@@ -42,6 +42,7 @@
 #include "maidsafe/vault/accountamendmenthandler.h"
 #include "maidsafe/vault/accountrepository.h"
 #include "maidsafe/vault/chunkinfohandler.h"
+#include "maidsafe/vault/infosynchroniser.h"
 #include "protobuf/maidsafe_service.pb.h"
 #include "protobuf/maidsafe_messages.pb.h"
 
@@ -105,7 +106,8 @@ class VaultChunkStore;
 
 class VaultService : public maidsafe::MaidsafeService {
  public:
-  VaultService(const std::string &pmid_public,
+  VaultService(const std::string &pmid,
+               const std::string &pmid_public,
                const std::string &pmid_private,
                const std::string &pmid_public_signature,
                VaultChunkStore *vault_chunkstore,
@@ -292,7 +294,7 @@ class VaultService : public maidsafe::MaidsafeService {
   // Returns whether the node is within "count" closest nodes (Kademlia closest)
   bool NodeWithinClosest(const std::string &peer_pmid,
                          const boost::uint16_t &count);
-  std::string pmid_public_, pmid_private_, pmid_public_signature_, pmid_;
+  std::string pmid_, pmid_public_, pmid_private_, pmid_public_signature_;
   VaultChunkStore *vault_chunkstore_;
   kad::KNode *knode_;
   VaultServiceLogic *vault_service_logic_;
@@ -303,6 +305,8 @@ class VaultService : public maidsafe::MaidsafeService {
   AccountAmendmentHandler aah_;
   ChunkInfoHandler cih_;
   QThreadPool thread_pool_;
+  boost::shared_ptr<base::PDRoutingTableHandler> routing_table_;
+  InfoSynchroniser info_synchroniser_;
 };
 
 class RegistrationService : public maidsafe::VaultRegistration {

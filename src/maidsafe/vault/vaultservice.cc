@@ -85,17 +85,18 @@ void SendCachableChunkTask::run() {
                                      callback_, transport_id_);
 }
 
-VaultService::VaultService(const std::string &pmid_public,
+VaultService::VaultService(const std::string &pmid,
+                           const std::string &pmid_public,
                            const std::string &pmid_private,
                            const std::string &pmid_public_signature,
                            VaultChunkStore *vault_chunkstore,
                            kad::KNode *knode,
                            VaultServiceLogic *vault_service_logic,
                            const boost::int16_t &transport_id)
-    : pmid_public_(pmid_public),
+    : pmid_(pmid),
+      pmid_public_(pmid_public),
       pmid_private_(pmid_private),
       pmid_public_signature_(pmid_public_signature),
-      pmid_(),
       vault_chunkstore_(vault_chunkstore),
       knode_(knode),
       vault_service_logic_(vault_service_logic),
@@ -104,11 +105,12 @@ VaultService::VaultService(const std::string &pmid_public,
       ah_(true),
       aah_(&ah_, vault_service_logic_),
       cih_(true),
-      thread_pool_() {
-  crypto::Crypto co;
-  co.set_hash_algorithm(crypto::SHA_512);
-  pmid_ = co.Hash(pmid_public_ + pmid_public_signature_, "",
-                  crypto::STRING_STRING, false);
+      thread_pool_(),
+      routing_table_(knode_ == NULL ?
+          boost::shared_ptr<base::PDRoutingTableHandler>() :
+          (*base::PDRoutingTable::getInstance())
+          [boost::lexical_cast<std::string>(knode_->host_port())]),
+      info_synchroniser_(pmid_, routing_table_) {
   thread_pool_.setMaxThreadCount(1);
 }
 
@@ -751,6 +753,9 @@ void VaultService::AmendAccount(google::protobuf::RpcController*,
       printf("In VaultService::AmendAccount (%s), account to amend (%s) does "
              "not exist.\n", HexSubstr(pmid_).c_str(), HexSubstr(pmid).c_str());
 #endif
+      bool get_account_from_peer(info_synchroniser_.ShouldFetch(pmid));
+                                                    //      if (get_account_from_peer)
+                                                    //        vault_service_logic_->GetAccount(pmid);
     }
   } else if (request->amendment_type() ==
              maidsafe::AmendAccountRequest::kSpaceOffered) {
@@ -2085,11 +2090,9 @@ int VaultService::AddAccount(const std::string &pmid,
 
 bool VaultService::NodeWithinClosest(const std::string &peer_pmid,
                                      const boost::uint16_t &count) {
-  boost::shared_ptr<base::PDRoutingTableHandler> rt_handler =
-      (*base::PDRoutingTable::getInstance())
-          [boost::lexical_cast<std::string>(knode_->host_port())];
   std::list<base::PDRoutingTableTuple> close_peers;
-  if (rt_handler->GetClosestContacts(pmid_, count, &close_peers) != kSuccess) {
+  if (routing_table_->GetClosestContacts(pmid_, count, &close_peers) !=
+      kSuccess) {
 #ifdef DEBUG
     printf("In VaultService::NodeWithinClosest(%s), failed to query local"
            "routing table.\n", HexSubstr(pmid_).c_str());

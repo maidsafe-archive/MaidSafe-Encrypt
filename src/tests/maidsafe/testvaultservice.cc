@@ -126,7 +126,8 @@ class VaultServicesTest : public testing::Test {
     ASSERT_TRUE(vault_chunkstore_->Init());
 
     vault_service_logic_ = new VaultServiceLogic(vault_rpcs_, knode_);
-    vault_service_ = new VaultService(vault_public_key_, vault_private_key_,
+    vault_service_ = new VaultService(vault_pmid_, vault_public_key_,
+                                      vault_private_key_,
                                       vault_public_key_signature_,
                                       vault_chunkstore_, knode_.get(),
                                       vault_service_logic_, transport_id);
@@ -454,7 +455,8 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesStorePrep) {
 
 TEST_F(MockVaultServicesTest, BEH_MAID_ServicesStoreChunk) {
   delete vault_service_;
-  vault_service_ = new VaultService(vault_public_key_, vault_private_key_,
+  vault_service_ = new VaultService(vault_pmid_, vault_public_key_,
+                                    vault_private_key_,
                                     vault_public_key_signature_,
                                     vault_chunkstore_, knode_.get(),
                                     &mock_vault_service_logic_,
@@ -791,7 +793,8 @@ TEST_F(MockVaultServicesTest, FUNC_MAID_ServicesAmendAccount) {
   boost::shared_ptr<kad::KNode> knode;
   MockVsl mock_vault_service_logic(vault_rpcs, knode);
   delete vault_service_;
-  vault_service_ = new VaultService(vault_public_key_, vault_private_key_,
+  vault_service_ = new VaultService(vault_pmid_, vault_public_key_,
+                                    vault_private_key_,
                                     vault_public_key_signature_,
                                     vault_chunkstore_, knode_.get(),
                                     &mock_vault_service_logic,
@@ -1219,7 +1222,8 @@ TEST_F(MockVaultServicesTest, FUNC_MAID_ServicesAmendAccount) {
 
 TEST_F(MockVaultServicesTest, BEH_MAID_ServicesAddToWatchList) {
   delete vault_service_;
-  vault_service_ = new VaultService(vault_public_key_, vault_private_key_,
+  vault_service_ = new VaultService(vault_pmid_, vault_public_key_,
+                                    vault_private_key_,
                                     vault_public_key_signature_,
                                     vault_chunkstore_, knode_.get(),
                                     &mock_vault_service_logic_,
@@ -1432,7 +1436,8 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesAddToWatchList) {
 
 TEST_F(MockVaultServicesTest, FUNC_MAID_ServicesRemoveFromWatchList) {
   delete vault_service_;
-  vault_service_ = new VaultService(vault_public_key_, vault_private_key_,
+  vault_service_ = new VaultService(vault_pmid_, vault_public_key_,
+                                    vault_private_key_,
                                     vault_public_key_signature_,
                                     vault_chunkstore_, knode_.get(),
                                     &mock_vault_service_logic_,
@@ -1670,7 +1675,8 @@ TEST_F(MockVaultServicesTest, FUNC_MAID_ServicesRemoveFromWatchList) {
 
 TEST_F(MockVaultServicesTest, BEH_MAID_ServicesAddToReferenceList) {
   delete vault_service_;
-  vault_service_ = new VaultService(vault_public_key_, vault_private_key_,
+  vault_service_ = new VaultService(vault_pmid_, vault_public_key_,
+                                    vault_private_key_,
                                     vault_public_key_signature_,
                                     vault_chunkstore_, knode_.get(),
                                     &mock_vault_service_logic_,
@@ -1924,7 +1930,8 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesAddToReferenceList) {
 
 TEST_F(MockVaultServicesTest, DISABLED_FUNC_MAID_ServicesRemoveFromReferenceList) {  // NOLINT(Fraser) - will be fixed once "DISABLED_" is removed.
   delete vault_service_;
-  vault_service_ = new VaultService(vault_public_key_, vault_private_key_,
+  vault_service_ = new VaultService(vault_pmid_, vault_public_key_,
+                                    vault_private_key_,
                                     vault_public_key_signature_,
                                     vault_chunkstore_, knode_.get(),
                                     &mock_vault_service_logic_,
@@ -2281,7 +2288,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesVaultStatus) {
 }
 
 TEST_F(VaultServicesTest, BEH_MAID_ServicesCreateBP) {
-  VaultService service(vault_public_key_, vault_private_key_,
+  VaultService service(vault_pmid_, vault_public_key_, vault_private_key_,
       vault_public_key_signature_, vault_chunkstore_, NULL,
       vault_service_logic_, udt_transport_.GetID());
   rpcprotocol::Controller controller;
@@ -2348,7 +2355,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesCreateBP) {
 }
 
 TEST_F(VaultServicesTest, BEH_MAID_ServicesModifyBPInfo) {
-  VaultService service(vault_public_key_, vault_private_key_,
+  VaultService service(vault_pmid_, vault_public_key_, vault_private_key_,
       vault_public_key_signature_, vault_chunkstore_, NULL,
       vault_service_logic_, udt_transport_.GetID());
   rpcprotocol::Controller controller;
@@ -2528,7 +2535,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesModifyBPInfo) {
 }
 
 TEST_F(VaultServicesTest, BEH_MAID_ServicesGetBPMessages) {
-  VaultService service(vault_public_key_, vault_private_key_,
+  VaultService service(vault_pmid_, vault_public_key_, vault_private_key_,
       vault_public_key_signature_, vault_chunkstore_, NULL,
       vault_service_logic_, udt_transport_.GetID());
   rpcprotocol::Controller controller;
@@ -2604,7 +2611,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesGetBPMessages) {
 }
 
 TEST_F(VaultServicesTest, BEH_MAID_ServicesAddBPMessages) {
-  VaultService service(vault_public_key_, vault_private_key_,
+  VaultService service(vault_pmid_, vault_public_key_, vault_private_key_,
       vault_public_key_signature_, vault_chunkstore_, NULL,
       vault_service_logic_, udt_transport_.GetID());
   rpcprotocol::Controller controller;
@@ -2783,7 +2790,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesAddBPMessages) {
 }
 
 TEST_F(VaultServicesTest, BEH_MAID_ServicesContactInfo) {
-  VaultService service(vault_public_key_, vault_private_key_,
+  VaultService service(vault_pmid_, vault_public_key_, vault_private_key_,
                        vault_public_key_signature_, vault_chunkstore_,
                        NULL, vault_service_logic_,
                        udt_transport_.GetID());

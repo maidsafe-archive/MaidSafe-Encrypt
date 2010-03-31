@@ -154,7 +154,6 @@ void PDVault::Start(bool first_node) {
     }
   }
   if (success) {
-    RegisterMaidService();
     boost::mutex kad_join_mutex;
     if (first_node) {
       boost::asio::ip::address local_ip;
@@ -181,6 +180,7 @@ void PDVault::Start(bool first_node) {
     port_ = knode_->host_port();
     routing_table_ = (*base::PDRoutingTable::getInstance())
           [boost::lexical_cast<std::string>(port_)];
+    RegisterMaidService();
 
     if (kad_joined_ && vault_service_logic_.Init(pmid_, pmid_public_,
         signed_pmid_public_, pmid_private_)) {
@@ -245,7 +245,8 @@ void PDVault::CleanUp() {
 
 void PDVault::RegisterMaidService() {
   vault_service_ = boost::shared_ptr<VaultService>(
-    new VaultService(pmid_public_,
+    new VaultService(pmid_,
+                     pmid_public_,
                      pmid_private_,
                      signed_pmid_public_,
                      &vault_chunkstore_,
