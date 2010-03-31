@@ -716,18 +716,6 @@ bool ClientController::Logout() {
   printf("ClientController::Logout - After threads done.\n");
 #endif
 
-  std::string mounted_win_drive(1, ss_->WinDrive());
-  mounted_win_drive += ":";
-  try {
-    while (fs::exists(mounted_win_drive) && ss_->Mounted() == 0)
-      boost::this_thread::sleep(boost::posix_time::milliseconds(10));
-  }
-  catch(const std::exception &e) {
-#ifdef DEBUG
-    printf("ClientController::Logout - %s\n", e.what());
-#endif
-  }
-
   file_system::UnMount(ss_->SessionName(), ss_->DefConLevel());
   ss_->ResetSession();
   instant_messages_.clear();
@@ -1019,7 +1007,7 @@ void ClientController::ClearStaleMessages() {
 #endif
     }
   }
-//  printf("CC::ClearStaleMessages() - Left\n");
+  printf("CC::ClearStaleMessages() - Left\n");
 }
 
 int ClientController::HandleDeleteContactNotification(
@@ -1795,7 +1783,7 @@ std::string ClientController::GenerateBPInfo() {
   for (size_t n = 0; n < contacts.size(); ++n) {
     bpi.add_users(co.Hash(contacts[n], "", crypto::STRING_STRING, false));
   }
-  EndPoint *ep = bpi.mutable_ep();
+  EndPoint *ep = bpi.add_ep();
   *ep = ss_->Ep();
   PersonalDetails *pd = bpi.mutable_pd();
   *pd = ss_->Pd();
@@ -1816,16 +1804,21 @@ std::string ClientController::GenerateBPInfo(
   for (size_t n = 0; n < contacts.size(); ++n) {
     bpi.add_users(co.Hash(contacts[n], "", crypto::STRING_STRING, false));
   }
-  EndPoint *ep = bpi.mutable_ep();
+  bpi.set_online(ss_->ConnectionStatus());
+  EndPoint *ep = bpi.add_ep();
   *ep = ss_->Ep();
   PersonalDetails *pd = bpi.mutable_pd();
-  pd->set_full_name(info[0]);
-  pd->set_phone_number(info[1]);
-  pd->set_birthday(info[2]);
-  pd->set_gender(info[3]);
-  pd->set_language(info[4]);
-  pd->set_city(info[5]);
-  pd->set_country(info[6]);
+  if (info.empty()) {
+    pd->set_full_name(info[0]);
+    pd->set_phone_number(info[1]);
+    pd->set_birthday(info[2]);
+    pd->set_gender(info[3]);
+    pd->set_language(info[4]);
+    pd->set_city(info[5]);
+    pd->set_country(info[6]);
+  } else {
+    *ep = ss_->Ep();
+  }
   std::string ser_bpi;
   bpi.SerializeToString(&ser_bpi);
   return ser_bpi;
@@ -2096,18 +2089,17 @@ int ClientController::SetInfo(const std::vector<std::string> &info) {
     return n;
   }
 
-  printf("CC::SetInfo - %s\n", info[0].c_str());
-
-  PersonalDetails pd;
-  pd.set_full_name(info[0]);
-  pd.set_phone_number(info[1]);
-  pd.set_birthday(info[2]);
-  pd.set_gender(info[3]);
-  pd.set_language(info[4]);
-  pd.set_city(info[5]);
-  pd.set_country(info[6]);
-
-  ss_->SetPd(pd);
+  if (!info.empty()) {
+    PersonalDetails pd;
+    pd.set_full_name(info[0]);
+    pd.set_phone_number(info[1]);
+    pd.set_birthday(info[2]);
+    pd.set_gender(info[3]);
+    pd.set_language(info[4]);
+    pd.set_city(info[5]);
+    pd.set_country(info[6]);
+    ss_->SetPd(pd);
+  }
 
   return 0;
 }

@@ -49,7 +49,7 @@ ClientController* ClientController::instance() {
 
 ClientController::ClientController(QObject* parent)
     : QObject(parent),
-      checking_for_messages_(false) { }
+      cfmt_(NULL) { }
 
 ClientController::~ClientController() { }
 
@@ -63,18 +63,19 @@ void ClientController::StartCheckingMessages() {
   cfmt_->set_started(true);
   connect(cfmt_, SIGNAL(completed(bool)),
           this,  SLOT(onCheckMessagesCompleted(bool)));
-  printf("Antes del RUUUUUUUUUNNNNN\n");
   cfmt_->start();
-  printf("Despues del RUUUUUUUUUNNNNN\n");
 }
 
 void ClientController::StopCheckingMessages() {
   cfmt_->set_started(false);
+  cfmt_->terminate();
+  cfmt_->wait();
   disconnect(cfmt_, NULL, this, NULL);
 }
 
 void ClientController::shutdown() {
   maidsafe::ClientController::getInstance()->CloseConnection(true);
+  maidsafe::ClientController::getInstance()->Destroy();
 }
 
 QString ClientController::publicUsername() const {
@@ -388,6 +389,28 @@ bool ClientController::IsLocalVaultOwned() {
   return maidsafe::ClientController::getInstance()->IsLocalVaultOwned();
 }
 
+void ClientController::onInstantMessage(const std::string &message,
+                                        const boost::uint32_t&,
+                                        const boost::int16_t&,
+                                        const float &) {
+  maidsafe::BufferPacketMessage bpm;
+  crypto::Crypto co;
+  co.set_symm_algorithm(crypto::AES_256);
+  if (!bpm.ParseFromString(message)) {
+    return;
+  }
+  std::string aes_key = co.AsymDecrypt(bpm.rsaenc_key(), "",
+                        maidsafe::SessionSingleton::getInstance()->
+                        PrivateKey(maidsafe::MPID), crypto::STRING_STRING);
+  std::string instant_message(co.SymmDecrypt(bpm.aesenc_message(),
+                              "", crypto::STRING_STRING, aes_key));
+  maidsafe::InstantMessage im;
+  if (!im.ParseFromString(instant_message)) {
+    return;
+  }
+  analyseMessage(im);
+}
+
 bool ClientController::GetMessages() {
   return maidsafe::ClientController::getInstance()->GetMessages();
 }
@@ -423,8 +446,6 @@ void ClientController::onCheckMessagesCompleted(bool success) {
     analyseMessage(temp.front());
     temp.pop_front();
   }
-  checking_for_messages_ = false;
-//  StartCheckingMessages();
 }
 
 int ClientController::analyseMessage(const maidsafe::InstantMessage& im) {

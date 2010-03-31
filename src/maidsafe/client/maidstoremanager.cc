@@ -127,6 +127,8 @@ void MaidsafeStoreManager::Init(int port, base::callback_func_type cb,
     success = transport_handler_.RegisterOnServerDown(boost::bind(
         &kad::KNode::HandleDeadRendezvousServer, knode_.get(), _1));
   if (success)
+    success = transport_handler_.RegisterOnMessage(im_notifier_);
+  if (success)
     success = (transport_handler_.Start(port, udt_transport_.GetID()) == 0);
   if (success)
     success = (channel_manager_.Start() == 0);

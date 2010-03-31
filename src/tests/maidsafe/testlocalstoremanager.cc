@@ -617,7 +617,7 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_ContactInfoFromBufferPacket) {
   buffer_packet_info.set_online(5);
   buffer_packet_info.add_users(co_.Hash("Juanito", "",
                                crypto::STRING_STRING, false));
-  maidsafe::EndPoint *ep = buffer_packet_info.mutable_ep();
+  maidsafe::EndPoint *ep = buffer_packet_info.add_ep();
   ep->set_ip("127.0.0.1");
   ep->set_port(12700);
   maidsafe::PersonalDetails *pd = buffer_packet_info.mutable_pd();

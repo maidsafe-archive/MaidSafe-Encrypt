@@ -52,7 +52,7 @@ message BufferPacketInfo {
   required bytes owner_publickey = 2;
   repeated bytes users = 3;
   optional int32 online = 4;
-  optional EndPoint ep = 5;
+  repeated EndPoint ep = 5;  // external, internal, rendezvous
   optional PersonalDetails pd = 6;
 }
 

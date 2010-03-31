@@ -334,8 +334,8 @@ bool VaultBufferPacketHandler::ContactInfo(const std::string &current_bp,
     }
   }
 
-  ep->set_ip(bpi.ep().ip());
-  ep->set_port(bpi.ep().port());
+  ep->set_ip(bpi.ep(0).ip());
+  ep->set_port(bpi.ep(0).port());
   *pd = bpi.pd();
   *status = bpi.online();
 
