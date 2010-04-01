@@ -132,24 +132,24 @@ void Shares::onCreateShareClicked() {
   }
 
   QStringList admin_set;
-  ShareParticipantsChoice spc_admin(this, tr("Administrators"), &admin_set);
-  int n = spc_admin.exec();
-
+//  ShareParticipantsChoice spc_admin(this, tr("Administrators"), &admin_set);
+//  int n = spc_admin.exec();
+//
   QStringList db_contacts = ClientController::instance()->contactsNames();
-  foreach(const QString& s, admin_set) {
-    db_contacts.removeAll(s);
-  }
-
+//  foreach(const QString& s, admin_set) {
+//    db_contacts.removeAll(s);
+//  }
+//
 
   QStringList ro_set(admin_set);
   if (db_contacts.size() > 0) {
     ShareParticipantsChoice spc_ro(this, tr("Read Onlys"), &ro_set);
-    n = spc_ro.exec();
+    int n = spc_ro.exec();
   } else {
     ro_set.clear();
   }
 
-  if (ro_set.size() == 0 && admin_set.size() == 0) {
+  if (ro_set.size() == 0 /*&& admin_set.size() == 0*/) {
     return;
   }
 

@@ -76,7 +76,8 @@ class Authentication {
         system_packets_result_(kPendingResult),
         user_info_result_(kPendingResult),
         get_smidtimid_result_(kPendingResult),
-        crypto_key_pairs_() {}
+        crypto_key_pairs_() { }
+  ~Authentication() { }
   void Init(const boost::uint16_t &crypto_key_buffer_count,
             boost::shared_ptr<StoreManagerInterface> smgr);
   int GetUserInfo(const std::string &username, const std::string &pin);

@@ -29,10 +29,10 @@
 namespace maidsafe {
 
 CryptoKeyPairs::CryptoKeyPairs()
-      : keypairs_done_(0), keypairs_todo_(0), keypairs_(),
+      : keypairs_done_(0), keypairs_todo_(0), pending_requests_(0), keypairs_(),
         thrds_(kMaxCryptoThreadCount, boost::shared_ptr<boost::thread>()),
-        keyslist_mutex_(), keys_done_mutex_(), start_mutex_(), keys_cond_(),
-        started_(false), destroying_this_(false) {
+        keyslist_mutex_(), keys_done_mutex_(), start_mutex_(), req_mutex_(),
+        keys_cond_(), req_cond_(), started_(false), destroying_this_(false) {
 }
 
 CryptoKeyPairs::~CryptoKeyPairs() {
@@ -41,6 +41,13 @@ CryptoKeyPairs::~CryptoKeyPairs() {
   for (it = thrds_.begin(); it != thrds_.end(); ++it) {
     if (*it) {
       (*it)->join();
+    }
+  }
+  // waiting for pending requests to exit
+  {
+    boost::mutex::scoped_lock lock(req_mutex_);
+    while (pending_requests_ > 0) {
+      req_cond_.timed_wait(lock, boost::posix_time::seconds(10));
     }
   }
 }
@@ -89,17 +96,23 @@ void CryptoKeyPairs::CreateKeyPair() {
     {
       boost::mutex::scoped_lock lock(keys_done_mutex_);
       ++keypairs_done_;
-      if (kMaxCryptoThreadCount - (keypairs_todo_ - keypairs_done_) > 0)
+      if (kMaxCryptoThreadCount - (keypairs_todo_ - keypairs_done_) > 0) {
         work_todo = false;
+      }
     }
   }
 }
 
 void CryptoKeyPairs::FinishedCreating() {
+  bool finished = false;
   {
     boost::mutex::scoped_lock lock(keys_done_mutex_);
     if (keypairs_todo_ == keypairs_done_)
-      started_ = false;
+      finished = true;
+  }
+  if (finished) {
+    boost::mutex::scoped_lock lock(start_mutex_);
+    started_ = false;
   }
   keys_cond_.notify_all();
 }
@@ -117,16 +130,30 @@ bool CryptoKeyPairs::GetKeyPair(crypto::RsaKeyPair *keypair) {
       result = true;
     }
   } else {
-    boost::mutex::scoped_lock lock(keyslist_mutex_);
-    while (keypairs_.empty() && started_) {
-      keys_cond_.wait(lock);
+    {
+      boost::mutex::scoped_lock lock(req_mutex_);
+      ++pending_requests_;
     }
-    if (!keypairs_.empty()) {
-      *keypair = keypairs_.front();
-      keypairs_.pop_front();
-      result = true;
-    } else {
-      result = false;
+    {
+      boost::mutex::scoped_lock lock(keyslist_mutex_);
+      while (keypairs_.empty() && started_) {
+        keys_cond_.wait(lock);
+      }
+      if (!keypairs_.empty()) {
+        *keypair = keypairs_.front();
+        keypairs_.pop_front();
+        result = true;
+      } else {
+        result = false;
+      }
+    }
+    {
+      boost::mutex::scoped_lock lock(req_mutex_);
+      --pending_requests_;
+      if (destroying_this_) {
+        req_cond_.notify_one();
+      }
+
     }
   }
   return result;

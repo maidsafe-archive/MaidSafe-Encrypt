@@ -22,7 +22,7 @@
 
 
 CheckForMessagesThread::CheckForMessagesThread(QObject* parent)
-    : WorkerThread(parent), interval_(3), started_(false),
+    : QThread(parent), interval_(3), started_(false),
       interval_mutex_(), start_mutex_() { }
 
 CheckForMessagesThread::~CheckForMessagesThread() { }

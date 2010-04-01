@@ -170,6 +170,10 @@ enum ReturnCode {
   kFileSystemUnmountError = -10008,
   kFuseMountPointError = -10009,
   kFileSystemException = -10010,
+  kAddLiveContactFailure = -10011,
+  kLiveContactNotFound = -10012,
+  kLiveContactNoEp = -10013,
+
 
   // Self Encryption Handler (-11000)
 

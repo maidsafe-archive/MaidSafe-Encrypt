@@ -2465,7 +2465,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesModifyBPInfo) {
   bpi.add_users("newuser0");
   bpi.add_users("newuser1");
   bpi.add_users("newuser2");
-  maidsafe::EndPoint *ep = bpi.mutable_ep();
+  maidsafe::EndPoint *ep = bpi.add_ep();
   ep->set_ip("132.248.59.1");
   ep->set_port(132);
   maidsafe::PersonalDetails *pd = bpi.mutable_pd();
@@ -2523,8 +2523,8 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesModifyBPInfo) {
   ASSERT_EQ(3, bpi.users_size());
   for (int n = 0; n < bpi.users_size(); ++n)
     ASSERT_EQ("newuser" + base::itos(n), bpi.users(n));
-  ASSERT_EQ(ep->ip(), bpi.ep().ip());
-  ASSERT_EQ(ep->port(), bpi.ep().port());
+  ASSERT_EQ(ep->ip(), bpi.ep(0).ip());
+  ASSERT_EQ(ep->port(), bpi.ep(0).port());
   ASSERT_EQ(pd->full_name(), bpi.pd().full_name());
   ASSERT_EQ(pd->phone_number(), bpi.pd().phone_number());
   ASSERT_EQ(pd->birthday(), bpi.pd().birthday());
@@ -2809,7 +2809,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesContactInfo) {
   bpi.set_owner_publickey(pub_key);
   bpi.set_online(1);
   bpi.add_users(co.Hash("newuser", "", crypto::STRING_STRING, false));
-  maidsafe::EndPoint *ep = bpi.mutable_ep();
+  maidsafe::EndPoint *ep = bpi.add_ep();
   ep->set_ip("132.248.59.1");
   ep->set_port(13224);
   maidsafe::PersonalDetails *pd = bpi.mutable_pd();

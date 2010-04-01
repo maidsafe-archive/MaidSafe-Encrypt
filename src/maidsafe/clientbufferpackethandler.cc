@@ -135,7 +135,7 @@ void ClientBufferPacketHandler::ModifyOwnerInfo(const BPInputParameters &args,
   buffer_packet_info.set_owner(args.sign_id);
   buffer_packet_info.set_owner_publickey(args.public_key);
   buffer_packet_info.set_online(status);
-  EndPoint *ep = buffer_packet_info.mutable_ep();
+  EndPoint *ep = buffer_packet_info.add_ep();
   ep->set_ip(knode_->host_ip());
   ep->set_port(knode_->host_port());
   for (unsigned int i = 0; i < users.size(); ++i)

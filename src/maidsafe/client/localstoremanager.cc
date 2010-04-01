@@ -647,7 +647,7 @@ int LocalStoreManager::CreateBP() {
   buffer_packet_info.set_owner(ss_->Id(MPID));
   buffer_packet_info.set_owner_publickey(ss_->PublicKey(MPID));
   buffer_packet_info.set_online(1);
-  EndPoint *ep = buffer_packet_info.mutable_ep();
+  EndPoint *ep = buffer_packet_info.add_ep();
   ep->set_ip("127.0.0.1");
   ep->set_port(12700);
   ser_owner_info->set_data(buffer_packet_info.SerializeAsString());

@@ -48,6 +48,11 @@
     world.
 */
 
+typedef boost::function<void(const std::string&,
+                             const boost::uint32_t&,
+                             const boost::int16_t&,
+                             const float &)> IMNotifier;
+
 class ClientController : public QObject {
   Q_OBJECT
  public:
@@ -151,6 +156,10 @@ class ClientController : public QObject {
                        const QString& txt,
                        const QList<QString>& to,
                        const QString& conversation);
+  void onInstantMessage(const std::string &message,
+                        const boost::uint32_t&,
+                        const boost::int16_t&,
+                        const float &);
 
   // Vault info
   bool PollVaultInfo(QString *chunkstore, boost::uint64_t *offered_space,
@@ -191,7 +200,6 @@ class ClientController : public QObject {
   virtual ~ClientController();
 
   int analyseMessage(const maidsafe::InstantMessage& im);
-  bool checking_for_messages_;
   CheckForMessagesThread *cfmt_;
 };
 

@@ -96,12 +96,12 @@ TEST_F(VaultBufferPacketHandlerTest, BEH_MAID_ChangeOwnerInfo) {
   ASSERT_EQ("test bufferpacket", bpi_up.owner());
   ASSERT_EQ(1, bpi_up.online());
   ASSERT_EQ(2, bpi_up.users_size());
-  ASSERT_FALSE(bpi_up.has_ep());
+  ASSERT_EQ(0, bpi_up.ep_size());
   ASSERT_FALSE(bpi_up.has_pd());
 
   maidsafe::PersonalDetails *pd = bpi.mutable_pd();
   pd->Clear();
-  maidsafe::EndPoint *ep = bpi.mutable_ep();
+  maidsafe::EndPoint *ep = bpi.add_ep();
   ep->set_ip("132.248.59.1");
   ep->set_port(12345);
   bpi.SerializeToString(&ser_bpi);
@@ -116,7 +116,7 @@ TEST_F(VaultBufferPacketHandlerTest, BEH_MAID_ChangeOwnerInfo) {
   ASSERT_EQ("test bufferpacket", bpi_up.owner());
   ASSERT_EQ(1, bpi_up.online());
   ASSERT_EQ(2, bpi_up.users_size());
-  ASSERT_TRUE(bpi_up.has_ep());
+  ASSERT_EQ(1, bpi_up.ep_size());
   ASSERT_TRUE(bpi_up.has_pd());
 }
 
@@ -266,7 +266,7 @@ TEST_F(VaultBufferPacketHandlerTest, BEH_MAID_GetStatus) {
   bpi.set_owner_publickey(public_key);
   bpi.set_online(1);
   bpi.add_users(cry_obj.Hash("newuser", "", crypto::STRING_STRING, false));
-  maidsafe::EndPoint *ep = bpi.mutable_ep();
+  maidsafe::EndPoint *ep = bpi.add_ep();
   ep->set_ip("132.248.59.1");
   ep->set_port(12345);
   maidsafe::PersonalDetails *pd = bpi.mutable_pd();

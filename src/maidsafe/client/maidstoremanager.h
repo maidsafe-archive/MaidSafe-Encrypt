@@ -253,6 +253,11 @@ struct LocalVaultOwnedCallbackArgs {
   LocalVaultOwnedCallbackArgs &operator=(const LocalVaultOwnedCallbackArgs&);
 };
 
+typedef boost::function<void(const std::string&,
+                             const boost::uint32_t&,
+                             const boost::int16_t&,
+                             const float &)> IMNotifier;
+
 class MaidsafeStoreManager : public StoreManagerInterface {
  public:
   explicit MaidsafeStoreManager(boost::shared_ptr<ChunkStore> cstore);
@@ -337,6 +342,7 @@ class MaidsafeStoreManager : public StoreManagerInterface {
                               std::string *public_key_sig,
                               std::string *private_key);
   virtual int CreateAccount(const boost::uint64_t &space);
+  void SetInstantMessageNotifier(IMNotifier on_msg);
 
   friend void AddToWatchListTask::run();
   friend void SendChunkCopyTask::run();
@@ -345,8 +351,7 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   friend void DeletePacketTask::run();
   friend size_t testpdvault::CheckStoredCopies(
       std::map<std::string, std::string> chunks,
-      const int &timeout,
-      boost::shared_ptr<MaidsafeStoreManager> sm);
+      const int &timeout, boost::shared_ptr<MaidsafeStoreManager> sm);
  private:
   MaidsafeStoreManager &operator=(const MaidsafeStoreManager&);
   MaidsafeStoreManager(const MaidsafeStoreManager&);
@@ -531,6 +536,7 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   static int kChunkMaxThreadCount_;
   static int kPacketMaxThreadCount_;
   boost::int16_t trans_id_;
+  IMNotifier im_notifier_;
 };
 
 }  // namespace maidsafe

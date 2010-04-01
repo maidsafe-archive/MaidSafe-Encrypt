@@ -522,4 +522,150 @@ TEST_F(SessionSingletonTest, BEH_MAID_Conversations) {
   ASSERT_EQ(0, ss_->ConversationList(&conv));
   ASSERT_EQ(size_t(0), conv.size());
 }
+
+TEST_F(SessionSingletonTest, BEH_MAID_LiveContacts) {
+  // Verify LiveContacts are empty after reset
+  std::list<std::string> contacts;
+  ASSERT_EQ(0, ss_->LivePublicUsernameList(&contacts));
+  ASSERT_EQ(size_t(0), contacts.size());
+  std::map<std::string, ConnectionDetails> live_contacts;
+  ASSERT_EQ(0, ss_->LiveContactMap(&live_contacts));
+  ASSERT_EQ(size_t(0), live_contacts.size());
+
+  // Modify non-existent contact
+  std::string non_existent_contact("nalgabert");
+  std::vector<EndPoint> end_points;
+  boost::uint16_t transport_id;
+  boost::uint32_t connection_id;
+  int status;
+  boost::uint32_t timestamp;
+  ASSERT_EQ(kLiveContactNotFound, ss_->LiveContactDetails(non_existent_contact,
+            &end_points, &transport_id, &connection_id, &status, &timestamp));
+  ASSERT_EQ(kLiveContactNotFound, ss_->LiveContactTransportConnection(
+            non_existent_contact, &transport_id, &connection_id));
+  transport_id = 2;
+  connection_id = 23654;
+  ASSERT_EQ(kLiveContactNotFound, ss_->StartLiveConnection(
+            non_existent_contact, transport_id, connection_id));
+  ASSERT_EQ(kLiveContactNotFound,
+            ss_->ModifyTransportId(non_existent_contact, transport_id));
+  ASSERT_EQ(kLiveContactNotFound,
+            ss_->ModifyConnectionId(non_existent_contact, connection_id));
+  for (int n = 0; n < 3; ++n)
+    ASSERT_EQ(kLiveContactNotFound,
+              ss_->ModifyEndPoint(non_existent_contact, end_points[0], n));
+  ASSERT_EQ(kLiveContactNoEp,
+            ss_->ModifyEndPoint(non_existent_contact, end_points[0], -1));
+  ASSERT_EQ(kLiveContactNoEp,
+            ss_->ModifyEndPoint(non_existent_contact, end_points[0], 3));
+  ASSERT_EQ(kLiveContactNotFound, ss_->ModifyStatus(non_existent_contact, 7));
+  ASSERT_EQ(0, ss_->DeleteLiveContact(non_existent_contact));
+
+  // Adding a contact
+  std::string contact_a("ava");
+  end_points.clear();
+  EndPoint ep;
+  for (int n = 0; n < 3; ++n) {
+    ep.Clear();
+    ep.set_ip("192.168.1." + base::itos(n));
+    ep.set_port(64000 + n);
+    end_points.push_back(ep);
+  }
+  ASSERT_EQ(0, ss_->AddLiveContact(contact_a, end_points, 7));
+  ASSERT_EQ(kAddLiveContactFailure,
+            ss_->AddLiveContact(contact_a, end_points, 7));
+
+  // Verifying details of added contact
+  std::vector<EndPoint> inserted_eps(end_points);
+  ASSERT_EQ(0, ss_->LivePublicUsernameList(&contacts));
+  ASSERT_EQ(size_t(1), contacts.size());
+  ASSERT_EQ(contact_a, contacts.front());
+  ASSERT_EQ(0, ss_->LiveContactMap(&live_contacts));
+  ASSERT_EQ(size_t(1), live_contacts.size());
+  SessionSingleton::live_map::iterator it = live_contacts.find(contact_a);
+  ASSERT_FALSE(live_contacts.end() == it);
+  ASSERT_EQ(0, ss_->LiveContactDetails(contact_a, &end_points, &transport_id,
+            &connection_id, &status, &timestamp));
+  for (int n = 0; n < 3; ++n) {
+    ASSERT_EQ(inserted_eps[n].ip(), end_points[n].ip());
+    ASSERT_EQ(inserted_eps[n].port(), end_points[n].port());
+  }
+  ASSERT_EQ(0, transport_id);
+  ASSERT_EQ(0, connection_id);
+  ASSERT_EQ(0, timestamp);
+  ASSERT_EQ(7, status);
+  ASSERT_EQ(0, ss_->LiveContactTransportConnection(contact_a, &transport_id,
+            &connection_id));
+  ASSERT_EQ(0, transport_id);
+  ASSERT_EQ(0, connection_id);
+  ASSERT_EQ(0, ss_->StartLiveConnection(contact_a, 2, 23456));
+  ASSERT_EQ(0, ss_->LiveContactDetails(contact_a, &end_points, &transport_id,
+            &connection_id, &status, &timestamp));
+  ASSERT_EQ(2, transport_id);
+  ASSERT_EQ(23456, connection_id);
+  boost::uint32_t now = base::get_epoch_time();
+  ASSERT_TRUE(timestamp <= now && timestamp > now - 2);
+
+  // Modifying details of added contact
+  ASSERT_EQ(0, ss_->ModifyTransportId(contact_a, 3));
+  ASSERT_EQ(0, ss_->ModifyConnectionId(contact_a, 33333));
+  inserted_eps.clear();
+  for (int n = 0; n < 3; ++n) {
+    ep.Clear();
+    ep.set_ip("172.22.18." + base::itos(n));
+    ep.set_port(22700 + n);
+    ASSERT_EQ(0, ss_->ModifyEndPoint(contact_a, ep, n));
+    inserted_eps.push_back(ep);
+  }
+  ASSERT_EQ(0, ss_->ModifyStatus(contact_a, 2));
+  ASSERT_EQ(0, ss_->LiveContactDetails(contact_a, &end_points, &transport_id,
+            &connection_id, &status, &timestamp));
+  for (int n = 0; n < 3; ++n) {
+    ASSERT_EQ(inserted_eps[n].ip(), end_points[n].ip());
+    ASSERT_EQ(inserted_eps[n].port(), end_points[n].port());
+  }
+  ASSERT_EQ(3, transport_id);
+  ASSERT_EQ(33333, connection_id);
+  ASSERT_EQ(2, status);
+  now = base::get_epoch_time();
+  ASSERT_TRUE(timestamp <= now && timestamp > now - 2);
+
+  // Deleting inserted contact
+  ASSERT_EQ(1, ss_->DeleteLiveContact(contact_a));
+
+  // Inserting multiple contacts
+  int test_contacts(10);
+  for (int n = 0; n < test_contacts; ++n) {
+    std::string contact_n("ava" + base::itos(n));
+    end_points.clear();
+    EndPoint ep;
+    for (int a = 0; a < 3; ++a) {
+      ep.Clear();
+      ep.set_ip("192.168." + base::itos(n) + "." + base::itos(a));
+      ep.set_port(64000 + (n * 10) + a);
+      end_points.push_back(ep);
+    }
+    ASSERT_EQ(0, ss_->AddLiveContact(contact_n, end_points, n));
+  }
+  ASSERT_EQ(0, ss_->LivePublicUsernameList(&contacts));
+  ASSERT_EQ(size_t(10), contacts.size());
+  std::list<std::string>::iterator cit;
+  int y(0);
+  for (cit = contacts.begin(); cit != contacts.end(); ++cit) {
+    ASSERT_EQ("ava" + base::itos(y), *cit);
+    ++y;
+  }
+
+  for (int e = 0; e < 10; ++e)
+    if ((e%2) == 0)
+      ASSERT_EQ(1, ss_->DeleteLiveContact("ava" + base::itos(e)));
+  ASSERT_EQ(0, ss_->LivePublicUsernameList(&contacts));
+  ASSERT_EQ(size_t(5), contacts.size());
+  y = 1;
+  for (cit = contacts.begin(); cit != contacts.end(); ++cit) {
+    ASSERT_EQ("ava" + base::itos(y), *cit);
+    y += 2;
+  }
+}
+
 }  // namespace maidsafe

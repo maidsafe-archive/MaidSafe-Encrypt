@@ -239,7 +239,7 @@ class ClientController {
 
   // Functions
   ClientController();
-  ~ClientController() {}
+  ~ClientController() { }
   ClientController &operator=(const ClientController&);
   ClientController(const ClientController&);
   bool JoinKademlia();

@@ -97,7 +97,7 @@ void PacketOpCallback(const int &delete_result,
                       int *result) {
   boost::mutex::scoped_lock lock(*mutex);
   *result = delete_result;
-  cond_var->notify_one();
+  cond_var->notify_all();
 };
 
 }  // namespace test_lsm
@@ -231,6 +231,7 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_RemoveAllPacketsFromKey) {
         cond_var.wait(lock);
     }
     ASSERT_EQ(maidsafe::kSuccess, result);
+    result = maidsafe::kGeneralError;
   }
 
   // Remove said packets
@@ -616,7 +617,7 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_ContactInfoFromBufferPacket) {
   buffer_packet_info.set_online(5);
   buffer_packet_info.add_users(co_.Hash("Juanito", "",
                                crypto::STRING_STRING, false));
-  maidsafe::EndPoint *ep = buffer_packet_info.mutable_ep();
+  maidsafe::EndPoint *ep = buffer_packet_info.add_ep();
   ep->set_ip("127.0.0.1");
   ep->set_port(12700);
   maidsafe::PersonalDetails *pd = buffer_packet_info.mutable_pd();
