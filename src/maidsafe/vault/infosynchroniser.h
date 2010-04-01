@@ -51,6 +51,9 @@ class InfoSynchroniser {
   InfoSynchroniser(const InfoSynchroniser&);
   InfoSynchroniser& operator=(const InfoSynchroniser&);
   FRIEND_TEST(InfoSynchroniserTest, BEH_VAULT_InfoSyncShouldFetch);
+  FRIEND_TEST(InfoSynchroniserTest, BEH_VAULT_InfoSyncTimestamps);
+  FRIEND_TEST(InfoSynchroniserTest, BEH_VAULT_InfoSyncRemoveEntry);
+  FRIEND_TEST(InfoSynchroniserTest, BEH_VAULT_InfoSyncPruneMap);
   void AddNodeToClosest(const base::PDRoutingTableTuple &node,
                         std::vector<kad::Contact> *closest);
   std::string pmid_;
