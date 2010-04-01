@@ -1068,10 +1068,10 @@ int MaidsafeStoreManager::GetAccountDetails(boost::uint64_t *space_offered,
   // never send the RPC to our own vault
   RemoveKadContact(pmid, &data->contacts);
 
-  if (data->contacts.size() < kKadStoreThreshold) {
+  if (data->contacts.size() < kKadUpperThreshold) {
 #ifdef DEBUG
     printf("In MSM::GetAccountDetails, Kad lookup failed to find %u nodes; "
-           "found %u nodes.\n", kKadStoreThreshold, data->contacts.size());
+           "found %u nodes.\n", kKadUpperThreshold, data->contacts.size());
 #endif
     return kFindAccountHoldersError;
   }
@@ -1107,9 +1107,11 @@ int MaidsafeStoreManager::GetAccountDetails(boost::uint64_t *space_offered,
   }
 
   // wait for the RPCs to return or timeout
-  while (data->returned_count < kKadStoreThreshold) {
+  while (data->returned_count < kKadUpperThreshold) {
     data->condition.wait(lock);
   }
+
+  // TODO(Steve#) start at 4 results and loop until success or all 16 failed
 
   std::vector<boost::uint64_t> offered_values, given_values, taken_values;
   int n(0);
@@ -1140,13 +1142,11 @@ int MaidsafeStoreManager::GetAccountDetails(boost::uint64_t *space_offered,
 
   // TODO(Steve#) do we want to fail if the majority don't have the account?
 
-  const boost::uint16_t min_res = kad::K - kKadStoreThreshold;
-
-  // require more than 4 non-timed-out responses
-  if (n <= min_res) {
+  // require at least 4 non-timed-out responses
+  if (n < kKadLowerThreshold) {
 #ifdef DEBUG
-    printf("In MSM::GetAccountDetails, received only %u responses; need more "
-           "than %u.\n", n, min_res);
+    printf("In MSM::GetAccountDetails, received only %u responses; need at "
+           "least %u.\n", n, kKadLowerThreshold);
 #endif
     return kRequestInsufficientResponses;
   }
@@ -1159,8 +1159,10 @@ int MaidsafeStoreManager::GetAccountDetails(boost::uint64_t *space_offered,
   GetFilteredAverage(given_values,   &given_avg,   &given_n);
   GetFilteredAverage(taken_values,   &taken_avg,   &taken_n);
 
-  // require more than 4 non-outliers of each
-  if (offered_n <= min_res || given_n <= min_res || taken_n <= min_res) {
+  // require at least 4 non-outliers of each
+  if (offered_n < kKadLowerThreshold ||
+      given_n   < kKadLowerThreshold ||
+      taken_n   < kKadLowerThreshold) {
 #ifdef DEBUG
     printf("In MSM::GetAccountDetails, no consensus on values reached.\n");
 #endif
@@ -1495,10 +1497,10 @@ void MaidsafeStoreManager::AddToWatchList(StoreData store_data) {
                               kStoreChunkFindNodesFailure);
     return;
   }
-  if (data->contacts.size() < kKadStoreThreshold) {
+  if (data->contacts.size() < kKadUpperThreshold) {
 #ifdef DEBUG
     printf("In MSM::AddToWatchList, Kad lookup failed to find %u nodes; "
-           "found %u nodes.\n", kKadStoreThreshold, data->contacts.size());
+           "found %u nodes.\n", kKadUpperThreshold, data->contacts.size());
 #endif
     tasks_handler_.DeleteTask(data->store_data.data_name, kStoreChunk,
                               kStoreChunkFindNodesFailure);
@@ -1544,42 +1546,35 @@ void MaidsafeStoreManager::AddToWatchListCallback(
   ++data->returned_count;
   WatchListOpData::AddToWatchDataHolder &holder =
       data->add_to_watchlist_data_holders.at(index);
-  bool success(true);
+
   if (!holder.response.IsInitialized()) {
 #ifdef DEBUG
     printf("In MSM::AddToWatchListCallback, response %u is uninitialised.\n",
            index);
 #endif
-    success = false;
-  }
-  if (success && holder.response.result() != kAck) {
+  } else if (holder.response.result() != kAck) {
 #ifdef DEBUG
     printf("In MSM::AddToWatchListCallback, response %u has result %i.\n",
            index, holder.response.result());
 #endif
-    success = false;
-  }
-  if (success && holder.response.pmid() != holder.node_id) {
+  } else if (holder.response.pmid() != holder.node_id) {
 #ifdef DEBUG
     printf("In MSM::AddToWatchListCallback, response %u from %s has pmid %s.\n",
            index, HexSubstr(holder.node_id).c_str(),
            HexSubstr(holder.response.pmid()).c_str());
 #endif
-    success = false;
     // TODO(Fraser#5#): 2010-01-08 - Send alert to holder.node_id's A/C holders
-  }
-  if (success && holder.response.upload_count() > kMinChunkCopies) {
+  } else if (holder.response.upload_count() > kMinChunkCopies) {
 #ifdef DEBUG
     printf("In MSM::AddToWatchListCallback, response %u from %s has "
            "upload_count of %u.\n", index, HexSubstr(holder.node_id).c_str(),
            holder.response.upload_count());
 #endif
-    success = false;
     // TODO(Fraser#5#): 2010-01-08 - Send alert to holder.node_id's A/C holders
+  } else {
+    data->required_upload_copies.insert(holder.response.upload_count());
   }
 
-  if (success)
-    data->required_upload_copies.insert(holder.response.upload_count());
   int result = AssessUploadCounts(data);
   if (result == kSuccess) {
     if (data->consensus_upload_copies > 0) {
@@ -1608,8 +1603,9 @@ int MaidsafeStoreManager::AssessUploadCounts(
   std::multiset<int>::iterator it;
   // data->mutex should already be locked, but just in case...
   boost::mutex::scoped_try_lock lock(data->mutex);
-if (data->returned_count < kKadStoreThreshold)
+  if (data->returned_count < kKadUpperThreshold)
     return kRequestPendingConsensus;
+
   // Get most common upload_copies figure
   std::multiset<int> copy_required_upload_copies(data->required_upload_copies);
   while (!copy_required_upload_copies.empty()) {
@@ -1618,46 +1614,34 @@ if (data->returned_count < kKadStoreThreshold)
     if (current_count > max_count) {
       max_count = current_count;
       data->consensus_upload_copies = current_copies;
+    } else if (current_count == max_count &&
+               current_copies > data->consensus_upload_copies) {
+      data->consensus_upload_copies = current_copies;
     }
     ++discrete_opinions;
   }
-  if (discrete_opinions == 1 && max_count >= kKadStoreThreshold)
+
+  if (discrete_opinions == 1 && max_count >= kKadUpperThreshold)
     return kSuccess;
 
-  // If more than two discrete opinions, return error and set copies to zero.
-  if (discrete_opinions > 2) {
-    data->consensus_upload_copies = 0;
-    return kRequestFailedConsensus;
-  }
   // If no more results due, try to get consensus.
   if (data->returned_count >= data->add_to_watchlist_data_holders.size()) {
-    if (discrete_opinions == 2) {
-      it = data->required_upload_copies.end();
-      --it;
-      int max_copies(*it);
-      it = data->required_upload_copies.begin();
-      int min_copies(*it);
-      // If max_copies is the most common figure, go with this.  Otherwise...
-      if (data->consensus_upload_copies != max_copies) {
-        if (data->store_data.size > kMaxSmallChunkSize && min_copies > 0)
-          data->consensus_upload_copies = min_copies;
-        else
-          data->consensus_upload_copies = max_copies;
-      }
-    } else if (discrete_opinions == 0) {
+    if (discrete_opinions == 0) {
       data->consensus_upload_copies = 0;
       return kRequestFailedConsensus;
     }
   } else {
-      data->consensus_upload_copies = -1;
-      return kRequestPendingConsensus;
+    data->consensus_upload_copies = -1;
+    return kRequestPendingConsensus;
   }
+
   // If not enough for consensus, return error and set copies to -1.
   if (static_cast<int>(data->required_upload_copies.count(
-      data->consensus_upload_copies)) <= kad::K - kKadStoreThreshold) {
+      data->consensus_upload_copies)) < kKadLowerThreshold) {
     data->consensus_upload_copies = 0;
     return kRequestFailedConsensus;
   }
+
   return kSuccess;
 }
 
@@ -2260,10 +2244,10 @@ void MaidsafeStoreManager::RemoveFromWatchList(const StoreData &store_data) {
                               kDeleteChunkFindNodesFailure);
     return;
   }
-  if (data->contacts.size() < kKadStoreThreshold) {
+  if (data->contacts.size() < kKadUpperThreshold) {
 #ifdef DEBUG
     printf("In MSM::RemoveFromWatchList, Kad lookup failed to find %u nodes; "
-           "found %u nodes.\n", kKadStoreThreshold, data->contacts.size());
+           "found %u nodes.\n", kKadUpperThreshold, data->contacts.size());
 #endif
     tasks_handler_.DeleteTask(store_data.data_name, kDeleteChunk,
                               kDeleteChunkFindNodesFailure);
@@ -2304,7 +2288,7 @@ void MaidsafeStoreManager::RemoveFromWatchListCallback(
     boost::uint16_t index,
     boost::shared_ptr<WatchListOpData> data) {
   boost::mutex::scoped_lock lock(data->mutex);
-  if (data->successful_delete_count >= kKadStoreThreshold)
+  if (data->successful_delete_count >= kKadUpperThreshold)
     // Success has already been achieved and acted upon
     return;
   ++data->returned_count;
@@ -2339,7 +2323,7 @@ void MaidsafeStoreManager::RemoveFromWatchListCallback(
     ++data->successful_delete_count;
 
   // Overall success
-  if (data->successful_delete_count >= kKadStoreThreshold) {
+  if (data->successful_delete_count >= kKadUpperThreshold) {
     tasks_handler_.DeleteTask(data->store_data.data_name, kDeleteChunk,
                               kSuccess);
     return;
@@ -2755,10 +2739,10 @@ int MaidsafeStoreManager::CreateAccount(const boost::uint64_t &space) {
   // never send the RPC to our own vault
   RemoveKadContact(ss_->Id(PMID), &data->contacts);
 
-  if (data->contacts.size() < kKadStoreThreshold) {
+  if (data->contacts.size() < kKadUpperThreshold) {
 #ifdef DEBUG
     printf("In MSM::CreateAccount, Kad lookup failed to find %u nodes; "
-           "found %u node(s).\n", kKadStoreThreshold, data->contacts.size());
+           "found %u node(s).\n", kKadUpperThreshold, data->contacts.size());
 #endif
     return kFindAccountHoldersError;
   }
@@ -2797,7 +2781,7 @@ int MaidsafeStoreManager::CreateAccount(const boost::uint64_t &space) {
 
   // wait for the RPCs to return or timeout, or enough positive responses
   while (data->returned_count < data->contacts.size() &&
-         data->success_count < kKadStoreThreshold) {
+         data->success_count < kKadUpperThreshold) {
     data->condition.wait(lock);
   }
 
@@ -2807,10 +2791,10 @@ int MaidsafeStoreManager::CreateAccount(const boost::uint64_t &space) {
       data->data_holders.at(i).controller->req_id());
   }
 
-  if (data->success_count < kKadStoreThreshold) {
+  if (data->success_count < kKadUpperThreshold) {
 #ifdef DEBUG
     printf("In MSM::CreateAccount, not enough positive responses "
-           "received (%d of %d).\n", data->success_count, kKadStoreThreshold);
+           "received (%d of %d).\n", data->success_count, kKadUpperThreshold);
 #endif
     return maidsafe::kRequestFailedConsensus;
   }

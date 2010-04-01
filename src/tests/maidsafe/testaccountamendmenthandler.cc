@@ -226,16 +226,16 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_AssessAmendment) {
   bool found = (it != aah_.amendments_.get<by_timestamp>().end());
   ASSERT_TRUE(found);
   // Set Chunk Info holders so that kKadStoreThreshold - 2 have responded
-  ASSERT_LE(kKadStoreThreshold, good_pmids_.size() - 3);
-  ASSERT_GE(kKadStoreThreshold, 3);
-  for (size_t i = 0; i < static_cast<size_t>(kKadStoreThreshold - 1); ++i)
+  ASSERT_LE(kKadUpperThreshold, good_pmids_.size() - 3);
+  ASSERT_GE(kKadUpperThreshold, 3);
+  for (size_t i = 0; i < static_cast<size_t>(kKadUpperThreshold - 1); ++i)
     test_amendment.chunk_info_holders.insert(std::pair<std::string, bool>
         (good_pmids_.at(i), true));
-  for (size_t i = static_cast<size_t>(kKadStoreThreshold - 1);
+  for (size_t i = static_cast<size_t>(kKadUpperThreshold - 1);
        i < good_pmids_.size(); ++i)
     test_amendment.chunk_info_holders.insert(std::pair<std::string, bool>
         (good_pmids_.at(i), false));
-  test_amendment.success_count = kKadStoreThreshold - 2;
+  test_amendment.success_count = kKadUpperThreshold - 2;
   aah_.amendments_.get<by_timestamp>().replace(it, test_amendment);
 
   ASSERT_EQ(far_account_name, test_amendment.account_name);
@@ -243,7 +243,7 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_AssessAmendment) {
   ASSERT_EQ(size_t(0), test_amendment.pendings.size());
   ASSERT_EQ(size_t(2), test_amendment.probable_pendings.size());
   ASSERT_EQ(exp_time, test_amendment.expiry_time);
-  ASSERT_EQ(boost::uint16_t(kKadStoreThreshold - 2),
+  ASSERT_EQ(boost::uint16_t(kKadUpperThreshold - 2),
             test_amendment.success_count);
   ASSERT_EQ(kAccountAmendmentPending, test_amendment.account_amendment_result);
   ASSERT_EQ(size_t(1), aah_.amendments_.size());
@@ -257,7 +257,7 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_AssessAmendment) {
   ASSERT_EQ(size_t(0), test_amendment.pendings.size());
   ASSERT_EQ(size_t(2), test_amendment.probable_pendings.size());
   ASSERT_EQ(exp_time, test_amendment.expiry_time);
-  ASSERT_EQ(boost::uint16_t(kKadStoreThreshold - 2),
+  ASSERT_EQ(boost::uint16_t(kKadUpperThreshold - 2),
             test_amendment.success_count);
   ASSERT_EQ(kAccountAmendmentPending, test_amendment.account_amendment_result);
   ASSERT_EQ(size_t(1), aah_.amendments_.size());
@@ -271,7 +271,7 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_AssessAmendment) {
   ASSERT_EQ(size_t(0), test_amendment.pendings.size());
   ASSERT_EQ(size_t(2), test_amendment.probable_pendings.size());
   ASSERT_EQ(exp_time, test_amendment.expiry_time);
-  ASSERT_EQ(boost::uint16_t(kKadStoreThreshold - 2),
+  ASSERT_EQ(boost::uint16_t(kKadUpperThreshold - 2),
             test_amendment.success_count);
   ASSERT_EQ(kAccountAmendmentPending, test_amendment.account_amendment_result);
   ASSERT_EQ(size_t(1), aah_.amendments_.size());
@@ -285,7 +285,7 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_AssessAmendment) {
   ASSERT_EQ(size_t(0), test_amendment.pendings.size());
   ASSERT_EQ(size_t(2), test_amendment.probable_pendings.size());
   ASSERT_EQ(exp_time, test_amendment.expiry_time);
-  ASSERT_EQ(boost::uint16_t(kKadStoreThreshold - 2),
+  ASSERT_EQ(boost::uint16_t(kKadUpperThreshold - 2),
             test_amendment.success_count);
   ASSERT_EQ(kAccountAmendmentPending, test_amendment.account_amendment_result);
   ASSERT_EQ(size_t(1), aah_.amendments_.size());
@@ -299,7 +299,7 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_AssessAmendment) {
   ASSERT_EQ(size_t(0), test_amendment.pendings.size());
   ASSERT_EQ(size_t(2), test_amendment.probable_pendings.size());
   ASSERT_EQ(exp_time, test_amendment.expiry_time);
-  ASSERT_EQ(boost::uint16_t(kKadStoreThreshold - 2),
+  ASSERT_EQ(boost::uint16_t(kKadUpperThreshold - 2),
             test_amendment.success_count);
   ASSERT_EQ(kAccountAmendmentPending, test_amendment.account_amendment_result);
   ASSERT_EQ(size_t(1), aah_.amendments_.size());
@@ -313,7 +313,7 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_AssessAmendment) {
   ASSERT_EQ(size_t(0), test_amendment.pendings.size());
   ASSERT_EQ(size_t(2), test_amendment.probable_pendings.size());
   ASSERT_EQ(exp_time, test_amendment.expiry_time);
-  ASSERT_EQ(boost::uint16_t(kKadStoreThreshold - 2),
+  ASSERT_EQ(boost::uint16_t(kKadUpperThreshold - 2),
             test_amendment.success_count);
   ASSERT_EQ(kAccountAmendmentPending, test_amendment.account_amendment_result);
   ASSERT_EQ(size_t(1), aah_.amendments_.size());
@@ -334,7 +334,7 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_AssessAmendment) {
   ASSERT_EQ(size_t(0), test_amendment.pendings.size());
   ASSERT_EQ(size_t(2), test_amendment.probable_pendings.size());
   ASSERT_EQ(exp_time, test_amendment.expiry_time);
-  ASSERT_EQ(boost::uint16_t(kKadStoreThreshold - 2),
+  ASSERT_EQ(boost::uint16_t(kKadUpperThreshold - 2),
             test_amendment.success_count);
   ASSERT_EQ(kAccountAmendmentPending,
             test_amendment.account_amendment_result);
@@ -354,7 +354,7 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_AssessAmendment) {
   ASSERT_EQ(size_t(1), test_amendment.pendings.size());
   ASSERT_EQ(size_t(2), test_amendment.probable_pendings.size());
   ASSERT_EQ(exp_time, test_amendment.expiry_time);
-  ASSERT_EQ(boost::uint16_t(kKadStoreThreshold - 1),
+  ASSERT_EQ(boost::uint16_t(kKadUpperThreshold - 1),
             test_amendment.success_count);
   ASSERT_EQ(kAccountAmendmentPending,
             test_amendment.account_amendment_result);
@@ -374,7 +374,7 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_AssessAmendment) {
   ASSERT_EQ(size_t(0), test_amendment.pendings.size());
   ASSERT_EQ(size_t(2), test_amendment.probable_pendings.size());
   ASSERT_EQ(exp_time, test_amendment.expiry_time);
-  ASSERT_EQ(boost::uint16_t(kKadStoreThreshold),
+  ASSERT_EQ(boost::uint16_t(kKadUpperThreshold),
             test_amendment.success_count);
   ASSERT_EQ(kSuccess, test_amendment.account_amendment_result);
   ASSERT_EQ(size_t(1), aah_.amendments_.size());
