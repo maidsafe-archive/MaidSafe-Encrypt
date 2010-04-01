@@ -83,7 +83,7 @@ PacketParams MidPacket::Create(PacketParams params) {
       boost::any_cast<std::string>(params["username"]), pin);
   result["name"] = PacketName(params);
   result["encRid"] = crypto_obj_.SymmEncrypt(boost::lexical_cast<std::string>
-    (rid), "", crypto::STRING_STRING, password);;
+      (rid), "", crypto::STRING_STRING, password);
   result["rid"] = rid;
   return result;
 }

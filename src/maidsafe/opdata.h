@@ -25,6 +25,8 @@
 #include <boost/thread/locks.hpp>
 #include <maidsafe/maidsafe-dht_config.h>
 
+#include <list>
+#include <map>
 #include <set>
 #include <string>
 #include <vector>

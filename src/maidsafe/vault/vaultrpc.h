@@ -159,6 +159,20 @@ class VaultRpcs {
                    maidsafe::GetSyncDataResponse *get_sync_data_response,
                    rpcprotocol::Controller *controller,
                    google::protobuf::Closure *done);
+  void GetAccount(const kad::Contact &peer,
+                  bool local,
+                  const boost::int16_t &transport_id,
+                  maidsafe::GetAccountRequest *get_account_request,
+                  maidsafe::GetAccountResponse *get_account_response,
+                  rpcprotocol::Controller *controller,
+                  google::protobuf::Closure *done);
+  void GetChunkInfo(const kad::Contact &peer,
+                    bool local,
+                    const boost::int16_t &transport_id,
+                    maidsafe::GetChunkInfoRequest *get_chunk_info_request,
+                    maidsafe::GetChunkInfoResponse *get_chunk_info_response,
+                    rpcprotocol::Controller *controller,
+                    google::protobuf::Closure *done);
   void GetBPMessages(const std::string &buffer_packet_name,
                      const std::string &public_key,
                      const std::string &public_key_signature,

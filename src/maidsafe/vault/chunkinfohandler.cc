@@ -413,7 +413,7 @@ void ChunkInfoHandler::GetStaleWaitingListEntries(
   if (!started_)
     return;
   boost::uint32_t now = base::get_epoch_time();
-  for (std::map<std::string, ChunkInfo>::iterator ci_it = chunk_infos_.begin();
+  for (CIMap::iterator ci_it = chunk_infos_.begin();
        ci_it != chunk_infos_.end(); ++ci_it) {
     for (std::list<WaitingListEntry>::iterator wait_it =
          ci_it->second.waiting_list.begin();
@@ -480,30 +480,29 @@ ChunkInfoMap ChunkInfoHandler::PutMapToPb() {
   return chunk_info_map;
 }
 
-void ChunkInfoHandler::AddChunkInfoToPbSet(
-    const std::pair<const std::string, ChunkInfo> &pr,
-    ChunkInfoMap *chunk_info_map) {
+void ChunkInfoHandler::AddChunkInfoToPbSet(const CIMap::value_type &ci_pair,
+                                           ChunkInfoMap *chunk_info_map) {
   ChunkInfoMap::VaultChunkInfo *vault_chunk_info =
       chunk_info_map->add_vault_chunk_info();
-  ChunkInfo chunk_info(pr.second);
-  chunk_info.PutToPb(pr.first, vault_chunk_info);
+  ChunkInfo chunk_info(ci_pair.second);
+  chunk_info.PutToPb(ci_pair.first, vault_chunk_info);
 }
 
 void ChunkInfoHandler::GetMapFromPb(const ChunkInfoMap &chunk_info_map) {
   ChunkInfoMap::VaultChunkInfo vault_chunk_info;
   boost::mutex::scoped_lock loch(chunk_info_mutex_);
   bool use_max_efficiency = chunk_infos_.empty();
-  std::map<std::string, ChunkInfo>::iterator it = chunk_infos_.begin();
+  CIMap::iterator it = chunk_infos_.begin();
   for (int i = 0; i < chunk_info_map.vault_chunk_info_size(); ++i) {
     vault_chunk_info.Clear();
     vault_chunk_info = chunk_info_map.vault_chunk_info(i);
     ChunkInfo chunk_info(vault_chunk_info);
     if (use_max_efficiency)
-      it = chunk_infos_.insert(it, std::pair<std::string, ChunkInfo>(
+      it = chunk_infos_.insert(it, CIMap::value_type(
           vault_chunk_info.chunk_name(), chunk_info));
     else
-      chunk_infos_.insert(std::pair<std::string, ChunkInfo>(
-          vault_chunk_info.chunk_name(), chunk_info));
+      chunk_infos_.insert(CIMap::value_type(vault_chunk_info.chunk_name(),
+          chunk_info));
   }
   started_ = true;
 }
@@ -515,7 +514,7 @@ int ChunkInfoHandler::GetChunkInfo(const std::string &chunk_name,
     *chunk_info = ChunkInfo();
     return kChunkInfoHandlerNotStarted;
   }
-  std::map<std::string, ChunkInfo>::iterator it = chunk_infos_.find(chunk_name);
+  CIMap::iterator it = chunk_infos_.find(chunk_name);
 
   if (it == chunk_infos_.end()) {
     *chunk_info = ChunkInfo();
@@ -532,9 +531,8 @@ int ChunkInfoHandler::InsertChunkInfoFromPb(
   boost::mutex::scoped_lock lock(chunk_info_mutex_);
   if (!started_)
     return kChunkInfoHandlerNotStarted;
-  std::pair<std::map<std::string, ChunkInfo>::iterator, bool> sp =
-      chunk_infos_.insert(std::pair<std::string, ChunkInfo>
-          (vault_chunk_info.chunk_name(), chunk_info));
+  std::pair<CIMap::iterator, bool> sp = chunk_infos_.insert(
+      CIMap::value_type(vault_chunk_info.chunk_name(), chunk_info));
   if (!sp.second)
     return kChunkInfoExists;
   return kSuccess;

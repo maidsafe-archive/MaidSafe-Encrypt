@@ -24,9 +24,9 @@
 
 #include <stdio.h>
 #include <gtest/gtest.h>
+#include <boost/lexical_cast.hpp>
 #include <string>
 #include <cstdlib>
-#include <boost/lexical_cast.hpp>
 #include "maidsafe/client/systempackets.h"
 #include "tests/maidsafe/cached_keys.h"
 
@@ -114,7 +114,7 @@ TEST_F(SystemPacketHandlerTest, BEH_MAID_CreateSigPacket) {
   ASSERT_EQ(keypair1.public_key(), keypair2.public_key());
   ASSERT_EQ(keypair1.private_key(), keypair2.private_key());
   GenericPacket packet;
-  packet.set_data(boost::any_cast<std::string>(result["publicKey"]));;
+  packet.set_data(boost::any_cast<std::string>(result["publicKey"]));
   packet.set_signature(sig_pubkey);
   std::string ser_packet(packet.SerializeAsString());
   rec_data = sigPacket->GetData(ser_packet, PacketParams());
