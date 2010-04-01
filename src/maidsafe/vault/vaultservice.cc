@@ -826,10 +826,14 @@ void VaultService::AccountStatus(google::protobuf::RpcController*,
     }
     done->Run();
   } else {
-    response->set_result(kAck);
+    crypto::Crypto co;
+    co.set_symm_algorithm(crypto::AES_256);
+    co.set_hash_algorithm(crypto::SHA_512);
+    std::string account_name = co.Hash(request->account_pmid() + kAccount, "",
+                                       crypto::STRING_STRING, false);
     if (!ValidateSignedRequest(request->public_key(),
         request->public_key_signature(), request->request_signature(),
-        request->account_pmid() + kAccount, request->account_pmid())) {
+        account_name, request->account_pmid())) {
   #ifdef DEBUG
       printf("In VaultService::AccountStatus (%s), ", HexSubstr(pmid_).c_str());
       printf("failed to validate signed request.\n");
@@ -842,6 +846,7 @@ void VaultService::AccountStatus(google::protobuf::RpcController*,
     response->set_space_offered(space_offered);
     response->set_space_given(space_given);
     response->set_space_taken(space_taken);
+    response->set_result(kAck);
     done->Run();
   }
 }
