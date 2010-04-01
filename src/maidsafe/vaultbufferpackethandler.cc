@@ -108,6 +108,9 @@ bool VaultBufferPacketHandler::ChangeOwnerInfo(const std::string &ser_gp,
                                                const std::string &public_key,
                                                std::string *ser_packet) {
   if (!ValidateOwnerSignature(public_key, *ser_packet)) {
+#ifdef DEBUG
+    printf("VBPH::ChangeOwnerInfo - doesn't ValidateOwnerSignature.\n");
+#endif
     return false;
   }
   BufferPacket bp;
@@ -115,10 +118,16 @@ bool VaultBufferPacketHandler::ChangeOwnerInfo(const std::string &ser_gp,
   bp.clear_owner_info();
   GenericPacket *gp = bp.add_owner_info();
   if (!gp->ParseFromString(ser_gp)) {
+#ifdef DEBUG
+    printf("VBPH::ChangeOwnerInfo - ser_gp is not a GenericPacket.\n");
+#endif
     return false;
   } else {
     BufferPacketInfo bpi;
     if (!bpi.ParseFromString(gp->data())) {
+#ifdef DEBUG
+      printf("VBPH::ChangeOwnerInfo - data is not a BufferPacketInfo.\n");
+#endif
       return false;
     }
   }
@@ -294,9 +303,10 @@ bool VaultBufferPacketHandler::AddMessage(const std::string &current_bp,
 
 bool VaultBufferPacketHandler::ContactInfo(const std::string &current_bp,
                                            const std::string &public_username,
-                                           EndPoint *ep,
+                                           std::list<EndPoint> *ep,
                                            PersonalDetails *pd,
                                            boost::uint16_t *status) {
+  ep->clear();
   BufferPacket bufferpacket;
   if (!bufferpacket.ParseFromString(current_bp)) {
 #ifdef DEBUG
@@ -334,8 +344,10 @@ bool VaultBufferPacketHandler::ContactInfo(const std::string &current_bp,
     }
   }
 
-  ep->set_ip(bpi.ep(0).ip());
-  ep->set_port(bpi.ep(0).port());
+  for (int n = 0; n < bpi.ep_size(); ++n)
+    ep->push_back(bpi.ep(n));
+//  ep->set_ip(bpi.ep(0).ip());
+//  ep->set_port(bpi.ep(0).port());
   *pd = bpi.pd();
   *status = bpi.online();
 

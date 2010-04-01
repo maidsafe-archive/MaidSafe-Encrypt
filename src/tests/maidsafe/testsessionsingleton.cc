@@ -651,8 +651,11 @@ TEST_F(SessionSingletonTest, BEH_MAID_LiveContacts) {
   ASSERT_EQ(size_t(10), contacts.size());
   std::list<std::string>::iterator cit;
   int y(0);
+  int estado;
   for (cit = contacts.begin(); cit != contacts.end(); ++cit) {
     ASSERT_EQ("ava" + base::itos(y), *cit);
+    ASSERT_EQ(0, ss_->LiveContactStatus(*cit, &estado));
+    ASSERT_EQ(y, estado);
     ++y;
   }
 

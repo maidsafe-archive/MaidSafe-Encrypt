@@ -1639,11 +1639,11 @@ void VaultService::ContactInfo(google::protobuf::RpcController*,
     return;
   }
 
-  maidsafe::EndPoint *ep = response->mutable_ep();
+  std::list<maidsafe::EndPoint> ep;
   maidsafe::PersonalDetails *pd = response->mutable_pd();
   boost::uint16_t status;
   maidsafe::VaultBufferPacketHandler vbph;
-  if (!vbph.ContactInfo(ser_bp, request->id(), ep, pd, &status)) {
+  if (!vbph.ContactInfo(ser_bp, request->id(), &ep, pd, &status)) {
     response->set_result(kNack);
     done->Run();
 #ifdef DEBUG
@@ -1653,6 +1653,11 @@ void VaultService::ContactInfo(google::protobuf::RpcController*,
     return;
   }
 
+  std::list<maidsafe::EndPoint>::iterator it;
+  for (it = ep.begin(); it != ep.end(); ++it) {
+    maidsafe::EndPoint *end_point = response->add_ep();
+    *end_point = *it;
+  }
   response->set_status(status);
   done->Run();
 }

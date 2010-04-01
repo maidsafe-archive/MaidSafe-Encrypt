@@ -73,7 +73,9 @@ bool SessionSingleton::ResetSession() {
   EndPoint ep;
   ep.set_ip("127.0.0.1");
   ep.set_port(12700);
-  SetEp(ep);
+  SetExternalEp(ep);
+  SetInternalEp(ep);
+  SetRendezvousEp(ep);
   PersonalDetails pd;
   SetPd(pd);
   ka_.ClearKeyRing();
@@ -113,7 +115,9 @@ char SessionSingleton::WinDrive() { return ud_.win_drive; }
 int SessionSingleton::ConnectionStatus() { return ud_.connection_status; }
 std::string SessionSingleton::VaultIP() { return ud_.vault_ip; }
 boost::uint32_t SessionSingleton::VaultPort() { return ud_.vault_port; }
-EndPoint SessionSingleton::Ep() { return ud_.ep; }
+EndPoint SessionSingleton::ExternalEp() { return ud_.external_ep; }
+EndPoint SessionSingleton::InternalEp() { return ud_.internal_ep; }
+EndPoint SessionSingleton::RendezvousEp() { return ud_.rendezvous_ep; }
 PersonalDetails SessionSingleton::Pd() { return ud_.pd; }
 
 // Mutators
@@ -208,8 +212,16 @@ bool SessionSingleton::SetVaultPort(const boost::uint32_t &vault_port) {
     return false;
   }
 }
-bool SessionSingleton::SetEp(const EndPoint &ep) {
-  ud_.ep = ep;
+bool SessionSingleton::SetExternalEp(const EndPoint &ep) {
+  ud_.external_ep = ep;
+  return true;
+}
+bool SessionSingleton::SetInternalEp(const EndPoint &ep) {
+  ud_.internal_ep = ep;
+  return true;
+}
+bool SessionSingleton::SetRendezvousEp(const EndPoint &ep) {
+  ud_.rendezvous_ep = ep;
   return true;
 }
 bool SessionSingleton::SetPd(const PersonalDetails &pd) {
@@ -618,6 +630,18 @@ int SessionSingleton::LiveContactTransportConnection(
       return kLiveContactNotFound;
     *transport_id = it->second.transport;
     *connection_id = it->second.connection_id;
+  }
+  return 0;
+}
+int SessionSingleton::LiveContactStatus(const std::string &contact,
+                                        int *status) {
+  *status = -1;
+  {
+    boost::mutex::scoped_lock loch_awe(lc_mutex_);
+    live_map::iterator it = live_contacts_.find(contact);
+    if (it == live_contacts_.end())
+      return kLiveContactNotFound;
+    *status = it->second.status;
   }
   return 0;
 }

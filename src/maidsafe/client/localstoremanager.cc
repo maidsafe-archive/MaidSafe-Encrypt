@@ -650,6 +650,12 @@ int LocalStoreManager::CreateBP() {
   EndPoint *ep = buffer_packet_info.add_ep();
   ep->set_ip("127.0.0.1");
   ep->set_port(12700);
+  ep = buffer_packet_info.add_ep();
+  ep->set_ip("127.0.0.1");
+  ep->set_port(12700);
+  ep = buffer_packet_info.add_ep();
+  ep->set_ip("127.0.0.1");
+  ep->set_port(12700);
   ser_owner_info->set_data(buffer_packet_info.SerializeAsString());
   crypto::Crypto co;
   ser_owner_info->set_signature(co.AsymSign(ser_owner_info->data(), "",
@@ -791,7 +797,7 @@ void LocalStoreManager::ContactInfo(const std::string &public_username,
     rec_pub_key = ss_->GetContactPublicKey(public_username);
   std::string bufferpacketname(BufferPacketName(public_username, rec_pub_key));
   std::string bp_in_chunk;
-  EndPoint ep;
+  std::list<EndPoint> ep;
   PersonalDetails pd;
   boost::uint16_t status(1);
   if (FindAndLoadChunk(bufferpacketname, &bp_in_chunk) != 0) {

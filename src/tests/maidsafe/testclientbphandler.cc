@@ -127,9 +127,15 @@ void ContactInfoCallbackSucceed(const kad::Contact &peer,
   response->set_result(kAck);
   response->set_pmid_id(peer.node_id());
   response->set_status(3);
-  maidsafe::EndPoint *ep = response->mutable_ep();
+  maidsafe::EndPoint *ep = response->add_ep();
   ep->set_ip("132.248.59.1");
   ep->set_port(48591);
+  ep = response->add_ep();
+  ep->set_ip("132.248.59.2");
+  ep->set_port(48592);
+  ep = response->add_ep();
+  ep->set_ip("132.248.59.3");
+  ep->set_port(48593);
   maidsafe::PersonalDetails *pd = response->mutable_pd();
   pd->Clear();
   done->Run();
@@ -172,7 +178,7 @@ class BPCallback {
     msgs = rec_msgs;
   }
   void ContactInfo_CB(const maidsafe::ReturnCode &res,
-                      const maidsafe::EndPoint &ep,
+                      const std::list<maidsafe::EndPoint> &ep,
                       const maidsafe::PersonalDetails &pd,
                       const boost::uint32_t &st) {
     result = res;
@@ -183,10 +189,11 @@ class BPCallback {
   void Reset() {
     result = maidsafe::kGeneralError;
     msgs.clear();
+    end_point.clear();
   }
   maidsafe::ReturnCode result;
   std::list<maidsafe::ValidatedBufferPacketMessage> msgs;
-  maidsafe::EndPoint end_point;
+  std::list<maidsafe::EndPoint> end_point;
   maidsafe::PersonalDetails personal_details;
   boost::uint32_t status;
 };
@@ -952,8 +959,12 @@ TEST_F(TestClientBP, BEH_MAID_ContactInfoBasic) {
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   ASSERT_EQ(maidsafe::kSuccess, cb.result);
   ASSERT_EQ(boost::uint32_t(3), cb.status);
-  ASSERT_EQ("132.248.59.1", cb.end_point.ip());
-  ASSERT_EQ(boost::uint32_t(48591), cb.end_point.port());
+  std::vector<maidsafe::EndPoint> eps(cb.end_point.begin(),
+                                      cb.end_point.end());
+  for (size_t n = 0; n < eps.size(); ++n) {
+    ASSERT_EQ("132.248.59." + base::itos(n + 1), eps[n].ip());
+    ASSERT_EQ(48591 + n, eps[n].port());
+  }
 }
 
 TEST_F(TestClientBP, BEH_MAID_ContactInfoNoReferences) {
@@ -1066,8 +1077,12 @@ TEST_F(TestClientBP, BEH_MAID_ContactInfoOneFindContacts) {
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   ASSERT_EQ(maidsafe::kSuccess, cb.result);
   ASSERT_EQ(boost::uint32_t(3), cb.status);
-  ASSERT_EQ("132.248.59.1", cb.end_point.ip());
-  ASSERT_EQ(boost::uint32_t(48591), cb.end_point.port());
+  std::vector<maidsafe::EndPoint> eps(cb.end_point.begin(),
+                                      cb.end_point.end());
+  for (size_t n = 0; n < eps.size(); ++n) {
+    ASSERT_EQ("132.248.59." + base::itos(n + 1), eps[n].ip());
+    ASSERT_EQ(48591 + n, eps[n].port());
+  }
 }
 
 TEST_F(TestClientBP, BEH_MAID_ContactInfoFailAddMessageRpc) {

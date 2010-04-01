@@ -63,7 +63,9 @@ struct UserDetails {
                   connection_status(0),
                   vault_ip(),
                   vault_port(0),
-                  ep(),
+                  external_ep(),
+                  internal_ep(),
+                  rendezvous_ep(),
                   pd() {}
   DefConLevels defconlevel;
   bool da_modified;
@@ -84,7 +86,9 @@ struct UserDetails {
   int connection_status;
   std::string vault_ip;
   boost::uint32_t vault_port;
-  EndPoint ep;
+  EndPoint external_ep;
+  EndPoint internal_ep;
+  EndPoint rendezvous_ep;
   PersonalDetails pd;
 };
 
@@ -129,7 +133,9 @@ class SessionSingleton {
   int ConnectionStatus();
   std::string VaultIP();
   boost::uint32_t VaultPort();
-  EndPoint Ep();
+  EndPoint ExternalEp();
+  EndPoint InternalEp();
+  EndPoint RendezvousEp();
   PersonalDetails Pd();
 
   // Mutators
@@ -154,7 +160,9 @@ class SessionSingleton {
   bool SetConnectionStatus(int status);
   bool SetVaultIP(const std::string &vault_ip);
   bool SetVaultPort(const boost::uint32_t &vault_port);
-  bool SetEp(const EndPoint &ep);
+  bool SetExternalEp(const EndPoint &ep);
+  bool SetInternalEp(const EndPoint &ep);
+  bool SetRendezvousEp(const EndPoint &ep);
   bool SetPd(const PersonalDetails &pd);
 
   ///////////////////////////
@@ -282,6 +290,7 @@ class SessionSingleton {
   int LiveContactTransportConnection(const std::string &contact,
                                      boost::uint16_t *transport_id,
                                      boost::uint32_t *connection_id);
+  int LiveContactStatus(const std::string &contact, int *status);
   int StartLiveConnection(const std::string &contact,
                           boost::uint16_t transport_id,
                           const boost::uint32_t &connection_id);

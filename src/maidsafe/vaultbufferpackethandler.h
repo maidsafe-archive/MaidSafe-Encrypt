@@ -57,7 +57,7 @@ class VaultBufferPacketHandler {
                   std::string *updated_bp);
   bool ContactInfo(const std::string &current_bp,
                    const std::string &public_username,
-                   EndPoint *ep,
+                   std::list<EndPoint> *ep,
                    PersonalDetails *pd,
                    boost::uint16_t *status);
 
