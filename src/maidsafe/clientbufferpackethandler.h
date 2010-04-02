@@ -42,10 +42,8 @@ namespace maidsafe {
 typedef boost::function<void(const ReturnCode&)> bp_operations_cb;
 typedef boost::function<void(const ReturnCode&,
   const std::list<ValidatedBufferPacketMessage>&)> bp_getmessages_cb;
-typedef boost::function<void(const ReturnCode&, const std::list<EndPoint>&,
-  const PersonalDetails&, const boost::uint32_t&)> bp_getcontactinfo_cb;
 
-enum BpOpType {MODIFY_INFO, ADD_MESSAGE, GET_MESSAGES, GET_INFO};
+enum BpOpType {MODIFY_INFO, ADD_MESSAGE, GET_MESSAGES};
 
 struct CreateBPData {
   CreateBPData() : request(), exclude_ctcs(), successful_stores(0),
@@ -60,18 +58,16 @@ struct CreateBPData {
 struct ChangeBPData {
   ChangeBPData() : modify_request(), add_msg_request(), get_msgs_request(),
     holder_ids(), successful_ops(0), idx(0), is_calledback(false), type(),
-    cb(0), cb_getmsgs(0), private_key("") {}
+    cb(0), cb_getmsgs(0), private_key() {}
   ModifyBPInfoRequest modify_request;
   AddBPMessageRequest add_msg_request;
   GetBPMessagesRequest get_msgs_request;
-  ContactInfoRequest contactinfo_request;
   std::vector<std::string> holder_ids;
   boost::uint16_t successful_ops, idx;
   bool is_calledback;
   BpOpType type;
   bp_operations_cb cb;
   bp_getmessages_cb cb_getmsgs;
-  bp_getcontactinfo_cb cb_getinfo;
   std::string private_key;
 };
 
@@ -86,12 +82,11 @@ struct ModifyBPCallbackData {
   ModifyBPCallbackData()
     : ctrl(NULL), modify_response(NULL),
       add_msg_response(NULL), get_msgs_response(NULL),
-      contactinfo_response(NULL), ctc(), data(), transport_id(0) {}
+      ctc(), data(), transport_id(0) {}
   rpcprotocol::Controller *ctrl;
   ModifyBPInfoResponse *modify_response;
   AddBPMessageResponse *add_msg_response;
   GetBPMessagesResponse *get_msgs_response;
-  ContactInfoResponse *contactinfo_response;
   kad::Contact ctc;
   boost::shared_ptr<ChangeBPData> data;
   boost::int16_t transport_id;
@@ -106,26 +101,26 @@ class ClientBufferPacketHandler {
   static const boost::uint16_t kParallelFindCtcs = 1;
  public:
   ClientBufferPacketHandler(boost::shared_ptr<maidsafe::BufferPacketRpcs> rpcs,
-    boost::shared_ptr<kad::KNode> knode);
+                            boost::shared_ptr<kad::KNode> knode);
   virtual ~ClientBufferPacketHandler() {}
-  void CreateBufferPacket(const BPInputParameters &args, bp_operations_cb cb,
+  void CreateBufferPacket(const BPInputParameters &args,
+                          bp_operations_cb cb,
                           const boost::int16_t &transport_id);
-  void ModifyOwnerInfo(const BPInputParameters &args, const int &status,
+  void ModifyOwnerInfo(const BPInputParameters &args,
                        const std::vector<std::string> &users,
-                       bp_operations_cb cb, const boost::int16_t &transport_id);
-  void GetMessages(const BPInputParameters &args, bp_getmessages_cb cb,
+                       bp_operations_cb cb,
+                       const boost::int16_t &transport_id);
+  void GetMessages(const BPInputParameters &args,
+                   bp_getmessages_cb cb,
                    const boost::int16_t &transport_id);
-  void AddMessage(const BPInputParameters &args, const std::string &my_pu,
+  void AddMessage(const BPInputParameters &args,
+                  const std::string &my_pu,
                   const std::string &recver_public_key,
-                  const std::string &receiver_id, const std::string &message,
-                  const MessageType &m_type, bp_operations_cb cb,
+                  const std::string &receiver_id,
+                  const std::string &message,
+                  const MessageType &m_type,
+                  bp_operations_cb cb,
                   const boost::int16_t &transport_id);
-  void ContactInfo(const BPInputParameters &my_signing_credentials,
-                   const std::string &my_pu,
-                   const std::string &recs_pu,
-                   const std::string &recs_pk,
-                   bp_getcontactinfo_cb cicb,
-                   const boost::int16_t &transport_id);
  private:
   void IterativeStore(boost::shared_ptr<CreateBPData> data,
                       const boost::int16_t &transport_id);

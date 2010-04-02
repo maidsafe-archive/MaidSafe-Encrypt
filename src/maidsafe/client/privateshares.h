@@ -46,7 +46,7 @@
 namespace maidsafe {
 
 struct ShareParticipants {
-  ShareParticipants() : id(""), public_key(), role('R') {}
+  ShareParticipants() : id(), public_key(), role('R') {}
   ShareParticipants(const std::string &l_id,
                     const std::string &l_public_key,
                     const char &l_role)

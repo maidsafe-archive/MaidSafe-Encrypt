@@ -20,8 +20,8 @@ namespace fs = boost::filesystem;
 namespace maidsafe {
 
 // PrivateShare
-PrivateShare::PrivateShare() : name_(""),
-    msid_(""), msid_pub_key_(""), msid_priv_key_(""),
+PrivateShare::PrivateShare() : name_(),
+    msid_(), msid_pub_key_(), msid_priv_key_(),
     rank_(0), last_view_(0), participants_(0) {
 }
 

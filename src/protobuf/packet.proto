@@ -4,7 +4,7 @@ package maidsafe;
 enum MessageType {
   ADD_CONTACT_RQST = 1;
   INSTANT_MSG = 2;
-  STATUS_CHECK = 3;
+  HELLO_PING = 3;
 }
 
 enum PacketType {
@@ -21,24 +21,16 @@ enum PacketType {
   ANMAID = 10;
   MSID = 11;
   PD_DIR = 12;
-  BUFFER = 13;
-  BUFFER_INFO = 14;
-  BUFFER_MESSAGE = 15;
-}
-
-message PersonalDetails {
-  optional bytes full_name = 1;
-  optional bytes phone_number = 2;
-  optional bytes birthday = 3;
-  optional bytes gender = 4;
-  optional bytes language = 5;
-  optional bytes city = 6;
-  optional bytes country = 7;
 }
 
 message EndPoint {
-  required bytes ip = 1;
-  required uint32 port = 2;
+  repeated bytes ip = 1;
+  repeated uint32 port = 2;
+}
+
+message LivePresence {
+  required bytes contact_id = 1;
+  optional bytes end_points = 2;
 }
 
 // BP General Message Structure
@@ -51,9 +43,6 @@ message BufferPacketInfo {
   required bytes owner = 1;
   required bytes owner_publickey = 2;
   repeated bytes users = 3;
-  optional int32 online = 4;
-  repeated EndPoint ep = 5;  // external, internal, rendezvous
-  optional PersonalDetails pd = 6;
 }
 
 message BufferPacketMessage {
@@ -68,6 +57,7 @@ message BufferPacketMessage {
 message BufferPacket {
   repeated GenericPacket owner_info = 1;
   repeated GenericPacket messages = 2;
+  repeated GenericPacket presence_notifications = 3;
 }
 
 message ValidatedBufferPacketMessage {

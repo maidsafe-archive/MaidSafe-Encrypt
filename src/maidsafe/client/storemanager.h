@@ -51,9 +51,6 @@ typedef boost::function<void(const OwnLocalVaultResult&, const std::string&)>
 
 typedef boost::function<void(const VaultStatus&)> LocalVaultOwnedFunctor;
 
-typedef boost::function<void(const ReturnCode&, const std::list<EndPoint>&,
-    const PersonalDetails&, const boost::uint32_t&)> ContactInfoNotifier;
-
 typedef boost::function<void(const std::vector<std::string>&,
     const ReturnCode&)> LoadPacketFunctor;
 
@@ -112,10 +109,6 @@ class StoreManagerInterface {
   virtual int AddBPMessage(const std::vector<std::string> &receivers,
                            const std::string &message,
                            const MessageType &m_type)=0;
-  virtual void ContactInfo(const std::string &public_username,
-                           const std::string &me,
-                           ContactInfoNotifier cin)=0;
-  virtual void OwnInfo(ContactInfoNotifier cin)=0;
 
   // Vault
   virtual void PollVaultInfo(base::callback_func_type cb)=0;

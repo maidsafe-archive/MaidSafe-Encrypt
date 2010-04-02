@@ -274,7 +274,7 @@ class ChunkstoreTest : public testing::Test {
         file_path("chunk.txt", fs::native),
         file_content("ABC"),
         hash_file_content(""),
-        other_hash(""),
+        other_hash(),
         cry_obj(new crypto::Crypto),
         h_size(),
         nh_size(),

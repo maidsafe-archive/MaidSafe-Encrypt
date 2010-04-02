@@ -102,23 +102,4 @@ void BufferPacketRpcsImpl::AddBPMessage(const kad::Contact &peer,
                        done);
 }
 
-void BufferPacketRpcsImpl::ContactInfo(const kad::Contact &peer,
-    const bool &local, const boost::int16_t &transport_id,
-    const ContactInfoRequest *contactinfo_request,
-    ContactInfoResponse *contactinfo_response,
-    rpcprotocol::Controller *controller, google::protobuf::Closure *done) {
-  std::string local_ip;
-  boost::uint16_t local_port(0);
-  if (local) {
-    local_ip = peer.local_ip();
-    local_port = peer.local_port();
-  }
-  rpcprotocol::Channel channel(channel_manager_, transport_handler_,
-      transport_id, peer.host_ip(), peer.host_port(), local_ip, local_port,
-      peer.rendezvous_ip(), peer.rendezvous_port());
-  maidsafe::MaidsafeService::Stub service(&channel);
-  service.ContactInfo(controller, contactinfo_request, contactinfo_response,
-                      done);
-}
-
 }  // namespace maidsafe

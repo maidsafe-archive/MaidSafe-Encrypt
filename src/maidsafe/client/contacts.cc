@@ -20,14 +20,14 @@ namespace fs = boost::filesystem;
 namespace maidsafe {
 
 //  Contacts
-Contact::Contact() :pub_name_(""), pub_key_(""), full_name_(""),
-  office_phone_(""), birthday_(""), gender_('U'), language_(-1),
-  country_(-1), city_(""), confirmed_('\0'), rank_(0),  last_contact_(-1) { }
+Contact::Contact() :pub_name_(), pub_key_(), full_name_(),
+  office_phone_(), birthday_(), gender_('U'), language_(-1),
+  country_(-1), city_(), confirmed_('\0'), rank_(0),  last_contact_(-1) { }
 
 Contact::Contact(const std::vector<std::string> &attributes)
-    :pub_name_(""), pub_key_(""), full_name_(""),
-    office_phone_(""), birthday_(""), gender_('U'), language_(-1),
-    country_(-1), city_(""), confirmed_('\0'), rank_(0), last_contact_(-1) {
+    :pub_name_(), pub_key_(), full_name_(),
+    office_phone_(), birthday_(), gender_('U'), language_(-1),
+    country_(-1), city_(), confirmed_('\0'), rank_(0), last_contact_(-1) {
   pub_name_ = attributes[0];
   pub_key_ = attributes[1];
   full_name_ = attributes[2];

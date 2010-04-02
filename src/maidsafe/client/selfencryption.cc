@@ -62,7 +62,7 @@ SelfEncryption::SelfEncryption(boost::shared_ptr<ChunkStore> client_chunkstore)
                                       // i.e. multiple of 32.
       min_chunklet_size_(32),
       compress_(true),
-      file_hash_(""),
+      file_hash_(),
       chunk_count_(0) {
 #ifdef DEBUG
 //          printf("version_ = %s\n", version_);

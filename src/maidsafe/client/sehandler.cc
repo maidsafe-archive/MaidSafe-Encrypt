@@ -392,7 +392,7 @@ int SEHandler::GetDirKeys(const std::string &dir_path,
 #ifdef DEBUG
     printf("Keys needed because inside of Shares/Private.\n");
 #endif
-    std::string private_key("");
+    std::string private_key;
     if (0 != ss_->GetShareKeys(msid, parent_key, &private_key))
       return -1;
     crypto::Crypto co;

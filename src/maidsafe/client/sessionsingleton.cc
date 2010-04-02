@@ -71,11 +71,7 @@ bool SessionSingleton::ResetSession() {
   SetVaultIP("");
   SetVaultPort(0);
   EndPoint ep;
-  ep.set_ip("127.0.0.1");
-  ep.set_port(12700);
-  SetExternalEp(ep);
-  SetInternalEp(ep);
-  SetRendezvousEp(ep);
+  SetEp(ep);
   PersonalDetails pd;
   SetPd(pd);
   ka_.ClearKeyRing();
@@ -115,9 +111,7 @@ char SessionSingleton::WinDrive() { return ud_.win_drive; }
 int SessionSingleton::ConnectionStatus() { return ud_.connection_status; }
 std::string SessionSingleton::VaultIP() { return ud_.vault_ip; }
 boost::uint32_t SessionSingleton::VaultPort() { return ud_.vault_port; }
-EndPoint SessionSingleton::ExternalEp() { return ud_.external_ep; }
-EndPoint SessionSingleton::InternalEp() { return ud_.internal_ep; }
-EndPoint SessionSingleton::RendezvousEp() { return ud_.rendezvous_ep; }
+EndPoint SessionSingleton::Ep() { return ud_.ep; }
 PersonalDetails SessionSingleton::Pd() { return ud_.pd; }
 
 // Mutators
@@ -212,16 +206,8 @@ bool SessionSingleton::SetVaultPort(const boost::uint32_t &vault_port) {
     return false;
   }
 }
-bool SessionSingleton::SetExternalEp(const EndPoint &ep) {
-  ud_.external_ep = ep;
-  return true;
-}
-bool SessionSingleton::SetInternalEp(const EndPoint &ep) {
-  ud_.internal_ep = ep;
-  return true;
-}
-bool SessionSingleton::SetRendezvousEp(const EndPoint &ep) {
-  ud_.rendezvous_ep = ep;
+bool SessionSingleton::SetEp(const EndPoint &ep) {
+  ud_.ep = ep;
   return true;
 }
 bool SessionSingleton::SetPd(const PersonalDetails &pd) {
@@ -551,12 +537,10 @@ void SessionSingleton::ClearConversations() {
 ///////////////////////////////
 
 int SessionSingleton::AddLiveContact(const std::string &contact,
-                                     const std::vector<EndPoint> &end_points,
+                                     const EndPoint &end_points,
                                      int status) {
   ConnectionDetails cd;
-  cd.external_ep = end_points[0];
-  cd.internal_ep = end_points[1];
-  cd.rendezvous_ep = end_points[2];
+  cd.ep = end_points;
   cd.status = status;
   cd.transport = 0;
   cd.connection_id = 0;
@@ -592,12 +576,12 @@ int SessionSingleton::LiveContactMap(
   return 0;
 }
 int SessionSingleton::LiveContactDetails(const std::string &contact,
-                                         std::vector<EndPoint> *end_points,
+                                         EndPoint *end_points,
                                          boost::uint16_t *transport_id,
                                          boost::uint32_t *connection_id,
                                          int *status,
                                          boost::uint32_t *init_timestamp) {
-  end_points->clear();
+  end_points->Clear();
   *transport_id = 0;
   *connection_id = 0;
   *status = 0;
@@ -607,9 +591,7 @@ int SessionSingleton::LiveContactDetails(const std::string &contact,
     live_map::iterator it = live_contacts_.find(contact);
     if (it == live_contacts_.end())
       return kLiveContactNotFound;
-    end_points->push_back(it->second.external_ep);
-    end_points->push_back(it->second.internal_ep);
-    end_points->push_back(it->second.rendezvous_ep);
+    *end_points = it->second.ep;
     *transport_id = it->second.transport;
     *connection_id = it->second.connection_id;
     *status = it->second.status;
@@ -682,7 +664,9 @@ int SessionSingleton::ModifyConnectionId(const std::string &contact,
   return 0;
 }
 int SessionSingleton::ModifyEndPoint(const std::string &contact,
-                                     const EndPoint &end_point, int which) {
+                                     const std::string &ip,
+                                     const boost::uint16_t &port,
+                                     int which) {
   if (which < 0 || which > 2)
     return kLiveContactNoEp;
   {
@@ -690,11 +674,11 @@ int SessionSingleton::ModifyEndPoint(const std::string &contact,
     live_map::iterator it = live_contacts_.find(contact);
     if (it == live_contacts_.end())
       return kLiveContactNotFound;
-    switch (which) {
-      case 0: it->second.external_ep = end_point; break;
-      case 1: it->second.internal_ep = end_point; break;
-      case 2: it->second.rendezvous_ep = end_point; break;
-    }
+
+    if (which >= it->second.ep.ip_size())
+      return kLiveContactNoEp;
+    it->second.ep.set_ip(which, ip);
+    it->second.ep.set_port(which, port);
   }
   return 0;
 }
