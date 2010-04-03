@@ -1231,10 +1231,10 @@ int PDVault::AmendAccount(const boost::uint64_t &space_offered) {
       data->contacts.pop_back();
   }
 
-  if (data->contacts.size() < size_t(kKadStoreThreshold)) {
+  if (data->contacts.size() < size_t(kKadUpperThreshold)) {
 #ifdef DEBUG
     printf("In PDVault::AmendAccount, Kad lookup failed to find %u nodes; "
-           "found %u node(s).\n", kKadStoreThreshold, data->contacts.size());
+           "found %u node(s).\n", kKadUpperThreshold, data->contacts.size());
 #endif
     return maidsafe::kFindAccountHoldersError;
   }
@@ -1276,7 +1276,7 @@ int PDVault::AmendAccount(const boost::uint64_t &space_offered) {
 
   // wait for the RPCs to return or timeout, or enough positive responses
   while (data->returned_count < data->contacts.size() &&
-         data->success_count < kKadStoreThreshold) {
+         data->success_count < kKadUpperThreshold) {
     data->condition.wait(lock);
   }
 
@@ -1286,10 +1286,10 @@ int PDVault::AmendAccount(const boost::uint64_t &space_offered) {
       data->data_holders.at(i).controller->req_id());
   }
 
-  if (data->success_count < kKadStoreThreshold) {
+  if (data->success_count < kKadUpperThreshold) {
 #ifdef DEBUG
     printf("In PDVault::AmendAccount, not enough positive responses "
-           "received (%d of %d).\n", data->success_count, kKadStoreThreshold);
+           "received (%d of %d).\n", data->success_count, kKadUpperThreshold);
 #endif
     return maidsafe::kRequestFailedConsensus;
   }

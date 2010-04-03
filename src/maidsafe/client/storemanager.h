@@ -51,7 +51,7 @@ typedef boost::function<void(const OwnLocalVaultResult&, const std::string&)>
 
 typedef boost::function<void(const VaultStatus&)> LocalVaultOwnedFunctor;
 
-typedef boost::function<void(const ReturnCode&, const EndPoint&,
+typedef boost::function<void(const ReturnCode&, const std::list<EndPoint>&,
     const PersonalDetails&, const boost::uint32_t&)> ContactInfoNotifier;
 
 typedef boost::function<void(const std::vector<std::string>&,

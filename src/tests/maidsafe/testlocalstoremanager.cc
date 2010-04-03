@@ -46,7 +46,7 @@ class FakeCallback {
     result_ = res;
   }
   void ContactInfo_CB(const maidsafe::ReturnCode &res,
-                      const maidsafe::EndPoint &ep,
+                      const std::list<maidsafe::EndPoint> &ep,
                       const maidsafe::PersonalDetails &pd,
                       const boost::uint32_t &st) {
     boost::mutex::scoped_lock loch(*mutex);
@@ -56,12 +56,13 @@ class FakeCallback {
     status = st;
   }
   void Reset() {
+    end_point.clear();
     result_ = "";
     result = maidsafe::kGeneralError;
   }
   std::string result_;
   maidsafe::ReturnCode result;
-  maidsafe::EndPoint end_point;
+  std::list<maidsafe::EndPoint> end_point;
   maidsafe::PersonalDetails personal_details;
   boost::uint32_t status;
   boost::mutex *mutex;
@@ -620,6 +621,12 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_ContactInfoFromBufferPacket) {
   maidsafe::EndPoint *ep = buffer_packet_info.add_ep();
   ep->set_ip("127.0.0.1");
   ep->set_port(12700);
+  ep = buffer_packet_info.add_ep();
+  ep->set_ip("127.0.0.1");
+  ep->set_port(12700);
+  ep = buffer_packet_info.add_ep();
+  ep->set_ip("127.0.0.1");
+  ep->set_port(12700);
   maidsafe::PersonalDetails *pd = buffer_packet_info.mutable_pd();
   pd->set_full_name("Juanbert Tupadre");
   pd->set_phone_number("0987654321");
@@ -637,8 +644,12 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_ContactInfoFromBufferPacket) {
                            &fcb2, _1, _2, _3, _4));
   wait_for_result_lsm2(fcb2, mutex_);
   ASSERT_EQ(maidsafe::kSuccess, fcb2.result);
-  ASSERT_EQ(ep->ip(), fcb2.end_point.ip());
-  ASSERT_EQ(ep->port(), fcb2.end_point.port());
+  std::vector<maidsafe::EndPoint> eps(fcb2.end_point.begin(),
+                                      fcb2.end_point.end());
+  for (size_t n = 0; n < eps.size(); ++n) {
+    ASSERT_EQ(ep->ip(), eps[n].ip());
+    ASSERT_EQ(ep->port(), eps[n].port());
+  }
   ASSERT_EQ(static_cast<boost::uint32_t>(buffer_packet_info.online()),
             fcb2.status);
   ASSERT_EQ(pd->full_name(), fcb2.personal_details.full_name());
@@ -681,8 +692,12 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_ContactInfoFromBufferPacket) {
                                &fcb1, _1, _2, _3, _4));
   wait_for_result_lsm2(fcb1, mutex_);
   ASSERT_EQ(maidsafe::kSuccess, fcb1.result);
-  ASSERT_EQ(ep->ip(), fcb1.end_point.ip());
-  ASSERT_EQ(ep->port(), fcb1.end_point.port());
+  eps = std::vector<maidsafe::EndPoint>(fcb1.end_point.begin(),
+                                        fcb1.end_point.end());
+  for (size_t n = 0; n < eps.size(); ++n) {
+    ASSERT_EQ(ep->ip(), eps[n].ip());
+    ASSERT_EQ(ep->port(), eps[n].port());
+  }
   ASSERT_EQ(static_cast<boost::uint32_t>(buffer_packet_info.online()),
             fcb1.status);
 

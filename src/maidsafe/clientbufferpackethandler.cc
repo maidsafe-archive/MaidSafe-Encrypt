@@ -138,6 +138,12 @@ void ClientBufferPacketHandler::ModifyOwnerInfo(const BPInputParameters &args,
   EndPoint *ep = buffer_packet_info.add_ep();
   ep->set_ip(knode_->host_ip());
   ep->set_port(knode_->host_port());
+  ep = buffer_packet_info.add_ep();
+  ep->set_ip(knode_->local_host_ip());
+  ep->set_port(knode_->local_host_port());
+  ep = buffer_packet_info.add_ep();
+  ep->set_ip(knode_->rv_ip());
+  ep->set_port(knode_->rv_port());
   for (unsigned int i = 0; i < users.size(); ++i)
     buffer_packet_info.add_users(users.at(i));
 
@@ -304,7 +310,7 @@ void ClientBufferPacketHandler::FindReferences_CB(const std::string &result,
                          break;
                          }
       case GET_INFO: {
-                     EndPoint ep;
+                     std::list<EndPoint> ep;
                      boost::uint32_t status(0);
                      PersonalDetails pd;
                      data->cb_getinfo(kGetBPInfoError, ep, pd, status);
@@ -431,18 +437,18 @@ void ClientBufferPacketHandler::IterativeFindContacts(
                            data.contactinfo_response->pmid_id() ==
                              data.ctc.node_id()) {
                          PersonalDetails pd;
-                         EndPoint ep;
-                         ep.set_ip("");
-                         ep.set_port(0);
+                         std::list<EndPoint> eps;
                          boost::uint32_t status(0);
-                         if (data.contactinfo_response->has_ep() &&
+                         if (data.contactinfo_response->ep_size() > 0 &&
                              data.contactinfo_response->has_status() &&
                              data.contactinfo_response->has_pd()) {
-                           ep = data.contactinfo_response->ep();
+                           for (int n = 0;
+                                n < data.contactinfo_response->ep_size(); ++n)
+                             eps.push_back(data.contactinfo_response->ep(n));
                            status = data.contactinfo_response->status();
                            pd = data.contactinfo_response->pd();
                          }
-                         data.data->cb_getinfo(kSuccess, ep, pd, status);
+                         data.data->cb_getinfo(kSuccess, eps, pd, status);
                          return;
                        }
                        break;
@@ -469,7 +475,7 @@ void ClientBufferPacketHandler::IterativeFindContacts(
                            break;
                            }
         case GET_INFO: {
-                       EndPoint ep;
+                       std::list<EndPoint> ep;
                        PersonalDetails pd;
                        data.data->cb_getinfo(kGetBPInfoError, ep, pd, 0);
                        break;

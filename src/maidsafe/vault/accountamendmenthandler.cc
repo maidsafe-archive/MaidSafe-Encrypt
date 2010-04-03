@@ -162,7 +162,7 @@ int AccountAmendmentHandler::AssessAmendment(const std::string &owner_pmid,
     (*chunk_info_holders_it).second = true;
     ++amendment->success_count;
     amendment->pendings.push_back(pending);
-    if (amendment->success_count >= kKadStoreThreshold) {  // Overall success
+    if (amendment->success_count >= kKadUpperThreshold) {  // Overall success
       if (amendment->account_amendment_result == kAccountAmendmentPending) {
         // Amend actual account
         amendment->account_amendment_result = account_handler_->AmendAccount(
@@ -225,7 +225,7 @@ void AccountAmendmentHandler::CreateNewAmendmentCallback(
       find_nodes_response, amendment.account_name, &contacts, &mutex, &cv,
       &result);
   if (result == maidsafe::kSuccess && contacts.size() >=
-      size_t(kKadStoreThreshold)) {
+      size_t(kKadUpperThreshold)) {
     // Populate map of Chunk Info holders
     for (size_t i = 0; i < contacts.size(); ++i) {
       modified_amendment.chunk_info_holders.insert(std::pair<std::string, bool>(

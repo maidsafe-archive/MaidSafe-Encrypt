@@ -258,7 +258,7 @@ namespace maidsafe_vault {
 
 static std::vector< boost::shared_ptr<PDVault> > pdvaults_;
 static const int kNumOfClients = 1;
-static const int kNetworkSize = kKadStoreThreshold + kMinChunkCopies +
+static const int kNetworkSize = kKadUpperThreshold + kMinChunkCopies +
                                 kNumOfClients;
 static const int kNumOfTestChunks = kNetworkSize + 1;
 /**

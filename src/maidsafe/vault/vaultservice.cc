@@ -848,13 +848,18 @@ void VaultService::AccountStatus(google::protobuf::RpcController*,
     }
     done->Run();
   } else {
+    crypto::Crypto co;
+    co.set_symm_algorithm(crypto::AES_256);
+    co.set_hash_algorithm(crypto::SHA_512);
+    std::string account_name = co.Hash(request->account_pmid() + kAccount, "",
+                                       crypto::STRING_STRING, false);
     if (!ValidateSignedRequest(request->public_key(),
         request->public_key_signature(), request->request_signature(),
-        account_pmid, account_pmid)) {
-  #ifdef DEBUG
+        account_name, account_pmid)) {
+#ifdef DEBUG
       printf("In VaultService::AccountStatus (%s), ", HexSubstr(pmid_).c_str());
       printf("failed to validate signed request.\n");
-  #endif
+#endif
       // TODO(Team#5#): return info that we consider "public" from the account
       done->Run();
       return;
@@ -1757,11 +1762,11 @@ void VaultService::ContactInfo(google::protobuf::RpcController*,
     return;
   }
 
-  maidsafe::EndPoint *ep = response->mutable_ep();
+  std::list<maidsafe::EndPoint> ep;
   maidsafe::PersonalDetails *pd = response->mutable_pd();
   boost::uint16_t status;
   maidsafe::VaultBufferPacketHandler vbph;
-  if (!vbph.ContactInfo(ser_bp, request->id(), ep, pd, &status)) {
+  if (!vbph.ContactInfo(ser_bp, request->id(), &ep, pd, &status)) {
     response->set_result(kNack);
     done->Run();
 #ifdef DEBUG
@@ -1771,6 +1776,11 @@ void VaultService::ContactInfo(google::protobuf::RpcController*,
     return;
   }
 
+  std::list<maidsafe::EndPoint>::iterator it;
+  for (it = ep.begin(); it != ep.end(); ++it) {
+    maidsafe::EndPoint *end_point = response->add_ep();
+    *end_point = *it;
+  }
   response->set_status(status);
   done->Run();
 }

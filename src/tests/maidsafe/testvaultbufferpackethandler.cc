@@ -269,6 +269,12 @@ TEST_F(VaultBufferPacketHandlerTest, BEH_MAID_GetStatus) {
   maidsafe::EndPoint *ep = bpi.add_ep();
   ep->set_ip("132.248.59.1");
   ep->set_port(12345);
+  ep = bpi.add_ep();
+  ep->set_ip("132.248.59.2");
+  ep->set_port(12346);
+  ep = bpi.add_ep();
+  ep->set_ip("132.248.59.3");
+  ep->set_port(12347);
   maidsafe::PersonalDetails *pd = bpi.mutable_pd();
   pd->set_full_name("Juanbert Tupadre");
   pd->set_phone_number("0987654321");
@@ -290,7 +296,7 @@ TEST_F(VaultBufferPacketHandlerTest, BEH_MAID_GetStatus) {
   bp.SerializeToString(&ser_bp);
 
   // Get the info
-  maidsafe::EndPoint end_point;
+  std::list<maidsafe::EndPoint> end_point;
   maidsafe::PersonalDetails personal_details;
   boost::uint16_t status;
   ASSERT_FALSE(vbph.ContactInfo("", "newuser", &end_point, &personal_details,
@@ -299,8 +305,11 @@ TEST_F(VaultBufferPacketHandlerTest, BEH_MAID_GetStatus) {
                &personal_details, &status));
   ASSERT_TRUE(vbph.ContactInfo(ser_bp, "newuser", &end_point, &personal_details,
               &status));
-  ASSERT_EQ(ep->ip(), end_point.ip());
-  ASSERT_EQ(ep->port(), end_point.port());
+  std::vector<maidsafe::EndPoint> eps(end_point.begin(), end_point.end());
+  for (size_t n = 0; n < eps.size(); ++n) {
+    ASSERT_EQ("132.248.59." + base::itos(n + 1), eps[n].ip());
+    ASSERT_EQ(12345 + n, eps[n].port());
+  }
   ASSERT_EQ(bpi.online(), status);
   ASSERT_EQ(pd->full_name(), personal_details.full_name());
   ASSERT_EQ(pd->phone_number(), personal_details.phone_number());
@@ -313,8 +322,11 @@ TEST_F(VaultBufferPacketHandlerTest, BEH_MAID_GetStatus) {
   // Get own info
   ASSERT_TRUE(vbph.ContactInfo(ser_bp, testuser, &end_point, &personal_details,
               &status));
-  ASSERT_EQ(ep->ip(), end_point.ip());
-  ASSERT_EQ(ep->port(), end_point.port());
+  eps = std::vector<maidsafe::EndPoint>(end_point.begin(), end_point.end());
+  for (size_t a = 0; a < eps.size(); ++a) {
+    ASSERT_EQ("132.248.59." + base::itos(a + 1), eps[a].ip());
+    ASSERT_EQ(12345 + a, eps[a].port());
+  }
   ASSERT_EQ(bpi.online(), status);
   ASSERT_EQ(pd->full_name(), personal_details.full_name());
   ASSERT_EQ(pd->phone_number(), personal_details.phone_number());

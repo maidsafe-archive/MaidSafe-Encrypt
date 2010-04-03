@@ -1784,7 +1784,17 @@ std::string ClientController::GenerateBPInfo() {
     bpi.add_users(co.Hash(contacts[n], "", crypto::STRING_STRING, false));
   }
   EndPoint *ep = bpi.add_ep();
-  *ep = ss_->Ep();
+  *ep = ss_->ExternalEp();
+  if (!ep->IsInitialized())
+    printf("external\n");
+  ep = bpi.add_ep();
+  *ep = ss_->InternalEp();
+  if (!ep->IsInitialized())
+    printf("internal\n");
+  ep = bpi.add_ep();
+  *ep = ss_->RendezvousEp();
+  if (!ep->IsInitialized())
+    printf("rdzv\n");
   PersonalDetails *pd = bpi.mutable_pd();
   *pd = ss_->Pd();
   std::string ser_bpi(bpi.SerializeAsString());
@@ -1806,7 +1816,11 @@ std::string ClientController::GenerateBPInfo(
   }
   bpi.set_online(ss_->ConnectionStatus());
   EndPoint *ep = bpi.add_ep();
-  *ep = ss_->Ep();
+  *ep = ss_->ExternalEp();
+  ep = bpi.add_ep();
+  *ep = ss_->InternalEp();
+  ep = bpi.add_ep();
+  *ep = ss_->RendezvousEp();
   PersonalDetails *pd = bpi.mutable_pd();
   if (!info.empty()) {
     pd->set_full_name(info[0]);
@@ -1817,7 +1831,7 @@ std::string ClientController::GenerateBPInfo(
     pd->set_city(info[5]);
     pd->set_country(info[6]);
   } else {
-    *ep = ss_->Ep();
+    *pd = ss_->Pd();
   }
   std::string ser_bpi;
   bpi.SerializeToString(&ser_bpi);
@@ -2073,7 +2087,13 @@ int ClientController::GetInfo(const std::string &public_username,
              bpc.personal_details.full_name().c_str());
 #endif
       ss_->SetPd(bpc.personal_details);
-      ss_->SetEp(bpc.end_point);
+      std::vector<EndPoint> eps(bpc.end_point.begin(), bpc.end_point.end());
+      printf("CC::GetInfo - %d\n", eps.size());
+      ss_->SetExternalEp(eps[0]);
+//      ++it;
+      ss_->SetInternalEp(eps[1]);
+//      ++it;
+      ss_->SetRendezvousEp(eps[2]);
     }
   }
 

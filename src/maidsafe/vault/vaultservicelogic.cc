@@ -192,11 +192,11 @@ void VaultServiceLogic::RemoteOpStageTwo(
                                                          data->contacts);
 
   if (data->contacts.size() + (within_k_closest ? 1 : 0) <
-      size_t(kKadStoreThreshold)) {
+      size_t(kKadUpperThreshold)) {
 #ifdef DEBUG
     printf("In VSL::RemoteOpStageTwo for %s (%s), Kad lookup failed to find "
            "%u nodes; found %u nodes.\n", typeid(data).name(),
-           HexSubstr(pmid_).c_str(), kKadStoreThreshold, data->contacts.size());
+           HexSubstr(pmid_).c_str(), kKadUpperThreshold, data->contacts.size());
 #endif
     data->callback(kVaultServiceFindNodesTooFew);
     return;
@@ -327,8 +327,8 @@ void VaultServiceLogic::RemoteOpStageThree(boost::uint16_t index,
 template<typename T>
 void VaultServiceLogic::AssessResult(const ReturnCode &result,
                                      boost::shared_ptr<T> data) {
-  if (data->success_count >= kKadStoreThreshold ||
-      data->failure_count > data->data_holders.size() - kKadStoreThreshold) {
+  if (data->success_count >= kKadUpperThreshold ||
+      data->failure_count > data->data_holders.size() - kKadUpperThreshold) {
     data->callback(result);
     data->callback_done = true;
   }
@@ -338,8 +338,8 @@ template<>
 void VaultServiceLogic::AssessResult(
     const ReturnCode &result,
     boost::shared_ptr<RemoteAccountStatusOpData> data) {
-  if (data->success_count - data->failure_count >= kKadTrustThreshold ||
-      data->failure_count > data->data_holders.size() - kKadTrustThreshold) {
+  if (data->success_count - data->failure_count >= kKadLowerThreshold ||
+      data->failure_count > data->data_holders.size() - kKadLowerThreshold) {
     data->callback(result);
     data->callback_done = true;
   }

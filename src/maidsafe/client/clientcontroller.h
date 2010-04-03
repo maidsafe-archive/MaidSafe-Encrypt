@@ -56,7 +56,7 @@ class BPCallback {
  public:
   BPCallback() : result(kGeneralError), end_point(), status(0) {}
   void ContactInfoCallback(const ReturnCode &res,
-                           const EndPoint &ep,
+                           const std::list<EndPoint> &ep,
                            const PersonalDetails &pd,
                            const boost::uint32_t &st) {
     result = res;
@@ -66,13 +66,13 @@ class BPCallback {
   }
 
   void Reset() {
-    end_point.Clear();
+    end_point.clear();
     personal_details.Clear();
     result = kGeneralError;
   }
 
   ReturnCode result;
-  EndPoint end_point;
+  std::list<EndPoint> end_point;
   PersonalDetails personal_details;
   boost::uint32_t status;
 };
