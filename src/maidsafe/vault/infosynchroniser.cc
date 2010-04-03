@@ -32,7 +32,12 @@
 
 namespace maidsafe_vault {
 
-bool InfoSynchroniser::ShouldFetch(const std::string &id) {
+bool InfoSynchroniser::ShouldFetch(const std::string &id,
+                                   std::vector<kad::Contact> *closest_nodes) {
+  if (closest_nodes == NULL)
+    return false;
+  else
+    closest_nodes->clear();
   if (id == pmid_)
     return false;
   {
@@ -60,10 +65,14 @@ bool InfoSynchroniser::ShouldFetch(const std::string &id) {
     return false;
   }
   kad::Contact our_contact(pmid_, "", 0);
-  std::vector<kad::Contact> closest_nodes;
   std::for_each(nodes.begin(), nodes.end(), boost::bind(
-      &InfoSynchroniser::AddNodeToClosest, this, _1, &closest_nodes));
-  return maidsafe::ContactWithinClosest(id, our_contact, closest_nodes);
+      &InfoSynchroniser::AddNodeToClosest, this, _1, closest_nodes));
+  if (maidsafe::ContactWithinClosest(id, our_contact, *closest_nodes)) {
+    return true;
+  } else {
+    closest_nodes->clear();
+    return false;
+  }
 }
 
 void InfoSynchroniser::RemoveEntry(const std::string &id) {

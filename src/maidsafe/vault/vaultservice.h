@@ -43,12 +43,11 @@
 #include "maidsafe/vault/accountrepository.h"
 #include "maidsafe/vault/chunkinfohandler.h"
 #include "maidsafe/vault/infosynchroniser.h"
+#include "maidsafe/vault/vaultservicelogic.h"
 #include "protobuf/maidsafe_service.pb.h"
 #include "protobuf/maidsafe_messages.pb.h"
 
 namespace maidsafe_vault {
-
-class VaultServiceLogic;
 
 struct IsOwnedPendingResponse {
   IsOwnedPendingResponse() : callback(NULL), args(NULL) {}
@@ -87,13 +86,18 @@ class SendCachableChunkTask : public QRunnable {
                         const std::string chunkcontent,
                         const kad::ContactInfo cacher,
                         VaultServiceLogic *vault_service_logic,
-                        VoidFuncOneInt callback)
-      : chunkname_(chunkname), chunkcontent_(chunkcontent), cacher_(cacher),
-        vault_service_logic_(vault_service_logic), callback_(callback),
-        transport_id_(0) {}
+                        VoidFuncOneInt callback,
+                        const boost::int16_t &transport_id)
+      : chunkname_(chunkname),
+        chunkcontent_(chunkcontent),
+        cacher_(cacher),
+        vault_service_logic_(vault_service_logic),
+        callback_(callback),
+        transport_id_(transport_id) {}
   void run();
-
  private:
+  SendCachableChunkTask &operator=(const SendCachableChunkTask&);
+  SendCachableChunkTask(const SendCachableChunkTask&);
   std::string chunkname_;
   std::string chunkcontent_;
   kad::ContactInfo cacher_;
@@ -101,6 +105,36 @@ class SendCachableChunkTask : public QRunnable {
   VoidFuncOneInt callback_;
   boost::uint16_t transport_id_;
 };
+
+template <typename T1, typename T2>
+class GetRemoteInfoTask : public QRunnable {
+ public:
+  GetRemoteInfoTask(const std::vector<kad::Contact> &close_contacts,
+                    const std::vector<T1> &requests,
+                    VaultServiceLogic *vault_service_logic,
+                    T2 callback,
+                    const boost::int16_t &transport_id)
+      : close_contacts_(close_contacts),
+        get_info_requests_(requests),
+        vault_service_logic_(vault_service_logic),
+        callback_(callback),
+        transport_id_(transport_id) {}
+  void run();
+ private:
+  GetRemoteInfoTask &operator=(const GetRemoteInfoTask&);
+  GetRemoteInfoTask(const GetRemoteInfoTask&);
+  std::vector<kad::Contact> close_contacts_;
+  std::vector<T1> get_info_requests_;
+  VaultServiceLogic *vault_service_logic_;
+  T2 callback_;
+  boost::int16_t transport_id_;
+};
+
+typedef GetRemoteInfoTask<maidsafe::GetAccountRequest, VoidFuncIntAccount>
+    GetRemoteAccountTask;
+
+typedef GetRemoteInfoTask<maidsafe::GetChunkInfoRequest, VoidFuncIntChunkInfo>
+    GetRemoteChunkInfoTask;
 
 class VaultChunkStore;
 
@@ -294,6 +328,21 @@ class VaultService : public maidsafe::MaidsafeService {
   // Returns whether the node is within "count" closest nodes (Kademlia closest)
   bool NodeWithinClosest(const std::string &peer_pmid,
                          const boost::uint16_t &count);
+  void GetRemoteAccount(const std::string &account_pmid,
+                        const std::vector<kad::Contact> &close_contacts);
+  template <typename T>
+  void ConstructGetInfoRequests(const kad::Contact &contact,
+                                const std::string &key,
+                                const T &partial_request,
+                                std::vector<T> *requests);
+  void GetRemoteAccountCallback(
+      const int &result,
+      const VaultAccountSet::VaultAccount &vault_account);
+  void GetRemoteChunkInfo(const std::string &chunk_name,
+                          const std::vector<kad::Contact> &close_contacts);
+  void GetRemoteChunkInfoCallback(
+      const int &result,
+      const ChunkInfoMap::VaultChunkInfo &vault_chunk_info);
   std::string pmid_, pmid_public_, pmid_private_, pmid_public_signature_;
   VaultChunkStore *vault_chunkstore_;
   kad::KNode *knode_;

@@ -117,8 +117,7 @@ class ClientControllerTest : public testing::Test {
   VaultConfigParameters vcp_;
  private:
   ClientControllerTest(const ClientControllerTest&);
-  ClientControllerTest &operator=
-      (const ClientControllerTest&);
+  ClientControllerTest &operator=(const ClientControllerTest&);
 };
 
 TEST_F(ClientControllerTest, FUNC_MAID_LocalControllerLoginSequence) {

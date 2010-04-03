@@ -44,7 +44,8 @@ class InfoSynchroniser {
   InfoSynchroniser(const std::string &pmid,
                    boost::shared_ptr<base::PDRoutingTableHandler> rt)
       : pmid_(pmid), routing_table_(rt), info_entries_(), mutex_() {}
-  bool ShouldFetch(const std::string &id);
+  bool ShouldFetch(const std::string &id,
+                   std::vector<kad::Contact> *closest_nodes);
   void RemoveEntry(const std::string &id);
   void PruneMap();
  private:

@@ -153,7 +153,6 @@ bool CryptoKeyPairs::GetKeyPair(crypto::RsaKeyPair *keypair) {
       if (destroying_this_) {
         req_cond_.notify_one();
       }
-
     }
   }
   return result;

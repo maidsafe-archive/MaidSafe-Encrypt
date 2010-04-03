@@ -49,8 +49,8 @@ class VaultRpcs;
 
 // This is used to hold the data required to perform a Kad lookup to get a
 // vault's remote account holders, send each an AmendAccountRequest or
-// AccountStatusRequest and assess the responses.  T1 is request and T2 is
-// corresponding response.
+// AccountStatusRequest and assess the responses.
+// T1 is request and T2 is response.
 template <typename T1, typename T2>
 struct RemoteOpData {
   struct RemoteOpHolder {
@@ -113,6 +113,63 @@ struct CacheChunkData {
   rpcprotocol::Controller controller;
 };
 
+// This is used to hold the data required to send each close peer a
+// GetAccountRequest or GetChunkInfoRequest and run the callback.  The contacts
+// are called in order from first to last.
+// T1 is request, T2 response and T3 callback.
+template <typename T1, typename T2, typename T3>
+struct GetInfoData {
+  struct GetInfoOpHolder {
+    GetInfoOpHolder(const kad::Contact &contct, const T1 &req)
+        : contact(contct),
+          request(req),
+          response(),
+          controller(new rpcprotocol::Controller) {}
+    kad::Contact contact;
+    T1 request;
+    T2 response;
+    boost::shared_ptr<rpcprotocol::Controller> controller;
+  };
+  GetInfoData(T3 cb,
+              const boost::int16_t &trans_id,
+              const std::vector<kad::Contact> &contcts,
+              const std::vector<T1> &reqs)
+      : callback(cb),
+        transport_id(trans_id),
+        mutex(),
+        callback_done(false),
+        op_holders() {
+    std::vector<kad::Contact>::const_iterator contacts_it = contcts.begin();
+    typename std::vector<T1>::const_iterator requests_it = reqs.begin();
+    while (contacts_it != contcts.end() && requests_it != reqs.end()) {
+      op_holders.push_back(GetInfoOpHolder((*contacts_it), (*requests_it)));
+      ++contacts_it;
+      ++requests_it;
+    }
+  }
+  T3 callback;
+  boost::int16_t transport_id;
+  boost::mutex mutex;
+  bool callback_done;
+  std::vector<GetInfoOpHolder> op_holders;
+  boost::uint16_t index_of_last_request_sent;
+  boost::uint16_t response_count;
+};
+
+typedef boost::function<void (const ReturnCode&,
+    const VaultAccountSet::VaultAccount&)> VoidFuncIntAccount;
+
+typedef boost::function<void (const ReturnCode&,
+    const ChunkInfoMap::VaultChunkInfo&)> VoidFuncIntChunkInfo;
+
+typedef GetInfoData<maidsafe::GetAccountRequest,
+    maidsafe::GetAccountResponse, VoidFuncIntAccount> GetAccountData;
+
+typedef GetInfoData<maidsafe::GetChunkInfoRequest,
+    maidsafe::GetChunkInfoResponse, VoidFuncIntChunkInfo> GetChunkInfoData;
+
+const size_t kParallelRequests(2);
+
 class VaultServiceLogic {
  public:
   VaultServiceLogic(const boost::shared_ptr<VaultRpcs> &vault_rpcs,
@@ -148,6 +205,14 @@ class VaultServiceLogic {
                   const kad::ContactInfo &cacher,
                   VoidFuncOneInt callback,
                   const boost::int16_t &transport_id);
+  void GetAccount(const std::vector<kad::Contact> &close_contacts,
+                  const std::vector<maidsafe::GetAccountRequest> &requests,
+                  VoidFuncIntAccount callback,
+                  const boost::int16_t &transport_id);
+  void GetChunkInfo(const std::vector<kad::Contact> &close_contacts,
+                    const std::vector<maidsafe::GetChunkInfoRequest> &requests,
+                    VoidFuncIntChunkInfo callback,
+                    const boost::int16_t &transport_id);
  private:
   VaultServiceLogic(const VaultServiceLogic&);
   VaultServiceLogic &operator=(const VaultServiceLogic&);
@@ -181,10 +246,16 @@ class VaultServiceLogic {
   // Specialisations defining appropriate success conditions
   template <typename T>
   void AssessResult(const ReturnCode &result, boost::shared_ptr<T> data);
+  void CacheChunkCallback(boost::shared_ptr<CacheChunkData> data);
+  template <typename T>
+  void GetInfoCallback(const boost::uint16_t &index, boost::shared_ptr<T> data);
+  void SendInfoRpc(const boost::uint16_t &index,
+                   boost::shared_ptr<GetAccountData> data);
+  void SendInfoRpc(const boost::uint16_t &index,
+                   boost::shared_ptr<GetChunkInfoData> data);
   // Returns a signature for validation by recipient of RPC
   std::string GetSignedRequest(const std::string &name,
                                const std::string &recipient_id);
-  void CacheChunkCallback(boost::shared_ptr<CacheChunkData> data);
 
   boost::shared_ptr<VaultRpcs> vault_rpcs_;
   boost::shared_ptr<kad::KNode> knode_;

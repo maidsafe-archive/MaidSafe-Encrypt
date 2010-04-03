@@ -28,6 +28,7 @@
 #include <maidsafe/maidsafe-dht.h>
 #include <maidsafe/online.h>
 
+#include <algorithm>
 #include <list>
 
 #include "maidsafe/maidsafevalidator.h"
@@ -386,6 +387,133 @@ void VaultServiceLogic::CacheChunkCallback(
     data->cb(kCacheChunkResponseError);
 
   data->cb(kSuccess);
+}
+
+void VaultServiceLogic::GetAccount(
+    const std::vector<kad::Contact> &close_contacts,
+    const std::vector<maidsafe::GetAccountRequest> &requests,
+    VoidFuncIntAccount callback,
+    const boost::int16_t &transport_id) {
+  boost::shared_ptr<GetAccountData> data(new GetAccountData(callback,
+      transport_id, close_contacts, requests));
+  if (data->op_holders.empty()) {
+    callback(kRemoteOpResponseError, VaultAccountSet::VaultAccount());
+    return;
+  }
+  const size_t kMaxParallel(std::min(data->op_holders.size(),
+      kParallelRequests));
+  for (boost::uint16_t i = 0; i < kMaxParallel; ++i)
+    SendInfoRpc(i, data);
+}
+
+void VaultServiceLogic::GetChunkInfo(
+    const std::vector<kad::Contact> &close_contacts,
+    const std::vector<maidsafe::GetChunkInfoRequest> &requests,
+    VoidFuncIntChunkInfo callback,
+    const boost::int16_t &transport_id) {
+  boost::shared_ptr<GetChunkInfoData> data(new GetChunkInfoData(callback,
+      transport_id, close_contacts, requests));
+  if (data->op_holders.empty()) {
+    callback(kRemoteOpResponseError, ChunkInfoMap::VaultChunkInfo());
+    return;
+  }
+  const size_t kMaxParallel(std::min(data->op_holders.size(),
+      kParallelRequests));
+  for (boost::uint16_t i = 0; i < kMaxParallel; ++i)
+    SendInfoRpc(i, data);
+}
+
+template <>
+void VaultServiceLogic::GetInfoCallback(
+    const boost::uint16_t &index,
+    boost::shared_ptr<GetAccountData> data) {
+  boost::mutex::scoped_lock lock(data->mutex);
+  if (data->callback_done)
+    return;
+  maidsafe::GetAccountResponse &get_account_response =
+      data->op_holders.at(index).response;
+  if (get_account_response.IsInitialized() &&
+      get_account_response.result() == kAck &&
+      get_account_response.has_vault_account() &&
+      get_account_response.vault_account().IsInitialized()) {  // Success
+    data->callback_done = true;
+    data->callback(kSuccess, get_account_response.vault_account());
+  } else {
+    if (data->response_count == data->op_holders.size()) {  // Overall failure
+      data->callback_done = true;
+      data->callback(kRemoteOpResponseFailed, VaultAccountSet::VaultAccount());
+    } else {  // Try another contact
+      boost::uint16_t next_index(data->index_of_last_request_sent + 1);
+      size_t op_holders_size(data->op_holders.size());
+      lock.unlock();
+      if (next_index < op_holders_size)
+        SendInfoRpc(next_index, data);
+    }
+  }
+}
+
+template <>
+void VaultServiceLogic::GetInfoCallback(
+    const boost::uint16_t &index,
+    boost::shared_ptr<GetChunkInfoData> data) {
+  boost::mutex::scoped_lock lock(data->mutex);
+  if (data->callback_done)
+    return;
+  ++data->response_count;
+  maidsafe::GetChunkInfoResponse &get_chunk_info_response =
+      data->op_holders.at(index).response;
+  if (get_chunk_info_response.IsInitialized() &&
+      get_chunk_info_response.result() == kAck &&
+      get_chunk_info_response.has_vault_chunk_info() &&
+      get_chunk_info_response.vault_chunk_info().IsInitialized()) {  // Success
+    data->callback_done = true;
+    data->callback(kSuccess,
+        get_chunk_info_response.vault_chunk_info());
+  } else {
+    if (data->response_count == data->op_holders.size()) {  // Overall failure
+      data->callback_done = true;
+      data->callback(kRemoteOpResponseFailed, ChunkInfoMap::VaultChunkInfo());
+    } else {  // Try another contact
+      boost::uint16_t next_index(data->index_of_last_request_sent + 1);
+      size_t op_holders_size(data->op_holders.size());
+      lock.unlock();
+      if (next_index < op_holders_size)
+        SendInfoRpc(next_index, data);
+    }
+  }
+}
+
+void VaultServiceLogic::SendInfoRpc(const boost::uint16_t &index,
+                                    boost::shared_ptr<GetAccountData> data) {
+  GetAccountData::GetInfoOpHolder &holder = data->op_holders.at(index);
+  {
+    boost::mutex::scoped_lock lock(data->mutex);
+    data->index_of_last_request_sent = index;
+  }
+  GetInfoCallback(index, data);
+  google::protobuf::Closure* done = google::protobuf::NewCallback<
+      VaultServiceLogic, const boost::uint16_t&,
+      boost::shared_ptr<GetAccountData> >
+      (this, &VaultServiceLogic::GetInfoCallback, index, data);
+  vault_rpcs_->GetAccount(holder.contact,
+      kad_ops_->AddressIsLocal(holder.contact), data->transport_id,
+      &holder.request, &holder.response, holder.controller.get(), done);
+}
+
+void VaultServiceLogic::SendInfoRpc(const boost::uint16_t &index,
+                                    boost::shared_ptr<GetChunkInfoData> data) {
+  GetChunkInfoData::GetInfoOpHolder &holder = data->op_holders.at(index);
+  {
+    boost::mutex::scoped_lock lock(data->mutex);
+    data->index_of_last_request_sent = index;
+  }
+  google::protobuf::Closure* done = google::protobuf::NewCallback<
+      VaultServiceLogic, const boost::uint16_t&,
+      boost::shared_ptr<GetChunkInfoData> >
+      (this, &VaultServiceLogic::GetInfoCallback, index, data);
+  vault_rpcs_->GetChunkInfo(holder.contact,
+      kad_ops_->AddressIsLocal(holder.contact), data->transport_id,
+      &holder.request, &holder.response, holder.controller.get(), done);
 }
 
 std::string VaultServiceLogic::GetSignedRequest(
