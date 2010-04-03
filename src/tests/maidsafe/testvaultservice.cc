@@ -949,8 +949,9 @@ TEST_F(MockVaultServicesTest, FUNC_MAID_ServicesAmendAccount) {
   asreq.set_public_key(client_pub_key);
   asreq.set_public_key_signature(client_pub_key_sig);
   asreq.set_request_signature(co.AsymSign(co.Hash(client_pub_key_sig +
-      client_pmid + kAccount + vault_pmid_, "", crypto::STRING_STRING, false),
-      "", client_priv_key, crypto::STRING_STRING));
+      co.Hash(client_pmid + kAccount, "", crypto::STRING_STRING, false) +
+      vault_pmid_, "", crypto::STRING_STRING, false), "", client_priv_key,
+      crypto::STRING_STRING));
 
   // current SpaceTaken should be 0
   {
@@ -1347,8 +1348,9 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesAddToWatchList) {
   asreq.set_public_key(client_pub_key);
   asreq.set_public_key_signature(client_pub_key_sig);
   asreq.set_request_signature(co.AsymSign(co.Hash(client_pub_key_sig +
-      client_pmid + kAccount + vault_pmid_, "", crypto::STRING_STRING, false),
-      "", client_priv_key, crypto::STRING_STRING));
+      co.Hash(client_pmid + kAccount, "", crypto::STRING_STRING, false) +
+      vault_pmid_, "", crypto::STRING_STRING, false), "", client_priv_key,
+      crypto::STRING_STRING));
 
   // SpaceTaken should be 0
   {
@@ -1503,9 +1505,9 @@ TEST_F(MockVaultServicesTest, FUNC_MAID_ServicesRemoveFromWatchList) {
     client_asreq[i].set_public_key(client_pub_key[i]);
     client_asreq[i].set_public_key_signature(client_pub_key_sig[i]);
     client_asreq[i].set_request_signature(co.AsymSign(co.Hash(
-        client_pub_key_sig[i] + client_pmid[i] + kAccount + vault_pmid_, "",
-        crypto::STRING_STRING, false), "", client_priv_key[i],
-        crypto::STRING_STRING));
+        client_pub_key_sig[i] + co.Hash(client_pmid[i] + kAccount, "",
+        crypto::STRING_STRING, false) + vault_pmid_, "", crypto::STRING_STRING,
+        false), "", client_priv_key[i], crypto::STRING_STRING));
 
     // create #i's account
     {
@@ -1817,8 +1819,9 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesAddToReferenceList) {
   asreq.set_public_key(vlt_pub_key);
   asreq.set_public_key_signature(vlt_pub_key_sig);
   asreq.set_request_signature(co.AsymSign(co.Hash(vlt_pub_key_sig +
-      vlt_pmid + kAccount + vault_pmid_, "", crypto::STRING_STRING, false),
-      "", vlt_priv_key, crypto::STRING_STRING));
+      co.Hash(vlt_pmid + kAccount, "", crypto::STRING_STRING, false) +
+      vault_pmid_, "", crypto::STRING_STRING, false), "", vlt_priv_key,
+      crypto::STRING_STRING));
 
   // SpaceGiven should be 0
   {
@@ -2085,8 +2088,9 @@ TEST_F(MockVaultServicesTest, DISABLED_FUNC_MAID_ServicesRemoveFromReferenceList
   asreq.set_public_key(vlt_pub_key);
   asreq.set_public_key_signature(vlt_pub_key_sig);
   asreq.set_request_signature(co.AsymSign(co.Hash(vlt_pub_key_sig +
-      vlt_pmid + kAccount + vault_pmid_, "", crypto::STRING_STRING, false),
-      "", vlt_priv_key, crypto::STRING_STRING));
+      co.Hash(vlt_pmid + kAccount, "", crypto::STRING_STRING, false) +
+      vault_pmid_, "", crypto::STRING_STRING, false), "", vlt_priv_key,
+      crypto::STRING_STRING));
 
   // SpaceGiven should be the chunk size
   {
