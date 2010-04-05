@@ -66,26 +66,30 @@ void GetFilePath(PWCHAR filePath, LPCWSTR FileName) {
   wcsncat(filePath, FileName, wcslen(FileName));
 }
 
-//  void GetDokanFilePath(PWCHAR filePath, LPCWSTR FileName) {
-//    std::locale loc;
-//    WCHAR DokanDrive[3];
-//    DokanDrive[0] = std::use_facet< std::ctype<wchar_t> >(loc).widen(
-//        maidsafe::ClientController::getInstance()->DriveLetter());
-//    DokanDrive[1] = L':';
-//    DokanDrive[2] = L'\0';
-//    RtlZeroMemory(filePath, MAX_PATH);
-//    wcsncpy(filePath, DokanDrive, wcslen(DokanDrive));
-//    wcsncat(filePath, FileName, wcslen(FileName));
-//  }
-
-void GetFilePath(std::string *filePathStr, LPCWSTR FileName) {
+std::string WstrToStr(LPCWSTR in_wstr) {
   std::ostringstream stm;
   const std::ctype<char> &ctfacet =
       std::use_facet< std::ctype<char> >(stm.getloc());
-  for (size_t i = 0; i < wcslen(FileName); ++i)
-    stm << ctfacet.narrow(FileName[i], 0);
-  fs::path path_(stm.str());
-  *filePathStr = base::TidyPath(path_.string());
+  for (size_t i = 0; i < wcslen(in_wstr); ++i)
+    stm << ctfacet.narrow(in_wstr[i], 0);
+  return base::TidyPath(stm.str());
+}
+
+//  void GetFilePath(std::string *filePathStr, LPCWSTR FileName) {
+//    std::ostringstream stm;
+//    const std::ctype<char> &ctfacet =
+//        std::use_facet< std::ctype<char> >(stm.getloc());
+//    for (size_t i = 0; i < wcslen(FileName); ++i)
+//      stm << ctfacet.narrow(FileName[i], 0);
+//    fs::path path_(stm.str());
+//    *filePathStr = base::TidyPath(path_.string());
+//  }
+
+void GetMountPoint(char drive, LPWSTR mount_point) {
+  std::locale loc;
+  mount_point[0] = std::use_facet< std::ctype<wchar_t> >(loc).widen(drive);
+  mount_point[1] = L':';
+  mount_point[2] = L'\0';
 }
 
 FILETIME GetFileTime(ULONGLONG linuxtime) {
@@ -117,12 +121,11 @@ int WinCreateFile(LPCWSTR FileName,
   WCHAR filePath[MAX_PATH];
   HANDLE handle;
 //  DWORD fileAttr;
-  std::string relPathStr, filePathStr, rootStr;
   DbgPrint(L"WinCreateFile\nFileName: %s\n", FileName);
   GetFilePath(filePath, FileName);
-  GetFilePath(&filePathStr, filePath);
-  GetFilePath(&relPathStr, FileName);
-  GetFilePath(&rootStr, RootDirectory);
+
+  std::string relPathStr(WstrToStr(FileName));
+  std::string rootStr(WstrToStr(RootDirectory));
   // WCHAR DokanPath[MAX_PATH];
   // GetDokanFilePath(DokanPath, FileName);
   // build the required maidsafe branch dirs
@@ -177,16 +180,15 @@ int WinCreateFile(LPCWSTR FileName,
     }
   }
   //  if it's a file, decrypt it to the maidsafe dir or else create dir
-  if (!fs::exists(filePathStr) && ser_mdm != "") {
+  if (!fs::exists(filePath) && ser_mdm != "") {
     mdm.ParseFromString(ser_mdm);
     if (mdm.type() < 3) {  // i.e. if this is a file
       int res = maidsafe::ClientController::getInstance()->read(relPathStr);
-      DbgPrint("In WinCreateFile: Decryption of %s: %i\n",
-             relPathStr.c_str(),
-             res);
+      DbgPrint("In WinCreateFile: Decryption of %s: %i\n", relPathStr.c_str(),
+               res);
     } else if (mdm.type() == 4 || mdm.type() == 5) {  //  i.e. if this is a dir
-      DbgPrint("In WinCreateFile: Making dir %s\n", filePathStr.c_str());
-      fs::create_directory(filePathStr);
+      DbgPrint(L"In WinCreateFile: Making dir %s\n", filePath);
+      fs::create_directory(filePath);
     } else {
       DbgPrint("In WinCreateFile: don't recognise mdm type.\n");
       return -99999;
@@ -221,7 +223,7 @@ int WinCreateFile(LPCWSTR FileName,
 //  fileAttr = GetFileAttributes(filePath);
 //  if (fileAttr && fileAttr & FILE_ATTRIBUTE_DIRECTORY) {
 
-  if (fs::is_directory(filePathStr)) {
+  if (fs::is_directory(filePath)) {
     DokanFileInfo->IsDirectory = TRUE;
     // get db for *this* dir (we've already got db for parent)
     std::string relPathStrElement(relPathStr), ser_mdm_dir("");
@@ -305,8 +307,7 @@ int WinCreateDirectory(LPCWSTR FileName, PDOKAN_FILE_INFO) {
   GetFilePath(filePath, FileName);
   if (wcslen(FileName) == 1)
     return 0;
-  std::string dir_path_str;
-  GetFilePath(&dir_path_str, filePath);
+  std::string dir_path_str(WstrToStr(filePath));
   fs::path dir_path(dir_path_str);
   DbgPrint("In WinCreateDirectory, dir_path_str: %s\n",
          dir_path.string().c_str());
@@ -321,9 +322,7 @@ int WinCreateDirectory(LPCWSTR FileName, PDOKAN_FILE_INFO) {
     return error * -1;  // error code is negated val of Win Sys Error code
   }
 //  }
-  std::string filePathStr, relPathStr;
-  GetFilePath(&filePathStr, filePath);
-  GetFilePath(&relPathStr, FileName);
+  std::string relPathStr(WstrToStr(FileName));
   DbgPrint("In WinCreateDirectory, ms_mkdir PATH: %s\n", relPathStr.c_str());
   bool gui_private_share_(false);
   if (maidsafe::ClientController::getInstance()->ReadOnly(relPathStr,
@@ -374,9 +373,7 @@ int WinOpenDirectory(LPCWSTR FileName, PDOKAN_FILE_INFO DokanFileInfo) {
 int WinCloseFile(LPCWSTR FileName, PDOKAN_FILE_INFO DokanFileInfo) {
   DbgPrint(L"WinCloseFile\nFileName: %s\n", FileName);
   WCHAR filePath[MAX_PATH];
-  std::string filePathStr;
   GetFilePath(filePath, FileName);
-  GetFilePath(&filePathStr, filePath);
   if (DokanFileInfo->Context) {
     CloseHandle((HANDLE)DokanFileInfo->Context);
     DokanFileInfo->Context = 0;
@@ -387,10 +384,8 @@ int WinCloseFile(LPCWSTR FileName, PDOKAN_FILE_INFO DokanFileInfo) {
 int WinCleanup(LPCWSTR FileName, PDOKAN_FILE_INFO DokanFileInfo) {
   DbgPrint(L"WinCleanup\nFileName: %s\n", FileName);
   WCHAR filePath[MAX_PATH];
-  std::string filePathStr, relPathStr;
   GetFilePath(filePath, FileName);
-  GetFilePath(&filePathStr, filePath);
-  GetFilePath(&relPathStr, FileName);
+  std::string relPathStr(WstrToStr(FileName));
   // WCHAR DokanPath[MAX_PATH];
   // GetDokanFilePath(DokanPath, FileName);
   bool encrypt_ = false;
@@ -422,41 +417,32 @@ int WinCleanup(LPCWSTR FileName, PDOKAN_FILE_INFO DokanFileInfo) {
         DbgPrint("In WinCleanup, Encryption succeeded.\n");
       }
     }
-//     if (!to_delete_.size())
-//       return 0;
-//     bool delete_ = false;
-//     for (std::list<std::string>::iterator dit = to_delete_.begin();
-//          dit != to_delete_.end();
-//          ++dit) {
-//       if (*dit == relPathStr) {
-//         to_delete_.erase(dit);
-//         delete_ = true;
-//         break;
-//       }
-//     }
-//     if (!delete_)
-//       return 0;
-//     for (std::list<std::string>::iterator dit = to_delete_.begin();
-//          dit != to_delete_.end();
-//          ++dit) {
-//       if (*dit == relPathStr)
-//         return 0;
-//     }
-//     if (fs::is_directory(filePathStr)) {
-//       std::cout << "THIS IS A DIRECTORY - I'M DONE HERE Y'ALL" << std::endl;
-//       return 0;
-//     }
-//     std::cout << "Removing " << filePathStr << std::endl;
-    // fs::remove(filePathStr);
-  return 0;
-
-  } else {
-//    if (fs::is_directory(filePathStr)) {
+//    if (!to_delete_.size())
 //      return 0;
-//    } else {
-//      std::cout << "rrrrrrrrrrrrrrrrrrrrrrrrrr" << std::endl;
-      return -1;
+//    bool delete_ = false;
+//    for (std::list<std::string>::iterator dit = to_delete_.begin();
+//        dit != to_delete_.end(); ++dit) {
+//      if (*dit == relPathStr) {
+//        to_delete_.erase(dit);
+//        delete_ = true;
+//        break;
+//      }
 //    }
+//    if (!delete_)
+//      return 0;
+//    for (std::list<std::string>::iterator dit = to_delete_.begin();
+//        dit != to_delete_.end(); ++dit) {
+//      if (*dit == relPathStr)
+//        return 0;
+//    }
+//    if (fs::is_directory(filePath))
+//      return 0;
+//    //  printf("Removing %s\n", WstrToStr(filePath).c_str());
+//    //  fs::remove(filePath);
+    return 0;
+  } else {
+//    return fs::is_directory(filePath) ? 0 : -1;
+    return -1;
   }
   return 0;
 }
@@ -587,8 +573,6 @@ int WinFlushFileBuffers(LPCWSTR FileName, PDOKAN_FILE_INFO DokanFileInfo) {
   WCHAR filePath[MAX_PATH];
   HANDLE handle = (HANDLE)DokanFileInfo->Context;
   GetFilePath(filePath, FileName);
-  std::string filePathStr;
-  GetFilePath(&filePathStr, filePath);
   if (!handle || handle == INVALID_HANDLE_VALUE)
     return 0;
   if (!FlushFileBuffers(handle))
@@ -604,8 +588,7 @@ int WinGetFileInformation(LPCWSTR FileName,
   HANDLE handle = (HANDLE)DokanFileInfo->Context;
   BOOL opened = FALSE;
   GetFilePath(filePath, FileName);
-  std::string relPathStr;
-  GetFilePath(&relPathStr, FileName);
+  std::string relPathStr(WstrToStr(FileName));
   if (!handle || handle == INVALID_HANDLE_VALUE) {
     //  If CreateDirectory returned FILE_ALREADY_EXISTS and
     //  it is called with FILE_OPEN_IF, that handle must be opened.
@@ -709,9 +692,7 @@ int WinFindFiles(LPCWSTR FileName,
   PWCHAR yenStar = const_cast<PWCHAR>(L"\\*");
   int count = 0;
   GetFilePath(filePath, FileName);
-  std::string filePathStr, relPathStr;
-  GetFilePath(&filePathStr, filePath);
-  GetFilePath(&relPathStr, FileName);
+  std::string relPathStr(WstrToStr(FileName));
   wcscat(filePath, yenStar);
   std::map<std::string, maidsafe::ItemType> children;
   maidsafe::ClientController::getInstance()->readdir(relPathStr, children);
@@ -748,8 +729,7 @@ int WinFindFiles(LPCWSTR FileName,
       DbgPrint(L"\tchild: %s\ttype: %i\n", findData.cFileName, ityp);
       findData.cAlternateFileName[ 14 ] = NULL;
       // create children directories if they don't exist
-      std::string root_dir;
-      GetFilePath(&root_dir, RootDirectory);
+      std::string root_dir(WstrToStr(RootDirectory));
       fs::path sub_dir(root_dir);
       sub_dir /= path_;
       if (!fs::exists(sub_dir)) {
@@ -793,8 +773,7 @@ int WinDeleteFile(LPCWSTR FileName, PDOKAN_FILE_INFO) {
   WCHAR filePath[MAX_PATH];
   // HANDLE handle = (HANDLE)DokanFileInfo->Context;
   GetFilePath(filePath, FileName);
-  std::string relPathStr;
-  GetFilePath(&relPathStr, FileName);
+  std::string relPathStr(WstrToStr(FileName));
   if (to_delete_.size()) {
     for (std::list<std::string>::iterator dit = to_delete_.begin();
          dit != to_delete_.end();
@@ -827,8 +806,7 @@ int WinDeleteDirectory(LPCWSTR FileName, PDOKAN_FILE_INFO) {
   ULONG fileLen;
   ZeroMemory(filePath, sizeof(filePath));
   GetFilePath(filePath, FileName);
-  std::string relPathStr;
-  GetFilePath(&relPathStr, FileName);
+  std::string relPathStr(WstrToStr(FileName));
   fileLen = wcslen(filePath);
   if (filePath[fileLen-1] != L'\\') {
     filePath[fileLen++] = L'\\';
@@ -899,22 +877,20 @@ int WinMoveFile(LPCWSTR FileName,
   BOOL status;
   GetFilePath(filePath, FileName);
   GetFilePath(newFilePath, NewFileName);
-  std::string o_path_;
-  std::string n_path_;
-  GetFilePath(&o_path_, FileName);
-  GetFilePath(&n_path_, NewFileName);
+  std::string o_path(WstrToStr(FileName));
+  std::string n_path(WstrToStr(NewFileName));
   if (DokanFileInfo->Context) {
     //  should close? or rename at closing?
     CloseHandle((HANDLE)DokanFileInfo->Context);
     DokanFileInfo->Context = 0;
   }
 
-  bool gui_private_share_(false);
-  if (maidsafe::ClientController::getInstance()->ReadOnly(n_path_,
-      gui_private_share_))
+  bool gui_private_share(false);
+  if (maidsafe::ClientController::getInstance()->ReadOnly(n_path,
+      gui_private_share))
     return -5;
 
-  if (maidsafe::ClientController::getInstance()->rename(o_path_, n_path_) != 0)
+  if (maidsafe::ClientController::getInstance()->rename(o_path, n_path) != 0)
     return -errno;
   if (ReplaceIfExisting) {
     status = MoveFileEx(filePath, newFilePath, MOVEFILE_REPLACE_EXISTING);
@@ -934,13 +910,13 @@ int WinMoveFile(LPCWSTR FileName,
   for (std::list<std::string>::iterator dit = to_delete_.begin();
        dit != to_delete_.end();
        ++dit) {
-    if (*dit == o_path_) {
+    if (*dit == o_path) {
       to_delete_.erase(dit);
-      to_delete_.insert(dit, n_path_);
+      to_delete_.insert(dit, n_path);
       break;
     }
   }
-  return status == TRUE ? 0 : -1;
+  return status ? 0 : -1;
 }
 
 int WinLockFile(LPCWSTR FileName,
@@ -1137,7 +1113,9 @@ void CallMount(char drive) {
   wprintf(L"RootDirectory: %ls\n", RootDirectory);
 #endif
 
-  Dokan_Options->DriveLetter = drive;
+  WCHAR mount_point[MAX_PATH];
+  GetMountPoint(drive, mount_point);
+  Dokan_Options->MountPoint = mount_point;
   Dokan_Options->ThreadCount = 3;
 #ifdef DEBUG
   Dokan_Options->Options |= DOKAN_OPTION_DEBUG;
@@ -1201,6 +1179,11 @@ void CallMount(char drive) {
       printf("Dokan Can't assign a drive letter\n");
 #endif
       break;
+    case DOKAN_MOUNT_POINT_ERROR:
+#ifdef DEBUG
+      printf("Dokan Mount point error\n");
+#endif
+      break;
     default:
 #ifdef DEBUG
       printf("Dokan Unknown error: %d\n", status);
@@ -1234,7 +1217,9 @@ void Mount(char drive) {
 }
 
 bool UnMount(char drive) {
-  return DokanUnmount(drive);
+  WCHAR mount_point[MAX_PATH];
+  GetMountPoint(drive, mount_point);
+  return DokanUnmount(mount_point);
 }
 
 }  // namespace fs_w_fuse

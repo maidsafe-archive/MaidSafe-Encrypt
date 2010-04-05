@@ -32,18 +32,19 @@
 
 namespace fs_w_fuse {
 
-static void DbgPrint(LPCWSTR format, ...);
-static void DbgPrint(LPCSTR format, ...);
-
 #define WinCheckFlag(val, flag) if (val&flag) { DbgPrint(L"\t\t" #flag L"\n"); }  // NOLINT
 
 static WCHAR RootDirectory[MAX_PATH];
 
+static void DbgPrint(LPCWSTR format, ...);
+
+static void DbgPrint(LPCSTR format, ...);
+
 static void GetFilePath(PWCHAR filePath, LPCWSTR FileName);
 
-//  static void GetDokanFilePath(PWCHAR filePath, LPCWSTR FileName);
+static std::string WstrToStr(LPCWSTR in_wstr);
 
-static void GetFilePath(std::string *filePathStr, LPCWSTR FileName);
+static void GetMountPoint(char drive, LPWSTR mount_point);
 
 static FILETIME GetFileTime(ULONGLONG linuxtime);
 
