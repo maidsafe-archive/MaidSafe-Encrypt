@@ -163,7 +163,7 @@ TEST_F(AccountHandlerTest, FUNC_VAULT_AccountHandlerPutGetPb) {
     result = account_handler1.accounts_.insert(account);
     ASSERT_TRUE(result.second);
   }
-  VaultAccountSet vault_account_set = account_handler1.PutSetToPb();
+  VaultAccountSet vault_account_set = account_handler1.PutSetToPb("");
   std::string serialised_vault_account_set1;
   ASSERT_TRUE(vault_account_set.SerializeToString(
       &serialised_vault_account_set1));
@@ -187,7 +187,7 @@ TEST_F(AccountHandlerTest, FUNC_VAULT_AccountHandlerPutGetPb) {
       ASSERT_EQ(*alerts_it1, *alerts_it2);
   }
   vault_account_set.Clear();
-  vault_account_set = account_handler1.PutSetToPb();
+  vault_account_set = account_handler1.PutSetToPb("");
   std::string serialised_vault_account_set2;
   ASSERT_TRUE(vault_account_set.SerializeToString(
       &serialised_vault_account_set2));

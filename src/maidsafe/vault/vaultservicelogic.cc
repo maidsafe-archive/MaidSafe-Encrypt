@@ -184,15 +184,29 @@ void VaultServiceLogic::RemoteOpStageTwo(
     return;
   }
 
+#ifdef DEBUG
+//  printf("\nIn VSL::RemoteOpStageTwo (%s) - %s\n", HexSubstr(pmid_).c_str(),
+//         typeid(data).name());
+//  for (size_t i = 0; i < data->contacts.size(); ++i) {
+//    printf("In VSL::RemoteOpStageTwo (%s), contact #%d is %s.\n",
+//           HexSubstr(pmid_).c_str(), i,
+//           HexSubstr(data->contacts[i].node_id()).c_str());
+//  }
+#endif
+
+  size_t less_contacts(0);
+
   // ensure account holder != account subject
-  RemoveKadContact(data);
+  if (RemoveSubjectContact(data))
+    ++less_contacts;
 
   bool within_k_closest = maidsafe::ContactWithinClosest(data->kad_key,
                                                          our_details_,
                                                          data->contacts);
+  if (within_k_closest)
+    ++less_contacts;
 
-  if (data->contacts.size() + (within_k_closest ? 1 : 0) <
-      size_t(kKadUpperThreshold)) {
+  if (data->contacts.size() + less_contacts < size_t(kKadUpperThreshold)) {
 #ifdef DEBUG
     printf("In VSL::RemoteOpStageTwo for %s (%s), Kad lookup failed to find "
            "%u nodes; found %u nodes.\n", typeid(data).name(),
@@ -203,8 +217,8 @@ void VaultServiceLogic::RemoteOpStageTwo(
   }
 
   if (within_k_closest) {
-    while (data->contacts.size() >= kad::K)
-      data->contacts.pop_back();  // only need K-1 closest now
+    while (data->contacts.size() + less_contacts > kad::K)
+      data->contacts.pop_back();  // only need K-x closest now
     // We've already queried/amended the account if we happen to hold it.
     if (data->found_local_result == kSuccess)
       ++data->success_count;
@@ -225,13 +239,13 @@ void VaultServiceLogic::RemoteOpStageTwo(
 }
 
 template<>
-bool VaultServiceLogic::RemoveKadContact(
+bool VaultServiceLogic::RemoveSubjectContact(
     boost::shared_ptr<AddToReferenceListOpData>) {
-  return true;
+  return false;
 }
 
 template<typename T>
-bool VaultServiceLogic::RemoveKadContact(boost::shared_ptr<T> data) {
+bool VaultServiceLogic::RemoveSubjectContact(boost::shared_ptr<T> data) {
   return maidsafe::RemoveKadContact(data->request.account_pmid(),
                                     &data->contacts);
 }
@@ -298,10 +312,10 @@ void VaultServiceLogic::RemoteOpStageThree(boost::uint16_t index,
 
   if (result == kSuccess && holder->response.result() != kAck) {
 #ifdef DEBUG
-//    printf("In VSL::RemoteOpStageThree for %s (%s), response %u from %s "
-//         "is negative (%i).\n", typeid(data).name(), HexSubstr(pmid_).c_str(),
-//           index, HexSubstr(holder->node_id).c_str(),
-//           holder->response.result());
+    printf("In VSL::RemoteOpStageThree for %s (%s), response %u from %s "
+           "is negative (%i).\n", typeid(data).name(), HexSubstr(pmid_).c_str(),
+           index, HexSubstr(holder->node_id).c_str(),
+           holder->response.result());
 #endif
     result = kRemoteOpResponseFailed;
   }

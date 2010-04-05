@@ -257,10 +257,9 @@ void CreateBufferPacket(const std::string &owner,
 namespace maidsafe_vault {
 
 static std::vector< boost::shared_ptr<PDVault> > pdvaults_;
-static const int kNumOfClients = 1;
-static const int kNetworkSize = kKadUpperThreshold + kMinChunkCopies +
-                                kNumOfClients;
-static const int kNumOfTestChunks = kNetworkSize + 1;
+static const int kNumOfClients = 2;
+static const int kNetworkSize = kad::K + kNumOfClients;
+static const int kNumOfTestChunks = 3;  // kNetworkSize + 1;
 /**
  * Note: StoreAndGetChunks only works for small K due to resource problems
  *       Recommended are K = 8 and kMinSuccessfulPecentageStore = 50%
@@ -338,6 +337,21 @@ class PDVaultTest : public testing::Test {
   }
 
   virtual void SetUp() {
+    // stop the vaults that will be replaced
+    for (int i = kNetworkSize - kNumOfClients; i < kNetworkSize; ++i) {
+      pdvaults_[i]->Stop();
+    }
+
+    // look up the stopped vaults to flush routing tables
+    for (int i = 0; i < kNetworkSize - kNumOfClients; ++i) {
+      for (int j = kNetworkSize - kNumOfClients; j < kNetworkSize; ++j) {
+        maidsafe::CallbackObj cb;
+        pdvaults_[i]->kad_ops_->FindNode(pdvaults_[i]->pmid_, boost::bind(
+            &maidsafe::CallbackObj::CallbackFunc, &cb, _1), false);
+        cb.WaitForCallback();
+      }
+    }
+
     // create each client and take over a vault
     for (int i = 0; i < kNumOfClients; ++i) {
       printf("Setting up client %d of %d...\n", i + 1, kNumOfClients);
@@ -361,7 +375,7 @@ class PDVaultTest : public testing::Test {
       printf("Taking over vault #%d: %s => %s\n", vlt,
              HexSubstr(pdvaults_[vlt]->pmid_).c_str(),
              HexSubstr(clients_[i]->pmid_name).c_str());
-      pdvaults_[vlt]->Stop();
+      // pdvaults_[vlt]->Stop();
       fs::path dir(pdvaults_[vlt]->vault_chunkstore_.ChunkStoreDir());
       boost::uint64_t used(pdvaults_[vlt]->vault_chunkstore_.used_space());
       boost::uint64_t avlb(pdvaults_[vlt]->vault_chunkstore_.available_space());
@@ -384,6 +398,8 @@ class PDVaultTest : public testing::Test {
       ASSERT_EQ(kVaultStarted, pdvaults_[vlt]->vault_status());
       printf("Vault #%d restarted.\n", vlt);
     }
+
+    printf("--- SetUp completed. ---\n\n");
   }
 
   virtual void TearDown() {
@@ -435,6 +451,32 @@ TEST_F(PDVaultTest, FUNC_MAID_StoreAndGetChunks) {
   // wait for account creation of our vaults
   printf("Waiting for account creation...\n");
   boost::this_thread::sleep(boost::posix_time::seconds(20));
+
+  // make sure accounts for clients are in the right places
+  printf("\n-- Checking accounts locally... --\n");
+  for (int i = 0; i < kNumOfClients; ++i) {
+    std::string client_pmid(pdvaults_[kNetworkSize - kNumOfClients + i]->pmid_);
+    std::string account_name(crypto_.Hash(client_pmid + kAccount, "",
+                                          crypto::STRING_STRING, false));
+    printf("Client %s, account %s:\n", HexSubstr(client_pmid).c_str(),
+           HexSubstr(account_name).c_str());
+    std::set<std::string> closest;
+    std::vector<kad::Contact> contacts;
+    clients_[i]->msm->kad_ops_->FindCloseNodes(account_name, &contacts);
+    for (size_t j = 0; j < contacts.size(); ++j) {
+      closest.insert(contacts[j].node_id());
+    }
+    for (int j = 0; j < kNetworkSize; ++j) {
+      bool client = pdvaults_[j]->pmid_ == client_pmid;
+      bool holder = pdvaults_[j]->vault_service_->HaveAccount(client_pmid);
+      bool close = closest.count(pdvaults_[j]->pmid_) == 1;
+      printf(" Vault %s%s%s%s\n", HexSubstr(pdvaults_[j]->pmid_).c_str(),
+             client ? " - client's" : "",
+             holder ? " - holder" : "",
+             close ? " - close" : "");
+      ASSERT_FALSE(close && !(!holder ^ !client));
+    }
+  }
 
   // store chunks to network with each client
   for (int i = 0; i < kNumOfClients; ++i)

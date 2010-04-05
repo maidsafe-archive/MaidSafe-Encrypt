@@ -235,9 +235,9 @@ class VaultServiceLogic {
   // Specialisations for sending appropriate RPCs
   template <typename T>
   void SendRpcs(boost::shared_ptr<T> data);
-  // Specialisations for removing any appropriate contacts from vector
+  // Specialisations for removing contact of operation subject from vector
   template<typename T>
-  bool RemoveKadContact(boost::shared_ptr<T> data);
+  bool RemoveSubjectContact(boost::shared_ptr<T> data);
   // Second callback method in e.g. AmendRemoteAccount operation.  Called
   // repeatedly by each RPC response.  index indicates the position in data's
   // internal vectors of the respondent.

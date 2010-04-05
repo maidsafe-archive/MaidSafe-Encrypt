@@ -171,21 +171,20 @@ int AccountHandler::AddAlerts(const std::string &pmid,
   return kSuccess;
 }
 
-VaultAccountSet AccountHandler::PutSetToPb() {
+VaultAccountSet AccountHandler::PutSetToPb(const std::string &exclude) {
   VaultAccountSet vault_account_set;
   {
     boost::mutex::scoped_lock loch(account_mutex_);
-    std::for_each(accounts_.begin(), accounts_.end(), boost::bind(
-        &AccountHandler::AddAccountToPbSet, this, _1, &vault_account_set));
+    for (AccountSet::iterator it = accounts_.begin();
+         it != accounts_.end(); ++it) {
+      if (it->pmid != exclude) {
+        VaultAccountSet::VaultAccount *vault_account =
+            vault_account_set.add_vault_account();
+        it->PutToPb(vault_account);
+      }
+    }
   }
   return vault_account_set;
-}
-
-void AccountHandler::AddAccountToPbSet(Account account,
-                                       VaultAccountSet *vault_account_set) {
-  VaultAccountSet::VaultAccount *vault_account =
-      vault_account_set->add_vault_account();
-  account.PutToPb(vault_account);
 }
 
 void AccountHandler::GetSetFromPb(const VaultAccountSet &vault_account_set) {

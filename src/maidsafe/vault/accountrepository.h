@@ -74,7 +74,7 @@ struct Account {
     for (int i = 0; i < vault_account.alerts_size(); ++i)
       alerts.push_back(vault_account.alerts(i));
   }
-  void PutToPb(VaultAccountSet::VaultAccount *vault_account) {
+  void PutToPb(VaultAccountSet::VaultAccount *vault_account) const {
     vault_account->set_pmid(pmid);
     vault_account->set_offered(offered);
     vault_account->set_vault_used(vault_used);
@@ -121,7 +121,7 @@ class AccountHandler {
                      boost::uint64_t *account_used);
   int GetAlerts(const std::string &pmid, std::list<std::string> *alerts);
   int AddAlerts(const std::string &pmid, const std::string &alert);
-  VaultAccountSet PutSetToPb();
+  VaultAccountSet PutSetToPb(const std::string &exclude);
   void GetSetFromPb(const VaultAccountSet &vault_account_set);
   int GetAccount(const std::string &pmid, Account *account);
   int InsertAccountFromPb(const VaultAccountSet::VaultAccount &vault_account);
@@ -135,7 +135,6 @@ class AccountHandler {
   FRIEND_TEST(AccountHandlerTest, FUNC_VAULT_AccountHandlerPutGetPb);
   FRIEND_TEST(AccountHandlerTest, FUNC_VAULT_AccountHandlerPutGetAccount);
   FRIEND_TEST(AccountAmendmentHandlerTest, BEH_MAID_AAH_ProcessRequest);
-  void AddAccountToPbSet(Account account, VaultAccountSet *vault_account_set);
   AccountSet accounts_;
   boost::mutex account_mutex_;
   bool started_;

@@ -224,7 +224,7 @@ bool ContactWithinClosest(const std::string &key,
   return ctc.back().node_id() != new_contact.node_id();
 }
 
-bool RemoveKadContact(const std::string &id,  // or Contact?
+bool RemoveKadContact(const std::string &id,
                       std::vector<kad::Contact> *contacts) {
   // TODO(Team#) move to DHT
   for (size_t i = 0; i < contacts->size(); ++i) {

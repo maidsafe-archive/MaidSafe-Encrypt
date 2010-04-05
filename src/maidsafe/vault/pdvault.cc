@@ -1223,18 +1223,28 @@ int PDVault::AmendAccount(const boost::uint64_t &space_offered) {
     return maidsafe::kFindAccountHoldersError;
   }
 
+  size_t required_contacts;
+
   if (maidsafe::ContactWithinClosest(account_name, our_details_,
                                      data->contacts)) {
     // we are within the K closest, but can't hold our own account;
     // create the account on not more than K-1 nodes
-    while (data->contacts.size() >= kad::K)
+    while (data->contacts.size() >= kad::K) {
+#ifdef DEBUG
+      printf("In PDVault::AmendAccount, skipping %s.\n",
+             HexSubstr(data->contacts.back().node_id()).c_str());
+#endif
       data->contacts.pop_back();
+    }
+    required_contacts = kad::K - 1;
+  } else {
+    required_contacts = kad::K;
   }
 
-  if (data->contacts.size() < size_t(kKadUpperThreshold)) {
+  if (data->contacts.size() < required_contacts) {
 #ifdef DEBUG
     printf("In PDVault::AmendAccount, Kad lookup failed to find %u nodes; "
-           "found %u node(s).\n", kKadUpperThreshold, data->contacts.size());
+           "found %u node(s).\n", required_contacts, data->contacts.size());
 #endif
     return maidsafe::kFindAccountHoldersError;
   }
@@ -1276,7 +1286,7 @@ int PDVault::AmendAccount(const boost::uint64_t &space_offered) {
 
   // wait for the RPCs to return or timeout, or enough positive responses
   while (data->returned_count < data->contacts.size() &&
-         data->success_count < kKadUpperThreshold) {
+         data->success_count < required_contacts) {
     data->condition.wait(lock);
   }
 
@@ -1286,10 +1296,10 @@ int PDVault::AmendAccount(const boost::uint64_t &space_offered) {
       data->data_holders.at(i).controller->req_id());
   }
 
-  if (data->success_count < kKadUpperThreshold) {
+  if (data->success_count < required_contacts) {
 #ifdef DEBUG
     printf("In PDVault::AmendAccount, not enough positive responses "
-           "received (%d of %d).\n", data->success_count, kKadUpperThreshold);
+           "received (%d of %d).\n", data->success_count, required_contacts);
 #endif
     return maidsafe::kRequestFailedConsensus;
   }

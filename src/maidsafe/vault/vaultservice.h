@@ -247,6 +247,7 @@ class VaultService : public maidsafe::MaidsafeService {
                            maidsafe::ContactInfoResponse* response,
                            google::protobuf::Closure* done);
   int AddAccount(const std::string &pmid, const boost::uint64_t &offer);
+  bool HaveAccount(const std::string &pmid);
  private:
   FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesValidateSignedRequest);
   FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesValidateIdentity);
