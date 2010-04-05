@@ -38,6 +38,8 @@
 #include "maidsafe/vaultbufferpackethandler.h"
 #include "maidsafe/vault/vaultchunkstore.h"
 
+// TODO(Team#) order method definitions according to declarations in header
+
 namespace maidsafe_vault {
 
 void vsvc_dummy_callback(const std::string &result) {

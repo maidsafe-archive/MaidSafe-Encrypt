@@ -500,12 +500,12 @@ int MaidsafeStoreManager::LoadChunk(const std::string &chunk_name,
     if (!opdata->found_chunk_holder) {
 #ifdef DEBUG
       printf("In MSM::LoadChunk (%i), unable to locate chunk copy holders for "
-             "%s.", knode_->host_port(), HexSubstr(chunk_name).c_str());
+             "%s.\n", knode_->host_port(), HexSubstr(chunk_name).c_str());
 #endif
       return kLoadChunkFindNodesFailure;
     }
 #ifdef DEBUG
-    printf("In MSM::LoadChunk (%i), failed loading chunk %s.",
+    printf("In MSM::LoadChunk (%i), failed loading chunk %s.\n",
            knode_->host_port(), HexSubstr(chunk_name).c_str());
 #endif
     return kLoadChunkFailure;
@@ -513,7 +513,7 @@ int MaidsafeStoreManager::LoadChunk(const std::string &chunk_name,
 
   if (data->empty()) {
 #ifdef DEBUG
-    printf("In MSM::LoadChunk (%i), loaded chunk %s was empty.",
+    printf("In MSM::LoadChunk (%i), loaded chunk %s was empty.\n",
            knode_->host_port(), HexSubstr(chunk_name).c_str());
 #endif
     return kLoadChunkFailure;
