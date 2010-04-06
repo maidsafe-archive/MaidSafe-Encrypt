@@ -258,7 +258,6 @@ class VaultService : public maidsafe::MaidsafeService {
   FRIEND_TEST(VaultServicesTest, BEH_MAID_ValidateDataChunk);
   FRIEND_TEST(VaultServicesTest, BEH_MAID_Storable);
   FRIEND_TEST(VaultServicesTest, BEH_MAID_LocalStorage);
-  FRIEND_TEST(VaultServicesTest, BEH_MAID_UpdateBPChunkLocal);
   FRIEND_TEST(VaultServicesTest, BEH_MAID_NodeWithinClosest);
   FRIEND_TEST(MockVaultServicesTest, BEH_MAID_StoreChunk);
   FRIEND_TEST(VaultServicesTest, BEH_MAID_GetCheckChunk);
@@ -298,8 +297,8 @@ class VaultService : public maidsafe::MaidsafeService {
   bool HasChunkLocal(const std::string &chunkname);
   bool StoreChunkLocal(const std::string &chunkname,
                        const std::string &content);
-  bool UpdateBPChunkLocal(const std::string &bufferpacket_name,
-                          const std::string &content);
+  bool UpdateChunkLocal(const std::string &chunkname,
+                        const std::string &content);
   bool LoadChunkLocal(const std::string &chunkname, std::string *content);
   bool DeleteChunkLocal(const std::string &chunkname);
   boost::uint64_t GetChunkSizeLocal(const std::string &chunkname);

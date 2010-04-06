@@ -207,19 +207,139 @@ class MockVaultServicesTest : public VaultServicesTest {
   MockVaultServicesTest &operator=(const MockVaultServicesTest&);
 };
 
-TEST_F(VaultServicesTest, DISABLED_BEH_MAID_ValidateSignedSize) {
-  // TODO(Team#) test ValidateSignedSize
-  ASSERT_TRUE(false) << "NOT IMPLEMENTED";
+TEST_F(VaultServicesTest, BEH_MAID_ValidateSignedSize) {
+  maidsafe::SignedSize sz;
+  ASSERT_FALSE(vault_service_->ValidateSignedSize(sz));
+
+  boost::uint64_t size(123);
+  std::string pub_key, priv_key, pub_key_sig, size_sig, pmid;
+  CreateRSAKeys(&pub_key, &priv_key);
+  crypto::Crypto co;
+  pub_key_sig = co.AsymSign(pub_key, "", priv_key, crypto::STRING_STRING);
+  pmid = co.Hash(pub_key + pub_key_sig, "", crypto::STRING_STRING, false);
+  size_sig = co.AsymSign(base::itos_ull(size), "", priv_key,
+                         crypto::STRING_STRING);
+
+  sz.set_data_size(size);
+  sz.set_signature(size_sig);
+  sz.set_pmid("moo");
+  sz.set_public_key(pub_key);
+  sz.set_public_key_signature(pub_key_sig);
+  ASSERT_FALSE(vault_service_->ValidateSignedSize(sz));
+  sz.set_pmid(pmid);
+  sz.set_data_size(321);
+  ASSERT_FALSE(vault_service_->ValidateSignedSize(sz));
+  sz.set_data_size(size);
+  ASSERT_TRUE(vault_service_->ValidateSignedSize(sz));
 }
 
-TEST_F(VaultServicesTest, DISABLED_BEH_MAID_ValidateStoreContract) {
-  // TODO(Team#) test ValidateStoreContract
-  ASSERT_TRUE(false) << "NOT IMPLEMENTED";
+TEST_F(VaultServicesTest, BEH_MAID_ValidateStoreContract) {
+  maidsafe::StoreContract sc;
+  ASSERT_FALSE(vault_service_->ValidateStoreContract(sc));
+
+  std::string pub_key, priv_key, pub_key_sig, pmid;
+  CreateRSAKeys(&pub_key, &priv_key);
+  crypto::Crypto co;
+  pub_key_sig = co.AsymSign(pub_key, "", priv_key, crypto::STRING_STRING);
+  pmid = co.Hash(pub_key + pub_key_sig, "", crypto::STRING_STRING, false);
+
+  sc.set_signature("moo");
+  sc.set_pmid(pmid);
+  sc.set_public_key(pub_key);
+  sc.set_public_key_signature(pub_key_sig);
+  ASSERT_FALSE(vault_service_->ValidateStoreContract(sc));
+
+  maidsafe::StoreContract::InnerContract *ic = sc.mutable_inner_contract();
+  maidsafe::SignedSize *sz = ic->mutable_signed_size();
+  ic->set_result(kAck);
+  ASSERT_FALSE(vault_service_->ValidateStoreContract(sc));
+
+  std::string pub_key2, priv_key2, pub_key_sig2, size_sig, pmid2;
+  CreateRSAKeys(&pub_key2, &priv_key2);
+  pub_key_sig2 = co.AsymSign(pub_key2, "", priv_key2, crypto::STRING_STRING);
+  pmid2 = co.Hash(pub_key2 + pub_key_sig2, "", crypto::STRING_STRING, false);
+  size_sig = co.AsymSign("123", "", priv_key2, crypto::STRING_STRING);
+
+  sz->set_data_size(123);
+  sz->set_signature(size_sig);
+  sz->set_pmid(pmid2);
+  sz->set_public_key(pub_key2);
+  sz->set_public_key_signature(pub_key_sig2);
+  sc.set_pmid(pmid2);
+  sc.set_public_key(pub_key2);
+  sc.set_public_key_signature(pub_key_sig2);
+  sc.set_signature(co.AsymSign(ic->SerializeAsString(), "", priv_key2,
+                               crypto::STRING_STRING));
+  ASSERT_FALSE(vault_service_->ValidateStoreContract(sc));
+
+  ic->set_result(kAck);
+  sc.set_pmid(pmid);
+  sc.set_public_key_signature(pub_key_sig);
+  sc.set_signature(co.AsymSign(ic->SerializeAsString(), "", priv_key,
+                               crypto::STRING_STRING));
+  ASSERT_FALSE(vault_service_->ValidateStoreContract(sc));
+
+  sc.set_public_key(pub_key);
+  ic->set_result(kNack);
+  sc.set_signature(co.AsymSign(ic->SerializeAsString(), "", priv_key,
+                               crypto::STRING_STRING));
+  ASSERT_FALSE(vault_service_->ValidateStoreContract(sc));
+
+  ic->set_result(kAck);
+  sc.set_signature(co.AsymSign(ic->SerializeAsString(), "", priv_key,
+                               crypto::STRING_STRING));
+  ASSERT_TRUE(vault_service_->ValidateStoreContract(sc));
 }
 
-TEST_F(VaultServicesTest, DISABLED_BEH_MAID_ValidateAmendRequest) {
-  // TODO(Team#) test ValidateAmendRequest
-  ASSERT_TRUE(false) << "NOT IMPLEMENTED";
+TEST_F(VaultServicesTest, BEH_MAID_ValidateAmendRequest) {
+  maidsafe::AmendAccountRequest req;
+  boost::uint64_t account_delta;
+  std::string returned_pmid;
+  ASSERT_FALSE(vault_service_->ValidateAmendRequest(&req, &account_delta,
+                                                    &returned_pmid));
+
+  std::string pub_key, priv_key, pub_key_sig, pmid, size_sig;
+  CreateRSAKeys(&pub_key, &priv_key);
+  crypto::Crypto co;
+  pub_key_sig = co.AsymSign(pub_key, "", priv_key, crypto::STRING_STRING);
+  pmid = co.Hash(pub_key + pub_key_sig, "", crypto::STRING_STRING, false);
+  size_sig = co.AsymSign("123", "", priv_key, crypto::STRING_STRING);
+
+  req.set_amendment_type(maidsafe::AmendAccountRequest::kSpaceOffered);
+  req.set_account_pmid(pmid);
+  ASSERT_FALSE(vault_service_->ValidateAmendRequest(&req, &account_delta,
+                                                    &returned_pmid));
+
+  maidsafe::SignedSize *sz = req.mutable_signed_size();
+  sz->set_data_size(123);
+  sz->set_signature(size_sig);
+  sz->set_pmid(pmid);
+  sz->set_public_key(pub_key);
+  sz->set_public_key_signature(pub_key_sig);
+  req.set_account_pmid(vault_service_->pmid_);
+  ASSERT_FALSE(vault_service_->ValidateAmendRequest(&req, &account_delta,
+                                                    &returned_pmid));
+  req.set_account_pmid("moo");
+  ASSERT_FALSE(vault_service_->ValidateAmendRequest(&req, &account_delta,
+                                                    &returned_pmid));
+
+  req.set_amendment_type(maidsafe::AmendAccountRequest::kSpaceGivenInc);
+  ASSERT_FALSE(vault_service_->ValidateAmendRequest(&req, &account_delta,
+                                                    &returned_pmid));
+
+  req.set_chunkname("chunk name");
+  ASSERT_TRUE(vault_service_->ValidateAmendRequest(&req, &account_delta,
+                                                   &returned_pmid));
+  ASSERT_EQ(123, account_delta);
+  ASSERT_EQ("moo", returned_pmid);
+
+  req.set_amendment_type(maidsafe::AmendAccountRequest::kSpaceOffered);
+  req.clear_chunkname();
+  req.set_account_pmid(pmid);
+  ASSERT_TRUE(vault_service_->ValidateAmendRequest(&req, &account_delta,
+                                                   &returned_pmid));
+  ASSERT_EQ(123, account_delta);
+  ASSERT_EQ(pmid, returned_pmid);
 }
 
 TEST_F(VaultServicesTest, BEH_MAID_ValidateSignedRequest) {
@@ -306,30 +426,47 @@ TEST_F(VaultServicesTest, BEH_MAID_Storable) {
 TEST_F(VaultServicesTest, BEH_MAID_LocalStorage) {
   crypto::Crypto co;
   co.set_hash_algorithm(crypto::SHA_512);
-  std::string content("This is a data chunk");
+  std::string content("This is a data chunk"), test_content;
+  std::string new_content("This is another data chunk");
   std::string chunkname(co.Hash(content, "", crypto::STRING_STRING, false));
-  std::string test_content, new_content("This is another data chunk");
+  std::string fake_chunkname(co.Hash("moo", "", crypto::STRING_STRING, false));
   EXPECT_FALSE(vault_service_->HasChunkLocal(chunkname));
+  EXPECT_EQ(0, vault_service_->GetChunkSizeLocal(chunkname));
   EXPECT_TRUE(vault_service_->StoreChunkLocal(chunkname, content));
   EXPECT_TRUE(vault_service_->HasChunkLocal(chunkname));
+  EXPECT_EQ(content.size(), vault_service_->GetChunkSizeLocal(chunkname));
   EXPECT_TRUE(vault_service_->LoadChunkLocal(chunkname, &test_content));
   EXPECT_EQ(content, test_content);
-  EXPECT_FALSE(vault_service_->LoadChunkLocal(chunkname + "X", &test_content));
+  // EXPECT_FALSE(vault_service_->StoreChunkLocal(chunkname, content));
+  // EXPECT_FALSE(vault_service_->StoreChunkLocal(chunkname, new_content));
+  EXPECT_FALSE(vault_service_->LoadChunkLocal(fake_chunkname, &test_content));
+  EXPECT_FALSE(vault_service_->UpdateChunkLocal(fake_chunkname, new_content));
+  EXPECT_TRUE(vault_service_->UpdateChunkLocal(chunkname, new_content));
+  EXPECT_EQ(new_content.size(), vault_service_->GetChunkSizeLocal(chunkname));
   EXPECT_TRUE(vault_service_->LoadChunkLocal(chunkname, &test_content));
+  EXPECT_EQ(new_content, test_content);
   EXPECT_TRUE(vault_service_->DeleteChunkLocal(chunkname));
   EXPECT_FALSE(vault_service_->HasChunkLocal(chunkname));
+  EXPECT_EQ(0, vault_service_->GetChunkSizeLocal(chunkname));
   EXPECT_FALSE(vault_service_->LoadChunkLocal(chunkname, &test_content));
-  // TODO(Team#) test GetChunkSizeLocal
 }
 
-TEST_F(VaultServicesTest, DISABLED_BEH_MAID_UpdateBPChunkLocal) {
-  // TODO(Team#) test UpdateBPChunkLocal
-  ASSERT_TRUE(false) << "NOT IMPLEMENTED";
-}
+TEST_F(VaultServicesTest, BEH_MAID_NodeWithinClosest) {
+  vault_service_->pmid_ = std::string(kKeySize, 0);
+  for (int i = 0; i < 5; ++i) {
+    base::PDRoutingTableTuple entry(std::string(kKeySize, i + 1),
+                                    "127.0.0.1", 123 + i, "127.0.0.1", 456 + i,
+                                    "pubkey", 10, 1, 1234);
+    vault_service_->routing_table_->AddTuple(entry);
+  }
 
-TEST_F(VaultServicesTest, DISABLED_BEH_MAID_NodeWithinClosest) {
-  // TODO(Team#) test NodeWithinClosest
-  ASSERT_TRUE(false) << "NOT IMPLEMENTED";
+  ASSERT_FALSE(vault_service_->NodeWithinClosest(std::string(kKeySize, 6), 10));
+  ASSERT_FALSE(vault_service_->NodeWithinClosest(std::string(kKeySize, 4), 3));
+  ASSERT_TRUE(vault_service_->NodeWithinClosest(std::string(kKeySize, 1), 0));
+  ASSERT_TRUE(vault_service_->NodeWithinClosest(std::string(kKeySize, 2), 0));
+  ASSERT_TRUE(vault_service_->NodeWithinClosest(std::string(kKeySize, 3), 0));
+  ASSERT_TRUE(vault_service_->NodeWithinClosest(std::string(kKeySize, 4), 0));
+  ASSERT_TRUE(vault_service_->NodeWithinClosest(std::string(kKeySize, 5), 0));
 }
 
 // -----------------------------------------------------------------------------
