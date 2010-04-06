@@ -352,7 +352,7 @@ void PerpetualData::onUserCreationCompleted(bool success) {
 }
 
 void PerpetualData::onMountCompleted(bool success) {
-  qDebug() << "PerpetualData::onMountCompleted:" << success;
+  qDebug() << "PerpetualData::onMountCompleted: " << success;
 
   //
   if (success) {
@@ -369,11 +369,11 @@ void PerpetualData::onMountCompleted(bool success) {
     setState(FAILURE);
   }
   if (!ClientController::instance()->publicUsername().isEmpty())
-      ClientController::instance()->StartCheckingMessages();
+    ClientController::instance()->StartCheckingMessages();
 }
 
 void PerpetualData::onUnmountCompleted(bool success) {
-  qDebug() << "PerpetualData::onUnMountCompleted:" << success;
+  qDebug() << "PerpetualData::onUnMountCompleted: " << success;
 
   if (success) {
     // TODO(Team#5#): 2009-08-18 - disable the logout action
@@ -415,7 +415,8 @@ void PerpetualData::onLogout() {
       // if we're still to login we can't logout
       return;
   }
-  ClientController::instance()->StopCheckingMessages();
+  if (!ClientController::instance()->publicUsername().isEmpty())
+    ClientController::instance()->StopCheckingMessages();
   asyncUnmount();
   setState(LOGGING_OUT);
 }
