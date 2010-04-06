@@ -141,7 +141,6 @@ void UserPanels::onPublicUsernameChosen() {
   activatePanel(true);
   ui_.user_public_username->setText(
       ClientController::instance()->publicUsername());
-  ClientController::instance()->StartCheckingMessages();
 }
 
 void UserPanels::onMyFilesClicked() {
