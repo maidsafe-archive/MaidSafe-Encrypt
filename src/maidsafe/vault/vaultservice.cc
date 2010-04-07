@@ -38,6 +38,8 @@
 #include "maidsafe/vaultbufferpackethandler.h"
 #include "maidsafe/vault/vaultchunkstore.h"
 
+// TODO(Team#) order method definitions according to declarations in header
+
 namespace maidsafe_vault {
 
 void vsvc_dummy_callback(const std::string &result) {
@@ -1553,7 +1555,7 @@ void VaultService::ModifyBPInfo(google::protobuf::RpcController*,
     return;
   }
 
-  if (!UpdateBPChunkLocal(request->bufferpacket_name(), ser_bp)) {
+  if (!UpdateChunkLocal(request->bufferpacket_name(), ser_bp)) {
     response->set_result(kNack);
     done->Run();
 #ifdef DEBUG
@@ -1638,7 +1640,7 @@ void VaultService::GetBPMessages(google::protobuf::RpcController*,
   for (int i = 0; i < static_cast<int>(msgs.size()); ++i)
     response->add_messages(msgs[i]);
 
-  if (!UpdateBPChunkLocal(request->bufferpacket_name(), ser_bp)) {
+  if (!UpdateChunkLocal(request->bufferpacket_name(), ser_bp)) {
     response->clear_messages();
     response->set_result(kNack);
     done->Run();
@@ -1712,7 +1714,7 @@ void VaultService::AddBPMessage(google::protobuf::RpcController*,
     return;
   }
 
-  if (!UpdateBPChunkLocal(request->bufferpacket_name(), updated_bp)) {
+  if (!UpdateChunkLocal(request->bufferpacket_name(), updated_bp)) {
     response->set_result(kNack);
     done->Run();
 #ifdef DEBUG
@@ -1857,9 +1859,8 @@ bool VaultService::ValidateStoreContract(const maidsafe::StoreContract &sc) {
   if (sc.pmid() == sc.inner_contract().signed_size().pmid()) {
 #ifdef DEBUG
     printf("In VaultService::ValidateStoreContract, PMIDs of contract and "
-           "signed size don't match (%s vs %s).\n",
-           HexSubstr(sc.pmid()).c_str(),
-           HexSubstr(sc.inner_contract().signed_size().pmid()).c_str());
+           "signed size can't be identical (%s).\n",
+           HexSubstr(sc.pmid()).c_str());
 #endif
     return false;
   }
@@ -1888,6 +1889,10 @@ bool VaultService::ValidateAmendRequest(
   }
 
   const maidsafe::SignedSize &sz = request->signed_size();
+  if (!ValidateSignedSize(sz)) {
+    return false;
+  }
+
   if (request->amendment_type() ==
       maidsafe::AmendAccountRequest::kSpaceOffered) {
     if (request->account_pmid() != sz.pmid()) {
@@ -1904,10 +1909,6 @@ bool VaultService::ValidateAmendRequest(
 #endif
       return false;
     }
-  }
-
-  if (!ValidateSignedSize(sz)) {
-    return false;
   }
 
   *pmid = request->account_pmid();
@@ -1979,9 +1980,9 @@ bool VaultService::StoreChunkLocal(const std::string &chunkname,
   return (result == kSuccess || result == kInvalidChunkType);
 }
 
-bool VaultService::UpdateBPChunkLocal(const std::string &bufferpacket_name,
-                                      const std::string &content) {
-  return vault_chunkstore_->UpdateChunk(bufferpacket_name, content) == kSuccess;
+bool VaultService::UpdateChunkLocal(const std::string &chunkname,
+                                    const std::string &content) {
+  return (vault_chunkstore_->UpdateChunk(chunkname, content) == kSuccess);
 }
 
 bool VaultService::LoadChunkLocal(const std::string &chunkname,

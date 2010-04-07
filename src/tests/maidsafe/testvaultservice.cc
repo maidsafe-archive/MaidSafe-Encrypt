@@ -207,7 +207,142 @@ class MockVaultServicesTest : public VaultServicesTest {
   MockVaultServicesTest &operator=(const MockVaultServicesTest&);
 };
 
-TEST_F(VaultServicesTest, BEH_MAID_ServicesValidateSignedRequest) {
+TEST_F(VaultServicesTest, BEH_MAID_ValidateSignedSize) {
+  maidsafe::SignedSize sz;
+  ASSERT_FALSE(vault_service_->ValidateSignedSize(sz));
+
+  boost::uint64_t size(123);
+  std::string pub_key, priv_key, pub_key_sig, size_sig, pmid;
+  CreateRSAKeys(&pub_key, &priv_key);
+  crypto::Crypto co;
+  pub_key_sig = co.AsymSign(pub_key, "", priv_key, crypto::STRING_STRING);
+  pmid = co.Hash(pub_key + pub_key_sig, "", crypto::STRING_STRING, false);
+  size_sig = co.AsymSign(base::itos_ull(size), "", priv_key,
+                         crypto::STRING_STRING);
+
+  sz.set_data_size(size);
+  sz.set_signature(size_sig);
+  sz.set_pmid("moo");
+  sz.set_public_key(pub_key);
+  sz.set_public_key_signature(pub_key_sig);
+  ASSERT_FALSE(vault_service_->ValidateSignedSize(sz));
+  sz.set_pmid(pmid);
+  sz.set_data_size(321);
+  ASSERT_FALSE(vault_service_->ValidateSignedSize(sz));
+  sz.set_data_size(size);
+  ASSERT_TRUE(vault_service_->ValidateSignedSize(sz));
+}
+
+TEST_F(VaultServicesTest, BEH_MAID_ValidateStoreContract) {
+  maidsafe::StoreContract sc;
+  ASSERT_FALSE(vault_service_->ValidateStoreContract(sc));
+
+  std::string pub_key, priv_key, pub_key_sig, pmid;
+  CreateRSAKeys(&pub_key, &priv_key);
+  crypto::Crypto co;
+  pub_key_sig = co.AsymSign(pub_key, "", priv_key, crypto::STRING_STRING);
+  pmid = co.Hash(pub_key + pub_key_sig, "", crypto::STRING_STRING, false);
+
+  sc.set_signature("moo");
+  sc.set_pmid(pmid);
+  sc.set_public_key(pub_key);
+  sc.set_public_key_signature(pub_key_sig);
+  ASSERT_FALSE(vault_service_->ValidateStoreContract(sc));
+
+  maidsafe::StoreContract::InnerContract *ic = sc.mutable_inner_contract();
+  maidsafe::SignedSize *sz = ic->mutable_signed_size();
+  ic->set_result(kAck);
+  ASSERT_FALSE(vault_service_->ValidateStoreContract(sc));
+
+  std::string pub_key2, priv_key2, pub_key_sig2, size_sig, pmid2;
+  CreateRSAKeys(&pub_key2, &priv_key2);
+  pub_key_sig2 = co.AsymSign(pub_key2, "", priv_key2, crypto::STRING_STRING);
+  pmid2 = co.Hash(pub_key2 + pub_key_sig2, "", crypto::STRING_STRING, false);
+  size_sig = co.AsymSign("123", "", priv_key2, crypto::STRING_STRING);
+
+  sz->set_data_size(123);
+  sz->set_signature(size_sig);
+  sz->set_pmid(pmid2);
+  sz->set_public_key(pub_key2);
+  sz->set_public_key_signature(pub_key_sig2);
+  sc.set_pmid(pmid2);
+  sc.set_public_key(pub_key2);
+  sc.set_public_key_signature(pub_key_sig2);
+  sc.set_signature(co.AsymSign(ic->SerializeAsString(), "", priv_key2,
+                               crypto::STRING_STRING));
+  ASSERT_FALSE(vault_service_->ValidateStoreContract(sc));
+
+  ic->set_result(kAck);
+  sc.set_pmid(pmid);
+  sc.set_public_key_signature(pub_key_sig);
+  sc.set_signature(co.AsymSign(ic->SerializeAsString(), "", priv_key,
+                               crypto::STRING_STRING));
+  ASSERT_FALSE(vault_service_->ValidateStoreContract(sc));
+
+  sc.set_public_key(pub_key);
+  ic->set_result(kNack);
+  sc.set_signature(co.AsymSign(ic->SerializeAsString(), "", priv_key,
+                               crypto::STRING_STRING));
+  ASSERT_FALSE(vault_service_->ValidateStoreContract(sc));
+
+  ic->set_result(kAck);
+  sc.set_signature(co.AsymSign(ic->SerializeAsString(), "", priv_key,
+                               crypto::STRING_STRING));
+  ASSERT_TRUE(vault_service_->ValidateStoreContract(sc));
+}
+
+TEST_F(VaultServicesTest, BEH_MAID_ValidateAmendRequest) {
+  maidsafe::AmendAccountRequest req;
+  boost::uint64_t account_delta;
+  std::string returned_pmid;
+  ASSERT_FALSE(vault_service_->ValidateAmendRequest(&req, &account_delta,
+                                                    &returned_pmid));
+
+  std::string pub_key, priv_key, pub_key_sig, pmid, size_sig;
+  CreateRSAKeys(&pub_key, &priv_key);
+  crypto::Crypto co;
+  pub_key_sig = co.AsymSign(pub_key, "", priv_key, crypto::STRING_STRING);
+  pmid = co.Hash(pub_key + pub_key_sig, "", crypto::STRING_STRING, false);
+  size_sig = co.AsymSign("123", "", priv_key, crypto::STRING_STRING);
+
+  req.set_amendment_type(maidsafe::AmendAccountRequest::kSpaceOffered);
+  req.set_account_pmid(pmid);
+  ASSERT_FALSE(vault_service_->ValidateAmendRequest(&req, &account_delta,
+                                                    &returned_pmid));
+
+  maidsafe::SignedSize *sz = req.mutable_signed_size();
+  sz->set_data_size(123);
+  sz->set_signature(size_sig);
+  sz->set_pmid(pmid);
+  sz->set_public_key(pub_key);
+  sz->set_public_key_signature(pub_key_sig);
+  req.set_account_pmid(vault_service_->pmid_);
+  ASSERT_FALSE(vault_service_->ValidateAmendRequest(&req, &account_delta,
+                                                    &returned_pmid));
+  req.set_account_pmid("moo");
+  ASSERT_FALSE(vault_service_->ValidateAmendRequest(&req, &account_delta,
+                                                    &returned_pmid));
+
+  req.set_amendment_type(maidsafe::AmendAccountRequest::kSpaceGivenInc);
+  ASSERT_FALSE(vault_service_->ValidateAmendRequest(&req, &account_delta,
+                                                    &returned_pmid));
+
+  req.set_chunkname("chunk name");
+  ASSERT_TRUE(vault_service_->ValidateAmendRequest(&req, &account_delta,
+                                                   &returned_pmid));
+  ASSERT_EQ(boost::uint64_t(123), account_delta);
+  ASSERT_EQ("moo", returned_pmid);
+
+  req.set_amendment_type(maidsafe::AmendAccountRequest::kSpaceOffered);
+  req.clear_chunkname();
+  req.set_account_pmid(pmid);
+  ASSERT_TRUE(vault_service_->ValidateAmendRequest(&req, &account_delta,
+                                                   &returned_pmid));
+  ASSERT_EQ(boost::uint64_t(123), account_delta);
+  ASSERT_EQ(pmid, returned_pmid);
+}
+
+TEST_F(VaultServicesTest, BEH_MAID_ValidateSignedRequest) {
   std::string pub_key, priv_key, key("xyz"), pmid, sig_pub_key, sig_req;
   CreateRSAKeys(&pub_key, &priv_key);
 
@@ -229,7 +364,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesValidateSignedRequest) {
                                                      "ghi", key, pmid));
 }
 
-TEST_F(VaultServicesTest, BEH_MAID_ServicesValidateIdentity) {
+TEST_F(VaultServicesTest, BEH_MAID_ValidateIdentity) {
   std::string pub_key, priv_key, sig_pub_key;
   CreateRSAKeys(&pub_key, &priv_key);
   crypto::Crypto co;
@@ -244,7 +379,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesValidateIdentity) {
   ASSERT_TRUE(vault_service_->ValidateIdentity(pmid, pub_key, sig_pub_key));
 }
 
-TEST_F(VaultServicesTest, BEH_MAID_ServicesValidateSystemPacket) {
+TEST_F(VaultServicesTest, BEH_MAID_ValidateSystemPacket) {
   std::string pub_key, priv_key;
   CreateRSAKeys(&pub_key, &priv_key);
 
@@ -268,7 +403,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesValidateSystemPacket) {
                                                     pub_key));
 }
 
-TEST_F(VaultServicesTest, BEH_MAID_ServicesValidateDataChunk) {
+TEST_F(VaultServicesTest, BEH_MAID_ValidateDataChunk) {
   crypto::Crypto co;
   co.set_hash_algorithm(crypto::SHA_512);
   std::string content("This is a data chunk");
@@ -281,32 +416,62 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesValidateDataChunk) {
   EXPECT_FALSE(vault_service_->ValidateDataChunk(chunkname, content));
 }
 
-TEST_F(VaultServicesTest, BEH_MAID_ServicesStorable) {
+TEST_F(VaultServicesTest, BEH_MAID_Storable) {
   ASSERT_EQ(0, vault_service_->Storable(12345));
   ASSERT_EQ(0, vault_service_->Storable(kAvailableSpace));
   ASSERT_NE(0, vault_service_->Storable(kAvailableSpace + 1));
   ASSERT_NE(0, vault_service_->Storable(0));
 }
 
-TEST_F(VaultServicesTest, BEH_MAID_ServicesLocalStorage) {
+TEST_F(VaultServicesTest, BEH_MAID_LocalStorage) {
   crypto::Crypto co;
   co.set_hash_algorithm(crypto::SHA_512);
-  std::string content("This is a data chunk");
+  std::string content("This is a data chunk"), test_content;
+  std::string new_content("This is another data chunk");
   std::string chunkname(co.Hash(content, "", crypto::STRING_STRING, false));
-  std::string test_content, new_content("This is another data chunk");
+  std::string fake_chunkname(co.Hash("moo", "", crypto::STRING_STRING, false));
   EXPECT_FALSE(vault_service_->HasChunkLocal(chunkname));
+  EXPECT_EQ(boost::uint64_t(0), vault_service_->GetChunkSizeLocal(chunkname));
   EXPECT_TRUE(vault_service_->StoreChunkLocal(chunkname, content));
   EXPECT_TRUE(vault_service_->HasChunkLocal(chunkname));
+  EXPECT_EQ(content.size(), vault_service_->GetChunkSizeLocal(chunkname));
   EXPECT_TRUE(vault_service_->LoadChunkLocal(chunkname, &test_content));
   EXPECT_EQ(content, test_content);
-  EXPECT_FALSE(vault_service_->LoadChunkLocal(chunkname + "X", &test_content));
+  // EXPECT_FALSE(vault_service_->StoreChunkLocal(chunkname, content));
+  // EXPECT_FALSE(vault_service_->StoreChunkLocal(chunkname, new_content));
+  EXPECT_FALSE(vault_service_->LoadChunkLocal(fake_chunkname, &test_content));
+  EXPECT_FALSE(vault_service_->UpdateChunkLocal(fake_chunkname, new_content));
+  EXPECT_TRUE(vault_service_->UpdateChunkLocal(chunkname, new_content));
+  EXPECT_EQ(new_content.size(), vault_service_->GetChunkSizeLocal(chunkname));
   EXPECT_TRUE(vault_service_->LoadChunkLocal(chunkname, &test_content));
+  EXPECT_EQ(new_content, test_content);
   EXPECT_TRUE(vault_service_->DeleteChunkLocal(chunkname));
   EXPECT_FALSE(vault_service_->HasChunkLocal(chunkname));
+  EXPECT_EQ(boost::uint64_t(0), vault_service_->GetChunkSizeLocal(chunkname));
   EXPECT_FALSE(vault_service_->LoadChunkLocal(chunkname, &test_content));
 }
 
-TEST_F(VaultServicesTest, BEH_MAID_ServicesStorePrep) {
+TEST_F(VaultServicesTest, BEH_MAID_NodeWithinClosest) {
+  vault_service_->pmid_ = std::string(kKeySize, 0);
+  for (int i = 0; i < 5; ++i) {
+    base::PDRoutingTableTuple entry(std::string(kKeySize, i + 1),
+                                    "127.0.0.1", 123 + i, "127.0.0.1", 456 + i,
+                                    "pubkey", 10, 1, 1234);
+    vault_service_->routing_table_->AddTuple(entry);
+  }
+
+  ASSERT_FALSE(vault_service_->NodeWithinClosest(std::string(kKeySize, 6), 10));
+  ASSERT_FALSE(vault_service_->NodeWithinClosest(std::string(kKeySize, 4), 3));
+  ASSERT_TRUE(vault_service_->NodeWithinClosest(std::string(kKeySize, 1), 0));
+  ASSERT_TRUE(vault_service_->NodeWithinClosest(std::string(kKeySize, 2), 0));
+  ASSERT_TRUE(vault_service_->NodeWithinClosest(std::string(kKeySize, 3), 0));
+  ASSERT_TRUE(vault_service_->NodeWithinClosest(std::string(kKeySize, 4), 0));
+  ASSERT_TRUE(vault_service_->NodeWithinClosest(std::string(kKeySize, 5), 0));
+}
+
+// -----------------------------------------------------------------------------
+
+TEST_F(VaultServicesTest, BEH_MAID_StorePrep) {
   rpcprotocol::Controller controller;
   maidsafe::StorePrepRequest request;
   maidsafe::StorePrepResponse response;
@@ -453,7 +618,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesStorePrep) {
   }
 }
 
-TEST_F(MockVaultServicesTest, BEH_MAID_ServicesStoreChunk) {
+TEST_F(MockVaultServicesTest, BEH_MAID_StoreChunk) {
   delete vault_service_;
   vault_service_ = new VaultService(vault_pmid_, vault_public_key_,
                                     vault_private_key_,
@@ -597,7 +762,7 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesStoreChunk) {
   ASSERT_EQ(size_t(1), ci.reference_list.size());
 }
 
-TEST_F(VaultServicesTest, BEH_MAID_ServicesGetCheckChunk) {
+TEST_F(VaultServicesTest, BEH_MAID_GetCheckChunk) {
   rpcprotocol::Controller controller;
   maidsafe::GetChunkRequest request;
   maidsafe::GetChunkResponse response;
@@ -674,7 +839,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesGetCheckChunk) {
   }
 }
 
-TEST_F(VaultServicesTest, BEH_MAID_ServicesDeleteChunk) {
+TEST_F(VaultServicesTest, BEH_MAID_DeleteChunk) {
   rpcprotocol::Controller controller;
   maidsafe::DeleteChunkRequest request;
   maidsafe::DeleteChunkResponse response;
@@ -788,7 +953,838 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesDeleteChunk) {
   ASSERT_FALSE(vault_service_->HasChunkLocal(chunk_name));
 }
 
-TEST_F(MockVaultServicesTest, FUNC_MAID_ServicesAmendAccount) {
+TEST_F(VaultServicesTest, BEH_MAID_ValidityCheck) {
+  rpcprotocol::Controller controller;
+  maidsafe::ValidityCheckRequest request;
+  maidsafe::ValidityCheckResponse response;
+
+  std::string pub_key, priv_key, pmid, sig_pub_key, sig_req;
+  CreateRSAKeys(&pub_key, &priv_key);
+  crypto::Crypto co;
+  co.set_symm_algorithm(crypto::AES_256);
+  co.set_hash_algorithm(crypto::SHA_512);
+  std::string content("This is a data chunk");
+  std::string rnd_data(base::RandomString(20));
+  std::string chunkname(co.Hash(content, "", crypto::STRING_STRING, false));
+  std::string vc_hash(co.Hash(content + rnd_data, "", crypto::STRING_STRING,
+                              false));
+  CreateSignedRequest(pub_key, priv_key, chunkname, &pmid, &sig_pub_key,
+                      &sig_req);
+
+  TestCallback cb_obj;
+
+  for (boost::uint32_t i = 0; i <= 1; ++i) {
+    switch (i) {
+      case 0:  // uninitialized request
+        break;
+      case 1:  // make LoadChunkLocal() fail
+        request.set_chunkname(chunkname);
+        request.set_random_data(rnd_data);
+        break;
+    }
+
+    google::protobuf::Closure *done =
+        google::protobuf::NewCallback<TestCallback>(&cb_obj,
+        &TestCallback::CallbackFunction);
+    vault_service_->ValidityCheck(&controller, &request, &response, done);
+    EXPECT_TRUE(response.IsInitialized());
+    EXPECT_NE(kAck, static_cast<int>(response.result()));
+    response.Clear();
+  }
+
+  ASSERT_TRUE(vault_service_->StoreChunkLocal(chunkname, content));
+
+  // test success
+  {
+    google::protobuf::Closure *done =
+        google::protobuf::NewCallback<TestCallback>(&cb_obj,
+        &TestCallback::CallbackFunction);
+    vault_service_->ValidityCheck(&controller, &request, &response, done);
+    EXPECT_TRUE(response.IsInitialized());
+    EXPECT_EQ(kAck, static_cast<int>(response.result()));
+    EXPECT_EQ(vc_hash, response.hash_content());
+  }
+}
+
+TEST_F(VaultServicesTest, DISABLED_BEH_MAID_SwapChunk) {
+  // TODO(Team#) test SwapChunk
+  ASSERT_TRUE(false) << "NOT IMPLEMENTED";
+}
+
+TEST_F(VaultServicesTest, BEH_MAID_CacheChunk) {
+  rpcprotocol::Controller controller;
+  maidsafe::CacheChunkRequest request;
+  maidsafe::CacheChunkResponse response;
+
+  std::string pub_key, priv_key, pmid, sig_pub_key, sig_req;
+  CreateRSAKeys(&pub_key, &priv_key);
+  crypto::Crypto co;
+  co.set_symm_algorithm(crypto::AES_256);
+  co.set_hash_algorithm(crypto::SHA_512);
+  std::string content("This is a data chunk");
+  std::string chunkname(co.Hash(content, "", crypto::STRING_STRING, false));
+  CreateSignedRequest(pub_key, priv_key, chunkname, &pmid, &sig_pub_key,
+                      &sig_req);
+
+  // Not initialised
+  TestCallback cb_obj;
+  google::protobuf::Closure *done = google::protobuf::NewCallback<TestCallback>
+                                    (&cb_obj, &TestCallback::CallbackFunction);
+  vault_service_->CacheChunk(&controller, &request, &response, done);
+  ASSERT_EQ(kNack, static_cast<int>(response.result()));
+  ASSERT_FALSE(vault_service_->vault_chunkstore_->Has(chunkname));
+
+  // Wrong parameters
+  request.set_chunkname("aaaaaaaaaaaaa");
+  request.set_chunkcontent(content);
+  request.set_pmid(pmid);
+  request.set_public_key(pub_key);
+  request.set_public_key_signature(sig_pub_key);
+  request.set_request_signature(sig_req);
+  done = google::protobuf::NewCallback<TestCallback>
+         (&cb_obj, &TestCallback::CallbackFunction);
+  vault_service_->CacheChunk(&controller, &request, &response, done);
+  ASSERT_EQ(kNack, static_cast<int>(response.result()));
+  ASSERT_FALSE(vault_service_->vault_chunkstore_->Has(chunkname));
+
+  request.set_chunkname(chunkname);
+  request.set_pmid("aaaaaaaaaaaaaa");
+  done = google::protobuf::NewCallback<TestCallback>
+         (&cb_obj, &TestCallback::CallbackFunction);
+  vault_service_->CacheChunk(&controller, &request, &response, done);
+  ASSERT_EQ(kNack, static_cast<int>(response.result()));
+  ASSERT_FALSE(vault_service_->vault_chunkstore_->Has(chunkname));
+  ASSERT_FALSE(fs::exists(vault_service_->vault_chunkstore_->GetChunkPath(
+               chunkname, (maidsafe::kHashable | maidsafe::kCache), false)));
+
+  request.set_pmid(pmid);
+  done = google::protobuf::NewCallback<TestCallback>
+         (&cb_obj, &TestCallback::CallbackFunction);
+  vault_service_->CacheChunk(&controller, &request, &response, done);
+  ASSERT_EQ(kAck, static_cast<int>(response.result()));
+  ASSERT_TRUE(vault_service_->vault_chunkstore_->Has(chunkname));
+  ASSERT_EQ(maidsafe::kHashable|maidsafe::kCache,
+            vault_service_->vault_chunkstore_->chunk_type(chunkname));
+  ASSERT_TRUE(fs::exists(vault_service_->vault_chunkstore_->GetChunkPath(
+              chunkname, (maidsafe::kHashable | maidsafe::kCache), false)));
+}
+
+TEST_F(VaultServicesTest, DISABLED_BEH_MAID_GetChunkReferences) {
+  // TODO(Team#) test GetChunkReferences
+  ASSERT_TRUE(false) << "NOT IMPLEMENTED";
+}
+
+TEST_F(MockVaultServicesTest, BEH_MAID_AddToWatchList) {
+  delete vault_service_;
+  vault_service_ = new VaultService(vault_pmid_, vault_public_key_,
+                                    vault_private_key_,
+                                    vault_public_key_signature_,
+                                    vault_chunkstore_, knode_.get(),
+                                    &mock_vault_service_logic_,
+                                    udt_transport_.GetID());
+
+  maidsafe::GetSyncDataResponse get_sync_data_response;
+  vault_service_->AddStartupSyncData(get_sync_data_response);
+
+  rpcprotocol::Controller controller;
+  maidsafe::AddToWatchListRequest request;
+  maidsafe::AddToWatchListResponse response;
+
+  // client = node requesting to store a chunk
+  // vlt = Vault storing the chunk
+  // vault_service_ = this vault, i.e. the Chunk Info and Account Holder
+
+  std::string client_pub_key, client_priv_key, client_pmid, client_pub_key_sig;
+  std::string vlt_pub_key, vlt_priv_key, vlt_pmid, vlt_pub_key_sig;
+  std::string size_sig;
+
+  CreateRSAKeys(&client_pub_key, &client_priv_key);
+  CreateRSAKeys(&vlt_pub_key, &vlt_priv_key);
+  crypto::Crypto co;
+  co.set_symm_algorithm(crypto::AES_256);
+  co.set_hash_algorithm(crypto::SHA_512);
+
+  client_pub_key_sig = co.AsymSign(client_pub_key, "", client_priv_key,
+                                   crypto::STRING_STRING);
+  client_pmid = co.Hash(client_pub_key + client_pub_key_sig, "",
+                        crypto::STRING_STRING, false);
+  vlt_pub_key_sig = co.AsymSign(vlt_pub_key, "", vlt_priv_key,
+                                crypto::STRING_STRING);
+  vlt_pmid = co.Hash(vlt_pub_key + vlt_pub_key_sig, "", crypto::STRING_STRING,
+                     false);
+
+  EXPECT_CALL(mock_vault_service_logic_,
+              AmendRemoteAccount(testing::_, testing::_, testing::_,
+                                 testing::_))
+      .Times(testing::AtLeast(2))
+      .WillRepeatedly(testing::WithArg<2>(testing::Invoke(
+          boost::bind(&mock_vsl::RunVaultCallback, kSuccess, _1))));
+
+  std::string chunk_data("This is a data chunk");
+  std::string chunk_name(co.Hash(chunk_data, "", crypto::STRING_STRING, false));
+  boost::uint64_t chunk_size(chunk_data.size());
+
+  size_sig = co.AsymSign(boost::lexical_cast<std::string>(chunk_size), "",
+                         client_priv_key, crypto::STRING_STRING);
+
+  TestCallback cb_obj;
+
+  boost::uint64_t space_offered = chunk_size * 3 / 2;
+
+  maidsafe::SignedSize *signed_size;
+
+  maidsafe::AmendAccountRequest amend_req;
+  maidsafe::AmendAccountResponse amend_resp;
+  signed_size = amend_req.mutable_signed_size();
+  signed_size->set_data_size(space_offered);
+  signed_size->set_signature(co.AsymSign(base::itos_ull(space_offered), "",
+                             client_priv_key, crypto::STRING_STRING));
+  signed_size->set_pmid(client_pmid);
+  signed_size->set_public_key(client_pub_key);
+  signed_size->set_public_key_signature(client_pub_key_sig);
+  amend_req.set_amendment_type(maidsafe::AmendAccountRequest::kSpaceOffered);
+  amend_req.set_account_pmid(client_pmid);
+  amend_req.set_chunkname(chunk_name);
+
+  // Create the account first
+  {
+    google::protobuf::Closure *done =
+        google::protobuf::NewCallback<TestCallback>
+        (&cb_obj, &TestCallback::CallbackFunction);
+    vault_service_->AmendAccount(&controller, &amend_req, &amend_resp, done);
+    ASSERT_TRUE(amend_resp.IsInitialized());
+    ASSERT_EQ(kAck, static_cast<int>(amend_resp.result()));
+    amend_resp.Clear();
+  }
+
+  for (int i = 0; i <= 3; ++i) {
+    switch (i) {
+      case 0:  // empty request
+        break;
+      case 1:  // unsigned request
+        signed_size = request.mutable_signed_size();
+        signed_size->set_data_size(chunk_size);
+        signed_size->set_signature(size_sig);
+        signed_size->set_pmid(client_pmid);
+        signed_size->set_public_key(client_pub_key);
+        signed_size->set_public_key_signature(client_pub_key_sig);
+        request.set_chunkname(chunk_name);
+        request.set_request_signature("fail");
+        break;
+      case 2:  // unsigned size
+        request.set_request_signature(co.AsymSign(co.Hash(client_pub_key_sig +
+            chunk_name + vault_pmid_, "", crypto::STRING_STRING, false),
+            "", client_priv_key, crypto::STRING_STRING));
+        signed_size->set_signature("fail");
+        break;
+      case 3:  // zero size
+        signed_size->set_data_size(0);
+        signed_size->set_signature(co.AsymSign("0", "", client_priv_key,
+                                   crypto::STRING_STRING));
+        break;
+    }
+
+    google::protobuf::Closure *done =
+        google::protobuf::NewCallback<TestCallback>(&cb_obj,
+        &TestCallback::CallbackFunction);
+    vault_service_->AddToWatchList(&controller, &request, &response, done);
+    EXPECT_TRUE(response.IsInitialized());
+    EXPECT_NE(kAck, static_cast<int>(response.result()));
+    response.Clear();
+  }
+
+  signed_size->set_data_size(chunk_size);
+  signed_size->set_signature(size_sig);
+
+  maidsafe::AccountStatusRequest asreq;
+  asreq.set_account_pmid(client_pmid);
+  asreq.set_public_key(client_pub_key);
+  asreq.set_public_key_signature(client_pub_key_sig);
+  asreq.set_request_signature(co.AsymSign(co.Hash(client_pub_key_sig +
+      co.Hash(client_pmid + kAccount, "", crypto::STRING_STRING, false) +
+      vault_pmid_, "", crypto::STRING_STRING, false), "", client_priv_key,
+      crypto::STRING_STRING));
+
+  // SpaceTaken should be 0
+  {
+    maidsafe::AccountStatusResponse asrsp;
+    google::protobuf::Closure *done =
+        google::protobuf::NewCallback<TestCallback>(&cb_obj,
+        &TestCallback::CallbackFunction);
+    vault_service_->AccountStatus(&controller, &asreq, &asrsp, done);
+    EXPECT_TRUE(asrsp.IsInitialized());
+    EXPECT_EQ(boost::uint64_t(0), asrsp.space_taken());
+  }
+
+  // add to watch list as first
+  {
+    google::protobuf::Closure *done =
+        google::protobuf::NewCallback<TestCallback>(&cb_obj,
+        &TestCallback::CallbackFunction);
+    vault_service_->AddToWatchList(&controller, &request, &response, done);
+    EXPECT_TRUE(response.IsInitialized());
+    EXPECT_EQ(kAck, static_cast<int>(response.result()));
+    response.Clear();
+  }
+
+  // wait for amendments by the chunk info holder
+  vault_service_->thread_pool_.waitForDone();
+
+  // SpaceTaken should be none, because we don't have credits
+  {
+    maidsafe::AccountStatusResponse asrsp;
+    google::protobuf::Closure *done =
+        google::protobuf::NewCallback<TestCallback>(&cb_obj,
+        &TestCallback::CallbackFunction);
+    vault_service_->AccountStatus(&controller, &asreq, &asrsp, done);
+    EXPECT_TRUE(asrsp.IsInitialized());
+    EXPECT_EQ(boost::uint64_t(0), asrsp.space_taken());
+  }
+
+  // create the account
+  {
+    maidsafe::AmendAccountRequest aa_req;
+    maidsafe::AmendAccountResponse aa_rsp;
+    google::protobuf::Closure *done =
+        google::protobuf::NewCallback<TestCallback>(&cb_obj,
+        &TestCallback::CallbackFunction);
+    signed_size = aa_req.mutable_signed_size();
+    signed_size->set_data_size(chunk_size * kMinChunkCopies * 2);
+    std::string ser_size(base::itos_ull(signed_size->data_size()));
+    signed_size->set_signature(co.AsymSign(ser_size, "", client_priv_key,
+                               crypto::STRING_STRING));
+    signed_size->set_pmid(client_pmid);
+    signed_size->set_public_key(client_pub_key);
+    signed_size->set_public_key_signature(client_pub_key_sig);
+    aa_req.set_amendment_type(maidsafe::AmendAccountRequest::kSpaceOffered);
+    aa_req.set_account_pmid(client_pmid);
+    vault_service_->AmendAccount(&controller, &aa_req, &aa_rsp, done);
+    ASSERT_TRUE(aa_rsp.IsInitialized());
+    ASSERT_EQ(kAck, static_cast<int>(aa_rsp.result()));
+  }
+
+  // add to watch list as first, second try
+  {
+    google::protobuf::Closure *done =
+        google::protobuf::NewCallback<TestCallback>(&cb_obj,
+        &TestCallback::CallbackFunction);
+    vault_service_->AddToWatchList(&controller, &request, &response, done);
+    EXPECT_TRUE(response.IsInitialized());
+    EXPECT_EQ(kAck, static_cast<int>(response.result()));
+    response.Clear();
+  }
+
+  // wait for amendments by the chunk info holder
+  vault_service_->thread_pool_.waitForDone();
+
+  // SpaceTaken should be four times the chunk size
+  {
+    maidsafe::AccountStatusResponse asrsp;
+    google::protobuf::Closure *done =
+        google::protobuf::NewCallback<TestCallback>(&cb_obj,
+        &TestCallback::CallbackFunction);
+    vault_service_->AccountStatus(&controller, &asreq, &asrsp, done);
+    EXPECT_TRUE(asrsp.IsInitialized());
+    EXPECT_EQ(kMinChunkCopies * chunk_size, asrsp.space_taken());
+  }
+}
+
+TEST_F(MockVaultServicesTest, BEH_MAID_RemoveFromWatchList) {
+  delete vault_service_;
+  vault_service_ = new VaultService(vault_pmid_, vault_public_key_,
+                                    vault_private_key_,
+                                    vault_public_key_signature_,
+                                    vault_chunkstore_, knode_.get(),
+                                    &mock_vault_service_logic_,
+                                    udt_transport_.GetID());
+
+  maidsafe::GetSyncDataResponse get_sync_data_response;
+  vault_service_->AddStartupSyncData(get_sync_data_response);
+
+  rpcprotocol::Controller controller;
+  maidsafe::AddToWatchListRequest add_request;
+  maidsafe::AddToWatchListResponse add_response;
+  maidsafe::RemoveFromWatchListRequest rem_request;
+  maidsafe::RemoveFromWatchListResponse rem_response;
+
+  crypto::Crypto co;
+  co.set_symm_algorithm(crypto::AES_256);
+  co.set_hash_algorithm(crypto::SHA_512);
+
+  EXPECT_CALL(mock_vault_service_logic_,
+              AmendRemoteAccount(testing::_, testing::_, testing::_,
+                                 testing::_))
+      .Times(testing::AtLeast(kMinChunkCopies + 1))
+      .WillRepeatedly(testing::WithArg<2>(testing::Invoke(
+          boost::bind(&mock_vsl::RunVaultCallback, kSuccess, _1))));
+
+  std::string chunk_data("This is a data chunk");
+  std::string chunk_name(co.Hash(chunk_data, "", crypto::STRING_STRING, false));
+  boost::uint64_t chunk_size(chunk_data.size());
+
+  std::string client_pub_key[kMinChunkCopies + 1];
+  std::string client_priv_key[kMinChunkCopies + 1];
+  std::string client_pmid[kMinChunkCopies + 1];
+  std::string client_pub_key_sig[kMinChunkCopies + 1];
+  maidsafe::AccountStatusRequest client_asreq[kMinChunkCopies + 1];
+
+  maidsafe::SignedSize *signed_size;
+  TestCallback cb_obj;
+
+  // initialise 5 clients and add them to the Watch List
+  for (int i = 0; i < kMinChunkCopies + 1; ++i) {
+    printf("Initialising client %d of %d...\n", i + 1, kMinChunkCopies + 1);
+    CreateRSAKeys(&client_pub_key[i], &client_priv_key[i]);
+    client_pub_key_sig[i] = co.AsymSign(client_pub_key[i], "",
+                                        client_priv_key[i],
+                                        crypto::STRING_STRING);
+    client_pmid[i] = co.Hash(client_pub_key[i] + client_pub_key_sig[i], "",
+                             crypto::STRING_STRING, false);
+
+    signed_size = add_request.mutable_signed_size();
+    signed_size->set_data_size(chunk_size);
+    signed_size->set_signature(co.AsymSign(boost::lexical_cast<std::string>
+        (chunk_size), "", client_priv_key[i], crypto::STRING_STRING));
+    signed_size->set_pmid(client_pmid[i]);
+    signed_size->set_public_key(client_pub_key[i]);
+    signed_size->set_public_key_signature(client_pub_key_sig[i]);
+
+    add_request.set_chunkname(chunk_name);
+    add_request.set_request_signature(co.AsymSign(co.Hash(client_pub_key_sig[i]
+        + chunk_name + vault_pmid_, "", crypto::STRING_STRING, false), "",
+        client_priv_key[i], crypto::STRING_STRING));
+
+    client_asreq[i].set_account_pmid(client_pmid[i]);
+    client_asreq[i].set_public_key(client_pub_key[i]);
+    client_asreq[i].set_public_key_signature(client_pub_key_sig[i]);
+    client_asreq[i].set_request_signature(co.AsymSign(co.Hash(
+        client_pub_key_sig[i] + co.Hash(client_pmid[i] + kAccount, "",
+        crypto::STRING_STRING, false) + vault_pmid_, "", crypto::STRING_STRING,
+        false), "", client_priv_key[i], crypto::STRING_STRING));
+
+    // create #i's account
+    {
+      maidsafe::AmendAccountRequest aa_req;
+      maidsafe::AmendAccountResponse aa_rsp;
+      google::protobuf::Closure *done =
+          google::protobuf::NewCallback<TestCallback>(&cb_obj,
+          &TestCallback::CallbackFunction);
+      signed_size = aa_req.mutable_signed_size();
+      signed_size->set_data_size(chunk_size * kMinChunkCopies * 2);
+      std::string ser_size(base::itos_ull(signed_size->data_size()));
+      signed_size->set_signature(co.AsymSign(ser_size, "", client_priv_key[i],
+                                 crypto::STRING_STRING));
+      signed_size->set_pmid(client_pmid[i]);
+      signed_size->set_public_key(client_pub_key[i]);
+      signed_size->set_public_key_signature(client_pub_key_sig[i]);
+      aa_req.set_amendment_type(maidsafe::AmendAccountRequest::kSpaceOffered);
+      aa_req.set_account_pmid(client_pmid[i]);
+      vault_service_->AmendAccount(&controller, &aa_req, &aa_rsp, done);
+      ASSERT_TRUE(aa_rsp.IsInitialized());
+      ASSERT_EQ(kAck, static_cast<int>(aa_rsp.result()));
+    }
+
+    // add #i to Watch List
+    {
+      google::protobuf::Closure *done =
+          google::protobuf::NewCallback<TestCallback>(&cb_obj,
+          &TestCallback::CallbackFunction);
+      add_response.Clear();
+      vault_service_->AddToWatchList(&controller, &add_request, &add_response,
+                                     done);
+      EXPECT_TRUE(add_response.IsInitialized());
+      EXPECT_EQ(kAck, static_cast<int>(add_response.result()));
+    }
+
+    // wait for amendments by the chunk info holder
+    vault_service_->thread_pool_.waitForDone();
+
+    // simulate uploaded chunk for #i
+    if (add_response.upload_count() > 0) {
+      maidsafe::AddToReferenceListRequest add_ref_request;
+      maidsafe::AddToReferenceListResponse add_ref_response;
+
+      maidsafe::StoreContract *sc = add_ref_request.mutable_store_contract();
+      maidsafe::StoreContract::InnerContract *ic = sc->mutable_inner_contract();
+      maidsafe::SignedSize *sz = ic->mutable_signed_size();
+
+      sz->set_data_size(chunk_size);
+      sz->set_signature(co.AsymSign(boost::lexical_cast<std::string>
+          (chunk_size), "", client_priv_key[i], crypto::STRING_STRING));
+      sz->set_pmid(client_pmid[i]);
+      sz->set_public_key(client_pub_key[i]);
+      sz->set_public_key_signature(client_pub_key_sig[i]);
+
+      ic->set_result(kAck);
+
+      sc->set_signature(co.AsymSign(ic->SerializeAsString(), "",
+                                    vault_private_key_, crypto::STRING_STRING));
+      sc->set_pmid(vault_pmid_);
+      sc->set_public_key(vault_public_key_);
+      sc->set_public_key_signature(vault_public_key_signature_);
+
+      add_ref_request.set_chunkname(chunk_name);
+      add_ref_request.set_request_signature(co.AsymSign(co.Hash(
+          vault_public_key_signature_+ chunk_name + vault_pmid_, "",
+          crypto::STRING_STRING, false), "", vault_private_key_,
+          crypto::STRING_STRING));
+
+      google::protobuf::Closure *done =
+          google::protobuf::NewCallback<TestCallback>(&cb_obj,
+          &TestCallback::CallbackFunction);
+      vault_service_->AddToReferenceList(&controller, &add_ref_request,
+                                         &add_ref_response, done);
+      EXPECT_TRUE(add_ref_response.IsInitialized());
+      EXPECT_EQ(kAck, static_cast<int>(add_ref_response.result()));
+    }
+
+    // wait for amendments by the chunk info holder
+    vault_service_->thread_pool_.waitForDone();
+
+    // check SpaceTaken for #i except #0
+    if (i > 0) {
+      maidsafe::AccountStatusResponse asrsp;
+      google::protobuf::Closure *done =
+          google::protobuf::NewCallback<TestCallback>(&cb_obj,
+          &TestCallback::CallbackFunction);
+      vault_service_->AccountStatus(&controller, &client_asreq[i], &asrsp,
+                                    done);
+      EXPECT_TRUE(asrsp.IsInitialized());
+      EXPECT_EQ(chunk_size, asrsp.space_taken());
+    }
+
+    // check SpaceTaken for #0
+    {
+      maidsafe::AccountStatusResponse asrsp;
+      google::protobuf::Closure *done =
+          google::protobuf::NewCallback<TestCallback>(&cb_obj,
+          &TestCallback::CallbackFunction);
+      vault_service_->AccountStatus(&controller, &client_asreq[0], &asrsp,
+                                    done);
+      EXPECT_TRUE(asrsp.IsInitialized());
+      if (i <= kMinChunkCopies - 1)
+        EXPECT_EQ((kMinChunkCopies - i) * chunk_size, asrsp.space_taken());
+      else
+        EXPECT_EQ(chunk_size, asrsp.space_taken());
+    }
+  }
+
+  rem_request.set_chunkname(chunk_name);
+  rem_request.set_pmid(client_pmid[0]);
+  rem_request.set_public_key(client_pub_key[0]);
+  rem_request.set_public_key_signature(client_pub_key_sig[0]);
+  rem_request.set_request_signature("fail");
+
+  // invalid removal request only for the first client
+  {
+    google::protobuf::Closure *done =
+        google::protobuf::NewCallback<TestCallback>(&cb_obj,
+        &TestCallback::CallbackFunction);
+    vault_service_->RemoveFromWatchList(&controller, &rem_request,
+                                        &rem_response, done);
+    EXPECT_TRUE(rem_response.IsInitialized());
+    EXPECT_NE(kAck, static_cast<int>(rem_response.result()));
+    rem_response.Clear();
+  }
+
+  // now remove all, from last to first
+  for (int i = kMinChunkCopies; i >= 0; --i) {
+    rem_request.set_pmid(client_pmid[i]);
+    rem_request.set_public_key(client_pub_key[i]);
+    rem_request.set_public_key_signature(client_pub_key_sig[i]);
+    rem_request.set_request_signature(co.AsymSign(co.Hash(client_pub_key_sig[i]
+        + chunk_name + vault_pmid_, "", crypto::STRING_STRING, false), "",
+        client_priv_key[i], crypto::STRING_STRING));
+
+    // remove #i from Watch List
+    {
+      google::protobuf::Closure *done =
+          google::protobuf::NewCallback<TestCallback>(&cb_obj,
+          &TestCallback::CallbackFunction);
+      vault_service_->RemoveFromWatchList(&controller, &rem_request,
+                                          &rem_response, done);
+      EXPECT_TRUE(rem_response.IsInitialized());
+      EXPECT_EQ(kAck, static_cast<int>(rem_response.result()));
+      rem_response.Clear();
+    }
+
+    // wait for amendments by the chunk info holder
+    vault_service_->thread_pool_.waitForDone();
+
+    // check SpaceTaken for #i
+    {
+      maidsafe::AccountStatusResponse asrsp;
+      google::protobuf::Closure *done =
+          google::protobuf::NewCallback<TestCallback>(&cb_obj,
+          &TestCallback::CallbackFunction);
+      vault_service_->AccountStatus(&controller, &client_asreq[i], &asrsp,
+                                    done);
+      EXPECT_TRUE(asrsp.IsInitialized());
+      if (i == 0 || i == kMinChunkCopies)
+        EXPECT_EQ(boost::uint64_t(0), asrsp.space_taken());
+      else
+        EXPECT_EQ(chunk_size, asrsp.space_taken());
+    }
+  }
+}
+
+TEST_F(MockVaultServicesTest, BEH_MAID_AddToReferenceList) {
+  delete vault_service_;
+  vault_service_ = new VaultService(vault_pmid_, vault_public_key_,
+                                    vault_private_key_,
+                                    vault_public_key_signature_,
+                                    vault_chunkstore_, knode_.get(),
+                                    &mock_vault_service_logic_,
+                                    udt_transport_.GetID());
+
+  maidsafe::GetSyncDataResponse get_sync_data_response;
+  vault_service_->AddStartupSyncData(get_sync_data_response);
+
+  rpcprotocol::Controller controller;
+  maidsafe::AddToReferenceListRequest request;
+  maidsafe::AddToReferenceListResponse response;
+
+  maidsafe::SignedSize *signed_size = NULL;
+  maidsafe::StoreContract *store_contract = NULL;
+  maidsafe::StoreContract::InnerContract *inner_contract = NULL;
+
+  // client = node requesting to store a chunk
+  // vlt = Vault storing the chunk
+  // vault_service_ = this vault, i.e. the Chunk Info and Account Holder
+
+  std::string client_pub_key, client_priv_key, client_pmid, client_pub_key_sig;
+  std::string vlt_pub_key, vlt_priv_key, vlt_pmid, vlt_pub_key_sig;
+  std::string size_sig;
+
+  CreateRSAKeys(&client_pub_key, &client_priv_key);
+  CreateRSAKeys(&vlt_pub_key, &vlt_priv_key);
+  crypto::Crypto co;
+  co.set_symm_algorithm(crypto::AES_256);
+  co.set_hash_algorithm(crypto::SHA_512);
+
+  client_pub_key_sig = co.AsymSign(client_pub_key, "", client_priv_key,
+                                   crypto::STRING_STRING);
+  client_pmid = co.Hash(client_pub_key + client_pub_key_sig, "",
+                        crypto::STRING_STRING, false);
+  vlt_pub_key_sig = co.AsymSign(vlt_pub_key, "", vlt_priv_key,
+                                crypto::STRING_STRING);
+  vlt_pmid = co.Hash(vlt_pub_key + vlt_pub_key_sig, "", crypto::STRING_STRING,
+                     false);
+
+  EXPECT_CALL(mock_vault_service_logic_,
+              AmendRemoteAccount(testing::_, testing::_, testing::_,
+                                 testing::_))
+      .Times(testing::AtLeast(2))
+      .WillRepeatedly(testing::WithArg<2>(testing::Invoke(
+          boost::bind(&mock_vsl::RunVaultCallback, kSuccess, _1))));
+
+  std::string chunk_data("This is a data chunk");
+  std::string chunk_name(co.Hash(chunk_data, "", crypto::STRING_STRING, false));
+  boost::uint64_t chunk_size(chunk_data.size());
+
+  size_sig = co.AsymSign(boost::lexical_cast<std::string>(chunk_size), "",
+                         client_priv_key, crypto::STRING_STRING);
+
+  TestCallback cb_obj;
+
+  for (int i = 0; i <= 7; ++i) {
+    printf("\n--- CASE #%i --- \n", i);
+    switch (i) {
+      case 0:  // empty request
+        break;
+      case 1:  // unsigned request
+        store_contract = request.mutable_store_contract();
+        inner_contract = store_contract->mutable_inner_contract();
+        signed_size = inner_contract->mutable_signed_size();
+        signed_size->set_data_size(chunk_size);
+        signed_size->set_signature(size_sig);
+        signed_size->set_pmid(client_pmid);
+        signed_size->set_public_key(client_pub_key);
+        signed_size->set_public_key_signature(client_pub_key_sig);
+        inner_contract->set_result(kAck);
+        store_contract->set_signature(co.AsymSign(
+            inner_contract->SerializeAsString(), "", vlt_priv_key,
+            crypto::STRING_STRING));
+        store_contract->set_pmid(vlt_pmid);
+        store_contract->set_public_key(vlt_pub_key);
+        store_contract->set_public_key_signature(vlt_pub_key_sig);
+
+        request.set_chunkname(chunk_name);
+        request.set_request_signature("fail");
+        break;
+      case 2:  // unsigned contract
+        store_contract->set_signature("fail");
+        request.set_request_signature(co.AsymSign(co.Hash(vlt_pub_key_sig +
+            chunk_name + vault_pmid_, "", crypto::STRING_STRING, false),
+            "", vlt_priv_key, crypto::STRING_STRING));
+        break;
+      case 3:  // unsigned size
+        signed_size->set_signature("fail");
+        store_contract->set_signature(co.AsymSign(
+            inner_contract->SerializeAsString(), "", vlt_priv_key,
+            crypto::STRING_STRING));
+        break;
+      case 4:  // zero size
+        signed_size->set_data_size(0);
+        signed_size->set_signature(co.AsymSign("0", "", client_priv_key,
+                                   crypto::STRING_STRING));
+        store_contract->set_signature(co.AsymSign(
+            inner_contract->SerializeAsString(), "", vlt_priv_key,
+            crypto::STRING_STRING));
+        break;
+      case 5:  // rejected contract
+        signed_size->set_data_size(chunk_size);
+        signed_size->set_signature(size_sig);
+        inner_contract->set_result(kNack);
+        store_contract->set_signature(co.AsymSign(
+            inner_contract->SerializeAsString(), "", vlt_priv_key,
+            crypto::STRING_STRING));
+        break;
+      case 6:  // invalid chunk name
+        inner_contract->set_result(kAck);
+        store_contract->set_signature(co.AsymSign(
+            inner_contract->SerializeAsString(), "", vlt_priv_key,
+            crypto::STRING_STRING));
+        request.set_chunkname("fail");
+        request.set_request_signature(co.AsymSign(co.Hash(vlt_pub_key_sig +
+            "fail" + vault_pmid_, "", crypto::STRING_STRING, false), "",
+            vlt_priv_key, crypto::STRING_STRING));
+        break;
+      case 7:  // non-existing watchlist
+        request.set_chunkname(chunk_name);
+        request.set_request_signature(co.AsymSign(co.Hash(vlt_pub_key_sig +
+            chunk_name + vault_pmid_, "", crypto::STRING_STRING, false), "",
+            vlt_priv_key, crypto::STRING_STRING));
+        break;
+    }
+
+    google::protobuf::Closure *done =
+        google::protobuf::NewCallback<TestCallback>(&cb_obj,
+        &TestCallback::CallbackFunction);
+    vault_service_->AddToReferenceList(&controller, &request, &response, done);
+    EXPECT_TRUE(response.IsInitialized());
+    EXPECT_NE(kAck, static_cast<int>(response.result()));
+    response.Clear();
+  }
+
+  maidsafe::AccountStatusRequest asreq;
+  asreq.set_account_pmid(vlt_pmid);
+  asreq.set_public_key(vlt_pub_key);
+  asreq.set_public_key_signature(vlt_pub_key_sig);
+  asreq.set_request_signature(co.AsymSign(co.Hash(vlt_pub_key_sig +
+      co.Hash(vlt_pmid + kAccount, "", crypto::STRING_STRING, false) +
+      vault_pmid_, "", crypto::STRING_STRING, false), "", vlt_priv_key,
+      crypto::STRING_STRING));
+
+  // SpaceGiven should be 0
+  {
+    maidsafe::AccountStatusResponse asrsp;
+    google::protobuf::Closure *done =
+        google::protobuf::NewCallback<TestCallback>(&cb_obj,
+        &TestCallback::CallbackFunction);
+    vault_service_->AccountStatus(&controller, &asreq, &asrsp, done);
+    EXPECT_TRUE(asrsp.IsInitialized());
+    EXPECT_EQ(boost::uint64_t(0), asrsp.space_given());
+  }
+
+  // create client's account
+  {
+    maidsafe::AmendAccountRequest aa_req;
+    maidsafe::AmendAccountResponse aa_rsp;
+    google::protobuf::Closure *done =
+        google::protobuf::NewCallback<TestCallback>(&cb_obj,
+        &TestCallback::CallbackFunction);
+    signed_size = aa_req.mutable_signed_size();
+    signed_size->set_data_size(chunk_size * kMinChunkCopies);
+    std::string ser_size(base::itos_ull(signed_size->data_size()));
+    signed_size->set_signature(co.AsymSign(ser_size, "", client_priv_key,
+                               crypto::STRING_STRING));
+    signed_size->set_pmid(client_pmid);
+    signed_size->set_public_key(client_pub_key);
+    signed_size->set_public_key_signature(client_pub_key_sig);
+    aa_req.set_amendment_type(maidsafe::AmendAccountRequest::kSpaceOffered);
+    aa_req.set_account_pmid(client_pmid);
+    vault_service_->AmendAccount(&controller, &aa_req, &aa_rsp, done);
+    ASSERT_TRUE(aa_rsp.IsInitialized());
+    ASSERT_EQ(kAck, static_cast<int>(aa_rsp.result()));
+  }
+
+  // create vault's account
+  {
+    maidsafe::AmendAccountRequest aa_req;
+    maidsafe::AmendAccountResponse aa_rsp;
+    google::protobuf::Closure *done =
+        google::protobuf::NewCallback<TestCallback>(&cb_obj,
+        &TestCallback::CallbackFunction);
+    signed_size = aa_req.mutable_signed_size();
+    signed_size->set_data_size(chunk_size * kMinChunkCopies);
+    std::string ser_size(base::itos_ull(signed_size->data_size()));
+    signed_size->set_signature(co.AsymSign(ser_size, "", vlt_priv_key,
+                               crypto::STRING_STRING));
+    signed_size->set_pmid(vlt_pmid);
+    signed_size->set_public_key(vlt_pub_key);
+    signed_size->set_public_key_signature(vlt_pub_key_sig);
+    aa_req.set_amendment_type(maidsafe::AmendAccountRequest::kSpaceOffered);
+    aa_req.set_account_pmid(vlt_pmid);
+    vault_service_->AmendAccount(&controller, &aa_req, &aa_rsp, done);
+    ASSERT_TRUE(aa_rsp.IsInitialized());
+    ASSERT_EQ(kAck, static_cast<int>(aa_rsp.result()));
+  }
+
+  // add client to Watch List
+  {
+    maidsafe::AddToWatchListRequest add_request;
+    maidsafe::AddToWatchListResponse add_response;
+
+    signed_size = add_request.mutable_signed_size();
+    signed_size->set_data_size(chunk_size);
+    signed_size->set_signature(co.AsymSign(boost::lexical_cast<std::string>
+        (chunk_size), "", client_priv_key, crypto::STRING_STRING));
+    signed_size->set_pmid(client_pmid);
+    signed_size->set_public_key(client_pub_key);
+    signed_size->set_public_key_signature(client_pub_key_sig);
+
+    add_request.set_chunkname(chunk_name);
+    add_request.set_request_signature(co.AsymSign(co.Hash(client_pub_key_sig
+        + chunk_name + vault_pmid_, "", crypto::STRING_STRING, false), "",
+        client_priv_key, crypto::STRING_STRING));
+
+    google::protobuf::Closure *done =
+        google::protobuf::NewCallback<TestCallback>(&cb_obj,
+        &TestCallback::CallbackFunction);
+    vault_service_->AddToWatchList(&controller, &add_request, &add_response,
+                                   done);
+    EXPECT_TRUE(add_response.IsInitialized());
+    EXPECT_EQ(kAck, static_cast<int>(add_response.result()));
+  }
+
+  // add vault to Reference List
+  {
+    google::protobuf::Closure *done =
+        google::protobuf::NewCallback<TestCallback>(&cb_obj,
+        &TestCallback::CallbackFunction);
+    vault_service_->AddToReferenceList(&controller, &request, &response, done);
+    EXPECT_TRUE(response.IsInitialized());
+    EXPECT_EQ(kAck, static_cast<int>(response.result()));
+    response.Clear();
+  }
+
+  // wait for amendments by the chunk info holder
+  vault_service_->thread_pool_.waitForDone();
+
+  // SpaceGiven should be the chunk size
+  {
+    maidsafe::AccountStatusResponse asrsp;
+    google::protobuf::Closure *done =
+        google::protobuf::NewCallback<TestCallback>(&cb_obj,
+        &TestCallback::CallbackFunction);
+    vault_service_->AccountStatus(&controller, &asreq, &asrsp, done);
+    EXPECT_TRUE(asrsp.IsInitialized());
+    EXPECT_EQ(chunk_size, asrsp.space_given());
+  }
+}
+
+TEST_F(MockVaultServicesTest, BEH_MAID_AmendAccount) {
   boost::shared_ptr<VaultRpcs> vault_rpcs;
   boost::shared_ptr<kad::KNode> knode;
   MockVsl mock_vault_service_logic(vault_rpcs, knode);
@@ -824,17 +1820,17 @@ TEST_F(MockVaultServicesTest, FUNC_MAID_ServicesAmendAccount) {
   std::string client_account_name = co.Hash(client_pmid + kAccount, "",
                                             crypto::STRING_STRING, false);
 
-  std::string chunk_data("This is a data chunk");
-  std::string chunk_name(co.Hash(chunk_data, "", crypto::STRING_STRING, false));
-  boost::uint64_t chunk_size(chunk_data.size());
-
   EXPECT_CALL(*mock_vault_service_logic.kadops(),
-              FindCloseNodes(chunk_name,
+              FindCloseNodes(client_account_name,
                              testing::An<const base::callback_func_type&>()))
       .Times(testing::AtLeast(6))
       .WillRepeatedly(testing::WithArg<1>(testing::Invoke(
           boost::bind(&mock_kadops::RunCallback,
           k_group.serialised_find_nodes_response(), _1))));
+
+  std::string chunk_data("This is a data chunk");
+  std::string chunk_name(co.Hash(chunk_data, "", crypto::STRING_STRING, false));
+  boost::uint64_t chunk_size(chunk_data.size());
 
   size_sig = co.AsymSign(boost::lexical_cast<std::string>(chunk_size), "",
                          client_priv_key, crypto::STRING_STRING);
@@ -1221,1014 +2217,22 @@ TEST_F(MockVaultServicesTest, FUNC_MAID_ServicesAmendAccount) {
   }
 }
 
-TEST_F(MockVaultServicesTest, BEH_MAID_ServicesAddToWatchList) {
-  delete vault_service_;
-  vault_service_ = new VaultService(vault_pmid_, vault_public_key_,
-                                    vault_private_key_,
-                                    vault_public_key_signature_,
-                                    vault_chunkstore_, knode_.get(),
-                                    &mock_vault_service_logic_,
-                                    udt_transport_.GetID());
-
-  maidsafe::GetSyncDataResponse get_sync_data_response;
-  vault_service_->AddStartupSyncData(get_sync_data_response);
-
-  rpcprotocol::Controller controller;
-  maidsafe::AddToWatchListRequest request;
-  maidsafe::AddToWatchListResponse response;
-
-  // client = node requesting to store a chunk
-  // vlt = Vault storing the chunk
-  // vault_service_ = this vault, i.e. the Chunk Info and Account Holder
-
-  std::string client_pub_key, client_priv_key, client_pmid, client_pub_key_sig;
-  std::string vlt_pub_key, vlt_priv_key, vlt_pmid, vlt_pub_key_sig;
-  std::string size_sig;
-
-  CreateRSAKeys(&client_pub_key, &client_priv_key);
-  CreateRSAKeys(&vlt_pub_key, &vlt_priv_key);
-  crypto::Crypto co;
-  co.set_symm_algorithm(crypto::AES_256);
-  co.set_hash_algorithm(crypto::SHA_512);
-
-  client_pub_key_sig = co.AsymSign(client_pub_key, "", client_priv_key,
-                                   crypto::STRING_STRING);
-  client_pmid = co.Hash(client_pub_key + client_pub_key_sig, "",
-                        crypto::STRING_STRING, false);
-  vlt_pub_key_sig = co.AsymSign(vlt_pub_key, "", vlt_priv_key,
-                                crypto::STRING_STRING);
-  vlt_pmid = co.Hash(vlt_pub_key + vlt_pub_key_sig, "", crypto::STRING_STRING,
-                     false);
-
-  EXPECT_CALL(mock_vault_service_logic_,
-              AmendRemoteAccount(testing::_, testing::_, testing::_,
-                                 testing::_))
-      .Times(testing::AtLeast(2))
-      .WillRepeatedly(testing::WithArg<2>(testing::Invoke(
-          boost::bind(&mock_vsl::RunVaultCallback, kSuccess, _1))));
-
-  std::string chunk_data("This is a data chunk");
-  std::string chunk_name(co.Hash(chunk_data, "", crypto::STRING_STRING, false));
-  boost::uint64_t chunk_size(chunk_data.size());
-
-  size_sig = co.AsymSign(boost::lexical_cast<std::string>(chunk_size), "",
-                         client_priv_key, crypto::STRING_STRING);
-
-  TestCallback cb_obj;
-
-  boost::uint64_t space_offered = chunk_size * 3 / 2;
-
-  maidsafe::SignedSize *signed_size;
-
-  maidsafe::AmendAccountRequest amend_req;
-  maidsafe::AmendAccountResponse amend_resp;
-  signed_size = amend_req.mutable_signed_size();
-  signed_size->set_data_size(space_offered);
-  signed_size->set_signature(co.AsymSign(base::itos_ull(space_offered), "",
-                             client_priv_key, crypto::STRING_STRING));
-  signed_size->set_pmid(client_pmid);
-  signed_size->set_public_key(client_pub_key);
-  signed_size->set_public_key_signature(client_pub_key_sig);
-  amend_req.set_amendment_type(maidsafe::AmendAccountRequest::kSpaceOffered);
-  amend_req.set_account_pmid(client_pmid);
-  amend_req.set_chunkname(chunk_name);
-
-  // Create the account first
-  {
-    google::protobuf::Closure *done =
-        google::protobuf::NewCallback<TestCallback>
-        (&cb_obj, &TestCallback::CallbackFunction);
-    vault_service_->AmendAccount(&controller, &amend_req, &amend_resp, done);
-    ASSERT_TRUE(amend_resp.IsInitialized());
-    ASSERT_EQ(kAck, static_cast<int>(amend_resp.result()));
-    amend_resp.Clear();
-  }
-
-  for (int i = 0; i <= 3; ++i) {
-    switch (i) {
-      case 0:  // empty request
-        break;
-      case 1:  // unsigned request
-        signed_size = request.mutable_signed_size();
-        signed_size->set_data_size(chunk_size);
-        signed_size->set_signature(size_sig);
-        signed_size->set_pmid(client_pmid);
-        signed_size->set_public_key(client_pub_key);
-        signed_size->set_public_key_signature(client_pub_key_sig);
-        request.set_chunkname(chunk_name);
-        request.set_request_signature("fail");
-        break;
-      case 2:  // unsigned size
-        request.set_request_signature(co.AsymSign(co.Hash(client_pub_key_sig +
-            chunk_name + vault_pmid_, "", crypto::STRING_STRING, false),
-            "", client_priv_key, crypto::STRING_STRING));
-        signed_size->set_signature("fail");
-        break;
-      case 3:  // zero size
-        signed_size->set_data_size(0);
-        signed_size->set_signature(co.AsymSign("0", "", client_priv_key,
-                                   crypto::STRING_STRING));
-        break;
-    }
-
-    google::protobuf::Closure *done =
-        google::protobuf::NewCallback<TestCallback>(&cb_obj,
-        &TestCallback::CallbackFunction);
-    vault_service_->AddToWatchList(&controller, &request, &response, done);
-    EXPECT_TRUE(response.IsInitialized());
-    EXPECT_NE(kAck, static_cast<int>(response.result()));
-    response.Clear();
-  }
-
-  signed_size->set_data_size(chunk_size);
-  signed_size->set_signature(size_sig);
-
-  maidsafe::AccountStatusRequest asreq;
-  asreq.set_account_pmid(client_pmid);
-  asreq.set_public_key(client_pub_key);
-  asreq.set_public_key_signature(client_pub_key_sig);
-  asreq.set_request_signature(co.AsymSign(co.Hash(client_pub_key_sig +
-      co.Hash(client_pmid + kAccount, "", crypto::STRING_STRING, false) +
-      vault_pmid_, "", crypto::STRING_STRING, false), "", client_priv_key,
-      crypto::STRING_STRING));
-
-  // SpaceTaken should be 0
-  {
-    maidsafe::AccountStatusResponse asrsp;
-    google::protobuf::Closure *done =
-        google::protobuf::NewCallback<TestCallback>(&cb_obj,
-        &TestCallback::CallbackFunction);
-    vault_service_->AccountStatus(&controller, &asreq, &asrsp, done);
-    EXPECT_TRUE(asrsp.IsInitialized());
-    EXPECT_EQ(boost::uint64_t(0), asrsp.space_taken());
-  }
-
-  // add to watch list as first
-  {
-    google::protobuf::Closure *done =
-        google::protobuf::NewCallback<TestCallback>(&cb_obj,
-        &TestCallback::CallbackFunction);
-    vault_service_->AddToWatchList(&controller, &request, &response, done);
-    EXPECT_TRUE(response.IsInitialized());
-    EXPECT_EQ(kAck, static_cast<int>(response.result()));
-    response.Clear();
-  }
-
-  // wait for amendments by the chunk info holder
-  vault_service_->thread_pool_.waitForDone();
-
-  // SpaceTaken should be none, because we don't have credits
-  {
-    maidsafe::AccountStatusResponse asrsp;
-    google::protobuf::Closure *done =
-        google::protobuf::NewCallback<TestCallback>(&cb_obj,
-        &TestCallback::CallbackFunction);
-    vault_service_->AccountStatus(&controller, &asreq, &asrsp, done);
-    EXPECT_TRUE(asrsp.IsInitialized());
-    EXPECT_EQ(boost::uint64_t(0), asrsp.space_taken());
-  }
-
-  // create the account
-  {
-    maidsafe::AmendAccountRequest aa_req;
-    maidsafe::AmendAccountResponse aa_rsp;
-    google::protobuf::Closure *done =
-        google::protobuf::NewCallback<TestCallback>(&cb_obj,
-        &TestCallback::CallbackFunction);
-    signed_size = aa_req.mutable_signed_size();
-    signed_size->set_data_size(chunk_size * kMinChunkCopies * 2);
-    std::string ser_size(base::itos_ull(signed_size->data_size()));
-    signed_size->set_signature(co.AsymSign(ser_size, "", client_priv_key,
-                               crypto::STRING_STRING));
-    signed_size->set_pmid(client_pmid);
-    signed_size->set_public_key(client_pub_key);
-    signed_size->set_public_key_signature(client_pub_key_sig);
-    aa_req.set_amendment_type(maidsafe::AmendAccountRequest::kSpaceOffered);
-    aa_req.set_account_pmid(client_pmid);
-    vault_service_->AmendAccount(&controller, &aa_req, &aa_rsp, done);
-    ASSERT_TRUE(aa_rsp.IsInitialized());
-    ASSERT_EQ(kAck, static_cast<int>(aa_rsp.result()));
-  }
-
-  // add to watch list as first, second try
-  {
-    google::protobuf::Closure *done =
-        google::protobuf::NewCallback<TestCallback>(&cb_obj,
-        &TestCallback::CallbackFunction);
-    vault_service_->AddToWatchList(&controller, &request, &response, done);
-    EXPECT_TRUE(response.IsInitialized());
-    EXPECT_EQ(kAck, static_cast<int>(response.result()));
-    response.Clear();
-  }
-
-  // wait for amendments by the chunk info holder
-  vault_service_->thread_pool_.waitForDone();
-
-  // SpaceTaken should be four times the chunk size
-  {
-    maidsafe::AccountStatusResponse asrsp;
-    google::protobuf::Closure *done =
-        google::protobuf::NewCallback<TestCallback>(&cb_obj,
-        &TestCallback::CallbackFunction);
-    vault_service_->AccountStatus(&controller, &asreq, &asrsp, done);
-    EXPECT_TRUE(asrsp.IsInitialized());
-    EXPECT_EQ(kMinChunkCopies * chunk_size, asrsp.space_taken());
-  }
+TEST_F(VaultServicesTest, DISABLED_BEH_MAID_GetSyncData) {
+  // TODO(Team#) test GetSyncDate
+  ASSERT_TRUE(false) << "NOT IMPLEMENTED";
 }
 
-TEST_F(MockVaultServicesTest, FUNC_MAID_ServicesRemoveFromWatchList) {
-  delete vault_service_;
-  vault_service_ = new VaultService(vault_pmid_, vault_public_key_,
-                                    vault_private_key_,
-                                    vault_public_key_signature_,
-                                    vault_chunkstore_, knode_.get(),
-                                    &mock_vault_service_logic_,
-                                    udt_transport_.GetID());
-
-  maidsafe::GetSyncDataResponse get_sync_data_response;
-  vault_service_->AddStartupSyncData(get_sync_data_response);
-
-  rpcprotocol::Controller controller;
-  maidsafe::AddToWatchListRequest add_request;
-  maidsafe::AddToWatchListResponse add_response;
-  maidsafe::RemoveFromWatchListRequest rem_request;
-  maidsafe::RemoveFromWatchListResponse rem_response;
-
-  crypto::Crypto co;
-  co.set_symm_algorithm(crypto::AES_256);
-  co.set_hash_algorithm(crypto::SHA_512);
-
-  EXPECT_CALL(mock_vault_service_logic_,
-              AmendRemoteAccount(testing::_, testing::_, testing::_,
-                                 testing::_))
-      .Times(testing::AtLeast(kMinChunkCopies + 1))
-      .WillRepeatedly(testing::WithArg<2>(testing::Invoke(
-          boost::bind(&mock_vsl::RunVaultCallback, kSuccess, _1))));
-
-  std::string chunk_data("This is a data chunk");
-  std::string chunk_name(co.Hash(chunk_data, "", crypto::STRING_STRING, false));
-  boost::uint64_t chunk_size(chunk_data.size());
-
-  std::string client_pub_key[kMinChunkCopies + 1];
-  std::string client_priv_key[kMinChunkCopies + 1];
-  std::string client_pmid[kMinChunkCopies + 1];
-  std::string client_pub_key_sig[kMinChunkCopies + 1];
-  maidsafe::AccountStatusRequest client_asreq[kMinChunkCopies + 1];
-
-  maidsafe::SignedSize *signed_size;
-  TestCallback cb_obj;
-
-  // initialise 5 clients and add them to the Watch List
-  for (int i = 0; i < kMinChunkCopies + 1; ++i) {
-    printf("Initialising client %d of %d...\n", i + 1, kMinChunkCopies + 1);
-    CreateRSAKeys(&client_pub_key[i], &client_priv_key[i]);
-    client_pub_key_sig[i] = co.AsymSign(client_pub_key[i], "",
-                                        client_priv_key[i],
-                                        crypto::STRING_STRING);
-    client_pmid[i] = co.Hash(client_pub_key[i] + client_pub_key_sig[i], "",
-                             crypto::STRING_STRING, false);
-
-    signed_size = add_request.mutable_signed_size();
-    signed_size->set_data_size(chunk_size);
-    signed_size->set_signature(co.AsymSign(boost::lexical_cast<std::string>
-        (chunk_size), "", client_priv_key[i], crypto::STRING_STRING));
-    signed_size->set_pmid(client_pmid[i]);
-    signed_size->set_public_key(client_pub_key[i]);
-    signed_size->set_public_key_signature(client_pub_key_sig[i]);
-
-    add_request.set_chunkname(chunk_name);
-    add_request.set_request_signature(co.AsymSign(co.Hash(client_pub_key_sig[i]
-        + chunk_name + vault_pmid_, "", crypto::STRING_STRING, false), "",
-        client_priv_key[i], crypto::STRING_STRING));
-
-    client_asreq[i].set_account_pmid(client_pmid[i]);
-    client_asreq[i].set_public_key(client_pub_key[i]);
-    client_asreq[i].set_public_key_signature(client_pub_key_sig[i]);
-    client_asreq[i].set_request_signature(co.AsymSign(co.Hash(
-        client_pub_key_sig[i] + co.Hash(client_pmid[i] + kAccount, "",
-        crypto::STRING_STRING, false) + vault_pmid_, "", crypto::STRING_STRING,
-        false), "", client_priv_key[i], crypto::STRING_STRING));
-
-    // create #i's account
-    {
-      maidsafe::AmendAccountRequest aa_req;
-      maidsafe::AmendAccountResponse aa_rsp;
-      google::protobuf::Closure *done =
-          google::protobuf::NewCallback<TestCallback>(&cb_obj,
-          &TestCallback::CallbackFunction);
-      signed_size = aa_req.mutable_signed_size();
-      signed_size->set_data_size(chunk_size * kMinChunkCopies * 2);
-      std::string ser_size(base::itos_ull(signed_size->data_size()));
-      signed_size->set_signature(co.AsymSign(ser_size, "", client_priv_key[i],
-                                 crypto::STRING_STRING));
-      signed_size->set_pmid(client_pmid[i]);
-      signed_size->set_public_key(client_pub_key[i]);
-      signed_size->set_public_key_signature(client_pub_key_sig[i]);
-      aa_req.set_amendment_type(maidsafe::AmendAccountRequest::kSpaceOffered);
-      aa_req.set_account_pmid(client_pmid[i]);
-      vault_service_->AmendAccount(&controller, &aa_req, &aa_rsp, done);
-      ASSERT_TRUE(aa_rsp.IsInitialized());
-      ASSERT_EQ(kAck, static_cast<int>(aa_rsp.result()));
-    }
-
-    // add #i to Watch List
-    {
-      google::protobuf::Closure *done =
-          google::protobuf::NewCallback<TestCallback>(&cb_obj,
-          &TestCallback::CallbackFunction);
-      add_response.Clear();
-      vault_service_->AddToWatchList(&controller, &add_request, &add_response,
-                                     done);
-      EXPECT_TRUE(add_response.IsInitialized());
-      EXPECT_EQ(kAck, static_cast<int>(add_response.result()));
-    }
-
-    // wait for amendments by the chunk info holder
-    vault_service_->thread_pool_.waitForDone();
-
-    // simulate uploaded chunk for #i
-    if (add_response.upload_count() > 0) {
-      maidsafe::AddToReferenceListRequest add_ref_request;
-      maidsafe::AddToReferenceListResponse add_ref_response;
-
-      maidsafe::StoreContract *sc = add_ref_request.mutable_store_contract();
-      maidsafe::StoreContract::InnerContract *ic = sc->mutable_inner_contract();
-      maidsafe::SignedSize *sz = ic->mutable_signed_size();
-
-      sz->set_data_size(chunk_size);
-      sz->set_signature(co.AsymSign(boost::lexical_cast<std::string>
-          (chunk_size), "", client_priv_key[i], crypto::STRING_STRING));
-      sz->set_pmid(client_pmid[i]);
-      sz->set_public_key(client_pub_key[i]);
-      sz->set_public_key_signature(client_pub_key_sig[i]);
-
-      ic->set_result(kAck);
-
-      sc->set_signature(co.AsymSign(ic->SerializeAsString(), "",
-                                    vault_private_key_, crypto::STRING_STRING));
-      sc->set_pmid(vault_pmid_);
-      sc->set_public_key(vault_public_key_);
-      sc->set_public_key_signature(vault_public_key_signature_);
-
-      add_ref_request.set_chunkname(chunk_name);
-      add_ref_request.set_request_signature(co.AsymSign(co.Hash(
-          vault_public_key_signature_+ chunk_name + vault_pmid_, "",
-          crypto::STRING_STRING, false), "", vault_private_key_,
-          crypto::STRING_STRING));
-
-      google::protobuf::Closure *done =
-          google::protobuf::NewCallback<TestCallback>(&cb_obj,
-          &TestCallback::CallbackFunction);
-      vault_service_->AddToReferenceList(&controller, &add_ref_request,
-                                         &add_ref_response, done);
-      EXPECT_TRUE(add_ref_response.IsInitialized());
-      EXPECT_EQ(kAck, static_cast<int>(add_ref_response.result()));
-    }
-
-    // wait for amendments by the chunk info holder
-    vault_service_->thread_pool_.waitForDone();
-
-    // check SpaceTaken for #i except #0
-    if (i > 0) {
-      maidsafe::AccountStatusResponse asrsp;
-      google::protobuf::Closure *done =
-          google::protobuf::NewCallback<TestCallback>(&cb_obj,
-          &TestCallback::CallbackFunction);
-      vault_service_->AccountStatus(&controller, &client_asreq[i], &asrsp,
-                                    done);
-      EXPECT_TRUE(asrsp.IsInitialized());
-      EXPECT_EQ(chunk_size, asrsp.space_taken());
-    }
-
-    // check SpaceTaken for #0
-    {
-      maidsafe::AccountStatusResponse asrsp;
-      google::protobuf::Closure *done =
-          google::protobuf::NewCallback<TestCallback>(&cb_obj,
-          &TestCallback::CallbackFunction);
-      vault_service_->AccountStatus(&controller, &client_asreq[0], &asrsp,
-                                    done);
-      EXPECT_TRUE(asrsp.IsInitialized());
-      if (i <= kMinChunkCopies - 1)
-        EXPECT_EQ((kMinChunkCopies - i) * chunk_size, asrsp.space_taken());
-      else
-        EXPECT_EQ(chunk_size, asrsp.space_taken());
-    }
-  }
-
-  rem_request.set_chunkname(chunk_name);
-  rem_request.set_pmid(client_pmid[0]);
-  rem_request.set_public_key(client_pub_key[0]);
-  rem_request.set_public_key_signature(client_pub_key_sig[0]);
-  rem_request.set_request_signature("fail");
-
-  // invalid removal request only for the first client
-  {
-    google::protobuf::Closure *done =
-        google::protobuf::NewCallback<TestCallback>(&cb_obj,
-        &TestCallback::CallbackFunction);
-    vault_service_->RemoveFromWatchList(&controller, &rem_request,
-                                        &rem_response, done);
-    EXPECT_TRUE(rem_response.IsInitialized());
-    EXPECT_NE(kAck, static_cast<int>(rem_response.result()));
-    rem_response.Clear();
-  }
-
-  // now remove all, from last to first
-  for (int i = kMinChunkCopies; i >= 0; --i) {
-    rem_request.set_pmid(client_pmid[i]);
-    rem_request.set_public_key(client_pub_key[i]);
-    rem_request.set_public_key_signature(client_pub_key_sig[i]);
-    rem_request.set_request_signature(co.AsymSign(co.Hash(client_pub_key_sig[i]
-        + chunk_name + vault_pmid_, "", crypto::STRING_STRING, false), "",
-        client_priv_key[i], crypto::STRING_STRING));
-
-    // remove #i from Watch List
-    {
-      google::protobuf::Closure *done =
-          google::protobuf::NewCallback<TestCallback>(&cb_obj,
-          &TestCallback::CallbackFunction);
-      vault_service_->RemoveFromWatchList(&controller, &rem_request,
-                                          &rem_response, done);
-      EXPECT_TRUE(rem_response.IsInitialized());
-      EXPECT_EQ(kAck, static_cast<int>(rem_response.result()));
-      rem_response.Clear();
-    }
-
-    // wait for amendments by the chunk info holder
-    vault_service_->thread_pool_.waitForDone();
-
-    // check SpaceTaken for #i
-    {
-      maidsafe::AccountStatusResponse asrsp;
-      google::protobuf::Closure *done =
-          google::protobuf::NewCallback<TestCallback>(&cb_obj,
-          &TestCallback::CallbackFunction);
-      vault_service_->AccountStatus(&controller, &client_asreq[i], &asrsp,
-                                    done);
-      EXPECT_TRUE(asrsp.IsInitialized());
-      if (i == 0 || i == kMinChunkCopies)
-        EXPECT_EQ(boost::uint64_t(0), asrsp.space_taken());
-      else
-        EXPECT_EQ(chunk_size, asrsp.space_taken());
-    }
-  }
+TEST_F(VaultServicesTest, DISABLED_BEH_MAID_GetAccount) {
+  // TODO(Team#) test GetAccount
+  ASSERT_TRUE(false) << "NOT IMPLEMENTED";
 }
 
-TEST_F(MockVaultServicesTest, BEH_MAID_ServicesAddToReferenceList) {
-  delete vault_service_;
-  vault_service_ = new VaultService(vault_pmid_, vault_public_key_,
-                                    vault_private_key_,
-                                    vault_public_key_signature_,
-                                    vault_chunkstore_, knode_.get(),
-                                    &mock_vault_service_logic_,
-                                    udt_transport_.GetID());
-
-  maidsafe::GetSyncDataResponse get_sync_data_response;
-  vault_service_->AddStartupSyncData(get_sync_data_response);
-
-  rpcprotocol::Controller controller;
-  maidsafe::AddToReferenceListRequest request;
-  maidsafe::AddToReferenceListResponse response;
-
-  maidsafe::SignedSize *signed_size = NULL;
-  maidsafe::StoreContract *store_contract = NULL;
-  maidsafe::StoreContract::InnerContract *inner_contract = NULL;
-
-  // client = node requesting to store a chunk
-  // vlt = Vault storing the chunk
-  // vault_service_ = this vault, i.e. the Chunk Info and Account Holder
-
-  std::string client_pub_key, client_priv_key, client_pmid, client_pub_key_sig;
-  std::string vlt_pub_key, vlt_priv_key, vlt_pmid, vlt_pub_key_sig;
-  std::string size_sig;
-
-  CreateRSAKeys(&client_pub_key, &client_priv_key);
-  CreateRSAKeys(&vlt_pub_key, &vlt_priv_key);
-  crypto::Crypto co;
-  co.set_symm_algorithm(crypto::AES_256);
-  co.set_hash_algorithm(crypto::SHA_512);
-
-  client_pub_key_sig = co.AsymSign(client_pub_key, "", client_priv_key,
-                                   crypto::STRING_STRING);
-  client_pmid = co.Hash(client_pub_key + client_pub_key_sig, "",
-                        crypto::STRING_STRING, false);
-  vlt_pub_key_sig = co.AsymSign(vlt_pub_key, "", vlt_priv_key,
-                                crypto::STRING_STRING);
-  vlt_pmid = co.Hash(vlt_pub_key + vlt_pub_key_sig, "", crypto::STRING_STRING,
-                     false);
-
-  EXPECT_CALL(mock_vault_service_logic_,
-              AmendRemoteAccount(testing::_, testing::_, testing::_,
-                                 testing::_))
-      .Times(testing::AtLeast(2))
-      .WillRepeatedly(testing::WithArg<2>(testing::Invoke(
-          boost::bind(&mock_vsl::RunVaultCallback, kSuccess, _1))));
-
-  std::string chunk_data("This is a data chunk");
-  std::string chunk_name(co.Hash(chunk_data, "", crypto::STRING_STRING, false));
-  boost::uint64_t chunk_size(chunk_data.size());
-
-  size_sig = co.AsymSign(boost::lexical_cast<std::string>(chunk_size), "",
-                         client_priv_key, crypto::STRING_STRING);
-
-  TestCallback cb_obj;
-
-  for (int i = 0; i <= 7; ++i) {
-    printf("\n--- CASE #%i --- \n", i);
-    switch (i) {
-      case 0:  // empty request
-        break;
-      case 1:  // unsigned request
-        store_contract = request.mutable_store_contract();
-        inner_contract = store_contract->mutable_inner_contract();
-        signed_size = inner_contract->mutable_signed_size();
-        signed_size->set_data_size(chunk_size);
-        signed_size->set_signature(size_sig);
-        signed_size->set_pmid(client_pmid);
-        signed_size->set_public_key(client_pub_key);
-        signed_size->set_public_key_signature(client_pub_key_sig);
-        inner_contract->set_result(kAck);
-        store_contract->set_signature(co.AsymSign(
-            inner_contract->SerializeAsString(), "", vlt_priv_key,
-            crypto::STRING_STRING));
-        store_contract->set_pmid(vlt_pmid);
-        store_contract->set_public_key(vlt_pub_key);
-        store_contract->set_public_key_signature(vlt_pub_key_sig);
-
-        request.set_chunkname(chunk_name);
-        request.set_request_signature("fail");
-        break;
-      case 2:  // unsigned contract
-        store_contract->set_signature("fail");
-        request.set_request_signature(co.AsymSign(co.Hash(vlt_pub_key_sig +
-            chunk_name + vault_pmid_, "", crypto::STRING_STRING, false),
-            "", vlt_priv_key, crypto::STRING_STRING));
-        break;
-      case 3:  // unsigned size
-        signed_size->set_signature("fail");
-        store_contract->set_signature(co.AsymSign(
-            inner_contract->SerializeAsString(), "", vlt_priv_key,
-            crypto::STRING_STRING));
-        break;
-      case 4:  // zero size
-        signed_size->set_data_size(0);
-        signed_size->set_signature(co.AsymSign("0", "", client_priv_key,
-                                   crypto::STRING_STRING));
-        store_contract->set_signature(co.AsymSign(
-            inner_contract->SerializeAsString(), "", vlt_priv_key,
-            crypto::STRING_STRING));
-        break;
-      case 5:  // rejected contract
-        signed_size->set_data_size(chunk_size);
-        signed_size->set_signature(size_sig);
-        inner_contract->set_result(kNack);
-        store_contract->set_signature(co.AsymSign(
-            inner_contract->SerializeAsString(), "", vlt_priv_key,
-            crypto::STRING_STRING));
-        break;
-      case 6:  // invalid chunk name
-        inner_contract->set_result(kAck);
-        store_contract->set_signature(co.AsymSign(
-            inner_contract->SerializeAsString(), "", vlt_priv_key,
-            crypto::STRING_STRING));
-        request.set_chunkname("fail");
-        request.set_request_signature(co.AsymSign(co.Hash(vlt_pub_key_sig +
-            "fail" + vault_pmid_, "", crypto::STRING_STRING, false), "",
-            vlt_priv_key, crypto::STRING_STRING));
-        break;
-      case 7:  // non-existing watchlist
-        request.set_chunkname(chunk_name);
-        request.set_request_signature(co.AsymSign(co.Hash(vlt_pub_key_sig +
-            chunk_name + vault_pmid_, "", crypto::STRING_STRING, false), "",
-            vlt_priv_key, crypto::STRING_STRING));
-        break;
-    }
-
-    google::protobuf::Closure *done =
-        google::protobuf::NewCallback<TestCallback>(&cb_obj,
-        &TestCallback::CallbackFunction);
-    vault_service_->AddToReferenceList(&controller, &request, &response, done);
-    EXPECT_TRUE(response.IsInitialized());
-    EXPECT_NE(kAck, static_cast<int>(response.result()));
-    response.Clear();
-  }
-
-  maidsafe::AccountStatusRequest asreq;
-  asreq.set_account_pmid(vlt_pmid);
-  asreq.set_public_key(vlt_pub_key);
-  asreq.set_public_key_signature(vlt_pub_key_sig);
-  asreq.set_request_signature(co.AsymSign(co.Hash(vlt_pub_key_sig +
-      co.Hash(vlt_pmid + kAccount, "", crypto::STRING_STRING, false) +
-      vault_pmid_, "", crypto::STRING_STRING, false), "", vlt_priv_key,
-      crypto::STRING_STRING));
-
-  // SpaceGiven should be 0
-  {
-    maidsafe::AccountStatusResponse asrsp;
-    google::protobuf::Closure *done =
-        google::protobuf::NewCallback<TestCallback>(&cb_obj,
-        &TestCallback::CallbackFunction);
-    vault_service_->AccountStatus(&controller, &asreq, &asrsp, done);
-    EXPECT_TRUE(asrsp.IsInitialized());
-    EXPECT_EQ(boost::uint64_t(0), asrsp.space_given());
-  }
-
-  // create client's account
-  {
-    maidsafe::AmendAccountRequest aa_req;
-    maidsafe::AmendAccountResponse aa_rsp;
-    google::protobuf::Closure *done =
-        google::protobuf::NewCallback<TestCallback>(&cb_obj,
-        &TestCallback::CallbackFunction);
-    signed_size = aa_req.mutable_signed_size();
-    signed_size->set_data_size(chunk_size * kMinChunkCopies);
-    std::string ser_size(base::itos_ull(signed_size->data_size()));
-    signed_size->set_signature(co.AsymSign(ser_size, "", client_priv_key,
-                               crypto::STRING_STRING));
-    signed_size->set_pmid(client_pmid);
-    signed_size->set_public_key(client_pub_key);
-    signed_size->set_public_key_signature(client_pub_key_sig);
-    aa_req.set_amendment_type(maidsafe::AmendAccountRequest::kSpaceOffered);
-    aa_req.set_account_pmid(client_pmid);
-    vault_service_->AmendAccount(&controller, &aa_req, &aa_rsp, done);
-    ASSERT_TRUE(aa_rsp.IsInitialized());
-    ASSERT_EQ(kAck, static_cast<int>(aa_rsp.result()));
-  }
-
-  // create vault's account
-  {
-    maidsafe::AmendAccountRequest aa_req;
-    maidsafe::AmendAccountResponse aa_rsp;
-    google::protobuf::Closure *done =
-        google::protobuf::NewCallback<TestCallback>(&cb_obj,
-        &TestCallback::CallbackFunction);
-    signed_size = aa_req.mutable_signed_size();
-    signed_size->set_data_size(chunk_size * kMinChunkCopies);
-    std::string ser_size(base::itos_ull(signed_size->data_size()));
-    signed_size->set_signature(co.AsymSign(ser_size, "", vlt_priv_key,
-                               crypto::STRING_STRING));
-    signed_size->set_pmid(vlt_pmid);
-    signed_size->set_public_key(vlt_pub_key);
-    signed_size->set_public_key_signature(vlt_pub_key_sig);
-    aa_req.set_amendment_type(maidsafe::AmendAccountRequest::kSpaceOffered);
-    aa_req.set_account_pmid(vlt_pmid);
-    vault_service_->AmendAccount(&controller, &aa_req, &aa_rsp, done);
-    ASSERT_TRUE(aa_rsp.IsInitialized());
-    ASSERT_EQ(kAck, static_cast<int>(aa_rsp.result()));
-  }
-
-  // add client to Watch List
-  {
-    maidsafe::AddToWatchListRequest add_request;
-    maidsafe::AddToWatchListResponse add_response;
-
-    signed_size = add_request.mutable_signed_size();
-    signed_size->set_data_size(chunk_size);
-    signed_size->set_signature(co.AsymSign(boost::lexical_cast<std::string>
-        (chunk_size), "", client_priv_key, crypto::STRING_STRING));
-    signed_size->set_pmid(client_pmid);
-    signed_size->set_public_key(client_pub_key);
-    signed_size->set_public_key_signature(client_pub_key_sig);
-
-    add_request.set_chunkname(chunk_name);
-    add_request.set_request_signature(co.AsymSign(co.Hash(client_pub_key_sig
-        + chunk_name + vault_pmid_, "", crypto::STRING_STRING, false), "",
-        client_priv_key, crypto::STRING_STRING));
-
-    google::protobuf::Closure *done =
-        google::protobuf::NewCallback<TestCallback>(&cb_obj,
-        &TestCallback::CallbackFunction);
-    vault_service_->AddToWatchList(&controller, &add_request, &add_response,
-                                   done);
-    EXPECT_TRUE(add_response.IsInitialized());
-    EXPECT_EQ(kAck, static_cast<int>(add_response.result()));
-  }
-
-  // add vault to Reference List
-  {
-    google::protobuf::Closure *done =
-        google::protobuf::NewCallback<TestCallback>(&cb_obj,
-        &TestCallback::CallbackFunction);
-    vault_service_->AddToReferenceList(&controller, &request, &response, done);
-    EXPECT_TRUE(response.IsInitialized());
-    EXPECT_EQ(kAck, static_cast<int>(response.result()));
-    response.Clear();
-  }
-
-  // wait for amendments by the chunk info holder
-  vault_service_->thread_pool_.waitForDone();
-
-  // SpaceGiven should be the chunk size
-  {
-    maidsafe::AccountStatusResponse asrsp;
-    google::protobuf::Closure *done =
-        google::protobuf::NewCallback<TestCallback>(&cb_obj,
-        &TestCallback::CallbackFunction);
-    vault_service_->AccountStatus(&controller, &asreq, &asrsp, done);
-    EXPECT_TRUE(asrsp.IsInitialized());
-    EXPECT_EQ(chunk_size, asrsp.space_given());
-  }
+TEST_F(VaultServicesTest, DISABLED_BEH_MAID_GetChunkInfo) {
+  // TODO(Team#) test GetChunkInfo
+  ASSERT_TRUE(false) << "NOT IMPLEMENTED";
 }
 
-TEST_F(MockVaultServicesTest, DISABLED_FUNC_MAID_ServicesRemoveFromReferenceList) {  // NOLINT(Fraser) - will be fixed once "DISABLED_" is removed.
-  delete vault_service_;
-  vault_service_ = new VaultService(vault_pmid_, vault_public_key_,
-                                    vault_private_key_,
-                                    vault_public_key_signature_,
-                                    vault_chunkstore_, knode_.get(),
-                                    &mock_vault_service_logic_,
-                                    udt_transport_.GetID());
-
-  maidsafe::GetSyncDataResponse get_sync_data_response;
-  vault_service_->AddStartupSyncData(get_sync_data_response);
-
-  ASSERT_TRUE(false) << "-- NOT IMPLEMENTED --";
-  /*
-  rpcprotocol::Controller controller;
-  maidsafe::AddToReferenceListRequest add_request;
-  maidsafe::AddToReferenceListResponse add_response;
-  maidsafe::RemoveFromReferenceListRequest rem_request;
-  maidsafe::RemoveFromReferenceListResponse rem_response;
-
-  maidsafe::SignedSize *signed_size;
-  maidsafe::StoreContract *store_contract;
-  maidsafe::StoreContract::InnerContract *inner_contract;
-
-  // client = node requesting to store a chunk, or the Watch List Holder
-  // vlt = Vault storing the chunk
-  // vault_service_ = this vault, i.e. the Reference List Holder
-
-  std::string client_pub_key, client_priv_key, client_pmid, client_pub_key_sig;
-  std::string vlt_pub_key, vlt_priv_key, vlt_pmid, vlt_pub_key_sig;
-  std::string size_sig;
-
-  CreateRSAKeys(&client_pub_key, &client_priv_key);
-  CreateRSAKeys(&vlt_pub_key, &vlt_priv_key);
-  crypto::Crypto co;
-  co.set_symm_algorithm(crypto::AES_256);
-  co.set_hash_algorithm(crypto::SHA_512);
-
-  client_pub_key_sig = co.AsymSign(client_pub_key, "", client_priv_key,
-                                   crypto::STRING_STRING);
-  client_pmid = co.Hash(client_pub_key + client_pub_key_sig, "",
-                        crypto::STRING_STRING, false);
-  vlt_pub_key_sig = co.AsymSign(vlt_pub_key, "", vlt_priv_key,
-                                crypto::STRING_STRING);
-  vlt_pmid = co.Hash(vlt_pub_key + vlt_pub_key_sig, "", crypto::STRING_STRING,
-                     false);
-
-  std::string chunk_data("This is a data chunk");
-  std::string chunk_name(co.Hash(chunk_data, "", crypto::STRING_STRING, false));
-  boost::uint64_t chunk_size(chunk_data.size());
-
-  size_sig = co.AsymSign(boost::lexical_cast<std::string>(chunk_size), "",
-                         client_priv_key, crypto::STRING_STRING);
-
-  TestCallback cb_obj;
-
-  store_contract = add_request.mutable_store_contract();
-  inner_contract = store_contract->mutable_inner_contract();
-  signed_size = inner_contract->mutable_signed_size();
-  signed_size->set_data_size(chunk_size);
-  signed_size->set_signature(size_sig);
-  signed_size->set_pmid(client_pmid);
-  signed_size->set_public_key(client_pub_key);
-  signed_size->set_public_key_signature(client_pub_key_sig);
-  inner_contract->set_result(kAck);
-  store_contract->set_signature(co.AsymSign(
-      inner_contract->SerializeAsString(), "", vlt_priv_key,
-      crypto::STRING_STRING));
-  store_contract->set_pmid(vlt_pmid);
-  store_contract->set_public_key(vlt_pub_key);
-  store_contract->set_public_key_signature(vlt_pub_key_sig);
-  add_request.set_chunkname(chunk_name);
-  add_request.set_request_signature(co.AsymSign(co.Hash(vlt_pub_key_sig +
-      chunk_name + vault_pmid_, "", crypto::STRING_STRING, false), "",
-      vlt_priv_key, crypto::STRING_STRING));
-
-  // add to ref list first
-  {
-    google::protobuf::Closure *done =
-        google::protobuf::NewCallback<TestCallback>(&cb_obj,
-        &TestCallback::CallbackFunction);
-    vault_service_->AddToReferenceList(&controller, &add_request, &add_response,
-                                       done);
-    EXPECT_TRUE(add_response.IsInitialized());
-    EXPECT_EQ(kAck, static_cast<int>(add_response.result()));
-    add_response.Clear();
-  }
-
-  // invalid requests to remove from ref list
-  for (int i = 0; i <= 5; ++i) {
-    switch (i) {
-      case 0:  // empty request
-        break;
-      case 1:  // unsigned request
-        signed_size = rem_request.mutable_signed_size();
-        signed_size->set_data_size(chunk_size);
-        signed_size->set_signature(size_sig);
-        signed_size->set_pmid(client_pmid);
-        signed_size->set_public_key(client_pub_key);
-        signed_size->set_public_key_signature(client_pub_key_sig);
-        rem_request.set_pmid(vlt_pmid);
-        rem_request.set_public_key(vlt_pub_key);
-        rem_request.set_public_key_signature(vlt_pub_key_sig);
-        rem_request.set_chunkname(chunk_name);
-        rem_request.set_request_signature("fail");
-        break;
-      case 2:  // unsigned size
-        rem_request.set_request_signature(co.AsymSign(co.Hash(vlt_pub_key_sig +
-            chunk_name + vault_pmid_, "", crypto::STRING_STRING, false), "",
-            vlt_priv_key, crypto::STRING_STRING));
-        signed_size->set_signature("fail");
-        break;
-      case 3:  // zero size
-        signed_size->set_data_size(0);
-        signed_size->set_signature(co.AsymSign("0", "", client_priv_key,
-                                   crypto::STRING_STRING));
-        break;
-      case 4:  // self-signed size
-        signed_size->set_data_size(chunk_size);
-        signed_size->set_signature(co.AsymSign(boost::lexical_cast<std::string>
-            (chunk_size), "", vlt_priv_key, crypto::STRING_STRING));
-        signed_size->set_pmid(vlt_pmid);
-        signed_size->set_public_key(vlt_pub_key);
-        signed_size->set_public_key_signature(vlt_pub_key_sig);
-        break;
-      case 5:  // invalid chunk name
-        signed_size->set_signature(size_sig);
-        signed_size->set_pmid(client_pmid);
-        signed_size->set_public_key(client_pub_key);
-        signed_size->set_public_key_signature(client_pub_key_sig);
-        rem_request.set_chunkname("fail");
-        rem_request.set_request_signature(co.AsymSign(co.Hash(vlt_pub_key_sig +
-            "fail" + vault_pmid_, "", crypto::STRING_STRING, false), "",
-            vlt_priv_key, crypto::STRING_STRING));
-        break;
-    }
-
-    google::protobuf::Closure *done =
-        google::protobuf::NewCallback<TestCallback>(&cb_obj,
-        &TestCallback::CallbackFunction);
-    vault_service_->RemoveFromReferenceList(&controller, &rem_request,
-                                            &rem_response, done);
-    EXPECT_TRUE(rem_response.IsInitialized());
-    EXPECT_NE(kAck, static_cast<int>(rem_response.result()));
-    rem_response.Clear();
-  }
-
-  rem_request.set_chunkname(chunk_name);
-  rem_request.set_request_signature(co.AsymSign(co.Hash(vlt_pub_key_sig +
-      chunk_name + vault_pmid_, "", crypto::STRING_STRING, false),
-      "", vlt_priv_key, crypto::STRING_STRING));
-
-  maidsafe::AccountStatusRequest asreq;
-  asreq.set_pmid(vlt_pmid);
-  asreq.set_public_key(vlt_pub_key);
-  asreq.set_public_key_signature(vlt_pub_key_sig);
-  asreq.set_request_signature(co.AsymSign(co.Hash(vlt_pub_key_sig +
-      co.Hash(vlt_pmid + kAccount, "", crypto::STRING_STRING, false) +
-      vault_pmid_, "", crypto::STRING_STRING, false), "", vlt_priv_key,
-      crypto::STRING_STRING));
-
-  // SpaceGiven should be the chunk size
-  {
-    maidsafe::AccountStatusResponse asrsp;
-    google::protobuf::Closure *done =
-        google::protobuf::NewCallback<TestCallback>(&cb_obj,
-        &TestCallback::CallbackFunction);
-    vault_service_->AccountStatus(&controller, &asreq, &asrsp, done);
-    EXPECT_TRUE(asrsp.IsInitialized());
-    EXPECT_EQ(chunk_size, asrsp.space_given());
-  }
-
-  // remove from ref list
-  {
-    google::protobuf::Closure *done =
-        google::protobuf::NewCallback<TestCallback>(&cb_obj,
-        &TestCallback::CallbackFunction);
-    vault_service_->RemoveFromReferenceList(&controller, &rem_request,
-        &rem_response, done);
-    EXPECT_TRUE(rem_response.IsInitialized());
-    EXPECT_EQ(kAck, static_cast<int>(rem_response.result()));
-    rem_response.Clear();
-  }
-
-  // SpaceGiven should be 0
-  {
-    maidsafe::AccountStatusResponse asrsp;
-    google::protobuf::Closure *done =
-        google::protobuf::NewCallback<TestCallback>(&cb_obj,
-        &TestCallback::CallbackFunction);
-    vault_service_->AccountStatus(&controller, &asreq, &asrsp, done);
-    EXPECT_TRUE(asrsp.IsInitialized());
-    EXPECT_EQ(boost::uint64_t(0), asrsp.space_given());
-  }
-  */
-}
-
-TEST_F(VaultServicesTest, BEH_MAID_ServicesValidityCheck) {
-  rpcprotocol::Controller controller;
-  maidsafe::ValidityCheckRequest request;
-  maidsafe::ValidityCheckResponse response;
-
-  std::string pub_key, priv_key, pmid, sig_pub_key, sig_req;
-  CreateRSAKeys(&pub_key, &priv_key);
-  crypto::Crypto co;
-  co.set_symm_algorithm(crypto::AES_256);
-  co.set_hash_algorithm(crypto::SHA_512);
-  std::string content("This is a data chunk");
-  std::string rnd_data(base::RandomString(20));
-  std::string chunkname(co.Hash(content, "", crypto::STRING_STRING, false));
-  std::string vc_hash(co.Hash(content + rnd_data, "", crypto::STRING_STRING,
-                              false));
-  CreateSignedRequest(pub_key, priv_key, chunkname, &pmid, &sig_pub_key,
-                      &sig_req);
-
-  TestCallback cb_obj;
-
-  for (boost::uint32_t i = 0; i <= 1; ++i) {
-    switch (i) {
-      case 0:  // uninitialized request
-        break;
-      case 1:  // make LoadChunkLocal() fail
-        request.set_chunkname(chunkname);
-        request.set_random_data(rnd_data);
-        break;
-    }
-
-    google::protobuf::Closure *done =
-        google::protobuf::NewCallback<TestCallback>(&cb_obj,
-        &TestCallback::CallbackFunction);
-    vault_service_->ValidityCheck(&controller, &request, &response, done);
-    EXPECT_TRUE(response.IsInitialized());
-    EXPECT_NE(kAck, static_cast<int>(response.result()));
-    response.Clear();
-  }
-
-  ASSERT_TRUE(vault_service_->StoreChunkLocal(chunkname, content));
-
-  // test success
-  {
-    google::protobuf::Closure *done =
-        google::protobuf::NewCallback<TestCallback>(&cb_obj,
-        &TestCallback::CallbackFunction);
-    vault_service_->ValidityCheck(&controller, &request, &response, done);
-    EXPECT_TRUE(response.IsInitialized());
-    EXPECT_EQ(kAck, static_cast<int>(response.result()));
-    EXPECT_EQ(vc_hash, response.hash_content());
-  }
-}
-
-// TODO(Team#) implement test for VaultService::SwapChunk()
-/* TEST_F(VaultServicesTest, BEH_MAID_ServicesSwapChunk) {
-  rpcprotocol::Controller controller;
-  maidsafe::SwapChunkRequest request;
-  maidsafe::SwapChunkResponse response;
-
-  std::string pub_key, priv_key, pmid, sig_pub_key, sig_req;
-  CreateRSAKeys(&pub_key, &priv_key);
-  crypto::Crypto co;
-  co.set_symm_algorithm(crypto::AES_256);
-  co.set_hash_algorithm(crypto::SHA_512);
-  std::string content("This is a data chunk");
-  std::string chunkname(co.Hash(content, "", crypto::STRING_STRING, false));
-  CreateSignedRequest(pub_key, priv_key, chunkname, &pmid, &sig_pub_key,
-                      &sig_req);
-
-  TestCallback cb_obj;
-
-  for (boost::uint32_t i = 0; i <= 2; ++i) {
-    switch (i) {
-      case 0:  // uninitialized request
-        break;
-      case 1:  // invalid request type
-        request.set_request_type(2);
-        request.set_chunkname1(chunkname);
-        request.set_chunkcontent1(content);  // opt
-        request.set_size1(content.size());  // opt
-        // request.set_chunkcontent2( );  // opt
-        break;
-      case 2:  // make HasChunkLocal() fail
-        request.set_request_type(0);
-        break;
-      // ...
-    }
-
-    google::protobuf::Closure *done =
-        google::protobuf::NewCallback<TestCallback>(&cb_obj,
-        &TestCallback::CallbackFunction);
-    vault_service_->SwapChunk(&controller, &request, &response, done);
-    EXPECT_TRUE(response.IsInitialized());
-    EXPECT_NE(kAck, static_cast<int>(response.result()));
-    response.Clear();
-  }
-
-  // ...
-} */
-
-TEST_F(VaultServicesTest, BEH_MAID_ServicesVaultStatus) {
+TEST_F(VaultServicesTest, BEH_MAID_VaultStatus) {
   rpcprotocol::Controller controller;
   maidsafe::VaultStatusRequest request;
   maidsafe::VaultStatusResponse response;
@@ -2291,7 +2295,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesVaultStatus) {
   }
 }
 
-TEST_F(VaultServicesTest, BEH_MAID_ServicesCreateBP) {
+TEST_F(VaultServicesTest, BEH_MAID_CreateBP) {
   VaultService service(vault_pmid_, vault_public_key_, vault_private_key_,
       vault_public_key_signature_, vault_chunkstore_, NULL,
       vault_service_logic_, udt_transport_.GetID());
@@ -2358,7 +2362,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesCreateBP) {
   ASSERT_EQ(ser_bp, test_content);
 }
 
-TEST_F(VaultServicesTest, BEH_MAID_ServicesModifyBPInfo) {
+TEST_F(VaultServicesTest, BEH_MAID_ModifyBPInfo) {
   VaultService service(vault_pmid_, vault_public_key_, vault_private_key_,
       vault_public_key_signature_, vault_chunkstore_, NULL,
       vault_service_logic_, udt_transport_.GetID());
@@ -2538,7 +2542,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesModifyBPInfo) {
   ASSERT_EQ(pd->country(), bpi.pd().country());
 }
 
-TEST_F(VaultServicesTest, BEH_MAID_ServicesGetBPMessages) {
+TEST_F(VaultServicesTest, BEH_MAID_GetBPMessages) {
   VaultService service(vault_pmid_, vault_public_key_, vault_private_key_,
       vault_public_key_signature_, vault_chunkstore_, NULL,
       vault_service_logic_, udt_transport_.GetID());
@@ -2614,7 +2618,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesGetBPMessages) {
   ASSERT_EQ(0, get_msg_response.messages_size());
 }
 
-TEST_F(VaultServicesTest, BEH_MAID_ServicesAddBPMessages) {
+TEST_F(VaultServicesTest, BEH_MAID_AddBPMessages) {
   VaultService service(vault_pmid_, vault_public_key_, vault_private_key_,
       vault_public_key_signature_, vault_chunkstore_, NULL,
       vault_service_logic_, udt_transport_.GetID());
@@ -2793,7 +2797,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesAddBPMessages) {
   ASSERT_EQ(0, get_msg_response.messages_size());
 }
 
-TEST_F(VaultServicesTest, BEH_MAID_ServicesContactInfo) {
+TEST_F(VaultServicesTest, BEH_MAID_ContactInfo) {
   VaultService service(vault_pmid_, vault_public_key_, vault_private_key_,
                        vault_public_key_signature_, vault_chunkstore_,
                        NULL, vault_service_logic_,
@@ -2961,64 +2965,6 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesContactInfo) {
   ASSERT_EQ(pd->language(), response.pd().language());
   ASSERT_EQ(pd->city(), response.pd().city());
   ASSERT_EQ(pd->country(), response.pd().country());
-}
-
-TEST_F(VaultServicesTest, BEH_MAID_ServicesCacheChunk) {
-  rpcprotocol::Controller controller;
-  maidsafe::CacheChunkRequest request;
-  maidsafe::CacheChunkResponse response;
-
-  std::string pub_key, priv_key, pmid, sig_pub_key, sig_req;
-  CreateRSAKeys(&pub_key, &priv_key);
-  crypto::Crypto co;
-  co.set_symm_algorithm(crypto::AES_256);
-  co.set_hash_algorithm(crypto::SHA_512);
-  std::string content("This is a data chunk");
-  std::string chunkname(co.Hash(content, "", crypto::STRING_STRING, false));
-  CreateSignedRequest(pub_key, priv_key, chunkname, &pmid, &sig_pub_key,
-                      &sig_req);
-
-  // Not initialised
-  TestCallback cb_obj;
-  google::protobuf::Closure *done = google::protobuf::NewCallback<TestCallback>
-                                    (&cb_obj, &TestCallback::CallbackFunction);
-  vault_service_->CacheChunk(&controller, &request, &response, done);
-  ASSERT_EQ(kNack, static_cast<int>(response.result()));
-  ASSERT_FALSE(vault_service_->vault_chunkstore_->Has(chunkname));
-
-  // Wrong parameters
-  request.set_chunkname("aaaaaaaaaaaaa");
-  request.set_chunkcontent(content);
-  request.set_pmid(pmid);
-  request.set_public_key(pub_key);
-  request.set_public_key_signature(sig_pub_key);
-  request.set_request_signature(sig_req);
-  done = google::protobuf::NewCallback<TestCallback>
-         (&cb_obj, &TestCallback::CallbackFunction);
-  vault_service_->CacheChunk(&controller, &request, &response, done);
-  ASSERT_EQ(kNack, static_cast<int>(response.result()));
-  ASSERT_FALSE(vault_service_->vault_chunkstore_->Has(chunkname));
-
-  request.set_chunkname(chunkname);
-  request.set_pmid("aaaaaaaaaaaaaa");
-  done = google::protobuf::NewCallback<TestCallback>
-         (&cb_obj, &TestCallback::CallbackFunction);
-  vault_service_->CacheChunk(&controller, &request, &response, done);
-  ASSERT_EQ(kNack, static_cast<int>(response.result()));
-  ASSERT_FALSE(vault_service_->vault_chunkstore_->Has(chunkname));
-  ASSERT_FALSE(fs::exists(vault_service_->vault_chunkstore_->GetChunkPath(
-               chunkname, (maidsafe::kHashable | maidsafe::kCache), false)));
-
-  request.set_pmid(pmid);
-  done = google::protobuf::NewCallback<TestCallback>
-         (&cb_obj, &TestCallback::CallbackFunction);
-  vault_service_->CacheChunk(&controller, &request, &response, done);
-  ASSERT_EQ(kAck, static_cast<int>(response.result()));
-  ASSERT_TRUE(vault_service_->vault_chunkstore_->Has(chunkname));
-  ASSERT_EQ(maidsafe::kHashable|maidsafe::kCache,
-            vault_service_->vault_chunkstore_->chunk_type(chunkname));
-  ASSERT_TRUE(fs::exists(vault_service_->vault_chunkstore_->GetChunkPath(
-              chunkname, (maidsafe::kHashable | maidsafe::kCache), false)));
 }
 
 }  // namespace maidsafe_vault
