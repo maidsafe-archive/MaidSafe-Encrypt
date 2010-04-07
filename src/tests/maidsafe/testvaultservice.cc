@@ -207,7 +207,7 @@ class MockVaultServicesTest : public VaultServicesTest {
   MockVaultServicesTest &operator=(const MockVaultServicesTest&);
 };
 
-TEST_F(VaultServicesTest, BEH_MAID_ValidateSignedSize) {
+TEST_F(VaultServicesTest, BEH_MAID_ServicesValidateSignedSize) {
   maidsafe::SignedSize sz;
   ASSERT_FALSE(vault_service_->ValidateSignedSize(sz));
 
@@ -233,7 +233,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ValidateSignedSize) {
   ASSERT_TRUE(vault_service_->ValidateSignedSize(sz));
 }
 
-TEST_F(VaultServicesTest, BEH_MAID_ValidateStoreContract) {
+TEST_F(VaultServicesTest, BEH_MAID_ServicesValidateStoreContract) {
   maidsafe::StoreContract sc;
   ASSERT_FALSE(vault_service_->ValidateStoreContract(sc));
 
@@ -291,7 +291,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ValidateStoreContract) {
   ASSERT_TRUE(vault_service_->ValidateStoreContract(sc));
 }
 
-TEST_F(VaultServicesTest, BEH_MAID_ValidateAmendRequest) {
+TEST_F(VaultServicesTest, BEH_MAID_ServicesValidateAmendRequest) {
   maidsafe::AmendAccountRequest req;
   boost::uint64_t account_delta;
   std::string returned_pmid;
@@ -342,7 +342,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ValidateAmendRequest) {
   ASSERT_EQ(pmid, returned_pmid);
 }
 
-TEST_F(VaultServicesTest, BEH_MAID_ValidateSignedRequest) {
+TEST_F(VaultServicesTest, BEH_MAID_ServicesValidateSignedRequest) {
   std::string pub_key, priv_key, key("xyz"), pmid, sig_pub_key, sig_req;
   CreateRSAKeys(&pub_key, &priv_key);
 
@@ -364,7 +364,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ValidateSignedRequest) {
                                                      "ghi", key, pmid));
 }
 
-TEST_F(VaultServicesTest, BEH_MAID_ValidateIdentity) {
+TEST_F(VaultServicesTest, BEH_MAID_ServicesValidateIdentity) {
   std::string pub_key, priv_key, sig_pub_key;
   CreateRSAKeys(&pub_key, &priv_key);
   crypto::Crypto co;
@@ -379,7 +379,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ValidateIdentity) {
   ASSERT_TRUE(vault_service_->ValidateIdentity(pmid, pub_key, sig_pub_key));
 }
 
-TEST_F(VaultServicesTest, BEH_MAID_ValidateSystemPacket) {
+TEST_F(VaultServicesTest, BEH_MAID_ServicesValidateSystemPacket) {
   std::string pub_key, priv_key;
   CreateRSAKeys(&pub_key, &priv_key);
 
@@ -403,7 +403,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ValidateSystemPacket) {
                                                     pub_key));
 }
 
-TEST_F(VaultServicesTest, BEH_MAID_ValidateDataChunk) {
+TEST_F(VaultServicesTest, BEH_MAID_ServicesValidateDataChunk) {
   crypto::Crypto co;
   co.set_hash_algorithm(crypto::SHA_512);
   std::string content("This is a data chunk");
@@ -416,14 +416,14 @@ TEST_F(VaultServicesTest, BEH_MAID_ValidateDataChunk) {
   EXPECT_FALSE(vault_service_->ValidateDataChunk(chunkname, content));
 }
 
-TEST_F(VaultServicesTest, BEH_MAID_Storable) {
+TEST_F(VaultServicesTest, BEH_MAID_ServicesStorable) {
   ASSERT_EQ(0, vault_service_->Storable(12345));
   ASSERT_EQ(0, vault_service_->Storable(kAvailableSpace));
   ASSERT_NE(0, vault_service_->Storable(kAvailableSpace + 1));
   ASSERT_NE(0, vault_service_->Storable(0));
 }
 
-TEST_F(VaultServicesTest, BEH_MAID_LocalStorage) {
+TEST_F(VaultServicesTest, BEH_MAID_ServicesLocalStorage) {
   crypto::Crypto co;
   co.set_hash_algorithm(crypto::SHA_512);
   std::string content("This is a data chunk"), test_content;
@@ -451,7 +451,7 @@ TEST_F(VaultServicesTest, BEH_MAID_LocalStorage) {
   EXPECT_FALSE(vault_service_->LoadChunkLocal(chunkname, &test_content));
 }
 
-TEST_F(VaultServicesTest, BEH_MAID_NodeWithinClosest) {
+TEST_F(VaultServicesTest, BEH_MAID_ServicesNodeWithinClosest) {
   vault_service_->pmid_ = std::string(kKeySize, 0);
   for (int i = 0; i < 5; ++i) {
     base::PDRoutingTableTuple entry(std::string(kKeySize, i + 1),
@@ -471,7 +471,7 @@ TEST_F(VaultServicesTest, BEH_MAID_NodeWithinClosest) {
 
 // -----------------------------------------------------------------------------
 
-TEST_F(VaultServicesTest, BEH_MAID_StorePrep) {
+TEST_F(VaultServicesTest, BEH_MAID_ServicesStorePrep) {
   rpcprotocol::Controller controller;
   maidsafe::StorePrepRequest request;
   maidsafe::StorePrepResponse response;
@@ -618,7 +618,7 @@ TEST_F(VaultServicesTest, BEH_MAID_StorePrep) {
   }
 }
 
-TEST_F(MockVaultServicesTest, BEH_MAID_StoreChunk) {
+TEST_F(MockVaultServicesTest, BEH_MAID_ServicesStoreChunk) {
   delete vault_service_;
   vault_service_ = new VaultService(vault_pmid_, vault_public_key_,
                                     vault_private_key_,
@@ -762,7 +762,7 @@ TEST_F(MockVaultServicesTest, BEH_MAID_StoreChunk) {
   ASSERT_EQ(size_t(1), ci.reference_list.size());
 }
 
-TEST_F(VaultServicesTest, BEH_MAID_GetCheckChunk) {
+TEST_F(VaultServicesTest, BEH_MAID_ServicesGetCheckChunk) {
   rpcprotocol::Controller controller;
   maidsafe::GetChunkRequest request;
   maidsafe::GetChunkResponse response;
@@ -839,7 +839,7 @@ TEST_F(VaultServicesTest, BEH_MAID_GetCheckChunk) {
   }
 }
 
-TEST_F(VaultServicesTest, BEH_MAID_DeleteChunk) {
+TEST_F(VaultServicesTest, BEH_MAID_ServicesDeleteChunk) {
   rpcprotocol::Controller controller;
   maidsafe::DeleteChunkRequest request;
   maidsafe::DeleteChunkResponse response;
@@ -953,7 +953,7 @@ TEST_F(VaultServicesTest, BEH_MAID_DeleteChunk) {
   ASSERT_FALSE(vault_service_->HasChunkLocal(chunk_name));
 }
 
-TEST_F(VaultServicesTest, BEH_MAID_ValidityCheck) {
+TEST_F(VaultServicesTest, BEH_MAID_ServicesValidityCheck) {
   rpcprotocol::Controller controller;
   maidsafe::ValidityCheckRequest request;
   maidsafe::ValidityCheckResponse response;
@@ -1011,7 +1011,7 @@ TEST_F(VaultServicesTest, DISABLED_BEH_MAID_SwapChunk) {
   ASSERT_TRUE(false) << "NOT IMPLEMENTED";
 }
 
-TEST_F(VaultServicesTest, BEH_MAID_CacheChunk) {
+TEST_F(VaultServicesTest, BEH_MAID_ServicesCacheChunk) {
   rpcprotocol::Controller controller;
   maidsafe::CacheChunkRequest request;
   maidsafe::CacheChunkResponse response;
@@ -1074,7 +1074,7 @@ TEST_F(VaultServicesTest, DISABLED_BEH_MAID_GetChunkReferences) {
   ASSERT_TRUE(false) << "NOT IMPLEMENTED";
 }
 
-TEST_F(MockVaultServicesTest, BEH_MAID_AddToWatchList) {
+TEST_F(MockVaultServicesTest, BEH_MAID_ServicesAddToWatchList) {
   delete vault_service_;
   vault_service_ = new VaultService(vault_pmid_, vault_public_key_,
                                     vault_private_key_,
@@ -1289,7 +1289,7 @@ TEST_F(MockVaultServicesTest, BEH_MAID_AddToWatchList) {
   }
 }
 
-TEST_F(MockVaultServicesTest, BEH_MAID_RemoveFromWatchList) {
+TEST_F(MockVaultServicesTest, BEH_MAID_ServicesRemoveFromWatchList) {
   delete vault_service_;
   vault_service_ = new VaultService(vault_pmid_, vault_public_key_,
                                     vault_private_key_,
@@ -1528,7 +1528,7 @@ TEST_F(MockVaultServicesTest, BEH_MAID_RemoveFromWatchList) {
   }
 }
 
-TEST_F(MockVaultServicesTest, BEH_MAID_AddToReferenceList) {
+TEST_F(MockVaultServicesTest, BEH_MAID_ServicesAddToReferenceList) {
   delete vault_service_;
   vault_service_ = new VaultService(vault_pmid_, vault_public_key_,
                                     vault_private_key_,
@@ -1784,7 +1784,7 @@ TEST_F(MockVaultServicesTest, BEH_MAID_AddToReferenceList) {
   }
 }
 
-TEST_F(MockVaultServicesTest, BEH_MAID_AmendAccount) {
+TEST_F(MockVaultServicesTest, BEH_MAID_ServicesAmendAccount) {
   boost::shared_ptr<VaultRpcs> vault_rpcs;
   boost::shared_ptr<kad::KNode> knode;
   MockVsl mock_vault_service_logic(vault_rpcs, knode);
@@ -2232,7 +2232,7 @@ TEST_F(VaultServicesTest, DISABLED_BEH_MAID_GetChunkInfo) {
   ASSERT_TRUE(false) << "NOT IMPLEMENTED";
 }
 
-TEST_F(VaultServicesTest, BEH_MAID_VaultStatus) {
+TEST_F(VaultServicesTest, BEH_MAID_ServicesVaultStatus) {
   rpcprotocol::Controller controller;
   maidsafe::VaultStatusRequest request;
   maidsafe::VaultStatusResponse response;
@@ -2295,7 +2295,7 @@ TEST_F(VaultServicesTest, BEH_MAID_VaultStatus) {
   }
 }
 
-TEST_F(VaultServicesTest, BEH_MAID_CreateBP) {
+TEST_F(VaultServicesTest, BEH_MAID_ServicesCreateBP) {
   VaultService service(vault_pmid_, vault_public_key_, vault_private_key_,
       vault_public_key_signature_, vault_chunkstore_, NULL,
       vault_service_logic_, udt_transport_.GetID());
@@ -2362,7 +2362,7 @@ TEST_F(VaultServicesTest, BEH_MAID_CreateBP) {
   ASSERT_EQ(ser_bp, test_content);
 }
 
-TEST_F(VaultServicesTest, BEH_MAID_ModifyBPInfo) {
+TEST_F(VaultServicesTest, BEH_MAID_ServicesModifyBPInfo) {
   VaultService service(vault_pmid_, vault_public_key_, vault_private_key_,
       vault_public_key_signature_, vault_chunkstore_, NULL,
       vault_service_logic_, udt_transport_.GetID());
@@ -2542,7 +2542,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ModifyBPInfo) {
   ASSERT_EQ(pd->country(), bpi.pd().country());
 }
 
-TEST_F(VaultServicesTest, BEH_MAID_GetBPMessages) {
+TEST_F(VaultServicesTest, BEH_MAID_ServicesGetBPMessages) {
   VaultService service(vault_pmid_, vault_public_key_, vault_private_key_,
       vault_public_key_signature_, vault_chunkstore_, NULL,
       vault_service_logic_, udt_transport_.GetID());
@@ -2618,7 +2618,7 @@ TEST_F(VaultServicesTest, BEH_MAID_GetBPMessages) {
   ASSERT_EQ(0, get_msg_response.messages_size());
 }
 
-TEST_F(VaultServicesTest, BEH_MAID_AddBPMessages) {
+TEST_F(VaultServicesTest, BEH_MAID_ServicesAddBPMessages) {
   VaultService service(vault_pmid_, vault_public_key_, vault_private_key_,
       vault_public_key_signature_, vault_chunkstore_, NULL,
       vault_service_logic_, udt_transport_.GetID());
@@ -2797,7 +2797,7 @@ TEST_F(VaultServicesTest, BEH_MAID_AddBPMessages) {
   ASSERT_EQ(0, get_msg_response.messages_size());
 }
 
-TEST_F(VaultServicesTest, BEH_MAID_ContactInfo) {
+TEST_F(VaultServicesTest, BEH_MAID_ServicesContactInfo) {
   VaultService service(vault_pmid_, vault_public_key_, vault_private_key_,
                        vault_public_key_signature_, vault_chunkstore_,
                        NULL, vault_service_logic_,
