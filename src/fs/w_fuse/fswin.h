@@ -130,6 +130,30 @@ static int __stdcall WinUnlockFile(LPCWSTR FileName,
                                    LONGLONG Length,
                                    PDOKAN_FILE_INFO DokanFileInfo);
 
+static int __stdcall WinGetFileSecurity(
+    LPCWSTR FileName,
+    PSECURITY_INFORMATION SecurityInformation,
+    PSECURITY_DESCRIPTOR SecurityDescriptor,
+    ULONG BufferLength,
+    PULONG LengthNeeded,
+    PDOKAN_FILE_INFO DokanFileInfo);
+
+static int __stdcall WinSetFileSecurity(
+    LPCWSTR FileName,
+    PSECURITY_INFORMATION SecurityInformation,
+    PSECURITY_DESCRIPTOR SecurityDescriptor,
+    ULONG SecurityDescriptorLength,
+    PDOKAN_FILE_INFO DokanFileInfo);
+
+static int __stdcall WinGetVolumeInformation(LPWSTR VolumeNameBuffer,
+                                             DWORD VolumeNameSize,
+                                             LPDWORD VolumeSerialNumber,
+                                             LPDWORD MaximumComponentLength,
+                                             LPDWORD FileSystemFlags,
+                                             LPWSTR FileSystemNameBuffer,
+                                             DWORD FileSystemNameSize,
+                                             PDOKAN_FILE_INFO DokanFileInfo);
+
 static int __stdcall WinUnmount(PDOKAN_FILE_INFO);
 
 static void CallMount(char drive);

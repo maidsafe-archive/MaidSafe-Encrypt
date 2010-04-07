@@ -28,6 +28,7 @@ THE SOFTWARE.
 
 #include <list>
 #include <map>
+#include <vector>
 
 #include "maidsafe/client/clientcontroller.h"
 
@@ -1083,6 +1084,89 @@ int WinUnlockFile(LPCWSTR FileName,
   return 0;
 }
 
+int WinGetFileSecurity(LPCWSTR FileName,
+                       PSECURITY_INFORMATION SecurityInformation,
+                       PSECURITY_DESCRIPTOR SecurityDescriptor,
+                       ULONG BufferLength,
+                       PULONG LengthNeeded,
+                       PDOKAN_FILE_INFO DokanFileInfo) {
+  DbgPrint(L"GetFileSecurity %s\n", FileName);
+  HANDLE handle;
+  WCHAR filePath[MAX_PATH];
+  GetFilePath(filePath, FileName);
+  handle = (HANDLE)DokanFileInfo->Context;
+  if (!handle || handle == INVALID_HANDLE_VALUE) {
+    DbgPrint(L"\tinvalid handle\n\n");
+    return -1;
+  }
+  if (!GetUserObjectSecurity(handle, SecurityInformation, SecurityDescriptor,
+      BufferLength, LengthNeeded)) {
+    int error = GetLastError();
+    if (error == ERROR_INSUFFICIENT_BUFFER) {
+      DbgPrint(L"  GetUserObjectSecurity failed: ERROR_INSUFFICIENT_BUFFER\n");
+      return error * -1;
+    } else {
+      DbgPrint(L"  GetUserObjectSecurity failed: %d\n", error);
+      return -1;
+    }
+  }
+  return 0;
+}
+
+int WinSetFileSecurity(LPCWSTR FileName,
+                       PSECURITY_INFORMATION SecurityInformation,
+                       PSECURITY_DESCRIPTOR SecurityDescriptor,
+                       ULONG,
+                       PDOKAN_FILE_INFO DokanFileInfo) {
+  DbgPrint(L"SetFileSecurity %s\n", FileName);
+  HANDLE handle;
+  WCHAR filePath[MAX_PATH];
+  GetFilePath(filePath, FileName);
+  handle = (HANDLE)DokanFileInfo->Context;
+  if (!handle || handle == INVALID_HANDLE_VALUE) {
+    DbgPrint(L"\tinvalid handle\n\n");
+    return -1;
+  }
+  if (!SetUserObjectSecurity(handle, SecurityInformation, SecurityDescriptor)) {
+    int error = GetLastError();
+    DbgPrint(L"  SetUserObjectSecurity failed: %d\n", error);
+    return -1;
+  }
+  return 0;
+}
+
+int WinGetVolumeInformation(LPWSTR VolumeNameBuffer,
+                            DWORD,
+                            LPDWORD VolumeSerialNumber,
+                            LPDWORD MaximumComponentLength,
+                            LPDWORD FileSystemFlags,
+                            LPWSTR FileSystemNameBuffer,
+                            DWORD,
+                            PDOKAN_FILE_INFO) {
+  std::string public_username =
+      maidsafe::SessionSingleton::getInstance()->PublicUsername();
+  if (public_username.empty()) {
+    wcscpy(VolumeNameBuffer, L"maidsafe");
+  } else {
+    std::string volume_name = public_username + "'s maidsafe";
+    std::vector<WCHAR> s(MAX_PATH);
+    MultiByteToWideChar(CP_ACP, 0, volume_name.c_str(), volume_name.length(),
+        &s[0], MAX_PATH);
+    std::wstring w_volume_name = &s[0];
+    wcscpy(VolumeNameBuffer, w_volume_name.c_str());
+  }
+  *VolumeSerialNumber = 0x19831116;
+  *MaximumComponentLength = 256;
+  *FileSystemFlags = FILE_CASE_SENSITIVE_SEARCH |
+                     FILE_CASE_PRESERVED_NAMES |
+                     FILE_SUPPORTS_REMOTE_STORAGE |
+                     FILE_UNICODE_ON_DISK |
+                     FILE_PERSISTENT_ACLS;
+
+  wcscpy(FileSystemNameBuffer, L"maidsafe drive");
+  return 0;
+}
+
 int WinUnmount(PDOKAN_FILE_INFO) {
   DbgPrint(L"\tUnmount\n");
   return 0;
@@ -1122,7 +1206,7 @@ void CallMount(char drive) {
 //  Dokan_Options->Options |= DOKAN_OPTION_STDERR;
 #endif
 //  Dokan_Options->Options |= DOKAN_OPTION_KEEP_ALIVE;
-  Dokan_Options->Options |= DOKAN_OPTION_NETWORK;
+//  Dokan_Options->Options |= DOKAN_OPTION_NETWORK;
 //  Dokan_Options->Options |= DOKAN_OPTION_REMOVABLE;
 
   ZeroMemory(Dokan_Operations, sizeof(DOKAN_OPERATIONS));
@@ -1146,8 +1230,10 @@ void CallMount(char drive) {
   Dokan_Operations->SetAllocationSize = WinSetAllocationSize;
   Dokan_Operations->LockFile = WinLockFile;
   Dokan_Operations->UnlockFile = WinUnlockFile;
+  Dokan_Operations->GetFileSecurity = WinGetFileSecurity;
+  Dokan_Operations->SetFileSecurity = WinSetFileSecurity;
   Dokan_Operations->GetDiskFreeSpace = NULL;
-  Dokan_Operations->GetVolumeInformation = NULL;
+  Dokan_Operations->GetVolumeInformation = WinGetVolumeInformation;
   Dokan_Operations->Unmount = WinUnmount;
 
   status = DokanMain(Dokan_Options, Dokan_Operations);
