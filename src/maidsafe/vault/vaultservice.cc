@@ -817,7 +817,6 @@ void VaultService::AmendAccount(google::protobuf::RpcController*,
     return;
   }
   done->Run();
-  return;
 }
 
 void VaultService::AccountStatus(google::protobuf::RpcController*,
@@ -1241,7 +1240,7 @@ void VaultService::GetAccount(google::protobuf::RpcController*,
   if (result != kSuccess) {
     done->Run();
 #ifdef DEBUG
-    printf("In VaultService::GetAccount (%s), don't have account for node %s.\n",
+    printf("In VaultService::GetAccount (%s), don't have account for node %s\n",
            HexSubstr(pmid_).c_str(),
            HexSubstr(request->account_pmid()).c_str());
 #endif

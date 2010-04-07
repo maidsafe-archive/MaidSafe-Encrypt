@@ -104,7 +104,12 @@ typedef RemoteOpData<maidsafe::AccountStatusRequest,
     maidsafe::AccountStatusResponse> RemoteAccountStatusOpData;
 
 struct CacheChunkData {
-  CacheChunkData() : chunkname(), kc(), cb(), request(), response() {}
+  CacheChunkData() : chunkname(),
+                     kc(),
+                     cb(),
+                     request(),
+                     response(),
+                     controller() {}
   std::string chunkname;
   kad::ContactInfo kc;
   VoidFuncOneInt cb;

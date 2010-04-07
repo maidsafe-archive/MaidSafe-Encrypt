@@ -203,7 +203,8 @@ void AccountAmendmentHandler::CreateNewAmendment(
       return;
     }
   }
-  vault_service_logic_->kadops()->FindCloseNodes(amendment.account_name,
+  vault_service_logic_->kadops()->FindCloseNodes(
+      amendment.probable_pendings.front().request.chunkname(),
       boost::bind(&AccountAmendmentHandler::CreateNewAmendmentCallback, this,
                   amendment, _1));
 }
