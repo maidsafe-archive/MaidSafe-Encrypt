@@ -1820,17 +1820,17 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesAmendAccount) {
   std::string client_account_name = co.Hash(client_pmid + kAccount, "",
                                             crypto::STRING_STRING, false);
 
+  std::string chunk_data("This is a data chunk");
+  std::string chunk_name(co.Hash(chunk_data, "", crypto::STRING_STRING, false));
+  boost::uint64_t chunk_size(chunk_data.size());
+
   EXPECT_CALL(*mock_vault_service_logic.kadops(),
-              FindCloseNodes(client_account_name,
+              FindCloseNodes(chunk_name,
                              testing::An<const base::callback_func_type&>()))
       .Times(testing::AtLeast(6))
       .WillRepeatedly(testing::WithArg<1>(testing::Invoke(
           boost::bind(&mock_kadops::RunCallback,
           k_group.serialised_find_nodes_response(), _1))));
-
-  std::string chunk_data("This is a data chunk");
-  std::string chunk_name(co.Hash(chunk_data, "", crypto::STRING_STRING, false));
-  boost::uint64_t chunk_size(chunk_data.size());
 
   size_sig = co.AsymSign(boost::lexical_cast<std::string>(chunk_size), "",
                          client_priv_key, crypto::STRING_STRING);
