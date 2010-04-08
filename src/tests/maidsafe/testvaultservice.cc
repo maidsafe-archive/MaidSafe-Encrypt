@@ -457,7 +457,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesNodeWithinClosest) {
     base::PDRoutingTableTuple entry(std::string(kKeySize, i + 1),
                                     "127.0.0.1", 123 + i, "127.0.0.1", 456 + i,
                                     "pubkey", 10, 1, 1234);
-    vault_service_->routing_table_->AddTuple(entry);
+    ASSERT_EQ(kSuccess, vault_service_->routing_table_->AddTuple(entry));
   }
 
   ASSERT_FALSE(vault_service_->NodeWithinClosest(std::string(kKeySize, 6), 10));
@@ -467,6 +467,8 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesNodeWithinClosest) {
   ASSERT_TRUE(vault_service_->NodeWithinClosest(std::string(kKeySize, 3), 0));
   ASSERT_TRUE(vault_service_->NodeWithinClosest(std::string(kKeySize, 4), 0));
   ASSERT_TRUE(vault_service_->NodeWithinClosest(std::string(kKeySize, 5), 0));
+
+  vault_service_->routing_table_->Clear();
 }
 
 // -----------------------------------------------------------------------------
@@ -1006,7 +1008,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesValidityCheck) {
   }
 }
 
-TEST_F(VaultServicesTest, DISABLED_BEH_MAID_SwapChunk) {
+TEST_F(VaultServicesTest, DISABLED_BEH_MAID_ServicesSwapChunk) {
   // TODO(Team#) test SwapChunk
   ASSERT_TRUE(false) << "NOT IMPLEMENTED";
 }
@@ -1069,9 +1071,76 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesCacheChunk) {
               chunkname, (maidsafe::kHashable | maidsafe::kCache), false)));
 }
 
-TEST_F(VaultServicesTest, DISABLED_BEH_MAID_GetChunkReferences) {
-  // TODO(Team#) test GetChunkReferences
-  ASSERT_TRUE(false) << "NOT IMPLEMENTED";
+TEST_F(VaultServicesTest, BEH_MAID_ServicesGetChunkReferences) {
+  rpcprotocol::Controller controller;
+  maidsafe::GetChunkReferencesRequest request;
+  maidsafe::GetChunkReferencesResponse response;
+
+  std::string pub_key, priv_key, pmid, sig_pub_key, sig_req;
+  CreateRSAKeys(&pub_key, &priv_key);
+  crypto::Crypto co;
+  co.set_symm_algorithm(crypto::AES_256);
+  co.set_hash_algorithm(crypto::SHA_512);
+  std::string content("This is a data chunk");
+  std::string chunk_name(co.Hash(content, "", crypto::STRING_STRING, false));
+  CreateSignedRequest(pub_key, priv_key, chunk_name, &pmid, &sig_pub_key,
+                      &sig_req);
+
+  TestCallback cb_obj;
+
+  for (int i = 0; i <= 2; ++i) {
+    switch (i) {
+      case 0:  // empty request
+        break;
+      case 1:  // non-existant chunk info
+        request.set_chunkname(chunk_name);
+        break;
+      case 2:  // no active watchers
+        int required_references, required_payments;
+        vault_service_->cih_.PrepareAddToWatchList(chunk_name, pmid, 9,
+                                                   &required_references,
+                                                   &required_payments);
+        break;
+    }
+    google::protobuf::Closure *done =
+        google::protobuf::NewCallback<TestCallback>
+        (&cb_obj, &TestCallback::CallbackFunction);
+    vault_service_->GetChunkReferences(&controller, &request, &response, done);
+    ASSERT_TRUE(response.IsInitialized());
+    ASSERT_EQ(kNack, static_cast<int>(response.result()));
+    response.Clear();
+  }
+
+  // watchers, but no refs
+  vault_service_->cih_.SetStoringDone(chunk_name, pmid);
+  vault_service_->cih_.SetPaymentsDone(chunk_name, pmid);
+  std::string creditor;
+  int refunds;
+  ASSERT_TRUE(vault_service_->cih_.TryCommitToWatchList(chunk_name, pmid,
+                                                        &creditor, &refunds));
+  {
+    google::protobuf::Closure *done =
+        google::protobuf::NewCallback<TestCallback>
+        (&cb_obj, &TestCallback::CallbackFunction);
+    vault_service_->GetChunkReferences(&controller, &request, &response, done);
+    ASSERT_TRUE(response.IsInitialized());
+    ASSERT_EQ(kAck, static_cast<int>(response.result()));
+    ASSERT_EQ(0, response.references_size());
+    response.Clear();
+  }
+
+  // now we have a reference
+  vault_service_->cih_.AddToReferenceList(chunk_name, vault_service_->pmid_, 9);
+  {
+    google::protobuf::Closure *done =
+        google::protobuf::NewCallback<TestCallback>
+        (&cb_obj, &TestCallback::CallbackFunction);
+    vault_service_->GetChunkReferences(&controller, &request, &response, done);
+    ASSERT_TRUE(response.IsInitialized());
+    ASSERT_EQ(kAck, static_cast<int>(response.result()));
+    ASSERT_EQ(1, response.references_size());
+    ASSERT_EQ(vault_service_->pmid_, response.references(0));
+  }
 }
 
 TEST_F(MockVaultServicesTest, BEH_MAID_ServicesAddToWatchList) {
@@ -2217,19 +2286,234 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesAmendAccount) {
   }
 }
 
-TEST_F(VaultServicesTest, DISABLED_BEH_MAID_GetSyncData) {
-  // TODO(Team#) test GetSyncDate
-  ASSERT_TRUE(false) << "NOT IMPLEMENTED";
+TEST_F(VaultServicesTest, BEH_MAID_ServicesGetSyncData) {
+  rpcprotocol::Controller controller;
+  maidsafe::GetSyncDataRequest request;
+  maidsafe::GetSyncDataResponse response;
+
+  std::string pub_key, priv_key, pmid, pub_key_sig, req_sig;
+  CreateRSAKeys(&pub_key, &priv_key);
+  crypto::Crypto co;
+  co.set_symm_algorithm(crypto::AES_256);
+  co.set_hash_algorithm(crypto::SHA_512);
+  std::string content("This is a data chunk");
+  std::string chunk_name(co.Hash(content, "", crypto::STRING_STRING, false));
+  CreateSignedRequest(pub_key, priv_key, "", &pmid, &pub_key_sig, &req_sig);
+
+  TestCallback cb_obj;
+
+  for (int i = 0; i <= 2; ++i) {
+    switch (i) {
+      case 0:  // uninitialized request
+        break;
+      case 1:  // invalid request
+        request.set_pmid(pmid);
+        request.set_public_key(pub_key);
+        request.set_public_key_signature(pub_key_sig);
+        request.set_request_signature("fail");
+        break;
+      case 2:  // not in local routing table
+        request.set_request_signature(req_sig);
+        break;
+    }
+
+    google::protobuf::Closure *done =
+        google::protobuf::NewCallback<TestCallback>(&cb_obj,
+        &TestCallback::CallbackFunction);
+    vault_service_->GetSyncData(&controller, &request, &response, done);
+    EXPECT_TRUE(response.IsInitialized());
+    EXPECT_EQ(kNack, static_cast<int>(response.result()));
+    response.Clear();
+  }
+
+  // valid request, but no data to sync
+  base::PDRoutingTableTuple entry(pmid, "127.0.0.1", 123, "127.0.0.1", 456,
+                                  pub_key, 10, 1, 1234);
+  ASSERT_EQ(kSuccess, vault_service_->routing_table_->AddTuple(entry));
+  {
+    google::protobuf::Closure *done =
+        google::protobuf::NewCallback<TestCallback>(&cb_obj,
+        &TestCallback::CallbackFunction);
+    vault_service_->GetSyncData(&controller, &request, &response, done);
+    EXPECT_TRUE(response.IsInitialized());
+    EXPECT_EQ(kAck, static_cast<int>(response.result()));
+    if (response.has_vault_account_set())
+      ASSERT_EQ(0, response.vault_account_set().vault_account_size());
+    if(response.has_chunk_info_map())
+      ASSERT_EQ(0, response.chunk_info_map().vault_chunk_info_size());
+    response.Clear();
+  }
+
+  // add and retrieve accounts and chunk info
+  {
+    ASSERT_EQ(kSuccess, vault_service_->AddAccount(pmid, 1234));
+    ASSERT_EQ(kSuccess, vault_service_->AddAccount("other pmid", 1234));
+    int req_references, req_payments, refunds;
+    std::string creditor;
+    vault_service_->cih_.PrepareAddToWatchList(chunk_name, pmid, 123,
+                                               &req_references, &req_payments);
+    vault_service_->cih_.SetStoringDone(chunk_name, pmid);
+    vault_service_->cih_.SetPaymentsDone(chunk_name, pmid);
+    ASSERT_TRUE(vault_service_->cih_.TryCommitToWatchList(chunk_name, pmid,
+                                                          &creditor, &refunds));
+
+    google::protobuf::Closure *done =
+        google::protobuf::NewCallback<TestCallback>(&cb_obj,
+        &TestCallback::CallbackFunction);
+    vault_service_->GetSyncData(&controller, &request, &response, done);
+    EXPECT_TRUE(response.IsInitialized());
+    EXPECT_EQ(kAck, static_cast<int>(response.result()));
+
+    EXPECT_TRUE(response.has_vault_account_set());
+    // only one account, because sender's account should be excluded
+    ASSERT_EQ(1, response.vault_account_set().vault_account_size());
+    ASSERT_TRUE(response.vault_account_set().vault_account(0).has_pmid());
+    ASSERT_EQ("other pmid",
+              response.vault_account_set().vault_account(0).pmid());
+
+    EXPECT_TRUE(response.has_chunk_info_map());
+    ASSERT_EQ(1, response.chunk_info_map().vault_chunk_info_size());
+    ASSERT_LE(1, response.chunk_info_map().vault_chunk_info(0).
+                     watch_list_entry_size());
+    ASSERT_TRUE(response.chunk_info_map().vault_chunk_info(0).
+                    watch_list_entry(0).has_pmid());
+    ASSERT_EQ(pmid, response.chunk_info_map().vault_chunk_info(0).
+                        watch_list_entry(0).pmid());
+  }
+  vault_service_->routing_table_->Clear();
 }
 
-TEST_F(VaultServicesTest, DISABLED_BEH_MAID_GetAccount) {
-  // TODO(Team#) test GetAccount
-  ASSERT_TRUE(false) << "NOT IMPLEMENTED";
+TEST_F(VaultServicesTest, BEH_MAID_ServicesGetAccount) {
+  rpcprotocol::Controller controller;
+  maidsafe::GetAccountRequest request;
+  maidsafe::GetAccountResponse response;
+
+  std::string pub_key, priv_key, pmid, pub_key_sig, req_sig;
+  CreateRSAKeys(&pub_key, &priv_key);
+  CreateSignedRequest(pub_key, priv_key, "account pmid", &pmid, &pub_key_sig,
+                      &req_sig);
+
+  TestCallback cb_obj;
+
+  for (int i = 0; i <= 3; ++i) {
+    switch (i) {
+      case 0:  // uninitialized request
+        break;
+      case 1:  // invalid request
+        request.set_account_pmid("account pmid");
+        request.set_pmid(pmid);
+        request.set_public_key(pub_key);
+        request.set_public_key_signature(pub_key_sig);
+        request.set_request_signature("fail");
+        break;
+      case 2:  // not in local routing table
+        request.set_request_signature(req_sig);
+        break;
+      case 3:  // no account
+        base::PDRoutingTableTuple entry(pmid, "127.0.0.1", 123, "127.0.0.1",
+                                        456, pub_key, 10, 1, 1234);
+        ASSERT_EQ(kSuccess, vault_service_->routing_table_->AddTuple(entry));
+        break;
+    }
+
+    google::protobuf::Closure *done =
+        google::protobuf::NewCallback<TestCallback>(&cb_obj,
+        &TestCallback::CallbackFunction);
+    vault_service_->GetAccount(&controller, &request, &response, done);
+    EXPECT_TRUE(response.IsInitialized());
+    EXPECT_EQ(kNack, static_cast<int>(response.result()));
+    response.Clear();
+  }
+
+  // add and retrieve account
+  {
+    ASSERT_EQ(kSuccess, vault_service_->AddAccount("account pmid", 1234));
+
+    google::protobuf::Closure *done =
+        google::protobuf::NewCallback<TestCallback>(&cb_obj,
+        &TestCallback::CallbackFunction);
+    vault_service_->GetAccount(&controller, &request, &response, done);
+    EXPECT_TRUE(response.IsInitialized());
+    EXPECT_EQ(kAck, static_cast<int>(response.result()));
+
+    EXPECT_TRUE(response.has_vault_account());
+    ASSERT_TRUE(response.vault_account().has_pmid());
+    ASSERT_EQ("account pmid", response.vault_account().pmid());
+  }
+  vault_service_->routing_table_->Clear();
 }
 
-TEST_F(VaultServicesTest, DISABLED_BEH_MAID_GetChunkInfo) {
-  // TODO(Team#) test GetChunkInfo
-  ASSERT_TRUE(false) << "NOT IMPLEMENTED";
+TEST_F(VaultServicesTest, BEH_MAID_ServicesGetChunkInfo) {
+  rpcprotocol::Controller controller;
+  maidsafe::GetChunkInfoRequest request;
+  maidsafe::GetChunkInfoResponse response;
+
+  std::string pub_key, priv_key, pmid, pub_key_sig, req_sig;
+  CreateRSAKeys(&pub_key, &priv_key);
+  crypto::Crypto co;
+  co.set_symm_algorithm(crypto::AES_256);
+  co.set_hash_algorithm(crypto::SHA_512);
+  std::string content("This is a data chunk");
+  std::string chunk_name(co.Hash(content, "", crypto::STRING_STRING, false));
+  CreateSignedRequest(pub_key, priv_key, chunk_name, &pmid, &pub_key_sig,
+                      &req_sig);
+
+  TestCallback cb_obj;
+
+  for (int i = 0; i <= 3; ++i) {
+    switch (i) {
+      case 0:  // uninitialized request
+        break;
+      case 1:  // invalid request
+        request.set_chunkname(chunk_name);
+        request.set_pmid(pmid);
+        request.set_public_key(pub_key);
+        request.set_public_key_signature(pub_key_sig);
+        request.set_request_signature("fail");
+        break;
+      case 2:  // not in local routing table
+        request.set_request_signature(req_sig);
+        break;
+      case 3:  // no account
+        base::PDRoutingTableTuple entry(pmid, "127.0.0.1", 123, "127.0.0.1",
+                                        456, pub_key, 10, 1, 1234);
+        ASSERT_EQ(kSuccess, vault_service_->routing_table_->AddTuple(entry));
+        break;
+    }
+
+    google::protobuf::Closure *done =
+        google::protobuf::NewCallback<TestCallback>(&cb_obj,
+        &TestCallback::CallbackFunction);
+    vault_service_->GetChunkInfo(&controller, &request, &response, done);
+    EXPECT_TRUE(response.IsInitialized());
+    EXPECT_EQ(kNack, static_cast<int>(response.result()));
+    response.Clear();
+  }
+
+  // add and retrieve chunk info
+  {
+    int req_references, req_payments, refunds;
+    std::string creditor;
+    vault_service_->cih_.PrepareAddToWatchList(chunk_name, pmid, 123,
+                                               &req_references, &req_payments);
+    vault_service_->cih_.SetStoringDone(chunk_name, pmid);
+    vault_service_->cih_.SetPaymentsDone(chunk_name, pmid);
+    ASSERT_TRUE(vault_service_->cih_.TryCommitToWatchList(chunk_name, pmid,
+                                                          &creditor, &refunds));
+
+    google::protobuf::Closure *done =
+        google::protobuf::NewCallback<TestCallback>(&cb_obj,
+        &TestCallback::CallbackFunction);
+    vault_service_->GetChunkInfo(&controller, &request, &response, done);
+    EXPECT_TRUE(response.IsInitialized());
+    EXPECT_EQ(kAck, static_cast<int>(response.result()));
+
+    EXPECT_TRUE(response.has_vault_chunk_info());
+    ASSERT_LE(1, response.vault_chunk_info().watch_list_entry_size());
+    ASSERT_TRUE(response.vault_chunk_info().watch_list_entry(0).has_pmid());
+    ASSERT_EQ(pmid, response.vault_chunk_info().watch_list_entry(0).pmid());
+  }
+  vault_service_->routing_table_->Clear();
 }
 
 TEST_F(VaultServicesTest, BEH_MAID_ServicesVaultStatus) {
