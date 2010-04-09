@@ -67,6 +67,32 @@ void FindRemoteCtcCBSucceed(base::callback_func_type cb) {
   boost::thread thrd(execute_cb, cb, res.SerializeAsString());
 }
 
+void FindNodesSucceed(base::callback_func_type cb) {
+  kad::FindResponse res;
+  res.set_result(kad::kRpcResultSuccess);
+  kad::Contact ctc("id", "127.0.0.1", 8888, "127.0.0.1", 8888);
+  std::string ser_ctc;
+  ctc.SerialiseToString(&ser_ctc);
+  for (int n = 0; n < kad::K; ++n) {
+    printf("%d\n", n);
+    res.add_closest_nodes(ser_ctc);
+  }
+  boost::thread thrd(execute_cb, cb, res.SerializeAsString());
+}
+
+void FindNodesCBSucceed(base::callback_func_type cb) {
+  kad::FindResponse res;
+  res.set_result(kad::kRpcResultSuccess);
+  kad::Contact ctc("id", "127.0.0.1", 8888, "127.0.0.1", 8888);
+  std::string ser_ctc;
+  ctc.SerialiseToString(&ser_ctc);
+  for (int n = 0; n < kad::K; ++n) {
+    printf("%d\n", n);
+    res.add_closest_nodes(ser_ctc);
+  }
+  boost::thread thrd(execute_cb, cb, res.SerializeAsString());
+}
+
 void FindReferencesCBFailed(base::callback_func_type cb) {
   kad::FindResponse res;
   res.set_result(kad::kRpcResultFailure);
@@ -87,7 +113,9 @@ void BPCallbackFail(const kad::Contact &peer,
 }
 
 void BPCallbackSucceed(const kad::Contact &peer,
-  maidsafe::CreateBPResponse *response, google::protobuf::Closure *done) {
+                       maidsafe::CreateBPResponse *response,
+                       google::protobuf::Closure *done) {
+  printf("BPCallbackSucceed\n");
   response->set_result(kAck);
   response->set_pmid_id(peer.node_id());
   done->Run();
@@ -178,7 +206,7 @@ class GetMsgsHelper {
   void AddMessage(const std::string &msg, const std::string &rec_pub_key,
     const std::string &sender) {
     maidsafe::ValidatedBufferPacketMessage bp_msg;
-    uint32_t iter = base::random_32bit_uinteger() % 1000 +1;
+    boost::uint32_t iter = base::random_32bit_uinteger() % 1000 +1;
     std::string aes_key = co.SecurePassword(co.Hash(msg, "",
       crypto::STRING_STRING, false), iter);
     bp_msg.set_index(co.AsymEncrypt(aes_key, "", rec_pub_key,
@@ -228,12 +256,19 @@ class MockBPH : public maidsafe::ClientBufferPacketHandler {
           boost::shared_ptr<kad::KNode> knode)
     : maidsafe::ClientBufferPacketHandler(rpcs, knode) {}
   MOCK_METHOD2(FindReferences,
-    void(base::callback_func_type, boost::shared_ptr<maidsafe::ChangeBPData>));
+      void(base::callback_func_type,
+           boost::shared_ptr<maidsafe::ChangeBPData>));
   MOCK_METHOD3(FindRemoteContact,
-    void(base::callback_func_type, boost::shared_ptr<maidsafe::ChangeBPData>,
-    const int&));
+      void(base::callback_func_type,
+           boost::shared_ptr<maidsafe::ChangeBPData>,
+           const int&));
   MOCK_METHOD2(FindNodes,
-    void(base::callback_func_type, boost::shared_ptr<maidsafe::ChangeBPData>));
+      void(base::callback_func_type,
+           boost::shared_ptr<maidsafe::ChangeBPData>));
+  MOCK_METHOD3(FindNodes_CB,
+      void(const std::string&,
+           boost::shared_ptr<maidsafe::ChangeBPData>,
+           const boost::int16_t&));
 };
 
 class TestClientBP : public testing::Test {
@@ -319,18 +354,23 @@ class TestClientBP : public testing::Test {
 };
 
 TEST_F(TestClientBP, BEH_MAID_CreateBP_OK) {
-  maidsafe::ClientBufferPacketHandler cbph(BPMock, knode_);
+  MockBPH cbph(BPMock, knode_);
   BPCallback cb;
 
+  EXPECT_CALL(cbph, FindNodes(_, _))
+      .WillOnce(WithArgs<0>(Invoke(FindNodesSucceed)));
+//  EXPECT_CALL(cbph, FindNodes_CB(_, _, _))
+//      .WillOnce(Return(FindNodesCBSucceed));
   EXPECT_CALL(*BPMock, CreateBP(_, _, _, _, _, _, _))
-    .Times(kMinChunkCopies)
-    .WillRepeatedly(WithArgs<0, 4, 6>(Invoke(BPCallbackSucceed)));
+      .WillRepeatedly(WithArgs<0, 4, 6>(Invoke(BPCallbackSucceed)));
 
-  std::string signed_pub_key = cryp.AsymSign(keys_.at(1).public_key(), "",
-    keys_.at(1).private_key(), crypto::STRING_STRING);
+  std::string signed_pubkey = cryp.AsymSign(keys_.at(1).public_key(), "",
+                              keys_.at(1).private_key(), crypto::STRING_STRING);
   maidsafe::BPInputParameters bpip = {cryp.Hash(keys_.at(1).public_key() +
-    signed_pub_key, "", crypto::STRING_STRING, false), keys_.at(1).public_key(),
-    keys_.at(1).private_key()};
+                                          signed_pubkey, "",
+                                          crypto::STRING_STRING, false),
+                                      keys_.at(1).public_key(),
+                                      keys_.at(1).private_key()};
 
   cbph.CreateBufferPacket(bpip,
                           boost::bind(&BPCallback::BPOperation_CB, &cb, _1),

@@ -101,17 +101,17 @@ void ClientBufferPacketHandler::GetMessages(
   boost::shared_ptr<ChangeBPData> data(new ChangeBPData);
   std::string bpname(crypto_obj_.Hash(args.sign_id + args.public_key, "",
                      crypto::STRING_STRING, false));
-  data->get_presence_request.set_bufferpacket_name(bpname);
-  data->get_presence_request.set_public_key(args.public_key);
-  data->get_presence_request.set_pmid(args.sign_id);
+  data->get_msgs_request.set_bufferpacket_name(bpname);
+  data->get_msgs_request.set_public_key(args.public_key);
+  data->get_msgs_request.set_pmid(args.sign_id);
   std::string pubkey_signature(crypto_obj_.AsymSign(args.public_key, "",
                                args.private_key, crypto::STRING_STRING));
-  data->get_presence_request.set_signed_public_key(pubkey_signature);
+  data->get_msgs_request.set_signed_public_key(pubkey_signature);
   std::string req_signature(crypto_obj_.AsymSign(
       crypto_obj_.Hash(args.public_key + pubkey_signature + bpname, "",
                        crypto::STRING_STRING, false),
       "", args.private_key, crypto::STRING_STRING));
-  data->get_presence_request.set_signed_request(req_signature);
+  data->get_msgs_request.set_signed_request(req_signature);
 
   data->cb_getmsgs = cb;
   data->type = GET_MESSAGES;
@@ -178,17 +178,19 @@ void ClientBufferPacketHandler::GetPresence(
     bp_getpresence_cb cb,
     const boost::int16_t &transport_id) {
   boost::shared_ptr<ChangeBPData> data(new ChangeBPData);
-  data->get_msgs_request.set_bufferpacket_name(crypto_obj_.Hash(args.sign_id +
-    args.public_key, "", crypto::STRING_STRING, false));
-  data->get_msgs_request.set_public_key(args.public_key);
-  data->get_msgs_request.set_pmid(args.sign_id);
-  data->get_msgs_request.set_signed_public_key(crypto_obj_.AsymSign(
-    args.public_key, "", args.private_key, crypto::STRING_STRING));
-  data->get_msgs_request.set_signed_request(crypto_obj_.AsymSign(
-    crypto_obj_.Hash(args.public_key +
-    data->get_msgs_request.signed_public_key() +
-    data->get_msgs_request.bufferpacket_name(), "", crypto::STRING_STRING,
-    false), "", args.private_key, crypto::STRING_STRING));
+  std::string bpname(crypto_obj_.Hash(args.sign_id + args.public_key, "",
+                     crypto::STRING_STRING, false));
+  data->get_presence_request.set_bufferpacket_name(bpname);
+  data->get_presence_request.set_public_key(args.public_key);
+  data->get_presence_request.set_pmid(args.sign_id);
+  std::string pubkey_signature(crypto_obj_.AsymSign(args.public_key, "",
+                               args.private_key, crypto::STRING_STRING));
+  data->get_presence_request.set_signed_public_key(pubkey_signature);
+  std::string req_signature(crypto_obj_.AsymSign(
+      crypto_obj_.Hash(args.public_key + pubkey_signature + bpname, "",
+                       crypto::STRING_STRING, false),
+      "", args.private_key, crypto::STRING_STRING));
+  data->get_presence_request.set_signed_request(req_signature);
 
   data->cb_getpresence = cb;
   data->type = GET_PRESENCE;

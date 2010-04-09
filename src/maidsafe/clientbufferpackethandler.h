@@ -160,9 +160,9 @@ class ClientBufferPacketHandler {
  private:
   virtual void FindNodes(base::callback_func_type cb,
                          boost::shared_ptr<ChangeBPData> data);
-  void FindNodes_CB(const std::string &result,
-                    boost::shared_ptr<ChangeBPData> data,
-                    const boost::int16_t &transport_id);
+  virtual void FindNodes_CB(const std::string &result,
+                            boost::shared_ptr<ChangeBPData> data,
+                            const boost::int16_t &transport_id);
   void ActionOnBpDone(
       boost::shared_ptr<std::vector<ModifyBPCallbackData> > cb_datas,
       boost::int16_t index);
