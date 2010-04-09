@@ -43,7 +43,7 @@ void SaveProfileSettingsThread::run() {
   profileInfo.push_back(theHash_["City"].toStdString());
   profileInfo.push_back(theHash_["Country"].toStdString());
 
-  const bool success = ClientController::instance()->SetInfo(profileInfo);
+  const bool success = true/*ClientController::instance()->SetInfo(profileInfo)*/;
 
   emit completed(success);
 }

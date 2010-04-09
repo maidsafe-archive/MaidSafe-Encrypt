@@ -2694,7 +2694,6 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesCreateBP) {
   maidsafe::BufferPacketInfo bpi;
   bpi.set_owner("Dan");
   bpi.set_owner_publickey(pub_key);
-  bpi.set_online(1);
   bpi.add_users("newuser");
   maidsafe::BufferPacket bp;
   maidsafe::GenericPacket *info = bp.add_owner_info();
@@ -2757,7 +2756,6 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesModifyBPInfo) {
   maidsafe::BufferPacketInfo bpi;
   bpi.set_owner("Dan");
   bpi.set_owner_publickey(pub_key);
-  bpi.set_online(1);
   bpi.add_users("newuser");
   maidsafe::BufferPacket bp;
   maidsafe::GenericPacket *info = bp.add_owner_info();
@@ -2844,21 +2842,9 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesModifyBPInfo) {
   bpi.Clear();
   bpi.set_owner("Dan");
   bpi.set_owner_publickey(pub_key);
-  bpi.set_online(0);
   bpi.add_users("newuser0");
   bpi.add_users("newuser1");
   bpi.add_users("newuser2");
-  maidsafe::EndPoint *ep = bpi.add_ep();
-  ep->set_ip("132.248.59.1");
-  ep->set_port(132);
-  maidsafe::PersonalDetails *pd = bpi.mutable_pd();
-  pd->set_full_name("Juanbert Tupadre");
-  pd->set_phone_number("0987654321");
-  pd->set_birthday("01/01/1970");
-  pd->set_gender("Male");
-  pd->set_language("English");
-  pd->set_city("Troon");
-  pd->set_country("United Kingdom of Her Majesty the Queen");
   bpi.SerializeToString(&ser_bpi);
   gp.set_data(ser_bpi);
   gp.set_signature(co.AsymSign(gp.data(), "", priv_key, crypto::STRING_STRING));
@@ -2904,19 +2890,9 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesModifyBPInfo) {
   ASSERT_TRUE(bpi.ParseFromString(bp.owner_info(0).data()));
   EXPECT_EQ("Dan", bpi.owner());
   EXPECT_EQ(pub_key, bpi.owner_publickey());
-  EXPECT_EQ(0, bpi.online());
   EXPECT_EQ(3, bpi.users_size());
   for (int n = 0; n < bpi.users_size(); ++n)
     EXPECT_EQ("newuser" + base::itos(n), bpi.users(n));
-  EXPECT_EQ(ep->ip(), bpi.ep(0).ip());
-  EXPECT_EQ(ep->port(), bpi.ep(0).port());
-  EXPECT_EQ(pd->full_name(), bpi.pd().full_name());
-  EXPECT_EQ(pd->phone_number(), bpi.pd().phone_number());
-  EXPECT_EQ(pd->birthday(), bpi.pd().birthday());
-  EXPECT_EQ(pd->gender(), bpi.pd().gender());
-  EXPECT_EQ(pd->language(), bpi.pd().language());
-  EXPECT_EQ(pd->city(), bpi.pd().city());
-  EXPECT_EQ(pd->country(), bpi.pd().country());
 }
 
 TEST_F(VaultServicesTest, BEH_MAID_ServicesGetBPMessages) {
@@ -2940,7 +2916,6 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesGetBPMessages) {
   maidsafe::BufferPacketInfo bpi;
   bpi.set_owner("Dan");
   bpi.set_owner_publickey(pub_key);
-  bpi.set_online(1);
   bpi.add_users("newuser");
   maidsafe::BufferPacket bp;
   maidsafe::GenericPacket *info = bp.add_owner_info();
@@ -3016,7 +2991,6 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesAddBPMessages) {
   maidsafe::BufferPacketInfo bpi;
   bpi.set_owner("Dan");
   bpi.set_owner_publickey(pub_key);
-  bpi.set_online(1);
   bpi.add_users(co.Hash("newuser", "", crypto::STRING_STRING, false));
   maidsafe::BufferPacket bp;
   maidsafe::GenericPacket *info = bp.add_owner_info();

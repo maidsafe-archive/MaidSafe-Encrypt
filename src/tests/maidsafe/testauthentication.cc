@@ -575,7 +575,7 @@ TEST_F(AuthenticationTest, BEH_MAID_CreateMSIDPacket) {
   msid_name = msid_result.name();
   priv_key = msid_result.private_key();
   pub_key = msid_result.public_key();
-  std::string empty_str("");
+  std::string empty_str;
   cb_.Reset();
   boost::this_thread::sleep(boost::posix_time::seconds(1));
   ASSERT_NE(empty_str, msid_name);

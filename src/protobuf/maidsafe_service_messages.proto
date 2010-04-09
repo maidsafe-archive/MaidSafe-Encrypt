@@ -399,21 +399,34 @@ message AddBPMessageResponse {
   optional bytes signed_public_key = 4;
 }
 
-message ContactInfoRequest {
+message GetBPPresenceRequest {
   required bytes bufferpacket_name = 1;
-  required bytes id = 2;
+  required bytes public_key = 2;
   required bytes pmid = 3;
-  required bytes public_key = 4;
-  required bytes public_key_signature = 5;
-  required bytes request_signature = 6;
+  required bytes signed_public_key = 4;
+  required bytes signed_request = 5;
 }
 
-message ContactInfoResponse {
+message GetBPPresenceResponse {
+  required uint32 result = 1;
+  repeated bytes messages = 2;
+  optional bytes pmid_id = 3;
+  optional bytes public_key = 4;
+  optional bytes signed_public_key = 5;
+}
+
+message AddBPPresenceRequest {
+  required bytes bufferpacket_name = 1;
+  required bytes data = 2;
+  required bytes pmid = 3;
+  required bytes public_key = 4;
+  required bytes signed_public_key = 5;
+  required bytes signed_request = 6;
+}
+
+message AddBPPresenceResponse {
   required uint32 result = 1;
   optional bytes pmid_id = 2;
   optional bytes public_key = 3;
-  optional bytes public_key_signature = 4;
-  repeated EndPoint ep = 5;
-  optional PersonalDetails pd = 6;
-  optional uint32 status = 7;
+  optional bytes signed_public_key = 4;
 }

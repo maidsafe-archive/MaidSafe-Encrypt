@@ -58,7 +58,7 @@ std::string CreateRandomFile(const std::string &filename,
 
 class FakeCallback {
  public:
-  FakeCallback() : result("") {}
+  FakeCallback() : result() {}
   void CallbackFunc(const std::string &res) {
     result = res;
   }

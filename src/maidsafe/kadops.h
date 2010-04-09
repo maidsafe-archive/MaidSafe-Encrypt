@@ -35,7 +35,7 @@ namespace maidsafe {
 
 class CallbackObj {
  public:
-  CallbackObj() : mutex_(), called_(false), result_("") {}
+  CallbackObj() : mutex_(), called_(false), result_() {}
   ~CallbackObj() {}
   void CallbackFunc(const std::string &result) {
     boost::mutex::scoped_lock lock(mutex_);

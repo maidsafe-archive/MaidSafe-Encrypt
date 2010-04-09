@@ -158,7 +158,7 @@ void ChunkStore::FindFiles(const fs::path &root_dir_path,
   try {
     if (!fs::exists(root_dir_path))
       return;
-    std::string non_hex_name("");
+    std::string non_hex_name;
     fs::directory_iterator end_itr;
     for (fs::directory_iterator itr(root_dir_path); itr != end_itr; ++itr) {
   //    printf("Iter at %s\n", itr->path().filename().c_str());
@@ -632,7 +632,7 @@ int ChunkStore::HashCheckChunk(const std::string &key) {
 
 int ChunkStore::HashCheckChunk(const std::string &key,
                                const fs::path &chunk_path) {
-  std::string non_hex_filename("");
+  std::string non_hex_filename;
   boost::uint64_t chunk_size(0);
   boost::posix_time::ptime now(boost::posix_time::microsec_clock::local_time());
   {

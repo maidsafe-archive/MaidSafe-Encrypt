@@ -53,7 +53,7 @@
 
 namespace maidsafe {
 
-CC_CallbackResult::CC_CallbackResult() : result("") {}
+CC_CallbackResult::CC_CallbackResult() : result() {}
 
 void CC_CallbackResult::Reset() {
   result = "";
@@ -81,7 +81,7 @@ ClientController::ClientController() : client_chunkstore_(),
                                        auth_(),
                                        ss_(),
                                        ser_da_(),
-                                       ser_dm_(""),
+                                       ser_dm_(),
                                        db_enc_queue_(),
                                        seh_(),
                                        instant_messages_(),
@@ -91,7 +91,8 @@ ClientController::ClientController() : client_chunkstore_(),
                                        client_store_(),
                                        initialised_(false),
                                        logging_out_(false),
-                                       logged_in_(false) {}
+                                       logged_in_(false),
+                                       imn_() {}
 
 boost::mutex cc_mutex;
 
@@ -219,21 +220,24 @@ int ClientController::ParseDa() {
     Key k = data_atlas.keys(n);
     keys.push_back(k);
   }
-  SessionSingleton::getInstance()->LoadKeys(&keys);
+  ss_->LoadKeys(&keys);
 
   std::list<PublicContact> contacts;
   for (int n = 0; n < data_atlas.contacts_size(); ++n) {
     PublicContact pc = data_atlas.contacts(n);
     contacts.push_back(pc);
   }
-  SessionSingleton::getInstance()->LoadContacts(&contacts);
+  ss_->LoadContacts(&contacts);
 
   std::list<Share> shares;
   for (int n = 0; n < data_atlas.shares_size(); ++n) {
     Share sh = data_atlas.shares(n);
     shares.push_back(sh);
   }
-  SessionSingleton::getInstance()->LoadShares(&shares);
+  ss_->LoadShares(&shares);
+
+  if (data_atlas.has_pd())
+    ss_->SetPd(data_atlas.pd());
 
   DataMap dm_root, dm_shares;
   dm_root = data_atlas.dms(0);
@@ -267,15 +271,15 @@ int ClientController::SerialiseDa() {
 #endif
     return kClientControllerNotInitialised;
   }
-  DataAtlas data_atlas_;
-  data_atlas_.set_root_db_key(ss_->RootDbKey());
+  DataAtlas data_atlas;
+  data_atlas.set_root_db_key(ss_->RootDbKey());
   DataMap root_dm, shares_dm;
   seh_.EncryptDb(kRoot, PRIVATE, "", "", false, &root_dm);
   seh_.EncryptDb(base::TidyPath(kRootSubdir[1][0]), PRIVATE, "", "", false,
                   &shares_dm);
-  DataMap *dm = data_atlas_.add_dms();
+  DataMap *dm = data_atlas.add_dms();
   *dm = root_dm;
-  dm = data_atlas_.add_dms();
+  dm = data_atlas.add_dms();
   *dm = shares_dm;
 #ifdef DEBUG
   // printf("data_atlas_.dms(0).file_hash(): %s\n",
@@ -288,7 +292,7 @@ int ClientController::SerialiseDa() {
   ss_->GetKeys(&keyring);
   while (!keyring.empty()) {
     KeyAtlasRow kar = keyring.front();
-    Key *k = data_atlas_.add_keys();
+    Key *k = data_atlas.add_keys();
     k->set_type(maidsafe::PacketType(kar.type_));
     k->set_id(kar.id_);
     k->set_private_key(kar.private_key_);
@@ -301,7 +305,7 @@ int ClientController::SerialiseDa() {
   std::vector<maidsafe::mi_contact> contacts;
   ss_->GetContactList(&contacts);
   for (unsigned int n = 0; n < contacts.size(); ++n) {
-    PublicContact *pc = data_atlas_.add_contacts();
+    PublicContact *pc = data_atlas.add_contacts();
     pc->set_pub_name(contacts[n].pub_name_);
     pc->set_pub_key(contacts[n].pub_key_);
     pc->set_full_name(contacts[n].full_name_);
@@ -323,7 +327,7 @@ int ClientController::SerialiseDa() {
   ss_->GetFullShareList(ALPHA, kAll, &ps_list);
   while (!ps_list.empty()) {
     PrivateShare this_ps = ps_list.front();
-    Share *sh = data_atlas_.add_shares();
+    Share *sh = data_atlas.add_shares();
     sh->set_name(this_ps.Name());
     sh->set_msid(this_ps.Msid());
     sh->set_msid_pub_key(this_ps.MsidPubKey());
@@ -343,9 +347,13 @@ int ClientController::SerialiseDa() {
     ps_list.pop_front();
   }
 //  printf("ClientController::SerialiseDa() - Finished with Shares.\n");
+
+  PersonalDetails *pd = data_atlas.mutable_pd();
+  *pd = ss_->Pd();
+
   ser_da_.clear();
   ser_dm_.clear();
-  data_atlas_.SerializeToString(&ser_da_);
+  data_atlas.SerializeToString(&ser_da_);
   seh_.EncryptString(ser_da_, &ser_dm_);
 
 //  printf("ClientController::SerialiseDa() - Serialised.\n");
@@ -621,14 +629,6 @@ bool ClientController::ValidateUser(const std::string &password) {
 
   // Do BP operations if need be
   if (ss_->PublicUsername() != "") {
-    std::vector<std::string> info;
-    if (GetInfo("", &info) != 0) {
-#ifdef DEBUG
-      printf("ClientController::ValidateUser - Cannot get BP Info.\n");
-#endif
-      ss_->ResetSession();
-      return false;
-    }
     clear_messages_thread_ = boost::thread(
                              &ClientController::ClearStaleMessages, this);
   }
@@ -1578,6 +1578,49 @@ int ClientController::SendInstantFile(std::string *filename,
   return res;
 }
 
+void ClientController::onInstantMessage(const std::string &message,
+                                        const boost::uint32_t&,
+                                        const boost::int16_t&,
+                                        const float&) {
+  GenericPacket gp;
+  if (!gp.ParseFromString(message)) {
+    return;
+  }
+
+  BufferPacketMessage bpm;
+  crypto::Crypto co;
+  co.set_symm_algorithm(crypto::AES_256);
+  if (!bpm.ParseFromString(gp.data())) {
+    return;
+  }
+
+  std::string senders_pk = ss_->GetContactPublicKey(bpm.sender_id());
+  if (senders_pk.empty()) {
+    return;
+  }
+
+  if (!co.AsymCheckSig(gp.data(), gp.signature(), senders_pk,
+      crypto::STRING_STRING)) {
+    return;
+  }
+  std::string aes_key = co.AsymDecrypt(bpm.rsaenc_key(), "",
+                        maidsafe::SessionSingleton::getInstance()->
+                        PrivateKey(maidsafe::MPID), crypto::STRING_STRING);
+  std::string instant_message(co.SymmDecrypt(bpm.aesenc_message(),
+                              "", crypto::STRING_STRING, aes_key));
+  InstantMessage im;
+  if (!im.ParseFromString(instant_message)) {
+    return;
+  }
+  imn_(im);
+//  analyseMessage(im);
+}
+
+void ClientController::SetIMNotifier(IMNotifier imn) {
+  imn_ = imn;
+}
+
+
 ////////////////////////
 // Contact Operations //
 ////////////////////////
@@ -1783,58 +1826,7 @@ std::string ClientController::GenerateBPInfo() {
   for (size_t n = 0; n < contacts.size(); ++n) {
     bpi.add_users(co.Hash(contacts[n], "", crypto::STRING_STRING, false));
   }
-  EndPoint *ep = bpi.add_ep();
-  *ep = ss_->ExternalEp();
-  if (!ep->IsInitialized())
-    printf("external\n");
-  ep = bpi.add_ep();
-  *ep = ss_->InternalEp();
-  if (!ep->IsInitialized())
-    printf("internal\n");
-  ep = bpi.add_ep();
-  *ep = ss_->RendezvousEp();
-  if (!ep->IsInitialized())
-    printf("rdzv\n");
-  PersonalDetails *pd = bpi.mutable_pd();
-  *pd = ss_->Pd();
   std::string ser_bpi(bpi.SerializeAsString());
-  return ser_bpi;
-}
-
-std::string ClientController::GenerateBPInfo(
-    const std::vector<std::string> &info) {
-  std::vector<std::string> contacts;
-  if (ss_->GetPublicUsernameList(&contacts) != 0)
-    return "";
-  BufferPacketInfo bpi;
-  bpi.set_owner(ss_->Id(MPID));
-  bpi.set_owner_publickey(ss_->PublicKey(MPID));
-  crypto::Crypto co;
-  co.set_hash_algorithm(crypto::SHA_512);
-  for (size_t n = 0; n < contacts.size(); ++n) {
-    bpi.add_users(co.Hash(contacts[n], "", crypto::STRING_STRING, false));
-  }
-  bpi.set_online(ss_->ConnectionStatus());
-  EndPoint *ep = bpi.add_ep();
-  *ep = ss_->ExternalEp();
-  ep = bpi.add_ep();
-  *ep = ss_->InternalEp();
-  ep = bpi.add_ep();
-  *ep = ss_->RendezvousEp();
-  PersonalDetails *pd = bpi.mutable_pd();
-  if (!info.empty()) {
-    pd->set_full_name(info[0]);
-    pd->set_phone_number(info[1]);
-    pd->set_birthday(info[2]);
-    pd->set_gender(info[3]);
-    pd->set_language(info[4]);
-    pd->set_city(info[5]);
-    pd->set_country(info[6]);
-  } else {
-    *pd = ss_->Pd();
-  }
-  std::string ser_bpi;
-  bpi.SerializeToString(&ser_bpi);
   return ser_bpi;
 }
 
@@ -1896,8 +1888,8 @@ int ClientController::GetSortedShareList(
 }
 
 int ClientController::CreateNewShare(const std::string &name,
-                      const std::set<std::string> &admins,
-                      const std::set<std::string> &readonlys) {
+                                     const std::set<std::string> &admins,
+                                     const std::set<std::string> &readonlys) {
   if (!initialised_) {
 #ifdef DEBUG
     printf("CC::CreateNewShare - Not initialised.\n");
@@ -2038,87 +2030,6 @@ int ClientController::CreateNewShare(const std::string &name,
   #endif
       return -22;
     }
-  }
-
-  return 0;
-}
-
-/////////////////////
-// Info Operations //
-/////////////////////
-
-int ClientController::GetInfo(const std::string &public_username,
-                              std::vector<std::string> *info) {
-  if (!logged_in_) {
-    if (!public_username.empty() && info == NULL)
-      return kClientControllerError;
-    else
-      info->clear();
-    BPCallback bpc;
-    ContactInfoNotifier cin = boost::bind(&BPCallback::ContactInfoCallback,
-                              &bpc, _1, _2, _3, _4);
-    bool own(true);
-    if (public_username.empty()) {
-      sm_->OwnInfo(cin);
-    } else {
-      sm_->ContactInfo(public_username, ss_->Id(MPID), cin);
-      own = false;
-    }
-    while (bpc.result == kGeneralError)
-      boost::this_thread::sleep(boost::posix_time::milliseconds(250));
-
-    if (bpc.result != kSuccess) {
-  #ifdef DEBUG
-      printf("CC::GetInfo - Failed to get info %d\n", bpc.result);
-  #endif
-      return bpc.result;
-    }
-
-    if (!own) {
-      info->push_back(bpc.personal_details.full_name());
-      info->push_back(bpc.personal_details.phone_number());
-      info->push_back(bpc.personal_details.gender());
-      info->push_back(bpc.personal_details.language());
-      info->push_back(bpc.personal_details.city());
-      info->push_back(bpc.personal_details.country());
-    } else {
-#ifdef DEBUG
-      printf("Putting stuff to the session - %s\n",
-             bpc.personal_details.full_name().c_str());
-#endif
-      ss_->SetPd(bpc.personal_details);
-      std::vector<EndPoint> eps(bpc.end_point.begin(), bpc.end_point.end());
-      printf("CC::GetInfo - %d\n", eps.size());
-      ss_->SetExternalEp(eps[0]);
-//      ++it;
-      ss_->SetInternalEp(eps[1]);
-//      ++it;
-      ss_->SetRendezvousEp(eps[2]);
-    }
-  }
-
-  return 0;
-}
-
-int ClientController::SetInfo(const std::vector<std::string> &info) {
-  int n = sm_->ModifyBPInfo(GenerateBPInfo(info));
-  if (n != 0) {
-#ifdef DEBUG
-    printf("CC::SetInfo - Failed to set info.\n");
-#endif
-    return n;
-  }
-
-  if (!info.empty()) {
-    PersonalDetails pd;
-    pd.set_full_name(info[0]);
-    pd.set_phone_number(info[1]);
-    pd.set_birthday(info[2]);
-    pd.set_gender(info[3]);
-    pd.set_language(info[4]);
-    pd.set_city(info[5]);
-    pd.set_country(info[6]);
-    ss_->SetPd(pd);
   }
 
   return 0;
@@ -2638,10 +2549,10 @@ bool ClientController::ReadOnly(const std::string &path, bool gui) {
 //  fs::path private_shares_(base::TidyPath(kSharesSubdir[0][0]), fs::native);
 //  if (parnt_path_ == private_shares_) {
 //    return false
-    std::string msid("");
+    std::string msid;
     int n = PathDistinction(path, &msid);
     if (n == 2 && msid != "") {
-      std::string pub_key(""), priv_key("");
+      std::string pub_key, priv_key;
       int result = ss_->GetShareKeys(msid, &pub_key, &priv_key);
       if (result != 0) {
 #ifdef DEBUG
@@ -2715,7 +2626,7 @@ int ClientController::mkdir(const std::string &path) {
   printf("\t\tCC::mkdir %s\n", path.c_str());
 #endif
   DirType dir_type;
-  std::string msid("");
+  std::string msid;
   if (GetDb(path, &dir_type, &msid)) {
 #ifdef DEBUG
     printf("\t\tIn CC::mkdir, GetDb (%s) failed.\n", path.c_str());
@@ -2803,8 +2714,8 @@ int ClientController::rename(const std::string &path,
 #endif
   DirType dir_type;
   DirType db_type2;
-  std::string msid("");
-  std::string msid2("");
+  std::string msid;
+  std::string msid2;
   if (GetDb(path, &dir_type, &msid) || GetDb(path2, &db_type2, &msid2)) {
 #ifdef DEBUG
     printf("\t\tCC::rename failed to get one of the dbs\n");
@@ -2874,7 +2785,7 @@ int ClientController::rmdir(const std::string &path) {
   printf("\t\tCC::rmdir %s\n", path.c_str());
 #endif
   DirType dir_type;
-  std::string msid("");
+  std::string msid;
   if (GetDb(path, &dir_type, &msid))
     return -1;
   std::map<std::string, ItemType> children;
@@ -2917,7 +2828,7 @@ int ClientController::getattr(const std::string &path, std::string &ser_mdm) {
   printf("\t\tCC::getattr %s\n", path.c_str());
 #endif
   DirType dir_type;
-  std::string msid("");
+  std::string msid;
   if (GetDb(path, &dir_type, &msid))
     return -1;
   boost::scoped_ptr<DataAtlasHandler> dah_(new DataAtlasHandler());
@@ -2940,7 +2851,7 @@ int ClientController::readdir(const std::string &path,  // NOLINT
   printf("\t\tCC::readdir %s\n", path.c_str());
 #endif
   DirType dir_type;
-  std::string msid("");
+  std::string msid;
   if (GetDb(path, &dir_type, &msid))
     return -1;
   boost::scoped_ptr<DataAtlasHandler> dah_(new DataAtlasHandler());
@@ -2960,7 +2871,7 @@ int ClientController::mknod(const std::string &path) {
   printf("\t\tCC::mknod %s\n", path.c_str());
 #endif
   DirType dir_type;
-  std::string msid("");
+  std::string msid;
   if (GetDb(path, &dir_type, &msid))
     return -1;
 #ifdef DEBUG
@@ -2993,7 +2904,7 @@ int ClientController::unlink(const std::string &path) {
   printf("\t\tCC::unlink %s\n", path.c_str());
 #endif
   DirType dir_type;
-  std::string msid("");
+  std::string msid;
   if (GetDb(path, &dir_type, &msid))
     return -1;
   if (RemoveElement(path))
@@ -3029,8 +2940,8 @@ int ClientController::link(const std::string &path, const std::string &path2) {
 #endif
   DirType dir_type;
   DirType db_type2;
-  std::string msid("");
-  std::string msid2("");
+  std::string msid;
+  std::string msid2;
   if (GetDb(path, &dir_type, &msid) || GetDb(path2, &db_type2, &msid2))
     return -1;
   std::string ms_old_rel_entry_ = path;
@@ -3073,8 +2984,8 @@ int ClientController::cpdir(const std::string &path,
 #endif
   DirType dir_type;
   DirType db_type2;
-  std::string msid("");
-  std::string msid2("");
+  std::string msid;
+  std::string msid2;
   if (GetDb(path, &dir_type, &msid) || GetDb(path2, &db_type2, &msid2))
     return -1;
   std::string ms_old_rel_entry_ = path;
@@ -3138,7 +3049,7 @@ int ClientController::utime(const std::string &path) {
   printf("\t\tCC::utime %s\n", path.c_str());
 #endif
   DirType dir_type;
-  std::string msid("");
+  std::string msid;
   if (GetDb(path, &dir_type, &msid))
     return -1;
   std::string thepath = path;
@@ -3174,7 +3085,7 @@ int ClientController::atime(const std::string &path) {
   printf("\t\tCC::atime %s\n", path.c_str());
 #endif
   DirType dir_type;
-  std::string msid("");
+  std::string msid;
   if (GetDb(path, &dir_type, &msid))
     return -1;
   std::string thepath = path;
@@ -3202,7 +3113,7 @@ int ClientController::open(const std::string &path) {
   printf("\t\tCC::open %s\n", path.c_str());
 #endif
   DirType dir_type;
-  std::string msid("");
+  std::string msid;
   if (GetDb(path, &dir_type, &msid))
     return -1;
   return RetrieveElement(path);
@@ -3219,7 +3130,7 @@ int ClientController::read(const std::string &path) {
   printf("\t\tCC::read %s\n", path.c_str());
 #endif
   DirType dir_type;
-  std::string msid("");
+  std::string msid;
   if (GetDb(path, &dir_type, &msid))
     return -1;
   return RetrieveElement(path);
@@ -3236,7 +3147,7 @@ int ClientController::write(const std::string &path) {
   printf("\t\tCC::write %s\n", path.c_str());
 #endif
   DirType dir_type;
-  std::string msid("");
+  std::string msid;
   if (GetDb(path, &dir_type, &msid)) {
 #ifdef DEBUG
     printf("\t\tCC::write GetDb failed.\n");

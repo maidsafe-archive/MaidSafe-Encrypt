@@ -250,10 +250,6 @@ class VaultService : public maidsafe::MaidsafeService {
                             const maidsafe::AddBPMessageRequest* request,
                             maidsafe::AddBPMessageResponse* response,
                             google::protobuf::Closure* done);
-  virtual void ContactInfo(google::protobuf::RpcController* controller,
-                           const maidsafe::ContactInfoRequest* request,
-                           maidsafe::ContactInfoResponse* response,
-                           google::protobuf::Closure* done);
   int AddAccount(const std::string &pmid, const boost::uint64_t &offer);
   bool HaveAccount(const std::string &pmid);
  private:

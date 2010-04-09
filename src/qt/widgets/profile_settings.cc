@@ -59,19 +59,19 @@ void ProfileSettings::setActive(bool b) {
     init_ = true;
 
     QString pub = ClientController::instance()->publicUsername();
-    std::vector<std::string> profileInfo;
+//    std::vector<std::string> profileInfo;
 
     ui_.pubNameEdit->setText(pub);
 
-    qDebug() << "ProfileSettings::setActive - avant getinfo";
-    int n = ClientController::instance()->GetInfo("", &profileInfo);
-    qDebug() << "ProfileSettings::setActive - got info";
+//    qDebug() << "ProfileSettings::setActive - avant getinfo";
+//    int n = ClientController::instance()->GetInfo("", &profileInfo);
+//    qDebug() << "ProfileSettings::setActive - got info";
 
-    if (n != 0) {
-      QMessageBox::warning(this, tr("Error"),
-                           QString(tr("contact doesn't exist. %1").arg(pub)));
-      return;
-    }
+//    if (n != 0) {
+//      QMessageBox::warning(this, tr("Error"),
+//                           QString(tr("contact doesn't exist. %1").arg(pub)));
+//      return;
+//    }
 
     // qDebug() << profileInfo ;
     maidsafe::PersonalDetails pd =
