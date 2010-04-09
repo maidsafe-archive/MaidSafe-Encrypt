@@ -61,6 +61,7 @@ size_t CheckStoredCopies(std::map<std::string, std::string> chunks,
 
 namespace maidsafe_vault {
 class PDVaultTest;
+class PDVaultTest_FUNC_MAID_StoreAndGetChunks_Test;
 class RunPDVaults;
 }  // namespace maidsafe_vault
 
@@ -365,10 +366,9 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_DeletePacket);
   FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_GetAccountDetails);
   FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_GetFilteredAverage);
-  FRIEND_TEST(PDVaultTest, FUNC_MAID_StoreAndGetChunks);
-  FRIEND_TEST(PDVaultTest, FUNC_MAID_Cachechunk);
   friend class MsmSetLocalVaultOwnedTest;
   friend class maidsafe_vault::PDVaultTest;
+  friend class maidsafe_vault::PDVaultTest_FUNC_MAID_StoreAndGetChunks_Test;
   friend class maidsafe_vault::RunPDVaults;
   // Check the inputs to the public methods are valid
   int ValidateInputs(const std::string &name,

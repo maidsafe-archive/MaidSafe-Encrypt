@@ -587,19 +587,19 @@ TEST_F(SessionSingletonTest, BEH_MAID_LiveContacts) {
     ASSERT_EQ(inserted_eps.ip(n), end_points.ip(n));
     ASSERT_EQ(inserted_eps.port(n), end_points.port(n));
   }
-  ASSERT_EQ(0, transport_id);
-  ASSERT_EQ(0, connection_id);
-  ASSERT_EQ(0, timestamp);
+  ASSERT_EQ(boost::uint32_t(0), transport_id);
+  ASSERT_EQ(boost::uint32_t(0), connection_id);
+  ASSERT_EQ(boost::uint32_t(0), timestamp);
   ASSERT_EQ(7, status);
   ASSERT_EQ(0, ss_->LiveContactTransportConnection(contact_a, &transport_id,
             &connection_id));
-  ASSERT_EQ(0, transport_id);
-  ASSERT_EQ(0, connection_id);
+  ASSERT_EQ(boost::uint32_t(0), transport_id);
+  ASSERT_EQ(boost::uint32_t(0), connection_id);
   ASSERT_EQ(0, ss_->StartLiveConnection(contact_a, 2, 23456));
   ASSERT_EQ(0, ss_->LiveContactDetails(contact_a, &end_points, &transport_id,
             &connection_id, &status, &timestamp));
-  ASSERT_EQ(2, transport_id);
-  ASSERT_EQ(23456, connection_id);
+  ASSERT_EQ(boost::uint32_t(2), transport_id);
+  ASSERT_EQ(boost::uint32_t(23456), connection_id);
   boost::uint32_t now = base::get_epoch_time();
   ASSERT_TRUE(timestamp <= now && timestamp > now - 2);
 
@@ -620,8 +620,8 @@ TEST_F(SessionSingletonTest, BEH_MAID_LiveContacts) {
     ASSERT_EQ(inserted_eps.ip(n), end_points.ip(n));
     ASSERT_EQ(inserted_eps.port(n), end_points.port(n));
   }
-  ASSERT_EQ(3, transport_id);
-  ASSERT_EQ(33333, connection_id);
+  ASSERT_EQ(boost::uint32_t(3), transport_id);
+  ASSERT_EQ(boost::uint32_t(33333), connection_id);
   ASSERT_EQ(2, status);
   now = base::get_epoch_time();
   ASSERT_TRUE(timestamp <= now && timestamp > now - 2);

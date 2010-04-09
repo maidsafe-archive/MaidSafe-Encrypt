@@ -151,10 +151,10 @@ class AccountAmendmentHandler {
   FRIEND_TEST(AccountAmendmentHandlerTest, BEH_MAID_AAH_AssessAmendment);
   FRIEND_TEST(AccountAmendmentHandlerTest, BEH_MAID_AAH_ProcessRequest);
   FRIEND_TEST(AccountAmendmentHandlerTest, BEH_MAID_AAH_CleanUp);
-  FRIEND_TEST(MockVaultServicesTest, FUNC_MAID_ServicesAmendAccount);
   FRIEND_TEST(MockVaultServicesTest, BEH_MAID_ServicesAddToWatchList);
-  FRIEND_TEST(MockVaultServicesTest, FUNC_MAID_ServicesRemoveFromWatchList);
+  FRIEND_TEST(MockVaultServicesTest, BEH_MAID_ServicesRemoveFromWatchList);
   FRIEND_TEST(MockVaultServicesTest, BEH_MAID_ServicesAddToReferenceList);
+  FRIEND_TEST(MockVaultServicesTest, BEH_MAID_ServicesAmendAccount);
   // Searches and actions the amendment request in an AccountAmendment
   int AssessAmendment(const std::string &owner_pmid,
                       const int &amendment_field,

@@ -37,7 +37,8 @@
 #include "maidsafe/maidsafevalidator.h"
 #include "maidsafe/vaultbufferpackethandler.h"
 #include "maidsafe/vault/vaultchunkstore.h"
-#include "maidsafe/vault/vaultservicelogic.h"
+
+// TODO(Team#) order method definitions according to declarations in header
 
 namespace maidsafe_vault {
 
@@ -63,26 +64,44 @@ void int_dummy_callback(const int &result) {
 
 template<>
 void RemoteTask<maidsafe::AmendAccountRequest>::run() {
-  vault_service_logic_->AmendRemoteAccount(request_, found_local_result_,
-                                           callback_, transport_id_);
+  if (vault_service_logic_ != NULL)
+    vault_service_logic_->AmendRemoteAccount(request_, found_local_result_,
+                                             callback_, transport_id_);
 }
 
 template <>
 void RemoteTask<maidsafe::AccountStatusRequest>::run() {
-  vault_service_logic_->RemoteVaultAbleToStore(request_, found_local_result_,
-                                               callback_, transport_id_);
+  if (vault_service_logic_ != NULL)
+    vault_service_logic_->RemoteVaultAbleToStore(request_, found_local_result_,
+                                                 callback_, transport_id_);
 }
 
 template <>
 void RemoteTask<maidsafe::AddToReferenceListRequest>::run() {
-  vault_service_logic_->AddToRemoteRefList(request_, found_local_result_,
-                                           callback_, transport_id_);
+  if (vault_service_logic_ != NULL)
+    vault_service_logic_->AddToRemoteRefList(request_, found_local_result_,
+                                             callback_, transport_id_);
 }
 
 void SendCachableChunkTask::run() {
   if (vault_service_logic_ != NULL)
     vault_service_logic_->CacheChunk(chunkname_, chunkcontent_, cacher_,
                                      callback_, transport_id_);
+}
+
+template<>
+void GetRemoteInfoTask<maidsafe::GetAccountRequest, VoidFuncIntAccount>::run() {
+  if (vault_service_logic_ != NULL)
+    vault_service_logic_->GetAccount(close_contacts_, get_info_requests_,
+                                     callback_, transport_id_);
+}
+
+template<>
+void GetRemoteInfoTask
+    <maidsafe::GetChunkInfoRequest, VoidFuncIntChunkInfo>::run() {
+  if (vault_service_logic_ != NULL)
+    vault_service_logic_->GetChunkInfo(close_contacts_, get_info_requests_,
+                                       callback_, transport_id_);
 }
 
 VaultService::VaultService(const std::string &pmid,
@@ -118,7 +137,7 @@ void VaultService::AddStartupSyncData(
     const maidsafe::GetSyncDataResponse &get_sync_data_response) {
   if (!get_sync_data_response.IsInitialized()) {
 #ifdef DEBUG
-    printf("In VaultService::AddStartupSyncData(%s), response is not "
+    printf("In VaultService::AddStartupSyncData (%s), response is not "
            "initialized.\n", HexSubstr(pmid_).c_str());
 #endif
     ah_.set_started(true);
@@ -128,7 +147,7 @@ void VaultService::AddStartupSyncData(
 
   if (get_sync_data_response.result() != kAck) {
 #ifdef DEBUG
-    printf("In VaultService::AddStartupSyncData(%s), result is not kAck.\n",
+    printf("In VaultService::AddStartupSyncData (%s), result is negative.\n",
            HexSubstr(pmid_).c_str());
 #endif
     ah_.set_started(true);
@@ -138,9 +157,15 @@ void VaultService::AddStartupSyncData(
 
   if (get_sync_data_response.has_vault_account_set()) {
     ah_.GetSetFromPb(get_sync_data_response.vault_account_set());
+#ifdef DEBUG
+    int n = get_sync_data_response.vault_account_set().vault_account_size();
+    if (n > 0)
+      printf("In VaultService::AddStartupSyncData (%s), added %d accounts.\n",
+             HexSubstr(pmid_).c_str(), n);
+#endif
   } else {
 #ifdef DEBUG
-    printf("In VaultService::AddStartupSyncData(%s), missing "
+    printf("In VaultService::AddStartupSyncData (%s), missing "
            "vault_account_set.\n", HexSubstr(pmid_).c_str());
 #endif
     ah_.set_started(true);
@@ -148,9 +173,15 @@ void VaultService::AddStartupSyncData(
 
   if (get_sync_data_response.has_chunk_info_map()) {
     cih_.GetMapFromPb(get_sync_data_response.chunk_info_map());
+#ifdef DEBUG
+    int n = get_sync_data_response.chunk_info_map().vault_chunk_info_size();
+    if (n > 0)
+      printf("In VaultService::AddStartupSyncData (%s), added %d chunk infos."
+             "\n", HexSubstr(pmid_).c_str(), n);
+#endif
   } else {
 #ifdef DEBUG
-    printf("In VaultService::AddStartupSyncData(%s), missing "
+    printf("In VaultService::AddStartupSyncData (%s), missing "
            "chunk_info_map.\n", HexSubstr(pmid_).c_str());
 #endif
     cih_.set_started(true);
@@ -497,9 +528,10 @@ void VaultService::FinalisePayment(const std::string &chunk_name,
     }
   } else {
 #ifdef DEBUG
-    printf("In VaultService::FinalisePayment (%s), couldn't commit to watch "
-           "list yet (%s hasn't stored chunk %s).\n", HexSubstr(pmid_).c_str(),
-           HexSubstr(pmid).c_str(), HexSubstr(chunk_name).c_str());
+//    printf("In VaultService::FinalisePayment (%s), couldn't commit to watch "
+//           "list yet (%s hasn't stored chunk %s).\n",
+//           HexSubstr(pmid_).c_str(), HexSubstr(pmid).c_str(),
+//           HexSubstr(chunk_name).c_str());
 #endif
   }
 }
@@ -659,10 +691,10 @@ void VaultService::DoneAddToReferenceList(
     }
   } else {
 #ifdef DEBUG
-    printf("In VaultService::DoneAddToReferenceList (%s), couldn't commit to "
-           "watch list yet (%s hasn't paid for chunk %s).\n",
-           HexSubstr(pmid_).c_str(), HexSubstr(client_pmid).c_str(),
-           HexSubstr(chunk_name).c_str());
+//    printf("In VaultService::DoneAddToReferenceList (%s), couldn't commit to "
+//           "watch list yet (%s hasn't paid for chunk %s).\n",
+//           HexSubstr(pmid_).c_str(), HexSubstr(client_pmid).c_str(),
+//           HexSubstr(chunk_name).c_str());
 #endif
   }
 }
@@ -729,9 +761,11 @@ void VaultService::AmendAccount(google::protobuf::RpcController*,
     return;
   }
 
-  /* printf("VaultService::AmendAccount - from %s to %s\n",
-         HexSubstr(pmid).c_str(),
-         HexSubstr(knode_->node_id()).c_str()); */
+//  printf("VaultService::AmendAccount (%s), from %s for %s.\n",
+//         HexSubstr(pmid_).c_str(),
+//         HexSubstr(request->signed_size().pmid()).c_str(),
+//         HexSubstr(pmid).c_str());
+
   if (ah_.HaveAccount(pmid) == kAccountNotFound) {
     if (request->amendment_type() ==
         maidsafe::AmendAccountRequest::kSpaceOffered) {
@@ -749,13 +783,15 @@ void VaultService::AmendAccount(google::protobuf::RpcController*,
 #endif
       }
     } else {
+      done->Run();
 #ifdef DEBUG
       printf("In VaultService::AmendAccount (%s), account to amend (%s) does "
              "not exist.\n", HexSubstr(pmid_).c_str(), HexSubstr(pmid).c_str());
 #endif
-      bool get_account_from_peer(info_synchroniser_.ShouldFetch(pmid));
-                                                    //      if (get_account_from_peer)
-                                                    //        vault_service_logic_->GetAccount(pmid);
+      std::vector<kad::Contact> close_contacts;
+      if (info_synchroniser_.ShouldFetch(pmid, &close_contacts))
+        GetRemoteAccount(pmid, close_contacts);
+      return;
     }
   } else if (request->amendment_type() ==
              maidsafe::AmendAccountRequest::kSpaceOffered) {
@@ -770,6 +806,7 @@ void VaultService::AmendAccount(google::protobuf::RpcController*,
 #endif
     }
   } else {
+    // TODO(Team#) ensure sender (signer) is a valid chunk info holder
     // aah_->ProcessRequest() calls done->Run();
     int result = aah_.ProcessRequest(request, response, done);
     if (result != 0) {
@@ -782,7 +819,6 @@ void VaultService::AmendAccount(google::protobuf::RpcController*,
     return;
   }
   done->Run();
-  return;
 }
 
 void VaultService::AccountStatus(google::protobuf::RpcController*,
@@ -799,17 +835,20 @@ void VaultService::AccountStatus(google::protobuf::RpcController*,
     done->Run();
     return;
   }
+  std::string account_pmid = request->account_pmid();
 
   boost::uint64_t space_offered(0), space_given(0), space_taken(0);
-  int n = ah_.GetAccountInfo(request->account_pmid(), &space_offered,
-                             &space_given, &space_taken);
+  int n = ah_.GetAccountInfo(account_pmid, &space_offered, &space_given,
+                             &space_taken);
   if (n != 0) {
 #ifdef DEBUG
     printf("In VaultService::AccountStatus (%s), ", HexSubstr(pmid_).c_str());
-    printf("don't have the account for %s.\n",
-           HexSubstr(request->account_pmid()).c_str());
+    printf("don't have the account for %s.\n", HexSubstr(account_pmid).c_str());
 #endif
     done->Run();
+    std::vector<kad::Contact> close_contacts;
+    if (info_synchroniser_.ShouldFetch(account_pmid, &close_contacts))
+      GetRemoteAccount(account_pmid, close_contacts);
     return;
   }
 
@@ -826,14 +865,18 @@ void VaultService::AccountStatus(google::protobuf::RpcController*,
     }
     done->Run();
   } else {
-    response->set_result(kAck);
+    crypto::Crypto co;
+    co.set_symm_algorithm(crypto::AES_256);
+    co.set_hash_algorithm(crypto::SHA_512);
+    std::string account_name = co.Hash(request->account_pmid() + kAccount, "",
+                                       crypto::STRING_STRING, false);
     if (!ValidateSignedRequest(request->public_key(),
         request->public_key_signature(), request->request_signature(),
-        request->account_pmid() + kAccount, request->account_pmid())) {
-  #ifdef DEBUG
+        account_name, account_pmid)) {
+#ifdef DEBUG
       printf("In VaultService::AccountStatus (%s), ", HexSubstr(pmid_).c_str());
       printf("failed to validate signed request.\n");
-  #endif
+#endif
       // TODO(Team#5#): return info that we consider "public" from the account
       done->Run();
       return;
@@ -842,6 +885,7 @@ void VaultService::AccountStatus(google::protobuf::RpcController*,
     response->set_space_offered(space_offered);
     response->set_space_given(space_given);
     response->set_space_taken(space_taken);
+    response->set_result(kAck);
     done->Run();
   }
 }
@@ -903,8 +947,8 @@ void VaultService::GetChunk(google::protobuf::RpcController*,
   kad::ContactInfo kc;
   if (!details.empty() && kc.ParseFromString(details)) {
     SendCachableChunkTask *task = new SendCachableChunkTask(chunkname, content,
-                                  kc, vault_service_logic_,
-                                  &int_dummy_callback);
+                                  kc, vault_service_logic_, &int_dummy_callback,
+                                  transport_id_);
     thread_pool_.start(task);
   }
 }
@@ -1131,40 +1175,31 @@ void VaultService::GetSyncData(google::protobuf::RpcController*,
                                google::protobuf::Closure *done) {
   response->set_result(kNack);
   if (!request->IsInitialized()) {
-    done->Run();
 #ifdef DEBUG
-    printf("In VaultService::GetSyncData(%s), request is not initialized.\n",
+    printf("In VaultService::GetSyncData (%s), request is not initialized.\n",
            HexSubstr(pmid_).c_str());
 #endif
-    return;
-  }
-
-  if (!ValidateSignedRequest(request->public_key(),
+  } else if (!ValidateSignedRequest(request->public_key(),
       request->public_key_signature(), request->request_signature(), "",
       request->pmid())) {
-    done->Run();
 #ifdef DEBUG
-    printf("In VaultService::GetSyncData(%s), request does not validate.\n",
+    printf("In VaultService::GetSyncData (%s), request does not validate.\n",
            HexSubstr(pmid_).c_str());
 #endif
-    return;
-  }
-
-  if (!NodeWithinClosest(request->pmid(), kad::K)) {
-    done->Run();
+  } else if (!NodeWithinClosest(request->pmid(), kad::K)) {
 #ifdef DEBUG
-    printf("In VaultService::GetSyncData(%s), requester (%s) not in local"
+    printf("In VaultService::GetSyncData (%s), requester (%s) not in local"
            "routing table's closest k nodes.\n", HexSubstr(pmid_).c_str(),
            HexSubstr(request->pmid()).c_str());
 #endif
   } else {
     response->set_result(kAck);
     VaultAccountSet *vault_account_set = response->mutable_vault_account_set();
-    *vault_account_set = ah_.PutSetToPb();
+    *vault_account_set = ah_.PutSetToPb(request->pmid());
     ChunkInfoMap *chunk_info_map = response->mutable_chunk_info_map();
     *chunk_info_map = cih_.PutMapToPb();
-    done->Run();
   }
+  done->Run();
 }
 
 void VaultService::GetAccount(google::protobuf::RpcController*,
@@ -1175,7 +1210,7 @@ void VaultService::GetAccount(google::protobuf::RpcController*,
   if (!request->IsInitialized()) {
     done->Run();
 #ifdef DEBUG
-    printf("In VaultService::GetAccount(%s), request is not initialized.\n",
+    printf("In VaultService::GetAccount (%s), request is not initialized.\n",
            HexSubstr(pmid_).c_str());
 #endif
     return;
@@ -1186,7 +1221,7 @@ void VaultService::GetAccount(google::protobuf::RpcController*,
       request->account_pmid(), request->pmid())) {
     done->Run();
 #ifdef DEBUG
-    printf("In VaultService::GetAccount(%s), request does not validate.\n",
+    printf("In VaultService::GetAccount (%s), request does not validate.\n",
            HexSubstr(pmid_).c_str());
 #endif
     return;
@@ -1195,7 +1230,7 @@ void VaultService::GetAccount(google::protobuf::RpcController*,
   if (!NodeWithinClosest(request->pmid(), kad::K)) {
     done->Run();
 #ifdef DEBUG
-    printf("In VaultService::GetAccount(%s), requester (%s) not in local"
+    printf("In VaultService::GetAccount (%s), requester (%s) not in local"
            "routing table's closest k nodes.\n", HexSubstr(pmid_).c_str(),
            HexSubstr(request->pmid()).c_str());
 #endif
@@ -1207,7 +1242,7 @@ void VaultService::GetAccount(google::protobuf::RpcController*,
   if (result != kSuccess) {
     done->Run();
 #ifdef DEBUG
-    printf("In VaultService::GetAccount(%s), don't have account for node %s.\n",
+    printf("In VaultService::GetAccount (%s), don't have account for node %s\n",
            HexSubstr(pmid_).c_str(),
            HexSubstr(request->account_pmid()).c_str());
 #endif
@@ -1227,7 +1262,7 @@ void VaultService::GetChunkInfo(google::protobuf::RpcController*,
   if (!request->IsInitialized()) {
     done->Run();
 #ifdef DEBUG
-    printf("In VaultService::GetChunkInfo(%s), request is not initialized.\n",
+    printf("In VaultService::GetChunkInfo (%s), request is not initialized.\n",
            HexSubstr(pmid_).c_str());
 #endif
     return;
@@ -1238,7 +1273,7 @@ void VaultService::GetChunkInfo(google::protobuf::RpcController*,
       request->chunkname(), request->pmid())) {
     done->Run();
 #ifdef DEBUG
-    printf("In VaultService::GetChunkInfo(%s), request does not validate.\n",
+    printf("In VaultService::GetChunkInfo (%s), request does not validate.\n",
            HexSubstr(pmid_).c_str());
 #endif
     return;
@@ -1247,7 +1282,7 @@ void VaultService::GetChunkInfo(google::protobuf::RpcController*,
   if (!NodeWithinClosest(request->pmid(), kad::K)) {
     done->Run();
 #ifdef DEBUG
-    printf("In VaultService::GetChunkInfo(%s), requester (%s) not in local"
+    printf("In VaultService::GetChunkInfo (%s), requester (%s) not in local"
            "routing table's closest k nodes.\n", HexSubstr(pmid_).c_str(),
            HexSubstr(request->pmid()).c_str());
 #endif
@@ -1259,7 +1294,7 @@ void VaultService::GetChunkInfo(google::protobuf::RpcController*,
   if (result != kSuccess) {
     done->Run();
 #ifdef DEBUG
-    printf("In VaultService::GetChunkInfo(%s), don't have ChunkInfo for chunk"
+    printf("In VaultService::GetChunkInfo (%s), don't have ChunkInfo for chunk"
            " %s.\n", HexSubstr(pmid_).c_str(),
            HexSubstr(request->chunkname()).c_str());
 #endif
@@ -1520,7 +1555,7 @@ void VaultService::ModifyBPInfo(google::protobuf::RpcController*,
     return;
   }
 
-  if (!UpdateBPChunkLocal(request->bufferpacket_name(), ser_bp)) {
+  if (!UpdateChunkLocal(request->bufferpacket_name(), ser_bp)) {
     response->set_result(kNack);
     done->Run();
 #ifdef DEBUG
@@ -1605,7 +1640,7 @@ void VaultService::GetBPMessages(google::protobuf::RpcController*,
   for (int i = 0; i < static_cast<int>(msgs.size()); ++i)
     response->add_messages(msgs[i]);
 
-  if (!UpdateBPChunkLocal(request->bufferpacket_name(), ser_bp)) {
+  if (!UpdateChunkLocal(request->bufferpacket_name(), ser_bp)) {
     response->clear_messages();
     response->set_result(kNack);
     done->Run();
@@ -1679,7 +1714,7 @@ void VaultService::AddBPMessage(google::protobuf::RpcController*,
     return;
   }
 
-  if (!UpdateBPChunkLocal(request->bufferpacket_name(), updated_bp)) {
+  if (!UpdateChunkLocal(request->bufferpacket_name(), updated_bp)) {
     response->set_result(kNack);
     done->Run();
 #ifdef DEBUG
@@ -1760,9 +1795,8 @@ bool VaultService::ValidateStoreContract(const maidsafe::StoreContract &sc) {
   if (sc.pmid() == sc.inner_contract().signed_size().pmid()) {
 #ifdef DEBUG
     printf("In VaultService::ValidateStoreContract, PMIDs of contract and "
-           "signed size don't match (%s vs %s).\n",
-           HexSubstr(sc.pmid()).c_str(),
-           HexSubstr(sc.inner_contract().signed_size().pmid()).c_str());
+           "signed size can't be identical (%s).\n",
+           HexSubstr(sc.pmid()).c_str());
 #endif
     return false;
   }
@@ -1791,6 +1825,10 @@ bool VaultService::ValidateAmendRequest(
   }
 
   const maidsafe::SignedSize &sz = request->signed_size();
+  if (!ValidateSignedSize(sz)) {
+    return false;
+  }
+
   if (request->amendment_type() ==
       maidsafe::AmendAccountRequest::kSpaceOffered) {
     if (request->account_pmid() != sz.pmid()) {
@@ -1807,10 +1845,6 @@ bool VaultService::ValidateAmendRequest(
 #endif
       return false;
     }
-  }
-
-  if (!ValidateSignedSize(sz)) {
-    return false;
   }
 
   *pmid = request->account_pmid();
@@ -1882,9 +1916,9 @@ bool VaultService::StoreChunkLocal(const std::string &chunkname,
   return (result == kSuccess || result == kInvalidChunkType);
 }
 
-bool VaultService::UpdateBPChunkLocal(const std::string &bufferpacket_name,
-                                      const std::string &content) {
-  return vault_chunkstore_->UpdateChunk(bufferpacket_name, content) == kSuccess;
+bool VaultService::UpdateChunkLocal(const std::string &chunkname,
+                                    const std::string &content) {
+  return (vault_chunkstore_->UpdateChunk(chunkname, content) == kSuccess);
 }
 
 bool VaultService::LoadChunkLocal(const std::string &chunkname,
@@ -2029,6 +2063,10 @@ int VaultService::AddAccount(const std::string &pmid,
   return ah_.AddAccount(pmid, offer);
 }
 
+bool VaultService::HaveAccount(const std::string &pmid) {
+  return ah_.HaveAccount(pmid) == kSuccess;
+}
+
 bool VaultService::NodeWithinClosest(const std::string &peer_pmid,
                                      const boost::uint16_t &count) {
   std::list<base::PDRoutingTableTuple> close_peers;
@@ -2053,6 +2091,85 @@ bool VaultService::NodeWithinClosest(const std::string &peer_pmid,
   return found;
 }
 
+void VaultService::GetRemoteAccount(
+    const std::string &account_pmid,
+    const std::vector<kad::Contact> &close_contacts) {
+  maidsafe::GetAccountRequest get_account_request;
+  get_account_request.set_account_pmid(account_pmid);
+  get_account_request.set_pmid(pmid_);
+  get_account_request.set_public_key(pmid_public_);
+  get_account_request.set_public_key_signature(pmid_public_signature_);
+  std::vector<maidsafe::GetAccountRequest> requests;
+  std::for_each(close_contacts.begin(), close_contacts.end(),
+      boost::bind(static_cast<
+          void(VaultService::*)(const kad::Contact&,
+                                const std::string &,
+                                const maidsafe::GetAccountRequest&,
+                                std::vector<maidsafe::GetAccountRequest>*)>
+      (&VaultService::ConstructGetInfoRequests), this, _1, account_pmid,
+      get_account_request, &requests));
+  // thread_pool_ handles destruction of task.
+  GetRemoteAccountTask *task = new GetRemoteAccountTask(close_contacts,
+      requests, vault_service_logic_, boost::bind(
+      &VaultService::GetRemoteAccountCallback, this, _1, _2), transport_id_);
+  thread_pool_.start(task);
+}
+
+template <typename T>
+void VaultService::ConstructGetInfoRequests(const kad::Contact &contact,
+                                            const std::string &key,
+                                            const T &partial_request,
+                                            std::vector<T> *requests) {
+  crypto::Crypto co;
+  co.set_hash_algorithm(crypto::SHA_512);
+  T request(partial_request);
+  request.set_request_signature(co.AsymSign(co.Hash(pmid_public_signature_ +
+      key + contact.node_id(), "", crypto::STRING_STRING, false), "",
+      pmid_private_, crypto::STRING_STRING));
+  requests->push_back(request);
+}
+
+void VaultService::GetRemoteAccountCallback(
+    const int &result,
+    const VaultAccountSet::VaultAccount &vault_account) {
+  if (result == kSuccess) {
+    if (ah_.InsertAccountFromPb(vault_account) == kSuccess)
+      info_synchroniser_.RemoveEntry(vault_account.pmid());
+  }
+}
+
+void VaultService::GetRemoteChunkInfo(
+    const std::string &chunk_name,
+    const std::vector<kad::Contact> &close_contacts) {
+  maidsafe::GetChunkInfoRequest get_chunk_info_request;
+  get_chunk_info_request.set_chunkname(chunk_name);
+  get_chunk_info_request.set_pmid(pmid_);
+  get_chunk_info_request.set_public_key(pmid_public_);
+  get_chunk_info_request.set_public_key_signature(pmid_public_signature_);
+  std::vector<maidsafe::GetChunkInfoRequest> requests;
+  std::for_each(close_contacts.begin(), close_contacts.end(),
+      boost::bind(static_cast<
+          void(VaultService::*)(const kad::Contact&,
+                                const std::string &,
+                                const maidsafe::GetChunkInfoRequest&,
+                                std::vector<maidsafe::GetChunkInfoRequest>*)>
+      (&VaultService::ConstructGetInfoRequests), this, _1, chunk_name,
+      get_chunk_info_request, &requests));
+  // thread_pool_ handles destruction of task.
+  GetRemoteChunkInfoTask *task = new GetRemoteChunkInfoTask(close_contacts,
+      requests, vault_service_logic_, boost::bind(
+      &VaultService::GetRemoteChunkInfoCallback, this, _1, _2), transport_id_);
+  thread_pool_.start(task);
+}
+
+void VaultService::GetRemoteChunkInfoCallback(
+      const int &result,
+      const ChunkInfoMap::VaultChunkInfo &vault_chunk_info) {
+  if (result == kSuccess) {
+    if (cih_.InsertChunkInfoFromPb(vault_chunk_info) == kSuccess)
+      info_synchroniser_.RemoveEntry(vault_chunk_info.chunk_name());
+  }
+}
 
 RegistrationService::RegistrationService(
     boost::function<void(const maidsafe::VaultConfig&)> notifier)

@@ -35,7 +35,8 @@ class InfoSynchroniserTest : public testing::Test {
                                  crypto::STRING_STRING, false)),
                            kMinRoutingTableSize_(100),
                            routing_table_(new base::PDRoutingTableHandler()),
-                           info_synchroniser_(pmid_, routing_table_) {}
+                           info_synchroniser_(pmid_, routing_table_),
+                           closest_nodes_() {}
  protected:
   void SetUp() {
     ASSERT_EQ(crypto::SHA_512, co_.hash_algorithm());
@@ -48,6 +49,7 @@ class InfoSynchroniserTest : public testing::Test {
                                       0, "", 0, 0, 0);
       routing_table_->AddTuple(pdrtt);
     }
+    closest_nodes_.push_back(kad::Contact());
   }
   void TearDown() {}
   crypto::Crypto co_;
@@ -55,6 +57,7 @@ class InfoSynchroniserTest : public testing::Test {
   const size_t kMinRoutingTableSize_;
   boost::shared_ptr<base::PDRoutingTableHandler> routing_table_;
   InfoSynchroniser info_synchroniser_;
+  std::vector<kad::Contact> closest_nodes_;
 };
 
 TEST_F(InfoSynchroniserTest, BEH_VAULT_InfoSyncShouldFetch) {
@@ -78,13 +81,21 @@ TEST_F(InfoSynchroniserTest, BEH_VAULT_InfoSyncShouldFetch) {
     else
       id = co_.Hash(base::RandomString(100), "", crypto::STRING_STRING, false);
   }
-  ASSERT_FALSE(info_synchroniser_.ShouldFetch(id));
+  ASSERT_FALSE(closest_nodes_.empty());
+  ASSERT_FALSE(info_synchroniser_.ShouldFetch(id, &closest_nodes_));
+  ASSERT_TRUE(closest_nodes_.empty());
   ASSERT_EQ(size_t(1), info_synchroniser_.info_entries_.size());
-  ASSERT_FALSE(info_synchroniser_.ShouldFetch(id));
+  closest_nodes_.push_back(kad::Contact());
+  ASSERT_FALSE(closest_nodes_.empty());
+  ASSERT_FALSE(info_synchroniser_.ShouldFetch(id, &closest_nodes_));
+  ASSERT_TRUE(closest_nodes_.empty());
   ASSERT_EQ(size_t(1), info_synchroniser_.info_entries_.size());
 
   // Shouldn't try to get our own ID
-  ASSERT_FALSE(info_synchroniser_.ShouldFetch(pmid_));
+  closest_nodes_.push_back(kad::Contact());
+  ASSERT_FALSE(closest_nodes_.empty());
+  ASSERT_FALSE(info_synchroniser_.ShouldFetch(pmid_, &closest_nodes_));
+  ASSERT_TRUE(closest_nodes_.empty());
   ASSERT_EQ(size_t(1), info_synchroniser_.info_entries_.size());
 
   // Should return true once for an ID close to our pmid
@@ -93,9 +104,15 @@ TEST_F(InfoSynchroniserTest, BEH_VAULT_InfoSyncShouldFetch) {
   while (id == pmid_)
     id.replace(it, id.end(),
         base::itos_ull(base::random_32bit_uinteger() % 900000 + 100000));
-  ASSERT_TRUE(info_synchroniser_.ShouldFetch(id));
+  closest_nodes_.push_back(kad::Contact());
+  ASSERT_FALSE(closest_nodes_.empty());
+  ASSERT_TRUE(info_synchroniser_.ShouldFetch(id, &closest_nodes_));
+  ASSERT_EQ(kad::K, closest_nodes_.size());
   ASSERT_EQ(size_t(2), info_synchroniser_.info_entries_.size());
-  ASSERT_FALSE(info_synchroniser_.ShouldFetch(id));
+  closest_nodes_.push_back(kad::Contact());
+  ASSERT_FALSE(closest_nodes_.empty());
+  ASSERT_FALSE(info_synchroniser_.ShouldFetch(id, &closest_nodes_));
+  ASSERT_TRUE(closest_nodes_.empty());
   ASSERT_EQ(size_t(2), info_synchroniser_.info_entries_.size());
 }
 
@@ -103,7 +120,7 @@ TEST_F(InfoSynchroniserTest, BEH_VAULT_InfoSyncTimestamps) {
   const size_t kTestMapSize = 100;
   while (info_synchroniser_.info_entries_.size() < kTestMapSize) {
     info_synchroniser_.ShouldFetch(co_.Hash(base::RandomString(100), "",
-        crypto::STRING_STRING, false));
+        crypto::STRING_STRING, false), &closest_nodes_);
   }
   std::string id1 = co_.Hash(base::RandomString(100), "", crypto::STRING_STRING,
                              false);
@@ -111,8 +128,8 @@ TEST_F(InfoSynchroniserTest, BEH_VAULT_InfoSyncTimestamps) {
                              false);
   while (id1 == id2)
     id2 = co_.Hash(base::RandomString(100), "", crypto::STRING_STRING, false);
-  info_synchroniser_.ShouldFetch(id1);
-  info_synchroniser_.ShouldFetch(id2);
+  info_synchroniser_.ShouldFetch(id1, &closest_nodes_);
+  info_synchroniser_.ShouldFetch(id2, &closest_nodes_);
   ASSERT_EQ(kTestMapSize + 2, info_synchroniser_.info_entries_.size());
   InfoSynchroniser::InfoEntryMap::iterator it =
       info_synchroniser_.info_entries_.find(id2);
@@ -123,7 +140,7 @@ TEST_F(InfoSynchroniserTest, BEH_VAULT_InfoSyncTimestamps) {
   boost::uint32_t id1_insertion_time = it->second;
   boost::this_thread::sleep(boost::posix_time::seconds(1));
   ASSERT_EQ(id1_insertion_time, it->second);
-  info_synchroniser_.ShouldFetch(id1);
+  info_synchroniser_.ShouldFetch(id1, &closest_nodes_);
   ASSERT_GT(it->second, id1_insertion_time);
   it = info_synchroniser_.info_entries_.find(id2);
   ASSERT_EQ(id2_insertion_time, it->second);
@@ -133,7 +150,7 @@ TEST_F(InfoSynchroniserTest, BEH_VAULT_InfoSyncRemoveEntry) {
   const size_t kTestMapSize = 100;
   while (info_synchroniser_.info_entries_.size() < kTestMapSize) {
     info_synchroniser_.ShouldFetch(co_.Hash(base::RandomString(100), "",
-        crypto::STRING_STRING, false));
+        crypto::STRING_STRING, false), &closest_nodes_);
   }
   std::string id1 = co_.Hash(base::RandomString(100), "", crypto::STRING_STRING,
                              false);
@@ -141,8 +158,8 @@ TEST_F(InfoSynchroniserTest, BEH_VAULT_InfoSyncRemoveEntry) {
                              false);
   while (id1 == id2)
     id2 = co_.Hash(base::RandomString(100), "", crypto::STRING_STRING, false);
-  info_synchroniser_.ShouldFetch(id1);
-  info_synchroniser_.ShouldFetch(id2);
+  info_synchroniser_.ShouldFetch(id1, &closest_nodes_);
+  info_synchroniser_.ShouldFetch(id2, &closest_nodes_);
   ASSERT_EQ(kTestMapSize + 2, info_synchroniser_.info_entries_.size());
   InfoSynchroniser::InfoEntryMap::iterator it =
       info_synchroniser_.info_entries_.find(id1);
@@ -165,7 +182,7 @@ TEST_F(InfoSynchroniserTest, BEH_VAULT_InfoSyncPruneMap) {
   const size_t kTestMapSize = 100;
   while (info_synchroniser_.info_entries_.size() < kTestMapSize) {
     info_synchroniser_.ShouldFetch(co_.Hash(base::RandomString(100), "",
-        crypto::STRING_STRING, false));
+        crypto::STRING_STRING, false), &closest_nodes_);
   }
   info_synchroniser_.PruneMap();
   ASSERT_EQ(kTestMapSize, info_synchroniser_.info_entries_.size());

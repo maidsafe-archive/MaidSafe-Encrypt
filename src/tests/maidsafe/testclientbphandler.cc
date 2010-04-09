@@ -224,6 +224,8 @@ class MockBPH : public maidsafe::ClientBufferPacketHandler {
   MOCK_METHOD3(FindRemoteContact,
     void(base::callback_func_type, boost::shared_ptr<maidsafe::ChangeBPData>,
     const int&));
+  MOCK_METHOD2(FindNodes,
+    void(base::callback_func_type, boost::shared_ptr<maidsafe::ChangeBPData>));
 };
 
 class TestClientBP : public testing::Test {

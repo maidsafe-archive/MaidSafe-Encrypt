@@ -66,14 +66,31 @@ class BPCallback {
   }
   void BPGetMsgs_CB(
       const maidsafe::ReturnCode &res,
-      const std::list<maidsafe::ValidatedBufferPacketMessage> &rec_msgs) {
-    result = res;
-    msgs = rec_msgs;
+      const std::list<maidsafe::ValidatedBufferPacketMessage> &rec_msgs,
+      bool b) {
+    if (b) {
+      printf("BPGetMsgs_CB\n");
+      result = res;
+      msgs.clear();
+      std::set<std::string>::iterator it;
+      for (it = vbpm_set.begin(); it != vbpm_set.end(); ++it) {
+        maidsafe::ValidatedBufferPacketMessage vbpm;
+        vbpm.ParseFromString(*it);
+        msgs.push_back(vbpm);
+      }
+    } else {
+      msgs.clear();
+      msgs = rec_msgs;
+      std::list<maidsafe::ValidatedBufferPacketMessage>::iterator it;
+      for (it = msgs.begin(); it != msgs.end(); ++it)
+        vbpm_set.insert(it->SerializeAsString());
+    }
   }
   void Reset() {
     result = maidsafe::kGeneralError;
     msgs.clear();
   }
+  std::set<std::string> vbpm_set;
   maidsafe::ReturnCode result;
   std::list<maidsafe::ValidatedBufferPacketMessage> msgs;
 };
@@ -213,7 +230,8 @@ TEST_F(CBPHandlerTest, FUNC_MAID_TestBPHOperations) {
   printf("Step 4\n");
 
   cb.Reset();
-  cbph->GetMessages(bpip, boost::bind(&BPCallback::BPGetMsgs_CB, &cb, _1, _2),
+  cbph->GetMessages(bpip,
+                    boost::bind(&BPCallback::BPGetMsgs_CB, &cb, _1, _2, _3),
                     trans->GetID());
   while (cb.result == -1)
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
@@ -242,7 +260,8 @@ TEST_F(CBPHandlerTest, FUNC_MAID_TestBPHOperations) {
   printf("Step 8\n");
 
   cb.Reset();
-  cbph->GetMessages(bpip, boost::bind(&BPCallback::BPGetMsgs_CB, &cb, _1, _2),
+  cbph->GetMessages(bpip,
+                    boost::bind(&BPCallback::BPGetMsgs_CB, &cb, _1, _2, _3),
                     trans->GetID());
   while (cb.result == -1)
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
@@ -256,7 +275,8 @@ TEST_F(CBPHandlerTest, FUNC_MAID_TestBPHOperations) {
   bpip1.sign_id = bpip.sign_id;
   bpip1.public_key = bpip.public_key;
   cb.Reset();
-  cbph->GetMessages(bpip1, boost::bind(&BPCallback::BPGetMsgs_CB, &cb, _1, _2),
+  cbph->GetMessages(bpip1,
+                    boost::bind(&BPCallback::BPGetMsgs_CB, &cb, _1, _2, _3),
                     trans->GetID());
   while (cb.result == -1)
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
