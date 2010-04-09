@@ -69,7 +69,6 @@ class BPCallback {
       const std::list<maidsafe::ValidatedBufferPacketMessage> &rec_msgs,
       bool b) {
     if (b) {
-      printf("BPGetMsgs_CB\n");
       result = res;
       msgs.clear();
       std::set<std::string>::iterator it;

@@ -30,7 +30,7 @@ message EndPoint {
 
 message LivePresence {
   required bytes contact_id = 1;
-  optional bytes end_points = 2;
+  repeated bytes end_points = 2;
 }
 
 // BP General Message Structure

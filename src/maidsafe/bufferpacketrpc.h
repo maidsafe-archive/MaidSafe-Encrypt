@@ -37,62 +37,99 @@ namespace maidsafe {
 class BufferPacketRpcs {
  public:
   virtual ~BufferPacketRpcs() {}
-  virtual void CreateBP(const kad::Contact &peer, const bool &local,
+  virtual void CreateBP(const kad::Contact &peer,
+                        const bool &local,
                         const boost::int16_t &transport_id,
                         const CreateBPRequest *create_request,
                         CreateBPResponse *create_response,
                         rpcprotocol::Controller *controller,
                         google::protobuf::Closure *done) = 0;
-  virtual void ModifyBPInfo(const kad::Contact &peer, const bool &local,
+  virtual void ModifyBPInfo(const kad::Contact &peer,
+                            const bool &local,
                             const boost::int16_t &transport_id,
                             const ModifyBPInfoRequest *modify_request,
                             ModifyBPInfoResponse *modify_response,
                             rpcprotocol::Controller *controller,
                             google::protobuf::Closure *done) = 0;
-  virtual void GetBPMessages(const kad::Contact &peer, const bool &local,
+  virtual void GetBPMessages(const kad::Contact &peer,
+                             const bool &local,
                              const boost::int16_t &transport_id,
                              const GetBPMessagesRequest *get_messages_request,
                              GetBPMessagesResponse *get_messages_response,
                              rpcprotocol::Controller *controller,
                              google::protobuf::Closure *done) = 0;
-  virtual void AddBPMessage(const kad::Contact &peer, const bool &local,
+  virtual void AddBPMessage(const kad::Contact &peer,
+                            const bool &local,
                             const boost::int16_t &transport_id,
                             const AddBPMessageRequest *add_message_request,
                             AddBPMessageResponse *add_message_response,
                             rpcprotocol::Controller *controller,
                             google::protobuf::Closure *done) = 0;
+  virtual void GetBPPresence(const kad::Contact &peer,
+                             const bool &local,
+                             const boost::int16_t &transport_id,
+                             const GetBPPresenceRequest *get_presence_request,
+                             GetBPPresenceResponse *get_presence_response,
+                             rpcprotocol::Controller *controller,
+                             google::protobuf::Closure *done) = 0;
+  virtual void AddBPPresence(const kad::Contact &peer,
+                             const bool &local,
+                             const boost::int16_t &transport_id,
+                             const AddBPPresenceRequest *add_presence_request,
+                             AddBPPresenceResponse *add_presence_response,
+                             rpcprotocol::Controller *controller,
+                             google::protobuf::Closure *done) = 0;
 };
 
 class BufferPacketRpcsImpl : public BufferPacketRpcs {
  public:
   BufferPacketRpcsImpl(transport::TransportHandler *transport_handler,
-    rpcprotocol::ChannelManager *channel_manager):
-    transport_handler_(transport_handler), channel_manager_(channel_manager) {}
+                       rpcprotocol::ChannelManager *channel_manager)
+      : transport_handler_(transport_handler),
+        channel_manager_(channel_manager) {}
   ~BufferPacketRpcsImpl() {}
-  void CreateBP(const kad::Contact &peer, const bool &local,
+  void CreateBP(const kad::Contact &peer,
+                const bool &local,
                 const boost::int16_t &transport_id,
                 const CreateBPRequest *create_request,
                 CreateBPResponse *create_response,
                 rpcprotocol::Controller *controller,
                 google::protobuf::Closure *done);
-  void ModifyBPInfo(const kad::Contact &peer, const bool &local,
+  void ModifyBPInfo(const kad::Contact &peer,
+                    const bool &local,
                     const boost::int16_t &transport_id,
                     const ModifyBPInfoRequest *modify_request,
                     ModifyBPInfoResponse *modify_response,
                     rpcprotocol::Controller *controller,
                     google::protobuf::Closure *done);
-  void GetBPMessages(const kad::Contact &peer, const bool &local,
+  void GetBPMessages(const kad::Contact &peer,
+                     const bool &local,
                      const boost::int16_t &transport_id,
                      const GetBPMessagesRequest *get_messages_request,
                      GetBPMessagesResponse *get_messages_response,
                      rpcprotocol::Controller *controller,
                      google::protobuf::Closure *done);
-  void AddBPMessage(const kad::Contact &peer, const bool &local,
+  void AddBPMessage(const kad::Contact &peer,
+                    const bool &local,
                     const boost::int16_t &transport_id,
                     const AddBPMessageRequest *add_message_request,
                     AddBPMessageResponse *add_message_response,
                     rpcprotocol::Controller *controller,
                     google::protobuf::Closure *done);
+  void GetBPPresence(const kad::Contact &peer,
+                     const bool &local,
+                     const boost::int16_t &transport_id,
+                     const GetBPPresenceRequest *get_presence_request,
+                     GetBPPresenceResponse *get_presence_response,
+                     rpcprotocol::Controller *controller,
+                     google::protobuf::Closure *done);
+  void AddBPPresence(const kad::Contact &peer,
+                     const bool &local,
+                     const boost::int16_t &transport_id,
+                     const AddBPPresenceRequest *add_presence_request,
+                     AddBPPresenceResponse *add_presence_response,
+                     rpcprotocol::Controller *controller,
+                     google::protobuf::Closure *done);
  private:
   BufferPacketRpcsImpl(const BufferPacketRpcsImpl&);
   BufferPacketRpcsImpl& operator=(const BufferPacketRpcsImpl&);

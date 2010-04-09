@@ -197,21 +197,29 @@ class GetMsgsHelper {
 class MockBPRpcs : public maidsafe::BufferPacketRpcs {
  public:
   MOCK_METHOD7(CreateBP, void(const kad::Contact&, const bool&,
-    const boost::int16_t&, const maidsafe::CreateBPRequest*,
-    maidsafe::CreateBPResponse*, rpcprotocol::Controller*,
-    google::protobuf::Closure *));
+      const boost::int16_t&, const maidsafe::CreateBPRequest*,
+      maidsafe::CreateBPResponse*, rpcprotocol::Controller*,
+      google::protobuf::Closure *));
   MOCK_METHOD7(ModifyBPInfo, void(const kad::Contact&, const bool&,
-    const boost::int16_t&, const maidsafe::ModifyBPInfoRequest*,
-    maidsafe::ModifyBPInfoResponse*, rpcprotocol::Controller*,
-    google::protobuf::Closure*));
+      const boost::int16_t&, const maidsafe::ModifyBPInfoRequest*,
+      maidsafe::ModifyBPInfoResponse*, rpcprotocol::Controller*,
+      google::protobuf::Closure*));
   MOCK_METHOD7(GetBPMessages, void(const kad::Contact&, const bool&,
-    const boost::int16_t&, const maidsafe::GetBPMessagesRequest*,
-    maidsafe::GetBPMessagesResponse*, rpcprotocol::Controller*,
-    google::protobuf::Closure*));
+      const boost::int16_t&, const maidsafe::GetBPMessagesRequest*,
+      maidsafe::GetBPMessagesResponse*, rpcprotocol::Controller*,
+      google::protobuf::Closure*));
   MOCK_METHOD7(AddBPMessage, void(const kad::Contact&, const bool&,
-    const boost::int16_t&, const maidsafe::AddBPMessageRequest*,
-    maidsafe::AddBPMessageResponse*, rpcprotocol::Controller*,
-    google::protobuf::Closure*));
+      const boost::int16_t&, const maidsafe::AddBPMessageRequest*,
+      maidsafe::AddBPMessageResponse*, rpcprotocol::Controller*,
+      google::protobuf::Closure*));
+  MOCK_METHOD7(GetBPPresence, void(const kad::Contact&, const bool&,
+      const boost::int16_t&, const maidsafe::GetBPPresenceRequest*,
+      maidsafe::GetBPPresenceResponse*, rpcprotocol::Controller*,
+      google::protobuf::Closure*));
+  MOCK_METHOD7(AddBPPresence, void(const kad::Contact&, const bool&,
+      const boost::int16_t&, const maidsafe::AddBPPresenceRequest*,
+      maidsafe::AddBPPresenceResponse*, rpcprotocol::Controller*,
+      google::protobuf::Closure*));
 };
 
 class MockBPH : public maidsafe::ClientBufferPacketHandler {

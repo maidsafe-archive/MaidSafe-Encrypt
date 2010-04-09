@@ -35,6 +35,8 @@ service MaidsafeService {
   rpc ModifyBPInfo( ModifyBPInfoRequest ) returns ( ModifyBPInfoResponse );
   rpc GetBPMessages( GetBPMessagesRequest ) returns ( GetBPMessagesResponse );
   rpc AddBPMessage( AddBPMessageRequest ) returns ( AddBPMessageResponse );
+  rpc GetBPPresence( GetBPPresenceRequest ) returns ( GetBPPresenceResponse );
+  rpc AddBPPresence( AddBPPresenceRequest ) returns ( AddBPPresenceResponse );
 }
 
 service VaultRegistration {
