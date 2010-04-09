@@ -231,6 +231,7 @@ message GetSyncDataResponse {
   required uint32 result = 1;
   optional maidsafe_vault.VaultAccountSet vault_account_set = 2;
   optional maidsafe_vault.ChunkInfoMap chunk_info_map = 3;
+  optional maidsafe_vault.VaultBufferPacketMap vault_buffer_packet_map = 4;
 }
 
 message GetAccountRequest {
@@ -257,6 +258,19 @@ message GetChunkInfoRequest {
 message GetChunkInfoResponse {
   required uint32 result = 1;
   optional maidsafe_vault.ChunkInfoMap.VaultChunkInfo vault_chunk_info = 2;
+}
+
+message GetBufferPacketRequest {
+  required bytes bufferpacket_name = 1;
+  required bytes pmid = 2;
+  required bytes public_key = 3;
+  required bytes public_key_signature = 4;
+  required bytes request_signature = 5;
+}
+
+message GetBufferPacketResponse {
+  required uint32 result = 1;
+  optional maidsafe_vault.VaultBufferPacketMap.VaultBufferPacket vault_buffer_packet = 2;
 }
 
 message VaultCommunication {

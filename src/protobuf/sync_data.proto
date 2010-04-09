@@ -1,3 +1,4 @@
+import "packet.proto";
 package maidsafe_vault;
 
 message VaultAccountSet {
@@ -37,4 +38,12 @@ message ChunkInfoMap {
     required uint64 chunk_size = 7;
   }
   repeated VaultChunkInfo vault_chunk_info = 1;
+}
+
+message VaultBufferPacketMap {
+  message VaultBufferPacket {
+    required bytes bufferpacket_name = 1;
+    repeated maidsafe.GenericPacket owner_info = 2;
+  }
+  repeated VaultBufferPacket vault_buffer_packet = 1;
 }

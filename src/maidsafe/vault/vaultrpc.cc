@@ -346,6 +346,29 @@ void VaultRpcs::GetChunkInfo(
                        get_chunk_info_response, done);
 }
 
+void VaultRpcs::GetBufferPacket(
+      const kad::Contact &peer,
+      bool local,
+      const boost::int16_t &transport_id,
+      maidsafe::GetBufferPacketRequest *get_buffer_packet_request,
+      maidsafe::GetBufferPacketResponse *get_buffer_packet_response,
+      rpcprotocol::Controller *controller,
+      google::protobuf::Closure *done) {
+  std::string local_ip;
+  boost::uint16_t local_port(0);
+  if (local) {
+    local_ip = peer.local_ip();
+    local_port = peer.local_port();
+  }
+  rpcprotocol::Channel channel(channel_manager_, transport_handler_,
+                               transport_id, peer.host_ip(), peer.host_port(),
+                               local_ip, local_port, peer.rendezvous_ip(),
+                               peer.rendezvous_port());
+  maidsafe::MaidsafeService::Stub service(&channel);
+  service.GetBufferPacket(controller, get_buffer_packet_request,
+                          get_buffer_packet_response, done);
+}
+
 void VaultRpcs::GetBPMessages(const std::string &buffer_packet_name,
                               const std::string &public_key,
                               const std::string &public_key_signature,

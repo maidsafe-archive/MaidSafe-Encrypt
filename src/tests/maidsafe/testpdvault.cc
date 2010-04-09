@@ -85,32 +85,6 @@ inline void DeleteCallback(const std::string &result) {
   }
 }
 
-inline void GetPacketCallback(const std::string &result) {
-//  maidsafe::GetResponse resp;
-//  boost::mutex::scoped_lock lock(callback_mutex_);
-//  if (!resp.ParseFromString(result) || resp.result() != kAck) {
-//    callback_packets_.push_back("Failed");
-//  } else {
-//    callback_packets_.push_back(resp.content());
-//  }
-  boost::mutex::scoped_lock lock(callback_mutex_);
-  callback_packets_.push_back(result);
-}
-
-inline void GetMessagesCallback(const std::string &result) {
-  maidsafe::GetBPMessagesResponse resp;
-  if (!resp.ParseFromString(result) || resp.result() != kAck) {
-    callback_succeeded_ = false;
-    callback_timed_out_ = false;
-  } else {
-    callback_succeeded_ = true;
-    callback_timed_out_ = false;
-    for (int i = 0; i < resp.messages_size(); i++) {
-      callback_messages_.push_back(resp.messages(i));
-    }
-  }
-}
-
 void PrepareCallbackResults() {
   callback_timed_out_ = true;
   callback_succeeded_ = false;
@@ -190,66 +164,6 @@ void MakeChunks(const std::vector< boost::shared_ptr<ClientData> > &clients,
     chunks->insert(std::pair<std::string, std::string>
         (chunk_name, chunk_content));
   }
-}
-
-void CreatePacketType(const std::string &priv_key,
-                      int no_of_packets,
-                      std::map<std::string, std::string> *packets) {
-  crypto::Crypto co;
-  co.set_hash_algorithm(crypto::SHA_512);
-  for (int i = 0; i < no_of_packets; ++i) {
-    maidsafe::GenericPacket gp;
-    gp.set_data(base::RandomString(4096));
-    gp.set_signature(co.AsymSign(gp.data(), "", priv_key,
-        crypto::STRING_STRING));
-    std::string ser_packet;
-    gp.SerializeToString(&ser_packet);
-    std::string packet_name = co.Hash(ser_packet, "", crypto::STRING_STRING,
-                                      false);
-//    chunkstore->AddChunkToOutgoing(*packet_name, *ser_packet);
-    packets->insert(std::pair<std::string, std::string>
-        (base::EncodeToHex(packet_name), ser_packet));
-//    printf("Created packet %i.\n", packets->size());
-  }
-}
-
-void CreateChunkPackets(const std::vector<std::string> &priv_keys,
-                        std::vector<std::string> *packets) {
-  crypto::Crypto co;
-  co.set_hash_algorithm(crypto::SHA_512);
-  for (size_t i = 0; i < priv_keys.size(); ++i) {
-    maidsafe::GenericPacket gp;
-    gp.set_data(base::RandomString(4096));
-    gp.set_signature(co.AsymSign(gp.data(), "", priv_keys[i],
-                     crypto::STRING_STRING));
-    std::string ser_gp;
-    gp.SerializeToString(&ser_gp);
-    packets->push_back(ser_gp);
-  }
-  printf("Leaving CreateChunkPackets\n");
-}
-
-void CreateBufferPacket(const std::string &owner,
-                        const std::string &public_key,
-                        const std::string &private_key,
-                        std::string *packet_name,
-                        std::string *ser_packet) {
-  crypto::Crypto co;
-  co.set_hash_algorithm(crypto::SHA_512);
-  *packet_name = co.Hash(owner + "BUFFER", "", crypto::STRING_STRING,
-                         false);
-  maidsafe::BufferPacket buffer_packet;
-  maidsafe::GenericPacket *ser_owner_info= buffer_packet.add_owner_info();
-  maidsafe::BufferPacketInfo buffer_packet_info;
-  buffer_packet_info.set_owner(owner);
-  buffer_packet_info.set_owner_publickey(public_key);
-  buffer_packet_info.set_online(false);
-  std::string ser_info;
-  buffer_packet_info.SerializeToString(&ser_info);
-  ser_owner_info->set_data(ser_info);
-  ser_owner_info->set_signature(co.AsymSign(ser_info, "", private_key,
-    crypto::STRING_STRING));
-  buffer_packet.SerializeToString(ser_packet);
 }
 
 }  // namespace testpdvault

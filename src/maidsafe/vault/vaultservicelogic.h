@@ -167,11 +167,18 @@ typedef boost::function<void (const ReturnCode&,
 typedef boost::function<void (const ReturnCode&,
     const ChunkInfoMap::VaultChunkInfo&)> VoidFuncIntChunkInfo;
 
+typedef boost::function<void (const ReturnCode&,
+    const VaultBufferPacketMap::VaultBufferPacket&)> VoidFuncIntBufferPacket;
+
 typedef GetInfoData<maidsafe::GetAccountRequest,
     maidsafe::GetAccountResponse, VoidFuncIntAccount> GetAccountData;
 
 typedef GetInfoData<maidsafe::GetChunkInfoRequest,
     maidsafe::GetChunkInfoResponse, VoidFuncIntChunkInfo> GetChunkInfoData;
+
+typedef GetInfoData<maidsafe::GetBufferPacketRequest,
+    maidsafe::GetBufferPacketResponse, VoidFuncIntBufferPacket>
+    GetBufferPacketData;
 
 const size_t kParallelRequests(2);
 
@@ -218,6 +225,10 @@ class VaultServiceLogic {
                     const std::vector<maidsafe::GetChunkInfoRequest> &requests,
                     VoidFuncIntChunkInfo callback,
                     const boost::int16_t &transport_id);
+  void GetBufferPacket(const std::vector<kad::Contact> &close_contacts,
+      const std::vector<maidsafe::GetBufferPacketRequest> &requests,
+      VoidFuncIntBufferPacket callback,
+      const boost::int16_t &transport_id);
  private:
   VaultServiceLogic(const VaultServiceLogic&);
   VaultServiceLogic &operator=(const VaultServiceLogic&);
@@ -258,6 +269,8 @@ class VaultServiceLogic {
                    boost::shared_ptr<GetAccountData> data);
   void SendInfoRpc(const boost::uint16_t &index,
                    boost::shared_ptr<GetChunkInfoData> data);
+  void SendInfoRpc(const boost::uint16_t &index,
+                   boost::shared_ptr<GetBufferPacketData> data);
   // Returns a signature for validation by recipient of RPC
   std::string GetSignedRequest(const std::string &name,
                                const std::string &recipient_id);

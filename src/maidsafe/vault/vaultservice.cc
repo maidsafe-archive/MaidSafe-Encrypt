@@ -104,6 +104,14 @@ void GetRemoteInfoTask
                                        callback_, transport_id_);
 }
 
+template<>
+void GetRemoteInfoTask
+    <maidsafe::GetBufferPacketRequest, VoidFuncIntBufferPacket>::run() {
+  if (vault_service_logic_ != NULL)
+    vault_service_logic_->GetBufferPacket(close_contacts_, get_info_requests_,
+                                          callback_, transport_id_);
+}
+
 VaultService::VaultService(const std::string &pmid,
                            const std::string &pmid_public,
                            const std::string &pmid_private,
@@ -124,6 +132,7 @@ VaultService::VaultService(const std::string &pmid,
       ah_(true),
       aah_(&ah_, vault_service_logic_),
       cih_(true),
+      bps_(),
       thread_pool_(),
       routing_table_(knode_ == NULL ?
           boost::shared_ptr<base::PDRoutingTableHandler>() :
@@ -185,6 +194,22 @@ void VaultService::AddStartupSyncData(
            "chunk_info_map.\n", HexSubstr(pmid_).c_str());
 #endif
     cih_.set_started(true);
+  }
+
+  if (get_sync_data_response.has_vault_buffer_packet_map()) {
+    bps_.ImportMapFromPb(get_sync_data_response.vault_buffer_packet_map());
+#ifdef DEBUG
+    int n = get_sync_data_response.vault_buffer_packet_map().
+        vault_buffer_packet_size();
+    if (n > 0)
+      printf("In VaultService::AddStartupSyncData (%s), added %d buffer "
+             "packets.\n", HexSubstr(pmid_).c_str(), n);
+#endif
+  } else {
+#ifdef DEBUG
+    printf("In VaultService::AddStartupSyncData (%s), missing "
+           "vault_buffer_packet_map.\n", HexSubstr(pmid_).c_str());
+#endif
   }
 }
 
@@ -1198,6 +1223,9 @@ void VaultService::GetSyncData(google::protobuf::RpcController*,
     *vault_account_set = ah_.PutSetToPb(request->pmid());
     ChunkInfoMap *chunk_info_map = response->mutable_chunk_info_map();
     *chunk_info_map = cih_.PutMapToPb();
+    VaultBufferPacketMap *vault_buffer_packet_map =
+        response->mutable_vault_buffer_packet_map();
+    *vault_buffer_packet_map = bps_.ExportMapToPb();
   }
   done->Run();
 }
@@ -1307,6 +1335,66 @@ void VaultService::GetChunkInfo(google::protobuf::RpcController*,
   }
 }
 
+void VaultService::GetBufferPacket(google::protobuf::RpcController*,
+    const maidsafe::GetBufferPacketRequest *request,
+    maidsafe::GetBufferPacketResponse *response,
+    google::protobuf::Closure *done) {
+  response->set_result(kNack);
+  if (!request->IsInitialized()) {
+    done->Run();
+#ifdef DEBUG
+    printf("In VaultService::GetBufferPacket (%s), request is not initialized."
+           "\n", HexSubstr(pmid_).c_str());
+#endif
+    return;
+  }
+
+  if (!ValidateSignedRequest(request->public_key(),
+      request->public_key_signature(), request->request_signature(),
+      request->bufferpacket_name(), request->pmid())) {
+    done->Run();
+#ifdef DEBUG
+    printf("In VaultService::GetBufferPacket (%s), request does not validate."
+           "\n", HexSubstr(pmid_).c_str());
+#endif
+    return;
+  }
+
+  if (!NodeWithinClosest(request->pmid(), kad::K)) {
+    done->Run();
+#ifdef DEBUG
+    printf("In VaultService::GetBufferPacket (%s), requester (%s) not in local"
+           "routing table's closest k nodes.\n", HexSubstr(pmid_).c_str(),
+           HexSubstr(request->pmid()).c_str());
+#endif
+    return;
+  }
+
+  std::string ser_bp;
+  if (!bps_.LoadBP(request->bufferpacket_name(), &ser_bp)) {
+    done->Run();
+#ifdef DEBUG
+    printf("In VaultService::GetBufferPacket (%s), don't have buffer packet %s."
+           "\n", HexSubstr(pmid_).c_str(),
+           HexSubstr(request->bufferpacket_name()).c_str());
+#endif
+    return;
+  } else {
+    VaultBufferPacketMap::VaultBufferPacket *vbp =
+        response->mutable_vault_buffer_packet();
+    vbp->set_bufferpacket_name(request->bufferpacket_name());
+    maidsafe::BufferPacket bp;
+    bp.ParseFromString(ser_bp);
+    for (int i = 0; i < bp.owner_info_size(); ++i) {
+      maidsafe::GenericPacket *gp = vbp->add_owner_info();
+      gp->set_data(bp.owner_info(i).data());
+      gp->set_signature(bp.owner_info(i).signature());
+    }
+    response->set_result(kAck);
+    done->Run();
+  }
+}
+
 void VaultService::VaultStatus(google::protobuf::RpcController*,
                                const maidsafe::VaultStatusRequest *request,
                                maidsafe::VaultStatusResponse *response,
@@ -1408,36 +1496,18 @@ void VaultService::CreateBP(google::protobuf::RpcController*,
     return;
   }
 
-  if (!StoreChunkLocal(request->bufferpacket_name(), request->data())) {
+  if (!bps_.StoreBP(request->bufferpacket_name(), request->data())) {
     response->set_result(kNack);
     done->Run();
 #ifdef DEBUG
     if (knode_ != NULL) {
       printf("In VaultService::CreateBP (%s), ", HexSubstr(pmid_).c_str());
-      printf("failed to store chunk locally.\n");
+      printf("failed to store buffer packet locally.\n");
     }
 #endif
     return;
   }
 
-  if (knode_ != NULL) {
-    kad::SignedValue sig_value;
-    sig_value.set_value(pmid_);
-    co.set_hash_algorithm(crypto::SHA_512);
-    sig_value.set_value_signature(co.AsymSign(pmid_, "", pmid_private_,
-      crypto::STRING_STRING));
-    // TTL set to 24 hrs
-    std::string request_signature = co.AsymSign(co.Hash(pmid_public_ +
-      pmid_public_signature_ + request->bufferpacket_name(), "",
-      crypto::STRING_STRING, false), "", pmid_private_, crypto::STRING_STRING);
-    kad::SignedRequest sr;
-    sr.set_signer_id(pmid_);
-    sr.set_public_key(pmid_public_);
-    sr.set_signed_public_key(pmid_public_signature_);
-    sr.set_signed_request(request_signature);
-    knode_->StoreValue(request->bufferpacket_name(), sig_value, sr, 86400,
-                       &vsvc_dummy_callback);
-  }
   response->set_result(kAck);
   done->Run();
 }
@@ -1518,13 +1588,13 @@ void VaultService::ModifyBPInfo(google::protobuf::RpcController*,
   }
 
   std::string ser_bp;
-  if (!LoadChunkLocal(request->bufferpacket_name(), &ser_bp)) {
+  if (!bps_.LoadBP(request->bufferpacket_name(), &ser_bp)) {
     response->set_result(kNack);
     done->Run();
 #ifdef DEBUG
     if (knode_ != NULL) {
       printf("In VaultService::ModifyBPInfo (%s), ", HexSubstr(pmid_).c_str());
-      printf("failed to load the local chunk where the BP is held.\n");
+      printf("failed to load local buffer packet.\n");
     }
 #endif
     return;
@@ -1555,13 +1625,13 @@ void VaultService::ModifyBPInfo(google::protobuf::RpcController*,
     return;
   }
 
-  if (!UpdateChunkLocal(request->bufferpacket_name(), ser_bp)) {
+  if (!bps_.UpdateBP(request->bufferpacket_name(), ser_bp)) {
     response->set_result(kNack);
     done->Run();
 #ifdef DEBUG
     if (knode_ != NULL) {
       printf("In VaultService::ModifyBPInfo (%s), ", HexSubstr(pmid_).c_str());
-      printf("failed to update the local chunk store.\n");
+      printf("failed to update the local buffer packet.\n");
     }
 #endif
     return;
@@ -1616,12 +1686,12 @@ void VaultService::GetBPMessages(google::protobuf::RpcController*,
   }
 
   std::string ser_bp;
-  if (!LoadChunkLocal(request->bufferpacket_name(), &ser_bp)) {
+  if (!bps_.LoadBP(request->bufferpacket_name(), &ser_bp)) {
     response->set_result(kNack);
     done->Run();
 #ifdef DEBUG
     printf("In VaultService::GetBPMessages (%s), ", HexSubstr(pmid_).c_str());
-    printf("failed to load the local chunk where the BP is held.\n");
+    printf("failed to load the local buffer packet.\n");
 #endif
     return;
   }
@@ -1640,13 +1710,13 @@ void VaultService::GetBPMessages(google::protobuf::RpcController*,
   for (int i = 0; i < static_cast<int>(msgs.size()); ++i)
     response->add_messages(msgs[i]);
 
-  if (!UpdateChunkLocal(request->bufferpacket_name(), ser_bp)) {
+  if (!bps_.UpdateBP(request->bufferpacket_name(), ser_bp)) {
     response->clear_messages();
     response->set_result(kNack);
     done->Run();
 #ifdef DEBUG
     printf("In VaultService::GetBPMessages (%s), ", HexSubstr(pmid_).c_str());
-    printf("failed to update the local chunk store.\n");
+    printf("failed to update the local buffer packet.\n");
 #endif
     return;
   }
@@ -1687,13 +1757,13 @@ void VaultService::AddBPMessage(google::protobuf::RpcController*,
   }
 
   std::string ser_bp;
-  if (!LoadChunkLocal(request->bufferpacket_name(), &ser_bp)) {
+  if (!bps_.LoadBP(request->bufferpacket_name(), &ser_bp)) {
     response->set_result(kNack);
     done->Run();
 #ifdef DEBUG
     if (knode_ != NULL) {
       printf("In VaultService::AddBPMessage (%s), ", HexSubstr(pmid_).c_str());
-      printf("failed to load the local chunk where the BP is held.\n");
+      printf("failed to load the local buffer packet.\n");
     }
 #endif
     return;
@@ -1714,13 +1784,13 @@ void VaultService::AddBPMessage(google::protobuf::RpcController*,
     return;
   }
 
-  if (!UpdateChunkLocal(request->bufferpacket_name(), updated_bp)) {
+  if (!bps_.UpdateBP(request->bufferpacket_name(), updated_bp)) {
     response->set_result(kNack);
     done->Run();
 #ifdef DEBUG
     if (knode_ != NULL) {
       printf("In VaultService::AddBPMessage (%s), ", HexSubstr(pmid_).c_str());
-      printf("failed to update the local chunk store.\n");
+      printf("failed to update the local buffer packet.\n");
     }
 #endif
     return;
@@ -1760,12 +1830,12 @@ void VaultService::ContactInfo(google::protobuf::RpcController*,
   }
 
   std::string ser_bp;
-  if (!LoadChunkLocal(request->bufferpacket_name(), &ser_bp)) {
+  if (!bps_.LoadBP(request->bufferpacket_name(), &ser_bp)) {
     response->set_result(kNack);
     done->Run();
 #ifdef DEBUG
     printf("In VaultService::ContactInfo (%s), ", HexSubstr(pmid_).c_str());
-    printf("failed to load the local chunk where the BP is held.\n");
+    printf("failed to load the local buffer packet.\n");
 #endif
     return;
   }
@@ -1978,11 +2048,6 @@ bool VaultService::StoreChunkLocal(const std::string &chunkname,
   // If result == kInvalidChunkType, the chunk already exists in the store.
   // Assuming chunk contents don't change, this is an overall success.
   return (result == kSuccess || result == kInvalidChunkType);
-}
-
-bool VaultService::UpdateChunkLocal(const std::string &chunkname,
-                                    const std::string &content) {
-  return (vault_chunkstore_->UpdateChunk(chunkname, content) == kSuccess);
 }
 
 bool VaultService::LoadChunkLocal(const std::string &chunkname,
@@ -2232,6 +2297,41 @@ void VaultService::GetRemoteChunkInfoCallback(
   if (result == kSuccess) {
     if (cih_.InsertChunkInfoFromPb(vault_chunk_info) == kSuccess)
       info_synchroniser_.RemoveEntry(vault_chunk_info.chunk_name());
+  }
+}
+
+void VaultService::GetRemoteBufferPacket(
+    const std::string &bp_name,
+    const std::vector<kad::Contact> &close_contacts) {
+  maidsafe::GetBufferPacketRequest get_buffer_packet_request;
+  get_buffer_packet_request.set_bufferpacket_name(bp_name);
+  get_buffer_packet_request.set_pmid(pmid_);
+  get_buffer_packet_request.set_public_key(pmid_public_);
+  get_buffer_packet_request.set_public_key_signature(pmid_public_signature_);
+  std::vector<maidsafe::GetBufferPacketRequest> requests;
+  std::for_each(close_contacts.begin(), close_contacts.end(),
+      boost::bind(static_cast<
+          void(VaultService::*)(const kad::Contact &,
+                                const std::string &,
+                                const maidsafe::GetBufferPacketRequest &,
+                                std::vector<maidsafe::GetBufferPacketRequest>*)>
+      (&VaultService::ConstructGetInfoRequests), this, _1, bp_name,
+      get_buffer_packet_request, &requests));
+  // thread_pool_ handles destruction of task.
+  GetRemoteBufferPacketTask *task =
+      new GetRemoteBufferPacketTask(close_contacts, requests,
+      vault_service_logic_, boost::bind(
+          &VaultService::GetRemoteBufferPacketCallback, this, _1, _2),
+      transport_id_);
+  thread_pool_.start(task);
+}
+
+void VaultService::GetRemoteBufferPacketCallback(
+    const int &result,
+    const VaultBufferPacketMap::VaultBufferPacket &buffer_packet) {
+  if (result == kSuccess) {
+    if (bps_.InsertBufferPacketFromPb(buffer_packet) == kSuccess)
+      info_synchroniser_.RemoveEntry(buffer_packet.bufferpacket_name());
   }
 }
 

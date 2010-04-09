@@ -437,6 +437,23 @@ void VaultServiceLogic::GetChunkInfo(
     SendInfoRpc(i, data);
 }
 
+void VaultServiceLogic::GetBufferPacket(
+    const std::vector<kad::Contact> &close_contacts,
+    const std::vector<maidsafe::GetBufferPacketRequest> &requests,
+    VoidFuncIntBufferPacket callback,
+    const boost::int16_t &transport_id) {
+  boost::shared_ptr<GetBufferPacketData> data(new GetBufferPacketData(callback,
+      transport_id, close_contacts, requests));
+  if (data->op_holders.empty()) {
+    callback(kRemoteOpResponseError, VaultBufferPacketMap::VaultBufferPacket());
+    return;
+  }
+  const size_t kMaxParallel(std::min(data->op_holders.size(),
+      kParallelRequests));
+  for (boost::uint16_t i = 0; i < kMaxParallel; ++i)
+    SendInfoRpc(i, data);
+}
+
 template <>
 void VaultServiceLogic::GetInfoCallback(
     const boost::uint16_t &index,
@@ -497,6 +514,38 @@ void VaultServiceLogic::GetInfoCallback(
   }
 }
 
+template <>
+void VaultServiceLogic::GetInfoCallback(
+    const boost::uint16_t &index,
+    boost::shared_ptr<GetBufferPacketData> data) {
+  boost::mutex::scoped_lock lock(data->mutex);
+  if (data->callback_done)
+    return;
+  ++data->response_count;
+  maidsafe::GetBufferPacketResponse &get_buffer_packet_response =
+      data->op_holders.at(index).response;
+  if (get_buffer_packet_response.IsInitialized() &&
+      get_buffer_packet_response.result() == kAck &&
+      get_buffer_packet_response.has_vault_buffer_packet() &&
+      get_buffer_packet_response.vault_buffer_packet().IsInitialized()) {
+    data->callback_done = true;
+    data->callback(kSuccess,
+        get_buffer_packet_response.vault_buffer_packet());
+  } else {
+    if (data->response_count == data->op_holders.size()) {  // Overall failure
+      data->callback_done = true;
+      data->callback(kRemoteOpResponseFailed,
+                     VaultBufferPacketMap::VaultBufferPacket());
+    } else {  // Try another contact
+      boost::uint16_t next_index(data->index_of_last_request_sent + 1);
+      size_t op_holders_size(data->op_holders.size());
+      lock.unlock();
+      if (next_index < op_holders_size)
+        SendInfoRpc(next_index, data);
+    }
+  }
+}
+
 void VaultServiceLogic::SendInfoRpc(const boost::uint16_t &index,
                                     boost::shared_ptr<GetAccountData> data) {
   GetAccountData::GetInfoOpHolder &holder = data->op_holders.at(index);
@@ -526,6 +575,22 @@ void VaultServiceLogic::SendInfoRpc(const boost::uint16_t &index,
       boost::shared_ptr<GetChunkInfoData> >
       (this, &VaultServiceLogic::GetInfoCallback, index, data);
   vault_rpcs_->GetChunkInfo(holder.contact,
+      kad_ops_->AddressIsLocal(holder.contact), data->transport_id,
+      &holder.request, &holder.response, holder.controller.get(), done);
+}
+
+void VaultServiceLogic::SendInfoRpc(const boost::uint16_t &index,
+    boost::shared_ptr<GetBufferPacketData> data) {
+  GetBufferPacketData::GetInfoOpHolder &holder = data->op_holders.at(index);
+  {
+    boost::mutex::scoped_lock lock(data->mutex);
+    data->index_of_last_request_sent = index;
+  }
+  google::protobuf::Closure* done = google::protobuf::NewCallback<
+      VaultServiceLogic, const boost::uint16_t&,
+      boost::shared_ptr<GetBufferPacketData> >
+      (this, &VaultServiceLogic::GetInfoCallback, index, data);
+  vault_rpcs_->GetBufferPacket(holder.contact,
       kad_ops_->AddressIsLocal(holder.contact), data->transport_id,
       &holder.request, &holder.response, holder.controller.get(), done);
 }

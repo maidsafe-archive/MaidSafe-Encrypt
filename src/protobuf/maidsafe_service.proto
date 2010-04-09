@@ -27,6 +27,8 @@ service MaidsafeService {
   rpc GetSyncData (GetSyncDataRequest) returns (GetSyncDataResponse);
   rpc GetAccount (GetAccountRequest) returns (GetAccountResponse);
   rpc GetChunkInfo (GetChunkInfoRequest) returns (GetChunkInfoResponse);
+  rpc GetBufferPacket (GetBufferPacketRequest) returns
+      (GetBufferPacketResponse);
   // misc vault services
   rpc VaultStatus (VaultStatusRequest) returns (VaultStatusResponse);
   // BP services

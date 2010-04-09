@@ -22,34 +22,6 @@
 
 namespace maidsafe_vault {
 
-int VaultChunkStore::UpdateChunk(const std::string &key,
-                                 const std::string &value) {
-  int valid = InitialOperationVerification(key);
-  if (valid != kSuccess)
-    return valid;
-
-  // check we have the chunk already
-  maidsafe::ChunkType type = kInvalidChunkType;
-  {
-    boost::mutex::scoped_lock lock(chunkstore_set_mutex_);
-    maidsafe::chunk_set_by_non_hex_name::iterator itr =
-        chunkstore_set_.get<maidsafe::non_hex_name>().find(key);
-    if (itr != chunkstore_set_.end())
-      type = (*itr).type_;
-  }
-  if (type == kInvalidChunkType) {
-#ifdef DEBUG
-    printf("In ChunkStore::UpdateChunk, don't currently have chunk.\n");
-#endif
-    return kInvalidChunkType;
-  }
-  fs::path chunk_path(GetChunkPath(key, type, false));
-  if (DeleteChunkFunction(key, chunk_path) != kSuccess)
-    return kChunkstoreUpdateFailure;
-  return (StoreChunkFunction(key, value, chunk_path, type) == kSuccess) ?
-      kSuccess : kChunkstoreUpdateFailure;
-}
-
 maidsafe::ChunkInfo VaultChunkStore::GetOldestChecked() {
   maidsafe::ChunkInfo chunk;
   {
