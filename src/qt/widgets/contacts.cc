@@ -45,7 +45,7 @@ Contacts::Contacts(QWidget* parent)
   ui_.add->setAutoDefault(true);
   ui_.listWidget->setSelectionMode(QAbstractItemView::ExtendedSelection);
   ui_.contactLineEdit->installEventFilter(this);
-  ui_.contactLineEdit->setText("Search Contacts");
+  ui_.contactLineEdit->setText(tr("Search Contacts"));
   sortType_ = 0;
 
   // to enable displaying of menu pop-up for Users
@@ -250,14 +250,14 @@ void Contacts::onViewProfileClicked() {
   }
 
   // \TODO QString/html/%1,%2 etc - inline view of details?
-  QString details("Public Username: ");
+  QString details(tr("Public Username: "));
   details += QString(mic.pub_name_.c_str()) + "\n";
-  details += "Full Name: " + QString(mic.full_name_.c_str()) + "\n";
-  details += "Office Phone: " + QString(mic.office_phone_.c_str()) + "\n";
-  details += "Birthday: " + QString(mic.birthday_.c_str()) + "\n";
-  details += "Gender: " + QString(1, QChar(mic.gender_)) + "\n";
+  details += tr("Full Name: ") + QString(mic.full_name_.c_str()) + "\n";
+  details += tr("Office Phone: ") + QString(mic.office_phone_.c_str()) + "\n";
+  details += tr("Birthday: ") + QString(mic.birthday_.c_str()) + "\n";
+  details += tr("Gender: ") + QString(1, QChar(mic.gender_)) + "\n";
   details += "Language: English\n";
-  details += "City: " + QString(mic.city_.c_str()) + "\n";
+  details += tr("City: ") + QString(mic.city_.c_str()) + "\n";
   details += "Country: UK\n";
 
   QMessageBox::information(this, tr("Contact Details"), details);
@@ -434,7 +434,7 @@ void Contacts::onFileSendClicked() {
   }
 
   if (ClientController::instance()->sendInstantFile(filename, text, conts,
-      tr(""))) {
+      "")) {
     QMessageBox::information(this, tr("File Sent"),
                              tr("Success sending file: %1").arg(filename));
   } else {
@@ -470,7 +470,7 @@ void Contacts::onAddedContact(const QString &name,
   qDebug() << "Contacts::onAddedContact()";
 
   QMessageBox msgBox;
-  msgBox.setText("Accept contact request from " + name);
+  msgBox.setText(tr("Accept contact request from %1?").arg(name));
   msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
   msgBox.setDefaultButton(QMessageBox::Yes);
   int ret = msgBox.exec();
@@ -533,7 +533,7 @@ void Contacts::onDeletedContact(const QString &name) {
 
 void Contacts::onContactsBoxLostFocus() {
   if (ui_.contactLineEdit->text() == "") {
-        ui_.contactLineEdit->setText("Search Contacts");
+        ui_.contactLineEdit->setText(tr("Search Contacts"));
         QPalette pal;
         pal.setColor(QPalette::Text, Qt::lightGray);
         ui_.contactLineEdit->setPalette(pal);

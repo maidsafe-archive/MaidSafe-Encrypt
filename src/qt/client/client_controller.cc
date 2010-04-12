@@ -647,3 +647,29 @@ int ClientController::SetInfo(const std::vector<std::string> &info) {
   return maidsafe::ClientController::getInstance()->SetInfo(info);
 }
 
+int ClientController::getattr(const std::string &path, std::string &ser_mdm) {
+  return maidsafe::ClientController::getInstance()->getattr(path, ser_mdm);
+}
+int ClientController::readdir(const std::string &path,
+              std::map<std::string, maidsafe::ItemType> &children) {
+  return maidsafe::ClientController::getInstance()->readdir(path, children);
+}
+int ClientController::read(const std::string &path) {
+  return maidsafe::ClientController::getInstance()->read(path);
+}
+int ClientController::write(const std::string &path) {
+  return maidsafe::ClientController::getInstance()->write(path);
+}
+
+int ClientController::rename(const std::string &path, const std::string &path2){
+  return maidsafe::ClientController::getInstance()->rename(path, path2);
+}
+
+int ClientController::mkdir(const std::string &path) {
+  return maidsafe::ClientController::getInstance()->mkdir(path);
+}
+
+int ClientController::rmdir(const std::string &path) {
+  return maidsafe::ClientController::getInstance()->rmdir(path);
+}
+

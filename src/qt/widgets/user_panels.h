@@ -31,6 +31,7 @@ class Contacts;
 class VaultInfo;
 class PublicUsername;
 class PersonalMessages;
+class FileBrowser;
 
 // Main User Panel for Perpetual Data
 /*!
@@ -121,6 +122,7 @@ class UserPanels : public QWidget {
 //  VaultInfo* vaultinfo_;
 
   PublicUsername* public_username_;
+  FileBrowser* browser_;
 
   // track the active panel
   int panel_;

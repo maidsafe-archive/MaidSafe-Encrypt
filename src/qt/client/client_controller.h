@@ -89,6 +89,19 @@ class ClientController : public QObject {
   char DriveLetter();
   bool Logout();
 
+  /////////////////////////////
+  // qt file browser methods //
+  /////////////////////////////
+
+  int getattr(const std::string &path, std::string &ser_mdm);
+  int readdir(const std::string &path,
+              std::map<std::string, maidsafe::ItemType> &children);
+  int read(const std::string &path);
+  int write(const std::string &path);
+  int rename(const std::string &path, const std::string &path2);
+  int mkdir(const std::string &path);
+  int rmdir(const std::string &path);
+
   bool CreatePublicUsername(const std::string &public_username);
   bool CreateUser(const std::string &username,
                   const std::string &pin,

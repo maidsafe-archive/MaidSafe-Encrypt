@@ -164,6 +164,7 @@ class PerpetualData : public QMainWindow {
                     //  < returning to login
   };
 
+
   // flag set to true when application is quitting
   bool quitting_;
 

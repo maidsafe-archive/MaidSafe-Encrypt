@@ -76,7 +76,7 @@ void PublicUsername::onCreateUsernameClicked() {
 
 void PublicUsername::onCreateUsernameCompleted(bool success) {
   if (success) {
-    ui_.contactLineEdit->setText(tr(""));
+    ui_.contactLineEdit->setText("");
     emit complete();
   } else {
     QMessageBox::warning(this, tr("Problem!"), tr("Error setting Username."));

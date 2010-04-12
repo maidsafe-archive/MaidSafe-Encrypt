@@ -25,6 +25,7 @@
 // local
 #include "qt/widgets/panel.h"
 #include "qt/widgets/messages.h"
+#include "qt/widgets/file_browser.h"
 #include "qt/widgets/shares.h"
 #include "qt/widgets/contacts.h"
 #include "qt/widgets/personal_messages.h"
@@ -47,6 +48,7 @@ UserPanels::UserPanels(QWidget* parent)
   ui_.tabWidget_2->setContextMenuPolicy(Qt::CustomContextMenu);
 
   public_username_ = new PublicUsername;
+  browser_ = new FileBrowser;
 
   ui_.my_files_button->setAutoDefault(true);
 
@@ -145,7 +147,10 @@ void UserPanels::onPublicUsernameChosen() {
 }
 
 void UserPanels::onMyFilesClicked() {
-  UserSpaceFileSystem::instance()->explore(UserSpaceFileSystem::MY_FILES);
+  browser_->setActive(true);
+  browser_->show();
+
+  //UserSpaceFileSystem::instance()->explore(UserSpaceFileSystem::MY_FILES);
 }
 
 void UserPanels::onCurrentChanged(int index) {

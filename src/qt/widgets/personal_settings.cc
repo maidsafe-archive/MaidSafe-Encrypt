@@ -27,6 +27,9 @@ PersonalSettings::PersonalSettings(QWidget* parent) : init_(false) {
 
     connect(ui_.pushButtonPicture, SIGNAL(clicked(bool)),
           this,           SLOT(onPicChangeClicked(bool)));
+
+    connect(ui_.langListWidget, SIGNAL(itemActivated(QListWidgetItem*)),
+            this,               SLOT(onLangSelect(QListWidgetItem*)));
 }
 
 PersonalSettings::~PersonalSettings() { }
@@ -51,6 +54,10 @@ void PersonalSettings::onMessageTextEdit(const QString& text) {
 
 void PersonalSettings::onPicChangeClicked(bool b) {
   changedValues_.insert("changepic", "");
+}
+
+void PersonalSettings::onLangSelect(QListWidgetItem* item) {
+  changedValues_.insert("language", item->text());
 }
 
 

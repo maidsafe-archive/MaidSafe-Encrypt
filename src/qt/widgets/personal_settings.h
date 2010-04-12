@@ -39,6 +39,7 @@ class PersonalSettings : public QWidget {
     void onUsernameTextEdit(const QString&);
     void onMessageTextEdit(const QString&);
     void onPicChangeClicked(bool);
+    void onLangSelect(QListWidgetItem*);
 
  private:
   Ui::PersonalSettingsPage ui_;

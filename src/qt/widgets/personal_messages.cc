@@ -237,8 +237,8 @@ void PersonalMessages::onSendMessageComplete(bool success,
 }
 
 void PersonalMessages::onSendInvite() {
-  QString filename = QFileDialog::getSaveFileName(this, "Save file", "",
-                                                  ".html");
+  QString filename = QFileDialog::getSaveFileName(this, tr("Save file"), "",
+                                                  tr(".html"));
   QFile f(filename);
   f.open(QIODevice::WriteOnly);
   QTextStream out(&f);
@@ -276,9 +276,9 @@ void PersonalMessages::onSendFile() {
   ClientController::instance()->SessionName()).string() +
          "/My Files");
   QStringList fileNames = QFileDialog::getOpenFileNames(this,
-                                                        "Select one to send",
-                                                        root,
-                                                        tr("Any file (*)"));
+                                                       tr("Select one to send"),
+                                                       root,
+                                                       tr("Any file (*)"));
 #endif
 
 #ifdef DEBUG
