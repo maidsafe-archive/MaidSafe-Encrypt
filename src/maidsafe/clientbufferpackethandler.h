@@ -27,6 +27,7 @@
 
 #include <boost/thread/mutex.hpp>
 #include <boost/cstdint.hpp>
+#include <gtest/gtest_prod.h>
 #include <maidsafe/crypto.h>
 
 #include <list>
@@ -160,28 +161,12 @@ class ClientBufferPacketHandler {
  private:
   virtual void FindNodes(base::callback_func_type cb,
                          boost::shared_ptr<ChangeBPData> data);
-  virtual void FindNodes_CB(const std::string &result,
-                            boost::shared_ptr<ChangeBPData> data,
-                            const boost::int16_t &transport_id);
+  virtual void FindNodesCallback(const std::string &result,
+                                 boost::shared_ptr<ChangeBPData> data,
+                                 const boost::int16_t &transport_id);
   void ActionOnBpDone(
       boost::shared_ptr<std::vector<ModifyBPCallbackData> > cb_datas,
       boost::int16_t index);
-  void IterativeStore(boost::shared_ptr<CreateBPData> data,
-                      const boost::int16_t &transport_id);
-  void CreateBPCallback(const CreateBPResponse* resp,
-                        CreateBPCallbackData cb_data);
-  virtual void FindReferences(base::callback_func_type cb,
-                              boost::shared_ptr<ChangeBPData> data);
-  void FindReferences_CB(const std::string &result,
-                         boost::shared_ptr<ChangeBPData> data,
-                         const boost::int16_t &transport_id);
-  void IterativeFindContacts(ModifyBPCallbackData data);
-  virtual void FindRemoteContact(base::callback_func_type cb,
-                                 boost::shared_ptr<ChangeBPData> data,
-                                 const int &idx);
-  void FindRemoteContact_CB(const std::string &result,
-                            boost::shared_ptr<ChangeBPData> data,
-                            const boost::int16_t &transport_id);
   std::list<ValidatedBufferPacketMessage> ValidateMsgs(
       const GetBPMessagesResponse *response,
       const std::string &private_key);

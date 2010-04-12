@@ -103,7 +103,7 @@ class CBPHandlerTest : public testing::Test {
                      cbph(NULL),
                      bp_rpcs(),
                      test_dir_(file_system::TempDir() /
-                               ("maidsafe_TestCBPH_" + base::RandomString(6))),
+                              ("maidsafe_TestCBPH_" + base::RandomString(6))),
                      kad_config_file_(test_dir_ / ".kadconfig"),
                      cryp(),
                      keys_(),
