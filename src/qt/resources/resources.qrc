@@ -13,6 +13,9 @@
   <qresource prefix="translations">
     <file>pd_translation_de_test.qm</file>
     <file>pd_translation_de.ts</file>
+    <file>pd_translation_es.ts</file>
+    <file>pd_translation_fr.ts</file>
+    <file>pd_translation_gd.ts</file>
   </qresource>
   <qresource prefix="icons/32">
     <file>32/Color Picker_32.png</file>

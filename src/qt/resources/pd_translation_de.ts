@@ -6,17 +6,17 @@
     <message>
         <location filename="ui/about.ui" line="14"/>
         <source>About Perpetual Data</source>
-        <translation type="unfinished"></translation>
+        <translation>Über Perpetual Data</translation>
     </message>
     <message>
         <location filename="ui/about.ui" line="40"/>
         <source>Perpetual Data 0.6 Alpha</source>
-        <translation type="unfinished"></translation>
+        <translation>Perpetual Data 0.6 Alpha</translation>
     </message>
     <message>
         <location filename="ui/about.ui" line="79"/>
         <source>Blah blah blah... you can stick any kind of rich text, html in here....</source>
-        <translation type="unfinished"></translation>
+        <translation>yada yada yada german for blah blah blah.</translation>
     </message>
 </context>
 <context>
@@ -24,7 +24,7 @@
     <message>
         <location filename="ui/smily.ui" line="14"/>
         <source>Smily</source>
-        <translation type="unfinished"></translation>
+        <translation></translation>
     </message>
     <message>
         <location filename="ui/smily.ui" line="51"/>
@@ -32,14 +32,14 @@
         <location filename="ui/smily.ui" line="61"/>
         <location filename="ui/smily.ui" line="66"/>
         <source>New Row</source>
-        <translation type="unfinished"></translation>
+        <translation></translation>
     </message>
     <message>
         <location filename="ui/smily.ui" line="71"/>
         <location filename="ui/smily.ui" line="76"/>
         <location filename="ui/smily.ui" line="81"/>
         <source>New Column</source>
-        <translation type="unfinished"></translation>
+        <translation></translation>
     </message>
 </context>
 <context>
@@ -47,27 +47,27 @@
     <message>
         <location filename="ui/connection_settings.ui" line="14"/>
         <source>Form</source>
-        <translation type="unfinished"></translation>
+        <translation></translation>
     </message>
     <message>
         <location filename="ui/connection_settings.ui" line="20"/>
         <source>Connection Settings</source>
-        <translation type="unfinished"></translation>
+        <translation>Verbindungseinstellungen</translation>
     </message>
     <message>
         <location filename="ui/connection_settings.ui" line="26"/>
         <source>Network</source>
-        <translation type="unfinished"></translation>
+        <translation>Netzwerk</translation>
     </message>
     <message>
         <location filename="ui/connection_settings.ui" line="35"/>
         <source>Port Number :</source>
-        <translation type="unfinished"></translation>
+        <translation>Port-Nummer :</translation>
     </message>
     <message>
         <location filename="ui/connection_settings.ui" line="51"/>
         <source>UPnP Enabled?</source>
-        <translation type="unfinished"></translation>
+        <translation>UPnP-fähig?</translation>
     </message>
 </context>
 <context>
@@ -75,7 +75,7 @@
     <message>
         <location filename="widgets/contacts.cc" line="55"/>
         <source>View Profile</source>
-        <translation type="unfinished"></translation>
+        <translation>Profil anzeigen</translation>
     </message>
     <message>
         <location filename="widgets/contacts.cc" line="56"/>
@@ -150,7 +150,7 @@
     <message>
         <location filename="widgets/contacts.cc" line="293"/>
         <source>Error removing user: %1</source>
-        <translation type="unfinished"></translation>
+        <translation></translation>
     </message>
     <message>
         <location filename="widgets/contacts.cc" line="399"/>
@@ -513,7 +513,7 @@
     <message>
         <location filename="widgets/login.cc" line="168"/>
         <source>Joining the network</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">Netzwerk</translation>
     </message>
     <message>
         <location filename="widgets/login.cc" line="209"/>
@@ -1343,7 +1343,7 @@ You can change you public username later if you wish. </source>
         <location filename="widgets/vault_info.cc" line="77"/>
         <location filename="widgets/vault_info.cc" line="128"/>
         <source>&lt;font color=red&gt;&lt;strong&gt;Attention! Your vault seems to be offline!&lt;/strong&gt;&lt;/font&gt;</source>
-        <translation type="unfinished"></translation>
+        <translation>attention in german</translation>
     </message>
 </context>
 <context>
@@ -1383,7 +1383,7 @@ You can change you public username later if you wish. </source>
     <message>
         <location filename="ui/user_vault_info.ui" line="116"/>
         <source>Vault Status</source>
-        <translation type="unfinished"></translation>
+        <translation>Vault in german</translation>
     </message>
     <message>
         <location filename="ui/user_vault_info.ui" line="142"/>
