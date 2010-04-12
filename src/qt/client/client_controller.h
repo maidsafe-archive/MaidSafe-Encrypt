@@ -32,6 +32,7 @@
 #include "maidsafe/client/contacts.h"
 
 // local
+#include "qt/client/check_for_messages_thread.h"
 #include "qt/client/contact.h"
 #include "qt/client/profile.h"
 #include "qt/client/presence.h"
@@ -46,6 +47,11 @@
     qt/client, act as a layer between the Qt gui world and the maidsafe
     world.
 */
+
+typedef boost::function<void(const std::string&,
+                             const boost::uint32_t&,
+                             const boost::int16_t&,
+                             const float &)> IMNotifier;
 
 class ClientController : public QObject {
   Q_OBJECT
@@ -114,11 +120,6 @@ class ClientController : public QObject {
                      const std::set<std::string> &admins,
                      const std::set<std::string> &readonlys);
   bool ValidateUser(const std::string &password);
-
-  // Get Own Info
-  int GetInfo(const std::string &public_username,
-              std::vector<std::string> *info);
-  int SetInfo(const std::vector<std::string> &info);
 
   ///////////////////////////////
   //// Conversation Handling ////
@@ -196,16 +197,14 @@ class ClientController : public QObject {
 
   private slots:
     // temporary while we emulate message notifications
-    void checkForMessages();
     void onCheckMessagesCompleted(bool success);
 
  private:
   explicit ClientController(QObject* parent = 0);
   virtual ~ClientController();
 
-  int analyseMessage(const maidsafe::InstantMessage& im);
-  class ClientControllerImpl;
-  ClientControllerImpl* impl_;
+  void analyseMessage(const maidsafe::InstantMessage& im);
+  CheckForMessagesThread *cfmt_;
 };
 
 #endif  // QT_CLIENT_CLIENT_CONTROLLER_H_

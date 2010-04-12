@@ -60,6 +60,8 @@ enum ReturnCode {
   kGetBPInfoError = -2014,
   kBPAddMessageError = -2015,
   kBPAwaitingCallback = -2016,
+  kBPGetPresenceError = -2017,
+  kBPAddPresenceError = -2018,
 
   // Chunkstore
   kInvalidChunkType = -127,
@@ -100,7 +102,7 @@ enum ReturnCode {
   // Store Managers
   kStoreManagerError = -7001,
   kNotConnected = -7002,
-  kLoadChunkFindValueFailure = -7003,
+  kLoadChunkFindNodesFailure = -7003,
   kStoreChunkFindNodesFailure = -7004,
   kStoreChunkError = -7005,
   kStoreCancelledOrDone = -7006,
@@ -170,6 +172,10 @@ enum ReturnCode {
   kFileSystemUnmountError = -10008,
   kFuseMountPointError = -10009,
   kFileSystemException = -10010,
+  kAddLiveContactFailure = -10011,
+  kLiveContactNotFound = -10012,
+  kLiveContactNoEp = -10013,
+
 
   // Self Encryption Handler (-11000)
 
@@ -203,17 +209,11 @@ enum ReturnCode {
   kVaultServiceFindNodesError = -1503,
   kVaultServiceFindNodesFailure = -1504,
   kVaultServiceFindNodesTooFew = -1505,
-  kAddToRefResponseUninitialised = -1506,
-  kAddToRefResponseFailed = -1507,
-  kAddToRefResponseError = -1508,
-  kAmendAccountResponseUninitialised = -1509,
-  kAmendAccountResponseFailed = -1510,
-  kAmendAccountResponseError = -1511,
-  kAccountStatusResponseUninitialised = -1512,
-  kAccountStatusResponseFailed = -1513,
-  kAccountStatusResponseError = -1514,
-  kCacheChunkResponseUninitialised = -1515,
-  kCacheChunkResponseError = -1516,
+  kRemoteOpResponseUninitialised = -1506,
+  kRemoteOpResponseFailed = -1507,
+  kRemoteOpResponseError = -1508,
+  kCacheChunkResponseUninitialised = -1509,
+  kCacheChunkResponseError = -1510,
 
   // Vault
   kVaultDaemonException = -2501,
@@ -244,24 +244,28 @@ enum ReturnCode {
   kNoCacheSpaceToClear = -3515,
 
   // Account Handler & Account Amendment Handler
-  kAccountNotFound = -4501,
-  kAccountExists = -4502,
-  kAccountDeleteFailed = -4503,
-  kAccountWrongAccountField = -4504,
-  kAccountEmptyAlert = -4505,
-  kAccountNotEnoughSpace = -4506,
-  kAmendAccountTypeError = -4507,
-  kAmendAccountCountError = -4508,
-  kAccountAmendmentError = -4509,
-  kAccountAmendmentPending = -4510,
-  kAccountAmendmentNotFound = -4511,
-  kAccountAmendmentUpdated = -4512,
-  kAccountAmendmentFinished = -4513,
+  kAccountHandlerNotStarted = -4501,
+  kAccountNotFound = -4502,
+  kAccountExists = -4503,
+  kAccountDeleteFailed = -4504,
+  kAccountWrongAccountField = -4505,
+  kAccountEmptyAlert = -4506,
+  kAccountNotEnoughSpace = -4507,
+  kAmendAccountTypeError = -4508,
+  kAmendAccountCountError = -4509,
+  kAccountAmendmentError = -4510,
+  kAccountAmendmentPending = -4511,
+  kAccountAmendmentNotFound = -4512,
+  kAccountAmendmentUpdated = -4513,
+  kAccountAmendmentFinished = -4514,
 
   // Chunk Info Handler
-  kChunkInfoInvalidSize = -5501,
-  kChunkInfoInvalidName = -5502,
-  kChunkInfoCannotDelete = -5503
+  kChunkInfoHandlerNotStarted = -5501,
+  kChunkInfoInvalidSize = -5502,
+  kChunkInfoInvalidName = -5503,
+  kChunkInfoCannotDelete = -5504,
+  kChunkInfoExists = -5505,
+  kChunkInfoNoActiveWatchers = -5506
 
   // Vault Buffer Packet Handler
 };

@@ -15,15 +15,28 @@
 #ifndef QT_CLIENT_CHECK_FOR_MESSAGES_THREAD_H_
 #define QT_CLIENT_CHECK_FOR_MESSAGES_THREAD_H_
 
+#include <boost/cstdint.hpp>
+#include <boost/thread/mutex.hpp>
 #include "qt/client/worker_thread.h"
 
-class CheckForMessagesThread : public WorkerThread {
+class CheckForMessagesThread : public QThread {
   Q_OBJECT
  public:
   explicit CheckForMessagesThread(QObject* parent = 0);
   virtual ~CheckForMessagesThread();
-
   virtual void run();
+  boost::uint16_t interval();
+  void set_interval(boost::uint16_t the_interval);
+  bool started();
+  void set_started(bool turn_on);
+
+ private:
+  boost::uint16_t interval_;
+  bool started_;
+  boost::mutex interval_mutex_, start_mutex_;
+
+  signals:
+    void completed(bool success);
 };
 
 #endif  // QT_CLIENT_CHECK_FOR_MESSAGES_THREAD_H_

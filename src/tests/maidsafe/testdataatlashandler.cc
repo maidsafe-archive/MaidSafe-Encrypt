@@ -112,7 +112,8 @@ class DataAtlasHandlerTest : public testing::Test {
     boost::shared_ptr<LocalStoreManager>
         sm(new LocalStoreManager(client_chunkstore_));
     // sm = sm_;
-    sm->Init(0, boost::bind(&test_dah::FakeCallback::CallbackFunc, &cb, _1));
+    sm->Init(0, boost::bind(&test_dah::FakeCallback::CallbackFunc, &cb, _1),
+             test_root_dir_);
     boost::mutex mutex;
     test_dah::wait_for_result_seh_(cb, &mutex);
     GenericResponse res;

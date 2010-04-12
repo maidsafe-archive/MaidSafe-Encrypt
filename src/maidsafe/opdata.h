@@ -25,6 +25,8 @@
 #include <boost/thread/locks.hpp>
 #include <maidsafe/maidsafe-dht_config.h>
 
+#include <list>
+#include <map>
 #include <set>
 #include <string>
 #include <vector>
@@ -33,17 +35,6 @@
 #include "maidsafe/client/storemanager.h"
 
 namespace maidsafe {
-
-enum ChunkHolderStatus {
-  kUnknown,
-  kContactable,
-  kHasChunk,
-  kAwaitingChunk,
-  kUpdatingChunk,
-  kDone,
-  kFailedHolder,
-  kFailedChecksum
-};
 
 struct StoreData {
   // Default constructor
@@ -302,39 +293,62 @@ struct GenericConditionData {
   GenericConditionData(const GenericConditionData&);
 };
 
-struct ChunkHolder {
+enum ChunkHolderStatus {
+  kHolderNew,
+  kHolderContactable,
+  kHolderHasChunk,
+  kHolderPending,
+  kHolderFailed,
+  kHolderStatusCount  // highest index
+};
+
+class GetChunkOpData {
  public:
-  explicit ChunkHolder(const kad::Contact &chunk_holder_contact)
-      : chunk_holder_contact(chunk_holder_contact),
-        local(false),
-        check_chunk_response(),
-        status(kUnknown),
-        index(-1),
-        controller(),
-        mutex() {}
-  explicit ChunkHolder(const kad::ContactInfo &chunk_holder_contact_info)
-      : chunk_holder_contact(chunk_holder_contact_info),
-        local(false),
-        check_chunk_response(),
-        status(kUnknown),
-        index(-1),
-        controller(),
-        mutex() {}
-  kad::Contact chunk_holder_contact;
-  bool local;
-  CheckChunkResponse check_chunk_response;
-  ChunkHolderStatus status;
-  // This can be set to the index of this ChunkHolder in a container of
-  // ChunkHolders.
-  int index;
-  // This shared pointer will remain NULL if the ChunkHolder's contact details
-  // cannot be found via Kademlia.  It is kept here to enable the associated RPC
-  // to be cancelled.
-  boost::shared_ptr<rpcprotocol::Controller> controller;
-  boost::mutex *mutex;
+  explicit GetChunkOpData(const std::string &chunk_name_)
+    : chunk_name(chunk_name_),
+      needs_cache_copy_id(),
+      failed(false),
+      find_value_done(false),
+      found_chunk_holder(false),
+      idx_info(0),
+      num_info_responses(0),
+      chunk_info_holders(),
+      chunk_holder_contacts(),
+      ref_responses(),
+      check_responses(),
+      controllers(),
+      mutex(),
+      condition() {}
+  void AddChunkHolder(const std::string &pmid) {
+    bool found(false);
+    for (int i = 0; i < kHolderStatusCount; ++i) {
+      if (chunk_holders[i].count(pmid) != 0) {
+        found = true;
+        break;
+      }
+    }
+    if (!found) {
+      chunk_holders[kHolderNew].insert(pmid);
+    }
+  }
+  void AddChunkHolder(const kad::Contact &contact) {
+    chunk_holders[kHolderContactable].insert(contact.node_id());
+    chunk_holder_contacts[contact.node_id()] = contact;
+  }
+  std::string chunk_name, needs_cache_copy_id;
+  bool failed, find_value_done, found_chunk_holder;
+  size_t idx_info, num_info_responses;
+  std::vector<kad::Contact> chunk_info_holders;
+  std::set<std::string> chunk_holders[kHolderStatusCount];
+  std::map<std::string, kad::Contact> chunk_holder_contacts;
+  std::vector<GetChunkReferencesResponse> ref_responses;
+  std::vector<CheckChunkResponse> check_responses;
+  std::list< boost::shared_ptr<rpcprotocol::Controller> > controllers;
+  boost::mutex mutex;
+  boost::condition_variable condition;
  private:
-  ChunkHolder &operator=(const ChunkHolder&);
-  ChunkHolder(const ChunkHolder&);
+  GetChunkOpData &operator=(const GetChunkOpData&);
+  GetChunkOpData(const GetChunkOpData&);
 };
 
 }  // namespace maidsafe

@@ -88,7 +88,7 @@ int main(int argc, char *argv[]) {
   int rv = app.exec();
 
   // finalize client controller
-  ClientController::instance()->shutdown();
+//  ClientController::instance()->shutdown();
 
   SystemTrayIcon::instance()->hide();
 

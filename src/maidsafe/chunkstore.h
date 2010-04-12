@@ -53,7 +53,7 @@ const ChunkType kOutgoing = 0x04;
 const ChunkType kTempCache = 0x08;
 
 struct ChunkInfo {
-  ChunkInfo() : non_hex_name_(""),
+  ChunkInfo() : non_hex_name_(),
                 last_checked_(boost::posix_time::min_date_time),
                 type_(kHashable | kNormal) {}
   ChunkInfo(const std::string &non_hex_name,

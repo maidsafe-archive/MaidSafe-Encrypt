@@ -85,32 +85,6 @@ inline void DeleteCallback(const std::string &result) {
   }
 }
 
-inline void GetPacketCallback(const std::string &result) {
-//  maidsafe::GetResponse resp;
-//  boost::mutex::scoped_lock lock(callback_mutex_);
-//  if (!resp.ParseFromString(result) || resp.result() != kAck) {
-//    callback_packets_.push_back("Failed");
-//  } else {
-//    callback_packets_.push_back(resp.content());
-//  }
-  boost::mutex::scoped_lock lock(callback_mutex_);
-  callback_packets_.push_back(result);
-}
-
-inline void GetMessagesCallback(const std::string &result) {
-  maidsafe::GetBPMessagesResponse resp;
-  if (!resp.ParseFromString(result) || resp.result() != kAck) {
-    callback_succeeded_ = false;
-    callback_timed_out_ = false;
-  } else {
-    callback_succeeded_ = true;
-    callback_timed_out_ = false;
-    for (int i = 0; i < resp.messages_size(); i++) {
-      callback_messages_.push_back(resp.messages(i));
-    }
-  }
-}
-
 void PrepareCallbackResults() {
   callback_timed_out_ = true;
   callback_succeeded_ = false;
@@ -192,127 +166,14 @@ void MakeChunks(const std::vector< boost::shared_ptr<ClientData> > &clients,
   }
 }
 
-void CreatePacketType(const std::string &priv_key,
-                      int no_of_packets,
-                      std::map<std::string, std::string> *packets) {
-  crypto::Crypto co;
-  co.set_hash_algorithm(crypto::SHA_512);
-  for (int i = 0; i < no_of_packets; ++i) {
-    maidsafe::GenericPacket gp;
-    gp.set_data(base::RandomString(4096));
-    gp.set_signature(co.AsymSign(gp.data(), "", priv_key,
-        crypto::STRING_STRING));
-    std::string ser_packet;
-    gp.SerializeToString(&ser_packet);
-    std::string packet_name = co.Hash(ser_packet, "", crypto::STRING_STRING,
-                                      false);
-//    chunkstore->AddChunkToOutgoing(*packet_name, *ser_packet);
-    packets->insert(std::pair<std::string, std::string>
-        (base::EncodeToHex(packet_name), ser_packet));
-//    printf("Created packet %i.\n", packets->size());
-  }
-}
-
-void CreateChunkPackets(const std::vector<std::string> &priv_keys,
-                        std::vector<std::string> *packets) {
-  crypto::Crypto co;
-  co.set_hash_algorithm(crypto::SHA_512);
-  for (size_t i = 0; i < priv_keys.size(); ++i) {
-    maidsafe::GenericPacket gp;
-    gp.set_data(base::RandomString(4096));
-    gp.set_signature(co.AsymSign(gp.data(), "", priv_keys[i],
-                     crypto::STRING_STRING));
-    std::string ser_gp;
-    gp.SerializeToString(&ser_gp);
-    packets->push_back(ser_gp);
-  }
-  printf("Leaving CreateChunkPackets\n");
-}
-
-void CreateBufferPacket(const std::string &owner,
-                        const std::string &public_key,
-                        const std::string &private_key,
-                        std::string *packet_name,
-                        std::string *ser_packet) {
-  crypto::Crypto co;
-  co.set_hash_algorithm(crypto::SHA_512);
-  *packet_name = co.Hash(owner + "BUFFER", "", crypto::STRING_STRING,
-                         false);
-  maidsafe::BufferPacket buffer_packet;
-  maidsafe::GenericPacket *ser_owner_info= buffer_packet.add_owner_info();
-  maidsafe::BufferPacketInfo buffer_packet_info;
-  buffer_packet_info.set_owner(owner);
-  buffer_packet_info.set_owner_publickey(public_key);
-  buffer_packet_info.set_online(false);
-  std::string ser_info;
-  buffer_packet_info.SerializeToString(&ser_info);
-  ser_owner_info->set_data(ser_info);
-  ser_owner_info->set_signature(co.AsymSign(ser_info, "", private_key,
-    crypto::STRING_STRING));
-  buffer_packet.SerializeToString(ser_packet);
-}
-
-size_t CheckStoredCopies(std::map<std::string, std::string> chunks,
-                         const int &timeout_seconds,
-                         boost::shared_ptr<maidsafe::MaidsafeStoreManager> sm) {
-  printf("\nChecking chunk references remotely...\n\n");
-  std::set<std::string> not_stored;
-  std::set<std::string> stored;
-  std::map<std::string, std::string>::iterator it;
-  for (it = chunks.begin(); it != chunks.end(); ++it)
-    not_stored.insert((*it).first);
-
-  int set_iteration = 0;
-  bool found(false);
-  int chunk_ref_count = 0;
-  boost::uint32_t timeout(base::get_epoch_time() + timeout_seconds);  // seconds
-  while (stored.size() < chunks.size() && (base::get_epoch_time() < timeout)) {
-    ++set_iteration;
-    if (!found) {
-      printf("Sleeping iteration %i\n", set_iteration);
-      boost::this_thread::sleep(boost::posix_time::seconds(10));
-    }
-    std::set<std::string>::iterator not_stored_it = not_stored.begin();
-    while (not_stored_it != not_stored.end()) {
-      kad::ContactInfo cache_holder;
-      std::vector<std::string> chunk_holders_ids;
-      std::string needs_cache_copy_id;
-      sm->kad_ops_->FindValue(*not_stored_it, false, &cache_holder,
-                              &chunk_holders_ids, &needs_cache_copy_id);
-      if (chunk_holders_ids.size() >= 1) {
-        printf("Found chunk ref for %s, got %u holders.\n",
-               HexSubstr(*not_stored_it).c_str(), chunk_holders_ids.size());
-        not_stored.erase(*not_stored_it);
-        stored.insert(*not_stored_it);
-        ++chunk_ref_count;
-        found = true;
-        break;
-      } else {
-        printf("Not there with chunk ref for %s, got %u holders.\n",
-               HexSubstr(*not_stored_it).c_str(), chunk_holders_ids.size());
-      }
-      ++not_stored_it;
-      found = false;
-    }
-  }
-  if (!not_stored.empty()) {
-    printf("Could NOT find refs to chunks:\n");
-    for (std::set<std::string>::iterator not_stored_it = not_stored.begin();
-         not_stored_it != not_stored.end(); ++not_stored_it)
-      printf("\t - %s\n", HexSubstr(*not_stored_it).c_str());
-  }
-  return chunk_ref_count;
-}
-
 }  // namespace testpdvault
 
 namespace maidsafe_vault {
 
 static std::vector< boost::shared_ptr<PDVault> > pdvaults_;
-static const int kNumOfClients = 1;
-static const int kNetworkSize = kKadStoreThreshold + kMinChunkCopies +
-                                kNumOfClients;
-static const int kNumOfTestChunks = kNetworkSize * 1.5;
+static const int kNumOfClients = 2;
+static const int kNetworkSize = kad::K + kNumOfClients;
+static const int kNumOfTestChunks = 3;  // kNetworkSize + 1;
 /**
  * Note: StoreAndGetChunks only works for small K due to resource problems
  *       Recommended are K = 8 and kMinSuccessfulPecentageStore = 50%
@@ -390,6 +251,21 @@ class PDVaultTest : public testing::Test {
   }
 
   virtual void SetUp() {
+    // stop the vaults that will be replaced
+    for (int i = kNetworkSize - kNumOfClients; i < kNetworkSize; ++i) {
+      pdvaults_[i]->Stop();
+    }
+
+    // look up the stopped vaults to flush routing tables
+    for (int i = 0; i < kNetworkSize - kNumOfClients; ++i) {
+      for (int j = kNetworkSize - kNumOfClients; j < kNetworkSize; ++j) {
+        maidsafe::CallbackObj cb;
+        pdvaults_[i]->kad_ops_->FindNode(pdvaults_[i]->pmid_, boost::bind(
+            &maidsafe::CallbackObj::CallbackFunc, &cb, _1), false);
+        cb.WaitForCallback();
+      }
+    }
+
     // create each client and take over a vault
     for (int i = 0; i < kNumOfClients; ++i) {
       printf("Setting up client %d of %d...\n", i + 1, kNumOfClients);
@@ -402,7 +278,8 @@ class PDVaultTest : public testing::Test {
       clients_[i]->msm = sm_local_;
       clients_[i]->msm->ss_ = &clients_[i]->mss;
       testpdvault::PrepareCallbackResults();
-      clients_[i]->msm->Init(0, boost::bind(&testpdvault::GeneralCallback, _1));
+      clients_[i]->msm->Init(0, boost::bind(&testpdvault::GeneralCallback, _1),
+                             "");
       testpdvault::WaitFunction(60, &mutex_);
       ASSERT_TRUE(callback_succeeded_);
       ASSERT_FALSE(callback_timed_out_);
@@ -412,7 +289,7 @@ class PDVaultTest : public testing::Test {
       printf("Taking over vault #%d: %s => %s\n", vlt,
              HexSubstr(pdvaults_[vlt]->pmid_).c_str(),
              HexSubstr(clients_[i]->pmid_name).c_str());
-      pdvaults_[vlt]->Stop();
+      // pdvaults_[vlt]->Stop();
       fs::path dir(pdvaults_[vlt]->vault_chunkstore_.ChunkStoreDir());
       boost::uint64_t used(pdvaults_[vlt]->vault_chunkstore_.used_space());
       boost::uint64_t avlb(pdvaults_[vlt]->vault_chunkstore_.available_space());
@@ -435,6 +312,8 @@ class PDVaultTest : public testing::Test {
       ASSERT_EQ(kVaultStarted, pdvaults_[vlt]->vault_status());
       printf("Vault #%d restarted.\n", vlt);
     }
+
+    printf("--- SetUp completed. ---\n\n");
   }
 
   virtual void TearDown() {
@@ -487,6 +366,32 @@ TEST_F(PDVaultTest, FUNC_MAID_StoreAndGetChunks) {
   printf("Waiting for account creation...\n");
   boost::this_thread::sleep(boost::posix_time::seconds(20));
 
+  // make sure accounts for clients are in the right places
+  printf("\n-- Checking accounts locally... --\n");
+  for (int i = 0; i < kNumOfClients; ++i) {
+    std::string client_pmid(pdvaults_[kNetworkSize - kNumOfClients + i]->pmid_);
+    std::string account_name(crypto_.Hash(client_pmid + kAccount, "",
+                                          crypto::STRING_STRING, false));
+    printf("Client %s, account %s:\n", HexSubstr(client_pmid).c_str(),
+           HexSubstr(account_name).c_str());
+    std::set<std::string> closest;
+    std::vector<kad::Contact> contacts;
+    clients_[i]->msm->kad_ops_->FindCloseNodes(account_name, &contacts);
+    for (size_t j = 0; j < contacts.size(); ++j) {
+      closest.insert(contacts[j].node_id());
+    }
+    for (int j = 0; j < kNetworkSize; ++j) {
+      bool client = pdvaults_[j]->pmid_ == client_pmid;
+      bool holder = pdvaults_[j]->vault_service_->HaveAccount(client_pmid);
+      bool close = closest.count(pdvaults_[j]->pmid_) == 1;
+      printf(" Vault %s%s%s%s\n", HexSubstr(pdvaults_[j]->pmid_).c_str(),
+             client ? " - client's" : "",
+             holder ? " - holder" : "",
+             close ? " - close" : "");
+      ASSERT_FALSE(close && !(!holder ^ !client));
+    }
+  }
+
   // store chunks to network with each client
   for (int i = 0; i < kNumOfClients; ++i)
     for (it = chunks.begin(); it != chunks.end(); ++it)
@@ -498,20 +403,18 @@ TEST_F(PDVaultTest, FUNC_MAID_StoreAndGetChunks) {
   printf("\nWaiting for chunks to get stored...\n");
   boost::this_thread::sleep(boost::posix_time::seconds(15));
 
-  printf("\nChecking chunks and refs locally...\n");
+  printf("\nChecking chunks locally...\n");
 
-  // checking for chunks and reference packets
-  std::set<std::string> stored_chunks, stored_refs;
+  // checking for chunks
+  std::set<std::string> stored_chunks;
   int iteration = 0;
-  while ((stored_chunks.size() < chunks.size() ||
-         stored_refs.size() < chunks.size()) &&
-         iteration < 18) {
+  while (stored_chunks.size() < chunks.size() && iteration < 18) {
     ++iteration;
     printf("\n-- Sleeping iteration %i --\n\n", iteration);
     boost::this_thread::sleep(boost::posix_time::seconds(10));
 
     for (it = chunks.begin(); it != chunks.end(); ++it) {
-      int chunk_count(0), ref_count(0);
+      int chunk_count(0);
       std::vector<std::string> values;
 
       for (int vault_no = 0; vault_no < kNetworkSize; ++vault_no) {
@@ -521,13 +424,6 @@ TEST_F(PDVaultTest, FUNC_MAID_StoreAndGetChunks) {
                  HexSubstr(pdvaults_[vault_no]->pmid_).c_str(),
                  HexSubstr((*it).first).c_str());
           ++chunk_count;
-        }
-        if (stored_refs.count((*it).first) == 0 &&
-            pdvaults_[vault_no]->knode_->FindValueLocal((*it).first, &values)) {
-          printf("Vault %d (%s) has %d refs to chunk %s.\n", vault_no,
-                 HexSubstr(pdvaults_[vault_no]->pmid_).c_str(),
-                 values.size(), HexSubstr((*it).first).c_str());
-          ++ref_count;
         }
       }
 
@@ -539,29 +435,12 @@ TEST_F(PDVaultTest, FUNC_MAID_StoreAndGetChunks) {
                  HexSubstr((*it).first).c_str());
         }
       }
-
-      if (stored_refs.count((*it).first) == 0) {
-        if (ref_count >= kKadStoreThreshold) {
-          stored_refs.insert((*it).first);
-        } else {
-          printf("Only %d ref packets for %s stored so far.\n", ref_count,
-                 HexSubstr((*it).first).c_str());
-        }
-      }
     }
   }
 
   ASSERT_EQ(chunks.size(), stored_chunks.size());
   stored_chunks.clear();
-  ASSERT_EQ(chunks.size(), stored_refs.size());
-  stored_refs.clear();
 
-  boost::this_thread::sleep(boost::posix_time::seconds(10));
-
-  ASSERT_EQ(chunks.size(),
-            testpdvault::CheckStoredCopies(chunks, 120, clients_[0]->msm));
-
-  boost::this_thread::sleep(boost::posix_time::seconds(20));
   printf("\nTrying to retrieve stored chunks...\n");
 
   // Check each chunk can be retrieved correctly
@@ -578,9 +457,9 @@ TEST_F(PDVaultTest, FUNC_MAID_StoreAndGetChunks) {
     }
   }
 
-  printf("\nMaking each chunk unique, but keep ref packets...\n");
+  printf("\nMaking each chunk unique, but keep references...\n");
 
-  // Remove all but one copy of each chunk, but leave reference packet showing
+  // Remove all but one copy of each chunk, but leave reference list showing
   // multiple chunk holders.
   for (it = chunks.begin(); it != chunks.end(); ++it) {
     bool first_copy(true);
@@ -620,7 +499,7 @@ TEST_F(PDVaultTest, FUNC_MAID_StoreAndGetChunks) {
   printf("\nRemoving all chunks except one...\n");
 
   // Remove all copies of each chunk except the first one, but leave reference
-  // packet showing multiple chunk holders.
+  // list showing multiple chunk holders.
   bool first_chunk(true);
   for (it = chunks.begin(); it != chunks.end(); ++it) {
     for (int vault_no = 0; vault_no < kNetworkSize; ++vault_no) {

@@ -778,7 +778,7 @@ TEST_F(SelfEncryptionTest, BEH_MAID_EncryptDecryptStringSerDA) {
     k->set_id(co.Hash(keys_.at(i).public_key() + k->public_key_signature(), "",
         crypto::STRING_STRING, false));
   }
-  std::string ser_da("");
+  std::string ser_da;
   ASSERT_TRUE(da.SerializeToString(&ser_da));
   DataMap dm1;
 
@@ -787,7 +787,7 @@ TEST_F(SelfEncryptionTest, BEH_MAID_EncryptDecryptStringSerDA) {
   dm1.set_file_hash(se.SHA512(ser_da));
   ASSERT_EQ(0, se.Encrypt(ser_da, true, &dm1));
 
-  std::string dec_str("");
+  std::string dec_str;
   ASSERT_EQ(0, se.Decrypt(dm1, 0, &dec_str));
   EXPECT_EQ(se.SHA512(ser_da), se.SHA512(dec_str));
   EXPECT_EQ(ser_da.size(), dec_str.size());

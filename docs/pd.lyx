@@ -1,4 +1,4 @@
-#LyX 1.6.4 created this file. For more info see http://www.lyx.org/
+#LyX 1.6.5 created this file. For more info see http://www.lyx.org/
 \lyxformat 345
 \begin_document
 \begin_header
@@ -59,8 +59,9 @@ This paper presents a new way of networking and data handling globally.
  This data centric network is likely to revolutionise the IT industry in
  a very positive fashion.
   For the first time you will be able to approach any computer and like
- saying 'you be mine', log in, and it is as though it becomes your computer, with all your data,
- desktop etc. but without leaving any trace upon logout.
+ saying 'you be mine', log in, and it is as though it becomes your computer,
+ with all your data, desktop etc.
+ but without leaving any trace upon logout.
  
 \end_layout
 
@@ -230,20 +231,21 @@ maidsafe can be considered a platform rather than a single application and
  on this platform there is the ability for many applications to exist.
  The significant difference from traditional networks and particularly storage
  area networks is that in a maidsafe network people are self policed, network
- controlled, self created and completely unknown.  There are publicly
- known IDs that can be created by users, however, these are separated from
- their login or data management IDs used elsewhere in the network.
+ controlled, self created and completely unknown.
+  There are publicly known IDs that can be created by users, however, these
+ are separated from their login or data management IDs used elsewhere in
+ the network.
 \end_layout
 
 \begin_layout Standard
 The initial response to the findings of this system are varied and range
  from impossible all the way to this is amazing.
  A point to note is that the systems represented by this paper are at present
- very computationally intensive in areas, require significant bandwidth and may
- appear to be unsustainable, however initial testing proves this not to
- be the case substantively, although it should also be noted we are in a
- state of Moore's Law growth in CPU and possibly faster than this with broadband
- bandwidth and hard drive capacities.
+ very computationally intensive in areas, require significant bandwidth
+ and may appear to be unsustainable, however initial testing proves this
+ not to be the case substantively, although it should also be noted we are
+ in a state of Moore's Law growth in CPU and possibly faster than this with
+ broadband bandwidth and hard drive capacities.
  This area of growth has been exponential over the last decade and the author
  is very aware that the further down a period of exponential growth then
  each passing day brings significantly more CPU, bandwidth and disk space
@@ -357,7 +359,7 @@ p = public key (used to encrypt)
 \end_layout
 
 \begin_layout Standard
-netputV = put a Value on the network (kademlia)
+netputV = put a Value on the network (Kademlia)
 \end_layout
 
 \begin_layout Standard
@@ -365,7 +367,7 @@ netputD = put Data on the network (maidsafe)
 \end_layout
 
 \begin_layout Standard
-netgetV = get Value from network (kadmelia)
+netgetV = get Value from network (Kadmelia)
 \end_layout
 
 \begin_layout Standard
@@ -440,11 +442,11 @@ Given the above parameters it would seem incredible not to design some system
 \end_layout
 
 \begin_layout Note
-The references used throughout this paper do not provide links
- to the source.
+The references used throughout this paper do not provide links to the source.
  A Internet search will find these documents in their current location.
  This is intentional as dead links tend to stop the user from continuing
- to find the cited document.  Some references are from the IEEE, requiring an account.
+ to find the cited document.
+  Some references are from the IEEE, requiring an account.
 \end_layout
 
 \begin_layout Subsection
@@ -454,14 +456,15 @@ Methodology
 \begin_layout Standard
 By taking a small proportion of every hard drive's free space and adding
  this together we would have enormous storage.
- In addition, the ability to duplicate data across many locations would give
- the ability to ensure data can be monitored and when necessary self repaired
- (by making further copies on disk part (node or computer) failure etc.).
+ In addition, the ability to duplicate data across many locations would
+ give the ability to ensure data can be monitored and when necessary self
+ repaired (by making further copies on disk part (node or computer) failure
+ etc.).
 \end_layout
 
 \begin_layout Standard
-Linking these computers in a way in which everyone benefits and
- does not necessarily have to pay any price would be seen as not only acceptable
+Linking these computers in a way in which everyone benefits and does not
+ necessarily have to pay any price would be seen as not only acceptable
  but as a significant benefit.
  To allow people to add data, whatever it may be, and be assured that their
  data is secure and perpetual for as long as they want it is not possible
@@ -484,7 +487,8 @@ The ability for users to create their own encrypted user identifiers and
 
 \end_inset
 
-.  This allows security to be not enhanced but altered significantly.
+.
+  This allows security to be not enhanced but altered significantly.
  
 \begin_inset Box Shadowbox
 position "t"
@@ -507,12 +511,11 @@ It is inconcievable that in today's world the implemetation of stronger
  case you use biometric authentication i.e.
  a system reads your fingerprint, then sends it to an authentication system.
  If this fingerprint is stolen from that server then the thief not only
- has your password to that system but actually has your fingerprint.  It
- is easy to change a password, but not your finger, so the question has to
- be asked again; is that really more secure?
- With maidsafe, nothing is transmitted back to a central resource, nobody
- knows you have an account, or who you are, so where can a thief steal your
- ID?
+ has your password to that system but actually has your fingerprint.
+  It is easy to change a password, but not your finger, so the question
+ has to be asked again; is that really more secure? With maidsafe, nothing
+ is transmitted back to a central resource, nobody knows you have an account,
+ or who you are, so where can a thief steal your ID?
 \end_layout
 
 \end_inset
@@ -542,12 +545,13 @@ People may prefer to be in control of their own digital assets and not to
 \end_layout
 
 \begin_layout Standard
-Interestingly in this design, any disk space you donate or are required to
- provide to the network 
+Interestingly in this design, any disk space you donate or are required
+ to provide to the network 
 \emph on
 will not store your data
 \emph default
-, rather, the encrypted chunks of other people's files will reside on your space, and equally they will store the encrypted parts making up your files.
+, rather, the encrypted chunks of other people's files will reside on your
+ space, and equally they will store the encrypted parts making up your files.
 \end_layout
 
 \begin_layout Standard
@@ -557,9 +561,9 @@ In the maidsafe network, the network will self-heal and data will move around
 \end_layout
 
 \begin_layout Standard
-One of the most important parts of this network is that
- a truly distributed network will be created, enabling people to validate
- who they are and undeniably who they are communicating with.
+One of the most important parts of this network is that a truly distributed
+ network will be created, enabling people to validate who they are and undeniabl
+y who they are communicating with.
 \end_layout
 
 \begin_layout Standard
@@ -641,7 +645,7 @@ Do things
 \begin_inset Text
 
 \begin_layout Plain Layout
-kademlia
+Kademlia
 \end_layout
 
 \end_inset
@@ -653,7 +657,7 @@ kademlia
 \begin_inset CommandInset nomenclature
 LatexCommand nomenclature
 symbol "DNS"
-description "Domain Name System, used to convert IP addresses (such as 88.222.43.12) into memorable names such as maidsafe.net, google.com etc. "
+description "Domain Name System, used to convert IP addresses (such as 88.222.43.12) into memorable names such as maidsafe.net, google.com etc. and vice versa"
 
 \end_inset
 
@@ -711,13 +715,14 @@ Transport
 \begin_layout Standard
 Therefor it is noted maidsafe does not require ftp, web, email etc.
  and in fact can replace these technologies relatively easily with a faster
- and more secure network.  In addition, the DNS system that has suffered in
- recent times with capacity issues, phishing (theft and fraud by pretending
- to be another site - using name mangeling or DNS poisining techniques)
- and other attacks is also not required.
- maidsafe also allows data to move freely and cache when in use.  This means
- that busy sites or sites under attack actually get replicated and become
- faster rather than slower, or failing altogether.
+ and more secure network.
+  In addition, the DNS system that has suffered in recent times with capacity
+ issues, phishing (theft and fraud by pretending to be another site - using
+ name mangeling or DNS poisining techniques) and other attacks is also not
+ required.
+ maidsafe also allows data to move freely and cache when in use.
+  This means that busy sites or sites under attack actually get replicated
+ and become faster rather than slower, or failing altogether.
 \end_layout
 
 \begin_layout Section
@@ -740,8 +745,9 @@ maidsafe employs a transport that is UDP (User Datagram Protocol) based,
  punching, UPNP, NAT-PMP etc.) at the basic network layer (UDP) and also
  for small kadmelia messages.
  As the maidsafe layer requests reliability in sending data a TCP emulation
- layer is required.  This was initially an air-hook implementation but more
- recently greater success has been with UDT
+ layer is required.
+  This was initially an air-hook implementation but more recently greater
+ success has been with UDT
 \begin_inset CommandInset citation
 LatexCommand cite
 key "key-1"
@@ -760,8 +766,7 @@ The DHT is used in maidsafe technology as a key/
 \emph on
 value
 \emph default
- pair
- storage area i.e.
+ pair storage area i.e.
  we store a hash key and associate 
 \emph on
 values
@@ -858,10 +863,10 @@ Filesystem Layer
 \end_layout
 
 \begin_layout Standard
-The filesystem layer is presented here as the user interface, although in reality the
- system has 2 user interfaces; the fuse interface and
- a graphical user interface to provide the login screen and amongst others
- the messaging screen, vault management, contacts etc.
+The filesystem layer is presented here as the user interface, although in
+ reality the system has 2 user interfaces; the fuse interface and a graphical
+ user interface to provide the login screen and amongst others the messaging
+ screen, vault management, contacts etc.
 \end_layout
 
 \begin_layout Subsubsection
@@ -870,9 +875,9 @@ FUSE (File System In UserspacE)
 
 \begin_layout Standard
 The filesystem presented to the user has to be one which is controlled by
- the maidsafe client process and populated from the users' own datamap, whilst
- at the same time only appearing to have all the users data actually there
- (otherwise download all data all the time limits the system).
+ the maidsafe client process and populated from the users' own datamap,
+ whilst at the same time only appearing to have all the users data actually
+ there (otherwise download all data all the time limits the system).
   For this purpose, a filesystem in userspace was required.
  The chosen system is slightly different for each tier1 operating system
  Linux has FUSE, MAC OSX has MACFUSE and Windows has Dokan.
@@ -889,8 +894,8 @@ All of these have a very similar API (Application Programming Interface)
 These systems are all kernel level components and as such allow us to present
  a full filesystem to the user as a mounted drive (similar to a usb drive)
  where users can browse the drive like any other drive on their computer.
-  This device is a software device and as such we can allow an infinite amount
- of data to be present on it.
+  This device is a software device and as such we can allow an infinite
+ amount of data to be present on it.
  Any application accessing the data believes this is a normal filesystem
  and treats it as such.
  Underneath this, the maidsafe client software is retrieving bits of data
@@ -912,12 +917,12 @@ In the maidsafe layer data is continually being serialised and sent across
  the network and messages containing requests and responses are being transferre
 d.
  To accomplish this there are many serialisation options available.
- The option chosen here is 'protocol buffers', which is an open sourced project
- from Google (many Google components are used by maidsafe, including coding
- standards, test framework etc.).
+ The option chosen here is 'protocol buffers', which is an open sourced
+ project from Google (many Google components are used by maidsafe, including
+ coding standards, test framework etc.).
  These allow data to be serialised based on templates known as proto files
  which are compiled into native c++ code which the programmer can use to
- write and read serialised data in a very efficient manner.
+ read and write serialised data in a very efficient manner.
 \end_layout
 
 \begin_layout Standard
@@ -939,17 +944,19 @@ Buffer Packet
 \end_layout
 
 \begin_layout Standard
-To enable faster moving values than a standard kademlia key could update
- or keep in synchronisation, a special kademlia type is created called a
+To enable faster moving values than a standard Kademlia key could update
+ or keep in synchronisation, a special Kademlia type is created called a
  buffer packet.
- This is a system where a key can accept many short TTL values.  The recipients of these values read them then confirm they are new using the hash of the
- value being checked for uniqueness.
- This requires the TTL on the data to be at least 20% shorter than the remembered hashes list the recipient has to create and monitor.
+ This is a system where a key can accept many short TTL values.
+  The recipients of these values read them then confirm they are new using
+ the hash of the value being checked for uniqueness.
+ This requires the TTL on the data to be at least 20% shorter than the remembere
+d hashes list the recipient has to create and monitor.
  As an indicative step a TTL of 180seconds is recommended with a remembered
  list time of 50 seconds to ensure consistency.
  This allows what would seem like faster reads on the network than is currently
  possible.
- Here kademlia delete is not used but rather TTL and data expiration is
+ Here Kademlia delete is not used but rather TTL and data expiration is
  used.
 \end_layout
 
@@ -979,7 +986,7 @@ An important building block for the system depends on what we call buffer
 \end_layout
 
 \begin_layout Standard
-We have known keys in the DHT key value pair such as PMID, MPID, MAID etc.
+We have known keys in the DHT key value, pair such as PMID, MPID, MAID etc.
  which hold differing information such as public keys etc at the moment.
  Knowing these keys means we can know of the existence of buffer keys by
  some hashing (i.e.
@@ -1040,8 +1047,8 @@ If this buffer becomes too full then an actual data chunk is created and
  way.
  This data chunk will be created by the next person wishing to save a message
  and the value added as the last entry on the list.
- In PD we can limit this buffer to 500Kb or some other figure decided preferably
- by the network.
+ In PD we can limit this buffer to 500Kb or some other figure decided, preferabl
+y by the network.
 \end_layout
 
 \begin_layout Standard
@@ -1049,12 +1056,12 @@ A special entry in the buffer packet
 \begin_inset Formula $RSAsign(Online\: IP:PORT:RVIP:RVPORT)_{[PMID]}$
 \end_inset
 
- may be set which tells other nodes trying to communicate that the end node
- is actually online at the relevant IP and UDP Port (the RV IP and port
- are described later), in this case the censoring or filtering of messages
- is handled at the node itself, which will silently drop all non-authorised
- messages.
- This can be enhanced by creating a share like scenario, where a key pair
+ may be set, which tells other nodes trying to communicate that the end
+ node is actually online at the relevant IP and UDP Port (the RV IP and
+ port are described later).
+ In this case, the censoring or filtering of messages is handled at the
+ node itself, which will silently drop all non-authorised messages.
+ This can be enhanced by creating a share-like scenario, where a key pair
  is created and the user is passed the public key to decrypt this location,
  or even a password is created for nodes to decrypt this information if
  synchronous encryption is decided to be a better option here.
@@ -1079,12 +1086,13 @@ The watch list is a list of 4 IDs that are all self signed and works as
 \end_layout
 
 \begin_layout Itemize
-A client requests that the network store a chunk by selecting 4 nodes from his
- routing table with the appropriate rank
+A client requests that the network store a chunk by selecting 4 nodes from
+ his routing table with the appropriate rank
 \end_layout
 
 \begin_layout Standard
-The IDs are the PMID IDs, and are not linked to the user ID or public ID; they are only used to save data and request delete of data chunks.
+The IDs are the PMID IDs, and are not linked to the user ID or public ID;
+ they are only used to save data and request delete of data chunks.
  This list may eventually be encompassed in the rank packet described later.
  
 \end_layout
@@ -1164,8 +1172,8 @@ name "sub:Chunk-References"
 \end_layout
 
 \begin_layout Standard
-As a vault stores a chunk it updates the chunk reference packet with a message
- signed by its PMID.
+As a vault stores a chunk, it updates the chunk reference packet with a
+ message signed by its PMID.
  This packet takes the form 
 \end_layout
 
@@ -1250,11 +1258,11 @@ Allow deletion of a value by the signing authority of the value (in this
 Allow deletion of a value on lost chunk - by the request of any of the other
  chunk holders signed by their PMID.
  In this case the holder will confirm with the 'to be deleted' PMID that
- the vault has in fact lost the chunk (or stopped storing it).  This is achieved
- via a RPC.
+ the vault has in fact lost the chunk (or stopped storing it).
+  This is achieved via a RPC.
  If the deletion request is valid, the reference is removed and the existing
- chunk holder is messaged (to their buffer packet - or direct), declaring that there is
- a lost chunk.
+ chunk holder is messaged (to their buffer packet - or direct), declaring
+ that there is a lost chunk.
 \begin_inset Foot
 status collapsed
 
@@ -1281,7 +1289,7 @@ It should be noted here, this is a case where a signed data bit can be deleted,
 \end_layout
 
 \begin_layout Enumerate
-For both 1 & 2 above the deleted PMID rank packet (see
+For both 1 & 2 above, the deleted PMID rank packet (see
 \begin_inset CommandInset ref
 LatexCommand ref
 reference "sub:Rank-Packets-(or"
@@ -1292,7 +1300,7 @@ reference "sub:Rank-Packets-(or"
 \end_layout
 
 \begin_layout Enumerate
-In the case of a PMID being added to this reference then the PMID add reference
+In the case of a PMID being added to this reference, the PMID add reference
  message is stored in the cache directory.
 \end_layout
 
@@ -1301,10 +1309,6 @@ In the case of a PMID being added to this reference then the PMID add reference
 wide false
 sideways false
 status open
-
-\begin_layout Plain Layout
-
-\end_layout
 
 \begin_layout Plain Layout
 \begin_inset Caption
@@ -1434,9 +1438,9 @@ Confirm signature (using standard PKI rules, check privately signed data
 \end_layout
 
 \begin_layout Standard
-The issue is that unless the public keys are protected in that they cannot
- be altered such a system would fail, as any cracker could essentially replace
- the public key and then pretend to be the ID.
+The issue is that unless the public keys are protected (in that they cannot
+ be altered) such a system would fail, as any cracker could essentially
+ replace the public key and then pretend to be the ID.
  In maidsafe this is made impossible using protection mechanisms from deleting
  MPID packets as shown in section 
 \begin_inset CommandInset ref
@@ -1456,16 +1460,16 @@ reference "sub:Public-ID-MPID"
 \end_layout
 
 \begin_layout Standard
-This gives us a distributed validated and updated PKI infrastructure, with
- one proviso, we require that these chunks are not tampered with and that
+This gives us a distributed validated and updated PKI infrastructure with
+ one proviso: we require that these chunks are not tampered with, and that
  is where we use SHA.
  The SHA of many ID keys is the chunk name and also the ID associated with
  the chunk.
  With ranking and perpetual data this ensures the chunk is valid as any
  chunk on the maidsafe network.
- These anonymous chunks can sign non anonymous chunks happily and then only
- they can delete them (signing is built into chunk name - cannot be retrospectiv
-e, i.e.
+ These anonymous chunks can sign non-anonymous chunks, and then only they
+ can delete them (signing is built into chunk name - cannot be retrospective,
+ i.e.
  you could not (given today's technology) create a key pair that creates
  the same resulting hash name, so fraud would be computationally near impossible
 ).
@@ -1513,7 +1517,7 @@ system ID=(SHA512Hash(Public_Key+Signature [Signed_by_some[priv]]))
 \end_layout
 
 \begin_layout Standard
-As we have well formed chunks and a validity check we can be assured the
+As we have well formed chunks and a validity check, we can be assured the
  public key we get is the key that was saved in that chunk and has not been
  tampered with.
  The MPID and similar keys are very small and stored on trustworthy machines
@@ -1531,7 +1535,7 @@ reference "sub:Rank-Packets-(or"
 \begin_layout Standard
 
 \emph on
-This is a self regulating and managing global PKI infrastructure.
+This is a self-regulating and self-managing global PKI infrastructure.
 \end_layout
 
 \begin_layout Subsection
@@ -1575,7 +1579,7 @@ Content == random number signed by ANMID
 \end_layout
 
 \begin_layout Standard
-ID == H(U+P)
+ID == H( H(U) + H(P) )
 \end_layout
 
 \begin_layout Standard
@@ -1606,7 +1610,7 @@ Content == random number signed by ANSMID
 \end_layout
 
 \begin_layout Standard
-ID is H(U + P + 1).
+ID == H( H(U) + H(P) + 1 ).
  
 \end_layout
 
@@ -1638,7 +1642,7 @@ Content == Public Key signed by
 \begin_inset CommandInset nomenclature
 LatexCommand nomenclature
 symbol "ANMAID"
-description "Anonymous MAID keypair, this keypair is never used for anything other than sign the MAID packet and delete it again if necessary. The private key is never transmitted or used in any other situation. This is a safe keypair in that it's used with extreme caution and therefor extremely unlikely to be stolen or otherwise comprimised."
+description "Anonymous MAID keypair. This keypair is never used for anything other than sign the MAID packet and delete it again if necessary. The private key is never transmitted or used in any other situation. This is a safe keypair in that it's used with extreme caution and therefor extremely unlikely to be stolen or otherwise comprimised."
 
 \end_inset
 
@@ -1646,7 +1650,7 @@ ANMAID
 \end_layout
 
 \begin_layout Standard
-ID == H(content)
+ID == H( content )
 \end_layout
 
 \begin_layout Standard
@@ -1655,7 +1659,7 @@ ID == H(content)
 \begin_inset CommandInset nomenclature
 LatexCommand nomenclature
 symbol "TMID"
-description "[Temporary maidsafe IDentification] An ever changing chunk (at every session update) which holds the data map of the data atlas (i.e. a database of all stored files)."
+description "[Temporary maidsafe IDentification]. An ever changing chunk (at every session update) which holds the data map of the data atlas (i.e. a database of all stored files)."
 
 \end_inset
 
@@ -1678,7 +1682,7 @@ Content == (data map of data atlas) encrypted using users password signed
 \begin_inset CommandInset nomenclature
 LatexCommand nomenclature
 symbol "ANTMID"
-description "Anonymous TMID keypair, this keypair is never used for anything other than sign the TMID packet and delete it again if necessary. The private key is never transmitted or used in any other situation. This is a safe keypair in that it's used with extreme caution and therefor extremely unlikely to be stolen or otherwise comprimised."
+description "Anonymous TMID keypair. This keypair is never used for anything other than sign the TMID packet and delete it again if necessary. The private key is never transmitted or used in any other situation. This is a safe keypair in that it's used with extreme caution and therefor extremely unlikely to be stolen or otherwise comprimised."
 
 \end_inset
 
@@ -1686,7 +1690,7 @@ ANTMID
 \end_layout
 
 \begin_layout Standard
-ID = H(content) 
+ID == H( content ) 
 \end_layout
 
 \begin_layout Standard
@@ -1695,7 +1699,7 @@ ID = H(content)
 \begin_inset CommandInset nomenclature
 LatexCommand nomenclature
 symbol "MPID"
-description "[maidsafe Public IDentification] A special packet which creates a user identity that is public. This packet is not linked with any other in the system, i.e. there is no link between this and login or data storage and retrieval. It can be considered to be a publicly viewable name (e.g. printed on a business card) that gives no clues to the user's system credentials. "
+description "[maidsafe Public IDentification]. A special packet which creates a user identity that is public. This packet is not linked with any other in the system, i.e. there is no link between this and login or data storage and retrieval. It can be considered to be a publicly viewable name (e.g. printed on a business card) that gives no clues to the user's system credentials. "
 
 \end_inset
 
@@ -1717,7 +1721,7 @@ Content == Public Key signed by
 \begin_inset CommandInset nomenclature
 LatexCommand nomenclature
 symbol "ANMPID"
-description "Anonymous MPID keypair, this keypair is never used for anything other than sign the MPID packet and delete it again if necessary. The private key is never transmitted or used in any other situation. This is a safe keypair in that it's used with extreme caution and therefor extremely unlikely to be stolen or otherwise comprimised."
+description "Anonymous MPID keypair. This keypair is never used for anything other than to sign the MPID packet and delete it again if necessary. The private key is never transmitted or used in any other situation. This is a safe keypair in that it's used with extreme caution and therefor extremely unlikely to be stolen or otherwise comprimised."
 
 \end_inset
 
@@ -1725,7 +1729,7 @@ ANMPID
 \end_layout
 
 \begin_layout Standard
-ID == H(public name)
+ID == H( public name )
 \end_layout
 
 \begin_layout Standard
@@ -1734,7 +1738,7 @@ ID == H(public name)
 \begin_inset CommandInset nomenclature
 LatexCommand nomenclature
 symbol "PMID"
-description "[Proxy maidsafe IDentification] A packet named with the hash of the Vault's public key signed by the owners MAID, and which is linked to the MAID. By linking the vault and the client, it allows the client to store data directly by signing requests with this PMID key. The PMID keypair is created by the client."
+description "[Proxy maidsafe IDentification]. A packet named with the hash of the vault's public key, signed by the owners MAID and which is linked to the MAID. By linking the vault and the client, it allows the client to store data directly by signing requests with this PMID key. The PMID keypair is created by the client."
 
 \end_inset
 
@@ -1754,7 +1758,7 @@ Content == Public key signed by MAID
 \end_layout
 
 \begin_layout Standard
-ID == H(content)
+ID == H( content )
 \end_layout
 
 \begin_layout Standard
@@ -1763,7 +1767,7 @@ ID == H(content)
 \begin_inset CommandInset nomenclature
 LatexCommand nomenclature
 symbol "MSID"
-description " [maidsafe Shared IDentification] A private share data map held locally and updated on the network via messages."
+description " [maidsafe Shared IDentification]. A private share data map held locally and updated on the network via messages."
 
 \end_inset
 
@@ -1778,7 +1782,7 @@ MSID
 \begin_inset CommandInset nomenclature
 LatexCommand nomenclature
 symbol "PPMID"
-description " [Purchasable Proxy maidsafe IDentification] A packet used to maintain a list of disk space which may be allocated by Maidsafe to others either at a cost or by donation, etc. This is used in the pdzone registration process."
+description " [Purchasable Proxy Maidsafe IDentification]. A packet used to maintain a list of disk space which may be allocated by maidsafe to others either at a cost or by donation, etc. This is used in the pdzone registration process."
 
 \end_inset
 
@@ -1787,17 +1791,17 @@ PPMID
  - Purchasable Proxy maidsafe ID - Used to maintain a list of disk space
  which may be allocated by maidsafe to others either at a cost or donation
  etc.
- This is used the the pdzone registration process.
+ This is used during the pdzone registration process.
 \end_layout
 
 \begin_layout Standard
 To maintain separation of the packets from any linked information they are
- all signed by an anon ID and these ID's are named ANMID ANMAID etc.
+ all signed by an anon ID and these IDs are named ANMID, ANMAID etc.
  with the exception of the PMID which is signed by the MAID.
- The reason for this is the MAID and PMID are linked and this signature
- links them.
- The one way signature (MAID->PMID) and not the other way around is a measure
- of security in case of vault failure or intrusion possibilities.
+ The reason for this is the MAID and PMID are linked and it is this signature
+ that links them.
+ The one way signature (MAID->PMID) is a measure of security in case of
+ vault failure or intrusion possibilities.
  The MAID security measures are stored securely on the network but the PMID
  private key is contained at the vault location.
  The system can unauthorise a vault via the MAID ID if there are any security
@@ -1869,8 +1873,8 @@ Overview
 \end_layout
 
 \begin_layout Note
-This section assumes the reader has read the kademlia paper referenced in
- this section as repleating the details is not of value here.
+This section assumes the reader has read the Kademlia paper referenced in
+ this section as repeating the details is not of value here.
 \end_layout
 
 \begin_layout Standard
@@ -1906,19 +1910,19 @@ maidsafe, however, does something different (as you may expect) and actually
 \end_layout
 
 \begin_layout Example
-The reason for this is twofold, initially the value is generally a large
+The reason for this is twofold; initially the value is generally a large
  chunk of data we cannot hold ourselves as it would be too large (consider
  we may have several million keys per user, adding to several exabytes of
  data if the values were all local).
  Secondly the security of a distributed system is paramount, as you do not
  have access to the machines the data is on you require a mechanism to ensure
  that the data you get back is valid and not tampered with, maidsafe does
- many different checks on this, but there is a final user Check available
- and this is to ensure the value hashes to the key!
+ many different checks on this, but there is a final user check available
+ which ensures the value hashes to the key!
 \end_layout
 
 \begin_layout Example
-So maidsafe uses kademlia to store keys and values as well as routing informatio
+So maidsafe uses Kademlia to store keys and values as well as routing informatio
 n, but uses an overlay network (maid layer) to ensure data robustness (explained
  in Vaults section 
 \begin_inset CommandInset ref
@@ -1943,10 +1947,8 @@ Distributed
 \end_layout
 
 \begin_layout Standard
-As described a hash table is a relatively simple concept and can be thought
- of as a mere two column database.
- The power of distributed hash tables takes this further by splitting the
- actual database over multiple locations.
+The power of distributed hash tables over regular hash tables is found in
+ the ability to split the database over multiple locations.
  These locations are in themselves hash keys, usually in the same address
  space as the values (but this is not a requirement).
  The distinguishing factor here is what request for the data is made (in
@@ -1955,10 +1957,10 @@ As described a hash table is a relatively simple concept and can be thought
 \end_layout
 
 \begin_layout Standard
-The basic process is to find a value in Kadmelia the search congregates
- on the nodes closer and closer to the value being searched (like a find
- node) and when a node with the value (which may be very far away from the
- value) has the value it replies to the FIND_VALUE with the actual value.
+To find a value in Kadmelia, the search congregates on the nodes closer
+ and closer to the value being searched (like a find node) and when a node
+ with the value (which may be very far away from the value) has the value
+ it replies to the FIND_VALUE with the actual value.
  In opposition to a FIND_NODE where merely closer and closer nodes are returned
  (there is no value in this case) until some node has no details closer
  than requested.
@@ -1998,31 +2000,32 @@ key "key-15"
 \end_layout
 
 \begin_layout Standard
-Standard kademlia, though, has some limitations and an example of some limitatio
+Standard Kademlia, though, has some limitations and an example of some limitatio
 ns are:
 \end_layout
 
 \begin_layout Itemize
-susceptible to node failures causing bad routing information to be propagated
+Susceptibility to node failures causing bad routing information to be propagated
  for a longer time than necessary
 \end_layout
 
 \begin_layout Itemize
-whilst relying on a balanced routing table match the balanced binary tree,
- standard kademlia does not put any favour on closer nodes being more important
+Reliance on a balanced routing table match the balanced binary tree.
+ Standard Kademlia does not put any favour on closer nodes being more important
  (examination of the binary tree routing algorithm will quickly show the
  closest nodes are more important than the very sparse further away (XOR
  distance)) nodes.
- Kademlia does recodnise the closer more important nodes, in it's standard
- for it does not assist these nodes in any way.
+ Kademlia does recognise the closer more important nodes in its standard,
+ as it does not assist these nodes in any way.
 \end_layout
 
 \begin_layout Itemize
-Potential 'race conditions' in republishing values between the k closest
+Potential 'race conditions' in republishing values between the k-closest
  nodes to any particular value.
  This is a situation where a value is republished and all k nodes then decide
- to republish in a given interval, it is obvious that they will all republish
- at interval n after a republish is seen.
+ to republish in a given interval.
+ It is obvious that they will all republish at interval n after a republish
+ is seen.
  This means all nodes may in fact be crossing over each others republish
  times, causing the race.
 \end_layout
@@ -2036,20 +2039,20 @@ key "key-16"
 \end_inset
 
 .
- These additions have been recodnised and improved upon by maidsafe in creating
+ These additions have been recognised and improved upon by maidsafe in creating
  perpetualdata.
- Further issues with Kademlia and DHT's in general is the ability to amend
+ Further issues with Kademlia and DHTs in general is the ability to amend
  (or delete) values after publishing.
  This is due to the inherent distributed nature of the values (as the name
  suggests).
- As values are distributed in a pseudo random manner (mathematically predictabil
-ity becomes an issue due to the large amount of variables (routes, nodes,
+ As values are distributed in a pseudo random manner (mathematical predictabilit
+y becomes an issue due to the large amount of variables (routes, nodes,
  node names, locations etc.) and random human input).
  
 \end_layout
 
 \begin_layout Note
-Random here is used to indicate not computationally recodnisable with today's
+Random here is used to indicate not computationally recognisable with today's
  resources.
 \end_layout
 
@@ -2058,9 +2061,10 @@ Searches on Kademlia networks are very fast and iterative (
 \emph on
 not recursive
 \emph default
-) this means that each node will ask some nodes a question get answers (hopefull
+).
+ This means that each node will ask some nodes a question, get answers (hopefull
 y) and from the answers construct a new node list to ask.
- If this were recursive then a failed node would halt the process, as this
+ If this were recursive, then a failed node would halt the process; as this
  is iterative then failed nodes simply timeout whilst the search continues
  (this is the 
 \begin_inset Formula $\beta$
@@ -2075,19 +2079,27 @@ y) and from the answers construct a new node list to ask.
 \end_inset
 
  (parallel level) searches).
- As kademlia uses a binary tree and XOR searching the search time per iteration
+ As Kademlia uses a binary tree and XOR searching the search time per iteration
  is 
 \begin_inset Formula $\mathcal{O}\ln n$
 \end_inset
 
- (where big O is network latency and a factor of XOR distance between node
- id's (holes in address space) and n is number of nodes, not number of possible
- nodes) this figure can be improved upon by the additions shown so far.
- Further examination of the big O constant may lead to further improvements
- in search completion times by not only using decreasing distance but also
- decreasing distance with path protection (multiple routes protected) by
- examination of xor distance between parts of the network particularly where
- there is binary imbalance in early days.
+ (where 
+\begin_inset Formula $\mathcal{O}$
+\end_inset
+
+ is network latency and a factor of XOR distance between node IDs (holes
+ in address space) and n is number of nodes, not number of possible nodes).
+ This figure can be improved upon by the additions shown so far.
+ Further examination of the 
+\begin_inset Formula $\mathcal{O}$
+\end_inset
+
+ constant may lead to further improvements in search completion times by
+ not only using decreasing distance but also decreasing distance with path
+ protection (multiple routes protected) by examination of XOR distance between
+ parts of the network, particularly where there is binary imbalance in early
+ days.
  
 \end_layout
 
@@ -2099,7 +2111,7 @@ Value Handling
 In Kademlia there are several methods of ensuring values are consistent
  and protected at the same time.
  The initial value to be considered is K and this should be chosen to be
- the number of random nodes that can be allowed to go off line in a Refresh
+ the number of random nodes that can be allowed to go offline in a Refresh
  (Refresh) time.
  Also there is a republish time (Repub) which is the initial store of the
  value and sets a time to live (TTL) value on the data.
@@ -2111,20 +2123,20 @@ Caching
 \end_layout
 
 \begin_layout Standard
-In kademlia values are cached distant from their natural location of the
+In Kademlia, values are cached distant from their natural location of the
  K closest nodes.
  The TTL is used in this instance to calculate how long a value can live
  and the further away from the K closest determines the TTL value that each
  value has.
  This value is chosen as the reciprocal of the distance from K of the value
- (so 2 steps away the TTL is halved and 4 steps the TTL is quarter etc.).
+ (so 2 steps away the TTL is halved and 4 steps the TTL is quartered etc.).
  
 \end_layout
 
 \begin_layout Standard
 This can present issues when the refresh time (usually 60 mins but configurable)
  is due.
- In this case the node must check it's in the K closest and if so refresh
+ In this case the node must check it is in the K closest and if so refresh
  (i.e.
  send a store_value) the K closest nodes.
  If a node is not in the K closest then this store RPC should not be sent,
@@ -2132,9 +2144,12 @@ This can present issues when the refresh time (usually 60 mins but configurable)
  not expired, in this case only a node with a value which is not in the
  k closest group will republish (the true TTL so reverse of inverse reciprocal)
  to the K closest.
- In maidsafe Beta refresh is used to vary in an evenly distributed way the
- 60 minute intervals to reduce potential for race conditions in republishing
- values.
+ In maidsafe, 
+\begin_inset Formula $\beta$
+\end_inset
+
+ refresh is used to vary in an evenly distributed way the 60 minute intervals
+ to reduce potential for race conditions in republishing values.
  If a value is deleted the closest nodes with the value (k closest) should
  be updated with a -1 value and this should not be cached, this prevents
  cached copies actually republishing values that are due to be removed anyway
@@ -2147,22 +2162,22 @@ Time To Live Values
 \end_layout
 
 \begin_layout Standard
-The TTL can be different for any different type of file from seconds to
+The TTL can be different for any different type of file, from seconds to
  a figure meaning do not delete ever (i.e.
  -1).
- For fast changing data the TTL should be small and for unchanging data
- (like digital keys) the TTL may be very large or even infinite (relatively).
- This value is reset only by the storing node unless another algorithm for
- that value type is known by the kademlia node i.e.
+ For fast changing data the TTL should be small, and for unchanging data
+ (like digital keys) the TTL should be very large.
+ This value is only reset by the storing node unless another algorithm for
+ that value type is known by the Kademlia node i.e.
  in the case of vault validity check, it will be by one of the identified
- kadmelia ID's watching the chunk, so the vlaue will hold the ID's allowed
+ Kadmelia IDs watching the chunk, so the value will hold the IDs allowed
  to republish the data (also the ID will be allowed to delete himself from
  the list but not the others).
- Using this mechanism maidsafe uses a 24hr period for reference pointers
+ Using this mechanism, maidsafe uses a 24hr period for reference pointers
  and a 60 day period for signature packets, which will also republish these
- kademlia values in case of error etc.
- at every validity check, this is done simply as a speed up as kademlia
- values are retrieved much faster than maidsafe data.
+ Kademlia values in case of error at every validity check.
+ This is done simply as a speed up, as Kademlia values are retrieved much
+ faster than maidsafe data.
 \end_layout
 
 \begin_layout Subsection
@@ -2174,31 +2189,25 @@ Description
 \end_layout
 
 \begin_layout Standard
-As previously stated modifying a value in a distributed hash table is notoriousl
-y difficult.
+As previously stated, modifying a value in a distributed hash table is notorious
+ly difficult.
  This is endemic in the very nature of the pseudo random distribution of
  data in such a network (the DHT strength is one of the largest weaknesses
  here).
- If a single value is altered via any method which may even include checking
- digital signatures or passwords etc.
- many methods can be dreamed up for this, the value itself may exist in
- many places and it's finding these places that's the problem.
- We have already seen the distribution as random, therefor this assumes
- you would require to search every node in the network (not only closest)
- for copies and make sure there also altered.
- To make this even more difficult, another node may also be alerting the
+ If a single value is altered via any method, the value itself may exist
+ in many places and it's finding these places that's the problem.
+ We have already seen the distribution as random, therefor this implies
+ you would be required to search every node in the network (not only closest)
+ for copies and make sure they are also altered.
+ To make this even more difficult, another node may also be altering the
  value at the same time, thereby causing chaos in the synchronising of data
  on the network, eventually leading to total collapse.
 \end_layout
 
 \begin_layout Standard
-This is not really all that very good for many networks, seems like DHT
- are good read only but terrible read write and this may be the case.
-\end_layout
-
-\begin_layout Standard
-This, of course, is just not accepted by maidsafe and turning this problem
- into a great feature and requirement is essential.
+This would imply that DHTs are only good read only, however, in the case
+ of maidsafe and pd, this negative attribute is turned into a positive and
+ essential aspect.
  As noted in the section 
 \begin_inset CommandInset ref
 LatexCommand ref
@@ -2206,24 +2215,33 @@ reference "alg:Alg-PKIID=SHA512Hash(RSA[pub]+Signed-[RSA[priv]])"
 
 \end_inset
 
- a PKI network actually requires non changing of identities that are linked
+, a PKI network actually requires non changing of identities that are linked
  to a public key.
- In this case this problem described above is fantastic and were glad we
+ In this case this problem described above is fantastic and we're glad we
  have such an issue.
- Added to the fact even trying to alter the content of a packet of data
+ Added to this fact, even trying to alter the content of a packet of data
  that hashes to the key is an illegal instruction in maidsafe, therefor
  there's a double benefit for us.
  
 \end_layout
 
 \begin_layout Standard
-The only changeable data stored on the kadmelia network as far as a maidsafe
- implementation is concerned is data deemed as, 
+The only changeable data stored on the Kadmelia network as far as a maidsafe
+ implementation is concerned is data deemed as 
 \emph on
+
+\begin_inset Quotes eld
+\end_inset
+
 Multi value one of which should be correct
 \emph default
-, by this it means a value should have several results and as such one of
- the result should be correct, but not necessarily all of them.
+
+\begin_inset Quotes erd
+\end_inset
+
+.
+ By this it means a value should have several results and as such one of
+ the results should be correct, but not necessarily all of them.
  This seems weird but is in fact very simple, basically every value will
  hash to a key or will contain multiple values (maidsafe uses signatures
  in addition to ensure safety through validation) and of each value a correct
@@ -2233,41 +2251,41 @@ Multi value one of which should be correct
 
 \begin_layout Example
 maidsafe stores pointers to data chunks (data hashes to a key again) as
- kademlia values.
+ Kademlia values.
  The number of pointers is usually four (4).
  As this is a truly distributed network maidsafe expects nodes to be off
  or damaged or somehow unreachable and expects this on fairly regular terms.
- On retrieving a value, each pointer is tried to see if, not only the node
- is there, but also the node has the data (see Vaults, as data moves around
- an awful lot).
+ On retrieving a value, each pointer is tried to see if not only the node
+ is there, but also that the node has the data (see Vaults, as data moves
+ around an awful lot).
  In this way a dead or incorrect value is allowed and catered for.
  
 \end_layout
 
 \begin_layout Example
-To add to this maidsafe makes use of a couple of features of the upgrades
- to kademlia explained earlier.
- This particular feature is the force-K feature to ensure close nodes are
- given a high priority, using the maximisation of near neighbor knowledge.
+To add to this, maidsafe makes use of a couple of features of the upgrades
+ to Kademlia explained earlier.
+ One such feature is force-K, to ensure close nodes are given a high priority,
+ using the maximisation of near neighbour knowledge.
  A small addition to enhance this aspect is to flag all data cached throughout
- the network as cached and not a value within the k closest nodes to the
+ the network as cached and not a value within the k-closest nodes to the
  value.
- In this manner values retrieved can be tried for validity in the knowledge
- it may be stale (only may be, very unlikely) and if so continue the search
- for the data going to the k closest nodes to ask for fresh data.
+ In this manner, values retrieved can be tried for validity in the knowledge
+ that although unlikely, it may be stale and if so, continue the search
+ for the data going to the k-closest nodes to ask for fresh data.
  
 \end_layout
 
 \begin_layout Example
-To get to the k closest nodes we require that nodes do not return anything
+To get to the k-closest nodes, we require that nodes do not return anything
  but closer nodes.
  On finding no closer being returned would indicate we have got one of the
- k closest nodes.
- This is where we alter the workings of kademlia and ask the closest node
- once more for the k closest nodes to the value were looking for.
- With the force-k addition this would likely include the k closest nodes
+ k-closest nodes.
+ This is where we alter the workings of Kademlia and ask the closest node
+ once more for the k-closest nodes to the value were looking for.
+ With the force-k addition this would likely include the k-closest nodes
  (this can be further enhanced if necessary by asking all nodes returned
- the same question again and sort the answer by xor closeness).
+ the same question again and sort the answer by XOR closeness).
  Assuming we have the closest nodes we can do many things but initially
  we can assume we have the valid freshest data.
  This should return pointers (from the above example) that are valid.
@@ -2275,8 +2293,8 @@ To get to the k closest nodes we require that nodes do not return anything
 \end_layout
 
 \begin_layout Example
-Nodes with flagged cache values will check using this process they are not
- in the k closest nodes and timeout (exponentially) the cache value.
+Nodes with flagged cache values will check using this process that they
+ are not in the k-closest nodes and timeout (exponentially) the cache value.
  
 \end_layout
 
@@ -2288,13 +2306,12 @@ Locks
 To achieve reliability of data where multiple copies may exist and be altered
  from multiple locations is a problem that requires addressing, before changing
  data.
- Using the above scenario a node intending (and allowed to, if required)
- tries to get all the k closest nodes via an iterative search.
+ Using the above scenario a node intending to alter a piece of data tries
+ to get all the k-closest nodes via an iterative search.
  On success each node is sent a lock request which it answers with (Acknowledge)
  ACK or (Negative Acknowledge) NACK.
- Each node can pass this request to its known k closest nodes.
- On receipt of k ACK's the node then alters the value (if allowed as previously
- stated).
+ Each node can pass this request to its known k-closest nodes.
+ On receipt of k ACKs, the node then alters the value.
  On receiving an altered value the holding nodes release the lock.
  Failure to receive a value update in 10 seconds should auto release the
  lock.
@@ -2322,26 +2339,25 @@ Overview
 \end_layout
 
 \begin_layout Standard
-The vaults are initially a very capable, fast and efficient massively distribute
-d storage mechanism, 
+The vaults are a very capable, fast and efficient massively distributed
+ storage mechanism but 
 \emph on
 not
 \emph default
- a distributed filesystem as in Andrews or CFS etc.
- but a storage mechanism that can be presented on any filesystem whether
- a local system such as FAT, FAT32, NTFS, EXTx, resier etc.
+ merely a distributed filesystem as in Andrews or CFS.
+ Instead, each vault is a conceptual storage mechanism that can be presented
+ on any filesystem whether a local system such as FAT, FAT32, NTFS, EXTx,
+ resier etc.
  or a network file system such as NFS, Andrews, SMBFS etc.
- although debatable there would be no requirement for network file systems
+ although debateably there would be no requirement for network file systems
  in a maidsafe network.
 \end_layout
 
 \begin_layout Standard
-The vault is the storage component of the network initially, but is also
- partially responsible for signature validation, decryption and an ever
- increasing amount of services.
- Initially the vault is only concerned with 2 layers of the system.
- It is a service or daemon and controlled by either an individual client
- or several clients, these layers are as follows:
+The vault is primarily the storage component of the network, but is also
+ partially responsible for signature validation and decryption.
+ It is a service or daemon controlled by either an individual client or
+ several clients and makes use of the following layers:
 \end_layout
 
 \begin_layout Standard
@@ -2379,22 +2395,22 @@ Transport
 \end_layout
 
 \begin_layout Itemize
-Transport Layer - or Layer 1 is responsible for providing the network routing,
+Transport Layer (Layer 1) is responsible for providing the network routing,
  NAT traversal and network churn management.
  
 \end_layout
 
 \begin_layout Itemize
-maidsafe (MAID) Layer - or Layer 2 is responsible for implementing most
- of what follows in this paper, including all algorithms relating to self
- healing (additional churn control), ranking, perpetual data, self encryption
- and most importantly self or anonymous authentication.
+maidsafe (MAID) Layer (Layer 2) is responsible for implementing most of
+ what follows in this paper, including all algorithms relating to self healing
+ (additional churn control), ranking, perpetual data, self encryption and
+ most importantly self or anonymous authentication.
 \end_layout
 
 \begin_layout Standard
 To allow fairness in the system of vaults a measurement has to be made of
- the vaults capability to store and provide access to data.
- This measurement should take into account at a minimum the vaults on line
+ the vaults' capability to store and provide access to data.
+ This measurement should take into account at a minimum the vaults online
  time, bandwidth, processing speed, free CPU availability, and drive capacity.
  This may seem like a lot to take into account and measure with any degree
  of accuracy, so a system that would allow every aspect of a vault to be
@@ -2415,16 +2431,16 @@ In nature this mechanism is made clear for us to see, the strength of an
  organism is how best it survives, the most effective hunters obtain the
  most nourishment, the most efficient plants grow to gather the most sunshine
  and so on.
- The lesson is the more efficient a system is the stronger and more effective
+ The lesson is the more efficient a system, the stronger and more effective
  it is.
  
 \end_layout
 
 \begin_layout Standard
-Vaults are organised to mimic this philosophy in computer terms and this
+Vaults are organised to mimic this philosophy in computing terms, which
  means a system that tolerates (to varying degrees) inefficiency as well
  as rewarding efficiency (as in nature).
- Vaults 'raison d'etre' is to store and allow retrieval of data, the more
+ Vaults 'raison d'être' is to store and allow retrieval of data; the more
  data it can store and provide the more efficient it is.
  The ability to store data should then be based in a logical manner, which
  as it turns out is a very effective process.
@@ -2445,13 +2461,12 @@ NAT traversal
 \end_layout
 
 \begin_layout Standard
-Vaults require a publicly accessible UDP port for the network to function
- and a vault to provide the save/get data capability.
+Vaults require a publicly accessible UDP port for the network to function.
  This is made difficult today as most computers are behind firewalls.
  There is currently no method of firewall penetration that is guaranteed
  to work in every case.
  There are several attempts such as STUN, TURN, ICE, UPNP, PNP-NAT and many
- others but on their own there is no guaranteed method with the exception
+ others, but on their own there is no guaranteed method with the exception
  of (debatable) TURN where every node is connected to an external node and
  relays all traffic through it.
  This is not an acceptable situation for large data transfers though as
@@ -2461,9 +2476,10 @@ Vaults require a publicly accessible UDP port for the network to function
 
 \begin_layout Standard
 There is a mechanism called UDP hole punching which shows success rates
- of around 83-92%, maidsafe utilises standard UDP hole punching using known
- accessible addresses to punch the hole through.
- The nodes that are seen as 'direct' connect are 
+ of around 83-92%.
+ maidsafe utilises standard UDP hole punching using known accessible addresses
+ to punch the hole through.
+ The nodes that are seen as 'direct' connect are:
 \end_layout
 
 \begin_layout Enumerate
@@ -2517,7 +2533,7 @@ Vaults will default to use a random port in the range 5001-65535 (user definable
 
 \begin_layout Standard
 User defined, this is where a user decides to manually port forward a router
- port to the vault (via the client RPC's).
+ port to the vault (via the client RPCs).
  
 \end_layout
 
@@ -2528,10 +2544,10 @@ The other port will be a standard fall back port
 \emph default
  and this port will broadcast the vaults presence on start-up to the local
  network (via a UDP broadcast).
- Any ports responding will do so with their KADID, this KADID which is actual
- fact the PMID will go into the vaults routing table as the internal IP:port
+ Any ports responding will do so with their KADID (which is actually the
+ PMID) and will go into the vaults' routing table as the internal IP:port
  of that PMID.
- The vault will only every pass this to other internally connected vaults.
+ The vault will only ever pass this to other internally connected vaults.
  To any external request this information is ignored and the PMID external
  contact details are used.
  
@@ -2543,12 +2559,12 @@ Network Segmentation
 
 \begin_layout Standard
 In the case of network failure / segmentation all vaults will periodically
- broadcast a bootstrap (FIND_NODE RPC) on this port to locate other nodes,
- when other nodes are found the internal contact details PLUS the normal
+ broadcast a bootstrap (FIND_NODE RPC) on this port to locate other nodes.
+ When other nodes are found, the internal contact details PLUS the normal
  external contact details are provided, if available.
  This allows the networks to reconfigure into smaller networks and hopefully
  find the parent network again when the network error has been sorted.
- In large catastrophes like continents going off line (possible) this allows
+ In large catastrophes like continents going offline (possible) this allows
  maidsafe to continue to operate and it is hoped the data would be 100%
  available very quickly on such an outage.
  
@@ -2561,7 +2577,7 @@ Listening socket
 \begin_layout Standard
 Vaults will start a listening socket for incoming messages and deal with
  them appropriately.
- The issues to be aware of here are 
+ The issues to be aware of here are:
 \end_layout
 
 \begin_layout Enumerate
@@ -2611,7 +2627,7 @@ reference "tab:Vault-Control-RPC"
 
 \end_inset
 
- for a list of vault RPC's that are controlled by the owning client.
+ for a list of vault RPCs that are controlled by the owning client.
 \end_layout
 
 \begin_layout Standard
@@ -2622,7 +2638,7 @@ reference "tab:vault-generalVault-General"
 
 \end_inset
 
- for a list of vault RPC's that are used by other vaults and clients.
+ for a list of vault RPCs that are used by other vaults and clients.
 \end_layout
 
 \begin_layout Standard
@@ -3003,7 +3019,7 @@ name "tab:Vault-Control-RPC"
 
 \end_inset
 
- Vault Control RPC's
+ Vault Control RPCs
 \end_layout
 
 \end_inset
@@ -3498,7 +3514,7 @@ name "tab:vault-generalVault-General"
 
 \end_inset
 
-Vault General RPC's
+Vault General RPCs
 \end_layout
 
 \end_inset
@@ -3528,17 +3544,18 @@ Local Vault Registration
 \begin_layout Standard
 This is the situation where a person is registering themselves on the system
  that actually will run their vault.
- This need not be there computer, one they have access to and is on-line
- most of the time with some available disk space.
+ A user's vault doesn't necessarily need to run on their computer or the
+ same computer as the client, only one which they have access to and is
+ online most of the time with some available disk space.
  On successful registration the user can then log into any maidsafe client
  on any machine and access their data.
  In the case of a family situation then perhaps all the family will create
- their user id on a single machine that's always on, but then choose to
+ their user ID on a single machine that's always on, but then choose to
  use the client part on only their own machine.
 \end_layout
 
 \begin_layout Enumerate
-A vault starts and waits on a client to connect with it to provide a PMID
+A vault starts and waits for a client to connect with it to provide a PMID
  key pair.
 \end_layout
 
@@ -3596,7 +3613,7 @@ s where users will port forward rather than have maidsafe hole punch or
 \end_layout
 
 \begin_layout Enumerate
-The vault then starts it's main port and goes through the normal bootstrap
+The vault then starts its main port and goes through the normal bootstrap
  process.
 \end_layout
 
@@ -3666,8 +3683,8 @@ Vault Startup
 \end_layout
 
 \begin_layout Enumerate
-Vaults starts up, demonizes and reads its configuration file, or waits on
- ownership in registration mode, see 
+A vault starts up as a daemon process and reads its configuration file,
+ or waits on ownership in registration mode, see 
 \begin_inset CommandInset ref
 LatexCommand ref
 reference "sub:Local-Vault-Registration"
@@ -3678,14 +3695,15 @@ reference "sub:Local-Vault-Registration"
 \end_layout
 
 \begin_layout Enumerate
-From the file it takes the hash of the signed public PMID key, this is the
- vault ID (==PMID) 
+From the file it takes the hash of the signed public PMID key, which is
+ used as the vault ID (==PMID) 
 \end_layout
 
 \begin_layout Enumerate
 The vault now carries out a network bootstrap to determine its connectivity
- status (behind firewall etc..), this is done from a list of potential network
- bootstrap nodes who are directly connected
+ status (behind firewall etc..).
+ This is done from a list of potential network bootstrap nodes who are directly
+ connected
 \begin_inset Foot
 status collapsed
 
@@ -3697,23 +3715,23 @@ In this scenario directly connected means has a publicly accessible IP/PORT
 
 \end_inset
 
-' and can act as rendezvous nodes if need be.
+' and can act as rendezvous nodes if needbe.
 \end_layout
 
 \begin_layout Enumerate
-The vault now carries out a kademlia bootstrap (FIND_NODE==PMID), this is
- done from a cache of previously known kademlia nodes (sorted by rank -
- highest first)
+The vault now carries out a Kademlia bootstrap (FIND_NODE==PMID).
+ This is done from a cache of previously known Kademlia nodes (sorted by
+ rank - highest first)
 \end_layout
 
 \begin_layout Enumerate
 The vault then does a check on each chunk to determine what chunks are still
- under it's control (i.e.
+ under its control (i.e.
  it is in the reference holders value for the chunk).
 \end_layout
 
 \begin_layout Enumerate
-The vault then moves the lost chunks to it's cache directory
+The vault then moves the lost chunks to its cache directory
 \end_layout
 
 \begin_layout Subsection
@@ -3728,12 +3746,12 @@ name "sub:Rank-Packets-(or"
 \end_layout
 
 \begin_layout Standard
-As previously discussed for this system to operate effectively the vaults
- have to be able to provide a mechanism that allows the good to grow and
- the weak to fail and all the options in between.
- This is accomplished using special system packets called rank packets.
- These rely on a the ability to delete single signed values from a chunk
- containing a list of values.
+For this system to operate effectively the vaults have to be able to provide
+ a mechanism that allows the good to grow, the weak to fail and all the
+ options in between.
+ This is accomplished using special system packets called rank packets which
+ rely on a the ability to delete single signed values from a chunk containing
+ a list of values.
  This particular chunk is called a rank chunk.
 \end_layout
 
@@ -3743,28 +3761,28 @@ So a rank chunk is H(MPID + "RANK") (the actual word rank).
 \end_layout
 
 \begin_layout Standard
-This packet is held as a Kademlia key value in the K closest nodes as standard
- in kademlia.
- Again as in 
+This packet is held as a Kademlia key value in the k-closest nodes as standard
+ in Kademlia.
+ As in 
 \begin_inset CommandInset ref
 LatexCommand ref
 reference "sub:Chunk-References"
 
 \end_inset
 
- the node has to know this is a rank packet and follow some rules regarding
+, the node has to know this is a rank packet and follow some rules regarding
  it.
 \end_layout
 
 \begin_layout Standard
-In this document rank is described in a fashion that basically is a count
- of how much data any PMID has on the network any any one time and this
- is incremented or decremented to allow a node to recover space, i.e.
- when a user deletes a file the cline tpart of the system will instruct
- the vault to depete the equivelent number of chunks that make up the file.
+In this document rank is described in a fashion that is basically a count
+ of how much data any PMID has on the network at any one time and this is
+ incremented or decremented to allow a node to recover space, i.e.
+ when a user deletes a file, the client part of the system will instruct
+ the vault to delete the equivelent number of chunks that make up the file.
  This deletion means the vault moves some chunks to a cache dir, but only
  after instructing the network for a reduce rank message.
- Failure to intruct a reduce rank message will in fact cuase the network
+ Failure to instruct a reduce rank message will in fact cuase the network
  to reduce the rank by a factor of 2 or 3 times the actual amount of data
  the vault deletes.
 \end_layout
@@ -3774,23 +3792,22 @@ Rank Decrement
 \end_layout
 
 \begin_layout Enumerate
-On receipt of an decrement rank message - the signature is checked , confirm
- that this is a signature of the reference chunk holder, also the remove
- request notice is passed as a part of this signed message, the signature
- of this remove notice is also checked.
+On receipt of an decrement rank message, the signature is checked to confirm
+ that this is a signature of the reference chunk holder, the remove request
+ notice is passed as a part of this signed message and the signature of
+ this remove notice is also checked.
  
 \end_layout
 
 \begin_layout Enumerate
-The rank is decremented, again by the size of the chunk in Kilobytes and
- the validation packet described above is passed to the K closest nodes
- to do likewise.
+The rank is decremented by the size of the chunk in kilobytes and the validation
+ packet described above is passed to the k-closest nodes to do likewise.
 \end_layout
 
 \begin_layout Enumerate
-Any note to decrement a rank is checked by all nodes, in case of disagreement
- this is a majority rule situation where the majority will likely be the
- actual rank sorted due to churn effects of the network.
+Any note to decrement a rank is checked by all nodes.
+ In case of disagreement this is a majority rule situation where the majority
+ will likely be the actual rank sorted due to churn effects of the network.
 \end_layout
 
 \begin_layout Subsubsection
@@ -3800,8 +3817,8 @@ Rank Increment
 \begin_layout Standard
 In this case the actual PMID to be incremented is responsible for acquiring
  the increment notice.
- Again the number to increment by is the size of the chunk in Kilobytes.
- This is done using the following process.
+ Again the number to increment by is the size of the chunk in kilobytes.
+ This is done using the following process:
 \end_layout
 
 \begin_layout Enumerate
@@ -3823,12 +3840,12 @@ The reference holder checks his cache dir for the relevant add reference
 \end_layout
 
 \begin_layout Enumerate
-The reference holder then republishes the new chunk reference with the k
- closest nodes and the copy of the increment request.
+The reference holder then republishes the new chunk reference with the k-closest
+ nodes and the copy of the increment request.
 \end_layout
 
 \begin_layout Enumerate
-The reference holder deletes the relevant add reference file(to stop multiple
+The reference holder deletes the relevant add reference file (to stop multiple
  adds).
 \end_layout
 
@@ -3946,15 +3963,15 @@ How do we store / find this rank etc.
 \end_layout
 
 \begin_layout Standard
-The rank is part of the contact tuple for each PMID on the network and transmitt
-ed and saved into routing tables.
+The rank is part of the contact tuple for each PMID on the network, transmitted
+ and saved via routing tables.
  The update rank can be obtained at any time by checking the rank packet.
  This rank should be returned with every FIND_NODE RPC.
- A FIND_RANK RPC will allow the kademlia network to be queried for all nodes
+ A FIND_RANK RPC will allow the Kademlia network to be queried for all nodes
  close to the RANK packet and the average of the returned values is considered
- that nodes rank.
+ that nodes' rank.
  This RPC may be performed prior to a STORE_DATA RPC to ensure the rank
- is correct and up to date, when required.
+ is correct and up-to-date, when required.
 \end_layout
 
 \begin_layout Standard
@@ -3967,14 +3984,33 @@ Save Chunk Location
 \end_layout
 
 \begin_layout Standard
-To store a bit of data - we want to find nodes to store this on - so what
- nodes do we want.
- well we need to know the RTT for nodes in our routing tables and we calculate
+To store a bit of data we firstly need to determine which nodes to store
+ the data on.
+ We need to know the RTT for nodes in our routing tables and we calculate
  the locations based on rank / RTT e.g.
- 1: our rank is 1123 2: We search for nodes with a rank just short of this
- or equal (from our routing table) 3: We get the distribution of these nodes
- by call - closest - furthest - then the two at ~33% and ~67%.
- 4: do a swap chunk 
+ 
+\end_layout
+
+\begin_layout Standard
+1.
+ Our rank is 1123
+\end_layout
+
+\begin_layout Standard
+2.
+ We search for nodes with a rank just short of this or equal (from our routing
+ table)
+\end_layout
+
+\begin_layout Standard
+3.
+ We get the distribution of these nodes by call - closest - furthest - then
+ the two at ~33% and ~67%.
+\end_layout
+
+\begin_layout Standard
+4.
+ Do a swap chunk 
 \end_layout
 
 \begin_layout Standard
@@ -3997,14 +4033,31 @@ Swap Chunk example
 \end_layout
 
 \begin_layout Standard
-Swap chunks are the method used for storing data, you will already have
- candidates with good Geo location and rank.
+Swapping chunks is the method used to store data.
+ You will already have candidates with good geo-location and rank.
  The offer to store a chunk of the same size is made to them (they should
  be happy your rank is probably better than theirs).
- Recipient 1: checks your rank 2: If you have any lost chunk references
- - they will request you contact the holder of a lost chunk and get another
- copy and have them sign a stored receipt in your rank packet.
- 3: They agree to the swap.
+\end_layout
+
+\begin_layout Standard
+Recipient 
+\end_layout
+
+\begin_layout Standard
+1.
+ Checks your rank
+\end_layout
+
+\begin_layout Standard
+2.
+ If you have any lost chunk references - they will request you contact the
+ holder of a lost chunk and get another copy and have them sign a stored
+ receipt in your rank packet.
+\end_layout
+
+\begin_layout Standard
+3.
+ They agree to the swap.
  The chunk they swap will be of a same or less size - but their choice of
  which chunk is decided by a few factors a: size (obviously) b: Length of
  time they have held the chunk (use oldest first) / OR a chunk which shows
@@ -4013,9 +4066,18 @@ Swap chunks are the method used for storing data, you will already have
 \end_layout
 
 \begin_layout Standard
-You 1: On swap agreement - you send your chunk the first (closest partner)
- and the nodes to store on.
- 2: Each node in turn replies with a stored OK - you remove from your queue
+You
+\end_layout
+
+\begin_layout Standard
+1.
+ On swap agreement - you send your chunk the first (closest partner) and
+ the nodes to store on.
+\end_layout
+
+\begin_layout Standard
+2.
+ Each node in turn replies with a stored OK - you remove from your queue
  (this can be carried out much faster by relaying all data from start through
  partners to last partner - single transmission).
  Each node keeps a copy of the data swapped - i.e.
@@ -4028,9 +4090,10 @@ Cache Chunk
 \end_layout
 
 \begin_layout Standard
-When searching for a chunk (akin to find value in kademlia) you tell the
- last node that did not have the chunk to take a copy of this data.
- The last node gets the data and consequent find value will return this
+When searching for a chunk (akin to find value in Kademlia), the client
+ tells the last node that did not have the chunk to take a copy of this
+ data.
+ The last node gets the data and consequently find value will return this
  chunk to the searcher.
 \end_layout
 
@@ -4039,8 +4102,8 @@ Cache times - or how long do we store a cache chunk ?
 \end_layout
 
 \begin_layout Standard
-Option 1: As in kademlia we store the cache chunk for a time which is inversely
- proportional to the xor distance from the original.
+Option 1: As in Kademlia we store the cache chunk for a time which is inversely
+ proportional to the XOR distance from the original.
 \end_layout
 
 \begin_layout Standard
@@ -4056,28 +4119,52 @@ Cache Lost Chunk
 \end_layout
 
 \begin_layout Standard
-In the special case of lost chunks we need to make copies - and how to do
- this fairly has been a point of internal debate for me anyway.
+In the special case of lost chunks we need to make copies.
+ How to do this fairly remains a point of internal debate.
  It would appear there may be a flaw in the design as a hacker may just
  request all his chunks are lost copies, thereby bypassing any payment.
 \end_layout
 
 \begin_layout Standard
-So there's a couple of rules to stop that and enhance the system 1: Chunk
- lost store request must be co signed by original storage partners.
- 2: Cache lost chunks stored in a separate locations from normal cache (only
+So there are a couple of rules to stop that and enhance the system:
+\end_layout
+
+\begin_layout Standard
+1.
+ Chunk lost store request must be co signed by original storage partners.
+\end_layout
+
+\begin_layout Standard
+2.
+ Cache lost chunks stored in a separate locations from normal cache (only
  to differentiate) but follows same rules about giving the data.
- 3: Cache chunk is stored along with the ID of who stored it.
- 4: A validity check on these chunks is requested to force the partners
- to again check the node that lost the chunk - if all ok - this chunk is
- deleted (or moved to normal cache dir and follow same rules as a normal
- cache chunk) 5: If there is no chance to have this taken back the cache
- chunk holder is deemed to now be in control of this chunk and the partners
- sign an receipt for having stored a chunk (DISCUSS) 6: In the case of 5
- the originator will have his swap chunk swapped back for no charge by the
- partners (he has not honored his deal by losing this chunk) - so when he
- is next on line he can take the chunk back or lose it ! - If the chunk
- has more people looking at it (i.e.
+\end_layout
+
+\begin_layout Standard
+3.
+ Cache chunk is stored along with the ID of who stored it.
+\end_layout
+
+\begin_layout Standard
+4.
+ A validity check on these chunks is requested to force the partners to
+ again check the node that lost the chunk - if all ok - this chunk is deleted
+ (or moved to normal cache dir and follow same rules as a normal cache chunk)
+\end_layout
+
+\begin_layout Standard
+5.
+ If there is no chance to have this taken back the cache chunk holder is
+ deemed to now be in control of this chunk and the partners sign a receipt
+ for having stored a chunk (DISCUSS)
+\end_layout
+
+\begin_layout Standard
+6.
+ In the case of 5, the originator will have his swap chunk swapped back
+ for no charge by the partners (he has not honored his deal by losing this
+ chunk) - so when he is next online he can take the chunk back or lose it!
+ If the chunk has more people looking at it (i.e.
  buffer packet shows more people looking at it) then the originator is penalized
  with a lost chunk notice on his rank packet.
 \end_layout
@@ -4087,12 +4174,12 @@ Validity Check
 \end_layout
 
 \begin_layout Standard
-To ensure data validity is constant on the network validity checks are performed
- at regular intervals.
- For each chunk a vault holds it will carry out a vailidity check from time
+To ensure data validity is constant on the network, validity checks are
+ performed at regular intervals.
+ For each chunk a vault holds it will carry out a validity check from time
  to time on the chunk.
- Chunks health checks (or validity checks) are required to ensure data is,
- actually in existance and also not been tampered with or damaged.
+ Chunks' health checks (or validity checks) are required to ensure data
+ is actually in existance and also not been tampered with or damaged.
  
 \end_layout
 
@@ -4121,16 +4208,15 @@ On startup - any chunk noted as lost in your rank packet - should initiate
 \begin_layout Enumerate
 At any time a corrupted chunk in the rank packet should initiate a check
  on all chunks you have (otherwise you will find it hard to save data -
- or the client attached the the vault will).
+ or the client attached to the vault will).
  This will make the corrupted one go to bottom of the list faster.
  
 \end_layout
 
 \begin_layout Standard
 Each of the above is done in conjunction with a validity check for the chunk
- with longest time between a validity check.
- ! Any validity check for any chunk will mean you always check the longest
- unchecked chunk.
+ with longest time between a validity check! Any validity check for any
+ chunk will mean you always check the longest unchecked chunk.
 \end_layout
 
 \begin_layout Subsubsection
@@ -4143,9 +4229,9 @@ This checking process is between partner nodes who all share a common chunk.
  a chunk copied 4 times will have 4 validity checking nodes.
  To allow the network to check the data without transmitting the actual
  data another method is described below.
- It should be noted that ALL data chunks ID is a hash of the content, therefore
- there is another check available for end user client node to validate the
- data they receive.
+ It should be noted that ALL data chunks' IDs are a hash of the content,
+ therefore there is another check available for end user client node to
+ validate the data they receive.
  The partner node validity check is described below:
 \end_layout
 
@@ -4245,17 +4331,17 @@ The layers can be thought of as:
 \end_layout
 
 \begin_layout Itemize
-Network Layer - or Layer 1 is responsible for providing the network access.
+Network Layer (Layer 1) is responsible for providing the network access.
  
 \end_layout
 
 \begin_layout Itemize
-MAID Layer - or Layer 2 is the storage area as far as a client can tell.
+MAID Layer (Layer 2) is the storage area as far as a client can tell.
 \end_layout
 
 \begin_layout Itemize
-FileSystem Layer - or Layer 3 is the area of the system responsible for
- presenting the user with a filesystem from which to work with data.
+FileSystem Layer (Layer 3) is the area of the system responsible for presenting
+ the user with a filesystem from which to work with data.
  Initially this will be a FUSE implementation (Filesystem In User Space).
  For embedded systems where FUSE type is not available the file interface
  may be controlled via a traditional explorer type windows in the application
@@ -4267,7 +4353,7 @@ Self Authentication
 \end_layout
 
 \begin_layout Standard
-A user is authorised on the the network with 3 unique pieces of information.
+A user is authorised on the the network with 3 unique pieces of information:
  A username (U), a pin number (P), and a password (W).
  We use a method of hashing called Secure Hash Algorithm (SHA) in this case.
  SHA produces a code for given data, any small change in the data produces
@@ -4304,19 +4390,6 @@ Create a User Identity
 \end_inset
 
  (to ensure uniqueness)
-\end_layout
-
-\begin_layout Enumerate
-\paragraph_spacing onehalf
-\align left
-Create a MAID packet as in 
-\begin_inset CommandInset ref
-LatexCommand ref
-reference "sub:Create-an-ID"
-
-\end_inset
-
-
 \end_layout
 
 \begin_layout Enumerate
@@ -4383,7 +4456,7 @@ reference "sub:Create-an-ID"
 \begin_layout Enumerate
 \paragraph_spacing onehalf
 \align left
-\begin_inset Formula $RSA{\scriptstyle {\textstyle sign}_{(k)_{ANSMID}}{\displaystyle (R)\equiv R{\scriptstyle s}}}$
+\begin_inset Formula $RSA{\scriptstyle {\textstyle sign}_{(k)_{ANSMID}}{\displaystyle (R)\equiv Q{\scriptstyle s}}}$
 \end_inset
 
  
@@ -4405,7 +4478,7 @@ SMID
 \begin_layout Enumerate
 Create
 \emph on
- ANMID
+ ANMAID
 \emph default
  as in 
 \begin_inset CommandInset ref
@@ -4424,7 +4497,7 @@ reference "sub:Create-an-ID"
 \end_inset
 
 
-\begin_inset Formula $RSAsign_{(k)_{[ANMIAD]}}{\scriptstyle }(p)\equiv x$
+\begin_inset Formula $RSAsign_{(k)_{[ANMAID]}}{\scriptstyle }(p)\equiv x$
 \end_inset
 
  (sign public key with private key)
@@ -4446,7 +4519,7 @@ MAID
 \begin_layout Enumerate
 \paragraph_spacing onehalf
 \align left
-\begin_inset Formula $n\equiv H(H(U)+H(P)+H(d)$
+\begin_inset Formula $n\equiv H(H(U)+H(P)+H(d))$
 \end_inset
 
 
@@ -4828,7 +4901,7 @@ Add data structure (key pairs etc.
 \emph on
 ID
 \emph default
-'s (
+s (
 \emph on
 MAID, MID, PMID
 \emph default
@@ -4874,8 +4947,8 @@ The Data Map (i.e.
 \end_inset
 
 ) of the Data Atlas is what is stored to the TMID and encrypted with the
- users password (W).
- Data Atlas's are represented to the user as a file system with the file
+ user's password (W).
+ Data Atlases are represented to the user as a file system with the file
  name and path containing the file hash which maps to the Data Atlas to
  retrieve the file content.
 \end_layout
@@ -4894,7 +4967,7 @@ name "sub:Public-ID-MPID"
 \begin_layout Standard
 This is a different packet from others as its name must be the hash of the
  users chosen public name.
- Unlike other packets MPID public Id's should be stored with any node that
+ Unlike other packets MPID public IDs should be stored with any node that
  communicates with it.
  Only allowing delete from these nodes with a revocation certificate [LATER]
 \end_layout
@@ -4988,7 +5061,7 @@ MPID
 \end_layout
 
 \begin_layout Standard
-The MPID buffer packet may contain a list of ID's allowed to post messages
+The MPID buffer packet may contain a list of IDs allowed to post messages
  there.
  This is described in the messenger section.
  
@@ -5039,7 +5112,7 @@ reference "sub:Ranking"
 \end_layout
 
 \begin_layout Enumerate
-S1 reply's OK you need to store a chunk (c2) from me to.
+S1 replies OK you need to store a chunk (c2) from me to.
  This chunk is of the same size.
 \end_layout
 
@@ -5088,7 +5161,7 @@ Client Node Churn Resolution
 \end_layout
 
 \begin_layout Standard
-As vaults from rank 0 to X are expected to be on line for a determinable
+As vaults from rank 0 to X are expected to be online for a determinable
  percentage of time (or else they are demoted / promoted) then their effect
  on churn is somewhat determinable.
  However, client nodes are not, and so they can have a detrimental effect
@@ -5105,16 +5178,8 @@ As maidsafe alters Kademlia to use a 512 bit number rather than a SHA-1
 \end_layout
 
 \begin_layout Itemize
-All client node's addresses comprise an initial (512-160) 352 bits which
- are all 
-\begin_inset Quotes eld
-\end_inset
-
--
-\begin_inset Quotes erd
-\end_inset
-
-s (hyphens)
+All client node's addresses comprise an initial 352 (512-160) bits which
+ are all hyphens
 \end_layout
 
 \begin_layout Itemize
@@ -5124,8 +5189,8 @@ All client node's last 160 bits of address will be a standard SHA-1 hash
 \end_layout
 
 \begin_layout Standard
-To implement this we have is_unique calls in the system to ensure we do
- not have collisions of data on the network, including creating ID's with
+To implement this, we have is_unique calls in the system to ensure we do
+ not have collisions of data on the network, including creating IDs with
  key pairs etc.
  (at the system level).
  To ensure we never try and store a 
@@ -5169,7 +5234,7 @@ Find nearest node to this name.
 \end_layout
 
 \begin_layout Enumerate
-Retrieve the value for the key of the name, this will provide at least 3
+Retrieve the value for the key of the name; this will provide at least 3
  locations of duplicate chunks.
 \end_layout
 
@@ -5187,8 +5252,8 @@ Delete Data from Network
 \end_layout
 
 \begin_layout Standard
-The act of deleting data is again relatively although some caveats are in
- place.
+The act of deleting data is again relatively simple, although some caveats
+ are in place.
  Here we distinguish between data chunks and system chunks.
  
 \end_layout
@@ -5196,7 +5261,7 @@ The act of deleting data is again relatively although some caveats are in
 \begin_layout Standard
 Data chunks are chunks on the network where the name (which is also the
  key in the DHT key value pair) is equivalent to the hash of the chunk content.
- this provides a safety check for chunk validity.
+ This provides a safety check for chunk validity.
  System chunks on the other hand may not always meet this criteria, although
  all system chunks are signed by a PKI private key.
  
@@ -5207,11 +5272,11 @@ The process is as follows.
 \end_layout
 
 \begin_layout Enumerate
-vault gets a signed request to delete a chunk.
+Vault gets a signed request to delete a chunk.
 \end_layout
 
 \begin_layout Enumerate
-vault checks this chunk by attempting to extract a signature.
+Vault checks this chunk by attempting to extract a signature.
 \end_layout
 
 \begin_layout Enumerate
@@ -5226,8 +5291,8 @@ The vault passes this request on to his peers who are also saving the chunk.
 \end_layout
 
 \begin_layout Enumerate
-If the signature does not match the request is silently dropped, and a system
- alert is generated [ALERT_ATTEMPTED_UNAUTHORISED_DELETE].
+If the signature does not match, the request is silently dropped, and a
+ system alert is generated [ALERT_ATTEMPTED_UNAUTHORISED_DELETE].
 \end_layout
 
 \begin_layout Enumerate
@@ -5249,8 +5314,8 @@ reference "sub:Chunk-lifetimes-and"
 \end_layout
 
 \begin_layout Enumerate
-If data chunk and no ID's are left in the list then the chunk is marked
- for delete in 60 days.
+If data chunk and no IDs are left in the list then the chunk is marked for
+ delete in 60 days.
  
 \end_layout
 
@@ -5356,7 +5421,7 @@ reference "sub:Generic-BUFFER-packet"
 \end_layout
 
 \begin_layout Itemize
-where C1 and C2 are MPID nodes on the network sharing data.
+Where C1 and C2 are MPID nodes on the network sharing data.
 \end_layout
 
 \begin_layout Subsection
@@ -5394,7 +5459,7 @@ DA and a subset of
 \end_layout
 
 \begin_layout Enumerate
-select data maps as created in section 
+Select data maps as created in section 
 \begin_inset CommandInset ref
 LatexCommand ref
 reference "sub:Data-maps"
@@ -5405,7 +5470,7 @@ reference "sub:Data-maps"
 \end_layout
 
 \begin_layout Enumerate
-select data Metadata from section 
+Select data Metadata from section 
 \begin_inset CommandInset ref
 LatexCommand ref
 reference "sub:Data-maps"
@@ -5421,15 +5486,15 @@ es/addusers/delusers/updateusers)
 \end_layout
 
 \begin_layout Enumerate
-concatenate
+Concatenate
 \end_layout
 
 \begin_layout Enumerate
-serialise into share called Ns
+Serialise into share called Ns
 \end_layout
 
 \begin_layout Enumerate
-send sys message to public name you are sharing with (in a buffer message
+Send sys message to public name you are sharing with (in a buffer message
  as in 
 \begin_inset CommandInset ref
 LatexCommand ref
@@ -5572,8 +5637,8 @@ It has been suggested in tests done at a local level that this could achieve
  maidsafe imagine this would mean a reduction in disk space required today
  - or a reclamation of disk space of somewhere between 60 - 90%, although
  only real world testing will provide the definitive answer.
- Update ! a recent study by datamoniotor puts savings from 4 /1 to 89 /1
- with an average at enterprise level of 20 /1 i.e.
+ A recent study by datamonitor puts savings from 4 /1 to 89 /1 with an average
+ at enterprise level of 20 /1 i.e.
  20Gb can be backed up on 1 Gb space, therefore 95% savings.
 \end_layout
 
@@ -5607,7 +5672,7 @@ Web Site Logins with No Password
 \end_layout
 
 \begin_layout Standard
-[PD signs requests using public or anon ID's]
+[PD signs requests using public or anon IDs]
 \end_layout
 
 \begin_layout Section
@@ -5616,7 +5681,7 @@ Future Trends
 
 \begin_layout Standard
 The future of this type of technology is a bright one.
- A self managed digital ID which can spawn as many ID's as the system or
+ A self managed digital ID which can spawn as many IDs as the system or
  the user decides it should (SHA512 hashes allow for 
 \begin_inset Formula $2x10^{154}$
 \end_inset
@@ -5639,7 +5704,7 @@ A cryptographically secure digital ID with which any human can carry out
  Logging in to PayPal is an example.
  With a maidsafe System, a member can log in from any networked computer
  in the world.
- The Login process takes place on the local computer and involves only the
+ The login process takes place on the local computer and involves only the
  user and the software.
  No password is ever transmitted.
  This ID can be used for anonymous self-authenticated voting, for file sharing
@@ -5653,21 +5718,21 @@ Digital coin, like the gold coin of old, is a thing.
 \end_layout
 
 \begin_layout Enumerate
-be subdivided or combined, and be appropriately re-denominated to any decimal
+Be subdivided or combined, and be appropriately re-denominated to any decimal
  place; 
 \end_layout
 
 \begin_layout Enumerate
-remember and display the contractual agreement from which it originated;
+Remember and display the contractual agreement from which it originated;
  
 \end_layout
 
 \begin_layout Enumerate
-perform internal calculations according to pre-set formula, and, 
+Perform internal calculations according to pre-set formula, and, 
 \end_layout
 
 \begin_layout Enumerate
-autonomously access the Internet for variables to input into said formula.
+Autonomously access the Internet for variables to input into said formula.
  
 \end_layout
 
@@ -5788,7 +5853,7 @@ key "key-15"
 \end_inset
 
 PETAR MAYMOUNKOV AND DAVID MAZI`RESE Kademlia: A Peer-to-peer Information
- System Based on the XOR Metric {petar,dm}@cs.nyu.edu http://kademlia.scs.cs.nyu.edu
+ System Based on the XOR Metric {petar,dm}@cs.nyu.edu http://Kademlia.scs.cs.nyu.edu
  
 \end_layout
 

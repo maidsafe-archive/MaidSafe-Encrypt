@@ -41,15 +41,23 @@ namespace maidsafe {
 
 typedef boost::function<void(const ReturnCode&)> bp_operations_cb;
 typedef boost::function<void(const ReturnCode&,
-  const std::list<ValidatedBufferPacketMessage>&)> bp_getmessages_cb;
-typedef boost::function<void(const ReturnCode&, const EndPoint&,
-  const PersonalDetails&, const boost::uint32_t&)> bp_getcontactinfo_cb;
+  const std::list<ValidatedBufferPacketMessage>&, bool)> bp_getmessages_cb;
+typedef boost::function<void(const ReturnCode&,
+  const std::list<LivePresence>&, bool)> bp_getpresence_cb;
 
-enum BpOpType {MODIFY_INFO, ADD_MESSAGE, GET_MESSAGES, GET_INFO};
+enum BpOpType {
+  CREATEBP,
+  MODIFY_INFO,
+  ADD_MESSAGE,
+  GET_MESSAGES,
+  ADD_PRESENCE,
+  GET_PRESENCE
+};
 
 struct CreateBPData {
-  CreateBPData() : request(), exclude_ctcs(), successful_stores(0),
-    is_calledback(false), cb(0) {}
+  CreateBPData()
+      : request(), exclude_ctcs(), successful_stores(0), is_calledback(false),
+        cb(0) {}
   CreateBPRequest request;
   std::vector<kad::Contact> exclude_ctcs;
   boost::uint16_t successful_stores;
@@ -58,20 +66,24 @@ struct CreateBPData {
 };
 
 struct ChangeBPData {
-  ChangeBPData() : modify_request(), add_msg_request(), get_msgs_request(),
-    holder_ids(), successful_ops(0), idx(0), is_calledback(false), type(),
-    cb(0), cb_getmsgs(0), private_key("") {}
+  ChangeBPData() : create_request(), modify_request(), get_msgs_request(),
+                   add_msg_request(), get_presence_request(),
+                   add_presence_request(), holder_ids(), successful_ops(0),
+                   idx(0), is_calledback(false), type(), cb(0), cb_getmsgs(0),
+                   cb_getpresence(0), private_key() {}
+  CreateBPRequest create_request;
   ModifyBPInfoRequest modify_request;
-  AddBPMessageRequest add_msg_request;
   GetBPMessagesRequest get_msgs_request;
-  ContactInfoRequest contactinfo_request;
+  AddBPMessageRequest add_msg_request;
+  GetBPPresenceRequest get_presence_request;
+  AddBPPresenceRequest add_presence_request;
   std::vector<std::string> holder_ids;
   boost::uint16_t successful_ops, idx;
   bool is_calledback;
   BpOpType type;
   bp_operations_cb cb;
   bp_getmessages_cb cb_getmsgs;
-  bp_getcontactinfo_cb cb_getinfo;
+  bp_getpresence_cb cb_getpresence;
   std::string private_key;
 };
 
@@ -83,18 +95,28 @@ struct CreateBPCallbackData {
 };
 
 struct ModifyBPCallbackData {
-  ModifyBPCallbackData()
-    : ctrl(NULL), modify_response(NULL),
-      add_msg_response(NULL), get_msgs_response(NULL),
-      contactinfo_response(NULL), ctc(), data(), transport_id(0) {}
+  ModifyBPCallbackData() : ctrl(NULL),
+                           create_response(NULL),
+                           modify_response(NULL),
+                           get_msgs_response(NULL),
+                           add_msg_response(NULL),
+                           get_presence_response(NULL),
+                           add_presence_response(NULL),
+                           ctc(),
+                           data(),
+                           transport_id(0),
+                           is_calledback(false) {}
   rpcprotocol::Controller *ctrl;
+  CreateBPResponse *create_response;
   ModifyBPInfoResponse *modify_response;
-  AddBPMessageResponse *add_msg_response;
   GetBPMessagesResponse *get_msgs_response;
-  ContactInfoResponse *contactinfo_response;
+  AddBPMessageResponse *add_msg_response;
+  GetBPPresenceResponse *get_presence_response;
+  AddBPPresenceResponse *add_presence_response;
   kad::Contact ctc;
   boost::shared_ptr<ChangeBPData> data;
   boost::int16_t transport_id;
+  bool is_calledback;
 };
 
 struct BPInputParameters {
@@ -106,27 +128,44 @@ class ClientBufferPacketHandler {
   static const boost::uint16_t kParallelFindCtcs = 1;
  public:
   ClientBufferPacketHandler(boost::shared_ptr<maidsafe::BufferPacketRpcs> rpcs,
-    boost::shared_ptr<kad::KNode> knode);
+                            boost::shared_ptr<kad::KNode> knode);
   virtual ~ClientBufferPacketHandler() {}
-  void CreateBufferPacket(const BPInputParameters &args, bp_operations_cb cb,
+  void CreateBufferPacket(const BPInputParameters &args,
+                          bp_operations_cb cb,
                           const boost::int16_t &transport_id);
-  void ModifyOwnerInfo(const BPInputParameters &args, const int &status,
+  void ModifyOwnerInfo(const BPInputParameters &args,
                        const std::vector<std::string> &users,
-                       bp_operations_cb cb, const boost::int16_t &transport_id);
-  void GetMessages(const BPInputParameters &args, bp_getmessages_cb cb,
+                       bp_operations_cb cb,
+                       const boost::int16_t &transport_id);
+  void GetMessages(const BPInputParameters &args,
+                   bp_getmessages_cb cb,
                    const boost::int16_t &transport_id);
-  void AddMessage(const BPInputParameters &args, const std::string &my_pu,
+  void AddMessage(const BPInputParameters &args,
+                  const std::string &my_pu,
                   const std::string &recver_public_key,
-                  const std::string &receiver_id, const std::string &message,
-                  const MessageType &m_type, bp_operations_cb cb,
+                  const std::string &receiver_id,
+                  const std::string &message,
+                  const MessageType &m_type,
+                  bp_operations_cb cb,
                   const boost::int16_t &transport_id);
-  void ContactInfo(const BPInputParameters &my_signing_credentials,
+  void GetPresence(const BPInputParameters &args,
+                   bp_getpresence_cb cb,
+                   const boost::int16_t &transport_id);
+  void AddPresence(const BPInputParameters &args,
                    const std::string &my_pu,
-                   const std::string &recs_pu,
-                   const std::string &recs_pk,
-                   bp_getcontactinfo_cb cicb,
+                   const std::string &recver_public_key,
+                   const std::string &receiver_id,
+                   bp_operations_cb cb,
                    const boost::int16_t &transport_id);
  private:
+  virtual void FindNodes(base::callback_func_type cb,
+                         boost::shared_ptr<ChangeBPData> data);
+  virtual void FindNodes_CB(const std::string &result,
+                            boost::shared_ptr<ChangeBPData> data,
+                            const boost::int16_t &transport_id);
+  void ActionOnBpDone(
+      boost::shared_ptr<std::vector<ModifyBPCallbackData> > cb_datas,
+      boost::int16_t index);
   void IterativeStore(boost::shared_ptr<CreateBPData> data,
                       const boost::int16_t &transport_id);
   void CreateBPCallback(const CreateBPResponse* resp,
@@ -144,7 +183,11 @@ class ClientBufferPacketHandler {
                             boost::shared_ptr<ChangeBPData> data,
                             const boost::int16_t &transport_id);
   std::list<ValidatedBufferPacketMessage> ValidateMsgs(
-      const GetBPMessagesResponse *response, const std::string &private_key);
+      const GetBPMessagesResponse *response,
+      const std::string &private_key);
+  std::list<LivePresence> ValidatePresence(
+      const GetBPPresenceResponse *response,
+      const std::string &private_key);
   ClientBufferPacketHandler &operator=(const ClientBufferPacketHandler);
   ClientBufferPacketHandler(const ClientBufferPacketHandler&);
   crypto::Crypto crypto_obj_;

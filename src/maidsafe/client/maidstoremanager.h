@@ -61,6 +61,7 @@ size_t CheckStoredCopies(std::map<std::string, std::string> chunks,
 
 namespace maidsafe_vault {
 class PDVaultTest;
+class PDVaultTest_FUNC_MAID_StoreAndGetChunks_Test;
 class RunPDVaults;
 }  // namespace maidsafe_vault
 
@@ -254,10 +255,14 @@ struct LocalVaultOwnedCallbackArgs {
 };
 
 class MaidsafeStoreManager : public StoreManagerInterface {
+  typedef boost::function<void(const std::string&,
+                               const boost::uint32_t&,
+                               const boost::int16_t&,
+                               const float &)> IMNotifier;
  public:
   explicit MaidsafeStoreManager(boost::shared_ptr<ChunkStore> cstore);
   virtual ~MaidsafeStoreManager() {}
-  void Init(int port, base::callback_func_type cb);
+  void Init(int port, base::callback_func_type cb, fs::path db_directory);
   void Close(base::callback_func_type cb, bool cancel_pending_ops);
   void CleanUpTransport();
   void StopRvPing() { transport_handler_.StopPingRendezvous(); }
@@ -307,10 +312,6 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   virtual int AddBPMessage(const std::vector<std::string> &receivers,
                            const std::string &message,
                            const MessageType &type);
-  virtual void ContactInfo(const std::string &public_username,
-                           const std::string &me,
-                           ContactInfoNotifier cin);
-  virtual void OwnInfo(ContactInfoNotifier cin);
 
   // Vault
   void PollVaultInfo(base::callback_func_type cb);
@@ -337,6 +338,7 @@ class MaidsafeStoreManager : public StoreManagerInterface {
                               std::string *public_key_sig,
                               std::string *private_key);
   virtual int CreateAccount(const boost::uint64_t &space);
+  void SetInstantMessageNotifier(IMNotifier on_msg);
 
   friend void AddToWatchListTask::run();
   friend void SendChunkCopyTask::run();
@@ -345,8 +347,7 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   friend void DeletePacketTask::run();
   friend size_t testpdvault::CheckStoredCopies(
       std::map<std::string, std::string> chunks,
-      const int &timeout,
-      boost::shared_ptr<MaidsafeStoreManager> sm);
+      const int &timeout, boost::shared_ptr<MaidsafeStoreManager> sm);
  private:
   MaidsafeStoreManager &operator=(const MaidsafeStoreManager&);
   MaidsafeStoreManager(const MaidsafeStoreManager&);
@@ -365,10 +366,9 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_DeletePacket);
   FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_GetAccountDetails);
   FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_GetFilteredAverage);
-  FRIEND_TEST(PDVaultTest, FUNC_MAID_StoreAndGetChunks);
-  FRIEND_TEST(PDVaultTest, FUNC_MAID_Cachechunk);
   friend class MsmSetLocalVaultOwnedTest;
   friend class maidsafe_vault::PDVaultTest;
+  friend class maidsafe_vault::PDVaultTest_FUNC_MAID_StoreAndGetChunks_Test;
   friend class maidsafe_vault::RunPDVaults;
   // Check the inputs to the public methods are valid
   int ValidateInputs(const std::string &name,
@@ -393,6 +393,10 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   // Assesses each RemoveFromWatchListResponse.
   void RemoveFromWatchListCallback(boost::uint16_t index,
                                    boost::shared_ptr<WatchListOpData> data);
+  // Contact the chunk info holders to retrieve the list of chunk holders
+  bool GetChunkReferences(const std::string &chunk_name,
+                          const std::vector<kad::Contact> &chunk_info_holders,
+                          std::vector<std::string> *references);
   void AccountStatusCallback(boost::shared_ptr<AccountStatusData> data);
   // Calculates the mean of only the values within sqrt(2) std devs from mean
   // TODO(Team#) move to central place for global usage?
@@ -447,61 +451,22 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   virtual int SendChunkContent(
       boost::shared_ptr<SendChunkData> send_chunk_data);
   void SendContentCallback(boost::shared_ptr<SendChunkData> send_chunk_data);
-  // Populates a vector of chunk holders.  Those that are contactable have
-  // non-empty contact details and those that have the chunk have their variable
-  // check_chunk_response_.result() == kAck.  To stop the function from sending
-  // any further RPCs (e.g. if a previous one has yielded a satisfactory result
-  // for the calling method), set stop_sending to true.  The function increments
-  // check_chunk_rpc_count each time an RPC is sent.
-  void FindAvailableChunkHolders(
-      const std::string &chunk_name,
-      const std::vector<std::string> &chunk_holders_ids,
-      boost::shared_ptr<GenericConditionData> cond_data,
-      std::vector< boost::shared_ptr<ChunkHolder> > *chunk_holders,
-      int *available_chunk_holder_index,
-      bool *stop_sending,
-      int *check_chunk_rpc_count);
-  // Populates the contact details of a peer vault (with ID chunk_holder_id) and
-  // pushes them into the list of contacts provided.  If the RPC fails, the
-  // chunk holder's status_ is set to kFailedHolder.  Having done this,
-  // notify is called on the conditional variable.
-  void GetHolderContactCallback(
-      const std::string &chunk_holder_id,
-      const std::string &result,
-      std::vector< boost::shared_ptr<ChunkHolder> > *chunk_holders,
-      boost::shared_ptr<GenericConditionData> cond_data);
-  // This populates the chunk holder's check_chunk_response_ variable (i.e.
-  // confirms whether the peer has the chunk or not).  If the RPC fails, the
-  // chunk holder's status_ is set to kFailedHolder.  If not, the chunk holder's
-  // index is pushed onto confirmed_chunk_holder_index.  Having done this,
-  // notify is called on find_conditional_.
-  void HasChunkCallback(boost::shared_ptr<ChunkHolder> chunk_holder,
-                        int *available_chunk_holder_index);
-  // Given a vector of vault ids, this gets the contact info for each and if
-  // load_data is true, attempts to load the data once the first contact info
-  // is received.
-  virtual int FindAndLoadChunk(
-      const std::string &chunk_name,
-      const std::vector<std::string> &chunk_holders_ids,
-      bool load_data,
-      std::string *data);
+  void LoadChunk_FindCB(const std::string &result,
+                        boost::shared_ptr<GetChunkOpData> data);
+  void LoadChunk_RefsCB(size_t rsp_idx,
+                        boost::shared_ptr<GetChunkOpData> data);
+  void LoadChunk_HolderCB(const std::string &result,
+                          const std::string &pmid,
+                          boost::shared_ptr<GetChunkOpData> data);
+  void LoadChunk_CheckCB(std::pair<std::string, size_t> params,
+                         boost::shared_ptr<GetChunkOpData> data);
   // Get a chunk's content from a specific peer.
   int GetChunk(const std::string &chunk_name,
-               boost::shared_ptr<ChunkHolder> chunk_holder,
-               std::string *data,
-               boost::mutex *get_mutex);
-  // Get a bufferpacket's content from a specific peer.
-  void GetMessages(const std::string &buffer_packet_name,
-                   boost::shared_ptr<ChunkHolder> chunk_holder,
-                   const std::string &public_key,
-                   const std::string &signed_public_key,
-                   std::string *serialised_get_messages_response,
-                   boost::mutex *get_mutex);
-  void GetChunkCallback(boost::mutex *mutex, bool *get_chunk_done);
-  virtual void FindCloseNodes(
-      const std::vector<std::string> &packet_holder_ids,
-      std::vector< boost::shared_ptr<ChunkHolder> > *packet_holders,
-      boost::shared_ptr<GenericConditionData> find_cond_data);
+               const kad::Contact &chunk_holder,
+               std::string *data);
+  void GetChunkCallback(
+      bool *done,
+      std::pair<boost::mutex*, boost::condition_variable*> sync);
   // Callback for blocking version of LoadPacket
   void LoadPacketCallback(const std::vector<std::string> values_in,
                           const int &result_in,
@@ -561,12 +526,12 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   boost::shared_ptr<ChunkStore> client_chunkstore_;
   QThreadPool chunk_thread_pool_, packet_thread_pool_;
   boost::mutex store_packet_mutex_;
-  boost::condition_variable get_chunk_conditional_;
   boost::shared_ptr<BufferPacketRpcs> bprpcs_;
   ClientBufferPacketHandler cbph_;
   static int kChunkMaxThreadCount_;
   static int kPacketMaxThreadCount_;
   boost::int16_t trans_id_;
+  IMNotifier im_notifier_;
 };
 
 }  // namespace maidsafe

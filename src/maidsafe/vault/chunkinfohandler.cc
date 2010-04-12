@@ -27,6 +27,11 @@
 
 namespace maidsafe_vault {
 
+void ChunkInfoHandler::set_started(bool started) {
+  boost::mutex::scoped_lock lock(chunk_info_mutex_);
+  started_ = started;
+}
+
 int ChunkInfoHandler::PrepareAddToWatchList(const std::string &chunk_name,
                                             const std::string &pmid,
                                             const boost::uint64_t &chunk_size,
@@ -35,6 +40,8 @@ int ChunkInfoHandler::PrepareAddToWatchList(const std::string &chunk_name,
   *required_references = 0;
   *required_payments = 0;
   boost::mutex::scoped_lock lock(chunk_info_mutex_);
+  if (!started_)
+    return kChunkInfoHandlerNotStarted;
 
   ChunkInfo &ci = chunk_infos_[chunk_name];
 
@@ -92,9 +99,11 @@ bool ChunkInfoHandler::TryCommitToWatchList(const std::string &chunk_name,
                                             const std::string &pmid,
                                             std::string *creditor,
                                             int *refunds) {
-  *creditor = "";
+  creditor->clear();
   *refunds = 0;
   boost::mutex::scoped_lock lock(chunk_info_mutex_);
+  if (!started_)
+    return false;
   if (chunk_infos_.count(chunk_name) == 0)
     return false;
 
@@ -163,6 +172,8 @@ void ChunkInfoHandler::ResetAddToWatchList(const std::string &chunk_name,
                                            std::list<std::string> *creditors,
                                            std::list<std::string> *references) {
   boost::mutex::scoped_lock lock(chunk_info_mutex_);
+  if (!started_)
+    return;
   if (chunk_infos_.count(chunk_name) == 0)
     return;
   ChunkInfo &ci = chunk_infos_[chunk_name];
@@ -197,6 +208,8 @@ int ChunkInfoHandler::RemoveFromWatchList(const std::string &chunk_name,
                                           std::list<std::string> *creditors,
                                           std::list<std::string> *references) {
   boost::mutex::scoped_lock lock(chunk_info_mutex_);
+  if (!started_)
+    return kChunkInfoHandlerNotStarted;
 
   if (!HasWatchers(chunk_name))
     return kChunkInfoInvalidName;
@@ -273,6 +286,8 @@ int ChunkInfoHandler::AddToReferenceList(const std::string &chunk_name,
                                          const std::string &pmid,
                                          const boost::uint64_t &chunk_size) {
   boost::mutex::scoped_lock lock(chunk_info_mutex_);
+  if (!started_)
+    return kChunkInfoHandlerNotStarted;
   if (!HasWatchers(chunk_name))
     return kChunkInfoInvalidName;
 
@@ -303,6 +318,8 @@ int ChunkInfoHandler::RemoveFromReferenceList(const std::string &chunk_name,
                                               const std::string &pmid,
                                               int *chunk_size) {
   boost::mutex::scoped_lock lock(chunk_info_mutex_);
+  if (!started_)
+    return kChunkInfoHandlerNotStarted;
   if (chunk_infos_.count(chunk_name) == 0)
     return kChunkInfoInvalidName;
 
@@ -326,9 +343,35 @@ int ChunkInfoHandler::RemoveFromReferenceList(const std::string &chunk_name,
   return 0;
 }
 
+int ChunkInfoHandler::GetActiveReferences(const std::string chunk_name,
+                                          std::list<std::string> *references) {
+  boost::mutex::scoped_lock lock(chunk_info_mutex_);
+  if (!started_)
+    return kChunkInfoHandlerNotStarted;
+  if (chunk_infos_.count(chunk_name) == 0)
+    return kChunkInfoInvalidName;
+
+  ChunkInfo &ci = chunk_infos_[chunk_name];
+
+  if (ci.watcher_count == 0 && ci.watcher_checksum == 0)
+    return kChunkInfoNoActiveWatchers;
+
+  boost::uint32_t now = base::get_epoch_time();
+
+  for (std::list<ReferenceListEntry>::iterator it = ci.reference_list.begin();
+       it != ci.reference_list.end(); ++it) {
+    if (it->last_seen + kChunkInfoRefActiveTimeout >= now)
+      references->push_back(it->pmid);
+  }
+
+  return kSuccess;
+}
+
 void ChunkInfoHandler::SetStoringDone(const std::string &chunk_name,
                                       const std::string &pmid) {
   boost::mutex::scoped_lock lock(chunk_info_mutex_);
+  if (!started_)
+    return;
   if (chunk_infos_.count(chunk_name) == 0)
     return;
   ChunkInfo &ci = chunk_infos_[chunk_name];
@@ -347,6 +390,8 @@ void ChunkInfoHandler::SetStoringDone(const std::string &chunk_name,
 void ChunkInfoHandler::SetPaymentsDone(const std::string &chunk_name,
                                        const std::string &pmid) {
   boost::mutex::scoped_lock lock(chunk_info_mutex_);
+  if (!started_)
+    return;
   if (chunk_infos_.count(chunk_name) == 0)
     return;
   ChunkInfo &ci = chunk_infos_[chunk_name];
@@ -365,8 +410,10 @@ void ChunkInfoHandler::SetPaymentsDone(const std::string &chunk_name,
 void ChunkInfoHandler::GetStaleWaitingListEntries(
     std::list< std::pair<std::string, std::string> > *entries) {
   boost::mutex::scoped_lock lock(chunk_info_mutex_);
+  if (!started_)
+    return;
   boost::uint32_t now = base::get_epoch_time();
-  for (std::map<std::string, ChunkInfo>::iterator ci_it = chunk_infos_.begin();
+  for (CIMap::iterator ci_it = chunk_infos_.begin();
        ci_it != chunk_infos_.end(); ++ci_it) {
     for (std::list<WaitingListEntry>::iterator wait_it =
          ci_it->second.waiting_list.begin();
@@ -382,7 +429,7 @@ bool ChunkInfoHandler::HasWatchers(const std::string &chunk_name) {
   if (chunk_infos_.count(chunk_name) == 0)
     return false;
   ChunkInfo &ci = chunk_infos_[chunk_name];
-  return /* ci.watch_list.size() != 0 || */ ci.waiting_list.size() != 0 ||
+  return /* ci.watch_list.size() != 0 || */ !ci.waiting_list.empty() ||
          ci.watcher_count != 0 || ci.watcher_checksum != 0;
 }
 
@@ -422,5 +469,74 @@ boost::uint64_t ChunkInfoHandler::GetChecksum(const std::string &id) {
   return *reinterpret_cast<boost::uint64_t*>(
             const_cast<char*>(id.substr(kKeySize - 8).data()));
 }
+
+ChunkInfoMap ChunkInfoHandler::PutMapToPb() {
+  ChunkInfoMap chunk_info_map;
+  {
+    boost::mutex::scoped_lock loch(chunk_info_mutex_);
+    std::for_each(chunk_infos_.begin(), chunk_infos_.end(), boost::bind(
+        &ChunkInfoHandler::AddChunkInfoToPbSet, this, _1, &chunk_info_map));
+  }
+  return chunk_info_map;
+}
+
+void ChunkInfoHandler::AddChunkInfoToPbSet(const CIMap::value_type &ci_pair,
+                                           ChunkInfoMap *chunk_info_map) {
+  ChunkInfoMap::VaultChunkInfo *vault_chunk_info =
+      chunk_info_map->add_vault_chunk_info();
+  ChunkInfo chunk_info(ci_pair.second);
+  chunk_info.PutToPb(ci_pair.first, vault_chunk_info);
+}
+
+void ChunkInfoHandler::GetMapFromPb(const ChunkInfoMap &chunk_info_map) {
+  ChunkInfoMap::VaultChunkInfo vault_chunk_info;
+  boost::mutex::scoped_lock loch(chunk_info_mutex_);
+  bool use_max_efficiency = chunk_infos_.empty();
+  CIMap::iterator it = chunk_infos_.begin();
+  for (int i = 0; i < chunk_info_map.vault_chunk_info_size(); ++i) {
+    vault_chunk_info.Clear();
+    vault_chunk_info = chunk_info_map.vault_chunk_info(i);
+    ChunkInfo chunk_info(vault_chunk_info);
+    if (use_max_efficiency)
+      it = chunk_infos_.insert(it, CIMap::value_type(
+          vault_chunk_info.chunk_name(), chunk_info));
+    else
+      chunk_infos_.insert(CIMap::value_type(vault_chunk_info.chunk_name(),
+          chunk_info));
+  }
+  started_ = true;
+}
+
+int ChunkInfoHandler::GetChunkInfo(const std::string &chunk_name,
+                                   ChunkInfo *chunk_info) {
+  boost::mutex::scoped_lock lock(chunk_info_mutex_);
+  if (!started_) {
+    *chunk_info = ChunkInfo();
+    return kChunkInfoHandlerNotStarted;
+  }
+  CIMap::iterator it = chunk_infos_.find(chunk_name);
+
+  if (it == chunk_infos_.end()) {
+    *chunk_info = ChunkInfo();
+    return kChunkInfoInvalidName;
+  } else {
+    *chunk_info = (*it).second;
+    return kSuccess;
+  }
+}
+
+int ChunkInfoHandler::InsertChunkInfoFromPb(
+    const ChunkInfoMap::VaultChunkInfo &vault_chunk_info) {
+  ChunkInfo chunk_info(vault_chunk_info);
+  boost::mutex::scoped_lock lock(chunk_info_mutex_);
+  if (!started_)
+    return kChunkInfoHandlerNotStarted;
+  std::pair<CIMap::iterator, bool> sp = chunk_infos_.insert(
+      CIMap::value_type(vault_chunk_info.chunk_name(), chunk_info));
+  if (!sp.second)
+    return kChunkInfoExists;
+  return kSuccess;
+}
+
 
 }  // namespace maidsafe_vault

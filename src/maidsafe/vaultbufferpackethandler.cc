@@ -108,6 +108,9 @@ bool VaultBufferPacketHandler::ChangeOwnerInfo(const std::string &ser_gp,
                                                const std::string &public_key,
                                                std::string *ser_packet) {
   if (!ValidateOwnerSignature(public_key, *ser_packet)) {
+#ifdef DEBUG
+    printf("VBPH::ChangeOwnerInfo - doesn't ValidateOwnerSignature.\n");
+#endif
     return false;
   }
   BufferPacket bp;
@@ -115,94 +118,20 @@ bool VaultBufferPacketHandler::ChangeOwnerInfo(const std::string &ser_gp,
   bp.clear_owner_info();
   GenericPacket *gp = bp.add_owner_info();
   if (!gp->ParseFromString(ser_gp)) {
+#ifdef DEBUG
+    printf("VBPH::ChangeOwnerInfo - ser_gp is not a GenericPacket.\n");
+#endif
     return false;
   } else {
     BufferPacketInfo bpi;
     if (!bpi.ParseFromString(gp->data())) {
+#ifdef DEBUG
+      printf("VBPH::ChangeOwnerInfo - data is not a BufferPacketInfo.\n");
+#endif
       return false;
     }
   }
   bp.SerializeToString(ser_packet);
-  return true;
-}
-
-bool VaultBufferPacketHandler::CheckStatus(const std::string &current_bp,
-                                           const std::string &ser_message,
-                                           const std::string &signed_public_key,
-                                           int *status) {
-  GenericPacket message;
-  if (!message.ParseFromString(ser_message)) {
-#ifdef DEBUG
-    printf("Invalid msg.\n");
-#endif
-    return false;
-  }
-
-  BufferPacket bufferpacket;
-  if (!bufferpacket.ParseFromString(current_bp)) {
-#ifdef DEBUG
-    printf("Invalid bufferpacket.\n");
-#endif
-    return false;
-  }
-
-  // getting message from signed data sent
-  BufferPacketMessage bpm;
-  if (!bpm.ParseFromString(message.data())) {
-#ifdef DEBUG
-    printf("Invalid bpmessage.\n");
-#endif
-    return false;
-  }
-
-  if (bpm.type() != STATUS_CHECK) {
-#ifdef DEBUG
-    printf("Invalid message type.\n");
-#endif
-    return false;
-  }
-
-  std::string public_key = bpm.sender_public_key();
-  if (!crypto_obj_.AsymCheckSig(public_key, signed_public_key,
-      public_key, crypto::STRING_STRING)) {
-#ifdef DEBUG
-    printf("Invalid public key signature.\n");
-#endif
-    return false;
-  }
-
-  if (!crypto_obj_.AsymCheckSig(message.data(), message.signature(),
-      public_key, crypto::STRING_STRING)) {
-#ifdef DEBUG
-    printf("Invalid message signature.\n");
-#endif
-    return false;
-  }
-
-  BufferPacketInfo bpi;
-  bpi.ParseFromString(bufferpacket.owner_info(0).data());
-  if (!bpi.has_online()) {
-#ifdef DEBUG
-    printf("NO STATUS.\n");
-#endif
-  }
-
-  bool flag = false;
-  // TODO(dan): here ther should be no check for user in list
-  // if it is decided to accept from all
-  for (int i = 0; i < bpi.users_size(); i++)
-    if (bpi.users(i) == bpm.sender_id()) {
-      flag = true;
-      break;
-    }
-  if (!flag) {
-#ifdef DEBUG
-    printf("Unauthorised user.\n");
-#endif
-    return false;
-  }
-
-  *status = bpi.online();
   return true;
 }
 
@@ -289,56 +218,6 @@ bool VaultBufferPacketHandler::AddMessage(const std::string &current_bp,
   gp->set_signature(message.signature());
 
   bufferpacket.SerializeToString(updated_bp);
-  return true;
-}
-
-bool VaultBufferPacketHandler::ContactInfo(const std::string &current_bp,
-                                           const std::string &public_username,
-                                           EndPoint *ep,
-                                           PersonalDetails *pd,
-                                           boost::uint16_t *status) {
-  BufferPacket bufferpacket;
-  if (!bufferpacket.ParseFromString(current_bp)) {
-#ifdef DEBUG
-    printf("VaultBufferPacketHandler::ContactInfo - Invalid bufferpacket.\n");
-#endif
-    return false;
-  }
-
-  BufferPacketInfo bpi;
-  if (bufferpacket.owner_info_size() < 1 ||
-      !bpi.ParseFromString(bufferpacket.owner_info(0).data())) {
-#ifdef DEBUG
-    printf("VaultBufferPacketHandler::ContactInfo - BP corrupt.\n");
-#endif
-    return false;
-  }
-
-  if (!IsOwner(public_username, bufferpacket.owner_info(0))) {
-    bool found(false);
-    std::string hashed_sender_id = crypto_obj_.Hash(public_username, "",
-                                                    crypto::STRING_STRING,
-                                                    false);
-    for (int n = 0; n < bpi.users_size(); ++n) {
-      if (bpi.users(n) == hashed_sender_id) {
-        found = true;
-        n = bpi.users_size();
-      }
-    }
-
-    if (!found) {
-  #ifdef DEBUG
-      printf("VaultBufferPacketHandler::ContactInfo - Not allowed.\n");
-  #endif
-      return false;
-    }
-  }
-
-  ep->set_ip(bpi.ep().ip());
-  ep->set_port(bpi.ep().port());
-  *pd = bpi.pd();
-  *status = bpi.online();
-
   return true;
 }
 

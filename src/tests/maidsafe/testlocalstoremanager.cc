@@ -41,19 +41,9 @@ namespace test_lsm {
 class FakeCallback {
  public:
   explicit FakeCallback(boost::mutex *m)
-    : result_(""), result(maidsafe::kGeneralError), mutex(m) {}
+    : result_(), result(maidsafe::kGeneralError), mutex(m) {}
   void CallbackFunc(const std::string &res) {
     result_ = res;
-  }
-  void ContactInfo_CB(const maidsafe::ReturnCode &res,
-                      const maidsafe::EndPoint &ep,
-                      const maidsafe::PersonalDetails &pd,
-                      const boost::uint32_t &st) {
-    boost::mutex::scoped_lock loch(*mutex);
-    result = res;
-    end_point = ep;
-    personal_details = pd;
-    status = st;
   }
   void Reset() {
     result_ = "";
@@ -61,9 +51,6 @@ class FakeCallback {
   }
   std::string result_;
   maidsafe::ReturnCode result;
-  maidsafe::EndPoint end_point;
-  maidsafe::PersonalDetails personal_details;
-  boost::uint32_t status;
   boost::mutex *mutex;
 };
 
@@ -97,7 +84,7 @@ void PacketOpCallback(const int &delete_result,
                       int *result) {
   boost::mutex::scoped_lock lock(*mutex);
   *result = delete_result;
-  cond_var->notify_one();
+  cond_var->notify_all();
 };
 
 }  // namespace test_lsm
@@ -150,8 +137,8 @@ class LocalStoreManagerTest : public testing::Test {
     }
     sm_ = new maidsafe::LocalStoreManager(client_chunkstore_);
     // sm_ = new Localsm_();
-    sm_->Init(0, boost::bind(&test_lsm::FakeCallback::CallbackFunc,
-                                      &cb, _1));
+    sm_->Init(0, boost::bind(&test_lsm::FakeCallback::CallbackFunc, &cb, _1),
+              test_root_dir_);
     wait_for_result_lsm(cb, mutex_);
     maidsafe::GenericResponse res;
     ASSERT_TRUE(res.ParseFromString(cb.result_));
@@ -231,6 +218,7 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_RemoveAllPacketsFromKey) {
         cond_var.wait(lock);
     }
     ASSERT_EQ(maidsafe::kSuccess, result);
+    result = maidsafe::kGeneralError;
   }
 
   // Remove said packets
@@ -417,7 +405,6 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_StoreAndLoadBufferPacket) {
   ASSERT_TRUE(bpi.ParseFromString(gp.data()));
   ASSERT_EQ(ss_->Id(maidsafe::MPID), bpi.owner());
   ASSERT_EQ(ss_->PublicKey(maidsafe::MPID), bpi.owner_publickey());
-  ASSERT_EQ(1, bpi.online());
 }
 
 TEST_F(LocalStoreManagerTest, BEH_MAID_ModifyBufferPacketInfo) {
@@ -440,23 +427,13 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_ModifyBufferPacketInfo) {
   ASSERT_TRUE(bpi.ParseFromString(gp.data()));
   ASSERT_EQ(ss_->Id(maidsafe::MPID), bpi.owner());
   ASSERT_EQ(ss_->PublicKey(maidsafe::MPID), bpi.owner_publickey());
-  ASSERT_EQ(1, bpi.online());
 
   // Modifying the BP info
   maidsafe::BufferPacketInfo buffer_packet_info;
   std::string ser_info;
   buffer_packet_info.set_owner(ss_->Id(maidsafe::MPID));
   buffer_packet_info.set_owner_publickey(ss_->PublicKey(maidsafe::MPID));
-  buffer_packet_info.set_online(true);
   buffer_packet_info.add_users("Juanito");
-  maidsafe::PersonalDetails *pd = buffer_packet_info.mutable_pd();
-  pd->set_full_name("Juanbert Tupadre");
-  pd->set_phone_number("0987654321");
-  pd->set_birthday("01/01/1970");
-  pd->set_gender("Male");
-  pd->set_language("English");
-  pd->set_city("Troon");
-  pd->set_country("United Kingdom of Her Majesty the Queen");
   buffer_packet_info.SerializeToString(&ser_info);
   ASSERT_EQ(0, sm_->ModifyBPInfo(ser_info));
   packet_content = "";
@@ -480,7 +457,6 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_AddAndGetBufferPacketMessages) {
   maidsafe::BufferPacketInfo buffer_packet_info;
   buffer_packet_info.set_owner(ss_->Id(maidsafe::MPID));
   buffer_packet_info.set_owner_publickey(ss_->PublicKey(maidsafe::MPID));
-  buffer_packet_info.set_online(false);
   buffer_packet_info.add_users(co_.Hash("Juanito", "",
                                crypto::STRING_STRING, false));
   std::string ser_info;
@@ -519,7 +495,7 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_AddAndGetBufferPacketMessages) {
   ASSERT_EQ(size_t(1), messages.size());
   ASSERT_EQ("Juanito", messages.front().sender());
   ASSERT_EQ(test_msg, messages.front().message());
-  ASSERT_NE("", messages.front().index());
+  ASSERT_EQ("", messages.front().index());
   ASSERT_EQ(maidsafe::INSTANT_MSG, messages.front().type());
 
   // Check message is gone
@@ -567,12 +543,11 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_AddRequestBufferPacketMessage) {
   ASSERT_EQ(size_t(1), messages.size());
   ASSERT_EQ("Juanito", messages.front().sender());
   ASSERT_EQ(test_msg, messages.front().message());
-  ASSERT_NE("", messages.front().index());
+  ASSERT_EQ("", messages.front().index());
   ASSERT_EQ(maidsafe::ADD_CONTACT_RQST, messages.front().type());
   maidsafe::BufferPacketInfo buffer_packet_info;
   buffer_packet_info.set_owner(ss_->Id(maidsafe::MPID));
   buffer_packet_info.set_owner_publickey(ss_->PublicKey(maidsafe::MPID));
-  buffer_packet_info.set_online(false);
   buffer_packet_info.add_users(co_.Hash("Juanito", "",
                                crypto::STRING_STRING, false));
   std::string ser_info;
@@ -599,91 +574,6 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_AddRequestBufferPacketMessage) {
   ASSERT_EQ(size_t(1), messages.size());
   ASSERT_EQ("Juanito", messages.front().sender());
   ASSERT_EQ(test_msg, messages.front().message());
-  ASSERT_NE("", messages.front().index());
+  ASSERT_EQ("", messages.front().index());
   ASSERT_EQ(maidsafe::INSTANT_MSG, messages.front().type());
-}
-
-TEST_F(LocalStoreManagerTest, BEH_MAID_ContactInfoFromBufferPacket) {
-  std::string bufferpacketname = co_.Hash(ss_->Id(maidsafe::MPID) +
-                                 ss_->PublicKey(maidsafe::MPID), "",
-                                 crypto::STRING_STRING, false);
-  ASSERT_TRUE(sm_->KeyUnique(bufferpacketname, false));
-  ASSERT_EQ(0, sm_->CreateBP());
-  ASSERT_FALSE(sm_->KeyUnique(bufferpacketname, false));
-  maidsafe::BufferPacketInfo buffer_packet_info;
-  buffer_packet_info.set_owner(ss_->Id(maidsafe::MPID));
-  buffer_packet_info.set_owner_publickey(ss_->PublicKey(maidsafe::MPID));
-  buffer_packet_info.set_online(5);
-  buffer_packet_info.add_users(co_.Hash("Juanito", "",
-                               crypto::STRING_STRING, false));
-  maidsafe::EndPoint *ep = buffer_packet_info.mutable_ep();
-  ep->set_ip("127.0.0.1");
-  ep->set_port(12700);
-  maidsafe::PersonalDetails *pd = buffer_packet_info.mutable_pd();
-  pd->set_full_name("Juanbert Tupadre");
-  pd->set_phone_number("0987654321");
-  pd->set_birthday("01/01/1970");
-  pd->set_gender("Male");
-  pd->set_language("English");
-  pd->set_city("Troon");
-  pd->set_country("United Kingdom of Her Majesty the Queen");
-  std::string ser_info;
-  buffer_packet_info.SerializeToString(&ser_info);
-  ASSERT_EQ(0, sm_->ModifyBPInfo(ser_info));
-
-  test_lsm::FakeCallback fcb2(mutex_);
-  sm_->OwnInfo(boost::bind(&test_lsm::FakeCallback::ContactInfo_CB,
-                           &fcb2, _1, _2, _3, _4));
-  wait_for_result_lsm2(fcb2, mutex_);
-  ASSERT_EQ(maidsafe::kSuccess, fcb2.result);
-  ASSERT_EQ(ep->ip(), fcb2.end_point.ip());
-  ASSERT_EQ(ep->port(), fcb2.end_point.port());
-  ASSERT_EQ(static_cast<boost::uint32_t>(buffer_packet_info.online()),
-            fcb2.status);
-  ASSERT_EQ(pd->full_name(), fcb2.personal_details.full_name());
-  ASSERT_EQ(pd->phone_number(), fcb2.personal_details.phone_number());
-  ASSERT_EQ(pd->birthday(), fcb2.personal_details.birthday());
-  ASSERT_EQ(pd->gender(), fcb2.personal_details.gender());
-  ASSERT_EQ(pd->language(), fcb2.personal_details.language());
-  ASSERT_EQ(pd->city(), fcb2.personal_details.city());
-  ASSERT_EQ(pd->country(), fcb2.personal_details.country());
-
-  std::string me_pubusername = ss_->Id(maidsafe::MPID);
-  std::string me_pubkey = ss_->PublicKey(maidsafe::MPID);
-  std::string me_privkey = ss_->PrivateKey(maidsafe::MPID);
-  std::string me_sigpubkey = co_.AsymSign(me_pubkey, "",
-                             me_privkey, crypto::STRING_STRING);
-
-  ASSERT_EQ(0, ss_->AddContact(me_pubusername, me_pubkey, "", "", "", 'U', 1, 2,
-            "", 'C', 0, 0));
-  test_lsm::FakeCallback fcb(mutex_);
-  sm_->ContactInfo(me_pubusername, "Juanito Banana",
-                   boost::bind(&test_lsm::FakeCallback::ContactInfo_CB,
-                               &fcb, _1, _2, _3, _4));
-  wait_for_result_lsm2(fcb, mutex_);
-  ASSERT_EQ(maidsafe::kGetBPInfoError, fcb.result);
-
-  // Create the user "Juanito", add to session, then the message and send it
-  ss_->ResetSession();
-  std::string private_key = keys_.at(2).private_key();
-  std::string public_key = keys_.at(2).public_key();
-  std::string signed_public_key = co_.AsymSign(public_key, "",
-                                  private_key, crypto::STRING_STRING);
-  ss_->AddKey(maidsafe::MPID, "Juanito", private_key, public_key,
-              signed_public_key);
-  ASSERT_EQ(0, ss_->AddContact(me_pubusername, me_pubkey, "", "", "", 'U', 1, 2,
-            "", 'C', 0, 0));
-
-  test_lsm::FakeCallback fcb1(mutex_);
-  sm_->ContactInfo(me_pubusername, ss_->Id(maidsafe::MPID),
-                   boost::bind(&test_lsm::FakeCallback::ContactInfo_CB,
-                               &fcb1, _1, _2, _3, _4));
-  wait_for_result_lsm2(fcb1, mutex_);
-  ASSERT_EQ(maidsafe::kSuccess, fcb1.result);
-  ASSERT_EQ(ep->ip(), fcb1.end_point.ip());
-  ASSERT_EQ(ep->port(), fcb1.end_point.port());
-  ASSERT_EQ(static_cast<boost::uint32_t>(buffer_packet_info.online()),
-            fcb1.status);
-
-  ss_->ResetSession();
 }

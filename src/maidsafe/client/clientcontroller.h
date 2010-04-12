@@ -56,7 +56,7 @@ class BPCallback {
  public:
   BPCallback() : result(kGeneralError), end_point(), status(0) {}
   void ContactInfoCallback(const ReturnCode &res,
-                           const EndPoint &ep,
+                           const std::list<EndPoint> &ep,
                            const PersonalDetails &pd,
                            const boost::uint32_t &st) {
     result = res;
@@ -66,17 +66,16 @@ class BPCallback {
   }
 
   void Reset() {
-    end_point.Clear();
+    end_point.clear();
     personal_details.Clear();
     result = kGeneralError;
   }
 
   ReturnCode result;
-  EndPoint end_point;
+  std::list<EndPoint> end_point;
   PersonalDetails personal_details;
   boost::uint32_t status;
 };
-
 
 struct VaultConfigParameters {
   VaultConfigParameters() : vault_type(0), space(0), port(0), directory() {}
@@ -113,25 +112,23 @@ class ClientController {
   bool ChangeUsername(const std::string &new_username);
   bool ChangePin(const std::string &new_pin);
   bool ChangePassword(const std::string &new_password);
-//  bool AuthoriseUsers(std::set<std::string> users);
-//  bool DeauthoriseUsers(std::set<std::string> users);
   int ChangeConnectionStatus(int status);
   int RunDbEncQueue();
   inline bool initialised() { return initialised_; }
 
   // Messages
+  typedef boost::function<void(const InstantMessage&)> IMNotifier;
   bool GetMessages();
   int HandleMessages(
-      std::list<ValidatedBufferPacketMessage>*valid_messages);
+      std::list<ValidatedBufferPacketMessage> *valid_messages);
   int HandleReceivedShare(const PrivateShareNotification &psn,
                           const std::string &name);
   int HandleDeleteContactNotification(const std::string &sender);
   int HandleInstantMessage(
       const ValidatedBufferPacketMessage &vbpm);
-  int HandleAddContactRequest(const ContactInfo &ci,
-    const std::string &sender);
+  int HandleAddContactRequest(const ContactInfo &ci, const std::string &sender);
   int HandleAddContactResponse(const ContactInfo &ci,
-    const std::string &sender);
+                               const std::string &sender);
   int GetInstantMessages(std::list<InstantMessage> *messages);
   int SendInstantMessage(const std::string &message,
                          const std::vector<std::string> &contact_names,
@@ -142,6 +139,11 @@ class ClientController {
                       const std::string &conversation);
   int AddInstantFile(const InstantFileNotification &ifm,
                      const std::string &location);
+  void onInstantMessage(const std::string &message,
+                        const boost::uint32_t&,
+                        const boost::int16_t&,
+                        const float &);
+  void SetIMNotifier(IMNotifier imn);
 
   // Contact operations
   int ContactList(const std::string &pub_name,
@@ -163,11 +165,6 @@ class ClientController {
   int CreateNewShare(const std::string &name,
                      const std::set<std::string> &admins,
                      const std::set<std::string> &readonlys);
-
-  // Own Info operations
-  int GetInfo(const std::string &public_username,
-              std::vector<std::string> *info);
-  int SetInfo(const std::vector<std::string> &info);
 
   // Vault operations
   bool PollVaultInfo(std::string *chunkstore,
@@ -230,9 +227,16 @@ class ClientController {
   // Friend tests
   FRIEND_TEST(FunctionalClientControllerTest, FUNC_MAID_ControllerBackupFile);
   FRIEND_TEST(FunctionalClientControllerTest, FUNC_MAID_ControllerSaveSession);
+  FRIEND_TEST(ClientControllerTest, FUNC_MAID_LocalControllerBackupFile);
+  FRIEND_TEST(ClientControllerTest, FUNC_MAID_LocalControllerSaveSession);
+  FRIEND_TEST(ClientControllerTest, FUNC_MAID_LocalControllerContactAddition);
+  FRIEND_TEST(ClientControllerTest, BEH_MAID_LocalControllerHandleMessages);
+  FRIEND_TEST(ClientControllerTest,
+              FUNC_MAID_LocalControllerClearStaleMessages);
+
   // Functions
   ClientController();
-  ~ClientController() {}
+  ~ClientController() { }
   ClientController &operator=(const ClientController&);
   ClientController(const ClientController&);
   bool JoinKademlia();
@@ -264,7 +268,6 @@ class ClientController {
                                bool *callback_arrived,
                                VaultStatus *res);
   std::string GenerateBPInfo();
-  std::string GenerateBPInfo(const std::vector<std::string> &info);
 
   // Variables
   boost::shared_ptr<ChunkStore> client_chunkstore_;
@@ -272,10 +275,10 @@ class ClientController {
   Authentication auth_;
   SessionSingleton *ss_;
   std::string ser_da_, ser_dm_;
-  std::map<std::string, std::pair<std::string, std::string> >db_enc_queue_;
+  std::map<std::string, std::pair<std::string, std::string> > db_enc_queue_;
   SEHandler seh_;
   static ClientController *single;
-  std::list<InstantMessage> messages_;
+  std::list<InstantMessage> instant_messages_;
   std::map<std::string, boost::uint32_t> received_messages_;
   boost::mutex rec_msg_mutex_;
   boost::thread clear_messages_thread_;
@@ -283,6 +286,7 @@ class ClientController {
   bool initialised_;
   bool logging_out_;
   bool logged_in_;
+  IMNotifier imn_;
 };
 
 }  // namespace maidsafe

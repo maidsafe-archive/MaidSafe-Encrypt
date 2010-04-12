@@ -321,11 +321,6 @@ void PerpetualData::asyncUnmount() {
 }
 
 void PerpetualData::asyncCreateUser() {
-  printf("PerpetualData::asyncCreateUser - VT: %i\nSO: %s\nP: %s\nDC: %s\n",
-         create_->VaultType(),
-         create_->SpaceOffered().toStdString().c_str(),
-         create_->PortChosen().toStdString().c_str(),
-         create_->DirectoryChosen().toStdString().c_str());
   CreateUserThread* cut = new CreateUserThread(login_->username(),
                                                login_->pin(),
                                                login_->password(),
@@ -357,7 +352,7 @@ void PerpetualData::onUserCreationCompleted(bool success) {
 }
 
 void PerpetualData::onMountCompleted(bool success) {
-  qDebug() << "PerpetualData::onMountCompleted:" << success;
+  qDebug() << "PerpetualData::onMountCompleted: " << success;
 
   //
   if (success) {
@@ -374,11 +369,11 @@ void PerpetualData::onMountCompleted(bool success) {
     setState(FAILURE);
   }
   if (!ClientController::instance()->publicUsername().isEmpty())
-      ClientController::instance()->StartCheckingMessages();
+    ClientController::instance()->StartCheckingMessages();
 }
 
 void PerpetualData::onUnmountCompleted(bool success) {
-  qDebug() << "PerpetualData::onUnMountCompleted:" << success;
+  qDebug() << "PerpetualData::onUnMountCompleted: " << success;
 
   if (success) {
     // TODO(Team#5#): 2009-08-18 - disable the logout action
@@ -396,6 +391,7 @@ void PerpetualData::onUnmountCompleted(bool success) {
     // TODO(Team#5#): 2009-08-18 - what to do (or can we do)
     //                             if logout failed but we're closing
     //                             the application?
+    ClientController::instance()->shutdown();
     qApp->quit();
   }
 }
@@ -419,7 +415,8 @@ void PerpetualData::onLogout() {
       // if we're still to login we can't logout
       return;
   }
-  ClientController::instance()->StopCheckingMessages();
+  if (!ClientController::instance()->publicUsername().isEmpty())
+    ClientController::instance()->StopCheckingMessages();
   asyncUnmount();
   setState(LOGGING_OUT);
 }
@@ -432,6 +429,7 @@ void PerpetualData::quit() {
 void PerpetualData::onQuit() {
   // TODO(Team#5#): 2009-08-18 - confirm quit if something in progress
   if (state_ != LOGGED_IN) {
+    ClientController::instance()->shutdown();
     qApp->quit();
   } else {
     quitting_ = true;
@@ -539,7 +537,6 @@ void PerpetualData::onMessageReceived(ClientController::MessageType type,
   } else if (type == ClientController::INVITE) {
     // TODO(Team#5#): 2010-01-13 - handle Invite
   }
-  printf("Perpertual Data.cc %f", t.elapsed());
 }
 
 void PerpetualData::onShareReceived(const QString& from,
@@ -552,10 +549,6 @@ void PerpetualData::onShareReceived(const QString& from,
 }
 
 void PerpetualData::onFileReceived(const maidsafe::InstantMessage& im) {
-#ifdef DEBUG
-  printf("PerpetualData::onFileReceived - in onFilerecieved");
-#endif
-
   maidsafe::InstantFileNotification ifn = im.instantfile_notification();
 
   QMessageBox msgBox;
@@ -661,7 +654,6 @@ void PerpetualData::onConnectionStatusChanged(int status) {
 }
 
 void PerpetualData::onDirectoryEntered(const QString& dir) {
-  printf("Contacts::onDirectoryEntered :: %s \n", dir.toStdString().c_str());
   QString root;
 
 #ifdef __WIN32__

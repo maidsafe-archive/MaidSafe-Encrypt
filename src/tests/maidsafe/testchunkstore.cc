@@ -206,13 +206,6 @@ class ThreadedTest {
     boost::this_thread::sleep(delay);
     *result = chunkstore_->DeleteChunk(name);
   }
-  void UpdateChunk(const boost::posix_time::milliseconds &delay,
-                   const std::string &name,
-                   const std::string &value,
-                   boost::shared_ptr<int> result) {
-    boost::this_thread::sleep(delay);
-    *result = chunkstore_->UpdateChunk(name, value);
-  }
   void Load(const boost::posix_time::milliseconds &delay,
                  const std::string &name,
                  boost::shared_ptr<std::string> value,
@@ -274,7 +267,7 @@ class ChunkstoreTest : public testing::Test {
         file_path("chunk.txt", fs::native),
         file_content("ABC"),
         hash_file_content(""),
-        other_hash(""),
+        other_hash(),
         cry_obj(new crypto::Crypto),
         h_size(),
         nh_size(),
@@ -341,8 +334,6 @@ TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreInit) {
             chunkstore->AddChunkToOutgoing(h_name.at(0), h_value.at(0)));
   ASSERT_EQ(kChunkstoreUninitialised,
             chunkstore->DeleteChunk(h_name.at(0)));
-  ASSERT_EQ(kChunkstoreUninitialised,
-            chunkstore->UpdateChunk(h_name.at(0), h_value.at(0)));
   std::string value("value");
   ASSERT_EQ(kChunkstoreUninitialised,
             chunkstore->Load(h_name.at(0), &value));
@@ -848,47 +839,6 @@ TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreLoadRandomChunk) {
   ASSERT_EQ(val, stored_value);
 }
 
-TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreUpdateChunk) {
-  boost::shared_ptr<VaultChunkStore> chunkstore(new VaultChunkStore(
-      storedir.string(), 1073741824, 0));
-  ASSERT_TRUE(chunkstore->Init());
-  test_chunkstore::WaitForInitialisation(chunkstore, 60000);
-  ASSERT_TRUE(chunkstore->is_initialised());
-  // check using hashable chunk
-  ASSERT_TRUE(test_chunkstore::MakeChunks(2, cry_obj, true, 3, 32000, &h_size,
-                                          &h_value, &h_name));
-  ASSERT_NE(h_value.at(0), h_value.at(1));
-  ASSERT_EQ(size_t(0), chunkstore->GetChunkSize(h_name.at(0)));
-  ASSERT_EQ(0, chunkstore->Store(h_name.at(0), h_value.at(0)));
-  ASSERT_EQ(h_size.at(0), chunkstore->GetChunkSize(h_name.at(0)));
-  ASSERT_EQ(0, chunkstore->UpdateChunk(h_name.at(0), h_value.at(1)));
-  std::string rec_value("Value");
-  ASSERT_EQ(0, chunkstore->Load(h_name.at(0), &rec_value));
-  ASSERT_EQ(h_value.at(1), rec_value);
-  ASSERT_EQ(h_size.at(1), chunkstore->GetChunkSize(h_name.at(0)));
-  // check using non-hashable chunk
-  ASSERT_TRUE(test_chunkstore::MakeChunks(2, cry_obj, true, 3, 32000, &nh_size,
-                                          &nh_value, &nh_name));
-  ASSERT_NE(nh_value.at(0), nh_value.at(1));
-  ASSERT_EQ(size_t(0), chunkstore->GetChunkSize(nh_name.at(0)));
-  ASSERT_EQ(0, chunkstore->Store(nh_name.at(0), nh_value.at(0)));
-  ASSERT_EQ(nh_size.at(0), chunkstore->GetChunkSize(nh_name.at(0)));
-  ASSERT_EQ(0, chunkstore->UpdateChunk(nh_name.at(0), nh_value.at(1)));
-  rec_value = "Value";
-  ASSERT_EQ(0, chunkstore->Load(nh_name.at(0), &rec_value));
-  ASSERT_EQ(nh_value.at(1), rec_value);
-  ASSERT_EQ(nh_size.at(1), chunkstore->GetChunkSize(nh_name.at(0)));
-  // check using non-existent chunk
-  std::string othername = cry_obj->Hash("otherfile", "", crypto::STRING_STRING,
-                                        false);
-  ASSERT_EQ(kInvalidChunkType,
-            chunkstore->UpdateChunk(othername, h_value.at(0)));
-  // check we can handle keys of wrong length
-  std::string wrong_length_key("too short");
-  ASSERT_EQ(kIncorrectKeySize,
-            chunkstore->UpdateChunk(wrong_length_key, h_value.at(0)));
-}
-
 TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreHashCheckChunk) {
   boost::shared_ptr<VaultChunkStore> chunkstore(new VaultChunkStore(
       storedir.string(), 1073741824, 0));
@@ -1154,29 +1104,18 @@ TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreReuseDirectory) {
     }
   }
   // Create a new chunkstore that has same root dir
-  boost::shared_ptr<VaultChunkStore> chunkstore1(new VaultChunkStore(
-      storedir.string(), 1073741824, 0));
-  ASSERT_TRUE(chunkstore1->Init());
-  test_chunkstore::WaitForInitialisation(chunkstore1, 60000);
-  ASSERT_TRUE(chunkstore1->is_initialised());
-  ASSERT_EQ(static_cast<size_t>(kDefaultChunkCount) + kNumberOfChunks,
-            chunkstore1->chunkstore_set_.size());
-  for (int k = 0; k < kNumberOfChunks; k++) {
-    ASSERT_TRUE(chunkstore1->Has(h_name.at(k)));
-    std::string rec_value("Value");
-    ASSERT_EQ(0, chunkstore1->Load(h_name.at(k), &rec_value));
-  }
-  // creating a new chunkstore that has same root dir but with one of the
-  // hashable chunks modified to fail hash check
-  ASSERT_EQ(0, chunkstore->UpdateChunk(h_name.at(0), "modified content"));
   boost::shared_ptr<VaultChunkStore> chunkstore2(new VaultChunkStore(
       storedir.string(), 1073741824, 0));
   ASSERT_TRUE(chunkstore2->Init());
   test_chunkstore::WaitForInitialisation(chunkstore2, 60000);
   ASSERT_TRUE(chunkstore2->is_initialised());
-  ASSERT_EQ(static_cast<size_t>(kDefaultChunkCount) + kNumberOfChunks - 1,
+  ASSERT_EQ(static_cast<size_t>(kDefaultChunkCount) + kNumberOfChunks,
             chunkstore2->chunkstore_set_.size());
-  ASSERT_FALSE(chunkstore2->Has(h_name.at(0)));
+  for (int k = 0; k < kNumberOfChunks; k++) {
+    ASSERT_TRUE(chunkstore2->Has(h_name.at(k)));
+    std::string rec_value("Value");
+    ASSERT_EQ(0, chunkstore2->Load(h_name.at(k), &rec_value));
+  }
 }
 
 TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreClear) {
@@ -1284,6 +1223,9 @@ TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreCheckAllChunks) {
   ASSERT_EQ(size_t(0), failed_chunk_names.size());
   ASSERT_EQ(0, chunkstore->HashCheckAllChunks(true, &failed_chunk_names));
   ASSERT_EQ(size_t(0), failed_chunk_names.size());
+
+  // TODO(Team#) test treatment of non-hashable chunks in chunk store
+/*
   // Modify four of the hashable files (one in each subdirectory).
   std::string modified_content("modified content");
   ASSERT_EQ(0, chunkstore->UpdateChunk(h_name.at(0), modified_content));
@@ -1338,6 +1280,7 @@ TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreCheckAllChunks) {
   failed_chunk_names.remove(h_name.at(10));
   failed_chunk_names.remove(h_name.at(15));
   ASSERT_EQ(size_t(0), failed_chunk_names.size());
+*/
 }
 
 TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreThreadedStoreAndLoad) {
@@ -1411,93 +1354,6 @@ TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreThreadedStoreAndLoad) {
     result = result && (*load_result.at(i) == 0);
   }
   ASSERT_TRUE(result);
-}
-
-TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreThreadedUpdate) {
-  boost::shared_ptr<VaultChunkStore> chunkstore(new VaultChunkStore(
-      storedir.string(), 1073741824, 0));
-  ASSERT_TRUE(chunkstore->Init());
-  test_chunkstore::WaitForInitialisation(chunkstore, 60000);
-  ASSERT_TRUE(chunkstore->is_initialised());
-  const int kNumberOfChunks = 50;
-  ASSERT_TRUE(test_chunkstore::MakeChunks(kNumberOfChunks, cry_obj, true,
-                                          1000, 32000, &h_size, &h_value,
-                                          &h_name));
-  test_chunkstore::ThreadedTest tester(chunkstore);
-  // Prepare update vectors
-  boost::posix_time::milliseconds update_delay(0);
-  std::vector<boost::shared_ptr<int> > update_result;
-  boost::thread_group update_thread_group;
-  for (int i = 0; i < kNumberOfChunks; ++i) {
-    boost::shared_ptr<int> res(new int(1));  // NOLINT (Fraser) - Incorrect interpretation by lint.
-    update_result.push_back(res);
-  }
-  // Store chunks
-  boost::posix_time::milliseconds store_delay(0);
-  std::vector<boost::shared_ptr<int> > store_result;
-  boost::thread_group store_thread_group;
-  for (int i = 0; i < kNumberOfChunks; ++i) {
-    boost::shared_ptr<int> res(new int(1));  // NOLINT (Fraser) - Incorrect interpretation by lint.
-    store_result.push_back(res);
-    store_thread_group.create_thread(boost::bind(
-        &test_chunkstore::ThreadedTest::Store, tester, store_delay,
-        h_name.at(i), h_value.at(i), store_result.at(i)));
-  }
-  // Start updating chunks in reverse order once first chunk has been stored to
-  // ensure some update failures.
-  while (!chunkstore->Has(h_name.at(0)))
-    boost::this_thread::yield();
-  for (int i = kNumberOfChunks - 1; i >= 0; --i) {
-    update_thread_group.create_thread(boost::bind(
-        &test_chunkstore::ThreadedTest::UpdateChunk, tester, update_delay,
-        h_name.at(i), "Updated", update_result.at(i)));
-  }
-  update_thread_group.join_all();
-  store_thread_group.join_all();
-  // Check all stores returned 0
-  bool result(true);
-  for (int i = 0; i < kNumberOfChunks; ++i)
-    result = result && (*store_result.at(i) == 0);
-  ASSERT_TRUE(result);
-  // Count number of successful updates
-  int successful_updates(0);
-  for (int i = 0; i < kNumberOfChunks; ++i) {
-    if (*update_result.at(i) == 0)
-      ++successful_updates;
-  }
-  // Load back all chunks
-  boost::posix_time::milliseconds load_delay(0);
-  std::vector<boost::shared_ptr<std::string> > load_value;
-  std::vector<boost::shared_ptr<int> > load_result;
-  boost::thread_group load_thread_group;
-  for (int i = 0; i < kNumberOfChunks; ++i) {
-    boost::shared_ptr<std::string> val(new std::string("Value"));
-    load_value.push_back(val);
-    boost::shared_ptr<int> res(new int(1));  // NOLINT (Fraser) - Incorrect interpretation by lint.
-    load_result.push_back(res);
-    load_thread_group.create_thread(boost::bind(
-        &test_chunkstore::ThreadedTest::Load, tester, load_delay,
-        h_name.at(i), load_value.at(i), load_result.at(i)));
-  }
-  load_thread_group.join_all();
-  // Check all loads returned 0 and all values loaded correctly
-  for (int i = 0; i < kNumberOfChunks; ++i) {
-    ASSERT_TRUE((h_value.at(i) == *load_value.at(i)) ||
-                ("Updated" == *load_value.at(i)));
-    result = result && (*load_result.at(i) == 0);
-  }
-  ASSERT_TRUE(result);
-  // Check results match number of successful updates
-  int stored(0), updated(0);
-  for (int i = 0; i < kNumberOfChunks; ++i) {
-    if (h_value.at(i) == (*load_value.at(i)))
-      ++stored;
-    if ("Updated" == (*load_value.at(i)))
-      ++updated;
-  }
-  printf("%i stored, %i updated\n", stored, updated);
-  ASSERT_EQ(kNumberOfChunks, stored + updated);
-  ASSERT_EQ(successful_updates, updated);
 }
 
 TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreThreadedDelete) {
@@ -1743,14 +1599,6 @@ TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreThreadedCheckAll) {
     result = result && (*store_result.at(i) == 0);
   ASSERT_TRUE(result);
   ASSERT_EQ(size_t(0), (*failed_chunks).size());
-  // Amend a chunk to fail and retest
-  ASSERT_EQ(0, chunkstore->UpdateChunk(h_name.at(0), h_value.at(1)));
-  boost::thread check_all_thread1(
-      &test_chunkstore::ThreadedTest::HashCheckAllChunks, tester,
-      check_all_delay, true, failed_chunks, check_all_result);
-  check_all_thread1.join();
-  ASSERT_EQ(size_t(1), (*failed_chunks).size());
-  ASSERT_EQ(h_name.at(0), failed_chunks->front());
 }
 
 TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreThreadedChangeType) {

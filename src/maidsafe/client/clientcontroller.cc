@@ -53,7 +53,7 @@
 
 namespace maidsafe {
 
-CC_CallbackResult::CC_CallbackResult() : result("") {}
+CC_CallbackResult::CC_CallbackResult() : result() {}
 
 void CC_CallbackResult::Reset() {
   result = "";
@@ -81,17 +81,18 @@ ClientController::ClientController() : client_chunkstore_(),
                                        auth_(),
                                        ss_(),
                                        ser_da_(),
-                                       ser_dm_(""),
+                                       ser_dm_(),
                                        db_enc_queue_(),
                                        seh_(),
-                                       messages_(),
+                                       instant_messages_(),
                                        received_messages_(),
                                        rec_msg_mutex_(),
                                        clear_messages_thread_(),
                                        client_store_(),
                                        initialised_(false),
                                        logging_out_(false),
-                                       logged_in_(false) {}
+                                       logged_in_(false),
+                                       imn_() {}
 
 boost::mutex cc_mutex;
 
@@ -161,7 +162,7 @@ int ClientController::Init() {
 #endif
     return -1;
   }
-  auth_.Init(kMaxCryptoThreadCount, kNoOfSystemPackets, sm_);
+  auth_.Init(kNoOfSystemPackets, sm_);
   ss_ = SessionSingleton::getInstance();
   initialised_ = true;
   return 0;
@@ -169,7 +170,7 @@ int ClientController::Init() {
 
 bool ClientController::JoinKademlia() {
   CC_CallbackResult cb;
-  sm_->Init(0, boost::bind(&CC_CallbackResult::CallbackFunc, &cb, _1));
+  sm_->Init(0, boost::bind(&CC_CallbackResult::CallbackFunc, &cb, _1), "");
   WaitForResult(cb);
   GenericResponse result;
   if ((!result.ParseFromString(cb.result)) ||
@@ -219,21 +220,24 @@ int ClientController::ParseDa() {
     Key k = data_atlas.keys(n);
     keys.push_back(k);
   }
-  SessionSingleton::getInstance()->LoadKeys(&keys);
+  ss_->LoadKeys(&keys);
 
   std::list<PublicContact> contacts;
   for (int n = 0; n < data_atlas.contacts_size(); ++n) {
     PublicContact pc = data_atlas.contacts(n);
     contacts.push_back(pc);
   }
-  SessionSingleton::getInstance()->LoadContacts(&contacts);
+  ss_->LoadContacts(&contacts);
 
   std::list<Share> shares;
   for (int n = 0; n < data_atlas.shares_size(); ++n) {
     Share sh = data_atlas.shares(n);
     shares.push_back(sh);
   }
-  SessionSingleton::getInstance()->LoadShares(&shares);
+  ss_->LoadShares(&shares);
+
+  if (data_atlas.has_pd())
+    ss_->SetPd(data_atlas.pd());
 
   DataMap dm_root, dm_shares;
   dm_root = data_atlas.dms(0);
@@ -267,15 +271,15 @@ int ClientController::SerialiseDa() {
 #endif
     return kClientControllerNotInitialised;
   }
-  DataAtlas data_atlas_;
-  data_atlas_.set_root_db_key(ss_->RootDbKey());
+  DataAtlas data_atlas;
+  data_atlas.set_root_db_key(ss_->RootDbKey());
   DataMap root_dm, shares_dm;
   seh_.EncryptDb(kRoot, PRIVATE, "", "", false, &root_dm);
   seh_.EncryptDb(base::TidyPath(kRootSubdir[1][0]), PRIVATE, "", "", false,
                   &shares_dm);
-  DataMap *dm = data_atlas_.add_dms();
+  DataMap *dm = data_atlas.add_dms();
   *dm = root_dm;
-  dm = data_atlas_.add_dms();
+  dm = data_atlas.add_dms();
   *dm = shares_dm;
 #ifdef DEBUG
   // printf("data_atlas_.dms(0).file_hash(): %s\n",
@@ -288,7 +292,7 @@ int ClientController::SerialiseDa() {
   ss_->GetKeys(&keyring);
   while (!keyring.empty()) {
     KeyAtlasRow kar = keyring.front();
-    Key *k = data_atlas_.add_keys();
+    Key *k = data_atlas.add_keys();
     k->set_type(maidsafe::PacketType(kar.type_));
     k->set_id(kar.id_);
     k->set_private_key(kar.private_key_);
@@ -296,12 +300,12 @@ int ClientController::SerialiseDa() {
     k->set_public_key_signature(kar.signed_public_key_);
     keyring.pop_front();
   }
-  printf("ClientController::SerialiseDa() - Finished with Keys.\n");
+//  printf("ClientController::SerialiseDa() - Finished with Keys.\n");
 
   std::vector<maidsafe::mi_contact> contacts;
   ss_->GetContactList(&contacts);
   for (unsigned int n = 0; n < contacts.size(); ++n) {
-    PublicContact *pc = data_atlas_.add_contacts();
+    PublicContact *pc = data_atlas.add_contacts();
     pc->set_pub_name(contacts[n].pub_name_);
     pc->set_pub_key(contacts[n].pub_key_);
     pc->set_full_name(contacts[n].full_name_);
@@ -317,13 +321,13 @@ int ClientController::SerialiseDa() {
     pc->set_rank(contacts[n].rank_);
     pc->set_last_contact(contacts[n].last_contact_);
   }
-  printf("ClientController::SerialiseDa() - Finished with Contacts.\n");
+//  printf("ClientController::SerialiseDa() - Finished with Contacts.\n");
 
   std::list<PrivateShare> ps_list;
   ss_->GetFullShareList(ALPHA, kAll, &ps_list);
   while (!ps_list.empty()) {
     PrivateShare this_ps = ps_list.front();
-    Share *sh = data_atlas_.add_shares();
+    Share *sh = data_atlas.add_shares();
     sh->set_name(this_ps.Name());
     sh->set_msid(this_ps.Msid());
     sh->set_msid_pub_key(this_ps.MsidPubKey());
@@ -342,13 +346,17 @@ int ClientController::SerialiseDa() {
     }
     ps_list.pop_front();
   }
-  printf("ClientController::SerialiseDa() - Finished with Shares.\n");
+//  printf("ClientController::SerialiseDa() - Finished with Shares.\n");
+
+  PersonalDetails *pd = data_atlas.mutable_pd();
+  *pd = ss_->Pd();
+
   ser_da_.clear();
   ser_dm_.clear();
-  data_atlas_.SerializeToString(&ser_da_);
+  data_atlas.SerializeToString(&ser_da_);
   seh_.EncryptString(ser_da_, &ser_dm_);
 
-  printf("ClientController::SerialiseDa() - Serialised.\n");
+//  printf("ClientController::SerialiseDa() - Serialised.\n");
 
   return 0;
 }
@@ -364,7 +372,13 @@ int ClientController::CheckUserExists(const std::string &username,
   }
   ss_->ResetSession();
   ss_->SetDefConLevel(level);
-  return auth_.GetUserInfo(username, pin);
+  int result = auth_.GetUserInfo(username, pin);
+  if (result != kSuccess) {
+    while (auth_.get_smidtimid_result() == kPendingResult) {
+      boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+    }
+  }
+  return result;
 }
 
 bool ClientController::CreateUser(const std::string &username,
@@ -615,14 +629,8 @@ bool ClientController::ValidateUser(const std::string &password) {
 
   // Do BP operations if need be
   if (ss_->PublicUsername() != "") {
-    std::vector<std::string> info;
-    if (GetInfo("", &info) != 0) {
-#ifdef DEBUG
-      printf("ClientController::ValidateUser - Cannot get BP Info.\n");
-#endif
-      ss_->ResetSession();
-      return false;
-    }
+    clear_messages_thread_ = boost::thread(
+                             &ClientController::ClearStaleMessages, this);
   }
 
 //  // CHANGE CONNECTION STATUS
@@ -633,8 +641,6 @@ bool ClientController::ValidateUser(const std::string &password) {
 //  }
 //  ss_->SetConnectionStatus(connection_status);
 
-  clear_messages_thread_ = boost::thread(&ClientController::ClearStaleMessages,
-                                         this);
   logged_in_ = true;
   return true;
 }
@@ -686,6 +692,7 @@ bool ClientController::Logout() {
     return false;
   }
   logging_out_ = true;
+  clear_messages_thread_.join();
 
 //  int connection_status(0);
 //  int n = ChangeConnectionStatus(connection_status);
@@ -702,7 +709,6 @@ bool ClientController::Logout() {
     return false;
   }
 
-  clear_messages_thread_.join();
   while (sm_->NotDoneWithUploading()) {
     boost::this_thread::sleep(boost::posix_time::seconds(1));
   }
@@ -712,7 +718,11 @@ bool ClientController::Logout() {
 
   file_system::UnMount(ss_->SessionName(), ss_->DefConLevel());
   ss_->ResetSession();
-  messages_.clear();
+  instant_messages_.clear();
+  {
+    boost::mutex::scoped_lock loch(rec_msg_mutex_);
+    received_messages_.clear();
+  }
   client_chunkstore_->Clear();
   ser_da_.clear();
   ser_dm_.clear();
@@ -778,6 +788,7 @@ bool ClientController::ChangeUsername(const std::string &new_username) {
 #ifdef DEBUG
     printf("CC::ChangeUsername - Not initialised.\n");
 #endif
+    printf("CC::ChangeUsername - Not initialised.\n");
     return false;
   }
   SerialiseDa();
@@ -822,8 +833,7 @@ bool ClientController::ChangePassword(const std::string &new_password) {
 // Buffer Packet Operations //
 //////////////////////////////
 
-bool ClientController::CreatePublicUsername(
-    const std::string &public_username) {
+bool ClientController::CreatePublicUsername(const std::string &pub_username) {
   if (!initialised_) {
 #ifdef DEBUG
     printf("CC::CreatePublicUsername - Not initialised.\n");
@@ -837,7 +847,7 @@ bool ClientController::CreatePublicUsername(
     return false;
   }
 
-  int result = auth_.CreatePublicName(public_username);
+  int result = auth_.CreatePublicName(pub_username);
   if (result != kSuccess) {
 #ifdef DEBUG
     printf("CC::CreatePublicUsername - Error in CreatePublicName.\n");
@@ -852,6 +862,8 @@ bool ClientController::CreatePublicUsername(
     return false;
   }
 
+  clear_messages_thread_ = boost::thread(
+                           &ClientController::ClearStaleMessages, this);
   return true;
 }
 
@@ -916,35 +928,37 @@ int ClientController::HandleMessages(
 #endif
     return kClientControllerNotInitialised;
   }
+
   int result = 0;
-#ifdef DEBUG
-      printf("=========================================\n");
-#endif
   while (!valid_messages->empty()) {
+#ifdef DEBUG
+//    printf("CC::HandleMessages - Sender: %s\n", valid_messages->front().sender().c_str());
+//    printf("CC::HandleMessages - Index: %s\n", HexSubstr(valid_messages->front().index()).c_str());
+//    printf("CC::HandleMessages - Type: %d\n", valid_messages->front().type());
+//    printf("CC::HandleMessages - Time: %d\n", valid_messages->front().timestamp());
+#endif
+
     std::map<std::string, boost::uint32_t>::iterator it;
     rec_msg_mutex_.lock();
-#ifdef DEBUG
-    printf("ClientController::HandleMessages - received_messages_ size: %d\n",
-           received_messages_.size());
-#endif
-    it = received_messages_.find(valid_messages->front().message());
+//#ifdef DEBUG
+//    printf("ClientController::HandleMessages - received_messages_ size: %d\n",
+//           received_messages_.size());
+//#endif
+    it = received_messages_.find(valid_messages->front().SerializeAsString());
     if (it != received_messages_.end()) {
 #ifdef DEBUG
-      printf("ClientController::HandleMessages - Previously received message.");
+      printf("ClientController::HandleMessages - Previously received msg.\n");
 #endif
       rec_msg_mutex_.unlock();
+      valid_messages->pop_front();
       continue;
     }
 
+    boost::uint32_t now = base::get_epoch_time();
     received_messages_.insert(std::pair<std::string, boost::uint32_t>(
-                              valid_messages->front().message(),
-                              valid_messages->front().timestamp()));
+                              valid_messages->front().SerializeAsString(),
+                              now));
     rec_msg_mutex_.unlock();
-#ifdef DEBUG
-    printf("ClientController::HandleMessages timestamp: %d\n",
-           valid_messages->front().timestamp());
-    printf("=========================================\n");
-#endif
     switch (valid_messages->front().type()) {
       case ADD_CONTACT_RQST:
       case INSTANT_MSG:
@@ -958,31 +972,42 @@ int ClientController::HandleMessages(
 }
 
 void ClientController::ClearStaleMessages() {
-  int recheck_interval = 100;  // milliseconds
-  int total_sleep = 10000;  // milliseconds
   while (!logging_out_) {
-#ifdef DEBUG
-    printf("ClientController::ClearStaleMessages timestamp: %d\n",
-           base::get_epoch_time());
-#endif
-    if (ss_->PublicUsername() == "")
-      return;
-    boost::mutex::scoped_lock loch(rec_msg_mutex_);
-    boost::uint32_t now = base::get_epoch_time() - 10;
-    std::map<std::string, boost::uint32_t>::iterator it;
-    for (it = received_messages_.begin();
-         it != received_messages_.end(); ++it) {
-      if (it->second > now)
-        break;
+    int round(0);
+    while (round < 2) {
+      if (!logging_out_) {
+        boost::this_thread::sleep(boost::posix_time::seconds(5));
+        ++round;
+      } else {
+        return;
+      }
     }
-    received_messages_.erase(received_messages_.begin(), it);
-    int count = 0;
-    while (!logging_out_ && count < total_sleep) {
-      boost::this_thread::sleep(boost::posix_time::milliseconds(
-          recheck_interval));
-      count += recheck_interval;
+    {
+      boost::mutex::scoped_lock loch(rec_msg_mutex_);
+#ifdef DEBUG
+//      printf("CC::ClearStaleMessages timestamp: %d %d\n",
+//             base::get_epoch_time(), received_messages_.size());
+#endif
+      boost::uint32_t now = base::get_epoch_time() - 10;
+      std::map<std::string, boost::uint32_t>::iterator it;
+      std::vector<std::string> msgs;
+      for (it = received_messages_.begin();
+           it != received_messages_.end(); ++it) {
+        if (it->second < now)
+          msgs.push_back(it->first);
+//        printf("CC::ClearStaleMessages - Message: %d\n", it->second);
+      }
+      for (size_t n = 0 ; n < msgs.size(); ++n) {
+        received_messages_.erase(msgs[n]);
+//        size_t a = received_messages_.erase(msgs[n]);
+//        printf("CC::ClearStaleMessages erased %d with result %d\n", n, a);
+      }
+#ifdef DEBUG
+//      printf("CC::ClearStaleMessages() - erased %d\n", msgs.size());
+#endif
     }
   }
+  printf("CC::ClearStaleMessages() - Left\n");
 }
 
 int ClientController::HandleDeleteContactNotification(
@@ -1014,8 +1039,8 @@ int ClientController::HandleReceivedShare(
     return kClientControllerNotInitialised;
   }
 #ifdef DEBUG
-  printf("Dir key: %s", psn.dir_db_key().c_str());
-  printf("Public key: %s", psn.public_key().c_str());
+  printf("Dir key: %s", HexSubstr(psn.dir_db_key()).c_str());
+  printf("Public key: %s", HexSubstr(psn.public_key()).c_str());
 #endif
 
   std::vector<std::string> attributes;
@@ -1150,20 +1175,30 @@ int ClientController::HandleInstantMessage(
 #endif
     return kClientControllerNotInitialised;
   }
-#ifdef DEBUG
-  printf("INSTANT MESSAGE received\n");
-  printf("Sender: %s\n", vbpm.sender().c_str());
-#endif
+//#ifdef DEBUG
+//  printf("INSTANT MESSAGE received - ");
+//  printf("Sender: %s\n", vbpm.sender().c_str());
+//#endif
   InstantMessage im;
   if (im.ParseFromString(vbpm.message())) {
-      messages_.push_back(im);
+      instant_messages_.push_back(im);
 #ifdef DEBUG
-      printf("%s\n", im.message().c_str());
+//      printf("CC::HandleInstantMessage - %s\n", im.sender().c_str());
+//      printf("CC::HandleInstantMessage - %s\n", im.message().c_str());
+//      printf("CC::HandleInstantMessage - %d\n", im.date());
+//      if (im.has_conversation())
+//        printf("CC::HandleInstantMessage - %s\n", im.conversation().c_str());
+//      if (im.has_contact_notification())
+//        printf("CC::HandleInstantMessage - contact_notification\n");
+//      if (im.has_instantfile_notification())
+//        printf("CC::HandleInstantMessage - instantfile_notification\n");
+//      if (im.has_privateshare_notification())
+//        printf("CC::HandleInstantMessage - privateshare_notification\n");
 #endif
     return 0;
-  } else {
-    return -1;
   }
+
+  return -1;
 }
 
 int ClientController::AddInstantFile(
@@ -1452,8 +1487,8 @@ int ClientController::GetInstantMessages(std::list<InstantMessage> *messages) {
 #endif
     return kClientControllerNotInitialised;
   }
-  *messages = messages_;
-  messages_.clear();
+  *messages = instant_messages_;
+  instant_messages_.clear();
   return 0;
 }
 
@@ -1542,6 +1577,49 @@ int ClientController::SendInstantFile(std::string *filename,
 
   return res;
 }
+
+void ClientController::onInstantMessage(const std::string &message,
+                                        const boost::uint32_t&,
+                                        const boost::int16_t&,
+                                        const float&) {
+  GenericPacket gp;
+  if (!gp.ParseFromString(message)) {
+    return;
+  }
+
+  BufferPacketMessage bpm;
+  crypto::Crypto co;
+  co.set_symm_algorithm(crypto::AES_256);
+  if (!bpm.ParseFromString(gp.data())) {
+    return;
+  }
+
+  std::string senders_pk = ss_->GetContactPublicKey(bpm.sender_id());
+  if (senders_pk.empty()) {
+    return;
+  }
+
+  if (!co.AsymCheckSig(gp.data(), gp.signature(), senders_pk,
+      crypto::STRING_STRING)) {
+    return;
+  }
+  std::string aes_key = co.AsymDecrypt(bpm.rsaenc_key(), "",
+                        maidsafe::SessionSingleton::getInstance()->
+                        PrivateKey(maidsafe::MPID), crypto::STRING_STRING);
+  std::string instant_message(co.SymmDecrypt(bpm.aesenc_message(),
+                              "", crypto::STRING_STRING, aes_key));
+  InstantMessage im;
+  if (!im.ParseFromString(instant_message)) {
+    return;
+  }
+  imn_(im);
+//  analyseMessage(im);
+}
+
+void ClientController::SetIMNotifier(IMNotifier imn) {
+  imn_ = imn;
+}
+
 
 ////////////////////////
 // Contact Operations //
@@ -1734,8 +1812,12 @@ int ClientController::DeleteContact(const std::string &public_name) {
 
 std::string ClientController::GenerateBPInfo() {
   std::vector<std::string> contacts;
-  if (ss_->GetPublicUsernameList(&contacts) != 0)
+  if (ss_->GetPublicUsernameList(&contacts) != 0) {
+#ifdef DEBUG
+    printf("CC::GenerateBPInfo() - Failed to get list of contacts.\n");
+#endif
     return "";
+  }
   BufferPacketInfo bpi;
   bpi.set_owner(ss_->Id(MPID));
   bpi.set_owner_publickey(ss_->PublicKey(MPID));
@@ -1744,40 +1826,7 @@ std::string ClientController::GenerateBPInfo() {
   for (size_t n = 0; n < contacts.size(); ++n) {
     bpi.add_users(co.Hash(contacts[n], "", crypto::STRING_STRING, false));
   }
-  EndPoint *ep = bpi.mutable_ep();
-  *ep = ss_->Ep();
-  PersonalDetails *pd = bpi.mutable_pd();
-  *pd = ss_->Pd();
-  std::string ser_bpi;
-  bpi.SerializeToString(&ser_bpi);
-  return ser_bpi;
-}
-
-std::string ClientController::GenerateBPInfo(
-    const std::vector<std::string> &info) {
-  std::vector<std::string> contacts;
-  if (ss_->GetPublicUsernameList(&contacts) != 0)
-    return "";
-  BufferPacketInfo bpi;
-  bpi.set_owner(ss_->Id(MPID));
-  bpi.set_owner_publickey(ss_->PublicKey(MPID));
-  crypto::Crypto co;
-  co.set_hash_algorithm(crypto::SHA_512);
-  for (size_t n = 0; n < contacts.size(); ++n) {
-    bpi.add_users(co.Hash(contacts[n], "", crypto::STRING_STRING, false));
-  }
-  EndPoint *ep = bpi.mutable_ep();
-  *ep = ss_->Ep();
-  PersonalDetails *pd = bpi.mutable_pd();
-  pd->set_full_name(info[0]);
-  pd->set_phone_number(info[1]);
-  pd->set_birthday(info[2]);
-  pd->set_gender(info[3]);
-  pd->set_language(info[4]);
-  pd->set_city(info[5]);
-  pd->set_country(info[6]);
-  std::string ser_bpi;
-  bpi.SerializeToString(&ser_bpi);
+  std::string ser_bpi(bpi.SerializeAsString());
   return ser_bpi;
 }
 
@@ -1839,8 +1888,8 @@ int ClientController::GetSortedShareList(
 }
 
 int ClientController::CreateNewShare(const std::string &name,
-                      const std::set<std::string> &admins,
-                      const std::set<std::string> &readonlys) {
+                                     const std::set<std::string> &admins,
+                                     const std::set<std::string> &readonlys) {
   if (!initialised_) {
 #ifdef DEBUG
     printf("CC::CreateNewShare - Not initialised.\n");
@@ -1870,8 +1919,8 @@ int ClientController::CreateNewShare(const std::string &name,
   std::vector<std::string> attributes;
   attributes.push_back(name);
 #ifdef DEBUG
-  printf("Public key: %s\n", cmsidr.public_key().c_str());
-  printf("MSID: %s\n", cmsidr.name().c_str());
+  printf("Public key: %s\n", HexSubstr(cmsidr.public_key()).c_str());
+  printf("MSID: %s\n", HexSubstr(cmsidr.name()).c_str());
 #endif
   // MSID & keys are needed here
   attributes.push_back(cmsidr.name());
@@ -1982,82 +2031,6 @@ int ClientController::CreateNewShare(const std::string &name,
       return -22;
     }
   }
-
-  return 0;
-}
-
-/////////////////////
-// Info Operations //
-/////////////////////
-
-int ClientController::GetInfo(const std::string &public_username,
-                              std::vector<std::string> *info) {
-  if (!logged_in_) {
-    if (!public_username.empty() && info == NULL)
-      return kClientControllerError;
-    else
-      info->clear();
-    BPCallback bpc;
-    ContactInfoNotifier cin = boost::bind(&BPCallback::ContactInfoCallback,
-                              &bpc, _1, _2, _3, _4);
-    bool own(true);
-    if (public_username.empty()) {
-      sm_->OwnInfo(cin);
-    } else {
-      sm_->ContactInfo(public_username, ss_->Id(MPID), cin);
-      own = false;
-    }
-    while (bpc.result == kGeneralError)
-      boost::this_thread::sleep(boost::posix_time::milliseconds(250));
-
-    if (bpc.result != kSuccess) {
-  #ifdef DEBUG
-      printf("CC::GetInfo - Failed to get info %d\n", bpc.result);
-  #endif
-      return bpc.result;
-    }
-
-    if (!own) {
-      info->push_back(bpc.personal_details.full_name());
-      info->push_back(bpc.personal_details.phone_number());
-      info->push_back(bpc.personal_details.gender());
-      info->push_back(bpc.personal_details.language());
-      info->push_back(bpc.personal_details.city());
-      info->push_back(bpc.personal_details.country());
-    } else {
-#ifdef DEBUG
-      printf("Putting stuff to the session - %s\n",
-             bpc.personal_details.full_name().c_str());
-#endif
-      ss_->SetPd(bpc.personal_details);
-      ss_->SetEp(bpc.end_point);
-    }
-  }
-
-  return 0;
-}
-
-int ClientController::SetInfo(const std::vector<std::string> &info) {
-  int n = sm_->ModifyBPInfo(GenerateBPInfo(info));
-  if (n != 0) {
-#ifdef DEBUG
-    printf("CC::SetInfo - Failed to set info.\n");
-#endif
-    return n;
-  }
-
-  printf("CC::SetInfo - %s\n", info[0].c_str());
-
-  PersonalDetails pd;
-  pd.set_full_name(info[0]);
-  pd.set_phone_number(info[1]);
-  pd.set_birthday(info[2]);
-  pd.set_gender(info[3]);
-  pd.set_language(info[4]);
-  pd.set_city(info[5]);
-  pd.set_country(info[6]);
-
-  ss_->SetPd(pd);
 
   return 0;
 }
@@ -2383,7 +2356,7 @@ int ClientController::GetDb(const std::string &orig_path,
   dah->GetDbPath(path, CONNECT, &db_path);
   PathDistinction(parent_path, msid);
 #ifdef DEBUG
-  printf("\t\tMSID: %s\n", msid->c_str());
+  printf("\t\tMSID: %s\n", HexSubstr(*msid).c_str());
 #endif
 
   if (fs::exists(db_path) && *msid == "") {
@@ -2419,7 +2392,8 @@ int ClientController::SaveDb(const std::string &db_path,
                              const std::string &msid,
                              const bool &immediate_save) {
 #ifdef DEBUG
-  printf("\t\tCC::SaveDb %s with MSID = %s\n", db_path.c_str(), msid.c_str());
+  printf("\t\tCC::SaveDb %s with MSID = %s\n", db_path.c_str(),
+         HexSubstr(msid).c_str());
 #endif
   std::string parent_path_(""), dir_key_("");
   fs::path temp_(db_path);
@@ -2575,10 +2549,10 @@ bool ClientController::ReadOnly(const std::string &path, bool gui) {
 //  fs::path private_shares_(base::TidyPath(kSharesSubdir[0][0]), fs::native);
 //  if (parnt_path_ == private_shares_) {
 //    return false
-    std::string msid("");
+    std::string msid;
     int n = PathDistinction(path, &msid);
     if (n == 2 && msid != "") {
-      std::string pub_key(""), priv_key("");
+      std::string pub_key, priv_key;
       int result = ss_->GetShareKeys(msid, &pub_key, &priv_key);
       if (result != 0) {
 #ifdef DEBUG
@@ -2652,7 +2626,7 @@ int ClientController::mkdir(const std::string &path) {
   printf("\t\tCC::mkdir %s\n", path.c_str());
 #endif
   DirType dir_type;
-  std::string msid("");
+  std::string msid;
   if (GetDb(path, &dir_type, &msid)) {
 #ifdef DEBUG
     printf("\t\tIn CC::mkdir, GetDb (%s) failed.\n", path.c_str());
@@ -2674,15 +2648,16 @@ int ClientController::mkdir(const std::string &path) {
   }
 
 #ifdef DEBUG
-  printf("MSID after MakeElement: %s -- type: %i\n", msid.c_str(), dir_type);
+  printf("MSID after MakeElement: %s -- type: %i\n",
+         HexSubstr(msid).c_str(), dir_type);
 #endif
   fs::path pp(path);
   msid.clear();
   PathDistinction(pp.parent_path().string(), &msid);
   dir_type = GetDirType(pp.parent_path().string());
 #ifdef DEBUG
-  printf("MSID after PathDis parent: %s. Path: %s -- type: %i\n", msid.c_str(),
-    pp.parent_path().string().c_str(), dir_type);
+  printf("MSID after PathDis parent: %s. Path: %s -- type: %i\n",
+         HexSubstr(msid).c_str(), pp.parent_path().string().c_str(), dir_type);
 #endif
   bool immediate_save = true;
   if (msid == "") {
@@ -2706,8 +2681,8 @@ int ClientController::mkdir(const std::string &path) {
   PathDistinction(imaginary_.string(), &msid);
   dir_type = GetDirType(imaginary_.string());
 #ifdef DEBUG
-  printf("MSID after imaginary string: %s -- type: %i\n", msid.c_str(),
-    dir_type);
+  printf("MSID after imaginary string: %s -- type: %i\n",
+         HexSubstr(msid).c_str(), dir_type);
 #endif
   immediate_save = true;
   if (msid == "")
@@ -2739,8 +2714,8 @@ int ClientController::rename(const std::string &path,
 #endif
   DirType dir_type;
   DirType db_type2;
-  std::string msid("");
-  std::string msid2("");
+  std::string msid;
+  std::string msid2;
   if (GetDb(path, &dir_type, &msid) || GetDb(path2, &db_type2, &msid2)) {
 #ifdef DEBUG
     printf("\t\tCC::rename failed to get one of the dbs\n");
@@ -2810,7 +2785,7 @@ int ClientController::rmdir(const std::string &path) {
   printf("\t\tCC::rmdir %s\n", path.c_str());
 #endif
   DirType dir_type;
-  std::string msid("");
+  std::string msid;
   if (GetDb(path, &dir_type, &msid))
     return -1;
   std::map<std::string, ItemType> children;
@@ -2853,7 +2828,7 @@ int ClientController::getattr(const std::string &path, std::string &ser_mdm) {
   printf("\t\tCC::getattr %s\n", path.c_str());
 #endif
   DirType dir_type;
-  std::string msid("");
+  std::string msid;
   if (GetDb(path, &dir_type, &msid))
     return -1;
   boost::scoped_ptr<DataAtlasHandler> dah_(new DataAtlasHandler());
@@ -2876,7 +2851,7 @@ int ClientController::readdir(const std::string &path,  // NOLINT
   printf("\t\tCC::readdir %s\n", path.c_str());
 #endif
   DirType dir_type;
-  std::string msid("");
+  std::string msid;
   if (GetDb(path, &dir_type, &msid))
     return -1;
   boost::scoped_ptr<DataAtlasHandler> dah_(new DataAtlasHandler());
@@ -2896,7 +2871,7 @@ int ClientController::mknod(const std::string &path) {
   printf("\t\tCC::mknod %s\n", path.c_str());
 #endif
   DirType dir_type;
-  std::string msid("");
+  std::string msid;
   if (GetDb(path, &dir_type, &msid))
     return -1;
 #ifdef DEBUG
@@ -2929,7 +2904,7 @@ int ClientController::unlink(const std::string &path) {
   printf("\t\tCC::unlink %s\n", path.c_str());
 #endif
   DirType dir_type;
-  std::string msid("");
+  std::string msid;
   if (GetDb(path, &dir_type, &msid))
     return -1;
   if (RemoveElement(path))
@@ -2965,8 +2940,8 @@ int ClientController::link(const std::string &path, const std::string &path2) {
 #endif
   DirType dir_type;
   DirType db_type2;
-  std::string msid("");
-  std::string msid2("");
+  std::string msid;
+  std::string msid2;
   if (GetDb(path, &dir_type, &msid) || GetDb(path2, &db_type2, &msid2))
     return -1;
   std::string ms_old_rel_entry_ = path;
@@ -3009,8 +2984,8 @@ int ClientController::cpdir(const std::string &path,
 #endif
   DirType dir_type;
   DirType db_type2;
-  std::string msid("");
-  std::string msid2("");
+  std::string msid;
+  std::string msid2;
   if (GetDb(path, &dir_type, &msid) || GetDb(path2, &db_type2, &msid2))
     return -1;
   std::string ms_old_rel_entry_ = path;
@@ -3074,7 +3049,7 @@ int ClientController::utime(const std::string &path) {
   printf("\t\tCC::utime %s\n", path.c_str());
 #endif
   DirType dir_type;
-  std::string msid("");
+  std::string msid;
   if (GetDb(path, &dir_type, &msid))
     return -1;
   std::string thepath = path;
@@ -3110,7 +3085,7 @@ int ClientController::atime(const std::string &path) {
   printf("\t\tCC::atime %s\n", path.c_str());
 #endif
   DirType dir_type;
-  std::string msid("");
+  std::string msid;
   if (GetDb(path, &dir_type, &msid))
     return -1;
   std::string thepath = path;
@@ -3138,7 +3113,7 @@ int ClientController::open(const std::string &path) {
   printf("\t\tCC::open %s\n", path.c_str());
 #endif
   DirType dir_type;
-  std::string msid("");
+  std::string msid;
   if (GetDb(path, &dir_type, &msid))
     return -1;
   return RetrieveElement(path);
@@ -3155,7 +3130,7 @@ int ClientController::read(const std::string &path) {
   printf("\t\tCC::read %s\n", path.c_str());
 #endif
   DirType dir_type;
-  std::string msid("");
+  std::string msid;
   if (GetDb(path, &dir_type, &msid))
     return -1;
   return RetrieveElement(path);
@@ -3172,7 +3147,7 @@ int ClientController::write(const std::string &path) {
   printf("\t\tCC::write %s\n", path.c_str());
 #endif
   DirType dir_type;
-  std::string msid("");
+  std::string msid;
   if (GetDb(path, &dir_type, &msid)) {
 #ifdef DEBUG
     printf("\t\tCC::write GetDb failed.\n");

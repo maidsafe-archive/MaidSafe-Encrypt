@@ -40,11 +40,11 @@
 #include "tests/maidsafe/localvaults.h"
 
 static std::vector< boost::shared_ptr<maidsafe_vault::PDVault> > pdvaults_;
-static const int kNetworkSize_ = 16;
+static const int kNetworkSize_ = kad::K;
 
 class KadCB {
  public:
-  KadCB() : result("") {}
+  KadCB() : result() {}
   void CallbackFunc(const std::string &res) {
     base::GeneralResponse result_msg;
     if (!result_msg.ParseFromString(res)) {
@@ -66,28 +66,32 @@ class BPCallback {
   }
   void BPGetMsgs_CB(
       const maidsafe::ReturnCode &res,
-      const std::list<maidsafe::ValidatedBufferPacketMessage> &rec_msgs) {
-    result = res;
-    msgs = rec_msgs;
-  }
-  void ContactInfo_CB(const maidsafe::ReturnCode &res,
-                      const maidsafe::EndPoint &ep,
-                      const maidsafe::PersonalDetails &pd,
-                      const boost::uint32_t &st) {
-    result = res;
-    end_point = ep;
-    personal_details = pd;
-    status = st;
+      const std::list<maidsafe::ValidatedBufferPacketMessage> &rec_msgs,
+      bool b) {
+    if (b) {
+      result = res;
+      msgs.clear();
+      std::set<std::string>::iterator it;
+      for (it = vbpm_set.begin(); it != vbpm_set.end(); ++it) {
+        maidsafe::ValidatedBufferPacketMessage vbpm;
+        vbpm.ParseFromString(*it);
+        msgs.push_back(vbpm);
+      }
+    } else {
+      msgs.clear();
+      msgs = rec_msgs;
+      std::list<maidsafe::ValidatedBufferPacketMessage>::iterator it;
+      for (it = msgs.begin(); it != msgs.end(); ++it)
+        vbpm_set.insert(it->SerializeAsString());
+    }
   }
   void Reset() {
     result = maidsafe::kGeneralError;
     msgs.clear();
   }
+  std::set<std::string> vbpm_set;
   maidsafe::ReturnCode result;
   std::list<maidsafe::ValidatedBufferPacketMessage> msgs;
-  maidsafe::EndPoint end_point;
-  maidsafe::PersonalDetails personal_details;
-  boost::uint32_t status;
 };
 
 class CBPHandlerTest : public testing::Test {
@@ -189,7 +193,7 @@ TEST_F(CBPHandlerTest, FUNC_MAID_TestBPHOperations) {
                                       owner_pubkey, owner_privkey};
 
   std::vector<std::string> users;
-  cbph->ModifyOwnerInfo(bpip, 0, users, boost::bind(
+  cbph->ModifyOwnerInfo(bpip, users, boost::bind(
                         &BPCallback::BPOperation_CB, &cb, _1), trans->GetID());
   while (cb.result == -1)
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
@@ -222,35 +226,27 @@ TEST_F(CBPHandlerTest, FUNC_MAID_TestBPHOperations) {
   while (cb.result == -1)
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   ASSERT_EQ(maidsafe::kBPAddMessageError, cb.result);
-  printf("Step 3a\n");
+  printf("Step 4\n");
 
   cb.Reset();
-  cbph->ContactInfo(bpip1, sender_id, "publicname", owner_pubkey, boost::bind(
-                    &BPCallback::ContactInfo_CB, &cb, _1, _2, _3, 4),
-                    trans->GetID());
-  while (cb.result == -1)
-    boost::this_thread::sleep(boost::posix_time::milliseconds(500));
-  ASSERT_EQ(maidsafe::kGetBPInfoError, cb.result);
-  printf("Step 3b\n");
-
-  cb.Reset();
-  cbph->GetMessages(bpip, boost::bind(&BPCallback::BPGetMsgs_CB, &cb, _1, _2),
+  cbph->GetMessages(bpip,
+                    boost::bind(&BPCallback::BPGetMsgs_CB, &cb, _1, _2, _3),
                     trans->GetID());
   while (cb.result == -1)
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   ASSERT_EQ(maidsafe::kSuccess, cb.result);
   ASSERT_TRUE(cb.msgs.empty());
-  printf("Step 4\n");
+  printf("Step 6\n");
 
   users.push_back(cryp.Hash(sender_id, "", crypto::STRING_STRING, false));
   cb.Reset();
 
-  cbph->ModifyOwnerInfo(bpip, 5, users, boost::bind(
+  cbph->ModifyOwnerInfo(bpip, users, boost::bind(
                         &BPCallback::BPOperation_CB, &cb, _1), trans->GetID());
   while (cb.result == -1)
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   ASSERT_EQ(maidsafe::kSuccess, cb.result);
-  printf("Step 5\n");
+  printf("Step 7\n");
 
   cb.Reset();
 
@@ -260,22 +256,11 @@ TEST_F(CBPHandlerTest, FUNC_MAID_TestBPHOperations) {
   while (cb.result == -1)
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   ASSERT_EQ(maidsafe::kSuccess, cb.result);
-  printf("Step 6a\n");
+  printf("Step 8\n");
 
   cb.Reset();
-  cbph->ContactInfo(bpip1, sender_id, recv_id, owner_pubkey, boost::bind(
-                    &BPCallback::ContactInfo_CB, &cb, _1, _2, _3, _4),
-                    trans->GetID());
-  while (cb.result == -1)
-    boost::this_thread::sleep(boost::posix_time::milliseconds(500));
-  ASSERT_EQ(maidsafe::kSuccess, cb.result);
-  ASSERT_EQ(boost::uint32_t(5), cb.status);
-  ASSERT_EQ(knode->host_ip(), cb.end_point.ip());
-  ASSERT_EQ(knode->host_port(), cb.end_point.port());
-  printf("Step 6b\n");
-
-  cb.Reset();
-  cbph->GetMessages(bpip, boost::bind(&BPCallback::BPGetMsgs_CB, &cb, _1, _2),
+  cbph->GetMessages(bpip,
+                    boost::bind(&BPCallback::BPGetMsgs_CB, &cb, _1, _2, _3),
                     trans->GetID());
   while (cb.result == -1)
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
@@ -283,26 +268,27 @@ TEST_F(CBPHandlerTest, FUNC_MAID_TestBPHOperations) {
   ASSERT_EQ(size_t(1), cb.msgs.size());
   ASSERT_EQ("Hello World", cb.msgs.front().message());
   ASSERT_EQ(sender_id, cb.msgs.front().sender());
-  printf("Step 7\n");
+  printf("Step 10\n");
 
   // Request BPs not belonging to the sender
   bpip1.sign_id = bpip.sign_id;
   bpip1.public_key = bpip.public_key;
   cb.Reset();
-  cbph->GetMessages(bpip1, boost::bind(&BPCallback::BPGetMsgs_CB, &cb, _1, _2),
+  cbph->GetMessages(bpip1,
+                    boost::bind(&BPCallback::BPGetMsgs_CB, &cb, _1, _2, _3),
                     trans->GetID());
   while (cb.result == -1)
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   ASSERT_EQ(maidsafe::kBPMessagesRetrievalError, cb.result);
-  printf("Step 8\n");
+  printf("Step 11\n");
 
   cb.Reset();
-  cbph->ModifyOwnerInfo(bpip1, 0, users, boost::bind(
+  cbph->ModifyOwnerInfo(bpip1, users, boost::bind(
                         &BPCallback::BPOperation_CB, &cb, _1), trans->GetID());
   while (cb.result == -1)
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   ASSERT_EQ(maidsafe::kModifyBPError, cb.result);
-  printf("Step 9\n");
+  printf("Step 12\n");
 }
 
 int main(int argc, char **argv) {

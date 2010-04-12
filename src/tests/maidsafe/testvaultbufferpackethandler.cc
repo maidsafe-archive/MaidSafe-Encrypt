@@ -74,7 +74,6 @@ TEST_F(VaultBufferPacketHandlerTest, BEH_MAID_ChangeOwnerInfo) {
   maidsafe::BufferPacketInfo bpi;
   bpi.set_owner("test bufferpacket");
   bpi.set_owner_publickey(public_key);
-  bpi.set_online(1);
   bpi.add_users(testuser);
   bpi.add_users("newuser");
   maidsafe::BufferPacket bp;
@@ -94,16 +93,8 @@ TEST_F(VaultBufferPacketHandlerTest, BEH_MAID_ChangeOwnerInfo) {
   maidsafe::BufferPacketInfo bpi_up;
   bpi_up.ParseFromString(new_gp.data());
   ASSERT_EQ("test bufferpacket", bpi_up.owner());
-  ASSERT_EQ(1, bpi_up.online());
   ASSERT_EQ(2, bpi_up.users_size());
-  ASSERT_FALSE(bpi_up.has_ep());
-  ASSERT_FALSE(bpi_up.has_pd());
 
-  maidsafe::PersonalDetails *pd = bpi.mutable_pd();
-  pd->Clear();
-  maidsafe::EndPoint *ep = bpi.mutable_ep();
-  ep->set_ip("132.248.59.1");
-  ep->set_port(12345);
   bpi.SerializeToString(&ser_bpi);
   info->set_data(ser_bpi);
   info->set_signature(cry_obj.AsymSign(ser_bpi, "", private_key,
@@ -114,10 +105,7 @@ TEST_F(VaultBufferPacketHandlerTest, BEH_MAID_ChangeOwnerInfo) {
   new_gp = bp.owner_info(0);
   bpi_up.ParseFromString(new_gp.data());
   ASSERT_EQ("test bufferpacket", bpi_up.owner());
-  ASSERT_EQ(1, bpi_up.online());
   ASSERT_EQ(2, bpi_up.users_size());
-  ASSERT_TRUE(bpi_up.has_ep());
-  ASSERT_TRUE(bpi_up.has_pd());
 }
 
 TEST_F(VaultBufferPacketHandlerTest, BEH_MAID_Add_Get_Clear_Msgs) {
@@ -257,70 +245,4 @@ TEST_F(VaultBufferPacketHandlerTest, BEH_MAID_Add_Get_ReqMsgs) {
   ASSERT_TRUE(vbph.IsOwner("test bufferpacket", bp_updated.owner_info(0)));
   ASSERT_TRUE(vbph.GetMessages(&str_bp_updated, &msgs));
   ASSERT_EQ(size_t(1), msgs.size());
-}
-
-TEST_F(VaultBufferPacketHandlerTest, BEH_MAID_GetStatus) {
-  // Create a BP
-  maidsafe::BufferPacketInfo bpi;
-  bpi.set_owner(testuser);
-  bpi.set_owner_publickey(public_key);
-  bpi.set_online(1);
-  bpi.add_users(cry_obj.Hash("newuser", "", crypto::STRING_STRING, false));
-  maidsafe::EndPoint *ep = bpi.mutable_ep();
-  ep->set_ip("132.248.59.1");
-  ep->set_port(12345);
-  maidsafe::PersonalDetails *pd = bpi.mutable_pd();
-  pd->set_full_name("Juanbert Tupadre");
-  pd->set_phone_number("0987654321");
-  pd->set_birthday("01/01/1970");
-  pd->set_gender("Male");
-  pd->set_language("English");
-  pd->set_city("Troon");
-  pd->set_country("United Kingdom of Her Majesty the Queen");
-  maidsafe::BufferPacket bp;
-  maidsafe::GenericPacket *info = bp.add_owner_info();
-  std::string ser_bpi;
-  bpi.SerializeToString(&ser_bpi);
-  info->set_data(ser_bpi);
-  info->set_signature(cry_obj.AsymSign(ser_bpi, "", private_key,
-                      crypto::STRING_STRING));
-  std::string ser_gp;
-  info->SerializeToString(&ser_gp);
-  std::string ser_bp;
-  bp.SerializeToString(&ser_bp);
-
-  // Get the info
-  maidsafe::EndPoint end_point;
-  maidsafe::PersonalDetails personal_details;
-  boost::uint16_t status;
-  ASSERT_FALSE(vbph.ContactInfo("", "newuser", &end_point, &personal_details,
-               &status));
-  ASSERT_FALSE(vbph.ContactInfo(ser_bp, "non-authorised", &end_point,
-               &personal_details, &status));
-  ASSERT_TRUE(vbph.ContactInfo(ser_bp, "newuser", &end_point, &personal_details,
-              &status));
-  ASSERT_EQ(ep->ip(), end_point.ip());
-  ASSERT_EQ(ep->port(), end_point.port());
-  ASSERT_EQ(bpi.online(), status);
-  ASSERT_EQ(pd->full_name(), personal_details.full_name());
-  ASSERT_EQ(pd->phone_number(), personal_details.phone_number());
-  ASSERT_EQ(pd->birthday(), personal_details.birthday());
-  ASSERT_EQ(pd->gender(), personal_details.gender());
-  ASSERT_EQ(pd->language(), personal_details.language());
-  ASSERT_EQ(pd->city(), personal_details.city());
-  ASSERT_EQ(pd->country(), personal_details.country());
-
-  // Get own info
-  ASSERT_TRUE(vbph.ContactInfo(ser_bp, testuser, &end_point, &personal_details,
-              &status));
-  ASSERT_EQ(ep->ip(), end_point.ip());
-  ASSERT_EQ(ep->port(), end_point.port());
-  ASSERT_EQ(bpi.online(), status);
-  ASSERT_EQ(pd->full_name(), personal_details.full_name());
-  ASSERT_EQ(pd->phone_number(), personal_details.phone_number());
-  ASSERT_EQ(pd->birthday(), personal_details.birthday());
-  ASSERT_EQ(pd->gender(), personal_details.gender());
-  ASSERT_EQ(pd->language(), personal_details.language());
-  ASSERT_EQ(pd->city(), personal_details.city());
-  ASSERT_EQ(pd->country(), personal_details.country());
 }

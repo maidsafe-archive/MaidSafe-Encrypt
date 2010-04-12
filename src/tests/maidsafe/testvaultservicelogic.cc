@@ -33,16 +33,13 @@ TEST_F(VaultServiceLogicTest, BEH_MAID_VSL_Offline) {
   boost::shared_ptr<MockVaultRpcs> mock_rpcs(new MockVaultRpcs(NULL, NULL));
   VaultServiceLogic vsl(mock_rpcs, boost::shared_ptr<kad::KNode>());
 
-  maidsafe::StoreContract sc;
-  ASSERT_EQ(kVaultOffline, vsl.AddToRemoteRefList("x", sc, kSuccess, 0));
-
-  maidsafe::AmendAccountRequest aar;
+  maidsafe::AddToReferenceListRequest arr;
   boost::mutex mutex;
   boost::condition_variable cv;
   int result(kGeneralError);
-  VoidFuncOneInt cb =
+  VoidFuncOneInt cb1 =
       boost::bind(&mock_vsl::CopyResult, _1, &mutex, &cv, &result);
-  vsl.AmendRemoteAccount(aar, kSuccess, cb, 0);
+  vsl.AddToRemoteRefList(arr, kSuccess, cb1, 0);
   {
     boost::mutex::scoped_lock lock(mutex);
     while (result == kGeneralError) {
@@ -51,8 +48,31 @@ TEST_F(VaultServiceLogicTest, BEH_MAID_VSL_Offline) {
   }
   ASSERT_EQ(kVaultOffline, result);
 
+  result = kGeneralError;
+  maidsafe::AmendAccountRequest aar;
+  VoidFuncOneInt cb2 =
+      boost::bind(&mock_vsl::CopyResult, _1, &mutex, &cv, &result);
+  vsl.AmendRemoteAccount(aar, kSuccess, cb2, 0);
+  {
+    boost::mutex::scoped_lock lock(mutex);
+    while (result == kGeneralError) {
+      cv.wait(lock);
+    }
+  }
+  ASSERT_EQ(kVaultOffline, result);
+
+  result = kGeneralError;
   maidsafe::AccountStatusRequest asr;
-  ASSERT_EQ(kVaultOffline, vsl.RemoteVaultAbleToStore(asr, kSuccess, 0));
+  VoidFuncOneInt cb3 =
+      boost::bind(&mock_vsl::CopyResult, _1, &mutex, &cv, &result);
+  vsl.RemoteVaultAbleToStore(asr, kSuccess, cb3, 0);
+  {
+    boost::mutex::scoped_lock lock(mutex);
+    while (result == kGeneralError) {
+      cv.wait(lock);
+    }
+  }
+  ASSERT_EQ(kVaultOffline, result);
 }
 
 TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_AddToRemoteRefList) {
@@ -64,7 +84,6 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_AddToRemoteRefList) {
   vsl.pmid_private_ = pmid_private_;
   vsl.online_ = true;
   vsl.our_details_ = our_contact_;
-  maidsafe::StoreContract store_contract;
 
   std::vector<maidsafe::AddToReferenceListResponse> good_responses;
   std::vector<maidsafe::AddToReferenceListResponse> good_responses_less_one;
@@ -82,7 +101,7 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_AddToRemoteRefList) {
       too_few_ack_responses(good_responses);
   std::vector<maidsafe::AddToReferenceListResponse>
       fail_initialise_responses(good_responses);
-  for (size_t i = kKadStoreThreshold - 1; i < good_contacts_.size(); ++i) {
+  for (size_t i = kKadUpperThreshold - 1; i < good_contacts_.size(); ++i) {
     bad_pmid_responses.at(i).set_pmid(good_contacts_.at(i - 1).node_id());
     too_few_ack_responses.at(i).set_result(kNack);
     fail_initialise_responses.at(i).clear_result();
@@ -92,14 +111,21 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_AddToRemoteRefList) {
   std::string far_chunkname =
       crypto_.Obfuscate(pmid_, std::string(64, -1), crypto::XOR);
 
+  maidsafe::AddToReferenceListRequest request, close_request;
+  request.set_chunkname(far_chunkname);
+  close_request.set_chunkname(pmid_);
+  request.mutable_store_contract();
+  close_request.mutable_store_contract();
+  boost::mutex mutex;
+  boost::condition_variable cv;
+  int result(kGeneralError);
+  VoidFuncOneInt cb =
+      boost::bind(&mock_vsl::CopyResult, _1, &mutex, &cv, &result);
+
   // Expectations
   EXPECT_CALL(vsl, AddToRemoteRefList(testing::_, testing::_, testing::_,
                                       testing::_))
       .WillRepeatedly(testing::Invoke(&vsl, &MockVsl::AddToRemoteRefListReal));
-  EXPECT_CALL(*vsl.kadops(), FindCloseNodes(testing::_,
-      testing::An< std::vector<kad::Contact>* >()))
-      .WillRepeatedly(testing::Invoke(vsl.kadops().get(),
-          &maidsafe::MockKadOps::FindCloseNodesReal));
   EXPECT_CALL(*vsl.kadops(), FindCloseNodes(far_chunkname,
       testing::An<const base::callback_func_type&>()))
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
@@ -168,36 +194,91 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_AddToRemoteRefList) {
   }
 
   // Call 1 - FindKNodes fails (NULL pointer)
-  ASSERT_EQ(kVaultServiceFindNodesError,
-            vsl.AddToRemoteRefList(far_chunkname, store_contract, kSuccess, 0));
+  vsl.AddToRemoteRefList(request, kSuccess, cb, 0);
+  {
+    boost::mutex::scoped_lock lock(mutex);
+    while (result == kGeneralError) {
+      cv.wait(lock);
+    }
+  }
+  ASSERT_EQ(kVaultServiceFindNodesError, result);
 
   // Call 2 - FindKNodes returns kNack
-  ASSERT_EQ(kVaultServiceFindNodesFailure,
-            vsl.AddToRemoteRefList(far_chunkname, store_contract, kSuccess, 0));
+  result = kGeneralError;
+  vsl.AddToRemoteRefList(request, kSuccess, cb, 0);
+  {
+    boost::mutex::scoped_lock lock(mutex);
+    while (result == kGeneralError) {
+      cv.wait(lock);
+    }
+  }
+  ASSERT_EQ(kVaultServiceFindNodesFailure, result);
 
   // Call 3 - FindKnodes only returns 1 node
-  ASSERT_EQ(kVaultServiceFindNodesTooFew,
-            vsl.AddToRemoteRefList(far_chunkname, store_contract, kSuccess, 0));
+  result = kGeneralError;
+  vsl.AddToRemoteRefList(request, kSuccess, cb, 0);
+  {
+    boost::mutex::scoped_lock lock(mutex);
+    while (result == kGeneralError) {
+      cv.wait(lock);
+    }
+  }
+  ASSERT_EQ(kVaultServiceFindNodesTooFew, result);
 
   // Call 4 - All OK
-  ASSERT_EQ(kSuccess, vsl.AddToRemoteRefList(far_chunkname, store_contract,
-                                             kSuccess, 0));
+  result = kGeneralError;
+  vsl.AddToRemoteRefList(request, kSuccess, cb, 0);
+  {
+    boost::mutex::scoped_lock lock(mutex);
+    while (result == kGeneralError) {
+      cv.wait(lock);
+    }
+  }
+  ASSERT_EQ(kSuccess, result);
 
   // Call 5 - All OK - we're close to chunkname, so we replace contact 16
-  ASSERT_EQ(kSuccess, vsl.AddToRemoteRefList(pmid_, store_contract, kSuccess,
-                                             0));
+  result = kGeneralError;
+  vsl.AddToRemoteRefList(close_request, kSuccess, cb, 0);
+  {
+    boost::mutex::scoped_lock lock(mutex);
+    while (result == kGeneralError) {
+      cv.wait(lock);
+    }
+  }
+  ASSERT_EQ(kSuccess, result);
 
   // Call 6 - Five responses have incorrect PMID
-  ASSERT_EQ(kAddToRefResponseError,
-            vsl.AddToRemoteRefList(far_chunkname, store_contract, kSuccess, 0));
+  result = kGeneralError;
+  vsl.AddToRemoteRefList(request, kSuccess, cb, 0);
+  {
+    boost::mutex::scoped_lock lock(mutex);
+    while (result == kGeneralError) {
+      cv.wait(lock);
+    }
+  }
+  ASSERT_EQ(kRemoteOpResponseError, result);
 
   // Call 7 - Five responses return kNack
-  ASSERT_EQ(kAddToRefResponseFailed,
-            vsl.AddToRemoteRefList(far_chunkname, store_contract, kSuccess, 0));
+  result = kGeneralError;
+  vsl.AddToRemoteRefList(request, kSuccess, cb, 0);
+  {
+    boost::mutex::scoped_lock lock(mutex);
+    while (result == kGeneralError) {
+      cv.wait(lock);
+    }
+  }
+  ASSERT_EQ(kRemoteOpResponseFailed, result);
 
   // Call 8 - Five responses don't have result set
-  ASSERT_EQ(kAddToRefResponseUninitialised,
-            vsl.AddToRemoteRefList(far_chunkname, store_contract, kSuccess, 0));
+  result = kGeneralError;
+  vsl.AddToRemoteRefList(request, kSuccess, cb, 0);
+  {
+    boost::mutex::scoped_lock lock(mutex);
+    while (result == kGeneralError) {
+      cv.wait(lock);
+    }
+  }
+  ASSERT_EQ(kRemoteOpResponseUninitialised, result);
 }
 
 TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_AmendRemoteAccount) {
@@ -226,7 +307,7 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_AmendRemoteAccount) {
       too_few_ack_responses(good_responses);
   std::vector<maidsafe::AmendAccountResponse>
       fail_initialise_responses(good_responses);
-  for (size_t i = kKadStoreThreshold - 1; i < good_contacts_.size(); ++i) {
+  for (size_t i = kKadUpperThreshold - 1; i < good_contacts_.size(); ++i) {
     bad_pmid_responses.at(i).set_pmid(good_contacts_.at(i - 1).node_id());
     too_few_ack_responses.at(i).set_result(kNack);
     fail_initialise_responses.at(i).clear_result();
@@ -387,7 +468,7 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_AmendRemoteAccount) {
       cv.wait(lock);
     }
   }
-  ASSERT_EQ(kAmendAccountResponseError, result);
+  ASSERT_EQ(kRemoteOpResponseError, result);
 
   // Call 7 - Five responses return kNack
   result = kGeneralError;
@@ -398,7 +479,7 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_AmendRemoteAccount) {
       cv.wait(lock);
     }
   }
-  ASSERT_EQ(kAmendAccountResponseFailed, result);
+  ASSERT_EQ(kRemoteOpResponseFailed, result);
 
   // Call 8 - Five responses don't have result set
   result = kGeneralError;
@@ -409,7 +490,7 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_AmendRemoteAccount) {
       cv.wait(lock);
     }
   }
-  ASSERT_EQ(kAmendAccountResponseUninitialised, result);
+  ASSERT_EQ(kRemoteOpResponseUninitialised, result);
 }
 
 TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_RemoteVaultAbleToStore) {
@@ -439,11 +520,12 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_RemoteVaultAbleToStore) {
       too_few_ack_responses(good_responses);
   std::vector<maidsafe::AccountStatusResponse>
       fail_initialise_responses(good_responses);
-  for (size_t i = kKadTrustThreshold - 1; i < good_contacts_.size(); ++i) {
+  for (size_t i = kKadLowerThreshold - 1; i < good_contacts_.size(); ++i) {
     bad_pmid_responses.at(i).set_pmid(good_contacts_.at(i - 1).node_id());
     too_few_ack_responses.at(i).set_result(kNack);
     fail_initialise_responses.at(i).clear_result();
   }
+
   std::string account_owner(crypto_.Hash("Account Owner", "",
       crypto::STRING_STRING, false));
   std::string account_name(crypto_.Hash(account_owner + kAccount, "",
@@ -451,11 +533,13 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_RemoteVaultAbleToStore) {
   maidsafe::AccountStatusRequest request;
   request.set_account_pmid(account_owner);
 
+  boost::mutex mutex;
+  boost::condition_variable cv;
+  int result(kGeneralError);
+  VoidFuncOneInt cb =
+      boost::bind(&mock_vsl::CopyResult, _1, &mutex, &cv, &result);
+
   // Expectations
-  EXPECT_CALL(*vsl.kadops(), FindCloseNodes(testing::_,
-      testing::An< std::vector<kad::Contact>* >()))
-      .WillRepeatedly(testing::Invoke(vsl.kadops().get(),
-          &maidsafe::MockKadOps::FindCloseNodesReal));
   EXPECT_CALL(*vsl.kadops(), FindCloseNodes(account_name,
       testing::An<const base::callback_func_type&>()))
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
@@ -522,34 +606,91 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_RemoteVaultAbleToStore) {
   }
 
   // Call 1 - FindKNodes fails (NULL pointer)
-  ASSERT_EQ(kVaultServiceFindNodesError,
-            vsl.RemoteVaultAbleToStore(request, kSuccess, 0));
+  vsl.RemoteVaultAbleToStore(request, kSuccess, cb, 0);
+  {
+    boost::mutex::scoped_lock lock(mutex);
+    while (result == kGeneralError) {
+      cv.wait(lock);
+    }
+  }
+  ASSERT_EQ(kVaultServiceFindNodesError, result);
 
   // Call 2 - FindKNodes returns kNack
-  ASSERT_EQ(kVaultServiceFindNodesFailure,
-            vsl.RemoteVaultAbleToStore(request, kSuccess, 0));
+  result = kGeneralError;
+  vsl.RemoteVaultAbleToStore(request, kSuccess, cb, 0);
+  {
+    boost::mutex::scoped_lock lock(mutex);
+    while (result == kGeneralError) {
+      cv.wait(lock);
+    }
+  }
+  ASSERT_EQ(kVaultServiceFindNodesFailure, result);
 
   // Call 3 - FindKnodes only returns 1 node
-  ASSERT_EQ(kVaultServiceFindNodesTooFew,
-            vsl.RemoteVaultAbleToStore(request, kSuccess, 0));
+  result = kGeneralError;
+  vsl.RemoteVaultAbleToStore(request, kSuccess, cb, 0);
+  {
+    boost::mutex::scoped_lock lock(mutex);
+    while (result == kGeneralError) {
+      cv.wait(lock);
+    }
+  }
+  ASSERT_EQ(kVaultServiceFindNodesTooFew, result);
 
   // Call 4 - All OK
-  ASSERT_EQ(kSuccess, vsl.RemoteVaultAbleToStore(request, kSuccess, 0));
+  result = kGeneralError;
+  vsl.RemoteVaultAbleToStore(request, kSuccess, cb, 0);
+  {
+    boost::mutex::scoped_lock lock(mutex);
+    while (result == kGeneralError) {
+      cv.wait(lock);
+    }
+  }
+  ASSERT_EQ(kSuccess, result);
 
-  // Call 5 - All OK - FindKNodes only returns 15 nodes, so we're contact 16
-  ASSERT_EQ(kSuccess, vsl.RemoteVaultAbleToStore(request, kSuccess, 0));
+  // Call 5 - All OK - we're close to chunkname, so we replace contact 16
+  result = kGeneralError;
+  vsl.RemoteVaultAbleToStore(request, kSuccess, cb, 0);
+  {
+    boost::mutex::scoped_lock lock(mutex);
+    while (result == kGeneralError) {
+      cv.wait(lock);
+    }
+  }
+  ASSERT_EQ(kSuccess, result);
 
   // Call 6 - Fourteen responses have incorrect PMID
-  ASSERT_EQ(kAccountStatusResponseError,
-            vsl.RemoteVaultAbleToStore(request, kSuccess, 0));
+  result = kGeneralError;
+  vsl.RemoteVaultAbleToStore(request, kSuccess, cb, 0);
+  {
+    boost::mutex::scoped_lock lock(mutex);
+    while (result == kGeneralError) {
+      cv.wait(lock);
+    }
+  }
+  ASSERT_EQ(kRemoteOpResponseError, result);
 
   // Call 7 - Fourteen responses return kNack
-  ASSERT_EQ(kAccountStatusResponseFailed,
-            vsl.RemoteVaultAbleToStore(request, kSuccess, 0));
+  result = kGeneralError;
+  vsl.RemoteVaultAbleToStore(request, kSuccess, cb, 0);
+  {
+    boost::mutex::scoped_lock lock(mutex);
+    while (result == kGeneralError) {
+      cv.wait(lock);
+    }
+  }
+  ASSERT_EQ(kRemoteOpResponseFailed, result);
 
   // Call 8 - Fourteen responses don't have result set
-  ASSERT_EQ(kAccountStatusResponseUninitialised,
-            vsl.RemoteVaultAbleToStore(request, kSuccess, 0));
+  result = kGeneralError;
+  vsl.RemoteVaultAbleToStore(request, kSuccess, cb, 0);
+  {
+    boost::mutex::scoped_lock lock(mutex);
+    while (result == kGeneralError) {
+      cv.wait(lock);
+    }
+  }
+  ASSERT_EQ(kRemoteOpResponseUninitialised, result);
 }
 
 }  // namespace maidsafe_vault

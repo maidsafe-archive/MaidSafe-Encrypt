@@ -31,7 +31,8 @@ SessionSingleton* SessionSingleton::single = 0;
 boost::mutex ss_mutex;
 
 SessionSingleton::SessionSingleton()
-    : ud_(), ka_(), ch_(), psh_(), conversations_() {
+    : ud_(), ka_(), ch_(), psh_(), conversations_(), live_contacts_(),
+      lc_mutex_() {
   ResetSession();
 }
 
@@ -69,12 +70,148 @@ bool SessionSingleton::ResetSession() {
   SetConnectionStatus(1);
   SetVaultIP("");
   SetVaultPort(0);
-  SetEp(EndPoint());
-  SetPd(PersonalDetails());
+  EndPoint ep;
+  SetEp(ep);
+  PersonalDetails pd;
+  SetPd(pd);
   ka_.ClearKeyRing();
   ch_.ClearContacts();
   psh_.MI_ClearPrivateShares();
   conversations_.clear();
+  live_contacts_.clear();
+  return true;
+}
+
+///////////////////////////////
+//// User Details Handling ////
+///////////////////////////////
+
+// Accessors
+DefConLevels SessionSingleton::DefConLevel() { return ud_.defconlevel; }
+bool SessionSingleton::DaModified() { return ud_.da_modified; }
+std::string SessionSingleton::Username() { return ud_.username; }
+std::string SessionSingleton::Pin() { return ud_.pin; }
+std::string SessionSingleton::Password() { return ud_.password; }
+std::string SessionSingleton::PublicUsername() { return Id(MPID); }
+boost::uint32_t SessionSingleton::MidRid() { return ud_.mid_rid; }
+boost::uint32_t SessionSingleton::SmidRid() { return ud_.smid_rid; }
+std::string SessionSingleton::SessionName() { return ud_.session_name; }
+std::string SessionSingleton::TmidContent() { return ud_.tmid_content; }
+std::string SessionSingleton::SmidTmidContent() { return ud_.smidtmid_content; }
+std::string SessionSingleton::RootDbKey() { return ud_.root_db_key; }
+bool SessionSingleton::SelfEncrypting() { return ud_.self_encrypting; }
+std::set<std::string> SessionSingleton::AuthorisedUsers() {
+  return ud_.authorised_users;
+}
+std::set<std::string> SessionSingleton::MaidAuthorisedUsers() {
+  return ud_.maid_authorised_users;
+}
+int SessionSingleton::Mounted() { return ud_.mounted; }
+char SessionSingleton::WinDrive() { return ud_.win_drive; }
+int SessionSingleton::ConnectionStatus() { return ud_.connection_status; }
+std::string SessionSingleton::VaultIP() { return ud_.vault_ip; }
+boost::uint32_t SessionSingleton::VaultPort() { return ud_.vault_port; }
+EndPoint SessionSingleton::Ep() { return ud_.ep; }
+PersonalDetails SessionSingleton::Pd() { return ud_.pd; }
+
+// Mutators
+bool SessionSingleton::SetDefConLevel(DefConLevels defconlevel) {
+  ud_.defconlevel = defconlevel;
+  return true;
+}
+bool SessionSingleton::SetDaModified(bool da_modified) {
+  ud_.da_modified = da_modified;
+  return true;
+}
+bool SessionSingleton::SetUsername(const std::string &username) {
+  ud_.username = username;
+  return true;
+}
+bool SessionSingleton::SetPin(const std::string &pin) {
+  ud_.pin = pin;
+  return true;
+}
+bool SessionSingleton::SetPassword(const std::string &password) {
+  ud_.password = password;
+  return true;
+}
+bool SessionSingleton::SetMidRid(const boost::uint32_t &midrid) {
+  ud_.mid_rid = midrid;
+  return true;
+}
+bool SessionSingleton::SetSmidRid(const boost::uint32_t &smidrid) {
+  ud_.smid_rid = smidrid;
+  return true;
+}
+bool SessionSingleton::SetSessionName(bool clear) {
+  if (clear) {
+    ud_.session_name = "";
+  } else {
+    if (Username() == "" || Pin() == "")
+      return false;
+    crypto::Crypto c;
+    c.set_hash_algorithm(crypto::SHA_1);
+    ud_.session_name =
+        c.Hash(Pin()+Username(), "", crypto::STRING_STRING, true);
+  }
+  return true;
+}
+bool SessionSingleton::SetRootDbKey(const std::string &root_db_key) {
+  ud_.root_db_key = root_db_key;
+  return true;
+}
+bool SessionSingleton::SetTmidContent(const std::string &tmid_content) {
+  ud_.tmid_content = tmid_content;
+  return true;
+}
+bool SessionSingleton::SetSmidTmidContent(const std::string &smidtmid_content) {
+  ud_.smidtmid_content = smidtmid_content;
+  return true;
+}
+bool SessionSingleton::SetSelfEncrypting(bool self_encrypting) {
+  ud_.self_encrypting = self_encrypting;
+  return true;
+}
+bool SessionSingleton::SetAuthorisedUsers(
+    const std::set<std::string> &authorised_users) {
+  ud_.authorised_users = authorised_users;
+  return true;
+}
+bool SessionSingleton::SetMaidAuthorisedUsers(
+    const std::set<std::string> &maid_authorised_users) {
+  ud_.maid_authorised_users = maid_authorised_users;
+  return true;
+}
+bool SessionSingleton::SetMounted(int mounted) {
+  ud_.mounted = mounted;
+  return true;
+}
+bool SessionSingleton::SetWinDrive(char win_drive) {
+  ud_.win_drive = win_drive;
+  return true;
+}
+bool SessionSingleton::SetConnectionStatus(int status) {
+  ud_.connection_status = status;
+  return true;
+}
+bool SessionSingleton::SetVaultIP(const std::string &vault_ip) {
+  ud_.vault_ip = vault_ip;
+  return true;
+}
+bool SessionSingleton::SetVaultPort(const boost::uint32_t &vault_port) {
+  if ((vault_port > 1023 && vault_port < 65536) || vault_port == 0) {
+    ud_.vault_port = vault_port;
+    return true;
+  } else {
+    return false;
+  }
+}
+bool SessionSingleton::SetEp(const EndPoint &ep) {
+  ud_.ep = ep;
+  return true;
+}
+bool SessionSingleton::SetPd(const PersonalDetails &pd) {
+  ud_.pd = pd;
   return true;
 }
 
@@ -393,6 +530,181 @@ int SessionSingleton::ConversationExits(const std::string &id) {
 }
 void SessionSingleton::ClearConversations() {
   conversations_.clear();
+}
+
+///////////////////////////////
+//// Live Contact Handling ////
+///////////////////////////////
+
+int SessionSingleton::AddLiveContact(const std::string &contact,
+                                     const EndPoint &end_points,
+                                     int status) {
+  ConnectionDetails cd;
+  cd.ep = end_points;
+  cd.status = status;
+  cd.transport = 0;
+  cd.connection_id = 0;
+  cd.init_timestamp = 0;
+
+  std::pair<live_map::iterator, bool> p;
+  {
+    boost::mutex::scoped_lock loch_awe(lc_mutex_);
+    p = live_contacts_.insert(
+        std::pair<std::string, ConnectionDetails>(contact, cd));
+  }
+  if (!p.second)
+    return kAddLiveContactFailure;
+
+  return 0;
+}
+int SessionSingleton::LivePublicUsernameList(std::list<std::string> *contacts) {
+  contacts->clear();
+  {
+    boost::mutex::scoped_lock loch_awe(lc_mutex_);
+    live_map::iterator it;
+    for (it = live_contacts_.begin(); it != live_contacts_.end(); ++it)
+      contacts->push_back(it->first);
+  }
+  return 0;
+}
+int SessionSingleton::LiveContactMap(
+    std::map<std::string, ConnectionDetails> *live_contacts) {
+  {
+    boost::mutex::scoped_lock loch_awe(lc_mutex_);
+    *live_contacts = live_contacts_;
+  }
+  return 0;
+}
+int SessionSingleton::LiveContactDetails(const std::string &contact,
+                                         EndPoint *end_points,
+                                         boost::uint16_t *transport_id,
+                                         boost::uint32_t *connection_id,
+                                         int *status,
+                                         boost::uint32_t *init_timestamp) {
+  end_points->Clear();
+  *transport_id = 0;
+  *connection_id = 0;
+  *status = 0;
+  *init_timestamp = 0;
+  {
+    boost::mutex::scoped_lock loch_awe(lc_mutex_);
+    live_map::iterator it = live_contacts_.find(contact);
+    if (it == live_contacts_.end())
+      return kLiveContactNotFound;
+    *end_points = it->second.ep;
+    *transport_id = it->second.transport;
+    *connection_id = it->second.connection_id;
+    *status = it->second.status;
+    *init_timestamp = it->second.init_timestamp;
+  }
+  return 0;
+}
+int SessionSingleton::LiveContactTransportConnection(
+    const std::string &contact,
+    boost::uint16_t *transport_id,
+    boost::uint32_t *connection_id) {
+  *transport_id = 0;
+  *connection_id = 0;
+  {
+    boost::mutex::scoped_lock loch_awe(lc_mutex_);
+    live_map::iterator it = live_contacts_.find(contact);
+    if (it == live_contacts_.end())
+      return kLiveContactNotFound;
+    *transport_id = it->second.transport;
+    *connection_id = it->second.connection_id;
+  }
+  return 0;
+}
+int SessionSingleton::LiveContactStatus(const std::string &contact,
+                                        int *status) {
+  *status = -1;
+  {
+    boost::mutex::scoped_lock loch_awe(lc_mutex_);
+    live_map::iterator it = live_contacts_.find(contact);
+    if (it == live_contacts_.end())
+      return kLiveContactNotFound;
+    *status = it->second.status;
+  }
+  return 0;
+}
+int SessionSingleton::StartLiveConnection(const std::string &contact,
+                                          boost::uint16_t transport_id,
+                                          const boost::uint32_t &conn_id) {
+  {
+    boost::mutex::scoped_lock loch_awe(lc_mutex_);
+    live_map::iterator it = live_contacts_.find(contact);
+    if (it == live_contacts_.end())
+      return kLiveContactNotFound;
+    it->second.transport = transport_id;
+    it->second.connection_id = conn_id;
+    it->second.init_timestamp = base::get_epoch_time();
+  }
+  return 0;
+}
+int SessionSingleton::ModifyTransportId(const std::string &contact,
+                                        boost::uint16_t transport_id) {
+  {
+    boost::mutex::scoped_lock loch_awe(lc_mutex_);
+    live_map::iterator it = live_contacts_.find(contact);
+    if (it == live_contacts_.end())
+      return kLiveContactNotFound;
+    it->second.transport = transport_id;
+  }
+  return 0;
+}
+int SessionSingleton::ModifyConnectionId(const std::string &contact,
+                                         const boost::uint32_t &connection_id) {
+  {
+    boost::mutex::scoped_lock loch_awe(lc_mutex_);
+    live_map::iterator it = live_contacts_.find(contact);
+    if (it == live_contacts_.end())
+      return kLiveContactNotFound;
+    it->second.connection_id = connection_id;
+  }
+  return 0;
+}
+int SessionSingleton::ModifyEndPoint(const std::string &contact,
+                                     const std::string &ip,
+                                     const boost::uint16_t &port,
+                                     int which) {
+  if (which < 0 || which > 2)
+    return kLiveContactNoEp;
+  {
+    boost::mutex::scoped_lock loch_awe(lc_mutex_);
+    live_map::iterator it = live_contacts_.find(contact);
+    if (it == live_contacts_.end())
+      return kLiveContactNotFound;
+
+    if (which >= it->second.ep.ip_size())
+      return kLiveContactNoEp;
+    it->second.ep.set_ip(which, ip);
+    it->second.ep.set_port(which, port);
+  }
+  return 0;
+}
+int SessionSingleton::ModifyStatus(const std::string &contact, int status) {
+  {
+    boost::mutex::scoped_lock loch_awe(lc_mutex_);
+    live_map::iterator it = live_contacts_.find(contact);
+    if (it == live_contacts_.end())
+      return kLiveContactNotFound;
+    it->second.status = status;
+  }
+  return 0;
+}
+int SessionSingleton::DeleteLiveContact(const std::string &contact) {
+  size_t n(0);
+  {
+    boost::mutex::scoped_lock loch_awe(lc_mutex_);
+    n = live_contacts_.erase(contact);
+  }
+  return n;
+}
+void SessionSingleton::ClearLiveContacts() {
+  {
+    boost::mutex::scoped_lock loch_awe(lc_mutex_);
+    live_contacts_.clear();
+  }
 }
 
 }  // namespace maidsafe

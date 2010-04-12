@@ -48,55 +48,27 @@ namespace maidsafe_vault {
 class VaultRpcs;
 
 // This is used to hold the data required to perform a Kad lookup to get a
-// group of Chunk Info holders, send each an AddToReferenceListRequest and
-// assess the responses.  It's a big-ass callback struct :-(
-struct AddRefCallbackData {
-  struct AddRefDataHolder {
-    explicit AddRefDataHolder(const std::string &id)
-        : node_id(id), response(), controller(new rpcprotocol::Controller) {}
+// vault's remote account holders, send each an AmendAccountRequest or
+// AccountStatusRequest and assess the responses.
+// T1 is request and T2 is response.
+template <typename T1, typename T2>
+struct RemoteOpData {
+  struct RemoteOpHolder {
+    explicit RemoteOpHolder(const std::string &id)
+        : node_id(id), response(), controller(new rpcprotocol::Controller) {
+      controller->set_timeout(20);
+    }
     std::string node_id;
-    maidsafe::AddToReferenceListResponse response;
+    T2 response;
     boost::shared_ptr<rpcprotocol::Controller> controller;
   };
-  explicit AddRefCallbackData(int found_local_res)
-      : found_local_result(found_local_res),
-        mutex(),
-        cv(),
-        contacts(),
-        data_holders(),
-        success_count(0),
-        failure_count(0),
-        callback_done(false),
-        result(kVaultServiceError) {}
-  int found_local_result;
-  boost::mutex mutex;
-  boost::condition_variable cv;
-  std::vector<kad::Contact> contacts;
-  std::vector<AddRefDataHolder> data_holders;
-  boost::uint16_t success_count;
-  boost::uint16_t failure_count;
-  bool callback_done;
-  int result;
-};
-
-// This is used to hold the data required to perform a Kad lookup to get a
-// vault's remote account holders, send each an AmendAccountRequest and assess
-// the responses.  It's another big-ass callback struct :-(
-struct AmendRemoteAccountOpData {
-  struct AmendRemoteAccountOpHolder {
-    explicit AmendRemoteAccountOpHolder(const std::string &id)
-        : node_id(id), response(), controller(new rpcprotocol::Controller) {}
-    std::string node_id;
-    maidsafe::AmendAccountResponse response;
-    boost::shared_ptr<rpcprotocol::Controller> controller;
-  };
-  AmendRemoteAccountOpData(maidsafe::AmendAccountRequest req,
-                           std::string name,
-                           int found_local_res,
-                           VoidFuncOneInt cb,
-                           boost::int16_t trans_id)
+  RemoteOpData(T1 req,
+               std::string kadkey,
+               int found_local_res,
+               VoidFuncOneInt cb,
+               boost::int16_t trans_id)
       : request(req),
-        account_name(name),
+        kad_key(kadkey),
         found_local_result(found_local_res),
         callback(cb),
         transport_id(trans_id),
@@ -105,54 +77,39 @@ struct AmendRemoteAccountOpData {
         data_holders(),
         success_count(0),
         failure_count(0),
-        callback_done(false) {}
-  maidsafe::AmendAccountRequest request;
-  std::string account_name;  // non-hex version
+        callback_done(false) {
+    contacts.reserve(kad::K);
+    data_holders.reserve(kad::K);
+  }
+  T1 request;
+  std::string kad_key;
   int found_local_result;
   VoidFuncOneInt callback;
   boost::int16_t transport_id;
   boost::mutex mutex;
   std::vector<kad::Contact> contacts;
-  std::vector<AmendRemoteAccountOpHolder> data_holders;
+  std::vector<RemoteOpHolder> data_holders;
   boost::uint16_t success_count;
   boost::uint16_t failure_count;
   bool callback_done;
 };
 
-// This is used to hold the data required to perform a Kad lookup to get a
-// vault's remote account holders, send each an AccountStatusRequest and assess
-// the responses.  Yup - it's yet another big-ass callback struct :-(
-struct AccountStatusCallbackData {
-  struct AccountStatusHolder {
-    explicit AccountStatusHolder(const std::string &id)
-        : node_id(id), response(), controller(new rpcprotocol::Controller) {}
-    std::string node_id;
-    maidsafe::AccountStatusResponse response;
-    boost::shared_ptr<rpcprotocol::Controller> controller;
-  };
-  explicit AccountStatusCallbackData(int found_local_res)
-      : found_local_result(found_local_res),
-        mutex(),
-        cv(),
-        contacts(),
-        data_holders(),
-        success_count(0),
-        failure_count(0),
-        callback_done(false),
-        result(kVaultServiceError) {}
-  int found_local_result;
-  boost::mutex mutex;
-  boost::condition_variable cv;
-  std::vector<kad::Contact> contacts;
-  std::vector<AccountStatusHolder> data_holders;
-  boost::uint16_t success_count;
-  boost::uint16_t failure_count;
-  bool callback_done;
-  int result;
-};
+typedef RemoteOpData<maidsafe::AddToReferenceListRequest,
+    maidsafe::AddToReferenceListResponse> AddToReferenceListOpData;
+
+typedef RemoteOpData<maidsafe::AmendAccountRequest,
+    maidsafe::AmendAccountResponse> AmendRemoteAccountOpData;
+
+typedef RemoteOpData<maidsafe::AccountStatusRequest,
+    maidsafe::AccountStatusResponse> RemoteAccountStatusOpData;
 
 struct CacheChunkData {
-  CacheChunkData() : chunkname(), kc(), cb(), request(), response() {}
+  CacheChunkData() : chunkname(),
+                     kc(),
+                     cb(),
+                     request(),
+                     response(),
+                     controller() {}
   std::string chunkname;
   kad::ContactInfo kc;
   VoidFuncOneInt cb;
@@ -160,6 +117,70 @@ struct CacheChunkData {
   maidsafe::CacheChunkResponse response;
   rpcprotocol::Controller controller;
 };
+
+// This is used to hold the data required to send each close peer a
+// GetAccountRequest or GetChunkInfoRequest and run the callback.  The contacts
+// are called in order from first to last.
+// T1 is request, T2 response and T3 callback.
+template <typename T1, typename T2, typename T3>
+struct GetInfoData {
+  struct GetInfoOpHolder {
+    GetInfoOpHolder(const kad::Contact &contct, const T1 &req)
+        : contact(contct),
+          request(req),
+          response(),
+          controller(new rpcprotocol::Controller) {}
+    kad::Contact contact;
+    T1 request;
+    T2 response;
+    boost::shared_ptr<rpcprotocol::Controller> controller;
+  };
+  GetInfoData(T3 cb,
+              const boost::int16_t &trans_id,
+              const std::vector<kad::Contact> &contcts,
+              const std::vector<T1> &reqs)
+      : callback(cb),
+        transport_id(trans_id),
+        mutex(),
+        callback_done(false),
+        op_holders() {
+    std::vector<kad::Contact>::const_iterator contacts_it = contcts.begin();
+    typename std::vector<T1>::const_iterator requests_it = reqs.begin();
+    while (contacts_it != contcts.end() && requests_it != reqs.end()) {
+      op_holders.push_back(GetInfoOpHolder((*contacts_it), (*requests_it)));
+      ++contacts_it;
+      ++requests_it;
+    }
+  }
+  T3 callback;
+  boost::int16_t transport_id;
+  boost::mutex mutex;
+  bool callback_done;
+  std::vector<GetInfoOpHolder> op_holders;
+  boost::uint16_t index_of_last_request_sent;
+  boost::uint16_t response_count;
+};
+
+typedef boost::function<void (const ReturnCode&,
+    const VaultAccountSet::VaultAccount&)> VoidFuncIntAccount;
+
+typedef boost::function<void (const ReturnCode&,
+    const ChunkInfoMap::VaultChunkInfo&)> VoidFuncIntChunkInfo;
+
+typedef boost::function<void (const ReturnCode&,
+    const VaultBufferPacketMap::VaultBufferPacket&)> VoidFuncIntBufferPacket;
+
+typedef GetInfoData<maidsafe::GetAccountRequest,
+    maidsafe::GetAccountResponse, VoidFuncIntAccount> GetAccountData;
+
+typedef GetInfoData<maidsafe::GetChunkInfoRequest,
+    maidsafe::GetChunkInfoResponse, VoidFuncIntChunkInfo> GetChunkInfoData;
+
+typedef GetInfoData<maidsafe::GetBufferPacketRequest,
+    maidsafe::GetBufferPacketResponse, VoidFuncIntBufferPacket>
+    GetBufferPacketData;
+
+const size_t kParallelRequests(2);
 
 class VaultServiceLogic {
  public:
@@ -173,27 +194,41 @@ class VaultServiceLogic {
   bool online();
   boost::shared_ptr<maidsafe::KadOps> kadops() { return kad_ops_; }
   void SetOnlineStatus(bool online);
-  // Blocking call which looks up Chunk Info holders and sends each an
+  // Call which looks up Chunk Info holders and sends each an
   // AddToReferenceListRequest to add this vault's ID to ref list for chunkname.
-  virtual int AddToRemoteRefList(const std::string &chunkname,
-                                 const maidsafe::StoreContract &store_contract,
-                                 const int &found_local_result,
-                                 const boost::int16_t &transport_id);
+  virtual void AddToRemoteRefList(
+      const maidsafe::AddToReferenceListRequest &request,
+      const int &found_local_result,
+      const VoidFuncOneInt &callback,
+      const boost::int16_t &transport_id);
   // Amend account of PMID requesting to be added to Watch List or Ref List.
   virtual void AmendRemoteAccount(const maidsafe::AmendAccountRequest &request,
                                   const int &found_local_result,
                                   const VoidFuncOneInt &callback,
                                   const boost::int16_t &transport_id);
-  // Blocking call which looks up account holders and sends each an
+  // Call which looks up account holders and sends each an
   // AccountStatusRequest to establish if the account owner has space to store
-  int RemoteVaultAbleToStore(maidsafe::AccountStatusRequest request,
-                             const int &found_local_result,
-                             const boost::int16_t &transport_id);
+  void RemoteVaultAbleToStore(maidsafe::AccountStatusRequest request,
+                              const int &found_local_result,
+                              const VoidFuncOneInt &callback,
+                              const boost::int16_t &transport_id);
   void CacheChunk(const std::string &chunkname,
                   const std::string &chunkcontent,
                   const kad::ContactInfo &cacher,
                   VoidFuncOneInt callback,
                   const boost::int16_t &transport_id);
+  void GetAccount(const std::vector<kad::Contact> &close_contacts,
+                  const std::vector<maidsafe::GetAccountRequest> &requests,
+                  VoidFuncIntAccount callback,
+                  const boost::int16_t &transport_id);
+  void GetChunkInfo(const std::vector<kad::Contact> &close_contacts,
+                    const std::vector<maidsafe::GetChunkInfoRequest> &requests,
+                    VoidFuncIntChunkInfo callback,
+                    const boost::int16_t &transport_id);
+  void GetBufferPacket(const std::vector<kad::Contact> &close_contacts,
+      const std::vector<maidsafe::GetBufferPacketRequest> &requests,
+      VoidFuncIntBufferPacket callback,
+      const boost::int16_t &transport_id);
  private:
   VaultServiceLogic(const VaultServiceLogic&);
   VaultServiceLogic &operator=(const VaultServiceLogic&);
@@ -204,33 +239,41 @@ class VaultServiceLogic {
   FRIEND_TEST(AccountAmendmentHandlerTest, BEH_MAID_AAH_AssessAmendment);
   FRIEND_TEST(AccountAmendmentHandlerTest, BEH_MAID_AAH_CreateNewAmendment);
   FRIEND_TEST(AccountAmendmentHandlerTest, BEH_MAID_AAH_ProcessRequest);
-  FRIEND_TEST(MockVaultServicesTest, FUNC_MAID_ServicesAmendAccount);
+  FRIEND_TEST(MockVaultServicesTest, BEH_MAID_ServicesAmendAccount);
   friend class MockVsl;
   friend class MockVaultServicesTest;
-
-  // Method called by each AddToReferenceList response in AddToRemoteRefList.
-  // index indicates the position in data's internal vectors of the respondent.
-  void AddToRemoteRefListCallback(boost::uint16_t index,
-                                  boost::shared_ptr<AddRefCallbackData> data);
-  // First callback method in AmendRemoteAccount operation.  Called once by
-  // knode_->FindKNodes (when finding account holders details)
-  void AmendRemoteAccountStageTwo(
-      boost::shared_ptr<AmendRemoteAccountOpData> data,
-      const std::string &find_nodes_response);
-  // Second callback method in AmendRemoteAccount operation.  Called repeatedly
-  // by each AmendAccount RPC response.  index indicates the position in data's
+  // First callback method in e.g. AmendRemoteAccount operation.  Called once by
+  // knode_->FindKNodes (when finding account holders' details).  T is
+  // AmendRemoteAccountOpData or RemoteAccountStatusOpData.
+  template <typename T>
+  void RemoteOpStageTwo(boost::shared_ptr<T> data,
+                        const std::string &find_nodes_response);
+  // Specialisations for sending appropriate RPCs
+  template <typename T>
+  void SendRpcs(boost::shared_ptr<T> data);
+  // Specialisations for removing contact of operation subject from vector
+  template<typename T>
+  bool RemoveSubjectContact(boost::shared_ptr<T> data);
+  // Second callback method in e.g. AmendRemoteAccount operation.  Called
+  // repeatedly by each RPC response.  index indicates the position in data's
   // internal vectors of the respondent.
-  void AmendRemoteAccountStageThree(
-      boost::uint16_t index,
-      boost::shared_ptr<AmendRemoteAccountOpData> data);
-  // Method called by each AccountStatus response in RemoteVaultAbleToStore.
-  // index indicates the position in data's internal vectors of the respondent.
-  void AccountStatusCallback(boost::uint16_t index,
-                             boost::shared_ptr<AccountStatusCallbackData> data);
+  template <typename T>
+  void RemoteOpStageThree(boost::uint16_t index, boost::shared_ptr<T> data);
+  // Specialisations defining appropriate success conditions
+  template <typename T>
+  void AssessResult(const ReturnCode &result, boost::shared_ptr<T> data);
+  void CacheChunkCallback(boost::shared_ptr<CacheChunkData> data);
+  template <typename T>
+  void GetInfoCallback(const boost::uint16_t &index, boost::shared_ptr<T> data);
+  void SendInfoRpc(const boost::uint16_t &index,
+                   boost::shared_ptr<GetAccountData> data);
+  void SendInfoRpc(const boost::uint16_t &index,
+                   boost::shared_ptr<GetChunkInfoData> data);
+  void SendInfoRpc(const boost::uint16_t &index,
+                   boost::shared_ptr<GetBufferPacketData> data);
   // Returns a signature for validation by recipient of RPC
   std::string GetSignedRequest(const std::string &name,
                                const std::string &recipient_id);
-  void CacheChunkCallback(boost::shared_ptr<CacheChunkData> data);
 
   boost::shared_ptr<VaultRpcs> vault_rpcs_;
   boost::shared_ptr<kad::KNode> knode_;

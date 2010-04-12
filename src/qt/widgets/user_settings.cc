@@ -136,9 +136,8 @@ void UserSettings::HandleOK() {
   bool applied;
   if (!personal_->changedValues_.isEmpty()) {
     QHash<QString, QString> theHash = personal_->changedValues_;
-    /*if (theHash.contains("language") {
-    }
-    if (theHash.contains("username")) {
+
+    /*if (theHash.contains("username")) {
       applied = ClientController::instance()->ChangeUsername(
                 theHash.value("username").toStdString());
     }

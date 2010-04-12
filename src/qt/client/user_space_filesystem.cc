@@ -105,7 +105,7 @@ bool UserSpaceFileSystem::unmount() {
   std::locale loc;
   wchar_t drive_letter = std::use_facet< std::ctype<wchar_t> >
       (loc).widen(ClientController::instance()->WinDrive());
-  success = fs_w_fuse::DokanUnmount(drive_letter);
+  success = fs_w_fuse::UnMount(drive_letter);
 
 /*
   // %SystemRoot%\explorer.exe /e /root,M:\Shares\Private\Share 1

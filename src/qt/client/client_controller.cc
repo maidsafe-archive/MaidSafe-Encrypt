@@ -28,9 +28,6 @@
 #include <string>
 #include <vector>
 
-// local
-#include "qt/client/check_for_messages_thread.h"
-
 // core
 #include "fs/filesystem.h"
 #include "maidsafe/client/contacts.h"
@@ -45,12 +42,6 @@ namespace {
   }
 }
 
-class ClientController::ClientControllerImpl {
- public:
-  ClientControllerImpl() { }
-  QTimer messagePollTimer;
-};
-
 ClientController* ClientController::instance() {
   static ClientController qtcc;
   return &qtcc;
@@ -58,30 +49,33 @@ ClientController* ClientController::instance() {
 
 ClientController::ClientController(QObject* parent)
     : QObject(parent),
-      impl_(new ClientControllerImpl) { }
+      cfmt_(NULL) { }
 
-ClientController::~ClientController() {
-  delete impl_;
-  impl_ = NULL;
-}
+ClientController::~ClientController() { }
 
 bool ClientController::Init() {
   return maidsafe::ClientController::getInstance()->Init();
 }
 
 void ClientController::StartCheckingMessages() {
-  impl_->messagePollTimer.start(MESSAGE_POLL_TIMEOUT_MS);
-  connect(&impl_->messagePollTimer, SIGNAL(timeout()),
-          this,                     SLOT(checkForMessages()));
+  cfmt_ = new CheckForMessagesThread(this);
+  cfmt_->set_interval(3);
+  cfmt_->set_started(true);
+  connect(cfmt_, SIGNAL(completed(bool)),
+          this,  SLOT(onCheckMessagesCompleted(bool)));
+  cfmt_->start();
 }
 
 void ClientController::StopCheckingMessages() {
-  impl_->messagePollTimer.stop();
-  disconnect(&impl_->messagePollTimer, NULL, this, NULL);
+  cfmt_->set_started(false);
+  cfmt_->terminate();
+  cfmt_->wait();
+  disconnect(cfmt_, NULL, this, NULL);
 }
 
 void ClientController::shutdown() {
   maidsafe::ClientController::getInstance()->CloseConnection(true);
+  maidsafe::ClientController::getInstance()->Destroy();
 }
 
 QString ClientController::publicUsername() const {
@@ -399,22 +393,8 @@ bool ClientController::GetMessages() {
   return maidsafe::ClientController::getInstance()->GetMessages();
 }
 
-void ClientController::checkForMessages() {
-  // Check for messages only when public username is set
-
-  if (publicUsername().isEmpty())
-    return;
-
-  CheckForMessagesThread* cfmt = new CheckForMessagesThread(this);
-
-  connect(cfmt, SIGNAL(completed(bool)),
-          this, SLOT(onCheckMessagesCompleted(bool)));
-
-  cfmt->start();
-
-  StopCheckingMessages();
-
-//  if (!maidsafe::ClientController::getInstance()->GetMessages()) {
+void ClientController::onCheckMessagesCompleted(bool success) {
+//  if (!success) {
 //    if (maidsafe::SessionSingleton::getInstance()->ConnectionStatus() != 1) {
 //      int one(1);
 //      // modify CC online status
@@ -433,41 +413,6 @@ void ClientController::checkForMessages() {
 //      return;
 //    }
 //  }
-//  std::list<maidsafe::InstantMessage> msgs;
-//  int n = maidsafe::ClientController::getInstance()
-//                ->GetInstantMessages(&msgs);
-//
-//
-//  if (n != 0)
-//    return;
-//
-//  std::list<maidsafe::InstantMessage> temp = msgs;
-//  while (!temp.empty()) {
-//      analyseMessage(temp.front());
-//      temp.pop_front();
-//  }
-}
-
-void ClientController::onCheckMessagesCompleted(bool success) {
-  if (!success) {
-    if (maidsafe::SessionSingleton::getInstance()->ConnectionStatus() != 1) {
-      int one(1);
-      // modify CC online status
-      maidsafe::SessionSingleton::getInstance()->SetConnectionStatus(one);
-      // signal for change of icon
-      emit connectionStatusChanged(one);
-      return;
-    }
-  } else {
-    if (maidsafe::SessionSingleton::getInstance()->ConnectionStatus() == 1) {
-      int zero(0);
-      // modify CC online status
-      maidsafe::SessionSingleton::getInstance()->SetConnectionStatus(zero);
-      // signal for change of icon
-      emit connectionStatusChanged(zero);
-      return;
-    }
-  }
   std::list<maidsafe::InstantMessage> msgs;
   int n = maidsafe::ClientController::getInstance()->GetInstantMessages(&msgs);
 
@@ -476,13 +421,12 @@ void ClientController::onCheckMessagesCompleted(bool success) {
 
   std::list<maidsafe::InstantMessage> temp = msgs;
   while (!temp.empty()) {
-      analyseMessage(temp.front());
-      temp.pop_front();
+    analyseMessage(temp.front());
+    temp.pop_front();
   }
-  StartCheckingMessages();
 }
 
-int ClientController::analyseMessage(const maidsafe::InstantMessage& im) {
+void ClientController::analyseMessage(const maidsafe::InstantMessage& im) {
   boost::progress_timer t;
   MessageType type = TEXT;
   int n = 0;
@@ -556,9 +500,9 @@ int ClientController::analyseMessage(const maidsafe::InstantMessage& im) {
   const QString conversation = QString::fromStdString(im.conversation());
 
   emit messageReceived(type, time, sender, message, conversation);
-  printf("Ansa %f", t.elapsed());
+//  printf("Ansa %f", t.elapsed());
 
-  return n;
+//  return n;
 }
 
 int ClientController::SaveSession() {
@@ -637,14 +581,6 @@ int ClientController::GetContactInfo(const std::string &pub_name,
                                                                    mic);
 }
 
-int ClientController::GetInfo(const std::string &public_username,
-                              std::vector<std::string> *info) {
-  return maidsafe::ClientController::getInstance()->GetInfo(public_username,
-                                                            info);
-}
-
-int ClientController::SetInfo(const std::vector<std::string> &info) {
-  return maidsafe::ClientController::getInstance()->SetInfo(info);
 }
 
 int ClientController::getattr(const std::string &path, std::string &ser_mdm) {
@@ -671,5 +607,3 @@ int ClientController::mkdir(const std::string &path) {
 
 int ClientController::rmdir(const std::string &path) {
   return maidsafe::ClientController::getInstance()->rmdir(path);
-}
-

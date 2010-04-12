@@ -41,10 +41,6 @@ class VaultBufferPacketHandler {
   VaultBufferPacketHandler();
   bool ValidateOwnerSignature(const std::string &public_key,
                               const std::string &ser_bufferpacket);
-  bool CheckStatus(const std::string &current_bp,
-                   const std::string &ser_message,
-                   const std::string &signed_public_key,
-                   int *status);
   bool GetMessages(std::string *ser_bp, std::vector<std::string> *msgs);
   bool ClearMessages(std::string *ser_bufferpacket);
   bool IsOwner(const std::string &owner_id, const GenericPacket &gp_info);
@@ -55,13 +51,6 @@ class VaultBufferPacketHandler {
                   const std::string &ser_message,
                   const std::string &signed_public_key,
                   std::string *updated_bp);
-  bool ContactInfo(const std::string &current_bp,
-                   const std::string &public_username,
-                   EndPoint *ep,
-                   PersonalDetails *pd,
-                   boost::uint16_t *status);
-
-
   bool CheckMsgStructure(const std::string &ser_message,
                          std::string *sender_id,
                          MessageType *type);

@@ -48,13 +48,13 @@ class MockSessionSingleton;
 struct UserDetails {
   UserDetails() : defconlevel(kDefCon3),
                   da_modified(false),
-                  username(""),
-                  pin(""),
-                  password(""),
+                  username(),
+                  pin(),
+                  password(),
                   mid_rid(0),
                   smid_rid(0),
-                  session_name(""),
-                  root_db_key(""),
+                  session_name(),
+                  root_db_key(),
                   self_encrypting(true),
                   authorised_users(),
                   maid_authorised_users(),
@@ -88,6 +88,14 @@ struct UserDetails {
   PersonalDetails pd;
 };
 
+struct ConnectionDetails {
+  EndPoint ep;
+  boost::uint16_t transport;
+  boost::uint32_t connection_id;
+  int status;
+  boost::uint32_t init_timestamp;
+};
+
 class SessionSingleton {
  public:
   bool ResetSession();
@@ -99,133 +107,53 @@ class SessionSingleton {
   ///////////////////////////////
 
   // Accessors
-  inline DefConLevels DefConLevel() { return ud_.defconlevel; }
-  inline bool DaModified() { return ud_.da_modified; }
-  inline std::string Username() { return ud_.username; }
-  inline std::string Pin() { return ud_.pin; }
-  inline std::string Password() { return ud_.password; }
-  inline std::string PublicUsername() { return Id(MPID); }
-  inline boost::uint32_t MidRid() { return ud_.mid_rid; }
-  inline boost::uint32_t SmidRid() { return ud_.smid_rid; }
-  inline std::string SessionName() { return ud_.session_name; }
-  inline std::string TmidContent() { return ud_.tmid_content; }
-  inline std::string SmidTmidContent() { return ud_.smidtmid_content; }
-  inline std::string RootDbKey() { return ud_.root_db_key; }
-  inline bool SelfEncrypting() { return ud_.self_encrypting; }
-  inline std::set<std::string> AuthorisedUsers() {
-    return ud_.authorised_users;
-  }
-  inline std::set<std::string> MaidAuthorisedUsers() {
-    return ud_.maid_authorised_users;
-  }
-  inline int Mounted() { return ud_.mounted; }
-  inline char WinDrive() { return ud_.win_drive; }
-  inline int ConnectionStatus() { return ud_.connection_status; }
-  inline std::string VaultIP() { return ud_.vault_ip; }
-  inline boost::uint32_t VaultPort() { return ud_.vault_port; }
-  inline EndPoint Ep() { return ud_.ep; }
-  inline PersonalDetails Pd() { return ud_.pd; }
+  DefConLevels DefConLevel();
+  bool DaModified();
+  std::string Username();
+  std::string Pin();
+  std::string Password();
+  std::string PublicUsername();
+  boost::uint32_t MidRid();
+  boost::uint32_t SmidRid();
+  std::string SessionName();
+  std::string TmidContent();
+  std::string SmidTmidContent();
+  std::string RootDbKey();
+  bool SelfEncrypting();
+  std::set<std::string> AuthorisedUsers();
+  std::set<std::string> MaidAuthorisedUsers();
+  int Mounted();
+  char WinDrive();
+  int ConnectionStatus();
+  std::string VaultIP();
+  boost::uint32_t VaultPort();
+  EndPoint Ep();
+  PersonalDetails Pd();
 
   // Mutators
-  inline bool SetDefConLevel(DefConLevels defconlevel) {
-    ud_.defconlevel = defconlevel;
-    return true;
-  }
-  inline bool SetDaModified(bool da_modified) {
-    ud_.da_modified = da_modified;
-    return true;
-  }
-  inline bool SetUsername(const std::string &username) {
-    ud_.username = username;
-    return true;
-  }
-  inline bool SetPin(const std::string &pin) {
-    ud_.pin = pin;
-    return true;
-  }
-  inline bool SetPassword(const std::string &password) {
-    ud_.password = password;
-    return true;
-  }
-  inline bool SetMidRid(const boost::uint32_t &midrid) {
-    ud_.mid_rid = midrid;
-    return true;
-  }
-  inline bool SetSmidRid(const boost::uint32_t &smidrid) {
-    ud_.smid_rid = smidrid;
-    return true;
-  }
-  inline bool SetSessionName(bool clear) {
-    if (clear) {
-      ud_.session_name = "";
-    } else {
-      if (Username() == "" || Pin() == "")
-        return false;
-      crypto::Crypto c;
-      c.set_hash_algorithm(crypto::SHA_1);
-      ud_.session_name =
-          c.Hash(Pin()+Username(), "", crypto::STRING_STRING, true);
-    }
-    return true;
-  }
-  inline bool SetRootDbKey(const std::string &root_db_key) {
-    ud_.root_db_key = root_db_key;
-    return true;
-  }
-  inline bool SetTmidContent(const std::string &tmid_content) {
-    ud_.tmid_content = tmid_content;
-    return true;
-  }
-  inline bool SetSmidTmidContent(const std::string &smidtmid_content) {
-    ud_.smidtmid_content = smidtmid_content;
-    return true;
-  }
-  inline bool SetSelfEncrypting(bool self_encrypting) {
-    ud_.self_encrypting = self_encrypting;
-    return true;
-  }
-  inline bool SetAuthorisedUsers(
-      const std::set<std::string> &authorised_users) {
-    ud_.authorised_users = authorised_users;
-    return true;
-  }
-  inline bool SetMaidAuthorisedUsers(
-      const std::set<std::string> &maid_authorised_users) {
-    ud_.maid_authorised_users = maid_authorised_users;
-    return true;
-  }
-  inline bool SetMounted(int mounted) {
-    ud_.mounted = mounted;
-    return true;
-  }
-  inline bool SetWinDrive(char win_drive) {
-    ud_.win_drive = win_drive;
-    return true;
-  }
-  inline bool SetConnectionStatus(int status) {
-    ud_.connection_status = status;
-    return true;
-  }
-  inline bool SetVaultIP(const std::string &vault_ip) {
-    ud_.vault_ip = vault_ip;
-    return true;
-  }
-  inline bool SetVaultPort(const boost::uint32_t &vault_port) {
-    if ((vault_port > 1023 && vault_port < 65536) || vault_port == 0) {
-      ud_.vault_port = vault_port;
-      return true;
-    } else {
-      return false;
-    }
-  }
-  inline bool SetEp(const EndPoint &ep) {
-    ud_.ep = ep;
-    return true;
-  }
-  inline bool SetPd(const PersonalDetails &pd) {
-    ud_.pd = pd;
-    return true;
-  }
+  bool SetDefConLevel(DefConLevels defconlevel);
+  bool SetDaModified(bool da_modified);
+  bool SetUsername(const std::string &username);
+  bool SetPin(const std::string &pin);
+  bool SetPassword(const std::string &password);
+  bool SetMidRid(const boost::uint32_t &midrid);
+  bool SetSmidRid(const boost::uint32_t &smidrid);
+  bool SetSessionName(bool clear);
+  bool SetRootDbKey(const std::string &root_db_key);
+  bool SetTmidContent(const std::string &tmid_content);
+  bool SetSmidTmidContent(const std::string &smidtmid_content);
+  bool SetSelfEncrypting(bool self_encrypting);
+  bool SetAuthorisedUsers(
+      const std::set<std::string> &authorised_users);
+  bool SetMaidAuthorisedUsers(
+      const std::set<std::string> &maid_authorised_users);
+  bool SetMounted(int mounted);
+  bool SetWinDrive(char win_drive);
+  bool SetConnectionStatus(int status);
+  bool SetVaultIP(const std::string &vault_ip);
+  bool SetVaultPort(const boost::uint32_t &vault_port);
+  bool SetEp(const EndPoint &ep);
+  bool SetPd(const PersonalDetails &pd);
 
   ///////////////////////////
   //// Key Ring Handling ////
@@ -333,6 +261,40 @@ class SessionSingleton {
   int ConversationExits(const std::string &id);
   void ClearConversations();
 
+  ///////////////////////////////
+  //// Live Contact Handling ////
+  ///////////////////////////////
+
+  typedef std::map<std::string, ConnectionDetails> live_map;
+  int AddLiveContact(const std::string &contact,
+                     const EndPoint &end_points,
+                     int status);
+  int LivePublicUsernameList(std::list<std::string> *contacts);
+  int LiveContactMap(std::map<std::string, ConnectionDetails> *live_contacts);
+  int LiveContactDetails(const std::string &contact,
+                         EndPoint *end_points,
+                         boost::uint16_t *transport_id,
+                         boost::uint32_t *connection_id,
+                         int *status,
+                         boost::uint32_t *init_timestamp);
+  int LiveContactTransportConnection(const std::string &contact,
+                                     boost::uint16_t *transport_id,
+                                     boost::uint32_t *connection_id);
+  int LiveContactStatus(const std::string &contact, int *status);
+  int StartLiveConnection(const std::string &contact,
+                          boost::uint16_t transport_id,
+                          const boost::uint32_t &connection_id);
+  int ModifyTransportId(const std::string &contact,
+                        boost::uint16_t transport_id);
+  int ModifyConnectionId(const std::string &contact,
+                         const boost::uint32_t &connection_id);
+  int ModifyEndPoint(const std::string &contact, const std::string &ip,
+                     const boost::uint16_t &port, int which);
+  int ModifyStatus(const std::string &contact,
+                   int status);
+  int DeleteLiveContact(const std::string &contact);
+  void ClearLiveContacts();
+
  private:
   friend class MockSessionSingleton;
   SessionSingleton &operator=(const SessionSingleton&);
@@ -345,6 +307,8 @@ class SessionSingleton {
   ContactsHandler ch_;
   PrivateShareHandler psh_;
   std::set<std::string> conversations_;
+  std::map<std::string, ConnectionDetails> live_contacts_;
+  boost::mutex lc_mutex_;
 };
 
 }  // namespace maidsafe

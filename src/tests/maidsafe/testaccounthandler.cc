@@ -37,12 +37,12 @@ class AccountHandlerTest : public testing::Test {
 };
 
 TEST_F(AccountHandlerTest, BEH_VAULT_AccountHandlerInit) {
-  AccountHandler ah;
+  AccountHandler ah(true);
   ASSERT_EQ(size_t(0), ah.accounts_.size());
 }
 
 TEST_F(AccountHandlerTest, BEH_VAULT_AccountHandlerAddAndFind) {
-  AccountHandler ah;
+  AccountHandler ah(true);
   ASSERT_EQ(size_t(0), ah.accounts_.size());
   ASSERT_EQ(kAccountNotFound, ah.HaveAccount("AAAAAAAAA"));
 
@@ -56,7 +56,7 @@ TEST_F(AccountHandlerTest, BEH_VAULT_AccountHandlerAddAndFind) {
 }
 
 TEST_F(AccountHandlerTest, BEH_VAULT_AccountHandlerModify) {
-  AccountHandler ah;
+  AccountHandler ah(true);
   ASSERT_EQ(size_t(0), ah.accounts_.size());
   std::string pmid("some pmid");
   boost::uint64_t offered(0), vault_space(0), account_used(0);
@@ -134,7 +134,7 @@ TEST_F(AccountHandlerTest, BEH_VAULT_AccountHandlerModify) {
 }
 
 TEST_F(AccountHandlerTest, BEH_VAULT_AccountHandlerDelete) {
-  AccountHandler ah;
+  AccountHandler ah(true);
   ASSERT_EQ(size_t(0), ah.accounts_.size());
   std::string pmid("some pmid");
   boost::uint64_t offer(1234567890);
@@ -148,6 +148,139 @@ TEST_F(AccountHandlerTest, BEH_VAULT_AccountHandlerDelete) {
   ASSERT_EQ(0, ah.DeleteAccount(pmid));
   ASSERT_EQ(kAccountNotFound, ah.HaveAccount(pmid));
   ASSERT_EQ(kAccountNotFound, ah.DeleteAccount(pmid));
+}
+
+TEST_F(AccountHandlerTest, FUNC_VAULT_AccountHandlerPutGetPb) {
+  AccountHandler account_handler1(true), account_handler2(true);
+  std::pair<AccountSet::iterator, bool> result;
+  const int kNumEntries(698);
+  for (int i = 0; i < kNumEntries; ++i) {
+    std::list<std::string> alerts;
+    for (boost::uint16_t j = 0; j < (base::random_32bit_uinteger() % 999); ++j)
+      alerts.push_back(base::RandomString(base::random_32bit_uinteger() % 999));
+    Account account(base::RandomString(64), base::random_32bit_uinteger(),
+        base::random_32bit_uinteger(), base::random_32bit_uinteger(), alerts);
+    result = account_handler1.accounts_.insert(account);
+    ASSERT_TRUE(result.second);
+  }
+  VaultAccountSet vault_account_set = account_handler1.PutSetToPb("");
+  std::string serialised_vault_account_set1;
+  ASSERT_TRUE(vault_account_set.SerializeToString(
+      &serialised_vault_account_set1));
+  vault_account_set.Clear();
+  ASSERT_TRUE(vault_account_set.ParseFromString(serialised_vault_account_set1));
+  account_handler2.GetSetFromPb(vault_account_set);
+  ASSERT_EQ(account_handler1.accounts_.size(),
+            account_handler2.accounts_.size());
+  AccountSet::iterator it1 = account_handler1.accounts_.begin();
+  AccountSet::iterator it2 = account_handler2.accounts_.begin();
+  for (; it1 != account_handler1.accounts_.end(); ++it1, ++it2) {
+    Account account1(*it1), account2(*it2);
+    ASSERT_EQ(account1.pmid, account2.pmid);
+    ASSERT_EQ(account1.offered, account2.offered);
+    ASSERT_EQ(account1.vault_used, account2.vault_used);
+    ASSERT_EQ(account1.account_used, account2.account_used);
+    ASSERT_EQ(account1.alerts.size(), account2.alerts.size());
+    std::list<std::string>::iterator alerts_it1 = account1.alerts.begin();
+    std::list<std::string>::iterator alerts_it2 = account2.alerts.begin();
+    for (; alerts_it1 != account1.alerts.end(); ++alerts_it1, ++alerts_it2)
+      ASSERT_EQ(*alerts_it1, *alerts_it2);
+  }
+  vault_account_set.Clear();
+  vault_account_set = account_handler1.PutSetToPb("");
+  std::string serialised_vault_account_set2;
+  ASSERT_TRUE(vault_account_set.SerializeToString(
+      &serialised_vault_account_set2));
+  ASSERT_EQ(serialised_vault_account_set1, serialised_vault_account_set2);
+}
+
+TEST_F(AccountHandlerTest, FUNC_VAULT_AccountHandlerPutGetAccount) {
+  // Test with account handler not started
+  AccountHandler account_handler(false);
+  VaultAccountSet::VaultAccount vault_account_put;
+  vault_account_put.set_pmid(base::RandomString(64));
+  vault_account_put.set_offered(base::random_32bit_uinteger());
+  vault_account_put.set_vault_used(base::random_32bit_uinteger());
+  vault_account_put.set_account_used(base::random_32bit_uinteger());
+  for (boost::uint16_t j = 0; j < (base::random_32bit_uinteger() % 999); ++j) {
+    vault_account_put.add_alerts(base::RandomString(
+        base::random_32bit_uinteger() % 999));
+  }
+  ASSERT_EQ(kAccountHandlerNotStarted,
+            account_handler.InsertAccountFromPb(vault_account_put));
+  std::list<std::string> alerts;
+  alerts.push_back(base::RandomString(base::random_32bit_uinteger() % 999));
+  Account dummy_account("Not empty", 10, 9, 8, alerts);
+  Account account(dummy_account);
+  ASSERT_EQ(kAccountHandlerNotStarted,
+            account_handler.GetAccount(vault_account_put.pmid(), &account));
+  ASSERT_TRUE(account.pmid.empty());
+  ASSERT_EQ(boost::uint64_t(0), account.offered);
+  ASSERT_EQ(boost::uint64_t(0), account.vault_used);
+  ASSERT_EQ(boost::uint64_t(0), account.account_used);
+  ASSERT_TRUE(account.alerts.empty());
+  account_handler.set_started(true);
+  ASSERT_EQ(kAccountNotFound,
+            account_handler.HaveAccount(vault_account_put.pmid()));
+
+  // Test before adding account
+  account = dummy_account;
+  ASSERT_EQ(kAccountNotFound,
+            account_handler.GetAccount(vault_account_put.pmid(), &account));
+  ASSERT_TRUE(account.pmid.empty());
+  ASSERT_EQ(boost::uint64_t(0), account.offered);
+  ASSERT_EQ(boost::uint64_t(0), account.vault_used);
+  ASSERT_EQ(boost::uint64_t(0), account.account_used);
+  ASSERT_TRUE(account.alerts.empty());
+
+  // Add accounts
+  std::pair<AccountSet::iterator, bool> result;
+  const size_t kNumEntries(551);
+  for (size_t i = 0; i < kNumEntries; ++i) {
+    alerts.clear();
+    for (boost::uint16_t j = 0; j < (base::random_32bit_uinteger() % 999); ++j)
+      alerts.push_back(base::RandomString(base::random_32bit_uinteger() % 999));
+    result = account_handler.accounts_.insert(Account(base::RandomString(64),
+        base::random_32bit_uinteger(), base::random_32bit_uinteger(),
+        base::random_32bit_uinteger(), alerts));
+    ASSERT_TRUE(result.second);
+  }
+
+  // Insert and retrieve account
+  ASSERT_EQ(kSuccess, account_handler.InsertAccountFromPb(vault_account_put));
+  ASSERT_EQ(kNumEntries + 1, account_handler.accounts_.size());
+  ASSERT_EQ(kSuccess, account_handler.HaveAccount(vault_account_put.pmid()));
+  account = dummy_account;
+  ASSERT_EQ(kSuccess,
+            account_handler.GetAccount(vault_account_put.pmid(), &account));
+  ASSERT_EQ(vault_account_put.pmid(), account.pmid);
+  ASSERT_EQ(vault_account_put.offered(), account.offered);
+  ASSERT_EQ(vault_account_put.vault_used(), account.vault_used);
+  ASSERT_EQ(vault_account_put.account_used(), account.account_used);
+  ASSERT_EQ(static_cast<size_t>(vault_account_put.alerts_size()),
+            account.alerts.size());
+  std::list<std::string>::iterator it = account.alerts.begin();
+  for (int i = 0; it != account.alerts.end(); ++it, ++i)
+    ASSERT_EQ(vault_account_put.alerts(i), *it);
+
+  // Convert account to protocol buffer
+  VaultAccountSet::VaultAccount vault_account_get;
+  account.PutToPb(&vault_account_get);
+  ASSERT_EQ(vault_account_put.pmid(), vault_account_get.pmid());
+  ASSERT_EQ(vault_account_put.offered(), vault_account_get.offered());
+  ASSERT_EQ(vault_account_put.vault_used(), vault_account_get.vault_used());
+  ASSERT_EQ(vault_account_put.account_used(), vault_account_get.account_used());
+  ASSERT_EQ(vault_account_put.alerts_size(), vault_account_get.alerts_size());
+  for (int i = 0; i < vault_account_put.alerts_size(); ++i)
+    ASSERT_EQ(vault_account_put.alerts(i), vault_account_get.alerts(i));
+
+  // Check account can't be added again
+  ASSERT_EQ(kAccountExists,
+            account_handler.InsertAccountFromPb(vault_account_put));
+  ASSERT_EQ(kNumEntries + 1, account_handler.accounts_.size());
+  ASSERT_EQ(kAccountExists, account_handler.AddAccount(
+      vault_account_put.pmid(), (base::random_32bit_uinteger() % 999)));
+  ASSERT_EQ(kNumEntries + 1, account_handler.accounts_.size());
 }
 
 }  // namespace maidsafe_vault

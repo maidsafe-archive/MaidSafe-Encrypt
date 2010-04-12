@@ -127,10 +127,7 @@ PersonalMessages::~PersonalMessages() {
   qDebug() << "Destroy Finished";
 }
 
-void PersonalMessages::closeEvent(QCloseEvent *event) {
-
-}
-
+void PersonalMessages::closeEvent(QCloseEvent *event) { }
 
 void PersonalMessages::setActive(bool b) {
   if (b && !init_) {
@@ -446,7 +443,7 @@ void PersonalMessages::onMessageTextEdit() {
     ui_.message_text_edit->moveCursor(QTextCursor::End,
                                       QTextCursor::MoveAnchor);
   } else if (text.contains(":-\\")) {
-    text.replace(":-\\", "<img src=\"://smilies//smily_blue//sconfused.gif\";");
+    text.replace(":-\\", "<img src=\"://smilies//smily_blue//sconfused.gif\";");  // NOLINT
     ui_.message_text_edit->setHtml(text);
     ui_.message_text_edit->moveCursor(QTextCursor::End,
                                       QTextCursor::MoveAnchor);

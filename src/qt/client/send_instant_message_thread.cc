@@ -31,6 +31,7 @@ SendInstantMessageThread::SendInstantMessageThread(const QString& text,
 SendInstantMessageThread::~SendInstantMessageThread() { }
 
 void SendInstantMessageThread::run() {
+  qDebug() << "SendInstantMessageThread::run";
   const bool success = ClientController::instance()->sendInstantMessage(
                                               text_, conts_, convName_);
 

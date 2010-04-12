@@ -47,7 +47,7 @@ class LocalStoreManager : public StoreManagerInterface {
  public:
   explicit LocalStoreManager(boost::shared_ptr<ChunkStore> client_chunkstore);
   virtual ~LocalStoreManager() {}
-  virtual void Init(int, base::callback_func_type cb);
+  virtual void Init(int, base::callback_func_type cb, fs::path db_directory);
   virtual void Close(base::callback_func_type cb, bool);
   virtual void CleanUpTransport() {}
   virtual void StopRvPing() {}
@@ -94,10 +94,6 @@ class LocalStoreManager : public StoreManagerInterface {
   virtual int AddBPMessage(const std::vector<std::string> &receivers,
                            const std::string &message,
                            const MessageType &m_type);
-  virtual void ContactInfo(const std::string &public_username,
-                           const std::string &me,
-                           ContactInfoNotifier cin);
-  virtual void OwnInfo(ContactInfoNotifier cin);
 
   // Vault
   virtual void PollVaultInfo(base::callback_func_type cb);
