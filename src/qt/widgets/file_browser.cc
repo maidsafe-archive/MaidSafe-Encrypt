@@ -383,10 +383,15 @@ void FileBrowser::onItemDoubleClicked(QTreeWidgetItem* item, int column){
                                   0,
                                   SW_SHOWNORMAL);
       });
+      if (returnValue <= 32) {
+        qWarning() << "FileBrowser::open: failed to open"
+               << path;
+      }
 #else
   // nautilus FuseHomeDir()/Shares/Private/"name"
       QString app("nautilus");
       QStringList args;
+      QDir dir(path);
       args <<  QString("%1").arg(dir.absolutePath());
 
       qDebug() << "explore:" << app << args;
@@ -397,13 +402,7 @@ void FileBrowser::onItemDoubleClicked(QTreeWidgetItem* item, int column){
                   << "with args"
                   << args;
       }
-
 #endif
-
-      if (returnValue <= 32) {
-        qWarning() << "FileBrowser::open: failed to open"
-               << path;
-      }
     }
   }
 }
