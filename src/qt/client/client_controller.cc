@@ -581,8 +581,6 @@ int ClientController::GetContactInfo(const std::string &pub_name,
                                                                    mic);
 }
 
-}
-
 int ClientController::getattr(const std::string &path, std::string &ser_mdm) {
   return maidsafe::ClientController::getInstance()->getattr(path, ser_mdm);
 }
@@ -607,3 +605,4 @@ int ClientController::mkdir(const std::string &path) {
 
 int ClientController::rmdir(const std::string &path) {
   return maidsafe::ClientController::getInstance()->rmdir(path);
+}

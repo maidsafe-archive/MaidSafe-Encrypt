@@ -364,6 +364,7 @@ void FileBrowser::onItemDoubleClicked(QTreeWidgetItem* item, int column){
       QString path = rootPath_ + currentDir_ + item->text(0);
 
       qDebug() << "Item Double Clicked open file :" + path;
+#ifdef MAIDSAFE_WIN32
 
       QString operation("open");
       quintptr returnValue;
@@ -382,6 +383,22 @@ void FileBrowser::onItemDoubleClicked(QTreeWidgetItem* item, int column){
                                   0,
                                   SW_SHOWNORMAL);
       });
+#else
+  // nautilus FuseHomeDir()/Shares/Private/"name"
+      QString app("nautilus");
+      QStringList args;
+      args <<  QString("%1").arg(dir.absolutePath());
+
+      qDebug() << "explore:" << app << args;
+
+      if (!QProcess::startDetached(app, args)) {
+        qWarning() << "UserSpaceFileSystem::explore: failed to start"
+                  << app
+                  << "with args"
+                  << args;
+      }
+
+#endif
 
       if (returnValue <= 32) {
         qWarning() << "FileBrowser::open: failed to open"
