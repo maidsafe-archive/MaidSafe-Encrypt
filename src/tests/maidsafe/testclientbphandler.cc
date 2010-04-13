@@ -141,6 +141,24 @@ void BPAddMsgCallbackFailed(
   done->Run();
 }
 
+void BPAddPresenceCallbackSucceed(
+    const kad::Contact &peer,
+    maidsafe::AddBPPresenceResponse *response,
+    google::protobuf::Closure *done) {
+  response->set_result(kAck);
+  response->set_pmid_id(peer.node_id());
+  done->Run();
+}
+
+void BPAddPresenceCallbackFailed(
+    const kad::Contact &peer,
+    maidsafe::AddBPPresenceResponse *response,
+    google::protobuf::Closure *done) {
+  response->set_result(kNack);
+  response->set_pmid_id(peer.node_id());
+  done->Run();
+}
+
 class KadCB {
  public:
   KadCB() : result() {}
@@ -184,13 +202,36 @@ class BPCallback {
         vbpm_set.insert(it->SerializeAsString());
     }
   }
+  void BPGetPresence_CB(
+      const maidsafe::ReturnCode &res,
+      const std::list<maidsafe::LivePresence> &pres,
+      bool b) {
+    if (b) {
+      result = res;
+      presences.clear();
+      std::set<std::string>::iterator it;
+      for (it = presence_set.begin(); it != presence_set.end(); ++it) {
+        maidsafe::LivePresence pr;
+        pr.ParseFromString(*it);
+        presences.push_back(pr);
+      }
+    } else {
+      presences.clear();
+      presences = pres;
+      std::list<maidsafe::LivePresence>::iterator it;
+      for (it = presences.begin(); it != presences.end(); ++it)
+        presence_set.insert(it->SerializeAsString());
+    }
+  }
   void Reset() {
     result = maidsafe::kGeneralError;
     msgs.clear();
   }
   std::set<std::string> vbpm_set;
+  std::set<std::string> presence_set;
   maidsafe::ReturnCode result;
   std::list<maidsafe::ValidatedBufferPacketMessage> msgs;
+  std::list<maidsafe::LivePresence> presences;
 };
 
 class GetMsgsHelper {
@@ -201,7 +242,7 @@ class GetMsgsHelper {
       maidsafe::GetBPMessagesResponse *response,
       google::protobuf::Closure *done) {
     response->set_result(kAck);
-    for (unsigned int i = 0; i < msgs.size(); ++i)
+    for (size_t i = 0; i < msgs.size(); ++i)
       response->add_messages(msgs.at(i).SerializeAsString());
     response->set_pmid_id(peer.node_id());
     done->Run();
@@ -209,6 +250,24 @@ class GetMsgsHelper {
   void BPGetMsgsCallbackFailed(
       const kad::Contact &peer,
       maidsafe::GetBPMessagesResponse *response,
+      google::protobuf::Closure *done) {
+    response->set_result(kNack);
+    response->set_pmid_id(peer.node_id());
+    done->Run();
+  }
+  void BPGetPresenceCallbackSucceed(
+      const kad::Contact &peer,
+      maidsafe::GetBPPresenceResponse *response,
+      google::protobuf::Closure *done) {
+    response->set_result(kAck);
+    for (size_t i = 0; i < presences.size(); ++i)
+      response->add_messages(presences.at(i).SerializeAsString());
+    response->set_pmid_id(peer.node_id());
+    done->Run();
+  }
+  void BPGetPresenceCallbackFailed(
+      const kad::Contact &peer,
+      maidsafe::GetBPPresenceResponse *response,
       google::protobuf::Closure *done) {
     response->set_result(kNack);
     response->set_pmid_id(peer.node_id());
@@ -229,8 +288,15 @@ class GetMsgsHelper {
     bp_msg.set_type(maidsafe::INSTANT_MSG);
     msgs.push_back(bp_msg);
   }
+  void AddPresence(const std::string &sender) {
+    maidsafe::LivePresence bp_presence;
+    bp_presence.set_contact_id(sender);
+    bp_presence.set_end_point("las nueces del rey mazorca");
+    presences.push_back(bp_presence);
+  }
  private:
   std::vector<maidsafe::ValidatedBufferPacketMessage> msgs;
+  std::vector<maidsafe::LivePresence> presences;
   crypto::Crypto co;
 };
 
@@ -335,7 +401,6 @@ class TestClientBP : public testing::Test {
     knode_->Leave();
     trans_han_->StopAll();
     ch_man_->Stop();
-//    delete knode_;
     delete trans_;
     delete trans_han_;
     delete ch_man_;
@@ -826,3 +891,263 @@ TEST_F(TestClientBP, BEH_MAID_GetMessagesFailRpcs) {
     boost::this_thread::sleep(boost::posix_time::milliseconds(100));
   ASSERT_EQ(maidsafe::kBPMessagesRetrievalError, cb.result);
 }
+
+TEST_F(TestClientBP, BEH_MAID_AddPresenceOk) {
+  MockBPH cbph(BPMock, knode_);
+  BPCallback cb;
+
+  EXPECT_CALL(cbph, FindNodes(_, _))
+      .WillOnce(WithArgs<0>(Invoke(FindNodesSucceed)));
+  EXPECT_CALL(*BPMock, AddBPPresence(_, _, _, _, _, _, _))
+      .WillRepeatedly(WithArgs<0, 4, 6>(Invoke(BPAddPresenceCallbackSucceed)));
+
+  std::string signed_pubkey = cryp.AsymSign(keys_.at(1).public_key(), "",
+                                            keys_.at(1).private_key(),
+                                            crypto::STRING_STRING);
+  maidsafe::BPInputParameters bpip = {cryp.Hash(keys_.at(1).public_key() +
+                                          signed_pubkey, "",
+                                          crypto::STRING_STRING, false),
+                                      keys_.at(1).public_key(),
+                                      keys_.at(1).private_key()};
+
+  // creating info of receiver
+  signed_pubkey = cryp.AsymSign(keys_.at(2).public_key(), "",
+                                keys_.at(2).private_key(),
+                                crypto::STRING_STRING);
+  std::string recv_id = cryp.Hash(keys_.at(2).public_key() + signed_pubkey, "",
+                                  crypto::STRING_STRING, false);
+
+  cbph.AddPresence(bpip, "", keys_.at(2).public_key(), recv_id,
+                   boost::bind(&BPCallback::BPOperation_CB, &cb, _1),
+                   trans_->GetID());
+  while (cb.result == -1)
+    boost::this_thread::sleep(boost::posix_time::milliseconds(500));
+  ASSERT_EQ(maidsafe::kSuccess, cb.result);
+}
+
+TEST_F(TestClientBP, BEH_MAID_AddPresenceFailFindNodes) {
+  MockBPH cbph(BPMock, knode_);
+  BPCallback cb;
+
+  EXPECT_CALL(cbph, FindNodes(_, _))
+      .WillOnce(WithArgs<0>(Invoke(FindNodesFailure)))
+      .WillOnce(WithArgs<0>(Invoke(FindNodesFailNoParse)))
+      .WillOnce(WithArgs<0>(Invoke(FindNodesFailNotEnough)))
+      .WillOnce(WithArgs<0>(Invoke(FindNodesFailNotContacts)));
+
+  std::string signed_pubkey = cryp.AsymSign(keys_.at(1).public_key(), "",
+                                            keys_.at(1).private_key(),
+                                            crypto::STRING_STRING);
+  maidsafe::BPInputParameters bpip = {cryp.Hash(keys_.at(1).public_key() +
+                                          signed_pubkey, "",
+                                          crypto::STRING_STRING, false),
+                                      keys_.at(1).public_key(),
+                                      keys_.at(1).private_key()};
+
+  // creating info of receiver
+  signed_pubkey = cryp.AsymSign(keys_.at(2).public_key(), "",
+                                keys_.at(2).private_key(),
+                                crypto::STRING_STRING);
+  std::string recv_id = cryp.Hash(keys_.at(2).public_key() + signed_pubkey, "",
+                                  crypto::STRING_STRING, false);
+
+  cbph.AddPresence(bpip, "", keys_.at(2).public_key(), recv_id,
+                   boost::bind(&BPCallback::BPOperation_CB, &cb, _1),
+                   trans_->GetID());
+  while (cb.result == maidsafe::kGeneralError)
+    boost::this_thread::sleep(boost::posix_time::milliseconds(100));
+  ASSERT_EQ(maidsafe::kBPAddPresenceError, cb.result);
+
+  cb.Reset();
+  cbph.AddPresence(bpip, "", keys_.at(2).public_key(), recv_id,
+                   boost::bind(&BPCallback::BPOperation_CB, &cb, _1),
+                   trans_->GetID());
+  while (cb.result == maidsafe::kGeneralError)
+    boost::this_thread::sleep(boost::posix_time::milliseconds(100));
+  ASSERT_EQ(maidsafe::kBPAddPresenceError, cb.result);
+
+  cb.Reset();
+  cbph.AddPresence(bpip, "", keys_.at(2).public_key(), recv_id,
+                   boost::bind(&BPCallback::BPOperation_CB, &cb, _1),
+                   trans_->GetID());
+  while (cb.result == maidsafe::kGeneralError)
+    boost::this_thread::sleep(boost::posix_time::milliseconds(100));
+  ASSERT_EQ(maidsafe::kBPAddPresenceError, cb.result);
+
+  cb.Reset();
+  cbph.AddPresence(bpip, "", keys_.at(2).public_key(), recv_id,
+                   boost::bind(&BPCallback::BPOperation_CB, &cb, _1),
+                   trans_->GetID());
+  while (cb.result == maidsafe::kGeneralError)
+    boost::this_thread::sleep(boost::posix_time::milliseconds(100));
+  ASSERT_EQ(maidsafe::kBPAddPresenceError, cb.result);
+}
+
+TEST_F(TestClientBP, BEH_MAID_AddBPPresenceFailRpcs) {
+  MockBPH cbph(BPMock, knode_);
+  BPCallback cb;
+
+  EXPECT_CALL(cbph, FindNodes(_, _))
+      .WillOnce(WithArgs<0>(Invoke(FindNodesSucceed)));
+  EXPECT_CALL(*BPMock, AddBPPresence(_, _, _, _, _, _, _))
+      .WillRepeatedly(WithArgs<0, 4, 6>(Invoke(BPAddPresenceCallbackFailed)));
+
+  std::string signed_pubkey = cryp.AsymSign(keys_.at(1).public_key(), "",
+                                            keys_.at(1).private_key(),
+                                            crypto::STRING_STRING);
+  maidsafe::BPInputParameters bpip = {cryp.Hash(keys_.at(1).public_key() +
+                                          signed_pubkey, "",
+                                          crypto::STRING_STRING, false),
+                                      keys_.at(1).public_key(),
+                                      keys_.at(1).private_key()};
+
+  // creating info of receiver
+  signed_pubkey = cryp.AsymSign(keys_.at(2).public_key(), "",
+                                keys_.at(2).private_key(),
+                                crypto::STRING_STRING);
+  std::string recv_id = cryp.Hash(keys_.at(2).public_key() + signed_pubkey, "",
+                                  crypto::STRING_STRING, false);
+
+  cbph.AddPresence(bpip, "", keys_.at(2).public_key(), recv_id,
+                   boost::bind(&BPCallback::BPOperation_CB, &cb, _1),
+                   trans_->GetID());
+  while (cb.result == maidsafe::kGeneralError)
+    boost::this_thread::sleep(boost::posix_time::milliseconds(100));
+  ASSERT_EQ(maidsafe::kBPAddPresenceError, cb.result);
+}
+
+TEST_F(TestClientBP, BEH_MAID_GetPresenceOk) {
+  MockBPH cbph(BPMock, knode_);
+  BPCallback cb;
+  GetMsgsHelper helper;
+  helper.AddPresence("sender1");
+  helper.AddPresence("sender2");
+  helper.AddPresence("sender3");
+
+  EXPECT_CALL(cbph, FindNodes(_, _))
+      .WillOnce(WithArgs<0>(Invoke(FindNodesSucceed)));
+  EXPECT_CALL(*BPMock, GetBPPresence(_, _, _, _, _, _, _))
+      .WillRepeatedly(WithArgs<0, 4, 6>(Invoke(&helper,
+                      &GetMsgsHelper::BPGetPresenceCallbackSucceed)));
+
+  std::string signed_pub_key = cryp.AsymSign(keys_.at(1).public_key(), "",
+                                             keys_.at(1).private_key(),
+                                             crypto::STRING_STRING);
+  maidsafe::BPInputParameters bpip = {cryp.Hash(keys_.at(1).public_key() +
+                                                signed_pub_key, "",
+                                                crypto::STRING_STRING, false),
+                                      keys_.at(1).public_key(),
+                                      keys_.at(1).private_key()};
+
+  cbph.GetPresence(bpip,
+                   boost::bind(&BPCallback::BPGetPresence_CB, &cb, _1, _2, _3),
+                   trans_->GetID());
+  while (cb.result == maidsafe::kGeneralError)
+    boost::this_thread::sleep(boost::posix_time::milliseconds(100));
+  ASSERT_EQ(maidsafe::kSuccess, cb.result);
+  ASSERT_EQ(size_t(3), cb.presences.size());
+  maidsafe::LivePresence pr = cb.presences.front();
+  ASSERT_EQ("sender1", pr.contact_id());
+  cb.presences.pop_front();
+  pr.Clear();
+  pr = cb.presences.front();
+  ASSERT_EQ("sender2", pr.contact_id());
+  cb.presences.pop_front();
+  pr.Clear();
+  pr = cb.presences.front();
+  ASSERT_EQ("sender3", pr.contact_id());
+}
+
+TEST_F(TestClientBP, BEH_MAID_GetPresenceFailFindNodes) {
+  MockBPH cbph(BPMock, knode_);
+  BPCallback cb;
+  GetMsgsHelper helper;
+  helper.AddPresence("sender1");
+  helper.AddPresence("sender2");
+  helper.AddPresence("sender3");
+
+  EXPECT_CALL(cbph, FindNodes(_, _))
+      .WillOnce(WithArgs<0>(Invoke(FindNodesFailure)))
+      .WillOnce(WithArgs<0>(Invoke(FindNodesFailNoParse)))
+      .WillOnce(WithArgs<0>(Invoke(FindNodesFailNotEnough)))
+      .WillOnce(WithArgs<0>(Invoke(FindNodesFailNotContacts)));
+
+  std::string signed_pubkey = cryp.AsymSign(keys_.at(1).public_key(), "",
+                                            keys_.at(1).private_key(),
+                                            crypto::STRING_STRING);
+  maidsafe::BPInputParameters bpip = {cryp.Hash(keys_.at(1).public_key() +
+                                          signed_pubkey, "",
+                                          crypto::STRING_STRING, false),
+                                      keys_.at(1).public_key(),
+                                      keys_.at(1).private_key()};
+
+  // creating info of receiver
+  signed_pubkey = cryp.AsymSign(keys_.at(2).public_key(), "",
+                                keys_.at(2).private_key(),
+                                crypto::STRING_STRING);
+  std::string recv_id = cryp.Hash(keys_.at(2).public_key() + signed_pubkey, "",
+                                  crypto::STRING_STRING, false);
+
+  cbph.GetPresence(bpip,
+                   boost::bind(&BPCallback::BPGetPresence_CB, &cb, _1, _2, _3),
+                   trans_->GetID());
+  while (cb.result == maidsafe::kGeneralError)
+    boost::this_thread::sleep(boost::posix_time::milliseconds(100));
+  ASSERT_EQ(maidsafe::kBPGetPresenceError, cb.result);
+
+  cb.Reset();
+  cbph.GetPresence(bpip,
+                   boost::bind(&BPCallback::BPGetPresence_CB, &cb, _1, _2, _3),
+                   trans_->GetID());
+  while (cb.result == maidsafe::kGeneralError)
+    boost::this_thread::sleep(boost::posix_time::milliseconds(100));
+  ASSERT_EQ(maidsafe::kBPGetPresenceError, cb.result);
+
+  cb.Reset();
+  cbph.GetPresence(bpip,
+                   boost::bind(&BPCallback::BPGetPresence_CB, &cb, _1, _2, _3),
+                   trans_->GetID());
+  while (cb.result == maidsafe::kGeneralError)
+    boost::this_thread::sleep(boost::posix_time::milliseconds(100));
+  ASSERT_EQ(maidsafe::kBPGetPresenceError, cb.result);
+
+  cb.Reset();
+  cbph.GetPresence(bpip,
+                   boost::bind(&BPCallback::BPGetPresence_CB, &cb, _1, _2, _3),
+                   trans_->GetID());
+  while (cb.result == maidsafe::kGeneralError)
+    boost::this_thread::sleep(boost::posix_time::milliseconds(100));
+  ASSERT_EQ(maidsafe::kBPGetPresenceError, cb.result);
+}
+
+TEST_F(TestClientBP, BEH_MAID_GetPresenceFailRpcs) {
+  MockBPH cbph(BPMock, knode_);
+  BPCallback cb;
+  GetMsgsHelper helper;
+  helper.AddPresence("sender1");
+  helper.AddPresence("sender2");
+  helper.AddPresence("sender3");
+
+  EXPECT_CALL(cbph, FindNodes(_, _))
+      .WillOnce(WithArgs<0>(Invoke(FindNodesSucceed)));
+  EXPECT_CALL(*BPMock, GetBPPresence(_, _, _, _, _, _, _))
+      .WillRepeatedly(WithArgs<0, 4, 6>(Invoke(&helper,
+                      &GetMsgsHelper::BPGetPresenceCallbackFailed)));
+
+  std::string signed_pub_key = cryp.AsymSign(keys_.at(1).public_key(), "",
+                                             keys_.at(1).private_key(),
+                                             crypto::STRING_STRING);
+  maidsafe::BPInputParameters bpip = {cryp.Hash(keys_.at(1).public_key() +
+                                                signed_pub_key, "",
+                                                crypto::STRING_STRING, false),
+                                      keys_.at(1).public_key(),
+                                      keys_.at(1).private_key()};
+
+  cbph.GetPresence(bpip,
+                   boost::bind(&BPCallback::BPGetPresence_CB, &cb, _1, _2, _3),
+                   trans_->GetID());
+  while (cb.result == maidsafe::kGeneralError)
+    boost::this_thread::sleep(boost::posix_time::milliseconds(100));
+  ASSERT_EQ(maidsafe::kBPGetPresenceError, cb.result);
+}
+

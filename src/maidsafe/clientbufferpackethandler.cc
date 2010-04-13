@@ -213,20 +213,12 @@ void ClientBufferPacketHandler::AddPresence(
   EndPoint ep;
   ep.add_ip(knode_->host_ip());
   ep.add_port(knode_->host_port());
-  std::string s_ep(ep.SerializeAsString());
-  lp.add_end_points(crypto_obj_.AsymEncrypt(s_ep, "", recver_public_key,
-                    crypto::STRING_STRING));
-  ep.Clear();
   ep.add_ip(knode_->local_host_ip());
   ep.add_port(knode_->local_host_port());
-  s_ep = ep.SerializeAsString();
-  lp.add_end_points(crypto_obj_.AsymEncrypt(s_ep, "", recver_public_key,
-                    crypto::STRING_STRING));
-  ep.Clear();
   ep.add_ip(knode_->rv_ip());
   ep.add_port(knode_->rv_port());
-  s_ep = ep.SerializeAsString();
-  lp.add_end_points(crypto_obj_.AsymEncrypt(s_ep, "", recver_public_key,
+  std::string s_ep(ep.SerializeAsString());
+  lp.set_end_point(crypto_obj_.AsymEncrypt(s_ep, "", recver_public_key,
                     crypto::STRING_STRING));
 
   GenericPacket ser_lp;
@@ -607,14 +599,10 @@ std::list<LivePresence> ClientBufferPacketHandler::ValidatePresence(
   for (int i = 0; i < response->messages_size(); ++i) {
     LivePresence lp;
     if (lp.ParseFromString(response->messages(i))) {
-      std::vector<std::string> decrypted_endpoints;
-      for (int n = 0; n < lp.end_points_size(); ++n)
-        decrypted_endpoints.push_back(crypto_obj_.AsymDecrypt(
-                                      lp.end_points(n), "", private_key,
-                                      crypto::STRING_STRING));
-      lp.Clear();
-      for (size_t a = 0; a < decrypted_endpoints.size(); ++a)
-        lp.add_end_points(decrypted_endpoints[a]);
+      std::string decrypted_endpoint(crypto_obj_.AsymDecrypt(
+                                     lp.end_point(), "", private_key,
+                                     crypto::STRING_STRING));
+      lp.set_end_point(decrypted_endpoint);
     }
     result.push_back(lp);
   }

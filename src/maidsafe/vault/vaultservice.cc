@@ -43,23 +43,28 @@
 namespace maidsafe_vault {
 
 void vsvc_dummy_callback(const std::string &result) {
-#ifdef DEBUG
   kad::StoreResponse result_msg;
-  if (!result_msg.ParseFromString(result))
+  if (!result_msg.ParseFromString(result)) {
+#ifdef DEBUG
     printf("Can't parse store result.\n");
+#endif
+  }
 //  printf("%s\n", result_msg.DebugString().c_str());
-  if (result_msg.result() != kad::kRpcResultSuccess)
+  if (result_msg.result() != kad::kRpcResultSuccess) {
+#ifdef DEBUG
     printf("Storing chunk reference failed.\n");
+#endif
+  }
 //  else
 //    printf("Storing chunk reference succeeded.\n");
-#endif
 }
 
 void int_dummy_callback(const int &result) {
+  if (result != 0) {
 #ifdef DEBUG
-  if (result != 0)
     printf("int_dummy_callback: something failed (%i).\n", result);
 #endif
+  }
 }
 
 template<>
@@ -1697,6 +1702,18 @@ void VaultService::GetBPMessages(google::protobuf::RpcController*,
   }
 
   maidsafe::VaultBufferPacketHandler vbph;
+  if (!vbph.ValidateOwnerSignature(request->public_key(), ser_bp)) {
+    response->set_result(kNack);
+    done->Run();
+#ifdef DEBUG
+    if (knode_ != NULL) {
+      printf("In VaultService::GetBPMessages (%s), ", HexSubstr(pmid_).c_str());
+      printf("failed to validate the Buffer Packet ownership.\n");
+    }
+#endif
+    return;
+  }
+
   std::vector<std::string> msgs;
   if (!vbph.GetMessages(&ser_bp, &msgs)) {
     response->set_result(kNack);
@@ -1707,7 +1724,7 @@ void VaultService::GetBPMessages(google::protobuf::RpcController*,
 #endif
     return;
   }
-  for (int i = 0; i < static_cast<int>(msgs.size()); ++i)
+  for (size_t i = 0; i < msgs.size(); ++i)
     response->add_messages(msgs[i]);
 
   if (!bps_.UpdateBP(request->bufferpacket_name(), ser_bp)) {
@@ -1785,6 +1802,162 @@ void VaultService::AddBPMessage(google::protobuf::RpcController*,
   }
 
   if (!bps_.UpdateBP(request->bufferpacket_name(), updated_bp)) {
+    response->set_result(kNack);
+    done->Run();
+#ifdef DEBUG
+    if (knode_ != NULL) {
+      printf("In VaultService::AddBPMessage (%s), ", HexSubstr(pmid_).c_str());
+      printf("failed to update the local buffer packet.\n");
+    }
+#endif
+    return;
+  }
+
+  done->Run();
+}
+
+void VaultService::GetBPPresence(google::protobuf::RpcController*,
+                                 const maidsafe::GetBPPresenceRequest *request,
+                                 maidsafe::GetBPPresenceResponse *response,
+                                 google::protobuf::Closure *done) {
+  response->set_pmid_id(pmid_);
+  response->set_public_key(pmid_public_);
+  response->set_signed_public_key(pmid_public_signature_);
+  response->set_result(kAck);
+  if (!request->IsInitialized()) {
+    response->set_result(kNack);
+    done->Run();
+#ifdef DEBUG
+    printf("In VaultService::GetBPMessages (%s), request is not initialized.\n",
+           HexSubstr(pmid_).c_str());
+#endif
+    return;
+  }
+
+  crypto::Crypto co;
+  co.set_hash_algorithm(crypto::SHA_512);
+  if (!co.AsymCheckSig(request->public_key(), request->signed_public_key(),
+      request->public_key(), crypto::STRING_STRING)) {
+    response->set_result(kNack);
+    done->Run();
+#ifdef DEBUG
+    printf("In VaultService::GetBPMessages (%s), ", HexSubstr(pmid_).c_str());
+    printf("failed to validate signed public key.\n");
+#endif
+    return;
+  }
+
+  if (!co.AsymCheckSig(co.Hash(request->public_key() +
+      request->signed_public_key() + request->bufferpacket_name(), "",
+      crypto::STRING_STRING, false), request->signed_request(),
+      request->public_key(), crypto::STRING_STRING)) {
+    response->set_result(kNack);
+    done->Run();
+#ifdef DEBUG
+    printf("In VaultService::GetBPMessages (%s), ", HexSubstr(pmid_).c_str());
+    printf("failed to validate signed request.\n");
+#endif
+    return;
+  }
+
+  std::string ser_bp;
+  if (!bps_.LoadBP(request->bufferpacket_name(), &ser_bp)) {
+    response->set_result(kNack);
+    done->Run();
+#ifdef DEBUG
+    printf("In VaultService::GetBPMessages (%s), ", HexSubstr(pmid_).c_str());
+    printf("failed to load the local buffer packet.\n");
+#endif
+    return;
+  }
+
+  maidsafe::VaultBufferPacketHandler vbph;
+  std::vector<std::string> msgs;
+  if (!vbph.GetPresence(&ser_bp, &msgs)) {
+    response->set_result(kNack);
+    done->Run();
+#ifdef DEBUG
+    printf("In VaultService::GetBPMessages (%s), ", HexSubstr(pmid_).c_str());
+    printf("failed to extract the messages.\n");
+#endif
+    return;
+  }
+  for (int i = 0; i < static_cast<int>(msgs.size()); ++i)
+    response->add_messages(msgs[i]);
+
+  if (!bps_.UpdateBP(request->bufferpacket_name(), ser_bp)) {
+    response->clear_messages();
+    response->set_result(kNack);
+    done->Run();
+#ifdef DEBUG
+    printf("In VaultService::GetBPMessages (%s), ", HexSubstr(pmid_).c_str());
+    printf("failed to update the local buffer packet.\n");
+#endif
+    return;
+  }
+
+  response->set_result(kAck);
+  done->Run();
+}
+
+void VaultService::AddBPPresence(google::protobuf::RpcController*,
+                                 const maidsafe::AddBPPresenceRequest* request,
+                                 maidsafe::AddBPPresenceResponse* response,
+                                 google::protobuf::Closure* done) {
+  response->set_pmid_id(pmid_);
+  response->set_public_key(pmid_public_);
+  response->set_signed_public_key(pmid_public_signature_);
+  response->set_result(kAck);
+  if (!request->IsInitialized()) {
+    response->set_result(kNack);
+    done->Run();
+#ifdef DEBUG
+    if (knode_ != NULL)
+      printf("In VaultService::AddBPMessage(%s), request is not initialized.\n",
+             HexSubstr(pmid_).c_str());
+#endif
+    return;
+  }
+
+  if (!ValidateSignedRequest(request->public_key(),
+      request->signed_public_key(), request->signed_request(),
+      request->bufferpacket_name(), request->pmid())) {
+    response->set_result(kNack);
+    done->Run();
+#ifdef DEBUG
+    printf("In VaultService::AddBPMessage(%s), request/id doesn't validate.\n",
+           HexSubstr(pmid_).c_str());
+#endif
+    return;
+  }
+
+  std::string ser_bp;
+  if (!bps_.LoadBP(request->bufferpacket_name(), &ser_bp)) {
+    response->set_result(kNack);
+    done->Run();
+#ifdef DEBUG
+    if (knode_ != NULL) {
+      printf("In VaultService::AddBPMessage (%s), ", HexSubstr(pmid_).c_str());
+      printf("failed to load the local buffer packet.\n");
+    }
+#endif
+    return;
+  }
+
+  maidsafe::VaultBufferPacketHandler vbph;
+  if (!vbph.AddPresence(request->data(), &ser_bp)) {
+    response->set_result(kNack);
+    done->Run();
+#ifdef DEBUG
+    if (knode_ != NULL) {
+      printf("In VaultService::AddBPMessage (%s), ", HexSubstr(pmid_).c_str());
+      printf("failed to add the message.\n");
+    }
+#endif
+    return;
+  }
+
+  if (!bps_.UpdateBP(request->bufferpacket_name(), ser_bp)) {
     response->set_result(kNack);
     done->Run();
 #ifdef DEBUG

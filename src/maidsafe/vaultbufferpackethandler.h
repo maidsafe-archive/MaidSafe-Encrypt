@@ -54,6 +54,8 @@ class VaultBufferPacketHandler {
   bool CheckMsgStructure(const std::string &ser_message,
                          std::string *sender_id,
                          MessageType *type);
+  bool GetPresence(std::string *ser_bp, std::vector<std::string> *msgs);
+  bool AddPresence(const std::string &ser_message, std::string *ser_bp);
 
  private:
   crypto::Crypto crypto_obj_;

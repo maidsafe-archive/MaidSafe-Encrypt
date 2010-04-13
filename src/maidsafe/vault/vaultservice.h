@@ -250,6 +250,14 @@ class VaultService : public maidsafe::MaidsafeService {
                             const maidsafe::AddBPMessageRequest* request,
                             maidsafe::AddBPMessageResponse* response,
                             google::protobuf::Closure* done);
+  virtual void GetBPPresence(google::protobuf::RpcController* controller,
+                             const maidsafe::GetBPPresenceRequest *request,
+                             maidsafe::GetBPPresenceResponse *response,
+                             google::protobuf::Closure *done);
+  virtual void AddBPPresence(google::protobuf::RpcController* controller,
+                             const maidsafe::AddBPPresenceRequest* request,
+                             maidsafe::AddBPPresenceResponse* response,
+                             google::protobuf::Closure* done);
   int AddAccount(const std::string &pmid, const boost::uint64_t &offer);
   bool HaveAccount(const std::string &pmid);
  private:
@@ -281,6 +289,8 @@ class VaultService : public maidsafe::MaidsafeService {
   FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesModifyBPInfo);
   FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesGetBPMessages);
   FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesAddBPMessages);
+  FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesGetBPPresence);
+  FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesAddBPPresence);
   VaultService(const VaultService&);
   VaultService &operator=(const VaultService&);
   void DiscardResult(const int&) {}
