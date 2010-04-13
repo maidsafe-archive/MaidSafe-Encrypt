@@ -43,6 +43,7 @@ namespace fs = boost::filesystem;
   theWatcher_ = new QFileSystemWatcher;
   setAcceptDrops(true);
   ui_.driveTreeWidget->setAcceptDrops(true);
+  setAttribute(Qt::WA_DeleteOnClose, true);
 
   menu = new QMenu(this);
 
@@ -108,6 +109,8 @@ namespace fs = boost::filesystem;
 }
 
 FileBrowser::~FileBrowser() {
+
+
 }
 
 void FileBrowser::setActive(bool b) {
@@ -389,19 +392,8 @@ void FileBrowser::onItemDoubleClicked(QTreeWidgetItem* item, int column){
       }
 #else
   // nautilus FuseHomeDir()/Shares/Private/"name"
-      QString app("nautilus");
-      QStringList args;
-      QDir dir(path);
-      args <<  QString("%1").arg(dir.absolutePath());
+     system(path.toStdString());
 
-      qDebug() << "explore:" << app << args;
-
-      if (!QProcess::startDetached(app, args)) {
-        qWarning() << "UserSpaceFileSystem::explore: failed to start"
-                  << app
-                  << "with args"
-                  << args;
-      }
 #endif
     }
   }

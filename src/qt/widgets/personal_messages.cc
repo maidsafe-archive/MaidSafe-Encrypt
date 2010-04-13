@@ -166,8 +166,8 @@ void PersonalMessages::onMessageReceived(ClientController::MessageType,
     QDateTime theDate = QDateTime::currentDateTime();
     QString date = theDate.toString("dd.MM.yyyy hh:mm:ss");
 
-    ui_.message_window->insertHtml(
-        tr("<span style=\"background-color:#CCFF99\">"
+    ui_.message_window->insertHtml(QString(
+        "<span style=\"background-color:#CCFF99\">"
            "<br />%3 %1 said: %2</span>").arg(sender).arg(message).arg(date));
   }
     printf("Personal Messages.cc %f", t.elapsed());
@@ -194,7 +194,7 @@ void PersonalMessages::setMessage(QString mess) {
   QString date = theDate.toString("dd.MM.yyyy hh:mm:ss");
 
   ui_.message_window->insertHtml(
-      tr("<span style=\"background-color:#CCFF99\">"
+      QString("<span style=\"background-color:#CCFF99\">"
          "<br />%3 %1 said: %2</span>").arg(convName_).arg(mess).arg(date));
   ui_.message_window->moveCursor(QTextCursor::End, QTextCursor::MoveAnchor);
 }
