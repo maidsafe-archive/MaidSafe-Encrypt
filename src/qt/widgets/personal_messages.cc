@@ -118,13 +118,15 @@ PersonalMessages::PersonalMessages(QString name)
 PersonalMessages::~PersonalMessages() {
   int n = ClientController::instance()->RemoveConversation(
           convName_.toStdString());
-  dir_ = "" + convName_ + ".html";
+
+// TODO (Stephen#5#): Locate where to save conversarion history and also add check for user preference
+  /*dir_ = "" + convName_ + ".html";
   QFile f(dir_);
   f.open(QIODevice::WriteOnly);
   QTextStream out(&f);
   out << ui_.message_window->toHtml();
   f.close();
-  qDebug() << "Destroy Finished";
+  qDebug() << "Destroy Finished";*/
 }
 
 void PersonalMessages::closeEvent(QCloseEvent *event) { }
@@ -145,14 +147,15 @@ void PersonalMessages::reset() {
 }
 
 void PersonalMessages::loadConversation() {
-  QFile file(dir_);
+// TODO (Stephen#5#): load conversation history and display previous messages to user preference
+/* QFile file(dir_);
   if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
     return;
   QTextStream in(&file);
   QString line = in.readAll();
   ui_.message_window->setHtml(line);
   file.close();
-  ui_.message_window->moveCursor(QTextCursor::End, QTextCursor::MoveAnchor);
+  ui_.message_window->moveCursor(QTextCursor::End, QTextCursor::MoveAnchor);*/
 }
 
 void PersonalMessages::onMessageReceived(ClientController::MessageType,

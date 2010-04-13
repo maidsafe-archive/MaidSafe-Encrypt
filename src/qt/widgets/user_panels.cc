@@ -158,7 +158,6 @@ void UserPanels::onMyFilesClicked() {
 #else
   UserSpaceFileSystem::instance()->explore(UserSpaceFileSystem::MY_FILES);
 #endif
-;
 }
 
 void UserPanels::onCurrentChanged(int index) {

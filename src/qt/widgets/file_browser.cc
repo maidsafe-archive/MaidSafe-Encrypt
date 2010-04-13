@@ -57,14 +57,15 @@ namespace fs = boost::filesystem;
   newFolder = new QAction(tr("New Folder"), this);
 
   menu->addAction(openFile);
-  menu->addSeparator();
-  menu->addAction(cutFile);
-  menu->addAction(copyFile);
   menu->addAction(saveFile);
   menu->addSeparator();
+  //menu->addAction(cutFile);
+  //menu->addAction(copyFile);
+  //menu->addAction(saveFile);
+  //menu->addSeparator();
   menu->addAction(deleteFile);
   menu->addAction(renameFile);
-  menu->addAction(sendFile);
+  //menu->addAction(sendFile);
   menu->addSeparator();
   menu->addAction(newFolder);
 
@@ -110,7 +111,6 @@ namespace fs = boost::filesystem;
 
 FileBrowser::~FileBrowser() {
 
-
 }
 
 void FileBrowser::setActive(bool b) {
@@ -130,7 +130,7 @@ void FileBrowser::setActive(bool b) {
 
 void FileBrowser::reset() {
 
-  }
+}
 
 void FileBrowser::dragEnterEvent(QDragEnterEvent *event) {
   qDebug() << "drag enter event";

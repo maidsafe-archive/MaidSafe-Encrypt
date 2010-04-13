@@ -280,11 +280,16 @@ void PerpetualData::onLoginExistingUser() {
   // existing user whose credentials have been verified
   // mount the file system..
 
-#ifdef DEBUG
+
   qDebug() << "public name:" << ClientController::instance()->publicUsername();
-#endif
+
+
+#ifdef PD_LIGHT
+  onMountCompleted(true);
+#else
   setState(MOUNT_USER);
   asyncMount();
+#endif
 }
 
 void PerpetualData::onLoginNewUser() {
@@ -417,8 +422,14 @@ void PerpetualData::onLogout() {
   }
   if (!ClientController::instance()->publicUsername().isEmpty())
     ClientController::instance()->StopCheckingMessages();
+#ifdef PD_LIGHT
+  setState(LOGGING_OUT);
+  onUnmountCompleted(true);
+#else
   asyncUnmount();
   setState(LOGGING_OUT);
+#endif
+
 }
 
 void PerpetualData::quit() {
