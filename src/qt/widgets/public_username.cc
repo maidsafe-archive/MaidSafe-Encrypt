@@ -17,6 +17,9 @@
 // qt
 #include <QMessageBox>
 
+// core
+#include "qt/client/client_controller.h"
+
 // local
 #include "qt/client/create_public_username_thread.h"
 
@@ -78,6 +81,7 @@ void PublicUsername::onCreateUsernameCompleted(bool success) {
   if (success) {
     ui_.contactLineEdit->setText(tr(""));
     emit complete();
+    ClientController::instance()->StartCheckingMessages();
   } else {
     QMessageBox::warning(this, tr("Problem!"), tr("Error setting Username."));
   }
