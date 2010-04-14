@@ -2340,9 +2340,9 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesGetSyncData) {
     EXPECT_EQ(kAck, static_cast<int>(response.result()));
     if (response.has_vault_account_set())
       EXPECT_EQ(0, response.vault_account_set().vault_account_size());
-    if(response.has_chunk_info_map())
+    if (response.has_chunk_info_map())
       EXPECT_EQ(0, response.chunk_info_map().vault_chunk_info_size());
-    if(response.has_vault_buffer_packet_map())
+    if (response.has_vault_buffer_packet_map())
       EXPECT_EQ(0,
                 response.vault_buffer_packet_map().vault_buffer_packet_size());
     response.Clear();
@@ -3099,8 +3099,8 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesAddBPMessages) {
   add_msg_request.set_public_key(newuser_pub_key);
   add_msg_request.set_signed_public_key(newuser_sig_pub_key);
   add_msg_request.set_signed_request(newuser_sig_req);
-  done = google::protobuf::NewCallback<TestCallback> (&cb_obj,
-    &TestCallback::CallbackFunction);
+  done = google::protobuf::NewCallback<TestCallback>
+         (&cb_obj, &TestCallback::CallbackFunction);
   service.AddBPMessage(&controller, &add_msg_request, &add_msg_response, done);
   ASSERT_TRUE(add_msg_response.IsInitialized());
   EXPECT_EQ(kAck, static_cast<int>(add_msg_response.result()));
@@ -3146,6 +3146,314 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesAddBPMessages) {
   EXPECT_EQ(get_msg_response.pmid_id(), co.Hash(get_msg_response.public_key() +
     get_msg_response.signed_public_key(), "", crypto::STRING_STRING, false));
   EXPECT_EQ(0, get_msg_response.messages_size());
+}
+
+TEST_F(VaultServicesTest, BEH_MAID_ServicesGetBPPresence) {
+  VaultService service(vault_pmid_, vault_public_key_, vault_private_key_,
+      vault_public_key_signature_, vault_chunkstore_, NULL,
+      vault_service_logic_, udt_transport_.GetID());
+  rpcprotocol::Controller controller;
+  maidsafe::CreateBPRequest request;
+  maidsafe::CreateBPResponse response;
+
+  // Not initialised
+  TestCallback cb_obj;
+  google::protobuf::Closure *done = google::protobuf::NewCallback<TestCallback>
+                                    (&cb_obj, &TestCallback::CallbackFunction);
+  std::string pub_key, priv_key, pmid, sig_pub_key, sig_req;
+  CreateRSAKeys(&pub_key, &priv_key);
+  crypto::Crypto co;
+  co.set_symm_algorithm(crypto::AES_256);
+  co.set_hash_algorithm(crypto::SHA_512);
+
+  maidsafe::BufferPacketInfo bpi;
+  bpi.set_owner("Dan");
+  bpi.set_owner_publickey(pub_key);
+  bpi.add_users("newuser");
+  maidsafe::BufferPacket bp;
+  maidsafe::GenericPacket *info = bp.add_owner_info();
+  std::string ser_bpi;
+  bpi.SerializeToString(&ser_bpi);
+  info->set_data(ser_bpi);
+  info->set_signature(co.AsymSign(ser_bpi, "", priv_key,
+    crypto::STRING_STRING));
+  std::string ser_gp;
+  info->SerializeToString(&ser_gp);
+  std::string ser_bp;
+  bp.SerializeToString(&ser_bp);
+
+  std::string bufferpacket_name(co.Hash("DanBUFFER", "", crypto::STRING_STRING,
+                                false));
+  CreateSignedRequest(pub_key, priv_key, bufferpacket_name, &pmid, &sig_pub_key,
+                      &sig_req);
+  request.set_bufferpacket_name(bufferpacket_name);
+  request.set_data(ser_bp);
+  request.set_pmid(pmid);
+  request.set_public_key(pub_key);
+  request.set_signed_public_key(sig_pub_key);
+  request.set_signed_request(sig_req);
+
+  service.CreateBP(&controller, &request, &response, done);
+  ASSERT_TRUE(response.IsInitialized());
+  EXPECT_EQ(kAck, static_cast<int>(response.result()));
+  EXPECT_EQ(response.pmid_id(), co.Hash(response.public_key() +
+                                        response.signed_public_key(), "",
+                                        crypto::STRING_STRING, false));
+
+  // Load the stored BP to check it
+  std::string test_content;
+  EXPECT_TRUE(service.bps_.HasBP(bufferpacket_name));
+  EXPECT_TRUE(service.bps_.LoadBP(bufferpacket_name, &test_content));
+  EXPECT_EQ(ser_bp, test_content);
+
+  // Get the messages
+  maidsafe::GetBPPresenceRequest get_presence_request;
+  maidsafe::GetBPPresenceResponse get_presence_response;
+  get_presence_request.set_bufferpacket_name(bufferpacket_name);
+  get_presence_request.set_pmid(pmid);
+  get_presence_request.set_public_key(pub_key);
+  get_presence_request.set_signed_public_key(sig_pub_key);
+  get_presence_request.set_signed_request(sig_req);
+  done = google::protobuf::NewCallback<TestCallback>
+         (&cb_obj, &TestCallback::CallbackFunction);
+  service.GetBPPresence(&controller, &get_presence_request,
+                        &get_presence_response, done);
+  ASSERT_TRUE(get_presence_response.IsInitialized());
+  EXPECT_EQ(kAck, static_cast<int>(get_presence_response.result()));
+  EXPECT_EQ(get_presence_response.pmid_id(),
+            co.Hash(get_presence_response.public_key() +
+                    get_presence_response.signed_public_key(), "",
+                    crypto::STRING_STRING, false));
+  EXPECT_EQ(0, get_presence_response.messages_size());
+  EXPECT_TRUE(service.bps_.HasBP(bufferpacket_name));
+  EXPECT_TRUE(service.bps_.LoadBP(bufferpacket_name, &test_content));
+  EXPECT_EQ(ser_bp, test_content);
+
+  maidsafe::BufferPacket mod_bp;
+  bp.ParseFromString(test_content);
+  maidsafe::LivePresence lp;
+  lp.set_contact_id("newuser");
+  maidsafe::EndPoint ep;
+  for (int n = 0; n < 3; ++n) {
+    ep.add_ip(base::itos(n));
+    ep.add_port(n);
+  }
+  lp.set_end_point(ep.SerializeAsString());
+  maidsafe::GenericPacket lp_gp;
+  lp_gp.set_data(lp.SerializeAsString());
+  lp_gp.set_signature("");
+  maidsafe::GenericPacket *mod_gp = mod_bp.add_presence_notifications();
+  *mod_gp = lp_gp;
+  EXPECT_TRUE(service.bps_.UpdateBP(bufferpacket_name,
+                                    mod_bp.SerializeAsString()));
+
+  done = google::protobuf::NewCallback<TestCallback>
+         (&cb_obj, &TestCallback::CallbackFunction);
+  service.GetBPPresence(&controller, &get_presence_request,
+                        &get_presence_response, done);
+  ASSERT_TRUE(get_presence_response.IsInitialized());
+  EXPECT_EQ(kAck, static_cast<int>(get_presence_response.result()));
+  EXPECT_EQ(get_presence_response.pmid_id(),
+            co.Hash(get_presence_response.public_key() +
+                    get_presence_response.signed_public_key(), "",
+                    crypto::STRING_STRING, false));
+  EXPECT_EQ(1, get_presence_response.messages_size());
+  ASSERT_EQ(lp_gp.SerializeAsString(), get_presence_response.messages(0));
+
+  get_presence_response.Clear();
+  done = google::protobuf::NewCallback<TestCallback>
+         (&cb_obj, &TestCallback::CallbackFunction);
+  service.GetBPPresence(&controller, &get_presence_request,
+                        &get_presence_response, done);
+  ASSERT_TRUE(get_presence_response.IsInitialized());
+  EXPECT_EQ(kAck, static_cast<int>(get_presence_response.result()));
+  EXPECT_EQ(get_presence_response.pmid_id(),
+            co.Hash(get_presence_response.public_key() +
+                    get_presence_response.signed_public_key(), "",
+                    crypto::STRING_STRING, false));
+  EXPECT_EQ(0, get_presence_response.messages_size());
+}
+
+TEST_F(VaultServicesTest, BEH_MAID_ServicesAddBPPresence) {
+  VaultService service(vault_pmid_, vault_public_key_, vault_private_key_,
+                       vault_public_key_signature_, vault_chunkstore_, NULL,
+                       vault_service_logic_, udt_transport_.GetID());
+  rpcprotocol::Controller controller;
+  maidsafe::CreateBPRequest request;
+  maidsafe::CreateBPResponse response;
+
+  // Not initialised
+  TestCallback cb_obj;
+  google::protobuf::Closure *done = google::protobuf::NewCallback<TestCallback>
+                                    (&cb_obj, &TestCallback::CallbackFunction);
+  std::string pub_key, priv_key, pmid, sig_pub_key, sig_req;
+  CreateRSAKeys(&pub_key, &priv_key);
+  crypto::Crypto co;
+  co.set_symm_algorithm(crypto::AES_256);
+  co.set_hash_algorithm(crypto::SHA_512);
+
+  maidsafe::BufferPacketInfo bpi;
+  bpi.set_owner("Dan");
+  bpi.set_owner_publickey(pub_key);
+  bpi.add_users(co.Hash("newuser", "", crypto::STRING_STRING, false));
+  maidsafe::BufferPacket bp;
+  maidsafe::GenericPacket *info = bp.add_owner_info();
+  std::string ser_bpi;
+  bpi.SerializeToString(&ser_bpi);
+  info->set_data(ser_bpi);
+  info->set_signature(co.AsymSign(ser_bpi, "", priv_key,
+    crypto::STRING_STRING));
+  std::string ser_gp;
+  info->SerializeToString(&ser_gp);
+  std::string ser_bp;
+  bp.SerializeToString(&ser_bp);
+
+  std::string bufferpacket_name(co.Hash("DanBUFFER", "", crypto::STRING_STRING,
+                                false));
+  CreateSignedRequest(pub_key, priv_key, bufferpacket_name, &pmid, &sig_pub_key,
+                      &sig_req);
+  request.set_bufferpacket_name(bufferpacket_name);
+  request.set_data(ser_bp);
+  request.set_pmid(pmid);
+  request.set_public_key(pub_key);
+  request.set_signed_public_key(sig_pub_key);
+  request.set_signed_request(sig_req);
+
+  service.CreateBP(&controller, &request, &response, done);
+  ASSERT_TRUE(response.IsInitialized());
+  EXPECT_EQ(kAck, static_cast<int>(response.result()));
+  EXPECT_EQ(response.pmid_id(), co.Hash(response.public_key() +
+                                        response.signed_public_key(), "",
+                                        crypto::STRING_STRING, false));
+
+  // Load the stored BP to check it
+  std::string test_content;
+  EXPECT_TRUE(service.bps_.HasBP(bufferpacket_name));
+  EXPECT_TRUE(service.bps_.LoadBP(bufferpacket_name, &test_content));
+  EXPECT_EQ(ser_bp, test_content);
+
+  // Get the messages
+  maidsafe::GetBPPresenceRequest get_presence_request;
+  maidsafe::GetBPPresenceResponse get_presence_response;
+  get_presence_request.set_bufferpacket_name(bufferpacket_name);
+  get_presence_request.set_pmid(pmid);
+  get_presence_request.set_public_key(pub_key);
+  get_presence_request.set_signed_public_key(sig_pub_key);
+  get_presence_request.set_signed_request(sig_req);
+  done = google::protobuf::NewCallback<TestCallback>
+         (&cb_obj, &TestCallback::CallbackFunction);
+  service.GetBPPresence(&controller, &get_presence_request,
+                        &get_presence_response, done);
+  ASSERT_TRUE(get_presence_response.IsInitialized());
+  EXPECT_EQ(kAck, static_cast<int>(get_presence_response.result()));
+  EXPECT_EQ(get_presence_response.pmid_id(),
+            co.Hash(get_presence_response.public_key() +
+                    get_presence_response.signed_public_key(), "",
+                    crypto::STRING_STRING, false));
+  EXPECT_EQ(0, get_presence_response.messages_size());
+
+  // Creation of newuser's credentials
+  std::string newuser_pub_key, newuser_priv_key, newuser_pmid,
+              newuser_sig_pub_key, newuser_sig_req;
+  CreateRSAKeys(&newuser_pub_key, &newuser_priv_key);
+  CreateSignedRequest(newuser_pub_key, newuser_priv_key, bufferpacket_name,
+                      &newuser_pmid, &newuser_sig_pub_key, &newuser_sig_req);
+
+  // Sending wrong message
+  maidsafe::AddBPPresenceRequest add_presence_request;
+  maidsafe::AddBPPresenceResponse add_presence_response;
+  add_presence_request.set_bufferpacket_name(bufferpacket_name);
+  add_presence_request.set_data("Something that's not a correct message");
+  add_presence_request.set_pmid(newuser_pmid);
+  add_presence_request.set_public_key(newuser_pub_key);
+  add_presence_request.set_signed_public_key(newuser_sig_pub_key);
+  add_presence_request.set_signed_request(newuser_sig_req);
+  done = google::protobuf::NewCallback<TestCallback>
+         (&cb_obj, &TestCallback::CallbackFunction);
+  service.AddBPPresence(&controller, &add_presence_request,
+                        &add_presence_response, done);
+  ASSERT_TRUE(add_presence_response.IsInitialized());
+  EXPECT_EQ(kNack, static_cast<int>(add_presence_response.result()));
+  EXPECT_EQ(add_presence_response.pmid_id(),
+            co.Hash(add_presence_response.public_key() +
+                    add_presence_response.signed_public_key(), "",
+                    crypto::STRING_STRING, false));
+
+  // Creating the message
+  maidsafe::LivePresence lp;
+  lp.set_contact_id("newuser");
+  maidsafe::EndPoint ep;
+  for (int n = 0; n < 3; ++n) {
+    ep.add_ip(base::itos(n));
+    ep.add_port(n);
+  }
+  lp.set_end_point(ep.SerializeAsString());
+  maidsafe::GenericPacket lp_gp;
+  lp_gp.set_data(lp.SerializeAsString());
+  lp_gp.set_signature("");
+  ser_gp = "";
+  lp_gp.SerializeToString(&ser_gp);
+
+  // Sending the message
+  add_presence_request.Clear();
+  add_presence_response.Clear();
+  add_presence_request.set_bufferpacket_name(bufferpacket_name);
+  add_presence_request.set_data(ser_gp);
+  add_presence_request.set_pmid(newuser_pmid);
+  add_presence_request.set_public_key(newuser_pub_key);
+  add_presence_request.set_signed_public_key(newuser_sig_pub_key);
+  add_presence_request.set_signed_request(newuser_sig_req);
+  done = google::protobuf::NewCallback<TestCallback>
+         (&cb_obj, &TestCallback::CallbackFunction);
+  service.AddBPPresence(&controller, &add_presence_request,
+                        &add_presence_response, done);
+  ASSERT_TRUE(add_presence_response.IsInitialized());
+  EXPECT_EQ(kAck, static_cast<int>(add_presence_response.result()));
+  EXPECT_EQ(add_presence_response.pmid_id(),
+            co.Hash(add_presence_response.public_key() +
+                    add_presence_response.signed_public_key(), "",
+                    crypto::STRING_STRING, false));
+
+  // Get the messages again
+  get_presence_request.Clear();
+  get_presence_response.Clear();
+  get_presence_request.set_bufferpacket_name(bufferpacket_name);
+  get_presence_request.set_pmid(pmid);
+  get_presence_request.set_public_key(pub_key);
+  get_presence_request.set_signed_public_key(sig_pub_key);
+  get_presence_request.set_signed_request(sig_req);
+  done = google::protobuf::NewCallback<TestCallback>
+         (&cb_obj, &TestCallback::CallbackFunction);
+  service.GetBPPresence(&controller, &get_presence_request,
+                        &get_presence_response, done);
+  ASSERT_TRUE(get_presence_response.IsInitialized());
+  EXPECT_EQ(kAck, static_cast<int>(get_presence_response.result()));
+  EXPECT_EQ(get_presence_response.pmid_id(),
+            co.Hash(get_presence_response.public_key() +
+                    get_presence_response.signed_public_key(), "",
+                    crypto::STRING_STRING, false));
+  ASSERT_EQ(1, get_presence_response.messages_size());
+  ASSERT_EQ(lp_gp.SerializeAsString(), get_presence_response.messages(0));
+
+  // Get the messages again
+  get_presence_request.Clear();
+  get_presence_response.Clear();
+  get_presence_request.set_bufferpacket_name(bufferpacket_name);
+  get_presence_request.set_pmid(pmid);
+  get_presence_request.set_public_key(pub_key);
+  get_presence_request.set_signed_public_key(sig_pub_key);
+  get_presence_request.set_signed_request(sig_req);
+  done = google::protobuf::NewCallback<TestCallback>
+         (&cb_obj, &TestCallback::CallbackFunction);
+  service.GetBPPresence(&controller, &get_presence_request,
+                        &get_presence_response, done);
+  ASSERT_TRUE(get_presence_response.IsInitialized());
+  EXPECT_EQ(kAck, static_cast<int>(get_presence_response.result()));
+  EXPECT_EQ(get_presence_response.pmid_id(),
+            co.Hash(get_presence_response.public_key() +
+                    get_presence_response.signed_public_key(), "",
+                    crypto::STRING_STRING, false));
+  EXPECT_EQ(0, get_presence_response.messages_size());
 }
 
 }  // namespace maidsafe_vault

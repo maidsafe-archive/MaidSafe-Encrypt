@@ -23,6 +23,20 @@
 #include "widgets/system_tray_icon.h"
 #include "client/client_controller.h"
 
+// google crash reporter
+#ifdef MAIDSAFE_LINUX
+  #include "google/breakpad/common/linux/linux_syscall_support.h"
+  #include "google/breakpad/client/linux/handler/exception_handler.h"
+#endif
+
+static bool DumpCallback(const char *dump_path, const char *dump_id, void *,
+    bool succeeded) {
+  if (succeeded) {
+    printf("%s is dumped.\n", dump_id);
+  }
+  return succeeded;
+}
+
 void pdMessageOutput(QtMsgType type, const char* msg) {
   switch (type) {
     case QtDebugMsg:    printf("Debug: %s\n", msg);
@@ -37,6 +51,10 @@ void pdMessageOutput(QtMsgType type, const char* msg) {
 }
 
 int main(int argc, char *argv[]) {
+  #ifdef MAIDSAFE_LINUX
+    google_breakpad::ExceptionHandler eh(".", NULL, DumpCallback, NULL,
+        true);
+  #endif
   qInstallMsgHandler(pdMessageOutput);
 
   //Set up Internationalization

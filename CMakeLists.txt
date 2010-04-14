@@ -498,6 +498,34 @@ ELSE()
 ENDIF()
 
 ###################################################################################################
+# Google BreakPad library Linux                                                                   #
+###################################################################################################
+IF(UNIX AND NOT APPLE)
+  UNSET(BREAKPAD_LIBRARY CACHE)
+  IF(BREAKPAD_LIBRARY_PATH)
+    SET(BREAKPAD_LIBRARY_PATH ${BREAKPAD_LIBRARY_PATH} CACHE INTERNAL "Path to udt library directory" FORCE)
+    SET(BREAKPAD_LIB_DIR ${BREAKPAD_LIBRARY_PATH})
+  ELSE(BREAKPAD_LIBRARY_PATH)
+    SET(BREAKPAD_LIB_DIR ${LIB_DIR})
+  ENDIF(BREAKPAD_LIBRARY_PATH)
+  IF(BREAKPAD_INCLUDE_PATH)
+    SET(BREAKPAD_INCLUDE_PATH ${BREAKPAD_INCLUDE_PATH} CACHE INTERNAL "Path to breakpad include directory" FORCE)
+    SET(BREAKPAD_INCLUDE_DIR ${BREAKPAD_INCLUDE_PATH} CACHE INTERNAL "Path to breakpad include directory" FORCE)
+  ELSE(BREAKPAD_INCLUDE_PATH)
+    FOREACH(INC_OPTION ${INCLUDE_DIR})
+      SET(BREAKPAD_INCLUDE_DIR ${BREAKPAD_INCLUDE_DIR} CACHE INTERNAL "Path to breakpad include directory" FORCE)
+    ENDFOREACH()
+  ENDIF(BREAKPAD_INCLUDE_PATH)
+  FIND_LIBRARY(BREAKPAD_LIBRARY libbreakpad_client.a ${BREAKPAD_LIB_DIR})
+  FIND_FILE(BREAKPAD_HEADER exception_handler.h "${BREAKPAD_INCLUDE_DIR}/client/linux/handler")
+  IF(NOT BREAKPAD_LIBRARY OR NOT BREAKPAD_HEADER)
+    SET(ERROR_MESSAGE "\nCould not find BreakPad library.\n")
+    MESSAGE(FATAL_ERROR "${ERROR_MESSAGE}")
+  ENDIF(NOT BREAKPAD_LIBRARY OR NOT BREAKPAD_HEADER)
+
+ENDIF(UNIX AND NOT APPLE)
+
+###################################################################################################
 # All other libraries search                                                                      #
 ###################################################################################################
 IF(UNIX)
@@ -584,7 +612,7 @@ ENDIF(WIN32)
 
 SET(SYS_LIB ${SYS_LIB} ${Boost_LIBRARIES} ${PROTOBUF_LIBRARY} ${CRYPTOPP_LIBRARY})
 SET(SYS_LIB_LIGHT ${SYS_LIB_LIGHT} ${Boost_LIBRARIES} ${PROTOBUF_LIBRARY} ${CRYPTOPP_LIBRARY})
-INCLUDE_DIRECTORIES(${SOURCE_DIR} ${INCLUDE_DIR} ${GTEST_INCLUDE_DIRS} ${PROTOBUF_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS} ${MAIDSAFE_DHT_INCLUDE_DIR} ${CMAKE_BINARY_DIR})
+INCLUDE_DIRECTORIES(${SOURCE_DIR} ${INCLUDE_DIR} ${GTEST_INCLUDE_DIRS} ${PROTOBUF_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS} ${MAIDSAFE_DHT_INCLUDE_DIR} ${CMAKE_BINARY_DIR}.${BREAKPAD_INCLUDE_DIR})
 LINK_DIRECTORIES(${PD_BINARY_DIR})
 
 ###################################################################################################
@@ -690,9 +718,9 @@ ADD_LIBRARY(PDpbmsgslib STATIC ${M_PROTOBUF_DIR})
 ###################################################################################################
 # Builds                                                                                          #
 ###################################################################################################
-TARGET_LINK_LIBRARIES(perpetualdata PDmsclientlib PDmaidsafelib PDfslib PDpbmsgslib ${QT_LIBRARIES} ${MAIDSAFE_DHT_LIBRARY} ${UDT_LIBRARY} ${SYS_LIB})
-TARGET_LINK_LIBRARIES(pdlocal PDTESTmsclientlib PDmaidsafelib PDfslib PDpbmsgslib ${QT_LIBRARIES} ${MAIDSAFE_DHT_LIBRARY} ${SYS_LIB})
-TARGET_LINK_LIBRARIES(pdlightlocal PDTESTmsclientlib PDmaidsafelib PDfslib PDpbmsgslib ${QT_LIBRARIES} ${MAIDSAFE_DHT_LIBRARY} ${SYS_LIB_LIGHT})
+TARGET_LINK_LIBRARIES(perpetualdata PDmsclientlib PDmaidsafelib PDfslib PDpbmsgslib ${QT_LIBRARIES} ${MAIDSAFE_DHT_LIBRARY} ${UDT_LIBRARY} ${SYS_LIB} ${BREAKPAD_LIBRARY})
+TARGET_LINK_LIBRARIES(pdlocal PDTESTmsclientlib PDmaidsafelib PDfslib PDpbmsgslib ${QT_LIBRARIES} ${MAIDSAFE_DHT_LIBRARY} ${SYS_LIB} ${BREAKPAD_LIBRARY})
+TARGET_LINK_LIBRARIES(pdlightlocal PDTESTmsclientlib PDmaidsafelib PDfslib PDpbmsgslib ${QT_LIBRARIES} ${MAIDSAFE_DHT_LIBRARY} ${SYS_LIB_LIGHT} ${BREAKPAD_LIBRARY})
 TARGET_LINK_LIBRARIES(TESTmaidsafe PDmsclientlib PDmaidsafelib PDmsvaultlib PDfslib PDpbmsgslib ${QT_LIBRARIES} gtest gmock ${MAIDSAFE_DHT_LIBRARY} ${UDT_LIBRARY} ${SYS_LIB})
 TARGET_LINK_LIBRARIES(TESTpdvault PDmsclientlib PDmsvaultlib PDmaidsafelib PDfslib PDpbmsgslib ${QT_LIBRARIES} gtest ${MAIDSAFE_DHT_LIBRARY} ${UDT_LIBRARY} ${SYS_LIB})
 TARGET_LINK_LIBRARIES(TESTbph PDfslib PDmsclientlib PDmsvaultlib PDmaidsafelib PDpbmsgslib ${QT_LIBRARIES} gtest ${MAIDSAFE_DHT_LIBRARY} ${UDT_LIBRARY} ${SYS_LIB})
@@ -702,7 +730,7 @@ TARGET_LINK_LIBRARIES(TESTlocalclientcontroller PDTESTmsclientlib PDmaidsafelib 
 #TARGET_LINK_LIBRARIES(TESTfuse PDmsclientlib PDmaidsafelib PDmsvaultlib PDfslib PDpbmsgslib ${QT_LIBRARIES} gtest ${MAIDSAFE_DHT_LIBRARY} ${UDT_LIBRARY} ${SYS_LIB})
 TARGET_LINK_LIBRARIES(TESTfs PDmaidsafelib PDfslib ${QT_LIBRARIES} gtest ${MAIDSAFE_DHT_LIBRARY} ${UDT_LIBRARY} ${SYS_LIB})
 TARGET_LINK_LIBRARIES(testvault PDmsclientlib PDmsvaultlib PDmaidsafelib PDfslib PDpbmsgslib ${QT_LIBRARIES} ${MAIDSAFE_DHT_LIBRARY} ${UDT_LIBRARY} ${SYS_LIB})
-TARGET_LINK_LIBRARIES(vault PDmsvaultlib PDmaidsafelib PDfslib PDpbmsgslib ${QT_LIBRARIES} ${MAIDSAFE_DHT_LIBRARY} ${UDT_LIBRARY} ${SYS_LIB})
+TARGET_LINK_LIBRARIES(vault PDmsvaultlib PDmaidsafelib PDfslib PDpbmsgslib ${QT_LIBRARIES} ${MAIDSAFE_DHT_LIBRARY} ${UDT_LIBRARY} ${SYS_LIB} ${BREAKPAD_LIBRARY})
 #IF(WIN32)
 #  SET(TARGET_PROPERTIES vault testvault TESTmaidsafe COMPILE_FLAGS ${CMAKE_CXX_FLAGS} --Wl,-subsystem,console)
 #ENDIF(WIN32)
@@ -724,7 +752,7 @@ IF(APPLE)
 ELSEIF(UNIX AND NOT APPLE)
   SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG -pg -fprofile-arcs -ftest-coverage")
   SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O2 -Wuninitialized")
-  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DMAIDSAFE_POSIX -Wextra -Wall  -Wfloat-equal -Wlong-long -Wstrict-overflow=5 -Wredundant-decls -Wunused-function -Wunused-label -Wunused-parameter -Wunused-value -Wunused-variable -std=c++98 -ansi -D_FORTIFY_SOURCE=2 -fno-stack-protector -D_FILE_OFFSET_BITS=64")
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DMAIDSAFE_LINUX -DMAIDSAFE_POSIX -Wextra -Wall  -Wfloat-equal -Wlong-long -Wstrict-overflow=5 -Wredundant-decls -Wunused-function -Wunused-label -Wunused-parameter -Wunused-value -Wunused-variable -std=c++98 -ansi -D_FORTIFY_SOURCE=2 -fno-stack-protector -D_FILE_OFFSET_BITS=64")
   ##put libs in here that will have no chance of passing tests - 3rd party ONLY !!
   SET_TARGET_PROPERTIES(pdlocal perpetualdata PROPERTIES COMPILE_FLAGS -w)
 ELSEIF(WIN32)

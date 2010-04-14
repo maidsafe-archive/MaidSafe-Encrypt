@@ -26,6 +26,7 @@
 #include "maidsafe/vault/infosynchroniser.h"
 
 #include <algorithm>
+#include <list>
 
 #include "maidsafe/kadops.h"
 #include "maidsafe/maidsafe.h"

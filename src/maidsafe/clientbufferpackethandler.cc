@@ -54,7 +54,7 @@ void ClientBufferPacketHandler::CreateBufferPacket(
       data->create_request.bufferpacket_name(), "", crypto::STRING_STRING,
       false), "", args.private_key, crypto::STRING_STRING));
 
-  FindNodes(boost::bind(&ClientBufferPacketHandler::FindNodes_CB,
+  FindNodes(boost::bind(&ClientBufferPacketHandler::FindNodesCallback,
             this, _1, data, transport_id), data);
 }
 
@@ -90,7 +90,7 @@ void ClientBufferPacketHandler::ModifyOwnerInfo(
 
   data->cb = cb;
   data->type = MODIFY_INFO;
-  FindNodes(boost::bind(&ClientBufferPacketHandler::FindNodes_CB,
+  FindNodes(boost::bind(&ClientBufferPacketHandler::FindNodesCallback,
             this, _1, data, transport_id), data);
 }
 
@@ -116,7 +116,7 @@ void ClientBufferPacketHandler::GetMessages(
   data->cb_getmsgs = cb;
   data->type = GET_MESSAGES;
   data->private_key = args.private_key;
-  FindNodes(boost::bind(&ClientBufferPacketHandler::FindNodes_CB,
+  FindNodes(boost::bind(&ClientBufferPacketHandler::FindNodesCallback,
             this, _1, data, transport_id), data);
 }
 
@@ -169,7 +169,7 @@ void ClientBufferPacketHandler::AddMessage(
 
   data->cb = cb;
   data->type = ADD_MESSAGE;
-  FindNodes(boost::bind(&ClientBufferPacketHandler::FindNodes_CB,
+  FindNodes(boost::bind(&ClientBufferPacketHandler::FindNodesCallback,
             this, _1, data, transport_id), data);
 }
 
@@ -195,7 +195,7 @@ void ClientBufferPacketHandler::GetPresence(
   data->cb_getpresence = cb;
   data->type = GET_PRESENCE;
   data->private_key = args.private_key;
-  FindNodes(boost::bind(&ClientBufferPacketHandler::FindNodes_CB,
+  FindNodes(boost::bind(&ClientBufferPacketHandler::FindNodesCallback,
             this, _1, data, transport_id), data);
 }
 
@@ -213,20 +213,12 @@ void ClientBufferPacketHandler::AddPresence(
   EndPoint ep;
   ep.add_ip(knode_->host_ip());
   ep.add_port(knode_->host_port());
-  std::string s_ep(ep.SerializeAsString());
-  lp.add_end_points(crypto_obj_.AsymEncrypt(s_ep, "", recver_public_key,
-                    crypto::STRING_STRING));
-  ep.Clear();
   ep.add_ip(knode_->local_host_ip());
   ep.add_port(knode_->local_host_port());
-  s_ep = ep.SerializeAsString();
-  lp.add_end_points(crypto_obj_.AsymEncrypt(s_ep, "", recver_public_key,
-                    crypto::STRING_STRING));
-  ep.Clear();
   ep.add_ip(knode_->rv_ip());
   ep.add_port(knode_->rv_port());
-  s_ep = ep.SerializeAsString();
-  lp.add_end_points(crypto_obj_.AsymEncrypt(s_ep, "", recver_public_key,
+  std::string s_ep(ep.SerializeAsString());
+  lp.set_end_point(crypto_obj_.AsymEncrypt(s_ep, "", recver_public_key,
                     crypto::STRING_STRING));
 
   GenericPacket ser_lp;
@@ -234,22 +226,23 @@ void ClientBufferPacketHandler::AddPresence(
   ser_lp.set_signature(crypto_obj_.AsymSign(ser_lp.data(), "", args.private_key,
                        crypto::STRING_STRING));
 
-  data->add_msg_request.set_data(ser_lp.SerializeAsString());
-  data->add_msg_request.set_bufferpacket_name(crypto_obj_.Hash(receiver_id +
-      recver_public_key, "", crypto::STRING_STRING, false));
-  data->add_msg_request.set_pmid(args.sign_id);
-  data->add_msg_request.set_public_key(args.public_key);
-  data->add_msg_request.set_signed_public_key(crypto_obj_.AsymSign(
-    args.public_key, "", args.private_key, crypto::STRING_STRING));
-  data->add_msg_request.set_signed_request(crypto_obj_.AsymSign(
-      crypto_obj_.Hash(args.public_key +
-      data->add_msg_request.signed_public_key() +
-      data->add_msg_request.bufferpacket_name(), "", crypto::STRING_STRING,
-      false), "", args.private_key, crypto::STRING_STRING));
+  data->add_presence_request.set_data(ser_lp.SerializeAsString());
+  std::string bpname(crypto_obj_.Hash(receiver_id + recver_public_key, "",
+                     crypto::STRING_STRING, false));
+  data->add_presence_request.set_bufferpacket_name(bpname);
+  data->add_presence_request.set_pmid(args.sign_id);
+  data->add_presence_request.set_public_key(args.public_key);
+  std::string pubkey_sig(crypto_obj_.AsymSign(args.public_key, "",
+                         args.private_key, crypto::STRING_STRING));
+  data->add_presence_request.set_signed_public_key(pubkey_sig);
+  data->add_presence_request.set_signed_request(crypto_obj_.AsymSign(
+      crypto_obj_.Hash(args.public_key + pubkey_sig + bpname, "",
+                       crypto::STRING_STRING, false),
+      "", args.private_key, crypto::STRING_STRING));
 
   data->cb = cb;
   data->type = ADD_PRESENCE;
-  FindNodes(boost::bind(&ClientBufferPacketHandler::FindNodes_CB,
+  FindNodes(boost::bind(&ClientBufferPacketHandler::FindNodesCallback,
             this, _1, data, transport_id), data);
 }
 
@@ -280,7 +273,7 @@ void ClientBufferPacketHandler::FindNodes(
   }
 }
 
-void ClientBufferPacketHandler::FindNodes_CB(
+void ClientBufferPacketHandler::FindNodesCallback(
     const std::string &result,
     boost::shared_ptr<ChangeBPData> data,
     const boost::int16_t &transport_id) {
@@ -290,7 +283,7 @@ void ClientBufferPacketHandler::FindNodes_CB(
       rslt.closest_nodes_size() < kKadUpperThreshold) {
     switch (data->type) {
       case CREATEBP: data->cb(kStoreNewBPError);
-                   break;
+                     break;
       case MODIFY_INFO: data->cb(kModifyBPError);
                         break;
       case GET_MESSAGES: {
@@ -540,7 +533,7 @@ void ClientBufferPacketHandler::ActionOnBpDone(
           if (cb_datas->at(index).data->successful_ops >= kKadUpperThreshold)
             cb_datas->at(index).data->cb(kSuccess);
           else
-            cb_datas->at(index).data->cb(kModifyBPError);
+            cb_datas->at(index).data->cb(kStoreNewBPError);
           break;
       case MODIFY_INFO:
           if (cb_datas->at(index).data->successful_ops >= kKadUpperThreshold)
@@ -582,276 +575,6 @@ void ClientBufferPacketHandler::ActionOnBpDone(
   }
 }
 
-void ClientBufferPacketHandler::IterativeStore(
-    boost::shared_ptr<CreateBPData> data,
-    const boost::int16_t &transport_id) {
-  if (data->is_calledback)
-    return;
-
-  if (data->successful_stores >= kMinChunkCopies) {
-    data->cb(kSuccess);
-    data->is_calledback = true;
-    return;
-  }
-
-  // Getting the contacts to store the new buffer packet
-  boost::uint16_t concurrent_stores = kMinChunkCopies - data->successful_stores;
-
-  if (concurrent_stores > ClientBufferPacketHandler::kParallelStores)
-    concurrent_stores = ClientBufferPacketHandler::kParallelStores;
-
-  std::vector<kad::Contact> ctcs;
-  knode_->GetRandomContacts(concurrent_stores, data->exclude_ctcs, &ctcs);
-
-  if (ctcs.empty()) {
-    data->cb(kStoreNewBPError);
-    data->is_calledback = true;
-    return;
-  }
-
-  std::vector<kad::Contact>::iterator it = ctcs.begin();
-  while (it != ctcs.end()) {
-    bool local = (knode_->CheckContactLocalAddress(it->node_id(),
-      it->local_ip(), it->local_port(), it->host_ip()) ==
-      kad::LOCAL);
-    CreateBPCallbackData cb_data;
-    cb_data.ctrl = new rpcprotocol::Controller;
-    cb_data.ctc = *it;
-    cb_data.data = data;
-    cb_data.transport_id = transport_id;
-    CreateBPResponse *resp = new CreateBPResponse;
-    google::protobuf::Closure *done = google::protobuf::NewCallback <
-      ClientBufferPacketHandler, const CreateBPResponse*, CreateBPCallbackData >
-      (this, &ClientBufferPacketHandler::CreateBPCallback, resp, cb_data);
-    data->exclude_ctcs.push_back(cb_data.ctc);
-    rpcs_->CreateBP(cb_data.ctc, local, transport_id, &data->request, resp,
-                    cb_data.ctrl, done);
-    ++it;
-  }
-}
-
-void ClientBufferPacketHandler::CreateBPCallback(
-    const CreateBPResponse *resp,
-    CreateBPCallbackData cb_data) {
-  if (cb_data.data->is_calledback) {
-    delete resp;
-    delete cb_data.ctrl;
-    IterativeStore(cb_data.data, cb_data.transport_id);
-    return;
-  }
-
-  if (!resp->IsInitialized() || cb_data.ctrl->Failed()) {
-    delete resp;
-    delete cb_data.ctrl;
-    IterativeStore(cb_data.data, cb_data.transport_id);
-    return;
-  }
-
-  if (resp->result() == kAck && resp->pmid_id() == cb_data.ctc.node_id())
-    ++cb_data.data->successful_stores;
-
-  delete resp;
-  delete cb_data.ctrl;
-  IterativeStore(cb_data.data, cb_data.transport_id);
-}
-
-void ClientBufferPacketHandler::FindReferences(
-    base::callback_func_type cb,
-    boost::shared_ptr<ChangeBPData> data) {
-  switch (data->type) {
-    case ADD_MESSAGE: knode_->FindValue(
-      data->add_msg_request.bufferpacket_name(), false, cb);
-      break;
-    case GET_MESSAGES: knode_->FindValue(
-      data->get_msgs_request.bufferpacket_name(), false, cb);
-      break;
-    case MODIFY_INFO: knode_->FindValue(
-      data->modify_request.bufferpacket_name(), false, cb);
-      break;
-    default: break;
-  }
-}
-
-void ClientBufferPacketHandler::FindRemoteContact(
-    base::callback_func_type cb,
-    boost::shared_ptr<ChangeBPData> data,
-    const int &idx) {
-  knode_->FindNode(data->holder_ids[idx], cb, false);
-}
-
-void ClientBufferPacketHandler::FindReferences_CB(
-    const std::string &result,
-    boost::shared_ptr<ChangeBPData> data,
-    const boost::int16_t &transport_id) {
-  kad::FindResponse rslt;
-  if (!rslt.ParseFromString(result) ||
-      rslt.result() != kad::kRpcResultSuccess) {
-    switch (data->type) {
-      case MODIFY_INFO: data->cb(kModifyBPError);
-                        break;
-      case ADD_MESSAGE: data->cb(kBPAddMessageError);
-                        break;
-      case GET_MESSAGES: {
-                         std::list<ValidatedBufferPacketMessage> msgs;
-                         data->cb_getmsgs(kBPMessagesRetrievalError,
-                                          msgs, true);
-                         break;
-                         }
-      default: break;
-    }
-    return;
-  }
-  for (int i = 0; i < rslt.signed_values_size(); ++i)
-    data->holder_ids.push_back(rslt.signed_values(i).value());
-
-  ModifyBPCallbackData cb_data;
-  cb_data.data = data;
-  cb_data.transport_id = transport_id;
-  IterativeFindContacts(cb_data);
-}
-
-void ClientBufferPacketHandler::FindRemoteContact_CB(
-    const std::string &result,
-    boost::shared_ptr<ChangeBPData> data,
-    const boost::int16_t &transport_id) {
-  kad::FindNodeResult rslt;
-  kad::Contact ctc;
-  ModifyBPCallbackData cb_data;
-  cb_data.data = data;
-  cb_data.transport_id = transport_id;
-  if (!rslt.ParseFromString(result) ||
-      rslt.result() != kad::kRpcResultSuccess ||
-      !ctc.ParseFromString(rslt.contact())) {
-    IterativeFindContacts(cb_data);
-  } else {
-    bool local = (knode_->CheckContactLocalAddress(ctc.node_id(),
-                  ctc.local_ip(), ctc.local_port(), ctc.host_ip()) ==
-                  kad::LOCAL);
-    cb_data.ctrl = new rpcprotocol::Controller;
-    cb_data.ctc = ctc;
-
-    google::protobuf::Closure *done = NULL;
-    switch (cb_data.data->type) {
-      case MODIFY_INFO:
-        cb_data.modify_response = new ModifyBPInfoResponse;
-        done = google::protobuf::NewCallback <
-          ClientBufferPacketHandler, ModifyBPCallbackData > (this,
-          &ClientBufferPacketHandler::IterativeFindContacts, cb_data);
-        rpcs_->ModifyBPInfo(ctc, local, transport_id, &data->modify_request,
-          cb_data.modify_response, cb_data.ctrl, done);
-        break;
-      case ADD_MESSAGE:
-        cb_data.add_msg_response = new AddBPMessageResponse;
-        done = google::protobuf::NewCallback <
-          ClientBufferPacketHandler, ModifyBPCallbackData > (this,
-          &ClientBufferPacketHandler::IterativeFindContacts, cb_data);
-        rpcs_->AddBPMessage(ctc, local, transport_id, &data->add_msg_request,
-          cb_data.add_msg_response, cb_data.ctrl, done);
-        break;
-      case GET_MESSAGES:
-        cb_data.get_msgs_response = new GetBPMessagesResponse;
-        done = google::protobuf::NewCallback <
-          ClientBufferPacketHandler, ModifyBPCallbackData > (this,
-          &ClientBufferPacketHandler::IterativeFindContacts, cb_data);
-        rpcs_->GetBPMessages(ctc, local, transport_id, &data->get_msgs_request,
-          cb_data.get_msgs_response, cb_data.ctrl, done);
-        break;
-      default: break;
-    }
-  }
-}
-
-void ClientBufferPacketHandler::IterativeFindContacts(
-    ModifyBPCallbackData data) {
-  if (data.data->is_calledback) {
-    if (data.ctrl != NULL) {
-      switch (data.data->type) {
-        case MODIFY_INFO: delete data.modify_response;
-                          break;
-        case ADD_MESSAGE: delete data.add_msg_response;
-                          break;
-        case GET_MESSAGES: delete data.get_msgs_response;
-                           break;
-        default: break;
-      }
-      delete data.ctrl;
-    }
-    return;
-  }
-
-  // Reply of ModifyBPInfo Rpc
-  if (data.ctrl != NULL) {
-    if (!data.ctrl->Failed()) {
-      switch (data.data->type) {
-        case MODIFY_INFO: if (data.modify_response->IsInitialized() &&
-                              data.modify_response->result() == kAck &&
-                              data.modify_response->pmid_id() ==
-                              data.ctc.node_id())
-                            ++data.data->successful_ops;
-                          delete data.modify_response;
-                          break;
-        case ADD_MESSAGE: if (data.add_msg_response->IsInitialized() &&
-                              data.add_msg_response->result() == kAck &&
-                              data.add_msg_response->pmid_id() ==
-                              data.ctc.node_id())
-                            ++data.data->successful_ops;
-                          delete data.add_msg_response;
-                          break;
-        case GET_MESSAGES: if (data.get_msgs_response->IsInitialized() &&
-                               data.get_msgs_response->result() == kAck &&
-                               data.get_msgs_response->pmid_id() ==
-                               data.ctc.node_id()) {
-                             std::list<ValidatedBufferPacketMessage> msgs =
-                                ValidateMsgs(data.get_msgs_response,
-                                data.data->private_key);
-                             data.data->cb_getmsgs(kSuccess, msgs, false);
-                             return;
-                           }
-                           break;
-        default: break;
-      }
-    }
-    delete data.ctrl;
-  }
-
-  // No more holders contacted
-  if (data.data->idx >= data.data->holder_ids.size()) {
-    data.data->is_calledback = true;
-    if (data.data->successful_ops > 0) {
-      data.data->cb(kSuccess);
-    } else {
-      switch (data.data->type) {
-        case MODIFY_INFO: data.data->cb(kModifyBPError);
-                          break;
-        case ADD_MESSAGE: data.data->cb(kBPAddMessageError);
-                           break;
-        case GET_MESSAGES: {
-                           std::list<ValidatedBufferPacketMessage> msgs;
-                           data.data->cb_getmsgs(kBPMessagesRetrievalError,
-                                                 msgs, true);
-                           break;
-                           }
-        default: break;
-      }
-    }
-    return;
-  }
-
-  // Getting remaining ids to search
-  boost::uint16_t remaining = data.data->holder_ids.size() - data.data->idx;
-  if (remaining > ClientBufferPacketHandler::kParallelFindCtcs)
-    remaining = ClientBufferPacketHandler::kParallelFindCtcs;
-
-  while (remaining > 0) {
-    const int curr_idx(data.data->idx);
-    ++data.data->idx;
-    FindRemoteContact(boost::bind(
-      &ClientBufferPacketHandler::FindRemoteContact_CB, this, _1, data.data,
-      data.transport_id), data.data, curr_idx);
-    --remaining;
-  }
-}
-
 std::list<ValidatedBufferPacketMessage> ClientBufferPacketHandler::ValidateMsgs(
     const GetBPMessagesResponse *response,
     const std::string &private_key) {
@@ -860,9 +583,9 @@ std::list<ValidatedBufferPacketMessage> ClientBufferPacketHandler::ValidateMsgs(
     ValidatedBufferPacketMessage msg;
     if (msg.ParseFromString(response->messages(i))) {
       std::string aes_key = crypto_obj_.AsymDecrypt(msg.index(), "",
-          private_key, crypto::STRING_STRING);
-      msg.set_message(crypto_obj_.SymmDecrypt(msg.message(),
-          "", crypto::STRING_STRING, aes_key));
+                            private_key, crypto::STRING_STRING);
+      msg.set_message(crypto_obj_.SymmDecrypt(msg.message(), "",
+                      crypto::STRING_STRING, aes_key));
       msg.set_index("");
       result.push_back(msg);
     }
@@ -874,6 +597,16 @@ std::list<LivePresence> ClientBufferPacketHandler::ValidatePresence(
     const GetBPPresenceResponse *response,
     const std::string &private_key) {
   std::list<LivePresence> result;
+  for (int i = 0; i < response->messages_size(); ++i) {
+    LivePresence lp;
+    if (lp.ParseFromString(response->messages(i))) {
+      std::string decrypted_endpoint(crypto_obj_.AsymDecrypt(
+                                     lp.end_point(), "", private_key,
+                                     crypto::STRING_STRING));
+      lp.set_end_point(decrypted_endpoint);
+    }
+    result.push_back(lp);
+  }
   return result;
 }
 

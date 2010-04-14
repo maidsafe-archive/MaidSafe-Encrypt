@@ -27,6 +27,7 @@
 
 #include <boost/thread/mutex.hpp>
 #include <boost/cstdint.hpp>
+#include <gtest/gtest_prod.h>
 #include <maidsafe/crypto.h>
 
 #include <list>
@@ -54,22 +55,11 @@ enum BpOpType {
   GET_PRESENCE
 };
 
-struct CreateBPData {
-  CreateBPData()
-      : request(), exclude_ctcs(), successful_stores(0), is_calledback(false),
-        cb(0) {}
-  CreateBPRequest request;
-  std::vector<kad::Contact> exclude_ctcs;
-  boost::uint16_t successful_stores;
-  bool is_calledback;
-  bp_operations_cb cb;
-};
-
 struct ChangeBPData {
   ChangeBPData() : create_request(), modify_request(), get_msgs_request(),
                    add_msg_request(), get_presence_request(),
-                   add_presence_request(), holder_ids(), successful_ops(0),
-                   idx(0), is_calledback(false), type(), cb(0), cb_getmsgs(0),
+                   add_presence_request(), successful_ops(0),
+                   is_calledback(false), type(), cb(0), cb_getmsgs(0),
                    cb_getpresence(0), private_key() {}
   CreateBPRequest create_request;
   ModifyBPInfoRequest modify_request;
@@ -77,21 +67,13 @@ struct ChangeBPData {
   AddBPMessageRequest add_msg_request;
   GetBPPresenceRequest get_presence_request;
   AddBPPresenceRequest add_presence_request;
-  std::vector<std::string> holder_ids;
-  boost::uint16_t successful_ops, idx;
+  boost::uint16_t successful_ops;
   bool is_calledback;
   BpOpType type;
   bp_operations_cb cb;
   bp_getmessages_cb cb_getmsgs;
   bp_getpresence_cb cb_getpresence;
   std::string private_key;
-};
-
-struct CreateBPCallbackData {
-  rpcprotocol::Controller *ctrl;
-  kad::Contact ctc;
-  boost::shared_ptr<CreateBPData> data;
-  boost::int16_t transport_id;
 };
 
 struct ModifyBPCallbackData {
@@ -160,28 +142,12 @@ class ClientBufferPacketHandler {
  private:
   virtual void FindNodes(base::callback_func_type cb,
                          boost::shared_ptr<ChangeBPData> data);
-  virtual void FindNodes_CB(const std::string &result,
-                            boost::shared_ptr<ChangeBPData> data,
-                            const boost::int16_t &transport_id);
+  virtual void FindNodesCallback(const std::string &result,
+                                 boost::shared_ptr<ChangeBPData> data,
+                                 const boost::int16_t &transport_id);
   void ActionOnBpDone(
       boost::shared_ptr<std::vector<ModifyBPCallbackData> > cb_datas,
       boost::int16_t index);
-  void IterativeStore(boost::shared_ptr<CreateBPData> data,
-                      const boost::int16_t &transport_id);
-  void CreateBPCallback(const CreateBPResponse* resp,
-                        CreateBPCallbackData cb_data);
-  virtual void FindReferences(base::callback_func_type cb,
-                              boost::shared_ptr<ChangeBPData> data);
-  void FindReferences_CB(const std::string &result,
-                         boost::shared_ptr<ChangeBPData> data,
-                         const boost::int16_t &transport_id);
-  void IterativeFindContacts(ModifyBPCallbackData data);
-  virtual void FindRemoteContact(base::callback_func_type cb,
-                                 boost::shared_ptr<ChangeBPData> data,
-                                 const int &idx);
-  void FindRemoteContact_CB(const std::string &result,
-                            boost::shared_ptr<ChangeBPData> data,
-                            const boost::int16_t &transport_id);
   std::list<ValidatedBufferPacketMessage> ValidateMsgs(
       const GetBPMessagesResponse *response,
       const std::string &private_key);

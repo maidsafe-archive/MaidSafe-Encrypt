@@ -22,9 +22,22 @@
 #include <syslog.h>
 #include <string.h>
 #include "maidsafe/vault/vaultdaemon.h"
+#ifdef MAIDSAFE_LINUX
+  #include "google/breakpad/common/linux/linux_syscall_support.h"
+  #include "google/breakpad/client/linux/handler/exception_handler.h"
+#endif
 
 #define LOGFILE "VaultService.txt"
 const int kSleepTime = 10000;
+
+static bool DumpCallback(const char *, const char *dump_id, void *,
+    bool succeeded) {
+  if (succeeded) {
+    printf("%s is dumped.\n", dump_id);
+  }
+  return succeeded;
+}
+
 
 int WriteToLog(char* str) {
   FILE* log;
@@ -56,6 +69,11 @@ int main(int argc, char* argv[]) {
     printf("arg[1]: %s\n", argv[1]);
     printf("arg[2]: %s\n", argv[2]);
   }
+
+  #ifdef MAIDSAFE_LINUX
+    google_breakpad::ExceptionHandler eh(".", NULL, DumpCallback, NULL,
+        true);
+  #endif
 
   std::string log_string;
   /* Our process ID and Session ID */
@@ -103,6 +121,7 @@ int main(int argc, char* argv[]) {
   std::string prt(argv[1]), path_to_config(argv[2]);
   int port = base::stoi(prt);
   maidsafe_vault::VaultDaemon vault_daemon(port, path_to_config);
+
   if (!vault_daemon.StartVault())
     exit(EXIT_FAILURE);
   /* The Big Loop */
