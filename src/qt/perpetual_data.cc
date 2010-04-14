@@ -57,9 +57,8 @@ PerpetualData::PerpetualData(QWidget* parent)
   statusBar()->addPermanentWidget(message_status_ = new QLabel);
 
   createActions();
-
   createMenus();
-
+  showLoggedOutMenu();
   // create the main screens
   login_ = new Login;
   create_ = new CreateUser;
@@ -239,6 +238,7 @@ void PerpetualData::setState(State state) {
     }
     case LOGGED_IN:
     {
+        showLoggedInMenu();
         ui_.stackedWidget->setCurrentWidget(userPanels_);
         connect(userPanels_, SIGNAL(unreadMessages(int)),
                 this,        SLOT(onUnreadMessagesChanged(int)));
@@ -247,6 +247,7 @@ void PerpetualData::setState(State state) {
     }
     case LOGGING_OUT:
     {
+        showLoggedOutMenu();
         ui_.stackedWidget->setCurrentWidget(progressPage_);
         progressPage_->setTitle(tr("Logging out"));
         progressPage_->setProgressMessage(
@@ -712,6 +713,24 @@ void PerpetualData::onBusyTriggered() {
 }
 
 void PerpetualData::onOffline_2Triggered() {
+}
+
+void PerpetualData::showLoggedInMenu() {
+  actions_[LOGOUT]->setEnabled(true);
+  ui_.menuStatus->setEnabled(true);
+  actions_[MY_FILES]->setEnabled(true);
+  actions_[PRIVATE_SHARES]->setEnabled(true);
+  actions_[GO_OFFLINE]->setEnabled(true);
+  actions_[SETTINGS]->setEnabled(true);
+}
+
+void PerpetualData::showLoggedOutMenu() {
+  actions_[LOGOUT]->setEnabled(false);
+  ui_.menuStatus->setEnabled(false);
+  actions_[MY_FILES]->setEnabled(false);
+  actions_[PRIVATE_SHARES]->setEnabled(false);
+  actions_[GO_OFFLINE]->setEnabled(false);
+  actions_[SETTINGS]->setEnabled(false);
 }
 
 

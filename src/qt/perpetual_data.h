@@ -102,7 +102,8 @@ class PerpetualData : public QMainWindow {
     void onAwayTriggered();
     void onBusyTriggered();
     void onOffline_2Triggered();
-
+    void showLoggedOutMenu();
+    void showLoggedInMenu();
 
     void onDirectoryEntered(const QString&);
 

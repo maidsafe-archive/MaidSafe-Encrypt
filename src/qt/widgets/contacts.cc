@@ -361,6 +361,12 @@ void Contacts::onSendMessageClicked() {
   }*/
 }
 
+#ifdef PD_LIGHT
+void Contacts::onFileSendClicked() {
+  QString msg = tr("Please use the PD Browser to send files");
+  QMessageBox::information(this, tr("Information"), msg);
+}
+#else
 void Contacts::onFileSendClicked() {
   QList<QListWidgetItem *> contacts = currentContact();
   if (contacts.size() == 0)
@@ -443,6 +449,7 @@ void Contacts::onFileSendClicked() {
     QMessageBox::warning(this, tr("File Not Sent"), msg);
   }
 }
+#endif
 
 QList<QListWidgetItem *> Contacts::currentContact() {
 //  if (!ui_.listWidget->currentItem())

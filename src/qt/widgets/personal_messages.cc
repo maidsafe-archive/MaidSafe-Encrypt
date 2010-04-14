@@ -245,7 +245,12 @@ void PersonalMessages::onSendInvite() {
   out << ui_.message_window->toHtml();
   f.close();
 }
-
+#ifdef PD_LIGHT
+void PersonalMessages::onSendFile() {
+  QString msg = tr("Please use the PD Browser to send files");
+  QMessageBox::information(this, tr("Information"), msg);
+}
+#else
 void PersonalMessages::onSendFile() {
   QList<QString> conts;
   conts.push_back(convName_);
@@ -316,6 +321,7 @@ void PersonalMessages::onSendFile() {
     QMessageBox::warning(this, tr("File Not Sent"), msg);
   }
 }
+#endif
 
 void PersonalMessages::onTextClicked() {
   bool ok;

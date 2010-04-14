@@ -43,7 +43,6 @@ namespace fs = boost::filesystem;
   theWatcher_ = new QFileSystemWatcher;
   setAcceptDrops(true);
   ui_.driveTreeWidget->setAcceptDrops(true);
-  setAttribute(Qt::WA_DeleteOnClose, true);
 
   menu = new QMenu(this);
 
@@ -61,11 +60,10 @@ namespace fs = boost::filesystem;
   menu->addSeparator();
   //menu->addAction(cutFile);
   //menu->addAction(copyFile);
-  //menu->addAction(saveFile);
   //menu->addSeparator();
   menu->addAction(deleteFile);
   menu->addAction(renameFile);
-  //menu->addAction(sendFile);
+  menu->addAction(sendFile);
   menu->addSeparator();
   menu->addAction(newFolder);
 
@@ -110,6 +108,7 @@ namespace fs = boost::filesystem;
 }
 
 FileBrowser::~FileBrowser() {
+  reset();
 
 }
 
@@ -129,7 +128,7 @@ void FileBrowser::setActive(bool b) {
 }
 
 void FileBrowser::reset() {
-
+  init_ = false;
 }
 
 void FileBrowser::dragEnterEvent(QDragEnterEvent *event) {
@@ -158,6 +157,26 @@ void FileBrowser::onOpenFileClicked() {
 }
 
 void FileBrowser::onSendFileClicked() {
+  QTreeWidgetItem* theItem = ui_.driveTreeWidget->currentItem();
+  QString filename = theItem->text(0);
+  bool ok;
+  QString text = QInputDialog::getText(this, tr("Who will recieve the file?"),
+                                       tr("Recipient"),
+                                       QLineEdit::Normal,"", &ok);
+
+  if (ok){
+    QList<QString> conts;
+    conts.push_back(text);
+    if (ClientController::instance()->sendInstantFile(filename, "", conts,""))
+    {
+      QMessageBox::information(this, tr("File Sent"),
+                              tr("Success sending file: %1").arg(filename));
+    } else {
+      const QString msg = tr("There was an error sending the file: %1")
+                            .arg(filename);
+      QMessageBox::warning(this, tr("File Not Sent"), msg);
+    }
+  }
 }
 
 void FileBrowser::onCopyFileClicked() {
@@ -189,9 +208,10 @@ void FileBrowser::onDeleteFileClicked() {
       return;
     }
   } else {
-// TODO (Stephen#1#): Error message box
-
-    return;
+    QMessageBox msgBox;
+    msgBox.setIcon(QMessageBox::Warning);
+    msgBox.setText(tr("You can only delete networked files"));
+    msgBox.exec();
   }
 }
 
@@ -364,7 +384,10 @@ void FileBrowser::onItemDoubleClicked(QTreeWidgetItem* item, int column){
 
       rft->start();
     } else if (item->text(1) == "Downloading" || item->text(1) == "Uploading") {
-// TODO (Stephen#5#): Ask for some patience!!...
+      QMessageBox msgBox;
+      msgBox.setIcon(QMessageBox::Warning);
+      msgBox.setText(tr("Please wait for file to load"));
+      msgBox.exec();
     } else {
       QString path = rootPath_ + currentDir_ + item->text(0);
 
