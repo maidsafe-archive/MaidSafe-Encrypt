@@ -1828,7 +1828,7 @@ void VaultService::GetBPPresence(google::protobuf::RpcController*,
     response->set_result(kNack);
     done->Run();
 #ifdef DEBUG
-    printf("In VaultService::GetBPMessages (%s), request is not initialized.\n",
+    printf("In VaultService::GetBPPresence (%s), request is not initialized.\n",
            HexSubstr(pmid_).c_str());
 #endif
     return;
@@ -1841,7 +1841,7 @@ void VaultService::GetBPPresence(google::protobuf::RpcController*,
     response->set_result(kNack);
     done->Run();
 #ifdef DEBUG
-    printf("In VaultService::GetBPMessages (%s), ", HexSubstr(pmid_).c_str());
+    printf("In VaultService::GetBPPresence (%s), ", HexSubstr(pmid_).c_str());
     printf("failed to validate signed public key.\n");
 #endif
     return;
@@ -1854,7 +1854,7 @@ void VaultService::GetBPPresence(google::protobuf::RpcController*,
     response->set_result(kNack);
     done->Run();
 #ifdef DEBUG
-    printf("In VaultService::GetBPMessages (%s), ", HexSubstr(pmid_).c_str());
+    printf("In VaultService::GetBPPresence (%s), ", HexSubstr(pmid_).c_str());
     printf("failed to validate signed request.\n");
 #endif
     return;
@@ -1865,7 +1865,7 @@ void VaultService::GetBPPresence(google::protobuf::RpcController*,
     response->set_result(kNack);
     done->Run();
 #ifdef DEBUG
-    printf("In VaultService::GetBPMessages (%s), ", HexSubstr(pmid_).c_str());
+    printf("In VaultService::GetBPPresence (%s), ", HexSubstr(pmid_).c_str());
     printf("failed to load the local buffer packet.\n");
 #endif
     return;
@@ -1877,7 +1877,7 @@ void VaultService::GetBPPresence(google::protobuf::RpcController*,
     response->set_result(kNack);
     done->Run();
 #ifdef DEBUG
-    printf("In VaultService::GetBPMessages (%s), ", HexSubstr(pmid_).c_str());
+    printf("In VaultService::GetBPPresence (%s), ", HexSubstr(pmid_).c_str());
     printf("failed to extract the messages.\n");
 #endif
     return;
@@ -1890,7 +1890,7 @@ void VaultService::GetBPPresence(google::protobuf::RpcController*,
     response->set_result(kNack);
     done->Run();
 #ifdef DEBUG
-    printf("In VaultService::GetBPMessages (%s), ", HexSubstr(pmid_).c_str());
+    printf("In VaultService::GetBPPresence (%s), ", HexSubstr(pmid_).c_str());
     printf("failed to update the local buffer packet.\n");
 #endif
     return;
@@ -1913,7 +1913,7 @@ void VaultService::AddBPPresence(google::protobuf::RpcController*,
     done->Run();
 #ifdef DEBUG
     if (knode_ != NULL)
-      printf("In VaultService::AddBPMessage(%s), request is not initialized.\n",
+      printf("In VaultService::AddBPPresence(%s), request not initialized.\n",
              HexSubstr(pmid_).c_str());
 #endif
     return;
@@ -1925,7 +1925,7 @@ void VaultService::AddBPPresence(google::protobuf::RpcController*,
     response->set_result(kNack);
     done->Run();
 #ifdef DEBUG
-    printf("In VaultService::AddBPMessage(%s), request/id doesn't validate.\n",
+    printf("In VaultService::AddBPPresence(%s), request/id doesn't validate.\n",
            HexSubstr(pmid_).c_str());
 #endif
     return;
@@ -1937,7 +1937,7 @@ void VaultService::AddBPPresence(google::protobuf::RpcController*,
     done->Run();
 #ifdef DEBUG
     if (knode_ != NULL) {
-      printf("In VaultService::AddBPMessage (%s), ", HexSubstr(pmid_).c_str());
+      printf("In VaultService::AddBPPresence (%s), ", HexSubstr(pmid_).c_str());
       printf("failed to load the local buffer packet.\n");
     }
 #endif
@@ -1950,7 +1950,7 @@ void VaultService::AddBPPresence(google::protobuf::RpcController*,
     done->Run();
 #ifdef DEBUG
     if (knode_ != NULL) {
-      printf("In VaultService::AddBPMessage (%s), ", HexSubstr(pmid_).c_str());
+      printf("In VaultService::AddBPPresence (%s), ", HexSubstr(pmid_).c_str());
       printf("failed to add the message.\n");
     }
 #endif
@@ -1962,7 +1962,7 @@ void VaultService::AddBPPresence(google::protobuf::RpcController*,
     done->Run();
 #ifdef DEBUG
     if (knode_ != NULL) {
-      printf("In VaultService::AddBPMessage (%s), ", HexSubstr(pmid_).c_str());
+      printf("In VaultService::AddBPPresence (%s), ", HexSubstr(pmid_).c_str());
       printf("failed to update the local buffer packet.\n");
     }
 #endif

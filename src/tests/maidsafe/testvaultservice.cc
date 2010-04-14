@@ -2340,9 +2340,9 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesGetSyncData) {
     EXPECT_EQ(kAck, static_cast<int>(response.result()));
     if (response.has_vault_account_set())
       EXPECT_EQ(0, response.vault_account_set().vault_account_size());
-    if(response.has_chunk_info_map())
+    if (response.has_chunk_info_map())
       EXPECT_EQ(0, response.chunk_info_map().vault_chunk_info_size());
-    if(response.has_vault_buffer_packet_map())
+    if (response.has_vault_buffer_packet_map())
       EXPECT_EQ(0,
                 response.vault_buffer_packet_map().vault_buffer_packet_size());
     response.Clear();

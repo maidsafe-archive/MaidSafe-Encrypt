@@ -226,6 +226,7 @@ class BPCallback {
   void Reset() {
     result = maidsafe::kGeneralError;
     msgs.clear();
+    presences.clear();
   }
   std::set<std::string> vbpm_set;
   std::set<std::string> presence_set;

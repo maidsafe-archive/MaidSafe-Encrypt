@@ -226,18 +226,19 @@ void ClientBufferPacketHandler::AddPresence(
   ser_lp.set_signature(crypto_obj_.AsymSign(ser_lp.data(), "", args.private_key,
                        crypto::STRING_STRING));
 
-  data->add_msg_request.set_data(ser_lp.SerializeAsString());
-  data->add_msg_request.set_bufferpacket_name(crypto_obj_.Hash(receiver_id +
-      recver_public_key, "", crypto::STRING_STRING, false));
-  data->add_msg_request.set_pmid(args.sign_id);
-  data->add_msg_request.set_public_key(args.public_key);
-  data->add_msg_request.set_signed_public_key(crypto_obj_.AsymSign(
-    args.public_key, "", args.private_key, crypto::STRING_STRING));
-  data->add_msg_request.set_signed_request(crypto_obj_.AsymSign(
-      crypto_obj_.Hash(args.public_key +
-      data->add_msg_request.signed_public_key() +
-      data->add_msg_request.bufferpacket_name(), "", crypto::STRING_STRING,
-      false), "", args.private_key, crypto::STRING_STRING));
+  data->add_presence_request.set_data(ser_lp.SerializeAsString());
+  std::string bpname(crypto_obj_.Hash(receiver_id + recver_public_key, "",
+                     crypto::STRING_STRING, false));
+  data->add_presence_request.set_bufferpacket_name(bpname);
+  data->add_presence_request.set_pmid(args.sign_id);
+  data->add_presence_request.set_public_key(args.public_key);
+  std::string pubkey_sig(crypto_obj_.AsymSign(args.public_key, "",
+                         args.private_key, crypto::STRING_STRING));
+  data->add_presence_request.set_signed_public_key(pubkey_sig);
+  data->add_presence_request.set_signed_request(crypto_obj_.AsymSign(
+      crypto_obj_.Hash(args.public_key + pubkey_sig + bpname, "",
+                       crypto::STRING_STRING, false),
+      "", args.private_key, crypto::STRING_STRING));
 
   data->cb = cb;
   data->type = ADD_PRESENCE;
