@@ -122,7 +122,7 @@ PerpetualData::~PerpetualData() {
 }
 
 void PerpetualData::createActions() {
-  // most of the actions have already been created for the menubar
+//most of the actions have already been created for the menubar
   actions_[ QUIT ] = ui_.actionQuit;
   actions_[ LOGOUT ] = ui_.actionLogout;
   actions_[ FULLSCREEN ] = ui_.actionFullScreen;
@@ -135,7 +135,7 @@ void PerpetualData::createActions() {
   actions_[ AWAY ] = ui_.actionAway;
   actions_[ BUSY ] = ui_.actionBusy;
   actions_[ OFFLINE_2 ] = ui_.actionOffline_2;
-// actions_[ SAVE_SESSION ] = ui_.actionSave_Session;
+//actions_[ SAVE_SESSION ] = ui_.actionSave_Session;
 
   actions_[ QUIT ]->setShortcut(Qt::ALT + Qt::Key_F4);
   actions_[ FULLSCREEN ]->setShortcut(Qt::Key_F11);
@@ -280,9 +280,7 @@ void PerpetualData::onLoginExistingUser() {
   // existing user whose credentials have been verified
   // mount the file system..
 
-
   qDebug() << "public name:" << ClientController::instance()->publicUsername();
-
 
 #ifdef PD_LIGHT
   onMountCompleted(true);
@@ -305,7 +303,7 @@ void PerpetualData::onSetupNewUserComplete() {
 }
 
 void PerpetualData::onSetupNewUserCancelled() {
-  // process was cancelled.  back to login.
+  // process was cancelled. back to login.
   setState(LOGIN);
 }
 
@@ -347,10 +345,13 @@ void PerpetualData::onUserCreationCompleted(bool success) {
   qDebug() << "PerpetualData::onUserCreationCompleted:" << success;
 
   if (success) {
-    asyncMount();
-    setState(MOUNT_USER);
+#ifdef PD_LIGHT
+  onMountCompleted(true);
+#else
+  setState(MOUNT_USER);
+  asyncMount();
+#endif
   } else {
-    // TODO(Team#5#): 2009-08-18 - more detail about the failure
     progressPage_->setProgressMessage(tr("User creation failed"));
     setState(FAILURE);
   }
@@ -359,7 +360,6 @@ void PerpetualData::onUserCreationCompleted(bool success) {
 void PerpetualData::onMountCompleted(bool success) {
   qDebug() << "PerpetualData::onMountCompleted: " << success;
 
-  //
   if (success) {
     const QString pu = ClientController::instance()->publicUsername();
     if (!pu.isEmpty()) {
@@ -368,6 +368,7 @@ void PerpetualData::onMountCompleted(bool success) {
       statusBar()->showMessage(tr("Logged in"));
     }
     setState(LOGGED_IN);
+    qDebug() << QString("Logged in: %1").arg(pu);
   } else {
     // TODO(Team#5#): 2009-08-18 - more detail about the failure
     progressPage_->setProgressMessage(tr("Mount failed"));

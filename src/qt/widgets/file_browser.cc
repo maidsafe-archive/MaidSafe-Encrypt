@@ -189,6 +189,8 @@ void FileBrowser::onDeleteFileClicked() {
       return;
     }
   } else {
+// TODO (Stephen#1#): Error message box
+
     return;
   }
 }
@@ -362,7 +364,7 @@ void FileBrowser::onItemDoubleClicked(QTreeWidgetItem* item, int column){
 
       rft->start();
     } else if (item->text(1) == "Downloading" || item->text(1) == "Uploading") {
-
+// TODO (Stephen#5#): Ask for some patience!!...
     } else {
       QString path = rootPath_ + currentDir_ + item->text(0);
 
