@@ -24,7 +24,6 @@
 
 #include "maidsafe/client/keyatlas.h"
 
-#include <stdint.h>
 #include <boost/filesystem.hpp>
 #include <maidsafe/crypto.h>
 #include <maidsafe/maidsafe-dht.h>

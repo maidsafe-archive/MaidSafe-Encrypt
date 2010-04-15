@@ -1938,7 +1938,7 @@ int ClientController::CreateNewShare(const std::string &name,
   std::list<maidsafe::ShareParticipants> participants;
   std::vector<maidsafe::ShareParticipants> parts;
   std::vector<std::string> admin_recs;
-  std::set<std::string>::iterator it;
+  std::set<std::string>::const_iterator it;
   for (it = admins.begin(); it != admins.end(); ++it) {
     std::vector<maidsafe::Contact> c_list;
     maidsafe::mi_contact mic;

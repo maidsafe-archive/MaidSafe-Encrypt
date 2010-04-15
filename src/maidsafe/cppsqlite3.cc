@@ -979,7 +979,7 @@ CppSQLite3Statement CppSQLite3DB::compileStatement(const char* szSQL) {
 
 bool CppSQLite3DB::tableExists(const char* szTable) {
   char szSQL[128];
-  snprintf(szSQL, sizeof(szSQL),
+  sprintf(szSQL,
       "select count(*) from sqlite_master where type='table' and name='%s'",
       szTable);
   int nRet = execScalar(szSQL);

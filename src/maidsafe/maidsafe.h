@@ -35,7 +35,6 @@
 #error This API uses a newer version of the maidsafe-dht library.
 #error Please update this project.
 #endif
-#include <stdint.h>
 
 #include <string>
 
@@ -351,11 +350,11 @@ const int kChunkInfoWatcherPendingTimeout = 86400;  // 24 hours
 // time until a chunk holder is not considered active anymore
 const int kChunkInfoRefActiveTimeout = 86400;  // 24 hours
 // min. no. of responses required out of k
-const boost::uint16_t kKadUpperThreshold(kad::K *
-                                         kad::kMinSuccessfulPecentageStore);
+const boost::uint16_t kKadUpperThreshold(static_cast<boost::uint16_t>(kad::K *
+                                         kad::kMinSuccessfulPecentageStore));
 const boost::uint16_t kKadLowerThreshold(
-    kad::kMinSuccessfulPecentageStore > .25 ? kad::K * .25
-                                            : kKadUpperThreshold);
+  kad::kMinSuccessfulPecentageStore > .25 ?
+  static_cast<boost::uint16_t>(kad::K * .25) : kKadUpperThreshold);
 
 namespace maidsafe {
 

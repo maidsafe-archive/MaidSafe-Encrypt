@@ -184,7 +184,7 @@ void ClientBufferPacketHandler::AddMessage(const BPInputParameters &args,
   bpmsg.set_type(m_type);
   bpmsg.set_timestamp(base::get_epoch_time());
   // generating key to encrypt msg with AES
-  uint32_t iter = base::random_32bit_uinteger() % 1000 +1;
+  boost::uint32_t iter = base::random_32bit_uinteger() % 1000 +1;
   std::string aes_key = crypto_obj_.SecurePassword(
       crypto_obj_.Hash(message, "", crypto::STRING_STRING, false), iter);
 

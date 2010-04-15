@@ -21,7 +21,6 @@
 *
 * ============================================================================
 */
-#include <stdint.h>
 
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
@@ -263,40 +262,40 @@ TEST_F(SelfEncryptionTest, BEH_MAID_CalculateChunkSizes) {
   fs::path file_path(ms_home_path_);
 
   SelfEncryption se(client_chunkstore_);
-  uint16_t min_chunks = se.min_chunks_;
-  uint16_t max_chunks = se.max_chunks_;
-  uint64_t default_chunk_size_ = se.default_chunk_size_;
+  boost::uint16_t min_chunks = se.min_chunks_;
+  boost::uint16_t max_chunks = se.max_chunks_;
+  boost::uint64_t default_chunk_size_ = se.default_chunk_size_;
 
   // make file of size larger than (max no of chunks)*(default chunk size)
   std::string test_file1 = "test01.txt";
-  uint64_t file_size1 = default_chunk_size_*max_chunks*2;
+  boost::uint64_t file_size1 = default_chunk_size_*max_chunks*2;
   fs::path path1(test_se::CreateRandomFile(test_file1, file_size1), fs::native);
 
   // make file of size exactly (max no of chunks)*(default chunk size)
   std::string test_file2 = "test02.txt";
-  uint64_t file_size2 = default_chunk_size_*max_chunks;
+  boost::uint64_t file_size2 = default_chunk_size_*max_chunks;
   fs::path path2(test_se::CreateRandomFile(test_file2, file_size2), fs::native);
 
   // make file of size between (max no of chunks)*(default chunk size)
   // & (min no of chunks)*(default chunk size)
   std::string test_file3 = "test03.txt";
-  uint64_t file_size3 = default_chunk_size_*(max_chunks+min_chunks)/2;
+  boost::uint64_t file_size3 = default_chunk_size_*(max_chunks+min_chunks)/2;
   fs::path path3(test_se::CreateRandomFile(test_file3, file_size3), fs::native);
 
   //  make file of size smaller than (min no of chunks)*(default chunk size)
   std::string test_file4 = "test04.txt";
-  uint64_t file_size4 = default_chunk_size_*min_chunks/2;
+  boost::uint64_t file_size4 = default_chunk_size_*min_chunks/2;
   fs::path path4(test_se::CreateRandomFile(test_file4, file_size4), fs::native);
 
   //  make file of size 4 bytes
   std::string test_file5 = "test05.txt";
-  uint64_t file_size5 = 4;
+  boost::uint64_t file_size5 = 4;
   fs::path path5(test_se::CreateRandomFile(test_file5, file_size5), fs::native);
 
   //  set file hash so that each chunk size is unaltered
   DataMap dm;
   se.file_hash_ = "8888888888888888888888888888888888888888";
-  uint64_t chunk_size_total = 0;
+  boost::uint64_t chunk_size_total = 0;
   iohandler->SetData(path1.string(), false);
   ASSERT_TRUE(se.CalculateChunkSizes(iohandler, &dm));
   ASSERT_EQ(max_chunks, dm.chunk_size_size());
@@ -566,7 +565,7 @@ TEST_F(SelfEncryptionTest, BEH_MAID_GeneratePreEncHashes) {
 
   // Modify default chunklet size so that pre-encryption hashes are generated
   // from only first 2 chars of each chunk.
-  uint16_t *new_default_chunklet_size_ =
+  boost::uint16_t *new_default_chunklet_size_ =
       const_cast<uint16_t*>(&se.default_chunklet_size_);
   *new_default_chunklet_size_ = 2;
   dm.clear_chunk_name();

@@ -282,8 +282,8 @@ TEST_F(SystemPacketHandlerTest, BEH_MAID_GetRidSMID) {
       crypto::STRING_STRING));
   PacketParams recovered_rid = smidPacket->GetData(gp.SerializeAsString(),
       input_param_);
-  ASSERT_EQ(boost::any_cast<uint32_t>(input_param_["rid"]),
-      boost::any_cast<uint32_t>(recovered_rid["data"]));
+  ASSERT_EQ(boost::any_cast<boost::uint32_t>(input_param_["rid"]),
+      boost::any_cast<boost::uint32_t>(recovered_rid["data"]));
 }
 
 }  // namespace maidsafe

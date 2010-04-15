@@ -50,17 +50,17 @@ class PdDirTest : public testing::Test {
   std::string db_name1_;
 };
 
-void PrepareMDM(const int32_t id,
+void PrepareMDM(const boost::int32_t id,
                         const std::string &display_name,
                         const ItemType &type,
                         const std::string &file_hash,
                         const std::string &stats,
                         const std::string &tag,
-                        const uint32_t &file_size_high,
-                        const uint32_t &file_size_low,
-                        const uint32_t &creation_time,
-                        const uint32_t &last_modified,
-                        const uint32_t &last_access,
+                        const boost::uint32_t &file_size_high,
+                        const boost::uint32_t &file_size_low,
+                        const boost::uint32_t &creation_time,
+                        const boost::uint32_t &last_modified,
+                        const boost::uint32_t &last_access,
                         std::string &ser_mdm) {
   MetaDataMap mdm;
   mdm.set_id(id);

@@ -25,7 +25,6 @@
 #include <boost/filesystem.hpp>
 #include <maidsafe/crypto.h>
 #include <maidsafe/utils.h>
-#include <stdint.h>
 
 #include <string>
 #include <vector>

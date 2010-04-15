@@ -77,7 +77,7 @@ class StoreManagerInterface {
   // Chunks
   virtual int LoadChunk(const std::string &chunk_name, std::string *data)=0;
   virtual int StoreChunk(const std::string &chunk_name,
-                         const DirType dir_type,
+                         DirType dir_type,
                          const std::string &msid)=0;
   virtual int DeleteChunk(const std::string &chunk_name,
                           const boost::uint64_t &chunk_size,

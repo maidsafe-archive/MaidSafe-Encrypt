@@ -256,7 +256,9 @@ void VaultServiceLogic::SendRpcs(
   for (boost::uint16_t j = 0; j < data->contacts.size(); ++j) {
     data->request.set_request_signature(GetSignedRequest(data->kad_key,
         data->contacts.at(j).node_id()));
-    google::protobuf::Closure* done = google::protobuf::NewCallback(this,
+    google::protobuf::Closure* done = google::protobuf::NewCallback<
+        VaultServiceLogic, boost::uint16_t,
+        boost::shared_ptr<AddToReferenceListOpData> > (this,
         &VaultServiceLogic::RemoteOpStageThree, j, data);
     vault_rpcs_->AddToReferenceList(data->contacts.at(j),
         kad_ops_->AddressIsLocal(data->contacts.at(j)), data->transport_id,
@@ -269,7 +271,9 @@ template<>
 void VaultServiceLogic::SendRpcs(
     boost::shared_ptr<AmendRemoteAccountOpData> data) {
   for (boost::uint16_t j = 0; j < data->contacts.size(); ++j) {
-    google::protobuf::Closure* done = google::protobuf::NewCallback(this,
+    google::protobuf::Closure* done = google::protobuf::NewCallback<
+        VaultServiceLogic, boost::uint16_t,
+        boost::shared_ptr<AmendRemoteAccountOpData> > (this,
         &VaultServiceLogic::RemoteOpStageThree, j, data);
     vault_rpcs_->AmendAccount(data->contacts.at(j),
                               kad_ops_->AddressIsLocal(data->contacts.at(j)),
@@ -283,7 +287,9 @@ template<>
 void VaultServiceLogic::SendRpcs(
     boost::shared_ptr<RemoteAccountStatusOpData> data) {
   for (boost::uint16_t j = 0; j < data->contacts.size(); ++j) {
-    google::protobuf::Closure* done = google::protobuf::NewCallback(this,
+    google::protobuf::Closure* done = google::protobuf::NewCallback<
+        VaultServiceLogic, boost::uint16_t,
+        boost::shared_ptr<RemoteAccountStatusOpData> > (this,
         &VaultServiceLogic::RemoteOpStageThree, j, data);
     vault_rpcs_->AccountStatus(data->contacts.at(j),
                                kad_ops_->AddressIsLocal(data->contacts.at(j)),

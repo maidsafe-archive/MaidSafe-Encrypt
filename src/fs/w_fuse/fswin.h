@@ -32,7 +32,7 @@
 
 namespace fs_w_fuse {
 
-#define WinCheckFlag(val, flag) if (val&flag) { DbgPrint(L"\t\t" #flag L"\n"); }  // NOLINT
+#define WinCheckFlag(val, flag) if (val&flag) { DbgPrint(L"\t\t" L#flag L"\n"); }  // NOLINT
 
 static WCHAR RootDirectory[MAX_PATH];
 

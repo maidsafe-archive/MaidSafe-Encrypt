@@ -30,8 +30,6 @@
 #include <maidsafe/utils.h>
 #include <maidsafe/crypto.h>
 
-#include <stdint.h>
-
 #include <algorithm>
 #include <cctype>
 #include <cstdio>
@@ -417,7 +415,7 @@ int DataAtlasHandler::CopySubDbs(const std::string &original_path_,
   result = ListSubDirs(original_path_, &subdirs_);
   if (result != kSuccess)
     return result;
-  uint16_t i = 0;
+  boost::uint16_t i = 0;
   while (i < subdirs_.size()) {
     fs::path orig_path_(original_path_);
     fs::path targ_path_(target_path_);
