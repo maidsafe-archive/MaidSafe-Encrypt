@@ -32,7 +32,7 @@
          </sizepolicy>
         </property>
         <property name="text">
-         <string>Total Space : </string>
+         <string>Total space:</string>
         </property>
         <property name="wordWrap">
          <bool>true</bool>
@@ -48,7 +48,7 @@
          </sizepolicy>
         </property>
         <property name="text">
-         <string>TextLabel</string>
+         <string>0</string>
         </property>
        </widget>
       </item>
@@ -61,7 +61,7 @@
          </sizepolicy>
         </property>
         <property name="text">
-         <string>Used Space : </string>
+         <string>Used space:</string>
         </property>
        </widget>
       </item>
@@ -74,7 +74,7 @@
          </sizepolicy>
         </property>
         <property name="text">
-         <string>TextLabel</string>
+         <string>0</string>
         </property>
        </widget>
       </item>
@@ -87,7 +87,7 @@
          </sizepolicy>
         </property>
         <property name="text">
-         <string>Free Space : </string>
+         <string>Free space:</string>
         </property>
        </widget>
       </item>
@@ -139,7 +139,7 @@
          </sizepolicy>
         </property>
         <property name="text">
-         <string>Storing Directory</string>
+         <string>Data directory:</string>
         </property>
        </widget>
       </item>
@@ -165,7 +165,7 @@
          </sizepolicy>
         </property>
         <property name="text">
-         <string>Vault IP address</string>
+         <string>Vault IP address:</string>
         </property>
        </widget>
       </item>
@@ -191,7 +191,7 @@
          </sizepolicy>
         </property>
         <property name="text">
-         <string>Vault port</string>
+         <string>Vault port:</string>
         </property>
        </widget>
       </item>

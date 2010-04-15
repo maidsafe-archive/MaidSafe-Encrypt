@@ -25,6 +25,11 @@
 // local
 #include "qt/widgets/panel.h"
 #include "qt/widgets/messages.h"
+
+#ifdef PD_LIGHT
+#include "qt/widgets/file_browser.h"
+#endif
+
 #include "qt/widgets/shares.h"
 #include "qt/widgets/contacts.h"
 #include "qt/widgets/personal_messages.h"
@@ -47,6 +52,9 @@ UserPanels::UserPanels(QWidget* parent)
   ui_.tabWidget_2->setContextMenuPolicy(Qt::CustomContextMenu);
 
   public_username_ = new PublicUsername;
+#ifdef PD_LIGHT
+  browser_ = new FileBrowser;
+#endif
 
   ui_.my_files_button->setAutoDefault(true);
 
@@ -63,9 +71,9 @@ UserPanels::UserPanels(QWidget* parent)
 
   menuContacts = new QMenu(this);
 
-  sortAlpha = new QAction(tr("Sort Alphabetical"), this);
-  sortContacted = new QAction(tr("Sort Most Contacted"), this);
-  sortRecent = new QAction(tr("Sort Most Recent"), this);
+  sortAlpha = new QAction(tr("Sort alphabetically"), this);
+  sortContacted = new QAction(tr("Sort by most contacted"), this);
+  sortRecent = new QAction(tr("Sort by most recent"), this);
 
   menuContacts->addAction(sortAlpha);
   menuContacts->addAction(sortContacted);
@@ -77,9 +85,9 @@ UserPanels::UserPanels(QWidget* parent)
 
   menuShares = new QMenu(this);
 
-  sortShareAlpha = new QAction(tr("Sort Alphabetical"), this);
-  sortShareUsed = new QAction(tr("Sort Most Used"), this);
-  sortShareRecent = new QAction(tr("Sort Most Recent"), this);
+  sortShareAlpha = new QAction(tr("Sort alphabetically"), this);
+  sortShareUsed = new QAction(tr("Sort by most contacted"), this);
+  sortShareRecent = new QAction(tr("Sort by most recent"), this);
 
   menuShares->addAction(sortShareAlpha);
   menuShares->addAction(sortShareUsed);
@@ -144,7 +152,12 @@ void UserPanels::onPublicUsernameChosen() {
 }
 
 void UserPanels::onMyFilesClicked() {
+#ifdef PD_LIGHT
+  browser_->setActive(true);
+  browser_->show();
+#else
   UserSpaceFileSystem::instance()->explore(UserSpaceFileSystem::MY_FILES);
+#endif
 }
 
 void UserPanels::onCurrentChanged(int index) {

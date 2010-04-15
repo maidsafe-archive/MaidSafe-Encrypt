@@ -57,9 +57,8 @@ PerpetualData::PerpetualData(QWidget* parent)
   statusBar()->addPermanentWidget(message_status_ = new QLabel);
 
   createActions();
-
   createMenus();
-
+  showLoggedOutMenu();
   // create the main screens
   login_ = new Login;
   create_ = new CreateUser;
@@ -122,7 +121,7 @@ PerpetualData::~PerpetualData() {
 }
 
 void PerpetualData::createActions() {
-  // most of the actions have already been created for the menubar
+//most of the actions have already been created for the menubar
   actions_[ QUIT ] = ui_.actionQuit;
   actions_[ LOGOUT ] = ui_.actionLogout;
   actions_[ FULLSCREEN ] = ui_.actionFullScreen;
@@ -135,7 +134,7 @@ void PerpetualData::createActions() {
   actions_[ AWAY ] = ui_.actionAway;
   actions_[ BUSY ] = ui_.actionBusy;
   actions_[ OFFLINE_2 ] = ui_.actionOffline_2;
-// actions_[ SAVE_SESSION ] = ui_.actionSave_Session;
+//actions_[ SAVE_SESSION ] = ui_.actionSave_Session;
 
   actions_[ QUIT ]->setShortcut(Qt::ALT + Qt::Key_F4);
   actions_[ FULLSCREEN ]->setShortcut(Qt::Key_F11);
@@ -216,9 +215,9 @@ void PerpetualData::setState(State state) {
     case CREATE_USER:
     {
         ui_.stackedWidget->setCurrentWidget(progressPage_);
-        progressPage_->setTitle(tr("Creating User"));
+        progressPage_->setTitle(tr("Creating User Account"));
         progressPage_->setProgressMessage(
-                    tr("Creating a user.  This may take some time..."));
+            tr("A user account is being created. This may take some time..."));
         progressPage_->setError(false);
         progressPage_->setCanCancel(false);  // can't cancel it yet
         // connect(create_, SIGNAL(cancel()),
@@ -228,9 +227,9 @@ void PerpetualData::setState(State state) {
     case MOUNT_USER:
     {
         ui_.stackedWidget->setCurrentWidget(progressPage_);
-        progressPage_->setTitle(tr("Mounting User"));
+        progressPage_->setTitle(tr("Mounting User File System"));
         progressPage_->setProgressMessage(
-                                    tr("Mounting user file system..."));
+            tr("Your file system is being set up..."));
         progressPage_->setError(false);
         progressPage_->setCanCancel(false);  // can't cancel it yet
         // connect(create_, SIGNAL(cancel()),
@@ -239,6 +238,7 @@ void PerpetualData::setState(State state) {
     }
     case LOGGED_IN:
     {
+        showLoggedInMenu();
         ui_.stackedWidget->setCurrentWidget(userPanels_);
         connect(userPanels_, SIGNAL(unreadMessages(int)),
                 this,        SLOT(onUnreadMessagesChanged(int)));
@@ -247,10 +247,12 @@ void PerpetualData::setState(State state) {
     }
     case LOGGING_OUT:
     {
+        showLoggedOutMenu();
         ui_.stackedWidget->setCurrentWidget(progressPage_);
         progressPage_->setTitle(tr("Logging out"));
         progressPage_->setProgressMessage(
-            tr("Logging out. Removing all traces of you from the system."));
+            tr("Logging out and removing all traces of you from the "
+               "system..."));
         progressPage_->setError(false);
         progressPage_->setCanCancel(false);
         break;
@@ -261,7 +263,7 @@ void PerpetualData::setState(State state) {
         progressPage_->setError(true);
         progressPage_->setCanCancel(false);
         connect(progressPage_, SIGNAL(ok()),
-                this,           SLOT(onFailureAcknowledged()));
+                this,          SLOT(onFailureAcknowledged()));
         break;
     }
     default:
@@ -280,11 +282,14 @@ void PerpetualData::onLoginExistingUser() {
   // existing user whose credentials have been verified
   // mount the file system..
 
-#ifdef DEBUG
   qDebug() << "public name:" << ClientController::instance()->publicUsername();
-#endif
+
+#ifdef PD_LIGHT
+  onMountCompleted(true);
+#else
   setState(MOUNT_USER);
   asyncMount();
+#endif
 }
 
 void PerpetualData::onLoginNewUser() {
@@ -300,7 +305,7 @@ void PerpetualData::onSetupNewUserComplete() {
 }
 
 void PerpetualData::onSetupNewUserCancelled() {
-  // process was cancelled.  back to login.
+  // process was cancelled. back to login.
   setState(LOGIN);
 }
 
@@ -342,11 +347,14 @@ void PerpetualData::onUserCreationCompleted(bool success) {
   qDebug() << "PerpetualData::onUserCreationCompleted:" << success;
 
   if (success) {
-    asyncMount();
-    setState(MOUNT_USER);
+#ifdef PD_LIGHT
+  onMountCompleted(true);
+#else
+  setState(MOUNT_USER);
+  asyncMount();
+#endif
   } else {
-    // TODO(Team#5#): 2009-08-18 - more detail about the failure
-    progressPage_->setProgressMessage(tr("User creation failed"));
+    progressPage_->setProgressMessage(tr("Failed creating a user account."));
     setState(FAILURE);
   }
 }
@@ -354,7 +362,6 @@ void PerpetualData::onUserCreationCompleted(bool success) {
 void PerpetualData::onMountCompleted(bool success) {
   qDebug() << "PerpetualData::onMountCompleted: " << success;
 
-  //
   if (success) {
     const QString pu = ClientController::instance()->publicUsername();
     if (!pu.isEmpty()) {
@@ -363,9 +370,11 @@ void PerpetualData::onMountCompleted(bool success) {
       statusBar()->showMessage(tr("Logged in"));
     }
     setState(LOGGED_IN);
+    qDebug() << QString("Logged in: %1").arg(pu);
   } else {
     // TODO(Team#5#): 2009-08-18 - more detail about the failure
-    progressPage_->setProgressMessage(tr("Mount failed"));
+    progressPage_->setProgressMessage(
+        tr("The file system could not be mounted."));
     setState(FAILURE);
   }
   if (!ClientController::instance()->publicUsername().isEmpty())
@@ -383,7 +392,8 @@ void PerpetualData::onUnmountCompleted(bool success) {
       setState(LOGIN);
   } else {
     // TODO(Team#5#): 2009-08-18 - more detail about the failure
-    progressPage_->setProgressMessage(tr("Unmount failed"));
+    progressPage_->setProgressMessage(
+        tr("The file system could not be unmounted."));
     setState(FAILURE);
   }
 
@@ -397,13 +407,13 @@ void PerpetualData::onUnmountCompleted(bool success) {
 }
 
 void PerpetualData::onSaveSessionCompleted(int result) {
-  QString saveSessionMsg("Died saving the session.");
+  QString saveSessionMsg(tr("Your session could not be saved."));
   if (result == 0)
-    saveSessionMsg = tr("Save session successful!");
+    saveSessionMsg = tr("Your session was successfully saved.");
   qDebug() << "PerpetualData::onSaveSessionCompleted - Result: " << result;
 
 //  QMessageBox::warning(this, tr("Notification!"), saveSessionMsg);
-  SystemTrayIcon::instance()->showMessage(tr("Alert!"), saveSessionMsg);
+  SystemTrayIcon::instance()->showMessage(tr("Alert"), saveSessionMsg);
 }
 
 void PerpetualData::onFailureAcknowledged() {
@@ -417,8 +427,14 @@ void PerpetualData::onLogout() {
   }
   if (!ClientController::instance()->publicUsername().isEmpty())
     ClientController::instance()->StopCheckingMessages();
+#ifdef PD_LIGHT
+  setState(LOGGING_OUT);
+  onUnmountCompleted(true);
+#else
   asyncUnmount();
   setState(LOGGING_OUT);
+#endif
+
 }
 
 void PerpetualData::quit() {
@@ -552,8 +568,9 @@ void PerpetualData::onFileReceived(const maidsafe::InstantMessage& im) {
   maidsafe::InstantFileNotification ifn = im.instantfile_notification();
 
   QMessageBox msgBox;
-  msgBox.setText(QString::fromStdString(im.sender()) + " is sending you: "
-                + QString::fromStdString(ifn.filename()));
+  msgBox.setText(tr("%1 is sending you: %2")
+                 .arg(QString::fromStdString(im.sender()))
+                 .arg(QString::fromStdString(ifn.filename())));
   msgBox.setStandardButtons(QMessageBox::Save | QMessageBox::Cancel);
   msgBox.setDefaultButton(QMessageBox::Save);
   int ret = msgBox.exec();
@@ -631,20 +648,14 @@ void PerpetualData::onUnreadMessagesChanged(int count) {
   qDebug() << "PerpetualData::onUnreadMessagesChanged:" << count;
   QString text;
   if (state_ == LOGGED_IN) {
-    if (count == 0) {
-      text = tr("No unread messages");
-    } else if (count == 1) {
-      text = tr("1 unread message");
-    } else {
-      text = tr("%n unread messages", "", count);
-    }
+    text = tr("%n unread message(s)", "", count);
   }
   message_status_->setText(text);
 }
 
 void PerpetualData::onConnectionStatusChanged(int status) {
   SystemTrayIcon::instance()->ChangeStatus(status);
-  QString title("Connection status");
+  QString title(tr("Connection status"));
   QString message;
   switch (status) {
     case 0: message = tr("You are connected!"); break;
@@ -678,6 +689,7 @@ void PerpetualData::onDirectoryEntered(const QString& dir) {
 }
 
 void PerpetualData::onSettingsTriggered() {
+  qDebug() << "in onSettingsTriggered()";
     settings_ = new UserSettings;
 
     QFile file(":/qss/defaultWithWhite1.qss");
@@ -699,6 +711,24 @@ void PerpetualData::onBusyTriggered() {
 }
 
 void PerpetualData::onOffline_2Triggered() {
+}
+
+void PerpetualData::showLoggedInMenu() {
+  actions_[LOGOUT]->setEnabled(true);
+  ui_.menuStatus->setEnabled(true);
+  actions_[MY_FILES]->setEnabled(true);
+  actions_[PRIVATE_SHARES]->setEnabled(true);
+  actions_[GO_OFFLINE]->setEnabled(true);
+  actions_[SETTINGS]->setEnabled(true);
+}
+
+void PerpetualData::showLoggedOutMenu() {
+  actions_[LOGOUT]->setEnabled(false);
+  ui_.menuStatus->setEnabled(false);
+  actions_[MY_FILES]->setEnabled(false);
+  actions_[PRIVATE_SHARES]->setEnabled(false);
+  actions_[GO_OFFLINE]->setEnabled(false);
+  actions_[SETTINGS]->setEnabled(false);
 }
 
 

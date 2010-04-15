@@ -69,9 +69,9 @@ void CreateUser::reset() {
     p->cleanupPage();
   }
   vault_type_ = 0;
-  space_ = tr("");
-  port_ = tr("");
-  directory_ = tr("");
+  space_ = "";
+  port_ = "";
+  directory_ = "";
 }
 
 void CreateUser::onBack() {

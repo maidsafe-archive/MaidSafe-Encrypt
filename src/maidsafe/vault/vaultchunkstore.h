@@ -46,8 +46,6 @@ class VaultChunkStore : public maidsafe::ChunkStore {
                   const boost::uint64_t &used_space)
       : ChunkStore(chunkstore_dir, available_space, used_space),
         space_used_by_cache_(0) {}
-  // This replaces the existing value - it doesn't append to the existing value
-  int UpdateChunk(const std::string &key, const std::string &value);
   // Loads a chunk chosen at random from hashable normal (ie not cached) chunks
   int LoadRandomChunk(std::string *key, std::string *value);
   void GetAllChunks(std::list<std::string> *chunk_names);

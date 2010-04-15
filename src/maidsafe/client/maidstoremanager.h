@@ -254,12 +254,11 @@ struct LocalVaultOwnedCallbackArgs {
   LocalVaultOwnedCallbackArgs &operator=(const LocalVaultOwnedCallbackArgs&);
 };
 
-typedef boost::function<void(const std::string&,
-                             const boost::uint32_t&,
-                             const boost::int16_t&,
-                             const float &)> IMNotifier;
-
 class MaidsafeStoreManager : public StoreManagerInterface {
+  typedef boost::function<void(const std::string&,
+                               const boost::uint32_t&,
+                               const boost::int16_t&,
+                               const float &)> IMNotifier;
  public:
   explicit MaidsafeStoreManager(boost::shared_ptr<ChunkStore> cstore);
   virtual ~MaidsafeStoreManager() {}
@@ -313,10 +312,6 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   virtual int AddBPMessage(const std::vector<std::string> &receivers,
                            const std::string &message,
                            const MessageType &type);
-  virtual void ContactInfo(const std::string &public_username,
-                           const std::string &me,
-                           ContactInfoNotifier cin);
-  virtual void OwnInfo(ContactInfoNotifier cin);
 
   // Vault
   void PollVaultInfo(base::callback_func_type cb);

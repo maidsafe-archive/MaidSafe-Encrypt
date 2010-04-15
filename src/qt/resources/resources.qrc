@@ -10,6 +10,8 @@
     <file alias="help">64/Help-64.png</file>
     <file alias="globe">64/Globe-64.png</file>
   </qresource>
+  <qresource prefix="translations">
+  </qresource>
   <qresource prefix="icons/32">
     <file>32/Color Picker_32.png</file>
     <file>32/smily-select.png</file>

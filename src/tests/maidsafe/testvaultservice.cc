@@ -30,7 +30,6 @@
 #include <maidsafe/transportudt.h>
 
 #include "fs/filesystem.h"
-#include "maidsafe/vaultbufferpackethandler.h"
 #include "maidsafe/vault/chunkinfohandler.h"
 #include "maidsafe/vault/vaultchunkstore.h"
 #include "maidsafe/vault/vaultdaemon.h"
@@ -417,17 +416,16 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesValidateDataChunk) {
 }
 
 TEST_F(VaultServicesTest, BEH_MAID_ServicesStorable) {
-  ASSERT_EQ(0, vault_service_->Storable(12345));
-  ASSERT_EQ(0, vault_service_->Storable(kAvailableSpace));
-  ASSERT_NE(0, vault_service_->Storable(kAvailableSpace + 1));
-  ASSERT_NE(0, vault_service_->Storable(0));
+  EXPECT_EQ(0, vault_service_->Storable(12345));
+  EXPECT_EQ(0, vault_service_->Storable(kAvailableSpace));
+  EXPECT_NE(0, vault_service_->Storable(kAvailableSpace + 1));
+  EXPECT_NE(0, vault_service_->Storable(0));
 }
 
 TEST_F(VaultServicesTest, BEH_MAID_ServicesLocalStorage) {
   crypto::Crypto co;
   co.set_hash_algorithm(crypto::SHA_512);
   std::string content("This is a data chunk"), test_content;
-  std::string new_content("This is another data chunk");
   std::string chunkname(co.Hash(content, "", crypto::STRING_STRING, false));
   std::string fake_chunkname(co.Hash("moo", "", crypto::STRING_STRING, false));
   EXPECT_FALSE(vault_service_->HasChunkLocal(chunkname));
@@ -440,11 +438,6 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesLocalStorage) {
   // EXPECT_FALSE(vault_service_->StoreChunkLocal(chunkname, content));
   // EXPECT_FALSE(vault_service_->StoreChunkLocal(chunkname, new_content));
   EXPECT_FALSE(vault_service_->LoadChunkLocal(fake_chunkname, &test_content));
-  EXPECT_FALSE(vault_service_->UpdateChunkLocal(fake_chunkname, new_content));
-  EXPECT_TRUE(vault_service_->UpdateChunkLocal(chunkname, new_content));
-  EXPECT_EQ(new_content.size(), vault_service_->GetChunkSizeLocal(chunkname));
-  EXPECT_TRUE(vault_service_->LoadChunkLocal(chunkname, &test_content));
-  EXPECT_EQ(new_content, test_content);
   EXPECT_TRUE(vault_service_->DeleteChunkLocal(chunkname));
   EXPECT_FALSE(vault_service_->HasChunkLocal(chunkname));
   EXPECT_EQ(boost::uint64_t(0), vault_service_->GetChunkSizeLocal(chunkname));
@@ -569,7 +562,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesStorePrep) {
         google::protobuf::NewCallback<TestCallback>(&cb_obj,
         &TestCallback::CallbackFunction);
     vault_service_->StorePrep(&controller, &request, &response, done);
-    EXPECT_TRUE(response.IsInitialized());
+    ASSERT_TRUE(response.IsInitialized());
     store_contract = response.mutable_store_contract();
     inner_contract = store_contract->mutable_inner_contract();
     std::string inner_cont_sig = co.AsymSign(
@@ -595,7 +588,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesStorePrep) {
         google::protobuf::NewCallback<TestCallback>(&cb_obj,
         &TestCallback::CallbackFunction);
     vault_service_->StorePrep(&controller, &request, &response, done);
-    EXPECT_TRUE(response.IsInitialized());
+    ASSERT_TRUE(response.IsInitialized());
     store_contract = response.mutable_store_contract();
     inner_contract = store_contract->mutable_inner_contract();
     signed_size = inner_contract->mutable_signed_size();
@@ -692,7 +685,7 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesStoreChunk) {
         google::protobuf::NewCallback<TestCallback>(&cb_obj,
         &TestCallback::CallbackFunction);
     vault_service_->StoreChunk(&controller, &request, &response, done);
-    EXPECT_TRUE(response.IsInitialized());
+    ASSERT_TRUE(response.IsInitialized());
     EXPECT_NE(kAck, static_cast<int>(response.result()));
     response.Clear();
   }
@@ -724,7 +717,7 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesStoreChunk) {
         google::protobuf::NewCallback<TestCallback>(&cb_obj,
         &TestCallback::CallbackFunction);
     vault_service_->StorePrep(&controller, &sp_req, &sp_rsp, done);
-    EXPECT_TRUE(sp_rsp.IsInitialized());
+    ASSERT_TRUE(sp_rsp.IsInitialized());
   }
   const maidsafe::StoreContract &contract = sp_rsp.store_contract();
   EXPECT_EQ(kAck, static_cast<int>(contract.inner_contract().result()));
@@ -738,9 +731,9 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesStoreChunk) {
   }
 
   ChunkInfo &ci = vault_service_->cih_.chunk_infos_[chunk_name];
-  ASSERT_EQ(size_t(1), ci.waiting_list.size());
-  ASSERT_EQ(size_t(0), ci.watch_list.size());
-  ASSERT_EQ(size_t(0), ci.reference_list.size());
+  EXPECT_EQ(size_t(1), ci.waiting_list.size());
+  EXPECT_EQ(size_t(0), ci.watch_list.size());
+  EXPECT_EQ(size_t(0), ci.reference_list.size());
 
   // try to store, should succeed
   {
@@ -748,7 +741,7 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesStoreChunk) {
         google::protobuf::NewCallback<TestCallback>(&cb_obj,
         &TestCallback::CallbackFunction);
     vault_service_->StoreChunk(&controller, &request, &response, done);
-    EXPECT_TRUE(response.IsInitialized());
+    ASSERT_TRUE(response.IsInitialized());
     EXPECT_EQ(kAck, static_cast<int>(response.result()));
     response.Clear();
   }
@@ -759,9 +752,9 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesStoreChunk) {
   vault_service_->thread_pool_.waitForDone();
 
   // we should have a reference list entry now
-  ASSERT_EQ(size_t(0), ci.waiting_list.size());
-  ASSERT_NE(size_t(0), ci.watch_list.size());
-  ASSERT_EQ(size_t(1), ci.reference_list.size());
+  EXPECT_EQ(size_t(0), ci.waiting_list.size());
+  EXPECT_NE(size_t(0), ci.watch_list.size());
+  EXPECT_EQ(size_t(1), ci.reference_list.size());
 }
 
 TEST_F(VaultServicesTest, BEH_MAID_ServicesGetCheckChunk) {
@@ -793,7 +786,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesGetCheckChunk) {
         google::protobuf::NewCallback<TestCallback>(&cb_obj,
         &TestCallback::CallbackFunction);
     vault_service_->GetChunk(&controller, &request, &response, done);
-    EXPECT_TRUE(response.IsInitialized());
+    ASSERT_TRUE(response.IsInitialized());
     EXPECT_NE(kAck, static_cast<int>(response.result()));
     response.Clear();
   }
@@ -812,21 +805,21 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesGetCheckChunk) {
         &TestCallback::CallbackFunction);
     vault_service_->CheckChunk(&controller, &check_request, &check_response,
                                done);
-    EXPECT_TRUE(check_response.IsInitialized());
+    ASSERT_TRUE(check_response.IsInitialized());
     EXPECT_NE(kAck, static_cast<int>(check_response.result()));
     response.Clear();
   }
 
   // test both for success
   {
-    ASSERT_TRUE(vault_service_->StoreChunkLocal(chunkname, content));
+    EXPECT_TRUE(vault_service_->StoreChunkLocal(chunkname, content));
 
     google::protobuf::Closure *done1 =
         google::protobuf::NewCallback<TestCallback>(&cb_obj,
         &TestCallback::CallbackFunction);
     vault_service_->CheckChunk(&controller, &check_request, &check_response,
                                done1);
-    EXPECT_TRUE(check_response.IsInitialized());
+    ASSERT_TRUE(check_response.IsInitialized());
     EXPECT_EQ(kAck, static_cast<int>(check_response.result()));
     response.Clear();
 
@@ -834,7 +827,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesGetCheckChunk) {
         google::protobuf::NewCallback<TestCallback>(&cb_obj,
         &TestCallback::CallbackFunction);
     vault_service_->GetChunk(&controller, &request, &response, done2);
-    EXPECT_TRUE(response.IsInitialized());
+    ASSERT_TRUE(response.IsInitialized());
     EXPECT_EQ(kAck, static_cast<int>(response.result()));
     EXPECT_EQ(content, response.content());
     response.Clear();
@@ -874,8 +867,8 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesDeleteChunk) {
 
   TestCallback cb_obj;
 
-  ASSERT_TRUE(vault_service_->StoreChunkLocal(chunk_name, chunk_data));
-  ASSERT_TRUE(vault_service_->HasChunkLocal(chunk_name));
+  EXPECT_TRUE(vault_service_->StoreChunkLocal(chunk_name, chunk_data));
+  EXPECT_TRUE(vault_service_->HasChunkLocal(chunk_name));
 
   for (int i = 0; i <= 4; ++i) {
     printf("--- CASE #%i --- \n", i);
@@ -916,7 +909,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesDeleteChunk) {
         google::protobuf::NewCallback<TestCallback>(&cb_obj,
         &TestCallback::CallbackFunction);
     vault_service_->DeleteChunk(&controller, &request, &response, done);
-    EXPECT_TRUE(response.IsInitialized());
+    ASSERT_TRUE(response.IsInitialized());
     EXPECT_NE(kAck, static_cast<int>(response.result()));
     response.Clear();
   }
@@ -933,7 +926,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesDeleteChunk) {
         google::protobuf::NewCallback<TestCallback>(&cb_obj,
         &TestCallback::CallbackFunction);
     vault_service_->DeleteChunk(&controller, &request, &response, done);
-    EXPECT_TRUE(response.IsInitialized());
+    ASSERT_TRUE(response.IsInitialized());
     EXPECT_EQ(kAck, static_cast<int>(response.result()));
     response.Clear();
   }
@@ -947,12 +940,12 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesDeleteChunk) {
         google::protobuf::NewCallback<TestCallback>(&cb_obj,
         &TestCallback::CallbackFunction);
     vault_service_->DeleteChunk(&controller, &request, &response, done);
-    EXPECT_TRUE(response.IsInitialized());
+    ASSERT_TRUE(response.IsInitialized());
     EXPECT_EQ(kAck, static_cast<int>(response.result()));
     response.Clear();
   }
 
-  ASSERT_FALSE(vault_service_->HasChunkLocal(chunk_name));
+  EXPECT_FALSE(vault_service_->HasChunkLocal(chunk_name));
 }
 
 TEST_F(VaultServicesTest, BEH_MAID_ServicesValidityCheck) {
@@ -989,12 +982,12 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesValidityCheck) {
         google::protobuf::NewCallback<TestCallback>(&cb_obj,
         &TestCallback::CallbackFunction);
     vault_service_->ValidityCheck(&controller, &request, &response, done);
-    EXPECT_TRUE(response.IsInitialized());
+    ASSERT_TRUE(response.IsInitialized());
     EXPECT_NE(kAck, static_cast<int>(response.result()));
     response.Clear();
   }
 
-  ASSERT_TRUE(vault_service_->StoreChunkLocal(chunkname, content));
+  EXPECT_TRUE(vault_service_->StoreChunkLocal(chunkname, content));
 
   // test success
   {
@@ -1002,7 +995,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesValidityCheck) {
         google::protobuf::NewCallback<TestCallback>(&cb_obj,
         &TestCallback::CallbackFunction);
     vault_service_->ValidityCheck(&controller, &request, &response, done);
-    EXPECT_TRUE(response.IsInitialized());
+    ASSERT_TRUE(response.IsInitialized());
     EXPECT_EQ(kAck, static_cast<int>(response.result()));
     EXPECT_EQ(vc_hash, response.hash_content());
   }
@@ -1033,8 +1026,10 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesCacheChunk) {
   google::protobuf::Closure *done = google::protobuf::NewCallback<TestCallback>
                                     (&cb_obj, &TestCallback::CallbackFunction);
   vault_service_->CacheChunk(&controller, &request, &response, done);
-  ASSERT_EQ(kNack, static_cast<int>(response.result()));
-  ASSERT_FALSE(vault_service_->vault_chunkstore_->Has(chunkname));
+  ASSERT_TRUE(response.IsInitialized());
+  EXPECT_EQ(kNack, static_cast<int>(response.result()));
+  EXPECT_FALSE(vault_service_->vault_chunkstore_->Has(chunkname));
+  response.Clear();
 
   // Wrong parameters
   request.set_chunkname("aaaaaaaaaaaaa");
@@ -1046,28 +1041,33 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesCacheChunk) {
   done = google::protobuf::NewCallback<TestCallback>
          (&cb_obj, &TestCallback::CallbackFunction);
   vault_service_->CacheChunk(&controller, &request, &response, done);
-  ASSERT_EQ(kNack, static_cast<int>(response.result()));
-  ASSERT_FALSE(vault_service_->vault_chunkstore_->Has(chunkname));
+  ASSERT_TRUE(response.IsInitialized());
+  EXPECT_EQ(kNack, static_cast<int>(response.result()));
+  EXPECT_FALSE(vault_service_->vault_chunkstore_->Has(chunkname));
+  response.Clear();
 
   request.set_chunkname(chunkname);
   request.set_pmid("aaaaaaaaaaaaaa");
   done = google::protobuf::NewCallback<TestCallback>
          (&cb_obj, &TestCallback::CallbackFunction);
   vault_service_->CacheChunk(&controller, &request, &response, done);
-  ASSERT_EQ(kNack, static_cast<int>(response.result()));
-  ASSERT_FALSE(vault_service_->vault_chunkstore_->Has(chunkname));
-  ASSERT_FALSE(fs::exists(vault_service_->vault_chunkstore_->GetChunkPath(
+  ASSERT_TRUE(response.IsInitialized());
+  EXPECT_EQ(kNack, static_cast<int>(response.result()));
+  EXPECT_FALSE(vault_service_->vault_chunkstore_->Has(chunkname));
+  EXPECT_FALSE(fs::exists(vault_service_->vault_chunkstore_->GetChunkPath(
                chunkname, (maidsafe::kHashable | maidsafe::kCache), false)));
+  response.Clear();
 
   request.set_pmid(pmid);
   done = google::protobuf::NewCallback<TestCallback>
          (&cb_obj, &TestCallback::CallbackFunction);
   vault_service_->CacheChunk(&controller, &request, &response, done);
-  ASSERT_EQ(kAck, static_cast<int>(response.result()));
-  ASSERT_TRUE(vault_service_->vault_chunkstore_->Has(chunkname));
-  ASSERT_EQ(maidsafe::kHashable|maidsafe::kCache,
+  ASSERT_TRUE(response.IsInitialized());
+  EXPECT_EQ(kAck, static_cast<int>(response.result()));
+  EXPECT_TRUE(vault_service_->vault_chunkstore_->Has(chunkname));
+  EXPECT_EQ(maidsafe::kHashable|maidsafe::kCache,
             vault_service_->vault_chunkstore_->chunk_type(chunkname));
-  ASSERT_TRUE(fs::exists(vault_service_->vault_chunkstore_->GetChunkPath(
+  EXPECT_TRUE(fs::exists(vault_service_->vault_chunkstore_->GetChunkPath(
               chunkname, (maidsafe::kHashable | maidsafe::kCache), false)));
 }
 
@@ -1107,7 +1107,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesGetChunkReferences) {
         (&cb_obj, &TestCallback::CallbackFunction);
     vault_service_->GetChunkReferences(&controller, &request, &response, done);
     ASSERT_TRUE(response.IsInitialized());
-    ASSERT_EQ(kNack, static_cast<int>(response.result()));
+    EXPECT_EQ(kNack, static_cast<int>(response.result()));
     response.Clear();
   }
 
@@ -1116,7 +1116,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesGetChunkReferences) {
   vault_service_->cih_.SetPaymentsDone(chunk_name, pmid);
   std::string creditor;
   int refunds;
-  ASSERT_TRUE(vault_service_->cih_.TryCommitToWatchList(chunk_name, pmid,
+  EXPECT_TRUE(vault_service_->cih_.TryCommitToWatchList(chunk_name, pmid,
                                                         &creditor, &refunds));
   {
     google::protobuf::Closure *done =
@@ -1124,8 +1124,8 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesGetChunkReferences) {
         (&cb_obj, &TestCallback::CallbackFunction);
     vault_service_->GetChunkReferences(&controller, &request, &response, done);
     ASSERT_TRUE(response.IsInitialized());
-    ASSERT_EQ(kAck, static_cast<int>(response.result()));
-    ASSERT_EQ(0, response.references_size());
+    EXPECT_EQ(kAck, static_cast<int>(response.result()));
+    EXPECT_EQ(0, response.references_size());
     response.Clear();
   }
 
@@ -1137,9 +1137,9 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesGetChunkReferences) {
         (&cb_obj, &TestCallback::CallbackFunction);
     vault_service_->GetChunkReferences(&controller, &request, &response, done);
     ASSERT_TRUE(response.IsInitialized());
-    ASSERT_EQ(kAck, static_cast<int>(response.result()));
-    ASSERT_EQ(1, response.references_size());
-    ASSERT_EQ(vault_service_->pmid_, response.references(0));
+    EXPECT_EQ(kAck, static_cast<int>(response.result()));
+    EXPECT_EQ(1, response.references_size());
+    EXPECT_EQ(vault_service_->pmid_, response.references(0));
   }
 }
 
@@ -1222,7 +1222,7 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesAddToWatchList) {
         (&cb_obj, &TestCallback::CallbackFunction);
     vault_service_->AmendAccount(&controller, &amend_req, &amend_resp, done);
     ASSERT_TRUE(amend_resp.IsInitialized());
-    ASSERT_EQ(kAck, static_cast<int>(amend_resp.result()));
+    EXPECT_EQ(kAck, static_cast<int>(amend_resp.result()));
     amend_resp.Clear();
   }
 
@@ -1257,7 +1257,7 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesAddToWatchList) {
         google::protobuf::NewCallback<TestCallback>(&cb_obj,
         &TestCallback::CallbackFunction);
     vault_service_->AddToWatchList(&controller, &request, &response, done);
-    EXPECT_TRUE(response.IsInitialized());
+    ASSERT_TRUE(response.IsInitialized());
     EXPECT_NE(kAck, static_cast<int>(response.result()));
     response.Clear();
   }
@@ -1281,7 +1281,7 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesAddToWatchList) {
         google::protobuf::NewCallback<TestCallback>(&cb_obj,
         &TestCallback::CallbackFunction);
     vault_service_->AccountStatus(&controller, &asreq, &asrsp, done);
-    EXPECT_TRUE(asrsp.IsInitialized());
+    ASSERT_TRUE(asrsp.IsInitialized());
     EXPECT_EQ(boost::uint64_t(0), asrsp.space_taken());
   }
 
@@ -1291,7 +1291,7 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesAddToWatchList) {
         google::protobuf::NewCallback<TestCallback>(&cb_obj,
         &TestCallback::CallbackFunction);
     vault_service_->AddToWatchList(&controller, &request, &response, done);
-    EXPECT_TRUE(response.IsInitialized());
+    ASSERT_TRUE(response.IsInitialized());
     EXPECT_EQ(kAck, static_cast<int>(response.result()));
     response.Clear();
   }
@@ -1306,7 +1306,7 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesAddToWatchList) {
         google::protobuf::NewCallback<TestCallback>(&cb_obj,
         &TestCallback::CallbackFunction);
     vault_service_->AccountStatus(&controller, &asreq, &asrsp, done);
-    EXPECT_TRUE(asrsp.IsInitialized());
+    ASSERT_TRUE(asrsp.IsInitialized());
     EXPECT_EQ(boost::uint64_t(0), asrsp.space_taken());
   }
 
@@ -1329,7 +1329,7 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesAddToWatchList) {
     aa_req.set_account_pmid(client_pmid);
     vault_service_->AmendAccount(&controller, &aa_req, &aa_rsp, done);
     ASSERT_TRUE(aa_rsp.IsInitialized());
-    ASSERT_EQ(kAck, static_cast<int>(aa_rsp.result()));
+    EXPECT_EQ(kAck, static_cast<int>(aa_rsp.result()));
   }
 
   // add to watch list as first, second try
@@ -1338,7 +1338,7 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesAddToWatchList) {
         google::protobuf::NewCallback<TestCallback>(&cb_obj,
         &TestCallback::CallbackFunction);
     vault_service_->AddToWatchList(&controller, &request, &response, done);
-    EXPECT_TRUE(response.IsInitialized());
+    ASSERT_TRUE(response.IsInitialized());
     EXPECT_EQ(kAck, static_cast<int>(response.result()));
     response.Clear();
   }
@@ -1353,7 +1353,7 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesAddToWatchList) {
         google::protobuf::NewCallback<TestCallback>(&cb_obj,
         &TestCallback::CallbackFunction);
     vault_service_->AccountStatus(&controller, &asreq, &asrsp, done);
-    EXPECT_TRUE(asrsp.IsInitialized());
+    ASSERT_TRUE(asrsp.IsInitialized());
     EXPECT_EQ(kMinChunkCopies * chunk_size, asrsp.space_taken());
   }
 }
@@ -1450,7 +1450,7 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesRemoveFromWatchList) {
       aa_req.set_account_pmid(client_pmid[i]);
       vault_service_->AmendAccount(&controller, &aa_req, &aa_rsp, done);
       ASSERT_TRUE(aa_rsp.IsInitialized());
-      ASSERT_EQ(kAck, static_cast<int>(aa_rsp.result()));
+      EXPECT_EQ(kAck, static_cast<int>(aa_rsp.result()));
     }
 
     // add #i to Watch List
@@ -1461,7 +1461,7 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesRemoveFromWatchList) {
       add_response.Clear();
       vault_service_->AddToWatchList(&controller, &add_request, &add_response,
                                      done);
-      EXPECT_TRUE(add_response.IsInitialized());
+      ASSERT_TRUE(add_response.IsInitialized());
       EXPECT_EQ(kAck, static_cast<int>(add_response.result()));
     }
 
@@ -1503,7 +1503,7 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesRemoveFromWatchList) {
           &TestCallback::CallbackFunction);
       vault_service_->AddToReferenceList(&controller, &add_ref_request,
                                          &add_ref_response, done);
-      EXPECT_TRUE(add_ref_response.IsInitialized());
+      ASSERT_TRUE(add_ref_response.IsInitialized());
       EXPECT_EQ(kAck, static_cast<int>(add_ref_response.result()));
     }
 
@@ -1518,7 +1518,7 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesRemoveFromWatchList) {
           &TestCallback::CallbackFunction);
       vault_service_->AccountStatus(&controller, &client_asreq[i], &asrsp,
                                     done);
-      EXPECT_TRUE(asrsp.IsInitialized());
+      ASSERT_TRUE(asrsp.IsInitialized());
       EXPECT_EQ(chunk_size, asrsp.space_taken());
     }
 
@@ -1551,7 +1551,7 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesRemoveFromWatchList) {
         &TestCallback::CallbackFunction);
     vault_service_->RemoveFromWatchList(&controller, &rem_request,
                                         &rem_response, done);
-    EXPECT_TRUE(rem_response.IsInitialized());
+    ASSERT_TRUE(rem_response.IsInitialized());
     EXPECT_NE(kAck, static_cast<int>(rem_response.result()));
     rem_response.Clear();
   }
@@ -1572,7 +1572,7 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesRemoveFromWatchList) {
           &TestCallback::CallbackFunction);
       vault_service_->RemoveFromWatchList(&controller, &rem_request,
                                           &rem_response, done);
-      EXPECT_TRUE(rem_response.IsInitialized());
+      ASSERT_TRUE(rem_response.IsInitialized());
       EXPECT_EQ(kAck, static_cast<int>(rem_response.result()));
       rem_response.Clear();
     }
@@ -1588,7 +1588,7 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesRemoveFromWatchList) {
           &TestCallback::CallbackFunction);
       vault_service_->AccountStatus(&controller, &client_asreq[i], &asrsp,
                                     done);
-      EXPECT_TRUE(asrsp.IsInitialized());
+      ASSERT_TRUE(asrsp.IsInitialized());
       if (i == 0 || i == kMinChunkCopies)
         EXPECT_EQ(boost::uint64_t(0), asrsp.space_taken());
       else
@@ -1731,7 +1731,7 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesAddToReferenceList) {
         google::protobuf::NewCallback<TestCallback>(&cb_obj,
         &TestCallback::CallbackFunction);
     vault_service_->AddToReferenceList(&controller, &request, &response, done);
-    EXPECT_TRUE(response.IsInitialized());
+    ASSERT_TRUE(response.IsInitialized());
     EXPECT_NE(kAck, static_cast<int>(response.result()));
     response.Clear();
   }
@@ -1752,7 +1752,7 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesAddToReferenceList) {
         google::protobuf::NewCallback<TestCallback>(&cb_obj,
         &TestCallback::CallbackFunction);
     vault_service_->AccountStatus(&controller, &asreq, &asrsp, done);
-    EXPECT_TRUE(asrsp.IsInitialized());
+    ASSERT_TRUE(asrsp.IsInitialized());
     EXPECT_EQ(boost::uint64_t(0), asrsp.space_given());
   }
 
@@ -1775,7 +1775,7 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesAddToReferenceList) {
     aa_req.set_account_pmid(client_pmid);
     vault_service_->AmendAccount(&controller, &aa_req, &aa_rsp, done);
     ASSERT_TRUE(aa_rsp.IsInitialized());
-    ASSERT_EQ(kAck, static_cast<int>(aa_rsp.result()));
+    EXPECT_EQ(kAck, static_cast<int>(aa_rsp.result()));
   }
 
   // create vault's account
@@ -1797,7 +1797,7 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesAddToReferenceList) {
     aa_req.set_account_pmid(vlt_pmid);
     vault_service_->AmendAccount(&controller, &aa_req, &aa_rsp, done);
     ASSERT_TRUE(aa_rsp.IsInitialized());
-    ASSERT_EQ(kAck, static_cast<int>(aa_rsp.result()));
+    EXPECT_EQ(kAck, static_cast<int>(aa_rsp.result()));
   }
 
   // add client to Watch List
@@ -1823,7 +1823,7 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesAddToReferenceList) {
         &TestCallback::CallbackFunction);
     vault_service_->AddToWatchList(&controller, &add_request, &add_response,
                                    done);
-    EXPECT_TRUE(add_response.IsInitialized());
+    ASSERT_TRUE(add_response.IsInitialized());
     EXPECT_EQ(kAck, static_cast<int>(add_response.result()));
   }
 
@@ -1833,7 +1833,7 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesAddToReferenceList) {
         google::protobuf::NewCallback<TestCallback>(&cb_obj,
         &TestCallback::CallbackFunction);
     vault_service_->AddToReferenceList(&controller, &request, &response, done);
-    EXPECT_TRUE(response.IsInitialized());
+    ASSERT_TRUE(response.IsInitialized());
     EXPECT_EQ(kAck, static_cast<int>(response.result()));
     response.Clear();
   }
@@ -1848,7 +1848,7 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesAddToReferenceList) {
         google::protobuf::NewCallback<TestCallback>(&cb_obj,
         &TestCallback::CallbackFunction);
     vault_service_->AccountStatus(&controller, &asreq, &asrsp, done);
-    EXPECT_TRUE(asrsp.IsInitialized());
+    ASSERT_TRUE(asrsp.IsInitialized());
     EXPECT_EQ(chunk_size, asrsp.space_given());
   }
 }
@@ -1929,7 +1929,7 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesAmendAccount) {
   {
     vault_service_->AmendAccount(&controller, &request, &response, done);
     ASSERT_TRUE(response.IsInitialized());
-    ASSERT_EQ(kAck, static_cast<int>(response.result()));
+    EXPECT_EQ(kAck, static_cast<int>(response.result()));
     response.Clear();
   }
 
@@ -1989,7 +1989,7 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesAmendAccount) {
       if (static_cast<int>(responses.at(i).result()) == kAck)
         ++success_count;
     }
-    ASSERT_EQ(success_count, 0);
+    EXPECT_EQ(success_count, 0);
     responses.clear();
     callbacks.clear();
     vault_service_->aah_.amendments_.clear();
@@ -2007,7 +2007,7 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesAmendAccount) {
         &TestCallback::CallbackFunction);
     vault_service_->AccountStatus(&controller, &asreq, &asrsp, done);
     ASSERT_TRUE(asrsp.IsInitialized());
-    ASSERT_EQ(kAck, static_cast<int>(asrsp.result()));
+    EXPECT_EQ(kAck, static_cast<int>(asrsp.result()));
   }
 
   asreq.clear_space_requested();
@@ -2026,10 +2026,10 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesAmendAccount) {
         &TestCallback::CallbackFunction);
     vault_service_->AccountStatus(&controller, &asreq, &asrsp, done);
     ASSERT_TRUE(asrsp.IsInitialized());
-    ASSERT_EQ(kAck, static_cast<int>(asrsp.result()));
-    ASSERT_EQ(space_offered, asrsp.space_offered());
-    ASSERT_EQ(boost::uint64_t(0), asrsp.space_taken());
-    ASSERT_EQ(boost::uint64_t(0), asrsp.space_given());
+    EXPECT_EQ(kAck, static_cast<int>(asrsp.result()));
+    EXPECT_EQ(space_offered, asrsp.space_offered());
+    EXPECT_EQ(boost::uint64_t(0), asrsp.space_taken());
+    EXPECT_EQ(boost::uint64_t(0), asrsp.space_given());
     printf("Passed getting status with 0 space taken.\n");
   }
 
@@ -2056,8 +2056,8 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesAmendAccount) {
     if (static_cast<int>(responses.at(i).result()) == kAck)
       ++success_count;
   }
-  ASSERT_GE(success_count, kad::K - 1);
-  printf("Passed incrementing space taken.\n");
+  EXPECT_GE(success_count, kad::K - 1);
+  printf("Completed incrementing space taken.\n");
 
   // current SpaceTaken should be chunk_size
   {
@@ -2067,10 +2067,10 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesAmendAccount) {
         &TestCallback::CallbackFunction);
     vault_service_->AccountStatus(&controller, &asreq, &asrsp, done);
     ASSERT_TRUE(asrsp.IsInitialized());
-    ASSERT_EQ(space_offered, asrsp.space_offered());
-    ASSERT_EQ(chunk_size, asrsp.space_taken());
-    ASSERT_EQ(boost::uint64_t(0), asrsp.space_given());
-    printf("Passed getting status with appropriate space taken.\n");
+    EXPECT_EQ(space_offered, asrsp.space_offered());
+    EXPECT_EQ(chunk_size, asrsp.space_taken());
+    EXPECT_EQ(boost::uint64_t(0), asrsp.space_given());
+    printf("Completed getting status with appropriate space taken.\n");
   }
 
   asreq.set_space_requested(chunk_size);
@@ -2083,7 +2083,7 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesAmendAccount) {
         &TestCallback::CallbackFunction);
     vault_service_->AccountStatus(&controller, &asreq, &asrsp, done);
     ASSERT_TRUE(asrsp.IsInitialized());
-    ASSERT_NE(kAck, static_cast<int>(asrsp.result()));
+    EXPECT_NE(kAck, static_cast<int>(asrsp.result()));
   }
 
   asreq.clear_space_requested();
@@ -2111,8 +2111,8 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesAmendAccount) {
     if (static_cast<int>(responses.at(i).result()) == kAck)
       ++success_count;
   }
-  ASSERT_GE(success_count, kad::K - 1);
-  printf("Passed decrementing space taken.\n");
+  EXPECT_GE(success_count, kad::K - 1);
+  printf("Completed decrementing space taken.\n");
 
   // current SpaceTaken should be 0
   {
@@ -2122,10 +2122,10 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesAmendAccount) {
         &TestCallback::CallbackFunction);
     vault_service_->AccountStatus(&controller, &asreq, &asrsp, done);
     ASSERT_TRUE(asrsp.IsInitialized());
-    ASSERT_EQ(space_offered, asrsp.space_offered());
-    ASSERT_EQ(boost::uint64_t(0), asrsp.space_taken());
-    ASSERT_EQ(boost::uint64_t(0), asrsp.space_given());
-    printf("Passed getting status with 0 space taken.\n");
+    EXPECT_EQ(space_offered, asrsp.space_offered());
+    EXPECT_EQ(boost::uint64_t(0), asrsp.space_taken());
+    EXPECT_EQ(boost::uint64_t(0), asrsp.space_given());
+    printf("Completed getting status with 0 space taken.\n");
   }
 
   // decrease SpaceTaken again, should fail
@@ -2148,8 +2148,8 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesAmendAccount) {
     if (static_cast<int>(responses.at(i).result()) == kAck)
       ++success_count;
   }
-  ASSERT_EQ(0, success_count);
-  printf("Correctly failed to decrement space taken.\n");
+  EXPECT_EQ(0, success_count);
+  printf("Completed invalid attempt to decrement space taken.\n");
 
   // current SpaceTaken should still be 0
   {
@@ -2159,10 +2159,10 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesAmendAccount) {
         &TestCallback::CallbackFunction);
     vault_service_->AccountStatus(&controller, &asreq, &asrsp, done);
     ASSERT_TRUE(asrsp.IsInitialized());
-    ASSERT_EQ(space_offered, asrsp.space_offered());
-    ASSERT_EQ(boost::uint64_t(0), asrsp.space_taken());
-    ASSERT_EQ(boost::uint64_t(0), asrsp.space_given());
-    printf("Passed getting status with 0 space taken.\n");
+    EXPECT_EQ(space_offered, asrsp.space_offered());
+    EXPECT_EQ(boost::uint64_t(0), asrsp.space_taken());
+    EXPECT_EQ(boost::uint64_t(0), asrsp.space_given());
+    printf("Completed getting status with 0 space taken.\n");
   }
 
   // increase SpaceGiven
@@ -2188,8 +2188,8 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesAmendAccount) {
     if (static_cast<int>(responses.at(i).result()) == kAck)
       ++success_count;
   }
-  ASSERT_GE(success_count, kad::K - 1);
-  printf("Correctly incremented space given.\n");
+  EXPECT_GE(success_count, kad::K - 1);
+  printf("Completed incrementing space given.\n");
 
   // current SpaceGiven should be chunk_size
   {
@@ -2199,10 +2199,10 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesAmendAccount) {
         &TestCallback::CallbackFunction);
     vault_service_->AccountStatus(&controller, &asreq, &asrsp, done);
     ASSERT_TRUE(asrsp.IsInitialized());
-    ASSERT_EQ(space_offered, asrsp.space_offered());
-    ASSERT_EQ(boost::uint64_t(0), asrsp.space_taken());
-    ASSERT_EQ(chunk_size, asrsp.space_given());
-    printf("Passed getting status with appropriate space given.\n");
+    EXPECT_EQ(space_offered, asrsp.space_offered());
+    EXPECT_EQ(boost::uint64_t(0), asrsp.space_taken());
+    EXPECT_EQ(chunk_size, asrsp.space_given());
+    printf("Completed getting status with appropriate space given.\n");
   }
 
   // decrease SpaceGiven
@@ -2228,8 +2228,8 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesAmendAccount) {
     if (static_cast<int>(responses.at(i).result()) == kAck)
       ++success_count;
   }
-  ASSERT_GE(success_count, kad::K - 1);
-  printf("Correctly decremented space given.\n");
+  EXPECT_GE(success_count, kad::K - 1);
+  printf("Completed decrementing space given.\n");
 
   // current SpaceGiven should still be 0
   {
@@ -2239,10 +2239,10 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesAmendAccount) {
         &TestCallback::CallbackFunction);
     vault_service_->AccountStatus(&controller, &asreq, &asrsp, done);
     ASSERT_TRUE(asrsp.IsInitialized());
-    ASSERT_EQ(space_offered, asrsp.space_offered());
-    ASSERT_EQ(boost::uint64_t(0), asrsp.space_taken());
-    ASSERT_EQ(boost::uint64_t(0), asrsp.space_given());
-    printf("Passed getting status with 0 space given.\n");
+    EXPECT_EQ(space_offered, asrsp.space_offered());
+    EXPECT_EQ(boost::uint64_t(0), asrsp.space_taken());
+    EXPECT_EQ(boost::uint64_t(0), asrsp.space_given());
+    printf("Completed getting status with 0 space given.\n");
   }
 
   // decrease SpaceGiven again, should fail
@@ -2268,8 +2268,8 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesAmendAccount) {
     if (static_cast<int>(responses.at(i).result()) == kAck)
       ++success_count;
   }
-  ASSERT_EQ(0, success_count);
-  printf("Correctly failed to decrement space given.\n");
+  EXPECT_EQ(0, success_count);
+  printf("Completed invalid attempt to decrement space given.\n");
 
   // current SpaceGiven should still be 0
   {
@@ -2279,10 +2279,10 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesAmendAccount) {
         &TestCallback::CallbackFunction);
     vault_service_->AccountStatus(&controller, &asreq, &asrsp, done);
     ASSERT_TRUE(asrsp.IsInitialized());
-    ASSERT_EQ(space_offered, asrsp.space_offered());
-    ASSERT_EQ(boost::uint64_t(0), asrsp.space_taken());
-    ASSERT_EQ(boost::uint64_t(0), asrsp.space_given());
-    printf("Passed getting status with 0 space given.\n");
+    EXPECT_EQ(space_offered, asrsp.space_offered());
+    EXPECT_EQ(boost::uint64_t(0), asrsp.space_taken());
+    EXPECT_EQ(boost::uint64_t(0), asrsp.space_given());
+    printf("Completed getting status with 0 space given.\n");
   }
 }
 
@@ -2298,6 +2298,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesGetSyncData) {
   co.set_hash_algorithm(crypto::SHA_512);
   std::string content("This is a data chunk");
   std::string chunk_name(co.Hash(content, "", crypto::STRING_STRING, false));
+  std::string bp_name(co.Hash("testBUFFER", "", crypto::STRING_STRING, false));
   CreateSignedRequest(pub_key, priv_key, "", &pmid, &pub_key_sig, &req_sig);
 
   TestCallback cb_obj;
@@ -2321,7 +2322,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesGetSyncData) {
         google::protobuf::NewCallback<TestCallback>(&cb_obj,
         &TestCallback::CallbackFunction);
     vault_service_->GetSyncData(&controller, &request, &response, done);
-    EXPECT_TRUE(response.IsInitialized());
+    ASSERT_TRUE(response.IsInitialized());
     EXPECT_EQ(kNack, static_cast<int>(response.result()));
     response.Clear();
   }
@@ -2329,56 +2330,73 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesGetSyncData) {
   // valid request, but no data to sync
   base::PDRoutingTableTuple entry(pmid, "127.0.0.1", 123, "127.0.0.1", 456,
                                   pub_key, 10, 1, 1234);
-  ASSERT_EQ(kSuccess, vault_service_->routing_table_->AddTuple(entry));
+  EXPECT_EQ(kSuccess, vault_service_->routing_table_->AddTuple(entry));
   {
     google::protobuf::Closure *done =
         google::protobuf::NewCallback<TestCallback>(&cb_obj,
         &TestCallback::CallbackFunction);
     vault_service_->GetSyncData(&controller, &request, &response, done);
-    EXPECT_TRUE(response.IsInitialized());
+    ASSERT_TRUE(response.IsInitialized());
     EXPECT_EQ(kAck, static_cast<int>(response.result()));
     if (response.has_vault_account_set())
-      ASSERT_EQ(0, response.vault_account_set().vault_account_size());
-    if(response.has_chunk_info_map())
-      ASSERT_EQ(0, response.chunk_info_map().vault_chunk_info_size());
+      EXPECT_EQ(0, response.vault_account_set().vault_account_size());
+    if (response.has_chunk_info_map())
+      EXPECT_EQ(0, response.chunk_info_map().vault_chunk_info_size());
+    if (response.has_vault_buffer_packet_map())
+      EXPECT_EQ(0,
+                response.vault_buffer_packet_map().vault_buffer_packet_size());
     response.Clear();
   }
 
-  // add and retrieve accounts and chunk info
+  // add and retrieve accounts, chunk info and buffer packet
   {
-    ASSERT_EQ(kSuccess, vault_service_->AddAccount(pmid, 1234));
-    ASSERT_EQ(kSuccess, vault_service_->AddAccount("other pmid", 1234));
+    EXPECT_EQ(kSuccess, vault_service_->AddAccount(pmid, 1234));
+    EXPECT_EQ(kSuccess, vault_service_->AddAccount("other pmid", 1234));
     int req_references, req_payments, refunds;
     std::string creditor;
     vault_service_->cih_.PrepareAddToWatchList(chunk_name, pmid, 123,
                                                &req_references, &req_payments);
     vault_service_->cih_.SetStoringDone(chunk_name, pmid);
     vault_service_->cih_.SetPaymentsDone(chunk_name, pmid);
-    ASSERT_TRUE(vault_service_->cih_.TryCommitToWatchList(chunk_name, pmid,
+    EXPECT_TRUE(vault_service_->cih_.TryCommitToWatchList(chunk_name, pmid,
                                                           &creditor, &refunds));
+    maidsafe::BufferPacket bp;
+    maidsafe::GenericPacket *gp = bp.add_owner_info();
+    gp->set_data("bp owner data");
+    gp->set_signature("bp owner sig");
+    EXPECT_TRUE(vault_service_->bps_.StoreBP(bp_name, bp.SerializeAsString()));
 
     google::protobuf::Closure *done =
         google::protobuf::NewCallback<TestCallback>(&cb_obj,
         &TestCallback::CallbackFunction);
     vault_service_->GetSyncData(&controller, &request, &response, done);
-    EXPECT_TRUE(response.IsInitialized());
+    ASSERT_TRUE(response.IsInitialized());
     EXPECT_EQ(kAck, static_cast<int>(response.result()));
 
-    EXPECT_TRUE(response.has_vault_account_set());
+    ASSERT_TRUE(response.has_vault_account_set());
     // only one account, because sender's account should be excluded
     ASSERT_EQ(1, response.vault_account_set().vault_account_size());
     ASSERT_TRUE(response.vault_account_set().vault_account(0).has_pmid());
-    ASSERT_EQ("other pmid",
+    EXPECT_EQ("other pmid",
               response.vault_account_set().vault_account(0).pmid());
 
-    EXPECT_TRUE(response.has_chunk_info_map());
+    ASSERT_TRUE(response.has_chunk_info_map());
     ASSERT_EQ(1, response.chunk_info_map().vault_chunk_info_size());
     ASSERT_LE(1, response.chunk_info_map().vault_chunk_info(0).
                      watch_list_entry_size());
     ASSERT_TRUE(response.chunk_info_map().vault_chunk_info(0).
                     watch_list_entry(0).has_pmid());
-    ASSERT_EQ(pmid, response.chunk_info_map().vault_chunk_info(0).
+    EXPECT_EQ(pmid, response.chunk_info_map().vault_chunk_info(0).
                         watch_list_entry(0).pmid());
+
+    ASSERT_TRUE(response.has_vault_buffer_packet_map());
+    ASSERT_EQ(1, response.vault_buffer_packet_map().vault_buffer_packet_size());
+    ASSERT_EQ(1, response.vault_buffer_packet_map().vault_buffer_packet(0).
+                     owner_info_size());
+    ASSERT_TRUE(response.vault_buffer_packet_map().vault_buffer_packet(0).
+                    owner_info(0).has_data());
+    EXPECT_EQ(gp->data(), response.vault_buffer_packet_map().
+                              vault_buffer_packet(0).owner_info(0).data());
   }
   vault_service_->routing_table_->Clear();
 }
@@ -2412,7 +2430,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesGetAccount) {
       case 3:  // no account
         base::PDRoutingTableTuple entry(pmid, "127.0.0.1", 123, "127.0.0.1",
                                         456, pub_key, 10, 1, 1234);
-        ASSERT_EQ(kSuccess, vault_service_->routing_table_->AddTuple(entry));
+        EXPECT_EQ(kSuccess, vault_service_->routing_table_->AddTuple(entry));
         break;
     }
 
@@ -2420,7 +2438,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesGetAccount) {
         google::protobuf::NewCallback<TestCallback>(&cb_obj,
         &TestCallback::CallbackFunction);
     vault_service_->GetAccount(&controller, &request, &response, done);
-    EXPECT_TRUE(response.IsInitialized());
+    ASSERT_TRUE(response.IsInitialized());
     EXPECT_EQ(kNack, static_cast<int>(response.result()));
     response.Clear();
   }
@@ -2433,12 +2451,12 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesGetAccount) {
         google::protobuf::NewCallback<TestCallback>(&cb_obj,
         &TestCallback::CallbackFunction);
     vault_service_->GetAccount(&controller, &request, &response, done);
-    EXPECT_TRUE(response.IsInitialized());
+    ASSERT_TRUE(response.IsInitialized());
     EXPECT_EQ(kAck, static_cast<int>(response.result()));
 
-    EXPECT_TRUE(response.has_vault_account());
+    ASSERT_TRUE(response.has_vault_account());
     ASSERT_TRUE(response.vault_account().has_pmid());
-    ASSERT_EQ("account pmid", response.vault_account().pmid());
+    EXPECT_EQ("account pmid", response.vault_account().pmid());
   }
   vault_service_->routing_table_->Clear();
 }
@@ -2477,7 +2495,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesGetChunkInfo) {
       case 3:  // no account
         base::PDRoutingTableTuple entry(pmid, "127.0.0.1", 123, "127.0.0.1",
                                         456, pub_key, 10, 1, 1234);
-        ASSERT_EQ(kSuccess, vault_service_->routing_table_->AddTuple(entry));
+        EXPECT_EQ(kSuccess, vault_service_->routing_table_->AddTuple(entry));
         break;
     }
 
@@ -2485,7 +2503,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesGetChunkInfo) {
         google::protobuf::NewCallback<TestCallback>(&cb_obj,
         &TestCallback::CallbackFunction);
     vault_service_->GetChunkInfo(&controller, &request, &response, done);
-    EXPECT_TRUE(response.IsInitialized());
+    ASSERT_TRUE(response.IsInitialized());
     EXPECT_EQ(kNack, static_cast<int>(response.result()));
     response.Clear();
   }
@@ -2498,20 +2516,91 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesGetChunkInfo) {
                                                &req_references, &req_payments);
     vault_service_->cih_.SetStoringDone(chunk_name, pmid);
     vault_service_->cih_.SetPaymentsDone(chunk_name, pmid);
-    ASSERT_TRUE(vault_service_->cih_.TryCommitToWatchList(chunk_name, pmid,
+    EXPECT_TRUE(vault_service_->cih_.TryCommitToWatchList(chunk_name, pmid,
                                                           &creditor, &refunds));
 
     google::protobuf::Closure *done =
         google::protobuf::NewCallback<TestCallback>(&cb_obj,
         &TestCallback::CallbackFunction);
     vault_service_->GetChunkInfo(&controller, &request, &response, done);
-    EXPECT_TRUE(response.IsInitialized());
+    ASSERT_TRUE(response.IsInitialized());
     EXPECT_EQ(kAck, static_cast<int>(response.result()));
 
-    EXPECT_TRUE(response.has_vault_chunk_info());
+    ASSERT_TRUE(response.has_vault_chunk_info());
     ASSERT_LE(1, response.vault_chunk_info().watch_list_entry_size());
     ASSERT_TRUE(response.vault_chunk_info().watch_list_entry(0).has_pmid());
-    ASSERT_EQ(pmid, response.vault_chunk_info().watch_list_entry(0).pmid());
+    EXPECT_EQ(pmid, response.vault_chunk_info().watch_list_entry(0).pmid());
+  }
+  vault_service_->routing_table_->Clear();
+}
+
+TEST_F(VaultServicesTest, BEH_MAID_ServicesGetBufferPacket) {
+  rpcprotocol::Controller controller;
+  maidsafe::GetBufferPacketRequest request;
+  maidsafe::GetBufferPacketResponse response;
+
+  std::string pub_key, priv_key, pmid, pub_key_sig, req_sig;
+  CreateRSAKeys(&pub_key, &priv_key);
+  crypto::Crypto co;
+  co.set_symm_algorithm(crypto::AES_256);
+  co.set_hash_algorithm(crypto::SHA_512);
+  std::string bp_name(co.Hash("testBUFFER", "", crypto::STRING_STRING, false));
+  CreateSignedRequest(pub_key, priv_key, bp_name, &pmid, &pub_key_sig,
+                      &req_sig);
+
+  TestCallback cb_obj;
+
+  for (int i = 0; i <= 3; ++i) {
+    switch (i) {
+      case 0:  // uninitialized request
+        break;
+      case 1:  // invalid request
+        request.set_bufferpacket_name(bp_name);
+        request.set_pmid(pmid);
+        request.set_public_key(pub_key);
+        request.set_public_key_signature(pub_key_sig);
+        request.set_request_signature("fail");
+        break;
+      case 2:  // not in local routing table
+        request.set_request_signature(req_sig);
+        break;
+      case 3:  // no buffer packet
+        base::PDRoutingTableTuple entry(pmid, "127.0.0.1", 123, "127.0.0.1",
+                                        456, pub_key, 10, 1, 1234);
+        EXPECT_EQ(kSuccess, vault_service_->routing_table_->AddTuple(entry));
+        break;
+    }
+
+    google::protobuf::Closure *done =
+        google::protobuf::NewCallback<TestCallback>(&cb_obj,
+        &TestCallback::CallbackFunction);
+    vault_service_->GetBufferPacket(&controller, &request, &response, done);
+    ASSERT_TRUE(response.IsInitialized());
+    EXPECT_EQ(kNack, static_cast<int>(response.result()));
+    response.Clear();
+  }
+
+  // add and retrieve bp
+  {
+    maidsafe::BufferPacket bp;
+    maidsafe::GenericPacket *gp = bp.add_owner_info();
+    gp->set_data("bp owner data");
+    gp->set_signature("bp owner sig");
+    ASSERT_TRUE(vault_service_->bps_.StoreBP(bp_name, bp.SerializeAsString()));
+
+    google::protobuf::Closure *done =
+        google::protobuf::NewCallback<TestCallback>(&cb_obj,
+        &TestCallback::CallbackFunction);
+    vault_service_->GetBufferPacket(&controller, &request, &response, done);
+    ASSERT_TRUE(response.IsInitialized());
+    EXPECT_EQ(kAck, static_cast<int>(response.result()));
+
+    ASSERT_TRUE(response.has_vault_buffer_packet());
+    ASSERT_EQ(1, response.vault_buffer_packet().owner_info_size());
+    const maidsafe::GenericPacket &owner_info =
+        response.vault_buffer_packet().owner_info(0);
+    EXPECT_EQ(gp->data(), owner_info.data());
+    EXPECT_EQ(gp->signature(), owner_info.signature());
   }
   vault_service_->routing_table_->Clear();
 }
@@ -2546,7 +2635,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesVaultStatus) {
         google::protobuf::NewCallback<TestCallback>(&cb_obj,
         &TestCallback::CallbackFunction);
     vault_service_->VaultStatus(&controller, &request, &response, done);
-    EXPECT_TRUE(response.IsInitialized());
+    ASSERT_TRUE(response.IsInitialized());
     EXPECT_NE(kAck, static_cast<int>(response.result()));
     response.Clear();
   }
@@ -2564,7 +2653,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesVaultStatus) {
         google::protobuf::NewCallback<TestCallback>(&cb_obj,
         &TestCallback::CallbackFunction);
     vault_service_->VaultStatus(&controller, &request, &response, done);
-    EXPECT_TRUE(response.IsInitialized());
+    ASSERT_TRUE(response.IsInitialized());
     EXPECT_EQ(kAck, static_cast<int>(response.result()));
 
     std::string dec_rsp = co.AsymDecrypt(response.encrypted_response(), "",
@@ -2574,8 +2663,6 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesVaultStatus) {
     EXPECT_EQ(vault_chunkstore_->ChunkStoreDir(), vc.chunkstore());
     EXPECT_EQ(vault_chunkstore_->available_space(), vc.offered_space());
     EXPECT_EQ(vault_chunkstore_->FreeSpace(), vc.free_space());
-
-    response.Clear();
   }
 }
 
@@ -2592,10 +2679,11 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesCreateBP) {
   google::protobuf::Closure *done = google::protobuf::NewCallback<TestCallback>
                                     (&cb_obj, &TestCallback::CallbackFunction);
   service.CreateBP(&controller, &request, &response, done);
-  ASSERT_EQ(kNack, static_cast<int>(response.result()));
-  ASSERT_EQ(vault_pmid_, response.pmid_id());
-  ASSERT_EQ(vault_public_key_, response.public_key());
-  ASSERT_EQ(vault_public_key_signature_, response.signed_public_key());
+  ASSERT_TRUE(response.IsInitialized());
+  EXPECT_EQ(kNack, static_cast<int>(response.result()));
+  EXPECT_EQ(vault_pmid_, response.pmid_id());
+  EXPECT_EQ(vault_public_key_, response.public_key());
+  EXPECT_EQ(vault_public_key_signature_, response.signed_public_key());
 
   std::string pub_key, priv_key, pmid, sig_pub_key, sig_req;
   CreateRSAKeys(&pub_key, &priv_key);
@@ -2606,7 +2694,6 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesCreateBP) {
   maidsafe::BufferPacketInfo bpi;
   bpi.set_owner("Dan");
   bpi.set_owner_publickey(pub_key);
-  bpi.set_online(1);
   bpi.add_users("newuser");
   maidsafe::BufferPacket bp;
   maidsafe::GenericPacket *info = bp.add_owner_info();
@@ -2631,19 +2718,20 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesCreateBP) {
   request.set_signed_public_key(sig_pub_key);
   request.set_signed_request(sig_req);
 
+  response.Clear();
   done = google::protobuf::NewCallback<TestCallback>
          (&cb_obj, &TestCallback::CallbackFunction);
   service.CreateBP(&controller, &request, &response, done);
   ASSERT_TRUE(response.IsInitialized());
-  ASSERT_EQ(kAck, static_cast<int>(response.result()));
-  ASSERT_EQ(response.pmid_id(), co.Hash(response.public_key() +
+  EXPECT_EQ(kAck, static_cast<int>(response.result()));
+  EXPECT_EQ(response.pmid_id(), co.Hash(response.public_key() +
     response.signed_public_key(), "", crypto::STRING_STRING, false));
 
   // Load the stored BP
   std::string test_content;
-  ASSERT_TRUE(service.HasChunkLocal(bufferpacket_name));
-  ASSERT_TRUE(service.LoadChunkLocal(bufferpacket_name, &test_content));
-  ASSERT_EQ(ser_bp, test_content);
+  EXPECT_TRUE(service.bps_.HasBP(bufferpacket_name));
+  EXPECT_TRUE(service.bps_.LoadBP(bufferpacket_name, &test_content));
+  EXPECT_EQ(ser_bp, test_content);
 }
 
 TEST_F(VaultServicesTest, BEH_MAID_ServicesModifyBPInfo) {
@@ -2668,7 +2756,6 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesModifyBPInfo) {
   maidsafe::BufferPacketInfo bpi;
   bpi.set_owner("Dan");
   bpi.set_owner_publickey(pub_key);
-  bpi.set_online(1);
   bpi.add_users("newuser");
   maidsafe::BufferPacket bp;
   maidsafe::GenericPacket *info = bp.add_owner_info();
@@ -2698,15 +2785,15 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesModifyBPInfo) {
   service.CreateBP(&controller, &create_request, &create_response,
     done);
   ASSERT_TRUE(create_response.IsInitialized());
-  ASSERT_EQ(kAck, static_cast<int>(create_response.result()));
-  ASSERT_EQ(create_response.pmid_id(), co.Hash(create_response.public_key() +
+  EXPECT_EQ(kAck, static_cast<int>(create_response.result()));
+  EXPECT_EQ(create_response.pmid_id(), co.Hash(create_response.public_key() +
     create_response.signed_public_key(), "", crypto::STRING_STRING, false));
 
   // Load the stored BP
   std::string test_content;
-  ASSERT_TRUE(service.HasChunkLocal(bufferpacket_name));
-  ASSERT_TRUE(service.LoadChunkLocal(bufferpacket_name, &test_content));
-  ASSERT_EQ(ser_bp, test_content);
+  EXPECT_TRUE(service.bps_.HasBP(bufferpacket_name));
+  EXPECT_TRUE(service.bps_.LoadBP(bufferpacket_name, &test_content));
+  EXPECT_EQ(ser_bp, test_content);
 
   // Wrong data: not a Generic Packet
   maidsafe::ModifyBPInfoRequest modify_request;
@@ -2720,10 +2807,11 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesModifyBPInfo) {
   done = google::protobuf::NewCallback<TestCallback> (&cb_obj,
     &TestCallback::CallbackFunction);
   service.ModifyBPInfo(&controller, &modify_request, &modify_response, done);
-  ASSERT_EQ(kNack, static_cast<int>(modify_response.result()));
-  ASSERT_EQ(vault_pmid_, modify_response.pmid_id());
-  ASSERT_EQ(vault_public_key_, modify_response.public_key());
-  ASSERT_EQ(vault_public_key_signature_, modify_response.signed_public_key());
+  ASSERT_TRUE(modify_response.IsInitialized());
+  EXPECT_EQ(kNack, static_cast<int>(modify_response.result()));
+  EXPECT_EQ(vault_pmid_, modify_response.pmid_id());
+  EXPECT_EQ(vault_public_key_, modify_response.public_key());
+  EXPECT_EQ(vault_public_key_signature_, modify_response.signed_public_key());
 
   // Wrong data: not a BufferPacketInfo inside the GP
   modify_request.Clear();
@@ -2742,10 +2830,11 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesModifyBPInfo) {
   done = google::protobuf::NewCallback<TestCallback> (&cb_obj,
     &TestCallback::CallbackFunction);
   service.ModifyBPInfo(&controller, &modify_request, &modify_response, done);
-  ASSERT_EQ(kNack, static_cast<int>(modify_response.result()));
-  ASSERT_EQ(vault_pmid_, modify_response.pmid_id());
-  ASSERT_EQ(vault_public_key_, modify_response.public_key());
-  ASSERT_EQ(vault_public_key_signature_, modify_response.signed_public_key());
+  ASSERT_TRUE(modify_response.IsInitialized());
+  EXPECT_EQ(kNack, static_cast<int>(modify_response.result()));
+  EXPECT_EQ(vault_pmid_, modify_response.pmid_id());
+  EXPECT_EQ(vault_public_key_, modify_response.public_key());
+  EXPECT_EQ(vault_public_key_signature_, modify_response.signed_public_key());
 
   // Wrong bufferpacket name
   modify_request.Clear();
@@ -2753,21 +2842,9 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesModifyBPInfo) {
   bpi.Clear();
   bpi.set_owner("Dan");
   bpi.set_owner_publickey(pub_key);
-  bpi.set_online(0);
   bpi.add_users("newuser0");
   bpi.add_users("newuser1");
   bpi.add_users("newuser2");
-  maidsafe::EndPoint *ep = bpi.add_ep();
-  ep->set_ip("132.248.59.1");
-  ep->set_port(132);
-  maidsafe::PersonalDetails *pd = bpi.mutable_pd();
-  pd->set_full_name("Juanbert Tupadre");
-  pd->set_phone_number("0987654321");
-  pd->set_birthday("01/01/1970");
-  pd->set_gender("Male");
-  pd->set_language("English");
-  pd->set_city("Troon");
-  pd->set_country("United Kingdom of Her Majesty the Queen");
   bpi.SerializeToString(&ser_bpi);
   gp.set_data(ser_bpi);
   gp.set_signature(co.AsymSign(gp.data(), "", priv_key, crypto::STRING_STRING));
@@ -2783,10 +2860,11 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesModifyBPInfo) {
   done = google::protobuf::NewCallback<TestCallback> (&cb_obj,
     &TestCallback::CallbackFunction);
   service.ModifyBPInfo(&controller, &modify_request, &modify_response, done);
-  ASSERT_EQ(kNack, static_cast<int>(modify_response.result()));
-  ASSERT_EQ(vault_pmid_, modify_response.pmid_id());
-  ASSERT_EQ(vault_public_key_, modify_response.public_key());
-  ASSERT_EQ(vault_public_key_signature_, modify_response.signed_public_key());
+  ASSERT_TRUE(modify_response.IsInitialized());
+  EXPECT_EQ(kNack, static_cast<int>(modify_response.result()));
+  EXPECT_EQ(vault_pmid_, modify_response.pmid_id());
+  EXPECT_EQ(vault_public_key_, modify_response.public_key());
+  EXPECT_EQ(vault_public_key_signature_, modify_response.signed_public_key());
 
   // Correct change
   modify_request.Clear();
@@ -2800,30 +2878,21 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesModifyBPInfo) {
   done = google::protobuf::NewCallback<TestCallback> (&cb_obj,
     &TestCallback::CallbackFunction);
   service.ModifyBPInfo(&controller, &modify_request, &modify_response, done);
-  ASSERT_EQ(kAck, static_cast<int>(modify_response.result()));
-  ASSERT_EQ(vault_pmid_, modify_response.pmid_id());
-  ASSERT_EQ(vault_public_key_, modify_response.public_key());
-  ASSERT_EQ(vault_public_key_signature_, modify_response.signed_public_key());
+  ASSERT_TRUE(modify_response.IsInitialized());
+  EXPECT_EQ(kAck, static_cast<int>(modify_response.result()));
+  EXPECT_EQ(vault_pmid_, modify_response.pmid_id());
+  EXPECT_EQ(vault_public_key_, modify_response.public_key());
+  EXPECT_EQ(vault_public_key_signature_, modify_response.signed_public_key());
 
-  ASSERT_TRUE(service.HasChunkLocal(bufferpacket_name));
-  ASSERT_TRUE(service.LoadChunkLocal(bufferpacket_name, &test_content));
+  EXPECT_TRUE(service.bps_.HasBP(bufferpacket_name));
+  EXPECT_TRUE(service.bps_.LoadBP(bufferpacket_name, &test_content));
   ASSERT_TRUE(bp.ParseFromString(test_content));
   ASSERT_TRUE(bpi.ParseFromString(bp.owner_info(0).data()));
-  ASSERT_EQ("Dan", bpi.owner());
-  ASSERT_EQ(pub_key, bpi.owner_publickey());
-  ASSERT_EQ(0, bpi.online());
-  ASSERT_EQ(3, bpi.users_size());
+  EXPECT_EQ("Dan", bpi.owner());
+  EXPECT_EQ(pub_key, bpi.owner_publickey());
+  EXPECT_EQ(3, bpi.users_size());
   for (int n = 0; n < bpi.users_size(); ++n)
-    ASSERT_EQ("newuser" + base::itos(n), bpi.users(n));
-  ASSERT_EQ(ep->ip(), bpi.ep(0).ip());
-  ASSERT_EQ(ep->port(), bpi.ep(0).port());
-  ASSERT_EQ(pd->full_name(), bpi.pd().full_name());
-  ASSERT_EQ(pd->phone_number(), bpi.pd().phone_number());
-  ASSERT_EQ(pd->birthday(), bpi.pd().birthday());
-  ASSERT_EQ(pd->gender(), bpi.pd().gender());
-  ASSERT_EQ(pd->language(), bpi.pd().language());
-  ASSERT_EQ(pd->city(), bpi.pd().city());
-  ASSERT_EQ(pd->country(), bpi.pd().country());
+    EXPECT_EQ("newuser" + base::itos(n), bpi.users(n));
 }
 
 TEST_F(VaultServicesTest, BEH_MAID_ServicesGetBPMessages) {
@@ -2847,7 +2916,6 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesGetBPMessages) {
   maidsafe::BufferPacketInfo bpi;
   bpi.set_owner("Dan");
   bpi.set_owner_publickey(pub_key);
-  bpi.set_online(1);
   bpi.add_users("newuser");
   maidsafe::BufferPacket bp;
   maidsafe::GenericPacket *info = bp.add_owner_info();
@@ -2874,15 +2942,15 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesGetBPMessages) {
 
   service.CreateBP(&controller, &request, &response, done);
   ASSERT_TRUE(response.IsInitialized());
-  ASSERT_EQ(kAck, static_cast<int>(response.result()));
-  ASSERT_EQ(response.pmid_id(), co.Hash(response.public_key() +
+  EXPECT_EQ(kAck, static_cast<int>(response.result()));
+  EXPECT_EQ(response.pmid_id(), co.Hash(response.public_key() +
     response.signed_public_key(), "", crypto::STRING_STRING, false));
 
   // Load the stored BP to check it
   std::string test_content;
-  ASSERT_TRUE(service.HasChunkLocal(bufferpacket_name));
-  ASSERT_TRUE(service.LoadChunkLocal(bufferpacket_name, &test_content));
-  ASSERT_EQ(ser_bp, test_content);
+  EXPECT_TRUE(service.bps_.HasBP(bufferpacket_name));
+  EXPECT_TRUE(service.bps_.LoadBP(bufferpacket_name, &test_content));
+  EXPECT_EQ(ser_bp, test_content);
 
   // Get the messages
   maidsafe::GetBPMessagesRequest get_msg_request;
@@ -2896,10 +2964,10 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesGetBPMessages) {
     &TestCallback::CallbackFunction);
   service.GetBPMessages(&controller, &get_msg_request, &get_msg_response, done);
   ASSERT_TRUE(get_msg_response.IsInitialized());
-  ASSERT_EQ(kAck, static_cast<int>(get_msg_response.result()));
-  ASSERT_EQ(get_msg_response.pmid_id(), co.Hash(get_msg_response.public_key() +
+  EXPECT_EQ(kAck, static_cast<int>(get_msg_response.result()));
+  EXPECT_EQ(get_msg_response.pmid_id(), co.Hash(get_msg_response.public_key() +
     get_msg_response.signed_public_key(), "", crypto::STRING_STRING, false));
-  ASSERT_EQ(0, get_msg_response.messages_size());
+  EXPECT_EQ(0, get_msg_response.messages_size());
 }
 
 TEST_F(VaultServicesTest, BEH_MAID_ServicesAddBPMessages) {
@@ -2923,7 +2991,6 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesAddBPMessages) {
   maidsafe::BufferPacketInfo bpi;
   bpi.set_owner("Dan");
   bpi.set_owner_publickey(pub_key);
-  bpi.set_online(1);
   bpi.add_users(co.Hash("newuser", "", crypto::STRING_STRING, false));
   maidsafe::BufferPacket bp;
   maidsafe::GenericPacket *info = bp.add_owner_info();
@@ -2950,15 +3017,15 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesAddBPMessages) {
 
   service.CreateBP(&controller, &request, &response, done);
   ASSERT_TRUE(response.IsInitialized());
-  ASSERT_EQ(kAck, static_cast<int>(response.result()));
-  ASSERT_EQ(response.pmid_id(), co.Hash(response.public_key() +
+  EXPECT_EQ(kAck, static_cast<int>(response.result()));
+  EXPECT_EQ(response.pmid_id(), co.Hash(response.public_key() +
     response.signed_public_key(), "", crypto::STRING_STRING, false));
 
   // Load the stored BP to check it
   std::string test_content;
-  ASSERT_TRUE(service.HasChunkLocal(bufferpacket_name));
-  ASSERT_TRUE(service.LoadChunkLocal(bufferpacket_name, &test_content));
-  ASSERT_EQ(ser_bp, test_content);
+  EXPECT_TRUE(service.bps_.HasBP(bufferpacket_name));
+  EXPECT_TRUE(service.bps_.LoadBP(bufferpacket_name, &test_content));
+  EXPECT_EQ(ser_bp, test_content);
 
   // Get the messages
   maidsafe::GetBPMessagesRequest get_msg_request;
@@ -2972,10 +3039,10 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesAddBPMessages) {
     &TestCallback::CallbackFunction);
   service.GetBPMessages(&controller, &get_msg_request, &get_msg_response, done);
   ASSERT_TRUE(get_msg_response.IsInitialized());
-  ASSERT_EQ(kAck, static_cast<int>(get_msg_response.result()));
-  ASSERT_EQ(get_msg_response.pmid_id(), co.Hash(get_msg_response.public_key() +
+  EXPECT_EQ(kAck, static_cast<int>(get_msg_response.result()));
+  EXPECT_EQ(get_msg_response.pmid_id(), co.Hash(get_msg_response.public_key() +
     get_msg_response.signed_public_key(), "", crypto::STRING_STRING, false));
-  ASSERT_EQ(0, get_msg_response.messages_size());
+  EXPECT_EQ(0, get_msg_response.messages_size());
 
   // Creation of newuser's credentials
   std::string newuser_pub_key, newuser_priv_key, newuser_pmid,
@@ -2997,8 +3064,8 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesAddBPMessages) {
     &TestCallback::CallbackFunction);
   service.AddBPMessage(&controller, &add_msg_request, &add_msg_response, done);
   ASSERT_TRUE(add_msg_response.IsInitialized());
-  ASSERT_EQ(kNack, static_cast<int>(add_msg_response.result()));
-  ASSERT_EQ(add_msg_response.pmid_id(), co.Hash(add_msg_response.public_key() +
+  EXPECT_EQ(kNack, static_cast<int>(add_msg_response.result()));
+  EXPECT_EQ(add_msg_response.pmid_id(), co.Hash(add_msg_response.public_key() +
     add_msg_response.signed_public_key(), "", crypto::STRING_STRING, false));
 
   // Creating the message
@@ -3032,12 +3099,12 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesAddBPMessages) {
   add_msg_request.set_public_key(newuser_pub_key);
   add_msg_request.set_signed_public_key(newuser_sig_pub_key);
   add_msg_request.set_signed_request(newuser_sig_req);
-  done = google::protobuf::NewCallback<TestCallback> (&cb_obj,
-    &TestCallback::CallbackFunction);
+  done = google::protobuf::NewCallback<TestCallback>
+         (&cb_obj, &TestCallback::CallbackFunction);
   service.AddBPMessage(&controller, &add_msg_request, &add_msg_response, done);
   ASSERT_TRUE(add_msg_response.IsInitialized());
-  ASSERT_EQ(kAck, static_cast<int>(add_msg_response.result()));
-  ASSERT_EQ(add_msg_response.pmid_id(), co.Hash(add_msg_response.public_key() +
+  EXPECT_EQ(kAck, static_cast<int>(add_msg_response.result()));
+  EXPECT_EQ(add_msg_response.pmid_id(), co.Hash(add_msg_response.public_key() +
     add_msg_response.signed_public_key(), "", crypto::STRING_STRING, false));
 
   // Get the messages again
@@ -3052,16 +3119,16 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesAddBPMessages) {
     &TestCallback::CallbackFunction);
   service.GetBPMessages(&controller, &get_msg_request, &get_msg_response, done);
   ASSERT_TRUE(get_msg_response.IsInitialized());
-  ASSERT_EQ(kAck, static_cast<int>(get_msg_response.result()));
-  ASSERT_EQ(get_msg_response.pmid_id(), co.Hash(get_msg_response.public_key() +
+  EXPECT_EQ(kAck, static_cast<int>(get_msg_response.result()));
+  EXPECT_EQ(get_msg_response.pmid_id(), co.Hash(get_msg_response.public_key() +
     get_msg_response.signed_public_key(), "", crypto::STRING_STRING, false));
   ASSERT_EQ(1, get_msg_response.messages_size());
   maidsafe::ValidatedBufferPacketMessage vbpm;
   ASSERT_TRUE(vbpm.ParseFromString(get_msg_response.messages(0)));
-  ASSERT_EQ(bpm.sender_id(), vbpm.sender());
-  ASSERT_EQ(bpm.aesenc_message(), vbpm.message());
-  ASSERT_EQ(bpm.rsaenc_key(), vbpm.index());
-  ASSERT_EQ(bpm.type(), vbpm.type());
+  EXPECT_EQ(bpm.sender_id(), vbpm.sender());
+  EXPECT_EQ(bpm.aesenc_message(), vbpm.message());
+  EXPECT_EQ(bpm.rsaenc_key(), vbpm.index());
+  EXPECT_EQ(bpm.type(), vbpm.type());
 
   // Get the messages again
   get_msg_request.Clear();
@@ -3075,21 +3142,24 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesAddBPMessages) {
     &TestCallback::CallbackFunction);
   service.GetBPMessages(&controller, &get_msg_request, &get_msg_response, done);
   ASSERT_TRUE(get_msg_response.IsInitialized());
-  ASSERT_EQ(kAck, static_cast<int>(get_msg_response.result()));
-  ASSERT_EQ(get_msg_response.pmid_id(), co.Hash(get_msg_response.public_key() +
+  EXPECT_EQ(kAck, static_cast<int>(get_msg_response.result()));
+  EXPECT_EQ(get_msg_response.pmid_id(), co.Hash(get_msg_response.public_key() +
     get_msg_response.signed_public_key(), "", crypto::STRING_STRING, false));
-  ASSERT_EQ(0, get_msg_response.messages_size());
+  EXPECT_EQ(0, get_msg_response.messages_size());
 }
 
-TEST_F(VaultServicesTest, BEH_MAID_ServicesContactInfo) {
+TEST_F(VaultServicesTest, BEH_MAID_ServicesGetBPPresence) {
   VaultService service(vault_pmid_, vault_public_key_, vault_private_key_,
-                       vault_public_key_signature_, vault_chunkstore_,
-                       NULL, vault_service_logic_,
-                       udt_transport_.GetID());
-  rpcprotocol::Controller create_controller;
-  maidsafe::CreateBPRequest create_request;
-  maidsafe::CreateBPResponse create_response;
+      vault_public_key_signature_, vault_chunkstore_, NULL,
+      vault_service_logic_, udt_transport_.GetID());
+  rpcprotocol::Controller controller;
+  maidsafe::CreateBPRequest request;
+  maidsafe::CreateBPResponse response;
 
+  // Not initialised
+  TestCallback cb_obj;
+  google::protobuf::Closure *done = google::protobuf::NewCallback<TestCallback>
+                                    (&cb_obj, &TestCallback::CallbackFunction);
   std::string pub_key, priv_key, pmid, sig_pub_key, sig_req;
   CreateRSAKeys(&pub_key, &priv_key);
   crypto::Crypto co;
@@ -3099,33 +3169,14 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesContactInfo) {
   maidsafe::BufferPacketInfo bpi;
   bpi.set_owner("Dan");
   bpi.set_owner_publickey(pub_key);
-  bpi.set_online(1);
-  bpi.add_users(co.Hash("newuser", "", crypto::STRING_STRING, false));
-  maidsafe::EndPoint *ep = bpi.add_ep();
-  ep->set_ip("132.248.59.1");
-  ep->set_port(13221);
-  ep = bpi.add_ep();
-  ep->set_ip("132.248.59.2");
-  ep->set_port(13222);
-  ep = bpi.add_ep();
-  ep->set_ip("132.248.59.3");
-  ep->set_port(13223);
-  maidsafe::PersonalDetails *pd = bpi.mutable_pd();
-  pd->set_full_name("Juanbert Tupadre");
-  pd->set_phone_number("0987654321");
-  pd->set_birthday("01/01/1970");
-  pd->set_gender("Male");
-  pd->set_language("English");
-  pd->set_city("Troon");
-  pd->set_country("United Kingdom of Her Majesty the Queen");
-
+  bpi.add_users("newuser");
   maidsafe::BufferPacket bp;
   maidsafe::GenericPacket *info = bp.add_owner_info();
   std::string ser_bpi;
   bpi.SerializeToString(&ser_bpi);
   info->set_data(ser_bpi);
   info->set_signature(co.AsymSign(ser_bpi, "", priv_key,
-                      crypto::STRING_STRING));
+    crypto::STRING_STRING));
   std::string ser_gp;
   info->SerializeToString(&ser_gp);
   std::string ser_bp;
@@ -3135,120 +3186,274 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesContactInfo) {
                                 false));
   CreateSignedRequest(pub_key, priv_key, bufferpacket_name, &pmid, &sig_pub_key,
                       &sig_req);
-  create_request.set_bufferpacket_name(bufferpacket_name);
-  create_request.set_data(ser_bp);
-  create_request.set_pmid(pmid);
-  create_request.set_public_key(pub_key);
-  create_request.set_signed_public_key(sig_pub_key);
-  create_request.set_signed_request(sig_req);
+  request.set_bufferpacket_name(bufferpacket_name);
+  request.set_data(ser_bp);
+  request.set_pmid(pmid);
+  request.set_public_key(pub_key);
+  request.set_signed_public_key(sig_pub_key);
+  request.set_signed_request(sig_req);
 
+  service.CreateBP(&controller, &request, &response, done);
+  ASSERT_TRUE(response.IsInitialized());
+  EXPECT_EQ(kAck, static_cast<int>(response.result()));
+  EXPECT_EQ(response.pmid_id(), co.Hash(response.public_key() +
+                                        response.signed_public_key(), "",
+                                        crypto::STRING_STRING, false));
+
+  // Load the stored BP to check it
+  std::string test_content;
+  EXPECT_TRUE(service.bps_.HasBP(bufferpacket_name));
+  EXPECT_TRUE(service.bps_.LoadBP(bufferpacket_name, &test_content));
+  EXPECT_EQ(ser_bp, test_content);
+
+  // Get the messages
+  maidsafe::GetBPPresenceRequest get_presence_request;
+  maidsafe::GetBPPresenceResponse get_presence_response;
+  get_presence_request.set_bufferpacket_name(bufferpacket_name);
+  get_presence_request.set_pmid(pmid);
+  get_presence_request.set_public_key(pub_key);
+  get_presence_request.set_signed_public_key(sig_pub_key);
+  get_presence_request.set_signed_request(sig_req);
+  done = google::protobuf::NewCallback<TestCallback>
+         (&cb_obj, &TestCallback::CallbackFunction);
+  service.GetBPPresence(&controller, &get_presence_request,
+                        &get_presence_response, done);
+  ASSERT_TRUE(get_presence_response.IsInitialized());
+  EXPECT_EQ(kAck, static_cast<int>(get_presence_response.result()));
+  EXPECT_EQ(get_presence_response.pmid_id(),
+            co.Hash(get_presence_response.public_key() +
+                    get_presence_response.signed_public_key(), "",
+                    crypto::STRING_STRING, false));
+  EXPECT_EQ(0, get_presence_response.messages_size());
+  EXPECT_TRUE(service.bps_.HasBP(bufferpacket_name));
+  EXPECT_TRUE(service.bps_.LoadBP(bufferpacket_name, &test_content));
+  EXPECT_EQ(ser_bp, test_content);
+
+  maidsafe::BufferPacket mod_bp;
+  bp.ParseFromString(test_content);
+  maidsafe::LivePresence lp;
+  lp.set_contact_id("newuser");
+  maidsafe::EndPoint ep;
+  for (int n = 0; n < 3; ++n) {
+    ep.add_ip(base::itos(n));
+    ep.add_port(n);
+  }
+  lp.set_end_point(ep.SerializeAsString());
+  maidsafe::GenericPacket lp_gp;
+  lp_gp.set_data(lp.SerializeAsString());
+  lp_gp.set_signature("");
+  maidsafe::GenericPacket *mod_gp = mod_bp.add_presence_notifications();
+  *mod_gp = lp_gp;
+  EXPECT_TRUE(service.bps_.UpdateBP(bufferpacket_name,
+                                    mod_bp.SerializeAsString()));
+
+  done = google::protobuf::NewCallback<TestCallback>
+         (&cb_obj, &TestCallback::CallbackFunction);
+  service.GetBPPresence(&controller, &get_presence_request,
+                        &get_presence_response, done);
+  ASSERT_TRUE(get_presence_response.IsInitialized());
+  EXPECT_EQ(kAck, static_cast<int>(get_presence_response.result()));
+  EXPECT_EQ(get_presence_response.pmid_id(),
+            co.Hash(get_presence_response.public_key() +
+                    get_presence_response.signed_public_key(), "",
+                    crypto::STRING_STRING, false));
+  EXPECT_EQ(1, get_presence_response.messages_size());
+  ASSERT_EQ(lp_gp.SerializeAsString(), get_presence_response.messages(0));
+
+  get_presence_response.Clear();
+  done = google::protobuf::NewCallback<TestCallback>
+         (&cb_obj, &TestCallback::CallbackFunction);
+  service.GetBPPresence(&controller, &get_presence_request,
+                        &get_presence_response, done);
+  ASSERT_TRUE(get_presence_response.IsInitialized());
+  EXPECT_EQ(kAck, static_cast<int>(get_presence_response.result()));
+  EXPECT_EQ(get_presence_response.pmid_id(),
+            co.Hash(get_presence_response.public_key() +
+                    get_presence_response.signed_public_key(), "",
+                    crypto::STRING_STRING, false));
+  EXPECT_EQ(0, get_presence_response.messages_size());
+}
+
+TEST_F(VaultServicesTest, BEH_MAID_ServicesAddBPPresence) {
+  VaultService service(vault_pmid_, vault_public_key_, vault_private_key_,
+                       vault_public_key_signature_, vault_chunkstore_, NULL,
+                       vault_service_logic_, udt_transport_.GetID());
+  rpcprotocol::Controller controller;
+  maidsafe::CreateBPRequest request;
+  maidsafe::CreateBPResponse response;
+
+  // Not initialised
   TestCallback cb_obj;
   google::protobuf::Closure *done = google::protobuf::NewCallback<TestCallback>
                                     (&cb_obj, &TestCallback::CallbackFunction);
-  service.CreateBP(&create_controller, &create_request, &create_response, done);
-  ASSERT_TRUE(create_response.IsInitialized());
-  ASSERT_EQ(kAck, static_cast<int>(create_response.result()));
-  ASSERT_EQ(create_response.pmid_id(), co.Hash(create_response.public_key() +
-            create_response.signed_public_key(), "", crypto::STRING_STRING,
-            false));
+  std::string pub_key, priv_key, pmid, sig_pub_key, sig_req;
+  CreateRSAKeys(&pub_key, &priv_key);
+  crypto::Crypto co;
+  co.set_symm_algorithm(crypto::AES_256);
+  co.set_hash_algorithm(crypto::SHA_512);
 
-  rpcprotocol::Controller controller;
-  maidsafe::ContactInfoRequest request;
-  maidsafe::ContactInfoResponse response;
+  maidsafe::BufferPacketInfo bpi;
+  bpi.set_owner("Dan");
+  bpi.set_owner_publickey(pub_key);
+  bpi.add_users(co.Hash("newuser", "", crypto::STRING_STRING, false));
+  maidsafe::BufferPacket bp;
+  maidsafe::GenericPacket *info = bp.add_owner_info();
+  std::string ser_bpi;
+  bpi.SerializeToString(&ser_bpi);
+  info->set_data(ser_bpi);
+  info->set_signature(co.AsymSign(ser_bpi, "", priv_key,
+    crypto::STRING_STRING));
+  std::string ser_gp;
+  info->SerializeToString(&ser_gp);
+  std::string ser_bp;
+  bp.SerializeToString(&ser_bp);
 
+  std::string bufferpacket_name(co.Hash("DanBUFFER", "", crypto::STRING_STRING,
+                                false));
+  CreateSignedRequest(pub_key, priv_key, bufferpacket_name, &pmid, &sig_pub_key,
+                      &sig_req);
+  request.set_bufferpacket_name(bufferpacket_name);
+  request.set_data(ser_bp);
+  request.set_pmid(pmid);
+  request.set_public_key(pub_key);
+  request.set_signed_public_key(sig_pub_key);
+  request.set_signed_request(sig_req);
+
+  service.CreateBP(&controller, &request, &response, done);
+  ASSERT_TRUE(response.IsInitialized());
+  EXPECT_EQ(kAck, static_cast<int>(response.result()));
+  EXPECT_EQ(response.pmid_id(), co.Hash(response.public_key() +
+                                        response.signed_public_key(), "",
+                                        crypto::STRING_STRING, false));
+
+  // Load the stored BP to check it
+  std::string test_content;
+  EXPECT_TRUE(service.bps_.HasBP(bufferpacket_name));
+  EXPECT_TRUE(service.bps_.LoadBP(bufferpacket_name, &test_content));
+  EXPECT_EQ(ser_bp, test_content);
+
+  // Get the messages
+  maidsafe::GetBPPresenceRequest get_presence_request;
+  maidsafe::GetBPPresenceResponse get_presence_response;
+  get_presence_request.set_bufferpacket_name(bufferpacket_name);
+  get_presence_request.set_pmid(pmid);
+  get_presence_request.set_public_key(pub_key);
+  get_presence_request.set_signed_public_key(sig_pub_key);
+  get_presence_request.set_signed_request(sig_req);
   done = google::protobuf::NewCallback<TestCallback>
          (&cb_obj, &TestCallback::CallbackFunction);
-  vault_service_->ContactInfo(&controller, &request, &response, done);
-  ASSERT_TRUE(response.IsInitialized());
-  ASSERT_EQ(kNack, static_cast<int>(response.result()));
-  ASSERT_EQ(vault_pmid_, response.pmid_id());
+  service.GetBPPresence(&controller, &get_presence_request,
+                        &get_presence_response, done);
+  ASSERT_TRUE(get_presence_response.IsInitialized());
+  EXPECT_EQ(kAck, static_cast<int>(get_presence_response.result()));
+  EXPECT_EQ(get_presence_response.pmid_id(),
+            co.Hash(get_presence_response.public_key() +
+                    get_presence_response.signed_public_key(), "",
+                    crypto::STRING_STRING, false));
+  EXPECT_EQ(0, get_presence_response.messages_size());
 
   // Creation of newuser's credentials
   std::string newuser_pub_key, newuser_priv_key, newuser_pmid,
-    newuser_sig_pub_key, newuser_sig_req;
+              newuser_sig_pub_key, newuser_sig_req;
   CreateRSAKeys(&newuser_pub_key, &newuser_priv_key);
   CreateSignedRequest(newuser_pub_key, newuser_priv_key, bufferpacket_name,
-    &newuser_pmid, &newuser_sig_pub_key, &newuser_sig_req);
+                      &newuser_pmid, &newuser_sig_pub_key, &newuser_sig_req);
 
-  request.set_bufferpacket_name("chingon");
-  request.set_id("newuser");
-  request.set_pmid(newuser_pmid);
-  request.set_public_key(newuser_pub_key);
-  request.set_public_key_signature(newuser_sig_pub_key);
-  request.set_request_signature(newuser_sig_req);
-
+  // Sending wrong message
+  maidsafe::AddBPPresenceRequest add_presence_request;
+  maidsafe::AddBPPresenceResponse add_presence_response;
+  add_presence_request.set_bufferpacket_name(bufferpacket_name);
+  add_presence_request.set_data("Something that's not a correct message");
+  add_presence_request.set_pmid(newuser_pmid);
+  add_presence_request.set_public_key(newuser_pub_key);
+  add_presence_request.set_signed_public_key(newuser_sig_pub_key);
+  add_presence_request.set_signed_request(newuser_sig_req);
   done = google::protobuf::NewCallback<TestCallback>
          (&cb_obj, &TestCallback::CallbackFunction);
-  vault_service_->ContactInfo(&controller, &request, &response, done);
-  ASSERT_TRUE(response.IsInitialized());
-  ASSERT_EQ(kNack, static_cast<int>(response.result()));
-  ASSERT_EQ(vault_pmid_, response.pmid_id());
+  service.AddBPPresence(&controller, &add_presence_request,
+                        &add_presence_response, done);
+  ASSERT_TRUE(add_presence_response.IsInitialized());
+  EXPECT_EQ(kNack, static_cast<int>(add_presence_response.result()));
+  EXPECT_EQ(add_presence_response.pmid_id(),
+            co.Hash(add_presence_response.public_key() +
+                    add_presence_response.signed_public_key(), "",
+                    crypto::STRING_STRING, false));
 
-  request.set_bufferpacket_name(bufferpacket_name);
-  request.set_public_key_signature("chingon");
+  // Creating the message
+  maidsafe::LivePresence lp;
+  lp.set_contact_id("newuser");
+  maidsafe::EndPoint ep;
+  for (int n = 0; n < 3; ++n) {
+    ep.add_ip(base::itos(n));
+    ep.add_port(n);
+  }
+  lp.set_end_point(ep.SerializeAsString());
+  maidsafe::GenericPacket lp_gp;
+  lp_gp.set_data(lp.SerializeAsString());
+  lp_gp.set_signature("");
+  ser_gp = "";
+  lp_gp.SerializeToString(&ser_gp);
+
+  // Sending the message
+  add_presence_request.Clear();
+  add_presence_response.Clear();
+  add_presence_request.set_bufferpacket_name(bufferpacket_name);
+  add_presence_request.set_data(ser_gp);
+  add_presence_request.set_pmid(newuser_pmid);
+  add_presence_request.set_public_key(newuser_pub_key);
+  add_presence_request.set_signed_public_key(newuser_sig_pub_key);
+  add_presence_request.set_signed_request(newuser_sig_req);
   done = google::protobuf::NewCallback<TestCallback>
          (&cb_obj, &TestCallback::CallbackFunction);
-  vault_service_->ContactInfo(&controller, &request, &response, done);
-  ASSERT_TRUE(response.IsInitialized());
-  ASSERT_EQ(kNack, static_cast<int>(response.result()));
-  ASSERT_EQ(vault_pmid_, response.pmid_id());
+  service.AddBPPresence(&controller, &add_presence_request,
+                        &add_presence_response, done);
+  ASSERT_TRUE(add_presence_response.IsInitialized());
+  EXPECT_EQ(kAck, static_cast<int>(add_presence_response.result()));
+  EXPECT_EQ(add_presence_response.pmid_id(),
+            co.Hash(add_presence_response.public_key() +
+                    add_presence_response.signed_public_key(), "",
+                    crypto::STRING_STRING, false));
 
-  request.set_public_key_signature(newuser_sig_pub_key);
-  request.set_request_signature("chingon");
+  // Get the messages again
+  get_presence_request.Clear();
+  get_presence_response.Clear();
+  get_presence_request.set_bufferpacket_name(bufferpacket_name);
+  get_presence_request.set_pmid(pmid);
+  get_presence_request.set_public_key(pub_key);
+  get_presence_request.set_signed_public_key(sig_pub_key);
+  get_presence_request.set_signed_request(sig_req);
   done = google::protobuf::NewCallback<TestCallback>
          (&cb_obj, &TestCallback::CallbackFunction);
-  vault_service_->ContactInfo(&controller, &request, &response, done);
-  ASSERT_TRUE(response.IsInitialized());
-  ASSERT_EQ(kNack, static_cast<int>(response.result()));
-  ASSERT_EQ(vault_pmid_, response.pmid_id());
+  service.GetBPPresence(&controller, &get_presence_request,
+                        &get_presence_response, done);
+  ASSERT_TRUE(get_presence_response.IsInitialized());
+  EXPECT_EQ(kAck, static_cast<int>(get_presence_response.result()));
+  EXPECT_EQ(get_presence_response.pmid_id(),
+            co.Hash(get_presence_response.public_key() +
+                    get_presence_response.signed_public_key(), "",
+                    crypto::STRING_STRING, false));
+  ASSERT_EQ(1, get_presence_response.messages_size());
+  ASSERT_EQ(lp_gp.SerializeAsString(), get_presence_response.messages(0));
 
-  request.set_request_signature(newuser_sig_req);
+  // Get the messages again
+  get_presence_request.Clear();
+  get_presence_response.Clear();
+  get_presence_request.set_bufferpacket_name(bufferpacket_name);
+  get_presence_request.set_pmid(pmid);
+  get_presence_request.set_public_key(pub_key);
+  get_presence_request.set_signed_public_key(sig_pub_key);
+  get_presence_request.set_signed_request(sig_req);
   done = google::protobuf::NewCallback<TestCallback>
          (&cb_obj, &TestCallback::CallbackFunction);
-  vault_service_->ContactInfo(&controller, &request, &response, done);
-  ASSERT_TRUE(response.IsInitialized());
-  ASSERT_EQ(kAck, static_cast<int>(response.result()));
-  ASSERT_EQ(vault_pmid_, response.pmid_id());
-  ASSERT_EQ("132.248.59.1" , response.ep(0).ip());
-  ASSERT_EQ(ep->port() - 2, response.ep(0).port());
-  ASSERT_EQ("132.248.59.2", response.ep(1).ip());
-  ASSERT_EQ(ep->port() - 1, response.ep(1).port());
-  ASSERT_EQ(ep->ip(), response.ep(2).ip());
-  ASSERT_EQ(ep->port(), response.ep(2).port());
-  ASSERT_EQ(pd->full_name(), response.pd().full_name());
-  ASSERT_EQ(pd->phone_number(), response.pd().phone_number());
-  ASSERT_EQ(pd->birthday(), response.pd().birthday());
-  ASSERT_EQ(pd->gender(), response.pd().gender());
-  ASSERT_EQ(pd->language(), response.pd().language());
-  ASSERT_EQ(pd->city(), response.pd().city());
-  ASSERT_EQ(pd->country(), response.pd().country());
-
-  response.Clear();
-  request.set_bufferpacket_name(bufferpacket_name);
-  request.set_id("Dan");
-  request.set_pmid(pmid);
-  request.set_public_key(pub_key);
-  request.set_public_key_signature(sig_pub_key);
-  request.set_request_signature(sig_req);
-  done = google::protobuf::NewCallback<TestCallback>
-         (&cb_obj, &TestCallback::CallbackFunction);
-  vault_service_->ContactInfo(&controller, &request, &response, done);
-  ASSERT_TRUE(response.IsInitialized());
-  ASSERT_EQ(kAck, static_cast<int>(response.result()));
-  ASSERT_EQ(vault_pmid_, response.pmid_id());
-  ASSERT_EQ("132.248.59.1" , response.ep(0).ip());
-  ASSERT_EQ(ep->port() - 2, response.ep(0).port());
-  ASSERT_EQ("132.248.59.2", response.ep(1).ip());
-  ASSERT_EQ(ep->port() - 1, response.ep(1).port());
-  ASSERT_EQ(ep->ip(), response.ep(2).ip());
-  ASSERT_EQ(ep->port(), response.ep(2).port());
-  ASSERT_EQ(pd->full_name(), response.pd().full_name());
-  ASSERT_EQ(pd->phone_number(), response.pd().phone_number());
-  ASSERT_EQ(pd->birthday(), response.pd().birthday());
-  ASSERT_EQ(pd->gender(), response.pd().gender());
-  ASSERT_EQ(pd->language(), response.pd().language());
-  ASSERT_EQ(pd->city(), response.pd().city());
-  ASSERT_EQ(pd->country(), response.pd().country());
+  service.GetBPPresence(&controller, &get_presence_request,
+                        &get_presence_response, done);
+  ASSERT_TRUE(get_presence_response.IsInitialized());
+  EXPECT_EQ(kAck, static_cast<int>(get_presence_response.result()));
+  EXPECT_EQ(get_presence_response.pmid_id(),
+            co.Hash(get_presence_response.public_key() +
+                    get_presence_response.signed_public_key(), "",
+                    crypto::STRING_STRING, false));
+  EXPECT_EQ(0, get_presence_response.messages_size());
 }
 
 }  // namespace maidsafe_vault

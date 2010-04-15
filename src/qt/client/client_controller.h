@@ -95,6 +95,19 @@ class ClientController : public QObject {
   char DriveLetter();
   bool Logout();
 
+  /////////////////////////////
+  // qt file browser methods //
+  /////////////////////////////
+
+  int getattr(const std::string &path, std::string &ser_mdm);
+  int readdir(const std::string &path,
+              std::map<std::string, maidsafe::ItemType> &children);
+  int read(const std::string &path);
+  int write(const std::string &path);
+  int rename(const std::string &path, const std::string &path2);
+  int mkdir(const std::string &path);
+  int rmdir(const std::string &path);
+
   bool CreatePublicUsername(const std::string &public_username);
   bool CreateUser(const std::string &username,
                   const std::string &pin,
@@ -107,11 +120,6 @@ class ClientController : public QObject {
                      const std::set<std::string> &admins,
                      const std::set<std::string> &readonlys);
   bool ValidateUser(const std::string &password);
-
-  // Get Own Info
-  int GetInfo(const std::string &public_username,
-              std::vector<std::string> *info);
-  int SetInfo(const std::vector<std::string> &info);
 
   ///////////////////////////////
   //// Conversation Handling ////
@@ -156,10 +164,6 @@ class ClientController : public QObject {
                        const QString& txt,
                        const QList<QString>& to,
                        const QString& conversation);
-  void onInstantMessage(const std::string &message,
-                        const boost::uint32_t&,
-                        const boost::int16_t&,
-                        const float &);
 
   // Vault info
   bool PollVaultInfo(QString *chunkstore, boost::uint64_t *offered_space,
@@ -199,7 +203,7 @@ class ClientController : public QObject {
   explicit ClientController(QObject* parent = 0);
   virtual ~ClientController();
 
-  int analyseMessage(const maidsafe::InstantMessage& im);
+  void analyseMessage(const maidsafe::InstantMessage& im);
   CheckForMessagesThread *cfmt_;
 };
 

@@ -23,7 +23,7 @@ CreateOptionsPage::CreateOptionsPage(QWidget* parent)
     : QWizardPage(parent) {
   ui_.setupUi(this);
 
-  setTitle(tr("Storage options"));
+  setTitle(tr("Storage Options"));
   ui_.buy->setEnabled(false);
   ui_.borrow->setEnabled(false);
 }

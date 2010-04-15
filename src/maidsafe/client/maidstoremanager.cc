@@ -1380,7 +1380,7 @@ int MaidsafeStoreManager::ModifyBPInfo(const std::string &info) {
   }
   for (int i = 0; i < buffer_packet_info.users_size(); ++i)
     users.push_back(buffer_packet_info.users(i));
-  cbph_.ModifyOwnerInfo(bi_input_params, ss_->ConnectionStatus(), users,
+  cbph_.ModifyOwnerInfo(bi_input_params, users,
       boost::bind(&BPCallbackObj::BPOperationCallback, &bp_callback_obj, _1),
       udt_transport_.GetID());
   {
@@ -1440,25 +1440,6 @@ int MaidsafeStoreManager::AddBPMessage(
     }
   }
   return result;
-}
-
-void MaidsafeStoreManager::ContactInfo(const std::string &public_username,
-                                       const std::string &me,
-                                       ContactInfoNotifier cin) {
-  BPInputParameters bi_input_params = {ss_->Id(MPID), ss_->PublicKey(MPID),
-                                       ss_->PrivateKey(MPID)};
-  std::string rec_pub_key;
-  if (public_username == me)
-    rec_pub_key = ss_->PublicKey(MPID);
-  else
-    rec_pub_key = ss_->GetContactPublicKey(public_username);
-
-  cbph_.ContactInfo(bi_input_params, me, public_username, rec_pub_key,
-                    cin, udt_transport_.GetID());
-}
-
-void MaidsafeStoreManager::OwnInfo(ContactInfoNotifier cin) {
-  ContactInfo(ss_->Id(MPID), ss_->Id(MPID), cin);
 }
 
 void MaidsafeStoreManager::AddToWatchList(StoreData store_data) {

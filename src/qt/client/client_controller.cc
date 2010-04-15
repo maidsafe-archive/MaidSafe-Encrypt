@@ -389,52 +389,30 @@ bool ClientController::IsLocalVaultOwned() {
   return maidsafe::ClientController::getInstance()->IsLocalVaultOwned();
 }
 
-void ClientController::onInstantMessage(const std::string &message,
-                                        const boost::uint32_t&,
-                                        const boost::int16_t&,
-                                        const float &) {
-  maidsafe::BufferPacketMessage bpm;
-  crypto::Crypto co;
-  co.set_symm_algorithm(crypto::AES_256);
-  if (!bpm.ParseFromString(message)) {
-    return;
-  }
-  std::string aes_key = co.AsymDecrypt(bpm.rsaenc_key(), "",
-                        maidsafe::SessionSingleton::getInstance()->
-                        PrivateKey(maidsafe::MPID), crypto::STRING_STRING);
-  std::string instant_message(co.SymmDecrypt(bpm.aesenc_message(),
-                              "", crypto::STRING_STRING, aes_key));
-  maidsafe::InstantMessage im;
-  if (!im.ParseFromString(instant_message)) {
-    return;
-  }
-  analyseMessage(im);
-}
-
 bool ClientController::GetMessages() {
   return maidsafe::ClientController::getInstance()->GetMessages();
 }
 
 void ClientController::onCheckMessagesCompleted(bool success) {
-  if (!success) {
-    if (maidsafe::SessionSingleton::getInstance()->ConnectionStatus() != 1) {
-      int one(1);
-      // modify CC online status
-      maidsafe::SessionSingleton::getInstance()->SetConnectionStatus(one);
-      // signal for change of icon
-      emit connectionStatusChanged(one);
-      return;
-    }
-  } else {
-    if (maidsafe::SessionSingleton::getInstance()->ConnectionStatus() == 1) {
-      int zero(0);
-      // modify CC online status
-      maidsafe::SessionSingleton::getInstance()->SetConnectionStatus(zero);
-      // signal for change of icon
-      emit connectionStatusChanged(zero);
-      return;
-    }
-  }
+//  if (!success) {
+//    if (maidsafe::SessionSingleton::getInstance()->ConnectionStatus() != 1) {
+//      int one(1);
+//      // modify CC online status
+//      maidsafe::SessionSingleton::getInstance()->SetConnectionStatus(one);
+//      // signal for change of icon
+//      emit connectionStatusChanged(one);
+//      return;
+//    }
+//  } else {
+//    if (maidsafe::SessionSingleton::getInstance()->ConnectionStatus() == 1) {
+//      int zero(0);
+//      // modify CC online status
+//      maidsafe::SessionSingleton::getInstance()->SetConnectionStatus(zero);
+//      // signal for change of icon
+//      emit connectionStatusChanged(zero);
+//      return;
+//    }
+//  }
   std::list<maidsafe::InstantMessage> msgs;
   int n = maidsafe::ClientController::getInstance()->GetInstantMessages(&msgs);
 
@@ -448,7 +426,7 @@ void ClientController::onCheckMessagesCompleted(bool success) {
   }
 }
 
-int ClientController::analyseMessage(const maidsafe::InstantMessage& im) {
+void ClientController::analyseMessage(const maidsafe::InstantMessage& im) {
   boost::progress_timer t;
   MessageType type = TEXT;
   int n = 0;
@@ -522,9 +500,9 @@ int ClientController::analyseMessage(const maidsafe::InstantMessage& im) {
   const QString conversation = QString::fromStdString(im.conversation());
 
   emit messageReceived(type, time, sender, message, conversation);
-  printf("Ansa %f", t.elapsed());
+//  printf("Ansa %f", t.elapsed());
 
-  return n;
+//  return n;
 }
 
 int ClientController::SaveSession() {
@@ -603,13 +581,28 @@ int ClientController::GetContactInfo(const std::string &pub_name,
                                                                    mic);
 }
 
-int ClientController::GetInfo(const std::string &public_username,
-                              std::vector<std::string> *info) {
-  return maidsafe::ClientController::getInstance()->GetInfo(public_username,
-                                                            info);
+int ClientController::getattr(const std::string &path, std::string &ser_mdm) {
+  return maidsafe::ClientController::getInstance()->getattr(path, ser_mdm);
+}
+int ClientController::readdir(const std::string &path,
+              std::map<std::string, maidsafe::ItemType> &children) {
+  return maidsafe::ClientController::getInstance()->readdir(path, children);
+}
+int ClientController::read(const std::string &path) {
+  return maidsafe::ClientController::getInstance()->read(path);
+}
+int ClientController::write(const std::string &path) {
+  return maidsafe::ClientController::getInstance()->write(path);
 }
 
-int ClientController::SetInfo(const std::vector<std::string> &info) {
-  return maidsafe::ClientController::getInstance()->SetInfo(info);
+int ClientController::rename(const std::string &path, const std::string &path2){
+  return maidsafe::ClientController::getInstance()->rename(path, path2);
 }
 
+int ClientController::mkdir(const std::string &path) {
+  return maidsafe::ClientController::getInstance()->mkdir(path);
+}
+
+int ClientController::rmdir(const std::string &path) {
+  return maidsafe::ClientController::getInstance()->rmdir(path);
+}

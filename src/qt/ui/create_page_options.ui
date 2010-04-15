@@ -11,27 +11,37 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Form</string>
+   <string>Create Account Options</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
+    <widget class="QLabel" name="label">
+     <property name="text">
+      <string>To create a user account, you will also need a vault on the network. Please choose from the following options:</string>
+     </property>
+     <property name="wordWrap">
+      <bool>true</bool>
+     </property>
+    </widget>
+   </item>
+   <item>
     <widget class="QRadioButton" name="local">
      <property name="text">
-      <string>setup local vault</string>
+      <string>Setup a local vault</string>
      </property>
     </widget>
    </item>
    <item>
     <widget class="QRadioButton" name="buy">
      <property name="text">
-      <string>buy vault space</string>
+      <string>Purchase vault space</string>
      </property>
     </widget>
    </item>
    <item>
     <widget class="QRadioButton" name="borrow">
      <property name="text">
-      <string>use a friend</string>
+      <string>Share vault with a friend</string>
      </property>
     </widget>
    </item>

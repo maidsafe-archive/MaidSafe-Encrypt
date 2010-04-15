@@ -48,13 +48,13 @@ class MockSessionSingleton;
 struct UserDetails {
   UserDetails() : defconlevel(kDefCon3),
                   da_modified(false),
-                  username(""),
-                  pin(""),
-                  password(""),
+                  username(),
+                  pin(),
+                  password(),
                   mid_rid(0),
                   smid_rid(0),
-                  session_name(""),
-                  root_db_key(""),
+                  session_name(),
+                  root_db_key(),
                   self_encrypting(true),
                   authorised_users(),
                   maid_authorised_users(),
@@ -63,9 +63,7 @@ struct UserDetails {
                   connection_status(0),
                   vault_ip(),
                   vault_port(0),
-                  external_ep(),
-                  internal_ep(),
-                  rendezvous_ep(),
+                  ep(),
                   pd() {}
   DefConLevels defconlevel;
   bool da_modified;
@@ -86,16 +84,12 @@ struct UserDetails {
   int connection_status;
   std::string vault_ip;
   boost::uint32_t vault_port;
-  EndPoint external_ep;
-  EndPoint internal_ep;
-  EndPoint rendezvous_ep;
+  EndPoint ep;
   PersonalDetails pd;
 };
 
 struct ConnectionDetails {
-  EndPoint external_ep;
-  EndPoint internal_ep;
-  EndPoint rendezvous_ep;
+  EndPoint ep;
   boost::uint16_t transport;
   boost::uint32_t connection_id;
   int status;
@@ -133,9 +127,7 @@ class SessionSingleton {
   int ConnectionStatus();
   std::string VaultIP();
   boost::uint32_t VaultPort();
-  EndPoint ExternalEp();
-  EndPoint InternalEp();
-  EndPoint RendezvousEp();
+  EndPoint Ep();
   PersonalDetails Pd();
 
   // Mutators
@@ -160,9 +152,7 @@ class SessionSingleton {
   bool SetConnectionStatus(int status);
   bool SetVaultIP(const std::string &vault_ip);
   bool SetVaultPort(const boost::uint32_t &vault_port);
-  bool SetExternalEp(const EndPoint &ep);
-  bool SetInternalEp(const EndPoint &ep);
-  bool SetRendezvousEp(const EndPoint &ep);
+  bool SetEp(const EndPoint &ep);
   bool SetPd(const PersonalDetails &pd);
 
   ///////////////////////////
@@ -277,12 +267,12 @@ class SessionSingleton {
 
   typedef std::map<std::string, ConnectionDetails> live_map;
   int AddLiveContact(const std::string &contact,
-                     const std::vector<EndPoint> &end_points,
+                     const EndPoint &end_points,
                      int status);
   int LivePublicUsernameList(std::list<std::string> *contacts);
   int LiveContactMap(std::map<std::string, ConnectionDetails> *live_contacts);
   int LiveContactDetails(const std::string &contact,
-                         std::vector<EndPoint> *end_points,
+                         EndPoint *end_points,
                          boost::uint16_t *transport_id,
                          boost::uint32_t *connection_id,
                          int *status,
@@ -298,8 +288,8 @@ class SessionSingleton {
                         boost::uint16_t transport_id);
   int ModifyConnectionId(const std::string &contact,
                          const boost::uint32_t &connection_id);
-  int ModifyEndPoint(const std::string &contact,
-                     const EndPoint &end_point, int which);
+  int ModifyEndPoint(const std::string &contact, const std::string &ip,
+                     const boost::uint16_t &port, int which);
   int ModifyStatus(const std::string &contact,
                    int status);
   int DeleteLiveContact(const std::string &contact);

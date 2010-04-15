@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Dialog</string>
+   <string>Create User Account</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
@@ -40,7 +40,7 @@
         </font>
        </property>
        <property name="text">
-        <string>This is the...</string>
+        <string></string>
        </property>
       </widget>
      </item>

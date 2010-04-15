@@ -102,7 +102,8 @@ class PerpetualData : public QMainWindow {
     void onAwayTriggered();
     void onBusyTriggered();
     void onOffline_2Triggered();
-
+    void showLoggedOutMenu();
+    void showLoggedInMenu();
 
     void onDirectoryEntered(const QString&);
 
@@ -163,6 +164,7 @@ class PerpetualData : public QMainWindow {
     FAILURE         //  < Something critical failed.  Showing message before
                     //  < returning to login
   };
+
 
   // flag set to true when application is quitting
   bool quitting_;

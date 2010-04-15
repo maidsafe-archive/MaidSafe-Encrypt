@@ -189,7 +189,7 @@ int DataAtlasHandler::ModifyMetaDataMap(const std::string &element_path,
 
 int DataAtlasHandler::RemoveElement(const std::string &element_path) {
   int result = kDataAtlasError;
-  std::string ser_mdm("");
+  std::string ser_mdm;
   result = GetMetaDataMap(element_path, &ser_mdm);
   if (result != kSuccess) {
     printf("DataAtlasHandler::RemoveElement fail 0\n");
@@ -200,7 +200,7 @@ int DataAtlasHandler::RemoveElement(const std::string &element_path) {
     printf("DataAtlasHandler::RemoveElement fail 0.5\n");
     return result;
   }
-  std::string ser_dm("");
+  std::string ser_dm;
   if (mdm.type() != DIRECTORY && mdm.type() != EMPTY_DIRECTORY) {
     result = GetDataMap(element_path, &ser_dm);
     if (result != kSuccess) {
@@ -220,7 +220,7 @@ int DataAtlasHandler::RemoveElement(const std::string &element_path) {
   }
   if (ser_dm == "") {
     try {
-      std::string db_to_delete("");
+      std::string db_to_delete;
       GetDbPath(element_path, CREATE, &db_to_delete);
 //      printf("Deleting DB: %s", db_to_delete.c_str());
       fs::remove(db_to_delete);
@@ -261,7 +261,7 @@ int DataAtlasHandler::RenameElement(const std::string &original_path,
                                     bool force) {
   // As this is a rename, where the element is a dir, the original dir key can
   // be used.
-  std::string dir_key("");
+  std::string dir_key;
   int result = GetDirKey(original_path, &dir_key);
   if (result != kSuccess) {
 #ifdef DEBUG
@@ -288,22 +288,22 @@ int DataAtlasHandler::RenameElement(const std::string &original_path,
 
 int DataAtlasHandler::CopyElement(const std::string &original_path,
                                   const std::string &target_path,
-                                  const std::string &new_dir_key_,
+                                  const std::string &new_dir_key,
                                   bool force) {
   int result = kDataAtlasError;
-  boost::shared_ptr<PdDir> da_original_(GetPdDir(original_path, CONNECT,
+  boost::shared_ptr<PdDir> da_original(GetPdDir(original_path, CONNECT,
       &result));
   if (result != kSuccess)
     return result;
-  boost::shared_ptr<PdDir> da_target_(GetPdDir(target_path, CONNECT, &result));
+  boost::shared_ptr<PdDir> da_target(GetPdDir(target_path, CONNECT, &result));
   if (result != kSuccess)
     return result;
-  std::string ser_mdm(""), ser_dm(""), original_name_, target_name_;
-  original_name_ = GetElementNameFromPath(original_path);
-  target_name_ = GetElementNameFromPath(target_path);
+  std::string ser_mdm, ser_dm, original_name, target_name;
+  original_name = GetElementNameFromPath(original_path);
+  target_name = GetElementNameFromPath(target_path);
 
   // Check if target exists.  If so, and force==false, abort.
-  result = da_target_->GetMetaDataMap(target_name_, &ser_mdm);
+  result = da_target->GetMetaDataMap(target_name, &ser_mdm);
   if (result == kSuccess) {  // i.e. target exists
     if (!force) {
 #ifdef DEBUG
@@ -312,7 +312,7 @@ int DataAtlasHandler::CopyElement(const std::string &original_path,
       return kCopyElementError;
     } else {
       // i.e. force==true, so delete old target in preparation of adding new.
-      result = da_target_->RemoveElement(target_name_);
+      result = da_target->RemoveElement(target_name);
       if (result != kSuccess) {
 #ifdef DEBUG
         printf("Couldn't remove existing target element before copying.\n");
@@ -324,20 +324,20 @@ int DataAtlasHandler::CopyElement(const std::string &original_path,
 
   // Get original mdm and dm
   ser_mdm = "";
-  result = da_original_->GetMetaDataMap(original_name_, &ser_mdm);
+  result = da_original->GetMetaDataMap(original_name, &ser_mdm);
   if (result != kSuccess) {
 #ifdef DEBUG
     printf("Can't retrieve original mdm for copying.\n");
 #endif
     return kCopyElementError;
   }
-  da_original_->GetDataMap(original_name_, &ser_dm);
+  da_original->GetDataMap(original_name, &ser_dm);
 
   // Amend mdm
   MetaDataMap mdm;
   mdm.ParseFromString(ser_mdm);
   mdm.set_id(-2);
-  mdm.set_display_name(target_name_);
+  mdm.set_display_name(target_name);
   mdm.SerializeToString(&ser_mdm);
 
 #ifdef DEBUG
@@ -345,7 +345,7 @@ int DataAtlasHandler::CopyElement(const std::string &original_path,
   // printf("In DAH::Cpyelmnt, addingelement: %s with sermdm %s & serdm %s\n",
   //        target_path.c_str(), ser_mdm.c_str(), ser_dm.c_str());
 #endif
-  result = AddElement(target_path, ser_mdm, ser_dm, new_dir_key_, false);
+  result = AddElement(target_path, ser_mdm, ser_dm, new_dir_key, false);
   if (result != kSuccess) {
 #ifdef DEBUG
     printf("In copyelement, result of addelement = %i\n", result);
@@ -366,19 +366,19 @@ int DataAtlasHandler::CopyElement(const std::string &original_path,
   return kSuccess;
 }
 
-int DataAtlasHandler::CopyDb(const std::string &original_path_,
-                             const std::string &target_path_) {
-  std::string original_db_path_, target_db_path_;
-  GetDbPath(original_path_, CREATE, &original_db_path_);
-  GetDbPath(target_path_, CREATE, &target_db_path_);
+int DataAtlasHandler::CopyDb(const std::string &original_path,
+                             const std::string &target_path) {
+  std::string original_db_path, target_db_path;
+  GetDbPath(original_path, CREATE, &original_db_path);
+  GetDbPath(target_path, CREATE, &target_db_path);
 #ifdef DEBUG
   // printf("In DAH::CopyDb:\noriginal_db_path_ = %s\ntarget_db_path_ = %s\n\n",
   //        original_db_path_.c_str(), target_db_path_.c_str());
 #endif
   try {
-    if (fs::exists(target_db_path_))
-      fs::remove(target_db_path_);
-    fs::copy_file(original_db_path_, target_db_path_);
+    if (fs::exists(target_db_path))
+      fs::remove(target_db_path);
+    fs::copy_file(original_db_path, target_db_path);
     return kSuccess;
   }
   catch(const std::exception &e) {
@@ -390,44 +390,44 @@ int DataAtlasHandler::CopyDb(const std::string &original_path_,
 }
 
 int DataAtlasHandler::ListSubDirs(const std::string &element_path,
-                                  std::vector<std::string> *subdirs_) {
+                                  std::vector<std::string> *subdirs) {
   int result = kDataAtlasError;
   // append "/a" to element_path so that GetPdDir finds correct branch
-  fs::path path_(element_path, fs::native);
-  path_ /= "a";
-  std::string element_path_modified = path_.string();
+  fs::path path(element_path, fs::native);
+  path /= "a";
+  std::string element_path_modified = path.string();
 
-  boost::shared_ptr<PdDir> da_(GetPdDir(element_path_modified, CONNECT,
+  boost::shared_ptr<PdDir> da(GetPdDir(element_path_modified, CONNECT,
       &result));
   if (result != kSuccess)
     return result;
-  return da_->ListSubDirs(subdirs_);
+  return da->ListSubDirs(subdirs);
 }
 
-int DataAtlasHandler::CopySubDbs(const std::string &original_path_,
-                                 const std::string &target_path_) {
+int DataAtlasHandler::CopySubDbs(const std::string &original_path,
+                                 const std::string &target_path) {
 #ifdef DEBUG
   // printf("In DAH::CopySubDbs:\noriginal_path_ = %s\ntarget_path_ = %s\n\n",
   //        original_path_.c_str(), target_path_.c_str());
 #endif
   int result = kDataAtlasError;
-  std::vector<std::string> subdirs_;
-  result = ListSubDirs(original_path_, &subdirs_);
+  std::vector<std::string> subdirs;
+  result = ListSubDirs(original_path, &subdirs);
   if (result != kSuccess)
     return result;
   boost::uint16_t i = 0;
-  while (i < subdirs_.size()) {
-    fs::path orig_path_(original_path_);
-    fs::path targ_path_(target_path_);
-    orig_path_ /= subdirs_[i];
-    targ_path_ /= subdirs_[i];
-    result = CopySubDbs(orig_path_.string(), targ_path_.string());
+  while (i < subdirs.size()) {
+    fs::path orig_path(original_path);
+    fs::path targ_path(target_path);
+    orig_path /= subdirs[i];
+    targ_path /= subdirs[i];
+    result = CopySubDbs(orig_path.string(), targ_path.string());
     if (result != kSuccess)
       // ie CopySubDbs failed
       return result;
     ++i;
   }
-  result = CopyDb(original_path_, target_path_);
+  result = CopyDb(original_path, target_path);
   if (result != kSuccess)
     return result;
   return kSuccess;
@@ -472,7 +472,7 @@ int DataAtlasHandler::GetMetaDataMap(const std::string &element_path,
   // printf("\t\tDataAtlasHandler::GetMetaDataMap %s\n", element_path.c_str());
 #endif
   int result = kDataAtlasError;
-  boost::shared_ptr<PdDir> da_(GetPdDir(element_path, CONNECT, &result));
+  boost::shared_ptr<PdDir> da(GetPdDir(element_path, CONNECT, &result));
   if (result != kSuccess)
     return result;
   std::string the_path(GetElementNameFromPath(element_path));
@@ -480,106 +480,44 @@ int DataAtlasHandler::GetMetaDataMap(const std::string &element_path,
   // printf("\t\tDataAtlasHandler::GetMetaDataMap the_path: %s\n",
   //   the_path.c_str());
 #endif
-  result = da_->GetMetaDataMap(the_path, ser_mdm);
+  result = da->GetMetaDataMap(the_path, ser_mdm);
   return result;
 }
 
 int DataAtlasHandler::ChangeCtime(const std::string &element_path) {
   int result = kDataAtlasError;
-  boost::shared_ptr<PdDir> da_(GetPdDir(element_path, CONNECT, &result));
+  boost::shared_ptr<PdDir> da(GetPdDir(element_path, CONNECT, &result));
   if (result != kSuccess)
     return result;
-  return da_->ChangeCtime(GetElementNameFromPath(element_path));
+  return da->ChangeCtime(GetElementNameFromPath(element_path));
 }
 
 int DataAtlasHandler::ChangeMtime(const std::string &element_path) {
   int result = kDataAtlasError;
-  boost::shared_ptr<PdDir> da_(GetPdDir(element_path, CONNECT, &result));
+  boost::shared_ptr<PdDir> da(GetPdDir(element_path, CONNECT, &result));
   if (result != kSuccess)
     return result;
-  return da_->ChangeMtime(GetElementNameFromPath(element_path));
+  return da->ChangeMtime(GetElementNameFromPath(element_path));
 }
 
 int DataAtlasHandler::ChangeAtime(const std::string &element_path) {
   int result = kDataAtlasError;
-  boost::shared_ptr<PdDir> da_(GetPdDir(element_path, CONNECT, &result));
+  boost::shared_ptr<PdDir> da(GetPdDir(element_path, CONNECT, &result));
   if (result != kSuccess)
     return result;
-  return da_->ChangeAtime(GetElementNameFromPath(element_path));
+  return da->ChangeAtime(GetElementNameFromPath(element_path));
 }
 
 int DataAtlasHandler::DisconnectPdDir(const std::string &branch_path) {
   int result = kDataAtlasError;
   // append "/a" to branch_path so that GetPdDir finds correct branch
-  fs::path path_(branch_path, fs::native);
-  path_ /= "a";
-  std::string element_path_modified = path_.string();
+  fs::path path(branch_path, fs::native);
+  path /= "a";
+  std::string element_path_modified = path.string();
 
-  boost::shared_ptr<PdDir> da_(GetPdDir(element_path_modified, DISCONNECT,
+  boost::shared_ptr<PdDir> da(GetPdDir(element_path_modified, DISCONNECT,
       &result));
   return result;
 }
 
-// methods for the Key Ring
-/*
-void DataAtlasHandler::GetKeyDbPath(std::string *keys_db_name_) {
-  GetDbPath("/KeysDb", CREATE, keys_db_name_);
-}
-
-boost::shared_ptr<KeyAtlas> DataAtlasHandler::GetKeysDb(DbInitFlag flag_,
-                                                        int *result) {
-  std::string keys_db_name_;
-  GetDbPath("/KeysDb", CREATE, &keys_db_name_);
-  int result_ = -1;
-  boost::shared_ptr<KeyAtlas> key_db_(new KeyAtlas(keys_db_name_,
-                                                   flag_,
-                                                   &result_));
-  *result = result_;
-  return key_db_;
-}
-
-int DataAtlasHandler::DisconnectKeysDb() {
-  int result_ = -1;
-  boost::shared_ptr<KeyAtlas> key_db_(GetKeysDb(DISCONNECT, &result_));
-  return 0;
-}
-
-int DataAtlasHandler::AddKeys(const std::string &package_type, const
-  std::string &package_id, const std::string &private_key, const std::string
-  &public_key) {
-  int result_ = -1;
-  boost::shared_ptr<KeyAtlas> key_db_(GetKeysDb(CONNECT, &result_));
-  return key_db_->AddKeys(package_type, package_id, private_key, public_key);
-}
-
-std::string DataAtlasHandler::GetPackageID(const std::string &packet_type) {
-  int result_ = -1;
-  boost::shared_ptr<KeyAtlas> key_db_(GetKeysDb(CONNECT, &result_));
-  return key_db_->GetPackageID(packet_type);
-}
-
-std::string DataAtlasHandler::GetPrivateKey(const std::string &packet_type) {
-  int result_ = -1;
-  boost::shared_ptr<KeyAtlas> key_db_(GetKeysDb(CONNECT, &result_));
-  return key_db_->GetPrivateKey(packet_type);
-}
-
-std::string DataAtlasHandler::GetPublicKey(const std::string &packet_type) {
-  int result_ = -1;
-  boost::shared_ptr<KeyAtlas> key_db_(GetKeysDb(CONNECT, &result_));
-  return key_db_->GetPublicKey(packet_type);
-}
-
-int DataAtlasHandler::RemoveKeys(const std::string &package_type) {
-  int result_ = -1;
-  boost::shared_ptr<KeyAtlas> key_db_(GetKeysDb(CONNECT, &result_));
-  return key_db_->RemoveKeys(package_type);
-}
-
-void DataAtlasHandler::GetKeyRing(std::list<Key_Type> *keyring) {
-  int result_ = -1;
-  boost::shared_ptr<KeyAtlas> key_db_(GetKeysDb(CONNECT, &result_));
-  key_db_->GetKeyRing(keyring);
-}
-*/
 }  // namespace maidsafe

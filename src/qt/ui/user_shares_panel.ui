@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Form</string>
+   <string>Shares</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout_2">
    <item>
@@ -88,7 +88,7 @@
           <item>
            <widget class="QLabel" name="label">
             <property name="text">
-             <string>Filter : </string>
+             <string>Filter:</string>
             </property>
            </widget>
           </item>

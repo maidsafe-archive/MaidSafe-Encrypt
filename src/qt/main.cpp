@@ -14,11 +14,28 @@
 
 // qt
 #include <QApplication>
+#include <QTranslator>
+#include <QLibraryInfo>
+#include <QDebug>
 
 // local
 #include "qt/perpetual_data.h"
 #include "widgets/system_tray_icon.h"
 #include "client/client_controller.h"
+
+// google crash reporter
+#ifdef MAIDSAFE_LINUX
+  #include "google/breakpad/common/linux/linux_syscall_support.h"
+  #include "google/breakpad/client/linux/handler/exception_handler.h"
+#endif
+
+static bool DumpCallback(const char *dump_path, const char *dump_id, void *,
+    bool succeeded) {
+  if (succeeded) {
+    printf("%s is dumped.\n", dump_id);
+  }
+  return succeeded;
+}
 
 void pdMessageOutput(QtMsgType type, const char* msg) {
   switch (type) {
@@ -34,11 +51,28 @@ void pdMessageOutput(QtMsgType type, const char* msg) {
 }
 
 int main(int argc, char *argv[]) {
+  #ifdef MAIDSAFE_LINUX
+    google_breakpad::ExceptionHandler eh(".", NULL, DumpCallback, NULL,
+        true);
+  #endif
   qInstallMsgHandler(pdMessageOutput);
 
+  //Set up Internationalization
   QApplication app(argc, argv);
-  app.setOrganizationDomain("maidsafe.net");
-  app.setOrganizationName("MaidSafe");
+
+//  QTranslator qtTranslator;
+//  qtTranslator.load("qt_" + QLocale::system().name(),
+//             QLibraryInfo::location(QLibraryInfo::TranslationsPath));
+//  app.installTranslator(&qtTranslator);
+//
+//  QTranslator myappTranslator;
+//  bool res = myappTranslator.load(":/translations/pd_translation_de_test.qm");
+//  app.installTranslator(&myappTranslator);
+
+//  qDebug() << "Translate Result"  << res;
+
+  app.setOrganizationDomain("http://www.maidsafe.net");
+  app.setOrganizationName("maidsafe.net Ltd.");
   app.setApplicationName("Perpetual Data");
   app.setApplicationVersion("0.1");
 
@@ -72,7 +106,7 @@ int main(int argc, char *argv[]) {
   int rv = app.exec();
 
   // finalize client controller
-//  ClientController::instance()->shutdown();
+  ClientController::instance()->shutdown();
 
   SystemTrayIcon::instance()->hide();
 

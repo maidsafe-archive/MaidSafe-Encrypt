@@ -42,6 +42,7 @@
 #include "maidsafe/vault/accountamendmenthandler.h"
 #include "maidsafe/vault/accountrepository.h"
 #include "maidsafe/vault/chunkinfohandler.h"
+#include "maidsafe/vault/bufferpacketstore.h"
 #include "maidsafe/vault/infosynchroniser.h"
 #include "maidsafe/vault/vaultservicelogic.h"
 #include "protobuf/maidsafe_service.pb.h"
@@ -136,6 +137,9 @@ typedef GetRemoteInfoTask<maidsafe::GetAccountRequest, VoidFuncIntAccount>
 typedef GetRemoteInfoTask<maidsafe::GetChunkInfoRequest, VoidFuncIntChunkInfo>
     GetRemoteChunkInfoTask;
 
+typedef GetRemoteInfoTask<maidsafe::GetBufferPacketRequest,
+    VoidFuncIntBufferPacket> GetRemoteBufferPacketTask;
+
 class VaultChunkStore;
 
 class VaultService : public maidsafe::MaidsafeService {
@@ -222,6 +226,10 @@ class VaultService : public maidsafe::MaidsafeService {
                             const maidsafe::GetChunkInfoRequest *request,
                             maidsafe::GetChunkInfoResponse *response,
                             google::protobuf::Closure *done);
+  virtual void GetBufferPacket(google::protobuf::RpcController* controller,
+                               const maidsafe::GetBufferPacketRequest *request,
+                               maidsafe::GetBufferPacketResponse *response,
+                               google::protobuf::Closure *done);
   virtual void VaultStatus(google::protobuf::RpcController* controller,
                            const maidsafe::VaultStatusRequest *request,
                            maidsafe::VaultStatusResponse *response,
@@ -242,10 +250,14 @@ class VaultService : public maidsafe::MaidsafeService {
                             const maidsafe::AddBPMessageRequest* request,
                             maidsafe::AddBPMessageResponse* response,
                             google::protobuf::Closure* done);
-  virtual void ContactInfo(google::protobuf::RpcController* controller,
-                           const maidsafe::ContactInfoRequest* request,
-                           maidsafe::ContactInfoResponse* response,
-                           google::protobuf::Closure* done);
+  virtual void GetBPPresence(google::protobuf::RpcController* controller,
+                             const maidsafe::GetBPPresenceRequest *request,
+                             maidsafe::GetBPPresenceResponse *response,
+                             google::protobuf::Closure *done);
+  virtual void AddBPPresence(google::protobuf::RpcController* controller,
+                             const maidsafe::AddBPPresenceRequest* request,
+                             maidsafe::AddBPPresenceResponse* response,
+                             google::protobuf::Closure* done);
   int AddAccount(const std::string &pmid, const boost::uint64_t &offer);
   bool HaveAccount(const std::string &pmid);
  private:
@@ -272,10 +284,13 @@ class VaultService : public maidsafe::MaidsafeService {
   FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesGetSyncData);
   FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesGetAccount);
   FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesGetChunkInfo);
+  FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesGetBufferPacket);
   FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesCreateBP);
   FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesModifyBPInfo);
   FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesGetBPMessages);
   FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesAddBPMessages);
+  FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesGetBPPresence);
+  FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesAddBPPresence);
   VaultService(const VaultService&);
   VaultService &operator=(const VaultService&);
   void DiscardResult(const int&) {}
@@ -300,8 +315,6 @@ class VaultService : public maidsafe::MaidsafeService {
   bool HasChunkLocal(const std::string &chunkname);
   bool StoreChunkLocal(const std::string &chunkname,
                        const std::string &content);
-  bool UpdateChunkLocal(const std::string &chunkname,
-                        const std::string &content);
   bool LoadChunkLocal(const std::string &chunkname, std::string *content);
   bool DeleteChunkLocal(const std::string &chunkname);
   boost::uint64_t GetChunkSizeLocal(const std::string &chunkname);
@@ -348,6 +361,12 @@ class VaultService : public maidsafe::MaidsafeService {
   void GetRemoteChunkInfoCallback(
       const int &result,
       const ChunkInfoMap::VaultChunkInfo &vault_chunk_info);
+  void GetRemoteBufferPacket(
+      const std::string &bp_name,
+      const std::vector<kad::Contact> &close_contacts);
+  void GetRemoteBufferPacketCallback(
+      const int &result,
+      const VaultBufferPacketMap::VaultBufferPacket &buffer_packet);
   // Returns whether the node is within "count" closest nodes (Kademlia closest)
   bool NodeWithinClosest(const std::string &peer_pmid,
                          const boost::uint16_t &count);
@@ -361,6 +380,7 @@ class VaultService : public maidsafe::MaidsafeService {
   AccountHandler ah_;
   AccountAmendmentHandler aah_;
   ChunkInfoHandler cih_;
+  BufferPacketStore bps_;
   QThreadPool thread_pool_;
   boost::shared_ptr<base::PDRoutingTableHandler> routing_table_;
   InfoSynchroniser info_synchroniser_;
