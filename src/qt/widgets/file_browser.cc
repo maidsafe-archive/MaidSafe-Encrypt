@@ -417,7 +417,7 @@ void FileBrowser::onItemDoubleClicked(QTreeWidgetItem* item, int column){
       }
 #else
   // nautilus FuseHomeDir()/Shares/Private/"name"
-     system(path.toStdString());
+     system(path.toStdString().c_str());
 
 #endif
     }
