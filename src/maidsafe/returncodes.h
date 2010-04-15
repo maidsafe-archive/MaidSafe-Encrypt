@@ -158,6 +158,14 @@ enum ReturnCode {
   kKeyNotUnique = -7056,
 
   // Message Handler (-8000)
+  kConnectionNotExists = -8001,
+  kFailedToConnect = -8002,
+  kFailedToSend = -8003,
+  kFailedToStartHandler = -8004,
+  kHandlerAlreadyStarted = -8005,
+  kHandlerNotStarted = -8006,
+  kConnectionAlreadyExists = -8007,
+  kConnectionDown = -8008,
 
   // Private Share Handler (-9000)
 
