@@ -42,41 +42,7 @@ VaultInfo::VaultInfo(QWidget* parent)
 void VaultInfo::setActive(bool b) {
   if (b && !init_) {
 //    qDebug() << "VaultInfo::setActive b && !init_";
-    QString chunkstore;
-    boost::uint64_t offered_space;
-    boost::uint64_t free_space;
-    QString ip;
-    boost::uint32_t port;
-    bool res = ClientController::instance()->PollVaultInfo(&chunkstore,
-               &offered_space, &free_space, &ip, &port);
-    if (res) {
-      std::string offered(base::itos_ull(offered_space/1024));
-      std::string free(base::itos_ull(free_space/1024));
-      std::string used(base::itos_ull((offered_space - free_space)/1024));
-      std::string s_port(base::itos_ul(port));
-      ui_.offeredLbl->setText(QString::fromStdString(offered + " Kb"));
-      ui_.freeLbl->setText(QString::fromStdString(free + " Kb"));
-      ui_.usedLbl->setText(QString::fromStdString(used + " Kb"));
-      ui_.labelStoringDirectory->setText(chunkstore);
-      ui_.labelIP->setText(ip);
-      ui_.labelPort->setText(QString::fromStdString(s_port));
-
-      ui_.vaultSpaceBar->setMinimum(0);
-      ui_.vaultSpaceBar->setMaximum(offered_space);
-      ui_.vaultSpaceBar->setValue(offered_space - free_space);
-
-      if ((offered_space * 0.1) < free_space) {
-        ui_.labelVaultStatusMessage->setText(tr("<font color=green>Vault is "
-                                             "feeling goooood =)</font>"));
-      } else {
-        ui_.labelVaultStatusMessage->setText(tr("<font color=red>It might be "
-                                      "time to share some more space!</font>"));
-      }
-
-    } else {
-      ui_.labelVaultStatusMessage->setText(tr("<font color=red><strong>"
-          "Attention! Your vault seems to be offline!</strong></font>"));
-    }
+    onUpdateVaultInfo();
     init_ = true;
   } else if (!b && init_) {
     reset();
@@ -102,13 +68,10 @@ void VaultInfo::onUpdateVaultInfo() {
   bool b = ClientController::instance()->PollVaultInfo(&chunkstore,
          &offered_space, &free_space, &ip, &port);
   if (b) {
-    std::string offered(base::itos_ull(offered_space/1024));
-    std::string free(base::itos_ull(free_space/1024));
-    std::string used(base::itos_ull((offered_space - free_space)/1024));
     std::string s_port(base::itos_ul(port));
-    ui_.offeredLbl->setText(QString::fromStdString(offered + " Kb"));
-    ui_.freeLbl->setText(QString::fromStdString(free + " Kb"));
-    ui_.usedLbl->setText(QString::fromStdString(used + " Kb"));
+    ui_.offeredLbl->setText(tr("%1 KB").arg(offered_space/1024));
+    ui_.freeLbl->setText(tr("%1 KB").arg(free_space/1024));
+    ui_.usedLbl->setText(tr("%1 KB").arg((offered_space - free_space)/1024));
     ui_.labelStoringDirectory->setText(chunkstore);
     ui_.labelIP->setText(ip);
     ui_.labelPort->setText(QString::fromStdString(s_port));
@@ -118,14 +81,17 @@ void VaultInfo::onUpdateVaultInfo() {
     ui_.vaultSpaceBar->setValue(offered_space - free_space);
 
     if ((offered_space * 0.1) < free_space) {
-      ui_.labelVaultStatusMessage->setText(tr("<font color=green>Vault is "
-                                           "feeling goooood =)</font>"));
+      ui_.labelVaultStatusMessage->setText(
+          tr("Vault is in good condition.")
+          .prepend("<font color=green>").append("</font>"));
     } else {
-      ui_.labelVaultStatusMessage->setText(tr("<font color=red>It might be "
-                                    "time to share some more space!</font>"));
+      ui_.labelVaultStatusMessage->setText(
+          tr("It might be time to share some more space!")
+          .prepend("<font color=orange>").append("</font>"));
     }
   } else {
-    ui_.labelVaultStatusMessage->setText(tr("<font color=red><strong>Attention!"
-        " Your vault seems to be offline!</strong></font>"));
+    ui_.labelVaultStatusMessage->setText(
+        tr("Attention, your vault seems to be offline!")
+        .prepend("<font color=red><strong>").append("</strong></font>"));
   }
 }

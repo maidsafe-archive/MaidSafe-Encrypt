@@ -32,7 +32,7 @@
          <item>
           <widget class="QLabel" name="usernameLbl">
            <property name="text">
-            <string>Enter new username here :</string>
+            <string>Enter new username:</string>
            </property>
           </widget>
          </item>
@@ -42,7 +42,7 @@
          <item>
           <widget class="QLabel" name="label">
            <property name="text">
-            <string>Enter new pin here : </string>
+            <string>Enter new PIN:</string>
            </property>
           </widget>
          </item>
@@ -52,7 +52,7 @@
          <item>
           <widget class="QLabel" name="label_2">
            <property name="text">
-            <string>Enter new password here : </string>
+            <string>Enter new password:</string>
            </property>
           </widget>
          </item>
@@ -60,13 +60,6 @@
           <widget class="QLineEdit" name="passwordEdit"/>
          </item>
         </layout>
-       </widget>
-      </item>
-      <item>
-       <widget class="QGroupBox" name="groupBox_3">
-        <property name="title">
-         <string>GroupBox</string>
-        </property>
        </widget>
       </item>
      </layout>

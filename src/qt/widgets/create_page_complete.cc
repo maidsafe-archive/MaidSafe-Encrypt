@@ -22,7 +22,7 @@ CreateCompletePage::CreateCompletePage(QWidget* parent)
     : QWizardPage(parent) {
   ui_.setupUi(this);
 
-  setTitle(tr("Ready to create user"));
+  setTitle(tr("Ready to Create Account"));
 
   cleanupPage();
 }
@@ -43,10 +43,9 @@ void CreateCompletePage::setProgressMessage(const QString& msg) {
 }
 
 void CreateCompletePage::cleanupPage() {
-  setMessage(tr("<qt>We now have all the details required to create a new user."
-                " Press 'Finish' to complete the user creation process.<br/>"
-                "<br/>Please note that user creation can take several minutes."
-                "</qt>"));
+  setMessage(tr("<qt>We now have all the details required to create a new user "
+                "account. Press 'Finish' to complete the process.<br/><br/>"
+                "Please note that this can take several minutes.</qt>"));
 
   showCreationProgress(false);
 }

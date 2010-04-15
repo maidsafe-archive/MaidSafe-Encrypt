@@ -23,7 +23,7 @@
       <item row="1" column="0">
        <widget class="QLabel" name="label">
         <property name="text">
-         <string>Full Name :</string>
+         <string>Full name:</string>
         </property>
        </widget>
       </item>
@@ -33,7 +33,7 @@
       <item row="2" column="0">
        <widget class="QLabel" name="label_2">
         <property name="text">
-         <string>Phone No :</string>
+         <string>Phone no.:</string>
         </property>
        </widget>
       </item>
@@ -43,7 +43,7 @@
       <item row="3" column="0">
        <widget class="QLabel" name="label_3">
         <property name="text">
-         <string>BirthDay :</string>
+         <string>Birthday:</string>
         </property>
        </widget>
       </item>
@@ -53,14 +53,14 @@
       <item row="4" column="0">
        <widget class="QLabel" name="label_4">
         <property name="text">
-         <string>Gender : </string>
+         <string>Gender:</string>
         </property>
        </widget>
       </item>
       <item row="5" column="0">
        <widget class="QLabel" name="label_5">
         <property name="text">
-         <string>Language :</string>
+         <string>Spoken languages:</string>
         </property>
        </widget>
       </item>
@@ -70,7 +70,7 @@
       <item row="6" column="0">
        <widget class="QLabel" name="label_6">
         <property name="text">
-         <string>City : </string>
+         <string>City:</string>
         </property>
        </widget>
       </item>
@@ -80,7 +80,7 @@
       <item row="7" column="0">
        <widget class="QLabel" name="label_7">
         <property name="text">
-         <string>Country : </string>
+         <string>Country:</string>
         </property>
        </widget>
       </item>
@@ -129,7 +129,7 @@
       <item row="0" column="0">
        <widget class="QLabel" name="label_8">
         <property name="text">
-         <string>Public Name :</string>
+         <string>Public name:</string>
         </property>
        </widget>
       </item>

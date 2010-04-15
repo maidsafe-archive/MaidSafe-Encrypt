@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>User settings</string>
+   <string>User Settings</string>
   </property>
   <layout class="QHBoxLayout" name="horizontalLayout">
    <item>
@@ -38,7 +38,7 @@
          <item row="0" column="0">
           <widget class="QLabel" name="label">
            <property name="text">
-            <string>Public Username :</string>
+            <string>Public username:</string>
            </property>
           </widget>
          </item>
@@ -52,7 +52,7 @@
          <item row="2" column="0">
           <widget class="QLabel" name="label_2">
            <property name="text">
-            <string>Type a Message for others to see :</string>
+            <string>Enter a status message for others to see:</string>
            </property>
           </widget>
          </item>
@@ -87,7 +87,7 @@
             </sizepolicy>
            </property>
            <property name="text">
-            <string>Choose a display picture to be used</string>
+            <string>Choose a display picture:</string>
            </property>
            <property name="wordWrap">
             <bool>true</bool>
@@ -97,7 +97,7 @@
          <item>
           <widget class="QPushButton" name="pushButtonPicture">
            <property name="text">
-            <string>Change Picture...</string>
+            <string>Browse...</string>
            </property>
           </widget>
          </item>
@@ -135,32 +135,12 @@
          <item>
           <widget class="QLabel" name="label_4">
            <property name="text">
-            <string>Language :</string>
+            <string>Language:</string>
            </property>
           </widget>
          </item>
          <item>
           <widget class="QListWidget" name="langListWidget">
-           <item>
-            <property name="text">
-             <string>English</string>
-            </property>
-           </item>
-           <item>
-            <property name="text">
-             <string>French</string>
-            </property>
-           </item>
-           <item>
-            <property name="text">
-             <string>German</string>
-            </property>
-           </item>
-           <item>
-            <property name="text">
-             <string>Spanish</string>
-            </property>
-           </item>
           </widget>
          </item>
         </layout>

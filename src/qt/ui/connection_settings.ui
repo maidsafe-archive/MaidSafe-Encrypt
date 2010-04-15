@@ -32,7 +32,7 @@
          <item row="0" column="0">
           <widget class="QLabel" name="label">
            <property name="text">
-            <string>Port Number :</string>
+            <string>Port Number:</string>
            </property>
           </widget>
          </item>
@@ -48,7 +48,7 @@
             </sizepolicy>
            </property>
            <property name="text">
-            <string>UPnP Enabled?</string>
+            <string>Enable UPnP?</string>
            </property>
           </widget>
          </item>

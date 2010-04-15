@@ -61,8 +61,8 @@ PublicUsername::~PublicUsername() { }
 void PublicUsername::onCreateUsernameClicked() {
   QString text = ui_.contactLineEdit->text().trimmed();
   if (text.isEmpty()) {
-    QMessageBox::warning(this, tr("Problem!"),
-                         tr("Please specify a Username."));
+    QMessageBox::warning(this, tr("Error"),
+                         tr("Please specify a username."));
     return;
   }
 
@@ -83,7 +83,7 @@ void PublicUsername::onCreateUsernameCompleted(bool success) {
     emit complete();
     ClientController::instance()->StartCheckingMessages();
   } else {
-    QMessageBox::warning(this, tr("Problem!"), tr("Error setting Username."));
+    QMessageBox::warning(this, tr("Error"), tr("Could not set new username."));
   }
   ui_.progressLabel->setVisible(false);
   ui_.progressBar->setVisible(false);

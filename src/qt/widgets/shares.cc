@@ -92,7 +92,7 @@ void Shares::onCreateShareClicked() {
 
   // Check if a share is being created
   if (!shareInProcess_.isEmpty()) {
-    QMessageBox::warning(this, tr("Patience!"),
+    QMessageBox::warning(this, tr("Patience..."),
                  tr("A share is being created."));
     return;
   }
@@ -100,7 +100,7 @@ void Shares::onCreateShareClicked() {
   bool ok;
   QString text = QInputDialog::getText(this,
                                        tr("Add Share"),
-                                       tr("Please enter a Share to add :"),
+                                       tr("Please enter a share to add:"),
                                        QLineEdit::Normal,
                                        QString(),
                                        &ok);
@@ -113,21 +113,21 @@ void Shares::onCreateShareClicked() {
   QList<QListWidgetItem*> items = ui_.listWidget->findItems(share_name,
                                 Qt::MatchCaseSensitive);
   if (items.size() > 0) {
-    QMessageBox::warning(this, tr("Problem!"),
-                 tr("You already have a share with this name."));
+    QMessageBox::warning(this, tr("Error"),
+        tr("You already have a share with this name."));
     return;
   }
 
   // Check for contacts to share with
   if (ClientController::instance()->contactsNames().size() == 0) {
-    QMessageBox::warning(this, tr("Problem!"),
-                 tr("You have no contacts to include in this share."));
+    QMessageBox::warning(this, tr("Error"),
+        tr("You have no contacts to include in this share."));
     return;
   }
 
   if (share_name.isEmpty()) {
-    QMessageBox::warning(this, tr("Problem!"),
-                         tr("Please type a valid name for the share."));
+    QMessageBox::warning(this, tr("Error"),
+        tr("Please enter a valid name for the share."));
     return;
   }
 
@@ -143,7 +143,7 @@ void Shares::onCreateShareClicked() {
 
   QStringList ro_set(admin_set);
   if (db_contacts.size() > 0) {
-    ShareParticipantsChoice spc_ro(this, tr("Read Onlys"), &ro_set);
+    ShareParticipantsChoice spc_ro(this, tr("Read-only Participants"), &ro_set);
     int n = spc_ro.exec();
   } else {
     ro_set.clear();
@@ -159,7 +159,7 @@ void Shares::onCreateShareClicked() {
   connect(cst,  SIGNAL(completed(bool)),
           this, SLOT(onCreateShareCompleted(bool)));
 
-  ui_.labelCreate->setText(tr("Creating share: ") + share_name);
+  ui_.labelCreate->setText(tr("Creating share: %1").arg(share_name));
   ui_.labelCreate->setVisible(true);
   ui_.progressBarCreate->reset();
   ui_.progressBarCreate->setVisible(true);
@@ -174,7 +174,7 @@ void Shares::onCreateShareCompleted(bool b) {
   if (b) {
     addShare(shareInProcess_);
   } else {
-    QMessageBox::warning(this, tr("Problem!"),
+    QMessageBox::warning(this, tr("Error"),
                          tr("There was an issue creating this share."));
   }
   shareInProcess_ = tr("");

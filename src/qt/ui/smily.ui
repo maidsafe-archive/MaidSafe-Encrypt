@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Smily</string>
+   <string>Emoticon</string>
   </property>
   <layout class="QHBoxLayout" name="horizontalLayout">
    <item>
@@ -48,37 +48,37 @@
      </attribute>
      <row>
       <property name="text">
-       <string>New Row</string>
+       <string/>
       </property>
      </row>
      <row>
       <property name="text">
-       <string>New Row</string>
+       <string/>
       </property>
      </row>
      <row>
       <property name="text">
-       <string>New Row</string>
+       <string/>
       </property>
      </row>
      <row>
       <property name="text">
-       <string>New Row</string>
+       <string/>
       </property>
      </row>
      <column>
       <property name="text">
-       <string>New Column</string>
+       <string/>
       </property>
      </column>
      <column>
       <property name="text">
-       <string>New Column</string>
+       <string/>
       </property>
      </column>
      <column>
       <property name="text">
-       <string>New Column</string>
+       <string/>
       </property>
      </column>
      <item row="0" column="0">

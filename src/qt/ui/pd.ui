@@ -141,7 +141,7 @@
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>FullScreen</string>
+    <string>Fullscreen</string>
    </property>
   </action>
   <action name="actionWord_Processor">
@@ -176,12 +176,12 @@
   </action>
   <action name="actionMy_Files">
    <property name="text">
-    <string>My Files</string>
+    <string>My files</string>
    </property>
   </action>
   <action name="actionPrivate_Shares">
    <property name="text">
-    <string>Private Shares</string>
+    <string>Private shares</string>
    </property>
   </action>
   <action name="actionOffline">
@@ -189,7 +189,7 @@
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>Go Offline</string>
+    <string>Offline mode</string>
    </property>
   </action>
   <action name="actionSettings">

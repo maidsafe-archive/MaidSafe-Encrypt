@@ -165,7 +165,7 @@ void Login::StartProgressBar() {
   ui_.login->setVisible(false);
   ui_.progress_bar->setVisible(true);
   ui_.progress_label->setVisible(true);
-  ui_.progress_label->setText(tr("Joining the network"));
+  ui_.progress_label->setText(tr("Joining the network..."));
 }
 
 void Login::onUsernameEdited(const QString& text) {
@@ -372,7 +372,7 @@ void Login::UserValidated(bool b) {
   if (b) {
     emit existingUser();
   } else {
-    QMessageBox::warning(this, tr("Error!"),
+    QMessageBox::warning(this, tr("Error"),
                          tr("Please verify your credentials."));
     reset();
   }

@@ -153,12 +153,9 @@ void UserSettings::HandleOK() {
   if (!security_->changedValues_.isEmpty()) {
     QHash<QString, QString> theHash = security_->changedValues_;
     bool ok;
-    QString text = QInputDialog::getText(this,
-                                       tr("Change Settings"),
-                                       tr("Please enter your current password"),
-                                       QLineEdit::Normal,
-                                       QString(),
-                                       &ok);
+    QString text = QInputDialog::getText(this, tr("Change Settings"),
+        tr("Please enter your current password:"), QLineEdit::Normal, QString(),
+        &ok);
     if (ok && !text.isEmpty()) {
       const bool success = ClientController::instance()->ValidateUser(
                                                             text.toStdString());
@@ -172,7 +169,8 @@ void UserSettings::HandleOK() {
         ssst->start();
       } else {
         QMessageBox::warning(this, tr("Wrong Password"),
-                        QString(tr("Security Info will not be changed")));
+        QString(tr("Could not validate the password, security info will not be "
+                   "changed.")));
       }
     }
   }
@@ -190,13 +188,13 @@ void UserSettings::HandleOK() {
 
 void UserSettings::onSaveProfileSettingsCompleted(bool success) {
   QMessageBox::warning(this, tr("Profile Settings Thread Complete"),
-                       QString(tr("Result. %1").arg(success)));
+                       QString(tr("Result: %1").arg(success)));
 }
 
 
 void UserSettings::onSaveSecuritySettingsCompleted(bool success) {
   QMessageBox::warning(this, tr("Security Settings Thread Complete"),
-                       QString(tr("Result. %1").arg(success)));
+                       QString(tr("Result: %1").arg(success)));
 }
 
 void UserSettings::HandleApply() { }

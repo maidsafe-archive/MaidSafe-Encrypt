@@ -167,14 +167,18 @@ void PersonalMessages::onMessageReceived(ClientController::MessageType,
   if (sender == convName_) {
     ui_.message_window->moveCursor(QTextCursor::End, QTextCursor::MoveAnchor);
     QDateTime theDate = QDateTime::currentDateTime();
-    QString date = theDate.toString("dd.MM.yyyy hh:mm:ss");
+    // TODO(Team#) use date format from the user's locale
+    QString date = theDate.toString("dd/MM/yyyy hh:mm:ss");
 
-    ui_.message_window->insertHtml(QString(
-        "<span style=\"background-color:#CCFF99\">"
-           "<br />%3 %1 said: %2</span>").arg(sender).arg(message).arg(date));
+    ui_.message_window->insertHtml(tr("%3 %1 said: %2")
+        .prepend("<span style=\"background-color:#CCFF99\"><br />")
+        .arg(sender).arg(message).arg(date)
+        .append("</span>"));
   }
-    printf("Personal Messages.cc %f", t.elapsed());
-    ui_.message_window->moveCursor(QTextCursor::End, QTextCursor::MoveAnchor);
+#ifdef DEBUG
+  printf("Personal Messages.cc %f", t.elapsed());
+#endif
+  ui_.message_window->moveCursor(QTextCursor::End, QTextCursor::MoveAnchor);
 }
 
 void PersonalMessages::sendMessage(const QDateTime& time,
@@ -194,11 +198,13 @@ QString PersonalMessages::getName() {
 void PersonalMessages::setMessage(QString mess) {
   ui_.message_window->moveCursor(QTextCursor::End, QTextCursor::MoveAnchor);
   QDateTime theDate = QDateTime::currentDateTime();
-  QString date = theDate.toString("dd.MM.yyyy hh:mm:ss");
+  // TODO(Team#) use date format from the user's locale
+  QString date = theDate.toString("dd/MM/yyyy hh:mm:ss");
 
-  ui_.message_window->insertHtml(
-      QString("<span style=\"background-color:#CCFF99\">"
-         "<br />%3 %1 said: %2</span>").arg(convName_).arg(mess).arg(date));
+  ui_.message_window->insertHtml(tr("%3 %1 said: %2")
+        .prepend("<span style=\"background-color:#CCFF99\"><br />")
+        .arg(convName_).arg(mess).arg(date)
+        .append("</span>"));
   ui_.message_window->moveCursor(QTextCursor::End, QTextCursor::MoveAnchor);
 }
 
@@ -213,7 +219,7 @@ void PersonalMessages::onSendMessageClicked() {
                                      convName_, conts, this);
 
     connect(simt, SIGNAL(sendMessageCompleted(bool, const QString&)),
-          this, SLOT(onSendMessageComplete(bool, const QString&)));
+            this, SLOT(onSendMessageComplete(bool, const QString&)));
 
     simt->start();
   }
@@ -223,11 +229,13 @@ void PersonalMessages::onSendMessageComplete(bool success,
                                              const QString& text) {
   if (success) {
     QDateTime theDate = QDateTime::currentDateTime();
-    QString date = theDate.toString("dd.MM.yyyy hh:mm:ss");
+    // TODO(Team#) use date format from the user's locale
+    QString date = theDate.toString("dd/MM/yyyy hh:mm:ss");
     ui_.message_window->moveCursor(QTextCursor::End, QTextCursor::MoveAnchor);
-    ui_.message_window->insertHtml(
-        tr("<span style=\"background-color:#E0FFFF\">"
-           "<br />%1 you said: %2 </span>").arg(date).arg(text));
+    ui_.message_window->insertHtml(tr("%2 you said: %1")
+        .prepend("<span style=\"background-color:#E0FFFF\"><br />")
+        .arg(text).arg(date)
+        .append("</span>"));
     ui_.message_window->moveCursor(QTextCursor::End, QTextCursor::MoveAnchor);
   } else {
     const QString msg = tr("Error sending message.");
@@ -238,7 +246,7 @@ void PersonalMessages::onSendMessageComplete(bool success,
 
 void PersonalMessages::onSendInvite() {
   QString filename = QFileDialog::getSaveFileName(this, tr("Save file"), "",
-                                                  tr(".html"));
+                                                  ".html");
   QFile f(filename);
   f.open(QIODevice::WriteOnly);
   QTextStream out(&f);
@@ -247,7 +255,7 @@ void PersonalMessages::onSendInvite() {
 }
 #ifdef PD_LIGHT
 void PersonalMessages::onSendFile() {
-  QString msg = tr("Please use the PD Browser to send files");
+  QString msg = tr("Please use the PD Browser to send files.");
   QMessageBox::information(this, tr("Information"), msg);
 }
 #else
@@ -270,7 +278,7 @@ void PersonalMessages::onSendFile() {
          arg(ClientController::instance()->WinDrive());
   QFileDialog *qfd = new QFileDialog(this,
                      tr("File to share..."),
-                     root, tr("Any file (*)"));
+                     root, tr("Any file") + "(*)");
   int result = qfd->exec();
   if (result == QDialog::Rejected) {
     return;
@@ -281,9 +289,7 @@ void PersonalMessages::onSendFile() {
   ClientController::instance()->SessionName()).string() +
          "/My Files");
   QStringList fileNames = QFileDialog::getOpenFileNames(this,
-                                                       tr("Select one to send"),
-                                                       root,
-                                                       tr("Any file (*)"));
+      tr("Select a file to send"), root, tr("Any file") + "(*)");
 #endif
 
 #ifdef DEBUG
@@ -301,9 +307,9 @@ void PersonalMessages::onSendFile() {
   // accompanying message
   bool ok;
   QString text = QInputDialog::getText(this,
-                                       tr("Messsage entry"),
-                                       tr("Please Enter a message if you "
-                                          "wish to accompany the file(s)"),
+                                       tr("Message"),
+                                       tr("Please enter a message to send with "
+                                          "the file(s):"),
                                        QLineEdit::Normal,
                                        QString(),
                                        &ok);
@@ -431,6 +437,7 @@ void PersonalMessages::onSmilyChosen(int row, int column) {
 void PersonalMessages::onMessageTextEdit() {
   QString text = ui_.message_text_edit->toHtml();
 
+  // TODO(Team#) handle short emoticons, avoid sending html with image paths
   if (text.contains(":-D")) {
     text.replace(":-D", "<img src=\"://smilies//smily_blue//sbiggrin.gif\";");
     ui_.message_text_edit->setHtml(text);
