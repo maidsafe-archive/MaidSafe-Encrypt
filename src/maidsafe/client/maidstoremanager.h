@@ -71,81 +71,6 @@ class ClientRpcs;
 
 enum TaskStatus { kPending, kStarted, kCancelled, kCompleted };
 
-class BPCallbackObj {
- public:
-  BPCallbackObj(bool *called_back,
-                boost::condition_variable *cond_var,
-                boost::mutex *mutex,
-                ReturnCode *result)
-                    : called_back_(called_back),
-                      cond_var_(cond_var),
-                      mutex_(mutex),
-                      result_(result),
-                      end_point_(NULL),
-                      personal_details_(NULL),
-                      messages_(NULL),
-                      status_(0) {
-    boost::mutex::scoped_lock lock(*mutex_);
-    *called_back = false;
-    *result_ = kBPAwaitingCallback;
-  }
-  BPCallbackObj(bool *called_back,
-                boost::condition_variable *cond_var,
-                boost::mutex *mutex,
-                ReturnCode *result,
-                std::list<ValidatedBufferPacketMessage> *messages)
-                    : called_back_(called_back),
-                      cond_var_(cond_var),
-                      mutex_(mutex),
-                      result_(result),
-                      end_point_(NULL),
-                      personal_details_(NULL),
-                      messages_(messages),
-                      status_(0) {
-    boost::mutex::scoped_lock lock(*mutex_);
-    *called_back = false;
-    *result_ = kBPAwaitingCallback;
-    messages_->clear();
-  }
-  void BPOperationCallback(const ReturnCode &return_code) {
-    boost::mutex::scoped_lock lock(*mutex_);
-    *result_ = return_code;
-    *called_back_ = true;
-    cond_var_->notify_all();
-  }
-  void BPGetMessagesCallback(
-      const ReturnCode &return_code,
-      const std::list<ValidatedBufferPacketMessage> &rec_msgs) {
-    boost::mutex::scoped_lock lock(*mutex_);
-    if (messages_ == NULL) {
-      *result_ = kBPError;
-    } else {
-      *result_ = return_code;
-      *messages_ = rec_msgs;
-    }
-    *called_back_ = true;
-    cond_var_->notify_all();
-  }
-  void BPContactInfoCallback(const maidsafe::ReturnCode &res,
-                             const maidsafe::EndPoint &ep,
-                             const maidsafe::PersonalDetails &pd,
-                             const boost::uint32_t &st) {
-    *result_ = res;
-    *end_point_ = ep;
-    *personal_details_ = pd;
-    *status_ = st;
-  }
- private:
-  bool *called_back_;
-  boost::condition_variable *cond_var_;
-  boost::mutex *mutex_;
-  ReturnCode *result_;
-  EndPoint *end_point_;
-  PersonalDetails *personal_details_;
-  std::list<ValidatedBufferPacketMessage> *messages_;
-  boost::uint32_t *status_;
-};
-
 class ChunkStore;
 class SessionSingleton;
 
@@ -254,6 +179,28 @@ struct LocalVaultOwnedCallbackArgs {
   LocalVaultOwnedCallbackArgs &operator=(const LocalVaultOwnedCallbackArgs&);
 };
 
+struct PresenceMessages {
+  std::set<std::string> presence_set;
+  boost::uint16_t successes;
+  bool done;
+  boost::mutex mutex;
+};
+
+struct VBPMessages {
+  std::set<std::string> presence_set;
+  boost::uint16_t successes;
+  bool done;
+  boost::mutex mutex;
+};
+
+struct BPResults {
+  size_t returned_count;
+  std::map<std::string, ReturnCode> *results;
+  boost::mutex mutex;
+  bool finished;
+  ReturnCode rc;
+};
+
 class MaidsafeStoreManager : public StoreManagerInterface {
   typedef boost::function<void(const std::string&,
                                const boost::uint32_t&,
@@ -311,7 +258,12 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   virtual int ModifyBPInfo(const std::string &info);
   virtual int AddBPMessage(const std::vector<std::string> &receivers,
                            const std::string &message,
-                           const MessageType &type);
+                           const MessageType &type,
+                           std::map<std::string, ReturnCode> *add_results);
+  virtual int LoadBPPresence(std::list<LivePresence> *messages);
+  virtual int AddBPPresence(
+      const std::vector<std::string> &receivers,
+      std::map<std::string, ReturnCode> *add_results);
 
   // Vault
   void PollVaultInfo(base::callback_func_type cb);
@@ -505,14 +457,26 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   void DoNothingCallback(const std::string&) {}
   void PollVaultInfoCallback(const VaultStatusResponse *response,
                              base::callback_func_type cb);
-//  void VaultContactInfoCallback(const std::string &ser_result,
-//                                base::callback_func_type cb);
   void SetLocalVaultOwnedCallback(
       boost::shared_ptr<SetLocalVaultOwnedCallbackArgs> callback_args);
   void LocalVaultOwnedCallback(
       boost::shared_ptr<LocalVaultOwnedCallbackArgs> callback_args);
   void AmendAccountCallback(size_t index,
                             boost::shared_ptr<AmendAccountData> data);
+  void ModifyBpCallback(const ReturnCode &rc,
+                        boost::shared_ptr<BPResults> pm);
+  void AddToBpCallback(const ReturnCode &rc,
+                       const std::string &receiver,
+                       boost::shared_ptr<BPResults> results);
+  void LoadMessagesCallback(const maidsafe::ReturnCode &res,
+                            const std::list<ValidatedBufferPacketMessage> &msgs,
+                            bool b,
+                            boost::shared_ptr<VBPMessages> vbpms);
+  void LoadPresenceCallback(const maidsafe::ReturnCode &res,
+                            const std::list<std::string> &pres,
+                            bool b,
+                            boost::shared_ptr<PresenceMessages> pm);
+  std::string ValidatePresence(const std::string &ser_presence);
 
   transport::TransportUDT udt_transport_;
   transport::TransportHandler transport_handler_;

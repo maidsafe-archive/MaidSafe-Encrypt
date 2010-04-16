@@ -635,7 +635,8 @@ bool LocalStoreManager::ValidateGenericPacket(std::string ser_gp,
   return true;
 }
 
-// Buffer packet
+////////////// BUFFER PACKET //////////////
+
 int LocalStoreManager::CreateBP() {
   if (ss_->Id(MPID) == "")
     return -666;
@@ -652,6 +653,41 @@ int LocalStoreManager::CreateBP() {
                                 ss_->PrivateKey(MPID), crypto::STRING_STRING));
   buffer_packet.SerializeToString(&ser_packet);
   return FlushDataIntoChunk(bufferpacketname, ser_packet, false);
+}
+
+int LocalStoreManager::ModifyBPInfo(const std::string &info) {
+  if (ss_->Id(MPID) == "")
+    return -666;
+
+  std::string bp_in_chunk;
+  std::string bufferpacketname(BufferPacketName()), ser_gp;
+  GenericPacket gp;
+  gp.set_data(info);
+  crypto::Crypto co;
+  gp.set_signature(co.AsymSign(gp.data(), "", ss_->PrivateKey(MPID),
+                   crypto::STRING_STRING));
+  gp.SerializeToString(&ser_gp);
+  if (FindAndLoadChunk(bufferpacketname, &bp_in_chunk) != 0) {
+#ifdef DEBUG
+    printf("LocalStoreManager::ModifyBPInfo - Failed to find BP chunk(%s).\n",
+           bufferpacketname.substr(0, 10).c_str());
+#endif
+    return -1;
+  }
+  std::string new_bp;
+  if (!vbph_.ChangeOwnerInfo(ser_gp, ss_->PublicKey(MPID), &bp_in_chunk)) {
+#ifdef DEBUG
+    printf("LocalStoreManager::ModifyBPInfo - Failed to change owner info.\n");
+#endif
+    return -2;
+  }
+  if (FlushDataIntoChunk(bufferpacketname, bp_in_chunk, true) != 0) {
+#ifdef DEBUG
+    printf("LocalStoreManager::ModifyBPInfo - Failed to flush BP to chunk.\n");
+#endif
+    return -3;
+  }
+  return 0;
 }
 
 int LocalStoreManager::LoadBPMessages(
@@ -697,59 +733,39 @@ int LocalStoreManager::LoadBPMessages(
   return 0;
 }
 
-int LocalStoreManager::ModifyBPInfo(const std::string &info) {
+int LocalStoreManager::AddBPMessage(
+    const std::vector<std::string> &receivers,
+    const std::string &message,
+    const MessageType &m_type,
+    std::map<std::string, ReturnCode> *add_results) {
+  if (!add_results)
+    return -660;
   if (ss_->Id(MPID) == "")
     return -666;
 
-  std::string bp_in_chunk;
-  std::string bufferpacketname(BufferPacketName()), ser_gp;
-  GenericPacket gp;
-  gp.set_data(info);
-  crypto::Crypto co;
-  gp.set_signature(co.AsymSign(gp.data(), "", ss_->PrivateKey(MPID),
-                   crypto::STRING_STRING));
-  gp.SerializeToString(&ser_gp);
-  if (FindAndLoadChunk(bufferpacketname, &bp_in_chunk) != 0) {
-#ifdef DEBUG
-    printf("LocalStoreManager::ModifyBPInfo - Failed to find BP chunk(%s).\n",
-           bufferpacketname.substr(0, 10).c_str());
-#endif
-    return -1;
+  std::set<std::string> sss(receivers.begin(), receivers.end());
+  std::vector<std::string> recs;
+  std::set<std::string>::iterator it;
+  if (sss.size() != receivers.size()) {
+    for (it = sss.begin(); it != sss.end(); ++it)
+      recs.push_back(*it);
   }
-  std::string new_bp;
-  if (!vbph_.ChangeOwnerInfo(ser_gp, ss_->PublicKey(MPID), &bp_in_chunk)) {
-#ifdef DEBUG
-    printf("LocalStoreManager::ModifyBPInfo - Failed to change owner info.\n");
-#endif
-    return -2;
-  }
-  if (FlushDataIntoChunk(bufferpacketname, bp_in_chunk, true) != 0) {
-#ifdef DEBUG
-    printf("LocalStoreManager::ModifyBPInfo - Failed to flush BP to chunk.\n");
-#endif
-    return -3;
-  }
-  return 0;
-}
-
-int LocalStoreManager::AddBPMessage(const std::vector<std::string> &receivers,
-                                    const std::string &message,
-                                    const MessageType &m_type) {
-  if (ss_->Id(MPID) == "")
-    return -666;
+  for (size_t n = 0; n < recs.size(); ++n)
+    add_results->insert(std::pair<std::string, ReturnCode>
+                                 (recs[n],     kBPAwaitingCallback));
 
   std::string bp_in_chunk, ser_gp;
-  int fails = 0;
+  int successes = 0;
   boost::uint32_t timestamp = base::get_epoch_time();
-  for (size_t n = 0; n < receivers.size(); ++n) {
-    std::string rec_pub_key(ss_->GetContactPublicKey(receivers[n]));
-    std::string bufferpacketname(BufferPacketName(receivers[n], rec_pub_key));
+  for (size_t n = 0; n < recs.size(); ++n) {
+    std::string rec_pub_key(ss_->GetContactPublicKey(recs[n]));
+    std::string bufferpacketname(BufferPacketName(recs[n], rec_pub_key));
     if (FindAndLoadChunk(bufferpacketname, &bp_in_chunk) != 0) {
 #ifdef DEBUG
       printf("LocalStoreManager::AddBPMessage - Failed to find BP chunk (%s)\n",
-             receivers[n].c_str());
+             recs[n].c_str());
 #endif
-      ++fails;
+      (*add_results)[recs[n]] = kBPAddMessageError;
       continue;
     }
 
@@ -759,23 +775,37 @@ int LocalStoreManager::AddBPMessage(const std::vector<std::string> &receivers,
         &updated_bp)) {
 #ifdef DEBUG
       printf("LocalStoreManager::AddBPMessage - Failed to add message (%s).\n",
-             receivers[n].c_str());
+             recs[n].c_str());
 #endif
-      ++fails;
+      (*add_results)[recs[n]] = kBPAddMessageError;
       continue;
     }
 
     if (FlushDataIntoChunk(bufferpacketname, updated_bp, true) != 0) {
 #ifdef DEBUG
       printf("LSM::AddBPMessage - Failed to flush BP into chunk. (%s).\n",
-             receivers[n].c_str());
+             recs[n].c_str());
 #endif
-      ++fails;
+      (*add_results)[recs[n]] = kBPAddMessageError;
       continue;
     }
+    (*add_results)[recs[n]] = kSuccess;
+    ++successes;
   }
-  return fails;
+  return successes;
 }
+
+int LocalStoreManager::LoadBPPresence(std::list<LivePresence>*) {
+  return kSuccess;
+}
+
+int LocalStoreManager::AddBPPresence(
+    const std::vector<std::string> &receivers,
+    std::map<std::string, ReturnCode>*) {
+  return receivers.size();
+}
+
+////////////// END BUFFER PACKET //////////////
 
 int LocalStoreManager::FindAndLoadChunk(const std::string &chunkname,
                                         std::string *data) {

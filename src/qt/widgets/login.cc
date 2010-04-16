@@ -91,7 +91,7 @@ class PasswordValidator : public QValidator {
  public:
   explicit PasswordValidator(QObject* parent) : QValidator(parent) { }
 
-  virtual State validate(QString& input, int& pos) const {
+  virtual State validate(QString& input, int&) const {
     if (input.contains(" "))
         return Invalid;
     if (input.length() < 4)
@@ -168,15 +168,15 @@ void Login::StartProgressBar() {
   ui_.progress_label->setText(tr("Joining the network"));
 }
 
-void Login::onUsernameEdited(const QString& text) {
+void Login::onUsernameEdited(const QString&) {
   updateUI();
 }
 
-void Login::onPinEdited(const QString& text) {
+void Login::onPinEdited(const QString&) {
   updateUI();
 }
 
-void Login::onPasswordEdited(const QString& text) {
+void Login::onPasswordEdited(const QString&) {
   // TODO(Team#5#): 2009-08-27 - indicate password strength?
   if (!user_exists_) {
   }

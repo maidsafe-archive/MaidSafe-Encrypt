@@ -29,7 +29,7 @@
 class MountThread : public WorkerThread {
   Q_OBJECT
  public:
-  typedef enum MountAction {
+  enum MountAction {
     MOUNT,
     UNMOUNT
   };

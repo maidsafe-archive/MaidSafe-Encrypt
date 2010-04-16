@@ -295,7 +295,7 @@ void ClientBufferPacketHandler::FindNodesCallback(
       case ADD_MESSAGE: data->cb(kBPAddMessageError);
                         break;
       case GET_PRESENCE: {
-                           std::list<LivePresence> lps;
+                           std::list<std::string> lps;
                            data->cb_getpresence(kBPGetPresenceError,
                                                 lps, true);
                            break;
@@ -357,7 +357,7 @@ void ClientBufferPacketHandler::FindNodesCallback(
       case ADD_MESSAGE: data->cb(kBPAddMessageError);
                         break;
       case GET_PRESENCE: {
-                           std::list<LivePresence> lps;
+                           std::list<std::string> lps;
                            data->cb_getpresence(kBPGetPresenceError,
                                                 lps, true);
                            break;
@@ -498,9 +498,11 @@ void ClientBufferPacketHandler::ActionOnBpDone(
                 cb_datas->at(index).get_presence_response->pmid_id() ==
                     cb_datas->at(index).ctc.node_id()) {
                   ++cb_datas->at(index).data->successful_ops;
-                  std::list<LivePresence> lps = ValidatePresence(
-                      cb_datas->at(index).get_presence_response,
-                      cb_datas->at(index).data->private_key);
+                  std::list<std::string> lps;
+                  GetBPPresenceResponse *response =
+                      cb_datas->at(index).get_presence_response;
+                  for (int n = 0; n < response->messages_size(); ++n)
+                    lps.push_back(response->messages(n));
                   cb_datas->at(index).data->cb_getpresence(kSuccess, lps,
                                                            false);
                 }
@@ -557,7 +559,7 @@ void ClientBufferPacketHandler::ActionOnBpDone(
             cb_datas->at(index).data->cb(kBPAddMessageError);
           break;
       case GET_PRESENCE: {
-          std::list<LivePresence> lps;
+          std::list<std::string> lps;
           if (cb_datas->at(index).data->successful_ops >= kKadUpperThreshold)
             cb_datas->at(index).data->cb_getpresence(kSuccess, lps, true);
           else
@@ -589,23 +591,6 @@ std::list<ValidatedBufferPacketMessage> ClientBufferPacketHandler::ValidateMsgs(
       msg.set_index("");
       result.push_back(msg);
     }
-  }
-  return result;
-}
-
-std::list<LivePresence> ClientBufferPacketHandler::ValidatePresence(
-    const GetBPPresenceResponse *response,
-    const std::string &private_key) {
-  std::list<LivePresence> result;
-  for (int i = 0; i < response->messages_size(); ++i) {
-    LivePresence lp;
-    if (lp.ParseFromString(response->messages(i))) {
-      std::string decrypted_endpoint(crypto_obj_.AsymDecrypt(
-                                     lp.end_point(), "", private_key,
-                                     crypto::STRING_STRING));
-      lp.set_end_point(decrypted_endpoint);
-    }
-    result.push_back(lp);
   }
   return result;
 }

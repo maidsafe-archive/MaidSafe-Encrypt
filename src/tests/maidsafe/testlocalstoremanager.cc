@@ -483,8 +483,10 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_AddAndGetBufferPacketMessages) {
   std::vector<std::string> pulbicusernames;
   std::string test_msg("There are strange things done in the midnight sun");
   pulbicusernames.push_back(me_pubusername);
-  ASSERT_EQ(0, sm_->AddBPMessage(pulbicusernames, test_msg,
-            maidsafe::INSTANT_MSG));
+  std::map<std::string, maidsafe::ReturnCode> add_results;
+  ASSERT_EQ(static_cast<int>(pulbicusernames.size()),
+            sm_->AddBPMessage(pulbicusernames, test_msg, maidsafe::INSTANT_MSG,
+                              &add_results));
 
   // Retrive message and check that it is the correct one
   ss_->ResetSession();
@@ -529,10 +531,13 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_AddRequestBufferPacketMessage) {
   std::vector<std::string> pulbicusernames;
   std::string test_msg("There are strange things done in the midnight sun");
   pulbicusernames.push_back(me_pubusername);
+  std::map<std::string, maidsafe::ReturnCode> add_results;
   ASSERT_NE(0, sm_->AddBPMessage(pulbicusernames, test_msg,
-            maidsafe::INSTANT_MSG));
-  ASSERT_EQ(0, sm_->AddBPMessage(pulbicusernames, test_msg,
-            maidsafe::ADD_CONTACT_RQST));
+            maidsafe::INSTANT_MSG, &add_results));
+  add_results.clear();
+  ASSERT_EQ(static_cast<int>(pulbicusernames.size()),
+            sm_->AddBPMessage(pulbicusernames, test_msg,
+                              maidsafe::ADD_CONTACT_RQST, &add_results));
 
   // Back to "Me"
   ss_->ResetSession();
@@ -562,8 +567,10 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_AddRequestBufferPacketMessage) {
             "", 'C', 0, 0));
   pulbicusernames.clear();
   pulbicusernames.push_back(me_pubusername);
-  ASSERT_EQ(0, sm_->AddBPMessage(pulbicusernames, test_msg,
-            maidsafe::INSTANT_MSG));
+  add_results.clear();
+  ASSERT_EQ(static_cast<int>(pulbicusernames.size()),
+            sm_->AddBPMessage(pulbicusernames, test_msg, maidsafe::INSTANT_MSG,
+                              &add_results));
 
   // Back to "Me"
   ss_->ResetSession();

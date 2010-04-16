@@ -42,9 +42,11 @@ namespace maidsafe {
 
 typedef boost::function<void(const ReturnCode&)> bp_operations_cb;
 typedef boost::function<void(const ReturnCode&,
-  const std::list<ValidatedBufferPacketMessage>&, bool)> bp_getmessages_cb;
+                             const std::list<ValidatedBufferPacketMessage>&,
+                             bool)> bp_getmessages_cb;
 typedef boost::function<void(const ReturnCode&,
-  const std::list<LivePresence>&, bool)> bp_getpresence_cb;
+                             const std::list<std::string>&,
+                             bool)> bp_getpresence_cb;
 
 enum BpOpType {
   CREATEBP,

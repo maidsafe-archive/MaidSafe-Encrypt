@@ -204,23 +204,21 @@ class BPCallback {
   }
   void BPGetPresence_CB(
       const maidsafe::ReturnCode &res,
-      const std::list<maidsafe::LivePresence> &pres,
+      const std::list<std::string> &pres,
       bool b) {
     if (b) {
       result = res;
       presences.clear();
       std::set<std::string>::iterator it;
       for (it = presence_set.begin(); it != presence_set.end(); ++it) {
-        maidsafe::LivePresence pr;
-        pr.ParseFromString(*it);
-        presences.push_back(pr);
+        presences.push_back(*it);
       }
     } else {
       presences.clear();
       presences = pres;
-      std::list<maidsafe::LivePresence>::iterator it;
+      std::list<std::string>::iterator it;
       for (it = presences.begin(); it != presences.end(); ++it)
-        presence_set.insert(it->SerializeAsString());
+        presence_set.insert(*it);
     }
   }
   void Reset() {
@@ -232,7 +230,7 @@ class BPCallback {
   std::set<std::string> presence_set;
   maidsafe::ReturnCode result;
   std::list<maidsafe::ValidatedBufferPacketMessage> msgs;
-  std::list<maidsafe::LivePresence> presences;
+  std::list<std::string> presences;
 };
 
 class GetMsgsHelper {
@@ -262,7 +260,7 @@ class GetMsgsHelper {
       google::protobuf::Closure *done) {
     response->set_result(kAck);
     for (size_t i = 0; i < presences.size(); ++i)
-      response->add_messages(presences.at(i).SerializeAsString());
+      response->add_messages(presences.at(i));
     response->set_pmid_id(peer.node_id());
     done->Run();
   }
@@ -293,11 +291,14 @@ class GetMsgsHelper {
     maidsafe::LivePresence bp_presence;
     bp_presence.set_contact_id(sender);
     bp_presence.set_end_point("las nueces del rey mazorca");
-    presences.push_back(bp_presence);
+    maidsafe::GenericPacket gp;
+    gp.set_data(bp_presence.SerializeAsString());
+    gp.set_signature("mis enormes testiculos");
+    presences.push_back(gp.SerializeAsString());
   }
  private:
   std::vector<maidsafe::ValidatedBufferPacketMessage> msgs;
-  std::vector<maidsafe::LivePresence> presences;
+  std::vector<std::string> presences;
   crypto::Crypto co;
 };
 
@@ -1047,15 +1048,22 @@ TEST_F(TestClientBP, BEH_MAID_GetPresenceOk) {
     boost::this_thread::sleep(boost::posix_time::milliseconds(100));
   ASSERT_EQ(maidsafe::kSuccess, cb.result);
   ASSERT_EQ(size_t(3), cb.presences.size());
-  maidsafe::LivePresence pr = cb.presences.front();
+  maidsafe::GenericPacket gp;
+  ASSERT_TRUE(gp.ParseFromString(cb.presences.front()));
+  maidsafe::LivePresence pr;
+  ASSERT_TRUE(pr.ParseFromString(gp.data()));
   ASSERT_EQ("sender1", pr.contact_id());
   cb.presences.pop_front();
+  gp.Clear();
+  ASSERT_TRUE(gp.ParseFromString(cb.presences.front()));
   pr.Clear();
-  pr = cb.presences.front();
+  ASSERT_TRUE(pr.ParseFromString(gp.data()));
   ASSERT_EQ("sender2", pr.contact_id());
   cb.presences.pop_front();
+  gp.Clear();
+  ASSERT_TRUE(gp.ParseFromString(cb.presences.front()));
   pr.Clear();
-  pr = cb.presences.front();
+  ASSERT_TRUE(pr.ParseFromString(gp.data()));
   ASSERT_EQ("sender3", pr.contact_id());
 }
 

@@ -87,25 +87,21 @@ class BPCallback {
   }
   void BPGetPresence_CB(
       const maidsafe::ReturnCode &res,
-      const std::list<maidsafe::LivePresence> &pres,
+      const std::list<std::string> &pres,
       bool b) {
     if (b) {
       result = res;
       presences.clear();
       std::set<std::string>::iterator it;
       for (it = presence_set.begin(); it != presence_set.end(); ++it) {
-        maidsafe::GenericPacket gp;
-        gp.ParseFromString(*it);
-        maidsafe::LivePresence pr;
-        pr.ParseFromString(gp.data());
-        presences.push_back(pr);
+        presences.push_back(*it);
       }
     } else {
       presences.clear();
       presences = pres;
-      std::list<maidsafe::LivePresence>::iterator it;
+      std::list<std::string>::iterator it;
       for (it = presences.begin(); it != presences.end(); ++it)
-        presence_set.insert(it->SerializeAsString());
+        presence_set.insert(*it);
     }
   }
   void Reset() {
@@ -119,7 +115,7 @@ class BPCallback {
   std::set<std::string> presence_set;
   maidsafe::ReturnCode result;
   std::list<maidsafe::ValidatedBufferPacketMessage> msgs;
-  std::list<maidsafe::LivePresence> presences;
+  std::list<std::string> presences;
 };
 
 class CBPHandlerTest : public testing::Test {
@@ -332,7 +328,11 @@ TEST_F(CBPHandlerTest, FUNC_MAID_TestBPHOperations) {
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   ASSERT_EQ(maidsafe::kSuccess, cb.result);
   ASSERT_EQ(size_t(1), cb.presences.size());
-  ASSERT_EQ(sender_id, cb.presences.front().contact_id());
+  maidsafe::GenericPacket gp;
+  ASSERT_TRUE(gp.ParseFromString(cb.presences.front()));
+  maidsafe::LivePresence pr;
+  ASSERT_TRUE(pr.ParseFromString(gp.data()));
+  ASSERT_EQ(sender_id, pr.contact_id());
   printf("Step 11\n");
 
   // Request BPs not belonging to the sender
