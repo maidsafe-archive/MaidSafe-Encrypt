@@ -342,7 +342,7 @@ class RunPDVaults {
       for (int l = 0; l < no_of_clients_; ++l)
         printf("* %2i  %5i  %s... *\n", l,
                clients_[l]->msm->knode_->host_port(),
-               (base::EncodeToHex(clients_[l]->msm->knode_->node_id()))
+               clients_[l]->msm->knode_->node_id().ToStringEncoded()
                .substr(0, 31).c_str());
       printf("*                                               *\n");
     }

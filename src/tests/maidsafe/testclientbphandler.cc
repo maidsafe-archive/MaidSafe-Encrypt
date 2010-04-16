@@ -93,7 +93,7 @@ void BPCallbackFail(const kad::Contact &peer,
                     maidsafe::CreateBPResponse *response,
                     google::protobuf::Closure *done) {
   response->set_result(kNack);
-  response->set_pmid_id(peer.node_id());
+  response->set_pmid_id(peer.node_id().ToStringDecoded());
   done->Run();
 }
 
@@ -101,7 +101,7 @@ void BPCallbackSucceed(const kad::Contact &peer,
                        maidsafe::CreateBPResponse *response,
                        google::protobuf::Closure *done) {
   response->set_result(kAck);
-  response->set_pmid_id(peer.node_id());
+  response->set_pmid_id(peer.node_id().ToStringDecoded());
   done->Run();
 }
 
@@ -110,7 +110,7 @@ void BPInfoCallbackSucceed(
     maidsafe::ModifyBPInfoResponse *response,
     google::protobuf::Closure *done) {
   response->set_result(kAck);
-  response->set_pmid_id(peer.node_id());
+  response->set_pmid_id(peer.node_id().ToStringDecoded());
   done->Run();
 }
 
@@ -119,7 +119,7 @@ void BPInfoCallbackFailed(
     maidsafe::ModifyBPInfoResponse *response,
     google::protobuf::Closure *done) {
   response->set_result(kNack);
-  response->set_pmid_id(peer.node_id());
+  response->set_pmid_id(peer.node_id().ToStringDecoded());
   done->Run();
 }
 
@@ -128,7 +128,7 @@ void BPAddMsgCallbackSucceed(
     maidsafe::AddBPMessageResponse *response,
     google::protobuf::Closure *done) {
   response->set_result(kAck);
-  response->set_pmid_id(peer.node_id());
+  response->set_pmid_id(peer.node_id().ToStringDecoded());
   done->Run();
 }
 
@@ -137,7 +137,7 @@ void BPAddMsgCallbackFailed(
     maidsafe::AddBPMessageResponse *response,
     google::protobuf::Closure *done) {
   response->set_result(kNack);
-  response->set_pmid_id(peer.node_id());
+  response->set_pmid_id(peer.node_id().ToStringDecoded());
   done->Run();
 }
 
@@ -146,7 +146,7 @@ void BPAddPresenceCallbackSucceed(
     maidsafe::AddBPPresenceResponse *response,
     google::protobuf::Closure *done) {
   response->set_result(kAck);
-  response->set_pmid_id(peer.node_id());
+  response->set_pmid_id(peer.node_id().ToStringDecoded());
   done->Run();
 }
 
@@ -155,7 +155,7 @@ void BPAddPresenceCallbackFailed(
     maidsafe::AddBPPresenceResponse *response,
     google::protobuf::Closure *done) {
   response->set_result(kNack);
-  response->set_pmid_id(peer.node_id());
+  response->set_pmid_id(peer.node_id().ToStringDecoded());
   done->Run();
 }
 
@@ -243,7 +243,7 @@ class GetMsgsHelper {
     response->set_result(kAck);
     for (size_t i = 0; i < msgs.size(); ++i)
       response->add_messages(msgs.at(i).SerializeAsString());
-    response->set_pmid_id(peer.node_id());
+    response->set_pmid_id(peer.node_id().ToStringDecoded());
     done->Run();
   }
   void BPGetMsgsCallbackFailed(
@@ -251,7 +251,7 @@ class GetMsgsHelper {
       maidsafe::GetBPMessagesResponse *response,
       google::protobuf::Closure *done) {
     response->set_result(kNack);
-    response->set_pmid_id(peer.node_id());
+    response->set_pmid_id(peer.node_id().ToStringDecoded());
     done->Run();
   }
   void BPGetPresenceCallbackSucceed(
@@ -261,7 +261,7 @@ class GetMsgsHelper {
     response->set_result(kAck);
     for (size_t i = 0; i < presences.size(); ++i)
       response->add_messages(presences.at(i));
-    response->set_pmid_id(peer.node_id());
+    response->set_pmid_id(peer.node_id().ToStringDecoded());
     done->Run();
   }
   void BPGetPresenceCallbackFailed(
@@ -269,7 +269,7 @@ class GetMsgsHelper {
       maidsafe::GetBPPresenceResponse *response,
       google::protobuf::Closure *done) {
     response->set_result(kNack);
-    response->set_pmid_id(peer.node_id());
+    response->set_pmid_id(peer.node_id().ToStringDecoded());
     done->Run();
   }
   void AddMessage(const std::string &msg,

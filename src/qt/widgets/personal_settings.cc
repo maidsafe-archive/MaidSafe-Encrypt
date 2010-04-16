@@ -38,7 +38,7 @@ void PersonalSettings::setActive(bool b) {
   if (b && !init_) {
     init_ = true;
     ui_.usernameEdit->setText(ClientController::instance()->publicUsername());
-    ui_.messageEdit->setText("Hello This is my message!");
+    ui_.messageEdit->setText("Hello, this is my message!");
   }
 }
 

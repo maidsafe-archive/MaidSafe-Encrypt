@@ -166,7 +166,7 @@ void Messages::updateHtml() {
   }
 
   if (messages_.isEmpty()) {
-    html = tr("There are no new messages");
+    html = tr("There are no new messages.");
   }
 
   ui_.textBrowser->setHtml(html);

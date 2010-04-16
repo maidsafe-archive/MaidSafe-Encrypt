@@ -60,19 +60,19 @@ int main(int argc, char *argv[]) {
   //Set up Internationalization
   QApplication app(argc, argv);
 
-  QTranslator qtTranslator;
-  qtTranslator.load("qt_" + QLocale::system().name(),
-             QLibraryInfo::location(QLibraryInfo::TranslationsPath));
-  app.installTranslator(&qtTranslator);
+//  QTranslator qtTranslator;
+//  qtTranslator.load("qt_" + QLocale::system().name(),
+//             QLibraryInfo::location(QLibraryInfo::TranslationsPath));
+//  app.installTranslator(&qtTranslator);
+//
+//  QTranslator myappTranslator;
+//  bool res = myappTranslator.load(":/translations/pd_translation_de_test.qm");
+//  app.installTranslator(&myappTranslator);
 
-  QTranslator myappTranslator;
-  bool res = myappTranslator.load(":/translations/pd_translation_de_test.qm");
-  app.installTranslator(&myappTranslator);
+//  qDebug() << "Translate Result"  << res;
 
-  qDebug() << "Translate Result"  << res;
-
-  app.setOrganizationDomain("maidsafe.net");
-  app.setOrganizationName("MaidSafe");
+  app.setOrganizationDomain("http://www.maidsafe.net");
+  app.setOrganizationName("maidsafe.net Ltd.");
   app.setApplicationName("Perpetual Data");
   app.setApplicationVersion("0.1");
 

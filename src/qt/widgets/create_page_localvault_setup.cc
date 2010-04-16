@@ -76,8 +76,8 @@ void CreateLocalVaultPage::cleanupPage() {
           .arg(QString(availableSpace_.c_str())));
   ui_.labelSpace->setText(qs);
   ui_.lineDirectory->setReadOnly(true);
-  ui_.lineSpace->setText(tr("10240"));
-  ui_.linePort->setText(tr("0"));
+  ui_.lineSpace->setText("10240");
+  ui_.linePort->setText("0");
   ui_.lineDirectory->setText(QString::fromStdString(
       file_system::ApplicationDataDir().string()));
 }
@@ -107,9 +107,9 @@ void CreateLocalVaultPage::onSpaceEdited(const QString& text) {
     if (spaceChosen < spaceAvailable) {
       spaceReady_ = true;
     } else {
-      QMessageBox::warning(this, tr("Error!"), tr("You don't have that much "
-                           "space!"));
-      ui_.lineSpace->setText(tr("1024"));
+      QMessageBox::warning(this, tr("Error"), tr("You don't have that much "
+                                                 "space available!"));
+      ui_.lineSpace->setText("1024");
       return;
     }
     if (dirReady_) {
@@ -122,12 +122,14 @@ void CreateLocalVaultPage::onSpaceEdited(const QString& text) {
 }
 
 void CreateLocalVaultPage::onPortModified() {
-  if (ui_.linePort->text() != tr("0")) {
-    int ret = QMessageBox::warning(this, tr("Warning!"),
-              tr("It is a recommended setting to leave 0 on this field!"),
-              QMessageBox::Ok|QMessageBox::Cancel);
-    if (ret != 1024)
-      ui_.linePort->setText(tr("0"));
+  if (ui_.linePort->text().toInt() != 0) {
+    int ret = QMessageBox::question(this, tr("Change port?"),
+              tr("It is recommended to leave the port as 0, so it can be "
+                 "chosen automatically. Do you really want to change this "
+                 "setting?"),
+              QMessageBox::Yes|QMessageBox::No);
+    if (ret != QMessageBox::Yes)
+      ui_.linePort->setText("0");
   }
 }
 

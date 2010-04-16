@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Create Public UserName</string>
+   <string/>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <property name="sizeConstraint">
@@ -26,9 +26,7 @@
       </sizepolicy>
      </property>
      <property name="text">
-      <string>To complete the creation of your account you need to create a public username.
-This is the name you might share with other users so they can communicate with you
-You can change you public username later if you wish. </string>
+      <string>To complete the creation of your account, you need to create a public username. This is the name you share with other users so they can communicate with you.</string>
      </property>
      <property name="wordWrap">
       <bool>true</bool>
@@ -46,11 +44,8 @@ You can change you public username later if you wish. </string>
      </item>
      <item>
       <widget class="QPushButton" name="create">
-       <property name="toolTip">
-        <string>Click here to create your public username</string>
-       </property>
        <property name="text">
-        <string>Create your public username!</string>
+        <string>Create Public Username</string>
        </property>
       </widget>
      </item>

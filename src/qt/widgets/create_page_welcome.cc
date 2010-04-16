@@ -21,7 +21,7 @@
 CreateWelcomePage::CreateWelcomePage(QWidget* parent)
     : QWizardPage(parent) {
   ui_.setupUi(this);
-  setTitle(tr("Create user"));
+  setTitle(tr("Create User Account"));
 }
 
 CreateWelcomePage::~CreateWelcomePage() {}

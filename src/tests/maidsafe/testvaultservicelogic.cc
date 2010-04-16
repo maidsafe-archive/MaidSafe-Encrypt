@@ -90,7 +90,7 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_AddToRemoteRefList) {
   for (size_t i = 0; i < good_contacts_.size(); ++i) {
     maidsafe::AddToReferenceListResponse add_ref_response;
     add_ref_response.set_result(kAck);
-    add_ref_response.set_pmid(good_contacts_.at(i).node_id());
+    add_ref_response.set_pmid(good_contacts_.at(i).node_id().ToStringDecoded());
     good_responses.push_back(add_ref_response);
     if (i < good_contacts_.size() - 1)
       good_responses_less_one.push_back(add_ref_response);
@@ -102,7 +102,8 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_AddToRemoteRefList) {
   std::vector<maidsafe::AddToReferenceListResponse>
       fail_initialise_responses(good_responses);
   for (size_t i = kKadUpperThreshold - 1; i < good_contacts_.size(); ++i) {
-    bad_pmid_responses.at(i).set_pmid(good_contacts_.at(i - 1).node_id());
+    bad_pmid_responses.at(i).set_pmid(
+        good_contacts_.at(i - 1).node_id().ToStringDecoded());
     too_few_ack_responses.at(i).set_result(kNack);
     fail_initialise_responses.at(i).clear_result();
   }
@@ -296,7 +297,8 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_AmendRemoteAccount) {
   for (size_t i = 0; i < good_contacts_.size(); ++i) {
     maidsafe::AmendAccountResponse amend_acc_response;
     amend_acc_response.set_result(kAck);
-    amend_acc_response.set_pmid(good_contacts_.at(i).node_id());
+    amend_acc_response.set_pmid(
+        good_contacts_.at(i).node_id().ToStringDecoded());
     good_responses.push_back(amend_acc_response);
     if (i < good_contacts_.size() - 1)
       good_responses_less_one.push_back(amend_acc_response);
@@ -308,7 +310,8 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_AmendRemoteAccount) {
   std::vector<maidsafe::AmendAccountResponse>
       fail_initialise_responses(good_responses);
   for (size_t i = kKadUpperThreshold - 1; i < good_contacts_.size(); ++i) {
-    bad_pmid_responses.at(i).set_pmid(good_contacts_.at(i - 1).node_id());
+    bad_pmid_responses.at(i).set_pmid(
+        good_contacts_.at(i - 1).node_id().ToStringDecoded());
     too_few_ack_responses.at(i).set_result(kNack);
     fail_initialise_responses.at(i).clear_result();
   }
@@ -509,7 +512,8 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_RemoteVaultAbleToStore) {
   for (size_t i = 0; i < good_contacts_.size(); ++i) {
     maidsafe::AccountStatusResponse acc_status_response;
     acc_status_response.set_result(kAck);
-    acc_status_response.set_pmid(good_contacts_.at(i).node_id());
+    acc_status_response.set_pmid(
+        good_contacts_.at(i).node_id().ToStringDecoded());
     good_responses.push_back(acc_status_response);
     if (i < good_contacts_.size() - 1)
       good_responses_less_one.push_back(acc_status_response);
@@ -521,7 +525,8 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_RemoteVaultAbleToStore) {
   std::vector<maidsafe::AccountStatusResponse>
       fail_initialise_responses(good_responses);
   for (size_t i = kKadLowerThreshold - 1; i < good_contacts_.size(); ++i) {
-    bad_pmid_responses.at(i).set_pmid(good_contacts_.at(i - 1).node_id());
+    bad_pmid_responses.at(i).set_pmid(
+        good_contacts_.at(i - 1).node_id().ToStringDecoded());
     too_few_ack_responses.at(i).set_result(kNack);
     fail_initialise_responses.at(i).clear_result();
   }

@@ -62,7 +62,7 @@ void VaultRpcs::AddToReferenceList(
     maidsafe::AddToReferenceListResponse *add_to_reference_list_response,
     rpcprotocol::Controller *controller,
     google::protobuf::Closure *done) {
-  if (peer.node_id() == own_id_) {
+  if (peer.node_id().ToStringDecoded() == own_id_) {
     add_to_reference_list_response->set_result(kNotRemote);
     done->Run();
     return;

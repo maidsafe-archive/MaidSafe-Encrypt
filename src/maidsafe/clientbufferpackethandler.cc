@@ -251,24 +251,30 @@ void ClientBufferPacketHandler::FindNodes(
     boost::shared_ptr<ChangeBPData> data) {
   switch (data->type) {
     case CREATEBP:
-        knode_->FindCloseNodes(data->create_request.bufferpacket_name(), cb);
+        knode_->FindCloseNodes(
+            kad::KadId(data->create_request.bufferpacket_name(), false), cb);
         break;
     case MODIFY_INFO:
-        knode_->FindCloseNodes(data->modify_request.bufferpacket_name(), cb);
+        knode_->FindCloseNodes(
+            kad::KadId(data->modify_request.bufferpacket_name(), false), cb);
         break;
     case GET_MESSAGES:
-        knode_->FindCloseNodes(data->get_msgs_request.bufferpacket_name(), cb);
+        knode_->FindCloseNodes(
+            kad::KadId(data->get_msgs_request.bufferpacket_name(), false), cb);
         break;
     case ADD_MESSAGE:
-        knode_->FindCloseNodes(data->add_msg_request.bufferpacket_name(), cb);
+        knode_->FindCloseNodes(
+            kad::KadId(data->add_msg_request.bufferpacket_name(), false), cb);
         break;
     case GET_PRESENCE:
-        knode_->FindCloseNodes(data->get_presence_request.bufferpacket_name(),
-                               cb);
+        knode_->FindCloseNodes(
+            kad::KadId(data->get_presence_request.bufferpacket_name(), false),
+            cb);
         break;
     case ADD_PRESENCE:
-        knode_->FindCloseNodes(data->add_presence_request.bufferpacket_name(),
-                               cb);
+        knode_->FindCloseNodes(
+            kad::KadId(data->add_presence_request.bufferpacket_name(), false),
+            cb);
         break;
   }
 }
@@ -456,7 +462,7 @@ void ClientBufferPacketHandler::ActionOnBpDone(
             if (cb_datas->at(index).create_response->IsInitialized() &&
                 cb_datas->at(index).create_response->result() == kAck &&
                 cb_datas->at(index).create_response->pmid_id() ==
-                    cb_datas->at(index).ctc.node_id()) {
+                    cb_datas->at(index).ctc.node_id().ToStringDecoded()) {
                   ++cb_datas->at(index).data->successful_ops;
                 }
             delete cb_datas->at(index).create_response;
@@ -465,7 +471,7 @@ void ClientBufferPacketHandler::ActionOnBpDone(
             if (cb_datas->at(index).modify_response->IsInitialized() &&
                 cb_datas->at(index).modify_response->result() == kAck &&
                 cb_datas->at(index).modify_response->pmid_id() ==
-                    cb_datas->at(index).ctc.node_id()) {
+                    cb_datas->at(index).ctc.node_id().ToStringDecoded()) {
                   ++cb_datas->at(index).data->successful_ops;
                 }
             delete cb_datas->at(index).modify_response;
@@ -474,7 +480,7 @@ void ClientBufferPacketHandler::ActionOnBpDone(
             if (cb_datas->at(index).get_msgs_response->IsInitialized() &&
                 cb_datas->at(index).get_msgs_response->result() == kAck &&
                 cb_datas->at(index).get_msgs_response->pmid_id() ==
-                    cb_datas->at(index).ctc.node_id()) {
+                    cb_datas->at(index).ctc.node_id().ToStringDecoded()) {
                   ++cb_datas->at(index).data->successful_ops;
                   std::list<ValidatedBufferPacketMessage> msgs =
                       ValidateMsgs(cb_datas->at(index).get_msgs_response,
@@ -487,7 +493,7 @@ void ClientBufferPacketHandler::ActionOnBpDone(
             if (cb_datas->at(index).add_msg_response->IsInitialized() &&
                 cb_datas->at(index).add_msg_response->result() == kAck &&
                 cb_datas->at(index).add_msg_response->pmid_id() ==
-                    cb_datas->at(index).ctc.node_id()) {
+                    cb_datas->at(index).ctc.node_id().ToStringDecoded()) {
                   ++cb_datas->at(index).data->successful_ops;
                 }
             delete cb_datas->at(index).add_msg_response;
@@ -496,7 +502,7 @@ void ClientBufferPacketHandler::ActionOnBpDone(
             if (cb_datas->at(index).get_presence_response->IsInitialized() &&
                 cb_datas->at(index).get_presence_response->result() == kAck &&
                 cb_datas->at(index).get_presence_response->pmid_id() ==
-                    cb_datas->at(index).ctc.node_id()) {
+                    cb_datas->at(index).ctc.node_id().ToStringDecoded()) {
                   ++cb_datas->at(index).data->successful_ops;
                   std::list<std::string> lps;
                   GetBPPresenceResponse *response =
@@ -512,7 +518,7 @@ void ClientBufferPacketHandler::ActionOnBpDone(
             if (cb_datas->at(index).add_presence_response->IsInitialized() &&
                 cb_datas->at(index).add_presence_response->result() == kAck &&
                 cb_datas->at(index).add_presence_response->pmid_id() ==
-                    cb_datas->at(index).ctc.node_id()) {
+                    cb_datas->at(index).ctc.node_id().ToStringDecoded()) {
                   ++cb_datas->at(index).data->successful_ops;
                 }
             delete cb_datas->at(index).add_msg_response;

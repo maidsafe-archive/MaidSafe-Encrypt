@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Security Settings</string>
+   <string/>
   </property>
   <layout class="QGridLayout" name="gridLayout">
    <item row="0" column="0">
@@ -23,7 +23,7 @@
       <item>
        <widget class="QGroupBox" name="groupBox_2">
         <property name="title">
-         <string>Login Settings</string>
+         <string>Change Login</string>
         </property>
         <property name="flat">
          <bool>true</bool>
@@ -32,7 +32,7 @@
          <item>
           <widget class="QLabel" name="usernameLbl">
            <property name="text">
-            <string>Enter new username here :</string>
+            <string>New username:</string>
            </property>
           </widget>
          </item>
@@ -42,7 +42,7 @@
          <item>
           <widget class="QLabel" name="label">
            <property name="text">
-            <string>Enter new pin here : </string>
+            <string>New PIN:</string>
            </property>
           </widget>
          </item>
@@ -52,7 +52,7 @@
          <item>
           <widget class="QLabel" name="label_2">
            <property name="text">
-            <string>Enter new password here : </string>
+            <string>New password:</string>
            </property>
           </widget>
          </item>
@@ -60,13 +60,6 @@
           <widget class="QLineEdit" name="passwordEdit"/>
          </item>
         </layout>
-       </widget>
-      </item>
-      <item>
-       <widget class="QGroupBox" name="groupBox_3">
-        <property name="title">
-         <string>GroupBox</string>
-        </property>
        </widget>
       </item>
      </layout>

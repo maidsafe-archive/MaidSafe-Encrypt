@@ -201,7 +201,7 @@ class PDVault {
   void CleanUp();
   VaultStatus vault_status();
   void SetVaultStatus(const VaultStatus &vault_status);
-  std::string node_id() const { return knode_->node_id(); }
+  std::string node_id() const { return knode_->node_id().ToStringDecoded(); }
   std::string host_ip() const { return knode_->host_ip(); }
   boost::uint16_t host_port() const { return knode_->host_port(); }
   std::string local_host_ip() const { return knode_->local_host_ip(); }

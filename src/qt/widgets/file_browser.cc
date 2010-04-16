@@ -160,7 +160,7 @@ void FileBrowser::onSendFileClicked() {
   QTreeWidgetItem* theItem = ui_.driveTreeWidget->currentItem();
   QString filename = theItem->text(0);
   bool ok;
-  QString text = QInputDialog::getText(this, tr("Who will recieve the file?"),
+  QString text = QInputDialog::getText(this, tr("Who will receive the file?"),
                                        tr("Recipient"),
                                        QLineEdit::Normal,"", &ok);
 
@@ -189,10 +189,11 @@ void FileBrowser::onDeleteFileClicked() {
   bool ok;
   QTreeWidgetItem* theItem = ui_.driveTreeWidget->currentItem();
   qDebug() << theItem->text(0);
-  if(theItem->text(1) == "Network") {
+  if(theItem->text(1) == tr("Network")) {
     QMessageBox msgBox;
-    msgBox.setText(tr("Delete Item."));
-    msgBox.setInformativeText(tr("Do you wish to remove %1").arg(theItem->text(0)));
+    msgBox.setText(tr("Delete Item"));
+    msgBox.setInformativeText(
+        tr("Do you wish to remove %1?").arg(theItem->text(0)));
     msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
     msgBox.setDefaultButton(QMessageBox::Save);
     int ret = msgBox.exec();
@@ -210,7 +211,7 @@ void FileBrowser::onDeleteFileClicked() {
   } else {
     QMessageBox msgBox;
     msgBox.setIcon(QMessageBox::Warning);
-    msgBox.setText(tr("You can only delete networked files"));
+    msgBox.setText(tr("You can only delete networked files."));
     msgBox.exec();
   }
 }
@@ -221,8 +222,8 @@ void FileBrowser::onNewFolderClicked() {
   qDebug() << theItem->text(1);
 
     QString text = QInputDialog::getText(this, tr("Create Directory"),
-                                       tr("Directory Name:"), QLineEdit::Normal,
-                                       tr("New Folder"), &ok);
+        tr("Name of the new directory:"), QLineEdit::Normal,
+        tr("New Folder", "default directory name"), &ok);
     if (ok && !text.isEmpty()){
       MakeDirectoryThread* mdt = new MakeDirectoryThread(currentDir_ + text,
                                                           this);
@@ -238,33 +239,34 @@ void FileBrowser::onRenameFileClicked() {
   bool ok;
   QTreeWidgetItem* theItem = ui_.driveTreeWidget->currentItem();
   qDebug() << theItem->text(1);
-  if(theItem->text(1) == "Network"){
+  if(theItem->text(1) == tr("Network")){
 
     QString text = QInputDialog::getText(this, tr("Rename File"),
-                                       tr("File Name:"), QLineEdit::Normal,
-                                       theItem->text(0), &ok);
+        tr("New file name:"), QLineEdit::Normal, theItem->text(0), &ok);
     if (ok && !text.isEmpty()){
-      RenameFileThread* rft = new RenameFileThread(currentDir_ + theItem->text(0),
-                                                  currentDir_ + text ,this);
+      RenameFileThread* rft = new RenameFileThread(currentDir_ +
+          theItem->text(0), currentDir_ + text ,this);
 
-      connect(rft, SIGNAL(renameFileCompleted(int,const QString&, const QString&)),
-          this, SLOT(onRenameFileCompleted(int,const QString&, const QString&)));
+      connect(rft,
+              SIGNAL(renameFileCompleted(int,const QString&, const QString&)),
+              this,
+              SLOT(onRenameFileCompleted(int,const QString&, const QString&)));
 
       rft->start();
     }
   } else {
     QMessageBox msgBox;
     msgBox.setIcon(QMessageBox::Warning);
-    msgBox.setText(tr("Renaming is only allowed for Networked files"));
+    msgBox.setText(tr("Renaming is only allowed for networked files."));
     msgBox.exec();
   }
 }
 
 void FileBrowser::onSaveFileClicked() {
   QTreeWidgetItem* theItem = ui_.driveTreeWidget->currentItem();
-  if (theItem->text(1) == "Local") {
+  if (theItem->text(1) == tr("Local")) {
     //ui_.driveTreeWidget->editItem(item, 1);
-    theItem->setText(1, "Uploading");
+    theItem->setText(1, tr("Uploading"));
     saveFileToNetwork(currentDir_ + theItem->text(0));
   }
 }
@@ -336,9 +338,10 @@ int FileBrowser::populateDirectory(QString dir) {
       QTreeWidgetItem *newItem = new QTreeWidgetItem(ui_.driveTreeWidget);
       newItem->setIcon(0, theIcon);
       newItem->setText(0, item);
-      newItem->setText(1, "Network");
+      newItem->setText(1, tr("Network"));
       newItem->setText(2, tr("%1 KB").arg(ceil(mdm.file_size_low()/1024)));
-      newItem->setText(4, tr("%1").arg(lastModified->toString("dd/MM/yyyy hh/mm")));
+      // TODO(Team#) use date format from the user's locale
+      newItem->setText(4, lastModified->toString("dd/MM/yyyy hh:mm"));
       ui_.driveTreeWidget->insertTopLevelItem(rowCount, newItem);
 
      } else {
@@ -352,13 +355,14 @@ int FileBrowser::populateDirectory(QString dir) {
       std::string fullFilePath = rootPath_.toStdString() +
                                 currentDir_.toStdString() + s;
       if (fs::exists(fullFilePath)) {
-        newItem->setText(1, "Local");
+        newItem->setText(1, tr("Local"));
       } else {
-        newItem->setText(1, "Network");
+        newItem->setText(1, tr("Network"));
       }
       newItem->setText(2, tr("%1 KB").arg(ceil(mdm.file_size_low()/1024)));
-      newItem->setText(3, tr("%1 File").arg(item.right(3)));
-      newItem->setText(4, tr("%1").arg(lastModified->toString("dd/MM/yyyy hh/mm")));
+      newItem->setText(3, tr("%1 File").arg(item.section('.', -1)));
+      // TODO(Team#) use date format from the user's locale
+      newItem->setText(4, lastModified->toString("dd/MM/yyyy hh:mm"));
       ui_.driveTreeWidget->insertTopLevelItem(rowCount, newItem);
     }
     children.erase(children.begin());
@@ -369,29 +373,32 @@ int FileBrowser::populateDirectory(QString dir) {
 void FileBrowser::onItemDoubleClicked(QTreeWidgetItem* item, int column){
   qDebug() << "Entered ItemDoubleClicked";
   if (item->text(3) == ""){
-    qDebug() << "in ItemDoubleClicked open folder" << "/"+item->text(0)+"/";
-    populateDirectory(currentDir_ +item->text(0)+"/");
+    qDebug() << "in ItemDoubleClicked open folder" << "/" << item->text(0) <<
+        "/";
+    populateDirectory(currentDir_  + item->text(0) + "/");
   }
   else {
-    if (item->text(1) == "Network"){
+    if (item->text(1) == tr("Network")){
       ui_.driveTreeWidget->editItem(item, 1);
-      item->setText(1, "Downloading");
+      item->setText(1, tr("Downloading"));
 
-      ReadFileThread* rft = new ReadFileThread(currentDir_ + item->text(0), this);
+      ReadFileThread* rft = new ReadFileThread(currentDir_ + item->text(0),
+                                               this);
 
       connect(rft, SIGNAL(readFileCompleted(int,const QString&)),
           this, SLOT(onReadFileCompleted(int,const QString&)));
 
       rft->start();
-    } else if (item->text(1) == "Downloading" || item->text(1) == "Uploading") {
+    } else if (item->text(1) == tr("Downloading") ||
+               item->text(1) == tr("Uploading")) {
       QMessageBox msgBox;
       msgBox.setIcon(QMessageBox::Warning);
-      msgBox.setText(tr("Please wait for file to load"));
+      msgBox.setText(tr("Please wait for the file transfer to finish."));
       msgBox.exec();
     } else {
       QString path = rootPath_ + currentDir_ + item->text(0);
 
-      qDebug() << "Item Double Clicked open file :" + path;
+      qDebug() << "Item Double Clicked open file: " + path;
 #ifdef MAIDSAFE_WIN32
 
       QString operation("open");
@@ -443,7 +450,7 @@ void FileBrowser::onReadFileCompleted(int success, const QString& filepath) {
     {
       QTreeWidgetItem* theWidget = widgetList[0];
       ui_.driveTreeWidget->editItem(theWidget, 1);
-      theWidget->setText(1, "Local");
+      theWidget->setText(1, tr("Local"));
 
       qDebug() << "widgetList not empty";
     }
@@ -507,7 +514,7 @@ void FileBrowser::onSaveFileCompleted(int success, const QString& filepath) {
     {
       QTreeWidgetItem* theWidget = widgetList[0];
       ui_.driveTreeWidget->editItem(theWidget, 1);
-      theWidget->setText(1, "Network");
+      theWidget->setText(1, tr("Network"));
 
       qDebug() << "widgetList not empty";
     }
@@ -519,15 +526,15 @@ void FileBrowser::onSaveFileCompleted(int success, const QString& filepath) {
 
 void FileBrowser::uploadFileFromLocal(const QString& filePath) {
   std::string filename = filePath.toStdString();
-  filename.erase(0,filename.find_last_of("/")+1);
-  qDebug() << "Upload File From Local : "
+  filename.erase(0, filename.find_last_of("/") + 1);
+  qDebug() << "Upload File From Local: "
            << QString::fromStdString(filename);
 
-  std::string fullFilePath = rootPath_.toStdString() +
-                                currentDir_.toStdString() + filename;
+  std::string fullFilePath = rootPath_.toStdString() + currentDir_.toStdString()
+      + filename;
 
   QList<QTreeWidgetItem *> widgetList = ui_.driveTreeWidget->findItems(
-                      QString::fromStdString(filename), Qt::MatchExactly	, 0);
+      QString::fromStdString(filename), Qt::MatchExactly, 0);
 
   if(widgetList.isEmpty()) {
     fs::copy_file(filePath.toStdString(), fullFilePath);
@@ -539,9 +546,8 @@ void FileBrowser::uploadFileFromLocal(const QString& filePath) {
   } else {
     QMessageBox msgBox;
     msgBox.setIcon(QMessageBox::Warning);
-    msgBox.setText(tr(
-    "File with same name already exists! please rename your file before"
-    " uploading"));
+    msgBox.setText(tr("A file with the same name already exists! Please rename "
+                      "your file before uploading."));
     msgBox.exec();
   }
 }
@@ -556,9 +562,9 @@ void FileBrowser::saveFileToNetwork(const QString& filePath){
 
 void FileBrowser::onUploadClicked(bool){
   QStringList fileNames = QFileDialog::getOpenFileNames(this,
-                                                        tr("Upload A File"),
+                                                        tr("Upload a File"),
                                                         "",
-                                                        tr("Any file (*)"));
+                                                        tr("Any file") + "(*)");
   if (fileNames.isEmpty()) {
     return;
   }

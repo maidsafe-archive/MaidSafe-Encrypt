@@ -231,7 +231,8 @@ void VaultServiceLogic::RemoteOpStageTwo(
 
   // Set up holders for forthcoming individual RPCs
   for (size_t i = 0; i < data->contacts.size(); ++i) {
-    typename T::RemoteOpHolder holder(data->contacts.at(i).node_id());
+    typename T::RemoteOpHolder holder(
+        data->contacts.at(i).node_id().ToStringDecoded());
     data->data_holders.push_back(holder);
   }
 
@@ -255,7 +256,7 @@ void VaultServiceLogic::SendRpcs(
     boost::shared_ptr<AddToReferenceListOpData> data) {
   for (boost::uint16_t j = 0; j < data->contacts.size(); ++j) {
     data->request.set_request_signature(GetSignedRequest(data->kad_key,
-        data->contacts.at(j).node_id()));
+        data->contacts.at(j).node_id().ToStringDecoded()));
     google::protobuf::Closure* done = google::protobuf::NewCallback(this,
         &VaultServiceLogic::RemoteOpStageThree, j, data);
     vault_rpcs_->AddToReferenceList(data->contacts.at(j),

@@ -567,7 +567,7 @@ void MaidsafeStoreManager::LoadChunk_FindCB(const std::string &result,
   kad::Contact cache_holder(find_rsp.alternative_value_holder());
 #ifdef DEBUG
     printf("In MSM::LoadChunk_FindCB, node %s has cached chunk %s.\n",
-           HexSubstr(cache_holder.node_id()).c_str(),
+           HexSubstr(cache_holder.node_id().ToStringDecoded()).c_str(),
            HexSubstr(data->chunk_name).c_str());
 #endif
     data->AddChunkHolder(cache_holder);
@@ -1084,12 +1084,13 @@ int MaidsafeStoreManager::GetAccountDetails(boost::uint64_t *space_offered,
   std::vector<AccountStatusRequest> account_status_requests;
   for (size_t i = 0; i < data->contacts.size(); ++i) {
     std::string request_signature = co.AsymSign(co.Hash(
-        pub_key_sig + account_name + data->contacts.at(i).node_id(), "",
+        pub_key_sig + account_name +
+        data->contacts.at(i).node_id().ToStringDecoded(), "",
         crypto::STRING_STRING, false), "", priv_key, crypto::STRING_STRING);
     account_status_request.set_request_signature(request_signature);
     account_status_requests.push_back(account_status_request);
     AccountStatusData::AccountStatusDataHolder holder(
-        data->contacts.at(i).node_id());
+        data->contacts.at(i).node_id().ToStringDecoded());
     data->data_holders.push_back(holder);
   }
 
@@ -1593,7 +1594,7 @@ void MaidsafeStoreManager::AddToWatchList(StoreData store_data) {
   }
   for (size_t i = 0; i < data->contacts.size(); ++i) {
     WatchListOpData::AddToWatchDataHolder holder(
-        data->contacts.at(i).node_id());
+        data->contacts.at(i).node_id().ToStringDecoded());
     data->add_to_watchlist_data_holders.push_back(holder);
   }
 
@@ -1840,8 +1841,8 @@ int MaidsafeStoreManager::GetStoreRequests(
     return kStoreManagerException;
   }
   std::string request_signature;
-  GetRequestSignature(store_data, send_chunk_data->peer.node_id(),
-                      &request_signature);
+  GetRequestSignature(store_data,
+      send_chunk_data->peer.node_id().ToStringDecoded(), &request_signature);
   if (request_signature.empty())
     return kGetRequestSigError;
   store_prep_request.set_chunkname(store_data.data_name);
@@ -1895,7 +1896,7 @@ int MaidsafeStoreManager::GetAddToWatchListRequests(
   for (size_t i = 0; i < recipients.size(); ++i) {
     std::string signature;
     GetRequestSignature(store_data.data_name, store_data.dir_type,
-        recipients.at(i).node_id(), store_data.public_key,
+        recipients.at(i).node_id().ToStringDecoded(), store_data.public_key,
         store_data.public_key_signature, store_data.private_key, &signature);
     if (signature.empty()) {
       add_to_watch_list_requests->clear();
@@ -1923,7 +1924,7 @@ int MaidsafeStoreManager::GetRemoveFromWatchListRequests(
   for (size_t i = 0; i < recipients.size(); ++i) {
     std::string signature;
     GetRequestSignature(store_data.data_name, store_data.dir_type,
-        recipients.at(i).node_id(), store_data.public_key,
+        recipients.at(i).node_id().ToStringDecoded(), store_data.public_key,
         store_data.public_key_signature, store_data.private_key, &signature);
     if (signature.empty()) {
       remove_from_watch_list_requests->clear();
@@ -2073,7 +2074,8 @@ void MaidsafeStoreManager::SendPrepCallback(
 //  printf("In MaidsafeStoreManager::SendPrepCallback.\n");
 #endif
   ++send_chunk_data->attempt;
-  int result = ValidatePrepResponse(send_chunk_data->peer.node_id(),
+  int result = ValidatePrepResponse(
+      send_chunk_data->peer.node_id().ToStringDecoded(),
       send_chunk_data->store_prep_request.signed_size(),
       &send_chunk_data->store_prep_response);
   if (result == kSuccess) {
@@ -2193,23 +2195,23 @@ void MaidsafeStoreManager::SendContentCallback(
   if (!response.IsInitialized()) {
 #ifdef DEBUG
     printf("In MSM::SendContentCallback, resp from pmid %s uninitialised.\n",
-           HexSubstr(send_chunk_data->peer.node_id()).c_str());
+        HexSubstr(send_chunk_data->peer.node_id().ToStringDecoded()).c_str());
 #endif
     result = kSendContentFailure;
   }
   if (result == kSuccess &&
-      response.pmid() != send_chunk_data->peer.node_id()) {
+      response.pmid() != send_chunk_data->peer.node_id().ToStringDecoded()) {
 #ifdef DEBUG
     printf("In MSM::SendContentCallback, ids are not OK: response pmid: %s pee"
-           "r node ID: %s\n", HexSubstr(response.pmid()).c_str(),
-           HexSubstr(send_chunk_data->peer.node_id()).c_str());
+        "r node ID: %s\n", HexSubstr(response.pmid()).c_str(),
+        HexSubstr(send_chunk_data->peer.node_id().ToStringDecoded()).c_str());
 #endif
     result = kSendContentFailure;
   }
   if (result == kSuccess && response.result() != kAck) {
 #ifdef DEBUG
     printf("In MSM::SendContentCallback, resp from pmid %s returned %u\n",
-           HexSubstr(send_chunk_data->peer.node_id()).c_str(),
+           HexSubstr(send_chunk_data->peer.node_id().ToStringDecoded()).c_str(),
            response.result());
 #endif
     result = kSendContentFailure;
@@ -2340,7 +2342,7 @@ void MaidsafeStoreManager::RemoveFromWatchList(const StoreData &store_data) {
   }
   for (size_t i = 0; i < data->contacts.size(); ++i) {
     WatchListOpData::RemoveFromWatchDataHolder holder(
-        data->contacts.at(i).node_id());
+        data->contacts.at(i).node_id().ToStringDecoded());
     data->remove_from_watchlist_data_holders.push_back(holder);
   }
 
@@ -2525,7 +2527,8 @@ void MaidsafeStoreManager::SendPacket(boost::shared_ptr<StoreData> store_data) {
   sr.set_signed_request(signed_request);
   base::callback_func_type cb = boost::bind(
       &MaidsafeStoreManager::SendPacketCallback, this, _1, store_data);
-  knode_->StoreValue(store_data->data_name, signed_value, sr, 31556926, cb);
+  knode_->StoreValue(kad::KadId(store_data->data_name, false), signed_value, sr,
+      31556926, cb);
 }
 
 void MaidsafeStoreManager::SendPacketCallback(
@@ -2596,7 +2599,8 @@ void MaidsafeStoreManager::DeletePacketFromNet(
     sr.set_public_key(delete_data->public_key);
     sr.set_signed_public_key(delete_data->public_key_signature);
     sr.set_signed_request(signed_request);
-    knode_->DeleteValue(delete_data->packet_name, signed_value, sr, cb);
+    knode_->DeleteValue(kad::KadId(delete_data->packet_name, false),
+        signed_value, sr, cb);
   }
 }
 
@@ -2834,7 +2838,7 @@ int MaidsafeStoreManager::CreateAccount(const boost::uint64_t &space) {
   request.set_account_pmid(ss_->Id(PMID));
   for (boost::uint16_t i = 0; i < data->contacts.size(); ++i) {
     AmendAccountData::AmendAccountDataHolder holder(
-        data->contacts.at(i).node_id());
+        data->contacts.at(i).node_id().ToStringDecoded());
     data->data_holders.push_back(holder);
   }
 

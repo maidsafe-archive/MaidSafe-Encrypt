@@ -378,7 +378,7 @@ TEST_F(PDVaultTest, FUNC_MAID_StoreAndGetChunks) {
     std::vector<kad::Contact> contacts;
     clients_[i]->msm->kad_ops_->FindCloseNodes(account_name, &contacts);
     for (size_t j = 0; j < contacts.size(); ++j) {
-      closest.insert(contacts[j].node_id());
+      closest.insert(contacts[j].node_id().ToStringDecoded());
     }
     for (int j = 0; j < kNetworkSize; ++j) {
       bool client = pdvaults_[j]->pmid_ == client_pmid;

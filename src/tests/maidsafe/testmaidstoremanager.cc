@@ -516,7 +516,8 @@ class MockClientRpcs : public ClientRpcs {
 };
 
 MATCHER_P(EqualsContact, kad_contact, "") {
-  return (arg.node_id() == kad_contact.node_id() &&
+  return (arg.node_id().ToStringDecoded() ==
+          kad_contact.node_id().ToStringDecoded() &&
           arg.host_ip() == kad_contact.host_ip() &&
           arg.host_port() == kad_contact.host_port());
 }
@@ -589,55 +590,55 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AddToWatchList) {
         testing::_))
             .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
                 boost::bind(&test_msm::AddToWatchListCallback,
-                            i + 1 < kKadLowerThreshold,
-                            kAck,
-                            chunk_info_holders.at(i).node_id(),
-                            kMinChunkCopies,
-                            _1, _2, &callback_count, &mutex, &cond_var))))  // 3
+                    i + 1 < kKadLowerThreshold,
+                    kAck,
+                    chunk_info_holders.at(i).node_id().ToStringDecoded(),
+                    kMinChunkCopies,
+                    _1, _2, &callback_count, &mutex, &cond_var))))  // 3
             .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
                 boost::bind(&test_msm::AddToWatchListCallback,
-                            true,
-                            i + 1 < kKadLowerThreshold ? kAck : kNack,
-                            chunk_info_holders.at(i).node_id(),
-                            kMinChunkCopies,
-                            _1, _2, &callback_count, &mutex, &cond_var))))  // 4
+                    true,
+                    i + 1 < kKadLowerThreshold ? kAck : kNack,
+                    chunk_info_holders.at(i).node_id().ToStringDecoded(),
+                    kMinChunkCopies,
+                    _1, _2, &callback_count, &mutex, &cond_var))))  // 4
             .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
                 boost::bind(&test_msm::AddToWatchListCallback,
-                            true,
-                            kAck,
-                            chunk_info_holders.at((i + 1) %
-                                chunk_info_holders.size()).node_id(),
-                            kMinChunkCopies,
-                            _1, _2, &callback_count, &mutex, &cond_var))))  // 5
+                    true,
+                    kAck,
+                    chunk_info_holders.at((i + 1) %
+                        chunk_info_holders.size()).node_id().ToStringDecoded(),
+                    kMinChunkCopies,
+                    _1, _2, &callback_count, &mutex, &cond_var))))  // 5
             .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
                 boost::bind(&test_msm::AddToWatchListCallback,
-                            true,
-                            kAck,
-                            chunk_info_holders.at(i).node_id(),
-                            kMinChunkCopies +
-                                (i + 1 < kKadLowerThreshold ? 0 : 1),
-                            _1, _2, &callback_count, &mutex, &cond_var))))  // 6
+                    true,
+                    kAck,
+                    chunk_info_holders.at(i).node_id().ToStringDecoded(),
+                    kMinChunkCopies +
+                        (i + 1 < kKadLowerThreshold ? 0 : 1),
+                    _1, _2, &callback_count, &mutex, &cond_var))))  // 6
             .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
                 boost::bind(&test_msm::AddToWatchListCallback,
-                            true,
-                            kAck,
-                            chunk_info_holders.at(i).node_id(),
-                            0,
-                            _1, _2, &callback_count, &mutex, &cond_var))))  // 7
+                    true,
+                    kAck,
+                    chunk_info_holders.at(i).node_id().ToStringDecoded(),
+                    0,
+                    _1, _2, &callback_count, &mutex, &cond_var))))  // 7
             .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
                 boost::bind(&test_msm::AddToWatchListCallback,
-                            true,
-                            kAck,
-                            chunk_info_holders.at(i).node_id(),
-                            kMinChunkCopies,
-                            _1, _2, &callback_count, &mutex, &cond_var))))  // 8
+                    true,
+                    kAck,
+                    chunk_info_holders.at(i).node_id().ToStringDecoded(),
+                    kMinChunkCopies,
+                    _1, _2, &callback_count, &mutex, &cond_var))))  // 8
             .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
                 boost::bind(&test_msm::AddToWatchListCallback,
-                            true,
-                            kAck,
-                            chunk_info_holders.at(i).node_id(),
-                            i == 0 ? 0 : kMinChunkCopies - 1,
-                            _1, _2, &callback_count, &mutex, &cond_var))));
+                    true,
+                    kAck,
+                    chunk_info_holders.at(i).node_id().ToStringDecoded(),
+                    i == 0 ? 0 : kMinChunkCopies - 1,
+                    _1, _2, &callback_count, &mutex, &cond_var))));
   }
 
   EXPECT_CALL(msm, SendChunkPrep(
@@ -1673,29 +1674,29 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_RemoveFromWatchList) {
         testing::_))
             .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
                 boost::bind(&test_msm::RemoveFromWatchListCallback,
-                            i + 1 < kKadLowerThreshold,
-                            kAck,
-                            chunk_info_holders.at(i).node_id(),
-                            _1, _2))))                                 // Call 4
+                    i + 1 < kKadLowerThreshold,
+                    kAck,
+                    chunk_info_holders.at(i).node_id().ToStringDecoded(),
+                    _1, _2))))                                 // Call 4
             .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
                 boost::bind(&test_msm::RemoveFromWatchListCallback,
-                            true,
-                            i + 1 < kKadLowerThreshold ? kAck : kNack,
-                            chunk_info_holders.at(i).node_id(),
-                            _1, _2))))                                 // Call 5
+                    true,
+                    i + 1 < kKadLowerThreshold ? kAck : kNack,
+                    chunk_info_holders.at(i).node_id().ToStringDecoded(),
+                    _1, _2))))                                 // Call 5
             .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
                 boost::bind(&test_msm::RemoveFromWatchListCallback,
-                            true,
-                            kAck,
-                            chunk_info_holders.at((i + 1) %
-                                chunk_info_holders.size()).node_id(),
-                            _1, _2))))                                 // Call 6
+                    true,
+                    kAck,
+                    chunk_info_holders.at((i + 1) %
+                        chunk_info_holders.size()).node_id().ToStringDecoded(),
+                    _1, _2))))                                 // Call 6
             .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
                 boost::bind(&test_msm::RemoveFromWatchListCallback,
-                            true,
-                            kAck,
-                            chunk_info_holders.at(i).node_id(),
-                            _1, _2))));                                // Call 7
+                    true,
+                    kAck,
+                    chunk_info_holders.at(i).node_id().ToStringDecoded(),
+                    _1, _2))));                                // Call 7
   }
 
   // Run test calls
@@ -2521,24 +2522,28 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_GetAccountDetails) {
         testing::_))
             .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
                 boost::bind(&test_msm::ThreadedAccountStatusCallback, &tcc,
-                false, kAck, account_holders.at(i).node_id(), false,
-                test_msm::AccountStatusValues(0, 0, 0), _1, _2))))     // Call 3
+                false, kAck, account_holders.at(i).node_id().ToStringDecoded(),
+                false, test_msm::AccountStatusValues(0, 0, 0), _1, _2))))  // 3
             .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
                 boost::bind(&test_msm::ThreadedAccountStatusCallback, &tcc,
-                i < kKadLowerThreshold, kAck, account_holders.at(i).node_id(),
-                true, test_msm::AccountStatusValues(i*i, i, i), _1, _2))))  // 4
+                i < kKadLowerThreshold, kAck,
+                account_holders.at(i).node_id().ToStringDecoded(), true,
+                test_msm::AccountStatusValues(i*i, i, i), _1, _2))))  // 4
             .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
                 boost::bind(&test_msm::ThreadedAccountStatusCallback, &tcc,
-                i < kKadUpperThreshold, kAck, account_holders.at(i).node_id(),
-                false, test_msm::AccountStatusValues(1, 2, 3), _1, _2))))  // #5
+                i < kKadUpperThreshold, kAck,
+                account_holders.at(i).node_id().ToStringDecoded(), false,
+                test_msm::AccountStatusValues(1, 2, 3), _1, _2))))  // #5
             .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
                 boost::bind(&test_msm::ThreadedAccountStatusCallback, &tcc,
-                i < kKadUpperThreshold, kNack, account_holders.at(i).node_id(),
-                true, test_msm::AccountStatusValues(1, 2, 3), _1, _2))))   // #6
+                i < kKadUpperThreshold, kNack,
+                account_holders.at(i).node_id().ToStringDecoded(), true,
+                test_msm::AccountStatusValues(1, 2, 3), _1, _2))))   // #6
             .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
                 boost::bind(&test_msm::ThreadedAccountStatusCallback, &tcc,
-                i < kKadUpperThreshold, kAck, account_holders.at(i).node_id(),
-                true, test_msm::AccountStatusValues(1, 2, 3), _1, _2))));  // #7
+                i < kKadUpperThreshold, kAck,
+                account_holders.at(i).node_id().ToStringDecoded(), true,
+                test_msm::AccountStatusValues(1, 2, 3), _1, _2))));  // #7
   }
 
   boost::uint64_t space_offered, space_given, space_taken;
@@ -2701,18 +2706,21 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_GetFilteredAverage) {
         testing::_))
             .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
                 boost::bind(&test_msm::ThreadedAmendAccountCallback, &tcc,
-                false, kAck, account_holders.at(i).node_id(), _1, _2))))   // #3
+                false, kAck, account_holders.at(i).node_id().ToStringDecoded(),
+                _1, _2))))   // #3
             .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
                 boost::bind(&test_msm::ThreadedAmendAccountCallback, &tcc,
                 true, (i < kKadStoreThreshold - 1 ? kAck : kNack),
-                account_holders.at(i).node_id(), _1, _2))))                // #4
+                account_holders.at(i).node_id().ToStringDecoded(), _1, _2))))
             .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
                 boost::bind(&test_msm::ThreadedAmendAccountCallback, &tcc,
                 true, kAck, (i < kKadStoreThreshold - 1 ?
-                    account_holders.at(i).node_id() : "fail"), _1, _2))))  // #5
+                    account_holders.at(i).node_id().ToStringDecoded() : "fail"),
+                    _1, _2))))  // #5
             .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
                 boost::bind(&test_msm::ThreadedAmendAccountCallback, &tcc,
-                true, kAck, account_holders.at(i).node_id(), _1, _2))));   // #6
+                true, kAck, account_holders.at(i).node_id().ToStringDecoded(),
+                _1, _2))));   // #6
   }
 
   // Call 0 - not online
