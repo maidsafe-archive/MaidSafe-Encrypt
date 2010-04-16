@@ -33,31 +33,31 @@
 
 class TestIMHandler : public testing::Test {
  public:
-   TestIMHandler() : trans(new transport::TransportUDT), trans_hndlr(),
-                     im_hdlr(),trans_id(0), port(0), ip(), msgs_rec(),
-                     msgs_sent(), new_conn_accepted(), ext_conn_id(),
-                     new_conn_trans_id() {
-     boost::asio::ip::address addr;
-     base::get_local_address(&addr);
-     ip = addr.to_string();
-   }
-   void SetUp() {
-     trans_hndlr.Register(trans.get(), &trans_id);
-     ASSERT_TRUE(trans_hndlr.RegisterOnSend(boost::bind(&TestIMHandler::SendNotifier,
-        this, _1, _2)));
-     ASSERT_TRUE(trans_hndlr.RegisterOnServerDown(boost::bind(
-        &TestIMHandler::OnServerDown, this, _1, _2, _3)));
-     ASSERT_TRUE(trans_hndlr.RegisterOnMessage(boost::bind(
-        &maidsafe::IMConnectionHandler::OnMessageArrive, &im_hdlr, _1, _2, _3,
-        _4)));
-     ASSERT_EQ(0, trans_hndlr.Start(0, trans_id));
-     port = trans_hndlr.listening_port(trans_id);
-     ASSERT_FALSE(trans->is_stopped());
-   }
-   void TearDown() {
-     im_hdlr.Stop();
-     trans_hndlr.Stop(trans_id);
-   }
+  TestIMHandler() : trans(new transport::TransportUDT), trans_hndlr(),
+                    im_hdlr(), trans_id(0), port(0), ip(), msgs_rec(),
+                    msgs_sent(), new_conn_accepted(), ext_conn_id(),
+                    new_conn_trans_id() {
+    boost::asio::ip::address addr;
+    base::get_local_address(&addr);
+    ip = addr.to_string();
+  }
+  void SetUp() {
+    trans_hndlr.Register(trans.get(), &trans_id);
+    ASSERT_TRUE(trans_hndlr.RegisterOnSend(boost::bind(
+       &TestIMHandler::SendNotifier, this, _1, _2)));
+    ASSERT_TRUE(trans_hndlr.RegisterOnServerDown(boost::bind(
+       &TestIMHandler::OnServerDown, this, _1, _2, _3)));
+    ASSERT_TRUE(trans_hndlr.RegisterOnMessage(boost::bind(
+       &maidsafe::IMConnectionHandler::OnMessageArrive, &im_hdlr, _1, _2, _3,
+       _4)));
+    ASSERT_EQ(0, trans_hndlr.Start(0, trans_id));
+    port = trans_hndlr.listening_port(trans_id);
+    ASSERT_FALSE(trans->is_stopped());
+  }
+  void TearDown() {
+    im_hdlr.Stop();
+    trans_hndlr.Stop(trans_id);
+  }
  protected:
   boost::shared_ptr<transport::Transport> trans;
   transport::TransportHandler trans_hndlr;
@@ -303,23 +303,23 @@ TEST_F(TestIMHandler, FUNC_MAID_IMHdlrMultipleConnections) {
       boost::bind(&TestIMHandler::NewMsgNotifier, this, _1),
       boost::bind(&TestIMHandler::NewConnMsg, this, _1, _2, _3)));
   transport::TransportUDT udt_trans1, udt_trans2;
-  ASSERT_TRUE(udt_trans1.RegisterOnSend(boost::bind(&TestIMHandler::SendNotifier,
-        this, _1, _2)));
+  ASSERT_TRUE(udt_trans1.RegisterOnSend(boost::bind(
+        &TestIMHandler::SendNotifier, this, _1, _2)));
   ASSERT_TRUE(udt_trans1.RegisterOnServerDown(boost::bind(
         &TestIMHandler::OnServerDown, this, _1, _2, _3)));
   ASSERT_TRUE(udt_trans1.RegisterOnMessage(boost::bind(
         &TestIMHandler::UDTTransMsgArrived, this, _1, _2, _3,
         _4)));
   ASSERT_EQ(0, udt_trans1.Start(0));
-  ASSERT_TRUE(udt_trans2.RegisterOnSend(boost::bind(&TestIMHandler::SendNotifier,
-        this, _1, _2)));
+  ASSERT_TRUE(udt_trans2.RegisterOnSend(boost::bind(
+        &TestIMHandler::SendNotifier, this, _1, _2)));
   ASSERT_TRUE(udt_trans2.RegisterOnServerDown(boost::bind(
         &TestIMHandler::OnServerDown, this, _1, _2, _3)));
   ASSERT_TRUE(udt_trans2.RegisterOnMessage(boost::bind(
         &TestIMHandler::UDTTransMsgArrived, this, _1, _2, _3,
         _4)));
   ASSERT_EQ(0, udt_trans2.Start(0));
-  boost::uint16_t port2 (udt_trans2.listening_port());
+  boost::uint16_t port2(udt_trans2.listening_port());
   maidsafe::EndPoint endpoint;
   endpoint.add_ip(ip);
   endpoint.add_ip(ip);

@@ -30,19 +30,19 @@ bool KadOps::AddressIsLocal(const kad::Contact &peer) {
 }
 
 bool KadOps::AddressIsLocal(const kad::ContactInfo &peer) {
-  return knode_->CheckContactLocalAddress(peer.node_id(), peer.local_ip(),
-      peer.local_port(), peer.ip()) == kad::LOCAL;
+  return knode_->CheckContactLocalAddress(kad::KadId(peer.node_id(), false),
+      peer.local_ip(), peer.local_port(), peer.ip()) == kad::LOCAL;
 }
 
 void KadOps::FindNode(const std::string &node_id,
                       base::callback_func_type cb,
                       const bool &local) {
-  knode_->FindNode(node_id, cb, local);
+  knode_->FindNode(kad::KadId(node_id, false), cb, local);
 }
 
 void KadOps::FindCloseNodes(const std::string &kad_key,
                             const base::callback_func_type &callback) {
-  knode_->FindCloseNodes(kad_key, callback);
+  knode_->FindCloseNodes(kad::KadId(kad_key, false), callback);
 }
 
 int KadOps::FindCloseNodes(const std::string &kad_key,
@@ -115,7 +115,7 @@ void KadOps::HandleFindCloseNodesResponse(
 void KadOps::FindValue(const std::string &kad_key,
                        bool check_local,
                        const base::callback_func_type &cb) {
-  knode_->FindValue(kad_key, check_local, cb);
+  knode_->FindValue(kad::KadId(kad_key, false), check_local, cb);
 }
 
 int KadOps::FindValue(const std::string &kad_key,
@@ -129,7 +129,7 @@ int KadOps::FindValue(const std::string &kad_key,
   needs_cache_copy_id->clear();
 
   CallbackObj kad_cb_obj;
-  knode_->FindValue(kad_key, check_local,
+  knode_->FindValue(kad::KadId(kad_key, false), check_local,
                     boost::bind(&CallbackObj::CallbackFunc, &kad_cb_obj, _1));
   kad_cb_obj.WaitForCallback();
 
@@ -220,7 +220,7 @@ bool ContactWithinClosest(const std::string &key,
   }
   return false; */
   std::vector<kad::Contact> ctc(closest_contacts);
-  kad::InsertKadContact(key, new_contact, &ctc);
+  kad::InsertKadContact(kad::KadId(key, false), new_contact, &ctc);
   return ctc.back().node_id() != new_contact.node_id();
 }
 
@@ -228,7 +228,7 @@ bool RemoveKadContact(const std::string &id,
                       std::vector<kad::Contact> *contacts) {
   // TODO(Team#) move to DHT
   for (size_t i = 0; i < contacts->size(); ++i) {
-    if (contacts->at(i).node_id() == id) {
+    if (contacts->at(i).node_id().ToStringDecoded() == id) {
       contacts->erase(contacts->begin() + i);
       return true;
     }

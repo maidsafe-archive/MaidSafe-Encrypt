@@ -2362,8 +2362,8 @@ void VaultService::ConstructGetInfoRequests(const kad::Contact &contact,
   co.set_hash_algorithm(crypto::SHA_512);
   T request(partial_request);
   request.set_request_signature(co.AsymSign(co.Hash(pmid_public_signature_ +
-      key + contact.node_id(), "", crypto::STRING_STRING, false), "",
-      pmid_private_, crypto::STRING_STRING));
+      key + contact.node_id().ToStringDecoded(), "", crypto::STRING_STRING,
+      false), "", pmid_private_, crypto::STRING_STRING));
   requests->push_back(request);
 }
 
