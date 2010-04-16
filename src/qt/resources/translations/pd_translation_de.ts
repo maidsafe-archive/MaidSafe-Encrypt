@@ -16,7 +16,7 @@
     <message>
         <location line="+39"/>
         <source>Blah blah blah... you can stick any kind of rich text, html in here....</source>
-        <translation>yada yada yada german for blah blah blah.</translation>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -24,14 +24,13 @@
     <message>
         <location filename="../../ui/smily.ui" line="+14"/>
         <source>Emoticon</source>
-        <translation type="unfinished"></translation>
+        <translation>Emoticon</translation>
     </message>
 </context>
 <context>
     <name>ConnectionSettingsPage</name>
     <message>
-        <location filename="../../ui/connection_settings.ui" line="+14"/>
-        <location line="+6"/>
+        <location filename="../../ui/connection_settings.ui" line="+20"/>
         <source>Connection Settings</source>
         <translation>Verbindungseinstellungen</translation>
     </message>
@@ -43,12 +42,12 @@
     <message>
         <location line="+9"/>
         <source>Port Number:</source>
-        <translation type="unfinished"></translation>
+        <translation>Portnummer:</translation>
     </message>
     <message>
         <location line="+16"/>
         <source>Enable UPnP?</source>
-        <translation type="unfinished"></translation>
+        <translation>UPnP aktivieren?</translation>
     </message>
 </context>
 <context>
@@ -58,7 +57,7 @@
         <location line="+495"/>
         <location line="+52"/>
         <source>Search Contacts</source>
-        <translation type="unfinished"></translation>
+        <translation>Kontakte durchsuchen</translation>
     </message>
     <message>
         <location line="-540"/>
@@ -68,128 +67,128 @@
     <message>
         <location line="+1"/>
         <source>Send Message</source>
-        <translation type="unfinished"></translation>
+        <translation>Nachricht senden</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Send File</source>
-        <translation type="unfinished"></translation>
+        <translation>Datei senden</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Delete Contact</source>
-        <translation type="unfinished"></translation>
+        <translation>Kontakt löschen</translation>
     </message>
     <message>
         <location line="+114"/>
         <source>Add Contact</source>
-        <translation type="unfinished"></translation>
+        <translation>Kontakt hinzufügen</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Please enter a username to add:</source>
-        <translation type="unfinished"></translation>
+        <translation>Bitte einen Nutzernamen zum Hinzufügen eingeben:</translation>
     </message>
     <message>
         <location line="+12"/>
         <source>It is not possible to add yourself as a contact.</source>
-        <translation type="unfinished"></translation>
+        <translation>Es ist nicht möglich, sich selbst als Kontakt hinzuzufügen.</translation>
     </message>
     <message>
         <location line="+52"/>
         <location line="+36"/>
         <source>Please select only one contact.</source>
-        <translation type="unfinished"></translation>
+        <translation>Bitte nur einen Kontakt auswählen.</translation>
     </message>
     <message>
         <location line="-25"/>
         <source>The contact doesn&apos;t exist.</source>
-        <translation type="unfinished"></translation>
+        <translation>Der Kontakt existiert nicht.</translation>
     </message>
     <message>
         <location line="+5"/>
         <source>Public Username: </source>
-        <translation type="unfinished"></translation>
+        <translation>Öffentlicher Nutzername:</translation>
     </message>
     <message>
         <location line="+2"/>
         <source>Full Name: </source>
-        <translation type="unfinished"></translation>
+        <translation>Vollständiger Name:</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Office Phone: </source>
-        <translation type="unfinished"></translation>
+        <translation>Telefon geschäftlich:</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Birthday: </source>
-        <translation type="unfinished"></translation>
+        <translation>Geburtstag:</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Gender: </source>
-        <translation type="unfinished"></translation>
+        <translation>Geschlecht:</translation>
     </message>
     <message>
         <location line="+2"/>
         <source>City: </source>
-        <translation type="unfinished"></translation>
+        <translation>Stadt:</translation>
     </message>
     <message>
         <location line="+33"/>
         <source>Error removing contact: %1</source>
-        <translation type="unfinished"></translation>
+        <translation>Fehler beim Entfernen des Kontaktes: %1</translation>
     </message>
     <message>
         <location line="+73"/>
         <source>Please use the PD Browser to send files.</source>
-        <translation type="unfinished"></translation>
+        <translation>Bitte den PD-Browser verwenden um Dateien zu schicken.</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Information</source>
-        <translation type="unfinished"></translation>
+        <translation>Information</translation>
     </message>
     <message>
         <location line="+38"/>
         <source>Choose a file to share</source>
-        <translation type="unfinished"></translation>
+        <translation>Datei zum Freigeben auswählen</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Any file</source>
-        <translation type="unfinished"></translation>
+        <translation>Alle Dateien</translation>
     </message>
     <message>
         <location line="+26"/>
         <source>Message</source>
-        <translation type="unfinished"></translation>
+        <translation>Nachricht</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Please enter a message to send with the file(s):</source>
-        <translation type="unfinished"></translation>
+        <translation>Bitte eine Nachricht eingeben, die mit den Dateien verschickt wird:</translation>
     </message>
     <message>
         <location line="+150"/>
         <source>No contacts match %1</source>
-        <translation type="unfinished"></translation>
+        <translation>Keine Treffer für Kontakt %1</translation>
     </message>
     <message>
         <location line="+45"/>
         <source>Could not add the contact, because the username doesn&apos;t exist.</source>
-        <translation type="unfinished"></translation>
+        <translation>Der Kontakt konnte nicht hinzugefügt werden, weil der Nutzername nicht existiert.</translation>
     </message>
     <message>
         <location line="+4"/>
         <source>The contact already exists in your list.</source>
-        <translation type="unfinished"></translation>
+        <translation>Der Kontakt ist bereits in der Liste.</translation>
     </message>
     <message>
         <location line="-441"/>
         <source>Please enter a valid username.</source>
-        <translation type="unfinished"></translation>
+        <translation>Bitte einen gültigen Nutzernamen eingeben.</translation>
     </message>
     <message>
         <location line="-7"/>
@@ -200,60 +199,60 @@
         <location line="+20"/>
         <location line="+335"/>
         <source>Error</source>
-        <translation type="unfinished"></translation>
+        <translation>Fehler</translation>
     </message>
     <message>
         <location line="-364"/>
         <source>Contact Details</source>
-        <translation type="unfinished"></translation>
+        <translation>Kontaktdetails</translation>
     </message>
     <message>
         <location line="+181"/>
         <source>File Sent</source>
-        <translation type="unfinished"></translation>
+        <translation>Datei gesendet</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Success sending file: %1</source>
-        <translation type="unfinished"></translation>
+        <translation>Datei erfolgreich gesendet: %1</translation>
     </message>
     <message>
         <location line="+2"/>
         <source>There was an error sending the file: %1</source>
-        <translation type="unfinished"></translation>
+        <translation>Fehler beim Senden der Datei: %1</translation>
     </message>
     <message>
         <location line="+2"/>
         <source>File Not Sent</source>
-        <translation type="unfinished"></translation>
+        <translation>Datei nicht gesendet</translation>
     </message>
     <message>
         <location line="+31"/>
         <source>Accept contact request from %1?</source>
-        <translation type="unfinished"></translation>
+        <translation>Kontaktanfrage von %1 akzeptieren?</translation>
     </message>
     <message>
         <location line="+151"/>
         <source>Notification</source>
-        <translation type="unfinished"></translation>
+        <translation>Hinweis</translation>
     </message>
 </context>
 <context>
     <name>ContactsPage</name>
     <message>
         <location filename="../../ui/user_contacts_panel.ui" line="+89"/>
-        <source>Search contacts:</source>
-        <translation type="unfinished"></translation>
+        <source>Search contacts</source>
+        <translation>Kontakte durchsuchen</translation>
     </message>
     <message>
         <location line="+26"/>
         <source>Add a contact</source>
-        <translation type="unfinished"></translation>
+        <translation>Kontakt hinzufügen</translation>
     </message>
     <message>
         <location line="+31"/>
         <source>Contacts</source>
-        <translation type="unfinished"></translation>
+        <translation>Kontakte</translation>
     </message>
 </context>
 <context>
@@ -261,12 +260,12 @@
     <message>
         <location filename="../../widgets/create_page_complete.cc" line="+25"/>
         <source>Ready to Create Account</source>
-        <translation type="unfinished"></translation>
+        <translation>Nutzerkonto einrichten</translation>
     </message>
     <message>
         <location line="+21"/>
         <source>&lt;qt&gt;We now have all the details required to create a new user account. Press &apos;Finish&apos; to complete the process.&lt;br/&gt;&lt;br/&gt;Please note that this can take several minutes.&lt;/qt&gt;</source>
-        <translation type="unfinished"></translation>
+        <translation>&lt;qt&gt;Wir haben nun alle Daten beisammen, um ein neues Nutzerkonto einzurichten. Ein Klick auf &apos;Fertigstellen&apos; schließt den Prozess ab.&lt;br/&gt;&lt;br/&gt;Das kann ein paar Minuten in Anspruch nehmen.&lt;/qt&gt;</translation>
     </message>
 </context>
 <context>
@@ -274,7 +273,7 @@
     <message>
         <location filename="../../widgets/create_page_license.cc" line="+25"/>
         <source>License agreement</source>
-        <translation type="unfinished"></translation>
+        <translation>Lizenzvertrag</translation>
     </message>
 </context>
 <context>
@@ -282,37 +281,37 @@
     <message>
         <location filename="../../widgets/create_page_localvault_setup.cc" line="+50"/>
         <source>Local Vault Configuration</source>
-        <translation type="unfinished"></translation>
+        <translation>Einstellungen Lokaler Vault</translation>
     </message>
     <message>
         <location line="+25"/>
         <source>Space to offer in MB (available %1 MB):</source>
-        <translation type="unfinished"></translation>
+        <translation>Angebotener Speicherplatz in MB (verfügbar %1 MB):</translation>
     </message>
     <message>
         <location line="+35"/>
         <source>Error</source>
-        <translation type="unfinished"></translation>
+        <translation>Fehler</translation>
     </message>
     <message>
         <location line="+0"/>
         <source>You don&apos;t have that much space available!</source>
-        <translation type="unfinished"></translation>
+        <translation>So viel Platz ist nicht verfügbar!</translation>
     </message>
     <message>
         <location line="+16"/>
         <source>Change port?</source>
-        <translation type="unfinished"></translation>
+        <translation>Port ändern?</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>It is recommended to leave the port as 0, so it can be chosen automatically. Do you really want to change this setting?</source>
-        <translation type="unfinished"></translation>
+        <translation>Es wird empfohlen, den Port auf 0 zu lassen, sodass er automatisch bestimmt werden kann. Soll diese Einstellung wirklich geändert werden?</translation>
     </message>
     <message>
         <location line="-30"/>
         <source>Find Files</source>
-        <translation type="unfinished"></translation>
+        <translation>Dateien suchen</translation>
     </message>
 </context>
 <context>
@@ -320,7 +319,7 @@
     <message>
         <location filename="../../widgets/create_page_options.cc" line="+26"/>
         <source>Storage Options</source>
-        <translation type="unfinished"></translation>
+        <translation>Speichereinstellungen</translation>
     </message>
 </context>
 <context>
@@ -328,22 +327,22 @@
     <message>
         <location filename="../../ui/create.ui" line="+14"/>
         <source>Create User Account</source>
-        <translation type="unfinished"></translation>
+        <translation>Nutzerkonto einrichten</translation>
     </message>
     <message>
         <location line="+73"/>
         <source>&lt; Back</source>
-        <translation type="unfinished"></translation>
+        <translation>&lt; Zurück</translation>
     </message>
     <message>
         <location line="+7"/>
         <source>Next &gt;</source>
-        <translation type="unfinished"></translation>
+        <translation>Weiter &gt;</translation>
     </message>
     <message>
         <location line="+23"/>
         <source>Cancel</source>
-        <translation type="unfinished"></translation>
+        <translation>Abbrechen</translation>
     </message>
 </context>
 <context>
@@ -351,12 +350,12 @@
     <message>
         <location filename="../../widgets/create_user.cc" line="+132"/>
         <source>Finish</source>
-        <translation type="unfinished"></translation>
+        <translation>Fertigstellen</translation>
     </message>
     <message>
         <location line="+0"/>
         <source>Next &gt;</source>
-        <translation type="unfinished"></translation>
+        <translation>Weiter &gt;</translation>
     </message>
 </context>
 <context>
@@ -364,7 +363,7 @@
     <message>
         <location filename="../../widgets/create_page_welcome.cc" line="+24"/>
         <source>Create User Account</source>
-        <translation type="unfinished"></translation>
+        <translation>Nutzerkonto einrichten</translation>
     </message>
 </context>
 <context>
@@ -372,7 +371,7 @@
     <message>
         <location filename="../../ui/share_participants.ui" line="+17"/>
         <source>Share</source>
-        <translation type="unfinished"></translation>
+        <translation>Freigabe</translation>
     </message>
 </context>
 <context>
@@ -380,72 +379,72 @@
     <message>
         <location filename="../../widgets/file_browser.cc" line="+49"/>
         <source>Open</source>
-        <translation type="unfinished"></translation>
+        <translation>Öffnen</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Send</source>
-        <translation type="unfinished"></translation>
+        <translation>Senden</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Cut</source>
-        <translation type="unfinished"></translation>
+        <translation>Ausschneiden</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Copy</source>
-        <translation type="unfinished"></translation>
+        <translation>Einfügen</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Delete</source>
-        <translation type="unfinished"></translation>
+        <translation>Löschen</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Rename</source>
-        <translation type="unfinished"></translation>
+        <translation>Umbenennen</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Save</source>
-        <translation type="unfinished"></translation>
+        <translation>Speichern</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>New Folder</source>
-        <translation type="unfinished"></translation>
+        <translation>Neuer Ordner</translation>
     </message>
     <message>
         <location line="+107"/>
         <source>Who will receive the file?</source>
-        <translation type="unfinished"></translation>
+        <translation>Wer soll die Datei empfangen?</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Recipient</source>
-        <translation type="unfinished"></translation>
+        <translation>Empfänger</translation>
     </message>
     <message>
         <location line="+8"/>
         <source>File Sent</source>
-        <translation type="unfinished"></translation>
+        <translation>Datei gesendet</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Success sending file: %1</source>
-        <translation type="unfinished"></translation>
+        <translation>Datei erfolgreich gesendet: %1</translation>
     </message>
     <message>
         <location line="+2"/>
         <source>There was an error sending the file: %1</source>
-        <translation type="unfinished"></translation>
+        <translation>Beim Senden der Datei ist ein Fehler aufgetreten: %1</translation>
     </message>
     <message>
         <location line="+2"/>
         <source>File Not Sent</source>
-        <translation type="unfinished"></translation>
+        <translation>Datei nicht gesendet</translation>
     </message>
     <message>
         <location line="+15"/>
@@ -455,103 +454,103 @@
         <location line="+21"/>
         <location line="+136"/>
         <source>Network</source>
-        <translation type="unfinished">Netzwerk</translation>
+        <translation>Netzwerk</translation>
     </message>
     <message>
         <location line="-323"/>
         <source>Delete Item</source>
-        <translation type="unfinished"></translation>
+        <translation>Eintrag löschen</translation>
     </message>
     <message>
         <location line="+2"/>
         <source>Do you wish to remove %1?</source>
-        <translation type="unfinished"></translation>
+        <translation>Soll %1 wirklich gelöscht werden?</translation>
     </message>
     <message>
         <location line="+18"/>
         <source>You can only delete networked files.</source>
-        <translation type="unfinished"></translation>
+        <translation>Nur Netzwerkdateien können gelöscht werden.</translation>
     </message>
     <message>
         <location line="+11"/>
         <source>Name of the new directory:</source>
-        <translation type="unfinished"></translation>
+        <translation>Name des neuen Verzeichnisses:</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>New Folder</source>
         <comment>default directory name</comment>
-        <translation type="unfinished"></translation>
+        <translation>Neuer Ordner</translation>
     </message>
     <message>
         <location line="+19"/>
         <source>New file name:</source>
-        <translation type="unfinished"></translation>
+        <translation>Neuer Dateiname:</translation>
     </message>
     <message>
         <location line="+15"/>
         <source>Renaming is only allowed for networked files.</source>
-        <translation type="unfinished"></translation>
+        <translation>Nur Netzwerkdateien können umbenannt werden.</translation>
     </message>
     <message>
         <location line="+7"/>
         <location line="+91"/>
         <location line="+95"/>
         <source>Local</source>
-        <translation type="unfinished"></translation>
+        <translation>Lokal</translation>
     </message>
     <message>
         <location line="-184"/>
         <location line="+124"/>
         <source>Uploading</source>
-        <translation type="unfinished"></translation>
+        <translation>Uploaden</translation>
     </message>
     <message>
         <location line="-10"/>
         <location line="+9"/>
         <source>Downloading</source>
-        <translation type="unfinished"></translation>
+        <translation>Downloaden</translation>
     </message>
     <message>
         <location line="+4"/>
         <source>Please wait for the file transfer to finish.</source>
-        <translation type="unfinished"></translation>
+        <translation>Bitte warten, bis der Transfer abgeschlossen ist.</translation>
     </message>
     <message>
         <location line="+153"/>
         <source>A file with the same name already exists! Please rename your file before uploading.</source>
-        <translation type="unfinished"></translation>
+        <translation>Es existiert bereits eine Datei mit dem gleichen Namen! Vor dem Hochladen muss die Datei umbenannt werden.</translation>
     </message>
     <message>
         <location line="+16"/>
         <source>Upload a File</source>
-        <translation type="unfinished"></translation>
+        <translation>Datei hochladen</translation>
     </message>
     <message>
         <location line="+2"/>
         <source>Any file</source>
-        <translation type="unfinished"></translation>
+        <translation>Alle Dateien</translation>
     </message>
     <message>
         <location line="-343"/>
         <source>Create Directory</source>
-        <translation type="unfinished"></translation>
+        <translation>Verzeichnis anlegen</translation>
     </message>
     <message>
         <location line="+20"/>
         <source>Rename File</source>
-        <translation type="unfinished"></translation>
+        <translation>Datei umbenennen</translation>
     </message>
     <message>
         <location line="+98"/>
         <location line="+20"/>
         <source>%1 KB</source>
-        <translation type="unfinished"></translation>
+        <translation>%1 KB</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>%1 File</source>
-        <translation type="unfinished"></translation>
+        <translation>%1-Datei</translation>
     </message>
 </context>
 <context>
@@ -559,30 +558,25 @@
     <message>
         <location filename="../../ui/file_browser.ui" line="+14"/>
         <source>PD Browser</source>
-        <translation type="unfinished"></translation>
+        <translation>PD-Browser</translation>
     </message>
     <message>
         <location line="+38"/>
         <source>Upload</source>
-        <translation type="unfinished"></translation>
+        <translation>Hochladen</translation>
     </message>
     <message>
         <location line="+7"/>
         <source>Back</source>
-        <translation type="unfinished"></translation>
+        <translation>Zurück</translation>
     </message>
 </context>
 <context>
     <name>FileTransferPage</name>
     <message>
-        <location filename="../../ui/file_transfer_settings.ui" line="+14"/>
-        <source>File Transfer Settings</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location line="+6"/>
+        <location filename="../../ui/file_transfer_settings.ui" line="+20"/>
         <source>File Transfer</source>
-        <translation type="unfinished"></translation>
+        <translation>Dateiübertragung</translation>
     </message>
 </context>
 <context>
@@ -590,27 +584,27 @@
     <message>
         <location filename="../../widgets/login.cc" line="+168"/>
         <source>Joining the network...</source>
-        <translation type="unfinished"></translation>
+        <translation>Dem Netzwerk beitreten...</translation>
     </message>
     <message>
         <location line="+41"/>
         <source>Checking user details...</source>
-        <translation type="unfinished"></translation>
+        <translation>Nutzerdaten werden überprüft...</translation>
     </message>
     <message>
         <location line="+17"/>
         <source>Validating password...</source>
-        <translation type="unfinished"></translation>
+        <translation>Passwort wird validiert...</translation>
     </message>
     <message>
         <location line="+149"/>
         <source>Error</source>
-        <translation type="unfinished"></translation>
+        <translation>Fehler</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Please verify your credentials.</source>
-        <translation type="unfinished"></translation>
+        <translation>Bitte die Angaben überprüfen.</translation>
     </message>
 </context>
 <context>
@@ -618,62 +612,62 @@
     <message>
         <location filename="../../ui/login.ui" line="+59"/>
         <source>Enter a username. Do not use dictionary words or names.</source>
-        <translation type="unfinished"></translation>
+        <translation>Geben Sie einen Nutzernamen ein. Vermeiden Sie Namen oder Einträge eines Wörterbuches.</translation>
     </message>
     <message>
         <location line="+3"/>
         <source>Your username is private to you. It should be between 4 and 25 characters.</source>
-        <translation type="unfinished"></translation>
+        <translation>Ihr Nutzername sollte ihr persönliches Geheimnis bleiben. Er sollte zwischen 4 und 25 Zeichen lang sein.</translation>
     </message>
     <message>
         <location line="+55"/>
         <source>Enter a password, please use numbers and characters to increase security.</source>
-        <translation type="unfinished"></translation>
+        <translation>Geben Sie ein Passwort ein. Verwenden Sie dabei Zahlen und Buchstaben um die Sicherheit zu erhöhen.</translation>
     </message>
     <message>
         <location line="-71"/>
         <source>Username:</source>
-        <translation type="unfinished"></translation>
+        <translation>Nutzername:</translation>
     </message>
     <message>
         <location line="+26"/>
         <source>PIN:</source>
-        <translation type="unfinished"></translation>
+        <translation>PIN:</translation>
     </message>
     <message>
         <location line="+13"/>
         <source>Enter a personal identification number, 4 digits only. This PIN is private to you, do not divulge it to anyone.</source>
-        <translation type="unfinished"></translation>
+        <translation>Geben Sie eine 4-stellige persönliche Identifizierungsnummer ein. Diese PIN sollten sie geheim halten.</translation>
     </message>
     <message>
         <location line="+3"/>
         <source>You need to enter a 4 digit number here.</source>
-        <translation type="unfinished"></translation>
+        <translation>Sie müssen hier eine 4-stellige Zahl eingeben.</translation>
     </message>
     <message>
         <location line="+13"/>
         <source>Password:</source>
-        <translation type="unfinished"></translation>
+        <translation>Passwort:</translation>
     </message>
     <message>
         <location line="+13"/>
         <source>Enter your password or passphrase here. The longer it is, the harder it will be to guess it. Please include numbers and symbols as well, and avoid dictionary words.</source>
-        <translation type="unfinished"></translation>
+        <translation>Geben Sie Ihr Passwort oder Ihre Passphrase hier ein. Je länger desto schwieriger ist es, es zu erraten. Bitte verwenden Sie auch Zahlen und Sonderzeichen, und vermeiden Sie Wörterbucheinträge.</translation>
     </message>
     <message>
         <location line="+80"/>
         <source>Clear</source>
-        <translation type="unfinished"></translation>
+        <translation>Zurücksetzen</translation>
     </message>
     <message>
         <location line="+20"/>
         <source>Login</source>
-        <translation type="unfinished"></translation>
+        <translation>Einloggen</translation>
     </message>
     <message>
         <location line="+7"/>
         <source>Create</source>
-        <translation type="unfinished"></translation>
+        <translation>Erstellen</translation>
     </message>
 </context>
 <context>
@@ -681,15 +675,7 @@
     <message>
         <location filename="../../widgets/messages.cc" line="+169"/>
         <source>There are no new messages.</source>
-        <translation type="unfinished"></translation>
-    </message>
-</context>
-<context>
-    <name>MessagesPage</name>
-    <message>
-        <location filename="../../ui/user_messages_panel.ui" line="+14"/>
-        <source>Messages</source>
-        <translation type="unfinished"></translation>
+        <translation>Keine neuen Nachrichten.</translation>
     </message>
 </context>
 <context>
@@ -697,261 +683,256 @@
     <message>
         <location filename="../../ui/pd.ui" line="+29"/>
         <source>Perpetual Data</source>
-        <translation type="unfinished"></translation>
+        <translation>Perpetual Data</translation>
     </message>
     <message>
         <location line="+53"/>
         <source>File</source>
-        <translation type="unfinished"></translation>
+        <translation>Datei</translation>
     </message>
     <message>
         <location line="+4"/>
         <source>Status</source>
-        <translation type="unfinished"></translation>
+        <translation>Status</translation>
     </message>
     <message>
         <location line="+13"/>
         <source>View</source>
-        <translation type="unfinished"></translation>
+        <translation>Ansicht</translation>
     </message>
     <message>
         <location line="+9"/>
         <source>Tools</source>
-        <translation type="unfinished"></translation>
+        <translation>Extras</translation>
     </message>
     <message>
         <location line="+10"/>
         <source>Help</source>
-        <translation type="unfinished"></translation>
+        <translation>Hilfe</translation>
     </message>
     <message>
         <location line="+13"/>
         <source>Logout</source>
-        <translation type="unfinished"></translation>
+        <translation>Ausloggen</translation>
     </message>
     <message>
         <location line="+5"/>
         <source>Quit</source>
-        <translation type="unfinished"></translation>
+        <translation>Beenden</translation>
     </message>
     <message>
         <location line="+8"/>
         <source>Fullscreen</source>
-        <translation type="unfinished"></translation>
+        <translation>Vollbild</translation>
     </message>
     <message>
         <location line="+35"/>
         <source>My files</source>
-        <translation type="unfinished"></translation>
+        <translation>Meine Dateien</translation>
     </message>
     <message>
         <location line="+5"/>
         <source>Private shares</source>
-        <translation type="unfinished"></translation>
+        <translation>Private Shares</translation>
     </message>
     <message>
         <location line="+8"/>
         <source>Offline mode</source>
-        <translation type="unfinished"></translation>
+        <translation>Offlinemodus</translation>
     </message>
     <message>
         <location line="-43"/>
         <source>Word Processor</source>
-        <translation type="unfinished"></translation>
+        <translation>Textverarbeitung</translation>
     </message>
     <message>
         <location line="+5"/>
         <source>Spread Sheet</source>
-        <translation type="unfinished"></translation>
+        <translation>Tabellenkalkulation</translation>
     </message>
     <message>
         <location line="+5"/>
         <source>Presentation</source>
-        <translation type="unfinished"></translation>
+        <translation>Präsentationen</translation>
     </message>
     <message>
         <location line="+5"/>
         <source>Browser</source>
-        <translation type="unfinished"></translation>
+        <translation>Browser</translation>
     </message>
     <message>
         <location line="+5"/>
         <source>About</source>
-        <translation type="unfinished"></translation>
+        <translation>Über</translation>
     </message>
     <message>
         <location line="+5"/>
         <source>Manual</source>
-        <translation type="unfinished"></translation>
+        <translation>Handbuch</translation>
     </message>
     <message>
         <location line="+23"/>
         <location line="+37"/>
         <source>Settings</source>
-        <translation type="unfinished"></translation>
+        <translation>Einstellungen</translation>
     </message>
     <message>
         <location line="-29"/>
         <source>Online</source>
-        <translation type="unfinished"></translation>
+        <translation>Online</translation>
     </message>
     <message>
         <location line="+8"/>
         <source>Away</source>
-        <translation type="unfinished"></translation>
+        <translation>Abwesend</translation>
     </message>
     <message>
         <location line="+8"/>
         <source>Busy</source>
-        <translation type="unfinished"></translation>
+        <translation>Beschäftigt</translation>
     </message>
     <message>
         <location line="+8"/>
         <source>Offline</source>
-        <translation type="unfinished"></translation>
+        <translation>Offline</translation>
     </message>
     <message>
         <location filename="../../perpetual_data.cc" line="+176"/>
         <source>Notepad</source>
-        <translation type="unfinished"></translation>
+        <translation>Notepad</translation>
     </message>
     <message>
         <location line="+42"/>
         <source>Creating User Account</source>
-        <translation type="unfinished"></translation>
+        <translation>Nutzerkonto einrichten</translation>
     </message>
     <message>
         <location line="+2"/>
         <source>A user account is being created. This may take some time...</source>
-        <translation type="unfinished"></translation>
+        <translation>Das Nutzerkonto wird eingerichtet, dies könnte ein wenig dauern...</translation>
     </message>
     <message>
         <location line="+10"/>
         <source>Mounting User File System</source>
-        <translation type="unfinished"></translation>
+        <translation>Nutzer-Dateisystem einrichten</translation>
     </message>
     <message>
         <location line="+2"/>
         <source>Your file system is being set up...</source>
-        <translation type="unfinished"></translation>
+        <translation>Dateisystem wird eingerichtet...</translation>
     </message>
     <message>
         <location line="+20"/>
         <source>Logging out</source>
-        <translation type="unfinished"></translation>
+        <translation>Ausloggen</translation>
     </message>
     <message>
         <location line="+2"/>
         <source>Logging out and removing all traces of you from the system...</source>
-        <translation type="unfinished"></translation>
+        <translation>Ausloggen und alle Spuren im System entfernen...</translation>
     </message>
     <message>
         <location line="+103"/>
         <source>Failed creating a user account.</source>
-        <translation type="unfinished"></translation>
+        <translation>Fehler beim Einrichten des Nutzerkontos.</translation>
     </message>
     <message>
         <location line="+11"/>
         <source>Logged in: %1</source>
-        <translation type="unfinished"></translation>
+        <translation>Eingeloggt: %1</translation>
     </message>
     <message>
         <location line="+2"/>
         <source>Logged in</source>
-        <translation type="unfinished"></translation>
+        <translation>Eingeloggt</translation>
     </message>
     <message>
         <location line="+7"/>
         <source>The file system could not be mounted.</source>
-        <translation type="unfinished"></translation>
+        <translation>Das Dateisystem konnte nicht eingeklinkt werden.</translation>
     </message>
     <message>
         <location line="+12"/>
         <source>Logged out</source>
-        <translation type="unfinished"></translation>
+        <translation>Ausgeloggt</translation>
     </message>
     <message>
         <location line="+7"/>
         <source>The file system could not be unmounted.</source>
-        <translation type="unfinished"></translation>
+        <translation>Das Dateisystem konnte nicht ausgeklinkt werden.</translation>
     </message>
     <message>
         <location line="+14"/>
         <source>Your session could not be saved.</source>
-        <translation type="unfinished"></translation>
+        <translation>Die Sitzung konnte nicht gespeichert werden.</translation>
     </message>
     <message>
         <location line="+2"/>
         <source>Your session was successfully saved.</source>
-        <translation type="unfinished"></translation>
+        <translation>Sitzung wurde erfolgreich gespeichert.</translation>
     </message>
     <message>
         <location line="+4"/>
         <source>Alert</source>
-        <translation type="unfinished"></translation>
+        <translation>Hinweis</translation>
     </message>
     <message>
         <location line="+134"/>
         <source>%1 said: %2</source>
-        <translation type="unfinished"></translation>
+        <translation>%1 sagte: %2</translation>
     </message>
     <message>
         <location line="+10"/>
         <source>Share received</source>
-        <translation type="unfinished"></translation>
+        <translation>Freigabe erhalten</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>&apos;%1&apos; has shared &apos;%2&apos; with you</source>
-        <translation type="unfinished"></translation>
+        <translation>&apos;%1&apos; hat &apos;%2&apos; freigegeben</translation>
     </message>
     <message>
         <location line="+10"/>
         <source>%1 is sending you: %2</source>
-        <translation type="unfinished"></translation>
+        <translation>%1 schickt: %2</translation>
     </message>
     <message>
-        <location line="+22"/>
-        <source>/</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location line="+1"/>
+        <location line="+23"/>
         <source>Save File As...</source>
-        <translation type="unfinished"></translation>
+        <translation>Speichern unter...</translation>
     </message>
     <message>
         <location line="+35"/>
         <source>File received</source>
-        <translation type="unfinished"></translation>
+        <translation>Datei empfangen</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>&apos;%1&apos; has shared the file &apos;%2&apos; with you</source>
-        <translation type="unfinished"></translation>
+        <translation>&apos;%1&apos; hat die Datei &apos;%2&apos; freigegeben</translation>
     </message>
     <message numerus="yes">
         <location line="+21"/>
         <source>%n unread message(s)</source>
-        <translation type="unfinished">
-            <numerusform></numerusform>
-            <numerusform></numerusform>
+        <translation>
+            <numerusform>%n ungelesene Nachricht</numerusform>
+            <numerusform>%n ungelesene Nachrichten</numerusform>
         </translation>
     </message>
     <message>
         <location line="+7"/>
         <source>Connection status</source>
-        <translation type="unfinished"></translation>
+        <translation>Verbindungsstatus</translation>
     </message>
     <message>
         <location line="+3"/>
         <source>You are connected!</source>
-        <translation type="unfinished"></translation>
+        <translation>Verbindung hergestellt!</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>You are off-line!</source>
-        <translation type="unfinished"></translation>
+        <translation>Verbindung getrennt!</translation>
     </message>
 </context>
 <context>
@@ -959,7 +940,7 @@
     <message>
         <location filename="../../ui/user_personal_message.ui" line="+20"/>
         <source>PD Messages</source>
-        <translation type="unfinished"></translation>
+        <translation>PD-Nachrichten</translation>
     </message>
     <message>
         <location line="+36"/>
@@ -982,28 +963,28 @@ p, li { white-space: pre-wrap; }
     <message>
         <location line="+23"/>
         <source>Participants</source>
-        <translation type="unfinished"></translation>
+        <translation>Teilnehmer</translation>
     </message>
     <message>
         <location line="+101"/>
         <source>Send Message</source>
-        <translation type="unfinished"></translation>
+        <translation>Nachricht senden</translation>
     </message>
     <message>
         <location line="+19"/>
         <location line="+16"/>
         <source>Invite</source>
-        <translation type="unfinished"></translation>
+        <translation>Einladen</translation>
     </message>
     <message>
         <location line="-10"/>
         <source>Send</source>
-        <translation type="unfinished"></translation>
+        <translation>Senden</translation>
     </message>
     <message>
         <location line="+15"/>
         <source>Send File</source>
-        <translation type="unfinished"></translation>
+        <translation>Datei verschicken</translation>
     </message>
 </context>
 <context>
@@ -1011,84 +992,84 @@ p, li { white-space: pre-wrap; }
     <message>
         <location filename="../../widgets/personal_messages.cc" line="+241"/>
         <source>Error sending message.</source>
-        <translation type="unfinished"></translation>
+        <translation>Fehler beim Senden der Nachricht.</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Error</source>
-        <translation type="unfinished"></translation>
+        <translation>Fehler</translation>
     </message>
     <message>
         <location line="+38"/>
         <source>File to share...</source>
-        <translation type="unfinished"></translation>
+        <translation>Freizugebende Datei...</translation>
     </message>
     <message>
         <location line="-107"/>
         <location line="+31"/>
         <source>%3 %1 said: %2</source>
-        <translation type="unfinished"></translation>
+        <translation>%3 sagte %1: %2</translation>
     </message>
     <message>
         <location line="+31"/>
         <source>%2 you said: %1</source>
-        <translation type="unfinished"></translation>
+        <translation>%2 sagtest du: %1</translation>
     </message>
     <message>
         <location line="+13"/>
         <source>Save file</source>
-        <translation type="unfinished"></translation>
+        <translation>Datei speichern</translation>
     </message>
     <message>
         <location line="+10"/>
         <source>Please use the PD Browser to send files.</source>
-        <translation type="unfinished"></translation>
+        <translation>Bitte den PD-Browser zum Senden von Dateien verwenden.</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Information</source>
-        <translation type="unfinished"></translation>
+        <translation>Information</translation>
     </message>
     <message>
         <location line="+22"/>
         <location line="+11"/>
         <source>Any file</source>
-        <translation type="unfinished"></translation>
+        <translation>Alle Dateien</translation>
     </message>
     <message>
         <location line="+0"/>
         <source>Select a file to send</source>
-        <translation type="unfinished"></translation>
+        <translation>Datei zum Versenden auswählen</translation>
     </message>
     <message>
         <location line="+18"/>
         <source>Message</source>
-        <translation type="unfinished"></translation>
+        <translation>Nachricht</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Please enter a message to send with the file(s):</source>
-        <translation type="unfinished"></translation>
+        <translation>Bitte eine Nachricht eingeben, die mit den Dateien verschickt wird:</translation>
     </message>
     <message>
         <location line="+11"/>
         <source>File Sent</source>
-        <translation type="unfinished"></translation>
+        <translation>Datei gesendet</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Success sending file: %1</source>
-        <translation type="unfinished"></translation>
+        <translation>Datei erfolgreich gesendet: %1</translation>
     </message>
     <message>
         <location line="+2"/>
         <source>There was an error sending the file: %1</source>
-        <translation type="unfinished"></translation>
+        <translation>Fehler beim Senden der Datei: %1</translation>
     </message>
     <message>
         <location line="+2"/>
         <source>File Not Sent</source>
-        <translation type="unfinished"></translation>
+        <translation>Datei nicht gesendet</translation>
     </message>
 </context>
 <context>
@@ -1096,57 +1077,57 @@ p, li { white-space: pre-wrap; }
     <message>
         <location filename="../../ui/personal_settings.ui" line="+14"/>
         <source>User Settings</source>
-        <translation type="unfinished"></translation>
+        <translation>Nutzereinstellungen</translation>
     </message>
     <message>
         <location line="+6"/>
         <source>Personal Settings</source>
-        <translation type="unfinished"></translation>
+        <translation>Persönliche Einstellungen</translation>
     </message>
     <message>
         <location line="+12"/>
         <source>Display Name</source>
-        <translation type="unfinished"></translation>
+        <translation>Angezeigter Name</translation>
     </message>
     <message>
         <location line="+9"/>
         <source>Public username:</source>
-        <translation type="unfinished"></translation>
+        <translation>Öffentlicher Nutzername:</translation>
     </message>
     <message>
         <location line="+14"/>
         <source>Enter a status message for others to see:</source>
-        <translation type="unfinished"></translation>
+        <translation>Status-Nachricht für Freunde:</translation>
     </message>
     <message>
         <location line="+35"/>
         <source>Choose a display picture:</source>
-        <translation type="unfinished"></translation>
+        <translation>Bild auswählen:</translation>
     </message>
     <message>
         <location line="+10"/>
         <source>Browse...</source>
-        <translation type="unfinished"></translation>
+        <translation>Auswählen...</translation>
     </message>
     <message>
         <location line="+29"/>
         <source>Language Settings</source>
-        <translation type="unfinished"></translation>
+        <translation>Spracheinstellungen</translation>
     </message>
     <message>
         <location line="+9"/>
         <source>Language:</source>
-        <translation type="unfinished"></translation>
+        <translation>Sprache:</translation>
     </message>
     <message>
         <location line="-73"/>
         <source>Save conversation history?</source>
-        <translation type="unfinished"></translation>
+        <translation>Konversationen ausfzeichnen?</translation>
     </message>
     <message>
         <location line="+10"/>
         <source>Display Picture</source>
-        <translation type="unfinished"></translation>
+        <translation>Angezeigtes Bild</translation>
     </message>
 </context>
 <context>
@@ -1155,86 +1136,85 @@ p, li { white-space: pre-wrap; }
         <location filename="../../client/presence.cc" line="+46"/>
         <location line="+6"/>
         <source>Unknown</source>
-        <translation type="unfinished"></translation>
+        <translation>Unbekannt</translation>
     </message>
     <message>
         <location line="-5"/>
         <source>Available</source>
-        <translation type="unfinished"></translation>
+        <translation>Verfügbar</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Idle</source>
-        <translation type="unfinished"></translation>
+        <translation>Untätig</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Busy</source>
-        <translation type="unfinished"></translation>
+        <translation>Beschäftigt</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Unavailable</source>
-        <translation type="unfinished"></translation>
+        <translation>Nicht verfügbar</translation>
     </message>
 </context>
 <context>
     <name>ProfileSettingsPage</name>
     <message>
-        <location filename="../../ui/profile_settings.ui" line="+14"/>
-        <location line="+6"/>
+        <location filename="../../ui/profile_settings.ui" line="+20"/>
         <source>Profile Settings</source>
-        <translation type="unfinished"></translation>
+        <translation>Profileinstellungen</translation>
     </message>
     <message>
         <location line="+6"/>
         <source>Full name:</source>
-        <translation type="unfinished"></translation>
+        <translation>Vollständiger Name:</translation>
     </message>
     <message>
         <location line="+10"/>
         <source>Phone no.:</source>
-        <translation type="unfinished"></translation>
+        <translation>Telefonnummer:</translation>
     </message>
     <message>
         <location line="+10"/>
         <source>Birthday:</source>
-        <translation type="unfinished"></translation>
+        <translation>Geburtstag:</translation>
     </message>
     <message>
         <location line="+10"/>
         <source>Gender:</source>
-        <translation type="unfinished"></translation>
+        <translation>Geschlecht:</translation>
     </message>
     <message>
         <location line="+7"/>
         <source>Spoken languages:</source>
-        <translation type="unfinished"></translation>
+        <translation>Sprachen:</translation>
     </message>
     <message>
         <location line="+10"/>
         <source>City:</source>
-        <translation type="unfinished"></translation>
+        <translation>Stadt:</translation>
     </message>
     <message>
         <location line="+10"/>
         <source>Country:</source>
-        <translation type="unfinished"></translation>
+        <translation>Land:</translation>
     </message>
     <message>
         <location line="+19"/>
         <source>Male</source>
-        <translation type="unfinished"></translation>
+        <translation>männlich</translation>
     </message>
     <message>
         <location line="+7"/>
         <source>Female</source>
-        <translation type="unfinished"></translation>
+        <translation>weiblich</translation>
     </message>
     <message>
         <location line="+23"/>
         <source>Public name:</source>
-        <translation type="unfinished"></translation>
+        <translation>Öffentlicher Name:</translation>
     </message>
 </context>
 <context>
@@ -1242,27 +1222,17 @@ p, li { white-space: pre-wrap; }
     <message>
         <location filename="../../ui/progress.ui" line="+14"/>
         <source>Progress</source>
-        <translation type="unfinished"></translation>
+        <translation>Fortschritt</translation>
     </message>
     <message>
-        <location line="+29"/>
-        <source>Progressing...</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location line="+22"/>
-        <source>Doing something...</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location line="+61"/>
+        <location line="+107"/>
         <source>OK</source>
-        <translation type="unfinished"></translation>
+        <translation>OK</translation>
     </message>
     <message>
         <location line="+7"/>
         <source>Cancel</source>
-        <translation type="unfinished"></translation>
+        <translation>Abbrechen</translation>
     </message>
 </context>
 <context>
@@ -1271,72 +1241,63 @@ p, li { white-space: pre-wrap; }
         <location filename="../../widgets/public_username.cc" line="+64"/>
         <location line="+22"/>
         <source>Error</source>
-        <translation type="unfinished"></translation>
+        <translation>Fehler</translation>
     </message>
     <message>
         <location line="-21"/>
         <source>Please specify a username.</source>
-        <translation type="unfinished"></translation>
+        <translation>Bitte einen Nutzernamen angeben.</translation>
     </message>
     <message>
         <location line="+21"/>
         <source>Could not set new username.</source>
-        <translation type="unfinished"></translation>
+        <translation>Nutzername konnte nicht gespeichert werden.</translation>
     </message>
 </context>
 <context>
     <name>PublicUsernamePage</name>
     <message>
-        <location filename="../../ui/user_public_username_panel.ui" line="+14"/>
-        <location line="+39"/>
+        <location filename="../../ui/user_public_username_panel.ui" line="+29"/>
+        <source>To complete the creation of your account, you need to create a public username. This is the name you share with other users so they can communicate with you.</source>
+        <translation>Um die Erstellung Ihres Nutzerkontos abzuschließen, müssen Sie einen öffentlichen Nutzernamen angeben, unter welchem Ihre Freunde Sie kontaktieren können.</translation>
+    </message>
+    <message>
+        <location line="+19"/>
         <source>Create Public Username</source>
-        <translation type="unfinished"></translation>
+        <translation>Öffentlichen Nutzernamen anlegen</translation>
     </message>
     <message>
-        <location line="-24"/>
-        <source>To complete the creation of your account, you need to create a public username. This is the name you share with other users so they can communicate with you.
-
-You can change your public username later if you wish.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location line="+21"/>
-        <source>Click here to create your public username</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location line="+31"/>
+        <location line="+28"/>
         <source>Creating public username...</source>
-        <translation type="unfinished"></translation>
+        <translation>Öffentlicher Nutzername wird angelegt...</translation>
     </message>
 </context>
 <context>
     <name>SecuritySettingsPage</name>
     <message>
-        <location filename="../../ui/security_settings.ui" line="+14"/>
-        <location line="+6"/>
+        <location filename="../../ui/security_settings.ui" line="+20"/>
         <source>Security Settings</source>
-        <translation type="unfinished"></translation>
+        <translation>Sicherheitseinstellungen</translation>
     </message>
     <message>
         <location line="+6"/>
-        <source>Login Settings</source>
-        <translation type="unfinished"></translation>
+        <source>Change Login</source>
+        <translation>Login ändern</translation>
     </message>
     <message>
         <location line="+9"/>
-        <source>Enter new username:</source>
-        <translation type="unfinished"></translation>
+        <source>New username:</source>
+        <translation>Neuer Nutzername:</translation>
     </message>
     <message>
         <location line="+10"/>
-        <source>Enter new PIN:</source>
-        <translation type="unfinished"></translation>
+        <source>New PIN:</source>
+        <translation>Neue PIN:</translation>
     </message>
     <message>
         <location line="+10"/>
-        <source>Enter new password:</source>
-        <translation type="unfinished"></translation>
+        <source>New password:</source>
+        <translation>Neues Passwort:</translation>
     </message>
 </context>
 <context>
@@ -1344,22 +1305,22 @@ You can change your public username later if you wish.</source>
     <message>
         <location filename="../../widgets/shares.cc" line="+95"/>
         <source>Patience...</source>
-        <translation type="unfinished"></translation>
+        <translation>Geduld...</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>A share is being created.</source>
-        <translation type="unfinished"></translation>
+        <translation>Eine Freigabe wird eingerichtet.</translation>
     </message>
     <message>
         <location line="+6"/>
         <source>Add Share</source>
-        <translation type="unfinished"></translation>
+        <translation>Freigabe hinzufügen</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Please enter a share to add:</source>
-        <translation type="unfinished"></translation>
+        <translation>Bitte eine Freigabe angeben:</translation>
     </message>
     <message>
         <location line="+13"/>
@@ -1367,37 +1328,37 @@ You can change your public username later if you wish.</source>
         <location line="+6"/>
         <location line="+48"/>
         <source>Error</source>
-        <translation type="unfinished"></translation>
+        <translation>Fehler</translation>
     </message>
     <message>
         <location line="-47"/>
         <source>Please enter a valid name for the share.</source>
-        <translation type="unfinished"></translation>
+        <translation>Bitte einen gültigen Namen für die Freigabe angeben.</translation>
     </message>
     <message>
         <location line="+16"/>
         <source>Read-only Participants</source>
-        <translation type="unfinished"></translation>
+        <translation>Teilnehmer mit Lesezugriff</translation>
     </message>
     <message>
         <location line="+16"/>
         <source>Creating share: %1</source>
-        <translation type="unfinished"></translation>
+        <translation>Freigabe einrichten: %1</translation>
     </message>
     <message>
         <location line="-45"/>
         <source>You already have a share with this name.</source>
-        <translation type="unfinished"></translation>
+        <translation>Eine Freigabe mit diesem Namen existiert bereits.</translation>
     </message>
     <message>
         <location line="+7"/>
         <source>You have no contacts to include in this share.</source>
-        <translation type="unfinished"></translation>
+        <translation>Keine Kontakte für diese Freigabe verfügbar.</translation>
     </message>
     <message>
         <location line="+54"/>
         <source>There was an issue creating this share.</source>
-        <translation type="unfinished"></translation>
+        <translation>Beim Einrichten der Freigabe ist ein Problem aufgetreten.</translation>
     </message>
 </context>
 <context>
@@ -1405,76 +1366,70 @@ You can change your public username later if you wish.</source>
     <message>
         <location filename="../../ui/user_shares_panel.ui" line="+59"/>
         <source>Search Shares</source>
-        <translation type="unfinished"></translation>
+        <translation>Freigaben durchsuchen</translation>
     </message>
     <message>
         <location line="+7"/>
-        <source>Click here to create your public username</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location line="+3"/>
         <source>Create</source>
-        <translation type="unfinished"></translation>
+        <translation>Erstellen</translation>
     </message>
     <message>
         <location line="+22"/>
         <source>Filter:</source>
-        <translation type="unfinished"></translation>
+        <translation>Filter:</translation>
     </message>
     <message>
-        <location line="-77"/>
-        <location line="+69"/>
+        <location line="-8"/>
         <source>Shares</source>
-        <translation type="unfinished"></translation>
+        <translation>Freigaben</translation>
     </message>
     <message>
         <location line="+28"/>
         <source>All</source>
-        <translation type="unfinished"></translation>
+        <translation>Alle</translation>
     </message>
     <message>
         <location line="+5"/>
         <source>Read-Only</source>
-        <translation type="unfinished"></translation>
+        <translation>Nur Lesen</translation>
     </message>
     <message>
         <location line="+5"/>
         <source>Admin</source>
-        <translation type="unfinished"></translation>
+        <translation>Admin</translation>
     </message>
 </context>
 <context>
     <name>SystemTrayIcon</name>
     <message>
         <location filename="../../widgets/system_tray_icon.cc" line="+43"/>
-        <source>&amp;Restore Window</source>
-        <translation type="unfinished"></translation>
+        <source>&amp;Restore window</source>
+        <translation>&amp;Fenster wiederherstellen</translation>
     </message>
     <message>
         <location line="+3"/>
         <source>&amp;Close</source>
-        <translation type="unfinished"></translation>
+        <translation>&amp;Schließen</translation>
     </message>
     <message>
         <location line="+3"/>
         <source>&amp;Exit</source>
-        <translation type="unfinished"></translation>
+        <translation>&amp;Beenden</translation>
     </message>
     <message>
         <location line="+3"/>
         <source>&amp;Data</source>
-        <translation type="unfinished"></translation>
+        <translation>&amp;Daten</translation>
     </message>
     <message>
         <location line="+3"/>
         <source>&amp;Send a file</source>
-        <translation type="unfinished"></translation>
+        <translation>Datei &amp;versenden</translation>
     </message>
     <message>
         <location line="+8"/>
-        <source>Create a share</source>
-        <translation type="unfinished"></translation>
+        <source>&amp;Create a share</source>
+        <translation>&amp;Freigabe einrichten</translation>
     </message>
 </context>
 <context>
@@ -1483,19 +1438,19 @@ You can change your public username later if you wish.</source>
         <location filename="../../widgets/user_panels.cc" line="+74"/>
         <location line="+14"/>
         <source>Sort alphabetically</source>
-        <translation type="unfinished"></translation>
+        <translation>Sortieren nach Alphabet</translation>
     </message>
     <message>
         <location line="-13"/>
         <location line="+14"/>
         <source>Sort by most contacted</source>
-        <translation type="unfinished"></translation>
+        <translation>Sortieren nach meist kontaktiert</translation>
     </message>
     <message>
         <location line="-13"/>
         <location line="+14"/>
         <source>Sort by most recent</source>
-        <translation type="unfinished"></translation>
+        <translation>Sortieren nach neuesten</translation>
     </message>
 </context>
 <context>
@@ -1503,46 +1458,22 @@ You can change your public username later if you wish.</source>
     <message>
         <location filename="../../widgets/user_settings.cc" line="+156"/>
         <source>Change Settings</source>
-        <translation type="unfinished"></translation>
+        <translation>Einstellungen ändern</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Please enter your current password:</source>
-        <translation type="unfinished"></translation>
+        <translation>Bitte derzeitiges Passwort eingeben:</translation>
     </message>
     <message>
         <location line="+15"/>
         <source>Could not validate the password, security info will not be changed.</source>
-        <translation type="unfinished"></translation>
+        <translation>Passwort konnte nicht validiert werden, Sicherheitseinstellungen werden nicht geändert.</translation>
     </message>
     <message>
-        <location line="+19"/>
-        <location line="+6"/>
-        <source>Result: %1</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location line="-26"/>
+        <location line="-1"/>
         <source>Wrong Password</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location line="+19"/>
-        <source>Profile Settings Thread Complete</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location line="+6"/>
-        <source>Security Settings Thread Complete</source>
-        <translation type="unfinished"></translation>
-    </message>
-</context>
-<context>
-    <name>UserSettingsPage</name>
-    <message>
-        <location filename="../../ui/user_settings.ui" line="+14"/>
-        <source>PD Settings</source>
-        <translation type="unfinished"></translation>
+        <translation>Falsches Passwort</translation>
     </message>
 </context>
 <context>
@@ -1552,115 +1483,84 @@ You can change your public username later if you wish.</source>
         <location line="+1"/>
         <location line="+1"/>
         <source>%1 KB</source>
-        <translation type="unfinished"></translation>
+        <translation>%1 KB</translation>
     </message>
     <message>
         <location line="+11"/>
         <source>Vault is in good condition.</source>
-        <translation type="unfinished"></translation>
+        <translation>Vault ist in gutem Zustand.</translation>
     </message>
     <message>
         <location line="+4"/>
         <source>It might be time to share some more space!</source>
-        <translation type="unfinished"></translation>
+        <translation>Es wird Zeit etwas mehr Speicherplatz freizugeben!</translation>
     </message>
     <message>
         <location line="+5"/>
         <source>Attention, your vault seems to be offline!</source>
-        <translation type="unfinished"></translation>
+        <translation>Achtung, Vault scheint offline zu sein!</translation>
     </message>
 </context>
 <context>
     <name>VaultInfoPage</name>
     <message>
-        <location filename="../../ui/user_vault_info.ui" line="+14"/>
-        <source>Vault Settings</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location line="+6"/>
+        <location filename="../../ui/user_vault_info.ui" line="+20"/>
         <source>Vault Information</source>
-        <translation type="unfinished"></translation>
+        <translation>Vault-Informationen</translation>
     </message>
     <message>
         <location line="+15"/>
         <source>Total space:</source>
-        <translation type="unfinished"></translation>
+        <translation>Gesamtspeicher:</translation>
     </message>
     <message>
-        <location line="+16"/>
-        <location line="+26"/>
-        <source>0</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location line="-13"/>
+        <location line="+29"/>
         <source>Used space:</source>
-        <translation type="unfinished"></translation>
+        <translation>Genutzter Speicher:</translation>
     </message>
     <message>
         <location line="+26"/>
         <source>Free space:</source>
-        <translation type="unfinished"></translation>
+        <translation>Freier Speicher:</translation>
     </message>
     <message>
         <location line="+52"/>
         <source>Data directory:</source>
-        <translation type="unfinished"></translation>
+        <translation>Datenverzeichnis:</translation>
     </message>
     <message>
         <location line="+26"/>
         <source>Vault IP address:</source>
-        <translation type="unfinished"></translation>
+        <translation>Vault-IP-Adresse:</translation>
     </message>
     <message>
         <location line="+26"/>
         <source>Vault port:</source>
-        <translation type="unfinished"></translation>
+        <translation>Vault-Port:</translation>
     </message>
     <message>
-        <location line="-91"/>
-        <source>TextLabel</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location line="+13"/>
+        <location line="-78"/>
         <source>Vault Status</source>
-        <translation>Vault in german</translation>
+        <translation>Vault-Zustand</translation>
     </message>
     <message>
         <location line="+135"/>
         <source>Refresh</source>
-        <translation type="unfinished"></translation>
+        <translation>Aktualisieren</translation>
     </message>
 </context>
 <context>
     <name>complete</name>
     <message>
-        <location filename="../../ui/create_page_complete.ui" line="+14"/>
-        <source>Create User Complete</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location line="+6"/>
-        <source>complete</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location line="+23"/>
+        <location filename="../../ui/create_page_complete.ui" line="+43"/>
         <source>User creation in progress...</source>
-        <translation type="unfinished"></translation>
+        <translation>Nutzerkonto wird eingerichtet...</translation>
     </message>
 </context>
 <context>
     <name>license</name>
-    <message>
-        <location filename="../../ui/create_page_license.ui" line="+14"/>
-        <source>Form</source>
-        <translation type="unfinished"></translation>
-    </message>
     <message utf8="true">
-        <location line="+6"/>
+        <location filename="../../ui/create_page_license.ui" line="+20"/>
         <source>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
 &lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
 p, li { white-space: pre-wrap; }
@@ -1785,12 +1685,12 @@ p, li { white-space: pre-wrap; }
     <message>
         <location line="+125"/>
         <source>I accept</source>
-        <translation type="unfinished"></translation>
+        <translation>Ich stimme zu</translation>
     </message>
     <message>
         <location line="+7"/>
         <source>No thanks</source>
-        <translation type="unfinished"></translation>
+        <translation>Nein, danke</translation>
     </message>
 </context>
 <context>
@@ -1798,80 +1698,69 @@ p, li { white-space: pre-wrap; }
     <message>
         <location filename="../../ui/create_page_localvault_setup.ui" line="+57"/>
         <source>Space to offer (in MB):</source>
-        <translation type="unfinished"></translation>
+        <translation>Angebotener Speicherplatz (in MB):</translation>
     </message>
     <message>
-        <location line="-43"/>
-        <source>License</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location line="+14"/>
+        <location line="-29"/>
         <source>The space you offer to the network is also how much space you will have to store your files in. A minimum space of 1 GB = 1024 MB is recommended.
 
 Leaving port as 0 will allow Perpetual Data to determine one for you automatically.
 
 Choose the directory so that you are able to increase the space when you desire.</source>
-        <translation type="unfinished"></translation>
+        <translation>Die Größe des angebotenen Speicherplatz bestimmt zugleich die Größe des verfügbaren Speicherplatzes. Mindestens 1 GB (1024 MB) werden empfohlen.
+
+Wird der Port auf 0 belassen, kann Perpetual Data automatisch einen auswählen.
+
+Das Verzeichnis sollte so gewählt werden, dass der Speicherplatz bei Bedarf erhöht werden kann.</translation>
     </message>
     <message>
         <location line="+43"/>
         <source>Port (0 recommended):</source>
-        <translation type="unfinished"></translation>
+        <translation>Port (0 empfohlen):</translation>
     </message>
     <message>
         <location line="+10"/>
         <source>0</source>
-        <translation type="unfinished"></translation>
+        <translation>0</translation>
     </message>
     <message>
         <location line="+9"/>
         <source>Data directory:</source>
-        <translation type="unfinished"></translation>
+        <translation>Datenverzeichnis:</translation>
     </message>
     <message>
         <location line="+18"/>
         <source>Browse...</source>
-        <translation type="unfinished"></translation>
+        <translation>Auswählen...</translation>
     </message>
 </context>
 <context>
     <name>options</name>
     <message>
-        <location filename="../../ui/create_page_options.ui" line="+14"/>
-        <source>Create Account Options</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location line="+6"/>
+        <location filename="../../ui/create_page_options.ui" line="+20"/>
         <source>To create a user account, you will also need a vault on the network. Please choose from the following options:</source>
-        <translation type="unfinished"></translation>
+        <translation>Um ein Nutzerkonto einzurichten wird ein Vault im Netzwerk benötigt. Es bestehen folgende Möglichkeiten:</translation>
     </message>
     <message>
         <location line="+10"/>
         <source>Setup a local vault</source>
-        <translation type="unfinished"></translation>
+        <translation>Lokalen Vault einrichten</translation>
     </message>
     <message>
         <location line="+7"/>
         <source>Purchase vault space</source>
-        <translation type="unfinished"></translation>
+        <translation>Vault-Speicher kaufen</translation>
     </message>
     <message>
         <location line="+7"/>
         <source>Share vault with a friend</source>
-        <translation type="unfinished"></translation>
+        <translation>Vault mit einem Freund teilen</translation>
     </message>
 </context>
 <context>
     <name>welcome</name>
     <message>
-        <location filename="../../ui/create_page_welcome.ui" line="+14"/>
-        <source>Create User Welcome</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location line="+6"/>
+        <location filename="../../ui/create_page_welcome.ui" line="+20"/>
         <source>Thank you for choosing Maidsafe Perpetual Data as your provider of self-encrypted distributed data storage in a self-healing peer-to-peer network.
 
 You are now ready to begin the process of creating a user account, using the details entered during login:
@@ -1881,7 +1770,15 @@ PIN - Personal identification number
 Password - Private password or passphrase
 
 If you want to change any of these details please click &apos;Back&apos; to login again. Alternatively, you can change any of these details once you have created your account.</source>
-        <translation type="unfinished"></translation>
+        <translation>Danke, dass Sie sich für Maidsafe Perpetual Data und damit selbstverschlüsselte, verteilte Datenspeicherung in einem selbstheilenden P2P-Netzwerk entschieden haben.
+
+Sie können nun ein Nutzerkonto einrichten. Dafür werden die Daten verwendet, die während des Login eingegeben wurden:
+
+Nutzer - Ihr Nutzername, typischerweise eine E-Mail-Adresse
+PIN - Persönliche Identifikationsnummer
+Passwort - Geheimes Passwort oder Passphrase
+
+Sollten Sie Ihre Angaben nochmal ändern wollen, klicken Sie &apos;Zurück&apos; um sich neu einzuloggen. Ansonsten können diese jederzeit später noch geändert werden.</translation>
     </message>
 </context>
 </TS>

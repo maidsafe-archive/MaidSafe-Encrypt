@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Vault Settings</string>
+   <string/>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout_2">
    <item>
@@ -48,7 +48,7 @@
          </sizepolicy>
         </property>
         <property name="text">
-         <string>0</string>
+         <string/>
         </property>
        </widget>
       </item>
@@ -74,7 +74,7 @@
          </sizepolicy>
         </property>
         <property name="text">
-         <string>0</string>
+         <string/>
         </property>
        </widget>
       </item>
@@ -100,7 +100,7 @@
          </sizepolicy>
         </property>
         <property name="text">
-         <string>TextLabel</string>
+         <string/>
         </property>
        </widget>
       </item>

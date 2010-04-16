@@ -590,7 +590,7 @@ void PerpetualData::onFileReceived(const maidsafe::InstantMessage& im) {
           maidsafe::SessionSingleton::getInstance()->SessionName()).string() +
           "/My Files");
 #endif
-      root += tr("/") + QString::fromStdString(ifn.filename());
+      root += "/" + QString::fromStdString(ifn.filename());
       qfd_ = new QFileDialog(this, tr("Save File As..."), root);
       connect(qfd_, SIGNAL(directoryEntered(const QString&)),
               this, SLOT(onDirectoryEntered(const QString&)));

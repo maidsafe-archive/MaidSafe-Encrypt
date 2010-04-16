@@ -86,7 +86,7 @@
         <string/>
        </property>
        <property name="text">
-        <string>Search contacts:</string>
+        <string>Search contacts</string>
        </property>
        <property name="cursorPosition">
         <number>0</number>
