@@ -117,12 +117,12 @@ static FILETIME GetFileTime(ULONGLONG linuxtime) {
   return filetime;
 }
 
-int __stdcall WinCreateFile(const WCHAR *FileName,
-                            DWORD AccessMode,
-                            DWORD ShareMode,
-                            DWORD CreationDisposition,
-                            DWORD FlagsAndAttributes,
-                            PDOKAN_FILE_INFO DokanFileInfo) {
+static int __stdcall WinCreateFile(const WCHAR *FileName,
+                                   DWORD AccessMode,
+                                   DWORD ShareMode,
+                                   DWORD CreationDisposition,
+                                   DWORD FlagsAndAttributes,
+                                   PDOKAN_FILE_INFO DokanFileInfo) {
   WCHAR filePath[MAX_PATH];
   HANDLE handle;
 //  DWORD fileAttr;
@@ -306,7 +306,7 @@ int __stdcall WinCreateFile(const WCHAR *FileName,
   return 0;
 }
 
-int __stdcall WinCreateDirectory(const WCHAR *FileName,
+static int __stdcall WinCreateDirectory(const WCHAR *FileName,
                                         PDOKAN_FILE_INFO) {
   DbgPrint(L"WinCreateDirectory\nFileName: %s\n", FileName);
   WCHAR filePath[MAX_PATH];
