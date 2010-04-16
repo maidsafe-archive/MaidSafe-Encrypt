@@ -36,10 +36,14 @@ namespace fs = boost::filesystem;
 
 namespace fs_w_fuse {
 
+#define WinCheckFlag(val, flag) if (val&flag) { DbgPrint(L"\t\t" #flag L"\n"); }  // NOLINT
+
 std::list<ULONG64> to_encrypt_;
 std::list<std::string> to_delete_;
 
-static void DbgPrint(LPCWSTR format, ...) {
+static WCHAR RootDirectory[MAX_PATH];
+
+static void DbgPrint(const WCHAR *format, ...) {
 #ifdef DEBUG
   WCHAR buffer[512];
   va_list argp;
@@ -50,7 +54,7 @@ static void DbgPrint(LPCWSTR format, ...) {
 #endif
 }
 
-static void DbgPrint(LPCSTR format, ...) {
+static void DbgPrint(const CHAR *format, ...) {
 #ifdef DEBUG
   CHAR buffer[512];
   va_list argp;
@@ -61,13 +65,13 @@ static void DbgPrint(LPCSTR format, ...) {
 #endif
 }
 
-void GetFilePath(PWCHAR filePath, LPCWSTR FileName) {
+static void GetFilePath(PWCHAR filePath, const WCHAR *FileName) {
   RtlZeroMemory(filePath, MAX_PATH);
   wcsncpy(filePath, RootDirectory, wcslen(RootDirectory));
   wcsncat(filePath, FileName, wcslen(FileName));
 }
 
-std::string WstrToStr(LPCWSTR in_wstr) {
+static std::string WstrToStr(const WCHAR *in_wstr) {
   std::ostringstream stm;
   const std::ctype<char> &ctfacet =
       std::use_facet< std::ctype<char> >(stm.getloc());
@@ -76,7 +80,7 @@ std::string WstrToStr(LPCWSTR in_wstr) {
   return base::TidyPath(stm.str());
 }
 
-//  void GetFilePath(std::string *filePathStr, LPCWSTR FileName) {
+//  void GetFilePath(std::string *filePathStr, const WCHAR *FileName) {
 //    std::ostringstream stm;
 //    const std::ctype<char> &ctfacet =
 //        std::use_facet< std::ctype<char> >(stm.getloc());
@@ -86,14 +90,14 @@ std::string WstrToStr(LPCWSTR in_wstr) {
 //    *filePathStr = base::TidyPath(path_.string());
 //  }
 
-void GetMountPoint(char drive, LPWSTR mount_point) {
+static void GetMountPoint(char drive, LPWSTR mount_point) {
   std::locale loc;
   mount_point[0] = std::use_facet< std::ctype<wchar_t> >(loc).widen(drive);
   mount_point[1] = L':';
   mount_point[2] = L'\0';
 }
 
-FILETIME GetFileTime(ULONGLONG linuxtime) {
+static FILETIME GetFileTime(ULONGLONG linuxtime) {
   FILETIME filetime, ft;
   SYSTEMTIME systime;
   systime.wYear = 1970;
@@ -113,12 +117,12 @@ FILETIME GetFileTime(ULONGLONG linuxtime) {
   return filetime;
 }
 
-int WinCreateFile(LPCWSTR FileName,
-                  DWORD AccessMode,
-                  DWORD ShareMode,
-                  DWORD CreationDisposition,
-                  DWORD FlagsAndAttributes,
-                  PDOKAN_FILE_INFO DokanFileInfo) {
+int __stdcall WinCreateFile(const WCHAR *FileName,
+                            DWORD AccessMode,
+                            DWORD ShareMode,
+                            DWORD CreationDisposition,
+                            DWORD FlagsAndAttributes,
+                            PDOKAN_FILE_INFO DokanFileInfo) {
   WCHAR filePath[MAX_PATH];
   HANDLE handle;
 //  DWORD fileAttr;
@@ -302,7 +306,8 @@ int WinCreateFile(LPCWSTR FileName,
   return 0;
 }
 
-int WinCreateDirectory(LPCWSTR FileName, PDOKAN_FILE_INFO) {
+int __stdcall WinCreateDirectory(const WCHAR *FileName,
+                                        PDOKAN_FILE_INFO) {
   DbgPrint(L"WinCreateDirectory\nFileName: %s\n", FileName);
   WCHAR filePath[MAX_PATH];
   GetFilePath(filePath, FileName);
@@ -336,7 +341,8 @@ int WinCreateDirectory(LPCWSTR FileName, PDOKAN_FILE_INFO) {
   return 0;
 }
 
-int WinOpenDirectory(LPCWSTR FileName, PDOKAN_FILE_INFO DokanFileInfo) {
+static int __stdcall WinOpenDirectory(const WCHAR *FileName,
+                                      PDOKAN_FILE_INFO DokanFileInfo) {
   DbgPrint(L"WinOpenDirectory\nFileName: %s\n", FileName);
   WCHAR filePath[MAX_PATH];
   HANDLE handle;
@@ -371,7 +377,8 @@ int WinOpenDirectory(LPCWSTR FileName, PDOKAN_FILE_INFO DokanFileInfo) {
   return 0;
 }
 
-int WinCloseFile(LPCWSTR FileName, PDOKAN_FILE_INFO DokanFileInfo) {
+static int __stdcall WinCloseFile(const WCHAR *FileName,
+                                  PDOKAN_FILE_INFO DokanFileInfo) {
   DbgPrint(L"WinCloseFile\nFileName: %s\n", FileName);
   WCHAR filePath[MAX_PATH];
   GetFilePath(filePath, FileName);
@@ -382,7 +389,8 @@ int WinCloseFile(LPCWSTR FileName, PDOKAN_FILE_INFO DokanFileInfo) {
   return 0;
 }
 
-int WinCleanup(LPCWSTR FileName, PDOKAN_FILE_INFO DokanFileInfo) {
+static int __stdcall WinCleanup(const WCHAR *FileName,
+                                PDOKAN_FILE_INFO DokanFileInfo) {
   DbgPrint(L"WinCleanup\nFileName: %s\n", FileName);
   WCHAR filePath[MAX_PATH];
   GetFilePath(filePath, FileName);
@@ -448,12 +456,12 @@ int WinCleanup(LPCWSTR FileName, PDOKAN_FILE_INFO DokanFileInfo) {
   return 0;
 }
 
-int WinReadFile(LPCWSTR FileName,
-                LPVOID Buffer,
-                DWORD BufferLength,
-                LPDWORD ReadLength,
-                LONGLONG Offset,
-                PDOKAN_FILE_INFO DokanFileInfo) {
+static int __stdcall WinReadFile(const WCHAR *FileName,
+                                 LPVOID Buffer,
+                                 DWORD BufferLength,
+                                 LPDWORD ReadLength,
+                                 LONGLONG Offset,
+                                 PDOKAN_FILE_INFO DokanFileInfo) {
   DbgPrint(L"WinReadFile\nFileName: %s\n", FileName);
   WCHAR   filePath[MAX_PATH];
   HANDLE   handle = (HANDLE)DokanFileInfo->Context;
@@ -501,12 +509,12 @@ int WinReadFile(LPCWSTR FileName,
   return 0;
 }
 
-int WinWriteFile(LPCWSTR FileName,
-                 LPCVOID Buffer,
-                 DWORD NumberOfBytesToWrite,
-                 LPDWORD NumberOfBytesWritten,
-                 LONGLONG Offset,
-                 PDOKAN_FILE_INFO DokanFileInfo) {
+static int __stdcall WinWriteFile(const WCHAR *FileName,
+                                  LPCVOID Buffer,
+                                  DWORD NumberOfBytesToWrite,
+                                  LPDWORD NumberOfBytesWritten,
+                                  LONGLONG Offset,
+                                  PDOKAN_FILE_INFO DokanFileInfo) {
   DbgPrint(L"WinWriteFile\nFileName: %s\n", FileName);
   WCHAR filePath[MAX_PATH];
   HANDLE handle = (HANDLE)DokanFileInfo->Context;
@@ -569,7 +577,8 @@ int WinWriteFile(LPCWSTR FileName,
   return 0;
 }
 
-int WinFlushFileBuffers(LPCWSTR FileName, PDOKAN_FILE_INFO DokanFileInfo) {
+static int __stdcall WinFlushFileBuffers(const WCHAR *FileName,
+                                         PDOKAN_FILE_INFO DokanFileInfo) {
   DbgPrint(L"WinFlushFileBuffers\nFileName: %s\n", FileName);
   WCHAR filePath[MAX_PATH];
   HANDLE handle = (HANDLE)DokanFileInfo->Context;
@@ -581,9 +590,10 @@ int WinFlushFileBuffers(LPCWSTR FileName, PDOKAN_FILE_INFO DokanFileInfo) {
   return 0;
 }
 
-int WinGetFileInformation(LPCWSTR FileName,
-                          LPBY_HANDLE_FILE_INFORMATION HandleFileInformation,
-                          PDOKAN_FILE_INFO DokanFileInfo) {
+static int __stdcall WinGetFileInformation(
+    const WCHAR *FileName,
+    LPBY_HANDLE_FILE_INFORMATION HandleFileInformation,
+    PDOKAN_FILE_INFO DokanFileInfo) {
   DbgPrint(L"WinGetFileInformation\nFileName: %s\n", FileName);
   WCHAR filePath[MAX_PATH];
   HANDLE handle = (HANDLE)DokanFileInfo->Context;
@@ -684,9 +694,9 @@ int WinGetFileInformation(LPCWSTR FileName,
   return 0;
 }
 
-int WinFindFiles(LPCWSTR FileName,
-                 PFillFindData FillFindData,  // function postatic inter
-                 PDOKAN_FILE_INFO DokanFileInfo) {
+static int __stdcall WinFindFiles(const WCHAR *FileName,
+                                  PFillFindData FillFindData,
+                                  PDOKAN_FILE_INFO DokanFileInfo) {
   DbgPrint(L"WinFindFiles\nFileName: %s\n", FileName);
   WCHAR filePath[MAX_PATH];
   WIN32_FIND_DATAW findData;
@@ -769,7 +779,7 @@ int WinFindFiles(LPCWSTR FileName,
   return 0;
 }
 
-int WinDeleteFile(LPCWSTR FileName, PDOKAN_FILE_INFO) {
+static int __stdcall WinDeleteFile(const WCHAR *FileName, PDOKAN_FILE_INFO) {
   DbgPrint(L"WinDeleteFile\nFileName: %s\n", FileName);
   WCHAR filePath[MAX_PATH];
   // HANDLE handle = (HANDLE)DokanFileInfo->Context;
@@ -799,7 +809,8 @@ int WinDeleteFile(LPCWSTR FileName, PDOKAN_FILE_INFO) {
   return 0;
 }
 
-int WinDeleteDirectory(LPCWSTR FileName, PDOKAN_FILE_INFO) {
+static int __stdcall WinDeleteDirectory(const WCHAR *FileName,
+                                        PDOKAN_FILE_INFO) {
   DbgPrint(L"WinDeleteDirectory\nFileName: %s\n", FileName);
   WCHAR filePath[MAX_PATH];
   HANDLE hFind;
@@ -868,10 +879,10 @@ int WinDeleteDirectory(LPCWSTR FileName, PDOKAN_FILE_INFO) {
 //    return 0;
 }
 
-int WinMoveFile(LPCWSTR FileName,
-                LPCWSTR NewFileName,
-                BOOL ReplaceIfExisting,
-                PDOKAN_FILE_INFO DokanFileInfo) {
+static int __stdcall WinMoveFile(const WCHAR *FileName,
+                                 const WCHAR *NewFileName,
+                                 BOOL ReplaceIfExisting,
+                                 PDOKAN_FILE_INFO DokanFileInfo) {
   DbgPrint(L"WinMovefile\nFileName: %s\n", FileName);
   WCHAR filePath[MAX_PATH];
   WCHAR newFilePath[MAX_PATH];
@@ -920,10 +931,10 @@ int WinMoveFile(LPCWSTR FileName,
   return status ? 0 : -1;
 }
 
-int WinLockFile(LPCWSTR FileName,
-                LONGLONG ByteOffset,
-                LONGLONG Length,
-                PDOKAN_FILE_INFO DokanFileInfo) {
+static int __stdcall WinLockFile(const WCHAR *FileName,
+                                 LONGLONG ByteOffset,
+                                 LONGLONG Length,
+                                 PDOKAN_FILE_INFO DokanFileInfo) {
   DbgPrint(L"WinLockFile\nFileName: %s\n", FileName);
   WCHAR filePath[MAX_PATH];
   HANDLE handle;
@@ -950,9 +961,9 @@ int WinLockFile(LPCWSTR FileName,
   return 0;
 }
 
-int WinSetEndOfFile(LPCWSTR FileName,
-                    LONGLONG ByteOffset,
-                    PDOKAN_FILE_INFO DokanFileInfo) {
+static int __stdcall WinSetEndOfFile(const WCHAR *FileName,
+                                     LONGLONG ByteOffset,
+                                     PDOKAN_FILE_INFO DokanFileInfo) {
   DbgPrint(L"WinSetEndofFile\nFileName: %s\n", FileName);
   WCHAR filePath[MAX_PATH];
   HANDLE handle;
@@ -979,9 +990,9 @@ int WinSetEndOfFile(LPCWSTR FileName,
   return 0;
 }
 
-int WinSetAllocationSize(LPCWSTR FileName,
-                         LONGLONG AllocSize,
-                         PDOKAN_FILE_INFO DokanFileInfo) {
+static int __stdcall WinSetAllocationSize(const WCHAR *FileName,
+                                          LONGLONG AllocSize,
+                                          PDOKAN_FILE_INFO DokanFileInfo) {
   DbgPrint(L"WinSetAllocationSize\nFileName: %s\n", FileName);
   WCHAR filePath[MAX_PATH];
   HANDLE handle;
@@ -1016,9 +1027,9 @@ int WinSetAllocationSize(LPCWSTR FileName,
   return 0;
 }
 
-int WinSetFileAttributes(LPCWSTR FileName,
-                         DWORD FileAttributes,
-                         PDOKAN_FILE_INFO) {
+static int __stdcall WinSetFileAttributes(const WCHAR *FileName,
+                                          DWORD FileAttributes,
+                                          PDOKAN_FILE_INFO) {
   DbgPrint(L"WinSetFileAttributes\nFileName: %s\n", FileName);
   WCHAR filePath[MAX_PATH];
   GetFilePath(filePath, FileName);
@@ -1031,11 +1042,11 @@ int WinSetFileAttributes(LPCWSTR FileName,
   return 0;
 }
 
-int WinSetFileTime(LPCWSTR FileName,
-                   CONST FILETIME *CreationTime,
-                   CONST FILETIME *LastAccessTime,
-                   CONST FILETIME *LastWriteTime,
-                   PDOKAN_FILE_INFO DokanFileInfo) {
+static int __stdcall WinSetFileTime(const WCHAR *FileName,
+                                    CONST FILETIME *CreationTime,
+                                    CONST FILETIME *LastAccessTime,
+                                    CONST FILETIME *LastWriteTime,
+                                    PDOKAN_FILE_INFO DokanFileInfo) {
   DbgPrint(L"WinSetFileTime\nFileName: %s\n", FileName);
   WCHAR   filePath[MAX_PATH];
   HANDLE   handle;
@@ -1054,10 +1065,10 @@ int WinSetFileTime(LPCWSTR FileName,
   return 0;
 }
 
-int WinUnlockFile(LPCWSTR FileName,
-                  LONGLONG ByteOffset,
-                  LONGLONG Length,
-                  PDOKAN_FILE_INFO DokanFileInfo) {
+static int __stdcall WinUnlockFile(const WCHAR *FileName,
+                                   LONGLONG ByteOffset,
+                                   LONGLONG Length,
+                                   PDOKAN_FILE_INFO DokanFileInfo) {
   DbgPrint(L"WinUnLockFile\nFileName: %s\n", FileName);
   WCHAR filePath[MAX_PATH];
   HANDLE handle;
@@ -1084,12 +1095,13 @@ int WinUnlockFile(LPCWSTR FileName,
   return 0;
 }
 
-int WinGetFileSecurity(LPCWSTR FileName,
-                       PSECURITY_INFORMATION SecurityInformation,
-                       PSECURITY_DESCRIPTOR SecurityDescriptor,
-                       ULONG BufferLength,
-                       PULONG LengthNeeded,
-                       PDOKAN_FILE_INFO DokanFileInfo) {
+static int __stdcall WinGetFileSecurity(
+    const WCHAR *FileName,
+    PSECURITY_INFORMATION SecurityInformation,
+    PSECURITY_DESCRIPTOR SecurityDescriptor,
+    ULONG BufferLength,
+    PULONG LengthNeeded,
+    PDOKAN_FILE_INFO DokanFileInfo) {
   DbgPrint(L"GetFileSecurity %s\n", FileName);
   HANDLE handle;
   WCHAR filePath[MAX_PATH];
@@ -1113,11 +1125,12 @@ int WinGetFileSecurity(LPCWSTR FileName,
   return 0;
 }
 
-int WinSetFileSecurity(LPCWSTR FileName,
-                       PSECURITY_INFORMATION SecurityInformation,
-                       PSECURITY_DESCRIPTOR SecurityDescriptor,
-                       ULONG,
-                       PDOKAN_FILE_INFO DokanFileInfo) {
+static int __stdcall WinSetFileSecurity(
+    const WCHAR *FileName,
+    PSECURITY_INFORMATION SecurityInformation,
+    PSECURITY_DESCRIPTOR SecurityDescriptor,
+    ULONG,
+    PDOKAN_FILE_INFO DokanFileInfo) {
   DbgPrint(L"SetFileSecurity %s\n", FileName);
   HANDLE handle;
   WCHAR filePath[MAX_PATH];
@@ -1135,14 +1148,14 @@ int WinSetFileSecurity(LPCWSTR FileName,
   return 0;
 }
 
-int WinGetVolumeInformation(LPWSTR VolumeNameBuffer,
-                            DWORD,
-                            LPDWORD VolumeSerialNumber,
-                            LPDWORD MaximumComponentLength,
-                            LPDWORD FileSystemFlags,
-                            LPWSTR FileSystemNameBuffer,
-                            DWORD,
-                            PDOKAN_FILE_INFO) {
+static int __stdcall WinGetVolumeInformation(LPWSTR VolumeNameBuffer,
+                                             DWORD,
+                                             LPDWORD VolumeSerialNumber,
+                                             LPDWORD MaximumComponentLength,
+                                             LPDWORD FileSystemFlags,
+                                             LPWSTR FileSystemNameBuffer,
+                                             DWORD,
+                                             PDOKAN_FILE_INFO) {
   std::string public_username =
       maidsafe::SessionSingleton::getInstance()->PublicUsername();
   if (public_username.empty()) {
@@ -1167,12 +1180,12 @@ int WinGetVolumeInformation(LPWSTR VolumeNameBuffer,
   return 0;
 }
 
-int WinUnmount(PDOKAN_FILE_INFO) {
+static int __stdcall WinUnmount(PDOKAN_FILE_INFO) {
   DbgPrint(L"\tUnmount\n");
   return 0;
 }
 
-void CallMount(char drive) {
+static void CallMount(char drive) {
   DbgPrint("In CallMount()\n");
   int status;
   PDOKAN_OPERATIONS Dokan_Operations =
