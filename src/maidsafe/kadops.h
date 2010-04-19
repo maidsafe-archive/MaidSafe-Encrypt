@@ -90,24 +90,24 @@ class KadOps {
   /**
    * Wrapper for the non-blocking Kademlia function.
    */
-  virtual void FindNode(const std::string &node_id,
+  virtual void FindNode(const kad::KadId &node_id,
                         base::callback_func_type cb,
                         const bool &local);
   /**
    * Wrapper for the non-blocking Kademlia function.
    */
-  virtual void FindCloseNodes(const std::string &kad_key,
+  virtual void FindCloseNodes(const kad::KadId &kad_key,
                               const base::callback_func_type &callback);
   /**
    * Blocking call to Kademlia's FindCloseNodes.
    */
-  virtual int FindCloseNodes(const std::string &kad_key,
+  virtual int FindCloseNodes(const kad::KadId &kad_key,
                              std::vector<kad::Contact> *contacts);
   /**
    * A callback handler for passing to FindCloseNodes.
    */
   void HandleFindCloseNodesResponse(const std::string &response,
-                                    const std::string &kad_key,
+                                    const kad::KadId &kad_key,
                                     std::vector<kad::Contact> *contacts,
                                     boost::mutex *mutex,
                                     boost::condition_variable *cv,
@@ -120,7 +120,7 @@ class KadOps {
    * lookup.  If check_local is true, it also checks the local chunkstore first.
    * The values are loaded in reverse order.
    */
-  virtual int FindValue(const std::string &kad_key,
+  virtual int FindValue(const kad::KadId &kad_key,
                         bool check_local,
                         kad::ContactInfo *cache_holder,
                         std::vector<std::string> *values,
@@ -128,7 +128,7 @@ class KadOps {
   /**
    * Simple wrapper for the Kademlia function.
    */
-  virtual void FindValue(const std::string &kad_key,
+  virtual void FindValue(const kad::KadId &kad_key,
                          bool check_local,
                          const base::callback_func_type &cb);
   /**
@@ -155,7 +155,7 @@ class KadOps {
  * @param closest_contacts a vector of contacts to compare new_contact to
  * @return true if new_contact is closer to key than one of closest_contacts
  */
-bool ContactWithinClosest(const std::string &key,
+bool ContactWithinClosest(const kad::KadId &key,
     const kad::Contact &new_contact,
     const std::vector<kad::Contact> &closest_contacts);
 
@@ -165,7 +165,7 @@ bool ContactWithinClosest(const std::string &key,
  * @param contacts pointer to a contact vector to remove the contact from
  * @return true if contact found and removed, otherwise false
  */
-bool RemoveKadContact(const std::string &id,
+bool RemoveKadContact(const kad::KadId &id,
                       std::vector<kad::Contact> *contacts);
 
 }  // namespace maidsafe

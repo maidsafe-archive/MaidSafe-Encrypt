@@ -1894,7 +1894,7 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesAmendAccount) {
   boost::uint64_t chunk_size(chunk_data.size());
 
   EXPECT_CALL(*mock_vault_service_logic.kadops(),
-              FindCloseNodes(chunk_name,
+              FindCloseNodes(kad::KadId(chunk_name, false),
                              testing::An<const base::callback_func_type&>()))
       .Times(testing::AtLeast(6))
       .WillRepeatedly(testing::WithArg<1>(testing::Invoke(
