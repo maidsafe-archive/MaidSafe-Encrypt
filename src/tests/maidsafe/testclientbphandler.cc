@@ -48,7 +48,9 @@ void execute_cb(base::callback_func_type cb, const std::string &result) {
 void FindNodesSucceed(base::callback_func_type cb) {
   kad::FindResponse res;
   res.set_result(kad::kRpcResultSuccess);
-  kad::Contact ctc("id", "127.0.0.1", 8888, "127.0.0.1", 8888);
+  crypto::Crypto co;
+  std::string id(co.Hash("id", "", crypto::STRING_STRING, false));
+  kad::Contact ctc(id, "127.0.0.1", 8888, "127.0.0.1", 8888);
   std::string ser_ctc;
   ctc.SerialiseToString(&ser_ctc);
   for (int n = 0; n < kad::K; ++n) {
@@ -71,8 +73,10 @@ void FindNodesFailNoParse(base::callback_func_type cb) {
 void FindNodesFailNotEnough(base::callback_func_type cb) {
   kad::FindResponse res;
   res.set_result(kad::kRpcResultSuccess);
-  kad::Contact ctc("id", "127.0.0.1", 8888, "127.0.0.1", 8888);
+  crypto::Crypto co;
+  std::string id(co.Hash("id", "", crypto::STRING_STRING, false));
   std::string ser_ctc;
+  kad::Contact ctc(id, "127.0.0.1", 8888, "127.0.0.1", 8888);
   ctc.SerialiseToString(&ser_ctc);
   for (int n = 0; n < kad::K/4; ++n) {
     res.add_closest_nodes(ser_ctc);

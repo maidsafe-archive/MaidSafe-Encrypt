@@ -749,6 +749,8 @@ int LocalStoreManager::AddBPMessage(
   if (sss.size() != receivers.size()) {
     for (it = sss.begin(); it != sss.end(); ++it)
       recs.push_back(*it);
+  } else {
+    recs = receivers;
   }
   for (size_t n = 0; n < recs.size(); ++n)
     add_results->insert(std::pair<std::string, ReturnCode>

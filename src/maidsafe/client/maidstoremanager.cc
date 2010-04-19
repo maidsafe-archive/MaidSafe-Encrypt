@@ -1414,6 +1414,8 @@ int MaidsafeStoreManager::AddBPMessage(
   if (sss.size() != receivers.size()) {
     for (it = sss.begin(); it != sss.end(); ++it)
       recs.push_back(*it);
+  } else {
+    recs = receivers;
   }
 
   for (size_t n = 0; n < recs.size(); ++n)
@@ -1501,6 +1503,8 @@ int MaidsafeStoreManager::AddBPPresence(
   if (sss.size() != receivers.size()) {
     for (it = sss.begin(); it != sss.end(); ++it)
       recs.push_back(*it);
+  } else {
+    recs = receivers;
   }
 
   for (size_t n = 0; n < recs.size(); ++n)

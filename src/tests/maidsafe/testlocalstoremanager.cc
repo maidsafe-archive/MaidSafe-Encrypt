@@ -532,7 +532,7 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_AddRequestBufferPacketMessage) {
   std::string test_msg("There are strange things done in the midnight sun");
   pulbicusernames.push_back(me_pubusername);
   std::map<std::string, maidsafe::ReturnCode> add_results;
-  ASSERT_NE(0, sm_->AddBPMessage(pulbicusernames, test_msg,
+  ASSERT_EQ(0, sm_->AddBPMessage(pulbicusernames, test_msg,
             maidsafe::INSTANT_MSG, &add_results));
   add_results.clear();
   ASSERT_EQ(static_cast<int>(pulbicusernames.size()),
