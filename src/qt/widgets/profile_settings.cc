@@ -59,7 +59,7 @@ void ProfileSettings::setActive(bool b) {
     init_ = true;
 
     QString pub = ClientController::instance()->publicUsername();
-//    std::vector<std::string> profileInfo;
+    //std::vector<std::string> profileInfo;
 
     ui_.pubNameEdit->setText(pub);
 

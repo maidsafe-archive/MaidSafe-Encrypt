@@ -40,9 +40,10 @@ namespace fs = boost::filesystem;
 
  FileBrowser::FileBrowser(QWidget* parent) : init_(false) {
   ui_.setupUi(this);
-  theWatcher_ = new QFileSystemWatcher;
+  setWindowIcon(QPixmap(":/icons/16/globe"));
+  //theWatcher_ = new QFileSystemWatcher;
   ui_.driveTreeWidget->setAcceptDrops(true);
-  ui_.driveTreeWidget->installEventFilter(this);
+  ui_.driveTreeWidget->viewport()->installEventFilter(this);
 
   menu = new QMenu(this);
 
@@ -53,7 +54,6 @@ namespace fs = boost::filesystem;
   deleteFile = new QAction(tr("Delete"), this);
   renameFile = new QAction(tr("Rename"), this);
   saveFile = new QAction(tr("Save"), this);
-  newFolder = new QAction(tr("New Folder"), this);
 
   menu->addAction(openFile);
   menu->addAction(saveFile);
@@ -64,8 +64,10 @@ namespace fs = boost::filesystem;
   menu->addAction(deleteFile);
   menu->addAction(renameFile);
   menu->addAction(sendFile);
-  menu->addSeparator();
-  menu->addAction(newFolder);
+
+  menu2 = new QMenu(this);
+  newFolder = new QAction(tr("New Folder"), this);
+  menu2->addAction(newFolder);
 
   connect(ui_.driveTreeWidget, SIGNAL(itemDoubleClicked(QTreeWidgetItem*, int)),
           this,            SLOT(onItemDoubleClicked(QTreeWidgetItem*, int)));
@@ -73,8 +75,8 @@ namespace fs = boost::filesystem;
   connect(ui_.driveTreeWidget, SIGNAL(itemPressed(QTreeWidgetItem*, int)),
           this,            SLOT(onMousePressed(QTreeWidgetItem*, int)));
 
-  connect(theWatcher_, SIGNAL(fileChanged(const QString&)),
-          this,        SLOT(onWatchedFileChanged(const QString&)));
+  //connect(theWatcher_, SIGNAL(fileChanged(const QString&)),
+     //     this,        SLOT(onWatchedFileChanged(const QString&)));
 
   connect(ui_.backButton, SIGNAL(clicked(bool)),
           this,           SLOT(onBackClicked(bool)));
@@ -141,10 +143,6 @@ void FileBrowser::dropEvent(QDropEvent *event) {
   QString fileName = urls.first().toLocalFile();
   qDebug() << fileName;
   uploadFileFromLocal(fileName);
-}
-
-void FileBrowser::mousePressEvent ( QMouseEvent * event ) {
-  qDebug() << "blah";
 }
 
 void FileBrowser::onMousePressed(QTreeWidgetItem* item, int column) {
@@ -223,9 +221,6 @@ void FileBrowser::onDeleteFileClicked() {
 
 void FileBrowser::onNewFolderClicked() {
   bool ok;
-  QTreeWidgetItem* theItem = ui_.driveTreeWidget->currentItem();
-  qDebug() << theItem->text(1);
-
     QString text = QInputDialog::getText(this, tr("Create Directory"),
         tr("Name of the new directory:"), QLineEdit::Normal,
         tr("New Folder", "default directory name"), &ok);
@@ -439,7 +434,7 @@ void FileBrowser::onReadFileCompleted(int success, const QString& filepath) {
   if (success != -1){
     std::string dir = filepath.toStdString();
     dir.erase(0,1);
-    theWatcher_->addPath(rootPath_ + QString::fromStdString(dir));
+//    theWatcher_->addPath(rootPath_ + QString::fromStdString(dir));
 
     std::string file = filepath.toStdString();
     file.erase(0,file.find_last_of("/")+1);
@@ -463,7 +458,7 @@ void FileBrowser::onReadFileCompleted(int success, const QString& filepath) {
   }
 }
 
-void FileBrowser::onWatchedFileChanged(const QString& path) {
+/*void FileBrowser::onWatchedFileChanged(const QString& path) {
   qDebug() << "onWatchedFileChanged : " << path;
   std::string file = path.toStdString();
   file.erase(0,file.find_last_of("/")+1);
@@ -482,14 +477,14 @@ void FileBrowser::onWatchedFileChanged(const QString& path) {
   } else {
     qDebug() << "onWatchFileChanged : no file matched" << theFile;
   }
-}
+}*/
 
 void FileBrowser::onSaveFileCompleted(int success, const QString& filepath) {
   qDebug() << "onSaveFileCompleted : " << filepath;
   if (success != -1) {
     std::string dir = filepath.toStdString();
     dir.erase(0,1);
-    theWatcher_->removePath(rootPath_ + QString::fromStdString(dir));
+//    theWatcher_->removePath(rootPath_ + QString::fromStdString(dir));
 
     std::string fullFilePath = rootPath_.toStdString() + filepath.toStdString();
 
@@ -588,7 +583,6 @@ void FileBrowser::onRenameFileCompleted(int success, const QString& filepath,
                         currentDir_.toStdString() + newfilepath.toStdString();
 
     qDebug() << "Rename Success";
-
     populateDirectory(currentDir_);
   }
 }
@@ -596,9 +590,7 @@ void FileBrowser::onRenameFileCompleted(int success, const QString& filepath,
 void FileBrowser::onMakeDirectoryCompleted(int success, const QString& dir) {
   qDebug() << "in onMakeDirectoryCompleted";
   if(success != -1){
-
     qDebug() << "MakeDir Success";
-
     populateDirectory(currentDir_);
   }
 }
@@ -612,12 +604,10 @@ void FileBrowser::onRemoveDirCompleted(int success, const QString& path) {
 }
 
 bool FileBrowser::eventFilter(QObject *obj, QEvent *event) {
-  if (obj == ui_.driveTreeWidget) {
+  if (obj == ui_.driveTreeWidget->viewport()) {
     qDebug() << event->type();
     if (event->type() == QEvent::ContextMenu) {
-      if(QApplication::mouseButtons() == Qt::RightButton){
-        menu->exec(QCursor::pos());
-        }
+        menu2->exec(QCursor::pos());
       return true;
     } else {
       return false;
