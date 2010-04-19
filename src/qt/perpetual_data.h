@@ -90,6 +90,7 @@ class PerpetualData : public QMainWindow {
 
     void onLogout();
     void onAbout();
+    void onLogoutUserCompleted(bool);
     void onToggleFullScreen(bool);
     void onApplicationActionTriggered();
     void onQuit();
@@ -204,6 +205,7 @@ class PerpetualData : public QMainWindow {
   void asyncMount();
   void asyncCreateUser();
   void asyncUnmount();
+  void asyncLogout();
 };
 
 #endif  // QT_PERPETUAL_DATA_H_

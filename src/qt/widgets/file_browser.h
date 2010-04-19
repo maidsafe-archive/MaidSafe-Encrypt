@@ -58,6 +58,8 @@ class FileBrowser : public QDialog {
   protected:
   void dropEvent(QDropEvent *event);
   void dragEnterEvent(QDragEnterEvent *event);
+  void mousePressEvent(QMouseEvent *event);
+  bool eventFilter(QObject *obj, QEvent *ev);
 
   private slots:
   void onItemDoubleClicked(QTreeWidgetItem*, int);
@@ -79,6 +81,7 @@ class FileBrowser : public QDialog {
   void onNewFolderClicked();
   void onBackClicked(bool);
   void onUploadClicked(bool);
+
 };
 
 #endif // FILE_BROWSER_H_INCLUDED

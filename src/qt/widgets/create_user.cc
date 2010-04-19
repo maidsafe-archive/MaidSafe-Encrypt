@@ -130,6 +130,9 @@ void CreateUser::setCurrentPage(int index, int dir) {
   ui_.back->setEnabled(index > 0);
   ui_.next->setEnabled(page->isComplete());
   ui_.next->setText(index == pages_.size() - 1 ? tr("Finish") : tr("Next >"));
+  if (index ==  3)
+    ui_.next->setEnabled(true);
+
   if (index == pages_.size() - 1) {
     qDebug() << "CreateUser::setCurrentPage VaultType: " << VaultType();
     qDebug() << "CreateUser::setCurrentPage SpaceOffered: " << SpaceOffered();

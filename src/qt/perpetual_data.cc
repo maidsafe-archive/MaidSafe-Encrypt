@@ -20,6 +20,7 @@
 #include <QProcess>
 #include <QList>
 #include <QFileDialog>
+#include <QInputDialog>
 #include <boost/progress.hpp>
 
 #include <list>
@@ -37,6 +38,7 @@
 #include "qt/widgets/user_settings.h"
 
 #include "qt/client/create_user_thread.h"
+#include "qt/client/logout_user_thread.h"
 #include "qt/client/join_kademlia_thread.h"
 #include "qt/client/mount_thread.h"
 #include "qt/client/save_session_thread.h"
@@ -136,6 +138,14 @@ void PerpetualData::createActions() {
   actions_[ OFFLINE_2 ] = ui_.actionOffline_2;
 //actions_[ SAVE_SESSION ] = ui_.actionSave_Session;
 
+// Remove Status Menu until implemented
+  ui_.menuStatus->setVisible(false);
+  actions_[ ONLINE ]->setVisible(false);
+  actions_[ AWAY ]->setVisible(false);
+  actions_[ BUSY ]->setVisible(false);
+  actions_[ OFFLINE_2 ]->setVisible(false);
+//
+
   actions_[ QUIT ]->setShortcut(Qt::ALT + Qt::Key_F4);
   actions_[ FULLSCREEN ]->setShortcut(Qt::Key_F11);
 
@@ -205,6 +215,7 @@ void PerpetualData::setState(State state) {
     }
     case SETUP_USER:
     {
+        create_->reset();
         ui_.stackedWidget->setCurrentWidget(create_);
         connect(create_, SIGNAL(complete()),
                 this,    SLOT(onSetupNewUserComplete()));
@@ -325,6 +336,14 @@ void PerpetualData::asyncUnmount() {
   mt->start();
 }
 
+void PerpetualData::asyncLogout() {
+  LogoutUserThread* lut = new LogoutUserThread();
+  connect(lut,   SIGNAL(logoutUserCompleted(bool)),
+         this, SLOT(onLogoutUserCompleted(bool)));
+
+  lut->start();
+}
+
 void PerpetualData::asyncCreateUser() {
   CreateUserThread* cut = new CreateUserThread(login_->username(),
                                                login_->pin(),
@@ -348,6 +367,7 @@ void PerpetualData::onUserCreationCompleted(bool success) {
 
   if (success) {
 #ifdef PD_LIGHT
+  ClientController::instance()->SetMounted(0);
   onMountCompleted(true);
 #else
   setState(MOUNT_USER);
@@ -428,8 +448,8 @@ void PerpetualData::onLogout() {
   if (!ClientController::instance()->publicUsername().isEmpty())
     ClientController::instance()->StopCheckingMessages();
 #ifdef PD_LIGHT
+  asyncLogout();
   setState(LOGGING_OUT);
-  onUnmountCompleted(true);
 #else
   asyncUnmount();
   setState(LOGGING_OUT);
@@ -582,6 +602,18 @@ void PerpetualData::onFileReceived(const maidsafe::InstantMessage& im) {
   switch (ret) {
     case QMessageBox::Save: {
       // Save
+#ifdef PD_LIGHT
+    bool ok;
+    QString text = QInputDialog::getText(this, tr("Save File As?"),
+                                      tr("Filename"),
+                                      QLineEdit::Normal,"", &ok);
+    if (ok && !text.isEmpty()){
+      QString s = QString("My Files\\%1").arg(text);
+      n = maidsafe::ClientController::getInstance()->
+          AddInstantFile(im.instantfile_notification(), s.toStdString());
+    }
+#else
+
 #ifdef __WIN32__
       root = QString("%1:\\My Files").
              arg(ClientController::instance()->WinDrive());
@@ -625,6 +657,7 @@ void PerpetualData::onFileReceived(const maidsafe::InstantMessage& im) {
 #ifdef DEBUG
       printf("PerpetualData::onFileReceived - Res: %i\n", n);
 #endif
+#endif // end of elseif PD_LIGHT
       if (n == 0) {
         QString title = tr("File received");
         QString message = tr("'%1' has shared the file '%2' with you")
@@ -713,10 +746,14 @@ void PerpetualData::onBusyTriggered() {
 void PerpetualData::onOffline_2Triggered() {
 }
 
+void PerpetualData::onLogoutUserCompleted(bool success) {
+      // TODO(Stephen#5#): Logout should be in own thread
+  onUnmountCompleted(success);
+}
+
 void PerpetualData::showLoggedInMenu() {
   actions_[LOGOUT]->setEnabled(true);
-  ui_.menuStatus->setEnabled(true);
-  actions_[MY_FILES]->setEnabled(true);
+  //actions_[MY_FILES]->setEnabled(true);
   actions_[PRIVATE_SHARES]->setEnabled(true);
   actions_[GO_OFFLINE]->setEnabled(true);
   actions_[SETTINGS]->setEnabled(true);
@@ -724,7 +761,7 @@ void PerpetualData::showLoggedInMenu() {
 
 void PerpetualData::showLoggedOutMenu() {
   actions_[LOGOUT]->setEnabled(false);
-  ui_.menuStatus->setEnabled(false);
+  //ui_.menuStatus->setEnabled(false);
   actions_[MY_FILES]->setEnabled(false);
   actions_[PRIVATE_SHARES]->setEnabled(false);
   actions_[GO_OFFLINE]->setEnabled(false);

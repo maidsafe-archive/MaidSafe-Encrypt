@@ -41,8 +41,8 @@ namespace fs = boost::filesystem;
  FileBrowser::FileBrowser(QWidget* parent) : init_(false) {
   ui_.setupUi(this);
   theWatcher_ = new QFileSystemWatcher;
-  setAcceptDrops(true);
   ui_.driveTreeWidget->setAcceptDrops(true);
+  ui_.driveTreeWidget->installEventFilter(this);
 
   menu = new QMenu(this);
 
@@ -109,7 +109,6 @@ namespace fs = boost::filesystem;
 
 FileBrowser::~FileBrowser() {
   reset();
-
 }
 
 void FileBrowser::setActive(bool b) {
@@ -144,6 +143,10 @@ void FileBrowser::dropEvent(QDropEvent *event) {
   uploadFileFromLocal(fileName);
 }
 
+void FileBrowser::mousePressEvent ( QMouseEvent * event ) {
+  qDebug() << "blah";
+}
+
 void FileBrowser::onMousePressed(QTreeWidgetItem* item, int column) {
   if(QApplication::mouseButtons() == Qt::RightButton){
     menu->exec(QCursor::pos());
@@ -167,7 +170,9 @@ void FileBrowser::onSendFileClicked() {
   if (ok){
     QList<QString> conts;
     conts.push_back(text);
-    if (ClientController::instance()->sendInstantFile(filename, "", conts,""))
+    QString filePath = rootPath_ + currentDir_ + filename;
+
+    if (ClientController::instance()->sendInstantFile(filePath, "", conts,""))
     {
       QMessageBox::information(this, tr("File Sent"),
                               tr("Success sending file: %1").arg(filename));
@@ -425,7 +430,6 @@ void FileBrowser::onItemDoubleClicked(QTreeWidgetItem* item, int column){
 #else
   // nautilus FuseHomeDir()/Shares/Private/"name"
      system(path.toStdString().c_str());
-
 #endif
     }
   }
@@ -605,5 +609,22 @@ void FileBrowser::onRemoveDirCompleted(int success, const QString& path) {
     qDebug() << "RemoveDir Success";
     populateDirectory(currentDir_);
   }
-
 }
+
+bool FileBrowser::eventFilter(QObject *obj, QEvent *event) {
+  if (obj == ui_.driveTreeWidget) {
+    qDebug() << event->type();
+    if (event->type() == QEvent::ContextMenu) {
+      if(QApplication::mouseButtons() == Qt::RightButton){
+        menu->exec(QCursor::pos());
+        }
+      return true;
+    } else {
+      return false;
+    }
+  } else {
+    // pass the event on to the parent class
+    return FileBrowser::eventFilter(obj, event);
+  }
+}
+

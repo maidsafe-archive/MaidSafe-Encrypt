@@ -341,10 +341,13 @@ QLabel {
  }
  
  QRadioButton::indicator {
-    color: #000000
- }
+    color: #000000   
+  }
  
  QGroupBox{
   color: #FFFFFF;
-
+ }
+ 
+ QLineEdit::disabled{
+   background-color:lightgrey;
  }
