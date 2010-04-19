@@ -63,11 +63,11 @@ TEST_F(KadOpsTest, BEH_MAID_FindCloseNodes) {
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
           boost::bind(&mock_kadops::RunCallback, fail_result_, _1))))  // Call 3
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_kadops::RunCallback, few_result_, _1))))  // Call 4
+          boost::bind(&mock_kadops::RunCallback, few_result_, _1))))   // Call 4
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
           boost::bind(&mock_kadops::RunCallback, good_result_, _1))))  // Call 5
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_kadops::RunCallback, good_result_, _1))));  //  6
+          boost::bind(&mock_kadops::RunCallback, good_result_, _1))));      // 6
 
   // Call 1
   ASSERT_EQ(kFindNodesError, mko_.FindCloseNodes("x", NULL));
@@ -104,13 +104,17 @@ TEST_F(KadOpsTest, DISABLED_BEH_MAID_GetStorePeer) {
 
 TEST_F(KadOpsTest, BEH_MAID_ContactWithinClosest) {
   std::vector<kad::Contact> ctc;
-  kad::Contact contact1(base::DecodeFromHex("11111111"), "127.0.0.1", 0);
+  kad::Contact contact1(base::DecodeFromHex(std::string(2* kKeySize, '1')),
+                        "127.0.0.1", 0);
   ctc.push_back(contact1);
-  kad::Contact contact2(base::DecodeFromHex("77777777"), "127.0.0.1", 0);
+  kad::Contact contact2(base::DecodeFromHex(std::string(2* kKeySize, '7')),
+                        "127.0.0.1", 0);
   ctc.push_back(contact2);
-  kad::Contact close(base::DecodeFromHex("33333333"), "127.0.0.1", 0);
-  kad::Contact not_close(base::DecodeFromHex("ffffffff"), "127.0.0.1", 0);
-  std::string key(base::DecodeFromHex("00000000"));
+  kad::Contact close(base::DecodeFromHex(std::string(2* kKeySize, '3')),
+                     "127.0.0.1", 0);
+  kad::Contact not_close(base::DecodeFromHex(std::string(2* kKeySize, 'f')),
+                         "127.0.0.1", 0);
+  std::string key(base::DecodeFromHex(std::string(2* kKeySize, '0')));
 
   ASSERT_TRUE(ContactWithinClosest(key, close, ctc));
   ASSERT_FALSE(ContactWithinClosest(key, not_close, ctc));
@@ -119,21 +123,26 @@ TEST_F(KadOpsTest, BEH_MAID_ContactWithinClosest) {
 TEST_F(KadOpsTest, BEH_MAID_RemoveKadContact) {
   std::vector<kad::Contact> ctc;
   {
-    kad::Contact contact("aaa", "127.0.0.1", 0);
+    kad::Contact contact(crypto_.Hash("aaa", "", crypto::STRING_STRING, false),
+                         "127.0.0.1", 0);
     ctc.push_back(contact);
   }
   {
-    kad::Contact contact("bbb", "127.0.0.1", 0);
+    kad::Contact contact(crypto_.Hash("bbb", "", crypto::STRING_STRING, false),
+                         "127.0.0.1", 0);
     ctc.push_back(contact);
   }
   {
-    kad::Contact contact("ccc", "127.0.0.1", 0);
+    kad::Contact contact(crypto_.Hash("ccc", "", crypto::STRING_STRING, false),
+                                      "127.0.0.1", 0);
     ctc.push_back(contact);
   }
   ASSERT_EQ(size_t(3), ctc.size());
-  ASSERT_FALSE(RemoveKadContact("ddd", &ctc));
+  ASSERT_FALSE(RemoveKadContact(crypto_.Hash("ddd", "", crypto::STRING_STRING,
+      false), &ctc));
   ASSERT_EQ(size_t(3), ctc.size());
-  ASSERT_TRUE(RemoveKadContact("bbb", &ctc));
+  ASSERT_TRUE(RemoveKadContact(crypto_.Hash("bbb", "", crypto::STRING_STRING,
+      false), &ctc));
   ASSERT_EQ(size_t(2), ctc.size());
 }
 
