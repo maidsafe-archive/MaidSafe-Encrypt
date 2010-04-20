@@ -34,7 +34,9 @@
 
 // 3rd party
 #if defined(MAIDSAFE_WIN32)
-#include "fs/w_fuse/fswin.h"
+#ifndef PD_LIGHT
+  #include "fs/w_fuse/fswin.h"
+#endif
 #elif defined(MAIDSAFE_POSIX)
 #include "fs/l_fuse/fslinux.h"
 #endif
@@ -79,7 +81,10 @@ bool UserSpaceFileSystem::mount() {
   std::string debug_mode("-d");
 #ifdef MAIDSAFE_WIN32
   char drive = ClientController::instance()->DriveLetter();
+#ifndef PD_LIGHT
   fs_w_fuse::Mount(drive);
+#endif
+
   ClientController::instance()->SetWinDrive(drive);
 #elif defined(MAIDSAFE_POSIX)
   std::string mount_point = file_system::MaidsafeFuseDir(
@@ -92,10 +97,12 @@ bool UserSpaceFileSystem::mount() {
       return false;
   }
   return true;
+
 }
 
 bool UserSpaceFileSystem::unmount() {
   // unmount drive
+
   bool success = false;
 //  std::string ms_dir = file_system::MaidsafeDir(
 //      maidsafe::SessionSingleton::getInstance()->SessionName()).string();
@@ -105,7 +112,9 @@ bool UserSpaceFileSystem::unmount() {
   std::locale loc;
   wchar_t drive_letter = std::use_facet< std::ctype<wchar_t> >
       (loc).widen(ClientController::instance()->WinDrive());
+#ifndef PD_LIGHT
   success = fs_w_fuse::UnMount(drive_letter);
+#endif
 
 /*
   // %SystemRoot%\explorer.exe /e /root,M:\Shares\Private\Share 1

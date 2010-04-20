@@ -747,7 +747,7 @@ void PerpetualData::onOffline_2Triggered() {
 }
 
 void PerpetualData::onLogoutUserCompleted(bool success) {
-      // TODO(Stephen#5#): Logout should be in own thread
+
   onUnmountCompleted(success);
 }
 
