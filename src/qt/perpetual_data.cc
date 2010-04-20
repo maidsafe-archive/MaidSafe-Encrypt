@@ -46,8 +46,8 @@
 #include "ui_about.h"
 
 PerpetualData::PerpetualData(QWidget* parent)
-    : QMainWindow(parent), login_(NULL), create_(NULL), message_status_(NULL),
-      state_(LOGIN), quitting_(false) {
+    : QMainWindow(parent), quitting_(false), login_(NULL), create_(NULL),
+      message_status_(NULL), state_(LOGIN) {
   setAttribute(Qt::WA_DeleteOnClose, false);
   setWindowIcon(QPixmap(":/icons/16/globe"));
 
@@ -525,10 +525,10 @@ void PerpetualData::onApplicationActionTriggered() {
 }
 
 void PerpetualData::onMessageReceived(ClientController::MessageType type,
-                                      const QDateTime& time,
+                                      const QDateTime&,
                                       const QString& sender,
                                       const QString& detail,
-                                      const QString& conversation) {
+                                      const QString&) {
   boost::progress_timer t;
   if (type == ClientController::TEXT) {
     std::list<std::string> theList;
@@ -590,7 +590,7 @@ void PerpetualData::onFileReceived(const maidsafe::InstantMessage& im) {
           maidsafe::SessionSingleton::getInstance()->SessionName()).string() +
           "/My Files");
 #endif
-      root += tr("/") + QString::fromStdString(ifn.filename());
+      root += "/" + QString::fromStdString(ifn.filename());
       qfd_ = new QFileDialog(this, tr("Save File As..."), root);
       connect(qfd_, SIGNAL(directoryEntered(const QString&)),
               this, SLOT(onDirectoryEntered(const QString&)));

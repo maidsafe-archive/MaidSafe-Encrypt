@@ -103,12 +103,17 @@ class StoreManagerInterface {
 
   // Buffer packet
   virtual int CreateBP()=0;
-  virtual int LoadBPMessages(
-      std::list<maidsafe::ValidatedBufferPacketMessage> *messages)=0;
   virtual int ModifyBPInfo(const std::string &info)=0;
+  virtual int LoadBPMessages(
+      std::list<ValidatedBufferPacketMessage> *messages)=0;
   virtual int AddBPMessage(const std::vector<std::string> &receivers,
                            const std::string &message,
-                           const MessageType &m_type)=0;
+                           const MessageType &m_type,
+                           std::map<std::string, ReturnCode> *add_results)=0;
+  virtual int LoadBPPresence(std::list<LivePresence> *messages)=0;
+  virtual int AddBPPresence(
+      const std::vector<std::string> &receivers,
+      std::map<std::string, ReturnCode> *add_results)=0;
 
   // Vault
   virtual void PollVaultInfo(base::callback_func_type cb)=0;

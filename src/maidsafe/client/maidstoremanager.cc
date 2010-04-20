@@ -357,7 +357,7 @@ int MaidsafeStoreManager::LoadChunk(const std::string &chunk_name,
   boost::mutex::scoped_lock lock(opdata->mutex);
 
   // #1 Find a cached chunk copy if it exists, otherwise the chunk info holders.
-  kad_ops_->FindValue(chunk_name, false,
+  kad_ops_->FindValue(kad::KadId(chunk_name, false), false,
       boost::bind(&MaidsafeStoreManager::LoadChunk_FindCB, this, _1, opdata));
 
   // Main loop of retrieval process, stages reversed for early bail-out.
@@ -435,7 +435,7 @@ int MaidsafeStoreManager::LoadChunk(const std::string &chunk_name,
 //      printf("In MSM::LoadChunk, looking up holder %s...\n",
 //             HexSubstr(*it).c_str());
 #endif
-      kad_ops_->FindNode(*it, boost::bind(
+      kad_ops_->FindNode(kad::KadId(*it, false), boost::bind(
             &MaidsafeStoreManager::LoadChunk_HolderCB, this, _1, *it, opdata),
             false);
       opdata->chunk_holders[kHolderPending].insert(*it);
@@ -729,7 +729,7 @@ void MaidsafeStoreManager::LoadPacket(const std::string &packet_name,
     lpf(results, static_cast<ReturnCode>(valid));
     return;
   }
-  kad_ops_->FindValue(packet_name, false,
+  kad_ops_->FindValue(kad::KadId(packet_name, false), false,
       boost::bind(&MaidsafeStoreManager::LoadPacketCallback, this, packet_name,
       0, _1, lpf));
 }
@@ -792,7 +792,7 @@ void MaidsafeStoreManager::LoadPacketCallback(const std::string &packet_name,
     lpf(values, static_cast<ReturnCode>(ret_value));
     return;
   } else {
-    kad_ops_->FindValue(packet_name, false,
+    kad_ops_->FindValue(kad::KadId(packet_name, false), false,
         boost::bind(&MaidsafeStoreManager::LoadPacketCallback, this,
         packet_name, attempt + 1, _1, lpf));
   }
@@ -846,7 +846,7 @@ void MaidsafeStoreManager::KeyUnique(const std::string &key,
     cb(kStoreManagerError);
     return;
   }
-  kad_ops_->FindValue(key, check_local,
+  kad_ops_->FindValue(kad::KadId(key, false), check_local,
       boost::bind(&MaidsafeStoreManager::KeyUniqueCallback, this, _1, cb));
 }
 
@@ -965,8 +965,8 @@ void MaidsafeStoreManager::DeletePacket(const std::string &packet_name,
   if (vals.empty()) {
     kad::ContactInfo cache_holder;
     std::string needs_cache_copy_id;
-    int res = kad_ops_->FindValue(packet_name, false, &cache_holder, &vals,
-                                  &needs_cache_copy_id);
+    int res = kad_ops_->FindValue(kad::KadId(packet_name, false), false,
+                                  &cache_holder, &vals, &needs_cache_copy_id);
     if (res == kFindValueFailure) {  // packet doesn't exist on net
       cb(kSuccess);
       return;
@@ -1057,7 +1057,8 @@ int MaidsafeStoreManager::GetAccountDetails(boost::uint64_t *space_offered,
 
   // Find the account holders
   boost::shared_ptr<AccountStatusData> data(new AccountStatusData);
-  int rslt = kad_ops_->FindCloseNodes(account_name, &data->contacts);
+  int rslt = kad_ops_->FindCloseNodes(kad::KadId(account_name, false),
+                                      &data->contacts);
   if (rslt != kSuccess) {
 #ifdef DEBUG
     printf("In MSM::GetAccountDetails, Kad lookup failed -- error %i\n", rslt);
@@ -1066,7 +1067,7 @@ int MaidsafeStoreManager::GetAccountDetails(boost::uint64_t *space_offered,
   }
 
   // never send the RPC to our own vault
-  RemoveKadContact(pmid, &data->contacts);
+  RemoveKadContact(kad::KadId(pmid, false), &data->contacts);
 
   if (data->contacts.size() < kKadUpperThreshold) {
 #ifdef DEBUG
@@ -1311,137 +1312,233 @@ void MaidsafeStoreManager::GetPacketSignatureKeys(PacketType packet_type,
   }
 }
 
+////////////// BUFFER PACKET //////////////
+
 int MaidsafeStoreManager::CreateBP() {
-  BPInputParameters bi_input_params = {ss_->Id(MPID), ss_->PublicKey(MPID),
-                                       ss_->PrivateKey(MPID)};
-  bool called_back(false);
-  boost::condition_variable cond_var;
-  boost::mutex mutex;
-  ReturnCode result;
-  BPCallbackObj bp_callback_obj(&called_back, &cond_var, &mutex, &result);
-  cbph_.CreateBufferPacket(bi_input_params, boost::bind(
-      &BPCallbackObj::BPOperationCallback, &bp_callback_obj, _1),
-      udt_transport_.GetID());
-  {
-    boost::mutex::scoped_lock lock(mutex);
-    while (!called_back)
-      cond_var.wait(lock);
+  BPInputParameters bpip = {ss_->Id(MPID),
+                            ss_->PublicKey(MPID),
+                            ss_->PrivateKey(MPID)};
+  bool local_done(false);
+  boost::shared_ptr<BPResults> bp_results(new BPResults);
+  bp_results->finished = local_done;
+  cbph_.CreateBufferPacket(bpip,
+                           boost::bind(&MaidsafeStoreManager::ModifyBpCallback,
+                                       this, _1, bp_results),
+                           udt_transport_.GetID());
+  while (!local_done) {
+    boost::this_thread::sleep(boost::posix_time::milliseconds(200));
+    {
+      boost::mutex::scoped_lock loch_glascarnoch(bp_results->mutex);
+      local_done = bp_results->finished;
+    }
   }
-  return result;
+  return bp_results->rc;
+}
+
+int MaidsafeStoreManager::ModifyBPInfo(const std::string &info) {
+  BPInputParameters bpip = {ss_->Id(MPID),
+                            ss_->PublicKey(MPID),
+                            ss_->PrivateKey(MPID)};
+  bool local_done(false);
+  boost::shared_ptr<BPResults> bp_results(new BPResults);
+  bp_results->finished = local_done;
+  BufferPacketInfo buffer_packet_info;
+  if (!buffer_packet_info.ParseFromString(info))
+    return kBPInfoParseError;
+
+  std::vector<std::string> users;
+  for (int i = 0; i < buffer_packet_info.users_size(); ++i)
+    users.push_back(buffer_packet_info.users(i));
+  cbph_.ModifyOwnerInfo(bpip, users,
+                        boost::bind(&MaidsafeStoreManager::ModifyBpCallback,
+                                    this, _1, bp_results),
+                        udt_transport_.GetID());
+  while (!local_done) {
+    boost::this_thread::sleep(boost::posix_time::milliseconds(200));
+    {
+      boost::mutex::scoped_lock loch_glascarnoch(bp_results->mutex);
+      local_done = bp_results->finished;
+    }
+  }
+  return bp_results->rc;
 }
 
 int MaidsafeStoreManager::LoadBPMessages(
     std::list<ValidatedBufferPacketMessage> *messages) {
-  BPInputParameters bi_input_params = {ss_->Id(MPID), ss_->PublicKey(MPID),
-                                       ss_->PrivateKey(MPID)};
-  bool called_back(false);
-  boost::condition_variable cond_var;
-  boost::mutex mutex;
-  ReturnCode result;
-//  std::list<ValidatedBufferPacketMessage> received_messages;
-  BPCallbackObj bp_callback_obj(&called_back, &cond_var, &mutex, &result,
-                                messages);
-  cbph_.GetMessages(bi_input_params, boost::bind(
-      &BPCallbackObj::BPGetMessagesCallback, &bp_callback_obj, _1, _2),
-      udt_transport_.GetID());
-  {
-    boost::mutex::scoped_lock lock(mutex);
-    while (!called_back)
-      cond_var.wait(lock);
+  if (!messages)
+    return kBPError;
+
+  BPInputParameters bpip = {ss_->Id(MPID),
+                            ss_->PublicKey(MPID),
+                            ss_->PrivateKey(MPID)};
+  boost::shared_ptr<VBPMessages> bpm(new VBPMessages);
+  cbph_.GetMessages(bpip,
+                    boost::bind(&MaidsafeStoreManager::LoadMessagesCallback,
+                                this, _1, _2, _3, bpm),
+                    udt_transport_.GetID());
+  bool local_done(false);
+  while (!local_done) {
+    boost::this_thread::sleep(boost::posix_time::milliseconds(200));
+    {
+      boost::mutex::scoped_lock loch_oich(bpm->mutex);
+      local_done = bpm->done;
+    }
   }
 
-//  crypto::Crypto crypto_obj_;
-//  crypto_obj_.set_hash_algorithm(crypto::SHA_512);
-//  crypto_obj_.set_symm_algorithm(crypto::AES_256);
-//  while (!received_messages.empty()) {
-//    ValidatedBufferPacketMessage valid_message = received_messages.front();
-//    std::string aes_key = crypto_obj_.AsymDecrypt(valid_message.index(), "",
-//        ss_->PrivateKey(MPID), crypto::STRING_STRING);
-//    valid_message.set_message(crypto_obj_.SymmDecrypt(valid_message.message(),
-//        "", crypto::STRING_STRING, aes_key));
-//    messages->push_back(valid_message);
-//    received_messages.pop_front();
-//  }
-  return result;
-}
+  ValidatedBufferPacketMessage vbpm;
+  std::set<std::string>::iterator it;
+  for (it = bpm->presence_set.begin();
+       it != bpm->presence_set.end(); ++it) {
+    vbpm.ParseFromString(*it);
+    messages->push_back(vbpm);
+  }
 
-int MaidsafeStoreManager::ModifyBPInfo(const std::string &info) {
-  BPInputParameters bi_input_params = {ss_->Id(MPID), ss_->PublicKey(MPID),
-                                       ss_->PrivateKey(MPID)};
-  bool called_back(false);
-  boost::condition_variable cond_var;
-  boost::mutex mutex;
-  ReturnCode result;
-  BPCallbackObj bp_callback_obj(&called_back, &cond_var, &mutex, &result);
-  std::vector<std::string> users;
-  BufferPacketInfo buffer_packet_info;
-  if (!buffer_packet_info.ParseFromString(info)) {
-    printf("MaidsafeStoreManager::ModifyBPInfo - Wrong BPI\n");
-    return kBPInfoParseError;
-  }
-  for (int i = 0; i < buffer_packet_info.users_size(); ++i)
-    users.push_back(buffer_packet_info.users(i));
-  cbph_.ModifyOwnerInfo(bi_input_params, users,
-      boost::bind(&BPCallbackObj::BPOperationCallback, &bp_callback_obj, _1),
-      udt_transport_.GetID());
-  {
-    boost::mutex::scoped_lock lock(mutex);
-    while (!called_back)
-      cond_var.wait(lock);
-  }
-  return result;
+  return bpm->successes;
 }
 
 int MaidsafeStoreManager::AddBPMessage(
     const std::vector<std::string> &receivers,
     const std::string &message,
-    const MessageType &type) {
-  BPInputParameters bi_input_params = {ss_->Id(MPID), ss_->PublicKey(MPID),
-                                       ss_->PrivateKey(MPID)};
-  bool called_back(false);
-  boost::condition_variable cond_var;
-  boost::mutex mutex;
-  std::vector <ReturnCode> results;
-  std::vector <BPCallbackObj> bp_callback_objs;
-  // Set up callback objects and results
-  for (size_t i = 0; i < receivers.size(); ++i) {
-    ReturnCode result(kBPError);
-    results.push_back(result);
-    BPCallbackObj bp_callback_obj(&called_back, &cond_var, &mutex,
-        &results.at(i));
-    bp_callback_objs.push_back(bp_callback_obj);
+    const MessageType &type,
+    std::map<std::string, ReturnCode> *add_results) {
+  BPInputParameters bpip = {ss_->Id(MPID),
+                            ss_->PublicKey(MPID),
+                            ss_->PrivateKey(MPID)};
+  boost::shared_ptr<BPResults> bp_results(new BPResults);
+  size_t local_count(0);
+  bp_results->returned_count = local_count;
+  bp_results->results = add_results;
+
+  std::set<std::string> sss(receivers.begin(), receivers.end());
+  std::vector<std::string> recs;
+  std::set<std::string>::iterator it;
+  if (sss.size() != receivers.size()) {
+    for (it = sss.begin(); it != sss.end(); ++it)
+      recs.push_back(*it);
+  } else {
+    recs = receivers;
   }
+
+  for (size_t n = 0; n < recs.size(); ++n)
+    bp_results->results->insert(std::pair<std::string,  ReturnCode>
+                                         (recs[n],      kBPAwaitingCallback));
   // Add the message to each receiver's bp
-  for (size_t i = 0; i < receivers.size(); ++i) {
-    cbph_.AddMessage(bi_input_params, ss_->PublicUsername(),
-        ss_->GetContactPublicKey(receivers.at(i)),
-        receivers.at(i), message, type, boost::bind(
-        &BPCallbackObj::BPOperationCallback, &bp_callback_objs.at(i), _1),
-        udt_transport_.GetID());
+  for (size_t i = 0; i < recs.size(); ++i) {
+    cbph_.AddMessage(bpip, ss_->PublicUsername(),
+                     ss_->GetContactPublicKey(recs[i]), recs[i], message, type,
+                     boost::bind(&MaidsafeStoreManager::AddToBpCallback,
+                                 this, _1, recs[i], bp_results),
+                     udt_transport_.GetID());
   }
-  // Wait for all to call back
-  size_t returned_count(0);
-  {
-    boost::mutex::scoped_lock lock(mutex);
-    while (!called_back && returned_count < receivers.size())
-      cond_var.wait(lock);
-    called_back = false;
-    ++returned_count;
-  }
-  // Assess results and return
-  ReturnCode result(kSuccess);
-  for (size_t i = 0; i < receivers.size(); ++i) {
-    if (results.at(i) != kSuccess) {
-#ifdef DEBUG
-      printf("In MSM::AddBPMessage, failed to AddMessage - result %u is %i\n",
-             i, results.at(i));
-#endif
-      result = results.at(i);
-      break;
+
+  while (local_count < recs.size()) {
+    boost::this_thread::sleep(boost::posix_time::milliseconds(500));
+    {
+      boost::mutex::scoped_lock loch_quoich(bp_results->mutex);
+      local_count = bp_results->returned_count;
     }
   }
-  return result;
+
+  int successes(0);
+  std::map<std::string, ReturnCode>::iterator map_it;
+  for (map_it = bp_results->results->begin();
+       map_it != bp_results->results->end(); ++map_it)
+    if (map_it->second == kSuccess)
+      ++successes;
+
+  return successes;
 }
+
+int MaidsafeStoreManager::LoadBPPresence(std::list<LivePresence> *messages) {
+  if (!messages)
+    return kBPError;
+
+  BPInputParameters bpip = {ss_->Id(MPID),
+                            ss_->PublicKey(MPID),
+                            ss_->PrivateKey(MPID)};
+  boost::shared_ptr<PresenceMessages> bp_pm(new PresenceMessages);
+  cbph_.GetPresence(bpip,
+                    boost::bind(&MaidsafeStoreManager::LoadPresenceCallback,
+                                this, _1, _2, _3, bp_pm),
+                    udt_transport_.GetID());
+
+  bool local_done(false);
+  while (!local_done) {
+    boost::this_thread::sleep(boost::posix_time::milliseconds(200));
+    {
+      boost::mutex::scoped_lock loch_shin(bp_pm->mutex);
+      local_done = bp_pm->done;
+    }
+  }
+
+  LivePresence lp;
+  std::set<std::string>::iterator it;
+  for (it = bp_pm->presence_set.begin();
+       it != bp_pm->presence_set.end(); ++it) {
+    lp.ParseFromString(*it);
+    messages->push_back(lp);
+  }
+
+  return bp_pm->successes;
+}
+
+int MaidsafeStoreManager::AddBPPresence(
+    const std::vector<std::string> &receivers,
+    std::map<std::string, ReturnCode> *add_results) {
+  if (!add_results)
+    return kBPError;
+  if (receivers.empty())
+    return kSuccess;
+
+  BPInputParameters bpip = {ss_->Id(MPID),
+                            ss_->PublicKey(MPID),
+                            ss_->PrivateKey(MPID)};
+  boost::shared_ptr<BPResults> bp_results(new BPResults);
+  size_t local_count(0);
+  bp_results->returned_count = local_count;
+  bp_results->results = add_results;
+
+  std::set<std::string> sss(receivers.begin(), receivers.end());
+  std::vector<std::string> recs;
+  std::set<std::string>::iterator it;
+  if (sss.size() != receivers.size()) {
+    for (it = sss.begin(); it != sss.end(); ++it)
+      recs.push_back(*it);
+  } else {
+    recs = receivers;
+  }
+
+  for (size_t n = 0; n < recs.size(); ++n)
+    bp_results->results->insert(std::pair<std::string,  ReturnCode>
+                                         (recs[n],      kBPAwaitingCallback));
+
+  for (size_t a = 0; a < recs.size(); ++a) {
+    cbph_.AddPresence(bpip, ss_->PublicUsername(),
+                      ss_->GetContactPublicKey(recs[a]), recs[a],
+                      boost::bind(&MaidsafeStoreManager::AddToBpCallback, this,
+                                  _1, recs[a], bp_results),
+                      udt_transport_.GetID());
+  }
+
+  while (local_count < recs.size()) {
+    boost::this_thread::sleep(boost::posix_time::milliseconds(500));
+    {
+      boost::mutex::scoped_lock loch_quoich(bp_results->mutex);
+      local_count = bp_results->returned_count;
+    }
+  }
+
+  int successes(0);
+  std::map<std::string, ReturnCode>::iterator map_it;
+  for (map_it = bp_results->results->begin();
+       map_it != bp_results->results->end(); ++map_it)
+    if (map_it->second == kSuccess)
+      ++successes;
+
+  return successes;
+}
+
+////////////// END BUFFER PACKET //////////////
 
 void MaidsafeStoreManager::AddToWatchList(StoreData store_data) {
   // TODO(Fraser#5#): 2009-12-21 - Consider repeating this until success or
@@ -1470,7 +1567,8 @@ void MaidsafeStoreManager::AddToWatchList(StoreData store_data) {
   }
   // Find the Chunk Info holders
   boost::shared_ptr<WatchListOpData> data(new WatchListOpData(store_data));
-  int result = kad_ops_->FindCloseNodes(store_data.data_name, &data->contacts);
+  int result = kad_ops_->FindCloseNodes(kad::KadId(store_data.data_name, false),
+                                        &data->contacts);
   if (result != kSuccess) {
 #ifdef DEBUG
     printf("In MSM::AddToWatchList, Kad lookup failed -- error %i\n", result);
@@ -2217,7 +2315,8 @@ void MaidsafeStoreManager::RemoveFromWatchList(const StoreData &store_data) {
   }
   // Find the Chunk Info holders
   boost::shared_ptr<WatchListOpData> data(new WatchListOpData(store_data));
-  int result = kad_ops_->FindCloseNodes(store_data.data_name, &data->contacts);
+  int result = kad_ops_->FindCloseNodes(kad::KadId(store_data.data_name, false),
+                                        &data->contacts);
   if (result != kSuccess) {
 #ifdef DEBUG
     printf("In MSM::RemoveFromWatchList, Kad lookup failed -- error %i\n",
@@ -2371,9 +2470,9 @@ void MaidsafeStoreManager::SendPacketPrep(
   kad::ContactInfo cache_holder;
   std::vector<std::string> values;
   std::string needs_cache_copy_id;
-  int find_result = (kad_ops_->FindValue(store_data->data_name, true,
-                                         &cache_holder, &values,
-                                         &needs_cache_copy_id));
+  int find_result = (kad_ops_->FindValue(
+      kad::KadId(store_data->data_name, false), true, &cache_holder, &values,
+      &needs_cache_copy_id));
   if (cache_holder.has_node_id())
     to_return = kSendPacketCached;
   bool exists = (find_result == kSuccess && values.size());
@@ -2615,7 +2714,7 @@ void MaidsafeStoreManager::PollVaultInfoCallback(
 }
 
 void MaidsafeStoreManager::VaultContactInfo(base::callback_func_type cb) {
-  kad_ops_->FindNode(ss_->Id(PMID), cb, false);
+  kad_ops_->FindNode(kad::KadId(ss_->Id(PMID), false), cb, false);
 }
 
 void MaidsafeStoreManager::SetLocalVaultOwned(
@@ -2713,7 +2812,8 @@ int MaidsafeStoreManager::CreateAccount(const boost::uint64_t &space) {
 
   // Find the account holders
   boost::shared_ptr<AmendAccountData> data(new AmendAccountData);
-  int n = kad_ops_->FindCloseNodes(account_name, &data->contacts);
+  int n = kad_ops_->FindCloseNodes(kad::KadId(account_name, false),
+                                   &data->contacts);
   if (n != kSuccess) {
 #ifdef DEBUG
     printf("In MSM::CreateAccount, Kad lookup failed -- error %i\n", n);
@@ -2722,7 +2822,7 @@ int MaidsafeStoreManager::CreateAccount(const boost::uint64_t &space) {
   }
 
   // never send the RPC to our own vault
-  RemoveKadContact(ss_->Id(PMID), &data->contacts);
+  RemoveKadContact(kad::KadId(ss_->Id(PMID), false), &data->contacts);
 
   if (data->contacts.size() < kKadUpperThreshold) {
 #ifdef DEBUG
@@ -2815,6 +2915,96 @@ void MaidsafeStoreManager::AmendAccountCallback(size_t index,
     ++data->success_count;
   }
   data->condition.notify_one();
+}
+
+void MaidsafeStoreManager::ModifyBpCallback(
+    const ReturnCode &rc,
+    boost::shared_ptr<BPResults> pm) {
+  boost::mutex::scoped_lock loch_assynt(pm->mutex);
+  pm->rc = rc;
+  pm->finished = true;
+}
+
+void MaidsafeStoreManager::AddToBpCallback(
+    const ReturnCode &rc,
+    const std::string &receiver,
+    boost::shared_ptr<BPResults> bp_results) {
+  boost::mutex::scoped_lock loch_arkaig(bp_results->mutex);
+  (*bp_results->results)[receiver] = rc;
+}
+
+void MaidsafeStoreManager::LoadMessagesCallback(
+    const maidsafe::ReturnCode &res,
+    const std::list<ValidatedBufferPacketMessage> &msgs,
+    bool b,
+    boost::shared_ptr<VBPMessages> vbpms) {
+  boost::mutex::scoped_lock loch_mullardoch(vbpms->mutex);
+  if (res == kSuccess)
+    ++vbpms->successes;
+
+  if (b)
+    vbpms->done = true;
+
+  std::list<ValidatedBufferPacketMessage>::const_iterator it;
+  ValidatedBufferPacketMessage vbpm;
+  for (it = msgs.begin(); it != msgs.end(); ++it) {
+    vbpms->presence_set.insert(it->SerializeAsString());
+  }
+}
+
+void MaidsafeStoreManager::LoadPresenceCallback(
+    const maidsafe::ReturnCode &res,
+    const std::list<std::string> &pres,
+    bool b,
+    boost::shared_ptr<PresenceMessages> pm) {
+  boost::mutex::scoped_lock loch_fannich(pm->mutex);
+  if (res == kSuccess)
+    ++pm->successes;
+
+  if (b)
+    pm->done = true;
+
+  std::list<std::string>::const_iterator it;
+  std::string validated_presence;
+  for (it = pres.begin(); it != pres.end(); ++it) {
+    validated_presence = ValidatePresence(*it);
+    if (validated_presence.empty())
+      continue;
+    pm->presence_set.insert(validated_presence);
+  }
+}
+
+std::string MaidsafeStoreManager::ValidatePresence(
+    const std::string &ser_presence) {
+  std::string result;
+  GenericPacket gp;
+  if (!gp.ParseFromString(ser_presence))
+    return result;
+  LivePresence lp;
+  if (!lp.ParseFromString(gp.data()))
+    return result;
+
+  std::string publickey(ss_->GetContactPublicKey(lp.contact_id()));
+  if (publickey.empty())
+    return result;
+
+  crypto::Crypto co;
+  if (!co.AsymCheckSig(gp.data(), gp.signature(), publickey,
+      crypto::STRING_STRING))
+    return result;
+
+  result = co.AsymDecrypt(lp.end_point(), "", ss_->PrivateKey(MPID),
+                          crypto::STRING_STRING);
+  if (result.empty())
+    return result;
+
+  EndPoint ep;
+  if (!ep.ParseFromString(result))
+    return "";
+
+  lp.set_end_point(result);
+
+  return lp.SerializeAsString();
 }
 
 }  // namespace maidsafe

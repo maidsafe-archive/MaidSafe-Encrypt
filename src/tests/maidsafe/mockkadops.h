@@ -55,19 +55,19 @@ class MockKadOps : public KadOps {
       : KadOps(knode) {}
   MOCK_METHOD1(AddressIsLocal, bool(const kad::Contact &peer));
   MOCK_METHOD1(AddressIsLocal, bool(const kad::ContactInfo &peer));
-  MOCK_METHOD3(FindValue, void(const std::string &kad_key,
+  MOCK_METHOD3(FindValue, void(const kad::KadId &kad_key,
                                bool check_local,
                                const base::callback_func_type &cb));
-  MOCK_METHOD5(FindValue, int(const std::string &kad_key,
+  MOCK_METHOD5(FindValue, int(const kad::KadId &kad_key,
                               bool check_local,
                               kad::ContactInfo *cache_holder,
                               std::vector<std::string> *values,
                               std::string *needs_cache_copy_id));
-  MOCK_METHOD2(FindCloseNodes, void(const std::string &kad_key,
+  MOCK_METHOD2(FindCloseNodes, void(const kad::KadId &kad_key,
                                     const base::callback_func_type &callback));
-  MOCK_METHOD2(FindCloseNodes, int(const std::string &kad_key,
+  MOCK_METHOD2(FindCloseNodes, int(const kad::KadId &kad_key,
                                    std::vector<kad::Contact> *contacts));
-  int FindCloseNodesReal(const std::string &kad_key,
+  int FindCloseNodesReal(const kad::KadId &kad_key,
                          std::vector<kad::Contact> *contacts) {
     return KadOps::FindCloseNodes(kad_key, contacts);
   }

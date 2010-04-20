@@ -82,7 +82,8 @@ struct AccountAmendment {
     probable_pendings.push_back(pending);
     crypto::Crypto co;
     co.set_hash_algorithm(crypto::SHA_512);
-    account_name = co.Hash(pmid + kAccount, "", crypto::STRING_STRING, false);
+    account_name = kad::KadId(co.Hash(pmid + kAccount, "",
+        crypto::STRING_STRING, false), false);
   }
   bool operator<(const AccountAmendment &aa) const {
     return expiry_time < aa.expiry_time;
@@ -91,7 +92,7 @@ struct AccountAmendment {
   int field;
   boost::uint64_t offer;
   bool increase;
-  std::string account_name;
+  kad::KadId account_name;
   // Chunk Info holders IDs and flag whether we've received their request
   std::map<std::string, bool> chunk_info_holders;
   // Responses and callbacks awaiting overall success / failure before being run

@@ -1213,8 +1213,8 @@ int PDVault::AmendAccount(const boost::uint64_t &space_offered) {
   crypto::Crypto co;
   co.set_symm_algorithm(crypto::AES_256);
   co.set_hash_algorithm(crypto::SHA_512);
-  std::string account_name = co.Hash(pmid_ + kAccount, "",
-                                     crypto::STRING_STRING, false);
+  kad::KadId account_name(co.Hash(pmid_ + kAccount, "", crypto::STRING_STRING,
+      false), false);
 
   // Find the account holders
   boost::shared_ptr<maidsafe::AmendAccountData>

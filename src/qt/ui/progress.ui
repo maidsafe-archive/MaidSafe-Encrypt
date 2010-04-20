@@ -34,13 +34,8 @@
          <verstretch>0</verstretch>
         </sizepolicy>
        </property>
-       <property name="font">
-        <font>
-         <pointsize>10</pointsize>
-        </font>
-       </property>
        <property name="text">
-        <string>Progressing...</string>
+        <string/>
        </property>
        <property name="wordWrap">
         <bool>true</bool>
@@ -62,7 +57,7 @@
       <item>
        <widget class="QLabel" name="progress_label">
         <property name="text">
-         <string>Doing something...</string>
+         <string/>
         </property>
         <property name="wordWrap">
          <bool>true</bool>

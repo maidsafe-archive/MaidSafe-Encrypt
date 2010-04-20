@@ -260,8 +260,8 @@ class PDVaultTest : public testing::Test {
     for (int i = 0; i < kNetworkSize - kNumOfClients; ++i) {
       for (int j = kNetworkSize - kNumOfClients; j < kNetworkSize; ++j) {
         maidsafe::CallbackObj cb;
-        pdvaults_[i]->kad_ops_->FindNode(pdvaults_[i]->pmid_, boost::bind(
-            &maidsafe::CallbackObj::CallbackFunc, &cb, _1), false);
+        pdvaults_[i]->kad_ops_->FindNode(kad::KadId(pdvaults_[i]->pmid_, false),
+            boost::bind(&maidsafe::CallbackObj::CallbackFunc, &cb, _1), false);
         cb.WaitForCallback();
       }
     }
@@ -376,7 +376,8 @@ TEST_F(PDVaultTest, FUNC_MAID_StoreAndGetChunks) {
            HexSubstr(account_name).c_str());
     std::set<std::string> closest;
     std::vector<kad::Contact> contacts;
-    clients_[i]->msm->kad_ops_->FindCloseNodes(account_name, &contacts);
+    clients_[i]->msm->kad_ops_->FindCloseNodes(kad::KadId(account_name, false),
+                                               &contacts);
     for (size_t j = 0; j < contacts.size(); ++j) {
       closest.insert(contacts[j].node_id().ToStringDecoded());
     }

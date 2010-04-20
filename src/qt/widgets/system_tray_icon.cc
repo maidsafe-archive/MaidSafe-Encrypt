@@ -40,7 +40,7 @@ SystemTrayIcon::SystemTrayIcon()
   setIcon(QPixmap(":/icons/16/globe"));
 
   {
-    action_open_ = new QAction(tr("&Restore Window"), this);
+    action_open_ = new QAction(tr("&Restore window"), this);
     connect(action_open_, SIGNAL(triggered()), this, SIGNAL(open()));
 
     action_close_ = new QAction(tr("&Close"), this);
@@ -60,7 +60,7 @@ SystemTrayIcon::SystemTrayIcon()
     menu_ = new QMenu;
     menu_->addAction(action_open_);
 
-    QMenu* share_menu = menu_->addMenu(tr("Create a share"));
+    QMenu* share_menu = menu_->addMenu(tr("&Create a share"));
     share_menu->addAction(action_data_share_);
     share_menu->addAction(action_send_file_);
 
