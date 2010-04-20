@@ -258,6 +258,9 @@ TEST_F(VaultBufferPacketHandlerTest, BEH_MAID_AddGetPresence) {
   bpi.ParseFromString(gp_info.data());
   std::string user("el usuario");
   bpi.add_users(cry_obj_.Hash(user, "", crypto::STRING_STRING, false));
+  for (int i = 0; i < 10; ++i)
+    bpi.add_users(cry_obj_.Hash(user + base::itos(i), "", crypto::STRING_STRING,
+                  false));
   gp_info.set_data(bpi.SerializeAsString());
   gp_info.set_signature(cry_obj_.AsymSign(gp_info.data(), "", private_key_,
                         crypto::STRING_STRING));
@@ -335,17 +338,54 @@ TEST_F(VaultBufferPacketHandlerTest, BEH_MAID_AddGetPresence) {
                         keys_[1].private_key(), crypto::STRING_STRING));
     ASSERT_TRUE(vbph_.AddPresence(lp_gp.SerializeAsString(), &ser_bp_));
   }
+
+  ASSERT_TRUE(vbph_.GetPresence(&ser_bp_, &msgs));
+  ASSERT_EQ(size_t(1), msgs.size());
+  ASSERT_TRUE(lp_gp.ParseFromString(msgs[0]));
+  ASSERT_TRUE(cry_obj_.AsymCheckSig(lp_gp.data(), lp_gp.signature(),
+              keys_[1].public_key(), crypto::STRING_STRING));
+  lp.Clear();
+  ASSERT_TRUE(lp.ParseFromString(lp_gp.data()));
+  ASSERT_EQ(user, lp.contact_id());
+  dec_ep = cry_obj_.AsymDecrypt(lp.end_point(), "", private_key_,
+                                crypto::STRING_STRING);
+  ep.Clear();
+  ASSERT_TRUE(ep.ParseFromString(dec_ep));
+  for (int a = 0; a < 3; ++a) {
+    ASSERT_EQ(base::itos(a), ep.ip(a));
+    ASSERT_EQ(a, static_cast<int>(ep.port(a)));
+  }
+  ASSERT_TRUE(vbph_.GetPresence(&ser_bp_, &msgs));
+  ASSERT_EQ(size_t(0), msgs.size());
+
+  for (int y = 0; y < 10; ++y) {
+    lp.Clear();
+    lp.set_contact_id(user + base::itos(y));
+    ep.Clear();
+    for (int n = 0; n < 3; ++n) {
+      ep.add_ip(base::itos(n));
+      ep.add_port(n);
+    }
+    lp.set_end_point(cry_obj_.AsymEncrypt(ep.SerializeAsString(), "",
+                     public_key_, crypto::STRING_STRING));
+    lp_gp.Clear();
+    lp_gp.set_data(lp.SerializeAsString());
+    lp_gp.set_signature(cry_obj_.AsymSign(lp_gp.data(), "",
+                        keys_[1].private_key(), crypto::STRING_STRING));
+    ASSERT_TRUE(vbph_.AddPresence(lp_gp.SerializeAsString(), &ser_bp_));
+  }
+
   ASSERT_TRUE(vbph_.GetPresence(&ser_bp_, &msgs));
   ASSERT_EQ(size_t(10), msgs.size());
-    for (size_t y = 0; y < msgs.size(); ++y) {
-    ASSERT_TRUE(lp_gp.ParseFromString(msgs[0]));
+  for (size_t e = 0; e < msgs.size(); ++e) {
+    ASSERT_TRUE(lp_gp.ParseFromString(msgs[e]));
     ASSERT_TRUE(cry_obj_.AsymCheckSig(lp_gp.data(), lp_gp.signature(),
                 keys_[1].public_key(), crypto::STRING_STRING));
     lp.Clear();
     ASSERT_TRUE(lp.ParseFromString(lp_gp.data()));
-    ASSERT_EQ(user, lp.contact_id());
-    std::string dec_ep(cry_obj_.AsymDecrypt(lp.end_point(), "", private_key_,
-                       crypto::STRING_STRING));
+    ASSERT_EQ(user + base::itos(e), lp.contact_id());
+    dec_ep = cry_obj_.AsymDecrypt(lp.end_point(), "", private_key_,
+                                  crypto::STRING_STRING);
     ep.Clear();
     ASSERT_TRUE(ep.ParseFromString(dec_ep));
     for (int a = 0; a < 3; ++a) {
