@@ -200,15 +200,9 @@ if  grep -v maidsafe /etc/passwd ; then /usr/sbin/adduser --system --shell /bin/
                     </distributionFileList>
                 </folder>
                 <folder>
-<<<<<<< HEAD
                     <description>usrsharepixmaps</description>
                     <destination>/usr/share/pixmaps/</destination>
                     <name>pixmaps</name>
-=======
-                    <description>/usr/share/pixmaps</description>
-                    <destination>/usr/share/pixmaps</destination>
-                    <name>/usr/share/pixmaps</name>
->>>>>>> 7b4f087e6db95e65518000f66ee9dcb8ad2c8625
                     <platforms>linux</platforms>
                     <distributionFileList>
                         <distributionFile>
@@ -217,15 +211,9 @@ if  grep -v maidsafe /etc/passwd ; then /usr/sbin/adduser --system --shell /bin/
                     </distributionFileList>
                 </folder>
                 <folder>
-<<<<<<< HEAD
                     <description>usrsharemenu</description>
                     <destination>/usr/share/menu/</destination>
                     <name>menu</name>
-=======
-                    <description>/usr/share/menu</description>
-                    <destination>/usr/share/menu</destination>
-                    <name>/usr/share/menu</name>
->>>>>>> 7b4f087e6db95e65518000f66ee9dcb8ad2c8625
                     <platforms>linux</platforms>
                     <distributionFileList>
                         <distributionFile>
@@ -234,15 +222,9 @@ if  grep -v maidsafe /etc/passwd ; then /usr/sbin/adduser --system --shell /bin/
                     </distributionFileList>
                 </folder>
                 <folder>
-<<<<<<< HEAD
                     <description>usrshareapplications</description>
                     <destination>/usr/share/applications/</destination>
                     <name>applications</name>
-=======
-                    <description>/usr/share/applications</description>
-                    <destination>/usr/share/applications</destination>
-                    <name>/usr/share/applications</name>
->>>>>>> 7b4f087e6db95e65518000f66ee9dcb8ad2c8625
                     <platforms>linux</platforms>
                     <distributionFileList>
                         <distributionFile>
@@ -257,15 +239,9 @@ if  grep -v maidsafe /etc/passwd ; then /usr/sbin/adduser --system --shell /bin/
                     </distributionFileList>
                 </folder>
                 <folder>
-<<<<<<< HEAD
                     <description>varcachemaidsafe</description>
                     <destination>/var/cache/maidsafe/</destination>
                     <name>varcache</name>
-=======
-                    <description>/var/cache/maidsafe/</description>
-                    <destination>/var/cache/maidsafe/</destination>
-                    <name>/var/cache/maidsafe/</name>
->>>>>>> 7b4f087e6db95e65518000f66ee9dcb8ad2c8625
                     <platforms>linux</platforms>
                     <distributionFileList>
                         <distributionFile>
@@ -273,20 +249,6 @@ if  grep -v maidsafe /etc/passwd ; then /usr/sbin/adduser --system --shell /bin/
                         </distributionFile>
                     </distributionFileList>
                 </folder>
-<<<<<<< HEAD
-=======
-                <folder>
-                    <description>/etc/init.d</description>
-                    <destination>/etc/init.d</destination>
-                    <name>/etc/init.d</name>
-                    <platforms>linux</platforms>
-                    <distributionFileList>
-                        <distributionFile>
-                            <origin>../../build/Linux/Release/bin/perpetualvault</origin>
-                        </distributionFile>
-                    </distributionFileList>
-                </folder>
->>>>>>> 7b4f087e6db95e65518000f66ee9dcb8ad2c8625
             </folderList>
             <startMenuShortcutList>
                 <startMenuShortcut>
@@ -325,15 +287,9 @@ if  grep -v maidsafe /etc/passwd ; then /usr/sbin/adduser --system --shell /bin/
                     <platforms>all</platforms>
                 </folder>
                 <folder>
-<<<<<<< HEAD
                     <description>etcinitd</description>
                     <destination>/etc/init.d/</destination>
                     <name>etcinitd</name>
-=======
-                    <description>Install Directory</description>
-                    <destination>${installdir}</destination>
-                    <name>installdirL</name>
->>>>>>> 7b4f087e6db95e65518000f66ee9dcb8ad2c8625
                     <platforms>linux</platforms>
                     <distributionFileList>
                         <distributionFile>
@@ -353,15 +309,9 @@ if  grep -v maidsafe /etc/passwd ; then /usr/sbin/adduser --system --shell /bin/
                     </distributionFileList>
                 </folder>
                 <folder>
-<<<<<<< HEAD
                     <description>DaemonDir</description>
                     <destination>/Library/LaunchDaemons</destination>
                     <name>Daemondir</name>
-=======
-                    <description>Install Directory</description>
-                    <destination>${installdir}</destination>
-                    <name>installdirM</name>
->>>>>>> 7b4f087e6db95e65518000f66ee9dcb8ad2c8625
                     <platforms>osx</platforms>
                     <distributionFileList>
                         <distributionFile>
@@ -467,11 +417,7 @@ if  grep -v maidsafe /etc/passwd ; then /usr/sbin/adduser --system --shell /bin/
                     <platforms>linux</platforms>
                     <distributionFileList>
                         <distributionFile>
-<<<<<<< HEAD
                             <origin>../../../installbuilder-6.3.0/autoupdate/output/autoupdate-linux.bin</origin>
-=======
-                            <origin>../../../installbuilder-6.2.7/autoupdate/output/autoupdate-linux.bin</origin>
->>>>>>> 7b4f087e6db95e65518000f66ee9dcb8ad2c8625
                         </distributionFile>
                     </distributionFileList>
                 </folder>
@@ -481,11 +427,7 @@ if  grep -v maidsafe /etc/passwd ; then /usr/sbin/adduser --system --shell /bin/
                     <name>autoupdaterosx</name>
                     <platforms>osx</platforms>
                     <distributionFileList>
-<<<<<<< HEAD
-                        <distributionFile origin="../../../../../Applications/BitRock InstallBuilder Enterprise 6.2.6/autoupdate/output/autoupdate-osx.app"/>
-=======
-                        <distributionFile origin="/Applications/BitRock InstallBuilder Enterprise 6.2.6/autoupdate/output/autoupdate-osx.app"/>
->>>>>>> 7b4f087e6db95e65518000f66ee9dcb8ad2c8625
+                        <distributionFile origin="../../../../../Applications/BitRock InstallBuilder Professional 6.3.0/autoupdate/output/autoupdate-osx.app"/>
                     </distributionFileList>
                 </folder>
             </folderList>
