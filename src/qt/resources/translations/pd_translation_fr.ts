@@ -30,8 +30,7 @@
 <context>
     <name>ConnectionSettingsPage</name>
     <message>
-        <location filename="../../ui/connection_settings.ui" line="+14"/>
-        <location line="+6"/>
+        <location filename="../../ui/connection_settings.ui" line="+20"/>
         <source>Connection Settings</source>
         <translation type="unfinished"></translation>
     </message>
@@ -242,7 +241,7 @@
     <name>ContactsPage</name>
     <message>
         <location filename="../../ui/user_contacts_panel.ui" line="+89"/>
-        <source>Search contacts:</source>
+        <source>Search contacts</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -575,12 +574,7 @@
 <context>
     <name>FileTransferPage</name>
     <message>
-        <location filename="../../ui/file_transfer_settings.ui" line="+14"/>
-        <source>File Transfer Settings</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location line="+6"/>
+        <location filename="../../ui/file_transfer_settings.ui" line="+20"/>
         <source>File Transfer</source>
         <translation type="unfinished"></translation>
     </message>
@@ -681,14 +675,6 @@
     <message>
         <location filename="../../widgets/messages.cc" line="+169"/>
         <source>There are no new messages.</source>
-        <translation type="unfinished"></translation>
-    </message>
-</context>
-<context>
-    <name>MessagesPage</name>
-    <message>
-        <location filename="../../ui/user_messages_panel.ui" line="+14"/>
-        <source>Messages</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -911,12 +897,7 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="+22"/>
-        <source>/</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location line="+1"/>
+        <location line="+23"/>
         <source>Save File As...</source>
         <translation type="unfinished"></translation>
     </message>
@@ -1181,8 +1162,7 @@ p, li { white-space: pre-wrap; }
 <context>
     <name>ProfileSettingsPage</name>
     <message>
-        <location filename="../../ui/profile_settings.ui" line="+14"/>
-        <location line="+6"/>
+        <location filename="../../ui/profile_settings.ui" line="+20"/>
         <source>Profile Settings</source>
         <translation type="unfinished"></translation>
     </message>
@@ -1245,17 +1225,7 @@ p, li { white-space: pre-wrap; }
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="+29"/>
-        <source>Progressing...</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location line="+22"/>
-        <source>Doing something...</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location line="+61"/>
+        <location line="+107"/>
         <source>OK</source>
         <translation type="unfinished"></translation>
     </message>
@@ -1287,25 +1257,17 @@ p, li { white-space: pre-wrap; }
 <context>
     <name>PublicUsernamePage</name>
     <message>
-        <location filename="../../ui/user_public_username_panel.ui" line="+14"/>
-        <location line="+39"/>
+        <location filename="../../ui/user_public_username_panel.ui" line="+29"/>
+        <source>To complete the creation of your account, you need to create a public username. This is the name you share with other users so they can communicate with you.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+19"/>
         <source>Create Public Username</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="-24"/>
-        <source>To complete the creation of your account, you need to create a public username. This is the name you share with other users so they can communicate with you.
-
-You can change your public username later if you wish.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location line="+21"/>
-        <source>Click here to create your public username</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location line="+31"/>
+        <location line="+28"/>
         <source>Creating public username...</source>
         <translation type="unfinished"></translation>
     </message>
@@ -1313,29 +1275,28 @@ You can change your public username later if you wish.</source>
 <context>
     <name>SecuritySettingsPage</name>
     <message>
-        <location filename="../../ui/security_settings.ui" line="+14"/>
-        <location line="+6"/>
+        <location filename="../../ui/security_settings.ui" line="+20"/>
         <source>Security Settings</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location line="+6"/>
-        <source>Login Settings</source>
+        <source>Change Login</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location line="+9"/>
-        <source>Enter new username:</source>
+        <source>New username:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location line="+10"/>
-        <source>Enter new PIN:</source>
+        <source>New PIN:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location line="+10"/>
-        <source>Enter new password:</source>
+        <source>New password:</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -1409,11 +1370,6 @@ You can change your public username later if you wish.</source>
     </message>
     <message>
         <location line="+7"/>
-        <source>Click here to create your public username</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location line="+3"/>
         <source>Create</source>
         <translation type="unfinished"></translation>
     </message>
@@ -1423,8 +1379,7 @@ You can change your public username later if you wish.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="-77"/>
-        <location line="+69"/>
+        <location line="-8"/>
         <source>Shares</source>
         <translation type="unfinished"></translation>
     </message>
@@ -1448,7 +1403,7 @@ You can change your public username later if you wish.</source>
     <name>SystemTrayIcon</name>
     <message>
         <location filename="../../widgets/system_tray_icon.cc" line="+43"/>
-        <source>&amp;Restore Window</source>
+        <source>&amp;Restore window</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -1473,7 +1428,7 @@ You can change your public username later if you wish.</source>
     </message>
     <message>
         <location line="+8"/>
-        <source>Create a share</source>
+        <source>&amp;Create a share</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -1516,32 +1471,8 @@ You can change your public username later if you wish.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="+19"/>
-        <location line="+6"/>
-        <source>Result: %1</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location line="-26"/>
+        <location line="-1"/>
         <source>Wrong Password</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location line="+19"/>
-        <source>Profile Settings Thread Complete</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location line="+6"/>
-        <source>Security Settings Thread Complete</source>
-        <translation type="unfinished"></translation>
-    </message>
-</context>
-<context>
-    <name>UserSettingsPage</name>
-    <message>
-        <location filename="../../ui/user_settings.ui" line="+14"/>
-        <source>PD Settings</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -1573,12 +1504,7 @@ You can change your public username later if you wish.</source>
 <context>
     <name>VaultInfoPage</name>
     <message>
-        <location filename="../../ui/user_vault_info.ui" line="+14"/>
-        <source>Vault Settings</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location line="+6"/>
+        <location filename="../../ui/user_vault_info.ui" line="+20"/>
         <source>Vault Information</source>
         <translation type="unfinished"></translation>
     </message>
@@ -1588,13 +1514,7 @@ You can change your public username later if you wish.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="+16"/>
-        <location line="+26"/>
-        <source>0</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location line="-13"/>
+        <location line="+29"/>
         <source>Used space:</source>
         <translation type="unfinished"></translation>
     </message>
@@ -1619,12 +1539,7 @@ You can change your public username later if you wish.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="-91"/>
-        <source>TextLabel</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location line="+13"/>
+        <location line="-78"/>
         <source>Vault Status</source>
         <translation type="unfinished"></translation>
     </message>
@@ -1637,30 +1552,15 @@ You can change your public username later if you wish.</source>
 <context>
     <name>complete</name>
     <message>
-        <location filename="../../ui/create_page_complete.ui" line="+14"/>
-        <source>Create User Complete</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location line="+6"/>
-        <source>complete</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location line="+23"/>
+        <location filename="../../ui/create_page_complete.ui" line="+43"/>
         <source>User creation in progress...</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
     <name>license</name>
-    <message>
-        <location filename="../../ui/create_page_license.ui" line="+14"/>
-        <source>Form</source>
-        <translation type="unfinished"></translation>
-    </message>
     <message utf8="true">
-        <location line="+6"/>
+        <location filename="../../ui/create_page_license.ui" line="+20"/>
         <source>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
 &lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
 p, li { white-space: pre-wrap; }
@@ -1801,12 +1701,7 @@ p, li { white-space: pre-wrap; }
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="-43"/>
-        <source>License</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location line="+14"/>
+        <location line="-29"/>
         <source>The space you offer to the network is also how much space you will have to store your files in. A minimum space of 1 GB = 1024 MB is recommended.
 
 Leaving port as 0 will allow Perpetual Data to determine one for you automatically.
@@ -1838,12 +1733,7 @@ Choose the directory so that you are able to increase the space when you desire.
 <context>
     <name>options</name>
     <message>
-        <location filename="../../ui/create_page_options.ui" line="+14"/>
-        <source>Create Account Options</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location line="+6"/>
+        <location filename="../../ui/create_page_options.ui" line="+20"/>
         <source>To create a user account, you will also need a vault on the network. Please choose from the following options:</source>
         <translation type="unfinished"></translation>
     </message>
@@ -1866,12 +1756,7 @@ Choose the directory so that you are able to increase the space when you desire.
 <context>
     <name>welcome</name>
     <message>
-        <location filename="../../ui/create_page_welcome.ui" line="+14"/>
-        <source>Create User Welcome</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location line="+6"/>
+        <location filename="../../ui/create_page_welcome.ui" line="+20"/>
         <source>Thank you for choosing Maidsafe Perpetual Data as your provider of self-encrypted distributed data storage in a self-healing peer-to-peer network.
 
 You are now ready to begin the process of creating a user account, using the details entered during login:

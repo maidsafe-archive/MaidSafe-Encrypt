@@ -11,6 +11,11 @@
     <file alias="globe">64/Globe-64.png</file>
   </qresource>
   <qresource prefix="translations">
+    <file>translations/pd_translation_de.qm</file>
+    <file>translations/pd_translation_en.qm</file>
+    <file>translations/pd_translation_es.qm</file>
+    <file>translations/pd_translation_fr.qm</file>
+    <file>translations/pd_translation_gd.qm</file>
   </qresource>
   <qresource prefix="icons/32">
     <file>32/Color Picker_32.png</file>

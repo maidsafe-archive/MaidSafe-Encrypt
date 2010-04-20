@@ -48,7 +48,9 @@ void execute_cb(base::callback_func_type cb, const std::string &result) {
 void FindNodesSucceed(base::callback_func_type cb) {
   kad::FindResponse res;
   res.set_result(kad::kRpcResultSuccess);
-  kad::Contact ctc("id", "127.0.0.1", 8888, "127.0.0.1", 8888);
+  crypto::Crypto co;
+  std::string id(co.Hash("id", "", crypto::STRING_STRING, false));
+  kad::Contact ctc(id, "127.0.0.1", 8888, "127.0.0.1", 8888);
   std::string ser_ctc;
   ctc.SerialiseToString(&ser_ctc);
   for (int n = 0; n < kad::K; ++n) {
@@ -71,8 +73,10 @@ void FindNodesFailNoParse(base::callback_func_type cb) {
 void FindNodesFailNotEnough(base::callback_func_type cb) {
   kad::FindResponse res;
   res.set_result(kad::kRpcResultSuccess);
-  kad::Contact ctc("id", "127.0.0.1", 8888, "127.0.0.1", 8888);
+  crypto::Crypto co;
+  std::string id(co.Hash("id", "", crypto::STRING_STRING, false));
   std::string ser_ctc;
+  kad::Contact ctc(id, "127.0.0.1", 8888, "127.0.0.1", 8888);
   ctc.SerialiseToString(&ser_ctc);
   for (int n = 0; n < kad::K/4; ++n) {
     res.add_closest_nodes(ser_ctc);
@@ -93,7 +97,7 @@ void BPCallbackFail(const kad::Contact &peer,
                     maidsafe::CreateBPResponse *response,
                     google::protobuf::Closure *done) {
   response->set_result(kNack);
-  response->set_pmid_id(peer.node_id());
+  response->set_pmid_id(peer.node_id().ToStringDecoded());
   done->Run();
 }
 
@@ -101,7 +105,7 @@ void BPCallbackSucceed(const kad::Contact &peer,
                        maidsafe::CreateBPResponse *response,
                        google::protobuf::Closure *done) {
   response->set_result(kAck);
-  response->set_pmid_id(peer.node_id());
+  response->set_pmid_id(peer.node_id().ToStringDecoded());
   done->Run();
 }
 
@@ -110,7 +114,7 @@ void BPInfoCallbackSucceed(
     maidsafe::ModifyBPInfoResponse *response,
     google::protobuf::Closure *done) {
   response->set_result(kAck);
-  response->set_pmid_id(peer.node_id());
+  response->set_pmid_id(peer.node_id().ToStringDecoded());
   done->Run();
 }
 
@@ -119,7 +123,7 @@ void BPInfoCallbackFailed(
     maidsafe::ModifyBPInfoResponse *response,
     google::protobuf::Closure *done) {
   response->set_result(kNack);
-  response->set_pmid_id(peer.node_id());
+  response->set_pmid_id(peer.node_id().ToStringDecoded());
   done->Run();
 }
 
@@ -128,7 +132,7 @@ void BPAddMsgCallbackSucceed(
     maidsafe::AddBPMessageResponse *response,
     google::protobuf::Closure *done) {
   response->set_result(kAck);
-  response->set_pmid_id(peer.node_id());
+  response->set_pmid_id(peer.node_id().ToStringDecoded());
   done->Run();
 }
 
@@ -137,7 +141,7 @@ void BPAddMsgCallbackFailed(
     maidsafe::AddBPMessageResponse *response,
     google::protobuf::Closure *done) {
   response->set_result(kNack);
-  response->set_pmid_id(peer.node_id());
+  response->set_pmid_id(peer.node_id().ToStringDecoded());
   done->Run();
 }
 
@@ -146,7 +150,7 @@ void BPAddPresenceCallbackSucceed(
     maidsafe::AddBPPresenceResponse *response,
     google::protobuf::Closure *done) {
   response->set_result(kAck);
-  response->set_pmid_id(peer.node_id());
+  response->set_pmid_id(peer.node_id().ToStringDecoded());
   done->Run();
 }
 
@@ -155,7 +159,7 @@ void BPAddPresenceCallbackFailed(
     maidsafe::AddBPPresenceResponse *response,
     google::protobuf::Closure *done) {
   response->set_result(kNack);
-  response->set_pmid_id(peer.node_id());
+  response->set_pmid_id(peer.node_id().ToStringDecoded());
   done->Run();
 }
 
@@ -204,23 +208,21 @@ class BPCallback {
   }
   void BPGetPresence_CB(
       const maidsafe::ReturnCode &res,
-      const std::list<maidsafe::LivePresence> &pres,
+      const std::list<std::string> &pres,
       bool b) {
     if (b) {
       result = res;
       presences.clear();
       std::set<std::string>::iterator it;
       for (it = presence_set.begin(); it != presence_set.end(); ++it) {
-        maidsafe::LivePresence pr;
-        pr.ParseFromString(*it);
-        presences.push_back(pr);
+        presences.push_back(*it);
       }
     } else {
       presences.clear();
       presences = pres;
-      std::list<maidsafe::LivePresence>::iterator it;
+      std::list<std::string>::iterator it;
       for (it = presences.begin(); it != presences.end(); ++it)
-        presence_set.insert(it->SerializeAsString());
+        presence_set.insert(*it);
     }
   }
   void Reset() {
@@ -232,7 +234,7 @@ class BPCallback {
   std::set<std::string> presence_set;
   maidsafe::ReturnCode result;
   std::list<maidsafe::ValidatedBufferPacketMessage> msgs;
-  std::list<maidsafe::LivePresence> presences;
+  std::list<std::string> presences;
 };
 
 class GetMsgsHelper {
@@ -245,7 +247,7 @@ class GetMsgsHelper {
     response->set_result(kAck);
     for (size_t i = 0; i < msgs.size(); ++i)
       response->add_messages(msgs.at(i).SerializeAsString());
-    response->set_pmid_id(peer.node_id());
+    response->set_pmid_id(peer.node_id().ToStringDecoded());
     done->Run();
   }
   void BPGetMsgsCallbackFailed(
@@ -253,7 +255,7 @@ class GetMsgsHelper {
       maidsafe::GetBPMessagesResponse *response,
       google::protobuf::Closure *done) {
     response->set_result(kNack);
-    response->set_pmid_id(peer.node_id());
+    response->set_pmid_id(peer.node_id().ToStringDecoded());
     done->Run();
   }
   void BPGetPresenceCallbackSucceed(
@@ -262,8 +264,8 @@ class GetMsgsHelper {
       google::protobuf::Closure *done) {
     response->set_result(kAck);
     for (size_t i = 0; i < presences.size(); ++i)
-      response->add_messages(presences.at(i).SerializeAsString());
-    response->set_pmid_id(peer.node_id());
+      response->add_messages(presences.at(i));
+    response->set_pmid_id(peer.node_id().ToStringDecoded());
     done->Run();
   }
   void BPGetPresenceCallbackFailed(
@@ -271,7 +273,7 @@ class GetMsgsHelper {
       maidsafe::GetBPPresenceResponse *response,
       google::protobuf::Closure *done) {
     response->set_result(kNack);
-    response->set_pmid_id(peer.node_id());
+    response->set_pmid_id(peer.node_id().ToStringDecoded());
     done->Run();
   }
   void AddMessage(const std::string &msg,
@@ -293,11 +295,14 @@ class GetMsgsHelper {
     maidsafe::LivePresence bp_presence;
     bp_presence.set_contact_id(sender);
     bp_presence.set_end_point("las nueces del rey mazorca");
-    presences.push_back(bp_presence);
+    maidsafe::GenericPacket gp;
+    gp.set_data(bp_presence.SerializeAsString());
+    gp.set_signature("mis enormes testiculos");
+    presences.push_back(gp.SerializeAsString());
   }
  private:
   std::vector<maidsafe::ValidatedBufferPacketMessage> msgs;
-  std::vector<maidsafe::LivePresence> presences;
+  std::vector<std::string> presences;
   crypto::Crypto co;
 };
 
@@ -1047,15 +1052,22 @@ TEST_F(TestClientBP, BEH_MAID_GetPresenceOk) {
     boost::this_thread::sleep(boost::posix_time::milliseconds(100));
   ASSERT_EQ(maidsafe::kSuccess, cb.result);
   ASSERT_EQ(size_t(3), cb.presences.size());
-  maidsafe::LivePresence pr = cb.presences.front();
+  maidsafe::GenericPacket gp;
+  ASSERT_TRUE(gp.ParseFromString(cb.presences.front()));
+  maidsafe::LivePresence pr;
+  ASSERT_TRUE(pr.ParseFromString(gp.data()));
   ASSERT_EQ("sender1", pr.contact_id());
   cb.presences.pop_front();
+  gp.Clear();
+  ASSERT_TRUE(gp.ParseFromString(cb.presences.front()));
   pr.Clear();
-  pr = cb.presences.front();
+  ASSERT_TRUE(pr.ParseFromString(gp.data()));
   ASSERT_EQ("sender2", pr.contact_id());
   cb.presences.pop_front();
+  gp.Clear();
+  ASSERT_TRUE(gp.ParseFromString(cb.presences.front()));
   pr.Clear();
-  pr = cb.presences.front();
+  ASSERT_TRUE(pr.ParseFromString(gp.data()));
   ASSERT_EQ("sender3", pr.contact_id());
 }
 

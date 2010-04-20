@@ -187,14 +187,14 @@ void UserSettings::HandleOK() {
 }
 
 void UserSettings::onSaveProfileSettingsCompleted(bool success) {
-  QMessageBox::warning(this, tr("Profile Settings Thread Complete"),
-                       QString(tr("Result: %1").arg(success)));
+  QMessageBox::warning(this, "Profile Settings Thread Complete",
+                       QString("Result: %1").arg(success));
 }
 
 
 void UserSettings::onSaveSecuritySettingsCompleted(bool success) {
-  QMessageBox::warning(this, tr("Security Settings Thread Complete"),
-                       QString(tr("Result: %1").arg(success)));
+  QMessageBox::warning(this, "Security Settings Thread Complete",
+                       QString("Result: %1").arg(success));
 }
 
 void UserSettings::HandleApply() { }

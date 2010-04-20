@@ -1381,8 +1381,9 @@ int ClientController::HandleAddContactRequest(
 
   std::vector<std::string> contact_names;
   contact_names.push_back(sender);
-  if (sm_->AddBPMessage(contact_names, ser_im, INSTANT_MSG) !=
-      kSuccess) {
+  std::map<std::string, ReturnCode> add_results;
+  if (sm_->AddBPMessage(contact_names, ser_im, INSTANT_MSG,
+      &add_results) != static_cast<int>(contact_names.size())) {
 #ifdef DEBUG
     printf("ClientController::HandleAddContactRequest - Failed send msg\n");
 #endif
@@ -1464,7 +1465,9 @@ int ClientController::SendInstantMessage(const std::string &message,
   im.set_conversation(conversation);
   im.SerializeToString(&ser_im);
 
-  if (sm_->AddBPMessage(contact_names, ser_im, INSTANT_MSG) != kSuccess) {
+  std::map<std::string, ReturnCode> add_results;
+  if (sm_->AddBPMessage(contact_names, ser_im, INSTANT_MSG, &add_results) !=
+      static_cast<int>(contact_names.size())) {
 #ifdef DEBUG
     printf("ClientController::SendInstantMessage - Not all recepients got "
            "the message\n");
@@ -1561,8 +1564,9 @@ int ClientController::SendInstantFile(std::string *filename,
   std::string ser_instant_file;
   im.SerializeToString(&ser_instant_file);
 
-  if (sm_->AddBPMessage(contact_names, ser_instant_file, INSTANT_MSG) !=
-      kSuccess) {
+  std::map<std::string, ReturnCode> add_results;
+  if (sm_->AddBPMessage(contact_names, ser_instant_file, INSTANT_MSG,
+      &add_results) != static_cast<int>(contact_names.size())) {
 #ifdef DEBUG
     printf("ClientController::SendInstantFile - Not all recepients got "
            "the message\n");
@@ -1736,8 +1740,9 @@ int ClientController::AddContact(const std::string &public_name) {
 
   std::vector<std::string> contact_names;
   contact_names.push_back(public_name);
-  if (sm_->AddBPMessage(contact_names, ser_im, ADD_CONTACT_RQST) !=
-      kSuccess) {
+  std::map<std::string, ReturnCode> add_results;
+  if (sm_->AddBPMessage(contact_names, ser_im, ADD_CONTACT_RQST,
+      &add_results) != static_cast<int>(contact_names.size())) {
 #ifdef DEBUG
     printf("ClientController::AddContact - Failed to send request\n");
 #endif
@@ -1777,8 +1782,9 @@ int ClientController::DeleteContact(const std::string &public_name) {
 
   std::vector<std::string> contact_names;
   contact_names.push_back(public_name);
-  if (sm_->AddBPMessage(contact_names, ser_im, ADD_CONTACT_RQST) !=
-      kSuccess) {
+  std::map<std::string, ReturnCode> add_results;
+  if (sm_->AddBPMessage(contact_names, ser_im, ADD_CONTACT_RQST,
+      &add_results) != static_cast<int>(contact_names.size())) {
 #ifdef DEBUG
     printf("ClientController::DeleteContact - Failed to send deletion msg\n");
 #endif
@@ -1930,7 +1936,7 @@ int ClientController::CreateNewShare(const std::string &name,
   std::list<maidsafe::ShareParticipants> participants;
   std::vector<maidsafe::ShareParticipants> parts;
   std::vector<std::string> admin_recs;
-  std::set<std::string>::iterator it;
+  std::set<std::string>::const_iterator it;
   for (it = admins.begin(); it != admins.end(); ++it) {
     std::vector<maidsafe::Contact> c_list;
     maidsafe::mi_contact mic;
@@ -2002,8 +2008,9 @@ int ClientController::CreateNewShare(const std::string &name,
   im.SerializeToString(&share_message);
 
   if (ro_recs.size() > 0) {
-    if (sm_->AddBPMessage(ro_recs, share_message, INSTANT_MSG) !=
-        kSuccess) {
+    std::map<std::string, ReturnCode> add_results;
+    if (sm_->AddBPMessage(ro_recs, share_message, INSTANT_MSG,
+        &add_results) != static_cast<int>(ro_recs.size())) {
   #ifdef DEBUG
       printf("ClientController::CreateNewShare - Not all recepients got "
              "the message\n");
@@ -2022,8 +2029,9 @@ int ClientController::CreateNewShare(const std::string &name,
                "to share " + name;
     im.set_message(message);
     im.SerializeToString(&share_message);
-    if (sm_->AddBPMessage(admin_recs, share_message, INSTANT_MSG) !=
-        kSuccess) {
+    std::map<std::string, ReturnCode> add_results;
+    if (sm_->AddBPMessage(admin_recs, share_message, INSTANT_MSG,
+        &add_results) != static_cast<int>(admin_recs.size())) {
   #ifdef DEBUG
       printf("ClientController::CreateNewShare - Not all recepients got "
              "the message\n");

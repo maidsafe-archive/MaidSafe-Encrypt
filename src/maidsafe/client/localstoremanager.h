@@ -30,6 +30,7 @@
 #include <gtest/gtest_prod.h>
 
 #include <list>
+#include <map>
 #include <string>
 #include <vector>
 
@@ -60,7 +61,7 @@ class LocalStoreManager : public StoreManagerInterface {
   // Chunks
   virtual int LoadChunk(const std::string &chunk_name, std::string *data);
   virtual int StoreChunk(const std::string &chunk_name,
-                         const DirType dir_type,
+                         DirType dir_type,
                          const std::string &msid);
   virtual int DeleteChunk(const std::string &chunk_name,
                           const boost::uint64_t &chunk_size,
@@ -88,12 +89,17 @@ class LocalStoreManager : public StoreManagerInterface {
                             const VoidFuncOneInt &cb);
   // Buffer packet
   virtual int CreateBP();
-  virtual int LoadBPMessages(
-      std::list<maidsafe::ValidatedBufferPacketMessage> *messages);
   virtual int ModifyBPInfo(const std::string &info);
+  virtual int LoadBPMessages(
+      std::list<ValidatedBufferPacketMessage> *messages);
   virtual int AddBPMessage(const std::vector<std::string> &receivers,
                            const std::string &message,
-                           const MessageType &m_type);
+                           const MessageType &m_type,
+                           std::map<std::string, ReturnCode> *add_results);
+  virtual int LoadBPPresence(std::list<LivePresence> *messages);
+  virtual int AddBPPresence(
+      const std::vector<std::string> &receivers,
+      std::map<std::string, ReturnCode> *add_results);
 
   // Vault
   virtual void PollVaultInfo(base::callback_func_type cb);

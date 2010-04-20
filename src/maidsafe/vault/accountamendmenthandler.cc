@@ -204,7 +204,8 @@ void AccountAmendmentHandler::CreateNewAmendment(
     }
   }
   vault_service_logic_->kadops()->FindCloseNodes(
-      amendment.probable_pendings.front().request.chunkname(),
+      kad::KadId(amendment.probable_pendings.front().request.chunkname(),
+                 false),
       boost::bind(&AccountAmendmentHandler::CreateNewAmendmentCallback, this,
                   amendment, _1));
 }
@@ -230,7 +231,7 @@ void AccountAmendmentHandler::CreateNewAmendmentCallback(
     // Populate map of Chunk Info holders
     for (size_t i = 0; i < contacts.size(); ++i) {
       modified_amendment.chunk_info_holders.insert(std::pair<std::string, bool>(
-          contacts.at(i).node_id(), false));
+          contacts.at(i).node_id().ToStringDecoded(), false));
     }
     // Update multi-index
     amendments_.get<by_timestamp>().replace(it, modified_amendment);

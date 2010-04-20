@@ -32,6 +32,7 @@
 #include <boost/filesystem/fstream.hpp>
 #ifdef MAIDSAFE_WIN32
 #include <shlwapi.h>
+#include <shlobj.h>
 #include <sstream>
 #endif
 #include "maidsafe/returncodes.h"

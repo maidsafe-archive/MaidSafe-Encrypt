@@ -246,7 +246,7 @@ bool SEHandler::ProcessMetaData(const std::string &rel_entry,
       // file_size_ = fs::file_size(full_path_);
       // mdm.set_file_size_high(file_size_/4294967295);
       // mdm.set_file_size_low(file_size_%4294967295);
-      mdm.set_file_size_low(static_cast<uint32_t>(file_size));
+      mdm.set_file_size_low(static_cast<boost::uint32_t>(file_size));
       // no break as we want file hash added
     case EMPTY_FILE:
       mdm.add_file_hash(hash);

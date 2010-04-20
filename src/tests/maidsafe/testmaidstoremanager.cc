@@ -383,15 +383,11 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_KeyUnique) {
   msm.kad_ops_ = mko;
 
   // Set up test requirements
-  std::vector<std::string> keys;
-  const size_t kTestCount(8);
-  std::string h =
-      crypto_.Hash(base::RandomString(100), "", crypto::STRING_STRING, false);
-  keys.push_back(h + "a");
-  keys.push_back(h.substr(0, h.size() - 1));
-  for (size_t i = 2; i < kTestCount; ++i) {
-    keys.push_back(crypto_.Hash(base::RandomString(100), "",
-                                crypto::STRING_STRING, false));
+  std::vector<kad::KadId> keys;
+  const size_t kTestCount(7);
+  for (size_t i = 0; i < kTestCount; ++i) {
+    keys.push_back(kad::KadId(crypto_.Hash(base::RandomString(100), "",
+        crypto::STRING_STRING, false), false));
   }
   std::string ser_result_empty, ser_result_unparsable("Bleh"), ser_result_fail;
   std::string ser_result_no_values, ser_result_cached_copy, ser_result_good;
@@ -413,61 +409,57 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_KeyUnique) {
   find_response.SerializeToString(&ser_result_cached_copy);
 
   // Set up expectations
-  EXPECT_CALL(*mko, FindValue(keys.at(2), false, testing::_))  // Call 3
+  EXPECT_CALL(*mko, FindValue(keys.at(1), false, testing::_))  // Call 2
       .WillOnce(testing::WithArgs<2>(testing::Invoke(boost::bind(
           &test_msm::RunLoadPacketCallback, _1, ser_result_empty))));
 
-  EXPECT_CALL(*mko, FindValue(keys.at(3), false, testing::_))  // Call 4
+  EXPECT_CALL(*mko, FindValue(keys.at(2), false, testing::_))  // Call 3
       .WillOnce(testing::WithArgs<2>(testing::Invoke(boost::bind(
           &test_msm::RunLoadPacketCallback, _1, ser_result_unparsable))));
 
-  EXPECT_CALL(*mko, FindValue(keys.at(4), false, testing::_))  // Call 5
+  EXPECT_CALL(*mko, FindValue(keys.at(3), false, testing::_))  // Call 4
       .WillOnce(testing::WithArgs<2>(testing::Invoke(boost::bind(
           &test_msm::RunLoadPacketCallback, _1, ser_result_fail))));
 
-  EXPECT_CALL(*mko, FindValue(keys.at(5), false, testing::_))  // Call 6
+  EXPECT_CALL(*mko, FindValue(keys.at(4), false, testing::_))  // Call 5
       .WillOnce(testing::WithArgs<2>(testing::Invoke(boost::bind(
           &test_msm::RunLoadPacketCallback, _1, ser_result_no_values))));
 
-  EXPECT_CALL(*mko, FindValue(keys.at(6), false, testing::_))  // Call 7
+  EXPECT_CALL(*mko, FindValue(keys.at(5), false, testing::_))  // Call 6
       .WillOnce(testing::WithArgs<2>(testing::Invoke(boost::bind(
           &test_msm::RunLoadPacketCallback, _1, ser_result_cached_copy))));
 
-  EXPECT_CALL(*mko, FindValue(keys.at(7), false, testing::_))  // Call 8
+  EXPECT_CALL(*mko, FindValue(keys.at(6), false, testing::_))  // Call 7
       .WillOnce(testing::WithArgs<2>(testing::Invoke(boost::bind(
           &test_msm::RunLoadPacketCallback, _1, ser_result_good))));
 
-  // Call 1 - Check with bad key length
+  // Call 1 - Check with NULL pointer
   size_t test_number(0);
-  ASSERT_FALSE(msm.KeyUnique(keys.at(test_number), false));
+//  ASSERT_FALSE(msm.KeyUnique(keys.at(test_number).ToStringDecoded(), false));
 
-  // Call 2 - Check with NULL pointer
+  // Call 2 - FindValue returns an empty string
   ++test_number;
-  ASSERT_FALSE(msm.KeyUnique(keys.at(test_number), false));
+  ASSERT_FALSE(msm.KeyUnique(keys.at(test_number).ToStringDecoded(), false));
 
-  // Call 3 - FindValue returns an empty string
+  // Call 3 - FindValue returns an unparsable string
   ++test_number;
-  ASSERT_FALSE(msm.KeyUnique(keys.at(test_number), false));
+  ASSERT_FALSE(msm.KeyUnique(keys.at(test_number).ToStringDecoded(), false));
 
-  // Call 4 - FindValue returns an unparsable string
+  // Call 4 - FindValue fails
   ++test_number;
-  ASSERT_FALSE(msm.KeyUnique(keys.at(test_number), false));
+  ASSERT_TRUE(msm.KeyUnique(keys.at(test_number).ToStringDecoded(), false));
 
-  // Call 5 - FindValue fails
+  // Call 5 - FindValue claims success but doesn't populate value vector
   ++test_number;
-  ASSERT_TRUE(msm.KeyUnique(keys.at(test_number), false));
+  ASSERT_FALSE(msm.KeyUnique(keys.at(test_number).ToStringDecoded(), false));
 
-  // Call 6 - FindValue claims success but doesn't populate value vector
+  // Call 6 - FindValue yields a cached copy
   ++test_number;
-  ASSERT_FALSE(msm.KeyUnique(keys.at(test_number), false));
+  ASSERT_FALSE(msm.KeyUnique(keys.at(test_number).ToStringDecoded(), false));
 
-  // Call 7 - FindValue yields a cached copy
+  // Call 7 - Success
   ++test_number;
-  ASSERT_FALSE(msm.KeyUnique(keys.at(test_number), false));
-
-  // Call 8 - Success
-  ++test_number;
-  ASSERT_FALSE(msm.KeyUnique(keys.at(test_number), false));
+  ASSERT_FALSE(msm.KeyUnique(keys.at(test_number).ToStringDecoded(), false));
 }
 
 class MockClientRpcs : public ClientRpcs {
@@ -516,7 +508,8 @@ class MockClientRpcs : public ClientRpcs {
 };
 
 MATCHER_P(EqualsContact, kad_contact, "") {
-  return (arg.node_id() == kad_contact.node_id() &&
+  return (arg.node_id().ToStringDecoded() ==
+          kad_contact.node_id().ToStringDecoded() &&
           arg.host_ip() == kad_contact.host_ip() &&
           arg.host_port() == kad_contact.host_port());
 }
@@ -561,18 +554,18 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AddToWatchList) {
   // Set expectations
   EXPECT_CALL(*mko, AddressIsLocal(testing::An<const kad::Contact&>()))
       .WillRepeatedly(testing::Return(true));
-  EXPECT_CALL(*mko, FindCloseNodes(chunk_names.at(0),
+  EXPECT_CALL(*mko, FindCloseNodes(kad::KadId(chunk_names.at(0), false),
                                    testing::An< std::vector<kad::Contact>* >()))
       .WillOnce(DoAll(testing::SetArgumentPointee<1>(chunk_info_holders),
           testing::Return(-1)));  // Call 1
 
-  EXPECT_CALL(*mko, FindCloseNodes(chunk_names.at(1),
+  EXPECT_CALL(*mko, FindCloseNodes(kad::KadId(chunk_names.at(1), false),
                                    testing::An< std::vector<kad::Contact>* >()))
       .WillOnce(DoAll(testing::SetArgumentPointee<1>(few_chunk_info_holders),
           testing::Return(kSuccess)));  // Call 2
 
   for (int i = 2; i < kTestCount; ++i) {
-    EXPECT_CALL(*mko, FindCloseNodes(chunk_names.at(i),
+    EXPECT_CALL(*mko, FindCloseNodes(kad::KadId(chunk_names.at(i), false),
         testing::An< std::vector<kad::Contact>* >()))
         .WillOnce(DoAll(testing::SetArgumentPointee<1>(chunk_info_holders),
             testing::Return(kSuccess)));  // Calls 3 to 9
@@ -589,55 +582,55 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AddToWatchList) {
         testing::_))
             .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
                 boost::bind(&test_msm::AddToWatchListCallback,
-                            i + 1 < kKadLowerThreshold,
-                            kAck,
-                            chunk_info_holders.at(i).node_id(),
-                            kMinChunkCopies,
-                            _1, _2, &callback_count, &mutex, &cond_var))))  // 3
+                    i + 1 < kKadLowerThreshold,
+                    kAck,
+                    chunk_info_holders.at(i).node_id().ToStringDecoded(),
+                    kMinChunkCopies,
+                    _1, _2, &callback_count, &mutex, &cond_var))))  // 3
             .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
                 boost::bind(&test_msm::AddToWatchListCallback,
-                            true,
-                            i + 1 < kKadLowerThreshold ? kAck : kNack,
-                            chunk_info_holders.at(i).node_id(),
-                            kMinChunkCopies,
-                            _1, _2, &callback_count, &mutex, &cond_var))))  // 4
+                    true,
+                    i + 1 < kKadLowerThreshold ? kAck : kNack,
+                    chunk_info_holders.at(i).node_id().ToStringDecoded(),
+                    kMinChunkCopies,
+                    _1, _2, &callback_count, &mutex, &cond_var))))  // 4
             .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
                 boost::bind(&test_msm::AddToWatchListCallback,
-                            true,
-                            kAck,
-                            chunk_info_holders.at((i + 1) %
-                                chunk_info_holders.size()).node_id(),
-                            kMinChunkCopies,
-                            _1, _2, &callback_count, &mutex, &cond_var))))  // 5
+                    true,
+                    kAck,
+                    chunk_info_holders.at((i + 1) %
+                        chunk_info_holders.size()).node_id().ToStringDecoded(),
+                    kMinChunkCopies,
+                    _1, _2, &callback_count, &mutex, &cond_var))))  // 5
             .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
                 boost::bind(&test_msm::AddToWatchListCallback,
-                            true,
-                            kAck,
-                            chunk_info_holders.at(i).node_id(),
-                            kMinChunkCopies +
-                                (i + 1 < kKadLowerThreshold ? 0 : 1),
-                            _1, _2, &callback_count, &mutex, &cond_var))))  // 6
+                    true,
+                    kAck,
+                    chunk_info_holders.at(i).node_id().ToStringDecoded(),
+                    kMinChunkCopies +
+                        (i + 1 < kKadLowerThreshold ? 0 : 1),
+                    _1, _2, &callback_count, &mutex, &cond_var))))  // 6
             .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
                 boost::bind(&test_msm::AddToWatchListCallback,
-                            true,
-                            kAck,
-                            chunk_info_holders.at(i).node_id(),
-                            0,
-                            _1, _2, &callback_count, &mutex, &cond_var))))  // 7
+                    true,
+                    kAck,
+                    chunk_info_holders.at(i).node_id().ToStringDecoded(),
+                    0,
+                    _1, _2, &callback_count, &mutex, &cond_var))))  // 7
             .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
                 boost::bind(&test_msm::AddToWatchListCallback,
-                            true,
-                            kAck,
-                            chunk_info_holders.at(i).node_id(),
-                            kMinChunkCopies,
-                            _1, _2, &callback_count, &mutex, &cond_var))))  // 8
+                    true,
+                    kAck,
+                    chunk_info_holders.at(i).node_id().ToStringDecoded(),
+                    kMinChunkCopies,
+                    _1, _2, &callback_count, &mutex, &cond_var))))  // 8
             .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
                 boost::bind(&test_msm::AddToWatchListCallback,
-                            true,
-                            kAck,
-                            chunk_info_holders.at(i).node_id(),
-                            i == 0 ? 0 : kMinChunkCopies - 1,
-                            _1, _2, &callback_count, &mutex, &cond_var))));
+                    true,
+                    kAck,
+                    chunk_info_holders.at(i).node_id().ToStringDecoded(),
+                    i == 0 ? 0 : kMinChunkCopies - 1,
+                    _1, _2, &callback_count, &mutex, &cond_var))));
   }
 
   EXPECT_CALL(msm, SendChunkPrep(
@@ -1644,18 +1637,18 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_RemoveFromWatchList) {
   // Set expectations
   EXPECT_CALL(*mko, AddressIsLocal(testing::An<const kad::Contact&>()))
       .WillRepeatedly(testing::Return(true));
-  EXPECT_CALL(*mko, FindCloseNodes(chunk_names.at(1),
+  EXPECT_CALL(*mko, FindCloseNodes(kad::KadId(chunk_names.at(1), false),
                                    testing::An< std::vector<kad::Contact>* >()))
       .WillOnce(DoAll(testing::SetArgumentPointee<1>(chunk_info_holders),
           testing::Return(-1)));  // Call 2
 
-  EXPECT_CALL(*mko, FindCloseNodes(chunk_names.at(2),
+  EXPECT_CALL(*mko, FindCloseNodes(kad::KadId(chunk_names.at(2), false),
                                    testing::An< std::vector<kad::Contact>* >()))
       .WillOnce(DoAll(testing::SetArgumentPointee<1>(few_chunk_info_holders),
           testing::Return(kSuccess)));  // Call 3
 
   for (int i = 3; i < 7; ++i) {
-    EXPECT_CALL(*mko, FindCloseNodes(chunk_names.at(i),
+    EXPECT_CALL(*mko, FindCloseNodes(kad::KadId(chunk_names.at(i), false),
         testing::An< std::vector<kad::Contact>* >()))
         .WillOnce(DoAll(testing::SetArgumentPointee<1>(chunk_info_holders),
             testing::Return(kSuccess)));  // Calls 4 to 7
@@ -1673,29 +1666,29 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_RemoveFromWatchList) {
         testing::_))
             .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
                 boost::bind(&test_msm::RemoveFromWatchListCallback,
-                            i + 1 < kKadLowerThreshold,
-                            kAck,
-                            chunk_info_holders.at(i).node_id(),
-                            _1, _2))))                                 // Call 4
+                    i + 1 < kKadLowerThreshold,
+                    kAck,
+                    chunk_info_holders.at(i).node_id().ToStringDecoded(),
+                    _1, _2))))                                 // Call 4
             .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
                 boost::bind(&test_msm::RemoveFromWatchListCallback,
-                            true,
-                            i + 1 < kKadLowerThreshold ? kAck : kNack,
-                            chunk_info_holders.at(i).node_id(),
-                            _1, _2))))                                 // Call 5
+                    true,
+                    i + 1 < kKadLowerThreshold ? kAck : kNack,
+                    chunk_info_holders.at(i).node_id().ToStringDecoded(),
+                    _1, _2))))                                 // Call 5
             .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
                 boost::bind(&test_msm::RemoveFromWatchListCallback,
-                            true,
-                            kAck,
-                            chunk_info_holders.at((i + 1) %
-                                chunk_info_holders.size()).node_id(),
-                            _1, _2))))                                 // Call 6
+                    true,
+                    kAck,
+                    chunk_info_holders.at((i + 1) %
+                        chunk_info_holders.size()).node_id().ToStringDecoded(),
+                    _1, _2))))                                 // Call 6
             .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
                 boost::bind(&test_msm::RemoveFromWatchListCallback,
-                            true,
-                            kAck,
-                            chunk_info_holders.at(i).node_id(),
-                            _1, _2))));                                // Call 7
+                    true,
+                    kAck,
+                    chunk_info_holders.at(i).node_id().ToStringDecoded(),
+                    _1, _2))));                                // Call 7
   }
 
   // Run test calls
@@ -1874,8 +1867,8 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_StoreNewPacket) {
   store_response.SerializeToString(&ser_kad_store_response_fail);
 
   // Set up expectations
-  EXPECT_CALL(*mko, FindValue(packet_name, true, testing::_, testing::_,
-      testing::_))
+  EXPECT_CALL(*mko, FindValue(kad::KadId(packet_name, false), true, testing::_,
+      testing::_, testing::_))
           .Times(6)
           .WillOnce(testing::Return(-1))  // Call 4
           .WillOnce(DoAll(testing::SetArgumentPointee<2>(cache_holder),
@@ -2075,8 +2068,8 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_StoreExistingPacket) {
     existing_values.push_back("ExistingValue" + base::itos(i));
 
   // Set up expectations
-  EXPECT_CALL(*mko, FindValue(packet_name, true, testing::_, testing::_,
-      testing::_))
+  EXPECT_CALL(*mko, FindValue(kad::KadId(packet_name, false), true, testing::_,
+      testing::_, testing::_))
           .Times(8)
           .WillRepeatedly(DoAll(testing::SetArgumentPointee<3>(existing_values),
                                 testing::Return(kSuccess)));
@@ -2223,32 +2216,38 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_LoadPacket) {
   std::vector<std::string> returned_values;
 
   // Set up expectations
-  EXPECT_CALL(*mko, FindValue(packet_names.at(2), false, testing::_))  // Call 3
+  EXPECT_CALL(*mko, FindValue(kad::KadId(packet_names.at(2), false), false,
+      testing::_))  // Call 3
       .Times(kMaxChunkLoadRetries)
       .WillRepeatedly(testing::WithArgs<2>(testing::Invoke(boost::bind(
           &test_msm::RunLoadPacketCallback, _1, ser_result_empty))));
 
-  EXPECT_CALL(*mko, FindValue(packet_names.at(3), false, testing::_))  // Call 4
+  EXPECT_CALL(*mko, FindValue(kad::KadId(packet_names.at(3), false), false,
+      testing::_))  // Call 4
       .Times(kMaxChunkLoadRetries)
       .WillRepeatedly(testing::WithArgs<2>(testing::Invoke(boost::bind(
           &test_msm::RunLoadPacketCallback, _1, ser_result_unparsable))));
 
-  EXPECT_CALL(*mko, FindValue(packet_names.at(4), false, testing::_))  // Call 5
+  EXPECT_CALL(*mko, FindValue(kad::KadId(packet_names.at(4), false), false,
+      testing::_))  // Call 5
       .Times(kMaxChunkLoadRetries)
       .WillRepeatedly(testing::WithArgs<2>(testing::Invoke(boost::bind(
           &test_msm::RunLoadPacketCallback, _1, ser_result_fail))));
 
-  EXPECT_CALL(*mko, FindValue(packet_names.at(5), false, testing::_))  // Call 6
+  EXPECT_CALL(*mko, FindValue(kad::KadId(packet_names.at(5), false), false,
+      testing::_))  // Call 6
       .Times(kMaxChunkLoadRetries)
       .WillRepeatedly(testing::WithArgs<2>(testing::Invoke(boost::bind(
           &test_msm::RunLoadPacketCallback, _1, ser_result_no_values))));
 
-  EXPECT_CALL(*mko, FindValue(packet_names.at(6), false, testing::_))  // Call 7
+  EXPECT_CALL(*mko, FindValue(kad::KadId(packet_names.at(6), false), false,
+      testing::_))  // Call 7
       .Times(kMaxChunkLoadRetries)
       .WillRepeatedly(testing::WithArgs<2>(testing::Invoke(boost::bind(
           &test_msm::RunLoadPacketCallback, _1, ser_result_cached_copy))));
 
-  EXPECT_CALL(*mko, FindValue(packet_names.at(7), false, testing::_))  // Call 8
+  EXPECT_CALL(*mko, FindValue(kad::KadId(packet_names.at(7), false), false,
+      testing::_))  // Call 8
       .WillOnce(testing::WithArgs<2>(testing::Invoke(boost::bind(
           &test_msm::RunLoadPacketCallback, _1, ser_result_cached_copy))))
       .WillOnce(testing::WithArgs<2>(testing::Invoke(boost::bind(
@@ -2499,7 +2498,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_GetAccountDetails) {
   // Set expectations
   EXPECT_CALL(*mko, AddressIsLocal(testing::An<const kad::Contact&>()))
       .WillRepeatedly(testing::Return(true));
-  EXPECT_CALL(*mko, FindCloseNodes(account_name,
+  EXPECT_CALL(*mko, FindCloseNodes(kad::KadId(account_name, false),
                                    testing::An< std::vector<kad::Contact>* >()))
       .Times(7)
       .WillOnce(DoAll(testing::SetArgumentPointee<1>(account_holders),
@@ -2521,24 +2520,28 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_GetAccountDetails) {
         testing::_))
             .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
                 boost::bind(&test_msm::ThreadedAccountStatusCallback, &tcc,
-                false, kAck, account_holders.at(i).node_id(), false,
-                test_msm::AccountStatusValues(0, 0, 0), _1, _2))))     // Call 3
+                false, kAck, account_holders.at(i).node_id().ToStringDecoded(),
+                false, test_msm::AccountStatusValues(0, 0, 0), _1, _2))))  // 3
             .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
                 boost::bind(&test_msm::ThreadedAccountStatusCallback, &tcc,
-                i < kKadLowerThreshold, kAck, account_holders.at(i).node_id(),
-                true, test_msm::AccountStatusValues(i*i, i, i), _1, _2))))  // 4
+                i < kKadLowerThreshold, kAck,
+                account_holders.at(i).node_id().ToStringDecoded(), true,
+                test_msm::AccountStatusValues(i*i, i, i), _1, _2))))  // 4
             .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
                 boost::bind(&test_msm::ThreadedAccountStatusCallback, &tcc,
-                i < kKadUpperThreshold, kAck, account_holders.at(i).node_id(),
-                false, test_msm::AccountStatusValues(1, 2, 3), _1, _2))))  // #5
+                i < kKadUpperThreshold, kAck,
+                account_holders.at(i).node_id().ToStringDecoded(), false,
+                test_msm::AccountStatusValues(1, 2, 3), _1, _2))))  // #5
             .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
                 boost::bind(&test_msm::ThreadedAccountStatusCallback, &tcc,
-                i < kKadUpperThreshold, kNack, account_holders.at(i).node_id(),
-                true, test_msm::AccountStatusValues(1, 2, 3), _1, _2))))   // #6
+                i < kKadUpperThreshold, kNack,
+                account_holders.at(i).node_id().ToStringDecoded(), true,
+                test_msm::AccountStatusValues(1, 2, 3), _1, _2))))   // #6
             .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
                 boost::bind(&test_msm::ThreadedAccountStatusCallback, &tcc,
-                i < kKadUpperThreshold, kAck, account_holders.at(i).node_id(),
-                true, test_msm::AccountStatusValues(1, 2, 3), _1, _2))));  // #7
+                i < kKadUpperThreshold, kAck,
+                account_holders.at(i).node_id().ToStringDecoded(), true,
+                test_msm::AccountStatusValues(1, 2, 3), _1, _2))));  // #7
   }
 
   boost::uint64_t space_offered, space_given, space_taken;
@@ -2701,18 +2704,21 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_GetFilteredAverage) {
         testing::_))
             .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
                 boost::bind(&test_msm::ThreadedAmendAccountCallback, &tcc,
-                false, kAck, account_holders.at(i).node_id(), _1, _2))))   // #3
+                false, kAck, account_holders.at(i).node_id().ToStringDecoded(),
+                _1, _2))))   // #3
             .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
                 boost::bind(&test_msm::ThreadedAmendAccountCallback, &tcc,
                 true, (i < kKadStoreThreshold - 1 ? kAck : kNack),
-                account_holders.at(i).node_id(), _1, _2))))                // #4
+                account_holders.at(i).node_id().ToStringDecoded(), _1, _2))))
             .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
                 boost::bind(&test_msm::ThreadedAmendAccountCallback, &tcc,
                 true, kAck, (i < kKadStoreThreshold - 1 ?
-                    account_holders.at(i).node_id() : "fail"), _1, _2))))  // #5
+                    account_holders.at(i).node_id().ToStringDecoded() : "fail"),
+                    _1, _2))))  // #5
             .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
                 boost::bind(&test_msm::ThreadedAmendAccountCallback, &tcc,
-                true, kAck, account_holders.at(i).node_id(), _1, _2))));   // #6
+                true, kAck, account_holders.at(i).node_id().ToStringDecoded(),
+                _1, _2))));   // #6
   }
 
   // Call 0 - not online

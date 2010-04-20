@@ -123,7 +123,7 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_AssessAmendment) {
   }
   AccountAmendment test_amendment(test_account_name, 2, 1000, true,
       pendings.at(0));
-  test_amendment.account_name = test_account_name;
+  test_amendment.account_name = kad::KadId(test_account_name, false);
 
   // Add account to AccountHolder and amendment to aah_ so amend can succeed
   ASSERT_EQ(kSuccess, ah_.AddAccount(test_account_name, 999999));
@@ -135,7 +135,7 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_AssessAmendment) {
   // Run 1 - Before FindKNodes response has arrived
   int test_run(1);
   boost::uint64_t exp_time = test_amendment.expiry_time;
-  ASSERT_EQ(test_account_name, test_amendment.account_name);
+  ASSERT_EQ(test_account_name, test_amendment.account_name.ToStringDecoded());
   ASSERT_EQ(size_t(0), test_amendment.chunk_info_holders.size());
   ASSERT_EQ(size_t(0), test_amendment.pendings.size());
   ASSERT_EQ(size_t(1), test_amendment.probable_pendings.size());
@@ -147,7 +147,7 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_AssessAmendment) {
   int result = aah_.AssessAmendment("Wrong", 2, 1000, true,
       pendings.at(test_run), &test_amendment);
   ASSERT_EQ(kAccountAmendmentNotFound, result);
-  ASSERT_EQ(test_account_name, test_amendment.account_name);
+  ASSERT_EQ(test_account_name, test_amendment.account_name.ToStringDecoded());
   ASSERT_EQ(size_t(0), test_amendment.chunk_info_holders.size());
   ASSERT_EQ(size_t(0), test_amendment.pendings.size());
   ASSERT_EQ(size_t(1), test_amendment.probable_pendings.size());
@@ -160,7 +160,7 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_AssessAmendment) {
   result = aah_.AssessAmendment(test_account_name, 1, 1000, true,
       pendings.at(test_run), &test_amendment);
   ASSERT_EQ(kAccountAmendmentNotFound, result);
-  ASSERT_EQ(test_account_name, test_amendment.account_name);
+  ASSERT_EQ(test_account_name, test_amendment.account_name.ToStringDecoded());
   ASSERT_EQ(size_t(0), test_amendment.chunk_info_holders.size());
   ASSERT_EQ(size_t(0), test_amendment.pendings.size());
   ASSERT_EQ(size_t(1), test_amendment.probable_pendings.size());
@@ -173,7 +173,7 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_AssessAmendment) {
   result = aah_.AssessAmendment(test_account_name, 2, 1001, true,
       pendings.at(test_run), &test_amendment);
   ASSERT_EQ(kAccountAmendmentNotFound, result);
-  ASSERT_EQ(test_account_name, test_amendment.account_name);
+  ASSERT_EQ(test_account_name, test_amendment.account_name.ToStringDecoded());
   ASSERT_EQ(size_t(0), test_amendment.chunk_info_holders.size());
   ASSERT_EQ(size_t(0), test_amendment.pendings.size());
   ASSERT_EQ(size_t(1), test_amendment.probable_pendings.size());
@@ -186,7 +186,7 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_AssessAmendment) {
   result = aah_.AssessAmendment(test_account_name, 2, 1000, false,
       pendings.at(test_run), &test_amendment);
   ASSERT_EQ(kAccountAmendmentNotFound, result);
-  ASSERT_EQ(test_account_name, test_amendment.account_name);
+  ASSERT_EQ(test_account_name, test_amendment.account_name.ToStringDecoded());
   ASSERT_EQ(size_t(0), test_amendment.chunk_info_holders.size());
   ASSERT_EQ(size_t(0), test_amendment.pendings.size());
   ASSERT_EQ(size_t(1), test_amendment.probable_pendings.size());
@@ -199,7 +199,7 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_AssessAmendment) {
   result = aah_.AssessAmendment(test_account_name, 2, 1000, true,
       pendings.at(0), &test_amendment);
   ASSERT_EQ(kAccountAmendmentNotFound, result);
-  ASSERT_EQ(test_account_name, test_amendment.account_name);
+  ASSERT_EQ(test_account_name, test_amendment.account_name.ToStringDecoded());
   ASSERT_EQ(size_t(0), test_amendment.chunk_info_holders.size());
   ASSERT_EQ(size_t(0), test_amendment.pendings.size());
   ASSERT_EQ(size_t(1), test_amendment.probable_pendings.size());
@@ -212,7 +212,7 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_AssessAmendment) {
   result = aah_.AssessAmendment(test_account_name, 2, 1000, true,
       pendings.at(test_run), &test_amendment);
   ASSERT_EQ(kAccountAmendmentUpdated, result);
-  ASSERT_EQ(test_account_name, test_amendment.account_name);
+  ASSERT_EQ(test_account_name, test_amendment.account_name.ToStringDecoded());
   ASSERT_EQ(size_t(0), test_amendment.chunk_info_holders.size());
   ASSERT_EQ(size_t(0), test_amendment.pendings.size());
   ASSERT_EQ(size_t(2), test_amendment.probable_pendings.size());
@@ -240,7 +240,7 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_AssessAmendment) {
   test_amendment.success_count = kKadUpperThreshold - 2;
   aah_.amendments_.get<by_timestamp>().replace(it, test_amendment);
 
-  ASSERT_EQ(test_account_name, test_amendment.account_name);
+  ASSERT_EQ(test_account_name, test_amendment.account_name.ToStringDecoded());
   ASSERT_EQ(good_pmids_.size(), test_amendment.chunk_info_holders.size());
   ASSERT_EQ(size_t(0), test_amendment.pendings.size());
   ASSERT_EQ(size_t(2), test_amendment.probable_pendings.size());
@@ -254,7 +254,7 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_AssessAmendment) {
   result = aah_.AssessAmendment("Wrong", 2, 1000, true, pendings.at(test_run),
       &test_amendment);
   ASSERT_EQ(kAccountAmendmentNotFound, result);
-  ASSERT_EQ(test_account_name, test_amendment.account_name);
+  ASSERT_EQ(test_account_name, test_amendment.account_name.ToStringDecoded());
   ASSERT_EQ(good_pmids_.size(), test_amendment.chunk_info_holders.size());
   ASSERT_EQ(size_t(0), test_amendment.pendings.size());
   ASSERT_EQ(size_t(2), test_amendment.probable_pendings.size());
@@ -268,7 +268,7 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_AssessAmendment) {
   result = aah_.AssessAmendment(test_account_name, 1, 1000, true,
       pendings.at(test_run), &test_amendment);
   ASSERT_EQ(kAccountAmendmentNotFound, result);
-  ASSERT_EQ(test_account_name, test_amendment.account_name);
+  ASSERT_EQ(test_account_name, test_amendment.account_name.ToStringDecoded());
   ASSERT_EQ(good_pmids_.size(), test_amendment.chunk_info_holders.size());
   ASSERT_EQ(size_t(0), test_amendment.pendings.size());
   ASSERT_EQ(size_t(2), test_amendment.probable_pendings.size());
@@ -282,7 +282,7 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_AssessAmendment) {
   result = aah_.AssessAmendment(test_account_name, 2, 1001, true,
       pendings.at(test_run), &test_amendment);
   ASSERT_EQ(kAccountAmendmentNotFound, result);
-  ASSERT_EQ(test_account_name, test_amendment.account_name);
+  ASSERT_EQ(test_account_name, test_amendment.account_name.ToStringDecoded());
   ASSERT_EQ(good_pmids_.size(), test_amendment.chunk_info_holders.size());
   ASSERT_EQ(size_t(0), test_amendment.pendings.size());
   ASSERT_EQ(size_t(2), test_amendment.probable_pendings.size());
@@ -296,7 +296,7 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_AssessAmendment) {
   result = aah_.AssessAmendment(test_account_name, 2, 1000,
       false, pendings.at(test_run), &test_amendment);
   ASSERT_EQ(kAccountAmendmentNotFound, result);
-  ASSERT_EQ(test_account_name, test_amendment.account_name);
+  ASSERT_EQ(test_account_name, test_amendment.account_name.ToStringDecoded());
   ASSERT_EQ(good_pmids_.size(), test_amendment.chunk_info_holders.size());
   ASSERT_EQ(size_t(0), test_amendment.pendings.size());
   ASSERT_EQ(size_t(2), test_amendment.probable_pendings.size());
@@ -310,7 +310,7 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_AssessAmendment) {
   result = aah_.AssessAmendment(test_account_name, 2, 1000, true,
       pendings.at(test_run), &test_amendment);
   ASSERT_EQ(kAccountAmendmentNotFound, result);
-  ASSERT_EQ(test_account_name, test_amendment.account_name);
+  ASSERT_EQ(test_account_name, test_amendment.account_name.ToStringDecoded());
   ASSERT_EQ(good_pmids_.size(), test_amendment.chunk_info_holders.size());
   ASSERT_EQ(size_t(0), test_amendment.pendings.size());
   ASSERT_EQ(size_t(2), test_amendment.probable_pendings.size());
@@ -330,7 +330,7 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_AssessAmendment) {
   result = aah_.AssessAmendment(test_account_name, 2, 1000, true, pending1,
       &test_amendment);
   ASSERT_EQ(kAccountAmendmentNotFound, result);
-  ASSERT_EQ(test_account_name, test_amendment.account_name);
+  ASSERT_EQ(test_account_name, test_amendment.account_name.ToStringDecoded());
   ASSERT_EQ(good_pmids_.size(),
             test_amendment.chunk_info_holders.size());
   ASSERT_EQ(size_t(0), test_amendment.pendings.size());
@@ -350,7 +350,7 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_AssessAmendment) {
   result = aah_.AssessAmendment(test_account_name, 2, 1000, true, pending2,
       &test_amendment);
   ASSERT_EQ(kAccountAmendmentUpdated, result);
-  ASSERT_EQ(test_account_name, test_amendment.account_name);
+  ASSERT_EQ(test_account_name, test_amendment.account_name.ToStringDecoded());
   ASSERT_EQ(good_pmids_.size(),
             test_amendment.chunk_info_holders.size());
   ASSERT_EQ(size_t(1), test_amendment.pendings.size());
@@ -371,7 +371,7 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_AssessAmendment) {
   result = aah_.AssessAmendment(test_account_name, 2, 1000, true, pending3,
       &test_amendment);
   ASSERT_EQ(kAccountAmendmentUpdated, result);
-  ASSERT_EQ(test_account_name, test_amendment.account_name);
+  ASSERT_EQ(test_account_name, test_amendment.account_name.ToStringDecoded());
   ASSERT_EQ(good_pmids_.size(), test_amendment.chunk_info_holders.size());
   ASSERT_EQ(size_t(0), test_amendment.pendings.size());
   ASSERT_EQ(size_t(2), test_amendment.probable_pendings.size());
@@ -389,7 +389,7 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_AssessAmendment) {
   // Set success_count to chunk_info_holders.size() - 1
   test_amendment.success_count = test_amendment.chunk_info_holders.size() - 1;
   aah_.amendments_.get<by_timestamp>().replace(it, test_amendment);
-  ASSERT_EQ(test_account_name, test_amendment.account_name);
+  ASSERT_EQ(test_account_name, test_amendment.account_name.ToStringDecoded());
   ASSERT_EQ(good_pmids_.size(), test_amendment.chunk_info_holders.size());
   ASSERT_EQ(size_t(0), test_amendment.pendings.size());
   ASSERT_EQ(size_t(2), test_amendment.probable_pendings.size());
@@ -406,7 +406,7 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_AssessAmendment) {
   result = aah_.AssessAmendment(test_account_name, 2, 1000, true, pending4,
       &test_amendment);
   ASSERT_EQ(kAccountAmendmentFinished, result);
-  ASSERT_EQ(test_account_name, test_amendment.account_name);
+  ASSERT_EQ(test_account_name, test_amendment.account_name.ToStringDecoded());
   ASSERT_EQ(good_pmids_.size(), test_amendment.chunk_info_holders.size());
   ASSERT_EQ(size_t(0), test_amendment.pendings.size());
   ASSERT_EQ(size_t(2), test_amendment.probable_pendings.size());
@@ -446,7 +446,7 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_CreateNewAmendment) {
         &test_aah::CallbacksHolder::callback);
     PendingAmending pending(&requests.at(i), &responses.at(i), done);
     AccountAmendment amendment(test_account_name, 2, 1000, true, pending);
-    amendment.account_name = test_account_name;
+    amendment.account_name = kad::KadId(test_account_name, false);
     test_amendments.push_back(amendment);
     // Sleep to let timestamps differ.
     boost::this_thread::sleep(boost::posix_time::milliseconds(2));
@@ -455,7 +455,7 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_CreateNewAmendment) {
   ASSERT_EQ(kSuccess, ah_.AddAccount(test_account_name, 999999));
 
   // Expectations
-  EXPECT_CALL(*vsl_.kadops(), FindCloseNodes(far_chunk_name,
+  EXPECT_CALL(*vsl_.kadops(), FindCloseNodes(kad::KadId(far_chunk_name, false),
       testing::An<const base::callback_func_type&>()))
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
           boost::bind(&mock_kadops::RunCallback, fail_parse_result_, _1))))
@@ -707,7 +707,7 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_ProcessRequest) {
   ASSERT_EQ(size_t(11), ah_.accounts_.size());
 
   // Expectations
-  EXPECT_CALL(*vsl_.kadops(), FindCloseNodes(chunk_name,
+  EXPECT_CALL(*vsl_.kadops(), FindCloseNodes(kad::KadId(chunk_name, false),
       testing::An<const base::callback_func_type&>()))
       .Times(testing::AtLeast(5))
       .WillOnce(testing::WithArgs<1>(testing::Invoke(

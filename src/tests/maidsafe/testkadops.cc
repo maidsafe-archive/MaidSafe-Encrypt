@@ -53,48 +53,48 @@ TEST_F(KadOpsTest, BEH_MAID_FindCloseNodes) {
       crypto::STRING_STRING, false), "192.168.1.0", 4999);
 
   // Expectations
-  EXPECT_CALL(mko_, FindCloseNodes("x",
+  EXPECT_CALL(mko_, FindCloseNodes(kad::KadId(),
       testing::An< std::vector<kad::Contact>* >()))
       .WillRepeatedly(testing::Invoke(&mko_, &MockKadOps::FindCloseNodesReal));
-  EXPECT_CALL(mko_, FindCloseNodes("x",
+  EXPECT_CALL(mko_, FindCloseNodes(kad::KadId(),
       testing::An<const base::callback_func_type&>()))
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
           boost::bind(&mock_kadops::RunCallback, fail_parse_result_, _1))))
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
           boost::bind(&mock_kadops::RunCallback, fail_result_, _1))))  // Call 3
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_kadops::RunCallback, few_result_, _1))))  // Call 4
+          boost::bind(&mock_kadops::RunCallback, few_result_, _1))))   // Call 4
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
           boost::bind(&mock_kadops::RunCallback, good_result_, _1))))  // Call 5
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_kadops::RunCallback, good_result_, _1))));  //  6
+          boost::bind(&mock_kadops::RunCallback, good_result_, _1))));      // 6
 
   // Call 1
-  ASSERT_EQ(kFindNodesError, mko_.FindCloseNodes("x", NULL));
+  ASSERT_EQ(kFindNodesError, mko_.FindCloseNodes(kad::KadId(), NULL));
 
   // Call 2
   contacts.push_back(dummy_contact);
   ASSERT_EQ(size_t(1), contacts.size());
-  ASSERT_EQ(kFindNodesParseError, mko_.FindCloseNodes("x", &contacts));
+  ASSERT_EQ(kFindNodesParseError, mko_.FindCloseNodes(kad::KadId(), &contacts));
   ASSERT_EQ(size_t(0), contacts.size());
 
   // Call 3
   contacts.push_back(dummy_contact);
   ASSERT_EQ(size_t(1), contacts.size());
-  ASSERT_EQ(kFindNodesFailure, mko_.FindCloseNodes("x", &contacts));
+  ASSERT_EQ(kFindNodesFailure, mko_.FindCloseNodes(kad::KadId(), &contacts));
   ASSERT_EQ(size_t(0), contacts.size());
 
   // Call 4
-  ASSERT_EQ(kSuccess, mko_.FindCloseNodes("x", &contacts));
+  ASSERT_EQ(kSuccess, mko_.FindCloseNodes(kad::KadId(), &contacts));
   ASSERT_EQ(few_pmids_.size(), contacts.size());
 
   // Call 5
-  ASSERT_EQ(kSuccess, mko_.FindCloseNodes("x", &contacts));
+  ASSERT_EQ(kSuccess, mko_.FindCloseNodes(kad::KadId(), &contacts));
   ASSERT_EQ(size_t(kad::K), contacts.size());
 
   // Call 6
   contacts.push_back(dummy_contact);
-  ASSERT_EQ(kSuccess, mko_.FindCloseNodes("x", &contacts));
+  ASSERT_EQ(kSuccess, mko_.FindCloseNodes(kad::KadId(), &contacts));
   ASSERT_EQ(size_t(kad::K), contacts.size());
 }
 
@@ -104,13 +104,17 @@ TEST_F(KadOpsTest, DISABLED_BEH_MAID_GetStorePeer) {
 
 TEST_F(KadOpsTest, BEH_MAID_ContactWithinClosest) {
   std::vector<kad::Contact> ctc;
-  kad::Contact contact1(base::DecodeFromHex("11111111"), "127.0.0.1", 0);
+  kad::Contact contact1(base::DecodeFromHex(std::string(2* kKeySize, '1')),
+                        "127.0.0.1", 0);
   ctc.push_back(contact1);
-  kad::Contact contact2(base::DecodeFromHex("77777777"), "127.0.0.1", 0);
+  kad::Contact contact2(base::DecodeFromHex(std::string(2* kKeySize, '7')),
+                        "127.0.0.1", 0);
   ctc.push_back(contact2);
-  kad::Contact close(base::DecodeFromHex("33333333"), "127.0.0.1", 0);
-  kad::Contact not_close(base::DecodeFromHex("ffffffff"), "127.0.0.1", 0);
-  std::string key(base::DecodeFromHex("00000000"));
+  kad::Contact close(base::DecodeFromHex(std::string(2* kKeySize, '3')),
+                     "127.0.0.1", 0);
+  kad::Contact not_close(base::DecodeFromHex(std::string(2* kKeySize, 'f')),
+                         "127.0.0.1", 0);
+  kad::KadId key(std::string(2* kKeySize, '0'), true);
 
   ASSERT_TRUE(ContactWithinClosest(key, close, ctc));
   ASSERT_FALSE(ContactWithinClosest(key, not_close, ctc));
@@ -119,21 +123,26 @@ TEST_F(KadOpsTest, BEH_MAID_ContactWithinClosest) {
 TEST_F(KadOpsTest, BEH_MAID_RemoveKadContact) {
   std::vector<kad::Contact> ctc;
   {
-    kad::Contact contact("aaa", "127.0.0.1", 0);
+    kad::Contact contact(crypto_.Hash("aaa", "", crypto::STRING_STRING, false),
+                         "127.0.0.1", 0);
     ctc.push_back(contact);
   }
   {
-    kad::Contact contact("bbb", "127.0.0.1", 0);
+    kad::Contact contact(crypto_.Hash("bbb", "", crypto::STRING_STRING, false),
+                         "127.0.0.1", 0);
     ctc.push_back(contact);
   }
   {
-    kad::Contact contact("ccc", "127.0.0.1", 0);
+    kad::Contact contact(crypto_.Hash("ccc", "", crypto::STRING_STRING, false),
+                                      "127.0.0.1", 0);
     ctc.push_back(contact);
   }
   ASSERT_EQ(size_t(3), ctc.size());
-  ASSERT_FALSE(RemoveKadContact("ddd", &ctc));
+  ASSERT_FALSE(RemoveKadContact(kad::KadId(crypto_.Hash("ddd", "",
+      crypto::STRING_STRING, false), false), &ctc));
   ASSERT_EQ(size_t(3), ctc.size());
-  ASSERT_TRUE(RemoveKadContact("bbb", &ctc));
+  ASSERT_TRUE(RemoveKadContact(kad::KadId(crypto_.Hash("bbb", "",
+      crypto::STRING_STRING, false), false), &ctc));
   ASSERT_EQ(size_t(2), ctc.size());
 }
 

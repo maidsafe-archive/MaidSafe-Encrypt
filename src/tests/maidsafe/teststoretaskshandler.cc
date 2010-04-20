@@ -187,7 +187,7 @@ TEST_F(StoreTasksHandlerTest, BEH_MAID_StoreTaskStartSubTask) {
     ASSERT_EQ(size_t(0), (*it.first).exclude_peers_.size());
   }
   // Check we can't start a subtask using invalid credentials
-  kad::Contact peer("a", "1", 1, "1", 1);
+  kad::Contact peer(kad::KadId(), "1", 1, "1", 1);
   ASSERT_EQ(kStoreTaskNotFound,
             tasks_handler_.StartSubTask("a", kStoreChunk, peer));
   ASSERT_EQ(kStoreTaskNotFound,
@@ -231,7 +231,7 @@ TEST_F(StoreTasksHandlerTest, BEH_MAID_StoreTaskStopSubTask) {
               tasks_handler_.AddTask(base::itos(i), kStoreChunk, 3, 13, 30));
   // Check we can't stop a subtask of a task that's not started
   const int kTester(50);
-  kad::Contact peer("a", "1", 1, "1", 1);
+  kad::Contact peer(kad::KadId(), "1", 1, "1", 1);
   std::pair<StoreTaskSet::iterator, StoreTaskSet::iterator> it;
   it = tasks_handler_.tasks_.equal_range(boost::make_tuple(base::itos(kTester),
                                                            kStoreChunk));

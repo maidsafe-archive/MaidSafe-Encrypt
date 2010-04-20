@@ -158,11 +158,12 @@ void PDVault::Start(bool first_node) {
     if (first_node) {
       boost::asio::ip::address local_ip;
       base::get_local_address(&local_ip);
-      knode_->Join(pmid_, kad_config_file_.string(), local_ip.to_string(),
+      knode_->Join(kad::KadId(pmid_, false), kad_config_file_.string(),
+          local_ip.to_string(),
           transport_handler_->listening_port(transport_id_),
           boost::bind(&PDVault::KadJoinedCallback, this, _1, &kad_join_mutex));
     } else {
-      knode_->Join(pmid_, kad_config_file_.string(),
+      knode_->Join(kad::KadId(pmid_, false), kad_config_file_.string(),
           boost::bind(&PDVault::KadJoinedCallback, this, _1, &kad_join_mutex));
     }
     // Hash check all current chunks in chunkstore
@@ -487,7 +488,7 @@ void PDVault::ValidityCheck(const std::string &chunk_name,
           validity_check_args->chunk_holder_.local_port(),
           validity_check_args->chunk_holder_.host_ip());
   std::string ip = validity_check_args->chunk_holder_.host_ip();
-  uint16_t port = static_cast<uint16_t>(
+  boost::uint16_t port = static_cast<boost::uint16_t>(
                       validity_check_args->chunk_holder_.host_port());
   if (conn_type == kad::LOCAL) {
     ip = validity_check_args->chunk_holder_.local_ip();
@@ -586,8 +587,8 @@ void PDVault::IterativeSyncVault_SyncChunk(
                                       synch_args->chunk_holder_.local_port(),
                                       synch_args->chunk_holder_.host_ip());
     std::string ip = synch_args->chunk_holder_.host_ip();
-    uint16_t port =
-        static_cast<uint16_t>(synch_args->chunk_holder_.host_port());
+    boost::uint16_t port =
+        static_cast<boost::uint16_t>(synch_args->chunk_holder_.host_port());
     if (conn_type == kad::LOCAL) {
       ip = synch_args->chunk_holder_.local_ip();
       port = synch_args->chunk_holder_.local_port();
@@ -742,7 +743,7 @@ void PDVault::FindChunkRef(boost::shared_ptr<struct LoadChunkData> data) {
 #endif
     return;
   }
-  knode_->FindValue(data->chunk_name, false,
+  knode_->FindValue(kad::KadId(data->chunk_name, false), false,
       boost::bind(&PDVault::FindChunkRefCallback, this, _1, data));
 }
 
@@ -819,7 +820,8 @@ void PDVault::CheckChunk(boost::shared_ptr<GetArgs> get_args) {
                                        get_args->chunk_holder_.local_port(),
                                        get_args->chunk_holder_.host_ip());
   std::string ip = get_args->chunk_holder_.host_ip();
-  uint16_t port = static_cast<uint16_t>(get_args->chunk_holder_.host_port());
+  boost::uint16_t port =
+      static_cast<boost::uint16_t>(get_args->chunk_holder_.host_port());
   if (conn_type == kad::LOCAL) {
     ip = get_args->chunk_holder_.local_ip();
     port = get_args->chunk_holder_.local_port();
@@ -847,7 +849,8 @@ void PDVault::CheckChunkCallback(
   }
   if (check_chunk_response->IsInitialized() &&
       check_chunk_response->has_pmid() &&
-      check_chunk_response->pmid() != get_args->chunk_holder_.node_id()) {
+      check_chunk_response->pmid() !=
+      get_args->chunk_holder_.node_id().ToStringDecoded()) {
     if (get_args->retry_remote_) {
       get_args->retry_remote_ = false;
 //      knode_->UpdatePDRTContactToRemote(get_args->chunk_holder_.node_id());
@@ -889,7 +892,7 @@ void PDVault::CheckChunkCallback(
                                          get_args->chunk_holder_.local_port(),
                                          get_args->chunk_holder_.host_ip());
       std::string ip = get_args->chunk_holder_.host_ip();
-      uint16_t port = static_cast<uint16_t>(
+      boost::uint16_t port = static_cast<boost::uint16_t>(
                           get_args->chunk_holder_.host_port());
       if (conn_type == kad::LOCAL) {
         ip = get_args->chunk_holder_.local_ip();
@@ -950,7 +953,8 @@ void PDVault::GetMessagesCallback(
     return;
   if (get_messages_response->IsInitialized() &&
       get_messages_response->has_pmid_id() &&
-      get_messages_response->pmid_id() != get_args->chunk_holder_.node_id()) {
+      get_messages_response->pmid_id() !=
+      get_args->chunk_holder_.node_id().ToStringDecoded()) {
     if (get_args->retry_remote_) {
       get_args->retry_remote_ = false;
 //      knode_->UpdatePDRTContactToRemote(get_args->chunk_holder_.node_id());
@@ -994,7 +998,8 @@ void PDVault::GetChunkCallback(
     return;
   if (get_chunk_response->IsInitialized() &&
       get_chunk_response->has_pmid() &&
-      get_chunk_response->pmid() != get_args->chunk_holder_.node_id()) {
+      get_chunk_response->pmid() !=
+      get_args->chunk_holder_.node_id().ToStringDecoded()) {
     if (get_args->retry_remote_) {
       get_args->retry_remote_ = false;
 //      knode_->UpdatePDRTContactToRemote(get_args->chunk_holder_.node_id());
@@ -1184,7 +1189,7 @@ void PDVault::SwapChunkAcceptChunk(
   sr.set_public_key(pmid_public_);
   sr.set_signed_public_key(signed_pmid_public_);
   sr.set_signed_request(signed_request);
-  knode_->StoreValue(swap_chunk_args->chunkname_,
+  knode_->StoreValue(kad::KadId(swap_chunk_args->chunkname_, false),
                      signed_value,
                      sr,
                      86400,
@@ -1209,8 +1214,8 @@ int PDVault::AmendAccount(const boost::uint64_t &space_offered) {
   crypto::Crypto co;
   co.set_symm_algorithm(crypto::AES_256);
   co.set_hash_algorithm(crypto::SHA_512);
-  std::string account_name = co.Hash(pmid_ + kAccount, "",
-                                     crypto::STRING_STRING, false);
+  kad::KadId account_name(co.Hash(pmid_ + kAccount, "", crypto::STRING_STRING,
+      false), false);
 
   // Find the account holders
   boost::shared_ptr<maidsafe::AmendAccountData>
@@ -1232,7 +1237,7 @@ int PDVault::AmendAccount(const boost::uint64_t &space_offered) {
     while (data->contacts.size() >= kad::K) {
 #ifdef DEBUG
       printf("In PDVault::AmendAccount, skipping %s.\n",
-             HexSubstr(data->contacts.back().node_id()).c_str());
+          HexSubstr(data->contacts.back().node_id().ToStringDecoded()).c_str());
 #endif
       data->contacts.pop_back();
     }
@@ -1264,7 +1269,7 @@ int PDVault::AmendAccount(const boost::uint64_t &space_offered) {
   amend_account_request.set_account_pmid(pmid_);
   for (boost::uint16_t i = 0; i < data->contacts.size(); ++i) {
     maidsafe::AmendAccountData::AmendAccountDataHolder holder(
-        data->contacts.at(i).node_id());
+        data->contacts.at(i).node_id().ToStringDecoded());
     data->data_holders.push_back(holder);
   }
 

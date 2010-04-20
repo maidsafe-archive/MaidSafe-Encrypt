@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Shares</string>
+   <string/>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout_2">
    <item>
@@ -62,9 +62,6 @@
      </item>
      <item>
       <widget class="QPushButton" name="create">
-       <property name="toolTip">
-        <string>Click here to create your public username</string>
-       </property>
        <property name="text">
         <string>Create</string>
        </property>
