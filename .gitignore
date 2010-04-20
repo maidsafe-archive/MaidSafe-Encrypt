@@ -1,6 +1,7 @@
 *.0
 *~
 build/*
+!build/*.cmake
 desktop.ini
 src/protobuf/*.pb.h
 src/protobuf/*.pb.cc

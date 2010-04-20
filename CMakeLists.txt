@@ -67,6 +67,8 @@ IF(APPLE)
   SET(CMAKE_OSX_SYSROOT "/")
 ENDIF(APPLE)
 
+UNSET(LIBRARY_OUTPUT_PATH CACHE)
+UNSET(EXECUTABLE_OUTPUT_PATH CACHE)
 IF(CMAKE_BUILD_TYPE MATCHES "Release")
   MESSAGE("Building a package which is OK to release.")
   MESSAGE("------------------------------------------")

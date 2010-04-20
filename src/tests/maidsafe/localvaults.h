@@ -55,7 +55,7 @@ void GeneratePmidStuff(std::string *public_key,
                             crypto::STRING_STRING);
   *public_key = keys.public_key();
   *private_key = keys.private_key();
-  *pmid = co.Hash(*signed_key, "", crypto::STRING_STRING, false);
+  *pmid = co.Hash(*public_key + *signed_key, "", crypto::STRING_STRING, false);
 }
 
 class Env: public testing::Environment {
@@ -127,7 +127,7 @@ class Env: public testing::Environment {
             (*pdvaults_)[0]->vault_status());
         base::KadConfig kad_config;
         base::KadConfig::Contact *kad_contact = kad_config.add_contact();
-        kad_contact->set_node_id((*pdvaults_)[0]->node_id());
+        kad_contact->set_node_id(base::EncodeToHex((*pdvaults_)[0]->node_id()));
         kad_contact->set_ip((*pdvaults_)[0]->host_ip());
         kad_contact->set_port((*pdvaults_)[0]->host_port());
         kad_contact->set_local_ip((*pdvaults_)[0]->local_host_ip());

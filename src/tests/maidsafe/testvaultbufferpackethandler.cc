@@ -295,7 +295,7 @@ TEST_F(VaultBufferPacketHandlerTest, BEH_MAID_AddGetPresence) {
   ASSERT_TRUE(ep.ParseFromString(dec_ep));
   for (int a = 0; a < 3; ++a) {
     ASSERT_EQ(base::itos(a), ep.ip(a));
-    ASSERT_EQ(a, ep.port(a));
+    ASSERT_EQ(a, static_cast<int>(ep.port(a)));
   }
   msgs.clear();
   ASSERT_TRUE(vbph_.GetPresence(&ser_bp_, &msgs));
@@ -350,7 +350,7 @@ TEST_F(VaultBufferPacketHandlerTest, BEH_MAID_AddGetPresence) {
     ASSERT_TRUE(ep.ParseFromString(dec_ep));
     for (int a = 0; a < 3; ++a) {
       ASSERT_EQ(base::itos(a), ep.ip(a));
-      ASSERT_EQ(a, ep.port(a));
+      ASSERT_EQ(a, static_cast<int>(ep.port(a)));
     }
   }
   ASSERT_TRUE(vbph_.GetPresence(&ser_bp_, &msgs));
