@@ -17,9 +17,9 @@
 #include "fs/filesystem.h"
 #include "qt/client/user_space_filesystem.h"
 #include <math.h>
-#ifdef __MSVC__
+#ifdef MAIDSAFE_WIN32
 #include <windows.h>
-#include <Shellapi.h>
+#include <shellapi.h>
 #endif
 
 #include <QDebug>
