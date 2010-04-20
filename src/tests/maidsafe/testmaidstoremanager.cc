@@ -435,7 +435,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_KeyUnique) {
 
   // Call 1 - Check with NULL pointer
   size_t test_number(0);
-  //ASSERT_FALSE(msm.KeyUnique(keys.at(test_number).ToStringDecoded(), false));
+//  ASSERT_FALSE(msm.KeyUnique(keys.at(test_number).ToStringDecoded(), false));
 
   // Call 2 - FindValue returns an empty string
   ++test_number;

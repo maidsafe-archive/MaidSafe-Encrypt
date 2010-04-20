@@ -820,7 +820,8 @@ void PDVault::CheckChunk(boost::shared_ptr<GetArgs> get_args) {
                                        get_args->chunk_holder_.local_port(),
                                        get_args->chunk_holder_.host_ip());
   std::string ip = get_args->chunk_holder_.host_ip();
-  boost::uint16_t port = static_cast<boost::uint16_t>(get_args->chunk_holder_.host_port());
+  boost::uint16_t port =
+      static_cast<boost::uint16_t>(get_args->chunk_holder_.host_port());
   if (conn_type == kad::LOCAL) {
     ip = get_args->chunk_holder_.local_ip();
     port = get_args->chunk_holder_.local_port();

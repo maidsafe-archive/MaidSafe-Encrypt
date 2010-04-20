@@ -566,7 +566,7 @@ TEST_F(SelfEncryptionTest, BEH_MAID_GeneratePreEncHashes) {
   // Modify default chunklet size so that pre-encryption hashes are generated
   // from only first 2 chars of each chunk.
   boost::uint16_t *new_default_chunklet_size_ =
-      const_cast<uint16_t*>(&se.default_chunklet_size_);
+    const_cast<boost::uint16_t*>(&se.default_chunklet_size_);
   *new_default_chunklet_size_ = 2;
   dm.clear_chunk_name();
   iohandler->SetData(path1.string(), true);

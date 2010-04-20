@@ -31,8 +31,8 @@
 #include "fs/filesystem.h"
 #include <boost/filesystem/fstream.hpp>
 #ifdef MAIDSAFE_WIN32
-#include <shlobj.h>
 #include <shlwapi.h>
+#include <shlobj.h>
 #include <sstream>
 #endif
 #include "maidsafe/returncodes.h"

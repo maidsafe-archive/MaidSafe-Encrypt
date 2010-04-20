@@ -141,8 +141,9 @@ int SelfEncryption::Encrypt(const std::string &entry_str,
       // set this chunklet's size
       boost::uint16_t this_chunklet_size = default_chunklet_size_;
       if (dm->chunk_size(chunk_no) - this_chunk_done < this_chunklet_size)
-        this_chunklet_size = static_cast<boost::uint16_t>(dm->chunk_size(chunk_no)
-                                                   - this_chunk_done);
+        this_chunklet_size =
+            static_cast<boost::uint16_t>(dm->chunk_size(chunk_no) -
+            this_chunk_done);
       // save chunklet's size to chunk_ before compression so that correct
       // offset can be applied if required
       chunk.add_pre_compression_chunklet_size(this_chunklet_size);
@@ -353,8 +354,8 @@ int SelfEncryption::Decrypt(const maidsafe::DataMap &dm,
         // adjust size of obfuscate hash to match size of chunklet
         std::string resized_obs_hash;
         ResizeObfuscationHash(obfuscate_hash,
-                              static_cast<boost::uint16_t>(this_chunklet.size()),
-                              &resized_obs_hash);
+            static_cast<boost::uint16_t>(this_chunklet.size()),
+            &resized_obs_hash);
         std::string decrypt;
         crypto::Crypto dec_crypto;
         dec_crypto.set_symm_algorithm(crypto::AES_256);
@@ -539,8 +540,9 @@ bool SelfEncryption::CalculateChunkSizes(
     // maximum bytes added to them.
     float max_ratio = static_cast<float>(1)/(max_chunks_*16);
 
-    boost::uint64_t this_chunk_size = static_cast<boost::uint64_t>(this_avg_chunk_size
-        *(1+(max_ratio*ChunkAddition(file_hash_.c_str()[this_chunk]))));
+    boost::uint64_t this_chunk_size =
+        static_cast<boost::uint64_t>(this_avg_chunk_size *
+        (1 + (max_ratio * ChunkAddition(file_hash_.c_str()[this_chunk]))));
     if (!this_chunk_size)  // i.e. size of 0
       ++this_chunk_size;
     dm->add_chunk_size(this_chunk_size);
