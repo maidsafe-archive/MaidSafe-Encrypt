@@ -42,7 +42,6 @@ void KadOps::FindNode(const kad::KadId &node_id,
 
 void KadOps::FindCloseNodes(const kad::KadId &kad_key,
                             const base::callback_func_type &callback) {
-  printf("KadOps::FindCloseNodes %s\n", kad_key.ToStringEncoded().c_str());
   knode_->FindCloseNodes(kad_key, callback);
 }
 
