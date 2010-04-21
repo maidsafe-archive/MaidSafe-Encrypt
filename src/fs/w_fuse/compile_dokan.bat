@@ -1,9 +1,0 @@
-@call "E:\dawn\trunk\src\fs\w_fuse\set_build_env.bat"
-cd E:\dawn\trunk\src\fs\w_fuse\dokan\
-build /wcbg 
-cd E:\dawn\trunk\src\fs\w_fuse\dokan_control\
-build /wcbg 
-cd E:\dawn\trunk\src\fs\w_fuse\dokan_mount\
-build /wcbg 
-cd E:\dawn\trunk\src\fs\w_fuse\sys\
-build /wcbg 
