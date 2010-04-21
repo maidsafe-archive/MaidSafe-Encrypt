@@ -63,7 +63,7 @@ struct RemoteOpData {
     boost::shared_ptr<rpcprotocol::Controller> controller;
   };
   RemoteOpData(T1 req,
-               std::string kadkey,
+               kad::KadId kadkey,
                int found_local_res,
                VoidFuncOneInt cb,
                boost::int16_t trans_id)
@@ -82,7 +82,7 @@ struct RemoteOpData {
     data_holders.reserve(kad::K);
   }
   T1 request;
-  std::string kad_key;
+  kad::KadId kad_key;
   int found_local_result;
   VoidFuncOneInt callback;
   boost::int16_t transport_id;

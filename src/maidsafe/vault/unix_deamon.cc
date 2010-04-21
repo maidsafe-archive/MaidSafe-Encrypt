@@ -30,8 +30,10 @@
 #define LOGFILE "VaultService.txt"
 const int kSleepTime = 10000;
 
-static bool DumpCallback(const char *, const char *dump_id, void *,
-    bool succeeded) {
+static bool DumpCallback(const char*,
+                         const char *dump_id,
+                         void*,
+                         bool succeeded) {
   if (succeeded) {
     printf("%s is dumped.\n", dump_id);
   }
@@ -70,10 +72,9 @@ int main(int argc, char* argv[]) {
     printf("arg[2]: %s\n", argv[2]);
   }
 
-  #ifdef MAIDSAFE_LINUX
-    google_breakpad::ExceptionHandler eh(".", NULL, DumpCallback, NULL,
-        true);
-  #endif
+#ifdef MAIDSAFE_LINUX
+  google_breakpad::ExceptionHandler eh(".", NULL, DumpCallback, NULL, true);
+#endif
 
   std::string log_string;
   /* Our process ID and Session ID */

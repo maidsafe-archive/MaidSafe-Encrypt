@@ -37,7 +37,7 @@ class FileBrowser : public QDialog {
  private:
   Ui::FileBrowserPage ui_;
   //QFileSystemModel* model_;
-  QFileSystemWatcher* theWatcher_;
+  //QFileSystemWatcher* theWatcher_;
   bool init_;
   QString currentDir_;
   QString rootPath_;
@@ -50,6 +50,7 @@ class FileBrowser : public QDialog {
   QAction *renameFile;
   QAction *saveFile;
   QAction *newFolder;
+  QMenu *menu2;
 
   int populateDirectory(const QString);
   void uploadFileFromLocal(const QString& filePath);
@@ -58,6 +59,7 @@ class FileBrowser : public QDialog {
   protected:
   void dropEvent(QDropEvent *event);
   void dragEnterEvent(QDragEnterEvent *event);
+  bool eventFilter(QObject *obj, QEvent *ev);
 
   private slots:
   void onItemDoubleClicked(QTreeWidgetItem*, int);
@@ -68,7 +70,6 @@ class FileBrowser : public QDialog {
   void onRemoveDirCompleted(int success, const QString& path);
   void onRenameFileCompleted(int success, const QString& filepath,
                                           const QString& newfilepath);
-  void onWatchedFileChanged(const QString& path);
   void onOpenFileClicked();
   void onSendFileClicked();
   void onCopyFileClicked();
@@ -79,6 +80,8 @@ class FileBrowser : public QDialog {
   void onNewFolderClicked();
   void onBackClicked(bool);
   void onUploadClicked(bool);
+ //void onWatchedFileChanged(const QString& path);
+
 };
 
 #endif // FILE_BROWSER_H_INCLUDED

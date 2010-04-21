@@ -8,7 +8,7 @@
  * You are not free to copy, amend or otherwise use this source code without
  * explicit written permission of the board of directors of maidsafe.net
  *
- *  Created on: March 24  int rename(const std::string &path, const std::string &path2); 2010
+ *  Created on: March 24 2010
  *      Author: Stephen
  */
 

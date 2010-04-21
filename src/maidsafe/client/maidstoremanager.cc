@@ -370,7 +370,7 @@ int MaidsafeStoreManager::LoadChunk(const std::string &chunk_name,
   boost::mutex::scoped_lock lock(opdata->mutex);
 
   // #1 Find a cached chunk copy if it exists, otherwise the chunk info holders.
-  kad_ops_->FindValue(chunk_name, false,
+  kad_ops_->FindValue(kad::KadId(chunk_name, false), false,
       boost::bind(&MaidsafeStoreManager::LoadChunk_FindCB, this, _1, opdata));
 
   // Main loop of retrieval process, stages reversed for early bail-out.
@@ -448,7 +448,7 @@ int MaidsafeStoreManager::LoadChunk(const std::string &chunk_name,
 //      printf("In MSM::LoadChunk, looking up holder %s...\n",
 //             HexSubstr(*it).c_str());
 #endif
-      kad_ops_->FindNode(*it, boost::bind(
+      kad_ops_->FindNode(kad::KadId(*it, false), boost::bind(
             &MaidsafeStoreManager::LoadChunk_HolderCB, this, _1, *it, opdata),
             false);
       opdata->chunk_holders[kHolderPending].insert(*it);
@@ -742,7 +742,7 @@ void MaidsafeStoreManager::LoadPacket(const std::string &packet_name,
     lpf(results, static_cast<ReturnCode>(valid));
     return;
   }
-  kad_ops_->FindValue(packet_name, false,
+  kad_ops_->FindValue(kad::KadId(packet_name, false), false,
       boost::bind(&MaidsafeStoreManager::LoadPacketCallback, this, packet_name,
       0, _1, lpf));
 }
@@ -805,7 +805,7 @@ void MaidsafeStoreManager::LoadPacketCallback(const std::string &packet_name,
     lpf(values, static_cast<ReturnCode>(ret_value));
     return;
   } else {
-    kad_ops_->FindValue(packet_name, false,
+    kad_ops_->FindValue(kad::KadId(packet_name, false), false,
         boost::bind(&MaidsafeStoreManager::LoadPacketCallback, this,
         packet_name, attempt + 1, _1, lpf));
   }
@@ -859,7 +859,7 @@ void MaidsafeStoreManager::KeyUnique(const std::string &key,
     cb(kStoreManagerError);
     return;
   }
-  kad_ops_->FindValue(key, check_local,
+  kad_ops_->FindValue(kad::KadId(key, false), check_local,
       boost::bind(&MaidsafeStoreManager::KeyUniqueCallback, this, _1, cb));
 }
 
@@ -978,8 +978,8 @@ void MaidsafeStoreManager::DeletePacket(const std::string &packet_name,
   if (vals.empty()) {
     kad::ContactInfo cache_holder;
     std::string needs_cache_copy_id;
-    int res = kad_ops_->FindValue(packet_name, false, &cache_holder, &vals,
-                                  &needs_cache_copy_id);
+    int res = kad_ops_->FindValue(kad::KadId(packet_name, false), false,
+                                  &cache_holder, &vals, &needs_cache_copy_id);
     if (res == kFindValueFailure) {  // packet doesn't exist on net
       cb(kSuccess);
       return;
@@ -1070,7 +1070,8 @@ int MaidsafeStoreManager::GetAccountDetails(boost::uint64_t *space_offered,
 
   // Find the account holders
   boost::shared_ptr<AccountStatusData> data(new AccountStatusData);
-  int rslt = kad_ops_->FindCloseNodes(account_name, &data->contacts);
+  int rslt = kad_ops_->FindCloseNodes(kad::KadId(account_name, false),
+                                      &data->contacts);
   if (rslt != kSuccess) {
 #ifdef DEBUG
     printf("In MSM::GetAccountDetails, Kad lookup failed -- error %i\n", rslt);
@@ -1079,7 +1080,7 @@ int MaidsafeStoreManager::GetAccountDetails(boost::uint64_t *space_offered,
   }
 
   // never send the RPC to our own vault
-  RemoveKadContact(pmid, &data->contacts);
+  RemoveKadContact(kad::KadId(pmid, false), &data->contacts);
 
   if (data->contacts.size() < kKadUpperThreshold) {
 #ifdef DEBUG
@@ -1592,7 +1593,8 @@ void MaidsafeStoreManager::AddToWatchList(StoreData store_data) {
   }
   // Find the Chunk Info holders
   boost::shared_ptr<WatchListOpData> data(new WatchListOpData(store_data));
-  int result = kad_ops_->FindCloseNodes(store_data.data_name, &data->contacts);
+  int result = kad_ops_->FindCloseNodes(kad::KadId(store_data.data_name, false),
+                                        &data->contacts);
   if (result != kSuccess) {
 #ifdef DEBUG
     printf("In MSM::AddToWatchList, Kad lookup failed -- error %i\n", result);
@@ -2339,7 +2341,8 @@ void MaidsafeStoreManager::RemoveFromWatchList(const StoreData &store_data) {
   }
   // Find the Chunk Info holders
   boost::shared_ptr<WatchListOpData> data(new WatchListOpData(store_data));
-  int result = kad_ops_->FindCloseNodes(store_data.data_name, &data->contacts);
+  int result = kad_ops_->FindCloseNodes(kad::KadId(store_data.data_name, false),
+                                        &data->contacts);
   if (result != kSuccess) {
 #ifdef DEBUG
     printf("In MSM::RemoveFromWatchList, Kad lookup failed -- error %i\n",
@@ -2493,9 +2496,9 @@ void MaidsafeStoreManager::SendPacketPrep(
   kad::ContactInfo cache_holder;
   std::vector<std::string> values;
   std::string needs_cache_copy_id;
-  int find_result = (kad_ops_->FindValue(store_data->data_name, true,
-                                         &cache_holder, &values,
-                                         &needs_cache_copy_id));
+  int find_result = (kad_ops_->FindValue(
+      kad::KadId(store_data->data_name, false), true, &cache_holder, &values,
+      &needs_cache_copy_id));
   if (cache_holder.has_node_id())
     to_return = kSendPacketCached;
   bool exists = (find_result == kSuccess && values.size());
@@ -2737,7 +2740,7 @@ void MaidsafeStoreManager::PollVaultInfoCallback(
 }
 
 void MaidsafeStoreManager::VaultContactInfo(base::callback_func_type cb) {
-  kad_ops_->FindNode(ss_->Id(PMID), cb, false);
+  kad_ops_->FindNode(kad::KadId(ss_->Id(PMID), false), cb, false);
 }
 
 void MaidsafeStoreManager::SetLocalVaultOwned(
@@ -2835,7 +2838,8 @@ int MaidsafeStoreManager::CreateAccount(const boost::uint64_t &space) {
 
   // Find the account holders
   boost::shared_ptr<AmendAccountData> data(new AmendAccountData);
-  int n = kad_ops_->FindCloseNodes(account_name, &data->contacts);
+  int n = kad_ops_->FindCloseNodes(kad::KadId(account_name, false),
+                                   &data->contacts);
   if (n != kSuccess) {
 #ifdef DEBUG
     printf("In MSM::CreateAccount, Kad lookup failed -- error %i\n", n);
@@ -2844,7 +2848,7 @@ int MaidsafeStoreManager::CreateAccount(const boost::uint64_t &space) {
   }
 
   // never send the RPC to our own vault
-  RemoveKadContact(ss_->Id(PMID), &data->contacts);
+  RemoveKadContact(kad::KadId(ss_->Id(PMID), false), &data->contacts);
 
   if (data->contacts.size() < kKadUpperThreshold) {
 #ifdef DEBUG

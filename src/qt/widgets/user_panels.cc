@@ -128,16 +128,16 @@ void UserPanels::onPublicUsernameChosen() {
     ui_.tabWidget_2->removeTab(0);
   }
 
-  if (ui_.tabWidget_2->count() > 2) {
+  if (ui_.tabWidget_2->count() > 1) {
   } else {
     QPixmap contactIcon_ = QPixmap(":/icons/32/contacts");
     QPixmap shareIcon_ = QPixmap(":/icons/32/shares");
-    QPixmap messagesIcon_ = QPixmap(":/icons/32/messages");
+    //QPixmap messagesIcon_ = QPixmap(":/icons/32/messages");
     // QPixmap vaultInfoIcon_ = QPixmap(":/icons/32/settings");
 
     ui_.tabWidget_2->addTab(contacts_ = new Contacts, contactIcon_, "");
     ui_.tabWidget_2->addTab(shares_   = new Shares, shareIcon_, "");
-    ui_.tabWidget_2->addTab(messages_ = new Messages, messagesIcon_, "");
+    //ui_.tabWidget_2->addTab(messages_ = new Messages, messagesIcon_, "");
     connect(messages_, SIGNAL(messageReceived()),
             this,      SLOT(onMessageReceived()));
 
@@ -193,7 +193,7 @@ void UserPanels::setActive(bool active) {
 
     qDebug() << "UserPanels::setActive - public name:" << username;
 
-    if (ui_.tabWidget_2->count() < 3)
+    if (ui_.tabWidget_2->count() < 2)
         ui_.tabWidget_2->removeTab(0);
 
     if (username.isEmpty()) {

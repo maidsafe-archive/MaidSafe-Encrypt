@@ -27,10 +27,8 @@
 
 #include <boost/filesystem.hpp>
 #include <gtest/gtest_prod.h>
-#include <stdint.h>
 
 #include <string>
-
 
 #include "fs/filesystem.h"
 #include "protobuf/datamaps.pb.h"
@@ -54,17 +52,17 @@ class SelfEncryption {
   // decrypt chunks starting at chunklet spanning offset point
   int Decrypt(const maidsafe::DataMap &dm,
               const std::string &entry_str,
-              const uint64_t &offset,
+              const boost::uint64_t &offset,
               const bool &overwrite);
   int Decrypt(const maidsafe::DataMap &dm,
-              const uint64_t &offset,
+              const boost::uint64_t &offset,
               std::string *decrypted_str);
   std::string SHA512(const fs::path &file_path);
   std::string SHA512(const std::string &content);
   fs::path GetChunkPath(const std::string &chunk_name);
  private:
   int Decrypt(const maidsafe::DataMap &dm,
-              const uint64_t &offset,
+              const boost::uint64_t &offset,
               const std::string &path,
               boost::shared_ptr<DataIOHandler> iohandler,
               std::string *decrypted_str);
@@ -88,7 +86,7 @@ class SelfEncryption {
                   std::string *hash);
   // concatenate copies of hash until desired length reached
   bool ResizeObfuscationHash(const std::string &obfuscate_hash,
-                             const uint16_t &length,
+                             const boost::uint16_t &length,
                              std::string *resized_obs_hash);
   FRIEND_TEST(SelfEncryptionTest, BEH_MAID_CheckEntry);
   FRIEND_TEST(SelfEncryptionTest, BEH_MAID_CreateProcessDirectory);
@@ -102,11 +100,11 @@ class SelfEncryption {
   FRIEND_TEST(SelfEncryptionTest, BEH_MAID_DecryptFile);
   boost::shared_ptr<ChunkStore> client_chunkstore_;
   const std::string version_;
-  const uint16_t min_chunks_;
-  const uint16_t max_chunks_;
-  const uint64_t default_chunk_size_;
-  const uint16_t default_chunklet_size_;
-  const uint16_t min_chunklet_size_;
+  const boost::uint16_t min_chunks_;
+  const boost::uint16_t max_chunks_;
+  const boost::uint64_t default_chunk_size_;
+  const boost::uint16_t default_chunklet_size_;
+  const boost::uint16_t min_chunklet_size_;
   bool compress_;
   std::string file_hash_;
   int chunk_count_;

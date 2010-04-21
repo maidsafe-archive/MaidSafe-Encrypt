@@ -127,7 +127,7 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_AddToRemoteRefList) {
   EXPECT_CALL(vsl, AddToRemoteRefList(testing::_, testing::_, testing::_,
                                       testing::_))
       .WillRepeatedly(testing::Invoke(&vsl, &MockVsl::AddToRemoteRefListReal));
-  EXPECT_CALL(*vsl.kadops(), FindCloseNodes(far_chunkname,
+  EXPECT_CALL(*vsl.kadops(), FindCloseNodes(kad::KadId(far_chunkname, false),
       testing::An<const base::callback_func_type&>()))
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
           boost::bind(&mock_kadops::RunCallback, fail_parse_result_, _1))))
@@ -143,7 +143,7 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_AddToRemoteRefList) {
           boost::bind(&mock_kadops::RunCallback, good_result_, _1))))  // Call 7
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
           boost::bind(&mock_kadops::RunCallback, good_result_, _1))));  // 8
-  EXPECT_CALL(*vsl.kadops(), FindCloseNodes(pmid_,
+  EXPECT_CALL(*vsl.kadops(), FindCloseNodes(kad::KadId(pmid_, false),
       testing::An<const base::callback_func_type&>()))  // Call 5
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
           boost::bind(&mock_kadops::RunCallback, good_result_less_one_, _1))));
@@ -343,7 +343,7 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_AmendRemoteAccount) {
   EXPECT_CALL(vsl, AmendRemoteAccount(testing::_, testing::_, testing::_,
                                       testing::_))
       .WillRepeatedly(testing::Invoke(&vsl, &MockVsl::AmendRemoteAccountReal));
-  EXPECT_CALL(*vsl.kadops(), FindCloseNodes(account_name,
+  EXPECT_CALL(*vsl.kadops(), FindCloseNodes(kad::KadId(account_name, false),
       testing::An<const base::callback_func_type&>()))
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
           boost::bind(&mock_kadops::RunCallback, fail_parse_result_, _1))))
@@ -545,7 +545,7 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_RemoteVaultAbleToStore) {
       boost::bind(&mock_vsl::CopyResult, _1, &mutex, &cv, &result);
 
   // Expectations
-  EXPECT_CALL(*vsl.kadops(), FindCloseNodes(account_name,
+  EXPECT_CALL(*vsl.kadops(), FindCloseNodes(kad::KadId(account_name, false),
       testing::An<const base::callback_func_type&>()))
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
           boost::bind(&mock_kadops::RunCallback, fail_parse_result_, _1))))

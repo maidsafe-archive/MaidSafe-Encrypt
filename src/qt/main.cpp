@@ -24,18 +24,36 @@
 #include "client/client_controller.h"
 
 // google crash reporter
-#ifdef MAIDSAFE_LINUX
-  #include "google/breakpad/common/linux/linux_syscall_support.h"
-  #include "google/breakpad/client/linux/handler/exception_handler.h"
+#if defined(MAIDSAFE_LINUX)
+  #include <google/breakpad/common/linux/linux_syscall_support.h>
+  #include <google/breakpad/client/linux/handler/exception_handler.h>
+#elif defined(__MSVC__)
+  #include <client/windows/handler/exception_handler.h>
 #endif
 
-static bool DumpCallback(const char *dump_path, const char *dump_id, void *,
-    bool succeeded) {
+#if defined(MAIDSAFE_LINUX)
+static bool DumpCallback(const char*,
+                         const char *dump_id,
+                         void*,
+                         bool succeeded) {
   if (succeeded) {
     printf("%s is dumped.\n", dump_id);
   }
   return succeeded;
 }
+#elif defined(__MSVC__)
+static bool DumpCallback(const wchar_t*,
+                         const wchar_t* minidump_id,
+                         void*,
+                         EXCEPTION_POINTERS*,
+                         MDRawAssertionInfo*,
+                         bool succeeded) {
+  if (succeeded) {
+    wprintf(L"%s is dumped.\n", minidump_id);
+  }
+  return succeeded;
+}
+#endif
 
 void pdMessageOutput(QtMsgType type, const char* msg) {
   switch (type) {
@@ -51,10 +69,12 @@ void pdMessageOutput(QtMsgType type, const char* msg) {
 }
 
 int main(int argc, char *argv[]) {
-  #ifdef MAIDSAFE_LINUX
-    google_breakpad::ExceptionHandler eh(".", NULL, DumpCallback, NULL,
-        true);
-  #endif
+#ifdef MAIDSAFE_LINUX
+  google_breakpad::ExceptionHandler eh(".", NULL, DumpCallback, NULL, true);
+#elif defined(__MSVC__)
+  google_breakpad::ExceptionHandler eh(L".", NULL, DumpCallback,
+      NULL, google_breakpad::ExceptionHandler::HANDLER_ALL);
+#endif
   qInstallMsgHandler(pdMessageOutput);
 
   //Set up Internationalization

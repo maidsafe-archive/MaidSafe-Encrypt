@@ -36,7 +36,11 @@ namespace fs = boost::filesystem;
 
 namespace fs_w_fuse {
 
+#ifdef __MSVC__
+#define WinCheckFlag(val, flag) if (val&flag) { DbgPrint(L"\t\t" L#flag L"\n"); }  // NOLINT
+#else
 #define WinCheckFlag(val, flag) if (val&flag) { DbgPrint(L"\t\t" #flag L"\n"); }  // NOLINT
+#endif
 
 std::list<ULONG64> to_encrypt_;
 std::list<std::string> to_delete_;
@@ -492,7 +496,7 @@ static int __stdcall WinReadFile(const WCHAR *FileName,
   }
   if (!ReadFile(handle, Buffer, BufferLength, ReadLength, NULL)) {
     DbgPrint(L"In WinReadFile, read error = %u, buffer length = %d, read length"
-             " = %d\n\n",
+             L" = %d\n\n",
              GetLastError(),
              BufferLength,
              *ReadLength);

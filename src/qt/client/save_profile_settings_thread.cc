@@ -33,17 +33,24 @@ SaveProfileSettingsThread::~SaveProfileSettingsThread() { }
 void SaveProfileSettingsThread::run() {
   qDebug() << "SaveProfileSettingsThread::run";
 
-  std::vector<std::string> profileInfo;
+  maidsafe::PersonalDetails pd =
+          maidsafe::SessionSingleton::getInstance()->Pd();
 
-  profileInfo.push_back(theHash_["FullName"].toStdString());
+  //TODO - Implement save settings
+
+  if (!theHash_["FullName"].isEmpty()){
+
+  }
+
+  /*profileInfo.push_back(theHash_["FullName"].toStdString());
   profileInfo.push_back(theHash_["Phone"].toStdString());
   profileInfo.push_back(theHash_["BirthDay"].toStdString());
   profileInfo.push_back(theHash_["Gender"].toStdString());
   profileInfo.push_back(theHash_["Language"].toStdString());
   profileInfo.push_back(theHash_["City"].toStdString());
-  profileInfo.push_back(theHash_["Country"].toStdString());
+  profileInfo.push_back(theHash_["Country"].toStdString());*/
 
-  const bool success = true/*ClientController::instance()->SetInfo(profileInfo)*/;
+  const bool success = true;
 
   emit completed(success);
 }

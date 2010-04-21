@@ -8,37 +8,32 @@
  * You are not free to copy, amend or otherwise use this source code without
  * explicit written permission of the board of directors of maidsafe.net
  *
- *  Created on: March 23 2010
- *      Author: Stephen
+ *  Created on: May 5, 2009
+ *      Author: Team
  */
 
-#ifndef RENAME_FILE_THREAD_H_INCLUDED
-#define RENAME_FILE_THREAD_H_INCLUDED
+#ifndef LOGOUT_USER_THREAD_H_INCLUDED
+#define LOGOUT_USER_THREAD_H_INCLUDED
 
 #include "qt/client/worker_thread.h"
 
-// Worker thread for renaming files
+// Worker thread for logging out users files
 /*!
-    renaming a file from the network is blocking and can take a while so we
+    logging out users from the network is blocking and can take a while so we
     use a worker thread to ensure that it doesn't block the main gui.
 
     Currently intended for single use.
 */
-class RenameFileThread : public WorkerThread {
+class LogoutUserThread : public WorkerThread {
   Q_OBJECT
  public:
-  RenameFileThread(const QString& filepath, const QString& newFilePath,
-                             QObject* parent = 0);
-  virtual ~RenameFileThread();
+  LogoutUserThread();
+  virtual ~LogoutUserThread();
 
   virtual void run();
 
- private:
-  QString filepath_;
-  QString newFilePath_;
-
   signals:
-  void renameFileCompleted(int, const QString&, const QString&);
+  void logoutUserCompleted(bool);
 };
 
-#endif // RENAME_FILE_THREAD_H_INCLUDED
+#endif // LOGOUT_USER_THREAD_H_INCLUDED

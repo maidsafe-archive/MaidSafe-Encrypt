@@ -30,8 +30,6 @@
 #include <maidsafe/crypto.h>
 #include <maidsafe/utils.h>
 
-#include <stdint.h>
-
 #include <algorithm>
 #include <cctype>
 #include <cstdio>

@@ -159,7 +159,7 @@ class CBPHandlerTest : public testing::Test {
 
     base::KadConfig kad_config;
     base::KadConfig::Contact *kad_contact = kad_config.add_contact();
-    kad_contact->set_node_id(pdvaults_[0]->node_id());
+    kad_contact->set_node_id(base::EncodeToHex(pdvaults_[0]->node_id()));
     kad_contact->set_ip(pdvaults_[0]->host_ip());
     kad_contact->set_port(pdvaults_[0]->host_port());
     kad_contact->set_local_ip(pdvaults_[0]->local_host_ip());
@@ -207,6 +207,8 @@ class CBPHandlerTest : public testing::Test {
 };
 
 TEST_F(CBPHandlerTest, FUNC_MAID_TestBPHOperations) {
+
+
   std::string owner_pubkey(keys_.at(1).public_key()),
               owner_privkey(keys_.at(1).private_key());
   BPCallback cb;

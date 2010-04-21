@@ -34,7 +34,9 @@
 
 // 3rd party
 #if defined(MAIDSAFE_WIN32)
-#include "fs/w_fuse/fswin.h"
+#ifndef PD_LIGHT
+  #include "fs/w_fuse/fswin.h"
+#endif
 #elif defined(MAIDSAFE_POSIX)
 #include "fs/l_fuse/fslinux.h"
 #endif
@@ -49,7 +51,9 @@ class UserSpaceFileSystem::UserSpaceFileSystemImpl {
 #ifdef MAIDSAFE_WIN32
   // none needed
 #elif defined(MAIDSAFE_POSIX)
-  fs_l_fuse::FSLinux fsl_;
+  #ifndef PD_LIGHT
+    fs_l_fuse::FSLinux fsl_;
+  #endif
 #endif
 };
 
@@ -59,8 +63,8 @@ UserSpaceFileSystem* UserSpaceFileSystem::instance() {
 }
 
 UserSpaceFileSystem::UserSpaceFileSystem(QObject* parent)
-    : QObject(parent)
-    , impl_(new UserSpaceFileSystemImpl) { }
+    : QObject(parent),
+      impl_(new UserSpaceFileSystemImpl) { }
 
 UserSpaceFileSystem::~UserSpaceFileSystem() {
   delete impl_;
@@ -79,12 +83,16 @@ bool UserSpaceFileSystem::mount() {
   std::string debug_mode("-d");
 #ifdef MAIDSAFE_WIN32
   char drive = ClientController::instance()->DriveLetter();
-  fs_w_fuse::Mount(drive);
+  #ifndef PD_LIGHT
+    fs_w_fuse::Mount(drive);
+  #endif
   ClientController::instance()->SetWinDrive(drive);
 #elif defined(MAIDSAFE_POSIX)
   std::string mount_point = file_system::MaidsafeFuseDir(
       ClientController::instance()->SessionName()).string();
-  impl_->fsl_.Mount(mount_point, debug_mode);
+  #ifndef PD_LIGHT
+    impl_->fsl_.Mount(mount_point, debug_mode);
+  #endif
 #endif
   boost::this_thread::sleep(boost::posix_time::seconds(1));
 
@@ -92,10 +100,12 @@ bool UserSpaceFileSystem::mount() {
       return false;
   }
   return true;
+
 }
 
 bool UserSpaceFileSystem::unmount() {
   // unmount drive
+
   bool success = false;
 //  std::string ms_dir = file_system::MaidsafeDir(
 //      maidsafe::SessionSingleton::getInstance()->SessionName()).string();
@@ -105,43 +115,17 @@ bool UserSpaceFileSystem::unmount() {
   std::locale loc;
   wchar_t drive_letter = std::use_facet< std::ctype<wchar_t> >
       (loc).widen(ClientController::instance()->WinDrive());
-  success = fs_w_fuse::UnMount(drive_letter);
-
-/*
-  // %SystemRoot%\explorer.exe /e /root,M:\Shares\Private\Share 1
-  // invoking using QProcess doesn't work if the path has spaces in the name
-  // so we need to go old skool...
-  QString operation("open");
-  QString command("dokanctl");
-  QString parameters(" /u ");
-  parameters.append(ClientController::instance()->WinDrive());
-  quintptr returnValue;
-  QT_WA(
-      {
-          returnValue = (quintptr)ShellExecute(0,
-                                  (TCHAR *)operation.utf16(),
-                                  (TCHAR *)command.utf16(),
-                                  (TCHAR *)parameters.utf16(),
-                                  0,
-                                  SW_HIDE);
-      } ,
-      {
-          returnValue = (quintptr)ShellExecuteA(0,
-                                  operation.toLocal8Bit().constData(),
-                                  command.toLocal8Bit().constData(),
-                                  parameters.toLocal8Bit().constData(),
-                                  0,
-                                  SW_HIDE);
-      }
- );
-*/
-
+  #ifndef PD_LIGHT
+    success = fs_w_fuse::UnMount(drive_letter);
+  #endif
   if (!success)
     qWarning() << "UserSpaceFileSystem::unmount: failed to unmount dokan"
                << success;
 #elif defined(MAIDSAFE_POSIX)
   // un-mount fuse
-  impl_->fsl_.UnMount();
+  #ifndef PD_LIGHT
+    impl_->fsl_.UnMount();
+  #endif
   success = true;
 #endif
 
@@ -190,7 +174,6 @@ void UserSpaceFileSystem::explore(Location l, QString subDir) {
     qWarning() << "UserSpaceFileSystem::explore: failed to open"
                << dir.absolutePath();
   }
-
 #else
   // nautilus FuseHomeDir()/Shares/Private/"name"
   QString app("nautilus");
@@ -205,7 +188,6 @@ void UserSpaceFileSystem::explore(Location l, QString subDir) {
                << "with args"
                << args;
   }
-
 #endif
 }
 

@@ -263,8 +263,6 @@ void PersonalMessages::onSendFile() {
   QList<QString> conts;
   conts.push_back(convName_);
 
-  // choose a file
-  // starting directory should be the maidafe one.
   // TODO(Team#5#): 2009-07-28 - restrict file dialog to maidsafe directories
   // Possible to do by using Directory Entered Signal
   QString root;

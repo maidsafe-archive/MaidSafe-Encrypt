@@ -38,7 +38,6 @@
 #include <maidsafe/maidsafe-dht.h>
 #include <maidsafe/utils.h>
 
-#include <stdint.h>
 #include <cstdio>
 #include <set>
 #include <string>
@@ -57,7 +56,7 @@ SelfEncryption::SelfEncryption(boost::shared_ptr<ChunkStore> client_chunkstore)
       min_chunks_(3),
       max_chunks_(40),
       default_chunk_size_(262144),
-      default_chunklet_size_(16384),  // static_cast<uint16_t> MUST be a
+      default_chunklet_size_(16384),  // static_cast<boost::uint16_t> MUST be a
                                       // multiple of 2*IV for AES encryption,
                                       // i.e. multiple of 32.
       min_chunklet_size_(32),
@@ -128,11 +127,11 @@ int SelfEncryption::Encrypt(const std::string &entry_str,
       chunk.set_compression_type(compression_type);
     }
     // initialise counter for amount of data put into chunk
-    uint64_t this_chunk_done = 0;
+    boost::uint64_t this_chunk_done = 0;
     // get index numbers of pre-encryption hashes for use in obfuscation and
     // encryption
-    uint32_t obfuscate_hash_no = (chunk_no + 2) % chunk_count_;
-    uint32_t encryption_hash_no = (chunk_no + 1) % chunk_count_;
+    boost::uint32_t obfuscate_hash_no = (chunk_no + 2) % chunk_count_;
+    boost::uint32_t encryption_hash_no = (chunk_no + 1) % chunk_count_;
     // loop through each chunklet
     while (this_chunk_done < dm->chunk_size(chunk_no)) {
       // retrieve appropriate pre-encryption hashes for use in obfuscation and
@@ -140,10 +139,11 @@ int SelfEncryption::Encrypt(const std::string &entry_str,
       std::string obfuscate_hash = dm->chunk_name(obfuscate_hash_no);
       std::string encryption_hash = dm->chunk_name(encryption_hash_no);
       // set this chunklet's size
-      uint16_t this_chunklet_size = default_chunklet_size_;
+      boost::uint16_t this_chunklet_size = default_chunklet_size_;
       if (dm->chunk_size(chunk_no) - this_chunk_done < this_chunklet_size)
-        this_chunklet_size = static_cast<uint16_t>(dm->chunk_size(chunk_no)
-                                                   - this_chunk_done);
+        this_chunklet_size =
+            static_cast<boost::uint16_t>(dm->chunk_size(chunk_no) -
+            this_chunk_done);
       // save chunklet's size to chunk_ before compression so that correct
       // offset can be applied if required
       chunk.add_pre_compression_chunklet_size(this_chunklet_size);
@@ -231,7 +231,7 @@ int SelfEncryption::Encrypt(const std::string &entry_str,
 
 int SelfEncryption::Decrypt(const maidsafe::DataMap &dm,
                             const std::string &entry_str,
-                            const uint64_t &offset,
+                            const boost::uint64_t &offset,
                             const bool &overwrite) {
   try {
     if (fs::exists(entry_str)) {
@@ -252,7 +252,7 @@ int SelfEncryption::Decrypt(const maidsafe::DataMap &dm,
 }
 
 int SelfEncryption::Decrypt(const maidsafe::DataMap &dm,
-                            const uint64_t &offset,
+                            const boost::uint64_t &offset,
                             std::string *decrypted_str) {
   boost::shared_ptr<DataIOHandler> iohandler(new StringIOHandler);
   iohandler->SetData("", false);
@@ -260,7 +260,7 @@ int SelfEncryption::Decrypt(const maidsafe::DataMap &dm,
 }
 
 int SelfEncryption::Decrypt(const maidsafe::DataMap &dm,
-                            const uint64_t &offset,
+                            const boost::uint64_t &offset,
                             const std::string &path,
                             boost::shared_ptr<DataIOHandler> iohandler,
                             std::string *decrypted_str) {
@@ -354,8 +354,8 @@ int SelfEncryption::Decrypt(const maidsafe::DataMap &dm,
         // adjust size of obfuscate hash to match size of chunklet
         std::string resized_obs_hash;
         ResizeObfuscationHash(obfuscate_hash,
-                              static_cast<uint16_t>(this_chunklet.size()),
-                              &resized_obs_hash);
+            static_cast<boost::uint16_t>(this_chunklet.size()),
+            &resized_obs_hash);
         std::string decrypt;
         crypto::Crypto dec_crypto;
         dec_crypto.set_symm_algorithm(crypto::AES_256);
@@ -397,7 +397,7 @@ int SelfEncryption::Decrypt(const maidsafe::DataMap &dm,
 
 int SelfEncryption::CheckEntry(boost::shared_ptr<DataIOHandler> iohandler) {
   // if file size < 2 bytes, it's too small to chunk
-  uint64_t filesize(0);
+  boost::uint64_t filesize(0);
   iohandler->Size(&filesize);
   return filesize < 2 ? -1 : 0;
 }
@@ -454,9 +454,9 @@ bool SelfEncryption::CheckCompressibility(
       return false;
   }
 
-  uint64_t test_chunk_size = 256;
-  uint64_t pointer = 0;
-  uint64_t pre_comp_file_size = 0;
+  boost::uint64_t test_chunk_size = 256;
+  boost::uint64_t pointer = 0;
+  boost::uint64_t pre_comp_file_size = 0;
   if (!iohandler->Size(&pre_comp_file_size))
     return false;
 
@@ -464,7 +464,7 @@ bool SelfEncryption::CheckCompressibility(
     return false;
 
   if (2*test_chunk_size > pre_comp_file_size)
-    test_chunk_size = static_cast<uint16_t>(pre_comp_file_size);
+    test_chunk_size = static_cast<boost::uint16_t>(pre_comp_file_size);
   else
     pointer = pre_comp_file_size/2;
   boost::scoped_ptr<char>buffer(new char[test_chunk_size]);
@@ -499,10 +499,10 @@ bool SelfEncryption::CheckCompressibility(
 bool SelfEncryption::CalculateChunkSizes(
     boost::shared_ptr<DataIOHandler> iohandler,
     maidsafe::DataMap *dm) {
-  uint64_t file_size = 0;
+  boost::uint64_t file_size = 0;
   if (!iohandler->Size(&file_size))
     return false;
-  uint64_t this_avg_chunk_size = default_chunk_size_;
+  boost::uint64_t this_avg_chunk_size = default_chunk_size_;
 
   // If the file is so large it will split into more chunks than max_chunks_,
   // resize chunks to yield no more than max_chunks_
@@ -532,7 +532,7 @@ bool SelfEncryption::CalculateChunkSizes(
 
   // iterate through each chunk except the last, adding or subtracting bytes
   // based on the file hash
-  uint64_t remainder = file_size;
+  boost::uint64_t remainder = file_size;
 
   for (int this_chunk = 0; this_chunk < chunk_count_-1; ++this_chunk) {
     // get maximum ratio to add/subtract from chunks so that we're not left
@@ -540,8 +540,9 @@ bool SelfEncryption::CalculateChunkSizes(
     // maximum bytes added to them.
     float max_ratio = static_cast<float>(1)/(max_chunks_*16);
 
-    uint64_t this_chunk_size = static_cast<uint64_t>(this_avg_chunk_size
-        *(1+(max_ratio*ChunkAddition(file_hash_.c_str()[this_chunk]))));
+    boost::uint64_t this_chunk_size =
+        static_cast<boost::uint64_t>(this_avg_chunk_size *
+        (1 + (max_ratio * ChunkAddition(file_hash_.c_str()[this_chunk]))));
     if (!this_chunk_size)  // i.e. size of 0
       ++this_chunk_size;
     dm->add_chunk_size(this_chunk_size);
@@ -567,14 +568,14 @@ bool SelfEncryption::GeneratePreEncHashes(
     maidsafe::DataMap *dm) {
   if (!iohandler->Open())
     return false;
-  uint64_t pointer = 0;
+  boost::uint64_t pointer = 0;
 
   for (int i = 0; i < chunk_count_; ++i) {
     std::string pre_enc_hash;
-    uint64_t this_chunk_size = dm->chunk_size(i);
-    uint16_t buffer_size = default_chunklet_size_;
+    boost::uint64_t this_chunk_size = dm->chunk_size(i);
+    boost::uint16_t buffer_size = default_chunklet_size_;
     if (this_chunk_size < default_chunklet_size_)
-      buffer_size = static_cast<uint16_t>(this_chunk_size);
+      buffer_size = static_cast<boost::uint16_t>(this_chunk_size);
 
     boost::scoped_ptr<char> buffer(new char[buffer_size]);
     std::ostringstream this_hash(std::ostringstream::binary);
@@ -630,10 +631,10 @@ bool SelfEncryption::HashUnique(const maidsafe::DataMap &dm,
 }
 
 bool SelfEncryption::ResizeObfuscationHash(const std::string &obfuscate_hash,
-                                           const uint16_t &length,
+                                           const boost::uint16_t &length,
                                            std::string *resized_obs_hash) {
   *resized_obs_hash = obfuscate_hash;
-  int32_t length_difference = length - obfuscate_hash.size();
+  boost::int32_t length_difference = length - obfuscate_hash.size();
   std::string appendix = obfuscate_hash;
   while (length_difference > 0) {
     resized_obs_hash->append(appendix);

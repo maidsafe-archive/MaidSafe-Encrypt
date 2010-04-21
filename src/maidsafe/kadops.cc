@@ -34,18 +34,18 @@ bool KadOps::AddressIsLocal(const kad::ContactInfo &peer) {
       peer.local_ip(), peer.local_port(), peer.ip()) == kad::LOCAL;
 }
 
-void KadOps::FindNode(const std::string &node_id,
+void KadOps::FindNode(const kad::KadId &node_id,
                       base::callback_func_type cb,
                       const bool &local) {
-  knode_->FindNode(kad::KadId(node_id, false), cb, local);
+  knode_->FindNode(node_id, cb, local);
 }
 
-void KadOps::FindCloseNodes(const std::string &kad_key,
+void KadOps::FindCloseNodes(const kad::KadId &kad_key,
                             const base::callback_func_type &callback) {
-  knode_->FindCloseNodes(kad::KadId(kad_key, false), callback);
+  knode_->FindCloseNodes(kad_key, callback);
 }
 
-int KadOps::FindCloseNodes(const std::string &kad_key,
+int KadOps::FindCloseNodes(const kad::KadId &kad_key,
                            std::vector<kad::Contact> *contacts) {
   if (contacts == NULL) {
 #ifdef DEBUG
@@ -68,7 +68,7 @@ int KadOps::FindCloseNodes(const std::string &kad_key,
 
 void KadOps::HandleFindCloseNodesResponse(
     const std::string &response,
-    const std::string&,  //  &kad_key,
+    const kad::KadId&,  //  &kad_key,
     std::vector<kad::Contact> *contacts,
     boost::mutex *mutex,
     boost::condition_variable *cv,
@@ -112,13 +112,13 @@ void KadOps::HandleFindCloseNodesResponse(
   cv->notify_one();
 }
 
-void KadOps::FindValue(const std::string &kad_key,
+void KadOps::FindValue(const kad::KadId &kad_key,
                        bool check_local,
                        const base::callback_func_type &cb) {
-  knode_->FindValue(kad::KadId(kad_key, false), check_local, cb);
+  knode_->FindValue(kad_key, check_local, cb);
 }
 
-int KadOps::FindValue(const std::string &kad_key,
+int KadOps::FindValue(const kad::KadId &kad_key,
                       bool check_local,
                       kad::ContactInfo *cache_holder,
                       std::vector<std::string> *values,
@@ -129,7 +129,7 @@ int KadOps::FindValue(const std::string &kad_key,
   needs_cache_copy_id->clear();
 
   CallbackObj kad_cb_obj;
-  knode_->FindValue(kad::KadId(kad_key, false), check_local,
+  knode_->FindValue(kad_key, check_local,
                     boost::bind(&CallbackObj::CallbackFunc, &kad_cb_obj, _1));
   kad_cb_obj.WaitForCallback();
 
@@ -210,25 +210,22 @@ int KadOps::GetStorePeer(const float &,
   return kSuccess;
 }
 
-bool ContactWithinClosest(const std::string &key,
+bool ContactWithinClosest(const kad::KadId &key,
     const kad::Contact &new_contact,
     const std::vector<kad::Contact> &closest_contacts) {
-  /* BigInt dist(kademlia_distance(new_contact.node_id(), key));
+  kad::KadId dist(new_contact.node_id() ^ key);
   for (size_t i = 0; i < closest_contacts.size(); ++i) {
-    if (dist < kademlia_distance(closest_contacts[i].node_id(), key))
+    if (dist < (closest_contacts[i].node_id() ^ key))
       return true;
   }
-  return false; */
-  std::vector<kad::Contact> ctc(closest_contacts);
-  kad::InsertKadContact(kad::KadId(key, false), new_contact, &ctc);
-  return ctc.back().node_id() != new_contact.node_id();
+  return false;
 }
 
-bool RemoveKadContact(const std::string &id,
+bool RemoveKadContact(const kad::KadId &id,
                       std::vector<kad::Contact> *contacts) {
   // TODO(Team#) move to DHT
   for (size_t i = 0; i < contacts->size(); ++i) {
-    if (contacts->at(i).node_id().ToStringDecoded() == id) {
+    if (contacts->at(i).node_id() == id) {
       contacts->erase(contacts->begin() + i);
       return true;
     }

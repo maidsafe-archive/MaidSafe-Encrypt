@@ -1,28 +1,28 @@
-# ============================================================================
-#
-# Copyright [2010] maidsafe.net limited
-#
-# Description:  CMakeList for PD project.
-# Version:      1.0
-# Created:      2010-04-15-21.01.30
-# Revision:     none
-# Compiler:     gcc
-# Author:       Fraser Hutchison (fh), fraser.hutchison@maidsafe.net
-# Company:      maidsafe.net limited
-#
-# The following source code is property of maidsafe.net limited and is not
-# meant for external use.  The use of this code is governed by the license
-# file LICENSE.TXT found in the root of this directory and also on
-# www.maidsafe.net.
-#
-# You are not free to copy, amend or otherwise use this source code without
-# the explicit written permission of the board of directors of maidsafe.net.
-#
-# ============================================================================
+# ============================================================================ #
+#                                                                              #
+# Copyright [2010] maidsafe.net limited                                        #
+#                                                                              #
+# Description:  CMakeList for PD project.                                      #
+# Version:      1.0                                                            #
+# Created:      2010-04-15-21.01.30                                            #
+# Revision:     none                                                           #
+# Compiler:     N/A                                                            #
+# Author:       Team                                                           #
+# Company:      maidsafe.net limited                                           #
+#                                                                              #
+# The following source code is property of maidsafe.net limited and is not     #
+# meant for external use.  The use of this code is governed by the license     #
+# file LICENSE.TXT found in the root of this directory and also on             #
+# www.maidsafe.net.                                                            #
+#                                                                              #
+# You are not free to copy, amend or otherwise use this source code without    #
+# the explicit written permission of the board of directors of maidsafe.net.   #
+#                                                                              #
+# ============================================================================ #
 
 
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8 FATAL_ERROR)
-SET(UPDATE_TYPE git)
+PROJECT(PD)
 MESSAGE("================================================================================\n")
 SET(CMAKE_CACHEFILE "${CMAKE_CACHEFILE_DIR}/CMakeCache.txt")
 IF(WIN32)
@@ -48,349 +48,131 @@ SET(UPDATE_COMMAND "${GITCOMMAND}")
 
 IF(NOT CMAKE_BUILD_TYPE)
   SET(CMAKE_BUILD_TYPE "Release" CACHE INTERNAL "Choose the type of build, options are: Debug Release RelWithDebInfo MinSizeRel." FORCE)
-ENDIF(NOT CMAKE_BUILD_TYPE)
-PROJECT(PD)
+ENDIF()
 IF(NOT MAIDSAFE_TEST_TYPE)
   SET(MAIDSAFE_TEST_TYPE "BEH" CACHE INTERNAL "Choose the type of TEST, options are: _ BEH FUNC" FORCE)
-ENDIF(NOT MAIDSAFE_TEST_TYPE)
+ENDIF()
 
 IF(UNIX)
   EXECUTE_PROCESS(COMMAND date +%a%d%m%y OUTPUT_VARIABLE pddate OUTPUT_STRIP_TRAILING_WHITESPACE)
-ELSE(UNIX)
+ELSE()
   EXECUTE_PROCESS(COMMAND CMD /C DATE /T OUTPUT_VARIABLE pddate OUTPUT_STRIP_TRAILING_WHITESPACE)
   STRING(REPLACE "/" "" pddate ${pddate})
   STRING(SUBSTRING ${pddate} 0 4 pddateddmm)
   STRING(SUBSTRING ${pddate} 6 2 pddateyy)
   SET(pddate ${pddateddmm}${pddateyy})
-ENDIF(UNIX)
+ENDIF()
 
-###################################################################################################
-# Set default include and library directories                                                     #
-###################################################################################################
-SET(SOURCE_DIR ${PD_SOURCE_DIR}/src)
-IF(WIN32)
-  IF(MSVC)
-    SET(INCLUDE_DIR c:/include)
-    SET(LIB_DIR c:/lib)
-    SET(DOC_LIB_DIR " - e.g. \"c:\\lib\"")
-  ELSE(MSVC)
-    SET(INCLUDE_DIR c:/usr/include)
-    SET(LIB_DIR c:/usr/lib)
-    SET(DOC_LIB_DIR " - e.g. \"c:\\usr\\lib\"")
-    LINK_DIRECTORIES(c:/MinGW/lib/ c:/MinGW/mingw32/lib/ c:/usr/lib/ c:/Qt/4.5.0/lib)
-  ENDIF(MSVC)
-ELSE(WIN32)
-  SET(INCLUDE_DIR /usr/include /usr/local/include /opt/local/var/macports/software/macfuse/1.7_0/opt/local/include)
-  SET(LIB_DIR /usr/lib /usr/local/lib)
-  IF(APPLE)
-    SET(CMAKE_OSX_SYSROOT "/")
-  ENDIF(APPLE)
-ENDIF(WIN32)
-SET(CMAKE_REQUIRED_INCLUDES ${INCLUDE_DIR})
+IF(APPLE)
+  SET(CMAKE_OSX_SYSROOT "/")
+ENDIF(APPLE)
 
+UNSET(LIBRARY_OUTPUT_PATH CACHE)
+UNSET(EXECUTABLE_OUTPUT_PATH CACHE)
 IF(CMAKE_BUILD_TYPE MATCHES "Release")
   MESSAGE("Building a package which is OK to release.")
   MESSAGE("------------------------------------------")
-  SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/Release/bin/)
-  SET(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/Release/lib)
+  IF(MSVC)
+    IF(CMAKE_CL_64)
+      SET(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin/x64 CACHE PATH "Library target dir (x64).")
+      SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin/x64 CACHE PATH "Executable target dir (x64).")
+    ELSE()
+      SET(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin/win32 CACHE PATH "Library target dir (win32).")
+      SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin/win32 CACHE PATH "Executable target dir (win32).")
+    ENDIF()
+  ELSE()
+    SET(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/Release/lib CACHE PATH "Library target dir (Release).")
+    SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/Release/bin CACHE PATH "Executable target dir (Release).")
+  ENDIF()
 ELSE()
   MESSAGE("Building a package which is NOT OK to release.")
   MESSAGE("----------------------------------------------")
-  SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/Debug/bin/)
-  SET(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/Debug/lib)
+  IF(MSVC)
+    IF(CMAKE_CL_64)
+      SET(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin/x64 CACHE PATH "Library target dir (x64).")
+      SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin/x64 CACHE PATH "Executable target dir (x64).")
+    ELSE()
+      SET(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin/win32 CACHE PATH "Library target dir (win32).")
+      SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin/win32 CACHE PATH "Executable target dir (win32).")
+    ENDIF()
+  ELSE()
+    SET(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/Debug/lib CACHE PATH "Library target dir (Debug).")
+    SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/Debug/bin CACHE PATH "Executable target dir (Debug).")
+  ENDIF()
  	SET(pddate "DEVELOPER_${pddate}")
+ENDIF()
+
+SET(CMAKE_DEBUG_POSTFIX _d)
+SET(CMAKE_RELWITHDEBINFO_POSTFIX _rwdi)
+SET(CMAKE_MINSIZEREL_POSTFIX _msr)
+
+###################################################################################################
+# Set default directories to be searched for included files and libs                              #
+###################################################################################################
+SET(SOURCE_DIR ${PD_SOURCE_DIR}/src)
+IF(DEFINED ADD_LIBRARY_DIR)
+  IF(DEFAULT_LIBRARY_DIR)
+    LIST(REMOVE_DUPLICATES DEFAULT_LIBRARY_DIR)
+  ENDIF()
+  SET(DEFAULT_LIBRARY_DIR ${DEFAULT_LIBRARY_DIR} ${ADD_LIBRARY_DIR} CACHE INTERNAL "Path to libraries directories" FORCE)
+ENDIF()
+
+IF(MSVC)
+  SET(CMAKE_INCLUDE_PATH "c:\\msvc\\include")
+  SET(CMAKE_LIBRARY_PATH "c:\\msvc\\lib" ${DEFAULT_LIBRARY_DIR})
+ELSEIF(WIN32)
+  SET(CMAKE_INCLUDE_PATH "c:\\usr\\include")
+  SET(CMAKE_LIBRARY_PATH "c:\\usr\\lib" ${DEFAULT_LIBRARY_DIR})
+ELSE()
+  SET(CMAKE_INCLUDE_PATH "/usr/include")
+  SET(CMAKE_LIBRARY_PATH "/usr/lib" ${DEFAULT_LIBRARY_DIR})
 ENDIF()
 
 ###################################################################################################
 # Boost libraries search                                                                          #
 ###################################################################################################
 SET(REQUIRED_BOOST_COMPONENTS date_time filesystem regex system thread)
-SET(COPY_OF_LIST REQUIRED_BOOST_COMPONENTS)
-FOREACH(COMPONENT ${REQUIRED_BOOST_COMPONENTS})
-  LIST(LENGTH ${COPY_OF_LIST} LEN)
-  MATH(EXPR LEN ${LEN}-1)
-  LIST(FIND ${COPY_OF_LIST} ${COMPONENT} POSITION)
-  IF(${POSITION} EQUAL 0)
-    SET(REQUIRED_BOOST_LIST \"${COMPONENT}\")
-  ELSEIF(${POSITION} EQUAL LEN)
-    SET(REQUIRED_BOOST_LIST "${REQUIRED_BOOST_LIST} and \"${COMPONENT}\"")
-  ELSE()
-    SET(REQUIRED_BOOST_LIST "${REQUIRED_BOOST_LIST}, \"${COMPONENT}\"")
-  ENDIF()
-  STRING(TOUPPER ${COMPONENT} COMP)
-  UNSET(Boost_${COMP}_FOUND CACHE)
-ENDFOREACH()
-FOREACH(VER_NUM RANGE 40 99)
-  SET(Boost_ADDITIONAL_VERSIONS ${Boost_ADDITIONAL_VERSIONS} "1.${VER_NUM}" "1.${VER_NUM}.0")
-  SET(BOOST_TRY_VERSIONS ${BOOST_TRY_VERSIONS} "boost-1_${VER_NUM}")
-ENDFOREACH()
-UNSET(Boost_INCLUDE_DIR CACHE)
-UNSET(BOOST_LIBRARY_DIRS CACHE)
-UNSET(TRY_BOOST_INC_DIR CACHE)
-IF(DEFINED BOOST_LIB_DIR)
-  SET(BOOST_LIB_DIR ${BOOST_LIB_DIR} CACHE INTERNAL "Path to Boost libraries directory" FORCE)
-  SET(BOOST_LIBRARYDIR ${BOOST_LIB_DIR} CACHE INTERNAL "Path to Boost libraries directory" FORCE)
-ELSE()
-  IF(WIN32)
-    SET(BOOST_LIBRARYDIR ${LIB_DIR})
-  ELSE()
-    LIST(GET ${LIB_DIR} 0 BOOST_LIBRARYDIR)
-  ENDIF()
-ENDIF()
-IF(DEFINED BOOST_INC_DIR)
-  SET(BOOST_INC_DIR ${BOOST_INC_DIR} CACHE INTERNAL "Path to Boost include directory" FORCE)
-  SET(Boost_INCLUDE_DIR ${BOOST_INC_DIR} CACHE INTERNAL "Path to Boost include directory" FORCE)
-ELSE()
-  LIST(REVERSE BOOST_TRY_VERSIONS)
-  FOREACH(TRY_VERSION ${BOOST_TRY_VERSIONS})
-    FOREACH(INC_OPTION ${INCLUDE_DIR})
-      FIND_FILE(TRY_BOOST_INC_DIR ${TRY_VERSION} ${INC_OPTION})
-      IF(NOT TRY_BOOST_INC_DIR MATCHES TRY_BOOST_INC_DIR-NOTFOUND)
-        SET(Boost_INCLUDE_DIR ${TRY_BOOST_INC_DIR})
-        BREAK()
-      ENDIF()
-    ENDFOREACH()
-    IF(NOT TRY_BOOST_INC_DIR MATCHES TRY_BOOST_INC_DIR-NOTFOUND)
-      BREAK()
-    ENDIF()
-  ENDFOREACH()
-ENDIF()
-SET(Boost_USE_STATIC_LIBS ON)
-SET(Boost_USE_MULTITHREADED ON)
-FIND_PACKAGE(Boost 1.40 COMPONENTS ${REQUIRED_BOOST_COMPONENTS})
-FOREACH(COMPONENT ${REQUIRED_BOOST_COMPONENTS})
-  STRING(TOUPPER ${COMPONENT} COMP)
-  IF(NOT DEFINED Boost_${COMP}_FOUND)
-    IF(DEFINED Boost_LIB_VERSION)
-      SET(ERROR_VERSION "version ${Boost_LIB_VERSION} ")
-    ENDIF()
-    SET(ERROR_MESSAGE "\nFound Boost headers at ${Boost_INCLUDE_DIR} but could not find ")
-    SET(ERROR_MESSAGE "${ERROR_MESSAGE}Boost \"${COMPONENT}\" library.\n")
-    SET(ERROR_MESSAGE "${ERROR_MESSAGE}Required Boost libraries are ${REQUIRED_BOOST_LIST}.\n")
-    SET(ERROR_MESSAGE "${ERROR_MESSAGE}You can download Boost libraries at http://www.boost.org\n")
-    SET(ERROR_MESSAGE "${ERROR_MESSAGE}If the required Boost libraries are already installed, run:\n")
-    SET(ERROR_MESSAGE "${ERROR_MESSAGE}cmake ../.. -DBOOST_LIB_DIR=<Path to Boost library directory> and/or\n")
-    SET(ERROR_MESSAGE "${ERROR_MESSAGE}cmake ../.. -DBOOST_INC_DIR=<Path to Boost include directory>")
-    MESSAGE(FATAL_ERROR "${ERROR_MESSAGE}")
-  ENDIF()
-ENDFOREACH()
-IF(NOT Boost_FOUND)
-  SET(ERROR_MESSAGE "\nCould not find Boost libraries.\n")
-  SET(ERROR_MESSAGE "${ERROR_MESSAGE}Required Boost libraries are ${REQUIRED_BOOST_LIST}.\n")
-  SET(ERROR_MESSAGE "${ERROR_MESSAGE}You can download Boost libraries at http://www.boost.org\n")
-  SET(ERROR_MESSAGE "${ERROR_MESSAGE}If the required Boost libraries are already installed, run:\n")
-  SET(ERROR_MESSAGE "${ERROR_MESSAGE}cmake ../.. -DBOOST_LIB_DIR=<Path to Boost library directory> and/or\n")
-  SET(ERROR_MESSAGE "${ERROR_MESSAGE}cmake ../.. -DBOOST_INC_DIR=<Path to Boost include directory>")
-  MESSAGE(FATAL_ERROR "${ERROR_MESSAGE}")
-ENDIF()
+INCLUDE(${PD_SOURCE_DIR}/build/maidsafe_FindBoost.cmake)
+SET(INCLUDE_DIRS ${INCLUDE_DIRS} ${Boost_INCLUDE_DIR})
+SET(LIBS_DIRS ${LIBS_DIRS} ${Boost_LIBRARY_DIRS})
 
 ###################################################################################################
 # QT library search                                                                               #
 ###################################################################################################
-UNSET(QMAKE_EXE CACHE)
-UNSET(QT_LIBRARIES CACHE)
-UNSET(QT_LIBRARY_DIR CACHE)
-UNSET(QT_MOC_EXECUTABLE CACHE)
-UNSET(QT_INCLUDE_DIR CACHE)
-UNSET(QT_INCLUDES CACHE)
-IF(QT_ROOT_PATH)
-  SET(QT_ROOT_PATH ${QT_ROOT_PATH} CACHE INTERNAL "Path to Qt root directory" FORCE)
-  SET(QT_ROOT_DIR ${QT_ROOT_PATH})
-ELSE()
-  IF(WIN32)
-    SET(QT_ROOT_DIR "c:\\Qt\\4.6.2" CACHE INTERNAL "Path to Qt root directory" FORCE)
-  ELSE()
-    SET(QT_ROOT_DIR "/usr/local/Trolltech/Qt-4.5.3" CACHE INTERNAL "Path to Qt root directory" FORCE)
-  ENDIF(WIN32)
-ENDIF()
-FIND_PROGRAM(QMAKE_EXE NAMES qmake qmake4 qmake-qt4 PATHS ${QT_ROOT_DIR}/bin)
-IF(NOT QMAKE_EXE)
-  SET(ERROR_MESSAGE "\nCould not find Qt.  NO QMAKE EXECUTABLE ")
-  IF(WIN32)
-    SET(ERROR_MESSAGE "${ERROR_MESSAGE}(Tried to find qmake.exe in ${QT_ROOT_DIR}\\bin)")
-  ELSE()
-    SET(ERROR_MESSAGE "${ERROR_MESSAGE}(Tried to find qmake in ${QT_ROOT_DIR}/bin)")
-  ENDIF()
-  SET(ERROR_MESSAGE "${ERROR_MESSAGE}\nYou can download Qt at http://qt.nokia.com/downloads\n")
-  SET(ERROR_MESSAGE "${ERROR_MESSAGE}If Qt is already installed, run:\n")
-  SET(ERROR_MESSAGE "${ERROR_MESSAGE}cmake ../.. -DQT_ROOT_PATH=<Path to Qt root directory>")
-  IF(WIN32)
-    SET(ERROR_MESSAGE "${ERROR_MESSAGE}\n(such that qmake.exe is in \"<Path to Qt root directory>\\bin\").")
-  ELSE()
-    SET(ERROR_MESSAGE "${ERROR_MESSAGE}\n(such that qmake is in \"<Path to Qt root directory>/bin\").")
-  ENDIF()
-  MESSAGE(FATAL_ERROR "${ERROR_MESSAGE}")
-ENDIF()
-IF(QT_LIBRARY_PATH)
-  SET(QT_LIBRARY_PATH ${QT_LIBRARY_PATH} CACHE INTERNAL "Path to Qt library directory" FORCE)
-  SET(QT_LIB_DIR ${QT_LIBRARY_PATH})
-ELSE()
-  SET(QT_LIB_DIR "${QT_ROOT_DIR}/lib")
-ENDIF()
-IF(QT_INCLUDE_PATH)
-  SET(QT_INCLUDE_PATH ${QT_INCLUDE_PATH} CACHE INTERNAL "Path to Qt include directory" FORCE)
-  SET(QT_INCLUDE_DIR ${QT_INCLUDE_PATH} CACHE INTERNAL "Path to Qt include directory" FORCE)
-ELSE()
-  SET(QT_INCLUDE_DIR "${QT_ROOT_DIR}/include" CACHE INTERNAL "Path to Qt include directory" FORCE)
-ENDIF()
-FIND_LIBRARY(QT_QTCORE_LIBRARY NAMES libQtCore4.a PATHS ${QT_LIB_DIR} DOC "Path to Qt qtcore library")
-SET(ENV{QTDIR} ${QT_ROOT_DIR})
-SET(QT_STATIC 1)
-FIND_PACKAGE(Qt4 COMPONENTS QtCore QtGui REQUIRED)
-INCLUDE(CheckIncludeFileCXX)
-INCLUDE(${QT_USE_FILE})
-CHECK_INCLUDE_FILE_CXX(Qt/qcoreapplication.h QT_INCLUDES)
-IF(NOT QT_QTCORE_FOUND)
-  SET(ERROR_MESSAGE "\nCould not find Qt.  NO QT CORE LIBRARY - ")
-  SET(ERROR_MESSAGE "${ERROR_MESSAGE}You can download Qt at http://qt.nokia.com/downloads\n")
-  SET(ERROR_MESSAGE "${ERROR_MESSAGE}If Qt is already installed, run:\n")
-  SET(ERROR_MESSAGE "${ERROR_MESSAGE}cmake ../.. -DQT_ROOT_PATH=<Path to Qt root directory>")
-  MESSAGE(FATAL_ERROR "${ERROR_MESSAGE}")
-ENDIF()
-IF(QT_LIBRARIES)
-  IF(NOT QT_INCLUDES)
-    SET(ERROR_MESSAGE "\nCould not find Qt.  AT LEAST ONE HEADER FILE IS MISSING - ")
-    SET(ERROR_MESSAGE "${ERROR_MESSAGE}You can download Qt at http://qt.nokia.com/downloads\n")
-    SET(ERROR_MESSAGE "${ERROR_MESSAGE}If Qt is already installed, run:\n")
-    SET(ERROR_MESSAGE "${ERROR_MESSAGE}cmake ../.. -DQT_INCLUDE_PATH=<Path to Qt include directory>")
-    MESSAGE(FATAL_ERROR "${ERROR_MESSAGE}")
-  ENDIF()
-ELSE(QT_LIBRARIES)
-  SET(ERROR_MESSAGE "\nCould not find Qt.  NO QT LIBRARIES - ")
-  SET(ERROR_MESSAGE "${ERROR_MESSAGE}You can download Qt at http://qt.nokia.com/downloads\n")
-  SET(ERROR_MESSAGE "${ERROR_MESSAGE}If Qt is already installed, run:\n")
-  SET(ERROR_MESSAGE "${ERROR_MESSAGE}cmake ../.. -DQT_LIBRARY_PATH=<Path to Qt library directory>")
-  MESSAGE(FATAL_ERROR "${ERROR_MESSAGE}")
-ENDIF(QT_LIBRARIES)
+# Including this file sets up environment with correct dirs / flags - no need to explicitly set
+# anything else other than linking to QT_LIBRARIES as appropriate.
+INCLUDE(${PD_SOURCE_DIR}/build/maidsafe_FindQt4.cmake)
 
 ###################################################################################################
 # Google Test library search                                                                      #
 ###################################################################################################
-UNSET(GTEST_LIBRARY CACHE)
-UNSET(GTEST_MAIN_LIBRARY CACHE)
-UNSET(GTEST_INCLUDE_DIR CACHE)
-UNSET(GTEST_INCLUDE CACHE)
-IF(GTEST_ROOT_PATH)
-  SET(GTEST_ROOT_PATH ${GTEST_ROOT_PATH} CACHE INTERNAL "Path to Google Test library directory" FORCE)
-  SET(ENV{GTEST_ROOT} ${GTEST_ROOT_PATH})
-ELSE()
-  SET(ENV{GTEST_ROOT} ${LIB_DIR})
-ENDIF()
-IF(GTEST_INCLUDE_PATH)
-  SET(GTEST_INCLUDE_PATH ${GTEST_INCLUDE_PATH} CACHE INTERNAL "Path to Google Test include directory" FORCE)
-  SET(GTEST_INCLUDE_DIR ${GTEST_INCLUDE_PATH} CACHE INTERNAL "Path to Google Test include directory" FORCE)
-ELSE()
-  FOREACH(INC_OPTION ${INCLUDE_DIR})
-    SET(GTEST_INCLUDE_DIR ${GTEST_INCLUDE_DIR} ${INC_OPTION}/gtest CACHE INTERNAL "Path to Google Test include directory" FORCE)
-  ENDFOREACH()
-ENDIF()
-INCLUDE(FindGTest)
-FIND_PACKAGE(GTest)
-CHECK_INCLUDE_FILE_CXX(gtest/gtest.h GTEST_INCLUDE)
-IF(GTEST_LIBRARY)
-  IF(NOT GTEST_INCLUDE)
-    SET(ERROR_MESSAGE "\nCould not find Google Test.  NO GTEST.H - ")
-    SET(ERROR_MESSAGE "${ERROR_MESSAGE}You can download it at http://code.google.com/p/googletest\n")
-    SET(ERROR_MESSAGE "${ERROR_MESSAGE}If Google Test is already installed, run:\n")
-    SET(ERROR_MESSAGE "${ERROR_MESSAGE}cmake ../.. -DGTEST_INCLUDE_PATH=<Path to gtest include directory>")
-    MESSAGE(FATAL_ERROR "${ERROR_MESSAGE}")
-  ENDIF()
-ELSE(GTEST_LIBRARY)
-  SET(ERROR_MESSAGE "\nCould not find Google Test.  NO GTEST LIBRARY - ")
-  SET(ERROR_MESSAGE "${ERROR_MESSAGE}You can download it at http://code.google.com/p/googletest\n")
-  SET(ERROR_MESSAGE "${ERROR_MESSAGE}If Google Test is already installed, run:\n")
-  SET(ERROR_MESSAGE "${ERROR_MESSAGE}cmake ../.. -DGTEST_ROOT_PATH=<Path to gtest library directory>")
-  MESSAGE(FATAL_ERROR "${ERROR_MESSAGE}")
-ENDIF(GTEST_LIBRARY)
+INCLUDE(${PD_SOURCE_DIR}/build/maidsafe_FindGtest.cmake)
+SET(INCLUDE_DIRS ${INCLUDE_DIRS} ${Gtest_INCLUDE_DIR})
+SET(LIBS_DIRS ${LIBS_DIRS} ${Gtest_LIBRARY_DIR} ${Gtest_LIBRARY_DIR_DEBUG})
+
+###################################################################################################
+# Google Mock library search                                                                      #
+###################################################################################################
+INCLUDE(${PD_SOURCE_DIR}/build/maidsafe_FindGmock.cmake)
+SET(INCLUDE_DIRS ${INCLUDE_DIRS} ${Gmock_INCLUDE_DIR})
+SET(LIBS_DIRS ${LIBS_DIRS} ${Gmock_LIBRARY_DIR} ${Gmock_LIBRARY_DIR_DEBUG})
 
 ###################################################################################################
 # Protocol Buffers library search                                                                 #
 ###################################################################################################
-FUNCTION(GENERATE_PROTO_FILES PROTO_FILE CACHE_NAME)
-  FILE(STRINGS ${SOURCE_DIR}/${PROTO_FILE} PROTO_STRING)
-  UNSET(NEW_${ARGV1} CACHE)
-  SET(NEW_${ARGV1} ${PROTO_STRING} CACHE STRING "Google Protocol Buffers - new file contents for ${ARGV1}")
-  IF((${FORCE_PROTOC_COMPILE}) OR (NOT "${NEW_${ARGV1}}" STREQUAL "${${ARGV1}}"))
-    GET_FILENAME_COMPONENT(PROTO_FILE_ROOT ${SOURCE_DIR}/${PROTO_FILE} PATH)
-    GET_FILENAME_COMPONENT(PROTO_FILE_NAME ${SOURCE_DIR}/${PROTO_FILE} NAME)
-    EXECUTE_PROCESS(COMMAND ${PROTOBUF_PROTOC_EXECUTABLE} --proto_path=${PROTO_FILE_ROOT} --cpp_out=${PROTO_FILE_ROOT} ${SOURCE_DIR}/${PROTO_FILE} RESULT_VARIABLE PROTO_RES ERROR_VARIABLE PROTO_ERR)
-    UNSET(${ARGV1} CACHE)
-    IF(NOT ${PROTO_RES})
-      MESSAGE("--   Generated files from ${PROTO_FILE_NAME}")
-      SET(${ARGV1} ${PROTO_STRING} CACHE STRING "Google Protocol Buffers - file contents for ${PROTO_FILE}")
-    ELSE()
-      MESSAGE(FATAL_ERROR "Failed trying to generate files from ${PROTO_FILE_NAME}\n${PROTO_ERR}")
-    ENDIF()
-  ENDIF()
-  UNSET(NEW_${ARGV1} CACHE)
-ENDFUNCTION()
+FILE(GLOB PROTO_FILES RELATIVE ${SOURCE_DIR} "${SOURCE_DIR}/protobuf/*.proto")
+INCLUDE(${PD_SOURCE_DIR}/build/maidsafe_FindProtobuf.cmake)
+SET(INCLUDE_DIRS ${INCLUDE_DIRS} ${Protobuf_INCLUDE_DIR})
+SET(LIBS_DIRS ${LIBS_DIRS} ${Protobuf_LIBRARY_DIR} ${Protobuf_LIBRARY_DIR_DEBUG})
 
-UNSET(PROTOBUF_PROTOC_EXECUTABLE CACHE)
-UNSET(PROTOBUF_INCLUDE CACHE)
-UNSET(Protobuf_LIBRARY_RELEASE CACHE)
-UNSET(Protobuf_LIBRARY_DEBUG CACHE)
-UNSET(PROTOBUF_LIBRARY CACHE)
-
-INCLUDE(CheckLibraryExists)
-IF(MSVC)
-  FIND_PROGRAM(PROTOBUF_PROTOC_EXECUTABLE "protoc.exe" PATHS "C:\\Program Files" "C:\\Program Files (x86)")
-ELSE(MSVC)
-  FIND_PROGRAM(PROTOBUF_PROTOC_EXECUTABLE "protoc")
-ENDIF(MSVC)
-
-IF(NOT PROTOBUF_PROTOC_EXECUTABLE)
-  MESSAGE(FATAL "No Protocol Buffers package found. Get it here: http://code.google.com/apis/protocolbuffers")
-ELSE(NOT PROTOBUF_PROTOC_EXECUTABLE)
-  MESSAGE(STATUS "Found Protocol Buffers compiler: ${PROTOBUF_PROTOC_EXECUTABLE}")
-  EXECUTE_PROCESS(COMMAND ${PROTOBUF_PROTOC_EXECUTABLE} --version OUTPUT_VARIABLE CURRENT_PROTOC_VERSION OUTPUT_STRIP_TRAILING_WHITESPACE)
-  IF(NOT "${PROTOC_VERSION}" STREQUAL "${CURRENT_PROTOC_VERSION}")
-    SET(FORCE_PROTOC_COMPILE TRUE)
-    UNSET(PROTOC_VERSION CACHE)
-    SET(PROTOC_VERSION ${CURRENT_PROTOC_VERSION} CACHE STRING "Google Protocol Buffer Compiler Version")
-  ENDIF()
-ENDIF(NOT PROTOBUF_PROTOC_EXECUTABLE)
-
-IF(MSVC)
-  FIND_PATH(PROTOBUF_INCLUDE google/protobuf/message.h
-    DOC "Google Protocol Buffers include files"
-    PATHS ${PROTOBUF_ROOT}/src/ INCLUDE )
-  IF(CMAKE_CL_64)
-    FIND_LIBRARY(Protobuf_LIBRARY_RELEASE libprotobuf.lib
-      DOC "Protocol Buffers C++ libprotobuf (release)"
-      PATHS ${PROTOBUF_ROOT}/vsprojects/x64/Release LIB NO_DEFAULT_PATH )
-    FIND_LIBRARY(Protobuf_LIBRARY_DEBUG libprotobuf.lib
-      DOC "Protocol Buffers C++ libprotobuf (debug)"
-      PATHS ${PROTOBUF_ROOT}/vsprojects/x64/Debug LIB NO_DEFAULT_PATH )
-    ELSE(CMAKE_CL_64)
-      FIND_LIBRARY(Protobuf_LIBRARY_RELEASE libprotobuf.lib
-        DOC "Protocol Buffers C++ libprotobuf (release)"
-        PATHS ${PROTOBUF_ROOT}/vsprojects/Release LIB NO_DEFAULT_PATH )
-      FIND_LIBRARY(Protobuf_LIBRARY_DEBUG libprotobuf.lib
-        DOC "Protocol Buffers C++ libprotobuf (debug)"
-        PATHS ${PROTOBUF_ROOT}/vsprojects/Debug LIB NO_DEFAULT_PATH )
-    ENDIF(CMAKE_CL_64)
-  SET(PROTOBUF_LIBRARY optimized ${Protobuf_LIBRARY_RELEASE} debug ${Protobuf_LIBRARY_DEBUG} CACHE STRING "Google Protocol Buffers library" )
-ELSE(MSVC)
-  FIND_PATH(PROTOBUF_INCLUDE google/protobuf/message.h
-    DOC "Google Protocol Buffers include files"
-    PATHS ${PROTOBUF_ROOT}/src/ INCLUDE ${INCLUDE_DIR})
-  FIND_LIBRARY(PROTOBUF_LIBRARY protobuf DOC "libprotobuf"
-    PATHS "/usr/lib" "/usr/lib64" "/usr/local/lib" LIB )
-ENDIF(MSVC)
-IF(NOT PROTOBUF_INCLUDE OR NOT PROTOBUF_LIBRARY)
-  SET(ERROR_MESSAGE "\nCould not find Protocol Buffers.  AT LEAST ONE HEADER or LIBRARY FILE IS MISSING - ")
-  SET(ERROR_MESSAGE "${ERROR_MESSAGE}You can download it at http://code.google.com/p/protobuf\n")
-  SET(ERROR_MESSAGE "${ERROR_MESSAGE}If Protocol Buffers is already installed, run:\n")
-  SET(ERROR_MESSAGE "${ERROR_MESSAGE}cmake ../.. -DPROTOBUF_ROOT=<Path to (compiled) protobuf root directory>")
-  MESSAGE(FATAL_ERROR "${ERROR_MESSAGE} ${LIB_ERROR_MESSAGE}")
-ELSE(NOT PROTOBUF_INCLUDE OR NOT PROTOBUF_LIBRARY)
-  MESSAGE(STATUS "Found Protocol Buffers runtime: " ${PROTOBUF_INCLUDE})
-  FILE(GLOB PROTO_FILES RELATIVE ${SOURCE_DIR} "${SOURCE_DIR}/protobuf/*.proto")
-  FOREACH(PROTO_FILE ${PROTO_FILES})
-    STRING(REGEX REPLACE "[\\/.]" "_" PROTO_CACHE_NAME ${PROTO_FILE})
-    GENERATE_PROTO_FILES(${PROTO_FILE} ${PROTO_CACHE_NAME})
-  ENDFOREACH()
-ENDIF(NOT PROTOBUF_INCLUDE OR NOT PROTOBUF_LIBRARY)
+###################################################################################################
+# Google BreakPad library search                                                                  #
+###################################################################################################
+IF((UNIX AND NOT APPLE) OR MSVC)
+  INCLUDE(${PD_SOURCE_DIR}/build/maidsafe_FindBreakpad.cmake)
+  SET(INCLUDE_DIRS ${INCLUDE_DIRS} ${Breakpad_INCLUDE_DIR})
+  SET(LIBS_DIRS ${LIBS_DIRS} ${Breakpad_LIBRARY_DIR})
+ENDIF()
 
 ###################################################################################################
 # Python library search                                                                           #
@@ -405,197 +187,55 @@ ELSE(PYTHONINTERP_FOUND)
 ENDIF(PYTHONINTERP_FOUND)
 
 ###################################################################################################
-# maidsafe-dht library search                                                                     #
+# maidsafe-dht, cryptopp and udt library search                                                   #
 ###################################################################################################
-UNSET(MAIDSAFE_DHT_LIBRARY CACHE)
-UNSET(MAIDSAFE_DHT_INCLUDE_DIR CACHE)
-UNSET(MAIDSAFE_DHT_CONFIG CACHE)
-UNSET(MAIDSAFE_DOT_H CACHE)
-IF(MAIDSAFE_DHT_LIBRARY_PATH)
-  SET(MAIDSAFE_DHT_LIBRARY_PATH ${MAIDSAFE_DHT_LIBRARY_PATH} CACHE INTERNAL "Path to maidsafe-dht library directory" FORCE)
-  SET(MAIDSAFE_DHT_LIB_DIR ${MAIDSAFE_DHT_LIBRARY_PATH})
-ELSE()
-  SET(MAIDSAFE_DHT_LIB_DIR ${LIB_DIR})
-ENDIF()
-IF(MAIDSAFE_DHT_INCLUDE_PATH)
-  SET(MAIDSAFE_DHT_INCLUDE_PATH ${MAIDSAFE_DHT_INCLUDE_PATH} CACHE INTERNAL "Path to maidsafe-dht include directory" FORCE)
-  SET(MAIDSAFE_DHT_INCLUDE_DIR ${MAIDSAFE_DHT_INCLUDE_PATH} CACHE INTERNAL "Path to maidsafe-dht include directory" FORCE)
-ELSE()
-  FOREACH(INC_OPTION ${INCLUDE_DIR})
-    SET(MAIDSAFE_DHT_INCLUDE_DIR ${MAIDSAFE_DHT_INCLUDE_DIR} ${INC_OPTION}/maidsafe CACHE INTERNAL "Path to maidsafe-dht include directory" FORCE)
-  ENDFOREACH()
-ENDIF()
-FIND_LIBRARY(MAIDSAFE_DHT_LIBRARY libmaidsafe_dht.a ${MAIDSAFE_DHT_LIB_DIR})
-IF(NOT MAIDSAFE_DHT_LIBRARY)
-  SET(ERROR_MESSAGE "\nCould not find maidsafe-dht library.\n")
-  SET(ERROR_MESSAGE "${ERROR_MESSAGE}You can download it at http://code.google.com/p/maidsafe-dht\n")
-  SET(ERROR_MESSAGE "${ERROR_MESSAGE}If maidsafe-dht is already installed, run:\n")
-  SET(ERROR_MESSAGE "${ERROR_MESSAGE}cmake ../.. -DMAIDSAFE_DHT_LIBRARY_PATH=<Path to maidsafe-dht library directory>")
-  MESSAGE(FATAL_ERROR "${ERROR_MESSAGE}")
-ENDIF()
-FIND_FILE(MAIDSAFE_DHT_CONFIG maidsafe-dht_config.h ${MAIDSAFE_DHT_INCLUDE_DIR})
-IF(NOT MAIDSAFE_DHT_CONFIG)
-  SET(ERROR_MESSAGE "\nCould not find maidsafe-dht_config.h\n")
-  SET(ERROR_MESSAGE "${ERROR_MESSAGE}You can download maidsafe-dht at http://code.google.com/p/maidsafe-dht\n")
-  SET(ERROR_MESSAGE "${ERROR_MESSAGE}If maidsafe-dht is already installed, run:\n")
-  SET(ERROR_MESSAGE "${ERROR_MESSAGE}cmake ../.. -DMAIDSAFE_DHT_INCLUDE_PATH=<Path to maidsafe-dht include directory>")
-  MESSAGE(FATAL_ERROR "${ERROR_MESSAGE}")
-ENDIF()
-FILE(STRINGS ${MAIDSAFE_DHT_CONFIG} VERSION_LINE REGEX "MAIDSAFE_DHT_VERSION")
-STRING(REPLACE "#define MAIDSAFE_DHT_VERSION " "" INSTALLED_DHT_VERSION ${VERSION_LINE})
-FIND_FILE(MAIDSAFE_DOT_H /maidsafe/maidsafe.h ${SOURCE_DIR})
-FILE(STRINGS ${MAIDSAFE_DOT_H} VERSION_LINE REGEX "#define THIS_MAIDSAFE_DHT_VERSION")
-STRING(REPLACE "#define THIS_MAIDSAFE_DHT_VERSION " "" THIS_DHT_VERSION ${VERSION_LINE})
-IF(NOT ${THIS_DHT_VERSION} MATCHES ${INSTALLED_DHT_VERSION})
-  SET(ERROR_MESSAGE "\nInstalled version of maidsafe-dht has MAIDSAFE_DHT_VERSION == ${INSTALLED_DHT_VERSION}\n")
-  SET(ERROR_MESSAGE "${ERROR_MESSAGE}This project has MAIDSAFE_DHT_VERSION == ${THIS_DHT_VERSION}\n")
-  IF(${THIS_DHT_VERSION} LESS ${INSTALLED_DHT_VERSION})
-    SET(ERROR_MESSAGE "${ERROR_MESSAGE}Please update ${MAIDSAFE_DOT_H}\n")
-  ELSE()
-    SET(ERROR_MESSAGE "${ERROR_MESSAGE}Please update maidsafe-dht.\n")
-    SET(ERROR_MESSAGE "${ERROR_MESSAGE}You can download maidsafe-dht at http://code.google.com/p/maidsafe-dht\n")
-  ENDIF()
-  MESSAGE(FATAL_ERROR "${ERROR_MESSAGE}")
-ELSE()
-  MESSAGE("-- Found library ${MAIDSAFE_DHT_LIBRARY}")
-ENDIF()
+INCLUDE(${PD_SOURCE_DIR}/build/maidsafe_FindMaidsafeDht.cmake)
+SET(INCLUDE_DIRS ${INCLUDE_DIRS} ${maidsafe_dht_INCLUDE_DIR})
+SET(LIBS_DIRS ${LIBS_DIRS} ${maidsafe_dht_LIBRARY_DIR} ${maidsafe_dht_LIBRARY_DIR_DEBUG})
 
 ###################################################################################################
-# cryptopp library search                                                                         #
+# Dokan library search                                                                            #
 ###################################################################################################
-UNSET(CRYPTOPP_LIBRARY CACHE)
-UNSET(CRYPTOPP_INCLUDE_DIR CACHE)
-IF(CRYPTOPP_LIBRARY_PATH)
-  SET(CRYPTOPP_LIBRARY_PATH ${CRYPTOPP_LIBRARY_PATH} CACHE INTERNAL "Path to cryptopp library directory" FORCE)
-  SET(CRYPTOPP_LIB_DIR ${CRYPTOPP_LIBRARY_PATH})
-ELSE()
-  SET(CRYPTOPP_LIB_DIR ${LIB_DIR})
+IF(WIN32)
+  INCLUDE(${PD_SOURCE_DIR}/build/maidsafe_FindDokan.cmake)
+  SET(INCLUDE_DIRS ${INCLUDE_DIRS} ${Dokan_INCLUDE_DIR})
+  SET(LIBS_DIRS ${LIBS_DIRS} ${Dokan_LIBRARY_DIR})
 ENDIF()
-IF(CRYPTOPP_INCLUDE_PATH)
-  SET(CRYPTOPP_INCLUDE_PATH ${CRYPTOPP_INCLUDE_PATH} CACHE INTERNAL "Path to cryptopp include directory" FORCE)
-  SET(CRYPTOPP_INCLUDE_DIR ${CRYPTOPP_INCLUDE_PATH} CACHE INTERNAL "Path to cryptopp include directory" FORCE)
-ELSE()
-  FOREACH(INC_OPTION ${INCLUDE_DIR})
-    SET(CRYPTOPP_INCLUDE_DIR ${CRYPTOPP_INCLUDE_DIR} CACHE INTERNAL "Path to cryptopp include directory" FORCE)
-  ENDFOREACH()
-ENDIF()
-FIND_LIBRARY(CRYPTOPP_LIBRARY libcryptopp.a ${CRYPTOPP_LIB_DIR})
-IF(NOT CRYPTOPP_LIBRARY)
-  SET(ERROR_MESSAGE "\nCould not find cryptopp library.\n")
-  SET(ERROR_MESSAGE "${ERROR_MESSAGE}You can download it at http://code.google.com/p/maidsafe-dht\n")
-  SET(ERROR_MESSAGE "${ERROR_MESSAGE}If cryptopp is already installed, run:\n")
-  SET(ERROR_MESSAGE "${ERROR_MESSAGE}cmake ../.. -DCRYPTOPP_LIBRARY_PATH=<Path to cryptopp library directory>")
-  MESSAGE(FATAL_ERROR "${ERROR_MESSAGE}")
-ELSE()
-  MESSAGE("-- Found library ${CRYPTOPP_LIBRARY}")
-ENDIF()
-
-###################################################################################################
-# udt library search                                                                              #
-###################################################################################################
-UNSET(UDT_LIBRARY CACHE)
-UNSET(UDT_INCLUDE_DIR CACHE)
-IF(UDT_LIBRARY_PATH)
-  SET(UDT_LIBRARY_PATH ${UDT_LIBRARY_PATH} CACHE INTERNAL "Path to udt library directory" FORCE)
-  SET(UDT_LIB_DIR ${UDT_LIBRARY_PATH})
-ELSE()
-  SET(UDT_LIB_DIR ${LIB_DIR})
-ENDIF()
-IF(UDT_INCLUDE_PATH)
-  SET(UDT_INCLUDE_PATH ${UDT_INCLUDE_PATH} CACHE INTERNAL "Path to udt include directory" FORCE)
-  SET(UDT_INCLUDE_DIR ${UDT_INCLUDE_PATH} CACHE INTERNAL "Path to udt include directory" FORCE)
-ELSE()
-  FOREACH(INC_OPTION ${INCLUDE_DIR})
-    SET(UDT_INCLUDE_DIR ${UDT_INCLUDE_DIR} CACHE INTERNAL "Path to udt include directory" FORCE)
-  ENDFOREACH()
-ENDIF()
-FIND_LIBRARY(UDT_LIBRARY libudt.a ${UDT_LIB_DIR})
-IF(NOT UDT_LIBRARY)
-  SET(ERROR_MESSAGE "\nCould not find udt library.\n")
-  SET(ERROR_MESSAGE "${ERROR_MESSAGE}You can download it at http://code.google.com/p/maidsafe-dht\n")
-  SET(ERROR_MESSAGE "${ERROR_MESSAGE}If udt is already installed, run:\n")
-  SET(ERROR_MESSAGE "${ERROR_MESSAGE}cmake ../.. -DUDT_LIBRARY_PATH=<Path to udt library directory>")
-  MESSAGE(FATAL_ERROR "${ERROR_MESSAGE}")
-ELSE()
-  MESSAGE("-- Found library ${UDT_LIBRARY}")
-ENDIF()
-
-###################################################################################################
-# Google BreakPad library Linux                                                                   #
-###################################################################################################
-IF(UNIX AND NOT APPLE)
-  UNSET(BREAKPAD_LIBRARY CACHE)
-  IF(BREAKPAD_LIBRARY_PATH)
-    SET(BREAKPAD_LIBRARY_PATH ${BREAKPAD_LIBRARY_PATH} CACHE INTERNAL "Path to udt library directory" FORCE)
-    SET(BREAKPAD_LIB_DIR ${BREAKPAD_LIBRARY_PATH})
-  ELSE(BREAKPAD_LIBRARY_PATH)
-    SET(BREAKPAD_LIB_DIR ${LIB_DIR})
-  ENDIF(BREAKPAD_LIBRARY_PATH)
-  IF(BREAKPAD_INCLUDE_PATH)
-    SET(BREAKPAD_INCLUDE_PATH ${BREAKPAD_INCLUDE_PATH} CACHE INTERNAL "Path to breakpad include directory" FORCE)
-    SET(BREAKPAD_INCLUDE_DIR ${BREAKPAD_INCLUDE_PATH} CACHE INTERNAL "Path to breakpad include directory" FORCE)
-  ELSE(BREAKPAD_INCLUDE_PATH)
-    FOREACH(INC_OPTION ${INCLUDE_DIR})
-      SET(BREAKPAD_INCLUDE_DIR ${BREAKPAD_INCLUDE_DIR} CACHE INTERNAL "Path to breakpad include directory" FORCE)
-    ENDFOREACH()
-  ENDIF(BREAKPAD_INCLUDE_PATH)
-  FIND_LIBRARY(BREAKPAD_LIBRARY libbreakpad_client.a ${BREAKPAD_LIB_DIR})
-  FIND_FILE(BREAKPAD_HEADER exception_handler.h "${BREAKPAD_INCLUDE_DIR}/client/linux/handler")
-  IF(NOT BREAKPAD_LIBRARY OR NOT BREAKPAD_HEADER)
-    SET(ERROR_MESSAGE "\nCould not find BreakPad library.\n")
-    MESSAGE(FATAL_ERROR "${ERROR_MESSAGE}")
-  ENDIF(NOT BREAKPAD_LIBRARY OR NOT BREAKPAD_HEADER)
-
-ENDIF(UNIX AND NOT APPLE)
 
 ###################################################################################################
 # All other libraries search                                                                      #
 ###################################################################################################
 IF(UNIX)
-  SET(SYS_LIB libsqlite3.a libfuse.a)
-  SET(SYS_LIB_LIGHT libsqlite3.a libfuse.a)
+  SET(SYS_LIBS libsqlite3.a libfuse.a)
   IF(NOT APPLE)
-    SET(SYS_LIB rt c ${SYS_LIB})
-    SET(SYS_LIB_LIGHT rt c ${SYS_LIB})
+    SET(SYS_LIBS rt c ${SYS_LIBS})
   ENDIF()
-  FOREACH(library ${SYS_LIB})
-    FIND_LIBRARY(CURRENT_LIB ${library} ${LIB_DIR})
-    IF(CURRENT_LIB)
-      MESSAGE("-- Found library ${CURRENT_LIB}")
-    ELSE(CURRENT_LIB)
-      MESSAGE(FATAL_ERROR "\nCouldn't find lieberry ${library}")
-    ENDIF(CURRENT_LIB)
-    UNSET(CURRENT_LIB CACHE)
-  ENDFOREACH()
 ELSEIF(WIN32)
-  UNSET(DOKAN_H CACHE)
-  SET(SYS_LIBS libsqlite3 dokan advapi32 kernel32 ws2_32 iphlpapi mswsock)
-#  SET(SYS_LIB libsqlite3 maidsafe-dht dokan advapi32 kernel32 -mi386pe stdc++ ws2_32 iphlpapi)
-  FOREACH(library ${SYS_LIBS})
-    FIND_LIBRARY(CURRENT_LIB ${library} c:/usr/lib)
-    IF(CURRENT_LIB)
-      MESSAGE("-- Found library ${CURRENT_LIB}")
-      IF(${CURRENT_LIB} MATCHES dll$ OR ${CURRENT_LIB} MATCHES DLL$)
-        SET(SYS_LIB ${SYS_LIB} -l${library})
-        IF(NOT ${library} STREQUAL "dokan.lib")
-          SET(SYS_LIB_LIGHT ${SYS_LIB} -l${library})
-        ENDIF(NOT ${library} STREQUAL "dokan.lib")
-      ELSE()
-        SET(SYS_LIB ${SYS_LIB} ${CURRENT_LIB})
-        IF(NOT ${library} STREQUAL "dokan.lib")
-          SET(SYS_LIB_LIGHT ${SYS_LIB_LIGHT} ${CURRENT_LIB})
-        ENDIF(NOT ${library} STREQUAL "dokan.lib")
-      ENDIF()
-    ELSE(CURRENT_LIB)
-      MESSAGE(FATAL_ERROR "\nCouldn't find lieberry ${library}")
-    ENDIF(CURRENT_LIB)
-    UNSET(CURRENT_LIB CACHE)
-  ENDFOREACH()
-  FIND_FILE(DOKAN_H dokan.h c:/usr/include)
-  IF(NOT DOKAN_H)
-    MESSAGE(FATAL_ERROR "\nCouldn't find dokan.h in C:\\usr\\include")
+  IF(MSVC)
+    SET(SYS_LIBS sqlite3 ws2_32 odbc32 odbccp32 WSock32 IPHlpApi)
+  ELSE()
+    SET(SYS_LIBS sqlite3 advapi32 kernel32 ws2_32 iphlpapi mswsock)
   ENDIF()
-ENDIF(UNIX)
+ENDIF()
+FOREACH(library ${SYS_LIBS})
+  FIND_LIBRARY(CURRENT_LIB ${library})
+  IF(CURRENT_LIB)
+    MESSAGE("-- Found library ${CURRENT_LIB}")
+    GET_FILENAME_COMPONENT(CURRENT_LIBRARY_DIR ${CURRENT_LIB} PATH)
+    SET(LIBS_DIRS ${LIBS_DIRS} ${CURRENT_LIBRARY_DIR})
+  ELSE()
+    SET(ERROR_MESSAGE "\nCould not find library ${library}.  Run\n")
+    SET(ERROR_MESSAGE "${ERROR_MESSAGE}cmake ../.. -DADD_LIBRARY_DIR=<Path to ${library} directory>")
+    MESSAGE(FATAL_ERROR "${ERROR_MESSAGE}")
+  ENDIF()
+  UNSET(CURRENT_LIB CACHE)
+ENDFOREACH()
+
+
+#      IF(${CURRENT_LIB} MATCHES dll$ OR ${CURRENT_LIB} MATCHES DLL$)
+#        SET(SYS_LIBS ${SYS_LIBS} -l${library})
+#      ELSE()
+#        SET(SYS_LIBS ${SYS_LIBS} ${CURRENT_LIB})
 
 MESSAGE("================================================================================")
 
@@ -632,11 +272,6 @@ IF(WIN32)
     SET(CLEAN_TEMP "OFF" CACHE INTERNAL "Cleanup of temp test folders, options are: ONCE, OFF, ALWAYS" FORCE)
   ENDIF()
 ENDIF(WIN32)
-
-SET(SYS_LIB ${SYS_LIB} ${Boost_LIBRARIES} ${PROTOBUF_LIBRARY} ${CRYPTOPP_LIBRARY})
-SET(SYS_LIB_LIGHT ${SYS_LIB_LIGHT} ${Boost_LIBRARIES} ${PROTOBUF_LIBRARY} ${CRYPTOPP_LIBRARY})
-INCLUDE_DIRECTORIES(${SOURCE_DIR} ${INCLUDE_DIR} ${GTEST_INCLUDE_DIRS} ${PROTOBUF_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS} ${MAIDSAFE_DHT_INCLUDE_DIR} ${CMAKE_BINARY_DIR} ${BREAKPAD_INCLUDE_DIR})
-LINK_DIRECTORIES(${PD_BINARY_DIR})
 
 ###################################################################################################
 # Set up all files as GLOBs                                                                       #
@@ -705,19 +340,27 @@ ENDIF(APPLE)
 ###################################################################################################
 # All Platforms:  Add exes and Create all PD libs                                                 #
 ###################################################################################################
+LIST(REMOVE_DUPLICATES INCLUDE_DIRS)
+INCLUDE_DIRECTORIES(${SOURCE_DIR} ${CMAKE_BINARY_DIR} ${INCLUDE_DIRS})
+LIST(REMOVE_DUPLICATES LIBS_DIRS)
+IF(MSVC)
+  LINK_DIRECTORIES(${LIBS_DIRS} ${LIBRARY_OUTPUT_PATH})
+ENDIF()
+LINK_DIRECTORIES(${PD_BINARY_DIR})
+
 IF(APPLE)
   ADD_EXECUTABLE(perpetualdata MACOSX_BUNDLE ${M_QT_C})
   ADD_EXECUTABLE(pdlocal MACOSX_BUNDLE  ${M_QT_C})
-  ADD_EXECUTABLE(pdlightlocal MACOSX_BUNDLE  ${M_QT_FB_C})
-ELSEIF(UNIX AND NOT APPLE)
+  ADD_EXECUTABLE(pdlightlocal MACOSX_BUNDLE  ${M_QT_FB_C} ${SOURCE_DIR}/fs/filesystem.cc)
+ELSEIF((UNIX AND NOT APPLE) OR MSVC)
   ADD_EXECUTABLE(perpetualdata ${M_QT_C})
   ADD_EXECUTABLE(pdlocal ${M_QT_C})
-  ADD_EXECUTABLE(pdlightlocal ${M_QT_FB_C})
+  ADD_EXECUTABLE(pdlightlocal ${M_QT_FB_C} ${SOURCE_DIR}/fs/filesystem.cc)
 ELSEIF(WIN32)
   ADD_EXECUTABLE(perpetualdata WIN32 ${M_QT_C})
   ADD_EXECUTABLE(pdlocal WIN32 ${M_QT_C})
-  ADD_EXECUTABLE(pdlightlocal WIN32 ${M_QT_FB_C})
-ENDIF(APPLE)
+  ADD_EXECUTABLE(pdlightlocal WIN32 ${M_QT_FB_C} ${SOURCE_DIR}/fs/filesystem.cc)
+ENDIF()
 #ADD_EXECUTABLE(TESTfuse "${SOURCE_DIR}/tests/maidsafe/testfuse.cc")
 ADD_EXECUTABLE(TESTnetworkclientcontroller "${SOURCE_DIR}/tests/maidsafe/functionaltestclientcontroller.cc")
 ADD_EXECUTABLE(TESTfuncauth "${SOURCE_DIR}/tests/maidsafe/functionaltestauthentication.cc")
@@ -744,23 +387,116 @@ ADD_LIBRARY(PDpbmsgslib STATIC ${M_PROTOBUF_DIR})
 ###################################################################################################
 # Builds                                                                                          #
 ###################################################################################################
-TARGET_LINK_LIBRARIES(perpetualdata PDmsclientlib PDmaidsafelib PDfslib PDpbmsgslib ${QT_LIBRARIES} ${MAIDSAFE_DHT_LIBRARY} ${UDT_LIBRARY} ${SYS_LIB} ${BREAKPAD_LIBRARY})
-TARGET_LINK_LIBRARIES(pdlocal PDTESTmsclientlib PDmaidsafelib PDfslib PDpbmsgslib ${QT_LIBRARIES} ${MAIDSAFE_DHT_LIBRARY} ${SYS_LIB} ${BREAKPAD_LIBRARY})
-TARGET_LINK_LIBRARIES(pdlightlocal PDTESTmsclientlib PDmaidsafelib PDfslib PDpbmsgslib ${QT_LIBRARIES} ${MAIDSAFE_DHT_LIBRARY} ${SYS_LIB_LIGHT} ${BREAKPAD_LIBRARY})
-TARGET_LINK_LIBRARIES(TESTmaidsafe PDmsclientlib PDmaidsafelib PDmsvaultlib PDfslib PDpbmsgslib ${QT_LIBRARIES} gtest gmock ${MAIDSAFE_DHT_LIBRARY} ${UDT_LIBRARY} ${SYS_LIB})
-TARGET_LINK_LIBRARIES(TESTpdvault PDmsclientlib PDmsvaultlib PDmaidsafelib PDfslib PDpbmsgslib ${QT_LIBRARIES} gtest ${MAIDSAFE_DHT_LIBRARY} ${UDT_LIBRARY} ${SYS_LIB})
-TARGET_LINK_LIBRARIES(TESTbph PDfslib PDmsclientlib PDmsvaultlib PDmaidsafelib PDpbmsgslib ${QT_LIBRARIES} gtest ${MAIDSAFE_DHT_LIBRARY} ${UDT_LIBRARY} ${SYS_LIB})
-TARGET_LINK_LIBRARIES(TESTimconnhndl PDfslib PDmsclientlib PDmsvaultlib PDmaidsafelib PDpbmsgslib ${QT_LIBRARIES} gtest ${MAIDSAFE_DHT_LIBRARY} ${UDT_LIBRARY} ${SYS_LIB})
-TARGET_LINK_LIBRARIES(TESTnetworkclientcontroller PDmsclientlib  PDmsvaultlib PDmaidsafelib PDfslib PDpbmsgslib ${QT_LIBRARIES} gtest ${MAIDSAFE_DHT_LIBRARY} ${UDT_LIBRARY} ${SYS_LIB})
-TARGET_LINK_LIBRARIES(TESTfuncauth PDmsclientlib  PDmsvaultlib PDmaidsafelib PDfslib PDpbmsgslib ${QT_LIBRARIES} gtest ${MAIDSAFE_DHT_LIBRARY} ${UDT_LIBRARY} ${SYS_LIB})
-TARGET_LINK_LIBRARIES(TESTlocalclientcontroller PDTESTmsclientlib PDmaidsafelib PDfslib PDpbmsgslib ${QT_LIBRARIES} gtest ${MAIDSAFE_DHT_LIBRARY} ${UDT_LIBRARY} ${SYS_LIB})
-#TARGET_LINK_LIBRARIES(TESTfuse PDmsclientlib PDmaidsafelib PDmsvaultlib PDfslib PDpbmsgslib ${QT_LIBRARIES} gtest ${MAIDSAFE_DHT_LIBRARY} ${UDT_LIBRARY} ${SYS_LIB})
-TARGET_LINK_LIBRARIES(TESTfs PDmaidsafelib PDfslib ${QT_LIBRARIES} gtest ${MAIDSAFE_DHT_LIBRARY} ${UDT_LIBRARY} ${SYS_LIB})
-TARGET_LINK_LIBRARIES(testvault PDmsclientlib PDmsvaultlib PDmaidsafelib PDfslib PDpbmsgslib ${QT_LIBRARIES} ${MAIDSAFE_DHT_LIBRARY} ${UDT_LIBRARY} ${SYS_LIB})
-TARGET_LINK_LIBRARIES(vault PDmsvaultlib PDmaidsafelib PDfslib PDpbmsgslib ${QT_LIBRARIES} ${MAIDSAFE_DHT_LIBRARY} ${UDT_LIBRARY} ${SYS_LIB} ${BREAKPAD_LIBRARY})
-#IF(WIN32)
-#  SET(TARGET_PROPERTIES vault testvault TESTmaidsafe COMPILE_FLAGS ${CMAKE_CXX_FLAGS} --Wl,-subsystem,console)
-#ENDIF(WIN32)
+SET(ALL_TARGET_LIBS PDmaidsafelib PDfslib PDpbmsgslib)
+
+IF(NOT MSVC)
+  SET(SYS_LIBS ${QT_LIBRARIES} ${Boost_LIBRARIES} ${Protobuf_LIBRARY} ${maidsafe_dht_LIBRARY} ${Udt_LIBRARY} ${Cryptopp_LIBRARY} ${SYS_LIBS})
+  TARGET_LINK_LIBRARIES(perpetualdata PDmsclientlib ${ALL_TARGET_LIBS} ${Dokan_LIBRARY} ${Breakpad_LIBRARY} ${SYS_LIBS})
+  TARGET_LINK_LIBRARIES(pdlocal PDTESTmsclientlib ${ALL_TARGET_LIBS} ${Dokan_LIBRARY} ${Breakpad_LIBRARY} ${SYS_LIBS})
+  TARGET_LINK_LIBRARIES(pdlightlocal PDTESTmsclientlib PDmaidsafelib PDpbmsgslib ${Breakpad_LIBRARY} ${SYS_LIBS})
+  TARGET_LINK_LIBRARIES(vault PDmsvaultlib ${ALL_TARGET_LIBS} ${Breakpad_LIBRARY} ${SYS_LIBS})
+
+  SET(TEST_LIBS PDmsclientlib PDmsvaultlib ${ALL_TARGET_LIBS} ${Gtest_LIBRARY} ${SYS_LIBS})
+  TARGET_LINK_LIBRARIES(TESTmaidsafe ${TEST_LIBS} ${Gmock_LIBRARY})
+  TARGET_LINK_LIBRARIES(TESTpdvault ${TEST_LIBS})
+  TARGET_LINK_LIBRARIES(TESTbph ${TEST_LIBS})
+  TARGET_LINK_LIBRARIES(TESTimconnhndl ${TEST_LIBS})
+  TARGET_LINK_LIBRARIES(TESTnetworkclientcontroller ${TEST_LIBS})
+  TARGET_LINK_LIBRARIES(TESTfuncauth ${TEST_LIBS})
+  #TARGET_LINK_LIBRARIES(TESTfuse ${TEST_LIBS})
+  TARGET_LINK_LIBRARIES(TESTlocalclientcontroller PDTESTmsclientlib ${ALL_TARGET_LIBS} ${Gtest_LIBRARY} ${SYS_LIBS})
+  TARGET_LINK_LIBRARIES(TESTfs ${ALL_TARGET_LIBS} ${Gtest_LIBRARY} ${SYS_LIBS})
+  TARGET_LINK_LIBRARIES(testvault PDmsclientlib PDmsvaultlib ${ALL_TARGET_LIBS} ${SYS_LIBS})
+ELSE()
+  SET(ALL_TARGET_LIBS ${ALL_TARGET_LIBS} ${QT_LIBRARIES})
+  SET(DEBUG_LIBS ${Boost_DATE_TIME_LIBRARY_DEBUG} ${Boost_FILESYSTEM_LIBRARY_DEBUG} ${Boost_THREAD_LIBRARY_DEBUG}
+      ${Boost_SYSTEM_LIBRARY_DEBUG} ${Boost_REGEX_LIBRARY_DEBUG} ${Protobuf_LIBRARY_DEBUG}
+      ${maidsafe_dht_LIBRARY_DEBUG} ${Udt_LIBRARY_DEBUG} ${Cryptopp_LIBRARY_DEBUG} ${SYS_LIBS})
+  SET(RELEASE_LIBS ${Boost_DATE_TIME_LIBRARY_RELEASE} ${Boost_FILESYSTEM_LIBRARY_RELEASE} ${Boost_THREAD_LIBRARY_RELEASE}
+      ${Boost_SYSTEM_LIBRARY_RELEASE} ${Boost_REGEX_LIBRARY_RELEASE} ${Protobuf_LIBRARY}
+      ${maidsafe_dht_LIBRARY} ${Udt_LIBRARY} ${Cryptopp_LIBRARY} ${SYS_LIBS})
+
+  TARGET_LINK_LIBRARIES(perpetualdata
+                          PDmsclientlib
+                          ${ALL_TARGET_LIBS}
+                          ${Dokan_LIBRARY}
+                          debug ${Breakpad_LIBRARY_DEBUG} optimized ${Breakpad_LIBRARY})
+  TARGET_LINK_LIBRARIES(pdlocal
+                          PDTESTmsclientlib
+                          ${ALL_TARGET_LIBS}
+                          ${Dokan_LIBRARY}
+                          debug ${Breakpad_LIBRARY_DEBUG} optimized ${Breakpad_LIBRARY})
+  TARGET_LINK_LIBRARIES(pdlightlocal
+                          PDTESTmsclientlib
+                          ${ALL_TARGET_LIBS}
+                          ${Dokan_LIBRARY}
+                          debug ${Breakpad_LIBRARY_DEBUG} optimized ${Breakpad_LIBRARY})
+  TARGET_LINK_LIBRARIES(vault
+                          PDmsvaultlib
+                          ${ALL_TARGET_LIBS}
+                          debug ${Breakpad_LIBRARY_DEBUG} optimized ${Breakpad_LIBRARY})
+  TARGET_LINK_LIBRARIES(TESTlocalclientcontroller
+                          PDTESTmsclientlib
+                          ${ALL_TARGET_LIBS}
+                          debug ${Gtest_LIBRARY_DEBUG} optimized ${Gtest_LIBRARY})
+  TARGET_LINK_LIBRARIES(TESTfs
+                          ${ALL_TARGET_LIBS}
+                          debug ${Gtest_LIBRARY_DEBUG} optimized ${Gtest_LIBRARY})
+  TARGET_LINK_LIBRARIES(testvault
+                          PDmsclientlib
+                          PDmsvaultlib
+                          ${ALL_TARGET_LIBS})
+  FOREACH (DLIB ${DEBUG_LIBS})
+    TARGET_LINK_LIBRARIES(perpetualdata debug ${DLIB})
+    TARGET_LINK_LIBRARIES(pdlocal debug ${DLIB})
+    TARGET_LINK_LIBRARIES(pdlightlocal debug ${DLIB})
+    TARGET_LINK_LIBRARIES(vault debug ${DLIB})
+    TARGET_LINK_LIBRARIES(TESTlocalclientcontroller debug ${DLIB})
+    TARGET_LINK_LIBRARIES(TESTfs debug ${DLIB})
+    TARGET_LINK_LIBRARIES(testvault debug ${DLIB})
+  ENDFOREACH()
+  FOREACH (RLIB ${RELEASE_LIBS})
+    TARGET_LINK_LIBRARIES(perpetualdata optimized ${RLIB})
+    TARGET_LINK_LIBRARIES(pdlocal optimized ${RLIB})
+    TARGET_LINK_LIBRARIES(pdlightlocal optimized ${RLIB})
+    TARGET_LINK_LIBRARIES(vault optimized ${RLIB})
+    TARGET_LINK_LIBRARIES(TESTlocalclientcontroller optimized ${RLIB})
+    TARGET_LINK_LIBRARIES(TESTfs optimized ${RLIB})
+    TARGET_LINK_LIBRARIES(testvault optimized ${RLIB})
+  ENDFOREACH()
+
+  SET(ALL_TARGET_LIBS PDmsclientlib PDmsvaultlib ${ALL_TARGET_LIBS})
+  SET(DEBUG_TEST_LIBS ${Gtest_LIBRARY_DEBUG} ${DEBUG_LIBS})
+  SET(RELEASE_TEST_LIBS ${Gtest_LIBRARY} ${RELEASE_LIBS})
+
+  TARGET_LINK_LIBRARIES(TESTmaidsafe ${ALL_TARGET_LIBS})
+  TARGET_LINK_LIBRARIES(TESTpdvault ${ALL_TARGET_LIBS})
+  TARGET_LINK_LIBRARIES(TESTbph ${ALL_TARGET_LIBS})
+  TARGET_LINK_LIBRARIES(TESTimconnhndl ${ALL_TARGET_LIBS})
+  TARGET_LINK_LIBRARIES(TESTnetworkclientcontroller ${ALL_TARGET_LIBS})
+  TARGET_LINK_LIBRARIES(TESTfuncauth ${ALL_TARGET_LIBS})
+#  TARGET_LINK_LIBRARIES(TESTfuse ${ALL_TARGET_LIBS})
+
+  FOREACH (DLIB ${DEBUG_TEST_LIBS})
+    TARGET_LINK_LIBRARIES(TESTmaidsafe debug ${DLIB})
+    TARGET_LINK_LIBRARIES(TESTpdvault debug ${DLIB})
+    TARGET_LINK_LIBRARIES(TESTbph debug ${DLIB})
+    TARGET_LINK_LIBRARIES(TESTimconnhndl debug ${DLIB})
+    TARGET_LINK_LIBRARIES(TESTnetworkclientcontroller debug ${DLIB})
+    TARGET_LINK_LIBRARIES(TESTfuncauth debug ${DLIB})
+#    TARGET_LINK_LIBRARIES(TESTfuse debug ${DLIB})
+  ENDFOREACH()
+  FOREACH (RLIB ${RELEASE_TEST_LIBS})
+    TARGET_LINK_LIBRARIES(TESTmaidsafe optimized ${RLIB})
+    TARGET_LINK_LIBRARIES(TESTpdvault optimized ${RLIB})
+    TARGET_LINK_LIBRARIES(TESTbph optimized ${RLIB})
+    TARGET_LINK_LIBRARIES(TESTimconnhndl optimized ${RLIB})
+    TARGET_LINK_LIBRARIES(TESTnetworkclientcontroller optimized ${RLIB})
+    TARGET_LINK_LIBRARIES(TESTfuncauth optimized ${RLIB})
+#    TARGET_LINK_LIBRARIES(TESTfuse optimized ${RLIB})
+  ENDFOREACH()
+  TARGET_LINK_LIBRARIES(TESTmaidsafe debug ${Gmock_LIBRARY_DEBUG} optimized ${Gmock_LIBRARY})
+ENDIF()
 
 ###################################################################################################
 # Compiler and linker flags - after all targets declared                                          #
@@ -769,9 +505,6 @@ SET_TARGET_PROPERTIES(PDTESTmsclientlib PROPERTIES COMPILE_FLAGS -DLOCAL_PDVAULT
 SET_TARGET_PROPERTIES(TESTlocalclientcontroller PROPERTIES COMPILE_FLAGS -DLOCAL_PDVAULT)
 SET_TARGET_PROPERTIES(pdlightlocal PROPERTIES COMPILE_FLAGS -DPD_LIGHT)
 SET(BUILD_SHARED_LIBS OFF)
-IF(WIN32)
-  SET(CMAKE_EXE_LINKER_FLAGS "-Wl,--enable-auto-import")
-ENDIF(WIN32)
 IF(APPLE)
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DMAIDSAFE_APPLE -D_FORTIFY_SOURCE=2 -DOSX -DBSD -D__FreeBSD__=10 -D_FILE_OFFSET_BITS=64")
   SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG -pg -fprofile-arcs -ftest-coverage")
@@ -783,15 +516,27 @@ ELSEIF(UNIX AND NOT APPLE)
   ##put libs in here that will have no chance of passing tests - 3rd party ONLY !!
   SET_TARGET_PROPERTIES(pdlocal perpetualdata PROPERTIES COMPILE_FLAGS -w)
 ELSEIF(WIN32)
+  ADD_DEFINITIONS(-DWIN32 -D_WIN32 -D__WINDOWS__ -D__WIN32__ -DMAIDSAFE_WIN32)
+  ADD_DEFINITIONS(-DWIN32_LEAN_AND_MEAN -D_WIN32_WINNT=0x501)
+  ADD_DEFINITIONS(-D_UNICODE -DUNICODE -D_BIND_TO_CURRENT_VCLIBS_VERSION=1)
   IF(MSVC)
-    SET(FS_SOURCE_FILE ${SOURCE_DIR}/fs/w_fuse/fswin.cc)
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /DUNICODE /D_UNICODE /D_WIN32_WINDOWS /D_CONSOLE /D__MSVC__")
-    SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS} /DUNICODE /D_WIN32_WINDOWS /DDEBUG /D_CONSOLE")
+    ADD_DEFINITIONS(-D__MSVC__ -DNOMINMAX -DBOOST_ALL_NO_LIB)
+    SET(CMAKE_CXX_FLAGS_RELEASE "/O2 /Ob2 /Ot /Oy /GL /D \"NDEBUG\" /EHsc /MD /Gy /W3 /Zi /wd4503")
+    SET(CMAKE_CXX_FLAGS_DEBUG "/Od /Ot /Oy /D \"_DEBUG\" /EHsc /MDd  /c /ZI /TP /wd4503")
+    # CMake defaults stack size to 10MB.  Set this to windows default of 1MB
+    STRING(REGEX REPLACE "/STACK:[0-9]+" "" CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}")
+    STRING(REGEX REPLACE "/STACK:[0-9]+" "" CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS}")
+    SET_TARGET_PROPERTIES(perpetualdata pdlocal pdlightlocal TESTmaidsafe TESTpdvault TESTbph TESTimconnhndl TESTnetworkclientcontroller
+                          TESTfuncauth TESTlocalclientcontroller TESTfs testvault vault PROPERTIES
+        COMPILE_FLAGS "-DUDT_STATIC"
+        LINK_FLAGS "/STACK:1048576"
+        LINK_FLAGS_RELEASE "/OPT:REF /OPT:ICF /LTCG")
   ELSE(MSVC)
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wfloat-equal -Wlong-long -Wstrict-overflow=5 -D_FORTIFY_SOURCE=2 -fno-stack-protector -D_FILE_OFFSET_BITS=64")
     SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG") # -g -pg -fprofile-arcs -ftest-coverage")
     SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O2 -Wuninitialized")
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -I c:/usr/include -DMAIDSAFE_WIN32 -D_FORTIFY_SOURCE=2 -DWIN32_LEAN_AND_MEAN -D__MINGW__ -L c:/MinGW/lib/ -L c:/MinGW/mingw32/lib/ -static -mthreads -D_GLIBCXX_USE_WCHAR_T -DUNICODE -D_UNICODE -DWIN32 -D_WIN32_WINNT=0x0501")
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -I c:/usr/include -D_FORTIFY_SOURCE=2 -D__MINGW__ -L c:/MinGW/lib/ -L c:/MinGW/mingw32/lib/ -static -mthreads -D_GLIBCXX_USE_WCHAR_T")
+    # SET(CMAKE_EXE_LINKER_FLAGS "-Wl,--enable-auto-import")
     # SET(CMAKE_EXE_LINKER_FLAGS_DEBUG "${CMAKE_EXE_LINKER_FLAGS_DEBUG} -fprofile-arcs -ftest-coverage")
     SET_TARGET_PROPERTIES(pdlocal perpetualdata PROPERTIES COMPILE_FLAGS -w)
   ENDIF(MSVC)
@@ -834,10 +579,10 @@ IF(NOT ${MAIDSAFE_TEST_TYPE} MATCHES "BEH")
 ENDIF()
 
 IF(UNIX)
-	SET(MAID_TEST_PATH ${EXECUTABLE_OUTPUT_PATH}TESTmaidsafe)
-ELSE(UNIX)
-	SET(MAID_TEST_PATH ${EXECUTABLE_OUTPUT_PATH}TESTmaidsafe.exe)
-ENDIF(UNIX)
+	SET(MAID_TEST_PATH ${EXECUTABLE_OUTPUT_PATH}/TESTmaidsafe)
+ELSE()
+	SET(MAID_TEST_PATH ${EXECUTABLE_OUTPUT_PATH}/TESTmaidsafe.exe)
+ENDIF()
 
 IF(EXISTS ${MAID_TEST_PATH})
   FOREACH(TEST_EXECUTABLE TESTmaidsafe)
@@ -963,18 +708,10 @@ MESSAGE("=======================================================================
 MESSAGE("")
 
 # BitRock InstallBuilder
-IF(APPLE)
-  add_custom_target(installer ALL "/Applications/BitRock\ InstallBuilder\ Enterprise\ 6.2.6/autoupdate/bin/.customize.app/Contents/MacOS/installbuilder.sh" build ${SOURCE_DIR}/installerfiles/autoup.xml
-                    COMMAND "/Applications/BitRock\ InstallBuilder\ Enterprise\ 6.2.6/bin/Builder.app/Contents/MacOS/installbuilder.sh" build ${SOURCE_DIR}/installerfiles/pd.xml
-                    DEPENDS perpetualdata vault)
-ENDIF(APPLE)
-IF(WIN32)
-  add_custom_target(installer ALL "/Applications/BitRock\ InstallBuilder\ Enterprise\ 6.2.6/autoupdate/bin/.customize.app/Contents/MacOS/installbuilder.sh" build ${SOURCE_DIR}/installerfiles/autoup.xml
-                    COMMAND "c:/Program Files/InstallBuilder/bin/builder.exe" ${SOURCE_DIR}/pd.xml
-                    DEPENDS perpetualdata vault)
-ENDIF(WIN32)
-IF(UNIX AND NOT APPLE)
-  add_custom_target(installer "~/installbuilder-6.3.0/autoupdate/bin/customize.bin" build ${SOURCE_DIR}/installerfiles/autoup.xml
-                    COMMAND ALL "~/installbuilder-6.3.0/bin/builder" build ${SOURCE_DIR}/pd.xml
-                    DEPENDS perpetualdata vault)
-ENDIF(UNIX AND NOT APPLE)
+IF(CMAKE_BUILD_TYPE MATCHES Release)
+  INCLUDE(${PD_SOURCE_DIR}/build/maidsafe_FindInstallBuilder.cmake)
+  IF(InstallBuilder_BUILDER_EXE AND InstallBuilder_CUSTOMISE_EXE)
+    ADD_CUSTOM_TARGET(installer ALL ${InstallBuilder_CUSTOMISE_EXE} build ${SOURCE_DIR}/installerfiles/autoup.xml
+                      COMMAND ${InstallBuilder_BUILDER_EXE} build ${SOURCE_DIR}/installerfiles/pd.xml DEPENDS perpetualdata vault)
+  ENDIF()
+ENDIF()

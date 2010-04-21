@@ -28,9 +28,26 @@
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <string>
 #include "maidsafe/vault/vaultdaemon.h"
+#ifdef __MSVC__
+  #include <client/windows/handler/exception_handler.h>
+#endif
 
 #define LOGFILE "VaultService.txt"
 const int kSleepTime = 10000;  // milliseconds
+
+#ifdef __MSVC__
+static bool DumpCallback(const wchar_t*,
+                         const wchar_t* minidump_id,
+                         void*,
+                         EXCEPTION_POINTERS*,
+                         MDRawAssertionInfo*,
+                         bool succeeded) {
+  if (succeeded) {
+    wprintf(L"%s is dumped.\n", minidump_id);
+  }
+  return succeeded;
+}
+#endif
 
 int WriteToLog(char* str) {
   FILE* log;
@@ -60,6 +77,10 @@ void ControlHandler(DWORD request);
 int InitService();
 
 int main() {
+#ifdef __MSVC__
+  google_breakpad::ExceptionHandler eh(L".", NULL, DumpCallback,
+      NULL, google_breakpad::ExceptionHandler::HANDLER_ALL);
+#endif
   const size_t kMax(8);
   wchar_t service_name_[kMax];
   mbstowcs(service_name_, "PDVault", kMax);
