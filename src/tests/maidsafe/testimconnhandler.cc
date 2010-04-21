@@ -3,7 +3,7 @@
 *
 * Copyright [2010] maidsafe.net limited
 *
-* Description:  Functional test for Clientbufferpackethandler
+* Description:  Test for IMConnectionHandler
 * Version:      1.0
 * Created:      2010-04-14-10.09.29
 * Revision:     none
@@ -284,8 +284,6 @@ TEST_F(TestIMHandler, BEH_MAID_IMHdlrAcceptConnection) {
   boost::this_thread::sleep(boost::posix_time::seconds(2));
   ASSERT_EQ(msg, msgs_rec);
   ASSERT_NE(0, new_conn_accepted);
-  ASSERT_EQ(maidsafe::kConnectionNotExists,
-      im_hdlr.CloseConnection(trans_id, new_conn_accepted));
   ASSERT_EQ(maidsafe::kSuccess,
       im_hdlr.AddConnection(trans_id, new_conn_accepted));
   msg = "Goodbye";

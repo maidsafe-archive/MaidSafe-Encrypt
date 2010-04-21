@@ -46,6 +46,8 @@
 #include "maidsafe/clientbufferpackethandler.h"
 #include "maidsafe/client/storemanager.h"
 #include "maidsafe/client/storetaskshandler.h"
+#include "maidsafe/client/imconnectionhandler.h"
+#include "maidsafe/client/imhandler.h"
 
 // These forward declarations are to allow PDVaultTest functions to be declared
 // as friends of MaidsafeStoreManager.
@@ -202,10 +204,8 @@ struct BPResults {
 };
 
 class MaidsafeStoreManager : public StoreManagerInterface {
-  typedef boost::function<void(const std::string&,
-                               const boost::uint32_t&,
-                               const boost::int16_t&,
-                               const float &)> IMNotifier;
+  typedef boost::function<void(const std::string&)> IMNotifier;
+  typedef boost::function<void(const std::string&,const int&)> IMStatusNotifier;
  public:
   explicit MaidsafeStoreManager(boost::shared_ptr<ChunkStore> cstore);
   virtual ~MaidsafeStoreManager() {}
@@ -290,7 +290,8 @@ class MaidsafeStoreManager : public StoreManagerInterface {
                               std::string *public_key_sig,
                               std::string *private_key);
   virtual int CreateAccount(const boost::uint64_t &space);
-  void SetInstantMessageNotifier(IMNotifier on_msg);
+  void SetInstantMessageNotifier(IMNotifier on_msg, IMStatusNotifier
+      status_notifier);
 
   friend void AddToWatchListTask::run();
   friend void SendChunkCopyTask::run();
@@ -300,6 +301,11 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   friend size_t testpdvault::CheckStoredCopies(
       std::map<std::string, std::string> chunks,
       const int &timeout, boost::shared_ptr<MaidsafeStoreManager> sm);
+
+  //Instant messaging send online message
+  bool SendPresence(const std::string &contactname);
+  void SendLogOutMessage(const std::string &contactname);
+
  private:
   MaidsafeStoreManager &operator=(const MaidsafeStoreManager&);
   MaidsafeStoreManager(const MaidsafeStoreManager&);
@@ -478,6 +484,13 @@ class MaidsafeStoreManager : public StoreManagerInterface {
                             boost::shared_ptr<PresenceMessages> pm);
   std::string ValidatePresence(const std::string &ser_presence);
 
+  // Instant messaging related functions
+  void CloseConnection(const std::string &contactname);
+  void OnMessage(const std::string &msg);
+  void OnNewConnection(const boost::int16_t &trans_id,
+      const boost::uint32_t &conn_id, const std::string &msg);
+  bool SendIM(const std::string &msg, const std::string &contactname);
+
   transport::TransportUDT udt_transport_;
   transport::TransportHandler transport_handler_;
   rpcprotocol::ChannelManager channel_manager_;
@@ -496,6 +509,9 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   static int kPacketMaxThreadCount_;
   boost::int16_t trans_id_;
   IMNotifier im_notifier_;
+  IMStatusNotifier im_status_notifier_;
+  IMConnectionHandler im_conn_hdler_;
+  IMHandler im_handler_;
 };
 
 }  // namespace maidsafe

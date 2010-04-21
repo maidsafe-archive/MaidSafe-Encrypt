@@ -95,7 +95,9 @@ MaidsafeStoreManager::MaidsafeStoreManager(boost::shared_ptr<ChunkStore> cstore)
       store_packet_mutex_(),
       bprpcs_(new BufferPacketRpcsImpl(&transport_handler_, &channel_manager_)),
       cbph_(bprpcs_, knode_),
-      trans_id_(0) {
+      trans_id_(0),
+      im_notifier_(), im_status_notifier_(), im_conn_hdler_(),
+      im_handler_(ss_) {
   transport_handler_.Register(&udt_transport_, &trans_id_);
   knode_->SetTransID(trans_id_);
   knode_->SetAlternativeStore(client_chunkstore_.get());
@@ -127,11 +129,22 @@ void MaidsafeStoreManager::Init(int port, base::callback_func_type cb,
     success = transport_handler_.RegisterOnServerDown(boost::bind(
         &kad::KNode::HandleDeadRendezvousServer, knode_.get(), _1));
   if (success)
-    success = transport_handler_.RegisterOnMessage(im_notifier_);
+    success = transport_handler_.RegisterOnMessage(boost::bind(
+        &IMConnectionHandler::OnMessageArrive, &im_conn_hdler_,
+        _1, _2, _3, _4));
   if (success)
     success = (transport_handler_.Start(port, udt_transport_.GetID()) == 0);
   if (success)
     success = (channel_manager_.Start() == 0);
+  if (success) {
+    if (kSuccess == im_conn_hdler_.Start(&transport_handler_,
+        boost::bind(&MaidsafeStoreManager::OnMessage, this, _1),
+        boost::bind(&MaidsafeStoreManager::OnNewConnection, this, _1, _2, _3))) {
+      success = true;
+    } else {
+      success = false;
+    }
+  }
 #ifdef DEBUG
 //  printf("\tIn MaidsafeStoreManager::Init, before Join.\n");
 #endif
@@ -1416,6 +1429,19 @@ int MaidsafeStoreManager::AddBPMessage(
       recs.push_back(*it);
   } else {
     recs = receivers;
+  }
+
+  if (type == maidsafe::INSTANT_MSG) {
+    std::vector<std::string>::iterator it = recs.begin();
+    while (it != recs.end()) {
+      if (SendIM(message, *it)) {
+        bp_results->results->insert(std::pair<std::string,  ReturnCode>
+                                         (*it, kSuccess));
+        recs.erase(it);
+      } else {
+        ++it;
+      }
+    }
   }
 
   for (size_t n = 0; n < recs.size(); ++n)
@@ -3001,6 +3027,114 @@ std::string MaidsafeStoreManager::ValidatePresence(
   lp.set_end_point(result);
 
   return lp.SerializeAsString();
+}
+
+// Instant messaging operations
+
+void MaidsafeStoreManager::OnNewConnection(const boost::int16_t &trans_id,
+      const boost::uint32_t &conn_id, const std::string &msg) {
+  if (kSuccess == im_conn_hdler_.AddConnection(trans_id, conn_id)) {
+    std::string ser_im;
+    maidsafe::MessageType type;
+    if (im_handler_.ValidateMessage(msg, &type, &ser_im) &&
+        type == maidsafe::HELLO_PING) {
+      maidsafe::InstantMessage im;
+      im.ParseFromString(ser_im);
+      if (kSuccess != ss_->AddLiveContact(im.sender(), im.endpoint(), 0)) {
+        ss_->ModifyConnectionId(im.sender(), conn_id);
+        ss_->ModifyTransportId(im.sender(), trans_id);
+      } else {
+        ss_->ModifyConnectionId(im.sender(), conn_id);
+        ss_->ModifyTransportId(im.sender(), trans_id);
+        ss_->ModifyEndPoint(im.sender(), im.endpoint());
+      }
+      im_status_notifier_(im.sender(), im.status());
+    } else {
+      im_conn_hdler_.CloseConnection(trans_id, conn_id);
+    }
+  } else {
+    im_conn_hdler_.CloseConnection(trans_id, conn_id);
+  }
+}
+
+void MaidsafeStoreManager::OnMessage(const std::string &msg) {
+  std::string ser_im;
+  maidsafe::MessageType type;
+  if (im_handler_.ValidateMessage(msg, &type, &ser_im)) {
+    if (type == maidsafe::INSTANT_MSG) {
+      im_notifier_(ser_im);
+    } else if (type == maidsafe::LOGOUT_PING) {
+      maidsafe::InstantMessage im;
+      im.ParseFromString(ser_im);
+      CloseConnection(im.sender());
+      // TODO (team): define status as not connected
+      im_status_notifier_(im.sender(), 1);
+    }
+  }
+}
+
+void MaidsafeStoreManager::CloseConnection(const std::string &contactname) {
+  maidsafe::EndPoint ep;
+  boost::uint16_t t_id;
+  boost::uint32_t c_id, time_stamp;
+  int status;
+  if (kSuccess != ss_->LiveContactDetails(contactname, &ep, &t_id,
+          &c_id, &status, &time_stamp)) {
+    return;
+  }
+  im_conn_hdler_.CloseConnection(t_id, c_id);
+  ss_->DeleteLiveContact(contactname);
+  return;
+}
+
+void MaidsafeStoreManager::SetInstantMessageNotifier(IMNotifier on_msg,
+      IMStatusNotifier status_notifier) {
+  im_notifier_ = on_msg;
+  im_status_notifier_ = status_notifier;
+}
+
+bool MaidsafeStoreManager::SendIM(const std::string &msg,
+      const std::string &contactname) {
+  ConnectionDetails info;
+  if (kSuccess != ss_->LiveContactDetails(contactname,
+                  &info.ep, &info.transport, &info.connection_id, &info.status,
+                  &info.init_timestamp)) {
+    return false;
+  }
+
+  std::string ser_msg(im_handler_.CreateMessage(msg, contactname));
+
+  // Find if there is a connection available to send
+  if (kSuccess != im_conn_hdler_.SendMessage(info.transport, info.connection_id,
+        ser_msg)) {
+    // try to create a connection to known endpoint
+    if (kSuccess != im_conn_hdler_.CreateConnection(info.transport, info.ep,
+          &info.connection_id)) {
+      // TODO (team): define status as not connected
+      im_status_notifier_(contactname, 1);
+      ss_->DeleteLiveContact(contactname);
+      return false;
+    } else {
+      std::string ep_msg(im_handler_.CreateMessageEndpoint(contactname));
+      if (kSuccess != im_conn_hdler_.AddConnection(info.transport,
+                                                   info.connection_id) &&
+          kSuccess != im_conn_hdler_.SendMessage(info.transport,
+                                                 info.connection_id,
+                                                 ser_msg) &&
+          kSuccess != im_conn_hdler_.SendMessage(info.transport,
+                                                 info.connection_id,
+                                                 ser_msg)) {
+        im_status_notifier_(contactname, 1);
+        ss_->DeleteLiveContact(contactname);
+        im_conn_hdler_.CloseConnection(info.transport, info.connection_id);
+        return false;
+      } else {
+        ss_->ModifyConnectionId(contactname, info.connection_id);
+      }
+    }
+  }
+  return true;
+
 }
 
 }  // namespace maidsafe

@@ -126,11 +126,11 @@ ReturnCode IMConnectionHandler::CloseConnection(const boost::int16_t &trans_id,
     return kHandlerNotStarted;
   connections_container::iterator it = connections_.find(
       boost::make_tuple(trans_id, conn_id));
+  transport_handler_->CloseConnection(conn_id, trans_id);
   boost::mutex::scoped_lock guard(connections_mutex_);
   if (it == connections_.end()) {
     return kConnectionNotExists;
   }
-  transport_handler_->CloseConnection(it->conn_id, it->trans_id);
   boost::shared_ptr<boost::asio::deadline_timer> timer(it->timer);
   connections_.erase(it);
   timer->cancel();

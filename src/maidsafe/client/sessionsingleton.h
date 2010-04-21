@@ -290,6 +290,7 @@ class SessionSingleton {
                          const boost::uint32_t &connection_id);
   int ModifyEndPoint(const std::string &contact, const std::string &ip,
                      const boost::uint16_t &port, int which);
+  int ModifyEndPoint(const std::string &contact, const EndPoint end_point);
   int ModifyStatus(const std::string &contact,
                    int status);
   int DeleteLiveContact(const std::string &contact);
