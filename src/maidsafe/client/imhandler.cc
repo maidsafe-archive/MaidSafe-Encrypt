@@ -1,0 +1,141 @@
+/*
+* ============================================================================
+*
+* Copyright [2010] maidsafe.net limited
+*
+* Description:  Class that Validates and creates messages for im
+* Version:      1.0
+* Created:      2010-04-13
+* Revision:     none
+* Compiler:     gcc
+* Author:
+* Company:      maidsafe.net limited
+*
+* The following source code is property of maidsafe.net limited and is not
+* meant for external use.  The use of this code is governed by the license
+* file LICENSE.TXT found in the root of this directory and also on
+* www.maidsafe.net.
+*
+* You are not free to copy, amend or otherwise use this source code without
+* the explicit written permission of the board of directors of maidsafe.net.
+*
+* ============================================================================
+*/
+
+#include <maidsafe/maidsafe-dht_config.h>
+
+#include "maidsafe/client/imhandler.h"
+#include "maidsafe/client/sessionsingleton.h"
+
+namespace maidsafe {
+
+IMHandler::IMHandler(SessionSingleton *ss) : ss_(ss), crypto_() {
+}
+
+std::string IMHandler::CreateMessage(const std::string &msg,
+      const std::string &receiver) {
+  maidsafe::BufferPacketMessage bpmsg;
+  bpmsg.set_sender_id(ss_->PublicUsername());
+  bpmsg.set_type(INSTANT_MSG);
+  boost::uint32_t iter(base::random_32bit_uinteger() % 1000 +1);
+  std::string aes_key = crypto_.SecurePassword(
+      crypto_.Hash(msg, "", crypto::STRING_STRING, false), iter);
+  bpmsg.set_aesenc_message(crypto_.SymmEncrypt(msg, "",
+      crypto::STRING_STRING, aes_key));
+  std::string rec_pub_key(ss_->GetContactPublicKey(receiver));
+  bpmsg.set_rsaenc_key(crypto_.AsymEncrypt(aes_key, "",
+      rec_pub_key, crypto::STRING_STRING));
+
+  GenericPacket gp;
+  gp.set_data(bpmsg.SerializeAsString());
+  gp.set_signature(crypto_.AsymSign(gp.data(), "", ss_->PrivateKey(MPID),
+      crypto::STRING_STRING));
+  return gp.SerializeAsString();
+}
+
+std::string IMHandler::CreateMessageEndpoint(const std::string &receiver) {
+  InstantMessage msg;
+  msg.set_sender(ss_->PublicUsername());
+  msg.set_message("");
+  msg.set_date(base::get_epoch_time());
+  msg.set_status(ss_->ConnectionStatus());
+  EndPoint *endpoint = msg.mutable_endpoint();
+  *endpoint = ss_->Ep();
+  std::string ser_msg(msg.SerializeAsString());
+
+  BufferPacketMessage bpmsg;
+  bpmsg.set_sender_id(ss_->PublicUsername());
+  bpmsg.set_type(HELLO_PING);
+  boost::uint32_t iter(base::random_32bit_uinteger() % 1000 +1);
+  std::string aes_key = crypto_.SecurePassword(
+      crypto_.Hash(ser_msg, "", crypto::STRING_STRING, false), iter);
+  bpmsg.set_aesenc_message(crypto_.SymmEncrypt(ser_msg, "",
+      crypto::STRING_STRING, aes_key));
+  std::string rec_pub_key(ss_->GetContactPublicKey(receiver));
+  bpmsg.set_rsaenc_key(crypto_.AsymEncrypt(aes_key, "",
+      rec_pub_key, crypto::STRING_STRING));
+
+  GenericPacket gp;
+  gp.set_data(bpmsg.SerializeAsString());
+  gp.set_signature(crypto_.AsymSign(gp.data(), "", ss_->PrivateKey(MPID),
+      crypto::STRING_STRING));
+  return gp.SerializeAsString();
+}
+
+std::string IMHandler::CreateLogOutMessage(const std::string &receiver) {
+  InstantMessage msg;
+  msg.set_sender(ss_->PublicUsername());
+  msg.set_message("");
+  msg.set_date(base::get_epoch_time());
+  msg.set_status(ss_->ConnectionStatus());
+  std::string ser_msg(msg.SerializeAsString());
+
+  BufferPacketMessage bpmsg;
+  bpmsg.set_sender_id(ss_->PublicUsername());
+  bpmsg.set_type(LOGOUT_PING);
+  boost::uint32_t iter(base::random_32bit_uinteger() % 1000 +1);
+  std::string aes_key = crypto_.SecurePassword(
+      crypto_.Hash(ser_msg, "", crypto::STRING_STRING, false), iter);
+  bpmsg.set_aesenc_message(crypto_.SymmEncrypt(ser_msg, "",
+      crypto::STRING_STRING, aes_key));
+  std::string rec_pub_key(ss_->GetContactPublicKey(receiver));
+  bpmsg.set_rsaenc_key(crypto_.AsymEncrypt(aes_key, "",
+      rec_pub_key, crypto::STRING_STRING));
+
+  GenericPacket gp;
+  gp.set_data(bpmsg.SerializeAsString());
+  gp.set_signature(crypto_.AsymSign(gp.data(), "", ss_->PrivateKey(MPID),
+      crypto::STRING_STRING));
+  return gp.SerializeAsString();
+}
+
+bool IMHandler::ValidateMessage(const std::string &ser_msg,
+                                MessageType *type,
+                                std::string *validated_msg) {
+  validated_msg->clear();
+  GenericPacket gp;
+  if (!gp.ParseFromString(ser_msg))
+    return false;
+  BufferPacketMessage bpmsg;
+  if (!bpmsg.ParseFromString(gp.data()))
+    return false;
+  std::string send_pub_key(ss_->GetContactPublicKey(bpmsg.sender_id()));
+  if (!crypto_.AsymCheckSig(gp.data(), gp.signature(), send_pub_key,
+      crypto::STRING_STRING ))
+    return false;
+
+  std::string aes_key(crypto_.AsymDecrypt(bpmsg.rsaenc_key(), "",
+      ss_->PrivateKey(MPID), crypto::STRING_STRING));
+  InstantMessage im;
+  if (!im.ParseFromString(crypto_.SymmDecrypt(bpmsg.aesenc_message(),
+      "", crypto::STRING_STRING, aes_key)))
+    return false;
+
+  if (bpmsg.type() == HELLO_PING && !im.has_endpoint())
+    return false;
+
+  im.SerializeToString(validated_msg);
+  *type = bpmsg.type();
+  return true;
+}
+}  // namespace
