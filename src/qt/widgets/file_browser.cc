@@ -17,6 +17,10 @@
 #include "fs/filesystem.h"
 #include "qt/client/user_space_filesystem.h"
 #include <math.h>
+#ifdef MAIDSAFE_WIN32
+#include <windows.h>
+#include <shellapi.h>
+#endif
 
 #include <QDebug>
 #include <QProcess>
@@ -189,7 +193,6 @@ void FileBrowser::onCutFileClicked() {
 }
 
 void FileBrowser::onDeleteFileClicked() {
-  bool ok;
   QTreeWidgetItem* theItem = ui_.driveTreeWidget->currentItem();
   qDebug() << theItem->text(0);
   if(theItem->text(1) == tr("Network")) {
@@ -304,32 +307,33 @@ int FileBrowser::populateDirectory(QString dir) {
     if (ClientController::instance()->getattr(path_.string(), ser_mdm)) {
       qDebug() << "populateDirectory failed at getattr()";
       return -1;
-      }
+    }
 
-      QStringList columns;
-      columns << "Name" << "Status" << "Size" << "Type" << "Date Modified" ;
-      ui_.driveTreeWidget->setHeaderLabels(columns);
+    QStringList columns;
+    columns << "Name" << "Status" << "Size" << "Type" << "Date Modified" ;
+    ui_.driveTreeWidget->setHeaderLabels(columns);
 
-      mdm.ParseFromString(ser_mdm);
-      const char *charpath(s.c_str());
+    mdm.ParseFromString(ser_mdm);
+    const char *charpath(s.c_str());
 
-      QDateTime *lastModified = new QDateTime;
-      QFileIconProvider *icon = new QFileIconProvider;
-      int linuxtime = mdm.last_modified();
-      lastModified->setTime_t(linuxtime);
+    QDateTime *lastModified = new QDateTime;
+    QFileIconProvider *icon = new QFileIconProvider;
+    int linuxtime = mdm.last_modified();
+    lastModified->setTime_t(linuxtime);
 
     if (ityp == maidsafe::DIRECTORY || ityp == maidsafe::EMPTY_DIRECTORY) {
       //Folder
       std::string branchPath = rootPath_.toStdString()
                             + currentDir_.toStdString() + s;
       if (!fs::exists(branchPath)) {
-      try {
-        fs::create_directory(branchPath);
-        qDebug() << "Create Directory :" << QString::fromStdString(branchPath);
-      }
-      catch(const std::exception &e) {
-        qDebug() << "Create Directory Failed";
-      }
+        try {
+          fs::create_directory(branchPath);
+          qDebug() << "Create Directory :" <<
+              QString::fromStdString(branchPath);
+        }
+        catch(const std::exception&) {
+          qDebug() << "Create Directory Failed";
+        }
       }
 
       QIcon theIcon = icon->icon(QFileIconProvider::Folder);
@@ -339,12 +343,13 @@ int FileBrowser::populateDirectory(QString dir) {
       newItem->setIcon(0, theIcon);
       newItem->setText(0, item);
       newItem->setText(1, tr("Network"));
-      newItem->setText(2, tr("%1 KB").arg(ceil(mdm.file_size_low()/1024)));
+      newItem->setText(2, tr("%1 KB").arg(
+          ceil(static_cast<double>(mdm.file_size_low())/1024)));
       // TODO(Team#) use date format from the user's locale
       newItem->setText(4, lastModified->toString("dd/MM/yyyy hh:mm"));
       ui_.driveTreeWidget->insertTopLevelItem(rowCount, newItem);
 
-     } else {
+    } else {
        //File
       QIcon theIcon = icon->icon(QFileIconProvider::File);
 
@@ -359,7 +364,8 @@ int FileBrowser::populateDirectory(QString dir) {
       } else {
         newItem->setText(1, tr("Network"));
       }
-      newItem->setText(2, tr("%1 KB").arg(ceil(mdm.file_size_low()/1024)));
+      newItem->setText(2, tr("%1 KB").arg(
+          ceil(static_cast<double>(mdm.file_size_low())/1024)));
       newItem->setText(3, tr("%1 File").arg(item.section('.', -1)));
       // TODO(Team#) use date format from the user's locale
       newItem->setText(4, lastModified->toString("dd/MM/yyyy hh:mm"));
@@ -368,9 +374,10 @@ int FileBrowser::populateDirectory(QString dir) {
     children.erase(children.begin());
     rowCount++;
   }
+  return 0;
 }
 
-void FileBrowser::onItemDoubleClicked(QTreeWidgetItem* item, int column){
+void FileBrowser::onItemDoubleClicked(QTreeWidgetItem* item, int column) {
   qDebug() << "Entered ItemDoubleClicked";
   if (item->text(3) == ""){
     qDebug() << "in ItemDoubleClicked open folder" << "/" << item->text(0) <<
@@ -494,7 +501,7 @@ void FileBrowser::onSaveFileCompleted(int success, const QString& filepath) {
         qDebug() << "Remove File Success:"
                  << QString::fromStdString(fullFilePath);
       }
-      catch(const std::exception &e) {
+      catch(const std::exception&) {
         qDebug() << "Remove File failure:"
                  << QString::fromStdString(fullFilePath);
       }
@@ -617,4 +624,3 @@ bool FileBrowser::eventFilter(QObject *obj, QEvent *event) {
     return FileBrowser::eventFilter(obj, event);
   }
 }
-
