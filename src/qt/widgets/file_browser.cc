@@ -308,17 +308,11 @@ int FileBrowser::populateDirectory(QString dir) {
       return -1;
     }
 
-<<<<<<< HEAD
-      QStringList columns;
-      columns << "Name" << "Status" << "Size" << "Type" << "Date Modified" ;
-      ui_.driveTreeWidget->setHeaderLabels(columns);
-      ui_.driveTreeWidget->resizeColumnToContents(2);
-      ui_.driveTreeWidget->resizeColumnToContents(3);
-=======
     QStringList columns;
     columns << "Name" << "Status" << "Size" << "Type" << "Date Modified" ;
     ui_.driveTreeWidget->setHeaderLabels(columns);
->>>>>>> 22c55149bbb61aaa3f930c70ee5e855d04d54056
+    ui_.driveTreeWidget->resizeColumnToContents(2);
+    ui_.driveTreeWidget->resizeColumnToContents(3);
 
     mdm.ParseFromString(ser_mdm);
     const char *charpath(s.c_str());
@@ -636,10 +630,6 @@ void FileBrowser::onRemoveDirCompleted(int success, const QString& path) {
 
 bool FileBrowser::eventFilter(QObject *obj, QEvent *event) {
   if (obj == ui_.driveTreeWidget->viewport()) {
-<<<<<<< HEAD
-=======
-//    qDebug() << event->type();
->>>>>>> 22c55149bbb61aaa3f930c70ee5e855d04d54056
     if (event->type() == QEvent::ContextMenu) {
         menu2->exec(QCursor::pos());
       return true;
