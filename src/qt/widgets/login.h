@@ -63,6 +63,7 @@ class Login : public QWidget {
       can tab bcakwards from pin and password.
   */
   virtual bool focusNextPrevChild(bool next);
+  void changeEvent(QEvent *event);
 
   signals:
     // Details of an existing user have been entered and 'Login' clicked

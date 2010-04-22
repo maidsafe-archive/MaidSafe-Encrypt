@@ -96,6 +96,9 @@ class Messages : public Panel {
 
   // Count of unread messages
   int unread_;
+
+ protected:
+  void changeEvent(QEvent *event);
 };
 
 #endif  // QT_WIDGETS_MESSAGES_H_

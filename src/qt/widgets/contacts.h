@@ -122,7 +122,7 @@ class Contacts : public Panel {
     void customContentsMenu(const QPoint &pos);
     void DoneAddingContact(int result, QString contact);
 
-    protected:
+  protected:
     bool eventFilter(QObject *obj, QEvent *ev);
     void changeEvent(QEvent *event);
 };

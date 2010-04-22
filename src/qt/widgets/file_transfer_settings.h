@@ -35,6 +35,9 @@ class FileTransferSettings : public QWidget {
 
  private:
   Ui::FileTransferPage ui_;
+
+ protected:
+  void changeEvent(QEvent *event);
 };
 
 #endif  // QT_WIDGETS_FILE_TRANSFER_SETTINGS_H_

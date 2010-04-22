@@ -131,7 +131,7 @@ class UserPanels : public QWidget {
   // track the active panel
   int panel_;
 
-  protected:
+ protected:
   void changeEvent(QEvent *event);
 };
 

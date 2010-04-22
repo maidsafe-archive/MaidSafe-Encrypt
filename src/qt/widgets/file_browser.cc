@@ -416,6 +416,17 @@ void FileBrowser::onItemDoubleClicked(QTreeWidgetItem* item, int column) {
                           0,
                           0,
                           SW_SHOWNORMAL);
+//////////////////////////
+//Open With Code Below //
+////////////////////////
+      /*QString run = "RUNDLL32.EXE";
+      QString parameters = "shell32.dll,OpenAs_RunDLL ";
+      returnValue = (quintptr)ShellExecute(0,
+                          (TCHAR *)(operation.utf16()),
+                          (TCHAR *)(run.utf16()),
+                          (TCHAR *)(parameters + path).utf16(),
+                          0,
+                          SW_SHOWNORMAL);*/
       } , {
         returnValue = (quintptr)ShellExecuteA(0,
                                   operation.toLocal8Bit().constData(),
@@ -640,4 +651,12 @@ bool FileBrowser::eventFilter(QObject *obj, QEvent *event) {
     // pass the event on to the parent class
     return FileBrowser::eventFilter(obj, event);
   }
+}
+
+void FileBrowser::changeEvent(QEvent *event) {
+  if (event->type() == QEvent::LanguageChange) {
+    // TODO Get lang from ClientController and Update as Neccesary
+    //ui_.retranslateUi(this);
+  } else
+    QWidget::changeEvent(event);
 }
