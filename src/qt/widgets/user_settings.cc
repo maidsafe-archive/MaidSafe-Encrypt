@@ -16,6 +16,7 @@
 #include <QMessageBox>
 #include <QDebug>
 #include <QInputDialog>
+#include <QTranslator>
 
 #include "qt/client/client_controller.h"
 #include "qt/client/save_profile_settings_thread.h"
@@ -137,14 +138,12 @@ void UserSettings::HandleOK() {
   if (!personal_->changedValues_.isEmpty()) {
     QHash<QString, QString> theHash = personal_->changedValues_;
 
-    /*if (theHash.contains("username")) {
-      applied = ClientController::instance()->ChangeUsername(
-                theHash.value("username").toStdString());
+    if (theHash.contains("language")) {
+
+      QString right = theHash["language"].right(3);
+      QString newLocale = right.left(2);
+      emit langChanged(newLocale);
     }
-    if (theHash.contains("message")) {
-    }
-    if (theHash.contains("changedpic")) {
-    }*/
   }
   if (!fileTransfer_->changedValues_.isEmpty()) {
   }

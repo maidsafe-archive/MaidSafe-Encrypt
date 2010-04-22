@@ -309,6 +309,8 @@ int FileBrowser::populateDirectory(QString dir) {
       QStringList columns;
       columns << "Name" << "Status" << "Size" << "Type" << "Date Modified" ;
       ui_.driveTreeWidget->setHeaderLabels(columns);
+      ui_.driveTreeWidget->resizeColumnToContents(2);
+      ui_.driveTreeWidget->resizeColumnToContents(3);
 
       mdm.ParseFromString(ser_mdm);
       const char *charpath(s.c_str());
@@ -575,7 +577,7 @@ void FileBrowser::onUploadClicked(bool){
 
 void FileBrowser::onRenameFileCompleted(int success, const QString& filepath,
                                         const QString& newfilepath){
-  qDebug() << "in onRenameFileCompleted";
+  qDebug() << "in onRenameFileCompleted:" + newfilepath;
   if(success != -1){
     std::string fullFilePath = rootPath_.toStdString() +
                         currentDir_.toStdString() + filepath.toStdString();
@@ -588,7 +590,7 @@ void FileBrowser::onRenameFileCompleted(int success, const QString& filepath,
 }
 
 void FileBrowser::onMakeDirectoryCompleted(int success, const QString& dir) {
-  qDebug() << "in onMakeDirectoryCompleted";
+  qDebug() << "in onMakeDirectoryCompleted:" + dir;
   if(success != -1){
     qDebug() << "MakeDir Success";
     populateDirectory(currentDir_);
@@ -596,7 +598,7 @@ void FileBrowser::onMakeDirectoryCompleted(int success, const QString& dir) {
 }
 
 void FileBrowser::onRemoveDirCompleted(int success, const QString& path) {
-  qDebug() << "in onRemoveDirCompleted";
+  qDebug() << "in onRemoveDirCompleted:" + path;
   if(success != -1){
     qDebug() << "RemoveDir Success";
     populateDirectory(currentDir_);
@@ -605,7 +607,6 @@ void FileBrowser::onRemoveDirCompleted(int success, const QString& path) {
 
 bool FileBrowser::eventFilter(QObject *obj, QEvent *event) {
   if (obj == ui_.driveTreeWidget->viewport()) {
-    qDebug() << event->type();
     if (event->type() == QEvent::ContextMenu) {
         menu2->exec(QCursor::pos());
       return true;

@@ -130,6 +130,9 @@ class UserPanels : public QWidget {
 #endif
   // track the active panel
   int panel_;
+
+  protected:
+  void changeEvent(QEvent *event);
 };
 
 #endif  // QT_WIDGETS_USER_PANELS_H_

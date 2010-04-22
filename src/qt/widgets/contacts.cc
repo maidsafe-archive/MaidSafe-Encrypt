@@ -45,17 +45,16 @@ Contacts::Contacts(QWidget* parent)
   ui_.add->setAutoDefault(true);
   ui_.listWidget->setSelectionMode(QAbstractItemView::ExtendedSelection);
   ui_.contactLineEdit->installEventFilter(this);
-  ui_.contactLineEdit->setText(tr("Search Contacts"));
+  ui_.contactLineEdit->setText(searchContactsString_);
   sortType_ = 0;
 
   // to enable displaying of menu pop-up for Users
-
   menu = new QMenu(this);
 
-  viewProfile = new QAction(tr("View Profile"), this);
-  sendMessage = new QAction(tr("Send Message"), this);
-  sendFile = new QAction(tr("Send File"), this);
-  deleteContact = new QAction(tr("Delete Contact"), this);
+  viewProfile = new QAction(viewProfileString_, this);
+  sendMessage = new QAction(sendMessageString_, this);
+  sendFile = new QAction(sendFileString_, this);
+  deleteContact = new QAction(deleteContactString_, this);
 
   menu->addAction(viewProfile);
   menu->addAction(sendMessage);
@@ -117,6 +116,9 @@ Contacts::Contacts(QWidget* parent)
 
   connect(ui_.listWidget, SIGNAL(itemSelectionChanged()),
           this,           SLOT(onItemSelectionChanged()));
+
+  populateStrings();
+  ui_.retranslateUi(this);
 }
 
 
@@ -169,8 +171,8 @@ void Contacts::onItemSelectionChanged() {
 void Contacts::onAddContactClicked() {
   bool ok;
   QString text = QInputDialog::getText(this,
-                                       tr("Add Contact"),
-                                       tr("Please enter a username to add:"),
+                                       addContactString_,
+                                       enterUsernameString_,
                                        QLineEdit::Normal,
                                        QString(),
                                        &ok);
@@ -181,14 +183,14 @@ void Contacts::onAddContactClicked() {
   const QString contact_name = text.trimmed();
 
   if (contact_name == ClientController::instance()->publicUsername()) {
-    QMessageBox::warning(this, tr("Error"),
-        tr("It is not possible to add yourself as a contact."));
+    QMessageBox::warning(this, errorString_,
+        notPossibleAddString_);
     return;
   }
 
   if (contact_name == "") {
-    QMessageBox::warning(this, tr("Error"),
-                         tr("Please enter a valid username."));
+    QMessageBox::warning(this, errorString_,
+                         enterValidUsernameString_);
     return;
   }
 
@@ -233,8 +235,8 @@ void Contacts::onViewProfileClicked() {
       return;
 
   if (contacts.size() > 1) {
-    QMessageBox::warning(this, tr("Error"),
-                         QString(tr("Please select only one contact.")));
+    QMessageBox::warning(this, errorString_,
+                         QString(selectOnlyOneString_));
     return;
   }
 
@@ -244,8 +246,8 @@ void Contacts::onViewProfileClicked() {
           contact->text().toStdString(), &mic);
 
   if (n != 0) {
-    QMessageBox::warning(this, tr("Error"),
-                         QString(tr("The contact doesn't exist.")));
+    QMessageBox::warning(this, errorString_,
+                         QString(contactDoesntExistString_));
     return;
   }
 
@@ -269,8 +271,8 @@ void Contacts::onDeleteUserClicked() {
     return;
 
   if (contacts.size() > 1) {
-    QMessageBox::warning(this, tr("Error"),
-                         QString(tr("Please select only one contact.")));
+    QMessageBox::warning(this, errorString_,
+                         QString(selectOnlyOneString_));
     return;
   }
 
@@ -289,8 +291,8 @@ void Contacts::onDeleteUserClicked() {
       delete item;
     }
   } else {
-    QMessageBox::warning(this, tr("Error"),
-                         QString(tr("Error removing contact: %1"))
+    QMessageBox::warning(this, errorString_,
+                         QString(errorRemovingContactString_)
                          .arg(contact_->publicName()));
   }
 }
@@ -363,8 +365,8 @@ void Contacts::onSendMessageClicked() {
 
 #ifdef PD_LIGHT
 void Contacts::onFileSendClicked() {
-  QString msg = tr("Please use the PD Browser to send files.");
-  QMessageBox::information(this, tr("Information"), msg);
+  QString msg = usePDBrowserString_;
+  QMessageBox::information(this, infoString_, msg);
 }
 #else
 void Contacts::onFileSendClicked() {
@@ -402,8 +404,8 @@ void Contacts::onFileSendClicked() {
 #endif
 
   qfd = new QFileDialog(this,
-                     tr("Choose a file to share"),
-                     root, tr("Any file") + "(*)");
+                     selectAFileString_,
+                     root, anyFileString_ + "(*)");
 
   connect(qfd,  SIGNAL(directoryEntered(const QString&)),
           this, SLOT(onDirectoryEntered(const QString&)));
@@ -429,9 +431,8 @@ void Contacts::onFileSendClicked() {
   // accompanying message
   bool ok;
   QString text = QInputDialog::getText(this,
-                                       tr("Message"),
-                                       tr("Please enter a message to send with "
-                                          "the file(s):"),
+                                       messageString_,
+                                       enterMessageString_,
                                        QLineEdit::Normal,
                                        QString(),
                                        &ok);
@@ -441,12 +442,11 @@ void Contacts::onFileSendClicked() {
 
   if (ClientController::instance()->sendInstantFile(filename, text, conts,
       "")) {
-    QMessageBox::information(this, tr("File Sent"),
-                             tr("Success sending file: %1").arg(filename));
+    QMessageBox::information(this, fileSentString_,
+                             fileSuccessString_.arg(filename));
   } else {
-    const QString msg = tr("There was an error sending the file: %1")
-                       .arg(filename);
-    QMessageBox::warning(this, tr("File Not Sent"), msg);
+    const QString msg = errorSendingFileString_.arg(filename);
+    QMessageBox::warning(this, fileNotSentString_, msg);
   }
 }
 #endif
@@ -477,7 +477,7 @@ void Contacts::onAddedContact(const QString &name,
   qDebug() << "Contacts::onAddedContact()";
 
   QMessageBox msgBox;
-  msgBox.setText(tr("Accept contact request from %1?").arg(name));
+  msgBox.setText(acceptContactRequestString_.arg(name));
   msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
   msgBox.setDefaultButton(QMessageBox::Yes);
   int ret = msgBox.exec();
@@ -540,7 +540,7 @@ void Contacts::onDeletedContact(const QString &name) {
 
 void Contacts::onContactsBoxLostFocus() {
   if (ui_.contactLineEdit->text() == "") {
-        ui_.contactLineEdit->setText(tr("Search Contacts"));
+        ui_.contactLineEdit->setText(searchContactsString_);
         QPalette pal;
         pal.setColor(QPalette::Text, Qt::lightGray);
         ui_.contactLineEdit->setPalette(pal);
@@ -580,7 +580,7 @@ void Contacts::onContactsBoxTextEdited(const QString &value) {
     } else {
       ui_.listWidget->clear();
       QListWidgetItem* item = new QListWidgetItem;
-      item->setText(tr("No contacts match %1").arg(contact_name));
+      item->setText(noContactMatchString_.arg(contact_name));
       ui_.listWidget->addItem(item);
     }
   } else {
@@ -592,7 +592,7 @@ void Contacts::onContactsBoxTextEdited(const QString &value) {
 bool Contacts::eventFilter(QObject *obj, QEvent *event) {
      if (obj == ui_.contactLineEdit) {
          if (event->type() == QEvent::FocusIn) {
-             if (ui_.contactLineEdit->text() == tr("Search Contacts")) {
+             if (ui_.contactLineEdit->text() == searchContactsString_) {
                 ui_.contactLineEdit->clear();
                 QPalette pal;
                 pal.setColor(QPalette::Text, Qt::black);
@@ -624,12 +624,12 @@ void Contacts::DoneAddingContact(int result, QString contact) {
       addContact(new Contact(contact));
       break;
     case -221:
-      QMessageBox::warning(this, tr("Error"),
-          tr("Could not add the contact, because the username doesn't exist."));
+      QMessageBox::warning(this, errorString_,
+          usernameNotExistString_);
       break;
     case -7:
-      QMessageBox::warning(this, tr("Notification"),
-          tr("The contact already exists in your list."));
+      QMessageBox::warning(this, notificationString_,
+          contactAlreadyExistsString_);
       break;
   }
 }
@@ -660,3 +660,62 @@ void Contacts::onDirectoryEntered(const QString& dir) {
   }
 #endif
 }
+
+void Contacts::changeEvent(QEvent *event) {
+  if (event->type() == QEvent::LanguageChange) {
+    // TODO Get lang from ClientController and Update as Neccesary
+  /*QTranslator qtTranslator;
+  QString lang = "de";
+  qtTranslator.load("qt_" + lang,
+            QLibraryInfo::location(QLibraryInfo::TranslationsPath));
+  qApp->installTranslator(&qtTranslator);
+
+  QString locale = QLocale::system().name().left(2);
+  QTranslator myappTranslator;
+  bool res = myappTranslator.load(":/translations/pd_translation_" + lang);
+  qApp->installTranslator(&myappTranslator);
+
+  ui_.retranslateUi(this);
+  populateStrings();*/
+  } else
+    QWidget::changeEvent(event);
+}
+
+void Contacts::populateStrings() {
+  addContactString_ = tr("Add Contact");
+  noContactMatchString_ = tr("No contacts match %1");
+  errorString_ = tr("Error");
+  searchContactsString_ = tr("Search Contacts");
+  enterUsernameString_ = tr("Please enter a username to add:");
+  contactAlreadyExistsString_ = tr("The contact already exists in your list.");
+  usernameNotExistString_ = tr("Could not add the contact,"
+                                        " because the username doesn't exist.");
+  errorSendingFileString_ = tr("There was an error sending the file: %1");
+  fileNotSentString_ = tr("File Not Sent");
+  fileSuccessString_ = tr("Success sending file: %1");
+  fileSentString_ = tr("File Sent");
+  notificationString_ = tr("Notification");
+  acceptContactRequestString_ = tr("Accept contact request from %1?");
+  enterMessageString_ = tr("Please enter a message to send with the file(s):");
+  messageString_ = tr("Message");
+  selectAFileString_ = tr("Choose a file to share");
+  anyFileString_ = tr("Any File");
+  usePDBrowserString_ = tr("Please use the PD Browser to send files.");
+  infoString_ = tr("Information");
+  errorRemovingContactString_ = tr("Error removing contact: %1");
+  selectOnlyOneString_ = tr("Please select only one contact.");
+  contactDoesntExistString_ = tr("The contact doesn't exist.");
+  enterValidUsernameString_ = tr("Please enter a valid username.");
+  notPossibleAddString_ = tr("It is not possible to add yourself as a contact.");
+  deleteContactString_ = tr("Delete Contact");
+  sendMessageString_ = tr("Send Message");
+  sendFileString_ = tr("Send File");
+  viewProfileString_ = tr("View Profile");
+
+  viewProfile->setText(viewProfileString_);
+  sendFile->setText(sendFileString_);
+  sendMessage->setText(sendMessageString_);
+  deleteContact->setText(deleteContactString_);
+
+}
+

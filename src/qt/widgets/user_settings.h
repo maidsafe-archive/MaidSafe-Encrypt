@@ -51,6 +51,9 @@ class UserSettings : public QDialog {
     void onSaveProfileSettingsCompleted(bool);
     void onSaveSecuritySettingsCompleted(bool);
 
+  signals:
+    void langChanged(const QString &lang);
+
  private:
   Ui::UserSettingsPage ui_;
   QStringList Pages;

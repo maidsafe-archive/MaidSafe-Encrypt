@@ -16,12 +16,14 @@
 
 // qt
 #include <QDebug>
+#include <QTranslator>
 #include <QMessageBox>
 #include <QProcess>
 #include <QList>
 #include <QFileDialog>
 #include <QInputDialog>
 #include <boost/progress.hpp>
+#include <QLibraryInfo>
 
 #include <list>
 #include <string>
@@ -81,6 +83,18 @@ PerpetualData::PerpetualData(QWidget* parent)
   jkt->start();
 
   login_->StartProgressBar();
+
+  /*QTranslator qtTranslator;
+  qtTranslator.load("qt_" + QLocale::system().name(),
+            QLibraryInfo::location(QLibraryInfo::TranslationsPath));
+  qApp->installTranslator(&qtTranslator);
+
+  QString locale = QLocale::system().name().left(2);
+  QTranslator myappTranslator;
+  bool res = myappTranslator.load(":/translations/pd_translation_de.qm");
+  qApp->installTranslator(&myappTranslator);*/
+
+  ui_.retranslateUi(this);
 }
 
 void PerpetualData::onJoinKademliaCompleted(bool b) {
@@ -725,6 +739,9 @@ void PerpetualData::onSettingsTriggered() {
   qDebug() << "in onSettingsTriggered()";
     settings_ = new UserSettings;
 
+    connect(settings_, SIGNAL(langChanged(const QString&)),
+          this,                 SLOT(onLangChanged(const QString&)));
+
     QFile file(":/qss/defaultWithWhite1.qss");
     file.open(QFile::ReadOnly);
     QString styleSheet = QLatin1String(file.readAll());
@@ -766,6 +783,29 @@ void PerpetualData::showLoggedOutMenu() {
   actions_[PRIVATE_SHARES]->setEnabled(false);
   actions_[GO_OFFLINE]->setEnabled(false);
   actions_[SETTINGS]->setEnabled(false);
+}
+
+void PerpetualData::changeEvent(QEvent *event)
+{
+     if (event->type() == QEvent::LanguageChange) {
+         //ui_.retranslateUi(this);
+     } else
+         QWidget::changeEvent(event);
+}
+
+void PerpetualData::onLangChanged(const QString &lang) {
+  QTranslator qtTranslator;
+  QLocale locale1(lang);
+  qtTranslator.load("qt_" + lang,
+            QLibraryInfo::location(QLibraryInfo::TranslationsPath));
+  qApp->installTranslator(&qtTranslator);
+
+  QString locale = QLocale::system().name().left(2);
+  QTranslator myappTranslator;
+  bool res = myappTranslator.load(":/translations/pd_translation_" + lang);
+  qApp->installTranslator(&myappTranslator);
+
+  ui_.retranslateUi(this);
 }
 
 
