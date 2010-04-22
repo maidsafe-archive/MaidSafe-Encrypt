@@ -283,8 +283,10 @@ bool VaultBufferPacketHandler::AddPresence(const std::string &ser_message,
     return false;
   }
 
-  std::string hashed_sender_id(crypto_obj_.Hash(lp.contact_id(), "",
-                                                crypto::STRING_STRING, false));
+  std::string sender_id(lp.contact_id());
+  std::string hashed_sender_id(crypto_obj_.Hash(sender_id, "",
+                                                crypto::STRING_STRING,
+                                                false));
   BufferPacketInfo bpi;
   bpi.ParseFromString(bufferpacket.owner_info(0).data());
   bool flag = false;
@@ -304,8 +306,22 @@ bool VaultBufferPacketHandler::AddPresence(const std::string &ser_message,
     return false;
   }
 
-  GenericPacket *gp = bufferpacket.add_presence_notifications();
-  *gp = message;
+  bool b(false);
+  for (int n = 0; n < bufferpacket.presence_notifications_size(); ++n) {
+    GenericPacket *gp = bufferpacket.mutable_presence_notifications(n);
+    LivePresence lp;
+    lp.ParseFromString(gp->data());
+    if (lp.contact_id() == sender_id) {
+      *gp = message;
+      b = true;
+    }
+  }
+
+  if (!b) {
+    GenericPacket *gp = bufferpacket.add_presence_notifications();
+    *gp = message;
+  }
+
   *ser_bp = "";
   bufferpacket.SerializeToString(ser_bp);
 

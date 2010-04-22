@@ -35,6 +35,7 @@
 #define LOGFILE "VaultService.txt"
 const int kSleepTime = 10000;  // milliseconds
 
+#ifdef __MSVC__
 static bool DumpCallback(const wchar_t*,
                          const wchar_t* minidump_id,
                          void*,
@@ -46,6 +47,7 @@ static bool DumpCallback(const wchar_t*,
   }
   return succeeded;
 }
+#endif
 
 int WriteToLog(char* str) {
   FILE* log;

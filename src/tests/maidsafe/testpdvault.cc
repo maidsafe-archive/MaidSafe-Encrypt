@@ -166,6 +166,21 @@ void MakeChunks(const std::vector< boost::shared_ptr<ClientData> > &clients,
   }
 }
 
+void PrintRpcTimings(const rpcprotocol::RpcStatsMap &rpc_timings) {
+  printf("Calls  RPC Name                                            "
+         "min/avg/max\n");
+  for (rpcprotocol::RpcStatsMap::const_iterator it = rpc_timings.begin();
+       it != rpc_timings.end();
+       ++it) {
+    printf("%5llux %-50s  %.2f/%.2f/%.2f s\n",
+           it->second.Size(),
+           it->first.c_str(),
+           it->second.Min() / 1000.0,
+           it->second.Mean() / 1000.0,
+           it->second.Max() / 1000.0);
+  }
+}
+
 }  // namespace testpdvault
 
 namespace maidsafe_vault {
@@ -494,47 +509,57 @@ TEST_F(PDVaultTest, FUNC_MAID_StoreAndGetChunks) {
     }
   }
 
-  if (kNumOfClients < 2 || kNumOfTestChunks < 2)
-    return;
+  if (kNumOfClients >= 2 && kNumOfTestChunks >= 2) {
+    printf("\nRemoving all chunks except one...\n");
 
-  printf("\nRemoving all chunks except one...\n");
-
-  // Remove all copies of each chunk except the first one, but leave reference
-  // list showing multiple chunk holders.
-  bool first_chunk(true);
-  for (it = chunks.begin(); it != chunks.end(); ++it) {
-    for (int vault_no = 0; vault_no < kNetworkSize; ++vault_no) {
-      if (pdvaults_[vault_no]->vault_chunkstore_.Has((*it).first)) {
-        if (first_chunk) {
-          first_chunk = false;
-          continue;
+    // Remove all copies of each chunk except the first one, but leave reference
+    // list showing multiple chunk holders.
+    bool first_chunk(true);
+    for (it = chunks.begin(); it != chunks.end(); ++it) {
+      for (int vault_no = 0; vault_no < kNetworkSize; ++vault_no) {
+        if (pdvaults_[vault_no]->vault_chunkstore_.Has((*it).first)) {
+          if (first_chunk) {
+            first_chunk = false;
+            continue;
+          }
+          printf(">> Deleting chunk %s from vault %d\n",
+                 HexSubstr((*it).first).c_str(), vault_no);
+          ASSERT_EQ(0, pdvaults_[vault_no]->
+              vault_chunkstore_.DeleteChunk((*it).first));
         }
-        printf(">> Deleting chunk %s from vault %d\n",
-               HexSubstr((*it).first).c_str(), vault_no);
-        ASSERT_EQ(0, pdvaults_[vault_no]->
-            vault_chunkstore_.DeleteChunk((*it).first));
+      }
+    }
+
+    printf("\nTrying to retrieve first chunk, fail other chunks...\n");
+
+    // Check only first chunk can be retrieved from the net
+    for (int i = 0; i < kNumOfClients; ++i) {
+      for (it = chunks.begin(); it != chunks.end(); ++it) {
+        ASSERT_EQ(0, clients_[i]->chunkstore->DeleteChunk((*it).first));
+        printf(">> Client %d, getting chunk %s\n", i + 1,
+               HexSubstr((*it).first).c_str());
+        std::string data;
+        if (it == chunks.begin()) {
+          ASSERT_EQ(0, clients_[i]->msm->LoadChunk((*it).first, &data));
+          ASSERT_EQ(data, (*it).second);
+          ASSERT_EQ((*it).first, crypto_.Hash(data, "", crypto::STRING_STRING,
+                                              false));
+        } else {
+          ASSERT_NE(0, clients_[i]->msm->LoadChunk((*it).first, &data));
+        }
       }
     }
   }
 
-  printf("\nTrying to retrieve first chunk, fail other chunks...\n");
-
-  // Check only first chunk can be retrieved from the net
   for (int i = 0; i < kNumOfClients; ++i) {
-    for (it = chunks.begin(); it != chunks.end(); ++it) {
-      ASSERT_EQ(0, clients_[i]->chunkstore->DeleteChunk((*it).first));
-      printf(">> Client %d, getting chunk %s\n", i + 1,
-             HexSubstr((*it).first).c_str());
-      std::string data;
-      if (it == chunks.begin()) {
-        ASSERT_EQ(0, clients_[i]->msm->LoadChunk((*it).first, &data));
-        ASSERT_EQ(data, (*it).second);
-        ASSERT_EQ((*it).first, crypto_.Hash(data, "", crypto::STRING_STRING,
-                                            false));
-      } else {
-        ASSERT_NE(0, clients_[i]->msm->LoadChunk((*it).first, &data));
-      }
-    }
+    printf("\nStatistics for client %d:\n", i + 1);
+    testpdvault::PrintRpcTimings(
+        clients_[i]->msm->channel_manager_.RpcTimings());
+  }
+  for (int i = 0; i < kNetworkSize; ++i) {
+    printf("\nStatistics for vault %d:\n", i);
+    testpdvault::PrintRpcTimings(
+        pdvaults_[i]->channel_manager_.RpcTimings());
   }
 }
 

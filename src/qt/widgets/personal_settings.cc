@@ -16,7 +16,8 @@
 #include "qt/widgets/personal_settings.h"
 #include "qt/client/client_controller.h"
 
-PersonalSettings::PersonalSettings(QWidget* parent) : init_(false) {
+PersonalSettings::PersonalSettings(QWidget* parent)
+    : QWidget(parent), init_(false) {
   ui_.setupUi(this);
 
     connect(ui_.usernameEdit, SIGNAL(textEdited(const QString&)),
@@ -66,7 +67,7 @@ void PersonalSettings::onMessageTextEdit(const QString& text) {
   changedValues_.insert("message", text);
 }
 
-void PersonalSettings::onPicChangeClicked(bool b) {
+void PersonalSettings::onPicChangeClicked(bool) {
   changedValues_.insert("changepic", "");
 }
 

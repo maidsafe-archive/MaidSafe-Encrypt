@@ -707,18 +707,10 @@ MESSAGE("=======================================================================
 MESSAGE("")
 
 # BitRock InstallBuilder
-IF(APPLE)
-  add_custom_target(installer ALL "/Applications/BitRock\ InstallBuilder\ Enterprise\ 6.2.6/autoupdate/bin/.customize.app/Contents/MacOS/installbuilder.sh" build ${SOURCE_DIR}/installerfiles/autoup.xml
-                    COMMAND "/Applications/BitRock\ InstallBuilder\ Enterprise\ 6.2.6/bin/Builder.app/Contents/MacOS/installbuilder.sh" build ${SOURCE_DIR}/installerfiles/pd.xml
-                    DEPENDS perpetualdata vault)
-ENDIF(APPLE)
-IF(WIN32)
-  add_custom_target(installer ALL "/Applications/BitRock\ InstallBuilder\ Enterprise\ 6.2.6/autoupdate/bin/.customize.app/Contents/MacOS/installbuilder.sh" build ${SOURCE_DIR}/installerfiles/autoup.xml
-                    COMMAND "c:/Program Files/InstallBuilder/bin/builder.exe" ${SOURCE_DIR}/pd.xml
-                    DEPENDS perpetualdata vault)
-ENDIF(WIN32)
-IF(UNIX AND NOT APPLE)
-  add_custom_target(installer "~/installbuilder-6.3.0/autoupdate/bin/customize.bin" build ${SOURCE_DIR}/installerfiles/autoup.xml
-                    COMMAND ALL "~/installbuilder-6.3.0/bin/builder" build ${SOURCE_DIR}/pd.xml
-                    DEPENDS perpetualdata vault)
-ENDIF(UNIX AND NOT APPLE)
+IF(CMAKE_BUILD_TYPE MATCHES Release)
+  INCLUDE(${PD_SOURCE_DIR}/build/maidsafe_FindInstallBuilder.cmake)
+  IF(InstallBuilder_BUILDER_EXE AND InstallBuilder_CUSTOMISE_EXE)
+    ADD_CUSTOM_TARGET(installer ALL ${InstallBuilder_CUSTOMISE_EXE} build ${SOURCE_DIR}/installerfiles/autoup.xml
+                      COMMAND ${InstallBuilder_BUILDER_EXE} build ${SOURCE_DIR}/installerfiles/pd.xml DEPENDS perpetualdata vault)
+  ENDIF()
+ENDIF()

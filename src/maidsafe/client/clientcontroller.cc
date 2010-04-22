@@ -633,14 +633,6 @@ bool ClientController::ValidateUser(const std::string &password) {
                              &ClientController::ClearStaleMessages, this);
   }
 
-//  // CHANGE CONNECTION STATUS
-//  int connection_status(1);
-//  int n = ChangeConnectionStatus(connection_status);
-//  if (n != 0) {
-//    // Alert for BP problems
-//  }
-//  ss_->SetConnectionStatus(connection_status);
-
   logged_in_ = true;
   return true;
 }
@@ -693,13 +685,6 @@ bool ClientController::Logout() {
   }
   logging_out_ = true;
   clear_messages_thread_.join();
-
-//  int connection_status(0);
-//  int n = ChangeConnectionStatus(connection_status);
-//  if (n != 0) {
-//    // Alert for BP problems
-//  }
-//  ss_->SetConnectionStatus(connection_status);
 
   int result = SaveSession();
   if (result != kSuccess) {

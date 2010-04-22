@@ -17,24 +17,27 @@
 #include "fs/filesystem.h"
 #include "qt/client/user_space_filesystem.h"
 #include <math.h>
+#ifdef MAIDSAFE_WIN32
+#include <windows.h>
+#include <shellapi.h>
+#endif
 
 #include <QDebug>
-#include <QProcess>
-#include <QMouseEvent>
-#include <QFileIconProvider>
-#include <QUrl>
 #include <QFileDialog>
+#include <QFileIconProvider>
 #include <QInputDialog>
 #include <QLineEdit>
 #include <QMessageBox>
+#include <QMouseEvent>
+#include <QUrl>
 
-#include "qt/client/client_controller.h"
 #include "maidsafe/client/clientcontroller.h"
-#include "qt/client/read_file_thread.h"
-#include "qt/client/save_file_thread.h"
-#include "qt/client/rename_file_thread.h"
+#include "qt/client/client_controller.h"
 #include "qt/client/make_directory_thread.h"
+#include "qt/client/read_file_thread.h"
 #include "qt/client/remove_dir_thread.h"
+#include "qt/client/rename_file_thread.h"
+#include "qt/client/save_file_thread.h"
 
 namespace fs = boost::filesystem;
 
@@ -189,7 +192,6 @@ void FileBrowser::onCutFileClicked() {
 }
 
 void FileBrowser::onDeleteFileClicked() {
-  bool ok;
   QTreeWidgetItem* theItem = ui_.driveTreeWidget->currentItem();
   qDebug() << theItem->text(0);
   if(theItem->text(1) == tr("Network")) {
@@ -304,34 +306,41 @@ int FileBrowser::populateDirectory(QString dir) {
     if (ClientController::instance()->getattr(path_.string(), ser_mdm)) {
       qDebug() << "populateDirectory failed at getattr()";
       return -1;
-      }
+    }
 
+<<<<<<< HEAD
       QStringList columns;
       columns << "Name" << "Status" << "Size" << "Type" << "Date Modified" ;
       ui_.driveTreeWidget->setHeaderLabels(columns);
       ui_.driveTreeWidget->resizeColumnToContents(2);
       ui_.driveTreeWidget->resizeColumnToContents(3);
+=======
+    QStringList columns;
+    columns << "Name" << "Status" << "Size" << "Type" << "Date Modified" ;
+    ui_.driveTreeWidget->setHeaderLabels(columns);
+>>>>>>> 22c55149bbb61aaa3f930c70ee5e855d04d54056
 
-      mdm.ParseFromString(ser_mdm);
-      const char *charpath(s.c_str());
+    mdm.ParseFromString(ser_mdm);
+    const char *charpath(s.c_str());
 
-      QDateTime *lastModified = new QDateTime;
-      QFileIconProvider *icon = new QFileIconProvider;
-      int linuxtime = mdm.last_modified();
-      lastModified->setTime_t(linuxtime);
+    QDateTime *lastModified = new QDateTime;
+    QFileIconProvider *icon = new QFileIconProvider;
+    int linuxtime = mdm.last_modified();
+    lastModified->setTime_t(linuxtime);
 
     if (ityp == maidsafe::DIRECTORY || ityp == maidsafe::EMPTY_DIRECTORY) {
       //Folder
       std::string branchPath = rootPath_.toStdString()
                             + currentDir_.toStdString() + s;
       if (!fs::exists(branchPath)) {
-      try {
-        fs::create_directory(branchPath);
-        qDebug() << "Create Directory :" << QString::fromStdString(branchPath);
-      }
-      catch(const std::exception &e) {
-        qDebug() << "Create Directory Failed";
-      }
+        try {
+          fs::create_directory(branchPath);
+          qDebug() << "Create Directory :" <<
+              QString::fromStdString(branchPath);
+        }
+        catch(const std::exception&) {
+          qDebug() << "Create Directory Failed";
+        }
       }
 
       QIcon theIcon = icon->icon(QFileIconProvider::Folder);
@@ -341,12 +350,13 @@ int FileBrowser::populateDirectory(QString dir) {
       newItem->setIcon(0, theIcon);
       newItem->setText(0, item);
       newItem->setText(1, tr("Network"));
-      newItem->setText(2, tr("%1 KB").arg(ceil(mdm.file_size_low()/1024)));
+      newItem->setText(2, tr("%1 KB").arg(
+          ceil(static_cast<double>(mdm.file_size_low())/1024)));
       // TODO(Team#) use date format from the user's locale
       newItem->setText(4, lastModified->toString("dd/MM/yyyy hh:mm"));
       ui_.driveTreeWidget->insertTopLevelItem(rowCount, newItem);
 
-     } else {
+    } else {
        //File
       QIcon theIcon = icon->icon(QFileIconProvider::File);
 
@@ -361,7 +371,8 @@ int FileBrowser::populateDirectory(QString dir) {
       } else {
         newItem->setText(1, tr("Network"));
       }
-      newItem->setText(2, tr("%1 KB").arg(ceil(mdm.file_size_low()/1024)));
+      newItem->setText(2, tr("%1 KB").arg(
+          ceil(static_cast<double>(mdm.file_size_low())/1024)));
       newItem->setText(3, tr("%1 File").arg(item.section('.', -1)));
       // TODO(Team#) use date format from the user's locale
       newItem->setText(4, lastModified->toString("dd/MM/yyyy hh:mm"));
@@ -370,17 +381,17 @@ int FileBrowser::populateDirectory(QString dir) {
     children.erase(children.begin());
     rowCount++;
   }
+  return 0;
 }
 
-void FileBrowser::onItemDoubleClicked(QTreeWidgetItem* item, int column){
+void FileBrowser::onItemDoubleClicked(QTreeWidgetItem* item, int column) {
   qDebug() << "Entered ItemDoubleClicked";
   if (item->text(3) == ""){
     qDebug() << "in ItemDoubleClicked open folder" << "/" << item->text(0) <<
         "/";
     populateDirectory(currentDir_  + item->text(0) + "/");
-  }
-  else {
-    if (item->text(1) == tr("Network")){
+  } else {
+    if (item->text(1) == tr("Network")) {
       ui_.driveTreeWidget->editItem(item, 1);
       item->setText(1, tr("Downloading"));
 
@@ -401,8 +412,7 @@ void FileBrowser::onItemDoubleClicked(QTreeWidgetItem* item, int column){
       QString path = rootPath_ + currentDir_ + item->text(0);
 
       qDebug() << "Item Double Clicked open file: " + path;
-#ifdef MAIDSAFE_WIN32
-
+#if defined(MAIDSAFE_WIN32)
       QString operation("open");
       quintptr returnValue;
       QT_WA({
@@ -422,11 +432,30 @@ void FileBrowser::onItemDoubleClicked(QTreeWidgetItem* item, int column){
       });
       if (returnValue <= 32) {
         qWarning() << "FileBrowser::open: failed to open"
-               << path;
+                   << path;
       }
-#else
-  // nautilus FuseHomeDir()/Shares/Private/"name"
-     system(path.toStdString().c_str());
+#elif defined(MAIDSAFE_POSIX)
+      QString command;
+      QStringList parameters;
+      if (!boost::filesystem::exists("/usr/bin/gnome-open")) {
+        if (!boost::filesystem::exists("/usr/bin/kde-open")) {
+        } else {
+          command = tr("/usr/bin/kde-open");
+        }
+      } else {
+        command = tr("/usr/bin/gnome-open");
+      }
+      if (!command.isEmpty()) {
+        parameters << QString::fromStdString(path.toStdString());
+        myProcess_.reset(new QProcess);
+        myProcess_->start(command, parameters);
+      }
+#elif defined(MAIDSAFE_APPLE)
+      QString command("open");
+      QStringList parameters;
+      parameters << QString::fromStdString(path.toStdString());
+      myProcess_.reset(new QProcess);
+      myProcess_->start(command, parameters);
 #endif
     }
   }
@@ -496,7 +525,7 @@ void FileBrowser::onSaveFileCompleted(int success, const QString& filepath) {
         qDebug() << "Remove File Success:"
                  << QString::fromStdString(fullFilePath);
       }
-      catch(const std::exception &e) {
+      catch(const std::exception&) {
         qDebug() << "Remove File failure:"
                  << QString::fromStdString(fullFilePath);
       }
@@ -607,6 +636,10 @@ void FileBrowser::onRemoveDirCompleted(int success, const QString& path) {
 
 bool FileBrowser::eventFilter(QObject *obj, QEvent *event) {
   if (obj == ui_.driveTreeWidget->viewport()) {
+<<<<<<< HEAD
+=======
+//    qDebug() << event->type();
+>>>>>>> 22c55149bbb61aaa3f930c70ee5e855d04d54056
     if (event->type() == QEvent::ContextMenu) {
         menu2->exec(QCursor::pos());
       return true;
@@ -618,4 +651,3 @@ bool FileBrowser::eventFilter(QObject *obj, QEvent *event) {
     return FileBrowser::eventFilter(obj, event);
   }
 }
-
