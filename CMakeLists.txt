@@ -756,6 +756,8 @@ MESSAGE("")
 # BitRock InstallBuilder
 IF(CMAKE_BUILD_TYPE MATCHES Release)
   INCLUDE(${PD_SOURCE_DIR}/build/maidsafe_FindInstallBuilder.cmake)
-  ADD_CUSTOM_TARGET(installer ALL ${InstallBuilder_CUSTOMISE_EXE} build ${SOURCE_DIR}/installerfiles/autoup.xml
-                    COMMAND ${InstallBuilder_BUILDER_EXE} build ${SOURCE_DIR}/installerfiles/pd.xml DEPENDS perpetualdata vault)
+  IF(InstallBuilder_BUILDER_EXE AND InstallBuilder_CUSTOMISE_EXE)
+    ADD_CUSTOM_TARGET(installer ALL ${InstallBuilder_CUSTOMISE_EXE} build ${SOURCE_DIR}/installerfiles/autoup.xml
+                      COMMAND ${InstallBuilder_BUILDER_EXE} build ${SOURCE_DIR}/installerfiles/pd.xml DEPENDS perpetualdata vault)
+  ENDIF()
 ENDIF()
