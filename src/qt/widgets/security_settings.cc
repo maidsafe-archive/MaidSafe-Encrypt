@@ -15,7 +15,7 @@
 #include "qt/widgets/security_settings.h"
 #include "qt/client/client_controller.h"
 
-SecuritySettings::SecuritySettings(QWidget* parent) {
+SecuritySettings::SecuritySettings(QWidget* parent) : QWidget(parent) {
   ui_.setupUi(this);
 
   connect(ui_.usernameEdit, SIGNAL(textEdited(const QString&)),
