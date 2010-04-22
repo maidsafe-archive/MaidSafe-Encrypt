@@ -427,6 +427,7 @@ void FileBrowser::onItemDoubleClicked(QTreeWidgetItem* item, int column) {
                           (TCHAR *)(parameters + path).utf16(),
                           0,
                           SW_SHOWNORMAL);*/
+//////////////
       } , {
         returnValue = (quintptr)ShellExecuteA(0,
                                   operation.toLocal8Bit().constData(),
