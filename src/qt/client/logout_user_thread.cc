@@ -12,7 +12,7 @@
  *      Author: Stephen
  */
 
- #include "qt/client/logout_user_thread.h"
+#include "qt/client/logout_user_thread.h"
 
 // qt
 #include <QDebug>
@@ -25,7 +25,7 @@ LogoutUserThread::LogoutUserThread() { }
 LogoutUserThread::~LogoutUserThread() { }
 
 void LogoutUserThread::run() {
-  qDebug() << "LogoutUserThread::run" ;
+  qDebug() << "LogoutUserThread::run";
 
   bool success = ClientController::instance()->Logout();
 

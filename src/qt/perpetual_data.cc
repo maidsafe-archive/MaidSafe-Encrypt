@@ -119,7 +119,7 @@ void PerpetualData::onJoinKademliaCompleted(bool b) {
 }
 
 PerpetualData::~PerpetualData() {
-  onLogout();
+//  onLogout();
 }
 
 void PerpetualData::createActions() {
@@ -336,13 +336,13 @@ void PerpetualData::asyncUnmount() {
   mt->start();
 }
 
-void PerpetualData::asyncLogout() {
-  LogoutUserThread* lut = new LogoutUserThread();
-  connect(lut,   SIGNAL(logoutUserCompleted(bool)),
-         this, SLOT(onLogoutUserCompleted(bool)));
-
-  lut->start();
-}
+//  void PerpetualData::asyncLogout() {
+//    LogoutUserThread* lut = new LogoutUserThread();
+//    connect(lut,   SIGNAL(logoutUserCompleted(bool)),
+//           this, SLOT(onLogoutUserCompleted(bool)));
+//
+//    lut->start();
+//  }
 
 void PerpetualData::asyncCreateUser() {
   CreateUserThread* cut = new CreateUserThread(login_->username(),
@@ -442,19 +442,17 @@ void PerpetualData::onFailureAcknowledged() {
 
 void PerpetualData::onLogout() {
   if (state_ != LOGGED_IN) {
-      // if we're still to login we can't logout
-      return;
+    // if we're still to login we can't logout
+    return;
   }
   if (!ClientController::instance()->publicUsername().isEmpty())
     ClientController::instance()->StopCheckingMessages();
-#ifdef PD_LIGHT
-  asyncLogout();
-  setState(LOGGING_OUT);
-#else
+//#ifdef PD_LIGHT
+//  asyncLogout();
+//#else
   asyncUnmount();
+//#endif
   setState(LOGGING_OUT);
-#endif
-
 }
 
 void PerpetualData::quit() {
