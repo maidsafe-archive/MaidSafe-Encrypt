@@ -38,6 +38,8 @@ class FileBrowser : public QDialog {
     void smilyChosen(int, int);
 
  private:
+    void setMenuDirMenu();
+    void setMenuFileMenu();
   Ui::FileBrowserPage ui_;
   // QFileSystemModel* model_;
   // QFileSystemWatcher* theWatcher_;
@@ -46,6 +48,9 @@ class FileBrowser : public QDialog {
   QString rootPath_;
   QMenu *menu;
   QAction *openFile;
+#ifdef MAIDSAFE_APPLE
+  QAction *openWith;
+#endif // MAIDSAFE_APPLE
   QAction *sendFile;
   QAction *copyFile;
   QAction *cutFile;
@@ -75,7 +80,12 @@ class FileBrowser : public QDialog {
     void onRemoveDirCompleted(int success, const QString& path);
     void onRenameFileCompleted(int success, const QString& filepath,
                                             const QString& newfilepath);
+
     void onOpenFileClicked();
+// #ifdef MAIDSAFE_APPLE // TODO (Alec): Find out why this throws
+#if not defined (WIN32) && not defined (MAIDSAFE_LINUX)
+    void onOpenWithClicked();
+#endif
     void onSendFileClicked();
     void onCopyFileClicked();
     void onCutFileClicked();
@@ -85,6 +95,9 @@ class FileBrowser : public QDialog {
     void onNewFolderClicked();
     void onBackClicked(bool);
     void onUploadClicked(bool);
+    void onOpenError(QProcess::ProcessError);
+    void onOpenStarted();
+    void onOpenFinished(int, QProcess::ExitStatus);
     // void onWatchedFileChanged(const QString& path);
 };
 
