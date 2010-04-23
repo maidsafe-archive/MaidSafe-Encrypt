@@ -103,7 +103,7 @@ class IMConnectionHandler {
       const boost::uint32_t &conn_id);
   ReturnCode CloseConnections(const boost::int16_t &trans_id);
   void OnMessageArrive(const std::string &msg, const boost::uint32_t &conn_id,
-      const boost::int16_t &trans_id, const float &rtt);
+      const boost::int16_t &trans_id, const double &rtt);
  private:
   void ConnectionTimesOut(const boost::int16_t &trans_id,
       const boost::uint32_t &conn_id, const boost::system::error_code &ec);

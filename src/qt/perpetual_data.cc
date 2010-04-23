@@ -572,7 +572,7 @@ void PerpetualData::onMessageReceived(ClientController::MessageType type,
     }
 
     if (!messageList.contains(sender)) {
-      PersonalMessages* mess_ = new PersonalMessages(sender);
+      PersonalMessages* mess_ = new PersonalMessages(this, sender);
 
       QFile file(":/qss/defaultWithWhite1.qss");
       file.open(QFile::ReadOnly);
@@ -801,9 +801,10 @@ void PerpetualData::onLangChanged(const QString &lang) {
   QString locale = QLocale::system().name().left(2);
   QTranslator myappTranslator;
   bool res = myappTranslator.load(":/translations/pd_translation_" + lang);
-  qApp->installTranslator(&myappTranslator);
-
-  ui_.retranslateUi(this);
+  if (res) {
+    qApp->installTranslator(&myappTranslator);
+    ui_.retranslateUi(this);
+  }
 }
 
 

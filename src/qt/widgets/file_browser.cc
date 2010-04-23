@@ -41,7 +41,7 @@
 
 namespace fs = boost::filesystem;
 
- FileBrowser::FileBrowser(QWidget* parent) : init_(false) {
+ FileBrowser::FileBrowser(QWidget* parent) : QDialog(parent), init_(false) {
   ui_.setupUi(this);
   setWindowIcon(QPixmap(":/icons/16/globe"));
   //theWatcher_ = new QFileSystemWatcher;
@@ -148,7 +148,7 @@ void FileBrowser::dropEvent(QDropEvent *event) {
   uploadFileFromLocal(fileName);
 }
 
-void FileBrowser::onMousePressed(QTreeWidgetItem* item, int column) {
+void FileBrowser::onMousePressed(QTreeWidgetItem*, int) {
   if(QApplication::mouseButtons() == Qt::RightButton){
     menu->exec(QCursor::pos());
   }
@@ -315,7 +315,7 @@ int FileBrowser::populateDirectory(QString dir) {
     ui_.driveTreeWidget->resizeColumnToContents(3);
 
     mdm.ParseFromString(ser_mdm);
-    const char *charpath(s.c_str());
+//    const char *charpath(s.c_str());
 
     QDateTime *lastModified = new QDateTime;
     QFileIconProvider *icon = new QFileIconProvider;
@@ -378,7 +378,7 @@ int FileBrowser::populateDirectory(QString dir) {
   return 0;
 }
 
-void FileBrowser::onItemDoubleClicked(QTreeWidgetItem* item, int column) {
+void FileBrowser::onItemDoubleClicked(QTreeWidgetItem* item, int) {
   qDebug() << "Entered ItemDoubleClicked";
   if (item->text(3) == ""){
     qDebug() << "in ItemDoubleClicked open folder" << "/" << item->text(0) <<

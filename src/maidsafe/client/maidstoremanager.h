@@ -205,7 +205,7 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   typedef boost::function<void(const std::string&,
                                const boost::uint32_t&,
                                const boost::int16_t&,
-                               const float &)> IMNotifier;
+                               const double&)> IMNotifier;
  public:
   explicit MaidsafeStoreManager(boost::shared_ptr<ChunkStore> cstore);
   virtual ~MaidsafeStoreManager() {}

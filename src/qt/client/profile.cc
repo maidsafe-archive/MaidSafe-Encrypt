@@ -25,6 +25,6 @@ Profile::Profile()
 Profile::~Profile() { }
 
 // static
-Profile Profile::fromContact(maidsafe::Contact *mc) {
+Profile Profile::fromContact(maidsafe::Contact*) {
   return Profile();
 }

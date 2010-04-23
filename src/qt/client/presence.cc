@@ -70,6 +70,6 @@ bool Presence::operator!=(const Presence& other) const {
 }
 
 // static
-Presence Presence::fromContact(maidsafe::Contact *mc) {
+Presence Presence::fromContact(maidsafe::Contact*) {
   return Presence();
 }

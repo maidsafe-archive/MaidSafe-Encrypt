@@ -30,8 +30,8 @@ class UserPanels;
 class PersonalMessages : public QMainWindow {
     Q_OBJECT
  public:
-  explicit PersonalMessages(QWidget* parent = 0);
-  explicit PersonalMessages(QString name = "");
+  PersonalMessages(QWidget* parent = 0, QString name = "");
+//  explicit PersonalMessages(QWidget* parent = 0);
   virtual ~PersonalMessages();
 
   void setName(QString name);

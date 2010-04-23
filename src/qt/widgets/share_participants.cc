@@ -22,7 +22,10 @@
 
 
 ShareParticipantsChoice::ShareParticipantsChoice(QWidget* parent,
-    const QString &title, QStringList *usernames) : usernames_(usernames) {
+                                                 const QString &title,
+                                                 QStringList *usernames)
+                                                 : QDialog(parent),
+                                                   usernames_(usernames) {
   ui_.setupUi(this);
 
   QStringList db_contacts = ClientController::instance()->contactsNames();

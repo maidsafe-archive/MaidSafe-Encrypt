@@ -71,7 +71,7 @@ class MockKadOps : public KadOps {
                          std::vector<kad::Contact> *contacts) {
     return KadOps::FindCloseNodes(kad_key, contacts);
   }
-  MOCK_METHOD4(GetStorePeer, int(const float &ideal_rtt,
+  MOCK_METHOD4(GetStorePeer, int(const double &ideal_rtt,
                                  const std::vector<kad::Contact> &exclude,
                                  kad::Contact *new_peer,
                                  bool *local));

@@ -39,8 +39,7 @@
 #include "qt/widgets/user_panels.h"
 
 Contacts::Contacts(QWidget* parent)
-    : Panel(parent)
-    , init_(false) {
+    : Panel(parent), init_(false) {
   ui_.setupUi(this);
   ui_.add->setAutoDefault(true);
   ui_.listWidget->setSelectionMode(QAbstractItemView::ExtendedSelection);
@@ -283,7 +282,7 @@ void Contacts::onDeleteUserClicked() {
                                     contact_->publicName(),
                                     Qt::MatchCaseSensitive);
 
-    int n = contacts_.removeAll(contact_);
+    contacts_.removeAll(contact_);
     delete contact_;
 
     foreach(QListWidgetItem* item, items) {
@@ -330,7 +329,7 @@ void Contacts::onSendMessageClicked() {
 
   foreach(QString contact, conts) {
     if (!messageList.contains(contact)) {
-      PersonalMessages* mess_ = new PersonalMessages(contact);
+      PersonalMessages* mess_ = new PersonalMessages(this, contact);
 
       QFile file(":/qss/defaultWithWhite1.qss");
       file.open(QFile::ReadOnly);
@@ -549,7 +548,7 @@ void Contacts::onContactsBoxLostFocus() {
   }
 }
 
-void Contacts::onContactsBoxTextEdited(const QString &value) {
+void Contacts::onContactsBoxTextEdited(const QString&) {
   qDebug() << "in search contacts";
 
   const QString contact_name = ui_.contactLineEdit->text().trimmed();

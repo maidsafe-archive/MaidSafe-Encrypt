@@ -36,29 +36,29 @@
 #include "qt/client/send_instant_message_thread.h"
 #include "qt/widgets/user_panels.h"
 
-PersonalMessages::PersonalMessages(QWidget* parent)
-    : QMainWindow(parent), active_(false), init_(false), convName_("") {
-  ui_.setupUi(this);
+//PersonalMessages::PersonalMessages(QWidget* parent)
+//    : QMainWindow(parent), active_(false), init_(false), convName_() {
+//  ui_.setupUi(this);
+//
+//  connect(ClientController::instance(),
+//          SIGNAL(messageReceived(ClientController::MessageType,
+//                                    const QDateTime&,
+//                                    const QString&,
+//                                    const QString&,
+//                                    const QString&)),
+//          this,
+//          SLOT(onMessageReceived(ClientController::MessageType,
+//                                    const QDateTime&,
+//                                    const QString&,
+//                                    const QString&,
+//                                    const QString&)));
+//
+//          connect(ui_.send_message_btn, SIGNAL(clicked(bool)),
+//                  this,                 SLOT(onSendMessageClicked()));
+//}
 
-  connect(ClientController::instance(),
-          SIGNAL(messageReceived(ClientController::MessageType,
-                                    const QDateTime&,
-                                    const QString&,
-                                    const QString&,
-                                    const QString&)),
-          this,
-          SLOT(onMessageReceived(ClientController::MessageType,
-                                    const QDateTime&,
-                                    const QString&,
-                                    const QString&,
-                                    const QString&)));
-
-          connect(ui_.send_message_btn, SIGNAL(clicked(bool)),
-                  this,                 SLOT(onSendMessageClicked()));
-}
-
-PersonalMessages::PersonalMessages(QString name)
-    : active_(false), init_(false) {
+PersonalMessages::PersonalMessages(QWidget* parent, QString name)
+    : QMainWindow(parent), active_(false), init_(false), convName_() {
   setAttribute(Qt::WA_DeleteOnClose, true);
   setWindowIcon(QPixmap(":/icons/16/globe"));
   ui_.setupUi(this);

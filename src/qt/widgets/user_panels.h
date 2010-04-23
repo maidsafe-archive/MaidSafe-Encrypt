@@ -92,9 +92,6 @@ class UserPanels : public QWidget {
     void onSortShareUsedClicked();
     void onSortShareRecentClicked();
 
-    // Notification from the Messages panel that a message was received
-    void onMessageReceived();
-
     // Notification from the Public Username panel that a username was set
     void onPublicUsernameChosen();
 
@@ -119,11 +116,8 @@ class UserPanels : public QWidget {
 
   Ui::UserPanels ui_;
 
-  Messages* messages_;
   Shares* shares_;
   Contacts* contacts_;
-//  VaultInfo* vaultinfo_;
-
   PublicUsername* public_username_;
 #ifdef PD_LIGHT
   FileBrowser* browser_;

@@ -484,8 +484,7 @@ bool SelfEncryption::CheckCompressibility(
     crypto::Crypto crypto_obj;
     compressed_test_chunk = crypto_obj.Compress(uncompressed_test_chunk, "",
                                                 9, crypto::STRING_STRING);
-    float ratio = static_cast<float>(compressed_test_chunk.size()
-                                      / test_chunk_size);
+    double ratio = compressed_test_chunk.size() / test_chunk_size;
     return (ratio <= 0.9);
   }
   catch(const std::exception &e) {
@@ -538,7 +537,7 @@ bool SelfEncryption::CalculateChunkSizes(
     // get maximum ratio to add/subtract from chunks so that we're not left
     // with a negative-sized final chunk should all previous chunks have had
     // maximum bytes added to them.
-    float max_ratio = static_cast<float>(1)/(max_chunks_*16);
+    double max_ratio = 1.0 / (max_chunks_ * 16);
 
     boost::uint64_t this_chunk_size =
         static_cast<boost::uint64_t>(this_avg_chunk_size *

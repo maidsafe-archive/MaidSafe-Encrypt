@@ -42,11 +42,10 @@ namespace {
 }
 
 UserPanels::UserPanels(QWidget* parent)
-    : QWidget(parent)
-    , messages_(NULL)
-    , shares_(NULL)
-    , contacts_(NULL)
-    , panel_(-1) {
+    : QWidget(parent),
+      shares_(NULL),
+      contacts_(NULL),
+      panel_(-1) {
   ui_.setupUi(this);
 
   ui_.tabWidget_2->setContextMenuPolicy(Qt::CustomContextMenu);
@@ -119,10 +118,6 @@ UserPanels::UserPanels(QWidget* parent)
 
 UserPanels::~UserPanels() { }
 
-void UserPanels::onMessageReceived() {
-  emit unreadMessages(messages_->unreadMessages());
-}
-
 void UserPanels::onPublicUsernameChosen() {
   if (ui_.tabWidget_2->currentWidget() == public_username_) {
     ui_.tabWidget_2->removeTab(0);
@@ -132,15 +127,9 @@ void UserPanels::onPublicUsernameChosen() {
   } else {
     QPixmap contactIcon_ = QPixmap(":/icons/32/contacts");
     QPixmap shareIcon_ = QPixmap(":/icons/32/shares");
-    // QPixmap messagesIcon_ = QPixmap(":/icons/32/messages");
-    // QPixmap vaultInfoIcon_ = QPixmap(":/icons/32/settings");
 
     ui_.tabWidget_2->addTab(contacts_ = new Contacts, contactIcon_, "");
     ui_.tabWidget_2->addTab(shares_   = new Shares, shareIcon_, "");
-    // ui_.tabWidget_2->addTab(messages_ = new Messages, messagesIcon_, "");
-    // ui_.tabWidget_2->addTab(vaultinfo_ = new VaultInfo, vaultInfoIcon_, "");
-    // connect(messages_, SIGNAL(messageReceived()),
-    //         this,      SLOT(onMessageReceived()));
   }
 
   ui_.tabWidget_2->setEnabled(true);
@@ -159,7 +148,7 @@ void UserPanels::onMyFilesClicked() {
 #endif
 }
 
-void UserPanels::onCurrentChanged(int index) {
+void UserPanels::onCurrentChanged(int) {
   activatePanel(true);
 }
 
@@ -263,7 +252,7 @@ void UserPanels::customContentsMenu(const QPoint &pos) {
   // }
 }
 
-void UserPanels::addConvToList(QString name) {
+void UserPanels::addConvToList(QString) {
 //  if(name != "")
 //    openConvList_.append("test");
 }

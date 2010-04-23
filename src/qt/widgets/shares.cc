@@ -144,7 +144,7 @@ void Shares::onCreateShareClicked() {
   QStringList ro_set(admin_set);
   if (db_contacts.size() > 0) {
     ShareParticipantsChoice spc_ro(this, tr("Read-only Participants"), &ro_set);
-    int n = spc_ro.exec();
+    spc_ro.exec();
   } else {
     ro_set.clear();
   }
@@ -223,7 +223,7 @@ void Shares::onAddedPrivateShare(const QString& name) {
   addShare(name);
 }
 
-void Shares::onSharesBoxTextEdited(const QString &value) {
+void Shares::onSharesBoxTextEdited(const QString&) {
   qDebug() << "in search shares";
 
   const QString share_name = ui_.shareNameLineEdit->text().trimmed();

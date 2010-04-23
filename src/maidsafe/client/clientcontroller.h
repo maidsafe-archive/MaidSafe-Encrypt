@@ -142,7 +142,7 @@ class ClientController {
   void onInstantMessage(const std::string &message,
                         const boost::uint32_t&,
                         const boost::int16_t&,
-                        const float &);
+                        const double&);
   void SetIMNotifier(IMNotifier imn);
 
   // Contact operations

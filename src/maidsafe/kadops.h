@@ -137,7 +137,7 @@ class KadOps {
    * exclude.  If the ideal_rtt is -1.0, then the contact with the highest rtt
    * will be chosen.
    */
-  virtual int GetStorePeer(const float &ideal_rtt,
+  virtual int GetStorePeer(const double &ideal_rtt,
                            const std::vector<kad::Contact> &exclude,
                            kad::Contact *new_peer,
                            bool *local);

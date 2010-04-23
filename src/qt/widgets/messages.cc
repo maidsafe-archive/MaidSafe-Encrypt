@@ -137,7 +137,7 @@ void Messages::onMessageReceived(ClientController::MessageType,
 void Messages::addMessage(const QDateTime& time,
                           const QString& sender,
                           const QString& message,
-                          const QString& conversation) {
+                          const QString&) {
   Message msg;
   msg.time = time;
   msg.from = sender;

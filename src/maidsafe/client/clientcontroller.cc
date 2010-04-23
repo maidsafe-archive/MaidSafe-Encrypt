@@ -1570,7 +1570,7 @@ int ClientController::SendInstantFile(std::string *filename,
 void ClientController::onInstantMessage(const std::string &message,
                                         const boost::uint32_t&,
                                         const boost::int16_t&,
-                                        const float&) {
+                                        const double&) {
   GenericPacket gp;
   if (!gp.ParseFromString(message)) {
     return;

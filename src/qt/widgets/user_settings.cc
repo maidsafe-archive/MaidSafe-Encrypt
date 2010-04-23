@@ -22,7 +22,7 @@
 #include "qt/client/save_profile_settings_thread.h"
 #include "qt/client/save_security_settings_thread.h"
 
-UserSettings::UserSettings(QWidget* parent) {
+UserSettings::UserSettings(QWidget* parent) : QDialog(parent) {
   ui_.setupUi(this);
 
   createSettingsMenu();
@@ -134,7 +134,7 @@ void UserSettings::setState(State state) {
 }
 
 void UserSettings::HandleOK() {
-  bool applied;
+//  bool applied;
   if (!personal_->changedValues_.isEmpty()) {
     QHash<QString, QString> theHash = personal_->changedValues_;
 
