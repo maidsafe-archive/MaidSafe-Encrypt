@@ -135,6 +135,7 @@ SET(REQUIRED_BOOST_COMPONENTS date_time filesystem regex system thread)
 INCLUDE(${PD_SOURCE_DIR}/build/maidsafe_FindBoost.cmake)
 SET(INCLUDE_DIRS ${INCLUDE_DIRS} ${Boost_INCLUDE_DIR})
 SET(LIBS_DIRS ${LIBS_DIRS} ${Boost_LIBRARY_DIRS})
+SET(LIBS_DIRS_DEBUG ${LIBS_DIRS_DEBUG} ${Boost_LIBRARY_DIRS})
 
 ###################################################################################################
 # QT library search                                                                               #
@@ -148,14 +149,16 @@ INCLUDE(${PD_SOURCE_DIR}/build/maidsafe_FindQt4.cmake)
 ###################################################################################################
 INCLUDE(${PD_SOURCE_DIR}/build/maidsafe_FindGtest.cmake)
 SET(INCLUDE_DIRS ${INCLUDE_DIRS} ${Gtest_INCLUDE_DIR})
-SET(LIBS_DIRS ${LIBS_DIRS} ${Gtest_LIBRARY_DIR} ${Gtest_LIBRARY_DIR_DEBUG})
+SET(LIBS_DIRS ${LIBS_DIRS} ${Gtest_LIBRARY_DIR})
+SET(LIBS_DIRS_DEBUG ${LIBS_DIRS_DEBUG} ${Gtest_LIBRARY_DIR_DEBUG})
 
 ###################################################################################################
 # Google Mock library search                                                                      #
 ###################################################################################################
 INCLUDE(${PD_SOURCE_DIR}/build/maidsafe_FindGmock.cmake)
 SET(INCLUDE_DIRS ${INCLUDE_DIRS} ${Gmock_INCLUDE_DIR})
-SET(LIBS_DIRS ${LIBS_DIRS} ${Gmock_LIBRARY_DIR} ${Gmock_LIBRARY_DIR_DEBUG})
+SET(LIBS_DIRS ${LIBS_DIRS} ${Gmock_LIBRARY_DIR})
+SET(LIBS_DIRS_DEBUG ${LIBS_DIRS_DEBUG} ${Gmock_LIBRARY_DIR_DEBUG})
 
 ###################################################################################################
 # Protocol Buffers library search                                                                 #
@@ -163,7 +166,8 @@ SET(LIBS_DIRS ${LIBS_DIRS} ${Gmock_LIBRARY_DIR} ${Gmock_LIBRARY_DIR_DEBUG})
 FILE(GLOB PROTO_FILES RELATIVE ${SOURCE_DIR} "${SOURCE_DIR}/protobuf/*.proto")
 INCLUDE(${PD_SOURCE_DIR}/build/maidsafe_FindProtobuf.cmake)
 SET(INCLUDE_DIRS ${INCLUDE_DIRS} ${Protobuf_INCLUDE_DIR})
-SET(LIBS_DIRS ${LIBS_DIRS} ${Protobuf_LIBRARY_DIR} ${Protobuf_LIBRARY_DIR_DEBUG})
+SET(LIBS_DIRS ${LIBS_DIRS} ${Protobuf_LIBRARY_DIR})
+SET(LIBS_DIRS_DEBUG ${LIBS_DIRS_DEBUG} ${Protobuf_LIBRARY_DIR_DEBUG})
 
 ###################################################################################################
 # Google BreakPad library search                                                                  #
@@ -172,6 +176,7 @@ IF((UNIX AND NOT APPLE) OR MSVC)
   INCLUDE(${PD_SOURCE_DIR}/build/maidsafe_FindBreakpad.cmake)
   SET(INCLUDE_DIRS ${INCLUDE_DIRS} ${Breakpad_INCLUDE_DIR})
   SET(LIBS_DIRS ${LIBS_DIRS} ${Breakpad_LIBRARY_DIR})
+  SET(LIBS_DIRS_DEBUG ${LIBS_DIRS_DEBUG} ${Breakpad_LIBRARY_DIR_DEBUG})
 ENDIF()
 
 ###################################################################################################
@@ -191,7 +196,8 @@ ENDIF(PYTHONINTERP_FOUND)
 ###################################################################################################
 INCLUDE(${PD_SOURCE_DIR}/build/maidsafe_FindMaidsafeDht.cmake)
 SET(INCLUDE_DIRS ${INCLUDE_DIRS} ${maidsafe_dht_INCLUDE_DIR})
-SET(LIBS_DIRS ${LIBS_DIRS} ${maidsafe_dht_LIBRARY_DIR} ${maidsafe_dht_LIBRARY_DIR_DEBUG})
+SET(LIBS_DIRS ${LIBS_DIRS} ${maidsafe_dht_LIBRARY_DIR})
+SET(LIBS_DIRS_DEBUG ${LIBS_DIRS_DEBUG} ${maidsafe_dht_LIBRARY_DIR_DEBUG})
 
 ###################################################################################################
 # Dokan library search                                                                            #
@@ -200,6 +206,7 @@ IF(WIN32)
   INCLUDE(${PD_SOURCE_DIR}/build/maidsafe_FindDokan.cmake)
   SET(INCLUDE_DIRS ${INCLUDE_DIRS} ${Dokan_INCLUDE_DIR})
   SET(LIBS_DIRS ${LIBS_DIRS} ${Dokan_LIBRARY_DIR})
+  SET(LIBS_DIRS_DEBUG ${LIBS_DIRS_DEBUG} ${Dokan_LIBRARY_DIR})
 ENDIF()
 
 ###################################################################################################
@@ -214,7 +221,7 @@ ELSEIF(WIN32)
   IF(MSVC)
     SET(SYS_LIBS sqlite3 ws2_32 odbc32 odbccp32 WSock32 IPHlpApi)
   ELSE()
-    SET(SYS_LIBS sqlite3 advapi32 kernel32 ws2_32 iphlpapi mswsock)
+    SET(SYS_LIBS sqlite3 advapi32 ws2_32 iphlpapi mswsock)
   ENDIF()
 ENDIF()
 FOREACH(library ${SYS_LIBS})
@@ -223,6 +230,7 @@ FOREACH(library ${SYS_LIBS})
     MESSAGE("-- Found library ${CURRENT_LIB}")
     GET_FILENAME_COMPONENT(CURRENT_LIBRARY_DIR ${CURRENT_LIB} PATH)
     SET(LIBS_DIRS ${LIBS_DIRS} ${CURRENT_LIBRARY_DIR})
+    SET(LIBS_DIRS_DEBUG ${LIBS_DIRS_DEBUG} ${CURRENT_LIBRARY_DIR})
   ELSE()
     SET(ERROR_MESSAGE "\nCould not find library ${library}.  Run\n")
     SET(ERROR_MESSAGE "${ERROR_MESSAGE}cmake ../.. -DADD_LIBRARY_DIR=<Path to ${library} directory>")
@@ -230,12 +238,6 @@ FOREACH(library ${SYS_LIBS})
   ENDIF()
   UNSET(CURRENT_LIB CACHE)
 ENDFOREACH()
-
-
-#      IF(${CURRENT_LIB} MATCHES dll$ OR ${CURRENT_LIB} MATCHES DLL$)
-#        SET(SYS_LIBS ${SYS_LIBS} -l${library})
-#      ELSE()
-#        SET(SYS_LIBS ${SYS_LIBS} ${CURRENT_LIB})
 
 MESSAGE("================================================================================")
 
@@ -341,10 +343,6 @@ ENDIF(APPLE)
 ###################################################################################################
 LIST(REMOVE_DUPLICATES INCLUDE_DIRS)
 INCLUDE_DIRECTORIES(${SOURCE_DIR} ${CMAKE_BINARY_DIR} ${INCLUDE_DIRS})
-LIST(REMOVE_DUPLICATES LIBS_DIRS)
-IF(MSVC)
-  LINK_DIRECTORIES(${LIBS_DIRS} ${LIBRARY_OUTPUT_PATH})
-ENDIF()
 LINK_DIRECTORIES(${PD_BINARY_DIR})
 
 IF(APPLE)
@@ -376,12 +374,23 @@ ELSE()
   ADD_EXECUTABLE(vault "${SOURCE_DIR}/maidsafe/vault/unix_deamon.cc")
 ENDIF()
 
+SET(ALL_EXECUTABLES perpetualdata pdlocal pdlightlocal TESTnetworkclientcontroller TESTfuncauth TESTlocalclientcontroller
+    TESTpdvault TESTbph TESTmaidsafe TESTfs testvault TESTimconnhndl vault) # TESTfuse
+
 ADD_LIBRARY(PDmaidsafelib STATIC ${M_MAIDSAFE_DIR})
 ADD_LIBRARY(PDmsclientlib STATIC ${M_MSCLIENT_DIR})
 ADD_LIBRARY(PDmsvaultlib STATIC ${M_MSVAULT_DIR})
 ADD_LIBRARY(PDTESTmsclientlib STATIC ${M_MSCLIENT_DIR})
 ADD_LIBRARY(PDfslib STATIC ${SOURCE_DIR}/fs/filesystem.cc ${FS_SOURCE_FILE})
 ADD_LIBRARY(PDpbmsgslib STATIC ${M_PROTOBUF_DIR})
+
+# Force renaming of exes to match standard CMake library renaming policy
+FOREACH(EXECUTABLE ${ALL_EXECUTABLES})
+  SET_TARGET_PROPERTIES(${EXECUTABLE} PROPERTIES
+                          DEBUG_OUTPUT_NAME ${EXECUTABLE}${CMAKE_DEBUG_POSTFIX}
+                          RELWITHDEBINFO_OUTPUT_NAME ${EXECUTABLE}${CMAKE_RELWITHDEBINFO_POSTFIX}
+                          MINSIZEREL_OUTPUT_NAME ${EXECUTABLE}${CMAKE_MINSIZEREL_POSTFIX})
+ENDFOREACH()
 
 ###################################################################################################
 # Builds                                                                                          #
@@ -476,6 +485,7 @@ ELSE()
   TARGET_LINK_LIBRARIES(TESTfuncauth ${ALL_TARGET_LIBS})
 #  TARGET_LINK_LIBRARIES(TESTfuse ${ALL_TARGET_LIBS})
 
+  TARGET_LINK_LIBRARIES(TESTmaidsafe debug ${Gmock_LIBRARY_DEBUG} optimized ${Gmock_LIBRARY})
   FOREACH (DLIB ${DEBUG_TEST_LIBS})
     TARGET_LINK_LIBRARIES(TESTmaidsafe debug ${DLIB})
     TARGET_LINK_LIBRARIES(TESTpdvault debug ${DLIB})
@@ -494,7 +504,6 @@ ELSE()
     TARGET_LINK_LIBRARIES(TESTfuncauth optimized ${RLIB})
 #    TARGET_LINK_LIBRARIES(TESTfuse optimized ${RLIB})
   ENDFOREACH()
-  TARGET_LINK_LIBRARIES(TESTmaidsafe debug ${Gmock_LIBRARY_DEBUG} optimized ${Gmock_LIBRARY})
 ENDIF()
 
 ###################################################################################################
@@ -525,12 +534,25 @@ ELSEIF(WIN32)
     # CMake defaults stack size to 10MB.  Set this to windows default of 1MB
     STRING(REGEX REPLACE "/STACK:[0-9]+" "" CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}")
     STRING(REGEX REPLACE "/STACK:[0-9]+" "" CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS}")
-    SET_TARGET_PROPERTIES(perpetualdata pdlocal pdlightlocal TESTmaidsafe TESTpdvault TESTbph TESTimconnhndl TESTnetworkclientcontroller
-                          TESTfuncauth TESTlocalclientcontroller TESTfs testvault vault PROPERTIES
-        COMPILE_FLAGS "-DUDT_STATIC"
-        LINK_FLAGS "/STACK:1048576"
-        LINK_FLAGS_RELEASE "/OPT:REF /OPT:ICF /LTCG")
-  ELSE(MSVC)
+    # Given a link dir of "a/b/c", MSVC adds "a/b/c/" AND "a/b/c/CMAKE_BUILD_TYPE" as link dirs, so we
+    # can't just use "LINK_DIRECTORIES" as some Google debug libs have the same name as the release version.
+    LIST(REMOVE_DUPLICATES LIBS_DIRS)
+    FOREACH(LIBS_DIR ${LIBS_DIRS})
+      STRING(REPLACE "\\" "\\\\" LIBS_DIR ${LIBS_DIR})
+      SET(LINKER_LIBS_DIRS_RELEASE "${LINKER_LIBS_DIRS_RELEASE} /LIBPATH:\"${LIBS_DIR}\"")
+    ENDFOREACH()
+    LIST(REMOVE_DUPLICATES LIBS_DIRS_DEBUG)
+    FOREACH(LIBS_DIR_DEBUG ${LIBS_DIRS_DEBUG})
+      STRING(REPLACE "\\" "\\\\" LIBS_DIR_DEBUG ${LIBS_DIR_DEBUG})
+      SET(LINKER_LIBS_DIRS_DEBUG "${LINKER_LIBS_DIRS_DEBUG} /LIBPATH:\"${LIBS_DIR_DEBUG}\"")
+    ENDFOREACH()
+    SET_TARGET_PROPERTIES(${ALL_EXECUTABLES} PROPERTIES
+                              COMPILE_FLAGS "-DUDT_STATIC"
+                              LINK_FLAGS_RELEASE "/STACK:1048576 /OPT:REF /OPT:ICF /LTCG /INCREMENTAL:NO ${LINKER_LIBS_DIRS_RELEASE}"
+                              LINK_FLAGS_DEBUG "/STACK:1048576 ${LINKER_LIBS_DIRS_DEBUG}"
+                              LINK_FLAGS_RELWITHDEBINFO "/STACK:1048576 ${LINKER_LIBS_DIRS_DEBUG}"
+                              LINK_FLAGS_MINSIZEREL "/STACK:1048576 ${LINKER_LIBS_DIRS_DEBUG}")
+  ELSE()
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wfloat-equal -Wlong-long -Wstrict-overflow=5 -D_FORTIFY_SOURCE=2 -fno-stack-protector -D_FILE_OFFSET_BITS=64")
     SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG") # -g -pg -fprofile-arcs -ftest-coverage")
     SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O2 -Wuninitialized")
@@ -538,8 +560,8 @@ ELSEIF(WIN32)
     # SET(CMAKE_EXE_LINKER_FLAGS "-Wl,--enable-auto-import")
     # SET(CMAKE_EXE_LINKER_FLAGS_DEBUG "${CMAKE_EXE_LINKER_FLAGS_DEBUG} -fprofile-arcs -ftest-coverage")
     SET_TARGET_PROPERTIES(pdlocal perpetualdata PROPERTIES COMPILE_FLAGS -w)
-  ENDIF(MSVC)
-ENDIF(APPLE)
+  ENDIF()
+ENDIF()
 
 ###################################################################################################
 # Tests                                                                                           #
@@ -577,10 +599,20 @@ IF(NOT ${MAIDSAFE_TEST_TYPE} MATCHES "BEH")
   ENDIF(PYTHONINTERP_FOUND)
 ENDIF()
 
-IF(UNIX)
-	SET(MAID_TEST_PATH ${EXECUTABLE_OUTPUT_PATH}/TESTmaidsafe)
+IF(CMAKE_BUILD_TYPE MATCHES "Debug")
+  SET(TEST_POSTFIX ${CMAKE_DEBUG_POSTFIX})
+ELSEIF(CMAKE_BUILD_TYPE MATCHES "RelWithDebInfo")
+  SET(TEST_POSTFIX ${CMAKE_RELWITHDEBINFO_POSTFIX})
+ELSEIF(CMAKE_BUILD_TYPE MATCHES "MinSizeRel")
+  SET(TEST_POSTFIX ${CMAKE_MINSIZEREL_POSTFIX})
+ENDIF()
+
+IF(MSVC)
+  SET(MAID_TEST_PATH ${EXECUTABLE_OUTPUT_PATH}/${CMAKE_BUILD_TYPE}/TESTmaidsafe${TEST_POSTFIX}.exe)
+ELSEIF(WIN32)
+  SET(MAID_TEST_PATH ${EXECUTABLE_OUTPUT_PATH}/TESTmaidsafe${TEST_POSTFIX}.exe)
 ELSE()
-	SET(MAID_TEST_PATH ${EXECUTABLE_OUTPUT_PATH}/TESTmaidsafe.exe)
+  SET(MAID_TEST_PATH ${EXECUTABLE_OUTPUT_PATH}/TESTmaidsafe${TEST_POSTFIX})
 ENDIF()
 
 IF(EXISTS ${MAID_TEST_PATH})
@@ -700,11 +732,26 @@ MESSAGE("    To include functional tests,           cmake ../.. -DMAIDSAFE_TEST_
 MESSAGE("================================================================================")
 MESSAGE("")
 MESSAGE("Build type is set to \"${CMAKE_BUILD_TYPE}\"")
+IF(NOT MSVC)
+  IF((NOT MAIDSAFE_DHT_BUILD_TYPE MATCHES "Debug") OR
+     (NOT MAIDSAFE_DHT_BUILD_TYPE MATCHES "RelWithDebInfo") OR
+     (NOT MAIDSAFE_DHT_BUILD_TYPE MATCHES "MinSizeRel"))
+    SET(MAIDSAFE_DHT_BUILD_TYPE Release)
+  ENDIF()
+  MESSAGE("Linking to \"${MAIDSAFE_DHT_BUILD_TYPE}\" build of maidsafe-dht, cryptopp & udt")
+ENDIF()
 MESSAGE("")
-MESSAGE("    To alter this (e.g. to Debug),          cmake ../.. -DCMAKE_BUILD_TYPE=Debug")
+MESSAGE("    To alter build type (e.g. to Debug),    cmake ../.. -DCMAKE_BUILD_TYPE=Debug")
+IF(NOT MSVC)
+  MESSAGE("")
+  MESSAGE("    To link to (e.g. Debug) build of maidsafe-dht, cryptopp & udt,")
+  MESSAGE("                                     cmake ../.. -DMAIDSAFE_DHT_BUILD_TYPE=Debug")
+  MESSAGE("")
+ENDIF()
 MESSAGE("    Options are Release, Debug, RelWithDebInfo, MinSizeRel")
 MESSAGE("================================================================================")
 MESSAGE("")
+
 
 # BitRock InstallBuilder
 IF(CMAKE_BUILD_TYPE MATCHES Release)

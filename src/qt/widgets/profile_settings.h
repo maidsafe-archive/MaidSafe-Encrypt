@@ -50,6 +50,9 @@ class ProfileSettings : public QWidget {
  private:
   Ui::ProfileSettingsPage ui_;
   bool init_;
+
+ protected:
+  void changeEvent(QEvent *event);
 };
 
 

@@ -57,6 +57,9 @@ class Progress : public QWidget {
 
  private:
   Ui::Progress ui_;
+
+ protected:
+  void changeEvent(QEvent *event);
 };
 
 #endif  // QT_WIDGETS_PROGRESS_H_

@@ -26,3 +26,11 @@ CreateWelcomePage::CreateWelcomePage(QWidget* parent)
 
 CreateWelcomePage::~CreateWelcomePage() {}
 
+void CreateWelcomePage::changeEvent(QEvent *event) {
+  if (event->type() == QEvent::LanguageChange) {
+    // TODO Get lang from ClientController and Update as Neccesary
+    //ui_.retranslateUi(this);
+  } else
+    QWidget::changeEvent(event);
+}
+

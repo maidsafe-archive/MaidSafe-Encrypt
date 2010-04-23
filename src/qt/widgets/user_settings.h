@@ -78,6 +78,9 @@ class UserSettings : public QDialog {
   FileTransferSettings* fileTransfer_;
   SecuritySettings* security_;
   ProfileSettings* profile_;
+
+ protected:
+  void changeEvent(QEvent *event);
 };
 
 #endif  // QT_WIDGETS_USER_SETTINGS_H_

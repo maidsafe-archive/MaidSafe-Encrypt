@@ -44,6 +44,9 @@ class PersonalSettings : public QWidget {
  private:
   Ui::PersonalSettingsPage ui_;
   bool init_;
+
+ protected:
+  void changeEvent(QEvent *event);
 };
 
 #endif  // QT_WIDGETS_PERSONAL_SETTINGS_H_

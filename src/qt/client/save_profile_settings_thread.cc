@@ -39,7 +39,6 @@ void SaveProfileSettingsThread::run() {
   //TODO - Implement save settings
 
   if (!theHash_["FullName"].isEmpty()){
-
   }
 
   /*profileInfo.push_back(theHash_["FullName"].toStdString());

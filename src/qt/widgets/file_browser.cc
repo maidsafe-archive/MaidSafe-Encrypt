@@ -51,6 +51,9 @@ namespace fs = boost::filesystem;
   menu = new QMenu(this);
 
   openFile = new QAction(tr("Open"), this);
+#if defined(MAIDSAFE_APPLE)
+  openWith = new QAction(tr("Open With.."), this);
+#endif
   sendFile = new QAction(tr("Send"), this);
   cutFile = new QAction(tr("Cut"), this);
   copyFile = new QAction(tr("Copy"), this);
@@ -59,6 +62,9 @@ namespace fs = boost::filesystem;
   saveFile = new QAction(tr("Save"), this);
 
   menu->addAction(openFile);
+#if defined(MAIDSAFE_APPLE)
+  menu->addAction(openWith);
+#endif
   menu->addAction(saveFile);
   menu->addSeparator();
   //menu->addAction(cutFile);
@@ -89,6 +95,11 @@ namespace fs = boost::filesystem;
 
   connect(openFile, SIGNAL(triggered()),
           this,        SLOT(onOpenFileClicked()));
+
+#if defined(MAIDSAFE_APPLE)
+  connect(openWith, SIGNAL(triggered()),
+          this,        SLOT(onOpenWithClicked()));
+#endif
 
   connect(sendFile, SIGNAL(triggered()),
           this,        SLOT(onSendFileClicked()));
@@ -135,6 +146,36 @@ void FileBrowser::reset() {
   init_ = false;
 }
 
+void FileBrowser::setMenuDirMenu() {
+  menu->addAction(openFile);
+#if defined(MAIDSAFE_APPLE)
+  menu->removeAction(openWith);
+#endif
+  menu->addAction(saveFile);
+  menu->addSeparator();
+  //menu->addAction(cutFile);
+  //menu->addAction(copyFile);
+  //menu->addSeparator();
+  menu->addAction(deleteFile);
+  menu->addAction(renameFile);
+  menu->addAction(sendFile);
+}
+
+void FileBrowser::setMenuFileMenu() {
+  menu->addAction(openFile);
+#if defined(MAIDSAFE_APPLE)
+  menu->addAction(openWith);
+#endif
+  menu->addAction(saveFile);
+  menu->addSeparator();
+  //menu->addAction(cutFile);
+  //menu->addAction(copyFile);
+  //menu->addSeparator();
+  menu->addAction(deleteFile);
+  menu->addAction(renameFile);
+  menu->addAction(sendFile);
+}
+
 void FileBrowser::dragEnterEvent(QDragEnterEvent *event) {
   qDebug() << "drag enter event";
   event->acceptProposedAction();
@@ -150,6 +191,10 @@ void FileBrowser::dropEvent(QDropEvent *event) {
 
 void FileBrowser::onMousePressed(QTreeWidgetItem*, int) {
   if(QApplication::mouseButtons() == Qt::RightButton){
+    if (item->text(3) == "Directory")
+      setMenuDirMenu();
+    else
+      setMenuFileMenu();
     menu->exec(QCursor::pos());
   }
 }
@@ -159,6 +204,41 @@ void FileBrowser::onOpenFileClicked() {
 
   onItemDoubleClicked(theItem, 0);
 }
+
+#if defined MAIDSAFE_APPLE
+void FileBrowser::onOpenWithClicked() {
+  qDebug() << "Open With invoked";
+
+  QTreeWidgetItem* theItem = ui_.driveTreeWidget->currentItem();
+  QString path = rootPath_ + currentDir_ + theItem->text(0);
+  QString fileName = QFileDialog::getOpenFileName(this,
+                                      tr("Choose Application to open with"),
+                                      "/Applications",
+                                      tr("All Applications") +  "(*.app)");
+  if (fileName.isEmpty()) {
+    return;
+  }
+
+  qDebug() << "Asked to open with: " << fileName;
+
+  QString command("open");
+  QStringList parameters;
+  parameters << "-a";
+  parameters << fileName;
+  parameters << QString::fromStdString(path.toStdString());
+  myProcess_.reset(new QProcess);
+  connect(myProcess_.get(), SIGNAL(error(QProcess::ProcessError)),
+      this, SLOT(onOpenError(QProcess::ProcessError)));
+  connect(myProcess_.get(), SIGNAL(started()),
+      this, SLOT(onOpenStarted()));
+  connect(myProcess_.get(), SIGNAL(finished(int, QProcess::ExitStatus)),
+      this, SLOT(onOpenFinished(int, QProcess::ExitStatus)));
+  // myProcess_->start(command, parameters);
+  if (!myProcess_->startDetached("/usr/bin/open", QStringList() << parameters)) {
+    qDebug() << ":'(";
+  }
+}
+#endif
 
 void FileBrowser::onSendFileClicked() {
   QTreeWidgetItem* theItem = ui_.driveTreeWidget->currentItem();
@@ -346,6 +426,7 @@ int FileBrowser::populateDirectory(QString dir) {
       newItem->setText(1, tr("Network"));
       newItem->setText(2, tr("%1 KB").arg(
           ceil(static_cast<double>(mdm.file_size_low())/1024)));
+      newItem->setText(3, tr("Directory"));
       // TODO(Team#) use date format from the user's locale
       newItem->setText(4, lastModified->toString("dd/MM/yyyy hh:mm"));
       ui_.driveTreeWidget->insertTopLevelItem(rowCount, newItem);
@@ -380,7 +461,7 @@ int FileBrowser::populateDirectory(QString dir) {
 
 void FileBrowser::onItemDoubleClicked(QTreeWidgetItem* item, int) {
   qDebug() << "Entered ItemDoubleClicked";
-  if (item->text(3) == ""){
+  if (item->text(3) == "Directory"){
     qDebug() << "in ItemDoubleClicked open folder" << "/" << item->text(0) <<
         "/";
     populateDirectory(currentDir_  + item->text(0) + "/");
@@ -416,6 +497,18 @@ void FileBrowser::onItemDoubleClicked(QTreeWidgetItem* item, int) {
                           0,
                           0,
                           SW_SHOWNORMAL);
+//////////////////////////
+//Open With Code Below //
+////////////////////////
+      /*QString run = "RUNDLL32.EXE";
+      QString parameters = "shell32.dll,OpenAs_RunDLL ";
+      returnValue = (quintptr)ShellExecute(0,
+                          (TCHAR *)(operation.utf16()),
+                          (TCHAR *)(run.utf16()),
+                          (TCHAR *)(parameters + path).utf16(),
+                          0,
+                          SW_SHOWNORMAL);*/
+//////////////
       } , {
         returnValue = (quintptr)ShellExecuteA(0,
                                   operation.toLocal8Bit().constData(),
@@ -449,10 +542,31 @@ void FileBrowser::onItemDoubleClicked(QTreeWidgetItem* item, int) {
       QStringList parameters;
       parameters << QString::fromStdString(path.toStdString());
       myProcess_.reset(new QProcess);
-      myProcess_->start(command, parameters);
+      connect(myProcess_.get(), SIGNAL(error(QProcess::ProcessError)),
+          this, SLOT(onOpenError(QProcess::ProcessError)));
+      connect(myProcess_.get(), SIGNAL(started()),
+          this, SLOT(onOpenStarted()));
+      connect(myProcess_.get(), SIGNAL(finished(int, QProcess::ExitStatus)),
+          this, SLOT(onOpenFinished(int, QProcess::ExitStatus)));
+      // myProcess_->start(command, parameters);
+      if (!myProcess_->startDetached("/usr/bin/open", QStringList() << parameters)) {
+        qDebug() << ":'(";
+      }
 #endif
     }
   }
+}
+
+void FileBrowser::onOpenError(QProcess::ProcessError e) {
+  qDebug() << "OpenError: " << e;
+}
+
+void FileBrowser::onOpenStarted() {
+  qDebug() << "OpenStarted";
+}
+
+void FileBrowser::onOpenFinished(int exitCode, QProcess::ExitStatus exitStatus) {
+  qDebug() << "OpenFinished: " << exitCode << ", " << exitStatus;
 }
 
 void FileBrowser::onReadFileCompleted(int success, const QString& filepath) {
@@ -640,4 +754,12 @@ bool FileBrowser::eventFilter(QObject *obj, QEvent *event) {
     // pass the event on to the parent class
     return FileBrowser::eventFilter(obj, event);
   }
+}
+
+void FileBrowser::changeEvent(QEvent *event) {
+  if (event->type() == QEvent::LanguageChange) {
+    // TODO Get lang from ClientController and Update as Neccesary
+    //ui_.retranslateUi(this);
+  } else
+    QWidget::changeEvent(event);
 }

@@ -175,7 +175,7 @@ IF(MSVC)
     SET(ERROR_MESSAGE "${ERROR_MESSAGE}cmake ../.. -DMAIDSAFE_DHT_ROOT_DIR=<Path to maidsafe-dht root directory>")
     MESSAGE(FATAL_ERROR "${ERROR_MESSAGE}")
   ENDIF()
-  SET(maidsafe_dht_LIBRARY_DIR_DEBUG ${CHECK_LIB_DIR_UNIQUE} CACHE PATH "Path to maidsafe_dht libraries directory" FORCE)
+  SET(maidsafe_dht_LIBRARY_DIR_DEBUG ${CHECK_LIB_DIR_DEBUG_UNIQUE} CACHE PATH "Path to maidsafe_dht libraries directory" FORCE)
 ENDIF()
 
 SET(LIBRARIES_LIST ${maidsafe_dht_LIBRARY} ${Cryptopp_LIBRARY} ${Udt_LIBRARY} ${maidsafe_dht_LIBRARY_DEBUG} ${Cryptopp_LIBRARY_DEBUG} ${Udt_LIBRARY_DEBUG})
