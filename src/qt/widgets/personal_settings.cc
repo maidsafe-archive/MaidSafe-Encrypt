@@ -11,7 +11,7 @@
  *  Created on: Jan 23, 2010
  *      Author: Stephen Alexander
  */
-
+#include <QDebug>
 
 #include "qt/widgets/personal_settings.h"
 #include "qt/client/client_controller.h"
@@ -28,9 +28,6 @@ PersonalSettings::PersonalSettings(QWidget* parent)
 
     connect(ui_.pushButtonPicture, SIGNAL(clicked(bool)),
           this,           SLOT(onPicChangeClicked(bool)));
-
-    connect(ui_.langListWidget, SIGNAL(itemActivated(QListWidgetItem*)),
-            this,               SLOT(onLangSelect(QListWidgetItem*)));
 }
 
 PersonalSettings::~PersonalSettings() { }
@@ -40,6 +37,23 @@ void PersonalSettings::setActive(bool b) {
     init_ = true;
     ui_.usernameEdit->setText(ClientController::instance()->publicUsername());
     ui_.messageEdit->setText("Hello, this is my message!");
+
+    QDir dir(":/translations/");
+    dir.setFilter(QDir::Files | QDir::Hidden | QDir::NoSymLinks);
+    QStringList filters;
+    filters << "*.qm";
+    dir.setNameFilters(filters);
+    QStringList theList = dir.entryList();
+    foreach(QString tFile, theList) {
+      tFile.remove("pd_translation_", Qt::CaseInsensitive);
+      tFile.remove(".qm", Qt::CaseInsensitive);
+      QLocale locale(tFile);
+      ui_.langListWidget->addItem(locale.languageToString(locale.language())
+                                + "(" + tFile + ")");
+    }
+
+    connect(ui_.langListWidget, SIGNAL(itemClicked(QListWidgetItem*)),
+            this,               SLOT(onLangSelect(QListWidgetItem*)));
   }
 }
 
@@ -61,4 +75,11 @@ void PersonalSettings::onLangSelect(QListWidgetItem* item) {
   changedValues_.insert("language", item->text());
 }
 
+void PersonalSettings::changeEvent(QEvent *event) {
+  if (event->type() == QEvent::LanguageChange) {
+    // TODO Get lang from ClientController and Update as Neccesary
+    //ui_.retranslateUi(this);
+  } else
+    QWidget::changeEvent(event);
+}
 

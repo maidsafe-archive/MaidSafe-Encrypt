@@ -33,6 +33,9 @@ class ShareParticipantsChoice : public QDialog {
  private:
   Ui::Dialog ui_;
   QStringList* usernames_;
+
+ protected:
+  void changeEvent(QEvent *event);
 };
 
 #endif  // QT_WIDGETS_SHARE_PARTICIPANTS_H_

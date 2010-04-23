@@ -70,6 +70,7 @@ class FileBrowser : public QDialog {
     void dropEvent(QDropEvent *event);
     void dragEnterEvent(QDragEnterEvent *event);
     bool eventFilter(QObject *obj, QEvent *ev);
+    void changeEvent(QEvent *event);
 
   private slots:
     void onItemDoubleClicked(QTreeWidgetItem*, int);

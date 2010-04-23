@@ -43,6 +43,9 @@ class CreateCompletePage : public QWizardPage {
 
  private:
   Ui::complete ui_;
+
+ protected:
+  void changeEvent(QEvent *event);
 };
 
 #endif  // QT_WIDGETS_CREATE_PAGE_COMPLETE_H_

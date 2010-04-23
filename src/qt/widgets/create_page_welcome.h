@@ -32,6 +32,9 @@ class CreateWelcomePage : public QWizardPage {
 
  private:
   Ui::welcome ui_;
+
+ protected:
+  void changeEvent(QEvent *event);
 };
 
 #endif  // QT_WIDGETS_CREATE_PAGE_WELCOME_H_

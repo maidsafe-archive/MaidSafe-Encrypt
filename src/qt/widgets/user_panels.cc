@@ -312,4 +312,11 @@ void UserPanels::onSortShareRecentClicked() {
   shares_->setActive(true);
 }
 
+void UserPanels::changeEvent(QEvent *event) {
+  if (event->type() == QEvent::LanguageChange) {
+  //  ui_.retranslateUi(this);
+  } else
+    QWidget::changeEvent(event);
+}
+
 

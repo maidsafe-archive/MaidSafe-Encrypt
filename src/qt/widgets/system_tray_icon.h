@@ -15,6 +15,7 @@
 #ifndef QT_WIDGETS_SYSTEM_TRAY_ICON_H_
 #define QT_WIDGETS_SYSTEM_TRAY_ICON_H_
 
+#include <QEvent>
 #include <QObject>
 #include <QSystemTrayIcon>
 
@@ -39,6 +40,7 @@ class SystemTrayIcon : public QSystemTrayIcon {
 
  protected:
   explicit SystemTrayIcon();
+  void changeEvent(QEvent *event);
 
   private slots:
     void onActivated(QSystemTrayIcon::ActivationReason reason);
