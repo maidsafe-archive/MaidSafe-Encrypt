@@ -23,22 +23,21 @@
 #endif
 
 #include <QDebug>
-#include <QProcess>
-#include <QMouseEvent>
-#include <QFileIconProvider>
-#include <QUrl>
 #include <QFileDialog>
+#include <QFileIconProvider>
 #include <QInputDialog>
 #include <QLineEdit>
 #include <QMessageBox>
+#include <QMouseEvent>
+#include <QUrl>
 
-#include "qt/client/client_controller.h"
 #include "maidsafe/client/clientcontroller.h"
-#include "qt/client/read_file_thread.h"
-#include "qt/client/save_file_thread.h"
-#include "qt/client/rename_file_thread.h"
+#include "qt/client/client_controller.h"
 #include "qt/client/make_directory_thread.h"
+#include "qt/client/read_file_thread.h"
 #include "qt/client/remove_dir_thread.h"
+#include "qt/client/rename_file_thread.h"
+#include "qt/client/save_file_thread.h"
 
 namespace fs = boost::filesystem;
 
@@ -312,6 +311,8 @@ int FileBrowser::populateDirectory(QString dir) {
     QStringList columns;
     columns << "Name" << "Status" << "Size" << "Type" << "Date Modified" ;
     ui_.driveTreeWidget->setHeaderLabels(columns);
+    ui_.driveTreeWidget->resizeColumnToContents(2);
+    ui_.driveTreeWidget->resizeColumnToContents(3);
 
     mdm.ParseFromString(ser_mdm);
     const char *charpath(s.c_str());
@@ -383,9 +384,8 @@ void FileBrowser::onItemDoubleClicked(QTreeWidgetItem* item, int column) {
     qDebug() << "in ItemDoubleClicked open folder" << "/" << item->text(0) <<
         "/";
     populateDirectory(currentDir_  + item->text(0) + "/");
-  }
-  else {
-    if (item->text(1) == tr("Network")){
+  } else {
+    if (item->text(1) == tr("Network")) {
       ui_.driveTreeWidget->editItem(item, 1);
       item->setText(1, tr("Downloading"));
 
@@ -406,8 +406,7 @@ void FileBrowser::onItemDoubleClicked(QTreeWidgetItem* item, int column) {
       QString path = rootPath_ + currentDir_ + item->text(0);
 
       qDebug() << "Item Double Clicked open file: " + path;
-#ifdef MAIDSAFE_WIN32
-
+#if defined(MAIDSAFE_WIN32)
       QString operation("open");
       quintptr returnValue;
       QT_WA({
@@ -417,6 +416,18 @@ void FileBrowser::onItemDoubleClicked(QTreeWidgetItem* item, int column) {
                           0,
                           0,
                           SW_SHOWNORMAL);
+//////////////////////////
+//Open With Code Below //
+////////////////////////
+      /*QString run = "RUNDLL32.EXE";
+      QString parameters = "shell32.dll,OpenAs_RunDLL ";
+      returnValue = (quintptr)ShellExecute(0,
+                          (TCHAR *)(operation.utf16()),
+                          (TCHAR *)(run.utf16()),
+                          (TCHAR *)(parameters + path).utf16(),
+                          0,
+                          SW_SHOWNORMAL);*/
+//////////////
       } , {
         returnValue = (quintptr)ShellExecuteA(0,
                                   operation.toLocal8Bit().constData(),
@@ -427,11 +438,30 @@ void FileBrowser::onItemDoubleClicked(QTreeWidgetItem* item, int column) {
       });
       if (returnValue <= 32) {
         qWarning() << "FileBrowser::open: failed to open"
-               << path;
+                   << path;
       }
-#else
-  // nautilus FuseHomeDir()/Shares/Private/"name"
-     system(path.toStdString().c_str());
+#elif defined(MAIDSAFE_POSIX)
+      QString command;
+      QStringList parameters;
+      if (!boost::filesystem::exists("/usr/bin/gnome-open")) {
+        if (!boost::filesystem::exists("/usr/bin/kde-open")) {
+        } else {
+          command = tr("/usr/bin/kde-open");
+        }
+      } else {
+        command = tr("/usr/bin/gnome-open");
+      }
+      if (!command.isEmpty()) {
+        parameters << QString::fromStdString(path.toStdString());
+        myProcess_.reset(new QProcess);
+        myProcess_->start(command, parameters);
+      }
+#elif defined(MAIDSAFE_APPLE)
+      QString command("open");
+      QStringList parameters;
+      parameters << QString::fromStdString(path.toStdString());
+      myProcess_.reset(new QProcess);
+      myProcess_->start(command, parameters);
 #endif
     }
   }
@@ -582,7 +612,7 @@ void FileBrowser::onUploadClicked(bool){
 
 void FileBrowser::onRenameFileCompleted(int success, const QString& filepath,
                                         const QString& newfilepath){
-  qDebug() << "in onRenameFileCompleted";
+  qDebug() << "in onRenameFileCompleted:" + newfilepath;
   if(success != -1){
     std::string fullFilePath = rootPath_.toStdString() +
                         currentDir_.toStdString() + filepath.toStdString();
@@ -595,7 +625,7 @@ void FileBrowser::onRenameFileCompleted(int success, const QString& filepath,
 }
 
 void FileBrowser::onMakeDirectoryCompleted(int success, const QString& dir) {
-  qDebug() << "in onMakeDirectoryCompleted";
+  qDebug() << "in onMakeDirectoryCompleted:" + dir;
   if(success != -1){
     qDebug() << "MakeDir Success";
     populateDirectory(currentDir_);
@@ -603,7 +633,7 @@ void FileBrowser::onMakeDirectoryCompleted(int success, const QString& dir) {
 }
 
 void FileBrowser::onRemoveDirCompleted(int success, const QString& path) {
-  qDebug() << "in onRemoveDirCompleted";
+  qDebug() << "in onRemoveDirCompleted:" + path;
   if(success != -1){
     qDebug() << "RemoveDir Success";
     populateDirectory(currentDir_);
@@ -612,7 +642,6 @@ void FileBrowser::onRemoveDirCompleted(int success, const QString& path) {
 
 bool FileBrowser::eventFilter(QObject *obj, QEvent *event) {
   if (obj == ui_.driveTreeWidget->viewport()) {
-    qDebug() << event->type();
     if (event->type() == QEvent::ContextMenu) {
         menu2->exec(QCursor::pos());
       return true;
@@ -623,4 +652,12 @@ bool FileBrowser::eventFilter(QObject *obj, QEvent *event) {
     // pass the event on to the parent class
     return FileBrowser::eventFilter(obj, event);
   }
+}
+
+void FileBrowser::changeEvent(QEvent *event) {
+  if (event->type() == QEvent::LanguageChange) {
+    // TODO Get lang from ClientController and Update as Neccesary
+    //ui_.retranslateUi(this);
+  } else
+    QWidget::changeEvent(event);
 }

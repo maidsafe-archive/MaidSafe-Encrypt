@@ -19,6 +19,7 @@
 #include <QMenu>
 #include <QAction>
 #include <QFileDialog>
+#include <QString>
 
 // local
 #include "qt/widgets/panel.h"
@@ -49,12 +50,42 @@ class Contacts : public Panel {
  private:
   // Add a new entry in the listing of contacts
   void addContact(Contact*);
+  void populateStrings();
   Ui::ContactsPage ui_;
   bool init_;
   QFileDialog* qfd;
   ContactList contacts_;
   UserPanels* userPanels_;
   PersonalMessages* messages_;
+
+  QString addContactString_;
+  QString noContactMatchString_;
+  QString searchContactsString_;
+  QString errorString_;
+  QString enterUsernameString_;
+  QString notificationString_;
+  QString acceptContactRequestString_;
+  QString viewProfileString_;
+  QString sendFileString_;
+  QString sendMessageString_;
+  QString deleteContactString_;
+  QString notPossibleAddString_;
+  QString enterValidUsernameString_;
+  QString contactDoesntExistString_;
+  QString selectOnlyOneString_;
+  QString errorRemovingContactString_;
+  QString usePDBrowserString_;
+  QString infoString_;
+  QString selectAFileString_;
+  QString anyFileString_;
+  QString messageString_;
+  QString enterMessageString_;
+  QString fileSentString_;
+  QString fileSuccessString_;
+  QString errorSendingFileString_;
+  QString fileNotSentString_;
+  QString contactAlreadyExistsString_;
+  QString usernameNotExistString_;
 
   QList<QListWidgetItem *> currentContact();
 
@@ -91,8 +122,9 @@ class Contacts : public Panel {
     void customContentsMenu(const QPoint &pos);
     void DoneAddingContact(int result, QString contact);
 
-    protected:
+  protected:
     bool eventFilter(QObject *obj, QEvent *ev);
+    void changeEvent(QEvent *event);
 };
 
 #endif  // QT_WIDGETS_CONTACTS_H_

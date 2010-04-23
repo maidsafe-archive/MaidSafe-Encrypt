@@ -156,3 +156,11 @@ QString CreateLocalVaultPage::PortChosen() const {
 QString CreateLocalVaultPage::DirectoryChosen() const {
   return ui_.lineDirectory->text();
 }
+
+void CreateLocalVaultPage::changeEvent(QEvent *event) {
+  if (event->type() == QEvent::LanguageChange) {
+    // TODO Get lang from ClientController and Update as Neccesary
+    //ui_.retranslateUi(this);
+  } else
+    QWidget::changeEvent(event);
+}

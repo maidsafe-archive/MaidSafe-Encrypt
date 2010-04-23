@@ -119,6 +119,8 @@ class PerpetualData : public QMainWindow {
     void onConnectionStatusChanged(int status);
 
     void onUnreadMessagesChanged(int count);
+
+    void onLangChanged(const QString &lang);
  private:
   Ui::PerpetualData ui_;
   QFileDialog *qfd_;
@@ -206,6 +208,9 @@ class PerpetualData : public QMainWindow {
   void asyncCreateUser();
   void asyncUnmount();
   void asyncLogout();
+
+  protected:
+  void changeEvent(QEvent *event);
 };
 
 #endif  // QT_PERPETUAL_DATA_H_

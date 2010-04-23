@@ -132,16 +132,15 @@ void UserPanels::onPublicUsernameChosen() {
   } else {
     QPixmap contactIcon_ = QPixmap(":/icons/32/contacts");
     QPixmap shareIcon_ = QPixmap(":/icons/32/shares");
-    //QPixmap messagesIcon_ = QPixmap(":/icons/32/messages");
+    // QPixmap messagesIcon_ = QPixmap(":/icons/32/messages");
     // QPixmap vaultInfoIcon_ = QPixmap(":/icons/32/settings");
 
     ui_.tabWidget_2->addTab(contacts_ = new Contacts, contactIcon_, "");
     ui_.tabWidget_2->addTab(shares_   = new Shares, shareIcon_, "");
-    //ui_.tabWidget_2->addTab(messages_ = new Messages, messagesIcon_, "");
-    connect(messages_, SIGNAL(messageReceived()),
-            this,      SLOT(onMessageReceived()));
-
+    // ui_.tabWidget_2->addTab(messages_ = new Messages, messagesIcon_, "");
     // ui_.tabWidget_2->addTab(vaultinfo_ = new VaultInfo, vaultInfoIcon_, "");
+    // connect(messages_, SIGNAL(messageReceived()),
+    //         this,      SLOT(onMessageReceived()));
   }
 
   ui_.tabWidget_2->setEnabled(true);
@@ -311,6 +310,13 @@ void UserPanels::onSortShareRecentClicked() {
   shares_->reset();
   shares_->sortType_ = 2;
   shares_->setActive(true);
+}
+
+void UserPanels::changeEvent(QEvent *event) {
+  if (event->type() == QEvent::LanguageChange) {
+  //  ui_.retranslateUi(this);
+  } else
+    QWidget::changeEvent(event);
 }
 
 

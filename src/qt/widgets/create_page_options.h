@@ -34,6 +34,9 @@ class CreateOptionsPage : public QWizardPage {
 
  private:
   Ui::options ui_;
+
+ protected:
+  void changeEvent(QEvent *event);
 };
 
 #endif  // QT_WIDGETS_CREATE_PAGE_OPTIONS_H_

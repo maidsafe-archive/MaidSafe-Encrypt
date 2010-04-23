@@ -47,6 +47,9 @@ class PublicUsername : public Panel {
  private:
   Ui::PublicUsernamePage ui_;
   bool init_;
+
+ protected:
+  void changeEvent(QEvent *event);
 };
 
 #endif  // QT_WIDGETS_PUBLIC_USERNAME_H_

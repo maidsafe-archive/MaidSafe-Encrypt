@@ -60,3 +60,11 @@ void ShareParticipantsChoice::accept() {
   done(0);
 }
 
+void ShareParticipantsChoice::changeEvent(QEvent *event) {
+  if (event->type() == QEvent::LanguageChange) {
+    // TODO Get lang from ClientController and Update as Neccesary
+    //ui_.retranslateUi(this);
+  } else
+    QWidget::changeEvent(event);
+}
+
