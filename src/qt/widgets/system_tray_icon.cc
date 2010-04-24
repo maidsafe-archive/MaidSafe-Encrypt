@@ -106,7 +106,7 @@ void SystemTrayIcon::ChangeStatus(int status) {
   }
 }
 
-void SystemTrayIcon::changeEvent(QEvent *event) {
+void SystemTrayIcon::changeEvent(QEvent*) {
   //TODO Implement for QObject
   /*if (event->type() == QEvent::LanguageChange) {
     // TODO Get lang from ClientController and Update as Neccesary

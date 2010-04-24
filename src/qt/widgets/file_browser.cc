@@ -189,7 +189,7 @@ void FileBrowser::dropEvent(QDropEvent *event) {
   uploadFileFromLocal(fileName);
 }
 
-void FileBrowser::onMousePressed(QTreeWidgetItem*, int) {
+void FileBrowser::onMousePressed(QTreeWidgetItem *item, int) {
   if(QApplication::mouseButtons() == Qt::RightButton){
     if (item->text(3) == "Directory")
       setMenuDirMenu();
@@ -205,7 +205,6 @@ void FileBrowser::onOpenFileClicked() {
   onItemDoubleClicked(theItem, 0);
 }
 
-#if defined MAIDSAFE_APPLE
 void FileBrowser::onOpenWithClicked() {
   qDebug() << "Open With invoked";
 
@@ -238,7 +237,6 @@ void FileBrowser::onOpenWithClicked() {
     qDebug() << ":'(";
   }
 }
-#endif
 
 void FileBrowser::onSendFileClicked() {
   QTreeWidgetItem* theItem = ui_.driveTreeWidget->currentItem();

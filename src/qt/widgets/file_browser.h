@@ -50,7 +50,7 @@ class FileBrowser : public QDialog {
   QAction *openFile;
 #ifdef MAIDSAFE_APPLE
   QAction *openWith;
-#endif // MAIDSAFE_APPLE
+#endif  // MAIDSAFE_APPLE
   QAction *sendFile;
   QAction *copyFile;
   QAction *cutFile;
@@ -84,9 +84,7 @@ class FileBrowser : public QDialog {
 
     void onOpenFileClicked();
 // #ifdef MAIDSAFE_APPLE // TODO (Alec): Find out why this throws
-#if not defined (WIN32) && not defined (MAIDSAFE_LINUX)
     void onOpenWithClicked();
-#endif
     void onSendFileClicked();
     void onCopyFileClicked();
     void onCutFileClicked();
