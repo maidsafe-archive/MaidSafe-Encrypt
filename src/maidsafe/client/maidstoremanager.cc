@@ -139,7 +139,8 @@ void MaidsafeStoreManager::Init(int port, base::callback_func_type cb,
   if (success) {
     if (kSuccess == im_conn_hdler_.Start(&transport_handler_,
         boost::bind(&MaidsafeStoreManager::OnMessage, this, _1),
-        boost::bind(&MaidsafeStoreManager::OnNewConnection, this, _1, _2, _3))) {
+        boost::bind(&MaidsafeStoreManager::OnNewConnection, this, _1, _2,
+                    _3))) {
       success = true;
     } else {
       success = false;
@@ -189,6 +190,7 @@ void MaidsafeStoreManager::Close(base::callback_func_type cb, bool) {
 //    packet_thread_pool_.clear();
   packet_thread_pool_.waitForDone();
   printf("\tIn MaidsafeStoreManager::Close, packet_thread_pool_ done.\n");
+  im_conn_hdler_.Stop();
   knode_->Leave();
 #ifdef DEBUG
 //  printf("\tIn MaidsafeStoreManager::Close, after Leave. "
@@ -1409,7 +1411,7 @@ int MaidsafeStoreManager::LoadBPMessages(
   return bpm->successes;
 }
 
-int MaidsafeStoreManager::AddBPMessage(
+int MaidsafeStoreManager::SendMessage(
     const std::vector<std::string> &receivers,
     const std::string &message,
     const MessageType &type,
@@ -3053,6 +3055,12 @@ void MaidsafeStoreManager::OnNewConnection(const boost::int16_t &trans_id,
         ss_->ModifyEndPoint(im.sender(), im.endpoint());
       }
       im_status_notifier_(im.sender(), im.status());
+    } else if (type == maidsafe::LOGOUT_PING) {
+      maidsafe::InstantMessage im;
+      im.ParseFromString(ser_im);
+      CloseConnection(im.sender());
+      // TODO(team): define status as not connected
+      im_status_notifier_(im.sender(), 1);
     } else {
       im_conn_hdler_.CloseConnection(trans_id, conn_id);
     }
@@ -3071,7 +3079,7 @@ void MaidsafeStoreManager::OnMessage(const std::string &msg) {
       maidsafe::InstantMessage im;
       im.ParseFromString(ser_im);
       CloseConnection(im.sender());
-      // TODO (team): define status as not connected
+      // TODO(team): define status as not connected
       im_status_notifier_(im.sender(), 1);
     }
   }
@@ -3114,17 +3122,15 @@ bool MaidsafeStoreManager::SendIM(const std::string &msg,
     // try to create a connection to known endpoint
     if (kSuccess != im_conn_hdler_.CreateConnection(info.transport, info.ep,
           &info.connection_id)) {
-      // TODO (team): define status as not connected
+      // TODO(team): define status as not connected
       im_status_notifier_(contactname, 1);
       ss_->DeleteLiveContact(contactname);
       return false;
     } else {
       std::string ep_msg(im_handler_.CreateMessageEndpoint(contactname));
-      if (kSuccess != im_conn_hdler_.AddConnection(info.transport,
-                                                   info.connection_id) &&
-          kSuccess != im_conn_hdler_.SendMessage(info.transport,
+      if (kSuccess != im_conn_hdler_.SendMessage(info.transport,
                                                  info.connection_id,
-                                                 ser_msg) &&
+                                                 ep_msg) ||
           kSuccess != im_conn_hdler_.SendMessage(info.transport,
                                                  info.connection_id,
                                                  ser_msg)) {
@@ -3138,7 +3144,68 @@ bool MaidsafeStoreManager::SendIM(const std::string &msg,
     }
   }
   return true;
+}
 
+void MaidsafeStoreManager::SetSessionEndPoint() {
+  EndPoint ep;
+  ep.add_ip(knode_->host_ip());
+  ep.add_ip(knode_->local_host_ip());
+  ep.add_ip(knode_->rv_ip());
+  ep.add_port(knode_->host_port());
+  ep.add_port(knode_->local_host_port());
+  ep.add_port(knode_->rv_port());
+  ss_->SetEp(ep);
+}
+
+void MaidsafeStoreManager::SendLogOutMessage(const std::string &contactname) {
+  ConnectionDetails info;
+  if (kSuccess != ss_->LiveContactDetails(contactname,
+                  &info.ep, &info.transport, &info.connection_id, &info.status,
+                  &info.init_timestamp)) {
+    return;
+  }
+  std::string ser_msg(im_handler_.CreateLogOutMessage(contactname));
+  if (kSuccess != im_conn_hdler_.SendMessage(info.transport, info.connection_id,
+        ser_msg)) {
+    // try to create a connection to known endpoint
+    if (kSuccess == im_conn_hdler_.CreateConnection(info.transport, info.ep,
+          &info.connection_id)) {
+      std::string ep_msg(im_handler_.CreateMessageEndpoint(contactname));
+      if (kSuccess == im_conn_hdler_.SendMessage(info.transport,
+                                                 info.connection_id,
+                                                 ep_msg)) {
+        im_conn_hdler_.SendMessage(info.transport, info.connection_id, ser_msg);
+      }
+    }
+  }
+}
+
+bool MaidsafeStoreManager::SendPresence(const std::string &contactname) {
+  ConnectionDetails info;
+  if (kSuccess != ss_->LiveContactDetails(contactname,
+                  &info.ep, &info.transport, &info.connection_id, &info.status,
+                  &info.init_timestamp)) {
+    return false;
+  }
+  std::string ser_msg(im_handler_.CreateMessageEndpoint(contactname));
+  if (kSuccess != im_conn_hdler_.SendMessage(info.transport, info.connection_id,
+        ser_msg)) {
+    if (kSuccess != im_conn_hdler_.CreateConnection(info.transport, info.ep,
+          &info.connection_id)) {
+      ss_->DeleteLiveContact(contactname);
+      im_status_notifier_(contactname, 1);
+      return false;
+    }
+    if (kSuccess != im_conn_hdler_.SendMessage(info.transport,
+                                               info.connection_id,
+                                               ser_msg)) {
+      ss_->DeleteLiveContact(contactname);
+      im_status_notifier_(contactname, 1);
+      im_conn_hdler_.CloseConnection(info.transport, info.connection_id);
+      return false;
+    }
+  }
+  return true;
 }
 
 }  // namespace maidsafe

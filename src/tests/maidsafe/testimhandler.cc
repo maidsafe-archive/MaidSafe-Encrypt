@@ -209,21 +209,8 @@ TEST_F(ImHandlerTest, BEH_MAID_ValidateMsgs) {
   ASSERT_FALSE(imhandler_.ValidateMessage(gp.SerializeAsString(),
       &type, &rec_msg));
 
-  gp.set_signature(crypto_.AsymSign(gp.data(), "", keys_.at(1).private_key(),
-      crypto::STRING_STRING));
-  ASSERT_FALSE(imhandler_.ValidateMessage(gp.SerializeAsString(),
-      &type, &rec_msg));
-
   bpmsg.set_rsaenc_key(crypto_.AsymEncrypt(aes_key, "",
       keys_.at(0).public_key(), crypto::STRING_STRING));
-  bpmsg.set_type(maidsafe::HELLO_PING);
-  gp.set_data(bpmsg.SerializeAsString());
-  gp.set_signature(crypto_.AsymSign(gp.data(), "", keys_.at(1).private_key(),
-      crypto::STRING_STRING));
-  ASSERT_FALSE(imhandler_.ValidateMessage(gp.SerializeAsString(),
-      &type, &rec_msg));
-
-  bpmsg.set_type(maidsafe::INSTANT_MSG);
   gp.set_data(bpmsg.SerializeAsString());
   gp.set_signature(crypto_.AsymSign(gp.data(), "", keys_.at(1).private_key(),
       crypto::STRING_STRING));

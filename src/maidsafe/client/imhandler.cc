@@ -114,27 +114,23 @@ bool IMHandler::ValidateMessage(const std::string &ser_msg,
                                 std::string *validated_msg) {
   validated_msg->clear();
   GenericPacket gp;
-  if (!gp.ParseFromString(ser_msg))
+  if (!gp.ParseFromString(ser_msg)) {
     return false;
+  }
   BufferPacketMessage bpmsg;
-  if (!bpmsg.ParseFromString(gp.data()))
+  if (!bpmsg.ParseFromString(gp.data())) {
     return false;
+  }
   std::string send_pub_key(ss_->GetContactPublicKey(bpmsg.sender_id()));
   if (!crypto_.AsymCheckSig(gp.data(), gp.signature(), send_pub_key,
-      crypto::STRING_STRING ))
+      crypto::STRING_STRING )) {
     return false;
+  }
 
   std::string aes_key(crypto_.AsymDecrypt(bpmsg.rsaenc_key(), "",
       ss_->PrivateKey(MPID), crypto::STRING_STRING));
-  InstantMessage im;
-  if (!im.ParseFromString(crypto_.SymmDecrypt(bpmsg.aesenc_message(),
-      "", crypto::STRING_STRING, aes_key)))
-    return false;
-
-  if (bpmsg.type() == HELLO_PING && !im.has_endpoint())
-    return false;
-
-  im.SerializeToString(validated_msg);
+  *validated_msg = crypto_.SymmDecrypt(bpmsg.aesenc_message(), "",
+      crypto::STRING_STRING, aes_key);
   *type = bpmsg.type();
   return true;
 }

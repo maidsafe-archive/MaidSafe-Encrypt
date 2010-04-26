@@ -204,8 +204,6 @@ struct BPResults {
 };
 
 class MaidsafeStoreManager : public StoreManagerInterface {
-  typedef boost::function<void(const std::string&)> IMNotifier;
-  typedef boost::function<void(const std::string&,const int&)> IMStatusNotifier;
  public:
   explicit MaidsafeStoreManager(boost::shared_ptr<ChunkStore> cstore);
   virtual ~MaidsafeStoreManager() {}
@@ -256,7 +254,7 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   virtual int CreateBP();
   virtual int LoadBPMessages(std::list<ValidatedBufferPacketMessage> *messages);
   virtual int ModifyBPInfo(const std::string &info);
-  virtual int AddBPMessage(const std::vector<std::string> &receivers,
+  virtual int SendMessage(const std::vector<std::string> &receivers,
                            const std::string &message,
                            const MessageType &type,
                            std::map<std::string, ReturnCode> *add_results);
@@ -290,8 +288,7 @@ class MaidsafeStoreManager : public StoreManagerInterface {
                               std::string *public_key_sig,
                               std::string *private_key);
   virtual int CreateAccount(const boost::uint64_t &space);
-  void SetInstantMessageNotifier(IMNotifier on_msg, IMStatusNotifier
-      status_notifier);
+
 
   friend void AddToWatchListTask::run();
   friend void SendChunkCopyTask::run();
@@ -302,9 +299,12 @@ class MaidsafeStoreManager : public StoreManagerInterface {
       std::map<std::string, std::string> chunks,
       const int &timeout, boost::shared_ptr<MaidsafeStoreManager> sm);
 
-  //Instant messaging send online message
+  // Instant messaging send online message
   bool SendPresence(const std::string &contactname);
   void SendLogOutMessage(const std::string &contactname);
+  void SetSessionEndPoint();
+  void SetInstantMessageNotifier(IMNotifier on_msg, IMStatusNotifier
+      status_notifier);
 
  private:
   MaidsafeStoreManager &operator=(const MaidsafeStoreManager&);

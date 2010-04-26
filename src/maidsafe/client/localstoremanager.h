@@ -92,7 +92,7 @@ class LocalStoreManager : public StoreManagerInterface {
   virtual int ModifyBPInfo(const std::string &info);
   virtual int LoadBPMessages(
       std::list<ValidatedBufferPacketMessage> *messages);
-  virtual int AddBPMessage(const std::vector<std::string> &receivers,
+  virtual int SendMessage(const std::vector<std::string> &receivers,
                            const std::string &message,
                            const MessageType &m_type,
                            std::map<std::string, ReturnCode> *add_results);
@@ -113,6 +113,10 @@ class LocalStoreManager : public StoreManagerInterface {
                                   const SetLocalVaultOwnedFunctor &functor);
   virtual void LocalVaultOwned(const LocalVaultOwnedFunctor &functor);
   virtual int CreateAccount(const boost::uint64_t&) { return kSuccess; }
+  bool SendPresence(const std::string &) { return false; }
+  void SendLogOutMessage(const std::string &) {}
+  void SetSessionEndPoint() {}
+  void SetInstantMessageNotifier(IMNotifier, IMStatusNotifier) {};
 
  private:
   LocalStoreManager &operator=(const LocalStoreManager&);

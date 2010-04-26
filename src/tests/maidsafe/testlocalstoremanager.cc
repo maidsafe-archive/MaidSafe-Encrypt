@@ -485,7 +485,7 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_AddAndGetBufferPacketMessages) {
   pulbicusernames.push_back(me_pubusername);
   std::map<std::string, maidsafe::ReturnCode> add_results;
   ASSERT_EQ(static_cast<int>(pulbicusernames.size()),
-            sm_->AddBPMessage(pulbicusernames, test_msg, maidsafe::INSTANT_MSG,
+            sm_->SendMessage(pulbicusernames, test_msg, maidsafe::INSTANT_MSG,
                               &add_results));
 
   // Retrive message and check that it is the correct one
@@ -532,11 +532,11 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_AddRequestBufferPacketMessage) {
   std::string test_msg("There are strange things done in the midnight sun");
   pulbicusernames.push_back(me_pubusername);
   std::map<std::string, maidsafe::ReturnCode> add_results;
-  ASSERT_EQ(0, sm_->AddBPMessage(pulbicusernames, test_msg,
+  ASSERT_EQ(0, sm_->SendMessage(pulbicusernames, test_msg,
             maidsafe::INSTANT_MSG, &add_results));
   add_results.clear();
   ASSERT_EQ(static_cast<int>(pulbicusernames.size()),
-            sm_->AddBPMessage(pulbicusernames, test_msg,
+            sm_->SendMessage(pulbicusernames, test_msg,
                               maidsafe::ADD_CONTACT_RQST, &add_results));
 
   // Back to "Me"
@@ -569,7 +569,7 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_AddRequestBufferPacketMessage) {
   pulbicusernames.push_back(me_pubusername);
   add_results.clear();
   ASSERT_EQ(static_cast<int>(pulbicusernames.size()),
-            sm_->AddBPMessage(pulbicusernames, test_msg, maidsafe::INSTANT_MSG,
+            sm_->SendMessage(pulbicusernames, test_msg, maidsafe::INSTANT_MSG,
                               &add_results));
 
   // Back to "Me"

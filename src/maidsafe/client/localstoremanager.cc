@@ -733,7 +733,7 @@ int LocalStoreManager::LoadBPMessages(
   return 0;
 }
 
-int LocalStoreManager::AddBPMessage(
+int LocalStoreManager::SendMessage(
     const std::vector<std::string> &receivers,
     const std::string &message,
     const MessageType &m_type,
