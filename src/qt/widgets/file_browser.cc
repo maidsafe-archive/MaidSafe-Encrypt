@@ -387,7 +387,8 @@ int FileBrowser::populateDirectory(QString dir) {
     }
 
     QStringList columns;
-    columns << "Name" << "Status" << "Size" << "Type" << "Date Modified" ;
+    columns << tr("Name") << tr("Status") << tr("Size") << tr("Type")
+            << tr("Date Modified") ;
     ui_.driveTreeWidget->setHeaderLabels(columns);
     ui_.driveTreeWidget->resizeColumnToContents(2);
     ui_.driveTreeWidget->resizeColumnToContents(3);
@@ -756,8 +757,7 @@ bool FileBrowser::eventFilter(QObject *obj, QEvent *event) {
 
 void FileBrowser::changeEvent(QEvent *event) {
   if (event->type() == QEvent::LanguageChange) {
-    // TODO Get lang from ClientController and Update as Neccesary
-    //ui_.retranslateUi(this);
+    ui_.retranslateUi(this);
   } else
     QWidget::changeEvent(event);
 }

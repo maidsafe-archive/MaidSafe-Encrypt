@@ -54,7 +54,6 @@ PerpetualData::PerpetualData(QWidget* parent)
       message_status_(NULL), state_(LOGIN) {
   setAttribute(Qt::WA_DeleteOnClose, false);
   setWindowIcon(QPixmap(":/icons/16/globe"));
-
   ui_.setupUi(this);
 
   statusBar()->show();
@@ -84,17 +83,19 @@ PerpetualData::PerpetualData(QWidget* parent)
 
   login_->StartProgressBar();
 
-  /*QTranslator qtTranslator;
-  qtTranslator.load("qt_" + QLocale::system().name(),
-            QLibraryInfo::location(QLibraryInfo::TranslationsPath));
-  qApp->installTranslator(&qtTranslator);
-
+  qtTranslator = new QTranslator;
+  myAppTranslator = new QTranslator;
   QString locale = QLocale::system().name().left(2);
-  QTranslator myappTranslator;
-  bool res = myappTranslator.load(":/translations/pd_translation_de.qm");
-  qApp->installTranslator(&myappTranslator);*/
+  qtTranslator->load("qt_" + locale,
+            QLibraryInfo::location(QLibraryInfo::TranslationsPath));
+  qApp->installTranslator(qtTranslator);
 
-  ui_.retranslateUi(this);
+  bool res = myAppTranslator->load(":/translations/pd_translation_" + locale);
+  if (res) {
+    qApp->installTranslator(myAppTranslator);
+    ui_.retranslateUi(this);
+  }
+
 }
 
 void PerpetualData::onJoinKademliaCompleted(bool b) {
@@ -783,26 +784,21 @@ void PerpetualData::showLoggedOutMenu() {
   actions_[SETTINGS]->setEnabled(false);
 }
 
-void PerpetualData::changeEvent(QEvent *event)
-{
+void PerpetualData::changeEvent(QEvent *event) {
      if (event->type() == QEvent::LanguageChange) {
-         //ui_.retranslateUi(this);
+         ui_.retranslateUi(this);
      } else
          QWidget::changeEvent(event);
 }
 
 void PerpetualData::onLangChanged(const QString &lang) {
-  QTranslator qtTranslator;
-  QLocale locale1(lang);
-  qtTranslator.load("qt_" + lang,
-            QLibraryInfo::location(QLibraryInfo::TranslationsPath));
-  qApp->installTranslator(&qtTranslator);
+  qtTranslator->load("qt_" + lang,
+           QLibraryInfo::location(QLibraryInfo::TranslationsPath));
+  qApp->installTranslator(qtTranslator);
 
-  QString locale = QLocale::system().name().left(2);
-  QTranslator myappTranslator;
-  bool res = myappTranslator.load(":/translations/pd_translation_" + lang);
+  bool res = myAppTranslator->load(":/translations/pd_translation_" + lang);
   if (res) {
-    qApp->installTranslator(&myappTranslator);
+    qApp->installTranslator(myAppTranslator);
     ui_.retranslateUi(this);
   }
 }

@@ -18,6 +18,8 @@
 // qt
 #include <QMainWindow>
 #include <QFileDialog>
+#include <QTranslator>
+#include <QLibraryInfo>
 
 // local
 #include "qt/client/client_controller.h"
@@ -60,6 +62,8 @@ class PerpetualData : public QMainWindow {
  public:
     explicit PerpetualData(QWidget* parent = 0);
     virtual ~PerpetualData();
+    QTranslator* qtTranslator;
+    QTranslator* myAppTranslator;
 
   public slots:
     void quit();
