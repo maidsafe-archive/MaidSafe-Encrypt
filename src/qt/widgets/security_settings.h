@@ -40,6 +40,9 @@ class SecuritySettings : public QWidget {
 
  private:
   Ui::SecuritySettingsPage ui_;
+
+ protected:
+  void changeEvent(QEvent *event);
 };
 
 #endif  // QT_WIDGETS_SECURITY_SETTINGS_H_

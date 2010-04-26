@@ -51,7 +51,7 @@
 typedef boost::function<void(const std::string&,
                              const boost::uint32_t&,
                              const boost::int16_t&,
-                             const float &)> IMNotifier;
+                             const double&)> IMNotifier;
 
 class ClientController : public QObject {
   Q_OBJECT
@@ -148,7 +148,6 @@ class ClientController : public QObject {
                    const QStringList& admin,
                    const QStringList& readOnly);
   ShareList shares(int type = 0, int filterType = 0) const;
-  std::list<std::string> getShareList(int type = 0, int filterType = 0) const;
   QDir shareDirRoot(const QString& name) const;
   QDir myFilesDirRoot(const QString& name) const;
 

@@ -43,11 +43,14 @@ class CreateLocalVaultPage : public QWizardPage {
   bool spaceReady_, dirReady_;
   std::string availableSpace_;
 
-  private slots:
-    void onBrowseClicked();
-    void onSpaceEdited(const QString& text);
-    void onPortModified();
-    void onDirectoryEdited(const QString& text);
+ private slots:
+  void onBrowseClicked();
+  void onSpaceEdited(const QString& text);
+  void onPortModified();
+  void onDirectoryEdited(const QString& text);
+
+ protected:
+  void changeEvent(QEvent *event);
 };
 
 #endif  // QT_WIDGETS_CREATE_PAGE_LOCALVAULT_SETUP_H_

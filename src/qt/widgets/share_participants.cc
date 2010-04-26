@@ -22,7 +22,10 @@
 
 
 ShareParticipantsChoice::ShareParticipantsChoice(QWidget* parent,
-    const QString &title, QStringList *usernames) : usernames_(usernames) {
+                                                 const QString &title,
+                                                 QStringList *usernames)
+                                                 : QDialog(parent),
+                                                   usernames_(usernames) {
   ui_.setupUi(this);
 
   QStringList db_contacts = ClientController::instance()->contactsNames();
@@ -58,5 +61,12 @@ void ShareParticipantsChoice::accept() {
     }
   }
   done(0);
+}
+
+void ShareParticipantsChoice::changeEvent(QEvent *event) {
+  if (event->type() == QEvent::LanguageChange) {
+    ui_.retranslateUi(this);
+  } else
+    QWidget::changeEvent(event);
 }
 

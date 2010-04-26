@@ -52,8 +52,9 @@ class Shares : public Panel {
     void onCreateShareCompleted(bool b);
     void onShareFilterChanged(int index);
 
-  protected:
-    bool eventFilter(QObject *obj, QEvent *ev);
+ protected:
+  bool eventFilter(QObject *obj, QEvent *ev);
+  void changeEvent(QEvent *event);
 
  private:
   // Initialize the display of a user's shares
@@ -69,6 +70,8 @@ class Shares : public Panel {
 
  signals:
   void complete();
+
+
 };
 
 #endif  // QT_WIDGETS_SHARES_H_

@@ -162,3 +162,10 @@ QString CreateUser::PortChosen() const {
 QString CreateUser::DirectoryChosen() const {
   return directory_;
 }
+
+void CreateUser::changeEvent(QEvent *event) {
+  if (event->type() == QEvent::LanguageChange) {
+    ui_.retranslateUi(this);
+  } else
+    QWidget::changeEvent(event);
+}

@@ -16,12 +16,14 @@
 
 // qt
 #include <QDebug>
+#include <QTranslator>
 #include <QMessageBox>
 #include <QProcess>
 #include <QList>
 #include <QFileDialog>
 #include <QInputDialog>
 #include <boost/progress.hpp>
+#include <QLibraryInfo>
 
 #include <list>
 #include <string>
@@ -52,7 +54,6 @@ PerpetualData::PerpetualData(QWidget* parent)
       message_status_(NULL), state_(LOGIN) {
   setAttribute(Qt::WA_DeleteOnClose, false);
   setWindowIcon(QPixmap(":/icons/16/globe"));
-
   ui_.setupUi(this);
 
   statusBar()->show();
@@ -81,6 +82,20 @@ PerpetualData::PerpetualData(QWidget* parent)
   jkt->start();
 
   login_->StartProgressBar();
+
+  qtTranslator = new QTranslator;
+  myAppTranslator = new QTranslator;
+  QString locale = QLocale::system().name().left(2);
+  qtTranslator->load("qt_" + locale,
+            QLibraryInfo::location(QLibraryInfo::TranslationsPath));
+  qApp->installTranslator(qtTranslator);
+
+  bool res = myAppTranslator->load(":/translations/pd_translation_" + locale);
+  if (res) {
+    qApp->installTranslator(myAppTranslator);
+    ui_.retranslateUi(this);
+  }
+
 }
 
 void PerpetualData::onJoinKademliaCompleted(bool b) {
@@ -119,7 +134,7 @@ void PerpetualData::onJoinKademliaCompleted(bool b) {
 }
 
 PerpetualData::~PerpetualData() {
-  onLogout();
+//  onLogout();
 }
 
 void PerpetualData::createActions() {
@@ -336,13 +351,13 @@ void PerpetualData::asyncUnmount() {
   mt->start();
 }
 
-void PerpetualData::asyncLogout() {
-  LogoutUserThread* lut = new LogoutUserThread();
-  connect(lut,   SIGNAL(logoutUserCompleted(bool)),
-         this, SLOT(onLogoutUserCompleted(bool)));
-
-  lut->start();
-}
+//  void PerpetualData::asyncLogout() {
+//    LogoutUserThread* lut = new LogoutUserThread();
+//    connect(lut,   SIGNAL(logoutUserCompleted(bool)),
+//           this, SLOT(onLogoutUserCompleted(bool)));
+//
+//    lut->start();
+//  }
 
 void PerpetualData::asyncCreateUser() {
   CreateUserThread* cut = new CreateUserThread(login_->username(),
@@ -442,19 +457,17 @@ void PerpetualData::onFailureAcknowledged() {
 
 void PerpetualData::onLogout() {
   if (state_ != LOGGED_IN) {
-      // if we're still to login we can't logout
-      return;
+    // if we're still to login we can't logout
+    return;
   }
   if (!ClientController::instance()->publicUsername().isEmpty())
     ClientController::instance()->StopCheckingMessages();
-#ifdef PD_LIGHT
-  asyncLogout();
-  setState(LOGGING_OUT);
-#else
+//#ifdef PD_LIGHT
+//  asyncLogout();
+//#else
   asyncUnmount();
+//#endif
   setState(LOGGING_OUT);
-#endif
-
 }
 
 void PerpetualData::quit() {
@@ -560,7 +573,7 @@ void PerpetualData::onMessageReceived(ClientController::MessageType type,
     }
 
     if (!messageList.contains(sender)) {
-      PersonalMessages* mess_ = new PersonalMessages(sender);
+      PersonalMessages* mess_ = new PersonalMessages(this, sender);
 
       QFile file(":/qss/defaultWithWhite1.qss");
       file.open(QFile::ReadOnly);
@@ -725,6 +738,9 @@ void PerpetualData::onSettingsTriggered() {
   qDebug() << "in onSettingsTriggered()";
     settings_ = new UserSettings;
 
+    connect(settings_, SIGNAL(langChanged(const QString&)),
+          this,                 SLOT(onLangChanged(const QString&)));
+
     QFile file(":/qss/defaultWithWhite1.qss");
     file.open(QFile::ReadOnly);
     QString styleSheet = QLatin1String(file.readAll());
@@ -766,6 +782,25 @@ void PerpetualData::showLoggedOutMenu() {
   actions_[PRIVATE_SHARES]->setEnabled(false);
   actions_[GO_OFFLINE]->setEnabled(false);
   actions_[SETTINGS]->setEnabled(false);
+}
+
+void PerpetualData::changeEvent(QEvent *event) {
+     if (event->type() == QEvent::LanguageChange) {
+         ui_.retranslateUi(this);
+     } else
+         QWidget::changeEvent(event);
+}
+
+void PerpetualData::onLangChanged(const QString &lang) {
+  qtTranslator->load("qt_" + lang,
+           QLibraryInfo::location(QLibraryInfo::TranslationsPath));
+  qApp->installTranslator(qtTranslator);
+
+  bool res = myAppTranslator->load(":/translations/pd_translation_" + lang);
+  if (res) {
+    qApp->installTranslator(myAppTranslator);
+    ui_.retranslateUi(this);
+  }
 }
 
 

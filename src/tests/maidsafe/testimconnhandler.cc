@@ -83,7 +83,7 @@ class TestIMHandler : public testing::Test {
     msgs_rec = msg;
   }
   void UDTTransMsgArrived(const std::string &msg, const boost::uint32_t &id,
-      const boost::int16_t&, const float&) {
+      const boost::int16_t&, const double&) {
     msgs_sent = msg;
     ext_conn_id = id;
   }

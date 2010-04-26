@@ -18,6 +18,8 @@
 // qt
 #include <QMainWindow>
 #include <QFileDialog>
+#include <QTranslator>
+#include <QLibraryInfo>
 
 // local
 #include "qt/client/client_controller.h"
@@ -60,6 +62,8 @@ class PerpetualData : public QMainWindow {
  public:
     explicit PerpetualData(QWidget* parent = 0);
     virtual ~PerpetualData();
+    QTranslator* qtTranslator;
+    QTranslator* myAppTranslator;
 
   public slots:
     void quit();
@@ -119,6 +123,8 @@ class PerpetualData : public QMainWindow {
     void onConnectionStatusChanged(int status);
 
     void onUnreadMessagesChanged(int count);
+
+    void onLangChanged(const QString &lang);
  private:
   Ui::PerpetualData ui_;
   QFileDialog *qfd_;
@@ -206,6 +212,9 @@ class PerpetualData : public QMainWindow {
   void asyncCreateUser();
   void asyncUnmount();
   void asyncLogout();
+
+  protected:
+  void changeEvent(QEvent *event);
 };
 
 #endif  // QT_PERPETUAL_DATA_H_

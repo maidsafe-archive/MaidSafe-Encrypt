@@ -2048,7 +2048,7 @@ int MaidsafeStoreManager::SendChunkPrep(const StoreData &store_data) {
 //    float ideal_rtt = task.largest_rtt * (1 -
 //        (static_cast<float>(task.success_count_)/task.successes_required_));
 //  }
-  float ideal_rtt = 1.0f;
+  double ideal_rtt = 1.0;
   kad::Contact peer;
   bool local(false);
   // TODO(Team#5#): 2010-02-17 - Ensure we don't try to store on own vault

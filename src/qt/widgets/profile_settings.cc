@@ -21,7 +21,8 @@
 
 #include "qt/client/client_controller.h"
 
-ProfileSettings::ProfileSettings(QWidget* parent) : init_(false) {
+ProfileSettings::ProfileSettings(QWidget* parent)
+    : QWidget(parent), init_(false) {
   ui_.setupUi(this);
 
     connect(ui_.pubNameEdit, SIGNAL(textEdited(const QString&)),
@@ -131,5 +132,12 @@ void ProfileSettings::onMaleChanged(bool checked) {
   } else {
     changedValues_.insert("Gender", "F");
   }
+}
+
+void ProfileSettings::changeEvent(QEvent *event) {
+  if (event->type() == QEvent::LanguageChange) {
+    ui_.retranslateUi(this);
+  } else
+    QWidget::changeEvent(event);
 }
 

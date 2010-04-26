@@ -307,7 +307,7 @@ class RunPDVaults {
       if (first) {
         base::KadConfig kad_config;
         base::KadConfig::Contact *kad_contact = kad_config.add_contact();
-        kad_contact->set_node_id((*pdvaults_)[j]->node_id());
+        kad_contact->set_node_id(base::EncodeToHex((*pdvaults_)[j]->node_id()));
         kad_contact->set_ip((*pdvaults_)[j]->host_ip());
         kad_contact->set_port((*pdvaults_)[j]->host_port());
         kad_contact->set_local_ip((*pdvaults_)[j]->local_host_ip());

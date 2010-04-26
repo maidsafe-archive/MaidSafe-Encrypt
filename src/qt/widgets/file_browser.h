@@ -12,15 +12,18 @@
  *      Author: Stephen Alexander
  */
 
-#ifndef FILE_BROWSER_H_INCLUDED
-#define FILE_BROWSER_H_INCLUDED
+#ifndef QT_WIDGETS_FILE_BROWSER_H_
+#define QT_WIDGETS_FILE_BROWSER_H_
 
-#include "ui_file_browser.h"
+#include <boost/shared_ptr.hpp>
 
-#include <QMenu>
 #include <QAction>
 #include <QFileSystemModel>
 #include <QFileSystemWatcher>
+#include <QMenu>
+#include <QProcess>
+
+#include "ui_file_browser.h"
 
 class FileBrowser : public QDialog {
   Q_OBJECT
@@ -35,14 +38,19 @@ class FileBrowser : public QDialog {
     void smilyChosen(int, int);
 
  private:
+    void setMenuDirMenu();
+    void setMenuFileMenu();
   Ui::FileBrowserPage ui_;
-  //QFileSystemModel* model_;
-  //QFileSystemWatcher* theWatcher_;
+  // QFileSystemModel* model_;
+  // QFileSystemWatcher* theWatcher_;
   bool init_;
   QString currentDir_;
   QString rootPath_;
   QMenu *menu;
   QAction *openFile;
+#ifdef MAIDSAFE_APPLE
+  QAction *openWith;
+#endif  // MAIDSAFE_APPLE
   QAction *sendFile;
   QAction *copyFile;
   QAction *cutFile;
@@ -51,37 +59,45 @@ class FileBrowser : public QDialog {
   QAction *saveFile;
   QAction *newFolder;
   QMenu *menu2;
+  boost::shared_ptr<QProcess> myProcess_;
+
 
   int populateDirectory(const QString);
   void uploadFileFromLocal(const QString& filePath);
   void saveFileToNetwork(const QString& filePath);
 
   protected:
-  void dropEvent(QDropEvent *event);
-  void dragEnterEvent(QDragEnterEvent *event);
-  bool eventFilter(QObject *obj, QEvent *ev);
+    void dropEvent(QDropEvent *event);
+    void dragEnterEvent(QDragEnterEvent *event);
+    bool eventFilter(QObject *obj, QEvent *ev);
+    void changeEvent(QEvent *event);
 
   private slots:
-  void onItemDoubleClicked(QTreeWidgetItem*, int);
-  void onMousePressed(QTreeWidgetItem* item, int column);
-  void onReadFileCompleted(int success, const QString& filepath);
-  void onSaveFileCompleted(int success, const QString& filepath);
-  void onMakeDirectoryCompleted(int success, const QString& dir);
-  void onRemoveDirCompleted(int success, const QString& path);
-  void onRenameFileCompleted(int success, const QString& filepath,
-                                          const QString& newfilepath);
-  void onOpenFileClicked();
-  void onSendFileClicked();
-  void onCopyFileClicked();
-  void onCutFileClicked();
-  void onDeleteFileClicked();
-  void onRenameFileClicked();
-  void onSaveFileClicked();
-  void onNewFolderClicked();
-  void onBackClicked(bool);
-  void onUploadClicked(bool);
- //void onWatchedFileChanged(const QString& path);
+    void onItemDoubleClicked(QTreeWidgetItem*, int);
+    void onMousePressed(QTreeWidgetItem* item, int column);
+    void onReadFileCompleted(int success, const QString& filepath);
+    void onSaveFileCompleted(int success, const QString& filepath);
+    void onMakeDirectoryCompleted(int success, const QString& dir);
+    void onRemoveDirCompleted(int success, const QString& path);
+    void onRenameFileCompleted(int success, const QString& filepath,
+                                            const QString& newfilepath);
 
+    void onOpenFileClicked();
+// #ifdef MAIDSAFE_APPLE // TODO (Alec): Find out why this throws
+    void onOpenWithClicked();
+    void onSendFileClicked();
+    void onCopyFileClicked();
+    void onCutFileClicked();
+    void onDeleteFileClicked();
+    void onRenameFileClicked();
+    void onSaveFileClicked();
+    void onNewFolderClicked();
+    void onBackClicked(bool);
+    void onUploadClicked(bool);
+    void onOpenError(QProcess::ProcessError);
+    void onOpenStarted();
+    void onOpenFinished(int, QProcess::ExitStatus);
+    // void onWatchedFileChanged(const QString& path);
 };
 
-#endif // FILE_BROWSER_H_INCLUDED
+#endif  // QT_WIDGETS_FILE_BROWSER_H_

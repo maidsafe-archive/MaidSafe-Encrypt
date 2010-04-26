@@ -83,9 +83,9 @@ QString ClientController::publicUsername() const {
          maidsafe::SessionSingleton::getInstance()->PublicUsername());
 }
 
-bool ClientController::createShare(const QString& shareName,
-                                   const QStringList& admin,
-                                   const QStringList& readOnly) {
+bool ClientController::createShare(const QString &shareName,
+                                   const QStringList &admin,
+                                   const QStringList &readOnly) {
   qDebug() << "createShare:" << shareName << admin << readOnly;
   std::set<std::string> admin_set, ro_set;
 
@@ -107,31 +107,6 @@ bool ClientController::createShare(const QString& shareName,
   }
 
   return false;
-}
-
-std::list<std::string> ClientController::getShareList(int type,
-                                                      int filterType) const {
-  std::list<std::string> share_list;
-
-  const int n =
-        maidsafe::ClientController::getInstance()->ShareList(
-        maidsafe::SortingMode(type), maidsafe::ShareFilter(filterType),
-        &share_list);
-
-//  if (n == 0) {
-//    while (!share_list->empty()) {
-//      std::string shareName = share_list.front();
-//      share_list->pop_front();
-//
-//      QString shareN = shareName;
-//
-//      Share share(shareN);
-//
-//      rv.push_back(share);
-//    }
-//  }
-
-  return share_list;
 }
 
 ShareList ClientController::shares(int type, int filterType) const {
@@ -239,7 +214,7 @@ QStringList ClientController::contactsNames() const {
   }
 
   QStringList rv;
-  for (int i = 0; i < contact_list.size(); ++i) {
+  for (size_t i = 0; i < contact_list.size(); ++i) {
     rv.push_back(QString::fromStdString(contact_list[i].PublicName()));
   }
 
@@ -393,26 +368,7 @@ bool ClientController::GetMessages() {
   return maidsafe::ClientController::getInstance()->GetMessages();
 }
 
-void ClientController::onCheckMessagesCompleted(bool success) {
-//  if (!success) {
-//    if (maidsafe::SessionSingleton::getInstance()->ConnectionStatus() != 1) {
-//      int one(1);
-//      // modify CC online status
-//      maidsafe::SessionSingleton::getInstance()->SetConnectionStatus(one);
-//      // signal for change of icon
-//      emit connectionStatusChanged(one);
-//      return;
-//    }
-//  } else {
-//    if (maidsafe::SessionSingleton::getInstance()->ConnectionStatus() == 1) {
-//      int zero(0);
-//      // modify CC online status
-//      maidsafe::SessionSingleton::getInstance()->SetConnectionStatus(zero);
-//      // signal for change of icon
-//      emit connectionStatusChanged(zero);
-//      return;
-//    }
-//  }
+void ClientController::onCheckMessagesCompleted(bool) {
   std::list<maidsafe::InstantMessage> msgs;
   int n = maidsafe::ClientController::getInstance()->GetInstantMessages(&msgs);
 

@@ -27,6 +27,6 @@ SaveConnectionSettingsThread::SaveConnectionSettingsThread(
 SaveConnectionSettingsThread::~SaveConnectionSettingsThread() { }
 
 void SaveConnectionSettingsThread::run() {
-  bool success = false;
+//  bool success = false;
   qDebug() << "SaveConnectionSettingsThread::run";
 }

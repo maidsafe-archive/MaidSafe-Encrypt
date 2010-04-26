@@ -52,4 +52,11 @@ void Progress::setCanCancel(bool cancancel) {
   ui_.cancel->setEnabled(cancancel);
 }
 
+void Progress::changeEvent(QEvent *event) {
+  if (event->type() == QEvent::LanguageChange) {
+    ui_.retranslateUi(this);
+  } else
+    QWidget::changeEvent(event);
+}
+
 

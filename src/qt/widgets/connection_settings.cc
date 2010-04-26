@@ -16,10 +16,17 @@
 #include "qt/widgets/connection_settings.h"
 #include "qt/client/client_controller.h"
 
-ConnectionSettings::ConnectionSettings(QWidget* parent) {
+ConnectionSettings::ConnectionSettings(QWidget* parent) : QWidget(parent) {
   ui_.setupUi(this);
 }
 
 ConnectionSettings::~ConnectionSettings() {}
+
+void ConnectionSettings::changeEvent(QEvent *event) {
+  if (event->type() == QEvent::LanguageChange) {
+    ui_.retranslateUi(this);
+  } else
+    QWidget::changeEvent(event);
+}
 
 

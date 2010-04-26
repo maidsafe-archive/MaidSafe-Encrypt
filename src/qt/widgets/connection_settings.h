@@ -35,6 +35,9 @@ class ConnectionSettings : public QWidget {
 
  private:
   Ui::ConnectionSettingsPage ui_;
+
+ protected:
+  void changeEvent(QEvent *event);
 };
 
 #endif  // QT_WIDGETS_CONNECTION_SETTINGS_H_

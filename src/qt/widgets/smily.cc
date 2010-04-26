@@ -14,7 +14,7 @@
 
 #include "qt/widgets/smily.h"
 
-Smily::Smily(QWidget* parent) {
+Smily::Smily(QWidget* parent) : QDialog(parent) {
   setWindowFlags(Qt::Popup);
   ui_.setupUi(this);
   adjustSize();

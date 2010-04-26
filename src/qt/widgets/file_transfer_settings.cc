@@ -15,8 +15,15 @@
 #include "qt/widgets/file_transfer_settings.h"
 #include "qt/client/client_controller.h"
 
-FileTransferSettings::FileTransferSettings(QWidget* parent) {
+FileTransferSettings::FileTransferSettings(QWidget* parent) : QWidget(parent) {
   ui_.setupUi(this);
 }
 
 FileTransferSettings::~FileTransferSettings() { }
+
+void FileTransferSettings::changeEvent(QEvent *event) {
+  if (event->type() == QEvent::LanguageChange) {
+    ui_.retranslateUi(this);
+  } else
+    QWidget::changeEvent(event);
+}

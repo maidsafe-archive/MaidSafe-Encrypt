@@ -41,3 +41,10 @@ bool CreateLicensePage::isComplete() const {
 void CreateLicensePage::cleanupPage() {
   ui_.decline->setChecked(true);
 }
+
+void CreateLicensePage::changeEvent(QEvent *event) {
+  if (event->type() == QEvent::LanguageChange) {
+    ui_.retranslateUi(this);
+  } else
+    QWidget::changeEvent(event);
+}

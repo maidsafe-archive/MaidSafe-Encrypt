@@ -36,29 +36,29 @@
 #include "qt/client/send_instant_message_thread.h"
 #include "qt/widgets/user_panels.h"
 
-PersonalMessages::PersonalMessages(QWidget* parent)
-    : active_(false), init_(false), convName_("") {
-  ui_.setupUi(this);
+//PersonalMessages::PersonalMessages(QWidget* parent)
+//    : QMainWindow(parent), active_(false), init_(false), convName_() {
+//  ui_.setupUi(this);
+//
+//  connect(ClientController::instance(),
+//          SIGNAL(messageReceived(ClientController::MessageType,
+//                                    const QDateTime&,
+//                                    const QString&,
+//                                    const QString&,
+//                                    const QString&)),
+//          this,
+//          SLOT(onMessageReceived(ClientController::MessageType,
+//                                    const QDateTime&,
+//                                    const QString&,
+//                                    const QString&,
+//                                    const QString&)));
+//
+//          connect(ui_.send_message_btn, SIGNAL(clicked(bool)),
+//                  this,                 SLOT(onSendMessageClicked()));
+//}
 
-  connect(ClientController::instance(),
-          SIGNAL(messageReceived(ClientController::MessageType,
-                                    const QDateTime&,
-                                    const QString&,
-                                    const QString&,
-                                    const QString&)),
-          this,
-          SLOT(onMessageReceived(ClientController::MessageType,
-                                    const QDateTime&,
-                                    const QString&,
-                                    const QString&,
-                                    const QString&)));
-
-          connect(ui_.send_message_btn, SIGNAL(clicked(bool)),
-                  this,                 SLOT(onSendMessageClicked()));
-}
-
-PersonalMessages::PersonalMessages(QString name)
-    : active_(false), init_(false) {
+PersonalMessages::PersonalMessages(QWidget* parent, QString name)
+    : QMainWindow(parent), active_(false), init_(false), convName_() {
   setAttribute(Qt::WA_DeleteOnClose, true);
   setWindowIcon(QPixmap(":/icons/16/globe"));
   ui_.setupUi(this);
@@ -75,6 +75,10 @@ PersonalMessages::PersonalMessages(QString name)
 
   int n = ClientController::instance()->AddConversation(
           convName_.toStdString());
+
+  if (n != 0) {
+    // There's no registry of the conversation, what do we do?
+  }
 
   this->setWindowTitle(this->windowTitle() + " " + name);
 
@@ -119,6 +123,10 @@ PersonalMessages::~PersonalMessages() {
   int n = ClientController::instance()->RemoveConversation(
           convName_.toStdString());
 
+  if (n != 0) {
+    // was the conversation not there? or was it not removed?
+  }
+
 // TODO (Stephen#5#): Locate where to save conversarion history and also add check for user preference
   /*dir_ = "" + convName_ + ".html";
   QFile f(dir_);
@@ -129,7 +137,7 @@ PersonalMessages::~PersonalMessages() {
   qDebug() << "Destroy Finished";*/
 }
 
-void PersonalMessages::closeEvent(QCloseEvent *event) { }
+void PersonalMessages::closeEvent(QCloseEvent*) { }
 
 void PersonalMessages::setActive(bool b) {
   if (b && !init_) {
@@ -159,10 +167,10 @@ void PersonalMessages::loadConversation() {
 }
 
 void PersonalMessages::onMessageReceived(ClientController::MessageType,
-                                         const QDateTime& time,
+                                         const QDateTime&,
                                          const QString& sender,
                                          const QString& message,
-                                         const QString& conversation) {
+                                         const QString&) {
   boost::progress_timer t;
   if (sender == convName_) {
     ui_.message_window->moveCursor(QTextCursor::End, QTextCursor::MoveAnchor);
@@ -181,12 +189,12 @@ void PersonalMessages::onMessageReceived(ClientController::MessageType,
   ui_.message_window->moveCursor(QTextCursor::End, QTextCursor::MoveAnchor);
 }
 
-void PersonalMessages::sendMessage(const QDateTime& time,
-                                   const QString& sender,
-                                   const QString& message) {
+void PersonalMessages::sendMessage(const QDateTime&,
+                                   const QString&,
+                                   const QString&) {
 }
 
-void PersonalMessages::setName(QString name) {
+void PersonalMessages::setName(QString) {
 //  convName_ = name;
 //  ui_.username_lbl->setText(name_);
 }
@@ -340,7 +348,6 @@ void PersonalMessages::onTextClicked() {
 }
 
 void PersonalMessages::onColorClicked() {
-  bool ok;
   color_ = QColorDialog::getColor(QColor("black"), this);
   formatHtml();
 }
@@ -492,6 +499,13 @@ void PersonalMessages::onMessageTextEdit() {
     ui_.message_text_edit->moveCursor(QTextCursor::End,
                                       QTextCursor::MoveAnchor);
   }
+}
+
+void PersonalMessages::changeEvent(QEvent *event) {
+  if (event->type() == QEvent::LanguageChange) {
+    ui_.retranslateUi(this);
+  } else
+    QWidget::changeEvent(event);
 }
 
 

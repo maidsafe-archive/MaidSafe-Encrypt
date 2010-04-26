@@ -179,7 +179,7 @@ ReturnCode IMConnectionHandler::SendMessage(const boost::int16_t &trans_id,
 
 void IMConnectionHandler::OnMessageArrive(const std::string &msg,
       const boost::uint32_t &conn_id, const boost::int16_t &trans_id,
-      const float &) {
+      const double&) {
   if (!started_)
     return;
   connections_container::iterator it = connections_.find(

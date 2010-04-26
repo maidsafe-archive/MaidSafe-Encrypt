@@ -105,25 +105,20 @@ bool UserSpaceFileSystem::mount() {
 
 bool UserSpaceFileSystem::unmount() {
   // unmount drive
-
   bool success = false;
-//  std::string ms_dir = file_system::MaidsafeDir(
-//      maidsafe::SessionSingleton::getInstance()->SessionName()).string();
-//  std::string mount_point = file_system::MaidsafeFuseDir(
-//      maidsafe::SessionSingleton::getInstance()->SessionName()).string();
 #ifdef MAIDSAFE_WIN32
-  std::locale loc;
-  wchar_t drive_letter = std::use_facet< std::ctype<wchar_t> >
-      (loc).widen(ClientController::instance()->WinDrive());
   #ifndef PD_LIGHT
+    std::locale loc;
+    wchar_t drive_letter = std::use_facet< std::ctype<wchar_t> >
+        (loc).widen(ClientController::instance()->WinDrive());
     success = fs_w_fuse::UnMount(drive_letter);
+    if (!success)
+      qWarning() << "UserSpaceFileSystem::unmount: failed to unmount dokan"
+                 << success;
   #endif
-  if (!success)
-    qWarning() << "UserSpaceFileSystem::unmount: failed to unmount dokan"
-               << success;
 #elif defined(MAIDSAFE_POSIX)
-  // un-mount fuse
   #ifndef PD_LIGHT
+    // un-mount fuse
     impl_->fsl_.UnMount();
   #endif
   success = true;

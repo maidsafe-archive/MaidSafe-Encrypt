@@ -30,8 +30,8 @@ class UserPanels;
 class PersonalMessages : public QMainWindow {
     Q_OBJECT
  public:
-  explicit PersonalMessages(QWidget* parent = 0);
-  explicit PersonalMessages(QString name = "");
+  PersonalMessages(QWidget* parent = 0, QString name = "");
+//  explicit PersonalMessages(QWidget* parent = 0);
   virtual ~PersonalMessages();
 
   void setName(QString name);
@@ -47,35 +47,34 @@ class PersonalMessages : public QMainWindow {
   // Notify when a message(s) is received.
     void messageReceived();
 
-  private slots:
-    void onMessageReceived(ClientController::MessageType,
+ private slots:
+  void onMessageReceived(ClientController::MessageType,
                            const QDateTime& time,
                            const QString& sender,
                            const QString& message,
                            const QString& conversation);
 
-    void onSendMessageClicked();
-    void onSendInvite();
-    void onSendFile();
-    void onTextClicked();
-    void onColorClicked();
-    void onSmilyClicked();
-    void formatHtml();
-    void onSmilyChosen(int row, int column);
-    void onSendMessageComplete(bool success, const QString& text);
-    void onMessageTextEdit();
+  void onSendMessageClicked();
+  void onSendInvite();
+  void onSendFile();
+  void onTextClicked();
+  void onColorClicked();
+  void onSmilyClicked();
+  void formatHtml();
+  void onSmilyChosen(int row, int column);
+  void onSendMessageComplete(bool success, const QString& text);
+  void onMessageTextEdit();
 
-  protected:
-    bool eventFilter(QObject *obj, QEvent *ev);
-    void closeEvent(QCloseEvent *event);
+ protected:
+  bool eventFilter(QObject *obj, QEvent *ev);
+  void closeEvent(QCloseEvent *event);
+  void changeEvent(QEvent *event);
 
  private:
   void loadConversation();
-
   void sendMessage(const QDateTime& time,
                   const QString& sender,
                   const QString& message);
-
   Ui::PersonalMessagePage ui_;
   bool active_;
   bool init_;

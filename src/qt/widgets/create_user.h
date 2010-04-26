@@ -25,7 +25,6 @@
 
 class QWizardPage;
 
-
 // Main User creation screen for Perpetual Data
 /*!
     Takes the user through a series of pages:
@@ -82,6 +81,9 @@ class CreateUser : public QWidget {
       \param dir direction of page navigation
   */
   void setCurrentPage(int index, int dir);
+
+ protected:
+  void changeEvent(QEvent *event);
 };
 
 #endif  // QT_WIDGETS_CREATE_USER_H_

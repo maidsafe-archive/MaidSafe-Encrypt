@@ -423,3 +423,10 @@ bool Login::focusNextPrevChild(bool next) {
   return QWidget::focusNextPrevChild(next);
 }
 
+void Login::changeEvent(QEvent *event) {
+  if (event->type() == QEvent::LanguageChange) {
+    ui_.retranslateUi(this);
+  } else
+    QWidget::changeEvent(event);
+}
+

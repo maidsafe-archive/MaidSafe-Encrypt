@@ -15,7 +15,7 @@
 #include "qt/widgets/security_settings.h"
 #include "qt/client/client_controller.h"
 
-SecuritySettings::SecuritySettings(QWidget* parent) {
+SecuritySettings::SecuritySettings(QWidget* parent) : QWidget(parent) {
   ui_.setupUi(this);
 
   connect(ui_.usernameEdit, SIGNAL(textEdited(const QString&)),
@@ -40,6 +40,13 @@ void SecuritySettings::onPinTextEdit(const QString& text) {
 
 void SecuritySettings::onPasswordTextEdit(const QString& text) {
   changedValues_.insert("password", text);
+}
+
+void SecuritySettings::changeEvent(QEvent *event) {
+  if (event->type() == QEvent::LanguageChange) {
+    ui_.retranslateUi(this);
+  } else
+    QWidget::changeEvent(event);
 }
 
 

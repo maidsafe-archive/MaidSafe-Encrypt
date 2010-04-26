@@ -196,14 +196,14 @@ int KadOps::FindValue(const kad::KadId &kad_key,
   return (empty) ? kFindValueFailure : kSuccess;
 }
 
-int KadOps::GetStorePeer(const float &,
+int KadOps::GetStorePeer(const double&,
                          const std::vector<kad::Contact> &exclude,
                          kad::Contact *new_peer,
                          bool *local) {
 // TODO(Fraser#5#): 2009-08-08 - Complete this so that rtt & rank is considered.
   std::vector<kad::Contact> result;
   knode_->GetRandomContacts(1, exclude, &result);
-  if (result.size() == static_cast<unsigned int>(0))
+  if (result.size() == size_t(0))
     return kGetStorePeerError;
   *new_peer = result.at(0);
   *local = AddressIsLocal(*new_peer);
