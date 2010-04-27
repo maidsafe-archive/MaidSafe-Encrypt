@@ -40,11 +40,13 @@ class FileBrowser : public QDialog {
  private:
     void setMenuDirMenu();
     void setMenuFileMenu();
+    QString getCurrentTreePath(QTreeWidgetItem* item);
   Ui::FileBrowserPage ui_;
   // QFileSystemModel* model_;
   // QFileSystemWatcher* theWatcher_;
   bool init_;
   QString currentDir_;
+  QString currentTreeDir_;
   QString rootPath_;
   QMenu *menu;
   QAction *openFile;
@@ -63,8 +65,10 @@ class FileBrowser : public QDialog {
 
 
   int populateDirectory(const QString);
+  int createTreeDirectory(const QString);
   void uploadFileFromLocal(const QString& filePath);
   void saveFileToNetwork(const QString& filePath);
+  void getTreeSubFolders(const QString);
 
   protected:
     void dropEvent(QDropEvent *event);
@@ -74,7 +78,9 @@ class FileBrowser : public QDialog {
 
   private slots:
     void onItemDoubleClicked(QTreeWidgetItem*, int);
+    void onFolderItemPressed(QTreeWidgetItem*, int);
     void onMousePressed(QTreeWidgetItem* item, int column);
+    void onItemExpanded(QTreeWidgetItem* item);
     void onReadFileCompleted(int success, const QString& filepath);
     void onSaveFileCompleted(int success, const QString& filepath);
     void onMakeDirectoryCompleted(int success, const QString& dir);

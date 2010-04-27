@@ -84,8 +84,11 @@ namespace fs = boost::filesystem;
   connect(ui_.driveTreeWidget, SIGNAL(itemPressed(QTreeWidgetItem*, int)),
           this,            SLOT(onMousePressed(QTreeWidgetItem*, int)));
 
-  //connect(theWatcher_, SIGNAL(fileChanged(const QString&)),
-     //     this,        SLOT(onWatchedFileChanged(const QString&)));
+  connect(ui_.treeViewTreeWidget, SIGNAL(itemExpanded(QTreeWidgetItem*)),
+          this,            SLOT(onItemExpanded(QTreeWidgetItem*)));
+
+  connect(ui_.treeViewTreeWidget, SIGNAL(itemPressed(QTreeWidgetItem*, int)),
+          this,            SLOT(onFolderItemPressed(QTreeWidgetItem*, int)));
 
   connect(ui_.backButton, SIGNAL(clicked(bool)),
           this,           SLOT(onBackClicked(bool)));
@@ -137,6 +140,7 @@ void FileBrowser::setActive(bool b) {
     qDebug() << rootPath_;
 
     populateDirectory("/");
+    createTreeDirectory("/");
     ui_.driveTreeWidget->header()->setResizeMode(QHeaderView::Interactive);
     ui_.driveTreeWidget->header()->setStretchLastSection(true);
   }
@@ -365,6 +369,7 @@ int FileBrowser::populateDirectory(QString dir) {
   qDebug() << "populateDirectory: " << dir;
   ui_.driveTreeWidget->clear();
   currentDir_ = dir;
+  ui_.locationEdit->setText(currentDir_);
 
   int rowCount = 0;
   std::string relPathStr = dir.toStdString();
@@ -372,6 +377,11 @@ int FileBrowser::populateDirectory(QString dir) {
   ClientController::instance()->readdir(relPathStr, children);
 
   qDebug() << "populateDirectory: " << QString::fromStdString(relPathStr);
+
+  QStringList columns;
+  columns << tr("Name") << tr("Status") << tr("Size") << tr("Type")
+          << tr("Date Modified") ;
+  ui_.driveTreeWidget->setHeaderLabels(columns);
 
   while (!children.empty()) {
     std::string s = children.begin()->first;
@@ -386,15 +396,7 @@ int FileBrowser::populateDirectory(QString dir) {
       return -1;
     }
 
-    QStringList columns;
-    columns << tr("Name") << tr("Status") << tr("Size") << tr("Type")
-            << tr("Date Modified") ;
-    ui_.driveTreeWidget->setHeaderLabels(columns);
-    ui_.driveTreeWidget->resizeColumnToContents(2);
-    ui_.driveTreeWidget->resizeColumnToContents(3);
-
     mdm.ParseFromString(ser_mdm);
-//    const char *charpath(s.c_str());
 
     QDateTime *lastModified = new QDateTime;
     QFileIconProvider *icon = new QFileIconProvider;
@@ -417,7 +419,6 @@ int FileBrowser::populateDirectory(QString dir) {
       }
 
       QIcon theIcon = icon->icon(QFileIconProvider::Folder);
-
       QString item = QString::fromStdString(s);
       QTreeWidgetItem *newItem = new QTreeWidgetItem(ui_.driveTreeWidget);
       newItem->setIcon(0, theIcon);
@@ -428,8 +429,8 @@ int FileBrowser::populateDirectory(QString dir) {
       newItem->setText(3, tr("Directory"));
       // TODO(Team#) use date format from the user's locale
       newItem->setText(4, lastModified->toString("dd/MM/yyyy hh:mm"));
-      ui_.driveTreeWidget->insertTopLevelItem(rowCount, newItem);
 
+      ui_.driveTreeWidget->insertTopLevelItem(rowCount, newItem);
     } else {
        //File
       QIcon theIcon = icon->icon(QFileIconProvider::File);
@@ -450,6 +451,62 @@ int FileBrowser::populateDirectory(QString dir) {
       newItem->setText(3, tr("%1 File").arg(item.section('.', -1)));
       // TODO(Team#) use date format from the user's locale
       newItem->setText(4, lastModified->toString("dd/MM/yyyy hh:mm"));
+      ui_.driveTreeWidget->insertTopLevelItem(rowCount, newItem);
+    }
+    children.erase(children.begin());
+    rowCount++;
+  }
+  ui_.driveTreeWidget->resizeColumnToContents(2);
+  ui_.driveTreeWidget->resizeColumnToContents(3);
+  return 0;
+}
+
+int FileBrowser::createTreeDirectory(QString dir) {
+ qDebug() << "createTreeDirectory: ";
+  ui_.treeViewTreeWidget->clear();
+
+  int rowCount = 0;
+  std::string relPathStr = currentTreeDir_.toStdString() + dir.toStdString();
+  std::map<std::string, maidsafe::ItemType> children;
+  ClientController::instance()->readdir(relPathStr, children);
+
+  qDebug() << "createTreeDirectory: ";
+  QStringList columns;
+  columns << tr("Folder");
+  ui_.treeViewTreeWidget->setHeaderLabels(columns);
+
+  while (!children.empty()) {
+    std::string s = children.begin()->first;
+    qDebug() << "children not empty";
+    maidsafe::ItemType ityp = children.begin()->second;
+    maidsafe::MetaDataMap mdm;
+    std::string ser_mdm;
+    fs::path path_(relPathStr);
+    path_ /= s;
+    if (ClientController::instance()->getattr(path_.string(), ser_mdm)) {
+      qDebug() << "populateDirectory failed at getattr()";
+      return -1;
+    }
+    mdm.ParseFromString(ser_mdm);
+
+    QFileIconProvider *icon = new QFileIconProvider;
+
+    if (ityp == maidsafe::DIRECTORY || ityp == maidsafe::EMPTY_DIRECTORY) {
+      QIcon theIcon = icon->icon(QFileIconProvider::Folder);
+      QString item = QString::fromStdString(s);
+      QTreeWidgetItem *newItem = new QTreeWidgetItem(ui_.treeViewTreeWidget);
+      newItem->setIcon(0, theIcon);
+      newItem->setText(0, item);
+
+      std::string relPathStr1 = relPathStr + s + "/";
+      std::map<std::string, maidsafe::ItemType> children1;
+      ClientController::instance()->readdir(relPathStr, children1);
+
+      if (!children.empty()) {
+        QTreeWidgetItem *emptyItem = new QTreeWidgetItem(newItem);
+        emptyItem->setText(0,"fake");
+      }
+
       ui_.driveTreeWidget->insertTopLevelItem(rowCount, newItem);
     }
     children.erase(children.begin());
@@ -705,7 +762,6 @@ void FileBrowser::onUploadClicked(bool){
   if (fileNames.isEmpty()) {
     return;
   }
-
   const QString filename = fileNames.at(0);
   qDebug() << filename;
   uploadFileFromLocal(filename);
@@ -760,4 +816,81 @@ void FileBrowser::changeEvent(QEvent *event) {
     ui_.retranslateUi(this);
   } else
     QWidget::changeEvent(event);
+}
+
+void FileBrowser::onItemExpanded(QTreeWidgetItem* item) {
+  qDebug() << "Item Expanded: ";
+  currentTreeDir_ = "/";
+  while (item->childCount() > 0){
+    item->removeChild(ui_.treeViewTreeWidget->itemBelow(item));
+  }
+
+  currentTreeDir_ = getCurrentTreePath(item);
+
+  int rowCount = 0;
+  QString folder = item->text(0);
+  std::string relPathStr = currentTreeDir_.toStdString() + folder.toStdString() + "/";
+  std::map<std::string, maidsafe::ItemType> children;
+  ClientController::instance()->readdir(relPathStr, children);
+  qDebug() << "Path String : " << QString::fromStdString(relPathStr);
+  currentTreeDir_ = QString::fromStdString(relPathStr);
+
+  while (!children.empty()) {
+    std::string s = children.begin()->first;
+    qDebug() << "children not empty";
+    maidsafe::ItemType ityp = children.begin()->second;
+    maidsafe::MetaDataMap mdm;
+    std::string ser_mdm;
+    fs::path path_(relPathStr);
+    path_ /= s;
+    if (ClientController::instance()->getattr(path_.string(), ser_mdm)) {
+      qDebug() << "populateDirectory failed at getattr()";
+    }
+    mdm.ParseFromString(ser_mdm);
+    QFileIconProvider *icon = new QFileIconProvider;
+
+    if (ityp == maidsafe::DIRECTORY || ityp == maidsafe::EMPTY_DIRECTORY) {
+      QIcon theIcon = icon->icon(QFileIconProvider::Folder);
+      QString theItem = QString::fromStdString(s);
+      QTreeWidgetItem *newItem = new QTreeWidgetItem(item);
+      newItem->setIcon(0, theIcon);
+      newItem->setText(0, theItem);
+
+      std::string relPathStr1 = relPathStr + s + "/";
+      std::map<std::string, maidsafe::ItemType> children1;
+      ClientController::instance()->readdir(relPathStr, children1);
+
+      if (!children.empty()) {
+        QTreeWidgetItem *emptyItem = new QTreeWidgetItem(newItem);
+      }
+      ui_.driveTreeWidget->insertTopLevelItem(rowCount, newItem);
+    }
+    children.erase(children.begin());
+    rowCount++;
+  }
+}
+
+void FileBrowser::onFolderItemPressed(QTreeWidgetItem* item, int colum) {
+  if(QApplication::mouseButtons() == Qt::LeftButton) {
+    QString dir = getCurrentTreePath(item);
+    populateDirectory(dir + item->text(0) + "/");
+  }
+}
+
+QString FileBrowser::getCurrentTreePath(QTreeWidgetItem* item){
+  QString path = "/";
+  QTreeWidgetItem* item1 = new QTreeWidgetItem();
+  item1 = item->parent();
+  if (item1 != NULL) {
+    while (item1->text(0) != "") {
+    qDebug() << "Parent = " << item1->text(0);
+    path = "/" + item1->text(0) + path;
+    QTreeWidgetItem* item2 = new QTreeWidgetItem();
+    item2 = item1->parent();
+    if (item2 == NULL)
+      break;
+    item1 = item2;
+    }
+  }
+  return path;
 }
