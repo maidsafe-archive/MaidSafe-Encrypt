@@ -41,7 +41,8 @@ IMConnectionHandler::IMConnectionHandler() : connections_(),
                                              worker_(),
                                              io_(),
                                              strand_(io_),
-                                             timer_(io_) {
+                                             timer_(io_),
+                                             send_finished_() {
   timer_.expires_at(boost::posix_time::pos_infin);
 }
 
@@ -90,8 +91,9 @@ ReturnCode IMConnectionHandler::AddConnection(const boost::int16_t &trans_id,
   if (p.second) {
     conn_info.timer->expires_from_now(boost::posix_time::seconds(
         kConnectionTimeout));
-    conn_info.timer->async_wait(boost::bind(
-        &IMConnectionHandler::ConnectionTimesOut, this, trans_id, conn_id, _1));
+    conn_info.timer->async_wait(strand_.wrap(boost::bind(
+        &IMConnectionHandler::ConnectionTimesOut, this, trans_id, conn_id,
+        _1)));
     return kSuccess;
   }
   return kConnectionAlreadyExists;
@@ -112,9 +114,9 @@ ReturnCode IMConnectionHandler::CreateConnection(
     }
     conn_info.timer->expires_from_now(boost::posix_time::seconds(
         kConnectionTimeout));
-    conn_info.timer->async_wait(boost::bind(
+    conn_info.timer->async_wait(strand_.wrap(boost::bind(
         &IMConnectionHandler::ConnectionTimesOut, this, trans_id,
-        *conn_id, _1));
+        *conn_id, _1)));
     return kSuccess;
   }
   return kFailedToConnect;
@@ -126,11 +128,11 @@ ReturnCode IMConnectionHandler::CloseConnection(const boost::int16_t &trans_id,
     return kHandlerNotStarted;
   connections_container::iterator it = connections_.find(
       boost::make_tuple(trans_id, conn_id));
+  transport_handler_->CloseConnection(conn_id, trans_id);
   boost::mutex::scoped_lock guard(connections_mutex_);
   if (it == connections_.end()) {
     return kConnectionNotExists;
   }
-  transport_handler_->CloseConnection(it->conn_id, it->trans_id);
   boost::shared_ptr<boost::asio::deadline_timer> timer(it->timer);
   connections_.erase(it);
   timer->cancel();
@@ -141,24 +143,33 @@ ReturnCode IMConnectionHandler::SendMessage(const boost::int16_t &trans_id,
       const boost::uint32_t &conn_id, const std::string &msg) {
   if (!started_)
     return kHandlerNotStarted;
+  boost::mutex::scoped_lock guard(connections_mutex_);
   connections_container::iterator it = connections_.find(
       boost::make_tuple(trans_id, conn_id));
   if (it == connections_.end()) {
     return kConnectionNotExists;
   }
-  boost::mutex::scoped_lock guard(connections_mutex_);
+  bool timer_restarted = false;
   if (!transport_handler_->Send(msg, conn_id, false, trans_id)) {
     connection_info info;
     info.trans_id = it->trans_id;
     info.conn_id = it->conn_id;
     info.restart_timer = true;
     info.timer = it->timer;
+    connections_.replace(it, info);
     info.timer->expires_from_now(
         boost::posix_time::seconds(kConnectionTimeout));
-    info.timer->async_wait(boost::bind(
+    info.timer->async_wait(strand_.wrap(boost::bind(
         &IMConnectionHandler::ConnectionTimesOut, this, trans_id,
-        conn_id, _1));
-    connections_.replace(it, info);
+        conn_id, _1)));
+    while (!timer_restarted) {
+      send_finished_.wait(guard);
+      connections_container::iterator it1 = connections_.find(
+        boost::make_tuple(trans_id, conn_id));
+      timer_restarted = !(it->restart_timer);
+
+    }
+
     return kSuccess;
   } else {
     connections_.erase(it);
@@ -185,10 +196,10 @@ void IMConnectionHandler::OnMessageArrive(const std::string &msg,
       info.restart_timer = true;
       info.timer->expires_from_now(
           boost::posix_time::seconds(kConnectionTimeout));
-      info.timer->async_wait(boost::bind(
-          &IMConnectionHandler::ConnectionTimesOut, this, trans_id,
-          conn_id, _1));
       connections_.replace(it, info);
+      info.timer->async_wait(strand_.wrap(boost::bind(
+          &IMConnectionHandler::ConnectionTimesOut, this, trans_id,
+          conn_id, _1)));
     }
     message_notifier_(msg);
   }
@@ -209,8 +220,10 @@ void IMConnectionHandler::ConnectionTimesOut(const boost::int16_t &trans_id,
     info.conn_id = it->conn_id;
     info.timer = it->timer;
     connections_.replace(it, info);
+    send_finished_.notify_all();
   } else {
     connections_.erase(it);
+    transport_handler_->CloseConnection(conn_id, trans_id);
   }
 }
 

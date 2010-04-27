@@ -1367,7 +1367,7 @@ int ClientController::HandleAddContactRequest(
   std::vector<std::string> contact_names;
   contact_names.push_back(sender);
   std::map<std::string, ReturnCode> add_results;
-  if (sm_->AddBPMessage(contact_names, ser_im, INSTANT_MSG,
+  if (sm_->SendMessage(contact_names, ser_im, INSTANT_MSG,
       &add_results) != static_cast<int>(contact_names.size())) {
 #ifdef DEBUG
     printf("ClientController::HandleAddContactRequest - Failed send msg\n");
@@ -1451,7 +1451,7 @@ int ClientController::SendInstantMessage(const std::string &message,
   im.SerializeToString(&ser_im);
 
   std::map<std::string, ReturnCode> add_results;
-  if (sm_->AddBPMessage(contact_names, ser_im, INSTANT_MSG, &add_results) !=
+  if (sm_->SendMessage(contact_names, ser_im, INSTANT_MSG, &add_results) !=
       static_cast<int>(contact_names.size())) {
 #ifdef DEBUG
     printf("ClientController::SendInstantMessage - Not all recepients got "
@@ -1550,7 +1550,7 @@ int ClientController::SendInstantFile(std::string *filename,
   im.SerializeToString(&ser_instant_file);
 
   std::map<std::string, ReturnCode> add_results;
-  if (sm_->AddBPMessage(contact_names, ser_instant_file, INSTANT_MSG,
+  if (sm_->SendMessage(contact_names, ser_instant_file, INSTANT_MSG,
       &add_results) != static_cast<int>(contact_names.size())) {
 #ifdef DEBUG
     printf("ClientController::SendInstantFile - Not all recepients got "
@@ -1726,7 +1726,7 @@ int ClientController::AddContact(const std::string &public_name) {
   std::vector<std::string> contact_names;
   contact_names.push_back(public_name);
   std::map<std::string, ReturnCode> add_results;
-  if (sm_->AddBPMessage(contact_names, ser_im, ADD_CONTACT_RQST,
+  if (sm_->SendMessage(contact_names, ser_im, ADD_CONTACT_RQST,
       &add_results) != static_cast<int>(contact_names.size())) {
 #ifdef DEBUG
     printf("ClientController::AddContact - Failed to send request\n");
@@ -1768,7 +1768,7 @@ int ClientController::DeleteContact(const std::string &public_name) {
   std::vector<std::string> contact_names;
   contact_names.push_back(public_name);
   std::map<std::string, ReturnCode> add_results;
-  if (sm_->AddBPMessage(contact_names, ser_im, ADD_CONTACT_RQST,
+  if (sm_->SendMessage(contact_names, ser_im, ADD_CONTACT_RQST,
       &add_results) != static_cast<int>(contact_names.size())) {
 #ifdef DEBUG
     printf("ClientController::DeleteContact - Failed to send deletion msg\n");
@@ -1994,7 +1994,7 @@ int ClientController::CreateNewShare(const std::string &name,
 
   if (ro_recs.size() > 0) {
     std::map<std::string, ReturnCode> add_results;
-    if (sm_->AddBPMessage(ro_recs, share_message, INSTANT_MSG,
+    if (sm_->SendMessage(ro_recs, share_message, INSTANT_MSG,
         &add_results) != static_cast<int>(ro_recs.size())) {
   #ifdef DEBUG
       printf("ClientController::CreateNewShare - Not all recepients got "
@@ -2015,7 +2015,7 @@ int ClientController::CreateNewShare(const std::string &name,
     im.set_message(message);
     im.SerializeToString(&share_message);
     std::map<std::string, ReturnCode> add_results;
-    if (sm_->AddBPMessage(admin_recs, share_message, INSTANT_MSG,
+    if (sm_->SendMessage(admin_recs, share_message, INSTANT_MSG,
         &add_results) != static_cast<int>(admin_recs.size())) {
   #ifdef DEBUG
       printf("ClientController::CreateNewShare - Not all recepients got "

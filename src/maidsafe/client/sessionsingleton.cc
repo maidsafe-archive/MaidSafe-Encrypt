@@ -682,6 +682,17 @@ int SessionSingleton::ModifyEndPoint(const std::string &contact,
   }
   return 0;
 }
+int SessionSingleton::ModifyEndPoint(const std::string &contact,
+                                     const EndPoint end_point) {
+  {
+    boost::mutex::scoped_lock loch_awe(lc_mutex_);
+    live_map::iterator it = live_contacts_.find(contact);
+    if (it == live_contacts_.end())
+      return kLiveContactNotFound;
+    it->second.ep = end_point;
+  }
+  return kSuccess;
+}
 int SessionSingleton::ModifyStatus(const std::string &contact, int status) {
   {
     boost::mutex::scoped_lock loch_awe(lc_mutex_);

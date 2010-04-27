@@ -26,6 +26,7 @@
 #define MAIDSAFE_CLIENT_STOREMANAGER_H_
 
 #include <boost/thread/condition_variable.hpp>
+#include <boost/function.hpp>
 #include <maidsafe/maidsafe-dht.h>
 #include <maidsafe/utils.h>
 
@@ -56,6 +57,9 @@ typedef boost::function<void(const std::vector<std::string>&,
     const ReturnCode&)> LoadPacketFunctor;
 
 typedef boost::function<void(const ReturnCode&)> CreateAccountFunctor;
+
+typedef boost::function<void(const std::string&)> IMNotifier;
+typedef boost::function<void(const std::string&,const int&)> IMStatusNotifier;
 
 class StoreManagerInterface {
  public:
@@ -107,7 +111,7 @@ class StoreManagerInterface {
   virtual int ModifyBPInfo(const std::string &info)=0;
   virtual int LoadBPMessages(
       std::list<ValidatedBufferPacketMessage> *messages)=0;
-  virtual int AddBPMessage(const std::vector<std::string> &receivers,
+  virtual int SendMessage(const std::vector<std::string> &receivers,
                            const std::string &message,
                            const MessageType &m_type,
                            std::map<std::string, ReturnCode> *add_results)=0;
@@ -129,6 +133,13 @@ class StoreManagerInterface {
       const SetLocalVaultOwnedFunctor &functor)=0;
   virtual void LocalVaultOwned(const LocalVaultOwnedFunctor &functor)=0;
   virtual int CreateAccount(const boost::uint64_t &space)=0;
+
+  // Instant Messaging
+  virtual bool SendPresence(const std::string &contactname)=0;
+  virtual void SendLogOutMessage(const std::string &contactname)=0;
+  virtual void SetSessionEndPoint()=0;
+  virtual void SetInstantMessageNotifier(IMNotifier on_msg, IMStatusNotifier
+      status_notifier)=0;
 };
 
 }  // namespace maidsafe
