@@ -50,9 +50,7 @@ class FileBrowser : public QDialog {
   QString rootPath_;
   QMenu *menu;
   QAction *openFile;
-#ifdef MAIDSAFE_APPLE
   QAction *openWith;
-#endif  // MAIDSAFE_APPLE
   QAction *sendFile;
   QAction *copyFile;
   QAction *cutFile;

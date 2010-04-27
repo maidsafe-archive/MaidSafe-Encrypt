@@ -51,9 +51,7 @@ namespace fs = boost::filesystem;
   menu = new QMenu(this);
 
   openFile = new QAction(tr("Open"), this);
-#if defined(MAIDSAFE_APPLE)
   openWith = new QAction(tr("Open With.."), this);
-#endif
   sendFile = new QAction(tr("Send"), this);
   cutFile = new QAction(tr("Cut"), this);
   copyFile = new QAction(tr("Copy"), this);
@@ -62,9 +60,7 @@ namespace fs = boost::filesystem;
   saveFile = new QAction(tr("Save"), this);
 
   menu->addAction(openFile);
-#if defined(MAIDSAFE_APPLE)
   menu->addAction(openWith);
-#endif
   menu->addAction(saveFile);
   menu->addSeparator();
   //menu->addAction(cutFile);
@@ -99,10 +95,8 @@ namespace fs = boost::filesystem;
   connect(openFile, SIGNAL(triggered()),
           this,        SLOT(onOpenFileClicked()));
 
-#if defined(MAIDSAFE_APPLE)
   connect(openWith, SIGNAL(triggered()),
           this,        SLOT(onOpenWithClicked()));
-#endif
 
   connect(sendFile, SIGNAL(triggered()),
           this,        SLOT(onSendFileClicked()));
@@ -152,9 +146,7 @@ void FileBrowser::reset() {
 
 void FileBrowser::setMenuDirMenu() {
   menu->addAction(openFile);
-#if defined(MAIDSAFE_APPLE)
   menu->removeAction(openWith);
-#endif
   menu->addAction(saveFile);
   menu->addSeparator();
   //menu->addAction(cutFile);
@@ -167,9 +159,7 @@ void FileBrowser::setMenuDirMenu() {
 
 void FileBrowser::setMenuFileMenu() {
   menu->addAction(openFile);
-#if defined(MAIDSAFE_APPLE)
   menu->addAction(openWith);
-#endif
   menu->addAction(saveFile);
   menu->addSeparator();
   //menu->addAction(cutFile);
@@ -205,15 +195,44 @@ void FileBrowser::onMousePressed(QTreeWidgetItem *item, int) {
 
 void FileBrowser::onOpenFileClicked() {
   QTreeWidgetItem* theItem = ui_.driveTreeWidget->currentItem();
-
   onItemDoubleClicked(theItem, 0);
 }
 
 void FileBrowser::onOpenWithClicked() {
   qDebug() << "Open With invoked";
-
   QTreeWidgetItem* theItem = ui_.driveTreeWidget->currentItem();
+  if(theItem->text(1) == tr("Network")) {
+    QMessageBox::warning(this, tr("PD Error"),
+                    tr("You must download the file before trying to open it"));
+                        return;
+  }
   QString path = rootPath_ + currentDir_ + theItem->text(0);
+
+#if defined(MAIDSAFE_WIN32)
+  QString operation("open");
+  QString run = "RUNDLL32.EXE";
+  QString parameters = "shell32.dll,OpenAs_RunDLL ";
+  quintptr returnValue;
+  QT_WA({
+    returnValue = (quintptr)ShellExecute(0,
+                        (TCHAR *)(operation.utf16()),
+                        (TCHAR *)(run.utf16()),
+                        (TCHAR *)(parameters + path).utf16(),
+                        0,
+                        SW_SHOWNORMAL);
+      } , {
+    returnValue = (quintptr)ShellExecuteA(0,
+                        (TCHAR *)(operation.utf16()),
+                        (TCHAR *)(run.utf16()),
+                        (TCHAR *)(parameters + path).utf16(),
+                        0,
+                        SW_SHOWNORMAL);
+      });
+      if (returnValue <= 32) {
+        qWarning() << "FileBrowser::open: failed to open"
+                   << path;
+      }
+#elif defined(MAIDSAFE_APPLE)
   QString fileName = QFileDialog::getOpenFileName(this,
                                       tr("Choose Application to open with"),
                                       "/Applications",
@@ -240,6 +259,9 @@ void FileBrowser::onOpenWithClicked() {
   if (!myProcess_->startDetached("/usr/bin/open", QStringList() << parameters)) {
     qDebug() << ":'(";
   }
+#else
+// TODO (Stephen): Implement Open With for Linux
+#endif
 }
 
 void FileBrowser::onSendFileClicked() {
@@ -456,6 +478,7 @@ int FileBrowser::populateDirectory(QString dir) {
     children.erase(children.begin());
     rowCount++;
   }
+  ui_.driveTreeWidget->resizeColumnToContents(1);
   ui_.driveTreeWidget->resizeColumnToContents(2);
   ui_.driveTreeWidget->resizeColumnToContents(3);
   return 0;
@@ -553,18 +576,6 @@ void FileBrowser::onItemDoubleClicked(QTreeWidgetItem* item, int) {
                           0,
                           0,
                           SW_SHOWNORMAL);
-//////////////////////////
-//Open With Code Below //
-////////////////////////
-      /*QString run = "RUNDLL32.EXE";
-      QString parameters = "shell32.dll,OpenAs_RunDLL ";
-      returnValue = (quintptr)ShellExecute(0,
-                          (TCHAR *)(operation.utf16()),
-                          (TCHAR *)(run.utf16()),
-                          (TCHAR *)(parameters + path).utf16(),
-                          0,
-                          SW_SHOWNORMAL);*/
-//////////////
       } , {
         returnValue = (quintptr)ShellExecuteA(0,
                                   operation.toLocal8Bit().constData(),
