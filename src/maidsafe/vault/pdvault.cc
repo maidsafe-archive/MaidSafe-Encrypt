@@ -241,7 +241,7 @@ int PDVault::Stop() {
 }
 
 void PDVault::CleanUp() {
-  transport::TransportUDT::CleanUp();
+  // transport::TransportUDT::CleanUp();
 }
 
 void PDVault::RegisterMaidService() {

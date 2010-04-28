@@ -49,8 +49,7 @@ namespace fs = boost::filesystem;
 namespace cc_test {
 
 static std::vector< boost::shared_ptr<maidsafe_vault::PDVault> > pdvaults_;
-static const int kNetworkSize_ = 17;
-static const int kTestK_ = 16;
+static const int kNetworkSize_ = kad::K + 1;
 static bool initialised_ = false;
 
 }  // namespace cc_test
@@ -101,7 +100,7 @@ class FunctionalClientControllerTest : public testing::Test {
     }
     ASSERT_LT(count, timeout);
     ASSERT_TRUE(fs::exists(kadconfig_dest));
-    boost::thread thr(&maidsafe_vault::VaultDaemon::StartVault, &vault_daemon_);
+//    boost::thread thr(&maidsafe_vault::VaultDaemon::StartVault, &vault_daemon_);
     ss_ = SessionSingleton::getInstance();
     ss_->ResetSession();
     cc_ = ClientController::getInstance();
@@ -142,52 +141,55 @@ class FunctionalClientControllerTest : public testing::Test {
 };
 
 TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerLoginSequence) {
-  {
-    std::string username = "User1";
-    std::string pin = "1234";
-    std::string password = "The beagle has landed.";
-    ASSERT_TRUE(ss_->Username().empty());
-    ASSERT_TRUE(ss_->Pin().empty());
-    ASSERT_TRUE(ss_->Password().empty());
-    printf("Preconditions fulfilled.\n");
+  std::string username = "User1";
+  std::string pin = "1234";
+  std::string password = "The beagle has landed.";
+  EXPECT_TRUE(ss_->Username().empty());
+  EXPECT_TRUE(ss_->Pin().empty());
+  EXPECT_TRUE(ss_->Password().empty());
+  printf("Preconditions fulfilled.\n");
 
-//    ASSERT_NE(maidsafe::kUserExists,
-//              cc_->CheckUserExists(username, pin, maidsafe::kDefCon3));
+  EXPECT_NE(maidsafe::kUserExists,
+            cc_->CheckUserExists(username, pin, maidsafe::kDefCon3));
+
+  {
     boost::progress_timer t;
-    EXPECT_TRUE(cc_->CreateUser(username, pin, password, vcp_));
+    ASSERT_TRUE(cc_->CreateUser(username, pin, password, vcp_));
     EXPECT_EQ(username, ss_->Username());
     EXPECT_EQ(pin, ss_->Pin());
     EXPECT_EQ(password, ss_->Password());
-    printf("User created.\nTime: ");
+    printf("User created, time: ");
   }
-  printf("===================\n\n\n\n\n");
-  boost::this_thread::sleep(boost::posix_time::seconds(60));
 
-//  ASSERT_TRUE(cc_->Logout());
-//  ASSERT_TRUE(ss_->Username().empty());
-//  ASSERT_TRUE(ss_->Pin().empty());
-//  ASSERT_TRUE(ss_->Password().empty());
-//  printf("Logged out.\n\n\n");
-//
-//  boost::this_thread::sleep(boost::posix_time::seconds(30));
-//
-//  ASSERT_EQ(maidsafe::kUserExists,
-//            cc_->CheckUserExists(username, pin, maidsafe::kDefCon3));
-//  ASSERT_TRUE(cc_->ValidateUser(password));
-//  ASSERT_EQ(username, ss_->Username());
-//  ASSERT_EQ(pin, ss_->Pin());
-//  ASSERT_EQ(password, ss_->Password());
-//  printf("Logged in.\n");
-//
-//  ASSERT_TRUE(cc_->Logout());
-//  ASSERT_TRUE(ss_->Username().empty());
-//  ASSERT_TRUE(ss_->Pin().empty());
-//  ASSERT_TRUE(ss_->Password().empty());
-//  printf("Logged out.\n");
-//
-//  ASSERT_NE(maidsafe::kUserExists,
-//            cc_->CheckUserExists("juan.smer", pin, maidsafe::kDefCon3));
-//  printf("Can't log in with fake details.\n");
+  printf("\n\n");
+  boost::this_thread::sleep(boost::posix_time::seconds(30));
+
+  ASSERT_TRUE(cc_->Logout());
+  EXPECT_TRUE(ss_->Username().empty());
+  EXPECT_TRUE(ss_->Pin().empty());
+  EXPECT_TRUE(ss_->Password().empty());
+  printf("Logged out.\n\n");
+
+  boost::this_thread::sleep(boost::posix_time::seconds(30));
+
+  ASSERT_EQ(maidsafe::kUserExists,
+            cc_->CheckUserExists(username, pin, maidsafe::kDefCon3));
+
+  ASSERT_TRUE(cc_->ValidateUser(password));
+  EXPECT_EQ(username, ss_->Username());
+  EXPECT_EQ(pin, ss_->Pin());
+  EXPECT_EQ(password, ss_->Password());
+  printf("Logged in.\n\n");
+
+  ASSERT_TRUE(cc_->Logout());
+  EXPECT_TRUE(ss_->Username().empty());
+  EXPECT_TRUE(ss_->Pin().empty());
+  EXPECT_TRUE(ss_->Password().empty());
+  printf("Logged out.\n\n");
+
+  ASSERT_NE(maidsafe::kUserExists,
+            cc_->CheckUserExists("juan.smer", pin, maidsafe::kDefCon3));
+  printf("Can't log in with fake details.\n");
 }
 
 TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerChangeDetails) {
@@ -369,7 +371,6 @@ TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerCreatePubUsername) {
   boost::this_thread::sleep(boost::posix_time::seconds(30));
 }
 
-/*
 TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerLeaveNetwork) {
   std::string username = "User4";
   std::string pin = "4567";
@@ -380,7 +381,8 @@ TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerLeaveNetwork) {
   ASSERT_TRUE(ss_->Password().empty());
   printf("Preconditions fulfilled.\n");
 
-  ASSERT_FALSE(cc_test::CheckUserExists(cc_, username, pin, 10000));
+  ASSERT_NE(maidsafe::kUserExists,
+            cc_->CheckUserExists(username, pin, maidsafe::kDefCon3));
   ASSERT_TRUE(cc_->CreateUser(username, pin, password, vcp_));
   ASSERT_EQ(username, ss_->Username());
   ASSERT_EQ(pin, ss_->Pin());
@@ -393,7 +395,8 @@ TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerLeaveNetwork) {
   ASSERT_TRUE(ss_->Password().empty());
   printf("Logged out.\n");
 
-  ASSERT_TRUE(cc_test::CheckUserExists(cc_, username, pin, 10000));
+  ASSERT_EQ(maidsafe::kUserExists,
+            cc_->CheckUserExists(username, pin, maidsafe::kDefCon3));
   ASSERT_TRUE(cc_->ValidateUser(password));
   ASSERT_EQ(username, ss_->Username());
   ASSERT_EQ(pin, ss_->Pin());
@@ -404,7 +407,8 @@ TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerLeaveNetwork) {
   ASSERT_TRUE(cc_->LeaveMaidsafeNetwork());
   printf("Left maidsafe ='(.\n");
 
-  ASSERT_FALSE(cc_test::CheckUserExists(cc_, username, pin, 10000));
+  ASSERT_NE(maidsafe::kUserExists,
+            cc_->CheckUserExists(username, pin, maidsafe::kDefCon3));
   printf("User no longer exists.\n");
 
   ASSERT_TRUE(cc_->CreateUser(username, pin, password, vcp_));
@@ -419,7 +423,6 @@ TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerLeaveNetwork) {
   ASSERT_TRUE(ss_->Password().empty());
   printf("Logged out.\n");
 }
-*/
 
 TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerBackupFile) {
   std::string username = "User5";

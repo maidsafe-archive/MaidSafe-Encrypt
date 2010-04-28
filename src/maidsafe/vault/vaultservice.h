@@ -299,11 +299,15 @@ class VaultService : public maidsafe::MaidsafeService {
   bool ValidateAmendRequest(const maidsafe::AmendAccountRequest *request,
                             boost::uint64_t *account_delta,
                             std::string *pmid);
-  bool ValidateSignedRequest(const std::string &public_key,
-                             const std::string &public_key_signature,
-                             const std::string &request_signature,
-                             const std::string &key,
-                             const std::string &pmid);
+  bool ValidateIdAndRequest(const std::string &public_key,
+                            const std::string &public_key_signature,
+                            const std::string &request_signature,
+                            const std::string &key,
+                            const std::string &signing_id);
+  bool ValidateRequestSignature(const std::string &public_key,
+                                const std::string &public_key_signature,
+                                const std::string &request_signature,
+                                const std::string &key);
   bool ValidateIdentity(const std::string &id,
                         const std::string &public_key,
                         const std::string &public_key_signature);

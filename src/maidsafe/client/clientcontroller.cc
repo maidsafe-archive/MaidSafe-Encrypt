@@ -891,7 +891,7 @@ bool ClientController::GetMessages() {
   }
 
   std::list<ValidatedBufferPacketMessage> valid_messages;
-  if (sm_->LoadBPMessages(&valid_messages) != 0) {
+  if (sm_->LoadBPMessages(&valid_messages) < kKadUpperThreshold) {
 #ifdef DEBUG
     printf("ClientController::GetMessages - Muffed the load\n");
 #endif

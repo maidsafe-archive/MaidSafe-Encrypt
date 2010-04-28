@@ -751,10 +751,11 @@ int SEHandler::LoadChunks(const DataMap &dm) {
   for (int i = 0; i < dm.encrypted_chunk_name_size(); ++i) {
     std::string data;
     int n = storem_->LoadChunk(dm.encrypted_chunk_name(i), &data);
-//  #ifdef DEBUG
-//      printf("SEHandler::LoadChunks chunk(%s): result(%d)\n",
-//             HexSubstr(dm.encrypted_chunk_name(i)).c_str(), n);
-//  #endif
+#ifdef DEBUG
+//    printf("SEHandler::LoadChunks %d of %d, chunk(%s): result(%d)\n",
+//           i + 1, dm.encrypted_chunk_name_size(),
+//           HexSubstr(dm.encrypted_chunk_name(i)).c_str(), n);
+#endif
     chunks_found += n;
     SelfEncryption se(client_chunkstore_);
     fs::path chunk_path = se.GetChunkPath(dm.encrypted_chunk_name(i));
