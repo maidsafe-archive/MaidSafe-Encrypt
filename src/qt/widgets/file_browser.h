@@ -22,6 +22,7 @@
 #include <QFileSystemWatcher>
 #include <QMenu>
 #include <QProcess>
+#include <QPixmap>
 
 #include "ui_file_browser.h"
 
@@ -40,7 +41,6 @@ class FileBrowser : public QDialog {
  private:
     void setMenuDirMenu();
     void setMenuFileMenu();
-    QString getCurrentTreePath(QTreeWidgetItem* item);
   Ui::FileBrowserPage ui_;
   // QFileSystemModel* model_;
   // QFileSystemWatcher* theWatcher_;
@@ -61,7 +61,9 @@ class FileBrowser : public QDialog {
   QMenu *menu2;
   boost::shared_ptr<QProcess> myProcess_;
 
-
+  QIcon getAssociatedIconFromPath(const QString& filepath);
+  QString getCurrentTreePath(QTreeWidgetItem* item);
+  void create_file( const std::string & ph, const std::string & contents );
   int populateDirectory(const QString);
   int createTreeDirectory(const QString);
   void uploadFileFromLocal(const QString& filePath);

@@ -17,6 +17,8 @@
 #include "fs/filesystem.h"
 #include "qt/client/user_space_filesystem.h"
 #include <math.h>
+#include <iostream>
+#include <fstream>
 #ifdef MAIDSAFE_WIN32
 #include <windows.h>
 #include <shellapi.h>
@@ -137,6 +139,7 @@ void FileBrowser::setActive(bool b) {
     createTreeDirectory("/");
     ui_.driveTreeWidget->header()->setResizeMode(QHeaderView::Interactive);
     ui_.driveTreeWidget->header()->setStretchLastSection(true);
+    ui_.driveTreeWidget->setSortingEnabled(true);
   }
 }
 
@@ -439,7 +442,6 @@ int FileBrowser::populateDirectory(QString dir) {
           qDebug() << "Create Directory Failed";
         }
       }
-
       QIcon theIcon = icon->icon(QFileIconProvider::Folder);
       QString item = QString::fromStdString(s);
       QTreeWidgetItem *newItem = new QTreeWidgetItem(ui_.driveTreeWidget);
@@ -454,15 +456,16 @@ int FileBrowser::populateDirectory(QString dir) {
 
       ui_.driveTreeWidget->insertTopLevelItem(rowCount, newItem);
     } else {
-       //File
-      QIcon theIcon = icon->icon(QFileIconProvider::File);
+      //TODO(Stephen) -- Get associated file icons
+      std::string fullFilePath = rootPath_.toStdString() +
+                                currentDir_.toStdString() + s;
+      QIcon theIcon = getAssociatedIconFromPath(
+                                          QString::fromStdString(fullFilePath));
 
       QString item = QString::fromStdString(s);
       QTreeWidgetItem *newItem = new QTreeWidgetItem(ui_.driveTreeWidget);
       newItem->setIcon(0, theIcon);
       newItem->setText(0, item);
-      std::string fullFilePath = rootPath_.toStdString() +
-                                currentDir_.toStdString() + s;
       if (fs::exists(fullFilePath)) {
         newItem->setText(1, tr("Local"));
       } else {
@@ -525,7 +528,7 @@ int FileBrowser::createTreeDirectory(QString dir) {
       std::map<std::string, maidsafe::ItemType> children1;
       ClientController::instance()->readdir(relPathStr, children1);
 
-      if (!children.empty()) {
+      if (!children1.empty()) {
         QTreeWidgetItem *emptyItem = new QTreeWidgetItem(newItem);
         emptyItem->setText(0,"fake");
       }
@@ -904,4 +907,27 @@ QString FileBrowser::getCurrentTreePath(QTreeWidgetItem* item){
     }
   }
   return path;
+}
+
+QIcon FileBrowser::getAssociatedIconFromPath(const QString& fullFilePath) {
+  QString qtPath = fullFilePath;
+  qtPath.replace(QString("//"),QString("/"));
+  qtPath.replace(QString("/"),QString("\\"));
+
+  if (!fs::exists(qtPath.toStdString())) {
+    try {
+        std::ofstream myfile;
+        myfile.open (qtPath.toStdString().c_str());
+        myfile << "Writing this to a file.\n";
+        myfile.close();
+    }
+    catch(const std::exception&) {
+      qDebug() << "Create File Failed";
+    }
+  }
+  QFileInfo fileInfo(qtPath);
+  QFileIconProvider fileIconProvider;
+  QIcon appIcon = fileIconProvider.icon(fileInfo);
+  fs::remove(qtPath.toStdString());
+  return appIcon;
 }
