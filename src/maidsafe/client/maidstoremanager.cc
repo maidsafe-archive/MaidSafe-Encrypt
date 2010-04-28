@@ -1459,6 +1459,7 @@ int MaidsafeStoreManager::SendMessage(
                      udt_transport_.GetID());
   }
 
+  // TODO(Steve#) replace with conditional variable
   while (local_count < recs.size()) {
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
     {
@@ -2959,6 +2960,7 @@ void MaidsafeStoreManager::AddToBpCallback(
     boost::shared_ptr<BPResults> bp_results) {
   boost::mutex::scoped_lock loch_arkaig(bp_results->mutex);
   (*bp_results->results)[receiver] = rc;
+  ++bp_results->returned_count;
 }
 
 void MaidsafeStoreManager::LoadMessagesCallback(

@@ -285,7 +285,7 @@ void VaultService::StorePrep(google::protobuf::RpcController*,
     return;
   }
 
-  if (!ValidateSignedRequest(request_sz.public_key(),
+  if (!ValidateIdAndRequest(request_sz.public_key(),
        request_sz.public_key_signature(), request->request_signature(),
        request->chunkname(), request_sz.pmid())) {
 #ifdef DEBUG
@@ -381,7 +381,7 @@ void VaultService::StoreChunk(google::protobuf::RpcController*,
     return;
   }
 
-  if (!ValidateSignedRequest(request->public_key(),
+  if (!ValidateIdAndRequest(request->public_key(),
        request->public_key_signature(), request->request_signature(),
        request->chunkname(), request->pmid())) {
 #ifdef DEBUG
@@ -462,7 +462,7 @@ void VaultService::AddToWatchList(
     return;
   }
 
-  if (!ValidateSignedRequest(sz.public_key(),
+  if (!ValidateIdAndRequest(sz.public_key(),
                              sz.public_key_signature(),
                              request->request_signature(),
                              request->chunkname(),
@@ -584,7 +584,7 @@ void VaultService::RemoveFromWatchList(
     return;
   }
 
-  if (!ValidateSignedRequest(request->public_key(),
+  if (!ValidateIdAndRequest(request->public_key(),
       request->public_key_signature(), request->request_signature(),
       request->chunkname(), request->pmid())) {
 #ifdef DEBUG
@@ -663,7 +663,7 @@ void VaultService::AddToReferenceList(
     return;
   }
 
-  if (!ValidateSignedRequest(store_contract.public_key(),
+  if (!ValidateIdAndRequest(store_contract.public_key(),
       store_contract.public_key_signature(), request->request_signature(),
       request->chunkname(), store_contract.pmid())) {
 #ifdef DEBUG
@@ -900,7 +900,7 @@ void VaultService::AccountStatus(google::protobuf::RpcController*,
     co.set_hash_algorithm(crypto::SHA_512);
     std::string account_name = co.Hash(request->account_pmid() + kAccount, "",
                                        crypto::STRING_STRING, false);
-    if (!ValidateSignedRequest(request->public_key(),
+    if (!ValidateIdAndRequest(request->public_key(),
         request->public_key_signature(), request->request_signature(),
         account_name, account_pmid)) {
 #ifdef DEBUG
@@ -1021,7 +1021,7 @@ void VaultService::DeleteChunk(google::protobuf::RpcController*,
     return;
   }
 
-  if (!ValidateSignedRequest(sz.public_key(),
+  if (!ValidateIdAndRequest(sz.public_key(),
                              sz.public_key_signature(),
                              request->request_signature(),
                              request->chunkname(),
@@ -1174,7 +1174,7 @@ void VaultService::CacheChunk(google::protobuf::RpcController*,
     return;
   }
 
-  if (!ValidateSignedRequest(request->public_key(),
+  if (!ValidateIdAndRequest(request->public_key(),
       request->public_key_signature(), request->request_signature(),
       request->chunkname(), request->pmid())) {
     response->set_result(kNack);
@@ -1209,7 +1209,7 @@ void VaultService::GetSyncData(google::protobuf::RpcController*,
     printf("In VaultService::GetSyncData (%s), request is not initialized.\n",
            HexSubstr(pmid_).c_str());
 #endif
-  } else if (!ValidateSignedRequest(request->public_key(),
+  } else if (!ValidateIdAndRequest(request->public_key(),
       request->public_key_signature(), request->request_signature(), "",
       request->pmid())) {
 #ifdef DEBUG
@@ -1249,7 +1249,7 @@ void VaultService::GetAccount(google::protobuf::RpcController*,
     return;
   }
 
-  if (!ValidateSignedRequest(request->public_key(),
+  if (!ValidateIdAndRequest(request->public_key(),
       request->public_key_signature(), request->request_signature(),
       request->account_pmid(), request->pmid())) {
     done->Run();
@@ -1301,7 +1301,7 @@ void VaultService::GetChunkInfo(google::protobuf::RpcController*,
     return;
   }
 
-  if (!ValidateSignedRequest(request->public_key(),
+  if (!ValidateIdAndRequest(request->public_key(),
       request->public_key_signature(), request->request_signature(),
       request->chunkname(), request->pmid())) {
     done->Run();
@@ -1354,7 +1354,7 @@ void VaultService::GetBufferPacket(google::protobuf::RpcController*,
     return;
   }
 
-  if (!ValidateSignedRequest(request->public_key(),
+  if (!ValidateIdAndRequest(request->public_key(),
       request->public_key_signature(), request->request_signature(),
       request->bufferpacket_name(), request->pmid())) {
     done->Run();
@@ -1471,25 +1471,9 @@ void VaultService::CreateBP(google::protobuf::RpcController*,
     return;
   }
 
-  crypto::Crypto co;
-  co.set_hash_algorithm(crypto::SHA_512);
-  if (!co.AsymCheckSig(request->public_key(), request->signed_public_key(),
-      request->public_key(), crypto::STRING_STRING)) {
-    response->set_result(kNack);
-    done->Run();
-#ifdef DEBUG
-    if (knode_ != NULL) {
-      printf("In VaultService::CreateBP (%s), ", HexSubstr(pmid_).c_str());
-      printf("failed to validate signed public key.\n");
-    }
-#endif
-    return;
-  }
-
-  if (!co.AsymCheckSig(co.Hash(request->public_key() +
-      request->signed_public_key() + request->bufferpacket_name(), "",
-      crypto::STRING_STRING, false), request->signed_request(),
-      request->public_key(), crypto::STRING_STRING)) {
+  if (!ValidateRequestSignature(request->public_key(),
+      request->signed_public_key(), request->signed_request(),
+      request->bufferpacket_name())) {
     response->set_result(kNack);
     done->Run();
 #ifdef DEBUG
@@ -1536,25 +1520,9 @@ void VaultService::ModifyBPInfo(google::protobuf::RpcController*,
     return;
   }
 
-  crypto::Crypto co;
-  co.set_hash_algorithm(crypto::SHA_512);
-  if (!co.AsymCheckSig(request->public_key(), request->signed_public_key(),
-      request->public_key(), crypto::STRING_STRING)) {
-    response->set_result(kNack);
-    done->Run();
-#ifdef DEBUG
-    if (knode_ != NULL) {
-      printf("In VaultService::ModifyBPInfo (%s), ", HexSubstr(pmid_).c_str());
-      printf("failed to validate signed public key.\n");
-    }
-#endif
-    return;
-  }
-
-  if (!co.AsymCheckSig(co.Hash(request->public_key() +
-      request->signed_public_key() + request->bufferpacket_name(), "",
-      crypto::STRING_STRING, false), request->signed_request(),
-      request->public_key(), crypto::STRING_STRING)) {
+  if (!ValidateRequestSignature(request->public_key(),
+      request->signed_public_key(), request->signed_request(),
+      request->bufferpacket_name())) {
     response->set_result(kNack);
     done->Run();
 #ifdef DEBUG
@@ -1664,23 +1632,9 @@ void VaultService::GetBPMessages(google::protobuf::RpcController*,
     return;
   }
 
-  crypto::Crypto co;
-  co.set_hash_algorithm(crypto::SHA_512);
-  if (!co.AsymCheckSig(request->public_key(), request->signed_public_key(),
-      request->public_key(), crypto::STRING_STRING)) {
-    response->set_result(kNack);
-    done->Run();
-#ifdef DEBUG
-    printf("In VaultService::GetBPMessages (%s), ", HexSubstr(pmid_).c_str());
-    printf("failed to validate signed public key.\n");
-#endif
-    return;
-  }
-
-  if (!co.AsymCheckSig(co.Hash(request->public_key() +
-      request->signed_public_key() + request->bufferpacket_name(), "",
-      crypto::STRING_STRING, false), request->signed_request(),
-      request->public_key(), crypto::STRING_STRING)) {
+  if (!ValidateRequestSignature(request->public_key(),
+      request->signed_public_key(), request->signed_request(),
+      request->bufferpacket_name())) {
     response->set_result(kNack);
     done->Run();
 #ifdef DEBUG
@@ -1761,14 +1715,14 @@ void VaultService::AddBPMessage(google::protobuf::RpcController*,
     return;
   }
 
-  if (!ValidateSignedRequest(request->public_key(),
+  if (!ValidateRequestSignature(request->public_key(),
       request->signed_public_key(), request->signed_request(),
-      request->bufferpacket_name(), request->pmid())) {
+      request->bufferpacket_name())) {
     response->set_result(kNack);
     done->Run();
 #ifdef DEBUG
-    printf("In VaultService::AddBPMessage(%s), request/id doesn't validate.\n",
-           HexSubstr(pmid_).c_str());
+    printf("In VaultService::AddBPMessage(%s), failed to validate signed "
+           "request.\n", HexSubstr(pmid_).c_str());
 #endif
     return;
   }
@@ -1834,23 +1788,9 @@ void VaultService::GetBPPresence(google::protobuf::RpcController*,
     return;
   }
 
-  crypto::Crypto co;
-  co.set_hash_algorithm(crypto::SHA_512);
-  if (!co.AsymCheckSig(request->public_key(), request->signed_public_key(),
-      request->public_key(), crypto::STRING_STRING)) {
-    response->set_result(kNack);
-    done->Run();
-#ifdef DEBUG
-    printf("In VaultService::GetBPPresence (%s), ", HexSubstr(pmid_).c_str());
-    printf("failed to validate signed public key.\n");
-#endif
-    return;
-  }
-
-  if (!co.AsymCheckSig(co.Hash(request->public_key() +
-      request->signed_public_key() + request->bufferpacket_name(), "",
-      crypto::STRING_STRING, false), request->signed_request(),
-      request->public_key(), crypto::STRING_STRING)) {
+  if (!ValidateRequestSignature(request->public_key(),
+      request->signed_public_key(), request->signed_request(),
+      request->bufferpacket_name())) {
     response->set_result(kNack);
     done->Run();
 #ifdef DEBUG
@@ -1919,14 +1859,14 @@ void VaultService::AddBPPresence(google::protobuf::RpcController*,
     return;
   }
 
-  if (!ValidateSignedRequest(request->public_key(),
+  if (!ValidateRequestSignature(request->public_key(),
       request->signed_public_key(), request->signed_request(),
-      request->bufferpacket_name(), request->pmid())) {
+      request->bufferpacket_name())) {
     response->set_result(kNack);
     done->Run();
 #ifdef DEBUG
-    printf("In VaultService::AddBPPresence(%s), request/id doesn't validate.\n",
-           HexSubstr(pmid_).c_str());
+    printf("In VaultService::AddBPPresence(%s), failed to validate signed "
+           "request.\n", HexSubstr(pmid_).c_str());
 #endif
     return;
   }
@@ -2095,7 +2035,7 @@ bool VaultService::ValidateAmendRequest(
   return true;
 }
 
-bool VaultService::ValidateSignedRequest(
+bool VaultService::ValidateIdAndRequest(
     const std::string &public_key,
     const std::string &public_key_signature,
     const std::string &request_signature,
@@ -2107,6 +2047,21 @@ bool VaultService::ValidateSignedRequest(
   maidsafe::MaidsafeValidator msv(pmid_);
   if (!msv.ValidateSignerId(signing_id, public_key, public_key_signature))
     return false;
+  if (!msv.ValidateRequest(request_signature, public_key, public_key_signature,
+      key))
+    return false;
+  return true;
+}
+
+bool VaultService::ValidateRequestSignature(
+    const std::string &public_key,
+    const std::string &public_key_signature,
+    const std::string &request_signature,
+    const std::string &key) {
+  if (request_signature == kAnonymousRequestSignature)
+    return true;
+
+  maidsafe::MaidsafeValidator msv(pmid_);
   if (!msv.ValidateRequest(request_signature, public_key, public_key_signature,
       key))
     return false;

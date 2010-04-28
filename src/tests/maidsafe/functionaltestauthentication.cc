@@ -32,7 +32,7 @@
 #include "maidsafe/client/maidstoremanager.h"
 
 static std::vector< boost::shared_ptr<maidsafe_vault::PDVault> > pdvaults_;
-static const int kNetworkSize_ = 16;
+static const int kNetworkSize_ = kad::K;
 
 namespace fs = boost::filesystem;
 
