@@ -215,19 +215,20 @@ void FileBrowser::onOpenWithClicked() {
   QString operation("open");
   QString run = "RUNDLL32.EXE";
   QString parameters = "shell32.dll,OpenAs_RunDLL ";
+  QString qtPath = getFullFilePath(path);
   quintptr returnValue;
   QT_WA({
     returnValue = (quintptr)ShellExecute(0,
                         (TCHAR *)(operation.utf16()),
                         (TCHAR *)(run.utf16()),
-                        (TCHAR *)(parameters + path).utf16(),
+                        (TCHAR *)(parameters + qtPath).utf16(),
                         0,
                         SW_SHOWNORMAL);
       } , {
     returnValue = (quintptr)ShellExecuteA(0,
                         (TCHAR *)(operation.utf16()),
                         (TCHAR *)(run.utf16()),
-                        (TCHAR *)(parameters + path).utf16(),
+                        (TCHAR *)(parameters + qtPath).utf16(),
                         0,
                         SW_SHOWNORMAL);
       });
@@ -910,16 +911,20 @@ QString FileBrowser::getCurrentTreePath(QTreeWidgetItem* item){
 }
 
 QIcon FileBrowser::getAssociatedIconFromPath(const QString& fullFilePath) {
-  QString qtPath = fullFilePath;
-  qtPath.replace(QString("//"),QString("/"));
-  qtPath.replace(QString("/"),QString("\\"));
+  QString qtPath = getFullFilePath(fullFilePath);
+  if(fs::exists(qtPath.toStdString())) {
+    QFileInfo fileInfo(qtPath);
+    QFileIconProvider fileIconProvider;
+    QIcon appIcon = fileIconProvider.icon(fileInfo);
+    return appIcon;
+  }
 
   if (!fs::exists(qtPath.toStdString())) {
     try {
-        std::ofstream myfile;
-        myfile.open (qtPath.toStdString().c_str());
-        myfile << "Writing this to a file.\n";
-        myfile.close();
+      std::ofstream myfile;
+      myfile.open (qtPath.toStdString().c_str());
+      myfile << "Writing this to a file.\n";
+      myfile.close();
     }
     catch(const std::exception&) {
       qDebug() << "Create File Failed";
@@ -928,6 +933,21 @@ QIcon FileBrowser::getAssociatedIconFromPath(const QString& fullFilePath) {
   QFileInfo fileInfo(qtPath);
   QFileIconProvider fileIconProvider;
   QIcon appIcon = fileIconProvider.icon(fileInfo);
-  fs::remove(qtPath.toStdString());
+
+  if (fs::exists(qtPath.toStdString())) {
+    try {
+      fs::remove(qtPath.toStdString());
+    }
+    catch(const std::exception&) {
+      qDebug() << "Create File Failed";
+    }
+  }
   return appIcon;
+}
+
+QString FileBrowser::getFullFilePath(const QString& filepath) {
+  QString qtPath = filepath;
+  qtPath.replace(QString("//"),QString("/"));
+  qtPath.replace(QString("/"),QString("\\"));
+  return qtPath;
 }

@@ -63,6 +63,7 @@ class FileBrowser : public QDialog {
 
   QIcon getAssociatedIconFromPath(const QString& filepath);
   QString getCurrentTreePath(QTreeWidgetItem* item);
+  QString getFullFilePath(const QString& filepath);
   void create_file( const std::string & ph, const std::string & contents );
   int populateDirectory(const QString);
   int createTreeDirectory(const QString);
