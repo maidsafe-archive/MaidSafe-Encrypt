@@ -341,26 +341,42 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesValidateAmendRequest) {
   ASSERT_EQ(pmid, returned_pmid);
 }
 
-TEST_F(VaultServicesTest, BEH_MAID_ServicesValidateSignedRequest) {
+TEST_F(VaultServicesTest, BEH_MAID_ServicesValidateIdAndRequest) {
   std::string pub_key, priv_key, key("xyz"), pmid, sig_pub_key, sig_req;
   CreateRSAKeys(&pub_key, &priv_key);
 
-  EXPECT_TRUE(vault_service_->ValidateSignedRequest("abc", "def",
-                                                    kAnonymousRequestSignature,
-                                                    key, ""));
+  EXPECT_TRUE(vault_service_->ValidateIdAndRequest("abc", "def",
+                                                   kAnonymousRequestSignature,
+                                                   key, ""));
 
   CreateSignedRequest(pub_key, priv_key, key, &pmid, &sig_pub_key, &sig_req);
-  EXPECT_TRUE(vault_service_->ValidateSignedRequest(pub_key, sig_pub_key,
-                                                    sig_req, key, pmid));
+  EXPECT_TRUE(vault_service_->ValidateIdAndRequest(pub_key, sig_pub_key,
+                                                   sig_req, key, pmid));
 
-  EXPECT_FALSE(vault_service_->ValidateSignedRequest(pub_key, sig_pub_key,
-                                                     sig_req, key, "abcdef"));
+  EXPECT_FALSE(vault_service_->ValidateIdAndRequest(pub_key, sig_pub_key,
+                                                    sig_req, key, "abcdef"));
 
   CreateSignedRequest("123", "456", key, &pmid, &sig_pub_key, &sig_req);
-  EXPECT_FALSE(vault_service_->ValidateSignedRequest("123", sig_pub_key,
-                                                     sig_req, key, pmid));
-  EXPECT_FALSE(vault_service_->ValidateSignedRequest("abc", "def",
-                                                     "ghi", key, pmid));
+  EXPECT_FALSE(vault_service_->ValidateIdAndRequest("123", sig_pub_key,
+                                                    sig_req, key, pmid));
+  EXPECT_FALSE(vault_service_->ValidateIdAndRequest("abc", "def", "ghi", key,
+                                                    pmid));
+}
+
+TEST_F(VaultServicesTest, BEH_MAID_ServicesValidateRequestSignature) {
+  std::string pub_key, priv_key, key("xyz"), pmid, sig_pub_key, sig_req;
+  CreateRSAKeys(&pub_key, &priv_key);
+  CreateSignedRequest(pub_key, priv_key, key, &pmid, &sig_pub_key, &sig_req);
+  ASSERT_TRUE(vault_service_->ValidateRequestSignature(pub_key, sig_pub_key,
+                                                       sig_req, key));
+  ASSERT_FALSE(vault_service_->ValidateRequestSignature("123", sig_pub_key,
+                                                        sig_req, key));
+  ASSERT_FALSE(vault_service_->ValidateRequestSignature(pub_key, "def", sig_req,
+                                                        key));
+  ASSERT_FALSE(vault_service_->ValidateRequestSignature(pub_key, sig_pub_key,
+                                                        "hijklm", key));
+  ASSERT_FALSE(vault_service_->ValidateRequestSignature(pub_key, sig_pub_key,
+                                                        sig_req, "abcdef"));
 }
 
 TEST_F(VaultServicesTest, BEH_MAID_ServicesValidateIdentity) {
@@ -2668,8 +2684,8 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesVaultStatus) {
 
 TEST_F(VaultServicesTest, BEH_MAID_ServicesCreateBP) {
   VaultService service(vault_pmid_, vault_public_key_, vault_private_key_,
-      vault_public_key_signature_, vault_chunkstore_, NULL,
-      vault_service_logic_, udt_transport_.GetID());
+                       vault_public_key_signature_, vault_chunkstore_, NULL,
+                       vault_service_logic_, udt_transport_.GetID());
   rpcprotocol::Controller controller;
   maidsafe::CreateBPRequest request;
   maidsafe::CreateBPResponse response;
@@ -2680,10 +2696,10 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesCreateBP) {
                                     (&cb_obj, &TestCallback::CallbackFunction);
   service.CreateBP(&controller, &request, &response, done);
   ASSERT_TRUE(response.IsInitialized());
-  EXPECT_EQ(kNack, static_cast<int>(response.result()));
-  EXPECT_EQ(vault_pmid_, response.pmid_id());
-  EXPECT_EQ(vault_public_key_, response.public_key());
-  EXPECT_EQ(vault_public_key_signature_, response.signed_public_key());
+  ASSERT_EQ(kNack, static_cast<int>(response.result()));
+  ASSERT_EQ(vault_pmid_, response.pmid_id());
+  ASSERT_EQ(vault_public_key_, response.public_key());
+  ASSERT_EQ(vault_public_key_signature_, response.signed_public_key());
 
   std::string pub_key, priv_key, pmid, sig_pub_key, sig_req;
   CreateRSAKeys(&pub_key, &priv_key);
@@ -2701,19 +2717,19 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesCreateBP) {
   bpi.SerializeToString(&ser_bpi);
   info->set_data(ser_bpi);
   info->set_signature(co.AsymSign(ser_bpi, "", priv_key,
-    crypto::STRING_STRING));
+                                  crypto::STRING_STRING));
   std::string ser_gp;
   info->SerializeToString(&ser_gp);
   std::string ser_bp;
   bp.SerializeToString(&ser_bp);
 
   std::string bufferpacket_name(co.Hash("DanBUFFER", "", crypto::STRING_STRING,
-    false));
+                                        false));
   CreateSignedRequest(pub_key, priv_key, bufferpacket_name, &pmid, &sig_pub_key,
-    &sig_req);
+                      &sig_req);
   request.set_bufferpacket_name(bufferpacket_name);
   request.set_data(ser_bp);
-  request.set_pmid(pmid);
+  request.set_pmid("Dan");
   request.set_public_key(pub_key);
   request.set_signed_public_key(sig_pub_key);
   request.set_signed_request(sig_req);
@@ -2725,7 +2741,8 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesCreateBP) {
   ASSERT_TRUE(response.IsInitialized());
   EXPECT_EQ(kAck, static_cast<int>(response.result()));
   EXPECT_EQ(response.pmid_id(), co.Hash(response.public_key() +
-    response.signed_public_key(), "", crypto::STRING_STRING, false));
+                                        response.signed_public_key(), "",
+                                        crypto::STRING_STRING, false));
 
   // Load the stored BP
   std::string test_content;
@@ -2736,8 +2753,8 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesCreateBP) {
 
 TEST_F(VaultServicesTest, BEH_MAID_ServicesModifyBPInfo) {
   VaultService service(vault_pmid_, vault_public_key_, vault_private_key_,
-      vault_public_key_signature_, vault_chunkstore_, NULL,
-      vault_service_logic_, udt_transport_.GetID());
+                       vault_public_key_signature_, vault_chunkstore_, NULL,
+                       vault_service_logic_, udt_transport_.GetID());
   rpcprotocol::Controller controller;
   maidsafe::CreateBPRequest create_request;
   maidsafe::CreateBPResponse create_response;
@@ -2745,7 +2762,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesModifyBPInfo) {
   // Not initialised
   TestCallback cb_obj;
   google::protobuf::Closure *done = google::protobuf::NewCallback<TestCallback>
-    (&cb_obj, &TestCallback::CallbackFunction);
+                                    (&cb_obj, &TestCallback::CallbackFunction);
   std::string pub_key, priv_key, pmid, sig_pub_key, sig_req;
   CreateRSAKeys(&pub_key, &priv_key);
   crypto::Crypto co;
@@ -2763,31 +2780,32 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesModifyBPInfo) {
   bpi.SerializeToString(&ser_bpi);
   info->set_data(ser_bpi);
   info->set_signature(co.AsymSign(ser_bpi, "", priv_key,
-    crypto::STRING_STRING));
+                                  crypto::STRING_STRING));
   std::string ser_gp;
   info->SerializeToString(&ser_gp);
   std::string ser_bp;
   bp.SerializeToString(&ser_bp);
 
   std::string bufferpacket_name(co.Hash("DanBUFFER", "", crypto::STRING_STRING,
-    false));
+                                        false));
   CreateSignedRequest(pub_key, priv_key, bufferpacket_name, &pmid, &sig_pub_key,
-    &sig_req);
+                      &sig_req);
   create_request.set_bufferpacket_name(bufferpacket_name);
   create_request.set_data(ser_bp);
-  create_request.set_pmid(pmid);
+  create_request.set_pmid("Dan");
   create_request.set_public_key(pub_key);
   create_request.set_signed_public_key(sig_pub_key);
   create_request.set_signed_request(sig_req);
 
-  done = google::protobuf::NewCallback<TestCallback> (&cb_obj,
-    &TestCallback::CallbackFunction);
-  service.CreateBP(&controller, &create_request, &create_response,
-    done);
+  done = google::protobuf::NewCallback<TestCallback>
+         (&cb_obj, &TestCallback::CallbackFunction);
+  service.CreateBP(&controller, &create_request, &create_response, done);
   ASSERT_TRUE(create_response.IsInitialized());
   EXPECT_EQ(kAck, static_cast<int>(create_response.result()));
-  EXPECT_EQ(create_response.pmid_id(), co.Hash(create_response.public_key() +
-    create_response.signed_public_key(), "", crypto::STRING_STRING, false));
+  EXPECT_EQ(create_response.pmid_id(),
+            co.Hash(create_response.public_key() +
+                    create_response.signed_public_key(), "",
+                    crypto::STRING_STRING, false));
 
   // Load the stored BP
   std::string test_content;
@@ -2804,8 +2822,8 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesModifyBPInfo) {
   modify_request.set_public_key(pub_key);
   modify_request.set_signed_public_key(sig_pub_key);
   modify_request.set_signed_request(sig_req);
-  done = google::protobuf::NewCallback<TestCallback> (&cb_obj,
-    &TestCallback::CallbackFunction);
+  done = google::protobuf::NewCallback<TestCallback>
+         (&cb_obj, &TestCallback::CallbackFunction);
   service.ModifyBPInfo(&controller, &modify_request, &modify_response, done);
   ASSERT_TRUE(modify_response.IsInitialized());
   EXPECT_EQ(kNack, static_cast<int>(modify_response.result()));
@@ -2827,8 +2845,8 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesModifyBPInfo) {
   modify_request.set_public_key(pub_key);
   modify_request.set_signed_public_key(sig_pub_key);
   modify_request.set_signed_request(sig_req);
-  done = google::protobuf::NewCallback<TestCallback> (&cb_obj,
-    &TestCallback::CallbackFunction);
+  done = google::protobuf::NewCallback<TestCallback>
+         (&cb_obj, &TestCallback::CallbackFunction);
   service.ModifyBPInfo(&controller, &modify_request, &modify_response, done);
   ASSERT_TRUE(modify_response.IsInitialized());
   EXPECT_EQ(kNack, static_cast<int>(modify_response.result()));
@@ -2851,14 +2869,15 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesModifyBPInfo) {
   gp.SerializeToString(&ser_gp);
   modify_request.set_bufferpacket_name("some bp that doesn't exist");
   modify_request.set_data(ser_gp);
-  modify_request.set_pmid(pmid);
+  modify_request.set_pmid("Dan");
   modify_request.set_public_key(pub_key);
   modify_request.set_signed_public_key(sig_pub_key);
   modify_request.set_signed_request(co.AsymSign(co.Hash(pub_key + sig_pub_key +
-    modify_request.bufferpacket_name(), "", crypto::STRING_STRING, false), "",
-    priv_key, crypto::STRING_STRING));
-  done = google::protobuf::NewCallback<TestCallback> (&cb_obj,
-    &TestCallback::CallbackFunction);
+                                    modify_request.bufferpacket_name(), "",
+                                    crypto::STRING_STRING, false), "",
+                                    priv_key, crypto::STRING_STRING));
+  done = google::protobuf::NewCallback<TestCallback>
+         (&cb_obj, &TestCallback::CallbackFunction);
   service.ModifyBPInfo(&controller, &modify_request, &modify_response, done);
   ASSERT_TRUE(modify_response.IsInitialized());
   EXPECT_EQ(kNack, static_cast<int>(modify_response.result()));
@@ -2871,12 +2890,12 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesModifyBPInfo) {
   modify_response.Clear();
   modify_request.set_bufferpacket_name(bufferpacket_name);
   modify_request.set_data(ser_gp);
-  modify_request.set_pmid(pmid);
+  modify_request.set_pmid("Dan");
   modify_request.set_public_key(pub_key);
   modify_request.set_signed_public_key(sig_pub_key);
   modify_request.set_signed_request(sig_req);
-  done = google::protobuf::NewCallback<TestCallback> (&cb_obj,
-    &TestCallback::CallbackFunction);
+  done = google::protobuf::NewCallback<TestCallback>
+         (&cb_obj, &TestCallback::CallbackFunction);
   service.ModifyBPInfo(&controller, &modify_request, &modify_response, done);
   ASSERT_TRUE(modify_response.IsInitialized());
   EXPECT_EQ(kAck, static_cast<int>(modify_response.result()));
@@ -2897,261 +2916,8 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesModifyBPInfo) {
 
 TEST_F(VaultServicesTest, BEH_MAID_ServicesGetBPMessages) {
   VaultService service(vault_pmid_, vault_public_key_, vault_private_key_,
-      vault_public_key_signature_, vault_chunkstore_, NULL,
-      vault_service_logic_, udt_transport_.GetID());
-  rpcprotocol::Controller controller;
-  maidsafe::CreateBPRequest request;
-  maidsafe::CreateBPResponse response;
-
-  // Not initialised
-  TestCallback cb_obj;
-  google::protobuf::Closure *done = google::protobuf::NewCallback<TestCallback>
-    (&cb_obj, &TestCallback::CallbackFunction);
-  std::string pub_key, priv_key, pmid, sig_pub_key, sig_req;
-  CreateRSAKeys(&pub_key, &priv_key);
-  crypto::Crypto co;
-  co.set_symm_algorithm(crypto::AES_256);
-  co.set_hash_algorithm(crypto::SHA_512);
-
-  maidsafe::BufferPacketInfo bpi;
-  bpi.set_owner("Dan");
-  bpi.set_owner_publickey(pub_key);
-  bpi.add_users("newuser");
-  maidsafe::BufferPacket bp;
-  maidsafe::GenericPacket *info = bp.add_owner_info();
-  std::string ser_bpi;
-  bpi.SerializeToString(&ser_bpi);
-  info->set_data(ser_bpi);
-  info->set_signature(co.AsymSign(ser_bpi, "", priv_key,
-    crypto::STRING_STRING));
-  std::string ser_gp;
-  info->SerializeToString(&ser_gp);
-  std::string ser_bp;
-  bp.SerializeToString(&ser_bp);
-
-  std::string bufferpacket_name(co.Hash("DanBUFFER", "", crypto::STRING_STRING,
-    false));
-  CreateSignedRequest(pub_key, priv_key, bufferpacket_name, &pmid, &sig_pub_key,
-    &sig_req);
-  request.set_bufferpacket_name(bufferpacket_name);
-  request.set_data(ser_bp);
-  request.set_pmid(pmid);
-  request.set_public_key(pub_key);
-  request.set_signed_public_key(sig_pub_key);
-  request.set_signed_request(sig_req);
-
-  service.CreateBP(&controller, &request, &response, done);
-  ASSERT_TRUE(response.IsInitialized());
-  EXPECT_EQ(kAck, static_cast<int>(response.result()));
-  EXPECT_EQ(response.pmid_id(), co.Hash(response.public_key() +
-    response.signed_public_key(), "", crypto::STRING_STRING, false));
-
-  // Load the stored BP to check it
-  std::string test_content;
-  EXPECT_TRUE(service.bps_.HasBP(bufferpacket_name));
-  EXPECT_TRUE(service.bps_.LoadBP(bufferpacket_name, &test_content));
-  EXPECT_EQ(ser_bp, test_content);
-
-  // Get the messages
-  maidsafe::GetBPMessagesRequest get_msg_request;
-  maidsafe::GetBPMessagesResponse get_msg_response;
-  get_msg_request.set_bufferpacket_name(bufferpacket_name);
-  get_msg_request.set_pmid(pmid);
-  get_msg_request.set_public_key(pub_key);
-  get_msg_request.set_signed_public_key(sig_pub_key);
-  get_msg_request.set_signed_request(sig_req);
-  done = google::protobuf::NewCallback<TestCallback> (&cb_obj,
-    &TestCallback::CallbackFunction);
-  service.GetBPMessages(&controller, &get_msg_request, &get_msg_response, done);
-  ASSERT_TRUE(get_msg_response.IsInitialized());
-  EXPECT_EQ(kAck, static_cast<int>(get_msg_response.result()));
-  EXPECT_EQ(get_msg_response.pmid_id(), co.Hash(get_msg_response.public_key() +
-    get_msg_response.signed_public_key(), "", crypto::STRING_STRING, false));
-  EXPECT_EQ(0, get_msg_response.messages_size());
-}
-
-TEST_F(VaultServicesTest, BEH_MAID_ServicesAddBPMessages) {
-  VaultService service(vault_pmid_, vault_public_key_, vault_private_key_,
-      vault_public_key_signature_, vault_chunkstore_, NULL,
-      vault_service_logic_, udt_transport_.GetID());
-  rpcprotocol::Controller controller;
-  maidsafe::CreateBPRequest request;
-  maidsafe::CreateBPResponse response;
-
-  // Not initialised
-  TestCallback cb_obj;
-  google::protobuf::Closure *done = google::protobuf::NewCallback<TestCallback>
-    (&cb_obj, &TestCallback::CallbackFunction);
-  std::string pub_key, priv_key, pmid, sig_pub_key, sig_req;
-  CreateRSAKeys(&pub_key, &priv_key);
-  crypto::Crypto co;
-  co.set_symm_algorithm(crypto::AES_256);
-  co.set_hash_algorithm(crypto::SHA_512);
-
-  maidsafe::BufferPacketInfo bpi;
-  bpi.set_owner("Dan");
-  bpi.set_owner_publickey(pub_key);
-  bpi.add_users(co.Hash("newuser", "", crypto::STRING_STRING, false));
-  maidsafe::BufferPacket bp;
-  maidsafe::GenericPacket *info = bp.add_owner_info();
-  std::string ser_bpi;
-  bpi.SerializeToString(&ser_bpi);
-  info->set_data(ser_bpi);
-  info->set_signature(co.AsymSign(ser_bpi, "", priv_key,
-    crypto::STRING_STRING));
-  std::string ser_gp;
-  info->SerializeToString(&ser_gp);
-  std::string ser_bp;
-  bp.SerializeToString(&ser_bp);
-
-  std::string bufferpacket_name(co.Hash("DanBUFFER", "", crypto::STRING_STRING,
-    false));
-  CreateSignedRequest(pub_key, priv_key, bufferpacket_name, &pmid, &sig_pub_key,
-    &sig_req);
-  request.set_bufferpacket_name(bufferpacket_name);
-  request.set_data(ser_bp);
-  request.set_pmid(pmid);
-  request.set_public_key(pub_key);
-  request.set_signed_public_key(sig_pub_key);
-  request.set_signed_request(sig_req);
-
-  service.CreateBP(&controller, &request, &response, done);
-  ASSERT_TRUE(response.IsInitialized());
-  EXPECT_EQ(kAck, static_cast<int>(response.result()));
-  EXPECT_EQ(response.pmid_id(), co.Hash(response.public_key() +
-    response.signed_public_key(), "", crypto::STRING_STRING, false));
-
-  // Load the stored BP to check it
-  std::string test_content;
-  EXPECT_TRUE(service.bps_.HasBP(bufferpacket_name));
-  EXPECT_TRUE(service.bps_.LoadBP(bufferpacket_name, &test_content));
-  EXPECT_EQ(ser_bp, test_content);
-
-  // Get the messages
-  maidsafe::GetBPMessagesRequest get_msg_request;
-  maidsafe::GetBPMessagesResponse get_msg_response;
-  get_msg_request.set_bufferpacket_name(bufferpacket_name);
-  get_msg_request.set_pmid(pmid);
-  get_msg_request.set_public_key(pub_key);
-  get_msg_request.set_signed_public_key(sig_pub_key);
-  get_msg_request.set_signed_request(sig_req);
-  done = google::protobuf::NewCallback<TestCallback> (&cb_obj,
-    &TestCallback::CallbackFunction);
-  service.GetBPMessages(&controller, &get_msg_request, &get_msg_response, done);
-  ASSERT_TRUE(get_msg_response.IsInitialized());
-  EXPECT_EQ(kAck, static_cast<int>(get_msg_response.result()));
-  EXPECT_EQ(get_msg_response.pmid_id(), co.Hash(get_msg_response.public_key() +
-    get_msg_response.signed_public_key(), "", crypto::STRING_STRING, false));
-  EXPECT_EQ(0, get_msg_response.messages_size());
-
-  // Creation of newuser's credentials
-  std::string newuser_pub_key, newuser_priv_key, newuser_pmid,
-    newuser_sig_pub_key, newuser_sig_req;
-  CreateRSAKeys(&newuser_pub_key, &newuser_priv_key);
-  CreateSignedRequest(newuser_pub_key, newuser_priv_key, bufferpacket_name,
-    &newuser_pmid, &newuser_sig_pub_key, &newuser_sig_req);
-
-  // Sending wrong message
-  maidsafe::AddBPMessageRequest add_msg_request;
-  maidsafe::AddBPMessageResponse add_msg_response;
-  add_msg_request.set_bufferpacket_name(bufferpacket_name);
-  add_msg_request.set_data("Something that's not a correct message");
-  add_msg_request.set_pmid(newuser_pmid);
-  add_msg_request.set_public_key(newuser_pub_key);
-  add_msg_request.set_signed_public_key(newuser_sig_pub_key);
-  add_msg_request.set_signed_request(newuser_sig_req);
-  done = google::protobuf::NewCallback<TestCallback> (&cb_obj,
-    &TestCallback::CallbackFunction);
-  service.AddBPMessage(&controller, &add_msg_request, &add_msg_response, done);
-  ASSERT_TRUE(add_msg_response.IsInitialized());
-  EXPECT_EQ(kNack, static_cast<int>(add_msg_response.result()));
-  EXPECT_EQ(add_msg_response.pmid_id(), co.Hash(add_msg_response.public_key() +
-    add_msg_response.signed_public_key(), "", crypto::STRING_STRING, false));
-
-  // Creating the message
-  maidsafe::BufferPacketMessage bpm;
-  maidsafe::GenericPacket gp;
-  std::string msg("Don't switch doors!!");
-  bpm.set_sender_id("newuser");
-  bpm.set_sender_public_key(newuser_pub_key);
-  bpm.set_type(maidsafe::INSTANT_MSG);
-  boost::uint32_t iter = base::random_32bit_uinteger() % 1000 +1;
-  std::string aes_key = co.SecurePassword(co.Hash(msg, "",
-    crypto::STRING_STRING, false), iter);
-  bpm.set_rsaenc_key(co.AsymEncrypt(aes_key, "", pub_key,
-    crypto::STRING_STRING));
-  bpm.set_aesenc_message(co.SymmEncrypt(msg, "", crypto::STRING_STRING,
-    aes_key));
-  bpm.set_timestamp(base::get_epoch_time());
-  std::string ser_bpm;
-  bpm.SerializeToString(&ser_bpm);
-  gp.set_data(ser_bpm);
-  gp.set_signature(co.AsymSign(gp.data(), "", newuser_priv_key,
-    crypto::STRING_STRING));
-  gp.SerializeToString(&ser_gp);
-
-  // Sending the message
-  add_msg_request.Clear();
-  add_msg_response.Clear();
-  add_msg_request.set_bufferpacket_name(bufferpacket_name);
-  add_msg_request.set_data(ser_gp);
-  add_msg_request.set_pmid(newuser_pmid);
-  add_msg_request.set_public_key(newuser_pub_key);
-  add_msg_request.set_signed_public_key(newuser_sig_pub_key);
-  add_msg_request.set_signed_request(newuser_sig_req);
-  done = google::protobuf::NewCallback<TestCallback>
-         (&cb_obj, &TestCallback::CallbackFunction);
-  service.AddBPMessage(&controller, &add_msg_request, &add_msg_response, done);
-  ASSERT_TRUE(add_msg_response.IsInitialized());
-  EXPECT_EQ(kAck, static_cast<int>(add_msg_response.result()));
-  EXPECT_EQ(add_msg_response.pmid_id(), co.Hash(add_msg_response.public_key() +
-    add_msg_response.signed_public_key(), "", crypto::STRING_STRING, false));
-
-  // Get the messages again
-  get_msg_request.Clear();
-  get_msg_response.Clear();
-  get_msg_request.set_bufferpacket_name(bufferpacket_name);
-  get_msg_request.set_pmid(pmid);
-  get_msg_request.set_public_key(pub_key);
-  get_msg_request.set_signed_public_key(sig_pub_key);
-  get_msg_request.set_signed_request(sig_req);
-  done = google::protobuf::NewCallback<TestCallback> (&cb_obj,
-    &TestCallback::CallbackFunction);
-  service.GetBPMessages(&controller, &get_msg_request, &get_msg_response, done);
-  ASSERT_TRUE(get_msg_response.IsInitialized());
-  EXPECT_EQ(kAck, static_cast<int>(get_msg_response.result()));
-  EXPECT_EQ(get_msg_response.pmid_id(), co.Hash(get_msg_response.public_key() +
-    get_msg_response.signed_public_key(), "", crypto::STRING_STRING, false));
-  ASSERT_EQ(1, get_msg_response.messages_size());
-  maidsafe::ValidatedBufferPacketMessage vbpm;
-  ASSERT_TRUE(vbpm.ParseFromString(get_msg_response.messages(0)));
-  EXPECT_EQ(bpm.sender_id(), vbpm.sender());
-  EXPECT_EQ(bpm.aesenc_message(), vbpm.message());
-  EXPECT_EQ(bpm.rsaenc_key(), vbpm.index());
-  EXPECT_EQ(bpm.type(), vbpm.type());
-
-  // Get the messages again
-  get_msg_request.Clear();
-  get_msg_response.Clear();
-  get_msg_request.set_bufferpacket_name(bufferpacket_name);
-  get_msg_request.set_pmid(pmid);
-  get_msg_request.set_public_key(pub_key);
-  get_msg_request.set_signed_public_key(sig_pub_key);
-  get_msg_request.set_signed_request(sig_req);
-  done = google::protobuf::NewCallback<TestCallback> (&cb_obj,
-    &TestCallback::CallbackFunction);
-  service.GetBPMessages(&controller, &get_msg_request, &get_msg_response, done);
-  ASSERT_TRUE(get_msg_response.IsInitialized());
-  EXPECT_EQ(kAck, static_cast<int>(get_msg_response.result()));
-  EXPECT_EQ(get_msg_response.pmid_id(), co.Hash(get_msg_response.public_key() +
-    get_msg_response.signed_public_key(), "", crypto::STRING_STRING, false));
-  EXPECT_EQ(0, get_msg_response.messages_size());
-}
-
-TEST_F(VaultServicesTest, BEH_MAID_ServicesGetBPPresence) {
-  VaultService service(vault_pmid_, vault_public_key_, vault_private_key_,
-      vault_public_key_signature_, vault_chunkstore_, NULL,
-      vault_service_logic_, udt_transport_.GetID());
+                       vault_public_key_signature_, vault_chunkstore_, NULL,
+                       vault_service_logic_, udt_transport_.GetID());
   rpcprotocol::Controller controller;
   maidsafe::CreateBPRequest request;
   maidsafe::CreateBPResponse response;
@@ -3176,7 +2942,274 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesGetBPPresence) {
   bpi.SerializeToString(&ser_bpi);
   info->set_data(ser_bpi);
   info->set_signature(co.AsymSign(ser_bpi, "", priv_key,
-    crypto::STRING_STRING));
+                      crypto::STRING_STRING));
+  std::string ser_gp;
+  info->SerializeToString(&ser_gp);
+  std::string ser_bp;
+  bp.SerializeToString(&ser_bp);
+
+  std::string bufferpacket_name(co.Hash("DanBUFFER", "", crypto::STRING_STRING,
+                                        false));
+  CreateSignedRequest(pub_key, priv_key, bufferpacket_name, &pmid, &sig_pub_key,
+                      &sig_req);
+  request.set_bufferpacket_name(bufferpacket_name);
+  request.set_data(ser_bp);
+  request.set_pmid("Dan");
+  request.set_public_key(pub_key);
+  request.set_signed_public_key(sig_pub_key);
+  request.set_signed_request(sig_req);
+
+  service.CreateBP(&controller, &request, &response, done);
+  ASSERT_TRUE(response.IsInitialized());
+  EXPECT_EQ(kAck, static_cast<int>(response.result()));
+  EXPECT_EQ(response.pmid_id(), co.Hash(response.public_key() +
+                                        response.signed_public_key(), "",
+                                        crypto::STRING_STRING, false));
+
+  // Load the stored BP to check it
+  std::string test_content;
+  EXPECT_TRUE(service.bps_.HasBP(bufferpacket_name));
+  EXPECT_TRUE(service.bps_.LoadBP(bufferpacket_name, &test_content));
+  EXPECT_EQ(ser_bp, test_content);
+
+  // Get the messages
+  maidsafe::GetBPMessagesRequest get_msg_request;
+  maidsafe::GetBPMessagesResponse get_msg_response;
+  get_msg_request.set_bufferpacket_name(bufferpacket_name);
+  get_msg_request.set_pmid("Dan");
+  get_msg_request.set_public_key(pub_key);
+  get_msg_request.set_signed_public_key(sig_pub_key);
+  get_msg_request.set_signed_request(sig_req);
+  done = google::protobuf::NewCallback<TestCallback>
+         (&cb_obj, &TestCallback::CallbackFunction);
+  service.GetBPMessages(&controller, &get_msg_request, &get_msg_response, done);
+  ASSERT_TRUE(get_msg_response.IsInitialized());
+  EXPECT_EQ(kAck, static_cast<int>(get_msg_response.result()));
+  EXPECT_EQ(get_msg_response.pmid_id(),
+            co.Hash(get_msg_response.public_key() +
+                    get_msg_response.signed_public_key(), "",
+                    crypto::STRING_STRING, false));
+  EXPECT_EQ(0, get_msg_response.messages_size());
+}
+
+TEST_F(VaultServicesTest, BEH_MAID_ServicesAddBPMessages) {
+  VaultService service(vault_pmid_, vault_public_key_, vault_private_key_,
+                       vault_public_key_signature_, vault_chunkstore_, NULL,
+                       vault_service_logic_, udt_transport_.GetID());
+  rpcprotocol::Controller controller;
+  maidsafe::CreateBPRequest request;
+  maidsafe::CreateBPResponse response;
+
+  // Not initialised
+  TestCallback cb_obj;
+  google::protobuf::Closure *done = google::protobuf::NewCallback<TestCallback>
+                                    (&cb_obj, &TestCallback::CallbackFunction);
+  std::string pub_key, priv_key, pmid, sig_pub_key, sig_req;
+  CreateRSAKeys(&pub_key, &priv_key);
+  crypto::Crypto co;
+  co.set_symm_algorithm(crypto::AES_256);
+  co.set_hash_algorithm(crypto::SHA_512);
+
+  maidsafe::BufferPacketInfo bpi;
+  bpi.set_owner("Dan");
+  bpi.set_owner_publickey(pub_key);
+  bpi.add_users(co.Hash("newuser", "", crypto::STRING_STRING, false));
+  maidsafe::BufferPacket bp;
+  maidsafe::GenericPacket *info = bp.add_owner_info();
+  std::string ser_bpi;
+  bpi.SerializeToString(&ser_bpi);
+  info->set_data(ser_bpi);
+  info->set_signature(co.AsymSign(ser_bpi, "", priv_key,
+                                  crypto::STRING_STRING));
+  std::string ser_gp;
+  info->SerializeToString(&ser_gp);
+  std::string ser_bp;
+  bp.SerializeToString(&ser_bp);
+
+  std::string bufferpacket_name(co.Hash("DanBUFFER", "", crypto::STRING_STRING,
+                                        false));
+  CreateSignedRequest(pub_key, priv_key, bufferpacket_name, &pmid, &sig_pub_key,
+                      &sig_req);
+  request.set_bufferpacket_name(bufferpacket_name);
+  request.set_data(ser_bp);
+  request.set_pmid("Dan");
+  request.set_public_key(pub_key);
+  request.set_signed_public_key(sig_pub_key);
+  request.set_signed_request(sig_req);
+
+  service.CreateBP(&controller, &request, &response, done);
+  ASSERT_TRUE(response.IsInitialized());
+  EXPECT_EQ(kAck, static_cast<int>(response.result()));
+  EXPECT_EQ(response.pmid_id(), co.Hash(response.public_key() +
+                                        response.signed_public_key(), "",
+                                        crypto::STRING_STRING, false));
+
+  // Load the stored BP to check it
+  std::string test_content;
+  EXPECT_TRUE(service.bps_.HasBP(bufferpacket_name));
+  EXPECT_TRUE(service.bps_.LoadBP(bufferpacket_name, &test_content));
+  EXPECT_EQ(ser_bp, test_content);
+
+  // Get the messages
+  maidsafe::GetBPMessagesRequest get_msg_request;
+  maidsafe::GetBPMessagesResponse get_msg_response;
+  get_msg_request.set_bufferpacket_name(bufferpacket_name);
+  get_msg_request.set_pmid("Dan");
+  get_msg_request.set_public_key(pub_key);
+  get_msg_request.set_signed_public_key(sig_pub_key);
+  get_msg_request.set_signed_request(sig_req);
+  done = google::protobuf::NewCallback<TestCallback>
+         (&cb_obj, &TestCallback::CallbackFunction);
+  service.GetBPMessages(&controller, &get_msg_request, &get_msg_response, done);
+  ASSERT_TRUE(get_msg_response.IsInitialized());
+  EXPECT_EQ(kAck, static_cast<int>(get_msg_response.result()));
+  EXPECT_EQ(get_msg_response.pmid_id(),
+            co.Hash(get_msg_response.public_key() +
+                    get_msg_response.signed_public_key(), "",
+                    crypto::STRING_STRING, false));
+  EXPECT_EQ(0, get_msg_response.messages_size());
+
+  // Creation of newuser's credentials
+  std::string newuser_pub_key, newuser_priv_key, newuser_pmid,
+              newuser_sig_pub_key, newuser_sig_req;
+  CreateRSAKeys(&newuser_pub_key, &newuser_priv_key);
+  CreateSignedRequest(newuser_pub_key, newuser_priv_key, bufferpacket_name,
+                      &newuser_pmid, &newuser_sig_pub_key, &newuser_sig_req);
+
+  // Sending wrong message
+  maidsafe::AddBPMessageRequest add_msg_request;
+  maidsafe::AddBPMessageResponse add_msg_response;
+  add_msg_request.set_bufferpacket_name(bufferpacket_name);
+  add_msg_request.set_data("Something that's not a correct message");
+  add_msg_request.set_pmid("newuser_pmid");
+  add_msg_request.set_public_key(newuser_pub_key);
+  add_msg_request.set_signed_public_key(newuser_sig_pub_key);
+  add_msg_request.set_signed_request(newuser_sig_req);
+  done = google::protobuf::NewCallback<TestCallback>
+         (&cb_obj, &TestCallback::CallbackFunction);
+  service.AddBPMessage(&controller, &add_msg_request, &add_msg_response, done);
+  ASSERT_TRUE(add_msg_response.IsInitialized());
+  EXPECT_EQ(kNack, static_cast<int>(add_msg_response.result()));
+  EXPECT_EQ(add_msg_response.pmid_id(),
+            co.Hash(add_msg_response.public_key() +
+                    add_msg_response.signed_public_key(), "",
+                    crypto::STRING_STRING, false));
+
+  // Creating the message
+  maidsafe::BufferPacketMessage bpm;
+  maidsafe::GenericPacket gp;
+  std::string msg("Don't switch doors!!");
+  bpm.set_sender_id("newuser");
+  bpm.set_sender_public_key(newuser_pub_key);
+  bpm.set_type(maidsafe::INSTANT_MSG);
+  boost::uint32_t iter = base::random_32bit_uinteger() % 1000 +1;
+  std::string aes_key = co.SecurePassword(co.Hash(msg, "",
+                                          crypto::STRING_STRING, false), iter);
+  bpm.set_rsaenc_key(co.AsymEncrypt(aes_key, "", pub_key,
+                                    crypto::STRING_STRING));
+  bpm.set_aesenc_message(co.SymmEncrypt(msg, "", crypto::STRING_STRING,
+                                        aes_key));
+  bpm.set_timestamp(base::get_epoch_time());
+  std::string ser_bpm;
+  bpm.SerializeToString(&ser_bpm);
+  gp.set_data(ser_bpm);
+  gp.set_signature(co.AsymSign(gp.data(), "", newuser_priv_key,
+                   crypto::STRING_STRING));
+  gp.SerializeToString(&ser_gp);
+
+  // Sending the message
+  add_msg_request.Clear();
+  add_msg_response.Clear();
+  add_msg_request.set_bufferpacket_name(bufferpacket_name);
+  add_msg_request.set_data(ser_gp);
+  add_msg_request.set_pmid("newuser_pmid");
+  add_msg_request.set_public_key(newuser_pub_key);
+  add_msg_request.set_signed_public_key(newuser_sig_pub_key);
+  add_msg_request.set_signed_request(newuser_sig_req);
+  done = google::protobuf::NewCallback<TestCallback>
+         (&cb_obj, &TestCallback::CallbackFunction);
+  service.AddBPMessage(&controller, &add_msg_request, &add_msg_response, done);
+  ASSERT_TRUE(add_msg_response.IsInitialized());
+  EXPECT_EQ(kAck, static_cast<int>(add_msg_response.result()));
+  EXPECT_EQ(add_msg_response.pmid_id(),
+            co.Hash(add_msg_response.public_key() +
+                    add_msg_response.signed_public_key(), "",
+                    crypto::STRING_STRING, false));
+
+  // Get the messages again
+  get_msg_request.Clear();
+  get_msg_response.Clear();
+  get_msg_request.set_bufferpacket_name(bufferpacket_name);
+  get_msg_request.set_pmid("Dan");
+  get_msg_request.set_public_key(pub_key);
+  get_msg_request.set_signed_public_key(sig_pub_key);
+  get_msg_request.set_signed_request(sig_req);
+  done = google::protobuf::NewCallback<TestCallback>
+         (&cb_obj, &TestCallback::CallbackFunction);
+  service.GetBPMessages(&controller, &get_msg_request, &get_msg_response, done);
+  ASSERT_TRUE(get_msg_response.IsInitialized());
+  EXPECT_EQ(kAck, static_cast<int>(get_msg_response.result()));
+  EXPECT_EQ(get_msg_response.pmid_id(),
+            co.Hash(get_msg_response.public_key() +
+                    get_msg_response.signed_public_key(), "",
+                    crypto::STRING_STRING, false));
+  ASSERT_EQ(1, get_msg_response.messages_size());
+  maidsafe::ValidatedBufferPacketMessage vbpm;
+  ASSERT_TRUE(vbpm.ParseFromString(get_msg_response.messages(0)));
+  EXPECT_EQ(bpm.sender_id(), vbpm.sender());
+  EXPECT_EQ(bpm.aesenc_message(), vbpm.message());
+  EXPECT_EQ(bpm.rsaenc_key(), vbpm.index());
+  EXPECT_EQ(bpm.type(), vbpm.type());
+
+  // Get the messages again
+  get_msg_request.Clear();
+  get_msg_response.Clear();
+  get_msg_request.set_bufferpacket_name(bufferpacket_name);
+  get_msg_request.set_pmid("Dan");
+  get_msg_request.set_public_key(pub_key);
+  get_msg_request.set_signed_public_key(sig_pub_key);
+  get_msg_request.set_signed_request(sig_req);
+  done = google::protobuf::NewCallback<TestCallback>
+         (&cb_obj, &TestCallback::CallbackFunction);
+  service.GetBPMessages(&controller, &get_msg_request, &get_msg_response, done);
+  ASSERT_TRUE(get_msg_response.IsInitialized());
+  EXPECT_EQ(kAck, static_cast<int>(get_msg_response.result()));
+  EXPECT_EQ(get_msg_response.pmid_id(),
+            co.Hash(get_msg_response.public_key() +
+                    get_msg_response.signed_public_key(), "",
+                    crypto::STRING_STRING, false));
+  EXPECT_EQ(0, get_msg_response.messages_size());
+}
+
+TEST_F(VaultServicesTest, BEH_MAID_ServicesGetBPPresence) {
+  VaultService service(vault_pmid_, vault_public_key_, vault_private_key_,
+                       vault_public_key_signature_, vault_chunkstore_, NULL,
+                       vault_service_logic_, udt_transport_.GetID());
+  rpcprotocol::Controller controller;
+  maidsafe::CreateBPRequest request;
+  maidsafe::CreateBPResponse response;
+
+  // Not initialised
+  TestCallback cb_obj;
+  google::protobuf::Closure *done = google::protobuf::NewCallback<TestCallback>
+                                    (&cb_obj, &TestCallback::CallbackFunction);
+  std::string pub_key, priv_key, pmid, sig_pub_key, sig_req;
+  CreateRSAKeys(&pub_key, &priv_key);
+  crypto::Crypto co;
+  co.set_symm_algorithm(crypto::AES_256);
+  co.set_hash_algorithm(crypto::SHA_512);
+
+  maidsafe::BufferPacketInfo bpi;
+  bpi.set_owner("Dan");
+  bpi.set_owner_publickey(pub_key);
+  bpi.add_users("newuser");
+  maidsafe::BufferPacket bp;
+  maidsafe::GenericPacket *info = bp.add_owner_info();
+  std::string ser_bpi;
+  bpi.SerializeToString(&ser_bpi);
+  info->set_data(ser_bpi);
+  info->set_signature(co.AsymSign(ser_bpi, "", priv_key,
+                                  crypto::STRING_STRING));
   std::string ser_gp;
   info->SerializeToString(&ser_gp);
   std::string ser_bp;
@@ -3188,7 +3221,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesGetBPPresence) {
                       &sig_req);
   request.set_bufferpacket_name(bufferpacket_name);
   request.set_data(ser_bp);
-  request.set_pmid(pmid);
+  request.set_pmid("Dan");
   request.set_public_key(pub_key);
   request.set_signed_public_key(sig_pub_key);
   request.set_signed_request(sig_req);
@@ -3210,7 +3243,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesGetBPPresence) {
   maidsafe::GetBPPresenceRequest get_presence_request;
   maidsafe::GetBPPresenceResponse get_presence_response;
   get_presence_request.set_bufferpacket_name(bufferpacket_name);
-  get_presence_request.set_pmid(pmid);
+  get_presence_request.set_pmid("Dan");
   get_presence_request.set_public_key(pub_key);
   get_presence_request.set_signed_public_key(sig_pub_key);
   get_presence_request.set_signed_request(sig_req);
@@ -3302,7 +3335,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesAddBPPresence) {
   bpi.SerializeToString(&ser_bpi);
   info->set_data(ser_bpi);
   info->set_signature(co.AsymSign(ser_bpi, "", priv_key,
-    crypto::STRING_STRING));
+                                  crypto::STRING_STRING));
   std::string ser_gp;
   info->SerializeToString(&ser_gp);
   std::string ser_bp;
@@ -3314,7 +3347,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesAddBPPresence) {
                       &sig_req);
   request.set_bufferpacket_name(bufferpacket_name);
   request.set_data(ser_bp);
-  request.set_pmid(pmid);
+  request.set_pmid("Dan");
   request.set_public_key(pub_key);
   request.set_signed_public_key(sig_pub_key);
   request.set_signed_request(sig_req);
@@ -3336,7 +3369,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesAddBPPresence) {
   maidsafe::GetBPPresenceRequest get_presence_request;
   maidsafe::GetBPPresenceResponse get_presence_response;
   get_presence_request.set_bufferpacket_name(bufferpacket_name);
-  get_presence_request.set_pmid(pmid);
+  get_presence_request.set_pmid("Dan");
   get_presence_request.set_public_key(pub_key);
   get_presence_request.set_signed_public_key(sig_pub_key);
   get_presence_request.set_signed_request(sig_req);
@@ -3364,7 +3397,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesAddBPPresence) {
   maidsafe::AddBPPresenceResponse add_presence_response;
   add_presence_request.set_bufferpacket_name(bufferpacket_name);
   add_presence_request.set_data("Something that's not a correct message");
-  add_presence_request.set_pmid(newuser_pmid);
+  add_presence_request.set_pmid("newuser_pmid");
   add_presence_request.set_public_key(newuser_pub_key);
   add_presence_request.set_signed_public_key(newuser_sig_pub_key);
   add_presence_request.set_signed_request(newuser_sig_req);
@@ -3399,7 +3432,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesAddBPPresence) {
   add_presence_response.Clear();
   add_presence_request.set_bufferpacket_name(bufferpacket_name);
   add_presence_request.set_data(ser_gp);
-  add_presence_request.set_pmid(newuser_pmid);
+  add_presence_request.set_pmid("newuser_pmid");
   add_presence_request.set_public_key(newuser_pub_key);
   add_presence_request.set_signed_public_key(newuser_sig_pub_key);
   add_presence_request.set_signed_request(newuser_sig_req);
@@ -3418,7 +3451,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesAddBPPresence) {
   get_presence_request.Clear();
   get_presence_response.Clear();
   get_presence_request.set_bufferpacket_name(bufferpacket_name);
-  get_presence_request.set_pmid(pmid);
+  get_presence_request.set_pmid("Dan");
   get_presence_request.set_public_key(pub_key);
   get_presence_request.set_signed_public_key(sig_pub_key);
   get_presence_request.set_signed_request(sig_req);
@@ -3439,7 +3472,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesAddBPPresence) {
   get_presence_request.Clear();
   get_presence_response.Clear();
   get_presence_request.set_bufferpacket_name(bufferpacket_name);
-  get_presence_request.set_pmid(pmid);
+  get_presence_request.set_pmid("Dan");
   get_presence_request.set_public_key(pub_key);
   get_presence_request.set_signed_public_key(sig_pub_key);
   get_presence_request.set_signed_request(sig_req);
