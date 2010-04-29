@@ -309,7 +309,7 @@ void FileBrowser::onOpenWithClicked() {
     qDebug() << ":'(";
   }
 #else
-// TODO (Stephen): Implement Open With for Linux
+// TODO (Team): Implement Open With for Linux
 #endif
 }
 
