@@ -264,7 +264,8 @@ class VaultService : public maidsafe::MaidsafeService {
   FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesValidateSignedSize);
   FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesValidateStoreContract);
   FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesValidateAmendRequest);
-  FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesValidateSignedRequest);
+  FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesValidateIdAndRequest);
+  FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesValidateRequestSignature);
   FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesValidateIdentity);
   FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesValidateSystemPacket);
   FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesValidateDataChunk);
