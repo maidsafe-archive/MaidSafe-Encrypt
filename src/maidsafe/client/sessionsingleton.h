@@ -26,7 +26,7 @@
 #define MAIDSAFE_CLIENT_SESSIONSINGLETON_H_
 
 #include <boost/thread/thread.hpp>
-#include <maidsafe/crypto.h>
+#include <maidsafe/base/crypto.h>
 
 #include <list>
 #include <map>

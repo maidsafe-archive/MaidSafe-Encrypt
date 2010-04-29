@@ -16,7 +16,7 @@
 #define MAIDSAFE_VAULT_VAULTDAEMON_H_
 
 #include <boost/filesystem.hpp>
-#include <maidsafe/utils.h>
+#include <maidsafe/base/utils.h>
 #include <string>
 
 #include "gtest/gtest_prod.h"

@@ -48,8 +48,8 @@ class LocalStoreManager : public StoreManagerInterface {
  public:
   explicit LocalStoreManager(boost::shared_ptr<ChunkStore> client_chunkstore);
   virtual ~LocalStoreManager() {}
-  virtual void Init(int, base::callback_func_type cb, fs::path db_directory);
-  virtual void Close(base::callback_func_type cb, bool);
+  virtual void Init(int, kad::VoidFunctorOneString cb, fs::path db_directory);
+  virtual void Close(kad::VoidFunctorOneString cb, bool);
   virtual void CleanUpTransport() {}
   virtual void StopRvPing() {}
   virtual bool NotDoneWithUploading();
@@ -102,8 +102,8 @@ class LocalStoreManager : public StoreManagerInterface {
       std::map<std::string, ReturnCode> *add_results);
 
   // Vault
-  virtual void PollVaultInfo(base::callback_func_type cb);
-  virtual void VaultContactInfo(base::callback_func_type cb);
+  virtual void PollVaultInfo(kad::VoidFunctorOneString cb);
+  virtual void VaultContactInfo(kad::VoidFunctorOneString cb);
   virtual void SetLocalVaultOwned(const std::string &priv_key,
                                   const std::string &pub_key,
                                   const std::string &signed_pub_key,

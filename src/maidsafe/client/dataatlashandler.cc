@@ -27,8 +27,7 @@
 #include <boost/filesystem.hpp>
 #include <boost/shared_ptr.hpp>
 
-#include <maidsafe/utils.h>
-#include <maidsafe/crypto.h>
+#include <maidsafe/base/crypto.h>
 
 #include <algorithm>
 #include <cctype>
@@ -37,8 +36,9 @@
 #include <sstream>
 
 #include "fs/filesystem.h"
-#include "maidsafe/client/keyatlas.h"
+#include "maidsafe/utils.h"
 #include "maidsafe/client/pddir.h"
+#include "maidsafe/client/keyatlas.h"
 #include "maidsafe/client/sessionsingleton.h"
 
 namespace fs = boost::filesystem;
@@ -107,7 +107,7 @@ void DataAtlasHandler::GetDbPath(const std::string &element_path,
 
   crypto::Crypto co;
   co.set_hash_algorithm(crypto::SHA_1);
-  *db_path = co.Hash(base::StrToLwr(pre_hash_db_name), "",
+  *db_path = co.Hash(StringToLowercase(pre_hash_db_name), "",
                      crypto::STRING_STRING, true);
 
   fs::path db_path1(db_dir_, fs::native);
@@ -240,9 +240,9 @@ int DataAtlasHandler::ListFolder(const std::string &element_path,
   int result = kDataAtlasError;
   if (element_path == "\\" || element_path == "/") {
     children->insert(std::pair<std::string, ItemType>(
-        base::TidyPath(kRootSubdir[0][0]), DIRECTORY));
+        TidyPath(kRootSubdir[0][0]), DIRECTORY));
     children->insert(std::pair<std::string, ItemType>(
-        base::TidyPath(kRootSubdir[1][0]), DIRECTORY));
+        TidyPath(kRootSubdir[1][0]), DIRECTORY));
     return kSuccess;
   }
   // append "/a" to element_path so that GetPdDir finds correct branch

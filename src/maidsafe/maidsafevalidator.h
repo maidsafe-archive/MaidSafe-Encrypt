@@ -25,7 +25,7 @@
 #ifndef MAIDSAFE_MAIDSAFEVALIDATOR_H_
 #define MAIDSAFE_MAIDSAFEVALIDATOR_H_
 
-#include <maidsafe/validationinterface.h>
+#include <maidsafe/base/validationinterface.h>
 
 #include <list>
 #include <string>

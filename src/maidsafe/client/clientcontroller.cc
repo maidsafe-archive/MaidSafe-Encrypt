@@ -31,10 +31,11 @@
 #include <boost/scoped_ptr.hpp>
 #include <boost/thread/mutex.hpp>
 #include <boost/filesystem/fstream.hpp>
-#include <maidsafe/kademlia_service_messages.pb.h>
+#include <maidsafe/protobuf/kademlia_service_messages.pb.h>
 #include <cstdio>
 
 #include "maidsafe/chunkstore.h"
+#include "maidsafe/utils.h"
 #include "maidsafe/client/contacts.h"
 #include "maidsafe/client/dataatlashandler.h"
 #include "maidsafe/client/privateshares.h"
@@ -255,7 +256,7 @@ int ClientController::ParseDa() {
 #endif
   if (i != 0)
     return -1;
-  i = seh_.DecryptDb(base::TidyPath(kRootSubdir[1][0]), PRIVATE, ser_dm_shares,
+  i = seh_.DecryptDb(TidyPath(kRootSubdir[1][0]), PRIVATE, ser_dm_shares,
                       "", "", false, false);
 #ifdef DEBUG
   printf("result of decrypt %s: %i -- (%s)\n", kRootSubdir[1][0].c_str(), i,
@@ -275,7 +276,7 @@ int ClientController::SerialiseDa() {
   data_atlas.set_root_db_key(ss_->RootDbKey());
   DataMap root_dm, shares_dm;
   seh_.EncryptDb(kRoot, PRIVATE, "", "", false, &root_dm);
-  seh_.EncryptDb(base::TidyPath(kRootSubdir[1][0]), PRIVATE, "", "", false,
+  seh_.EncryptDb(TidyPath(kRootSubdir[1][0]), PRIVATE, "", "", false,
                   &shares_dm);
   DataMap *dm = data_atlas.add_dms();
   *dm = root_dm;
@@ -499,13 +500,13 @@ bool ClientController::CreateUser(const std::string &username,
     DataMap dm;
     std::string ser_mdm, key;
     mdm.set_id(-2);
-    mdm.set_display_name(base::TidyPath(kRootSubdir[i][0]));
+    mdm.set_display_name(TidyPath(kRootSubdir[i][0]));
     mdm.set_type(EMPTY_DIRECTORY);
     mdm.set_stats("");
     mdm.set_tag("");
     mdm.set_file_size_high(0);
     mdm.set_file_size_low(0);
-    boost::uint32_t current_time = base::get_epoch_time();
+    boost::uint32_t current_time = base::GetEpochTime();
     mdm.set_creation_time(current_time);
     mdm.SerializeToString(&ser_mdm);
     if (kRootSubdir[i][1].empty()) {
@@ -513,9 +514,9 @@ bool ClientController::CreateUser(const std::string &username,
     } else {
       key = base::DecodeFromHex(kRootSubdir[i][1]);
     }
-    res += dah->AddElement(base::TidyPath(kRootSubdir[i][0]),
+    res += dah->AddElement(TidyPath(kRootSubdir[i][0]),
                            ser_mdm, "", key, true);
-    seh_.EncryptDb(base::TidyPath(kRootSubdir[i][0]),
+    seh_.EncryptDb(TidyPath(kRootSubdir[i][0]),
                     PRIVATE, key, "", true, &dm);
   }
 #ifdef DEBUG
@@ -536,24 +537,24 @@ bool ClientController::CreateUser(const std::string &username,
     mdm.set_tag("");
     mdm.set_file_size_high(0);
     mdm.set_file_size_low(0);
-    boost::uint32_t current_time = base::get_epoch_time();
+    boost::uint32_t current_time = base::GetEpochTime();
     mdm.set_creation_time(current_time);
     mdm.SerializeToString(&ser_mdm);
     if (kSharesSubdir[i][1].empty()) {  // ie no preassigned key so not public
       seh_.GenerateUniqueKey(&key);
-      res += dah->AddElement(base::TidyPath(kSharesSubdir[i][0]),
+      res += dah->AddElement(TidyPath(kSharesSubdir[i][0]),
                              ser_mdm, "", key, true);
-      seh_.EncryptDb(base::TidyPath(kSharesSubdir[i][0]),
+      seh_.EncryptDb(TidyPath(kSharesSubdir[i][0]),
                       PRIVATE, key, "", true, &dm);
     } else {
       key = kSharesSubdir[i][1];
-      res += dah->AddElement(base::TidyPath(kSharesSubdir[i][0]),
+      res += dah->AddElement(TidyPath(kSharesSubdir[i][0]),
                              ser_mdm, "", key, true);
-      if (seh_.DecryptDb(base::TidyPath(kSharesSubdir[i][0]),
+      if (seh_.DecryptDb(TidyPath(kSharesSubdir[i][0]),
                           ANONYMOUS, "", key, "", true, true)) {
         // ie Public and Anon have never been saved before on the network
         std::string ser_dm;
-        seh_.EncryptDb(base::TidyPath(kSharesSubdir[i][0]), ANONYMOUS,
+        seh_.EncryptDb(TidyPath(kSharesSubdir[i][0]), ANONYMOUS,
                         kSharesSubdir[i][1], "", true, &dm);
       }
     }
@@ -939,7 +940,7 @@ int ClientController::HandleMessages(
       continue;
     }
 
-    boost::uint32_t now = base::get_epoch_time();
+    boost::uint32_t now = base::GetEpochTime();
     received_messages_.insert(std::pair<std::string, boost::uint32_t>(
                               valid_messages->front().SerializeAsString(),
                               now));
@@ -971,9 +972,9 @@ void ClientController::ClearStaleMessages() {
       boost::mutex::scoped_lock loch(rec_msg_mutex_);
 #ifdef DEBUG
 //      printf("CC::ClearStaleMessages timestamp: %d %d\n",
-//             base::get_epoch_time(), received_messages_.size());
+//             base::GetEpochTime(), received_messages_.size());
 #endif
-      boost::uint32_t now = base::get_epoch_time() - 10;
+      boost::uint32_t now = base::GetEpochTime() - 10;
       std::map<std::string, boost::uint32_t>::iterator it;
       std::vector<std::string> msgs;
       for (it = received_messages_.begin();
@@ -1195,7 +1196,7 @@ int ClientController::AddInstantFile(
 #endif
     return kClientControllerNotInitialised;
   }
-  fs::path path(base::TidyPath(kRootSubdir[0][0]));
+  fs::path path(TidyPath(kRootSubdir[0][0]));
 
   maidsafe::MetaDataMap sent_mdm;
   sent_mdm.ParseFromString(ifm.ser_mdm());
@@ -1208,19 +1209,19 @@ int ClientController::AddInstantFile(
   mdm.set_tag(sent_mdm.tag());
   mdm.set_file_size_high(sent_mdm.file_size_high());
   mdm.set_file_size_low(sent_mdm.file_size_low());
-  mdm.set_creation_time(base::get_epoch_time());
-  mdm.set_last_modified(base::get_epoch_time());
-  mdm.set_last_access(base::get_epoch_time());
+  mdm.set_creation_time(base::GetEpochTime());
+  mdm.set_last_modified(base::GetEpochTime());
+  mdm.set_last_access(base::GetEpochTime());
   std::string dir_key;
 
   boost::scoped_ptr<DataAtlasHandler> dah_(new DataAtlasHandler());
   fs::path path_with_filename;
   if (location.empty()) {
-    path_with_filename = fs::path(base::TidyPath(kRootSubdir[0][0]));
+    path_with_filename = fs::path(TidyPath(kRootSubdir[0][0]));
     path_with_filename /= ifm.filename();
   } else {
     // TODO(Dan#5#): 2009-06-25 - Make sure location is the correct path
-    path_with_filename = fs::path(base::TidyPath(location));
+    path_with_filename = fs::path(TidyPath(location));
     mdm.set_display_name(path_with_filename.filename());
   }
   std::string ser_mdm;
@@ -1359,7 +1360,7 @@ int ClientController::HandleAddContactRequest(
   std::string message("\"");
   message += ss_->PublicUsername() + "\" has confirmed you as a contact.";
   im.set_sender(ss_->PublicUsername());
-  im.set_date(base::get_epoch_time());
+  im.set_date(base::GetEpochTime());
   im.set_message(message);
   std::string ser_im;
   im.SerializeToString(&ser_im);
@@ -1446,7 +1447,7 @@ int ClientController::SendInstantMessage(const std::string &message,
   InstantMessage im;
   im.set_sender(ss_->PublicUsername());
   im.set_message(message);
-  im.set_date(base::get_epoch_time());
+  im.set_date(base::GetEpochTime());
   im.set_conversation(conversation);
   im.SerializeToString(&ser_im);
 
@@ -1534,7 +1535,7 @@ int ClientController::SendInstantFile(std::string *filename,
   ifm->set_ser_dm(ser_dm);
   ifm->set_filename(p_filename.filename());
   im.set_sender(SessionSingleton::getInstance()->PublicUsername());
-  im.set_date(base::get_epoch_time());
+  im.set_date(base::GetEpochTime());
   im.set_conversation(conversation);
   std::string message;
   if (msg.empty()) {
@@ -1689,7 +1690,7 @@ int ClientController::AddContact(const std::string &public_name) {
   cn->set_action(0);
 
   im.set_sender(ss_->PublicUsername());
-  im.set_date(base::get_epoch_time());
+  im.set_date(base::GetEpochTime());
   std::string message("\"");
   message += im.sender() + "\" has requested to add you as a contact.";
   im.set_message(message);
@@ -1753,13 +1754,13 @@ int ClientController::DeleteContact(const std::string &public_name) {
   ContactNotification *cn = im.mutable_contact_notification();
   cn->set_action(2);
 
-  std::string deletion_msg(base::itos(base::get_epoch_nanoseconds()));
+  std::string deletion_msg(base::IntToString(base::GetEpochNanoseconds()));
   deletion_msg += " deleted " + public_name + " update " +
     ss_->PublicUsername();
 #ifdef DEBUG
   printf("MSG: %s\n", deletion_msg.c_str());
 #endif
-  im.set_date(base::get_epoch_milliseconds());
+  im.set_date(base::GetEpochMilliseconds());
   im.set_message(deletion_msg);
   im.set_sender(ss_->PublicUsername());
   std::string ser_im;
@@ -1984,7 +1985,7 @@ int ClientController::CreateNewShare(const std::string &name,
   psn->set_public_key(cmsidr.public_key());
   psn->set_dir_db_key(share_dir_key);
   im.set_sender(ss_->PublicUsername());
-  im.set_date(base::get_epoch_time());
+  im.set_date(base::GetEpochTime());
   std::string message("\"");
   message += im.sender() + "\" has added you as a Read Only participant to"
              " share " + name;
@@ -2232,10 +2233,10 @@ int ClientController::RemoveElement(const std::string &element_path) {
 }
 
 DirType ClientController::GetDirType(const std::string &path_) {
-  std::string myfiles = base::TidyPath(kRootSubdir[0][0]);
-//  std::string pub_shares = base::TidyPath(kSharesSubdir[1][0]);
-  std::string priv_shares = base::TidyPath(kSharesSubdir[0][0]);
-//  std::string anonymous_shares = base::TidyPath(kSharesSubdir[1][0]);
+  std::string myfiles = TidyPath(kRootSubdir[0][0]);
+//  std::string pub_shares = TidyPath(kSharesSubdir[1][0]);
+  std::string priv_shares = TidyPath(kSharesSubdir[0][0]);
+//  std::string anonymous_shares = TidyPath(kSharesSubdir[1][0]);
   if (path_ == "/" || path_ == "\\" ||
       (path_.compare(0, myfiles.size(), myfiles) == 0))
     return PRIVATE;
@@ -2335,15 +2336,15 @@ int ClientController::GetDb(const std::string &orig_path,
     parent_path = parent.parent_path().string();
     if (parent_path == "")
       parent_path = "/";
-    // if (parent_path_.size() <= 1 && path_!=base::TidyPath(my_files_)
-    //   && path_!=base::TidyPath(public_shares_)
-    //   && path_!=base::TidyPath(private_shares_)) {
+    // if (parent_path_.size() <= 1 && path_!=TidyPath(my_files_)
+    //   && path_!=TidyPath(public_shares_)
+    //   && path_!=TidyPath(private_shares_)) {
 #ifdef DEBUG
     //   printf("Parent dir is root!\n");
 #endif
     //   // return -1;
     // }
-    // parent_path_ = base::TidyPath(path_);
+    // parent_path_ = TidyPath(path_);
   }
   boost::scoped_ptr<DataAtlasHandler> dah(new DataAtlasHandler());
   dah->GetDbPath(path, CONNECT, &db_path);
@@ -2393,7 +2394,7 @@ int ClientController::SaveDb(const std::string &db_path,
   parent_path_ = temp_.parent_path().string();
   if (parent_path_ == "\\" ||
       parent_path_ == "/" ||
-      parent_path_ == base::TidyPath(kRootSubdir[1][0]))
+      parent_path_ == TidyPath(kRootSubdir[1][0]))
     return 0;
   boost::scoped_ptr<DataAtlasHandler> dah_(new DataAtlasHandler());
   if (dah_->GetDirKey(parent_path_, &dir_key_))
@@ -2424,7 +2425,7 @@ int ClientController::RemoveDb(const std::string &path) {
   parent_path = temp.parent_path().string();
   if (parent_path == "\\"||
       parent_path == "/"||
-      parent_path == base::TidyPath(kRootSubdir[1][0]))
+      parent_path == TidyPath(kRootSubdir[1][0]))
     return 0;
   boost::scoped_ptr<DataAtlasHandler> dah(new DataAtlasHandler());
   std::string dbpath;
@@ -2501,7 +2502,7 @@ bool ClientController::ReadOnly(const std::string &path, bool gui) {
       parnt_path_.string() == "/"||
       parnt_path_.string() == "\\") {
     for (int i = 0; i < kRootSubdirSize; ++i) {
-      fs::path root_subdir_(base::TidyPath(kRootSubdir[i][0]), fs::native);
+      fs::path root_subdir_(TidyPath(kRootSubdir[i][0]), fs::native);
       if (path_ == root_subdir_) {
 #ifdef DEBUG
         printf("Returning false AA.\n");
@@ -2524,11 +2525,11 @@ bool ClientController::ReadOnly(const std::string &path, bool gui) {
 
   // if path is a Shares subdir, but not one of preassigned Shares subdirs,
   // then readonly = true.
-  fs::path shares_(base::TidyPath(kRootSubdir[1][0]), fs::native);
+  fs::path shares_(TidyPath(kRootSubdir[1][0]), fs::native);
   if (parnt_path_ == shares_) {
     bool read_only_ = true;
     for (int i = 0; i < kSharesSubdirSize; ++i) {
-      fs::path shares_subdir_(base::TidyPath(kSharesSubdir[i][0]), fs::native);
+      fs::path shares_subdir_(TidyPath(kSharesSubdir[i][0]), fs::native);
       if (path_ == shares_subdir_)
         read_only_ = false;
     }
@@ -2539,7 +2540,7 @@ bool ClientController::ReadOnly(const std::string &path, bool gui) {
   }
   // if path is a Shares/Private subdir then readonly = true unless request
   // comes from gui setting up a private share.
-//  fs::path private_shares_(base::TidyPath(kSharesSubdir[0][0]), fs::native);
+//  fs::path private_shares_(TidyPath(kSharesSubdir[0][0]), fs::native);
 //  if (parnt_path_ == private_shares_) {
 //    return false
     std::string msid;

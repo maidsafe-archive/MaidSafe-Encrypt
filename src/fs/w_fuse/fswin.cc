@@ -24,13 +24,14 @@ THE SOFTWARE.
 
 #include "fs/w_fuse/fswin.h"
 
-#include <maidsafe/utils.h>
+#include <boost/lexical_cast.hpp>
 
 #include <list>
 #include <map>
 #include <vector>
 
 #include "maidsafe/client/clientcontroller.h"
+#include "maidsafe/utils.h"
 
 namespace fs = boost::filesystem;
 
@@ -81,7 +82,7 @@ static std::string WstrToStr(const WCHAR *in_wstr) {
       std::use_facet< std::ctype<char> >(stm.getloc());
   for (size_t i = 0; i < wcslen(in_wstr); ++i)
     stm << ctfacet.narrow(in_wstr[i], 0);
-  return base::TidyPath(stm.str());
+  return maidsafe::TidyPath(stm.str());
 }
 
 //  void GetFilePath(std::string *filePathStr, const WCHAR *FileName) {
@@ -91,7 +92,7 @@ static std::string WstrToStr(const WCHAR *in_wstr) {
 //    for (size_t i = 0; i < wcslen(FileName); ++i)
 //      stm << ctfacet.narrow(FileName[i], 0);
 //    fs::path path_(stm.str());
-//    *filePathStr = base::TidyPath(path_.string());
+//    *filePathStr = maidsafe::TidyPath(path_.string());
 //  }
 
 static void GetMountPoint(char drive, LPWSTR mount_point) {
@@ -160,7 +161,7 @@ static int __stdcall WinCreateFile(const WCHAR *FileName,
 //  if (branch_path_.string()=="" && !(relPathStr=="\\" || relPathStr=="/" )) {
 //    bool ok_=false;
 //    for (int i=0; i<kRootSubdirSize; i++) {
-//      if (relPathStr==base::TidyPath(kRootSubdir[i][0])) {
+//      if (relPathStr==maidsafe::TidyPath(kRootSubdir[i][0])) {
 //        ok_=true;
 //        break;
 //      }
@@ -1012,8 +1013,9 @@ static int __stdcall WinSetAllocationSize(const WCHAR *FileName,
       fileSize.QuadPart = AllocSize;
       if (!SetFilePointerEx(handle, fileSize, NULL, FILE_BEGIN)) {
         DbgPrint("In WinSetAllocationSize, SetFilePointer error: %ld",
-               GetLastError());
-        DbgPrint(", offfset = %s\n\n", base::itos_ull(AllocSize).c_str());
+                 GetLastError());
+        DbgPrint(", offfset = %s\n\n",
+                 boost::lexical_cast<std::string>(AllocSize).c_str());
         return GetLastError() * -1;
       }
       if (!SetEndOfFile(handle)) {

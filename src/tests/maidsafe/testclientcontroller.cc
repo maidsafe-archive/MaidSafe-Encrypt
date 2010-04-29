@@ -28,14 +28,15 @@
 #include <boost/progress.hpp>
 #include <boost/thread/thread.hpp>
 #include <gtest/gtest.h>
-#include <maidsafe/crypto.h>
-#include <maidsafe/utils.h>
+#include <maidsafe/base/crypto.h>
+#include <maidsafe/base/utils.h>
 
 #include <list>
 #include <map>
 #include <vector>
 
 #include "fs/filesystem.h"
+#include "maidsafe/utils.h"
 #include "maidsafe/client/clientcontroller.h"
 #include "maidsafe/client/selfencryption.h"
 #include "maidsafe/vault/vaultdaemon.h"
@@ -400,7 +401,7 @@ TEST_F(ClientControllerTest, FUNC_MAID_LocalControllerBackupFile) {
       kRootSubdir[0][0]);
   fs::path rel_path(kRootSubdir[0][0]);
   rel_path /= "testencryption.txt";
-  std::string rel_str_ = base::TidyPath(rel_path.string());
+  std::string rel_str_ = TidyPath(rel_path.string());
 
   fs::path full_path(file_system::MaidsafeHomeDir(ss_->SessionName()));
   full_path /= rel_path;
@@ -473,7 +474,7 @@ TEST_F(ClientControllerTest, FUNC_MAID_LocalControllerSaveSession) {
       kRootSubdir[0][0]);
   fs::path rel_path(kRootSubdir[0][0]);
   rel_path /= "testencryption.txt";
-  std::string rel_str = base::TidyPath(rel_path.string());
+  std::string rel_str = TidyPath(rel_path.string());
 
   fs::path full_path(file_system::MaidsafeHomeDir(ss_->SessionName()));
   full_path /= rel_path;
@@ -816,7 +817,7 @@ TEST_F(ClientControllerTest, FUNC_MAID_LocalControllerFuseFunctions) {
   fs::path mshomedir(file_system::MaidsafeHomeDir(ss_->SessionName()));
   // fs::path newdir = homedir / "NewDir";
   // fs::path msnewdir = mshomedir / "NewDir";
-  fs::path my_files(base::TidyPath(kRootSubdir[0][0]));
+  fs::path my_files(TidyPath(kRootSubdir[0][0]));
   fs::path startdir = my_files / "NewDir";
 
   testfile[0] = startdir;
@@ -963,7 +964,7 @@ TEST_F(ClientControllerTest, FUNC_MAID_LocalControllerFuseFunctions) {
 
 TEST_F(ClientControllerTest, BEH_MAID_LocalControllerHandleMessages) {
   int total_msgs(5);
-  boost::uint32_t now(base::get_epoch_time());
+  boost::uint32_t now(base::GetEpochTime());
   std::list<ValidatedBufferPacketMessage> valid_messages;
   maidsafe::ValidatedBufferPacketMessage vbpm;
   maidsafe::InstantMessage im;
@@ -988,7 +989,7 @@ TEST_F(ClientControllerTest, BEH_MAID_LocalControllerHandleMessages) {
 TEST_F(ClientControllerTest, FUNC_MAID_LocalControllerClearStaleMessages) {
   size_t total_msgs(5);
   boost::thread thr(&ClientController::ClearStaleMessages, cc_);
-  boost::uint32_t now(base::get_epoch_time());
+  boost::uint32_t now(base::GetEpochTime());
   std::list<ValidatedBufferPacketMessage> valid_messages;
   maidsafe::ValidatedBufferPacketMessage vbpm;
   maidsafe::InstantMessage im;
@@ -996,7 +997,7 @@ TEST_F(ClientControllerTest, FUNC_MAID_LocalControllerClearStaleMessages) {
     vbpm.Clear();
     im.Clear();
     vbpm.set_sender("nalga");
-    vbpm.set_index(base::itos(n));
+    vbpm.set_index(base::IntToString(n));
     vbpm.set_type(maidsafe::INSTANT_MSG);
     vbpm.set_timestamp(now);
     im.set_sender("nalga");

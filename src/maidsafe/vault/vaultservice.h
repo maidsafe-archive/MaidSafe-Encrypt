@@ -29,9 +29,9 @@
 #include <boost/thread/condition_variable.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <boost/tuple/tuple_comparison.hpp>
-#include <maidsafe/contact_info.pb.h>
-#include <maidsafe/crypto.h>
-#include <maidsafe/utils.h>
+#include <maidsafe/protobuf/contact_info.pb.h>
+#include <maidsafe/base/crypto.h>
+#include <maidsafe/base/utils.h>
 #include <QThreadPool>
 
 #include <map>
@@ -387,7 +387,7 @@ class VaultService : public maidsafe::MaidsafeService {
   ChunkInfoHandler cih_;
   BufferPacketStore bps_;
   QThreadPool thread_pool_;
-  boost::shared_ptr<base::PDRoutingTableHandler> routing_table_;
+  boost::shared_ptr<base::PublicRoutingTableHandler> routing_table_;
   InfoSynchroniser info_synchroniser_;
 };
 

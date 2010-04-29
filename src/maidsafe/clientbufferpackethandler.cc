@@ -13,7 +13,7 @@
  */
 
 #include "maidsafe/clientbufferpackethandler.h"
-#include "maidsafe/kademlia_service_messages.pb.h"
+#include <maidsafe/protobuf/kademlia_service_messages.pb.h>
 
 namespace maidsafe {
 
@@ -135,9 +135,9 @@ void ClientBufferPacketHandler::AddMessage(
   bpmsg.set_sender_id(my_pu);
   bpmsg.set_sender_public_key(args.public_key);
   bpmsg.set_type(m_type);
-  bpmsg.set_timestamp(base::get_epoch_time());
+  bpmsg.set_timestamp(base::GetEpochTime());
   // generating key to encrypt msg with AES
-  boost::uint32_t iter = base::random_32bit_uinteger() % 1000 +1;
+  boost::uint32_t iter = base::RandomUint32() % 1000 +1;
   std::string aes_key = crypto_obj_.SecurePassword(
       crypto_obj_.Hash(message, "", crypto::STRING_STRING, false), iter);
 
@@ -215,8 +215,8 @@ void ClientBufferPacketHandler::AddPresence(
   ep.add_port(knode_->host_port());
   ep.add_ip(knode_->local_host_ip());
   ep.add_port(knode_->local_host_port());
-  ep.add_ip(knode_->rv_ip());
-  ep.add_port(knode_->rv_port());
+  ep.add_ip(knode_->rendezvous_ip());
+  ep.add_port(knode_->rendezvous_port());
   std::string s_ep(ep.SerializeAsString());
   lp.set_end_point(crypto_obj_.AsymEncrypt(s_ep, "", recver_public_key,
                     crypto::STRING_STRING));
@@ -247,32 +247,32 @@ void ClientBufferPacketHandler::AddPresence(
 }
 
 void ClientBufferPacketHandler::FindNodes(
-    base::callback_func_type cb,
+    kad::VoidFunctorOneString cb,
     boost::shared_ptr<ChangeBPData> data) {
   switch (data->type) {
     case CREATEBP:
-        knode_->FindCloseNodes(
+        knode_->FindKClosestNodes(
             kad::KadId(data->create_request.bufferpacket_name(), false), cb);
         break;
     case MODIFY_INFO:
-        knode_->FindCloseNodes(
+        knode_->FindKClosestNodes(
             kad::KadId(data->modify_request.bufferpacket_name(), false), cb);
         break;
     case GET_MESSAGES:
-        knode_->FindCloseNodes(
+        knode_->FindKClosestNodes(
             kad::KadId(data->get_msgs_request.bufferpacket_name(), false), cb);
         break;
     case ADD_MESSAGE:
-        knode_->FindCloseNodes(
+        knode_->FindKClosestNodes(
             kad::KadId(data->add_msg_request.bufferpacket_name(), false), cb);
         break;
     case GET_PRESENCE:
-        knode_->FindCloseNodes(
+        knode_->FindKClosestNodes(
             kad::KadId(data->get_presence_request.bufferpacket_name(), false),
             cb);
         break;
     case ADD_PRESENCE:
-        knode_->FindCloseNodes(
+        knode_->FindKClosestNodes(
             kad::KadId(data->add_presence_request.bufferpacket_name(), false),
             cb);
         break;

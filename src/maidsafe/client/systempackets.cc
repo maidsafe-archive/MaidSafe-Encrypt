@@ -25,7 +25,7 @@
 #include "maidsafe/client/systempackets.h"
 #include <boost/lexical_cast.hpp>
 #include <maidsafe/maidsafe-dht.h>
-#include <maidsafe/utils.h>
+#include <maidsafe/base/utils.h>
 #include <cstdlib>
 #include <ctime>
 #include <cstdio>
@@ -74,9 +74,9 @@ PacketParams MidPacket::Create(PacketParams params) {
       boost::any_cast<std::string>(params["pin"]).empty())
     return result;
 
-  boost::uint32_t rid = base::random_32bit_uinteger();
+  boost::uint32_t rid = base::RandomUint32();
   while (rid == 0)
-    rid = base::random_32bit_uinteger();
+    rid = base::RandomUint32();
   boost::uint32_t pin = boost::lexical_cast<boost::uint32_t>(boost::any_cast
       <std::string>(params["pin"]));
   std::string password = crypto_obj_.SecurePassword(

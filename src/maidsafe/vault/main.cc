@@ -26,10 +26,10 @@
 
 #include <boost/thread/thread.hpp>
 #include <boost/thread/xtime.hpp>
-#include <maidsafe/crypto.h>
-#include <maidsafe/general_messages.pb.h>
+#include <maidsafe/base/crypto.h>
+#include <maidsafe/protobuf/general_messages.pb.h>
 #include <maidsafe/maidsafe-dht.h>
-#include <maidsafe/utils.h>
+#include <maidsafe/base/utils.h>
 
 #include <map>
 #include <vector>
@@ -439,13 +439,13 @@ class RunPDVaults {
 
       // store random chunks
       int no_of_chunks = (total_chunks_stored_ < 500) ?
-                         base::random_32bit_integer() % 6 : 0;
+                          base::RandomUint32() % 6 : 0;
       for (int j = 0; j < no_of_chunks; ++j) {
         if (ctrlc_pressed)
           break;
 
         std::string chunk_content =
-            base::RandomString(base::random_32bit_integer() % 10000 * 10 + 10);
+            base::RandomString(base::RandomInt32() % 10000 * 10 + 10);
         std::string chunk_name = cryobj_.Hash(chunk_content, "",
                                               crypto::STRING_STRING, false);
         fs::path chunk_path(test_dir_);
@@ -509,10 +509,10 @@ int main(int argc, char* argv[]) {
     std::string number(argv[1]);
     size_t sep = number.find(':');
     if (sep == std::string::npos) {
-      num_v = base::stoi(number);
+      num_v = boost::lexical_cast<int>(number);
     } else {
-      num_v = base::stoi(number.substr(0, sep));
-      num_c = base::stoi(number.substr(sep + 1));
+      num_v = boost::lexical_cast<int>(number.substr(0, sep));
+      num_c = boost::lexical_cast<int>(number.substr(sep + 1));
     }
     // printf("vaults: %d  clients: %d\n", num_v, num_c);
     if (num_v < 1 || num_c < 0) {

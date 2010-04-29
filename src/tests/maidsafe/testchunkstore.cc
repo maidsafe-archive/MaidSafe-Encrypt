@@ -15,8 +15,8 @@
 
 #include <boost/filesystem/fstream.hpp>
 #include <gtest/gtest.h>
-#include <maidsafe/crypto.h>
-#include <maidsafe/utils.h>
+#include <maidsafe/base/crypto.h>
+#include <maidsafe/base/utils.h>
 #include "fs/filesystem.h"
 #include "maidsafe/client/packetfactory.h"
 #include "maidsafe/returncodes.h"
@@ -72,7 +72,7 @@ bool MakeChunks(const boost::uint32_t &num_chunks,
       name->push_back(cry_obj->Hash(value->at(i), "", crypto::STRING_STRING,
                                     false));
     } else {
-      name->push_back(cry_obj->Hash(base::itos(i), "", crypto::STRING_STRING,
+      name->push_back(cry_obj->Hash(base::IntToString(i), "", crypto::STRING_STRING,
                                     false));
     }
   }
@@ -122,7 +122,7 @@ bool MakePackets(const boost::uint32_t &num_packets,
     gp.set_signature(cry_obj->AsymSign(data, "", private_key.at(i),
                      crypto::STRING_STRING));
     value->push_back(gp);
-    name->push_back(cry_obj->Hash(base::itos(i), "", crypto::STRING_STRING,
+    name->push_back(cry_obj->Hash(base::IntToString(i), "", crypto::STRING_STRING,
                                   false));
   }
   return (packetsize->size() == num_packets && value->size() == num_packets &&

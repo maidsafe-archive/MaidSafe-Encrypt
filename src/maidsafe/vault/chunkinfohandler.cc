@@ -59,7 +59,7 @@ int ChunkInfoHandler::PrepareAddToWatchList(const std::string &chunk_name,
   entry.storing_done = false;
   entry.payments_done = false;
   entry.requested_payments = 0;
-  entry.creation_time = base::get_epoch_time();
+  entry.creation_time = base::GetEpochTime();
 
   // only request uploads if not already waiting
   std::list<WaitingListEntry>::iterator it = ci.waiting_list.begin();
@@ -303,11 +303,11 @@ int ChunkInfoHandler::AddToReferenceList(const std::string &chunk_name,
   }
 
   if (it != ci.reference_list.end()) {
-    it->last_seen = base::get_epoch_time();
+    it->last_seen = base::GetEpochTime();
   } else {
     ReferenceListEntry entry;
     entry.pmid = pmid;
-    entry.last_seen = base::get_epoch_time();
+    entry.last_seen = base::GetEpochTime();
     ci.reference_list.push_back(entry);
   }
 
@@ -356,7 +356,7 @@ int ChunkInfoHandler::GetActiveReferences(const std::string chunk_name,
   if (ci.watcher_count == 0 && ci.watcher_checksum == 0)
     return kChunkInfoNoActiveWatchers;
 
-  boost::uint32_t now = base::get_epoch_time();
+  boost::uint32_t now = base::GetEpochTime();
 
   for (std::list<ReferenceListEntry>::iterator it = ci.reference_list.begin();
        it != ci.reference_list.end(); ++it) {
@@ -412,7 +412,7 @@ void ChunkInfoHandler::GetStaleWaitingListEntries(
   boost::mutex::scoped_lock lock(chunk_info_mutex_);
   if (!started_)
     return;
-  boost::uint32_t now = base::get_epoch_time();
+  boost::uint32_t now = base::GetEpochTime();
   for (CIMap::iterator ci_it = chunk_infos_.begin();
        ci_it != chunk_infos_.end(); ++ci_it) {
     for (std::list<WaitingListEntry>::iterator wait_it =
@@ -438,7 +438,7 @@ int ChunkInfoHandler::ActiveReferences(const std::string &chunk_name) {
     return 0;
   ChunkInfo &ci = chunk_infos_[chunk_name];
   int n = 0;
-  boost::uint32_t now = base::get_epoch_time();
+  boost::uint32_t now = base::GetEpochTime();
 
   for (std::list<ReferenceListEntry>::iterator it = ci.reference_list.begin();
        it != ci.reference_list.end(); ++it) {

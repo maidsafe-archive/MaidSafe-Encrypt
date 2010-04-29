@@ -26,7 +26,7 @@
 #define MAIDSAFE_CLIENT_CLIENTCONTROLLER_H_
 
 #include <gtest/gtest_prod.h>
-#include <maidsafe/utils.h>
+#include <maidsafe/base/utils.h>
 
 #include <list>
 #include <map>

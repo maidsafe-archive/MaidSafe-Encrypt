@@ -26,7 +26,7 @@
 #define MAIDSAFE_VAULT_VAULTRPC_H_
 
 #include <maidsafe/maidsafe-dht.h>
-#include <maidsafe/utils.h>
+#include <maidsafe/base/utils.h>
 #include <string>
 
 #include "maidsafe/maidsafe.h"

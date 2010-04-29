@@ -37,7 +37,7 @@
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/shared_ptr.hpp>
 
-#include <maidsafe/transporthandler-api.h>
+#include <maidsafe/transport/transporthandler-api.h>
 #include <string>
 
 #include "maidsafe/returncodes.h"

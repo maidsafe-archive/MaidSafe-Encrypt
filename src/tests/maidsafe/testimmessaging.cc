@@ -27,9 +27,9 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/filesystem/fstream.hpp>
 #include <maidsafe/maidsafe-dht_config.h>
-#include <maidsafe/transport-api.h>
-#include <maidsafe/transportudt.h>
-#include <maidsafe/general_messages.pb.h>
+#include <maidsafe/transport/transport-api.h>
+#include <maidsafe/transport/transportudt.h>
+#include <maidsafe/protobuf/general_messages.pb.h>
 #include "fs/filesystem.h"
 #include "maidsafe/client/imconnectionhandler.h"
 #include "maidsafe/client/maidstoremanager.h"
@@ -199,7 +199,7 @@ class TestImMessaging : public testing::Test {
           &TestImMessaging::UDTTransMsgArrived, this, _1, _2, _3, _4)));
     ASSERT_EQ(0, ctc1_trans_->Start(0));
     boost::asio::ip::address addr;
-    base::get_local_address(&addr);
+    base::GetLocalAddress(&addr);
     ctc1_ep_.add_ip(addr.to_string());
     ctc1_ep_.add_ip(addr.to_string());
     ctc1_ep_.add_ip("");

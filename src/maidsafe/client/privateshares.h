@@ -34,7 +34,7 @@
 #include <boost/multi_index/member.hpp>
 #include <gtest/gtest_prod.h>
 
-#include <maidsafe/utils.h>
+#include <maidsafe/base/utils.h>
 #include <maidsafe/maidsafe-dht_config.h>
 
 #include <string>

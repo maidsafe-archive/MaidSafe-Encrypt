@@ -58,7 +58,7 @@ std::string MakeFindNodesResponse(const FindNodesResponseType &type,
 };
 
 void RunCallback(const std::string &find_nodes_response,
-                 const base::callback_func_type &callback) {
+                 const kad::VoidFunctorOneString &callback) {
   callback(find_nodes_response);
 };
 

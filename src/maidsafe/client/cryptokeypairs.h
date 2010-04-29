@@ -30,7 +30,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/noncopyable.hpp>
 #include <gtest/gtest_prod.h>
-#include <maidsafe/crypto.h>
+#include <maidsafe/base/crypto.h>
 #include <list>
 #include <vector>
 

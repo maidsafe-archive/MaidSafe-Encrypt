@@ -30,8 +30,8 @@
 #include <boost/filesystem/fstream.hpp>
 #include <boost/thread/thread.hpp>
 #include <gtest/gtest.h>
-#include <maidsafe/crypto.h>
-#include <maidsafe/general_messages.pb.h>
+#include <maidsafe/base/crypto.h>
+#include <maidsafe/protobuf/general_messages.pb.h>
 #include <string>
 #include <vector>
 #include "fs/filesystem.h"

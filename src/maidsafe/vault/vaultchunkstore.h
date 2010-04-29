@@ -25,7 +25,7 @@
 #include <boost/multi_index/sequenced_index.hpp>
 #include <boost/thread/mutex.hpp>
 #include <gtest/gtest_prod.h>
-#include <maidsafe/crypto.h>
+#include <maidsafe/base/crypto.h>
 #include <maidsafe/maidsafe-dht.h>
 #include <functional>
 #include <list>

@@ -25,8 +25,8 @@
 
 #include "maidsafe/vault/validitycheck.h"
 #include <boost/bind.hpp>
-#include <maidsafe/utils.h>
-#include <maidsafe/crypto.h>
+#include <maidsafe/base/utils.h>
+#include <maidsafe/base/crypto.h>
 #include <list>
 
 namespace fs = boost::filesystem;
@@ -231,7 +231,7 @@ void ValCheck::CheckValidity_Callback(const dht::entry &result,
   // retries are only for timeouts, not incorrect hashes
   if ((result["result"].string() == kAck) || retry < vchRetry) {
     try {
-      boost::int32_t curr_time = base::get_epoch_time();
+      boost::int32_t curr_time = base::GetEpochTime();
       CppSQLite3Statement stmt;
       CppSQLite3Binary blob_node_id, blob_chunk_name;
       blob_node_id.setBinary((const unsigned char*)node_id.c_str(),
@@ -324,7 +324,7 @@ void ValCheck::DirtyChunkHandler(const std::string &chunk_name,
 }
 
 void ValCheck::ValCheckProcess() {
-  boost::int32_t lastchecked = base::get_epoch_time() - vchMinTime;
+  boost::int32_t lastchecked = base::GetEpochTime() - vchMinTime;
   boost::shared_ptr<IterativeCheckData> \
     data(new struct IterativeCheckData);
   try {

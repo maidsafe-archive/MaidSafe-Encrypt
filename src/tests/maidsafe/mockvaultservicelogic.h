@@ -29,7 +29,7 @@
 #include <boost/thread/condition_variable.hpp>
 #include <boost/thread/mutex.hpp>
 #include <gmock/gmock.h>
-#include <maidsafe/kademlia_service_messages.pb.h>
+#include <maidsafe/protobuf/kademlia_service_messages.pb.h>
 #include <maidsafe/maidsafe-dht_config.h>
 
 #include <string>

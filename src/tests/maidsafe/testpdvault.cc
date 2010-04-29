@@ -24,9 +24,10 @@
 
 #include <boost/progress.hpp>
 #include <gtest/gtest.h>
-#include <maidsafe/crypto.h>
+#include <maidsafe/base/crypto.h>
 #include <maidsafe/maidsafe-dht.h>
-#include <maidsafe/utils.h>
+#include <maidsafe/protobuf/kademlia_service_messages.pb.h>
+#include <maidsafe/base/utils.h>
 
 #include <map>
 #include <vector>
@@ -38,7 +39,6 @@
 #include "maidsafe/client/maidstoremanager.h"
 #include "maidsafe/client/sessionsingleton.h"
 #include "maidsafe/client/systempackets.h"
-#include "maidsafe/kademlia_service_messages.pb.h"
 #include "maidsafe/vault/pdvault.h"
 #include "tests/maidsafe/cached_keys.h"
 #include "tests/maidsafe/localvaults.h"
@@ -275,7 +275,7 @@ class PDVaultTest : public testing::Test {
     for (int i = 0; i < kNetworkSize - kNumOfClients; ++i) {
       for (int j = kNetworkSize - kNumOfClients; j < kNetworkSize; ++j) {
         maidsafe::CallbackObj cb;
-        pdvaults_[i]->kad_ops_->FindNode(kad::KadId(pdvaults_[i]->pmid_, false),
+        pdvaults_[i]->kad_ops_->GetNodeContactDetails(kad::KadId(pdvaults_[i]->pmid_, false),
             boost::bind(&maidsafe::CallbackObj::CallbackFunc, &cb, _1), false);
         cb.WaitForCallback();
       }
@@ -391,7 +391,7 @@ TEST_F(PDVaultTest, FUNC_MAID_StoreAndGetChunks) {
            HexSubstr(account_name).c_str());
     std::set<std::string> closest;
     std::vector<kad::Contact> contacts;
-    clients_[i]->msm->kad_ops_->FindCloseNodes(kad::KadId(account_name, false),
+    clients_[i]->msm->kad_ops_->FindKClosestNodes(kad::KadId(account_name, false),
                                                &contacts);
     for (size_t j = 0; j < contacts.size(); ++j) {
       closest.insert(contacts[j].node_id().ToStringDecoded());
@@ -413,8 +413,8 @@ TEST_F(PDVaultTest, FUNC_MAID_StoreAndGetChunks) {
     for (it = chunks.begin(); it != chunks.end(); ++it)
       clients_[i]->msm->StoreChunk((*it).first, maidsafe::PRIVATE, "");
   printf("\n-- Enqueued %s chunks for storing, total %s bytes. --\n",
-         base::itos_ull(kNumOfTestChunks).c_str(),
-         base::itos_ull(data_size).c_str());
+         boost::lexical_cast<std::string>(kNumOfTestChunks).c_str(),
+         boost::lexical_cast<std::string>(data_size).c_str());
 
   printf("\nWaiting for chunks to get stored...\n");
   boost::this_thread::sleep(boost::posix_time::seconds(15));
@@ -577,9 +577,9 @@ TEST_F(PDVaultTest, FUNC_MAID_Cachechunk) {
   ASSERT_EQ(0, channel_manager.Start());
 
   boost::uint16_t cache_vault_index(0), chunk_vault_index(0);
-  cache_vault_index = base::random_32bit_uinteger() % kNetworkSize;
+  cache_vault_index = base::RandomUint32() % kNetworkSize;
   while (chunk_vault_index == 0 || cache_vault_index == chunk_vault_index)
-    chunk_vault_index = base::random_32bit_uinteger() % kNetworkSize;
+    chunk_vault_index = base::RandomUint32() % kNetworkSize;
 
   kad::ContactInfo kc_cacher_vault;
   crypto::Crypto co;

@@ -23,8 +23,8 @@
 
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
-#include <maidsafe/contact_info.pb.h>
-#include <maidsafe/kademlia_service_messages.pb.h>
+#include <maidsafe/protobuf/contact_info.pb.h>
+#include <maidsafe/protobuf/kademlia_service_messages.pb.h>
 #include <queue>
 #include "fs/filesystem.h"
 #include "maidsafe/chunkstore.h"
@@ -107,7 +107,7 @@ void DoneRun(const int &min_delay,
   int diff = max_delay - min;
   if (diff < 1)
     diff = 1;
-  int sleep_time(base::random_32bit_uinteger() % diff + min);
+  int sleep_time(base::RandomUint32() % diff + min);
   boost::this_thread::sleep(boost::posix_time::milliseconds(sleep_time));
   callback->Run();
 }
@@ -122,7 +122,7 @@ void ConditionNotifyNoFlag(int set_return,
                            int *return_value,
                            maidsafe::GenericConditionData *generic_cond_data) {
   boost::this_thread::sleep(boost::posix_time::milliseconds(
-      base::random_32bit_uinteger() % 1000 + 5000));
+      base::RandomUint32() % 1000 + 5000));
   boost::lock_guard<boost::mutex> lock(generic_cond_data->cond_mutex);
   *return_value = set_return;
   generic_cond_data->cond_variable->notify_all();
@@ -277,7 +277,7 @@ void RunDeletePacketCallbacks(
   }
 }
 
-void RunLoadPacketCallback(const base::callback_func_type &cb,
+void RunLoadPacketCallback(const kad::VoidFunctorOneString &cb,
                            const std::string &ser_result) {
   cb(ser_result);
 }
@@ -539,9 +539,9 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AddToWatchList) {
   // Set up data for calls to FindKNodes
   std::vector<kad::Contact> chunk_info_holders, few_chunk_info_holders;
   for (boost::uint16_t i = 0; i < kad::K; ++i) {
-    kad::Contact contact(crypto_.Hash(base::itos(i * i), "",
-        crypto::STRING_STRING, false), "192.168.10." + base::itos(i), 8000 + i,
-        "192.168.10." + base::itos(i), 8000 + i);
+    kad::Contact contact(crypto_.Hash(base::IntToString(i * i), "",
+        crypto::STRING_STRING, false), "192.168.10." + base::IntToString(i), 8000 + i,
+        "192.168.10." + base::IntToString(i), 8000 + i);
     chunk_info_holders.push_back(contact);
     if (i < kKadUpperThreshold - 1)
       few_chunk_info_holders.push_back(contact);
@@ -554,18 +554,18 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AddToWatchList) {
   // Set expectations
   EXPECT_CALL(*mko, AddressIsLocal(testing::An<const kad::Contact&>()))
       .WillRepeatedly(testing::Return(true));
-  EXPECT_CALL(*mko, FindCloseNodes(kad::KadId(chunk_names.at(0), false),
+  EXPECT_CALL(*mko, FindKClosestNodes(kad::KadId(chunk_names.at(0), false),
                                    testing::An< std::vector<kad::Contact>* >()))
       .WillOnce(DoAll(testing::SetArgumentPointee<1>(chunk_info_holders),
           testing::Return(-1)));  // Call 1
 
-  EXPECT_CALL(*mko, FindCloseNodes(kad::KadId(chunk_names.at(1), false),
+  EXPECT_CALL(*mko, FindKClosestNodes(kad::KadId(chunk_names.at(1), false),
                                    testing::An< std::vector<kad::Contact>* >()))
       .WillOnce(DoAll(testing::SetArgumentPointee<1>(few_chunk_info_holders),
           testing::Return(kSuccess)));  // Call 2
 
   for (int i = 2; i < kTestCount; ++i) {
-    EXPECT_CALL(*mko, FindCloseNodes(kad::KadId(chunk_names.at(i), false),
+    EXPECT_CALL(*mko, FindKClosestNodes(kad::KadId(chunk_names.at(i), false),
         testing::An< std::vector<kad::Contact>* >()))
         .WillOnce(DoAll(testing::SetArgumentPointee<1>(chunk_info_holders),
             testing::Return(kSuccess)));  // Calls 3 to 9
@@ -772,7 +772,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AssessUploadCounts) {
       add_to_watchlist_data(new WatchListOpData(store_data));
   for (size_t i = 0; i < kad::K; ++i) {
     WatchListOpData::AddToWatchDataHolder
-        hldr(crypto_.Hash(base::itos(i * i), "", crypto::STRING_STRING, false));
+        hldr(crypto_.Hash(base::IntToString(i * i), "", crypto::STRING_STRING, false));
     add_to_watchlist_data->add_to_watchlist_data_holders.push_back(hldr);
   }
 
@@ -782,7 +782,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AssessUploadCounts) {
   // All return upload_copies == 2
   ++test_run;  // 1
   for (int i = 0; i < kad::K; ++i) {
-    SCOPED_TRACE("Test " + base::itos(test_run) +" -- Resp " + base::itos(i));
+    SCOPED_TRACE("Test " + base::IntToString(test_run) +" -- Resp " + base::IntToString(i));
     add_to_watchlist_data->required_upload_copies.insert(2);
     ++add_to_watchlist_data->returned_count;
     if (i < kKadUpperThreshold - 1) {
@@ -801,7 +801,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AssessUploadCounts) {
   add_to_watchlist_data->required_upload_copies.clear();
   add_to_watchlist_data->consensus_upload_copies = -1;
   for (int i = 0; i < kad::K; ++i) {
-    SCOPED_TRACE("Test " + base::itos(test_run) +" -- Resp " + base::itos(i));
+    SCOPED_TRACE("Test " + base::IntToString(test_run) +" -- Resp " + base::IntToString(i));
     add_to_watchlist_data->required_upload_copies.insert(0);
     ++add_to_watchlist_data->returned_count;
     if (i < kKadUpperThreshold - 1) {
@@ -827,7 +827,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AssessUploadCounts) {
   add_to_watchlist_data->required_upload_copies.clear();
   add_to_watchlist_data->consensus_upload_copies = -1;
   for (int i = 0; i < kad::K; ++i) {
-    SCOPED_TRACE("Test " + base::itos(test_run) +" -- Resp " + base::itos(i));
+    SCOPED_TRACE("Test " + base::IntToString(test_run) +" -- Resp " + base::IntToString(i));
     if (i < minority_threshold)
       add_to_watchlist_data->required_upload_copies.insert(0);
     else
@@ -851,7 +851,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AssessUploadCounts) {
   add_to_watchlist_data->required_upload_copies.clear();
   add_to_watchlist_data->consensus_upload_copies = -1;
   for (int i = 0; i < kad::K; ++i) {
-    SCOPED_TRACE("Test " + base::itos(test_run) +" -- Resp " + base::itos(i));
+    SCOPED_TRACE("Test " + base::IntToString(test_run) +" -- Resp " + base::IntToString(i));
     add_to_watchlist_data->required_upload_copies.insert(result_group);
     ++add_to_watchlist_data->returned_count;
     if (i == minority_threshold * result_group - 1) {
@@ -874,7 +874,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AssessUploadCounts) {
   add_to_watchlist_data->required_upload_copies.clear();
   add_to_watchlist_data->consensus_upload_copies = -1;
   for (int i = 0; i < kad::K; ++i) {
-    SCOPED_TRACE("Test " + base::itos(test_run) +" -- Resp " + base::itos(i));
+    SCOPED_TRACE("Test " + base::IntToString(test_run) +" -- Resp " + base::IntToString(i));
     if (i < minority_threshold)
       add_to_watchlist_data->required_upload_copies.insert(i);
     else
@@ -897,7 +897,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AssessUploadCounts) {
   add_to_watchlist_data->required_upload_copies.clear();
   add_to_watchlist_data->consensus_upload_copies = -1;
   for (int i = 0; i < kKadLowerThreshold; ++i) {
-    SCOPED_TRACE("Test " + base::itos(test_run) +" -- Resp " + base::itos(i));
+    SCOPED_TRACE("Test " + base::IntToString(test_run) +" -- Resp " + base::IntToString(i));
     add_to_watchlist_data->required_upload_copies.insert(2);
     ++add_to_watchlist_data->returned_count;
     if (i < kKadLowerThreshold - 1) {
@@ -916,7 +916,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AssessUploadCounts) {
   add_to_watchlist_data->required_upload_copies.clear();
   add_to_watchlist_data->consensus_upload_copies = -1;
   for (int i = 0; i < kKadLowerThreshold; ++i) {
-    SCOPED_TRACE("Test " + base::itos(test_run) +" -- Resp " + base::itos(i));
+    SCOPED_TRACE("Test " + base::IntToString(test_run) +" -- Resp " + base::IntToString(i));
     if (i == 0)
       add_to_watchlist_data->required_upload_copies.insert(2);
     else
@@ -939,7 +939,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AssessUploadCounts) {
   add_to_watchlist_data->required_upload_copies.clear();
   add_to_watchlist_data->consensus_upload_copies = -1;
   for (int i = 0; i < kKadLowerThreshold - 1; ++i) {
-    SCOPED_TRACE("Test " + base::itos(test_run) +" -- Resp " + base::itos(i));
+    SCOPED_TRACE("Test " + base::IntToString(test_run) +" -- Resp " + base::IntToString(i));
     add_to_watchlist_data->required_upload_copies.insert(2);
     ++add_to_watchlist_data->returned_count;
     if (i < kKadLowerThreshold - 2) {
@@ -961,7 +961,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_GetStoreRequests) {
   // Make chunk/packet names
   std::vector<std::string> names;
   for (int i = 100; i < 104; ++i) {
-    std::string j(base::itos(i));
+    std::string j(base::IntToString(i));
     names.push_back(crypto_.Hash(j, "", crypto::STRING_STRING, false));
   }
   boost::shared_ptr<SendChunkData> send_chunk_data(
@@ -1018,7 +1018,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_GetStoreRequests) {
       public_key_signature + names.at(0) + recipient_id, "",
       crypto::STRING_STRING, false), "", rsakp.private_key(),
       crypto::STRING_STRING);
-  std::string size_signature = crypto_.AsymSign(base::itos_ull(3), "",
+  std::string size_signature = crypto_.AsymSign(boost::lexical_cast<std::string>(3), "",
       rsakp.private_key(), crypto::STRING_STRING);
 
   ASSERT_EQ(names.at(0), store_prep_request.chunkname());
@@ -1076,7 +1076,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_GetStoreRequests) {
   request_signature = crypto_.AsymSign(crypto_.Hash(
       mpid_pub_sig + names.at(1) + recipient_id, "", crypto::STRING_STRING,
       false), "", mpid_pri, crypto::STRING_STRING);
-  size_signature = crypto_.AsymSign(base::itos_ull(3), "", mpid_pri,
+  size_signature = crypto_.AsymSign(boost::lexical_cast<std::string>(3), "", mpid_pri,
       crypto::STRING_STRING);
 
   ASSERT_EQ(names.at(1), store_prep_request.chunkname());
@@ -1137,7 +1137,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_GetStoreRequests) {
       client_pmid_public_signature_ + names.at(3) + recipient_id, "",
       crypto::STRING_STRING, false), "", client_pmid_keys_.private_key(),
       crypto::STRING_STRING);
-  size_signature = crypto_.AsymSign(base::itos_ull(3), "",
+  size_signature = crypto_.AsymSign(boost::lexical_cast<std::string>(3), "",
       client_pmid_keys_.private_key(), crypto::STRING_STRING);
 
   ASSERT_EQ(names.at(3), store_prep_request.chunkname());
@@ -1625,9 +1625,9 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_RemoveFromWatchList) {
   // Set up data for calls to FindKNodes
   std::vector<kad::Contact> chunk_info_holders, few_chunk_info_holders;
   for (boost::uint16_t i = 0; i < kad::K; ++i) {
-    kad::Contact contact(crypto_.Hash(base::itos(i * i), "",
-        crypto::STRING_STRING, false), "192.168.10." + base::itos(i), 8000 + i,
-        "192.168.10." + base::itos(i), 8000 + i);
+    kad::Contact contact(crypto_.Hash(base::IntToString(i * i), "",
+        crypto::STRING_STRING, false), "192.168.10." + base::IntToString(i), 8000 + i,
+        "192.168.10." + base::IntToString(i), 8000 + i);
     chunk_info_holders.push_back(contact);
     if (i < kKadUpperThreshold - 1)
       few_chunk_info_holders.push_back(contact);
@@ -1637,18 +1637,18 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_RemoveFromWatchList) {
   // Set expectations
   EXPECT_CALL(*mko, AddressIsLocal(testing::An<const kad::Contact&>()))
       .WillRepeatedly(testing::Return(true));
-  EXPECT_CALL(*mko, FindCloseNodes(kad::KadId(chunk_names.at(1), false),
+  EXPECT_CALL(*mko, FindKClosestNodes(kad::KadId(chunk_names.at(1), false),
                                    testing::An< std::vector<kad::Contact>* >()))
       .WillOnce(DoAll(testing::SetArgumentPointee<1>(chunk_info_holders),
           testing::Return(-1)));  // Call 2
 
-  EXPECT_CALL(*mko, FindCloseNodes(kad::KadId(chunk_names.at(2), false),
+  EXPECT_CALL(*mko, FindKClosestNodes(kad::KadId(chunk_names.at(2), false),
                                    testing::An< std::vector<kad::Contact>* >()))
       .WillOnce(DoAll(testing::SetArgumentPointee<1>(few_chunk_info_holders),
           testing::Return(kSuccess)));  // Call 3
 
   for (int i = 3; i < 7; ++i) {
-    EXPECT_CALL(*mko, FindCloseNodes(kad::KadId(chunk_names.at(i), false),
+    EXPECT_CALL(*mko, FindKClosestNodes(kad::KadId(chunk_names.at(i), false),
         testing::An< std::vector<kad::Contact>* >()))
         .WillOnce(DoAll(testing::SetArgumentPointee<1>(chunk_info_holders),
             testing::Return(kSuccess)));  // Calls 4 to 7
@@ -2065,7 +2065,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_StoreExistingPacket) {
   // Set up vector of existing values
   std::vector<std::string> existing_values;
   for (size_t i = 0; i < kExistingValueCount; ++i)
-    existing_values.push_back("ExistingValue" + base::itos(i));
+    existing_values.push_back("ExistingValue" + base::IntToString(i));
 
   // Set up expectations
   EXPECT_CALL(*mko, FindValue(kad::KadId(packet_name, false), true, testing::_,
@@ -2201,7 +2201,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_LoadPacket) {
   find_response.set_result(kad::kRpcResultFailure);
   for (size_t i = 0; i < kValueCount; ++i) {
     kad::SignedValue *sig_val = find_response.add_signed_values();
-    sig_val->set_value("Value" + base::itos(i));
+    sig_val->set_value("Value" + base::IntToString(i));
     sig_val->set_value_signature("Sig");
   }
   find_response.SerializeToString(&ser_result_fail);
@@ -2347,7 +2347,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_DeletePacket) {
   const size_t kValueCount(5);
   std::vector<std::string> packet_values, single_value;
   for (size_t i = 0; i < kValueCount; ++i)
-    packet_values.push_back("Value" + base::itos(i));
+    packet_values.push_back("Value" + base::IntToString(i));
   single_value.push_back("Value");
 
   // Set up serialised Kademlia delete responses
@@ -2483,9 +2483,9 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_GetAccountDetails) {
   // Set up data for calls to FindKNodes
   std::vector<kad::Contact> account_holders, few_account_holders;
   for (boost::uint16_t i = 0; i < kad::K; ++i) {
-    kad::Contact contact(crypto_.Hash(base::itos(i * i), "",
-        crypto::STRING_STRING, false), "192.168.10." + base::itos(i), 8000 + i,
-        "192.168.10." + base::itos(i), 8000 + i);
+    kad::Contact contact(crypto_.Hash(base::IntToString(i * i), "",
+        crypto::STRING_STRING, false), "192.168.10." + base::IntToString(i), 8000 + i,
+        "192.168.10." + base::IntToString(i), 8000 + i);
     account_holders.push_back(contact);
     if (i < kKadUpperThreshold - 1)
       few_account_holders.push_back(contact);
@@ -2498,7 +2498,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_GetAccountDetails) {
   // Set expectations
   EXPECT_CALL(*mko, AddressIsLocal(testing::An<const kad::Contact&>()))
       .WillRepeatedly(testing::Return(true));
-  EXPECT_CALL(*mko, FindCloseNodes(kad::KadId(account_name, false),
+  EXPECT_CALL(*mko, FindKClosestNodes(kad::KadId(account_name, false),
                                    testing::An< std::vector<kad::Contact>* >()))
       .Times(7)
       .WillOnce(DoAll(testing::SetArgumentPointee<1>(account_holders),
@@ -2671,9 +2671,9 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_GetFilteredAverage) {
   // Set up data for calls to FindKNodes
   std::vector<kad::Contact> account_holders, few_account_holders;
   for (boost::uint16_t i = 0; i < kad::K; ++i) {
-    kad::Contact contact(crypto_.Hash(base::itos(i * i), "",
-        crypto::STRING_STRING, false), "192.168.10." + base::itos(i), 8000 + i,
-        "192.168.10." + base::itos(i), 8000 + i);
+    kad::Contact contact(crypto_.Hash(base::IntToString(i * i), "",
+        crypto::STRING_STRING, false), "192.168.10." + base::IntToString(i), 8000 + i,
+        "192.168.10." + base::IntToString(i), 8000 + i);
     account_holders.push_back(contact);
     if (i >= kKadStoreThreshold)
       few_account_holders.push_back(contact);

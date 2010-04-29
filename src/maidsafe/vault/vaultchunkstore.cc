@@ -64,7 +64,7 @@ int VaultChunkStore::LoadRandomChunk(std::string *key, std::string *value) {
   }
   if (!hashable_count)  // i.e. there are no chunks available
     return kChunkstoreError;
-  int randindex = static_cast<int>(base::random_32bit_uinteger()
+  int randindex = static_cast<int>(base::RandomUint32()
       % hashable_count);
   {
     boost::mutex::scoped_lock lock(chunkstore_set_mutex_);

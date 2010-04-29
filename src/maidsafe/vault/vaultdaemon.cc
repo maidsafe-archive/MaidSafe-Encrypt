@@ -122,7 +122,7 @@ bool VaultDaemon::TakeOwnership() {
   WriteToLog("Vault has been owned.\n");
   WriteToLog("Vault ID:         " + base::EncodeToHex(pdvault_->node_id()));
   WriteToLog("Vault IP & port:  " + pdvault_->host_ip()+":"+
-      base::itos(pdvault_->host_port()));
+      base::IntToString(pdvault_->host_port()));
   StopRegistrationService();
   return true;
 }
@@ -146,17 +146,17 @@ int VaultDaemon::SetPaths() {
 }
 
 void VaultDaemon::SyncVault() {
-  base::callback_func_type cb;
+  kad::VoidFunctorOneString cb;
   pdvault_->SyncVault(cb);
 }
 
 void VaultDaemon::RepublishChunkRef() {
-  base::callback_func_type cb;
+  kad::VoidFunctorOneString cb;
   pdvault_->RepublishChunkRef(cb);
 }
 
 void VaultDaemon::ValidityCheck() {
-//  base::callback_func_type cb;
+//  kad::VoidFunctorOneString cb;
 //  pdvault_->ValidityCheck(cb);
 }
 
@@ -183,8 +183,8 @@ bool VaultDaemon::StartVault() {
         registration_service_->GetDescriptor()->name(),
         registration_channel_.get());
     if (0 != transport_handler_.StartLocal(kLocalPort,
-                                           local_udt_transport_.GetID())) {
-      WriteToLog("Failed to start transport on port " + base::itos(kLocalPort));
+                                           local_udt_transport_.transport_id())) {
+      WriteToLog("Failed to start transport on port " + base::IntToString(kLocalPort));
       channel_manager_.ClearChannels();
       started_registration_service = false;
     }
@@ -297,7 +297,7 @@ bool VaultDaemon::StartNotOwnedVault() {
   }
   WriteToLog("Vault ID:         " + base::EncodeToHex(pdvault_->node_id()));
   WriteToLog("Vault IP & port:  " + pdvault_->host_ip() + ":" +
-             base::itos(pdvault_->host_port()));
+             base::IntToString(pdvault_->host_port()));
   WriteToLog("Config file will be written to " + config_file_.string());
   return true;
 }

@@ -25,9 +25,9 @@
 #include "maidsafe/client/maidstoremanager.h"
 
 #include <boost/filesystem/fstream.hpp>
-#include <maidsafe/general_messages.pb.h>
-#include <maidsafe/kademlia_service_messages.pb.h>
-#include <maidsafe/transporthandler-api.h>
+#include <maidsafe/protobuf/general_messages.pb.h>
+#include <maidsafe/protobuf/kademlia_service_messages.pb.h>
+#include <maidsafe/transport/transporthandler-api.h>
 
 #include "fs/filesystem.h"
 #include "maidsafe/bufferpacketrpc.h"
@@ -99,11 +99,11 @@ MaidsafeStoreManager::MaidsafeStoreManager(boost::shared_ptr<ChunkStore> cstore)
       im_notifier_(), im_status_notifier_(), im_conn_hdler_(),
       im_handler_(ss_) {
   transport_handler_.Register(&udt_transport_, &trans_id_);
-  knode_->SetTransID(trans_id_);
-  knode_->SetAlternativeStore(client_chunkstore_.get());
+  knode_->set_transport_id(trans_id_);
+  knode_->set_alternative_store(client_chunkstore_.get());
 }
 
-void MaidsafeStoreManager::Init(int port, base::callback_func_type cb,
+void MaidsafeStoreManager::Init(int port, kad::VoidFunctorOneString cb,
                                 fs::path) {
   // If kad config file exists in dir we're in, use that, otherwise get default
   // path to file.
@@ -133,7 +133,7 @@ void MaidsafeStoreManager::Init(int port, base::callback_func_type cb,
         &IMConnectionHandler::OnMessageArrive, &im_conn_hdler_,
         _1, _2, _3, _4));
   if (success)
-    success = (transport_handler_.Start(port, udt_transport_.GetID()) == 0);
+    success = (transport_handler_.Start(port, udt_transport_.transport_id()) == 0);
   if (success)
     success = (channel_manager_.Start() == 0);
   if (success) {
@@ -178,7 +178,7 @@ void MaidsafeStoreManager::Init(int port, base::callback_func_type cb,
 #endif
 }
 
-void MaidsafeStoreManager::Close(base::callback_func_type cb, bool) {
+void MaidsafeStoreManager::Close(kad::VoidFunctorOneString cb, bool) {
 #ifdef DEBUG
 //  printf("\tIn MaidsafeStoreManager::Close, before Leave.\n");
 #endif
@@ -435,7 +435,7 @@ int MaidsafeStoreManager::LoadChunk(const std::string &chunk_name,
           opdata);
       client_rpcs_->CheckChunk(opdata->chunk_holder_contacts[*it],
           kad_ops_->AddressIsLocal(opdata->chunk_holder_contacts[*it]),
-          udt_transport_.GetID(), &request, &opdata->check_responses[rsp_idx],
+          udt_transport_.transport_id(), &request, &opdata->check_responses[rsp_idx],
           controller.get(), callback);
 
       opdata->chunk_holders[kHolderPending].insert(*it);
@@ -450,7 +450,7 @@ int MaidsafeStoreManager::LoadChunk(const std::string &chunk_name,
 //      printf("In MSM::LoadChunk, looking up holder %s...\n",
 //             HexSubstr(*it).c_str());
 #endif
-      kad_ops_->FindNode(kad::KadId(*it, false), boost::bind(
+      kad_ops_->GetNodeContactDetails(kad::KadId(*it, false), boost::bind(
             &MaidsafeStoreManager::LoadChunk_HolderCB, this, _1, *it, opdata),
             false);
       opdata->chunk_holders[kHolderPending].insert(*it);
@@ -498,7 +498,7 @@ int MaidsafeStoreManager::LoadChunk(const std::string &chunk_name,
             opdata->chunk_info_holders[opdata->idx_info],
             kad_ops_->AddressIsLocal(
                 opdata->chunk_info_holders[opdata->idx_info]),
-            udt_transport_.GetID(), &request, &opdata->ref_responses.back(),
+            udt_transport_.transport_id(), &request, &opdata->ref_responses.back(),
             controller.get(), callback);
       }
     }
@@ -507,7 +507,7 @@ int MaidsafeStoreManager::LoadChunk(const std::string &chunk_name,
   // cancel all outstanding RPCs
   for (std::list< boost::shared_ptr<rpcprotocol::Controller> >::iterator it =
        opdata->controllers.begin(); it != opdata->controllers.end(); ++it) {
-    channel_manager_.CancelPendingRequest((*it)->req_id());
+    channel_manager_.CancelPendingRequest((*it)->request_id());
     // opdata->controllers.erase(it);
   }
 
@@ -1072,7 +1072,7 @@ int MaidsafeStoreManager::GetAccountDetails(boost::uint64_t *space_offered,
 
   // Find the account holders
   boost::shared_ptr<AccountStatusData> data(new AccountStatusData);
-  int rslt = kad_ops_->FindCloseNodes(kad::KadId(account_name, false),
+  int rslt = kad_ops_->FindKClosestNodes(kad::KadId(account_name, false),
                                       &data->contacts);
   if (rslt != kSuccess) {
 #ifdef DEBUG
@@ -1118,7 +1118,7 @@ int MaidsafeStoreManager::GetAccountDetails(boost::uint64_t *space_offered,
     google::protobuf::Closure* callback = google::protobuf::NewCallback(this,
         &MaidsafeStoreManager::AccountStatusCallback, data);
     client_rpcs_->AccountStatus(data->contacts.at(i),
-        kad_ops_->AddressIsLocal(data->contacts.at(i)), udt_transport_.GetID(),
+        kad_ops_->AddressIsLocal(data->contacts.at(i)), udt_transport_.transport_id(),
         &account_status_requests.at(i), &data->data_holders.at(i).response,
         data->data_holders.at(i).controller.get(), callback);
   }
@@ -1153,7 +1153,7 @@ int MaidsafeStoreManager::GetAccountDetails(boost::uint64_t *space_offered,
     } else {
       // cancel outstanding RPCs
       channel_manager_.
-          CancelPendingRequest(holder.controller->req_id());
+          CancelPendingRequest(holder.controller->request_id());
     }
   }
 
@@ -1339,7 +1339,7 @@ int MaidsafeStoreManager::CreateBP() {
   cbph_.CreateBufferPacket(bpip,
                            boost::bind(&MaidsafeStoreManager::ModifyBpCallback,
                                        this, _1, bp_results),
-                           udt_transport_.GetID());
+                           udt_transport_.transport_id());
   while (!local_done) {
     boost::this_thread::sleep(boost::posix_time::milliseconds(200));
     {
@@ -1367,7 +1367,7 @@ int MaidsafeStoreManager::ModifyBPInfo(const std::string &info) {
   cbph_.ModifyOwnerInfo(bpip, users,
                         boost::bind(&MaidsafeStoreManager::ModifyBpCallback,
                                     this, _1, bp_results),
-                        udt_transport_.GetID());
+                        udt_transport_.transport_id());
   while (!local_done) {
     boost::this_thread::sleep(boost::posix_time::milliseconds(200));
     {
@@ -1390,7 +1390,7 @@ int MaidsafeStoreManager::LoadBPMessages(
   cbph_.GetMessages(bpip,
                     boost::bind(&MaidsafeStoreManager::LoadMessagesCallback,
                                 this, _1, _2, _3, bpm),
-                    udt_transport_.GetID());
+                    udt_transport_.transport_id());
   bool local_done(false);
   while (!local_done) {
     boost::this_thread::sleep(boost::posix_time::milliseconds(200));
@@ -1456,7 +1456,7 @@ int MaidsafeStoreManager::SendMessage(
                      ss_->GetContactPublicKey(recs[i]), recs[i], message, type,
                      boost::bind(&MaidsafeStoreManager::AddToBpCallback,
                                  this, _1, recs[i], bp_results),
-                     udt_transport_.GetID());
+                     udt_transport_.transport_id());
   }
 
   // TODO(Steve#) replace with conditional variable
@@ -1489,7 +1489,7 @@ int MaidsafeStoreManager::LoadBPPresence(std::list<LivePresence> *messages) {
   cbph_.GetPresence(bpip,
                     boost::bind(&MaidsafeStoreManager::LoadPresenceCallback,
                                 this, _1, _2, _3, bp_pm),
-                    udt_transport_.GetID());
+                    udt_transport_.transport_id());
 
   bool local_done(false);
   while (!local_done) {
@@ -1546,7 +1546,7 @@ int MaidsafeStoreManager::AddBPPresence(
                       ss_->GetContactPublicKey(recs[a]), recs[a],
                       boost::bind(&MaidsafeStoreManager::AddToBpCallback, this,
                                   _1, recs[a], bp_results),
-                      udt_transport_.GetID());
+                      udt_transport_.transport_id());
   }
 
   while (local_count < recs.size()) {
@@ -1596,7 +1596,7 @@ void MaidsafeStoreManager::AddToWatchList(StoreData store_data) {
   }
   // Find the Chunk Info holders
   boost::shared_ptr<WatchListOpData> data(new WatchListOpData(store_data));
-  int result = kad_ops_->FindCloseNodes(kad::KadId(store_data.data_name, false),
+  int result = kad_ops_->FindKClosestNodes(kad::KadId(store_data.data_name, false),
                                         &data->contacts);
   if (result != kSuccess) {
 #ifdef DEBUG
@@ -1638,7 +1638,7 @@ void MaidsafeStoreManager::AddToWatchList(StoreData store_data) {
     google::protobuf::Closure* callback = google::protobuf::NewCallback(this,
         &MaidsafeStoreManager::AddToWatchListCallback, j, data);
     client_rpcs_->AddToWatchList(data->contacts.at(j),
-        kad_ops_->AddressIsLocal(data->contacts.at(j)), udt_transport_.GetID(),
+        kad_ops_->AddressIsLocal(data->contacts.at(j)), udt_transport_.transport_id(),
         &add_to_watch_list_requests.at(j),
         &data->add_to_watchlist_data_holders.at(j).response,
         data->add_to_watchlist_data_holders.at(j).controller.get(), callback);
@@ -1892,7 +1892,7 @@ int MaidsafeStoreManager::GetStoreRequests(
   } else {
     crypto::Crypto co;
     co.set_symm_algorithm(crypto::AES_256);
-    mutable_signed_size->set_signature(co.AsymSign(base::itos_ull(chunk_size),
+    mutable_signed_size->set_signature(co.AsymSign(boost::lexical_cast<std::string>(chunk_size),
         "", store_data.private_key, crypto::STRING_STRING));
     mutable_signed_size->set_public_key(store_data.public_key);
     mutable_signed_size->set_public_key_signature(
@@ -1922,7 +1922,7 @@ int MaidsafeStoreManager::GetAddToWatchListRequests(
   SignedSize *mutable_signed_size = request.mutable_signed_size();
   mutable_signed_size->set_data_size(store_data.size);
   mutable_signed_size->set_signature(co.AsymSign(
-      base::itos_ull(store_data.size), "", store_data.private_key,
+      boost::lexical_cast<std::string>(store_data.size), "", store_data.private_key,
       crypto::STRING_STRING));
   mutable_signed_size->set_pmid(store_data.key_id);
   mutable_signed_size->set_public_key(store_data.public_key);
@@ -2035,8 +2035,8 @@ int MaidsafeStoreManager::SendChunkPrep(const StoreData &store_data) {
 //  // Get peer
 // TODO(Fraser#5#): 2009-08-14 - Uncomment lines below
 //  if (first) {  // set largest_rtt from first peer
-//    base::PDRoutingTableTuple peer_details;
-//    if ((*base::PDRoutingTable::getInstance())[boost::lexical_cast<
+//    base::PublicRoutingTableTuple peer_details;
+//    if ((*base::PublicRoutingTable::GetInstance())[boost::lexical_cast<
 //        std::string>(knode_.host_port())]->GetTupleInfo(peer.node_id(),
 //            &peer_details) != kSuccess) {
 //      set largest rtt via tasks_handler_.SetRtt
@@ -2095,7 +2095,7 @@ int MaidsafeStoreManager::SendChunkPrep(const StoreData &store_data) {
       &MaidsafeStoreManager::SendPrepCallback, send_chunk_data);
   client_rpcs_->StorePrep(peer,
                           local,
-                          udt_transport_.GetID(),
+                          udt_transport_.transport_id(),
                           &send_chunk_data->store_prep_request,
                           &send_chunk_data->store_prep_response,
                           send_chunk_data->controller.get(),
@@ -2130,7 +2130,7 @@ void MaidsafeStoreManager::SendPrepCallback(
     send_chunk_data->store_prep_response.Clear();
     client_rpcs_->StorePrep(send_chunk_data->peer,
                             send_chunk_data->local,
-                            udt_transport_.GetID(),
+                            udt_transport_.transport_id(),
                             &send_chunk_data->store_prep_request,
                             &send_chunk_data->store_prep_response,
                             send_chunk_data->controller.get(),
@@ -2211,7 +2211,7 @@ int MaidsafeStoreManager::SendChunkContent(
       &MaidsafeStoreManager::SendContentCallback, send_chunk_data);
   client_rpcs_->StoreChunk(send_chunk_data->peer,
                            send_chunk_data->local,
-                           udt_transport_.GetID(),
+                           udt_transport_.transport_id(),
                            &send_chunk_data->store_chunk_request,
                            &send_chunk_data->store_chunk_response,
                            send_chunk_data->controller.get(),
@@ -2297,7 +2297,7 @@ void MaidsafeStoreManager::SendContentCallback(
     send_chunk_data->store_chunk_response.Clear();
     client_rpcs_->StoreChunk(send_chunk_data->peer,
                              send_chunk_data->local,
-                             udt_transport_.GetID(),
+                             udt_transport_.transport_id(),
                              &send_chunk_data->store_chunk_request,
                              &send_chunk_data->store_chunk_response,
                              send_chunk_data->controller.get(),
@@ -2344,7 +2344,7 @@ void MaidsafeStoreManager::RemoveFromWatchList(const StoreData &store_data) {
   }
   // Find the Chunk Info holders
   boost::shared_ptr<WatchListOpData> data(new WatchListOpData(store_data));
-  int result = kad_ops_->FindCloseNodes(kad::KadId(store_data.data_name, false),
+  int result = kad_ops_->FindKClosestNodes(kad::KadId(store_data.data_name, false),
                                         &data->contacts);
   if (result != kSuccess) {
 #ifdef DEBUG
@@ -2387,7 +2387,7 @@ void MaidsafeStoreManager::RemoveFromWatchList(const StoreData &store_data) {
     google::protobuf::Closure* callback = google::protobuf::NewCallback(this,
         &MaidsafeStoreManager::RemoveFromWatchListCallback, j, data);
     client_rpcs_->RemoveFromWatchList(data->contacts.at(j),
-        kad_ops_->AddressIsLocal(data->contacts.at(j)), udt_transport_.GetID(),
+        kad_ops_->AddressIsLocal(data->contacts.at(j)), udt_transport_.transport_id(),
         &remove_from_watch_list_requests.at(j),
         &data->remove_from_watchlist_data_holders.at(j).response,
         data->remove_from_watchlist_data_holders.at(j).controller.get(),
@@ -2463,7 +2463,7 @@ int MaidsafeStoreManager::GetChunk(const std::string &chunk_name,
   {
     boost::mutex::scoped_lock lock(mutex);
     client_rpcs_->GetChunk(chunk_holder, kad_ops_->AddressIsLocal(chunk_holder),
-        udt_transport_.GetID(), &request, &response, &controller, callback);
+        udt_transport_.transport_id(), &request, &response, &controller, callback);
     while (!done)
       condition.wait(lock);
   }
@@ -2561,7 +2561,7 @@ void MaidsafeStoreManager::SendPacket(boost::shared_ptr<StoreData> store_data) {
   sr.set_public_key(store_data->public_key);
   sr.set_signed_public_key(store_data->public_key_signature);
   sr.set_signed_request(signed_request);
-  base::callback_func_type cb = boost::bind(
+  kad::VoidFunctorOneString cb = boost::bind(
       &MaidsafeStoreManager::SendPacketCallback, this, _1, store_data);
   knode_->StoreValue(kad::KadId(store_data->data_name, false), signed_value, sr,
       31556926, cb);
@@ -2618,7 +2618,7 @@ void MaidsafeStoreManager::DeletePacketFromNet(
   crypto::Crypto co;
   co.set_symm_algorithm(crypto::AES_256);
   co.set_hash_algorithm(crypto::SHA_512);
-  base::callback_func_type cb = boost::bind(
+  kad::VoidFunctorOneString cb = boost::bind(
       &MaidsafeStoreManager::DeletePacketCallback, this, _1, delete_data);
   boost::mutex::scoped_lock lock(delete_data->mutex);
   for (size_t i = 0; i < delete_data->values.size(); ++i) {
@@ -2681,14 +2681,14 @@ void MaidsafeStoreManager::DeletePacketCallback(
   }
 }
 
-void MaidsafeStoreManager::PollVaultInfo(base::callback_func_type cb) {
+void MaidsafeStoreManager::PollVaultInfo(kad::VoidFunctorOneString cb) {
   VaultCommunication vc;
   vc.set_chunkstore("YES");
   vc.set_offered_space(0);
   vc.set_free_space(0);
   vc.set_ip("YES");
   vc.set_port(0);
-  vc.set_timestamp(base::get_epoch_time());
+  vc.set_timestamp(base::GetEpochTime());
   std::string ser_vc;
   vc.SerializeToString(&ser_vc);
   crypto::Crypto co;
@@ -2697,12 +2697,12 @@ void MaidsafeStoreManager::PollVaultInfo(base::callback_func_type cb) {
   VaultStatusResponse vault_status_response;
   google::protobuf::Closure *done =
       google::protobuf::NewCallback<MaidsafeStoreManager,
-      const VaultStatusResponse*, base::callback_func_type>
+      const VaultStatusResponse*, kad::VoidFunctorOneString>
       (this, &MaidsafeStoreManager::PollVaultInfoCallback,
       &vault_status_response, cb);
   rpcprotocol::Controller *controller = new rpcprotocol::Controller;
   rpcprotocol::Channel *channel = new rpcprotocol::Channel(
-      &channel_manager_, &transport_handler_, udt_transport_.GetID(),
+      &channel_manager_, &transport_handler_, udt_transport_.transport_id(),
       ss_->VaultIP(), ss_->VaultPort(), "", 0, "", 0);
   client_rpcs_->PollVaultInfo(enc_ser_vc, &vault_status_response, controller,
       channel, done);
@@ -2710,7 +2710,7 @@ void MaidsafeStoreManager::PollVaultInfo(base::callback_func_type cb) {
 
 void MaidsafeStoreManager::PollVaultInfoCallback(
     const VaultStatusResponse *response,
-    base::callback_func_type cb) {
+    kad::VoidFunctorOneString cb) {
   std::string result;
   if (!response->IsInitialized()) {
     cb("FAIL");
@@ -2742,8 +2742,8 @@ void MaidsafeStoreManager::PollVaultInfoCallback(
   cb(ser_vc);
 }
 
-void MaidsafeStoreManager::VaultContactInfo(base::callback_func_type cb) {
-  kad_ops_->FindNode(kad::KadId(ss_->Id(PMID), false), cb, false);
+void MaidsafeStoreManager::VaultContactInfo(kad::VoidFunctorOneString cb) {
+  kad_ops_->GetNodeContactDetails(kad::KadId(ss_->Id(PMID), false), cb, false);
 }
 
 void MaidsafeStoreManager::SetLocalVaultOwned(
@@ -2767,7 +2767,7 @@ void MaidsafeStoreManager::SetLocalVaultOwned(
   request.set_vault_dir(vault_dir);
   request.set_space(space);
   rpcprotocol::Channel channel(&channel_manager_, &transport_handler_,
-                               udt_transport_.GetID(), "127.0.0.1", kLocalPort,
+                               udt_transport_.transport_id(), "127.0.0.1", kLocalPort,
                                "", 0, "", 0);
   google::protobuf::Closure *done = google::protobuf::NewCallback(this,
       &MaidsafeStoreManager::SetLocalVaultOwnedCallback, cb_args);
@@ -2797,7 +2797,7 @@ void MaidsafeStoreManager::LocalVaultOwned(
   boost::shared_ptr<LocalVaultOwnedCallbackArgs>
       cb_args(new LocalVaultOwnedCallbackArgs(functor));
   rpcprotocol::Channel channel(&channel_manager_, &transport_handler_,
-                               udt_transport_.GetID(), "127.0.0.1", kLocalPort,
+                               udt_transport_.transport_id(), "127.0.0.1", kLocalPort,
                                "", 0, "", 0);
   google::protobuf::Closure *done = google::protobuf::NewCallback(this,
       &MaidsafeStoreManager::LocalVaultOwnedCallback, cb_args);
@@ -2841,7 +2841,7 @@ int MaidsafeStoreManager::CreateAccount(const boost::uint64_t &space) {
 
   // Find the account holders
   boost::shared_ptr<AmendAccountData> data(new AmendAccountData);
-  int n = kad_ops_->FindCloseNodes(kad::KadId(account_name, false),
+  int n = kad_ops_->FindKClosestNodes(kad::KadId(account_name, false),
                                    &data->contacts);
   if (n != kSuccess) {
 #ifdef DEBUG
@@ -2867,7 +2867,8 @@ int MaidsafeStoreManager::CreateAccount(const boost::uint64_t &space) {
   SignedSize *mutable_signed_size = request.mutable_signed_size();
   mutable_signed_size->set_data_size(space);
   mutable_signed_size->set_pmid(ss_->Id(PMID));
-  mutable_signed_size->set_signature(co.AsymSign(base::itos_ull(space),
+  mutable_signed_size->set_signature(
+      co.AsymSign(boost::lexical_cast<std::string>(space),
                                      "", ss_->PrivateKey(PMID),
                                      crypto::STRING_STRING));
   mutable_signed_size->set_public_key(ss_->PublicKey(PMID));
@@ -2902,7 +2903,7 @@ int MaidsafeStoreManager::CreateAccount(const boost::uint64_t &space) {
   // kill all remaining RPCs before the data object is destroyed
   for (size_t i = 0; i < data->contacts.size(); ++i) {
     channel_manager_.CancelPendingRequest(
-      data->data_holders.at(i).controller->req_id());
+      data->data_holders.at(i).controller->request_id());
   }
 
   if (data->success_count < kKadUpperThreshold) {
@@ -3152,10 +3153,10 @@ void MaidsafeStoreManager::SetSessionEndPoint() {
   EndPoint ep;
   ep.add_ip(knode_->host_ip());
   ep.add_ip(knode_->local_host_ip());
-  ep.add_ip(knode_->rv_ip());
+  ep.add_ip(knode_->rendezvous_ip());
   ep.add_port(knode_->host_port());
   ep.add_port(knode_->local_host_port());
-  ep.add_port(knode_->rv_port());
+  ep.add_port(knode_->rendezvous_port());
   ss_->SetEp(ep);
 }
 

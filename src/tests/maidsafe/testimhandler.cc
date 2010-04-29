@@ -123,7 +123,7 @@ TEST_F(ImHandlerTest, BEH_MAID_Create_ValidateMsg) {
   maidsafe::InstantMessage im;
   im.set_sender(ss_->PublicUsername());
   im.set_message("testmsg");
-  im.set_date(base::get_epoch_time());
+  im.set_date(base::GetEpochTime());
   std::string ser_msg = imhandler_.CreateMessage(im.SerializeAsString(),
     "contact1");
 
@@ -188,12 +188,12 @@ TEST_F(ImHandlerTest, BEH_MAID_ValidateMsgs) {
   maidsafe::InstantMessage im;
   im.set_sender("contact1");
   im.set_message("testmsg");
-  im.set_date(base::get_epoch_time());
+  im.set_date(base::GetEpochTime());
 
   maidsafe::BufferPacketMessage bpmsg;
   bpmsg.set_sender_id("contact1");
   bpmsg.set_type(maidsafe::INSTANT_MSG);
-  boost::uint32_t iter(base::random_32bit_uinteger() % 1000 +1);
+  boost::uint32_t iter(base::RandomUint32() % 1000 +1);
   std::string aes_key = crypto_.SecurePassword(
       crypto_.Hash("testmsg", "", crypto::STRING_STRING, false), iter);
   bpmsg.set_aesenc_message(crypto_.SymmEncrypt(im.SerializeAsString(), "",

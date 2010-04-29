@@ -23,7 +23,7 @@
  */
 
 #include <gtest/gtest.h>
-#include <maidsafe/maidsafe-dht_config.h>
+#include <maidsafe/base/utils.h>
 #include "maidsafe/maidsafevalidator.h"
 #include "maidsafe/returncodes.h"
 #include "maidsafe/client/packetfactory.h"

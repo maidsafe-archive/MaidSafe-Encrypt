@@ -23,6 +23,7 @@
 */
 
 #include <gtest/gtest.h>
+#include <boost/thread/thread.hpp>
 #include "maidsafe/client/storetaskshandler.h"
 
 namespace test_store_task_handler {
@@ -30,14 +31,14 @@ namespace test_store_task_handler {
 void AddValidTasksWithoutCb(const size_t &count,
                             maidsafe::StoreTasksHandler *tasks_handler) {
   for (size_t i = 0; i < count; ++i)
-    tasks_handler->AddTask(base::itos(i), maidsafe::kStoreChunk, 3, 1, 0);
+    tasks_handler->AddTask(base::IntToString(i), maidsafe::kStoreChunk, 3, 1, 0);
 }
 
 void AddValidTasksWithCb(const size_t &count,
                          maidsafe::StoreTasksHandler *tasks_handler) {
   maidsafe::VoidFuncOneInt cb;
   for (size_t i = 1000; i < 1000 + count; ++i)
-    tasks_handler->AddTask(base::itos(i), maidsafe::kStoreChunk, 3, 1, 0, cb);
+    tasks_handler->AddTask(base::IntToString(i), maidsafe::kStoreChunk, 3, 1, 0, cb);
 }
 
 void AddInvalidTasks(const size_t &count,
@@ -94,7 +95,7 @@ TEST_F(StoreTasksHandlerTest, BEH_MAID_StoreTaskCount) {
   ASSERT_EQ(size_t(1), tasks_handler_.TasksCount());
   for (int i = 0; i < 9; ++i)
     ASSERT_EQ(kSuccess,
-              tasks_handler_.AddTask(base::itos(i), kStoreChunk, 3, 1, 1));
+              tasks_handler_.AddTask(base::IntToString(i), kStoreChunk, 3, 1, 1));
   ASSERT_EQ(size_t(10), tasks_handler_.TasksCount());
 }
 
@@ -137,7 +138,7 @@ TEST_F(StoreTasksHandlerTest, BEH_MAID_StoreTaskFindTask) {
   const int kTaskCount(100);
   for (int i = 0; i < kTaskCount; ++i)
     ASSERT_EQ(kSuccess,
-              tasks_handler_.AddTask(base::itos(i), kStoreChunk, 3, 1, 1));
+              tasks_handler_.AddTask(base::IntToString(i), kStoreChunk, 3, 1, 1));
   StoreTask find_task("Non empty", kStorePacket, 9, 4, 1);
   ASSERT_FALSE(tasks_handler_.Task("Test", kLoadChunk, &find_task));
   ASSERT_TRUE(find_task.data_name_.empty());
@@ -160,7 +161,7 @@ TEST_F(StoreTasksHandlerTest, BEH_MAID_StoreTaskSetSuccessesRequired) {
   const int kTaskCount(100);
   for (int i = 0; i < kTaskCount; ++i)
     ASSERT_EQ(kSuccess,
-              tasks_handler_.AddTask(base::itos(i), kStoreChunk, 3, 1, 1));
+              tasks_handler_.AddTask(base::IntToString(i), kStoreChunk, 3, 1, 1));
   StoreTask find_task("Non empty", kStorePacket, 9, 4, 1);
   ASSERT_TRUE(tasks_handler_.Task("9", kStoreChunk, &find_task));
   ASSERT_EQ(boost::uint8_t(1), find_task.successes_required_);
@@ -174,11 +175,11 @@ TEST_F(StoreTasksHandlerTest, BEH_MAID_StoreTaskStartSubTask) {
   const int kTaskCount(100);
   for (int i = 0; i < kTaskCount; ++i)
     ASSERT_EQ(kSuccess,
-              tasks_handler_.AddTask(base::itos(i), kStoreChunk, 3, 1, 1));
+              tasks_handler_.AddTask(base::IntToString(i), kStoreChunk, 3, 1, 1));
   // Check they're not started
   std::pair<StoreTaskSet::iterator, StoreTaskSet::iterator> it;
   for (int i = 0; i < kTaskCount; ++i) {
-    it = tasks_handler_.tasks_.equal_range(boost::make_tuple(base::itos(i),
+    it = tasks_handler_.tasks_.equal_range(boost::make_tuple(base::IntToString(i),
                                                              kStoreChunk));
     bool found = (it.first != it.second);
     ASSERT_TRUE(found);
@@ -194,7 +195,7 @@ TEST_F(StoreTasksHandlerTest, BEH_MAID_StoreTaskStartSubTask) {
             tasks_handler_.StartSubTask("9", kStorePacket, peer));
   ASSERT_EQ(size_t(kTaskCount), tasks_handler_.TasksCount());
   for (int i = 0; i < kTaskCount; ++i) {
-    it = tasks_handler_.tasks_.equal_range(boost::make_tuple(base::itos(i),
+    it = tasks_handler_.tasks_.equal_range(boost::make_tuple(base::IntToString(i),
                                                              kStoreChunk));
     bool found = (it.first != it.second);
     ASSERT_TRUE(found);
@@ -206,7 +207,7 @@ TEST_F(StoreTasksHandlerTest, BEH_MAID_StoreTaskStartSubTask) {
   ASSERT_EQ(kSuccess, tasks_handler_.StartSubTask("9", kStoreChunk, peer));
   ASSERT_EQ(size_t(kTaskCount), tasks_handler_.TasksCount());
   for (int i = 0; i < kTaskCount; ++i) {
-    it = tasks_handler_.tasks_.equal_range(boost::make_tuple(base::itos(i),
+    it = tasks_handler_.tasks_.equal_range(boost::make_tuple(base::IntToString(i),
                                                              kStoreChunk));
     bool found = (it.first != it.second);
     ASSERT_TRUE(found);
@@ -228,31 +229,31 @@ TEST_F(StoreTasksHandlerTest, BEH_MAID_StoreTaskStopSubTask) {
   const int kTaskCount(100);
   for (int i = 0; i < kTaskCount; ++i)
     ASSERT_EQ(kSuccess,
-              tasks_handler_.AddTask(base::itos(i), kStoreChunk, 3, 13, 30));
+              tasks_handler_.AddTask(base::IntToString(i), kStoreChunk, 3, 13, 30));
   // Check we can't stop a subtask of a task that's not started
   const int kTester(50);
   kad::Contact peer(kad::KadId(), "1", 1, "1", 1);
   std::pair<StoreTaskSet::iterator, StoreTaskSet::iterator> it;
-  it = tasks_handler_.tasks_.equal_range(boost::make_tuple(base::itos(kTester),
+  it = tasks_handler_.tasks_.equal_range(boost::make_tuple(base::IntToString(kTester),
                                                            kStoreChunk));
   bool found = (it.first != it.second);
   ASSERT_TRUE(found);
   ASSERT_FALSE((*it.first).started_);
   ASSERT_EQ(0, (*it.first).active_subtask_count_);
   ASSERT_EQ(kStoreTaskHandlerError, tasks_handler_.StopSubTask(
-      base::itos(kTester), kStoreChunk, true));
+      base::IntToString(kTester), kStoreChunk, true));
   ASSERT_FALSE((*it.first).started_);
   ASSERT_EQ(0, (*it.first).active_subtask_count_);
   // Check we can't stop a subtask of a task that's not in the set
   ASSERT_EQ(kStoreTaskNotFound, tasks_handler_.StopSubTask(
-      base::itos(kTester), kStorePacket, true));
+      base::IntToString(kTester), kStorePacket, true));
   // Start subtasks
   const int kRepeats(40);
   for (int i = 0; i < kRepeats; ++i) {
-    ASSERT_EQ(kSuccess, tasks_handler_.StartSubTask(base::itos(kTester),
+    ASSERT_EQ(kSuccess, tasks_handler_.StartSubTask(base::IntToString(kTester),
         kStoreChunk, peer));
   }
-  it = tasks_handler_.tasks_.equal_range(boost::make_tuple(base::itos(kTester),
+  it = tasks_handler_.tasks_.equal_range(boost::make_tuple(base::IntToString(kTester),
                                                            kStoreChunk));
   found = (it.first != it.second);
   ASSERT_TRUE(found);
@@ -265,13 +266,13 @@ TEST_F(StoreTasksHandlerTest, BEH_MAID_StoreTaskStopSubTask) {
   boost::thread_group stop_thread_group;
   stop_thread_group.create_thread(boost::bind(
       &test_store_task_handler::StopSubTasksSucceeded, kValidCount,
-      base::itos(kTester), kStoreChunk, &tasks_handler_));
+      base::IntToString(kTester), kStoreChunk, &tasks_handler_));
   stop_thread_group.create_thread(boost::bind(
       &test_store_task_handler::StopSubTasksFailed, kInvalidCount,
-      base::itos(kTester), kStoreChunk, &tasks_handler_));
+      base::IntToString(kTester), kStoreChunk, &tasks_handler_));
   stop_thread_group.join_all();
   // Check counts are OK
-  it = tasks_handler_.tasks_.equal_range(boost::make_tuple(base::itos(kTester),
+  it = tasks_handler_.tasks_.equal_range(boost::make_tuple(base::IntToString(kTester),
                                                            kStoreChunk));
   found = (it.first != it.second);
   ASSERT_TRUE(found);
@@ -282,11 +283,11 @@ TEST_F(StoreTasksHandlerTest, BEH_MAID_StoreTaskStopSubTask) {
   ASSERT_EQ(size_t(kInvalidCount), (*it.first).failures_count_);
   // Call Stop subtasks final twice to end task with overall success
   ASSERT_EQ(kStoreTaskNotFinished, tasks_handler_.StopSubTask(
-      base::itos(kTester), kStoreChunk, true));
+      base::IntToString(kTester), kStoreChunk, true));
   ASSERT_EQ(kStoreTaskFinishedPass, tasks_handler_.StopSubTask(
-      base::itos(kTester), kStoreChunk, true));
+      base::IntToString(kTester), kStoreChunk, true));
   // Manipulate task's internal data to re-activate it
-  it = tasks_handler_.tasks_.equal_range(boost::make_tuple(base::itos(kTester),
+  it = tasks_handler_.tasks_.equal_range(boost::make_tuple(base::IntToString(kTester),
                                                            kStoreChunk));
   found = (it.first != it.second);
   ASSERT_TRUE(found);
@@ -296,9 +297,9 @@ TEST_F(StoreTasksHandlerTest, BEH_MAID_StoreTaskStopSubTask) {
   tasks_handler_.tasks_.replace(it.first, task);
   // Call Stop subtasks to end task with overall failure (max fails)
   ASSERT_EQ(kStoreTaskFinishedFail, tasks_handler_.StopSubTask(
-      base::itos(kTester), kStoreChunk, false));
+      base::IntToString(kTester), kStoreChunk, false));
   // Manipulate task's internal data to re-activate it
-  it = tasks_handler_.tasks_.equal_range(boost::make_tuple(base::itos(kTester),
+  it = tasks_handler_.tasks_.equal_range(boost::make_tuple(base::IntToString(kTester),
                                                            kStoreChunk));
   found = (it.first != it.second);
   ASSERT_TRUE(found);
@@ -310,9 +311,9 @@ TEST_F(StoreTasksHandlerTest, BEH_MAID_StoreTaskStopSubTask) {
   tasks_handler_.tasks_.replace(it.first, task);
   // Call Stop subtasks final twice to end task with overall failure (cancelled)
   ASSERT_EQ(kStoreTaskNotFinished, tasks_handler_.StopSubTask(
-      base::itos(kTester), kStoreChunk, true));
+      base::IntToString(kTester), kStoreChunk, true));
   ASSERT_EQ(kStoreTaskFinishedFail, tasks_handler_.StopSubTask(
-      base::itos(kTester), kStoreChunk, true));
+      base::IntToString(kTester), kStoreChunk, true));
 }
 
 TEST_F(StoreTasksHandlerTest, BEH_MAID_StoreTaskDelete) {
@@ -321,14 +322,14 @@ TEST_F(StoreTasksHandlerTest, BEH_MAID_StoreTaskDelete) {
   const int kTaskCount(100);
   for (int i = 0; i < kTaskCount; ++i)
     ASSERT_EQ(kSuccess,
-              tasks_handler_.AddTask(base::itos(i), kStoreChunk, 3, 13, 30));
+              tasks_handler_.AddTask(base::IntToString(i), kStoreChunk, 3, 13, 30));
   // Check we can't delete a task that's not in the set
   ASSERT_EQ(kStoreTaskNotFound,
             tasks_handler_.DeleteTask("a", kStoreChunk, kSuccess));
   // Check we can delete a task
   ASSERT_EQ(kSuccess, tasks_handler_.DeleteTask("50", kStoreChunk, kSuccess));
   std::pair<StoreTaskSet::iterator, StoreTaskSet::iterator> it;
-  it = tasks_handler_.tasks_.equal_range(boost::make_tuple(base::itos(50),
+  it = tasks_handler_.tasks_.equal_range(boost::make_tuple(base::IntToString(50),
                                                            kStoreChunk));
   bool found = (it.first != it.second);
   ASSERT_FALSE(found);
@@ -342,7 +343,7 @@ TEST_F(StoreTasksHandlerTest, BEH_MAID_StoreTaskDelete) {
   ASSERT_FALSE(test_store_task_handler::called);
   // Check the task runs the callback when deleted
   ASSERT_EQ(kSuccess, tasks_handler_.DeleteTask("a", kStoreChunk, kSuccess));
-  it = tasks_handler_.tasks_.equal_range(boost::make_tuple(base::itos(50),
+  it = tasks_handler_.tasks_.equal_range(boost::make_tuple(base::IntToString(50),
                                                            kStoreChunk));
   found = (it.first != it.second);
   ASSERT_FALSE(found);
@@ -356,14 +357,14 @@ TEST_F(StoreTasksHandlerTest, BEH_MAID_StoreTaskCancelOne) {
   const int kTaskCount(100);
   for (int i = 0; i < kTaskCount; ++i)
     ASSERT_EQ(kSuccess,
-              tasks_handler_.AddTask(base::itos(i), kStoreChunk, 3, 13, 30));
+              tasks_handler_.AddTask(base::IntToString(i), kStoreChunk, 3, 13, 30));
   // Check we can't cancel a task that's not in the set
   ASSERT_EQ(kStoreTaskNotFound,
             tasks_handler_.CancelTask("a", kStoreChunk));
   // Check we can cancel a task
   std::pair<StoreTaskSet::iterator, StoreTaskSet::iterator> it;
   for (int i = 0; i < kTaskCount; ++i) {
-    it = tasks_handler_.tasks_.equal_range(boost::make_tuple(base::itos(i),
+    it = tasks_handler_.tasks_.equal_range(boost::make_tuple(base::IntToString(i),
                                                              kStoreChunk));
     bool found = (it.first != it.second);
     ASSERT_TRUE(found);
@@ -371,7 +372,7 @@ TEST_F(StoreTasksHandlerTest, BEH_MAID_StoreTaskCancelOne) {
   }
   ASSERT_EQ(kSuccess, tasks_handler_.CancelTask("50", kStoreChunk));
   for (int i = 0; i < kTaskCount; ++i) {
-    it = tasks_handler_.tasks_.equal_range(boost::make_tuple(base::itos(i),
+    it = tasks_handler_.tasks_.equal_range(boost::make_tuple(base::IntToString(i),
                                                              kStoreChunk));
     bool found = (it.first != it.second);
     ASSERT_TRUE(found);
@@ -389,11 +390,11 @@ TEST_F(StoreTasksHandlerTest, BEH_MAID_StoreTaskCancelAll) {
   const int kTaskCount(100);
   for (int i = 0; i < kTaskCount; ++i)
     ASSERT_EQ(kSuccess,
-              tasks_handler_.AddTask(base::itos(i), kStoreChunk, 3, 13, 30));
+              tasks_handler_.AddTask(base::IntToString(i), kStoreChunk, 3, 13, 30));
   // Check we can cancel all tasks
   std::pair<StoreTaskSet::iterator, StoreTaskSet::iterator> it;
   for (int i = 0; i < kTaskCount; ++i) {
-    it = tasks_handler_.tasks_.equal_range(boost::make_tuple(base::itos(i),
+    it = tasks_handler_.tasks_.equal_range(boost::make_tuple(base::IntToString(i),
                                                              kStoreChunk));
     bool found = (it.first != it.second);
     ASSERT_TRUE(found);
@@ -401,7 +402,7 @@ TEST_F(StoreTasksHandlerTest, BEH_MAID_StoreTaskCancelAll) {
   }
   tasks_handler_.CancelAllPendingTasks();
   for (int i = 0; i < kTaskCount; ++i) {
-    it = tasks_handler_.tasks_.equal_range(boost::make_tuple(base::itos(i),
+    it = tasks_handler_.tasks_.equal_range(boost::make_tuple(base::IntToString(i),
                                                              kStoreChunk));
     bool found = (it.first != it.second);
     ASSERT_TRUE(found);
@@ -415,7 +416,7 @@ TEST_F(StoreTasksHandlerTest, BEH_MAID_StoreTaskClearAll) {
   const int kTaskCount(100);
   for (int i = 0; i < kTaskCount; ++i)
     ASSERT_EQ(kSuccess,
-              tasks_handler_.AddTask(base::itos(i), kStoreChunk, 3, 13, 30));
+              tasks_handler_.AddTask(base::IntToString(i), kStoreChunk, 3, 13, 30));
   // Add a callback task
   VoidFuncOneInt cb = boost::bind(&test_store_task_handler::CallbackFunc, _1);
   ASSERT_EQ(kSuccess,

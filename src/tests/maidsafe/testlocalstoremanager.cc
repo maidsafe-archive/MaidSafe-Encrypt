@@ -21,8 +21,8 @@
 * ============================================================================
 */
 #include <gtest/gtest.h>
-#include <maidsafe/kademlia_service_messages.pb.h>
-#include <maidsafe/utils.h>
+#include <maidsafe/protobuf/kademlia_service_messages.pb.h>
+#include <maidsafe/base/utils.h>
 #include <boost/filesystem/fstream.hpp>
 #include <boost/lexical_cast.hpp>
 

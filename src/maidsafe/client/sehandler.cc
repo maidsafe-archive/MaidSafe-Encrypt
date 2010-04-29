@@ -28,6 +28,7 @@
 #include <boost/filesystem/fstream.hpp>
 #include <vector>
 
+#include "maidsafe/utils.h"
 #include "maidsafe/client/dataatlashandler.h"
 #include "maidsafe/client/selfencryption.h"
 #include "maidsafe/client/sessionsingleton.h"
@@ -92,7 +93,7 @@ ItemType SEHandler::CheckEntry(const fs::path &full_path,
       return LOCKED_FILE;
     }
     // TODO(Fraser#5#): 2010-03-08 - This fails in Windows - fix.
-    if (base::StrToLwr(fs::extension(full_path)) == ".lnk" || is_symlink)
+    if (StringToLowercase(fs::extension(full_path)) == ".lnk" || is_symlink)
       return LINK;
 
     *file_size = fs::file_size(full_path);
@@ -376,7 +377,7 @@ int SEHandler::GetDirKeys(const std::string &dir_path,
                           std::string *key,
                           std::string *parent_key) {
   boost::scoped_ptr<DataAtlasHandler> dah_(new DataAtlasHandler);
-  std::string tidy_path_ = base::TidyPath(dir_path);
+  std::string tidy_path_ = TidyPath(dir_path);
   fs::path dir_(tidy_path_, fs::native);
   // Get dir key for dir_path
   if (0 != dah_->GetDirKey(dir_.string(), key))

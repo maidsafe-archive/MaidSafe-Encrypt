@@ -203,7 +203,7 @@ void AccountAmendmentHandler::CreateNewAmendment(
       return;
     }
   }
-  vault_service_logic_->kadops()->FindCloseNodes(
+  vault_service_logic_->kadops()->FindKClosestNodes(
       kad::KadId(amendment.probable_pendings.front().request.chunkname(),
                  false),
       boost::bind(&AccountAmendmentHandler::CreateNewAmendmentCallback, this,
@@ -263,7 +263,7 @@ int AccountAmendmentHandler::CleanUp() {
   boost::mutex::scoped_lock lock(amendment_mutex_);
   AmendmentsByTimestamp::iterator it = amendments_.get<by_timestamp>().begin();
   while (it != amendments_.get<by_timestamp>().end() &&
-         (*it).expiry_time < base::get_epoch_milliseconds()) {
+         (*it).expiry_time < base::GetEpochMilliseconds()) {
     AccountAmendment amendment = *it;
     while (!amendment.probable_pendings.empty()) {
       amendment.probable_pendings.front().response->set_result(kNack);

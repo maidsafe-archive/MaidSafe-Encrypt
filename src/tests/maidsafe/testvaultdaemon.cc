@@ -21,9 +21,9 @@
 #include <vector>
 #include <map>
 #include <exception>
-#include <maidsafe/crypto.h>
+#include <maidsafe/base/crypto.h>
 #include <boost/date_time/posix_time/posix_time.hpp>
-#include <maidsafe/utils.h>
+#include <maidsafe/base/utils.h>
 #include "maidsafe/vault/vaultdaemon.h"
 
 
@@ -62,7 +62,7 @@ class VaultDaemonTest: public testing::Test {
     mutex[0] = new boost::recursive_mutex();
     timers[0] = new base::CallLaterTimer(mutex[0]);
     io_services[0] = new boost::asio::io_service();
-    db[0] = new boost::filesystem::path("pdhome"+base::itos(62001));
+    db[0] = new boost::filesystem::path("pdhome"+base::IntToString(62001));
     nodes[0] = new kad::KNode(io_services[0], *db[0], timers[0], mutex[0],
         kad::VAULT);
     cb.Reset();
@@ -71,15 +71,15 @@ class VaultDaemonTest: public testing::Test {
         &GeneralKadCallback::CallbackFunc, &cb, _1));
     wait_result(&cb, mutex[0]);
     EXPECT_EQ(kad::kRpcResultSuccess, cb.result());
-    kad::Contact bs_contact(kad::vault_random_id(), nodes[0]->host_ip_,
-        nodes[0]->host_port_);
+    kad::Contact bs_contact(kad::vault_random_id(), nodes[0]->host_ip,
+        nodes[0]->host_port);
     bootstrapping_nodes.push_back(bs_contact);
     // start the rest of the nodes
     for (int i = 1; i < kNetworkSize; i++) {
       mutex[i] = new boost::recursive_mutex();
       timers[i] = new base::CallLaterTimer(mutex[i]);
       io_services[i] = new boost::asio::io_service();
-      db[i] = new boost::filesystem::path("pdhome"+base::itos(62001+i));
+      db[i] = new boost::filesystem::path("pdhome"+base::IntToString(62001+i));
       nodes[i] = new kad::KNode(io_services[i], *db[i], timers[i], mutex[i],
           kad::VAULT);
       cb.Reset();
@@ -121,7 +121,7 @@ class VaultDaemonTest: public testing::Test {
 };
 
 TEST_F(VaultDaemonTest, BEH_KAD_EmptyChunkStorage) {
-  int rand_node = base::random_32bit_uinteger()%20;
+  int rand_node = base::RandomUint32()%20;
   kad::VaultDaemon daemon(nodes[rand_node]);
   GeneralKadCallback cb;
   daemon.SyncVault(boost::bind(&GeneralKadCallback::CallbackFunc, &cb, _1));
@@ -130,7 +130,7 @@ TEST_F(VaultDaemonTest, BEH_KAD_EmptyChunkStorage) {
 }
 
 TEST_F(VaultDaemonTest, FUNC_KAD_NoPartners) {
-  int rand_node = base::random_32bit_uinteger()%20;
+  int rand_node = base::RandomUint32()%20;
   // store a chunk
   std::string chunk_content = base::RandomString(250*1024);
   std::string chunk_name = cry_obj.Hash(chunk_content, "",
@@ -249,12 +249,12 @@ TEST_F(VaultDaemonTest, FUNC_KAD_SynchronizingMultiChunks) {
     args.set_data_type(maidsafe::PDDIR_NOTSIGNED);
     args.SerializeToString(&ser_args);
 
-    nodes[base::random_32bit_uinteger()%19]->RpcStoreChunk(ser_args,
+    nodes[base::RandomUint32()%19]->RpcStoreChunk(ser_args,
       sender_info, &ser_result);
     boost::this_thread::sleep(boost::posix_time::seconds(3));
     result.ParseFromString(ser_result);
     ASSERT_EQ(kad::kRpcResultFailure, result.result());
-    nodes[base::random_32bit_uinteger()%19]->RpcStoreChunk(ser_args,
+    nodes[base::RandomUint32()%19]->RpcStoreChunk(ser_args,
       sender_info, &ser_result);
     boost::this_thread::sleep(boost::posix_time::seconds(3));
     nodes[19]->RpcStoreChunk(ser_args, sender_info, &ser_result);
@@ -280,12 +280,12 @@ TEST_F(VaultDaemonTest, FUNC_KAD_SynchronizingMultiChunks) {
     args.set_signed_request(sig_req);
     args.set_data_type(maidsafe::PDDIR_NOTSIGNED);
     args.SerializeToString(&ser_args);
-    nodes[base::random_32bit_uinteger()%19]->RpcStoreChunk(ser_args,
+    nodes[base::RandomUint32()%19]->RpcStoreChunk(ser_args,
       sender_info, &ser_result);
     boost::this_thread::sleep(boost::posix_time::seconds(3));
     result.ParseFromString(ser_result);
     ASSERT_EQ(kad::kRpcResultFailure, result.result());
-    nodes[base::random_32bit_uinteger()  %19]->RpcStoreChunk(ser_args,
+    nodes[base::RandomUint32()  %19]->RpcStoreChunk(ser_args,
       sender_info, &ser_result);
     boost::this_thread::sleep(boost::posix_time::seconds(3));
     std::string new_chunk_content = base::RandomString(512);
@@ -333,12 +333,12 @@ TEST_F(VaultDaemonTest, FUNC_KAD_SynchronizingMultiChunksWithSomeNodesLeave) {
     args.set_signed_request(sig_req);
     args.set_data_type(maidsafe::PDDIR_NOTSIGNED);
     args.SerializeToString(&ser_args);
-    nodes[base::random_32bit_uinteger()%19]->RpcStoreChunk(ser_args,
+    nodes[base::RandomUint32()%19]->RpcStoreChunk(ser_args,
       sender_info, &ser_result);
     boost::this_thread::sleep(boost::posix_time::seconds(3));
     result.ParseFromString(ser_result);
     ASSERT_EQ(kad::kRpcResultFailure, result.result());
-    nodes[base::random_32bit_uinteger()%19]->RpcStoreChunk(ser_args,
+    nodes[base::RandomUint32()%19]->RpcStoreChunk(ser_args,
       sender_info, &ser_result);
     boost::this_thread::sleep(boost::posix_time::seconds(3));
     nodes[19]->RpcStoreChunk(ser_args, sender_info, &ser_result);
@@ -364,12 +364,12 @@ TEST_F(VaultDaemonTest, FUNC_KAD_SynchronizingMultiChunksWithSomeNodesLeave) {
     args.set_signed_request(sig_req);
     args.set_data_type(maidsafe::PDDIR_NOTSIGNED);
     args.SerializeToString(&ser_args);
-    nodes[base::random_32bit_uinteger()%19]->RpcStoreChunk(ser_args,
+    nodes[base::RandomUint32()%19]->RpcStoreChunk(ser_args,
       sender_info, &ser_result);
     boost::this_thread::sleep(boost::posix_time::seconds(3));
     result.ParseFromString(ser_result);
     ASSERT_EQ(kad::kRpcResultFailure, result.result());
-    nodes[base::random_32bit_uinteger()%19]->RpcStoreChunk(ser_args,
+    nodes[base::RandomUint32()%19]->RpcStoreChunk(ser_args,
       sender_info, &ser_result);
     boost::this_thread::sleep(boost::posix_time::seconds(3));
     std::string new_chunk_content = base::RandomString(512);
@@ -407,7 +407,7 @@ TEST_F(VaultDaemonTest, FUNC_KAD_SynchronizingMultiChunksWithSomeNodesLeave) {
 }
 
 TEST_F(VaultDaemonTest, FUNC_KAD_RepublishChunkRef) {
-  int rep_node = base::random_32bit_uinteger()%19;
+  int rep_node = base::RandomUint32()%19;
   // store 10 chunks
   for (int i = 0; i < 10; i++) {
     std::string chunk_content = base::RandomString(512);

@@ -27,7 +27,7 @@
 #include <boost/scoped_ptr.hpp>
 #include <gtest/gtest.h>
 #include <maidsafe/maidsafe-dht.h>
-#include <maidsafe/utils.h>
+#include <maidsafe/base/utils.h>
 
 #include "fs/filesystem.h"
 #include "maidsafe/chunkstore.h"
@@ -91,7 +91,7 @@ class SelfEncryptionTest : public testing::Test {
   void SetUp() {
     ss->ResetSession();
     ss->SetUsername("user1");
-    ss->SetPin(base::itos(base::random_32bit_uinteger()));
+    ss->SetPin(base::IntToString(base::RandomUint32()));
     ss->SetPassword("password1");
     ss->SetSessionName(false);
     ss->SetRootDbKey("whatever");

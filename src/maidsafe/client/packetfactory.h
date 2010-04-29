@@ -27,7 +27,7 @@
 
 #include <boost/any.hpp>
 #include <gtest/gtest_prod.h>
-#include <maidsafe/crypto.h>
+#include <maidsafe/base/crypto.h>
 #include <map>
 #include <string>
 

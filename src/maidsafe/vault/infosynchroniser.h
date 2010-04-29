@@ -27,12 +27,19 @@
 #define MAIDSAFE_VAULT_INFOSYNCHRONISER_H_
 
 #include <gtest/gtest_prod.h>
-#include <maidsafe/maidsafe-dht_config.h>
+#include <maidsafe/kademlia/contact.h>
 #include <boost/cstdint.hpp>
+#include <boost/shared_ptr.hpp>
+#include <boost/thread/mutex.hpp>
 
 #include <map>
 #include <string>
 #include <vector>
+
+namespace base {
+class PublicRoutingTableHandler;
+class PublicRoutingTableTuple;
+}  // namespace base
 
 namespace maidsafe_vault {
 
@@ -42,7 +49,7 @@ class InfoSynchroniser {
  public:
   typedef std::map<std::string, boost::uint32_t> InfoEntryMap;
   InfoSynchroniser(const std::string &pmid,
-                   boost::shared_ptr<base::PDRoutingTableHandler> rt)
+                   boost::shared_ptr<base::PublicRoutingTableHandler> rt)
       : pmid_(pmid), routing_table_(rt), info_entries_(), mutex_() {}
   bool ShouldFetch(const std::string &id,
                    std::vector<kad::Contact> *closest_nodes);
@@ -55,10 +62,10 @@ class InfoSynchroniser {
   FRIEND_TEST(InfoSynchroniserTest, BEH_VAULT_InfoSyncTimestamps);
   FRIEND_TEST(InfoSynchroniserTest, BEH_VAULT_InfoSyncRemoveEntry);
   FRIEND_TEST(InfoSynchroniserTest, BEH_VAULT_InfoSyncPruneMap);
-  void AddNodeToClosest(const base::PDRoutingTableTuple &node,
+  void AddNodeToClosest(const base::PublicRoutingTableTuple &node,
                         std::vector<kad::Contact> *closest);
   std::string pmid_;
-  boost::shared_ptr<base::PDRoutingTableHandler> routing_table_;
+  boost::shared_ptr<base::PublicRoutingTableHandler> routing_table_;
   InfoEntryMap info_entries_;
   boost::mutex mutex_;
 };

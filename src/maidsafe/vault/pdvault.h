@@ -29,10 +29,10 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/thread/condition_variable.hpp>
 #include <boost/thread/mutex.hpp>
-#include <maidsafe/crypto.h>
+#include <maidsafe/base/crypto.h>
 #include <maidsafe/maidsafe-dht.h>
-#include <maidsafe/transportudt.h>
-#include <maidsafe/utils.h>
+#include <maidsafe/transport/transportudt.h>
+#include <maidsafe/base/utils.h>
 #include <QThreadPool>
 
 #include <list>
@@ -63,7 +63,7 @@ enum VaultStatus {kVaultStarted, kVaultStopping, kVaultStopped};
   int num_updated_chunks;  // number of chunks updated
   int num_chunks;
   int active_updating;
-  base::callback_func_type cb;
+  kad::VoidFunctorOneString cb;
   bool is_callbacked;
 }; */
 
@@ -84,12 +84,12 @@ enum VaultStatus {kVaultStarted, kVaultStopping, kVaultStopped};
   std::list<std::string> chunk_names;  // chunks to be updated
   int num_republished_chunks;  // number of chunks updated
   int num_chunks;
-  base::callback_func_type cb;
+  kad::VoidFunctorOneString cb;
   bool is_callbacked;
 }; */
 
 struct LoadChunkData {
-  LoadChunkData(const std::string &chunkname, base::callback_func_type cb)
+  LoadChunkData(const std::string &chunkname, kad::VoidFunctorOneString cb)
     : chunk_holders(), failed_chunk_holders(), number_holders(0),
       failed_holders(0), is_active(false), chunk_name(chunkname), retry(0),
       cb(cb), is_callbacked(false), get_msgs(false), pub_key(""),
@@ -101,7 +101,7 @@ struct LoadChunkData {
   bool is_active;
   std::string chunk_name;
   int retry;
-  base::callback_func_type cb;
+  kad::VoidFunctorOneString cb;
   bool is_callbacked;
   // used only for get msgs
   bool get_msgs;
@@ -125,7 +125,7 @@ struct LoadChunkData {
   ValidityCheckArgs(const std::string &chunk_name,
                     const std::string &random_data,
                     const kad::Contact &chunk_holder,
-                    base::callback_func_type cb)
+                    kad::VoidFunctorOneString cb)
                         : chunk_name_(chunk_name),
                           random_data_(random_data),
                           chunk_holder_(chunk_holder),
@@ -133,7 +133,7 @@ struct LoadChunkData {
   const std::string chunk_name_;
   const std::string random_data_;
   const kad::Contact chunk_holder_;
-  base::callback_func_type cb_;
+  kad::VoidFunctorOneString cb_;
   bool retry_remote;
 }; */
 
@@ -156,7 +156,7 @@ struct SwapChunkArgs {
                 const boost::uint16_t &remote_port,
                 const std::string &rendezvous_ip,
                 const boost::uint16_t &rendezvous_port,
-                base::callback_func_type cb)
+                kad::VoidFunctorOneString cb)
      : chunkname_(chunkname),
        remote_ip_(remote_ip),
        remote_port_(remote_port),
@@ -168,7 +168,7 @@ struct SwapChunkArgs {
   boost::uint16_t remote_port_;
   std::string rendezvous_ip_;
   boost::uint16_t rendezvous_port_;
-  base::callback_func_type cb_;
+  kad::VoidFunctorOneString cb_;
 };
 
 struct SyncDataArgs {
@@ -206,30 +206,30 @@ class PDVault {
   boost::uint16_t host_port() const { return knode_->host_port(); }
   std::string local_host_ip() const { return knode_->local_host_ip(); }
   boost::uint16_t local_host_port() { return knode_->local_host_port(); }
-  std::string rv_ip() const { return knode_->rv_ip(); }
-  boost::uint16_t rv_port() const { return knode_->rv_port(); }
+  std::string rendezvous_ip() const { return knode_->rendezvous_ip(); }
+  boost::uint16_t rendezvous_port() const { return knode_->rendezvous_port(); }
   inline boost::uint64_t available_space() {
     return vault_chunkstore_.available_space();
   }
   inline boost::uint64_t UsedSpace() { return vault_chunkstore_.used_space(); }
   inline boost::uint64_t FreeSpace() { return vault_chunkstore_.FreeSpace(); }
 
-  void SyncVault(base::callback_func_type) {}
-  void RepublishChunkRef(base::callback_func_type) {}
+  void SyncVault(kad::VoidFunctorOneString) {}
+  void RepublishChunkRef(kad::VoidFunctorOneString) {}
 /*
   void ValidityCheck(const std::string &chunk_name,
                      const std::string &random_data,
                      const kad::Contact &remote,
                      int attempt,
-                     base::callback_func_type cb);
+                     kad::VoidFunctorOneString cb);
 */
-  void GetChunk(const std::string &chunk_name, base::callback_func_type cb);
+  void GetChunk(const std::string &chunk_name, kad::VoidFunctorOneString cb);
   void SwapChunk(const std::string &chunk_name,
                  const std::string &remote_ip,
                  const boost::uint16_t &remote_port,
                  const std::string &rendezvous_ip,
                  const boost::uint16_t &rendezvous_port,
-                 base::callback_func_type cb);
+                 kad::VoidFunctorOneString cb);
   void StopRvPing() { transport_handler_->StopPingRendezvous(); }
   friend class localvaults::Env;
   friend class PDVaultTest;
@@ -301,7 +301,7 @@ class PDVault {
   void GetMessages(const std::string &chunk_name,
                    const std::string &public_key,
                    const std::string &signed_public_key,
-                   base::callback_func_type cb);
+                   kad::VoidFunctorOneString cb);
   void SwapChunkSendChunk(
       boost::shared_ptr<maidsafe::SwapChunkResponse> swap_chunk_response,
       boost::shared_ptr<SwapChunkArgs> swap_chunk_args);
@@ -331,7 +331,7 @@ class PDVault {
   fs::path kad_config_file_;
   QThreadPool thread_pool_;
   boost::thread /* maidsafe_join_thread_, */ create_account_thread_;
-  boost::shared_ptr<base::PDRoutingTableHandler> routing_table_;
+  boost::shared_ptr<base::PublicRoutingTableHandler> routing_table_;
 };
 
 }  // namespace maidsafe_vault

@@ -13,7 +13,7 @@
  */
 #include <boost/filesystem/fstream.hpp>
 #include <boost/scoped_ptr.hpp>
-#include <maidsafe/signed_kadvalue.pb.h>
+#include <maidsafe/protobuf/signed_kadvalue.pb.h>
 
 #include <vector>
 
@@ -28,7 +28,7 @@ namespace fs = boost::filesystem;
 
 namespace maidsafe {
 
-void ExecuteSuccessCallback(const base::callback_func_type &cb,
+void ExecuteSuccessCallback(const kad::VoidFunctorOneString &cb,
                             boost::mutex *mutex) {
   boost::mutex::scoped_lock gaurd(*mutex);
   std::string ser_result;
@@ -38,7 +38,7 @@ void ExecuteSuccessCallback(const base::callback_func_type &cb,
   cb(ser_result);
 }
 
-void ExecuteFailureCallback(const base::callback_func_type &cb,
+void ExecuteFailureCallback(const kad::VoidFunctorOneString &cb,
                             boost::mutex *mutex) {
   boost::mutex::scoped_lock gaurd(*mutex);
   std::string ser_result;
@@ -48,19 +48,19 @@ void ExecuteFailureCallback(const base::callback_func_type &cb,
   cb(ser_result);
 }
 
-void ExecCallbackVaultInfo(const base::callback_func_type &cb,
+void ExecCallbackVaultInfo(const kad::VoidFunctorOneString &cb,
                            boost::mutex *mutex) {
   boost::mutex::scoped_lock loch(*mutex);
   VaultCommunication vc;
   vc.set_chunkstore("/home/Smer/ChunkStore");
-  vc.set_offered_space(base::random_32bit_uinteger());
-  boost::uint32_t fspace = base::random_32bit_uinteger();
+  vc.set_offered_space(base::RandomUint32());
+  boost::uint32_t fspace = base::RandomUint32();
   while (fspace >= vc.offered_space())
-    fspace = base::random_32bit_uinteger();
+    fspace = base::RandomUint32();
   vc.set_free_space(fspace);
   vc.set_ip("127.0.0.1");
-  vc.set_port((base::random_32bit_uinteger() % 64512) + 1000);
-  vc.set_timestamp(base::get_epoch_time());
+  vc.set_port((base::RandomUint32() % 64512) + 1000);
+  vc.set_timestamp(base::GetEpochTime());
   std::string ser_vc;
   vc.SerializeToString(&ser_vc);
   cb(ser_vc);
@@ -86,7 +86,7 @@ LocalStoreManager::LocalStoreManager(
           client_chunkstore_(client_chunkstore),
           ss_(SessionSingleton::getInstance()) {}
 
-void LocalStoreManager::Init(int, base::callback_func_type cb,
+void LocalStoreManager::Init(int, kad::VoidFunctorOneString cb,
                              fs::path db_directory) {
 #ifdef LOCAL_PDVAULT
   // Simulate knode join
@@ -114,7 +114,7 @@ void LocalStoreManager::Init(int, base::callback_func_type cb,
   }
 }
 
-void LocalStoreManager::Close(base::callback_func_type cb, bool) {
+void LocalStoreManager::Close(kad::VoidFunctorOneString cb, bool) {
 #ifdef LOCAL_PDVAULT
   // Simulate chunk threadpool join and knode leave
 //  boost::this_thread::sleep(boost::posix_time::seconds(3));
@@ -758,7 +758,7 @@ int LocalStoreManager::SendMessage(
 
   std::string bp_in_chunk, ser_gp;
   int successes = 0;
-  boost::uint32_t timestamp = base::get_epoch_time();
+  boost::uint32_t timestamp = base::GetEpochTime();
   for (size_t n = 0; n < recs.size(); ++n) {
     std::string rec_pub_key(ss_->GetContactPublicKey(recs[n]));
     std::string bufferpacketname(BufferPacketName(recs[n], rec_pub_key));
@@ -894,7 +894,7 @@ std::string LocalStoreManager::CreateMessage(const std::string &message,
   crypto::Crypto co;
   co.set_hash_algorithm(crypto::SHA_512);
   co.set_symm_algorithm(crypto::AES_256);
-  int iter = base::random_32bit_uinteger() % 1000 +1;
+  int iter = base::RandomUint32() % 1000 +1;
   std::string aes_key = co.SecurePassword(co.Hash(message, "",
                         crypto::STRING_STRING, false), iter);
   bpm.set_rsaenc_key(co.AsymEncrypt(aes_key, "", rec_public_key,
@@ -938,11 +938,11 @@ int LocalStoreManager::GetValue_FromDB(const std::string &key,
   return (results->size() > 0) ? kSuccess : kFindValueFailure;
 }
 
-void LocalStoreManager::PollVaultInfo(base::callback_func_type cb) {
+void LocalStoreManager::PollVaultInfo(kad::VoidFunctorOneString cb) {
   boost::thread thr(&ExecCallbackVaultInfo, cb, &mutex_);
 }
 
-void LocalStoreManager::VaultContactInfo(base::callback_func_type cb) {
+void LocalStoreManager::VaultContactInfo(kad::VoidFunctorOneString cb) {
   boost::thread thr(&ExecuteSuccessCallback, cb, &mutex_);
 }
 

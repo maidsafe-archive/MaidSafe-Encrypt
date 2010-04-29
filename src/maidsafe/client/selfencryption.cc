@@ -34,9 +34,9 @@
 
 #include <boost/filesystem/fstream.hpp>
 #include <boost/scoped_ptr.hpp>
-#include <maidsafe/crypto.h>
+#include <maidsafe/base/crypto.h>
 #include <maidsafe/maidsafe-dht.h>
-#include <maidsafe/utils.h>
+#include <maidsafe/base/utils.h>
 
 #include <cstdio>
 #include <set>
@@ -123,7 +123,7 @@ int SelfEncryption::Encrypt(const std::string &entry_str,
     Chunk chunk;
     if (dm->compression_on()) {
       int compression_level = 9;
-      std::string compression_type = "gzip" + base::itos(compression_level);
+      std::string compression_type = "gzip" + base::IntToString(compression_level);
       chunk.set_compression_type(compression_type);
     }
     // initialise counter for amount of data put into chunk

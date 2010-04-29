@@ -25,8 +25,8 @@
 #ifndef MAIDSAFE_VAULTBUFFERPACKETHANDLER_H_
 #define MAIDSAFE_VAULTBUFFERPACKETHANDLER_H_
 
-#include <maidsafe/crypto.h>
-#include <maidsafe/utils.h>
+#include <maidsafe/base/crypto.h>
+#include <maidsafe/base/utils.h>
 #include <list>
 #include <string>
 #include <vector>

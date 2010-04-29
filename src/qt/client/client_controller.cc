@@ -30,6 +30,7 @@
 
 // core
 #include "fs/filesystem.h"
+#include "maidsafe/utils.h"
 #include "maidsafe/client/contacts.h"
 #include "maidsafe/client/sessionsingleton.h"
 #include "maidsafe/client/privateshares.h"
@@ -315,7 +316,7 @@ bool ClientController::sendInstantFile(const QString& filePath,
 #endif
   qDebug() << "Before Tidy Path:" << rel_filename.c_str();
 
-  rel_filename = base::TidyPath(rel_filename);
+  rel_filename = maidsafe::TidyPath(rel_filename);
   qDebug() << "Tidied Path:" << rel_filename.c_str();
 
   std::vector<std::string> contacts;

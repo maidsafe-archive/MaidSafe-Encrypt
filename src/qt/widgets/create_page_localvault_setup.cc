@@ -21,6 +21,7 @@
 #include <QValidator>
 
 #include <boost/filesystem.hpp>
+#include <boost/lexical_cast.hpp>
 
 #include "fs/filesystem.h"
 #include "qt/client/client_controller.h"
@@ -69,7 +70,7 @@ void CreateLocalVaultPage::cleanupPage() {
   else
     info = boost::filesystem::space(boost::filesystem::path(chunkdir.root_name()
            + chunkdir.root_directory()));
-  availableSpace_ = base::itos_ull(info.available / (1024 * 1024));
+  availableSpace_ = boost::lexical_cast<std::string>(info.available / (1024 * 1024));
   spaceReady_ = true;
   dirReady_ = false;
   QString qs(tr("Space to offer in MB (available %1 MB):")
@@ -84,9 +85,10 @@ void CreateLocalVaultPage::cleanupPage() {
 
 bool CreateLocalVaultPage::isComplete() const {
 //  bool b = false;
-//  boost::uint64_t spaceChosen = base::stoi_ull(
+//  boost::uint64_t spaceChosen = boost::lexical_cast<boost::uint64_t>(
 //                                ui_.lineSpace->text().toStdString());
-//  boost::uint64_t spaceAvailable = base::stoi_ull(availableSpace_);
+//  boost::uint64_t spaceAvailable =
+//      boost::lexical_cast<boost::uint64_t>(availableSpace_);
 //  if (spaceChosen < spaceAvailable)
 //    b = true;
   return spaceReady_ && dirReady_/* && b*/;
@@ -101,9 +103,10 @@ void CreateLocalVaultPage::onBrowseClicked() {
 
 void CreateLocalVaultPage::onSpaceEdited(const QString& text) {
   if (!text.isEmpty() && text.size() > 1) {
-    boost::uint64_t spaceChosen = base::stoi_ull(
+    boost::uint64_t spaceChosen = boost::lexical_cast<boost::uint64_t>(
                                   ui_.lineSpace->text().toStdString());
-    boost::uint64_t spaceAvailable = base::stoi_ull(availableSpace_);
+    boost::uint64_t spaceAvailable =
+        boost::lexical_cast<boost::uint64_t>(availableSpace_);
     if (spaceChosen < spaceAvailable) {
       spaceReady_ = true;
     } else {

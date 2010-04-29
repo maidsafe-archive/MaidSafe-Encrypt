@@ -37,7 +37,7 @@ std::string IMHandler::CreateMessage(const std::string &msg,
   maidsafe::BufferPacketMessage bpmsg;
   bpmsg.set_sender_id(ss_->PublicUsername());
   bpmsg.set_type(INSTANT_MSG);
-  boost::uint32_t iter(base::random_32bit_uinteger() % 1000 +1);
+  boost::uint32_t iter(base::RandomUint32() % 1000 +1);
   std::string aes_key = crypto_.SecurePassword(
       crypto_.Hash(msg, "", crypto::STRING_STRING, false), iter);
   bpmsg.set_aesenc_message(crypto_.SymmEncrypt(msg, "",
@@ -57,7 +57,7 @@ std::string IMHandler::CreateMessageEndpoint(const std::string &receiver) {
   InstantMessage msg;
   msg.set_sender(ss_->PublicUsername());
   msg.set_message("");
-  msg.set_date(base::get_epoch_time());
+  msg.set_date(base::GetEpochTime());
   msg.set_status(ss_->ConnectionStatus());
   EndPoint *endpoint = msg.mutable_endpoint();
   *endpoint = ss_->Ep();
@@ -66,7 +66,7 @@ std::string IMHandler::CreateMessageEndpoint(const std::string &receiver) {
   BufferPacketMessage bpmsg;
   bpmsg.set_sender_id(ss_->PublicUsername());
   bpmsg.set_type(HELLO_PING);
-  boost::uint32_t iter(base::random_32bit_uinteger() % 1000 +1);
+  boost::uint32_t iter(base::RandomUint32() % 1000 +1);
   std::string aes_key = crypto_.SecurePassword(
       crypto_.Hash(ser_msg, "", crypto::STRING_STRING, false), iter);
   bpmsg.set_aesenc_message(crypto_.SymmEncrypt(ser_msg, "",
@@ -86,14 +86,14 @@ std::string IMHandler::CreateLogOutMessage(const std::string &receiver) {
   InstantMessage msg;
   msg.set_sender(ss_->PublicUsername());
   msg.set_message("");
-  msg.set_date(base::get_epoch_time());
+  msg.set_date(base::GetEpochTime());
   msg.set_status(ss_->ConnectionStatus());
   std::string ser_msg(msg.SerializeAsString());
 
   BufferPacketMessage bpmsg;
   bpmsg.set_sender_id(ss_->PublicUsername());
   bpmsg.set_type(LOGOUT_PING);
-  boost::uint32_t iter(base::random_32bit_uinteger() % 1000 +1);
+  boost::uint32_t iter(base::RandomUint32() % 1000 +1);
   std::string aes_key = crypto_.SecurePassword(
       crypto_.Hash(ser_msg, "", crypto::STRING_STRING, false), iter);
   bpmsg.set_aesenc_message(crypto_.SymmEncrypt(ser_msg, "",

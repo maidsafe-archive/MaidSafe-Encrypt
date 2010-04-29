@@ -23,6 +23,7 @@
 */
 
 #include <gtest/gtest.h>
+#include <boost/lexical_cast.hpp>
 #include "maidsafe/kadops.h"
 #include "maidsafe/vault/infosynchroniser.h"
 
@@ -34,18 +35,18 @@ class InfoSynchroniserTest : public testing::Test {
                            pmid_(co_.Hash(base::RandomString(100), "",
                                  crypto::STRING_STRING, false)),
                            kMinRoutingTableSize_(100),
-                           routing_table_(new base::PDRoutingTableHandler()),
+                           routing_table_(new base::PublicRoutingTableHandler()),
                            info_synchroniser_(pmid_, routing_table_),
                            closest_nodes_() {}
  protected:
   void SetUp() {
     ASSERT_EQ(crypto::SHA_512, co_.hash_algorithm());
-    size_t table_size = (base::random_32bit_uinteger() % 999) +
+    size_t table_size = (base::RandomUint32() % 999) +
                          kMinRoutingTableSize_;
     for (size_t i = 0; i < table_size; ++i) {
       std::string tuple_id = co_.Hash(base::RandomString(100), "",
                                       crypto::STRING_STRING, false);
-      base::PDRoutingTableTuple pdrtt(tuple_id, base::RandomString(13), i, "",
+      base::PublicRoutingTableTuple pdrtt(tuple_id, base::RandomString(13), i, "",
                                       0, "", 0, 0, 0);
       routing_table_->AddTuple(pdrtt);
     }
@@ -55,14 +56,14 @@ class InfoSynchroniserTest : public testing::Test {
   crypto::Crypto co_;
   std::string pmid_;
   const size_t kMinRoutingTableSize_;
-  boost::shared_ptr<base::PDRoutingTableHandler> routing_table_;
+  boost::shared_ptr<base::PublicRoutingTableHandler> routing_table_;
   InfoSynchroniser info_synchroniser_;
   std::vector<kad::Contact> closest_nodes_;
 };
 
 TEST_F(InfoSynchroniserTest, BEH_VAULT_InfoSyncShouldFetch) {
   ASSERT_EQ(size_t(0), info_synchroniser_.info_entries_.size());
-  std::list<base::PDRoutingTableTuple> nodes;
+  std::list<base::PublicRoutingTableTuple> nodes;
   std::string id = co_.Hash(base::RandomString(100), "", crypto::STRING_STRING,
                             false);
   ASSERT_EQ(0, routing_table_->GetClosestContacts(id, 0, &nodes));
@@ -104,7 +105,7 @@ TEST_F(InfoSynchroniserTest, BEH_VAULT_InfoSyncShouldFetch) {
   std::string::iterator it = id.end() - 6;
   while (id == pmid_)
     id.replace(it, id.end(),
-        base::itos_ull(base::random_32bit_uinteger() % 900000 + 100000));
+        boost::lexical_cast<std::string>(base::RandomUint32() % 900000 + 100000));
   closest_nodes_.push_back(kad::Contact());
   ASSERT_FALSE(closest_nodes_.empty());
   ASSERT_TRUE(info_synchroniser_.ShouldFetch(id, &closest_nodes_));
@@ -193,7 +194,7 @@ TEST_F(InfoSynchroniserTest, BEH_VAULT_InfoSyncPruneMap) {
   InfoEntrySet::iterator alive_set_it = alive_set.begin();
   InfoSynchroniser::InfoEntryMap::iterator it =
       info_synchroniser_.info_entries_.begin();
-  boost::uint32_t expired = base::get_epoch_time() - 1;
+  boost::uint32_t expired = base::GetEpochTime() - 1;
   while (it != info_synchroniser_.info_entries_.end()) {
     it->second = expired;
     expired_set_it = expired_set.insert(expired_set_it, it->first);

@@ -27,13 +27,13 @@
 #include <boost/filesystem.hpp>
 #include <boost/cstdint.hpp>
 #include <boost/lexical_cast.hpp>
+#include <maidsafe/base/utils.h>
 
-#include "maidsafe/maidsafe-dht_config.h"
 #include "maidsafe/client/dataiohandler.h"
 
 class TestStringIOHandler : public testing::Test {
  public:
-  TestStringIOHandler() : handler_(), data_(base::RandomString(255*1024)) {}
+  TestStringIOHandler() : handler_(), data_(base::RandomString(255 * 1024)) {}
  protected:
   virtual void SetUp() {
     ASSERT_EQ("", handler_.GetAsString());
@@ -118,9 +118,9 @@ class TestFileIOHandler : public testing::Test {
   TestFileIOHandler() : handler_(), in_file(), out_file(),
     data_(base::RandomString(255*1024)), in("in_file"), out("out_file") {
     in += boost::lexical_cast<std::string>(
-      base::random_32bit_integer());
+      base::RandomInt32());
     out += boost::lexical_cast<std::string>(
-      base::random_32bit_integer());
+      base::RandomInt32());
   }
  protected:
   virtual void SetUp() {

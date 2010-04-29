@@ -30,7 +30,7 @@
 #include <boost/multi_index/identity.hpp>
 #include <boost/multi_index/member.hpp>
 #include <boost/shared_ptr.hpp>
-#include <maidsafe/utils.h>
+#include <maidsafe/base/utils.h>
 #include <functional>
 #include <string>
 #include <vector>

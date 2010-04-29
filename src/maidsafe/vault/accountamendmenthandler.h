@@ -74,7 +74,7 @@ struct AccountAmendment {
         chunk_info_holders(),
         pendings(),
         probable_pendings(),
-        expiry_time(base::get_epoch_milliseconds() + kAccountAmendmentTimeout),
+        expiry_time(base::GetEpochMilliseconds() + kAccountAmendmentTimeout),
         success_count(0),
         account_amendment_result(kAccountAmendmentPending) {
     // Add to probable pendings list so that further similar requests don't get

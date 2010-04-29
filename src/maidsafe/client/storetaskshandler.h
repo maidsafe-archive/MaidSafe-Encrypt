@@ -26,9 +26,15 @@
 #define MAIDSAFE_CLIENT_STORETASKSHANDLER_H_
 
 #include <boost/cstdint.hpp>
+#include <boost/function.hpp>
 #include <boost/multi_index_container.hpp>
+#include <boost/multi_index/composite_key.hpp>
+#include <boost/multi_index/member.hpp>
+#include <boost/multi_index/ordered_index.hpp>
+#include <boost/thread/mutex.hpp>
 #include <gtest/gtest_prod.h>
-#include <maidsafe/maidsafe-dht_config.h>
+#include <maidsafe/base/utils.h>
+#include <maidsafe/kademlia/contact.h>
 
 #include <string>
 #include <vector>
@@ -78,7 +84,7 @@ struct StoreTask {
         started_(false),
         cancelled_(false),
         has_callback_(false),
-        timestamp_(base::get_epoch_time()),
+        timestamp_(base::GetEpochTime()),
         exclude_peers_(),
         successes_required_(successes_required),
         max_failures_(max_failures),
@@ -98,7 +104,7 @@ struct StoreTask {
         started_(false),
         cancelled_(false),
         has_callback_(true),
-        timestamp_(base::get_epoch_time()),
+        timestamp_(base::GetEpochTime()),
         exclude_peers_(),
         successes_required_(successes_required),
         max_failures_(max_failures),

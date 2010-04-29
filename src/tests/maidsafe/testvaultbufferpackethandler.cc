@@ -259,7 +259,7 @@ TEST_F(VaultBufferPacketHandlerTest, BEH_MAID_AddGetPresence) {
   std::string user("el usuario");
   bpi.add_users(cry_obj_.Hash(user, "", crypto::STRING_STRING, false));
   for (int i = 0; i < 10; ++i)
-    bpi.add_users(cry_obj_.Hash(user + base::itos(i), "", crypto::STRING_STRING,
+    bpi.add_users(cry_obj_.Hash(user + base::IntToString(i), "", crypto::STRING_STRING,
                   false));
   gp_info.set_data(bpi.SerializeAsString());
   gp_info.set_signature(cry_obj_.AsymSign(gp_info.data(), "", private_key_,
@@ -271,7 +271,7 @@ TEST_F(VaultBufferPacketHandlerTest, BEH_MAID_AddGetPresence) {
   lp.set_contact_id(user);
   maidsafe::EndPoint ep;
   for (int n = 0; n < 3; ++n) {
-    ep.add_ip(base::itos(n));
+    ep.add_ip(base::IntToString(n));
     ep.add_port(n);
   }
   lp.set_end_point(cry_obj_.AsymEncrypt(ep.SerializeAsString(), "", public_key_,
@@ -297,7 +297,7 @@ TEST_F(VaultBufferPacketHandlerTest, BEH_MAID_AddGetPresence) {
   ep.Clear();
   ASSERT_TRUE(ep.ParseFromString(dec_ep));
   for (int a = 0; a < 3; ++a) {
-    ASSERT_EQ(base::itos(a), ep.ip(a));
+    ASSERT_EQ(base::IntToString(a), ep.ip(a));
     ASSERT_EQ(a, static_cast<int>(ep.port(a)));
   }
   msgs.clear();
@@ -308,7 +308,7 @@ TEST_F(VaultBufferPacketHandlerTest, BEH_MAID_AddGetPresence) {
   lp.set_contact_id("el rey mazorca");
   ep.Clear();
   for (int n = 0; n < 3; ++n) {
-    ep.add_ip(base::itos(n));
+    ep.add_ip(base::IntToString(n));
     ep.add_port(n);
   }
   lp.set_end_point(cry_obj_.AsymEncrypt(ep.SerializeAsString(), "", public_key_,
@@ -327,7 +327,7 @@ TEST_F(VaultBufferPacketHandlerTest, BEH_MAID_AddGetPresence) {
     lp.set_contact_id(user);
     ep.Clear();
     for (int n = 0; n < 3; ++n) {
-      ep.add_ip(base::itos(n));
+      ep.add_ip(base::IntToString(n));
       ep.add_port(n);
     }
     lp.set_end_point(cry_obj_.AsymEncrypt(ep.SerializeAsString(), "",
@@ -352,7 +352,7 @@ TEST_F(VaultBufferPacketHandlerTest, BEH_MAID_AddGetPresence) {
   ep.Clear();
   ASSERT_TRUE(ep.ParseFromString(dec_ep));
   for (int a = 0; a < 3; ++a) {
-    ASSERT_EQ(base::itos(a), ep.ip(a));
+    ASSERT_EQ(base::IntToString(a), ep.ip(a));
     ASSERT_EQ(a, static_cast<int>(ep.port(a)));
   }
   ASSERT_TRUE(vbph_.GetPresence(&ser_bp_, &msgs));
@@ -360,10 +360,10 @@ TEST_F(VaultBufferPacketHandlerTest, BEH_MAID_AddGetPresence) {
 
   for (int y = 0; y < 10; ++y) {
     lp.Clear();
-    lp.set_contact_id(user + base::itos(y));
+    lp.set_contact_id(user + base::IntToString(y));
     ep.Clear();
     for (int n = 0; n < 3; ++n) {
-      ep.add_ip(base::itos(n));
+      ep.add_ip(base::IntToString(n));
       ep.add_port(n);
     }
     lp.set_end_point(cry_obj_.AsymEncrypt(ep.SerializeAsString(), "",
@@ -383,13 +383,13 @@ TEST_F(VaultBufferPacketHandlerTest, BEH_MAID_AddGetPresence) {
                 keys_[1].public_key(), crypto::STRING_STRING));
     lp.Clear();
     ASSERT_TRUE(lp.ParseFromString(lp_gp.data()));
-    ASSERT_EQ(user + base::itos(e), lp.contact_id());
+    ASSERT_EQ(user + base::IntToString(e), lp.contact_id());
     dec_ep = cry_obj_.AsymDecrypt(lp.end_point(), "", private_key_,
                                   crypto::STRING_STRING);
     ep.Clear();
     ASSERT_TRUE(ep.ParseFromString(dec_ep));
     for (int a = 0; a < 3; ++a) {
-      ASSERT_EQ(base::itos(a), ep.ip(a));
+      ASSERT_EQ(base::IntToString(a), ep.ip(a));
       ASSERT_EQ(a, static_cast<int>(ep.port(a)));
     }
   }

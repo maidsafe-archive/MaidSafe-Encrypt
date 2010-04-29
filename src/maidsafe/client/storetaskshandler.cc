@@ -95,7 +95,7 @@ int StoreTasksHandler::DoAddTask(const StoreTask &task) {
       return kStoreTaskHandlerError;
     }
     StoreTask existing_task = (*it.first);
-    existing_task.timestamp_ = base::get_epoch_time();
+    existing_task.timestamp_ = base::GetEpochTime();
     tasks_.replace(it.first, existing_task);
     return kStoreTaskAlreadyExists;
   }

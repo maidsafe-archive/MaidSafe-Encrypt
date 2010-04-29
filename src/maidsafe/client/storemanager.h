@@ -28,7 +28,7 @@
 #include <boost/thread/condition_variable.hpp>
 #include <boost/function.hpp>
 #include <maidsafe/maidsafe-dht.h>
-#include <maidsafe/utils.h>
+#include <maidsafe/base/utils.h>
 
 #include <list>
 #include <map>
@@ -65,9 +65,9 @@ class StoreManagerInterface {
  public:
   virtual ~StoreManagerInterface() {}
   virtual void Init(int port,
-                    base::callback_func_type cb,
+                    kad::VoidFunctorOneString cb,
                     fs::path db_directory)=0;
-  virtual void Close(base::callback_func_type cb, bool cancel_pending_ops)=0;
+  virtual void Close(kad::VoidFunctorOneString cb, bool cancel_pending_ops)=0;
   virtual void CleanUpTransport()=0;
   virtual void StopRvPing()=0;
   virtual bool NotDoneWithUploading()=0;
@@ -121,8 +121,8 @@ class StoreManagerInterface {
       std::map<std::string, ReturnCode> *add_results)=0;
 
   // Vault
-  virtual void PollVaultInfo(base::callback_func_type cb)=0;
-  virtual void VaultContactInfo(base::callback_func_type cb)=0;
+  virtual void PollVaultInfo(kad::VoidFunctorOneString cb)=0;
+  virtual void VaultContactInfo(kad::VoidFunctorOneString cb)=0;
   virtual void SetLocalVaultOwned(
       const std::string &priv_key,
       const std::string &pub_key,

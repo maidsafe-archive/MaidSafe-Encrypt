@@ -29,9 +29,9 @@
 #include <boost/thread/locks.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <gtest/gtest_prod.h>
-#include <maidsafe/crypto.h>
+#include <maidsafe/base/crypto.h>
 #include <maidsafe/maidsafe-dht_config.h>
-#include <maidsafe/transportudt.h>
+#include <maidsafe/transport/transportudt.h>
 #include <QThreadPool>
 
 #include <list>
@@ -207,8 +207,8 @@ class MaidsafeStoreManager : public StoreManagerInterface {
  public:
   explicit MaidsafeStoreManager(boost::shared_ptr<ChunkStore> cstore);
   virtual ~MaidsafeStoreManager() {}
-  void Init(int port, base::callback_func_type cb, fs::path db_directory);
-  void Close(base::callback_func_type cb, bool cancel_pending_ops);
+  void Init(int port, kad::VoidFunctorOneString cb, fs::path db_directory);
+  void Close(kad::VoidFunctorOneString cb, bool cancel_pending_ops);
   void CleanUpTransport();
   void StopRvPing() { transport_handler_.StopPingRendezvous(); }
   bool KeyUnique(const std::string &key, bool check_local);
@@ -264,8 +264,8 @@ class MaidsafeStoreManager : public StoreManagerInterface {
       std::map<std::string, ReturnCode> *add_results);
 
   // Vault
-  void PollVaultInfo(base::callback_func_type cb);
-  void VaultContactInfo(base::callback_func_type cb);
+  void PollVaultInfo(kad::VoidFunctorOneString cb);
+  void VaultContactInfo(kad::VoidFunctorOneString cb);
   void SetLocalVaultOwned(const std::string &priv_key,
                           const std::string &pub_key,
                           const std::string &signed_pub_key,
@@ -462,7 +462,7 @@ class MaidsafeStoreManager : public StoreManagerInterface {
                             boost::shared_ptr<DeletePacketData> delete_data);
   void DoNothingCallback(const std::string&) {}
   void PollVaultInfoCallback(const VaultStatusResponse *response,
-                             base::callback_func_type cb);
+                             kad::VoidFunctorOneString cb);
   void SetLocalVaultOwnedCallback(
       boost::shared_ptr<SetLocalVaultOwnedCallbackArgs> callback_args);
   void LocalVaultOwnedCallback(

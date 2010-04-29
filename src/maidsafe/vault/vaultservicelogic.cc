@@ -24,9 +24,9 @@
 
 #include "maidsafe/vault/vaultservicelogic.h"
 
-#include <maidsafe/kademlia_service_messages.pb.h>
+#include <maidsafe/protobuf/kademlia_service_messages.pb.h>
 #include <maidsafe/maidsafe-dht.h>
-#include <maidsafe/online.h>
+#include <maidsafe/base/online.h>
 
 #include <algorithm>
 #include <list>
@@ -49,7 +49,7 @@ VaultServiceLogic::VaultServiceLogic(
           pmid_private_(),
           online_(false),
           online_mutex_() {
-  base::OnlineController::instance()->RegisterObserver(0, boost::bind(
+  base::OnlineController::Instance()->RegisterObserver(0, boost::bind(
       &VaultServiceLogic::SetOnlineStatus, this, _1));
 }
 
@@ -85,7 +85,7 @@ void VaultServiceLogic::AddToRemoteRefList(
     const VoidFuncOneInt &callback,
     const boost::int16_t &transport_id) {
 // printf("1. Vault %s - contacts size: %u\n", HexSubstr(pmid_).c_str(),
-//         (*base::PDRoutingTable::getInstance())[base::itos(port_)]->size());
+//         (*base::PublicRoutingTable::GetInstance())[base::IntToString(port_)]->size());
   if (!online()) {
 #ifdef DEBUG
     printf("In VSL::AddToRemoteRefList (%s), offline.\n",
@@ -97,7 +97,7 @@ void VaultServiceLogic::AddToRemoteRefList(
   boost::shared_ptr<AddToReferenceListOpData> data(new AddToReferenceListOpData(
       request, kad::KadId(request.chunkname(), false), found_local_result,
       callback, transport_id));
-  kad_ops_->FindCloseNodes(kad::KadId(request.chunkname(), false), boost::bind(
+  kad_ops_->FindKClosestNodes(kad::KadId(request.chunkname(), false), boost::bind(
       static_cast< void(VaultServiceLogic::*)
           (boost::shared_ptr<AddToReferenceListOpData>, const std::string &) >
           (&VaultServiceLogic::RemoteOpStageTwo), this, data, _1));
@@ -122,7 +122,7 @@ void VaultServiceLogic::AmendRemoteAccount(
       crypto::STRING_STRING, false), false);
   boost::shared_ptr<AmendRemoteAccountOpData> data(new AmendRemoteAccountOpData(
       request, account_name, found_local_result, callback, transport_id));
-  kad_ops_->FindCloseNodes(account_name, boost::bind(
+  kad_ops_->FindKClosestNodes(account_name, boost::bind(
       static_cast< void(VaultServiceLogic::*)
           (boost::shared_ptr<AmendRemoteAccountOpData>, const std::string &) >
           (&VaultServiceLogic::RemoteOpStageTwo), this, data, _1));
@@ -148,7 +148,7 @@ void VaultServiceLogic::RemoteVaultAbleToStore(
   boost::shared_ptr<RemoteAccountStatusOpData>
       data(new RemoteAccountStatusOpData(request, account_name,
           found_local_result, callback, transport_id));
-  kad_ops_->FindCloseNodes(account_name, boost::bind(
+  kad_ops_->FindKClosestNodes(account_name, boost::bind(
       static_cast< void(VaultServiceLogic::*)
           (boost::shared_ptr<RemoteAccountStatusOpData>, const std::string &) >
           (&VaultServiceLogic::RemoteOpStageTwo), this, data, _1));
@@ -396,8 +396,8 @@ void VaultServiceLogic::CacheChunk(const std::string &chunkname,
       google::protobuf::NewCallback<VaultServiceLogic,
                                     boost::shared_ptr<CacheChunkData> >
       (this, &VaultServiceLogic::CacheChunkCallback, data);
-  vault_rpcs_->CacheChunk(cacher.ip(), cacher.port(), cacher.rv_ip(),
-                          cacher.rv_port(), transport_id, &data->request,
+  vault_rpcs_->CacheChunk(cacher.ip(), cacher.port(), cacher.rendezvous_ip(),
+                          cacher.rendezvous_port(), transport_id, &data->request,
                           &data->response, &data->controller, done);
 }
 

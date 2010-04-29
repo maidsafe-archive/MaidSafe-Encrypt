@@ -13,6 +13,7 @@
  */
 #include "maidsafe/client/contacts.h"
 #include <boost/filesystem.hpp>
+#include <boost/lexical_cast.hpp>
 #include <maidsafe/maidsafe-dht.h>
 
 namespace fs = boost::filesystem;
@@ -34,12 +35,12 @@ Contact::Contact(const std::vector<std::string> &attributes)
   office_phone_ = attributes[3];
   birthday_ = attributes[4];
   gender_ = attributes[5].at(0);
-  language_ = base::stoi(attributes[6]);
-  country_ = base::stoi(attributes[7]);
+  language_ = boost::lexical_cast<int>(attributes[6]);
+  country_ = boost::lexical_cast<int>(attributes[7]);
   city_ = attributes[8];
   confirmed_ = attributes[9].at(0);
-  rank_ = base::stoi(attributes[10]);
-  last_contact_ = base::stoi(attributes[11]);
+  rank_ = boost::lexical_cast<int>(attributes[10]);
+  last_contact_ = boost::lexical_cast<int>(attributes[11]);
 }
 
 //  ContactsHandler
@@ -57,7 +58,7 @@ int ContactsHandler::AddContact(const std::string &pub_name,
                                 const int &last_contact) {
   int lc = 0;
   if (last_contact == 0)
-    lc = base::get_epoch_time();
+    lc = base::GetEpochTime();
   else
     lc = last_contact;
   mi_contact mic(pub_name, pub_key, full_name, office_phone, birthday, gender,
@@ -247,7 +248,7 @@ int ContactsHandler::SetLastContactRank(const std::string &pub_name) {
   }
   mi_contact mic = *it;
   mic.rank_++;
-  mic.last_contact_ = base::get_epoch_time();
+  mic.last_contact_ = base::GetEpochTime();
   cs_.replace(it, mic);
   return 0;
 }

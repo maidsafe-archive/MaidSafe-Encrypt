@@ -15,7 +15,7 @@
 #include <boost/filesystem.hpp>
 #include <gtest/gtest.h>
 #include <maidsafe/maidsafe-dht.h>
-#include <maidsafe/utils.h>
+#include <maidsafe/base/utils.h>
 #include "maidsafe/client/contacts.h"
 
 class ContactsTest : public testing::Test {
@@ -361,21 +361,21 @@ TEST_F(ContactsTest, BEH_MAID_ListContacts_Rank_LastContact) {
             "List came back not empty after DB creation.";
 
   for (int n = 1; n < 21; n++) {
-    int r = base::random_32bit_uinteger()%122;
+    int r = base::RandomUint32()%122;
     std::vector<std::string> contact;
-    contact.push_back("pub_name_" + base::itos(n));
-    contact.push_back("pub_key_" + base::itos(n));
-    contact.push_back("full_name_" + base::itos(n));
-    contact.push_back("office_phone_" + base::itos(n));
-    contact.push_back("birthday_" + base::itos(n));
+    contact.push_back("pub_name_" + base::IntToString(n));
+    contact.push_back("pub_key_" + base::IntToString(n));
+    contact.push_back("full_name_" + base::IntToString(n));
+    contact.push_back("office_phone_" + base::IntToString(n));
+    contact.push_back("birthday_" + base::IntToString(n));
     contact.push_back("M");
-    contact.push_back(base::itos(n));
-    contact.push_back(base::itos(n));
-    contact.push_back("city_" + base::itos(n));
+    contact.push_back(base::IntToString(n));
+    contact.push_back(base::IntToString(n));
+    contact.push_back("city_" + base::IntToString(n));
     contact.push_back("C");
-    contact.push_back(base::itos(r));
-    int rt = base::get_epoch_time() - r;
-    contact.push_back(base::itos(rt));
+    contact.push_back(base::IntToString(r));
+    int rt = base::GetEpochTime() - r;
+    contact.push_back(base::IntToString(rt));
     ASSERT_EQ(0, sch_->AddContact(contact[0], contact[1], contact[2],
               contact[3], contact[4], 'M', n, n, contact[8], 'C', 0, 0));
   }
@@ -409,21 +409,21 @@ TEST_F(ContactsTest, BEH_MAID_ListContacts_Rank_LastContact) {
   }
 
   for (int n = 21; n < 101; n++) {
-    int r = base::random_32bit_uinteger()%122;
+    int r = base::RandomUint32()%122;
     std::vector<std::string> contact;
-    contact.push_back("pub_name_" + base::itos(n));
-    contact.push_back("pub_key_" + base::itos(n));
-    contact.push_back("full_name_" + base::itos(n));
-    contact.push_back("office_phone_" + base::itos(n));
-    contact.push_back("birthday_" + base::itos(n));
+    contact.push_back("pub_name_" + base::IntToString(n));
+    contact.push_back("pub_key_" + base::IntToString(n));
+    contact.push_back("full_name_" + base::IntToString(n));
+    contact.push_back("office_phone_" + base::IntToString(n));
+    contact.push_back("birthday_" + base::IntToString(n));
     contact.push_back("M");
-    contact.push_back(base::itos(n));
-    contact.push_back(base::itos(n));
-    contact.push_back("city_" + base::itos(n));
+    contact.push_back(base::IntToString(n));
+    contact.push_back(base::IntToString(n));
+    contact.push_back("city_" + base::IntToString(n));
     contact.push_back("C");
-    contact.push_back(base::itos(r));
-    int rt = base::get_epoch_time() - r;
-    contact.push_back(base::itos(rt));
+    contact.push_back(base::IntToString(r));
+    int rt = base::GetEpochTime() - r;
+    contact.push_back(base::IntToString(rt));
     ASSERT_EQ(0, sch_->AddContact(contact[0], contact[1], contact[2],
               contact[3], contact[4], 'M', n, n, contact[8], 'C', 0, 0));
   }

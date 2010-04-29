@@ -34,18 +34,18 @@ bool KadOps::AddressIsLocal(const kad::ContactInfo &peer) {
       peer.local_ip(), peer.local_port(), peer.ip()) == kad::LOCAL;
 }
 
-void KadOps::FindNode(const kad::KadId &node_id,
-                      base::callback_func_type cb,
+void KadOps::GetNodeContactDetails(const kad::KadId &node_id,
+                      kad::VoidFunctorOneString cb,
                       const bool &local) {
-  knode_->FindNode(node_id, cb, local);
+  knode_->GetNodeContactDetails(node_id, cb, local);
 }
 
-void KadOps::FindCloseNodes(const kad::KadId &kad_key,
-                            const base::callback_func_type &callback) {
-  knode_->FindCloseNodes(kad_key, callback);
+void KadOps::FindKClosestNodes(const kad::KadId &kad_key,
+                            const kad::VoidFunctorOneString &callback) {
+  knode_->FindKClosestNodes(kad_key, callback);
 }
 
-int KadOps::FindCloseNodes(const kad::KadId &kad_key,
+int KadOps::FindKClosestNodes(const kad::KadId &kad_key,
                            std::vector<kad::Contact> *contacts) {
   if (contacts == NULL) {
 #ifdef DEBUG
@@ -57,7 +57,7 @@ int KadOps::FindCloseNodes(const kad::KadId &kad_key,
   boost::mutex mutex;
   boost::condition_variable cv;
   ReturnCode result(kFindNodesError);
-  FindCloseNodes(kad_key, boost::bind(
+  FindKClosestNodes(kad_key, boost::bind(
       &KadOps::HandleFindCloseNodesResponse, this, _1, kad_key, contacts,
       &mutex, &cv, &result));
   boost::mutex::scoped_lock lock(mutex);
@@ -114,7 +114,7 @@ void KadOps::HandleFindCloseNodesResponse(
 
 void KadOps::FindValue(const kad::KadId &kad_key,
                        bool check_local,
-                       const base::callback_func_type &cb) {
+                       const kad::VoidFunctorOneString &cb) {
   knode_->FindValue(kad_key, check_local, cb);
 }
 

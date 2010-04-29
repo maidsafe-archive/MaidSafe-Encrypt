@@ -25,8 +25,9 @@
 #include <gtest/gtest.h>
 #include <boost/lexical_cast.hpp>
 #include <boost/filesystem.hpp>
-#include <maidsafe/general_messages.pb.h>
-#include <maidsafe/transportudt.h>
+#include <maidsafe/protobuf/general_messages.pb.h>
+#include <maidsafe/protobuf/kademlia_service_messages.pb.h>
+#include <maidsafe/transport/transportudt.h>
 
 #include "maidsafe/clientbufferpackethandler.h"
 
@@ -35,7 +36,6 @@
 #include "maidsafe/client/maidstoremanager.h"
 #include "maidsafe/client/sessionsingleton.h"
 #include "maidsafe/client/systempackets.h"
-#include "maidsafe/kademlia_service_messages.pb.h"
 #include "tests/maidsafe/cached_keys.h"
 #include "tests/maidsafe/localvaults.h"
 
@@ -148,7 +148,7 @@ class CBPHandlerTest : public testing::Test {
     trans_han->Register(trans, &trans_id);
     knode.reset(new kad::KNode(ch_man, trans_han, kad::CLIENT,
         keys_.at(0).private_key(), keys_.at(0).public_key(), false, false));
-    knode->SetTransID(trans_id);
+    knode->set_transport_id(trans_id);
     bp_rpcs.reset(new maidsafe::BufferPacketRpcsImpl(trans_han, ch_man));
     cbph = new maidsafe::ClientBufferPacketHandler(bp_rpcs, knode);
     ASSERT_TRUE(ch_man->RegisterNotifiersToTransport());
@@ -220,7 +220,7 @@ TEST_F(CBPHandlerTest, FUNC_MAID_TestBPHOperations) {
 
   std::vector<std::string> users;
   cbph->ModifyOwnerInfo(bpip, users, boost::bind(
-                        &BPCallback::BPOperation_CB, &cb, _1), trans->GetID());
+                        &BPCallback::BPOperation_CB, &cb, _1), trans->transport_id());
   while (cb.result == -1)
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   ASSERT_EQ(maidsafe::kModifyBPError, cb.result);
@@ -228,7 +228,7 @@ TEST_F(CBPHandlerTest, FUNC_MAID_TestBPHOperations) {
 
   cb.Reset();
   cbph->CreateBufferPacket(bpip, boost::bind(&BPCallback::BPOperation_CB,
-                           &cb, _1), trans->GetID());
+                           &cb, _1), trans->transport_id());
   while (cb.result == -1)
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   ASSERT_EQ(maidsafe::kSuccess, cb.result);
@@ -248,7 +248,7 @@ TEST_F(CBPHandlerTest, FUNC_MAID_TestBPHOperations) {
   cb.Reset();
   cbph->AddMessage(bpip1, sender_id, owner_pubkey, recv_id, "Hello World",
                    maidsafe::INSTANT_MSG, boost::bind(
-                   &BPCallback::BPOperation_CB, &cb, _1), trans->GetID());
+                   &BPCallback::BPOperation_CB, &cb, _1), trans->transport_id());
   while (cb.result == -1)
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   ASSERT_EQ(maidsafe::kBPAddMessageError, cb.result);
@@ -257,7 +257,7 @@ TEST_F(CBPHandlerTest, FUNC_MAID_TestBPHOperations) {
   cb.Reset();
   cbph->AddPresence(bpip1, sender_id, owner_pubkey, recv_id,
                     boost::bind(&BPCallback::BPOperation_CB, &cb, _1),
-                    trans->GetID());
+                    trans->transport_id());
   while (cb.result == -1)
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   ASSERT_EQ(maidsafe::kBPAddPresenceError, cb.result);
@@ -266,7 +266,7 @@ TEST_F(CBPHandlerTest, FUNC_MAID_TestBPHOperations) {
   cb.Reset();
   cbph->GetMessages(bpip,
                     boost::bind(&BPCallback::BPGetMsgs_CB, &cb, _1, _2, _3),
-                    trans->GetID());
+                    trans->transport_id());
   while (cb.result == -1)
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   ASSERT_EQ(maidsafe::kSuccess, cb.result);
@@ -276,7 +276,7 @@ TEST_F(CBPHandlerTest, FUNC_MAID_TestBPHOperations) {
   cb.Reset();
   cbph->GetPresence(bpip,
                     boost::bind(&BPCallback::BPGetPresence_CB, &cb, _1, _2, _3),
-                    trans->GetID());
+                    trans->transport_id());
   while (cb.result == -1)
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   ASSERT_EQ(maidsafe::kSuccess, cb.result);
@@ -286,7 +286,7 @@ TEST_F(CBPHandlerTest, FUNC_MAID_TestBPHOperations) {
   users.push_back(cryp.Hash(sender_id, "", crypto::STRING_STRING, false));
   cb.Reset();
   cbph->ModifyOwnerInfo(bpip, users, boost::bind(
-                        &BPCallback::BPOperation_CB, &cb, _1), trans->GetID());
+                        &BPCallback::BPOperation_CB, &cb, _1), trans->transport_id());
   while (cb.result == -1)
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   ASSERT_EQ(maidsafe::kSuccess, cb.result);
@@ -295,7 +295,7 @@ TEST_F(CBPHandlerTest, FUNC_MAID_TestBPHOperations) {
   cb.Reset();
   cbph->AddMessage(bpip1, sender_id, owner_pubkey, recv_id, "Hello World",
                    maidsafe::INSTANT_MSG, boost::bind(
-                   &BPCallback::BPOperation_CB, &cb, _1), trans->GetID());
+                   &BPCallback::BPOperation_CB, &cb, _1), trans->transport_id());
   while (cb.result == -1)
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   ASSERT_EQ(maidsafe::kSuccess, cb.result);
@@ -304,7 +304,7 @@ TEST_F(CBPHandlerTest, FUNC_MAID_TestBPHOperations) {
   cb.Reset();
   cbph->AddPresence(bpip1, sender_id, owner_pubkey, recv_id,
                     boost::bind(&BPCallback::BPOperation_CB, &cb, _1),
-                    trans->GetID());
+                    trans->transport_id());
   while (cb.result == -1)
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   ASSERT_EQ(maidsafe::kSuccess, cb.result);
@@ -313,7 +313,7 @@ TEST_F(CBPHandlerTest, FUNC_MAID_TestBPHOperations) {
   cb.Reset();
   cbph->GetMessages(bpip,
                     boost::bind(&BPCallback::BPGetMsgs_CB, &cb, _1, _2, _3),
-                    trans->GetID());
+                    trans->transport_id());
   while (cb.result == -1)
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   ASSERT_EQ(maidsafe::kSuccess, cb.result);
@@ -325,7 +325,7 @@ TEST_F(CBPHandlerTest, FUNC_MAID_TestBPHOperations) {
   cb.Reset();
   cbph->GetPresence(bpip,
                     boost::bind(&BPCallback::BPGetPresence_CB, &cb, _1, _2, _3),
-                    trans->GetID());
+                    trans->transport_id());
   while (cb.result == -1)
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   ASSERT_EQ(maidsafe::kSuccess, cb.result);
@@ -343,7 +343,7 @@ TEST_F(CBPHandlerTest, FUNC_MAID_TestBPHOperations) {
   cb.Reset();
   cbph->GetMessages(bpip1,
                     boost::bind(&BPCallback::BPGetMsgs_CB, &cb, _1, _2, _3),
-                    trans->GetID());
+                    trans->transport_id());
   while (cb.result == -1)
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   ASSERT_EQ(maidsafe::kBPMessagesRetrievalError, cb.result);
@@ -352,7 +352,7 @@ TEST_F(CBPHandlerTest, FUNC_MAID_TestBPHOperations) {
   cb.Reset();
   cbph->GetPresence(bpip1,
                     boost::bind(&BPCallback::BPGetPresence_CB, &cb, _1, _2, _3),
-                    trans->GetID());
+                    trans->transport_id());
   while (cb.result == -1)
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   ASSERT_EQ(maidsafe::kBPGetPresenceError, cb.result);
@@ -361,7 +361,7 @@ TEST_F(CBPHandlerTest, FUNC_MAID_TestBPHOperations) {
 
   cb.Reset();
   cbph->ModifyOwnerInfo(bpip1, users, boost::bind(
-                        &BPCallback::BPOperation_CB, &cb, _1), trans->GetID());
+                        &BPCallback::BPOperation_CB, &cb, _1), trans->transport_id());
   while (cb.result == -1)
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   ASSERT_EQ(maidsafe::kModifyBPError, cb.result);

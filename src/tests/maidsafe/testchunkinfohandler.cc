@@ -134,7 +134,7 @@ TEST_F(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerAdd) {
   cih.SetStoringDone(chunk_name, client[1]);
   ASSERT_EQ(0, cih.ActiveReferences(chunk_name));
   for (int i = 0; i < required_references; ++i) {
-    ASSERT_EQ(0, cih.AddToReferenceList(chunk_name, "rf" + base::itos(i), 123));
+    ASSERT_EQ(0, cih.AddToReferenceList(chunk_name, "rf" + base::IntToString(i), 123));
   }
   ASSERT_EQ(required_references, cih.ActiveReferences(chunk_name));
 
@@ -558,31 +558,31 @@ TEST_F(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerPutGetPb) {
   const int kNumEntries(749);
   for (int i = 0; i < kNumEntries; ++i) {
     ChunkInfo chunk_info;
-    for (boost::uint16_t j = 0; j < (base::random_32bit_uinteger() % 16); ++j) {
+    for (boost::uint16_t j = 0; j < (base::RandomUint32() % 16); ++j) {
       WaitingListEntry waiting_list_entry;
       waiting_list_entry.pmid = base::RandomString(64);
-      waiting_list_entry.creation_time = base::random_32bit_uinteger();
+      waiting_list_entry.creation_time = base::RandomUint32();
       waiting_list_entry.storing_done = waiting_list_entry.creation_time % 2;
       waiting_list_entry.payments_done = waiting_list_entry.creation_time % 3;
-      waiting_list_entry.requested_payments = base::random_32bit_integer();
+      waiting_list_entry.requested_payments = base::RandomInt32();
       chunk_info.waiting_list.push_back(waiting_list_entry);
     }
-    for (boost::uint16_t j = 0; j < (base::random_32bit_uinteger() % 16); ++j) {
+    for (boost::uint16_t j = 0; j < (base::RandomUint32() % 16); ++j) {
       WatchListEntry watch_list_entry;
       watch_list_entry.pmid = base::RandomString(64);
       watch_list_entry.can_delete =
           watch_list_entry.pmid.at(0) < watch_list_entry.pmid.at(1);
       chunk_info.watch_list.push_back(watch_list_entry);
     }
-    for (boost::uint16_t j = 0; j < (base::random_32bit_uinteger() % 16); ++j) {
+    for (boost::uint16_t j = 0; j < (base::RandomUint32() % 16); ++j) {
       ReferenceListEntry reference_list_entry;
       reference_list_entry.pmid = base::RandomString(64);
-      reference_list_entry.last_seen = base::random_32bit_uinteger();
+      reference_list_entry.last_seen = base::RandomUint32();
       chunk_info.reference_list.push_back(reference_list_entry);
     }
-    chunk_info.watcher_count = base::random_32bit_uinteger();
-    chunk_info.watcher_checksum = base::random_32bit_uinteger();
-    chunk_info.chunk_size = base::random_32bit_uinteger();
+    chunk_info.watcher_count = base::RandomUint32();
+    chunk_info.watcher_checksum = base::RandomUint32();
+    chunk_info.chunk_size = base::RandomUint32();
     result = chunk_info_handler1.chunk_infos_.insert(
         std::pair<std::string, ChunkInfo>(base::RandomString(64), chunk_info));
     ASSERT_TRUE(result.second);
@@ -658,30 +658,30 @@ TEST_F(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerPutGetChunkInfo) {
   ChunkInfoMap::VaultChunkInfo::WaitingListEntry *waiting_list_entry;
   ChunkInfoMap::VaultChunkInfo::WatchListEntry *watch_list_entry;
   ChunkInfoMap::VaultChunkInfo::ReferenceListEntry *reference_list_entry;
-  for (boost::uint16_t j = 0; j < (base::random_32bit_uinteger() % 16); ++j) {
+  for (boost::uint16_t j = 0; j < (base::RandomUint32() % 16); ++j) {
     waiting_list_entry = vault_chunk_info_put.add_waiting_list_entry();
     waiting_list_entry->set_pmid(base::RandomString(64));
-    waiting_list_entry->set_creation_time(base::random_32bit_uinteger());
+    waiting_list_entry->set_creation_time(base::RandomUint32());
     waiting_list_entry->set_storing_done(
         waiting_list_entry->creation_time() % 2);
     waiting_list_entry->set_payments_done(
         waiting_list_entry->creation_time() % 3);
-    waiting_list_entry->set_requested_payments(base::random_32bit_integer());
+    waiting_list_entry->set_requested_payments(base::RandomInt32());
   }
-  for (boost::uint16_t j = 0; j < (base::random_32bit_uinteger() % 16); ++j) {
+  for (boost::uint16_t j = 0; j < (base::RandomUint32() % 16); ++j) {
     watch_list_entry = vault_chunk_info_put.add_watch_list_entry();
     watch_list_entry->set_pmid(base::RandomString(64));
     watch_list_entry->set_can_delete(
-        base::random_32bit_uinteger() < base::random_32bit_uinteger());
+        base::RandomUint32() < base::RandomUint32());
   }
-  for (boost::uint16_t j = 0; j < (base::random_32bit_uinteger() % 16); ++j) {
+  for (boost::uint16_t j = 0; j < (base::RandomUint32() % 16); ++j) {
     reference_list_entry = vault_chunk_info_put.add_reference_list_entry();
     reference_list_entry->set_pmid(base::RandomString(64));
-    reference_list_entry->set_last_seen(base::random_32bit_uinteger());
+    reference_list_entry->set_last_seen(base::RandomUint32());
   }
-  vault_chunk_info_put.set_watcher_count(base::random_32bit_uinteger());
-  vault_chunk_info_put.set_watcher_checksum(base::random_32bit_uinteger());
-  vault_chunk_info_put.set_chunk_size(base::random_32bit_uinteger());
+  vault_chunk_info_put.set_watcher_count(base::RandomUint32());
+  vault_chunk_info_put.set_watcher_checksum(base::RandomUint32());
+  vault_chunk_info_put.set_chunk_size(base::RandomUint32());
   ASSERT_EQ(kChunkInfoHandlerNotStarted,
             chunk_info_handler.InsertChunkInfoFromPb(vault_chunk_info_put));
 
@@ -689,9 +689,9 @@ TEST_F(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerPutGetChunkInfo) {
   dummy_chunk_info.waiting_list.push_back(WaitingListEntry());
   dummy_chunk_info.watch_list.push_back(WatchListEntry());
   dummy_chunk_info.reference_list.push_back(ReferenceListEntry());
-  dummy_chunk_info.watcher_count = base::random_32bit_uinteger();
-  dummy_chunk_info.watcher_checksum = base::random_32bit_uinteger();
-  dummy_chunk_info.chunk_size = base::random_32bit_uinteger();
+  dummy_chunk_info.watcher_count = base::RandomUint32();
+  dummy_chunk_info.watcher_checksum = base::RandomUint32();
+  dummy_chunk_info.chunk_size = base::RandomUint32();
   ChunkInfo chunk_info = dummy_chunk_info;
   ASSERT_EQ(kChunkInfoHandlerNotStarted, chunk_info_handler.GetChunkInfo(
       vault_chunk_info_put.chunk_name(), &chunk_info));
@@ -722,17 +722,17 @@ TEST_F(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerPutGetChunkInfo) {
   const size_t kNumEntries(583);
   for (size_t i = 0; i < kNumEntries; ++i) {
     chunk_info.waiting_list.clear();
-    for (boost::uint16_t j = 0; j < (base::random_32bit_uinteger() % 16); ++j) {
+    for (boost::uint16_t j = 0; j < (base::RandomUint32() % 16); ++j) {
       WaitingListEntry waiting_list_ent;
       waiting_list_ent.pmid = base::RandomString(64);
-      waiting_list_ent.creation_time = base::random_32bit_uinteger();
+      waiting_list_ent.creation_time = base::RandomUint32();
       waiting_list_ent.storing_done = waiting_list_ent.creation_time % 2;
       waiting_list_ent.payments_done = waiting_list_ent.creation_time % 3;
-      waiting_list_ent.requested_payments = base::random_32bit_integer();
+      waiting_list_ent.requested_payments = base::RandomInt32();
       chunk_info.waiting_list.push_back(waiting_list_ent);
     }
     chunk_info.watch_list.clear();
-    for (boost::uint16_t j = 0; j < (base::random_32bit_uinteger() % 16); ++j) {
+    for (boost::uint16_t j = 0; j < (base::RandomUint32() % 16); ++j) {
       WatchListEntry watch_list_ent;
       watch_list_ent.pmid = base::RandomString(64);
       watch_list_ent.can_delete =
@@ -740,15 +740,15 @@ TEST_F(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerPutGetChunkInfo) {
       chunk_info.watch_list.push_back(watch_list_ent);
     }
     chunk_info.reference_list.clear();
-    for (boost::uint16_t j = 0; j < (base::random_32bit_uinteger() % 16); ++j) {
+    for (boost::uint16_t j = 0; j < (base::RandomUint32() % 16); ++j) {
       ReferenceListEntry reference_list_ent;
       reference_list_ent.pmid = base::RandomString(64);
-      reference_list_ent.last_seen = base::random_32bit_uinteger();
+      reference_list_ent.last_seen = base::RandomUint32();
       chunk_info.reference_list.push_back(reference_list_ent);
     }
-    chunk_info.watcher_count = base::random_32bit_uinteger();
-    chunk_info.watcher_checksum = base::random_32bit_uinteger();
-    chunk_info.chunk_size = base::random_32bit_uinteger();
+    chunk_info.watcher_count = base::RandomUint32();
+    chunk_info.watcher_checksum = base::RandomUint32();
+    chunk_info.chunk_size = base::RandomUint32();
     result = chunk_info_handler.chunk_infos_.insert(
         std::pair<std::string, ChunkInfo>(base::RandomString(64), chunk_info));
     ASSERT_TRUE(result.second);

@@ -22,13 +22,13 @@
 * ============================================================================
 */
 
+
 #include <gtest/gtest.h>
 #include <boost/bind.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
-#include <maidsafe/maidsafe-dht_config.h>
-#include <maidsafe/transport-api.h>
-#include <maidsafe/transportudt.h>
+#include <maidsafe/transport/transportudt.h>
+#include <maidsafe/base/utils.h>
 #include "maidsafe/client/imconnectionhandler.h"
 #include "protobuf/packet.pb.h"
 
@@ -39,7 +39,7 @@ class TestIMHandler : public testing::Test {
                     msgs_sent(), new_conn_accepted(), ext_conn_id(),
                     new_conn_trans_id() {
     boost::asio::ip::address addr;
-    base::get_local_address(&addr);
+    base::GetLocalAddress(&addr);
     ip = addr.to_string();
   }
   void SetUp() {

@@ -25,7 +25,7 @@
 #ifndef MAIDSAFE_CLIENT_IMHANDLER_H_
 #define MAIDSAFE_CLIENT_IMHANDLER_H_
 
-#include <maidsafe/crypto.h>
+#include <maidsafe/base/crypto.h>
 #include <string>
 #include "protobuf/packet.pb.h"
 

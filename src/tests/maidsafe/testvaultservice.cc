@@ -25,9 +25,9 @@
 #include <boost/lexical_cast.hpp>
 #include <google/protobuf/descriptor.h>
 #include <gtest/gtest.h>
-#include <maidsafe/crypto.h>
-#include <maidsafe/kademlia_service_messages.pb.h>
-#include <maidsafe/transportudt.h>
+#include <maidsafe/base/crypto.h>
+#include <maidsafe/protobuf/kademlia_service_messages.pb.h>
+#include <maidsafe/transport/transportudt.h>
 
 #include "fs/filesystem.h"
 #include "maidsafe/vault/chunkinfohandler.h"
@@ -119,7 +119,7 @@ class VaultServicesTest : public testing::Test {
     knode_.reset(new kad::KNode(&channel_manager_, &transport_handler_,
                                 kad::VAULT, vault_private_key_,
                                 vault_public_key_, false, false));
-    knode_->SetTransID(transport_id);
+    knode_->set_transport_id(transport_id);
     vault_chunkstore_ = new VaultChunkStore(chunkstore_dir_.string(),
                                             kAvailableSpace, 0);
     ASSERT_TRUE(vault_chunkstore_->Init());
@@ -216,7 +216,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesValidateSignedSize) {
   crypto::Crypto co;
   pub_key_sig = co.AsymSign(pub_key, "", priv_key, crypto::STRING_STRING);
   pmid = co.Hash(pub_key + pub_key_sig, "", crypto::STRING_STRING, false);
-  size_sig = co.AsymSign(base::itos_ull(size), "", priv_key,
+  size_sig = co.AsymSign(boost::lexical_cast<std::string>(size), "", priv_key,
                          crypto::STRING_STRING);
 
   sz.set_data_size(size);
@@ -463,7 +463,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesLocalStorage) {
 TEST_F(VaultServicesTest, BEH_MAID_ServicesNodeWithinClosest) {
   vault_service_->pmid_ = std::string(kKeySize, 0);
   for (int i = 0; i < 5; ++i) {
-    base::PDRoutingTableTuple entry(std::string(kKeySize, i + 1),
+    base::PublicRoutingTableTuple entry(std::string(kKeySize, i + 1),
                                     "127.0.0.1", 123 + i, "127.0.0.1", 456 + i,
                                     "pubkey", 10, 1, 1234);
     ASSERT_EQ(kSuccess, vault_service_->routing_table_->AddTuple(entry));
@@ -636,7 +636,7 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesStoreChunk) {
                                     vault_public_key_signature_,
                                     vault_chunkstore_, knode_.get(),
                                     &mock_vault_service_logic_,
-                                    udt_transport_.GetID());
+                                    udt_transport_.transport_id());
 
   maidsafe::GetSyncDataResponse get_sync_data_response;
   vault_service_->AddStartupSyncData(get_sync_data_response);
@@ -1166,7 +1166,7 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesAddToWatchList) {
                                     vault_public_key_signature_,
                                     vault_chunkstore_, knode_.get(),
                                     &mock_vault_service_logic_,
-                                    udt_transport_.GetID());
+                                    udt_transport_.transport_id());
 
   maidsafe::GetSyncDataResponse get_sync_data_response;
   vault_service_->AddStartupSyncData(get_sync_data_response);
@@ -1222,7 +1222,7 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesAddToWatchList) {
   maidsafe::AmendAccountResponse amend_resp;
   signed_size = amend_req.mutable_signed_size();
   signed_size->set_data_size(space_offered);
-  signed_size->set_signature(co.AsymSign(base::itos_ull(space_offered), "",
+  signed_size->set_signature(co.AsymSign(boost::lexical_cast<std::string>(space_offered), "",
                              client_priv_key, crypto::STRING_STRING));
   signed_size->set_pmid(client_pmid);
   signed_size->set_public_key(client_pub_key);
@@ -1335,7 +1335,7 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesAddToWatchList) {
         &TestCallback::CallbackFunction);
     signed_size = aa_req.mutable_signed_size();
     signed_size->set_data_size(chunk_size * kMinChunkCopies * 2);
-    std::string ser_size(base::itos_ull(signed_size->data_size()));
+    std::string ser_size(boost::lexical_cast<std::string>(signed_size->data_size()));
     signed_size->set_signature(co.AsymSign(ser_size, "", client_priv_key,
                                crypto::STRING_STRING));
     signed_size->set_pmid(client_pmid);
@@ -1381,7 +1381,7 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesRemoveFromWatchList) {
                                     vault_public_key_signature_,
                                     vault_chunkstore_, knode_.get(),
                                     &mock_vault_service_logic_,
-                                    udt_transport_.GetID());
+                                    udt_transport_.transport_id());
 
   maidsafe::GetSyncDataResponse get_sync_data_response;
   vault_service_->AddStartupSyncData(get_sync_data_response);
@@ -1456,7 +1456,7 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesRemoveFromWatchList) {
           &TestCallback::CallbackFunction);
       signed_size = aa_req.mutable_signed_size();
       signed_size->set_data_size(chunk_size * kMinChunkCopies * 2);
-      std::string ser_size(base::itos_ull(signed_size->data_size()));
+      std::string ser_size(boost::lexical_cast<std::string>(signed_size->data_size()));
       signed_size->set_signature(co.AsymSign(ser_size, "", client_priv_key[i],
                                  crypto::STRING_STRING));
       signed_size->set_pmid(client_pmid[i]);
@@ -1620,7 +1620,7 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesAddToReferenceList) {
                                     vault_public_key_signature_,
                                     vault_chunkstore_, knode_.get(),
                                     &mock_vault_service_logic_,
-                                    udt_transport_.GetID());
+                                    udt_transport_.transport_id());
 
   maidsafe::GetSyncDataResponse get_sync_data_response;
   vault_service_->AddStartupSyncData(get_sync_data_response);
@@ -1781,7 +1781,7 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesAddToReferenceList) {
         &TestCallback::CallbackFunction);
     signed_size = aa_req.mutable_signed_size();
     signed_size->set_data_size(chunk_size * kMinChunkCopies);
-    std::string ser_size(base::itos_ull(signed_size->data_size()));
+    std::string ser_size(boost::lexical_cast<std::string>(signed_size->data_size()));
     signed_size->set_signature(co.AsymSign(ser_size, "", client_priv_key,
                                crypto::STRING_STRING));
     signed_size->set_pmid(client_pmid);
@@ -1803,7 +1803,7 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesAddToReferenceList) {
         &TestCallback::CallbackFunction);
     signed_size = aa_req.mutable_signed_size();
     signed_size->set_data_size(chunk_size * kMinChunkCopies);
-    std::string ser_size(base::itos_ull(signed_size->data_size()));
+    std::string ser_size(boost::lexical_cast<std::string>(signed_size->data_size()));
     signed_size->set_signature(co.AsymSign(ser_size, "", vlt_priv_key,
                                crypto::STRING_STRING));
     signed_size->set_pmid(vlt_pmid);
@@ -1879,7 +1879,7 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesAmendAccount) {
                                     vault_public_key_signature_,
                                     vault_chunkstore_, knode_.get(),
                                     &mock_vault_service_logic,
-                                    udt_transport_.GetID());
+                                    udt_transport_.transport_id());
 
   maidsafe::GetSyncDataResponse get_sync_data_response;
   vault_service_->AddStartupSyncData(get_sync_data_response);
@@ -1910,8 +1910,8 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesAmendAccount) {
   boost::uint64_t chunk_size(chunk_data.size());
 
   EXPECT_CALL(*mock_vault_service_logic.kadops(),
-              FindCloseNodes(kad::KadId(chunk_name, false),
-                             testing::An<const base::callback_func_type&>()))
+              FindKClosestNodes(kad::KadId(chunk_name, false),
+                             testing::An<const kad::VoidFunctorOneString&>()))
       .Times(testing::AtLeast(6))
       .WillRepeatedly(testing::WithArg<1>(testing::Invoke(
           boost::bind(&mock_kadops::RunCallback,
@@ -1928,7 +1928,7 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesAmendAccount) {
   {
     maidsafe::SignedSize *signed_size = request.mutable_signed_size();
     signed_size->set_data_size(space_offered);
-    signed_size->set_signature(co.AsymSign(base::itos_ull(space_offered), "",
+    signed_size->set_signature(co.AsymSign(boost::lexical_cast<std::string>(space_offered), "",
                                client_priv_key, crypto::STRING_STRING));
     signed_size->set_pmid(client_pmid);
     signed_size->set_public_key(client_pub_key);
@@ -1976,7 +1976,7 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesAmendAccount) {
         for (int i = 0; i < kad::K; ++i) {
           signed_size = requests.at(i).mutable_signed_size();
           signed_size->set_data_size(0);
-          signed_size->set_signature(co.AsymSign(base::itos_ull(0), "",
+          signed_size->set_signature(co.AsymSign(boost::lexical_cast<std::string>(0), "",
                                      client_priv_key, crypto::STRING_STRING));
         }
         break;
@@ -2344,7 +2344,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesGetSyncData) {
   }
 
   // valid request, but no data to sync
-  base::PDRoutingTableTuple entry(pmid, "127.0.0.1", 123, "127.0.0.1", 456,
+  base::PublicRoutingTableTuple entry(pmid, "127.0.0.1", 123, "127.0.0.1", 456,
                                   pub_key, 10, 1, 1234);
   EXPECT_EQ(kSuccess, vault_service_->routing_table_->AddTuple(entry));
   {
@@ -2444,7 +2444,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesGetAccount) {
         request.set_request_signature(req_sig);
         break;
       case 3:  // no account
-        base::PDRoutingTableTuple entry(pmid, "127.0.0.1", 123, "127.0.0.1",
+        base::PublicRoutingTableTuple entry(pmid, "127.0.0.1", 123, "127.0.0.1",
                                         456, pub_key, 10, 1, 1234);
         EXPECT_EQ(kSuccess, vault_service_->routing_table_->AddTuple(entry));
         break;
@@ -2509,7 +2509,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesGetChunkInfo) {
         request.set_request_signature(req_sig);
         break;
       case 3:  // no account
-        base::PDRoutingTableTuple entry(pmid, "127.0.0.1", 123, "127.0.0.1",
+        base::PublicRoutingTableTuple entry(pmid, "127.0.0.1", 123, "127.0.0.1",
                                         456, pub_key, 10, 1, 1234);
         EXPECT_EQ(kSuccess, vault_service_->routing_table_->AddTuple(entry));
         break;
@@ -2581,7 +2581,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesGetBufferPacket) {
         request.set_request_signature(req_sig);
         break;
       case 3:  // no buffer packet
-        base::PDRoutingTableTuple entry(pmid, "127.0.0.1", 123, "127.0.0.1",
+        base::PublicRoutingTableTuple entry(pmid, "127.0.0.1", 123, "127.0.0.1",
                                         456, pub_key, 10, 1, 1234);
         EXPECT_EQ(kSuccess, vault_service_->routing_table_->AddTuple(entry));
         break;
@@ -2685,7 +2685,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesVaultStatus) {
 TEST_F(VaultServicesTest, BEH_MAID_ServicesCreateBP) {
   VaultService service(vault_pmid_, vault_public_key_, vault_private_key_,
                        vault_public_key_signature_, vault_chunkstore_, NULL,
-                       vault_service_logic_, udt_transport_.GetID());
+                       vault_service_logic_, udt_transport_.transport_id());
   rpcprotocol::Controller controller;
   maidsafe::CreateBPRequest request;
   maidsafe::CreateBPResponse response;
@@ -2754,7 +2754,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesCreateBP) {
 TEST_F(VaultServicesTest, BEH_MAID_ServicesModifyBPInfo) {
   VaultService service(vault_pmid_, vault_public_key_, vault_private_key_,
                        vault_public_key_signature_, vault_chunkstore_, NULL,
-                       vault_service_logic_, udt_transport_.GetID());
+                       vault_service_logic_, udt_transport_.transport_id());
   rpcprotocol::Controller controller;
   maidsafe::CreateBPRequest create_request;
   maidsafe::CreateBPResponse create_response;
@@ -2911,13 +2911,13 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesModifyBPInfo) {
   EXPECT_EQ(pub_key, bpi.owner_publickey());
   EXPECT_EQ(3, bpi.users_size());
   for (int n = 0; n < bpi.users_size(); ++n)
-    EXPECT_EQ("newuser" + base::itos(n), bpi.users(n));
+    EXPECT_EQ("newuser" + base::IntToString(n), bpi.users(n));
 }
 
 TEST_F(VaultServicesTest, BEH_MAID_ServicesGetBPMessages) {
   VaultService service(vault_pmid_, vault_public_key_, vault_private_key_,
                        vault_public_key_signature_, vault_chunkstore_, NULL,
-                       vault_service_logic_, udt_transport_.GetID());
+                       vault_service_logic_, udt_transport_.transport_id());
   rpcprotocol::Controller controller;
   maidsafe::CreateBPRequest request;
   maidsafe::CreateBPResponse response;
@@ -2995,7 +2995,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesGetBPMessages) {
 TEST_F(VaultServicesTest, BEH_MAID_ServicesAddBPMessages) {
   VaultService service(vault_pmid_, vault_public_key_, vault_private_key_,
                        vault_public_key_signature_, vault_chunkstore_, NULL,
-                       vault_service_logic_, udt_transport_.GetID());
+                       vault_service_logic_, udt_transport_.transport_id());
   rpcprotocol::Controller controller;
   maidsafe::CreateBPRequest request;
   maidsafe::CreateBPResponse response;
@@ -3102,14 +3102,14 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesAddBPMessages) {
   bpm.set_sender_id("newuser");
   bpm.set_sender_public_key(newuser_pub_key);
   bpm.set_type(maidsafe::INSTANT_MSG);
-  boost::uint32_t iter = base::random_32bit_uinteger() % 1000 +1;
+  boost::uint32_t iter = base::RandomUint32() % 1000 +1;
   std::string aes_key = co.SecurePassword(co.Hash(msg, "",
                                           crypto::STRING_STRING, false), iter);
   bpm.set_rsaenc_key(co.AsymEncrypt(aes_key, "", pub_key,
                                     crypto::STRING_STRING));
   bpm.set_aesenc_message(co.SymmEncrypt(msg, "", crypto::STRING_STRING,
                                         aes_key));
-  bpm.set_timestamp(base::get_epoch_time());
+  bpm.set_timestamp(base::GetEpochTime());
   std::string ser_bpm;
   bpm.SerializeToString(&ser_bpm);
   gp.set_data(ser_bpm);
@@ -3184,7 +3184,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesAddBPMessages) {
 TEST_F(VaultServicesTest, BEH_MAID_ServicesGetBPPresence) {
   VaultService service(vault_pmid_, vault_public_key_, vault_private_key_,
                        vault_public_key_signature_, vault_chunkstore_, NULL,
-                       vault_service_logic_, udt_transport_.GetID());
+                       vault_service_logic_, udt_transport_.transport_id());
   rpcprotocol::Controller controller;
   maidsafe::CreateBPRequest request;
   maidsafe::CreateBPResponse response;
@@ -3268,7 +3268,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesGetBPPresence) {
   lp.set_contact_id("newuser");
   maidsafe::EndPoint ep;
   for (int n = 0; n < 3; ++n) {
-    ep.add_ip(base::itos(n));
+    ep.add_ip(base::IntToString(n));
     ep.add_port(n);
   }
   lp.set_end_point(ep.SerializeAsString());
@@ -3310,7 +3310,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesGetBPPresence) {
 TEST_F(VaultServicesTest, BEH_MAID_ServicesAddBPPresence) {
   VaultService service(vault_pmid_, vault_public_key_, vault_private_key_,
                        vault_public_key_signature_, vault_chunkstore_, NULL,
-                       vault_service_logic_, udt_transport_.GetID());
+                       vault_service_logic_, udt_transport_.transport_id());
   rpcprotocol::Controller controller;
   maidsafe::CreateBPRequest request;
   maidsafe::CreateBPResponse response;
@@ -3417,7 +3417,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesAddBPPresence) {
   lp.set_contact_id("newuser");
   maidsafe::EndPoint ep;
   for (int n = 0; n < 3; ++n) {
-    ep.add_ip(base::itos(n));
+    ep.add_ip(base::IntToString(n));
     ep.add_port(n);
   }
   lp.set_end_point(ep.SerializeAsString());

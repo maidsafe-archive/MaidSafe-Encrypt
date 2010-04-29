@@ -26,7 +26,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/thread.hpp>
-#include <maidsafe/transportudt.h>
+#include <maidsafe/transport/transportudt.h>
 #include "fs/filesystem.h"
 #include "maidsafe/chunkstore.h"
 #include "maidsafe/vault/vaultservice.h"
@@ -142,7 +142,7 @@ class MsmSetLocalVaultOwnedTest : public testing::Test {
     ASSERT_TRUE(msm_.channel_manager_.RegisterNotifiersToTransport());
     ASSERT_TRUE(msm_.transport_handler_.RegisterOnServerDown(boost::bind(
         &test_vault_reg::HandleDeadServer, _1, _2, _3)));
-    ASSERT_EQ(0, msm_.transport_handler_.Start(0, msm_.udt_transport_.GetID()));
+    ASSERT_EQ(0, msm_.transport_handler_.Start(0, msm_.udt_transport_.transport_id()));
     ASSERT_EQ(0, msm_.channel_manager_.Start());
     ASSERT_TRUE(server_.RegisterNotifiersToTransport());
     ASSERT_TRUE(server_transport_handler_.RegisterOnServerDown(boost::bind(
@@ -153,7 +153,7 @@ class MsmSetLocalVaultOwnedTest : public testing::Test {
     service_channel_->SetService(service_.pservice());
     server_.RegisterChannel(service_.pservice()->GetDescriptor()->name(),
         service_channel_.get());
-    port_ = msm_.transport_handler_.listening_port(msm_.udt_transport_.GetID());
+    port_ = msm_.transport_handler_.listening_port(msm_.udt_transport_.transport_id());
   }
   void TearDown() {
     resulthandler_.Reset();

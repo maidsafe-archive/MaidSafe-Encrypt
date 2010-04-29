@@ -637,7 +637,7 @@ int SessionSingleton::StartLiveConnection(const std::string &contact,
       return kLiveContactNotFound;
     it->second.transport = transport_id;
     it->second.connection_id = conn_id;
-    it->second.init_timestamp = base::get_epoch_time();
+    it->second.init_timestamp = base::GetEpochTime();
   }
   return 0;
 }

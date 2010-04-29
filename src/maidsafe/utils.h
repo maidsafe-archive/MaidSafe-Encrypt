@@ -1,14 +1,14 @@
 /*
 * ============================================================================
 *
-* Copyright [2009] maidsafe.net limited
+* Copyright [2010] maidsafe.net limited
 *
-* Description:  none
+* Description:  Utility Functions
 * Version:      1.0
-* Created:      2009-08-13-01.01.27
+* Created:      2010-04-29-13.26.25
 * Revision:     none
 * Compiler:     gcc
-* Author:       Team
+* Author:       Team, dev@maidsafe.net
 * Company:      maidsafe.net limited
 *
 * The following source code is property of maidsafe.net limited and is not
@@ -22,16 +22,17 @@
 * ============================================================================
 */
 
-#include <maidsafe/base/log.h>
+#ifndef MAIDSAFE_UTILS_H_
+#define MAIDSAFE_UTILS_H_
 
-#include "gtest/gtest.h"
-int main(int argc, char **argv) {
-  google::InitGoogleLogging(argv[0]);
-  // setting output to be stderr
-#ifndef HAVE_GLOG
-  bool FLAGS_logtostderr;
-#endif
-  FLAGS_logtostderr = true;
-  testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
-}
+#include <string>
+
+namespace maidsafe {
+
+std::string TidyPath(const std::string &original_path);
+
+std::string StringToLowercase(const std::string &str);
+
+}  // namespace maidsafe
+
+#endif  // MAIDSAFE_UTILS_H_

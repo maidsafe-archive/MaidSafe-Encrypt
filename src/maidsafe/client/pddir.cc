@@ -25,10 +25,10 @@
 #include "maidsafe/client/pddir.h"
 
 #include <boost/filesystem.hpp>
+#include <boost/lexical_cast.hpp>
 
 #include <maidsafe/maidsafe-dht.h>
-#include <maidsafe/crypto.h>
-#include <maidsafe/utils.h>
+#include <maidsafe/base/crypto.h>
 
 #include <algorithm>
 #include <cctype>
@@ -39,9 +39,9 @@
 #include <string>
 #include <vector>
 
-
-#include "protobuf/datamaps.pb.h"
 #include "maidsafe/maidsafe.h"
+#include "maidsafe/utils.h"
+#include "protobuf/datamaps.pb.h"
 
 namespace fs = boost::filesystem;
 
@@ -154,7 +154,8 @@ int PdDir::GetDirKey(const std::string &file_name, std::string *dir_key) {
   if (id < 0)
     return id;
   try {
-    std::string s = "select dir_key from mdm where id=" + base::itos(id) + ";";
+    std::string s = "select dir_key from mdm where id=" +
+                    base::IntToString(id) + ";";
 #ifdef DEBUG
     // printf("%s\n", s.c_str());
 #endif
@@ -197,7 +198,7 @@ int PdDir::Disconnect() {
 }
 
 int PdDir::GetIdFromName(const std::string &file_name) {
-  std::string name = base::StrToLwr(file_name);
+  std::string name = StringToLowercase(file_name);
   SanitiseSingleQuotes(&name);
   std::string s = "select id from mdm where name='" + name + "';";
   try {
@@ -218,7 +219,7 @@ int PdDir::GetIdFromName(const std::string &file_name) {
 
 bool PdDir::DataMapExists(const int &id) {
   try {
-    std::string s = "select * from dm where id=" + base::itos(id) + ";";
+    std::string s = "select * from dm where id=" + base::IntToString(id) + ";";
     CppSQLite3Query q_dm = db_->execQuery(s.c_str());
     return !q_dm.eof();
   }
@@ -289,7 +290,7 @@ int PdDir::AddElement(const std::string &ser_mdm,
     }
 
     int ins_mdm = 0, ins_dm = 0;
-    std::string name = base::StrToLwr(mdm.display_name());
+    std::string name = StringToLowercase(mdm.display_name());
     if (!mdm_exists) {  // mdm name is not there
       // add to mdm
       CppSQLite3Statement stmt = db_->compileStatement(
@@ -300,17 +301,17 @@ int PdDir::AddElement(const std::string &ser_mdm,
       stmt.bind(4, mdm.type());
       stmt.bind(5, mdm.stats().c_str());
       stmt.bind(6, mdm.tag().c_str());
-      // stmt.bind(7, base::itos_ull(mdm.file_size_high()).c_str());
-      // stmt.bind(8, base::itos_ull(mdm.file_size_low()).c_str());
-      // stmt.bind(9, base::itos_ull(mdm.creation_time()).c_str());
+      // stmt.bind(7, boost::lexical_cast<std::string>(mdm.file_size_high()).c_str());
+      // stmt.bind(8, boost::lexical_cast<std::string>(mdm.file_size_low()).c_str());
+      // stmt.bind(9, boost::lexical_cast<std::string>(mdm.creation_time()).c_str());
       stmt.bind(7, mdm.file_size_high());
       stmt.bind(8, mdm.file_size_low());
       stmt.bind(9, mdm.creation_time());
-      boost::uint32_t current_time = base::get_epoch_time();
-      // stmt.bind(10, base::itos_ul(current_time).c_str());
-      // stmt.bind(11, base::itos_ul(current_time).c_str());
-      stmt.bind(10, base::itos_ul(current_time).c_str());
-      stmt.bind(11, base::itos_ul(current_time).c_str());
+      boost::uint32_t current_time = base::GetEpochTime();
+      // stmt.bind(10, boost::lexical_cast<std::string>(current_time).c_str());
+      // stmt.bind(11, boost::lexical_cast<std::string>(current_time).c_str());
+      stmt.bind(10, boost::lexical_cast<std::string>(current_time).c_str());
+      stmt.bind(11, boost::lexical_cast<std::string>(current_time).c_str());
       stmt.bind(12, base::EncodeToHex(dir_key).c_str());
       ins_mdm = stmt.execDML();
       stmt.finalize();
@@ -337,9 +338,7 @@ int PdDir::AddElement(const std::string &ser_mdm,
         stmt2.bind(1, mdm.type());
         stmt2.bind(2, mdm.stats().c_str());
         stmt2.bind(3, mdm.tag().c_str());
-        boost::uint32_t current_time = base::get_epoch_time();
-        // stmt2.bind(4, base::itos_ul(current_time).c_str());
-        // stmt2.bind(5, base::itos_ul(current_time).c_str());
+        boost::uint32_t current_time = base::GetEpochTime();
         stmt2.bind(4, static_cast<int>(current_time));
         stmt2.bind(5, static_cast<int>(current_time));
         stmt2.bind(6, mdm.id());
@@ -397,7 +396,7 @@ int PdDir::ModifyMetaDataMap(const std::string &ser_mdm,
     stmt.bind(3, mdm.tag().c_str());
     stmt.bind(4, mdm.file_size_high());
     stmt.bind(5, mdm.file_size_low());
-    boost::uint32_t current_time = base::get_epoch_time();
+    boost::uint32_t current_time = base::GetEpochTime();
     // stmt.bind(6, (const unsigned char)current_time);
     // stmt.bind(7, (const unsigned char)current_time);
     stmt.bind(6, static_cast<int>(current_time));
@@ -450,7 +449,8 @@ int PdDir::RemoveElement(const std::string &file_name) {
       return kDBCantFindFile;
     }
 
-    std::string s = "select type from mdm where id=" + base::itos(id) + ";";
+    std::string s = "select type from mdm where id=" +
+                    base::IntToString(id) + ";";
 #ifdef DEBUG
     // printf("%s\n", s.c_str());
 #endif
@@ -462,7 +462,7 @@ int PdDir::RemoveElement(const std::string &file_name) {
     if (ItemType(type) == REGULAR_FILE ||
         ItemType(type) == SMALL_FILE ||
         ItemType(type) == EMPTY_FILE) {
-      s = "delete from dm where id=" + base::itos(id) + ";";
+      s = "delete from dm where id=" + base::IntToString(id) + ";";
       rows = db_->execDML(s.c_str());
       if (rows > 0) {
         flag_dm = true;
@@ -472,7 +472,7 @@ int PdDir::RemoveElement(const std::string &file_name) {
     }
 
     // delete metadatamap
-    s = "delete from mdm where id=" + base::itos(id) + ";";
+    s = "delete from mdm where id=" + base::IntToString(id) + ";";
     rows = db_->execDML(s.c_str());
     if (rows>0)
       flag_mdm = true;
@@ -574,7 +574,8 @@ int PdDir::GetDataMap(const std::string &file_name, std::string *ser_dm) {
     return kDBCantFindFile;
 
   try {
-    std::string s = "select ser_dm from dm where id=" + base::itos(id) + ";";
+    std::string s = "select ser_dm from dm where id=" +
+                    base::IntToString(id) + ";";
     CppSQLite3Query q_dm = db_->execQuery(s.c_str());
     if (q_dm.eof()) {
 #ifdef DEBUG
@@ -607,7 +608,8 @@ int PdDir::GetMetaDataMap(const std::string &file_name, std::string *ser_mdm) {
 
   try {
     std::string file_hash;
-    std::string s = "select file_hash from dm where id=" + base::itos(id) + ";";
+    std::string s = "select file_hash from dm where id=" +
+                    base::IntToString(id) + ";";
     CppSQLite3Query q_dm = db_->execQuery(s.c_str());
     if (q_dm.eof())
       file_hash = "";
@@ -615,7 +617,7 @@ int PdDir::GetMetaDataMap(const std::string &file_name, std::string *ser_mdm) {
       file_hash = base::DecodeFromHex(q_dm.fieldValue(
                   static_cast<unsigned int>(0)));
 
-    s = "select * from mdm where id=" + base::itos(id) + ";";
+    s = "select * from mdm where id=" + base::IntToString(id) + ";";
     CppSQLite3Query q_mdm = db_->execQuery(s.c_str());
     if (q_mdm.eof()) {
 #ifdef DEBUG
@@ -631,11 +633,16 @@ int PdDir::GetMetaDataMap(const std::string &file_name, std::string *ser_mdm) {
       mdm.add_file_hash(file_hash);
       mdm.set_stats(q_mdm.fieldValue(4));
       mdm.set_tag(q_mdm.fieldValue(5));
-      mdm.set_file_size_high(base::stoi_ul(q_mdm.fieldValue(6)));
-      mdm.set_file_size_low(base::stoi_ul(q_mdm.fieldValue(7)));
-      mdm.set_creation_time(base::stoi_ul(q_mdm.fieldValue(8)));
-      mdm.set_last_modified(base::stoi_ul(q_mdm.fieldValue(9)));
-      mdm.set_last_access(base::stoi_ul(q_mdm.fieldValue(10)));
+      mdm.set_file_size_high(boost::lexical_cast<boost::uint32_t>(
+                             q_mdm.fieldValue(6)));
+      mdm.set_file_size_low(boost::lexical_cast<boost::uint32_t>(
+                            q_mdm.fieldValue(7)));
+      mdm.set_creation_time(boost::lexical_cast<boost::uint32_t>(
+                            q_mdm.fieldValue(8)));
+      mdm.set_last_modified(boost::lexical_cast<boost::uint32_t>(
+                            q_mdm.fieldValue(9)));
+      mdm.set_last_access(boost::lexical_cast<boost::uint32_t>(
+                          q_mdm.fieldValue(10)));
       mdm.SerializeToString(ser_mdm);
       return kSuccess;
     }
@@ -669,7 +676,7 @@ int PdDir::ChangeTime(const std::string &file_name, char time_type) {
   }
 
   try {
-    boost::uint32_t current_time = base::get_epoch_time();
+    boost::uint32_t current_time = base::GetEpochTime();
     std::string s = "update mdm set " + time_field + " = ? where id = ?;";
     CppSQLite3Statement stmt = db_->compileStatement(s.c_str());
     // stmt.bind(1, (const unsigned char)current_time);

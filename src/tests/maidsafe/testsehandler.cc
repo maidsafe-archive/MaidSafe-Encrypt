@@ -30,6 +30,7 @@
 
 #include "fs/filesystem.h"
 #include "maidsafe/chunkstore.h"
+#include "maidsafe/utils.h"
 #include "maidsafe/client/dataatlashandler.h"
 #include "maidsafe/client/localstoremanager.h"
 #include "maidsafe/client/packetfactory.h"
@@ -150,13 +151,13 @@ class SEHandlerTest : public testing::Test {
       MetaDataMap mdm;
       std::string ser_mdm, key;
       mdm.set_id(-2);
-      mdm.set_display_name(base::TidyPath(kRootSubdir[i][0]));
+      mdm.set_display_name(TidyPath(kRootSubdir[i][0]));
       mdm.set_type(EMPTY_DIRECTORY);
       mdm.set_stats("");
       mdm.set_tag("");
       mdm.set_file_size_high(0);
       mdm.set_file_size_low(0);
-      boost::uint32_t current_time = base::get_epoch_time();
+      boost::uint32_t current_time = base::GetEpochTime();
       mdm.set_creation_time(current_time);
       mdm.SerializeToString(&ser_mdm);
       if (kRootSubdir[i][1].empty())
@@ -165,7 +166,7 @@ class SEHandlerTest : public testing::Test {
         key = kRootSubdir[i][1];
       fs::create_directories(file_system::MaidsafeHomeDir(ss_->SessionName()) /
           kRootSubdir[i][0]);
-      dah->AddElement(base::TidyPath(kRootSubdir[i][0]),
+      dah->AddElement(TidyPath(kRootSubdir[i][0]),
           ser_mdm, "", key, true);
     }
 
@@ -184,18 +185,18 @@ class SEHandlerTest : public testing::Test {
 //    mdm_.set_tag("");
 //    mdm_.set_file_size_high(0);
 //    mdm_.set_file_size_low(0);
-//    boost::uint32_t current_time_ = base::get_epoch_time();
+//    boost::uint32_t current_time_ = base::GetEpochTime();
 //    mdm_.set_creation_time(current_time_);
 //    mdm_.SerializeToString(&ser_mdm_);
 //    key_ = kSharesSubdir[1][1];
-//    dah->AddElement(base::TidyPath(kSharesSubdir[1][0]),
+//    dah->AddElement(TidyPath(kSharesSubdir[1][0]),
 //      ser_mdm_, "", key_, true);
 //
-    dah->GetDbPath(base::TidyPath(kRootSubdir[0][0]), CREATE, &db_str1_);
+    dah->GetDbPath(TidyPath(kRootSubdir[0][0]), CREATE, &db_str1_);
 // *********************************************
 // Anonymous Shares are disabled at the moment *
 // *********************************************
-//    dah->GetDbPath(base::TidyPath(kSharesSubdir[1][0]), CREATE, &db_str2_);
+//    dah->GetDbPath(TidyPath(kSharesSubdir[1][0]), CREATE, &db_str2_);
     cb.Reset();
   }
   void TearDown() {
@@ -246,15 +247,15 @@ TEST_F(SEHandlerTest, BEH_MAID_Check_Entry) {
     name_too_long += "NameTooLong";
   fs::path rel_path8 = rel_path / name_too_long;
   fs::path rel_path9 = rel_path / "file9";
-  std::string rel_str1 = base::TidyPath(rel_path1.string());
-  std::string rel_str2 = base::TidyPath(rel_path2.string());
-  std::string rel_str3 = base::TidyPath(rel_path3.string());
-  std::string rel_str4 = base::TidyPath(rel_path4.string());
-  std::string rel_str5 = base::TidyPath(rel_path5.string());
-  std::string rel_str6 = base::TidyPath(rel_path6.string());
-  std::string rel_str7 = base::TidyPath(rel_path7.string());
-  std::string rel_str8 = base::TidyPath(rel_path8.string());
-  std::string rel_str9 = base::TidyPath(rel_path9.string());
+  std::string rel_str1 = TidyPath(rel_path1.string());
+  std::string rel_str2 = TidyPath(rel_path2.string());
+  std::string rel_str3 = TidyPath(rel_path3.string());
+  std::string rel_str4 = TidyPath(rel_path4.string());
+  std::string rel_str5 = TidyPath(rel_path5.string());
+  std::string rel_str6 = TidyPath(rel_path6.string());
+  std::string rel_str7 = TidyPath(rel_path7.string());
+  std::string rel_str8 = TidyPath(rel_path8.string());
+  std::string rel_str9 = TidyPath(rel_path9.string());
   boost::uint64_t size1 = 0;
   boost::uint64_t size2 = kMinRegularFileSize - 1;
   boost::uint64_t size3 = kMinRegularFileSize;
@@ -338,7 +339,7 @@ TEST_F(SEHandlerTest, BEH_MAID_EncryptFile) {
 
   fs::path rel_path(kRootSubdir[0][0]);
   rel_path /= "file1";
-  std::string rel_str = base::TidyPath(rel_path.string());
+  std::string rel_str = TidyPath(rel_path.string());
 
   std::string full_str = test_seh::CreateRandomFile(rel_str);
   int result = seh->EncryptFile(rel_str, PRIVATE, "");
@@ -465,7 +466,7 @@ TEST_F(SEHandlerTest, BEH_MAID_DecryptWithChunksPrevLoaded) {
 
   fs::path rel_path(kRootSubdir[0][0]);
   rel_path /= "file1";
-  std::string rel_str = base::TidyPath(rel_path.string());
+  std::string rel_str = TidyPath(rel_path.string());
 
   std::string full_str = test_seh::CreateRandomFile(rel_str);
   std::string hash_before, hash_after;
@@ -501,7 +502,7 @@ TEST_F(SEHandlerTest, BEH_MAID_DecryptWithLoadChunks) {
 
   fs::path rel_path(kRootSubdir[0][0]);
   rel_path /= "file1";
-  std::string rel_str = base::TidyPath(rel_path.string());
+  std::string rel_str = TidyPath(rel_path.string());
 
   std::string full_str = test_seh::CreateRandomFile(rel_str);
   std::string hash_before, hash_after;
@@ -552,7 +553,7 @@ TEST_F(SEHandlerTest, BEH_MAID_DecryptWithLoadChunks) {
 //
 //    fs::path rel_path_(kRootSubdir[0][0]);
 //    rel_path /= "file1";
-//    std::string rel_str = base::TidyPath(rel_path_.string());
+//    std::string rel_str = TidyPath(rel_path_.string());
 //
 //    std::string full_str = test_seh::CreateRandomFile(rel_str_);
 //    std::string hash_before_, hash_after_;
@@ -634,12 +635,12 @@ TEST_F(SEHandlerTest, BEH_MAID_EncryptAndDecryptPrivateDb) {
   dm.SerializeToString(&ser_dm);
 
   // Create the entry
-  ASSERT_EQ(0, seh->EncryptDb(base::TidyPath(kRootSubdir[0][0]), PRIVATE, key,
+  ASSERT_EQ(0, seh->EncryptDb(TidyPath(kRootSubdir[0][0]), PRIVATE, key,
             "", true, &dm));
 //  ASSERT_EQ("", ser_dm);
 
   // Test decryption with the directory DB ser_dm in the map
-  ASSERT_EQ(0, seh->DecryptDb(base::TidyPath(kRootSubdir[0][0]), PRIVATE,
+  ASSERT_EQ(0, seh->DecryptDb(TidyPath(kRootSubdir[0][0]), PRIVATE,
             ser_dm, key, "", true, false));
   ASSERT_TRUE(fs::exists(db_path));
   ASSERT_EQ(hash_before, co.Hash(db_str1_, "", crypto::FILE_STRING, false));
@@ -648,17 +649,17 @@ TEST_F(SEHandlerTest, BEH_MAID_EncryptAndDecryptPrivateDb) {
   fs::remove(db_path);
   ASSERT_FALSE(fs::exists(db_path));
   ASSERT_EQ(0,
-    seh->RemoveKeyFromUptodateDms(base::TidyPath(kRootSubdir[0][0]))) <<
+    seh->RemoveKeyFromUptodateDms(TidyPath(kRootSubdir[0][0]))) <<
     "Didn't find the key in the map of DMs.";
 
   // Test decryption with no record of the directory DB ser_dm
-  ASSERT_EQ(0, seh->DecryptDb(base::TidyPath(kRootSubdir[0][0]), PRIVATE,
+  ASSERT_EQ(0, seh->DecryptDb(TidyPath(kRootSubdir[0][0]), PRIVATE,
             ser_dm, key, "", true, false));
   ASSERT_TRUE(fs::exists(db_path));
   ASSERT_EQ(hash_before, co.Hash(db_str1_, "", crypto::FILE_STRING, false));
 
   // Test decryption with the directory DB ser_dm in the map
-  ASSERT_EQ(0, seh->DecryptDb(base::TidyPath(kRootSubdir[0][0]), PRIVATE,
+  ASSERT_EQ(0, seh->DecryptDb(TidyPath(kRootSubdir[0][0]), PRIVATE,
             ser_dm, key, "", true, false));
   ASSERT_TRUE(fs::exists(db_path));
   ASSERT_EQ(hash_before, co.Hash(db_str1_, "", crypto::FILE_STRING, false));
@@ -686,18 +687,18 @@ TEST_F(SEHandlerTest, DISABLED_BEH_MAID_EncryptAndDecryptAnonDb) {
 // *********************************************
 // Anonymous Shares are disabled at the moment *
 // *********************************************
-//  ASSERT_EQ(0, seh->EncryptDb(base::TidyPath(kSharesSubdir[1][0]),
+//  ASSERT_EQ(0, seh->EncryptDb(TidyPath(kSharesSubdir[1][0]),
 //    ANONYMOUS, key, "", false, &ser_dm));
   fs::remove(db_path);
   ASSERT_FALSE(fs::exists(db_path));
 //  ASSERT_EQ(0,
-//    seh->RemoveKeyFromUptodateDms(base::TidyPath(kSharesSubdir[1][0]))) <<
+//    seh->RemoveKeyFromUptodateDms(TidyPath(kSharesSubdir[1][0]))) <<
 //    "Didn't find the key in the map of DMs.";
-//  ASSERT_EQ(0, seh->DecryptDb(base::TidyPath(kSharesSubdir[1][0]),
+//  ASSERT_EQ(0, seh->DecryptDb(TidyPath(kSharesSubdir[1][0]),
 //    ANONYMOUS, ser_dm, key, "", false, false));
   ASSERT_TRUE(fs::exists(db_path));
   ASSERT_EQ(hash_before, co.Hash(db_str2_, "", crypto::FILE_STRING, false));
-//  ASSERT_EQ(0, seh->DecryptDb(base::TidyPath(kSharesSubdir[1][0]),
+//  ASSERT_EQ(0, seh->DecryptDb(TidyPath(kSharesSubdir[1][0]),
 //    ANONYMOUS, "", key, "", false, false));
   ASSERT_TRUE(fs::exists(db_path));
   ASSERT_EQ(hash_before, co.Hash(db_str2_, "", crypto::FILE_STRING, false));

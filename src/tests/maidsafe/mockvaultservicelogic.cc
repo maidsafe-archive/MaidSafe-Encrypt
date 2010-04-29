@@ -25,6 +25,8 @@
 
 #include "tests/maidsafe/mockvaultservicelogic.h"
 
+#include <boost/lexical_cast.hpp>
+
 #include <algorithm>
 
 namespace mock_vsl {
@@ -45,7 +47,7 @@ void KGroup::MakeAmendAccountRequests(
   maidsafe::SignedSize *signed_size = request.mutable_signed_size();
   for (size_t i = 0; i < members_.size(); ++i) {
     signed_size->set_data_size(data_size);
-    signed_size->set_signature(co_.AsymSign(base::itos_ull(data_size), "",
+    signed_size->set_signature(co_.AsymSign(boost::lexical_cast<std::string>(data_size), "",
         members_.at(i).pmid_private, crypto::STRING_STRING));
     signed_size->set_pmid(members_.at(i).pmid);
     signed_size->set_public_key(members_.at(i).pmid_public);
@@ -77,7 +79,7 @@ void DoneRun(const int &min_delay,
   int diff = max_delay - min;
   if (diff < 1)
     diff = 1;
-  int sleep_time(base::random_32bit_uinteger() % diff + min);
+  int sleep_time(base::RandomUint32() % diff + min);
   boost::this_thread::sleep(boost::posix_time::milliseconds(sleep_time));
   callback->Run();
 };

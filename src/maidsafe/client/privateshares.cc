@@ -210,7 +210,7 @@ int PrivateShareHandler::MI_TouchShare(const std::string &value,
     return -2024;
   private_share p_s = *it;
   ++p_s.rank_;
-  p_s.last_view_ = base::get_epoch_time();
+  p_s.last_view_ = base::GetEpochTime();
   pss_.replace(it, p_s);
 
   return 0;

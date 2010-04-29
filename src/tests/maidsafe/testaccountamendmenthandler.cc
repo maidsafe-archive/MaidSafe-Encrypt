@@ -455,8 +455,8 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_CreateNewAmendment) {
   ASSERT_EQ(kSuccess, ah_.AddAccount(test_account_name, 999999));
 
   // Expectations
-  EXPECT_CALL(*vsl_.kadops(), FindCloseNodes(kad::KadId(far_chunk_name, false),
-      testing::An<const base::callback_func_type&>()))
+  EXPECT_CALL(*vsl_.kadops(), FindKClosestNodes(kad::KadId(far_chunk_name, false),
+      testing::An<const kad::VoidFunctorOneString&>()))
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
           boost::bind(&mock_kadops::RunCallback, fail_parse_result_, _1))))
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
@@ -707,8 +707,8 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_ProcessRequest) {
   ASSERT_EQ(size_t(11), ah_.accounts_.size());
 
   // Expectations
-  EXPECT_CALL(*vsl_.kadops(), FindCloseNodes(kad::KadId(chunk_name, false),
-      testing::An<const base::callback_func_type&>()))
+  EXPECT_CALL(*vsl_.kadops(), FindKClosestNodes(kad::KadId(chunk_name, false),
+      testing::An<const kad::VoidFunctorOneString&>()))
       .Times(testing::AtLeast(5))
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
           boost::bind(&mock_kadops::RunCallback, good_result_, _1))))  // Call 2
@@ -904,7 +904,7 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_CleanUp) {
       aah_.amendments_.get<by_timestamp>().begin();
   ++it;
   AccountAmendment amendment = *it;
-  amendment.expiry_time = base::get_epoch_milliseconds() - 1000;
+  amendment.expiry_time = base::GetEpochMilliseconds() - 1000;
   aah_.amendments_.get<by_timestamp>().replace(it, amendment);
   ASSERT_EQ(1, aah_.CleanUp());
   ASSERT_EQ(size_t(99), aah_.amendments_.size());
@@ -913,7 +913,7 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_CleanUp) {
   it = aah_.amendments_.get<by_timestamp>().begin();
   for (int i = 0; i < 20; ++i, ++it) {
     AccountAmendment amendment = *it;
-    amendment.expiry_time = base::get_epoch_milliseconds() - 1000;
+    amendment.expiry_time = base::GetEpochMilliseconds() - 1000;
     aah_.amendments_.get<by_timestamp>().replace(it, amendment);
     // Sleep to let timestamps differ.
     boost::this_thread::sleep(boost::posix_time::milliseconds(2));
@@ -925,7 +925,7 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_CleanUp) {
   it = aah_.amendments_.get<by_timestamp>().begin();
   while (it != aah_.amendments_.get<by_timestamp>().end()) {
     AccountAmendment amendment = *it;
-    amendment.expiry_time = base::get_epoch_milliseconds() - 1000;
+    amendment.expiry_time = base::GetEpochMilliseconds() - 1000;
     aah_.amendments_.get<by_timestamp>().replace(it, amendment);
     ++it;
     // Sleep to let timestamps differ.

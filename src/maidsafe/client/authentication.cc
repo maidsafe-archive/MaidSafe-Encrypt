@@ -779,7 +779,7 @@ int Authentication::ChangeUsername(const std::string &ser_da,
   boost::uint32_t new_smid_rid(0);
   while (new_smid_rid == 0 || new_smid_rid == old_mid ||
          new_smid_rid == old_smid) {
-    new_smid_rid = base::random_32bit_uinteger();
+    new_smid_rid = base::RandomUint32();
   }
   user_params["rid"] = new_smid_rid;
   PacketParams smid_result = smidPacket->Create(user_params);
@@ -939,7 +939,7 @@ int Authentication::ChangePin(const std::string &ser_da,
   boost::uint32_t new_smid_rid(0);
   while (new_smid_rid == 0 || new_smid_rid == old_mid ||
          new_smid_rid == old_smid) {
-    new_smid_rid = base::random_32bit_uinteger();
+    new_smid_rid = base::RandomUint32();
   }
   user_params["rid"] = new_smid_rid;
   PacketParams smid_result = smidPacket->Create(user_params);
@@ -1142,7 +1142,7 @@ int Authentication::PublicUsernamePublicKey(const std::string &public_username,
   return kSuccess;
 }
 
-void Authentication::CreateMSIDPacket(base::callback_func_type cb) {
+void Authentication::CreateMSIDPacket(kad::VoidFunctorOneString cb) {
   PacketParams params;
   crypto::RsaKeyPair kp;
   while (!crypto_key_pairs_.GetKeyPair(&kp)) {

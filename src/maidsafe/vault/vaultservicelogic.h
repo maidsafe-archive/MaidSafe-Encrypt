@@ -28,8 +28,8 @@
 #include <boost/thread/condition_variable.hpp>
 #include <boost/thread/mutex.hpp>
 #include <gtest/gtest_prod.h>
-#include <maidsafe/channel-api.h>
-#include <maidsafe/contact_info.pb.h>
+#include <maidsafe/rpcprotocol/channel-api.h>
+#include <maidsafe/protobuf/contact_info.pb.h>
 
 #include <string>
 #include <vector>

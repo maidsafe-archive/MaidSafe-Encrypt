@@ -28,7 +28,7 @@
 #include <boost/thread/mutex.hpp>
 #include <boost/cstdint.hpp>
 #include <gtest/gtest_prod.h>
-#include <maidsafe/crypto.h>
+#include <maidsafe/base/crypto.h>
 
 #include <list>
 #include <vector>
@@ -142,7 +142,7 @@ class ClientBufferPacketHandler {
                    bp_operations_cb cb,
                    const boost::int16_t &transport_id);
  private:
-  virtual void FindNodes(base::callback_func_type cb,
+  virtual void FindNodes(kad::VoidFunctorOneString cb,
                          boost::shared_ptr<ChangeBPData> data);
   virtual void FindNodesCallback(const std::string &result,
                                  boost::shared_ptr<ChangeBPData> data,

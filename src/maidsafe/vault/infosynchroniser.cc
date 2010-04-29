@@ -25,6 +25,8 @@
 
 #include "maidsafe/vault/infosynchroniser.h"
 
+#include <maidsafe/base/routingtable.h>
+
 #include <algorithm>
 #include <list>
 
@@ -42,7 +44,7 @@ bool InfoSynchroniser::ShouldFetch(const std::string &id,
   if (id == pmid_)
     return false;
   {
-    boost::uint32_t expiry_time(base::get_epoch_time() + kInfoEntryLifespan);
+    boost::uint32_t expiry_time(base::GetEpochTime() + kInfoEntryLifespan);
     boost::mutex::scoped_lock lock(mutex_);
     InfoEntryMap::iterator it = info_entries_.lower_bound(id);
     // If the entry already exists, we either shouldn't hold the info, or we've
@@ -57,7 +59,7 @@ bool InfoSynchroniser::ShouldFetch(const std::string &id,
   }
 
   // Assess if we should hold the info.
-  std::list<base::PDRoutingTableTuple> nodes;
+  std::list<base::PublicRoutingTableTuple> nodes;
   if (routing_table_->GetClosestContacts(id, kad::K, &nodes) != kSuccess) {
 #ifdef DEBUG
     printf("In InfoSynchroniser::AddEntry(%s), failed to query local"
@@ -83,7 +85,7 @@ void InfoSynchroniser::RemoveEntry(const std::string &id) {
 }
 
 void InfoSynchroniser::PruneMap() {
-  boost::uint32_t current_time(base::get_epoch_time());
+  boost::uint32_t current_time(base::GetEpochTime());
   boost::mutex::scoped_lock lock(mutex_);
   InfoEntryMap::iterator it = info_entries_.begin();
   while (it != info_entries_.end()) {
@@ -94,9 +96,9 @@ void InfoSynchroniser::PruneMap() {
   }
 }
 
-void InfoSynchroniser::AddNodeToClosest(const base::PDRoutingTableTuple &node,
+void InfoSynchroniser::AddNodeToClosest(const base::PublicRoutingTableTuple &node,
                                         std::vector<kad::Contact> *closest) {
-  closest->push_back(kad::Contact(node.kademlia_id_, "", 0));
+  closest->push_back(kad::Contact(node.kademlia_id, "", 0));
 }
 
 }  // namespace maidsafe_vault

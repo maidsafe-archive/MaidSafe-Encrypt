@@ -23,14 +23,14 @@
 
 #include <gtest/gtest.h>
 #include <boost/filesystem.hpp>
-#include <maidsafe/crypto.h>
-#include <maidsafe/utils.h>
+#include <maidsafe/base/crypto.h>
 
 #include <string>
 #include <vector>
 
 #include "fs/filesystem.h"
 #include "maidsafe/chunkstore.h"
+#include "maidsafe/utils.h"
 #include "maidsafe/client/dataatlashandler.h"
 #include "maidsafe/client/keyatlas.h"
 #include "maidsafe/client/pddir.h"
@@ -141,13 +141,13 @@ class DataAtlasHandlerTest : public testing::Test {
       MetaDataMap mdm;
       std::string ser_mdm, key;
       mdm.set_id(-2);
-      mdm.set_display_name(base::TidyPath(kRootSubdir[i][0]));
+      mdm.set_display_name(TidyPath(kRootSubdir[i][0]));
       mdm.set_type(EMPTY_DIRECTORY);
       mdm.set_stats("");
       mdm.set_tag("");
       mdm.set_file_size_high(0);
       mdm.set_file_size_low(0);
-      boost::uint32_t current_time_ = base::get_epoch_time();
+      boost::uint32_t current_time_ = base::GetEpochTime();
       mdm.set_creation_time(current_time_);
       mdm.SerializeToString(&ser_mdm);
       if (kRootSubdir[i][1].empty())
@@ -156,7 +156,7 @@ class DataAtlasHandlerTest : public testing::Test {
         key = kRootSubdir[i][1];
       fs::create_directories(file_system::MaidsafeHomeDir(
           SessionSingleton::getInstance()->SessionName()) / kRootSubdir[i][0]);
-      dah->AddElement(base::TidyPath(kRootSubdir[i][0]), ser_mdm, "", key,
+      dah->AddElement(TidyPath(kRootSubdir[i][0]), ser_mdm, "", key,
                        true);
     }
     cb.Reset();
@@ -310,7 +310,7 @@ TEST_F(DataAtlasHandlerTest, BEH_MAID_AddGetDataMapDetail) {
 TEST_F(DataAtlasHandlerTest, BEH_MAID_AddGetDataMapDAH) {
   boost::scoped_ptr<DataAtlasHandler> dah_(new DataAtlasHandler());
   std::string ser_dm, ser_mdm;
-  std::string dir_name = base::TidyPath(kRootSubdir[0][0]) + "/";
+  std::string dir_name = TidyPath(kRootSubdir[0][0]) + "/";
   std::string file_name = "Doc2.doc";
   std::string element_path = dir_name+file_name;
   std::string file_hash = "file hash1";
@@ -421,7 +421,7 @@ TEST_F(DataAtlasHandlerTest, BEH_MAID_ObscureFilename) {
 
   boost::scoped_ptr<DataAtlasHandler> dah_(new DataAtlasHandler());
   std::string ser_dm, ser_mdm;
-  std::string dir_name = base::TidyPath(kRootSubdir[0][0]) + "/";
+  std::string dir_name = TidyPath(kRootSubdir[0][0]) + "/";
   std::string file_name("Doc!$%^&()-_+={}[];@~#,'''.doc");
   std::string element_path = dir_name + file_name;
   std::string file_hash("file hash obscure");
@@ -528,7 +528,7 @@ TEST_F(DataAtlasHandlerTest, BEH_MAID_RemoveMSFileAndPath) {
 
   boost::scoped_ptr<DataAtlasHandler> dah_(new DataAtlasHandler());
   std::string ser_dm, ser_mdm, ser_dm_recovered, ser_mdmrecovered;
-  std::string dir_name = base::TidyPath(kRootSubdir[0][0]) + "/";
+  std::string dir_name = TidyPath(kRootSubdir[0][0]) + "/";
   std::string file_name = "Doc3.doc";
   std::string element_path = dir_name+file_name;
   std::string file_hash = "file hash1";
@@ -592,7 +592,7 @@ TEST_F(DataAtlasHandlerTest, BEH_MAID_CopyMSFile) {
       ser_dm_recovered_copy2, ser_mdmrecovered_copy2;
   std::string ser_dm_exists, ser_mdmexists, ser_dm_recovered_exists,
       ser_mdmrecovered_exists;
-  std::string dir_name = base::TidyPath(kRootSubdir[0][0]) + "/";
+  std::string dir_name = TidyPath(kRootSubdir[0][0]) + "/";
   std::string file_name_original = "Original.doc";
   std::string file_name_copy = "Copy.doc";
   std::string file_name_exists = "Exists.doc";
@@ -736,7 +736,7 @@ TEST_F(DataAtlasHandlerTest, BEH_MAID_RenameMSFile) {
       ser_dm_recovered_copy2, ser_mdmrecovered_copy2;
   std::string ser_dm_exists, ser_mdmexists, ser_dm_recovered_exists,
       ser_mdmrecovered_exists;
-  std::string dir_name = base::TidyPath(kRootSubdir[0][0]) + "/";
+  std::string dir_name = TidyPath(kRootSubdir[0][0]) + "/";
   std::string file_name_original = "Original.doc";
   std::string file_name_copy = "Original.doc~.copy";
   std::string file_name_exists = "Exists.doc";
@@ -884,7 +884,7 @@ TEST_F(DataAtlasHandlerTest, BEH_MAID_RenameDir) {
 //  std::string ser_dm, recovered_ser_dm;
   std::string ser_mdm, recovered_ser_mdm;
   std::string dir_name("summat");
-  std::string dir_path(base::TidyPath(kRootSubdir[0][0]) + "/" + dir_name);
+  std::string dir_path(TidyPath(kRootSubdir[0][0]) + "/" + dir_name);
   MetaDataMap mdm, recovered_mdm;
   mdm.set_id(-2);
   mdm.set_display_name(dir_name);
@@ -923,7 +923,7 @@ TEST_F(DataAtlasHandlerTest, BEH_MAID_RenameDir) {
             "Last access time has not changed in MetaDataMap";
 
   std::string new_dir_name("summat_else");
-  std::string new_dir_path(base::TidyPath(kRootSubdir[0][0]) + "/" +
+  std::string new_dir_path(TidyPath(kRootSubdir[0][0]) + "/" +
                            new_dir_name);
   mdm.set_display_name(new_dir_name);
   ASSERT_EQ(0, dah->RenameElement(dir_path, new_dir_path, true));
@@ -959,7 +959,7 @@ TEST_F(DataAtlasHandlerTest, BEH_MAID_RemoveMSFileRepeatedDataMap) {
   boost::scoped_ptr<DataAtlasHandler> dah(new DataAtlasHandler());
   std::string ser_dm, ser_mdm, ser_mdm2, ser_dm_recovered, ser_mdmrecovered,
               ser_mdmrecovered2;
-  std::string dir_name = base::TidyPath(kRootSubdir[0][0]) + "/";
+  std::string dir_name = TidyPath(kRootSubdir[0][0]) + "/";
   std::string file_name = "Doc4.doc";
   std::string file_name2 = "MyFiLe.doc";
   std::string element_path = dir_name+file_name;
@@ -1048,7 +1048,7 @@ TEST_F(DataAtlasHandlerTest, BEH_MAID_AddRepeatedDataMap) {
   boost::scoped_ptr<DataAtlasHandler> dah_(new DataAtlasHandler());
   std::string ser_dm, ser_mdm1, ser_mdm2, ser_dm_recovered1,
       ser_dm_recovered2, ser_mdmrecovered1, ser_mdmrecovered2;
-  std::string dir_name = base::TidyPath(kRootSubdir[0][0]) + "/";
+  std::string dir_name = TidyPath(kRootSubdir[0][0]) + "/";
   std::string file_name1 = "Doc5.doc";
   std::string file_name2 = "MyFiLe2.doc";
   std::string element_path1 = dir_name+file_name1;
@@ -1147,7 +1147,7 @@ TEST_F(DataAtlasHandlerTest, BEH_MAID_AddEmptyDir) {
   boost::scoped_ptr<DataAtlasHandler> dah_(new DataAtlasHandler());
   std::string ser_dm, ser_mdm1, ser_mdm2, ser_dm_recovered,
     ser_mdmrecovered1, ser_mdmrecovered2;
-  std::string dir_name = base::TidyPath(kRootSubdir[0][0]) + "/";
+  std::string dir_name = TidyPath(kRootSubdir[0][0]) + "/";
   std::string file_name1 = "Docs";
   std::string file_name2 = "MyFiLe3.doc";
   std::string element_path1 = dir_name + file_name1;
@@ -1257,7 +1257,7 @@ TEST_F(DataAtlasHandlerTest, BEH_MAID_EmptyFileHandling) {
   boost::scoped_ptr<DataAtlasHandler> dah_(new DataAtlasHandler());
   std::string ser_dm1, ser_mdm1, ser_dm_recovered1, ser_mdmrecovered1;
   std::string ser_dm2, ser_mdm2, ser_dm_recovered2, ser_mdmrecovered2;
-  std::string dir_name = base::TidyPath(kRootSubdir[0][0]) + "/";
+  std::string dir_name = TidyPath(kRootSubdir[0][0]) + "/";
   std::string file_name = "MyFiLe4.doc";
   std::string element_path = dir_name+file_name;
   std::string file_hash_empty = "empty file hash";

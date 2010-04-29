@@ -26,9 +26,9 @@
 #include <gmock/gmock.h>
 #include <boost/lexical_cast.hpp>
 #include <boost/filesystem.hpp>
-#include <maidsafe/general_messages.pb.h>
-#include <maidsafe/kademlia_service_messages.pb.h>
-#include <maidsafe/transportudt.h>
+#include <maidsafe/protobuf/general_messages.pb.h>
+#include <maidsafe/protobuf/kademlia_service_messages.pb.h>
+#include <maidsafe/transport/transportudt.h>
 
 #include "fs/filesystem.h"
 #include "maidsafe/clientbufferpackethandler.h"
@@ -40,12 +40,12 @@ using ::testing::Invoke;
 using ::testing::InvokeWithoutArgs;
 using ::testing::WithArgs;
 
-void execute_cb(base::callback_func_type cb, const std::string &result) {
+void execute_cb(kad::VoidFunctorOneString cb, const std::string &result) {
   boost::this_thread::sleep(boost::posix_time::seconds(1));
   cb(result);
 }
 
-void FindNodesSucceed(base::callback_func_type cb) {
+void FindNodesSucceed(kad::VoidFunctorOneString cb) {
   kad::FindResponse res;
   res.set_result(kad::kRpcResultSuccess);
   crypto::Crypto co;
@@ -59,18 +59,18 @@ void FindNodesSucceed(base::callback_func_type cb) {
   boost::thread thrd(execute_cb, cb, res.SerializeAsString());
 }
 
-void FindNodesFailure(base::callback_func_type cb) {
+void FindNodesFailure(kad::VoidFunctorOneString cb) {
   kad::FindResponse res;
   res.set_result(kad::kRpcResultFailure);
   boost::thread thrd(execute_cb, cb, res.SerializeAsString());
 }
 
-void FindNodesFailNoParse(base::callback_func_type cb) {
+void FindNodesFailNoParse(kad::VoidFunctorOneString cb) {
   std::string summat("aaaa");
   boost::thread thrd(execute_cb, cb, summat);
 }
 
-void FindNodesFailNotEnough(base::callback_func_type cb) {
+void FindNodesFailNotEnough(kad::VoidFunctorOneString cb) {
   kad::FindResponse res;
   res.set_result(kad::kRpcResultSuccess);
   crypto::Crypto co;
@@ -84,7 +84,7 @@ void FindNodesFailNotEnough(base::callback_func_type cb) {
   boost::thread thrd(execute_cb, cb, res.SerializeAsString());
 }
 
-void FindNodesFailNotContacts(base::callback_func_type cb) {
+void FindNodesFailNotContacts(kad::VoidFunctorOneString cb) {
   kad::FindResponse res;
   res.set_result(kad::kRpcResultSuccess);
   for (int n = 0; n < kad::K; ++n) {
@@ -280,13 +280,13 @@ class GetMsgsHelper {
                   const std::string &rec_pub_key,
                   const std::string &sender) {
     maidsafe::ValidatedBufferPacketMessage bp_msg;
-    boost::uint32_t iter = base::random_32bit_uinteger() % 1000 +1;
+    boost::uint32_t iter = base::RandomUint32() % 1000 +1;
     std::string aes_key = co.SecurePassword(co.Hash(msg, "",
                           crypto::STRING_STRING, false), iter);
     bp_msg.set_index(co.AsymEncrypt(aes_key, "", rec_pub_key,
                      crypto::STRING_STRING));
     bp_msg.set_sender(sender);
-    bp_msg.set_timestamp(base::get_epoch_time());
+    bp_msg.set_timestamp(base::GetEpochTime());
     bp_msg.set_message(co.SymmEncrypt(msg, "", crypto::STRING_STRING, aes_key));
     bp_msg.set_type(maidsafe::INSTANT_MSG);
     msgs.push_back(bp_msg);
@@ -340,7 +340,7 @@ class MockBPH : public maidsafe::ClientBufferPacketHandler {
           boost::shared_ptr<kad::KNode> knode)
     : maidsafe::ClientBufferPacketHandler(rpcs, knode) {}
   MOCK_METHOD2(FindNodes,
-      void(base::callback_func_type,
+      void(kad::VoidFunctorOneString,
            boost::shared_ptr<maidsafe::ChangeBPData>));
 };
 
@@ -374,7 +374,7 @@ class TestClientBP : public testing::Test {
                                 keys_.at(0).private_key(),
                                 keys_.at(0).public_key(),
                                 false, false));
-    knode_->SetTransID(trans_id);
+    knode_->set_transport_id(trans_id);
     BPMock.reset(new MockBPRpcs);
     ASSERT_TRUE(ch_man_->RegisterNotifiersToTransport());
     ASSERT_TRUE(trans_han_->RegisterOnServerDown(
@@ -385,7 +385,7 @@ class TestClientBP : public testing::Test {
 
     cb_.Reset();
     boost::asio::ip::address local_ip;
-    ASSERT_TRUE(base::get_local_address(&local_ip));
+    ASSERT_TRUE(base::GetLocalAddress(&local_ip));
     knode_->Join(kad_config_file_.string(),
                  local_ip.to_string(),
                  trans_->listening_port(),
@@ -449,7 +449,7 @@ TEST_F(TestClientBP, BEH_MAID_CreateBpOk) {
 
   cbph.CreateBufferPacket(bpip,
                           boost::bind(&BPCallback::BPOperation_CB, &cb, _1),
-                          trans_->GetID());
+                          trans_->transport_id());
   while (cb.result == maidsafe::kGeneralError)
     boost::this_thread::sleep(boost::posix_time::milliseconds(100));
   ASSERT_EQ(maidsafe::kSuccess, cb.result);
@@ -475,7 +475,7 @@ TEST_F(TestClientBP, BEH_MAID_CreateBpFailFindNodes) {
 
   cbph.CreateBufferPacket(bpip,
                           boost::bind(&BPCallback::BPOperation_CB, &cb, _1),
-                          trans_->GetID());
+                          trans_->transport_id());
   while (cb.result == maidsafe::kGeneralError)
     boost::this_thread::sleep(boost::posix_time::milliseconds(100));
   ASSERT_EQ(maidsafe::kStoreNewBPError, cb.result);
@@ -483,7 +483,7 @@ TEST_F(TestClientBP, BEH_MAID_CreateBpFailFindNodes) {
   cb.Reset();
   cbph.CreateBufferPacket(bpip,
                           boost::bind(&BPCallback::BPOperation_CB, &cb, _1),
-                          trans_->GetID());
+                          trans_->transport_id());
   while (cb.result == maidsafe::kGeneralError)
     boost::this_thread::sleep(boost::posix_time::milliseconds(100));
   ASSERT_EQ(maidsafe::kStoreNewBPError, cb.result);
@@ -491,7 +491,7 @@ TEST_F(TestClientBP, BEH_MAID_CreateBpFailFindNodes) {
   cb.Reset();
   cbph.CreateBufferPacket(bpip,
                           boost::bind(&BPCallback::BPOperation_CB, &cb, _1),
-                          trans_->GetID());
+                          trans_->transport_id());
   while (cb.result == maidsafe::kGeneralError)
     boost::this_thread::sleep(boost::posix_time::milliseconds(100));
   ASSERT_EQ(maidsafe::kStoreNewBPError, cb.result);
@@ -499,7 +499,7 @@ TEST_F(TestClientBP, BEH_MAID_CreateBpFailFindNodes) {
   cb.Reset();
   cbph.CreateBufferPacket(bpip,
                           boost::bind(&BPCallback::BPOperation_CB, &cb, _1),
-                          trans_->GetID());
+                          trans_->transport_id());
   while (cb.result == maidsafe::kGeneralError)
     boost::this_thread::sleep(boost::posix_time::milliseconds(100));
   ASSERT_EQ(maidsafe::kStoreNewBPError, cb.result);
@@ -524,7 +524,7 @@ TEST_F(TestClientBP, BEH_MAID_CreateBpFailRpcs) {
 
   cbph.CreateBufferPacket(bpip,
                           boost::bind(&BPCallback::BPOperation_CB, &cb, _1),
-                          trans_->GetID());
+                          trans_->transport_id());
   while (cb.result == maidsafe::kGeneralError)
     boost::this_thread::sleep(boost::posix_time::milliseconds(100));
   ASSERT_EQ(maidsafe::kStoreNewBPError, cb.result);
@@ -550,7 +550,7 @@ TEST_F(TestClientBP, BEH_MAID_ModifyOwnerInfoOk) {
   std::vector<std::string> users;
   cbph.ModifyOwnerInfo(bpip, users,
                        boost::bind(&BPCallback::BPOperation_CB, &cb, _1),
-                       trans_->GetID());
+                       trans_->transport_id());
   while (cb.result == maidsafe::kGeneralError)
     boost::this_thread::sleep(boost::posix_time::milliseconds(100));
   ASSERT_EQ(maidsafe::kSuccess, cb.result);
@@ -577,7 +577,7 @@ TEST_F(TestClientBP, BEH_MAID_ModifyOwnerInfoFailFindNodes) {
   std::vector<std::string> users;
   cbph.ModifyOwnerInfo(bpip, users,
                        boost::bind(&BPCallback::BPOperation_CB, &cb, _1),
-                       trans_->GetID());
+                       trans_->transport_id());
   while (cb.result == maidsafe::kGeneralError)
     boost::this_thread::sleep(boost::posix_time::milliseconds(100));
   ASSERT_EQ(maidsafe::kModifyBPError, cb.result);
@@ -585,7 +585,7 @@ TEST_F(TestClientBP, BEH_MAID_ModifyOwnerInfoFailFindNodes) {
   cb.Reset();
   cbph.ModifyOwnerInfo(bpip, users,
                        boost::bind(&BPCallback::BPOperation_CB, &cb, _1),
-                       trans_->GetID());
+                       trans_->transport_id());
   while (cb.result == maidsafe::kGeneralError)
     boost::this_thread::sleep(boost::posix_time::milliseconds(100));
   ASSERT_EQ(maidsafe::kModifyBPError, cb.result);
@@ -593,7 +593,7 @@ TEST_F(TestClientBP, BEH_MAID_ModifyOwnerInfoFailFindNodes) {
   cb.Reset();
   cbph.ModifyOwnerInfo(bpip, users,
                        boost::bind(&BPCallback::BPOperation_CB, &cb, _1),
-                       trans_->GetID());
+                       trans_->transport_id());
   while (cb.result == maidsafe::kGeneralError)
     boost::this_thread::sleep(boost::posix_time::milliseconds(100));
   ASSERT_EQ(maidsafe::kModifyBPError, cb.result);
@@ -601,7 +601,7 @@ TEST_F(TestClientBP, BEH_MAID_ModifyOwnerInfoFailFindNodes) {
   cb.Reset();
   cbph.ModifyOwnerInfo(bpip, users,
                        boost::bind(&BPCallback::BPOperation_CB, &cb, _1),
-                       trans_->GetID());
+                       trans_->transport_id());
   while (cb.result == maidsafe::kGeneralError)
     boost::this_thread::sleep(boost::posix_time::milliseconds(100));
   ASSERT_EQ(maidsafe::kModifyBPError, cb.result);
@@ -627,7 +627,7 @@ TEST_F(TestClientBP, BEH_MAID_ModifyOwnerInfoFailRpcs) {
   std::vector<std::string> users;
   cbph.ModifyOwnerInfo(bpip, users,
                        boost::bind(&BPCallback::BPOperation_CB, &cb, _1),
-                       trans_->GetID());
+                       trans_->transport_id());
   while (cb.result == maidsafe::kGeneralError)
     boost::this_thread::sleep(boost::posix_time::milliseconds(100));
   ASSERT_EQ(maidsafe::kModifyBPError, cb.result);
@@ -661,7 +661,7 @@ TEST_F(TestClientBP, BEH_MAID_AddMessageOk) {
   cbph.AddMessage(bpip, "", keys_.at(2).public_key(), recv_id, "Hello World",
                   maidsafe::ADD_CONTACT_RQST,
                   boost::bind(&BPCallback::BPOperation_CB, &cb, _1),
-                  trans_->GetID());
+                  trans_->transport_id());
   while (cb.result == -1)
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   ASSERT_EQ(maidsafe::kSuccess, cb.result);
@@ -696,7 +696,7 @@ TEST_F(TestClientBP, BEH_MAID_AddMessageFailFindNodes) {
   cbph.AddMessage(bpip, "", keys_.at(2).public_key(), recv_id, "Hello World",
                   maidsafe::ADD_CONTACT_RQST,
                   boost::bind(&BPCallback::BPOperation_CB, &cb, _1),
-                  trans_->GetID());
+                  trans_->transport_id());
   while (cb.result == maidsafe::kGeneralError)
     boost::this_thread::sleep(boost::posix_time::milliseconds(100));
   ASSERT_EQ(maidsafe::kBPAddMessageError, cb.result);
@@ -705,7 +705,7 @@ TEST_F(TestClientBP, BEH_MAID_AddMessageFailFindNodes) {
   cbph.AddMessage(bpip, "", keys_.at(2).public_key(), recv_id, "Hello World",
                   maidsafe::ADD_CONTACT_RQST,
                   boost::bind(&BPCallback::BPOperation_CB, &cb, _1),
-                  trans_->GetID());
+                  trans_->transport_id());
   while (cb.result == maidsafe::kGeneralError)
     boost::this_thread::sleep(boost::posix_time::milliseconds(100));
   ASSERT_EQ(maidsafe::kBPAddMessageError, cb.result);
@@ -714,7 +714,7 @@ TEST_F(TestClientBP, BEH_MAID_AddMessageFailFindNodes) {
   cbph.AddMessage(bpip, "", keys_.at(2).public_key(), recv_id, "Hello World",
                   maidsafe::ADD_CONTACT_RQST,
                   boost::bind(&BPCallback::BPOperation_CB, &cb, _1),
-                  trans_->GetID());
+                  trans_->transport_id());
   while (cb.result == maidsafe::kGeneralError)
     boost::this_thread::sleep(boost::posix_time::milliseconds(100));
   ASSERT_EQ(maidsafe::kBPAddMessageError, cb.result);
@@ -723,7 +723,7 @@ TEST_F(TestClientBP, BEH_MAID_AddMessageFailFindNodes) {
   cbph.AddMessage(bpip, "", keys_.at(2).public_key(), recv_id, "Hello World",
                   maidsafe::ADD_CONTACT_RQST,
                   boost::bind(&BPCallback::BPOperation_CB, &cb, _1),
-                  trans_->GetID());
+                  trans_->transport_id());
   while (cb.result == maidsafe::kGeneralError)
     boost::this_thread::sleep(boost::posix_time::milliseconds(100));
   ASSERT_EQ(maidsafe::kBPAddMessageError, cb.result);
@@ -757,7 +757,7 @@ TEST_F(TestClientBP, BEH_MAID_AddMessageFailRpcs) {
   cbph.AddMessage(bpip, "", keys_.at(2).public_key(), recv_id, "Hello World",
                   maidsafe::ADD_CONTACT_RQST,
                   boost::bind(&BPCallback::BPOperation_CB, &cb, _1),
-                  trans_->GetID());
+                  trans_->transport_id());
   while (cb.result == maidsafe::kGeneralError)
     boost::this_thread::sleep(boost::posix_time::milliseconds(100));
   ASSERT_EQ(maidsafe::kBPAddMessageError, cb.result);
@@ -788,7 +788,7 @@ TEST_F(TestClientBP, BEH_MAID_GetMessagesOk) {
 
   cbph.GetMessages(bpip,
                    boost::bind(&BPCallback::BPGetMsgs_CB, &cb, _1, _2, _3),
-                   trans_->GetID());
+                   trans_->transport_id());
   while (cb.result == maidsafe::kGeneralError)
     boost::this_thread::sleep(boost::posix_time::milliseconds(100));
   ASSERT_EQ(maidsafe::kSuccess, cb.result);
@@ -837,7 +837,7 @@ TEST_F(TestClientBP, BEH_MAID_GetMessagesFailFindNodes) {
 
   cbph.GetMessages(bpip,
                    boost::bind(&BPCallback::BPGetMsgs_CB, &cb, _1, _2, _3),
-                   trans_->GetID());
+                   trans_->transport_id());
   while (cb.result == maidsafe::kGeneralError)
     boost::this_thread::sleep(boost::posix_time::milliseconds(100));
   ASSERT_EQ(maidsafe::kBPMessagesRetrievalError, cb.result);
@@ -845,7 +845,7 @@ TEST_F(TestClientBP, BEH_MAID_GetMessagesFailFindNodes) {
   cb.Reset();
   cbph.GetMessages(bpip,
                    boost::bind(&BPCallback::BPGetMsgs_CB, &cb, _1, _2, _3),
-                   trans_->GetID());
+                   trans_->transport_id());
   while (cb.result == maidsafe::kGeneralError)
     boost::this_thread::sleep(boost::posix_time::milliseconds(100));
   ASSERT_EQ(maidsafe::kBPMessagesRetrievalError, cb.result);
@@ -853,7 +853,7 @@ TEST_F(TestClientBP, BEH_MAID_GetMessagesFailFindNodes) {
   cb.Reset();
   cbph.GetMessages(bpip,
                    boost::bind(&BPCallback::BPGetMsgs_CB, &cb, _1, _2, _3),
-                   trans_->GetID());
+                   trans_->transport_id());
   while (cb.result == maidsafe::kGeneralError)
     boost::this_thread::sleep(boost::posix_time::milliseconds(100));
   ASSERT_EQ(maidsafe::kBPMessagesRetrievalError, cb.result);
@@ -861,7 +861,7 @@ TEST_F(TestClientBP, BEH_MAID_GetMessagesFailFindNodes) {
   cb.Reset();
   cbph.GetMessages(bpip,
                    boost::bind(&BPCallback::BPGetMsgs_CB, &cb, _1, _2, _3),
-                   trans_->GetID());
+                   trans_->transport_id());
   while (cb.result == maidsafe::kGeneralError)
     boost::this_thread::sleep(boost::posix_time::milliseconds(100));
   ASSERT_EQ(maidsafe::kBPMessagesRetrievalError, cb.result);
@@ -892,7 +892,7 @@ TEST_F(TestClientBP, BEH_MAID_GetMessagesFailRpcs) {
 
   cbph.GetMessages(bpip,
                    boost::bind(&BPCallback::BPGetMsgs_CB, &cb, _1, _2, _3),
-                   trans_->GetID());
+                   trans_->transport_id());
   while (cb.result == maidsafe::kGeneralError)
     boost::this_thread::sleep(boost::posix_time::milliseconds(100));
   ASSERT_EQ(maidsafe::kBPMessagesRetrievalError, cb.result);
@@ -925,7 +925,7 @@ TEST_F(TestClientBP, BEH_MAID_AddPresenceOk) {
 
   cbph.AddPresence(bpip, "", keys_.at(2).public_key(), recv_id,
                    boost::bind(&BPCallback::BPOperation_CB, &cb, _1),
-                   trans_->GetID());
+                   trans_->transport_id());
   while (cb.result == -1)
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   ASSERT_EQ(maidsafe::kSuccess, cb.result);
@@ -959,7 +959,7 @@ TEST_F(TestClientBP, BEH_MAID_AddPresenceFailFindNodes) {
 
   cbph.AddPresence(bpip, "", keys_.at(2).public_key(), recv_id,
                    boost::bind(&BPCallback::BPOperation_CB, &cb, _1),
-                   trans_->GetID());
+                   trans_->transport_id());
   while (cb.result == maidsafe::kGeneralError)
     boost::this_thread::sleep(boost::posix_time::milliseconds(100));
   ASSERT_EQ(maidsafe::kBPAddPresenceError, cb.result);
@@ -967,7 +967,7 @@ TEST_F(TestClientBP, BEH_MAID_AddPresenceFailFindNodes) {
   cb.Reset();
   cbph.AddPresence(bpip, "", keys_.at(2).public_key(), recv_id,
                    boost::bind(&BPCallback::BPOperation_CB, &cb, _1),
-                   trans_->GetID());
+                   trans_->transport_id());
   while (cb.result == maidsafe::kGeneralError)
     boost::this_thread::sleep(boost::posix_time::milliseconds(100));
   ASSERT_EQ(maidsafe::kBPAddPresenceError, cb.result);
@@ -975,7 +975,7 @@ TEST_F(TestClientBP, BEH_MAID_AddPresenceFailFindNodes) {
   cb.Reset();
   cbph.AddPresence(bpip, "", keys_.at(2).public_key(), recv_id,
                    boost::bind(&BPCallback::BPOperation_CB, &cb, _1),
-                   trans_->GetID());
+                   trans_->transport_id());
   while (cb.result == maidsafe::kGeneralError)
     boost::this_thread::sleep(boost::posix_time::milliseconds(100));
   ASSERT_EQ(maidsafe::kBPAddPresenceError, cb.result);
@@ -983,7 +983,7 @@ TEST_F(TestClientBP, BEH_MAID_AddPresenceFailFindNodes) {
   cb.Reset();
   cbph.AddPresence(bpip, "", keys_.at(2).public_key(), recv_id,
                    boost::bind(&BPCallback::BPOperation_CB, &cb, _1),
-                   trans_->GetID());
+                   trans_->transport_id());
   while (cb.result == maidsafe::kGeneralError)
     boost::this_thread::sleep(boost::posix_time::milliseconds(100));
   ASSERT_EQ(maidsafe::kBPAddPresenceError, cb.result);
@@ -1016,7 +1016,7 @@ TEST_F(TestClientBP, BEH_MAID_AddBPPresenceFailRpcs) {
 
   cbph.AddPresence(bpip, "", keys_.at(2).public_key(), recv_id,
                    boost::bind(&BPCallback::BPOperation_CB, &cb, _1),
-                   trans_->GetID());
+                   trans_->transport_id());
   while (cb.result == maidsafe::kGeneralError)
     boost::this_thread::sleep(boost::posix_time::milliseconds(100));
   ASSERT_EQ(maidsafe::kBPAddPresenceError, cb.result);
@@ -1047,7 +1047,7 @@ TEST_F(TestClientBP, BEH_MAID_GetPresenceOk) {
 
   cbph.GetPresence(bpip,
                    boost::bind(&BPCallback::BPGetPresence_CB, &cb, _1, _2, _3),
-                   trans_->GetID());
+                   trans_->transport_id());
   while (cb.result == maidsafe::kGeneralError)
     boost::this_thread::sleep(boost::posix_time::milliseconds(100));
   ASSERT_EQ(maidsafe::kSuccess, cb.result);
@@ -1103,7 +1103,7 @@ TEST_F(TestClientBP, BEH_MAID_GetPresenceFailFindNodes) {
 
   cbph.GetPresence(bpip,
                    boost::bind(&BPCallback::BPGetPresence_CB, &cb, _1, _2, _3),
-                   trans_->GetID());
+                   trans_->transport_id());
   while (cb.result == maidsafe::kGeneralError)
     boost::this_thread::sleep(boost::posix_time::milliseconds(100));
   ASSERT_EQ(maidsafe::kBPGetPresenceError, cb.result);
@@ -1111,7 +1111,7 @@ TEST_F(TestClientBP, BEH_MAID_GetPresenceFailFindNodes) {
   cb.Reset();
   cbph.GetPresence(bpip,
                    boost::bind(&BPCallback::BPGetPresence_CB, &cb, _1, _2, _3),
-                   trans_->GetID());
+                   trans_->transport_id());
   while (cb.result == maidsafe::kGeneralError)
     boost::this_thread::sleep(boost::posix_time::milliseconds(100));
   ASSERT_EQ(maidsafe::kBPGetPresenceError, cb.result);
@@ -1119,7 +1119,7 @@ TEST_F(TestClientBP, BEH_MAID_GetPresenceFailFindNodes) {
   cb.Reset();
   cbph.GetPresence(bpip,
                    boost::bind(&BPCallback::BPGetPresence_CB, &cb, _1, _2, _3),
-                   trans_->GetID());
+                   trans_->transport_id());
   while (cb.result == maidsafe::kGeneralError)
     boost::this_thread::sleep(boost::posix_time::milliseconds(100));
   ASSERT_EQ(maidsafe::kBPGetPresenceError, cb.result);
@@ -1127,7 +1127,7 @@ TEST_F(TestClientBP, BEH_MAID_GetPresenceFailFindNodes) {
   cb.Reset();
   cbph.GetPresence(bpip,
                    boost::bind(&BPCallback::BPGetPresence_CB, &cb, _1, _2, _3),
-                   trans_->GetID());
+                   trans_->transport_id());
   while (cb.result == maidsafe::kGeneralError)
     boost::this_thread::sleep(boost::posix_time::milliseconds(100));
   ASSERT_EQ(maidsafe::kBPGetPresenceError, cb.result);
@@ -1158,7 +1158,7 @@ TEST_F(TestClientBP, BEH_MAID_GetPresenceFailRpcs) {
 
   cbph.GetPresence(bpip,
                    boost::bind(&BPCallback::BPGetPresence_CB, &cb, _1, _2, _3),
-                   trans_->GetID());
+                   trans_->transport_id());
   while (cb.result == maidsafe::kGeneralError)
     boost::this_thread::sleep(boost::posix_time::milliseconds(100));
   ASSERT_EQ(maidsafe::kBPGetPresenceError, cb.result);

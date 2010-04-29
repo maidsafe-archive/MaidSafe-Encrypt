@@ -105,7 +105,7 @@ class Authentication {
                      const std::string &new_password);
   int PublicUsernamePublicKey(const std::string &public_username,
                               std::string *public_key);
-  void CreateMSIDPacket(base::callback_func_type cb);
+  void CreateMSIDPacket(kad::VoidFunctorOneString cb);
   ReturnCode get_smidtimid_result() {
     return get_smidtimid_result_;
   }

@@ -28,13 +28,13 @@
 #include <boost/progress.hpp>
 #include <boost/thread/thread.hpp>
 #include <gtest/gtest.h>
+#include <maidsafe/base/crypto.h>
 
 #include <list>
 #include <map>
 #include <vector>
 
 #include "tests/maidsafe/localvaults.h"
-#include "maidsafe/crypto.h"
 #include "maidsafe/utils.h"
 #include "fs/filesystem.h"
 #include "maidsafe/client/clientcontroller.h"
@@ -446,7 +446,7 @@ TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerBackupFile) {
       kRootSubdir[0][0]);
   fs::path rel_path(kRootSubdir[0][0]);
   rel_path /= "testencryption.txt";
-  std::string rel_str_ = base::TidyPath(rel_path.string());
+  std::string rel_str_ = TidyPath(rel_path.string());
 
   fs::path full_path(file_system::MaidsafeHomeDir(ss_->SessionName()));
   full_path /= rel_path;
@@ -521,7 +521,7 @@ TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerSaveSession) {
       kRootSubdir[0][0]);
   fs::path rel_path(kRootSubdir[0][0]);
   rel_path /= "testencryption.txt";
-  std::string rel_str = base::TidyPath(rel_path.string());
+  std::string rel_str = TidyPath(rel_path.string());
 
   fs::path full_path(file_system::MaidsafeHomeDir(ss_->SessionName()));
   full_path /= rel_path;
@@ -882,7 +882,7 @@ TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerFuseFunctions) {
   fs::path mshomedir(file_system::MaidsafeHomeDir(ss_->SessionName()));
   // fs::path newdir = homedir / "NewDir";
   // fs::path msnewdir = mshomedir / "NewDir";
-  fs::path my_files(base::TidyPath(kRootSubdir[0][0]));
+  fs::path my_files(TidyPath(kRootSubdir[0][0]));
   fs::path startdir = my_files / "NewDir";
 
   testfile[0] = startdir;

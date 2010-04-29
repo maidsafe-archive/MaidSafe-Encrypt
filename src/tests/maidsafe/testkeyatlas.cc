@@ -26,7 +26,7 @@
 #include <boost/scoped_ptr.hpp>
 
 #include <maidsafe/maidsafe-dht.h>
-#include <maidsafe/utils.h>
+#include <maidsafe/base/utils.h>
 #include "maidsafe/client/keyatlas.h"
 #include "maidsafe/client/packetfactory.h"
 #include "tests/maidsafe/cached_keys.h"
@@ -49,9 +49,9 @@ class KeyAtlasTest : public testing::Test {
 TEST_F(KeyAtlasTest, BEH_MAID_AddKeys) {
   // add keys
   for (int i = 0; i < 11; i++) {
-    std::string package_id = "Package ID " + base::itos(i);
-    std::string private_key = "Private Key " + base::itos(i);
-    std::string public_key = "Public Key " + base::itos(i);
+    std::string package_id = "Package ID " + base::IntToString(i);
+    std::string private_key = "Private Key " + base::IntToString(i);
+    std::string public_key = "Public Key " + base::IntToString(i);
     ASSERT_EQ(0, key_ring_.AddKey(i, package_id, private_key,
               public_key, "")) << "Failed to add key " << i << ".";
   }
@@ -64,16 +64,16 @@ TEST_F(KeyAtlasTest, BEH_MAID_GetPackageID) {
 
   // add keys
   for (int i = 0; i < 11; i++) {
-    std::string package_id = "Package ID " + base::itos(i);
-    std::string private_key = "Private Key " + base::itos(i);
-    std::string public_key = "Public Key " + base::itos(i);
+    std::string package_id = "Package ID " + base::IntToString(i);
+    std::string private_key = "Private Key " + base::IntToString(i);
+    std::string public_key = "Public Key " + base::IntToString(i);
     ASSERT_EQ(0, key_ring_.AddKey(i, package_id, private_key,
               public_key, "")) << "Failed to add key " << i << ".";
   }
 
   // get package Id
   for (int i = 0; i < 11; i++) {
-    std::string package_id = "Package ID " + base::itos(i);
+    std::string package_id = "Package ID " + base::IntToString(i);
     ASSERT_EQ(package_id, key_ring_.PackageID(i))
               << "Failed to get package ID for key " << i << ".";
   }
@@ -86,16 +86,16 @@ TEST_F(KeyAtlasTest, BEH_MAID_GetPrivateKey) {
 
   // add keys
   for (int i = 0; i < 11; i++) {
-    std::string package_id = "Package ID " + base::itos(i);
-    std::string private_key = "Private Key " + base::itos(i);
-    std::string public_key = "Public Key " + base::itos(i);
+    std::string package_id = "Package ID " + base::IntToString(i);
+    std::string private_key = "Private Key " + base::IntToString(i);
+    std::string public_key = "Public Key " + base::IntToString(i);
     ASSERT_EQ(0, key_ring_.AddKey(i, package_id, private_key,
               public_key, "")) << "MI - Failed to add key " << i << ".";
   }
 
   // get private key
   for (int i = 0; i < 11; i++) {
-    std::string private_key = "Private Key " + base::itos(i);
+    std::string private_key = "Private Key " + base::IntToString(i);
     ASSERT_EQ(private_key, key_ring_.PrivateKey(i))
               << "MI - Failed to get private key for key " << i << ".";
   }
@@ -108,16 +108,16 @@ TEST_F(KeyAtlasTest, BEH_MAID_GetPublicKey) {
 
   // add keys
   for (int i = 0; i < 11; i++) {
-    std::string package_id = "Package ID " + base::itos(i);
-    std::string private_key = "Private Key " + base::itos(i);
-    std::string public_key = "Public Key " + base::itos(i);
+    std::string package_id = "Package ID " + base::IntToString(i);
+    std::string private_key = "Private Key " + base::IntToString(i);
+    std::string public_key = "Public Key " + base::IntToString(i);
     ASSERT_EQ(0, key_ring_.AddKey(i, package_id, private_key,
               public_key, "")) << "Failed to add key " << i << ".";
   }
 
   // get public key
   for (int i = 0; i < 11; i++) {
-    std::string public_key = "Public Key " + base::itos(i);
+    std::string public_key = "Public Key " + base::IntToString(i);
     ASSERT_EQ(public_key, key_ring_.PublicKey(i))
               << "Failed to get public key for key " << i << ".";
   }
@@ -132,7 +132,7 @@ TEST_F(KeyAtlasTest, BEH_MAID_GetSignedPublicKey) {
   std::string pub_keys[11];
   std::string pri_keys[11];
   for (int i = 0; i < 11; i++) {
-    std::string package_id = "Package ID " + base::itos(i);
+    std::string package_id = "Package ID " + base::IntToString(i);
     pri_keys[i] = keys_.at(i).private_key();
     pub_keys[i] = keys_.at(i).public_key();
     ASSERT_EQ(0, key_ring_.AddKey(i, package_id, pri_keys[i],
@@ -161,9 +161,9 @@ TEST_F(KeyAtlasTest, BEH_MAID_GetSignedPublicKey) {
 TEST_F(KeyAtlasTest, BEH_MAID_RemoveKeys) {
   // add keys
   for (int i = 0; i < 11; i++) {
-    std::string package_id = "Package ID " + base::itos(i);
-    std::string private_key = "Private Key " + base::itos(i);
-    std::string public_key = "Public Key " + base::itos(i);
+    std::string package_id = "Package ID " + base::IntToString(i);
+    std::string private_key = "Private Key " + base::IntToString(i);
+    std::string public_key = "Public Key " + base::IntToString(i);
     ASSERT_EQ(0, key_ring_.AddKey(i, package_id, private_key,
               public_key, "")) << "Failed to add key " << i << ".";
   }
@@ -188,9 +188,9 @@ TEST_F(KeyAtlasTest, BEH_MAID_RemoveKeys) {
 TEST_F(KeyAtlasTest, BEH_MAID_GetKeyRing) {
   // add keys
   for (int i = 0; i < 7; i++) {
-    std::string package_id = "Package ID " + base::itos(i);
-    std::string private_key = "Private Key " + base::itos(i);
-    std::string public_key = "Public Key " + base::itos(i);
+    std::string package_id = "Package ID " + base::IntToString(i);
+    std::string private_key = "Private Key " + base::IntToString(i);
+    std::string public_key = "Public Key " + base::IntToString(i);
     ASSERT_EQ(0, key_ring_.AddKey(i, package_id, private_key,
               public_key, "")) << "Failed to add key " << i << ".";
   }
@@ -203,9 +203,9 @@ TEST_F(KeyAtlasTest, BEH_MAID_GetKeyRing) {
             << "Keyring list size is not equal to the number of IDs.";
 
   for (int i = 0; i < 7; i++) {
-    std::string package_id = "Package ID " + base::itos(i);
-    std::string private_key = "Private Key " + base::itos(i);
-    std::string public_key = "Public Key " + base::itos(i);
+    std::string package_id = "Package ID " + base::IntToString(i);
+    std::string private_key = "Private Key " + base::IntToString(i);
+    std::string public_key = "Public Key " + base::IntToString(i);
     bool found_key = false;
     for (std::list<maidsafe::KeyAtlasRow>::iterator it = keyring.begin();
         it != keyring.end(); it++) {
@@ -227,18 +227,18 @@ TEST_F(KeyAtlasTest, BEH_MAID_GetKeyRing) {
 TEST_F(KeyAtlasTest, BEH_MAID_AmendKeys) {
   // add keys
   for (int i = 0; i < 11; i++) {
-    std::string package_id = "Package ID " + base::itos(i);
-    std::string private_key = "Private Key " + base::itos(i);
-    std::string public_key = "Public Key " + base::itos(i);
+    std::string package_id = "Package ID " + base::IntToString(i);
+    std::string private_key = "Private Key " + base::IntToString(i);
+    std::string public_key = "Public Key " + base::IntToString(i);
     ASSERT_EQ(0, key_ring_.AddKey(i, package_id, private_key,
               public_key, "")) << "MI - Failed to add key " << i << ".";
   }
 
   // amend keys & check keys were correctly updated
   for (int i = 0; i < 11; i++) {
-    std::string updated_package_id = "Updated Package ID " + base::itos(i);
-    std::string updated_private_key = "Updated Private Key " + base::itos(i);
-    std::string updated_public_key = "Updated Public Key " + base::itos(i);
+    std::string updated_package_id = "Updated Package ID " + base::IntToString(i);
+    std::string updated_private_key = "Updated Private Key " + base::IntToString(i);
+    std::string updated_public_key = "Updated Public Key " + base::IntToString(i);
     ASSERT_EQ(0, key_ring_.AddKey(i, updated_package_id,
               updated_private_key, updated_public_key, "")) <<
               "Failed to update key " << i << ".";

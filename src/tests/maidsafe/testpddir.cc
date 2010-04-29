@@ -26,7 +26,7 @@
 
 #include <boost/filesystem.hpp>
 #include <maidsafe/maidsafe-dht.h>
-#include <maidsafe/utils.h>
+#include <maidsafe/base/utils.h>
 
 #include "maidsafe/client/pddir.h"
 

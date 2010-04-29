@@ -24,7 +24,7 @@
 #include <boost/thread/condition_variable.hpp>
 #include <boost/thread/locks.hpp>
 #include <maidsafe/maidsafe-dht_config.h>
-#include <maidsafe/kademlia_service_messages.pb.h>
+#include <maidsafe/protobuf/kademlia_service_messages.pb.h>
 
 #include <string>
 #include <vector>
@@ -90,18 +90,18 @@ class KadOps {
   /**
    * Wrapper for the non-blocking Kademlia function.
    */
-  virtual void FindNode(const kad::KadId &node_id,
-                        base::callback_func_type cb,
+  virtual void GetNodeContactDetails(const kad::KadId &node_id,
+                        kad::VoidFunctorOneString cb,
                         const bool &local);
   /**
    * Wrapper for the non-blocking Kademlia function.
    */
-  virtual void FindCloseNodes(const kad::KadId &kad_key,
-                              const base::callback_func_type &callback);
+  virtual void FindKClosestNodes(const kad::KadId &kad_key,
+                              const kad::VoidFunctorOneString &callback);
   /**
    * Blocking call to Kademlia's FindCloseNodes.
    */
-  virtual int FindCloseNodes(const kad::KadId &kad_key,
+  virtual int FindKClosestNodes(const kad::KadId &kad_key,
                              std::vector<kad::Contact> *contacts);
   /**
    * A callback handler for passing to FindCloseNodes.
@@ -130,7 +130,7 @@ class KadOps {
    */
   virtual void FindValue(const kad::KadId &kad_key,
                          bool check_local,
-                         const base::callback_func_type &cb);
+                         const kad::VoidFunctorOneString &cb);
   /**
    * Get a new contact from the routing table to try and store a chunk on.  The
    * closest to the ideal_rtt will be chosen from those not in the vector to

@@ -43,7 +43,7 @@ std::string MakeFindNodesResponse(const FindNodesResponseType &type,
                                   std::vector<std::string> *pmids);
 
 void RunCallback(const std::string &find_nodes_response,
-                 const base::callback_func_type &callback);
+                 const kad::VoidFunctorOneString &callback);
 
 }  // namespace mock_kadops
 
@@ -57,19 +57,19 @@ class MockKadOps : public KadOps {
   MOCK_METHOD1(AddressIsLocal, bool(const kad::ContactInfo &peer));
   MOCK_METHOD3(FindValue, void(const kad::KadId &kad_key,
                                bool check_local,
-                               const base::callback_func_type &cb));
+                               const kad::VoidFunctorOneString &cb));
   MOCK_METHOD5(FindValue, int(const kad::KadId &kad_key,
                               bool check_local,
                               kad::ContactInfo *cache_holder,
                               std::vector<std::string> *values,
                               std::string *needs_cache_copy_id));
-  MOCK_METHOD2(FindCloseNodes, void(const kad::KadId &kad_key,
-                                    const base::callback_func_type &callback));
-  MOCK_METHOD2(FindCloseNodes, int(const kad::KadId &kad_key,
+  MOCK_METHOD2(FindKClosestNodes, void(const kad::KadId &kad_key,
+                                    const kad::VoidFunctorOneString &callback));
+  MOCK_METHOD2(FindKClosestNodes, int(const kad::KadId &kad_key,
                                    std::vector<kad::Contact> *contacts));
   int FindCloseNodesReal(const kad::KadId &kad_key,
                          std::vector<kad::Contact> *contacts) {
-    return KadOps::FindCloseNodes(kad_key, contacts);
+    return KadOps::FindKClosestNodes(kad_key, contacts);
   }
   MOCK_METHOD4(GetStorePeer, int(const double &ideal_rtt,
                                  const std::vector<kad::Contact> &exclude,

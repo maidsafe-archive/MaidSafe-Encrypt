@@ -27,9 +27,9 @@
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/filesystem.hpp>
-#include <maidsafe/kademlia_service_messages.pb.h>
-#include <maidsafe/routingtable.h>
-#include <maidsafe/transportudt.h>
+#include <maidsafe/protobuf/kademlia_service_messages.pb.h>
+#include <maidsafe/base/routingtable.h>
+#include <maidsafe/transport/transportudt.h>
 
 #include <list>
 
@@ -140,8 +140,8 @@ VaultService::VaultService(const std::string &pmid,
       bps_(),
       thread_pool_(),
       routing_table_(knode_ == NULL ?
-          boost::shared_ptr<base::PDRoutingTableHandler>() :
-          (*base::PDRoutingTable::getInstance())
+          boost::shared_ptr<base::PublicRoutingTableHandler>() :
+          (*base::PublicRoutingTable::GetInstance())
           [boost::lexical_cast<std::string>(knode_->host_port())]),
       info_synchroniser_(pmid_, routing_table_) {
   thread_pool_.setMaxThreadCount(1);
@@ -889,8 +889,8 @@ void VaultService::AccountStatus(google::protobuf::RpcController*,
 #ifdef DEBUG
       printf("In VaultService::AccountStatus (%s), ", HexSubstr(pmid_).c_str());
       printf("requested space (%s) not available (> %s).\n",
-             base::itos_ull(request->space_requested()).c_str(),
-             base::itos_ull(space_offered - space_taken).c_str());
+             boost::lexical_cast<std::string>(request->space_requested()).c_str(),
+             boost::lexical_cast<std::string>(space_offered - space_taken).c_str());
 #endif
     }
     done->Run();
@@ -1929,7 +1929,7 @@ bool VaultService::ValidateSignedSize(const maidsafe::SignedSize &sz) {
     return false;
   }
   crypto::Crypto co;
-  std::string str_size = base::itos_ull(sz.data_size());
+  std::string str_size = boost::lexical_cast<std::string>(sz.data_size());
   if (!co.AsymCheckSig(str_size, sz.signature(), sz.public_key(),
       crypto::STRING_STRING)) {
 #ifdef DEBUG
@@ -2187,7 +2187,7 @@ void VaultService::AmendRemoteAccount(
       amend_account_request.mutable_signed_size();
   mutable_signed_size->set_data_size(size);
   mutable_signed_size->set_pmid(pmid_);
-  mutable_signed_size->set_signature(co.AsymSign(base::itos_ull(size), "",
+  mutable_signed_size->set_signature(co.AsymSign(boost::lexical_cast<std::string>(size), "",
                                      pmid_private_, crypto::STRING_STRING));
   mutable_signed_size->set_public_key(pmid_public_);
   mutable_signed_size->set_public_key_signature(pmid_public_signature_);
@@ -2235,8 +2235,8 @@ void VaultService::RemoteVaultAbleToStore(const boost::uint64_t &size,
 #ifdef DEBUG
     printf("In VaultService::RemoteVaultAbleToStore (%s), requested space "
            "(%s) not available (> %s).\n",
-           HexSubstr(pmid_).c_str(), base::itos_ull(size).c_str(),
-           base::itos_ull(space_offered - space_taken).c_str());
+           HexSubstr(pmid_).c_str(), boost::lexical_cast<std::string>(size).c_str(),
+           boost::lexical_cast<std::string>(space_offered - space_taken).c_str());
 #endif
   }
 
@@ -2262,7 +2262,7 @@ bool VaultService::HaveAccount(const std::string &pmid) {
 
 bool VaultService::NodeWithinClosest(const std::string &peer_pmid,
                                      const boost::uint16_t &count) {
-  std::list<base::PDRoutingTableTuple> close_peers;
+  std::list<base::PublicRoutingTableTuple> close_peers;
   if (routing_table_->GetClosestContacts(pmid_, count, &close_peers) !=
       kSuccess) {
 #ifdef DEBUG
@@ -2271,11 +2271,11 @@ bool VaultService::NodeWithinClosest(const std::string &peer_pmid,
 #endif
     return false;
   }
-  std::list<base::PDRoutingTableTuple>::iterator peer_list_itr =
+  std::list<base::PublicRoutingTableTuple>::iterator peer_list_itr =
       close_peers.begin();
   bool found(false);
   while (peer_list_itr != close_peers.end()) {
-    if ((*peer_list_itr).kademlia_id_ == peer_pmid) {
+    if ((*peer_list_itr).kademlia_id == peer_pmid) {
       found = true;
       break;
     }

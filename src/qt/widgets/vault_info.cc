@@ -15,6 +15,7 @@
 #include "qt/widgets/vault_info.h"
 
 // boost
+#include <boost/lexical_cast.hpp>
 #include <boost/progress.hpp>
 
 // qt
@@ -68,7 +69,7 @@ void VaultInfo::onUpdateVaultInfo() {
   bool b = ClientController::instance()->PollVaultInfo(&chunkstore,
          &offered_space, &free_space, &ip, &port);
   if (b) {
-    std::string s_port(base::itos_ul(port));
+    std::string s_port(boost::lexical_cast<std::string>(port));
     ui_.offeredLbl->setText(tr("%1 KB").arg(offered_space/1024));
     ui_.freeLbl->setText(tr("%1 KB").arg(free_space/1024));
     ui_.usedLbl->setText(tr("%1 KB").arg((offered_space - free_space)/1024));
