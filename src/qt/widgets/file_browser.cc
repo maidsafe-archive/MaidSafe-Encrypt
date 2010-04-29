@@ -940,6 +940,23 @@ void FileBrowser::onFolderItemPressed(QTreeWidgetItem* item, int colum) {
 void FileBrowser::onViewGroupClicked(QAction* action) {
 }
 void FileBrowser::onSortGroupClicked(QAction* action) {
+  QHeaderView* theHeader = ui_.driveTreeWidget->header();
+  Qt::SortOrder order = theHeader->sortIndicatorOrder();
+
+  if (order == Qt::AscendingOrder)
+    order = Qt::DescendingOrder;
+  else
+    order = Qt::AscendingOrder;
+
+  if (action == nameSort) {
+    ui_.driveTreeWidget->sortByColumn(0, order);
+  } else if (action == sizeSort) {
+    ui_.driveTreeWidget->sortByColumn(2, order);
+  } else if (action == typeSort) {
+    ui_.driveTreeWidget->sortByColumn(3, order);
+  } else if (action == dateSort) {
+    ui_.driveTreeWidget->sortByColumn(4, order);
+  }
 }
 
 QString FileBrowser::getCurrentTreePath(QTreeWidgetItem* item){

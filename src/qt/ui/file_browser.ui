@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>538</width>
+    <width>578</width>
     <height>249</height>
    </rect>
   </property>
@@ -83,7 +83,7 @@
         </size>
        </property>
        <property name="selectionBehavior">
-        <enum>QAbstractItemView::SelectItems</enum>
+        <enum>QAbstractItemView::SelectRows</enum>
        </property>
        <property name="indentation">
         <number>20</number>
