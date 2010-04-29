@@ -50,6 +50,33 @@ namespace fs = boost::filesystem;
   ui_.driveTreeWidget->setAcceptDrops(true);
   ui_.driveTreeWidget->viewport()->installEventFilter(this);
 
+  createAndConnectActions();
+
+  connect(ui_.driveTreeWidget, SIGNAL(itemDoubleClicked(QTreeWidgetItem*, int)),
+          this,            SLOT(onItemDoubleClicked(QTreeWidgetItem*, int)));
+
+  connect(ui_.driveTreeWidget, SIGNAL(itemPressed(QTreeWidgetItem*, int)),
+          this,            SLOT(onMousePressed(QTreeWidgetItem*, int)));
+
+  connect(ui_.treeViewTreeWidget, SIGNAL(itemExpanded(QTreeWidgetItem*)),
+          this,            SLOT(onItemExpanded(QTreeWidgetItem*)));
+
+  connect(ui_.treeViewTreeWidget, SIGNAL(itemPressed(QTreeWidgetItem*, int)),
+          this,            SLOT(onFolderItemPressed(QTreeWidgetItem*, int)));
+
+  connect(ui_.backButton, SIGNAL(clicked(bool)),
+          this,           SLOT(onBackClicked(bool)));
+
+  connect(ui_.uploadButton, SIGNAL(clicked(bool)),
+          this,           SLOT(onUploadClicked(bool)));
+
+}
+
+FileBrowser::~FileBrowser() {
+  reset();
+}
+
+void FileBrowser::createAndConnectActions() {
   menu = new QMenu(this);
 
   openFile = new QAction(tr("Open"), this);
@@ -71,28 +98,6 @@ namespace fs = boost::filesystem;
   menu->addAction(deleteFile);
   menu->addAction(renameFile);
   menu->addAction(sendFile);
-
-  menu2 = new QMenu(this);
-  newFolder = new QAction(tr("New Folder"), this);
-  menu2->addAction(newFolder);
-
-  connect(ui_.driveTreeWidget, SIGNAL(itemDoubleClicked(QTreeWidgetItem*, int)),
-          this,            SLOT(onItemDoubleClicked(QTreeWidgetItem*, int)));
-
-  connect(ui_.driveTreeWidget, SIGNAL(itemPressed(QTreeWidgetItem*, int)),
-          this,            SLOT(onMousePressed(QTreeWidgetItem*, int)));
-
-  connect(ui_.treeViewTreeWidget, SIGNAL(itemExpanded(QTreeWidgetItem*)),
-          this,            SLOT(onItemExpanded(QTreeWidgetItem*)));
-
-  connect(ui_.treeViewTreeWidget, SIGNAL(itemPressed(QTreeWidgetItem*, int)),
-          this,            SLOT(onFolderItemPressed(QTreeWidgetItem*, int)));
-
-  connect(ui_.backButton, SIGNAL(clicked(bool)),
-          this,           SLOT(onBackClicked(bool)));
-
-  connect(ui_.uploadButton, SIGNAL(clicked(bool)),
-          this,           SLOT(onUploadClicked(bool)));
 
   connect(openFile, SIGNAL(triggered()),
           this,        SLOT(onOpenFileClicked()));
@@ -118,12 +123,52 @@ namespace fs = boost::filesystem;
   connect(saveFile, SIGNAL(triggered()),
           this,        SLOT(onSaveFileClicked()));
 
+  menu2 = new QMenu(this);
+  viewGroup = new QActionGroup(this);
+  sortGroup = new QActionGroup(this);
+  view = new QMenu(tr("View"), this);
+  sort = new QMenu(tr("Sort By"), this);
+
+  newFolder = new QAction(tr("New Folder"), this);
+
+  tilesMode = new QAction(tr("Tiles"), viewGroup);
+  tilesMode->setCheckable(true);
+  listMode = new QAction(tr("List"), viewGroup);
+  listMode->setCheckable(true);
+  detailMode = new QAction(tr("Details"), viewGroup);
+  detailMode->setCheckable(true);
+  detailMode->setChecked(true);
+  iconMode = new QAction(tr("Icons"), viewGroup);
+  iconMode->setCheckable(true);
+
+  nameSort = new QAction(tr("Name"), sortGroup);
+  sizeSort = new QAction(tr("Size"), sortGroup);
+  typeSort = new QAction(tr("Type"), sortGroup);
+  dateSort = new QAction(tr("Date Modified"), sortGroup);
+
+  view->addAction(tilesMode);
+  view->addAction(listMode);
+  view->addAction(detailMode);
+  view->addAction(iconMode);
+  sort->addAction(nameSort);
+  sort->addAction(sizeSort);
+  sort->addAction(typeSort);
+  sort->addAction(dateSort);
+
+  menu2->addMenu(view);
+  menu2->addMenu(sort);
+  menu2->addSeparator();
+  menu2->addAction(newFolder);
+
   connect(newFolder, SIGNAL(triggered()),
           this,        SLOT(onNewFolderClicked()));
-}
 
-FileBrowser::~FileBrowser() {
-  reset();
+  connect(viewGroup, SIGNAL(triggered(QAction*)),
+          this,        SLOT(onViewGroupClicked(QAction*)));
+
+  connect(sortGroup, SIGNAL(triggered(QAction*)),
+          this,        SLOT(onSortGroupClicked(QAction*)));
+
 }
 
 void FileBrowser::setActive(bool b) {
@@ -892,6 +937,11 @@ void FileBrowser::onFolderItemPressed(QTreeWidgetItem* item, int colum) {
   }
 }
 
+void FileBrowser::onViewGroupClicked(QAction* action) {
+}
+void FileBrowser::onSortGroupClicked(QAction* action) {
+}
+
 QString FileBrowser::getCurrentTreePath(QTreeWidgetItem* item){
   QString path = "/";
   QTreeWidgetItem* item1 = new QTreeWidgetItem();
@@ -923,12 +973,13 @@ QIcon FileBrowser::getAssociatedIconFromPath(const QString& fullFilePath) {
     try {
       std::ofstream myfile;
       myfile.open (qtPath.toStdString().c_str());
-      myfile << "Writing this to a file.\n";
+      myfile << "Writing this to a dummy file.\n";
       myfile.close();
     }
     catch(const std::exception&) {
       qDebug() << "Create File Failed";
     }
+
   }
   QFileInfo fileInfo(qtPath);
   QFileIconProvider fileIconProvider;
@@ -951,3 +1002,4 @@ QString FileBrowser::getFullFilePath(const QString& filepath) {
   qtPath.replace(QString("/"),QString("\\"));
   return qtPath;
 }
+

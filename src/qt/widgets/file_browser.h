@@ -39,15 +39,13 @@ class FileBrowser : public QDialog {
     void smilyChosen(int, int);
 
  private:
-    void setMenuDirMenu();
-    void setMenuFileMenu();
   Ui::FileBrowserPage ui_;
-  // QFileSystemModel* model_;
-  // QFileSystemWatcher* theWatcher_;
   bool init_;
+  QString rootPath_;
   QString currentDir_;
   QString currentTreeDir_;
-  QString rootPath_;
+  QString viewType_;
+
   QMenu *menu;
   QAction *openFile;
   QAction *openWith;
@@ -57,19 +55,35 @@ class FileBrowser : public QDialog {
   QAction *deleteFile;
   QAction *renameFile;
   QAction *saveFile;
-  QAction *newFolder;
+
   QMenu *menu2;
+  QMenu *view;
+  QMenu *sort;
+  QActionGroup* viewGroup;
+  QActionGroup* sortGroup;
+  QAction *newFolder;
+  QAction *tilesMode;
+  QAction *listMode;
+  QAction *detailMode;
+  QAction *iconMode;
+  QAction *nameSort;
+  QAction *sizeSort;
+  QAction *typeSort;
+  QAction *dateSort;
+
   boost::shared_ptr<QProcess> myProcess_;
 
   QIcon getAssociatedIconFromPath(const QString& filepath);
   QString getCurrentTreePath(QTreeWidgetItem* item);
   QString getFullFilePath(const QString& filepath);
-  void create_file( const std::string & ph, const std::string & contents );
+  void createAndConnectActions();
   int populateDirectory(const QString);
   int createTreeDirectory(const QString);
   void uploadFileFromLocal(const QString& filePath);
   void saveFileToNetwork(const QString& filePath);
   void getTreeSubFolders(const QString);
+  void setMenuDirMenu();
+  void setMenuFileMenu();
 
   protected:
     void dropEvent(QDropEvent *event);
@@ -99,6 +113,8 @@ class FileBrowser : public QDialog {
     void onRenameFileClicked();
     void onSaveFileClicked();
     void onNewFolderClicked();
+    void onViewGroupClicked(QAction* action);
+    void onSortGroupClicked(QAction* action);
     void onBackClicked(bool);
     void onUploadClicked(bool);
     void onOpenError(QProcess::ProcessError);

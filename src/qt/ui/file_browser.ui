@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>456</width>
+    <width>538</width>
     <height>249</height>
    </rect>
   </property>
@@ -82,6 +82,9 @@
          <height>0</height>
         </size>
        </property>
+       <property name="selectionBehavior">
+        <enum>QAbstractItemView::SelectItems</enum>
+       </property>
        <property name="indentation">
         <number>20</number>
        </property>
@@ -90,6 +93,12 @@
        </property>
        <property name="uniformRowHeights">
         <bool>false</bool>
+       </property>
+       <property name="itemsExpandable">
+        <bool>false</bool>
+       </property>
+       <property name="sortingEnabled">
+        <bool>true</bool>
        </property>
        <property name="animated">
         <bool>false</bool>
@@ -100,6 +109,9 @@
        <attribute name="headerMinimumSectionSize">
         <number>41</number>
        </attribute>
+       <attribute name="headerShowSortIndicator" stdset="0">
+        <bool>true</bool>
+       </attribute>
        <attribute name="headerStretchLastSection">
         <bool>true</bool>
        </attribute>
@@ -108,6 +120,9 @@
        </attribute>
        <attribute name="headerMinimumSectionSize">
         <number>41</number>
+       </attribute>
+       <attribute name="headerShowSortIndicator" stdset="0">
+        <bool>true</bool>
        </attribute>
        <attribute name="headerStretchLastSection">
         <bool>true</bool>
