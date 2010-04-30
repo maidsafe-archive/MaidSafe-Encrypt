@@ -12,6 +12,8 @@
  *      Author: Team
  */
 
+#include <boost/lexical_cast.hpp>
+
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <stdio.h>
@@ -108,7 +110,7 @@ int main(int argc, char* argv[]) {
   /* Change the current working directory */
   if (n < 0) {
     /* Log the failure */
-    log_string = "Failed chdir(/tmp): " + base::itos(n) + " \n";
+    log_string = "Failed chdir(/tmp): " + base::IntToString(n) + " \n";
     WriteToLog(log_string);
     exit(EXIT_FAILURE);
   }
@@ -120,7 +122,7 @@ int main(int argc, char* argv[]) {
 
   /* Daemon-specific initialization goes here */
   std::string prt(argv[1]), path_to_config(argv[2]);
-  int port = base::stoi(prt);
+  int port = boost::lexical_cast<int>(prt);
   maidsafe_vault::VaultDaemon vault_daemon(port, path_to_config);
 
   if (!vault_daemon.StartVault())

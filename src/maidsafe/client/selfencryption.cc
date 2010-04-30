@@ -123,8 +123,8 @@ int SelfEncryption::Encrypt(const std::string &entry_str,
     Chunk chunk;
     if (dm->compression_on()) {
       int compression_level = 9;
-      std::string compression_type = "gzip" + base::IntToString(compression_level);
-      chunk.set_compression_type(compression_type);
+      std::string compr_type("gzip" + base::IntToString(compression_level));
+      chunk.set_compression_type(compr_type);
     }
     // initialise counter for amount of data put into chunk
     boost::uint64_t this_chunk_done = 0;

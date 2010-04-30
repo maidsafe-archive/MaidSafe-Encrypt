@@ -8,8 +8,8 @@
  * You are not free to copy, amend or otherwise use this source code without
  * explicit written permission of the board of directors of maidsafe.net
  *
- *  Created on: March 23 2010
- *      Author: Stephen
+ *  Created on: May 9, 2009
+ *      Author: Team
  */
 
 #include "qt/client/make_directory_thread.h"
@@ -21,13 +21,14 @@
 #include "qt/client/client_controller.h"
 
 
-MakeDirectoryThread::MakeDirectoryThread(const QString& filepath, QObject* parent)
+MakeDirectoryThread::MakeDirectoryThread(const QString& filepath,
+                                         QObject* parent)
     : WorkerThread(parent), filepath_(filepath) { }
 
 MakeDirectoryThread::~MakeDirectoryThread() { }
 
 void MakeDirectoryThread::run() {
-  qDebug() << "MakeDirectoryThread::run" << filepath_ ;
+  qDebug() << "MakeDirectoryThread::run" << filepath_;
 
   int success = ClientController::instance()->mkdir(filepath_.toStdString());
 

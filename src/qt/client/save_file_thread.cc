@@ -9,7 +9,7 @@
  * explicit written permission of the board of directors of maidsafe.net
  *
  *  Created on: March 23 2010
- *      Author: Stephen
+ *      Author: Team
  */
 
 #include "qt/client/save_file_thread.h"
@@ -27,7 +27,7 @@ SaveFileThread::SaveFileThread(const QString& filepath, QObject* parent)
 SaveFileThread::~SaveFileThread() { }
 
 void SaveFileThread::run() {
-  qDebug() << "SaveFileThread::run" << filepath_ ;
+  qDebug() << "SaveFileThread::run" << filepath_;
 
   int success = ClientController::instance()->write(filepath_.toStdString());
 

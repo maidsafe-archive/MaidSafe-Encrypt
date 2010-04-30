@@ -47,8 +47,9 @@ void KGroup::MakeAmendAccountRequests(
   maidsafe::SignedSize *signed_size = request.mutable_signed_size();
   for (size_t i = 0; i < members_.size(); ++i) {
     signed_size->set_data_size(data_size);
-    signed_size->set_signature(co_.AsymSign(boost::lexical_cast<std::string>(data_size), "",
-        members_.at(i).pmid_private, crypto::STRING_STRING));
+    signed_size->set_signature(
+        co_.AsymSign(boost::lexical_cast<std::string>(data_size), "",
+                     members_.at(i).pmid_private, crypto::STRING_STRING));
     signed_size->set_pmid(members_.at(i).pmid);
     signed_size->set_public_key(members_.at(i).pmid_public);
     signed_size->set_public_key_signature(members_.at(i).pmid_public_signature);

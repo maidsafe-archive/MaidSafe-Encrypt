@@ -1262,8 +1262,9 @@ int PDVault::AmendAccount(const boost::uint64_t &space_offered) {
       amend_account_request.mutable_signed_size();
   mutable_signed_size->set_data_size(space_offered);
   mutable_signed_size->set_pmid(pmid_);
-  mutable_signed_size->set_signature(co.AsymSign(boost::lexical_cast<std::string>(space_offered),
-      "", pmid_private_, crypto::STRING_STRING));
+  mutable_signed_size->set_signature(
+      co.AsymSign(boost::lexical_cast<std::string>(space_offered),
+                  "", pmid_private_, crypto::STRING_STRING));
   mutable_signed_size->set_public_key(pmid_public_);
   mutable_signed_size->set_public_key_signature(signed_pmid_public_);
   amend_account_request.set_account_pmid(pmid_);
@@ -1430,7 +1431,8 @@ void PDVault::UpdateSpaceOffered() {
 #ifdef DEBUG
     printf("In PDVault::UpdateSpaceOffered (%s), set space offered to %s "
            "on attempt #%d.\n", HexSubstr(pmid_).c_str(),
-           boost::lexical_cast<std::string>(vault_chunkstore_.available_space()).c_str(), n);
+           boost::lexical_cast<std::string>(
+              vault_chunkstore_.available_space()).c_str(), n);
 #endif
     JoinMaidsafeNet();
   } else if (result == 0) {

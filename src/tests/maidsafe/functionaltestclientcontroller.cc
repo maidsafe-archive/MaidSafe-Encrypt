@@ -100,7 +100,7 @@ class FunctionalClientControllerTest : public testing::Test {
     }
     ASSERT_LT(count, timeout);
     ASSERT_TRUE(fs::exists(kadconfig_dest));
-//    boost::thread thr(&maidsafe_vault::VaultDaemon::StartVault, &vault_daemon_);
+//  boost::thread thr(&maidsafe_vault::VaultDaemon::StartVault, &vault_daemon_);
     ss_ = SessionSingleton::getInstance();
     ss_->ResetSession();
     cc_ = ClientController::getInstance();

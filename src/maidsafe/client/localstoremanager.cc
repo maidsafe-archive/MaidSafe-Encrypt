@@ -16,6 +16,7 @@
 #include <maidsafe/protobuf/signed_kadvalue.pb.h>
 
 #include <vector>
+#include <set>
 
 #include "fs/filesystem.h"
 #include "maidsafe/chunkstore.h"

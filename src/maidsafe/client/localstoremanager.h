@@ -116,7 +116,7 @@ class LocalStoreManager : public StoreManagerInterface {
   bool SendPresence(const std::string &) { return false; }
   void SendLogOutMessage(const std::string &) {}
   void SetSessionEndPoint() {}
-  void SetInstantMessageNotifier(IMNotifier, IMStatusNotifier) {};
+  void SetInstantMessageNotifier(IMNotifier, IMStatusNotifier) {}
 
  private:
   LocalStoreManager &operator=(const LocalStoreManager&);

@@ -851,6 +851,6 @@ TEST_F(TestImMessaging, FUNC_MAID_HandleTwoConverstions) {
       &ctc2_status));
   ASSERT_EQ(std::string("contact2"), latest_ctc_updated_);
   ASSERT_EQ(1, latest_status_);
+}
 
-}
-}
+}  // namespace

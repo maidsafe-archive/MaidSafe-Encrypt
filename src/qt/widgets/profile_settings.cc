@@ -60,7 +60,7 @@ void ProfileSettings::setActive(bool b) {
     init_ = true;
 
     QString pub = ClientController::instance()->publicUsername();
-    //std::vector<std::string> profileInfo;
+    // std::vector<std::string> profileInfo;
 
     ui_.pubNameEdit->setText(pub);
 
@@ -137,7 +137,8 @@ void ProfileSettings::onMaleChanged(bool checked) {
 void ProfileSettings::changeEvent(QEvent *event) {
   if (event->type() == QEvent::LanguageChange) {
     ui_.retranslateUi(this);
-  } else
+  } else {
     QWidget::changeEvent(event);
+  }
 }
 

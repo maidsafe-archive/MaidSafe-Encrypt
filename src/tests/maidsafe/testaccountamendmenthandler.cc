@@ -455,7 +455,8 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_CreateNewAmendment) {
   ASSERT_EQ(kSuccess, ah_.AddAccount(test_account_name, 999999));
 
   // Expectations
-  EXPECT_CALL(*vsl_.kadops(), FindKClosestNodes(kad::KadId(far_chunk_name, false),
+  EXPECT_CALL(*vsl_.kadops(), FindKClosestNodes(kad::KadId(far_chunk_name,
+                                                           false),
       testing::An<const kad::VoidFunctorOneString&>()))
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
           boost::bind(&mock_kadops::RunCallback, fail_parse_result_, _1))))

@@ -123,7 +123,7 @@ bool IMHandler::ValidateMessage(const std::string &ser_msg,
   }
   std::string send_pub_key(ss_->GetContactPublicKey(bpmsg.sender_id()));
   if (!crypto_.AsymCheckSig(gp.data(), gp.signature(), send_pub_key,
-      crypto::STRING_STRING )) {
+                            crypto::STRING_STRING)) {
     return false;
   }
 
@@ -134,4 +134,5 @@ bool IMHandler::ValidateMessage(const std::string &ser_msg,
   *type = bpmsg.type();
   return true;
 }
+
 }  // namespace

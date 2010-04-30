@@ -85,7 +85,8 @@ void VaultServiceLogic::AddToRemoteRefList(
     const VoidFuncOneInt &callback,
     const boost::int16_t &transport_id) {
 // printf("1. Vault %s - contacts size: %u\n", HexSubstr(pmid_).c_str(),
-//         (*base::PublicRoutingTable::GetInstance())[base::IntToString(port_)]->size());
+//        (*base::PublicRoutingTable::GetInstance())
+//            [base::IntToString(port_)]->size());
   if (!online()) {
 #ifdef DEBUG
     printf("In VSL::AddToRemoteRefList (%s), offline.\n",
@@ -97,8 +98,8 @@ void VaultServiceLogic::AddToRemoteRefList(
   boost::shared_ptr<AddToReferenceListOpData> data(new AddToReferenceListOpData(
       request, kad::KadId(request.chunkname(), false), found_local_result,
       callback, transport_id));
-  kad_ops_->FindKClosestNodes(kad::KadId(request.chunkname(), false), boost::bind(
-      static_cast< void(VaultServiceLogic::*)
+  kad_ops_->FindKClosestNodes(kad::KadId(request.chunkname(), false),
+      boost::bind(static_cast< void(VaultServiceLogic::*)
           (boost::shared_ptr<AddToReferenceListOpData>, const std::string &) >
           (&VaultServiceLogic::RemoteOpStageTwo), this, data, _1));
 }
@@ -397,8 +398,9 @@ void VaultServiceLogic::CacheChunk(const std::string &chunkname,
                                     boost::shared_ptr<CacheChunkData> >
       (this, &VaultServiceLogic::CacheChunkCallback, data);
   vault_rpcs_->CacheChunk(cacher.ip(), cacher.port(), cacher.rendezvous_ip(),
-                          cacher.rendezvous_port(), transport_id, &data->request,
-                          &data->response, &data->controller, done);
+                          cacher.rendezvous_port(), transport_id,
+                          &data->request, &data->response, &data->controller,
+                          done);
 }
 
 void VaultServiceLogic::CacheChunkCallback(

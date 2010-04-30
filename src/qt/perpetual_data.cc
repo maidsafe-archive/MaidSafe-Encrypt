@@ -40,7 +40,6 @@
 #include "qt/widgets/user_settings.h"
 
 #include "qt/client/create_user_thread.h"
-#include "qt/client/logout_user_thread.h"
 #include "qt/client/join_kademlia_thread.h"
 #include "qt/client/mount_thread.h"
 #include "qt/client/save_session_thread.h"
@@ -95,7 +94,6 @@ PerpetualData::PerpetualData(QWidget* parent)
     qApp->installTranslator(myAppTranslator);
     ui_.retranslateUi(this);
   }
-
 }
 
 void PerpetualData::onJoinKademliaCompleted(bool b) {
@@ -138,7 +136,7 @@ PerpetualData::~PerpetualData() {
 }
 
 void PerpetualData::createActions() {
-//most of the actions have already been created for the menubar
+// most of the actions have already been created for the menubar
   actions_[ QUIT ] = ui_.actionQuit;
   actions_[ LOGOUT ] = ui_.actionLogout;
   actions_[ FULLSCREEN ] = ui_.actionFullScreen;
@@ -151,7 +149,7 @@ void PerpetualData::createActions() {
   actions_[ AWAY ] = ui_.actionAway;
   actions_[ BUSY ] = ui_.actionBusy;
   actions_[ OFFLINE_2 ] = ui_.actionOffline_2;
-//actions_[ SAVE_SESSION ] = ui_.actionSave_Session;
+// actions_[ SAVE_SESSION ] = ui_.actionSave_Session;
 
 // Remove Status Menu until implemented
   ui_.menuStatus->setVisible(false);
@@ -159,8 +157,6 @@ void PerpetualData::createActions() {
   actions_[ AWAY ]->setVisible(false);
   actions_[ BUSY ]->setVisible(false);
   actions_[ OFFLINE_2 ]->setVisible(false);
-//
-
   actions_[ QUIT ]->setShortcut(Qt::ALT + Qt::Key_F4);
   actions_[ FULLSCREEN ]->setShortcut(Qt::Key_F11);
 
@@ -462,11 +458,7 @@ void PerpetualData::onLogout() {
   }
   if (!ClientController::instance()->publicUsername().isEmpty())
     ClientController::instance()->StopCheckingMessages();
-//#ifdef PD_LIGHT
-//  asyncLogout();
-//#else
   asyncUnmount();
-//#endif
   setState(LOGGING_OUT);
 }
 
@@ -617,10 +609,10 @@ void PerpetualData::onFileReceived(const maidsafe::InstantMessage& im) {
       // Save
 #ifdef PD_LIGHT
     bool ok;
-    QString text = QInputDialog::getText(this, tr("Save File As?"),
+    QString text = QInputDialog::getText(this, tr("Save File As"),
                                       tr("Filename"),
-                                      QLineEdit::Normal,"", &ok);
-    if (ok && !text.isEmpty()){
+                                      QLineEdit::Normal, "", &ok);
+    if (ok && !text.isEmpty()) {
       QString s = QString("My Files\\%1").arg(text);
       n = maidsafe::ClientController::getInstance()->
           AddInstantFile(im.instantfile_notification(), s.toStdString());
@@ -670,7 +662,7 @@ void PerpetualData::onFileReceived(const maidsafe::InstantMessage& im) {
 #ifdef DEBUG
       printf("PerpetualData::onFileReceived - Res: %i\n", n);
 #endif
-#endif // end of elseif PD_LIGHT
+#endif  // end of elseif PD_LIGHT
       if (n == 0) {
         QString title = tr("File received");
         QString message = tr("'%1' has shared the file '%2' with you")
@@ -763,13 +755,12 @@ void PerpetualData::onOffline_2Triggered() {
 }
 
 void PerpetualData::onLogoutUserCompleted(bool success) {
-
   onUnmountCompleted(success);
 }
 
 void PerpetualData::showLoggedInMenu() {
   actions_[LOGOUT]->setEnabled(true);
-  //actions_[MY_FILES]->setEnabled(true);
+  // actions_[MY_FILES]->setEnabled(true);
   actions_[PRIVATE_SHARES]->setEnabled(true);
   actions_[GO_OFFLINE]->setEnabled(true);
   actions_[SETTINGS]->setEnabled(true);
@@ -777,7 +768,7 @@ void PerpetualData::showLoggedInMenu() {
 
 void PerpetualData::showLoggedOutMenu() {
   actions_[LOGOUT]->setEnabled(false);
-  //ui_.menuStatus->setEnabled(false);
+  // ui_.menuStatus->setEnabled(false);
   actions_[MY_FILES]->setEnabled(false);
   actions_[PRIVATE_SHARES]->setEnabled(false);
   actions_[GO_OFFLINE]->setEnabled(false);
@@ -785,10 +776,11 @@ void PerpetualData::showLoggedOutMenu() {
 }
 
 void PerpetualData::changeEvent(QEvent *event) {
-     if (event->type() == QEvent::LanguageChange) {
-         ui_.retranslateUi(this);
-     } else
-         QWidget::changeEvent(event);
+  if (event->type() == QEvent::LanguageChange) {
+    ui_.retranslateUi(this);
+  } else {
+    QWidget::changeEvent(event);
+  }
 }
 
 void PerpetualData::onLangChanged(const QString &lang) {
@@ -802,6 +794,3 @@ void PerpetualData::onLangChanged(const QString &lang) {
     ui_.retranslateUi(this);
   }
 }
-
-
-

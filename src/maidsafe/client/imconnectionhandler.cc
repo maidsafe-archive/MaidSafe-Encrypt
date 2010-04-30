@@ -167,7 +167,6 @@ ReturnCode IMConnectionHandler::SendMessage(const boost::int16_t &trans_id,
       connections_container::iterator it1 = connections_.find(
         boost::make_tuple(trans_id, conn_id));
       timer_restarted = !(it->restart_timer);
-
     }
 
     return kSuccess;

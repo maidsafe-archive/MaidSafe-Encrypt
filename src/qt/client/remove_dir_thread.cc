@@ -27,7 +27,7 @@ RemoveDirThread::RemoveDirThread(const QString& filepath, QObject* parent)
 RemoveDirThread::~RemoveDirThread() { }
 
 void RemoveDirThread::run() {
-  qDebug() << "SaveFileThread::run" << filepath_ ;
+  qDebug() << "SaveFileThread::run" << filepath_;
 
   int success = ClientController::instance()->rmdir(filepath_.toStdString());
 

@@ -236,9 +236,12 @@ TEST_F(KeyAtlasTest, BEH_MAID_AmendKeys) {
 
   // amend keys & check keys were correctly updated
   for (int i = 0; i < 11; i++) {
-    std::string updated_package_id = "Updated Package ID " + base::IntToString(i);
-    std::string updated_private_key = "Updated Private Key " + base::IntToString(i);
-    std::string updated_public_key = "Updated Public Key " + base::IntToString(i);
+    std::string updated_package_id("Updated Package ID " +
+                                   base::IntToString(i));
+    std::string updated_private_key("Updated Private Key " +
+                                    base::IntToString(i));
+    std::string updated_public_key("Updated Public Key " +
+                                   base::IntToString(i));
     ASSERT_EQ(0, key_ring_.AddKey(i, updated_package_id,
               updated_private_key, updated_public_key, "")) <<
               "Failed to update key " << i << ".";

@@ -36,8 +36,8 @@ class CreateLicensePage : public QWizardPage {
  private:
   Ui::license ui_;
 
- private slots:
-  void onAcceptToggled(bool);
+  private slots:
+    void onAcceptToggled(bool);
 
  protected:
   void changeEvent(QEvent *event);

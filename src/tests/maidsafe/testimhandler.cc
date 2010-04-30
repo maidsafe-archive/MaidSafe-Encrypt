@@ -116,7 +116,7 @@ TEST_F(ImHandlerTest, BEH_MAID_InstMsgCreateLogOutMsg) {
   ASSERT_TRUE(im.ParseFromString(crypto_.SymmDecrypt(bpmsg.aesenc_message(),
       "", crypto::STRING_STRING, aes_key)));
   ASSERT_EQ("Me", im.sender());
-  ASSERT_EQ(maidsafe::LOGOUT_PING, bpmsg.type());;
+  ASSERT_EQ(maidsafe::LOGOUT_PING, bpmsg.type());
 }
 
 TEST_F(ImHandlerTest, BEH_MAID_Create_ValidateMsg) {

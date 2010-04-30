@@ -75,7 +75,8 @@ TEST_F(KadOpsTest, BEH_MAID_FindCloseNodes) {
   // Call 2
   contacts.push_back(dummy_contact);
   ASSERT_EQ(size_t(1), contacts.size());
-  ASSERT_EQ(kFindNodesParseError, mko_.FindKClosestNodes(kad::KadId(), &contacts));
+  ASSERT_EQ(kFindNodesParseError,
+            mko_.FindKClosestNodes(kad::KadId(), &contacts));
   ASSERT_EQ(size_t(0), contacts.size());
 
   // Call 3

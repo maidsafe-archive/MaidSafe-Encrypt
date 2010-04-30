@@ -45,8 +45,9 @@ void SecuritySettings::onPasswordTextEdit(const QString& text) {
 void SecuritySettings::changeEvent(QEvent *event) {
   if (event->type() == QEvent::LanguageChange) {
     ui_.retranslateUi(this);
-  } else
+  } else {
     QWidget::changeEvent(event);
+  }
 }
 
 

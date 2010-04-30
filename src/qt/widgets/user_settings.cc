@@ -139,7 +139,6 @@ void UserSettings::HandleOK() {
     QHash<QString, QString> theHash = personal_->changedValues_;
 
     if (theHash.contains("language")) {
-
       QString right = theHash["language"].right(3);
       QString newLocale = right.left(2);
       emit langChanged(newLocale);
@@ -175,8 +174,8 @@ void UserSettings::HandleOK() {
   }
   if (!profile_->changedValues_.isEmpty()) {
     QHash<QString, QString> theHash = profile_->changedValues_;
-    SaveProfileSettingsThread* spst =
-                                  new SaveProfileSettingsThread(theHash, this);
+    SaveProfileSettingsThread* spst = new SaveProfileSettingsThread(theHash,
+                                                                    this);
 
     connect(spst, SIGNAL(completed(bool)),
             this, SLOT(onSaveProfileSettingsCompleted(bool)));
@@ -203,7 +202,8 @@ void UserSettings::HandleCancel() { }
 void UserSettings::changeEvent(QEvent *event) {
   if (event->type() == QEvent::LanguageChange) {
     ui_.retranslateUi(this);
-  } else
+  } else {
     QWidget::changeEvent(event);
+  }
 }
 

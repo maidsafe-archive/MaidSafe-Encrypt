@@ -12,8 +12,8 @@
  *      Author: Stephen
  */
 
-#ifndef REMOVE_DIR_THREAD_H_INCLUDED
-#define REMOVE_DIR_THREAD_H_INCLUDED
+#ifndef QT_CLIENT_REMOVE_DIR_THREAD_H_
+#define QT_CLIENT_REMOVE_DIR_THREAD_H_
 
 #include "qt/client/worker_thread.h"
 
@@ -40,4 +40,4 @@ class RemoveDirThread : public WorkerThread {
   void removeDirCompleted(int, const QString&);
 };
 
-#endif // REMOVE_DIR_THREAD_H_INCLUDED
+#endif  // QT_CLIENT_REMOVE_DIR_THREAD_H_

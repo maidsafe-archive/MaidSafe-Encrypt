@@ -12,8 +12,8 @@
  *      Author: Stephen
  */
 
-#ifndef READ_FILE_THREAD_H_INCLUDED
-#define READ_FILE_THREAD_H_INCLUDED
+#ifndef QT_CLIENT_READ_FILE_THREAD_H_
+#define QT_CLIENT_READ_FILE_THREAD_H_
 
 #include "qt/client/worker_thread.h"
 
@@ -41,4 +41,4 @@ class ReadFileThread : public WorkerThread {
 };
 
 
-#endif // READ_FILE_THREAD_H_INCLUDED
+#endif  // QT_CLIENT_READ_FILE_THREAD_H_

@@ -59,7 +59,7 @@ typedef boost::function<void(const std::vector<std::string>&,
 typedef boost::function<void(const ReturnCode&)> CreateAccountFunctor;
 
 typedef boost::function<void(const std::string&)> IMNotifier;
-typedef boost::function<void(const std::string&,const int&)> IMStatusNotifier;
+typedef boost::function<void(const std::string&, const int&)> IMStatusNotifier;
 
 class StoreManagerInterface {
  public:

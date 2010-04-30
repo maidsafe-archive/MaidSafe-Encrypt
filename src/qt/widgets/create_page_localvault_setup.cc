@@ -70,7 +70,8 @@ void CreateLocalVaultPage::cleanupPage() {
   else
     info = boost::filesystem::space(boost::filesystem::path(chunkdir.root_name()
            + chunkdir.root_directory()));
-  availableSpace_ = boost::lexical_cast<std::string>(info.available / (1024 * 1024));
+  availableSpace_ = boost::lexical_cast<std::string>
+                    (info.available / (1024 * 1024));
   spaceReady_ = true;
   dirReady_ = false;
   QString qs(tr("Space to offer in MB (available %1 MB):")
@@ -163,6 +164,7 @@ QString CreateLocalVaultPage::DirectoryChosen() const {
 void CreateLocalVaultPage::changeEvent(QEvent *event) {
   if (event->type() == QEvent::LanguageChange) {
     ui_.retranslateUi(this);
-  } else
+  } else {
     QWidget::changeEvent(event);
+  }
 }

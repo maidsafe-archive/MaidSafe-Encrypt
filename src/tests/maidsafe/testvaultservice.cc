@@ -1222,8 +1222,9 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesAddToWatchList) {
   maidsafe::AmendAccountResponse amend_resp;
   signed_size = amend_req.mutable_signed_size();
   signed_size->set_data_size(space_offered);
-  signed_size->set_signature(co.AsymSign(boost::lexical_cast<std::string>(space_offered), "",
-                             client_priv_key, crypto::STRING_STRING));
+  signed_size->set_signature(
+      co.AsymSign(boost::lexical_cast<std::string>(space_offered), "",
+                  client_priv_key, crypto::STRING_STRING));
   signed_size->set_pmid(client_pmid);
   signed_size->set_public_key(client_pub_key);
   signed_size->set_public_key_signature(client_pub_key_sig);
@@ -1335,7 +1336,8 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesAddToWatchList) {
         &TestCallback::CallbackFunction);
     signed_size = aa_req.mutable_signed_size();
     signed_size->set_data_size(chunk_size * kMinChunkCopies * 2);
-    std::string ser_size(boost::lexical_cast<std::string>(signed_size->data_size()));
+    std::string ser_size(boost::lexical_cast<std::string>
+                         (signed_size->data_size()));
     signed_size->set_signature(co.AsymSign(ser_size, "", client_priv_key,
                                crypto::STRING_STRING));
     signed_size->set_pmid(client_pmid);
@@ -1456,7 +1458,8 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesRemoveFromWatchList) {
           &TestCallback::CallbackFunction);
       signed_size = aa_req.mutable_signed_size();
       signed_size->set_data_size(chunk_size * kMinChunkCopies * 2);
-      std::string ser_size(boost::lexical_cast<std::string>(signed_size->data_size()));
+      std::string ser_size(boost::lexical_cast<std::string>
+                           (signed_size->data_size()));
       signed_size->set_signature(co.AsymSign(ser_size, "", client_priv_key[i],
                                  crypto::STRING_STRING));
       signed_size->set_pmid(client_pmid[i]);
@@ -1781,7 +1784,8 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesAddToReferenceList) {
         &TestCallback::CallbackFunction);
     signed_size = aa_req.mutable_signed_size();
     signed_size->set_data_size(chunk_size * kMinChunkCopies);
-    std::string ser_size(boost::lexical_cast<std::string>(signed_size->data_size()));
+    std::string ser_size(boost::lexical_cast<std::string>
+                         (signed_size->data_size()));
     signed_size->set_signature(co.AsymSign(ser_size, "", client_priv_key,
                                crypto::STRING_STRING));
     signed_size->set_pmid(client_pmid);
@@ -1803,7 +1807,8 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesAddToReferenceList) {
         &TestCallback::CallbackFunction);
     signed_size = aa_req.mutable_signed_size();
     signed_size->set_data_size(chunk_size * kMinChunkCopies);
-    std::string ser_size(boost::lexical_cast<std::string>(signed_size->data_size()));
+    std::string ser_size(boost::lexical_cast<std::string>
+                         (signed_size->data_size()));
     signed_size->set_signature(co.AsymSign(ser_size, "", vlt_priv_key,
                                crypto::STRING_STRING));
     signed_size->set_pmid(vlt_pmid);
@@ -1928,8 +1933,9 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesAmendAccount) {
   {
     maidsafe::SignedSize *signed_size = request.mutable_signed_size();
     signed_size->set_data_size(space_offered);
-    signed_size->set_signature(co.AsymSign(boost::lexical_cast<std::string>(space_offered), "",
-                               client_priv_key, crypto::STRING_STRING));
+    signed_size->set_signature(
+        co.AsymSign(boost::lexical_cast<std::string>(space_offered), "",
+                    client_priv_key, crypto::STRING_STRING));
     signed_size->set_pmid(client_pmid);
     signed_size->set_public_key(client_pub_key);
     signed_size->set_public_key_signature(client_pub_key_sig);
@@ -1976,8 +1982,9 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesAmendAccount) {
         for (int i = 0; i < kad::K; ++i) {
           signed_size = requests.at(i).mutable_signed_size();
           signed_size->set_data_size(0);
-          signed_size->set_signature(co.AsymSign(boost::lexical_cast<std::string>(0), "",
-                                     client_priv_key, crypto::STRING_STRING));
+          signed_size->set_signature(
+              co.AsymSign(boost::lexical_cast<std::string>(0), "",
+                          client_priv_key, crypto::STRING_STRING));
         }
         break;
       case 3:  // missing chunk name

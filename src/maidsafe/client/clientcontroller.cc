@@ -917,19 +917,8 @@ int ClientController::HandleMessages(
 
   int result = 0;
   while (!valid_messages->empty()) {
-#ifdef DEBUG
-//    printf("CC::HandleMessages - Sender: %s\n", valid_messages->front().sender().c_str());
-//    printf("CC::HandleMessages - Index: %s\n", HexSubstr(valid_messages->front().index()).c_str());
-//    printf("CC::HandleMessages - Type: %d\n", valid_messages->front().type());
-//    printf("CC::HandleMessages - Time: %d\n", valid_messages->front().timestamp());
-#endif
-
     std::map<std::string, boost::uint32_t>::iterator it;
     rec_msg_mutex_.lock();
-//#ifdef DEBUG
-//    printf("ClientController::HandleMessages - received_messages_ size: %d\n",
-//           received_messages_.size());
-//#endif
     it = received_messages_.find(valid_messages->front().SerializeAsString());
     if (it != received_messages_.end()) {
 #ifdef DEBUG
@@ -981,12 +970,9 @@ void ClientController::ClearStaleMessages() {
            it != received_messages_.end(); ++it) {
         if (it->second < now)
           msgs.push_back(it->first);
-//        printf("CC::ClearStaleMessages - Message: %d\n", it->second);
       }
       for (size_t n = 0 ; n < msgs.size(); ++n) {
         received_messages_.erase(msgs[n]);
-//        size_t a = received_messages_.erase(msgs[n]);
-//        printf("CC::ClearStaleMessages erased %d with result %d\n", n, a);
       }
 #ifdef DEBUG
 //      printf("CC::ClearStaleMessages() - erased %d\n", msgs.size());
@@ -1161,26 +1147,9 @@ int ClientController::HandleInstantMessage(
 #endif
     return kClientControllerNotInitialised;
   }
-//#ifdef DEBUG
-//  printf("INSTANT MESSAGE received - ");
-//  printf("Sender: %s\n", vbpm.sender().c_str());
-//#endif
   InstantMessage im;
   if (im.ParseFromString(vbpm.message())) {
       instant_messages_.push_back(im);
-#ifdef DEBUG
-//      printf("CC::HandleInstantMessage - %s\n", im.sender().c_str());
-//      printf("CC::HandleInstantMessage - %s\n", im.message().c_str());
-//      printf("CC::HandleInstantMessage - %d\n", im.date());
-//      if (im.has_conversation())
-//        printf("CC::HandleInstantMessage - %s\n", im.conversation().c_str());
-//      if (im.has_contact_notification())
-//        printf("CC::HandleInstantMessage - contact_notification\n");
-//      if (im.has_instantfile_notification())
-//        printf("CC::HandleInstantMessage - instantfile_notification\n");
-//      if (im.has_privateshare_notification())
-//        printf("CC::HandleInstantMessage - privateshare_notification\n");
-#endif
     return 0;
   }
 

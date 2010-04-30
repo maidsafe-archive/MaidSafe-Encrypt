@@ -134,7 +134,8 @@ TEST_F(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerAdd) {
   cih.SetStoringDone(chunk_name, client[1]);
   ASSERT_EQ(0, cih.ActiveReferences(chunk_name));
   for (int i = 0; i < required_references; ++i) {
-    ASSERT_EQ(0, cih.AddToReferenceList(chunk_name, "rf" + base::IntToString(i), 123));
+    ASSERT_EQ(0, cih.AddToReferenceList(chunk_name, "rf" + base::IntToString(i),
+                                        123));
   }
   ASSERT_EQ(required_references, cih.ActiveReferences(chunk_name));
 

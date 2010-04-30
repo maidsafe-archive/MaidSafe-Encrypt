@@ -12,7 +12,7 @@
  *      Author: Stephen
  */
 
- #include "qt/client/rename_file_thread.h"
+#include "qt/client/rename_file_thread.h"
 
 // qt
 #include <QDebug>
@@ -22,16 +22,18 @@
 
 
 RenameFileThread::RenameFileThread(const QString& filepath,
-                                 const QString& newFilePath, QObject* parent)
+                                   const QString& newFilePath,
+                                   QObject* parent)
     : WorkerThread(parent), filepath_(filepath), newFilePath_(newFilePath) { }
 
 RenameFileThread::~RenameFileThread() { }
 
 void RenameFileThread::run() {
-  qDebug() << "RenameFileThread::run" << filepath_ ;
+  qDebug() << "RenameFileThread::run" << filepath_;
 
-  int success = ClientController::instance()->rename(filepath_.toStdString(),
-                                                    newFilePath_.toStdString());
+  int success =
+      ClientController::instance()->rename(filepath_.toStdString(),
+                                           newFilePath_.toStdString());
 
   emit renameFileCompleted(success, filepath_, newFilePath_);
 }

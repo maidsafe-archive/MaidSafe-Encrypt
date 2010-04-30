@@ -301,15 +301,10 @@ int PdDir::AddElement(const std::string &ser_mdm,
       stmt.bind(4, mdm.type());
       stmt.bind(5, mdm.stats().c_str());
       stmt.bind(6, mdm.tag().c_str());
-      // stmt.bind(7, boost::lexical_cast<std::string>(mdm.file_size_high()).c_str());
-      // stmt.bind(8, boost::lexical_cast<std::string>(mdm.file_size_low()).c_str());
-      // stmt.bind(9, boost::lexical_cast<std::string>(mdm.creation_time()).c_str());
       stmt.bind(7, mdm.file_size_high());
       stmt.bind(8, mdm.file_size_low());
       stmt.bind(9, mdm.creation_time());
       boost::uint32_t current_time = base::GetEpochTime();
-      // stmt.bind(10, boost::lexical_cast<std::string>(current_time).c_str());
-      // stmt.bind(11, boost::lexical_cast<std::string>(current_time).c_str());
       stmt.bind(10, boost::lexical_cast<std::string>(current_time).c_str());
       stmt.bind(11, boost::lexical_cast<std::string>(current_time).c_str());
       stmt.bind(12, base::EncodeToHex(dir_key).c_str());

@@ -142,11 +142,11 @@ void AddToWatchListCallback(bool initialise_response,
     response->set_pmid(pmid);
     response->set_upload_count(upload_count);
   }
-  callback->Run();
   boost::mutex::scoped_lock lock(*mutex);
   ++(*callback_count);
   if (*callback_count == kad::K)
     cond_var->notify_one();
+  callback->Run();
 }
 
 void RemoveFromWatchListCallback(
@@ -540,8 +540,8 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AddToWatchList) {
   std::vector<kad::Contact> chunk_info_holders, few_chunk_info_holders;
   for (boost::uint16_t i = 0; i < kad::K; ++i) {
     kad::Contact contact(crypto_.Hash(base::IntToString(i * i), "",
-        crypto::STRING_STRING, false), "192.168.10." + base::IntToString(i), 8000 + i,
-        "192.168.10." + base::IntToString(i), 8000 + i);
+        crypto::STRING_STRING, false), "192.168.10." + base::IntToString(i),
+        8000 + i, "192.168.10." + base::IntToString(i), 8000 + i);
     chunk_info_holders.push_back(contact);
     if (i < kKadUpperThreshold - 1)
       few_chunk_info_holders.push_back(contact);
@@ -772,7 +772,8 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AssessUploadCounts) {
       add_to_watchlist_data(new WatchListOpData(store_data));
   for (size_t i = 0; i < kad::K; ++i) {
     WatchListOpData::AddToWatchDataHolder
-        hldr(crypto_.Hash(base::IntToString(i * i), "", crypto::STRING_STRING, false));
+        hldr(crypto_.Hash(base::IntToString(i * i), "", crypto::STRING_STRING,
+                          false));
     add_to_watchlist_data->add_to_watchlist_data_holders.push_back(hldr);
   }
 
@@ -782,7 +783,8 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AssessUploadCounts) {
   // All return upload_copies == 2
   ++test_run;  // 1
   for (int i = 0; i < kad::K; ++i) {
-    SCOPED_TRACE("Test " + base::IntToString(test_run) +" -- Resp " + base::IntToString(i));
+    SCOPED_TRACE("Test " + base::IntToString(test_run) + " -- Resp " +
+                 base::IntToString(i));
     add_to_watchlist_data->required_upload_copies.insert(2);
     ++add_to_watchlist_data->returned_count;
     if (i < kKadUpperThreshold - 1) {
@@ -801,7 +803,8 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AssessUploadCounts) {
   add_to_watchlist_data->required_upload_copies.clear();
   add_to_watchlist_data->consensus_upload_copies = -1;
   for (int i = 0; i < kad::K; ++i) {
-    SCOPED_TRACE("Test " + base::IntToString(test_run) +" -- Resp " + base::IntToString(i));
+    SCOPED_TRACE("Test " + base::IntToString(test_run) + " -- Resp " +
+                 base::IntToString(i));
     add_to_watchlist_data->required_upload_copies.insert(0);
     ++add_to_watchlist_data->returned_count;
     if (i < kKadUpperThreshold - 1) {
@@ -827,7 +830,8 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AssessUploadCounts) {
   add_to_watchlist_data->required_upload_copies.clear();
   add_to_watchlist_data->consensus_upload_copies = -1;
   for (int i = 0; i < kad::K; ++i) {
-    SCOPED_TRACE("Test " + base::IntToString(test_run) +" -- Resp " + base::IntToString(i));
+    SCOPED_TRACE("Test " + base::IntToString(test_run) + " -- Resp " +
+                 base::IntToString(i));
     if (i < minority_threshold)
       add_to_watchlist_data->required_upload_copies.insert(0);
     else
@@ -851,7 +855,8 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AssessUploadCounts) {
   add_to_watchlist_data->required_upload_copies.clear();
   add_to_watchlist_data->consensus_upload_copies = -1;
   for (int i = 0; i < kad::K; ++i) {
-    SCOPED_TRACE("Test " + base::IntToString(test_run) +" -- Resp " + base::IntToString(i));
+    SCOPED_TRACE("Test " + base::IntToString(test_run) + " -- Resp " +
+                 base::IntToString(i));
     add_to_watchlist_data->required_upload_copies.insert(result_group);
     ++add_to_watchlist_data->returned_count;
     if (i == minority_threshold * result_group - 1) {
@@ -874,7 +879,8 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AssessUploadCounts) {
   add_to_watchlist_data->required_upload_copies.clear();
   add_to_watchlist_data->consensus_upload_copies = -1;
   for (int i = 0; i < kad::K; ++i) {
-    SCOPED_TRACE("Test " + base::IntToString(test_run) +" -- Resp " + base::IntToString(i));
+    SCOPED_TRACE("Test " + base::IntToString(test_run) + " -- Resp " +
+                 base::IntToString(i));
     if (i < minority_threshold)
       add_to_watchlist_data->required_upload_copies.insert(i);
     else
@@ -897,7 +903,8 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AssessUploadCounts) {
   add_to_watchlist_data->required_upload_copies.clear();
   add_to_watchlist_data->consensus_upload_copies = -1;
   for (int i = 0; i < kKadLowerThreshold; ++i) {
-    SCOPED_TRACE("Test " + base::IntToString(test_run) +" -- Resp " + base::IntToString(i));
+    SCOPED_TRACE("Test " + base::IntToString(test_run) + " -- Resp " +
+                 base::IntToString(i));
     add_to_watchlist_data->required_upload_copies.insert(2);
     ++add_to_watchlist_data->returned_count;
     if (i < kKadLowerThreshold - 1) {
@@ -916,7 +923,8 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AssessUploadCounts) {
   add_to_watchlist_data->required_upload_copies.clear();
   add_to_watchlist_data->consensus_upload_copies = -1;
   for (int i = 0; i < kKadLowerThreshold; ++i) {
-    SCOPED_TRACE("Test " + base::IntToString(test_run) +" -- Resp " + base::IntToString(i));
+    SCOPED_TRACE("Test " + base::IntToString(test_run) + " -- Resp " +
+                 base::IntToString(i));
     if (i == 0)
       add_to_watchlist_data->required_upload_copies.insert(2);
     else
@@ -939,7 +947,8 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AssessUploadCounts) {
   add_to_watchlist_data->required_upload_copies.clear();
   add_to_watchlist_data->consensus_upload_copies = -1;
   for (int i = 0; i < kKadLowerThreshold - 1; ++i) {
-    SCOPED_TRACE("Test " + base::IntToString(test_run) +" -- Resp " + base::IntToString(i));
+    SCOPED_TRACE("Test " + base::IntToString(test_run) + " -- Resp " +
+                 base::IntToString(i));
     add_to_watchlist_data->required_upload_copies.insert(2);
     ++add_to_watchlist_data->returned_count;
     if (i < kKadLowerThreshold - 2) {
@@ -1018,8 +1027,9 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_GetStoreRequests) {
       public_key_signature + names.at(0) + recipient_id, "",
       crypto::STRING_STRING, false), "", rsakp.private_key(),
       crypto::STRING_STRING);
-  std::string size_signature = crypto_.AsymSign(boost::lexical_cast<std::string>(3), "",
-      rsakp.private_key(), crypto::STRING_STRING);
+  std::string size_signature(
+      crypto_.AsymSign(boost::lexical_cast<std::string>(3), "",
+                       rsakp.private_key(), crypto::STRING_STRING));
 
   ASSERT_EQ(names.at(0), store_prep_request.chunkname());
   ASSERT_EQ(size_t(3), store_prep_request.signed_size().data_size());
@@ -1076,8 +1086,8 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_GetStoreRequests) {
   request_signature = crypto_.AsymSign(crypto_.Hash(
       mpid_pub_sig + names.at(1) + recipient_id, "", crypto::STRING_STRING,
       false), "", mpid_pri, crypto::STRING_STRING);
-  size_signature = crypto_.AsymSign(boost::lexical_cast<std::string>(3), "", mpid_pri,
-      crypto::STRING_STRING);
+  size_signature = crypto_.AsymSign(boost::lexical_cast<std::string>(3), "",
+                                    mpid_pri, crypto::STRING_STRING);
 
   ASSERT_EQ(names.at(1), store_prep_request.chunkname());
   ASSERT_EQ(size_t(3), store_prep_request.signed_size().data_size());
@@ -1626,8 +1636,9 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_RemoveFromWatchList) {
   std::vector<kad::Contact> chunk_info_holders, few_chunk_info_holders;
   for (boost::uint16_t i = 0; i < kad::K; ++i) {
     kad::Contact contact(crypto_.Hash(base::IntToString(i * i), "",
-        crypto::STRING_STRING, false), "192.168.10." + base::IntToString(i), 8000 + i,
-        "192.168.10." + base::IntToString(i), 8000 + i);
+                                      crypto::STRING_STRING, false),
+                         "192.168.10." + base::IntToString(i), 8000 + i,
+                         "192.168.10." + base::IntToString(i), 8000 + i);
     chunk_info_holders.push_back(contact);
     if (i < kKadUpperThreshold - 1)
       few_chunk_info_holders.push_back(contact);
@@ -2484,8 +2495,9 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_GetAccountDetails) {
   std::vector<kad::Contact> account_holders, few_account_holders;
   for (boost::uint16_t i = 0; i < kad::K; ++i) {
     kad::Contact contact(crypto_.Hash(base::IntToString(i * i), "",
-        crypto::STRING_STRING, false), "192.168.10." + base::IntToString(i), 8000 + i,
-        "192.168.10." + base::IntToString(i), 8000 + i);
+                                      crypto::STRING_STRING, false),
+                         "192.168.10." + base::IntToString(i), 8000 + i,
+                         "192.168.10." + base::IntToString(i), 8000 + i);
     account_holders.push_back(contact);
     if (i < kKadUpperThreshold - 1)
       few_account_holders.push_back(contact);

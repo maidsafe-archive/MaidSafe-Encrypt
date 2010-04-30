@@ -36,27 +36,6 @@
 #include "qt/client/send_instant_message_thread.h"
 #include "qt/widgets/user_panels.h"
 
-//PersonalMessages::PersonalMessages(QWidget* parent)
-//    : QMainWindow(parent), active_(false), init_(false), convName_() {
-//  ui_.setupUi(this);
-//
-//  connect(ClientController::instance(),
-//          SIGNAL(messageReceived(ClientController::MessageType,
-//                                    const QDateTime&,
-//                                    const QString&,
-//                                    const QString&,
-//                                    const QString&)),
-//          this,
-//          SLOT(onMessageReceived(ClientController::MessageType,
-//                                    const QDateTime&,
-//                                    const QString&,
-//                                    const QString&,
-//                                    const QString&)));
-//
-//          connect(ui_.send_message_btn, SIGNAL(clicked(bool)),
-//                  this,                 SLOT(onSendMessageClicked()));
-//}
-
 PersonalMessages::PersonalMessages(QWidget* parent, QString name)
     : QMainWindow(parent), active_(false), init_(false), convName_() {
   setAttribute(Qt::WA_DeleteOnClose, true);
@@ -127,14 +106,16 @@ PersonalMessages::~PersonalMessages() {
     // was the conversation not there? or was it not removed?
   }
 
-// TODO (Stephen#5#): Locate where to save conversarion history and also add check for user preference
-  /*dir_ = "" + convName_ + ".html";
-  QFile f(dir_);
-  f.open(QIODevice::WriteOnly);
-  QTextStream out(&f);
-  out << ui_.message_window->toHtml();
-  f.close();
-  qDebug() << "Destroy Finished";*/
+// TODO(Stephen#5#): Locate where to save conversarion history and also add
+//                   check for user preference
+
+//  dir_ = "" + convName_ + ".html";
+//  QFile f(dir_);
+//  f.open(QIODevice::WriteOnly);
+//  QTextStream out(&f);
+//  out << ui_.message_window->toHtml();
+//  f.close();
+//  qDebug() << "Destroy Finished";
 }
 
 void PersonalMessages::closeEvent(QCloseEvent*) { }
@@ -155,15 +136,17 @@ void PersonalMessages::reset() {
 }
 
 void PersonalMessages::loadConversation() {
-// TODO (Stephen#5#): load conversation history and display previous messages to user preference
-/* QFile file(dir_);
-  if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
-    return;
-  QTextStream in(&file);
-  QString line = in.readAll();
-  ui_.message_window->setHtml(line);
-  file.close();
-  ui_.message_window->moveCursor(QTextCursor::End, QTextCursor::MoveAnchor);*/
+// TODO(Stephen#5#): load conversation history and display previous messages
+//                    to user preference
+
+//  QFile file(dir_);
+//  if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
+//    return;
+//  QTextStream in(&file);
+//  QString line = in.readAll();
+//  ui_.message_window->setHtml(line);
+//  file.close();
+//  ui_.message_window->moveCursor(QTextCursor::End, QTextCursor::MoveAnchor);
 }
 
 void PersonalMessages::onMessageReceived(ClientController::MessageType,
@@ -504,8 +487,9 @@ void PersonalMessages::onMessageTextEdit() {
 void PersonalMessages::changeEvent(QEvent *event) {
   if (event->type() == QEvent::LanguageChange) {
     ui_.retranslateUi(this);
-  } else
+  } else {
     QWidget::changeEvent(event);
+  }
 }
 
 

@@ -70,8 +70,6 @@ class Shares : public Panel {
 
  signals:
   void complete();
-
-
 };
 
 #endif  // QT_WIDGETS_SHARES_H_

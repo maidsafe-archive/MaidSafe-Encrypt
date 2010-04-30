@@ -183,8 +183,9 @@ bool VaultDaemon::StartVault() {
         registration_service_->GetDescriptor()->name(),
         registration_channel_.get());
     if (0 != transport_handler_.StartLocal(kLocalPort,
-                                           local_udt_transport_.transport_id())) {
-      WriteToLog("Failed to start transport on port " + base::IntToString(kLocalPort));
+             local_udt_transport_.transport_id())) {
+      WriteToLog("Failed to start transport on port " +
+                 base::IntToString(kLocalPort));
       channel_manager_.ClearChannels();
       started_registration_service = false;
     }

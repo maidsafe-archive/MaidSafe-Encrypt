@@ -889,8 +889,10 @@ void VaultService::AccountStatus(google::protobuf::RpcController*,
 #ifdef DEBUG
       printf("In VaultService::AccountStatus (%s), ", HexSubstr(pmid_).c_str());
       printf("requested space (%s) not available (> %s).\n",
-             boost::lexical_cast<std::string>(request->space_requested()).c_str(),
-             boost::lexical_cast<std::string>(space_offered - space_taken).c_str());
+             boost::lexical_cast<std::string>
+                 (request->space_requested()).c_str(),
+             boost::lexical_cast<std::string>
+                 (space_offered - space_taken).c_str());
 #endif
     }
     done->Run();
@@ -2187,8 +2189,9 @@ void VaultService::AmendRemoteAccount(
       amend_account_request.mutable_signed_size();
   mutable_signed_size->set_data_size(size);
   mutable_signed_size->set_pmid(pmid_);
-  mutable_signed_size->set_signature(co.AsymSign(boost::lexical_cast<std::string>(size), "",
-                                     pmid_private_, crypto::STRING_STRING));
+  mutable_signed_size->set_signature(
+      co.AsymSign(boost::lexical_cast<std::string>(size), "",
+                  pmid_private_, crypto::STRING_STRING));
   mutable_signed_size->set_public_key(pmid_public_);
   mutable_signed_size->set_public_key_signature(pmid_public_signature_);
   amend_account_request.set_chunkname(chunkname);
@@ -2235,8 +2238,10 @@ void VaultService::RemoteVaultAbleToStore(const boost::uint64_t &size,
 #ifdef DEBUG
     printf("In VaultService::RemoteVaultAbleToStore (%s), requested space "
            "(%s) not available (> %s).\n",
-           HexSubstr(pmid_).c_str(), boost::lexical_cast<std::string>(size).c_str(),
-           boost::lexical_cast<std::string>(space_offered - space_taken).c_str());
+           HexSubstr(pmid_).c_str(),
+           boost::lexical_cast<std::string>(size).c_str(),
+           boost::lexical_cast<std::string>
+              (space_offered - space_taken).c_str());
 #endif
   }
 
@@ -2435,7 +2440,7 @@ void RegistrationService::SetLocalVaultOwned(
     info = boost::filesystem::space(boost::filesystem::path("/"));
   else
     info = boost::filesystem::space(boost::filesystem::path(vaultdir.root_name()
-        + vaultdir.root_directory()));
+           + vaultdir.root_directory()));
   if (request->space() > info.available) {
     response->set_result(maidsafe::NOT_ENOUGH_SPACE);
     done->Run();

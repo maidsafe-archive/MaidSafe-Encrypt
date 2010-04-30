@@ -259,8 +259,8 @@ TEST_F(VaultBufferPacketHandlerTest, BEH_MAID_AddGetPresence) {
   std::string user("el usuario");
   bpi.add_users(cry_obj_.Hash(user, "", crypto::STRING_STRING, false));
   for (int i = 0; i < 10; ++i)
-    bpi.add_users(cry_obj_.Hash(user + base::IntToString(i), "", crypto::STRING_STRING,
-                  false));
+    bpi.add_users(cry_obj_.Hash(user + base::IntToString(i), "",
+                                crypto::STRING_STRING, false));
   gp_info.set_data(bpi.SerializeAsString());
   gp_info.set_signature(cry_obj_.AsymSign(gp_info.data(), "", private_key_,
                         crypto::STRING_STRING));

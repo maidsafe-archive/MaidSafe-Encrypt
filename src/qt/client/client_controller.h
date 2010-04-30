@@ -22,6 +22,7 @@
 #include <QDir>
 
 #include <list>
+#include <map>
 #include <set>
 #include <string>
 #include <vector>
@@ -100,7 +101,7 @@ class ClientController : public QObject {
   /////////////////////////////
 
   int getattr(const std::string &path, std::string &ser_mdm);
-  int readdir(const std::string &path,
+  int readdir(const std::string &path,  // NOLINT
               std::map<std::string, maidsafe::ItemType> &children);
   int read(const std::string &path);
   int write(const std::string &path);

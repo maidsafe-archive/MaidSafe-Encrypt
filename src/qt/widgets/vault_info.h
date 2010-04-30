@@ -33,19 +33,17 @@ class VaultInfo : public Panel {
   explicit VaultInfo(QWidget* parent = 0);
   virtual ~VaultInfo();
 
-  virtual void setActive(bool);
+  virtual void setActive(bool b);
   virtual void reset();
 
- private slots:
-  void onUpdateClicked();
+  private slots:
+    void onUpdateClicked();
+    void onUpdateVaultInfo();
 
  private:
   Ui::VaultInfoPage ui_;
   bool init_;
   QTimer infoPollTimer_;
-
- private slots:
-  void onUpdateVaultInfo();
 
  protected:
   void changeEvent(QEvent *event);

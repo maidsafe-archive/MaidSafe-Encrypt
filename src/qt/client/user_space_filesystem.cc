@@ -97,10 +97,9 @@ bool UserSpaceFileSystem::mount() {
   boost::this_thread::sleep(boost::posix_time::seconds(1));
 
   if (ClientController::instance()->Mounted() != 0) {
-      return false;
+    return false;
   }
   return true;
-
 }
 
 bool UserSpaceFileSystem::unmount() {
@@ -133,7 +132,6 @@ bool UserSpaceFileSystem::unmount() {
 
   return success;
 }
-
 
 void UserSpaceFileSystem::explore(Location l, QString subDir) {
   QDir dir;
@@ -185,4 +183,3 @@ void UserSpaceFileSystem::explore(Location l, QString subDir) {
   }
 #endif
 }
-

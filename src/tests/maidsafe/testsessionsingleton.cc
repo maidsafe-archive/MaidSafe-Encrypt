@@ -282,8 +282,10 @@ TEST_F(SessionSingletonTest, BEH_MAID_SessionContactsIO) {
   // Add contacts to the session
   for (int n = 0; n < 10; n++) {
     ASSERT_EQ(0, ss_->AddContact("pub_name_" + base::IntToString(n),
-              "pub_key_" + base::IntToString(n), "full_name_" + base::IntToString(n),
-              "office_phone_" + base::IntToString(n), "birthday_" + base::IntToString(n),
+              "pub_key_" + base::IntToString(n),
+              "full_name_" + base::IntToString(n),
+              "office_phone_" + base::IntToString(n),
+              "birthday_" + base::IntToString(n),
               'M', n, n, "city_" + base::IntToString(n), 'C', 0, 0));
   }
 
@@ -448,8 +450,10 @@ TEST_F(SessionSingletonTest, BEH_MAID_SessionPrivateSharesIO) {
 TEST_F(SessionSingletonTest, BEH_MAID_PubUsernameList) {
   for (size_t n = 0; n < 10; n++) {
     ASSERT_EQ(0, ss_->AddContact("pub_name_" + base::IntToString(n),
-              "pub_key_" + base::IntToString(n), "full_name_" + base::IntToString(n),
-              "office_phone_" + base::IntToString(n), "birthday_" + base::IntToString(n),
+              "pub_key_" + base::IntToString(n),
+              "full_name_" + base::IntToString(n),
+              "office_phone_" + base::IntToString(n),
+              "birthday_" + base::IntToString(n),
               'M', n, n, "city_" + base::IntToString(n), 'C', 0, 0));
   }
   std::vector<std::string> publicusernames;
@@ -462,8 +466,10 @@ TEST_F(SessionSingletonTest, BEH_MAID_PubUsernameList) {
 TEST_F(SessionSingletonTest, BEH_MAID_ContactPublicKey) {
   for (size_t n = 0; n < 10; n++) {
     ASSERT_EQ(0, ss_->AddContact("pub_name_" + base::IntToString(n),
-              "pub_key_" + base::IntToString(n), "full_name_" + base::IntToString(n),
-              "office_phone_" + base::IntToString(n), "birthday_" + base::IntToString(n),
+              "pub_key_" + base::IntToString(n),
+              "full_name_" + base::IntToString(n),
+              "office_phone_" + base::IntToString(n),
+              "birthday_" + base::IntToString(n),
               'M', n, n, "city_" + base::IntToString(n), 'C', 0, 0));
   }
   for (size_t a = 0; a < 10; ++a)
@@ -510,7 +516,8 @@ TEST_F(SessionSingletonTest, BEH_MAID_Conversations) {
     ASSERT_EQ(0, ss_->RemoveConversation(*it));
   }
   for (int y = 0; y < 10; ++y)
-    ASSERT_EQ(kNonExistentConversation, ss_->ConversationExits(base::IntToString(y)));
+    ASSERT_EQ(kNonExistentConversation,
+              ss_->ConversationExits(base::IntToString(y)));
 
   for (int e = 0; e < 10; ++e)
     ASSERT_EQ(0, ss_->AddConversation(base::IntToString(e)));
@@ -518,7 +525,8 @@ TEST_F(SessionSingletonTest, BEH_MAID_Conversations) {
   ASSERT_EQ(size_t(10), conv.size());
   ss_->ClearConversations();
   for (int l = 0; l < 10; ++l)
-    ASSERT_EQ(kNonExistentConversation, ss_->ConversationExits(base::IntToString(l)));
+    ASSERT_EQ(kNonExistentConversation,
+              ss_->ConversationExits(base::IntToString(l)));
   ASSERT_EQ(0, ss_->ConversationList(&conv));
   ASSERT_EQ(size_t(0), conv.size());
 }
@@ -610,8 +618,9 @@ TEST_F(SessionSingletonTest, BEH_MAID_LiveContacts) {
   for (int n = 0; n < 3; ++n) {
     inserted_eps.add_ip("172.22.18." + base::IntToString(n));
     inserted_eps.add_port(22700 + n);
-    ASSERT_EQ(0, ss_->ModifyEndPoint(contact_a, "172.22.18." + base::IntToString(n),
-              22700 + n, n));
+    ASSERT_EQ(0, ss_->ModifyEndPoint(contact_a,
+                                     "172.22.18." + base::IntToString(n),
+                                     22700 + n, n));
   }
   ASSERT_EQ(0, ss_->ModifyStatus(contact_a, 2));
   ASSERT_EQ(0, ss_->LiveContactDetails(contact_a, &end_points, &transport_id,
@@ -635,7 +644,8 @@ TEST_F(SessionSingletonTest, BEH_MAID_LiveContacts) {
     std::string contact_n("ava" + base::IntToString(n));
     end_points.Clear();
     for (int a = 0; a < 3; ++a) {
-      end_points.add_ip("192.168." + base::IntToString(n) + "." + base::IntToString(a));
+      end_points.add_ip("192.168." + base::IntToString(n) + "." +
+                        base::IntToString(a));
       end_points.add_port(64000 + (n * 10) + a);
     }
     ASSERT_EQ(0, ss_->AddLiveContact(contact_n, end_points, n));

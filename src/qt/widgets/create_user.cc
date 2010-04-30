@@ -166,6 +166,7 @@ QString CreateUser::DirectoryChosen() const {
 void CreateUser::changeEvent(QEvent *event) {
   if (event->type() == QEvent::LanguageChange) {
     ui_.retranslateUi(this);
-  } else
+  } else {
     QWidget::changeEvent(event);
+  }
 }

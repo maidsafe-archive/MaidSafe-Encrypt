@@ -31,13 +31,14 @@ namespace maidsafe_vault {
 
 class InfoSynchroniserTest : public testing::Test {
  public:
-  InfoSynchroniserTest() : co_(),
-                           pmid_(co_.Hash(base::RandomString(100), "",
-                                 crypto::STRING_STRING, false)),
-                           kMinRoutingTableSize_(100),
-                           routing_table_(new base::PublicRoutingTableHandler()),
-                           info_synchroniser_(pmid_, routing_table_),
-                           closest_nodes_() {}
+  InfoSynchroniserTest()
+      : co_(),
+        pmid_(co_.Hash(base::RandomString(100), "",
+                       crypto::STRING_STRING, false)),
+        kMinRoutingTableSize_(100),
+        routing_table_(new base::PublicRoutingTableHandler()),
+        info_synchroniser_(pmid_, routing_table_),
+        closest_nodes_() {}
  protected:
   void SetUp() {
     ASSERT_EQ(crypto::SHA_512, co_.hash_algorithm());
@@ -46,8 +47,8 @@ class InfoSynchroniserTest : public testing::Test {
     for (size_t i = 0; i < table_size; ++i) {
       std::string tuple_id = co_.Hash(base::RandomString(100), "",
                                       crypto::STRING_STRING, false);
-      base::PublicRoutingTableTuple pdrtt(tuple_id, base::RandomString(13), i, "",
-                                      0, "", 0, 0, 0);
+      base::PublicRoutingTableTuple pdrtt(tuple_id, base::RandomString(13), i,
+                                          "", 0, "", 0, 0, 0);
       routing_table_->AddTuple(pdrtt);
     }
     closest_nodes_.push_back(kad::Contact());
@@ -105,7 +106,8 @@ TEST_F(InfoSynchroniserTest, BEH_VAULT_InfoSyncShouldFetch) {
   std::string::iterator it = id.end() - 6;
   while (id == pmid_)
     id.replace(it, id.end(),
-        boost::lexical_cast<std::string>(base::RandomUint32() % 900000 + 100000));
+               boost::lexical_cast<std::string>(base::RandomUint32() % 900000 +
+                                                100000));
   closest_nodes_.push_back(kad::Contact());
   ASSERT_FALSE(closest_nodes_.empty());
   ASSERT_TRUE(info_synchroniser_.ShouldFetch(id, &closest_nodes_));

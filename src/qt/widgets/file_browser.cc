@@ -14,16 +14,6 @@
 
 #include "qt/widgets/file_browser.h"
 
-#include "fs/filesystem.h"
-#include "qt/client/user_space_filesystem.h"
-#include <math.h>
-#include <iostream>
-#include <fstream>
-#ifdef MAIDSAFE_WIN32
-#include <windows.h>
-#include <shellapi.h>
-#endif
-
 #include <QDebug>
 #include <QFileDialog>
 #include <QFileIconProvider>
@@ -33,6 +23,17 @@
 #include <QMouseEvent>
 #include <QUrl>
 
+#include <map>
+#include <string>
+#include <math.h>
+#include <iostream>
+#include <fstream>
+#ifdef MAIDSAFE_WIN32
+#include <windows.h>
+#include <shellapi.h>
+#endif
+
+#include "fs/filesystem.h"
 #include "maidsafe/client/clientcontroller.h"
 #include "qt/client/client_controller.h"
 #include "qt/client/make_directory_thread.h"
@@ -40,13 +41,14 @@
 #include "qt/client/remove_dir_thread.h"
 #include "qt/client/rename_file_thread.h"
 #include "qt/client/save_file_thread.h"
+#include "qt/client/user_space_filesystem.h"
 
 namespace fs = boost::filesystem;
 
- FileBrowser::FileBrowser(QWidget* parent) : QDialog(parent), init_(false) {
+FileBrowser::FileBrowser(QWidget* parent) : QDialog(parent), init_(false) {
   ui_.setupUi(this);
   setWindowIcon(QPixmap(":/icons/16/globe"));
-  //theWatcher_ = new QFileSystemWatcher;
+  // theWatcher_ = new QFileSystemWatcher;
   ui_.driveTreeWidget->setAcceptDrops(true);
   ui_.driveTreeWidget->viewport()->installEventFilter(this);
 
@@ -69,7 +71,6 @@ namespace fs = boost::filesystem;
 
   connect(ui_.uploadButton, SIGNAL(clicked(bool)),
           this,           SLOT(onUploadClicked(bool)));
-
 }
 
 FileBrowser::~FileBrowser() {
@@ -92,9 +93,9 @@ void FileBrowser::createAndConnectActions() {
   menu->addAction(openWith);
   menu->addAction(saveFile);
   menu->addSeparator();
-  //menu->addAction(cutFile);
-  //menu->addAction(copyFile);
-  //menu->addSeparator();
+//  menu->addAction(cutFile);
+//  menu->addAction(copyFile);
+//  menu->addSeparator();
   menu->addAction(deleteFile);
   menu->addAction(renameFile);
   menu->addAction(sendFile);
@@ -168,7 +169,6 @@ void FileBrowser::createAndConnectActions() {
 
   connect(sortGroup, SIGNAL(triggered(QAction*)),
           this,        SLOT(onSortGroupClicked(QAction*)));
-
 }
 
 void FileBrowser::setActive(bool b) {
@@ -197,9 +197,9 @@ void FileBrowser::setMenuDirMenu() {
   menu->removeAction(openWith);
   menu->addAction(saveFile);
   menu->addSeparator();
-  //menu->addAction(cutFile);
-  //menu->addAction(copyFile);
-  //menu->addSeparator();
+//  menu->addAction(cutFile);
+//  menu->addAction(copyFile);
+//  menu->addSeparator();
   menu->addAction(deleteFile);
   menu->addAction(renameFile);
   menu->addAction(sendFile);
@@ -210,9 +210,9 @@ void FileBrowser::setMenuFileMenu() {
   menu->addAction(openWith);
   menu->addAction(saveFile);
   menu->addSeparator();
-  //menu->addAction(cutFile);
-  //menu->addAction(copyFile);
-  //menu->addSeparator();
+//  menu->addAction(cutFile);
+//  menu->addAction(copyFile);
+//  menu->addSeparator();
   menu->addAction(deleteFile);
   menu->addAction(renameFile);
   menu->addAction(sendFile);
@@ -232,7 +232,7 @@ void FileBrowser::dropEvent(QDropEvent *event) {
 }
 
 void FileBrowser::onMousePressed(QTreeWidgetItem *item, int) {
-  if(QApplication::mouseButtons() == Qt::RightButton){
+  if (QApplication::mouseButtons() == Qt::RightButton) {
     if (item->text(3) == "Directory")
       setMenuDirMenu();
     else
@@ -249,7 +249,7 @@ void FileBrowser::onOpenFileClicked() {
 void FileBrowser::onOpenWithClicked() {
   qDebug() << "Open With invoked";
   QTreeWidgetItem* theItem = ui_.driveTreeWidget->currentItem();
-  if(theItem->text(1) == tr("Network")) {
+  if (theItem->text(1) == tr("Network")) {
     QMessageBox::warning(this, tr("PD Error"),
                     tr("You must download the file before trying to open it"));
                         return;
@@ -305,11 +305,12 @@ void FileBrowser::onOpenWithClicked() {
   connect(myProcess_.get(), SIGNAL(finished(int, QProcess::ExitStatus)),
       this, SLOT(onOpenFinished(int, QProcess::ExitStatus)));
   // myProcess_->start(command, parameters);
-  if (!myProcess_->startDetached("/usr/bin/open", QStringList() << parameters)) {
+  if (!myProcess_->startDetached("/usr/bin/open",
+                                 QStringList() << parameters)) {
     qDebug() << ":'(";
   }
 #else
-// TODO (Team): Implement Open With for Linux
+// TODO(Team): Implement Open With for Linux
 #endif
 }
 
@@ -319,20 +320,20 @@ void FileBrowser::onSendFileClicked() {
   bool ok;
   QString text = QInputDialog::getText(this, tr("Who will receive the file?"),
                                        tr("Recipient"),
-                                       QLineEdit::Normal,"", &ok);
+                                       QLineEdit::Normal, "", &ok);
 
-  if (ok){
+  if (ok) {
     QList<QString> conts;
     conts.push_back(text);
     QString filePath = rootPath_ + currentDir_ + filename;
 
-    if (ClientController::instance()->sendInstantFile(filePath, "", conts,""))
-    {
+    if (ClientController::instance()->sendInstantFile(
+        filePath, "", conts, "")) {
       QMessageBox::information(this, tr("File Sent"),
-                              tr("Success sending file: %1").arg(filename));
+                               tr("Success sending file: %1").arg(filename));
     } else {
       const QString msg = tr("There was an error sending the file: %1")
-                            .arg(filename);
+                              .arg(filename);
       QMessageBox::warning(this, tr("File Not Sent"), msg);
     }
   }
@@ -347,7 +348,7 @@ void FileBrowser::onCutFileClicked() {
 void FileBrowser::onDeleteFileClicked() {
   QTreeWidgetItem* theItem = ui_.driveTreeWidget->currentItem();
   qDebug() << theItem->text(0);
-  if(theItem->text(1) == tr("Network")) {
+  if (theItem->text(1) == tr("Network")) {
     QMessageBox msgBox;
     msgBox.setText(tr("Delete Item"));
     msgBox.setInformativeText(
@@ -357,10 +358,10 @@ void FileBrowser::onDeleteFileClicked() {
     int ret = msgBox.exec();
     if (ret == QMessageBox::Yes) {
       RemoveDirThread* rdt = new RemoveDirThread(currentDir_ + theItem->text(0),
-                                                          this);
+                                                 this);
 
-      connect(rdt, SIGNAL(removeDirCompleted(int,const QString&)),
-          this, SLOT(onRemoveDirCompleted(int,const QString&)));
+      connect(rdt,  SIGNAL(removeDirCompleted(int, const QString&)),
+              this, SLOT(onRemoveDirCompleted(int, const QString&)));
 
       rdt->start();
     } else {
@@ -379,12 +380,12 @@ void FileBrowser::onNewFolderClicked() {
     QString text = QInputDialog::getText(this, tr("Create Directory"),
         tr("Name of the new directory:"), QLineEdit::Normal,
         tr("New Folder", "default directory name"), &ok);
-    if (ok && !text.isEmpty()){
+    if (ok && !text.isEmpty()) {
       MakeDirectoryThread* mdt = new MakeDirectoryThread(currentDir_ + text,
                                                           this);
 
-      connect(mdt, SIGNAL(makeDirectoryCompleted(int,const QString&)),
-          this, SLOT(onMakeDirectoryCompleted(int,const QString&)));
+      connect(mdt,  SIGNAL(makeDirectoryCompleted(int, const QString&)),
+              this, SLOT(onMakeDirectoryCompleted(int, const QString&)));
 
       mdt->start();
     }
@@ -394,18 +395,18 @@ void FileBrowser::onRenameFileClicked() {
   bool ok;
   QTreeWidgetItem* theItem = ui_.driveTreeWidget->currentItem();
   qDebug() << theItem->text(1);
-  if(theItem->text(1) == tr("Network")){
-
+  if (theItem->text(1) == tr("Network")) {
     QString text = QInputDialog::getText(this, tr("Rename File"),
         tr("New file name:"), QLineEdit::Normal, theItem->text(0), &ok);
-    if (ok && !text.isEmpty()){
+    if (ok && !text.isEmpty()) {
       RenameFileThread* rft = new RenameFileThread(currentDir_ +
-          theItem->text(0), currentDir_ + text ,this);
+                                                       theItem->text(0),
+                                                   currentDir_ + text, this);
 
       connect(rft,
-              SIGNAL(renameFileCompleted(int,const QString&, const QString&)),
+              SIGNAL(renameFileCompleted(int, const QString&, const QString&)),
               this,
-              SLOT(onRenameFileCompleted(int,const QString&, const QString&)));
+              SLOT(onRenameFileCompleted(int, const QString&, const QString&)));
 
       rft->start();
     }
@@ -420,19 +421,19 @@ void FileBrowser::onRenameFileClicked() {
 void FileBrowser::onSaveFileClicked() {
   QTreeWidgetItem* theItem = ui_.driveTreeWidget->currentItem();
   if (theItem->text(1) == tr("Local")) {
-    //ui_.driveTreeWidget->editItem(item, 1);
+    // ui_.driveTreeWidget->editItem(item, 1);
     theItem->setText(1, tr("Uploading"));
     saveFileToNetwork(currentDir_ + theItem->text(0));
   }
 }
 
 void FileBrowser::onBackClicked(bool) {
-  if(currentDir_ == "/" || currentDir_ == "") {
+  if (currentDir_ == "/" || currentDir_ == "") {
   } else {
-  std::string dir = currentDir_.toStdString();
-  dir.erase(dir.find_last_of("/"), dir.size());
-  dir.erase(dir.find_last_of("/"), dir.size());
-  populateDirectory(QString::fromStdString(dir) + "/");
+    std::string dir = currentDir_.toStdString();
+    dir.erase(dir.find_last_of("/"), dir.size());
+    dir.erase(dir.find_last_of("/"), dir.size());
+    populateDirectory(QString::fromStdString(dir) + "/");
   }
 }
 
@@ -451,7 +452,7 @@ int FileBrowser::populateDirectory(QString dir) {
 
   QStringList columns;
   columns << tr("Name") << tr("Status") << tr("Size") << tr("Type")
-          << tr("Date Modified") ;
+          << tr("Date Modified");
   ui_.driveTreeWidget->setHeaderLabels(columns);
 
   while (!children.empty()) {
@@ -475,9 +476,9 @@ int FileBrowser::populateDirectory(QString dir) {
     lastModified->setTime_t(linuxtime);
 
     if (ityp == maidsafe::DIRECTORY || ityp == maidsafe::EMPTY_DIRECTORY) {
-      //Folder
-      std::string branchPath = rootPath_.toStdString()
-                            + currentDir_.toStdString() + s;
+      // Folder
+      std::string branchPath = rootPath_.toStdString() +
+                               currentDir_.toStdString() + s;
       if (!fs::exists(branchPath)) {
         try {
           fs::create_directory(branchPath);
@@ -497,16 +498,16 @@ int FileBrowser::populateDirectory(QString dir) {
       newItem->setText(2, tr("%1 KB").arg(
           ceil(static_cast<double>(mdm.file_size_low())/1024)));
       newItem->setText(3, tr("Directory"));
-      // TODO(Team#) use date format from the user's locale
+      // TODO(Team#): use date format from the user's locale
       newItem->setText(4, lastModified->toString("dd/MM/yyyy hh:mm"));
 
       ui_.driveTreeWidget->insertTopLevelItem(rowCount, newItem);
     } else {
-      //TODO(Stephen) -- Get associated file icons
+      // TODO(Stephen): Get associated file icons
       std::string fullFilePath = rootPath_.toStdString() +
                                 currentDir_.toStdString() + s;
       QIcon theIcon = getAssociatedIconFromPath(
-                                          QString::fromStdString(fullFilePath));
+                      QString::fromStdString(fullFilePath));
 
       QString item = QString::fromStdString(s);
       QTreeWidgetItem *newItem = new QTreeWidgetItem(ui_.driveTreeWidget);
@@ -520,12 +521,12 @@ int FileBrowser::populateDirectory(QString dir) {
       newItem->setText(2, tr("%1 KB").arg(
           ceil(static_cast<double>(mdm.file_size_low())/1024)));
       newItem->setText(3, tr("%1 File").arg(item.section('.', -1)));
-      // TODO(Team#) use date format from the user's locale
+      // TODO(Team#): use date format from the user's locale
       newItem->setText(4, lastModified->toString("dd/MM/yyyy hh:mm"));
       ui_.driveTreeWidget->insertTopLevelItem(rowCount, newItem);
     }
     children.erase(children.begin());
-    rowCount++;
+    ++rowCount;
   }
   ui_.driveTreeWidget->resizeColumnToContents(1);
   ui_.driveTreeWidget->resizeColumnToContents(2);
@@ -534,7 +535,7 @@ int FileBrowser::populateDirectory(QString dir) {
 }
 
 int FileBrowser::createTreeDirectory(QString dir) {
- qDebug() << "createTreeDirectory: ";
+  qDebug() << "createTreeDirectory: ";
   ui_.treeViewTreeWidget->clear();
 
   int rowCount = 0;
@@ -576,7 +577,7 @@ int FileBrowser::createTreeDirectory(QString dir) {
 
       if (!children1.empty()) {
         QTreeWidgetItem *emptyItem = new QTreeWidgetItem(newItem);
-        emptyItem->setText(0,"fake");
+        emptyItem->setText(0, "fake");
       }
 
       ui_.driveTreeWidget->insertTopLevelItem(rowCount, newItem);
@@ -589,7 +590,7 @@ int FileBrowser::createTreeDirectory(QString dir) {
 
 void FileBrowser::onItemDoubleClicked(QTreeWidgetItem* item, int) {
   qDebug() << "Entered ItemDoubleClicked";
-  if (item->text(3) == "Directory"){
+  if (item->text(3) == "Directory") {
     qDebug() << "in ItemDoubleClicked open folder" << "/" << item->text(0) <<
         "/";
     populateDirectory(currentDir_  + item->text(0) + "/");
@@ -601,8 +602,8 @@ void FileBrowser::onItemDoubleClicked(QTreeWidgetItem* item, int) {
       ReadFileThread* rft = new ReadFileThread(currentDir_ + item->text(0),
                                                this);
 
-      connect(rft, SIGNAL(readFileCompleted(int,const QString&)),
-          this, SLOT(onReadFileCompleted(int,const QString&)));
+      connect(rft,  SIGNAL(readFileCompleted(int, const QString&)),
+              this, SLOT(onReadFileCompleted(int, const QString&)));
 
       rft->start();
     } else if (item->text(1) == tr("Downloading") ||
@@ -659,13 +660,16 @@ void FileBrowser::onItemDoubleClicked(QTreeWidgetItem* item, int) {
       parameters << QString::fromStdString(path.toStdString());
       myProcess_.reset(new QProcess);
       connect(myProcess_.get(), SIGNAL(error(QProcess::ProcessError)),
-          this, SLOT(onOpenError(QProcess::ProcessError)));
+              this,             SLOT(onOpenError(QProcess::ProcessError)));
       connect(myProcess_.get(), SIGNAL(started()),
-          this, SLOT(onOpenStarted()));
-      connect(myProcess_.get(), SIGNAL(finished(int, QProcess::ExitStatus)),
-          this, SLOT(onOpenFinished(int, QProcess::ExitStatus)));
+              this,             SLOT(onOpenStarted()));
+      connect(myProcess_.get(),
+                  SIGNAL(finished(int, QProcess::ExitStatus)),
+              this,
+                  SLOT(onOpenFinished(int, QProcess::ExitStatus)));
       // myProcess_->start(command, parameters);
-      if (!myProcess_->startDetached("/usr/bin/open", QStringList() << parameters)) {
+      if (!myProcess_->startDetached("/usr/bin/open",
+          QStringList() << parameters)) {
         qDebug() << ":'(";
       }
 #endif
@@ -681,27 +685,27 @@ void FileBrowser::onOpenStarted() {
   qDebug() << "OpenStarted";
 }
 
-void FileBrowser::onOpenFinished(int exitCode, QProcess::ExitStatus exitStatus) {
+void FileBrowser::onOpenFinished(int exitCode,
+                                 QProcess::ExitStatus exitStatus) {
   qDebug() << "OpenFinished: " << exitCode << ", " << exitStatus;
 }
 
 void FileBrowser::onReadFileCompleted(int success, const QString& filepath) {
-  if (success != -1){
+  if (success != -1) {
     std::string dir = filepath.toStdString();
-    dir.erase(0,1);
+    dir.erase(0, 1);
 //    theWatcher_->addPath(rootPath_ + QString::fromStdString(dir));
 
     std::string file = filepath.toStdString();
-    file.erase(0,file.find_last_of("/")+1);
+    file.erase(0, file.find_last_of("/") + 1);
     QString theFile = QString::fromStdString(file);
 
     QList<QTreeWidgetItem *> widgetList = ui_.driveTreeWidget->findItems(
-                                            theFile, Qt::MatchExactly, 0);
+                                              theFile, Qt::MatchExactly, 0);
 
     qDebug() << "in onReadFileComplete : " << theFile;
 
-    if (!widgetList.empty())
-    {
+    if (!widgetList.empty()) {
       QTreeWidgetItem* theWidget = widgetList[0];
       ui_.driveTreeWidget->editItem(theWidget, 1);
       theWidget->setText(1, tr("Local"));
@@ -713,35 +717,35 @@ void FileBrowser::onReadFileCompleted(int success, const QString& filepath) {
   }
 }
 
-/*void FileBrowser::onWatchedFileChanged(const QString& path) {
-  qDebug() << "onWatchedFileChanged : " << path;
-  std::string file = path.toStdString();
-  file.erase(0,file.find_last_of("/")+1);
-  QString theFile = QString::fromStdString(file);
-
-  QList<QTreeWidgetItem *> widgetList = ui_.driveTreeWidget->findItems(
-                                            theFile, Qt::MatchExactly, 0);
-
-  qDebug() << "in onWatchedFileChanged : File to modify" << theFile;
-
-  if (!widgetList.empty())
-  {
-    QTreeWidgetItem* theWidget = widgetList[0];
-    ui_.driveTreeWidget->editItem(theWidget, 1);
-    //theWidget->setText(1, "Edited");
-  } else {
-    qDebug() << "onWatchFileChanged : no file matched" << theFile;
-  }
-}*/
+//  void FileBrowser::onWatchedFileChanged(const QString& path) {
+//    qDebug() << "onWatchedFileChanged : " << path;
+//    std::string file = path.toStdString();
+//    file.erase(0,file.find_last_of("/")+1);
+//    QString theFile = QString::fromStdString(file);
+//
+//    QList<QTreeWidgetItem *> widgetList = ui_.driveTreeWidget->findItems(
+//                                              theFile, Qt::MatchExactly, 0);
+//
+//    qDebug() << "in onWatchedFileChanged : File to modify" << theFile;
+//
+//    if (!widgetList.empty())
+//    {
+//      QTreeWidgetItem* theWidget = widgetList[0];
+//      ui_.driveTreeWidget->editItem(theWidget, 1);
+//      //theWidget->setText(1, "Edited");
+//    } else {
+//      qDebug() << "onWatchFileChanged : no file matched" << theFile;
+//    }
+//  }
 
 void FileBrowser::onSaveFileCompleted(int success, const QString& filepath) {
   qDebug() << "onSaveFileCompleted : " << filepath;
   if (success != -1) {
     std::string dir = filepath.toStdString();
-    dir.erase(0,1);
+    dir.erase(0, 1);
 //    theWatcher_->removePath(rootPath_ + QString::fromStdString(dir));
 
-    std::string fullFilePath = rootPath_.toStdString() + filepath.toStdString();
+    std::string fullFilePath(rootPath_.toStdString() + filepath.toStdString());
 
     if (fs::exists(fullFilePath)) {
       try {
@@ -755,17 +759,16 @@ void FileBrowser::onSaveFileCompleted(int success, const QString& filepath) {
       }
     }
 
-    std::string file = filepath.toStdString();
-    file.erase(0,file.find_last_of("/")+1);
-    QString theFile = QString::fromStdString(file);
+    std::string file(filepath.toStdString());
+    file.erase(0, file.find_last_of("/") + 1);
+    QString theFile(QString::fromStdString(file));
 
     QList<QTreeWidgetItem *> widgetList = ui_.driveTreeWidget->findItems(
-                                            theFile, Qt::MatchExactly, 0);
+                                              theFile, Qt::MatchExactly, 0);
 
     qDebug() << "in onSaveFileCompleted : " << theFile;
 
-    if (!widgetList.empty())
-    {
+    if (!widgetList.empty()) {
       QTreeWidgetItem* theWidget = widgetList[0];
       ui_.driveTreeWidget->editItem(theWidget, 1);
       theWidget->setText(1, tr("Network"));
@@ -784,15 +787,16 @@ void FileBrowser::uploadFileFromLocal(const QString& filePath) {
   qDebug() << "Upload File From Local: "
            << QString::fromStdString(filename);
 
-  std::string fullFilePath = rootPath_.toStdString() + currentDir_.toStdString()
-      + filename;
+  std::string fullFilePath(rootPath_.toStdString() + currentDir_.toStdString()
+                           + filename);
 
   QList<QTreeWidgetItem *> widgetList = ui_.driveTreeWidget->findItems(
-      QString::fromStdString(filename), Qt::MatchExactly, 0);
+                                            QString::fromStdString(filename),
+                                            Qt::MatchExactly, 0);
 
-  if(widgetList.isEmpty()) {
+  if (widgetList.isEmpty()) {
     fs::copy_file(filePath.toStdString(), fullFilePath);
-    if (fs::exists(fullFilePath)){
+    if (fs::exists(fullFilePath)) {
       saveFileToNetwork(currentDir_ + QString::fromStdString(filename));
     } else {
       qDebug() << "CopyFile Failed";
@@ -806,15 +810,18 @@ void FileBrowser::uploadFileFromLocal(const QString& filePath) {
   }
 }
 
-void FileBrowser::saveFileToNetwork(const QString& filePath){
-    //start save thread
-    SaveFileThread* sft = new SaveFileThread(filePath, this);
-    connect(sft, SIGNAL(saveFileCompleted(int,const QString&)),
-          this, SLOT(onSaveFileCompleted(int,const QString&)));
-    sft->start();
+void FileBrowser::saveFileToNetwork(const QString& filePath) {
+//  start save thread
+  SaveFileThread* sft = new SaveFileThread(filePath, this);
+  connect(sft,  SIGNAL(saveFileCompleted(int, const QString&)),
+          this, SLOT(onSaveFileCompleted(int, const QString&)));
+  sft->start();
 }
 
-void FileBrowser::onUploadClicked(bool){
+void FileBrowser::onUploadClicked(bool b) {
+  if (b) {
+  }
+
   QStringList fileNames = QFileDialog::getOpenFileNames(this,
                                                         tr("Upload a File"),
                                                         "",
@@ -828,9 +835,9 @@ void FileBrowser::onUploadClicked(bool){
 }
 
 void FileBrowser::onRenameFileCompleted(int success, const QString& filepath,
-                                        const QString& newfilepath){
+                                        const QString& newfilepath) {
   qDebug() << "in onRenameFileCompleted:" + newfilepath;
-  if(success != -1){
+  if (success != -1) {
     std::string fullFilePath = rootPath_.toStdString() +
                         currentDir_.toStdString() + filepath.toStdString();
     std::string fullNewFilePath = rootPath_.toStdString() +
@@ -843,7 +850,7 @@ void FileBrowser::onRenameFileCompleted(int success, const QString& filepath,
 
 void FileBrowser::onMakeDirectoryCompleted(int success, const QString& dir) {
   qDebug() << "in onMakeDirectoryCompleted:" + dir;
-  if(success != -1){
+  if (success != -1) {
     qDebug() << "MakeDir Success";
     populateDirectory(currentDir_);
   }
@@ -851,7 +858,7 @@ void FileBrowser::onMakeDirectoryCompleted(int success, const QString& dir) {
 
 void FileBrowser::onRemoveDirCompleted(int success, const QString& path) {
   qDebug() << "in onRemoveDirCompleted:" + path;
-  if(success != -1){
+  if (success != -1) {
     qDebug() << "RemoveDir Success";
     populateDirectory(currentDir_);
   }
@@ -874,14 +881,15 @@ bool FileBrowser::eventFilter(QObject *obj, QEvent *event) {
 void FileBrowser::changeEvent(QEvent *event) {
   if (event->type() == QEvent::LanguageChange) {
     ui_.retranslateUi(this);
-  } else
+  } else {
     QWidget::changeEvent(event);
+  }
 }
 
 void FileBrowser::onItemExpanded(QTreeWidgetItem* item) {
   qDebug() << "Item Expanded: ";
   currentTreeDir_ = "/";
-  while (item->childCount() > 0){
+  while (item->childCount() > 0) {
     item->removeChild(ui_.treeViewTreeWidget->itemBelow(item));
   }
 
@@ -889,7 +897,8 @@ void FileBrowser::onItemExpanded(QTreeWidgetItem* item) {
 
   int rowCount = 0;
   QString folder = item->text(0);
-  std::string relPathStr = currentTreeDir_.toStdString() + folder.toStdString() + "/";
+  std::string relPathStr(currentTreeDir_.toStdString() +
+                         folder.toStdString() + "/");
   std::map<std::string, maidsafe::ItemType> children;
   ClientController::instance()->readdir(relPathStr, children);
   qDebug() << "Path String : " << QString::fromStdString(relPathStr);
@@ -926,12 +935,12 @@ void FileBrowser::onItemExpanded(QTreeWidgetItem* item) {
       ui_.driveTreeWidget->insertTopLevelItem(rowCount, newItem);
     }
     children.erase(children.begin());
-    rowCount++;
+    ++rowCount;
   }
 }
 
 void FileBrowser::onFolderItemPressed(QTreeWidgetItem* item, int colum) {
-  if(QApplication::mouseButtons() == Qt::LeftButton) {
+  if (QApplication::mouseButtons() == Qt::LeftButton) {
     QString dir = getCurrentTreePath(item);
     populateDirectory(dir + item->text(0) + "/");
   }
@@ -959,7 +968,7 @@ void FileBrowser::onSortGroupClicked(QAction* action) {
   }
 }
 
-QString FileBrowser::getCurrentTreePath(QTreeWidgetItem* item){
+QString FileBrowser::getCurrentTreePath(QTreeWidgetItem* item) {
   QString path = "/";
   QTreeWidgetItem* item1 = new QTreeWidgetItem();
   item1 = item->parent();
@@ -979,7 +988,7 @@ QString FileBrowser::getCurrentTreePath(QTreeWidgetItem* item){
 
 QIcon FileBrowser::getAssociatedIconFromPath(const QString& fullFilePath) {
   QString qtPath = getFullFilePath(fullFilePath);
-  if(fs::exists(qtPath.toStdString())) {
+  if (fs::exists(qtPath.toStdString())) {
     QFileInfo fileInfo(qtPath);
     QFileIconProvider fileIconProvider;
     QIcon appIcon = fileIconProvider.icon(fileInfo);
@@ -989,15 +998,15 @@ QIcon FileBrowser::getAssociatedIconFromPath(const QString& fullFilePath) {
   if (!fs::exists(qtPath.toStdString())) {
     try {
       std::ofstream myfile;
-      myfile.open (qtPath.toStdString().c_str());
+      myfile.open(qtPath.toStdString().c_str());
       myfile << "Writing this to a dummy file.\n";
       myfile.close();
     }
     catch(const std::exception&) {
       qDebug() << "Create File Failed";
     }
-
   }
+
   QFileInfo fileInfo(qtPath);
   QFileIconProvider fileIconProvider;
   QIcon appIcon = fileIconProvider.icon(fileInfo);
@@ -1015,8 +1024,8 @@ QIcon FileBrowser::getAssociatedIconFromPath(const QString& fullFilePath) {
 
 QString FileBrowser::getFullFilePath(const QString& filepath) {
   QString qtPath = filepath;
-  qtPath.replace(QString("//"),QString("/"));
-  qtPath.replace(QString("/"),QString("\\"));
+  qtPath.replace(QString("//"), QString("/"));
+  qtPath.replace(QString("/"), QString("\\"));
   return qtPath;
 }
 

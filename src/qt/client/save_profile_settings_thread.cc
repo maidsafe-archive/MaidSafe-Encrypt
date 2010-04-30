@@ -8,8 +8,8 @@
  * You are not free to copy, amend or otherwise use this source code without
  * explicit written permission of the board of directors of maidsafe.net
  *
- *  Created on: March 15, 2010
- *      Author: Stephen
+ *  Created on: May 9, 2009
+ *      Author: Team
  */
 
 #include "qt/client/save_profile_settings_thread.h"
@@ -36,9 +36,9 @@ void SaveProfileSettingsThread::run() {
   maidsafe::PersonalDetails pd =
           maidsafe::SessionSingleton::getInstance()->Pd();
 
-  //TODO - Implement save settings
+  // TODO(Team): Implement save settings
 
-  if (!theHash_["FullName"].isEmpty()){
+  if (!theHash_["FullName"].isEmpty()) {
   }
 
   /*profileInfo.push_back(theHash_["FullName"].toStdString());

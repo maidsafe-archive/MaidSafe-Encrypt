@@ -211,7 +211,6 @@ class PerpetualData : public QMainWindow {
   void asyncMount();
   void asyncCreateUser();
   void asyncUnmount();
-  void asyncLogout();
 
   protected:
   void changeEvent(QEvent *event);

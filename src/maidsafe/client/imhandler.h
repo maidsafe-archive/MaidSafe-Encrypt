@@ -35,11 +35,11 @@ class SessionSingleton;
 
 class IMHandler {
  public:
-  IMHandler(SessionSingleton *ss);
+  explicit IMHandler(SessionSingleton *ss);
   std::string CreateMessage(const std::string &msg,
-      const std::string &receiver);
+                            const std::string &receiver);
   bool ValidateMessage(const std::string &ser_msg, MessageType *type,
-      std::string *validated_msg);
+                       std::string *validated_msg);
   std::string CreateMessageEndpoint(const std::string &receiver);
   std::string CreateLogOutMessage(const std::string &receiver);
  private:
@@ -47,6 +47,6 @@ class IMHandler {
   crypto::Crypto crypto_;
 };
 
-}  // namespace
+}  // namespace maidsafe
 
 #endif  // MAIDSAFE_CLIENT_IMHANDLER_H_

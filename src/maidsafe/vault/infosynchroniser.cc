@@ -96,8 +96,9 @@ void InfoSynchroniser::PruneMap() {
   }
 }
 
-void InfoSynchroniser::AddNodeToClosest(const base::PublicRoutingTableTuple &node,
-                                        std::vector<kad::Contact> *closest) {
+void InfoSynchroniser::AddNodeToClosest(
+    const base::PublicRoutingTableTuple &node,
+    std::vector<kad::Contact> *closest) {
   closest->push_back(kad::Contact(node.kademlia_id, "", 0));
 }
 

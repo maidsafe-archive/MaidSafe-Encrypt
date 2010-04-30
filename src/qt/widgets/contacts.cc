@@ -115,7 +115,6 @@ Contacts::Contacts(QWidget* parent)
 
   connect(ui_.listWidget, SIGNAL(itemSelectionChanged()),
           this,           SLOT(onItemSelectionChanged()));
-
 }
 
 
@@ -663,8 +662,9 @@ void Contacts::onDirectoryEntered(const QString& dir) {
 void Contacts::changeEvent(QEvent *event) {
   if (event->type() == QEvent::LanguageChange) {
     ui_.retranslateUi(this);
-  } else
+  } else {
     QWidget::changeEvent(event);
+  }
 }
 
 

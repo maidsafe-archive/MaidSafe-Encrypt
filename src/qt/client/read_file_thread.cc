@@ -27,7 +27,7 @@ ReadFileThread::ReadFileThread(const QString& filepath, QObject* parent)
 ReadFileThread::~ReadFileThread() { }
 
 void ReadFileThread::run() {
-  qDebug() << "ReadFileThread::run" << filepath_ ;
+  qDebug() << "ReadFileThread::run" << filepath_;
 
   int success = ClientController::instance()->read(filepath_.toStdString());
 

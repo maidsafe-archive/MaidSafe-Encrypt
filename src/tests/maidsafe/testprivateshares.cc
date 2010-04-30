@@ -326,10 +326,11 @@ TEST_F(PrivateSharesTest, BEH_MAID_MI_AddMultipleShares) {
     while (!sps.empty()) {
       maidsafe::ShareParticipants sp = sps.front();
       sps.pop_front();
-      ASSERT_EQ("PUB_NAME_" + base::IntToString(y) + "_" + base::IntToString(e), sp.id) <<
-                "Wrong public name.";
-      ASSERT_EQ("PUB_NAME_PUB_KEY_" + base::IntToString(y) + "_" + base::IntToString(e),
-                sp.public_key) << "Wrong public name key.";
+      ASSERT_EQ("PUB_NAME_" + base::IntToString(y) + "_" + base::IntToString(e),
+                sp.id) << "Wrong public name.";
+      ASSERT_EQ("PUB_NAME_PUB_KEY_" + base::IntToString(y) + "_" +
+                base::IntToString(e), sp.public_key) <<
+                "Wrong public name key.";
       ASSERT_EQ('C', sp.role) << "Wrong role.";
       e++;
     }
@@ -338,10 +339,10 @@ TEST_F(PrivateSharesTest, BEH_MAID_MI_AddMultipleShares) {
 
   unsigned int l = base::RandomUint32() % 10;
   maidsafe::PrivateShare by_name;
-  ASSERT_EQ(0, psh_->MI_GetShareInfo("NAME_" + base::IntToString(l), 0, &by_name)) <<
-            "Failed to locate share by name";
-  ASSERT_EQ("NAME_" + base::IntToString(l), by_name.Name()) << "Name different.";
-  ASSERT_EQ("MSID_" + base::IntToString(l), by_name.Msid()) << "Msid different.";
+  ASSERT_EQ(0, psh_->MI_GetShareInfo("NAME_" + base::IntToString(l), 0,
+            &by_name)) << "Failed to locate share by name";
+  ASSERT_EQ("NAME_" + base::IntToString(l), by_name.Name());
+  ASSERT_EQ("MSID_" + base::IntToString(l), by_name.Msid());
   ASSERT_EQ("MSID_PUB_KEY_" + base::IntToString(l), by_name.MsidPubKey()) <<
             "MsidPubKey different.";
   ASSERT_EQ("MSID_PRI_KEY_" + base::IntToString(l), by_name.MsidPriKey()) <<
@@ -353,10 +354,10 @@ TEST_F(PrivateSharesTest, BEH_MAID_MI_AddMultipleShares) {
   while (!sps.empty()) {
     maidsafe::ShareParticipants sp = sps.front();
     sps.pop_front();
-    ASSERT_EQ("PUB_NAME_" + base::IntToString(l) + "_" + base::IntToString(i), sp.id) <<
-              "Wrong public name.";
-    ASSERT_EQ("PUB_NAME_PUB_KEY_" + base::IntToString(l) + "_" + base::IntToString(i),
-              sp.public_key) << "Wrong public name key.";
+    ASSERT_EQ("PUB_NAME_" + base::IntToString(l) + "_" + base::IntToString(i),
+              sp.id) << "Wrong public name.";
+    ASSERT_EQ("PUB_NAME_PUB_KEY_" + base::IntToString(l) + "_" +
+              base::IntToString(i), sp.public_key) << "Wrong public name key.";
     ASSERT_EQ('C', sp.role) << "Wrong role.";
     i++;
   }
@@ -407,8 +408,7 @@ TEST_F(PrivateSharesTest, BEH_MAID_MI_DeleteShare) {
 
   // Delete random share by name
   unsigned int l = base::RandomUint32() % 10;
-  ASSERT_EQ(0, psh_->MI_DeletePrivateShare("NAME_" + base::IntToString(l), 0)) <<
-            "Failed to delete.";
+  ASSERT_EQ(0, psh_->MI_DeletePrivateShare("NAME_" + base::IntToString(l), 0));
 
   // Full share list
   ASSERT_EQ(0, psh_->MI_GetFullShareList(ALPHA, kAll, &full_share_list)) <<
@@ -419,14 +419,14 @@ TEST_F(PrivateSharesTest, BEH_MAID_MI_DeleteShare) {
   maidsafe::PrivateShare by_name, by_msid;
   std::list<maidsafe::share_participant> sp_list;
   // Find by share name
-  ASSERT_EQ(-2014, psh_->MI_GetShareInfo("NAME_" + base::IntToString(l), 0, &by_name))
-            << "Located share by name.";
+  ASSERT_EQ(-2014, psh_->MI_GetShareInfo("NAME_" + base::IntToString(l), 0,
+            &by_name)) << "Located share by name.";
   // Find by share msid
-  ASSERT_EQ(-2014, psh_->MI_GetShareInfo("MSID_" + base::IntToString(l), 1, &by_msid))
-            << "Located share by msid.";
+  ASSERT_EQ(-2014, psh_->MI_GetShareInfo("MSID_" + base::IntToString(l), 1,
+            &by_msid)) << "Located share by msid.";
   // Find the participants of the share
-  ASSERT_EQ(-2015, psh_->MI_GetParticipantsList("MSID_" + base::IntToString(l), 1,
-            &sp_list)) << "Some participants of the share remain.";
+  ASSERT_EQ(-2015, psh_->MI_GetParticipantsList("MSID_" + base::IntToString(l),
+            1, &sp_list)) << "Some participants of the share remain.";
   ASSERT_EQ(size_t(0), sp_list.size()) << "List not empty.";
 
   unsigned int e = l;
@@ -434,8 +434,7 @@ TEST_F(PrivateSharesTest, BEH_MAID_MI_DeleteShare) {
     e = base::RandomUint32() % 10;
 
   // Delete random share by msid
-  ASSERT_EQ(0, psh_->MI_DeletePrivateShare("MSID_" + base::IntToString(e), 1)) <<
-            "Failed to delete.";
+  ASSERT_EQ(0, psh_->MI_DeletePrivateShare("MSID_" + base::IntToString(e), 1));
 
   // Full share list
   ASSERT_EQ(0, psh_->MI_GetFullShareList(ALPHA, kAll, &full_share_list)) <<
@@ -444,14 +443,14 @@ TEST_F(PrivateSharesTest, BEH_MAID_MI_DeleteShare) {
             "Share container not empty on creation.";
 
   // Find by share name
-  ASSERT_EQ(-2014, psh_->MI_GetShareInfo("NAME_" + base::IntToString(e), 0, &by_name))
-            << "Located share by name.";
+  ASSERT_EQ(-2014, psh_->MI_GetShareInfo("NAME_" + base::IntToString(e), 0,
+            &by_name)) << "Located share by name.";
   // Find by share msid
-  ASSERT_EQ(-2014, psh_->MI_GetShareInfo("MSID_" + base::IntToString(e), 1, &by_msid))
-            << "Located share by msid.";
+  ASSERT_EQ(-2014, psh_->MI_GetShareInfo("MSID_" + base::IntToString(e), 1,
+            &by_msid)) << "Located share by msid.";
   // Find the participants of the share
-  ASSERT_EQ(-2015, psh_->MI_GetParticipantsList("MSID_" + base::IntToString(e), 1,
-            &sp_list)) << "Some participants of the share remain.";
+  ASSERT_EQ(-2015, psh_->MI_GetParticipantsList("MSID_" + base::IntToString(e),
+            1, &sp_list)) << "Some participants of the share remain.";
 }
 
 TEST_F(PrivateSharesTest, BEH_MAID_MI_AddContactToShare) {
@@ -540,8 +539,8 @@ TEST_F(PrivateSharesTest, BEH_MAID_MI_AddContactToShare) {
     ASSERT_EQ(attributes[1], sp_list.front().msid_) << "Msid wrong.";
     if (sp_list.front().public_name_ != "Dan" &&
         sp_list.front().public_name_ != "The Hutch") {
-      ASSERT_EQ("PUB_NAME_" + base::IntToString(n), sp_list.front().public_name_) <<
-                "Pub name wrong.";
+      ASSERT_EQ("PUB_NAME_" + base::IntToString(n),
+                sp_list.front().public_name_) << "Pub name wrong.";
       ASSERT_EQ("PUB_NAME_PUB_KEY_" + base::IntToString(n),
                 sp_list.front().public_key_) << "Msid wrong.";
       ASSERT_EQ('N', sp_list.front().role_) << "Msid wrong.";

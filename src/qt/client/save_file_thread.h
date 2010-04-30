@@ -12,8 +12,8 @@
  *      Author: Stephen
  */
 
-#ifndef SAVE_FILE_THREAD_H_INCLUDED
-#define SAVE_FILE_THREAD_H_INCLUDED
+#ifndef QT_CLIENT_SAVE_FILE_THREAD_H_
+#define QT_CLIENT_SAVE_FILE_THREAD_H_
 
 #include "qt/client/worker_thread.h"
 
@@ -40,4 +40,4 @@ class SaveFileThread : public WorkerThread {
   void saveFileCompleted(int, const QString&);
 };
 
-#endif // SAVE_FILE_THREAD_H_INCLUDED
+#endif  // QT_CLIENT_SAVE_FILE_THREAD_H_

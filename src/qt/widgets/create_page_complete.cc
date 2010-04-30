@@ -53,8 +53,9 @@ void CreateCompletePage::cleanupPage() {
 void CreateCompletePage::changeEvent(QEvent *event) {
   if (event->type() == QEvent::LanguageChange) {
     ui_.retranslateUi(this);
-  } else
+  } else {
     QWidget::changeEvent(event);
+  }
 }
 
 
