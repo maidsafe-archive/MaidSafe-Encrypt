@@ -321,13 +321,15 @@ class PDVaultTest : public testing::Test {
     // wait for the vaults to restart
     for (int i = 0; i < kNumOfClients; ++i) {
       const size_t vlt(kNetworkSize - kNumOfClients + i);
-      int n(0);
-      while (pdvaults_[vlt]->vault_status() != kVaultStarted && n < 10) {
-        n++;
-        boost::this_thread::sleep(boost::posix_time::seconds(1));
-      }
-      ASSERT_EQ(kVaultStarted, pdvaults_[vlt]->vault_status());
+      ASSERT_TRUE(pdvaults_[vlt]->WaitForStartup(10));
       printf("Vault #%d restarted.\n", vlt);
+    }
+
+    // wait for the vaults to sync
+    for (int i = 0; i < kNumOfClients; ++i) {
+      const size_t vlt(kNetworkSize - kNumOfClients + i);
+      ASSERT_TRUE(pdvaults_[vlt]->WaitForSync());
+      printf("Vault #%d synced.\n", vlt);
     }
 
     printf("--- SetUp completed. ---\n\n");
@@ -356,17 +358,16 @@ class PDVaultTest : public testing::Test {
 
 TEST_F(PDVaultTest, FUNC_MAID_VaultStartStop) {
   // check pdvaults can be started and stopped multiple times
-  bool success_(false);
   const int kTestVaultNo(kNetworkSize / 2);
   for (int loop = 0; loop < 7; ++loop) {
-    success_ = false;
     pdvaults_[kTestVaultNo]->Stop();
     ASSERT_NE(kVaultStarted, pdvaults_[kTestVaultNo]->vault_status());
     printf("Vault stopped - iteration %i.\n", loop+1);
     pdvaults_[kTestVaultNo]->Start(false);
-    ASSERT_EQ(kVaultStarted, pdvaults_[kTestVaultNo]->vault_status());
+    ASSERT_TRUE(pdvaults_[kTestVaultNo]->WaitForStartup(30));
     printf("Vault started - iteration %i.\n", loop+1);
   }
+  ASSERT_TRUE(pdvaults_[kTestVaultNo]->WaitForSync());
 }
 
 TEST_F(PDVaultTest, FUNC_MAID_StoreAndGetChunks) {
@@ -378,10 +379,6 @@ TEST_F(PDVaultTest, FUNC_MAID_StoreAndGetChunks) {
   for (it = chunks.begin(); it != chunks.end(); ++it) {
     data_size += (*it).second.size();
   }
-
-  // wait for account creation of our vaults
-  printf("Waiting for account creation...\n");
-  boost::this_thread::sleep(boost::posix_time::seconds(20));
 
   // make sure accounts for clients are in the right places
   printf("\n-- Checking accounts locally... --\n");

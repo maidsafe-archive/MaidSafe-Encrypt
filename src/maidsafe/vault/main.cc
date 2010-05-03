@@ -293,14 +293,7 @@ class RunPDVaults {
       ++current_nodes_created_;
       bool first = ((j == 0) && (!fs::exists(kad_config_path_)));
       (*pdvaults_)[j]->Start(first);
-      stop = boost::posix_time::second_clock::local_time() +
-          single_function_timeout_;
-      while (((*pdvaults_)[j]->vault_status() !=
-             maidsafe_vault::kVaultStarted)
-             && boost::posix_time::second_clock::local_time() < stop) {
-        boost::this_thread::sleep(boost::posix_time::seconds(1));
-      }
-      if (maidsafe_vault::kVaultStarted != (*pdvaults_)[j]->vault_status()) {
+      if (!(*pdvaults_)[j]->WaitForStartup(10)) {
         printf("Vault %i didn't start properly!\n", j);
         return;
       }
@@ -356,10 +349,9 @@ class RunPDVaults {
 //          (*(pdvaults_))[no_of_vaults_ - 1]->host_port(),
 //          HexSubstr((*(pdvaults_))[no_of_vaults_ - 1]->node_id()).c_str());
 
-    if (no_of_clients_ > 0) {
-      printf("\nWaiting 20 secs for account creation...\n\n");
-      boost::this_thread::sleep(boost::posix_time::seconds(20));
-    }
+    // Wait for account creation and syncing
+    for (int i = 0; i < no_of_vaults_; ++i)
+      (*pdvaults_)[i]->WaitForSync();
   }
 
   void TearDown() {

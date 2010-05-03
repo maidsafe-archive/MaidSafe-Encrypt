@@ -186,6 +186,7 @@ struct PresenceMessages {
   boost::uint16_t successes;
   bool done;
   boost::mutex mutex;
+  boost::condition_variable cond;
 };
 
 struct VBPMessages {
@@ -193,12 +194,14 @@ struct VBPMessages {
   boost::uint16_t successes;
   bool done;
   boost::mutex mutex;
+  boost::condition_variable cond;
 };
 
 struct BPResults {
   size_t returned_count;
   std::map<std::string, ReturnCode> *results;
   boost::mutex mutex;
+  boost::condition_variable cond;
   bool finished;
   ReturnCode rc;
 };

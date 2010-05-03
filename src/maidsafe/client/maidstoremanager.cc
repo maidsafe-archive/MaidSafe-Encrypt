@@ -1337,20 +1337,15 @@ int MaidsafeStoreManager::CreateBP() {
   BPInputParameters bpip = {ss_->Id(MPID),
                             ss_->PublicKey(MPID),
                             ss_->PrivateKey(MPID)};
-  bool local_done(false);
   boost::shared_ptr<BPResults> bp_results(new BPResults);
-  bp_results->finished = local_done;
+  bp_results->finished = false;
+  boost::mutex::scoped_lock loch_glascarnoch(bp_results->mutex);
   cbph_.CreateBufferPacket(bpip,
                            boost::bind(&MaidsafeStoreManager::ModifyBpCallback,
                                        this, _1, bp_results),
                            udt_transport_.transport_id());
-  while (!local_done) {
-    boost::this_thread::sleep(boost::posix_time::milliseconds(200));
-    {
-      boost::mutex::scoped_lock loch_glascarnoch(bp_results->mutex);
-      local_done = bp_results->finished;
-    }
-  }
+  while (!bp_results->finished)
+    bp_results->cond.wait(loch_glascarnoch);
   return bp_results->rc;
 }
 
@@ -1358,9 +1353,8 @@ int MaidsafeStoreManager::ModifyBPInfo(const std::string &info) {
   BPInputParameters bpip = {ss_->Id(MPID),
                             ss_->PublicKey(MPID),
                             ss_->PrivateKey(MPID)};
-  bool local_done(false);
   boost::shared_ptr<BPResults> bp_results(new BPResults);
-  bp_results->finished = local_done;
+  bp_results->finished = false;
   BufferPacketInfo buffer_packet_info;
   if (!buffer_packet_info.ParseFromString(info))
     return kBPInfoParseError;
@@ -1368,17 +1362,13 @@ int MaidsafeStoreManager::ModifyBPInfo(const std::string &info) {
   std::vector<std::string> users;
   for (int i = 0; i < buffer_packet_info.users_size(); ++i)
     users.push_back(buffer_packet_info.users(i));
+  boost::mutex::scoped_lock loch_glascarnoch(bp_results->mutex);
   cbph_.ModifyOwnerInfo(bpip, users,
                         boost::bind(&MaidsafeStoreManager::ModifyBpCallback,
                                     this, _1, bp_results),
                         udt_transport_.transport_id());
-  while (!local_done) {
-    boost::this_thread::sleep(boost::posix_time::milliseconds(200));
-    {
-      boost::mutex::scoped_lock loch_glascarnoch(bp_results->mutex);
-      local_done = bp_results->finished;
-    }
-  }
+  while (!bp_results->finished)
+    bp_results->cond.wait(loch_glascarnoch);
   return bp_results->rc;
 }
 
@@ -1391,18 +1381,13 @@ int MaidsafeStoreManager::LoadBPMessages(
                             ss_->PublicKey(MPID),
                             ss_->PrivateKey(MPID)};
   boost::shared_ptr<VBPMessages> bpm(new VBPMessages);
+  boost::mutex::scoped_lock loch_oich(bpm->mutex);
   cbph_.GetMessages(bpip,
                     boost::bind(&MaidsafeStoreManager::LoadMessagesCallback,
                                 this, _1, _2, _3, bpm),
                     udt_transport_.transport_id());
-  bool local_done(false);
-  while (!local_done) {
-    boost::this_thread::sleep(boost::posix_time::milliseconds(200));
-    {
-      boost::mutex::scoped_lock loch_oich(bpm->mutex);
-      local_done = bpm->done;
-    }
-  }
+  while (!bpm->done)
+    bpm->cond.wait(loch_oich);
 
   ValidatedBufferPacketMessage vbpm;
   std::set<std::string>::iterator it;
@@ -1424,8 +1409,7 @@ int MaidsafeStoreManager::SendMessage(
                             ss_->PublicKey(MPID),
                             ss_->PrivateKey(MPID)};
   boost::shared_ptr<BPResults> bp_results(new BPResults);
-  size_t local_count(0);
-  bp_results->returned_count = local_count;
+  bp_results->returned_count = 0;
   bp_results->results = add_results;
 
   std::set<std::string> sss(receivers.begin(), receivers.end());
@@ -1451,6 +1435,7 @@ int MaidsafeStoreManager::SendMessage(
     }
   }
 
+  boost::mutex::scoped_lock loch_quoich(bp_results->mutex);
   for (size_t n = 0; n < recs.size(); ++n)
     bp_results->results->insert(std::pair<std::string,  ReturnCode>
                                          (recs[n],      kBPAwaitingCallback));
@@ -1463,14 +1448,8 @@ int MaidsafeStoreManager::SendMessage(
                      udt_transport_.transport_id());
   }
 
-  // TODO(Steve#) replace with conditional variable
-  while (local_count < recs.size()) {
-    boost::this_thread::sleep(boost::posix_time::milliseconds(500));
-    {
-      boost::mutex::scoped_lock loch_quoich(bp_results->mutex);
-      local_count = bp_results->returned_count;
-    }
-  }
+  while (bp_results->returned_count < recs.size())
+    bp_results->cond.wait(loch_quoich);
 
   int successes(0);
   std::map<std::string, ReturnCode>::iterator map_it;
@@ -1490,19 +1469,14 @@ int MaidsafeStoreManager::LoadBPPresence(std::list<LivePresence> *messages) {
                             ss_->PublicKey(MPID),
                             ss_->PrivateKey(MPID)};
   boost::shared_ptr<PresenceMessages> bp_pm(new PresenceMessages);
+  boost::mutex::scoped_lock loch_shin(bp_pm->mutex);
   cbph_.GetPresence(bpip,
                     boost::bind(&MaidsafeStoreManager::LoadPresenceCallback,
                                 this, _1, _2, _3, bp_pm),
                     udt_transport_.transport_id());
 
-  bool local_done(false);
-  while (!local_done) {
-    boost::this_thread::sleep(boost::posix_time::milliseconds(200));
-    {
-      boost::mutex::scoped_lock loch_shin(bp_pm->mutex);
-      local_done = bp_pm->done;
-    }
-  }
+  while (!bp_pm->done)
+    bp_pm->cond.wait(loch_shin);
 
   LivePresence lp;
   std::set<std::string>::iterator it;
@@ -1527,8 +1501,7 @@ int MaidsafeStoreManager::AddBPPresence(
                             ss_->PublicKey(MPID),
                             ss_->PrivateKey(MPID)};
   boost::shared_ptr<BPResults> bp_results(new BPResults);
-  size_t local_count(0);
-  bp_results->returned_count = local_count;
+  bp_results->returned_count = 0;
   bp_results->results = add_results;
 
   std::set<std::string> sss(receivers.begin(), receivers.end());
@@ -1545,6 +1518,7 @@ int MaidsafeStoreManager::AddBPPresence(
     bp_results->results->insert(std::pair<std::string,  ReturnCode>
                                          (recs[n],      kBPAwaitingCallback));
 
+  boost::mutex::scoped_lock loch_quoich(bp_results->mutex);
   for (size_t a = 0; a < recs.size(); ++a) {
     cbph_.AddPresence(bpip, ss_->PublicUsername(),
                       ss_->GetContactPublicKey(recs[a]), recs[a],
@@ -1553,13 +1527,8 @@ int MaidsafeStoreManager::AddBPPresence(
                       udt_transport_.transport_id());
   }
 
-  while (local_count < recs.size()) {
-    boost::this_thread::sleep(boost::posix_time::milliseconds(500));
-    {
-      boost::mutex::scoped_lock loch_quoich(bp_results->mutex);
-      local_count = bp_results->returned_count;
-    }
-  }
+  while (bp_results->returned_count < recs.size())
+    bp_results->cond.wait(loch_quoich);
 
   int successes(0);
   std::map<std::string, ReturnCode>::iterator map_it;
@@ -2962,6 +2931,7 @@ void MaidsafeStoreManager::ModifyBpCallback(
   boost::mutex::scoped_lock loch_assynt(pm->mutex);
   pm->rc = rc;
   pm->finished = true;
+  pm->cond.notify_one();
 }
 
 void MaidsafeStoreManager::AddToBpCallback(
@@ -2971,6 +2941,7 @@ void MaidsafeStoreManager::AddToBpCallback(
   boost::mutex::scoped_lock loch_arkaig(bp_results->mutex);
   (*bp_results->results)[receiver] = rc;
   ++bp_results->returned_count;
+  bp_results->cond.notify_one();
 }
 
 void MaidsafeStoreManager::LoadMessagesCallback(
@@ -2990,6 +2961,7 @@ void MaidsafeStoreManager::LoadMessagesCallback(
   for (it = msgs.begin(); it != msgs.end(); ++it) {
     vbpms->presence_set.insert(it->SerializeAsString());
   }
+  vbpms->cond.notify_one();
 }
 
 void MaidsafeStoreManager::LoadPresenceCallback(
@@ -3012,6 +2984,7 @@ void MaidsafeStoreManager::LoadPresenceCallback(
       continue;
     pm->presence_set.insert(validated_presence);
   }
+  pm->cond.notify_one();
 }
 
 std::string MaidsafeStoreManager::ValidatePresence(
