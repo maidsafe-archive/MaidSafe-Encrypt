@@ -37,6 +37,7 @@
 
 #include <list>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "maidsafe/maidsafevalidator.h"
