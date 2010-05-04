@@ -694,7 +694,7 @@ int LocalStoreManager::ModifyBPInfo(const std::string &info) {
 int LocalStoreManager::LoadBPMessages(
     std::list<ValidatedBufferPacketMessage> *messages) {
   if (ss_->Id(MPID) == "")
-    return -666;
+    return 0;
 
   std::string bp_in_chunk;
   std::string bufferpacketname(BufferPacketName());
@@ -702,14 +702,14 @@ int LocalStoreManager::LoadBPMessages(
 #ifdef DEBUG
     printf("LocalStoreManager::LoadBPMessages - Failed to find BP chunk.\n");
 #endif
-    return -1;
+    return 0;
   }
   std::vector<std::string> msgs;
   if (!vbph_.GetMessages(&bp_in_chunk, &msgs)) {
 #ifdef DEBUG
     printf("LocalStoreManager::LoadBPMessages - Failed to get messages.\n");
 #endif
-    return -1;
+    return 0;
   }
   messages->clear();
   crypto::Crypto co;
@@ -729,9 +729,9 @@ int LocalStoreManager::LoadBPMessages(
 #ifdef DEBUG
     printf("LSM::LoadBPMessages - Failed to flush BP to chunk.\n");
 #endif
-    return -1;
+    return 0;
   }
-  return 0;
+  return kKadUpperThreshold;
 }
 
 int LocalStoreManager::SendMessage(
@@ -799,7 +799,7 @@ int LocalStoreManager::SendMessage(
 }
 
 int LocalStoreManager::LoadBPPresence(std::list<LivePresence>*) {
-  return kSuccess;
+  return kKadUpperThreshold;
 }
 
 int LocalStoreManager::AddBPPresence(
