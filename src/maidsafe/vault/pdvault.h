@@ -37,6 +37,7 @@
 
 #include <list>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "maidsafe/maidsafevalidator.h"
@@ -171,16 +172,6 @@ struct SwapChunkArgs {
   kad::VoidFunctorOneString cb_;
 };
 
-struct SyncDataArgs {
-  explicit SyncDataArgs(boost::shared_ptr<boost::mutex> mut)
-      : mutex(mut),
-        get_sync_data_response(),
-        controller() {}
-  boost::shared_ptr<boost::mutex> mutex;
-  maidsafe::GetSyncDataResponse get_sync_data_response;
-  rpcprotocol::Controller controller;
-};
-
 class PDVault {
  public:
   // vault_dir will contain .kadconfig (copied from read_only_kad_config_file)
@@ -201,6 +192,8 @@ class PDVault {
   void CleanUp();
   VaultStatus vault_status();
   void SetVaultStatus(const VaultStatus &vault_status);
+  bool WaitForStartup(const boost::uint16_t timeout);
+  bool WaitForSync();
   std::string node_id() const { return knode_->node_id().ToStringDecoded(); }
   std::string host_ip() const { return knode_->host_ip(); }
   boost::uint16_t host_port() const { return knode_->host_port(); }
@@ -258,9 +251,8 @@ class PDVault {
                             boost::shared_ptr<maidsafe::AmendAccountData> data);
   // Send request to kad-closest and k-th closest peers for their maidsafe info.
   void JoinMaidsafeNet();
-  void JoinMaidsafeNetCallback(boost::shared_ptr<SyncDataArgs> sync_data_args);
-  void UpdateSpaceOffered();
-
+  void GetSyncDataCallback(bool *done,
+      std::pair<boost::mutex*, boost::condition_variable*> sync);
 
 /*
   void IterativeSyncVault(boost::shared_ptr<SyncVaultData> data);
@@ -320,9 +312,11 @@ class PDVault {
   VaultChunkStore vault_chunkstore_;
   boost::shared_ptr<VaultService> vault_service_;
   VaultServiceLogic vault_service_logic_;
-  bool kad_joined_;
+  bool kad_joined_, kad_join_called_back_;
   VaultStatus vault_status_;
   boost::mutex vault_status_mutex_;
+  boost::condition_variable vault_status_cond_;
+  bool sync_done_, sync_succeeded_;
   boost::condition_variable kad_join_cond_;
   kad::Contact our_details_;
   std::string pmid_public_, pmid_private_, signed_pmid_public_, pmid_;
@@ -330,7 +324,7 @@ class PDVault {
   boost::shared_ptr<rpcprotocol::Channel> svc_channel_;
   fs::path kad_config_file_;
   QThreadPool thread_pool_;
-  boost::thread /* maidsafe_join_thread_, */ create_account_thread_;
+  boost::thread maidsafe_join_thread_;
   boost::shared_ptr<base::PublicRoutingTableHandler> routing_table_;
 };
 

@@ -95,6 +95,7 @@ class Env: public testing::Environment {
   }
 
   virtual void SetUp() {
+    ASSERT_LE(kad::K, kNetworkSize_) << "Need at least K nodes!";
     // Construct and start vaults
     printf("Creating vaults...\n");
     for (int i = 0; i < kNetworkSize_; ++i) {
@@ -106,25 +107,18 @@ class Env: public testing::Environment {
         printf("creating_directories - %s\n", local_dir.string().c_str());
         fs::create_directories(local_dir);
       }
+
       boost::shared_ptr<maidsafe_vault::PDVault>
           pdvault_local(new maidsafe_vault::PDVault(public_key, private_key,
           signed_key, local_dir, 0, false, false, kad_config_file_,
           1073741824, 0));
       pdvaults_->push_back(pdvault_local);
       ++current_nodes_created_;
+
       // Start first vault and set as bootstrapping node for others
       if (i == 0) {
         (*pdvaults_)[0]->Start(true);
-        boost::posix_time::ptime stop =
-            boost::posix_time::second_clock::local_time() +
-            single_function_timeout;
-        while (((*pdvaults_)[0]->vault_status() !=
-            maidsafe_vault::kVaultStarted) &&
-            boost::posix_time::second_clock::local_time() < stop) {
-          boost::this_thread::sleep(boost::posix_time::seconds(1));
-        }
-        ASSERT_EQ(maidsafe_vault::kVaultStarted,
-            (*pdvaults_)[0]->vault_status());
+        ASSERT_TRUE((*pdvaults_)[0]->WaitForStartup(10));
         base::KadConfig kad_config;
         base::KadConfig::Contact *kad_contact = kad_config.add_contact();
         kad_contact->set_node_id(base::EncodeToHex((*pdvaults_)[0]->node_id()));
@@ -139,26 +133,20 @@ class Env: public testing::Environment {
         printf("Vault 0 started.\n");
       } else {
         (*pdvaults_)[i]->Start(false);
-        boost::posix_time::ptime stop =
-            boost::posix_time::second_clock::local_time() +
-            single_function_timeout;
-        while (((*pdvaults_)[i]->vault_status() !=
-            maidsafe_vault::kVaultStarted)
-            && boost::posix_time::second_clock::local_time() < stop) {
-          boost::this_thread::sleep(boost::posix_time::seconds(1));
-        }
-        ASSERT_EQ(maidsafe_vault::kVaultStarted,
-                  (*pdvaults_)[i]->vault_status());
+        ASSERT_TRUE((*pdvaults_)[i]->WaitForStartup(10));
         printf("Vault %i started.\n", i);
-//      boost::this_thread::sleep(boost::posix_time::seconds(15));
       }
     }
+
     // Make kad config file in ./ for clients' use.
     if (fs::exists(".kadconfig"))
       fs::remove(".kadconfig");
     fs::copy_file(kad_config_file_, ".kadconfig");
-    // Allow new vaults time to finish setting up their accounts.
-    boost::this_thread::sleep(boost::posix_time::seconds(10));
+
+    // Wait for account creation and syncing
+    for (int i = 0; i < kNetworkSize_; ++i)
+      ASSERT_TRUE((*pdvaults_)[i]->WaitForSync());
+
 #ifdef WIN32
     HANDLE hconsole = GetStdHandle(STD_OUTPUT_HANDLE);
     SetConsoleTextAttribute(hconsole, 10 | 0 << 4);

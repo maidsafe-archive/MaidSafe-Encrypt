@@ -26,11 +26,11 @@
 #include <windows.h>
 #include <stdio.h>
 #include <boost/date_time/posix_time/posix_time.hpp>
-#include <string>
-#include "maidsafe/vault/vaultdaemon.h"
 #ifdef __MSVC__
   #include <client/windows/handler/exception_handler.h>
 #endif
+#include <string>
+#include "maidsafe/vault/vaultdaemon.h"
 
 #define LOGFILE "VaultService.txt"
 const int kSleepTime = 10000;  // milliseconds

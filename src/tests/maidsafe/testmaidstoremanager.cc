@@ -508,10 +508,7 @@ class MockClientRpcs : public ClientRpcs {
 };
 
 MATCHER_P(EqualsContact, kad_contact, "") {
-  return (arg.node_id().ToStringDecoded() ==
-          kad_contact.node_id().ToStringDecoded() &&
-          arg.host_ip() == kad_contact.host_ip() &&
-          arg.host_port() == kad_contact.host_port());
+  return (arg.Equals(kad_contact));
 }
 
 TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AddToWatchList) {
