@@ -112,6 +112,20 @@ void KadOps::HandleFindCloseNodesResponse(
   cv->notify_one();
 }
 
+bool KadOps::ConfirmCloseNode(const kad::KadId & /* kad_key */,
+                              const kad::Contact & /* contact */) {
+  // TODO(Team#) implement estimator for ConfirmCloseNode
+  return true;
+}
+
+bool KadOps::ConfirmCloseNodes(const kad::KadId &kad_key,
+    const std::vector<kad::Contact> &contacts) {
+  std::vector<kad::Contact>::const_iterator it = contacts.begin();
+  while (it != contacts.end() && ConfirmCloseNode(kad_key, *it))
+    ++it;
+  return it == contacts.end();
+}
+
 void KadOps::FindValue(const kad::KadId &kad_key,
                        bool check_local,
                        const kad::VoidFunctorOneString &cb) {
