@@ -134,10 +134,22 @@
        </column>
       </widget>
      </item>
+     <item>
+      <widget class="QListWidget" name="driveListWidget">
+       <property name="viewMode">
+        <enum>QListView::IconMode</enum>
+       </property>
+       <property name="sortingEnabled">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
     </layout>
    </item>
   </layout>
  </widget>
- <resources/>
+ <resources>
+  <include location="../resources/resources.qrc"/>
+ </resources>
  <connections/>
 </ui>

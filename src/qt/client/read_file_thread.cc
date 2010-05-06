@@ -30,6 +30,7 @@ void ReadFileThread::run() {
   qDebug() << "ReadFileThread::run" << filepath_;
 
   int success = ClientController::instance()->read(filepath_.toStdString());
+  this->sleep(2);
 
   emit readFileCompleted(success, filepath_);
 }

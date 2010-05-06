@@ -34,7 +34,6 @@
 #endif
 
 #include "fs/filesystem.h"
-#include "maidsafe/client/clientcontroller.h"
 #include "qt/client/client_controller.h"
 #include "qt/client/make_directory_thread.h"
 #include "qt/client/read_file_thread.h"
@@ -174,6 +173,7 @@ void FileBrowser::createAndConnectActions() {
 void FileBrowser::setActive(bool b) {
   if (b && !init_) {
     init_ = true;
+    ui_.driveListWidget->setVisible(false);
 
     rootPath_ = QString::fromStdString(file_system::MaidsafeHomeDir(
                     ClientController::instance()->SessionName()).string()+"/");
@@ -533,6 +533,12 @@ int FileBrowser::populateDirectory(QString dir) {
   ui_.driveTreeWidget->resizeColumnToContents(3);
   return 0;
 }
+
+void FileBrowser::drawTileView(maidsafe::MetaDataMap){}
+void FileBrowser::drawDetailView(maidsafe::MetaDataMap){}
+void FileBrowser::drawListView(maidsafe::MetaDataMap){}
+void FileBrowser::drawIconView(maidsafe::MetaDataMap){}
+void FileBrowser::drawLargeIconView(maidsafe::MetaDataMap){}
 
 int FileBrowser::createTreeDirectory(QString dir) {
   qDebug() << "createTreeDirectory: ";
@@ -946,7 +952,45 @@ void FileBrowser::onFolderItemPressed(QTreeWidgetItem* item, int colum) {
   }
 }
 
+void FileBrowser::setViewMode(ViewMode viewMode) {
+  viewMode_ = viewMode;
+  switch (viewMode) {
+    case TILES:
+      ui_.driveTreeWidget->setVisible(false);
+      ui_.driveListWidget->setVisible(true);
+      break;
+    case DETAIL:
+      ui_.driveTreeWidget->setVisible(true);
+      ui_.driveListWidget->setVisible(false);
+      break;
+    case LIST:
+      ui_.driveTreeWidget->setVisible(true);
+      ui_.driveListWidget->setVisible(false);
+      break;
+    case SMALLICONS:
+      ui_.driveTreeWidget->setVisible(false);
+      ui_.driveListWidget->setVisible(true);
+      break;
+    case LARGEICONS:
+      ui_.driveTreeWidget->setVisible(false);
+      ui_.driveListWidget->setVisible(true);
+      break;
+    default:
+      break;
+  }
+}
+
 void FileBrowser::onViewGroupClicked(QAction* action) {
+  if(action == tilesMode)
+    setViewMode(TILES);
+  else if (action == listMode)
+    setViewMode(LIST);
+  else if (action == detailMode)
+    setViewMode(DETAIL);
+  else if (action == iconMode)
+    setViewMode(SMALLICONS);
+  else if (action == iconMode)
+    setViewMode(LARGEICONS);
 }
 void FileBrowser::onSortGroupClicked(QAction* action) {
   QHeaderView* theHeader = ui_.driveTreeWidget->header();

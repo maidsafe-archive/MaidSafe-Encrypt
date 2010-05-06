@@ -24,6 +24,7 @@
 #include <QProcess>
 #include <QPixmap>
 
+#include "maidsafe/client/clientcontroller.h"
 #include "ui_file_browser.h"
 
 class FileBrowser : public QDialog {
@@ -71,6 +72,17 @@ class FileBrowser : public QDialog {
   QAction *typeSort;
   QAction *dateSort;
 
+    enum ViewMode {
+    TILES,
+    DETAIL,
+    LIST,
+    SMALLICONS,
+    LARGEICONS
+    };
+
+  void setViewMode(ViewMode viewMode);
+  ViewMode viewMode_;
+
   boost::shared_ptr<QProcess> myProcess_;
 
   QIcon getAssociatedIconFromPath(const QString& filepath);
@@ -84,6 +96,11 @@ class FileBrowser : public QDialog {
   void getTreeSubFolders(const QString);
   void setMenuDirMenu();
   void setMenuFileMenu();
+  void drawTileView(maidsafe::MetaDataMap);
+  void drawDetailView(maidsafe::MetaDataMap);
+  void drawListView(maidsafe::MetaDataMap);
+  void drawIconView(maidsafe::MetaDataMap);
+  void drawLargeIconView(maidsafe::MetaDataMap);
 
   protected:
     void dropEvent(QDropEvent *event);
