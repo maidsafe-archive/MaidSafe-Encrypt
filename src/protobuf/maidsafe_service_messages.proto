@@ -119,13 +119,41 @@ message AmendAccountRequest {
   required Amendment amendment_type = 1;
   required bytes account_pmid = 2;  // PMID of account to be amended
   required SignedSize signed_size = 3;
-  optional bytes chunkname = 4;  // required if type is not kSpaceOffered to
+  required bool confirmation_required = 4;  // true if ConfirmAmendment needed
+  optional bytes chunkname = 5;  // required if type is not kSpaceOffered to
                                  // assert that sender is valid ChunkInfo holder
 }
 
 message AmendAccountResponse {
   required uint32 result = 1;
-  optional bytes pmid = 2;  // account holder's PMID
+  required bool standby = 2;  // true if result not final, will ConfirmAmendment
+  optional bytes pmid = 3;  // account holder's PMID
+}
+
+message ExpectAmendmentRequest {
+  required AmendAccountRequest.Amendment amendment_type = 1;
+  required bytes chunkname = 2;
+  required bytes account_pmid = 3;  // PMID of account owner (i.e. sender)
+  required bytes public_key = 4;
+  required bytes public_key_signature = 5;
+  required bytes request_signature = 6;
+  repeated bytes amender_pmids = 7;  // the K vaults to expect amendments from
+}
+
+message ExpectAmendmentResponse {
+  required uint32 result = 1;
+  optional bytes pmid = 2;
+}
+
+message ConfirmAmendmentRequest {
+  required AmendAccountRequest.Amendment amendment_type = 1;
+  required bytes chunkname = 2;
+  required bytes account_pmid = 3;
+}
+
+message ConfirmAmendmentResponse {
+  required uint32 result = 1;
+  optional bytes pmid = 2;
 }
 
 message AccountStatusRequest {

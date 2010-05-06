@@ -851,6 +851,42 @@ void VaultService::AmendAccount(google::protobuf::RpcController*,
   done->Run();
 }
 
+void VaultService::ExpectAmendment(google::protobuf::RpcController*,
+    const maidsafe::ExpectAmendmentRequest *request,
+    maidsafe::ExpectAmendmentResponse *response,
+    google::protobuf::Closure *done) {
+  response->set_pmid(pmid_);
+  response->set_result(kNack);
+  if (!request->IsInitialized()) {
+#ifdef DEBUG
+    printf("In VaultService::ExpectAmendment (%s), request is not initialized."
+           "\n", HexSubstr(pmid_).c_str());
+#endif
+    done->Run();
+    return;
+  }
+
+  done->Run();  // TODO(Steve#) implement ExpectAmendment
+}
+
+void VaultService::ConfirmAmendment(google::protobuf::RpcController*,
+    const maidsafe::ConfirmAmendmentRequest *request,
+    maidsafe::ConfirmAmendmentResponse *response,
+    google::protobuf::Closure *done) {
+  response->set_pmid(pmid_);
+  response->set_result(kNack);
+  if (!request->IsInitialized()) {
+#ifdef DEBUG
+    printf("In VaultService::ConfirmAmendment (%s), request is not initialized."
+           "\n", HexSubstr(pmid_).c_str());
+#endif
+    done->Run();
+    return;
+  }
+
+  done->Run();  // TODO(Steve#) implement ConfirmAmendment
+}
+
 void VaultService::AccountStatus(google::protobuf::RpcController*,
                                  const maidsafe::AccountStatusRequest *request,
                                  maidsafe::AccountStatusResponse *response,
