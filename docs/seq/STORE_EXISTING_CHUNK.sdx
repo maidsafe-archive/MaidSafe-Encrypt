@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <diagram>
-<source><![CDATA[#![Store Existing Chunk    ]
+<source><![CDATA[#![Store Existing Chunk    2010-05-04      ]
 client:client "Client"
 info:vault "Chunk Info Holders x16"
 c_account:vault "Client A/C Holders x16"
@@ -44,17 +44,33 @@ Upload x copies as per
 "Store New Chunk" diagram
 *4
 
+(6)client:>c_account. EXPECT_AMENDMENT_REQUEST 
+*6 client
+For each Client Account Holder...
+*6
+
+c_account:c_account. Validate EXPECT_AMENDMENT_REQUEST. &
+c_account:>client.Ack / Nack &
+
 [c:Condition IF payment is required]
-*5 c_account
-Check 16 requests are from valid Chunk Info Holders by doing a
-Kademlia FIND_NODES and checking sender is in list of near nodes to value.
-*5
+*7 c_account
+AMEND_ACCOUNT_REQUEST is validated by referencing list of Chunk Info Holders sent in
+EXPECT_AMENDMENT_REQUEST.  If E_A_REQ has not yet arrived, reply "Standby", otherwise Ack/Nack.
+If reply is "Standby", a CONFIRM_AMENDMENT_REQUEST should be sent once the E_A_REQ arrives.
+*7
 
 (1)info:>c_account. AMEND_ACCOUNT_REQUEST (Space Taken Inc)
-(5)c_account:>info.Ack/Nack &
+(7)c_account:>info.Ack/Standby/Nack &
+(7)c_account:Ack/Nack =info. [Optional - see note] CONFIRM_AMENDMENT_REQUEST &
 [c:Condition IF account amendment fails]
 info:info. Revert addition of Client's PMID to Watch List&
 [/c]
++5 c_account
+AMEND_ACCOUNT_REQUEST is validated by by doing a Kademlia FIND_NODES and checking
+sender is in list of near nodes to value.  Chunk Info Holder doesn't care about amendment result
+in this case, so validation can happen after response sent.
++5
+
 [c:Condition IF this client replaces an existing payer]
 info:>f_account. AMEND_ACCOUNT_REQUEST (Space Taken Dec)
 (5)f_account:>info.Ack/Nack &
@@ -62,7 +78,8 @@ info:>f_account. AMEND_ACCOUNT_REQUEST (Space Taken Dec)
 [/c]
 [c:Condition IF payment is not required]
 info:>c_account. ACCOUNT_STATUS_REQUEST
-(5)c_account:>info.Ack/Nack &
+(7)c_account:>info.Ack/Nack &
+(7)c_account:Ack/Nack =info. [Optional - see note] CONFIRM_AMENDMENT_REQUEST &
 [c:Condition IF client can't pay]
 info:info. Revert addition of Client's PMID to Watch List&
 [/c]

@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <diagram>
-<source><![CDATA[#![Store New Chunk   ]
+<source><![CDATA[#![Store New Chunk    2010-05-04    ]
 client:client "First Client"
 peer:vault "Peer Vault"
 info:vault "Chunk Info Holders x16"
 c_account:vault "Client Account Holders x16"
 v_account:vault "Vault Account Holders x16"
 
-+1 info
+*1 c_account
 Watch List comprises:
   * list of PMIDs of current 4 paying clients
   * further list of reserve watchers
@@ -15,61 +15,96 @@ Watch List comprises:
   * checksum of current watchers
   * chunk size
   * minimum rank required of chunk holders.
-+1
+*1
 
 client:client. Check we have enough space in our account&
+*4 info
+As this is the first time the chunk has been stored, client must pay 4x for it.
+So this message requests 4x original space be deducted from client's account.
+*4
 
+client:client. Do FIND_NODES to get Chunk Info Holders' details and keep lookup result.&
+
+(2)client:>info. ADD_TO_WATCH_LIST_REQUEST
 *2 client
 For each Chunk Info Holder...
 *2
 
-(2)client:>info. ADD_TO_WATCH_LIST_REQUEST
 info:info. Validate request.&
-(3)info:>c_account. AMEND_ACCOUNT_REQUEST (Space Taken Inc)
-info:info. Prepare to create new Watch List.&
 info:>client.Ack (Store x copies) / Nack &
+(4)info:>c_account. AMEND_ACCOUNT_REQUEST (Space Taken Inc)
+
+*5 c_account
+AMEND_ACCOUNT_REQUEST is validated by referencing list of Chunk Info Holders sent in
+EXPECT_AMENDMENT_REQUEST.  If E_A_REQ has not yet arrived, reply "Standby", otherwise Ack/Nack.
+If reply is "Standby", a CONFIRM_AMENDMENT_REQUEST should be sent once the E_A_REQ arrives.
+*5
+
+(5)c_account:>info. Ack / Standby / Nack 
+info:info. Prepare to create new Watch List.&
+
+(3)client:>c_account. EXPECT_AMENDMENT_REQUEST &
+*3 client
+For each Client Account Holder...
+*3
+
+c_account:c_account. Validate EXPECT_AMENDMENT_REQUEST. &
+c_account:>client.Ack / Nack &
+
+(5)c_account:c_account. Validate AMEND_ACCOUNT_REQUEST. &
+
+(5)c_account:Ack/Nack =info. [Optional - see note] CONFIRM_AMENDMENT_REQUEST &
 
 [c:Loop Loop until x copies uploaded   ]
 
-*3 info
-As this is the first time the chunk has
-been stored, client must pay 4x for it.
-So this message requests 4x original
-space be deducted from client's account.
-*3
-
-*4 c_account
-Check 16 requests are from
-valid Chunk Info Holders by
-doing a Kademlia FIND_NODES
-and checking sender is in
-list of near nodes to value.
-*4
-
 client:client. Wait till online.&
 
-*5 client
+*6 client
 Select peer vault - use rank, stated
 space available and RTT to decide.
-*5
-
-client:Ack/Nack in Signed Contract =peer. STORE_PREP_REQUEST&
-
-*6 client
-Validate signed response & signed contract.  If Nack or failed validation,
-send signed Nack with contract to Peer Vault Account Holders & restart store loop.
 *6
 
-client:>peer. STORE_CHUNK_REQUEST
+client:>peer. STORE_PREP_REQUEST
+peer:>client. Ack/Nack in Signed Contract&
+
+*7 client
+Validate signed response & signed contract.  If Nack or failed validation,
+send signed Nack with contract to Peer Vault Account Holders & restart store loop.
+*7
+
+client:>peer. STORE_CHUNK_REQUEST&
 peer:>client.Ack/Nack &
 
+peer:peer. Do FIND_NODES to get Chunk Info Holders' details.&
+(10)peer:>v_account. EXPECT_AMENDMENT_REQUEST
+*10 peer
+For each Vault Account Holder...
+*10
+
+v_account:v_account. Validate request. &
+v_account:>peer.Ack / Nack &
+
 peer:>info. ADD_TO_REFERENCE_LIST_REQUEST
-(4)c_account:>info. Ack/Nack
+
 info:info. Finalise creation of new Watch List.&
 info:>peer. Ack/Nack &
 
 info:>v_account. AMEND_ACCOUNT_REQUEST (Space Given Inc)
-(4)v_account:>info.Ack/Nack &
+(5)v_account:v_account. Validate AMEND_ACCOUNT_REQUEST. &
+v_account:>info.Ack/Nack &
+(5)v_account:Ack/Nack =info. [Optional - see note] CONFIRM_AMENDMENT_REQUEST &
+[/c]
+
+[c:Loop Loop indefinitely every y seconds   ]
+*8 client
+For each Client Account Holder...
+*8
+(8)client:>c_account. ACCOUNT_STATUS_REQUEST
+*9 client
+Response contains list of successful amendments which can be referenced to
+validate that the overall chunk store process succeeded.
+*9
+(9)c_account:>client.Ack / Nack &
 [/c]]]></source>
 <configuration>
 <property name="actorWidth" value="25"/>
