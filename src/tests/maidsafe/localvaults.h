@@ -71,6 +71,13 @@ class Env: public testing::Environment {
         current_nodes_created_(0),
         mutex_(),
         single_function_timeout(60) {
+    crypto_.set_hash_algorithm(crypto::SHA_512);
+    crypto_.set_symm_algorithm(crypto::AES_256);
+  }
+
+  virtual void SetUp() {
+    ASSERT_LE(kad::K, kNetworkSize_) << "Need at least K nodes!";
+    pdvaults_->clear();
     try {
       if (fs::exists(vault_dir_))
         fs::remove_all(vault_dir_);
@@ -79,23 +86,7 @@ class Env: public testing::Environment {
       printf("%s\n", e_.what());
     }
     fs::create_directories(vault_dir_);
-    crypto_.set_hash_algorithm(crypto::SHA_512);
-    crypto_.set_symm_algorithm(crypto::AES_256);
-  }
 
-  virtual ~Env() {
-    try {
-      if (fs::exists(vault_dir_))
-        fs::remove_all(vault_dir_);
-    }
-    catch(const std::exception &e) {
-      printf("%s\n", e.what());
-    }
-    pdvaults_->clear();
-  }
-
-  virtual void SetUp() {
-    ASSERT_LE(kad::K, kNetworkSize_) << "Need at least K nodes!";
     // Construct and start vaults
     printf("Creating vaults...\n");
     for (int i = 0; i < kNetworkSize_; ++i) {
@@ -115,10 +106,12 @@ class Env: public testing::Environment {
       pdvaults_->push_back(pdvault_local);
       ++current_nodes_created_;
 
-      // Start first vault and set as bootstrapping node for others
+      // Start vault
+      (*pdvaults_)[i]->Start(i == 0);
+      ASSERT_TRUE((*pdvaults_)[i]->WaitForStartup(10));
+
+      // Set first node as bootstrapping node for others
       if (i == 0) {
-        (*pdvaults_)[0]->Start(true);
-        ASSERT_TRUE((*pdvaults_)[0]->WaitForStartup(10));
         base::KadConfig kad_config;
         base::KadConfig::Contact *kad_contact = kad_config.add_contact();
         kad_contact->set_node_id(base::EncodeToHex((*pdvaults_)[0]->node_id()));
@@ -130,12 +123,8 @@ class Env: public testing::Environment {
                             std::ios::out | std::ios::trunc | std::ios::binary);
         ASSERT_TRUE(kad_config.SerializeToOstream(&output));
         output.close();
-        printf("Vault 0 started.\n");
-      } else {
-        (*pdvaults_)[i]->Start(false);
-        ASSERT_TRUE((*pdvaults_)[i]->WaitForStartup(10));
-        printf("Vault %i started.\n", i);
       }
+      printf("Vault %i started.\n", i);
     }
 
     // Make kad config file in ./ for clients' use.
