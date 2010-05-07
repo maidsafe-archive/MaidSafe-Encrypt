@@ -306,6 +306,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesValidateAmendRequest) {
 
   req.set_amendment_type(maidsafe::AmendAccountRequest::kSpaceOffered);
   req.set_account_pmid(pmid);
+  req.set_confirmation_required(false);
   ASSERT_FALSE(vault_service_->ValidateAmendRequest(&req, &account_delta,
                                                     &returned_pmid));
 
@@ -1230,6 +1231,7 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesAddToWatchList) {
   signed_size->set_public_key_signature(client_pub_key_sig);
   amend_req.set_amendment_type(maidsafe::AmendAccountRequest::kSpaceOffered);
   amend_req.set_account_pmid(client_pmid);
+  amend_req.set_confirmation_required(false);
   amend_req.set_chunkname(chunk_name);
 
   // Create the account first
@@ -1345,6 +1347,7 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesAddToWatchList) {
     signed_size->set_public_key_signature(client_pub_key_sig);
     aa_req.set_amendment_type(maidsafe::AmendAccountRequest::kSpaceOffered);
     aa_req.set_account_pmid(client_pmid);
+    aa_req.set_confirmation_required(false);
     vault_service_->AmendAccount(&controller, &aa_req, &aa_rsp, done);
     ASSERT_TRUE(aa_rsp.IsInitialized());
     EXPECT_EQ(kAck, static_cast<int>(aa_rsp.result()));
@@ -1467,6 +1470,7 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesRemoveFromWatchList) {
       signed_size->set_public_key_signature(client_pub_key_sig[i]);
       aa_req.set_amendment_type(maidsafe::AmendAccountRequest::kSpaceOffered);
       aa_req.set_account_pmid(client_pmid[i]);
+      aa_req.set_confirmation_required(false);
       vault_service_->AmendAccount(&controller, &aa_req, &aa_rsp, done);
       ASSERT_TRUE(aa_rsp.IsInitialized());
       EXPECT_EQ(kAck, static_cast<int>(aa_rsp.result()));
@@ -1793,6 +1797,7 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesAddToReferenceList) {
     signed_size->set_public_key_signature(client_pub_key_sig);
     aa_req.set_amendment_type(maidsafe::AmendAccountRequest::kSpaceOffered);
     aa_req.set_account_pmid(client_pmid);
+    aa_req.set_confirmation_required(false);
     vault_service_->AmendAccount(&controller, &aa_req, &aa_rsp, done);
     ASSERT_TRUE(aa_rsp.IsInitialized());
     EXPECT_EQ(kAck, static_cast<int>(aa_rsp.result()));
@@ -1816,6 +1821,7 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesAddToReferenceList) {
     signed_size->set_public_key_signature(vlt_pub_key_sig);
     aa_req.set_amendment_type(maidsafe::AmendAccountRequest::kSpaceOffered);
     aa_req.set_account_pmid(vlt_pmid);
+    aa_req.set_confirmation_required(false);
     vault_service_->AmendAccount(&controller, &aa_req, &aa_rsp, done);
     ASSERT_TRUE(aa_rsp.IsInitialized());
     EXPECT_EQ(kAck, static_cast<int>(aa_rsp.result()));
@@ -1942,6 +1948,7 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesAmendAccount) {
   }
   request.set_amendment_type(maidsafe::AmendAccountRequest::kSpaceOffered);
   request.set_account_pmid(client_pmid);
+  request.set_confirmation_required(false);
   request.set_chunkname(chunk_name);
 
   // Create the account first
@@ -1952,6 +1959,7 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesAmendAccount) {
     vault_service_->AmendAccount(&controller, &request, &response, done);
     ASSERT_TRUE(response.IsInitialized());
     EXPECT_EQ(kAck, static_cast<int>(response.result()));
+    EXPECT_FALSE(response.standby());
     response.Clear();
   }
 
