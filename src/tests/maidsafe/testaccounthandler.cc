@@ -153,11 +153,11 @@ TEST_F(AccountHandlerTest, BEH_VAULT_AccountHandlerDelete) {
 TEST_F(AccountHandlerTest, FUNC_VAULT_AccountHandlerPutGetPb) {
   AccountHandler account_handler1(true), account_handler2(true);
   std::pair<AccountSet::iterator, bool> result;
-  const int kNumEntries(698);
+  const int kNumEntries(23);
   for (int i = 0; i < kNumEntries; ++i) {
     std::list<std::string> alerts;
-    for (boost::uint16_t j = 0; j < (base::RandomUint32() % 999); ++j)
-      alerts.push_back(base::RandomString(base::RandomUint32() % 999));
+    for (boost::uint16_t j = 0; j < (base::RandomUint32() % 9); ++j)
+      alerts.push_back(base::RandomString(base::RandomUint32() % 99));
     Account account(base::RandomString(64), base::RandomUint32(),
         base::RandomUint32(), base::RandomUint32(), alerts);
     result = account_handler1.accounts_.insert(account);
@@ -202,14 +202,14 @@ TEST_F(AccountHandlerTest, FUNC_VAULT_AccountHandlerPutGetAccount) {
   vault_account_put.set_offered(base::RandomUint32());
   vault_account_put.set_vault_used(base::RandomUint32());
   vault_account_put.set_account_used(base::RandomUint32());
-  for (boost::uint16_t j = 0; j < (base::RandomUint32() % 999); ++j) {
+  for (boost::uint16_t j = 0; j < (base::RandomUint32() % 9); ++j) {
     vault_account_put.add_alerts(base::RandomString(
-        base::RandomUint32() % 999));
+        base::RandomUint32() % 99));
   }
   ASSERT_EQ(kAccountHandlerNotStarted,
             account_handler.InsertAccountFromPb(vault_account_put));
   std::list<std::string> alerts;
-  alerts.push_back(base::RandomString(base::RandomUint32() % 999));
+  alerts.push_back(base::RandomString(base::RandomUint32() % 99));
   Account dummy_account("Not empty", 10, 9, 8, alerts);
   Account account(dummy_account);
   ASSERT_EQ(kAccountHandlerNotStarted,
@@ -235,11 +235,11 @@ TEST_F(AccountHandlerTest, FUNC_VAULT_AccountHandlerPutGetAccount) {
 
   // Add accounts
   std::pair<AccountSet::iterator, bool> result;
-  const size_t kNumEntries(551);
+  const size_t kNumEntries(42);
   for (size_t i = 0; i < kNumEntries; ++i) {
     alerts.clear();
-    for (boost::uint16_t j = 0; j < (base::RandomUint32() % 999); ++j)
-      alerts.push_back(base::RandomString(base::RandomUint32() % 999));
+    for (boost::uint16_t j = 0; j < (base::RandomUint32() % 9); ++j)
+      alerts.push_back(base::RandomString(base::RandomUint32() % 99));
     result = account_handler.accounts_.insert(Account(base::RandomString(64),
         base::RandomUint32(), base::RandomUint32(),
         base::RandomUint32(), alerts));
@@ -279,7 +279,7 @@ TEST_F(AccountHandlerTest, FUNC_VAULT_AccountHandlerPutGetAccount) {
             account_handler.InsertAccountFromPb(vault_account_put));
   ASSERT_EQ(kNumEntries + 1, account_handler.accounts_.size());
   ASSERT_EQ(kAccountExists, account_handler.AddAccount(
-      vault_account_put.pmid(), (base::RandomUint32() % 999)));
+      vault_account_put.pmid(), (base::RandomUint32() % 99)));
   ASSERT_EQ(kNumEntries + 1, account_handler.accounts_.size());
 }
 
