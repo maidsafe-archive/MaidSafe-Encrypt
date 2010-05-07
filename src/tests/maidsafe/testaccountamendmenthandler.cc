@@ -696,6 +696,10 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_ProcessRequest) {
   request.set_account_pmid(account_owner);
   maidsafe::SignedSize *sz = request.mutable_signed_size();
   sz->set_data_size(1000);
+  sz->set_pmid("IrrelevantPmid");
+  sz->set_signature("IrrelevantSig");
+  sz->set_public_key("IrrelevantPubKey");
+  sz->set_public_key_signature("IrrelevantPubKeySig");
   request.set_chunkname(chunk_name);
   request.set_confirmation_required(false);
   const maidsafe::AmendAccountRequest kDefaultRequest(request);
@@ -759,7 +763,7 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_ProcessRequest) {
         aah_.amendments_.insert(amendment);
     ASSERT_TRUE(p.second);
     // Sleep to let timestamps differ.
-    boost::this_thread::sleep(boost::posix_time::milliseconds(20));
+    boost::this_thread::sleep(boost::posix_time::milliseconds(2));
   }
   ASSERT_EQ(kSuccess, aah_.ProcessRequest(&request, &response, done));
   ASSERT_EQ(kMaxRepeatedAccountAmendments, aah_.amendments_.size());
