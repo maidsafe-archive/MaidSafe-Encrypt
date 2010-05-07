@@ -211,6 +211,7 @@ void AmendAccountCallback(bool initialise_response,
                           google::protobuf::Closure* callback) {
   if (initialise_response) {
     response->set_result(result);
+    response->set_standby(false);
     response->set_pmid(pmid);
   }
   callback->Run();

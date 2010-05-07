@@ -1293,6 +1293,7 @@ int PDVault::AmendAccount(const boost::uint64_t &space_offered) {
   mutable_signed_size->set_public_key(pmid_public_);
   mutable_signed_size->set_public_key_signature(signed_pmid_public_);
   amend_account_request.set_account_pmid(pmid_);
+  amend_account_request.set_confirmation_required(false);
   for (boost::uint16_t i = 0; i < data->contacts.size(); ++i) {
     maidsafe::AmendAccountData::AmendAccountDataHolder holder(
         data->contacts.at(i).node_id().ToStringDecoded());
