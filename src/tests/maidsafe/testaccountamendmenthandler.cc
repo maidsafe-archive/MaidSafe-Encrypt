@@ -80,6 +80,7 @@ class AccountAmendmentHandlerTest : public MockVaultServiceLogicTest {
     : ah_(true),
       vsl_(boost::shared_ptr<VaultRpcs>(), boost::shared_ptr<kad::KNode>()),
       aah_(&ah_, &vsl_) {}
+  ~AccountAmendmentHandlerTest() {}
   AccountHandler ah_;
   MockVsl vsl_;
   AccountAmendmentHandler aah_;
@@ -97,6 +98,7 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_AssessAmendment) {
       crypto_.Obfuscate(pmid_, std::string(64, -1), crypto::XOR);
   std::string test_account_name = crypto_.Hash(base::RandomString(100), "",
       crypto::STRING_STRING, false);
+  std::vector<maidsafe::AmendAccountRequest> requests;
   std::vector<maidsafe::AmendAccountResponse> responses;
   std::vector<PendingAmending> pendings;
   for (int i = 0; i < kTestRuns; ++i) {
@@ -116,9 +118,10 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_AssessAmendment) {
     mutable_signed_size->set_public_key_signature("IrrelevantPubKeySig");
     request.set_chunkname(test_account_name);
     request.set_confirmation_required(false);
+    requests.push_back(request);
     google::protobuf::Closure *done = google::protobuf::NewCallback(&cbh,
         &test_aah::CallbacksHolder::callback);
-    PendingAmending pending(&request, &responses.at(i), done);
+    PendingAmending pending(&requests.at(i), &responses.at(i), done);
     pendings.push_back(pending);
     // Sleep to let timestamps differ.
     boost::this_thread::sleep(boost::posix_time::milliseconds(2));
@@ -694,6 +697,7 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_ProcessRequest) {
   maidsafe::SignedSize *sz = request.mutable_signed_size();
   sz->set_data_size(1000);
   request.set_chunkname(chunk_name);
+  request.set_confirmation_required(false);
   const maidsafe::AmendAccountRequest kDefaultRequest(request);
   maidsafe::AmendAccountResponse response;
   response.set_pmid(pmid_);
@@ -755,7 +759,7 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_ProcessRequest) {
         aah_.amendments_.insert(amendment);
     ASSERT_TRUE(p.second);
     // Sleep to let timestamps differ.
-    boost::this_thread::sleep(boost::posix_time::milliseconds(2));
+    boost::this_thread::sleep(boost::posix_time::milliseconds(20));
   }
   ASSERT_EQ(kSuccess, aah_.ProcessRequest(&request, &response, done));
   ASSERT_EQ(kMaxRepeatedAccountAmendments, aah_.amendments_.size());
@@ -877,6 +881,7 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_CleanUp) {
   maidsafe::SignedSize *sz = request.mutable_signed_size();
   sz->set_data_size(1000);
   request.set_chunkname(chunk_name);
+  request.set_confirmation_required(false);
   const maidsafe::AmendAccountRequest kDefaultRequest(request);
   maidsafe::AmendAccountResponse response;
   response.set_pmid(pmid_);

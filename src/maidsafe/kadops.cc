@@ -19,6 +19,7 @@
 */
 
 #include "maidsafe/kadops.h"
+#include <maidsafe/protobuf/kademlia_service_messages.pb.h>
 
 namespace maidsafe {
 
@@ -35,18 +36,18 @@ bool KadOps::AddressIsLocal(const kad::ContactInfo &peer) {
 }
 
 void KadOps::GetNodeContactDetails(const kad::KadId &node_id,
-                      kad::VoidFunctorOneString cb,
-                      const bool &local) {
+                                   kad::VoidFunctorOneString cb,
+                                   const bool &local) {
   knode_->GetNodeContactDetails(node_id, cb, local);
 }
 
 void KadOps::FindKClosestNodes(const kad::KadId &kad_key,
-                            const kad::VoidFunctorOneString &callback) {
+                               const kad::VoidFunctorOneString &callback) {
   knode_->FindKClosestNodes(kad_key, callback);
 }
 
 int KadOps::FindKClosestNodes(const kad::KadId &kad_key,
-                           std::vector<kad::Contact> *contacts) {
+                              std::vector<kad::Contact> *contacts) {
   if (contacts == NULL) {
 #ifdef DEBUG
     printf("In KadOps::FindKNodes, NULL pointer passed.\n");

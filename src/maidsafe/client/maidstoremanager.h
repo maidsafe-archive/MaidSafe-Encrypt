@@ -208,6 +208,7 @@ struct BPResults {
 
 class MaidsafeStoreManager : public StoreManagerInterface {
  public:
+  typedef std::map<kad::Contact, bool> AccountHolderMap;
   explicit MaidsafeStoreManager(boost::shared_ptr<ChunkStore> cstore);
   virtual ~MaidsafeStoreManager() {}
   void Init(int port, kad::VoidFunctorOneString cb, fs::path db_directory);
@@ -341,10 +342,13 @@ class MaidsafeStoreManager : public StoreManagerInterface {
                           GenericConditionData *generic_cond_data);
   // Sends AddToWatchList requests to each of the k Chunk Info holders.
   virtual void AddToWatchList(StoreData store_data);
-  // Assesses each AddToWatchListResponse and if consensus of required chunk
-  // upload copies is achieved, begins new SendChunkCopyTask(s) if required.
-  void AddToWatchListCallback(boost::uint16_t index,
+  // Callback of FindNodes.  Sends AddToWatchList requests
+  void AddToWatchListStageTwo(const std::string &response,
                               boost::shared_ptr<WatchListOpData> data);
+  // Callback of AddToWatchList.  Assesses response and if consensus of required
+  // chunk upload copies is achieved, begins new SendChunkCopyTask(s) if needed.
+  void AddToWatchListStageThree(boost::uint16_t index,
+                                boost::shared_ptr<WatchListOpData> data);
   // Assesses AddToWatchListResponses for consensus of required chunk upload
   // copies.  Returns < 0 if no consensus.  data->mutex should already be locked
   // by method calling this one for duration of this function.
@@ -515,6 +519,7 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   IMStatusNotifier im_status_notifier_;
   IMConnectionHandler im_conn_hdler_;
   IMHandler im_handler_;
+  AccountHolderMap account_holders_;
 };
 
 }  // namespace maidsafe
