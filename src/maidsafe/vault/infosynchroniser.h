@@ -38,7 +38,7 @@
 
 namespace base {
 class PublicRoutingTableHandler;
-class PublicRoutingTableTuple;
+struct PublicRoutingTableTuple;
 }  // namespace base
 
 namespace maidsafe_vault {

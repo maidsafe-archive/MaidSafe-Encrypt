@@ -128,15 +128,15 @@ void ConditionNotifyNoFlag(int set_return,
   generic_cond_data->cond_variable->notify_all();
 }
 
-void AddToWatchListCallback(bool initialise_response,
-                            const int &result,
-                            const std::string &pmid,
-                            const boost::uint32_t &upload_count,
-                            maidsafe::AddToWatchListResponse *response,
-                            google::protobuf::Closure* callback,
-                            int *callback_count,
-                            boost::mutex *mutex,
-                            boost::condition_variable *cond_var) {
+void AddToWatchListStageThree(bool initialise_response,
+                              const int &result,
+                              const std::string &pmid,
+                              const boost::uint32_t &upload_count,
+                              maidsafe::AddToWatchListResponse *response,
+                              google::protobuf::Closure* callback,
+                              int *callback_count,
+                              boost::mutex *mutex,
+                              boost::condition_variable *cond_var) {
   if (initialise_response) {
     response->set_result(result);
     response->set_pmid(pmid);
@@ -579,21 +579,21 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AddToWatchList) {
         testing::_,
         testing::_))
             .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
-                boost::bind(&test_msm::AddToWatchListCallback,
+                boost::bind(&test_msm::AddToWatchListStageThree,
                     i + 1 < kKadLowerThreshold,
                     kAck,
                     chunk_info_holders.at(i).node_id().ToStringDecoded(),
                     kMinChunkCopies,
                     _1, _2, &callback_count, &mutex, &cond_var))))  // 3
             .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
-                boost::bind(&test_msm::AddToWatchListCallback,
+                boost::bind(&test_msm::AddToWatchListStageThree,
                     true,
                     i + 1 < kKadLowerThreshold ? kAck : kNack,
                     chunk_info_holders.at(i).node_id().ToStringDecoded(),
                     kMinChunkCopies,
                     _1, _2, &callback_count, &mutex, &cond_var))))  // 4
             .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
-                boost::bind(&test_msm::AddToWatchListCallback,
+                boost::bind(&test_msm::AddToWatchListStageThree,
                     true,
                     kAck,
                     chunk_info_holders.at((i + 1) %
@@ -601,7 +601,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AddToWatchList) {
                     kMinChunkCopies,
                     _1, _2, &callback_count, &mutex, &cond_var))))  // 5
             .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
-                boost::bind(&test_msm::AddToWatchListCallback,
+                boost::bind(&test_msm::AddToWatchListStageThree,
                     true,
                     kAck,
                     chunk_info_holders.at(i).node_id().ToStringDecoded(),
@@ -609,21 +609,21 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AddToWatchList) {
                         (i + 1 < kKadLowerThreshold ? 0 : 1),
                     _1, _2, &callback_count, &mutex, &cond_var))))  // 6
             .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
-                boost::bind(&test_msm::AddToWatchListCallback,
+                boost::bind(&test_msm::AddToWatchListStageThree,
                     true,
                     kAck,
                     chunk_info_holders.at(i).node_id().ToStringDecoded(),
                     0,
                     _1, _2, &callback_count, &mutex, &cond_var))))  // 7
             .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
-                boost::bind(&test_msm::AddToWatchListCallback,
+                boost::bind(&test_msm::AddToWatchListStageThree,
                     true,
                     kAck,
                     chunk_info_holders.at(i).node_id().ToStringDecoded(),
                     kMinChunkCopies,
                     _1, _2, &callback_count, &mutex, &cond_var))))  // 8
             .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
-                boost::bind(&test_msm::AddToWatchListCallback,
+                boost::bind(&test_msm::AddToWatchListStageThree,
                     true,
                     kAck,
                     chunk_info_holders.at(i).node_id().ToStringDecoded(),

@@ -96,8 +96,11 @@ MaidsafeStoreManager::MaidsafeStoreManager(boost::shared_ptr<ChunkStore> cstore)
       bprpcs_(new BufferPacketRpcsImpl(&transport_handler_, &channel_manager_)),
       cbph_(bprpcs_, knode_),
       trans_id_(0),
-      im_notifier_(), im_status_notifier_(), im_conn_hdler_(),
-      im_handler_(ss_) {
+      im_notifier_(),
+      im_status_notifier_(),
+      im_conn_hdler_(),
+      im_handler_(ss_),
+      account_holders_() {
   transport_handler_.Register(&udt_transport_, &trans_id_);
   knode_->set_transport_id(trans_id_);
   knode_->set_alternative_store(client_chunkstore_.get());
@@ -116,7 +119,7 @@ void MaidsafeStoreManager::Init(int port, kad::VoidFunctorOneString cb,
   }
   catch(const std::exception &ex) {
 #ifdef DEBUG
-    printf("In MSM::Init - Couldn't find kadconfig.\n");
+    printf("In MSM::Init - Couldn't find kadconfig - %s\n", ex.what());
 #endif
     success = false;
   }
@@ -1569,32 +1572,55 @@ void MaidsafeStoreManager::AddToWatchList(StoreData store_data) {
   }
   // Find the Chunk Info holders
   boost::shared_ptr<WatchListOpData> data(new WatchListOpData(store_data));
-  int result = kad_ops_->FindKClosestNodes(kad::KadId(store_data.data_name,
-                                           false), &data->contacts);
-  if (result != kSuccess) {
+  kad_ops_->FindKClosestNodes(kad::KadId(store_data.data_name, false),
+    boost::bind(&MaidsafeStoreManager::AddToWatchListStageTwo, this, _1, data));
+}
+
+void MaidsafeStoreManager::AddToWatchListStageTwo(
+    const std::string &response,                          
+    boost::shared_ptr<WatchListOpData> data) {
+  kad::FindResponse find_response;
+  if (!find_response.ParseFromString(response)) {
 #ifdef DEBUG
-    printf("In MSM::AddToWatchList, Kad lookup failed -- error %i\n", result);
-#endif
-    tasks_handler_.DeleteTask(data->store_data.data_name, kStoreChunk,
-                              kStoreChunkFindNodesFailure);
-    return;
-  }
-  if (data->contacts.size() < kKadUpperThreshold) {
-#ifdef DEBUG
-    printf("In MSM::AddToWatchList, Kad lookup failed to find %u nodes; "
-           "found %u nodes.\n", kKadUpperThreshold, data->contacts.size());
+    printf("In MSM::AddToWatchListStageTwo, can't parse FindNodes result.\n");
 #endif
     tasks_handler_.DeleteTask(data->store_data.data_name, kStoreChunk,
                               kStoreChunkFindNodesFailure);
     return;
   }
 
+  if (find_response.result() != kad::kRpcResultSuccess) {
+#ifdef DEBUG
+    printf("In MSM::AddToWatchListStageTwo, Kademlia RPC failed.\n");
+#endif
+    tasks_handler_.DeleteTask(data->store_data.data_name, kStoreChunk,
+                              kStoreChunkFindNodesFailure);
+    return;
+  }
+
+  if (find_response.closest_nodes_size() < kKadUpperThreshold) {
+#ifdef DEBUG
+    printf("In MSM::AddToWatchListStageTwo, Kad lookup failed to find %u nodes;"
+           " found %i nodes.\n", kKadUpperThreshold,
+           find_response.closest_nodes_size());
+#endif
+    tasks_handler_.DeleteTask(data->store_data.data_name, kStoreChunk,
+                              kStoreChunkFindNodesFailure);
+    return;
+  }
+
+  for (int i = 0; i < find_response.closest_nodes_size(); ++i) {
+    kad::Contact contact;
+    contact.ParseFromString(find_response.closest_nodes(i));
+    data->contacts.push_back(contact);
+  }
+
   // Set up holders for forthcoming RPCs
   std::vector<AddToWatchListRequest> add_to_watch_list_requests;
-  if (GetAddToWatchListRequests(store_data, data->contacts,
+  if (GetAddToWatchListRequests(data->store_data, data->contacts,
       &add_to_watch_list_requests) != kSuccess) {
 #ifdef DEBUG
-    printf("In MSM::AddToWatchList, failed to generate requests.\n");
+    printf("In MSM::AddToWatchListStageTwo, failed to generate requests.\n");
 #endif
     tasks_handler_.DeleteTask(data->store_data.data_name, kStoreChunk,
                               kStoreChunkError);
@@ -1606,10 +1632,10 @@ void MaidsafeStoreManager::AddToWatchList(StoreData store_data) {
     data->add_to_watchlist_data_holders.push_back(holder);
   }
 
-  // Send RPCs
+  // Send AddToWatchList RPCs
   for (boost::uint16_t j = 0; j < data->contacts.size(); ++j) {
     google::protobuf::Closure* callback = google::protobuf::NewCallback(this,
-        &MaidsafeStoreManager::AddToWatchListCallback, j, data);
+        &MaidsafeStoreManager::AddToWatchListStageThree, j, data);
     client_rpcs_->AddToWatchList(data->contacts.at(j),
         kad_ops_->AddressIsLocal(data->contacts.at(j)),
         udt_transport_.transport_id(),
@@ -1617,9 +1643,22 @@ void MaidsafeStoreManager::AddToWatchList(StoreData store_data) {
         &data->add_to_watchlist_data_holders.at(j).response,
         data->add_to_watchlist_data_holders.at(j).controller.get(), callback);
   }
+
+  // Send ExpectAmendment RPCs
+  for (AccountHolderMap::iterator it = account_holders_.begin();
+       it != account_holders_.end(); ++it) {
+//    google::protobuf::Closure* callback = google::protobuf::NewCallback(this,
+//        &MaidsafeStoreManager::ExpectAmendmentCallback, );
+//    client_rpcs_->ExpectAmendment((*it).first, (*it).second, 
+//        udt_transport_.transport_id(),
+//        &expect_amendment_requests.at(j),
+//        &data->add_to_watchlist_data_holders.at(j).response,
+//        data->add_to_watchlist_data_holders.at(j).controller.get(), callback);
+  }
+
 }
 
-void MaidsafeStoreManager::AddToWatchListCallback(
+void MaidsafeStoreManager::AddToWatchListStageThree(
     boost::uint16_t index,
     boost::shared_ptr<WatchListOpData> data) {
   boost::mutex::scoped_lock lock(data->mutex);
@@ -1632,24 +1671,24 @@ void MaidsafeStoreManager::AddToWatchListCallback(
 
   if (!holder.response.IsInitialized()) {
 #ifdef DEBUG
-    printf("In MSM::AddToWatchListCallback, response %u is uninitialised.\n",
+    printf("In MSM::AddToWatchListStageThree, response %u is uninitialised.\n",
            index);
 #endif
   } else if (holder.response.result() != kAck) {
 #ifdef DEBUG
-    printf("In MSM::AddToWatchListCallback, response %u has result %i.\n",
+    printf("In MSM::AddToWatchListStageThree, response %u has result %i.\n",
            index, holder.response.result());
 #endif
   } else if (holder.response.pmid() != holder.node_id) {
 #ifdef DEBUG
-    printf("In MSM::AddToWatchListCallback, response %u from %s has pmid %s.\n",
+    printf("In MSM::AddToWatchListStageThree, response %u from %s has pmid %s.\n",
            index, HexSubstr(holder.node_id).c_str(),
            HexSubstr(holder.response.pmid()).c_str());
 #endif
     // TODO(Fraser#5#): 2010-01-08 - Send alert to holder.node_id's A/C holders
   } else if (holder.response.upload_count() > kMinChunkCopies) {
 #ifdef DEBUG
-    printf("In MSM::AddToWatchListCallback, response %u from %s has "
+    printf("In MSM::AddToWatchListStageThree, response %u from %s has "
            "upload_count of %u.\n", index, HexSubstr(holder.node_id).c_str(),
            holder.response.upload_count());
 #endif

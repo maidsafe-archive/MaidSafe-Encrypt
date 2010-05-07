@@ -24,7 +24,6 @@
 #include <boost/thread/condition_variable.hpp>
 #include <boost/thread/locks.hpp>
 #include <maidsafe/maidsafe-dht_config.h>
-#include <maidsafe/protobuf/kademlia_service_messages.pb.h>
 
 #include <string>
 #include <vector>
