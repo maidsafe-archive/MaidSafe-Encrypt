@@ -535,6 +535,7 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_RemoteVaultAbleToStore) {
     if (i < good_contacts_.size() - 1)
       good_responses_less_one.push_back(acc_status_response);
   }
+
   std::vector<maidsafe::AccountStatusResponse>
       bad_pmid_responses(good_responses);
   std::vector<maidsafe::AccountStatusResponse>
@@ -543,7 +544,8 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_RemoteVaultAbleToStore) {
       fail_initialise_responses(good_responses);
   for (size_t i = kKadLowerThreshold - 1; i < good_contacts_.size(); ++i) {
     bad_pmid_responses.at(i).set_pmid(
-        good_contacts_.at(i - 1).node_id().ToStringDecoded());
+        good_contacts_.at((i + 1) % good_contacts_.size()).node_id()
+                          .ToStringDecoded());
     too_few_ack_responses.at(i).set_result(kNack);
     fail_initialise_responses.at(i).clear_result();
   }
@@ -622,6 +624,7 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_RemoteVaultAbleToStore) {
                               testing::WithArgs<6>(testing::Invoke(
                   boost::bind(&mock_vsl::ThreadedDoneRun, 100, 5000, _1)))));
   }
+
   for (size_t i = 0; i < good_contacts_.size() - 1; ++i) {
       EXPECT_CALL(*mock_rpcs, AccountStatus(EqualsContact(good_contacts_.at(i)),
           false, 0, testing::_, testing::_, testing::_, testing::_))  // Call 5
