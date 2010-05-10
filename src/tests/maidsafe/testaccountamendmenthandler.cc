@@ -104,7 +104,6 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_AssessAmendment) {
   for (int i = 0; i < kTestRuns; ++i) {
     maidsafe::AmendAccountResponse response;
     response.set_pmid(pmid_);
-    response.set_standby(false);
     responses.push_back(response);
     test_aah::CallbacksHolder cbh(&mutex, &cv);
     maidsafe::AmendAccountRequest request;
@@ -117,7 +116,6 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_AssessAmendment) {
     mutable_signed_size->set_public_key("IrrelevantPubKey");
     mutable_signed_size->set_public_key_signature("IrrelevantPubKeySig");
     request.set_chunkname(test_account_name);
-    request.set_confirmation_required(false);
     requests.push_back(request);
     google::protobuf::Closure *done = google::protobuf::NewCallback(&cbh,
         &test_aah::CallbacksHolder::callback);
@@ -443,11 +441,9 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_CreateNewAmendment) {
   for (int i = 0; i < kTestRuns; ++i) {
     maidsafe::AmendAccountRequest request;
     request.set_chunkname(far_chunk_name);
-    request.set_confirmation_required(false);
     requests.push_back(request);
     maidsafe::AmendAccountResponse response;
     response.set_pmid(pmid_);
-    response.set_standby(false);
     responses.push_back(response);
   }
   std::vector<AccountAmendment> test_amendments;
@@ -570,7 +566,6 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_CreateNewAmendment) {
     bad_requests.push_back(request);
     maidsafe::AmendAccountResponse resp;
     resp.set_pmid(pmid_);
-    resp.set_standby(false);
     bad_responses.push_back(resp);
   }
   for (int i = 0; i < kad::K; ++i) {
@@ -625,7 +620,6 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_CreateNewAmendment) {
     good_requests.push_back(request);
     maidsafe::AmendAccountResponse resp;
     resp.set_pmid(pmid_);
-    resp.set_standby(false);
     good_responses.push_back(resp);
   }
   for (int i = 0; i < kad::K; ++i) {
@@ -704,11 +698,9 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_ProcessRequest) {
   sz->set_public_key("IrrelevantPubKey");
   sz->set_public_key_signature("IrrelevantPubKeySig");
   request.set_chunkname(chunk_name);
-  request.set_confirmation_required(false);
   const maidsafe::AmendAccountRequest kDefaultRequest(request);
   maidsafe::AmendAccountResponse response;
   response.set_pmid(pmid_);
-  response.set_standby(false);
   const maidsafe::AmendAccountResponse kDefaultResponse(response);
   google::protobuf::Closure *done;
   // Add account to AccountHolder so amend can succeed
@@ -888,11 +880,9 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_CleanUp) {
   maidsafe::SignedSize *sz = request.mutable_signed_size();
   sz->set_data_size(1000);
   request.set_chunkname(chunk_name);
-  request.set_confirmation_required(false);
   const maidsafe::AmendAccountRequest kDefaultRequest(request);
   maidsafe::AmendAccountResponse response;
   response.set_pmid(pmid_);
-  response.set_standby(false);
   const maidsafe::AmendAccountResponse kDefaultResponse(response);
   std::vector<maidsafe::AmendAccountRequest> requests;
   std::vector<maidsafe::AmendAccountResponse> responses;

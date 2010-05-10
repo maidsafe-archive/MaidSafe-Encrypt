@@ -90,14 +90,6 @@ class VaultRpcs {
       maidsafe::ExpectAmendmentResponse *expect_amendment_response,
       rpcprotocol::Controller *controller,
       google::protobuf::Closure *done);
-  virtual void ConfirmAmendment(
-      const kad::Contact &peer,
-      bool local,
-      const boost::int16_t &transport_id,
-      maidsafe::ConfirmAmendmentRequest *confirm_amendment_request,
-      maidsafe::ConfirmAmendmentResponse *confirm_amendment_response,
-      rpcprotocol::Controller *controller,
-      google::protobuf::Closure *done);
   virtual void AccountStatus(
       const kad::Contact &peer,
       bool local,

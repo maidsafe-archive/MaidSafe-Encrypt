@@ -2890,7 +2890,6 @@ int MaidsafeStoreManager::CreateAccount(const boost::uint64_t &space) {
   mutable_signed_size->set_public_key(ss_->PublicKey(PMID));
   mutable_signed_size->set_public_key_signature(ss_->SignedPublicKey(PMID));
   request.set_account_pmid(ss_->Id(PMID));
-  request.set_confirmation_required(false);
   for (boost::uint16_t i = 0; i < data->contacts.size(); ++i) {
     AmendAccountData::AmendAccountDataHolder holder(
         data->contacts.at(i).node_id().ToStringDecoded());

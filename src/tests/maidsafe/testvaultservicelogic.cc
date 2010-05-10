@@ -308,7 +308,6 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_AmendRemoteAccount) {
   for (size_t i = 0; i < good_contacts_.size(); ++i) {
     maidsafe::AmendAccountResponse amend_acc_response;
     amend_acc_response.set_result(kAck);
-    amend_acc_response.set_standby(false);
     amend_acc_response.set_pmid(
         good_contacts_.at(i).node_id().ToStringDecoded());
     good_responses.push_back(amend_acc_response);

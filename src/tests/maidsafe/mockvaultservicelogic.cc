@@ -43,7 +43,6 @@ void KGroup::MakeAmendAccountRequests(
   maidsafe::AmendAccountRequest request;
   request.set_amendment_type(type);
   request.set_account_pmid(account_pmid);
-  request.set_confirmation_required(false);
   request.set_chunkname(chunkname);
   maidsafe::SignedSize *signed_size = request.mutable_signed_size();
   for (size_t i = 0; i < members_.size(); ++i) {
