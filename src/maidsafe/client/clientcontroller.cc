@@ -24,7 +24,7 @@
 
 #include "maidsafe/client/clientcontroller.h"
 
-#ifdef MAIDSAFE_WIN32
+#ifdef PD_WIN32
 #include <shlwapi.h>
 #endif
 

@@ -91,18 +91,18 @@ class KadOps {
    * Wrapper for the non-blocking Kademlia function.
    */
   virtual void GetNodeContactDetails(const kad::KadId &node_id,
-                        kad::VoidFunctorOneString cb,
-                        const bool &local);
+                                     kad::VoidFunctorOneString cb,
+                                     const bool &local);
   /**
    * Wrapper for the non-blocking Kademlia function.
    */
   virtual void FindKClosestNodes(const kad::KadId &kad_key,
-                              const kad::VoidFunctorOneString &callback);
+                                 const kad::VoidFunctorOneString &callback);
   /**
    * Blocking call to Kademlia's FindCloseNodes.
    */
   virtual int FindKClosestNodes(const kad::KadId &kad_key,
-                             std::vector<kad::Contact> *contacts);
+                                std::vector<kad::Contact> *contacts);
   /**
    * A callback handler for passing to FindCloseNodes.
    */
@@ -112,6 +112,16 @@ class KadOps {
                                     boost::mutex *mutex,
                                     boost::condition_variable *cv,
                                     ReturnCode *result);
+  /**
+   * Estimates whether a given node is within the K closest to a key.
+   */
+  virtual bool ConfirmCloseNode(const kad::KadId &kad_key,
+                                const kad::Contact &contact);
+  /**
+   * Estimates whether a given set of nodes is within the K closest to a key.
+   */
+  bool ConfirmCloseNodes(const kad::KadId &kad_key,
+                         const std::vector<kad::Contact> &contacts);
   /**
    * Blocking call to Kademlia Find Value.  If the maidsafe value is cached,
    * this may yield serialised contact details for a cache copy holder.

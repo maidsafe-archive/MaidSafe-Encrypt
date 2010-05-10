@@ -23,7 +23,7 @@
 #include <maidsafe/maidsafe-dht_config.h>
 
 // os
-#ifdef MAIDSAFE_WIN32
+#ifdef PD_WIN32
   #include <shellapi.h>
 #endif
 
@@ -33,11 +33,11 @@
 #include "fs/filesystem.h"
 
 // 3rd party
-#if defined(MAIDSAFE_WIN32)
+#if defined(PD_WIN32)
 #ifndef PD_LIGHT
   #include "fs/w_fuse/fswin.h"
 #endif
-#elif defined(MAIDSAFE_POSIX)
+#elif defined(PD_POSIX)
 #include "fs/l_fuse/fslinux.h"
 #endif
 
@@ -48,9 +48,9 @@ class UserSpaceFileSystem::UserSpaceFileSystemImpl {
  public:
   UserSpaceFileSystemImpl() { }
 
-#ifdef MAIDSAFE_WIN32
+#ifdef PD_WIN32
   // none needed
-#elif defined(MAIDSAFE_POSIX)
+#elif defined(PD_POSIX)
   #ifndef PD_LIGHT
     fs_l_fuse::FSLinux fsl_;
   #endif
@@ -81,13 +81,13 @@ bool UserSpaceFileSystem::mount() {
   ClientController::instance()->SetMounted(0);
 
   std::string debug_mode("-d");
-#ifdef MAIDSAFE_WIN32
+#ifdef PD_WIN32
   char drive = ClientController::instance()->DriveLetter();
   #ifndef PD_LIGHT
     fs_w_fuse::Mount(drive);
   #endif
   ClientController::instance()->SetWinDrive(drive);
-#elif defined(MAIDSAFE_POSIX)
+#elif defined(PD_POSIX)
   std::string mount_point = file_system::MaidsafeFuseDir(
       ClientController::instance()->SessionName()).string();
   #ifndef PD_LIGHT
@@ -105,7 +105,7 @@ bool UserSpaceFileSystem::mount() {
 bool UserSpaceFileSystem::unmount() {
   // unmount drive
   bool success = false;
-#ifdef MAIDSAFE_WIN32
+#ifdef PD_WIN32
   #ifndef PD_LIGHT
     std::locale loc;
     wchar_t drive_letter = std::use_facet< std::ctype<wchar_t> >
@@ -115,7 +115,7 @@ bool UserSpaceFileSystem::unmount() {
       qWarning() << "UserSpaceFileSystem::unmount: failed to unmount dokan"
                  << success;
   #endif
-#elif defined(MAIDSAFE_POSIX)
+#elif defined(PD_POSIX)
   #ifndef PD_LIGHT
     // un-mount fuse
     impl_->fsl_.UnMount();
@@ -141,7 +141,7 @@ void UserSpaceFileSystem::explore(Location l, QString subDir) {
     dir = ClientController::instance()->shareDirRoot(subDir);
   }
 
-#ifdef MAIDSAFE_WIN32
+#ifdef PD_WIN32
   // %SystemRoot%\explorer.exe /e /root,M:\Shares\Private\Share 1
   // invoking using QProcess doesn't work if the path has spaces in the name
   // so we need to go old skool...

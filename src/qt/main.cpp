@@ -24,14 +24,14 @@
 #include "client/client_controller.h"
 
 // google crash reporter
-#if defined(MAIDSAFE_LINUX)
+#if defined(PD_LINUX)
   #include <google/breakpad/common/linux/linux_syscall_support.h>
   #include <google/breakpad/client/linux/handler/exception_handler.h>
 #elif defined(__MSVC__)
   #include <client/windows/handler/exception_handler.h>
 #endif
 
-#if defined(MAIDSAFE_LINUX)
+#if defined(PD_LINUX)
 static bool DumpCallback(const char*,
                          const char *dump_id,
                          void*,
@@ -69,7 +69,7 @@ void pdMessageOutput(QtMsgType type, const char* msg) {
 }
 
 int main(int argc, char *argv[]) {
-#ifdef MAIDSAFE_LINUX
+#ifdef PD_LINUX
   google_breakpad::ExceptionHandler eh(".", NULL, DumpCallback, NULL, true);
 #elif defined(__MSVC__)
   google_breakpad::ExceptionHandler eh(L".", NULL, DumpCallback,

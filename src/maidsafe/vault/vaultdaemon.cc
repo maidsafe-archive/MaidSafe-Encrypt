@@ -17,7 +17,7 @@
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/filesystem/fstream.hpp>
 #include <google/protobuf/descriptor.h>
-#ifdef MAIDSAFE_WIN32
+#ifdef PD_WIN32
 #include <shlwapi.h>
 #endif
 #include <iostream>  // NOLINT Fraser - required for handling .config file
@@ -28,7 +28,7 @@
 
 namespace fs = boost::filesystem;
 
-//  #if defined(MAIDSAFE_APPLE)
+//  #if defined(PD_APPLE)
 //    int WriteToLog(std::string str) { return 0; }
 //  #endif
 

@@ -28,7 +28,7 @@
 #include <math.h>
 #include <iostream>
 #include <fstream>
-#ifdef MAIDSAFE_WIN32
+#ifdef PD_WIN32
 #include <windows.h>
 #include <shellapi.h>
 #endif
@@ -256,7 +256,7 @@ void FileBrowser::onOpenWithClicked() {
   }
   QString path = rootPath_ + currentDir_ + theItem->text(0);
 
-#if defined(MAIDSAFE_WIN32)
+#if defined(PD_WIN32)
   QString operation("open");
   QString run = "RUNDLL32.EXE";
   QString parameters = "shell32.dll,OpenAs_RunDLL ";
@@ -281,7 +281,7 @@ void FileBrowser::onOpenWithClicked() {
         qWarning() << "FileBrowser::open: failed to open"
                    << path;
       }
-#elif defined(MAIDSAFE_APPLE)
+#elif defined(PD_APPLE)
   QString fileName = QFileDialog::getOpenFileName(this,
                                       tr("Choose Application to open with"),
                                       "/Applications",
@@ -622,7 +622,7 @@ void FileBrowser::onItemDoubleClicked(QTreeWidgetItem* item, int) {
       QString path = rootPath_ + currentDir_ + item->text(0);
 
       qDebug() << "Item Double Clicked open file: " + path;
-#if defined(MAIDSAFE_WIN32)
+#if defined(PD_WIN32)
       QString operation("open");
       quintptr returnValue;
       QT_WA({
@@ -644,7 +644,7 @@ void FileBrowser::onItemDoubleClicked(QTreeWidgetItem* item, int) {
         qWarning() << "FileBrowser::open: failed to open"
                    << path;
       }
-#elif defined(MAIDSAFE_POSIX)
+#elif defined(PD_POSIX)
       QString command;
       QStringList parameters;
       if (!boost::filesystem::exists("/usr/bin/gnome-open")) {
@@ -660,7 +660,7 @@ void FileBrowser::onItemDoubleClicked(QTreeWidgetItem* item, int) {
         myProcess_.reset(new QProcess);
         myProcess_->start(command, parameters);
       }
-#elif defined(MAIDSAFE_APPLE)
+#elif defined(PD_APPLE)
       QString command("open");
       QStringList parameters;
       parameters << QString::fromStdString(path.toStdString());
