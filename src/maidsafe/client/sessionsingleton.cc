@@ -100,10 +100,10 @@ std::string SessionSingleton::TmidContent() { return ud_.tmid_content; }
 std::string SessionSingleton::SmidTmidContent() { return ud_.smidtmid_content; }
 std::string SessionSingleton::RootDbKey() { return ud_.root_db_key; }
 bool SessionSingleton::SelfEncrypting() { return ud_.self_encrypting; }
-std::set<std::string> SessionSingleton::AuthorisedUsers() {
+const std::set<std::string> &SessionSingleton::AuthorisedUsers() {
   return ud_.authorised_users;
 }
-std::set<std::string> SessionSingleton::MaidAuthorisedUsers() {
+const std::set<std::string> &SessionSingleton::MaidAuthorisedUsers() {
   return ud_.maid_authorised_users;
 }
 int SessionSingleton::Mounted() { return ud_.mounted; }

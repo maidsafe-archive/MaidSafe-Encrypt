@@ -120,8 +120,8 @@ class SessionSingleton {
   std::string SmidTmidContent();
   std::string RootDbKey();
   bool SelfEncrypting();
-  std::set<std::string> AuthorisedUsers();
-  std::set<std::string> MaidAuthorisedUsers();
+  const std::set<std::string> &AuthorisedUsers();
+  const std::set<std::string> &MaidAuthorisedUsers();
   int Mounted();
   char WinDrive();
   int ConnectionStatus();

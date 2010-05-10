@@ -27,6 +27,7 @@
 #include <boost/scoped_ptr.hpp>
 
 #include <gtest/gtest.h>
+#include <limits.h>
 
 #include "fs/filesystem.h"
 #include "maidsafe/chunkstore.h"
@@ -46,8 +47,11 @@ namespace fs = boost::filesystem;
 namespace test_seh {
 
 std::string CreateRandomFile(const std::string &filename,
-                             int size = (1024)) {
-  std::string file_content = base::RandomString(size);
+                             const boost::uint64_t &filesize) {
+  int file_size = static_cast<int>(filesize);
+  if (filesize > INT_MAX)
+    file_size = INT_MAX;
+  std::string file_content = base::RandomString(file_size);
   fs::path file_path(file_system::MaidsafeHomeDir(
       maidsafe::SessionSingleton::getInstance()->SessionName()) / filename);
   fs::ofstream ofs;
@@ -341,7 +345,7 @@ TEST_F(SEHandlerTest, BEH_MAID_EncryptFile) {
   rel_path /= "file1";
   std::string rel_str = TidyPath(rel_path.string());
 
-  std::string full_str = test_seh::CreateRandomFile(rel_str);
+  std::string full_str = test_seh::CreateRandomFile(rel_str, 1024);
   int result = seh->EncryptFile(rel_str, PRIVATE, "");
   ASSERT_EQ(0, result);
 
@@ -468,7 +472,7 @@ TEST_F(SEHandlerTest, BEH_MAID_DecryptWithChunksPrevLoaded) {
   rel_path /= "file1";
   std::string rel_str = TidyPath(rel_path.string());
 
-  std::string full_str = test_seh::CreateRandomFile(rel_str);
+  std::string full_str = test_seh::CreateRandomFile(rel_str, 1024);
   std::string hash_before, hash_after;
   SelfEncryption se(client_chunkstore_);
   hash_before = se.SHA512(fs::path(full_str));
@@ -504,7 +508,7 @@ TEST_F(SEHandlerTest, BEH_MAID_DecryptWithLoadChunks) {
   rel_path /= "file1";
   std::string rel_str = TidyPath(rel_path.string());
 
-  std::string full_str = test_seh::CreateRandomFile(rel_str);
+  std::string full_str = test_seh::CreateRandomFile(rel_str, 1024);
   std::string hash_before, hash_after;
   SelfEncryption se(client_chunkstore_);
   fs::path full_path(full_str, fs::native);
@@ -631,14 +635,13 @@ TEST_F(SEHandlerTest, BEH_MAID_EncryptAndDecryptPrivateDb) {
   ASSERT_TRUE(fs::exists(db_path));
   std::string hash_before = co.Hash(db_str1_, "", crypto::FILE_STRING, false);
   DataMap dm;
-  std::string ser_dm;
-  dm.SerializeToString(&ser_dm);
 
   // Create the entry
   ASSERT_EQ(0, seh->EncryptDb(TidyPath(kRootSubdir[0][0]), PRIVATE, key,
             "", true, &dm));
 //  ASSERT_EQ("", ser_dm);
 
+  std::string ser_dm;
   // Test decryption with the directory DB ser_dm in the map
   ASSERT_EQ(0, seh->DecryptDb(TidyPath(kRootSubdir[0][0]), PRIVATE,
             ser_dm, key, "", true, false));

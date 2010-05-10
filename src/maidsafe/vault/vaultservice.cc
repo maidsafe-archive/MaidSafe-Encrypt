@@ -2232,7 +2232,8 @@ void VaultService::AmendRemoteAccount(
   mutable_signed_size->set_public_key(pmid_public_);
   mutable_signed_size->set_public_key_signature(pmid_public_signature_);
   amend_account_request.set_chunkname(chunkname);
-  amend_account_request.set_confirmation_required(false);  // TODO(Steve#) confirmation required
+  amend_account_request.set_confirmation_required(false);
+      // TODO(Steve#) confirmation required
 
   // thread_pool_ handles destruction of task.
   RemoteTask<maidsafe::AmendAccountRequest> *task =

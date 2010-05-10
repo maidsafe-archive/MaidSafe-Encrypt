@@ -1577,7 +1577,7 @@ void MaidsafeStoreManager::AddToWatchList(StoreData store_data) {
 }
 
 void MaidsafeStoreManager::AddToWatchListStageTwo(
-    const std::string &response,                          
+    const std::string &response,
     boost::shared_ptr<WatchListOpData> data) {
   kad::FindResponse find_response;
   if (!find_response.ParseFromString(response)) {
@@ -1649,13 +1649,12 @@ void MaidsafeStoreManager::AddToWatchListStageTwo(
        it != account_holders_.end(); ++it) {
 //    google::protobuf::Closure* callback = google::protobuf::NewCallback(this,
 //        &MaidsafeStoreManager::ExpectAmendmentCallback, );
-//    client_rpcs_->ExpectAmendment((*it).first, (*it).second, 
+//    client_rpcs_->ExpectAmendment((*it).first, (*it).second,
 //        udt_transport_.transport_id(),
 //        &expect_amendment_requests.at(j),
 //        &data->add_to_watchlist_data_holders.at(j).response,
 //        data->add_to_watchlist_data_holders.at(j).controller.get(), callback);
   }
-
 }
 
 void MaidsafeStoreManager::AddToWatchListStageThree(
@@ -1681,8 +1680,8 @@ void MaidsafeStoreManager::AddToWatchListStageThree(
 #endif
   } else if (holder.response.pmid() != holder.node_id) {
 #ifdef DEBUG
-    printf("In MSM::AddToWatchListStageThree, response %u from %s has pmid %s.\n",
-           index, HexSubstr(holder.node_id).c_str(),
+    printf("In MSM::AddToWatchListStageThree, response %u from %s has "
+           "pmid %s.\n", index, HexSubstr(holder.node_id).c_str(),
            HexSubstr(holder.response.pmid()).c_str());
 #endif
     // TODO(Fraser#5#): 2010-01-08 - Send alert to holder.node_id's A/C holders

@@ -122,7 +122,7 @@ TEST_F(SessionSingletonTest, BEH_MAID_SetsGetsAndResetSession) {
   ASSERT_NE("", ss_->SessionName());
   ASSERT_EQ("ddd", ss_->RootDbKey());
   ASSERT_EQ(size_t(1), ss_->AuthorisedUsers().size());
-  std::set<std::string>::iterator it = ss_->AuthorisedUsers().find("eee");
+  std::set<std::string>::const_iterator it = ss_->AuthorisedUsers().find("eee");
   ASSERT_FALSE(ss_->AuthorisedUsers().end() == it);
   ASSERT_EQ(size_t(2), ss_->MaidAuthorisedUsers().size());
   it = ss_->MaidAuthorisedUsers().find("eee");
