@@ -62,13 +62,13 @@ PersonalMessages::PersonalMessages(QWidget* parent, QString name)
   this->setWindowTitle(this->windowTitle() + " " + name);
 
   connect(ClientController::instance(),
-          SIGNAL(messageReceived(ClientController::MessageType,
+          SIGNAL(messageReceived(int,
                                     const QDateTime&,
                                     const QString&,
                                     const QString&,
                                     const QString&)),
           this,
-          SLOT(onMessageReceived(ClientController::MessageType,
+          SLOT(onMessageReceived(int,
                                     const QDateTime&,
                                     const QString&,
                                     const QString&,
@@ -149,7 +149,7 @@ void PersonalMessages::loadConversation() {
 //  ui_.message_window->moveCursor(QTextCursor::End, QTextCursor::MoveAnchor);
 }
 
-void PersonalMessages::onMessageReceived(ClientController::MessageType,
+void PersonalMessages::onMessageReceived(int,
                                          const QDateTime&,
                                          const QString& sender,
                                          const QString& message,
