@@ -189,7 +189,7 @@ void PerpetualData::createActions() {
 }
 
 void PerpetualData::createMenus() {
-#if defined(MAIDSAFE_WIN32)
+#if defined(PD_WIN32)
   // an example of launching an extrernal application
   // path to application is stored in the action
 

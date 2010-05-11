@@ -30,7 +30,7 @@
 
 #include "fs/filesystem.h"
 #include <boost/filesystem/fstream.hpp>
-#ifdef MAIDSAFE_WIN32
+#ifdef PD_WIN32
 #include <shlwapi.h>
 #include <shlobj.h>
 #include <sstream>
@@ -53,9 +53,9 @@ fs::path HomeDir() {
 }
 
 fs::path ApplicationDataDir() {
-#if defined(MAIDSAFE_POSIX)
+#if defined(PD_POSIX)
   return fs::path("/var/cache/maidsafe/", fs::native);
-#elif defined(MAIDSAFE_WIN32)
+#elif defined(PD_WIN32)
   fs::path app_path("");
   TCHAR szpth[MAX_PATH];
   if (SUCCEEDED(SHGetFolderPath(NULL, CSIDL_COMMON_APPDATA, NULL, 0,
@@ -69,13 +69,13 @@ fs::path ApplicationDataDir() {
     app_path /= "maidsafe";
   }
   return app_path;
-#elif defined(MAIDSAFE_APPLE)
+#elif defined(PD_APPLE)
   return fs::path("/Library/maidsafe/", fs::native);
 #endif
 }
 
 fs::path TempDir() {
-#if defined(MAIDSAFE_WIN32)
+#if defined(PD_WIN32)
   fs::path temp_dir("");
   if (std::getenv("TEMP"))
     temp_dir = std::getenv("TEMP");

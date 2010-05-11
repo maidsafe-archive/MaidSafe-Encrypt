@@ -356,20 +356,6 @@ class PDVaultTest : public testing::Test {
   PDVaultTest &operator=(const PDVaultTest&);
 };
 
-TEST_F(PDVaultTest, FUNC_MAID_VaultStartStop) {
-  // check pdvaults can be started and stopped multiple times
-  const int kTestVaultNo(kNetworkSize / 2);
-  for (int loop = 0; loop < 7; ++loop) {
-    pdvaults_[kTestVaultNo]->Stop();
-    ASSERT_NE(kVaultStarted, pdvaults_[kTestVaultNo]->vault_status());
-    printf("Vault stopped - iteration %i.\n", loop+1);
-    pdvaults_[kTestVaultNo]->Start(false);
-    ASSERT_TRUE(pdvaults_[kTestVaultNo]->WaitForStartup(30));
-    printf("Vault started - iteration %i.\n", loop+1);
-  }
-  ASSERT_TRUE(pdvaults_[kTestVaultNo]->WaitForSync());
-}
-
 TEST_F(PDVaultTest, FUNC_MAID_StoreAndGetChunks) {
   std::map<std::string, std::string> chunks;
   testpdvault::MakeChunks(clients_, kNumOfTestChunks, test_root_dir_, &chunks);
@@ -560,6 +546,20 @@ TEST_F(PDVaultTest, FUNC_MAID_StoreAndGetChunks) {
     testpdvault::PrintRpcTimings(
         pdvaults_[i]->channel_manager_.RpcTimings());
   }
+}
+
+TEST_F(PDVaultTest, FUNC_MAID_VaultStartStop) {
+  // check pdvaults can be started and stopped multiple times
+  const int kTestVaultNo(kNetworkSize / 2);
+  for (int loop = 0; loop < 7; ++loop) {
+    pdvaults_[kTestVaultNo]->Stop();
+    ASSERT_NE(kVaultStarted, pdvaults_[kTestVaultNo]->vault_status());
+    printf("Vault stopped - iteration %i.\n", loop+1);
+    pdvaults_[kTestVaultNo]->Start(false);
+    ASSERT_TRUE(pdvaults_[kTestVaultNo]->WaitForStartup(30));
+    printf("Vault started - iteration %i.\n", loop+1);
+  }
+  ASSERT_TRUE(pdvaults_[kTestVaultNo]->WaitForSync());
 }
 
 TEST_F(PDVaultTest, FUNC_MAID_Cachechunk) {
