@@ -98,12 +98,12 @@ class KadOps {
   virtual void FindKClosestNodes(const kad::KadId &kad_key,
                                  const kad::VoidFunctorOneString &callback);
   /**
-   * Blocking call to Kademlia's FindCloseNodes.
+   * Blocking call to Kademlia's FindKClosestNodes.
    */
-  virtual int FindKClosestNodes(const kad::KadId &kad_key,
+  int BlockingFindKClosestNodes(const kad::KadId &kad_key,
                                 std::vector<kad::Contact> *contacts);
   /**
-   * A callback handler for passing to FindCloseNodes.
+   * A callback handler for passing to FindKClosestNodes.
    */
   void HandleFindCloseNodesResponse(const std::string &response,
                                     const kad::KadId &kad_key,

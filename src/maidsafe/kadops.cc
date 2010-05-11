@@ -46,8 +46,8 @@ void KadOps::FindKClosestNodes(const kad::KadId &kad_key,
   knode_->FindKClosestNodes(kad_key, callback);
 }
 
-int KadOps::FindKClosestNodes(const kad::KadId &kad_key,
-                              std::vector<kad::Contact> *contacts) {
+int KadOps::BlockingFindKClosestNodes(const kad::KadId &kad_key,
+                                      std::vector<kad::Contact> *contacts) {
   if (contacts == NULL) {
 #ifdef DEBUG
     printf("In KadOps::FindKNodes, NULL pointer passed.\n");

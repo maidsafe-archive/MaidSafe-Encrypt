@@ -1245,7 +1245,7 @@ int PDVault::AmendAccount(const boost::uint64_t &space_offered) {
   // Find the account holders
   boost::shared_ptr<maidsafe::AmendAccountData>
       data(new maidsafe::AmendAccountData);
-  int rslt = kad_ops_->FindKClosestNodes(account_name, &data->contacts);
+  int rslt = kad_ops_->BlockingFindKClosestNodes(account_name, &data->contacts);
   if (rslt != kSuccess) {
 #ifdef DEBUG
     printf("In PDVault::AmendAccount, Kad lookup failed -- error %i\n", rslt);

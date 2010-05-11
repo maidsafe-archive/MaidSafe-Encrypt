@@ -1078,8 +1078,8 @@ int MaidsafeStoreManager::GetAccountDetails(boost::uint64_t *space_offered,
 
   // Find the account holders
   boost::shared_ptr<AccountStatusData> data(new AccountStatusData);
-  int rslt = kad_ops_->FindKClosestNodes(kad::KadId(account_name, false),
-                                      &data->contacts);
+  int rslt = kad_ops_->BlockingFindKClosestNodes(
+      kad::KadId(account_name, false), &data->contacts);
   if (rslt != kSuccess) {
 #ifdef DEBUG
     printf("In MSM::GetAccountDetails, Kad lookup failed -- error %i\n", rslt);
@@ -1655,6 +1655,7 @@ void MaidsafeStoreManager::AddToWatchListStageTwo(
 //        &data->add_to_watchlist_data_holders.at(j).response,
 //        data->add_to_watchlist_data_holders.at(j).controller.get(), callback);
   }
+
 }
 
 void MaidsafeStoreManager::AddToWatchListStageThree(
@@ -1680,8 +1681,8 @@ void MaidsafeStoreManager::AddToWatchListStageThree(
 #endif
   } else if (holder.response.pmid() != holder.node_id) {
 #ifdef DEBUG
-    printf("In MSM::AddToWatchListStageThree, response %u from %s has "
-           "pmid %s.\n", index, HexSubstr(holder.node_id).c_str(),
+    printf("In MSM::AddToWatchListStageThree, response %u from %s has pmid %s.\n",
+           index, HexSubstr(holder.node_id).c_str(),
            HexSubstr(holder.response.pmid()).c_str());
 #endif
     // TODO(Fraser#5#): 2010-01-08 - Send alert to holder.node_id's A/C holders
@@ -2357,9 +2358,8 @@ void MaidsafeStoreManager::RemoveFromWatchList(const StoreData &store_data) {
   }
   // Find the Chunk Info holders
   boost::shared_ptr<WatchListOpData> data(new WatchListOpData(store_data));
-  int result = kad_ops_->FindKClosestNodes(kad::KadId(store_data.data_name,
-                                                      false),
-                                           &data->contacts);
+  int result = kad_ops_->BlockingFindKClosestNodes(
+      kad::KadId(store_data.data_name, false), &data->contacts);
   if (result != kSuccess) {
 #ifdef DEBUG
     printf("In MSM::RemoveFromWatchList, Kad lookup failed -- error %i\n",
@@ -2857,8 +2857,8 @@ int MaidsafeStoreManager::CreateAccount(const boost::uint64_t &space) {
 
   // Find the account holders
   boost::shared_ptr<AmendAccountData> data(new AmendAccountData);
-  int n = kad_ops_->FindKClosestNodes(kad::KadId(account_name, false),
-                                   &data->contacts);
+  int n = kad_ops_->BlockingFindKClosestNodes(kad::KadId(account_name, false),
+                                              &data->contacts);
   if (n != kSuccess) {
 #ifdef DEBUG
     printf("In MSM::CreateAccount, Kad lookup failed -- error %i\n", n);
