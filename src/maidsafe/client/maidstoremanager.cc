@@ -1615,10 +1615,9 @@ void MaidsafeStoreManager::AddToWatchListStageTwo(
     data->contacts.push_back(contact);
   }
 
-  for (AccountHolderSet::iterator it = account_holders_.begin();
-       it != account_holders_.end(); ++it) {
-    data->account_holders.push_back((*it).first);
-  }
+  data->account_holders.assign(
+      account_holders_manager_.account_holder_set().begin(),
+      account_holders_manager_.account_holder_set().end());
 
   // Set up holders for forthcoming ExpectAmendment RPCs
   std::vector<ExpectAmendmentRequest> expect_amendment_requests;
@@ -1667,8 +1666,8 @@ void MaidsafeStoreManager::AddToWatchListStageTwo(
   }
 
   // Send ExpectAmendment RPCs
-  for (AccountHolderSet::iterator it = account_holders_.begin();
-       it != account_holders_.end(); ++it) {
+//  for (AccountHolderSet::iterator it = account_holders_.begin();
+//       it != account_holders_.end(); ++it) {
 //    google::protobuf::Closure* callback = google::protobuf::NewCallback(this,
 //        &MaidsafeStoreManager::ExpectAmendmentCallback, );
 //    client_rpcs_->ExpectAmendment((*it).first, (*it).second,
@@ -1676,7 +1675,7 @@ void MaidsafeStoreManager::AddToWatchListStageTwo(
 //        &expect_amendment_requests.at(j),
 //        &data->add_to_watchlist_data_holders.at(j).response,
 //        data->add_to_watchlist_data_holders.at(j).controller.get(), callback);
-  }
+//  }
 
 }
 
@@ -1951,7 +1950,7 @@ int MaidsafeStoreManager::GetExpectAmendmentRequests(
     const std::vector<kad::Contact> &chunk_info_holders,
     std::vector<ExpectAmendmentRequest> *expect_amendment_requests) {
 
-      
+
   //required AmendAccountRequest.Amendment amendment_type = 1;
   //required bytes chunkname = 2;
   //required bytes account_pmid = 3;  // PMID of account owner (i.e. sender)
@@ -1959,9 +1958,9 @@ int MaidsafeStoreManager::GetExpectAmendmentRequests(
   //required bytes public_key_signature = 5;
   //required bytes request_signature = 6;
   //repeated bytes amender_pmids = 7;  // the K vaults to expect amendments from
-  //    
-  //    
-  //    
+  //
+  //
+  //
   //expect_amendment_requests->clear();
   //crypto::Crypto co;
   //co.set_symm_algorithm(crypto::AES_256);
@@ -2924,25 +2923,26 @@ int MaidsafeStoreManager::CreateAccount(const boost::uint64_t &space) {
   std::string account_name = co.Hash(ss_->Id(PMID) + kAccount, "",
                                      crypto::STRING_STRING, false);
 
-  account_holders_manager_.Init(ss_->Id(PMID));
-
-  // Find the account holders
   boost::shared_ptr<AmendAccountData> data(new AmendAccountData);
-  int n = kad_ops_->BlockingFindKClosestNodes(kad::KadId(account_name, false),
-                                              &data->contacts);
-  if (n != kSuccess) {
+  boost::mutex::scoped_lock lock(data->mutex);
+  account_holders_manager_.Init(ss_->Id(PMID),
+      boost::bind(&MaidsafeStoreManager::AccountHoldersManagerInitCallback,
+                  this, _1, _2, data));
+
+  // Wait for the account holders to be populated
+  while (data->returned_count == 0)
+    data->condition.wait(lock);
+
+  if (data->success_count == 0) {
 #ifdef DEBUG
-    printf("In MSM::CreateAccount, Kad lookup failed -- error %i\n", n);
+    printf("In MSM::CreateAccount, could not find account holders.\n");
 #endif
     return kFindAccountHoldersError;
   }
 
-  // never send the RPC to our own vault
-  RemoveKadContact(kad::KadId(ss_->Id(PMID), false), &data->contacts);
-
   if (data->contacts.size() < kKadUpperThreshold) {
 #ifdef DEBUG
-    printf("In MSM::CreateAccount, Kad lookup failed to find %u nodes; "
+    printf("In MSM::CreateAccount, failed to find %u account holders; "
            "found %u node(s).\n", kKadUpperThreshold, data->contacts.size());
 #endif
     return kFindAccountHoldersError;
@@ -2967,10 +2967,8 @@ int MaidsafeStoreManager::CreateAccount(const boost::uint64_t &space) {
     data->data_holders.push_back(holder);
   }
 
-  // lock the mutex here in case RPCs return before we wait on the condition
-  boost::mutex::scoped_lock lock(data->mutex);
-
   // Send the requests
+  data->returned_count = data->success_count = 0;
   for (size_t i = 0; i < data->contacts.size(); ++i) {
     google::protobuf::Closure* callback = google::protobuf::NewCallback(this,
         &MaidsafeStoreManager::AmendAccountCallback, i, data);
@@ -3004,11 +3002,16 @@ int MaidsafeStoreManager::CreateAccount(const boost::uint64_t &space) {
   return kSuccess;
 }
 
-void AccountHoldersManagerInitCallback(
+void MaidsafeStoreManager::AccountHoldersManagerInitCallback(
     const ReturnCode &result,
     const AccountHolderSet &account_holder_set,
-    ) {
-
+    boost::shared_ptr<AmendAccountData> data) {
+  boost::mutex::scoped_lock lock(data->mutex);
+  ++data->returned_count;  // to indicate we have a result
+  if (result == kSuccess)
+    ++data->success_count;
+  data->contacts.assign(account_holder_set.begin(), account_holder_set.end());
+  data->condition.notify_one();
 }
 
 void MaidsafeStoreManager::AmendAccountCallback(size_t index,

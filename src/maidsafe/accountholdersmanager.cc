@@ -69,10 +69,8 @@ void AccountHoldersManager::FindNodesCallback(
     kad::Contact contact;
     contact.ParseFromString(find_response.closest_nodes(i));
     // Vault cannot be AccountHolder for self
-    if(contact.node_id().ToStringDecoded() != pmid_) {
-      new_account_holder_set.insert(AccountHolderSet::value_type(
-          contact, kad_ops_->AddressIsLocal(contact)));
-    }
+    if(contact.node_id().ToStringDecoded() != pmid_)
+      new_account_holder_set.insert(contact);
   }
 
   callback(kSuccess, new_account_holder_set);

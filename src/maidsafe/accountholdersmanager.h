@@ -36,37 +36,9 @@ namespace maidsafe {
 
 class KadOps;
 
-class AccountHolderDetails {
- public:
-  AccountHolderDetails(const kad::Contact &contact, bool local)
-      : contact_(contact),
-        local_(local),
-        last_contacted_(boost::posix_time::microsec_clock::universal_time()) {}
-  AccountHolderDetails(const AccountHolderDetails &other)
-      : contact_(other.contact_),
-        local_(other.local_),
-        last_contacted_(other.last_contacted_) {}
-  AccountHolderDetails &operator=(const AccountHolderDetails &other) {
-    contact_ = other.contact_;
-    local_ = other.local_;
-    last_contacted_ = other.last_contacted_;
-    return *this;
-  }
-  kad::Contact contact() { return contact_; }
-  bool local() { return local_; }
-  boost::posix_time::ptime last_contacted() { return last_contacted_; }
-  void UpdateLastContactedToNow() {
-    last_contacted_ = boost::posix_time::microsec_clock::universal_time();
-  }
- private:
-  kad::Contact contact_;
-  bool local_;
-  boost::posix_time::ptime last_contacted_;
-};
-
-typedef std::set< AccountHolderDetails,
-    boost::function<bool(const AccountHolderDetails&,
-                         const AccountHolderDetails&)> > AccountHolderSet;
+typedef std::set< kad::Contact,
+                  boost::function<bool(const kad::Contact&,
+                                       const kad::Contact&)> > AccountHolderSet;
 
 typedef boost::function<void(const ReturnCode&, const AccountHolderSet&)>
     AccountHolderSetFunctor;
@@ -93,10 +65,9 @@ class AccountHoldersManager {
   AccountHoldersManager(const AccountHoldersManager&);
   void FindNodesCallback(const std::string &response,
                          AccountHolderSetFunctor callback);
-  bool CompareHolders(AccountHolderDetails lhs,
-                      AccountHolderDetails rhs) {
-    return kad::KadId::CloserToTarget(lhs.contact().node_id(),
-        rhs.contact().node_id(), kad::KadId(account_name_, false));
+  bool CompareHolders(kad::Contact lhs, kad::Contact rhs) {
+    return kad::KadId::CloserToTarget(lhs.node_id(), rhs.node_id(),
+                                      kad::KadId(account_name_, false));
   }
   boost::shared_ptr<KadOps> kad_ops_;
   std::string pmid_, account_name_;
