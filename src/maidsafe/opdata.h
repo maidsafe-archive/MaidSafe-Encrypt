@@ -164,24 +164,25 @@ struct DeletePacketData {
  private:
 };
 
+// This is used within following OpData structs to hold details of a single RPC
+template <typename ResponseType>
+struct SingleOpDataHolder {
+  explicit SingleOpDataHolder(const std::string &id)
+        : node_id(id), response(), controller(new rpcprotocol::Controller) {}
+    std::string node_id;
+    ResponseType response;
+    boost::shared_ptr<rpcprotocol::Controller> controller;
+};
+
 // This is used to hold the data required to perform a Kad lookup to get a
-// group of Chunk Info holders, send each an AddToWatchListRequest or
+// group of Chunk Info holders, send the result as part of k
+// ExpectAmendmentRequests, send each CI Holder an AddToWatchListRequest or
 // RemoveFromWatchListRequest and assess the responses.
 struct WatchListOpData {
-  struct AddToWatchDataHolder {
-    explicit AddToWatchDataHolder(const std::string &id)
-        : node_id(id), response(), controller(new rpcprotocol::Controller) {}
-    std::string node_id;
-    AddToWatchListResponse response;
-    boost::shared_ptr<rpcprotocol::Controller> controller;
-  };
-  struct RemoveFromWatchDataHolder {
-    explicit RemoveFromWatchDataHolder(const std::string &id)
-        : node_id(id), response(), controller(new rpcprotocol::Controller) {}
-    std::string node_id;
-    RemoveFromWatchListResponse response;
-    boost::shared_ptr<rpcprotocol::Controller> controller;
-  };
+  typedef SingleOpDataHolder<ExpectAmendmentResponse> AccountDataHolder;
+  typedef SingleOpDataHolder<AddToWatchListResponse> AddToWatchDataHolder;
+  typedef SingleOpDataHolder<RemoveFromWatchListResponse>
+      RemoveFromWatchDataHolder;
   explicit WatchListOpData(const StoreData &sd)
       : store_data(sd),
         mutex(),
@@ -194,7 +195,9 @@ struct WatchListOpData {
         consensus_upload_copies(-1) {}
   StoreData store_data;
   boost::mutex mutex;
+  std::vector<kad::Contact> account_holders;
   std::vector<kad::Contact> contacts;
+  std::vector<AccountDataHolder> account_data_holders;
   std::vector<AddToWatchDataHolder> add_to_watchlist_data_holders;
   std::vector<RemoveFromWatchDataHolder> remove_from_watchlist_data_holders;
   boost::uint16_t returned_count;
@@ -233,13 +236,7 @@ struct SendChunkData {
 // of account holders, send each an AccountStatusRequest and assess the
 // responses.
 struct AccountStatusData {
-  struct AccountStatusDataHolder {
-    explicit AccountStatusDataHolder(const std::string &id)
-        : node_id(id), response(), controller(new rpcprotocol::Controller) {}
-    std::string node_id;
-    AccountStatusResponse response;
-    boost::shared_ptr<rpcprotocol::Controller> controller;
-  };
+  typedef SingleOpDataHolder<AccountStatusResponse> AccountStatusDataHolder;
   explicit AccountStatusData()
       : mutex(),
         condition(),
@@ -257,13 +254,7 @@ struct AccountStatusData {
 // of account holders, send each an AmendAccountRequest and assess the
 // responses.
 struct AmendAccountData {
-  struct AmendAccountDataHolder {
-    explicit AmendAccountDataHolder(const std::string &id)
-        : node_id(id), response(), controller(new rpcprotocol::Controller) {}
-    std::string node_id;
-    AmendAccountResponse response;
-    boost::shared_ptr<rpcprotocol::Controller> controller;
-  };
+  typedef SingleOpDataHolder<AmendAccountResponse> AmendAccountDataHolder;
   explicit AmendAccountData()
       : mutex(),
         condition(),

@@ -25,8 +25,9 @@
 #ifndef MAIDSAFE_CLIENT_STOREMANAGER_H_
 #define MAIDSAFE_CLIENT_STOREMANAGER_H_
 
-#include <boost/thread/condition_variable.hpp>
+#include <boost/filesystem.hpp>
 #include <boost/function.hpp>
+#include <boost/thread/condition_variable.hpp>
 #include <maidsafe/maidsafe-dht.h>
 #include <maidsafe/base/utils.h>
 
@@ -66,7 +67,7 @@ class StoreManagerInterface {
   virtual ~StoreManagerInterface() {}
   virtual void Init(int port,
                     kad::VoidFunctorOneString cb,
-                    fs::path db_directory)=0;
+                    boost::filesystem::path db_directory)=0;
   virtual void Close(kad::VoidFunctorOneString cb, bool cancel_pending_ops)=0;
   virtual void CleanUpTransport()=0;
   virtual void StopRvPing()=0;

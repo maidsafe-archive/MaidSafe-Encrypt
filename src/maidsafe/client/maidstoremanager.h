@@ -40,6 +40,7 @@
 #include <string>
 #include <vector>
 
+#include "maidsafe/accountholdersmanager.h"
 #include "maidsafe/chunkstore.h"
 #include "maidsafe/opdata.h"
 #include "maidsafe/kadops.h"
@@ -208,7 +209,6 @@ struct BPResults {
 
 class MaidsafeStoreManager : public StoreManagerInterface {
  public:
-  typedef std::map<kad::Contact, bool> AccountHolderMap;
   explicit MaidsafeStoreManager(boost::shared_ptr<ChunkStore> cstore);
   virtual ~MaidsafeStoreManager() {}
   void Init(int port, kad::VoidFunctorOneString cb, fs::path db_directory);
@@ -383,6 +383,12 @@ class MaidsafeStoreManager : public StoreManagerInterface {
                                  const StoreTaskType &task_type);
   // Set up the requests needed to perform the store RPCs.
   int GetStoreRequests(boost::shared_ptr<SendChunkData> send_chunk_data);
+  // Set up the requests needed to perform the ExpectAmendment RPCs.
+  int GetExpectAmendmentRequests(
+      const StoreData &store_data,
+      const std::vector<kad::Contact> &account_holders,
+      const std::vector<kad::Contact> &chunk_info_holders,
+      std::vector<ExpectAmendmentRequest> *expect_amendment_requests);
   // Set up the requests needed to perform the AddToWatchList RPCs.
   int GetAddToWatchListRequests(
       const StoreData &store_data,
@@ -519,7 +525,7 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   IMStatusNotifier im_status_notifier_;
   IMConnectionHandler im_conn_hdler_;
   IMHandler im_handler_;
-  AccountHolderMap account_holders_;
+  AccountHoldersManager account_holders_manager_;
 };
 
 }  // namespace maidsafe

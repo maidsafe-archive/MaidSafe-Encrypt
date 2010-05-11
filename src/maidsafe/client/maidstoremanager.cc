@@ -100,7 +100,7 @@ MaidsafeStoreManager::MaidsafeStoreManager(boost::shared_ptr<ChunkStore> cstore)
       im_status_notifier_(),
       im_conn_hdler_(),
       im_handler_(ss_),
-      account_holders_() {
+      account_holders_manager_(kad_ops_) {
   transport_handler_.Register(&udt_transport_, &trans_id_);
   knode_->set_transport_id(trans_id_);
   knode_->set_alternative_store(client_chunkstore_.get());
@@ -1615,16 +1615,38 @@ void MaidsafeStoreManager::AddToWatchListStageTwo(
     data->contacts.push_back(contact);
   }
 
-  // Set up holders for forthcoming RPCs
-  std::vector<AddToWatchListRequest> add_to_watch_list_requests;
-  if (GetAddToWatchListRequests(data->store_data, data->contacts,
-      &add_to_watch_list_requests) != kSuccess) {
+  for (AccountHolderSet::iterator it = account_holders_.begin();
+       it != account_holders_.end(); ++it) {
+    data->account_holders.push_back((*it).first);
+  }
+
+  // Set up holders for forthcoming ExpectAmendment RPCs
+  std::vector<ExpectAmendmentRequest> expect_amendment_requests;
+  if (GetExpectAmendmentRequests(data->store_data, data->account_holders,
+      data->contacts, &expect_amendment_requests) != kSuccess) {
 #ifdef DEBUG
-    printf("In MSM::AddToWatchListStageTwo, failed to generate requests.\n");
+    printf("In MSM::AddToWatchListStageTwo, failed to generate EA requests.\n");
 #endif
     tasks_handler_.DeleteTask(data->store_data.data_name, kStoreChunk,
                               kStoreChunkError);
     return;
+  }
+
+  // Set up holders for forthcoming AddToWatchList RPCs
+  std::vector<AddToWatchListRequest> add_to_watch_list_requests;
+  if (GetAddToWatchListRequests(data->store_data, data->contacts,
+      &add_to_watch_list_requests) != kSuccess) {
+#ifdef DEBUG
+    printf("In MSM::AddToWatchListStageTwo, failed to generate AW requests.\n");
+#endif
+    tasks_handler_.DeleteTask(data->store_data.data_name, kStoreChunk,
+                              kStoreChunkError);
+    return;
+  }
+  for (size_t i = 0; i < data->account_holders.size(); ++i) {
+    WatchListOpData::AccountDataHolder holder(
+        data->account_holders.at(i).node_id().ToStringDecoded());
+    data->account_data_holders.push_back(holder);
   }
   for (size_t i = 0; i < data->contacts.size(); ++i) {
     WatchListOpData::AddToWatchDataHolder holder(
@@ -1645,7 +1667,7 @@ void MaidsafeStoreManager::AddToWatchListStageTwo(
   }
 
   // Send ExpectAmendment RPCs
-  for (AccountHolderMap::iterator it = account_holders_.begin();
+  for (AccountHolderSet::iterator it = account_holders_.begin();
        it != account_holders_.end(); ++it) {
 //    google::protobuf::Closure* callback = google::protobuf::NewCallback(this,
 //        &MaidsafeStoreManager::ExpectAmendmentCallback, );
@@ -1919,6 +1941,53 @@ int MaidsafeStoreManager::GetStoreRequests(
   store_chunk_request.set_public_key_signature(store_data.public_key_signature);
   store_chunk_request.set_request_signature(request_signature);
   store_chunk_request.set_data_type(data_type);
+  return kSuccess;
+}
+
+int MaidsafeStoreManager::GetExpectAmendmentRequests(
+    const StoreData &store_data,
+    const std::vector<kad::Contact> &account_holders,
+    const std::vector<kad::Contact> &chunk_info_holders,
+    std::vector<ExpectAmendmentRequest> *expect_amendment_requests) {
+
+      
+  //required AmendAccountRequest.Amendment amendment_type = 1;
+  //required bytes chunkname = 2;
+  //required bytes account_pmid = 3;  // PMID of account owner (i.e. sender)
+  //required bytes public_key = 4;
+  //required bytes public_key_signature = 5;
+  //required bytes request_signature = 6;
+  //repeated bytes amender_pmids = 7;  // the K vaults to expect amendments from
+  //    
+  //    
+  //    
+  //expect_amendment_requests->clear();
+  //crypto::Crypto co;
+  //co.set_symm_algorithm(crypto::AES_256);
+  //co.set_hash_algorithm(crypto::SHA_512);
+  //ExpectAmendmentRequest request;
+  //request.set_chunkname(store_data.data_name);
+  //SignedSize *mutable_signed_size = request.mutable_signed_size();
+  //mutable_signed_size->set_data_size(store_data.size);
+  //mutable_signed_size->set_signature(
+  //    co.AsymSign(boost::lexical_cast<std::string>(store_data.size), "",
+  //                store_data.private_key, crypto::STRING_STRING));
+  //mutable_signed_size->set_pmid(store_data.key_id);
+  //mutable_signed_size->set_public_key(store_data.public_key);
+  //mutable_signed_size->set_public_key_signature(
+  //    store_data.public_key_signature);
+  //for (size_t i = 0; i < recipients.size(); ++i) {
+  //  std::string signature;
+  //  GetRequestSignature(store_data.data_name, store_data.dir_type,
+  //      recipients.at(i).node_id().ToStringDecoded(), store_data.public_key,
+  //      store_data.public_key_signature, store_data.private_key, &signature);
+  //  if (signature.empty()) {
+  //    add_to_watch_list_requests->clear();
+  //    return kGetRequestSigError;
+  //  }
+  //  request.set_request_signature(signature);
+  //  add_to_watch_list_requests->push_back(request);
+  //}
   return kSuccess;
 }
 
@@ -2855,6 +2924,8 @@ int MaidsafeStoreManager::CreateAccount(const boost::uint64_t &space) {
   std::string account_name = co.Hash(ss_->Id(PMID) + kAccount, "",
                                      crypto::STRING_STRING, false);
 
+  account_holders_manager_.Init(ss_->Id(PMID));
+
   // Find the account holders
   boost::shared_ptr<AmendAccountData> data(new AmendAccountData);
   int n = kad_ops_->FindKClosestNodes(kad::KadId(account_name, false),
@@ -2932,6 +3003,13 @@ int MaidsafeStoreManager::CreateAccount(const boost::uint64_t &space) {
   }
 
   return kSuccess;
+}
+
+void AccountHoldersManagerInitCallback(
+    const ReturnCode &result,
+    const AccountHolderSet &account_holder_set,
+    ) {
+
 }
 
 void MaidsafeStoreManager::AmendAccountCallback(size_t index,
