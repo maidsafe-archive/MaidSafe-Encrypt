@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <diagram>
-<source><![CDATA[#![Delete Chunk   ]
+<source><![CDATA[#![Delete Chunk    2010-05-04    ]
 client:client "Client"
 peer:vault "Peer Vault"
 info:vault "Chunk Info Holders x16"
@@ -13,33 +13,55 @@ client:client. Wait till online.&
 For each Chunk Info Holder...
 *1
 
-client:>info. REMOVE_FROM_WATCH_LIST_REQUEST
+(1)client:>info. REMOVE_FROM_WATCH_LIST_REQUEST
 *2 client
 If this is First Storing Client, flag list as
 able to be deleted.
 *2
 
 *3 c_account
-Check 16 requests are from
-valid Chunk Info Holders by
-doing a Kademlia FIND_NODES
-and checking sender is in
-list of near nodes to value.
+AMEND_ACCOUNT_REQUEST is validated by
+referencing list of Chunk Info Holders sent in
+EXPECT_AMENDMENT_REQUEST.  If E_A_REQ has not
+yet arrived, reply "Standby", otherwise Ack/Nack.  If reply
+is "Standby", a CONFIRM_AMENDMENT_REQUEST
+should be sent once the E_A_REQ arrives.
 *3
 
 info:info. Validate request.&
 info:>client.Ack/Nack &
 
+(4)client:>c_account. EXPECT_AMENDMENT_REQUEST 
+*4 client
+For each Client Account Holder...
+*4
+
+c_account:c_account. Validate EXPECT_AMENDMENT_REQUEST. &
+c_account:>client.Ack / Nack &
+
 [c:Condition IF Client's PMID is in list]
 [c:Condition IF undeleted PMIDs in list == 1]
 [c:Loop Repeat for each PMID in list]
 info:>c_account. AMEND_ACCOUNT_REQUEST (Space Taken Dec)
-(3)c_account:>info.Ack/Nack &
+(3)c_account:>info.Ack/Standby/Nack &
+(3)c_account:Ack/Nack =info. [Optional - see note] CONFIRM_AMENDMENT_REQUEST &
 [/c]
+
 [c:Loop Repeat for each chunk holder]
-info:Ack/Nack =peer. DELETE_CHUNK_REQUEST
+info:>peer. DELETE_CHUNK_REQUEST 
+peer:>info. Ack/Nack &
+
+(6)peer:>v_account. EXPECT_AMENDMENT_REQUEST 
+*6 peer
+For each Vault Account Holder...
+*6
+
+v_account:v_account. Validate request. &
+v_account:>peer.Ack / Nack &
+
 info:>v_account. AMEND_ACCOUNT_REQUEST (Space Given Dec)
-(3)v_account:>info.Ack/Nack &
+(3)v_account:>info.Ack/Standby/Nack &
+(3)v_account:Ack/Nack =info. [Optional - see note] CONFIRM_AMENDMENT_REQUEST &
 [/c]
 [/c]
 [/c]]]></source>

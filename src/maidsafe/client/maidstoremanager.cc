@@ -103,6 +103,32 @@ MaidsafeStoreManager::MaidsafeStoreManager(boost::shared_ptr<ChunkStore> cstore)
   knode_->set_alternative_store(client_chunkstore_.get());
 }
 
+MaidsafeStoreManager::MaidsafeStoreManager(boost::shared_ptr<ChunkStore> cstore,
+    SessionSingleton *ss)
+    : udt_transport_(),
+      transport_handler_(),
+      channel_manager_(&transport_handler_),
+      kad_config_location_(".kadconfig"),
+      knode_(new kad::KNode(&channel_manager_, &transport_handler_, kad::CLIENT,
+             "", "", false, false)),
+      client_rpcs_(new ClientRpcs(&transport_handler_, &channel_manager_)),
+      kad_ops_(new KadOps(knode_)),
+      ss_(ss),
+      tasks_handler_(),
+      client_chunkstore_(cstore),
+      chunk_thread_pool_(),
+      packet_thread_pool_(),
+      store_packet_mutex_(),
+      bprpcs_(new BufferPacketRpcsImpl(&transport_handler_, &channel_manager_)),
+      cbph_(bprpcs_, knode_),
+      trans_id_(0),
+      im_notifier_(), im_status_notifier_(), im_conn_hdler_(),
+      im_handler_(ss_) {
+  transport_handler_.Register(&udt_transport_, &trans_id_);
+  knode_->set_transport_id(trans_id_);
+  knode_->set_alternative_store(client_chunkstore_.get());
+}
+
 void MaidsafeStoreManager::Init(int port, kad::VoidFunctorOneString cb,
                                 fs::path) {
   // If kad config file exists in dir we're in, use that, otherwise get default
@@ -3188,9 +3214,10 @@ bool MaidsafeStoreManager::SendPresence(const std::string &contactname) {
       im_status_notifier_(contactname, 1);
       im_conn_hdler_.CloseConnection(info.transport, info.connection_id);
       return false;
+    } else {
+      ss_->ModifyConnectionId(contactname, info.connection_id);
     }
   }
   return true;
 }
-
 }  // namespace maidsafe

@@ -47,7 +47,7 @@ class PersonalMessages : public QMainWindow {
     void messageReceived();
 
   private slots:
-    void onMessageReceived(ClientController::MessageType,
+    void onMessageReceived(int,
                              const QDateTime& time,
                              const QString& sender,
                              const QString& message,

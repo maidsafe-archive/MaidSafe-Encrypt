@@ -223,7 +223,13 @@ class ClientController {
   static int ftruncate();
   static int fgetattr(const std::string &path);
 
+  void RegisterImNotifiers(boost::function<void(const std::string&)> msg_not,
+      boost::function<void(const std::string&, const int&)> conn_not);
+
  private:
+  //friend class MockClientController;
+  //int Init(SessionSingleton *ss);
+
   // Friend tests
   FRIEND_TEST(FunctionalClientControllerTest, FUNC_MAID_ControllerBackupFile);
   FRIEND_TEST(FunctionalClientControllerTest, FUNC_MAID_ControllerSaveSession);
@@ -268,6 +274,8 @@ class ClientController {
                                bool *callback_arrived,
                                VaultStatus *res);
   std::string GenerateBPInfo();
+
+  std::vector<std::string> GetOffLineContacts();
 
   // Variables
   boost::shared_ptr<ChunkStore> client_chunkstore_;

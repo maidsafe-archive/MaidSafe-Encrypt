@@ -118,6 +118,8 @@ class LocalStoreManager : public StoreManagerInterface {
   void SetSessionEndPoint() {}
   void SetInstantMessageNotifier(IMNotifier, IMStatusNotifier) {}
 
+//  void ResetSessionSingleton(SessionSingleton *) {};
+
  private:
   LocalStoreManager &operator=(const LocalStoreManager&);
   LocalStoreManager(const LocalStoreManager&);

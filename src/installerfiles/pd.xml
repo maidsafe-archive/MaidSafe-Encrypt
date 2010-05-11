@@ -1,10 +1,165 @@
 <project>
     <shortName>pd</shortName>
     <fullName>Perpetual Data</fullName>
-    <version>5</version>
-    <installerFilename></installerFilename>
+    <version>0.5</version>
     <readmeFile>README</readmeFile>
     <licenseFile>EULA_001.txt</licenseFile>
+    <preBuildActionList>
+        <actionGroup>
+            <explanation>Copy Dokan to install_files/</explanation>
+            <actionList>
+                <createDirectory>
+                    <path>..\..\build\install_files\dokan\Windows 7</path>
+                </createDirectory>
+                <createDirectory>
+                    <path>..\..\build\install_files\dokan\Windows Vista and Windows Server 2008</path>
+                </createDirectory>
+                <createDirectory>
+                    <path>..\..\build\install_files\dokan\Windows XP</path>
+                </createDirectory>
+                <findFile>
+                    <baseDirectory>${build_project_directory}\..\..\build\Win</baseDirectory>
+                    <pattern>Dokan_*</pattern>
+                    <variable>DOKAN_ROOT</variable>
+                </findFile>
+                <copyFile>
+                    <destination>..\..\build\install_files\dokan\Windows 7\dokan.dll</destination>
+                    <origin>${DOKAN_ROOT}\Windows 7\dokan.dll</origin>
+                </copyFile>
+                <copyFile>
+                    <destination>..\..\build\install_files\dokan\Windows 7\dokan.sys</destination>
+                    <origin>${DOKAN_ROOT}\Windows 7\dokan.sys</origin>
+                </copyFile>
+                <copyFile>
+                    <destination>..\..\build\install_files\dokan\Windows 7\dokanctl.exe</destination>
+                    <origin>${DOKAN_ROOT}\Windows 7\dokanctl.exe</origin>
+                </copyFile>
+                <copyFile>
+                    <destination>..\..\build\install_files\dokan\Windows 7\mounter.exe</destination>
+                    <origin>${DOKAN_ROOT}\Windows 7\mounter.exe</origin>
+                </copyFile>
+                <copyFile>
+                    <destination>..\..\build\install_files\dokan\Windows Vista and Windows Server 2008\dokan.dll</destination>
+                    <origin>${DOKAN_ROOT}\Windows Vista and Windows Server 2008\dokan.dll</origin>
+                </copyFile>
+                <copyFile>
+                    <destination>..\..\build\install_files\dokan\Windows Vista and Windows Server 2008\dokan.sys</destination>
+                    <origin>${DOKAN_ROOT}\Windows Vista and Windows Server 2008\dokan.sys</origin>
+                </copyFile>
+                <copyFile>
+                    <destination>..\..\build\install_files\dokan\Windows Vista and Windows Server 2008\dokanctl.exe</destination>
+                    <origin>${DOKAN_ROOT}\Windows Vista and Windows Server 2008\dokanctl.exe</origin>
+                </copyFile>
+                <copyFile>
+                    <destination>..\..\build\install_files\dokan\Windows Vista and Windows Server 2008\mounter.exe</destination>
+                    <origin>${DOKAN_ROOT}\Windows Vista and Windows Server 2008\mounter.exe</origin>
+                </copyFile>
+                <copyFile>
+                    <destination>..\..\build\install_files\dokan\Windows XP\dokan.dll</destination>
+                    <origin>${DOKAN_ROOT}\Windows XP\dokan.dll</origin>
+                </copyFile>
+                <copyFile>
+                    <destination>..\..\build\install_files\dokan\Windows XP\dokan.sys</destination>
+                    <origin>${DOKAN_ROOT}\Windows XP\dokan.sys</origin>
+                </copyFile>
+                <copyFile>
+                    <destination>..\..\build\install_files\dokan\Windows XP\dokanctl.exe</destination>
+                    <origin>${DOKAN_ROOT}\Windows XP\dokanctl.exe</origin>
+                </copyFile>
+                <copyFile>
+                    <destination>..\..\build\install_files\dokan\Windows XP\mounter.exe</destination>
+                    <origin>${DOKAN_ROOT}\Windows XP\mounter.exe</origin>
+                </copyFile>
+            </actionList>
+        </actionGroup>
+        <actionGroup>
+            <explanation>Copy exes to install_files/</explanation>
+            <actionList>
+                <findFile>
+                    <baseDirectory>${build_project_directory}\..\..\build\Win</baseDirectory>
+                    <pattern>perpetualdata.exe</pattern>
+                    <variable>PERPETUALDATA_EXE</variable>
+                    <ruleList>
+                        <platformTest>
+                            <type>windows</type>
+                        </platformTest>
+                    </ruleList>
+                </findFile>
+                <findFile>
+                    <baseDirectory>${build_project_directory}\..\..\build\Linux</baseDirectory>
+                    <pattern>perpetualdata</pattern>
+                    <variable>PERPETUALDATA_EXE</variable>
+                    <ruleList>
+                        <platformTest>
+                            <negate>1</negate>
+                            <type>windows</type>
+                        </platformTest>
+                    </ruleList>
+                </findFile>
+                <copyFile>
+                    <destination>..\..\build\install_files</destination>
+                    <origin>${PERPETUALDATA_EXE}</origin>
+                </copyFile>
+                <findFile>
+                    <baseDirectory>${build_project_directory}\..\..\build\Win</baseDirectory>
+                    <pattern>vault.exe</pattern>
+                    <variable>VAULT_EXE</variable>
+                    <ruleList>
+                        <platformTest>
+                            <type>windows</type>
+                        </platformTest>
+                    </ruleList>
+                </findFile>
+                <findFile>
+                    <baseDirectory>${build_project_directory}\..\..\build\Linux</baseDirectory>
+                    <pattern>vault</pattern>
+                    <variable>VAULT_EXE</variable>
+                    <ruleList>
+                        <platformTest>
+                            <negate>1</negate>
+                            <type>windows</type>
+                        </platformTest>
+                    </ruleList>
+                </findFile>
+                <copyFile>
+                    <destination>..\..\build\install_files</destination>
+                    <origin>${VAULT_EXE}</origin>
+                </copyFile>
+                <findFile>
+                    <baseDirectory>${build_project_directory}\..\..\build</baseDirectory>
+                    <pattern>CMakeCache.txt</pattern>
+                    <variable>CMAKECACHE_TXT</variable>
+                </findFile>
+                <propertiesFileGet>
+                    <file>${CMAKECACHE_TXT}</file>
+                    <key>QT_BINARY_DIR:INTERNAL</key>
+                    <variable>QT_BINARY_DIR</variable>
+                </propertiesFileGet>
+                <copyFile>
+                    <destination>..\..\build\install_files</destination>
+                    <origin>${QT_BINARY_DIR}/QtCore4.dll</origin>
+                </copyFile>
+                <copyFile>
+                    <destination>..\..\build\install_files</destination>
+                    <origin>${QT_BINARY_DIR}/QtGui4.dll</origin>
+                </copyFile>
+                <propertiesFileGet>
+                    <file>${CMAKECACHE_TXT}</file>
+                    <key>INSTALLBUILDER_ROOT_DIR:INTERNAL</key>
+                    <variable>INSTALLBUILDER_ROOT_DIR</variable>
+                </propertiesFileGet>
+                <findFile>
+                    <baseDirectory>${INSTALLBUILDER_ROOT_DIR}/autoupdate/output</baseDirectory>
+                    <pattern>autoupdate-*</pattern>
+                    <variable>AUTOUPDATE_EXE</variable>
+                </findFile>
+                <copyFile>
+                    <destination>..\..\build\install_files</destination>
+                    <origin>${AUTOUPDATE_EXE}</origin>
+                </copyFile>
+            </actionList>
+        </actionGroup>
+    </preBuildActionList>
     <postInstallationActionList>
         <addDirectoryToPath>
             <insertAt>end</insertAt>
@@ -101,7 +256,22 @@ if  grep -v maidsafe /etc/passwd ; then /usr/sbin/adduser --system --shell /bin/
                     <platforms>windows</platforms>
                     <distributionFileList>
                         <distributionFile>
-                            <origin>../../build/Win/Release/bin/perpetualdata.exe</origin>
+                            <origin>../../build/install_files/perpetualdata.exe</origin>
+                        </distributionFile>
+                        <distributionFile>
+                            <origin>../../build/install_files/mingwm10.dll</origin>
+                        </distributionFile>
+                        <distributionFile>
+                            <origin>../../build/install_files/QtCore4.dll</origin>
+                        </distributionFile>
+                        <distributionFile>
+                            <origin>../../build/install_files/QtGui4.dll</origin>
+                        </distributionFile>
+                        <distributionDirectory>
+                            <origin>../../build/install_files/dokan</origin>
+                        </distributionDirectory>
+                        <distributionFile>
+                            <origin>../../build/install_files/mingwm10.dll</origin>
                         </distributionFile>
                     </distributionFileList>
                 </folder>
@@ -117,65 +287,16 @@ if  grep -v maidsafe /etc/passwd ; then /usr/sbin/adduser --system --shell /bin/
                     </distributionFileList>
                 </folder>
                 <folder>
-                    <description>libraries</description>
+                    <description>DokanDLL</description>
                     <destination>${windows_folder_systemroot}/system32</destination>
                     <name>libraries</name>
                     <platforms>windows</platforms>
-                    <distributionFileList>
-                        <distributionFile>
-                            <origin>../../mounter.exe</origin>
-                        </distributionFile>
-                        <distributionFile>
-                            <origin>../../dokan.dll</origin>
-                        </distributionFile>
-                        <distributionFile>
-                            <origin>../../dokanctl.exe</origin>
-                        </distributionFile>
-                        <distributionFile>
-                            <origin>../../mingwm10.dll</origin>
-                        </distributionFile>
-                        <distributionFile>
-                            <origin>../../QtCore4.dll</origin>
-                        </distributionFile>
-                        <distributionFile>
-                            <origin>../../QtCored4.dll</origin>
-                        </distributionFile>
-                        <distributionFile>
-                            <origin>../../QtGui4.dll</origin>
-                        </distributionFile>
-                        <distributionFile>
-                            <origin>../../QtGuid4.dll</origin>
-                        </distributionFile>
-                        <distributionFile>
-                            <origin>../../../maidsafe-dht/trunk/src/build/Win/bin/libcryptopp.a</origin>
-                        </distributionFile>
-                        <distributionFile>
-                            <origin>../../../maidsafe-dht/trunk/src/build/Win/bin/libcryptopp.dll</origin>
-                        </distributionFile>
-                        <distributionFile>
-                            <origin>../../../maidsafe-dht/trunk/src/build/Win/bin/libmaidsafe.a</origin>
-                        </distributionFile>
-                        <distributionFile>
-                            <origin>../../../maidsafe-dht/trunk/src/build/Win/bin/libmaidsafe.dll</origin>
-                        </distributionFile>
-                        <distributionFile>
-                            <origin>../../../maidsafe-dht/trunk/src/build/Win/bin/libudt.a</origin>
-                        </distributionFile>
-                        <distributionFile>
-                            <origin>../../../maidsafe-dht/trunk/src/build/Win/bin/libudt.dll</origin>
-                        </distributionFile>
-                    </distributionFileList>
                 </folder>
                 <folder>
-                    <description>libs</description>
+                    <description>DokanDriver</description>
                     <destination>${windows_folder_systemroot}/system32/drivers</destination>
-                    <name>libs</name>
+                    <name>drivers</name>
                     <platforms>windows</platforms>
-                    <distributionFileList>
-                        <distributionFile>
-                            <origin>../../dokan.sys</origin>
-                        </distributionFile>
-                    </distributionFileList>
                 </folder>
                 <folder>
                     <description>MaidsafeDrive</description>
@@ -304,7 +425,7 @@ if  grep -v maidsafe /etc/passwd ; then /usr/sbin/adduser --system --shell /bin/
                     <platforms>windows</platforms>
                     <distributionFileList>
                         <distributionFile>
-                            <origin>../../build/Win/Release/bin/vault.exe</origin>
+                            <origin>../../build/install_files/vault.exe</origin>
                         </distributionFile>
                     </distributionFileList>
                 </folder>
@@ -330,10 +451,10 @@ if  grep -v maidsafe /etc/passwd ; then /usr/sbin/adduser --system --shell /bin/
                     <startType>auto</startType>
                 </createWindowsService>
                 <showChoiceQuestion>
-                    <defaultValue>no</defaultValue>
-                    <text>Start vault service?</text>
+                    <defaultValue>yes</defaultValue>
+                    <text>Do you want to start the vault?</text>
                     <title>Installation Successful</title>
-                    <variable>startvaultservice</variable>
+                    <variable>START_SVC</variable>
                     <optionList>
                         <option>
                             <description>Yes</description>
@@ -363,6 +484,14 @@ if  grep -v maidsafe /etc/passwd ; then /usr/sbin/adduser --system --shell /bin/
                     <delay>15000</delay>
                     <displayName>PDVault</displayName>
                     <serviceName>PDVault</serviceName>
+                    <ruleList>
+                        <platformTest>
+                            <type>windows</type>
+                        </platformTest>
+                        <isTrue>
+                            <value>START_SVC</value>
+                        </isTrue>
+                    </ruleList>
                 </startWindowsService>
                 <addUnixService>
                     <description>The Vault component of Perpetual Data</description>
@@ -406,7 +535,7 @@ if  grep -v maidsafe /etc/passwd ; then /usr/sbin/adduser --system --shell /bin/
                     <platforms>windows</platforms>
                     <distributionFileList>
                         <distributionFile>
-                            <origin>../../../Program Files/BitRock InstallBuilder for Qt - Windows 6.2.7/autoupdate/output/autoupdate-windows.exe</origin>
+                            <origin>../../build/install_files/autoupdate-windows.exe</origin>
                         </distributionFile>
                     </distributionFileList>
                 </folder>
@@ -427,7 +556,7 @@ if  grep -v maidsafe /etc/passwd ; then /usr/sbin/adduser --system --shell /bin/
                     <name>autoupdaterosx</name>
                     <platforms>osx</platforms>
                     <distributionFileList>
-                        <distributionFile origin="../../../../../Applications/BitRock InstallBuilder Professional 6.3.0/autoupdate/output/autoupdate-osx.app"/>
+                        <distributionFile origin="../../../../Applications/BitRock InstallBuilder Professional 6.3.0/autoupdate/output/autoupdate-osx.app"/>
                     </distributionFileList>
                 </folder>
             </folderList>
@@ -544,12 +673,12 @@ fi
             <name>installdir</name>
             <description>Installer.Parameter.installdir.description</description>
             <explanation>Installer.Parameter.installdir.explanation</explanation>
-            <value></value>
+            <value>${platform_install_prefix}/maidsafe/${product_shortname}-${product_version}</value>
             <default>${platform_install_prefix}/${product_shortname}-${product_version}</default>
             <allowEmptyValue>0</allowEmptyValue>
             <ask>yes</ask>
             <cliOptionName>prefix</cliOptionName>
-            <mustBeWritable>yes</mustBeWritable>
+            <mustBeWritable>1</mustBeWritable>
             <mustExist>0</mustExist>
             <width>30</width>
         </directoryParameter>
