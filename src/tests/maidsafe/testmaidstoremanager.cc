@@ -211,7 +211,6 @@ void AmendAccountCallback(bool initialise_response,
                           google::protobuf::Closure* callback) {
   if (initialise_response) {
     response->set_result(result);
-    response->set_standby(false);
     response->set_pmid(pmid);
   }
   callback->Run();
@@ -535,15 +534,24 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AddToWatchList) {
   }
 
   // Set up data for calls to FindKNodes
-  std::vector<kad::Contact> chunk_info_holders, few_chunk_info_holders;
-  for (boost::uint16_t i = 0; i < kad::K; ++i) {
-    kad::Contact contact(crypto_.Hash(base::IntToString(i * i), "",
-        crypto::STRING_STRING, false), "192.168.10." + base::IntToString(i),
-        8000 + i, "192.168.10." + base::IntToString(i), 8000 + i);
-    chunk_info_holders.push_back(contact);
-    if (i < kKadUpperThreshold - 1)
-      few_chunk_info_holders.push_back(contact);
+  std::vector<std::string> good_pmids, few_pmids;
+  std::string bad_result = mock_kadops::MakeFindNodesResponse(
+      mock_kadops::kResultFail, &good_pmids);
+  std::string good_result = mock_kadops::MakeFindNodesResponse(
+      mock_kadops::kGood, &good_pmids);
+  std::string few_result = mock_kadops::MakeFindNodesResponse(
+      mock_kadops::kTooFewContacts, &few_pmids);
+  std::vector<kad::Contact> chunk_info_holders;
+  {
+    kad::FindResponse find_response;
+    kad::Contact contact;
+    ASSERT_TRUE(find_response.ParseFromString(good_result));
+    for (int i = 0; i < find_response.closest_nodes_size(); ++i) {
+      ASSERT_TRUE(contact.ParseFromString(find_response.closest_nodes(i)));
+      chunk_info_holders.push_back(contact);
+    }
   }
+
   int callback_count(0);
   int send_chunk_count(0);
   boost::mutex mutex;
@@ -553,20 +561,20 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AddToWatchList) {
   EXPECT_CALL(*mko, AddressIsLocal(testing::An<const kad::Contact&>()))
       .WillRepeatedly(testing::Return(true));
   EXPECT_CALL(*mko, FindKClosestNodes(kad::KadId(chunk_names.at(0), false),
-                                   testing::An< std::vector<kad::Contact>* >()))
-      .WillOnce(DoAll(testing::SetArgumentPointee<1>(chunk_info_holders),
-          testing::Return(-1)));  // Call 1
+                                      testing::_))
+      .WillOnce(testing::WithArgs<1>(testing::Invoke(
+          boost::bind(&mock_kadops::RunCallback, bad_result, _1))));  // Call 1
 
   EXPECT_CALL(*mko, FindKClosestNodes(kad::KadId(chunk_names.at(1), false),
-                                   testing::An< std::vector<kad::Contact>* >()))
-      .WillOnce(DoAll(testing::SetArgumentPointee<1>(few_chunk_info_holders),
-          testing::Return(kSuccess)));  // Call 2
+                                      testing::_))
+      .WillOnce(testing::WithArgs<1>(testing::Invoke(
+          boost::bind(&mock_kadops::RunCallback, few_result, _1))));  // Call 2
 
   for (int i = 2; i < kTestCount; ++i) {
     EXPECT_CALL(*mko, FindKClosestNodes(kad::KadId(chunk_names.at(i), false),
-        testing::An< std::vector<kad::Contact>* >()))
-        .WillOnce(DoAll(testing::SetArgumentPointee<1>(chunk_info_holders),
-            testing::Return(kSuccess)));  // Calls 3 to 9
+                                        testing::_))
+        .WillOnce(testing::WithArgs<1>(testing::Invoke(
+            boost::bind(&mock_kadops::RunCallback, good_result, _1))));  // 3-9
   }
 
   for (size_t i = 0; i < chunk_info_holders.size(); ++i) {
@@ -628,7 +636,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AddToWatchList) {
                     kAck,
                     chunk_info_holders.at(i).node_id().ToStringDecoded(),
                     i == 0 ? 0 : kMinChunkCopies - 1,
-                    _1, _2, &callback_count, &mutex, &cond_var))));
+                    _1, _2, &callback_count, &mutex, &cond_var))));  // 9
   }
 
   EXPECT_CALL(msm, SendChunkPrep(
@@ -932,6 +940,9 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AssessUploadCounts) {
       ASSERT_EQ(kRequestPendingConsensus,
                 msm.AssessUploadCounts(add_to_watchlist_data));
       ASSERT_EQ(-1, add_to_watchlist_data->consensus_upload_copies);
+    } else if (kKadLowerThreshold == 1) {
+      ASSERT_EQ(kSuccess, msm.AssessUploadCounts(add_to_watchlist_data));
+      ASSERT_EQ(2, add_to_watchlist_data->consensus_upload_copies);
     } else {
       ASSERT_EQ(kRequestFailedConsensus,
                 msm.AssessUploadCounts(add_to_watchlist_data));
@@ -1631,15 +1642,22 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_RemoveFromWatchList) {
   }
 
   // Set up data for calls to FindKNodes
-  std::vector<kad::Contact> chunk_info_holders, few_chunk_info_holders;
-  for (boost::uint16_t i = 0; i < kad::K; ++i) {
-    kad::Contact contact(crypto_.Hash(base::IntToString(i * i), "",
-                                      crypto::STRING_STRING, false),
-                         "192.168.10." + base::IntToString(i), 8000 + i,
-                         "192.168.10." + base::IntToString(i), 8000 + i);
-    chunk_info_holders.push_back(contact);
-    if (i < kKadUpperThreshold - 1)
-      few_chunk_info_holders.push_back(contact);
+  std::vector<std::string> good_pmids, few_pmids;
+  std::string bad_result = mock_kadops::MakeFindNodesResponse(
+      mock_kadops::kResultFail, &good_pmids);
+  std::string good_result = mock_kadops::MakeFindNodesResponse(
+      mock_kadops::kGood, &good_pmids);
+  std::string few_result = mock_kadops::MakeFindNodesResponse(
+      mock_kadops::kTooFewContacts, &few_pmids);
+  std::vector<kad::Contact> chunk_info_holders;
+  {
+    kad::FindResponse find_response;
+    kad::Contact contact;
+    ASSERT_TRUE(find_response.ParseFromString(good_result));
+    for (int i = 0; i < find_response.closest_nodes_size(); ++i) {
+      ASSERT_TRUE(contact.ParseFromString(find_response.closest_nodes(i)));
+      chunk_info_holders.push_back(contact);
+    }
   }
   ASSERT_TRUE(msm.ss_->SetConnectionStatus(0));
 
@@ -1647,20 +1665,20 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_RemoveFromWatchList) {
   EXPECT_CALL(*mko, AddressIsLocal(testing::An<const kad::Contact&>()))
       .WillRepeatedly(testing::Return(true));
   EXPECT_CALL(*mko, FindKClosestNodes(kad::KadId(chunk_names.at(1), false),
-                                   testing::An< std::vector<kad::Contact>* >()))
-      .WillOnce(DoAll(testing::SetArgumentPointee<1>(chunk_info_holders),
-          testing::Return(-1)));  // Call 2
+                                      testing::_))
+      .WillOnce(testing::WithArgs<1>(testing::Invoke(
+          boost::bind(&mock_kadops::RunCallback, bad_result, _1))));  // Call 2
 
   EXPECT_CALL(*mko, FindKClosestNodes(kad::KadId(chunk_names.at(2), false),
-                                   testing::An< std::vector<kad::Contact>* >()))
-      .WillOnce(DoAll(testing::SetArgumentPointee<1>(few_chunk_info_holders),
-          testing::Return(kSuccess)));  // Call 3
+                                      testing::_))
+      .WillOnce(testing::WithArgs<1>(testing::Invoke(
+          boost::bind(&mock_kadops::RunCallback, few_result, _1))));  // Call 3
 
   for (int i = 3; i < 7; ++i) {
     EXPECT_CALL(*mko, FindKClosestNodes(kad::KadId(chunk_names.at(i), false),
-        testing::An< std::vector<kad::Contact>* >()))
-        .WillOnce(DoAll(testing::SetArgumentPointee<1>(chunk_info_holders),
-            testing::Return(kSuccess)));  // Calls 4 to 7
+                                        testing::_))
+        .WillOnce(testing::WithArgs<1>(testing::Invoke(
+            boost::bind(&mock_kadops::RunCallback, good_result, _1))));  // 4-7
   }
 
   // Contact Info holders 1 to 12 inclusive
@@ -2490,15 +2508,22 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_GetAccountDetails) {
       crypto::STRING_STRING, false);
 
   // Set up data for calls to FindKNodes
-  std::vector<kad::Contact> account_holders, few_account_holders;
-  for (boost::uint16_t i = 0; i < kad::K; ++i) {
-    kad::Contact contact(crypto_.Hash(base::IntToString(i * i), "",
-                                      crypto::STRING_STRING, false),
-                         "192.168.10." + base::IntToString(i), 8000 + i,
-                         "192.168.10." + base::IntToString(i), 8000 + i);
-    account_holders.push_back(contact);
-    if (i < kKadUpperThreshold - 1)
-      few_account_holders.push_back(contact);
+  std::vector<std::string> good_pmids, few_pmids;
+  std::string bad_result = mock_kadops::MakeFindNodesResponse(
+      mock_kadops::kResultFail, &good_pmids);
+  std::string good_result = mock_kadops::MakeFindNodesResponse(
+      mock_kadops::kGood, &good_pmids);
+  std::string few_result = mock_kadops::MakeFindNodesResponse(
+      mock_kadops::kTooFewContacts, &few_pmids);
+  std::vector<kad::Contact> account_holders;
+  {
+    kad::FindResponse find_response;
+    kad::Contact contact;
+    ASSERT_TRUE(find_response.ParseFromString(good_result));
+    for (int i = 0; i < find_response.closest_nodes_size(); ++i) {
+      ASSERT_TRUE(contact.ParseFromString(find_response.closest_nodes(i)));
+      account_holders.push_back(contact);
+    }
   }
 
   // only one thread, so the RPCs are called in order
@@ -2509,14 +2534,14 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_GetAccountDetails) {
   EXPECT_CALL(*mko, AddressIsLocal(testing::An<const kad::Contact&>()))
       .WillRepeatedly(testing::Return(true));
   EXPECT_CALL(*mko, FindKClosestNodes(kad::KadId(account_name, false),
-                                   testing::An< std::vector<kad::Contact>* >()))
+                                      testing::_))
       .Times(7)
-      .WillOnce(DoAll(testing::SetArgumentPointee<1>(account_holders),
-          testing::Return(-1)))  // Call 1
-      .WillOnce(DoAll(testing::SetArgumentPointee<1>(few_account_holders),
-          testing::Return(kSuccess)))  // Call 2
-      .WillRepeatedly(DoAll(testing::SetArgumentPointee<1>(account_holders),
-          testing::Return(kSuccess)));
+      .WillOnce(testing::WithArgs<1>(testing::Invoke(
+          boost::bind(&mock_kadops::RunCallback, bad_result, _1))))  // Call 1
+      .WillOnce(testing::WithArgs<1>(testing::Invoke(
+          boost::bind(&mock_kadops::RunCallback, few_result, _1))))  // Call 2
+      .WillRepeatedly(testing::WithArgs<1>(testing::Invoke(
+          boost::bind(&mock_kadops::RunCallback, good_result, _1))));
 
   // Account holder responses
   for (int i = 0; i < kad::K; ++i) {

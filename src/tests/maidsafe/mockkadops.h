@@ -65,12 +65,6 @@ class MockKadOps : public KadOps {
                               std::string *needs_cache_copy_id));
   MOCK_METHOD2(FindKClosestNodes, void(const kad::KadId &kad_key,
                                     const kad::VoidFunctorOneString &callback));
-  MOCK_METHOD2(FindKClosestNodes, int(const kad::KadId &kad_key,
-                                   std::vector<kad::Contact> *contacts));
-  int FindCloseNodesReal(const kad::KadId &kad_key,
-                         std::vector<kad::Contact> *contacts) {
-    return KadOps::FindKClosestNodes(kad_key, contacts);
-  }
   MOCK_METHOD4(GetStorePeer, int(const double &ideal_rtt,
                                  const std::vector<kad::Contact> &exclude,
                                  kad::Contact *new_peer,

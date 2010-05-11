@@ -778,7 +778,6 @@ void VaultService::AmendAccount(google::protobuf::RpcController*,
                                 maidsafe::AmendAccountResponse *response,
                                 google::protobuf::Closure *done) {
   response->set_pmid(pmid_);
-  response->set_standby(false);
   response->set_result(kNack);
   // Validate request and extract data
   boost::uint64_t account_delta;
@@ -867,25 +866,7 @@ void VaultService::ExpectAmendment(google::protobuf::RpcController*,
     return;
   }
 
-  done->Run();  // TODO(Steve#) implement ExpectAmendment
-}
-
-void VaultService::ConfirmAmendment(google::protobuf::RpcController*,
-    const maidsafe::ConfirmAmendmentRequest *request,
-    maidsafe::ConfirmAmendmentResponse *response,
-    google::protobuf::Closure *done) {
-  response->set_pmid(pmid_);
-  response->set_result(kNack);
-  if (!request->IsInitialized()) {
-#ifdef DEBUG
-    printf("In VaultService::ConfirmAmendment (%s), request is not initialized."
-           "\n", HexSubstr(pmid_).c_str());
-#endif
-    done->Run();
-    return;
-  }
-
-  done->Run();  // TODO(Steve#) implement ConfirmAmendment
+  done->Run();  // TODO(Team#) implement ExpectAmendment
 }
 
 void VaultService::AccountStatus(google::protobuf::RpcController*,
@@ -2232,7 +2213,6 @@ void VaultService::AmendRemoteAccount(
   mutable_signed_size->set_public_key(pmid_public_);
   mutable_signed_size->set_public_key_signature(pmid_public_signature_);
   amend_account_request.set_chunkname(chunkname);
-  amend_account_request.set_confirmation_required(false);
       // TODO(Steve#) confirmation required
 
   // thread_pool_ handles destruction of task.

@@ -24,8 +24,6 @@ service MaidsafeService {
   rpc AmendAccount (AmendAccountRequest) returns (AmendAccountResponse);
   rpc ExpectAmendment (ExpectAmendmentRequest) returns
       (ExpectAmendmentResponse);
-  rpc ConfirmAmendment (ConfirmAmendmentRequest) returns
-      (ConfirmAmendmentResponse);
   rpc AccountStatus (AccountStatusRequest) returns (AccountStatusResponse);
   // synchronisation services
   rpc GetSyncData (GetSyncDataRequest) returns (GetSyncDataResponse);

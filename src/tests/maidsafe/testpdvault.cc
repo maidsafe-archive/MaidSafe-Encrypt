@@ -376,7 +376,7 @@ TEST_F(PDVaultTest, FUNC_MAID_StoreAndGetChunks) {
            HexSubstr(account_name).c_str());
     std::set<std::string> closest;
     std::vector<kad::Contact> contacts;
-    clients_[i]->msm->kad_ops_->FindKClosestNodes(
+    clients_[i]->msm->kad_ops_->BlockingFindKClosestNodes(
         kad::KadId(account_name, false), &contacts);
     for (size_t j = 0; j < contacts.size(); ++j) {
       closest.insert(contacts[j].node_id().ToStringDecoded());

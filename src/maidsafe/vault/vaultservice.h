@@ -214,10 +214,6 @@ class VaultService : public maidsafe::MaidsafeService {
                                const maidsafe::ExpectAmendmentRequest *request,
                                maidsafe::ExpectAmendmentResponse *response,
                                google::protobuf::Closure *done);
-  virtual void ConfirmAmendment(google::protobuf::RpcController *controller,
-      const maidsafe::ConfirmAmendmentRequest *request,
-      maidsafe::ConfirmAmendmentResponse *response,
-      google::protobuf::Closure *done);
   virtual void AccountStatus(google::protobuf::RpcController *controller,
                              const maidsafe::AccountStatusRequest *request,
                              maidsafe::AccountStatusResponse *response,
