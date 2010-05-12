@@ -1948,6 +1948,7 @@ int MaidsafeStoreManager::GetExpectAmendmentRequests(
     std::vector<ExpectAmendmentRequest> *expect_amendment_requests) {
 
 
+  /*
   required AmendAccountRequest.Amendment amendment_type = 1;
   required bytes chunkname = 2;
   required bytes account_pmid = 3;  // PMID of account owner (i.e. sender)
@@ -1955,7 +1956,7 @@ int MaidsafeStoreManager::GetExpectAmendmentRequests(
   required bytes public_key_signature = 5;
   required bytes request_signature = 6;
   repeated bytes amender_pmids = 7;  // the K vaults to expect amendments from
-  /*
+
   expect_amendment_requests->clear();
   crypto::Crypto co;
   co.set_symm_algorithm(crypto::AES_256);

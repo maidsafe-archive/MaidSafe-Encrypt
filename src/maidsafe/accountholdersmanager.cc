@@ -72,7 +72,7 @@ void AccountHoldersManager::FindNodesCallback(
     if (contact.node_id().ToStringDecoded() != pmid_)
       account_holder_group_.push_back(contact);
   }
-  callback(kSuccess, new_account_holder_group);
+  callback(kSuccess, account_holder_group_);
   last_update_ = boost::posix_time::microsec_clock::universal_time();
 }
 
