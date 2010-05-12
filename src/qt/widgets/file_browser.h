@@ -24,6 +24,7 @@
 #include <QProcess>
 #include <QPixmap>
 
+#include "maidsafe/client/clientcontroller.h"
 #include "ui_file_browser.h"
 
 class FileBrowser : public QDialog {
@@ -71,19 +72,36 @@ class FileBrowser : public QDialog {
   QAction *typeSort;
   QAction *dateSort;
 
+    enum ViewMode {
+    TILES,
+    DETAIL,
+    LIST,
+    SMALLICONS,
+    LARGEICONS
+    };
+
+  void setViewMode(ViewMode viewMode);
+  ViewMode viewMode_;
+
   boost::shared_ptr<QProcess> myProcess_;
 
   QIcon getAssociatedIconFromPath(const QString& filepath);
   QString getCurrentTreePath(QTreeWidgetItem* item);
   QString getFullFilePath(const QString& filepath);
   void createAndConnectActions();
-  int populateDirectory(const QString);
+  void populateDirectory(const QString);
   int createTreeDirectory(const QString);
   void uploadFileFromLocal(const QString& filePath);
   void saveFileToNetwork(const QString& filePath);
   void getTreeSubFolders(const QString);
+	void openFileFromDir(const QString);
   void setMenuDirMenu();
   void setMenuFileMenu();
+  int drawTileView();
+  int drawDetailView();
+  int drawListView();
+  int drawIconView();
+  int drawLargeIconView();
 
   protected:
     void dropEvent(QDropEvent *event);
@@ -93,6 +111,7 @@ class FileBrowser : public QDialog {
 
   private slots:
     void onItemDoubleClicked(QTreeWidgetItem*, int);
+		void onListItemDoubleClicked(QListWidgetItem*);
     void onFolderItemPressed(QTreeWidgetItem*, int);
     void onMousePressed(QTreeWidgetItem* item, int column);
     void onItemExpanded(QTreeWidgetItem* item);

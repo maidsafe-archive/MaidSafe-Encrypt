@@ -448,7 +448,6 @@ ELSE()
   TARGET_LINK_LIBRARIES(pdlightlocal
                           PDTESTmsclientlib
                           ${ALL_TARGET_LIBS}
-                          ${Dokan_LIBRARY}
                           debug ${Breakpad_LIBRARY_DEBUG} optimized ${Breakpad_LIBRARY})
   TARGET_LINK_LIBRARIES(vault
                           PDmsvaultlib
@@ -540,7 +539,7 @@ ELSEIF(WIN32)
   ADD_DEFINITIONS(-DWIN32_LEAN_AND_MEAN -D_WIN32_WINNT=0x501)
   ADD_DEFINITIONS(-D_UNICODE -DUNICODE -D_BIND_TO_CURRENT_VCLIBS_VERSION=1)
   IF(MSVC)
-    ADD_DEFINITIONS(-D__MSVC__ -DNOMINMAX -DBOOST_ALL_NO_LIB)
+    ADD_DEFINITIONS(-D__MSVC__ -DNOMINMAX -DBOOST_ALL_NO_LIB -DUDT_STATIC)
     SET(CMAKE_CXX_FLAGS_RELEASE "/O2 /Ob2 /Ot /Oy /GL /D \"NDEBUG\" /EHsc /MD /Gy /W3 /Zi /wd4503")
     SET(CMAKE_CXX_FLAGS_DEBUG "/Od /Ot /Oy /D_DEBUG /DDEBUG /EHsc /MDd  /c /ZI /TP /wd4503")
     # CMake defaults stack size to 10MB.  Set this to windows default of 1MB
@@ -559,7 +558,6 @@ ELSEIF(WIN32)
       SET(LINKER_LIBS_DIRS_DEBUG "${LINKER_LIBS_DIRS_DEBUG} /LIBPATH:\"${LIBS_DIR_DEBUG}\"")
     ENDFOREACH()
     SET_TARGET_PROPERTIES(${ALL_EXECUTABLES} PROPERTIES
-                              COMPILE_FLAGS "-DUDT_STATIC"
                               LINK_FLAGS_RELEASE "/STACK:1048576 /OPT:REF /OPT:ICF /LTCG /INCREMENTAL:NO ${LINKER_LIBS_DIRS_RELEASE}"
                               LINK_FLAGS_DEBUG "/STACK:1048576 ${LINKER_LIBS_DIRS_DEBUG}"
                               LINK_FLAGS_RELWITHDEBINFO "/STACK:1048576 ${LINKER_LIBS_DIRS_DEBUG}"

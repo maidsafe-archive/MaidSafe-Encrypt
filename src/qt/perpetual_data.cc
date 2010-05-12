@@ -570,7 +570,17 @@ void PerpetualData::onMessageReceived(int type,
       mess_->setStyleSheet(styleSheet);
       mess_->setMessage(tr("%1 said: %2").arg(sender).arg(detail));
       mess_->show();
-    }
+    } else {
+			foreach(QWidget *widget, QApplication::allWidgets()) {
+				PersonalMessages *mess = qobject_cast<PersonalMessages*>(widget);
+				if (mess) {
+					if (mess->getName() == sender) {
+						mess->setMessage(tr("%1 said: %2").arg(sender).arg(detail));
+						mess->show();
+					}
+				}
+			}
+		}
   } else if (ClientController::MessageType(type) == ClientController::INVITE) {
     // TODO(Team#5#): 2010-01-13 - handle Invite
   } else {
