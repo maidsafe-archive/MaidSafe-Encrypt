@@ -113,6 +113,7 @@ class FileBrowser : public QDialog {
     void onItemDoubleClicked(QTreeWidgetItem*, int);
 		void onListItemDoubleClicked(QListWidgetItem*);
     void onFolderItemPressed(QTreeWidgetItem*, int);
+		void onIconMousePressed(QListWidgetItem*);
     void onMousePressed(QTreeWidgetItem* item, int column);
     void onItemExpanded(QTreeWidgetItem* item);
     void onReadFileCompleted(int success, const QString& filepath);

@@ -71,6 +71,9 @@ FileBrowser::FileBrowser(QWidget* parent) : QDialog(parent), init_(false) {
 
 	connect(ui_.driveListWidget, SIGNAL(itemDoubleClicked(QListWidgetItem*)),
           this,           SLOT(onListItemDoubleClicked(QListWidgetItem*)));
+
+	connect(ui_.driveListWidget, SIGNAL(itemPressed(QListWidgetItem*)),
+          this,           SLOT(onIconMousePressed(QListWidgetItem*)));
 }
 
 FileBrowser::~FileBrowser() {
@@ -235,7 +238,7 @@ void FileBrowser::dropEvent(QDropEvent *event) {
 
 void FileBrowser::onMousePressed(QTreeWidgetItem *item, int) {
   if (QApplication::mouseButtons() == Qt::RightButton) {
-    if (item->text(3) == "Directory")
+    if (item->text(3) == "Directory")	
       setMenuDirMenu();
     else
       setMenuFileMenu();
@@ -243,20 +246,46 @@ void FileBrowser::onMousePressed(QTreeWidgetItem *item, int) {
   }
 }
 
+void FileBrowser::onIconMousePressed(QListWidgetItem* item) {
+  if (QApplication::mouseButtons() == Qt::RightButton) {
+    if (item->toolTip().contains("Directory"))	
+      setMenuDirMenu();
+    else
+      setMenuFileMenu();
+    menu->exec(QCursor::pos());
+  }	
+}
+
 void FileBrowser::onOpenFileClicked() {
-  QTreeWidgetItem* theItem = ui_.driveTreeWidget->currentItem();
-  onItemDoubleClicked(theItem, 0);
+	if (viewMode_ == DETAIL){
+		QTreeWidgetItem* theItem = ui_.driveTreeWidget->currentItem();
+		onItemDoubleClicked(theItem, 0);
+	} else {
+		QListWidgetItem* theItem = ui_.driveListWidget->currentItem();
+		onListItemDoubleClicked(theItem);
+	}
 }
 
 void FileBrowser::onOpenWithClicked() {
   qDebug() << "Open With invoked";
-  QTreeWidgetItem* theItem = ui_.driveTreeWidget->currentItem();
-  if (theItem->text(1) == tr("Network")) {
-    QMessageBox::warning(this, tr("PD Error"),
-                    tr("You must download the file before trying to open it"));
-                        return;
-  }
-  QString path = rootPath_ + currentDir_ + theItem->text(0);
+	QString path;
+	if (viewMode_ == DETAIL) {
+		QTreeWidgetItem* theItem = ui_.driveTreeWidget->currentItem();
+		if (theItem->text(1) == tr("Network")) {
+			QMessageBox::warning(this, tr("PD Error"),
+											tr("You must download the file before trying to open it"));
+			return;
+		}
+		path = rootPath_ + currentDir_ + theItem->text(0);	
+	} else {
+		QListWidgetItem* theItem = ui_.driveListWidget->currentItem();
+		if(theItem->toolTip().contains(tr("Newtork"))) {
+			QMessageBox::warning(this, tr("PD Error"),
+					tr("You must download the file before trying to open it"));
+			return;
+	}
+		path = rootPath_ + currentDir_ + theItem->text();	
+}
 
 #if defined(PD_WIN32)
   QString operation("open");
@@ -317,8 +346,14 @@ void FileBrowser::onOpenWithClicked() {
 }
 
 void FileBrowser::onSendFileClicked() {
-  QTreeWidgetItem* theItem = ui_.driveTreeWidget->currentItem();
-  QString filename = theItem->text(0);
+	QString filename;
+	if (viewMode_ == DETAIL){
+		QTreeWidgetItem* theItem = ui_.driveTreeWidget->currentItem();
+		filename = theItem->text(0);
+	} else {
+		QListWidgetItem* theItem = ui_.driveListWidget->currentItem();
+		filename = theItem->text();
+	}
   bool ok;
   QString text = QInputDialog::getText(this, tr("Who will receive the file?"),
                                        tr("Recipient"),
@@ -348,18 +383,27 @@ void FileBrowser::onCutFileClicked() {
 }
 
 void FileBrowser::onDeleteFileClicked() {
-  QTreeWidgetItem* theItem = ui_.driveTreeWidget->currentItem();
-  qDebug() << theItem->text(0);
-  if (theItem->text(1) == tr("Network")) {
+	bool onNetwork;
+	QString filename;
+	if (viewMode_ == DETAIL) {
+		QTreeWidgetItem* theItem = ui_.driveTreeWidget->currentItem();
+		onNetwork = (theItem->text(1) == tr("Network"));
+		filename = theItem->text(0);
+	} else {
+		QListWidgetItem* theItem = ui_.driveListWidget->currentItem();
+		onNetwork = theItem->text().contains(tr("Network"));
+		filename = theItem->text();
+	}
+  if (onNetwork) {
     QMessageBox msgBox;
     msgBox.setText(tr("Delete Item"));
     msgBox.setInformativeText(
-        tr("Do you wish to remove %1?").arg(theItem->text(0)));
+        tr("Do you wish to remove %1?").arg(filename));
     msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
     msgBox.setDefaultButton(QMessageBox::Save);
     int ret = msgBox.exec();
     if (ret == QMessageBox::Yes) {
-      RemoveDirThread* rdt = new RemoveDirThread(currentDir_ + theItem->text(0),
+      RemoveDirThread* rdt = new RemoveDirThread(currentDir_ + filename,
                                                  this);
 
       connect(rdt,  SIGNAL(removeDirCompleted(int, const QString&)),
@@ -395,14 +439,24 @@ void FileBrowser::onNewFolderClicked() {
 
 void FileBrowser::onRenameFileClicked() {
   bool ok;
-  QTreeWidgetItem* theItem = ui_.driveTreeWidget->currentItem();
-  qDebug() << theItem->text(1);
-  if (theItem->text(1) == tr("Network")) {
+	bool onNetwork;
+	QString filename;
+		if (viewMode_ == DETAIL) {
+		QTreeWidgetItem* theItem = ui_.driveTreeWidget->currentItem();
+		onNetwork = (theItem->text(1) == tr("Network"));
+		filename = theItem->text(0);
+	} else {
+		QListWidgetItem* theItem = ui_.driveListWidget->currentItem();
+		onNetwork = theItem->text().contains(tr("Network"));
+		filename = theItem->text();
+	}
+
+  if (onNetwork) {
     QString text = QInputDialog::getText(this, tr("Rename File"),
-        tr("New file name:"), QLineEdit::Normal, theItem->text(0), &ok);
+        tr("New file name:"), QLineEdit::Normal, filename, &ok);
     if (ok && !text.isEmpty()) {
       RenameFileThread* rft = new RenameFileThread(currentDir_ +
-                                                       theItem->text(0),
+                                                       filename,
                                                    currentDir_ + text, this);
 
       connect(rft,
@@ -421,12 +475,19 @@ void FileBrowser::onRenameFileClicked() {
 }
 
 void FileBrowser::onSaveFileClicked() {
-  QTreeWidgetItem* theItem = ui_.driveTreeWidget->currentItem();
-  if (theItem->text(1) == tr("Local")) {
-    // ui_.driveTreeWidget->editItem(item, 1);
-    theItem->setText(1, tr("Uploading"));
-    saveFileToNetwork(currentDir_ + theItem->text(0));
-  }
+	if (viewMode_ == DETAIL) {
+		QTreeWidgetItem* theItem = ui_.driveTreeWidget->currentItem();
+		if (theItem->text(1) == tr("Local")) {
+			theItem->setText(1, tr("Uploading"));
+			saveFileToNetwork(currentDir_ + theItem->text(0));
+		}
+	} else {
+		QListWidgetItem* theItem = ui_.driveListWidget->currentItem();
+		if (theItem->toolTip().contains(tr("Local"))) {
+			theItem->setToolTip(theItem->toolTip().replace(tr("Local"),tr("Uploading"), Qt::CaseSensitive));
+			saveFileToNetwork(currentDir_ + theItem->text());
+		}
+	}
 }
 
 void FileBrowser::onBackClicked(bool) {
@@ -618,7 +679,8 @@ int FileBrowser::drawIconView(){
 			newItem->setIcon(theIcon);
       newItem->setText(item);
 
-			newItem->setToolTip(tr("Status: Network") + "<br>" + tr("Type: Directory") + "<br>" + tr("Size: %1 KB").arg(
+			newItem->setToolTip(tr("Name: %1").arg(item) + tr("Status: Network") + "<br>" +
+													tr("Type: Directory") + "<br>" + tr("Size: %1 KB").arg(
 					ceil(static_cast<double>(mdm.file_size_low())/1024)) + "<br>" + "Date Modified:" +
 					lastModified->toString("dd/MM/yyyy hh:mm"));
 			ui_.driveListWidget->addItem(newItem);
@@ -851,9 +913,7 @@ void FileBrowser::onReadFileCompleted(int success, const QString& filepath) {
 				QTreeWidgetItem* theWidget = widgetList[0];
 				ui_.driveTreeWidget->editItem(theWidget, 1);
 				theWidget->setText(1, tr("Local"));
-			} else {
-				qDebug() << "onReadFileFailed";
-			}
+			} 
 		} else {
 			QList<QListWidgetItem *> widgetList = ui_.driveListWidget->findItems(
 																								theFile, Qt::MatchExactly);
@@ -911,18 +971,23 @@ void FileBrowser::onSaveFileCompleted(int success, const QString& filepath) {
     file.erase(0, file.find_last_of("/") + 1);
     QString theFile(QString::fromStdString(file));
 
-    QList<QTreeWidgetItem *> widgetList = ui_.driveTreeWidget->findItems(
+		if (viewMode_ == DETAIL) {
+			QList<QTreeWidgetItem *> widgetList = ui_.driveTreeWidget->findItems(
                                               theFile, Qt::MatchExactly, 0);
 
-    qDebug() << "in onSaveFileCompleted : " << theFile;
-
-    if (!widgetList.empty()) {
-      QTreeWidgetItem* theWidget = widgetList[0];
-      ui_.driveTreeWidget->editItem(theWidget, 1);
-      theWidget->setText(1, tr("Network"));
-
-      qDebug() << "widgetList not empty";
-    }
+			if (!widgetList.empty()) {
+				QTreeWidgetItem* theWidget = widgetList[0];
+				ui_.driveTreeWidget->editItem(theWidget, 1);
+				theWidget->setText(1, tr("Network"));
+			}
+		} else {
+			QList<QListWidgetItem *> widgetList = ui_.driveListWidget->findItems(
+																								theFile, Qt::MatchExactly);
+			if (!widgetList.empty()) {
+				QListWidgetItem* theWidget = widgetList[0];
+				theWidget->setToolTip(theWidget->toolTip().replace(tr("Uploading"),tr("Network"), Qt::CaseSensitive));
+			}
+		}
     populateDirectory(currentDir_);
   } else {
     qDebug() << "onSaveFileCompleted : no file found";
