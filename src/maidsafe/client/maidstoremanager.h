@@ -209,6 +209,8 @@ struct BPResults {
 class MaidsafeStoreManager : public StoreManagerInterface {
  public:
   explicit MaidsafeStoreManager(boost::shared_ptr<ChunkStore> cstore);
+  MaidsafeStoreManager(boost::shared_ptr<ChunkStore> cstore,
+      SessionSingleton *ss);
   virtual ~MaidsafeStoreManager() {}
   void Init(int port, kad::VoidFunctorOneString cb, fs::path db_directory);
   void Close(kad::VoidFunctorOneString cb, bool cancel_pending_ops);
@@ -308,6 +310,10 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   void SetSessionEndPoint();
   void SetInstantMessageNotifier(IMNotifier on_msg, IMStatusNotifier
       status_notifier);
+
+//  void ResetSessionSingleton(SessionSingleton *ss) {
+//    ss_ = ss;
+//  }
 
  private:
   MaidsafeStoreManager &operator=(const MaidsafeStoreManager&);

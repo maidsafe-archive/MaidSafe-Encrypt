@@ -106,13 +106,13 @@ void PerpetualData::onJoinKademliaCompleted(bool b) {
   setState(LOGIN);
 
   connect(ClientController::instance(),
-          SIGNAL(messageReceived(ClientController::MessageType,
+          SIGNAL(messageReceived(int,
                                     const QDateTime&,
                                     const QString&,
                                     const QString&,
                                     const QString&)),
           this,
-          SLOT(onMessageReceived(ClientController::MessageType,
+          SLOT(onMessageReceived(int,
                                     const QDateTime&,
                                     const QString&,
                                     const QString&,
@@ -549,22 +549,18 @@ void PerpetualData::onApplicationActionTriggered() {
   }
 }
 
-void PerpetualData::onMessageReceived(ClientController::MessageType type,
+void PerpetualData::onMessageReceived(int type,
                                       const QDateTime&,
                                       const QString& sender,
                                       const QString& detail,
                                       const QString&) {
   boost::progress_timer t;
-  if (type == ClientController::TEXT) {
+  if (ClientController::MessageType(type) == ClientController::TEXT) {
     std::list<std::string> theList;
-    ClientController::instance()->ConversationList(&theList);
+    int result =
+        ClientController::instance()->ConversationExits(sender.toStdString());
 
-    QList<QString> messageList;
-    foreach(std::string theConv, theList) {
-        messageList.append(QString::fromStdString(theConv));
-    }
-
-    if (!messageList.contains(sender)) {
+    if (result != 0) {
       PersonalMessages* mess_ = new PersonalMessages(this, sender);
 
       QFile file(":/qss/defaultWithWhite1.qss");
@@ -585,8 +581,10 @@ void PerpetualData::onMessageReceived(ClientController::MessageType type,
 				}
 			}
 		}
-  } else if (type == ClientController::INVITE) {
+  } else if (ClientController::MessageType(type) == ClientController::INVITE) {
     // TODO(Team#5#): 2010-01-13 - handle Invite
+  } else {
+    printf("Type != ClientController::TEXT && ClientController::INVITE\n");
   }
 }
 

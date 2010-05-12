@@ -56,12 +56,18 @@ ClientController::ClientController(QObject* parent)
 ClientController::~ClientController() { }
 
 bool ClientController::Init() {
-  return maidsafe::ClientController::getInstance()->Init();
+  int init_result = maidsafe::ClientController::getInstance()->Init();
+  if (init_result == 0) {
+    maidsafe::ClientController::getInstance()->RegisterImNotifiers(
+        boost::bind(&ClientController::OnNewMessage, this, _1),
+        boost::bind(&ClientController::OnHelloPing, this, _1, _2));
+  }
+  return init_result;
 }
 
 void ClientController::StartCheckingMessages() {
   cfmt_ = new CheckForMessagesThread(this);
-  cfmt_->set_interval(3);
+  cfmt_->set_interval(kCheckForMessagesInterval);
   cfmt_->set_started(true);
   connect(cfmt_, SIGNAL(completed(bool)),
           this,  SLOT(onCheckMessagesCompleted(bool)));
@@ -386,7 +392,7 @@ void ClientController::onCheckMessagesCompleted(bool) {
 
 void ClientController::analyseMessage(const maidsafe::InstantMessage& im) {
   boost::progress_timer t;
-  MessageType type = TEXT;
+  int type = int(TEXT);
   int n = 0;
   if (im.has_contact_notification()) {
     qDebug() << "HANDLING Contact Notification";
@@ -565,4 +571,17 @@ int ClientController::mkdir(const std::string &path) {
 
 int ClientController::rmdir(const std::string &path) {
   return maidsafe::ClientController::getInstance()->rmdir(path);
+}
+
+void ClientController::OnNewMessage(const std::string &msg) {
+  maidsafe::InstantMessage im;
+  if (im.ParseFromString(msg)) {
+    analyseMessage(im);
+  }
+}
+
+void ClientController::OnHelloPing(const std::string &contact_name,
+        const int &status) {
+  // TODO(Team): update GUI
+  printf("contact %s with status %d\n", contact_name.c_str(), status);
 }
