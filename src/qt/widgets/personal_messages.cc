@@ -61,19 +61,6 @@ PersonalMessages::PersonalMessages(QWidget* parent, QString name)
 
   this->setWindowTitle(this->windowTitle() + " " + name);
 
-  /*connect(ClientController::instance(),
-          SIGNAL(messageReceived(int,
-                                    const QDateTime&,
-                                    const QString&,
-                                    const QString&,
-                                    const QString&)),
-          this,
-          SLOT(onMessageReceived(int,
-                                    const QDateTime&,
-                                    const QString&,
-                                    const QString&,
-                                    const QString&)));	*/
-
   connect(ui_.send_message_btn, SIGNAL(clicked(bool)),
           this,                 SLOT(onSendMessageClicked()));
 
