@@ -417,7 +417,7 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   virtual int ValidatePrepResponse(
       const std::string &peer_node_id,
       const SignedSize &request_signed_size,
-      StorePrepResponse *const store_prep_response);
+      const StorePrepResponse *store_prep_response);
   // Send the actual data content to the peer.
   virtual int SendChunkContent(
       boost::shared_ptr<SendChunkData> send_chunk_data);
@@ -482,7 +482,7 @@ class MaidsafeStoreManager : public StoreManagerInterface {
       boost::shared_ptr<LocalVaultOwnedCallbackArgs> callback_args);
   void AccountHoldersManagerInitCallback(
       const ReturnCode &result,
-      const AccountHolderSet &account_holder_set,
+      const std::vector<kad::Contact> &account_holder_group,
       boost::shared_ptr<AmendAccountData> data);
   void AmendAccountCallback(size_t index,
                             boost::shared_ptr<AmendAccountData> data);

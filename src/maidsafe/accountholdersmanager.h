@@ -28,20 +28,16 @@
 #include <boost/thread/mutex.hpp>
 #include <maidsafe/kademlia/contact.h>
 #include <maidsafe/kademlia/kadid.h>
-#include <set>
 #include <string>
+#include <vector>
 #include "maidsafe/returncodes.h"
 
 namespace maidsafe {
 
 class KadOps;
 
-typedef std::set< kad::Contact,
-                  boost::function<bool(const kad::Contact&,
-                                       const kad::Contact&)> > AccountHolderSet;
-
-typedef boost::function<void(const ReturnCode&, const AccountHolderSet&)>
-    AccountHolderSetFunctor;
+typedef boost::function<void(const ReturnCode&,
+    const std::vector<kad::Contact>&)> AccountHolderGroupFunctor;
 
 class AccountHoldersManager {
  public:
@@ -49,29 +45,29 @@ class AccountHoldersManager {
       : kad_ops_(kad_ops),
         pmid_(),
         account_name_(),
-        account_holder_set_(),
+        account_holder_group_(),
         mutex_(),
         last_update_(boost::posix_time::neg_infin) {}
   void Init(const std::string &pmid,
-            const AccountHolderSetFunctor &callback);
-  AccountHolderSet account_holder_set() {
+            const AccountHolderGroupFunctor &callback);
+  std::vector<kad::Contact> account_holder_group() {
     boost::mutex::scoped_lock lock(mutex_);
-    return account_holder_set_;
+    return account_holder_group_;
   }
   std::string account_name() { return account_name_; }
-  void UpdateMap(AccountHolderSetFunctor callback);
+  void UpdateMap(AccountHolderGroupFunctor callback);
  private:
   AccountHoldersManager &operator=(const AccountHoldersManager&);
   AccountHoldersManager(const AccountHoldersManager&);
   void FindNodesCallback(const std::string &response,
-                         AccountHolderSetFunctor callback);
+                         AccountHolderGroupFunctor callback);
   bool CompareHolders(kad::Contact lhs, kad::Contact rhs) {
     return kad::KadId::CloserToTarget(lhs.node_id(), rhs.node_id(),
                                       kad::KadId(account_name_, false));
   }
   boost::shared_ptr<KadOps> kad_ops_;
   std::string pmid_, account_name_;
-  AccountHolderSet account_holder_set_;
+  std::vector<kad::Contact> account_holder_group_;
   boost::mutex mutex_;
   boost::posix_time::ptime last_update_;
 };

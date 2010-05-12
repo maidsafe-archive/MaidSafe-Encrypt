@@ -28,7 +28,7 @@
 namespace maidsafe {
 
 void AccountHoldersManager::Init(const std::string &pmid,
-                                 const AccountHolderSetFunctor &callback) {
+                                 const AccountHolderGroupFunctor &callback) {
   pmid_ = pmid;
   crypto::Crypto co;
   co.set_hash_algorithm(crypto::SHA_512);
@@ -36,21 +36,21 @@ void AccountHoldersManager::Init(const std::string &pmid,
   UpdateMap(callback);
 }
 
-void AccountHoldersManager::UpdateMap(AccountHolderSetFunctor callback) {
+void AccountHoldersManager::UpdateMap(AccountHolderGroupFunctor callback) {
   kad_ops_->FindKClosestNodes(kad::KadId(account_name_, false), boost::bind(
       &AccountHoldersManager::FindNodesCallback, this, _1, callback));
 }
 
 void AccountHoldersManager::FindNodesCallback(
     const std::string &response,
-    AccountHolderSetFunctor callback) {
+    AccountHolderGroupFunctor callback) {
   kad::FindResponse find_response;
   if (!find_response.ParseFromString(response)) {
 #ifdef DEBUG
     printf("In AHM::FindNodesCallback, can't parse result.\n");
 #endif
-    AccountHolderSet empty_account_holder_set;
-    callback(kFindNodesParseError, empty_account_holder_set);
+    std::vector<kad::Contact> empty_account_holder_group;
+    callback(kFindNodesParseError, empty_account_holder_group);
     return;
   }
 
@@ -58,24 +58,21 @@ void AccountHoldersManager::FindNodesCallback(
 #ifdef DEBUG
     printf("In AHM::FindNodesCallback, Kademlia RPC failed.\n");
 #endif
-    AccountHolderSet empty_account_holder_set;
-    callback(kFindNodesFailure, empty_account_holder_set);
+    std::vector<kad::Contact> empty_account_holder_group;
+    callback(kFindNodesFailure, empty_account_holder_group);
     return;
   }
 
-  AccountHolderSet new_account_holder_set(boost::bind(
-            &AccountHoldersManager::CompareHolders, this, _1, _2));
+  boost::mutex::scoped_lock lock(mutex_);
+  account_holder_group_.clear();
   for (int i = 0; i < find_response.closest_nodes_size(); ++i) {
     kad::Contact contact;
     contact.ParseFromString(find_response.closest_nodes(i));
     // Vault cannot be AccountHolder for self
-    if(contact.node_id().ToStringDecoded() != pmid_)
-      new_account_holder_set.insert(contact);
+    if (contact.node_id().ToStringDecoded() != pmid_)
+      account_holder_group_.push_back(contact);
   }
-
-  callback(kSuccess, new_account_holder_set);
-  boost::mutex::scoped_lock lock(mutex_);
-  account_holder_set_.swap(new_account_holder_set);
+  callback(kSuccess, new_account_holder_group);
   last_update_ = boost::posix_time::microsec_clock::universal_time();
 }
 

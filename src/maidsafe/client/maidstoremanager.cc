@@ -1615,9 +1615,7 @@ void MaidsafeStoreManager::AddToWatchListStageTwo(
     data->contacts.push_back(contact);
   }
 
-  data->account_holders.assign(
-      account_holders_manager_.account_holder_set().begin(),
-      account_holders_manager_.account_holder_set().end());
+  data->account_holders = account_holders_manager_.account_holder_group();
 
   // Set up holders for forthcoming ExpectAmendment RPCs
   std::vector<ExpectAmendmentRequest> expect_amendment_requests;
@@ -1666,7 +1664,7 @@ void MaidsafeStoreManager::AddToWatchListStageTwo(
   }
 
   // Send ExpectAmendment RPCs
-//  for (AccountHolderSet::iterator it = account_holders_.begin();
+//  for (std::vector<kad::Contact>::iterator it = account_holders_.begin();
 //       it != account_holders_.end(); ++it) {
 //    google::protobuf::Closure* callback = google::protobuf::NewCallback(this,
 //        &MaidsafeStoreManager::ExpectAmendmentCallback, );
@@ -1676,7 +1674,6 @@ void MaidsafeStoreManager::AddToWatchListStageTwo(
 //        &data->add_to_watchlist_data_holders.at(j).response,
 //        data->add_to_watchlist_data_holders.at(j).controller.get(), callback);
 //  }
-
 }
 
 void MaidsafeStoreManager::AddToWatchListStageThree(
@@ -1702,7 +1699,7 @@ void MaidsafeStoreManager::AddToWatchListStageThree(
 #endif
   } else if (holder.response.pmid() != holder.node_id) {
 #ifdef DEBUG
-    printf("In MSM::AddToWatchListStageThree, response %u from %s has pmid %s.\n",
+    printf("In MSM::AddToWatchListStageThree, resp %u from %s has pmid %s.\n",
            index, HexSubstr(holder.node_id).c_str(),
            HexSubstr(holder.response.pmid()).c_str());
 #endif
@@ -1951,43 +1948,41 @@ int MaidsafeStoreManager::GetExpectAmendmentRequests(
     std::vector<ExpectAmendmentRequest> *expect_amendment_requests) {
 
 
-  //required AmendAccountRequest.Amendment amendment_type = 1;
-  //required bytes chunkname = 2;
-  //required bytes account_pmid = 3;  // PMID of account owner (i.e. sender)
-  //required bytes public_key = 4;
-  //required bytes public_key_signature = 5;
-  //required bytes request_signature = 6;
-  //repeated bytes amender_pmids = 7;  // the K vaults to expect amendments from
-  //
-  //
-  //
-  //expect_amendment_requests->clear();
-  //crypto::Crypto co;
-  //co.set_symm_algorithm(crypto::AES_256);
-  //co.set_hash_algorithm(crypto::SHA_512);
-  //ExpectAmendmentRequest request;
-  //request.set_chunkname(store_data.data_name);
-  //SignedSize *mutable_signed_size = request.mutable_signed_size();
-  //mutable_signed_size->set_data_size(store_data.size);
-  //mutable_signed_size->set_signature(
-  //    co.AsymSign(boost::lexical_cast<std::string>(store_data.size), "",
-  //                store_data.private_key, crypto::STRING_STRING));
-  //mutable_signed_size->set_pmid(store_data.key_id);
-  //mutable_signed_size->set_public_key(store_data.public_key);
-  //mutable_signed_size->set_public_key_signature(
-  //    store_data.public_key_signature);
-  //for (size_t i = 0; i < recipients.size(); ++i) {
-  //  std::string signature;
-  //  GetRequestSignature(store_data.data_name, store_data.dir_type,
-  //      recipients.at(i).node_id().ToStringDecoded(), store_data.public_key,
-  //      store_data.public_key_signature, store_data.private_key, &signature);
-  //  if (signature.empty()) {
-  //    add_to_watch_list_requests->clear();
-  //    return kGetRequestSigError;
-  //  }
-  //  request.set_request_signature(signature);
-  //  add_to_watch_list_requests->push_back(request);
-  //}
+  required AmendAccountRequest.Amendment amendment_type = 1;
+  required bytes chunkname = 2;
+  required bytes account_pmid = 3;  // PMID of account owner (i.e. sender)
+  required bytes public_key = 4;
+  required bytes public_key_signature = 5;
+  required bytes request_signature = 6;
+  repeated bytes amender_pmids = 7;  // the K vaults to expect amendments from
+  /*
+  expect_amendment_requests->clear();
+  crypto::Crypto co;
+  co.set_symm_algorithm(crypto::AES_256);
+  co.set_hash_algorithm(crypto::SHA_512);
+  ExpectAmendmentRequest request;
+  request.set_chunkname(store_data.data_name);
+  SignedSize *mutable_signed_size = request.mutable_signed_size();
+  mutable_signed_size->set_data_size(store_data.size);
+  mutable_signed_size->set_signature(
+      co.AsymSign(boost::lexical_cast<std::string>(store_data.size), "",
+                  store_data.private_key, crypto::STRING_STRING));
+  mutable_signed_size->set_pmid(store_data.key_id);
+  mutable_signed_size->set_public_key(store_data.public_key);
+  mutable_signed_size->set_public_key_signature(
+      store_data.public_key_signature);
+  for (size_t i = 0; i < recipients.size(); ++i) {
+    std::string signature;
+    GetRequestSignature(store_data.data_name, store_data.dir_type,
+        recipients.at(i).node_id().ToStringDecoded(), store_data.public_key,
+        store_data.public_key_signature, store_data.private_key, &signature);
+    if (signature.empty()) {
+      add_to_watch_list_requests->clear();
+      return kGetRequestSigError;
+    }
+    request.set_request_signature(signature);
+    add_to_watch_list_requests->push_back(request);
+  } */
   return kSuccess;
 }
 
@@ -2236,7 +2231,7 @@ void MaidsafeStoreManager::SendPrepCallback(
 int MaidsafeStoreManager::ValidatePrepResponse(
     const std::string &peer_node_id,
     const SignedSize &request_signed_size,
-    StorePrepResponse *const store_prep_response) {
+    const StorePrepResponse *store_prep_response) {
   // Check response is initialised and from correct peer
   if (!store_prep_response->IsInitialized())
     return kSendPrepResponseUninitialised;
@@ -3004,13 +2999,13 @@ int MaidsafeStoreManager::CreateAccount(const boost::uint64_t &space) {
 
 void MaidsafeStoreManager::AccountHoldersManagerInitCallback(
     const ReturnCode &result,
-    const AccountHolderSet &account_holder_set,
+    const std::vector<kad::Contact> &account_holder_group,
     boost::shared_ptr<AmendAccountData> data) {
   boost::mutex::scoped_lock lock(data->mutex);
   ++data->returned_count;  // to indicate we have a result
   if (result == kSuccess)
     ++data->success_count;
-  data->contacts.assign(account_holder_set.begin(), account_holder_set.end());
+  data->contacts = account_holder_group;
   data->condition.notify_one();
 }
 

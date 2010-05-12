@@ -1380,7 +1380,7 @@ class MockMsmSendPrepCallback : public MaidsafeStoreManager {
   MOCK_METHOD3(ValidatePrepResponse, int(
       const std::string &peer_node_id,
       const SignedSize &request_signed_size,
-      StorePrepResponse *const store_prep_response));
+      const StorePrepResponse *store_prep_response));
   MOCK_METHOD1(SendChunkContent, int(
       boost::shared_ptr<SendChunkData> send_chunk_data));
 };
