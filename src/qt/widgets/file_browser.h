@@ -89,18 +89,19 @@ class FileBrowser : public QDialog {
   QString getCurrentTreePath(QTreeWidgetItem* item);
   QString getFullFilePath(const QString& filepath);
   void createAndConnectActions();
-  int populateDirectory(const QString);
+  void populateDirectory(const QString);
   int createTreeDirectory(const QString);
   void uploadFileFromLocal(const QString& filePath);
   void saveFileToNetwork(const QString& filePath);
   void getTreeSubFolders(const QString);
+	void openFileFromDir(const QString);
   void setMenuDirMenu();
   void setMenuFileMenu();
-  void drawTileView(maidsafe::MetaDataMap);
-  void drawDetailView(maidsafe::MetaDataMap);
-  void drawListView(maidsafe::MetaDataMap);
-  void drawIconView(maidsafe::MetaDataMap);
-  void drawLargeIconView(maidsafe::MetaDataMap);
+  int drawTileView();
+  int drawDetailView();
+  int drawListView();
+  int drawIconView();
+  int drawLargeIconView();
 
   protected:
     void dropEvent(QDropEvent *event);
@@ -110,6 +111,7 @@ class FileBrowser : public QDialog {
 
   private slots:
     void onItemDoubleClicked(QTreeWidgetItem*, int);
+		void onListItemDoubleClicked(QListWidgetItem*);
     void onFolderItemPressed(QTreeWidgetItem*, int);
     void onMousePressed(QTreeWidgetItem* item, int column);
     void onItemExpanded(QTreeWidgetItem* item);
