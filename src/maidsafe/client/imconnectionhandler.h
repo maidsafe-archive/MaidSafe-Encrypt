@@ -50,7 +50,7 @@ typedef boost::function<void(const std::string&)> new_message_notifier;
 typedef boost::function<void(const boost::int16_t&, const boost::uint32_t&,
     const std::string&)> new_connection_notifier;
 
-const boost::uint8_t kConnectionTimeout = 10;  // 10 seconds
+const boost::uint8_t kConnectionTimeout = 60;  // 60 seconds
 
 struct connection_info {
   connection_info(boost::asio::io_service &io) : trans_id(0), conn_id(0),  // NOLINT

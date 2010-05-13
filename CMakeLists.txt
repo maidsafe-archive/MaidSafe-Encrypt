@@ -448,7 +448,6 @@ ELSE()
   TARGET_LINK_LIBRARIES(pdlightlocal
                           PDTESTmsclientlib
                           ${ALL_TARGET_LIBS}
-                          ${Dokan_LIBRARY}
                           debug ${Breakpad_LIBRARY_DEBUG} optimized ${Breakpad_LIBRARY})
   TARGET_LINK_LIBRARIES(vault
                           PDmsvaultlib
@@ -522,24 +521,25 @@ ENDIF()
 ###################################################################################################
 SET_TARGET_PROPERTIES(PDTESTmsclientlib PROPERTIES COMPILE_FLAGS -DLOCAL_PDVAULT)
 SET_TARGET_PROPERTIES(TESTlocalclientcontroller PROPERTIES COMPILE_FLAGS -DLOCAL_PDVAULT)
-SET_TARGET_PROPERTIES(pdlightlocal PROPERTIES COMPILE_FLAGS -DPD_LIGHT)
+SET_TARGET_PROPERTIES(pdlightlocal PROPERTIES COMPILE_FLAGS "-DPD_LIGHT -DLOCAL_PDVAULT")
 SET(BUILD_SHARED_LIBS OFF)
 IF(APPLE)
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DPD_APPLE -D_FORTIFY_SOURCE=2 -DOSX -DBSD -D__FreeBSD__=10 -D_FILE_OFFSET_BITS=64")
   SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG -pg -fprofile-arcs -ftest-coverage")
   SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O2 -Wuninitialized")
+  SET_TARGET_PROPERTIES(pdlocal perpetualdata PROPERTIES COMPILE_FLAGS -DLOCAL_PDVAULT)
 ELSEIF(UNIX AND NOT APPLE)
   SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DPD_LINUX -DPD_POSIX -DDEBUG -pg -fprofile-arcs -ftest-coverage")
   SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O2 -Wuninitialized")
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wextra -Wall  -Wfloat-equal -Wlong-long -Wstrict-overflow=5 -Wredundant-decls -Wunused-function -Wunused-label -Wunused-parameter -Wunused-value -Wunused-variable -std=c++98 -ansi -D_FORTIFY_SOURCE=2 -fno-stack-protector -D_FILE_OFFSET_BITS=64")
   ##put libs in here that will have no chance of passing tests - 3rd party ONLY !!
-  SET_TARGET_PROPERTIES(pdlocal perpetualdata PROPERTIES COMPILE_FLAGS -w)
+  SET_TARGET_PROPERTIES(pdlocal perpetualdata PROPERTIES COMPILE_FLAGS "-w -DLOCAL_PDVAULT")
 ELSEIF(WIN32)
   ADD_DEFINITIONS(-DPD_WIN32 -DWIN32 -D_WIN32 -D__WINDOWS__ -D__WIN32__)
   ADD_DEFINITIONS(-DWIN32_LEAN_AND_MEAN -D_WIN32_WINNT=0x501)
   ADD_DEFINITIONS(-D_UNICODE -DUNICODE -D_BIND_TO_CURRENT_VCLIBS_VERSION=1)
   IF(MSVC)
-    ADD_DEFINITIONS(-D__MSVC__ -DNOMINMAX -DBOOST_ALL_NO_LIB)
+    ADD_DEFINITIONS(-D__MSVC__ -DNOMINMAX -DBOOST_ALL_NO_LIB -DUDT_STATIC)
     SET(CMAKE_CXX_FLAGS_RELEASE "/O2 /Ob2 /Ot /Oy /GL /D \"NDEBUG\" /EHsc /MD /Gy /W3 /Zi /wd4503")
     SET(CMAKE_CXX_FLAGS_DEBUG "/Od /Ot /Oy /D_DEBUG /DDEBUG /EHsc /MDd  /c /ZI /TP /wd4503")
     # CMake defaults stack size to 10MB.  Set this to windows default of 1MB
@@ -558,11 +558,11 @@ ELSEIF(WIN32)
       SET(LINKER_LIBS_DIRS_DEBUG "${LINKER_LIBS_DIRS_DEBUG} /LIBPATH:\"${LIBS_DIR_DEBUG}\"")
     ENDFOREACH()
     SET_TARGET_PROPERTIES(${ALL_EXECUTABLES} PROPERTIES
-                              COMPILE_FLAGS "-DUDT_STATIC"
                               LINK_FLAGS_RELEASE "/STACK:1048576 /OPT:REF /OPT:ICF /LTCG /INCREMENTAL:NO ${LINKER_LIBS_DIRS_RELEASE}"
                               LINK_FLAGS_DEBUG "/STACK:1048576 ${LINKER_LIBS_DIRS_DEBUG}"
                               LINK_FLAGS_RELWITHDEBINFO "/STACK:1048576 ${LINKER_LIBS_DIRS_DEBUG}"
                               LINK_FLAGS_MINSIZEREL "/STACK:1048576 ${LINKER_LIBS_DIRS_DEBUG}")
+    SET_TARGET_PROPERTIES(pdlocal perpetualdata PROPERTIES COMPILE_FLAGS "-DLOCAL_PDVAULT")
   ELSE()
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wfloat-equal -Wlong-long -Wstrict-overflow=5 -D_FORTIFY_SOURCE=2 -fno-stack-protector -D_FILE_OFFSET_BITS=64")
     SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG") # -g -pg -fprofile-arcs -ftest-coverage")
@@ -570,7 +570,7 @@ ELSEIF(WIN32)
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -I c:/usr/include -D_FORTIFY_SOURCE=2 -D__MINGW__ -L c:/MinGW/lib/ -L c:/MinGW/mingw32/lib/ -static -mthreads -D_GLIBCXX_USE_WCHAR_T")
     # SET(CMAKE_EXE_LINKER_FLAGS "-Wl,--enable-auto-import")
     # SET(CMAKE_EXE_LINKER_FLAGS_DEBUG "${CMAKE_EXE_LINKER_FLAGS_DEBUG} -fprofile-arcs -ftest-coverage")
-    SET_TARGET_PROPERTIES(pdlocal perpetualdata PROPERTIES COMPILE_FLAGS -w)
+    SET_TARGET_PROPERTIES(pdlocal perpetualdata PROPERTIES COMPILE_FLAGS "-w -DLOCAL_PDVAULT")
   ENDIF()
 ENDIF()
 

@@ -54,6 +54,12 @@ typedef boost::function<void(const std::string&,
                              const boost::int16_t&,
                              const double&)> IMNotifier;
 
+#ifdef LOCAL_PDVAULT
+  const boost::uint8_t kCheckForMessagesInterval = 3;
+#else
+  const boost::uint8_t kCheckForMessagesInterval = 60;
+#endif
+
 class ClientController : public QObject {
   Q_OBJECT
  public:
@@ -174,7 +180,7 @@ class ClientController : public QObject {
   int SaveSession();
 
  signals:
-  void messageReceived(ClientController::MessageType type,
+  void messageReceived(int type,
                        const QDateTime& time,
                        const QString& from,
                        const QString& msg,
@@ -202,6 +208,9 @@ class ClientController : public QObject {
  private:
   explicit ClientController(QObject* parent = 0);
   virtual ~ClientController();
+  // receive notifications for IM
+  void OnNewMessage(const std::string &msg);
+  void OnHelloPing(const std::string &contact_name, const int &status);
 
   void analyseMessage(const maidsafe::InstantMessage& im);
   CheckForMessagesThread *cfmt_;

@@ -731,7 +731,7 @@ int LocalStoreManager::LoadBPMessages(
 #endif
     return -1;
   }
-  return 0;
+  return kKadUpperThreshold;
 }
 
 int LocalStoreManager::SendMessage(

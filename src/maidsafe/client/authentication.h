@@ -80,6 +80,9 @@ class Authentication {
   ~Authentication() { }
   void Init(const boost::uint16_t &crypto_key_buffer_count,
             boost::shared_ptr<StoreManagerInterface> smgr);
+//  void Init(const boost::uint16_t &crypto_key_buffer_count,
+//            boost::shared_ptr<StoreManagerInterface> smgr,
+//            SessionSingleton *ss);
   int GetUserInfo(const std::string &username, const std::string &pin);
   int GetUserData(const std::string &password, std::string *ser_da);
   int CreateUserSysPackets(const std::string &username,
