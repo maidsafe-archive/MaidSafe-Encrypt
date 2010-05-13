@@ -312,7 +312,6 @@ const std::string no_compress_type[] =  {
 };
 
 // config file name
-const std::string kConfigFileName("maidsafe.cfg");
 const int kMaxPort = 65535;
 const int kMinPort = 5000;
 

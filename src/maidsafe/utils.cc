@@ -23,6 +23,7 @@
 */
 
 #include "maidsafe/utils.h"
+#include <maidsafe/kademlia/contact.h>
 
 namespace maidsafe {
 
@@ -47,6 +48,10 @@ std::string StringToLowercase(const std::string &str) {
     lowercase += tolower(str.at(i));
   }
   return lowercase;
+}
+
+bool ContactHasId(const std::string &id, const kad::Contact &contact) {
+  return contact.node_id().ToStringDecoded() == id;
 }
 
 }  // namespace maidsafe

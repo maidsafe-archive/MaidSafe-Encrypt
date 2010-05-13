@@ -27,11 +27,17 @@
 
 #include <string>
 
+namespace kad {
+class Contact;
+}  // namespace kad
+
 namespace maidsafe {
 
 std::string TidyPath(const std::string &original_path);
 
 std::string StringToLowercase(const std::string &str);
+
+bool ContactHasId(const std::string &id, const kad::Contact &contact);
 
 }  // namespace maidsafe
 
