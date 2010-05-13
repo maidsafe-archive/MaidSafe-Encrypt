@@ -76,8 +76,7 @@ class FileBrowser : public QDialog {
     TILES,
     DETAIL,
     LIST,
-    SMALLICONS,
-    LARGEICONS
+    SMALLICONS
     };
 
   void setViewMode(ViewMode viewMode);
@@ -97,11 +96,12 @@ class FileBrowser : public QDialog {
 	void openFileFromDir(const QString);
   void setMenuDirMenu();
   void setMenuFileMenu();
+  void setMenuSortIconMenu();
+  void setMenuSortDetailMenu();
   int drawTileView();
   int drawDetailView();
   int drawListView();
   int drawIconView();
-  int drawLargeIconView();
 
   protected:
     void dropEvent(QDropEvent *event);
