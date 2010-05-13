@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <diagram>
-<source><![CDATA[#![Store New Chunk    2010-05-04    ]
+<source><![CDATA[#![Store New Chunk    2010-05-13    ]
 client:client "First Client"
 peer:vault "Peer Vault"
 info:vault "Chunk Info Holders x16"
@@ -25,35 +25,29 @@ So this message requests 4x original space be deducted from client's account.
 
 client:client. Do FIND_NODES to get Chunk Info Holders' details and keep lookup result.&
 
-(2)client:>info. ADD_TO_WATCH_LIST_REQUEST
+(2)client:>c_account. EXPECT_AMENDMENT_REQUEST 
 *2 client
-For each Chunk Info Holder...
-*2
-
-info:info. Validate request.&
-info:>client.Ack (Store x copies) / Nack &
-(4)info:>c_account. AMEND_ACCOUNT_REQUEST (Space Taken Inc)
-
-*5 c_account
-AMEND_ACCOUNT_REQUEST is validated by referencing list of Chunk Info Holders sent in
-EXPECT_AMENDMENT_REQUEST.  If E_A_REQ has not yet arrived, reply "Standby", otherwise Ack/Nack.
-If reply is "Standby", a CONFIRM_AMENDMENT_REQUEST should be sent once the E_A_REQ arrives.
-*5
-
-(5)c_account:>info. Ack / Standby / Nack 
-info:info. Prepare to create new Watch List.&
-
-(3)client:>c_account. EXPECT_AMENDMENT_REQUEST &
-*3 client
 For each Client Account Holder...
-*3
-
-c_account:c_account. Validate EXPECT_AMENDMENT_REQUEST. &
+*2
 c_account:>client.Ack / Nack &
 
-(5)c_account:c_account. Validate AMEND_ACCOUNT_REQUEST. &
++5 c_account
+AMEND_ACCOUNT_REQUEST is validated by referencing list of
+Chunk Info Holders sent in EXPECT_AMENDMENT_REQUEST.
++5
 
-(5)c_account:Ack/Nack =info. [Optional - see note] CONFIRM_AMENDMENT_REQUEST &
+(3)client:>info. ADD_TO_WATCH_LIST_REQUEST 
+*3 client
+For each Chunk Info Holder...
+*3
+info:>client.Ack (Store x copies) / Nack &
+
+(4)info:>c_account. AMEND_ACCOUNT_REQUEST (Space Taken Inc) &
+
+(5)c_account:>info. Ack / Nack 
+info:info. Prepare to create new Watch List.&
+
+(5)c_account:c_account. Validate AMEND_ACCOUNT_REQUEST. &
 
 [c:Loop Loop until x copies uploaded   ]
 
@@ -80,8 +74,6 @@ peer:peer. Do FIND_NODES to get Chunk Info Holders' details.&
 *10 peer
 For each Vault Account Holder...
 *10
-
-v_account:v_account. Validate request. &
 v_account:>peer.Ack / Nack &
 
 peer:>info. ADD_TO_REFERENCE_LIST_REQUEST
@@ -92,7 +84,6 @@ info:>peer. Ack/Nack &
 info:>v_account. AMEND_ACCOUNT_REQUEST (Space Given Inc)
 (5)v_account:v_account. Validate AMEND_ACCOUNT_REQUEST. &
 v_account:>info.Ack/Nack &
-(5)v_account:Ack/Nack =info. [Optional - see note] CONFIRM_AMENDMENT_REQUEST &
 [/c]
 
 [c:Loop Loop indefinitely every y seconds   ]
