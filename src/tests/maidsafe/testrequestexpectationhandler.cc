@@ -117,6 +117,7 @@ TEST_F(RequestExpectationHandlerTest, BEH_MAID_REH_GetExpectedCallersIds) {
   // Add expectation to be retrieved later
   ASSERT_EQ(kSuccess,
       request_expectation_handler_.AddExpectation(expect_amendment_request_));
+
   // Amend the vector of ids and add again
   boost::this_thread::sleep(boost::posix_time::milliseconds(10));
   std::vector<std::string> second_ids;
@@ -128,6 +129,7 @@ TEST_F(RequestExpectationHandlerTest, BEH_MAID_REH_GetExpectedCallersIds) {
   }
   ASSERT_EQ(kSuccess,
       request_expectation_handler_.AddExpectation(expect_amendment_request_));
+
   // Add more expectations
   expect_amendment_request_.clear_amender_pmids();
   for (boost::uint16_t i = 0; i < kad::K; ++i) {
@@ -143,6 +145,7 @@ TEST_F(RequestExpectationHandlerTest, BEH_MAID_REH_GetExpectedCallersIds) {
                         expect_amendment_request_));
     ASSERT_EQ(j + 3, request_expectation_handler_.expectations_.size());
   }
+
   // Retrieve and check first expectation
   maidsafe::AmendAccountRequest amend_account_request;
   amend_account_request.set_amendment_type(
@@ -155,6 +158,7 @@ TEST_F(RequestExpectationHandlerTest, BEH_MAID_REH_GetExpectedCallersIds) {
   ASSERT_TRUE(result);
   ASSERT_EQ(request_expectation_handler_.kMaxExpectations_ - 1,
             request_expectation_handler_.expectations_.size());
+
   // Retrieve and check second expectation
   result_ids =
       request_expectation_handler_.GetExpectedCallersIds(amend_account_request);
@@ -162,6 +166,86 @@ TEST_F(RequestExpectationHandlerTest, BEH_MAID_REH_GetExpectedCallersIds) {
   ASSERT_TRUE(result);
   ASSERT_EQ(request_expectation_handler_.kMaxExpectations_ - 2,
             request_expectation_handler_.expectations_.size());
+
+  // Try to retrieve same expectation again
+  result_ids =
+      request_expectation_handler_.GetExpectedCallersIds(amend_account_request);
+  ASSERT_TRUE(result_ids.empty());
+  ASSERT_EQ(request_expectation_handler_.kMaxExpectations_ - 2,
+            request_expectation_handler_.expectations_.size());
+
+  // Try to retrieve expectation from empty map
+  result_ids = second_ids;
+  ASSERT_FALSE(result_ids.empty());
+  request_expectation_handler_.expectations_.clear();
+  ASSERT_TRUE(request_expectation_handler_.expectations_.empty());
+  result_ids =
+      request_expectation_handler_.GetExpectedCallersIds(amend_account_request);
+  ASSERT_TRUE(result_ids.empty());
+}
+
+TEST_F(RequestExpectationHandlerTest, BEH_MAID_REH_CleanUp) {
+  // Create handler which times out expectations after 1 second
+  RequestExpectationHandler another_expectation_handler(kMaxAccountAmendments,
+      kMaxRepeatedAccountAmendments, 1000);
+  maidsafe::AmendAccountRequest amend_account_request;
+  amend_account_request.set_amendment_type(
+      maidsafe::AmendAccountRequest::kSpaceTakenInc);
+  amend_account_request.set_account_pmid(account_pmid_);
+
+  const size_t test_count(10);
+  // We're going to insert test_count expectations - check we can first
+  ASSERT_LT(test_count, kMaxAccountAmendments);
+
+  // Add half of all expectations, sleep for 1/2 second then add other half
+  std::string new_name(chunkname_), first_id, second_id;
+  for (size_t i = 0; i != test_count; ++i) {
+    new_name.replace(0, 10, boost::lexical_cast<std::string>(1000000000 + i));
+    if (i == 0)
+      first_id = new_name;
+    if (i == test_count / 2) {
+      second_id = new_name;
+      boost::this_thread::sleep(boost::posix_time::milliseconds(500));
+    }
+    expect_amendment_request_.set_chunkname(new_name);
+    ASSERT_EQ(kSuccess, another_expectation_handler.AddExpectation(
+                        expect_amendment_request_));
+  }
+
+  // Check none get removed (none have timed out yet)
+  ASSERT_EQ(test_count, another_expectation_handler.expectations_.size());
+  ASSERT_EQ(0, another_expectation_handler.CleanUp());
+  ASSERT_EQ(test_count, another_expectation_handler.expectations_.size());
+
+  // Check we can retrieve first expectation
+  amend_account_request.set_chunkname(first_id);
+  std::vector<std::string> result =
+      another_expectation_handler.GetExpectedCallersIds(amend_account_request);
+  ASSERT_EQ(kad::K, result.size());
+  ASSERT_EQ(test_count - 1, another_expectation_handler.expectations_.size());
+  result =
+      another_expectation_handler.GetExpectedCallersIds(amend_account_request);
+  ASSERT_TRUE(result.empty());
+
+  // Wait for 1/2 second and cleanup - should remove remaining first group
+  boost::this_thread::sleep(boost::posix_time::milliseconds(510));
+  ASSERT_EQ((test_count / 2) - 1,
+            static_cast<size_t>(another_expectation_handler.CleanUp()));
+  ASSERT_EQ(test_count / 2, another_expectation_handler.expectations_.size());
+
+  // Check we can retrieve second expectation
+  amend_account_request.set_chunkname(second_id);
+  result =
+      another_expectation_handler.GetExpectedCallersIds(amend_account_request);
+  ASSERT_EQ(kad::K, result.size());
+  ASSERT_EQ((test_count / 2) - 1,
+            another_expectation_handler.expectations_.size());
+
+  // Wait for 1/2 second and cleanup - should remove all remaining
+  boost::this_thread::sleep(boost::posix_time::milliseconds(510));
+  ASSERT_EQ((test_count / 2) - 1,
+            static_cast<size_t>(another_expectation_handler.CleanUp()));
+  ASSERT_TRUE(another_expectation_handler.expectations_.empty());
 }
 
 }  // namespace maidsafe_vault
