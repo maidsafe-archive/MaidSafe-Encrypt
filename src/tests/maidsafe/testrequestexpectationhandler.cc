@@ -23,6 +23,7 @@
 */
 
 #include <gtest/gtest.h>
+#include <algorithm>
 #include "maidsafe/maidsafe.h"
 #include "maidsafe/vault/requestexpectationhandler.h"
 #include "protobuf/maidsafe_service_messages.pb.h"
@@ -44,6 +45,43 @@ class RequestExpectationHandlerTest : public testing::Test {
         expect_amendment_request_(),
         request_expectation_handler_(kMaxAccountAmendments,
                                      kMaxRepeatedAccountAmendments, 60000) {}
+  void RunRandomOps(std::vector<maidsafe::ExpectAmendmentRequest> ears) {
+    std::vector<maidsafe::AmendAccountRequest> aars(ears.size());
+    std::vector< std::vector<std::string> > input_vectors, output_vectors;
+    std::random_shuffle(ears.begin(), ears.end());
+    for (size_t i = 0; i != ears.size(); ++i) {
+      aars.at(i).set_amendment_type(ears.at(i).amendment_type());
+      aars.at(i).set_chunkname(ears.at(i).chunkname());
+      aars.at(i).set_account_pmid(ears.at(i).account_pmid());
+      std::vector<std::string> in_vect;
+      for (int j = 0; j != ears.at(i).amender_pmids_size(); ++j)
+        in_vect.push_back(ears.at(i).amender_pmids(j));
+      input_vectors.push_back(in_vect);
+    }
+    for (size_t i = 0; i != ears.size(); ++i) {
+      ASSERT_EQ(kSuccess,
+                request_expectation_handler_.AddExpectation(ears.at(i)));
+    }
+    for (size_t i = 0; i != ears.size(); ++i) {
+      boost::this_thread::sleep(boost::posix_time::milliseconds(
+          base::RandomUint32() % 50));
+      output_vectors.push_back(request_expectation_handler_.
+          GetExpectedCallersIds(aars.at(i)));
+    }
+    bool result = input_vectors == output_vectors;
+    ASSERT_TRUE(result);
+  }
+  void RunCleanUp(boost::mutex *test_mutex, bool *stop) {
+    while (true) {
+      {
+        boost::mutex::scoped_lock lock(*test_mutex);
+        if (*stop)
+          break;
+      }
+      request_expectation_handler_.CleanUp();
+      boost::this_thread::sleep(boost::posix_time::milliseconds(50));
+    }
+  }
  protected:
   void SetUp() {
     ASSERT_EQ(crypto::SHA_512, co_.hash_algorithm());
@@ -246,6 +284,51 @@ TEST_F(RequestExpectationHandlerTest, BEH_MAID_REH_CleanUp) {
   ASSERT_EQ((test_count / 2) - 1,
             static_cast<size_t>(another_expectation_handler.CleanUp()));
   ASSERT_TRUE(another_expectation_handler.expectations_.empty());
+}
+
+TEST_F(RequestExpectationHandlerTest, BEH_MAID_REH_Threaded) {
+  // Create expectations - need kMaxOpThreads set to >= 5.
+  const int kMaxOpThreads(20);
+  ASSERT_LT(4, kMaxOpThreads);
+  const int kTestThreadCount(base::RandomUint32() % (kMaxOpThreads - 4) + 4);
+  printf("Op thread count = %i\n", kTestThreadCount);
+  std::vector< std::vector<maidsafe::ExpectAmendmentRequest> > ears_vecs;
+  for (int i = 0; i != kTestThreadCount; ++i) {
+    std::vector<maidsafe::ExpectAmendmentRequest> ears;
+    std::string new_name(chunkname_);
+    for (size_t j = 0;
+         j != request_expectation_handler_.kMaxExpectations_ / kTestThreadCount;
+         ++j) {
+      new_name.replace(0, 4, boost::lexical_cast<std::string>(1000 + i));
+      new_name.replace(4, 6, boost::lexical_cast<std::string>(100000 + j));
+      expect_amendment_request_.set_chunkname(new_name);
+      ears.push_back(expect_amendment_request_);
+    }
+    ears_vecs.push_back(ears);
+  }
+
+  // Start CleanUp thread
+  boost::mutex test_mutex;
+  bool stop(false);
+  boost::thread t1(&RequestExpectationHandlerTest::RunCleanUp, this,
+                   &test_mutex, &stop);
+
+  // Run RandomOps in threads
+  std::vector< boost::shared_ptr<boost::thread> > ops_threads;
+  for (int k = 0; k != kTestThreadCount; ++k) {
+    ops_threads.push_back(boost::shared_ptr<boost::thread>(new boost::thread(
+        &RequestExpectationHandlerTest::RunRandomOps, this, ears_vecs.at(k))));
+  }
+
+  // Wait for threads to join
+  for (int l = 0; l != kTestThreadCount; ++l)
+    ops_threads.at(l)->join();
+  {
+    boost::mutex::scoped_lock lock(test_mutex);
+    stop = true;
+  }
+  t1.join();
+  ASSERT_TRUE(request_expectation_handler_.expectations_.empty());
 }
 
 }  // namespace maidsafe_vault
