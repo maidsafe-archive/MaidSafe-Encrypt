@@ -61,6 +61,7 @@ class AccountHoldersManager {
   AccountHoldersManager &operator=(const AccountHoldersManager&);
   AccountHoldersManager(const AccountHoldersManager&);
   FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_AddToWatchList);
+  FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_RemoveFromWatchList);
   void FindNodesCallback(const std::string &response,
                          AccountHolderGroupFunctor callback);
   bool CompareHolders(kad::Contact lhs, kad::Contact rhs) {
