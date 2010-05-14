@@ -26,6 +26,7 @@
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/function.hpp>
 #include <boost/thread/mutex.hpp>
+#include <gtest/gtest_prod.h>
 #include <maidsafe/kademlia/contact.h>
 #include <maidsafe/kademlia/kadid.h>
 #include <string>
@@ -59,6 +60,7 @@ class AccountHoldersManager {
  private:
   AccountHoldersManager &operator=(const AccountHoldersManager&);
   AccountHoldersManager(const AccountHoldersManager&);
+  FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_AddToWatchList);
   void FindNodesCallback(const std::string &response,
                          AccountHolderGroupFunctor callback);
   bool CompareHolders(kad::Contact lhs, kad::Contact rhs) {

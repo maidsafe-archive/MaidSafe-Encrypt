@@ -68,7 +68,12 @@ class ThreadedCallContainer {
     if (!running_)
       return;
     callbacks_.push(callback);
-    condition_.notify_one();
+    condition_.notify_all();
+  }
+  void Wait() {
+    boost::mutex::scoped_lock lock(mutex_);
+    while (running_ && !callbacks_.empty())
+      condition_.wait(lock);
   }
  private:
   ThreadedCallContainer(const ThreadedCallContainer&);
@@ -84,10 +89,11 @@ class ThreadedCallContainer {
         // grab the first cb from the queue, but allow other threads to operate
         // while executing it
         VoidFunc f = callbacks_.front();
-        callbacks_.pop();
         mutex_.unlock();
         f();
         mutex_.lock();
+        callbacks_.pop();
+        condition_.notify_all();
       }
     }
   }
@@ -131,22 +137,29 @@ void ConditionNotifyNoFlag(int set_return,
 void AddToWatchListStageThree(bool initialise_response,
                               const int &result,
                               const std::string &pmid,
-                              const boost::uint32_t &upload_count,
-                              maidsafe::AddToWatchListResponse *response,
-                              google::protobuf::Closure* callback,
-                              int *callback_count,
-                              boost::mutex *mutex,
-                              boost::condition_variable *cond_var) {
+                              maidsafe::ExpectAmendmentResponse *response,
+                              google::protobuf::Closure *callback,
+                              test_msm::ThreadedCallContainer *tcc) {
+  if (initialise_response) {
+    response->set_result(result);
+    response->set_pmid(pmid);
+  }
+  tcc->Enqueue(boost::bind(&google::protobuf::Closure::Run, callback));
+}
+
+void AddToWatchListStageFour(bool initialise_response,
+                             const int &result,
+                             const std::string &pmid,
+                             const boost::uint32_t &upload_count,
+                             maidsafe::AddToWatchListResponse *response,
+                             google::protobuf::Closure* callback,
+                             test_msm::ThreadedCallContainer *tcc) {
   if (initialise_response) {
     response->set_result(result);
     response->set_pmid(pmid);
     response->set_upload_count(upload_count);
   }
-  boost::mutex::scoped_lock lock(*mutex);
-  ++(*callback_count);
-  if (*callback_count == kad::K)
-    cond_var->notify_one();
-  callback->Run();
+  tcc->Enqueue(boost::bind(&google::protobuf::Closure::Run, callback));
 }
 
 void RemoveFromWatchListCallback(
@@ -497,6 +510,14 @@ class MockClientRpcs : public ClientRpcs {
       RemoveFromWatchListResponse *remove_from_watch_list_response,
       rpcprotocol::Controller *controller,
       google::protobuf::Closure *done));
+  MOCK_METHOD7(ExpectAmendment, void(
+      const kad::Contact &peer,
+      bool local,
+      const boost::int16_t &transport_id,
+      ExpectAmendmentRequest *expect_amendment_request,
+      ExpectAmendmentResponse *expect_amendment_response,
+      rpcprotocol::Controller *controller,
+      google::protobuf::Closure *done));
   MOCK_METHOD7(AccountStatus, void(
       const kad::Contact &peer,
       bool local,
@@ -521,7 +542,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AddToWatchList) {
   ASSERT_TRUE(client_chunkstore_->is_initialised());
 
   // Set up chunks
-  const int kTestCount(9);
+  const int kTestCount(12);
   std::vector<std::string> chunk_names;
   for (int i = 0; i < kTestCount; ++i) {
     boost::uint64_t chunk_size = 396 + i;
@@ -541,21 +562,21 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AddToWatchList) {
       mock_kadops::kGood, &good_pmids);
   std::string few_result = mock_kadops::MakeFindNodesResponse(
       mock_kadops::kTooFewContacts, &few_pmids);
-  std::vector<kad::Contact> chunk_info_holders;
+  std::vector<kad::Contact> contacts;
   {
     kad::FindResponse find_response;
     kad::Contact contact;
     ASSERT_TRUE(find_response.ParseFromString(good_result));
     for (int i = 0; i < find_response.closest_nodes_size(); ++i) {
       ASSERT_TRUE(contact.ParseFromString(find_response.closest_nodes(i)));
-      chunk_info_holders.push_back(contact);
+      contacts.push_back(contact);
     }
   }
 
-  int callback_count(0);
   int send_chunk_count(0);
   boost::mutex mutex;
   boost::condition_variable cond_var;
+  test_msm::ThreadedCallContainer tcc(1);
 
   // Set expectations
   EXPECT_CALL(*mko, AddressIsLocal(testing::An<const kad::Contact&>()))
@@ -563,23 +584,23 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AddToWatchList) {
   EXPECT_CALL(*mko, FindKClosestNodes(kad::KadId(chunk_names.at(0), false),
                                       testing::_))
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_kadops::RunCallback, bad_result, _1))));  // Call 1
+          boost::bind(&mock_kadops::RunCallback, bad_result, _1))));   // Call 1
 
   EXPECT_CALL(*mko, FindKClosestNodes(kad::KadId(chunk_names.at(1), false),
                                       testing::_))
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_kadops::RunCallback, few_result, _1))));  // Call 2
+          boost::bind(&mock_kadops::RunCallback, few_result, _1))));   // Call 2
 
   for (int i = 2; i < kTestCount; ++i) {
     EXPECT_CALL(*mko, FindKClosestNodes(kad::KadId(chunk_names.at(i), false),
                                         testing::_))
         .WillOnce(testing::WithArgs<1>(testing::Invoke(
-            boost::bind(&mock_kadops::RunCallback, good_result, _1))));  // 3-9
+            boost::bind(&mock_kadops::RunCallback, good_result, _1))));  // 3-12
   }
 
-  for (size_t i = 0; i < chunk_info_holders.size(); ++i) {
-    EXPECT_CALL(*mock_rpcs, AddToWatchList(
-        EqualsContact(chunk_info_holders.at(i)),
+  for (size_t i = 0; i < contacts.size(); ++i) {
+    EXPECT_CALL(*mock_rpcs, ExpectAmendment(
+        EqualsContact(contacts.at(i)),
         testing::_,
         testing::_,
         testing::_,
@@ -590,67 +611,96 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AddToWatchList) {
                 boost::bind(&test_msm::AddToWatchListStageThree,
                     i + 1 < kKadLowerThreshold,
                     kAck,
-                    chunk_info_holders.at(i).node_id().ToStringDecoded(),
-                    kMinChunkCopies,
-                    _1, _2, &callback_count, &mutex, &cond_var))))  // 3
+                    contacts.at(i).node_id().ToStringDecoded(),
+                    _1, _2, &tcc))))                                   // Call 4
             .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
                 boost::bind(&test_msm::AddToWatchListStageThree,
                     true,
                     i + 1 < kKadLowerThreshold ? kAck : kNack,
-                    chunk_info_holders.at(i).node_id().ToStringDecoded(),
-                    kMinChunkCopies,
-                    _1, _2, &callback_count, &mutex, &cond_var))))  // 4
-            .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
+                    contacts.at(i).node_id().ToStringDecoded(),
+                    _1, _2, &tcc))))                                   // Call 5
+            .WillRepeatedly(testing::WithArgs<4, 6>(testing::Invoke(
                 boost::bind(&test_msm::AddToWatchListStageThree,
                     true,
                     kAck,
-                    chunk_info_holders.at((i + 1) %
-                        chunk_info_holders.size()).node_id().ToStringDecoded(),
-                    kMinChunkCopies,
-                    _1, _2, &callback_count, &mutex, &cond_var))))  // 5
+                    contacts.at(i).node_id().ToStringDecoded(),
+                    _1, _2, &tcc))));                           // Calls 6 to 12
+  }
+
+  for (size_t i = 0; i < contacts.size(); ++i) {
+    EXPECT_CALL(*mock_rpcs, AddToWatchList(
+        EqualsContact(contacts.at(i)),
+        testing::_,
+        testing::_,
+        testing::_,
+        testing::_,
+        testing::_,
+        testing::_))
             .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
-                boost::bind(&test_msm::AddToWatchListStageThree,
+                boost::bind(&test_msm::AddToWatchListStageFour,
+                    i + 1 < kKadLowerThreshold,
+                    kAck,
+                    contacts.at(i).node_id().ToStringDecoded(),
+                    kMinChunkCopies,
+                    _1, _2, &tcc))))                                   // Call 6
+            .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
+                boost::bind(&test_msm::AddToWatchListStageFour,
+                    true,
+                    i + 1 < kKadLowerThreshold ? kAck : kNack,
+                    contacts.at(i).node_id().ToStringDecoded(),
+                    kMinChunkCopies,
+                    _1, _2, &tcc))))                                   // Call 7
+            .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
+                boost::bind(&test_msm::AddToWatchListStageFour,
                     true,
                     kAck,
-                    chunk_info_holders.at(i).node_id().ToStringDecoded(),
+                    contacts.at((i + 1) %
+                        contacts.size()).node_id().ToStringDecoded(),
+                    kMinChunkCopies,
+                    _1, _2, &tcc))))                                   // Call 8
+            .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
+                boost::bind(&test_msm::AddToWatchListStageFour,
+                    true,
+                    kAck,
+                    contacts.at(i).node_id().ToStringDecoded(),
                     kMinChunkCopies +
                         (i + 1 < kKadLowerThreshold ? 0 : 1),
-                    _1, _2, &callback_count, &mutex, &cond_var))))  // 6
+                    _1, _2, &tcc))))                                   // Call 9
             .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
-                boost::bind(&test_msm::AddToWatchListStageThree,
+                boost::bind(&test_msm::AddToWatchListStageFour,
                     true,
                     kAck,
-                    chunk_info_holders.at(i).node_id().ToStringDecoded(),
+                    contacts.at(i).node_id().ToStringDecoded(),
                     0,
-                    _1, _2, &callback_count, &mutex, &cond_var))))  // 7
+                    _1, _2, &tcc))))                                  // Call 10
             .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
-                boost::bind(&test_msm::AddToWatchListStageThree,
+                boost::bind(&test_msm::AddToWatchListStageFour,
                     true,
                     kAck,
-                    chunk_info_holders.at(i).node_id().ToStringDecoded(),
+                    contacts.at(i).node_id().ToStringDecoded(),
                     kMinChunkCopies,
-                    _1, _2, &callback_count, &mutex, &cond_var))))  // 8
+                    _1, _2, &tcc))))                                  // Call 11
             .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
-                boost::bind(&test_msm::AddToWatchListStageThree,
+                boost::bind(&test_msm::AddToWatchListStageFour,
                     true,
                     kAck,
-                    chunk_info_holders.at(i).node_id().ToStringDecoded(),
+                    contacts.at(i).node_id().ToStringDecoded(),
                     i == 0 ? 0 : kMinChunkCopies - 1,
-                    _1, _2, &callback_count, &mutex, &cond_var))));  // 9
+                    _1, _2, &tcc))));                                 // Call 12
   }
 
   EXPECT_CALL(msm, SendChunkPrep(
-      testing::AllOf(testing::Field(&StoreData::data_name, chunk_names.at(7)),
+      testing::AllOf(testing::Field(&StoreData::data_name, chunk_names.at(10)),
                      testing::Field(&StoreData::dir_type, PRIVATE))))
-          .Times(4)  // Call 8
+          .Times(4)  // Call 11
           .WillRepeatedly(testing::InvokeWithoutArgs(boost::bind(
               &test_msm::SendChunkCount, &send_chunk_count, &mutex,
               &cond_var)));
 
   EXPECT_CALL(msm, SendChunkPrep(
-      testing::AllOf(testing::Field(&StoreData::data_name, chunk_names.at(8)),
+      testing::AllOf(testing::Field(&StoreData::data_name, chunk_names.at(11)),
                      testing::Field(&StoreData::dir_type, PRIVATE))))
-          .Times(3)  // Call 9
+          .Times(3)  // Call 12
           .WillRepeatedly(testing::InvokeWithoutArgs(boost::bind(
               &test_msm::SendChunkCount, &send_chunk_count, &mutex,
               &cond_var)));
@@ -689,55 +739,108 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AddToWatchList) {
   }
   ASSERT_EQ(size_t(0), msm.tasks_handler_.TasksCount());
 
-  // Call 3 - Twelve ATW responses return uninitialised
+  // Call 3 - FindKNodes returns CIHs, but no AHs available
   ++test_run;
   printf("--- call %d ---\n", test_run + 1);
+  ASSERT_EQ(kSuccess, msm.StoreChunk(chunk_names.at(test_run), PRIVATE, ""));
+  time_taken = 0;
+  while (msm.tasks_handler_.TasksCount() != 0 && time_taken < kTimeout) {
+    time_taken += 100;
+    boost::this_thread::sleep(boost::posix_time::milliseconds(100));
+  }
+  ASSERT_EQ(size_t(0), msm.tasks_handler_.TasksCount());
+
+  msm.account_holders_manager_.account_holder_group_ = contacts;
+
+  // Call 4 - ExpectAmendment responses partially uninitialised
+  ++test_run;
+  printf("--- call %d ---\n", test_run + 1);
+  ASSERT_EQ(kSuccess, msm.StoreChunk(chunk_names.at(test_run), PRIVATE, ""));
+  time_taken = 0;
+  while (msm.tasks_handler_.TasksCount() != 0 && time_taken < kTimeout) {
+    time_taken += 100;
+    boost::this_thread::sleep(boost::posix_time::milliseconds(100));
+  }
+  tcc.Wait();
+  ASSERT_EQ(size_t(0), msm.tasks_handler_.TasksCount());
+
+  // Call 5 - ExpectAmendment responses partially unacknowledged
+  ++test_run;
+  printf("--- call %d ---\n", test_run + 1);
+  ASSERT_EQ(kSuccess, msm.StoreChunk(chunk_names.at(test_run), PRIVATE, ""));
+  time_taken = 0;
+  while (msm.tasks_handler_.TasksCount() != 0 && time_taken < kTimeout) {
+    time_taken += 100;
+    boost::this_thread::sleep(boost::posix_time::milliseconds(100));
+  }
+  tcc.Wait();
+  ASSERT_EQ(size_t(0), msm.tasks_handler_.TasksCount());
+
+  // Call 6 - Twelve ATW responses return uninitialised
+  ++test_run;
+  printf("--- call %d ---\n", test_run + 1);
+  ASSERT_EQ(kSuccess, msm.StoreChunk(chunk_names.at(test_run), PRIVATE, ""));
+  time_taken = 0;
+  while (msm.tasks_handler_.TasksCount() != 0 && time_taken < kTimeout) {
+    time_taken += 100;
+    boost::this_thread::sleep(boost::posix_time::milliseconds(100));
+  }
+  tcc.Wait();
+  ASSERT_EQ(size_t(0), msm.tasks_handler_.TasksCount());
+
+  // Call 7 - Twelve ATW responses return kNack
+  ++test_run;
+  printf("--- call %d ---\n", test_run + 1);
+  ASSERT_EQ(kSuccess, msm.StoreChunk(chunk_names.at(test_run), PRIVATE, ""));
+  time_taken = 0;
+  while (msm.tasks_handler_.TasksCount() != 0 && time_taken < kTimeout) {
+    time_taken += 100;
+    boost::this_thread::sleep(boost::posix_time::milliseconds(100));
+  }
+  tcc.Wait();
+  ASSERT_EQ(size_t(0), msm.tasks_handler_.TasksCount());
+
+  // Call 8 - Twelve ATW responses return with wrong PMIDs
+  ++test_run;
+  printf("--- call %d ---\n", test_run + 1);
+  ASSERT_EQ(kSuccess, msm.StoreChunk(chunk_names.at(test_run), PRIVATE, ""));
+  time_taken = 0;
+  while (msm.tasks_handler_.TasksCount() != 0 && time_taken < kTimeout) {
+    time_taken += 100;
+    boost::this_thread::sleep(boost::posix_time::milliseconds(100));
+  }
+  tcc.Wait();
+  ASSERT_EQ(size_t(0), msm.tasks_handler_.TasksCount());
+
+  // Call 9 - Twelve ATW responses return excessive upload_count
+  ++test_run;
+  printf("--- call %d ---\n", test_run + 1);
+  ASSERT_EQ(kSuccess, msm.StoreChunk(chunk_names.at(test_run), PRIVATE, ""));
+  time_taken = 0;
+  while (msm.tasks_handler_.TasksCount() != 0 && time_taken < kTimeout) {
+    time_taken += 100;
+    boost::this_thread::sleep(boost::posix_time::milliseconds(100));
+  }
+  tcc.Wait();
+  ASSERT_EQ(size_t(0), msm.tasks_handler_.TasksCount());
+
+  // Call 10 - All ATW responses return upload_count of 0
+  ++test_run;
+  printf("--- call %d ---\n", test_run + 1);
+  ASSERT_EQ(kSuccess, msm.StoreChunk(chunk_names.at(test_run), PRIVATE, ""));
+  time_taken = 0;
+  while (msm.tasks_handler_.TasksCount() != 0 && time_taken < kTimeout) {
+    time_taken += 100;
+    boost::this_thread::sleep(boost::posix_time::milliseconds(100));
+  }
+  tcc.Wait();
+  ASSERT_EQ(size_t(0), msm.tasks_handler_.TasksCount());
+
   boost::mutex::scoped_lock lock(mutex);
-  ASSERT_EQ(kSuccess, msm.StoreChunk(chunk_names.at(test_run), PRIVATE, ""));
-  while (callback_count < kad::K)
-    cond_var.wait(lock);
-  ASSERT_EQ(size_t(0), msm.tasks_handler_.TasksCount());
 
-  // Call 4 - Twelve ATW responses return kNack
+  // Call 11 - All ATW responses return upload_count of 4
   ++test_run;
   printf("--- call %d ---\n", test_run + 1);
-  callback_count = 0;
-  ASSERT_EQ(kSuccess, msm.StoreChunk(chunk_names.at(test_run), PRIVATE, ""));
-  while (callback_count < kad::K)
-    cond_var.wait(lock);
-  ASSERT_EQ(size_t(0), msm.tasks_handler_.TasksCount());
-
-  // Call 5 - Twelve ATW responses return with wrong PMIDs
-  ++test_run;
-  printf("--- call %d ---\n", test_run + 1);
-  callback_count = 0;
-  ASSERT_EQ(kSuccess, msm.StoreChunk(chunk_names.at(test_run), PRIVATE, ""));
-  while (callback_count < kad::K)
-    cond_var.wait(lock);
-  ASSERT_EQ(size_t(0), msm.tasks_handler_.TasksCount());
-
-  // Call 6 - Twelve ATW responses return excessive upload_count
-  ++test_run;
-  printf("--- call %d ---\n", test_run + 1);
-  callback_count = 0;
-  ASSERT_EQ(kSuccess, msm.StoreChunk(chunk_names.at(test_run), PRIVATE, ""));
-  while (callback_count < kad::K)
-    cond_var.wait(lock);
-  ASSERT_EQ(size_t(0), msm.tasks_handler_.TasksCount());
-
-  // Call 7 - All ATW responses return upload_count of 0
-  ++test_run;
-  printf("--- call %d ---\n", test_run + 1);
-  callback_count = 0;
-  ASSERT_EQ(kSuccess, msm.StoreChunk(chunk_names.at(test_run), PRIVATE, ""));
-  while (callback_count < kad::K)
-    cond_var.wait(lock);
-  ASSERT_EQ(size_t(0), msm.tasks_handler_.TasksCount());
-
-  // Call 8 - All ATW responses return upload_count of 4
-  ++test_run;
-  printf("--- call %d ---\n", test_run + 1);
-  callback_count = 0;
   ASSERT_EQ(kSuccess, msm.StoreChunk(chunk_names.at(test_run), PRIVATE, ""));
   while (send_chunk_count < kMinChunkCopies)
     cond_var.wait(lock);
@@ -747,11 +850,10 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AddToWatchList) {
       &retrieved_task));
   ASSERT_EQ(kMinChunkCopies, retrieved_task.successes_required_);
 
-  // Call 9 - All ATW responses return upload_count of 3 except one which
-  //          returns an upload_count of 0
+  // Call 12 - All ATW responses return upload_count of 3 except one which
+  //           returns an upload_count of 0
   ++test_run;
   printf("--- call %d ---\n", test_run + 1);
-  callback_count = 0;
   send_chunk_count = 0;
   ASSERT_EQ(kSuccess, msm.StoreChunk(chunk_names.at(test_run), PRIVATE, ""));
   while (send_chunk_count < kMinChunkCopies - 1)

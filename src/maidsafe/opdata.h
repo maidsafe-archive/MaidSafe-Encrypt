@@ -186,22 +186,23 @@ struct WatchListOpData {
   explicit WatchListOpData(const StoreData &sd)
       : store_data(sd),
         mutex(),
-        contacts(),
+        account_holders(),
+        chunk_info_holders(),
         add_to_watchlist_data_holders(),
         remove_from_watchlist_data_holders(),
         returned_count(0),
-        successful_delete_count(0),
+        success_count(0),
+        expect_amendment_done(false),
         required_upload_copies(),
         consensus_upload_copies(-1) {}
   StoreData store_data;
   boost::mutex mutex;
-  std::vector<kad::Contact> account_holders;
-  std::vector<kad::Contact> contacts;
+  std::vector<kad::Contact> account_holders, chunk_info_holders;
   std::vector<AccountDataHolder> account_data_holders;
   std::vector<AddToWatchDataHolder> add_to_watchlist_data_holders;
   std::vector<RemoveFromWatchDataHolder> remove_from_watchlist_data_holders;
-  boost::uint16_t returned_count;
-  boost::uint16_t successful_delete_count;
+  boost::uint16_t returned_count, success_count;
+  bool expect_amendment_done;
   std::multiset<int> required_upload_copies;
   int consensus_upload_copies;
 };

@@ -866,6 +866,13 @@ void VaultService::ExpectAmendment(google::protobuf::RpcController*,
     return;
   }
 
+#ifdef DEBUG
+  printf("In VaultService::ExpectAmendment (%s), amenders:\n", HexSubstr(pmid_).c_str());
+  for (int i = 0; i < request->amender_pmids_size(); ++i)
+    printf(" # %s\n", HexSubstr(request->amender_pmids(i)).c_str());
+  response->set_result(kAck);
+#endif
+
   done->Run();  // TODO(Team#) implement ExpectAmendment
 }
 

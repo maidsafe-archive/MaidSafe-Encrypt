@@ -1612,15 +1612,24 @@ void MaidsafeStoreManager::AddToWatchListStageTwo(
   for (int i = 0; i < find_response.closest_nodes_size(); ++i) {
     kad::Contact contact;
     contact.ParseFromString(find_response.closest_nodes(i));
-    data->contacts.push_back(contact);
+    data->chunk_info_holders.push_back(contact);
   }
 
   data->account_holders = account_holders_manager_.account_holder_group();
+  if (data->account_holders.size() < kKadUpperThreshold) {
+#ifdef DEBUG
+    printf("In MSM::AddToWatchListStageTwo, no account holders available.\n");
+#endif
+    // TODO(Team#) update account holders in AH manager, schedule retry
+    tasks_handler_.DeleteTask(data->store_data.data_name, kStoreChunk,
+                              kRequestFailedConsensus);
+    return;
+  }
 
   // Set up holders for forthcoming ExpectAmendment RPCs
   std::vector<ExpectAmendmentRequest> expect_amendment_requests;
   if (GetExpectAmendmentRequests(data->store_data, data->account_holders,
-      data->contacts, &expect_amendment_requests) != kSuccess) {
+      data->chunk_info_holders, &expect_amendment_requests) != kSuccess) {
 #ifdef DEBUG
     printf("In MSM::AddToWatchListStageTwo, failed to generate EA requests.\n");
 #endif
@@ -1629,69 +1638,42 @@ void MaidsafeStoreManager::AddToWatchListStageTwo(
     return;
   }
 
-  // Set up holders for forthcoming AddToWatchList RPCs
-  std::vector<AddToWatchListRequest> add_to_watch_list_requests;
-  if (GetAddToWatchListRequests(data->store_data, data->contacts,
-      &add_to_watch_list_requests) != kSuccess) {
-#ifdef DEBUG
-    printf("In MSM::AddToWatchListStageTwo, failed to generate AW requests.\n");
-#endif
-    tasks_handler_.DeleteTask(data->store_data.data_name, kStoreChunk,
-                              kStoreChunkError);
-    return;
-  }
   for (size_t i = 0; i < data->account_holders.size(); ++i) {
     WatchListOpData::AccountDataHolder holder(
         data->account_holders.at(i).node_id().ToStringDecoded());
     data->account_data_holders.push_back(holder);
   }
-  for (size_t i = 0; i < data->contacts.size(); ++i) {
-    WatchListOpData::AddToWatchDataHolder holder(
-        data->contacts.at(i).node_id().ToStringDecoded());
-    data->add_to_watchlist_data_holders.push_back(holder);
-  }
-
-  // Send AddToWatchList RPCs
-  for (boost::uint16_t j = 0; j < data->contacts.size(); ++j) {
-    google::protobuf::Closure* callback = google::protobuf::NewCallback(this,
-        &MaidsafeStoreManager::AddToWatchListStageThree, j, data);
-    client_rpcs_->AddToWatchList(data->contacts.at(j),
-        kad_ops_->AddressIsLocal(data->contacts.at(j)),
-        udt_transport_.transport_id(),
-        &add_to_watch_list_requests.at(j),
-        &data->add_to_watchlist_data_holders.at(j).response,
-        data->add_to_watchlist_data_holders.at(j).controller.get(), callback);
-  }
 
   // Send ExpectAmendment RPCs
-//  for (std::vector<kad::Contact>::iterator it = account_holders_.begin();
-//       it != account_holders_.end(); ++it) {
-//    google::protobuf::Closure* callback = google::protobuf::NewCallback(this,
-//        &MaidsafeStoreManager::ExpectAmendmentCallback, );
-//    client_rpcs_->ExpectAmendment((*it).first, (*it).second,
-//        udt_transport_.transport_id(),
-//        &expect_amendment_requests.at(j),
-//        &data->add_to_watchlist_data_holders.at(j).response,
-//        data->add_to_watchlist_data_holders.at(j).controller.get(), callback);
-//  }
+  boost::mutex::scoped_lock lock(data->mutex);
+  for (boost::uint16_t j = 0; j < data->account_holders.size(); ++j) {
+    google::protobuf::Closure* callback = google::protobuf::NewCallback(this,
+        &MaidsafeStoreManager::AddToWatchListStageThree, j, data);
+    client_rpcs_->ExpectAmendment(data->account_holders.at(j),
+        kad_ops_->AddressIsLocal(data->account_holders.at(j)),
+        udt_transport_.transport_id(),
+        &expect_amendment_requests.at(j),
+        &data->account_data_holders.at(j).response,
+        data->account_data_holders.at(j).controller.get(), callback);
+  }
 }
 
 void MaidsafeStoreManager::AddToWatchListStageThree(
     boost::uint16_t index,
     boost::shared_ptr<WatchListOpData> data) {
   boost::mutex::scoped_lock lock(data->mutex);
-  if (data->consensus_upload_copies >= 0)
-    // Consensus has already been achieved and acted upon
+  if (data->expect_amendment_done)
     return;
   ++data->returned_count;
-  WatchListOpData::AddToWatchDataHolder &holder =
-      data->add_to_watchlist_data_holders.at(index);
+  WatchListOpData::AccountDataHolder &holder =
+      data->account_data_holders.at(index);
 
   if (!holder.response.IsInitialized()) {
 #ifdef DEBUG
     printf("In MSM::AddToWatchListStageThree, response %u is uninitialised.\n",
            index);
 #endif
+    // TODO(Team#) report failed account holder to AH manager
   } else if (holder.response.result() != kAck) {
 #ifdef DEBUG
     printf("In MSM::AddToWatchListStageThree, response %u has result %i.\n",
@@ -1704,9 +1686,92 @@ void MaidsafeStoreManager::AddToWatchListStageThree(
            HexSubstr(holder.response.pmid()).c_str());
 #endif
     // TODO(Fraser#5#): 2010-01-08 - Send alert to holder.node_id's A/C holders
+  } else {
+    ++data->success_count;
+  }
+
+  if (data->returned_count < kKadUpperThreshold ||
+      (data->returned_count < data->account_holders.size() &&
+       data->success_count < kKadUpperThreshold)) {
+    // still waiting for consensus
+    return;
+  } else if (data->success_count < kKadUpperThreshold) {
+    // failed to get enough positive responses
+#ifdef DEBUG
+    printf("In MSM::AddToWatchListStageThree, ExpectAmendment failed.\n");
+#endif
+    // TODO(Team#) update account holders in AH manager, schedule retry
+    tasks_handler_.DeleteTask(data->store_data.data_name, kStoreChunk,
+                              kRequestFailedConsensus);
+    return;
+  }
+
+  data->expect_amendment_done = true;
+  data->returned_count = data->success_count = 0;
+
+  // Set up holders for forthcoming AddToWatchList RPCs
+  std::vector<AddToWatchListRequest> add_to_watch_list_requests;
+  if (GetAddToWatchListRequests(data->store_data, data->chunk_info_holders,
+      &add_to_watch_list_requests) != kSuccess) {
+#ifdef DEBUG
+    printf("In MSM::AddToWatchListStageThree, failed to generate AW requests."
+           "\n");
+#endif
+    tasks_handler_.DeleteTask(data->store_data.data_name, kStoreChunk,
+                              kStoreChunkError);
+    return;
+  }
+
+  for (size_t i = 0; i < data->chunk_info_holders.size(); ++i) {
+    WatchListOpData::AddToWatchDataHolder holder(
+        data->chunk_info_holders.at(i).node_id().ToStringDecoded());
+    data->add_to_watchlist_data_holders.push_back(holder);
+  }
+
+  // Send AddToWatchList RPCs
+  for (boost::uint16_t j = 0; j < data->chunk_info_holders.size(); ++j) {
+    google::protobuf::Closure* callback = google::protobuf::NewCallback(this,
+        &MaidsafeStoreManager::AddToWatchListStageFour, j, data);
+    client_rpcs_->AddToWatchList(data->chunk_info_holders.at(j),
+        kad_ops_->AddressIsLocal(data->chunk_info_holders.at(j)),
+        udt_transport_.transport_id(),
+        &add_to_watch_list_requests.at(j),
+        &data->add_to_watchlist_data_holders.at(j).response,
+        data->add_to_watchlist_data_holders.at(j).controller.get(), callback);
+  }
+}
+
+void MaidsafeStoreManager::AddToWatchListStageFour(
+    boost::uint16_t index,
+    boost::shared_ptr<WatchListOpData> data) {
+  boost::mutex::scoped_lock lock(data->mutex);
+  if (data->consensus_upload_copies >= 0)
+    // Consensus has already been achieved and acted upon
+    return;
+  ++data->returned_count;
+  WatchListOpData::AddToWatchDataHolder &holder =
+      data->add_to_watchlist_data_holders.at(index);
+
+  if (!holder.response.IsInitialized()) {
+#ifdef DEBUG
+    printf("In MSM::AddToWatchListStageFour, response %u is uninitialised.\n",
+           index);
+#endif
+  } else if (holder.response.result() != kAck) {
+#ifdef DEBUG
+    printf("In MSM::AddToWatchListStageFour, response %u has result %i.\n",
+           index, holder.response.result());
+#endif
+  } else if (holder.response.pmid() != holder.node_id) {
+#ifdef DEBUG
+    printf("In MSM::AddToWatchListStageFour, resp %u from %s has pmid %s.\n",
+           index, HexSubstr(holder.node_id).c_str(),
+           HexSubstr(holder.response.pmid()).c_str());
+#endif
+    // TODO(Fraser#5#): 2010-01-08 - Send alert to holder.node_id's A/C holders
   } else if (holder.response.upload_count() > kMinChunkCopies) {
 #ifdef DEBUG
-    printf("In MSM::AddToWatchListStageThree, response %u from %s has "
+    printf("In MSM::AddToWatchListStageFour, response %u from %s has "
            "upload_count of %u.\n", index, HexSubstr(holder.node_id).c_str(),
            holder.response.upload_count());
 #endif
@@ -1946,44 +2011,33 @@ int MaidsafeStoreManager::GetExpectAmendmentRequests(
     const std::vector<kad::Contact> &account_holders,
     const std::vector<kad::Contact> &chunk_info_holders,
     std::vector<ExpectAmendmentRequest> *expect_amendment_requests) {
-
-
-  /*
-  required AmendAccountRequest.Amendment amendment_type = 1;
-  required bytes chunkname = 2;
-  required bytes account_pmid = 3;  // PMID of account owner (i.e. sender)
-  required bytes public_key = 4;
-  required bytes public_key_signature = 5;
-  required bytes request_signature = 6;
-  repeated bytes amender_pmids = 7;  // the K vaults to expect amendments from
-
   expect_amendment_requests->clear();
   crypto::Crypto co;
   co.set_symm_algorithm(crypto::AES_256);
   co.set_hash_algorithm(crypto::SHA_512);
   ExpectAmendmentRequest request;
+  request.set_amendment_type(AmendAccountRequest::kSpaceTakenInc);
   request.set_chunkname(store_data.data_name);
-  SignedSize *mutable_signed_size = request.mutable_signed_size();
-  mutable_signed_size->set_data_size(store_data.size);
-  mutable_signed_size->set_signature(
-      co.AsymSign(boost::lexical_cast<std::string>(store_data.size), "",
-                  store_data.private_key, crypto::STRING_STRING));
-  mutable_signed_size->set_pmid(store_data.key_id);
-  mutable_signed_size->set_public_key(store_data.public_key);
-  mutable_signed_size->set_public_key_signature(
-      store_data.public_key_signature);
-  for (size_t i = 0; i < recipients.size(); ++i) {
+  request.set_account_pmid(store_data.key_id);
+  request.set_public_key(store_data.public_key);
+  request.set_public_key_signature(store_data.public_key_signature);
+  for (size_t i = 0; i < chunk_info_holders.size(); ++i) {
+    request.add_amender_pmids(
+        chunk_info_holders.at(i).node_id().ToStringDecoded());
+  }
+  for (size_t i = 0; i < account_holders.size(); ++i) {
     std::string signature;
     GetRequestSignature(store_data.data_name, store_data.dir_type,
-        recipients.at(i).node_id().ToStringDecoded(), store_data.public_key,
-        store_data.public_key_signature, store_data.private_key, &signature);
+        account_holders.at(i).node_id().ToStringDecoded(),
+        store_data.public_key, store_data.public_key_signature,
+        store_data.private_key, &signature);
     if (signature.empty()) {
-      add_to_watch_list_requests->clear();
+      expect_amendment_requests->clear();
       return kGetRequestSigError;
     }
     request.set_request_signature(signature);
-    add_to_watch_list_requests->push_back(request);
-  } */
+    expect_amendment_requests->push_back(request);
+  }
   return kSuccess;
 }
 
@@ -2423,7 +2477,7 @@ void MaidsafeStoreManager::RemoveFromWatchList(const StoreData &store_data) {
   // Find the Chunk Info holders
   boost::shared_ptr<WatchListOpData> data(new WatchListOpData(store_data));
   int result = kad_ops_->BlockingFindKClosestNodes(
-      kad::KadId(store_data.data_name, false), &data->contacts);
+      kad::KadId(store_data.data_name, false), &data->chunk_info_holders);
   if (result != kSuccess) {
 #ifdef DEBUG
     printf("In MSM::RemoveFromWatchList, Kad lookup failed -- error %i\n",
@@ -2433,10 +2487,11 @@ void MaidsafeStoreManager::RemoveFromWatchList(const StoreData &store_data) {
                               kDeleteChunkFindNodesFailure);
     return;
   }
-  if (data->contacts.size() < kKadUpperThreshold) {
+  if (data->chunk_info_holders.size() < kKadUpperThreshold) {
 #ifdef DEBUG
     printf("In MSM::RemoveFromWatchList, Kad lookup failed to find %u nodes; "
-           "found %u nodes.\n", kKadUpperThreshold, data->contacts.size());
+           "found %u nodes.\n", kKadUpperThreshold,
+           data->chunk_info_holders.size());
 #endif
     tasks_handler_.DeleteTask(store_data.data_name, kDeleteChunk,
                               kDeleteChunkFindNodesFailure);
@@ -2445,7 +2500,7 @@ void MaidsafeStoreManager::RemoveFromWatchList(const StoreData &store_data) {
 
   // Set up holders for forthcoming RPCs
   std::vector<RemoveFromWatchListRequest> remove_from_watch_list_requests;
-  if (GetRemoveFromWatchListRequests(store_data, data->contacts,
+  if (GetRemoveFromWatchListRequests(store_data, data->chunk_info_holders,
       &remove_from_watch_list_requests) != kSuccess) {
 #ifdef DEBUG
     printf("In MSM::RemoveFromWatchList, failed to generate requests.\n");
@@ -2454,18 +2509,18 @@ void MaidsafeStoreManager::RemoveFromWatchList(const StoreData &store_data) {
                               kDeleteChunkError);
     return;
   }
-  for (size_t i = 0; i < data->contacts.size(); ++i) {
+  for (size_t i = 0; i < data->chunk_info_holders.size(); ++i) {
     WatchListOpData::RemoveFromWatchDataHolder holder(
-        data->contacts.at(i).node_id().ToStringDecoded());
+        data->chunk_info_holders.at(i).node_id().ToStringDecoded());
     data->remove_from_watchlist_data_holders.push_back(holder);
   }
 
   // Send RPCs
-  for (boost::uint16_t j = 0; j < data->contacts.size(); ++j) {
+  for (boost::uint16_t j = 0; j < data->chunk_info_holders.size(); ++j) {
     google::protobuf::Closure* callback = google::protobuf::NewCallback(this,
         &MaidsafeStoreManager::RemoveFromWatchListCallback, j, data);
-    client_rpcs_->RemoveFromWatchList(data->contacts.at(j),
-        kad_ops_->AddressIsLocal(data->contacts.at(j)),
+    client_rpcs_->RemoveFromWatchList(data->chunk_info_holders.at(j),
+        kad_ops_->AddressIsLocal(data->chunk_info_holders.at(j)),
         udt_transport_.transport_id(),
         &remove_from_watch_list_requests.at(j),
         &data->remove_from_watchlist_data_holders.at(j).response,
@@ -2478,7 +2533,7 @@ void MaidsafeStoreManager::RemoveFromWatchListCallback(
     boost::uint16_t index,
     boost::shared_ptr<WatchListOpData> data) {
   boost::mutex::scoped_lock lock(data->mutex);
-  if (data->successful_delete_count >= kKadUpperThreshold)
+  if (data->success_count >= kKadUpperThreshold)
     // Success has already been achieved and acted upon
     return;
   ++data->returned_count;
@@ -2510,16 +2565,16 @@ void MaidsafeStoreManager::RemoveFromWatchListCallback(
   }
 
   if (success)
-    ++data->successful_delete_count;
+    ++data->success_count;
 
   // Overall success
-  if (data->successful_delete_count >= kKadUpperThreshold) {
+  if (data->success_count >= kKadUpperThreshold) {
     tasks_handler_.DeleteTask(data->store_data.data_name, kDeleteChunk,
                               kSuccess);
     return;
   }
   // Overall failure
-  if (data->returned_count >= data->contacts.size())
+  if (data->returned_count >= data->chunk_info_holders.size())
     tasks_handler_.DeleteTask(data->store_data.data_name, kDeleteChunk,
                               kDeleteChunkFailure);
 }
