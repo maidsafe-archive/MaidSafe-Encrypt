@@ -251,7 +251,7 @@ enum ReturnCode {
   kNoSpaceForCaching = -3514,
   kNoCacheSpaceToClear = -3515,
 
-  // Account Handler & Account Amendment Handler
+  // Account Handler & Account Amendment Handler & Request Expectation Handler
   kAccountHandlerNotStarted = -4501,
   kAccountNotFound = -4502,
   kAccountExists = -4503,
@@ -266,6 +266,7 @@ enum ReturnCode {
   kAccountAmendmentNotFound = -4512,
   kAccountAmendmentUpdated = -4513,
   kAccountAmendmentFinished = -4514,
+  kRequestExpectationCountError = -4515,
 
   // Chunk Info Handler
   kChunkInfoHandlerNotStarted = -5501,

@@ -66,10 +66,21 @@ int AccountAmendmentHandler::ProcessRequest(
     repeated_count = amendments_.count(boost::make_tuple(pmid, field,
         data_size, increase));
   }
-  if (total_count >= kMaxAccountAmendments ||
-      repeated_count >= kMaxRepeatedAccountAmendments) {
-    done->Run();
-    return kAmendAccountCountError;
+  bool tried_cleanup(false);
+  while (total_count >= kMaxAccountAmendments ||
+         repeated_count >= kMaxRepeatedAccountAmendments) {
+    if (!tried_cleanup) {
+      if (CleanUp() != 0) {  // i.e. some deletions were made
+        boost::mutex::scoped_lock lock(amendment_mutex_);
+        total_count = amendments_.size();
+        repeated_count = amendments_.count(boost::make_tuple(pmid, field,
+            data_size, increase));
+      }
+      tried_cleanup = true;
+    } else {
+      done->Run();
+      return kAmendAccountCountError;
+    }
   }
   // If amendment has already been added assess request, else add new amendment
   if (repeated_count != 0) {
