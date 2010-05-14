@@ -79,6 +79,7 @@ class RequestExpectationHandler {
   FRIEND_TEST(RequestExpectationHandlerTest,
               BEH_MAID_REH_GetExpectedCallersIds);
   FRIEND_TEST(RequestExpectationHandlerTest, BEH_MAID_REH_CleanUp);
+  FRIEND_TEST(RequestExpectationHandlerTest, BEH_MAID_REH_Threaded);
   template <typename RequestType>
   std::string GetExpectationIdentifier(const RequestType &request);
   const size_t kMaxExpectations_;
