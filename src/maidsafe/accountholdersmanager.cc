@@ -46,7 +46,13 @@ void AccountHoldersManager::Init(const std::string &pmid,
   UpdateGroup(callback);
 }
 
+void AccountHoldersManager::Update() {
+  UpdateGroup(do_nothing_);
+}
+
 void AccountHoldersManager::UpdateGroup(AccountHolderGroupFunctor callback) {
+  if(account_name_.empty())
+    return;
   {
     boost::mutex::scoped_lock lock(mutex_);
     failed_ids_.clear();

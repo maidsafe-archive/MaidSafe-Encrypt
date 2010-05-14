@@ -1620,7 +1620,8 @@ void MaidsafeStoreManager::AddToWatchListStageTwo(
 #ifdef DEBUG
     printf("In MSM::AddToWatchListStageTwo, no account holders available.\n");
 #endif
-    // TODO(Team#) update account holders in AH manager, schedule retry
+    // TODO(Team#) schedule retry dependent on AH manager update
+    account_holders_manager_.Update();
     tasks_handler_.DeleteTask(data->store_data.data_name, kStoreChunk,
                               kRequestFailedConsensus);
     return;
@@ -1674,7 +1675,7 @@ void MaidsafeStoreManager::AddToWatchListStageThree(
     printf("In MSM::AddToWatchListStageThree, response %u is uninitialised.\n",
            index);
 #endif
-    // TODO(Team#) report failed account holder to AH manager
+    account_holders_manager_.ReportFailure(holder.node_id);
   } else if (holder.response.result() != kAck) {
 #ifdef DEBUG
     printf("In MSM::AddToWatchListStageThree, response %u has result %i.\n",
@@ -1701,7 +1702,7 @@ void MaidsafeStoreManager::AddToWatchListStageThree(
 #ifdef DEBUG
     printf("In MSM::AddToWatchListStageThree, ExpectAmendment failed.\n");
 #endif
-    // TODO(Team#) update account holders in AH manager, schedule retry
+    // TODO(Team#) schedule retry
     tasks_handler_.DeleteTask(data->store_data.data_name, kStoreChunk,
                               kRequestFailedConsensus);
     return;
@@ -2530,7 +2531,8 @@ void MaidsafeStoreManager::RemoveFromWatchListStageTwo(
     printf("In MSM::RemoveFromWatchListStageTwo, no account holders available."
            "\n");
 #endif
-    // TODO(Team#) update account holders in AH manager, schedule retry
+    // TODO(Team#) schedule retry dependent on AH manager update
+    account_holders_manager_.Update();
     tasks_handler_.DeleteTask(data->store_data.data_name, kDeleteChunk,
                               kRequestFailedConsensus);
     return;
@@ -2585,7 +2587,7 @@ void MaidsafeStoreManager::RemoveFromWatchListStageThree(
     printf("In MSM::RemoveFromWatchListStageThree, response %u is "
            "uninitialised.\n", index);
 #endif
-    // TODO(Team#) report failed account holder to AH manager
+    account_holders_manager_.ReportFailure(holder.node_id);
   } else if (holder.response.result() != kAck) {
 #ifdef DEBUG
     printf("In MSM::RemoveFromWatchListStageThree, response %u has result %i."
@@ -2612,7 +2614,7 @@ void MaidsafeStoreManager::RemoveFromWatchListStageThree(
 #ifdef DEBUG
     printf("In MSM::RemoveFromWatchListStageThree, ExpectAmendment failed.\n");
 #endif
-    // TODO(Team#) update account holders in AH manager, schedule retry
+    // TODO(Team#) schedule retry
     tasks_handler_.DeleteTask(data->store_data.data_name, kDeleteChunk,
                               kRequestFailedConsensus);
     return;

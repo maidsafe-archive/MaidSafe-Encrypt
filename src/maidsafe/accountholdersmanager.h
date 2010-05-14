@@ -65,6 +65,7 @@ class AccountHoldersManager {
   ~AccountHoldersManager();
   void Init(const std::string &pmid,
             const AccountHolderGroupFunctor &callback);
+  void Update();
   std::vector<kad::Contact> account_holder_group() {
     boost::mutex::scoped_lock lock(mutex_);
     return account_holder_group_;
