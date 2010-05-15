@@ -41,6 +41,7 @@ namespace mi = boost::multi_index;
 namespace maidsafe_vault {
 
 class AccountHandler;
+class RequestExpectationHandler;
 class VaultServiceLogic;
 
 struct PendingAmending {
@@ -131,12 +132,15 @@ typedef AccountAmendmentSet::index<by_timestamp>::type AmendmentsByTimestamp;
 
 class AccountAmendmentHandler {
  public:
-  AccountAmendmentHandler(AccountHandler *account_handler,
-                          VaultServiceLogic *vault_service_logic)
-      : account_handler_(account_handler),
-        vault_service_logic_(vault_service_logic),
-        amendments_(),
-        amendment_mutex_() {}
+  AccountAmendmentHandler(
+      AccountHandler *account_handler,
+      RequestExpectationHandler *request_expectation_handler,
+      VaultServiceLogic *vault_service_logic)
+          : account_handler_(account_handler),
+            request_expectation_handler_(request_expectation_handler),
+            vault_service_logic_(vault_service_logic),
+            amendments_(),
+            amendment_mutex_() {}
   ~AccountAmendmentHandler() {}
   // Assumes that response->pmid() has already been set and that
   // request->signed_size() validates
@@ -164,10 +168,11 @@ class AccountAmendmentHandler {
                       const bool &inc,
                       const PendingAmending &pending,
                       AccountAmendment *amendment);
-  void CreateNewAmendment(const AccountAmendment &amendment);
+  void CreateNewAmendment(AccountAmendment amendment);
   void CreateNewAmendmentCallback(AccountAmendment amendment,
                                   std::string find_nodes_response);
   AccountHandler *account_handler_;
+  RequestExpectationHandler *request_expectation_handler_;
   VaultServiceLogic *vault_service_logic_;
   AccountAmendmentSet amendments_;
   boost::mutex amendment_mutex_;

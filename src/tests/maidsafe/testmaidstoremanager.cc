@@ -1815,7 +1815,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_RemoveFromWatchList) {
                     contacts.at(i).node_id().ToStringDecoded(),
                     _1, _2, &tcc))));                           // Calls 7 to 10
   }
-  
+
   for (size_t i = 0; i < contacts.size(); ++i) {
     EXPECT_CALL(*mock_rpcs, RemoveFromWatchList(
         EqualsContact(contacts.at(i)),

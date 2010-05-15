@@ -51,7 +51,7 @@ void AccountHoldersManager::Update() {
 }
 
 void AccountHoldersManager::UpdateGroup(AccountHolderGroupFunctor callback) {
-  if(account_name_.empty())
+  if (account_name_.empty())
     return;
   {
     boost::mutex::scoped_lock lock(mutex_);

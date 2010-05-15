@@ -120,7 +120,7 @@ TEST_F(InfoSynchroniserTest, BEH_VAULT_InfoSyncShouldFetch) {
   ASSERT_EQ(size_t(2), info_synchroniser_.info_entries_.size());
 }
 
-TEST_F(InfoSynchroniserTest, BEH_VAULT_InfoSyncTimestamps) {
+TEST_F(InfoSynchroniserTest, FUNC_VAULT_InfoSyncTimestamps) {
   const size_t kTestMapSize = 100;
   while (info_synchroniser_.info_entries_.size() < kTestMapSize) {
     info_synchroniser_.ShouldFetch(co_.Hash(base::RandomString(100), "",
@@ -150,8 +150,8 @@ TEST_F(InfoSynchroniserTest, BEH_VAULT_InfoSyncTimestamps) {
   ASSERT_EQ(id2_insertion_time, it->second);
 }
 
-TEST_F(InfoSynchroniserTest, BEH_VAULT_InfoSyncRemoveEntry) {
-  const size_t kTestMapSize = 100;
+TEST_F(InfoSynchroniserTest, FUNC_VAULT_InfoSyncRemoveEntry) {
+  const size_t kTestMapSize = 1000;
   while (info_synchroniser_.info_entries_.size() < kTestMapSize) {
     info_synchroniser_.ShouldFetch(co_.Hash(base::RandomString(100), "",
         crypto::STRING_STRING, false), &closest_nodes_);
@@ -182,7 +182,7 @@ TEST_F(InfoSynchroniserTest, BEH_VAULT_InfoSyncRemoveEntry) {
   ASSERT_TRUE(success);
 }
 
-TEST_F(InfoSynchroniserTest, BEH_VAULT_InfoSyncPruneMap) {
+TEST_F(InfoSynchroniserTest, FUNC_VAULT_InfoSyncPruneMap) {
   const size_t kTestMapSize = 100;
   while (info_synchroniser_.info_entries_.size() < kTestMapSize) {
     info_synchroniser_.ShouldFetch(co_.Hash(base::RandomString(100), "",

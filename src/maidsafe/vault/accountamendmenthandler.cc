@@ -27,6 +27,7 @@
 #include <vector>
 
 #include "maidsafe/vault/accountrepository.h"
+#include "maidsafe/vault/requestexpectationhandler.h"
 #include "maidsafe/vault/vaultservicelogic.h"
 
 namespace maidsafe_vault {
@@ -200,8 +201,25 @@ int AccountAmendmentHandler::AssessAmendment(const std::string &owner_pmid,
   }
 }
 
-void AccountAmendmentHandler::CreateNewAmendment(
-    const AccountAmendment &amendment) {
+void AccountAmendmentHandler::CreateNewAmendment(AccountAmendment amendment) {
+  std::vector<std::string> account_holders_ids =
+      request_expectation_handler_->GetExpectedCallersIds(
+          amendment.probable_pendings.front().request);
+  bool lookup_required(false);
+  if (account_holders_ids.size() >= size_t(kKadUpperThreshold)) {
+    // Assess probable (enqueued) requests
+    while (!amendment.probable_pendings.empty()) {
+      if (AssessAmendment(amendment.pmid, amendment.field, amendment.offer,
+          amendment.increase, amendment.probable_pendings.front(),
+          &amendment) == kAccountAmendmentNotFound) {
+        amendment.probable_pendings.front().response->set_result(kNack);
+        amendment.probable_pendings.front().done->Run();
+      }
+      amendment.probable_pendings.pop_front();
+    }
+  } else {
+    lookup_required = true;
+  }
   {
     boost::mutex::scoped_lock lock(amendment_mutex_);
     std::pair<AmendmentsByTimestamp::iterator, bool> p =
@@ -214,11 +232,13 @@ void AccountAmendmentHandler::CreateNewAmendment(
       return;
     }
   }
-  vault_service_logic_->kadops()->FindKClosestNodes(
-      kad::KadId(amendment.probable_pendings.front().request.chunkname(),
-                 false),
-      boost::bind(&AccountAmendmentHandler::CreateNewAmendmentCallback, this,
-                  amendment, _1));
+  if (lookup_required) {
+    vault_service_logic_->kadops()->FindKClosestNodes(
+        kad::KadId(amendment.probable_pendings.front().request.chunkname(),
+                   false),
+        boost::bind(&AccountAmendmentHandler::CreateNewAmendmentCallback, this,
+                    amendment, _1));
+  }
 }
 
 void AccountAmendmentHandler::CreateNewAmendmentCallback(

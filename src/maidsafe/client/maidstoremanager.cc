@@ -2635,7 +2635,7 @@ void MaidsafeStoreManager::RemoveFromWatchListStageThree(
                               kStoreChunkError);
     return;
   }
-  
+
   for (size_t i = 0; i < data->chunk_info_holders.size(); ++i) {
     WatchListOpData::RemoveFromWatchDataHolder holder(
         data->chunk_info_holders.at(i).node_id().ToStringDecoded());

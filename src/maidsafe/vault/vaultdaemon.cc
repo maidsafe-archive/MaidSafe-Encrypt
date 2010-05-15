@@ -311,7 +311,7 @@ int VaultDaemon::StopNotOwnedVault() {
       fs::remove_all(not_owned_path_);
     }
     catch(const std::exception &e) {
-#ifdef DEUBG
+#ifdef DEBUG
       printf("In VaultDaemon::StopNotOwnedVault, %s\n", e.what());
 #endif
       result = kVaultDaemonException;

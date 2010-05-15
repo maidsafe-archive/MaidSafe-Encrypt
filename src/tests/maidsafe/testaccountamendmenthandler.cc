@@ -23,8 +23,10 @@
 * ============================================================================
 */
 
+#include "maidsafe/maidsafe.h"
 #include "maidsafe/vault/accountamendmenthandler.h"
 #include "maidsafe/vault/accountrepository.h"
+#include "maidsafe/vault/requestexpectationhandler.h"
 #include "tests/maidsafe/mockvaultservicelogic.h"
 #include "tests/maidsafe/mockkadops.h"
 
@@ -79,10 +81,13 @@ class AccountAmendmentHandlerTest : public MockVaultServiceLogicTest {
   AccountAmendmentHandlerTest()
     : ah_(true),
       vsl_(boost::shared_ptr<VaultRpcs>(), boost::shared_ptr<kad::KNode>()),
-      aah_(&ah_, &vsl_) {}
+      reh_(kMaxAccountAmendments, kMaxRepeatedAccountAmendments,
+           kAccountAmendmentTimeout),
+      aah_(&ah_, &reh_, &vsl_) {}
   ~AccountAmendmentHandlerTest() {}
   AccountHandler ah_;
   MockVsl vsl_;
+  RequestExpectationHandler reh_;
   AccountAmendmentHandler aah_;
 };
 

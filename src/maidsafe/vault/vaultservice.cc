@@ -133,7 +133,10 @@ VaultService::VaultService(const std::string &pmid,
       transport_id_(transport_id),
       prm_(),
       ah_(true),
-      aah_(&ah_, vault_service_logic_),
+      request_expectation_handler_(kMaxAccountAmendments,
+                                   kMaxRepeatedAccountAmendments,
+                                   kAccountAmendmentTimeout),
+      aah_(&ah_, &request_expectation_handler_, vault_service_logic_),
       cih_(true),
       bps_(),
       thread_pool_(),
@@ -1053,15 +1056,35 @@ void VaultService::ExpectAmendment(
     done->Run();
     return;
   }
-
 #ifdef DEBUG
-  printf("In VaultService::ExpectAmendment (%s), amenders:\n", HexSubstr(pmid_).c_str());
+  printf("In VaultService::ExpectAmendment (%s), amenders:\n",
+         HexSubstr(pmid_).c_str());
   for (int i = 0; i < request->amender_pmids_size(); ++i)
     printf(" # %s\n", HexSubstr(request->amender_pmids(i)).c_str());
-  response->set_result(kAck);
 #endif
-
-  done->Run();  // TODO(Team#) implement ExpectAmendment
+  if (request->request_signature() == kAnonymousRequestSignature) {
+#ifdef DEBUG
+    printf("In VaultService::ExpectAmendment (%s), request is anonymous.\n",
+           HexSubstr(pmid_).c_str());
+#endif
+    done->Run();
+    return;
+  }
+  if (!ValidateIdAndRequest(request->public_key(),
+                            request->public_key_signature(),
+                            request->request_signature(),
+                            request->chunkname(),
+                            request->account_pmid())) {
+#ifdef DEBUG
+    printf("In VaultService::ExpectAmendment (%s), failed to validate.\n",
+           HexSubstr(pmid_).c_str());
+#endif
+    done->Run();
+    return;
+  }
+  request_expectation_handler_.AddExpectation(*request);
+  response->set_result(kAck);
+  done->Run();
 }
 
 void VaultService::AccountStatus(google::protobuf::RpcController*,
@@ -2085,7 +2108,7 @@ void VaultService::FindCloseNodesCallback(const std::string &result,
 
 void VaultService::FinalisePayment(const std::string &chunk_name,
                                    const std::string &pmid,
-                                   const int &chunk_size,
+                                   const boost::uint64_t &chunk_size,
                                    const int &permission_result) {
   if (permission_result != kSuccess) {
 #ifdef DEBUG

@@ -44,6 +44,7 @@
 #include "maidsafe/vault/chunkinfohandler.h"
 #include "maidsafe/vault/bufferpacketstore.h"
 #include "maidsafe/vault/infosynchroniser.h"
+#include "maidsafe/vault/requestexpectationhandler.h"
 #include "maidsafe/vault/vaultservicelogic.h"
 #include "protobuf/maidsafe_service.pb.h"
 #include "protobuf/maidsafe_messages.pb.h"
@@ -265,6 +266,8 @@ class VaultService : public maidsafe::MaidsafeService {
   int AddAccount(const std::string &pmid, const boost::uint64_t &offer);
   bool HaveAccount(const std::string &pmid);
  private:
+  VaultService(const VaultService&);
+  VaultService &operator=(const VaultService&);
   FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesValidateSignedSize);
   FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesValidateStoreContract);
   FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesValidateAmendRequest);
@@ -296,8 +299,6 @@ class VaultService : public maidsafe::MaidsafeService {
   FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesAddBPMessages);
   FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesGetBPPresence);
   FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesAddBPPresence);
-  VaultService(const VaultService&);
-  VaultService &operator=(const VaultService&);
   void DiscardResult(const int&) {}
   bool ValidateSignedSize(const maidsafe::SignedSize &sz);
   bool ValidateStoreContract(const maidsafe::StoreContract &sc);
@@ -331,7 +332,7 @@ class VaultService : public maidsafe::MaidsafeService {
                               std::vector<std::string> *close_nodes);
   void FinalisePayment(const std::string &chunk_name,
                        const std::string &pmid,
-                       const int &chunk_size,
+                       const boost::uint64_t &chunk_size,
                        const int &permission_result);
   void DoneAddToReferenceList(const maidsafe::StoreContract &store_contract,
                               const std::string &chunk_name);
@@ -387,6 +388,7 @@ class VaultService : public maidsafe::MaidsafeService {
   typedef std::map<std::string, maidsafe::StoreContract> PrepsReceivedMap;
   PrepsReceivedMap prm_;
   AccountHandler ah_;
+  RequestExpectationHandler request_expectation_handler_;
   AccountAmendmentHandler aah_;
   ChunkInfoHandler cih_;
   BufferPacketStore bps_;

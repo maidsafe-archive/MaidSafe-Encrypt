@@ -44,7 +44,8 @@ class RequestExpectationHandlerTest : public testing::Test {
         amender_pmids_(),
         expect_amendment_request_(),
         request_expectation_handler_(kMaxAccountAmendments,
-                                     kMaxRepeatedAccountAmendments, 60000) {}
+                                     kMaxRepeatedAccountAmendments,
+                                     kAccountAmendmentTimeout) {}
   void RunRandomOps(std::vector<maidsafe::ExpectAmendmentRequest> ears) {
     std::vector<maidsafe::AmendAccountRequest> aars(ears.size());
     std::vector< std::vector<std::string> > input_vectors, output_vectors;
