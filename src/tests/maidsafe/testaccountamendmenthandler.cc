@@ -677,6 +677,265 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_CreateNewAmendment) {
   ASSERT_EQ(size_t(3), aah_.amendments_.size());
 }
 
+TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_CreateNewWithExpecteds) {
+  // Setup
+  const int kTestRuns(3);
+  vsl_.our_details_ = our_contact_;
+
+  boost::mutex mutex;
+  boost::condition_variable cv;
+  test_aah::CallbacksHolder cbh(&mutex, &cv);
+  // Set chunk name as far as possible from our ID so we don't get added to
+  // vector of close nodes in vsl_.HandleFindKNodesResponse
+  std::string far_chunk_name =
+      crypto_.Obfuscate(pmid_, std::string(64, -1), crypto::XOR);
+  std::string test_account_pmid = crypto_.Hash(base::RandomString(100), "",
+      crypto::STRING_STRING, false);
+  std::string test_account_name = crypto_.Hash(test_account_pmid + kAccount, "",
+      crypto::STRING_STRING, false);
+  std::vector<maidsafe::AmendAccountRequest> requests;
+  std::vector<maidsafe::AmendAccountResponse> responses;
+  for (int i = 0; i < kTestRuns; ++i) {
+    maidsafe::AmendAccountRequest request;
+    request.set_chunkname(far_chunk_name);
+    request.set_amendment_type(maidsafe::AmendAccountRequest::kSpaceGivenInc);
+    request.set_account_pmid(test_account_pmid);
+    requests.push_back(request);
+    maidsafe::AmendAccountResponse response;
+    response.set_pmid(pmid_);
+    responses.push_back(response);
+  }
+  std::vector<AccountAmendment> test_amendments;
+  for (int i = 0; i < kTestRuns; ++i) {
+    google::protobuf::Closure *done = google::protobuf::NewCallback(&cbh,
+        &test_aah::CallbacksHolder::callback);
+    PendingAmending pending(&requests.at(i), &responses.at(i), done);
+    AccountAmendment amendment(test_account_name, 2, 1000, true, pending);
+    amendment.account_name = kad::KadId(test_account_name, false);
+    test_amendments.push_back(amendment);
+    // Sleep to let timestamps differ.
+    boost::this_thread::sleep(boost::posix_time::milliseconds(2));
+  }
+  // Add account to AccountHolder so amend can succeed
+  ASSERT_EQ(kSuccess, ah_.AddAccount(test_account_name, 999999));
+
+  // Expectations
+  EXPECT_CALL(*vsl_.kadops(), FindKClosestNodes(kad::KadId(far_chunk_name,
+                                                           false),
+      testing::An<const kad::VoidFunctorOneString&>()))
+      .WillOnce(testing::WithArgs<1>(testing::Invoke(
+          boost::bind(&mock_kadops::RunCallback, good_result_, _1))));
+
+  maidsafe::ExpectAmendmentRequest expect_amendment_request;
+  expect_amendment_request.set_amendment_type(
+      maidsafe::AmendAccountRequest::kSpaceGivenInc);
+  expect_amendment_request.set_chunkname(far_chunk_name);
+  expect_amendment_request.set_account_pmid(test_account_pmid);
+  expect_amendment_request.set_public_key("Unimportant");
+  expect_amendment_request.set_public_key_signature("Unimportant");
+  expect_amendment_request.set_request_signature("Unimportant");
+  for (boost::uint16_t i = 0; i < kad::K; ++i) {
+    expect_amendment_request.add_amender_pmids(good_pmids_.at(i));
+    // Push first expectation with too few contacts
+    if (i == kKadUpperThreshold - 2)
+      ASSERT_EQ(kSuccess, reh_.AddExpectation(expect_amendment_request));
+  }
+  // Sleep to ensure previous expectation timestamp < this one
+  boost::this_thread::sleep(boost::posix_time::milliseconds(2));
+  // Good list of pmids
+  ASSERT_EQ(kSuccess, reh_.AddExpectation(expect_amendment_request));
+
+  // Sleep to ensure previous expectation timestamp < this one
+  boost::this_thread::sleep(boost::posix_time::milliseconds(2));
+  // Some good pmids, but not enough
+  for (boost::uint16_t i = 0; i < kad::K - kKadUpperThreshold + 1; ++i) {
+    std::string *bad_pmid = expect_amendment_request.mutable_amender_pmids(i);
+    *bad_pmid = crypto_.Hash(
+        base::RandomString(100), "", crypto::STRING_STRING, false);
+  }
+  ASSERT_EQ(kSuccess, reh_.AddExpectation(expect_amendment_request));
+
+  // Call 1 - REH fails to provide enough contacts.  FindNodes response good.
+  // Send kad::K AmendmentRequests with matching PMIDs to achieve success.
+  int test_run(0);
+  // Force further kad::K probable_pendings into test_amendment
+  std::vector<maidsafe::AmendAccountRequest> good_requests;
+  std::vector<maidsafe::AmendAccountResponse> good_responses;
+  for (int i = 0; i < kad::K; ++i) {
+    maidsafe::AmendAccountRequest request;
+    maidsafe::SignedSize *sz = request.mutable_signed_size();
+    sz->set_pmid(good_pmids_.at(i));
+    good_requests.push_back(request);
+    maidsafe::AmendAccountResponse resp;
+    resp.set_pmid(pmid_);
+    good_responses.push_back(resp);
+  }
+  for (int i = 0; i < kad::K; ++i) {
+    google::protobuf::Closure *done = google::protobuf::NewCallback(&cbh,
+        &test_aah::CallbacksHolder::callback);
+    PendingAmending pending(&good_requests.at(i), &good_responses.at(i), done);
+    test_amendments.at(test_run).probable_pendings.push_back(pending);
+  }
+  aah_.CreateNewAmendment(test_amendments.at(test_run));
+  ASSERT_EQ(size_t(1), aah_.amendments_.size());
+  {
+    boost::mutex::scoped_lock lock(mutex);
+    while (!responses.at(test_run).IsInitialized())
+      cv.wait(lock);
+    for (int i = 0; i < kad::K; ++i) {
+      while (!good_responses.at(i).IsInitialized())
+        cv.wait(lock);
+    }
+  }
+
+  int expected_called_back_count(kad::K + 1);
+  ASSERT_EQ(expected_called_back_count, cbh.called_back_count());
+  ASSERT_TRUE(responses.at(test_run).IsInitialized());
+  ASSERT_EQ(size_t(kad::K), good_responses.size());
+  for (int i = 0; i < kad::K; ++i) {
+    ASSERT_TRUE(good_responses.at(i).IsInitialized());
+    ASSERT_EQ(kAck, static_cast<int>(good_responses.at(i).result()));
+  }
+  AmendmentsByTimestamp::iterator it =
+      aah_.amendments_.get<by_timestamp>().find(test_amendments.at(test_run));
+  ASSERT_EQ(size_t(kad::K), (*it).success_count);
+  ASSERT_EQ(size_t(0), (*it).pendings.size());
+  ASSERT_EQ(size_t(0), (*it).probable_pendings.size());
+  ASSERT_EQ(size_t(kad::K), (*it).chunk_info_holders.size());
+  ASSERT_EQ(kSuccess, (*it).account_amendment_result);
+  for (int i = 0; i < kad::K; ++i) {
+    AccountAmendment amd = *it;
+    std::map<std::string, bool>::iterator cih_it =
+        amd.chunk_info_holders.find(good_pmids_.at(i));
+    bool res = amd.chunk_info_holders.end() != cih_it;
+    ASSERT_TRUE(res);
+    ASSERT_TRUE((*cih_it).second);
+  }
+
+  // Call 2 - REH provides enough contacts - FindNodes not called.
+  // Send kad::K AmendmentRequests with matching PMIDs to achieve success.
+  ++test_run;
+  good_requests.clear();
+  good_responses.clear();
+  for (int i = 0; i < kad::K; ++i) {
+    maidsafe::AmendAccountRequest request;
+    maidsafe::SignedSize *sz = request.mutable_signed_size();
+    sz->set_pmid(good_pmids_.at(i));
+    request.set_chunkname(far_chunk_name);
+    request.set_amendment_type(maidsafe::AmendAccountRequest::kSpaceGivenInc);
+    request.set_account_pmid(test_account_pmid);
+    good_requests.push_back(request);
+    maidsafe::AmendAccountResponse resp;
+    resp.set_pmid(pmid_);
+    good_responses.push_back(resp);
+  }
+  for (int i = 0; i < kad::K; ++i) {
+    google::protobuf::Closure *done = google::protobuf::NewCallback(&cbh,
+        &test_aah::CallbacksHolder::callback);
+    PendingAmending pending(&good_requests.at(i), &good_responses.at(i), done);
+    test_amendments.at(test_run).probable_pendings.push_back(pending);
+  }
+  aah_.CreateNewAmendment(test_amendments.at(test_run));
+  ASSERT_EQ(size_t(2), aah_.amendments_.size());
+  {
+    boost::mutex::scoped_lock lock(mutex);
+    while (!responses.at(test_run).IsInitialized())
+      cv.wait(lock);
+    for (int i = 0; i < kad::K; ++i) {
+      while (!good_responses.at(i).IsInitialized())
+        cv.wait(lock);
+    }
+  }
+
+  expected_called_back_count += (kad::K + 1);
+  ASSERT_EQ(expected_called_back_count, cbh.called_back_count());
+  ASSERT_TRUE(responses.at(test_run).IsInitialized());
+  ASSERT_EQ(size_t(kad::K), good_responses.size());
+  for (int i = 0; i < kad::K; ++i) {
+    ASSERT_TRUE(good_responses.at(i).IsInitialized());
+    ASSERT_EQ(kAck, static_cast<int>(good_responses.at(i).result()));
+  }
+  it = aah_.amendments_.get<by_timestamp>().find(test_amendments.at(test_run));
+  ASSERT_EQ(size_t(kad::K), (*it).success_count);
+  ASSERT_EQ(size_t(0), (*it).pendings.size());
+  ASSERT_EQ(size_t(0), (*it).probable_pendings.size());
+  ASSERT_EQ(size_t(kad::K), (*it).chunk_info_holders.size());
+  ASSERT_EQ(kSuccess, (*it).account_amendment_result);
+  for (int i = 0; i < kad::K; ++i) {
+    AccountAmendment amd = *it;
+    std::map<std::string, bool>::iterator cih_it =
+        amd.chunk_info_holders.find(good_pmids_.at(i));
+    bool res = amd.chunk_info_holders.end() != cih_it;
+    ASSERT_TRUE(res);
+    ASSERT_TRUE((*cih_it).second);
+  }
+
+  // Call 3 - REH provides enough contacts, but some wrong pmids - FindNodes not
+  // called.
+  ++test_run;
+  good_requests.clear();
+  good_responses.clear();
+  for (int i = 0; i < kad::K; ++i) {
+    maidsafe::AmendAccountRequest request;
+    maidsafe::SignedSize *sz = request.mutable_signed_size();
+    sz->set_pmid(good_pmids_.at(i));
+    request.set_chunkname(far_chunk_name);
+    request.set_amendment_type(maidsafe::AmendAccountRequest::kSpaceGivenInc);
+    request.set_account_pmid(test_account_pmid);
+    good_requests.push_back(request);
+    maidsafe::AmendAccountResponse resp;
+    resp.set_pmid(pmid_);
+    good_responses.push_back(resp);
+  }
+  for (int i = 0; i < kad::K; ++i) {
+    google::protobuf::Closure *done = google::protobuf::NewCallback(&cbh,
+        &test_aah::CallbacksHolder::callback);
+    PendingAmending pending(&good_requests.at(i), &good_responses.at(i), done);
+    test_amendments.at(test_run).probable_pendings.push_back(pending);
+  }
+  aah_.CreateNewAmendment(test_amendments.at(test_run));
+  ASSERT_EQ(size_t(3), aah_.amendments_.size());
+  {
+    boost::mutex::scoped_lock lock(mutex);
+    while (!responses.at(test_run).IsInitialized())
+      cv.wait(lock);
+    for (int i = 0; i < kad::K - kKadUpperThreshold + 1; ++i) {
+      while (!good_responses.at(i).IsInitialized())
+        cv.wait(lock);
+    }
+  }
+
+  expected_called_back_count += (kad::K - kKadUpperThreshold + 2);
+  ASSERT_EQ(expected_called_back_count, cbh.called_back_count());
+  ASSERT_EQ(size_t(kad::K), good_responses.size());
+  int kacks(0), knacks(0);
+  for (int i = 0; i < kad::K; ++i) {
+    if (i < kKadUpperThreshold + 2) {
+      ASSERT_EQ(kNack, static_cast<int>(good_responses.at(i).result()));
+    } else {
+      ASSERT_FALSE(good_responses.at(i).IsInitialized());
+    }
+  }
+  it = aah_.amendments_.get<by_timestamp>().find(test_amendments.at(test_run));
+  ASSERT_EQ(size_t(kKadUpperThreshold - 1), (*it).success_count);
+  ASSERT_EQ(size_t(kKadUpperThreshold - 1), (*it).pendings.size());
+  ASSERT_EQ(size_t(0), (*it).probable_pendings.size());
+  ASSERT_EQ(size_t(kad::K), (*it).chunk_info_holders.size());
+  ASSERT_EQ(kAccountAmendmentPending, (*it).account_amendment_result);
+  for (int i = 0; i < kad::K - kKadUpperThreshold + 1; ++i) {
+    AccountAmendment amd = *it;
+    std::map<std::string, bool>::iterator cih_it =
+        amd.chunk_info_holders.find(good_pmids_.at(i));
+    bool res = amd.chunk_info_holders.end() == cih_it;
+    if (i < kKadUpperThreshold + 2) {
+      EXPECT_TRUE(res);
+    } else {
+      EXPECT_FALSE(res);
+      EXPECT_TRUE((*cih_it).second);
+    }
+  }
+}
+
 TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_ProcessRequest) {
   // Setup
   vsl_.pmid_ = pmid_;

@@ -289,6 +289,7 @@ class VaultService : public maidsafe::MaidsafeService {
   FRIEND_TEST(MockVaultServicesTest, BEH_MAID_ServicesRemoveFromWatchList);
   FRIEND_TEST(MockVaultServicesTest, BEH_MAID_ServicesAddToReferenceList);
   FRIEND_TEST(MockVaultServicesTest, BEH_MAID_ServicesAmendAccount);
+  FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesExpectAmendment);
   FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesGetSyncData);
   FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesGetAccount);
   FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesGetChunkInfo);

@@ -238,6 +238,7 @@ class VaultServiceLogic {
   FRIEND_TEST(VaultServiceLogicTest, FUNC_MAID_VSL_RemoteVaultAbleToStore);
   FRIEND_TEST(AccountAmendmentHandlerTest, BEH_MAID_AAH_AssessAmendment);
   FRIEND_TEST(AccountAmendmentHandlerTest, BEH_MAID_AAH_CreateNewAmendment);
+  FRIEND_TEST(AccountAmendmentHandlerTest, BEH_MAID_AAH_CreateNewWithExpecteds);
   FRIEND_TEST(AccountAmendmentHandlerTest, BEH_MAID_AAH_ProcessRequest);
   FRIEND_TEST(MockVaultServicesTest, BEH_MAID_ServicesAmendAccount);
   friend class MockVsl;

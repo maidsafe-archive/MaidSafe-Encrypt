@@ -2309,6 +2309,80 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesAmendAccount) {
   }
 }
 
+TEST_F(VaultServicesTest, BEH_MAID_ServicesExpectAmendment) {
+  rpcprotocol::Controller controller;
+  maidsafe::ExpectAmendmentRequest request;
+  maidsafe::ExpectAmendmentResponse response;
+
+  std::string pub_key, priv_key, pmid, pub_key_sig, req_sig;
+  CreateRSAKeys(&pub_key, &priv_key);
+  crypto::Crypto co;
+  co.set_symm_algorithm(crypto::AES_256);
+  co.set_hash_algorithm(crypto::SHA_512);
+  std::string content("This is a data chunk");
+  std::string chunk_name(co.Hash(content, "", crypto::STRING_STRING, false));
+  pub_key_sig = co.AsymSign(pub_key, "", priv_key, crypto::STRING_STRING);
+  pmid = co.Hash(pub_key + pub_key_sig, "", crypto::STRING_STRING, false);
+  req_sig = co.AsymSign(co.Hash(pub_key_sig + chunk_name + vault_pmid_, "",
+                        crypto::STRING_STRING, false), "", priv_key,
+                        crypto::STRING_STRING);
+  std::string account_pmid(pmid);
+
+  request.set_amendment_type(maidsafe::AmendAccountRequest::kSpaceTakenInc);
+  request.set_chunkname(chunk_name);
+  request.set_account_pmid(account_pmid);
+  request.set_public_key(pub_key);
+  request.set_public_key_signature(pub_key_sig);
+  std::vector<std::string> amender_pmids;
+  for (boost::uint16_t i = 0; i < kad::K; ++i) {
+    amender_pmids.push_back(co.Hash(base::RandomString(100), "",
+                                    crypto::STRING_STRING, false));
+    request.add_amender_pmids(amender_pmids.at(i));
+  }
+
+  TestCallback cb_obj;
+
+  for (int i = 0; i <= 2; ++i) {
+    switch (i) {
+      case 0:  // uninitialized request
+        break;
+      case 1:  // anonymous request
+        request.set_request_signature(kAnonymousRequestSignature);
+        break;
+      case 2:  // invalid request
+        request.set_request_signature("Bunkum");
+        break;
+    }
+
+    google::protobuf::Closure *done =
+        google::protobuf::NewCallback<TestCallback>(&cb_obj,
+        &TestCallback::CallbackFunction);
+    vault_service_->ExpectAmendment(&controller, &request, &response, done);
+    ASSERT_TRUE(response.IsInitialized());
+    EXPECT_EQ(kNack, static_cast<int>(response.result()));
+    response.Clear();
+  }
+
+  request.set_request_signature(req_sig);
+  google::protobuf::Closure *done =
+      google::protobuf::NewCallback<TestCallback>(&cb_obj,
+      &TestCallback::CallbackFunction);
+  vault_service_->ExpectAmendment(&controller, &request, &response, done);
+  ASSERT_TRUE(response.IsInitialized());
+  EXPECT_EQ(kAck, static_cast<int>(response.result()));
+  response.Clear();
+
+  // Retrieve and check expectation
+  maidsafe::AmendAccountRequest amend_account_request;
+  amend_account_request.set_amendment_type(request.amendment_type());
+  amend_account_request.set_chunkname(request.chunkname());
+  amend_account_request.set_account_pmid(request.account_pmid());
+  std::vector<std::string> result_ids = vault_service_->
+      request_expectation_handler_.GetExpectedCallersIds(amend_account_request);
+  bool result = amender_pmids == result_ids;
+  ASSERT_TRUE(result);
+}
+
 TEST_F(VaultServicesTest, BEH_MAID_ServicesGetSyncData) {
   rpcprotocol::Controller controller;
   maidsafe::GetSyncDataRequest request;

@@ -207,8 +207,14 @@ void AccountAmendmentHandler::CreateNewAmendment(AccountAmendment amendment) {
           amendment.probable_pendings.front().request);
   bool lookup_required(false);
   if (account_holders_ids.size() >= size_t(kKadUpperThreshold)) {
+    // Populate map of Chunk Info holders
+    for (size_t i = 0; i < account_holders_ids.size(); ++i) {
+      amendment.chunk_info_holders.insert(
+          std::pair<std::string, bool>(account_holders_ids.at(i), false));
+    }
     // Assess probable (enqueued) requests
     while (!amendment.probable_pendings.empty()) {
+      boost::mutex::scoped_lock lock(amendment_mutex_);
       if (AssessAmendment(amendment.pmid, amendment.field, amendment.offer,
           amendment.increase, amendment.probable_pendings.front(),
           &amendment) == kAccountAmendmentNotFound) {
