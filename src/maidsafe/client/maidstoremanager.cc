@@ -1532,9 +1532,9 @@ int MaidsafeStoreManager::SendMessage(
     std::vector<std::string>::iterator it = recs.begin();
     while (it != recs.end()) {
       if (SendIM(message, *it)) {
-        bp_results->results->insert(std::pair<std::string,  ReturnCode>
-                                         (*it, kSuccess));
-        recs.erase(it);
+        bp_results->results->insert(std::pair<std::string, ReturnCode>
+                                             (*it,         kSuccess));
+        it = recs.erase(it);
       } else {
         ++it;
       }
@@ -1543,8 +1543,8 @@ int MaidsafeStoreManager::SendMessage(
 
   boost::mutex::scoped_lock loch_quoich(bp_results->mutex);
   for (size_t n = 0; n < recs.size(); ++n)
-    bp_results->results->insert(std::pair<std::string,  ReturnCode>
-                                         (recs[n],      kBPAwaitingCallback));
+    bp_results->results->insert(std::pair<std::string, ReturnCode>
+                                         (recs[n],     kBPAwaitingCallback));
   // Add the message to each receiver's bp
   for (size_t i = 0; i < recs.size(); ++i) {
     cbph_.AddMessage(bpip, ss_->PublicUsername(),
