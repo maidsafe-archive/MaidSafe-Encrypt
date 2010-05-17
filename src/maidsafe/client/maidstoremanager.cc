@@ -75,7 +75,11 @@ void DeletePacketTask::run() {
   msm_->DeletePacketFromNet(delete_data_);
 }
 
-int MaidsafeStoreManager::kPacketMaxThreadCount_ = 5;
+void UpdatePacketTask::run() {
+  msm_->UpdatePacketOnNetwork(update_data_);
+}
+
+int MaidsafeStoreManager::kPacketMaxThreadCount_ = 1;
 int MaidsafeStoreManager::kChunkMaxThreadCount_ = 5;
 
 MaidsafeStoreManager::MaidsafeStoreManager(boost::shared_ptr<ChunkStore> cstore)
@@ -241,9 +245,9 @@ void MaidsafeStoreManager::CleanUpTransport() {
   transport::TransportUDT::CleanUp();
 }
 
-int MaidsafeStoreManager::ValidateInputs(const std::string &name,
-                                         const PacketType &packet_type,
-                                         const DirType &dir_type) {
+ReturnCode MaidsafeStoreManager::ValidateInputs(const std::string &name,
+                                                const PacketType &packet_type,
+                                                const DirType &dir_type) {
   if (name.size() != kKeySize)
     return kIncorrectKeySize;
   if (packet_type < PacketType_MIN || packet_type > PacketType_MAX)
@@ -260,7 +264,7 @@ int MaidsafeStoreManager::StoreChunk(const std::string &chunk_name,
 //  printf("In MaidsafeStoreManager::StoreChunk (%i), chunk_name = %s\n",
 //         knode_->host_port(), HexSubstr(chunk_name).c_str());
 #endif
-  int valid = ValidateInputs(chunk_name, PacketType_MIN, dir_type);
+  ReturnCode valid = ValidateInputs(chunk_name, PacketType_MIN, dir_type);
   if (valid != kSuccess) {
 #ifdef DEBUG
     printf("In MSM::StoreChunk, invalid input.  Error %i\n", valid);
@@ -320,14 +324,14 @@ void MaidsafeStoreManager::StorePacket(const std::string &packet_name,
 //  printf("In MaidsafeStoreManager::StorePacket (%i), packet_name = %s\n",
 //         knode_->host_port(), HexSubstr(packet_name).c_str());
 #endif
-  int valid = ValidateInputs(packet_name, system_packet_type, dir_type);
+  ReturnCode valid = ValidateInputs(packet_name, system_packet_type, dir_type);
   if (valid != kSuccess) {
 #ifdef DEBUG
     printf("In MSM::StorePacket, invalid input.  Error %i, packetname(%s), "
            "system_packet_type(%i), dir_type(%i)\n", valid,
            HexSubstr(packet_name).c_str(), system_packet_type, dir_type);
 #endif
-    cb(static_cast<ReturnCode>(valid));
+    cb(valid);
     printf("MaidsafeStoreManager::StorePacket: Not validated\n");
     return;
   }
@@ -365,7 +369,7 @@ int MaidsafeStoreManager::LoadChunk(const std::string &chunk_name,
   }
 
   data->clear();
-  int valid = ValidateInputs(chunk_name, PacketType_MIN, PRIVATE);
+  ReturnCode valid = ValidateInputs(chunk_name, PacketType_MIN, PRIVATE);
   if (valid != kSuccess) {
 #ifdef DEBUG
     printf("In MSM::LoadChunk, invalid input.  Error %i\n", valid);
@@ -765,12 +769,12 @@ void MaidsafeStoreManager::LoadPacket(const std::string &packet_name,
 //         knode_->host_port(), HexSubstr(packet_name).c_str());
 #endif
   std::vector<std::string> results;
-  int valid = ValidateInputs(packet_name, PacketType_MIN, PRIVATE);
+  ReturnCode valid = ValidateInputs(packet_name, PacketType_MIN, PRIVATE);
   if (valid != kSuccess) {
 #ifdef DEBUG
     printf("In MSM::LoadPacket2, invalid input.  Error %i\n", valid);
 #endif
-    lpf(results, static_cast<ReturnCode>(valid));
+    lpf(results, valid);
     return;
   }
   kad_ops_->FindValue(kad::KadId(packet_name, false), false,
@@ -885,7 +889,7 @@ void MaidsafeStoreManager::KeyUnique(const std::string &key,
 //  printf("In MaidsafeStoreManager::KeyUnique2 (%i), key = %s\n",
 //         knode_->host_port(), HexSubstr(key).c_str());
 #endif
-  int valid = ValidateInputs(key, PacketType_MIN, PRIVATE);
+  ReturnCode valid = ValidateInputs(key, PacketType_MIN, PRIVATE);
   if (valid != kSuccess) {
     cb(kStoreManagerError);
     return;
@@ -926,7 +930,7 @@ int MaidsafeStoreManager::DeleteChunk(const std::string &chunk_name,
 //  printf("In MaidsafeStoreManager::DeleteChunk (%i), chunk_name = %s\n",
 //         knode_->host_port(), HexSubstr(chunk_name).c_str());
 #endif
-  int valid = ValidateInputs(chunk_name, PacketType_MIN, dir_type);
+  ReturnCode valid = ValidateInputs(chunk_name, PacketType_MIN, dir_type);
   if (valid != kSuccess) {
 #ifdef DEBUG
     printf("In MSM::DeleteChunk, invalid input.  Error %i\n", valid);
@@ -996,12 +1000,12 @@ void MaidsafeStoreManager::DeletePacket(const std::string &packet_name,
 //  printf("In MaidsafeStoreManager::DeletePacket (%i), packet_name = %s\n",
 //         knode_->host_port(), HexSubstr(packet_name).c_str());
 #endif
-  int valid = ValidateInputs(packet_name, system_packet_type, dir_type);
+  ReturnCode valid = ValidateInputs(packet_name, system_packet_type, dir_type);
   if (valid != kSuccess) {
 #ifdef DEBUG
     printf("In MSM::DeletePacket, invalid input.  Error %i\n", valid);
 #endif
-    cb(static_cast<ReturnCode>(valid));
+    cb(valid);
     return;
   }
 
@@ -1029,6 +1033,99 @@ void MaidsafeStoreManager::DeletePacket(const std::string &packet_name,
   DeletePacketTask *delete_packet_task =
       new DeletePacketTask(delete_data, this);
   packet_thread_pool_.start(delete_packet_task);
+}
+
+void MaidsafeStoreManager::UpdatePacket(const std::string &packet_name,
+                                        const std::string &old_value,
+                                        const std::string &new_value,
+                                        PacketType system_packet_type,
+                                        DirType dir_type,
+                                        const std::string &msid,
+                                        const VoidFuncOneInt &cb) {
+  ReturnCode valid = ValidateInputs(packet_name, system_packet_type, dir_type);
+  if (valid != kSuccess) {
+#ifdef DEBUG
+    printf("In MSM::UpdatePacket, invalid input.  Error %i\n", valid);
+#endif
+    cb(valid);
+    return;
+  }
+
+  std::string key_id, public_key, public_key_signature, private_key;
+  GetPacketSignatureKeys(system_packet_type, dir_type, msid, &key_id,
+                         &public_key, &public_key_signature, &private_key);
+  boost::shared_ptr<UpdatePacketData> update_data(new UpdatePacketData(
+      packet_name, old_value, new_value, system_packet_type, dir_type, msid,
+      key_id, public_key, public_key_signature, private_key, cb));
+
+  // QThreadPool handles destruction of update_packet_task
+  UpdatePacketTask *update_packet_task = new UpdatePacketTask(update_data,
+                                                              this);
+  packet_thread_pool_.start(update_packet_task);
+//  UpdatePacketOnNetwork(update_data);
+}
+
+void MaidsafeStoreManager::UpdatePacketOnNetwork(
+    boost::shared_ptr<UpdatePacketData> update_data) {
+  crypto::Crypto co;
+  kad::VoidFunctorOneString cb(boost::bind(
+                                   &MaidsafeStoreManager::UpdatePacketCallback,
+                                   this, _1, update_data));
+  boost::mutex::scoped_lock lock(update_data->mutex);
+  kad::SignedValue osv;
+  osv.set_value(update_data->old_value);
+  osv.set_value_signature(co.AsymSign(osv.value(), "", update_data->private_key,
+                                      crypto::STRING_STRING));
+  kad::SignedValue nsv;
+  nsv.set_value(update_data->new_value);
+  nsv.set_value_signature(co.AsymSign(nsv.value(), "", update_data->private_key,
+                                      crypto::STRING_STRING));
+
+  std::string request_signature(co.AsymSign(
+                                    co.Hash(update_data->public_key +
+                                            update_data->public_key_signature +
+                                            update_data->packet_name,
+                                            "", crypto::STRING_STRING, false),
+                                "", update_data->private_key,
+                                crypto::STRING_STRING));
+  kad::SignedRequest sr;
+  sr.set_signer_id(update_data->key_id);
+  sr.set_public_key(update_data->public_key);
+  sr.set_signed_public_key(update_data->public_key_signature);
+  sr.set_signed_request(request_signature);
+  knode_->UpdateValue(kad::KadId(update_data->packet_name, false),
+                      osv, nsv, sr, 31556926, cb);
+}
+
+void MaidsafeStoreManager::UpdatePacketCallback(
+    const std::string &ser_kad_update_result,
+    boost::shared_ptr<UpdatePacketData> update_data) {
+  if (ser_kad_update_result.empty()) {
+#ifdef DEBUG
+    printf("In MSM::UpdatePacketCallback, fail - timeout.\n");
+#endif
+    boost::mutex::scoped_lock lock(update_data->mutex);
+    update_data->callback(kUpdatePacketError);
+    return;
+  }
+  kad::UpdateResponse update_response;
+  if (!update_response.ParseFromString(ser_kad_update_result)) {
+#ifdef DEBUG
+    printf("In MSM::UpdatePacketCallback, can't parse result.\n");
+#endif
+    boost::mutex::scoped_lock lock(update_data->mutex);
+    update_data->callback(kUpdatePacketParseError);
+    return;
+  }
+  if (update_response.result() != kad::kRpcResultSuccess) {
+#ifdef DEBUG
+    printf("In MSM::UpdatePacketCallback, Kademlia operation failed.\n");
+#endif
+    boost::mutex::scoped_lock lock(update_data->mutex);
+    update_data->callback(kUpdatePacketFailure);
+    return;
+  }
+  update_data->callback(kSuccess);
 }
 
 void MaidsafeStoreManager::GetFilteredAverage(
@@ -1317,8 +1414,6 @@ void MaidsafeStoreManager::GetPacketSignatureKeys(PacketType packet_type,
       *public_key_sig = ss_->SignedPublicKey(ANMPID);
       *private_key = ss_->PrivateKey(ANMPID);
       break;
-      // TODO(Fraser#5#): 2010-01-29 - Uncomment below once auth.cc fixed (MAID
-      //                               should be signed by ANMAID, not self)
     case MAID:
     case ANMAID:
       *key_id = ss_->Id(ANMAID);
@@ -1332,26 +1427,11 @@ void MaidsafeStoreManager::GetPacketSignatureKeys(PacketType packet_type,
       *public_key_sig = ss_->SignedPublicKey(MAID);
       *private_key = ss_->PrivateKey(MAID);
       break;
-//    case PMID:
-//    case MAID:
-//      *key_id = ss_->Id(MAID);
-//      *public_key = ss_->PublicKey(MAID);
-//      *public_key_sig = ss_->SignedPublicKey(MAID);
-//      *private_key = ss_->PrivateKey(MAID);
-//      break;
     case PD_DIR:
     case MSID:
       GetChunkSignatureKeys(dir_type, msid, key_id, public_key, public_key_sig,
                             private_key);
       break;
-//    case BUFFER:
-//    case BUFFER_INFO:
-//    case BUFFER_MESSAGE:
-//      *key_id = ss_->Id(MPID);
-//      *public_key = ss_->PublicKey(MPID);
-//      *public_key_sig = ss_->SignedPublicKey(MPID);
-//      *private_key = ss_->PrivateKey(MPID);
-//      break;
     default:
       break;
   }

@@ -365,6 +365,186 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_DeleteSystemPacketNotOwner) {
   ASSERT_FALSE(sm_->KeyUnique(gp_name, false));
 }
 
+TEST_F(LocalStoreManagerTest, BEH_MAID_UpdatePacket) {
+  // Store one packet
+  kad::SignedValue gp;
+  gp.set_value("Generic System Packet Data");
+  gp.set_value_signature(co_.AsymSign(gp.value(), "",
+                                      ss_->PrivateKey(maidsafe::ANMID),
+                                      crypto::STRING_STRING));
+  std::string gp_name(co_.Hash(gp.value() + gp.value_signature(), "",
+                      crypto::STRING_STRING, false));
+
+  int result(maidsafe::kGeneralError);
+  boost::mutex mutex;
+  boost::condition_variable cond_var;
+  sm_->StorePacket(gp_name, gp.value(), maidsafe::MID, maidsafe::PRIVATE, "",
+                   maidsafe::kDoNothingReturnFailure,
+                   boost::bind(&test_lsm::PacketOpCallback, _1, &mutex,
+                               &cond_var, &result));
+  {
+    boost::mutex::scoped_lock lock(mutex);
+    while (result == maidsafe::kGeneralError)
+      cond_var.wait(lock);
+  }
+  ASSERT_EQ(maidsafe::kSuccess, result);
+  std::vector<std::string> res;
+  ASSERT_EQ(maidsafe::kSuccess, sm_->LoadPacket(gp_name, &res));
+  ASSERT_EQ(size_t(1), res.size());
+  ASSERT_EQ(gp.SerializeAsString(), res[0]);
+
+  // Update the packet
+  result = maidsafe::kGeneralError;
+  kad::SignedValue new_gp;
+  new_gp.set_value("Mis bolas enormes y peludas");
+  new_gp.set_value_signature(co_.AsymSign(new_gp.value(), "",
+                                          ss_->PrivateKey(maidsafe::ANMID),
+                                          crypto::STRING_STRING));
+  sm_->UpdatePacket(gp_name, gp.value(), new_gp.value(), maidsafe::MID,
+                    maidsafe::PRIVATE, "",
+                    boost::bind(&test_lsm::PacketOpCallback, _1, &mutex,
+                                &cond_var, &result));
+  {
+    boost::mutex::scoped_lock lock(mutex);
+    while (result == maidsafe::kGeneralError)
+      cond_var.wait(lock);
+  }
+  ASSERT_EQ(maidsafe::kSuccess, result);
+  res.clear();
+  ASSERT_EQ(maidsafe::kSuccess, sm_->LoadPacket(gp_name, &res));
+  ASSERT_EQ(size_t(1), res.size());
+  ASSERT_EQ(new_gp.SerializeAsString(), res[0]);
+
+  // Store another value with that same key
+  result = maidsafe::kGeneralError;
+  gp.set_value("Mira nada mas que chichotas");
+  gp.set_value_signature(co_.AsymSign(gp.value(), "",
+                                      ss_->PrivateKey(maidsafe::ANMID),
+                                      crypto::STRING_STRING));
+  sm_->StorePacket(gp_name, gp.value(), maidsafe::MID, maidsafe::PRIVATE, "",
+                   maidsafe::kAppend, boost::bind(&test_lsm::PacketOpCallback,
+                                                  _1, &mutex, &cond_var,
+                                                  &result));
+  {
+    boost::mutex::scoped_lock lock(mutex);
+    while (result == maidsafe::kGeneralError)
+      cond_var.wait(lock);
+  }
+  ASSERT_EQ(maidsafe::kSuccess, result);
+  res.clear();
+  ASSERT_EQ(maidsafe::kSuccess, sm_->LoadPacket(gp_name, &res));
+  ASSERT_EQ(size_t(2), res.size());
+  for (size_t n = 0; n < res.size(); ++n)
+    ASSERT_TRUE(res[n] == gp.SerializeAsString() ||
+                res[n] == new_gp.SerializeAsString());
+
+  // Change one of the values
+  kad::SignedValue other_gp = gp;
+  gp.set_value("En esa cola si me formo");
+  gp.set_value_signature(co_.AsymSign(gp.value(), "",
+                                      ss_->PrivateKey(maidsafe::ANMID),
+                                      crypto::STRING_STRING));
+  sm_->UpdatePacket(gp_name, new_gp.value(), gp.value(), maidsafe::MID,
+                    maidsafe::PRIVATE, "",
+                    boost::bind(&test_lsm::PacketOpCallback, _1, &mutex,
+                                &cond_var, &result));
+  {
+    boost::mutex::scoped_lock lock(mutex);
+    while (result == maidsafe::kGeneralError)
+      cond_var.wait(lock);
+  }
+  ASSERT_EQ(maidsafe::kSuccess, result);
+  res.clear();
+  ASSERT_EQ(maidsafe::kSuccess, sm_->LoadPacket(gp_name, &res));
+  ASSERT_EQ(size_t(2), res.size());
+  std::set<std::string> all_values;
+  for (size_t n = 0; n < res.size(); ++n) {
+    ASSERT_TRUE(res[n] == gp.SerializeAsString() ||
+                res[n] == other_gp.SerializeAsString()) << n;
+    all_values.insert(res[n]);
+  }
+
+  // Store several values with that same key
+  for (size_t a = 0; a < 5; ++a) {
+    result = maidsafe::kGeneralError;
+    gp.set_value("value" + base::IntToString(a));
+    gp.set_value_signature(co_.AsymSign(gp.value(), "",
+                                        ss_->PrivateKey(maidsafe::ANMID),
+                                        crypto::STRING_STRING));
+    sm_->StorePacket(gp_name, gp.value(), maidsafe::MID, maidsafe::PRIVATE, "",
+                     maidsafe::kAppend, boost::bind(&test_lsm::PacketOpCallback,
+                                                    _1, &mutex, &cond_var,
+                                                    &result));
+    {
+      boost::mutex::scoped_lock lock(mutex);
+      while (result == maidsafe::kGeneralError)
+        cond_var.wait(lock);
+    }
+    ASSERT_EQ(maidsafe::kSuccess, result);
+    all_values.insert(gp.SerializeAsString());
+  }
+  res.clear();
+  ASSERT_EQ(maidsafe::kSuccess, sm_->LoadPacket(gp_name, &res));
+  ASSERT_EQ(all_values.size(), res.size());
+  std::set<std::string>::iterator it;
+  for (size_t n = 0; n < res.size(); ++n) {
+    it = all_values.find(res[n]);
+    ASSERT_FALSE(it == all_values.end());
+  }
+
+  // Try to change one of the values to another one
+  result = maidsafe::kGeneralError;
+  sm_->UpdatePacket(gp_name, "value0", "value2", maidsafe::MID,
+                    maidsafe::PRIVATE, "",
+                    boost::bind(&test_lsm::PacketOpCallback, _1, &mutex,
+                                &cond_var, &result));
+  {
+    boost::mutex::scoped_lock lock(mutex);
+    while (result == maidsafe::kGeneralError)
+      cond_var.wait(lock);
+  }
+  ASSERT_EQ(maidsafe::kStoreManagerError, result);
+  res.clear();
+  ASSERT_EQ(maidsafe::kSuccess, sm_->LoadPacket(gp_name, &res));
+  ASSERT_EQ(all_values.size(), res.size());
+  for (size_t n = 0; n < res.size(); ++n) {
+    it = all_values.find(res[n]);
+    ASSERT_FALSE(it == all_values.end());
+  }
+
+  // Try to update with different keys
+  crypto::RsaKeyPair rkp;
+  rkp.GenerateKeys(4096);
+  std::string anmid_pubkey_signature(co_.AsymSign(rkp.public_key(), "",
+                                                  rkp.private_key(),
+                                                  crypto::STRING_STRING));
+  std::string anmid_name(co_.Hash(rkp.public_key() + anmid_pubkey_signature, "",
+                                  crypto::STRING_STRING, false));
+  ss_->AddKey(maidsafe::ANMID, anmid_name, rkp.private_key(),
+              rkp.public_key(), anmid_pubkey_signature);
+  result = maidsafe::kGeneralError;
+  sm_->UpdatePacket(gp_name, "value0", "value1234", maidsafe::MID,
+                    maidsafe::PRIVATE, "",
+                    boost::bind(&test_lsm::PacketOpCallback, _1, &mutex,
+                                &cond_var, &result));
+  {
+    boost::mutex::scoped_lock lock(mutex);
+    while (result == maidsafe::kGeneralError)
+      cond_var.wait(lock);
+  }
+  ASSERT_EQ(maidsafe::kStoreManagerError, result);
+  res.clear();
+  ASSERT_EQ(maidsafe::kSuccess, sm_->LoadPacket(gp_name, &res));
+  ASSERT_EQ(all_values.size(), res.size());
+  for (size_t n = 0; n < res.size(); ++n) {
+    it = all_values.find(res[n]);
+    ASSERT_FALSE(it == all_values.end());
+  }
+  all_values = std::set<std::string>(res.begin(), res.end());
+  it = all_values.find("value1234");
+  ASSERT_TRUE(it == all_values.end());
+}
+
 TEST_F(LocalStoreManagerTest, BEH_MAID_StoreChunk) {
   std::string chunk_content = base::RandomString(256 * 1024);
   std::string chunk_name = co_.Hash(chunk_content, "",
@@ -493,7 +673,7 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_AddAndGetBufferPacketMessages) {
   ss_->AddKey(maidsafe::MPID, me_pubusername, me_privkey, me_pubkey,
               me_sigpubkey);
   std::list<maidsafe::ValidatedBufferPacketMessage> messages;
-  ASSERT_EQ(0, sm_->LoadBPMessages(&messages));
+  ASSERT_EQ(kKadUpperThreshold, sm_->LoadBPMessages(&messages));
   ASSERT_EQ(size_t(1), messages.size());
   ASSERT_EQ("Juanito", messages.front().sender());
   ASSERT_EQ(test_msg, messages.front().message());
@@ -501,7 +681,7 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_AddAndGetBufferPacketMessages) {
   ASSERT_EQ(maidsafe::INSTANT_MSG, messages.front().type());
 
   // Check message is gone
-  ASSERT_EQ(0, sm_->LoadBPMessages(&messages));
+  ASSERT_EQ(kKadUpperThreshold, sm_->LoadBPMessages(&messages));
   ASSERT_EQ(size_t(0), messages.size());
 }
 
@@ -544,7 +724,7 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_AddRequestBufferPacketMessage) {
   ss_->AddKey(maidsafe::MPID, me_pubusername, me_privkey, me_pubkey,
               me_sigpubkey);
   std::list<maidsafe::ValidatedBufferPacketMessage> messages;
-  ASSERT_EQ(0, sm_->LoadBPMessages(&messages));
+  ASSERT_EQ(kKadUpperThreshold, sm_->LoadBPMessages(&messages));
   ASSERT_EQ(size_t(1), messages.size());
   ASSERT_EQ("Juanito", messages.front().sender());
   ASSERT_EQ(test_msg, messages.front().message());
@@ -577,7 +757,7 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_AddRequestBufferPacketMessage) {
   ss_->AddKey(maidsafe::MPID, me_pubusername, me_privkey, me_pubkey,
               me_sigpubkey);
   messages.clear();
-  ASSERT_EQ(0, sm_->LoadBPMessages(&messages));
+  ASSERT_EQ(kKadUpperThreshold, sm_->LoadBPMessages(&messages));
   ASSERT_EQ(size_t(1), messages.size());
   ASSERT_EQ("Juanito", messages.front().sender());
   ASSERT_EQ(test_msg, messages.front().message());
