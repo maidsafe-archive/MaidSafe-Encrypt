@@ -141,8 +141,12 @@ class Env: public testing::Environment {
     SetConsoleTextAttribute(hconsole, 10 | 0 << 4);
 #endif
     printf("\n*-----------------------------------------------*\n");
-    printf("*            %i local vaults running            *\n",
-           kNetworkSize_);
+    if (kNetworkSize_ < 10 )
+      printf("*            %i local vaults running             *\n",
+             kNetworkSize_);
+    else
+      printf("*            %i local vaults running            *\n",
+             kNetworkSize_);
     printf("*                                               *\n");
     printf("* No. Port   ID                                 *\n");
     for (int l = 0; l < kNetworkSize_; ++l)
