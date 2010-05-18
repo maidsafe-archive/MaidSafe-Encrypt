@@ -112,7 +112,7 @@ class PerpetualData : public QMainWindow {
 
     void onDirectoryEntered(const QString&);
 
-    void onMessageReceived(ClientController::MessageType,
+    void onMessageReceived(int,
                            const QDateTime& time,
                            const QString& sender,
                            const QString& message,

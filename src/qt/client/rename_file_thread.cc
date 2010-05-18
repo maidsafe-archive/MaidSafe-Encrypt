@@ -34,6 +34,7 @@ void RenameFileThread::run() {
   int success =
       ClientController::instance()->rename(filepath_.toStdString(),
                                            newFilePath_.toStdString());
+  this->sleep(1);
 
   emit renameFileCompleted(success, filepath_, newFilePath_);
 }

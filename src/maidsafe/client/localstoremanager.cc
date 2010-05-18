@@ -447,6 +447,7 @@ void LocalStoreManager::StorePacket(const std::string &packet_name,
       if (!co.AsymCheckSig(sv.value(), sv.value_signature(), public_key,
           crypto::STRING_STRING)) {
         boost::thread thr(&ExecReturnCodeCallback, cb, kSendPacketFailure);
+        printf("%s\n", sv.value().c_str());
         return;
       }
     }
@@ -493,7 +494,7 @@ ReturnCode LocalStoreManager::StorePacket_InsertToDb(const std::string &key,
     if (key.length() != kKeySize) {
       return kIncorrectKeySize;
     }
-    std::string hex_key = base::EncodeToHex(key);
+    std::string hex_key(base::EncodeToHex(key));
     std::string s = "select value from network where key='" + hex_key + "';";
     boost::mutex::scoped_lock loch(mutex_);
     CppSQLite3Query q = db_.execQuery(s.c_str());
@@ -526,6 +527,124 @@ ReturnCode LocalStoreManager::StorePacket_InsertToDb(const std::string &key,
 #ifdef DEBUG
       printf("LocalStoreManager::StorePacket_InsertToDb - "
              "Insert failed.\n");
+#endif
+      return kStoreManagerError;
+    }
+    return kSuccess;
+  }
+  catch(CppSQLite3Exception &e) {  // NOLINT
+#ifdef DEBUG
+    printf("Error(%i): %s\n", e.errorCode(),  e.errorMessage());
+#endif
+    return kStoreManagerError;
+  }
+}
+
+void LocalStoreManager::UpdatePacket(const std::string &packet_name,
+                                     const std::string &old_value,
+                                     const std::string &new_value,
+                                     PacketType system_packet_type,
+                                     DirType dir_type,
+                                     const std::string &msid,
+                                     const VoidFuncOneInt &cb) {
+  std::string old_ser_gp;
+  CreateSerialisedSignedValue(old_value, system_packet_type, msid, &old_ser_gp);
+  std::string new_ser_gp;
+  CreateSerialisedSignedValue(new_value, system_packet_type, msid, &new_ser_gp);
+  if (old_ser_gp.empty() || new_ser_gp.empty()) {
+    boost::thread thr(&ExecReturnCodeCallback, cb, kNoPublicKeyToCheck);
+#ifdef DEBUG
+    printf("LSM::UpdatePacket - Empty old or new.\n");
+#endif
+    return;
+  }
+
+  std::string public_key;
+  kad::SignedValue old_sv, new_sv;
+  if (!old_sv.ParseFromString(old_ser_gp) ||
+      !new_sv.ParseFromString(new_ser_gp)) {
+#ifdef DEBUG
+    printf("LSM::UpdatePacket - Old or new doesn't parse.\n");
+#endif
+  }
+
+  SigningPublicKey(system_packet_type, dir_type, msid, &public_key);
+  if (public_key.empty()) {
+    boost::thread thr(&ExecReturnCodeCallback, cb, kNoPublicKeyToCheck);
+#ifdef DEBUG
+  printf("LSM::UpdatePacket - No public key.\n");
+#endif
+    return;
+  }
+
+  crypto::Crypto co;
+  if (!co.AsymCheckSig(old_sv.value(), old_sv.value_signature(), public_key,
+      crypto::STRING_STRING)) {
+    boost::thread thr(&ExecReturnCodeCallback, cb, kUpdatePacketFailure);
+#ifdef DEBUG
+    printf("LSM::UpdatePacket - Old fails validation.\n");
+#endif
+    return;
+  }
+  if (!co.AsymCheckSig(new_sv.value(), new_sv.value_signature(), public_key,
+      crypto::STRING_STRING)) {
+#ifdef DEBUG
+    printf("LSM::UpdatePacket - New fails validation.\n");
+#endif
+    boost::thread thr(&ExecReturnCodeCallback, cb, kUpdatePacketFailure);
+    return;
+  }
+
+  std::vector<std::string> values;
+  int n = GetValue_FromDB(packet_name, &values);
+  if (n == kFindValueError || values.empty()) {
+    boost::thread thr(&ExecReturnCodeCallback, cb, kStoreManagerError);
+#ifdef DEBUG
+    printf("LSM::UpdatePacket - Key not there.\n");
+#endif
+    return;
+  }
+
+  std::set<std::string> the_values(values.begin(), values.end());
+  std::set<std::string>::iterator it = the_values.find(old_ser_gp);
+  if (it == the_values.end()) {
+    boost::thread thr(&ExecReturnCodeCallback, cb, kStoreManagerError);
+#ifdef DEBUG
+    printf("LSM::UpdatePacket - Old value not there.\n");
+#endif
+    return;
+  }
+  it = the_values.find(new_ser_gp);
+  if (it != the_values.end()) {
+    boost::thread thr(&ExecReturnCodeCallback, cb, kStoreManagerError);
+#ifdef DEBUG
+    printf("LSM::UpdatePacket - New value already there.\n");
+#endif
+    return;
+  }
+
+  ReturnCode rc = UpdatePacketInDb(packet_name, old_ser_gp, new_ser_gp);
+  boost::thread thr(&ExecReturnCodeCallback, cb, rc);
+}
+
+ReturnCode LocalStoreManager::UpdatePacketInDb(const std::string &key,
+                                               const std::string &old_value,
+                                               const std::string &new_value) {
+  try {
+    if (key.length() != kKeySize) {
+      return kIncorrectKeySize;
+    }
+
+    std::string hex_key(base::EncodeToHex(key));
+    std::string hex_old_value(base::EncodeToHex(old_value));
+    std::string hex_new_value(base::EncodeToHex(new_value));
+    std::string statement("update network set value='");
+    statement += hex_new_value + "' where key='" + hex_key + "' and value='" +
+                 hex_old_value + "';";
+    int n = db_.execDML(statement.c_str());
+    if (n != 1) {
+#ifdef DEBUG
+      printf("LocalStoreManager::UpdatePacketInDb - Update failed(%d).\n", n);
 #endif
       return kStoreManagerError;
     }
@@ -694,7 +813,7 @@ int LocalStoreManager::ModifyBPInfo(const std::string &info) {
 int LocalStoreManager::LoadBPMessages(
     std::list<ValidatedBufferPacketMessage> *messages) {
   if (ss_->Id(MPID) == "")
-    return -666;
+    return 0;
 
   std::string bp_in_chunk;
   std::string bufferpacketname(BufferPacketName());
@@ -702,14 +821,14 @@ int LocalStoreManager::LoadBPMessages(
 #ifdef DEBUG
     printf("LocalStoreManager::LoadBPMessages - Failed to find BP chunk.\n");
 #endif
-    return -1;
+    return 0;
   }
   std::vector<std::string> msgs;
   if (!vbph_.GetMessages(&bp_in_chunk, &msgs)) {
 #ifdef DEBUG
     printf("LocalStoreManager::LoadBPMessages - Failed to get messages.\n");
 #endif
-    return -1;
+    return 0;
   }
   messages->clear();
   crypto::Crypto co;
@@ -729,9 +848,9 @@ int LocalStoreManager::LoadBPMessages(
 #ifdef DEBUG
     printf("LSM::LoadBPMessages - Failed to flush BP to chunk.\n");
 #endif
-    return -1;
+    return 0;
   }
-  return 0;
+  return kKadUpperThreshold;
 }
 
 int LocalStoreManager::SendMessage(
@@ -799,7 +918,7 @@ int LocalStoreManager::SendMessage(
 }
 
 int LocalStoreManager::LoadBPPresence(std::list<LivePresence>*) {
-  return kSuccess;
+  return kKadUpperThreshold;
 }
 
 int LocalStoreManager::AddBPPresence(

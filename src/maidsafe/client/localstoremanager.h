@@ -87,6 +87,14 @@ class LocalStoreManager : public StoreManagerInterface {
                             DirType dir_type,
                             const std::string &msid,
                             const VoidFuncOneInt &cb);
+  virtual void UpdatePacket(const std::string &packet_name,
+                            const std::string &old_value,
+                            const std::string &new_value,
+                            PacketType system_packet_type,
+                            DirType dir_type,
+                            const std::string &msid,
+                            const VoidFuncOneInt &cb);
+
   // Buffer packet
   virtual int CreateBP();
   virtual int ModifyBPInfo(const std::string &info);
@@ -118,6 +126,8 @@ class LocalStoreManager : public StoreManagerInterface {
   void SetSessionEndPoint() {}
   void SetInstantMessageNotifier(IMNotifier, IMStatusNotifier) {}
 
+//  void ResetSessionSingleton(SessionSingleton *) {};
+
  private:
   LocalStoreManager &operator=(const LocalStoreManager&);
   LocalStoreManager(const LocalStoreManager&);
@@ -131,6 +141,9 @@ class LocalStoreManager : public StoreManagerInterface {
                                        const std::string &public_key);
   int GetValue_FromDB(const std::string &key,
                       std::vector<std::string> *results);
+  ReturnCode UpdatePacketInDb(const std::string &key,
+                              const std::string &old_value,
+                              const std::string &new_value);
   int FindAndLoadChunk(const std::string &chunkname, std::string *data);
   int FlushDataIntoChunk(const std::string &chunkname,
                          const std::string &data,

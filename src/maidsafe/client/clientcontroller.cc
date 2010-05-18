@@ -169,6 +169,67 @@ int ClientController::Init() {
   return 0;
 }
 
+/*int ClientController::Init(SessionSingleton *ss) {
+
+  if (initialised_)
+    return 0;
+  fs::path client_path(file_system::ApplicationDataDir());
+  try {
+    // If main app dir isn't already there, create it
+    if (!fs::exists(client_path) && !fs::create_directories(client_path)) {
+#ifdef DEBUG
+      printf("CC::Init - Couldn't create app path (check permissions?): %s\n",
+             client_path.string().c_str());
+#endif
+      return -2;
+    }
+    client_path /= "client" + base::RandomString(8);
+    while (fs::exists(client_path))
+      client_path = fs::path(client_path.string().substr(0,
+          client_path.string().size()-8) + base::RandomString(8));
+    client_store_ = client_path.string();
+    if (!fs::exists(client_path) && !fs::create_directories(client_path)) {
+#ifdef DEBUG
+      printf("CC::Init -Couldn't create client path (check permissions?): %s\n",
+             client_path.string().c_str());
+#endif
+      return -3;
+    }
+  }
+  catch(const std::exception &e) {
+#ifdef DEBUG
+    printf("CC::Init - Couldn't create path (check permissions?): %s\n",
+           e.what());
+#endif
+    return -4;
+  }
+  client_chunkstore_ = boost::shared_ptr<ChunkStore>
+      (new ChunkStore(client_path.string(), 0, 0));
+  if (!client_chunkstore_->Init()) {
+#ifdef DEBUG
+    printf("CC::Init - Failed to initialise client chunkstore.\n");
+#endif
+    return -5;
+  }
+#ifdef LOCAL_PDVAULT
+  sm_.reset(new LocalStoreManager(client_chunkstore_));
+#else
+  sm_.reset(new MaidsafeStoreManager(client_chunkstore_));
+  sm_->ResetSessionSingleton(ss);
+#endif
+  if (!JoinKademlia()) {
+#ifdef DEBUG
+    printf("CC::Init - Couldn't join Kademlia!\n");
+#endif
+    return -1;
+  }
+  auth_.Init(kNoOfSystemPackets, sm_, ss);
+  ss_ = ss;
+  initialised_ = true;
+  return 0;
+
+}
+*/
 bool ClientController::JoinKademlia() {
   CC_CallbackResult cb;
   sm_->Init(0, boost::bind(&CC_CallbackResult::CallbackFunc, &cb, _1), "");
@@ -567,6 +628,9 @@ bool ClientController::CreateUser(const std::string &username,
     return false;
   }
 
+  logged_in_ = true;
+  // setting endpoint in session
+  sm_->SetSessionEndPoint();
   return true;
 }
 
@@ -628,8 +692,27 @@ bool ClientController::ValidateUser(const std::string &password) {
   // Create the mount point directory
   file_system::FuseMountPoint(ss_->SessionName());
 
+  // setting endpoint in session
+  sm_->SetSessionEndPoint();
+
   // Do BP operations if need be
   if (ss_->PublicUsername() != "") {
+    // Getting presense of contacts
+    std::list<LivePresence> presence_msgs;
+    if (sm_->LoadBPPresence(&presence_msgs) > 0) {
+      std::list<LivePresence>::const_iterator it = presence_msgs.begin();
+      for(; it != presence_msgs.end(); ++it) {
+        EndPoint ep;
+        if (ep.ParseFromString(it->end_point())) {
+          ss_->AddLiveContact(it->contact_id(), ep, 0);
+          sm_->SendPresence(it->contact_id());
+        }
+      }
+    }
+    std::vector<std::string> offline_ctcs = GetOffLineContacts();
+    std::map<std::string, ReturnCode> results;
+    sm_->AddBPPresence(offline_ctcs, &results);
+
     clear_messages_thread_ = boost::thread(
                              &ClientController::ClearStaleMessages, this);
   }
@@ -693,6 +776,14 @@ bool ClientController::Logout() {
     printf("ClientController::Logout - Failed to save session %d.\n", result);
 #endif
     return false;
+  }
+
+  // Sending logout messages to online contacts
+  std::map<std::string, ConnectionDetails> livectcs;
+  ss_->LiveContactMap(&livectcs);
+  for (std::map<std::string, ConnectionDetails>::iterator it = livectcs.begin();
+       it != livectcs.end(); ++it) {
+    sm_->SendLogOutMessage(it->first);
   }
 
   while (sm_->NotDoneWithUploading()) {
@@ -3151,5 +3242,33 @@ int ClientController::create(const std::string &path) {
 ///////////////////////////////
 // Here endeth FUSE stuff !! //
 ///////////////////////////////
+
+// IM notifiers registration
+void ClientController::RegisterImNotifiers(
+      boost::function<void(const std::string&)> msg_not,
+      boost::function<void(const std::string&, const int&)> conn_not) {
+  sm_->SetInstantMessageNotifier(msg_not, conn_not);
+}
+
+std::vector<std::string> ClientController::GetOffLineContacts() {
+  std::vector<std::string> contacts;
+  std::map<std::string, ConnectionDetails> livectcs;
+  ss_->LiveContactMap(&livectcs);
+  std::set<std::string> online_contacts;
+  for (std::map<std::string, ConnectionDetails>::iterator it = livectcs.begin();
+       it != livectcs.end(); ++it) {
+    online_contacts.insert(it->first);
+  }
+  std::vector<mi_contact> all_ctcs;
+  ss_->GetContactList(&all_ctcs);
+  for (std::vector<mi_contact>::const_iterator it = all_ctcs.begin();
+       it != all_ctcs.end(); ++it) {
+    std::set<std::string>::iterator s_it = online_contacts.find(it->pub_name_);
+    if (s_it == online_contacts.end()) {
+      contacts.push_back(it->pub_name_);
+    }
+  }
+  return contacts;
+}
 
 }  // namespace maidsafe
