@@ -21,9 +21,31 @@
 
 UserInbox::UserInbox(QWidget* parent) : QDialog(parent) {
   ui_.setupUi(this);
+
+	//TODO: get	list of conversations sorted by last contacted
+	QStringList mailList;
+
+	ui_.messageListWidget->addItems(mailList);
+
+	connect(ui_.replyButton, SIGNAL(clicked()),
+          this,             SLOT(onReplyClicked()));
+	
+	connect(ui_.messageListWidget, SIGNAL(itemClicked(QListWidgetItem*)),
+					this,								SLOT(onEmailClicked(QListWidgetItem*)));
+
+	ui_.groupBox->setVisible(false);
 }
 
 UserInbox::~UserInbox() {}
+
+void UserInbox::onReplyClicked() {	
+	//TODO: Send update email message
+}
+
+void UserInbox::onEmailClicked(QListWidgetItem* item) {
+	//TODO: Receive Email Message and Display in TextBox
+	QString email = item->text();
+}
 
 void UserInbox::changeEvent(QEvent *event) {
   if (event->type() == QEvent::LanguageChange) {

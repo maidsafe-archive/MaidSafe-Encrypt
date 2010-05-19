@@ -58,35 +58,6 @@ class Contacts : public Panel {
   UserPanels* userPanels_;
   PersonalMessages* messages_;
 
-  QString addContactString_;
-  QString noContactMatchString_;
-  QString searchContactsString_;
-  QString errorString_;
-  QString enterUsernameString_;
-  QString notificationString_;
-  QString acceptContactRequestString_;
-  QString viewProfileString_;
-  QString sendFileString_;
-  QString sendMessageString_;
-  QString deleteContactString_;
-  QString notPossibleAddString_;
-  QString enterValidUsernameString_;
-  QString contactDoesntExistString_;
-  QString selectOnlyOneString_;
-  QString errorRemovingContactString_;
-  QString usePDBrowserString_;
-  QString infoString_;
-  QString selectAFileString_;
-  QString anyFileString_;
-  QString messageString_;
-  QString enterMessageString_;
-  QString fileSentString_;
-  QString fileSuccessString_;
-  QString errorSendingFileString_;
-  QString fileNotSentString_;
-  QString contactAlreadyExistsString_;
-  QString usernameNotExistString_;
-
   QList<QListWidgetItem *> currentContact();
 
   QMenu *menu;
@@ -94,6 +65,7 @@ class Contacts : public Panel {
   QAction *sendFile;
   QAction *sendMessage;
   QAction *deleteContact;
+	QAction *sendEmail;
 
   QMenu *menuContacts;
   QAction *sortAlpha;

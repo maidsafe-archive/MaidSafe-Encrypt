@@ -31,4 +31,3 @@ void UserSendMail::changeEvent(QEvent *event) {
     QWidget::changeEvent(event);
   }
 }
-

@@ -27,6 +27,7 @@ UserMail::UserMail(QWidget* parent) : QDialog(parent) {
 
   ui_.stackedWidget->addWidget(userInbox_);
   ui_.stackedWidget->addWidget(userSendMail_);
+	
 }
 
 UserMail::~UserMail() {}
@@ -67,7 +68,6 @@ void UserMail::setState(State state) {
     }
   }
 }
-
 
 void UserMail::changeEvent(QEvent *event) {
   if (event->type() == QEvent::LanguageChange) {

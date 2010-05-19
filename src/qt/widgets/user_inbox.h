@@ -34,6 +34,10 @@ class UserInbox : public QDialog {
  private:
   Ui::UserInbox ui_; 
 
+ private slots:
+	void onReplyClicked();
+	void onEmailClicked(QListWidgetItem*);
+
  protected:
   void changeEvent(QEvent *event);
 };
