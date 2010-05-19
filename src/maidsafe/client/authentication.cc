@@ -62,6 +62,16 @@ void Authentication::Init(const boost::uint16_t &crypto_key_buffer_count,
   crypto_key_pairs_.StartToCreateKeyPairs(crypto_key_buffer_count);
 }
 
+//void Authentication::Init(const boost::uint16_t &crypto_key_buffer_count,
+//                          boost::shared_ptr<StoreManagerInterface> smgr,
+//                          SessionSingleton *ss) {
+//  sm_ = smgr;
+//  ss_ = ss;
+//  crypto_.set_hash_algorithm(crypto::SHA_512);
+//  crypto_.set_symm_algorithm(crypto::AES_256);
+//  crypto_key_pairs_.StartToCreateKeyPairs(crypto_key_buffer_count);
+//}
+
 int Authentication::GetUserInfo(const std::string &username,
                                 const std::string &pin) {
   user_info_result_ = kPendingResult;

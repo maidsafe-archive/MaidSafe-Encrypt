@@ -156,6 +156,9 @@ enum ReturnCode {
   kNoPublicKeyToCheck = -7054,
   kKeyUnique = -7055,
   kKeyNotUnique = -7056,
+  kUpdatePacketFailure = -7057,
+  kUpdatePacketError = -7058,
+  kUpdatePacketParseError = -7059,
 
   // Message Handler (-8000)
   kConnectionNotExists = -8001,

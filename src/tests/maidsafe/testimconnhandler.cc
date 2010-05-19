@@ -146,7 +146,7 @@ TEST_F(TestIMHandler, BEH_MAID_IMHdlrSendMessage) {
   udt_trans->Stop();
 }
 
-TEST_F(TestIMHandler, BEH_MAID_IMHdlrConnTimeout) {
+TEST_F(TestIMHandler, FUNC_MAID_IMHdlrConnTimeout) {
   ASSERT_EQ(maidsafe::kSuccess, im_hdlr.Start(&trans_hndlr,
       boost::bind(&TestIMHandler::NewMsgNotifier, this, _1),
       boost::bind(&TestIMHandler::NewConnMsg, this, _1, _2, _3)));
@@ -179,7 +179,7 @@ TEST_F(TestIMHandler, BEH_MAID_IMHdlrConnTimeout) {
   udt_trans->Stop();
 }
 
-TEST_F(TestIMHandler, BEH_MAID_IMHdlrResetConnTimeout) {
+TEST_F(TestIMHandler, FUNC_MAID_IMHdlrResetConnTimeout) {
   ASSERT_EQ(maidsafe::kSuccess, im_hdlr.Start(&trans_hndlr,
       boost::bind(&TestIMHandler::NewMsgNotifier, this, _1),
       boost::bind(&TestIMHandler::NewConnMsg, this, _1, _2, _3)));
@@ -223,7 +223,7 @@ TEST_F(TestIMHandler, BEH_MAID_IMHdlrResetConnTimeout) {
   udt_trans->Stop();
 }
 
-TEST_F(TestIMHandler, BEH_MAID_IMHdlrRemotePeerClosesConnection) {
+TEST_F(TestIMHandler, FUNC_MAID_IMHdlrRemotePeerClosesConnection) {
   ASSERT_EQ(maidsafe::kSuccess, im_hdlr.Start(&trans_hndlr,
       boost::bind(&TestIMHandler::NewMsgNotifier, this, _1),
       boost::bind(&TestIMHandler::NewConnMsg, this, _1, _2, _3)));

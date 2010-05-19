@@ -291,6 +291,16 @@ void RunDeletePacketCallbacks(
   }
 }
 
+void RunUpdatePacketCallbacks(
+    std::list< boost::function < void(boost::shared_ptr<
+        maidsafe::UpdatePacketData>) > > functors,
+    boost::shared_ptr<maidsafe::UpdatePacketData> update_data) {
+  while (functors.size()) {
+    functors.front()(update_data);
+    functors.pop_front();
+  }
+}
+
 void RunLoadPacketCallback(const kad::VoidFunctorOneString &cb,
                            const std::string &ser_result) {
   cb(ser_result);
@@ -2047,6 +2057,8 @@ class MockMsmStoreLoadPacket : public MaidsafeStoreManager {
   MOCK_METHOD1(SendPacket, void(boost::shared_ptr<StoreData> store_data));
   MOCK_METHOD1(DeletePacketFromNet,
                void(boost::shared_ptr<DeletePacketData> delete_data));
+  MOCK_METHOD1(UpdatePacketOnNetwork,
+               void(boost::shared_ptr<UpdatePacketData> update_data));
 };
 
 TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_StoreNewPacket) {
@@ -2683,6 +2695,151 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_DeletePacket) {
   // Call 7 - Multiple value request - DeleteResponse passes
   packet_op_result_ = kGeneralError;
   msm.DeletePacket(packet_name, packet_values, MID, PRIVATE, "", functor_);
+  {
+    boost::mutex::scoped_lock lock(mutex_);
+    while (packet_op_result_ == kGeneralError)
+      cond_var_.wait(lock);
+  }
+  ASSERT_EQ(kSuccess, packet_op_result_);
+}
+
+TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_UpdatePacket) {
+  MockMsmStoreLoadPacket msm(client_chunkstore_);
+
+  // Add keys to Session
+  crypto::RsaKeyPair anmid_keys = keys_.at(2);
+  std::string anmid_pri(anmid_keys.private_key());
+  std::string anmid_pub(anmid_keys.public_key());
+  std::string anmid_pub_key_signature(crypto_.AsymSign(anmid_pub, "", anmid_pri,
+                                                       crypto::STRING_STRING));
+  std::string anmid_name(crypto_.Hash(anmid_pub + anmid_pub_key_signature, "",
+                                      crypto::STRING_STRING, false));
+  SessionSingleton::getInstance()->AddKey(ANMID, anmid_name, anmid_pri,
+                                          anmid_pub, anmid_pub_key_signature);
+
+  // Set up packet for deletion
+  std::string packet_name(crypto_.Hash(base::RandomString(100), "",
+                                       crypto::STRING_STRING, false));
+  std::string key_id, public_key, public_key_signature, private_key;
+  msm.GetPacketSignatureKeys(MID, PRIVATE, "", &key_id, &public_key,
+                             &public_key_signature, &private_key);
+  ASSERT_EQ(anmid_name, key_id);
+  ASSERT_EQ(anmid_pub, public_key);
+  ASSERT_EQ(anmid_pub_key_signature, public_key_signature);
+  ASSERT_EQ(anmid_pri, private_key);
+  std::vector<std::string> packet_values;
+  for (size_t i = 0; i < 2; ++i)
+    packet_values.push_back("Value" + base::IntToString(i));
+
+  // Set up serialised Kademlia delete responses
+  std::string ser_kad_update_response_cant_parse("Rubbish"),
+              ser_kad_update_response_empty,
+              ser_kad_update_response_good,
+              ser_kad_update_response_fail;
+  kad::UpdateResponse update_response;
+  update_response.set_result(kad::kRpcResultSuccess);
+  update_response.SerializeToString(&ser_kad_update_response_good);
+  update_response.set_result("Fail");
+  update_response.SerializeToString(&ser_kad_update_response_fail);
+
+  // Set up lists of DeletePacketCallbacks using serialised Kad delete responses
+  std::list< boost::function< void(boost::shared_ptr<UpdatePacketData>) > >
+      functors_kad_good, functors_kad_empty, functors_kad_cant_parse,
+      functors_kad_fail;
+  functors_kad_empty.push_back(
+      boost::bind(&MaidsafeStoreManager::UpdatePacketCallback, &msm,
+                  ser_kad_update_response_empty, _1));
+  functors_kad_cant_parse.push_back(
+      boost::bind(&MaidsafeStoreManager::UpdatePacketCallback, &msm,
+                  ser_kad_update_response_cant_parse, _1));
+  functors_kad_fail.push_back(
+      boost::bind(&MaidsafeStoreManager::UpdatePacketCallback, &msm,
+                  ser_kad_update_response_fail, _1));
+  functors_kad_good.push_back(
+      boost::bind(&MaidsafeStoreManager::UpdatePacketCallback, &msm,
+                  ser_kad_update_response_good, _1));
+
+  EXPECT_CALL(msm, UpdatePacketOnNetwork(testing::_))
+      .WillOnce(testing::WithArgs<0>(testing::Invoke(boost::bind(
+          &test_msm::RunUpdatePacketCallbacks, functors_kad_empty, _1))))  // 4
+      .WillOnce(testing::WithArgs<0>(testing::Invoke(boost::bind(
+          &test_msm::RunUpdatePacketCallbacks, functors_kad_cant_parse, _1))))
+      .WillOnce(testing::WithArgs<0>(testing::Invoke(boost::bind(
+          &test_msm::RunUpdatePacketCallbacks, functors_kad_fail, _1))))   // 6
+      .WillOnce(testing::WithArgs<0>(testing::Invoke(boost::bind(
+          &test_msm::RunUpdatePacketCallbacks, functors_kad_good, _1))));  // 7
+
+  // Call 1 - Check with bad packet name length
+  packet_op_result_ = kGeneralError;
+  msm.UpdatePacket("InvalidName", packet_values[0], packet_values[1], MID,
+                   PRIVATE, "", functor_);
+  {
+    boost::mutex::scoped_lock lock(mutex_);
+    while (packet_op_result_ == kGeneralError)
+      cond_var_.wait(lock);
+  }
+  ASSERT_EQ(kIncorrectKeySize, packet_op_result_);
+
+  // Call 2 - Invalid PacketType
+  packet_op_result_ = kGeneralError;
+  msm.UpdatePacket(packet_name, packet_values[0], packet_values[1],
+                   static_cast<PacketType>(PacketType_MAX + 1), PRIVATE, "",
+                   functor_);
+  {
+    boost::mutex::scoped_lock lock(mutex_);
+    while (packet_op_result_ == kGeneralError)
+      cond_var_.wait(lock);
+  }
+  ASSERT_EQ(kPacketUnknownType, packet_op_result_);
+
+  // Call 3 - Invalid DirType
+  packet_op_result_ = kGeneralError;
+  msm.UpdatePacket(packet_name, packet_values[0], packet_values[1], MID,
+                   static_cast<DirType>(ANONYMOUS - 1), "", functor_);
+  {
+    boost::mutex::scoped_lock lock(mutex_);
+    while (packet_op_result_ == kGeneralError)
+      cond_var_.wait(lock);
+  }
+  ASSERT_EQ(kDirUnknownType, packet_op_result_);
+
+  // Call 4 - Multiple value request - UpdateResponse empty
+  packet_op_result_ = kGeneralError;
+  msm.UpdatePacket(packet_name, packet_values[0], packet_values[1], MID,
+                   PRIVATE, "", functor_);
+  {
+    boost::mutex::scoped_lock lock(mutex_);
+    while (packet_op_result_ == kGeneralError)
+      cond_var_.wait(lock);
+  }
+  ASSERT_EQ(kUpdatePacketError, packet_op_result_);
+
+  // Call 5 - Multiple value request - UpdateResponse doesn't parse
+  packet_op_result_ = kGeneralError;
+  msm.UpdatePacket(packet_name, packet_values[0], packet_values[1], MID,
+                   PRIVATE, "", functor_);
+  {
+    boost::mutex::scoped_lock lock(mutex_);
+    while (packet_op_result_ == kGeneralError)
+      cond_var_.wait(lock);
+  }
+  ASSERT_EQ(kUpdatePacketParseError, packet_op_result_);
+
+  // Call 6 - Multiple value request - UpdateResponse fails
+  packet_op_result_ = kGeneralError;
+  msm.UpdatePacket(packet_name, packet_values[0], packet_values[1], MID,
+                   PRIVATE, "", functor_);
+  {
+    boost::mutex::scoped_lock lock(mutex_);
+    while (packet_op_result_ == kGeneralError)
+      cond_var_.wait(lock);
+  }
+  ASSERT_EQ(kUpdatePacketFailure, packet_op_result_);
+
+  // Call 7 - Multiple value request - UpdateResponse passes
+  packet_op_result_ = kGeneralError;
+  msm.UpdatePacket(packet_name, packet_values[0], packet_values[1], MID,
+                   PRIVATE, "", functor_);
   {
     boost::mutex::scoped_lock lock(mutex_);
     while (packet_op_result_ == kGeneralError)

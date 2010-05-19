@@ -30,6 +30,7 @@ void SaveFileThread::run() {
   qDebug() << "SaveFileThread::run" << filepath_;
 
   int success = ClientController::instance()->write(filepath_.toStdString());
+  this->sleep(3);
 
   emit saveFileCompleted(success, filepath_);
 }

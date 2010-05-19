@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <diagram>
-<source><![CDATA[#![Delete Chunk    2010-05-04    ]
+<source><![CDATA[#![Delete Chunk    2010-05-13    ]
 client:client "Client"
 peer:vault "Peer Vault"
 info:vault "Chunk Info Holders x16"
@@ -22,46 +22,38 @@ able to be deleted.
 *3 c_account
 AMEND_ACCOUNT_REQUEST is validated by
 referencing list of Chunk Info Holders sent in
-EXPECT_AMENDMENT_REQUEST.  If E_A_REQ has not
-yet arrived, reply "Standby", otherwise Ack/Nack.  If reply
-is "Standby", a CONFIRM_AMENDMENT_REQUEST
-should be sent once the E_A_REQ arrives.
+EXPECT_AMENDMENT_REQUEST.
 *3
 
-info:info. Validate request.&
-info:>client.Ack/Nack &
+info:>client.Ack / Nack &
 
 (4)client:>c_account. EXPECT_AMENDMENT_REQUEST 
 *4 client
 For each Client Account Holder...
 *4
 
-c_account:c_account. Validate EXPECT_AMENDMENT_REQUEST. &
 c_account:>client.Ack / Nack &
 
 [c:Condition IF Client's PMID is in list]
 [c:Condition IF undeleted PMIDs in list == 1]
 [c:Loop Repeat for each PMID in list]
 info:>c_account. AMEND_ACCOUNT_REQUEST (Space Taken Dec)
-(3)c_account:>info.Ack/Standby/Nack &
-(3)c_account:Ack/Nack =info. [Optional - see note] CONFIRM_AMENDMENT_REQUEST &
+(3)c_account:>info.Ack / Nack &
 [/c]
 
 [c:Loop Repeat for each chunk holder]
 info:>peer. DELETE_CHUNK_REQUEST 
-peer:>info. Ack/Nack &
 
 (6)peer:>v_account. EXPECT_AMENDMENT_REQUEST 
 *6 peer
 For each Vault Account Holder...
 *6
 
-v_account:v_account. Validate request. &
 v_account:>peer.Ack / Nack &
+peer:>info. Ack / Nack &
 
 info:>v_account. AMEND_ACCOUNT_REQUEST (Space Given Dec)
-(3)v_account:>info.Ack/Standby/Nack &
-(3)v_account:Ack/Nack =info. [Optional - see note] CONFIRM_AMENDMENT_REQUEST &
+(3)v_account:>info.Ack / Nack &
 [/c]
 [/c]
 [/c]]]></source>

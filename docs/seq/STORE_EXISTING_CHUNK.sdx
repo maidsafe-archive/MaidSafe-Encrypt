@@ -1,13 +1,20 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <diagram>
-<source><![CDATA[#![Store Existing Chunk    2010-05-04      ]
+<source><![CDATA[#![Store Existing Chunk    2010-05-13      ]
 client:client "Client"
 info:vault "Chunk Info Holders x16"
 c_account:vault "Client A/C Holders x16"
 f_account:vault "First Storing Client A/C Holders x16"
 
-*1 c_account
+client:client. Check we have enough space in our account&
 
+(6)client:>c_account. EXPECT_AMENDMENT_REQUEST 
+*6 client
+For each Client Account Holder...
+*6
+c_account:>client.Ack / Nack &
+
+*1 c_account
 Watch List comprises:
   * list of PMIDs of current 4 paying clients
   * further list of reserve watchers
@@ -23,19 +30,17 @@ him and so effectively take over paying the storing vault.
    If no replacement watchers are available when a current payer deletes himself, he is not recompensed until the count and
 checksum are exactly zero, at which time all 4 get repaid.
 *1
-client:client. Check we have enough space in our account&
 
 *2 client
 For each Chunk Info Holder...
 *2
-
 (2)client:>info. ADD_TO_WATCH_LIST_REQUEST
+
 *3 info
 TODO: If chunk exists at lower rank,
 we must promote which will be store
 and delete lower ranked chunks.
 *3
-info:info. Validate request.&
 info:info. Add Client's PMID to Watch List&
 info:>client.Ack (Store x copies) / Nack &
 
@@ -44,24 +49,14 @@ Upload x copies as per
 "Store New Chunk" diagram
 *4
 
-(6)client:>c_account. EXPECT_AMENDMENT_REQUEST 
-*6 client
-For each Client Account Holder...
-*6
-
-c_account:c_account. Validate EXPECT_AMENDMENT_REQUEST. &
-c_account:>client.Ack / Nack &
-
 [c:Condition IF payment is required]
 *7 c_account
-AMEND_ACCOUNT_REQUEST is validated by referencing list of Chunk Info Holders sent in
-EXPECT_AMENDMENT_REQUEST.  If E_A_REQ has not yet arrived, reply "Standby", otherwise Ack/Nack.
-If reply is "Standby", a CONFIRM_AMENDMENT_REQUEST should be sent once the E_A_REQ arrives.
+AMEND_ACCOUNT_REQUEST is validated by referencing list of
+Chunk Info Holders sent in EXPECT_AMENDMENT_REQUEST.
 *7
 
 (1)info:>c_account. AMEND_ACCOUNT_REQUEST (Space Taken Inc)
-(7)c_account:>info.Ack/Standby/Nack &
-(7)c_account:Ack/Nack =info. [Optional - see note] CONFIRM_AMENDMENT_REQUEST &
+(7)c_account:>info.Ack / Nack &
 [c:Condition IF account amendment fails]
 info:info. Revert addition of Client's PMID to Watch List&
 [/c]
@@ -78,8 +73,7 @@ info:>f_account. AMEND_ACCOUNT_REQUEST (Space Taken Dec)
 [/c]
 [c:Condition IF payment is not required]
 info:>c_account. ACCOUNT_STATUS_REQUEST
-(7)c_account:>info.Ack/Nack &
-(7)c_account:Ack/Nack =info. [Optional - see note] CONFIRM_AMENDMENT_REQUEST &
+(7)c_account:>info.Ack / Nack &
 [c:Condition IF client can't pay]
 info:info. Revert addition of Client's PMID to Watch List&
 [/c]

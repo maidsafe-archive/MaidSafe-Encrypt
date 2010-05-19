@@ -145,6 +145,20 @@ class DeletePacketTask : public QRunnable {
   MaidsafeStoreManager *msm_;
 };
 
+class UpdatePacketTask : public QRunnable {
+ public:
+  UpdatePacketTask(boost::shared_ptr<UpdatePacketData> update_data,
+                   MaidsafeStoreManager *msm)
+      : update_data_(update_data),
+        msm_(msm) {}
+  void run();
+ private:
+  UpdatePacketTask &operator=(const UpdatePacketTask&);
+  UpdatePacketTask(const UpdatePacketTask&);
+  boost::shared_ptr<UpdatePacketData> update_data_;
+  MaidsafeStoreManager *msm_;
+};
+
 struct SetLocalVaultOwnedCallbackArgs {
  public:
   explicit SetLocalVaultOwnedCallbackArgs(SetLocalVaultOwnedFunctor functor)
@@ -210,6 +224,8 @@ struct BPResults {
 class MaidsafeStoreManager : public StoreManagerInterface {
  public:
   explicit MaidsafeStoreManager(boost::shared_ptr<ChunkStore> cstore);
+  MaidsafeStoreManager(boost::shared_ptr<ChunkStore> cstore,
+      SessionSingleton *ss);
   virtual ~MaidsafeStoreManager() {}
   void Init(int port, kad::VoidFunctorOneString cb, fs::path db_directory);
   void Close(kad::VoidFunctorOneString cb, bool cancel_pending_ops);
@@ -251,6 +267,14 @@ class MaidsafeStoreManager : public StoreManagerInterface {
                     DirType dir_type,
                     const std::string &msid,
                     const VoidFuncOneInt &cb);
+  virtual void UpdatePacket(const std::string &packet_name,
+                            const std::string &old_value,
+                            const std::string &new_value,
+                            PacketType system_packet_type,
+                            DirType dir_type,
+                            const std::string &msid,
+                            const VoidFuncOneInt &cb);
+
   int GetAccountDetails(boost::uint64_t *space_offered,
                         boost::uint64_t *space_given,
                         boost::uint64_t *space_taken);
@@ -298,6 +322,7 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   friend void StorePacketTask::run();
   friend void DeleteChunkTask::run();
   friend void DeletePacketTask::run();
+  friend void UpdatePacketTask::run();
   friend size_t testpdvault::CheckStoredCopies(
       std::map<std::string, std::string> chunks,
       const int &timeout, boost::shared_ptr<MaidsafeStoreManager> sm);
@@ -308,6 +333,10 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   void SetSessionEndPoint();
   void SetInstantMessageNotifier(IMNotifier on_msg, IMStatusNotifier
       status_notifier);
+
+//  void ResetSessionSingleton(SessionSingleton *ss) {
+//    ss_ = ss;
+//  }
 
  private:
   MaidsafeStoreManager &operator=(const MaidsafeStoreManager&);
@@ -325,6 +354,7 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_StoreExistingPacket);
   FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_LoadPacket);
   FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_DeletePacket);
+  FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_UpdatePacket);
   FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_GetAccountDetails);
   FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_GetFilteredAverage);
   friend class MsmSetLocalVaultOwnedTest;
@@ -332,9 +362,9 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   friend class maidsafe_vault::PDVaultTest_FUNC_MAID_StoreAndGetChunks_Test;
   friend class maidsafe_vault::RunPDVaults;
   // Check the inputs to the public methods are valid
-  int ValidateInputs(const std::string &name,
-                     const PacketType &packet_type,
-                     const DirType &dir_type);
+  ReturnCode ValidateInputs(const std::string &name,
+                            const PacketType &packet_type,
+                            const DirType &dir_type);
   void AddStorePacketTask(const StoreData &store_data,
                           bool is_mutable,
                           int *return_value,
@@ -482,6 +512,10 @@ class MaidsafeStoreManager : public StoreManagerInterface {
       boost::shared_ptr<DeletePacketData> delete_data);
   void DeletePacketCallback(const std::string &ser_kad_delete_result,
                             boost::shared_ptr<DeletePacketData> delete_data);
+  virtual void UpdatePacketOnNetwork(
+      boost::shared_ptr<UpdatePacketData> update_data);
+  void UpdatePacketCallback(const std::string &ser_kad_update_result,
+                            boost::shared_ptr<UpdatePacketData> delete_data);
   void DoNothingCallback(const std::string&) {}
   void PollVaultInfoCallback(const VaultStatusResponse *response,
                              kad::VoidFunctorOneString cb);
