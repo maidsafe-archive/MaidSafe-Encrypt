@@ -25,6 +25,8 @@
 #include <QPixmap>
 
 #include "maidsafe/client/clientcontroller.h"
+#include "qt/client/big_list_delegate.h"
+
 #include "ui_file_browser.h"
 
 class FileBrowser : public QDialog {
@@ -42,6 +44,7 @@ class FileBrowser : public QDialog {
  private:
   Ui::FileBrowserPage ui_;
   bool init_;
+	BigListDelegate* bigListDelegate;
   QString rootPath_;
   QString currentDir_;
   QString currentTreeDir_;
@@ -65,6 +68,7 @@ class FileBrowser : public QDialog {
   QAction *newFolder;
   QAction *tilesMode;
   QAction *listMode;
+	QAction *bigListMode;
   QAction *detailMode;
   QAction *iconMode;
   QAction *nameSort;
@@ -76,6 +80,7 @@ class FileBrowser : public QDialog {
     TILES,
     DETAIL,
     LIST,
+		BIGLIST,
     SMALLICONS
     };
 

@@ -47,6 +47,7 @@ namespace fs = boost::filesystem;
 FileBrowser::FileBrowser(QWidget* parent) : QDialog(parent), init_(false) {
   ui_.setupUi(this);
   setWindowIcon(QPixmap(":/icons/16/globe"));
+	this->setWindowFlags(Qt::WindowMinMaxButtonsHint);
   // theWatcher_ = new QFileSystemWatcher;
   ui_.driveTreeWidget->setAcceptDrops(true);
   ui_.driveTreeWidget->viewport()->installEventFilter(this);
@@ -137,11 +138,13 @@ void FileBrowser::createAndConnectActions() {
 
   /*tilesMode = new QAction(tr("Tiles"), viewGroup);
   tilesMode->setCheckable(true);*/
-  listMode = new QAction(tr("List"), viewGroup);
-  listMode->setCheckable(true);	
   detailMode = new QAction(tr("Details"), viewGroup);
   detailMode->setCheckable(true);
-  detailMode->setChecked(true);
+  detailMode->setChecked(true);	
+	listMode = new QAction(tr("List"), viewGroup);
+  listMode->setCheckable(true);
+	bigListMode = new QAction(tr("Big List"), viewGroup);
+	bigListMode->setCheckable(true);	
   iconMode = new QAction(tr("Icons"), viewGroup);
   iconMode->setCheckable(true);
 
@@ -151,8 +154,9 @@ void FileBrowser::createAndConnectActions() {
   dateSort = new QAction(tr("Date Modified"), sortGroup);
 
   //view->addAction(tilesMode);
-  view->addAction(listMode);
   view->addAction(detailMode);
+	view->addAction(bigListMode);
+	view->addAction(listMode);
   view->addAction(iconMode);
   sort->addAction(nameSort);
   sort->addAction(sizeSort);
@@ -527,6 +531,9 @@ void FileBrowser::populateDirectory(QString dir) {
     case LIST:
       drawIconView();
       break;
+    case BIGLIST:
+      drawIconView();
+      break;
     case SMALLICONS:
       drawIconView();
       break;
@@ -723,16 +730,21 @@ int FileBrowser::drawIconView(){
     children.erase(children.begin());
     ++rowCount;
   }
-	if (viewMode_ == LIST){
+	if (viewMode_ == LIST || viewMode_ == BIGLIST){
 		ui_.driveListWidget->setViewMode(QListView::ListMode);
 		ui_.driveListWidget->setFlow(QListView::TopToBottom);
 		ui_.driveListWidget->setUniformItemSizes(false);
 		ui_.driveListWidget->setGridSize(QSize());
+		ui_.driveTreeWidget->setWordWrap(true);
+		if (viewMode_ == BIGLIST)
+			ui_.driveListWidget->setIconSize(QSize(32,32));
+		else
+			ui_.driveListWidget->setIconSize(QSize());
 	} else {				
 		ui_.driveListWidget->setViewMode(QListView::IconMode);
 		ui_.driveListWidget->setFlow(QListView::LeftToRight);
 		ui_.driveListWidget->setWordWrap(false);
-		ui_.driveListWidget->setGridSize(QSize(80,80));
+		ui_.driveListWidget->setGridSize(QSize(90,80));
 	}
   return 0;
 }
@@ -1195,6 +1207,10 @@ void FileBrowser::setViewMode(ViewMode viewMode) {
       ui_.driveTreeWidget->setVisible(false);
       ui_.driveListWidget->setVisible(true);
       break;
+    case BIGLIST:
+      ui_.driveTreeWidget->setVisible(false);
+      ui_.driveListWidget->setVisible(true);
+      break;
     case SMALLICONS:
       ui_.driveTreeWidget->setVisible(false);
       ui_.driveListWidget->setVisible(true);
@@ -1214,8 +1230,8 @@ void FileBrowser::onViewGroupClicked(QAction* action) {
     setViewMode(DETAIL);
   else if (action == iconMode)
     setViewMode(SMALLICONS);
-//  else if (action == iconMode)
-//    setViewMode(LARGEICONS);
+  else if (action == bigListMode)
+    setViewMode(BIGLIST);
 }
 void FileBrowser::onSortGroupClicked(QAction* action) {
 	QHeaderView* theHeader = ui_.driveTreeWidget->header();
