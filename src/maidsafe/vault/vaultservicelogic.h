@@ -240,7 +240,7 @@ class VaultServiceLogic {
   FRIEND_TEST(AccountAmendmentHandlerTest, BEH_MAID_AAH_CreateNewAmendment);
   FRIEND_TEST(AccountAmendmentHandlerTest, BEH_MAID_AAH_CreateNewWithExpecteds);
   FRIEND_TEST(AccountAmendmentHandlerTest, BEH_MAID_AAH_ProcessRequest);
-  FRIEND_TEST(MockVaultServicesTest, BEH_MAID_ServicesAmendAccount);
+  FRIEND_TEST(MockVaultServicesTest, FUNC_MAID_ServicesAmendAccount);
   friend class MockVsl;
   friend class MockVaultServicesTest;
   // First callback method in e.g. AmendRemoteAccount operation.  Called once by

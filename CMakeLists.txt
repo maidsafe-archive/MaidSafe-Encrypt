@@ -161,6 +161,17 @@ SET(LIBS_DIRS ${LIBS_DIRS} ${Gmock_LIBRARY_DIR})
 SET(LIBS_DIRS_DEBUG ${LIBS_DIRS_DEBUG} ${Gmock_LIBRARY_DIR_DEBUG})
 
 ###################################################################################################
+# Google Log library search - Glog can't currently be compiled on Windows with MinGW              #
+###################################################################################################
+IF((NOT WIN32) OR MSVC)
+  INCLUDE(${PD_SOURCE_DIR}/build/maidsafe_FindGlog.cmake)
+  IF(Glog_FOUND)
+    SET(INCLUDE_DIRS ${INCLUDE_DIRS} ${Glog_INCLUDE_DIR})
+    SET(LIBS_DIRS ${LIBS_DIRS} ${Glog_LIBRARY_DIR} ${Glog_LIBRARY_DIR_DEBUG})
+  ENDIF()
+ENDIF()
+
+###################################################################################################
 # Protocol Buffers library search                                                                 #
 ###################################################################################################
 FILE(GLOB PROTO_FILES RELATIVE ${SOURCE_DIR} "${SOURCE_DIR}/protobuf/*.proto")
@@ -409,7 +420,7 @@ ENDFOREACH()
 SET(ALL_TARGET_LIBS PDmaidsafelib PDfslib PDpbmsgslib)
 
 IF(NOT MSVC)
-  SET(SYS_LIBS ${QT_LIBRARIES} ${Boost_LIBRARIES} ${Protobuf_LIBRARY} ${maidsafe_dht_LIBRARY} ${Udt_LIBRARY} ${Cryptopp_LIBRARY} ${SYS_LIBS})
+  SET(SYS_LIBS ${QT_LIBRARIES} ${Boost_LIBRARIES} ${Protobuf_LIBRARY} ${Glog_LIBRARY} ${maidsafe_dht_LIBRARY} ${Udt_LIBRARY} ${Cryptopp_LIBRARY} ${SYS_LIBS})
   TARGET_LINK_LIBRARIES(perpetualdata PDmsclientlib ${ALL_TARGET_LIBS} ${Dokan_LIBRARY} ${Breakpad_LIBRARY} ${SYS_LIBS})
   TARGET_LINK_LIBRARIES(pdlocal PDTESTmsclientlib ${ALL_TARGET_LIBS} ${Dokan_LIBRARY} ${Breakpad_LIBRARY} ${SYS_LIBS})
   TARGET_LINK_LIBRARIES(pdlightlocal PDTESTmsclientlib PDmaidsafelib PDpbmsgslib ${Breakpad_LIBRARY} ${SYS_LIBS})
@@ -429,10 +440,10 @@ IF(NOT MSVC)
 ELSE()
   SET(ALL_TARGET_LIBS ${ALL_TARGET_LIBS} ${QT_LIBRARIES})
   SET(DEBUG_LIBS ${Boost_DATE_TIME_LIBRARY_DEBUG} ${Boost_FILESYSTEM_LIBRARY_DEBUG} ${Boost_THREAD_LIBRARY_DEBUG}
-      ${Boost_SYSTEM_LIBRARY_DEBUG} ${Boost_REGEX_LIBRARY_DEBUG} ${Protobuf_LIBRARY_DEBUG}
+      ${Boost_SYSTEM_LIBRARY_DEBUG} ${Boost_REGEX_LIBRARY_DEBUG} ${Protobuf_LIBRARY_DEBUG} ${Glog_LIBRARY_DEBUG}
       ${maidsafe_dht_LIBRARY_DEBUG} ${Udt_LIBRARY_DEBUG} ${Cryptopp_LIBRARY_DEBUG} ${Sqlite3_LIBRARY_DEBUG} ${SYS_LIBS})
   SET(RELEASE_LIBS ${Boost_DATE_TIME_LIBRARY_RELEASE} ${Boost_FILESYSTEM_LIBRARY_RELEASE} ${Boost_THREAD_LIBRARY_RELEASE}
-      ${Boost_SYSTEM_LIBRARY_RELEASE} ${Boost_REGEX_LIBRARY_RELEASE} ${Protobuf_LIBRARY}
+      ${Boost_SYSTEM_LIBRARY_RELEASE} ${Boost_REGEX_LIBRARY_RELEASE} ${Protobuf_LIBRARY} ${Glog_LIBRARY}
       ${maidsafe_dht_LIBRARY} ${Udt_LIBRARY} ${Cryptopp_LIBRARY} ${Sqlite3_LIBRARY} ${SYS_LIBS})
 
   TARGET_LINK_LIBRARIES(perpetualdata
@@ -519,6 +530,9 @@ ENDIF()
 ###################################################################################################
 # Compiler and linker flags - after all targets declared                                          #
 ###################################################################################################
+IF(Glog_FOUND)
+  ADD_DEFINITIONS(-DHAVE_GLOG)
+ENDIF()
 SET_TARGET_PROPERTIES(PDTESTmsclientlib PROPERTIES COMPILE_FLAGS -DLOCAL_PDVAULT)
 SET_TARGET_PROPERTIES(TESTlocalclientcontroller PROPERTIES COMPILE_FLAGS -DLOCAL_PDVAULT)
 SET_TARGET_PROPERTIES(pdlightlocal PROPERTIES COMPILE_FLAGS -DPD_LIGHT)
@@ -538,6 +552,11 @@ ELSEIF(WIN32)
   ADD_DEFINITIONS(-DWIN32_LEAN_AND_MEAN -D_WIN32_WINNT=0x501)
   ADD_DEFINITIONS(-D_UNICODE -DUNICODE -D_BIND_TO_CURRENT_VCLIBS_VERSION=1)
   IF(MSVC)
+    # prevents inclusion of WinGDI.h which conflicts with Google Logging library and sets
+    # flag to link to static version of Google Glog
+    IF(Glog_FOUND)
+      ADD_DEFINITIONS(-DNOGDI -DGOOGLE_GLOG_DLL_DECL=)
+    ENDIF()
     ADD_DEFINITIONS(-D__MSVC__ -DNOMINMAX -DBOOST_ALL_NO_LIB -DUDT_STATIC)
     SET(CMAKE_CXX_FLAGS_RELEASE "/O2 /Ob2 /Ot /Oy /GL /DNDEBUG /EHsc /MD /Gy /W3 /Zi /wd4503")
     SET(CMAKE_CXX_FLAGS_DEBUG "/Od /Ot /Oy /D_DEBUG /DDEBUG /EHsc /MDd  /c /ZI /TP /wd4503")
@@ -559,8 +578,8 @@ ELSEIF(WIN32)
     SET_TARGET_PROPERTIES(${ALL_EXECUTABLES} PROPERTIES
                               LINK_FLAGS_RELEASE "/STACK:1048576 /OPT:REF /OPT:ICF /LTCG /INCREMENTAL:NO ${LINKER_LIBS_DIRS_RELEASE}"
                               LINK_FLAGS_DEBUG "/STACK:1048576 ${LINKER_LIBS_DIRS_DEBUG}"
-                              LINK_FLAGS_RELWITHDEBINFO "/STACK:1048576 ${LINKER_LIBS_DIRS_DEBUG}"
-                              LINK_FLAGS_MINSIZEREL "/STACK:1048576 ${LINKER_LIBS_DIRS_DEBUG}")
+                              LINK_FLAGS_RELWITHDEBINFO "/STACK:1048576 /LTCG ${LINKER_LIBS_DIRS_DEBUG}"
+                              LINK_FLAGS_MINSIZEREL "/STACK:1048576 /LTCG ${LINKER_LIBS_DIRS_DEBUG}")
   ELSE()
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wfloat-equal -Wlong-long -Wstrict-overflow=5 -D_FORTIFY_SOURCE=2 -fno-stack-protector -D_FILE_OFFSET_BITS=64")
     SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG") # -g -pg -fprofile-arcs -ftest-coverage")
@@ -614,6 +633,11 @@ IF(INCLUDE_TEST)
   UNSET(INCLUDE_TEST CACHE)
 ENDIF()
 
+SET(BEHAVIOURAL_TEST_TIMEOUT 60)
+SET(FUNCTIONAL_TEST_TIMEOUT 600)
+SET(LOCAL_SYSTEM_TEST_TIMEOUT 1800)
+SET(NETWORK_SYSTEM_TEST_TIMEOUT 3600)
+
 SET(MAID_TEST_PATH ${TEST_PREFIX}TESTmaidsafe${TEST_POSTFIX})
 IF(EXISTS ${MAID_TEST_PATH})
   EXECUTE_PROCESS(COMMAND ${MAID_TEST_PATH} --gtest_list_tests OUTPUT_VARIABLE maid_tests)
@@ -656,10 +680,10 @@ IF(EXISTS ${MAID_TEST_PATH})
             ADD_TEST(${tst}    ${MAID_TEST_PATH}   --gtest_filter=*${tst}*)
             IF("${tst}" MATCHES "^FUNC_" OR "${tst}" MATCHES "^DISABLED_FUNC_")
               SET_PROPERTY(TEST ${tst} PROPERTY LABELS Functional ${label_name})
-              SET_PROPERTY(TEST ${tst} PROPERTY TIMEOUT 600)
+              SET_PROPERTY(TEST ${tst} PROPERTY TIMEOUT ${FUNCTIONAL_TEST_TIMEOUT})
             ELSEIF("${tst}" MATCHES "^BEH_" OR "${tst}" MATCHES "^DISABLED_BEH_")
               SET_PROPERTY(TEST ${tst} PROPERTY LABELS Behavioural ${label_name})
-              SET_PROPERTY(TEST ${tst} PROPERTY TIMEOUT 60)
+              SET_PROPERTY(TEST ${tst} PROPERTY TIMEOUT ${BEHAVIOURAL_TEST_TIMEOUT})
             ELSE()
               MESSAGE("")
               MESSAGE("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
@@ -715,42 +739,42 @@ IF(NOT ${MAIDSAFE_TEST_TYPE} MATCHES "BEH")
   LIST(FIND EXCLUDED_TESTS Testnetworkclientcontroller TEST_EXCLUDED)
   IF(TEST_EXCLUDED EQUAL -1)
     ADD_TEST(Testnetworkclientcontroller ${TEST_PREFIX}TESTnetworkclientcontroller${TEST_POSTFIX})
-    SET_PROPERTY(TEST Testnetworkclientcontroller PROPERTY TIMEOUT 7201)
+    SET_PROPERTY(TEST Testnetworkclientcontroller PROPERTY TIMEOUT ${NETWORK_SYSTEM_TEST_TIMEOUT})
     SET_PROPERTY(TEST Testnetworkclientcontroller PROPERTY LABELS Functional ClientController NetworkCC)
   ENDIF()
 
   LIST(FIND EXCLUDED_TESTS Testlocalclientcontroller TEST_EXCLUDED)
   IF(TEST_EXCLUDED EQUAL -1)
     ADD_TEST(Testlocalclientcontroller ${TEST_PREFIX}TESTlocalclientcontroller${TEST_POSTFIX})
-    SET_PROPERTY(TEST Testlocalclientcontroller PROPERTY TIMEOUT 7201)
+    SET_PROPERTY(TEST Testlocalclientcontroller PROPERTY TIMEOUT ${LOCAL_SYSTEM_TEST_TIMEOUT})
     SET_PROPERTY(TEST Testlocalclientcontroller PROPERTY LABELS Functional ClientController LocalCC)
   ENDIF()
 
   LIST(FIND EXCLUDED_TESTS Testpdvault TEST_EXCLUDED)
   IF(TEST_EXCLUDED EQUAL -1)
     ADD_TEST(Testpdvault ${TEST_PREFIX}TESTpdvault${TEST_POSTFIX})
-    SET_PROPERTY(TEST Testpdvault PROPERTY TIMEOUT 3600)
+    SET_PROPERTY(TEST Testpdvault PROPERTY TIMEOUT ${NETWORK_SYSTEM_TEST_TIMEOUT})
     SET_PROPERTY(TEST Testpdvault PROPERTY LABELS Functional PdVault)
   ENDIF()
 
   LIST(FIND EXCLUDED_TESTS Testbph TEST_EXCLUDED)
   IF(TEST_EXCLUDED EQUAL -1)
     ADD_TEST(Testbph ${TEST_PREFIX}TESTbph${TEST_POSTFIX})
-    SET_PROPERTY(TEST Testbph PROPERTY TIMEOUT 3600)
+    SET_PROPERTY(TEST Testbph PROPERTY TIMEOUT ${NETWORK_SYSTEM_TEST_TIMEOUT})
     SET_PROPERTY(TEST Testbph PROPERTY LABELS Functional BufferPacketHandler)
   ENDIF()
 
   LIST(FIND EXCLUDED_TESTS Testnetworkauthentication TEST_EXCLUDED)
   IF(TEST_EXCLUDED EQUAL -1)
     ADD_TEST(Testnetworkauthentication ${TEST_PREFIX}TESTfuncauth${TEST_POSTFIX})
-    SET_PROPERTY(TEST Testnetworkauthentication PROPERTY TIMEOUT 3600)
+    SET_PROPERTY(TEST Testnetworkauthentication PROPERTY TIMEOUT ${NETWORK_SYSTEM_TEST_TIMEOUT})
     SET_PROPERTY(TEST Testnetworkauthentication PROPERTY LABELS Functional Authentication)
   ENDIF()
 
   LIST(FIND EXCLUDED_TESTS Testimconnhndl TEST_EXCLUDED)
   IF(TEST_EXCLUDED EQUAL -1)
     ADD_TEST(Testimconnhndl ${TEST_PREFIX}TESTimconnhndl${TEST_POSTFIX})
-    SET_PROPERTY(TEST Testimconnhndl PROPERTY TIMEOUT 3600)
+    SET_PROPERTY(TEST Testimconnhndl PROPERTY TIMEOUT ${NETWORK_SYSTEM_TEST_TIMEOUT})
     SET_PROPERTY(TEST Testimconnhndl PROPERTY LABELS Functional InstantMessaging)
   ENDIF()
 
@@ -766,7 +790,6 @@ IF(NOT ${MAIDSAFE_TEST_TYPE} MATCHES "BEH")
   ENDIF()
 ENDIF()
 
-SET(DART_TESTING_TIMEOUT 2400 CACHE INTERNAL "Maximum time allowed before CTest will kill the test.")
 IF(UNIX)
   SET(MEMORYCHECK_COMMAND "/usr/bin/valgrind --show-reachable=no")
 ENDIF(UNIX)

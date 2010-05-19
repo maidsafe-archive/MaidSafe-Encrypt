@@ -518,7 +518,7 @@ TEST_F(AuthenticationTest, FUNC_MAID_ChangePin) {
     boost::this_thread::sleep(boost::posix_time::milliseconds(10));
 }
 
-TEST_F(AuthenticationTest, BEH_MAID_CreatePublicName) {
+TEST_F(AuthenticationTest, FUNC_MAID_CreatePublicName) {
   crypto::Crypto crypto_obj;
   crypto_obj.set_symm_algorithm(crypto::AES_256);
   crypto_obj.set_hash_algorithm(crypto::SHA_512);
@@ -568,7 +568,7 @@ TEST_F(AuthenticationTest, BEH_MAID_CreateMSIDPacket) {
       &test_auth::FakeCallback::CallbackFunc, &cb_, _1));
   boost::mutex mutex;
   test_auth::WaitForResult(cb_, &mutex);
-  boost::this_thread::sleep(boost::posix_time::seconds(1));
+//  boost::this_thread::sleep(boost::posix_time::seconds(1));
   CreateMSIDResult msid_result;
   ASSERT_TRUE(msid_result.ParseFromString(cb_.result));
   ASSERT_EQ(kAck, static_cast<int>(msid_result.result()));
@@ -577,7 +577,7 @@ TEST_F(AuthenticationTest, BEH_MAID_CreateMSIDPacket) {
   pub_key = msid_result.public_key();
   std::string empty_str;
   cb_.Reset();
-  boost::this_thread::sleep(boost::posix_time::seconds(1));
+//  boost::this_thread::sleep(boost::posix_time::seconds(1));
   ASSERT_NE(empty_str, msid_name);
   ASSERT_NE(empty_str, priv_key);
   ASSERT_NE(empty_str, pub_key);

@@ -1376,7 +1376,7 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesAddToWatchList) {
   }
 }
 
-TEST_F(MockVaultServicesTest, BEH_MAID_ServicesRemoveFromWatchList) {
+TEST_F(MockVaultServicesTest, FUNC_MAID_ServicesRemoveFromWatchList) {
   delete vault_service_;
   vault_service_ = new VaultService(vault_pmid_, vault_public_key_,
                                     vault_private_key_,
@@ -1874,7 +1874,7 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesAddToReferenceList) {
   }
 }
 
-TEST_F(MockVaultServicesTest, BEH_MAID_ServicesAmendAccount) {
+TEST_F(MockVaultServicesTest, FUNC_MAID_ServicesAmendAccount) {
   boost::shared_ptr<VaultRpcs> vault_rpcs;
   boost::shared_ptr<kad::KNode> knode;
   MockVsl mock_vault_service_logic(vault_rpcs, knode);
