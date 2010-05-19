@@ -65,6 +65,15 @@ struct UserInfo {
   std::string pin;
 };
 
+struct SaveSessionData {
+  std::string ser_da;
+  std::string current_encripted_mid;
+  std::string mid_tmid_data;
+  boost::uint32_t new_mid;
+  VoidFuncOneInt vfoi;
+  bool same_mid_smid;
+};
+
 class Authentication {
  public:
   Authentication()
@@ -98,6 +107,7 @@ class Authentication {
                        const std::string &password,
                        const std::string &ser_dm);
   int SaveSession(const std::string &ser_da);
+  void SaveSession(const std::string &ser_da, const VoidFuncOneInt &cb);
   int RemoveMe(std::list<KeyAtlasRow> sig_keys);
   int CreatePublicName(const std::string &public_username);
   int ChangeUsername(const std::string &ser_da,
@@ -159,6 +169,15 @@ class Authentication {
   void CreateSmidPacket(boost::shared_ptr<FindSystemPacket> fsp);
   void CreateMaidPmidPacket(boost::shared_ptr<FindSystemPacket> fsp);
   std::string EncryptedDataMidSmid(boost::uint32_t rid);
+
+  void UpdateSmidCallback(const ReturnCode &rc,
+                          boost::shared_ptr<SaveSessionData> ssd);
+  void DeleteSmidTmidCallback(const ReturnCode &rc,
+                              boost::shared_ptr<SaveSessionData> ssd);
+  void UpdateMidCallback(const ReturnCode &rc,
+                         boost::shared_ptr<SaveSessionData> ssd);
+  void StoreMidTmidCallback(const ReturnCode &rc,
+                            boost::shared_ptr<SaveSessionData> ssd);
 
   UserDetails ud_;
   boost::mutex mutex_;

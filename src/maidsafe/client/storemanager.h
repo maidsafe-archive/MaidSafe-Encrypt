@@ -107,6 +107,13 @@ class StoreManagerInterface {
                             DirType dir_type,
                             const std::string &msid,
                             const VoidFuncOneInt &cb)=0;
+  virtual void UpdatePacket(const std::string &packet_name,
+                            const std::string &old_value,
+                            const std::string &new_value,
+                            PacketType system_packet_type,
+                            DirType dir_type,
+                            const std::string &msid,
+                            const VoidFuncOneInt &cb)=0;
 
   // Buffer packet
   virtual int CreateBP()=0;

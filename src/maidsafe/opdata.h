@@ -164,6 +164,40 @@ struct DeletePacketData {
  private:
 };
 
+struct UpdatePacketData {
+ public:
+  UpdatePacketData(const std::string &name,
+                   const std::string &oldvalue,
+                   const std::string &newvalue,
+                   PacketType sys_packet_type,
+                   DirType directory_type,
+                   const std::string &ms_id,
+                   const std::string &key,
+                   const std::string &pub_key,
+                   const std::string &pub_key_signature,
+                   const std::string &priv_key,
+                   VoidFuncOneInt cb)
+                       : packet_name(name),
+                         old_value(oldvalue),
+                         new_value(newvalue),
+                         msid(ms_id),
+                         key_id(key),
+                         public_key(pub_key),
+                         public_key_signature(pub_key_signature),
+                         private_key(priv_key),
+                         system_packet_type(sys_packet_type),
+                         dir_type(directory_type),
+                         callback(cb),
+                         mutex() {}
+  std::string packet_name;
+  std::string old_value, new_value, msid, key_id, public_key,
+              public_key_signature, private_key;
+  PacketType system_packet_type;
+  DirType dir_type;
+  VoidFuncOneInt callback;
+  boost::mutex mutex;
+};
+
 // This is used to hold the data required to perform a Kad lookup to get a
 // group of Chunk Info holders, send each an AddToWatchListRequest or
 // RemoveFromWatchListRequest and assess the responses.
