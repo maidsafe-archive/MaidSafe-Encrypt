@@ -725,6 +725,8 @@ int FileBrowser::drawIconView(){
 			tip.append("<br>");
 			tip.append(tr("Date Modified: ") + lastModified->toString("dd/MM/yyyy hh:mm"));
 			newItem->setToolTip(tip);
+//			ui_.driveListWidget->setItemDelegate(bigListDelegate_);
+//			newItem->setData(0, qVariantFromValue(QString(tip)));
 			ui_.driveListWidget->addItem(newItem);
     }
     children.erase(children.begin());

@@ -84,6 +84,7 @@ class Contacts : public Panel {
     void onViewProfileClicked();
     void onSendMessageClicked();
     void onFileSendClicked();
+		void onSendEmailClicked();
 
     void onDirectoryEntered(const QString&);
     void onContactsBoxTextEdited(const QString &value);

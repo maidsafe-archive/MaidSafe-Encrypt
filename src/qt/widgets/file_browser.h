@@ -44,7 +44,7 @@ class FileBrowser : public QDialog {
  private:
   Ui::FileBrowserPage ui_;
   bool init_;
-	BigListDelegate* bigListDelegate;
+	BigListDelegate* bigListDelegate_;
   QString rootPath_;
   QString currentDir_;
   QString currentTreeDir_;

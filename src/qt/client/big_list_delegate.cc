@@ -24,18 +24,17 @@ BigListDelegate::BigListDelegate(QObject *parent)
 void BigListDelegate::paint(QPainter *painter, const QStyleOptionViewItem &option,
                             const QModelIndex &index) const {
 
-		int progress = index.data().toInt();
-		
-		QStyleOptionProgressBar progressBarOption;
-    progressBarOption.rect = option.rect;
-    progressBarOption.minimum = 0;
-    progressBarOption.maximum = 100;
-    progressBarOption.progress = progress;
-    progressBarOption.text = QString::number(progress) + "%";
-    progressBarOption.textVisible = true;
-		
-		QApplication::style()->drawControl(QStyle::CE_ProgressBar,
-                                          &progressBarOption, painter);
+	if(qVariantCanConvert<QString>(index.data())) {
+
+		QString data = qVariantValue<QString>(index.data());
+		QRect rect(option.rect.topLeft(),QSize(32,32));
+
+		QApplication::style()->drawItemPixmap(painter, rect, Qt::AlignLeft, icon_);
+
+		rect.moveTo(rect.topRight());
+
+		QApplication::style()->drawItemText(painter, rect, Qt::AlignLeft, option.palette, true, data);
+	}
 }
 
 BigListDelegate::~BigListDelegate() { }
@@ -45,7 +44,6 @@ QSize BigListDelegate::sizeHint(const QStyleOptionViewItem & /* option */,
 	return QSize(pixelSize, pixelSize);
 }
 
-void BigListDelegate::setPixelSize(int size)
-{
-     pixelSize = size;
+void BigListDelegate::setPixelSize(int size) {
+	pixelSize = size;
 }
