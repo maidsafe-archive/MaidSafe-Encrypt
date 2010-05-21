@@ -1044,7 +1044,7 @@ class TestCCImMessaging : public testing::Test {
   std::string publicusername1_, publicusername2_;
   boost::shared_ptr<maidsafe::MaidsafeStoreManager> sm1_, sm2_;
   std::vector<crypto::RsaKeyPair> keys_;
-  std::string sm_rec_msg_;;
+  std::string sm_rec_msg_;
   std::string sender_, latest_ctc_updated_;
   int latest_status_;
  private:

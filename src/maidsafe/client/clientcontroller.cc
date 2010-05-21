@@ -74,6 +74,15 @@ void ClientController::WaitForResult(const CC_CallbackResult &cb) {
   }
 }
 
+void PacketOpCallback(const int &store_manager_result,
+                      boost::mutex *mutex,
+                      boost::condition_variable *cond_var,
+                      int *op_result) {
+  boost::mutex::scoped_lock lock(*mutex);
+  *op_result = store_manager_result;
+  cond_var->notify_one();
+};
+
 
 ClientController *ClientController::single = 0;
 
@@ -252,19 +261,19 @@ int ClientController::ParseDa() {
   DataAtlas data_atlas;
   if (ser_da_ == "") {
 #ifdef DEBUG
-    printf("TMID brought is \"\".\n");
+    printf("CC::ParseDa - TMID brought is \"\".\n");
 #endif
     return -9000;
   }
   if (!data_atlas.ParseFromString(ser_da_)) {
 #ifdef DEBUG
-    printf("TMID brought doesn't parse as a DA.\n");
+    printf("CC::ParseDa - TMID brought doesn't parse as a DA.\n");
 #endif
     return -9000;
   }
   if (!data_atlas.has_root_db_key()) {
 #ifdef DEBUG
-    printf("DA doesn't have a root db key.\n");
+    printf("CC::ParseDa - DA doesn't have a root db key.\n");
 #endif
     return -9001;
   }
@@ -272,7 +281,7 @@ int ClientController::ParseDa() {
 
   if (data_atlas.dms_size() != 2) {
 #ifdef DEBUG
-    printf("Wrong number of datamaps in the DA.\n");
+    printf("CC::ParseDa - Wrong number of datamaps in the DA.\n");
 #endif
     return -9002;
   }
@@ -313,15 +322,16 @@ int ClientController::ParseDa() {
 #endif
   int i = seh_.DecryptDb(kRoot, PRIVATE, ser_dm_root, "", "", false, false);
 #ifdef DEBUG
-  printf("result of decrypt root: %i -- (%s)\n", i, ""/*ser_dm_root.c_str()*/);
+//  printf("CC::ParseDa - result of decrypt root: %i -- (%s)\n", i,
+//         ""/*ser_dm_root.c_str()*/);
 #endif
   if (i != 0)
     return -1;
   i = seh_.DecryptDb(TidyPath(kRootSubdir[1][0]), PRIVATE, ser_dm_shares,
-                      "", "", false, false);
+                     "", "", false, false);
 #ifdef DEBUG
-  printf("result of decrypt %s: %i -- (%s)\n", kRootSubdir[1][0].c_str(), i,
-          ""/*ser_dm_shares.c_str()*/);
+//  printf("CC::ParseDa - result of decrypt %s: %i -- (%s)\n",
+//         kRootSubdir[1][0].c_str(), i, ""/*ser_dm_shares.c_str()*/);
 #endif
   return (i == 0) ? 0 : -1;
 }
@@ -701,7 +711,7 @@ bool ClientController::ValidateUser(const std::string &password) {
     std::list<LivePresence> presence_msgs;
     if (sm_->LoadBPPresence(&presence_msgs) > 0) {
       std::list<LivePresence>::const_iterator it = presence_msgs.begin();
-      for(; it != presence_msgs.end(); ++it) {
+      for (; it != presence_msgs.end(); ++it) {
         EndPoint ep;
         if (ep.ParseFromString(it->end_point())) {
           ss_->AddLiveContact(it->contact_id(), ep, 0);
@@ -823,8 +833,19 @@ int ClientController::SaveSession() {
 #endif
     return n;
   }
-  n = auth_.SaveSession(ser_dm_);
-  if (n != 0) {
+  n = kPendingResult;
+  boost::mutex mutex;
+  boost::condition_variable cond_var;
+  VoidFuncOneInt func = boost::bind(&PacketOpCallback, _1, &mutex,
+                                    &cond_var, &n);
+  auth_.SaveSession(ser_dm_, func);
+  {
+    boost::mutex::scoped_lock lock(mutex);
+    while (n == kPendingResult)
+      cond_var.wait(lock);
+  }
+
+  if (n != kSuccess) {
 #ifdef DEBUG
     printf("ClientController::SaveSession - Failed to Save Session.\n");
 #endif

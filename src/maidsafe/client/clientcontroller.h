@@ -227,8 +227,8 @@ class ClientController {
       boost::function<void(const std::string&, const int&)> conn_not);
 
  private:
-  //friend class MockClientController;
-  //int Init(SessionSingleton *ss);
+//  friend class MockClientController;
+//  int Init(SessionSingleton *ss);
 
   // Friend tests
   FRIEND_TEST(FunctionalClientControllerTest, FUNC_MAID_ControllerBackupFile);
