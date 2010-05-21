@@ -228,7 +228,8 @@ struct WatchListOpData {
         success_count(0),
         expect_amendment_done(false),
         required_upload_copies(),
-        consensus_upload_copies(-1) {}
+        consensus_upload_copies(-1),
+        payment_values() {}
   StoreData store_data;
   boost::mutex mutex;
   std::vector<kad::Contact> account_holders, chunk_info_holders;
@@ -239,6 +240,7 @@ struct WatchListOpData {
   bool expect_amendment_done;
   std::multiset<int> required_upload_copies;
   int consensus_upload_copies;
+  std::vector<boost::uint64_t> payment_values;
 };
 
 // This is used to hold the data required to perform a SendChunkPrep followed by
@@ -267,27 +269,28 @@ struct SendChunkData {
   boost::uint16_t attempt;
 };
 
-// This is used to hold the data required to perform a Kad lookup to get a group
-// of account holders, send each an AccountStatusRequest and assess the
-// responses.
+// This is used to hold the data required to send AccountStatusRequests and
+// assess the responses.
 struct AccountStatusData {
   typedef SingleOpDataHolder<AccountStatusResponse> AccountStatusDataHolder;
   explicit AccountStatusData()
       : mutex(),
-        condition(),
         contacts(),
         data_holders(),
-        returned_count(0) {}
+        returned_count(0),
+        success_count(0),
+        offered_values(),
+        given_values(),
+        taken_values() {}
   boost::mutex mutex;
-  boost::condition_variable condition;
   std::vector<kad::Contact> contacts;
   std::vector<AccountStatusDataHolder> data_holders;
-  boost::uint16_t returned_count;
+  boost::uint16_t returned_count, success_count;
+  std::vector<boost::uint64_t> offered_values, given_values, taken_values;
 };
 
-// This is used to hold the data required to perform a Kad lookup to get a group
-// of account holders, send each an AmendAccountRequest and assess the
-// responses.
+// This is used to hold the data required to send AmendAccountRequests and
+// assess the responses.
 struct AmendAccountData {
   typedef SingleOpDataHolder<AmendAccountResponse> AmendAccountDataHolder;
   explicit AmendAccountData()

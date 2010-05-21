@@ -754,6 +754,7 @@ void VaultService::AddToWatchList(
 
   response->set_pmid(pmid_);
   response->set_upload_count(0);
+  response->set_total_payment(0);
   response->set_result(kNack);
 
   if (!request->IsInitialized()) {
@@ -813,15 +814,17 @@ void VaultService::AddToWatchList(
     return;
   }
 
+  boost::uint64_t total_payment = required_payments * sz.data_size();
+
   response->set_upload_count(required_references);
+  response->set_total_payment(total_payment);
   response->set_result(kAck);
   done->Run();
 
   if (required_payments > 0) {
     // amend account for watcher
     AmendRemoteAccount(maidsafe::AmendAccountRequest::kSpaceTakenInc,
-                       required_payments * sz.data_size(), sz.pmid(),
-                       request->chunkname(),
+                       total_payment, sz.pmid(), request->chunkname(),
                        boost::bind(&VaultService::FinalisePayment, this,
                                    request->chunkname(), sz.pmid(),
                                    sz.data_size(), _1));

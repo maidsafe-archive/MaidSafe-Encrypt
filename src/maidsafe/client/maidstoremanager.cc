@@ -104,7 +104,8 @@ MaidsafeStoreManager::MaidsafeStoreManager(boost::shared_ptr<ChunkStore> cstore)
       im_status_notifier_(),
       im_conn_hdler_(),
       im_handler_(ss_),
-      account_holders_manager_(kad_ops_) {
+      account_holders_manager_(kad_ops_),
+      account_status_manager_() {
   transport_handler_.Register(&udt_transport_, &trans_id_);
   knode_->set_transport_id(trans_id_);
   knode_->set_alternative_store(client_chunkstore_.get());
@@ -131,7 +132,8 @@ MaidsafeStoreManager::MaidsafeStoreManager(boost::shared_ptr<ChunkStore> cstore,
       trans_id_(0),
       im_notifier_(), im_status_notifier_(), im_conn_hdler_(),
       im_handler_(ss_),
-      account_holders_manager_(kad_ops_) {
+      account_holders_manager_(kad_ops_),
+      account_status_manager_() {
   transport_handler_.Register(&udt_transport_, &trans_id_);
   knode_->set_transport_id(trans_id_);
   knode_->set_alternative_store(client_chunkstore_.get());
@@ -280,8 +282,8 @@ int MaidsafeStoreManager::StoreChunk(const std::string &chunk_name,
                                                        false));
   if (chunk_type < 0 || chunk_path.empty()) {
 #ifdef DEBUG
-    printf("In MaidsafeStoreManager::StoreChunk (%i), didn't find chunk %s\n",
-           knode_->host_port(), HexSubstr(chunk_name).c_str());
+    printf("In MaidsafeStoreManager::StoreChunk, didn't find chunk %s\n",
+           HexSubstr(chunk_name).c_str());
 #endif
     return kStoreChunkError;
   }
@@ -291,13 +293,21 @@ int MaidsafeStoreManager::StoreChunk(const std::string &chunk_name,
   }
   catch(const std::exception &e) {
 #ifdef DEBUG
-    printf("MaidsafeStoreManager::StoreChunk (%i) - path: %s - %s\n",
-           knode_->host_port(), chunk_path.string().c_str(), e.what());
+    printf("MaidsafeStoreManager::StoreChunk - path: %s - %s\n",
+           chunk_path.string().c_str(), e.what());
 #endif
     return kStoreManagerException;
   }
-  // TODO(Fraser#5#): 2010-01-29 - Check we've got enough space in our account
-  //                               to allow storing.
+
+  if (!account_status_manager_.AbleToStore(chunk_size * kMinChunkCopies)) {
+#ifdef DEBUG
+    printf("In MaidsafeStoreManager::StoreChunk, lacking space for chunk %s, "
+           "size %llu x %d.\n", HexSubstr(chunk_name).c_str(), chunk_size,
+           kMinChunkCopies);
+#endif
+    return kStoreChunkError;
+  }
+  
   if (chunk_type & kOutgoing) {
     std::string key_id, public_key, public_key_signature, private_key;
     GetChunkSignatureKeys(dir_type, msid, &key_id, &public_key,
@@ -1147,16 +1157,11 @@ void MaidsafeStoreManager::GetFilteredAverage(
   if (values.empty())
     return;
 
-//  printf("values:");
-
   // first pass: calculate mean
   for (size_t i = 0; i < values.size(); ++i) {
     sum += values[i];
-//    printf(" %llu", values[i]);
   }
   mean = 1.0 * sum / values.size();
-
-//  printf("\n");
 
   // second pass: calculate standard deviation (using Kahan summation)
   for (size_t i = 0; i < values.size(); ++i) {
@@ -1174,65 +1179,49 @@ void MaidsafeStoreManager::GetFilteredAverage(
       ++(*n);
   }
   *average = sum / *n;
-
-//  printf("mean: %f, dev: %f, avg: %llu, n: %u of %u\n", mean,
-//         1.414213562 * stddev, *average, *n, values.size());
 }
 
-int MaidsafeStoreManager::GetAccountDetails(boost::uint64_t *space_offered,
+void MaidsafeStoreManager::GetAccountStatus(boost::uint64_t *space_offered,
                                             boost::uint64_t *space_given,
                                             boost::uint64_t *space_taken) {
-  *space_offered = 0;
-  *space_given = 0;
-  *space_taken = 0;
+  account_status_manager_.AccountStatus(space_offered, space_given,
+                                        space_taken);
+}
+
+void MaidsafeStoreManager::UpdateAccountStatus(const bool &force) {
+  if (!force && !account_status_manager_.UpdateRequired())
+    return;
 
   if (ss_->ConnectionStatus() != 0)  // offline
-    return kTaskCancelledOffline;
-
-  // Set the account name
-  std::string pmid = ss_->Id(PMID);
-  std::string pub_key = ss_->PublicKey(PMID);
-  std::string pub_key_sig = ss_->SignedPublicKey(PMID);
-  std::string priv_key = ss_->PrivateKey(PMID);
-  crypto::Crypto co;
-  co.set_symm_algorithm(crypto::AES_256);
-  co.set_hash_algorithm(crypto::SHA_512);
-  std::string account_name = co.Hash(pmid + kAccount, "", crypto::STRING_STRING,
-                                     false);
+    return;
 
   // Find the account holders
   boost::shared_ptr<AccountStatusData> data(new AccountStatusData);
-  int rslt = kad_ops_->BlockingFindKClosestNodes(
-      kad::KadId(account_name, false), &data->contacts);
-  if (rslt != kSuccess) {
-#ifdef DEBUG
-    printf("In MSM::GetAccountDetails, Kad lookup failed -- error %i\n", rslt);
-#endif
-    return kFindAccountHoldersError;
-  }
-
-  // never send the RPC to our own vault
-  RemoveKadContact(kad::KadId(pmid, false), &data->contacts);
-
+  data->contacts = account_holders_manager_.account_holder_group();
   if (data->contacts.size() < kKadUpperThreshold) {
 #ifdef DEBUG
-    printf("In MSM::GetAccountDetails, Kad lookup failed to find %u nodes; "
-           "found %u nodes.\n", kKadUpperThreshold, data->contacts.size());
+    printf("In MSM::UpdateAccountStatus, no account holders available.\n");
 #endif
-    return kFindAccountHoldersError;
+    // TODO(Team#) possibly schedule retry dependent on AH manager update
+    account_holders_manager_.Update();
+    return;
   }
 
   // Create the requests
+  crypto::Crypto co;
+  co.set_symm_algorithm(crypto::AES_256);
+  co.set_hash_algorithm(crypto::SHA_512);
   AccountStatusRequest account_status_request;
-  account_status_request.set_account_pmid(pmid);
-  account_status_request.set_public_key(pub_key);
-  account_status_request.set_public_key_signature(pub_key_sig);
+  account_status_request.set_account_pmid(ss_->Id(PMID));
+  account_status_request.set_public_key(ss_->PublicKey(PMID));
+  account_status_request.set_public_key_signature(ss_->SignedPublicKey(PMID));
   std::vector<AccountStatusRequest> account_status_requests;
   for (size_t i = 0; i < data->contacts.size(); ++i) {
     std::string request_signature = co.AsymSign(co.Hash(
-        pub_key_sig + account_name +
+        ss_->SignedPublicKey(PMID) + account_holders_manager_.account_name() +
         data->contacts.at(i).node_id().ToStringDecoded(), "",
-        crypto::STRING_STRING, false), "", priv_key, crypto::STRING_STRING);
+        crypto::STRING_STRING, false), "", ss_->PrivateKey(PMID),
+        crypto::STRING_STRING);
     account_status_request.set_request_signature(request_signature);
     account_status_requests.push_back(account_status_request);
     AccountStatusData::AccountStatusDataHolder holder(
@@ -1240,94 +1229,95 @@ int MaidsafeStoreManager::GetAccountDetails(boost::uint64_t *space_offered,
     data->data_holders.push_back(holder);
   }
 
-  // lock the mutex here in case RPCs return before we wait on the condition
-  boost::mutex::scoped_lock lock(data->mutex);
-
   // Send the requests
+  boost::mutex::scoped_lock lock(data->mutex);
   for (size_t i = 0; i < data->contacts.size(); ++i) {
     google::protobuf::Closure* callback = google::protobuf::NewCallback(this,
-        &MaidsafeStoreManager::AccountStatusCallback, data);
+        &MaidsafeStoreManager::UpdateAccountStatusStageTwo, i, data);
     client_rpcs_->AccountStatus(data->contacts.at(i),
         kad_ops_->AddressIsLocal(data->contacts.at(i)),
-        udt_transport_.transport_id(), &account_status_requests.at(i),
+        udt_transport_.transport_id(),
+        &account_status_requests.at(i),
         &data->data_holders.at(i).response,
         data->data_holders.at(i).controller.get(), callback);
   }
+}
 
-  // wait for the RPCs to return or timeout
-  while (data->returned_count < kKadUpperThreshold) {
-    data->condition.wait(lock);
-  }
+void MaidsafeStoreManager::UpdateAccountStatusStageTwo(
+    size_t index,
+    boost::shared_ptr<AccountStatusData> data) {
+  boost::mutex::scoped_lock lock(data->mutex);
+  if (data->success_count >= kKadLowerThreshold)
+    return;
+  ++data->returned_count;
 
-  // TODO(Steve#) start at 4 results and loop until success or all 16 failed
-
-  std::vector<boost::uint64_t> offered_values, given_values, taken_values;
-  int n(0);
-
-  for (size_t i = 0; i < data->contacts.size(); ++i) {
-    AccountStatusData::AccountStatusDataHolder &holder =
-        data->data_holders.at(i);
-    if (holder.response.IsInitialized()) {
-      ++n;
-      if (holder.response.result() == kAck &&
-          holder.response.has_space_offered() &&
-          holder.response.has_space_given() &&
-          holder.response.has_space_taken()) {
-        offered_values.push_back(holder.response.space_offered());
-        given_values.push_back(holder.response.space_given());
-        taken_values.push_back(holder.response.space_taken());
-      } else {
-        offered_values.push_back(0);
-        given_values.push_back(0);
-        taken_values.push_back(0);
-      }
+  AccountStatusData::AccountStatusDataHolder &holder =
+      data->data_holders.at(index);
+  if (!holder.response.IsInitialized()) {
+#ifdef DEBUG
+    printf("In MSM::UpdateAccountStatusStageTwo, response %u is uninitialised."
+           "\n", index);
+    account_holders_manager_.ReportFailure(holder.node_id);
+#endif
+  } else if (holder.response.pmid() != holder.node_id) {
+#ifdef DEBUG
+    printf("In MSM::UpdateAccountStatusStageTwo, resp %u from %s has pmid %s."
+           "\n", index, HexSubstr(holder.node_id).c_str(),
+           HexSubstr(holder.response.pmid()).c_str());
+#endif
+    // TODO(Fraser#5#): 2010-01-08 - Send alert to holder.node_id's A/C holders
+  } else {
+    ++data->success_count;
+    if (holder.response.result() == kAck &&
+        holder.response.has_space_offered() &&
+        holder.response.has_space_given() &&
+        holder.response.has_space_taken()) {
+      data->offered_values.push_back(holder.response.space_offered());
+      data->given_values.push_back(holder.response.space_given());
+      data->taken_values.push_back(holder.response.space_taken());
     } else {
-      // cancel outstanding RPCs
-      channel_manager_.
-          CancelPendingRequest(holder.controller->request_id());
+      // treat as non-existing account
+      data->offered_values.push_back(0);
+      data->given_values.push_back(0);
+      data->taken_values.push_back(0);
     }
   }
 
-  // TODO(Steve#) do we want to fail if the majority don't have the account?
-
-  // require at least 4 non-timed-out responses
-  if (n < kKadLowerThreshold) {
+  if (data->returned_count < kKadLowerThreshold ||
+      (data->returned_count < data->contacts.size() &&
+       data->success_count < kKadLowerThreshold)) {
+    // still waiting for enough responses
+    return;
+  } else if (data->success_count < kKadLowerThreshold) {
+    // failed to get enough responses
 #ifdef DEBUG
-    printf("In MSM::GetAccountDetails, received only %u responses; need at "
-           "least %u.\n", n, kKadLowerThreshold);
+    printf("In MSM::UpdateAccountStatusStageTwo, received only %u responses; "
+           "need at least %u.\n", data->success_count, kKadLowerThreshold);
 #endif
-    return kRequestInsufficientResponses;
+    // TODO(Team#) possibly schedule retry
+    return;
   }
 
   boost::uint64_t offered_avg, given_avg, taken_avg;
   size_t offered_n, given_n, taken_n;
 
   // calculate filtered averages for our account values
-  GetFilteredAverage(offered_values, &offered_avg, &offered_n);
-  GetFilteredAverage(given_values,   &given_avg,   &given_n);
-  GetFilteredAverage(taken_values,   &taken_avg,   &taken_n);
+  GetFilteredAverage(data->offered_values, &offered_avg, &offered_n);
+  GetFilteredAverage(data->given_values,   &given_avg,   &given_n);
+  GetFilteredAverage(data->taken_values,   &taken_avg,   &taken_n);
 
   // require at least 4 non-outliers of each
   if (offered_n < kKadLowerThreshold ||
       given_n   < kKadLowerThreshold ||
       taken_n   < kKadLowerThreshold) {
 #ifdef DEBUG
-    printf("In MSM::GetAccountDetails, no consensus on values reached.\n");
+    if (data->returned_count >= data->contacts.size())
+      printf("In MSM::UpdateAccountStatusStageTwo, no consensus on values "
+            "reached.\n");
 #endif
-    return kRequestFailedConsensus;
+  } else {
+    account_status_manager_.SetAccountStatus(offered_avg, given_avg, taken_avg);
   }
-
-  *space_offered = offered_avg;
-  *space_given = given_avg;
-  *space_taken = taken_avg;
-  return kSuccess;
-}
-
-void MaidsafeStoreManager::AccountStatusCallback(
-    boost::shared_ptr<AccountStatusData> data) {
-  boost::mutex::scoped_lock lock(data->mutex);
-  ++data->returned_count;
-  data->condition.notify_one();
 }
 
 void MaidsafeStoreManager::GetChunkSignatureKeys(DirType dir_type,
@@ -1887,10 +1877,16 @@ void MaidsafeStoreManager::AddToWatchListStageFour(
     // TODO(Fraser#5#): 2010-01-08 - Send alert to holder.node_id's A/C holders
   } else {
     data->required_upload_copies.insert(holder.response.upload_count());
+    data->payment_values.push_back(holder.response.total_payment());
   }
 
   int result = AssessUploadCounts(data);
   if (result == kSuccess) {
+    boost::uint64_t payment;
+    size_t n;
+    GetFilteredAverage(data->payment_values, &payment, &n);
+    account_status_manager_.AdviseAmendment(
+        AmendAccountRequest::kSpaceTakenInc, payment);
     if (data->consensus_upload_copies > 0) {
       tasks_handler_.SetSuccessesRequired(data->store_data.data_name,
           kStoreChunk, data->consensus_upload_copies);
@@ -2122,9 +2118,6 @@ int MaidsafeStoreManager::GetExpectAmendmentRequests(
     const std::vector<kad::Contact> &chunk_info_holders,
     std::vector<ExpectAmendmentRequest> *expect_amendment_requests) {
   expect_amendment_requests->clear();
-  crypto::Crypto co;
-  co.set_symm_algorithm(crypto::AES_256);
-  co.set_hash_algorithm(crypto::SHA_512);
   ExpectAmendmentRequest request;
   request.set_amendment_type(amendment_type);
   request.set_chunkname(store_data.data_name);
@@ -2799,6 +2792,8 @@ void MaidsafeStoreManager::RemoveFromWatchListStageFour(
   if (data->success_count >= kKadUpperThreshold) {
     tasks_handler_.DeleteTask(data->store_data.data_name, kDeleteChunk,
                               kSuccess);
+    account_status_manager_.AdviseAmendment(
+        AmendAccountRequest::kSpaceTakenDec, data->store_data.size);
     return;
   }
   // Overall failure
@@ -3278,6 +3273,8 @@ int MaidsafeStoreManager::CreateAccount(const boost::uint64_t &space) {
     return maidsafe::kRequestFailedConsensus;
   }
 
+  account_status_manager_.AdviseAmendment(AmendAccountRequest::kSpaceOffered,
+                                          space);
   return kSuccess;
 }
 

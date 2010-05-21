@@ -70,6 +70,7 @@ message AddToWatchListResponse {
   required uint32 result = 1;
   optional bytes pmid = 2;  // Chunk Info holder's PMID
   optional uint32 upload_count = 3;
+  optional uint64 total_payment = 4;
 }
 
 message RemoveFromWatchListRequest {

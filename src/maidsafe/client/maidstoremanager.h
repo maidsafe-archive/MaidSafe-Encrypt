@@ -41,6 +41,7 @@
 #include <vector>
 
 #include "maidsafe/accountholdersmanager.h"
+#include "maidsafe/accountstatusmanager.h"
 #include "maidsafe/chunkstore.h"
 #include "maidsafe/opdata.h"
 #include "maidsafe/kadops.h"
@@ -275,7 +276,7 @@ class MaidsafeStoreManager : public StoreManagerInterface {
                             const std::string &msid,
                             const VoidFuncOneInt &cb);
 
-  int GetAccountDetails(boost::uint64_t *space_offered,
+  void GetAccountStatus(boost::uint64_t *space_offered,
                         boost::uint64_t *space_given,
                         boost::uint64_t *space_taken);
   // Buffer packet
@@ -331,8 +332,8 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   bool SendPresence(const std::string &contactname);
   void SendLogOutMessage(const std::string &contactname);
   void SetSessionEndPoint();
-  void SetInstantMessageNotifier(IMNotifier on_msg, IMStatusNotifier
-      status_notifier);
+  void SetInstantMessageNotifier(IMNotifier on_msg,
+                                 IMStatusNotifier status_notifier);
 
 //  void ResetSessionSingleton(SessionSingleton *ss) {
 //    ss_ = ss;
@@ -355,7 +356,8 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_LoadPacket);
   FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_DeletePacket);
   FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_UpdatePacket);
-  FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_GetAccountDetails);
+  FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_GetAccountStatus);
+  FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_UpdateAccountStatus);
   FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_GetFilteredAverage);
   friend class MsmSetLocalVaultOwnedTest;
   friend class maidsafe_vault::PDVaultTest;
@@ -400,7 +402,9 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   bool GetChunkReferences(const std::string &chunk_name,
                           const std::vector<kad::Contact> &chunk_info_holders,
                           std::vector<std::string> *references);
-  void AccountStatusCallback(boost::shared_ptr<AccountStatusData> data);
+  void UpdateAccountStatus(const bool &force = false);
+  void UpdateAccountStatusStageTwo(size_t index,
+                                   boost::shared_ptr<AccountStatusData> data);
   // Calculates the mean of only the values within sqrt(2) std devs from mean
   // TODO(Team#) move to central place for global usage?
   static void GetFilteredAverage(const std::vector<boost::uint64_t> &values,
@@ -573,6 +577,7 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   IMConnectionHandler im_conn_hdler_;
   IMHandler im_handler_;
   AccountHoldersManager account_holders_manager_;
+  AccountStatusManager account_status_manager_;
 };
 
 }  // namespace maidsafe

@@ -82,6 +82,7 @@ class AccountHoldersManager {
   FRIEND_TEST(AccountHoldersManagerTest, BEH_MAID_AHM_ReportFailure);
   FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_AddToWatchList);
   FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_RemoveFromWatchList);
+  FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_UpdateAccountStatus);
   void FindNodesCallback(const std::string &response,
                          AccountHolderGroupFunctor callback);
   void UpdateGroup(AccountHolderGroupFunctor callback);
