@@ -164,101 +164,148 @@ void FSLinux::UnMount() {
   }
 }
 
+#ifdef DEBUG
 int FSLinux::ms_readlink(const char *path, char*, size_t) {
-#ifdef DEBUG
   printf("ms_readlink %s\n", path);
+#else
+int FSLinux::ms_readlink(const char *, char*, size_t) {
 #endif
   return 0;
 }
+
+#ifdef DEBUG
 int FSLinux::ms_chmod(const char *path, mode_t) {
-#ifdef DEBUG
   printf("ms_chmod %s\n", path);
+#else
+int FSLinux::ms_chmod(const char *, mode_t) {
 #endif
   return 0;
 }
+
+#ifdef DEBUG
 int FSLinux::ms_chown(const char *path, uid_t, gid_t) {
-#ifdef DEBUG
   printf("ms_chown %s\n", path);
+#else
+int FSLinux::ms_chown(const char *, uid_t, gid_t) {
 #endif
   return 0;
 }
+
+#ifdef DEBUG
 int FSLinux::ms_truncate(const char *path, off_t) {
-#ifdef DEBUG
   printf("ms_truncate %s\n", path);
+#else
+  int FSLinux::ms_truncate(const char *, off_t) {
 #endif
   return 0;
 }
+
+#ifdef DEBUG
 int FSLinux::ms_utime(const char *path, struct utimbuf*) {
-#ifdef DEBUG
   printf("ms_utime %s\n", path);
+#else
+int FSLinux::ms_utime(const char *, struct utimbuf*) {
 #endif
   return 0;
 }
+
+#ifdef DEBUG
 int FSLinux::ms_flush(const char *path, struct fuse_file_info*) {
-#ifdef DEBUG
   printf("ms_flush %s\n", path);
+#else
+int FSLinux::ms_flush(const char *, struct fuse_file_info*) {
 #endif
   return 0;
 }
-int FSLinux::ms_fsync(const char *path, int, struct fuse_file_info*) {
+
 #ifdef DEBUG
+int FSLinux::ms_fsync(const char *path, int, struct fuse_file_info*) {
   printf("ms_fsync %s\n", path);
+#else
+int FSLinux::ms_fsync(const char *, int, struct fuse_file_info*) {
 #endif
   return 0;
 }
+#ifdef DEBUG
 int FSLinux::ms_setxattr(const char *path, const char*, const char*, size_t,
                          int) {
-#ifdef DEBUG
-  printf("ms_setxattr %s\n", path);
+	printf("ms_setxattr %s\n", path);
+#else
+int FSLinux::ms_setxattr(const char *, const char*, const char*, size_t,
+                         int) {
 #endif
   return 0;
 }
+
+#ifdef DEBUG
 int FSLinux::ms_getxattr(const char *path, const char*, char*, size_t) {
-#ifdef DEBUG
   printf("ms_getxattr %s\n", path);
+#else
+int FSLinux::ms_getxattr(const char *, const char*, char*, size_t) {
 #endif
   return 0;
 }
+
+#ifdef DEBUG
 int FSLinux::ms_listxattr(const char *path, char*, size_t) {
-#ifdef DEBUG
   printf("ms_listxattr %s\n", path);
+#else
+int FSLinux::ms_listxattr(const char *, char*, size_t) {
 #endif
   return 0;
 }
+
+#ifdef DEBUG
 int FSLinux::ms_removexattr(const char *path, const char*) {
-#ifdef DEBUG
   printf("ms_removexattr %s\n", path);
+#else
+int FSLinux::ms_removexattr(const char *, const char*) {
 #endif
   return 0;
 }
+
+#ifdef DEBUG
 int FSLinux::ms_fsyncdir(const char *path, int, struct fuse_file_info*) {
-#ifdef DEBUG
   printf("ms_fsyncdir %s\n", path);
+#else
+int FSLinux::ms_fsyncdir(const char *, int, struct fuse_file_info*) {
 #endif
   return 0;
 }
+
+#ifdef DEBUG
 int FSLinux::ms_ftruncate(const char *path, off_t, struct fuse_file_info*) {
-#ifdef DEBUG
   printf("ms_ftruncate %s\n", path);
+#else
+int FSLinux::ms_ftruncate(const char *, off_t, struct fuse_file_info*) {
 #endif
   return 0;
 }
+
+#ifdef DEBUG
 int FSLinux::ms_releasedir(const char *path, struct fuse_file_info*) {
-#ifdef DEBUG
   printf("ms_releasedir: %s\n", path);
+#else
+int FSLinux::ms_releasedir(const char *, struct fuse_file_info*) {
 #endif
   return 0;
 }
+
+#ifdef DEBUG
 int FSLinux::ms_opendir(const char *path, struct fuse_file_info*) {
-#ifdef DEBUG
   printf("ms_opendir: %s\n", path);
+#else
+int FSLinux::ms_opendir(const char *, struct fuse_file_info*) {
 #endif
   return 0;
 }
-int FSLinux::ms_access(const char *path, int mask) {
+
 #ifdef DEBUG
+int FSLinux::ms_access(const char *path, int mask) {
   printf("ms_access path: %s\n", path);
   printf("ms_access mask: %d\n", mask);
+#else
+int FSLinux::ms_access(const char *, int mask) {
 #endif
   return 0;
 }

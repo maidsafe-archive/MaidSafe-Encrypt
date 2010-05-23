@@ -72,6 +72,7 @@ fs::path ApplicationDataDir() {
 #elif defined(PD_APPLE)
   return fs::path("/Library/maidsafe/", fs::native);
 #endif
+return fs::path("/tmp");
 }
 
 fs::path TempDir() {
