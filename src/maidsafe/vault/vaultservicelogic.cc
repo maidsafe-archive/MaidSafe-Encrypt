@@ -563,7 +563,6 @@ void VaultServiceLogic::SendInfoRpc(const boost::uint16_t &index,
     boost::mutex::scoped_lock lock(data->mutex);
     data->index_of_last_request_sent = index;
   }
-  GetInfoCallback(index, data);
   google::protobuf::Closure* done = google::protobuf::NewCallback<
       VaultServiceLogic, const boost::uint16_t&,
       boost::shared_ptr<GetAccountData> >

@@ -174,9 +174,10 @@ void VaultService::AddStartupSyncData(
     ah_.GetSetFromPb(get_sync_data_response.vault_account_set());
 #ifdef DEBUG
     int n = get_sync_data_response.vault_account_set().vault_account_size();
-    if (n > 0)
-      printf("In VaultService::AddStartupSyncData (%s), added %d accounts.\n",
-             HexSubstr(pmid_).c_str(), n);
+    for (int i = 0; i < n; ++i)
+      printf("In VaultService::AddStartupSyncData (%s), added account %s.\n",
+             HexSubstr(pmid_).c_str(), HexSubstr(get_sync_data_response.
+             vault_account_set().vault_account(i).pmid()).c_str());
 #endif
   } else {
 #ifdef DEBUG
@@ -1007,13 +1008,26 @@ void VaultService::AmendAccount(google::protobuf::RpcController*,
       }
     } else {
       done->Run();
+      std::vector<kad::Contact> close_contacts;
+      if (info_synchroniser_.ShouldFetch(pmid, &close_contacts)) {
 #ifdef DEBUG
       printf("In VaultService::AmendAccount (%s), account to amend (%s) does "
-             "not exist.\n", HexSubstr(pmid_).c_str(), HexSubstr(pmid).c_str());
+             "not exist.  Fetching it now from:\n", HexSubstr(pmid_).c_str(),
+             HexSubstr(pmid).c_str());
+      for (size_t i = 0; i < close_contacts.size(); ++i) {
+        printf("\t-- %s\n", HexSubstr(close_contacts.at(i).node_id().
+               ToStringDecoded()).c_str());
+      }
+      printf("\n");
 #endif
-      std::vector<kad::Contact> close_contacts;
-      if (info_synchroniser_.ShouldFetch(pmid, &close_contacts))
         GetRemoteAccount(pmid, close_contacts);
+      } else {
+#ifdef DEBUG
+      printf("In VaultService::AmendAccount (%s), account to amend (%s) does "
+             "not exist.  Not fetching it.\n", HexSubstr(pmid_).c_str(),
+             HexSubstr(pmid).c_str());
+#endif
+      }
       return;
     }
   } else if (request->amendment_type() ==
@@ -2357,10 +2371,17 @@ void VaultService::ConstructGetInfoRequests(const kad::Contact &contact,
 void VaultService::GetRemoteAccountCallback(
     const int &result,
     const VaultAccountSet::VaultAccount &vault_account) {
+  int res(-1);
   if (result == kSuccess) {
-    if (ah_.InsertAccountFromPb(vault_account) == kSuccess)
+    res = ah_.InsertAccountFromPb(vault_account);
+    if (res == kSuccess)
       info_synchroniser_.RemoveEntry(vault_account.pmid());
   }
+#ifdef DEBUG
+  printf("In VaultService::GetRemoteAccountCallback (%s) for account %s: "
+         "result = %i and res = %i\n", HexSubstr(pmid_).c_str(),
+         HexSubstr(vault_account.pmid()).c_str(), result, res);
+#endif
 }
 
 void VaultService::GetRemoteChunkInfo(

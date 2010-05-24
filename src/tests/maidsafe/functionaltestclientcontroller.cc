@@ -66,15 +66,14 @@ class FunctionalClientControllerTest : public testing::Test {
   FunctionalClientControllerTest()
       : cc_dir_(file_system::TempDir() / ("maidsafe_TestCC_" +
                 base::RandomString(6))),
-        vault_daemon_(0, cc_dir_.string()),
+        /*vault_daemon_(0, cc_dir_.string()),*/
         cc_(),
-        authentication_(),
         ss_(),
         final_dir_(),
         vcp_() {}
 
   static void TearDownTestCase() {
-    // transport::TransportUDT::CleanUp();
+    transport::TransportUDT::CleanUp();
   }
 
   void SetUp() {
@@ -104,10 +103,10 @@ class FunctionalClientControllerTest : public testing::Test {
     ss_ = SessionSingleton::getInstance();
     ss_->ResetSession();
     cc_ = ClientController::getInstance();
-    if (!cc_test::initialised_) {
+//    if (!cc_test::initialised_) {
       ASSERT_EQ(kSuccess, cc_->Init());
-      cc_test::initialised_ = cc_->initialised();
-    }
+//      cc_test::initialised_ = cc_->initialised();
+//    }
     cc_->StopRvPing();
     ss_->SetConnectionStatus(0);
     vcp_.space = 100;
@@ -124,13 +123,13 @@ class FunctionalClientControllerTest : public testing::Test {
     catch(const std::exception &e) {
       printf("Error: %s\n", e.what());
     }
+    cc_->CloseConnection(false);
     cc_->Destroy();
   }
 
   fs::path cc_dir_;
-  maidsafe_vault::VaultDaemon vault_daemon_;
+//  maidsafe_vault::VaultDaemon vault_daemon_;
   ClientController *cc_;
-  Authentication *authentication_;
   SessionSingleton *ss_;
   fs::path final_dir_;
   VaultConfigParameters vcp_;

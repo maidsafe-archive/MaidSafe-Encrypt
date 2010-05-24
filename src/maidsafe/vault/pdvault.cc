@@ -1513,13 +1513,15 @@ void PDVault::JoinMaidsafeNet() {
 #ifdef DEBUG
   printf("In PDVault::JoinMaidsafeNet (%s), successfully synchronised data.\n",
          HexSubstr(pmid_).c_str());
+
 #endif
 
   sync_done_ = sync_succeeded_= true;
   vault_status_cond_.notify_all();
 }
 
-void PDVault::GetSyncDataCallback(bool *done,
+void PDVault::GetSyncDataCallback(
+    bool *done,
     std::pair<boost::mutex*, boost::condition_variable*> sync) {
   boost::mutex::scoped_lock lock(*sync.first);
   (*done) = true;

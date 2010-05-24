@@ -99,7 +99,9 @@ void InfoSynchroniser::PruneMap() {
 void InfoSynchroniser::AddNodeToClosest(
     const base::PublicRoutingTableTuple &node,
     std::vector<kad::Contact> *closest) {
-  closest->push_back(kad::Contact(node.kademlia_id, "", 0));
+  closest->push_back(kad::Contact(node.kademlia_id, node.host_ip,
+                                  node.host_port, node.host_ip, node.host_port,
+                                  node.rendezvous_ip, node.rendezvous_port));
 }
 
 }  // namespace maidsafe_vault

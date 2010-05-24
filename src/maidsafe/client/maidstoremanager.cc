@@ -435,7 +435,7 @@ int MaidsafeStoreManager::LoadChunk(const std::string &chunk_name,
     {
       bool done(false);
       for (it = opdata->chunk_holders[kHolderHasChunk].begin();
-           !done && it != opdata->chunk_holders[kHolderHasChunk].end(); ++it) {
+           !done && it != opdata->chunk_holders[kHolderHasChunk].end();) {
 #ifdef DEBUG
 //        printf("In MSM::LoadChunk, getting chunk %s from %s...\n",
 //               HexSubstr(chunk_name).c_str(), HexSubstr(*it).c_str());
@@ -448,7 +448,7 @@ int MaidsafeStoreManager::LoadChunk(const std::string &chunk_name,
 
         if (!done)
           opdata->chunk_holders[kHolderFailed].insert(*it);
-        opdata->chunk_holders[kHolderHasChunk].erase(it);
+        opdata->chunk_holders[kHolderHasChunk].erase(it++);
       }
       if (done)
         break;
@@ -459,7 +459,7 @@ int MaidsafeStoreManager::LoadChunk(const std::string &chunk_name,
              concurrency = 3;
          it != opdata->chunk_holders[kHolderContactable].end() &&
              concurrency > 0;
-         ++it, --concurrency) {
+         --concurrency) {
 #ifdef DEBUG
 //      printf("In MSM::LoadChunk, checking chunk %s on %s...\n",
 //             HexSubstr(chunk_name).c_str(), HexSubstr(*it).c_str());
@@ -485,13 +485,13 @@ int MaidsafeStoreManager::LoadChunk(const std::string &chunk_name,
           controller.get(), callback);
 
       opdata->chunk_holders[kHolderPending].insert(*it);
-      opdata->chunk_holders[kHolderContactable].erase(it);
+      opdata->chunk_holders[kHolderContactable].erase(it++);
     }
 
     // #3 Look up the potential chunk holders to get their contact details.
     for (it = opdata->chunk_holders[kHolderNew].begin(), concurrency = 2;
          it != opdata->chunk_holders[kHolderNew].end() && concurrency > 0;
-         ++it, --concurrency) {
+         --concurrency) {
 #ifdef DEBUG
 //      printf("In MSM::LoadChunk, looking up holder %s...\n",
 //             HexSubstr(*it).c_str());
@@ -500,7 +500,7 @@ int MaidsafeStoreManager::LoadChunk(const std::string &chunk_name,
             &MaidsafeStoreManager::LoadChunk_HolderCB, this, _1, *it, opdata),
             false);
       opdata->chunk_holders[kHolderPending].insert(*it);
-      opdata->chunk_holders[kHolderNew].erase(it);
+      opdata->chunk_holders[kHolderNew].erase(it++);
     }
 
     // check for chunk holder failure
@@ -552,10 +552,11 @@ int MaidsafeStoreManager::LoadChunk(const std::string &chunk_name,
   }  // while
 
   // cancel all outstanding RPCs
-  for (std::list< boost::shared_ptr<rpcprotocol::Controller> >::iterator it =
-       opdata->controllers.begin(); it != opdata->controllers.end(); ++it) {
-    channel_manager_.CancelPendingRequest((*it)->request_id());
-    // opdata->controllers.erase(it);
+  std::list< boost::shared_ptr<rpcprotocol::Controller> >::iterator
+      controllers_it = opdata->controllers.begin();
+  while(!opdata->controllers.empty()) {
+    channel_manager_.CancelPendingRequest((*controllers_it)->request_id());
+    controllers_it = opdata->controllers.erase(controllers_it);
   }
 
   if (opdata->failed) {
