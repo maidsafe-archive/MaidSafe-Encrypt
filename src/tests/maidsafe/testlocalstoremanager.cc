@@ -64,7 +64,7 @@ void wait_for_result_lsm(const FakeCallback &cb, boost::mutex *mutex) {
     }
     boost::this_thread::sleep(boost::posix_time::milliseconds(5));
   }
-};
+}
 
 void wait_for_result_lsm2(const FakeCallback &fcb, boost::mutex *mutex) {
   while (true) {
@@ -76,7 +76,7 @@ void wait_for_result_lsm2(const FakeCallback &fcb, boost::mutex *mutex) {
     }
     boost::this_thread::sleep(boost::posix_time::milliseconds(5));
   }
-};
+}
 
 void PacketOpCallback(const int &delete_result,
                       boost::mutex *mutex,
@@ -85,7 +85,7 @@ void PacketOpCallback(const int &delete_result,
   boost::mutex::scoped_lock lock(*mutex);
   *result = delete_result;
   cond_var->notify_all();
-};
+}
 
 }  // namespace test_lsm
 

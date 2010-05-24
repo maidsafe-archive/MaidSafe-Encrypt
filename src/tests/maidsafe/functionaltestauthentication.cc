@@ -59,7 +59,7 @@ void WaitForResult(const FakeCallback &cb, boost::mutex *mutex) {
     }
     boost::this_thread::sleep(boost::posix_time::milliseconds(20));
   }
-};
+}
 
 void PacketOpCallback(const int &store_manager_result,
                       boost::mutex *mutex,
@@ -68,7 +68,7 @@ void PacketOpCallback(const int &store_manager_result,
   boost::mutex::scoped_lock lock(*mutex);
   *op_result = store_manager_result;
   cond_var->notify_one();
-};
+}
 
 std::vector<crypto::RsaKeyPair> keys;
 

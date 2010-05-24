@@ -55,7 +55,7 @@ std::string CreateRandomFile(const std::string &filename,
   ofs << file_content;
   ofs.close();
   return file_path.string();
-};
+}
 
 class FakeCallback {
  public:
@@ -78,7 +78,7 @@ void wait_for_result_seh(const FakeCallback &cb, boost::mutex *mutex) {
     }
     boost::this_thread::sleep(boost::posix_time::seconds(1));
   }
-};
+}
 }  // namespace test_seh
 
 namespace maidsafe {
