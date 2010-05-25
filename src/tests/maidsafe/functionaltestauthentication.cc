@@ -310,7 +310,7 @@ TEST_F(FunctionalAuthenticationTest, FUNC_MAID_AUTH_RegisterUserTwice) {
     boost::this_thread::sleep(boost::posix_time::milliseconds(10));
 }
 
-TEST_F(FunctionalAuthenticationTest, FUNC_MAID_RepeatedSaveSession) {
+TEST_F(FunctionalAuthenticationTest, FUNC_MAID_RepeatedSaveSessionBlocking) {
   std::string username = "user6";
   int result = authentication_->GetUserInfo(username, pin_);
   EXPECT_EQ(kUserDoesntExist, result) << "User already exists";

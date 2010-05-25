@@ -321,7 +321,7 @@ TEST_F(AuthenticationTest, FUNC_MAID_RegisterUserTwice) {
     boost::this_thread::sleep(boost::posix_time::milliseconds(10));
 }
 
-TEST_F(AuthenticationTest, FUNC_MAID_RepeatedSaveSession) {
+TEST_F(AuthenticationTest, FUNC_MAID_RepeatedSaveSessionBlocking) {
   int result = authentication_.GetUserInfo(username_, pin_);
   EXPECT_EQ(kUserDoesntExist, result) << "User already exists";
   result = authentication_.CreateUserSysPackets(username_, pin_);

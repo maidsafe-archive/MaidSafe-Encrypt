@@ -40,7 +40,7 @@ class ValidityCheckTest:public testing::Test {
     base::CallLaterTimer *timer;
 };
 
-TEST_F(ValidityCheckTest, TestAddchunk) {
+TEST_F(ValidityCheckTest, FUNC_TestAddchunk) {
   boost::filesystem::path localpath("");
   kad::ValidityCheck vdcheck(node, localpath, timer);
   ASSERT_TRUE(vdcheck.Start());

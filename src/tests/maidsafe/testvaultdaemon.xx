@@ -225,7 +225,7 @@ TEST_F(VaultDaemonTest, FUNC_KAD_SynchronizingOneChunk) {
   ASSERT_EQ(new_chunk_content, ret_chunk);
 }
 
-TEST_F(VaultDaemonTest, FUNC_KAD_SynchronizingMultiChunks) {
+TEST_F(VaultDaemonTest, FUNC_KAD_SynchronizingMultiChunksStableNetwork) {
   // prepare 10 chunks: 5 of them are up-to-date, 5 are stale
   std::map<std::string, std::string> chunks;
   for (int i = 0; i < 5; i++) {
