@@ -455,8 +455,8 @@ void ClientController::analyseMessage(const maidsafe::InstantMessage& im) {
     }
 	} else if (im.has_email_notification()) {
 		//TODO:: emit signal to inform GUI of new email and 
-		//set type to display message to user informing of such event
 		// woo only qt stuff from here :)
+		emit emailReceieved(im);
 		type = EMAIL;
 	}
 

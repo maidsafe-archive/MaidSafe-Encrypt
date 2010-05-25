@@ -583,6 +583,7 @@ void PerpetualData::onMessageReceived(int type,
 		}
   } else if (ClientController::MessageType(type) == ClientController::INVITE) {
     // TODO(Team#5#): 2010-01-13 - handle Invite
+		//TODO HANDLE New email message
   } else {
     printf("Type != ClientController::TEXT && ClientController::INVITE\n");
   }
