@@ -1364,7 +1364,7 @@ int ClientController::HandleAddContactRequest(
       return -777;
     }
 
-    Contact c;
+    Contact c;											
     c.SetPublicName(sender);
     c.SetPublicKey(rec_public_key);
     c.SetFullName(ci.name());

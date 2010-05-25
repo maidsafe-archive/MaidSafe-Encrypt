@@ -453,7 +453,12 @@ void ClientController::analyseMessage(const maidsafe::InstantMessage& im) {
       emit addedPrivateShare(QString::fromStdString(psn.name()));
       type = SHARE;
     }
-  }
+	} else if (im.has_email_notification()) {
+		//TODO:: emit signal to inform GUI of new email and 
+		//set type to display message to user informing of such event
+		// woo only qt stuff from here :)
+		type = EMAIL
+	}
 
   QDateTime time = QDateTime::currentDateTime();
   if (im.has_date()) {

@@ -70,7 +70,8 @@ class ClientController : public QObject {
       CONTACT_REQUEST,    // Someone has requested to add us
       CONTACT_RESPONSE,   // Someone has responed to our request
       CONTACT_DELETE,     // Someone has deleted us from their list
-      INVITE              // To invite someone to a conversation
+      INVITE,							// To invite someone to a conversation
+			EMAIL								//Someone has sent an email
   };
 
   static ClientController* instance();
@@ -200,6 +201,7 @@ class ClientController : public QObject {
   void fileReceived(const maidsafe::InstantMessage& im);
   void connectionStatusChanged(int status);
   void systemMessage(const QString& message);
+	void emailReceieved(const maidsafe::InstantMessage& im);
 
   private slots:
     // temporary while we emulate message notifications
