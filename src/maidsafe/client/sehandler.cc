@@ -212,8 +212,22 @@ int SEHandler::EncryptString(const std::string &data,
   dm.set_file_hash(co.Hash(data, "", crypto::STRING_STRING, false));
   if (se.Encrypt(data, true, &dm))
     return -2;
+#ifdef DEBUG
+//  printf("SEHandler::EncryptString - Total chunks: %d\n",
+//         dm.encrypted_chunk_name_size());
+//  for (int i = 0; i < dm.encrypted_chunk_name_size(); ++i) {
+//    printf("SEHandler::LoadChunks %d of %d, chunk(%s)\n",
+//           i + 1, dm.encrypted_chunk_name_size(),
+//           HexSubstr(dm.encrypted_chunk_name(i)).c_str());
+//  }
+#endif
   StoreChunks(dm, PRIVATE, "");
-  dm.SerializeToString(ser_dm);
+  if (!dm.SerializeToString(ser_dm)) {
+#ifdef DEBUG
+    printf("SEHandler::EncryptString - Failed to serialize dm\n");
+#endif
+    return -23;
+  }
   return 0;
 }
 
@@ -312,12 +326,25 @@ int SEHandler::DecryptString(const std::string &ser_dm,
                              std::string *dec_string) {
   DataMap dm;
   dec_string->clear();
-  dm.ParseFromString(ser_dm);
-  if (LoadChunks(dm) != 0)
+  if (!dm.ParseFromString(ser_dm)) {
+#ifdef DEBUG
+      printf("SEHandler::DecryptString - Failed to parse into DM.\n");
+#endif
     return -1;
+  }
+  if (LoadChunks(dm) != 0) {
+#ifdef DEBUG
+      printf("SEHandler::DecryptString - Failed to get all chunks.\n");
+#endif
+    return -1;
+  }
   SelfEncryption se(client_chunkstore_);
-  if (se.Decrypt(dm, 0, dec_string))
+  if (se.Decrypt(dm, 0, dec_string)) {
+#ifdef DEBUG
+      printf("SEHandler::DecryptString - Failed to decrypt.\n");
+#endif
     return -1;
+  }
   return 0;
 }
 

@@ -47,6 +47,7 @@ namespace fs = boost::filesystem;
 FileBrowser::FileBrowser(QWidget* parent) : QDialog(parent), init_(false) {
   ui_.setupUi(this);
   setWindowIcon(QPixmap(":/icons/16/globe"));
+	this->setWindowFlags(Qt::WindowMinMaxButtonsHint);
   // theWatcher_ = new QFileSystemWatcher;
   ui_.driveTreeWidget->setAcceptDrops(true);
   ui_.driveTreeWidget->viewport()->installEventFilter(this);
@@ -135,13 +136,15 @@ void FileBrowser::createAndConnectActions() {
 
   newFolder = new QAction(tr("New Folder"), this);
 
-  tilesMode = new QAction(tr("Tiles"), viewGroup);
-  tilesMode->setCheckable(true);
-  listMode = new QAction(tr("List"), viewGroup);
-  listMode->setCheckable(true);
+  /*tilesMode = new QAction(tr("Tiles"), viewGroup);
+  tilesMode->setCheckable(true);*/
   detailMode = new QAction(tr("Details"), viewGroup);
   detailMode->setCheckable(true);
-  detailMode->setChecked(true);
+  detailMode->setChecked(true);	
+	listMode = new QAction(tr("List"), viewGroup);
+  listMode->setCheckable(true);
+	bigListMode = new QAction(tr("Big List"), viewGroup);
+	bigListMode->setCheckable(true);	
   iconMode = new QAction(tr("Icons"), viewGroup);
   iconMode->setCheckable(true);
 
@@ -150,9 +153,10 @@ void FileBrowser::createAndConnectActions() {
   typeSort = new QAction(tr("Type"), sortGroup);
   dateSort = new QAction(tr("Date Modified"), sortGroup);
 
-  view->addAction(tilesMode);
-  view->addAction(listMode);
+  //view->addAction(tilesMode);
   view->addAction(detailMode);
+	view->addAction(bigListMode);
+	view->addAction(listMode);
   view->addAction(iconMode);
   sort->addAction(nameSort);
   sort->addAction(sizeSort);
@@ -195,6 +199,20 @@ void FileBrowser::setActive(bool b) {
 
 void FileBrowser::reset() {
   init_ = false;
+}
+
+void FileBrowser::setMenuSortIconMenu() {
+  sort->addAction(nameSort);
+  sort->removeAction(sizeSort);
+  sort->removeAction(typeSort);
+  sort->removeAction(dateSort);
+}
+
+void FileBrowser::setMenuSortDetailMenu() {
+	sort->addAction(nameSort);
+  sort->addAction(sizeSort);
+  sort->addAction(typeSort);
+  sort->addAction(dateSort);
 }
 
 void FileBrowser::setMenuDirMenu() {
@@ -321,6 +339,7 @@ void FileBrowser::onOpenWithClicked() {
     return;
   }
 
+
   qDebug() << "Asked to open with: " << fileName;
 
   QString command("open");
@@ -391,7 +410,7 @@ void FileBrowser::onDeleteFileClicked() {
 		filename = theItem->text(0);
 	} else {
 		QListWidgetItem* theItem = ui_.driveListWidget->currentItem();
-		onNetwork = theItem->text().contains(tr("Network"));
+		onNetwork = theItem->toolTip().contains(tr("Network"));
 		filename = theItem->text();
 	}
   if (onNetwork) {
@@ -447,7 +466,7 @@ void FileBrowser::onRenameFileClicked() {
 		filename = theItem->text(0);
 	} else {
 		QListWidgetItem* theItem = ui_.driveListWidget->currentItem();
-		onNetwork = theItem->text().contains(tr("Network"));
+		onNetwork = theItem->toolTip().contains(tr("Network"));
 		filename = theItem->text();
 	}
 
@@ -510,15 +529,13 @@ void FileBrowser::populateDirectory(QString dir) {
       drawDetailView();
       break;
     case LIST:
-      ui_.driveTreeWidget->setVisible(true);
-      ui_.driveListWidget->setVisible(false);
+      drawIconView();
+      break;
+    case BIGLIST:
+      drawIconView();
       break;
     case SMALLICONS:
       drawIconView();
-      break;
-    case LARGEICONS:
-      ui_.driveTreeWidget->setVisible(false);
-      ui_.driveListWidget->setVisible(true);
       break;
     default:
       break;
@@ -679,9 +696,9 @@ int FileBrowser::drawIconView(){
 			newItem->setIcon(theIcon);
       newItem->setText(item);
 
-			newItem->setToolTip(tr("Name: %1").arg(item) + tr("Status: Network") + "<br>" +
+			newItem->setToolTip(tr("Name: %1").arg(item) + "<br>" + tr("Status: Network") + "<br>" +
 													tr("Type: Directory") + "<br>" + tr("Size: %1 KB").arg(
-					ceil(static_cast<double>(mdm.file_size_low())/1024)) + "<br>" + "Date Modified:" +
+					ceil(static_cast<double>(mdm.file_size_low())/1024)) + "<br>" + "Date Modified: " +
 					lastModified->toString("dd/MM/yyyy hh:mm"));
 			ui_.driveListWidget->addItem(newItem);
     } else {
@@ -695,10 +712,11 @@ int FileBrowser::drawIconView(){
       newItem->setIcon(theIcon);
       newItem->setText(item);
 			QString tip;
+			tip = tr("Name: %1").arg(item) + "<br>";
       if (fs::exists(fullFilePath)) {
-				tip = tr("Status: Local") + "<br>";
+				tip.append(tr("Status: Local") + "<br>");
       } else {
-				tip = tr("Status: Network") + "<br>";
+				tip.append(tr("Status: Network") + "<br>");
       }
 			tip.append(tr("Type: %1 File").arg(item.section('.', -1)));
 			tip.append("<br>");
@@ -712,11 +730,23 @@ int FileBrowser::drawIconView(){
     children.erase(children.begin());
     ++rowCount;
   }
+	if (viewMode_ == LIST || viewMode_ == BIGLIST){
+		ui_.driveListWidget->setViewMode(QListView::ListMode);
+		ui_.driveListWidget->setFlow(QListView::TopToBottom);
+		ui_.driveListWidget->setUniformItemSizes(false);
+		ui_.driveListWidget->setGridSize(QSize());
+		ui_.driveTreeWidget->setWordWrap(true);
+		if (viewMode_ == BIGLIST)
+			ui_.driveListWidget->setIconSize(QSize(32,32));
+		else
+			ui_.driveListWidget->setIconSize(QSize());
+	} else {				
+		ui_.driveListWidget->setViewMode(QListView::IconMode);
+		ui_.driveListWidget->setFlow(QListView::LeftToRight);
+		ui_.driveListWidget->setWordWrap(false);
+		ui_.driveListWidget->setGridSize(QSize(90,80));
+	}
   return 0;
-}
-
-int FileBrowser::drawLargeIconView() {
-return 0;
 }
 
 int FileBrowser::createTreeDirectory(QString dir) {
@@ -1079,7 +1109,11 @@ void FileBrowser::onRemoveDirCompleted(int success, const QString& path) {
 bool FileBrowser::eventFilter(QObject *obj, QEvent *event) {
 	if (obj == ui_.driveTreeWidget->viewport() || obj == ui_.driveListWidget) {
     if (event->type() == QEvent::ContextMenu) {
-        menu2->exec(QCursor::pos());
+			if (obj == ui_.driveTreeWidget->viewport())
+				setMenuSortDetailMenu();
+			else
+				setMenuSortIconMenu();
+			menu2->exec(QCursor::pos());
       return true;
     } else {
       return false;
@@ -1170,14 +1204,14 @@ void FileBrowser::setViewMode(ViewMode viewMode) {
       ui_.driveListWidget->setVisible(false);
       break;
     case LIST:
-      ui_.driveTreeWidget->setVisible(true);
-      ui_.driveListWidget->setVisible(false);
-      break;
-    case SMALLICONS:
       ui_.driveTreeWidget->setVisible(false);
       ui_.driveListWidget->setVisible(true);
       break;
-    case LARGEICONS:
+    case BIGLIST:
+      ui_.driveTreeWidget->setVisible(false);
+      ui_.driveListWidget->setVisible(true);
+      break;
+    case SMALLICONS:
       ui_.driveTreeWidget->setVisible(false);
       ui_.driveListWidget->setVisible(true);
       break;
@@ -1196,27 +1230,28 @@ void FileBrowser::onViewGroupClicked(QAction* action) {
     setViewMode(DETAIL);
   else if (action == iconMode)
     setViewMode(SMALLICONS);
-//  else if (action == iconMode)
-//    setViewMode(LARGEICONS);
+  else if (action == bigListMode)
+    setViewMode(BIGLIST);
 }
 void FileBrowser::onSortGroupClicked(QAction* action) {
-  QHeaderView* theHeader = ui_.driveTreeWidget->header();
-  Qt::SortOrder order = theHeader->sortIndicatorOrder();
+	QHeaderView* theHeader = ui_.driveTreeWidget->header();
+	Qt::SortOrder order = theHeader->sortIndicatorOrder();
 
   if (order == Qt::AscendingOrder)
     order = Qt::DescendingOrder;
   else
     order = Qt::AscendingOrder;
 
-  if (action == nameSort) {
-    ui_.driveTreeWidget->sortByColumn(0, order);
-  } else if (action == sizeSort) {
-    ui_.driveTreeWidget->sortByColumn(2, order);
-  } else if (action == typeSort) {
-    ui_.driveTreeWidget->sortByColumn(3, order);
-  } else if (action == dateSort) {
-    ui_.driveTreeWidget->sortByColumn(4, order);
-  }
+	if (action == nameSort) {
+		ui_.driveTreeWidget->sortByColumn(0, order);
+	} else if (action == sizeSort) {
+		ui_.driveTreeWidget->sortByColumn(2, order);
+	} else if (action == typeSort) {
+		ui_.driveTreeWidget->sortByColumn(3, order);
+	} else if (action == dateSort) {
+		ui_.driveTreeWidget->sortByColumn(4, order);
+	}	
+	ui_.driveListWidget->sortItems(order);	
 }
 
 QString FileBrowser::getCurrentTreePath(QTreeWidgetItem* item) {

@@ -50,15 +50,17 @@ Contacts::Contacts(QWidget* parent)
   // to enable displaying of menu pop-up for Users
   menu = new QMenu(this);
 
-  viewProfile = new QAction(tr("View Profile"), this);
-  sendMessage = new QAction(tr("Send Message"), this);
-  sendFile = new QAction(tr("Send File"), this);
+  viewProfile		= new QAction(tr("View Profile"), this);
+  sendMessage		= new QAction(tr("Send Message"), this);
+  sendFile			= new QAction(tr("Send File"), this);
   deleteContact = new QAction(tr("Delete Contact"), this);
+	sendEmail			= new QAction(tr("Send Email"), this);
 
   menu->addAction(viewProfile);
   menu->addAction(sendMessage);
   menu->addAction(sendFile);
   menu->addAction(deleteContact);
+	menu->addAction(sendEmail);
 
   ui_.listWidget->setContextMenuPolicy(Qt::CustomContextMenu);
 

@@ -62,15 +62,17 @@ void Authentication::Init(const boost::uint16_t &crypto_key_buffer_count,
   crypto_key_pairs_.StartToCreateKeyPairs(crypto_key_buffer_count);
 }
 
-//void Authentication::Init(const boost::uint16_t &crypto_key_buffer_count,
-//                          boost::shared_ptr<StoreManagerInterface> smgr,
-//                          SessionSingleton *ss) {
-//  sm_ = smgr;
-//  ss_ = ss;
-//  crypto_.set_hash_algorithm(crypto::SHA_512);
-//  crypto_.set_symm_algorithm(crypto::AES_256);
-//  crypto_key_pairs_.StartToCreateKeyPairs(crypto_key_buffer_count);
-//}
+/*
+void Authentication::Init(const boost::uint16_t &crypto_key_buffer_count,
+                          boost::shared_ptr<StoreManagerInterface> smgr,
+                          SessionSingleton *ss) {
+  sm_ = smgr;
+  ss_ = ss;
+  crypto_.set_hash_algorithm(crypto::SHA_512);
+  crypto_.set_symm_algorithm(crypto::AES_256);
+  crypto_key_pairs_.StartToCreateKeyPairs(crypto_key_buffer_count);
+}
+*/
 
 int Authentication::GetUserInfo(const std::string &username,
                                 const std::string &pin) {
@@ -548,6 +550,150 @@ int Authentication::CreateTmidPacket(const std::string &username,
   ss_->SetSmidTmidContent(gp.SerializeAsString());
 
   return kSuccess;
+}
+
+void Authentication::SaveSession(const std::string &ser_da,
+                                 const VoidFuncOneInt &cb) {
+  PacketParams params, result;
+  params["username"] = ss_->Username();
+  params["pin"] = ss_->Pin();
+
+  boost::shared_ptr<Packet> smidPacket(PacketFactory::Factory(SMID));
+  boost::shared_ptr<SaveSessionData> ssd(new SaveSessionData);
+  ssd->ser_da = ser_da;
+  ssd->vfoi = cb;
+  ssd->same_mid_smid = false;
+
+  // Need to update SMID with MID content
+  params["rid"] = ss_->MidRid();
+  result = smidPacket->Create(params);
+  std::string new_value(boost::any_cast<std::string>(result["encRid"]));
+  ssd->current_encripted_mid = new_value;
+  if (ss_->MidRid() != ss_->SmidRid()) {
+    params["rid"] = ss_->SmidRid();
+    result = smidPacket->Create(params);
+    std::string old_value(boost::any_cast<std::string>(result["encRid"]));
+    std::string packet_name(boost::any_cast<std::string>(result["name"]));
+    sm_->UpdatePacket(packet_name, old_value, new_value, SMID, PRIVATE, "",
+                      boost::bind(&Authentication::UpdateSmidCallback,
+                                  this, _1, ssd));
+  } else {
+    ssd->same_mid_smid = true;
+    UpdateSmidCallback(kSuccess, ssd);
+  }
+}
+
+void Authentication::UpdateSmidCallback(
+    const ReturnCode &rc,
+    boost::shared_ptr<SaveSessionData> ssd) {
+  if (rc != kSuccess) {
+    ssd->vfoi(rc);
+#ifdef DEBUG
+    printf("Auth::UpdateSmidCallback - Smid kad update failed(%d)\n", rc);
+#endif
+    return;
+  }
+
+  // Need to delete the TMID related to the SMID from the network
+  if (!ssd->same_mid_smid) {
+    PacketParams params;
+    params["username"] = ss_->Username();
+    params["pin"] = ss_->Pin();
+    params["rid"] = ss_->SmidRid();
+    boost::shared_ptr<Packet> tmidPacket(PacketFactory::Factory(TMID));
+    std::string tmidname(tmidPacket->PacketName(params));
+    GenericPacket gp;
+    if (!gp.ParseFromString(ss_->SmidTmidContent())) {
+#ifdef DEBUG
+      printf("Auth::UpdateSmidCallback - SmidTmidContent failed to parse.\n");
+#endif
+    }
+    std::vector<std::string> values(1, gp.data());
+    sm_->DeletePacket(tmidname, values, TMID, PRIVATE, "",
+                      boost::bind(&Authentication::DeleteSmidTmidCallback,
+                                  this, _1, ssd));
+  } else {
+    DeleteSmidTmidCallback(kSuccess, ssd);
+  }
+}
+
+void Authentication::DeleteSmidTmidCallback(
+    const ReturnCode &rc,
+    boost::shared_ptr<SaveSessionData> ssd) {
+  if (rc != kSuccess) {
+    ssd->vfoi(rc);
+#ifdef DEBUG
+    printf("Auth::DeleteSmidTmidCallback - SmidTmid delete failed(%d)\n", rc);
+#endif
+    return;
+  }
+  ss_->SetSmidRid(ss_->MidRid());
+  ss_->SetSmidTmidContent(ss_->TmidContent());
+
+  PacketParams params;
+  params["username"] = ss_->Username();
+  params["pin"] = ss_->Pin();
+  boost::shared_ptr<Packet> midPacket(PacketFactory::Factory(MID));
+  PacketParams mid_result = midPacket->Create(params);
+  while (ss_->MidRid() == boost::any_cast<boost::uint32_t>(mid_result["rid"]))
+    mid_result = midPacket->Create(params);
+
+  ssd->new_mid = boost::any_cast<boost::uint32_t>(mid_result["rid"]);
+  std::string new_value(boost::any_cast<std::string>(mid_result["encRid"]));
+  std::string packet_name(boost::any_cast<std::string>(mid_result["name"]));
+  sm_->UpdatePacket(packet_name, ssd->current_encripted_mid, new_value, MID,
+                    PRIVATE, "", boost::bind(&Authentication::UpdateMidCallback,
+                                             this, _1, ssd));
+}
+
+void Authentication::UpdateMidCallback(
+    const ReturnCode &rc,
+    boost::shared_ptr<SaveSessionData> ssd) {
+  if (rc != kSuccess) {
+    ssd->vfoi(rc);
+#ifdef DEBUG
+    printf("Auth::UpdateMidCallback - Mid kad update failed(%d)\n", rc);
+#endif
+    return;
+  }
+
+  PacketParams params;
+  params["username"] = ss_->Username();
+  params["pin"] = ss_->Pin();
+  params["rid"] = ssd->new_mid;
+  params["password"] = ss_->Password();
+  params["data"] = ssd->ser_da;
+  boost::shared_ptr<Packet> tmidPacket(PacketFactory::Factory(TMID));
+  PacketParams tmidresult = tmidPacket->Create(params);
+
+  ss_->SetMidRid(ssd->new_mid);
+  ssd->mid_tmid_data = boost::any_cast<std::string>(tmidresult["data"]);
+
+  sm_->StorePacket(boost::any_cast<std::string>(tmidresult["name"]),
+                   boost::any_cast<std::string>(tmidresult["data"]),
+                   TMID, PRIVATE, "", kDoNothingReturnFailure,
+                   boost::bind(&Authentication::StoreMidTmidCallback,
+                               this, _1, ssd));
+}
+
+void Authentication::StoreMidTmidCallback(
+    const ReturnCode &rc,
+    boost::shared_ptr<SaveSessionData> ssd) {
+  if (rc != kSuccess) {
+    ssd->vfoi(rc);
+#ifdef DEBUG
+    printf("Auth::StoreMidTmidCallback - Mid Tmid store failed(%d)\n", rc);
+#endif
+    return;
+  }
+
+  GenericPacket packet;
+  packet.set_data(ssd->mid_tmid_data);
+  packet.set_signature(crypto_.AsymSign(packet.data(), "",
+                       ss_->PrivateKey(ANTMID), crypto::STRING_STRING));
+  ss_->SetTmidContent(packet.SerializeAsString());
+
+  ssd->vfoi(rc);
 }
 
 int Authentication::SaveSession(const std::string &ser_da) {

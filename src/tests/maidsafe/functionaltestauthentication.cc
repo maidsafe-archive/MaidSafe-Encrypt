@@ -32,7 +32,7 @@
 #include "maidsafe/client/maidstoremanager.h"
 
 static std::vector< boost::shared_ptr<maidsafe_vault::PDVault> > pdvaults_;
-static const int kNetworkSize_ = kad::K;
+static const int kNetworkSize_ = kad::K + 2;
 
 namespace fs = boost::filesystem;
 
@@ -80,7 +80,7 @@ class FunctionalAuthenticationTest : public testing::Test {
  public:
   FunctionalAuthenticationTest()
       : test_root_dir_(file_system::TempDir() /
-            ("maidsafe_TestFuncAuth_" + base::RandomString(6))),
+                       ("maidsafe_TestFuncAuth_" + base::RandomString(6))),
         ss_(),
         sm_(),
         client_chunkstore_(),
@@ -310,7 +310,7 @@ TEST_F(FunctionalAuthenticationTest, FUNC_MAID_AUTH_RegisterUserTwice) {
     boost::this_thread::sleep(boost::posix_time::milliseconds(10));
 }
 
-TEST_F(FunctionalAuthenticationTest, FUNC_MAID_AUTH_RepeatedSaveSession) {
+TEST_F(FunctionalAuthenticationTest, FUNC_MAID_RepeatedSaveSession) {
   std::string username = "user6";
   int result = authentication_->GetUserInfo(username, pin_);
   EXPECT_EQ(kUserDoesntExist, result) << "User already exists";
@@ -343,9 +343,119 @@ TEST_F(FunctionalAuthenticationTest, FUNC_MAID_AUTH_RepeatedSaveSession) {
          co.Hash(boost::lexical_cast<std::string>(ss_->SmidRid()), "",
                  crypto::STRING_STRING, false),
          "", crypto::STRING_STRING, false);
+  dm.Clear();
+  dm.set_file_hash("filehash1");
+  dm.add_chunk_name("chunk11");
+  dm.add_chunk_name("chunk21");
+  dm.add_chunk_name("chunk31");
+  dm.add_encrypted_chunk_name("enc_chunk11");
+  dm.add_encrypted_chunk_name("enc_chunk21");
+  dm.add_encrypted_chunk_name("enc_chunk31");
+  dm.add_chunk_size(2001);
+  dm.add_chunk_size(2101);
+  dm.add_chunk_size(2051);
+  dm.set_compression_on(false);
+  ser_dm = dm.SerializeAsString();
   result = authentication_->SaveSession(ser_dm);
   ASSERT_EQ(kSuccess, result) << "Can't save session 1";
+
+  dm.Clear();
+  dm.set_file_hash("filehash2");
+  dm.add_chunk_name("chunk12");
+  dm.add_chunk_name("chunk22");
+  dm.add_chunk_name("chunk32");
+  dm.add_encrypted_chunk_name("enc_chunk12");
+  dm.add_encrypted_chunk_name("enc_chunk22");
+  dm.add_encrypted_chunk_name("enc_chunk32");
+  dm.add_chunk_size(2002);
+  dm.add_chunk_size(2102);
+  dm.add_chunk_size(2052);
+  dm.set_compression_on(false);
+  ser_dm = dm.SerializeAsString();
   result = authentication_->SaveSession(ser_dm);
+  ASSERT_EQ(kSuccess, result) << "Can't save session 2";
+  ASSERT_TRUE(sm_->KeyUnique(tmidsmidname, false));
+}
+
+TEST_F(FunctionalAuthenticationTest, FUNC_MAID_RepeatedSaveSessionCallbacks) {
+  std::string username = "user6b";
+  int result = authentication_->GetUserInfo(username, pin_);
+  EXPECT_EQ(kUserDoesntExist, result) << "User already exists";
+  result = authentication_->CreateUserSysPackets(username, pin_);
+  ASSERT_EQ(kSuccess, result) << "Unable to register user";
+
+  DataMap dm;
+  dm.set_file_hash("filehash");
+  dm.add_chunk_name("chunk1");
+  dm.add_chunk_name("chunk2");
+  dm.add_chunk_name("chunk3");
+  dm.add_encrypted_chunk_name("enc_chunk1");
+  dm.add_encrypted_chunk_name("enc_chunk2");
+  dm.add_encrypted_chunk_name("enc_chunk3");
+  dm.add_chunk_size(200);
+  dm.add_chunk_size(210);
+  dm.add_chunk_size(205);
+  dm.set_compression_on(false);
+  std::string ser_dm = dm.SerializeAsString();
+  result = authentication_->CreateTmidPacket(username, pin_, password_, ser_dm);
+  ASSERT_EQ(kSuccess, result) << "Unable to register user";
+
+  // store current mid, smid and tmid details to check later whether they remain
+  // on the network
+  crypto::Crypto co;
+  co.set_hash_algorithm(crypto::SHA_512);
+  std::string tmidsmidname = co.Hash(
+         co.Hash(ss_->Username(), "", crypto::STRING_STRING, false) +
+         co.Hash(ss_->Pin(), "", crypto::STRING_STRING, false) +
+         co.Hash(boost::lexical_cast<std::string>(ss_->SmidRid()), "",
+                 crypto::STRING_STRING, false),
+         "", crypto::STRING_STRING, false);
+  dm.Clear();
+  dm.set_file_hash("filehash1");
+  dm.add_chunk_name("chunk11");
+  dm.add_chunk_name("chunk21");
+  dm.add_chunk_name("chunk31");
+  dm.add_encrypted_chunk_name("enc_chunk11");
+  dm.add_encrypted_chunk_name("enc_chunk21");
+  dm.add_encrypted_chunk_name("enc_chunk31");
+  dm.add_chunk_size(2001);
+  dm.add_chunk_size(2101);
+  dm.add_chunk_size(2051);
+  dm.set_compression_on(false);
+  ser_dm = dm.SerializeAsString();
+  result = kPendingResult;
+  boost::mutex mutex;
+  boost::condition_variable cond_var;
+  VoidFuncOneInt func = boost::bind(&test_auth::PacketOpCallback, _1, &mutex,
+                                    &cond_var, &result);
+  authentication_->SaveSession(ser_dm, func);
+  {
+    boost::mutex::scoped_lock lock(mutex);
+    while (result == kPendingResult)
+      cond_var.wait(lock);
+  }
+  ASSERT_EQ(kSuccess, result) << "Can't save session 1";
+
+  dm.Clear();
+  dm.set_file_hash("filehash2");
+  dm.add_chunk_name("chunk12");
+  dm.add_chunk_name("chunk22");
+  dm.add_chunk_name("chunk32");
+  dm.add_encrypted_chunk_name("enc_chunk12");
+  dm.add_encrypted_chunk_name("enc_chunk22");
+  dm.add_encrypted_chunk_name("enc_chunk32");
+  dm.add_chunk_size(2002);
+  dm.add_chunk_size(2102);
+  dm.add_chunk_size(2052);
+  dm.set_compression_on(false);
+  ser_dm = dm.SerializeAsString();
+  result = kPendingResult;
+  authentication_->SaveSession(ser_dm, func);
+  {
+    boost::mutex::scoped_lock lock(mutex);
+    while (result == kPendingResult)
+      cond_var.wait(lock);
+  }
   ASSERT_EQ(kSuccess, result) << "Can't save session 2";
   ASSERT_TRUE(sm_->KeyUnique(tmidsmidname, false));
 }
