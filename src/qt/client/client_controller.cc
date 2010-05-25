@@ -457,7 +457,7 @@ void ClientController::analyseMessage(const maidsafe::InstantMessage& im) {
 		//TODO:: emit signal to inform GUI of new email and 
 		//set type to display message to user informing of such event
 		// woo only qt stuff from here :)
-		type = EMAIL
+		type = EMAIL;
 	}
 
   QDateTime time = QDateTime::currentDateTime();
