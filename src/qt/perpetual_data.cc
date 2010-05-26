@@ -129,6 +129,11 @@ void PerpetualData::onJoinKademliaCompleted(bool b) {
   connect(ClientController::instance(),
                 SIGNAL(connectionStatusChanged(int)),
           this, SLOT(onConnectionStatusChanged(int)));
+
+  connect(ClientController::instance(),
+                SIGNAL(emailReceieved(const maidsafe::InstantMessage&)),
+           this, SLOT(onEmailReceived(const maidsafe::InstantMessage&)));
+
 }
 
 PerpetualData::~PerpetualData() {
@@ -583,6 +588,7 @@ void PerpetualData::onMessageReceived(int type,
 		}
   } else if (ClientController::MessageType(type) == ClientController::INVITE) {
     // TODO(Team#5#): 2010-01-13 - handle Invite
+	} else if (ClientController::MessageType(type) == ClientController::EMAIL) {
 		//TODO HANDLE New email message
   } else {
     printf("Type != ClientController::TEXT && ClientController::INVITE\n");
@@ -596,6 +602,10 @@ void PerpetualData::onShareReceived(const QString& from,
                     .arg(from).arg(share_name);
 
   SystemTrayIcon::instance()->showMessage(title, message);
+}
+
+void PerpetualData::onEmailReceived(const maidsafe::InstantMessage& im) {
+	//TODO:Get email data and save in hidden maidsafe folder
 }
 
 void PerpetualData::onFileReceived(const maidsafe::InstantMessage& im) {
