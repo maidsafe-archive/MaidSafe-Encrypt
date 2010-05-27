@@ -20,7 +20,8 @@
 #include <QString>
 
 // local
-#include "qt/client/client_controller.h" 
+#include "qt/client/client_controller.h"
+#include "qt/client/read_file_thread.h"
 
 #include "ui_user_inbox.h"
 
@@ -32,11 +33,16 @@ class UserInbox : public QDialog {
   virtual ~UserInbox();	
 
  private:
-  Ui::UserInbox ui_; 
+  Ui::UserInbox ui_;
+	QString folder_;
+	QString rootPath_;
+
+	int populateEmails();
 
  private slots:
 	void onReplyClicked();
 	void onEmailClicked(QListWidgetItem*);
+	void onEmailFileCompleted(int, const QString&);
 
  protected:
   void changeEvent(QEvent *event);

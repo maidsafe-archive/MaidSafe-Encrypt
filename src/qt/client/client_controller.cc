@@ -306,6 +306,31 @@ bool ClientController::sendInstantMessage(const QString& txt,
   return (n == 0);
 }
 
+bool ClientController::sendEmail(const QString& subject,
+                       const QString& message,
+                       const QList<QString>& to,
+											 const QList<QString>& cc,
+											 const QList<QString>& bcc,
+											 const QString& conversation) {
+  qDebug() << "ClientController::sendEmail: " << subject;
+
+  std::vector<std::string> contacts, stdcc, stdbcc;
+  foreach(QString c, to) {
+    contacts.push_back(c.toStdString());
+  }
+  foreach(QString c, cc) {
+		stdcc.push_back(c.toStdString());
+	}
+	foreach(QString c, bcc) {
+    stdbcc.push_back(c.toStdString());
+  }
+  const int n = maidsafe::ClientController::getInstance()->
+              SendEmail(subject.toStdString(), message.toStdString(), contacts, 
+							stdcc, stdbcc, conversation.toStdString());
+	  
+	return (n == 0);
+}
+
 bool ClientController::sendInstantFile(const QString& filePath,
                                        const QString& txt,
                                        const QList<QString>& to,

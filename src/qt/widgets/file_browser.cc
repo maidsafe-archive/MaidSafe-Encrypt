@@ -611,7 +611,6 @@ int FileBrowser::drawDetailView(){
 
       ui_.driveTreeWidget->insertTopLevelItem(rowCount, newItem);
     } else {
-      // TODO(Stephen): Get associated file icons
       std::string fullFilePath = rootPath_.toStdString() +
                                 currentDir_.toStdString() + s;
       QIcon theIcon = getAssociatedIconFromPath(

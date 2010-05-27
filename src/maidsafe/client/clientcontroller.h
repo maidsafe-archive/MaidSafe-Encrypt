@@ -137,6 +137,11 @@ class ClientController {
                       const std::string &msg,
                       const std::vector<std::string> &contact_names,
                       const std::string &conversation);
+  int SendEmail(const std::string &subject, const std::string &msg,
+               const std::vector<std::string> &to, 
+							 const std::vector<std::string> &cc,
+							 const std::vector<std::string> &bcc,
+               const std::string &conversation);
   int AddInstantFile(const InstantFileNotification &ifm,
                      const std::string &location);
   void onInstantMessage(const std::string &message,

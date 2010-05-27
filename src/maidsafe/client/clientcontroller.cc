@@ -27,8 +27,10 @@
 #ifdef PD_WIN32
 #include <shlwapi.h>
 #endif
+#include <string>
 
 #include <boost/scoped_ptr.hpp>
+#include <boost/foreach.hpp>
 #include <boost/thread/mutex.hpp>
 #include <boost/filesystem/fstream.hpp>
 #include <maidsafe/protobuf/kademlia_service_messages.pb.h>
@@ -1486,6 +1488,69 @@ int ClientController::HandleAddContactResponse(
   }
   return 0;
 }
+
+int ClientController::SendEmail(const std::string &subject, const std::string &msg,
+             const std::vector<std::string> &to, const std::vector<std::string> &cc,
+						 const std::vector<std::string> &bcc, const std::string &conversation) {
+ if (!initialised_) {
+#ifdef DEBUG
+    printf("CC::SendEmail - Not initialised.\n");
+#endif
+    return kClientControllerNotInitialised;
+  }
+  if (ss_->ConnectionStatus() == 1) {
+#ifdef DEBUG
+    printf("Can't send an email while off-line.\n");
+#endif
+    return -9999;
+  }
+
+	std::string toList, ccList;
+	std::vector<std::string> contact_to;
+
+	BOOST_FOREACH(std::string contact, to) {
+		contact_to.push_back(contact);
+		toList.append(contact+", ");
+	}
+	BOOST_FOREACH(std::string contact, cc) {
+		contact_to.push_back(contact);
+		ccList.append(contact+", ");
+	}
+	BOOST_FOREACH(std::string contact, bcc) {
+		contact_to.push_back(contact);
+	}
+
+  InstantMessage im;
+  EmailNotification *en =
+		im.mutable_email_notification();
+  en->set_to(toList);
+  en->set_cc(ccList);
+  im.set_sender(SessionSingleton::getInstance()->PublicUsername());
+  im.set_date(base::GetEpochTime());
+  im.set_conversation(conversation);
+  im.set_message(msg);
+	im.set_subject(subject);
+
+  std::string ser_email;
+  im.SerializeToString(&ser_email);
+
+  std::map<std::string, ReturnCode> add_results;
+  if (sm_->SendMessage(contact_to, ser_email, EMAIL, &add_results) !=
+      static_cast<int>(contact_to.size())) {
+#ifdef DEBUG
+    printf("ClientController::SendEmail - Not all recepients got "
+           "the message\n");
+#endif
+    return -999;
+  }
+
+  int res = 0;
+  for (size_t n = 0; n < contact_to.size(); ++n) {
+    res += ss_->SetLastContactRank(contact_to[n]);
+  }
+
+  return res;
+}	
 
 int ClientController::SendInstantMessage(const std::string &message,
     const std::vector<std::string> &contact_names,

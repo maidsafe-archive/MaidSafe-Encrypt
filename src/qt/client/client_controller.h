@@ -172,6 +172,13 @@ class ClientController : public QObject {
                        const QList<QString>& to,
                        const QString& conversation);
 
+	bool sendEmail(const QString& subject,
+                 const QString& message,
+                 const QList<QString>& to,
+								 const QList<QString>& cc,
+								 const QList<QString>& bcc,
+                 const QString& conversation);
+
   // Vault info
   bool PollVaultInfo(QString *chunkstore, boost::uint64_t *offered_space,
                      boost::uint64_t *free_space, QString *ip,
