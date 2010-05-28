@@ -54,9 +54,9 @@ class VaultRpcs;
 template <typename T1, typename T2>
 struct RemoteOpData {
   struct RemoteOpHolder {
-    explicit RemoteOpHolder(const std::string &id)
+    explicit RemoteOpHolder(std::string id)
         : node_id(id), response(), controller(new rpcprotocol::Controller) {
-      controller->set_timeout(20);
+      controller->set_timeout(300);
     }
     std::string node_id;
     T2 response;
@@ -109,7 +109,7 @@ struct CacheChunkData {
                      cb(),
                      request(),
                      response(),
-                     controller() {}
+                     controller() { controller.set_timeout(300); }
   std::string chunkname;
   kad::ContactInfo kc;
   VoidFuncOneInt cb;
@@ -125,20 +125,22 @@ struct CacheChunkData {
 template <typename T1, typename T2, typename T3>
 struct GetInfoData {
   struct GetInfoOpHolder {
-    GetInfoOpHolder(const kad::Contact &contct, const T1 &req)
+    GetInfoOpHolder(kad::Contact contct, T1 req)
         : contact(contct),
           request(req),
           response(),
-          controller(new rpcprotocol::Controller) {}
+          controller(new rpcprotocol::Controller) {
+      controller->set_timeout(300);
+    }
     kad::Contact contact;
     T1 request;
     T2 response;
     boost::shared_ptr<rpcprotocol::Controller> controller;
   };
   GetInfoData(T3 cb,
-              const boost::int16_t &trans_id,
-              const std::vector<kad::Contact> &contcts,
-              const std::vector<T1> &reqs)
+              boost::int16_t trans_id,
+              std::vector<kad::Contact> contcts,
+              std::vector<T1> reqs)
       : callback(cb),
         transport_id(trans_id),
         mutex(),
@@ -161,13 +163,13 @@ struct GetInfoData {
   boost::uint16_t response_count;
 };
 
-typedef boost::function<void (const ReturnCode&,
+typedef boost::function<void (ReturnCode,
     const VaultAccountSet::VaultAccount&)> VoidFuncIntAccount;
 
-typedef boost::function<void (const ReturnCode&,
+typedef boost::function<void (ReturnCode,
     const ChunkInfoMap::VaultChunkInfo&)> VoidFuncIntChunkInfo;
 
-typedef boost::function<void (const ReturnCode&,
+typedef boost::function<void (ReturnCode,
     const VaultBufferPacketMap::VaultBufferPacket&)> VoidFuncIntBufferPacket;
 
 typedef GetInfoData<maidsafe::GetAccountRequest,
@@ -248,7 +250,7 @@ class VaultServiceLogic {
   // AmendRemoteAccountOpData or RemoteAccountStatusOpData.
   template <typename T>
   void RemoteOpStageTwo(boost::shared_ptr<T> data,
-                        const std::string &find_nodes_response);
+                        std::string find_nodes_response);
   // Specialisations for sending appropriate RPCs
   template <typename T>
   void SendRpcs(boost::shared_ptr<T> data);
@@ -262,10 +264,10 @@ class VaultServiceLogic {
   void RemoteOpStageThree(boost::uint16_t index, boost::shared_ptr<T> data);
   // Specialisations defining appropriate success conditions
   template <typename T>
-  void AssessResult(const ReturnCode &result, boost::shared_ptr<T> data);
+  void AssessResult(ReturnCode result, boost::shared_ptr<T> data);
   void CacheChunkCallback(boost::shared_ptr<CacheChunkData> data);
   template <typename T>
-  void GetInfoCallback(const boost::uint16_t &index, boost::shared_ptr<T> data);
+  void GetInfoCallback(boost::uint16_t index, boost::shared_ptr<T> data);
   void SendInfoRpc(const boost::uint16_t &index,
                    boost::shared_ptr<GetAccountData> data);
   void SendInfoRpc(const boost::uint16_t &index,

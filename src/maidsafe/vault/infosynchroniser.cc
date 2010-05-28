@@ -41,8 +41,12 @@ bool InfoSynchroniser::ShouldFetch(const std::string &id,
     return false;
   else
     closest_nodes->clear();
-  if (id == pmid_)
+  if (id == pmid_) {
+#ifdef DEBUG
+    printf("In InfoSynchroniser::ShouldFetch: this is our own PMID.\n");
+#endif
     return false;
+  }
   {
     boost::uint32_t expiry_time(base::GetEpochTime() + kInfoEntryLifespan);
     boost::mutex::scoped_lock lock(mutex_);
@@ -52,6 +56,10 @@ bool InfoSynchroniser::ShouldFetch(const std::string &id,
     if (it != info_entries_.end() &&
         !(info_entries_.key_comp()(id, it->first))) {
       it->second = expiry_time;
+#ifdef DEBUG
+      printf("In InfoSynchroniser::ShouldFetch: Entry already exists (either "
+             "we shouldn't hold this account or we're already fetching it).\n");
+#endif
       return false;
     } else {
       info_entries_.insert(it, InfoEntryMap::value_type(id, expiry_time));
@@ -75,6 +83,9 @@ bool InfoSynchroniser::ShouldFetch(const std::string &id,
     return true;
   } else {
     closest_nodes->clear();
+#ifdef DEBUG
+    printf("In InfoSynchroniser::ShouldFetch: Not within closest nodes.\n");
+#endif
     return false;
   }
 }

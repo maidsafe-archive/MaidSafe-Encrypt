@@ -96,7 +96,7 @@ class Authentication {
   int GetUserData(const std::string &password, std::string *ser_da);
   int CreateUserSysPackets(const std::string &username,
                            const std::string &pin);
-  void CreateUserSysPackets(const ReturnCode rc,
+  void CreateUserSysPackets(const ReturnCode &rc,
                             const std::string &username,
                             const std::string &pin,
                             VoidFuncOneInt vfoi,

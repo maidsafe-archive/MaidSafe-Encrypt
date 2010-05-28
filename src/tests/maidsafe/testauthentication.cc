@@ -612,7 +612,7 @@ TEST_F(AuthenticationTest, FUNC_MAID_CreatePublicName) {
             << "Created public username_ twice";
 }
 
-TEST_F(AuthenticationTest, BEH_MAID_InvalidUsernamePassword) {
+TEST_F(AuthenticationTest, FUNC_MAID_InvalidUsernamePassword) {
   cached_keys::MakeKeys(2, &test_auth::keys);
   crypto::RsaKeyPair keypair1 = test_auth::keys.at(0);
   crypto::RsaKeyPair keypair2 = test_auth::keys.at(1);
@@ -641,7 +641,7 @@ TEST_F(AuthenticationTest, BEH_MAID_InvalidUsernamePassword) {
     boost::this_thread::sleep(boost::posix_time::milliseconds(10));
 }
 
-TEST_F(AuthenticationTest, BEH_MAID_CreateMSIDPacket) {
+TEST_F(AuthenticationTest, FUNC_MAID_CreateMSIDPacket) {
   crypto::Crypto co;
   co.set_symm_algorithm(crypto::AES_256);
   co.set_hash_algorithm(crypto::SHA_512);
@@ -678,6 +678,53 @@ TEST_F(AuthenticationTest, BEH_MAID_CreateMSIDPacket) {
     crypto::STRING_STRING));
   ASSERT_EQ(co.Hash(pub_key + gp.signature(), "",
             crypto::STRING_STRING, false), msid_name);
+}
+
+TEST_F(AuthenticationTest, FUNC_MAID_RegisterLeaveRegister) {
+  int result = authentication_.GetUserInfo(username_, pin_);
+  EXPECT_EQ(kUserDoesntExist, result) << "User already exists";
+  result = authentication_.CreateUserSysPackets(username_, pin_);
+  ASSERT_EQ(kSuccess, result) << "Unable to register user";
+
+  DataMap dm;
+  dm.set_file_hash("filehash");
+  dm.add_chunk_name("chunk1");
+  dm.add_chunk_name("chunk2");
+  dm.add_chunk_name("chunk3");
+  dm.add_encrypted_chunk_name("enc_chunk1");
+  dm.add_encrypted_chunk_name("enc_chunk2");
+  dm.add_encrypted_chunk_name("enc_chunk3");
+  dm.add_chunk_size(200);
+  dm.add_chunk_size(210);
+  dm.add_chunk_size(205);
+  dm.set_compression_on(false);
+  std::string ser_dm = dm.SerializeAsString();
+  result = authentication_.CreateTmidPacket(username_, pin_, password_, ser_dm);
+  ASSERT_EQ(kSuccess, result) << "Unable to register user";
+
+  //  Remove user.
+  std::list<KeyAtlasRow> keys;
+  ss_->GetKeys(&keys);
+  result = authentication_.RemoveMe(keys);
+  ASSERT_EQ(kSuccess, result);
+  try {
+    fs::remove_all(file_system::MaidsafeDir(ss_->SessionName()));
+  }
+  catch(const std::exception &e) {
+    printf("%s\n", e.what());
+    FAIL();
+  }
+
+  //  Check user no longer registered.
+  ss_->ResetSession();
+  result = authentication_.GetUserInfo(username_, pin_);
+  ASSERT_NE(kUserExists, result);
+
+  ss_->ResetSession();
+  result = authentication_.CreateUserSysPackets(username_, pin_);
+  ASSERT_EQ(kSuccess, result) << "Unable to register user again.";
+  result = authentication_.CreateTmidPacket(username_, pin_, password_, ser_dm);
+  ASSERT_EQ(kSuccess, result) << "Unable to register user again.";
 }
 
 TEST(AuthenticationTest1, BEH_MAID_TestDestructor) {

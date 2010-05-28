@@ -335,13 +335,16 @@ int Authentication::CreateUserSysPackets(const std::string &username,
       &Authentication::CreateUserSysPackets, this, _1, username, pin, func,
       &count, &calledback));
 
-  while (system_packets_result_ == kPendingResult)
+  while (system_packets_result_ == kPendingResult) {
+    printf(".");
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
+  }
+  printf("\n");
 
   return system_packets_result_;
 }
 
-void Authentication::CreateUserSysPackets(const ReturnCode rc,
+void Authentication::CreateUserSysPackets(const ReturnCode &rc,
                                           const std::string &username,
                                           const std::string &pin,
                                           VoidFuncOneInt vfoi,
@@ -1371,16 +1374,20 @@ int Authentication::StorePacket(const std::string &packet_name,
 //                               to happen concurrently.
   boost::mutex mutex;
   boost::condition_variable cond_var;
-  int result(kGeneralError);
+  int result(kPendingResult);
   VoidFuncOneInt func = boost::bind(&Authentication::PacketOpCallback, this, _1,
                                     &mutex, &cond_var, &result);
   sm_->StorePacket(packet_name, value, type, PRIVATE_SHARE, msid, if_exists,
       func);
   {
     boost::mutex::scoped_lock lock(mutex);
-    while (result == kGeneralError)
+    while (result == kPendingResult)
       cond_var.wait(lock);
   }
+#ifdef DEBUG
+  if (result != kSuccess)
+    printf("!!!!!!!!!!!!!!!!!!!!!\nAuthentication::StorePacket %i\n\n", result);
+#endif
   return result;
 }
 
@@ -1391,18 +1398,22 @@ int Authentication::DeletePacket(const std::string &packet_name,
 //                               to happen concurrently.
   boost::mutex mutex;
   boost::condition_variable cond_var;
-  int result(kGeneralError);
+  int result(kPendingResult);
   VoidFuncOneInt func = boost::bind(&Authentication::PacketOpCallback, this, _1,
                                     &mutex, &cond_var, &result);
   std::vector<std::string> values;
-  if ("" != value)
+  if (!value.empty())
     values.push_back(value);
   sm_->DeletePacket(packet_name, values, type, PRIVATE, "", func);
   {
     boost::mutex::scoped_lock lock(mutex);
-    while (result == kGeneralError)
+    while (result == kPendingResult)
       cond_var.wait(lock);
   }
+#ifdef DEBUG
+  if (result != kSuccess)
+    printf("!!!!!!!!!!!!!!!!!!!!\nAuthentication::DeletePacket %i\n\n", result);
+#endif
   return result;
 }
 

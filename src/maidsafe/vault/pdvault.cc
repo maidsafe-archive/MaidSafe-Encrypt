@@ -1127,6 +1127,7 @@ void PDVault::SwapChunk(const std::string &chunk_name,
     cb(local_result_str);
   }
   rpcprotocol::Controller *controller = new rpcprotocol::Controller;
+  controller->set_timeout(300);
   vault_rpcs_->SwapChunk(0, chunk_name, "", chunkcontent1.size(), remote_ip,
       remote_port, rendezvous_ip, rendezvous_port, transport_id_,
       swap_chunk_response.get(), controller, callback);
@@ -1164,6 +1165,7 @@ void PDVault::SwapChunkSendChunk(
   google::protobuf::Closure* callback = google::protobuf::NewCallback(this,
       &PDVault::SwapChunkAcceptChunk, swap_chunk_response, swap_chunk_args);
   rpcprotocol::Controller *controller = new rpcprotocol::Controller;
+  controller->set_timeout(300);
   vault_rpcs_->SwapChunk(1, swap_chunk_args->chunkname_, chunkcontent1,
       chunkcontent1.size(), swap_chunk_args->remote_ip_,
       swap_chunk_args->remote_port_, swap_chunk_args->rendezvous_ip_,

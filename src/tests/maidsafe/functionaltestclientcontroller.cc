@@ -49,7 +49,7 @@ namespace fs = boost::filesystem;
 namespace cc_test {
 
 static std::vector< boost::shared_ptr<maidsafe_vault::PDVault> > pdvaults_;
-static const int kNetworkSize_ = kad::K + 1;
+static const int kNetworkSize_ = kad::K + 6;
 static bool initialised_ = false;
 
 }  // namespace cc_test
@@ -72,9 +72,9 @@ class FunctionalClientControllerTest : public testing::Test {
         final_dir_(),
         vcp_() {}
 
-  static void TearDownTestCase() {
-    transport::TransportUDT::CleanUp();
-  }
+//  static void TearDownTestCase() {
+//    transport::TransportUDT::CleanUp();
+//  }
 
   void SetUp() {
     try {
@@ -386,13 +386,15 @@ TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerLeaveNetwork) {
   ASSERT_EQ(username, ss_->Username());
   ASSERT_EQ(pin, ss_->Pin());
   ASSERT_EQ(password, ss_->Password());
-  printf("User created.\n");
+  boost::this_thread::sleep(boost::posix_time::seconds(30));
+  printf("User created.\n=============\n\n");
 
   ASSERT_TRUE(cc_->Logout());
   ASSERT_TRUE(ss_->Username().empty());
   ASSERT_TRUE(ss_->Pin().empty());
   ASSERT_TRUE(ss_->Password().empty());
-  printf("Logged out.\n");
+  boost::this_thread::sleep(boost::posix_time::seconds(60));
+  printf("Logged out.\n===========\n\n");
 
   ASSERT_EQ(maidsafe::kUserExists,
             cc_->CheckUserExists(username, pin, maidsafe::kDefCon3));
@@ -401,26 +403,29 @@ TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerLeaveNetwork) {
   ASSERT_EQ(pin, ss_->Pin());
   ASSERT_EQ(password, ss_->Password());
 //  ASSERT_EQ("el.mambo.tonnnnnto", ss_->PublicUsername());
-  printf("Logged in.\n");
+  boost::this_thread::sleep(boost::posix_time::seconds(30));
+  printf("Logged in.\n==========\n\n");
 
   ASSERT_TRUE(cc_->LeaveMaidsafeNetwork());
-  printf("Left maidsafe ='(.\n");
+  boost::this_thread::sleep(boost::posix_time::seconds(60));
+  printf("Left maidsafe ='(.\n==================\n\n");
 
-  ASSERT_NE(maidsafe::kUserExists,
+  ASSERT_EQ(maidsafe::kUserDoesntExist,
             cc_->CheckUserExists(username, pin, maidsafe::kDefCon3));
-  printf("User no longer exists.\n");
+  printf("User no longer exists.\n======================\n\n");
 
   ASSERT_TRUE(cc_->CreateUser(username, pin, password, vcp_));
   ASSERT_EQ(username, ss_->Username());
   ASSERT_EQ(pin, ss_->Pin());
   ASSERT_EQ(password, ss_->Password());
-  printf("User created again.\n");
+  boost::this_thread::sleep(boost::posix_time::seconds(30));
+  printf("User created again.\n===================\n\n");
 
   ASSERT_TRUE(cc_->Logout());
   ASSERT_TRUE(ss_->Username().empty());
   ASSERT_TRUE(ss_->Pin().empty());
   ASSERT_TRUE(ss_->Password().empty());
-  printf("Logged out.\n");
+  printf("Logged out.\n===========\n\n");
 }
 
 TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerBackupFile) {

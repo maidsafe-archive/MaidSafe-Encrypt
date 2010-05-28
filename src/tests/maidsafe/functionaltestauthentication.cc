@@ -690,6 +690,54 @@ TEST_F(FunctionalAuthenticationTest, FUNC_MAID_AUTH_CreateMSIDPacket) {
             crypto::STRING_STRING, false), msid_name);
 }
 
+TEST_F(FunctionalAuthenticationTest, FUNC_MAID_AUTH_RegisterLeaveRegister) {
+  std::string username = "user13";
+  int result = authentication_->GetUserInfo(username, pin_);
+  EXPECT_EQ(kUserDoesntExist, result) << "User already exists";
+  result = authentication_->CreateUserSysPackets(username, pin_);
+  ASSERT_EQ(kSuccess, result) << "Unable to register user";
+
+  DataMap dm;
+  dm.set_file_hash("filehash");
+  dm.add_chunk_name("chunk1");
+  dm.add_chunk_name("chunk2");
+  dm.add_chunk_name("chunk3");
+  dm.add_encrypted_chunk_name("enc_chunk1");
+  dm.add_encrypted_chunk_name("enc_chunk2");
+  dm.add_encrypted_chunk_name("enc_chunk3");
+  dm.add_chunk_size(200);
+  dm.add_chunk_size(210);
+  dm.add_chunk_size(205);
+  dm.set_compression_on(false);
+  std::string ser_dm = dm.SerializeAsString();
+  result = authentication_->CreateTmidPacket(username, pin_, password_, ser_dm);
+  ASSERT_EQ(kSuccess, result) << "Unable to register user";
+
+  //  Remove user.
+  std::list<KeyAtlasRow> keys;
+  ss_->GetKeys(&keys);
+  result = authentication_->RemoveMe(keys);
+  ASSERT_EQ(kSuccess, result);
+  try {
+    fs::remove_all(file_system::MaidsafeDir(ss_->SessionName()));
+  }
+  catch(const std::exception &e) {
+    printf("%s\n", e.what());
+    FAIL();
+  }
+
+  //  Check user no longer registered.
+  ss_->ResetSession();
+  result = authentication_->GetUserInfo(username, pin_);
+  ASSERT_NE(kUserExists, result);
+
+  ss_->ResetSession();
+  result = authentication_->CreateUserSysPackets(username, pin_);
+  ASSERT_EQ(kSuccess, result) << "Unable to register user again.";
+  result = authentication_->CreateTmidPacket(username, pin_, password_, ser_dm);
+  ASSERT_EQ(kSuccess, result) << "Unable to register user again.";
+}
+
 }  // namespace func_test_auth
 
 int main(int argc, char **argv) {

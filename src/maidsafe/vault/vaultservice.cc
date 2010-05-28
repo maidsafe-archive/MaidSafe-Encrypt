@@ -985,10 +985,10 @@ void VaultService::AmendAccount(google::protobuf::RpcController*,
     return;
   }
 
-//  printf("VaultService::AmendAccount (%s), from %s for %s.\n",
-//         HexSubstr(pmid_).c_str(),
-//         HexSubstr(request->signed_size().pmid()).c_str(),
-//         HexSubstr(pmid).c_str());
+  printf("VaultService::AmendAccount (%s), from %s for %s.\n",
+         HexSubstr(pmid_).c_str(),
+         HexSubstr(request->signed_size().pmid()).c_str(),
+         HexSubstr(pmid).c_str());
 
   if (ah_.HaveAccount(pmid) == kAccountNotFound) {
     if (request->amendment_type() ==
@@ -1011,14 +1011,14 @@ void VaultService::AmendAccount(google::protobuf::RpcController*,
       std::vector<kad::Contact> close_contacts;
       if (info_synchroniser_.ShouldFetch(pmid, &close_contacts)) {
 #ifdef DEBUG
-      printf("In VaultService::AmendAccount (%s), account to amend (%s) does "
-             "not exist.  Fetching it now from:\n", HexSubstr(pmid_).c_str(),
-             HexSubstr(pmid).c_str());
-      for (size_t i = 0; i < close_contacts.size(); ++i) {
-        printf("\t-- %s\n", HexSubstr(close_contacts.at(i).node_id().
-               ToStringDecoded()).c_str());
-      }
-      printf("\n");
+        printf("In VaultService::AmendAccount (%s), account to amend (%s) does "
+               "not exist.  Fetching it now from:\n", HexSubstr(pmid_).c_str(),
+               HexSubstr(pmid).c_str());
+        for (size_t i = 0; i < close_contacts.size(); ++i) {
+          printf("\t-- %s\n", HexSubstr(close_contacts.at(i).node_id().
+                 ToStringDecoded()).c_str());
+        }
+        printf("\n");
 #endif
         GetRemoteAccount(pmid, close_contacts);
       } else {
@@ -1074,10 +1074,10 @@ void VaultService::ExpectAmendment(
     return;
   }
 #ifdef DEBUG
-  printf("In VaultService::ExpectAmendment (%s), amenders:\n",
-         HexSubstr(pmid_).c_str());
-  for (int i = 0; i < request->amender_pmids_size(); ++i)
-    printf(" # %s\n", HexSubstr(request->amender_pmids(i)).c_str());
+//  printf("In VaultService::ExpectAmendment (%s), amenders:\n",
+//         HexSubstr(pmid_).c_str());
+//  for (int i = 0; i < request->amender_pmids_size(); ++i)
+//    printf(" # %s\n", HexSubstr(request->amender_pmids(i)).c_str());
 #endif
   if (request->request_signature() == kAnonymousRequestSignature) {
 #ifdef DEBUG

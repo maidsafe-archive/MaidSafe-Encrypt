@@ -464,6 +464,7 @@ bool ClientController::CreateUser(const std::string &username,
     return false;
   }
 
+  ss_->ResetSession();
   ss_->SetConnectionStatus(0);
   int result = auth_.CreateUserSysPackets(username, pin);
   if (result != kSuccess) {
@@ -862,20 +863,16 @@ bool ClientController::LeaveMaidsafeNetwork() {
     return false;
   }
   std::list<KeyAtlasRow> keys;
-  int result;
-  {
-    ss_->GetKeys(&keys);
-    result = auth_.RemoveMe(keys);
-  }
-  if (result == kSuccess) {
-    try {
-      fs::remove_all(file_system::MaidsafeDir(ss_->SessionName()));
-    }
-    catch(const std::exception &e) {
-#ifdef DEBUG
-      printf("ClientController::LeaveMaidsafeNetwork - %s\n", e.what());
-#endif
-    }
+  ss_->GetKeys(&keys);
+  if (auth_.RemoveMe(keys) == kSuccess) {
+//      try {
+//        fs::remove_all(file_system::MaidsafeDir(ss_->SessionName()));
+//      }
+//      catch(const std::exception &e) {
+//  #ifdef DEBUG
+//        printf("ClientController::LeaveMaidsafeNetwork - %s\n", e.what());
+//  #endif
+//      }
     return true;
   }
   return false;

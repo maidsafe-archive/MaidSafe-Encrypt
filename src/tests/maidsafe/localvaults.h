@@ -75,6 +75,10 @@ class Env: public testing::Environment {
     crypto_.set_symm_algorithm(crypto::AES_256);
   }
 
+  ~Env() {
+    transport::TransportUDT::CleanUp();
+  }
+
   virtual void SetUp() {
     ASSERT_LE(kad::K, kNetworkSize_) << "Need at least K nodes!";
     pdvaults_->clear();
@@ -177,11 +181,6 @@ class Env: public testing::Environment {
       else
         printf("Vault %i failed to stop correctly.\n", i);
       pdvaults_->at(i).reset();
-    }
-    for (int i = 0; i < current_nodes_created_; ++i) {
-//      if (i == current_nodes_created_ - 1)
-//        (*pdvaults_)[current_nodes_created_ - 1]->CleanUp();
-//      (*pdvaults_)[i].reset();
     }
     try {
       if (fs::exists(vault_dir_))

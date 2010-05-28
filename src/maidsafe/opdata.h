@@ -202,7 +202,9 @@ struct UpdatePacketData {
 template <typename ResponseType>
 struct SingleOpDataHolder {
   explicit SingleOpDataHolder(const std::string &id)
-        : node_id(id), response(), controller(new rpcprotocol::Controller) {}
+        : node_id(id), response(), controller(new rpcprotocol::Controller) {
+    controller->set_timeout(300);
+  }
     std::string node_id;
     ResponseType response;
     boost::shared_ptr<rpcprotocol::Controller> controller;
@@ -257,7 +259,7 @@ struct SendChunkData {
         store_chunk_request(),
         store_chunk_response(),
         controller(new rpcprotocol::Controller),
-        attempt(0) { controller->set_timeout(30); }
+        attempt(0) { controller->set_timeout(300); }
   StoreData store_data;
   kad::Contact peer;
   bool local;

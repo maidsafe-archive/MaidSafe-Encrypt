@@ -3204,6 +3204,12 @@ int MaidsafeStoreManager::CreateAccount(const boost::uint64_t &space) {
       boost::bind(&MaidsafeStoreManager::AccountHoldersManagerInitCallback,
                   this, _1, _2, data));
 
+#ifdef DEBUG
+  printf("In MSM::CreateAccount, name of PMID: %s & name of account: %s\n",
+         base::EncodeToHex(ss_->Id(PMID)).c_str(),
+         base::EncodeToHex(account_name).c_str());
+#endif
+
   // Wait for the account holders to be populated
   while (data->returned_count == 0)
     data->condition.wait(lock);

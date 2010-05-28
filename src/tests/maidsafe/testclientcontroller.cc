@@ -327,8 +327,8 @@ TEST_F(ClientControllerTest, FUNC_MAID_LocalControllerCreatePubUsername) {
   printf("Logged out.\n");
 }
 
-/*
-TEST_F(ClientControllerTest, BEH_MAID_LocalControllerLeaveNetwork) {
+
+TEST_F(ClientControllerTest, FUNC_MAID_LocalControllerLeaveNetwork) {
   std::string username = "User4";
   std::string pin = "4567";
   std::string password = "The chubster has landed.";
@@ -336,9 +336,10 @@ TEST_F(ClientControllerTest, BEH_MAID_LocalControllerLeaveNetwork) {
   ASSERT_TRUE(ss_->Username().empty());
   ASSERT_TRUE(ss_->Pin().empty());
   ASSERT_TRUE(ss_->Password().empty());
+  ASSERT_EQ(maidsafe::kUserDoesntExist,
+            cc_->CheckUserExists(username, pin, maidsafe::kDefCon3));
   printf("Preconditions fulfilled.\n");
 
-  ASSERT_FALSE(cc_test::CheckUserExists(cc_, username, pin, 10000));
   ASSERT_TRUE(cc_->CreateUser(username, pin, password, vcp_));
   ASSERT_EQ(username, ss_->Username());
   ASSERT_EQ(pin, ss_->Pin());
@@ -351,7 +352,8 @@ TEST_F(ClientControllerTest, BEH_MAID_LocalControllerLeaveNetwork) {
   ASSERT_TRUE(ss_->Password().empty());
   printf("Logged out.\n");
 
-  ASSERT_TRUE(cc_test::CheckUserExists(cc_, username, pin, 10000));
+  ASSERT_EQ(maidsafe::kUserExists,
+            cc_->CheckUserExists(username, pin, maidsafe::kDefCon3));
   ASSERT_TRUE(cc_->ValidateUser(password));
   ASSERT_EQ(username, ss_->Username());
   ASSERT_EQ(pin, ss_->Pin());
@@ -362,7 +364,8 @@ TEST_F(ClientControllerTest, BEH_MAID_LocalControllerLeaveNetwork) {
   ASSERT_TRUE(cc_->LeaveMaidsafeNetwork());
   printf("Left maidsafe ='(.\n");
 
-  ASSERT_FALSE(cc_test::CheckUserExists(cc_, username, pin, 10000));
+  ASSERT_EQ(maidsafe::kUserDoesntExist,
+            cc_->CheckUserExists(username, pin, maidsafe::kDefCon3));
   printf("User no longer exists.\n");
 
   ASSERT_TRUE(cc_->CreateUser(username, pin, password, vcp_));
@@ -377,7 +380,6 @@ TEST_F(ClientControllerTest, BEH_MAID_LocalControllerLeaveNetwork) {
   ASSERT_TRUE(ss_->Password().empty());
   printf("Logged out.\n");
 }
-*/
 
 TEST_F(ClientControllerTest, FUNC_MAID_LocalControllerBackupFile) {
   std::string username("User5");
