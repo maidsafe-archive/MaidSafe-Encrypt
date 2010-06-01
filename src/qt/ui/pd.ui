@@ -59,7 +59,7 @@
      <x>0</x>
      <y>0</y>
      <width>267</width>
-     <height>25</height>
+     <height>21</height>
     </rect>
    </property>
    <property name="sizePolicy">
@@ -96,6 +96,7 @@
     <addaction name="actionMy_Files"/>
     <addaction name="actionPrivate_Shares"/>
     <addaction name="actionOffline"/>
+    <addaction name="actionEmail"/>
    </widget>
    <widget class="QMenu" name="menuApplications">
     <property name="title">
@@ -226,6 +227,11 @@
   <action name="actionSettings_2">
    <property name="text">
     <string>Settings</string>
+   </property>
+  </action>
+  <action name="actionEmail">
+   <property name="text">
+    <string>Email</string>
    </property>
   </action>
  </widget>

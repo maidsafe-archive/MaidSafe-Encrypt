@@ -22,10 +22,9 @@
 UserInbox::UserInbox(QWidget* parent) : QDialog(parent) {
   ui_.setupUi(this);
 	rootPath_ = QString::fromStdString(file_system::MaidsafeHomeDir(
-                    ClientController::instance()->SessionName()).string()+"/")
-										.append("/.Emails/");
-	folder_ = "/.Emails/";
-
+                    ClientController::instance()->SessionName()).string()+"/");
+	folder_ = "/Email/";
+										
 	populateEmails();
 
 	connect(ui_.replyButton, SIGNAL(clicked()),
@@ -61,16 +60,15 @@ int UserInbox::populateEmails() {
     }
 		
 		QString filename = QString::fromStdString(s);
-
-		if (filename.startsWith(".email")){
-
+		if (filename.endsWith(".pdmail")){
 			mdm.ParseFromString(ser_mdm);
 			QDateTime *lastModified = new QDateTime;
 			int linuxtime = mdm.last_modified();
 			lastModified->setTime_t(linuxtime);	
 
 			QListWidgetItem *newItem = new QListWidgetItem;
-			newItem->setText(filename.section("_", 2, 2) + ":" + filename.section('_', 1, 1));
+			newItem->setText(filename.section("_", 1, 1).remove(".pdmail")
+																+ ":" + filename.section('_', 0, 0));
 			ui_.messageListWidget->addItem(newItem);
 		}
 
@@ -82,16 +80,16 @@ int UserInbox::populateEmails() {
 
 void UserInbox::onReplyClicked() {	
 	//TODO: Send update email message
+
 }
 
 void UserInbox::onEmailClicked(QListWidgetItem* item) {
 	QString email = item->text();
 
-	ReadFileThread* rft = new ReadFileThread(folder_ + ".email_" + 
-																						item->text().section(":", 1, 1) 
-																						+ "_" +
-																						item->text().section(":", 0, 0),																						
-                                           this);
+	ReadFileThread* rft = new ReadFileThread(folder_ + 
+												item->text().section(":", 1, 1) 
+												+ "_" +	item->text().section(":", 0, 0)
+												+ ".pdmail", this);
 
   connect(rft,  SIGNAL(readFileCompleted(int, const QString&)),
           this, SLOT(onEmailFileCompleted(int, const QString&)));

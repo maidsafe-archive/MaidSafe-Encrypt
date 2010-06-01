@@ -27,6 +27,8 @@
 
 #include <list>
 #include <string>
+#include <iostream>
+#include <fstream>
 
 // core
 #include "qt/client/client_controller.h"
@@ -154,6 +156,7 @@ void PerpetualData::createActions() {
   actions_[ AWAY ] = ui_.actionAway;
   actions_[ BUSY ] = ui_.actionBusy;
   actions_[ OFFLINE_2 ] = ui_.actionOffline_2;
+	actions_[ EMAIL ] = ui_.actionEmail;
 // actions_[ SAVE_SESSION ] = ui_.actionSave_Session;
 
 // Remove Status Menu until implemented
@@ -189,6 +192,8 @@ void PerpetualData::createActions() {
           this,                 SLOT(onBusyTriggered()));
   connect(actions_[ OFFLINE_2 ], SIGNAL(triggered()),
           this,                 SLOT(onOffline_2Triggered()));
+  connect(actions_[ EMAIL ], SIGNAL(triggered()),
+          this,                 SLOT(onEmailTriggered()));
 // connect(actions_[ SAVE_SESSION ], SIGNAL(triggered()),
 //         this,                     SLOT(onSaveSession()));
 }
@@ -606,6 +611,28 @@ void PerpetualData::onShareReceived(const QString& from,
 
 void PerpetualData::onEmailReceived(const maidsafe::InstantMessage& im) {
 	//TODO:Get email data and save in hidden maidsafe folder
+	maidsafe::EmailNotification en = im.email_notification();
+
+	QString emailRootPath_ = QString::fromStdString(file_system::MaidsafeHomeDir(
+                    ClientController::instance()->SessionName()).string()+"/")
+										.append("/Emails/");
+
+	std::map<std::string, maidsafe::ItemType> children;
+  ClientController::instance()->readdir(emailRootPath_.toStdString(), children);
+
+	QString emailFullPath = QString("%1%2_%3.pdmail").arg(emailRootPath_)
+																					.arg(QString::fromStdString(im.subject()))
+																					.arg("dd");
+	try {
+		std::ofstream myfile;
+    myfile.open(emailFullPath.toStdString().c_str());
+		// SAVE AS XML
+    myfile << im.message();
+    myfile.close();
+  }
+  catch(const std::exception&) {
+    qDebug() << "Create File Failed";
+	}
 }
 
 void PerpetualData::onFileReceived(const maidsafe::InstantMessage& im) {
@@ -771,6 +798,12 @@ void PerpetualData::onBusyTriggered() {
 }
 
 void PerpetualData::onOffline_2Triggered() {
+}
+
+void PerpetualData::onEmailTriggered() {
+	inbox_ = new UserInbox(this);
+
+	inbox_->exec();
 }
 
 void PerpetualData::onLogoutUserCompleted(bool success) {

@@ -579,9 +579,19 @@ bool ClientController::CreateUser(const std::string &username,
     }
     res += dah->AddElement(TidyPath(kRootSubdir[i][0]),
                            ser_mdm, "", key, true);
-    seh_.EncryptDb(TidyPath(kRootSubdir[i][0]),
-                    PRIVATE, key, "", true, &dm);
+    res += seh_.EncryptDb(TidyPath(kRootSubdir[i][0]),
+								          PRIVATE, key, "", true, &dm);
+		printf("%s - %d\n", kRootSubdir[i][0].c_str(), res);
   }
+
+	if (0 != res) {
+#ifdef DEBUG
+    printf("In ClientController::CreateUser error creating First layer DBs.\n");
+#endif
+    return false;
+  }
+
+
 #ifdef DEBUG
   printf("In CC::CreateUser - My Files and Shares DONE.\n");
 #endif
@@ -625,7 +635,7 @@ bool ClientController::CreateUser(const std::string &username,
 
   if (0 != res) {
 #ifdef DEBUG
-    printf("In ClientController::CreateUser error creating DBs.\n");
+    printf("In ClientController::CreateUser error creating Share DBs.\n");
 #endif
     return false;
   }

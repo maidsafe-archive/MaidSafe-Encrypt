@@ -25,6 +25,7 @@
 #include "qt/client/client_controller.h"
 #include "qt/widgets/personal_messages.h"
 #include "qt/widgets/user_settings.h"
+#include "qt/widgets/user_inbox.h"
 
 // generated
 #include "ui_pd.h"
@@ -37,6 +38,7 @@ class MountThread;
 class Progress;
 class PersonalMessages;
 class UserSettings;
+class UserInbox;
 
 // Main Window for Perpetual Data
 /*!
@@ -107,6 +109,8 @@ class PerpetualData : public QMainWindow {
     void onAwayTriggered();
     void onBusyTriggered();
     void onOffline_2Triggered();
+		void onEmailTriggered();
+
     void showLoggedOutMenu();
     void showLoggedInMenu();
 
@@ -146,7 +150,8 @@ class PerpetualData : public QMainWindow {
     ONLINE,
     BUSY,
     AWAY,
-    OFFLINE_2
+    OFFLINE_2,
+		EMAIL
     };
   typedef QMap<Action, QAction*> ActionMap;
   ActionMap actions_;
@@ -200,6 +205,9 @@ class PerpetualData : public QMainWindow {
 
   // User Settings Window
   UserSettings* settings_;
+
+	// Email Inbox
+	UserInbox* inbox_;
 
   // Switch between different application states
   void setState(State state);
