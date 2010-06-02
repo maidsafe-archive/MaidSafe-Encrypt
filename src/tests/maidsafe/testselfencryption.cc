@@ -71,7 +71,7 @@ std::string CreateRandomFile(const std::string &filename,
   }
   ofs.close();
   return file_path.string();
-};
+}
 
 }  // namespace test_se
 

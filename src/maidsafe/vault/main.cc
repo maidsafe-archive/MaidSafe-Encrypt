@@ -129,7 +129,7 @@ void GeneratePmidStuff(std::string *public_key,
   *public_key = keys.public_key();
   *private_key = keys.private_key();
   *pmid = co_.Hash(*signed_key, "", crypto::STRING_STRING, false);
-};
+}
 
 struct ClientData {
   explicit ClientData(const std::string &root_dir)

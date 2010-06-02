@@ -64,7 +64,7 @@ void CopyResult(const int &response,
   boost::mutex::scoped_lock lock(*mutex);
   *result = response;
   cv->notify_one();
-};
+}
 
 void RunVaultCallback(const maidsafe_vault::ReturnCode &result,
                       const VoidFuncOneInt &callback) {
@@ -83,12 +83,12 @@ void DoneRun(const int &min_delay,
   int sleep_time(base::RandomUint32() % diff + min);
   boost::this_thread::sleep(boost::posix_time::milliseconds(sleep_time));
   callback->Run();
-};
+}
 
 void ThreadedDoneRun(const int &min_delay,
                      const int &max_delay,
                      google::protobuf::Closure* callback) {
   boost::thread(DoneRun, min_delay, max_delay, callback);
-};
+}
 
 }  // namespace mock_vsl
