@@ -23,8 +23,8 @@ UserInbox::UserInbox(QWidget* parent) : QDialog(parent) {
   ui_.setupUi(this);
 	rootPath_ = QString::fromStdString(file_system::MaidsafeHomeDir(
                     ClientController::instance()->SessionName()).string()+"/");
-	folder_ = "/Email/";
-										
+	folder_ = "/Emails/";
+									
 	populateEmails();
 
 	connect(ui_.replyButton, SIGNAL(clicked()),
@@ -33,7 +33,7 @@ UserInbox::UserInbox(QWidget* parent) : QDialog(parent) {
 	connect(ui_.messageListWidget, SIGNAL(itemClicked(QListWidgetItem*)),
 					this,								SLOT(onEmailClicked(QListWidgetItem*)));
 
-	ui_.groupBox->setVisible(false);
+	ui_.replyGroupBox->setVisible(false);
 }
 
 UserInbox::~UserInbox() {}
@@ -78,7 +78,9 @@ int UserInbox::populateEmails() {
   return 0;
 }
 
-void UserInbox::onReplyClicked() {	
+void UserInbox::onReplyClicked() {
+
+
 	//TODO: Send update email message
 
 }
@@ -99,6 +101,7 @@ void UserInbox::onEmailClicked(QListWidgetItem* item) {
 
 void UserInbox::onEmailFileCompleted(int success, const QString& filepath) {
   if (success != -1) {
+
 		QString path = rootPath_ + filepath;
 		QFile file(path);
 	  if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
@@ -107,6 +110,7 @@ void UserInbox::onEmailFileCompleted(int success, const QString& filepath) {
 	  QString line = in.readAll();
 	  ui_.emailDisplayEdit->setHtml(line);
 	  file.remove();
+		ui_.replyGroupBox->setVisible(true);
 	}
 }
 

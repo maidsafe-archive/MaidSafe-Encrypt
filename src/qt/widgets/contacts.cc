@@ -297,8 +297,22 @@ void Contacts::onDeleteUserClicked() {
   }
 }
 
-void Contacts::onSendEmailClicked() { 
+void Contacts::onSendEmailClicked() {
+	QList<QListWidgetItem *> contacts = currentContact();
+  if (contacts.size() == 0)
+    return;
+	sendMail_ = new UserSendMail(this);
 
+	QList<QString> conts;
+  if (contacts.size() > 1) {
+    foreach(QListWidgetItem *item, contacts) {
+      conts.push_back(item->text());
+			sendMail_->addToRecipients(conts);
+    }
+  } else {
+		sendMail_->addSingleRecipient(contacts.front()->text());
+  }
+	sendMail_->exec();
 }
 
 void Contacts::onSendMessageClicked() {

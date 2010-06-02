@@ -57,6 +57,11 @@ PerpetualData::PerpetualData(QWidget* parent)
   setWindowIcon(QPixmap(":/icons/16/globe"));
   ui_.setupUi(this);
 
+#ifdef PD_LIGHT
+  browser_ = new FileBrowser;
+	browser_->setActive(true);
+#endif
+
   statusBar()->show();
   statusBar()->addPermanentWidget(message_status_ = new QLabel);
 
@@ -622,13 +627,36 @@ void PerpetualData::onEmailReceived(const maidsafe::InstantMessage& im) {
 
 	QString emailFullPath = QString("%1%2_%3.pdmail").arg(emailRootPath_)
 																					.arg(QString::fromStdString(im.subject()))
-																					.arg("dd");
+																					.arg(QString::fromStdString(im.conversation())); //unique conv
 	try {
 		std::ofstream myfile;
     myfile.open(emailFullPath.toStdString().c_str());
 		// SAVE AS XML
-    myfile << im.message();
+		QString htmlMessage = QString("<table style=\"width: 100%;\">"
+  "<tbody>"
+    "<tr>"
+      "<td style=\"vertical-align: top;\"> %1 to me<br />"
+        "</td>"
+      "<td style=\"vertical-align: top;\"> </td>"
+      "<td style=\"vertical-align: top;\"> %2 <br />"
+        "</td>"
+    "</tr>"
+    "<tr>"
+      "<td style=\"vertical-align: top;\" colspan=\"3\"> %3</td>"
+    "</tr>"
+    "<tr>"
+      "<td style=\"vertical-align: top;\" colspan=\"3\"> %4</td>"
+    "</tr>"
+  "</tbody>"
+	"</table>").arg(QString::fromStdString(im.sender())).arg("")
+						.arg(QString::fromStdString(im.subject())).arg(QString::fromStdString(im.message())); 
+    myfile << htmlMessage.toStdString();
     myfile.close();
+
+		SaveFileThread* sft = new SaveFileThread(emailFullPath, this);
+		connect(sft,  SIGNAL(saveFileCompleted(int, const QString&)),
+          this, SLOT(onSaveFileCompleted(int, const QString&)));
+		sft->start();
   }
   catch(const std::exception&) {
     qDebug() << "Create File Failed";
@@ -802,7 +830,6 @@ void PerpetualData::onOffline_2Triggered() {
 
 void PerpetualData::onEmailTriggered() {
 	inbox_ = new UserInbox(this);
-
 	inbox_->exec();
 }
 

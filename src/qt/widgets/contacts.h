@@ -25,12 +25,14 @@
 #include "qt/widgets/panel.h"
 #include "qt/client/contact.h"
 #include "qt/widgets/personal_messages.h"
+#include "qt/widgets/user_send_mail.h"
 
 // generated
 #include "ui_user_contacts_panel.h"
 
 class PersonalMessages;
 class UserPanels;
+class UserSendMail;
 
 // Custom widget that displays contacts
 /*!
@@ -57,6 +59,7 @@ class Contacts : public Panel {
   ContactList contacts_;
   UserPanels* userPanels_;
   PersonalMessages* messages_;
+	UserSendMail* sendMail_;
 
   QList<QListWidgetItem *> currentContact();
 

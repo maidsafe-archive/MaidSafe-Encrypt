@@ -22,6 +22,8 @@
 // local
 #include "qt/client/client_controller.h"
 #include "qt/client/read_file_thread.h"
+#include "qt/client/send_email_thread.h"
+#include "qt/widgets/file_browser.h"
 
 #include "ui_user_inbox.h"
 
@@ -34,6 +36,7 @@ class UserInbox : public QDialog {
 
  private:
   Ui::UserInbox ui_;
+	FileBrowser* browser_;
 	QString folder_;
 	QString rootPath_;
 

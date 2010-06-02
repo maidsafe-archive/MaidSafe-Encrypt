@@ -21,21 +21,27 @@
 #include "qt/client/client_controller.h"
 
 
-SendEmailThread::SendEmailThread(const QString& text,
-                                 const QString& convName,
-                                 QList<QString> conts,
+SendEmailThread::SendEmailThread(const QString& subject,
+																const QString& message,
+																const QList<QString>& to,
+																const QList<QString>& cc,
+																const QList<QString>& bcc,
+																const QString& conversation,
                                  QObject* parent) :
                                  WorkerThread(parent),
-                                 text_(text), conts_(conts),
-                                 convName_(convName) { }
+                                 subject_(subject), message_(message),
+                                 to_(to), cc_(cc), bcc_(bcc),
+																 conversation_(conversation){																 
+}
 
 SendEmailThread::~SendEmailThread() { }
 
 void SendEmailThread::run() {
-  qDebug() << "SendEmailThread::run" << text_;
+  qDebug() << "SendEmailThread::run" << message_;
 
-  //int success = ClientController::instance()->newEmailSendMessage();
+  bool success = ClientController::instance()->sendEmail(subject_,
+															message_, to_, cc_, bcc_, conversation_);
 
-  //emit sendEmailCompleted(success, text_);
+  emit sendEmailCompleted(success, subject_);
 }
 

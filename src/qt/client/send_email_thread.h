@@ -27,16 +27,21 @@
 class SendEmailThread : public WorkerThread {
   Q_OBJECT
  public:
-  SendEmailThread(const QString& text, const QString& convName,
-                           QList<QString> conts, QObject* parent = 0);
+  SendEmailThread(const QString& subject, const QString& message,
+									const QList<QString>& to, const QList<QString>& cc,
+									const QList<QString>& bcc, const QString& conversation,
+									QObject* parent = 0);
   virtual ~SendEmailThread();
 
   virtual void run();
 
  private:
-  QString text_;
-  QList<QString> conts_;
-  QString convName_;
+  QString subject_;
+  QString message_;
+  QList<QString> to_;
+  QList<QString> cc_;
+  QList<QString> bcc_;
+  QString conversation_;
 
   signals:
   void sendEmailCompleted(int, const QString&);

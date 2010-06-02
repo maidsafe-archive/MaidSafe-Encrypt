@@ -20,7 +20,9 @@
 #include <QString>
 
 // local
-#include "qt/client/client_controller.h" 
+#include "qt/client/client_controller.h"
+#include "qt/client/send_email_thread.h"
+#include "qt/client/save_file_thread.h"
 
 #include "ui_user_send_mail.h"
 
@@ -29,10 +31,16 @@ class UserSendMail : public QDialog {
 
  public:
   explicit UserSendMail(QWidget* parent = 0);
-  virtual ~UserSendMail();	
+  virtual ~UserSendMail();
+	void addToRecipients(const QList<QString>&);
+	void addSingleRecipient(const QString&);
 
  private:
-  Ui::UserSendMail ui_; 
+  Ui::UserSendMail ui_;
+
+ private slots:
+  void onSendClicked(bool);
+	void onSendEmailCompleted(int, const QString&);
 
  protected:
   void changeEvent(QEvent *event);

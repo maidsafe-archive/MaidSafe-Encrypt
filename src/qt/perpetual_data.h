@@ -26,6 +26,7 @@
 #include "qt/widgets/personal_messages.h"
 #include "qt/widgets/user_settings.h"
 #include "qt/widgets/user_inbox.h"
+#include "qt/client/save_file_thread.h"
 
 // generated
 #include "ui_pd.h"
@@ -39,6 +40,9 @@ class Progress;
 class PersonalMessages;
 class UserSettings;
 class UserInbox;
+#ifdef PD_LIGHT
+  class FileBrowser;
+#endif
 
 // Main Window for Perpetual Data
 /*!
@@ -208,6 +212,10 @@ class PerpetualData : public QMainWindow {
 
 	// Email Inbox
 	UserInbox* inbox_;
+
+#ifdef PD_LIGHT
+  FileBrowser* browser_;
+#endif
 
   // Switch between different application states
   void setState(State state);
