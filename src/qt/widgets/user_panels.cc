@@ -137,6 +137,11 @@ void UserPanels::onPublicUsernameChosen() {
   activatePanel(true);
   ui_.user_public_username->setText(
       ClientController::instance()->publicUsername());
+
+#ifdef PD_LIGHT
+  browser_->setActive(true);
+#endif
+
 }
 
 void UserPanels::onMyFilesClicked() {

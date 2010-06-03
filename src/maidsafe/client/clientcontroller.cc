@@ -1556,7 +1556,7 @@ int ClientController::SendEmail(const std::string &subject, const std::string &m
 		im.mutable_email_notification();
   en->set_to(toList);
   en->set_cc(ccList);
-  im.set_sender(SessionSingleton::getInstance()->PublicUsername());
+  im.set_sender(ss_->PublicUsername());
   im.set_date(base::GetEpochTime());
   im.set_conversation(conversation);
   im.set_message(msg);
@@ -1566,7 +1566,7 @@ int ClientController::SendEmail(const std::string &subject, const std::string &m
   im.SerializeToString(&ser_email);
 
   std::map<std::string, ReturnCode> add_results;
-  if (sm_->SendMessage(contact_to, ser_email, EMAIL, &add_results) !=
+  if (sm_->SendMessage(contact_to, ser_email, INSTANT_MSG, &add_results) !=
       static_cast<int>(contact_to.size())) {
 #ifdef DEBUG
     printf("ClientController::SendEmail - Not all recepients got "

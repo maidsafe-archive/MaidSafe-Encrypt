@@ -41,6 +41,7 @@ class UserSendMail : public QDialog {
  private slots:
   void onSendClicked(bool);
 	void onSendEmailCompleted(int, const QString&);
+  void onSaveFileCompleted(int, const QString&);
 
  protected:
   void changeEvent(QEvent *event);

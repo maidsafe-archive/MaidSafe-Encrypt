@@ -32,6 +32,7 @@
 
 // core
 #include "qt/client/client_controller.h"
+#include "maidsafe/utils.h"
 
 // local
 #include "qt/widgets/login.h"
@@ -56,11 +57,6 @@ PerpetualData::PerpetualData(QWidget* parent)
   setAttribute(Qt::WA_DeleteOnClose, false);
   setWindowIcon(QPixmap(":/icons/16/globe"));
   ui_.setupUi(this);
-
-#ifdef PD_LIGHT
-  browser_ = new FileBrowser;
-	browser_->setActive(true);
-#endif
 
   statusBar()->show();
   statusBar()->addPermanentWidget(message_status_ = new QLabel);
@@ -616,44 +612,46 @@ void PerpetualData::onShareReceived(const QString& from,
 
 void PerpetualData::onEmailReceived(const maidsafe::InstantMessage& im) {
 	//TODO:Get email data and save in hidden maidsafe folder
+  statusBar()->showMessage(tr("You have a new Email!"));
 	maidsafe::EmailNotification en = im.email_notification();
 
 	QString emailRootPath_ = QString::fromStdString(file_system::MaidsafeHomeDir(
                     ClientController::instance()->SessionName()).string()+"/")
 										.append("/Emails/");
 
+	QString emailFolder = "/Emails/";
+
+	std::string tidyRelPathStr = maidsafe::TidyPath(emailFolder.toStdString());
+	QString emailFolderPath = QString::fromStdString(tidyRelPathStr);
+
 	std::map<std::string, maidsafe::ItemType> children;
-  ClientController::instance()->readdir(emailRootPath_.toStdString(), children);
+  ClientController::instance()->readdir(emailFolderPath.toStdString(), children);
 
 	QString emailFullPath = QString("%1%2_%3.pdmail").arg(emailRootPath_)
 																					.arg(QString::fromStdString(im.subject()))
 																					.arg(QString::fromStdString(im.conversation())); //unique conv
+
+	QString emailMaidsafePath = QString("%1%2_%3.pdmail").arg(emailFolder)
+                                .arg(QString::fromStdString(im.subject()))
+																.arg(QString::fromStdString(im.conversation()));
+
+  std::string tidyEmail = maidsafe::TidyPath(emailMaidsafePath.toStdString());
+  QString tidyEmailMaidsafePath = QString::fromStdString(tidyEmail);
 	try {
 		std::ofstream myfile;
     myfile.open(emailFullPath.toStdString().c_str());
 		// SAVE AS XML
-		QString htmlMessage = QString("<table style=\"width: 100%;\">"
-  "<tbody>"
-    "<tr>"
-      "<td style=\"vertical-align: top;\"> %1 to me<br />"
-        "</td>"
-      "<td style=\"vertical-align: top;\"> </td>"
-      "<td style=\"vertical-align: top;\"> %2 <br />"
-        "</td>"
-    "</tr>"
-    "<tr>"
-      "<td style=\"vertical-align: top;\" colspan=\"3\"> %3</td>"
-    "</tr>"
-    "<tr>"
-      "<td style=\"vertical-align: top;\" colspan=\"3\"> %4</td>"
-    "</tr>"
-  "</tbody>"
-	"</table>").arg(QString::fromStdString(im.sender())).arg("")
-						.arg(QString::fromStdString(im.subject())).arg(QString::fromStdString(im.message())); 
+    QString htmlMessage = tr("From : %1 at %2 <br /> %3 <br /> %4")
+        .prepend("<span style=\"background-color:#CCFF99\"><br />")
+        .arg(QString::fromStdString(im.sender()))
+        .arg("date")
+				.arg(QString::fromStdString(im.subject()))
+        .arg(QString::fromStdString(im.message()))
+        .append("</span>"); 
     myfile << htmlMessage.toStdString();
     myfile.close();
 
-		SaveFileThread* sft = new SaveFileThread(emailFullPath, this);
+		SaveFileThread* sft = new SaveFileThread(tidyEmailMaidsafePath, this);
 		connect(sft,  SIGNAL(saveFileCompleted(int, const QString&)),
           this, SLOT(onSaveFileCompleted(int, const QString&)));
 		sft->start();
@@ -661,6 +659,30 @@ void PerpetualData::onEmailReceived(const maidsafe::InstantMessage& im) {
   catch(const std::exception&) {
     qDebug() << "Create File Failed";
 	}
+}
+
+void PerpetualData::onSaveFileCompleted(int success, const QString& filepath) {
+  qDebug() << "onSaveFileCompleted : " << filepath;
+  if (success != -1) {
+    std::string dir = filepath.toStdString();
+    dir.erase(0, 1);
+    QString rootPath_ = QString::fromStdString(file_system::MaidsafeHomeDir(
+                  ClientController::instance()->SessionName()).string()+"/");
+
+    std::string fullFilePath(rootPath_.toStdString() + filepath.toStdString());
+
+    if (fs::exists(fullFilePath)) {
+      try {
+        fs::remove(fullFilePath);
+        qDebug() << "Remove File Success:"
+                 << QString::fromStdString(fullFilePath);
+      }
+      catch(const std::exception&) {
+        qDebug() << "Remove File failure:"
+                 << QString::fromStdString(fullFilePath);
+      }
+    }
+  }
 }
 
 void PerpetualData::onFileReceived(const maidsafe::InstantMessage& im) {

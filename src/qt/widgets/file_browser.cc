@@ -33,6 +33,7 @@
 #include <shellapi.h>
 #endif
 
+#include "maidsafe/utils.h"
 #include "fs/filesystem.h"
 #include "qt/client/client_controller.h"
 #include "qt/client/make_directory_thread.h"
@@ -188,7 +189,7 @@ void FileBrowser::setActive(bool b) {
                     ClientController::instance()->SessionName()).string()+"/");
 
     qDebug() << rootPath_;
-
+    
     populateDirectory("/");
     createTreeDirectory("/");
     ui_.driveTreeWidget->header()->setResizeMode(QHeaderView::Interactive);
@@ -421,8 +422,14 @@ void FileBrowser::onDeleteFileClicked() {
     msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
     msgBox.setDefaultButton(QMessageBox::Save);
     int ret = msgBox.exec();
+
+		std::string str = currentDir_.toStdString() + filename.toStdString();
+		std::string tidyRelPathStr = maidsafe::TidyPath(str);
+		QString deletePath = QString::fromStdString(tidyRelPathStr);
+		qDebug() << "create folder" << deletePath;
+
     if (ret == QMessageBox::Yes) {
-      RemoveDirThread* rdt = new RemoveDirThread(currentDir_ + filename,
+      RemoveDirThread* rdt = new RemoveDirThread(deletePath,
                                                  this);
 
       connect(rdt,  SIGNAL(removeDirCompleted(int, const QString&)),
@@ -446,7 +453,12 @@ void FileBrowser::onNewFolderClicked() {
         tr("Name of the new directory:"), QLineEdit::Normal,
         tr("New Folder", "default directory name"), &ok);
     if (ok && !text.isEmpty()) {
-      MakeDirectoryThread* mdt = new MakeDirectoryThread(currentDir_ + text,
+			std::string str = currentDir_.toStdString() + text.toStdString();
+			std::string tidyRelPathStr = maidsafe::TidyPath(str);
+			QString folderPath = QString::fromStdString(tidyRelPathStr);
+			qDebug() << "create folder" << folderPath;
+
+      MakeDirectoryThread* mdt = new MakeDirectoryThread(folderPath,
                                                           this);
 
       connect(mdt,  SIGNAL(makeDirectoryCompleted(int, const QString&)),
@@ -474,9 +486,19 @@ void FileBrowser::onRenameFileClicked() {
     QString text = QInputDialog::getText(this, tr("Rename File"),
         tr("New file name:"), QLineEdit::Normal, filename, &ok);
     if (ok && !text.isEmpty()) {
-      RenameFileThread* rft = new RenameFileThread(currentDir_ +
-                                                       filename,
-                                                   currentDir_ + text, this);
+
+			std::string str = currentDir_.toStdString() + filename.toStdString();
+			std::string tidyRelPathStr = maidsafe::TidyPath(str);
+			QString oldFilePath = QString::fromStdString(tidyRelPathStr);
+			qDebug() << "rename file from" << oldFilePath;
+
+			std::string str1 = currentDir_.toStdString() + text.toStdString();
+			std::string tidyRelPathStr1 = maidsafe::TidyPath(str1);
+			QString newFilePath = QString::fromStdString(tidyRelPathStr1);
+			qDebug() << "rename file from" << newFilePath;
+
+      RenameFileThread* rft = new RenameFileThread(oldFilePath,
+                                                   newFilePath, this);
 
       connect(rft,
               SIGNAL(renameFileCompleted(int, const QString&, const QString&)),
@@ -554,9 +576,10 @@ int FileBrowser::drawDetailView(){
   int rowCount = 0;
   std::string relPathStr = currentDir_.toStdString();
   std::map<std::string, maidsafe::ItemType> children;
-  ClientController::instance()->readdir(relPathStr, children);
+	std::string tidyRelPathStr = maidsafe::TidyPath(relPathStr);
+  ClientController::instance()->readdir(tidyRelPathStr, children);
 
-  qDebug() << "populateDirectory: " << QString::fromStdString(relPathStr);
+  qDebug() << "populateDirectory: " << QString::fromStdString(tidyRelPathStr);
 
   QStringList columns;
   columns << tr("Name") << tr("Status") << tr("Size") << tr("Type")
@@ -571,7 +594,8 @@ int FileBrowser::drawDetailView(){
     std::string ser_mdm;
     fs::path path_(relPathStr);
     path_ /= s;
-    if (ClientController::instance()->getattr(path_.string(), ser_mdm)) {
+		std::string str = maidsafe::TidyPath(path_.string());
+    if (ClientController::instance()->getattr(str, ser_mdm)) {
       qDebug() << "populateDirectory failed at getattr()";
       return -1;
     }
@@ -585,13 +609,13 @@ int FileBrowser::drawDetailView(){
 
     if (ityp == maidsafe::DIRECTORY || ityp == maidsafe::EMPTY_DIRECTORY) {
       // Folder
-      std::string branchPath = rootPath_.toStdString() +
-                               currentDir_.toStdString() + s;
-      if (!fs::exists(branchPath)) {
+      QString qtPath = getFullFilePath(rootPath_ + currentDir_ 
+                                + QString::fromStdString(s));
+      if (!fs::exists(qtPath.toStdString())) {
         try {
-          fs::create_directory(branchPath);
+          fs::create_directory(qtPath.toStdString());
           qDebug() << "Create Directory :" <<
-              QString::fromStdString(branchPath);
+              QString::fromStdString(qtPath.toStdString());
         }
         catch(const std::exception&) {
           qDebug() << "Create Directory Failed";
@@ -651,7 +675,8 @@ int FileBrowser::drawIconView(){
   int rowCount = 0;
   std::string relPathStr = currentDir_.toStdString();
   std::map<std::string, maidsafe::ItemType> children;
-  ClientController::instance()->readdir(relPathStr, children);
+	std::string tidyRelPathStr = maidsafe::TidyPath(relPathStr);
+  ClientController::instance()->readdir(tidyRelPathStr, children);
 
   qDebug() << "drawIconView: " << QString::fromStdString(relPathStr);
 
@@ -663,7 +688,8 @@ int FileBrowser::drawIconView(){
     std::string ser_mdm;
     fs::path path_(relPathStr);
     path_ /= s;
-    if (ClientController::instance()->getattr(path_.string(), ser_mdm)) {
+		std::string str = maidsafe::TidyPath(path_.string());
+    if (ClientController::instance()->getattr(str, ser_mdm)) {
       qDebug() << "drawIconView failed at getattr()";
       return -1;
     }
@@ -677,13 +703,13 @@ int FileBrowser::drawIconView(){
 
     if (ityp == maidsafe::DIRECTORY || ityp == maidsafe::EMPTY_DIRECTORY) {
       // Folder
-      std::string branchPath = rootPath_.toStdString() +
-                               currentDir_.toStdString() + s;
-      if (!fs::exists(branchPath)) {
+      QString qtPath = getFullFilePath(rootPath_ + currentDir_ 
+                                      + QString::fromStdString(s));
+      if (!fs::exists(qtPath.toStdString())) {
         try {
-          fs::create_directory(branchPath);
+          fs::create_directory(qtPath.toStdString());
           qDebug() << "Create Directory :" <<
-              QString::fromStdString(branchPath);
+              QString::fromStdString(qtPath.toStdString());
         }
         catch(const std::exception&) {
           qDebug() << "Create Directory Failed";
@@ -757,7 +783,8 @@ int FileBrowser::createTreeDirectory(QString dir) {
   int rowCount = 0;
   std::string relPathStr = currentTreeDir_.toStdString() + dir.toStdString();
   std::map<std::string, maidsafe::ItemType> children;
-  ClientController::instance()->readdir(relPathStr, children);
+	std::string tidyRelPathStr = maidsafe::TidyPath(relPathStr);
+  ClientController::instance()->readdir(tidyRelPathStr, children);
 
   qDebug() << "createTreeDirectory: ";
   QStringList columns;
@@ -772,7 +799,8 @@ int FileBrowser::createTreeDirectory(QString dir) {
     std::string ser_mdm;
     fs::path path_(relPathStr);
     path_ /= s;
-    if (ClientController::instance()->getattr(path_.string(), ser_mdm)) {
+		std::string str = maidsafe::TidyPath(path_.string());
+    if (ClientController::instance()->getattr(str, ser_mdm)) {
       qDebug() << "populateDirectory failed at getattr()";
       return -1;
     }
@@ -811,7 +839,12 @@ void FileBrowser::onListItemDoubleClicked(QListWidgetItem* item) {
 		if (item->toolTip().contains("Network")) {
 			item->setToolTip(item->toolTip().replace("Network","Downloading", Qt::CaseSensitive));
 
-      ReadFileThread* rft = new ReadFileThread(currentDir_ + item->text(),
+			std::string tidyRelPathStr = maidsafe::TidyPath(currentDir_.toStdString() + 
+																										item->text().toStdString());
+			QString openFilePath = QString::fromStdString(tidyRelPathStr);
+			qDebug() << "upload File" << openFilePath;
+
+      ReadFileThread* rft = new ReadFileThread(openFilePath,
                                                this);
 
       connect(rft,  SIGNAL(readFileCompleted(int, const QString&)),
@@ -834,7 +867,12 @@ void FileBrowser::onItemDoubleClicked(QTreeWidgetItem* item, int) {
       ui_.driveTreeWidget->editItem(item, 1);
       item->setText(1, tr("Downloading"));
 
-      ReadFileThread* rft = new ReadFileThread(currentDir_ + item->text(0),
+			std::string tidyRelPathStr = maidsafe::TidyPath(currentDir_.toStdString() +
+																										item->text(0).toStdString());
+			QString openFilePath = QString::fromStdString(tidyRelPathStr);
+			qDebug() << "upload File" << openFilePath;
+
+      ReadFileThread* rft = new ReadFileThread(openFilePath,
                                                this);
 
       connect(rft,  SIGNAL(readFileCompleted(int, const QString&)),
@@ -1034,6 +1072,10 @@ void FileBrowser::uploadFileFromLocal(const QString& filePath) {
   std::string fullFilePath(rootPath_.toStdString() + currentDir_.toStdString()
                            + filename);
 
+	std::string tidyRelPathStr = maidsafe::TidyPath(currentDir_.toStdString() + filename);
+	QString uploadFilePath = QString::fromStdString(tidyRelPathStr);
+	qDebug() << "upload File" << uploadFilePath;
+
   QList<QTreeWidgetItem *> widgetList = ui_.driveTreeWidget->findItems(
                                             QString::fromStdString(filename),
                                             Qt::MatchExactly, 0);
@@ -1041,7 +1083,7 @@ void FileBrowser::uploadFileFromLocal(const QString& filePath) {
   if (widgetList.isEmpty()) {
     fs::copy_file(filePath.toStdString(), fullFilePath);
     if (fs::exists(fullFilePath)) {
-      saveFileToNetwork(currentDir_ + QString::fromStdString(filename));
+      saveFileToNetwork(uploadFilePath);
     } else {
       qDebug() << "CopyFile Failed";
     }
@@ -1096,6 +1138,7 @@ void FileBrowser::onMakeDirectoryCompleted(int success, const QString& dir) {
   if (success != -1) {
     qDebug() << "MakeDir Success";
     populateDirectory(currentDir_);
+    createTreeDirectory("/");
   }
 }
 

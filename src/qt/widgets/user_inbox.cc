@@ -16,12 +16,13 @@
 #include <QMessageBox>
 #include <QDebug>
 
+#include "maidsafe/utils.h"
 #include "qt/client/client_controller.h"
 
 
 UserInbox::UserInbox(QWidget* parent) : QDialog(parent) {
   ui_.setupUi(this);
-	rootPath_ = QString::fromStdString(file_system::MaidsafeHomeDir(
+  rootPath_ = QString::fromStdString(file_system::MaidsafeHomeDir(
                     ClientController::instance()->SessionName()).string()+"/");
 	folder_ = "/Emails/";
 									
@@ -29,7 +30,7 @@ UserInbox::UserInbox(QWidget* parent) : QDialog(parent) {
 
 	connect(ui_.replyButton, SIGNAL(clicked()),
           this,             SLOT(onReplyClicked()));
-	
+
 	connect(ui_.messageListWidget, SIGNAL(itemClicked(QListWidgetItem*)),
 					this,								SLOT(onEmailClicked(QListWidgetItem*)));
 
@@ -44,7 +45,8 @@ int UserInbox::populateEmails() {
 	int rowCount = 0;
   std::string relPathStr = folder_.toStdString();
   std::map<std::string, maidsafe::ItemType> children;
-  ClientController::instance()->readdir(relPathStr, children);
+	std::string tidyRelPathStr = maidsafe::TidyPath(relPathStr);
+  ClientController::instance()->readdir(tidyRelPathStr, children);
 
   while (!children.empty()) {
     std::string s = children.begin()->first;
@@ -54,7 +56,8 @@ int UserInbox::populateEmails() {
     std::string ser_mdm;
     fs::path path_(relPathStr);
     path_ /= s;
-    if (ClientController::instance()->getattr(path_.string(), ser_mdm)) {
+    std::string str = maidsafe::TidyPath(path_.string());
+    if (ClientController::instance()->getattr(str, ser_mdm)) {
       qDebug() << "drawIconView failed at getattr()";
       return -1;
     }
@@ -79,10 +82,93 @@ int UserInbox::populateEmails() {
 }
 
 void UserInbox::onReplyClicked() {
+  QListWidgetItem* item = ui_.messageListWidget->currentItem();
+  QList<QString> toList, ccList, bccList;
+  QString sender = item->text().section(":", 0, 0);
+  QString subject = item->text().section(":", 1, 1);
+  toList.push_front(sender);
+
+  QString htmlMessage = tr("From : me to %1 at %2 <br /> %3 <br /> %4")
+        .prepend("<span style=\"background-color:#CCFF99\"><br />")
+        .arg(sender).arg("date").arg(subject).arg(ui_.textEdit_2->toHtml())
+        .append("</span>"); 
 
 
-	//TODO: Send update email message
+  SendEmailThread* set = new SendEmailThread(subject, htmlMessage, toList,
+                                            ccList, bccList, sender, this);
 
+  connect(set,  SIGNAL(sendEmailCompleted(int, const QString&)),
+              this, SLOT(onSendEmailCompleted(int, const QString&)));	
+
+  set->start();
+
+  try {
+  QString emailRootPath_ = QString::fromStdString(file_system::MaidsafeHomeDir(
+                  ClientController::instance()->SessionName()).string()+"/")
+								.append("/Emails/");
+
+  QString emailFullPath = QString("%1%2_%3.pdmail").arg(emailRootPath_)
+													.arg(subject).arg(sender);
+
+    QString emailFolder = "/Emails/";
+    QString emailMaidsafePath = QString("%1%2_%3.pdmail").arg(emailFolder)
+                                          .arg(subject).arg(sender);
+
+  std::string tidyRelPathStr = maidsafe::TidyPath(emailMaidsafePath.toStdString());
+  QString emailFolderPath = QString::fromStdString(tidyRelPathStr);
+  qDebug() << "upload File" << emailFolderPath;
+
+		std::ofstream myfile;
+    myfile.open(emailFullPath.toStdString().c_str());
+    // SAVE AS XML
+  QString htmlMessage = tr("From : me to %1 at %2 <br /> %3 <br /> %4")
+        .prepend("<span style=\"background-color:#CCFF99\"><br />")
+        .arg(sender).arg("date").arg(subject).arg(ui_.textEdit_2->toHtml())
+        .append("</span>"); 
+    myfile << htmlMessage.toStdString();
+    myfile.close();
+
+    SaveFileThread* sft = new SaveFileThread(emailFolderPath, this);
+		connect(sft,  SIGNAL(saveFileCompleted(int, const QString&)),
+          this, SLOT(onSaveFileCompleted(int, const QString&)));
+    sft->start();
+
+  }
+  catch(const std::exception&) {
+    qDebug() << "Create File Failed";
+	}
+
+}
+
+void UserInbox::onSaveFileCompleted(int success, const QString& filepath) {
+ QListWidgetItem* item = ui_.messageListWidget->currentItem();
+
+  qDebug() << "onSaveFileCompleted : " << filepath;
+  if (success != -1) {
+    std::string dir = filepath.toStdString();
+    dir.erase(0, 1);
+    QString rootPath_ = QString::fromStdString(file_system::MaidsafeHomeDir(
+                  ClientController::instance()->SessionName()).string()+"/");
+
+    std::string fullFilePath(rootPath_.toStdString() + filepath.toStdString());
+
+    if (fs::exists(fullFilePath)) {
+      try {
+        fs::remove(fullFilePath);
+        qDebug() << "Remove File Success:"
+                 << QString::fromStdString(fullFilePath);
+      }
+      catch(const std::exception&) {
+        qDebug() << "Remove File failure:"
+                 << QString::fromStdString(fullFilePath);
+      }
+    }
+  }
+  onEmailClicked(item);
+}
+
+void UserInbox::onSendEmailCompleted(int, const QString&) {
+  ui_.replyGroupBox->setVisible(false);
 }
 
 void UserInbox::onEmailClicked(QListWidgetItem* item) {
@@ -101,15 +187,14 @@ void UserInbox::onEmailClicked(QListWidgetItem* item) {
 
 void UserInbox::onEmailFileCompleted(int success, const QString& filepath) {
   if (success != -1) {
-
 		QString path = rootPath_ + filepath;
 		QFile file(path);
-	  if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
-	    return;
-	  QTextStream in(&file);
-	  QString line = in.readAll();
-	  ui_.emailDisplayEdit->setHtml(line);
-	  file.remove();
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
+     return;
+  QTextStream in(&file);
+  QString line = in.readAll();
+  ui_.emailDisplayEdit->setHtml(line);
+  file.remove();
 		ui_.replyGroupBox->setVisible(true);
 	}
 }

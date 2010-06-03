@@ -129,6 +129,7 @@ class PerpetualData : public QMainWindow {
     void onShareReceived(const QString&, const QString&);
     void onFileReceived(const maidsafe::InstantMessage&);
     void onEmailReceived(const maidsafe::InstantMessage&);
+    void onSaveFileCompleted(int, const QString&);
     void onConnectionStatusChanged(int status);
 
     void onUnreadMessagesChanged(int count);
