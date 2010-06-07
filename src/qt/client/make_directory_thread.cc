@@ -30,7 +30,7 @@ MakeDirectoryThread::~MakeDirectoryThread() { }
 void MakeDirectoryThread::run() {
   qDebug() << "MakeDirectoryThread::run" << filepath_;
 
-  int success = ClientController::instance()->mkdir(filepath_.toStdString());
+  int success = ClientController::instance()->mkdir(filepath_);
 
   emit makeDirectoryCompleted(success, filepath_);
 }

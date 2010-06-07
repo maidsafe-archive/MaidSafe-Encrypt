@@ -32,8 +32,7 @@ void RenameFileThread::run() {
   qDebug() << "RenameFileThread::run" << filepath_;
 
   int success =
-      ClientController::instance()->rename(filepath_.toStdString(),
-                                           newFilePath_.toStdString());
+      ClientController::instance()->rename(filepath_, newFilePath_);
   this->sleep(1);
 
   emit renameFileCompleted(success, filepath_, newFilePath_);

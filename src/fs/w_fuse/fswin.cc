@@ -176,7 +176,7 @@ static int __stdcall WinCreateFile(const WCHAR *FileName,
   std::string ser_mdm = "";  // , ser_mdm_branch;
   maidsafe::MetaDataMap mdm;
   if (!maidsafe::ClientController::getInstance()->getattr(relPathStr,
-                                                          ser_mdm)) {
+                                                          &ser_mdm)) {
     if (!fs::exists(full_branch_path_)) {
       try {
         fs::create_directories(full_branch_path_);
@@ -239,7 +239,7 @@ static int __stdcall WinCreateFile(const WCHAR *FileName,
     std::string relPathStrElement(relPathStr), ser_mdm_dir("");
     relPathStrElement += "/a";
     if (maidsafe::ClientController::getInstance()->getattr(relPathStrElement,
-                                                           ser_mdm_dir)) {
+                                                           &ser_mdm_dir)) {
 //      printf("yyyyyyyyyyyyyyyyyyyyyyyyyyyyyy\n");
     }
 //    handle = CreateFile(
@@ -651,7 +651,7 @@ static int __stdcall WinGetFileInformation(
         return -1;
       }
       if (maidsafe::ClientController::getInstance()->getattr(relPathStr,
-                                                             ser_mdm)) {
+                                                             &ser_mdm)) {
         DbgPrint("In WinGetFileInfo, getattr failed\n");
         return -1;
       }
@@ -711,7 +711,7 @@ static int __stdcall WinFindFiles(const WCHAR *FileName,
   std::string relPathStr(WstrToStr(FileName));
   wcscat(filePath, yenStar);
   std::map<std::string, maidsafe::ItemType> children;
-  maidsafe::ClientController::getInstance()->readdir(relPathStr, children);
+  maidsafe::ClientController::getInstance()->readdir(relPathStr, &children);
   while (!children.empty()) {
     std::string s = children.begin()->first;
     maidsafe::ItemType ityp = children.begin()->second;
@@ -720,7 +720,7 @@ static int __stdcall WinFindFiles(const WCHAR *FileName,
     fs::path path_(relPathStr);
     path_ /= s;
     if (maidsafe::ClientController::getInstance()->getattr(path_.string(),
-                                                           ser_mdm)) {
+                                                           &ser_mdm)) {
       DbgPrint("In WinFindFiles, getattr failed\n");
       return -1;
     }
@@ -855,7 +855,7 @@ static int __stdcall WinDeleteDirectory(const WCHAR *FileName,
   }
 //    std::map<std::string, maidsafe::ItemType> children;
 //    if (maidsafe::ClientController::getInstance()->readdir(relPathStr,
-//                                                           children))
+//                                                           &children))
 //      return -errno;
 //    DbgPrint("In WinDeleteDirectory, Directory %s has %i children.\n\n\n",
 //           relPathStr.c_str(),

@@ -812,8 +812,12 @@ int LocalStoreManager::ModifyBPInfo(const std::string &info) {
 
 int LocalStoreManager::LoadBPMessages(
     std::list<ValidatedBufferPacketMessage> *messages) {
-  if (ss_->Id(MPID) == "")
+  if (ss_->Id(MPID) == "") {
+#ifdef DEBUG
+    printf("LocalStoreManager::LoadBPMessages - No MPID.\n");
+#endif
     return 0;
+  }
 
   std::string bp_in_chunk;
   std::string bufferpacketname(BufferPacketName());

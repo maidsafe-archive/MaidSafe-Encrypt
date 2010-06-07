@@ -22,7 +22,7 @@
 
 
 GetEmailThread::GetEmailThread(const QString& subject, QObject* parent)
-													:	subject_(subject), WorkerThread(parent) {}
+    :	WorkerThread(parent), subject_(subject) {}
 
 GetEmailThread::~GetEmailThread() { }
 

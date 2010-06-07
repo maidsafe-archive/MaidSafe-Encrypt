@@ -136,7 +136,6 @@ void PerpetualData::onJoinKademliaCompleted(bool b) {
   connect(ClientController::instance(),
                 SIGNAL(emailReceieved(const maidsafe::InstantMessage&)),
            this, SLOT(onEmailReceived(const maidsafe::InstantMessage&)));
-
 }
 
 PerpetualData::~PerpetualData() {
@@ -157,7 +156,7 @@ void PerpetualData::createActions() {
   actions_[ AWAY ] = ui_.actionAway;
   actions_[ BUSY ] = ui_.actionBusy;
   actions_[ OFFLINE_2 ] = ui_.actionOffline_2;
-	actions_[ EMAIL ] = ui_.actionEmail;
+  actions_[ EMAIL ] = ui_.actionEmail;
 // actions_[ SAVE_SESSION ] = ui_.actionSave_Session;
 
 // Remove Status Menu until implemented
@@ -186,15 +185,15 @@ void PerpetualData::createActions() {
   connect(actions_[ SETTINGS ], SIGNAL(triggered()),
           this,                 SLOT(onSettingsTriggered()));
   connect(actions_[ ONLINE ], SIGNAL(triggered()),
-          this,                 SLOT(onOnlineTriggered()));
+          this,               SLOT(onOnlineTriggered()));
   connect(actions_[ AWAY ], SIGNAL(triggered()),
-          this,                 SLOT(onAwayTriggered()));
+          this,             SLOT(onAwayTriggered()));
   connect(actions_[ BUSY ], SIGNAL(triggered()),
-          this,                 SLOT(onBusyTriggered()));
+          this,             SLOT(onBusyTriggered()));
   connect(actions_[ OFFLINE_2 ], SIGNAL(triggered()),
-          this,                 SLOT(onOffline_2Triggered()));
+          this,                  SLOT(onOffline_2Triggered()));
   connect(actions_[ EMAIL ], SIGNAL(triggered()),
-          this,                 SLOT(onEmailTriggered()));
+          this,              SLOT(onEmailTriggered()));
 // connect(actions_[ SAVE_SESSION ], SIGNAL(triggered()),
 //         this,                     SLOT(onSaveSession()));
 }
@@ -582,20 +581,20 @@ void PerpetualData::onMessageReceived(int type,
       mess_->setMessage(tr("%1").arg(detail));
       mess_->show();
     } else {
-			foreach(QWidget *widget, QApplication::allWidgets()) {
-				PersonalMessages *mess = qobject_cast<PersonalMessages*>(widget);
-				if (mess) {
-					if (mess->getName() == sender) {
-						mess->setMessage(tr("%1").arg(detail));
-						mess->show();
-					}
-				}
-			}
-		}
+      foreach(QWidget *widget, QApplication::allWidgets()) {
+        PersonalMessages *mess = qobject_cast<PersonalMessages*>(widget);
+        if (mess) {
+          if (mess->getName() == sender) {
+            mess->setMessage(tr("%1").arg(detail));
+            mess->show();
+          }
+        }
+      }
+    }
   } else if (ClientController::MessageType(type) == ClientController::INVITE) {
     // TODO(Team#5#): 2010-01-13 - handle Invite
-	} else if (ClientController::MessageType(type) == ClientController::EMAIL) {
-		//TODO HANDLE New email message
+  } else if (ClientController::MessageType(type) == ClientController::EMAIL) {
+    //TODO HANDLE New email message
   } else {
     printf("Type != ClientController::TEXT && ClientController::INVITE\n");
   }
@@ -611,54 +610,60 @@ void PerpetualData::onShareReceived(const QString& from,
 }
 
 void PerpetualData::onEmailReceived(const maidsafe::InstantMessage& im) {
-	//TODO:Get email data and save in hidden maidsafe folder
+  //TODO:Get email data and save in hidden maidsafe folder
   statusBar()->showMessage(tr("You have a new Email!"));
-	maidsafe::EmailNotification en = im.email_notification();
+  maidsafe::EmailNotification en = im.email_notification();
 
-	QString emailRootPath_ = QString::fromStdString(file_system::MaidsafeHomeDir(
-                    ClientController::instance()->SessionName()).string()+"/")
-										.append("/Emails/");
+  QString emailRootPath = QString::fromStdString(file_system::MaidsafeHomeDir(
+                          ClientController::instance()->SessionName()).string())
+                              .append("/Emails/");
+  if (!boost::filesystem::exists(emailRootPath.toStdString()))
+    boost::filesystem::create_directories(emailRootPath.toStdString());
 
-	QString emailFolder = "/Emails/";
+  QString emailFolder = "/Emails/";
 
-	std::string tidyRelPathStr = maidsafe::TidyPath(emailFolder.toStdString());
-	QString emailFolderPath = QString::fromStdString(tidyRelPathStr);
+  std::string tidyRelPathStr = maidsafe::TidyPath(emailFolder.toStdString());
+  QString emailFolderPath = QString::fromStdString(tidyRelPathStr);
 
-	std::map<std::string, maidsafe::ItemType> children;
-  ClientController::instance()->readdir(emailFolderPath.toStdString(), children);
+  std::map<std::string, maidsafe::ItemType> children;
+  ClientController::instance()->readdir(emailFolderPath, &children);
 
-	QString emailFullPath = QString("%1%2_%3.pdmail").arg(emailRootPath_)
-																					.arg(QString::fromStdString(im.subject()))
-																					.arg(QString::fromStdString(im.conversation())); //unique conv
+  QString emailFullPath;
+  emailFullPath = QString("%1%2_%3.pdmail")
+                      .arg(emailRootPath)
+                      .arg(QString::fromStdString(im.subject()))
+                      .arg(QString::fromStdString(im.conversation()));
 
-	QString emailMaidsafePath = QString("%1%2_%3.pdmail").arg(emailFolder)
-                                .arg(QString::fromStdString(im.subject()))
-																.arg(QString::fromStdString(im.conversation()));
+  QString emailMaidsafePath;
+  emailMaidsafePath = QString("%1%2_%3.pdmail")
+                          .arg(emailFolder)
+                          .arg(QString::fromStdString(im.subject()))
+                          .arg(QString::fromStdString(im.conversation()));
 
   std::string tidyEmail = maidsafe::TidyPath(emailMaidsafePath.toStdString());
   QString tidyEmailMaidsafePath = QString::fromStdString(tidyEmail);
-	try {
-		std::ofstream myfile;
-    myfile.open(emailFullPath.toStdString().c_str());
-		// SAVE AS XML
+  try {
+    std::ofstream myfile;
+    myfile.open(emailFullPath.toStdString().c_str(), std::ios::app);
+    // SAVE AS XML
     QString htmlMessage = tr("From : %1 at %2 <br /> %3 <br /> %4")
         .prepend("<span style=\"background-color:#CCFF99\"><br />")
         .arg(QString::fromStdString(im.sender()))
         .arg("date")
-				.arg(QString::fromStdString(im.subject()))
+        .arg(QString::fromStdString(im.subject()))
         .arg(QString::fromStdString(im.message()))
-        .append("</span>"); 
+        .append("</span>");
     myfile << htmlMessage.toStdString();
     myfile.close();
 
-		SaveFileThread* sft = new SaveFileThread(tidyEmailMaidsafePath, this);
-		connect(sft,  SIGNAL(saveFileCompleted(int, const QString&)),
+    SaveFileThread* sft = new SaveFileThread(tidyEmailMaidsafePath, this);
+    connect(sft,  SIGNAL(saveFileCompleted(int, const QString&)),
           this, SLOT(onSaveFileCompleted(int, const QString&)));
-		sft->start();
+    sft->start();
   }
   catch(const std::exception&) {
     qDebug() << "Create File Failed";
-	}
+  }
 }
 
 void PerpetualData::onSaveFileCompleted(int success, const QString& filepath) {
@@ -851,8 +856,8 @@ void PerpetualData::onOffline_2Triggered() {
 }
 
 void PerpetualData::onEmailTriggered() {
-	inbox_ = new UserInbox(this);
-	inbox_->exec();
+  inbox_ = new UserInbox(this);
+  inbox_->exec();
 }
 
 void PerpetualData::onLogoutUserCompleted(bool success) {

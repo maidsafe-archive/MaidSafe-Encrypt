@@ -107,14 +107,15 @@ class ClientController : public QObject {
   // qt file browser methods //
   /////////////////////////////
 
-  int getattr(const std::string &path, std::string &ser_mdm);
-  int readdir(const std::string &path,  // NOLINT
-              std::map<std::string, maidsafe::ItemType> &children);
-  int read(const std::string &path);
-  int write(const std::string &path);
-  int rename(const std::string &path, const std::string &path2);
-  int mkdir(const std::string &path);
-  int rmdir(const std::string &path);
+  int getattr(const QString &path, std::string *ser_mdm);
+  int readdir(const QString &path,  // NOLINT
+              std::map<std::string, maidsafe::ItemType> *children);
+  int read(const QString &path);
+  int write(const QString &path);
+  int rename(const QString &path, const QString &path2);
+  int mkdir(const QString &path);
+  int rmdir(const QString &path);
+  int mknod(const QString &path);
 
   bool CreatePublicUsername(const std::string &public_username);
   bool CreateUser(const std::string &username,

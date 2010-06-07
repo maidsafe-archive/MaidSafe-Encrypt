@@ -1397,7 +1397,7 @@ int ClientController::HandleAddContactRequest(
       return -777;
     }
 
-    Contact c;											
+    Contact c;
     c.SetPublicName(sender);
     c.SetPublicKey(rec_public_key);
     c.SetFullName(ci.name());
@@ -1581,7 +1581,7 @@ int ClientController::SendEmail(const std::string &subject, const std::string &m
   }
 
   return res;
-}	
+}
 
 int ClientController::SendInstantMessage(const std::string &message,
     const std::vector<std::string> &contact_names,
@@ -2967,7 +2967,7 @@ int ClientController::rmdir(const std::string &path) {
   return 0;
 }
 
-int ClientController::getattr(const std::string &path, std::string &ser_mdm) {
+int ClientController::getattr(const std::string &path, std::string *ser_mdm) {
   if (!initialised_) {
 #ifdef DEBUG
     printf("CC::getattr - Not initialised.\n");
@@ -2982,15 +2982,16 @@ int ClientController::getattr(const std::string &path, std::string &ser_mdm) {
   if (GetDb(path, &dir_type, &msid))
     return -1;
   boost::scoped_ptr<DataAtlasHandler> dah_(new DataAtlasHandler());
-  if (dah_->GetMetaDataMap(path, &ser_mdm))
+  if (dah_->GetMetaDataMap(path, ser_mdm))
     return -1;
   MetaDataMap mdm;
-  mdm.ParseFromString(ser_mdm);
+  if (!mdm.ParseFromString(*ser_mdm))
+    return -1;
   return 0;
 }
 
 int ClientController::readdir(const std::string &path,  // NOLINT
-                              std::map<std::string, ItemType> &children) {
+                              std::map<std::string, ItemType> *children) {
   if (!initialised_) {
 #ifdef DEBUG
     printf("CC::readdir - Not initialised.\n");
@@ -3004,8 +3005,8 @@ int ClientController::readdir(const std::string &path,  // NOLINT
   std::string msid;
   if (GetDb(path, &dir_type, &msid))
     return -1;
-  boost::scoped_ptr<DataAtlasHandler> dah_(new DataAtlasHandler());
-  if (dah_->ListFolder(path, &children))
+  boost::scoped_ptr<DataAtlasHandler> dah(new DataAtlasHandler());
+  if (dah->ListFolder(path, children))
     return -1;
   return 0;
 }

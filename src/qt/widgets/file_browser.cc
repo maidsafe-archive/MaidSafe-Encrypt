@@ -141,11 +141,11 @@ void FileBrowser::createAndConnectActions() {
   tilesMode->setCheckable(true);*/
   detailMode = new QAction(tr("Details"), viewGroup);
   detailMode->setCheckable(true);
-  detailMode->setChecked(true);	
+  detailMode->setChecked(true);
 	listMode = new QAction(tr("List"), viewGroup);
   listMode->setCheckable(true);
 	bigListMode = new QAction(tr("Big List"), viewGroup);
-	bigListMode->setCheckable(true);	
+	bigListMode->setCheckable(true);
   iconMode = new QAction(tr("Icons"), viewGroup);
   iconMode->setCheckable(true);
 
@@ -189,7 +189,7 @@ void FileBrowser::setActive(bool b) {
                     ClientController::instance()->SessionName()).string()+"/");
 
     qDebug() << rootPath_;
-    
+
     populateDirectory("/");
     createTreeDirectory("/");
     ui_.driveTreeWidget->header()->setResizeMode(QHeaderView::Interactive);
@@ -257,7 +257,7 @@ void FileBrowser::dropEvent(QDropEvent *event) {
 
 void FileBrowser::onMousePressed(QTreeWidgetItem *item, int) {
   if (QApplication::mouseButtons() == Qt::RightButton) {
-    if (item->text(3) == "Directory")	
+    if (item->text(3) == "Directory")
       setMenuDirMenu();
     else
       setMenuFileMenu();
@@ -267,12 +267,12 @@ void FileBrowser::onMousePressed(QTreeWidgetItem *item, int) {
 
 void FileBrowser::onIconMousePressed(QListWidgetItem* item) {
   if (QApplication::mouseButtons() == Qt::RightButton) {
-    if (item->toolTip().contains("Directory"))	
+    if (item->toolTip().contains("Directory"))
       setMenuDirMenu();
     else
       setMenuFileMenu();
     menu->exec(QCursor::pos());
-  }	
+  }
 }
 
 void FileBrowser::onOpenFileClicked() {
@@ -295,7 +295,7 @@ void FileBrowser::onOpenWithClicked() {
 											tr("You must download the file before trying to open it"));
 			return;
 		}
-		path = rootPath_ + currentDir_ + theItem->text(0);	
+		path = rootPath_ + currentDir_ + theItem->text(0);
 	} else {
 		QListWidgetItem* theItem = ui_.driveListWidget->currentItem();
 		if(theItem->toolTip().contains(tr("Newtork"))) {
@@ -303,7 +303,7 @@ void FileBrowser::onOpenWithClicked() {
 					tr("You must download the file before trying to open it"));
 			return;
 	}
-		path = rootPath_ + currentDir_ + theItem->text();	
+		path = rootPath_ + currentDir_ + theItem->text();
 }
 
 #if defined(PD_WIN32)
@@ -574,12 +574,12 @@ int FileBrowser::drawDetailView(){
   ui_.locationEdit->setText(currentDir_);
 
   int rowCount = 0;
-  std::string relPathStr = currentDir_.toStdString();
+//  std::string relPathStr = currentDir_.toStdString();
   std::map<std::string, maidsafe::ItemType> children;
-	std::string tidyRelPathStr = maidsafe::TidyPath(relPathStr);
-  ClientController::instance()->readdir(tidyRelPathStr, children);
+//	std::string tidyRelPathStr = maidsafe::TidyPath(relPathStr);
+  ClientController::instance()->readdir(currentDir_, &children);
 
-  qDebug() << "populateDirectory: " << QString::fromStdString(tidyRelPathStr);
+//  qDebug() << "populateDirectory: " << QString::fromStdString(tidyRelPathStr);
 
   QStringList columns;
   columns << tr("Name") << tr("Status") << tr("Size") << tr("Type")
@@ -592,10 +592,10 @@ int FileBrowser::drawDetailView(){
     maidsafe::ItemType ityp = children.begin()->second;
     maidsafe::MetaDataMap mdm;
     std::string ser_mdm;
-    fs::path path_(relPathStr);
-    path_ /= s;
-		std::string str = maidsafe::TidyPath(path_.string());
-    if (ClientController::instance()->getattr(str, ser_mdm)) {
+    fs::path path(currentDir_.toStdString());
+    path /= s;
+		QString str(path.string().c_str());
+    if (ClientController::instance()->getattr(str, &ser_mdm)) {
       qDebug() << "populateDirectory failed at getattr()";
       return -1;
     }
@@ -609,7 +609,7 @@ int FileBrowser::drawDetailView(){
 
     if (ityp == maidsafe::DIRECTORY || ityp == maidsafe::EMPTY_DIRECTORY) {
       // Folder
-      QString qtPath = getFullFilePath(rootPath_ + currentDir_ 
+      QString qtPath = getFullFilePath(rootPath_ + currentDir_
                                 + QString::fromStdString(s));
       if (!fs::exists(qtPath.toStdString())) {
         try {
@@ -673,12 +673,12 @@ int FileBrowser::drawIconView(){
   ui_.locationEdit->setText(currentDir_);
 
   int rowCount = 0;
-  std::string relPathStr = currentDir_.toStdString();
+//  std::string relPathStr = currentDir_.toStdString();
   std::map<std::string, maidsafe::ItemType> children;
-	std::string tidyRelPathStr = maidsafe::TidyPath(relPathStr);
-  ClientController::instance()->readdir(tidyRelPathStr, children);
+//	std::string tidyRelPathStr = maidsafe::TidyPath(relPathStr);
+  ClientController::instance()->readdir(currentDir_, &children);
 
-  qDebug() << "drawIconView: " << QString::fromStdString(relPathStr);
+//  qDebug() << "drawIconView: " << QString::fromStdString(relPathStr);
 
   while (!children.empty()) {
     std::string s = children.begin()->first;
@@ -686,10 +686,10 @@ int FileBrowser::drawIconView(){
     maidsafe::ItemType ityp = children.begin()->second;
     maidsafe::MetaDataMap mdm;
     std::string ser_mdm;
-    fs::path path_(relPathStr);
-    path_ /= s;
-		std::string str = maidsafe::TidyPath(path_.string());
-    if (ClientController::instance()->getattr(str, ser_mdm)) {
+    fs::path path(currentDir_.toStdString());
+    path /= s;
+		QString str(path.string().c_str());
+    if (ClientController::instance()->getattr(str, &ser_mdm)) {
       qDebug() << "drawIconView failed at getattr()";
       return -1;
     }
@@ -703,7 +703,7 @@ int FileBrowser::drawIconView(){
 
     if (ityp == maidsafe::DIRECTORY || ityp == maidsafe::EMPTY_DIRECTORY) {
       // Folder
-      QString qtPath = getFullFilePath(rootPath_ + currentDir_ 
+      QString qtPath = getFullFilePath(rootPath_ + currentDir_
                                       + QString::fromStdString(s));
       if (!fs::exists(qtPath.toStdString())) {
         try {
@@ -731,7 +731,7 @@ int FileBrowser::drawIconView(){
                                 currentDir_.toStdString() + s;
       QIcon theIcon = getAssociatedIconFromPath(
                       QString::fromStdString(fullFilePath));
-			
+
       QString item = QString::fromStdString(s);
       QListWidgetItem *newItem = new QListWidgetItem;
       newItem->setIcon(theIcon);
@@ -767,7 +767,7 @@ int FileBrowser::drawIconView(){
 			ui_.driveListWidget->setIconSize(QSize(32,32));
 		else
 			ui_.driveListWidget->setIconSize(QSize());
-	} else {				
+	} else {
 		ui_.driveListWidget->setViewMode(QListView::IconMode);
 		ui_.driveListWidget->setFlow(QListView::LeftToRight);
 		ui_.driveListWidget->setWordWrap(false);
@@ -776,15 +776,15 @@ int FileBrowser::drawIconView(){
   return 0;
 }
 
-int FileBrowser::createTreeDirectory(QString dir) {
+int FileBrowser::createTreeDirectory(QString) {
   qDebug() << "createTreeDirectory: ";
   ui_.treeViewTreeWidget->clear();
 
   int rowCount = 0;
-  std::string relPathStr = currentTreeDir_.toStdString() + dir.toStdString();
+//  std::string relPathStr = currentTreeDir_.toStdString() + dir.toStdString();
   std::map<std::string, maidsafe::ItemType> children;
-	std::string tidyRelPathStr = maidsafe::TidyPath(relPathStr);
-  ClientController::instance()->readdir(tidyRelPathStr, children);
+//	std::string tidyRelPathStr = maidsafe::TidyPath(relPathStr);
+  ClientController::instance()->readdir(currentTreeDir_, &children);
 
   qDebug() << "createTreeDirectory: ";
   QStringList columns;
@@ -797,10 +797,10 @@ int FileBrowser::createTreeDirectory(QString dir) {
     maidsafe::ItemType ityp = children.begin()->second;
     maidsafe::MetaDataMap mdm;
     std::string ser_mdm;
-    fs::path path_(relPathStr);
-    path_ /= s;
-		std::string str = maidsafe::TidyPath(path_.string());
-    if (ClientController::instance()->getattr(str, ser_mdm)) {
+    fs::path path(currentTreeDir_.toStdString());
+    path /= s;
+		QString str(path.string().c_str());
+    if (ClientController::instance()->getattr(str, &ser_mdm)) {
       qDebug() << "populateDirectory failed at getattr()";
       return -1;
     }
@@ -815,9 +815,10 @@ int FileBrowser::createTreeDirectory(QString dir) {
       newItem->setIcon(0, theIcon);
       newItem->setText(0, item);
 
-      std::string relPathStr1 = relPathStr + s + "/";
+      std::string relPathStr1 = currentTreeDir_.toStdString() + s + "/";
       std::map<std::string, maidsafe::ItemType> children1;
-      ClientController::instance()->readdir(relPathStr, children1);
+      ClientController::instance()->readdir(QString::fromStdString(relPathStr1),
+                                            &children1);
 
       if (!children1.empty()) {
         QTreeWidgetItem *emptyItem = new QTreeWidgetItem(newItem);
@@ -839,7 +840,7 @@ void FileBrowser::onListItemDoubleClicked(QListWidgetItem* item) {
 		if (item->toolTip().contains("Network")) {
 			item->setToolTip(item->toolTip().replace("Network","Downloading", Qt::CaseSensitive));
 
-			std::string tidyRelPathStr = maidsafe::TidyPath(currentDir_.toStdString() + 
+			std::string tidyRelPathStr = maidsafe::TidyPath(currentDir_.toStdString() +
 																										item->text().toStdString());
 			QString openFilePath = QString::fromStdString(tidyRelPathStr);
 			qDebug() << "upload File" << openFilePath;
@@ -982,7 +983,7 @@ void FileBrowser::onReadFileCompleted(int success, const QString& filepath) {
 				QTreeWidgetItem* theWidget = widgetList[0];
 				ui_.driveTreeWidget->editItem(theWidget, 1);
 				theWidget->setText(1, tr("Local"));
-			} 
+			}
 		} else {
 			QList<QListWidgetItem *> widgetList = ui_.driveListWidget->findItems(
 																								theFile, Qt::MatchExactly);
@@ -1178,7 +1179,6 @@ void FileBrowser::changeEvent(QEvent *event) {
 
 void FileBrowser::onItemExpanded(QTreeWidgetItem* item) {
   qDebug() << "Item Expanded: ";
-  currentTreeDir_ = "/";
   while (item->childCount() > 0) {
     item->removeChild(ui_.treeViewTreeWidget->itemBelow(item));
   }
@@ -1189,10 +1189,10 @@ void FileBrowser::onItemExpanded(QTreeWidgetItem* item) {
   QString folder = item->text(0);
   std::string relPathStr(currentTreeDir_.toStdString() +
                          folder.toStdString() + "/");
-  std::map<std::string, maidsafe::ItemType> children;
-  ClientController::instance()->readdir(relPathStr, children);
-  qDebug() << "Path String : " << QString::fromStdString(relPathStr);
   currentTreeDir_ = QString::fromStdString(relPathStr);
+  std::map<std::string, maidsafe::ItemType> children;
+  ClientController::instance()->readdir(currentTreeDir_, &children);
+//  qDebug() << "Path String : " << QString::fromStdString(relPathStr);
 
   while (!children.empty()) {
     std::string s = children.begin()->first;
@@ -1200,9 +1200,10 @@ void FileBrowser::onItemExpanded(QTreeWidgetItem* item) {
     maidsafe::ItemType ityp = children.begin()->second;
     maidsafe::MetaDataMap mdm;
     std::string ser_mdm;
-    fs::path path_(relPathStr);
-    path_ /= s;
-    if (ClientController::instance()->getattr(path_.string(), ser_mdm)) {
+    fs::path path(relPathStr);
+    path /= s;
+    QString str(path.string().c_str());
+    if (ClientController::instance()->getattr(str, &ser_mdm)) {
       qDebug() << "onItemExpanded failed at getattr()";
     }
     mdm.ParseFromString(ser_mdm);
@@ -1217,10 +1218,11 @@ void FileBrowser::onItemExpanded(QTreeWidgetItem* item) {
 
       std::string relPathStr1 = relPathStr + s + "/";
       std::map<std::string, maidsafe::ItemType> children1;
-      ClientController::instance()->readdir(relPathStr, children1);
+      ClientController::instance()->readdir(QString::fromStdString(relPathStr1),
+                                            &children1);
 
       if (!children.empty()) {
-        QTreeWidgetItem *emptyItem = new QTreeWidgetItem(newItem);
+//        QTreeWidgetItem *emptyItem = new QTreeWidgetItem(newItem);
       }
       ui_.driveTreeWidget->insertTopLevelItem(rowCount, newItem);
     }
@@ -1229,7 +1231,7 @@ void FileBrowser::onItemExpanded(QTreeWidgetItem* item) {
   }
 }
 
-void FileBrowser::onFolderItemPressed(QTreeWidgetItem* item, int colum) {
+void FileBrowser::onFolderItemPressed(QTreeWidgetItem* item, int) {
   if (QApplication::mouseButtons() == Qt::LeftButton) {
     QString dir = getCurrentTreePath(item);
     populateDirectory(dir + item->text(0) + "/");
@@ -1294,8 +1296,8 @@ void FileBrowser::onSortGroupClicked(QAction* action) {
 		ui_.driveTreeWidget->sortByColumn(3, order);
 	} else if (action == dateSort) {
 		ui_.driveTreeWidget->sortByColumn(4, order);
-	}	
-	ui_.driveListWidget->sortItems(order);	
+	}
+	ui_.driveListWidget->sortItems(order);
 }
 
 QString FileBrowser::getCurrentTreePath(QTreeWidgetItem* item) {

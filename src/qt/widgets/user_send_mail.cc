@@ -16,7 +16,9 @@
 #include <QMessageBox>
 #include <QDebug>
 
-#include "maidsafe/utils.h"
+#include <fstream>
+#include <string>
+
 #include "qt/client/client_controller.h"
 
 UserSendMail::UserSendMail(QWidget* parent) : QDialog(parent) {
@@ -30,7 +32,8 @@ UserSendMail::~UserSendMail() {}
 
 void UserSendMail::addToRecipients(const QList<QString>& to) {
   foreach(QString recipient, to) {
-    ui_.toTextEdit->setPlainText(recipient + "," + ui_.toTextEdit->toPlainText());
+    ui_.toTextEdit->setPlainText(recipient + "," +
+                                 ui_.toTextEdit->toPlainText());
   }
 }
 
@@ -53,101 +56,87 @@ void UserSendMail::onSendClicked(bool) {
   QStringList contacts = ClientController::instance()->contactsNames();
   int count =0;
   foreach(QString contact, toList) {
-    if(!contacts.contains(contact)) {
+    if (!contacts.contains(contact)) {
       toList.removeAt(count);
       count++;
     }
   }
   count = 0;
   foreach(QString contact, ccList) {
-    if(!contacts.contains(contact)) {
+    if (!contacts.contains(contact)) {
       ccList.removeAt(count);
       count++;
     }
   }
   count =0;
-	foreach(QString contact, bccList) {
-		if(!contacts.contains(contact)) {
-			bccList.removeAt(count);
-			count++;
-		}
-	}
-	 //generate random conv id
-	//QString conv = QString::fromStdString(base::RandomString(5));
+  foreach(QString contact, bccList) {
+    if (!contacts.contains(contact)) {
+      bccList.removeAt(count);
+      count++;
+    }
+  }
+  // generate random conv id
+  // QString conv = QString::fromStdString(base::RandomString(5));
   QString conv = ClientController::instance()->publicUsername();
 
-	SendEmailThread* set = new SendEmailThread(subject, message, toList, ccList,
-																						 bccList, conv, this);
+  SendEmailThread* set = new SendEmailThread(subject, message, toList, ccList,
+                                             bccList, conv, this);
 
   connect(set,  SIGNAL(sendEmailCompleted(int, const QString&)),
-              this, SLOT(onSendEmailCompleted(int, const QString&)));	
+          this, SLOT(onSendEmailCompleted(int, const QString&)));
 
   set->start();
 
-	try {
-	  QString emailRootPath_ = QString::fromStdString(file_system::MaidsafeHomeDir(
-                  ClientController::instance()->SessionName()).string()+"/")
-								.append("/Emails/");
+  try {
+    QString emailRootPath = QString::fromStdString(
+                                file_system::MaidsafeHomeDir(
+                                    ClientController::instance()->SessionName())
+                                    .string())
+                                .append("/Emails/");
+    if (!boost::filesystem::exists(emailRootPath.toStdString()))
+      boost::filesystem::create_directories(emailRootPath.toStdString());
 
-	  QString emailFullPath = QString("%1%2_%3.pdmail").arg(emailRootPath_)
-													.arg(subject).arg(conv);
+    QString emailFullPath = QString("%1%2_%3.pdmail").arg(emailRootPath)
+                                                     .arg(subject).arg(conv);
 
-    QString emailFolder = "/Emails/";
+    qDebug() << "upload File" << emailFullPath;
+
+    QString emailFolder("/Emails/");
     QString emailMaidsafePath = QString("%1%2_%3.pdmail").arg(emailFolder)
-                                          .arg(subject).arg(conv);
+                                                         .arg(subject)
+                                                         .arg(conv);
 
-	  std::string tidyRelPathStr = maidsafe::TidyPath(emailMaidsafePath.toStdString());
-	  QString emailFolderPath = QString::fromStdString(tidyRelPathStr);
-	  qDebug() << "upload File" << emailFolderPath;
+    qDebug() << "upload File" << emailMaidsafePath;
 
-		std::ofstream myfile;
-    myfile.open(emailFullPath.toStdString().c_str());
-		// SAVE AS XML
-	  QString htmlMessage = tr("From : me to %1 at %2 <br /> %3 <br /> %4")
+    std::ofstream myfile;
+    myfile.open(emailFullPath.toStdString().c_str(), std::ios::app);
+    // SAVE AS XML
+    QString htmlMessage = tr("From : me to %1 at %2 <br /> %3 <br /> %4")
         .prepend("<span style=\"background-color:#CCFF99\"><br />")
-        .arg(to).arg("date").arg(subject).arg(message)
-        .append("</span>"); 
+        .arg(to).arg("date").arg(subject).arg(message).append("</span>");
     myfile << htmlMessage.toStdString();
     myfile.close();
 
-    SaveFileThread* sft = new SaveFileThread(emailFolderPath, this);
-		connect(sft,  SIGNAL(saveFileCompleted(int, const QString&)),
-          this, SLOT(onSaveFileCompleted(int, const QString&)));
+    SaveFileThread* sft = new SaveFileThread(emailMaidsafePath, this);
+    connect(sft,  SIGNAL(saveFileCompleted(int, const QString&)),
+            this, SLOT(onSaveFileCompleted(int, const QString&)));
     sft->start();
-
   }
   catch(const std::exception&) {
     qDebug() << "Create File Failed";
-	}
-}
-
-void UserSendMail::onSaveFileCompleted(int success, const QString& filepath) {
-  qDebug() << "onSaveFileCompleted : " << filepath;
-  if (success != -1) {
-    std::string dir = filepath.toStdString();
-    dir.erase(0, 1);
-    QString rootPath_ = QString::fromStdString(file_system::MaidsafeHomeDir(
-                  ClientController::instance()->SessionName()).string()+"/");
-
-    std::string fullFilePath(rootPath_.toStdString() + filepath.toStdString());
-
-    if (fs::exists(fullFilePath)) {
-      try {
-        fs::remove(fullFilePath);
-        qDebug() << "Remove File Success:"
-                 << QString::fromStdString(fullFilePath);
-      }
-      catch(const std::exception&) {
-        qDebug() << "Remove File failure:"
-                 << QString::fromStdString(fullFilePath);
-      }
-    }
   }
 }
 
-void UserSendMail::onSendEmailCompleted(int success, const QString& subject) {
-	QMessageBox msgBox;
-  msgBox.setText(tr("Email : %1 sent!").arg(subject));
+void UserSendMail::onSaveFileCompleted(int success, const QString& filepath) {
+  qDebug() << "onSaveFileCompleted: " << filepath;
+  if (success != 0) {
+    qDebug() << "onSaveFileCompleted: Failed to send email";
+  }
+}
+
+void UserSendMail::onSendEmailCompleted(int, const QString& subject) {
+  QMessageBox msgBox;
+  msgBox.setText(tr("Email: %1 sent!").arg(subject));
   msgBox.exec();
 }
 

@@ -457,7 +457,7 @@ int FSLinux::ms_getattr(const char *path, struct stat *stbuf) {
 
   std::string ser_mdm;
   if (maidsafe::ClientController::getInstance()->getattr(
-      maidsafe::TidyPath(lpath), ser_mdm) != 0) {
+      maidsafe::TidyPath(lpath), &ser_mdm) != 0) {
 #ifdef DEBUG
     printf("CC getattr came back as failed.\n");
 #endif
@@ -505,7 +505,7 @@ int FSLinux::ms_fgetattr(const char *path, struct stat *stbuf,
 
   std::string ser_mdm;
   int n = maidsafe::ClientController::getInstance()->getattr(
-          maidsafe::TidyPath(lpath), ser_mdm);
+          maidsafe::TidyPath(lpath), &ser_mdm);
   maidsafe::MetaDataMap mdm;
   mdm.ParseFromString(ser_mdm);
 
@@ -534,7 +534,7 @@ int FSLinux::ms_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 
   std::map<std::string, maidsafe::ItemType> children;
   if (maidsafe::ClientController::getInstance()->readdir(
-      maidsafe::TidyPath(lpath), children) != 0)
+      maidsafe::TidyPath(lpath), &children) != 0)
     return -errno;
 
   (void) offset;
@@ -704,7 +704,7 @@ int FSLinux::ms_rmdir(const char *path) {
 
   std::map<std::string, maidsafe::ItemType> children;
   maidsafe::ClientController::getInstance()->readdir(
-      maidsafe::TidyPath(lpath), children);
+      maidsafe::TidyPath(lpath), &children);
   if (!children.empty())
     return -ENOTEMPTY;
 

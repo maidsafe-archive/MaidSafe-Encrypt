@@ -29,7 +29,7 @@ RemoveDirThread::~RemoveDirThread() { }
 void RemoveDirThread::run() {
   qDebug() << "SaveFileThread::run" << filepath_;
 
-  int success = ClientController::instance()->rmdir(filepath_.toStdString());
+  int success = ClientController::instance()->rmdir(filepath_);
 
   emit removeDirCompleted(success, filepath_);
 }
