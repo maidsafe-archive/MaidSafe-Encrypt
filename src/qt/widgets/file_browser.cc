@@ -190,6 +190,8 @@ void FileBrowser::setActive(bool b) {
 
     qDebug() << rootPath_;
 
+    currentDir_ = "/";
+    currentTreeDir_ = "/";
     populateDirectory("/");
     createTreeDirectory("/");
     ui_.driveTreeWidget->header()->setResizeMode(QHeaderView::Interactive);
@@ -779,7 +781,7 @@ int FileBrowser::drawIconView(){
 int FileBrowser::createTreeDirectory(QString) {
   qDebug() << "createTreeDirectory: ";
   ui_.treeViewTreeWidget->clear();
-
+  currentTreeDir_ = "/";
   int rowCount = 0;
 //  std::string relPathStr = currentTreeDir_.toStdString() + dir.toStdString();
   std::map<std::string, maidsafe::ItemType> children;
