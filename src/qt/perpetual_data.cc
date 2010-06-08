@@ -857,7 +857,7 @@ void PerpetualData::onOffline_2Triggered() {
 
 void PerpetualData::onEmailTriggered() {
   inbox_ = new UserInbox(this);
-  inbox_->exec();
+  inbox_->show();
 }
 
 void PerpetualData::onLogoutUserCompleted(bool success) {

@@ -44,7 +44,7 @@ class FileBrowser : public QDialog {
  private:
   Ui::FileBrowserPage ui_;
   bool init_;
-	BigListDelegate* bigListDelegate_;
+  BigListDelegate* bigListDelegate_;
   QString rootPath_;
   QString currentDir_;
   QString currentTreeDir_;
@@ -68,7 +68,7 @@ class FileBrowser : public QDialog {
   QAction *newFolder;
   QAction *tilesMode;
   QAction *listMode;
-	QAction *bigListMode;
+  QAction *bigListMode;
   QAction *detailMode;
   QAction *iconMode;
   QAction *nameSort;
@@ -80,7 +80,7 @@ class FileBrowser : public QDialog {
     TILES,
     DETAIL,
     LIST,
-		BIGLIST,
+    BIGLIST,
     SMALLICONS
     };
 
@@ -98,11 +98,13 @@ class FileBrowser : public QDialog {
   void uploadFileFromLocal(const QString& filePath);
   void saveFileToNetwork(const QString& filePath);
   void getTreeSubFolders(const QString);
-	void openFileFromDir(const QString);
+  void openFileFromDir(const QString);
   void setMenuDirMenu();
   void setMenuFileMenu();
   void setMenuSortIconMenu();
   void setMenuSortDetailMenu();
+  void setMenuSortNoFolderMenu();
+  void setMenuReadOnlyMenu();
   int drawTileView();
   int drawDetailView();
   int drawListView();
@@ -116,9 +118,9 @@ class FileBrowser : public QDialog {
 
   private slots:
     void onItemDoubleClicked(QTreeWidgetItem*, int);
-		void onListItemDoubleClicked(QListWidgetItem*);
+    void onListItemDoubleClicked(QListWidgetItem*);
     void onFolderItemPressed(QTreeWidgetItem*, int);
-		void onIconMousePressed(QListWidgetItem*);
+    void onIconMousePressed(QListWidgetItem*);
     void onMousePressed(QTreeWidgetItem* item, int column);
     void onItemExpanded(QTreeWidgetItem* item);
     void onReadFileCompleted(int success, const QString& filepath);

@@ -138,6 +138,7 @@ void UserSendMail::onSendEmailCompleted(int, const QString& subject) {
   QMessageBox msgBox;
   msgBox.setText(tr("Email: %1 sent!").arg(subject));
   msgBox.exec();
+  this->close();
 }
 
 void UserSendMail::changeEvent(QEvent *event) {

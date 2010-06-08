@@ -245,7 +245,7 @@ int DataAtlasHandler::ListFolder(const std::string &element_path,
 			TidyPath(kRootSubdir[i][0]), DIRECTORY));	
 		}
 		return kSuccess;
-	}
+  }
 
   // append "/a" to element_path so that GetPdDir finds correct branch
   fs::path path_(element_path, fs::native);

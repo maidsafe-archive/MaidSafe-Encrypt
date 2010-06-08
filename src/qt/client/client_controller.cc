@@ -307,11 +307,11 @@ bool ClientController::sendInstantMessage(const QString& txt,
 }
 
 bool ClientController::sendEmail(const QString& subject,
-                       const QString& message,
-                       const QList<QString>& to,
-											 const QList<QString>& cc,
-											 const QList<QString>& bcc,
-											 const QString& conversation) {
+                        const QString& message,
+                        const QList<QString>& to,
+                        const QList<QString>& cc,
+                        const QList<QString>& bcc,
+                        const QString& conversation) {
   qDebug() << "ClientController::sendEmail: " << subject;
 
   std::vector<std::string> contacts, stdcc, stdbcc;
@@ -319,16 +319,16 @@ bool ClientController::sendEmail(const QString& subject,
     contacts.push_back(c.toStdString());
   }
   foreach(QString c, cc) {
-		stdcc.push_back(c.toStdString());
-	}
-	foreach(QString c, bcc) {
+    stdcc.push_back(c.toStdString());
+  }
+  foreach(QString c, bcc) {
     stdbcc.push_back(c.toStdString());
   }
   const int n = maidsafe::ClientController::getInstance()->
               SendEmail(subject.toStdString(), message.toStdString(), contacts,
-							stdcc, stdbcc, conversation.toStdString());
+              stdcc, stdbcc, conversation.toStdString());
 
-	return (n == 0);
+  return (n == 0);
 }
 
 bool ClientController::sendInstantFile(const QString& filePath,
@@ -478,12 +478,12 @@ void ClientController::analyseMessage(const maidsafe::InstantMessage& im) {
       emit addedPrivateShare(QString::fromStdString(psn.name()));
       type = SHARE;
     }
-	} else if (im.has_email_notification()) {
-		//TODO:: emit signal to inform GUI of new email and
-		// woo only qt stuff from here :)
-		emit emailReceieved(im);
-		type = EMAIL;
-	}
+  } else if (im.has_email_notification()) {
+    // TODO(Stephen) :: emit signal to inform GUI of new email and
+    // woo only qt stuff from here :)
+    emit emailReceieved(im);
+    type = EMAIL;
+  }
 
   QDateTime time = QDateTime::currentDateTime();
   if (im.has_date()) {

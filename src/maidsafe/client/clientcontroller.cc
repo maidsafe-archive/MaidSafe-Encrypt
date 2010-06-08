@@ -1536,31 +1536,31 @@ int ClientController::SendEmail(const std::string &subject, const std::string &m
     return -9999;
   }
 
-	std::string toList, ccList;
-	std::vector<std::string> contact_to;
+  std::string toList, ccList;
+  std::vector<std::string> contact_to;
 
-	BOOST_FOREACH(std::string contact, to) {
-		contact_to.push_back(contact);
-		toList.append(contact+", ");
+  BOOST_FOREACH(std::string contact, to) {
+    contact_to.push_back(contact);
+    toList.append(contact+", ");
+  }
+  BOOST_FOREACH(std::string contact, cc) {
+    contact_to.push_back(contact);
+    ccList.append(contact+", ");
 	}
-	BOOST_FOREACH(std::string contact, cc) {
-		contact_to.push_back(contact);
-		ccList.append(contact+", ");
-	}
-	BOOST_FOREACH(std::string contact, bcc) {
-		contact_to.push_back(contact);
-	}
+  BOOST_FOREACH(std::string contact, bcc) {
+    contact_to.push_back(contact);
+  }
 
   InstantMessage im;
   EmailNotification *en =
-		im.mutable_email_notification();
+    im.mutable_email_notification();
   en->set_to(toList);
   en->set_cc(ccList);
   im.set_sender(ss_->PublicUsername());
   im.set_date(base::GetEpochTime());
   im.set_conversation(conversation);
   im.set_message(msg);
-	im.set_subject(subject);
+  im.set_subject(subject);
 
   std::string ser_email;
   im.SerializeToString(&ser_email);
@@ -3003,7 +3003,8 @@ int ClientController::readdir(const std::string &path,  // NOLINT
 #endif
   DirType dir_type;
   std::string msid;
-  if (GetDb(path, &dir_type, &msid))
+  // THIS MAY NOT WORK FOR DOKAN/FUSE!!!!
+  if (GetDb(path + "/a", &dir_type, &msid))
     return -1;
   boost::scoped_ptr<DataAtlasHandler> dah(new DataAtlasHandler());
   if (dah->ListFolder(path, children))

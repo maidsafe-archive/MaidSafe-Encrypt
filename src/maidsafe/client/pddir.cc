@@ -104,6 +104,7 @@ int PdDir::Connect() {
   }
   catch(const std::exception &e) {
 #ifdef DEBUG
+
     printf("%s\n", e.what());
 #endif
     return kDBOpenException;

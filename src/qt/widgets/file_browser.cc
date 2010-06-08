@@ -48,11 +48,11 @@ namespace fs = boost::filesystem;
 FileBrowser::FileBrowser(QWidget* parent) : QDialog(parent), init_(false) {
   ui_.setupUi(this);
   setWindowIcon(QPixmap(":/icons/16/globe"));
-	this->setWindowFlags(Qt::WindowMinMaxButtonsHint);
+  this->setWindowFlags(Qt::WindowMinMaxButtonsHint);
   // theWatcher_ = new QFileSystemWatcher;
   ui_.driveTreeWidget->setAcceptDrops(true);
   ui_.driveTreeWidget->viewport()->installEventFilter(this);
-	ui_.driveListWidget->installEventFilter(this);
+  ui_.driveListWidget->installEventFilter(this);
 
   createAndConnectActions();
 
@@ -71,10 +71,10 @@ FileBrowser::FileBrowser(QWidget* parent) : QDialog(parent), init_(false) {
   connect(ui_.backButton, SIGNAL(clicked(bool)),
           this,           SLOT(onBackClicked(bool)));
 
-	connect(ui_.driveListWidget, SIGNAL(itemDoubleClicked(QListWidgetItem*)),
+  connect(ui_.driveListWidget, SIGNAL(itemDoubleClicked(QListWidgetItem*)),
           this,           SLOT(onListItemDoubleClicked(QListWidgetItem*)));
 
-	connect(ui_.driveListWidget, SIGNAL(itemPressed(QListWidgetItem*)),
+  connect(ui_.driveListWidget, SIGNAL(itemPressed(QListWidgetItem*)),
           this,           SLOT(onIconMousePressed(QListWidgetItem*)));
 }
 
@@ -142,10 +142,10 @@ void FileBrowser::createAndConnectActions() {
   detailMode = new QAction(tr("Details"), viewGroup);
   detailMode->setCheckable(true);
   detailMode->setChecked(true);
-	listMode = new QAction(tr("List"), viewGroup);
+  listMode = new QAction(tr("List"), viewGroup);
   listMode->setCheckable(true);
-	bigListMode = new QAction(tr("Big List"), viewGroup);
-	bigListMode->setCheckable(true);
+  bigListMode = new QAction(tr("Big List"), viewGroup);
+  bigListMode->setCheckable(true);
   iconMode = new QAction(tr("Icons"), viewGroup);
   iconMode->setCheckable(true);
 
@@ -154,10 +154,10 @@ void FileBrowser::createAndConnectActions() {
   typeSort = new QAction(tr("Type"), sortGroup);
   dateSort = new QAction(tr("Date Modified"), sortGroup);
 
-  //view->addAction(tilesMode);
+  // view->addAction(tilesMode);
   view->addAction(detailMode);
-	view->addAction(bigListMode);
-	view->addAction(listMode);
+  view->addAction(bigListMode);
+  view->addAction(listMode);
   view->addAction(iconMode);
   sort->addAction(nameSort);
   sort->addAction(sizeSort);
@@ -183,7 +183,7 @@ void FileBrowser::setActive(bool b) {
   if (b && !init_) {
     init_ = true;
     ui_.driveListWidget->setVisible(false);
-		viewMode_ = DETAIL;
+    viewMode_ = DETAIL;
 
     rootPath_ = QString::fromStdString(file_system::MaidsafeHomeDir(
                     ClientController::instance()->SessionName()).string()+"/");
@@ -209,13 +209,19 @@ void FileBrowser::setMenuSortIconMenu() {
   sort->removeAction(sizeSort);
   sort->removeAction(typeSort);
   sort->removeAction(dateSort);
+  menu2->addAction(newFolder);
 }
 
 void FileBrowser::setMenuSortDetailMenu() {
-	sort->addAction(nameSort);
+  sort->addAction(nameSort);
   sort->addAction(sizeSort);
   sort->addAction(typeSort);
   sort->addAction(dateSort);
+  menu2->addAction(newFolder);
+}
+
+void FileBrowser::setMenuSortNoFolderMenu() {
+  menu2->removeAction(newFolder);
 }
 
 void FileBrowser::setMenuDirMenu() {
@@ -244,6 +250,19 @@ void FileBrowser::setMenuFileMenu() {
   menu->addAction(sendFile);
 }
 
+void FileBrowser::setMenuReadOnlyMenu() {
+  menu->removeAction(openFile);
+  menu->removeAction(openWith);
+  menu->removeAction(saveFile);
+  menu->addSeparator();
+//  menu->addAction(cutFile);
+//  menu->addAction(copyFile);
+//  menu->addSeparator();
+  menu->removeAction(deleteFile);
+  menu->removeAction(renameFile);
+  menu->removeAction(sendFile);
+}
+
 void FileBrowser::dragEnterEvent(QDragEnterEvent *event) {
   qDebug() << "drag enter event";
   event->acceptProposedAction();
@@ -263,6 +282,12 @@ void FileBrowser::onMousePressed(QTreeWidgetItem *item, int) {
       setMenuDirMenu();
     else
       setMenuFileMenu();
+
+    if (currentDir_.startsWith("/Emails/"))
+      setMenuReadOnlyMenu();
+    else if (currentDir_ == "/Shares/" || currentDir_ == "/Shares/Private/")
+      setMenuReadOnlyMenu();
+
     menu->exec(QCursor::pos());
   }
 }
@@ -273,39 +298,45 @@ void FileBrowser::onIconMousePressed(QListWidgetItem* item) {
       setMenuDirMenu();
     else
       setMenuFileMenu();
+
+    if (currentDir_.startsWith("/Emails/"))
+      setMenuReadOnlyMenu();
+    else if (currentDir_ == "/Shares/" || currentDir_ == "/Shares/Private/")
+      setMenuReadOnlyMenu();
+
     menu->exec(QCursor::pos());
   }
 }
 
 void FileBrowser::onOpenFileClicked() {
-	if (viewMode_ == DETAIL){
-		QTreeWidgetItem* theItem = ui_.driveTreeWidget->currentItem();
-		onItemDoubleClicked(theItem, 0);
-	} else {
-		QListWidgetItem* theItem = ui_.driveListWidget->currentItem();
-		onListItemDoubleClicked(theItem);
-	}
+  if (viewMode_ == DETAIL) {
+    QTreeWidgetItem* theItem = ui_.driveTreeWidget->currentItem();
+    onItemDoubleClicked(theItem, 0);
+  } else {
+    QListWidgetItem* theItem = ui_.driveListWidget->currentItem();
+    onListItemDoubleClicked(theItem);
+  }
 }
 
 void FileBrowser::onOpenWithClicked() {
   qDebug() << "Open With invoked";
-	QString path;
-	if (viewMode_ == DETAIL) {
-		QTreeWidgetItem* theItem = ui_.driveTreeWidget->currentItem();
-		if (theItem->text(1) == tr("Network")) {
-			QMessageBox::warning(this, tr("PD Error"),
-											tr("You must download the file before trying to open it"));
-			return;
-		}
-		path = rootPath_ + currentDir_ + theItem->text(0);
-	} else {
-		QListWidgetItem* theItem = ui_.driveListWidget->currentItem();
-		if(theItem->toolTip().contains(tr("Newtork"))) {
-			QMessageBox::warning(this, tr("PD Error"),
-					tr("You must download the file before trying to open it"));
-			return;
-	}
-		path = rootPath_ + currentDir_ + theItem->text();
+  QString path;
+  if (viewMode_ == DETAIL) {
+    QTreeWidgetItem* theItem = ui_.driveTreeWidget->currentItem();
+    if (theItem->text(1) == tr("Network")) {
+      QMessageBox::warning(this, tr("PD Error"),
+                 tr("You must download the file before trying to open it"));
+      return;
+    }
+    path = rootPath_ + currentDir_ + theItem->text(0);
+  } else {
+    QListWidgetItem* theItem = ui_.driveListWidget->currentItem();
+    if (theItem->toolTip().contains(tr("Newtork"))) {
+      QMessageBox::warning(this, tr("PD Error"),
+          tr("You must download the file before trying to open it"));
+      return;
+  }
+    path = rootPath_ + currentDir_ + theItem->text();
 }
 
 #if defined(PD_WIN32)
@@ -368,14 +399,14 @@ void FileBrowser::onOpenWithClicked() {
 }
 
 void FileBrowser::onSendFileClicked() {
-	QString filename;
-	if (viewMode_ == DETAIL){
-		QTreeWidgetItem* theItem = ui_.driveTreeWidget->currentItem();
-		filename = theItem->text(0);
-	} else {
-		QListWidgetItem* theItem = ui_.driveListWidget->currentItem();
-		filename = theItem->text();
-	}
+  QString filename;
+  if (viewMode_ == DETAIL) {
+    QTreeWidgetItem* theItem = ui_.driveTreeWidget->currentItem();
+    filename = theItem->text(0);
+  } else {
+    QListWidgetItem* theItem = ui_.driveListWidget->currentItem();
+    filename = theItem->text();
+  }
   bool ok;
   QString text = QInputDialog::getText(this, tr("Who will receive the file?"),
                                        tr("Recipient"),
@@ -405,17 +436,17 @@ void FileBrowser::onCutFileClicked() {
 }
 
 void FileBrowser::onDeleteFileClicked() {
-	bool onNetwork;
-	QString filename;
-	if (viewMode_ == DETAIL) {
-		QTreeWidgetItem* theItem = ui_.driveTreeWidget->currentItem();
-		onNetwork = (theItem->text(1) == tr("Network"));
-		filename = theItem->text(0);
-	} else {
-		QListWidgetItem* theItem = ui_.driveListWidget->currentItem();
-		onNetwork = theItem->toolTip().contains(tr("Network"));
-		filename = theItem->text();
-	}
+  bool onNetwork;
+  QString filename;
+  if (viewMode_ == DETAIL) {
+    QTreeWidgetItem* theItem = ui_.driveTreeWidget->currentItem();
+    onNetwork = (theItem->text(1) == tr("Network"));
+    filename = theItem->text(0);
+  } else {
+    QListWidgetItem* theItem = ui_.driveListWidget->currentItem();
+    onNetwork = theItem->toolTip().contains(tr("Network"));
+    filename = theItem->text();
+  }
   if (onNetwork) {
     QMessageBox msgBox;
     msgBox.setText(tr("Delete Item"));
@@ -425,10 +456,10 @@ void FileBrowser::onDeleteFileClicked() {
     msgBox.setDefaultButton(QMessageBox::Save);
     int ret = msgBox.exec();
 
-		std::string str = currentDir_.toStdString() + filename.toStdString();
-		std::string tidyRelPathStr = maidsafe::TidyPath(str);
-		QString deletePath = QString::fromStdString(tidyRelPathStr);
-		qDebug() << "create folder" << deletePath;
+    std::string str = currentDir_.toStdString() + filename.toStdString();
+    std::string tidyRelPathStr = maidsafe::TidyPath(str);
+    QString deletePath = QString::fromStdString(tidyRelPathStr);
+    qDebug() << "create folder" << deletePath;
 
     if (ret == QMessageBox::Yes) {
       RemoveDirThread* rdt = new RemoveDirThread(deletePath,
@@ -455,10 +486,10 @@ void FileBrowser::onNewFolderClicked() {
         tr("Name of the new directory:"), QLineEdit::Normal,
         tr("New Folder", "default directory name"), &ok);
     if (ok && !text.isEmpty()) {
-			std::string str = currentDir_.toStdString() + text.toStdString();
-			std::string tidyRelPathStr = maidsafe::TidyPath(str);
-			QString folderPath = QString::fromStdString(tidyRelPathStr);
-			qDebug() << "create folder" << folderPath;
+      std::string str = currentDir_.toStdString() + text.toStdString();
+      std::string tidyRelPathStr = maidsafe::TidyPath(str);
+      QString folderPath = QString::fromStdString(tidyRelPathStr);
+      qDebug() << "create folder" << folderPath;
 
       MakeDirectoryThread* mdt = new MakeDirectoryThread(folderPath,
                                                           this);
@@ -472,32 +503,31 @@ void FileBrowser::onNewFolderClicked() {
 
 void FileBrowser::onRenameFileClicked() {
   bool ok;
-	bool onNetwork;
-	QString filename;
-		if (viewMode_ == DETAIL) {
-		QTreeWidgetItem* theItem = ui_.driveTreeWidget->currentItem();
-		onNetwork = (theItem->text(1) == tr("Network"));
-		filename = theItem->text(0);
-	} else {
-		QListWidgetItem* theItem = ui_.driveListWidget->currentItem();
-		onNetwork = theItem->toolTip().contains(tr("Network"));
-		filename = theItem->text();
-	}
+  bool onNetwork;
+  QString filename;
+    if (viewMode_ == DETAIL) {
+    QTreeWidgetItem* theItem = ui_.driveTreeWidget->currentItem();
+    onNetwork = (theItem->text(1) == tr("Network"));
+    filename = theItem->text(0);
+  } else {
+    QListWidgetItem* theItem = ui_.driveListWidget->currentItem();
+    onNetwork = theItem->toolTip().contains(tr("Network"));
+    filename = theItem->text();
+  }
 
   if (onNetwork) {
     QString text = QInputDialog::getText(this, tr("Rename File"),
         tr("New file name:"), QLineEdit::Normal, filename, &ok);
     if (ok && !text.isEmpty()) {
+      std::string str = currentDir_.toStdString() + filename.toStdString();
+      std::string tidyRelPathStr = maidsafe::TidyPath(str);
+      QString oldFilePath = QString::fromStdString(tidyRelPathStr);
+      qDebug() << "rename file from" << oldFilePath;
 
-			std::string str = currentDir_.toStdString() + filename.toStdString();
-			std::string tidyRelPathStr = maidsafe::TidyPath(str);
-			QString oldFilePath = QString::fromStdString(tidyRelPathStr);
-			qDebug() << "rename file from" << oldFilePath;
-
-			std::string str1 = currentDir_.toStdString() + text.toStdString();
-			std::string tidyRelPathStr1 = maidsafe::TidyPath(str1);
-			QString newFilePath = QString::fromStdString(tidyRelPathStr1);
-			qDebug() << "rename file from" << newFilePath;
+      std::string str1 = currentDir_.toStdString() + text.toStdString();
+      std::string tidyRelPathStr1 = maidsafe::TidyPath(str1);
+      QString newFilePath = QString::fromStdString(tidyRelPathStr1);
+      qDebug() << "rename file from" << newFilePath;
 
       RenameFileThread* rft = new RenameFileThread(oldFilePath,
                                                    newFilePath, this);
@@ -518,19 +548,20 @@ void FileBrowser::onRenameFileClicked() {
 }
 
 void FileBrowser::onSaveFileClicked() {
-	if (viewMode_ == DETAIL) {
-		QTreeWidgetItem* theItem = ui_.driveTreeWidget->currentItem();
-		if (theItem->text(1) == tr("Local")) {
-			theItem->setText(1, tr("Uploading"));
-			saveFileToNetwork(currentDir_ + theItem->text(0));
-		}
-	} else {
-		QListWidgetItem* theItem = ui_.driveListWidget->currentItem();
-		if (theItem->toolTip().contains(tr("Local"))) {
-			theItem->setToolTip(theItem->toolTip().replace(tr("Local"),tr("Uploading"), Qt::CaseSensitive));
-			saveFileToNetwork(currentDir_ + theItem->text());
-		}
-	}
+  if (viewMode_ == DETAIL) {
+    QTreeWidgetItem* theItem = ui_.driveTreeWidget->currentItem();
+    if (theItem->text(1) == tr("Local")) {
+      theItem->setText(1, tr("Uploading"));
+      saveFileToNetwork(currentDir_ + theItem->text(0));
+    }
+  } else {
+    QListWidgetItem* theItem = ui_.driveListWidget->currentItem();
+    if (theItem->toolTip().contains(tr("Local"))) {
+      theItem->setToolTip(theItem->toolTip().replace(tr("Local"),
+                              tr("Uploading"), Qt::CaseSensitive));
+      saveFileToNetwork(currentDir_ + theItem->text());
+    }
+  }
 }
 
 void FileBrowser::onBackClicked(bool) {
@@ -544,8 +575,8 @@ void FileBrowser::onBackClicked(bool) {
 }
 
 void FileBrowser::populateDirectory(QString dir) {
-	  currentDir_ = dir;
-	switch (viewMode_) {
+    currentDir_ = dir;
+  switch (viewMode_) {
     case TILES:
       drawTileView();
       break;
@@ -566,19 +597,18 @@ void FileBrowser::populateDirectory(QString dir) {
   }
 }
 
-int FileBrowser::drawTileView(){
-
+int FileBrowser::drawTileView() {
 return 0;
 }
 
-int FileBrowser::drawDetailView(){
+int FileBrowser::drawDetailView() {
   ui_.driveTreeWidget->clear();
   ui_.locationEdit->setText(currentDir_);
 
   int rowCount = 0;
 //  std::string relPathStr = currentDir_.toStdString();
   std::map<std::string, maidsafe::ItemType> children;
-//	std::string tidyRelPathStr = maidsafe::TidyPath(relPathStr);
+//  std::string tidyRelPathStr = maidsafe::TidyPath(relPathStr);
   ClientController::instance()->readdir(currentDir_, &children);
 
 //  qDebug() << "populateDirectory: " << QString::fromStdString(tidyRelPathStr);
@@ -596,7 +626,7 @@ int FileBrowser::drawDetailView(){
     std::string ser_mdm;
     fs::path path(currentDir_.toStdString());
     path /= s;
-		QString str(path.string().c_str());
+    QString str(path.string().c_str());
     if (ClientController::instance()->getattr(str, &ser_mdm)) {
       qDebug() << "populateDirectory failed at getattr()";
       return -1;
@@ -604,9 +634,9 @@ int FileBrowser::drawDetailView(){
 
     mdm.ParseFromString(ser_mdm);
 
-		QDateTime *lastModified = new QDateTime;
+    QDateTime *lastModified = new QDateTime;
     QFileIconProvider *icon = new QFileIconProvider;
-		int linuxtime = mdm.last_modified();
+    int linuxtime = mdm.last_modified();
     lastModified->setTime_t(linuxtime);
 
     if (ityp == maidsafe::DIRECTORY || ityp == maidsafe::EMPTY_DIRECTORY) {
@@ -670,14 +700,14 @@ int FileBrowser::drawListView() {
 return 0;
 }
 
-int FileBrowser::drawIconView(){
+int FileBrowser::drawIconView() {
   ui_.driveListWidget->clear();
   ui_.locationEdit->setText(currentDir_);
 
   int rowCount = 0;
 //  std::string relPathStr = currentDir_.toStdString();
   std::map<std::string, maidsafe::ItemType> children;
-//	std::string tidyRelPathStr = maidsafe::TidyPath(relPathStr);
+//  std::string tidyRelPathStr = maidsafe::TidyPath(relPathStr);
   ClientController::instance()->readdir(currentDir_, &children);
 
 //  qDebug() << "drawIconView: " << QString::fromStdString(relPathStr);
@@ -690,7 +720,7 @@ int FileBrowser::drawIconView(){
     std::string ser_mdm;
     fs::path path(currentDir_.toStdString());
     path /= s;
-		QString str(path.string().c_str());
+    QString str(path.string().c_str());
     if (ClientController::instance()->getattr(str, &ser_mdm)) {
       qDebug() << "drawIconView failed at getattr()";
       return -1;
@@ -698,9 +728,9 @@ int FileBrowser::drawIconView(){
 
     mdm.ParseFromString(ser_mdm);
 
-		QDateTime *lastModified = new QDateTime;
+    QDateTime *lastModified = new QDateTime;
     QFileIconProvider *icon = new QFileIconProvider;
-		int linuxtime = mdm.last_modified();
+    int linuxtime = mdm.last_modified();
     lastModified->setTime_t(linuxtime);
 
     if (ityp == maidsafe::DIRECTORY || ityp == maidsafe::EMPTY_DIRECTORY) {
@@ -719,15 +749,18 @@ int FileBrowser::drawIconView(){
       }
       QIcon theIcon = icon->icon(QFileIconProvider::Folder);
       QString item = QString::fromStdString(s);
-			QListWidgetItem *newItem = new QListWidgetItem;
-			newItem->setIcon(theIcon);
+      QListWidgetItem *newItem = new QListWidgetItem;
+      newItem->setIcon(theIcon);
       newItem->setText(item);
 
-			newItem->setToolTip(tr("Name: %1").arg(item) + "<br>" + tr("Status: Network") + "<br>" +
-													tr("Type: Directory") + "<br>" + tr("Size: %1 KB").arg(
-					ceil(static_cast<double>(mdm.file_size_low())/1024)) + "<br>" + "Date Modified: " +
-					lastModified->toString("dd/MM/yyyy hh:mm"));
-			ui_.driveListWidget->addItem(newItem);
+      newItem->setToolTip(tr("Name: %1").arg(item) + "<br>" +
+                          tr("Status: Network") +
+                          "<br>" + tr("Type: Directory") + "<br>" +
+                          tr("Size: %1 KB").arg(
+                          ceil(static_cast<double>(mdm.file_size_low())/1024)) +
+                          "<br>" + "Date Modified: " +
+                          lastModified->toString("dd/MM/yyyy hh:mm"));
+      ui_.driveListWidget->addItem(newItem);
     } else {
       std::string fullFilePath = rootPath_.toStdString() +
                                 currentDir_.toStdString() + s;
@@ -738,43 +771,44 @@ int FileBrowser::drawIconView(){
       QListWidgetItem *newItem = new QListWidgetItem;
       newItem->setIcon(theIcon);
       newItem->setText(item);
-			QString tip;
-			tip = tr("Name: %1").arg(item) + "<br>";
+      QString tip;
+      tip = tr("Name: %1").arg(item) + "<br>";
       if (fs::exists(fullFilePath)) {
-				tip.append(tr("Status: Local") + "<br>");
+        tip.append(tr("Status: Local") + "<br>");
       } else {
-				tip.append(tr("Status: Network") + "<br>");
+        tip.append(tr("Status: Network") + "<br>");
       }
-			tip.append(tr("Type: %1 File").arg(item.section('.', -1)));
-			tip.append("<br>");
-			tip.append(tr("Size: %1 KB").arg(
+      tip.append(tr("Type: %1 File").arg(item.section('.', -1)));
+      tip.append("<br>");
+      tip.append(tr("Size: %1 KB").arg(
           ceil(static_cast<double>(mdm.file_size_low())/1024)));
-			tip.append("<br>");
-			tip.append(tr("Date Modified: ") + lastModified->toString("dd/MM/yyyy hh:mm"));
-			newItem->setToolTip(tip);
-//			ui_.driveListWidget->setItemDelegate(bigListDelegate_);
-//			newItem->setData(0, qVariantFromValue(QString(tip)));
-			ui_.driveListWidget->addItem(newItem);
+      tip.append("<br>");
+      tip.append(tr("Date Modified: ") +
+                      lastModified->toString("dd/MM/yyyy hh:mm"));
+      newItem->setToolTip(tip);
+//      ui_.driveListWidget->setItemDelegate(bigListDelegate_);
+//      newItem->setData(0, qVariantFromValue(QString(tip)));
+      ui_.driveListWidget->addItem(newItem);
     }
     children.erase(children.begin());
     ++rowCount;
   }
-	if (viewMode_ == LIST || viewMode_ == BIGLIST){
-		ui_.driveListWidget->setViewMode(QListView::ListMode);
-		ui_.driveListWidget->setFlow(QListView::TopToBottom);
-		ui_.driveListWidget->setUniformItemSizes(false);
-		ui_.driveListWidget->setGridSize(QSize());
-		ui_.driveTreeWidget->setWordWrap(true);
-		if (viewMode_ == BIGLIST)
-			ui_.driveListWidget->setIconSize(QSize(32,32));
-		else
-			ui_.driveListWidget->setIconSize(QSize());
-	} else {
-		ui_.driveListWidget->setViewMode(QListView::IconMode);
-		ui_.driveListWidget->setFlow(QListView::LeftToRight);
-		ui_.driveListWidget->setWordWrap(false);
-		ui_.driveListWidget->setGridSize(QSize(90,80));
-	}
+  if (viewMode_ == LIST || viewMode_ == BIGLIST) {
+    ui_.driveListWidget->setViewMode(QListView::ListMode);
+    ui_.driveListWidget->setFlow(QListView::TopToBottom);
+    ui_.driveListWidget->setUniformItemSizes(false);
+    ui_.driveListWidget->setGridSize(QSize());
+    ui_.driveTreeWidget->setWordWrap(true);
+    if (viewMode_ == BIGLIST)
+      ui_.driveListWidget->setIconSize(QSize(32, 32));
+    else
+      ui_.driveListWidget->setIconSize(QSize());
+  } else {
+    ui_.driveListWidget->setViewMode(QListView::IconMode);
+    ui_.driveListWidget->setFlow(QListView::LeftToRight);
+    ui_.driveListWidget->setWordWrap(false);
+    ui_.driveListWidget->setGridSize(QSize(90, 80));
+  }
   return 0;
 }
 
@@ -785,7 +819,7 @@ int FileBrowser::createTreeDirectory(QString) {
   int rowCount = 0;
 //  std::string relPathStr = currentTreeDir_.toStdString() + dir.toStdString();
   std::map<std::string, maidsafe::ItemType> children;
-//	std::string tidyRelPathStr = maidsafe::TidyPath(relPathStr);
+//  std::string tidyRelPathStr = maidsafe::TidyPath(relPathStr);
   ClientController::instance()->readdir(currentTreeDir_, &children);
 
   qDebug() << "createTreeDirectory: ";
@@ -801,7 +835,7 @@ int FileBrowser::createTreeDirectory(QString) {
     std::string ser_mdm;
     fs::path path(currentTreeDir_.toStdString());
     path /= s;
-		QString str(path.string().c_str());
+    QString str(path.string().c_str());
     if (ClientController::instance()->getattr(str, &ser_mdm)) {
       qDebug() << "populateDirectory failed at getattr()";
       return -1;
@@ -836,16 +870,17 @@ int FileBrowser::createTreeDirectory(QString) {
 }
 
 void FileBrowser::onListItemDoubleClicked(QListWidgetItem* item) {
-	if(item->toolTip().contains("Directory")) {
-		populateDirectory(currentDir_ + item->text() + "/");
-	} else {
-		if (item->toolTip().contains("Network")) {
-			item->setToolTip(item->toolTip().replace("Network","Downloading", Qt::CaseSensitive));
+  if (item->toolTip().contains("Directory")) {
+    populateDirectory(currentDir_ + item->text() + "/");
+  } else {
+    if (item->toolTip().contains("Network")) {
+      item->setToolTip(item->toolTip().replace("Network",
+                      "Downloading", Qt::CaseSensitive));
 
-			std::string tidyRelPathStr = maidsafe::TidyPath(currentDir_.toStdString() +
-																										item->text().toStdString());
-			QString openFilePath = QString::fromStdString(tidyRelPathStr);
-			qDebug() << "upload File" << openFilePath;
+      std::string tidyRelPathStr = maidsafe::TidyPath(currentDir_.toStdString()
+                                                 + item->text().toStdString());
+      QString openFilePath = QString::fromStdString(tidyRelPathStr);
+      qDebug() << "upload File" << openFilePath;
 
       ReadFileThread* rft = new ReadFileThread(openFilePath,
                                                this);
@@ -855,11 +890,11 @@ void FileBrowser::onListItemDoubleClicked(QListWidgetItem* item) {
 
       rft->start();
 
-		} else if (item->toolTip().contains("Local")) {
-			QString path = rootPath_ + currentDir_ + item->text();
-			openFileFromDir(path);
-		}
-	}
+    } else if (item->toolTip().contains("Local")) {
+      QString path = rootPath_ + currentDir_ + item->text();
+      openFileFromDir(path);
+    }
+  }
 }
 
 void FileBrowser::onItemDoubleClicked(QTreeWidgetItem* item, int) {
@@ -870,10 +905,10 @@ void FileBrowser::onItemDoubleClicked(QTreeWidgetItem* item, int) {
       ui_.driveTreeWidget->editItem(item, 1);
       item->setText(1, tr("Downloading"));
 
-			std::string tidyRelPathStr = maidsafe::TidyPath(currentDir_.toStdString() +
-																										item->text(0).toStdString());
-			QString openFilePath = QString::fromStdString(tidyRelPathStr);
-			qDebug() << "upload File" << openFilePath;
+      std::string tidyRelPathStr = maidsafe::TidyPath(currentDir_.toStdString()
+                                                + item->text(0).toStdString());
+      QString openFilePath = QString::fromStdString(tidyRelPathStr);
+      qDebug() << "upload File" << openFilePath;
 
       ReadFileThread* rft = new ReadFileThread(openFilePath,
                                                this);
@@ -895,7 +930,7 @@ void FileBrowser::onItemDoubleClicked(QTreeWidgetItem* item, int) {
   }
 }
 
-void FileBrowser::openFileFromDir(const QString path){
+void FileBrowser::openFileFromDir(const QString path) {
 #if defined(PD_WIN32)
       QString operation("open");
       quintptr returnValue;
@@ -978,23 +1013,24 @@ void FileBrowser::onReadFileCompleted(int success, const QString& filepath) {
     file.erase(0, file.find_last_of("/") + 1);
     QString theFile = QString::fromStdString(file);
 
-		if (viewMode_ == DETAIL) {
-			QList<QTreeWidgetItem *> widgetList = ui_.driveTreeWidget->findItems(
-																								theFile, Qt::MatchExactly, 0);
-			if (!widgetList.empty()) {
-				QTreeWidgetItem* theWidget = widgetList[0];
-				ui_.driveTreeWidget->editItem(theWidget, 1);
-				theWidget->setText(1, tr("Local"));
-			}
-		} else {
-			QList<QListWidgetItem *> widgetList = ui_.driveListWidget->findItems(
-																								theFile, Qt::MatchExactly);
-			if (!widgetList.empty()) {
-				QListWidgetItem* theWidget = widgetList[0];
-				theWidget->setToolTip(theWidget->toolTip().replace("Downloading","Local", Qt::CaseSensitive));
-			}
-		}
-	}
+    if (viewMode_ == DETAIL) {
+      QList<QTreeWidgetItem *> widgetList = ui_.driveTreeWidget->findItems(
+                                                theFile, Qt::MatchExactly, 0);
+      if (!widgetList.empty()) {
+        QTreeWidgetItem* theWidget = widgetList[0];
+        ui_.driveTreeWidget->editItem(theWidget, 1);
+        theWidget->setText(1, tr("Local"));
+      }
+    } else {
+      QList<QListWidgetItem *> widgetList = ui_.driveListWidget->findItems(
+                                                theFile, Qt::MatchExactly);
+      if (!widgetList.empty()) {
+        QListWidgetItem* theWidget = widgetList[0];
+        theWidget->setToolTip(theWidget->toolTip().replace("Downloading",
+                                            "Local", Qt::CaseSensitive));
+      }
+    }
+  }
 }
 
 //  void FileBrowser::onWatchedFileChanged(const QString& path) {
@@ -1043,23 +1079,24 @@ void FileBrowser::onSaveFileCompleted(int success, const QString& filepath) {
     file.erase(0, file.find_last_of("/") + 1);
     QString theFile(QString::fromStdString(file));
 
-		if (viewMode_ == DETAIL) {
-			QList<QTreeWidgetItem *> widgetList = ui_.driveTreeWidget->findItems(
+    if (viewMode_ == DETAIL) {
+      QList<QTreeWidgetItem *> widgetList = ui_.driveTreeWidget->findItems(
                                               theFile, Qt::MatchExactly, 0);
 
-			if (!widgetList.empty()) {
-				QTreeWidgetItem* theWidget = widgetList[0];
-				ui_.driveTreeWidget->editItem(theWidget, 1);
-				theWidget->setText(1, tr("Network"));
-			}
-		} else {
-			QList<QListWidgetItem *> widgetList = ui_.driveListWidget->findItems(
-																								theFile, Qt::MatchExactly);
-			if (!widgetList.empty()) {
-				QListWidgetItem* theWidget = widgetList[0];
-				theWidget->setToolTip(theWidget->toolTip().replace(tr("Uploading"),tr("Network"), Qt::CaseSensitive));
-			}
-		}
+      if (!widgetList.empty()) {
+        QTreeWidgetItem* theWidget = widgetList[0];
+        ui_.driveTreeWidget->editItem(theWidget, 1);
+        theWidget->setText(1, tr("Network"));
+      }
+    } else {
+      QList<QListWidgetItem *> widgetList = ui_.driveListWidget->findItems(
+                                                theFile, Qt::MatchExactly);
+      if (!widgetList.empty()) {
+        QListWidgetItem* theWidget = widgetList[0];
+        theWidget->setToolTip(theWidget->toolTip().replace(tr("Uploading"),
+                                        tr("Network"), Qt::CaseSensitive));
+      }
+    }
     populateDirectory(currentDir_);
   } else {
     qDebug() << "onSaveFileCompleted : no file found";
@@ -1075,9 +1112,10 @@ void FileBrowser::uploadFileFromLocal(const QString& filePath) {
   std::string fullFilePath(rootPath_.toStdString() + currentDir_.toStdString()
                            + filename);
 
-	std::string tidyRelPathStr = maidsafe::TidyPath(currentDir_.toStdString() + filename);
-	QString uploadFilePath = QString::fromStdString(tidyRelPathStr);
-	qDebug() << "upload File" << uploadFilePath;
+  std::string tidyRelPathStr = maidsafe::TidyPath(currentDir_.toStdString() +
+                                                                    filename);
+  QString uploadFilePath = QString::fromStdString(tidyRelPathStr);
+  qDebug() << "upload File" << uploadFilePath;
 
   QList<QTreeWidgetItem *> widgetList = ui_.driveTreeWidget->findItems(
                                             QString::fromStdString(filename),
@@ -1154,13 +1192,18 @@ void FileBrowser::onRemoveDirCompleted(int success, const QString& path) {
 }
 
 bool FileBrowser::eventFilter(QObject *obj, QEvent *event) {
-	if (obj == ui_.driveTreeWidget->viewport() || obj == ui_.driveListWidget) {
+  if (obj == ui_.driveTreeWidget->viewport() || obj == ui_.driveListWidget) {
     if (event->type() == QEvent::ContextMenu) {
-			if (obj == ui_.driveTreeWidget->viewport())
-				setMenuSortDetailMenu();
-			else
-				setMenuSortIconMenu();
-			menu2->exec(QCursor::pos());
+      if (obj == ui_.driveTreeWidget->viewport())
+        setMenuSortDetailMenu();
+      else
+        setMenuSortIconMenu();
+    if (currentDir_.startsWith("/Emails/"))
+      setMenuSortNoFolderMenu();
+    else if (currentDir_ == "/Shares/" || currentDir_ == "/Shares/Private/")
+      setMenuSortNoFolderMenu();
+
+      menu2->exec(QCursor::pos());
       return true;
     } else {
       return false;
@@ -1222,10 +1265,14 @@ void FileBrowser::onItemExpanded(QTreeWidgetItem* item) {
       std::map<std::string, maidsafe::ItemType> children1;
       ClientController::instance()->readdir(QString::fromStdString(relPathStr1),
                                             &children1);
-
-      if (!children.empty()) {
-//        QTreeWidgetItem *emptyItem = new QTreeWidgetItem(newItem);
-      }
+      while (!children1.empty()) {
+       maidsafe::ItemType ityp = children.begin()->second;
+       if (ityp == maidsafe::DIRECTORY || ityp == maidsafe::EMPTY_DIRECTORY) {
+         QTreeWidgetItem *emptyItem = new QTreeWidgetItem(newItem);
+         break;
+       }
+       children1.erase(children1.begin());
+      }    
       ui_.driveTreeWidget->insertTopLevelItem(rowCount, newItem);
     }
     children.erase(children.begin());
@@ -1266,11 +1313,11 @@ void FileBrowser::setViewMode(ViewMode viewMode) {
     default:
       break;
   }
-	populateDirectory(currentDir_);
+  populateDirectory(currentDir_);
 }
 
 void FileBrowser::onViewGroupClicked(QAction* action) {
-  if(action == tilesMode)
+  if (action == tilesMode)
     setViewMode(TILES);
   else if (action == listMode)
     setViewMode(LIST);
@@ -1282,24 +1329,24 @@ void FileBrowser::onViewGroupClicked(QAction* action) {
     setViewMode(BIGLIST);
 }
 void FileBrowser::onSortGroupClicked(QAction* action) {
-	QHeaderView* theHeader = ui_.driveTreeWidget->header();
-	Qt::SortOrder order = theHeader->sortIndicatorOrder();
+  QHeaderView* theHeader = ui_.driveTreeWidget->header();
+  Qt::SortOrder order = theHeader->sortIndicatorOrder();
 
   if (order == Qt::AscendingOrder)
     order = Qt::DescendingOrder;
   else
     order = Qt::AscendingOrder;
 
-	if (action == nameSort) {
-		ui_.driveTreeWidget->sortByColumn(0, order);
-	} else if (action == sizeSort) {
-		ui_.driveTreeWidget->sortByColumn(2, order);
-	} else if (action == typeSort) {
-		ui_.driveTreeWidget->sortByColumn(3, order);
-	} else if (action == dateSort) {
-		ui_.driveTreeWidget->sortByColumn(4, order);
-	}
-	ui_.driveListWidget->sortItems(order);
+  if (action == nameSort) {
+    ui_.driveTreeWidget->sortByColumn(0, order);
+  } else if (action == sizeSort) {
+    ui_.driveTreeWidget->sortByColumn(2, order);
+  } else if (action == typeSort) {
+    ui_.driveTreeWidget->sortByColumn(3, order);
+  } else if (action == dateSort) {
+    ui_.driveTreeWidget->sortByColumn(4, order);
+  }
+  ui_.driveListWidget->sortItems(order);
 }
 
 QString FileBrowser::getCurrentTreePath(QTreeWidgetItem* item) {
