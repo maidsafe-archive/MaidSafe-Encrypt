@@ -58,6 +58,10 @@ static boost::mutex callback_mutex_;
 static std::list<std::string> callback_packets_;
 static std::list<std::string> callback_messages_;
 
+namespace testvault {
+static const boost::uint8_t K(4);
+}  // namespace testvault
+
 namespace testpdvault {
 
 void PrepareCallbackResults() {
@@ -262,7 +266,7 @@ class RunPDVaults {
         clients_[client_idx]->chunkstore->Init();
         boost::shared_ptr<maidsafe::MaidsafeStoreManager>
             sm_local_(new maidsafe::MaidsafeStoreManager(
-                      clients_[client_idx]->chunkstore));
+                      clients_[client_idx]->chunkstore, testvault::K));
         clients_[client_idx]->msm = sm_local_;
         clients_[client_idx]->msm->ss_ = &clients_[client_idx]->mss;
         clients_[client_idx]->msm->kad_config_location_ =
@@ -288,7 +292,7 @@ class RunPDVaults {
       boost::shared_ptr<maidsafe_vault::PDVault>
           pdvault_local(new maidsafe_vault::PDVault(public_key, private_key,
           signed_key, dir, this_port, false, false, kad_config_path_,
-          1073741824, 0));
+          1073741824, 0, testvault::K));
       pdvaults_->push_back(pdvault_local);
       ++current_nodes_created_;
       bool first = ((j == 0) && (!fs::exists(kad_config_path_)));
@@ -335,7 +339,7 @@ class RunPDVaults {
       for (int l = 0; l < no_of_clients_; ++l)
         printf("* %2i  %5i  %s... *\n", l,
                clients_[l]->msm->knode_->host_port(),
-               clients_[l]->msm->knode_->node_id().ToStringEncoded()
+               clients_[l]->msm->knode_->node_id().String()
                .substr(0, 31).c_str());
       printf("*                                               *\n");
     }

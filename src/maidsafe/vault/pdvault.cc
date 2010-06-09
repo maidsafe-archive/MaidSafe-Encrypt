@@ -52,8 +52,14 @@ PDVault::PDVault(const std::string &pmid_public,
                  bool use_upnp,
                  const fs::path &read_only_kad_config_file,
                  const boost::uint64_t &available_space,
-                 const boost::uint64_t &used_space)
-    : port_(port),
+                 const boost::uint64_t &used_space,
+                 const boost::uint8_t &k)
+    : K_(k),
+      upper_threshold_(
+          static_cast<boost::uint16_t>(K_ * kMinSuccessfulPecentageStore)),
+      lower_threshold_(kMinSuccessfulPecentageStore > .25 ?
+          static_cast<boost::uint16_t>(K_ * .25) : upper_threshold_),
+      port_(port),
       global_udt_transport_(),
       transport_handler_(new transport::TransportHandler()),
       transport_id_(0),
@@ -61,13 +67,13 @@ PDVault::PDVault(const std::string &pmid_public,
       validator_(),
       knode_(new kad::KNode(&channel_manager_, transport_handler_, kad::VAULT,
                             pmid_private, pmid_public, port_forwarded,
-                            use_upnp)),
+                            use_upnp, K_)),
       vault_rpcs_(new VaultRpcs(transport_handler_, &channel_manager_)),
       kad_ops_(new maidsafe::KadOps(knode_)),
       vault_chunkstore_((vault_dir / "Chunkstore").string(), available_space,
                         used_space),
       vault_service_(),
-      vault_service_logic_(vault_rpcs_, knode_),
+      vault_service_logic_(vault_rpcs_, knode_, K_),
       kad_joined_(false),
       kad_join_called_back_(false),
       vault_status_(kVaultStopped),
@@ -162,13 +168,15 @@ void PDVault::Start(bool first_node) {
     if (first_node) {
       boost::asio::ip::address local_ip;
       base::GetLocalAddress(&local_ip);
-      knode_->Join(kad::KadId(pmid_, false), kad_config_file_.string(),
-          local_ip.to_string(),
-          transport_handler_->listening_port(transport_id_),
-          boost::bind(&PDVault::KadJoinedCallback, this, _1, &kad_join_mutex));
+      knode_->Join(kad::KadId(pmid_), kad_config_file_.string(),
+                   local_ip.to_string(),
+                   transport_handler_->listening_port(transport_id_),
+                   boost::bind(&PDVault::KadJoinedCallback, this, _1,
+                               &kad_join_mutex));
     } else {
-      knode_->Join(kad::KadId(pmid_, false), kad_config_file_.string(),
-          boost::bind(&PDVault::KadJoinedCallback, this, _1, &kad_join_mutex));
+      knode_->Join(kad::KadId(pmid_), kad_config_file_.string(),
+                   boost::bind(&PDVault::KadJoinedCallback, this, _1,
+                               &kad_join_mutex));
     }
 
     // Hash check all current chunks in chunkstore
@@ -262,7 +270,8 @@ void PDVault::RegisterMaidService() {
                      &vault_chunkstore_,
                      knode_.get(),
                      &vault_service_logic_,
-                     transport_id_));
+                     transport_id_,
+                     K_));
   svc_channel_ = boost::shared_ptr<rpcprotocol::Channel>(
       new rpcprotocol::Channel(&channel_manager_, transport_handler_));
   svc_channel_->SetService(vault_service_.get());
@@ -768,8 +777,9 @@ void PDVault::FindChunkRef(boost::shared_ptr<struct LoadChunkData> data) {
 #endif
     return;
   }
-  knode_->FindValue(kad::KadId(data->chunk_name, false), false,
-      boost::bind(&PDVault::FindChunkRefCallback, this, _1, data));
+  knode_->FindValue(kad::KadId(data->chunk_name), false,
+                    boost::bind(&PDVault::FindChunkRefCallback,
+                                this, _1, data));
 }
 
 void PDVault::FindChunkRefCallback(
@@ -875,7 +885,7 @@ void PDVault::CheckChunkCallback(
   if (check_chunk_response->IsInitialized() &&
       check_chunk_response->has_pmid() &&
       check_chunk_response->pmid() !=
-      get_args->chunk_holder_.node_id().ToStringDecoded()) {
+      get_args->chunk_holder_.node_id().String()) {
     if (get_args->retry_remote_) {
       get_args->retry_remote_ = false;
 //      knode_->UpdatePDRTContactToRemote(get_args->chunk_holder_.node_id());
@@ -979,7 +989,7 @@ void PDVault::GetMessagesCallback(
   if (get_messages_response->IsInitialized() &&
       get_messages_response->has_pmid_id() &&
       get_messages_response->pmid_id() !=
-      get_args->chunk_holder_.node_id().ToStringDecoded()) {
+      get_args->chunk_holder_.node_id().String()) {
     if (get_args->retry_remote_) {
       get_args->retry_remote_ = false;
 //      knode_->UpdatePDRTContactToRemote(get_args->chunk_holder_.node_id());
@@ -1024,7 +1034,7 @@ void PDVault::GetChunkCallback(
   if (get_chunk_response->IsInitialized() &&
       get_chunk_response->has_pmid() &&
       get_chunk_response->pmid() !=
-      get_args->chunk_holder_.node_id().ToStringDecoded()) {
+      get_args->chunk_holder_.node_id().String()) {
     if (get_args->retry_remote_) {
       get_args->retry_remote_ = false;
 //      knode_->UpdatePDRTContactToRemote(get_args->chunk_holder_.node_id());
@@ -1214,11 +1224,8 @@ void PDVault::SwapChunkAcceptChunk(
   sr.set_public_key(pmid_public_);
   sr.set_signed_public_key(signed_pmid_public_);
   sr.set_signed_request(signed_request);
-  knode_->StoreValue(kad::KadId(swap_chunk_args->chunkname_, false),
-                     signed_value,
-                     sr,
-                     86400,
-                     &pdv_dummy_callback);
+  knode_->StoreValue(kad::KadId(swap_chunk_args->chunkname_), signed_value,
+                     sr, 86400, &pdv_dummy_callback);
   maidsafe::SwapChunkResponse local_result;
   std::string local_result_str("");
   local_result.set_request_type(1);
@@ -1240,7 +1247,7 @@ int PDVault::AmendAccount(const boost::uint64_t &space_offered) {
   co.set_symm_algorithm(crypto::AES_256);
   co.set_hash_algorithm(crypto::SHA_512);
   kad::KadId account_name(co.Hash(pmid_ + kAccount, "", crypto::STRING_STRING,
-      false), false);
+                          false));
 
   // Find the account holders
   boost::shared_ptr<maidsafe::AmendAccountData>
@@ -1259,16 +1266,16 @@ int PDVault::AmendAccount(const boost::uint64_t &space_offered) {
                                      data->contacts)) {
     // we are within the K closest, but can't hold our own account;
     // create the account on not more than K-1 nodes
-    while (data->contacts.size() >= kad::K) {
+    while (data->contacts.size() >= K_) {
 #ifdef DEBUG
       printf("In PDVault::AmendAccount, skipping %s.\n",
-          HexSubstr(data->contacts.back().node_id().ToStringDecoded()).c_str());
+          HexSubstr(data->contacts.back().node_id().String()).c_str());
 #endif
       data->contacts.pop_back();
     }
-    required_contacts = kad::K - 1;
+    required_contacts = K_ - 1;
   } else {
-    required_contacts = kad::K;
+    required_contacts = K_;
   }
 
   if (data->contacts.size() < required_contacts) {
@@ -1295,7 +1302,7 @@ int PDVault::AmendAccount(const boost::uint64_t &space_offered) {
   amend_account_request.set_account_pmid(pmid_);
   for (boost::uint16_t i = 0; i < data->contacts.size(); ++i) {
     maidsafe::AmendAccountData::AmendAccountDataHolder holder(
-        data->contacts.at(i).node_id().ToStringDecoded());
+        data->contacts.at(i).node_id().String());
     data->data_holders.push_back(holder);
   }
 
@@ -1417,7 +1424,7 @@ void PDVault::JoinMaidsafeNet() {
 
   // Get K Kademlia-closest peers
   std::list<base::PublicRoutingTableTuple> close_peers;
-  if (routing_table_->GetClosestContacts(pmid_, kad::K, &close_peers) !=
+  if (routing_table_->GetClosestContacts(pmid_, K_, &close_peers) !=
       kSuccess || close_peers.empty()) {
 #ifdef DEBUG
     printf("In PDVault::JoinMaidsafeNet (%s), failed to query local"

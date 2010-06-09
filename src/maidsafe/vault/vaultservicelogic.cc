@@ -38,7 +38,8 @@ namespace maidsafe_vault {
 
 VaultServiceLogic::VaultServiceLogic(
     const boost::shared_ptr<VaultRpcs> &vault_rpcs,
-    const boost::shared_ptr<kad::KNode> &knode)
+    const boost::shared_ptr<kad::KNode> &knode,
+    const boost::uint8_t k)
         : vault_rpcs_(vault_rpcs),
           knode_(knode),
           kad_ops_(new maidsafe::KadOps(knode)),
@@ -48,9 +49,14 @@ VaultServiceLogic::VaultServiceLogic(
           pmid_public_signature_(),
           pmid_private_(),
           online_(false),
-          online_mutex_() {
-  base::OnlineController::Instance()->RegisterObserver(0, boost::bind(
-      &VaultServiceLogic::SetOnlineStatus, this, _1));
+          online_mutex_(),
+          K_(k),
+          upper_threshold_(
+              static_cast<boost::uint16_t>(K_ * kMinSuccessfulPecentageStore)),
+          lower_threshold_(kMinSuccessfulPecentageStore > .25 ?
+              static_cast<boost::uint16_t>(K_ * .25) : upper_threshold_) {
+  base::OnlineController::Instance()->RegisterObserver(0,
+      boost::bind(&VaultServiceLogic::SetOnlineStatus, this, _1));
 }
 
 bool VaultServiceLogic::Init(const std::string &pmid,
@@ -96,9 +102,9 @@ void VaultServiceLogic::AddToRemoteRefList(
     return;
   }
   boost::shared_ptr<AddToReferenceListOpData> data(new AddToReferenceListOpData(
-      request, kad::KadId(request.chunkname(), false), found_local_result,
-      callback, transport_id));
-  kad_ops_->FindKClosestNodes(kad::KadId(request.chunkname(), false),
+      request, kad::KadId(request.chunkname()), found_local_result,
+      callback, transport_id, K_));
+  kad_ops_->FindKClosestNodes(kad::KadId(request.chunkname()),
       boost::bind(static_cast< void(VaultServiceLogic::*)
           (boost::shared_ptr<AddToReferenceListOpData>, const std::string &) >
           (&VaultServiceLogic::RemoteOpStageTwo), this, data, _1));
@@ -120,9 +126,9 @@ void VaultServiceLogic::AmendRemoteAccount(
   crypto::Crypto co;
   co.set_hash_algorithm(crypto::SHA_512);
   kad::KadId account_name(co.Hash(request.account_pmid() + kAccount, "",
-      crypto::STRING_STRING, false), false);
+                          crypto::STRING_STRING, false));
   boost::shared_ptr<AmendRemoteAccountOpData> data(new AmendRemoteAccountOpData(
-      request, account_name, found_local_result, callback, transport_id));
+      request, account_name, found_local_result, callback, transport_id, K_));
   kad_ops_->FindKClosestNodes(account_name, boost::bind(
       static_cast< void(VaultServiceLogic::*)
           (boost::shared_ptr<AmendRemoteAccountOpData>, const std::string &) >
@@ -145,10 +151,10 @@ void VaultServiceLogic::RemoteVaultAbleToStore(
   crypto::Crypto co;
   co.set_hash_algorithm(crypto::SHA_512);
   kad::KadId account_name(co.Hash(request.account_pmid() + kAccount, "",
-      crypto::STRING_STRING, false), false);
+                          crypto::STRING_STRING, false));
   boost::shared_ptr<RemoteAccountStatusOpData>
       data(new RemoteAccountStatusOpData(request, account_name,
-          found_local_result, callback, transport_id));
+          found_local_result, callback, transport_id, K_));
   kad_ops_->FindKClosestNodes(account_name, boost::bind(
       static_cast< void(VaultServiceLogic::*)
           (boost::shared_ptr<RemoteAccountStatusOpData>, const std::string &) >
@@ -207,18 +213,18 @@ void VaultServiceLogic::RemoteOpStageTwo(
   if (within_k_closest)
     ++less_contacts;
 
-  if (data->contacts.size() + less_contacts < size_t(kKadUpperThreshold)) {
+  if (data->contacts.size() + less_contacts < size_t(upper_threshold_)) {
 #ifdef DEBUG
     printf("In VSL::RemoteOpStageTwo for %s (%s), Kad lookup failed to find "
            "%u nodes; found %u nodes.\n", typeid(data).name(),
-           HexSubstr(pmid_).c_str(), kKadUpperThreshold, data->contacts.size());
+           HexSubstr(pmid_).c_str(), upper_threshold_, data->contacts.size());
 #endif
     data->callback(kVaultServiceFindNodesTooFew);
     return;
   }
 
   if (within_k_closest) {
-    while (data->contacts.size() + less_contacts > kad::K)
+    while (data->contacts.size() + less_contacts > K_)
       data->contacts.pop_back();  // only need K-x closest now
     // We've already queried/amended the account if we happen to hold it.
     if (data->found_local_result == kSuccess)
@@ -233,7 +239,7 @@ void VaultServiceLogic::RemoteOpStageTwo(
   // Set up holders for forthcoming individual RPCs
   for (size_t i = 0; i < data->contacts.size(); ++i) {
     typename T::RemoteOpHolder holder(
-        data->contacts.at(i).node_id().ToStringDecoded());
+        data->contacts.at(i).node_id().String());
     data->data_holders.push_back(holder);
   }
 
@@ -248,8 +254,8 @@ bool VaultServiceLogic::RemoveSubjectContact(
 
 template<typename T>
 bool VaultServiceLogic::RemoveSubjectContact(boost::shared_ptr<T> data) {
-  return maidsafe::RemoveKadContact(
-      kad::KadId(data->request.account_pmid(), false), &data->contacts);
+  return maidsafe::RemoveKadContact(kad::KadId(data->request.account_pmid()),
+                                    &data->contacts);
 }
 
 template<>
@@ -257,8 +263,8 @@ void VaultServiceLogic::SendRpcs(
     boost::shared_ptr<AddToReferenceListOpData> data) {
   for (boost::uint16_t j = 0; j < data->contacts.size(); ++j) {
     data->request.set_request_signature(GetSignedRequest(
-        data->kad_key.ToStringDecoded(),
-        data->contacts.at(j).node_id().ToStringDecoded()));
+        data->kad_key.String(),
+        data->contacts.at(j).node_id().String()));
     google::protobuf::Closure* done = google::protobuf::NewCallback<
         VaultServiceLogic, boost::uint16_t,
         boost::shared_ptr<AddToReferenceListOpData> > (this,
@@ -350,8 +356,8 @@ void VaultServiceLogic::RemoteOpStageThree(boost::uint16_t index,
 template<typename T>
 void VaultServiceLogic::AssessResult(const ReturnCode &result,
                                      boost::shared_ptr<T> data) {
-  if (data->success_count >= kKadUpperThreshold ||
-      data->failure_count > data->data_holders.size() - kKadUpperThreshold) {
+  if (data->success_count >= upper_threshold_ ||
+      data->failure_count > data->data_holders.size() - upper_threshold_) {
     data->callback(result);
     data->callback_done = true;
   }
@@ -361,8 +367,8 @@ template<>
 void VaultServiceLogic::AssessResult(
     const ReturnCode &result,
     boost::shared_ptr<RemoteAccountStatusOpData> data) {
-  if (data->success_count - data->failure_count >= kKadLowerThreshold ||
-      data->failure_count > data->data_holders.size() - kKadLowerThreshold) {
+  if (data->success_count - data->failure_count >= lower_threshold_ ||
+      data->failure_count > data->data_holders.size() - lower_threshold_) {
     data->callback(result);
     data->callback_done = true;
   }

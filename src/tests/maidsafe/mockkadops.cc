@@ -25,6 +25,7 @@
 namespace mock_kadops {
 
 std::string MakeFindNodesResponse(const FindNodesResponseType &type,
+                                  const boost::uint8_t k,
                                   std::vector<std::string> *pmids) {
   if (type == kFailParse)
     return "It's not going to parse.";
@@ -36,7 +37,7 @@ std::string MakeFindNodesResponse(const FindNodesResponseType &type,
     find_response.set_result(kad::kRpcResultFailure);
   else
     find_response.set_result(kad::kRpcResultSuccess);
-  int contact_count(kad::K);
+  int contact_count(k);
   if (type == kTooFewContacts)
     contact_count = 1;
   // Set all IDs close to value of account we're going to be looking for to

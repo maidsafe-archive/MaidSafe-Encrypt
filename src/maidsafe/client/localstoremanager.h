@@ -46,7 +46,8 @@ class ChunkStore;
 
 class LocalStoreManager : public StoreManagerInterface {
  public:
-  explicit LocalStoreManager(boost::shared_ptr<ChunkStore> client_chunkstore);
+  explicit LocalStoreManager(boost::shared_ptr<ChunkStore> client_chunkstore,
+                             const boost::uint8_t k);
   virtual ~LocalStoreManager() {}
   virtual void Init(int, kad::VoidFunctorOneString cb, fs::path db_directory);
   virtual void Close(kad::VoidFunctorOneString cb, bool);
@@ -164,6 +165,8 @@ class LocalStoreManager : public StoreManagerInterface {
                                    const std::string &msid,
                                    std::string *ser_gp);
 
+  boost::uint8_t K_;
+  boost::uint16_t upper_threshold_;
   CppSQLite3DB db_;
   VaultBufferPacketHandler vbph_;
   boost::mutex mutex_;

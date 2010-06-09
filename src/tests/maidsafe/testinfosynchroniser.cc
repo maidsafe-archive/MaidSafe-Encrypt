@@ -29,6 +29,10 @@
 
 namespace maidsafe_vault {
 
+namespace test_info_sync {
+static const boost::uint8_t K(4);
+}  // namespace test_info_sync
+
 class InfoSynchroniserTest : public testing::Test {
  public:
   InfoSynchroniserTest()
@@ -37,7 +41,7 @@ class InfoSynchroniserTest : public testing::Test {
                        crypto::STRING_STRING, false)),
         kMinRoutingTableSize_(100),
         routing_table_(new base::PublicRoutingTableHandler()),
-        info_synchroniser_(pmid_, routing_table_),
+        info_synchroniser_(pmid_, routing_table_, test_info_sync::K),
         closest_nodes_() {}
  protected:
   void SetUp() {
@@ -69,17 +73,17 @@ TEST_F(InfoSynchroniserTest, BEH_VAULT_InfoSyncShouldFetch) {
                             false);
   ASSERT_EQ(0, routing_table_->GetClosestContacts(id, 0, &nodes));
   ASSERT_GE(nodes.size(), kMinRoutingTableSize_);
-  // Get a key which doesn't include test node's ID in kad::K closest node
+  // Get a key which doesn't include test node's ID in test_info_sync::K closest node
   while (true) {
-    ASSERT_EQ(0, routing_table_->GetClosestContacts(id, kad::K, &nodes));
-    ASSERT_EQ(kad::K, nodes.size());
+    ASSERT_EQ(0, routing_table_->GetClosestContacts(id, test_info_sync::K, &nodes));
+    ASSERT_EQ(test_info_sync::K, nodes.size());
     kad::Contact this_test_contact(pmid_, "", 0);
     std::vector<kad::Contact> closest_nodes;
     std::for_each(nodes.begin(), nodes.end(), boost::bind(
         &InfoSynchroniser::AddNodeToClosest, &info_synchroniser_, _1,
         &closest_nodes));
-    if (!maidsafe::ContactWithinClosest(kad::KadId(id, false),
-                                        this_test_contact, closest_nodes))
+    if (!maidsafe::ContactWithinClosest(kad::KadId(id), this_test_contact,
+                                        closest_nodes))
       break;
     else
       id = co_.Hash(base::RandomString(100), "", crypto::STRING_STRING, false);
@@ -111,7 +115,7 @@ TEST_F(InfoSynchroniserTest, BEH_VAULT_InfoSyncShouldFetch) {
   closest_nodes_.push_back(kad::Contact());
   ASSERT_FALSE(closest_nodes_.empty());
   ASSERT_TRUE(info_synchroniser_.ShouldFetch(id, &closest_nodes_));
-  ASSERT_EQ(kad::K, closest_nodes_.size());
+  ASSERT_EQ(test_info_sync::K, closest_nodes_.size());
   ASSERT_EQ(size_t(2), info_synchroniser_.info_entries_.size());
   closest_nodes_.push_back(kad::Contact());
   ASSERT_FALSE(closest_nodes_.empty());

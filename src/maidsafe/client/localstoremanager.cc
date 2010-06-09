@@ -79,8 +79,12 @@ void ExecReturnLoadPacketCallback(const LoadPacketFunctor &cb,
 }
 
 LocalStoreManager::LocalStoreManager(
-    boost::shared_ptr<ChunkStore> client_chunkstore)
-        : db_(),
+    boost::shared_ptr<ChunkStore> client_chunkstore,
+    const boost::uint8_t k)
+        : K_(k),
+          upper_threshold_(
+              static_cast<boost::uint16_t>(K_ * kMinSuccessfulPecentageStore)),
+          db_(),
           vbph_(),
           mutex_(),
           local_sm_dir_(file_system::LocalStoreManagerDir().string()),
@@ -854,7 +858,7 @@ int LocalStoreManager::LoadBPMessages(
 #endif
     return 0;
   }
-  return kKadUpperThreshold;
+  return upper_threshold_;
 }
 
 int LocalStoreManager::SendMessage(
@@ -922,7 +926,7 @@ int LocalStoreManager::SendMessage(
 }
 
 int LocalStoreManager::LoadBPPresence(std::list<LivePresence>*) {
-  return kKadUpperThreshold;
+  return upper_threshold_;
 }
 
 int LocalStoreManager::AddBPPresence(

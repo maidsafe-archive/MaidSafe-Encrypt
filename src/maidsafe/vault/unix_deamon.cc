@@ -64,14 +64,15 @@ int WriteToLog(std::string str) {
 }
 
 int main(int argc, char* argv[]) {
-  if (argc != 3) {
+  if (argc != 4) {
     printf("vault: Invalid number of arguments\n");
-    printf("Usage: vault [PORT] path_to_config_file\n");
+    printf("Usage: vault [PORT] path_to_config_file K\n");
     return -1;
   } else {
     printf("arg[0]: %s\n", argv[0]);
     printf("arg[1]: %s\n", argv[1]);
     printf("arg[2]: %s\n", argv[2]);
+    printf("arg[3]: %s\n", argv[2]);
   }
 
 #ifdef MAIDSAFE_LINUX
@@ -121,9 +122,10 @@ int main(int argc, char* argv[]) {
   close(STDERR_FILENO);
 
   /* Daemon-specific initialization goes here */
-  std::string prt(argv[1]), path_to_config(argv[2]);
+  std::string prt(argv[1]), path_to_config(argv[2]), k(argv[3]);
   int port = boost::lexical_cast<int>(prt);
-  maidsafe_vault::VaultDaemon vault_daemon(port, path_to_config);
+  boost::uint8_t K(boost::lexical_cast<boost::uint8_t>(k));
+  maidsafe_vault::VaultDaemon vault_daemon(port, path_to_config, K);
 
   if (!vault_daemon.StartVault())
     exit(EXIT_FAILURE);

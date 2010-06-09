@@ -38,6 +38,10 @@ namespace fs = boost::filesystem;
 
 namespace test_lsm {
 
+static const boost::uint8_t K(4);
+static const boost::uint8_t upper_threshold_(static_cast<boost::uint16_t>
+                                            (K * kMinSuccessfulPecentageStore));
+
 class FakeCallback {
  public:
   explicit FakeCallback(boost::mutex *m)
@@ -135,7 +139,7 @@ class LocalStoreManagerTest : public testing::Test {
       boost::this_thread::sleep(boost::posix_time::milliseconds(10));
       count += 10;
     }
-    sm_ = new maidsafe::LocalStoreManager(client_chunkstore_);
+    sm_ = new maidsafe::LocalStoreManager(client_chunkstore_, test_lsm::K);
     // sm_ = new Localsm_();
     sm_->Init(0, boost::bind(&test_lsm::FakeCallback::CallbackFunc, &cb, _1),
               test_root_dir_);
@@ -673,7 +677,7 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_AddAndGetBufferPacketMessages) {
   ss_->AddKey(maidsafe::MPID, me_pubusername, me_privkey, me_pubkey,
               me_sigpubkey);
   std::list<maidsafe::ValidatedBufferPacketMessage> messages;
-  ASSERT_EQ(kKadUpperThreshold, sm_->LoadBPMessages(&messages));
+  ASSERT_EQ(test_lsm::upper_threshold_, sm_->LoadBPMessages(&messages));
   ASSERT_EQ(size_t(1), messages.size());
   ASSERT_EQ("Juanito", messages.front().sender());
   ASSERT_EQ(test_msg, messages.front().message());
@@ -681,7 +685,7 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_AddAndGetBufferPacketMessages) {
   ASSERT_EQ(maidsafe::INSTANT_MSG, messages.front().type());
 
   // Check message is gone
-  ASSERT_EQ(kKadUpperThreshold, sm_->LoadBPMessages(&messages));
+  ASSERT_EQ(test_lsm::upper_threshold_, sm_->LoadBPMessages(&messages));
   ASSERT_EQ(size_t(0), messages.size());
 }
 
@@ -724,7 +728,7 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_AddRequestBufferPacketMessage) {
   ss_->AddKey(maidsafe::MPID, me_pubusername, me_privkey, me_pubkey,
               me_sigpubkey);
   std::list<maidsafe::ValidatedBufferPacketMessage> messages;
-  ASSERT_EQ(kKadUpperThreshold, sm_->LoadBPMessages(&messages));
+  ASSERT_EQ(test_lsm::upper_threshold_, sm_->LoadBPMessages(&messages));
   ASSERT_EQ(size_t(1), messages.size());
   ASSERT_EQ("Juanito", messages.front().sender());
   ASSERT_EQ(test_msg, messages.front().message());
@@ -757,7 +761,7 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_AddRequestBufferPacketMessage) {
   ss_->AddKey(maidsafe::MPID, me_pubusername, me_privkey, me_pubkey,
               me_sigpubkey);
   messages.clear();
-  ASSERT_EQ(kKadUpperThreshold, sm_->LoadBPMessages(&messages));
+  ASSERT_EQ(test_lsm::upper_threshold_, sm_->LoadBPMessages(&messages));
   ASSERT_EQ(size_t(1), messages.size());
   ASSERT_EQ("Juanito", messages.front().sender());
   ASSERT_EQ(test_msg, messages.front().message());

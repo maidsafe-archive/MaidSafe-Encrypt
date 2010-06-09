@@ -83,7 +83,7 @@ struct AccountAmendment {
     crypto::Crypto co;
     co.set_hash_algorithm(crypto::SHA_512);
     account_name = kad::KadId(co.Hash(pmid + kAccount, "",
-        crypto::STRING_STRING, false), false);
+                              crypto::STRING_STRING, false));
   }
   bool operator<(const AccountAmendment &aa) const {
     return expiry_time < aa.expiry_time;
@@ -131,11 +131,13 @@ typedef AccountAmendmentSet::index<by_timestamp>::type AmendmentsByTimestamp;
 class AccountAmendmentHandler {
  public:
   AccountAmendmentHandler(AccountHandler *account_handler,
-                          VaultServiceLogic *vault_service_logic)
+                          VaultServiceLogic *vault_service_logic,
+                          const boost::uint8_t &upper_threshold)
       : account_handler_(account_handler),
         vault_service_logic_(vault_service_logic),
         amendments_(),
-        amendment_mutex_() {}
+        amendment_mutex_(),
+        upper_threshold_(upper_threshold) {}
   ~AccountAmendmentHandler() {}
   // Assumes that response->pmid() has already been set and that
   // request->signed_size() validates
@@ -170,6 +172,7 @@ class AccountAmendmentHandler {
   VaultServiceLogic *vault_service_logic_;
   AccountAmendmentSet amendments_;
   boost::mutex amendment_mutex_;
+  boost::uint8_t upper_threshold_;
 };
 
 }  // namespace maidsafe_vault

@@ -39,6 +39,8 @@ namespace fs = boost::filesystem;
 
 namespace test_auth {
 
+static const boost::uint8_t K(4);
+
 class FakeCallback {
  public:
   FakeCallback() : result() {}
@@ -108,7 +110,7 @@ class AuthenticationTest : public testing::Test {
       boost::this_thread::sleep(boost::posix_time::milliseconds(10));
       count += 10;
     }
-    sm_.reset(new LocalStoreManager(client_chunkstore_));
+    sm_.reset(new LocalStoreManager(client_chunkstore_, test_auth::K));
     sm_->Init(0, boost::bind(&test_auth::FakeCallback::CallbackFunc, &cb_, _1),
               test_root_dir_);
     boost::mutex mutex;
@@ -682,7 +684,8 @@ TEST_F(AuthenticationTest, BEH_MAID_CreateMSIDPacket) {
 
 TEST(AuthenticationTest1, BEH_MAID_TestDestructor) {
   boost::shared_ptr<ChunkStore> chunkstore(new ChunkStore("tmp", 0, 0));
-  boost::shared_ptr<LocalStoreManager> sm(new LocalStoreManager(chunkstore));
+  boost::shared_ptr<LocalStoreManager> sm(new LocalStoreManager(chunkstore,
+                                                                test_auth::K));
   Authentication *auth = new Authentication;
   auth->Init(kNoOfSystemPackets, sm);
   boost::this_thread::sleep(boost::posix_time::seconds(3));

@@ -48,8 +48,9 @@ namespace fs = boost::filesystem;
 
 namespace cc_test {
 
+static const boost::uint8_t K(4);
 static std::vector< boost::shared_ptr<maidsafe_vault::PDVault> > pdvaults_;
-static const int kNetworkSize_ = kad::K + 1;
+static const int kNetworkSize_(K + 1);
 static bool initialised_ = false;
 
 }  // namespace cc_test
@@ -66,7 +67,7 @@ class FunctionalClientControllerTest : public testing::Test {
   FunctionalClientControllerTest()
       : cc_dir_(file_system::TempDir() / ("maidsafe_TestCC_" +
                 base::RandomString(6))),
-        vault_daemon_(0, cc_dir_.string()),
+        vault_daemon_(0, cc_dir_.string(), cc_test::K),
         cc_(),
         authentication_(),
         ss_(),
@@ -105,7 +106,7 @@ class FunctionalClientControllerTest : public testing::Test {
     ss_->ResetSession();
     cc_ = ClientController::getInstance();
     if (!cc_test::initialised_) {
-      ASSERT_EQ(kSuccess, cc_->Init());
+      ASSERT_EQ(kSuccess, cc_->Init(cc_test::K));
       cc_test::initialised_ = cc_->initialised();
     }
     cc_->StopRvPing();
@@ -1034,6 +1035,6 @@ TEST_F(FunctionalClientControllerTest, FUNC_MAID_ControllerFuseFunctions) {
 int main(int argc, char **argv) {
   testing::InitGoogleTest(&argc, argv);
   testing::AddGlobalTestEnvironment(new localvaults::Env(cc_test::kNetworkSize_,
-      &cc_test::pdvaults_));
+      &cc_test::pdvaults_, cc_test::K));
   return RUN_ALL_TESTS();
 }

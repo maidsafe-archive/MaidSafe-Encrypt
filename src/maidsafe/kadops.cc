@@ -30,8 +30,9 @@ bool KadOps::AddressIsLocal(const kad::Contact &peer) {
 }
 
 bool KadOps::AddressIsLocal(const kad::ContactInfo &peer) {
-  return knode_->CheckContactLocalAddress(kad::KadId(peer.node_id(), false),
-      peer.local_ip(), peer.local_port(), peer.ip()) == kad::LOCAL;
+  return knode_->CheckContactLocalAddress(kad::KadId(peer.node_id()),
+                                          peer.local_ip(), peer.local_port(),
+                                          peer.ip()) == kad::LOCAL;
 }
 
 void KadOps::GetNodeContactDetails(const kad::KadId &node_id,

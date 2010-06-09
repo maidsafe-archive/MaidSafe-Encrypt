@@ -222,9 +222,11 @@ struct BPResults {
 
 class MaidsafeStoreManager : public StoreManagerInterface {
  public:
-  explicit MaidsafeStoreManager(boost::shared_ptr<ChunkStore> cstore);
+  explicit MaidsafeStoreManager(boost::shared_ptr<ChunkStore> cstore,
+                                boost::uint8_t k);
   MaidsafeStoreManager(boost::shared_ptr<ChunkStore> cstore,
-      SessionSingleton *ss);
+                       boost::uint8_t k,
+                       SessionSingleton *ss);
   virtual ~MaidsafeStoreManager() {}
   void Init(int port, kad::VoidFunctorOneString cb, fs::path db_directory);
   void Close(kad::VoidFunctorOneString cb, bool cancel_pending_ops);
@@ -528,6 +530,9 @@ class MaidsafeStoreManager : public StoreManagerInterface {
       const boost::uint32_t &conn_id, const std::string &msg);
   bool SendIM(const std::string &msg, const std::string &contactname);
 
+  boost::uint8_t K_;
+  boost::uint16_t upper_threshold_;
+  boost::uint16_t lower_threshold_;
   transport::TransportUDT udt_transport_;
   transport::TransportHandler transport_handler_;
   rpcprotocol::ChannelManager channel_manager_;

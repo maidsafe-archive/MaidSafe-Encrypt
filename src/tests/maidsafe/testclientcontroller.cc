@@ -46,6 +46,10 @@
 
 namespace fs = boost::filesystem;
 
+namespace test_cc {
+static const boost::uint8_t K(4);
+}  // namespace test_cc
+
 namespace maidsafe {
 
 class ClientControllerTest : public testing::Test {
@@ -90,7 +94,7 @@ class ClientControllerTest : public testing::Test {
     ss_ = SessionSingleton::getInstance();
     ss_->ResetSession();
     cc_ = ClientController::getInstance();
-    cc_->Init();
+    cc_->Init(test_cc::K);
     cc_->StopRvPing();
     ss_->SetConnectionStatus(0);
     vcp_.space = 100;

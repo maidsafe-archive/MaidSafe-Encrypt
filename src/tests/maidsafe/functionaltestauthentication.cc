@@ -31,8 +31,12 @@
 #include "maidsafe/client/dataatlashandler.h"
 #include "maidsafe/client/maidstoremanager.h"
 
+namespace test_func_auth {
+static const boost::uint8_t K(4);
+}  // namespace test_func_auth
+
 static std::vector< boost::shared_ptr<maidsafe_vault::PDVault> > pdvaults_;
-static const int kNetworkSize_ = kad::K + 2;
+static const int kNetworkSize_ = test_func_auth::K + 2;
 
 namespace fs = boost::filesystem;
 
@@ -110,7 +114,7 @@ class FunctionalAuthenticationTest : public testing::Test {
       count += 10;
     }
     sm_ = boost::shared_ptr<MaidsafeStoreManager>(
-        new MaidsafeStoreManager(client_chunkstore_));
+        new MaidsafeStoreManager(client_chunkstore_, test_func_auth::K));
     sm_->Init(0, boost::bind(&test_auth::FakeCallback::CallbackFunc, &cb_, _1),
               test_root_dir_);
     boost::mutex mutex;
@@ -695,7 +699,7 @@ TEST_F(FunctionalAuthenticationTest, FUNC_MAID_AUTH_CreateMSIDPacket) {
 int main(int argc, char **argv) {
   testing::InitGoogleTest(&argc, argv);
   testing::AddGlobalTestEnvironment(
-      new localvaults::Env(kNetworkSize_, &pdvaults_));
+      new localvaults::Env(kNetworkSize_, &pdvaults_, test_func_auth::K));
   return RUN_ALL_TESTS();
 }
 
