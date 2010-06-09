@@ -33,6 +33,8 @@ namespace test_aah {
 static const boost::uint8_t K(4);
 static const boost::uint8_t upper_threshold(static_cast<boost::uint8_t>
                                            (K * kMinSuccessfulPecentageStore));
+static const boost::uint8_t lower_threshold(kMinSuccessfulPecentageStore > .25 ?
+             static_cast<boost::uint8_t >(K * .25) : upper_threshold);
 
 class CallbacksHolder {
  public:
@@ -128,13 +130,13 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_AssessAmendment) {
     boost::this_thread::sleep(boost::posix_time::milliseconds(2));
   }
   AccountAmendment test_amendment(test_account_name, 2, 1000, true,
-      pendings.at(0));
+                                  pendings.at(0));
   test_amendment.account_name = kad::KadId(test_account_name);
 
   // Add account to AccountHolder and amendment to aah_ so amend can succeed
   ASSERT_EQ(kSuccess, ah_.AddAccount(test_account_name, 999999));
-  std::pair<AccountAmendmentSet::iterator, bool> p =
-      aah_.amendments_.insert(test_amendment);
+  std::pair<AccountAmendmentSet::iterator, bool> p;
+  p = aah_.amendments_.insert(test_amendment);
   ASSERT_TRUE(p.second);
   boost::mutex::scoped_lock lock(aah_.amendment_mutex_);
 
@@ -151,7 +153,7 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_AssessAmendment) {
 
   // Wrong name
   int result = aah_.AssessAmendment("Wrong", 2, 1000, true,
-      pendings.at(test_run), &test_amendment);
+                                    pendings.at(test_run), &test_amendment);
   ASSERT_EQ(kAccountAmendmentNotFound, result);
   ASSERT_EQ(test_account_name, test_amendment.account_name.String());
   ASSERT_EQ(size_t(0), test_amendment.chunk_info_holders.size());
@@ -177,7 +179,7 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_AssessAmendment) {
 
   // Wrong amount
   result = aah_.AssessAmendment(test_account_name, 2, 1001, true,
-      pendings.at(test_run), &test_amendment);
+                                pendings.at(test_run), &test_amendment);
   ASSERT_EQ(kAccountAmendmentNotFound, result);
   ASSERT_EQ(test_account_name, test_amendment.account_name.String());
   ASSERT_EQ(size_t(0), test_amendment.chunk_info_holders.size());
@@ -190,7 +192,7 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_AssessAmendment) {
 
   // Wrong flag
   result = aah_.AssessAmendment(test_account_name, 2, 1000, false,
-      pendings.at(test_run), &test_amendment);
+                                pendings.at(test_run), &test_amendment);
   ASSERT_EQ(kAccountAmendmentNotFound, result);
   ASSERT_EQ(test_account_name, test_amendment.account_name.String());
   ASSERT_EQ(size_t(0), test_amendment.chunk_info_holders.size());
@@ -203,7 +205,7 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_AssessAmendment) {
 
   // Request already pending
   result = aah_.AssessAmendment(test_account_name, 2, 1000, true,
-      pendings.at(0), &test_amendment);
+                                pendings.at(0), &test_amendment);
   ASSERT_EQ(kAccountAmendmentNotFound, result);
   ASSERT_EQ(test_account_name, test_amendment.account_name.String());
   ASSERT_EQ(size_t(0), test_amendment.chunk_info_holders.size());
@@ -216,7 +218,7 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_AssessAmendment) {
 
   // OK
   result = aah_.AssessAmendment(test_account_name, 2, 1000, true,
-      pendings.at(test_run), &test_amendment);
+                                pendings.at(test_run), &test_amendment);
   ASSERT_EQ(kAccountAmendmentUpdated, result);
   ASSERT_EQ(test_account_name, test_amendment.account_name.String());
   ASSERT_EQ(size_t(0), test_amendment.chunk_info_holders.size());
@@ -234,8 +236,8 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_AssessAmendment) {
   bool found = (it != aah_.amendments_.get<by_timestamp>().end());
   ASSERT_TRUE(found);
   // Set Chunk Info holders so that kKadStoreThreshold - 2 have responded
-  ASSERT_LE(test_aah::upper_threshold, good_pmids_.size() - 3);
-  ASSERT_GE(test_aah::upper_threshold, 3);
+  ASSERT_LE(size_t(test_aah::lower_threshold), good_pmids_.size() - 3);
+  ASSERT_GE(size_t(test_aah::upper_threshold), 3);
   for (size_t i = 0; i < static_cast<size_t>(test_aah::upper_threshold - 1); ++i)
     test_amendment.chunk_info_holders.insert(std::pair<std::string, bool>
         (good_pmids_.at(i), true));

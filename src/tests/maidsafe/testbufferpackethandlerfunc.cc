@@ -39,12 +39,12 @@
 #include "tests/maidsafe/cached_keys.h"
 #include "tests/maidsafe/localvaults.h"
 
-static std::vector< boost::shared_ptr<maidsafe_vault::PDVault> > pdvaults_;
-static const int kNetworkSize_ = 16;
-
 namespace test_bph {
 static const boost::uint8_t K(4);
 }  // namespace test_bph
+
+static std::vector< boost::shared_ptr<maidsafe_vault::PDVault> > pdvaults_;
+static const int kNetworkSize_ = test_bph::K + 2;
 
 class KadCB {
  public:
