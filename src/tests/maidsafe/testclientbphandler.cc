@@ -40,6 +40,10 @@ using ::testing::Invoke;
 using ::testing::InvokeWithoutArgs;
 using ::testing::WithArgs;
 
+namespace test_cbph {
+static const boost::uint8_t K(4);
+}  // namespace test_cbph
+
 void execute_cb(kad::VoidFunctorOneString cb, const std::string &result) {
   boost::this_thread::sleep(boost::posix_time::seconds(1));
   cb(result);
@@ -53,7 +57,7 @@ void FindNodesSucceed(kad::VoidFunctorOneString cb) {
   kad::Contact ctc(id, "127.0.0.1", 8888, "127.0.0.1", 8888);
   std::string ser_ctc;
   ctc.SerialiseToString(&ser_ctc);
-  for (int n = 0; n < kad::K; ++n) {
+  for (int n = 0; n < test_cbph::K; ++n) {
     res.add_closest_nodes(ser_ctc);
   }
   boost::thread thrd(execute_cb, cb, res.SerializeAsString());
@@ -78,7 +82,7 @@ void FindNodesFailNotEnough(kad::VoidFunctorOneString cb) {
   std::string ser_ctc;
   kad::Contact ctc(id, "127.0.0.1", 8888, "127.0.0.1", 8888);
   ctc.SerialiseToString(&ser_ctc);
-  for (int n = 0; n < kad::K/4; ++n) {
+  for (int n = 0; n < test_cbph::K/4; ++n) {
     res.add_closest_nodes(ser_ctc);
   }
   boost::thread thrd(execute_cb, cb, res.SerializeAsString());
@@ -87,7 +91,7 @@ void FindNodesFailNotEnough(kad::VoidFunctorOneString cb) {
 void FindNodesFailNotContacts(kad::VoidFunctorOneString cb) {
   kad::FindResponse res;
   res.set_result(kad::kRpcResultSuccess);
-  for (int n = 0; n < kad::K; ++n) {
+  for (int n = 0; n < test_cbph::K; ++n) {
     res.add_closest_nodes("mis huevos en chile verde");
   }
   boost::thread thrd(execute_cb, cb, res.SerializeAsString());
@@ -97,7 +101,7 @@ void BPCallbackFail(const kad::Contact &peer,
                     maidsafe::CreateBPResponse *response,
                     google::protobuf::Closure *done) {
   response->set_result(kNack);
-  response->set_pmid_id(peer.node_id().ToStringDecoded());
+  response->set_pmid_id(peer.node_id().String());
   done->Run();
 }
 
@@ -105,7 +109,7 @@ void BPCallbackSucceed(const kad::Contact &peer,
                        maidsafe::CreateBPResponse *response,
                        google::protobuf::Closure *done) {
   response->set_result(kAck);
-  response->set_pmid_id(peer.node_id().ToStringDecoded());
+  response->set_pmid_id(peer.node_id().String());
   done->Run();
 }
 
@@ -114,7 +118,7 @@ void BPInfoCallbackSucceed(
     maidsafe::ModifyBPInfoResponse *response,
     google::protobuf::Closure *done) {
   response->set_result(kAck);
-  response->set_pmid_id(peer.node_id().ToStringDecoded());
+  response->set_pmid_id(peer.node_id().String());
   done->Run();
 }
 
@@ -123,7 +127,7 @@ void BPInfoCallbackFailed(
     maidsafe::ModifyBPInfoResponse *response,
     google::protobuf::Closure *done) {
   response->set_result(kNack);
-  response->set_pmid_id(peer.node_id().ToStringDecoded());
+  response->set_pmid_id(peer.node_id().String());
   done->Run();
 }
 
@@ -132,7 +136,7 @@ void BPAddMsgCallbackSucceed(
     maidsafe::AddBPMessageResponse *response,
     google::protobuf::Closure *done) {
   response->set_result(kAck);
-  response->set_pmid_id(peer.node_id().ToStringDecoded());
+  response->set_pmid_id(peer.node_id().String());
   done->Run();
 }
 
@@ -141,7 +145,7 @@ void BPAddMsgCallbackFailed(
     maidsafe::AddBPMessageResponse *response,
     google::protobuf::Closure *done) {
   response->set_result(kNack);
-  response->set_pmid_id(peer.node_id().ToStringDecoded());
+  response->set_pmid_id(peer.node_id().String());
   done->Run();
 }
 
@@ -150,7 +154,7 @@ void BPAddPresenceCallbackSucceed(
     maidsafe::AddBPPresenceResponse *response,
     google::protobuf::Closure *done) {
   response->set_result(kAck);
-  response->set_pmid_id(peer.node_id().ToStringDecoded());
+  response->set_pmid_id(peer.node_id().String());
   done->Run();
 }
 
@@ -159,7 +163,7 @@ void BPAddPresenceCallbackFailed(
     maidsafe::AddBPPresenceResponse *response,
     google::protobuf::Closure *done) {
   response->set_result(kNack);
-  response->set_pmid_id(peer.node_id().ToStringDecoded());
+  response->set_pmid_id(peer.node_id().String());
   done->Run();
 }
 
@@ -247,7 +251,7 @@ class GetMsgsHelper {
     response->set_result(kAck);
     for (size_t i = 0; i < msgs.size(); ++i)
       response->add_messages(msgs.at(i).SerializeAsString());
-    response->set_pmid_id(peer.node_id().ToStringDecoded());
+    response->set_pmid_id(peer.node_id().String());
     done->Run();
   }
   void BPGetMsgsCallbackFailed(
@@ -255,7 +259,7 @@ class GetMsgsHelper {
       maidsafe::GetBPMessagesResponse *response,
       google::protobuf::Closure *done) {
     response->set_result(kNack);
-    response->set_pmid_id(peer.node_id().ToStringDecoded());
+    response->set_pmid_id(peer.node_id().String());
     done->Run();
   }
   void BPGetPresenceCallbackSucceed(
@@ -265,7 +269,7 @@ class GetMsgsHelper {
     response->set_result(kAck);
     for (size_t i = 0; i < presences.size(); ++i)
       response->add_messages(presences.at(i));
-    response->set_pmid_id(peer.node_id().ToStringDecoded());
+    response->set_pmid_id(peer.node_id().String());
     done->Run();
   }
   void BPGetPresenceCallbackFailed(
@@ -273,7 +277,7 @@ class GetMsgsHelper {
       maidsafe::GetBPPresenceResponse *response,
       google::protobuf::Closure *done) {
     response->set_result(kNack);
-    response->set_pmid_id(peer.node_id().ToStringDecoded());
+    response->set_pmid_id(peer.node_id().String());
     done->Run();
   }
   void AddMessage(const std::string &msg,
@@ -338,7 +342,7 @@ class MockBPH : public maidsafe::ClientBufferPacketHandler {
  public:
   MockBPH(boost::shared_ptr<maidsafe::BufferPacketRpcs> rpcs,
           boost::shared_ptr<kad::KNode> knode)
-    : maidsafe::ClientBufferPacketHandler(rpcs, knode) {}
+    : maidsafe::ClientBufferPacketHandler(rpcs, knode, test_cbph::K) {}
   MOCK_METHOD2(FindNodes,
       void(kad::VoidFunctorOneString,
            boost::shared_ptr<maidsafe::ChangeBPData>));
@@ -373,7 +377,7 @@ class TestClientBP : public testing::Test {
     knode_.reset(new kad::KNode(ch_man_, trans_han_, kad::VAULT,
                                 keys_.at(0).private_key(),
                                 keys_.at(0).public_key(),
-                                false, false));
+                                false, false, test_cbph::K));
     knode_->set_transport_id(trans_id);
     BPMock.reset(new MockBPRpcs);
     ASSERT_TRUE(ch_man_->RegisterNotifiersToTransport());

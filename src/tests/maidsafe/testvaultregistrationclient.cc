@@ -36,6 +36,8 @@
 
 namespace test_vault_reg {
 
+static const boost::uint8_t K(4);
+
 inline void HandleDeadServer(const bool&,
                              const std::string&,
                              const boost::uint16_t&) {}
@@ -110,7 +112,7 @@ class MsmSetLocalVaultOwnedTest : public testing::Test {
             ("maidsafe_TestSetLocalVaultOwned_" + base::RandomString(6))),
         chunkstore_(new maidsafe::ChunkStore(test_root_dir_.string(), 1000000,
             0)),
-        msm_(chunkstore_),
+        msm_(chunkstore_, test_vault_reg::K),
         resulthandler_(),
         service_(),
         port_(0),
@@ -141,21 +143,21 @@ class MsmSetLocalVaultOwnedTest : public testing::Test {
                                                     &server_transport_id));
     ASSERT_TRUE(msm_.channel_manager_.RegisterNotifiersToTransport());
     ASSERT_TRUE(msm_.transport_handler_.RegisterOnServerDown(boost::bind(
-        &test_vault_reg::HandleDeadServer, _1, _2, _3)));
+                &test_vault_reg::HandleDeadServer, _1, _2, _3)));
     ASSERT_EQ(0, msm_.transport_handler_.Start(0,
-        msm_.udt_transport_.transport_id()));
+                 msm_.udt_transport_.transport_id()));
     ASSERT_EQ(0, msm_.channel_manager_.Start());
     ASSERT_TRUE(server_.RegisterNotifiersToTransport());
     ASSERT_TRUE(server_transport_handler_.RegisterOnServerDown(boost::bind(
-        &test_vault_reg::HandleDeadServer, _1, _2, _3)));
+                &test_vault_reg::HandleDeadServer, _1, _2, _3)));
     ASSERT_EQ(0, server_transport_handler_.StartLocal(kLocalPort,
-        server_transport_id));
+                                                      server_transport_id));
     ASSERT_EQ(0, server_.Start());
     service_channel_->SetService(service_.pservice());
     server_.RegisterChannel(service_.pservice()->GetDescriptor()->name(),
-        service_channel_.get());
+                            service_channel_.get());
     port_ = msm_.transport_handler_.listening_port(
-        msm_.udt_transport_.transport_id());
+                msm_.udt_transport_.transport_id());
   }
   void TearDown() {
     resulthandler_.Reset();

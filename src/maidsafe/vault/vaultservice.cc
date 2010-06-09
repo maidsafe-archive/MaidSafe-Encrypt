@@ -124,8 +124,12 @@ VaultService::VaultService(const std::string &pmid,
                            VaultChunkStore *vault_chunkstore,
                            kad::KNode *knode,
                            VaultServiceLogic *vault_service_logic,
-                           const boost::int16_t &transport_id)
-    : pmid_(pmid),
+                           const boost::int16_t &transport_id,
+                           const boost::uint8_t k)
+    : K_(k),
+      upper_threshold_(
+          static_cast<boost::uint16_t>(K_ * kMinSuccessfulPecentageStore)),
+      pmid_(pmid),
       pmid_public_(pmid_public),
       pmid_private_(pmid_private),
       pmid_public_signature_(pmid_public_signature),
@@ -135,7 +139,7 @@ VaultService::VaultService(const std::string &pmid,
       transport_id_(transport_id),
       prm_(),
       ah_(true),
-      aah_(&ah_, vault_service_logic_),
+      aah_(&ah_, vault_service_logic_, upper_threshold_),
       cih_(true),
       bps_(),
       thread_pool_(),
@@ -143,7 +147,7 @@ VaultService::VaultService(const std::string &pmid,
           boost::shared_ptr<base::PublicRoutingTableHandler>() :
           (*base::PublicRoutingTable::GetInstance())
           [boost::lexical_cast<std::string>(knode_->host_port())]),
-      info_synchroniser_(pmid_, routing_table_) {
+      info_synchroniser_(pmid_, routing_table_, K_) {
   thread_pool_.setMaxThreadCount(1);
 }
 
@@ -1218,7 +1222,7 @@ void VaultService::GetSyncData(google::protobuf::RpcController*,
     printf("In VaultService::GetSyncData (%s), request does not validate.\n",
            HexSubstr(pmid_).c_str());
 #endif
-  } else if (!NodeWithinClosest(request->pmid(), kad::K)) {
+  } else if (!NodeWithinClosest(request->pmid(), K_)) {
 #ifdef DEBUG
     printf("In VaultService::GetSyncData (%s), requester (%s) not in local"
            "routing table's closest k nodes.\n", HexSubstr(pmid_).c_str(),
@@ -1262,7 +1266,7 @@ void VaultService::GetAccount(google::protobuf::RpcController*,
     return;
   }
 
-  if (!NodeWithinClosest(request->pmid(), kad::K)) {
+  if (!NodeWithinClosest(request->pmid(), K_)) {
     done->Run();
 #ifdef DEBUG
     printf("In VaultService::GetAccount (%s), requester (%s) not in local"
@@ -1314,7 +1318,7 @@ void VaultService::GetChunkInfo(google::protobuf::RpcController*,
     return;
   }
 
-  if (!NodeWithinClosest(request->pmid(), kad::K)) {
+  if (!NodeWithinClosest(request->pmid(), K_)) {
     done->Run();
 #ifdef DEBUG
     printf("In VaultService::GetChunkInfo (%s), requester (%s) not in local"
@@ -1367,7 +1371,7 @@ void VaultService::GetBufferPacket(google::protobuf::RpcController*,
     return;
   }
 
-  if (!NodeWithinClosest(request->pmid(), kad::K)) {
+  if (!NodeWithinClosest(request->pmid(), K_)) {
     done->Run();
 #ifdef DEBUG
     printf("In VaultService::GetBufferPacket (%s), requester (%s) not in local"
@@ -2322,7 +2326,7 @@ void VaultService::ConstructGetInfoRequests(const kad::Contact &contact,
   co.set_hash_algorithm(crypto::SHA_512);
   T request(partial_request);
   request.set_request_signature(co.AsymSign(co.Hash(pmid_public_signature_ +
-      key + contact.node_id().ToStringDecoded(), "", crypto::STRING_STRING,
+      key + contact.node_id().String(), "", crypto::STRING_STRING,
       false), "", pmid_private_, crypto::STRING_STRING));
   requests->push_back(request);
 }

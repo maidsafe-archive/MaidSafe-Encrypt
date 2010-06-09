@@ -27,7 +27,7 @@
 
 #include <boost/cstdint.hpp>
 #include <maidsafe/maidsafe-dht.h>
-#define THIS_MAIDSAFE_DHT_VERSION 21
+#define THIS_MAIDSAFE_DHT_VERSION 23
 #if MAIDSAFE_DHT_VERSION < THIS_MAIDSAFE_DHT_VERSION
 #error This API is not compatible with the installed library.
 #error Please update the maidsafe-dht library.
@@ -340,6 +340,7 @@ const boost::uint64_t kMaxSmallChunkSize(666666);
 const boost::uint32_t kSaveUpdatesTrigger(10);  // max no of dbs in save queue
                                                  // before running save queue
 const double kMinSuccessfulPecentageOfUpdating(0.9);
+const double kMinSuccessfulPecentageStore(0.75);
 // port where the service to register a local vault is listening
 const boost::uint16_t kLocalPort = 5483;
 // additionally paying PMIDs kept in watch lists
@@ -349,11 +350,12 @@ const int kChunkInfoWatcherPendingTimeout = 86400;  // 24 hours
 // time until a chunk holder is not considered active anymore
 const int kChunkInfoRefActiveTimeout = 86400;  // 24 hours
 // min. no. of responses required out of k
-const boost::uint16_t kKadUpperThreshold(static_cast<boost::uint16_t>(kad::K *
-                                         kad::kMinSuccessfulPecentageStore));
-const boost::uint16_t kKadLowerThreshold(
-  kad::kMinSuccessfulPecentageStore > .25 ?
-  static_cast<boost::uint16_t>(kad::K * .25) : kKadUpperThreshold);
+//const boost::uint16_t kK(16);
+//const boost::uint16_t kKadUpperThreshold(static_cast<boost::uint16_t>(kK *
+//                                         kad::kMinSuccessfulPecentageStore));
+//const boost::uint16_t kKadLowerThreshold(
+//  kad::kMinSuccessfulPecentageStore > .25 ?
+//  static_cast<boost::uint16_t>(kK * .25) : kKadUpperThreshold);
 
 namespace maidsafe {
 

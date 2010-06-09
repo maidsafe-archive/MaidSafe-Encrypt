@@ -122,9 +122,12 @@ void ClientController::Destroy() {
   single = 0;
 }
 
-int ClientController::Init() {
+int ClientController::Init(boost::uint8_t k) {
   if (initialised_)
     return 0;
+  K_ = k;
+  upper_threshold_ = static_cast<boost::uint16_t>
+                     (K_ * kMinSuccessfulPecentageStore);
   fs::path client_path(file_system::ApplicationDataDir());
   try {
     // If main app dir isn't already there, create it
@@ -164,9 +167,9 @@ int ClientController::Init() {
     return -5;
   }
 #ifdef LOCAL_PDVAULT
-  sm_.reset(new LocalStoreManager(client_chunkstore_));
+  sm_.reset(new LocalStoreManager(client_chunkstore_, K_));
 #else
-  sm_.reset(new MaidsafeStoreManager(client_chunkstore_));
+  sm_.reset(new MaidsafeStoreManager(client_chunkstore_, K_));
 #endif
   if (!JoinKademlia()) {
 #ifdef DEBUG
@@ -1016,7 +1019,7 @@ bool ClientController::GetMessages() {
   }
 
   std::list<ValidatedBufferPacketMessage> valid_messages;
-  if (sm_->LoadBPMessages(&valid_messages) < kKadUpperThreshold) {
+  if (sm_->LoadBPMessages(&valid_messages) < upper_threshold_) {
 #ifdef DEBUG
     printf("ClientController::GetMessages - Muffed the load\n");
 #endif

@@ -40,7 +40,11 @@
 #include "tests/maidsafe/localvaults.h"
 
 static std::vector< boost::shared_ptr<maidsafe_vault::PDVault> > pdvaults_;
-static const int kNetworkSize_ = kad::K;
+static const int kNetworkSize_ = 16;
+
+namespace test_bph {
+static const boost::uint8_t K(4);
+}  // namespace test_bph
 
 class KadCB {
  public:
@@ -147,13 +151,15 @@ class CBPHandlerTest : public testing::Test {
     boost::int16_t trans_id;
     trans_han->Register(trans, &trans_id);
     knode.reset(new kad::KNode(ch_man, trans_han, kad::CLIENT,
-        keys_.at(0).private_key(), keys_.at(0).public_key(), false, false));
+                keys_.at(0).private_key(), keys_.at(0).public_key(), false,
+                false, test_bph::K));
     knode->set_transport_id(trans_id);
     bp_rpcs.reset(new maidsafe::BufferPacketRpcsImpl(trans_han, ch_man));
-    cbph = new maidsafe::ClientBufferPacketHandler(bp_rpcs, knode);
+    cbph = new maidsafe::ClientBufferPacketHandler(bp_rpcs, knode, test_bph::K);
     ASSERT_TRUE(ch_man->RegisterNotifiersToTransport());
     ASSERT_TRUE(trans_han->RegisterOnServerDown(
-      boost::bind(&kad::KNode::HandleDeadRendezvousServer, knode, _1)));
+                boost::bind(&kad::KNode::HandleDeadRendezvousServer,
+                            knode, _1)));
     EXPECT_EQ(0, trans_han->Start(0, trans_id));
     EXPECT_EQ(0, ch_man->Start());
 
@@ -374,6 +380,6 @@ TEST_F(CBPHandlerTest, FUNC_MAID_TestBPHOperations) {
 int main(int argc, char **argv) {
   testing::InitGoogleTest(&argc, argv);
   testing::AddGlobalTestEnvironment(
-      new localvaults::Env(kNetworkSize_, &pdvaults_));
+      new localvaults::Env(kNetworkSize_, &pdvaults_, test_bph::K));
   return RUN_ALL_TESTS();
 }

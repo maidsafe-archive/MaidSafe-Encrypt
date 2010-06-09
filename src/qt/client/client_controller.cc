@@ -56,7 +56,8 @@ ClientController::ClientController(QObject* parent)
 ClientController::~ClientController() { }
 
 bool ClientController::Init() {
-  int init_result = maidsafe::ClientController::getInstance()->Init();
+  boost::uint8_t K(4);
+  int init_result = maidsafe::ClientController::getInstance()->Init(K);
   if (init_result == 0) {
     maidsafe::ClientController::getInstance()->RegisterImNotifiers(
         boost::bind(&ClientController::OnNewMessage, this, _1),

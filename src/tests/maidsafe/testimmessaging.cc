@@ -41,6 +41,10 @@
 
 namespace fs = boost::filesystem;
 
+namespace test_immessaging {
+static const boost::uint8_t K(4);
+}  // namespace test_immessaging
+
 namespace {
 
 maidsafe::InstantMessage get_im_from_bp_message(const std::string &ser_bpmsg,
@@ -151,8 +155,9 @@ class TestImMessaging : public testing::Test {
       fs::create_directories(local_dir);
     }
     bootstrapping_vault_.reset(new maidsafe_vault::PDVault(public_key,
-        private_key, signed_key, local_dir, 0, false, false, kad_config_file_,
-        1073741824, 0));
+                               private_key, signed_key, local_dir, 0, false,
+                               false, kad_config_file_, 1073741824, 0,
+                               test_immessaging::K));
     bootstrapping_vault_->Start(true);
     ASSERT_EQ(maidsafe_vault::kVaultStarted,
             bootstrapping_vault_->vault_status());
@@ -173,7 +178,7 @@ class TestImMessaging : public testing::Test {
     boost::shared_ptr<maidsafe::ChunkStore> cstore(
         new maidsafe::ChunkStore("client", 0, 0));
     cstore->Init();
-    sm_.reset(new maidsafe::MaidsafeStoreManager(cstore));
+    sm_.reset(new maidsafe::MaidsafeStoreManager(cstore, test_immessaging::K));
     SMCallback cb;
     fs::path db_path;
     sm_->Init(0, boost::bind(&SMCallback::Callback, &cb, _1), db_path);
@@ -939,8 +944,9 @@ class TestCCImMessaging : public testing::Test {
       fs::create_directories(local_dir);
     }
     bootstrapping_vault_.reset(new maidsafe_vault::PDVault(public_key,
-        private_key, signed_key, local_dir, 0, false, false, kad_config_file_,
-        1073741824, 0));
+                               private_key, signed_key, local_dir, 0, false,
+                               false, kad_config_file_, 1073741824, 0,
+                               test_immessaging::K));
     bootstrapping_vault_->Start(true);
     ASSERT_EQ(maidsafe_vault::kVaultStarted,
             bootstrapping_vault_->vault_status());
@@ -964,8 +970,10 @@ class TestCCImMessaging : public testing::Test {
         new maidsafe::ChunkStore("client2", 0, 0));
     cstore1->Init();
     cstore2->Init();
-    sm1_.reset(new maidsafe::MaidsafeStoreManager(cstore1, ss1_));
-    sm2_.reset(new maidsafe::MaidsafeStoreManager(cstore2, ss2_));
+    sm1_.reset(new maidsafe::MaidsafeStoreManager(cstore1, test_immessaging::K,
+                                                  ss1_));
+    sm2_.reset(new maidsafe::MaidsafeStoreManager(cstore2, test_immessaging::K,
+                                                  ss2_));
     SMCallback cb;
     fs::path db_path;
     sm1_->Init(0, boost::bind(&SMCallback::Callback, &cb, _1), db_path);

@@ -45,6 +45,8 @@ namespace fs = boost::filesystem;
 
 namespace test_seh {
 
+static const boost::uint8_t K(4);
+
 std::string CreateRandomFile(const std::string &filename,
                              int size = (1024)) {
   std::string file_content = base::RandomString(size);
@@ -120,7 +122,7 @@ class SEHandlerTest : public testing::Test {
       count += 10;
     }
     boost::shared_ptr<LocalStoreManager>
-        sm(new LocalStoreManager(client_chunkstore_));
+        sm(new LocalStoreManager(client_chunkstore_, test_seh::K));
     cb.Reset();
     sm->Init(0, boost::bind(&test_seh::FakeCallback::CallbackFunc, &cb, _1),
              test_root_dir_);
@@ -227,7 +229,7 @@ class SEHandlerTest : public testing::Test {
 
 TEST_F(SEHandlerTest, BEH_MAID_Check_Entry) {
   boost::shared_ptr<LocalStoreManager>
-      sm(new LocalStoreManager(client_chunkstore_));
+      sm(new LocalStoreManager(client_chunkstore_, test_seh::K));
   sm->Init(0, boost::bind(&test_seh::FakeCallback::CallbackFunc, &cb, _1),
            test_root_dir_);
   boost::scoped_ptr<DataAtlasHandler> dah(new DataAtlasHandler());
@@ -330,7 +332,7 @@ TEST_F(SEHandlerTest, BEH_MAID_Check_Entry) {
 
 TEST_F(SEHandlerTest, BEH_MAID_EncryptFile) {
   boost::shared_ptr<LocalStoreManager>
-      sm(new LocalStoreManager(client_chunkstore_));
+      sm(new LocalStoreManager(client_chunkstore_, test_seh::K));
   sm->Init(0, boost::bind(&test_seh::FakeCallback::CallbackFunc, &cb, _1),
            test_root_dir_);
   boost::scoped_ptr<DataAtlasHandler> dah(new DataAtlasHandler());
@@ -360,7 +362,7 @@ TEST_F(SEHandlerTest, BEH_MAID_EncryptFile) {
 
 TEST_F(SEHandlerTest, BEH_MAID_EncryptString) {
   boost::shared_ptr<LocalStoreManager>
-      sm(new LocalStoreManager(client_chunkstore_));
+      sm(new LocalStoreManager(client_chunkstore_, test_seh::K));
   sm->Init(0, boost::bind(&test_seh::FakeCallback::CallbackFunc, &cb, _1),
            test_root_dir_);
   boost::scoped_ptr<DataAtlasHandler> dah(new DataAtlasHandler());
@@ -384,7 +386,7 @@ TEST_F(SEHandlerTest, BEH_MAID_EncryptString) {
 
 TEST_F(SEHandlerTest, BEH_MAID_DecryptStringWithChunksPrevLoaded) {
   boost::shared_ptr<LocalStoreManager>
-      sm(new LocalStoreManager(client_chunkstore_));
+      sm(new LocalStoreManager(client_chunkstore_, test_seh::K));
   sm->Init(0, boost::bind(&test_seh::FakeCallback::CallbackFunc, &cb, _1),
            test_root_dir_);
   boost::scoped_ptr<DataAtlasHandler> dah(new DataAtlasHandler());
@@ -410,7 +412,7 @@ TEST_F(SEHandlerTest, BEH_MAID_DecryptStringWithChunksPrevLoaded) {
 TEST_F(SEHandlerTest, BEH_MAID_DecryptStringWithLoadChunks) {
   ss_->SetDefConLevel(kDefCon2);
   boost::shared_ptr<LocalStoreManager>
-      sm(new LocalStoreManager(client_chunkstore_));
+      sm(new LocalStoreManager(client_chunkstore_, test_seh::K));
   sm->Init(0, boost::bind(&test_seh::FakeCallback::CallbackFunc, &cb, _1),
            test_root_dir_);
   boost::scoped_ptr<DataAtlasHandler> dah(new DataAtlasHandler());
@@ -457,7 +459,7 @@ TEST_F(SEHandlerTest, BEH_MAID_DecryptStringWithLoadChunks) {
 
 TEST_F(SEHandlerTest, BEH_MAID_DecryptWithChunksPrevLoaded) {
   boost::shared_ptr<LocalStoreManager>
-      sm(new LocalStoreManager(client_chunkstore_));
+      sm(new LocalStoreManager(client_chunkstore_, test_seh::K));
   sm->Init(0, boost::bind(&test_seh::FakeCallback::CallbackFunc, &cb, _1),
            test_root_dir_);
   boost::scoped_ptr<DataAtlasHandler> dah(new DataAtlasHandler());
@@ -493,7 +495,7 @@ TEST_F(SEHandlerTest, BEH_MAID_DecryptWithChunksPrevLoaded) {
 TEST_F(SEHandlerTest, BEH_MAID_DecryptWithLoadChunks) {
   ss_->SetDefConLevel(kDefCon2);
   boost::shared_ptr<LocalStoreManager>
-      sm(new LocalStoreManager(client_chunkstore_));
+      sm(new LocalStoreManager(client_chunkstore_, test_seh::K));
   sm->Init(0, boost::bind(&test_seh::FakeCallback::CallbackFunc, &cb, _1),
            test_root_dir_);
   boost::scoped_ptr<DataAtlasHandler> dah(new DataAtlasHandler());
@@ -614,7 +616,7 @@ TEST_F(SEHandlerTest, BEH_MAID_DecryptWithLoadChunks) {
 
 TEST_F(SEHandlerTest, BEH_MAID_EncryptAndDecryptPrivateDb) {
   boost::shared_ptr<LocalStoreManager>
-      sm(new LocalStoreManager(client_chunkstore_));
+      sm(new LocalStoreManager(client_chunkstore_, test_seh::K));
   sm->Init(0, boost::bind(&test_seh::FakeCallback::CallbackFunc, &cb, _1),
            test_root_dir_);
   boost::scoped_ptr<DataAtlasHandler> dah(new DataAtlasHandler());
@@ -670,7 +672,7 @@ TEST_F(SEHandlerTest, BEH_MAID_EncryptAndDecryptPrivateDb) {
 
 TEST_F(SEHandlerTest, DISABLED_BEH_MAID_EncryptAndDecryptAnonDb) {
   boost::shared_ptr<LocalStoreManager>
-      sm(new LocalStoreManager(client_chunkstore_));
+      sm(new LocalStoreManager(client_chunkstore_, test_seh::K));
   sm->Init(0, boost::bind(&test_seh::FakeCallback::CallbackFunc, &cb, _1),
            test_root_dir_);
   boost::scoped_ptr<DataAtlasHandler> dah(new DataAtlasHandler());

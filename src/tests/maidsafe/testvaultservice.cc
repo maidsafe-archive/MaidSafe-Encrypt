@@ -66,6 +66,10 @@ inline void CreateSignedRequest(const std::string &pub_key,
   // TODO(Team#) use new request signature method from the validator
 }
 
+namespace test_vault_service {
+static const boost::uint8_t K(4);
+}  // namespace test_vault_service
+
 namespace maidsafe_vault {
 
 typedef std::map<std::string, maidsafe::StoreContract> PrepsReceivedMap;
@@ -118,18 +122,21 @@ class VaultServicesTest : public testing::Test {
     transport_handler_.Register(&udt_transport_, &transport_id);
     knode_.reset(new kad::KNode(&channel_manager_, &transport_handler_,
                                 kad::VAULT, vault_private_key_,
-                                vault_public_key_, false, false));
+                                vault_public_key_, false, false,
+                                test_vault_service::K));
     knode_->set_transport_id(transport_id);
     vault_chunkstore_ = new VaultChunkStore(chunkstore_dir_.string(),
                                             kAvailableSpace, 0);
     ASSERT_TRUE(vault_chunkstore_->Init());
 
-    vault_service_logic_ = new VaultServiceLogic(vault_rpcs_, knode_);
+    vault_service_logic_ = new VaultServiceLogic(vault_rpcs_, knode_,
+                                                 test_vault_service::K);
     vault_service_ = new VaultService(vault_pmid_, vault_public_key_,
                                       vault_private_key_,
                                       vault_public_key_signature_,
                                       vault_chunkstore_, knode_.get(),
-                                      vault_service_logic_, transport_id);
+                                      vault_service_logic_, transport_id,
+                                      test_vault_service::K);
 
     maidsafe::GetSyncDataResponse get_sync_data_response;
     vault_service_->AddStartupSyncData(get_sync_data_response);
@@ -188,7 +195,8 @@ class MockVaultServicesTest : public VaultServicesTest {
  protected:
   MockVaultServicesTest()
       : mock_vault_service_logic_(boost::shared_ptr<VaultRpcs>(),
-                                  boost::shared_ptr<kad::KNode>()) {}
+                                  boost::shared_ptr<kad::KNode>(),
+                                  test_vault_service::K) {}
   void SetUp() {
     VaultServicesTest::SetUp();
     // Initialise mock_vault_service_logic
@@ -636,7 +644,8 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesStoreChunk) {
                                     vault_public_key_signature_,
                                     vault_chunkstore_, knode_.get(),
                                     &mock_vault_service_logic_,
-                                    udt_transport_.transport_id());
+                                    udt_transport_.transport_id(),
+                                    test_vault_service::K);
 
   maidsafe::GetSyncDataResponse get_sync_data_response;
   vault_service_->AddStartupSyncData(get_sync_data_response);
@@ -1166,7 +1175,8 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesAddToWatchList) {
                                     vault_public_key_signature_,
                                     vault_chunkstore_, knode_.get(),
                                     &mock_vault_service_logic_,
-                                    udt_transport_.transport_id());
+                                    udt_transport_.transport_id(),
+                                    test_vault_service::K);
 
   maidsafe::GetSyncDataResponse get_sync_data_response;
   vault_service_->AddStartupSyncData(get_sync_data_response);
@@ -1383,7 +1393,8 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesRemoveFromWatchList) {
                                     vault_public_key_signature_,
                                     vault_chunkstore_, knode_.get(),
                                     &mock_vault_service_logic_,
-                                    udt_transport_.transport_id());
+                                    udt_transport_.transport_id(),
+                                    test_vault_service::K);
 
   maidsafe::GetSyncDataResponse get_sync_data_response;
   vault_service_->AddStartupSyncData(get_sync_data_response);
@@ -1623,7 +1634,8 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesAddToReferenceList) {
                                     vault_public_key_signature_,
                                     vault_chunkstore_, knode_.get(),
                                     &mock_vault_service_logic_,
-                                    udt_transport_.transport_id());
+                                    udt_transport_.transport_id(),
+                                    test_vault_service::K);
 
   maidsafe::GetSyncDataResponse get_sync_data_response;
   vault_service_->AddStartupSyncData(get_sync_data_response);
@@ -1877,14 +1889,15 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesAddToReferenceList) {
 TEST_F(MockVaultServicesTest, BEH_MAID_ServicesAmendAccount) {
   boost::shared_ptr<VaultRpcs> vault_rpcs;
   boost::shared_ptr<kad::KNode> knode;
-  MockVsl mock_vault_service_logic(vault_rpcs, knode);
+  MockVsl mock_vault_service_logic(vault_rpcs, knode, test_vault_service::K);
   delete vault_service_;
   vault_service_ = new VaultService(vault_pmid_, vault_public_key_,
                                     vault_private_key_,
                                     vault_public_key_signature_,
                                     vault_chunkstore_, knode_.get(),
                                     &mock_vault_service_logic,
-                                    udt_transport_.transport_id());
+                                    udt_transport_.transport_id(),
+                                    test_vault_service::K);
 
   maidsafe::GetSyncDataResponse get_sync_data_response;
   vault_service_->AddStartupSyncData(get_sync_data_response);
@@ -1893,7 +1906,7 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesAmendAccount) {
   maidsafe::AmendAccountRequest request;
   maidsafe::AmendAccountResponse response;
 
-  mock_vsl::KGroup k_group;
+  mock_vsl::KGroup k_group(test_vault_service::K);
 
   std::string client_pub_key, client_priv_key, client_pmid, client_pub_key_sig;
   std::string size_sig;
@@ -1915,7 +1928,7 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesAmendAccount) {
   boost::uint64_t chunk_size(chunk_data.size());
 
   EXPECT_CALL(*mock_vault_service_logic.kadops(),
-              FindKClosestNodes(kad::KadId(chunk_name, false),
+              FindKClosestNodes(kad::KadId(chunk_name),
                              testing::An<const kad::VoidFunctorOneString&>()))
       .Times(testing::AtLeast(6))
       .WillRepeatedly(testing::WithArg<1>(testing::Invoke(
@@ -1969,17 +1982,17 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesAmendAccount) {
       chunk_name, &requests);
     switch (i) {
       case 0:  // empty request
-        for (int i = 0; i < kad::K; ++i)
+        for (int i = 0; i < test_vault_service::K; ++i)
           requests.at(i).Clear();
         break;
       case 1:  // unsigned size
-        for (int i = 0; i < kad::K; ++i) {
+        for (int i = 0; i < test_vault_service::K; ++i) {
           signed_size = requests.at(i).mutable_signed_size();
           signed_size->set_signature("fail");
         }
         break;
       case 2:  // zero size
-        for (int i = 0; i < kad::K; ++i) {
+        for (int i = 0; i < test_vault_service::K; ++i) {
           signed_size = requests.at(i).mutable_signed_size();
           signed_size->set_data_size(0);
           signed_size->set_signature(
@@ -1988,26 +2001,26 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesAmendAccount) {
         }
         break;
       case 3:  // missing chunk name
-        for (int i = 0; i < kad::K; ++i) {
+        for (int i = 0; i < test_vault_service::K; ++i) {
           requests.at(i).clear_chunkname();
         }
         break;
     }
 
-    for (int i = 0; i < kad::K; ++i) {
+    for (int i = 0; i < test_vault_service::K; ++i) {
       maidsafe::AmendAccountResponse response;
       responses.push_back(response);
       google::protobuf::Closure *done = google::protobuf::NewCallback(&cb_obj,
           &TestCallback::CallbackFunction);
       callbacks.push_back(done);
     }
-    for (int i = 0; i < kad::K; ++i) {
-      printf("REQ %02d/%02d - ", i+1, kad::K);
+    for (int i = 0; i < test_vault_service::K; ++i) {
+      printf("REQ %02d/%02d - ", i+1, test_vault_service::K);
       vault_service_->AmendAccount(&controller, &requests.at(i),
           &responses.at(i), callbacks.at(i));
     }
     success_count = 0;
-    for (int i = 0; i < kad::K; ++i) {
+    for (int i = 0; i < test_vault_service::K; ++i) {
       ASSERT_TRUE(responses.at(i).IsInitialized());
       if (static_cast<int>(responses.at(i).result()) == kAck)
         ++success_count;
@@ -2062,24 +2075,24 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesAmendAccount) {
     chunk_name, &requests);
   responses.clear();
   callbacks.clear();
-  for (int i = 0; i < kad::K; ++i) {
+  for (int i = 0; i < test_vault_service::K; ++i) {
     maidsafe::AmendAccountResponse response;
     responses.push_back(response);
     google::protobuf::Closure *done = google::protobuf::NewCallback(&cb_obj,
         &TestCallback::CallbackFunction);
     callbacks.push_back(done);
   }
-  for (int i = 0; i < kad::K; ++i) {
+  for (int i = 0; i < test_vault_service::K; ++i) {
     vault_service_->AmendAccount(&controller, &requests.at(i), &responses.at(i),
         callbacks.at(i));
   }
   success_count = 0;
-  for (int i = 0; i < kad::K; ++i) {
+  for (int i = 0; i < test_vault_service::K; ++i) {
     ASSERT_TRUE(responses.at(i).IsInitialized());
     if (static_cast<int>(responses.at(i).result()) == kAck)
       ++success_count;
   }
-  EXPECT_GE(success_count, kad::K - 1);
+  EXPECT_GE(success_count, test_vault_service::K - 1);
   printf("Completed incrementing space taken.\n");
 
   // current SpaceTaken should be chunk_size
@@ -2117,24 +2130,24 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesAmendAccount) {
     chunk_name, &requests);
   responses.clear();
   callbacks.clear();
-  for (int i = 0; i < kad::K; ++i) {
+  for (int i = 0; i < test_vault_service::K; ++i) {
     maidsafe::AmendAccountResponse response;
     responses.push_back(response);
     google::protobuf::Closure *done = google::protobuf::NewCallback(&cb_obj,
         &TestCallback::CallbackFunction);
     callbacks.push_back(done);
   }
-  for (int i = 0; i < kad::K; ++i) {
+  for (int i = 0; i < test_vault_service::K; ++i) {
     vault_service_->AmendAccount(&controller, &requests.at(i), &responses.at(i),
         callbacks.at(i));
   }
   success_count = 0;
-  for (int i = 0; i < kad::K; ++i) {
+  for (int i = 0; i < test_vault_service::K; ++i) {
     ASSERT_TRUE(responses.at(i).IsInitialized());
     if (static_cast<int>(responses.at(i).result()) == kAck)
       ++success_count;
   }
-  EXPECT_GE(success_count, kad::K - 1);
+  EXPECT_GE(success_count, test_vault_service::K - 1);
   printf("Completed decrementing space taken.\n");
 
   // current SpaceTaken should be 0
@@ -2154,19 +2167,19 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesAmendAccount) {
   // decrease SpaceTaken again, should fail
   responses.clear();
   callbacks.clear();
-  for (int i = 0; i < kad::K; ++i) {
+  for (int i = 0; i < test_vault_service::K; ++i) {
     maidsafe::AmendAccountResponse response;
     responses.push_back(response);
     google::protobuf::Closure *done = google::protobuf::NewCallback(&cb_obj,
         &TestCallback::CallbackFunction);
     callbacks.push_back(done);
   }
-  for (int i = 0; i < kad::K; ++i) {
+  for (int i = 0; i < test_vault_service::K; ++i) {
     vault_service_->AmendAccount(&controller, &requests.at(i), &responses.at(i),
         callbacks.at(i));
   }
   success_count = 0;
-  for (int i = 0; i < kad::K; ++i) {
+  for (int i = 0; i < test_vault_service::K; ++i) {
     ASSERT_TRUE(responses.at(i).IsInitialized());
     if (static_cast<int>(responses.at(i).result()) == kAck)
       ++success_count;
@@ -2194,24 +2207,24 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesAmendAccount) {
     chunk_name, &requests);
   responses.clear();
   callbacks.clear();
-  for (int i = 0; i < kad::K; ++i) {
+  for (int i = 0; i < test_vault_service::K; ++i) {
     maidsafe::AmendAccountResponse response;
     responses.push_back(response);
     google::protobuf::Closure *done = google::protobuf::NewCallback(&cb_obj,
         &TestCallback::CallbackFunction);
     callbacks.push_back(done);
   }
-  for (int i = 0; i < kad::K; ++i) {
+  for (int i = 0; i < test_vault_service::K; ++i) {
     vault_service_->AmendAccount(&controller, &requests.at(i), &responses.at(i),
         callbacks.at(i));
   }
   success_count = 0;
-  for (int i = 0; i < kad::K; ++i) {
+  for (int i = 0; i < test_vault_service::K; ++i) {
     ASSERT_TRUE(responses.at(i).IsInitialized());
     if (static_cast<int>(responses.at(i).result()) == kAck)
       ++success_count;
   }
-  EXPECT_GE(success_count, kad::K - 1);
+  EXPECT_GE(success_count, test_vault_service::K - 1);
   printf("Completed incrementing space given.\n");
 
   // current SpaceGiven should be chunk_size
@@ -2234,24 +2247,24 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesAmendAccount) {
     chunk_name, &requests);
   responses.clear();
   callbacks.clear();
-  for (int i = 0; i < kad::K; ++i) {
+  for (int i = 0; i < test_vault_service::K; ++i) {
     maidsafe::AmendAccountResponse response;
     responses.push_back(response);
     google::protobuf::Closure *done = google::protobuf::NewCallback(&cb_obj,
         &TestCallback::CallbackFunction);
     callbacks.push_back(done);
   }
-  for (int i = 0; i < kad::K; ++i) {
+  for (int i = 0; i < test_vault_service::K; ++i) {
     vault_service_->AmendAccount(&controller, &requests.at(i), &responses.at(i),
         callbacks.at(i));
   }
   success_count = 0;
-  for (int i = 0; i < kad::K; ++i) {
+  for (int i = 0; i < test_vault_service::K; ++i) {
     ASSERT_TRUE(responses.at(i).IsInitialized());
     if (static_cast<int>(responses.at(i).result()) == kAck)
       ++success_count;
   }
-  EXPECT_GE(success_count, kad::K - 1);
+  EXPECT_GE(success_count, test_vault_service::K - 1);
   printf("Completed decrementing space given.\n");
 
   // current SpaceGiven should still be 0
@@ -2274,19 +2287,19 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesAmendAccount) {
     chunk_name, &requests);
   responses.clear();
   callbacks.clear();
-  for (int i = 0; i < kad::K; ++i) {
+  for (int i = 0; i < test_vault_service::K; ++i) {
     maidsafe::AmendAccountResponse response;
     responses.push_back(response);
     google::protobuf::Closure *done = google::protobuf::NewCallback(&cb_obj,
         &TestCallback::CallbackFunction);
     callbacks.push_back(done);
   }
-  for (int i = 0; i < kad::K; ++i) {
+  for (int i = 0; i < test_vault_service::K; ++i) {
     vault_service_->AmendAccount(&controller, &requests.at(i), &responses.at(i),
         callbacks.at(i));
   }
   success_count = 0;
-  for (int i = 0; i < kad::K; ++i) {
+  for (int i = 0; i < test_vault_service::K; ++i) {
     ASSERT_TRUE(responses.at(i).IsInitialized());
     if (static_cast<int>(responses.at(i).result()) == kAck)
       ++success_count;
@@ -2692,7 +2705,8 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesVaultStatus) {
 TEST_F(VaultServicesTest, BEH_MAID_ServicesCreateBP) {
   VaultService service(vault_pmid_, vault_public_key_, vault_private_key_,
                        vault_public_key_signature_, vault_chunkstore_, NULL,
-                       vault_service_logic_, udt_transport_.transport_id());
+                       vault_service_logic_, udt_transport_.transport_id(),
+                       test_vault_service::K);
   rpcprotocol::Controller controller;
   maidsafe::CreateBPRequest request;
   maidsafe::CreateBPResponse response;
@@ -2761,7 +2775,8 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesCreateBP) {
 TEST_F(VaultServicesTest, BEH_MAID_ServicesModifyBPInfo) {
   VaultService service(vault_pmid_, vault_public_key_, vault_private_key_,
                        vault_public_key_signature_, vault_chunkstore_, NULL,
-                       vault_service_logic_, udt_transport_.transport_id());
+                       vault_service_logic_, udt_transport_.transport_id(),
+                       test_vault_service::K);
   rpcprotocol::Controller controller;
   maidsafe::CreateBPRequest create_request;
   maidsafe::CreateBPResponse create_response;
@@ -2924,7 +2939,8 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesModifyBPInfo) {
 TEST_F(VaultServicesTest, BEH_MAID_ServicesGetBPMessages) {
   VaultService service(vault_pmid_, vault_public_key_, vault_private_key_,
                        vault_public_key_signature_, vault_chunkstore_, NULL,
-                       vault_service_logic_, udt_transport_.transport_id());
+                       vault_service_logic_, udt_transport_.transport_id(),
+                       test_vault_service::K);
   rpcprotocol::Controller controller;
   maidsafe::CreateBPRequest request;
   maidsafe::CreateBPResponse response;
@@ -3002,7 +3018,8 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesGetBPMessages) {
 TEST_F(VaultServicesTest, BEH_MAID_ServicesAddBPMessages) {
   VaultService service(vault_pmid_, vault_public_key_, vault_private_key_,
                        vault_public_key_signature_, vault_chunkstore_, NULL,
-                       vault_service_logic_, udt_transport_.transport_id());
+                       vault_service_logic_, udt_transport_.transport_id(),
+                       test_vault_service::K);
   rpcprotocol::Controller controller;
   maidsafe::CreateBPRequest request;
   maidsafe::CreateBPResponse response;
@@ -3191,7 +3208,8 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesAddBPMessages) {
 TEST_F(VaultServicesTest, BEH_MAID_ServicesGetBPPresence) {
   VaultService service(vault_pmid_, vault_public_key_, vault_private_key_,
                        vault_public_key_signature_, vault_chunkstore_, NULL,
-                       vault_service_logic_, udt_transport_.transport_id());
+                       vault_service_logic_, udt_transport_.transport_id(),
+                       test_vault_service::K);
   rpcprotocol::Controller controller;
   maidsafe::CreateBPRequest request;
   maidsafe::CreateBPResponse response;
@@ -3317,7 +3335,8 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesGetBPPresence) {
 TEST_F(VaultServicesTest, BEH_MAID_ServicesAddBPPresence) {
   VaultService service(vault_pmid_, vault_public_key_, vault_private_key_,
                        vault_public_key_signature_, vault_chunkstore_, NULL,
-                       vault_service_logic_, udt_transport_.transport_id());
+                       vault_service_logic_, udt_transport_.transport_id(),
+                       test_vault_service::K);
   rpcprotocol::Controller controller;
   maidsafe::CreateBPRequest request;
   maidsafe::CreateBPResponse response;

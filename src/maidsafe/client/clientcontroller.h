@@ -89,7 +89,7 @@ class ClientController {
  public:
   static ClientController *getInstance();
   static void Destroy();
-  int Init();
+  int Init(boost::uint8_t k);
   // Close connection to kademlia/stub storage.  Currently with UDT, if
   // clean_up_transport is true, UDT cannot be restarted, so this is a
   // permanent cessation of the transport layer.
@@ -300,6 +300,8 @@ class ClientController {
   bool logging_out_;
   bool logged_in_;
   IMNotifier imn_;
+  boost::uint8_t K_;
+  boost::uint16_t upper_threshold_;
 };
 
 }  // namespace maidsafe

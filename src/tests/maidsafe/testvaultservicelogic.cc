@@ -26,9 +26,21 @@
 #include "tests/maidsafe/mockvaultservicelogic.h"
 #include "tests/maidsafe/mockkadops.h"
 
+namespace test_vault_service_logic {
+static const boost::uint8_t K(4);
+static const boost::uint8_t upper_threshold(static_cast<boost::uint8_t>
+                                           (K * kMinSuccessfulPecentageStore));
+static const boost::uint8_t lower_threshold(kMinSuccessfulPecentageStore > .25 ?
+             static_cast<boost::uint8_t >(K * .25) : upper_threshold);
+}  // namespace test_vault_service_logic
+
 namespace maidsafe_vault {
 
-class VaultServiceLogicTest : public MockVaultServiceLogicTest {};
+class VaultServiceLogicTest : public MockVaultServiceLogicTest {
+ public:
+  VaultServiceLogicTest()
+      : MockVaultServiceLogicTest(test_vault_service_logic::K) {}
+};
 
 MATCHER_P(EqualsContact, kad_contact, "") {
   return (arg.Equals(kad_contact));
@@ -36,7 +48,8 @@ MATCHER_P(EqualsContact, kad_contact, "") {
 
 TEST_F(VaultServiceLogicTest, BEH_MAID_VSL_Offline) {
   boost::shared_ptr<MockVaultRpcs> mock_rpcs(new MockVaultRpcs(NULL, NULL));
-  VaultServiceLogic vsl(mock_rpcs, boost::shared_ptr<kad::KNode>());
+  VaultServiceLogic vsl(mock_rpcs, boost::shared_ptr<kad::KNode>(),
+                        test_vault_service_logic::K);
 
   maidsafe::AddToReferenceListRequest arr;
   boost::mutex mutex;
@@ -83,7 +96,8 @@ TEST_F(VaultServiceLogicTest, BEH_MAID_VSL_Offline) {
 TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_AddToRemoteRefList) {
   // Setup
   boost::shared_ptr<MockVaultRpcs> mock_rpcs(new MockVaultRpcs(NULL, NULL));
-  MockVsl vsl(mock_rpcs, boost::shared_ptr<kad::KNode>());
+  MockVsl vsl(mock_rpcs, boost::shared_ptr<kad::KNode>(),
+              test_vault_service_logic::K);
   vsl.pmid_ = pmid_;
   vsl.pmid_public_signature_ = pmid_public_signature_;
   vsl.pmid_private_ = pmid_private_;
@@ -95,7 +109,7 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_AddToRemoteRefList) {
   for (size_t i = 0; i < good_contacts_.size(); ++i) {
     maidsafe::AddToReferenceListResponse add_ref_response;
     add_ref_response.set_result(kAck);
-    add_ref_response.set_pmid(good_contacts_.at(i).node_id().ToStringDecoded());
+    add_ref_response.set_pmid(good_contacts_.at(i).node_id().String());
     good_responses.push_back(add_ref_response);
     if (i < good_contacts_.size() - 1)
       good_responses_less_one.push_back(add_ref_response);
@@ -106,9 +120,10 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_AddToRemoteRefList) {
       too_few_ack_responses(good_responses);
   std::vector<maidsafe::AddToReferenceListResponse>
       fail_initialise_responses(good_responses);
-  for (size_t i = kKadUpperThreshold - 1; i < good_contacts_.size(); ++i) {
+  for (size_t i = test_vault_service_logic::upper_threshold - 1;
+       i < good_contacts_.size(); ++i) {
     bad_pmid_responses.at(i).set_pmid(
-        good_contacts_.at(i - 1).node_id().ToStringDecoded());
+        good_contacts_.at(i - 1).node_id().String());
     too_few_ack_responses.at(i).set_result(kNack);
     fail_initialise_responses.at(i).clear_result();
   }
@@ -132,7 +147,7 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_AddToRemoteRefList) {
   EXPECT_CALL(vsl, AddToRemoteRefList(testing::_, testing::_, testing::_,
                                       testing::_))
       .WillRepeatedly(testing::Invoke(&vsl, &MockVsl::AddToRemoteRefListReal));
-  EXPECT_CALL(*vsl.kadops(), FindKClosestNodes(kad::KadId(far_chunkname, false),
+  EXPECT_CALL(*vsl.kadops(), FindKClosestNodes(kad::KadId(far_chunkname),
       testing::An<const kad::VoidFunctorOneString&>()))
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
           boost::bind(&mock_kadops::RunCallback, fail_parse_result_, _1))))
@@ -148,7 +163,7 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_AddToRemoteRefList) {
           boost::bind(&mock_kadops::RunCallback, good_result_, _1))))  // Call 7
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
           boost::bind(&mock_kadops::RunCallback, good_result_, _1))));  // 8
-  EXPECT_CALL(*vsl.kadops(), FindKClosestNodes(kad::KadId(pmid_, false),
+  EXPECT_CALL(*vsl.kadops(), FindKClosestNodes(kad::KadId(pmid_),
       testing::An<const kad::VoidFunctorOneString&>()))  // Call 5
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
           boost::bind(&mock_kadops::RunCallback, good_result_less_one_, _1))));
@@ -296,7 +311,8 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_AddToRemoteRefList) {
 TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_AmendRemoteAccount) {
   // Setup
   boost::shared_ptr<MockVaultRpcs> mock_rpcs(new MockVaultRpcs(NULL, NULL));
-  MockVsl vsl(mock_rpcs, boost::shared_ptr<kad::KNode>());
+  MockVsl vsl(mock_rpcs, boost::shared_ptr<kad::KNode>(),
+              test_vault_service_logic::K);
   vsl.pmid_ = pmid_;
   vsl.pmid_public_signature_ = pmid_public_signature_;
   vsl.pmid_private_ = pmid_private_;
@@ -309,7 +325,7 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_AmendRemoteAccount) {
     maidsafe::AmendAccountResponse amend_acc_response;
     amend_acc_response.set_result(kAck);
     amend_acc_response.set_pmid(
-        good_contacts_.at(i).node_id().ToStringDecoded());
+        good_contacts_.at(i).node_id().String());
     good_responses.push_back(amend_acc_response);
     if (i < good_contacts_.size() - 1)
       good_responses_less_one.push_back(amend_acc_response);
@@ -320,9 +336,10 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_AmendRemoteAccount) {
       too_few_ack_responses(good_responses);
   std::vector<maidsafe::AmendAccountResponse>
       fail_initialise_responses(good_responses);
-  for (size_t i = kKadUpperThreshold - 1; i < good_contacts_.size(); ++i) {
+  for (size_t i = test_vault_service_logic::upper_threshold - 1;
+       i < good_contacts_.size(); ++i) {
     bad_pmid_responses.at(i).set_pmid(
-        good_contacts_.at(i - 1).node_id().ToStringDecoded());
+        good_contacts_.at(i - 1).node_id().String());
     too_few_ack_responses.at(i).set_result(kNack);
     fail_initialise_responses.at(i).clear_result();
   }
@@ -355,7 +372,7 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_AmendRemoteAccount) {
   EXPECT_CALL(vsl, AmendRemoteAccount(testing::_, testing::_, testing::_,
                                       testing::_))
       .WillRepeatedly(testing::Invoke(&vsl, &MockVsl::AmendRemoteAccountReal));
-  EXPECT_CALL(*vsl.kadops(), FindKClosestNodes(kad::KadId(account_name, false),
+  EXPECT_CALL(*vsl.kadops(), FindKClosestNodes(kad::KadId(account_name),
       testing::An<const kad::VoidFunctorOneString&>()))
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
           boost::bind(&mock_kadops::RunCallback, fail_parse_result_, _1))))
@@ -515,7 +532,8 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_AmendRemoteAccount) {
 TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_RemoteVaultAbleToStore) {
   // Setup
   boost::shared_ptr<MockVaultRpcs> mock_rpcs(new MockVaultRpcs(NULL, NULL));
-  MockVsl vsl(mock_rpcs, boost::shared_ptr<kad::KNode>());
+  MockVsl vsl(mock_rpcs, boost::shared_ptr<kad::KNode>(),
+              test_vault_service_logic::K);
   vsl.pmid_ = pmid_;
   vsl.pmid_public_signature_ = pmid_public_signature_;
   vsl.pmid_private_ = pmid_private_;
@@ -529,7 +547,7 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_RemoteVaultAbleToStore) {
     maidsafe::AccountStatusResponse acc_status_response;
     acc_status_response.set_result(kAck);
     acc_status_response.set_pmid(
-        good_contacts_.at(i).node_id().ToStringDecoded());
+        good_contacts_.at(i).node_id().String());
     good_responses.push_back(acc_status_response);
     if (i < good_contacts_.size() - 1)
       good_responses_less_one.push_back(acc_status_response);
@@ -540,9 +558,10 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_RemoteVaultAbleToStore) {
       too_few_ack_responses(good_responses);
   std::vector<maidsafe::AccountStatusResponse>
       fail_initialise_responses(good_responses);
-  for (size_t i = kKadLowerThreshold - 1; i < good_contacts_.size(); ++i) {
+  for (size_t i = test_vault_service_logic::lower_threshold - 1;
+       i < good_contacts_.size(); ++i) {
     bad_pmid_responses.at(i).set_pmid(
-        good_contacts_.at(i - 1).node_id().ToStringDecoded());
+        good_contacts_.at(i - 1).node_id().String());
     too_few_ack_responses.at(i).set_result(kNack);
     fail_initialise_responses.at(i).clear_result();
   }
@@ -561,7 +580,7 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_RemoteVaultAbleToStore) {
       boost::bind(&mock_vsl::CopyResult, _1, &mutex, &cv, &result);
 
   // Expectations
-  EXPECT_CALL(*vsl.kadops(), FindKClosestNodes(kad::KadId(account_name, false),
+  EXPECT_CALL(*vsl.kadops(), FindKClosestNodes(kad::KadId(account_name),
       testing::An<const kad::VoidFunctorOneString&>()))
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
           boost::bind(&mock_kadops::RunCallback, fail_parse_result_, _1))))

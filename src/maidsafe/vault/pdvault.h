@@ -185,7 +185,8 @@ class PDVault {
           bool use_upnp,
           const fs::path &read_only_kad_config_file,
           const boost::uint64_t &available_space,
-          const boost::uint64_t &used_space);
+          const boost::uint64_t &used_space,
+          const boost::uint8_t &k);
   ~PDVault();
   void Start(bool first_node);
   int Stop();
@@ -194,7 +195,7 @@ class PDVault {
   void SetVaultStatus(const VaultStatus &vault_status);
   bool WaitForStartup(const boost::uint16_t timeout);
   bool WaitForSync();
-  std::string node_id() const { return knode_->node_id().ToStringDecoded(); }
+  std::string node_id() const { return knode_->node_id().String(); }
   std::string host_ip() const { return knode_->host_ip(); }
   boost::uint16_t host_port() const { return knode_->host_port(); }
   std::string local_host_ip() const { return knode_->local_host_ip(); }
@@ -300,6 +301,9 @@ class PDVault {
   void SwapChunkAcceptChunk(
       boost::shared_ptr<maidsafe::SwapChunkResponse> swap_chunk_response,
       boost::shared_ptr<SwapChunkArgs> swap_chunk_args);
+  boost::uint8_t K_;
+  boost::uint16_t upper_threshold_;
+  boost::uint16_t lower_threshold_;
   boost::uint16_t port_;
   transport::TransportUDT global_udt_transport_;
   transport::TransportHandler *transport_handler_;
