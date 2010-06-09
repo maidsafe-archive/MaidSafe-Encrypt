@@ -611,7 +611,8 @@ void PerpetualData::onShareReceived(const QString& from,
 
 void PerpetualData::onEmailReceived(const maidsafe::InstantMessage& im) {
   //TODO:Get email data and save in hidden maidsafe folder
-  statusBar()->showMessage(tr("You have a new Email!"));
+  userPanels_->setEmailLabel("New E-mail!");
+  SystemTrayIcon::instance()->showMessage("New Email", "You have new email");
   maidsafe::EmailNotification en = im.email_notification();
 
   QString emailRootPath = QString::fromStdString(file_system::MaidsafeHomeDir(
@@ -837,9 +838,7 @@ void PerpetualData::onSettingsTriggered() {
     QFile file(":/qss/defaultWithWhite1.qss");
     file.open(QFile::ReadOnly);
     QString styleSheet = QLatin1String(file.readAll());
-
     settings_->setStyleSheet(styleSheet);
-
     settings_->exec();
 }
 
@@ -856,6 +855,7 @@ void PerpetualData::onOffline_2Triggered() {
 }
 
 void PerpetualData::onEmailTriggered() {
+  userPanels_->setEmailLabel("");
   inbox_ = new UserInbox(this);
   inbox_->show();
 }

@@ -32,7 +32,9 @@
 
 #include "qt/widgets/shares.h"
 #include "qt/widgets/contacts.h"
+#include "qt/widgets/user_message_logs.h"
 #include "qt/widgets/personal_messages.h"
+#include "qt/widgets/user_inbox.h"
 #include "qt/widgets/vault_info.h"
 #include "qt/widgets/public_username.h"
 #include "qt/client/client_controller.h"
@@ -62,6 +64,9 @@ UserPanels::UserPanels(QWidget* parent)
 
   connect(ui_.my_files_button, SIGNAL(clicked(bool)),
           this,                SLOT(onMyFilesClicked()));
+
+  connect(ui_.emailButton, SIGNAL(clicked(bool)),
+          this,                SLOT(onEmailsClicked()));
 
   connect(ui_.tabWidget_2, SIGNAL(currentChanged(int)),
           this,                 SLOT(onCurrentChanged(int)));
@@ -127,9 +132,11 @@ void UserPanels::onPublicUsernameChosen() {
   } else {
     QPixmap contactIcon_ = QPixmap(":/icons/32/contacts");
     QPixmap shareIcon_ = QPixmap(":/icons/32/shares");
+    QPixmap logIcon_ = QPixmap(":/icons/32/log");
 
     ui_.tabWidget_2->addTab(contacts_ = new Contacts, contactIcon_, "");
     ui_.tabWidget_2->addTab(shares_   = new Shares, shareIcon_, "");
+    ui_.tabWidget_2->addTab(logs_     = new MessageLogs, logIcon_, "");
   }
 
   ui_.tabWidget_2->setEnabled(true);
@@ -151,6 +158,12 @@ void UserPanels::onMyFilesClicked() {
 #else
   UserSpaceFileSystem::instance()->explore(UserSpaceFileSystem::MY_FILES);
 #endif
+}
+
+void UserPanels::onEmailsClicked() {
+  ui_.lblEmails->setText("");
+  inbox_ = new UserInbox(this);
+  inbox_->show();  
 }
 
 void UserPanels::onCurrentChanged(int) {
@@ -304,6 +317,10 @@ void UserPanels::onSortShareRecentClicked() {
   shares_->reset();
   shares_->sortType_ = 2;
   shares_->setActive(true);
+}
+
+void UserPanels::setEmailLabel(QString mess) {
+  ui_.lblEmails->setText(mess);
 }
 
 void UserPanels::changeEvent(QEvent *event) {

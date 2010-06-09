@@ -32,6 +32,8 @@
     <file alias="activities">32/UserActivities-32.png</file>
     <file alias="help">32/Help-32.png</file>
     <file alias="globe">32/Globe-32.png</file>
+    <file alias="email">32/MessageGreenEnvelope-32.png</file>
+    <file alias="log">32/GreyEnvelopeBack-32.png</file>    
   </qresource>
   <qresource prefix="smilies">
     <file>smily_blue/sbiggrin.gif</file>
