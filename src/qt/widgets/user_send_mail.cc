@@ -106,14 +106,17 @@ void UserSendMail::onSendClicked(bool) {
     QString emailMaidsafePath = QString("%1%2_%3.pdmail").arg(emailFolder)
                                                          .arg(subject)
                                                          .arg(conv);
+    QDateTime theDate = QDateTime::currentDateTime();
+    QString date = theDate.toString("dd/MM/yyyy hh:mm:ss");
+
     qDebug() << "upload File" << emailMaidsafePath;
-     std::ofstream myfile;
-     myfile.open(emailFullPath.toStdString().c_str(), std::ios::app);
-     // SAVE AS XML
-     QString htmlMessage = tr("From : me to %1 at %2 <br /> %3 <br /> %4")
-        .prepend("<span style=\"background-color:#CCFF99\"><br />")
-        .arg(to).arg("date").arg(subject).arg(message).append("</span>");
-     myfile << htmlMessage.toStdString();
+    std::ofstream myfile;
+    myfile.open(emailFullPath.toStdString().c_str(), std::ios::app);
+    // SAVE AS XML
+    QString htmlMessage = tr("From : me to %1 at %2 <br /> %3 <br /> %4")
+       .prepend("<span style=\"background-color:#CCFF99\"><br />")
+       .arg(to).arg(date).arg(subject).arg(message).append("</span>");
+    myfile << htmlMessage.toStdString();
 
     /*QFile output(emailFullPath);
 

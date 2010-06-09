@@ -643,6 +643,10 @@ void PerpetualData::onEmailReceived(const maidsafe::InstantMessage& im) {
 
   std::string tidyEmail = maidsafe::TidyPath(emailMaidsafePath.toStdString());
   QString tidyEmailMaidsafePath = QString::fromStdString(tidyEmail);
+
+  QDateTime theDate = QDateTime::currentDateTime();
+  theDate.setTime_t(im.date());
+  QString date = theDate.toString("dd/MM/yyyy hh:mm:ss");
   try {
     std::ofstream myfile;
     myfile.open(emailFullPath.toStdString().c_str(), std::ios::app);
@@ -650,7 +654,7 @@ void PerpetualData::onEmailReceived(const maidsafe::InstantMessage& im) {
     QString htmlMessage = tr("From : %1 at %2 <br /> %3 <br /> %4")
         .prepend("<span style=\"background-color:#CCFF99\"><br />")
         .arg(QString::fromStdString(im.sender()))
-        .arg("date")
+        .arg(date)
         .arg(QString::fromStdString(im.subject()))
         .arg(QString::fromStdString(im.message()))
         .append("</span>");

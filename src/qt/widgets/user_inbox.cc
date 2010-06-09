@@ -111,9 +111,9 @@ void UserInbox::onReplyClicked() {
   QString subject = item->text().section(":", 1, 1);
   toList.push_front(sender);
 
-  QString htmlMessage = tr("From : me to %1 at %2 <br /> %3 <br /> %4")
+  QString htmlMessage = tr("%1")
         .prepend("<span style=\"background-color:#CCFF99\"><br />")
-        .arg(sender).arg("date").arg(subject).arg(ui_.textEdit_2->toHtml())
+        .arg(ui_.textEdit_2->toHtml())
         .append("</span>");
 
 
@@ -143,12 +143,15 @@ void UserInbox::onReplyClicked() {
 
     qDebug() << "upload File" << emailMaidsafePath;
 
+    QDateTime theDate = QDateTime::currentDateTime();
+    QString date = theDate.toString("dd/MM/yyyy hh:mm:ss");
+
     std::ofstream myfile;
     myfile.open(emailFullPath.toStdString().c_str(), std::ios::app);
       // SAVE AS XML
     QString htmlMessage = tr("From : me to %1 at %2 <br /> %3 <br /> %4")
           .prepend("<span style=\"background-color:#CCFF99\"><br />")
-          .arg(sender).arg("date").arg(subject).arg(ui_.textEdit_2->toHtml())
+          .arg(sender).arg(date).arg(subject).arg(ui_.textEdit_2->toHtml())
           .append("</span>");
     myfile << htmlMessage.toStdString();
     myfile.close();
