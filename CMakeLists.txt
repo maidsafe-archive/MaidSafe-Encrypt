@@ -223,20 +223,10 @@ IF(WIN32)
 ENDIF()
 
 ###################################################################################################
-# SQLite3 library search                                                                          #
-###################################################################################################
-IF(MSVC)
-  INCLUDE(${PD_SOURCE_DIR}/build/maidsafe_FindSQLite3.cmake)
-  SET(INCLUDE_DIRS ${INCLUDE_DIRS} ${Sqlite3_INCLUDE_DIR})
-  SET(LIBS_DIRS ${LIBS_DIRS} ${Sqlite3_LIBRARY_DIR})
-  SET(LIBS_DIRS_DEBUG ${LIBS_DIRS_DEBUG} ${Sqlite3_LIBRARY_DIR_DEBUG})
-ENDIF()
-
-###################################################################################################
 # All other libraries search                                                                      #
 ###################################################################################################
 IF(UNIX)
-  SET(SYS_LIBS libsqlite3.a libfuse.a)
+  SET(SYS_LIBS  libfuse.a)
   IF(NOT APPLE)
     SET(SYS_LIBS rt c ${SYS_LIBS})
   ENDIF()
@@ -244,7 +234,7 @@ ELSEIF(WIN32)
   IF(MSVC)
     SET(SYS_LIBS ws2_32 odbc32 odbccp32 WSock32 IPHlpApi)
   ELSE()
-    SET(SYS_LIBS sqlite3 advapi32 ws2_32 iphlpapi mswsock)
+    SET(SYS_LIBS advapi32 ws2_32 iphlpapi mswsock)
   ENDIF()
 ENDIF()
 FOREACH(library ${SYS_LIBS})
@@ -443,10 +433,10 @@ ELSE()
   SET(ALL_TARGET_LIBS ${ALL_TARGET_LIBS} ${QT_LIBRARIES})
   SET(DEBUG_LIBS ${Boost_DATE_TIME_LIBRARY_DEBUG} ${Boost_FILESYSTEM_LIBRARY_DEBUG} ${Boost_THREAD_LIBRARY_DEBUG}
       ${Boost_SYSTEM_LIBRARY_DEBUG} ${Boost_REGEX_LIBRARY_DEBUG} ${Protobuf_LIBRARY_DEBUG} ${Glog_LIBRARY_DEBUG}
-      ${maidsafe_dht_LIBRARY_DEBUG} ${Udt_LIBRARY_DEBUG} ${Cryptopp_LIBRARY_DEBUG} ${Sqlite3_LIBRARY_DEBUG} ${SYS_LIBS})
+      ${maidsafe_dht_LIBRARY_DEBUG} ${Udt_LIBRARY_DEBUG} ${Cryptopp_LIBRARY_DEBUG} ${SYS_LIBS})
   SET(RELEASE_LIBS ${Boost_DATE_TIME_LIBRARY_RELEASE} ${Boost_FILESYSTEM_LIBRARY_RELEASE} ${Boost_THREAD_LIBRARY_RELEASE}
       ${Boost_SYSTEM_LIBRARY_RELEASE} ${Boost_REGEX_LIBRARY_RELEASE} ${Protobuf_LIBRARY} ${Glog_LIBRARY}
-      ${maidsafe_dht_LIBRARY} ${Udt_LIBRARY} ${Cryptopp_LIBRARY} ${Sqlite3_LIBRARY} ${SYS_LIBS})
+      ${maidsafe_dht_LIBRARY} ${Udt_LIBRARY} ${Cryptopp_LIBRARY}  ${SYS_LIBS})
 
   TARGET_LINK_LIBRARIES(perpetualdata
                           PDmsclientlib
