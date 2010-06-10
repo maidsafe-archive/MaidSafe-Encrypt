@@ -57,16 +57,14 @@ UserPanels::UserPanels(QWidget* parent)
   browser_ = new FileBrowser;
 #endif
 
-  ui_.my_files_button->setAutoDefault(true);
-
   connect(public_username_, SIGNAL(complete()),
           this,             SLOT(onPublicUsernameChosen()));
 
-  connect(ui_.my_files_button, SIGNAL(clicked(bool)),
+  /*connect(ui_.my_files_button, SIGNAL(clicked(bool)),
           this,                SLOT(onMyFilesClicked()));
 
   connect(ui_.emailButton, SIGNAL(clicked(bool)),
-          this,                SLOT(onEmailsClicked()));
+          this,                SLOT(onEmailsClicked())); */
 
   connect(ui_.tabWidget_2, SIGNAL(currentChanged(int)),
           this,                 SLOT(onCurrentChanged(int)));
@@ -130,25 +128,36 @@ void UserPanels::onPublicUsernameChosen() {
 
   if (ui_.tabWidget_2->count() > 1) {
   } else {
-    QPixmap contactIcon_ = QPixmap(":/icons/32/contacts");
-    QPixmap shareIcon_ = QPixmap(":/icons/32/shares");
-    QPixmap logIcon_ = QPixmap(":/icons/32/log");
+    QPixmap contactIcon_  = QPixmap(":/icons/32/contacts");
+    QPixmap shareIcon_    = QPixmap(":/icons/32/shares");
+    QPixmap logIcon_      = QPixmap(":/icons/32/log");
+    QPixmap emailIcon_  = QPixmap(":/icons/32/email");
+    QPixmap myFilesIcon_  = QPixmap(":/icons/32/32/VaultGrey-32.png");
 
     ui_.tabWidget_2->addTab(contacts_ = new Contacts, contactIcon_, "");
     ui_.tabWidget_2->addTab(shares_   = new Shares, shareIcon_, "");
     ui_.tabWidget_2->addTab(logs_     = new MessageLogs, logIcon_, "");
+    ui_.tabWidget_2->addTab(logs_     = new MessageLogs, emailIcon_, "");
+    ui_.tabWidget_2->addTab(logs_     = new MessageLogs, myFilesIcon_, "");
+
+    ui_.tabWidget_2->setTabToolTip(0, "Contacts");
+    ui_.tabWidget_2->setTabToolTip(1, "Shares");
+    ui_.tabWidget_2->setTabToolTip(2, "Message Log");
+    ui_.tabWidget_2->setTabToolTip(3, "Emails");
+    ui_.tabWidget_2->setTabToolTip(4, "My Files");
+
+    ui_.tabWidget_2->setTabWhatsThis(0, "All Contacts are here");
   }
 
   ui_.tabWidget_2->setEnabled(true);
   ui_.tabWidget_2->setCurrentWidget(contacts_);
   activatePanel(true);
-  ui_.user_public_username->setText(
-      ClientController::instance()->publicUsername());
+/*  ui_.user_public_username->setText(
+      ClientController::instance()->publicUsername()); */
 
 #ifdef PD_LIGHT
   browser_->setActive(true);
 #endif
-
 }
 
 void UserPanels::onMyFilesClicked() {
@@ -161,12 +170,20 @@ void UserPanels::onMyFilesClicked() {
 }
 
 void UserPanels::onEmailsClicked() {
-  ui_.lblEmails->setText("");
+  // ui_.lblEmails->setText("");
   inbox_ = new UserInbox(this);
-  inbox_->show();  
+  inbox_->show(); 
 }
 
-void UserPanels::onCurrentChanged(int) {
+void UserPanels::onCurrentChanged(int i) {
+  if (i == 3) {
+    onMyFilesClicked();
+    ui_.tabWidget_2->setCurrentWidget(contacts_);
+    int curr = ui_.tabWidget_2->currentIndex();
+  } else if (i == 4) {
+    onEmailsClicked();
+    ui_.tabWidget_2->setCurrentWidget(contacts_);
+  }
   activatePanel(true);
 }
 
@@ -217,8 +234,8 @@ void UserPanels::setActive(bool active) {
 //      static_cast<Panel*>(ui_.stackedWidget->widget(3))->reset();
       ui_.tabWidget_2->addTab(public_username_, "");
       ui_.tabWidget_2->setCurrentWidget(public_username_);
-      ui_.user_public_username->clear();
-      ui_.my_files_button->setEnabled(true);
+//      ui_.user_public_username->clear();
+//      ui_.my_files_button->setEnabled(true);
     } else {
       onPublicUsernameChosen();
     }
@@ -240,8 +257,8 @@ void UserPanels::setActive(bool active) {
 //    PublicUsername* p = static_cast<PublicUsername*>(
 //                       ui_.stackedWidget->widget(6));
     public_username_->clearPubUsername();
-    ui_.user_public_username->clear();
-    ui_.my_files_button->setEnabled(true);
+//    ui_.user_public_username->clear();
+//    ui_.my_files_button->setEnabled(true);
   }
 }
 
@@ -320,7 +337,7 @@ void UserPanels::onSortShareRecentClicked() {
 }
 
 void UserPanels::setEmailLabel(QString mess) {
-  ui_.lblEmails->setText(mess);
+//  ui_.lblEmails->setText(mess);
 }
 
 void UserPanels::changeEvent(QEvent *event) {

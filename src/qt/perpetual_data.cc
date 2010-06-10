@@ -55,7 +55,7 @@ PerpetualData::PerpetualData(QWidget* parent)
     : QMainWindow(parent), quitting_(false), login_(NULL), create_(NULL),
       message_status_(NULL), state_(LOGIN) {
   setAttribute(Qt::WA_DeleteOnClose, false);
-  setWindowIcon(QPixmap(":/icons/16/globe"));
+  setWindowIcon(QPixmap(":/icons/64/64/maidsafe-triangle.png"));
   ui_.setupUi(this);
 
   statusBar()->show();
@@ -594,7 +594,7 @@ void PerpetualData::onMessageReceived(int type,
   } else if (ClientController::MessageType(type) == ClientController::INVITE) {
     // TODO(Team#5#): 2010-01-13 - handle Invite
   } else if (ClientController::MessageType(type) == ClientController::EMAIL) {
-    //TODO HANDLE New email message
+    // TODO(Stephen) HANDLE New email message
   } else {
     printf("Type != ClientController::TEXT && ClientController::INVITE\n");
   }
@@ -610,7 +610,6 @@ void PerpetualData::onShareReceived(const QString& from,
 }
 
 void PerpetualData::onEmailReceived(const maidsafe::InstantMessage& im) {
-  //TODO:Get email data and save in hidden maidsafe folder
   userPanels_->setEmailLabel("New E-mail!");
   SystemTrayIcon::instance()->showMessage("New Email", "You have new email");
   maidsafe::EmailNotification en = im.email_notification();

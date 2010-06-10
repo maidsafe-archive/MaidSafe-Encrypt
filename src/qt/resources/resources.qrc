@@ -1,5 +1,6 @@
 <RCC>
   <qresource prefix="icons/64">
+    <file>64/maidsafe-triangle.png</file>
     <file>64/VaultGrey-64.png</file>
     <file alias="messages">64/Message-64.png</file>
     <file alias="contacts">64/Contacts-64.png</file>
@@ -33,7 +34,7 @@
     <file alias="help">32/Help-32.png</file>
     <file alias="globe">32/Globe-32.png</file>
     <file alias="email">32/MessageGreenEnvelope-32.png</file>
-    <file alias="log">32/GreyEnvelopeBack-32.png</file>    
+    <file alias="log">32/GreyEnvelopeBack-32.png</file>
   </qresource>
   <qresource prefix="smilies">
     <file>smily_blue/sbiggrin.gif</file>

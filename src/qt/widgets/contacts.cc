@@ -170,14 +170,20 @@ void Contacts::onItemSelectionChanged() {
 
 void Contacts::onAddContactClicked() {
   bool ok;
-  QString text = QInputDialog::getText(this,
-                                       tr("Add Contact"),
-                                       tr("Please enter a username to add:"),
-                                       QLineEdit::Normal,
-                                       QString(),
-                                       &ok);
-  if (!ok || text.isEmpty()) {
-      return;
+  QString text;
+  if (ui_.contactLineEdit->text() != "Search Contacts" && ui_.contactLineEdit->text() != "") {
+    text = ui_.contactLineEdit->text();
+    ui_.contactLineEdit->clear();
+  } else {
+    text = QInputDialog::getText(this,
+                                tr("Add Contact"),
+                                tr("Please enter a username to add:"),
+                                QLineEdit::Normal,
+                                QString(),
+                                &ok);
+    if (!ok || text.isEmpty()) {
+        return;
+    }
   }
 
   const QString contact_name = text.trimmed();
