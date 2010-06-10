@@ -1,0 +1,465 @@
+<project>
+    <shortName>pdlightlocal</shortName>
+    <fullName>PDLightLocal</fullName>
+    <version>0.01</version>
+    <readmeFile>${build_project_directory}/../text/readme.txt</readmeFile>
+    <licenseFile>${build_project_directory}/../text/EULA_001.txt</licenseFile>
+    <preBuildActionList>
+        <actionGroup>
+            <explanation>Copy exes to install_files/</explanation>
+            <actionList>
+                <setInstallerVariable>
+                    <name>EXECUTABLE_POSTFIX</name>
+                    <value>.exe</value>
+                    <ruleList>
+                        <platformTest>
+                            <type>windows</type>
+                        </platformTest>
+                    </ruleList>
+                </setInstallerVariable>
+                <setInstallerVariable>
+                    <name>EXECUTABLE_POSTFIX</name>
+                    <value></value>
+                    <ruleList>
+                        <platformTest>
+                            <negate>1</negate>
+                            <type>windows</type>
+                        </platformTest>
+                    </ruleList>
+                </setInstallerVariable>
+                <findFile>
+                    <baseDirectory>${build_project_directory}/../../build/Win</baseDirectory>
+                    <pattern>CMakeCache.txt</pattern>
+                    <variable>CMAKECACHE_TXT</variable>
+                    <ruleList>
+                        <platformTest>
+                            <type>windows</type>
+                        </platformTest>
+                    </ruleList>
+                </findFile>
+                <findFile>
+                    <baseDirectory>${build_project_directory}/../../build/Linux</baseDirectory>
+                    <pattern>CMakeCache.txt</pattern>
+                    <variable>CMAKECACHE_TXT</variable>
+                    <ruleList>
+                        <platformTest>
+                            <negate>1</negate>
+                            <type>windows</type>
+                        </platformTest>
+                    </ruleList>
+                </findFile>
+                <propertiesFileGet>
+                    <file>${CMAKECACHE_TXT}</file>
+                    <key>EXECUTABLE_OUTPUT_PATH:PATH</key>
+                    <variable>CMAKE_EXECUTABLE_OUTPUT_PATH</variable>
+                </propertiesFileGet>
+                <copyFile>
+                    <destination>${build_project_directory}/../temp/pdlightlocal${EXECUTABLE_POSTFIX}</destination>
+                    <origin>${CMAKE_EXECUTABLE_OUTPUT_PATH}/Release/pdlightlocal${EXECUTABLE_POSTFIX}</origin>
+                </copyFile>
+                <propertiesFileGet>
+                    <file>${CMAKECACHE_TXT}</file>
+                    <key>QT_BINARY_DIR:INTERNAL</key>
+                    <variable>QT_BINARY_DIR</variable>
+                    <ruleList>
+                        <platformTest>
+                            <type>windows</type>
+                        </platformTest>
+                    </ruleList>
+                </propertiesFileGet>
+                <copyFile>
+                    <destination>${build_project_directory}/../temp/QtCore4.dll</destination>
+                    <origin>${QT_BINARY_DIR}/QtCore4.dll</origin>
+                    <ruleList>
+                        <platformTest>
+                            <type>windows</type>
+                        </platformTest>
+                    </ruleList>
+                </copyFile>
+                <copyFile>
+                    <destination>${build_project_directory}/../temp/QtGui4.dll</destination>
+                    <origin>${QT_BINARY_DIR}/QtGui4.dll</origin>
+                    <ruleList>
+                        <platformTest>
+                            <type>windows</type>
+                        </platformTest>
+                    </ruleList>
+                </copyFile>
+                <propertiesFileGet>
+                    <file>${CMAKECACHE_TXT}</file>
+                    <key>INSTALLBUILDER_ROOT_DIR:INTERNAL</key>
+                    <variable>INSTALLBUILDER_ROOT_DIR</variable>
+                </propertiesFileGet>
+                <findFile>
+                    <baseDirectory>${INSTALLBUILDER_ROOT_DIR}/autoupdate/output</baseDirectory>
+                    <pattern>autoupdate-*</pattern>
+                    <variable>AUTOUPDATE_EXE</variable>
+                </findFile>
+                <copyFile>
+                    <destination>${build_project_directory}/../temp/</destination>
+                    <origin>${AUTOUPDATE_EXE}</origin>
+                </copyFile>
+            </actionList>
+        </actionGroup>
+    </preBuildActionList>
+    <postInstallationActionList>
+        <addDirectoryToPath>
+            <insertAt>end</insertAt>
+            <path>${installdir}</path>
+        </addDirectoryToPath>
+        <writeFile>
+            <path>${installdir}/addmaidsafeuser.sh</path>
+            <text>#!/bin/bash
+if  grep -v maidsafe /etc/passwd ; then /usr/sbin/adduser --system --shell /bin/false --no-create-home maidsafe; fi ;  if [ -e /var/cache/maidsafe/ ];then   mkdir -p /var/cache/maidsafe ;  /bin/chown maidsafe.maidsafe /var/cache/maidsafe;fi
+; /bin/chmod 755 /etc/init.d/vault</text>
+            <ruleList>
+                <platformTest>
+                    <type>linux</type>
+                </platformTest>
+            </ruleList>
+        </writeFile>
+        <changePermissions>
+            <files>${installdir}/addmaidsafeuser.sh</files>
+            <permissions>+x</permissions>
+            <ruleList>
+                <platformTest>
+                    <type>linux</type>
+                </platformTest>
+            </ruleList>
+        </changePermissions>
+        <runConsoleProgram>
+            <program>${installdir}/addmaidsafeuser.sh</program>
+            <programArguments></programArguments>
+            <ruleList>
+                <platformTest>
+                    <type>linux</type>
+                </platformTest>
+            </ruleList>
+        </runConsoleProgram>
+    </postInstallationActionList>
+    <allowComponentSelection>1</allowComponentSelection>
+    <description>Serverless cloud file storage</description>
+    <enableRollback>1</enableRollback>
+    <enableTimestamp>1</enableTimestamp>
+    <nativePackageName>maidsafePD</nativePackageName>
+    <rebootRequired>1</rebootRequired>
+    <registerWithPackageDatabase>1</registerWithPackageDatabase>
+    <release>1</release>
+    <requireInstallationByRootUser>1</requireInstallationByRootUser>
+    <saveRelativePaths>1</saveRelativePaths>
+    <summary>Serverless cloud file storage</summary>
+    <vendor>maidsafe.net</vendor>
+    <componentList>
+        <component>
+	<!-- client -->
+	<name>client</name>
+            <description>Client</description>
+            <canBeEdited>1</canBeEdited>
+            <detailedDescription>Perpetual Data Light allows you to upload, retrieve and share your files locally only.</detailedDescription>
+            <selected>1</selected>
+            <show>1</show>
+            <desktopShortcutList>
+                <shortcut>
+                    <comment>Perpetual Data Light (Local)</comment>
+                    <exec>${installdir}/pdlightlocal</exec>
+                    <icon></icon>
+                    <name>PDLightLocal</name>
+                    <path></path>
+                    <platforms>all</platforms>
+                    <runInTerminal>0</runInTerminal>
+                    <windowsExec>${installdir}/pdlightlocal</windowsExec>
+                    <windowsExecArgs></windowsExecArgs>
+                    <windowsIcon></windowsIcon>
+                    <windowsPath></windowsPath>
+                </shortcut>
+            </desktopShortcutList>
+            <folderList>
+                <folder>
+                    <description>Program Files</description>
+                    <destination>${installdir}</destination>
+                    <name>programfiles</name>
+                    <platforms>all</platforms>
+                    <shortcutList>
+                        <shortcut>
+                            <comment>Uninstall</comment>
+                            <exec>${installdir}/${uninstallerName}</exec>
+                            <icon></icon>
+                            <name>Uninstall ${product_fullname}</name>
+                            <path>${installdir}</path>
+                            <platforms>all</platforms>
+                            <runInTerminal>0</runInTerminal>
+                            <windowsExec>${installdir}/${uninstallerName}.exe</windowsExec>
+                            <windowsExecArgs></windowsExecArgs>
+                            <windowsIcon></windowsIcon>
+                            <windowsPath>${installdir}</windowsPath>
+                        </shortcut>
+                    </shortcutList>
+                </folder>
+                <folder>
+                    <description>Program Files</description>
+                    <destination>${installdir}</destination>
+                    <name>programfileslinux</name>
+                    <platforms>linux</platforms>
+                    <distributionFileList>
+                        <distributionFile>
+                            <origin>${build_project_directory}/../temp/pdlightlocal</origin>
+                        </distributionFile>
+                    </distributionFileList>
+                </folder>
+                <folder>
+                    <description>Program Files</description>
+                    <destination>${installdir}</destination>
+                    <name>programfileswindows</name>
+                    <platforms>windows</platforms>
+                    <distributionFileList>
+                        <distributionFile>
+                            <origin>${build_project_directory}/../temp/pdlightlocal.exe</origin>
+                        </distributionFile>
+                        <distributionFile>
+                            <origin>${build_project_directory}/../temp/QtCore4.dll</origin>
+                        </distributionFile>
+                        <distributionFile>
+                            <origin>${build_project_directory}/../temp/QtGui4.dll</origin>
+                        </distributionFile>
+                    </distributionFileList>
+                </folder>
+                <folder>
+                    <description>Program Files</description>
+                    <destination>${installdir}</destination>
+                    <name>programfilesosx</name>
+                    <platforms>osx</platforms>
+                    <distributionFileList>
+                        <distributionFile>
+                            <origin>${build_project_directory}/../temp/pdlightlocal</origin>
+                        </distributionFile>
+                    </distributionFileList>
+                </folder>
+                <folder>
+                    <description>usrsharepixmaps</description>
+                    <destination>/usr/share/pixmaps/</destination>
+                    <name>pixmaps</name>
+                    <platforms>linux</platforms>
+                    <distributionFileList>
+                        <distributionFile>
+                            <origin>${build_project_directory}/../images/maidsafe_logo.xpm</origin>
+                        </distributionFile>
+                    </distributionFileList>
+                </folder>
+                <folder>
+                    <description>usrsharemenu</description>
+                    <destination>/usr/share/menu/</destination>
+                    <name>menu</name>
+                    <platforms>linux</platforms>
+                    <distributionFileList>
+                        <distributionFile>
+                            <origin>${build_project_directory}/../temp/pdlightlocal</origin>
+                        </distributionFile>
+                    </distributionFileList>
+                </folder>
+                <folder>
+                    <description>usrshareapplications</description>
+                    <destination>/usr/share/applications/</destination>
+                    <name>applications</name>
+                    <platforms>linux</platforms>
+                    <distributionFileList>
+                        <distributionFile>
+                            <origin>${build_project_directory}/../other/perpetualdata.desktop</origin>
+                        </distributionFile>
+                        <distributionFile>
+                            <origin>${build_project_directory}/../other/pdlocal.desktop</origin>
+                        </distributionFile>
+                        <distributionFile>
+                            <origin>${build_project_directory}/../other/perpetualdatavault.desktop</origin>
+                        </distributionFile>
+                    </distributionFileList>
+                </folder>
+            </folderList>
+            <startMenuShortcutList>
+                <startMenuShortcut>
+                    <comment>Uninstall ${product_fullname}</comment>
+                    <name>Uninstall ${product_fullname}</name>
+                    <runInTerminal>0</runInTerminal>
+                    <windowsExec>${installdir}/${uninstallerName}.exe</windowsExec>
+                    <windowsExecArgs></windowsExecArgs>
+                    <windowsIcon></windowsIcon>
+                    <windowsPath>${installdir}/</windowsPath>
+                </startMenuShortcut>
+                <startMenuShortcut>
+                    <comment>Perpetual Data Light (Local)</comment>
+                    <name>PDLightLocal</name>
+                    <runInTerminal>0</runInTerminal>
+                    <windowsExec>${installdir}/pdlightlocal</windowsExec>
+                    <windowsExecArgs></windowsExecArgs>
+                    <windowsIcon></windowsIcon>
+                    <windowsPath></windowsPath>
+                </startMenuShortcut>
+            </startMenuShortcutList>
+        </component>
+
+	<!-- Auto update -->
+	<component>
+            <name>autoupdater</name>
+            <description>Auto Updater</description>
+            <canBeEdited>0</canBeEdited>
+            <selected>1</selected>
+            <show>0</show>
+            <folderList>
+                <folder>
+                    <description></description>
+                    <destination>${installdir}</destination>
+                    <name>autoupdaterwin</name>
+                    <platforms>windows</platforms>
+                    <distributionFileList>
+                        <distributionFile>
+                            <origin>${build_project_directory}/../temp/autoupdate-windows.exe</origin>
+                        </distributionFile>
+                    </distributionFileList>
+                </folder>
+                <folder>
+                    <description></description>
+                    <destination>${installdir}</destination>
+                    <name>autoupdaterlinux</name>
+                    <platforms>linux</platforms>
+                    <distributionFileList>
+                        <distributionFile>
+                            <origin>${build_project_directory}/../temp/autoupdate-linux.bin</origin>
+                        </distributionFile>
+                    </distributionFileList>
+                </folder>
+                <folder>
+                    <description></description>
+                    <destination>${installdir}</destination>
+                    <name>autoupdaterosx</name>
+                    <platforms>osx</platforms>
+                    <distributionFileList>
+                        <distributionFile>
+                            <origin>${build_project_directory}/../temp/autoupdate-osx.app</origin>
+                        </distributionFile>
+                    </distributionFileList>
+                </folder>
+            </folderList>
+            <postInstallationActionList>
+                <writeFile>
+                    <path>${installdir}/update.ini</path>
+                    <text>[update]
+url = http://127.0.0.1/
+version_id = 1
+update_download_location = ${system_temp_directory}
+check_for_updates = 1
+					</text>
+                </writeFile>
+                <writeFile>
+                    <path>${installdir}/chkupdate.sh</path>
+                    <text>#!/bin/bash
+${installdir}/autoupdate-linux.bin --mode unattended &gt; /dev/null 2&gt;&amp;1
+if [ $? -eq 0 ]; then
+  ${installdir}/autoupdate-linux.bin
+else
+  echo "Nothing to report..";
+fi
+					</text>
+                    <ruleList>
+                        <platformTest>
+                            <type>linux</type>
+                        </platformTest>
+                    </ruleList>
+                </writeFile>
+                <writeFile>
+                    <path>${installdir}/chkupdate.sh</path>
+                    <text>#!/bin/bash
+${installdir}/autoupdate-osx.app/Contents/MacOS/osx-intel --mode unattended &gt; /dev/null 2&gt;&amp;1
+if [ $? -eq 0 ]; then
+  ${installdir}/autoupdate-osx.app/Contents/MacOS/osx-intel
+else
+  echo "Nothing to report..";
+fi
+					</text>
+                    <ruleList>
+                        <platformTest>
+                            <type>osx</type>
+                        </platformTest>
+                    </ruleList>
+                </writeFile>
+                <writeFile>
+                    <path>${installdir}/chkupdate.bat</path>
+                    <text>
+${installdir}/autoupdate-windows.exe --mode unattended
+if ERRORLEVEL 0
+  ${installdir}/autoupdate-windows.exe
+else
+  echo "Nothing to report..";
+fi
+					</text>
+                    <ruleList>
+                        <platformTest>
+                            <type>windows</type>
+                        </platformTest>
+                    </ruleList>
+                </writeFile>
+                <runProgram>
+                    <program>schtasks</program>
+                    <programArguments>/create /sc hourly /tn "Perpetual Data AutoUpdate" /tr "${installdir}/chkupdate.bat"</programArguments>
+                    <ruleList>
+                        <platformTest>
+                            <type>windows</type>
+                        </platformTest>
+                    </ruleList>
+                </runProgram>
+
+	<!-- Create an empty variable -->
+	<setInstallerVariable name="crontab_content" value="">
+                    <ruleList>
+                        <platformTest>
+                            <negate>1</negate>
+                            <type>windows</type>
+                        </platformTest>
+                    </ruleList>
+                </setInstallerVariable>
+
+	<!-- Store in that variable the content (if exists) of the user crontab tasks -->
+	<setInstallerVariableFromScriptOutput exec="crontab" execArgs="-l" name="crontab_content">
+                    <abortOnError>0</abortOnError>
+                    <showMessageOnError>0</showMessageOnError>
+                </setInstallerVariableFromScriptOutput>
+
+	<!-- Add the tasks you want to add to this variable -->
+	<setInstallerVariable name="crontab_content">
+                    <value>"${crontab_content}
+@hourly ${installdir}/chkupdate.sh"</value>
+                </setInstallerVariable>
+
+	<!-- Add to crontab your tasks without removing existing one -->
+	<runProgram>
+                    <program>echo</program>
+                    <programArguments>${crontab_content} | crontab -</programArguments>
+                </runProgram>
+                <changePermissions>
+                    <files>chkupdate.sh</files>
+                    <permissions>+x</permissions>
+                    <ruleList>
+                        <platformTest>
+                            <negate>1</negate>
+                            <type>windows</type>
+                        </platformTest>
+                    </ruleList>
+                </changePermissions>
+            </postInstallationActionList>
+        </component>
+    </componentList>
+    <parameterList>
+        <directoryParameter>
+            <name>installdir</name>
+            <description>Installer.Parameter.installdir.description</description>
+            <explanation>Installer.Parameter.installdir.explanation</explanation>
+            <value>${platform_install_prefix}/maidsafe/${product_shortname}-${product_version}</value>
+            <default>${platform_install_prefix}/${product_shortname}-${product_version}</default>
+            <allowEmptyValue>0</allowEmptyValue>
+            <ask>yes</ask>
+            <cliOptionName>prefix</cliOptionName>
+            <mustBeWritable>1</mustBeWritable>
+            <mustExist>0</mustExist>
+            <width>30</width>
+        </directoryParameter>
+    </parameterList>
+</project>
+

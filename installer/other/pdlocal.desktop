@@ -1,0 +1,9 @@
+[Desktop Entry]
+Encoding=UTF-8
+Categories=Applications;Internet;GTK
+Comment=Maidsafe Perpetual Data local client
+Name=PerpetualData local
+Type=Application
+Icon=/usr/share/pixmaps/maidsafe_logo.xpm
+Exec=pdlocal
+

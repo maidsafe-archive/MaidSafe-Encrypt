@@ -1,3 +1,0 @@
-This is a WELCOME file for the Maidsafe Perpetual Data product from trunk/build/install_files/welcome.txt
-
-
