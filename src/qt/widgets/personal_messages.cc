@@ -39,7 +39,7 @@
 PersonalMessages::PersonalMessages(QWidget* parent, QString name)
     : QMainWindow(parent), active_(false), init_(false), convName_() {
   setAttribute(Qt::WA_DeleteOnClose, true);
-  setWindowIcon(QPixmap(":/icons/16/globe"));
+  setWindowIcon(QPixmap(":/icons/64/64/maidsafe-triangle.png"));
   ui_.setupUi(this);
 
   ui_.message_text_edit->installEventFilter(this);
