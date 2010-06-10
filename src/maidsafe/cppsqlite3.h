@@ -29,7 +29,7 @@
 #ifndef MAIDSAFE_CPPSQLITE3_H_
 #define MAIDSAFE_CPPSQLITE3_H_
 
-#include <sqlite3.h>
+#include "sqlite3.h"
 #include <cstdio>
 #include <cstring>
 
