@@ -146,6 +146,7 @@ void UserPanels::onPublicUsernameChosen() {
     ui_.tabWidget_2->setTabToolTip(3, "Emails");
     ui_.tabWidget_2->setTabToolTip(4, "My Files");
 
+    ui_.tabWidget_2->setTabWhatsThis(0, "All Contacts are here");
   }
 
   ui_.tabWidget_2->setEnabled(true);
