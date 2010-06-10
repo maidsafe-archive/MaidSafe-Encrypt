@@ -87,6 +87,11 @@ void UserSettings::createSettingsMenu() {
   ui_.settingsMenuList->addItem("Security");
   ui_.settingsMenuList->addItem("Vault Info");
   ui_.settingsMenuList->addItem("Profile");
+
+  ui_.settingsMenuList->item(1)->setHidden(true);
+  ui_.settingsMenuList->item(2)->setHidden(true);
+  ui_.settingsMenuList->item(3)->setHidden(true);
+  ui_.settingsMenuList->item(5)->setHidden(true);
 }
 
 void UserSettings::setState(State state) {
