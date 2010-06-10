@@ -94,6 +94,9 @@
              <verstretch>0</verstretch>
             </sizepolicy>
            </property>
+           <property name="toolTip">
+            <string>My Files</string>
+           </property>
            <property name="text">
             <string/>
            </property>
@@ -114,6 +117,9 @@
          </item>
          <item row="1" column="0">
           <widget class="QPushButton" name="emailButton">
+           <property name="toolTip">
+            <string>Email</string>
+           </property>
            <property name="text">
             <string/>
            </property>

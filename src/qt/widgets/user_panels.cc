@@ -137,6 +137,10 @@ void UserPanels::onPublicUsernameChosen() {
     ui_.tabWidget_2->addTab(contacts_ = new Contacts, contactIcon_, "");
     ui_.tabWidget_2->addTab(shares_   = new Shares, shareIcon_, "");
     ui_.tabWidget_2->addTab(logs_     = new MessageLogs, logIcon_, "");
+
+    ui_.tabWidget_2->setTabToolTip(0, "Contacts");
+    ui_.tabWidget_2->setTabToolTip(1, "Shares");
+    ui_.tabWidget_2->setTabToolTip(2, "Message Log");
   }
 
   ui_.tabWidget_2->setEnabled(true);

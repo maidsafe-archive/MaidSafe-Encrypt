@@ -1406,7 +1406,7 @@ QIcon FileBrowser::getAssociatedIconFromPath(const QString& fullFilePath) {
 QString FileBrowser::getFullFilePath(const QString& filepath) {
   QString qtPath = filepath;
   qtPath.replace(QString("//"), QString("/"));
-  qtPath.replace(QString("/"), QString("\\"));
+  //qtPath.replace(QString("/"), QString("//"));
   return qtPath;
 }
 
