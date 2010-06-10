@@ -26,11 +26,13 @@
 #include "ui_user_panels.h"
 
 class Messages;
+class MessageLogs;
 class Shares;
 class Contacts;
 class VaultInfo;
 class PublicUsername;
 class PersonalMessages;
+class UserInbox;
 #ifdef PD_LIGHT
   class FileBrowser;
 #endif
@@ -46,6 +48,7 @@ class PersonalMessages;
       Contacts
       Activities
       Help
+      Log
 
     The following panels are also available but can not be explicitly
     seen by the user:
@@ -68,6 +71,8 @@ class UserPanels : public QWidget {
   void addConvToList(QString name);
   QList<QString> getConvList();
   void setConvList(QList<QString> theList);
+
+  void setEmailLabel(QString mess);
 
   // Enable disable user panels
   /*!
@@ -97,7 +102,7 @@ class UserPanels : public QWidget {
 
     // 'My Files' button has been clicked
     void onMyFilesClicked();
-
+    void onEmailsClicked();
     void onCurrentChanged(int i);
 
  private:
@@ -116,8 +121,10 @@ class UserPanels : public QWidget {
 
   Ui::UserPanels ui_;
 
+  UserInbox* inbox_;
   Shares* shares_;
   Contacts* contacts_;
+  MessageLogs* logs_;
   PublicUsername* public_username_;
 #ifdef PD_LIGHT
   FileBrowser* browser_;

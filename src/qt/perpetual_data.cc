@@ -611,7 +611,8 @@ void PerpetualData::onShareReceived(const QString& from,
 
 void PerpetualData::onEmailReceived(const maidsafe::InstantMessage& im) {
   //TODO:Get email data and save in hidden maidsafe folder
-  statusBar()->showMessage(tr("You have a new Email!"));
+  userPanels_->setEmailLabel("New E-mail!");
+  SystemTrayIcon::instance()->showMessage("New Email", "You have new email");
   maidsafe::EmailNotification en = im.email_notification();
 
   QString emailRootPath = QString::fromStdString(file_system::MaidsafeHomeDir(
@@ -642,6 +643,10 @@ void PerpetualData::onEmailReceived(const maidsafe::InstantMessage& im) {
 
   std::string tidyEmail = maidsafe::TidyPath(emailMaidsafePath.toStdString());
   QString tidyEmailMaidsafePath = QString::fromStdString(tidyEmail);
+
+  QDateTime theDate = QDateTime::currentDateTime();
+  theDate.setTime_t(im.date());
+  QString date = theDate.toString("dd/MM/yyyy hh:mm:ss");
   try {
     std::ofstream myfile;
     myfile.open(emailFullPath.toStdString().c_str(), std::ios::app);
@@ -649,7 +654,7 @@ void PerpetualData::onEmailReceived(const maidsafe::InstantMessage& im) {
     QString htmlMessage = tr("From : %1 at %2 <br /> %3 <br /> %4")
         .prepend("<span style=\"background-color:#CCFF99\"><br />")
         .arg(QString::fromStdString(im.sender()))
-        .arg("date")
+        .arg(date)
         .arg(QString::fromStdString(im.subject()))
         .arg(QString::fromStdString(im.message()))
         .append("</span>");
@@ -837,9 +842,7 @@ void PerpetualData::onSettingsTriggered() {
     QFile file(":/qss/defaultWithWhite1.qss");
     file.open(QFile::ReadOnly);
     QString styleSheet = QLatin1String(file.readAll());
-
     settings_->setStyleSheet(styleSheet);
-
     settings_->exec();
 }
 
@@ -856,6 +859,7 @@ void PerpetualData::onOffline_2Triggered() {
 }
 
 void PerpetualData::onEmailTriggered() {
+  userPanels_->setEmailLabel("");
   inbox_ = new UserInbox(this);
   inbox_->show();
 }

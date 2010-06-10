@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>296</width>
-    <height>368</height>
+    <width>255</width>
+    <height>366</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -66,7 +66,7 @@
        </item>
        <item>
         <layout class="QGridLayout" name="gridLayout">
-         <item row="2" column="0">
+         <item row="2" column="1">
           <widget class="QLabel" name="user_public_username">
            <property name="minimumSize">
             <size>
@@ -79,14 +79,14 @@
            </property>
           </widget>
          </item>
-         <item row="4" column="0">
+         <item row="4" column="1">
           <widget class="QLabel" name="user_icon">
            <property name="text">
             <string/>
            </property>
           </widget>
          </item>
-         <item row="1" column="0">
+         <item row="1" column="1">
           <widget class="QPushButton" name="my_files_button">
            <property name="sizePolicy">
             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
@@ -109,6 +109,33 @@
            </property>
            <property name="flat">
             <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="0">
+          <widget class="QPushButton" name="emailButton">
+           <property name="text">
+            <string/>
+           </property>
+           <property name="icon">
+            <iconset resource="../resources/resources.qrc">
+             <normaloff>:/icons/32/email</normaloff>:/icons/32/email</iconset>
+           </property>
+           <property name="iconSize">
+            <size>
+             <width>32</width>
+             <height>32</height>
+            </size>
+           </property>
+           <property name="flat">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="0">
+          <widget class="QLabel" name="lblEmails">
+           <property name="text">
+            <string/>
            </property>
           </widget>
          </item>

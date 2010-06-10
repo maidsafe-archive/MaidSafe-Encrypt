@@ -15,6 +15,7 @@
 
 #include <QMessageBox>
 #include <QDebug>
+#include <QXmlStreamWriter>
 
 #include <fstream>
 #include <string>
@@ -105,17 +106,42 @@ void UserSendMail::onSendClicked(bool) {
     QString emailMaidsafePath = QString("%1%2_%3.pdmail").arg(emailFolder)
                                                          .arg(subject)
                                                          .arg(conv);
+    QDateTime theDate = QDateTime::currentDateTime();
+    QString date = theDate.toString("dd/MM/yyyy hh:mm:ss");
 
     qDebug() << "upload File" << emailMaidsafePath;
-
     std::ofstream myfile;
     myfile.open(emailFullPath.toStdString().c_str(), std::ios::app);
     // SAVE AS XML
     QString htmlMessage = tr("From : me to %1 at %2 <br /> %3 <br /> %4")
-        .prepend("<span style=\"background-color:#CCFF99\"><br />")
-        .arg(to).arg("date").arg(subject).arg(message).append("</span>");
+       .prepend("<span style=\"background-color:#CCFF99\"><br />")
+       .arg(to).arg(date).arg(subject).arg(message).append("</span>");
     myfile << htmlMessage.toStdString();
-    myfile.close();
+
+    /*QFile output(emailFullPath);
+
+    if (!output.open(QFile::WriteOnly | QFile::Text)) {
+         QMessageBox::warning(this, tr("QXmlStream Email"),
+                              tr("Cannot write file %1:\n%2.")
+                              .arg(emailFullPath)
+                              .arg(output.errorString()));
+         return;
+     }
+
+    QXmlStreamWriter stream(&output);
+    stream.setAutoFormatting(true);
+    stream.writeStartDocument();
+
+    stream.writeStartElement("E-Mail");
+    stream.writeAttribute("To", to);
+    stream.writeTextElement("Subject", subject);
+    stream.writeTextElement("Message", message);
+    stream.writeEndElement();
+
+    stream.writeEndDocument();
+
+    output.close();*/
+     myfile.close();
 
     SaveFileThread* sft = new SaveFileThread(emailMaidsafePath, this);
     connect(sft,  SIGNAL(saveFileCompleted(int, const QString&)),
