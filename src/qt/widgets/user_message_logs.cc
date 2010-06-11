@@ -66,7 +66,10 @@ void MessageLogs::onMessageReceived(int type,
                                       const QString& sender,
                                       const QString& detail,
                                       const QString&) {
- // ui_.logListWidget->insertItem(0, detail); 
+  // TODO(Stephen) :: grab important messages and put in Log
+  if (ClientController::MessageType(type) == ClientController::TEXT) {   
+    // ui_.logListWidget->insertItem(0, detail);
+  }
 }
 
 void MessageLogs::changeEvent(QEvent *event) {

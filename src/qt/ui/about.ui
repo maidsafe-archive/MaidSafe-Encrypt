@@ -37,7 +37,7 @@
         </font>
        </property>
        <property name="text">
-        <string>Perpetual Data 0.6 Alpha</string>
+        <string>Perpetual Data 0.01</string>
        </property>
       </widget>
      </item>
@@ -76,7 +76,10 @@
    <item>
     <widget class="QLabel" name="label_3">
      <property name="text">
-      <string>Blah blah blah... you can stick any kind of rich text, html in here....</string>
+      <string>Everyone invloved in Beta testing will be named in here if their name is provided to us.</string>
+     </property>
+     <property name="wordWrap">
+      <bool>true</bool>
      </property>
     </widget>
    </item>
@@ -113,6 +116,7 @@
   </layout>
  </widget>
  <resources>
+  <include location="../resources/resources.qrc"/>
   <include location="../resources/resources.qrc"/>
   <include location="../resources/resources.qrc"/>
   <include location="../resources/resources.qrc"/>

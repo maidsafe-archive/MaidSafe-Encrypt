@@ -551,7 +551,6 @@ ELSEIF(WIN32)
     # CMake defaults to passing stack size in LINKER_FLAGS of 10MB.  Set this to windows default of 1MB
     STRING(REGEX REPLACE "/STACK:[0-9]+" "" CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}")
     STRING(REGEX REPLACE "/STACK:[0-9]+" "" CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS}")
-    SET(CMAKE_CXX_STACK_SIZE 1048576)
     # Given a link dir of "a/b/c", MSVC adds "a/b/c/" AND "a/b/c/CMAKE_BUILD_TYPE" as link dirs, so we
     # can't just use "LINK_DIRECTORIES" as some Google debug libs have the same name as the release version.
     LIST(REMOVE_DUPLICATES LIBS_DIRS)
@@ -565,6 +564,7 @@ ELSEIF(WIN32)
       SET(LINKER_LIBS_DIRS_DEBUG "${LINKER_LIBS_DIRS_DEBUG} /LIBPATH:\"${LIBS_DIR_DEBUG}\"")
     ENDFOREACH()
     SET_TARGET_PROPERTIES(${ALL_EXECUTABLES} PROPERTIES
+                              LINK_FLAGS "/STACK:1048576"
                               LINK_FLAGS_RELEASE "/OPT:REF /OPT:ICF /LTCG /INCREMENTAL:NO ${LINKER_LIBS_DIRS_RELEASE}"
                               LINK_FLAGS_DEBUG "${LINKER_LIBS_DIRS_DEBUG}"
                               LINK_FLAGS_RELWITHDEBINFO "${LINKER_LIBS_DIRS_DEBUG}"
@@ -799,7 +799,9 @@ MESSAGE("")
 IF(CMAKE_BUILD_TYPE MATCHES Release)
   INCLUDE(${PD_SOURCE_DIR}/build/maidsafe_FindInstallBuilder.cmake)
   IF(InstallBuilder_BUILDER_EXE AND InstallBuilder_CUSTOMISE_EXE)
-    ADD_CUSTOM_TARGET(installer ALL ${InstallBuilder_CUSTOMISE_EXE} build ${SOURCE_DIR}/installerfiles/autoup.xml
-                      COMMAND ${InstallBuilder_BUILDER_EXE} build ${SOURCE_DIR}/installerfiles/pd.xml DEPENDS perpetualdata vault)
+    ADD_CUSTOM_TARGET(perpetualdataInstaller ALL ${InstallBuilder_CUSTOMISE_EXE} build ${PD_SOURCE_DIR}/installer/bitrock/autoup_pd.xml
+                      COMMAND ${InstallBuilder_BUILDER_EXE} build ${PD_SOURCE_DIR}/installer/bitrock/pd.xml DEPENDS perpetualdata vault)
+    ADD_CUSTOM_TARGET(pdlightlocalInstaller ALL ${InstallBuilder_CUSTOMISE_EXE} build ${PD_SOURCE_DIR}/installer/bitrock/autoup_pdlightlocal.xml
+                      COMMAND ${InstallBuilder_BUILDER_EXE} build ${PD_SOURCE_DIR}/installer/bitrock/pdlightlocal.xml DEPENDS pdlightlocal)
   ENDIF()
 ENDIF()

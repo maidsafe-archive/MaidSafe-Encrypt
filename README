@@ -1,6 +1,0 @@
-change for a test
-Directory structure 
-
-src/    -       All source files 
-doc/    -       Documentation including API structrure 
-i../BUILD_FILES/ - All files to build the build system for windows apple and linux (*nix)
