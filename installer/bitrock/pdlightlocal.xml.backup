@@ -329,17 +329,6 @@ if  grep -v maidsafe /etc/passwd ; then /usr/sbin/adduser --system --shell /bin/
                         </distributionFile>
                     </distributionFileList>
                 </folder>
-                <folder>
-                    <description>Binaries</description>
-                    <destination>${installdir}/bin</destination>
-                    <name>bin</name>
-                    <platforms>all</platforms>
-                    <distributionFileList>
-                        <distributionFile>
-                            <origin>../temp/pdlightlocal-0.01-windows-installer.exe</origin>
-                        </distributionFile>
-                    </distributionFileList>
-                </folder>
             </folderList>
             <startMenuShortcutList>
                 <startMenuShortcut>
