@@ -59,7 +59,7 @@
      <x>0</x>
      <y>0</y>
      <width>267</width>
-     <height>21</height>
+     <height>25</height>
     </rect>
    </property>
    <property name="sizePolicy">
@@ -76,6 +76,9 @@
      <string>File</string>
     </property>
     <widget class="QMenu" name="menuStatus">
+     <property name="enabled">
+      <bool>false</bool>
+     </property>
      <property name="title">
       <string>Status</string>
      </property>
@@ -140,6 +143,9 @@
    </property>
   </action>
   <action name="actionWord_Processor">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="text">
     <string>Word Processor</string>
    </property>
@@ -150,11 +156,17 @@
    </property>
   </action>
   <action name="actionPresentation">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="text">
     <string>Presentation</string>
    </property>
   </action>
   <action name="actionBrowser">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="text">
     <string>Browser</string>
    </property>
@@ -165,6 +177,9 @@
    </property>
   </action>
   <action name="actionManual">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="text">
     <string>Manual</string>
    </property>
