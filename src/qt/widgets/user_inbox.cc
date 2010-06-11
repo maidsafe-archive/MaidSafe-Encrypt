@@ -33,8 +33,13 @@ UserInbox::UserInbox(QWidget* parent) : QDialog(parent) {
                               ClientController::instance()->SessionName())
                                   .string())
                           .append("/Emails/");
-  if (!boost::filesystem::exists(emailRootPath.toStdString()))
-    boost::filesystem::create_directories(emailRootPath.toStdString());
+  try {
+    if (!boost::filesystem::exists(emailRootPath.toStdString()))
+      boost::filesystem::create_directories(emailRootPath.toStdString());
+  }
+  catch(const std::exception &e) {
+    qDebug() << "UserInbox::UserInbox - Failed to create " << emailRootPath;
+  }
 
   folder_ = "/Emails/";
 
@@ -131,8 +136,14 @@ void UserInbox::onReplyClicked() {
                                 ClientController::instance()->SessionName())
                                     .string())
                             .append("/Emails/");
+  try {
     if (!boost::filesystem::exists(emailRootPath.toStdString()))
       boost::filesystem::create_directories(emailRootPath.toStdString());
+  }
+  catch(const std::exception &e) {
+    qDebug() << "UserInbox::onReplyClicked - Failed to create "
+             << emailRootPath;
+  }
 
     QString emailFullPath = QString("%1%2_%3.pdmail").arg(emailRootPath)
                             .arg(subject).arg(sender);

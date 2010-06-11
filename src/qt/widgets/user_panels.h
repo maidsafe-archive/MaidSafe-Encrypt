@@ -66,6 +66,10 @@ class UserPanels : public QWidget {
   explicit UserPanels(QWidget* parent = 0);
   virtual ~UserPanels();
 
+#ifdef PD_LIGHT
+  void CloseFileBrowser();
+#endif
+
   QList<QString> openConvList_;
 
   void addConvToList(QString name);

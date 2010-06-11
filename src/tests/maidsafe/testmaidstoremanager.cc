@@ -1318,18 +1318,18 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_SendChunkPrep) {
   client_chunkstore_->AddChunkToOutgoing(chunkname, std::string("ddd"));
   std::string key_id, public_key, public_key_signature, private_key;
   msm.GetChunkSignatureKeys(PRIVATE, "", &key_id, &public_key,
-      &public_key_signature, &private_key);
+                            &public_key_signature, &private_key);
   StoreData store_data(chunkname, 3, (kHashable | kOutgoing), PRIVATE, "",
-      key_id, public_key, public_key_signature, private_key);
+                       key_id, public_key, public_key_signature, private_key);
   std::string peername = crypto_.Hash("peer", "", crypto::STRING_STRING, false);
   kad::Contact peer(peername, "192.192.1.1", 9999);
   ASSERT_EQ(kSuccess, msm.tasks_handler_.AddTask(store_data.data_name,
-      kStoreChunk, store_data.size, kMinChunkCopies, kMaxStoreFailures));
+            kStoreChunk, store_data.size, kMinChunkCopies, kMaxStoreFailures));
   ASSERT_EQ(size_t(1), msm.tasks_handler_.TasksCount());
 
   // Set up expectations
   EXPECT_CALL(msm, AssessTaskStatus(testing::_, kStoreChunk, testing::_))
-      .Times(6)
+      .Times(7)
       .WillOnce(testing::Return(kCompleted))  // Call 1
       .WillOnce(testing::Return(kCancelled))  // Call 2
       .WillOnce(testing::Return(kPending))  // Call 3
@@ -1350,33 +1350,40 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_SendChunkPrep) {
 
   EXPECT_CALL(msm, WaitForOnline(chunkname, kStoreChunk))
       .WillOnce(testing::Return(false))  // Call 5
+      .WillOnce(testing::Return(true))  // Call 6
       .WillOnce(testing::Return(true));  // Call 6
 
   // Run tests
   // Call 1
   ASSERT_EQ(kStoreCancelledOrDone, msm.SendChunkPrep(store_data));
+  printf("111111\n");
 
   // Call 2 - should cause the task to be removed
   ASSERT_EQ(kStoreCancelledOrDone, msm.SendChunkPrep(store_data));
   ASSERT_EQ(size_t(0), msm.tasks_handler_.TasksCount());
+  printf("222222\n");
 
   // Call 3
   ASSERT_EQ(kSuccess, msm.tasks_handler_.AddTask(store_data.data_name,
-      kStoreChunk, store_data.size, kMinChunkCopies, kMaxStoreFailures));
+            kStoreChunk, store_data.size, kMinChunkCopies, kMaxStoreFailures));
   ASSERT_EQ(size_t(1), msm.tasks_handler_.TasksCount());
   ASSERT_EQ(kGetStorePeerError, msm.SendChunkPrep(store_data));
+  printf("333333\n");
 
   // Call 4 - GetStorePeer call sneakily deletes the task before it's started
   ASSERT_EQ(kSendChunkFailure, msm.SendChunkPrep(store_data));
+  printf("444444\n");
 
   // Call 5
   ASSERT_EQ(kSuccess, msm.tasks_handler_.AddTask(store_data.data_name,
-      kStoreChunk, store_data.size, kMinChunkCopies, kMaxStoreFailures));
+            kStoreChunk, store_data.size, kMinChunkCopies, kMaxStoreFailures));
   ASSERT_EQ(size_t(1), msm.tasks_handler_.TasksCount());
   ASSERT_EQ(kTaskCancelledOffline, msm.SendChunkPrep(store_data));
+  printf("555555\n");
 
   // Call 6
   ASSERT_EQ(kSuccess, msm.SendChunkPrep(store_data));
+  printf("666666\n");
 }
 
 class MockMsmSendPrepCallback : public MaidsafeStoreManager {

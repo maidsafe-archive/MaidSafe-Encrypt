@@ -65,11 +65,18 @@ CreateLocalVaultPage::~CreateLocalVaultPage() { }
 void CreateLocalVaultPage::cleanupPage() {
   boost::filesystem::path chunkdir(QDir::homePath().toStdString());
   boost::filesystem::space_info info;
-  if ("/" != chunkdir.root_directory())
-    info = boost::filesystem::space(boost::filesystem::path("/"));
-  else
-    info = boost::filesystem::space(boost::filesystem::path(chunkdir.root_name()
-           + chunkdir.root_directory()));
+  try {
+    if ("/" != chunkdir.root_directory())
+      info = boost::filesystem::space(boost::filesystem::path("/"));
+    else
+      info = boost::filesystem::space(boost::filesystem::path(
+                 chunkdir.root_name() + chunkdir.root_directory()));
+  }
+  catch(const std::exception &e) {
+#ifdef DEBUG
+    printf("CreateLocalVaultPage::cleanupPage - Couldn't read space.\n");
+#endif
+  }
   availableSpace_ = boost::lexical_cast<std::string>
                     (info.available / (1024 * 1024));
   spaceReady_ = true;
@@ -104,8 +111,18 @@ void CreateLocalVaultPage::onBrowseClicked() {
 
 void CreateLocalVaultPage::onSpaceEdited(const QString& text) {
   if (!text.isEmpty() && text.size() > 1) {
-    boost::uint64_t spaceChosen = boost::lexical_cast<boost::uint64_t>(
-                                  ui_.lineSpace->text().toStdString());
+    boost::uint64_t spaceChosen(0);
+    std::string gfhkj(ui_.lineSpace->text().toLocal8Bit().data());
+
+    //int gfhkj(ui_.lineSpace->text().toInt());
+    try {
+      spaceChosen = boost::lexical_cast<boost::uint64_t>(
+                                    gfhkj);
+    }
+    catch(const std::exception &) {
+      spaceChosen = 10240;
+    }
+
     boost::uint64_t spaceAvailable =
         boost::lexical_cast<boost::uint64_t>(availableSpace_);
     if (spaceChosen < spaceAvailable) {
