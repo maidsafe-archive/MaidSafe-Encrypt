@@ -111,8 +111,18 @@ void CreateLocalVaultPage::onBrowseClicked() {
 
 void CreateLocalVaultPage::onSpaceEdited(const QString& text) {
   if (!text.isEmpty() && text.size() > 1) {
-    boost::uint64_t spaceChosen = boost::lexical_cast<boost::uint64_t>(
-                                  ui_.lineSpace->text().toStdString());
+    boost::uint64_t spaceChosen(0);
+    std::string gfhkj(ui_.lineSpace->text().toLocal8Bit().data());
+
+    //int gfhkj(ui_.lineSpace->text().toInt());
+    try {
+      spaceChosen = boost::lexical_cast<boost::uint64_t>(
+                                    gfhkj);
+    }
+    catch(const std::exception &) {
+      spaceChosen = 10240;
+    }
+
     boost::uint64_t spaceAvailable =
         boost::lexical_cast<boost::uint64_t>(availableSpace_);
     if (spaceChosen < spaceAvailable) {
