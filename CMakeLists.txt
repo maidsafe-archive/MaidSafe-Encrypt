@@ -129,6 +129,10 @@ ELSE()
   SET(CMAKE_INCLUDE_PATH "/usr/include")
   SET(CMAKE_LIBRARY_PATH "/usr/lib" ${DEFAULT_LIBRARY_DIR})
 ENDIF()
+IF(MINGW)
+  SET(CMAKE_INCLUDE_PATH "c:\\MinGW\\include")
+  SET(CMAKE_LIBRARY_PATH "c:\\MinGW\\lib" ${DEFAULT_LIBRARY_DIR})
+ENDIF(MINGW)
 
 ###################################################################################################
 # Boost libraries search                                                                          #
