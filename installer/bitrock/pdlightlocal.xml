@@ -54,7 +54,7 @@
                     <variable>CMAKE_EXECUTABLE_OUTPUT_PATH</variable>
                 </propertiesFileGet>
                 <copyFile>
-                    <destination>${build_project_directory}/../temp/pdlightlocal${EXECUTABLE_POSTFIX}</destination>
+                    <destination>${build_project_directory}/../temp/</destination>
                     <origin>${CMAKE_EXECUTABLE_OUTPUT_PATH}/Release/pdlightlocal${EXECUTABLE_POSTFIX}</origin>
                 </copyFile>
                 <propertiesFileGet>
@@ -68,7 +68,7 @@
                     </ruleList>
                 </propertiesFileGet>
                 <copyFile>
-                    <destination>${build_project_directory}/../temp/QtCore4.dll</destination>
+                    <destination>${build_project_directory}/../temp/</destination>
                     <origin>${QT_BINARY_DIR}/QtCore4.dll</origin>
                     <ruleList>
                         <platformTest>
@@ -77,7 +77,7 @@
                     </ruleList>
                 </copyFile>
                 <copyFile>
-                    <destination>${build_project_directory}/../temp/QtGui4.dll</destination>
+                    <destination>${build_project_directory}/../temp/</destination>
                     <origin>${QT_BINARY_DIR}/QtGui4.dll</origin>
                     <ruleList>
                         <platformTest>
@@ -102,6 +102,35 @@
             </actionList>
         </actionGroup>
     </preBuildActionList>
+    <postBuildActionList>
+        <deleteFile>
+            <path>${build_project_directory}/../temp/pdlightlocal${EXECUTABLE_POSTFIX}</path>
+        </deleteFile>
+        <deleteFile>
+            <path>${build_project_directory}/../temp/QtCore4.dll</path>
+            <ruleList>
+                <platformTest>
+                    <type>windows</type>
+                </platformTest>
+            </ruleList>
+        </deleteFile>
+        <deleteFile>
+            <path>${build_project_directory}/../temp/QtGui4.dll</path>
+            <ruleList>
+                <platformTest>
+                    <type>windows</type>
+                </platformTest>
+            </ruleList>
+        </deleteFile>
+        <findFile>
+            <baseDirectory>${build_project_directory}/../temp</baseDirectory>
+            <pattern>autoupdate-*</pattern>
+            <variable>TEMP_AUTOUPDATE_EXE</variable>
+        </findFile>
+        <deleteFile>
+            <path>${TEMP_AUTOUPDATE_EXE}</path>
+        </deleteFile>
+    </postBuildActionList>
     <postInstallationActionList>
         <addDirectoryToPath>
             <insertAt>end</insertAt>
@@ -142,6 +171,7 @@ if  grep -v maidsafe /etc/passwd ; then /usr/sbin/adduser --system --shell /bin/
     <enableRollback>1</enableRollback>
     <enableTimestamp>1</enableTimestamp>
     <nativePackageName>maidsafePD</nativePackageName>
+    <outputDirectory>${build_project_directory}/../temp</outputDirectory>
     <rebootRequired>1</rebootRequired>
     <registerWithPackageDatabase>1</registerWithPackageDatabase>
     <release>1</release>
@@ -155,12 +185,12 @@ if  grep -v maidsafe /etc/passwd ; then /usr/sbin/adduser --system --shell /bin/
 	<name>client</name>
             <description>Client</description>
             <canBeEdited>1</canBeEdited>
-            <detailedDescription>Perpetual Data Light allows you to upload, retrieve and share your files locally only.</detailedDescription>
+            <detailedDescription>Perpetual Data Light Local allows you to upload, retrieve and share your files locally only.</detailedDescription>
             <selected>1</selected>
             <show>1</show>
             <desktopShortcutList>
                 <shortcut>
-                    <comment>Perpetual Data Light (Local)</comment>
+                    <comment>Perpetual Data Light Local</comment>
                     <exec>${installdir}/pdlightlocal</exec>
                     <icon></icon>
                     <name>PDLightLocal</name>
@@ -285,7 +315,7 @@ if  grep -v maidsafe /etc/passwd ; then /usr/sbin/adduser --system --shell /bin/
                     <windowsPath>${installdir}/</windowsPath>
                 </startMenuShortcut>
                 <startMenuShortcut>
-                    <comment>Perpetual Data Light (Local)</comment>
+                    <comment>Perpetual Data Light Local</comment>
                     <name>PDLightLocal</name>
                     <runInTerminal>0</runInTerminal>
                     <windowsExec>${installdir}/pdlightlocal</windowsExec>
