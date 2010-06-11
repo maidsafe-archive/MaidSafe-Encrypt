@@ -260,7 +260,15 @@ bool LocalStoreManager::KeyUnique(const std::string &key, bool) {
   if (result) {
     fs::path file_path(local_sm_dir_ + "/StoreChunks");
     file_path = file_path / hex_key;
-    result = (!fs::exists(file_path));
+    try {
+      result = (!fs::exists(file_path));
+    }
+    catch(const std::exception &e) {
+#ifdef DEBUG
+      printf("LocalStoreManager::KeyUnique - Failed to check path existance\n");
+#endif
+      return false;
+    }
   }
   return result;
 }

@@ -94,8 +94,14 @@ void UserSendMail::onSendClicked(bool) {
                                     ClientController::instance()->SessionName())
                                     .string())
                                 .append("/Emails/");
-    if (!boost::filesystem::exists(emailRootPath.toStdString()))
-      boost::filesystem::create_directories(emailRootPath.toStdString());
+    try {
+      if (!boost::filesystem::exists(emailRootPath.toStdString()))
+        boost::filesystem::create_directories(emailRootPath.toStdString());
+    }
+    catch(const std::exception &e) {
+      qDebug() << "UserSendMail::onSendClicked - Failed to create "
+               << emailRootPath;
+    }
 
     QString emailFullPath = QString("%1%2_%3.pdmail").arg(emailRootPath)
                                                      .arg(subject).arg(conv);

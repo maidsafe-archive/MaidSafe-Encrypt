@@ -65,11 +65,18 @@ CreateLocalVaultPage::~CreateLocalVaultPage() { }
 void CreateLocalVaultPage::cleanupPage() {
   boost::filesystem::path chunkdir(QDir::homePath().toStdString());
   boost::filesystem::space_info info;
-  if ("/" != chunkdir.root_directory())
-    info = boost::filesystem::space(boost::filesystem::path("/"));
-  else
-    info = boost::filesystem::space(boost::filesystem::path(chunkdir.root_name()
-           + chunkdir.root_directory()));
+  try {
+    if ("/" != chunkdir.root_directory())
+      info = boost::filesystem::space(boost::filesystem::path("/"));
+    else
+      info = boost::filesystem::space(boost::filesystem::path(
+                 chunkdir.root_name() + chunkdir.root_directory()));
+  }
+  catch(const std::exception &e) {
+#ifdef DEBUG
+    printf("CreateLocalVaultPage::cleanupPage - Couldn't read space.\n");
+#endif
+  }
   availableSpace_ = boost::lexical_cast<std::string>
                     (info.available / (1024 * 1024));
   spaceReady_ = true;

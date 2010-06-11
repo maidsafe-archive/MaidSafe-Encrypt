@@ -445,8 +445,16 @@ int SEHandler::EncryptDb(const std::string &dir_path,
   SelfEncryption se(client_chunkstore_);
   boost::scoped_ptr<DataAtlasHandler> dah(new DataAtlasHandler);
   dah->GetDbPath(dir_path, CREATE, &db_path);
-  if (!fs::exists(db_path))
-    return -2;
+  try {
+    if (!fs::exists(db_path))
+      return -2;
+  }
+  catch(const std::exception &e) {
+#ifdef DEBUG
+    printf("SEHandler::EncryptDb - Can't check DB path\n");
+#endif
+      return -2;
+  }
   crypto::Crypto co;
   co.set_hash_algorithm(crypto::SHA_512);
   std::string file_hash = co.Hash(db_path, "", crypto::FILE_STRING, false);

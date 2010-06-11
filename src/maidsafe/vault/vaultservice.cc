@@ -2440,11 +2440,18 @@ void RegistrationService::SetLocalVaultOwned(
   // checking available space in disk
   boost::filesystem::path vaultdir(request->vault_dir());
   boost::filesystem::space_info info;
-  if ("/" != vaultdir.root_directory())
-    info = boost::filesystem::space(boost::filesystem::path("/"));
-  else
-    info = boost::filesystem::space(boost::filesystem::path(vaultdir.root_name()
-           + vaultdir.root_directory()));
+  try {
+    if ("/" != vaultdir.root_directory())
+      info = boost::filesystem::space(boost::filesystem::path("/"));
+    else
+      info = boost::filesystem::space(boost::filesystem::path(
+                 vaultdir.root_name() + vaultdir.root_directory()));
+  }
+  catch(const std::exception &e) {
+#ifdef DEBUG
+    printf("RegistrationService::SetLocalVaultOwned - Couldn't read space.\n");
+#endif
+  }
   if (request->space() > info.available) {
     response->set_result(maidsafe::NOT_ENOUGH_SPACE);
     done->Run();

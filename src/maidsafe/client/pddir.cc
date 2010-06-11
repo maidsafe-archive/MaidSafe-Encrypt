@@ -87,13 +87,13 @@ int PdDir::Init(DbInitFlag flag) {
 int PdDir::Connect() {
   if (connected_)
     return kSuccess;
-  if (!fs::exists(db_name_)) {
-#ifdef DEBUG
-    printf("In PdDir Connect: No DB\n");
-#endif
-    return kDBDoesntExist;
-  }
   try {
+    if (!fs::exists(db_name_)) {
+#ifdef DEBUG
+      printf("In PdDir Connect: No DB\n");
+#endif
+      return kDBDoesntExist;
+    }
 #ifdef DEBUG
     // printf("In PdDir Connect: Before open\n");
 #endif

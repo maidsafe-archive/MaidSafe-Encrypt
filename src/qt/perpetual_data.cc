@@ -469,6 +469,10 @@ void PerpetualData::onLogout() {
   if (!ClientController::instance()->publicUsername().isEmpty())
     ClientController::instance()->StopCheckingMessages();
   asyncUnmount();
+#ifdef PD_LIGHT
+  userPanels_->CloseFileBrowser();
+#endif
+
   setState(LOGGING_OUT);
 }
 
@@ -617,8 +621,15 @@ void PerpetualData::onEmailReceived(const maidsafe::InstantMessage& im) {
   QString emailRootPath = QString::fromStdString(file_system::MaidsafeHomeDir(
                           ClientController::instance()->SessionName()).string())
                               .append("/Emails/");
-  if (!boost::filesystem::exists(emailRootPath.toStdString()))
-    boost::filesystem::create_directories(emailRootPath.toStdString());
+  try {
+    if (!boost::filesystem::exists(emailRootPath.toStdString()))
+      boost::filesystem::create_directories(emailRootPath.toStdString());
+  }
+  catch(const std::exception &e) {
+    qDebug() << "PerpetualData::onEmailReceived - Failed to create "
+             << emailRootPath;
+    return;
+  }
 
   QString emailFolder = "/Emails/";
 

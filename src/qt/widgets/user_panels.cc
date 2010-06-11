@@ -119,7 +119,15 @@ UserPanels::UserPanels(QWidget* parent)
           this,        SLOT(onSortShareRecentClicked()));
 }
 
-UserPanels::~UserPanels() { }
+UserPanels::~UserPanels() {}
+
+#ifdef PD_LIGHT
+void UserPanels::CloseFileBrowser() {
+  browser_->setActive(false);
+  browser_->reset();
+  browser_->hide();
+}
+#endif
 
 void UserPanels::onPublicUsernameChosen() {
   if (ui_.tabWidget_2->currentWidget() == public_username_) {
@@ -131,20 +139,20 @@ void UserPanels::onPublicUsernameChosen() {
     QPixmap contactIcon_  = QPixmap(":/icons/32/contacts");
     QPixmap shareIcon_    = QPixmap(":/icons/32/shares");
     QPixmap logIcon_      = QPixmap(":/icons/32/log");
-    QPixmap emailIcon_  = QPixmap(":/icons/32/email");
+    QPixmap emailIcon_    = QPixmap(":/icons/32/email");
     QPixmap myFilesIcon_  = QPixmap(":/icons/32/32/VaultGrey-32.png");
 
     ui_.tabWidget_2->addTab(contacts_ = new Contacts, contactIcon_, "");
     ui_.tabWidget_2->addTab(shares_   = new Shares, shareIcon_, "");
     ui_.tabWidget_2->addTab(logs_     = new MessageLogs, logIcon_, "");
-    ui_.tabWidget_2->addTab(logs_     = new MessageLogs, emailIcon_, "");
     ui_.tabWidget_2->addTab(logs_     = new MessageLogs, myFilesIcon_, "");
+    ui_.tabWidget_2->addTab(logs_     = new MessageLogs, emailIcon_, "");
 
     ui_.tabWidget_2->setTabToolTip(0, "Contacts");
     ui_.tabWidget_2->setTabToolTip(1, "Shares");
     ui_.tabWidget_2->setTabToolTip(2, "Message Log");
-    ui_.tabWidget_2->setTabToolTip(3, "Emails");
-    ui_.tabWidget_2->setTabToolTip(4, "My Files");
+    ui_.tabWidget_2->setTabToolTip(3, "My Files");
+    ui_.tabWidget_2->setTabToolTip(4, "Emails");
 
     ui_.tabWidget_2->setTabWhatsThis(0, "All Contacts are here");
   }
@@ -152,8 +160,7 @@ void UserPanels::onPublicUsernameChosen() {
   ui_.tabWidget_2->setEnabled(true);
   ui_.tabWidget_2->setCurrentWidget(contacts_);
   activatePanel(true);
-/*  ui_.user_public_username->setText(
-      ClientController::instance()->publicUsername()); */
+  ui_.public_username->setText(ClientController::instance()->publicUsername());
 
 #ifdef PD_LIGHT
   browser_->setActive(true);
@@ -172,7 +179,7 @@ void UserPanels::onMyFilesClicked() {
 void UserPanels::onEmailsClicked() {
   // ui_.lblEmails->setText("");
   inbox_ = new UserInbox(this);
-  inbox_->show(); 
+  inbox_->show();
 }
 
 void UserPanels::onCurrentChanged(int i) {

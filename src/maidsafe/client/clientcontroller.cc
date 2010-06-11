@@ -2386,8 +2386,16 @@ int ClientController::RemoveElement(const std::string &element_path) {
     return -1;
   fs::path full_path =
       file_system::FullMSPathFromRelPath(element_path, ss_->SessionName());
-  if (fs::exists(full_path))
-    fs::remove_all(full_path);
+
+  try {
+    if (fs::exists(full_path))
+      fs::remove_all(full_path);
+  }
+  catch(const std::exception &e) {
+#ifdef DEBUG
+    printf("ClientController::RemoveElement - Failed to remove.\n");
+#endif
+  }
   return 0;
 }
 
@@ -2511,10 +2519,16 @@ int ClientController::GetDb(const std::string &orig_path,
 #ifdef DEBUG
   printf("\t\tMSID: %s\n", HexSubstr(*msid).c_str());
 #endif
-
-  if (fs::exists(db_path) && *msid == "") {
-    *dir_type = GetDirType(parent_path);
-    return 0;
+  try {
+    if (fs::exists(db_path) && *msid == "") {
+      *dir_type = GetDirType(parent_path);
+      return 0;
+    }
+  }
+  catch(const std::exception &e) {
+#ifdef DEBUG
+    printf("ClientController::GetDb - Problems with the db path.\n");
+#endif
   }
   if (dah->GetDirKey(parent_path, &dir_key)) {
 #ifdef DEBUG

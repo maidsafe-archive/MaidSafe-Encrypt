@@ -48,7 +48,7 @@ namespace fs = boost::filesystem;
 FileBrowser::FileBrowser(QWidget* parent) : QDialog(parent), init_(false) {
   ui_.setupUi(this);
   setWindowIcon(QPixmap(":/icons/64/64/maidsafe-triangle.png"));
-  this->setWindowFlags(Qt::WindowMinMaxButtonsHint);
+  this->setWindowFlags(Qt::WindowMinMaxButtonsHint | Qt::WindowCloseButtonHint);
   // theWatcher_ = new QFileSystemWatcher;
   ui_.driveTreeWidget->setAcceptDrops(true);
   ui_.driveTreeWidget->viewport()->installEventFilter(this);
@@ -643,15 +643,15 @@ int FileBrowser::drawDetailView() {
       // Folder
       QString qtPath = getFullFilePath(rootPath_ + currentDir_
                                 + QString::fromStdString(s));
-      if (!fs::exists(qtPath.toStdString())) {
-        try {
+      try {
+        if (!fs::exists(qtPath.toStdString())) {
           fs::create_directory(qtPath.toStdString());
-          qDebug() << "Create Directory :" <<
+          qDebug() << "FileBrowser::drawDetailView - Create Directory :" <<
               QString::fromStdString(qtPath.toStdString());
         }
-        catch(const std::exception&) {
-          qDebug() << "Create Directory Failed";
-        }
+      }
+      catch(const std::exception&) {
+        qDebug() << "FileBrowser::drawDetailView - Create Directory Failed";
       }
       QIcon theIcon = icon->icon(QFileIconProvider::Folder);
       QString item = QString::fromStdString(s);
@@ -659,8 +659,9 @@ int FileBrowser::drawDetailView() {
       newItem->setIcon(0, theIcon);
       newItem->setText(0, item);
       newItem->setText(1, tr("Network"));
-      newItem->setText(2, tr("%1 KB").arg(
-          ceil(static_cast<double>(mdm.file_size_low())/1024)));
+      newItem->setText(2, tr("%1 KB")
+                          .arg(ceil(static_cast<double>(mdm.file_size_low()) /
+                                                        1024)));
       newItem->setText(3, tr("Directory"));
       // TODO(Team#): use date format from the user's locale
       newItem->setText(4, lastModified->toString("dd/MM/yyyy hh:mm"));
@@ -676,10 +677,18 @@ int FileBrowser::drawDetailView() {
       QTreeWidgetItem *newItem = new QTreeWidgetItem(ui_.driveTreeWidget);
       newItem->setIcon(0, theIcon);
       newItem->setText(0, item);
-      if (fs::exists(fullFilePath)) {
-        newItem->setText(1, tr("Local"));
-      } else {
-        newItem->setText(1, tr("Network"));
+      try {
+        if (fs::exists(fullFilePath)) {
+          newItem->setText(1, tr("Local"));
+        } else {
+          newItem->setText(1, tr("Network"));
+        }
+      }
+      catch(const std::exception &e) {
+#ifdef DEBUG
+        printf("FileBrowser::drawDetailView - Can't analyse path.\n");
+#endif
+        continue;
       }
       newItem->setText(2, tr("%1 KB").arg(
           ceil(static_cast<double>(mdm.file_size_low())/1024)));
@@ -773,10 +782,18 @@ int FileBrowser::drawIconView() {
       newItem->setText(item);
       QString tip;
       tip = tr("Name: %1").arg(item) + "<br>";
-      if (fs::exists(fullFilePath)) {
-        tip.append(tr("Status: Local") + "<br>");
-      } else {
-        tip.append(tr("Status: Network") + "<br>");
+      try {
+        if (fs::exists(fullFilePath)) {
+          tip.append(tr("Status: Local") + "<br>");
+        } else {
+          tip.append(tr("Status: Network") + "<br>");
+        }
+      }
+      catch(const std::exception &e) {
+#ifdef DEBUG
+        printf("FileBrowser::drawIconView - Can't analyse path.\n");
+#endif
+        continue;
       }
       tip.append(tr("Type: %1 File").arg(item.section('.', -1)));
       tip.append("<br>");
@@ -956,13 +973,19 @@ void FileBrowser::openFileFromDir(const QString path) {
 #elif defined(PD_POSIX)
       QString command;
       QStringList parameters;
-      if (!boost::filesystem::exists("/usr/bin/gnome-open")) {
-        if (!boost::filesystem::exists("/usr/bin/kde-open")) {
+      try {
+        if (!boost::filesystem::exists("/usr/bin/gnome-open")) {
+          if (!boost::filesystem::exists("/usr/bin/kde-open")) {
+          } else {
+            command = tr("/usr/bin/kde-open");
+          }
         } else {
-          command = tr("/usr/bin/kde-open");
+          command = tr("/usr/bin/gnome-open");
         }
-      } else {
-        command = tr("/usr/bin/gnome-open");
+      }
+      catch(const std::exception &e) {
+        qDebug() << "FileBrowser::openFileFromDir - "
+                 << "Couldn't find executing command";
       }
       if (!command.isEmpty()) {
         parameters << QString::fromStdString(path.toStdString());
@@ -1063,16 +1086,16 @@ void FileBrowser::onSaveFileCompleted(int success, const QString& filepath) {
 
     std::string fullFilePath(rootPath_.toStdString() + filepath.toStdString());
 
-    if (fs::exists(fullFilePath)) {
-      try {
+    try {
+      if (fs::exists(fullFilePath)) {
         fs::remove(fullFilePath);
         qDebug() << "Remove File Success:"
                  << QString::fromStdString(fullFilePath);
       }
-      catch(const std::exception&) {
+    }
+    catch(const std::exception&) {
         qDebug() << "Remove File failure:"
                  << QString::fromStdString(fullFilePath);
-      }
     }
 
     std::string file(filepath.toStdString());
@@ -1122,11 +1145,18 @@ void FileBrowser::uploadFileFromLocal(const QString& filePath) {
                                             Qt::MatchExactly, 0);
 
   if (widgetList.isEmpty()) {
-    fs::copy_file(filePath.toStdString(), fullFilePath);
-    if (fs::exists(fullFilePath)) {
-      saveFileToNetwork(uploadFilePath);
-    } else {
-      qDebug() << "CopyFile Failed";
+    try {
+      fs::copy_file(filePath.toStdString(), fullFilePath);
+      if (fs::exists(fullFilePath)) {
+        saveFileToNetwork(uploadFilePath);
+      } else {
+        qDebug() << "CopyFile Failed";
+      }
+    }
+    catch(const std::exception &e) {
+#ifdef DEBUG
+      printf("FileBrowser::uploadFileFromLocal - Failed to copy file\n");
+#endif
     }
   } else {
     QMessageBox msgBox;
@@ -1272,7 +1302,7 @@ void FileBrowser::onItemExpanded(QTreeWidgetItem* item) {
          break;
        }
        children1.erase(children1.begin());
-      }    
+      }
       ui_.driveTreeWidget->insertTopLevelItem(rowCount, newItem);
     }
     children.erase(children.begin());
@@ -1369,11 +1399,18 @@ QString FileBrowser::getCurrentTreePath(QTreeWidgetItem* item) {
 
 QIcon FileBrowser::getAssociatedIconFromPath(const QString& fullFilePath) {
   QString qtPath = getFullFilePath(fullFilePath);
-  if (fs::exists(qtPath.toStdString())) {
-    QFileInfo fileInfo(qtPath);
-    QFileIconProvider fileIconProvider;
-    QIcon appIcon = fileIconProvider.icon(fileInfo);
-    return appIcon;
+  try {
+    if (fs::exists(qtPath.toStdString())) {
+      QFileInfo fileInfo(qtPath);
+      QFileIconProvider fileIconProvider;
+      QIcon appIcon = fileIconProvider.icon(fileInfo);
+      return appIcon;
+    }
+  }
+  catch(const std::exception &e) {
+#ifdef DEBUG
+    printf("FileBrowser::getAssociatedIconFromPath - Failed to asses path\n");
+#endif
   }
 
   if (!fs::exists(qtPath.toStdString())) {
