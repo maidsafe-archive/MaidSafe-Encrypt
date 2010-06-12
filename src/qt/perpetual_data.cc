@@ -85,18 +85,18 @@ PerpetualData::PerpetualData(QWidget* parent)
 
   login_->StartProgressBar();
 
-  //qtTranslator = new QTranslator;
-  //myAppTranslator = new QTranslator;
-  //QString locale = QLocale::system().name().left(2);
-  //qtTranslator->load("qt_" + locale,
-  //          QLibraryInfo::location(QLibraryInfo::TranslationsPath));
-  //qApp->installTranslator(qtTranslator);
+  qtTranslator = new QTranslator;
+  myAppTranslator = new QTranslator;
+  QString locale = QLocale::system().name().left(2);
+  qtTranslator->load("qt_" + locale,
+            QLibraryInfo::location(QLibraryInfo::TranslationsPath));
+  qApp->installTranslator(qtTranslator);
 
-  //bool res = myAppTranslator->load(":/translations/pd_translation_" + locale);
-  //if (res) {
-  //  qApp->installTranslator(myAppTranslator);
-  //  ui_.retranslateUi(this);
-  //}
+  bool res = myAppTranslator->load(":/translations/pd_translation_" + locale);
+  if (res) {
+    qApp->installTranslator(myAppTranslator);
+    ui_.retranslateUi(this);
+  }
 }
 
 void PerpetualData::onJoinKademliaCompleted(bool b) {
