@@ -36,7 +36,7 @@
 
 namespace maidsafe {
 
-const boost::int16_t kMaxCryptoThreadCount = 10;
+const boost::int8_t kMaxCryptoThreadCount = 10;
 
 class CryptoKeyPairs : public boost::noncopyable {
  public:
