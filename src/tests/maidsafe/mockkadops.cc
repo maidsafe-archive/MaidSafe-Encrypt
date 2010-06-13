@@ -55,11 +55,11 @@ std::string MakeFindNodesResponse(const FindNodesResponseType &type,
   }
   find_response.SerializeToString(&ser_node);
   return ser_node;
-};
+}
 
 void RunCallback(const std::string &find_nodes_response,
                  const kad::VoidFunctorOneString &callback) {
   callback(find_nodes_response);
-};
+}
 
 }  // namespace mock_kadops

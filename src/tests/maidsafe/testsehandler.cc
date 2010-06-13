@@ -61,7 +61,7 @@ std::string CreateRandomFile(const std::string &filename,
   ofs << file_content;
   ofs.close();
   return file_path.string();
-};
+}
 
 }  // namespace test_seh
 

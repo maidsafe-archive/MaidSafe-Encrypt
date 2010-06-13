@@ -97,7 +97,7 @@ void PacketOpCallback(const int &store_manager_result,
   boost::mutex::scoped_lock lock(*mutex);
   *op_result = store_manager_result;
   cond_var->notify_one();
-};
+}
 
 
 ClientController *ClientController::single = 0;

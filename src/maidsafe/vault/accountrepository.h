@@ -46,7 +46,7 @@ namespace maidsafe_vault {
 inline void PutAlertToPb(const std::string &alert,
                          VaultAccountSet::VaultAccount *vault_account) {
   vault_account->add_alerts(alert);
-};
+}
 
 struct Account {
   Account(std::string pmid,
