@@ -34,6 +34,7 @@
 
 #include "fs/filesystem.h"
 #include "maidsafe/client/cryptokeypairs.h"
+#include "protobuf/packet.pb.h"
 
 namespace fs = boost::filesystem;
 

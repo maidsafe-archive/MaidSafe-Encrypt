@@ -46,7 +46,7 @@
 #include "protobuf/maidsafe_messages.pb.h"
 #include "protobuf/maidsafe_service_messages.pb.h"
 #include "protobuf/packet.pb.h"
-#ifdef LOCAL_PDVAULT
+#if defined LOCAL_PDVAULT && !defined MS_NETWORK_TEST
   #include "maidsafe/client/localstoremanager.h"
 #else
   #include "maidsafe/client/maidstoremanager.h"
@@ -54,24 +54,40 @@
 
 namespace maidsafe {
 
-CC_CallbackResult::CC_CallbackResult() : result() {}
-
-void CC_CallbackResult::Reset() {
-  result = "";
+void CCCallback::StringCallback(const std::string &result) {
+  boost::mutex::scoped_lock lock(mutex_);
+  result_ = result;
+  cv_.notify_one();
 }
 
-void CC_CallbackResult::CallbackFunc(const std::string &res) {
-  result = res;
+void CCCallback::ReturnCodeCallback(const ReturnCode &return_code) {
+  boost::mutex::scoped_lock lock(mutex_);
+  return_code_ = return_code;
+  cv_.notify_one();
 }
 
-void ClientController::WaitForResult(const CC_CallbackResult &cb) {
-  while (true) {
-    {
-      if (cb.result != "")
-        return;
-    }
-    boost::this_thread::sleep(boost::posix_time::milliseconds(100));
+std::string CCCallback::WaitForStringResult() {
+  std::string result;
+  {
+    boost::mutex::scoped_lock lock(mutex_);
+    while (result_.empty())
+      cv_.wait(lock);
+    result = result_;
+    result_.clear();
   }
+  return result;
+}
+
+ReturnCode CCCallback::WaitForReturnCodeResult() {
+  ReturnCode result;
+  {
+    boost::mutex::scoped_lock lock(mutex_);
+    while (return_code_ == kPendingResult)
+      cv_.wait(lock);
+    result = return_code_;
+    return_code_ = kPendingResult;
+  }
+  return result;
 }
 
 void PacketOpCallback(const int &store_manager_result,
@@ -161,8 +177,8 @@ int ClientController::Init() {
 #endif
     return -5;
   }
-#ifdef LOCAL_PDVAULT
-  sm_.reset(new LocalStoreManager(client_chunkstore_));
+#if defined LOCAL_PDVAULT
+  sm_.reset(new LocalStoreManager(client_chunkstore_, ""));
 #else
   sm_.reset(new MaidsafeStoreManager(client_chunkstore_));
 #endif
@@ -240,15 +256,9 @@ int ClientController::Init() {
 }
 */
 bool ClientController::JoinKademlia() {
-  CC_CallbackResult cb;
-  sm_->Init(0, boost::bind(&CC_CallbackResult::CallbackFunc, &cb, _1), "");
-  WaitForResult(cb);
-  GenericResponse result;
-  if ((!result.ParseFromString(cb.result)) ||
-      (result.result() == kNack))
-    return false;
-  else
-    return true;
+  CCCallback cb;
+  sm_->Init(boost::bind(&CCCallback::ReturnCodeCallback, &cb, _1), 0);
+  return (cb.WaitForReturnCodeResult() == kSuccess);
 }
 
 int ClientController::ParseDa() {
@@ -739,13 +749,10 @@ void ClientController::CloseConnection(bool clean_up_transport) {
 #endif
     return;
   }
-  CC_CallbackResult cb;
+  CCCallback cb;
   sm_->StopRvPing();
-  sm_->Close(boost::bind(&CC_CallbackResult::CallbackFunc, &cb, _1), true);
-  WaitForResult(cb);
-  GenericResponse result;
-  if ((!result.ParseFromString(cb.result)) ||
-      (result.result() == kNack)) {
+  sm_->Close(boost::bind(&CCCallback::ReturnCodeCallback, &cb, _1), true);
+  if (cb.WaitForReturnCodeResult() != kSuccess) {
 #ifdef DEBUG
     printf("ClientController::CloseConnection - Error leaving network.\n");
 #endif
@@ -966,15 +973,14 @@ bool ClientController::CreatePublicUsername(const std::string &pub_username) {
 int ClientController::ChangeConnectionStatus(int status) {
   if (ss_->ConnectionStatus() == status)
     return -3;
-  CC_CallbackResult cb;
+  CCCallback cb;
   cbph_->ChangeStatus(status,
-                      boost::bind(&CC_CallbackResult::CallbackFunc, &cb, _1),
+                      boost::bind(&CCCallback::StringCallback, &cb, _1),
                       MPID);
-  WaitForResult(cb);
   UpdateResponse change_connection_status;
-  if (!change_connection_status.ParseFromString(cb.result))
+  if (!change_connection_status.ParseFromString(cb.WaitForStringResult()))
     return -1;
-  if (change_connection_status.result() == kNack)
+  if (change_connection_status.result() != kAck)
     return -2;
 
   return 0;
@@ -1972,16 +1978,14 @@ int ClientController::CreateNewShare(const std::string &name,
 #endif
     return -30008;
   }
-  CC_CallbackResult cbr;
-  auth_.CreateMSIDPacket(boost::bind(&CC_CallbackResult::CallbackFunc,
-                          &cbr, _1));
-  WaitForResult(cbr);
+  CCCallback cb;
+  auth_.CreateMSIDPacket(boost::bind(&CCCallback::StringCallback, &cb, _1));
   CreateMSIDResult cmsidr;
-  if (!cmsidr.ParseFromString(cbr.result)) {
+  if (!cmsidr.ParseFromString(cb.WaitForStringResult())) {
     printf("Result doesn't parse.\n");
     return -30001;
   }
-  if (cmsidr.result() == kNack) {
+  if (cmsidr.result() != kAck) {
     printf("The creation of the MSID failed.\n");
     return -30002;
   }
@@ -2128,11 +2132,11 @@ bool ClientController::PollVaultInfo(std::string *chunkstore,
     }
   }
 
-  CC_CallbackResult cb;
-  sm_->PollVaultInfo(boost::bind(&CC_CallbackResult::CallbackFunc, &cb, _1));
-  WaitForResult(cb);
+  CCCallback cb;
+  sm_->PollVaultInfo(boost::bind(&CCCallback::StringCallback, &cb, _1));
+  std::string callback_result = cb.WaitForStringResult();
 
-  if (cb.result == "FAIL") {
+  if (callback_result == "FAIL") {
 #ifdef DEBUG
     printf("ClientController::PollVaultInfo result FAIL.\n");
 #endif
@@ -2140,7 +2144,7 @@ bool ClientController::PollVaultInfo(std::string *chunkstore,
   }
 
   VaultCommunication vc;
-  if (!vc.ParseFromString(cb.result)) {
+  if (!vc.ParseFromString(callback_result)) {
 #ifdef DEBUG
     printf("ClientController::PollVaultInfo didn't parse.\n");
 #endif
@@ -2176,13 +2180,11 @@ bool ClientController::VaultContactInfo() {
   return true;
 #endif
 
-  CC_CallbackResult cbr;
-  sm_->VaultContactInfo(boost::bind(&CC_CallbackResult::CallbackFunc,
-                        &cbr, _1));
-  WaitForResult(cbr);
+  CCCallback cb;
+  sm_->VaultContactInfo(boost::bind(&CCCallback::StringCallback, &cb, _1));
 
   kad::FindNodeResult fnr;
-  if (!fnr.ParseFromString(cbr.result) ||
+  if (!fnr.ParseFromString(cb.WaitForStringResult()) ||
       fnr.result() != kad::kRpcResultSuccess) {
 #ifdef DEBUG
     printf("ClientController::VaultContactInfo: failed result.\n");

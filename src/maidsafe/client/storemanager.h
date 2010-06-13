@@ -42,13 +42,6 @@
 
 namespace maidsafe {
 
-enum IfPacketExists {
-  kDoNothingReturnFailure,
-  kDoNothingReturnSuccess,
-  kOverwrite,
-  kAppend
-};
-
 typedef boost::function<void(const OwnLocalVaultResult&, const std::string&)>
     SetLocalVaultOwnedFunctor;
 
@@ -67,10 +60,8 @@ typedef boost::function<void(const std::string&, const int&)> IMStatusNotifier;
 class StoreManagerInterface {
  public:
   virtual ~StoreManagerInterface() {}
-  virtual void Init(int port,
-                    kad::VoidFunctorOneString cb,
-                    boost::filesystem::path db_directory)=0;
-  virtual void Close(kad::VoidFunctorOneString cb, bool cancel_pending_ops)=0;
+  virtual void Init(VoidFuncOneInt callback, const boost::uint16_t &port)=0;
+  virtual void Close(VoidFuncOneInt callback, bool cancel_pending_ops)=0;
   virtual void CleanUpTransport()=0;
   virtual void StopRvPing()=0;
   virtual bool NotDoneWithUploading()=0;
@@ -99,7 +90,6 @@ class StoreManagerInterface {
                            PacketType system_packet_type,
                            DirType dir_type,
                            const std::string &msid,
-                           IfPacketExists if_packet_exists,
                            const VoidFuncOneInt &cb)=0;
   // Deletes all values for the specified key
   virtual void DeletePacket(const std::string &packet_name,

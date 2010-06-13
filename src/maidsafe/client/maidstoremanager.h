@@ -55,6 +55,9 @@
 // as friends of MaidsafeStoreManager.
 namespace maidsafe {
 class MaidsafeStoreManager;
+namespace test {
+class NetworkTest;
+}  // namespace test
 }  // namespace maidsafe
 
 namespace testpdvault {
@@ -226,10 +229,10 @@ class MaidsafeStoreManager : public StoreManagerInterface {
  public:
   explicit MaidsafeStoreManager(boost::shared_ptr<ChunkStore> cstore);
   MaidsafeStoreManager(boost::shared_ptr<ChunkStore> cstore,
-      SessionSingleton *ss);
+                       SessionSingleton *ss);
   virtual ~MaidsafeStoreManager() {}
-  void Init(int port, kad::VoidFunctorOneString cb, fs::path db_directory);
-  void Close(kad::VoidFunctorOneString cb, bool cancel_pending_ops);
+  void Init(VoidFuncOneInt callback, const boost::uint16_t &port);
+  void Close(VoidFuncOneInt callback, bool cancel_pending_ops);
   void CleanUpTransport();
   void StopRvPing() { transport_handler_.StopPingRendezvous(); }
   bool KeyUnique(const std::string &key, bool check_local);
@@ -249,7 +252,6 @@ class MaidsafeStoreManager : public StoreManagerInterface {
                    PacketType system_packet_type,
                    DirType dir_type,
                    const std::string &msid,
-                   IfPacketExists if_packet_exists,
                    const VoidFuncOneInt &cb);
   int LoadChunk(const std::string &chunk_name, std::string *data);
   // Blocking call which loads all values stored under the packet name
@@ -363,6 +365,7 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   friend class maidsafe_vault::PDVaultTest;
   friend class maidsafe_vault::PDVaultTest_FUNC_MAID_StoreAndGetChunks_Test;
   friend class maidsafe_vault::RunPDVaults;
+  friend class maidsafe::test::NetworkTest;
   // Check the inputs to the public methods are valid
   ReturnCode ValidateInputs(const std::string &name,
                             const PacketType &packet_type,
@@ -502,16 +505,10 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   // Callback for non-blocking version of KeyUnique
   void KeyUniqueCallback(const std::string &ser_response,
                          const VoidFuncOneInt &cb);
-  // Assess prior existence of packet on net and handle storing if required.
-  virtual void SendPacketPrep(boost::shared_ptr<StoreData> store_data);
   // Store an individual packet to the network as a kademlia value.
   virtual void SendPacket(boost::shared_ptr<StoreData> store_data);
   void SendPacketCallback(const std::string &ser_kad_store_result,
                           boost::shared_ptr<StoreData> store_data);
-  void OverwritePacket(boost::shared_ptr<StoreData> store_data,
-                       const std::vector<std::string> &values);
-  void OverwritePacketStageTwo(boost::shared_ptr<StoreData> store_data,
-                               const ReturnCode &delete_result);
   virtual void DeletePacketFromNet(
       boost::shared_ptr<DeletePacketData> delete_data);
   void DeletePacketCallback(const std::string &ser_kad_delete_result,
@@ -558,8 +555,6 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   transport::TransportUDT udt_transport_;
   transport::TransportHandler transport_handler_;
   rpcprotocol::ChannelManager channel_manager_;
-  std::string kad_config_location_;
-  boost::shared_ptr<kad::KNode> knode_;
   boost::shared_ptr<ClientRpcs> client_rpcs_;
   boost::shared_ptr<KadOps> kad_ops_;
   SessionSingleton *ss_;
@@ -571,7 +566,6 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   ClientBufferPacketHandler cbph_;
   static int kChunkMaxThreadCount_;
   static int kPacketMaxThreadCount_;
-  boost::int16_t trans_id_;
   IMNotifier im_notifier_;
   IMStatusNotifier im_status_notifier_;
   IMConnectionHandler im_conn_hdler_;

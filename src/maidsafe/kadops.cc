@@ -19,34 +19,132 @@
 */
 
 #include "maidsafe/kadops.h"
+
 #include <maidsafe/protobuf/kademlia_service_messages.pb.h>
+#include <maidsafe/protobuf/signed_kadvalue.pb.h>
+
+#include <algorithm>
+
+#include "fs/filesystem.h"
+#include "maidsafe/chunkstore.h"
+#include "protobuf/packet.pb.h"
 
 namespace maidsafe {
 
-KadOps::KadOps(const boost::shared_ptr<kad::KNode> &knode) : knode_(knode) {}
+KadOps::KadOps(transport::TransportHandler *transport_handler,
+               rpcprotocol::ChannelManager *channel_manager,
+               kad::NodeType type,
+               const std::string &private_key,
+               const std::string &public_key,
+               bool port_forwarded,
+               bool use_upnp,
+               boost::shared_ptr<ChunkStore> chunkstore)
+    : knode_(channel_manager, transport_handler, type, private_key,
+             public_key, port_forwarded, use_upnp),
+      node_type_(type),
+      default_time_to_live_(31556926) {
+  knode_.set_alternative_store(chunkstore.get());
+}
+
+void KadOps::Init(const boost::filesystem::path &kad_config,
+                  bool first_node,
+                  const std::string &pmid,
+                  const boost::uint16_t &port,
+                  boost::mutex *mutex,
+                  boost::condition_variable *cond_var,
+                  ReturnCode *result) {
+  // If kad config file exists in dir we're in, use that.  If not, try
+  // kad_config, otherwise get default path to file.
+  boost::filesystem::path kad_config_path(".kadconfig");
+  try {
+    if (!boost::filesystem::exists(kad_config_path)) {
+      if (boost::filesystem::exists(kad_config)) {
+        kad_config_path = kad_config;
+      } else {
+        kad_config_path = (file_system::ApplicationDataDir() / ".kadconfig");
+      }
+    }
+    if (!first_node && !boost::filesystem::exists(kad_config_path)) {
+#ifdef DEBUG
+      printf("In KadOps::Init, can't find kadconfig at %s - Failed to start "
+             "knode.\n", kad_config_path.string().c_str());
+#endif
+    }
+  }
+  catch(const std::exception &ex) {
+#ifdef DEBUG
+    printf("In KadOps::Init - %s\n", ex.what());
+#endif
+    boost::mutex::scoped_lock lock(*mutex);
+    *result = kKadConfigException;
+    cond_var->notify_one();
+    return;
+  }
+  if (node_type_ == kad::CLIENT) {
+    knode_.Join(kad_config_path.string(), boost::bind(&KadOps::InitCallback,
+        this, _1, mutex, cond_var, result));
+  } else {
+    if (first_node) {
+      boost::asio::ip::address local_ip;
+      base::GetLocalAddress(&local_ip);
+      knode_.Join(kad::KadId(pmid, false), kad_config_path.string(),
+          local_ip.to_string(), port, boost::bind(&KadOps::InitCallback, this,
+          _1, mutex, cond_var, result));
+    } else {
+      knode_.Join(kad::KadId(pmid, false), kad_config_path.string(),
+          boost::bind(&KadOps::InitCallback, this, _1, mutex, cond_var,
+          result));
+    }
+  }
+}
+
+void KadOps::InitCallback(const std::string &response,
+                          boost::mutex *mutex,
+                          boost::condition_variable *cond_var,
+                          ReturnCode *result) {
+  base::GeneralResponse kad_response;
+  boost::mutex::scoped_lock lock(*mutex);
+  if (!kad_response.ParseFromString(response) ||
+      kad_response.result() != kad::kRpcResultSuccess) {
+    *result = kKadOpsInitFailure;
+  } else {
+    *result = kSuccess;
+  }
+  cond_var->notify_one();
+}
 
 bool KadOps::AddressIsLocal(const kad::Contact &peer) {
-  return knode_->CheckContactLocalAddress(peer.node_id(), peer.local_ip(),
+  return knode_.CheckContactLocalAddress(peer.node_id(), peer.local_ip(),
       peer.local_port(), peer.host_ip()) == kad::LOCAL;
 }
 
 bool KadOps::AddressIsLocal(const kad::ContactInfo &peer) {
-  return knode_->CheckContactLocalAddress(kad::KadId(peer.node_id(), false),
+  return knode_.CheckContactLocalAddress(kad::KadId(peer.node_id(), false),
       peer.local_ip(), peer.local_port(), peer.ip()) == kad::LOCAL;
 }
 
-void KadOps::GetNodeContactDetails(const kad::KadId &node_id,
-                                   kad::VoidFunctorOneString cb,
-                                   const bool &local) {
-  knode_->GetNodeContactDetails(node_id, cb, local);
+void KadOps::GetNodeContactDetails(const std::string &node_id,
+                                   kad::VoidFunctorOneString callback,
+                                   bool local) {
+  kad::KadId kad_id;
+  if (!GetKadId(node_id, &kad_id)) {
+    callback(kad::kRpcResultFailure);
+    return;
+  }
+  knode_.GetNodeContactDetails(kad_id, callback, local);
 }
 
-void KadOps::FindKClosestNodes(const kad::KadId &kad_key,
-                               const kad::VoidFunctorOneString &callback) {
-  knode_->FindKClosestNodes(kad_key, callback);
+void KadOps::FindKClosestNodes(const std::string &key,
+                               kad::VoidFunctorOneString callback) {
+  kad::KadId kad_id;
+  if (!GetKadId(key, &kad_id)) {
+    callback(kad::kRpcResultFailure);
+    return;
+  }
+  knode_.FindKClosestNodes(kad_id, callback);
 }
 
-int KadOps::BlockingFindKClosestNodes(const kad::KadId &kad_key,
+int KadOps::BlockingFindKClosestNodes(const std::string &key,
                                       std::vector<kad::Contact> *contacts) {
   if (contacts == NULL) {
 #ifdef DEBUG
@@ -58,9 +156,8 @@ int KadOps::BlockingFindKClosestNodes(const kad::KadId &kad_key,
   boost::mutex mutex;
   boost::condition_variable cv;
   ReturnCode result(kFindNodesError);
-  FindKClosestNodes(kad_key, boost::bind(
-      &KadOps::HandleFindCloseNodesResponse, this, _1, kad_key, contacts,
-      &mutex, &cv, &result));
+  FindKClosestNodes(key, boost::bind(&KadOps::HandleFindCloseNodesResponse,
+                                     this, _1, contacts, &mutex, &cv, &result));
   boost::mutex::scoped_lock lock(mutex);
   while (result == kFindNodesError)
     cv.wait(lock);
@@ -69,7 +166,6 @@ int KadOps::BlockingFindKClosestNodes(const kad::KadId &kad_key,
 
 void KadOps::HandleFindCloseNodesResponse(
     const std::string &response,
-    const kad::KadId&,  //  &kad_key,
     std::vector<kad::Contact> *contacts,
     boost::mutex *mutex,
     boost::condition_variable *cv,
@@ -113,139 +209,140 @@ void KadOps::HandleFindCloseNodesResponse(
   cv->notify_one();
 }
 
-bool KadOps::ConfirmCloseNode(const kad::KadId & /* kad_key */,
+bool KadOps::ConfirmCloseNode(const std::string & /* key */,
                               const kad::Contact & /* contact */) {
   // TODO(Team#) implement estimator for ConfirmCloseNode
   return true;
 }
 
-bool KadOps::ConfirmCloseNodes(const kad::KadId &kad_key,
+bool KadOps::ConfirmCloseNodes(
+    const std::string &key,
     const std::vector<kad::Contact> &contacts) {
   std::vector<kad::Contact>::const_iterator it = contacts.begin();
-  while (it != contacts.end() && ConfirmCloseNode(kad_key, *it))
+  while (it != contacts.end() && ConfirmCloseNode(key, *it))
     ++it;
   return it == contacts.end();
 }
 
-void KadOps::FindValue(const kad::KadId &kad_key,
+void KadOps::StoreValue(const std::string &key,
+                        const kad::SignedValue &signed_value,
+                        const kad::SignedRequest &signed_request,
+                        kad::VoidFunctorOneString callback) {
+  kad::KadId kad_id;
+  if (!GetKadId(key, &kad_id)) {
+    callback(kad::kRpcResultFailure);
+    return;
+  }
+  knode_.StoreValue(kad_id, signed_value, signed_request, default_time_to_live_,
+                    callback);
+}
+
+void KadOps::DeleteValue(const std::string &key,
+                         const kad::SignedValue &signed_value,
+                         const kad::SignedRequest &signed_request,
+                         kad::VoidFunctorOneString callback){
+  kad::KadId kad_id;
+  if (!GetKadId(key, &kad_id)) {
+    callback(kad::kRpcResultFailure);
+    return;
+  }
+  knode_.DeleteValue(kad_id, signed_value, signed_request, callback);
+}
+
+void KadOps::UpdateValue(const std::string &key,
+                         const kad::SignedValue &old_value,
+                         const kad::SignedValue &new_value,
+                         const kad::SignedRequest &signed_request,
+                         kad::VoidFunctorOneString callback) {
+  kad::KadId kad_id;
+  if (!GetKadId(key, &kad_id)) {
+    callback(kad::kRpcResultFailure);
+    return;
+  }
+  knode_.UpdateValue(kad_id, old_value, new_value, signed_request,
+                     default_time_to_live_, callback);
+}
+
+void KadOps::FindValue(const std::string &key,
                        bool check_local,
-                       const kad::VoidFunctorOneString &cb) {
-  knode_->FindValue(kad_key, check_local, cb);
+                       kad::VoidFunctorOneString callback) {
+  kad::KadId kad_id;
+  if (!GetKadId(key, &kad_id)) {
+    callback(kad::kRpcResultFailure);
+    return;
+  }
+  knode_.FindValue(kad_id, check_local, callback);
 }
 
-int KadOps::FindValue(const kad::KadId &kad_key,
-                      bool check_local,
-                      kad::ContactInfo *cache_holder,
-                      std::vector<std::string> *values,
-                      std::string *needs_cache_copy_id) {
-  cache_holder->Clear();
-  values->clear();
-  // closest_nodes->clear();
-  needs_cache_copy_id->clear();
-
-  CallbackObj kad_cb_obj;
-  knode_->FindValue(kad_key, check_local,
-                    boost::bind(&CallbackObj::CallbackFunc, &kad_cb_obj, _1));
-  kad_cb_obj.WaitForCallback();
-
-  if (kad_cb_obj.result().empty()) {
-#ifdef DEBUG
-    printf("In KadOps::FindValue, fail - timeout.\n");
-#endif
-    return kFindValueError;
-  }
-
-  kad::FindResponse find_response;
-  if (!find_response.ParseFromString(kad_cb_obj.result())) {
-#ifdef DEBUG
-    printf("In KadOps::FindValue, can't parse result.\n");
-#endif
-    return kFindValueParseError;
-  }
-
-  /* for (int i = 0; i < find_response.closest_nodes_size(); ++i) {
-    kad::Contact contact;
-    contact.ParseFromString(find_response.closest_nodes(i));
-    closest_nodes->push_back(contact);
-    // printf("+-- node %s\n", HexSubstr(contact.node_id()).c_str());
-  } */
-
-  if (find_response.has_needs_cache_copy())
-    *needs_cache_copy_id = find_response.needs_cache_copy();
-
-  if (find_response.result() != kad::kRpcResultSuccess) {
-#ifdef DEBUG
-//    printf("In KadOps::FindValue, failed to find value for key %s"
-//           " (found %i nodes, %i values and %i signed vals)\n",
-//           HexSubstr(kad_key).c_str(), find_response.closest_nodes_size(),
-//           find_response.values_size(), find_response.signed_values_size());
-
-//    printf("Found alt val holder: %i\n",
-//           find_response.has_alternative_value_holder());
-#endif
-    return kFindValueFailure;
-  }
-
-  // If the response has an alternative_value, then the value is the ID of a
-  // peer which has a cached copy of the chunk.
-  if (find_response.result() == kad::kRpcResultSuccess &&
-      find_response.has_alternative_value_holder()) {
-    *cache_holder = find_response.alternative_value_holder();
-#ifdef DEBUG
-    printf("In KadOps::FindValue, node %s has cached the value.\n",
-           HexSubstr(cache_holder->node_id()).c_str());
-#endif
-    return kSuccess;
-  }
-
-  bool empty(true);
-  for (int i = 0; i < find_response.signed_values_size(); ++i) {
-    if (!find_response.signed_values(i).value().empty()) {
-      empty = false;
-      values->push_back(find_response.signed_values(i).value());
-    }
-  }
-#ifdef DEBUG
-  printf("In KadOps::FindValue, %i values have returned.\n", values->size());
-#endif
-  return (empty) ? kFindValueFailure : kSuccess;
-}
-
-int KadOps::GetStorePeer(const double&,
+int KadOps::GetStorePeer(const double & /* ideal_rtt */,
                          const std::vector<kad::Contact> &exclude,
                          kad::Contact *new_peer,
                          bool *local) {
 // TODO(Fraser#5#): 2009-08-08 - Complete this so that rtt & rank is considered.
   std::vector<kad::Contact> result;
-  knode_->GetRandomContacts(1, exclude, &result);
-  if (result.size() == size_t(0))
+  knode_.GetRandomContacts(1, exclude, &result);
+  if (result.empty())
     return kGetStorePeerError;
   *new_peer = result.at(0);
   *local = AddressIsLocal(*new_peer);
   return kSuccess;
 }
 
-bool ContactWithinClosest(const kad::KadId &key,
+void KadOps::SetThisEndpoint(EndPoint *this_endpoint) {
+  this_endpoint->add_ip(knode_.host_ip());
+  this_endpoint->add_ip(knode_.local_host_ip());
+  this_endpoint->add_ip(knode_.rendezvous_ip());
+  this_endpoint->add_port(knode_.host_port());
+  this_endpoint->add_port(knode_.local_host_port());
+  this_endpoint->add_port(knode_.rendezvous_port());
+}
+
+bool KadOps::GetKadId(const std::string &key, kad::KadId *kad_id) {
+  try {
+    *kad_id = kad::KadId(key, false);
+  }
+  catch(const std::exception&) {
+    *kad_id = kad::KadId();
+    return false;
+  }
+  return true;
+}
+
+bool ContactWithinClosest(
+    const std::string &key,
     const kad::Contact &new_contact,
     const std::vector<kad::Contact> &closest_contacts) {
-  kad::KadId dist(new_contact.node_id() ^ key);
-  for (size_t i = 0; i < closest_contacts.size(); ++i) {
-    if (dist < (closest_contacts[i].node_id() ^ key))
+  kad::KadId kad_id;
+  try {
+    kad_id = kad::KadId(key, false);
+  }
+  catch(const std::exception&) {
+    return false;
+  }
+  kad::KadId dist(new_contact.node_id() ^ kad_id);
+  std::vector<kad::Contact>::const_reverse_iterator rit =
+      closest_contacts.rbegin();
+  while (rit != closest_contacts.rend()) {
+    if (dist < ((*rit).node_id() ^ kad_id))
       return true;
+    else
+      ++rit;
   }
   return false;
 }
 
-bool RemoveKadContact(const kad::KadId &id,
+bool RemoveKadContact(const std::string &key,
                       std::vector<kad::Contact> *contacts) {
   // TODO(Team#) move to DHT
-  for (size_t i = 0; i < contacts->size(); ++i) {
-    if (contacts->at(i).node_id() == id) {
-      contacts->erase(contacts->begin() + i);
-      return true;
-    }
+  kad::Contact contact(key, "127.0.0.1", 1);
+  std::vector<kad::Contact>::iterator it = std::find_if(contacts->begin(),
+      contacts->end(), boost::bind(&kad::Contact::Equals, &contact, _1));
+  if (it != contacts->end()) {
+    contacts->erase(it);
+    return true;
+  } else {
+    return false;
   }
-  return false;
 }
 
 }  // namespace maidsafe

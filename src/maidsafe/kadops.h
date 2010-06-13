@@ -21,6 +21,7 @@
 #ifndef MAIDSAFE_KADOPS_H_
 #define MAIDSAFE_KADOPS_H_
 
+#include <boost/filesystem.hpp>
 #include <boost/thread/condition_variable.hpp>
 #include <boost/thread/locks.hpp>
 #include <maidsafe/maidsafe-dht_config.h>
@@ -30,54 +31,49 @@
 
 #include "maidsafe/maidsafe.h"
 
+namespace transport {
+class TransportHandler;
+}  // namespace transport
+
+namespace rpcprotocol {
+class ChannelManager;
+}  // namespace rpcprotocol
+
+namespace kad {
+class SignedValue;
+class SignedRequest;
+}  // namespace kad
+
+class TestClientBP;
+
 namespace maidsafe {
 
-class CallbackObj {
- public:
-  CallbackObj() : mutex_(), called_(false), result_() {}
-  ~CallbackObj() {}
-  void CallbackFunc(const std::string &result) {
-    boost::mutex::scoped_lock lock(mutex_);
-    result_ = result;
-    called_ = true;
-  }
-  std::string result() {
-//    printf("Callback obj result() - afore lock\n");
-    boost::mutex::scoped_lock lock(mutex_);
-//    printf("Callback obj result() - after lock\n");
-    return called_ ? result_ : "";
-  }
-  bool called() {
-    boost::mutex::scoped_lock lock(mutex_);
-    return called_;
-  }
-  //  Block until callback happens or timeout (milliseconds) passes.
-  void WaitForCallback(const int &timeout) {
-    int count = 0;
-    while (!called() && count < timeout) {
-      count += 10;
-      boost::this_thread::sleep(boost::posix_time::milliseconds(10));
-    }
-  }
-  //  Block until callback happens.
-  void WaitForCallback() {
-//    printf("Callback obj WaitForCallback() - start\n");
-    while (!called()) {
-//      printf("Callback obj WaitForCallback() - afore sleep\n");
-      boost::this_thread::sleep(boost::posix_time::milliseconds(10));
-//      printf("Callback obj WaitForCallback() - after slepp\n");
-    }
-  }
- private:
-  boost::mutex mutex_;
-  bool called_;
-  std::string result_;
-};
+namespace test {
+class CBPHandlerTest;
+}  // namespace test
+
+class ChunkStore;
+class EndPoint;
 
 class KadOps {
  public:
-  explicit KadOps(const boost::shared_ptr<kad::KNode> &knode);
+  KadOps(transport::TransportHandler *transport_handler,
+         rpcprotocol::ChannelManager *channel_manager,
+         kad::NodeType type,
+         const std::string &private_key,
+         const std::string &public_key,
+         bool port_forwarded,
+         bool use_upnp,
+         boost::shared_ptr<ChunkStore> chunkstore);
   virtual ~KadOps() {}
+  void Init(const boost::filesystem::path &kad_config,
+            bool first_node,
+            const std::string &pmid,
+            const boost::uint16_t &port,
+            boost::mutex *mutex,
+            boost::condition_variable *cond_var,
+            ReturnCode *result);
+  void Leave() { knode_.Leave(); }
   /**
    * Returns true if the peer is on the local network.
    */
@@ -89,24 +85,23 @@ class KadOps {
   /**
    * Wrapper for the non-blocking Kademlia function.
    */
-  virtual void GetNodeContactDetails(const kad::KadId &node_id,
-                                     kad::VoidFunctorOneString cb,
-                                     const bool &local);
+  virtual void GetNodeContactDetails(const std::string &node_id,
+                                     kad::VoidFunctorOneString callback,
+                                     bool local);
   /**
    * Wrapper for the non-blocking Kademlia function.
    */
-  virtual void FindKClosestNodes(const kad::KadId &kad_key,
-                                 const kad::VoidFunctorOneString &callback);
+  virtual void FindKClosestNodes(const std::string &key,
+                                 kad::VoidFunctorOneString callback);
   /**
    * Blocking call to Kademlia's FindKClosestNodes.
    */
-  int BlockingFindKClosestNodes(const kad::KadId &kad_key,
+  int BlockingFindKClosestNodes(const std::string &key,
                                 std::vector<kad::Contact> *contacts);
   /**
    * A callback handler for passing to FindKClosestNodes.
    */
   void HandleFindCloseNodesResponse(const std::string &response,
-                                    const kad::KadId &kad_key,
                                     std::vector<kad::Contact> *contacts,
                                     boost::mutex *mutex,
                                     boost::condition_variable *cv,
@@ -114,32 +109,41 @@ class KadOps {
   /**
    * Estimates whether a given node is within the K closest to a key.
    */
-  virtual bool ConfirmCloseNode(const kad::KadId &kad_key,
+  virtual bool ConfirmCloseNode(const std::string &key,
                                 const kad::Contact &contact);
   /**
    * Estimates whether a given set of nodes is within the K closest to a key.
    */
-  bool ConfirmCloseNodes(const kad::KadId &kad_key,
+  bool ConfirmCloseNodes(const std::string &key,
                          const std::vector<kad::Contact> &contacts);
   /**
-   * Blocking call to Kademlia Find Value.  If the maidsafe value is cached,
-   * this may yield serialised contact details for a cache copy holder.
-   * Otherwise it should yield the values.  It also yields the details of the
-   * closest nodes and the last kad node to not return the value during the
-   * lookup.  If check_local is true, it also checks the local chunkstore first.
-   * The values are loaded in reverse order.
-   */
-  virtual int FindValue(const kad::KadId &kad_key,
-                        bool check_local,
-                        kad::ContactInfo *cache_holder,
-                        std::vector<std::string> *values,
-                        std::string *needs_cache_copy_id);
+  * Stores a <key,signed_value> in the network.
+  */
+  void StoreValue(const std::string &key,
+                  const kad::SignedValue &signed_value,
+                  const kad::SignedRequest &signed_request,
+                  kad::VoidFunctorOneString callback);
+  /**
+  * Deletes a <key,signed_value> from the network.
+  */
+  void DeleteValue(const std::string &key,
+                   const kad::SignedValue &signed_value,
+                   const kad::SignedRequest &signed_request,
+                   kad::VoidFunctorOneString callback);
+  /**
+  * Updates (overwrites) a <key,signed_value> from the network.
+  */
+  void UpdateValue(const std::string &key,
+                   const kad::SignedValue &old_value,
+                   const kad::SignedValue &new_value,
+                   const kad::SignedRequest &signed_request,
+                   kad::VoidFunctorOneString callback);
   /**
    * Simple wrapper for the Kademlia function.
    */
-  virtual void FindValue(const kad::KadId &kad_key,
+  virtual void FindValue(const std::string &key,
                          bool check_local,
-                         const kad::VoidFunctorOneString &cb);
+                         kad::VoidFunctorOneString callback);
   /**
    * Get a new contact from the routing table to try and store a chunk on.  The
    * closest to the ideal_rtt will be chosen from those not in the vector to
@@ -150,10 +154,38 @@ class KadOps {
                            const std::vector<kad::Contact> &exclude,
                            kad::Contact *new_peer,
                            bool *local);
+  /**
+  * Notifier that is passed to the transport object for the case where the
+  * node's randezvous server goes down.
+  * @param dead_server notification of status of the rendezvous server: True
+  * server is up, False server is down
+  */
+  void HandleDeadRendezvousServer(bool dead_server) {
+    knode_.HandleDeadRendezvousServer(dead_server);
+  }
+  void SetThisEndpoint(EndPoint *this_endpoint);
+  void set_transport_id(const boost::int16_t &transport_id) {
+    knode_.set_transport_id(transport_id);
+  }
+  void set_signature_validator(base::SignatureValidator *validator) {
+    knode_.set_signature_validator(validator);
+  }
+  boost::uint16_t Port() const { return knode_.host_port(); }
+  kad::ContactInfo contact_info() const { return knode_.contact_info(); }
+  friend class TestClientBP;
+  friend class test::CBPHandlerTest;
+
  private:
   KadOps(const KadOps&);
   KadOps& operator=(const KadOps&);
-  boost::shared_ptr<kad::KNode> knode_;
+  bool GetKadId(const std::string &key, kad::KadId *kad_id);
+  void InitCallback(const std::string &response,
+                    boost::mutex *mutex,
+                    boost::condition_variable *cond_var,
+                    ReturnCode *result);
+  kad::KNode knode_;
+  kad::NodeType node_type_;
+  boost::int32_t default_time_to_live_;
 };
 
 /**
@@ -164,7 +196,8 @@ class KadOps {
  * @param closest_contacts a vector of contacts to compare new_contact to
  * @return true if new_contact is closer to key than one of closest_contacts
  */
-bool ContactWithinClosest(const kad::KadId &key,
+bool ContactWithinClosest(
+    const std::string &key,
     const kad::Contact &new_contact,
     const std::vector<kad::Contact> &closest_contacts);
 
@@ -174,7 +207,7 @@ bool ContactWithinClosest(const kad::KadId &key,
  * @param contacts pointer to a contact vector to remove the contact from
  * @return true if contact found and removed, otherwise false
  */
-bool RemoveKadContact(const kad::KadId &id,
+bool RemoveKadContact(const std::string &key,
                       std::vector<kad::Contact> *contacts);
 
 }  // namespace maidsafe

@@ -61,7 +61,7 @@ void AccountHoldersManager::UpdateGroup(AccountHolderGroupFunctor callback) {
   // TODO(Fraser#5#): 2010-05-12 - Implement better way of updating, e.g. send a
   //                  single request to a good account holder for his closest
   //                  contacts to account_name_;
-  kad_ops_->FindKClosestNodes(kad::KadId(account_name_, false), boost::bind(
+  kad_ops_->FindKClosestNodes(account_name_, boost::bind(
       &AccountHoldersManager::FindNodesCallback, this, _1, callback));
 }
 

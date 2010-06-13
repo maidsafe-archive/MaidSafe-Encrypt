@@ -120,9 +120,9 @@ bool VaultDaemon::TakeOwnership() {
     }
   }
   WriteToLog("Vault has been owned.\n");
-  WriteToLog("Vault ID:         " + base::EncodeToHex(pdvault_->node_id()));
-  WriteToLog("Vault IP & port:  " + pdvault_->host_ip()+":"+
-      base::IntToString(pdvault_->host_port()));
+  WriteToLog("Vault ID:         " + base::EncodeToHex(pdvault_->pmid()));
+//  WriteToLog("Vault IP & port:  " + pdvault_->host_ip()+":"+
+//      base::IntToString(pdvault_->host_port()));
   StopRegistrationService();
   return true;
 }
@@ -296,9 +296,9 @@ bool VaultDaemon::StartNotOwnedVault() {
   } else {
     WriteToLog("Vault started.  Waiting to be owned.\n");
   }
-  WriteToLog("Vault ID:         " + base::EncodeToHex(pdvault_->node_id()));
-  WriteToLog("Vault IP & port:  " + pdvault_->host_ip() + ":" +
-             base::IntToString(pdvault_->host_port()));
+  WriteToLog("Vault ID:         " + base::EncodeToHex(pdvault_->pmid()));
+//  WriteToLog("Vault IP & port:  " + pdvault_->host_ip() + ":" +
+//             base::IntToString(pdvault_->host_port()));
   WriteToLog("Config file will be written to " + config_file_.string());
   return true;
 }

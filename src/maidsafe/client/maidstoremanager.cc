@@ -29,7 +29,6 @@
 #include <maidsafe/protobuf/kademlia_service_messages.pb.h>
 #include <maidsafe/transport/transporthandler-api.h>
 
-#include "fs/filesystem.h"
 #include "maidsafe/bufferpacketrpc.h"
 #include "maidsafe/client/clientrpc.h"
 
@@ -46,29 +45,29 @@ namespace fs = boost::filesystem;
 namespace maidsafe {
 
 void AddToWatchListTask::run() {
-  printf("AddToWatchListTask start %s\n",
-         HexSubstr(store_data_.data_name).c_str());
+//  printf("AddToWatchListTask start %s\n",
+//         HexSubstr(store_data_.data_name).c_str());
   msm_->AddToWatchList(store_data_);
 }
 
 void SendChunkCopyTask::run() {
+#ifdef DEBUG
   printf("SendChunkCopyTask - chunk %s ENQUEUEDISED\n",
          HexSubstr(store_data_.data_name).c_str());
+#endif
   msm_->SendChunkPrep(store_data_);
-  printf("SendChunkCopyTask end %s\n",
-         HexSubstr(store_data_.data_name).c_str());
 }
 
 void StorePacketTask::run() {
-  msm_->SendPacketPrep(store_data_);
+  msm_->SendPacket(store_data_);
 }
 
 void DeleteChunkTask::run() {
+#ifdef DEBUG
   printf("DeleteChunkTask - chunk %s ENQUEUEDISED\n",
          HexSubstr(store_data_.data_name).c_str());
+#endif
   msm_->RemoveFromWatchList(store_data_);
-  printf("DeleteChunkTask end %s\n",
-         HexSubstr(store_data_.data_name).c_str());
 }
 
 void DeletePacketTask::run() {
@@ -86,11 +85,9 @@ MaidsafeStoreManager::MaidsafeStoreManager(boost::shared_ptr<ChunkStore> cstore)
     : udt_transport_(),
       transport_handler_(),
       channel_manager_(&transport_handler_),
-      kad_config_location_(".kadconfig"),
-      knode_(new kad::KNode(&channel_manager_, &transport_handler_, kad::CLIENT,
-             "", "", false, false)),
       client_rpcs_(new ClientRpcs(&transport_handler_, &channel_manager_)),
-      kad_ops_(new KadOps(knode_)),
+      kad_ops_(new KadOps(&transport_handler_, &channel_manager_, kad::CLIENT,
+                          "", "", false, false, cstore)),
       ss_(SessionSingleton::getInstance()),
       tasks_handler_(),
       client_chunkstore_(cstore),
@@ -98,29 +95,22 @@ MaidsafeStoreManager::MaidsafeStoreManager(boost::shared_ptr<ChunkStore> cstore)
       packet_thread_pool_(),
       store_packet_mutex_(),
       bprpcs_(new BufferPacketRpcsImpl(&transport_handler_, &channel_manager_)),
-      cbph_(bprpcs_, knode_),
-      trans_id_(0),
+      cbph_(bprpcs_, kad_ops_),
       im_notifier_(),
       im_status_notifier_(),
       im_conn_hdler_(),
       im_handler_(ss_),
       account_holders_manager_(kad_ops_),
-      account_status_manager_() {
-  transport_handler_.Register(&udt_transport_, &trans_id_);
-  knode_->set_transport_id(trans_id_);
-  knode_->set_alternative_store(client_chunkstore_.get());
-}
+      account_status_manager_() {}
 
 MaidsafeStoreManager::MaidsafeStoreManager(boost::shared_ptr<ChunkStore> cstore,
-    SessionSingleton *ss)
+                                           SessionSingleton *ss)
     : udt_transport_(),
       transport_handler_(),
       channel_manager_(&transport_handler_),
-      kad_config_location_(".kadconfig"),
-      knode_(new kad::KNode(&channel_manager_, &transport_handler_, kad::CLIENT,
-             "", "", false, false)),
       client_rpcs_(new ClientRpcs(&transport_handler_, &channel_manager_)),
-      kad_ops_(new KadOps(knode_)),
+      kad_ops_(new KadOps(&transport_handler_, &channel_manager_, kad::CLIENT,
+                          "", "", false, false, cstore)),
       ss_(ss),
       tasks_handler_(),
       client_chunkstore_(cstore),
@@ -128,94 +118,73 @@ MaidsafeStoreManager::MaidsafeStoreManager(boost::shared_ptr<ChunkStore> cstore,
       packet_thread_pool_(),
       store_packet_mutex_(),
       bprpcs_(new BufferPacketRpcsImpl(&transport_handler_, &channel_manager_)),
-      cbph_(bprpcs_, knode_),
-      trans_id_(0),
-      im_notifier_(), im_status_notifier_(), im_conn_hdler_(),
+      cbph_(bprpcs_, kad_ops_),
+      im_notifier_(),
+      im_status_notifier_(),
+      im_conn_hdler_(),
       im_handler_(ss_),
       account_holders_manager_(kad_ops_),
-      account_status_manager_() {
-  transport_handler_.Register(&udt_transport_, &trans_id_);
-  knode_->set_transport_id(trans_id_);
-  knode_->set_alternative_store(client_chunkstore_.get());
-}
+      account_status_manager_() {}
 
-void MaidsafeStoreManager::Init(int port, kad::VoidFunctorOneString cb,
-                                fs::path) {
-  // If kad config file exists in dir we're in, use that, otherwise get default
-  // path to file.
-  bool success(true);
-  try {
-    if (!fs::exists(kad_config_location_)) {
-      fs::path kad_conf_path(file_system::ApplicationDataDir() / ".kadconfig");
-      kad_config_location_ = kad_conf_path.string();
-    }
+void MaidsafeStoreManager::Init(VoidFuncOneInt callback,
+                                const boost::uint16_t &port) {
+  boost::int16_t transport_id;
+  transport_handler_.Register(&udt_transport_, &transport_id);
+  kad_ops_->set_transport_id(transport_id);
+  if (!channel_manager_.RegisterNotifiersToTransport()) {
+    callback(kStoreManagerInitError);
+    return;
   }
-  catch(const std::exception &ex) {
-#ifdef DEBUG
-    printf("In MSM::Init - Couldn't find kadconfig - %s\n", ex.what());
-#endif
-    success = false;
+  if (!transport_handler_.RegisterOnServerDown(boost::bind(
+          &KadOps::HandleDeadRendezvousServer, kad_ops_, _1))) {
+    callback(kStoreManagerInitError);
+    return;
   }
-#ifdef DEBUG
-//  printf("kadconfig_path: %s\n", kadconfig_str.c_str());
-#endif
-  if (success)
-    success = channel_manager_.RegisterNotifiersToTransport();
-  if (success)
-    success = transport_handler_.RegisterOnServerDown(boost::bind(
-        &kad::KNode::HandleDeadRendezvousServer, knode_.get(), _1));
-  if (success)
-    success = transport_handler_.RegisterOnMessage(boost::bind(
-        &IMConnectionHandler::OnMessageArrive, &im_conn_hdler_,
-        _1, _2, _3, _4));
-  if (success)
-    success = (transport_handler_.Start(port,
-               udt_transport_.transport_id()) == 0);
-  if (success)
-    success = (channel_manager_.Start() == 0);
-  if (success) {
-    if (kSuccess == im_conn_hdler_.Start(&transport_handler_,
-        boost::bind(&MaidsafeStoreManager::OnMessage, this, _1),
-        boost::bind(&MaidsafeStoreManager::OnNewConnection, this, _1, _2,
-                    _3))) {
-      success = true;
-    } else {
-      success = false;
-    }
+  if (!transport_handler_.RegisterOnMessage(boost::bind(
+          &IMConnectionHandler::OnMessageArrive, &im_conn_hdler_,
+          _1, _2, _3, _4))) {
+    callback(kStoreManagerInitError);
+    return;
+  }
+  if (transport_handler_.Start(port, udt_transport_.transport_id()) != 0) {
+    callback(kStoreManagerInitError);
+    return;
+  }
+  if (channel_manager_.Start() != 0) {
+    callback(kStoreManagerInitError);
+    return;
+  }
+  ReturnCode result = im_conn_hdler_.Start(&transport_handler_,
+      boost::bind(&MaidsafeStoreManager::OnMessage, this, _1),
+      boost::bind(&MaidsafeStoreManager::OnNewConnection, this, _1, _2, _3));
+  if (result != kSuccess) {
+    callback(result);
+    return;
   }
 #ifdef DEBUG
 //  printf("\tIn MaidsafeStoreManager::Init, before Join.\n");
 #endif
-  CallbackObj kad_cb_obj;
-  if (success) {
-    knode_->Join(kad_config_location_, boost::bind(&CallbackObj::CallbackFunc,
-        &kad_cb_obj, _1));
-    kad_cb_obj.WaitForCallback();
+  result = kPendingResult;
+  boost::mutex mutex;
+  boost::condition_variable cond_var;
+  kad_ops_->Init("", false, "", 0, &mutex, &cond_var, &result);
+  {
+    boost::mutex::scoped_lock lock(mutex);
+    while (result == kPendingResult)
+      cond_var.wait(lock);
   }
-  base::GeneralResponse kad_response;
-  GenericResponse maid_response;
-  std::string kad_result = kad_cb_obj.result();
-  std::string maid_result;
-  if (!success || !kad_response.ParseFromString(kad_result) ||
-      kad_response.result() != kad::kRpcResultSuccess) {
-    maid_response.set_result(kNack);
-    maid_response.SerializeToString(&maid_result);
-    cb(maid_result);
-    return;
-  } else {
-    maid_response.set_result(kAck);
-    maid_response.SerializeToString(&maid_result);
-    cb(maid_result);
-  }
-  chunk_thread_pool_.setMaxThreadCount(kChunkMaxThreadCount_);
-  packet_thread_pool_.setMaxThreadCount(kPacketMaxThreadCount_);
+  if (result == kSuccess) {
+    chunk_thread_pool_.setMaxThreadCount(kChunkMaxThreadCount_);
+    packet_thread_pool_.setMaxThreadCount(kPacketMaxThreadCount_);
 #ifdef DEBUG
-  printf("\tIn MaidsafeStoreManager::Init, after Join.  On port %u\n",
-         knode_->host_port());
+    printf("\tIn MSM::Init, after Join.  On port %u\n", kad_ops_->Port());
 #endif
+  }
+  callback(result);
 }
 
-void MaidsafeStoreManager::Close(kad::VoidFunctorOneString cb, bool) {
+void MaidsafeStoreManager::Close(VoidFuncOneInt callback,
+                                 bool /*cancel_pending_ops*/) {
 #ifdef DEBUG
 //  printf("\tIn MaidsafeStoreManager::Close, before Leave.\n");
 #endif
@@ -228,7 +197,7 @@ void MaidsafeStoreManager::Close(kad::VoidFunctorOneString cb, bool) {
   packet_thread_pool_.waitForDone();
   printf("\tIn MaidsafeStoreManager::Close, packet_thread_pool_ done.\n");
   im_conn_hdler_.Stop();
-  knode_->Leave();
+  kad_ops_->Leave();
 #ifdef DEBUG
 //  printf("\tIn MaidsafeStoreManager::Close, after Leave. "
 //         "Stopping transport.\n");
@@ -239,12 +208,7 @@ void MaidsafeStoreManager::Close(kad::VoidFunctorOneString cb, bool) {
 //  printf("\tIn MaidsafeStoreManager::Close, transport stopped.\n");
 #endif
   // Try again to kill the main storing thread in case it failed earlier.
-  GenericResponse result_msg;
-  result_msg.set_result(kAck);
-  std::string result;
-  result_msg.SerializeToString(&result);
-  cb(result);
-//  knode_.reset();
+  callback(kSuccess);
 }
 
 void MaidsafeStoreManager::CleanUpTransport() {
@@ -268,7 +232,7 @@ int MaidsafeStoreManager::StoreChunk(const std::string &chunk_name,
                                      const std::string &msid) {
 #ifdef DEBUG
 //  printf("In MaidsafeStoreManager::StoreChunk (%i), chunk_name = %s\n",
-//         knode_->host_port(), HexSubstr(chunk_name).c_str());
+//         kad_ops_->Port(), HexSubstr(chunk_name).c_str());
 #endif
   ReturnCode valid = ValidateInputs(chunk_name, PacketType_MIN, dir_type);
   if (valid != kSuccess) {
@@ -332,11 +296,10 @@ void MaidsafeStoreManager::StorePacket(const std::string &packet_name,
                                        PacketType system_packet_type,
                                        DirType dir_type,
                                        const std::string &msid,
-                                       IfPacketExists if_packet_exists,
                                        const VoidFuncOneInt &cb) {
 #ifdef DEBUG
 //  printf("In MaidsafeStoreManager::StorePacket (%i), packet_name = %s\n",
-//         knode_->host_port(), HexSubstr(packet_name).c_str());
+//         kad_ops_->Port(), HexSubstr(packet_name).c_str());
 #endif
   ReturnCode valid = ValidateInputs(packet_name, system_packet_type, dir_type);
   if (valid != kSuccess) {
@@ -354,7 +317,7 @@ void MaidsafeStoreManager::StorePacket(const std::string &packet_name,
       &public_key, &public_key_signature, &private_key);
   boost::shared_ptr<StoreData> store_data(new StoreData(packet_name, value,
       system_packet_type, dir_type, msid, key_id, public_key,
-      public_key_signature, private_key, if_packet_exists, cb));
+      public_key_signature, private_key, cb));
 #ifdef DEBUG
 //  printf("PN: %s\nV: %s\nK: %s\nPK: %s\nPKS: %s\n",
 //         HexSubstr(packet_name).c_str(),
@@ -373,7 +336,7 @@ int MaidsafeStoreManager::LoadChunk(const std::string &chunk_name,
   // TODO(Team#) make LoadChunk non-blocking, keep stages parallel
 #ifdef DEBUG
 //  printf("In MaidsafeStoreManager::LoadChunk (%i), chunk_name = %s\n",
-//         knode_->host_port(), HexSubstr(chunk_name).c_str());
+//         kad_ops_->Port(), HexSubstr(chunk_name).c_str());
 #endif
   if (data == NULL) {
 #ifdef DEBUG
@@ -394,7 +357,7 @@ int MaidsafeStoreManager::LoadChunk(const std::string &chunk_name,
   if (client_chunkstore_->Load(chunk_name, data) == kSuccess) {
 #ifdef DEBUG
 //    printf("In MSM::LoadChunk (%i) Found chunk %s in local chunkstore.\n",
-//           knode_->host_port(), HexSubstr(chunk_name).c_str());
+//           kad_ops_->Port(), HexSubstr(chunk_name).c_str());
 #endif
     return kSuccess;
   }
@@ -417,7 +380,7 @@ int MaidsafeStoreManager::LoadChunk(const std::string &chunk_name,
   boost::mutex::scoped_lock lock(opdata->mutex);
 
   // #1 Find a cached chunk copy if it exists, otherwise the chunk info holders.
-  kad_ops_->FindValue(kad::KadId(chunk_name, false), false,
+  kad_ops_->FindValue(chunk_name, false,
       boost::bind(&MaidsafeStoreManager::LoadChunk_FindCB, this, _1, opdata));
 
   // Main loop of retrieval process, stages reversed for early bail-out.
@@ -496,7 +459,7 @@ int MaidsafeStoreManager::LoadChunk(const std::string &chunk_name,
 //      printf("In MSM::LoadChunk, looking up holder %s...\n",
 //             HexSubstr(*it).c_str());
 #endif
-      kad_ops_->GetNodeContactDetails(kad::KadId(*it, false), boost::bind(
+      kad_ops_->GetNodeContactDetails(*it, boost::bind(
             &MaidsafeStoreManager::LoadChunk_HolderCB, this, _1, *it, opdata),
             false);
       opdata->chunk_holders[kHolderPending].insert(*it);
@@ -563,13 +526,13 @@ int MaidsafeStoreManager::LoadChunk(const std::string &chunk_name,
     if (!opdata->found_chunk_holder) {
 #ifdef DEBUG
       printf("In MSM::LoadChunk (%i), unable to locate chunk copy holders for "
-             "%s.\n", knode_->host_port(), HexSubstr(chunk_name).c_str());
+             "%s.\n", kad_ops_->Port(), HexSubstr(chunk_name).c_str());
 #endif
       return kLoadChunkFindNodesFailure;
     }
 #ifdef DEBUG
     printf("In MSM::LoadChunk (%i), failed loading chunk %s.\n",
-           knode_->host_port(), HexSubstr(chunk_name).c_str());
+           kad_ops_->Port(), HexSubstr(chunk_name).c_str());
 #endif
     return kLoadChunkFailure;
   }
@@ -577,7 +540,7 @@ int MaidsafeStoreManager::LoadChunk(const std::string &chunk_name,
   if (data->empty()) {
 #ifdef DEBUG
     printf("In MSM::LoadChunk (%i), loaded chunk %s was empty.\n",
-           knode_->host_port(), HexSubstr(chunk_name).c_str());
+           kad_ops_->Port(), HexSubstr(chunk_name).c_str());
 #endif
     return kLoadChunkFailure;
   }
@@ -738,7 +701,7 @@ int MaidsafeStoreManager::LoadPacket(const std::string &packet_name,
                                      std::vector<std::string> *results) {
 #ifdef DEBUG
 //  printf("In MaidsafeStoreManager::LoadPacket (%i), packet_name = %s\n",
-//         knode_->host_port(), HexSubstr(packet_name).c_str());
+//         kad_ops_->Port(), HexSubstr(packet_name).c_str());
 #endif
   if (results == NULL) {
 #ifdef DEBUG
@@ -781,7 +744,7 @@ void MaidsafeStoreManager::LoadPacket(const std::string &packet_name,
                                       const LoadPacketFunctor &lpf) {
 #ifdef DEBUG
 //  printf("In MaidsafeStoreManager::LoadPacket2 (%i), packet_name = %s\n",
-//         knode_->host_port(), HexSubstr(packet_name).c_str());
+//         kad_ops_->Port(), HexSubstr(packet_name).c_str());
 #endif
   std::vector<std::string> results;
   ReturnCode valid = ValidateInputs(packet_name, PacketType_MIN, PRIVATE);
@@ -792,9 +755,9 @@ void MaidsafeStoreManager::LoadPacket(const std::string &packet_name,
     lpf(results, valid);
     return;
   }
-  kad_ops_->FindValue(kad::KadId(packet_name, false), false,
-      boost::bind(&MaidsafeStoreManager::LoadPacketCallback, this, packet_name,
-      0, _1, lpf));
+  kad_ops_->FindValue(packet_name, false, boost::bind(
+      &MaidsafeStoreManager::LoadPacketCallback, this, packet_name, 0, _1,
+      lpf));
 }
 
 void MaidsafeStoreManager::LoadPacketCallback(const std::string &packet_name,
@@ -855,16 +818,16 @@ void MaidsafeStoreManager::LoadPacketCallback(const std::string &packet_name,
     lpf(values, static_cast<ReturnCode>(ret_value));
     return;
   } else {
-    kad_ops_->FindValue(kad::KadId(packet_name, false), false,
-        boost::bind(&MaidsafeStoreManager::LoadPacketCallback, this,
-        packet_name, attempt + 1, _1, lpf));
+    kad_ops_->FindValue(packet_name, false, boost::bind(
+        &MaidsafeStoreManager::LoadPacketCallback, this, packet_name,
+        attempt + 1, _1, lpf));
   }
 }
 
 bool MaidsafeStoreManager::KeyUnique(const std::string &key, bool check_local) {
 #ifdef DEBUG
 //  printf("In MaidsafeStoreManager::KeyUnique (%i), key = %s\n",
-//         knode_->host_port(), HexSubstr(key).c_str());
+//         kad_ops_->Port(), HexSubstr(key).c_str());
 #endif
   bool unique(false);
   bool called_back(false);
@@ -902,15 +865,15 @@ void MaidsafeStoreManager::KeyUnique(const std::string &key,
                                      const VoidFuncOneInt &cb) {
 #ifdef DEBUG
 //  printf("In MaidsafeStoreManager::KeyUnique2 (%i), key = %s\n",
-//         knode_->host_port(), HexSubstr(key).c_str());
+//         kad_ops_->Port(), HexSubstr(key).c_str());
 #endif
   ReturnCode valid = ValidateInputs(key, PacketType_MIN, PRIVATE);
   if (valid != kSuccess) {
     cb(kStoreManagerError);
     return;
   }
-  kad_ops_->FindValue(kad::KadId(key, false), check_local,
-      boost::bind(&MaidsafeStoreManager::KeyUniqueCallback, this, _1, cb));
+  kad_ops_->FindValue(key, check_local, boost::bind(
+      &MaidsafeStoreManager::KeyUniqueCallback, this, _1, cb));
 }
 
 void MaidsafeStoreManager::KeyUniqueCallback(
@@ -943,7 +906,7 @@ int MaidsafeStoreManager::DeleteChunk(const std::string &chunk_name,
                                       const std::string &msid) {
 #ifdef DEBUG
 //  printf("In MaidsafeStoreManager::DeleteChunk (%i), chunk_name = %s\n",
-//         knode_->host_port(), HexSubstr(chunk_name).c_str());
+//         kad_ops_->Port(), HexSubstr(chunk_name).c_str());
 #endif
   ReturnCode valid = ValidateInputs(chunk_name, PacketType_MIN, dir_type);
   if (valid != kSuccess) {
@@ -961,7 +924,7 @@ int MaidsafeStoreManager::DeleteChunk(const std::string &chunk_name,
 #ifdef DEBUG
       printf("In MSM::DeleteChunk (%i), didn't find chunk %s in local "
              "chunkstore - can't delete without valid size.\n",
-             knode_->host_port(), HexSubstr(chunk_name).c_str());
+             kad_ops_->Port(), HexSubstr(chunk_name).c_str());
 #endif
       return kDeleteSizeError;
     }
@@ -972,7 +935,7 @@ int MaidsafeStoreManager::DeleteChunk(const std::string &chunk_name,
   #ifdef DEBUG
       printf("In MSM::DeleteChunk (%i), didn't find chunk %s in local "
              "chunkstore - can't delete without valid size.\n%s\n",
-             knode_->host_port(), HexSubstr(chunk_name).c_str(), e.what());
+             kad_ops_->Port(), HexSubstr(chunk_name).c_str(), e.what());
   #endif
       return kDeleteSizeError;
     }
@@ -1013,7 +976,7 @@ void MaidsafeStoreManager::DeletePacket(const std::string &packet_name,
                                         const VoidFuncOneInt &cb) {
 #ifdef DEBUG
 //  printf("In MaidsafeStoreManager::DeletePacket (%i), packet_name = %s\n",
-//         knode_->host_port(), HexSubstr(packet_name).c_str());
+//         kad_ops_->Port(), HexSubstr(packet_name).c_str());
 #endif
   ReturnCode valid = ValidateInputs(packet_name, system_packet_type, dir_type);
   if (valid != kSuccess) {
@@ -1026,14 +989,11 @@ void MaidsafeStoreManager::DeletePacket(const std::string &packet_name,
 
   std::vector<std::string> vals(values);
   if (vals.empty()) {
-    kad::ContactInfo cache_holder;
-    std::string needs_cache_copy_id;
-    int res = kad_ops_->FindValue(kad::KadId(packet_name, false), false,
-                                  &cache_holder, &vals, &needs_cache_copy_id);
-    if (res == kFindValueFailure) {  // packet doesn't exist on net
+    int result = LoadPacket(packet_name, &vals);
+    if (result == kFindValueFailure) {  // packet doesn't exist on net
       cb(kSuccess);
       return;
-    } else if (res != kSuccess || vals.empty()) {
+    } else if (result != kSuccess || vals.empty()) {
       cb(kDeletePacketFindValueFailure);
       return;
     }
@@ -1084,8 +1044,8 @@ void MaidsafeStoreManager::UpdatePacketOnNetwork(
     boost::shared_ptr<UpdatePacketData> update_data) {
   crypto::Crypto co;
   kad::VoidFunctorOneString cb(boost::bind(
-                                   &MaidsafeStoreManager::UpdatePacketCallback,
-                                   this, _1, update_data));
+                                  &MaidsafeStoreManager::UpdatePacketCallback,
+                                  this, _1, update_data));
   boost::mutex::scoped_lock lock(update_data->mutex);
   kad::SignedValue osv;
   osv.set_value(update_data->old_value);
@@ -1108,8 +1068,7 @@ void MaidsafeStoreManager::UpdatePacketOnNetwork(
   sr.set_public_key(update_data->public_key);
   sr.set_signed_public_key(update_data->public_key_signature);
   sr.set_signed_request(request_signature);
-  knode_->UpdateValue(kad::KadId(update_data->packet_name, false),
-                      osv, nsv, sr, 31556926, cb);
+  kad_ops_->UpdateValue(update_data->packet_name, osv, nsv, sr, cb);
 }
 
 void MaidsafeStoreManager::UpdatePacketCallback(
@@ -1670,8 +1629,8 @@ void MaidsafeStoreManager::AddToWatchList(const StoreData &store_data) {
   }
   // Find the Chunk Info holders
   boost::shared_ptr<WatchListOpData> data(new WatchListOpData(store_data));
-  kad_ops_->FindKClosestNodes(kad::KadId(store_data.data_name, false),
-    boost::bind(&MaidsafeStoreManager::AddToWatchListStageTwo, this, _1, data));
+  kad_ops_->FindKClosestNodes(store_data.data_name, boost::bind(
+      &MaidsafeStoreManager::AddToWatchListStageTwo, this, _1, data));
 }
 
 void MaidsafeStoreManager::AddToWatchListStageTwo(
@@ -2273,7 +2232,7 @@ int MaidsafeStoreManager::SendChunkPrep(const StoreData &store_data) {
 //  if (first) {  // set largest_rtt from first peer
 //    base::PublicRoutingTableTuple peer_details;
 //    if ((*base::PublicRoutingTable::GetInstance())[boost::lexical_cast<
-//        std::string>(knode_.host_port())]->GetTupleInfo(peer.node_id(),
+//        std::string>(kad_ops_->Port())]->GetTupleInfo(peer.node_id(),
 //            &peer_details) != kSuccess) {
 //      set largest rtt via tasks_handler_.SetRtt
 //      largest_rtt = 1.0f;
@@ -2581,9 +2540,8 @@ void MaidsafeStoreManager::RemoveFromWatchList(const StoreData &store_data) {
   }
   // Find the Chunk Info holders
   boost::shared_ptr<WatchListOpData> data(new WatchListOpData(store_data));
-  kad_ops_->FindKClosestNodes(kad::KadId(store_data.data_name, false),
-    boost::bind(&MaidsafeStoreManager::RemoveFromWatchListStageTwo, this, _1,
-                data));
+  kad_ops_->FindKClosestNodes(store_data.data_name, boost::bind(
+      &MaidsafeStoreManager::RemoveFromWatchListStageTwo, this, _1, data));
 }
 
 void MaidsafeStoreManager::RemoveFromWatchListStageTwo(
@@ -2830,7 +2788,7 @@ int MaidsafeStoreManager::GetChunk(const std::string &chunk_name,
   if (!response.IsInitialized() || response.result() != kAck) {
 #ifdef DEBUG
     printf("In MSM::GetChunk (%d), could not get chunk %s.\n",
-           knode_->host_port(), HexSubstr(chunk_name).c_str());
+           kad_ops_->Port(), HexSubstr(chunk_name).c_str());
 #endif
     return kGetChunkFailure;
   }
@@ -2847,60 +2805,6 @@ void MaidsafeStoreManager::GetChunkCallback(bool *done,
   boost::mutex::scoped_lock lock(*sync.first);
   *done = true;
   sync.second->notify_one();
-}
-
-void MaidsafeStoreManager::SendPacketPrep(
-    boost::shared_ptr<StoreData> store_data) {
-#ifdef DEBUG
-//  printf("In MaidsafeStoreManager::SendPacketPrep\n");
-#endif
-  ReturnCode to_return = kUndefined;
-  kad::ContactInfo cache_holder;
-  std::vector<std::string> values;
-  std::string needs_cache_copy_id;
-  int find_result = (kad_ops_->FindValue(
-      kad::KadId(store_data->data_name, false), true, &cache_holder, &values,
-      &needs_cache_copy_id));
-  if (cache_holder.has_node_id())
-    to_return = kSendPacketCached;
-  bool exists = (find_result == kSuccess && values.size());
-  // If FindValue failed to complete the kad function then return.
-  if (to_return == kUndefined && !exists && find_result != kFindValueFailure) {
-#ifdef DEBUG
-    printf("In MSM::SendPacketPrep (%i), failed in FindValue.\n",
-           knode_->host_port());
-#endif
-    to_return = kSendPacketFindValueFailure;
-  }
-  if (to_return == kUndefined) {
-    if (exists) {
-      switch (store_data->if_packet_exists) {
-        case kDoNothingReturnFailure:
-          to_return = kSendPacketAlreadyExists;
-          break;
-        case kDoNothingReturnSuccess:
-          to_return = kSuccess;
-          break;
-        case kOverwrite:
-          OverwritePacket(store_data, values);
-          break;
-        case kAppend:
-          SendPacket(store_data);
-          break;
-        default:
-          to_return = kSendPacketUnknownExistsType;
-          break;
-      }
-    } else {
-      SendPacket(store_data);
-    }
-  }
-  if (to_return != kUndefined) {
-#ifdef DEBUG
-    printf("In MSM::SendPacketPrep, fail: %i.\n", to_return);
-#endif
-    store_data->callback(to_return);
-  }
 }
 
 void MaidsafeStoreManager::SendPacket(boost::shared_ptr<StoreData> store_data) {
@@ -2922,8 +2826,7 @@ void MaidsafeStoreManager::SendPacket(boost::shared_ptr<StoreData> store_data) {
   sr.set_signed_request(signed_request);
   kad::VoidFunctorOneString cb = boost::bind(
       &MaidsafeStoreManager::SendPacketCallback, this, _1, store_data);
-  knode_->StoreValue(kad::KadId(store_data->data_name, false), signed_value, sr,
-      31556926, cb);
+  kad_ops_->StoreValue(store_data->data_name, signed_value, sr, cb);
 }
 
 void MaidsafeStoreManager::SendPacketCallback(
@@ -2954,24 +2857,6 @@ void MaidsafeStoreManager::SendPacketCallback(
   store_data->callback(kSuccess);
 }
 
-void MaidsafeStoreManager::OverwritePacket(
-    boost::shared_ptr<StoreData> store_data,
-    const std::vector<std::string> &values) {
-  boost::shared_ptr<DeletePacketData> delete_data(new DeletePacketData(
-      store_data, values, boost::bind(
-      &MaidsafeStoreManager::OverwritePacketStageTwo, this, store_data, _1)));
-  DeletePacketFromNet(delete_data);
-}
-
-void MaidsafeStoreManager::OverwritePacketStageTwo(
-    boost::shared_ptr<StoreData> store_data,
-    const ReturnCode &delete_result) {
-  if (delete_result == kSuccess)
-    SendPacket(store_data);
-  else
-    store_data->callback(delete_result);
-}
-
 void MaidsafeStoreManager::DeletePacketFromNet(
     boost::shared_ptr<DeletePacketData> delete_data) {
   crypto::Crypto co;
@@ -2994,8 +2879,7 @@ void MaidsafeStoreManager::DeletePacketFromNet(
     sr.set_public_key(delete_data->public_key);
     sr.set_signed_public_key(delete_data->public_key_signature);
     sr.set_signed_request(signed_request);
-    knode_->DeleteValue(kad::KadId(delete_data->packet_name, false),
-        signed_value, sr, cb);
+    kad_ops_->DeleteValue(delete_data->packet_name, signed_value, sr, cb);
   }
 }
 
@@ -3102,7 +2986,7 @@ void MaidsafeStoreManager::PollVaultInfoCallback(
 }
 
 void MaidsafeStoreManager::VaultContactInfo(kad::VoidFunctorOneString cb) {
-  kad_ops_->GetNodeContactDetails(kad::KadId(ss_->Id(PMID), false), cb, false);
+  kad_ops_->GetNodeContactDetails(ss_->Id(PMID), cb, false);
 }
 
 void MaidsafeStoreManager::SetLocalVaultOwned(
@@ -3253,8 +3137,8 @@ int MaidsafeStoreManager::CreateAccount(const boost::uint64_t &space) {
   for (size_t i = 0; i < data->contacts.size(); ++i) {
     google::protobuf::Closure* callback = google::protobuf::NewCallback(this,
         &MaidsafeStoreManager::AmendAccountCallback, i, data);
-    client_rpcs_->AmendAccount(data->contacts.at(i), false, trans_id_,
-                               &request,
+    client_rpcs_->AmendAccount(data->contacts.at(i), false,
+                               udt_transport_.transport_id(), &request,
                                &data->data_holders.at(i).response,
                                data->data_holders.at(i).controller.get(),
                                callback);
@@ -3534,14 +3418,9 @@ bool MaidsafeStoreManager::SendIM(const std::string &msg,
 }
 
 void MaidsafeStoreManager::SetSessionEndPoint() {
-  EndPoint ep;
-  ep.add_ip(knode_->host_ip());
-  ep.add_ip(knode_->local_host_ip());
-  ep.add_ip(knode_->rendezvous_ip());
-  ep.add_port(knode_->host_port());
-  ep.add_port(knode_->local_host_port());
-  ep.add_port(knode_->rendezvous_port());
-  ss_->SetEp(ep);
+  EndPoint this_endpoint;
+  kad_ops_->SetThisEndpoint(&this_endpoint);
+  ss_->SetEp(this_endpoint);
 }
 
 void MaidsafeStoreManager::SendLogOutMessage(const std::string &contactname) {

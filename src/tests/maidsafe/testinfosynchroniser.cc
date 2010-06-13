@@ -78,8 +78,7 @@ TEST_F(InfoSynchroniserTest, BEH_VAULT_InfoSyncShouldFetch) {
     std::for_each(nodes.begin(), nodes.end(), boost::bind(
         &InfoSynchroniser::AddNodeToClosest, &info_synchroniser_, _1,
         &closest_nodes));
-    if (!maidsafe::ContactWithinClosest(kad::KadId(id, false),
-                                        this_test_contact, closest_nodes))
+    if (!maidsafe::ContactWithinClosest(id, this_test_contact, closest_nodes))
       break;
     else
       id = co_.Hash(base::RandomString(100), "", crypto::STRING_STRING, false);

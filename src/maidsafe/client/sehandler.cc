@@ -481,7 +481,7 @@ int SEHandler::EncryptDb(const std::string &dir_path,
   uptodate_datamaps_.insert(
       std::pair<std::string, std::string>(dir_path, enc_dm));
 
-  if (dir_key == "") {  // Means we're not storing to DHT - used by client
+  if (dir_key.empty()) {  // Means we're not storing to DHT - used by client
                         // controller to get root dbs for adding to DataAtlas.
 #ifdef DEBUG
 //    printf("dm is not stored in kademlia.\n");
@@ -505,13 +505,13 @@ int SEHandler::EncryptDb(const std::string &dir_path,
   int result(kPendingResult);
   VoidFuncOneInt functor = boost::bind(&SEHandler::PacketOpCallback, this, _1,
                                        &mutex, &cond_var, &result);
-  storem_->StorePacket(dir_key, enc_dm, PD_DIR, dir_type, msid, kOverwrite,
-                       functor);
-  {
-    boost::mutex::scoped_lock lock(mutex);
-    while (result == kPendingResult)
-      cond_var.wait(lock);
-  }
+//                                                        storem_->StorePacket(dir_key, enc_dm, PD_DIR, dir_type, msid, kOverwrite,
+//                                                                             functor);
+//  {
+//    boost::mutex::scoped_lock lock(mutex);
+//    while (result == kPendingResult)
+//      cond_var.wait(lock);
+//  }
   return result;
 #ifdef DEBUG
 //   printf("SEHandler::EncryptDb dir_path(%s) succeeded.\n", dir_path.c_str());

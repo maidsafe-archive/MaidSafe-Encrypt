@@ -42,32 +42,7 @@
 #include "protobuf/maidsafe_messages.pb.h"
 #include "protobuf/maidsafe_service_messages.pb.h"
 #include "tests/maidsafe/cached_keys.h"
-
-namespace test_dah {
-
-class FakeCallback {
- public:
-  FakeCallback() : result("") {}
-  void CallbackFunc(const std::string &res) {
-    result = res;
-  }
-  void Reset() {
-    result = "";
-  }
-  std::string result;
-};
-
-void wait_for_result_seh_(const FakeCallback &cb, boost::mutex *mutex) {
-  while (true) {
-    {
-      boost::mutex::scoped_lock guard(*mutex);
-      if (cb.result != "")
-        return;
-    }
-    boost::this_thread::sleep(boost::posix_time::milliseconds(5));
-  }
-};
-}  // namespace test_dah
+#include "tests/maidsafe/testcallback.h"
 
 namespace maidsafe {
 
@@ -77,8 +52,6 @@ class DataAtlasHandlerTest : public testing::Test {
  protected:
   DataAtlasHandlerTest() : test_root_dir_(file_system::TempDir() /
                                ("maidsafe_TestDAH_" + base::RandomString(6))),
-                           sm(),
-                           cb(),
                            keys_() {}
   ~DataAtlasHandlerTest() { }
   void SetUp() {
@@ -109,15 +82,11 @@ class DataAtlasHandlerTest : public testing::Test {
       count += 10;
     }
     boost::shared_ptr<LocalStoreManager>
-        sm(new LocalStoreManager(client_chunkstore_));
-    // sm = sm_;
-    sm->Init(0, boost::bind(&test_dah::FakeCallback::CallbackFunc, &cb, _1),
-             test_root_dir_);
-    boost::mutex mutex;
-    test_dah::wait_for_result_seh_(cb, &mutex);
-    GenericResponse res;
-    if ((!res.ParseFromString(cb.result)) ||
-        (res.result() == kNack)) {
+        sm(new LocalStoreManager(client_chunkstore_, test_root_dir_));
+    test::CallbackObject cb;
+    sm->Init(boost::bind(&test::CallbackObject::ReturnCodeCallback, &cb, _1),
+             0);
+    if (cb.WaitForReturnCodeResult() != kSuccess) {
       FAIL();
       return;
     }
@@ -159,7 +128,6 @@ class DataAtlasHandlerTest : public testing::Test {
       dah->AddElement(TidyPath(kRootSubdir[i][0]), ser_mdm, "", key,
                        true);
     }
-    cb.Reset();
   }
   void TearDown() {
     try {
@@ -176,8 +144,6 @@ class DataAtlasHandlerTest : public testing::Test {
     }
   }
   fs::path test_root_dir_;
-  boost::shared_ptr<LocalStoreManager> sm;
-  test_dah::FakeCallback cb;
   std::vector<crypto::RsaKeyPair> keys_;
  private:
   explicit DataAtlasHandlerTest(const maidsafe::DataAtlasHandlerTest&);

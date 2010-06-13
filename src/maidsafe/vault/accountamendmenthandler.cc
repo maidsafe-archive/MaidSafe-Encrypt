@@ -240,8 +240,7 @@ void AccountAmendmentHandler::CreateNewAmendment(AccountAmendment amendment) {
   }
   if (lookup_required) {
     vault_service_logic_->kadops()->FindKClosestNodes(
-        kad::KadId(amendment.probable_pendings.front().request.chunkname(),
-                   false),
+        amendment.probable_pendings.front().request.chunkname(),
         boost::bind(&AccountAmendmentHandler::CreateNewAmendmentCallback, this,
                     amendment, _1));
   }
@@ -261,8 +260,7 @@ void AccountAmendmentHandler::CreateNewAmendmentCallback(
   boost::condition_variable cv;
   maidsafe::ReturnCode result(maidsafe::kFindNodesError);
   vault_service_logic_->kadops()->HandleFindCloseNodesResponse(
-      find_nodes_response, amendment.account_name, &contacts, &mutex, &cv,
-      &result);
+      find_nodes_response, &contacts, &mutex, &cv, &result);
   if (result == maidsafe::kSuccess && contacts.size() >=
       size_t(kKadUpperThreshold)) {
     // Populate map of Chunk Info holders

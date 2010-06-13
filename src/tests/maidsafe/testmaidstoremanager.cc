@@ -403,15 +403,17 @@ class MockMsmKeyUnique : public MaidsafeStoreManager {
 
 TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_KeyUnique) {
   MockMsmKeyUnique msm(client_chunkstore_);
-  boost::shared_ptr<MockKadOps> mko(new MockKadOps(msm.knode_));
+  boost::shared_ptr<MockKadOps> mko(new MockKadOps(&msm.transport_handler_,
+      &msm.channel_manager_, kad::CLIENT, "", "", false, false,
+      client_chunkstore_));
   msm.kad_ops_ = mko;
 
   // Set up test requirements
-  std::vector<kad::KadId> keys;
+  std::vector<std::string> keys;
   const size_t kTestCount(7);
   for (size_t i = 0; i < kTestCount; ++i) {
-    keys.push_back(kad::KadId(crypto_.Hash(base::RandomString(100), "",
-        crypto::STRING_STRING, false), false));
+    keys.push_back(crypto_.Hash(base::RandomString(100), "",
+                                crypto::STRING_STRING, false));
   }
   std::string ser_result_empty, ser_result_unparsable("Bleh"), ser_result_fail;
   std::string ser_result_no_values, ser_result_cached_copy, ser_result_good;
@@ -459,31 +461,31 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_KeyUnique) {
 
   // Call 1 - Check with NULL pointer
   size_t test_number(0);
-//  ASSERT_FALSE(msm.KeyUnique(keys.at(test_number).ToStringDecoded(), false));
+//  ASSERT_FALSE(msm.KeyUnique(keys.at(test_number), false));
 
   // Call 2 - FindValue returns an empty string
   ++test_number;
-  ASSERT_FALSE(msm.KeyUnique(keys.at(test_number).ToStringDecoded(), false));
+  ASSERT_FALSE(msm.KeyUnique(keys.at(test_number), false));
 
   // Call 3 - FindValue returns an unparsable string
   ++test_number;
-  ASSERT_FALSE(msm.KeyUnique(keys.at(test_number).ToStringDecoded(), false));
+  ASSERT_FALSE(msm.KeyUnique(keys.at(test_number), false));
 
   // Call 4 - FindValue fails
   ++test_number;
-  ASSERT_TRUE(msm.KeyUnique(keys.at(test_number).ToStringDecoded(), false));
+  ASSERT_TRUE(msm.KeyUnique(keys.at(test_number), false));
 
   // Call 5 - FindValue claims success but doesn't populate value vector
   ++test_number;
-  ASSERT_FALSE(msm.KeyUnique(keys.at(test_number).ToStringDecoded(), false));
+  ASSERT_FALSE(msm.KeyUnique(keys.at(test_number), false));
 
   // Call 6 - FindValue yields a cached copy
   ++test_number;
-  ASSERT_FALSE(msm.KeyUnique(keys.at(test_number).ToStringDecoded(), false));
+  ASSERT_FALSE(msm.KeyUnique(keys.at(test_number), false));
 
   // Call 7 - Success
   ++test_number;
-  ASSERT_FALSE(msm.KeyUnique(keys.at(test_number).ToStringDecoded(), false));
+  ASSERT_FALSE(msm.KeyUnique(keys.at(test_number), false));
 }
 
 class MockClientRpcs : public ClientRpcs {
@@ -548,7 +550,9 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AddToWatchList) {
   boost::shared_ptr<MockClientRpcs> mock_rpcs(
       new MockClientRpcs(&msm.transport_handler_, &msm.channel_manager_));
   msm.client_rpcs_ = mock_rpcs;
-  boost::shared_ptr<MockKadOps> mko(new MockKadOps(msm.knode_));
+  boost::shared_ptr<MockKadOps> mko(new MockKadOps(&msm.transport_handler_,
+      &msm.channel_manager_, kad::CLIENT, "", "", false, false,
+      client_chunkstore_));
   msm.kad_ops_ = mko;
   ASSERT_TRUE(client_chunkstore_->is_initialised());
 
@@ -592,19 +596,16 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AddToWatchList) {
   // Set expectations
   EXPECT_CALL(*mko, AddressIsLocal(testing::An<const kad::Contact&>()))
       .WillRepeatedly(testing::Return(true));
-  EXPECT_CALL(*mko, FindKClosestNodes(kad::KadId(chunk_names.at(0), false),
-                                      testing::_))
+  EXPECT_CALL(*mko, FindKClosestNodes(chunk_names.at(0), testing::_))
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
           boost::bind(&mock_kadops::RunCallback, bad_result, _1))));   // Call 1
 
-  EXPECT_CALL(*mko, FindKClosestNodes(kad::KadId(chunk_names.at(1), false),
-                                      testing::_))
+  EXPECT_CALL(*mko, FindKClosestNodes(chunk_names.at(1), testing::_))
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
           boost::bind(&mock_kadops::RunCallback, few_result, _1))));   // Call 2
 
   for (int i = 2; i < kTestCount; ++i) {
-    EXPECT_CALL(*mko, FindKClosestNodes(kad::KadId(chunk_names.at(i), false),
-                                        testing::_))
+    EXPECT_CALL(*mko, FindKClosestNodes(chunk_names.at(i), testing::_))
         .WillOnce(testing::WithArgs<1>(testing::Invoke(
             boost::bind(&mock_kadops::RunCallback, good_result, _1))));  // 3-12
   }
@@ -1319,10 +1320,12 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_ValidatePrepResp) {
   StorePrepRequest store_prep_request = send_chunk_data->store_prep_request;
   StoreChunkRequest store_chunk_request = send_chunk_data->store_chunk_request;
   // Make proper response
-  maidsafe_vault::VaultChunkStore vault_chunkstore((test_root_dir_ /
-      "VaultChunkstore").string(), 999999, 0);
+  boost::shared_ptr<maidsafe_vault::VaultChunkStore> vault_chunkstore(
+      new maidsafe_vault::VaultChunkStore(
+          (test_root_dir_ / "VaultChunkstore").string(), 999999, 0));
   maidsafe_vault::VaultService vault_service(peer_pmid, peer_pmid_pub,
-      peer_pmid_pri, peer_pmid_pub_signature, &vault_chunkstore, NULL, NULL, 0);
+      peer_pmid_pri, peer_pmid_pub_signature, vault_chunkstore, NULL, 0,
+      boost::shared_ptr<maidsafe::KadOps>());
   StorePrepResponse good_store_prep_response;
   google::protobuf::Closure *done =
       google::protobuf::NewCallback(&google::protobuf::DoNothing);
@@ -1420,7 +1423,9 @@ class MockMsmSendChunkPrep : public MaidsafeStoreManager {
 
 TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_SendChunkPrep) {
   MockMsmSendChunkPrep msm(client_chunkstore_);
-  boost::shared_ptr<MockKadOps> mko(new MockKadOps(msm.knode_));
+  boost::shared_ptr<MockKadOps> mko(new MockKadOps(&msm.transport_handler_,
+      &msm.channel_manager_, kad::CLIENT, "", "", false, false,
+      client_chunkstore_));
   msm.kad_ops_ = mko;
 
   // Set up test data
@@ -1728,7 +1733,9 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_RemoveFromWatchList) {
   boost::shared_ptr<MockClientRpcs> mock_rpcs(
       new MockClientRpcs(&msm.transport_handler_, &msm.channel_manager_));
   msm.client_rpcs_ = mock_rpcs;
-  boost::shared_ptr<MockKadOps> mko(new MockKadOps(msm.knode_));
+  boost::shared_ptr<MockKadOps> mko(new MockKadOps(&msm.transport_handler_,
+      &msm.channel_manager_, kad::CLIENT, "", "", false, false,
+      client_chunkstore_));
   msm.kad_ops_ = mko;
   ASSERT_TRUE(client_chunkstore_->is_initialised());
 
@@ -1784,19 +1791,16 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_RemoveFromWatchList) {
   // Set expectations
   EXPECT_CALL(*mko, AddressIsLocal(testing::An<const kad::Contact&>()))
       .WillRepeatedly(testing::Return(true));
-  EXPECT_CALL(*mko, FindKClosestNodes(kad::KadId(chunk_names.at(1), false),
-                                      testing::_))
+  EXPECT_CALL(*mko, FindKClosestNodes(chunk_names.at(1), testing::_))
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
           boost::bind(&mock_kadops::RunCallback, bad_result, _1))));   // Call 2
 
-  EXPECT_CALL(*mko, FindKClosestNodes(kad::KadId(chunk_names.at(2), false),
-                                      testing::_))
+  EXPECT_CALL(*mko, FindKClosestNodes(chunk_names.at(2), testing::_))
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
           boost::bind(&mock_kadops::RunCallback, few_result, _1))));   // Call 3
 
   for (int i = 3; i < kTestCount; ++i) {
-    EXPECT_CALL(*mko, FindKClosestNodes(kad::KadId(chunk_names.at(i), false),
-                                        testing::_))
+    EXPECT_CALL(*mko, FindKClosestNodes(chunk_names.at(i), testing::_))
         .WillOnce(testing::WithArgs<1>(testing::Invoke(
             boost::bind(&mock_kadops::RunCallback, good_result, _1))));   // 4-7
   }
@@ -2067,7 +2071,9 @@ class MockMsmStoreLoadPacket : public MaidsafeStoreManager {
 
 TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_StoreNewPacket) {
   MockMsmStoreLoadPacket msm(client_chunkstore_);
-  boost::shared_ptr<MockKadOps> mko(new MockKadOps(msm.knode_));
+  boost::shared_ptr<MockKadOps> mko(new MockKadOps(&msm.transport_handler_,
+      &msm.channel_manager_, kad::CLIENT, "", "", false, false,
+      client_chunkstore_));
   msm.kad_ops_ = mko;
 
   // Add keys to Session
@@ -2105,34 +2111,33 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_StoreNewPacket) {
   store_response.set_result("Fail");
   store_response.SerializeToString(&ser_kad_store_response_fail);
 
-  // Set up expectations
-  EXPECT_CALL(*mko, FindValue(kad::KadId(packet_name, false), true, testing::_,
-      testing::_, testing::_))
-          .Times(6)
-          .WillOnce(testing::Return(-1))  // Call 4
-          .WillOnce(DoAll(testing::SetArgumentPointee<2>(cache_holder),
-                          testing::Return(kSuccess)))  // Call 5
-          .WillRepeatedly(testing::Return(kFindValueFailure));
+  //// Set up expectations
+  //EXPECT_CALL(*mko, FindValue(packet_name, true, testing::_, testing::_,
+  //    testing::_))
+  //        .Times(6)
+  //        .WillOnce(testing::Return(-1))  // Call 4
+  //        .WillOnce(DoAll(testing::SetArgumentPointee<2>(cache_holder),
+  //                        testing::Return(kSuccess)))  // Call 5
+  //        .WillRepeatedly(testing::Return(kFindValueFailure));
 
   EXPECT_CALL(msm, SendPacket(testing::_))
       .WillOnce(testing::WithArgs<0>(testing::Invoke(
           boost::bind(&MaidsafeStoreManager::SendPacketCallback, &msm,
-          ser_kad_store_response_empty, _1))))  // Call 6
+          ser_kad_store_response_empty, _1))))  // Call 4
       .WillOnce(testing::WithArgs<0>(testing::Invoke(
           boost::bind(&MaidsafeStoreManager::SendPacketCallback, &msm,
-          ser_kad_store_response_cant_parse, _1))))  // Call 7
+          ser_kad_store_response_cant_parse, _1))))  // Call 5
       .WillOnce(testing::WithArgs<0>(testing::Invoke(
           boost::bind(&MaidsafeStoreManager::SendPacketCallback, &msm,
-          ser_kad_store_response_fail, _1))))  // Call 8
+          ser_kad_store_response_fail, _1))))  // Call 6
       .WillOnce(testing::WithArgs<0>(testing::Invoke(
           boost::bind(&MaidsafeStoreManager::SendPacketCallback, &msm,
-          ser_kad_store_response_good, _1))));  // Call 9
+          ser_kad_store_response_good, _1))));  // Call 7
 
   // Call 1 - Check with bad packet name length
   packet_op_result_ = kGeneralError;
   std::string short_key('z', kKeySize - 1);
-  msm.StorePacket(short_key, packet_value, MID, PRIVATE, "",
-                  kDoNothingReturnSuccess, functor_);
+  msm.StorePacket(short_key, packet_value, MID, PRIVATE, "", functor_);
   {
     boost::mutex::scoped_lock lock(mutex_);
     while (packet_op_result_ == kGeneralError)
@@ -2143,8 +2148,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_StoreNewPacket) {
   // Call 2 - Check with bad packet type
   packet_op_result_ = kGeneralError;
   msm.StorePacket(packet_name, packet_value,
-      static_cast<PacketType>(PacketType_MIN - 1), PRIVATE, "",
-      kDoNothingReturnSuccess, functor_);
+      static_cast<PacketType>(PacketType_MIN - 1), PRIVATE, "", functor_);
   {
     boost::mutex::scoped_lock lock(mutex_);
     while (packet_op_result_ == kGeneralError)
@@ -2155,8 +2159,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_StoreNewPacket) {
   // Call 3 - Check with bad dir type
   packet_op_result_ = kGeneralError;
   msm.StorePacket(packet_name, packet_value, MID,
-      static_cast<DirType>(PUBLIC_SHARE + 1), "",  kDoNothingReturnSuccess,
-      functor_);
+      static_cast<DirType>(PUBLIC_SHARE + 1), "", functor_);
   {
     boost::mutex::scoped_lock lock(mutex_);
     while (packet_op_result_ == kGeneralError)
@@ -2164,32 +2167,9 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_StoreNewPacket) {
   }
   ASSERT_EQ(kDirUnknownType, packet_op_result_);
 
-  // Call 4 - FindValue fails
+  // Call 4 - SendPacket returns no result
   packet_op_result_ = kGeneralError;
-  msm.StorePacket(packet_name, packet_value, MID, PRIVATE, "",
-                  kDoNothingReturnSuccess, functor_);
-  {
-    boost::mutex::scoped_lock lock(mutex_);
-    while (packet_op_result_ == kGeneralError)
-      cond_var_.wait(lock);
-  }
-  ASSERT_EQ(kSendPacketFindValueFailure, packet_op_result_);
-
-  // Call 5 - FindValue yields a cached copy
-  packet_op_result_ = kGeneralError;
-  msm.StorePacket(packet_name, packet_value, MID, PRIVATE, "",
-                  kDoNothingReturnSuccess, functor_);
-  {
-    boost::mutex::scoped_lock lock(mutex_);
-    while (packet_op_result_ == kGeneralError)
-      cond_var_.wait(lock);
-  }
-  ASSERT_EQ(kSendPacketCached, packet_op_result_);
-
-  // Call 6 - SendPacket returns no result
-  packet_op_result_ = kGeneralError;
-  msm.StorePacket(packet_name, packet_value, MID, PRIVATE, "",
-                  kDoNothingReturnSuccess, functor_);
+  msm.StorePacket(packet_name, packet_value, MID, PRIVATE, "", functor_);
   {
     boost::mutex::scoped_lock lock(mutex_);
     while (packet_op_result_ == kGeneralError)
@@ -2197,10 +2177,9 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_StoreNewPacket) {
   }
   ASSERT_EQ(kSendPacketError, packet_op_result_);
 
-  // Call 7 - SendPacket returns unparseable result
+  // Call 5 - SendPacket returns unparseable result
   packet_op_result_ = kGeneralError;
-  msm.StorePacket(packet_name, packet_value, MID, PRIVATE, "",
-                  kDoNothingReturnSuccess, functor_);
+  msm.StorePacket(packet_name, packet_value, MID, PRIVATE, "", functor_);
   {
     boost::mutex::scoped_lock lock(mutex_);
     while (packet_op_result_ == kGeneralError)
@@ -2208,10 +2187,9 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_StoreNewPacket) {
   }
   ASSERT_EQ(kSendPacketParseError, packet_op_result_);
 
-  // Call 8 - SendPacket returns failure
+  // Call 6 - SendPacket returns failure
   packet_op_result_ = kGeneralError;
-  msm.StorePacket(packet_name, packet_value, MID, PRIVATE, "",
-                  kDoNothingReturnSuccess, functor_);
+  msm.StorePacket(packet_name, packet_value, MID, PRIVATE, "", functor_);
   {
     boost::mutex::scoped_lock lock(mutex_);
     while (packet_op_result_ == kGeneralError)
@@ -2219,10 +2197,9 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_StoreNewPacket) {
   }
   ASSERT_EQ(kSendPacketFailure, packet_op_result_);
 
-  // Call 9 - SendPacket returns success
+  // Call 7 - SendPacket returns success
   packet_op_result_ = kGeneralError;
-  msm.StorePacket(packet_name, packet_value, MID, PRIVATE, "",
-                  kDoNothingReturnSuccess, functor_);
+  msm.StorePacket(packet_name, packet_value, MID, PRIVATE, "", functor_);
   {
     boost::mutex::scoped_lock lock(mutex_);
     while (packet_op_result_ == kGeneralError)
@@ -2233,7 +2210,9 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_StoreNewPacket) {
 
 TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_StoreExistingPacket) {
   MockMsmStoreLoadPacket msm(client_chunkstore_);
-  boost::shared_ptr<MockKadOps> mko(new MockKadOps(msm.knode_));
+  boost::shared_ptr<MockKadOps> mko(new MockKadOps(&msm.transport_handler_,
+      &msm.channel_manager_, kad::CLIENT, "", "", false, false,
+      client_chunkstore_));
   msm.kad_ops_ = mko;
 
   // Add keys to Session
@@ -2307,32 +2286,20 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_StoreExistingPacket) {
     existing_values.push_back("ExistingValue" + base::IntToString(i));
 
   // Set up expectations
-  EXPECT_CALL(*mko, FindValue(kad::KadId(packet_name, false), true, testing::_,
-      testing::_, testing::_))
-          .Times(8)
-          .WillRepeatedly(DoAll(testing::SetArgumentPointee<3>(existing_values),
-                                testing::Return(kSuccess)));
+                                                                                  //EXPECT_CALL(*mko, FindValue(packet_name, true, testing::_, testing::_,
+                                                                                  //    testing::_))
+                                                                                  //        .Times(8)
+                                                                                  //        .WillRepeatedly(DoAll(testing::SetArgumentPointee<3>(existing_values),
+                                                                                  //                              testing::Return(kSuccess)));
 
   EXPECT_CALL(msm, SendPacket(testing::_))
-      .Times(2)
-      .WillRepeatedly(testing::WithArgs<0>(testing::Invoke(
+      .WillOnce(testing::WithArgs<0>(testing::Invoke(
           boost::bind(&MaidsafeStoreManager::SendPacketCallback, &msm,
-          ser_kad_store_response_good, _1))));  // Calls 3 & 8
-
-  EXPECT_CALL(msm, DeletePacketFromNet(testing::_))  // Calls 5 to 8 inclusive
-      .WillOnce(testing::WithArgs<0>(testing::Invoke(boost::bind(
-          &test_msm::RunDeletePacketCallbacks, functors_kad_empty, _1))))
-      .WillOnce(testing::WithArgs<0>(testing::Invoke(boost::bind(
-          &test_msm::RunDeletePacketCallbacks, functors_kad_cant_parse, _1))))
-      .WillOnce(testing::WithArgs<0>(testing::Invoke(boost::bind(
-          &test_msm::RunDeletePacketCallbacks, functors_kad_fail, _1))))
-      .WillOnce(testing::WithArgs<0>(testing::Invoke(boost::bind(
-          &test_msm::RunDeletePacketCallbacks, functors_kad_good, _1))));
+          ser_kad_store_response_good, _1))));  // Call 3
 
   // Call 1 - If exists kDoNothingReturnFailure
   packet_op_result_ = kGeneralError;
-  msm.StorePacket(packet_name, packet_value, MID, PRIVATE, "",
-                  kDoNothingReturnFailure, functor_);
+  msm.StorePacket(packet_name, packet_value, MID, PRIVATE, "", functor_);
   {
     boost::mutex::scoped_lock lock(mutex_);
     while (packet_op_result_ == kGeneralError)
@@ -2342,8 +2309,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_StoreExistingPacket) {
 
   // Call 2 - If exists kDoNothingReturnSuccess
   packet_op_result_ = kGeneralError;
-  msm.StorePacket(packet_name, packet_value, MID, PRIVATE, "",
-                  kDoNothingReturnSuccess, functor_);
+  msm.StorePacket(packet_name, packet_value, MID, PRIVATE, "", functor_);
   {
     boost::mutex::scoped_lock lock(mutex_);
     while (packet_op_result_ == kGeneralError)
@@ -2353,63 +2319,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_StoreExistingPacket) {
 
   // Call 3 - If exists kAppend
   packet_op_result_ = kGeneralError;
-  msm.StorePacket(packet_name, packet_value, MID, PRIVATE, "", kAppend,
-                  functor_);
-  {
-    boost::mutex::scoped_lock lock(mutex_);
-    while (packet_op_result_ == kGeneralError)
-      cond_var_.wait(lock);
-  }
-  ASSERT_EQ(kSuccess, packet_op_result_);
-
-  // Call 4 - Invalid IfExists
-  packet_op_result_ = kGeneralError;
-  msm.StorePacket(packet_name, packet_value, MID, PRIVATE, "",
-                  static_cast<IfPacketExists>(-1), functor_);
-  {
-    boost::mutex::scoped_lock lock(mutex_);
-    while (packet_op_result_ == kGeneralError)
-      cond_var_.wait(lock);
-  }
-  ASSERT_EQ(kSendPacketUnknownExistsType, packet_op_result_);
-
-  // Call 5 - If exists kOverwrite - DeleteResponse empty
-  packet_op_result_ = kGeneralError;
-  msm.StorePacket(packet_name, packet_value, MID, PRIVATE, "", kOverwrite,
-                  functor_);
-  {
-    boost::mutex::scoped_lock lock(mutex_);
-    while (packet_op_result_ == kGeneralError)
-      cond_var_.wait(lock);
-  }
-  ASSERT_EQ(kDeletePacketError, packet_op_result_);
-
-  // Call 6 - If exists kOverwrite - DeleteResponse doesn't parse
-  packet_op_result_ = kGeneralError;
-  msm.StorePacket(packet_name, packet_value, MID, PRIVATE, "", kOverwrite,
-                  functor_);
-  {
-    boost::mutex::scoped_lock lock(mutex_);
-    while (packet_op_result_ == kGeneralError)
-      cond_var_.wait(lock);
-  }
-  ASSERT_EQ(kDeletePacketParseError, packet_op_result_);
-
-  // Call 7 - If exists kOverwrite - DeleteResponse fails
-  packet_op_result_ = kGeneralError;
-  msm.StorePacket(packet_name, packet_value, MID, PRIVATE, "", kOverwrite,
-                  functor_);
-  {
-    boost::mutex::scoped_lock lock(mutex_);
-    while (packet_op_result_ == kGeneralError)
-      cond_var_.wait(lock);
-  }
-  ASSERT_EQ(kDeletePacketFailure, packet_op_result_);
-
-  // Call 8 - If exists kOverwrite - DeleteResponse passes
-  packet_op_result_ = kGeneralError;
-  msm.StorePacket(packet_name, packet_value, MID, PRIVATE, "", kOverwrite,
-                  functor_);
+  msm.StorePacket(packet_name, packet_value, MID, PRIVATE, "", functor_);
   {
     boost::mutex::scoped_lock lock(mutex_);
     while (packet_op_result_ == kGeneralError)
@@ -2420,7 +2330,9 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_StoreExistingPacket) {
 
 TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_LoadPacket) {
   MockMsmStoreLoadPacket msm(client_chunkstore_);
-  boost::shared_ptr<MockKadOps> mko(new MockKadOps(msm.knode_));
+  boost::shared_ptr<MockKadOps> mko(new MockKadOps(&msm.transport_handler_,
+      &msm.channel_manager_, kad::CLIENT, "", "", false, false,
+      client_chunkstore_));
   msm.kad_ops_ = mko;
 
   // Set up test requirements
@@ -2455,38 +2367,32 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_LoadPacket) {
   std::vector<std::string> returned_values;
 
   // Set up expectations
-  EXPECT_CALL(*mko, FindValue(kad::KadId(packet_names.at(2), false), false,
-      testing::_))  // Call 3
+  EXPECT_CALL(*mko, FindValue(packet_names.at(2), false, testing::_))  // Call 3
       .Times(kMaxChunkLoadRetries)
       .WillRepeatedly(testing::WithArgs<2>(testing::Invoke(boost::bind(
           &test_msm::RunLoadPacketCallback, _1, ser_result_empty))));
 
-  EXPECT_CALL(*mko, FindValue(kad::KadId(packet_names.at(3), false), false,
-      testing::_))  // Call 4
+  EXPECT_CALL(*mko, FindValue(packet_names.at(3), false, testing::_))  // Call 4
       .Times(kMaxChunkLoadRetries)
       .WillRepeatedly(testing::WithArgs<2>(testing::Invoke(boost::bind(
           &test_msm::RunLoadPacketCallback, _1, ser_result_unparsable))));
 
-  EXPECT_CALL(*mko, FindValue(kad::KadId(packet_names.at(4), false), false,
-      testing::_))  // Call 5
+  EXPECT_CALL(*mko, FindValue(packet_names.at(4), false, testing::_))  // Call 5
       .Times(kMaxChunkLoadRetries)
       .WillRepeatedly(testing::WithArgs<2>(testing::Invoke(boost::bind(
           &test_msm::RunLoadPacketCallback, _1, ser_result_fail))));
 
-  EXPECT_CALL(*mko, FindValue(kad::KadId(packet_names.at(5), false), false,
-      testing::_))  // Call 6
+  EXPECT_CALL(*mko, FindValue(packet_names.at(5), false, testing::_))  // Call 6
       .Times(kMaxChunkLoadRetries)
       .WillRepeatedly(testing::WithArgs<2>(testing::Invoke(boost::bind(
           &test_msm::RunLoadPacketCallback, _1, ser_result_no_values))));
 
-  EXPECT_CALL(*mko, FindValue(kad::KadId(packet_names.at(6), false), false,
-      testing::_))  // Call 7
+  EXPECT_CALL(*mko, FindValue(packet_names.at(6), false, testing::_))  // Call 7
       .Times(kMaxChunkLoadRetries)
       .WillRepeatedly(testing::WithArgs<2>(testing::Invoke(boost::bind(
           &test_msm::RunLoadPacketCallback, _1, ser_result_cached_copy))));
 
-  EXPECT_CALL(*mko, FindValue(kad::KadId(packet_names.at(7), false), false,
-      testing::_))  // Call 8
+  EXPECT_CALL(*mko, FindValue(packet_names.at(7), false, testing::_))  // Call 8
       .WillOnce(testing::WithArgs<2>(testing::Invoke(boost::bind(
           &test_msm::RunLoadPacketCallback, _1, ser_result_cached_copy))))
       .WillOnce(testing::WithArgs<2>(testing::Invoke(boost::bind(
@@ -2871,7 +2777,9 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_UpdateAccountStatus) {
   boost::shared_ptr<MockClientRpcs> mock_rpcs(
       new MockClientRpcs(&msm.transport_handler_, &msm.channel_manager_));
   msm.client_rpcs_ = mock_rpcs;
-  boost::shared_ptr<MockKadOps> mko(new MockKadOps(msm.knode_));
+  boost::shared_ptr<MockKadOps> mko(new MockKadOps(&msm.transport_handler_,
+      &msm.channel_manager_, kad::CLIENT, "", "", false, false,
+      client_chunkstore_));
   msm.kad_ops_ = mko;
   ASSERT_TRUE(client_chunkstore_->is_initialised());
 
@@ -2923,22 +2831,22 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_UpdateAccountStatus) {
                 boost::bind(&test_msm::ThreadedAccountStatusCallback, &tcc,
                 i < kKadUpperThreshold, kAck,
                 account_holders.at(i).node_id().ToStringDecoded(), false,
-                test_msm::AccountStatusValues(1, 2, 3), _1, _2))))     // call 5
+                test_msm::AccountStatusValues(1, 2, 3), _1, _2))))          // 5
             .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
                 boost::bind(&test_msm::ThreadedAccountStatusCallback, &tcc,
                 i < kKadUpperThreshold, kNack,
                 account_holders.at(i).node_id().ToStringDecoded(), true,
-                test_msm::AccountStatusValues(1, 2, 3), _1, _2))))     // call 6
+                test_msm::AccountStatusValues(1, 2, 3), _1, _2))))          // 6
             .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
                 boost::bind(&test_msm::ThreadedAccountStatusCallback, &tcc,
                 i < kKadLowerThreshold, kAck,
                 account_holders.at(i).node_id().ToStringDecoded(), true,
-                test_msm::AccountStatusValues(i*i, i, i), _1, _2))))   // call 7
+                test_msm::AccountStatusValues(i*i, i, i), _1, _2))))        // 7
             .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
                 boost::bind(&test_msm::ThreadedAccountStatusCallback, &tcc,
                 i < kKadUpperThreshold, kAck,
                 account_holders.at(i).node_id().ToStringDecoded(), true,
-                test_msm::AccountStatusValues(1, 2, 3), _1, _2))));    // call 8
+                test_msm::AccountStatusValues(1, 2, 3), _1, _2))));         // 8
   }
 
   // set default status, reset update requirement
@@ -3125,20 +3033,20 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_GetFilteredAverage) {
         testing::_))
             .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
                 boost::bind(&test_msm::ThreadedAmendAccountCallback, &tcc,
-                false, kAck, account_holders.at(i).node_id().ToStringDecoded(),
+                false, kAck, account_holders.at(i).node_id(),
                 _1, _2))))   // #3
             .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
                 boost::bind(&test_msm::ThreadedAmendAccountCallback, &tcc,
                 true, (i < kKadStoreThreshold - 1 ? kAck : kNack),
-                account_holders.at(i).node_id().ToStringDecoded(), _1, _2))))
+                account_holders.at(i).node_id(), _1, _2))))
             .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
                 boost::bind(&test_msm::ThreadedAmendAccountCallback, &tcc,
                 true, kAck, (i < kKadStoreThreshold - 1 ?
-                    account_holders.at(i).node_id().ToStringDecoded() : "fail"),
+                    account_holders.at(i).node_id() : "fail"),
                     _1, _2))))  // #5
             .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
                 boost::bind(&test_msm::ThreadedAmendAccountCallback, &tcc,
-                true, kAck, account_holders.at(i).node_id().ToStringDecoded(),
+                true, kAck, account_holders.at(i).node_id(),
                 _1, _2))));   // #6
   }
 

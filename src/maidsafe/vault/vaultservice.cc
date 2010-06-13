@@ -119,18 +119,26 @@ VaultService::VaultService(const std::string &pmid,
                            const std::string &pmid_public,
                            const std::string &pmid_private,
                            const std::string &pmid_public_signature,
-                           VaultChunkStore *vault_chunkstore,
-                           kad::KNode *knode,
+                           boost::shared_ptr<VaultChunkStore> vault_chunkstore,
                            VaultServiceLogic *vault_service_logic,
-                           const boost::int16_t &transport_id)
+                           const boost::int16_t &transport_id,
+                           boost::shared_ptr<maidsafe::KadOps> kadops)
+                           //const std::string &pmid,
+                           //const std::string &pmid_public,
+                           //const std::string &pmid_private,
+                           //const std::string &pmid_public_signature,
+                           //VaultChunkStore *vault_chunkstore,
+                           //kad::KNode *knode,
+                           //VaultServiceLogic *vault_service_logic,
+                           //const boost::int16_t &transport_id)
     : pmid_(pmid),
       pmid_public_(pmid_public),
       pmid_private_(pmid_private),
       pmid_public_signature_(pmid_public_signature),
       vault_chunkstore_(vault_chunkstore),
-      knode_(knode),
       vault_service_logic_(vault_service_logic),
       transport_id_(transport_id),
+      kad_ops_(kadops),
       prm_(),
       ah_(true),
       request_expectation_handler_(kMaxAccountAmendments,
@@ -140,10 +148,10 @@ VaultService::VaultService(const std::string &pmid,
       cih_(true),
       bps_(),
       thread_pool_(),
-      routing_table_(knode_ == NULL ?
+      routing_table_(kad_ops_.get() == NULL ?
           boost::shared_ptr<base::PublicRoutingTableHandler>() :
           (*base::PublicRoutingTable::GetInstance())
-          [boost::lexical_cast<std::string>(knode_->host_port())]),
+          [boost::lexical_cast<std::string>(kad_ops_->Port())]),
       info_synchroniser_(pmid_, routing_table_) {
   thread_pool_.setMaxThreadCount(1);
 }
@@ -368,7 +376,7 @@ void VaultService::StoreChunk(google::protobuf::RpcController*,
 //  printf("Signed Request: %s\n", request->request_signature().c_str());
 
 //  printf("In VaultService::StoreChunk (%i), Chunk name: %s\n",
-//         knode_->host_port(), HexSubstr(request->chunkname()).c_str());
+//         kad_ops_->Port(), HexSubstr(request->chunkname()).c_str());
 #endif
   // TODO(Fraser#5#): 2009-12-28 - if this fails more than kMinStoreRetries for
   //                               same chunkname & peer, delete from prm_?
@@ -472,7 +480,7 @@ void VaultService::CheckChunk(google::protobuf::RpcController*,
                               maidsafe::CheckChunkResponse *response,
                               google::protobuf::Closure *done) {
 #ifdef DEBUG
-//  printf("In VaultService::CheckChunk (%i)\n", knode_->host_port());
+//  printf("In VaultService::CheckChunk (%i)\n", kad_ops_->Port());
 #endif
   response->set_pmid(pmid_);
   if (!request->IsInitialized()) {
@@ -492,7 +500,7 @@ void VaultService::DeleteChunk(google::protobuf::RpcController*,
                                maidsafe::DeleteChunkResponse *response,
                                google::protobuf::Closure *done) {
 #ifdef DEBUG
-//  printf("In VaultService::DeleteChunk (%i)\n", knode_->host_port());
+//  printf("In VaultService::DeleteChunk (%i)\n", kad_ops_->Port());
 #endif
   response->set_pmid(pmid_);
   response->set_result(kNack);
@@ -573,7 +581,7 @@ void VaultService::ValidityCheck(google::protobuf::RpcController*,
                                  maidsafe::ValidityCheckResponse *response,
                                  google::protobuf::Closure *done) {
 #ifdef DEBUG
-//  printf("In VaultService::ValidityCheck (%i)\n", knode_->host_port());
+//  printf("In VaultService::ValidityCheck (%i)\n", kad_ops_->Port());
 #endif
   response->set_pmid(pmid_);
   if (!request->IsInitialized()) {
@@ -605,7 +613,7 @@ void VaultService::SwapChunk(google::protobuf::RpcController*,
                              maidsafe::SwapChunkResponse *response,
                              google::protobuf::Closure *done) {
 #ifdef DEBUG
-//  printf("In VaultService::SwapChunk (%i)\n", knode_->host_port());
+//  printf("In VaultService::SwapChunk (%i)\n", kad_ops_->Port());
 #endif
   response->set_pmid(pmid_);
   if (!request->IsInitialized()) {
@@ -908,7 +916,7 @@ void VaultService::AddToReferenceList(
     google::protobuf::Closure *done) {
 #ifdef DEBUG
 //  printf("In VaultService::AddToReferenceList (%i), Chunk name: %s, "
-//         "PMID: %s\n", knode_->host_port(),
+//         "PMID: %s\n", kad_ops_->Port(),
 //         HexSubstr(request->chunkname()).c_str(),
 //         base::EncodeToHex(request->pmid()).substr(0, 10).c_str());
 #endif
@@ -985,10 +993,12 @@ void VaultService::AmendAccount(google::protobuf::RpcController*,
     return;
   }
 
+#ifdef DEBUG
   printf("VaultService::AmendAccount (%s), from %s for %s.\n",
          HexSubstr(pmid_).c_str(),
          HexSubstr(request->signed_size().pmid()).c_str(),
          HexSubstr(pmid).c_str());
+#endif
 
   if (ah_.HaveAccount(pmid) == kAccountNotFound) {
     if (request->amendment_type() ==
@@ -1381,7 +1391,7 @@ void VaultService::VaultStatus(google::protobuf::RpcController*,
                                maidsafe::VaultStatusResponse *response,
                                google::protobuf::Closure *done) {
 #ifdef DEBUG
-//  printf("In VaultService::VaultStatus (%i)\n", knode_->host_port());
+//  printf("In VaultService::VaultStatus (%i)\n", kad_ops_->Port());
 #endif
   if (!request->IsInitialized()) {
     response->set_result(kNack);
@@ -1440,7 +1450,7 @@ void VaultService::CreateBP(google::protobuf::RpcController*,
     response->set_result(kNack);
     done->Run();
 #ifdef DEBUG
-    if (knode_ != NULL)
+    if (kad_ops_.get() != NULL)
       printf("In VaultService::CreateBP (%s), request is not initialized.\n",
              HexSubstr(pmid_).c_str());
 #endif
@@ -1453,7 +1463,7 @@ void VaultService::CreateBP(google::protobuf::RpcController*,
     response->set_result(kNack);
     done->Run();
 #ifdef DEBUG
-    if (knode_ != NULL) {
+    if (kad_ops_.get() != NULL) {
       printf("In VaultService::CreateBP (%s), ", HexSubstr(pmid_).c_str());
       printf("failed to validate signed request.\n");
     }
@@ -1465,7 +1475,7 @@ void VaultService::CreateBP(google::protobuf::RpcController*,
     response->set_result(kNack);
     done->Run();
 #ifdef DEBUG
-    if (knode_ != NULL) {
+    if (kad_ops_.get() != NULL) {
       printf("In VaultService::CreateBP (%s), ", HexSubstr(pmid_).c_str());
       printf("failed to store buffer packet locally.\n");
     }
@@ -1489,7 +1499,7 @@ void VaultService::ModifyBPInfo(google::protobuf::RpcController*,
     response->set_result(kNack);
     done->Run();
 #ifdef DEBUG
-    if (knode_ != NULL)
+    if (kad_ops_.get() != NULL)
       printf("In VaultService::ModifyBPInfo(%s), request is not initialized.\n",
            HexSubstr(pmid_).c_str());
 #endif
@@ -1502,7 +1512,7 @@ void VaultService::ModifyBPInfo(google::protobuf::RpcController*,
     response->set_result(kNack);
     done->Run();
 #ifdef DEBUG
-    if (knode_ != NULL) {
+    if (kad_ops_.get() != NULL) {
       printf("In VaultService::ModifyBPInfo (%s), ", HexSubstr(pmid_).c_str());
       printf("failed to validate signed request.\n");
     }
@@ -1515,7 +1525,7 @@ void VaultService::ModifyBPInfo(google::protobuf::RpcController*,
     response->set_result(kNack);
     done->Run();
 #ifdef DEBUG
-    if (knode_ != NULL) {
+    if (kad_ops_.get() != NULL) {
       printf("In VaultService::ModifyBPInfo (%s), ", HexSubstr(pmid_).c_str());
       printf("data sent is not a Generic Packet.\n");
     }
@@ -1528,7 +1538,7 @@ void VaultService::ModifyBPInfo(google::protobuf::RpcController*,
     response->set_result(kNack);
     done->Run();
 #ifdef DEBUG
-    if (knode_ != NULL) {
+    if (kad_ops_.get() != NULL) {
       printf("In VaultService::ModifyBPInfo (%s), ", HexSubstr(pmid_).c_str());
       printf("data inside Generic Packet is not BufferPacketInfo.\n");
     }
@@ -1541,7 +1551,7 @@ void VaultService::ModifyBPInfo(google::protobuf::RpcController*,
     response->set_result(kNack);
     done->Run();
 #ifdef DEBUG
-    if (knode_ != NULL) {
+    if (kad_ops_.get() != NULL) {
       printf("In VaultService::ModifyBPInfo (%s), ", HexSubstr(pmid_).c_str());
       printf("failed to load local buffer packet.\n");
     }
@@ -1554,7 +1564,7 @@ void VaultService::ModifyBPInfo(google::protobuf::RpcController*,
     response->set_result(kNack);
     done->Run();
 #ifdef DEBUG
-    if (knode_ != NULL) {
+    if (kad_ops_.get() != NULL) {
       printf("In VaultService::ModifyBPInfo (%s), ", HexSubstr(pmid_).c_str());
       printf("failed to validate the Buffer Packet ownership.\n");
     }
@@ -1566,7 +1576,7 @@ void VaultService::ModifyBPInfo(google::protobuf::RpcController*,
     response->set_result(kNack);
     done->Run();
 #ifdef DEBUG
-    if (knode_ != NULL) {
+    if (kad_ops_.get() != NULL) {
       printf("In VaultService::ModifyBPInfo (%s), ", HexSubstr(pmid_).c_str());
       printf("failed to update the BufferPacketInfo.\n");
     }
@@ -1578,7 +1588,7 @@ void VaultService::ModifyBPInfo(google::protobuf::RpcController*,
     response->set_result(kNack);
     done->Run();
 #ifdef DEBUG
-    if (knode_ != NULL) {
+    if (kad_ops_.get() != NULL) {
       printf("In VaultService::ModifyBPInfo (%s), ", HexSubstr(pmid_).c_str());
       printf("failed to update the local buffer packet.\n");
     }
@@ -1636,7 +1646,7 @@ void VaultService::GetBPMessages(google::protobuf::RpcController*,
     response->set_result(kNack);
     done->Run();
 #ifdef DEBUG
-    if (knode_ != NULL) {
+    if (kad_ops_.get() != NULL) {
       printf("In VaultService::GetBPMessages (%s), ", HexSubstr(pmid_).c_str());
       printf("failed to validate the Buffer Packet ownership.\n");
     }
@@ -1684,7 +1694,7 @@ void VaultService::AddBPMessage(google::protobuf::RpcController*,
     response->set_result(kNack);
     done->Run();
 #ifdef DEBUG
-    if (knode_ != NULL)
+    if (kad_ops_.get() != NULL)
       printf("In VaultService::AddBPMessage(%s), request is not initialized.\n",
              HexSubstr(pmid_).c_str());
 #endif
@@ -1708,7 +1718,7 @@ void VaultService::AddBPMessage(google::protobuf::RpcController*,
     response->set_result(kNack);
     done->Run();
 #ifdef DEBUG
-    if (knode_ != NULL) {
+    if (kad_ops_.get() != NULL) {
       printf("In VaultService::AddBPMessage (%s), ", HexSubstr(pmid_).c_str());
       printf("failed to load the local buffer packet.\n");
     }
@@ -1723,7 +1733,7 @@ void VaultService::AddBPMessage(google::protobuf::RpcController*,
     response->set_result(kNack);
     done->Run();
 #ifdef DEBUG
-    if (knode_ != NULL) {
+    if (kad_ops_.get() != NULL) {
       printf("In VaultService::AddBPMessage (%s), ", HexSubstr(pmid_).c_str());
       printf("failed to add the message.\n");
     }
@@ -1735,7 +1745,7 @@ void VaultService::AddBPMessage(google::protobuf::RpcController*,
     response->set_result(kNack);
     done->Run();
 #ifdef DEBUG
-    if (knode_ != NULL) {
+    if (kad_ops_.get() != NULL) {
       printf("In VaultService::AddBPMessage (%s), ", HexSubstr(pmid_).c_str());
       printf("failed to update the local buffer packet.\n");
     }
@@ -1828,7 +1838,7 @@ void VaultService::AddBPPresence(google::protobuf::RpcController*,
     response->set_result(kNack);
     done->Run();
 #ifdef DEBUG
-    if (knode_ != NULL)
+    if (kad_ops_.get() != NULL)
       printf("In VaultService::AddBPPresence(%s), request not initialized.\n",
              HexSubstr(pmid_).c_str());
 #endif
@@ -1852,7 +1862,7 @@ void VaultService::AddBPPresence(google::protobuf::RpcController*,
     response->set_result(kNack);
     done->Run();
 #ifdef DEBUG
-    if (knode_ != NULL) {
+    if (kad_ops_.get() != NULL) {
       printf("In VaultService::AddBPPresence (%s), ", HexSubstr(pmid_).c_str());
       printf("failed to load the local buffer packet.\n");
     }
@@ -1865,7 +1875,7 @@ void VaultService::AddBPPresence(google::protobuf::RpcController*,
     response->set_result(kNack);
     done->Run();
 #ifdef DEBUG
-    if (knode_ != NULL) {
+    if (kad_ops_.get() != NULL) {
       printf("In VaultService::AddBPPresence (%s), ", HexSubstr(pmid_).c_str());
       printf("failed to add the message.\n");
     }
@@ -1877,7 +1887,7 @@ void VaultService::AddBPPresence(google::protobuf::RpcController*,
     response->set_result(kNack);
     done->Run();
 #ifdef DEBUG
-    if (knode_ != NULL) {
+    if (kad_ops_.get() != NULL) {
       printf("In VaultService::AddBPPresence (%s), ", HexSubstr(pmid_).c_str());
       printf("failed to update the local buffer packet.\n");
     }

@@ -156,10 +156,8 @@ class MockVaultRpcs : public VaultRpcs {
 class MockVsl : public VaultServiceLogic {
  public:
   MockVsl(const boost::shared_ptr<VaultRpcs> &vault_rpcs,
-          const boost::shared_ptr<kad::KNode> &knode)
-      : VaultServiceLogic(vault_rpcs, knode) {
-    kad_ops_.reset(new maidsafe::MockKadOps(knode));
-  }
+          const boost::shared_ptr<maidsafe::KadOps> &kadops)
+      : VaultServiceLogic(vault_rpcs, kadops) {}
   boost::shared_ptr<maidsafe::MockKadOps> kadops() {
       return boost::static_pointer_cast<maidsafe::MockKadOps>(kad_ops_);
   }

@@ -14,13 +14,14 @@
 
 #include "maidsafe/clientbufferpackethandler.h"
 #include <maidsafe/protobuf/kademlia_service_messages.pb.h>
+#include "maidsafe/kadops.h"
 
 namespace maidsafe {
 
 ClientBufferPacketHandler::ClientBufferPacketHandler(
     boost::shared_ptr<maidsafe::BufferPacketRpcs> rpcs,
-    boost::shared_ptr<kad::KNode> knode)
-        : crypto_obj_(), rpcs_(rpcs), knode_(knode) {
+    boost::shared_ptr<KadOps> kadops)
+        : crypto_obj_(), rpcs_(rpcs), kad_ops_(kadops) {
   crypto_obj_.set_hash_algorithm(crypto::SHA_512);
   crypto_obj_.set_symm_algorithm(crypto::AES_256);
 }
@@ -211,12 +212,7 @@ void ClientBufferPacketHandler::AddPresence(
   LivePresence lp;
   lp.set_contact_id(my_pu);
   EndPoint ep;
-  ep.add_ip(knode_->host_ip());
-  ep.add_port(knode_->host_port());
-  ep.add_ip(knode_->local_host_ip());
-  ep.add_port(knode_->local_host_port());
-  ep.add_ip(knode_->rendezvous_ip());
-  ep.add_port(knode_->rendezvous_port());
+  kad_ops_->SetThisEndpoint(&ep);
   std::string s_ep(ep.SerializeAsString());
   lp.set_end_point(crypto_obj_.AsymEncrypt(s_ep, "", recver_public_key,
                     crypto::STRING_STRING));
@@ -251,30 +247,28 @@ void ClientBufferPacketHandler::FindNodes(
     boost::shared_ptr<ChangeBPData> data) {
   switch (data->type) {
     case CREATEBP:
-        knode_->FindKClosestNodes(
-            kad::KadId(data->create_request.bufferpacket_name(), false), cb);
+        kad_ops_->FindKClosestNodes(data->create_request.bufferpacket_name(),
+                                    cb);
         break;
     case MODIFY_INFO:
-        knode_->FindKClosestNodes(
-            kad::KadId(data->modify_request.bufferpacket_name(), false), cb);
+        kad_ops_->FindKClosestNodes(data->modify_request.bufferpacket_name(),
+                                    cb);
         break;
     case GET_MESSAGES:
-        knode_->FindKClosestNodes(
-            kad::KadId(data->get_msgs_request.bufferpacket_name(), false), cb);
+        kad_ops_->FindKClosestNodes(data->get_msgs_request.bufferpacket_name(),
+                                    cb);
         break;
     case ADD_MESSAGE:
-        knode_->FindKClosestNodes(
-            kad::KadId(data->add_msg_request.bufferpacket_name(), false), cb);
+        kad_ops_->FindKClosestNodes(data->add_msg_request.bufferpacket_name(),
+                                    cb);
         break;
     case GET_PRESENCE:
-        knode_->FindKClosestNodes(
-            kad::KadId(data->get_presence_request.bufferpacket_name(), false),
-            cb);
+        kad_ops_->FindKClosestNodes(
+            data->get_presence_request.bufferpacket_name(), cb);
         break;
     case ADD_PRESENCE:
-        knode_->FindKClosestNodes(
-            kad::KadId(data->add_presence_request.bufferpacket_name(), false),
-            cb);
+        kad_ops_->FindKClosestNodes(
+            data->add_presence_request.bufferpacket_name(), cb);
         break;
   }
 }
@@ -375,11 +369,7 @@ void ClientBufferPacketHandler::FindNodesCallback(
   }
 
   for (size_t a = 0; a < cb_datas->size(); ++a) {
-    bool local = (knode_->CheckContactLocalAddress(
-                      cb_datas->at(a).ctc.node_id(),
-                      cb_datas->at(a).ctc.local_ip(),
-                      cb_datas->at(a).ctc.local_port(),
-                      cb_datas->at(a).ctc.host_ip()) == kad::LOCAL);
+    bool local = kad_ops_->AddressIsLocal(cb_datas->at(a).ctc);
 
     google::protobuf::Closure *done = NULL;
     switch (data->type) {

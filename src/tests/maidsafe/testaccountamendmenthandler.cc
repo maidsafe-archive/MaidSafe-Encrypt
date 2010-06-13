@@ -80,7 +80,8 @@ class AccountAmendmentHandlerTest : public MockVaultServiceLogicTest {
  protected:
   AccountAmendmentHandlerTest()
     : ah_(true),
-      vsl_(boost::shared_ptr<VaultRpcs>(), boost::shared_ptr<kad::KNode>()),
+      vsl_(boost::shared_ptr<VaultRpcs>(),
+           boost::shared_ptr<maidsafe::KadOps>()),
       reh_(kMaxAccountAmendments, kMaxRepeatedAccountAmendments,
            kAccountAmendmentTimeout),
       aah_(&ah_, &reh_, &vsl_) {}
@@ -466,9 +467,8 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_CreateNewAmendment) {
   ASSERT_EQ(kSuccess, ah_.AddAccount(test_account_name, 999999));
 
   // Expectations
-  EXPECT_CALL(*vsl_.kadops(), FindKClosestNodes(kad::KadId(far_chunk_name,
-                                                           false),
-      testing::An<const kad::VoidFunctorOneString&>()))
+  EXPECT_CALL(*vsl_.kadops(), FindKClosestNodes(far_chunk_name,
+      testing::An<kad::VoidFunctorOneString>()))
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
           boost::bind(&mock_kadops::RunCallback, fail_parse_result_, _1))))
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
@@ -720,9 +720,8 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_CreateNewWithExpecteds) {
   ASSERT_EQ(kSuccess, ah_.AddAccount(test_account_name, 999999));
 
   // Expectations
-  EXPECT_CALL(*vsl_.kadops(), FindKClosestNodes(kad::KadId(far_chunk_name,
-                                                           false),
-      testing::An<const kad::VoidFunctorOneString&>()))
+  EXPECT_CALL(*vsl_.kadops(), FindKClosestNodes(far_chunk_name,
+      testing::An<kad::VoidFunctorOneString>()))
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
           boost::bind(&mock_kadops::RunCallback, good_result_, _1))));
 
@@ -982,8 +981,8 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_ProcessRequest) {
   ASSERT_EQ(size_t(11), ah_.accounts_.size());
 
   // Expectations
-  EXPECT_CALL(*vsl_.kadops(), FindKClosestNodes(kad::KadId(chunk_name, false),
-      testing::An<const kad::VoidFunctorOneString&>()))
+  EXPECT_CALL(*vsl_.kadops(), FindKClosestNodes(chunk_name,
+      testing::An<kad::VoidFunctorOneString>()))
       .Times(testing::AtLeast(5))
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
           boost::bind(&mock_kadops::RunCallback, good_result_, _1))))  // Call 2

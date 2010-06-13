@@ -36,7 +36,7 @@ MATCHER_P(EqualsContact, kad_contact, "") {
 
 TEST_F(VaultServiceLogicTest, BEH_MAID_VSL_Offline) {
   boost::shared_ptr<MockVaultRpcs> mock_rpcs(new MockVaultRpcs(NULL, NULL));
-  VaultServiceLogic vsl(mock_rpcs, boost::shared_ptr<kad::KNode>());
+  VaultServiceLogic vsl(mock_rpcs, boost::shared_ptr<maidsafe::KadOps>());
 
   maidsafe::AddToReferenceListRequest arr;
   boost::mutex mutex;
@@ -83,7 +83,7 @@ TEST_F(VaultServiceLogicTest, BEH_MAID_VSL_Offline) {
 TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_AddToRemoteRefList) {
   // Setup
   boost::shared_ptr<MockVaultRpcs> mock_rpcs(new MockVaultRpcs(NULL, NULL));
-  MockVsl vsl(mock_rpcs, boost::shared_ptr<kad::KNode>());
+  MockVsl vsl(mock_rpcs, boost::shared_ptr<maidsafe::KadOps>());
   vsl.pmid_ = pmid_;
   vsl.pmid_public_signature_ = pmid_public_signature_;
   vsl.pmid_private_ = pmid_private_;
@@ -132,8 +132,8 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_AddToRemoteRefList) {
   EXPECT_CALL(vsl, AddToRemoteRefList(testing::_, testing::_, testing::_,
                                       testing::_))
       .WillRepeatedly(testing::Invoke(&vsl, &MockVsl::AddToRemoteRefListReal));
-  EXPECT_CALL(*vsl.kadops(), FindKClosestNodes(kad::KadId(far_chunkname, false),
-      testing::An<const kad::VoidFunctorOneString&>()))
+  EXPECT_CALL(*vsl.kadops(), FindKClosestNodes(far_chunkname,
+      testing::An<kad::VoidFunctorOneString>()))
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
           boost::bind(&mock_kadops::RunCallback, fail_parse_result_, _1))))
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
@@ -148,8 +148,8 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_AddToRemoteRefList) {
           boost::bind(&mock_kadops::RunCallback, good_result_, _1))))  // Call 7
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
           boost::bind(&mock_kadops::RunCallback, good_result_, _1))));  // 8
-  EXPECT_CALL(*vsl.kadops(), FindKClosestNodes(kad::KadId(pmid_, false),
-      testing::An<const kad::VoidFunctorOneString&>()))  // Call 5
+  EXPECT_CALL(*vsl.kadops(), FindKClosestNodes(pmid_,
+      testing::An<kad::VoidFunctorOneString>()))  // Call 5
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
           boost::bind(&mock_kadops::RunCallback, good_result_less_one_, _1))));
 
@@ -296,7 +296,7 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_AddToRemoteRefList) {
 TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_AmendRemoteAccount) {
   // Setup
   boost::shared_ptr<MockVaultRpcs> mock_rpcs(new MockVaultRpcs(NULL, NULL));
-  MockVsl vsl(mock_rpcs, boost::shared_ptr<kad::KNode>());
+  MockVsl vsl(mock_rpcs, boost::shared_ptr<maidsafe::KadOps>());
   vsl.pmid_ = pmid_;
   vsl.pmid_public_signature_ = pmid_public_signature_;
   vsl.pmid_private_ = pmid_private_;
@@ -355,8 +355,8 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_AmendRemoteAccount) {
   EXPECT_CALL(vsl, AmendRemoteAccount(testing::_, testing::_, testing::_,
                                       testing::_))
       .WillRepeatedly(testing::Invoke(&vsl, &MockVsl::AmendRemoteAccountReal));
-  EXPECT_CALL(*vsl.kadops(), FindKClosestNodes(kad::KadId(account_name, false),
-      testing::An<const kad::VoidFunctorOneString&>()))
+  EXPECT_CALL(*vsl.kadops(), FindKClosestNodes(account_name,
+      testing::An<kad::VoidFunctorOneString>()))
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
           boost::bind(&mock_kadops::RunCallback, fail_parse_result_, _1))))
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
@@ -515,7 +515,7 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_AmendRemoteAccount) {
 TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_RemoteVaultAbleToStore) {
   // Setup
   boost::shared_ptr<MockVaultRpcs> mock_rpcs(new MockVaultRpcs(NULL, NULL));
-  MockVsl vsl(mock_rpcs, boost::shared_ptr<kad::KNode>());
+  MockVsl vsl(mock_rpcs, boost::shared_ptr<maidsafe::KadOps>());
   vsl.pmid_ = pmid_;
   vsl.pmid_public_signature_ = pmid_public_signature_;
   vsl.pmid_private_ = pmid_private_;
@@ -563,8 +563,8 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_RemoteVaultAbleToStore) {
       boost::bind(&mock_vsl::CopyResult, _1, &mutex, &cv, &result);
 
   // Expectations
-  EXPECT_CALL(*vsl.kadops(), FindKClosestNodes(kad::KadId(account_name, false),
-      testing::An<const kad::VoidFunctorOneString&>()))
+  EXPECT_CALL(*vsl.kadops(), FindKClosestNodes(account_name,
+      testing::An<kad::VoidFunctorOneString>()))
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
           boost::bind(&mock_kadops::RunCallback, fail_parse_result_, _1))))
       .WillOnce(testing::WithArgs<1>(testing::Invoke(

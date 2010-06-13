@@ -46,10 +46,11 @@ class ChunkStore;
 
 class LocalStoreManager : public StoreManagerInterface {
  public:
-  explicit LocalStoreManager(boost::shared_ptr<ChunkStore> client_chunkstore);
+  LocalStoreManager(boost::shared_ptr<ChunkStore> client_chunkstore,
+                    const fs::path &db_directory);
   virtual ~LocalStoreManager() {}
-  virtual void Init(int, kad::VoidFunctorOneString cb, fs::path db_directory);
-  virtual void Close(kad::VoidFunctorOneString cb, bool);
+  virtual void Init(VoidFuncOneInt callback, const boost::uint16_t &port);
+  virtual void Close(VoidFuncOneInt callback, bool cancel_pending_ops);
   virtual void CleanUpTransport() {}
   virtual void StopRvPing() {}
   virtual bool NotDoneWithUploading();
@@ -78,7 +79,6 @@ class LocalStoreManager : public StoreManagerInterface {
                            PacketType system_packet_type,
                            DirType dir_type,
                            const std::string &msid,
-                           IfPacketExists if_packet_exists,
                            const VoidFuncOneInt &cb);
   // Deletes all values for the specified key
   virtual void DeletePacket(const std::string &packet_name,
@@ -163,6 +163,12 @@ class LocalStoreManager : public StoreManagerInterface {
                                    const PacketType &pt,
                                    const std::string &msid,
                                    std::string *ser_gp);
+  void ExecReturnCodeCallback(VoidFuncOneInt cb, ReturnCode rc);
+  void ExecReturnLoadPacketCallback(LoadPacketFunctor cb,
+                                    std::vector<std::string> results,
+                                    ReturnCode rc);
+  void ExecStringCallback(kad::VoidFunctorOneString cb,
+                          MaidsafeRpcResult result);
 
   CppSQLite3DB db_;
   VaultBufferPacketHandler vbph_;

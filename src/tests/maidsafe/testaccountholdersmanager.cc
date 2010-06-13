@@ -25,6 +25,7 @@
 #include <gtest/gtest.h>
 #include "maidsafe/utils.h"
 #include "maidsafe/accountholdersmanager.h"
+#include "maidsafe/chunkstore.h"
 #include "tests/maidsafe/mockkadops.h"
 
 namespace maidsafe {
@@ -37,9 +38,11 @@ class AccountHoldersManagerTest : public testing::Test {
                        crypto::STRING_STRING, false)),
         account_name_(co_.Hash(pmid_ + kAccount, "", crypto::STRING_STRING,
                                false)),
-        account_id_(account_name_, false),
-        knode_(),
-        mock_kad_ops_(new MockKadOps(knode_)),
+        transport_handler_(),
+        channel_manager_(&transport_handler_),
+        chunkstore_(new ChunkStore("Chunkstore", 9999999, 0)),
+        mock_kad_ops_(new MockKadOps(&transport_handler_, &channel_manager_,
+                      kad::CLIENT, "", "", false, false, chunkstore_)),
         fail_parse_pmids_(),
         fail_pmids_(),
         few_pmids_(),
@@ -125,8 +128,9 @@ class AccountHoldersManagerTest : public testing::Test {
   }
   crypto::Crypto co_;
   std::string pmid_, account_name_;
-  kad::KadId account_id_;
-  boost::shared_ptr<kad::KNode> knode_;
+  transport::TransportHandler transport_handler_;
+  rpcprotocol::ChannelManager channel_manager_;
+  boost::shared_ptr<ChunkStore> chunkstore_;
   boost::shared_ptr<MockKadOps> mock_kad_ops_;
   std::vector<std::string> fail_parse_pmids_, fail_pmids_, few_pmids_;
   std::vector<std::string> good_pmids_;
@@ -143,7 +147,7 @@ class AccountHoldersManagerTest : public testing::Test {
 
 TEST_F(AccountHoldersManagerTest, BEH_MAID_AHM_Init) {
   // Set up expectations
-  EXPECT_CALL(*mock_kad_ops_, FindKClosestNodes(account_id_, testing::_))
+  EXPECT_CALL(*mock_kad_ops_, FindKClosestNodes(account_name_, testing::_))
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
           boost::bind(&mock_kadops::RunCallback, fail_parse_result_, _1))))
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
@@ -198,7 +202,7 @@ TEST_F(AccountHoldersManagerTest, BEH_MAID_AHM_Init) {
 
 TEST_F(AccountHoldersManagerTest, BEH_MAID_AHM_UpdateGroup) {
   // Set up expectations
-  EXPECT_CALL(*mock_kad_ops_, FindKClosestNodes(account_id_, testing::_))
+  EXPECT_CALL(*mock_kad_ops_, FindKClosestNodes(account_name_, testing::_))
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
           boost::bind(&mock_kadops::RunCallback, fail_parse_result_, _1))))
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
@@ -209,8 +213,7 @@ TEST_F(AccountHoldersManagerTest, BEH_MAID_AHM_UpdateGroup) {
           boost::bind(&mock_kadops::RunCallback, good_result_, _1))));  // Cll 4
   std::string good_pmid_account(co_.Hash(good_pmids_.back() + kAccount, "",
                                          crypto::STRING_STRING, false));
-  kad::KadId good_pmid_id(good_pmid_account, false);
-  EXPECT_CALL(*mock_kad_ops_, FindKClosestNodes(good_pmid_id, testing::_))
+  EXPECT_CALL(*mock_kad_ops_, FindKClosestNodes(good_pmid_account, testing::_))
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
           boost::bind(&mock_kadops::RunCallback, good_result_, _1))));  // Cll 5
 
@@ -357,7 +360,7 @@ TEST_F(AccountHoldersManagerTest, BEH_MAID_AHM_UpdateRequired) {
 
 TEST_F(AccountHoldersManagerTest, BEH_MAID_AHM_ReportFailure) {
   // Set up expectations
-  EXPECT_CALL(*mock_kad_ops_, FindKClosestNodes(account_id_, testing::_))
+  EXPECT_CALL(*mock_kad_ops_, FindKClosestNodes(account_name_, testing::_))
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
           boost::bind(&mock_kadops::RunCallback, good_result_, _1))))
       .WillOnce(testing::WithArgs<1>(testing::Invoke(

@@ -57,6 +57,8 @@ enum BpOpType {
   GET_PRESENCE
 };
 
+class KadOps;
+
 struct ChangeBPData {
   ChangeBPData() : create_request(), modify_request(), get_msgs_request(),
                    add_msg_request(), get_presence_request(),
@@ -112,7 +114,7 @@ class ClientBufferPacketHandler {
   static const boost::uint16_t kParallelFindCtcs = 1;
  public:
   ClientBufferPacketHandler(boost::shared_ptr<maidsafe::BufferPacketRpcs> rpcs,
-                            boost::shared_ptr<kad::KNode> knode);
+                            boost::shared_ptr<KadOps> kadops);
   virtual ~ClientBufferPacketHandler() {}
   void CreateBufferPacket(const BPInputParameters &args,
                           bp_operations_cb cb,
@@ -160,7 +162,7 @@ class ClientBufferPacketHandler {
   ClientBufferPacketHandler(const ClientBufferPacketHandler&);
   crypto::Crypto crypto_obj_;
   boost::shared_ptr<maidsafe::BufferPacketRpcs> rpcs_;
-  boost::shared_ptr<kad::KNode> knode_;
+  boost::shared_ptr<KadOps> kad_ops_;
 };
 
 }  // namespace maidsafe

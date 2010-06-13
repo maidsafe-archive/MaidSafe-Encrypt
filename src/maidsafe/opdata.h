@@ -49,7 +49,6 @@ struct StoreData {
                 chunk_type(kHashable | kNormal),
                 system_packet_type(MID),
                 dir_type(PRIVATE),
-                if_packet_exists(kDoNothingReturnFailure),
                 callback() {}
   // Store chunk constructor
   StoreData(const std::string &chunk_name,
@@ -72,7 +71,6 @@ struct StoreData {
                   chunk_type(ch_type),
                   system_packet_type(MID),
                   dir_type(directory_type),
-                  if_packet_exists(kDoNothingReturnFailure),
                   callback() {}
   // Store packet constructor
   StoreData(const std::string &packet_name,
@@ -84,7 +82,6 @@ struct StoreData {
             const std::string &pub_key,
             const std::string &pub_key_signature,
             const std::string &priv_key,
-            IfPacketExists if_exists,
             VoidFuncOneInt cb)
                 : data_name(packet_name),
                   value(packet_value),
@@ -97,7 +94,6 @@ struct StoreData {
                   chunk_type(kHashable | kNormal),
                   system_packet_type(sys_packet_type),
                   dir_type(directory_type),
-                  if_packet_exists(if_exists),
                   callback(cb) {}
   std::string data_name, value;
   boost::uint64_t size;
@@ -105,7 +101,6 @@ struct StoreData {
   ChunkType chunk_type;
   PacketType system_packet_type;
   DirType dir_type;
-  IfPacketExists if_packet_exists;
   VoidFuncOneInt callback;
 };
 
@@ -130,24 +125,6 @@ struct DeletePacketData {
                          private_key(priv_key),
                          system_packet_type(sys_packet_type),
                          dir_type(directory_type),
-                         callback(cb),
-                         mutex(),
-                         returned_count(0),
-                         called_back(false) {}
-  // This ctor effectively allows us to use a StoreData struct for deleting
-  // a packet during an OverwritePacket operation
-  DeletePacketData(boost::shared_ptr<StoreData> store_data,
-                   const std::vector<std::string> &vals,
-                   VoidFuncOneInt cb)
-                       : packet_name(store_data->data_name),
-                         values(vals),
-                         msid(store_data->msid),
-                         key_id(store_data->key_id),
-                         public_key(store_data->public_key),
-                         public_key_signature(store_data->public_key_signature),
-                         private_key(store_data->private_key),
-                         system_packet_type(store_data->system_packet_type),
-                         dir_type(store_data->dir_type),
                          callback(cb),
                          mutex(),
                          returned_count(0),
@@ -259,7 +236,7 @@ struct SendChunkData {
         store_chunk_request(),
         store_chunk_response(),
         controller(new rpcprotocol::Controller),
-        attempt(0) { controller->set_timeout(300); }
+        attempt(0) { controller->set_timeout(120); }
   StoreData store_data;
   kad::Contact peer;
   bool local;

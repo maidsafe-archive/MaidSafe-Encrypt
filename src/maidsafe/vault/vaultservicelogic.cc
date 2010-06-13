@@ -39,10 +39,9 @@ namespace maidsafe_vault {
 
 VaultServiceLogic::VaultServiceLogic(
     const boost::shared_ptr<VaultRpcs> &vault_rpcs,
-    const boost::shared_ptr<kad::KNode> &knode)
+    const boost::shared_ptr<maidsafe::KadOps> &kadops)
         : vault_rpcs_(vault_rpcs),
-          knode_(knode),
-          kad_ops_(new maidsafe::KadOps(knode)),
+          kad_ops_(kadops),
           our_details_(),
           pmid_(),
           pmid_public_key_(),
@@ -58,13 +57,13 @@ bool VaultServiceLogic::Init(const std::string &pmid,
                              const std::string &pmid_public_key,
                              const std::string &pmid_public_signature,
                              const std::string &pmid_private) {
-  if (knode_.get() == NULL)
+  if (kad_ops_.get() == NULL)
     return false;
   pmid_ = pmid;
   pmid_public_key_ = pmid_public_key;
   pmid_public_signature_ = pmid_public_signature;
   pmid_private_ = pmid_private;
-  kad::Contact our_details(knode_->contact_info());
+  kad::Contact our_details(kad_ops_->contact_info());
   our_details_ = our_details;
   SetOnlineStatus(true);
   return true;
@@ -97,9 +96,9 @@ void VaultServiceLogic::AddToRemoteRefList(
     return;
   }
   boost::shared_ptr<AddToReferenceListOpData> data(new AddToReferenceListOpData(
-      request, kad::KadId(request.chunkname(), false), found_local_result,
-      callback, transport_id));
-  kad_ops_->FindKClosestNodes(kad::KadId(request.chunkname(), false),
+      request, request.chunkname(), found_local_result, callback,
+      transport_id));
+  kad_ops_->FindKClosestNodes(request.chunkname(),
       boost::bind(static_cast< void(VaultServiceLogic::*)
           (boost::shared_ptr<AddToReferenceListOpData>, std::string) >
           (&VaultServiceLogic::RemoteOpStageTwo), this, data, _1));
@@ -120,12 +119,12 @@ void VaultServiceLogic::AmendRemoteAccount(
   }
   crypto::Crypto co;
   co.set_hash_algorithm(crypto::SHA_512);
-  kad::KadId account_name(co.Hash(request.account_pmid() + kAccount, "",
-      crypto::STRING_STRING, false), false);
+  std::string account_name(co.Hash(request.account_pmid() + kAccount, "",
+      crypto::STRING_STRING, false));
 #ifdef DEBUG
   printf("In VSL::AmendRemoteAccount, name of PMID: %s & name of account: %s\n",
          base::EncodeToHex(request.account_pmid()).c_str(),
-         account_name.ToStringEncoded().c_str());
+         account_name.c_str());
 #endif
   boost::shared_ptr<AmendRemoteAccountOpData> data(new AmendRemoteAccountOpData(
       request, account_name, found_local_result, callback, transport_id));
@@ -150,8 +149,8 @@ void VaultServiceLogic::RemoteVaultAbleToStore(
   }
   crypto::Crypto co;
   co.set_hash_algorithm(crypto::SHA_512);
-  kad::KadId account_name(co.Hash(request.account_pmid() + kAccount, "",
-      crypto::STRING_STRING, false), false);
+  std::string account_name(co.Hash(request.account_pmid() + kAccount, "",
+      crypto::STRING_STRING, false));
   boost::shared_ptr<RemoteAccountStatusOpData>
       data(new RemoteAccountStatusOpData(request, account_name,
           found_local_result, callback, transport_id));
@@ -169,8 +168,7 @@ void VaultServiceLogic::RemoteOpStageTwo(boost::shared_ptr<T> data,
   boost::condition_variable cv;
   maidsafe::ReturnCode result(maidsafe::kFindNodesError);
   kad_ops_->HandleFindCloseNodesResponse(find_nodes_response,
-                                         data->kad_key, &data->contacts,
-                                         &mutex, &cv, &result);
+                                         &data->contacts, &mutex, &cv, &result);
   if (result != maidsafe::kSuccess) {
 #ifdef DEBUG
     printf("In VSL::RemoteOpStageTwo for %s (%s), Kad lookup failed -- "
@@ -251,8 +249,8 @@ bool VaultServiceLogic::RemoveSubjectContact(
 
 template<typename T>
 bool VaultServiceLogic::RemoveSubjectContact(boost::shared_ptr<T> data) {
-  return maidsafe::RemoveKadContact(
-      kad::KadId(data->request.account_pmid(), false), &data->contacts);
+  return maidsafe::RemoveKadContact(data->request.account_pmid(),
+                                    &data->contacts);
 }
 
 template<>
@@ -260,8 +258,7 @@ void VaultServiceLogic::SendRpcs(
     boost::shared_ptr<AddToReferenceListOpData> data) {
   for (boost::uint16_t j = 0; j < data->contacts.size(); ++j) {
     data->request.set_request_signature(GetSignedRequest(
-        data->kad_key.ToStringDecoded(),
-        data->contacts.at(j).node_id().ToStringDecoded()));
+        data->kad_key, data->contacts.at(j).node_id().ToStringDecoded()));
     google::protobuf::Closure* done = google::protobuf::NewCallback<
         VaultServiceLogic, boost::uint16_t,
         boost::shared_ptr<AddToReferenceListOpData> > (this,

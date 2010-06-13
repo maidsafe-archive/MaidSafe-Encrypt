@@ -42,14 +42,28 @@
 
 namespace maidsafe {
 
+namespace test {
+class ClientControllerTest;
+class ClientControllerTest_BEH_MAID_CC_HandleMessages_Test;
+class ClientControllerTest_FUNC_MAID_NET_CC_HandleMessages_Test;
+class ClientControllerTest_FUNC_MAID_CC_ClearStaleMessages_Test;
+class ClientControllerTest_FUNC_MAID_NET_CC_ClearStaleMessages_Test;
+}
+
 class ChunkStore;
 
-class CC_CallbackResult {
+class CCCallback {
  public:
-  CC_CallbackResult();
-  void CallbackFunc(const std::string &res);
-  void Reset();
-  std::string result;
+  CCCallback() : result_(), return_code_(kPendingResult), mutex_(), cv_() {}
+  void StringCallback(const std::string &result);
+  void ReturnCodeCallback(const ReturnCode &return_code);
+  std::string WaitForStringResult();
+  ReturnCode WaitForReturnCodeResult();
+ private:
+  std::string result_;
+  ReturnCode return_code_;
+  boost::mutex mutex_;
+  boost::condition_variable cv_;
 };
 
 class BPCallback {
@@ -227,18 +241,12 @@ class ClientController {
       boost::function<void(const std::string&, const int&)> conn_not);
 
  private:
-//  friend class MockClientController;
-//  int Init(SessionSingleton *ss);
-
-  // Friend tests
-  FRIEND_TEST(FunctionalClientControllerTest, FUNC_MAID_ControllerBackupFile);
-  FRIEND_TEST(FunctionalClientControllerTest, FUNC_MAID_ControllerSaveSession);
-  FRIEND_TEST(ClientControllerTest, FUNC_MAID_LocalControllerBackupFile);
-  FRIEND_TEST(ClientControllerTest, FUNC_MAID_LocalControllerSaveSession);
-  FRIEND_TEST(ClientControllerTest, FUNC_MAID_LocalControllerContactAddition);
-  FRIEND_TEST(ClientControllerTest, BEH_MAID_LocalControllerHandleMessages);
-  FRIEND_TEST(ClientControllerTest,
-              FUNC_MAID_LocalControllerClearStaleMessages);
+  friend class test::ClientControllerTest;
+  friend class test::ClientControllerTest_BEH_MAID_CC_HandleMessages_Test;
+  friend class test::ClientControllerTest_FUNC_MAID_NET_CC_HandleMessages_Test;
+  friend class test::ClientControllerTest_FUNC_MAID_CC_ClearStaleMessages_Test;
+  friend class
+      test::ClientControllerTest_FUNC_MAID_NET_CC_ClearStaleMessages_Test;
 
   // Functions
   ClientController();
@@ -246,7 +254,6 @@ class ClientController {
   ClientController &operator=(const ClientController&);
   ClientController(const ClientController&);
   bool JoinKademlia();
-  void WaitForResult(const CC_CallbackResult &cb);
   int BackupElement(const std::string &path,
                     const DirType dir_type,
                     const std::string &msid);

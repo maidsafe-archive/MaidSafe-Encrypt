@@ -149,10 +149,10 @@ class VaultService : public maidsafe::MaidsafeService {
                const std::string &pmid_public,
                const std::string &pmid_private,
                const std::string &pmid_public_signature,
-               VaultChunkStore *vault_chunkstore,
-               kad::KNode *knode,
+               boost::shared_ptr<VaultChunkStore> vault_chunkstore,
                VaultServiceLogic *vault_service_logic,
-               const boost::int16_t &transport_id);
+               const boost::int16_t &transport_id,
+               boost::shared_ptr<maidsafe::KadOps> kadops);
   ~VaultService() {}
   void AddStartupSyncData(
       const maidsafe::GetSyncDataResponse &get_sync_data_response);
@@ -382,10 +382,10 @@ class VaultService : public maidsafe::MaidsafeService {
   bool NodeWithinClosest(const std::string &peer_pmid,
                          const boost::uint16_t &count);
   std::string pmid_, pmid_public_, pmid_private_, pmid_public_signature_;
-  VaultChunkStore *vault_chunkstore_;
-  kad::KNode *knode_;
+  boost::shared_ptr<VaultChunkStore> vault_chunkstore_;
   VaultServiceLogic *vault_service_logic_;
   boost::int16_t transport_id_;
+  boost::shared_ptr<maidsafe::KadOps> kad_ops_;
   typedef std::map<std::string, maidsafe::StoreContract> PrepsReceivedMap;
   PrepsReceivedMap prm_;
   AccountHandler ah_;

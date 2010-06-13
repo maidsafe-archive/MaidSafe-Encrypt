@@ -165,7 +165,7 @@ int VaultChunkStore::FreeCacheSpace(const boost::uint64_t &space_to_clear) {
         try {
           fs::remove_all(p);
         }
-        catch(const std::exception &e) {}
+        catch(const std::exception&) {}
         chunkstore_set_.get<1>().erase(itr);
         itr = chunkstore_set_.get<1>().begin();
         space_used_by_cache_ -= chunk.size_;

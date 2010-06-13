@@ -51,21 +51,23 @@ namespace maidsafe {
 
 class MockKadOps : public KadOps {
  public:
-  explicit MockKadOps(const boost::shared_ptr<kad::KNode> &knode)
-      : KadOps(knode) {}
+  MockKadOps(transport::TransportHandler *transport_handler,
+             rpcprotocol::ChannelManager *channel_manager,
+             kad::NodeType type,
+             const std::string &private_key,
+             const std::string &public_key,
+             bool port_forwarded,
+             bool use_upnp,
+             boost::shared_ptr<ChunkStore> chunkstore)
+      : KadOps(transport_handler, channel_manager, type, private_key,
+               public_key, port_forwarded, use_upnp, chunkstore) {}
   MOCK_METHOD1(AddressIsLocal, bool(const kad::Contact &peer));
   MOCK_METHOD1(AddressIsLocal, bool(const kad::ContactInfo &peer));
-  MOCK_METHOD3(FindValue, void(const kad::KadId &kad_key,
+  MOCK_METHOD3(FindValue, void(const std::string &key,
                                bool check_local,
-                               const kad::VoidFunctorOneString &cb));
-  MOCK_METHOD5(FindValue, int(const kad::KadId &kad_key,
-                              bool check_local,
-                              kad::ContactInfo *cache_holder,
-                              std::vector<std::string> *values,
-                              std::string *needs_cache_copy_id));
-  MOCK_METHOD2(FindKClosestNodes,
-               void(const kad::KadId &kad_key,
-                    const kad::VoidFunctorOneString &callback));
+                               kad::VoidFunctorOneString callback));
+  MOCK_METHOD2(FindKClosestNodes, void(const std::string &key,
+                                       kad::VoidFunctorOneString callback));
   MOCK_METHOD4(GetStorePeer, int(const double &ideal_rtt,
                                  const std::vector<kad::Contact> &exclude,
                                  kad::Contact *new_peer,

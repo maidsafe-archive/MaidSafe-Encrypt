@@ -56,14 +56,14 @@ struct RemoteOpData {
   struct RemoteOpHolder {
     explicit RemoteOpHolder(std::string id)
         : node_id(id), response(), controller(new rpcprotocol::Controller) {
-      controller->set_timeout(300);
+      controller->set_timeout(120);
     }
     std::string node_id;
     T2 response;
     boost::shared_ptr<rpcprotocol::Controller> controller;
   };
   RemoteOpData(T1 req,
-               kad::KadId kadkey,
+               std::string kadkey,
                int found_local_res,
                VoidFuncOneInt cb,
                boost::int16_t trans_id)
@@ -82,7 +82,7 @@ struct RemoteOpData {
     data_holders.reserve(kad::K);
   }
   T1 request;
-  kad::KadId kad_key;
+  std::string kad_key;
   int found_local_result;
   VoidFuncOneInt callback;
   boost::int16_t transport_id;
@@ -130,7 +130,7 @@ struct GetInfoData {
           request(req),
           response(),
           controller(new rpcprotocol::Controller) {
-      controller->set_timeout(300);
+      controller->set_timeout(120);
     }
     kad::Contact contact;
     T1 request;
@@ -187,7 +187,7 @@ const size_t kParallelRequests(2);
 class VaultServiceLogic {
  public:
   VaultServiceLogic(const boost::shared_ptr<VaultRpcs> &vault_rpcs,
-                    const boost::shared_ptr<kad::KNode> &knode);
+                    const boost::shared_ptr<maidsafe::KadOps> &kadops);
   virtual ~VaultServiceLogic() {}
   bool Init(const std::string &pmid,
             const std::string &pmid_public_key,
@@ -246,7 +246,7 @@ class VaultServiceLogic {
   friend class MockVsl;
   friend class MockVaultServicesTest;
   // First callback method in e.g. AmendRemoteAccount operation.  Called once by
-  // knode_->FindKNodes (when finding account holders' details).  T is
+  // kad_ops_->FindKNodes (when finding account holders' details).  T is
   // AmendRemoteAccountOpData or RemoteAccountStatusOpData.
   template <typename T>
   void RemoteOpStageTwo(boost::shared_ptr<T> data,
@@ -279,7 +279,6 @@ class VaultServiceLogic {
                                const std::string &recipient_id);
 
   boost::shared_ptr<VaultRpcs> vault_rpcs_;
-  boost::shared_ptr<kad::KNode> knode_;
   boost::shared_ptr<maidsafe::KadOps> kad_ops_;
   kad::Contact our_details_;
   std::string pmid_, pmid_public_key_, pmid_public_signature_, pmid_private_;
