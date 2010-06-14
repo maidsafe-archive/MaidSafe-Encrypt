@@ -54,6 +54,8 @@ static std::list<std::string> callback_messages_;
 
 namespace testpdvault {
 
+static const boost::uint8_t K(4);
+
 struct ClientData {
   explicit ClientData(const std::string &root_dir)
     : chunkstore_dir(root_dir + "/ClientChunkstore_" + base::RandomString(8)),
@@ -187,7 +189,7 @@ namespace maidsafe_vault {
 
 static std::vector< boost::shared_ptr<PDVault> > pdvaults_;
 static const int kNumOfClients = 2;
-static const int kNetworkSize = kad::K + kNumOfClients;
+static const int kNetworkSize = testpdvault::K + kNumOfClients;
 static const int kNumOfTestChunks = kNetworkSize + 1;
 /**
  * Note: StoreAndGetChunks only works for small K due to resource problems
@@ -276,7 +278,7 @@ class PDVaultTest : public testing::Test {
       for (int j = kNetworkSize - kNumOfClients; j < kNetworkSize; ++j) {
         maidsafe::CallbackObj cb;
         pdvaults_[i]->kad_ops_->GetNodeContactDetails(
-            kad::KadId(pdvaults_[i]->pmid_, false),
+            kad::KadId(pdvaults_[i]->pmid_),
             boost::bind(&maidsafe::CallbackObj::CallbackFunc, &cb, _1),
             false);
         cb.WaitForCallback();
@@ -291,7 +293,7 @@ class PDVaultTest : public testing::Test {
       ASSERT_TRUE(clients_[i]->chunkstore->Init());
       boost::shared_ptr<maidsafe::MaidsafeStoreManager>
           sm_local_(new maidsafe::MaidsafeStoreManager(
-                    clients_[i]->chunkstore));
+                    clients_[i]->chunkstore, testpdvault::K));
       clients_[i]->msm = sm_local_;
       clients_[i]->msm->ss_ = &clients_[i]->mss;
       testpdvault::PrepareCallbackResults();
@@ -314,7 +316,8 @@ class PDVaultTest : public testing::Test {
       pdvaults_[vlt].reset(new PDVault(clients_[i]->pmid_pub_key,
                                        clients_[i]->pmid_priv_key,
                                        clients_[i]->pmid_pub_key_sig, dir, 0,
-                                       false, false, kad_cfg, avlb, used));
+                                       false, false, kad_cfg, avlb, used,
+                                       testpdvault::K));
       pdvaults_[vlt]->Start(false);
     }
 
@@ -383,9 +386,9 @@ TEST_F(PDVaultTest, FUNC_MAID_StoreAndGetChunks) {
     std::set<std::string> closest;
     std::vector<kad::Contact> contacts;
     clients_[i]->msm->kad_ops_->BlockingFindKClosestNodes(
-        kad::KadId(account_name, false), &contacts);
+        kad::KadId(account_name), &contacts);
     for (size_t j = 0; j < contacts.size(); ++j) {
-      closest.insert(contacts[j].node_id().ToStringDecoded());
+      closest.insert(contacts[j].node_id().String());
     }
     for (int j = 0; j < kNetworkSize; ++j) {
       bool client = pdvaults_[j]->pmid_ == client_pmid;
@@ -648,6 +651,6 @@ int main(int argc, char **argv) {
   testing::InitGoogleTest(&argc, argv);
   testing::AddGlobalTestEnvironment(
       new localvaults::Env(maidsafe_vault::kNetworkSize,
-                           &maidsafe_vault::pdvaults_));
+                           &maidsafe_vault::pdvaults_, testpdvault::K));
   return RUN_ALL_TESTS();
 }

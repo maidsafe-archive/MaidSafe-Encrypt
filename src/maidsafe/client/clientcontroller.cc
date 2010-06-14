@@ -27,8 +27,10 @@
 #ifdef PD_WIN32
 #include <shlwapi.h>
 #endif
+#include <string>
 
 #include <boost/scoped_ptr.hpp>
+#include <boost/foreach.hpp>
 #include <boost/thread/mutex.hpp>
 #include <boost/filesystem/fstream.hpp>
 #include <maidsafe/protobuf/kademlia_service_messages.pb.h>
@@ -136,9 +138,12 @@ void ClientController::Destroy() {
   single = 0;
 }
 
-int ClientController::Init() {
+int ClientController::Init(boost::uint8_t k) {
   if (initialised_)
     return 0;
+  K_ = k;
+  upper_threshold_ = static_cast<boost::uint16_t>
+                     (K_ * kMinSuccessfulPecentageStore);
   fs::path client_path(file_system::ApplicationDataDir());
   try {
     // If main app dir isn't already there, create it
@@ -177,10 +182,10 @@ int ClientController::Init() {
 #endif
     return -5;
   }
-#if defined LOCAL_PDVAULT
-  sm_.reset(new LocalStoreManager(client_chunkstore_, ""));
+#ifdef LOCAL_PDVAULT
+  sm_.reset(new LocalStoreManager(client_chunkstore_, K_, ""));
 #else
-  sm_.reset(new MaidsafeStoreManager(client_chunkstore_));
+  sm_.reset(new MaidsafeStoreManager(client_chunkstore_, K_));
 #endif
   if (!JoinKademlia()) {
 #ifdef DEBUG
@@ -598,9 +603,19 @@ bool ClientController::CreateUser(const std::string &username,
     }
     res += dah->AddElement(TidyPath(kRootSubdir[i][0]),
                            ser_mdm, "", key, true);
-    seh_.EncryptDb(TidyPath(kRootSubdir[i][0]),
-                    PRIVATE, key, "", true, &dm);
+    res += seh_.EncryptDb(TidyPath(kRootSubdir[i][0]),
+								          PRIVATE, key, "", true, &dm);
+		printf("%s - %d\n", kRootSubdir[i][0].c_str(), res);
   }
+
+	if (0 != res) {
+#ifdef DEBUG
+    printf("In ClientController::CreateUser error creating First layer DBs.\n");
+#endif
+    return false;
+  }
+
+
 #ifdef DEBUG
   printf("In CC::CreateUser - My Files and Shares DONE.\n");
 #endif
@@ -644,7 +659,7 @@ bool ClientController::CreateUser(const std::string &username,
 
   if (0 != res) {
 #ifdef DEBUG
-    printf("In ClientController::CreateUser error creating DBs.\n");
+    printf("In ClientController::CreateUser error creating Share DBs.\n");
 #endif
     return false;
   }
@@ -1007,7 +1022,7 @@ bool ClientController::GetMessages() {
   }
 
   std::list<ValidatedBufferPacketMessage> valid_messages;
-  if (sm_->LoadBPMessages(&valid_messages) < kKadUpperThreshold) {
+  if (sm_->LoadBPMessages(&valid_messages) < upper_threshold_) {
 #ifdef DEBUG
     printf("ClientController::GetMessages - Muffed the load\n");
 #endif
@@ -1509,6 +1524,69 @@ int ClientController::HandleAddContactResponse(
     return -88;
   }
   return 0;
+}
+
+int ClientController::SendEmail(const std::string &subject, const std::string &msg,
+             const std::vector<std::string> &to, const std::vector<std::string> &cc,
+						 const std::vector<std::string> &bcc, const std::string &conversation) {
+ if (!initialised_) {
+#ifdef DEBUG
+    printf("CC::SendEmail - Not initialised.\n");
+#endif
+    return kClientControllerNotInitialised;
+  }
+  if (ss_->ConnectionStatus() == 1) {
+#ifdef DEBUG
+    printf("Can't send an email while off-line.\n");
+#endif
+    return -9999;
+  }
+
+  std::string toList, ccList;
+  std::vector<std::string> contact_to;
+
+  BOOST_FOREACH(std::string contact, to) {
+    contact_to.push_back(contact);
+    toList.append(contact+", ");
+  }
+  BOOST_FOREACH(std::string contact, cc) {
+    contact_to.push_back(contact);
+    ccList.append(contact+", ");
+	}
+  BOOST_FOREACH(std::string contact, bcc) {
+    contact_to.push_back(contact);
+  }
+
+  InstantMessage im;
+  EmailNotification *en =
+    im.mutable_email_notification();
+  en->set_to(toList);
+  en->set_cc(ccList);
+  im.set_sender(ss_->PublicUsername());
+  im.set_date(base::GetEpochTime());
+  im.set_conversation(conversation);
+  im.set_message(msg);
+  im.set_subject(subject);
+
+  std::string ser_email;
+  im.SerializeToString(&ser_email);
+
+  std::map<std::string, ReturnCode> add_results;
+  if (sm_->SendMessage(contact_to, ser_email, INSTANT_MSG, &add_results) !=
+      static_cast<int>(contact_to.size())) {
+#ifdef DEBUG
+    printf("ClientController::SendEmail - Not all recepients got "
+           "the message\n");
+#endif
+    return -999;
+  }
+
+  int res = 0;
+  for (size_t n = 0; n < contact_to.size(); ++n) {
+    res += ss_->SetLastContactRank(contact_to[n]);
+  }
+
+  return res;
 }
 
 int ClientController::SendInstantMessage(const std::string &message,
@@ -2307,8 +2385,16 @@ int ClientController::RemoveElement(const std::string &element_path) {
     return -1;
   fs::path full_path =
       file_system::FullMSPathFromRelPath(element_path, ss_->SessionName());
-  if (fs::exists(full_path))
-    fs::remove_all(full_path);
+
+  try {
+    if (fs::exists(full_path))
+      fs::remove_all(full_path);
+  }
+  catch(const std::exception &e) {
+#ifdef DEBUG
+    printf("ClientController::RemoveElement - Failed to remove.\n");
+#endif
+  }
   return 0;
 }
 
@@ -2432,10 +2518,16 @@ int ClientController::GetDb(const std::string &orig_path,
 #ifdef DEBUG
   printf("\t\tMSID: %s\n", HexSubstr(*msid).c_str());
 #endif
-
-  if (fs::exists(db_path) && *msid == "") {
-    *dir_type = GetDirType(parent_path);
-    return 0;
+  try {
+    if (fs::exists(db_path) && *msid == "") {
+      *dir_type = GetDirType(parent_path);
+      return 0;
+    }
+  }
+  catch(const std::exception &e) {
+#ifdef DEBUG
+    printf("ClientController::GetDb - Problems with the db path.\n");
+#endif
   }
   if (dah->GetDirKey(parent_path, &dir_key)) {
 #ifdef DEBUG
@@ -2891,7 +2983,7 @@ int ClientController::rmdir(const std::string &path) {
   return 0;
 }
 
-int ClientController::getattr(const std::string &path, std::string &ser_mdm) {
+int ClientController::getattr(const std::string &path, std::string *ser_mdm) {
   if (!initialised_) {
 #ifdef DEBUG
     printf("CC::getattr - Not initialised.\n");
@@ -2906,15 +2998,16 @@ int ClientController::getattr(const std::string &path, std::string &ser_mdm) {
   if (GetDb(path, &dir_type, &msid))
     return -1;
   boost::scoped_ptr<DataAtlasHandler> dah_(new DataAtlasHandler());
-  if (dah_->GetMetaDataMap(path, &ser_mdm))
+  if (dah_->GetMetaDataMap(path, ser_mdm))
     return -1;
   MetaDataMap mdm;
-  mdm.ParseFromString(ser_mdm);
+  if (!mdm.ParseFromString(*ser_mdm))
+    return -1;
   return 0;
 }
 
 int ClientController::readdir(const std::string &path,  // NOLINT
-                              std::map<std::string, ItemType> &children) {
+                              std::map<std::string, ItemType> *children) {
   if (!initialised_) {
 #ifdef DEBUG
     printf("CC::readdir - Not initialised.\n");
@@ -2926,10 +3019,11 @@ int ClientController::readdir(const std::string &path,  // NOLINT
 #endif
   DirType dir_type;
   std::string msid;
-  if (GetDb(path, &dir_type, &msid))
+  // THIS MAY NOT WORK FOR DOKAN/FUSE!!!!
+  if (GetDb(path + "/a", &dir_type, &msid))
     return -1;
-  boost::scoped_ptr<DataAtlasHandler> dah_(new DataAtlasHandler());
-  if (dah_->ListFolder(path, &children))
+  boost::scoped_ptr<DataAtlasHandler> dah(new DataAtlasHandler());
+  if (dah->ListFolder(path, children))
     return -1;
   return 0;
 }

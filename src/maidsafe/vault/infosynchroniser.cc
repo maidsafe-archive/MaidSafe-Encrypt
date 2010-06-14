@@ -68,7 +68,7 @@ bool InfoSynchroniser::ShouldFetch(const std::string &id,
 
   // Assess if we should hold the info.
   std::list<base::PublicRoutingTableTuple> nodes;
-  if (routing_table_->GetClosestContacts(id, kad::K, &nodes) != kSuccess) {
+  if (routing_table_->GetClosestContacts(id, K_, &nodes) != kSuccess) {
 #ifdef DEBUG
     printf("In InfoSynchroniser::AddEntry(%s), failed to query local"
            "routing table.\n", HexSubstr(pmid_).c_str());

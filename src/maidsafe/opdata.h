@@ -341,8 +341,8 @@ class GetChunkOpData {
   }
   void AddChunkHolder(const kad::Contact &contact) {
     chunk_holders[kHolderContactable].insert(
-        contact.node_id().ToStringDecoded());
-    chunk_holder_contacts[contact.node_id().ToStringDecoded()] = contact;
+        contact.node_id().String());
+    chunk_holder_contacts[contact.node_id().String()] = contact;
   }
   std::string chunk_name, needs_cache_copy_id;
   bool failed, find_value_done, found_chunk_holder;

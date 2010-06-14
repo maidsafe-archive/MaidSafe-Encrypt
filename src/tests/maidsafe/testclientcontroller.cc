@@ -41,6 +41,8 @@ namespace fs = boost::filesystem;
 
 namespace cc_test {
 
+static const boost::uint8_t K(4);
+
 void Sleep(const int &millisecs) {
 #ifdef MS_NETWORK_TEST
   boost::this_thread::sleep(boost::posix_time::milliseconds(millisecs));
@@ -72,7 +74,7 @@ class ClientControllerTest : public testing::Test {
     cc_->ss_ = ss_;
     cc_->initialised_ = true;
 #else
-    cc_->Init();
+    cc_->Init(test_cc::K);
 #endif
     vcp_.space = 1000000;
     vcp_.directory = (network_test_.test_dir() / "VaultChunkstore").string();

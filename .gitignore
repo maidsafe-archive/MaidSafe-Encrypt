@@ -7,3 +7,4 @@ desktop.ini
 *.kdev4
 src/protobuf/*.pb.h
 src/protobuf/*.pb.cc
+installer/temp/*

@@ -70,7 +70,8 @@ class ClientController : public QObject {
       CONTACT_REQUEST,    // Someone has requested to add us
       CONTACT_RESPONSE,   // Someone has responed to our request
       CONTACT_DELETE,     // Someone has deleted us from their list
-      INVITE              // To invite someone to a conversation
+      INVITE,							// To invite someone to a conversation
+			EMAIL								//Someone has sent an email
   };
 
   static ClientController* instance();
@@ -106,14 +107,15 @@ class ClientController : public QObject {
   // qt file browser methods //
   /////////////////////////////
 
-  int getattr(const std::string &path, std::string &ser_mdm);
-  int readdir(const std::string &path,  // NOLINT
-              std::map<std::string, maidsafe::ItemType> &children);
-  int read(const std::string &path);
-  int write(const std::string &path);
-  int rename(const std::string &path, const std::string &path2);
-  int mkdir(const std::string &path);
-  int rmdir(const std::string &path);
+  int getattr(const QString &path, std::string *ser_mdm);
+  int readdir(const QString &path,  // NOLINT
+              std::map<std::string, maidsafe::ItemType> *children);
+  int read(const QString &path);
+  int write(const QString &path);
+  int rename(const QString &path, const QString &path2);
+  int mkdir(const QString &path);
+  int rmdir(const QString &path);
+  int mknod(const QString &path);
 
   bool CreatePublicUsername(const std::string &public_username);
   bool CreateUser(const std::string &username,
@@ -171,6 +173,13 @@ class ClientController : public QObject {
                        const QList<QString>& to,
                        const QString& conversation);
 
+	bool sendEmail(const QString& subject,
+                 const QString& message,
+                 const QList<QString>& to,
+								 const QList<QString>& cc,
+								 const QList<QString>& bcc,
+                 const QString& conversation);
+
   // Vault info
   bool PollVaultInfo(QString *chunkstore, boost::uint64_t *offered_space,
                      boost::uint64_t *free_space, QString *ip,
@@ -200,6 +209,7 @@ class ClientController : public QObject {
   void fileReceived(const maidsafe::InstantMessage& im);
   void connectionStatusChanged(int status);
   void systemMessage(const QString& message);
+	void emailReceieved(const maidsafe::InstantMessage& im);
 
   private slots:
     // temporary while we emulate message notifications

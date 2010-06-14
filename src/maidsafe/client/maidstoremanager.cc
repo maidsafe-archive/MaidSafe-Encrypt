@@ -81,13 +81,19 @@ void UpdatePacketTask::run() {
 int MaidsafeStoreManager::kPacketMaxThreadCount_ = 1;
 int MaidsafeStoreManager::kChunkMaxThreadCount_ = 5;
 
-MaidsafeStoreManager::MaidsafeStoreManager(boost::shared_ptr<ChunkStore> cstore)
-    : udt_transport_(),
+MaidsafeStoreManager::MaidsafeStoreManager(boost::shared_ptr<ChunkStore> cstore,
+                                           boost::uint8_t k)
+    : K_(k),
+      upper_threshold_(
+          static_cast<boost::uint16_t>(K_ * kMinSuccessfulPecentageStore)),
+      lower_threshold_(kMinSuccessfulPecentageStore > .25 ?
+          static_cast<boost::uint16_t>(K_ * .25) : upper_threshold_),
+      udt_transport_(),
       transport_handler_(),
       channel_manager_(&transport_handler_),
       client_rpcs_(new ClientRpcs(&transport_handler_, &channel_manager_)),
       kad_ops_(new KadOps(&transport_handler_, &channel_manager_, kad::CLIENT,
-                          "", "", false, false, cstore)),
+                          "", "", false, false, K_, cstore)),
       ss_(SessionSingleton::getInstance()),
       tasks_handler_(),
       client_chunkstore_(cstore),
@@ -95,7 +101,7 @@ MaidsafeStoreManager::MaidsafeStoreManager(boost::shared_ptr<ChunkStore> cstore)
       packet_thread_pool_(),
       store_packet_mutex_(),
       bprpcs_(new BufferPacketRpcsImpl(&transport_handler_, &channel_manager_)),
-      cbph_(bprpcs_, kad_ops_),
+      cbph_(bprpcs_, kad_ops_, upper_threshold_),
       im_notifier_(),
       im_status_notifier_(),
       im_conn_hdler_(),
@@ -104,13 +110,19 @@ MaidsafeStoreManager::MaidsafeStoreManager(boost::shared_ptr<ChunkStore> cstore)
       account_status_manager_() {}
 
 MaidsafeStoreManager::MaidsafeStoreManager(boost::shared_ptr<ChunkStore> cstore,
+                                           boost::uint8_t k,
                                            SessionSingleton *ss)
-    : udt_transport_(),
+    : K_(k),
+      upper_threshold_(
+          static_cast<boost::uint16_t>(K_ * kMinSuccessfulPecentageStore)),
+      lower_threshold_(kMinSuccessfulPecentageStore > .25 ?
+          static_cast<boost::uint16_t>(K_ * .25) : upper_threshold_),
+      udt_transport_(),
       transport_handler_(),
       channel_manager_(&transport_handler_),
       client_rpcs_(new ClientRpcs(&transport_handler_, &channel_manager_)),
       kad_ops_(new KadOps(&transport_handler_, &channel_manager_, kad::CLIENT,
-                          "", "", false, false, cstore)),
+                          "", "", false, false, K_, cstore)),
       ss_(ss),
       tasks_handler_(),
       client_chunkstore_(cstore),
@@ -118,7 +130,7 @@ MaidsafeStoreManager::MaidsafeStoreManager(boost::shared_ptr<ChunkStore> cstore,
       packet_thread_pool_(),
       store_packet_mutex_(),
       bprpcs_(new BufferPacketRpcsImpl(&transport_handler_, &channel_manager_)),
-      cbph_(bprpcs_, kad_ops_),
+      cbph_(bprpcs_, kad_ops_, upper_threshold_),
       im_notifier_(),
       im_status_notifier_(),
       im_conn_hdler_(),
@@ -375,8 +387,8 @@ int MaidsafeStoreManager::LoadChunk(const std::string &chunk_name,
  */
 
   boost::shared_ptr<GetChunkOpData> opdata(new GetChunkOpData(chunk_name));
-  opdata->ref_responses.reserve(kad::K);
-  opdata->check_responses.reserve(kad::K * kMinChunkCopies);  // enough?
+  opdata->ref_responses.reserve(K_);
+  opdata->check_responses.reserve(K_ * kMinChunkCopies);  // enough?
   boost::mutex::scoped_lock lock(opdata->mutex);
 
   // #1 Find a cached chunk copy if it exists, otherwise the chunk info holders.
@@ -593,7 +605,7 @@ void MaidsafeStoreManager::LoadChunk_FindCB(const std::string &result,
   kad::Contact cache_holder(find_rsp.alternative_value_holder());
 #ifdef DEBUG
     printf("In MSM::LoadChunk_FindCB, node %s has cached chunk %s.\n",
-           HexSubstr(cache_holder.node_id().ToStringDecoded()).c_str(),
+           HexSubstr(cache_holder.node_id().String()).c_str(),
            HexSubstr(data->chunk_name).c_str());
 #endif
     data->AddChunkHolder(cache_holder);
@@ -1158,7 +1170,7 @@ void MaidsafeStoreManager::UpdateAccountStatus(const bool &force) {
   // Find the account holders
   boost::shared_ptr<AccountStatusData> data(new AccountStatusData);
   data->contacts = account_holders_manager_.account_holder_group();
-  if (data->contacts.size() < kKadUpperThreshold) {
+  if (data->contacts.size() < upper_threshold_) {
 #ifdef DEBUG
     printf("In MSM::UpdateAccountStatus, no account holders available.\n");
 #endif
@@ -1179,13 +1191,13 @@ void MaidsafeStoreManager::UpdateAccountStatus(const bool &force) {
   for (size_t i = 0; i < data->contacts.size(); ++i) {
     std::string request_signature = co.AsymSign(co.Hash(
         ss_->SignedPublicKey(PMID) + account_holders_manager_.account_name() +
-        data->contacts.at(i).node_id().ToStringDecoded(), "",
+        data->contacts.at(i).node_id().String(), "",
         crypto::STRING_STRING, false), "", ss_->PrivateKey(PMID),
         crypto::STRING_STRING);
     account_status_request.set_request_signature(request_signature);
     account_status_requests.push_back(account_status_request);
     AccountStatusData::AccountStatusDataHolder holder(
-        data->contacts.at(i).node_id().ToStringDecoded());
+        data->contacts.at(i).node_id().String());
     data->data_holders.push_back(holder);
   }
 
@@ -1207,7 +1219,7 @@ void MaidsafeStoreManager::UpdateAccountStatusStageTwo(
     size_t index,
     boost::shared_ptr<AccountStatusData> data) {
   boost::mutex::scoped_lock lock(data->mutex);
-  if (data->success_count >= kKadLowerThreshold)
+  if (data->success_count >= lower_threshold_)
     return;
   ++data->returned_count;
 
@@ -1243,16 +1255,16 @@ void MaidsafeStoreManager::UpdateAccountStatusStageTwo(
     }
   }
 
-  if (data->returned_count < kKadLowerThreshold ||
+  if (data->returned_count < lower_threshold_ ||
       (data->returned_count < data->contacts.size() &&
-       data->success_count < kKadLowerThreshold)) {
+       data->success_count < lower_threshold_)) {
     // still waiting for enough responses
     return;
-  } else if (data->success_count < kKadLowerThreshold) {
+  } else if (data->success_count < lower_threshold_) {
     // failed to get enough responses
 #ifdef DEBUG
     printf("In MSM::UpdateAccountStatusStageTwo, received only %u responses; "
-           "need at least %u.\n", data->success_count, kKadLowerThreshold);
+           "need at least %u.\n", data->success_count, lower_threshold_);
 #endif
     // TODO(Team#) possibly schedule retry
     return;
@@ -1267,9 +1279,9 @@ void MaidsafeStoreManager::UpdateAccountStatusStageTwo(
   GetFilteredAverage(data->taken_values,   &taken_avg,   &taken_n);
 
   // require at least 4 non-outliers of each
-  if (offered_n < kKadLowerThreshold ||
-      given_n   < kKadLowerThreshold ||
-      taken_n   < kKadLowerThreshold) {
+  if (offered_n < lower_threshold_ ||
+      given_n   < lower_threshold_ ||
+      taken_n   < lower_threshold_) {
 #ifdef DEBUG
     if (data->returned_count >= data->contacts.size())
       printf("In MSM::UpdateAccountStatusStageTwo, no consensus on values "
@@ -1783,7 +1795,7 @@ void MaidsafeStoreManager::AddToWatchListStageThree(
 
   for (size_t i = 0; i < data->chunk_info_holders.size(); ++i) {
     WatchListOpData::AddToWatchDataHolder holder(
-        data->chunk_info_holders.at(i).node_id().ToStringDecoded());
+        data->chunk_info_holders.at(i).node_id().String());
     data->add_to_watchlist_data_holders.push_back(holder);
   }
 
@@ -1873,7 +1885,7 @@ int MaidsafeStoreManager::AssessUploadCounts(
   std::multiset<int>::iterator it;
   // data->mutex should already be locked, but just in case...
   boost::mutex::scoped_try_lock lock(data->mutex);
-  if (data->returned_count < kKadUpperThreshold)
+  if (data->returned_count < upper_threshold_)
     return kRequestPendingConsensus;
 
   // Get most common upload_copies figure
@@ -1891,7 +1903,7 @@ int MaidsafeStoreManager::AssessUploadCounts(
     ++discrete_opinions;
   }
 
-  if (discrete_opinions == 1 && max_count >= kKadUpperThreshold)
+  if (discrete_opinions == 1 && max_count >= upper_threshold_)
     return kSuccess;
 
   // If no more results due, try to get consensus.
@@ -1907,7 +1919,7 @@ int MaidsafeStoreManager::AssessUploadCounts(
 
   // If not enough for consensus, return error and set copies to -1.
   if (static_cast<int>(data->required_upload_copies.count(
-      data->consensus_upload_copies)) < kKadLowerThreshold) {
+      data->consensus_upload_copies)) < lower_threshold_) {
     data->consensus_upload_copies = 0;
     return kRequestFailedConsensus;
   }
@@ -2038,7 +2050,7 @@ int MaidsafeStoreManager::GetStoreRequests(
   }
   std::string request_signature;
   GetRequestSignature(store_data,
-      send_chunk_data->peer.node_id().ToStringDecoded(), &request_signature);
+      send_chunk_data->peer.node_id().String(), &request_signature);
   if (request_signature.empty())
     return kGetRequestSigError;
   store_prep_request.set_chunkname(store_data.data_name);
@@ -2126,7 +2138,7 @@ int MaidsafeStoreManager::GetAddToWatchListRequests(
   for (size_t i = 0; i < recipients.size(); ++i) {
     std::string signature;
     GetRequestSignature(store_data.data_name, store_data.dir_type,
-        recipients.at(i).node_id().ToStringDecoded(), store_data.public_key,
+        recipients.at(i).node_id().String(), store_data.public_key,
         store_data.public_key_signature, store_data.private_key, &signature);
     if (signature.empty()) {
       add_to_watch_list_requests->clear();
@@ -2154,7 +2166,7 @@ int MaidsafeStoreManager::GetRemoveFromWatchListRequests(
   for (size_t i = 0; i < recipients.size(); ++i) {
     std::string signature;
     GetRequestSignature(store_data.data_name, store_data.dir_type,
-        recipients.at(i).node_id().ToStringDecoded(), store_data.public_key,
+        recipients.at(i).node_id().String(), store_data.public_key,
         store_data.public_key_signature, store_data.private_key, &signature);
     if (signature.empty()) {
       remove_from_watch_list_requests->clear();
@@ -2305,7 +2317,7 @@ void MaidsafeStoreManager::SendPrepCallback(
 #endif
   ++send_chunk_data->attempt;
   int result = ValidatePrepResponse(
-      send_chunk_data->peer.node_id().ToStringDecoded(),
+      send_chunk_data->peer.node_id().String(),
       send_chunk_data->store_prep_request.signed_size(),
       &send_chunk_data->store_prep_response);
   if (result == kSuccess) {
@@ -2425,23 +2437,23 @@ void MaidsafeStoreManager::SendContentCallback(
   if (!response.IsInitialized()) {
 #ifdef DEBUG
     printf("In MSM::SendContentCallback, resp from pmid %s uninitialised.\n",
-        HexSubstr(send_chunk_data->peer.node_id().ToStringDecoded()).c_str());
+        HexSubstr(send_chunk_data->peer.node_id().String()).c_str());
 #endif
     result = kSendContentFailure;
   }
   if (result == kSuccess &&
-      response.pmid() != send_chunk_data->peer.node_id().ToStringDecoded()) {
+      response.pmid() != send_chunk_data->peer.node_id().String()) {
 #ifdef DEBUG
     printf("In MSM::SendContentCallback, ids are not OK: response pmid: %s pee"
         "r node ID: %s\n", HexSubstr(response.pmid()).c_str(),
-        HexSubstr(send_chunk_data->peer.node_id().ToStringDecoded()).c_str());
+        HexSubstr(send_chunk_data->peer.node_id().String()).c_str());
 #endif
     result = kSendContentFailure;
   }
   if (result == kSuccess && response.result() != kAck) {
 #ifdef DEBUG
     printf("In MSM::SendContentCallback, resp from pmid %s returned %u\n",
-           HexSubstr(send_chunk_data->peer.node_id().ToStringDecoded()).c_str(),
+           HexSubstr(send_chunk_data->peer.node_id().String()).c_str(),
            response.result());
 #endif
     result = kSendContentFailure;
@@ -2697,7 +2709,7 @@ void MaidsafeStoreManager::RemoveFromWatchListStageThree(
 
   for (size_t i = 0; i < data->chunk_info_holders.size(); ++i) {
     WatchListOpData::RemoveFromWatchDataHolder holder(
-        data->chunk_info_holders.at(i).node_id().ToStringDecoded());
+        data->chunk_info_holders.at(i).node_id().String());
     data->remove_from_watchlist_data_holders.push_back(holder);
   }
 
@@ -2719,7 +2731,7 @@ void MaidsafeStoreManager::RemoveFromWatchListStageFour(
     boost::uint16_t index,
     boost::shared_ptr<WatchListOpData> data) {
   boost::mutex::scoped_lock lock(data->mutex);
-  if (data->success_count >= kKadUpperThreshold)
+  if (data->success_count >= upper_threshold_)
     // Success has already been achieved and acted upon
     return;
   ++data->returned_count;
@@ -2748,7 +2760,7 @@ void MaidsafeStoreManager::RemoveFromWatchListStageFour(
   }
 
   // Overall success
-  if (data->success_count >= kKadUpperThreshold) {
+  if (data->success_count >= upper_threshold_) {
     tasks_handler_.DeleteTask(data->store_data.data_name, kDeleteChunk,
                               kSuccess);
     account_status_manager_.AdviseAmendment(
@@ -3105,10 +3117,10 @@ int MaidsafeStoreManager::CreateAccount(const boost::uint64_t &space) {
     return kFindAccountHoldersError;
   }
 
-  if (data->contacts.size() < kKadUpperThreshold) {
+  if (data->contacts.size() < upper_threshold_) {
 #ifdef DEBUG
     printf("In MSM::CreateAccount, failed to find %u account holders; "
-           "found %u node(s).\n", kKadUpperThreshold, data->contacts.size());
+           "found %u node(s).\n", upper_threshold_, data->contacts.size());
 #endif
     return kFindAccountHoldersError;
   }
@@ -3128,7 +3140,7 @@ int MaidsafeStoreManager::CreateAccount(const boost::uint64_t &space) {
   request.set_account_pmid(ss_->Id(PMID));
   for (boost::uint16_t i = 0; i < data->contacts.size(); ++i) {
     AmendAccountData::AmendAccountDataHolder holder(
-        data->contacts.at(i).node_id().ToStringDecoded());
+        data->contacts.at(i).node_id().String());
     data->data_holders.push_back(holder);
   }
 
@@ -3146,7 +3158,7 @@ int MaidsafeStoreManager::CreateAccount(const boost::uint64_t &space) {
 
   // wait for the RPCs to return or timeout, or enough positive responses
   while (data->returned_count < data->contacts.size() &&
-         data->success_count < kKadUpperThreshold) {
+         data->success_count < upper_threshold_) {
     data->condition.wait(lock);
   }
 
@@ -3156,10 +3168,10 @@ int MaidsafeStoreManager::CreateAccount(const boost::uint64_t &space) {
       data->data_holders.at(i).controller->request_id());
   }
 
-  if (data->success_count < kKadUpperThreshold) {
+  if (data->success_count < upper_threshold_) {
 #ifdef DEBUG
     printf("In MSM::CreateAccount, not enough positive responses "
-           "received (%d of %d).\n", data->success_count, kKadUpperThreshold);
+           "received (%d of %d).\n", data->success_count, upper_threshold_);
 #endif
     return maidsafe::kRequestFailedConsensus;
   }

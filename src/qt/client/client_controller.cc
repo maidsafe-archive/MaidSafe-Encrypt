@@ -56,7 +56,8 @@ ClientController::ClientController(QObject* parent)
 ClientController::~ClientController() { }
 
 bool ClientController::Init() {
-  int init_result = maidsafe::ClientController::getInstance()->Init();
+  boost::uint8_t K(4);
+  int init_result = maidsafe::ClientController::getInstance()->Init(K);
   if (init_result == 0) {
     maidsafe::ClientController::getInstance()->RegisterImNotifiers(
         boost::bind(&ClientController::OnNewMessage, this, _1),
@@ -306,6 +307,31 @@ bool ClientController::sendInstantMessage(const QString& txt,
   return (n == 0);
 }
 
+bool ClientController::sendEmail(const QString& subject,
+                        const QString& message,
+                        const QList<QString>& to,
+                        const QList<QString>& cc,
+                        const QList<QString>& bcc,
+                        const QString& conversation) {
+  qDebug() << "ClientController::sendEmail: " << subject;
+
+  std::vector<std::string> contacts, stdcc, stdbcc;
+  foreach(QString c, to) {
+    contacts.push_back(c.toStdString());
+  }
+  foreach(QString c, cc) {
+    stdcc.push_back(c.toStdString());
+  }
+  foreach(QString c, bcc) {
+    stdbcc.push_back(c.toStdString());
+  }
+  const int n = maidsafe::ClientController::getInstance()->
+              SendEmail(subject.toStdString(), message.toStdString(), contacts,
+              stdcc, stdbcc, conversation.toStdString());
+
+  return (n == 0);
+}
+
 bool ClientController::sendInstantFile(const QString& filePath,
                                        const QString& txt,
                                        const QList<QString>& to,
@@ -453,6 +479,11 @@ void ClientController::analyseMessage(const maidsafe::InstantMessage& im) {
       emit addedPrivateShare(QString::fromStdString(psn.name()));
       type = SHARE;
     }
+  } else if (im.has_email_notification()) {
+    // TODO(Stephen) :: emit signal to inform GUI of new email and
+    // woo only qt stuff from here :)
+    emit emailReceieved(im);
+    type = EMAIL;
   }
 
   QDateTime time = QDateTime::currentDateTime();
@@ -545,32 +576,43 @@ int ClientController::GetContactInfo(const std::string &pub_name,
                                                                    mic);
 }
 
-int ClientController::getattr(const std::string &path, std::string &ser_mdm) {
-  return maidsafe::ClientController::getInstance()->getattr(path, ser_mdm);
+int ClientController::getattr(const QString &path, std::string *ser_mdm) {
+  std::string the_path(maidsafe::TidyPath(path.toStdString()));
+  return maidsafe::ClientController::getInstance()->getattr(the_path, ser_mdm);
 }
-int ClientController::readdir(const std::string &path,  // NOLINT
+int ClientController::readdir(const QString &path,  // NOLINT
                               std::map<std::string,
-                                       maidsafe::ItemType> &children) {
-  return maidsafe::ClientController::getInstance()->readdir(path, children);
+                                       maidsafe::ItemType> *children) {
+  std::string the_path(maidsafe::TidyPath(path.toStdString()));
+  return maidsafe::ClientController::getInstance()->readdir(the_path,
+                                                            children);
 }
-int ClientController::read(const std::string &path) {
-  return maidsafe::ClientController::getInstance()->read(path);
+int ClientController::read(const QString &path) {
+  std::string the_path(maidsafe::TidyPath(path.toStdString()));
+  return maidsafe::ClientController::getInstance()->read(the_path);
 }
-int ClientController::write(const std::string &path) {
-  return maidsafe::ClientController::getInstance()->write(path);
+int ClientController::write(const QString &path) {
+  std::string the_path(maidsafe::TidyPath(path.toStdString()));
+  return maidsafe::ClientController::getInstance()->write(the_path);
 }
-
-int ClientController::rename(const std::string &path,
-                             const std::string &path2) {
-  return maidsafe::ClientController::getInstance()->rename(path, path2);
+int ClientController::rename(const QString &path,
+                             const QString &path2) {
+  std::string the_path(maidsafe::TidyPath(path.toStdString()));
+  std::string the_path2(maidsafe::TidyPath(path2.toStdString()));
+  return maidsafe::ClientController::getInstance()->rename(the_path,
+                                                           the_path2);
 }
-
-int ClientController::mkdir(const std::string &path) {
-  return maidsafe::ClientController::getInstance()->mkdir(path);
+int ClientController::mkdir(const QString &path) {
+  std::string the_path(maidsafe::TidyPath(path.toStdString()));
+  return maidsafe::ClientController::getInstance()->mkdir(the_path);
 }
-
-int ClientController::rmdir(const std::string &path) {
-  return maidsafe::ClientController::getInstance()->rmdir(path);
+int ClientController::rmdir(const QString &path) {
+  std::string the_path(maidsafe::TidyPath(path.toStdString()));
+  return maidsafe::ClientController::getInstance()->rmdir(the_path);
+}
+int ClientController::mknod(const QString &path) {
+  std::string the_path(maidsafe::TidyPath(path.toStdString()));
+  return maidsafe::ClientController::getInstance()->mknod(the_path);
 }
 
 void ClientController::OnNewMessage(const std::string &msg) {

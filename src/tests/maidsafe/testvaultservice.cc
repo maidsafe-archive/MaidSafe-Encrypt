@@ -66,6 +66,10 @@ inline void CreateSignedRequest(const std::string &pub_key,
   // TODO(Team#) use new request signature method from the validator
 }
 
+namespace test_vault_service {
+static const boost::uint8_t K(4);
+}  // namespace test_vault_service
+
 namespace maidsafe_vault {
 
 typedef std::map<std::string, maidsafe::StoreContract> PrepsReceivedMap;
@@ -1892,7 +1896,7 @@ TEST_F(MockVaultServicesTest, FUNC_MAID_ServicesAmendAccount) {
   maidsafe::AmendAccountRequest request;
   maidsafe::AmendAccountResponse response;
 
-  mock_vsl::KGroup k_group;
+  mock_vsl::KGroup k_group(test_vault_service::K);
 
   std::string client_pub_key, client_priv_key, client_pmid, client_pub_key_sig;
   std::string size_sig;
@@ -1968,17 +1972,17 @@ TEST_F(MockVaultServicesTest, FUNC_MAID_ServicesAmendAccount) {
       chunk_name, &requests);
     switch (i) {
       case 0:  // empty request
-        for (int i = 0; i < kad::K; ++i)
+        for (int i = 0; i < test_vault_service::K; ++i)
           requests.at(i).Clear();
         break;
       case 1:  // unsigned size
-        for (int i = 0; i < kad::K; ++i) {
+        for (int i = 0; i < test_vault_service::K; ++i) {
           signed_size = requests.at(i).mutable_signed_size();
           signed_size->set_signature("fail");
         }
         break;
       case 2:  // zero size
-        for (int i = 0; i < kad::K; ++i) {
+        for (int i = 0; i < test_vault_service::K; ++i) {
           signed_size = requests.at(i).mutable_signed_size();
           signed_size->set_data_size(0);
           signed_size->set_signature(
@@ -1987,26 +1991,26 @@ TEST_F(MockVaultServicesTest, FUNC_MAID_ServicesAmendAccount) {
         }
         break;
       case 3:  // missing chunk name
-        for (int i = 0; i < kad::K; ++i) {
+        for (int i = 0; i < test_vault_service::K; ++i) {
           requests.at(i).clear_chunkname();
         }
         break;
     }
 
-    for (int i = 0; i < kad::K; ++i) {
+    for (int i = 0; i < test_vault_service::K; ++i) {
       maidsafe::AmendAccountResponse response;
       responses.push_back(response);
       google::protobuf::Closure *done = google::protobuf::NewCallback(&cb_obj,
           &TestCallback::CallbackFunction);
       callbacks.push_back(done);
     }
-    for (int i = 0; i < kad::K; ++i) {
-      printf("REQ %02d/%02d - ", i+1, kad::K);
+    for (int i = 0; i < test_vault_service::K; ++i) {
+      printf("REQ %02d/%02d - ", i+1, test_vault_service::K);
       vault_service_->AmendAccount(&controller, &requests.at(i),
           &responses.at(i), callbacks.at(i));
     }
     success_count = 0;
-    for (int i = 0; i < kad::K; ++i) {
+    for (int i = 0; i < test_vault_service::K; ++i) {
       ASSERT_TRUE(responses.at(i).IsInitialized());
       if (static_cast<int>(responses.at(i).result()) == kAck)
         ++success_count;
@@ -2061,24 +2065,24 @@ TEST_F(MockVaultServicesTest, FUNC_MAID_ServicesAmendAccount) {
     chunk_name, &requests);
   responses.clear();
   callbacks.clear();
-  for (int i = 0; i < kad::K; ++i) {
+  for (int i = 0; i < test_vault_service::K; ++i) {
     maidsafe::AmendAccountResponse response;
     responses.push_back(response);
     google::protobuf::Closure *done = google::protobuf::NewCallback(&cb_obj,
         &TestCallback::CallbackFunction);
     callbacks.push_back(done);
   }
-  for (int i = 0; i < kad::K; ++i) {
+  for (int i = 0; i < test_vault_service::K; ++i) {
     vault_service_->AmendAccount(&controller, &requests.at(i), &responses.at(i),
         callbacks.at(i));
   }
   success_count = 0;
-  for (int i = 0; i < kad::K; ++i) {
+  for (int i = 0; i < test_vault_service::K; ++i) {
     ASSERT_TRUE(responses.at(i).IsInitialized());
     if (static_cast<int>(responses.at(i).result()) == kAck)
       ++success_count;
   }
-  EXPECT_GE(success_count, kad::K - 1);
+  EXPECT_GE(success_count, test_vault_service::K - 1);
   printf("Completed incrementing space taken.\n");
 
   // current SpaceTaken should be chunk_size
@@ -2116,24 +2120,24 @@ TEST_F(MockVaultServicesTest, FUNC_MAID_ServicesAmendAccount) {
     chunk_name, &requests);
   responses.clear();
   callbacks.clear();
-  for (int i = 0; i < kad::K; ++i) {
+  for (int i = 0; i < test_vault_service::K; ++i) {
     maidsafe::AmendAccountResponse response;
     responses.push_back(response);
     google::protobuf::Closure *done = google::protobuf::NewCallback(&cb_obj,
         &TestCallback::CallbackFunction);
     callbacks.push_back(done);
   }
-  for (int i = 0; i < kad::K; ++i) {
+  for (int i = 0; i < test_vault_service::K; ++i) {
     vault_service_->AmendAccount(&controller, &requests.at(i), &responses.at(i),
         callbacks.at(i));
   }
   success_count = 0;
-  for (int i = 0; i < kad::K; ++i) {
+  for (int i = 0; i < test_vault_service::K; ++i) {
     ASSERT_TRUE(responses.at(i).IsInitialized());
     if (static_cast<int>(responses.at(i).result()) == kAck)
       ++success_count;
   }
-  EXPECT_GE(success_count, kad::K - 1);
+  EXPECT_GE(success_count, test_vault_service::K - 1);
   printf("Completed decrementing space taken.\n");
 
   // current SpaceTaken should be 0
@@ -2153,19 +2157,19 @@ TEST_F(MockVaultServicesTest, FUNC_MAID_ServicesAmendAccount) {
   // decrease SpaceTaken again, should fail
   responses.clear();
   callbacks.clear();
-  for (int i = 0; i < kad::K; ++i) {
+  for (int i = 0; i < test_vault_service::K; ++i) {
     maidsafe::AmendAccountResponse response;
     responses.push_back(response);
     google::protobuf::Closure *done = google::protobuf::NewCallback(&cb_obj,
         &TestCallback::CallbackFunction);
     callbacks.push_back(done);
   }
-  for (int i = 0; i < kad::K; ++i) {
+  for (int i = 0; i < test_vault_service::K; ++i) {
     vault_service_->AmendAccount(&controller, &requests.at(i), &responses.at(i),
         callbacks.at(i));
   }
   success_count = 0;
-  for (int i = 0; i < kad::K; ++i) {
+  for (int i = 0; i < test_vault_service::K; ++i) {
     ASSERT_TRUE(responses.at(i).IsInitialized());
     if (static_cast<int>(responses.at(i).result()) == kAck)
       ++success_count;
@@ -2193,24 +2197,24 @@ TEST_F(MockVaultServicesTest, FUNC_MAID_ServicesAmendAccount) {
     chunk_name, &requests);
   responses.clear();
   callbacks.clear();
-  for (int i = 0; i < kad::K; ++i) {
+  for (int i = 0; i < test_vault_service::K; ++i) {
     maidsafe::AmendAccountResponse response;
     responses.push_back(response);
     google::protobuf::Closure *done = google::protobuf::NewCallback(&cb_obj,
         &TestCallback::CallbackFunction);
     callbacks.push_back(done);
   }
-  for (int i = 0; i < kad::K; ++i) {
+  for (int i = 0; i < test_vault_service::K; ++i) {
     vault_service_->AmendAccount(&controller, &requests.at(i), &responses.at(i),
         callbacks.at(i));
   }
   success_count = 0;
-  for (int i = 0; i < kad::K; ++i) {
+  for (int i = 0; i < test_vault_service::K; ++i) {
     ASSERT_TRUE(responses.at(i).IsInitialized());
     if (static_cast<int>(responses.at(i).result()) == kAck)
       ++success_count;
   }
-  EXPECT_GE(success_count, kad::K - 1);
+  EXPECT_GE(success_count, test_vault_service::K - 1);
   printf("Completed incrementing space given.\n");
 
   // current SpaceGiven should be chunk_size
@@ -2233,24 +2237,24 @@ TEST_F(MockVaultServicesTest, FUNC_MAID_ServicesAmendAccount) {
     chunk_name, &requests);
   responses.clear();
   callbacks.clear();
-  for (int i = 0; i < kad::K; ++i) {
+  for (int i = 0; i < test_vault_service::K; ++i) {
     maidsafe::AmendAccountResponse response;
     responses.push_back(response);
     google::protobuf::Closure *done = google::protobuf::NewCallback(&cb_obj,
         &TestCallback::CallbackFunction);
     callbacks.push_back(done);
   }
-  for (int i = 0; i < kad::K; ++i) {
+  for (int i = 0; i < test_vault_service::K; ++i) {
     vault_service_->AmendAccount(&controller, &requests.at(i), &responses.at(i),
         callbacks.at(i));
   }
   success_count = 0;
-  for (int i = 0; i < kad::K; ++i) {
+  for (int i = 0; i < test_vault_service::K; ++i) {
     ASSERT_TRUE(responses.at(i).IsInitialized());
     if (static_cast<int>(responses.at(i).result()) == kAck)
       ++success_count;
   }
-  EXPECT_GE(success_count, kad::K - 1);
+  EXPECT_GE(success_count, test_vault_service::K - 1);
   printf("Completed decrementing space given.\n");
 
   // current SpaceGiven should still be 0
@@ -2273,19 +2277,19 @@ TEST_F(MockVaultServicesTest, FUNC_MAID_ServicesAmendAccount) {
     chunk_name, &requests);
   responses.clear();
   callbacks.clear();
-  for (int i = 0; i < kad::K; ++i) {
+  for (int i = 0; i < test_vault_service::K; ++i) {
     maidsafe::AmendAccountResponse response;
     responses.push_back(response);
     google::protobuf::Closure *done = google::protobuf::NewCallback(&cb_obj,
         &TestCallback::CallbackFunction);
     callbacks.push_back(done);
   }
-  for (int i = 0; i < kad::K; ++i) {
+  for (int i = 0; i < test_vault_service::K; ++i) {
     vault_service_->AmendAccount(&controller, &requests.at(i), &responses.at(i),
         callbacks.at(i));
   }
   success_count = 0;
-  for (int i = 0; i < kad::K; ++i) {
+  for (int i = 0; i < test_vault_service::K; ++i) {
     ASSERT_TRUE(responses.at(i).IsInitialized());
     if (static_cast<int>(responses.at(i).result()) == kAck)
       ++success_count;

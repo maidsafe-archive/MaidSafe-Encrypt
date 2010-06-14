@@ -27,8 +27,7 @@
 class SaveFileThread : public WorkerThread {
   Q_OBJECT
  public:
-  SaveFileThread(const QString& filepath,
-                             QObject* parent = 0);
+  SaveFileThread(const QString& filepath, QObject* parent = 0);
   virtual ~SaveFileThread();
 
   virtual void run();

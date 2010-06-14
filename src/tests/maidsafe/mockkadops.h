@@ -40,6 +40,7 @@ enum FindNodesResponseType {
 };
 
 std::string MakeFindNodesResponse(const FindNodesResponseType &type,
+                                  const boost::uint8_t k,
                                   std::vector<std::string> *pmids);
 
 void RunCallback(const std::string &find_nodes_response,

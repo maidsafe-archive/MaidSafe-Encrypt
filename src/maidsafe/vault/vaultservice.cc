@@ -123,15 +123,10 @@ VaultService::VaultService(const std::string &pmid,
                            VaultServiceLogic *vault_service_logic,
                            const boost::int16_t &transport_id,
                            boost::shared_ptr<maidsafe::KadOps> kadops)
-                           //const std::string &pmid,
-                           //const std::string &pmid_public,
-                           //const std::string &pmid_private,
-                           //const std::string &pmid_public_signature,
-                           //VaultChunkStore *vault_chunkstore,
-                           //kad::KNode *knode,
-                           //VaultServiceLogic *vault_service_logic,
-                           //const boost::int16_t &transport_id)
-    : pmid_(pmid),
+    : K_(kadops->k()),
+      upper_threshold_(
+          static_cast<boost::uint16_t>(K_ * kMinSuccessfulPecentageStore)),
+      pmid_(pmid),
       pmid_public_(pmid_public),
       pmid_private_(pmid_private),
       pmid_public_signature_(pmid_public_signature),
@@ -144,7 +139,8 @@ VaultService::VaultService(const std::string &pmid,
       request_expectation_handler_(kMaxAccountAmendments,
                                    kMaxRepeatedAccountAmendments,
                                    kAccountAmendmentTimeout),
-      aah_(&ah_, &request_expectation_handler_, vault_service_logic_),
+      aah_(&ah_, &request_expectation_handler_, vault_service_logic_,
+           upper_threshold_),
       cih_(true),
       bps_(),
       thread_pool_(),
@@ -152,7 +148,7 @@ VaultService::VaultService(const std::string &pmid,
           boost::shared_ptr<base::PublicRoutingTableHandler>() :
           (*base::PublicRoutingTable::GetInstance())
           [boost::lexical_cast<std::string>(kad_ops_->Port())]),
-      info_synchroniser_(pmid_, routing_table_) {
+      info_synchroniser_(pmid_, routing_table_, K_) {
   thread_pool_.setMaxThreadCount(1);
 }
 
@@ -1202,7 +1198,7 @@ void VaultService::GetSyncData(google::protobuf::RpcController*,
     printf("In VaultService::GetSyncData (%s), request does not validate.\n",
            HexSubstr(pmid_).c_str());
 #endif
-  } else if (!NodeWithinClosest(request->pmid(), kad::K)) {
+  } else if (!NodeWithinClosest(request->pmid(), K_)) {
 #ifdef DEBUG
     printf("In VaultService::GetSyncData (%s), requester (%s) not in local"
            "routing table's closest k nodes.\n", HexSubstr(pmid_).c_str(),
@@ -1246,7 +1242,7 @@ void VaultService::GetAccount(google::protobuf::RpcController*,
     return;
   }
 
-  if (!NodeWithinClosest(request->pmid(), kad::K)) {
+  if (!NodeWithinClosest(request->pmid(), K_)) {
     done->Run();
 #ifdef DEBUG
     printf("In VaultService::GetAccount (%s), requester (%s) not in local"
@@ -1298,7 +1294,7 @@ void VaultService::GetChunkInfo(google::protobuf::RpcController*,
     return;
   }
 
-  if (!NodeWithinClosest(request->pmid(), kad::K)) {
+  if (!NodeWithinClosest(request->pmid(), K_)) {
     done->Run();
 #ifdef DEBUG
     printf("In VaultService::GetChunkInfo (%s), requester (%s) not in local"
@@ -1351,7 +1347,7 @@ void VaultService::GetBufferPacket(google::protobuf::RpcController*,
     return;
   }
 
-  if (!NodeWithinClosest(request->pmid(), kad::K)) {
+  if (!NodeWithinClosest(request->pmid(), K_)) {
     done->Run();
 #ifdef DEBUG
     printf("In VaultService::GetBufferPacket (%s), requester (%s) not in local"
@@ -2373,7 +2369,7 @@ void VaultService::ConstructGetInfoRequests(const kad::Contact &contact,
   co.set_hash_algorithm(crypto::SHA_512);
   T request(partial_request);
   request.set_request_signature(co.AsymSign(co.Hash(pmid_public_signature_ +
-      key + contact.node_id().ToStringDecoded(), "", crypto::STRING_STRING,
+      key + contact.node_id().String(), "", crypto::STRING_STRING,
       false), "", pmid_private_, crypto::STRING_STRING));
   requests->push_back(request);
 }
@@ -2518,11 +2514,18 @@ void RegistrationService::SetLocalVaultOwned(
   // checking available space in disk
   boost::filesystem::path vaultdir(request->vault_dir());
   boost::filesystem::space_info info;
-  if ("/" != vaultdir.root_directory())
-    info = boost::filesystem::space(boost::filesystem::path("/"));
-  else
-    info = boost::filesystem::space(boost::filesystem::path(vaultdir.root_name()
-           + vaultdir.root_directory()));
+  try {
+    if ("/" != vaultdir.root_directory())
+      info = boost::filesystem::space(boost::filesystem::path("/"));
+    else
+      info = boost::filesystem::space(boost::filesystem::path(
+                 vaultdir.root_name() + vaultdir.root_directory()));
+  }
+  catch(const std::exception &e) {
+#ifdef DEBUG
+    printf("RegistrationService::SetLocalVaultOwned - Couldn't read space.\n");
+#endif
+  }
   if (request->space() > info.available) {
     response->set_result(maidsafe::NOT_ENOUGH_SPACE);
     done->Run();

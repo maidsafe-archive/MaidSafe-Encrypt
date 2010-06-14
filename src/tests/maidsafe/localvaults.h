@@ -67,8 +67,10 @@ class Env: public testing::Environment {
  public:
   Env(const int kNetworkSize,
       std::vector<boost::shared_ptr<maidsafe_vault::PDVault> > *pdvaults,
+      const boost::uint8_t &k,
       fs::path *kadconfig)
-      : vault_dir_(file_system::TempDir() / ("maidsafe_TestVaults_" +
+      : K_(k),
+        vault_dir_(file_system::TempDir() / ("maidsafe_TestVaults_" +
                    base::RandomString(6))),
         kad_config_file_(vault_dir_ / ".kadconfig"),
         pdvaults_(pdvaults),
@@ -82,7 +84,7 @@ class Env: public testing::Environment {
   }
 
   virtual void SetUp() {
-    ASSERT_LE(kad::K, kNetworkSize_) << "Need at least K nodes!";
+    ASSERT_LE(K_, kNetworkSize_) << "Need at least K nodes!";
     pdvaults_->clear();
     try {
       if (fs::exists(vault_dir_))
@@ -107,8 +109,8 @@ class Env: public testing::Environment {
 
       boost::shared_ptr<maidsafe_vault::PDVault>
           pdvault_local(new maidsafe_vault::PDVault(public_key, private_key,
-          signed_key, local_dir, 0, false, false, kad_config_file_,
-          1073741824, 0));
+                        signed_key, local_dir, 0, false, false,
+                        kad_config_file_, 1073741824, 0, K_));
       pdvaults_->push_back(pdvault_local);
       ++current_nodes_created_;
 
@@ -209,6 +211,7 @@ class Env: public testing::Environment {
  private:
   Env(const Env&);
   Env &operator=(const Env&);
+  boost::uint8_t K_;
   fs::path vault_dir_, chunkstore_dir_, kad_config_file_;
   std::vector< boost::shared_ptr<maidsafe_vault::PDVault> > *pdvaults_;
   const int kNetworkSize_;

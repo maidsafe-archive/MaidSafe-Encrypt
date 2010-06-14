@@ -20,8 +20,10 @@ namespace maidsafe {
 
 ClientBufferPacketHandler::ClientBufferPacketHandler(
     boost::shared_ptr<maidsafe::BufferPacketRpcs> rpcs,
-    boost::shared_ptr<KadOps> kadops)
-        : crypto_obj_(), rpcs_(rpcs), kad_ops_(kadops) {
+    boost::shared_ptr<KadOps> kadops,
+    boost::uint8_t upper_threshold)
+        : crypto_obj_(), rpcs_(rpcs), kad_ops_(kadops),
+          upper_threshold_(upper_threshold) {
   crypto_obj_.set_hash_algorithm(crypto::SHA_512);
   crypto_obj_.set_symm_algorithm(crypto::AES_256);
 }
@@ -280,7 +282,7 @@ void ClientBufferPacketHandler::FindNodesCallback(
   kad::FindResponse rslt;
   if (!rslt.ParseFromString(result) ||
       rslt.result() != kad::kRpcResultSuccess ||
-      rslt.closest_nodes_size() < kKadUpperThreshold) {
+      rslt.closest_nodes_size() < upper_threshold_) {
     switch (data->type) {
       case CREATEBP: data->cb(kStoreNewBPError);
                      break;
@@ -342,7 +344,7 @@ void ClientBufferPacketHandler::FindNodesCallback(
     cb_datas->push_back(cb_data);
   }
 
-  if (cb_datas->size() < kKadUpperThreshold) {
+  if (cb_datas->size() < upper_threshold_) {
     switch (data->type) {
       case CREATEBP: data->cb(kStoreNewBPError);
                    break;
@@ -452,7 +454,7 @@ void ClientBufferPacketHandler::ActionOnBpDone(
             if (cb_datas->at(index).create_response->IsInitialized() &&
                 cb_datas->at(index).create_response->result() == kAck &&
                 cb_datas->at(index).create_response->pmid_id() ==
-                    cb_datas->at(index).ctc.node_id().ToStringDecoded()) {
+                    cb_datas->at(index).ctc.node_id().String()) {
                   ++cb_datas->at(index).data->successful_ops;
                 }
             delete cb_datas->at(index).create_response;
@@ -461,7 +463,7 @@ void ClientBufferPacketHandler::ActionOnBpDone(
             if (cb_datas->at(index).modify_response->IsInitialized() &&
                 cb_datas->at(index).modify_response->result() == kAck &&
                 cb_datas->at(index).modify_response->pmid_id() ==
-                    cb_datas->at(index).ctc.node_id().ToStringDecoded()) {
+                    cb_datas->at(index).ctc.node_id().String()) {
                   ++cb_datas->at(index).data->successful_ops;
                 }
             delete cb_datas->at(index).modify_response;
@@ -470,7 +472,7 @@ void ClientBufferPacketHandler::ActionOnBpDone(
             if (cb_datas->at(index).get_msgs_response->IsInitialized() &&
                 cb_datas->at(index).get_msgs_response->result() == kAck &&
                 cb_datas->at(index).get_msgs_response->pmid_id() ==
-                    cb_datas->at(index).ctc.node_id().ToStringDecoded()) {
+                    cb_datas->at(index).ctc.node_id().String()) {
                   ++cb_datas->at(index).data->successful_ops;
                   std::list<ValidatedBufferPacketMessage> msgs =
                       ValidateMsgs(cb_datas->at(index).get_msgs_response,
@@ -483,7 +485,7 @@ void ClientBufferPacketHandler::ActionOnBpDone(
             if (cb_datas->at(index).add_msg_response->IsInitialized() &&
                 cb_datas->at(index).add_msg_response->result() == kAck &&
                 cb_datas->at(index).add_msg_response->pmid_id() ==
-                    cb_datas->at(index).ctc.node_id().ToStringDecoded()) {
+                    cb_datas->at(index).ctc.node_id().String()) {
                   ++cb_datas->at(index).data->successful_ops;
                 }
             delete cb_datas->at(index).add_msg_response;
@@ -492,7 +494,7 @@ void ClientBufferPacketHandler::ActionOnBpDone(
             if (cb_datas->at(index).get_presence_response->IsInitialized() &&
                 cb_datas->at(index).get_presence_response->result() == kAck &&
                 cb_datas->at(index).get_presence_response->pmid_id() ==
-                    cb_datas->at(index).ctc.node_id().ToStringDecoded()) {
+                    cb_datas->at(index).ctc.node_id().String()) {
                   ++cb_datas->at(index).data->successful_ops;
                   std::list<std::string> lps;
                   GetBPPresenceResponse *response =
@@ -508,7 +510,7 @@ void ClientBufferPacketHandler::ActionOnBpDone(
             if (cb_datas->at(index).add_presence_response->IsInitialized() &&
                 cb_datas->at(index).add_presence_response->result() == kAck &&
                 cb_datas->at(index).add_presence_response->pmid_id() ==
-                    cb_datas->at(index).ctc.node_id().ToStringDecoded()) {
+                    cb_datas->at(index).ctc.node_id().String()) {
                   ++cb_datas->at(index).data->successful_ops;
                 }
             delete cb_datas->at(index).add_msg_response;
@@ -528,20 +530,20 @@ void ClientBufferPacketHandler::ActionOnBpDone(
   if (finished) {
     switch (cb_datas->at(index).data->type) {
       case CREATEBP:
-          if (cb_datas->at(index).data->successful_ops >= kKadUpperThreshold)
+          if (cb_datas->at(index).data->successful_ops >= upper_threshold_)
             cb_datas->at(index).data->cb(kSuccess);
           else
             cb_datas->at(index).data->cb(kStoreNewBPError);
           break;
       case MODIFY_INFO:
-          if (cb_datas->at(index).data->successful_ops >= kKadUpperThreshold)
+          if (cb_datas->at(index).data->successful_ops >= upper_threshold_)
             cb_datas->at(index).data->cb(kSuccess);
           else
             cb_datas->at(index).data->cb(kModifyBPError);
           break;
       case GET_MESSAGES: {
           std::list<ValidatedBufferPacketMessage> msgs;
-          if (cb_datas->at(index).data->successful_ops >= kKadUpperThreshold)
+          if (cb_datas->at(index).data->successful_ops >= upper_threshold_)
             cb_datas->at(index).data->cb_getmsgs(kSuccess, msgs, true);
           else
             cb_datas->at(index).data->cb_getmsgs(kBPMessagesRetrievalError,
@@ -549,14 +551,14 @@ void ClientBufferPacketHandler::ActionOnBpDone(
           break;
       }
       case ADD_MESSAGE:
-          if (cb_datas->at(index).data->successful_ops >= kKadUpperThreshold)
+          if (cb_datas->at(index).data->successful_ops >= upper_threshold_)
             cb_datas->at(index).data->cb(kSuccess);
           else
             cb_datas->at(index).data->cb(kBPAddMessageError);
           break;
       case GET_PRESENCE: {
           std::list<std::string> lps;
-          if (cb_datas->at(index).data->successful_ops >= kKadUpperThreshold)
+          if (cb_datas->at(index).data->successful_ops >= upper_threshold_)
             cb_datas->at(index).data->cb_getpresence(kSuccess, lps, true);
           else
             cb_datas->at(index).data->cb_getpresence(kBPGetPresenceError,
@@ -564,7 +566,7 @@ void ClientBufferPacketHandler::ActionOnBpDone(
           break;
       }
       case ADD_PRESENCE:
-          if (cb_datas->at(index).data->successful_ops >= kKadUpperThreshold)
+          if (cb_datas->at(index).data->successful_ops >= upper_threshold_)
             cb_datas->at(index).data->cb(kSuccess);
           else
             cb_datas->at(index).data->cb(kBPAddPresenceError);

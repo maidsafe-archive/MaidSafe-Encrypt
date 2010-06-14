@@ -20,23 +20,36 @@
 #include <QString>
 
 // local
-#include "qt/client/client_controller.h" 
+#include "qt/client/client_controller.h"
+#include "qt/client/read_file_thread.h"
+#include "qt/client/send_email_thread.h"
+#include "qt/client/remove_dir_thread.h"
+#include "qt/client/save_file_thread.h"
+#include "qt/widgets/file_browser.h"
 
 #include "ui_user_inbox.h"
 
 class UserInbox : public QDialog {
-    Q_OBJECT
+  Q_OBJECT
 
  public:
   explicit UserInbox(QWidget* parent = 0);
-  virtual ~UserInbox();	
+  virtual ~UserInbox();
 
  private:
-  Ui::UserInbox ui_; 
+  Ui::UserInbox ui_;
+  FileBrowser* browser_;
+  QString folder_;
+  QString rootPath_;
 
- private slots:
-	void onReplyClicked();
-	void onEmailClicked(QListWidgetItem*);
+  int populateEmails();
+
+  private slots:
+    void onReplyClicked();
+    void onEmailClicked(QListWidgetItem*);
+    void onEmailFileCompleted(int, const QString&);
+    void onSendEmailCompleted(int, const QString&);
+    void onSaveFileCompleted(int, const QString&);
 
  protected:
   void changeEvent(QEvent *event);

@@ -342,11 +342,19 @@ int FSLinux::ms_open(const char *path, struct fuse_file_info *fi) {
               .string();
 
   fs::path some_path(lpath);
-  if (!fs::exists(some_path.parent_path()))
-    fs::create_directories(some_path.parent_path());
-  if (!fs::exists(lpath))
-    maidsafe::ClientController::getInstance()->read(
-        maidsafe::TidyPath(rel_path));
+  try {
+    if (!fs::exists(some_path.parent_path()))
+      fs::create_directories(some_path.parent_path());
+    if (!fs::exists(lpath))
+      maidsafe::ClientController::getInstance()->read(
+          maidsafe::TidyPath(rel_path));
+  }
+  catch(const std::exception &e) {
+#ifdef DEBUG
+    printf("ms_open path(%s): filesystem error.\n", path);
+#endif
+    return -errno;
+  }
 
   int fd;
 
@@ -424,8 +432,15 @@ int FSLinux::ms_write(const char *path, const char *data, size_t size,
 
   fs::path full_path(lpath);
   fs::path branch_path = full_path.parent_path();
-  if (!fs::exists(branch_path))
-    fs::create_directories(branch_path);
+  try {
+    if (!fs::exists(branch_path))
+      fs::create_directories(branch_path);
+  }
+  catch(const std::exception &e) {
+#ifdef DEBUG
+    printf("FSLinux::ms_write - failed to create directory %s\n", path);
+#endif
+  }
 
   int res;
 
@@ -457,7 +472,7 @@ int FSLinux::ms_getattr(const char *path, struct stat *stbuf) {
 
   std::string ser_mdm;
   if (maidsafe::ClientController::getInstance()->getattr(
-      maidsafe::TidyPath(lpath), ser_mdm) != 0) {
+      maidsafe::TidyPath(lpath), &ser_mdm) != 0) {
 #ifdef DEBUG
     printf("CC getattr came back as failed.\n");
 #endif
@@ -505,7 +520,7 @@ int FSLinux::ms_fgetattr(const char *path, struct stat *stbuf,
 
   std::string ser_mdm;
   int n = maidsafe::ClientController::getInstance()->getattr(
-          maidsafe::TidyPath(lpath), ser_mdm);
+          maidsafe::TidyPath(lpath), &ser_mdm);
   maidsafe::MetaDataMap mdm;
   mdm.ParseFromString(ser_mdm);
 
@@ -534,7 +549,7 @@ int FSLinux::ms_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 
   std::map<std::string, maidsafe::ItemType> children;
   if (maidsafe::ClientController::getInstance()->readdir(
-      maidsafe::TidyPath(lpath), children) != 0)
+      maidsafe::TidyPath(lpath), &children) != 0)
     return -errno;
 
   (void) offset;
@@ -547,8 +562,15 @@ int FSLinux::ms_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
     children.erase(children.begin());
   }
 
-  if (fs::exists(file_system::HomeDir() / ".thumbnails/fail/"))
-    fs::remove_all(file_system::HomeDir() / ".thumbnails/fail/");
+  try {
+    if (fs::exists(file_system::HomeDir() / ".thumbnails/fail/"))
+      fs::remove_all(file_system::HomeDir() / ".thumbnails/fail/");
+  }
+  catch(const std::exception &e) {
+#ifdef DEBUG
+    printf("FSLinux::ms_readdir - Failed to delete thumbs.\n");
+#endif
+  }
 
   return 0;
 }
@@ -568,8 +590,15 @@ int FSLinux::ms_mkdir(const char *path, mode_t mode) {
           maidsafe::SessionSingleton::getInstance()->SessionName()) / lpath)
               .string();
   fs::path full_path(lpath);
-  if (!fs::exists(full_path))
-    fs::create_directories(full_path);
+  try {
+    if (!fs::exists(full_path))
+      fs::create_directories(full_path);
+  }
+  catch(const std::exception &e) {
+#ifdef DEBUG
+    printf("FSLinux::ms_mkdir - Failed to create directory %s\n", path);
+#endif
+  }
 #ifdef DEBUG
   printf("ms_mkdir PATH: %s -- %d\n", lpath1.c_str(), mode);
 #endif
@@ -601,11 +630,18 @@ int FSLinux::ms_rename(const char *o_path, const char *n_path) {
       maidsafe::TidyPath(lo_path), maidsafe::TidyPath(ln_path)) != 0)
     return -errno;
   std::string s_name = maidsafe::SessionSingleton::getInstance()->SessionName();
-  if (fs::exists(file_system::MaidsafeHomeDir(s_name) / ln_path))
-    fs::remove(file_system::MaidsafeHomeDir(s_name) / ln_path);
-  if (fs::exists(file_system::MaidsafeHomeDir(s_name) / lo_path)) {
-    fs::rename((file_system::MaidsafeHomeDir(s_name) / lo_path),
-      (file_system::MaidsafeHomeDir(s_name) / ln_path));
+
+  try {
+    if (fs::exists(file_system::MaidsafeHomeDir(s_name) / ln_path))
+      fs::remove(file_system::MaidsafeHomeDir(s_name) / ln_path);
+    if (fs::exists(file_system::MaidsafeHomeDir(s_name) / lo_path))
+      fs::rename((file_system::MaidsafeHomeDir(s_name) / lo_path),
+                 (file_system::MaidsafeHomeDir(s_name) / ln_path));
+  }
+  catch(const std::exception &e) {
+#ifdef DEBUG
+    printf("FSLinux::ms_rename - Failed to remove and rename.\n");
+#endif
   }
   return 0;
 }
@@ -669,8 +705,15 @@ int FSLinux::ms_create(const char *path,
               .string();
   fs::path full_path(lpath);
   fs::path branch_path = full_path.parent_path();
-  if (!fs::exists(branch_path))
-    fs::create_directories(branch_path);
+  try {
+    if (!fs::exists(branch_path))
+      fs::create_directories(branch_path);
+  }
+  catch(const std::exception &e) {
+#ifdef DEBUG
+    printf("FSLinux::ms_create - Failed to create directory %s\n", path);
+#endif
+  }
 
   int fd;
   fd = open(lpath.c_str(), fi->flags, mode);
@@ -704,7 +747,7 @@ int FSLinux::ms_rmdir(const char *path) {
 
   std::map<std::string, maidsafe::ItemType> children;
   maidsafe::ClientController::getInstance()->readdir(
-      maidsafe::TidyPath(lpath), children);
+      maidsafe::TidyPath(lpath), &children);
   if (!children.empty())
     return -ENOTEMPTY;
 
@@ -734,8 +777,15 @@ int FSLinux::ms_unlink(const char *path) {
   lpath = (file_system::MaidsafeHomeDir(
           maidsafe::SessionSingleton::getInstance()->SessionName()) / lpath)
               .string();
-  if (fs::exists(lpath))
-    fs::remove(lpath);
+  try {
+    if (fs::exists(lpath))
+      fs::remove(lpath);
+  }
+  catch(const std::exception &e) {
+#ifdef DEBUG
+    printf("FSLinux::ms_unlink - Remove path failed\n");
+#endif
+  }
 
   return 0;
 }

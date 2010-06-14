@@ -34,7 +34,8 @@ namespace fs = boost::filesystem;
 
 namespace maidsafe_vault {
 
-VaultDaemon::VaultDaemon(const int &port, const std::string &vault_dir)
+VaultDaemon::VaultDaemon(const int &port, const std::string &vault_dir,
+                         const boost::uint8_t k)
     : pdvault_(),
       val_check_(),
       is_owned_(false),
@@ -55,7 +56,8 @@ VaultDaemon::VaultDaemon(const int &port, const std::string &vault_dir)
       channel_manager_(&transport_handler_),
       registration_channel_(),
       registration_service_(),
-      config_mutex_() {
+      config_mutex_(),
+      K_(k) {
   boost::int16_t trans_id;
   transport_handler_.Register(&local_udt_transport_, &trans_id);
   transport_handler_.Register(&global_udt_transport_, &trans_id);
@@ -280,8 +282,8 @@ bool VaultDaemon::StartNotOwnedVault() {
   not_owned_path_ = app_path_ / ("Vault_" + temp_pmid.substr(0, 8));
   boost::uint64_t space(1024 * 1024 * 1024);  // 1GB
   pdvault_.reset(new PDVault(keys.public_key(), keys.private_key(),
-      signed_pubkey, not_owned_path_, 0, false, false, kad_config_file_, space,
-      0));
+                             signed_pubkey, not_owned_path_, 0, false, false,
+                             kad_config_file_, space, 0, K_));
   pdvault_->Start(false);
   if (pdvault_->vault_status() == kVaultStopped) {
     WriteToLog("Failed to start a not owned vault - "
@@ -340,8 +342,8 @@ bool VaultDaemon::StartOwnedVault() {
     return false;
   }
   pdvault_.reset(new PDVault(pmid_public_, pmid_private_, signed_pmid_public_,
-      vault_path_, port_, false, false, kad_config_file_,
-      vault_available_space_, used_space_));
+                             vault_path_, port_, false, false, kad_config_file_,
+                             vault_available_space_, used_space_, K_));
   pdvault_->Start(first_vault);
   if (pdvault_->vault_status() == kVaultStopped) {
     WriteToLog("Failed To Start Owned Vault with info in config file");

@@ -35,8 +35,12 @@
 #include "maidsafe/vault/vaultservice.h"
 #include "tests/maidsafe/cached_keys.h"
 
-inline void HandleDeadServer(const bool &, const std::string &,
-  const boost::uint16_t&) {}
+inline void HandleDeadServer(const bool &, const std::string&,
+                             const boost::uint16_t&) {}
+
+namespace test_vault_registration_service {
+static const boost::uint8_t K(4);
+}  // namespace test_vault_service
 
 class NotifierHandler {
  public:
@@ -494,7 +498,8 @@ int WriteToLog(std::string str) {
 }
 
 void CreateVaultDaemon(const std::string &test_dir, bool *finished) {
-  maidsafe_vault::VaultDaemon daemon(0, test_dir);
+  maidsafe_vault::VaultDaemon daemon(0, test_dir,
+                                     test_vault_registration_service::K);
   ASSERT_TRUE(daemon.StartVault());
   daemon.Status();
   boost::filesystem::path vaultpath = daemon.vault_path();

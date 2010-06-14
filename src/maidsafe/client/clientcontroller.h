@@ -103,7 +103,7 @@ class ClientController {
  public:
   static ClientController *getInstance();
   static void Destroy();
-  int Init();
+  int Init(boost::uint8_t k);
   // Close connection to kademlia/stub storage.  Currently with UDT, if
   // clean_up_transport is true, UDT cannot be restarted, so this is a
   // permanent cessation of the transport layer.
@@ -151,6 +151,11 @@ class ClientController {
                       const std::string &msg,
                       const std::vector<std::string> &contact_names,
                       const std::string &conversation);
+  int SendEmail(const std::string &subject, const std::string &msg,
+               const std::vector<std::string> &to,
+							 const std::vector<std::string> &cc,
+							 const std::vector<std::string> &bcc,
+               const std::string &conversation);
   int AddInstantFile(const InstantFileNotification &ifm,
                      const std::string &location);
   void onInstantMessage(const std::string &message,
@@ -200,9 +205,9 @@ class ClientController {
   int mkdir(const std::string &path);
   int rename(const std::string &path, const std::string &path2);
   int rmdir(const std::string &path);
-  int getattr(const std::string &path, std::string &ser_mdm);
+  int getattr(const std::string &path, std::string *ser_mdm);
   int readdir(const std::string &path,  // NOLINT - readdir_r suggested
-              std::map<std::string, ItemType> &children);
+              std::map<std::string, ItemType> *children);
   int mknod(const std::string &path);
   int unlink(const std::string &path);
   int link(const std::string &path, const std::string &path2);
@@ -302,6 +307,8 @@ class ClientController {
   bool logging_out_;
   bool logged_in_;
   IMNotifier imn_;
+  boost::uint8_t K_;
+  boost::uint16_t upper_threshold_;
 };
 
 }  // namespace maidsafe

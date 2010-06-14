@@ -29,7 +29,17 @@ SaveFileThread::~SaveFileThread() { }
 void SaveFileThread::run() {
   qDebug() << "SaveFileThread::run" << filepath_;
 
-  int success = ClientController::instance()->write(filepath_.toStdString());
+  std::string s;
+  int success = ClientController::instance()->getattr(filepath_, &s);
+  if (success != 0) {
+    success = ClientController::instance()->mknod(filepath_);
+    if (success != 0) {
+      emit saveFileCompleted(success, filepath_);
+      return;
+    }
+  }
+
+  success = ClientController::instance()->write(filepath_);
   this->sleep(3);
 
   emit saveFileCompleted(success, filepath_);

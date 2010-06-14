@@ -46,6 +46,9 @@ class BigListDelegate : public QAbstractItemDelegate {
 
  private:
      int pixelSize;
+		 QPixmap icon_;
+		 QString text1, text2, text3;
+
  };
 
 #endif

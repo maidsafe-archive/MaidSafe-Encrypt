@@ -381,6 +381,8 @@ class VaultService : public maidsafe::MaidsafeService {
   // Returns whether the node is within "count" closest nodes (Kademlia closest)
   bool NodeWithinClosest(const std::string &peer_pmid,
                          const boost::uint16_t &count);
+  boost::uint8_t K_;
+  boost::uint16_t upper_threshold_;
   std::string pmid_, pmid_public_, pmid_private_, pmid_public_signature_;
   boost::shared_ptr<VaultChunkStore> vault_chunkstore_;
   VaultServiceLogic *vault_service_logic_;

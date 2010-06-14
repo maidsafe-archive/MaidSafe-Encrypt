@@ -78,6 +78,8 @@ Contacts::Contacts(QWidget* parent)
   connect(deleteContact, SIGNAL(triggered()),
           this,        SLOT(onDeleteUserClicked()));
 
+	connect(sendEmail, SIGNAL(triggered()),
+          this,        SLOT(onSendEmailClicked()));
 
   connect(ui_.listWidget, SIGNAL(customContextMenuRequested(const QPoint&)),
             this,         SLOT(customContentsMenu(const QPoint&)));
@@ -168,14 +170,20 @@ void Contacts::onItemSelectionChanged() {
 
 void Contacts::onAddContactClicked() {
   bool ok;
-  QString text = QInputDialog::getText(this,
-                                       tr("Add Contact"),
-                                       tr("Please enter a username to add:"),
-                                       QLineEdit::Normal,
-                                       QString(),
-                                       &ok);
-  if (!ok || text.isEmpty()) {
-      return;
+  QString text;
+  if (ui_.contactLineEdit->text() != "Search Contacts" && ui_.contactLineEdit->text() != "") {
+    text = ui_.contactLineEdit->text();
+    ui_.contactLineEdit->clear();
+  } else {
+    text = QInputDialog::getText(this,
+                                tr("Add Contact"),
+                                tr("Please enter a username to add:"),
+                                QLineEdit::Normal,
+                                QString(),
+                                &ok);
+    if (!ok || text.isEmpty()) {
+        return;
+    }
   }
 
   const QString contact_name = text.trimmed();
@@ -293,6 +301,24 @@ void Contacts::onDeleteUserClicked() {
                          QString(tr("Error removing contact: %1"))
                          .arg(contact_->publicName()));
   }
+}
+
+void Contacts::onSendEmailClicked() {
+	QList<QListWidgetItem *> contacts = currentContact();
+  if (contacts.size() == 0)
+    return;
+	sendMail_ = new UserSendMail(this);
+
+	QList<QString> conts;
+  if (contacts.size() > 1) {
+    foreach(QListWidgetItem *item, contacts) {
+      conts.push_back(item->text());
+			sendMail_->addToRecipients(conts);
+    }
+  } else {
+		sendMail_->addSingleRecipient(contacts.front()->text());
+  }
+	sendMail_->exec();
 }
 
 void Contacts::onSendMessageClicked() {

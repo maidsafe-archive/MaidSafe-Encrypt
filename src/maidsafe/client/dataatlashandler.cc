@@ -238,13 +238,15 @@ int DataAtlasHandler::RemoveElement(const std::string &element_path) {
 int DataAtlasHandler::ListFolder(const std::string &element_path,
                                  std::map<std::string, ItemType> *children) {
   int result = kDataAtlasError;
+
   if (element_path == "\\" || element_path == "/") {
-    children->insert(std::pair<std::string, ItemType>(
-        TidyPath(kRootSubdir[0][0]), DIRECTORY));
-    children->insert(std::pair<std::string, ItemType>(
-        TidyPath(kRootSubdir[1][0]), DIRECTORY));
+    for (int i = 0 ; i < kRootSubdirSize ; i++) {
+      children->insert(std::pair<std::string, ItemType>(
+      TidyPath(kRootSubdir[i][0]), DIRECTORY));
+    }
     return kSuccess;
   }
+
   // append "/a" to element_path so that GetPdDir finds correct branch
   fs::path path_(element_path, fs::native);
   path_ /= "a";

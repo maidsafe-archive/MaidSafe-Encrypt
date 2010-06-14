@@ -25,6 +25,8 @@
 #include "qt/client/client_controller.h"
 #include "qt/widgets/personal_messages.h"
 #include "qt/widgets/user_settings.h"
+#include "qt/widgets/user_inbox.h"
+#include "qt/client/save_file_thread.h"
 
 // generated
 #include "ui_pd.h"
@@ -37,6 +39,10 @@ class MountThread;
 class Progress;
 class PersonalMessages;
 class UserSettings;
+class UserInbox;
+#ifdef PD_LIGHT
+  class FileBrowser;
+#endif
 
 // Main Window for Perpetual Data
 /*!
@@ -107,6 +113,8 @@ class PerpetualData : public QMainWindow {
     void onAwayTriggered();
     void onBusyTriggered();
     void onOffline_2Triggered();
+		void onEmailTriggered();
+
     void showLoggedOutMenu();
     void showLoggedInMenu();
 
@@ -120,6 +128,8 @@ class PerpetualData : public QMainWindow {
 
     void onShareReceived(const QString&, const QString&);
     void onFileReceived(const maidsafe::InstantMessage&);
+    void onEmailReceived(const maidsafe::InstantMessage&);
+    void onSaveFileCompleted(int, const QString&);
     void onConnectionStatusChanged(int status);
 
     void onUnreadMessagesChanged(int count);
@@ -145,7 +155,8 @@ class PerpetualData : public QMainWindow {
     ONLINE,
     BUSY,
     AWAY,
-    OFFLINE_2
+    OFFLINE_2,
+		EMAIL
     };
   typedef QMap<Action, QAction*> ActionMap;
   ActionMap actions_;
@@ -199,6 +210,13 @@ class PerpetualData : public QMainWindow {
 
   // User Settings Window
   UserSettings* settings_;
+
+	// Email Inbox
+	UserInbox* inbox_;
+
+#ifdef PD_LIGHT
+  FileBrowser* browser_;
+#endif
 
   // Switch between different application states
   void setState(State state);

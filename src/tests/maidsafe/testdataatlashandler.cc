@@ -44,6 +44,10 @@
 #include "tests/maidsafe/cached_keys.h"
 #include "tests/maidsafe/testcallback.h"
 
+namespace test_dah {
+static const boost::uint8_t K(4);
+}  // namespace test_dah
+
 namespace maidsafe {
 
 namespace fs = boost::filesystem;
@@ -82,7 +86,7 @@ class DataAtlasHandlerTest : public testing::Test {
       count += 10;
     }
     boost::shared_ptr<LocalStoreManager>
-        sm(new LocalStoreManager(client_chunkstore_, test_root_dir_));
+        sm(new LocalStoreManager(client_chunkstore_, test_root_dir_, test_dah::K));
     test::CallbackObject cb;
     sm->Init(boost::bind(&test::CallbackObject::ReturnCodeCallback, &cb, _1),
              0);

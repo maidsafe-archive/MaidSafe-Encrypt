@@ -52,8 +52,14 @@ PDVault::PDVault(const std::string &pmid_public,
                  bool use_upnp,
                  const fs::path &read_only_kad_config_file,
                  const boost::uint64_t &available_space,
-                 const boost::uint64_t &used_space)
-    : port_(port),
+                 const boost::uint64_t &used_space,
+                 const boost::uint8_t &k)
+    : K_(k),
+      upper_threshold_(
+          static_cast<boost::uint16_t>(K_ * kMinSuccessfulPecentageStore)),
+      lower_threshold_(kMinSuccessfulPecentageStore > .25 ?
+          static_cast<boost::uint16_t>(K_ * .25) : upper_threshold_),
+      port_(port),
       global_udt_transport_(),
       transport_id_(0),
       transport_handler_(),
@@ -64,7 +70,7 @@ PDVault::PDVault(const std::string &pmid_public,
                         available_space, used_space)),
       kad_ops_(new maidsafe::KadOps(&transport_handler_, &channel_manager_,
                                     kad::VAULT, pmid_private, pmid_public,
-                                    port_forwarded, use_upnp,
+                                    port_forwarded, use_upnp, K_,
                                     vault_chunkstore_)),
       vault_service_(),
       vault_service_logic_(vault_rpcs_, kad_ops_),
@@ -805,7 +811,7 @@ void PDVault::CheckChunkCallback(
   if (check_chunk_response->IsInitialized() &&
       check_chunk_response->has_pmid() &&
       check_chunk_response->pmid() !=
-      get_args->chunk_holder_.node_id().ToStringDecoded()) {
+      get_args->chunk_holder_.node_id().String()) {
     if (get_args->retry_remote_) {
       get_args->retry_remote_ = false;
 //      knode_->UpdatePDRTContactToRemote(get_args->chunk_holder_.node_id());
@@ -905,7 +911,7 @@ void PDVault::GetMessagesCallback(
   if (get_messages_response->IsInitialized() &&
       get_messages_response->has_pmid_id() &&
       get_messages_response->pmid_id() !=
-      get_args->chunk_holder_.node_id().ToStringDecoded()) {
+      get_args->chunk_holder_.node_id().String()) {
     if (get_args->retry_remote_) {
       get_args->retry_remote_ = false;
 //      knode_->UpdatePDRTContactToRemote(get_args->chunk_holder_.node_id());
@@ -950,7 +956,7 @@ void PDVault::GetChunkCallback(
   if (get_chunk_response->IsInitialized() &&
       get_chunk_response->has_pmid() &&
       get_chunk_response->pmid() !=
-      get_args->chunk_holder_.node_id().ToStringDecoded()) {
+      get_args->chunk_holder_.node_id().String()) {
     if (get_args->retry_remote_) {
       get_args->retry_remote_ = false;
 //      knode_->UpdatePDRTContactToRemote(get_args->chunk_holder_.node_id());
@@ -1184,16 +1190,16 @@ int PDVault::AmendAccount(const boost::uint64_t &space_offered) {
                                      data->contacts)) {
     // we are within the K closest, but can't hold our own account;
     // create the account on not more than K-1 nodes
-    while (data->contacts.size() >= kad::K) {
+    while (data->contacts.size() >= K_) {
 #ifdef DEBUG
       printf("In PDVault::AmendAccount, skipping %s.\n",
-          HexSubstr(data->contacts.back().node_id().ToStringDecoded()).c_str());
+          HexSubstr(data->contacts.back().node_id().String()).c_str());
 #endif
       data->contacts.pop_back();
     }
-    required_contacts = kad::K - 1;
+    required_contacts = K_ - 1;
   } else {
-    required_contacts = kad::K;
+    required_contacts = K_;
   }
 
   if (data->contacts.size() < required_contacts) {
@@ -1220,7 +1226,7 @@ int PDVault::AmendAccount(const boost::uint64_t &space_offered) {
   amend_account_request.set_account_pmid(pmid_);
   for (boost::uint16_t i = 0; i < data->contacts.size(); ++i) {
     maidsafe::AmendAccountData::AmendAccountDataHolder holder(
-        data->contacts.at(i).node_id().ToStringDecoded());
+        data->contacts.at(i).node_id().String());
     data->data_holders.push_back(holder);
   }
 
@@ -1339,7 +1345,7 @@ void PDVault::JoinMaidsafeNet() {
 
   // Get K Kademlia-closest peers
   std::list<base::PublicRoutingTableTuple> close_peers;
-  if (routing_table_->GetClosestContacts(pmid_, kad::K, &close_peers) !=
+  if (routing_table_->GetClosestContacts(pmid_, K_, &close_peers) !=
       kSuccess || close_peers.empty()) {
 #ifdef DEBUG
     printf("In PDVault::JoinMaidsafeNet (%s), failed to query local"

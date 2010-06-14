@@ -114,7 +114,8 @@ class ClientBufferPacketHandler {
   static const boost::uint16_t kParallelFindCtcs = 1;
  public:
   ClientBufferPacketHandler(boost::shared_ptr<maidsafe::BufferPacketRpcs> rpcs,
-                            boost::shared_ptr<KadOps> kadops);
+                            boost::shared_ptr<KadOps> kadops,
+                            boost::uint8_t upper_threshold);
   virtual ~ClientBufferPacketHandler() {}
   void CreateBufferPacket(const BPInputParameters &args,
                           bp_operations_cb cb,
@@ -163,6 +164,7 @@ class ClientBufferPacketHandler {
   crypto::Crypto crypto_obj_;
   boost::shared_ptr<maidsafe::BufferPacketRpcs> rpcs_;
   boost::shared_ptr<KadOps> kad_ops_;
+  boost::uint16_t upper_threshold_;
 };
 
 }  // namespace maidsafe

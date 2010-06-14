@@ -66,7 +66,8 @@ struct RemoteOpData {
                std::string kadkey,
                int found_local_res,
                VoidFuncOneInt cb,
-               boost::int16_t trans_id)
+               boost::int16_t trans_id,
+               boost::uint8_t k)
       : request(req),
         kad_key(kadkey),
         found_local_result(found_local_res),
@@ -78,8 +79,8 @@ struct RemoteOpData {
         success_count(0),
         failure_count(0),
         callback_done(false) {
-    contacts.reserve(kad::K);
-    data_holders.reserve(kad::K);
+    contacts.reserve(k);
+    data_holders.reserve(k);
   }
   T1 request;
   std::string kad_key;
@@ -284,6 +285,9 @@ class VaultServiceLogic {
   std::string pmid_, pmid_public_key_, pmid_public_signature_, pmid_private_;
   bool online_;
   boost::mutex online_mutex_;
+  boost::uint8_t K_;
+  boost::uint16_t upper_threshold_;
+  boost::uint16_t lower_threshold_;
 };
 
 }  // namespace maidsafe_vault

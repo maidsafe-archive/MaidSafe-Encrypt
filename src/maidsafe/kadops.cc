@@ -119,8 +119,9 @@ bool KadOps::AddressIsLocal(const kad::Contact &peer) {
 }
 
 bool KadOps::AddressIsLocal(const kad::ContactInfo &peer) {
-  return knode_.CheckContactLocalAddress(kad::KadId(peer.node_id(), false),
-      peer.local_ip(), peer.local_port(), peer.ip()) == kad::LOCAL;
+  return knode_.CheckContactLocalAddress(kad::KadId(peer.node_id()),
+                                         peer.local_ip(), peer.local_port(),
+                                         peer.ip()) == kad::LOCAL;
 }
 
 void KadOps::GetNodeContactDetails(const std::string &node_id,
@@ -298,14 +299,13 @@ void KadOps::SetThisEndpoint(EndPoint *this_endpoint) {
 }
 
 bool KadOps::GetKadId(const std::string &key, kad::KadId *kad_id) {
-  try {
-    *kad_id = kad::KadId(key, false);
-  }
-  catch(const std::exception&) {
+  *kad_id = kad::KadId(key);
+  if (kad_id->IsValid()) {
+    return true;
+  } else {
     *kad_id = kad::KadId();
     return false;
   }
-  return true;
 }
 
 bool ContactWithinClosest(

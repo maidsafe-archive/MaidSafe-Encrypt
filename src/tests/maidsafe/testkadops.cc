@@ -24,6 +24,10 @@
 #include "tests/maidsafe/mockkadops.h"
 #include "maidsafe/chunkstore.h"
 
+namespace test_kadops {
+static const boost::uint8_t K(4);
+}  // namespace test_kadops
+
 namespace maidsafe {
 
 class KadOpsTest : public testing::Test {
@@ -37,13 +41,17 @@ class KadOpsTest : public testing::Test {
       crypto_(),
       fail_parse_result_(
         mock_kadops::MakeFindNodesResponse(mock_kadops::kFailParse,
+                                           test_kadops::K,
                                            &fail_parse_pmids_)),
       fail_result_(mock_kadops::MakeFindNodesResponse(mock_kadops::kResultFail,
+                                                      test_kadops::K,
                                                       &fail_pmids_)),
       few_result_(
         mock_kadops::MakeFindNodesResponse(mock_kadops::kTooFewContacts,
+                                           test_kadops::K,
                                            &few_pmids_)),
       good_result_(mock_kadops::MakeFindNodesResponse(mock_kadops::kGood,
+                                                      test_kadops::K,
                                                       &good_pmids_)) {
     crypto_.set_hash_algorithm(crypto::SHA_512);
     crypto_.set_symm_algorithm(crypto::AES_256);
@@ -101,12 +109,12 @@ TEST_F(KadOpsTest, BEH_MAID_BlockingFindKClosestNodes) {
 
   // Call 5
   ASSERT_EQ(kSuccess, mko_.BlockingFindKClosestNodes("", &contacts));
-  ASSERT_EQ(size_t(kad::K), contacts.size());
+  ASSERT_EQ(size_t(test_kadops::K), contacts.size());
 
   // Call 6
   contacts.push_back(dummy_contact);
   ASSERT_EQ(kSuccess, mko_.BlockingFindKClosestNodes("", &contacts));
-  ASSERT_EQ(size_t(kad::K), contacts.size());
+  ASSERT_EQ(size_t(test_kadops::K), contacts.size());
 }
 
 TEST_F(KadOpsTest, DISABLED_BEH_MAID_GetStorePeer) {

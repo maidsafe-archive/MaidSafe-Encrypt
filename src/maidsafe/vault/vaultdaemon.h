@@ -37,7 +37,8 @@ const boost::uint16_t kRsaKeySize = 4096;
 class VaultDaemon {
   // A daemon class to assist PD vault functions
  public:
-  VaultDaemon(const int &port, const std::string &vault_dir);
+  VaultDaemon(const int &port, const std::string &vault_dir,
+              const boost::uint8_t k);
   ~VaultDaemon();
   void Status();
   // Returns false if it fails to start the already owned vault or the not owned
@@ -77,9 +78,11 @@ class VaultDaemon {
   boost::shared_ptr<rpcprotocol::Channel> registration_channel_;
   boost::shared_ptr<RegistrationService> registration_service_;
   boost::mutex config_mutex_;
+  boost::uint8_t K_;
   VaultDaemon(const VaultDaemon&);
   VaultDaemon& operator=(const VaultDaemon&);
 };
+
 }  // namespace maidsafe_vault
 
 #endif  // MAIDSAFE_VAULT_VAULTDAEMON_H_

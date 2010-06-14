@@ -73,12 +73,13 @@ class KGroup {
     }
     std::string pmid, pmid_private, pmid_public, pmid_public_signature;
   };
-  KGroup() : co_(), members_(), serialised_find_nodes_response_() {
+  KGroup(const boost::uint8_t k)
+      : co_(), members_(), serialised_find_nodes_response_() {
     co_.set_symm_algorithm(crypto::AES_256);
     co_.set_hash_algorithm(crypto::SHA_512);
     kad::FindResponse find_response;
     find_response.set_result(kad::kRpcResultSuccess);
-    for (int i = 0; i < kad::K; ++i) {
+    for (int i = 0; i < k; ++i) {
       Member member;
       members_.push_back(member);
       kad::Contact node(member.pmid, "192.168.1.1", 5000 + i);
@@ -190,7 +191,7 @@ class MockVsl : public VaultServiceLogic {
 
 class MockVaultServiceLogicTest : public testing::Test {
  protected:
-  MockVaultServiceLogicTest()
+  MockVaultServiceLogicTest(const boost::uint8_t k)
       : pmid_(),
         pmid_private_(),
         pmid_public_(),
@@ -200,15 +201,15 @@ class MockVaultServiceLogicTest : public testing::Test {
         few_pmids_(),
         good_pmids_(),
         fail_parse_result_(
-            mock_kadops::MakeFindNodesResponse(mock_kadops::kFailParse,
+            mock_kadops::MakeFindNodesResponse(mock_kadops::kFailParse, k,
                                                &fail_parse_pmids_)),
         fail_result_(
-            mock_kadops::MakeFindNodesResponse(mock_kadops::kResultFail,
+            mock_kadops::MakeFindNodesResponse(mock_kadops::kResultFail, k,
                                                &fail_pmids_)),
         few_result_(
-            mock_kadops::MakeFindNodesResponse(mock_kadops::kTooFewContacts,
+            mock_kadops::MakeFindNodesResponse(mock_kadops::kTooFewContacts, k,
                                                &few_pmids_)),
-        good_result_(mock_kadops::MakeFindNodesResponse(mock_kadops::kGood,
+        good_result_(mock_kadops::MakeFindNodesResponse(mock_kadops::kGood, k,
                                                         &good_pmids_)),
         good_result_less_one_(),
         our_contact_(),

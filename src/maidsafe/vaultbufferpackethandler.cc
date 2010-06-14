@@ -179,7 +179,7 @@ bool VaultBufferPacketHandler::AddMessage(const std::string &current_bp,
   std::string public_key;
   //  These are the messages that are not sent with the MPID.
   //  Other new messages sent with the MPID should be here as well.
-  if (bpm.type() != INSTANT_MSG && bpm.type() != ADD_CONTACT_RQST) {
+  if (bpm.type() != INSTANT_MSG && bpm.type()!= EMAIL && bpm.type() != ADD_CONTACT_RQST) {
     public_key = bpm.sender_public_key();
     std::string id(crypto_obj_.Hash(public_key + signed_public_key, "",
                                     crypto::STRING_STRING, false));

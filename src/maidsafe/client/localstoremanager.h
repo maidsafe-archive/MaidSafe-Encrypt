@@ -47,6 +47,7 @@ class ChunkStore;
 class LocalStoreManager : public StoreManagerInterface {
  public:
   LocalStoreManager(boost::shared_ptr<ChunkStore> client_chunkstore,
+                    const boost::uint8_t &k,
                     const fs::path &db_directory);
   virtual ~LocalStoreManager() {}
   virtual void Init(VoidFuncOneInt callback, const boost::uint16_t &port);
@@ -170,6 +171,8 @@ class LocalStoreManager : public StoreManagerInterface {
   void ExecStringCallback(kad::VoidFunctorOneString cb,
                           MaidsafeRpcResult result);
 
+  boost::uint8_t K_;
+  boost::uint16_t upper_threshold_;
   CppSQLite3DB db_;
   VaultBufferPacketHandler vbph_;
   boost::mutex mutex_;

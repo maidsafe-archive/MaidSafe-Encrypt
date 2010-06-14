@@ -49,8 +49,9 @@ class InfoSynchroniser {
  public:
   typedef std::map<std::string, boost::uint32_t> InfoEntryMap;
   InfoSynchroniser(const std::string &pmid,
-                   boost::shared_ptr<base::PublicRoutingTableHandler> rt)
-      : pmid_(pmid), routing_table_(rt), info_entries_(), mutex_() {}
+                   boost::shared_ptr<base::PublicRoutingTableHandler> rt,
+                   boost::uint8_t k)
+      : pmid_(pmid), routing_table_(rt), info_entries_(), mutex_(), K_(k) {}
   bool ShouldFetch(const std::string &id,
                    std::vector<kad::Contact> *closest_nodes);
   void RemoveEntry(const std::string &id);
@@ -68,6 +69,7 @@ class InfoSynchroniser {
   boost::shared_ptr<base::PublicRoutingTableHandler> routing_table_;
   InfoEntryMap info_entries_;
   boost::mutex mutex_;
+  boost::uint8_t K_;
 };
 
 }  // namespace maidsafe_vault

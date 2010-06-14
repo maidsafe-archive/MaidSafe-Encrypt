@@ -88,10 +88,12 @@ bool UserSpaceFileSystem::mount() {
   #endif
   ClientController::instance()->SetWinDrive(drive);
 #elif defined(PD_POSIX)
-  std::string mount_point = file_system::MaidsafeFuseDir(
-      ClientController::instance()->SessionName()).string();
   #ifndef PD_LIGHT
-    impl_->fsl_.Mount(mount_point, debug_mode);
+    std::string mount_point(file_system::MaidsafeFuseDir(
+                                ClientController::instance()->SessionName())
+                                    .string());
+    if (!impl_->fsl_.Mount(mount_point, debug_mode))
+      return false;
   #endif
 #endif
   boost::this_thread::sleep(boost::posix_time::seconds(1));

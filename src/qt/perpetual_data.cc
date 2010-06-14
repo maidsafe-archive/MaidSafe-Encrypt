@@ -27,9 +27,12 @@
 
 #include <list>
 #include <string>
+#include <iostream>
+#include <fstream>
 
 // core
 #include "qt/client/client_controller.h"
+#include "maidsafe/utils.h"
 
 // local
 #include "qt/widgets/login.h"
@@ -52,7 +55,7 @@ PerpetualData::PerpetualData(QWidget* parent)
     : QMainWindow(parent), quitting_(false), login_(NULL), create_(NULL),
       message_status_(NULL), state_(LOGIN) {
   setAttribute(Qt::WA_DeleteOnClose, false);
-  setWindowIcon(QPixmap(":/icons/16/globe"));
+  setWindowIcon(QPixmap(":/icons/64/64/maidsafe-triangle.png"));
   ui_.setupUi(this);
 
   statusBar()->show();
@@ -129,6 +132,10 @@ void PerpetualData::onJoinKademliaCompleted(bool b) {
   connect(ClientController::instance(),
                 SIGNAL(connectionStatusChanged(int)),
           this, SLOT(onConnectionStatusChanged(int)));
+
+  connect(ClientController::instance(),
+                SIGNAL(emailReceieved(const maidsafe::InstantMessage&)),
+           this, SLOT(onEmailReceived(const maidsafe::InstantMessage&)));
 }
 
 PerpetualData::~PerpetualData() {
@@ -149,6 +156,7 @@ void PerpetualData::createActions() {
   actions_[ AWAY ] = ui_.actionAway;
   actions_[ BUSY ] = ui_.actionBusy;
   actions_[ OFFLINE_2 ] = ui_.actionOffline_2;
+  actions_[ EMAIL ] = ui_.actionEmail;
 // actions_[ SAVE_SESSION ] = ui_.actionSave_Session;
 
 // Remove Status Menu until implemented
@@ -177,13 +185,15 @@ void PerpetualData::createActions() {
   connect(actions_[ SETTINGS ], SIGNAL(triggered()),
           this,                 SLOT(onSettingsTriggered()));
   connect(actions_[ ONLINE ], SIGNAL(triggered()),
-          this,                 SLOT(onOnlineTriggered()));
+          this,               SLOT(onOnlineTriggered()));
   connect(actions_[ AWAY ], SIGNAL(triggered()),
-          this,                 SLOT(onAwayTriggered()));
+          this,             SLOT(onAwayTriggered()));
   connect(actions_[ BUSY ], SIGNAL(triggered()),
-          this,                 SLOT(onBusyTriggered()));
+          this,             SLOT(onBusyTriggered()));
   connect(actions_[ OFFLINE_2 ], SIGNAL(triggered()),
-          this,                 SLOT(onOffline_2Triggered()));
+          this,                  SLOT(onOffline_2Triggered()));
+  connect(actions_[ EMAIL ], SIGNAL(triggered()),
+          this,              SLOT(onEmailTriggered()));
 // connect(actions_[ SAVE_SESSION ], SIGNAL(triggered()),
 //         this,                     SLOT(onSaveSession()));
 }
@@ -459,6 +469,10 @@ void PerpetualData::onLogout() {
   if (!ClientController::instance()->publicUsername().isEmpty())
     ClientController::instance()->StopCheckingMessages();
   asyncUnmount();
+#ifdef PD_LIGHT
+  userPanels_->CloseFileBrowser();
+#endif
+
   setState(LOGGING_OUT);
 }
 
@@ -571,18 +585,20 @@ void PerpetualData::onMessageReceived(int type,
       mess_->setMessage(tr("%1").arg(detail));
       mess_->show();
     } else {
-			foreach(QWidget *widget, QApplication::allWidgets()) {
-				PersonalMessages *mess = qobject_cast<PersonalMessages*>(widget);
-				if (mess) {
-					if (mess->getName() == sender) {
-						mess->setMessage(tr("%1").arg(detail));
-						mess->show();
-					}
-				}
-			}
-		}
+      foreach(QWidget *widget, QApplication::allWidgets()) {
+        PersonalMessages *mess = qobject_cast<PersonalMessages*>(widget);
+        if (mess) {
+          if (mess->getName() == sender) {
+            mess->setMessage(tr("%1").arg(detail));
+            mess->show();
+          }
+        }
+      }
+    }
   } else if (ClientController::MessageType(type) == ClientController::INVITE) {
     // TODO(Team#5#): 2010-01-13 - handle Invite
+  } else if (ClientController::MessageType(type) == ClientController::EMAIL) {
+    // TODO(Stephen) HANDLE New email message
   } else {
     printf("Type != ClientController::TEXT && ClientController::INVITE\n");
   }
@@ -595,6 +611,98 @@ void PerpetualData::onShareReceived(const QString& from,
                     .arg(from).arg(share_name);
 
   SystemTrayIcon::instance()->showMessage(title, message);
+}
+
+void PerpetualData::onEmailReceived(const maidsafe::InstantMessage& im) {
+  userPanels_->setEmailLabel("New E-mail!");
+  SystemTrayIcon::instance()->showMessage("New Email", "You have new email");
+  maidsafe::EmailNotification en = im.email_notification();
+
+  QString emailRootPath = QString::fromStdString(file_system::MaidsafeHomeDir(
+                          ClientController::instance()->SessionName()).string())
+                              .append("/Emails/");
+  try {
+    if (!boost::filesystem::exists(emailRootPath.toStdString()))
+      boost::filesystem::create_directories(emailRootPath.toStdString());
+  }
+  catch(const std::exception &e) {
+    qDebug() << "PerpetualData::onEmailReceived - Failed to create "
+             << emailRootPath;
+    return;
+  }
+
+  QString emailFolder = "/Emails/";
+
+  std::string tidyRelPathStr = maidsafe::TidyPath(emailFolder.toStdString());
+  QString emailFolderPath = QString::fromStdString(tidyRelPathStr);
+
+  std::map<std::string, maidsafe::ItemType> children;
+  ClientController::instance()->readdir(emailFolderPath, &children);
+
+  QString emailFullPath;
+  emailFullPath = QString("%1%2_%3.pdmail")
+                      .arg(emailRootPath)
+                      .arg(QString::fromStdString(im.subject()))
+                      .arg(QString::fromStdString(im.conversation()));
+
+  QString emailMaidsafePath;
+  emailMaidsafePath = QString("%1%2_%3.pdmail")
+                          .arg(emailFolder)
+                          .arg(QString::fromStdString(im.subject()))
+                          .arg(QString::fromStdString(im.conversation()));
+
+  std::string tidyEmail = maidsafe::TidyPath(emailMaidsafePath.toStdString());
+  QString tidyEmailMaidsafePath = QString::fromStdString(tidyEmail);
+
+  QDateTime theDate = QDateTime::currentDateTime();
+  theDate.setTime_t(im.date());
+  QString date = theDate.toString("dd/MM/yyyy hh:mm:ss");
+  try {
+    std::ofstream myfile;
+    myfile.open(emailFullPath.toStdString().c_str(), std::ios::app);
+    // SAVE AS XML
+    QString htmlMessage = tr("From : %1 at %2 <br /> %3 <br /> %4")
+        .prepend("<span style=\"background-color:#CCFF99\"><br />")
+        .arg(QString::fromStdString(im.sender()))
+        .arg(date)
+        .arg(QString::fromStdString(im.subject()))
+        .arg(QString::fromStdString(im.message()))
+        .append("</span>");
+    myfile << htmlMessage.toStdString();
+    myfile.close();
+
+    SaveFileThread* sft = new SaveFileThread(tidyEmailMaidsafePath, this);
+    connect(sft,  SIGNAL(saveFileCompleted(int, const QString&)),
+          this, SLOT(onSaveFileCompleted(int, const QString&)));
+    sft->start();
+  }
+  catch(const std::exception&) {
+    qDebug() << "Create File Failed";
+  }
+}
+
+void PerpetualData::onSaveFileCompleted(int success, const QString& filepath) {
+  qDebug() << "onSaveFileCompleted : " << filepath;
+  if (success != -1) {
+    std::string dir = filepath.toStdString();
+    dir.erase(0, 1);
+    QString rootPath_ = QString::fromStdString(file_system::MaidsafeHomeDir(
+                  ClientController::instance()->SessionName()).string()+"/");
+
+    std::string fullFilePath(rootPath_.toStdString() + filepath.toStdString());
+
+    if (fs::exists(fullFilePath)) {
+      try {
+        fs::remove(fullFilePath);
+        qDebug() << "Remove File Success:"
+                 << QString::fromStdString(fullFilePath);
+      }
+      catch(const std::exception&) {
+        qDebug() << "Remove File failure:"
+                 << QString::fromStdString(fullFilePath);
+      }
+    }
+  }
 }
 
 void PerpetualData::onFileReceived(const maidsafe::InstantMessage& im) {
@@ -744,9 +852,7 @@ void PerpetualData::onSettingsTriggered() {
     QFile file(":/qss/defaultWithWhite1.qss");
     file.open(QFile::ReadOnly);
     QString styleSheet = QLatin1String(file.readAll());
-
     settings_->setStyleSheet(styleSheet);
-
     settings_->exec();
 }
 
@@ -760,6 +866,12 @@ void PerpetualData::onBusyTriggered() {
 }
 
 void PerpetualData::onOffline_2Triggered() {
+}
+
+void PerpetualData::onEmailTriggered() {
+  userPanels_->setEmailLabel("");
+  inbox_ = new UserInbox(this);
+  inbox_->show();
 }
 
 void PerpetualData::onLogoutUserCompleted(bool success) {

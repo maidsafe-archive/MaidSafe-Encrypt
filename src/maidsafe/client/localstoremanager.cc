@@ -29,10 +29,63 @@ namespace fs = boost::filesystem;
 
 namespace maidsafe {
 
+void ExecuteSuccessCallback(const kad::VoidFunctorOneString &cb,
+                            boost::mutex *mutex) {
+  boost::mutex::scoped_lock gaurd(*mutex);
+  std::string ser_result;
+  GenericResponse result;
+  result.set_result(kAck);
+  result.SerializeToString(&ser_result);
+  cb(ser_result);
+}
+
+void ExecuteFailureCallback(const kad::VoidFunctorOneString &cb,
+                            boost::mutex *mutex) {
+  boost::mutex::scoped_lock gaurd(*mutex);
+  std::string ser_result;
+  GenericResponse result;
+  result.set_result(kNack);
+  result.SerializeToString(&ser_result);
+  cb(ser_result);
+}
+
+void ExecCallbackVaultInfo(const kad::VoidFunctorOneString &cb,
+                           boost::mutex *mutex) {
+  boost::mutex::scoped_lock loch(*mutex);
+  VaultCommunication vc;
+  vc.set_chunkstore("/home/Smer/ChunkStore");
+  vc.set_offered_space(base::RandomUint32());
+  boost::uint32_t fspace = base::RandomUint32();
+  while (fspace >= vc.offered_space())
+    fspace = base::RandomUint32();
+  vc.set_free_space(fspace);
+  vc.set_ip("127.0.0.1");
+  vc.set_port((base::RandomUint32() % 64512) + 1000);
+  vc.set_timestamp(base::GetEpochTime());
+  std::string ser_vc;
+  vc.SerializeToString(&ser_vc);
+  cb(ser_vc);
+}
+
+void ExecReturnCodeCallback(const VoidFuncOneInt &cb,
+                            const ReturnCode rc) {
+  cb(rc);
+}
+
+void ExecReturnLoadPacketCallback(const LoadPacketFunctor &cb,
+                                  std::vector<std::string> results,
+                                  const ReturnCode rc) {
+  cb(results, rc);
+}
+
 LocalStoreManager::LocalStoreManager(
     boost::shared_ptr<ChunkStore> client_chunkstore,
+    const boost::uint8_t &k,
     const fs::path &db_directory)
-        : db_(),
+        : K_(k),
+          upper_threshold_(
+              static_cast<boost::uint16_t>(K_ * kMinSuccessfulPecentageStore)),
+          db_(),
           vbph_(),
           mutex_(),
           local_sm_dir_(db_directory.string()),
@@ -209,7 +262,15 @@ bool LocalStoreManager::KeyUnique(const std::string &key, bool) {
   if (result) {
     fs::path file_path(local_sm_dir_ + "/StoreChunks");
     file_path = file_path / hex_key;
-    result = (!fs::exists(file_path));
+    try {
+      result = (!fs::exists(file_path));
+    }
+    catch(const std::exception &e) {
+#ifdef DEBUG
+      printf("LocalStoreManager::KeyUnique - Failed to check path existance\n");
+#endif
+      return false;
+    }
   }
   return result;
 }
@@ -748,8 +809,12 @@ int LocalStoreManager::ModifyBPInfo(const std::string &info) {
 
 int LocalStoreManager::LoadBPMessages(
     std::list<ValidatedBufferPacketMessage> *messages) {
-  if (ss_->Id(MPID) == "")
+  if (ss_->Id(MPID) == "") {
+#ifdef DEBUG
+    printf("LocalStoreManager::LoadBPMessages - No MPID.\n");
+#endif
     return 0;
+  }
 
   std::string bp_in_chunk;
   std::string bufferpacketname(BufferPacketName());
@@ -786,7 +851,7 @@ int LocalStoreManager::LoadBPMessages(
 #endif
     return 0;
   }
-  return kKadUpperThreshold;
+  return upper_threshold_;
 }
 
 int LocalStoreManager::SendMessage(
@@ -854,7 +919,7 @@ int LocalStoreManager::SendMessage(
 }
 
 int LocalStoreManager::LoadBPPresence(std::list<LivePresence>*) {
-  return kKadUpperThreshold;
+  return upper_threshold_;
 }
 
 int LocalStoreManager::AddBPPresence(

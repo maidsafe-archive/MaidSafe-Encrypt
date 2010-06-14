@@ -6,6 +6,7 @@ enum MessageType {
   INSTANT_MSG = 2;
   HELLO_PING = 3;
   LOGOUT_PING = 4;
+	EMAIL = 5;
 }
 
 enum PacketType {
@@ -101,6 +102,12 @@ message PrivateShareNotification {
   required bytes dir_db_key = 7;
 }
 
+message EmailNotification {
+  required bytes to = 1;
+  optional bytes cc = 2;
+  optional bytes bcc = 3; 
+}
+
 message InstantMessage {
   required bytes sender = 1;
   required bytes message = 2;
@@ -111,6 +118,9 @@ message InstantMessage {
   optional bytes conversation = 7;
   optional EndPoint endpoint = 8;
   optional int32 status = 9;
+  optional bytes subject = 10;
+  optional EmailNotification email_notification = 11;
+	
 }
 
 message StoreMessagesResult {

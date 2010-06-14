@@ -48,6 +48,8 @@ namespace fs = boost::filesystem;
 
 namespace test_seh {
 
+static const boost::uint8_t K(4);
+
 std::string CreateRandomFile(const std::string &filename,
                              const boost::uint64_t &filesize) {
   int file_size = static_cast<int>(filesize);
@@ -106,7 +108,7 @@ class SEHandlerTest : public testing::Test {
       boost::this_thread::sleep(boost::posix_time::milliseconds(10));
       count += 10;
     }
-    sm_.reset(new LocalStoreManager(client_chunkstore_, test_root_dir_));
+    sm_.reset(new LocalStoreManager(client_chunkstore_, test_root_dir_, test_seh::K));
     cb_.Reset();
     sm_->Init(boost::bind(&test::CallbackObject::ReturnCodeCallback, &cb_, _1),
               0);
