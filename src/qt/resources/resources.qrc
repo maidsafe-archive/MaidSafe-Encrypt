@@ -19,6 +19,11 @@
     <file>translations/pd_translation_ga.qm</file>
   </qresource>
   <qresource prefix="icons/32">
+    <file alias="Share_Tab">32x32/places/network-workgroup.png</file>
+    <file alias="Files_Tab">32x32/places/user-home.png</file>
+    <file alias="Contact_Tab">32x32/apps/system-users.png</file>
+    <file alias="Log_Tab">32x32/apps/internet-news-reader.png</file>
+    <file alias="Email_Tab">32x32/apps/internet-mail.png</file>
     <file>32/Color Picker_32.png</file>
     <file>32/smily-select.png</file>
     <file>32/text-select.png</file>

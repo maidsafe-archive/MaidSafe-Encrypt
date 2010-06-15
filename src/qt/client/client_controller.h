@@ -70,8 +70,14 @@ class ClientController : public QObject {
       CONTACT_REQUEST,    // Someone has requested to add us
       CONTACT_RESPONSE,   // Someone has responed to our request
       CONTACT_DELETE,     // Someone has deleted us from their list
-      INVITE,							// To invite someone to a conversation
-			EMAIL								//Someone has sent an email
+      INVITE,             // To invite someone to a conversation
+      EMAIL               // Someone has sent an email
+  };
+
+  enum HintLevel {
+      OFF,
+      SMALL,
+      FULL
   };
 
   static ClientController* instance();
@@ -160,6 +166,12 @@ class ClientController : public QObject {
   QDir shareDirRoot(const QString& name) const;
   QDir myFilesDirRoot(const QString& name) const;
 
+  // Tooltip Getters
+  QString getContactTooltip(HintLevel level);
+  QString getSharesTooltip(HintLevel level);
+  QString getLogsTooltip(HintLevel level);
+  QString getEmailTooltip(HintLevel level);
+  QString getMyFilesTooltip(HintLevel level);
 
   // Messaging
   bool GetMessages();

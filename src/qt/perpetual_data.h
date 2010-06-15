@@ -114,6 +114,10 @@ class PerpetualData : public QMainWindow {
     void onBusyTriggered();
     void onOffline_2Triggered();
 		void onEmailTriggered();
+    void onOffTriggered();
+    void onSmallTriggered();
+    void onFullTriggered();
+    void onManualTriggered();
 
     void showLoggedOutMenu();
     void showLoggedInMenu();
@@ -156,7 +160,11 @@ class PerpetualData : public QMainWindow {
     BUSY,
     AWAY,
     OFFLINE_2,
-		EMAIL
+    EMAIL,
+    OFF,
+    SMALL,
+    FULL,
+    MANUAL
     };
   typedef QMap<Action, QAction*> ActionMap;
   ActionMap actions_;
