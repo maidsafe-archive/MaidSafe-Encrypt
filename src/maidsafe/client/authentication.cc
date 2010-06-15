@@ -76,6 +76,11 @@ void Authentication::Init(const boost::uint16_t &crypto_key_buffer_count,
 
 int Authentication::GetUserInfo(const std::string &username,
                                 const std::string &pin) {
+  if (username.empty() || pin.empty()) {
+    user_info_result_ = kAuthenticationError;
+    get_smidtimid_result_ = kAuthenticationError;
+    return kAuthenticationError;
+  }
   user_info_result_ = kPendingResult;
   get_smidtimid_result_ = kPendingResult;
   PacketParams params;

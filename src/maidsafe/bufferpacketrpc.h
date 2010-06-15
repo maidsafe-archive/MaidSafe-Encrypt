@@ -26,6 +26,7 @@
 #define MAIDSAFE_BUFFERPACKETRPC_H_
 
 #include <maidsafe/maidsafe-dht.h>
+#include <maidsafe/base/log.h>
 
 #include <string>
 

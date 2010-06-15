@@ -59,7 +59,7 @@
      <x>0</x>
      <y>0</y>
      <width>267</width>
-     <height>21</height>
+     <height>25</height>
     </rect>
    </property>
    <property name="sizePolicy">
@@ -76,6 +76,9 @@
      <string>File</string>
     </property>
     <widget class="QMenu" name="menuStatus">
+     <property name="enabled">
+      <bool>false</bool>
+     </property>
      <property name="title">
       <string>Status</string>
      </property>
@@ -112,8 +115,10 @@
     <property name="title">
      <string>Help</string>
     </property>
-    <addaction name="actionAbout"/>
+    <addaction name="actionWhat_s_this"/>
+    <addaction name="actionTooltips"/>
     <addaction name="actionManual"/>
+    <addaction name="actionAbout"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuView"/>
@@ -140,31 +145,49 @@
    </property>
   </action>
   <action name="actionWord_Processor">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="text">
     <string>Word Processor</string>
    </property>
   </action>
   <action name="actionSpread_Sheet">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="text">
     <string>Spread Sheet</string>
    </property>
   </action>
   <action name="actionPresentation">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="text">
     <string>Presentation</string>
    </property>
   </action>
   <action name="actionBrowser">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="text">
     <string>Browser</string>
    </property>
   </action>
   <action name="actionAbout">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>About</string>
    </property>
   </action>
   <action name="actionManual">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="text">
     <string>Manual</string>
    </property>
@@ -232,6 +255,28 @@
   <action name="actionEmail">
    <property name="text">
     <string>Email</string>
+   </property>
+  </action>
+  <action name="actionWhat_s_this">
+   <property name="text">
+    <string>What's this</string>
+   </property>
+   <property name="shortcut">
+    <string>Shift+F11</string>
+   </property>
+  </action>
+  <action name="actionTooltips">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Tooltips</string>
+   </property>
+   <property name="shortcut">
+    <string>Shift+F12</string>
    </property>
   </action>
  </widget>
