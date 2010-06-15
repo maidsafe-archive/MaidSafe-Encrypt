@@ -55,12 +55,12 @@
                 </findFile>
                 <propertiesFileGet>
                     <file>${CMAKECACHE_TXT}</file>
-                    <key>EXECUTABLE_OUTPUT_PATH:PATH</key>
-                    <variable>CMAKE_EXECUTABLE_OUTPUT_PATH</variable>
+                    <key>CMAKE_RUNTIME_OUTPUT_DIRECTORY:PATH</key>
+                    <variable>CMAKE_RUNTIME_OUTPUT_DIRECTORY</variable>
                 </propertiesFileGet>
                 <copyFile>
                     <destination>${build_project_directory}/../temp/</destination>
-                    <origin>${CMAKE_EXECUTABLE_OUTPUT_PATH}/Release/pdlightlocal${EXECUTABLE_POSTFIX}</origin>
+                    <origin>${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/Release/pdlightlocal${EXECUTABLE_POSTFIX}</origin>
                 </copyFile>
                 <propertiesFileGet>
                     <file>${CMAKECACHE_TXT}</file>
