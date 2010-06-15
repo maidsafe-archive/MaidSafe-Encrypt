@@ -898,15 +898,19 @@ void PerpetualData::showLoggedInMenu() {
   actions_[PRIVATE_SHARES]->setEnabled(true);
   actions_[GO_OFFLINE]->setEnabled(true);
   actions_[SETTINGS]->setEnabled(true);
+  actions_[EMAIL]->setEnabled(true);
+  actions_[OFFLINE_2]->setEnabled(true);
 }
 
 void PerpetualData::showLoggedOutMenu() {
   actions_[LOGOUT]->setEnabled(false);
   // ui_.menuStatus->setEnabled(false);
-  actions_[MY_FILES]->setEnabled(false);
+  actions_[MY_FILES]->setEnabled(true);
   actions_[PRIVATE_SHARES]->setEnabled(false);
   actions_[GO_OFFLINE]->setEnabled(false);
   actions_[SETTINGS]->setEnabled(false);
+  actions_[EMAIL]->setEnabled(false);
+  actions_[OFFLINE_2]->setEnabled(false);
 }
 
 void PerpetualData::onOffTriggered() {

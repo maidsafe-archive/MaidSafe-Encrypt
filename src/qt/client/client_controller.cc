@@ -631,7 +631,7 @@ QString ClientController::getContactTooltip(HintLevel level) {
   return "";
 }
 
-QString ClientController::getSharesTooltip(HintLevel level){
+QString ClientController::getSharesTooltip(HintLevel level) {
   if (level == SMALL) {
     return "Shares";
   } else if (level == FULL) {

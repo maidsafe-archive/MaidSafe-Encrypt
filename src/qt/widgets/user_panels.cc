@@ -136,11 +136,11 @@ void UserPanels::onPublicUsernameChosen() {
 
   if (ui_.tabWidget_2->count() > 1) {
   } else {
-    QPixmap contactIcon_  = QPixmap(":/icons/32/contacts");
-    QPixmap shareIcon_    = QPixmap(":/icons/32/shares");
-    QPixmap logIcon_      = QPixmap(":/icons/32/log");
-    QPixmap emailIcon_    = QPixmap(":/icons/32/email");
-    QPixmap myFilesIcon_  = QPixmap(":/icons/32/32/VaultGrey-32.png");
+    QPixmap contactIcon_  = QPixmap(":icons/32/Contact_Tab");
+    QPixmap shareIcon_    = QPixmap(":icons/32/Share_Tab");
+    QPixmap logIcon_      = QPixmap(":icons/32/Log_Tab");
+    QPixmap emailIcon_    = QPixmap(":icons/32/Email_Tab");
+    QPixmap myFilesIcon_  = QPixmap(":icons/32/Files_Tab");
 
     ui_.tabWidget_2->addTab(contacts_ = new Contacts, contactIcon_, "");
     ui_.tabWidget_2->addTab(shares_   = new Shares, shareIcon_, "");
