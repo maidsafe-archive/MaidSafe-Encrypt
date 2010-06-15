@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>267</width>
-    <height>419</height>
+    <width>306</width>
+    <height>364</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -58,8 +58,8 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>267</width>
-     <height>25</height>
+     <width>306</width>
+     <height>21</height>
     </rect>
    </property>
    <property name="sizePolicy">
@@ -115,10 +115,17 @@
     <property name="title">
      <string>Help</string>
     </property>
-    <addaction name="actionWhat_s_this"/>
-    <addaction name="actionTooltips"/>
+    <widget class="QMenu" name="menuToolTip">
+     <property name="title">
+      <string>ToolTip</string>
+     </property>
+     <addaction name="actionOff_2"/>
+     <addaction name="actionSmall_2"/>
+     <addaction name="actionFull_2"/>
+    </widget>
     <addaction name="actionManual"/>
     <addaction name="actionAbout"/>
+    <addaction name="menuToolTip"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuView"/>
@@ -186,7 +193,7 @@
   </action>
   <action name="actionManual">
    <property name="enabled">
-    <bool>false</bool>
+    <bool>true</bool>
    </property>
    <property name="text">
     <string>Manual</string>
@@ -265,18 +272,46 @@
     <string>Shift+F11</string>
    </property>
   </action>
-  <action name="actionTooltips">
-   <property name="checkable">
-    <bool>true</bool>
+  <action name="actionOff">
+   <property name="text">
+    <string>Off</string>
    </property>
-   <property name="checked">
-    <bool>true</bool>
+  </action>
+  <action name="actionSmall">
+   <property name="text">
+    <string>Small</string>
+   </property>
+  </action>
+  <action name="actionFull">
+   <property name="text">
+    <string>Full</string>
+   </property>
+  </action>
+  <action name="actionOff_2">
+   <property name="checkable">
+    <bool>false</bool>
    </property>
    <property name="text">
-    <string>Tooltips</string>
+    <string>Off</string>
    </property>
-   <property name="shortcut">
-    <string>Shift+F12</string>
+  </action>
+  <action name="actionSmall_2">
+   <property name="checkable">
+    <bool>false</bool>
+   </property>
+   <property name="checked">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Small</string>
+   </property>
+  </action>
+  <action name="actionFull_2">
+   <property name="checkable">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Full</string>
    </property>
   </action>
  </widget>

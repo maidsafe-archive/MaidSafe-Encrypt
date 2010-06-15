@@ -622,6 +622,49 @@ void ClientController::OnNewMessage(const std::string &msg) {
   }
 }
 
+QString ClientController::getContactTooltip(HintLevel level) {
+  if (level == SMALL) {
+    return "Contacts";
+  } else if (level == FULL) {
+    return "Contacts : Use This to communicate and share files with your friends";
+  }
+  return "";
+}
+
+QString ClientController::getSharesTooltip(HintLevel level){
+  if (level == SMALL) {
+    return "Shares";
+  } else if (level == FULL) {
+    return "Shares : Use This Tab to create and modify shares";
+  }
+  return "";
+}
+
+QString ClientController::getLogsTooltip(HintLevel level) {
+  if (level == SMALL) {
+    return "Logs";
+  } else if (level == FULL) {
+    return "Logs : Use This Tab to View PD Information";
+  }
+  return "";
+}
+QString ClientController::getEmailTooltip(HintLevel level) {
+  if (level == SMALL) {
+    return "Email";
+  } else if (level == FULL) {
+    return "Email : Use This Tab to view and reply to your emails";
+  }
+  return "";
+}
+QString ClientController::getMyFilesTooltip(HintLevel level) {
+  if (level == SMALL) {
+    return "MY Files";
+  } else if (level == FULL) {
+    return "My Files : Use This Tab to manage your protected PD Files";
+  }
+  return "";
+}
+
 void ClientController::OnHelloPing(const std::string &contact_name,
         const int &status) {
   // TODO(Team): update GUI

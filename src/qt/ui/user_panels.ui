@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>255</width>
-    <height>366</height>
+    <width>261</width>
+    <height>328</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -49,6 +49,12 @@
      </property>
      <property name="statusTip">
       <string/>
+     </property>
+     <property name="layoutDirection">
+      <enum>Qt::LeftToRight</enum>
+     </property>
+     <property name="tabPosition">
+      <enum>QTabWidget::North</enum>
      </property>
      <property name="currentIndex">
       <number>0</number>

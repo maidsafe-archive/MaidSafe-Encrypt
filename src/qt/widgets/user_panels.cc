@@ -37,7 +37,6 @@
 #include "qt/widgets/user_inbox.h"
 #include "qt/widgets/vault_info.h"
 #include "qt/widgets/public_username.h"
-#include "qt/client/client_controller.h"
 #include "qt/client/user_space_filesystem.h"
 
 namespace {
@@ -49,6 +48,7 @@ UserPanels::UserPanels(QWidget* parent)
       contacts_(NULL),
       panel_(-1) {
   ui_.setupUi(this);
+  level_ = ClientController::instance()->SMALL;
 
   ui_.tabWidget_2->setContextMenuPolicy(Qt::CustomContextMenu);
 
@@ -155,12 +155,14 @@ void UserPanels::onPublicUsernameChosen() {
     ui_.tabWidget_2->setTabToolTip(4, "Emails");
 
     ui_.tabWidget_2->setTabWhatsThis(0, "All Contacts are here");
+    this->adjustSize();
   }
 
   ui_.tabWidget_2->setEnabled(true);
   ui_.tabWidget_2->setCurrentWidget(contacts_);
   activatePanel(true);
   ui_.public_username->setText(ClientController::instance()->publicUsername());
+  updateTooltips();
 
 #ifdef PD_LIGHT
   browser_->setActive(true);
@@ -345,6 +347,19 @@ void UserPanels::onSortShareRecentClicked() {
 
 void UserPanels::setEmailLabel(QString mess) {
 //  ui_.lblEmails->setText(mess);
+}
+
+void UserPanels::setHintLevel(ClientController::HintLevel level) {
+  level_ = level;
+  updateTooltips();
+}
+
+void UserPanels::updateTooltips() {
+  ui_.tabWidget_2->setTabToolTip(0, ClientController::instance()->getContactTooltip(level_));
+  ui_.tabWidget_2->setTabToolTip(1, ClientController::instance()->getSharesTooltip(level_));
+  ui_.tabWidget_2->setTabToolTip(2, ClientController::instance()->getLogsTooltip(level_));
+  ui_.tabWidget_2->setTabToolTip(4, ClientController::instance()->getMyFilesTooltip(level_));
+  ui_.tabWidget_2->setTabToolTip(3, ClientController::instance()->getEmailTooltip(level_));
 }
 
 void UserPanels::changeEvent(QEvent *event) {

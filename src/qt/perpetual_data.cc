@@ -24,6 +24,8 @@
 #include <QInputDialog>
 #include <boost/progress.hpp>
 #include <QLibraryInfo>
+#include <QDesktopServices>
+#include <QUrl>
 
 #include <list>
 #include <string>
@@ -157,6 +159,10 @@ void PerpetualData::createActions() {
   actions_[ BUSY ] = ui_.actionBusy;
   actions_[ OFFLINE_2 ] = ui_.actionOffline_2;
   actions_[ EMAIL ] = ui_.actionEmail;
+  actions_[ OFF ] = ui_.actionOff_2;
+  actions_[ SMALL ] = ui_.actionSmall_2;
+  actions_[ FULL ] = ui_.actionFull_2;
+  actions_[ MANUAL ] = ui_.actionManual;
 // actions_[ SAVE_SESSION ] = ui_.actionSave_Session;
 
 // Remove Status Menu until implemented
@@ -196,6 +202,14 @@ void PerpetualData::createActions() {
           this,              SLOT(onEmailTriggered()));
 // connect(actions_[ SAVE_SESSION ], SIGNAL(triggered()),
 //         this,                     SLOT(onSaveSession()));
+  connect(actions_[ OFF ], SIGNAL(triggered()),
+          this,             SLOT(onOffTriggered()));
+  connect(actions_[ SMALL ], SIGNAL(triggered()),
+          this,                  SLOT(onSmallTriggered()));
+  connect(actions_[ FULL ], SIGNAL(triggered()),
+          this,              SLOT(onFullTriggered()));
+  connect(actions_[ MANUAL ], SIGNAL(triggered()),
+          this,              SLOT(onManualTriggered()));
 }
 
 void PerpetualData::createMenus() {
@@ -893,6 +907,20 @@ void PerpetualData::showLoggedOutMenu() {
   actions_[PRIVATE_SHARES]->setEnabled(false);
   actions_[GO_OFFLINE]->setEnabled(false);
   actions_[SETTINGS]->setEnabled(false);
+}
+
+void PerpetualData::onOffTriggered() {
+  userPanels_->setHintLevel(ClientController::OFF);
+}
+void PerpetualData::onSmallTriggered() {
+  userPanels_->setHintLevel(ClientController::SMALL);
+}
+void PerpetualData::onFullTriggered() {
+  userPanels_->setHintLevel(ClientController::FULL);
+}
+
+void PerpetualData::onManualTriggered() {
+  QDesktopServices::openUrl(QUrl(tr("www.maidsafe.net/help/")));
 }
 
 void PerpetualData::changeEvent(QEvent *event) {

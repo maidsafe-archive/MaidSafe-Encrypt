@@ -22,6 +22,7 @@
 // core
 #include <maidsafe/maidsafe-dht.h>
 #include "protobuf/maidsafe_service_messages.pb.h"
+#include "fs/filesystem.h"
 
 // local
 
@@ -91,6 +92,19 @@ void CreateUser::onNext() {
     emit complete();
     return;
   }
+
+#ifdef LOCAL_PDVAULT 
+  if (index == pages_.size() - 4) {
+    vault_type_ = 0;
+    space_ = "10240";
+    port_ = "0";
+    directory_ = QString::fromStdString(
+      file_system::ApplicationDataDir().string());
+    ui_.next->setText("Finish");
+    emit complete();
+    return;
+  }
+#endif
 
   // Vault choice page
   if (index == pages_.size() - 3) {
