@@ -24,6 +24,7 @@
 
 UserSettings::UserSettings(QWidget* parent) : QDialog(parent) {
   ui_.setupUi(this);
+  setWindowIcon(QPixmap(":/icons/32/Triangle"));
 
   createSettingsMenu();
 

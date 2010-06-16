@@ -71,6 +71,9 @@ FileBrowser::FileBrowser(QWidget* parent) : QDialog(parent), init_(false) {
   connect(ui_.backButton, SIGNAL(clicked(bool)),
           this,           SLOT(onBackClicked(bool)));
 
+  connect(ui_.homeButton, SIGNAL(clicked(bool)),
+          this,           SLOT(onHomeClicked(bool)));
+
   connect(ui_.driveListWidget, SIGNAL(itemDoubleClicked(QListWidgetItem*)),
           this,           SLOT(onListItemDoubleClicked(QListWidgetItem*)));
 
@@ -572,6 +575,10 @@ void FileBrowser::onBackClicked(bool) {
     dir.erase(dir.find_last_of("/"), dir.size());
     populateDirectory(QString::fromStdString(dir) + "/");
   }
+}
+
+void FileBrowser::onHomeClicked(bool) {
+  populateDirectory("/");
 }
 
 void FileBrowser::populateDirectory(QString dir) {

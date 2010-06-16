@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>361</width>
-    <height>328</height>
+    <width>342</width>
+    <height>332</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -56,11 +56,23 @@
      </item>
      <item row="1" column="0">
       <widget class="QLabel" name="icon">
+       <property name="enabled">
+        <bool>true</bool>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>64</width>
+         <height>64</height>
+        </size>
+       </property>
        <property name="text">
         <string/>
        </property>
        <property name="pixmap">
-        <pixmap resource="../resources/resources.qrc">:/icons/64/globe</pixmap>
+        <pixmap resource="../resources/resources.qrc">:/icons/64/Triangle64</pixmap>
+       </property>
+       <property name="scaledContents">
+        <bool>true</bool>
        </property>
       </widget>
      </item>
@@ -116,6 +128,7 @@
   </layout>
  </widget>
  <resources>
+  <include location="../resources/resources.qrc"/>
   <include location="../resources/resources.qrc"/>
   <include location="../resources/resources.qrc"/>
   <include location="../resources/resources.qrc"/>

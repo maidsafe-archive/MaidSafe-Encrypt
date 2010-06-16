@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>686</width>
+    <width>595</width>
     <height>249</height>
    </rect>
   </property>
@@ -17,28 +17,53 @@
    <item row="0" column="0">
     <layout class="QHBoxLayout" name="horizontalLayout">
      <item>
-      <widget class="QPushButton" name="uploadButton">
+      <widget class="QPushButton" name="homeButton">
+       <property name="toolTip">
+        <string>Home</string>
+       </property>
        <property name="text">
-        <string>Upload</string>
+        <string/>
+       </property>
+       <property name="icon">
+        <iconset resource="../resources/resources.qrc">
+         <normaloff>:/icons/32/Home</normaloff>:/icons/32/Home</iconset>
+       </property>
+       <property name="iconSize">
+        <size>
+         <width>24</width>
+         <height>24</height>
+        </size>
+       </property>
+       <property name="flat">
+        <bool>true</bool>
        </property>
       </widget>
      </item>
      <item>
       <widget class="QPushButton" name="backButton">
-       <property name="text">
+       <property name="toolTip">
         <string>Back</string>
+       </property>
+       <property name="text">
+        <string/>
+       </property>
+       <property name="icon">
+        <iconset resource="../resources/resources.qrc">
+         <normaloff>:/icons/32/Back</normaloff>:/icons/32/Back</iconset>
+       </property>
+       <property name="iconSize">
+        <size>
+         <width>24</width>
+         <height>24</height>
+        </size>
+       </property>
+       <property name="flat">
+        <bool>true</bool>
        </property>
       </widget>
      </item>
      <item>
       <widget class="QLineEdit" name="locationEdit"/>
-     </item>
-     <item>
-      <widget class="QPushButton" name="refreshButton">
-       <property name="text">
-        <string>Refresh</string>
-       </property>
-      </widget>
      </item>
     </layout>
    </item>

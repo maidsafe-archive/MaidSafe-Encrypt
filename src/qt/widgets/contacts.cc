@@ -336,14 +336,6 @@ void Contacts::onSendMessageClicked() {
     conts.push_back(contacts.front()->text());
   }
 
- /*( bool ok;
-  QString text = QInputDialog::getText(this,
-                                       tr("Message"),
-                                       tr("Please enter a quick message:"),
-                                       QLineEdit::Normal,
-                                       QString(),
-                                       &ok);*/
-
     std::list<std::string> theList;
     ClientController::instance()->ConversationList(&theList);
 
@@ -360,7 +352,10 @@ void Contacts::onSendMessageClicked() {
       file.open(QFile::ReadOnly);
       QString styleSheet = QLatin1String(file.readAll());
 
+      QPoint loc = this->mapToGlobal(this->pos());
+
       mess_->setStyleSheet(styleSheet);
+      mess_->move(loc);
       mess_->show();
     } else {
     foreach(QWidget *widget, QApplication::allWidgets()) {

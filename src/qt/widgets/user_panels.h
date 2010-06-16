@@ -90,7 +90,8 @@ class UserPanels : public QWidget {
 
   signals:
     // Notify a change in the number of unread messages
-    void unreadMessages(int messages);
+  void unreadMessages(int messages);
+  void publicUsernameChosen();
 
   private slots:
 

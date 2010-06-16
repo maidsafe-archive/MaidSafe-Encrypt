@@ -20,6 +20,7 @@
 #include <QFileDialog>
 #include <QTranslator>
 #include <QLibraryInfo>
+#include <QProcess>
 
 // local
 #include "qt/client/client_controller.h"
@@ -118,6 +119,9 @@ class PerpetualData : public QMainWindow {
     void onSmallTriggered();
     void onFullTriggered();
     void onManualTriggered();
+    void onPublicUsernameChosen();
+    void onUpdateTriggered();
+    void onUpdateChecked(int, QProcess::ExitStatus);
 
     void showLoggedOutMenu();
     void showLoggedInMenu();
@@ -164,7 +168,8 @@ class PerpetualData : public QMainWindow {
     OFF,
     SMALL,
     FULL,
-    MANUAL
+    MANUAL,
+    UPDATE
     };
   typedef QMap<Action, QAction*> ActionMap;
   ActionMap actions_;

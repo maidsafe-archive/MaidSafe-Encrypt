@@ -131,7 +131,7 @@ void UserPanels::CloseFileBrowser() {
 
 void UserPanels::onPublicUsernameChosen() {
   if (ui_.tabWidget_2->currentWidget() == public_username_) {
-    ui_.tabWidget_2->removeTab(0);
+    ui_.tabWidget_2->clear();
   }
 
   if (ui_.tabWidget_2->count() > 1) {
@@ -157,6 +157,8 @@ void UserPanels::onPublicUsernameChosen() {
     ui_.tabWidget_2->setTabWhatsThis(0, "All Contacts are here");
     this->adjustSize();
   }
+
+  emit publicUsernameChosen();
 
   ui_.tabWidget_2->setEnabled(true);
   ui_.tabWidget_2->setCurrentWidget(contacts_);
@@ -185,6 +187,16 @@ void UserPanels::onEmailsClicked() {
 }
 
 void UserPanels::onCurrentChanged(int i) {
+  const QString username = ClientController::instance()->publicUsername();
+
+  if (username.isEmpty()) {
+    if (i == 1) {
+      onMyFilesClicked();
+      ui_.tabWidget_2->setCurrentWidget(public_username_);
+      return;
+    }
+  }
+
   if (i == 3) {
     onMyFilesClicked();
     ui_.tabWidget_2->setCurrentWidget(contacts_);
@@ -243,6 +255,8 @@ void UserPanels::setActive(bool active) {
 //      static_cast<Panel*>(ui_.stackedWidget->widget(3))->reset();
       ui_.tabWidget_2->addTab(public_username_, "");
       ui_.tabWidget_2->setCurrentWidget(public_username_);
+      QPixmap myFilesIcon_  = QPixmap(":icons/32/Files_Tab");
+      ui_.tabWidget_2->addTab(logs_     = new MessageLogs, myFilesIcon_, "");
 //      ui_.user_public_username->clear();
 //      ui_.my_files_button->setEnabled(true);
     } else {
@@ -358,8 +372,8 @@ void UserPanels::updateTooltips() {
   ui_.tabWidget_2->setTabToolTip(0, ClientController::instance()->getContactTooltip(level_));
   ui_.tabWidget_2->setTabToolTip(1, ClientController::instance()->getSharesTooltip(level_));
   ui_.tabWidget_2->setTabToolTip(2, ClientController::instance()->getLogsTooltip(level_));
-  ui_.tabWidget_2->setTabToolTip(4, ClientController::instance()->getMyFilesTooltip(level_));
-  ui_.tabWidget_2->setTabToolTip(3, ClientController::instance()->getEmailTooltip(level_));
+  ui_.tabWidget_2->setTabToolTip(3, ClientController::instance()->getMyFilesTooltip(level_));
+  ui_.tabWidget_2->setTabToolTip(4, ClientController::instance()->getEmailTooltip(level_));
 }
 
 void UserPanels::changeEvent(QEvent *event) {

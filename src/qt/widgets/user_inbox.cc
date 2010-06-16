@@ -26,6 +26,7 @@
 
 UserInbox::UserInbox(QWidget* parent) : QDialog(parent) {
   ui_.setupUi(this);
+  setWindowIcon(QPixmap(":/icons/32/Triangle"));
   rootPath_ = QString::fromStdString(file_system::MaidsafeHomeDir(
               ClientController::instance()->SessionName()).string());
   QString emailRootPath = QString::fromStdString(

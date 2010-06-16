@@ -126,6 +126,7 @@
     <addaction name="actionManual"/>
     <addaction name="actionAbout"/>
     <addaction name="menuToolTip"/>
+    <addaction name="actionUpdate"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuView"/>
@@ -312,6 +313,11 @@
    </property>
    <property name="text">
     <string>Full</string>
+   </property>
+  </action>
+  <action name="actionUpdate">
+   <property name="text">
+    <string>Update</string>
    </property>
   </action>
  </widget>

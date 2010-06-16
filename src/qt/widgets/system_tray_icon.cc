@@ -37,7 +37,7 @@ SystemTrayIcon::SystemTrayIcon()
     qWarning() << "System tray messages not available";
   }
 
-  setIcon(QPixmap(":/icons/16/globe"));
+  setIcon(QPixmap(":/icons/32/Triangle"));
 
   {
     action_open_ = new QAction(tr("&Restore window"), this);
@@ -100,8 +100,8 @@ void SystemTrayIcon::onActivated(QSystemTrayIcon::ActivationReason reason) {
 
 void SystemTrayIcon::ChangeStatus(int status) {
   switch (status) {
-    case 0: setIcon(QPixmap(":/icons/16/globe")); break;
-    case 1: setIcon(QPixmap(":/icons/16/offline")); break;
+    case 0: setIcon(QPixmap(":/icons/32/Triangle")); break;
+    case 1: setIcon(QPixmap(":/icons/32/Triangle-offline")); break;
     default: break;
   }
 }
