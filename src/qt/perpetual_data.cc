@@ -959,7 +959,10 @@ void PerpetualData::onUpdateChecked(int code, QProcess::ExitStatus status){
     int ret = msgBox.exec();
 
     if (ret == QMessageBox::Yes) {
-      //Run Updater
+      QString program = "./autoupdate";
+      QStringList arguments;
+      QProcess *myProcess = new QProcess(this);
+      myProcess->start(program, arguments);
     }
   } else {
     QMessageBox msgBox;
