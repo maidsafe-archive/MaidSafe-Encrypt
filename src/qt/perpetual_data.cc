@@ -952,8 +952,8 @@ void PerpetualData::onUpdateTriggered() {
 void PerpetualData::onUpdateChecked(int code, QProcess::ExitStatus status){
   if (code == 0){
     QMessageBox msgBox;
-    msgBox.setText("New Update Available");
-    msgBox.setInformativeText("Would you like to install?");
+    msgBox.setText(tr("New Update Available"));
+    msgBox.setInformativeText(tr("Would you like to install?"));
     msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
     msgBox.setDefaultButton(QMessageBox::Yes);
     int ret = msgBox.exec();
@@ -963,7 +963,7 @@ void PerpetualData::onUpdateChecked(int code, QProcess::ExitStatus status){
     }
   } else {
     QMessageBox msgBox;
-    msgBox.setText("You are up to date!");
+    msgBox.setText(tr("You are up to date!"));
     msgBox.exec();
   }
 }
