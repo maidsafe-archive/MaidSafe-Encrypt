@@ -220,6 +220,7 @@ if  grep -v maidsafe /etc/passwd ; then /usr/sbin/adduser --system --shell /bin/
                     <windowsExec>${installdir}/pdlightlocal</windowsExec>
                     <windowsExecArgs></windowsExecArgs>
                     <windowsIcon>${installdir}/maidsafe_logo1.ico</windowsIcon>
+                    <windowsIconIndex>2</windowsIconIndex>
                     <windowsPath></windowsPath>
                 </shortcut>
             </desktopShortcutList>
@@ -240,7 +241,8 @@ if  grep -v maidsafe /etc/passwd ; then /usr/sbin/adduser --system --shell /bin/
                             <runInTerminal>0</runInTerminal>
                             <windowsExec>${installdir}/${uninstallerName}.exe</windowsExec>
                             <windowsExecArgs></windowsExecArgs>
-                            <windowsIcon></windowsIcon>
+                            <windowsIcon>${installdir}/maidsafe_logo1.ico</windowsIcon>
+                            <windowsIconIndex>2</windowsIconIndex>
                             <windowsPath>${installdir}</windowsPath>
                         </shortcut>
                     </shortcutList>
@@ -337,7 +339,7 @@ if  grep -v maidsafe /etc/passwd ; then /usr/sbin/adduser --system --shell /bin/
                     <runInTerminal>0</runInTerminal>
                     <windowsExec>${installdir}/${uninstallerName}.exe</windowsExec>
                     <windowsExecArgs></windowsExecArgs>
-                    <windowsIcon></windowsIcon>
+                    <windowsIcon>${installdir}/maidsafe_logo_cross_not_ok.ico</windowsIcon>
                     <windowsPath>${installdir}/</windowsPath>
                 </startMenuShortcut>
                 <startMenuShortcut>
@@ -346,7 +348,7 @@ if  grep -v maidsafe /etc/passwd ; then /usr/sbin/adduser --system --shell /bin/
                     <runInTerminal>0</runInTerminal>
                     <windowsExec>${installdir}/pdlightlocal</windowsExec>
                     <windowsExecArgs></windowsExecArgs>
-                    <windowsIcon></windowsIcon>
+                    <windowsIcon>${installdir}/maidsafe_logo1.ico</windowsIcon>
                     <windowsPath></windowsPath>
                 </startMenuShortcut>
             </startMenuShortcutList>
