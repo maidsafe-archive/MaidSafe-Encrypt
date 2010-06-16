@@ -48,7 +48,7 @@ namespace fs = boost::filesystem;
 
 FileBrowser::FileBrowser(QWidget* parent) : QDialog(parent), init_(false) {
   ui_.setupUi(this);
-  setWindowIcon(QPixmap(":/icons/64/64/maidsafe-triangle.png"));
+  setWindowIcon(QPixmap(":/icons/32/Triangle"));
   this->setWindowFlags(Qt::WindowMinMaxButtonsHint | Qt::WindowCloseButtonHint);
   // theWatcher_ = new QFileSystemWatcher;
   setAcceptDrops(true);
