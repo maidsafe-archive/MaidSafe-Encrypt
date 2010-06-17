@@ -48,7 +48,7 @@ UserPanels::UserPanels(QWidget* parent)
       contacts_(NULL),
       panel_(-1) {
   ui_.setupUi(this);
-  level_ = ClientController::instance()->SMALL;
+  level_ = ClientController::instance()->FULL;
 
   ui_.toolBarListWidget->setContextMenuPolicy(Qt::CustomContextMenu);
 
