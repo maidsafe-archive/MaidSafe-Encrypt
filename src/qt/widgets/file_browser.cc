@@ -15,6 +15,7 @@
 #include "qt/widgets/file_browser.h"
 
 #include <QDebug>
+#include <QDesktopServices>
 #include <QFileDialog>
 #include <QFileIconProvider>
 #include <QInputDialog>
@@ -50,6 +51,7 @@ FileBrowser::FileBrowser(QWidget* parent) : QDialog(parent), init_(false) {
   setWindowIcon(QPixmap(":/icons/32/Triangle"));
   this->setWindowFlags(Qt::WindowMinMaxButtonsHint | Qt::WindowCloseButtonHint);
   // theWatcher_ = new QFileSystemWatcher;
+  setAcceptDrops(true);
   ui_.driveTreeWidget->setAcceptDrops(true);
   ui_.driveTreeWidget->viewport()->installEventFilter(this);
   ui_.driveListWidget->installEventFilter(this);
@@ -948,7 +950,7 @@ void FileBrowser::onItemDoubleClicked(QTreeWidgetItem* item, int) {
       msgBox.setText(tr("Please wait for the file transfer to finish."));
       msgBox.exec();
     } else {
-      QString path = rootPath_ + currentDir_ + item->text(0);
+      QString path = getFullFilePath(rootPath_ + currentDir_ + item->text(0));
       openFileFromDir(path);
     }
   }
@@ -978,6 +980,7 @@ void FileBrowser::openFileFromDir(const QString path) {
                    << path;
       }
 #elif defined(PD_POSIX)
+
       QString command;
       QStringList parameters;
       try {
@@ -999,6 +1002,18 @@ void FileBrowser::openFileFromDir(const QString path) {
         myProcess_.reset(new QProcess);
         myProcess_->start(command, parameters);
       }
+
+      /*  QUrl youhome(path); filee path not open
+
+        qDebug() << "### youhome.toString() " << youhome.toString();
+
+        QUrl file(youhome.toLocalFile().prepend("File://"));
+
+        qDebug() << "### youhome.toLocalFile() " << file.toString();
+
+      QDesktopServices::openUrl(QURL::fromLocalFile(file));
+      */
+
 #elif defined(PD_APPLE)
       QString command("open");
       QStringList parameters;

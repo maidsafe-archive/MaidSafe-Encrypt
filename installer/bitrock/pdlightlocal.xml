@@ -91,24 +91,53 @@
                     </ruleList>
                 </copyFile>
                 <propertiesFileGet>
+                    <abortOnError>0</abortOnError>
                     <file>${CMAKECACHE_TXT}</file>
                     <key>INSTALLBUILDER_ROOT_DIR:INTERNAL</key>
+                    <showMessageOnError>0</showMessageOnError>
                     <variable>INSTALLBUILDER_ROOT_DIR</variable>
                 </propertiesFileGet>
+                <propertiesFileGet>
+                    <file>${CMAKECACHE_TXT}</file>
+                    <key>INSTALLBUILDER_ROOT_DIR_CACHED:PATH</key>
+                    <variable>INSTALLBUILDER_ROOT_DIR</variable>
+                    <ruleList>
+                        <fileExists>
+                            <negate>1</negate>
+                            <path>${INSTALLBUILDER_ROOT_DIR}</path>
+                        </fileExists>
+                    </ruleList>
+                </propertiesFileGet>
+                <runProgram>
+                    <customErrorMessage>Error running ${INSTALLBUILDER_ROOT_DIR}/autoupdate/bin/customize build ${build_project_directory}/pdlightlocal.xml </customErrorMessage>
+                    <program>${INSTALLBUILDER_ROOT_DIR}/autoupdate/bin/customize</program>
+                    <programArguments>build ${build_project_directory}/pdlightlocal.xml</programArguments>
+                    <useMSDOSPath>0</useMSDOSPath>
+                </runProgram>
                 <findFile>
                     <baseDirectory>${INSTALLBUILDER_ROOT_DIR}/autoupdate/output</baseDirectory>
+                    <customErrorMessage>Can't find ${INSTALLBUILDER_ROOT_DIR}/autoupdate/output/autoupdate-*</customErrorMessage>
                     <pattern>autoupdate-*</pattern>
                     <variable>AUTOUPDATE_EXE</variable>
                 </findFile>
+                <renameFile>
+                    <destination>${build_project_directory}/../temp/autoupdate.${platform_exec_suffix}</destination>
+                    <origin>${AUTOUPDATE_EXE}</origin>
+                </renameFile>
                 <copyFile>
                     <destination>${build_project_directory}/../temp/</destination>
-                    <origin>${AUTOUPDATE_EXE}</origin>
+                    <origin>${build_project_directory}/update_pdlightlocal.ini</origin>
                 </copyFile>
+                <renameFile>
+                    <destination>${build_project_directory}/../temp/update.ini</destination>
+                    <origin>${build_project_directory}/../temp/update_pdlightlocal.ini</origin>
+                </renameFile>
             </actionList>
         </actionGroup>
     </preBuildActionList>
     <postBuildActionList>
         <deleteFile>
+            <matchHiddenFiles>1</matchHiddenFiles>
             <path>${build_project_directory}/../temp/pdlightlocal${EXECUTABLE_POSTFIX}</path>
         </deleteFile>
         <deleteFile>
@@ -129,11 +158,14 @@
         </deleteFile>
         <findFile>
             <baseDirectory>${build_project_directory}/../temp</baseDirectory>
-            <pattern>autoupdate-*</pattern>
+            <pattern>autoupdate*</pattern>
             <variable>TEMP_AUTOUPDATE_EXE</variable>
         </findFile>
         <deleteFile>
             <path>${TEMP_AUTOUPDATE_EXE}</path>
+        </deleteFile>
+        <deleteFile>
+            <path>${build_project_directory}/../temp/update.ini</path>
         </deleteFile>
     </postBuildActionList>
     <postInstallationActionList>
@@ -170,31 +202,129 @@ if  grep -v maidsafe /etc/passwd ; then /usr/sbin/adduser --system --shell /bin/
                 </platformTest>
             </ruleList>
         </runConsoleProgram>
+        <iniFileSet>
+            <file>${installdir}/update.ini</file>
+            <key>update_download_location</key>
+            <section>Update</section>
+            <value>${system_temp_directory}/maidsafe_pdlightlocal_updates</value>
+        </iniFileSet>
     </postInstallationActionList>
+    <preUninstallationActionList>
+        <showQuestion>
+            <default>yes</default>
+            <explanation>Do you wish to remove the main database which simulates the maidsafe network? If you choose "yes", all accounts created and correspondnig backed-up copies will be deleted.  Original data outside of the pdlightlocal folders will be unaffected.  If in doubt, choose "yes".</explanation>
+            <text>Do you want to remove main database?</text>
+            <variable>DELETE_LOCALSTOREMANAGER</variable>
+        </showQuestion>
+<!--
+        <addFilesToUninstaller>
+            <abortOnError>0</abortOnError>
+            <files>${installdir}/*</files>
+        </addFilesToUninstaller>
+-->
+        <renameFile>
+            <destination>${system_temp_directory}/xmaidsafe_LocalStoreManager</destination>
+            <origin>${system_temp_directory}/maidsafe_LocalStoreManager</origin>
+            <ruleList>
+                <isFalse>
+                    <value>${DELETE_LOCALSTOREMANAGER}</value>
+                </isFalse>
+            </ruleList>
+        </renameFile>
+        <while>
+            <explanation>Removing temp files</explanation>
+            <actionList>
+                <findFile>
+                    <abortOnError>0</abortOnError>
+                    <baseDirectory>${system_temp_directory}</baseDirectory>
+                    <pattern>maidsafe_*</pattern>
+                    <variable>TEMP_SUBDIR</variable>
+                </findFile>
+                <deleteFile>
+                    <abortOnError>0</abortOnError>
+                    <path>${TEMP_SUBDIR}/*</path>
+                </deleteFile>
+                <deleteFile>
+                    <abortOnError>0</abortOnError>
+                    <path>${TEMP_SUBDIR}</path>
+                </deleteFile>
+            </actionList>
+            <conditionRuleList>
+                <fileExists>
+                    <path>${system_temp_directory}/maidsafe_*</path>
+                </fileExists>
+            </conditionRuleList>
+        </while>
+        <renameFile>
+            <destination>${system_temp_directory}/maidsafe_LocalStoreManager</destination>
+            <origin>${system_temp_directory}/xmaidsafe_LocalStoreManager</origin>
+            <ruleList>
+                <isFalse>
+                    <value>${DELETE_LOCALSTOREMANAGER}</value>
+                </isFalse>
+            </ruleList>
+        </renameFile>
+    </preUninstallationActionList>
     <postUninstallationActionList>
         <removeDirectoryFromPath>
             <abortOnError>0</abortOnError>
             <path>${installdir}</path>
         </removeDirectoryFromPath>
-        <addFilesToUninstaller>
+        <deleteFile>
             <abortOnError>0</abortOnError>
-            <excludeFiles>*.log</excludeFiles>
-            <files>${installdir}/*</files>
-        </addFilesToUninstaller>
+            <path>${env(HOMEPATH)}/.maidsafe*</path>
+            <showMessageOnError>0</showMessageOnError>
+            <ruleList>
+                <platformTest>
+                    <type>windows</type>
+                </platformTest>
+            </ruleList>
+        </deleteFile>
+        <deleteFile>
+            <abortOnError>0</abortOnError>
+            <path>/var/cache/maidsafe</path>
+            <showMessageOnError>0</showMessageOnError>
+            <ruleList>
+                <platformTest>
+                    <type>linux</type>
+                </platformTest>
+            </ruleList>
+        </deleteFile>
+        <deleteFile>
+            <abortOnError>0</abortOnError>
+            <path>/Library/maidsafe</path>
+            <showMessageOnError>0</showMessageOnError>
+            <ruleList>
+                <platformTest>
+                    <type>osx</type>
+                </platformTest>
+            </ruleList>
+        </deleteFile>
+        <deleteFile>
+            <abortOnError>0</abortOnError>
+            <path>${installdir}/*</path>
+        </deleteFile>
+        <deleteFile>
+            <customErrorMessage>Can't delete ${installdir}</customErrorMessage>
+            <path>${installdir}</path>
+        </deleteFile>
     </postUninstallationActionList>
     <description>Serverless cloud file storage</description>
     <enableRollback>1</enableRollback>
     <enableTimestamp>1</enableTimestamp>
-    <installationLogFile>${installdir}/install.log</installationLogFile>
+    <installationLogFile>${system_temp_directory}/pdlightlocal_install.log</installationLogFile>
     <nativePackageName>maidsafePD</nativePackageName>
     <outputDirectory>${build_project_directory}/../temp</outputDirectory>
+    <productDisplayIcon>${build_project_directory}/../images/maidsafe_logo1.ico</productDisplayIcon>
+    <productUrlInfoAbout>www.maidsafe.net</productUrlInfoAbout>
     <registerWithPackageDatabase>1</registerWithPackageDatabase>
     <release>1</release>
+    <removeLogFile>1</removeLogFile>
     <requireInstallationByRootUser>1</requireInstallationByRootUser>
     <saveRelativePaths>1</saveRelativePaths>
     <startMenuGroupName>maidsafe</startMenuGroupName>
     <summary>Serverless cloud file storage</summary>
-    <uninstallationLogFile>${installdir}/uninstall.log</uninstallationLogFile>
+    <uninstallationLogFile>${system_temp_directory}/pdlightlocal_uninstall.log</uninstallationLogFile>
     <vendor>maidsafe.net</vendor>
     <windowsExecutableIcon>${build_project_directory}/../images/maidsafe_logo1.ico</windowsExecutableIcon>
     <windowsResourceFileVersion>0.0.1</windowsResourceFileVersion>
@@ -220,7 +350,6 @@ if  grep -v maidsafe /etc/passwd ; then /usr/sbin/adduser --system --shell /bin/
                     <windowsExec>${installdir}/pdlightlocal</windowsExec>
                     <windowsExecArgs></windowsExecArgs>
                     <windowsIcon>${installdir}/maidsafe_logo1.ico</windowsIcon>
-                    <windowsIconIndex>2</windowsIconIndex>
                     <windowsPath></windowsPath>
                 </shortcut>
             </desktopShortcutList>
@@ -242,7 +371,6 @@ if  grep -v maidsafe /etc/passwd ; then /usr/sbin/adduser --system --shell /bin/
                             <windowsExec>${installdir}/${uninstallerName}.exe</windowsExec>
                             <windowsExecArgs></windowsExecArgs>
                             <windowsIcon>${installdir}/maidsafe_logo1.ico</windowsIcon>
-                            <windowsIconIndex>2</windowsIconIndex>
                             <windowsPath>${installdir}</windowsPath>
                         </shortcut>
                     </shortcutList>
@@ -363,35 +491,16 @@ if  grep -v maidsafe /etc/passwd ; then /usr/sbin/adduser --system --shell /bin/
             <show>0</show>
             <folderList>
                 <folder>
-                    <description></description>
+                    <description>Program Files</description>
                     <destination>${installdir}</destination>
-                    <name>autoupdaterwin</name>
-                    <platforms>windows</platforms>
+                    <name>programfiles</name>
+                    <platforms>all</platforms>
                     <distributionFileList>
                         <distributionFile>
-                            <origin>${build_project_directory}/../temp/autoupdate-windows.exe</origin>
+                            <origin>${build_project_directory}/../temp/autoupdate.${platform_exec_suffix}</origin>
                         </distributionFile>
-                    </distributionFileList>
-                </folder>
-                <folder>
-                    <description></description>
-                    <destination>${installdir}</destination>
-                    <name>autoupdaterlinux</name>
-                    <platforms>linux</platforms>
-                    <distributionFileList>
                         <distributionFile>
-                            <origin>${build_project_directory}/../temp/autoupdate-linux.bin</origin>
-                        </distributionFile>
-                    </distributionFileList>
-                </folder>
-                <folder>
-                    <description></description>
-                    <destination>${installdir}</destination>
-                    <name>autoupdaterosx</name>
-                    <platforms>osx</platforms>
-                    <distributionFileList>
-                        <distributionFile>
-                            <origin>${build_project_directory}/../temp/autoupdate-osx.app</origin>
+                            <origin>${build_project_directory}/../temp/update.ini</origin>
                         </distributionFile>
                     </distributionFileList>
                 </folder>
@@ -409,15 +518,6 @@ if  grep -v maidsafe /etc/passwd ; then /usr/sbin/adduser --system --shell /bin/
             </parameterList>
             <postInstallationActionList>
                 <writeFile>
-                    <path>${installdir}/update.ini</path>
-                    <text>[update]
-url = http://www.maidsafe.net/pdlightlocal
-version_id = 1
-update_download_location = ${system_temp_directory}
-check_for_updates = 1
-					</text>
-                </writeFile>
-                <writeFile>
                     <path>${installdir}/chkupdate.sh</path>
                     <text>#!/bin/bash
 ${installdir}/autoupdate-linux.bin --mode unattended &gt; /dev/null 2&gt;&amp;1
@@ -426,7 +526,7 @@ if [ $? -eq 0 ]; then
 else
   echo "Nothing to report.";
 fi
-					</text>
+					          </text>
                     <ruleList>
                         <platformTest>
                             <type>linux</type>
@@ -442,25 +542,10 @@ if [ $? -eq 0 ]; then
 else
   echo "Nothing to report.";
 fi
-					</text>
+					          </text>
                     <ruleList>
                         <platformTest>
                             <type>osx</type>
-                        </platformTest>
-                    </ruleList>
-                </writeFile>
-                <writeFile>
-                    <path>${installdir}/chkupdate.bat</path>
-                    <text>
-"${installdir}/autoupdate-windows.exe" --mode unattended
-if ERRORLEVEL 0
-  "${installdir}/autoupdate-windows.exe"
-else
-  echo "Nothing to report."
-					</text>
-                    <ruleList>
-                        <platformTest>
-                            <type>windows</type>
                         </platformTest>
                     </ruleList>
                 </writeFile>
@@ -468,20 +553,6 @@ else
                     <abortOnError>0</abortOnError>
                     <explanation>AutoUpdate Scheduler</explanation>
                     <actionList>
-                        <runProgram>
-                            <abortOnError>0</abortOnError>
-                            <program>schtasks</program>
-                            <programArguments>/create /sc hourly /tn "PDLightLocalAutoUpdate" /tr "${installdir}/chkupdate.bat"</programArguments>
-                            <ruleList>
-                                <platformTest>
-                                    <type>windows</type>
-                                </platformTest>
-                                <isTrue>
-                                    <value>${AUTOUPDATE_REQUESTED}</value>
-                                </isTrue>
-                            </ruleList>
-                        </runProgram>
-
 	<!-- Create an empty variable -->
 	<setInstallerVariable name="crontab_content" value="">
                             <abortOnError>0</abortOnError>
@@ -556,25 +627,6 @@ else
                     </actionList>
                 </actionGroup>
             </postInstallationActionList>
-            <postUninstallationActionList>
-                <actionGroup>
-                    <abortOnError>0</abortOnError>
-                    <explanation>Remove Auto Update Scheduled Task</explanation>
-                    <actionList>
-                        <runProgram>
-                            <abortOnError>0</abortOnError>
-                            <program>schtasks</program>
-                            <programArguments>/delete /tn "PDLightLocalAutoUpdate" /f</programArguments>
-                            <showMessageOnError>0</showMessageOnError>
-                            <ruleList>
-                                <platformTest>
-                                    <type>windows</type>
-                                </platformTest>
-                            </ruleList>
-                        </runProgram>
-                    </actionList>
-                </actionGroup>
-            </postUninstallationActionList>
         </component>
     </componentList>
     <parameterList>
