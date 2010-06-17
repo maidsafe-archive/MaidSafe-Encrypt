@@ -24,6 +24,7 @@
 #include <QInputDialog>
 #include <boost/progress.hpp>
 #include <QLibraryInfo>
+#include <QDesktopWidget>
 #include <QDesktopServices>
 #include <QUrl>
 
@@ -598,6 +599,22 @@ void PerpetualData::onMessageReceived(int type,
       QString styleSheet = QLatin1String(file.readAll());
 
       QPoint loc = this->mapToGlobal(this->pos());
+      QRect rec(QApplication::desktop()->availableGeometry(mess_));
+      rec.moveTopLeft(QPoint(-420, -255)); 
+
+      int count = 0;
+      while (!rec.contains(loc, true)) {
+        if (count < 20) {
+        loc.setX(loc.x() - 50);
+        if (loc.y() > 100)
+          loc.setY(loc.y() - 25);        
+        } else {
+          loc.setX(400);
+          loc.setY(400);
+          break;
+        }
+        count++;
+      }
 
       mess_->setStyleSheet(styleSheet);
       mess_->move(loc);
