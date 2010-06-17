@@ -146,6 +146,12 @@ void UserPanels::onPublicUsernameChosen() {
     QListWidgetItem *email = new QListWidgetItem(emailIcon_, tr("Email"), ui_.toolBarListWidget);
     QListWidgetItem *myFiles = new QListWidgetItem(myFilesIcon_, tr("My Files"), ui_.toolBarListWidget);
 
+    contact->setToolTip("Contacts");
+    share->setToolTip("Shares");
+    log->setToolTip("Logs");
+    email->setToolTip("Email");
+    myFiles->setToolTip("My Files");
+
     contact->setTextAlignment(Qt::AlignHCenter | Qt::AlignBottom);
     share->setTextAlignment(Qt::AlignHCenter | Qt::AlignBottom);
     log->setTextAlignment(Qt::AlignHCenter | Qt::AlignBottom);
@@ -252,6 +258,7 @@ void UserPanels::setActive(bool active) {
       QPixmap myFilesIcon_  = QPixmap(":icons/32/Files_Tab");
       QListWidgetItem *myFiles = new QListWidgetItem(myFilesIcon_, tr("My Files"), ui_.toolBarListWidget);
       myFiles->setTextAlignment(Qt::AlignHCenter | Qt::AlignBottom);
+      myFiles->setToolTip("My Files");
 
     } else {
       onPublicUsernameChosen();
@@ -342,11 +349,11 @@ void UserPanels::setHintLevel(ClientController::HintLevel level) {
 }
 
 void UserPanels::updateTooltips() {
-  /*ui_.tabWidget_2->setTabToolTip(0, ClientController::instance()->getContactTooltip(level_));
-  ui_.tabWidget_2->setTabToolTip(1, ClientController::instance()->getSharesTooltip(level_));
-  ui_.tabWidget_2->setTabToolTip(2, ClientController::instance()->getLogsTooltip(level_));
-  ui_.tabWidget_2->setTabToolTip(3, ClientController::instance()->getMyFilesTooltip(level_));
-  ui_.tabWidget_2->setTabToolTip(4, ClientController::instance()->getEmailTooltip(level_));*/
+  ui_.toolBarListWidget->item(0)->setToolTip(ClientController::instance()->getContactTooltip(level_));
+  ui_.toolBarListWidget->item(1)->setToolTip(ClientController::instance()->getSharesTooltip(level_));
+  ui_.toolBarListWidget->item(2)->setToolTip(ClientController::instance()->getLogsTooltip(level_));
+  ui_.toolBarListWidget->item(3)->setToolTip(ClientController::instance()->getMyFilesTooltip(level_));
+  ui_.toolBarListWidget->item(4)->setToolTip(ClientController::instance()->getEmailTooltip(level_));
 }
 
 void UserPanels::changeEvent(QEvent *event) {

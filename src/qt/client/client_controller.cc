@@ -658,7 +658,7 @@ QString ClientController::getEmailTooltip(HintLevel level) {
 }
 QString ClientController::getMyFilesTooltip(HintLevel level) {
   if (level == SMALL) {
-    return "MY Files";
+    return "My Files";
   } else if (level == FULL) {
     return "My Files : Use This Tab to manage your protected PD Files";
   }
