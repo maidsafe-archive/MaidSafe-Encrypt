@@ -150,7 +150,6 @@ void PerpetualData::createActions() {
   actions_[ LOGOUT ] = ui_.actionLogout;
   actions_[ FULLSCREEN ] = ui_.actionFullScreen;
   actions_[ ABOUT ] = ui_.actionAbout;
-  actions_[ MY_FILES ] = ui_.actionMy_Files;
   actions_[ PRIVATE_SHARES ] = ui_.actionPrivate_Shares;
   actions_[ GO_OFFLINE ] = ui_.actionOffline;
   actions_[ SETTINGS ] = ui_.actionSettings_2;
@@ -183,8 +182,6 @@ void PerpetualData::createActions() {
           this,              SLOT(onToggleFullScreen(bool)));
   connect(actions_[ ABOUT ], SIGNAL(triggered()),
           this,              SLOT(onAbout()));
-  connect(actions_[ MY_FILES ], SIGNAL(triggered()),
-          this,                 SLOT(onMyFiles()));
   connect(actions_[ PRIVATE_SHARES ], SIGNAL(triggered()),
           this,                       SLOT(onPrivateShares()));
   connect(actions_[ GO_OFFLINE ], SIGNAL(toggled(bool)),
@@ -902,13 +899,11 @@ void PerpetualData::onLogoutUserCompleted(bool success) {
 
 void PerpetualData::showLoggedInMenu() {
   actions_[LOGOUT]->setEnabled(true);
-  actions_[MY_FILES]->setEnabled(true);
   actions_[OFFLINE_2]->setEnabled(true);
 }
 
 void PerpetualData::showLoggedOutMenu() {
   actions_[LOGOUT]->setEnabled(false);
-  actions_[MY_FILES]->setEnabled(false);
   actions_[PRIVATE_SHARES]->setEnabled(false);
   actions_[GO_OFFLINE]->setEnabled(false);
   actions_[SETTINGS]->setEnabled(false);

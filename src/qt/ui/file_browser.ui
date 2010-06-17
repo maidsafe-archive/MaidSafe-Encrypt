@@ -63,7 +63,11 @@
       </widget>
      </item>
      <item>
-      <widget class="QLineEdit" name="locationEdit"/>
+      <widget class="QLineEdit" name="locationEdit">
+       <property name="readOnly">
+        <bool>true</bool>
+       </property>
+      </widget>
      </item>
     </layout>
    </item>

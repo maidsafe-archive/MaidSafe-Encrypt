@@ -111,7 +111,7 @@ class UserPanels : public QWidget {
     // 'My Files' button has been clicked
     void onMyFilesClicked();
     void onEmailsClicked();
-    void onCurrentChanged(int i);
+    void onItemClicked(QListWidgetItem* item);
 
  private:
 
