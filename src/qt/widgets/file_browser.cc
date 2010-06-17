@@ -1075,6 +1075,8 @@ void FileBrowser::onReadFileCompleted(int success, const QString& filepath) {
                                             "Local", Qt::CaseSensitive));
       }
     }
+    QString qtPath = getFullFilePath(rootPath_ + filepath);
+    openFileFromDir(qtPath);
   }
 }
 
