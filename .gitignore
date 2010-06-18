@@ -1,5 +1,7 @@
 *.0
 *~
+*.backup
+*.temp
 build/*
 !build/*.cmake
 desktop.ini
