@@ -96,16 +96,21 @@ void Shares::onCreateShareClicked() {
                  tr("A share is being created."));
     return;
   }
-
-  bool ok;
-  QString text = QInputDialog::getText(this,
-                                       tr("Add Share"),
-                                       tr("Please enter a share to add:"),
-                                       QLineEdit::Normal,
-                                       QString(),
-                                       &ok);
-  if (!ok || text.isEmpty()) {
-      return;
+  QString text;
+  if (ui_.shareNameLineEdit->text() != "Search Shares" && ui_.shareNameLineEdit->text() != "") {
+    text = ui_.shareNameLineEdit->text();
+    ui_.shareNameLineEdit->clear();
+  } else {
+    bool ok;
+    text = QInputDialog::getText(this,
+                                 tr("Add Share"),
+                                 tr("Please enter a share to add:"),
+                                 QLineEdit::Normal,
+                                 QString(),
+                                 &ok);
+    if (!ok || text.isEmpty()) {
+        return;
+    }
   }
 
   // Check if share name isn't already in list

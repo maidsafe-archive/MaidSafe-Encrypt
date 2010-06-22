@@ -1,8 +1,0 @@
-<autoUpdateProject>
-	<fullName>PDLightLocal</fullName>
-	<shortName>pdlightlocal</shortName>
-	<vendor>maidsafe.net</vendor>
-	<version>0.01</version>
-	<singleInstanceCheck>1</singleInstanceCheck>
-	<requireInstallationByRootUser>1</requireInstallationByRootUser>
-</autoUpdateProject>

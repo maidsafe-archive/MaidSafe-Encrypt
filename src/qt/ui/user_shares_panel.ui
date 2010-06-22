@@ -62,6 +62,9 @@
      </item>
      <item>
       <widget class="QPushButton" name="create">
+       <property name="toolTip">
+        <string>Create a share</string>
+       </property>
        <property name="text">
         <string>Create</string>
        </property>

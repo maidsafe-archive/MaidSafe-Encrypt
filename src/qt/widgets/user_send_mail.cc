@@ -24,6 +24,7 @@
 
 UserSendMail::UserSendMail(QWidget* parent) : QDialog(parent) {
   ui_.setupUi(this);
+  setWindowIcon(QPixmap(":/icons/32/Triangle"));
 
   connect(ui_.sendButton, SIGNAL(clicked(bool)),
           this,             SLOT(onSendClicked(bool)));

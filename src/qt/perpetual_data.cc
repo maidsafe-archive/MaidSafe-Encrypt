@@ -24,6 +24,9 @@
 #include <QInputDialog>
 #include <boost/progress.hpp>
 #include <QLibraryInfo>
+#include <QDesktopWidget>
+#include <QDesktopServices>
+#include <QUrl>
 
 #include <list>
 #include <string>
@@ -55,7 +58,7 @@ PerpetualData::PerpetualData(QWidget* parent)
     : QMainWindow(parent), quitting_(false), login_(NULL), create_(NULL),
       message_status_(NULL), state_(LOGIN) {
   setAttribute(Qt::WA_DeleteOnClose, false);
-  setWindowIcon(QPixmap(":/icons/64/64/maidsafe-triangle.png"));
+  setWindowIcon(QPixmap(":/icons/32/Triangle"));
   ui_.setupUi(this);
 
   statusBar()->show();
@@ -148,7 +151,6 @@ void PerpetualData::createActions() {
   actions_[ LOGOUT ] = ui_.actionLogout;
   actions_[ FULLSCREEN ] = ui_.actionFullScreen;
   actions_[ ABOUT ] = ui_.actionAbout;
-  actions_[ MY_FILES ] = ui_.actionMy_Files;
   actions_[ PRIVATE_SHARES ] = ui_.actionPrivate_Shares;
   actions_[ GO_OFFLINE ] = ui_.actionOffline;
   actions_[ SETTINGS ] = ui_.actionSettings_2;
@@ -157,6 +159,11 @@ void PerpetualData::createActions() {
   actions_[ BUSY ] = ui_.actionBusy;
   actions_[ OFFLINE_2 ] = ui_.actionOffline_2;
   actions_[ EMAIL ] = ui_.actionEmail;
+  actions_[ OFF ] = ui_.actionOff_2;
+  actions_[ SMALL ] = ui_.actionSmall_2;
+  actions_[ FULL ] = ui_.actionFull_2;
+  actions_[ MANUAL ] = ui_.actionManual;
+  actions_[ UPDATE ] = ui_.actionUpdate;
 // actions_[ SAVE_SESSION ] = ui_.actionSave_Session;
 
 // Remove Status Menu until implemented
@@ -176,8 +183,6 @@ void PerpetualData::createActions() {
           this,              SLOT(onToggleFullScreen(bool)));
   connect(actions_[ ABOUT ], SIGNAL(triggered()),
           this,              SLOT(onAbout()));
-  connect(actions_[ MY_FILES ], SIGNAL(triggered()),
-          this,                 SLOT(onMyFiles()));
   connect(actions_[ PRIVATE_SHARES ], SIGNAL(triggered()),
           this,                       SLOT(onPrivateShares()));
   connect(actions_[ GO_OFFLINE ], SIGNAL(toggled(bool)),
@@ -196,6 +201,16 @@ void PerpetualData::createActions() {
           this,              SLOT(onEmailTriggered()));
 // connect(actions_[ SAVE_SESSION ], SIGNAL(triggered()),
 //         this,                     SLOT(onSaveSession()));
+  connect(actions_[ OFF ], SIGNAL(triggered()),
+          this,             SLOT(onOffTriggered()));
+  connect(actions_[ SMALL ], SIGNAL(triggered()),
+          this,                  SLOT(onSmallTriggered()));
+  connect(actions_[ FULL ], SIGNAL(triggered()),
+          this,              SLOT(onFullTriggered()));
+  connect(actions_[ MANUAL ], SIGNAL(triggered()),
+          this,              SLOT(onManualTriggered()));
+  connect(actions_[ UPDATE ], SIGNAL(triggered()),
+          this,              SLOT(onUpdateTriggered()));
 }
 
 void PerpetualData::createMenus() {
@@ -274,6 +289,8 @@ void PerpetualData::setState(State state) {
         ui_.stackedWidget->setCurrentWidget(userPanels_);
         connect(userPanels_, SIGNAL(unreadMessages(int)),
                 this,        SLOT(onUnreadMessagesChanged(int)));
+        connect(userPanels_, SIGNAL(publicUsernameChosen()),
+                this,         SLOT(onPublicUsernameChosen()));
         userPanels_->setActive(true);
         break;
     }
@@ -581,7 +598,26 @@ void PerpetualData::onMessageReceived(int type,
       file.open(QFile::ReadOnly);
       QString styleSheet = QLatin1String(file.readAll());
 
+      QPoint loc = this->mapToGlobal(this->pos());
+      QRect rec(QApplication::desktop()->availableGeometry(mess_));
+      rec.moveTopLeft(QPoint(-420, -255)); 
+
+      int count = 0;
+      while (!rec.contains(loc, true)) {
+        if (count < 20) {
+        loc.setX(loc.x() - 50);
+        if (loc.y() > 100)
+          loc.setY(loc.y() - 25);        
+        } else {
+          loc.setX(400);
+          loc.setY(400);
+          break;
+        }
+        count++;
+      }
+
       mess_->setStyleSheet(styleSheet);
+      mess_->move(loc);
       mess_->setMessage(tr("%1").arg(detail));
       mess_->show();
     } else {
@@ -880,19 +916,71 @@ void PerpetualData::onLogoutUserCompleted(bool success) {
 
 void PerpetualData::showLoggedInMenu() {
   actions_[LOGOUT]->setEnabled(true);
-  // actions_[MY_FILES]->setEnabled(true);
-  actions_[PRIVATE_SHARES]->setEnabled(true);
-  actions_[GO_OFFLINE]->setEnabled(true);
-  actions_[SETTINGS]->setEnabled(true);
+  actions_[OFFLINE_2]->setEnabled(true);
 }
 
 void PerpetualData::showLoggedOutMenu() {
   actions_[LOGOUT]->setEnabled(false);
-  // ui_.menuStatus->setEnabled(false);
-  actions_[MY_FILES]->setEnabled(false);
   actions_[PRIVATE_SHARES]->setEnabled(false);
   actions_[GO_OFFLINE]->setEnabled(false);
   actions_[SETTINGS]->setEnabled(false);
+  actions_[EMAIL]->setEnabled(false);
+  actions_[OFFLINE_2]->setEnabled(false);
+}
+
+void PerpetualData::onPublicUsernameChosen() {
+  actions_[PRIVATE_SHARES]->setEnabled(true);
+  actions_[GO_OFFLINE]->setEnabled(true);
+  actions_[SETTINGS]->setEnabled(true);
+  actions_[EMAIL]->setEnabled(true);
+}
+
+void PerpetualData::onOffTriggered() {
+  userPanels_->setHintLevel(ClientController::OFF);
+}
+void PerpetualData::onSmallTriggered() {
+  userPanels_->setHintLevel(ClientController::SMALL);
+}
+void PerpetualData::onFullTriggered() {
+  userPanels_->setHintLevel(ClientController::FULL);
+}
+
+void PerpetualData::onManualTriggered() {
+  QDesktopServices::openUrl(QUrl("www.maidsafe.net/help/"));
+}
+
+void PerpetualData::onUpdateTriggered() {
+  QString program = "./autoupdate";
+  QStringList arguments;
+  arguments << "--mode" << "unattended";
+
+  QProcess *myProcess = new QProcess(this);
+  myProcess->start(program, arguments);
+
+  connect(myProcess, SIGNAL(finished(int, QProcess::ExitStatus)),
+          this,      SLOT(onUpdateChecked(int, QProcess::ExitStatus)));
+}
+
+void PerpetualData::onUpdateChecked(int code, QProcess::ExitStatus status){
+  if (code == 0){
+    QMessageBox msgBox;
+    msgBox.setText(tr("New Update Available"));
+    msgBox.setInformativeText(tr("Would you like to install?"));
+    msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
+    msgBox.setDefaultButton(QMessageBox::Yes);
+    int ret = msgBox.exec();
+
+    if (ret == QMessageBox::Yes) {
+      QString program = "./autoupdate";
+      QStringList arguments;
+      QProcess *myProcess = new QProcess(this);
+      myProcess->start(program, arguments);
+    }
+  } else {
+    QMessageBox msgBox;
+    msgBox.setText(tr("You are up to date!"));
+    msgBox.exec();
+  }
 }
 
 void PerpetualData::changeEvent(QEvent *event) {

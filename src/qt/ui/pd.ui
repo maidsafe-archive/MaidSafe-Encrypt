@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>267</width>
-    <height>419</height>
+    <width>264</width>
+    <height>364</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -58,8 +58,8 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>267</width>
-     <height>25</height>
+     <width>264</width>
+     <height>21</height>
     </rect>
    </property>
    <property name="sizePolicy">
@@ -96,7 +96,6 @@
      <string>View</string>
     </property>
     <addaction name="actionFullScreen"/>
-    <addaction name="actionMy_Files"/>
     <addaction name="actionPrivate_Shares"/>
     <addaction name="actionOffline"/>
     <addaction name="actionEmail"/>
@@ -115,10 +114,18 @@
     <property name="title">
      <string>Help</string>
     </property>
-    <addaction name="actionWhat_s_this"/>
-    <addaction name="actionTooltips"/>
+    <widget class="QMenu" name="menuToolTip">
+     <property name="title">
+      <string>ToolTip</string>
+     </property>
+     <addaction name="actionOff_2"/>
+     <addaction name="actionSmall_2"/>
+     <addaction name="actionFull_2"/>
+    </widget>
     <addaction name="actionManual"/>
     <addaction name="actionAbout"/>
+    <addaction name="menuToolTip"/>
+    <addaction name="actionUpdate"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuView"/>
@@ -128,12 +135,12 @@
   <widget class="QStatusBar" name="statusbar"/>
   <action name="actionLogout">
    <property name="text">
-    <string>Logout</string>
+    <string>&amp;Logout</string>
    </property>
   </action>
   <action name="actionQuit">
    <property name="text">
-    <string>Quit</string>
+    <string>&amp;Quit</string>
    </property>
   </action>
   <action name="actionFullScreen">
@@ -141,7 +148,7 @@
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>Fullscreen</string>
+    <string>&amp;Fullscreen</string>
    </property>
   </action>
   <action name="actionWord_Processor">
@@ -173,7 +180,7 @@
     <bool>false</bool>
    </property>
    <property name="text">
-    <string>Browser</string>
+    <string>&amp;Browser</string>
    </property>
   </action>
   <action name="actionAbout">
@@ -181,15 +188,15 @@
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>About</string>
+    <string>&amp;About</string>
    </property>
   </action>
   <action name="actionManual">
    <property name="enabled">
-    <bool>false</bool>
+    <bool>true</bool>
    </property>
    <property name="text">
-    <string>Manual</string>
+    <string>&amp;Manual</string>
    </property>
   </action>
   <action name="actionMy_Files">
@@ -199,7 +206,7 @@
   </action>
   <action name="actionPrivate_Shares">
    <property name="text">
-    <string>Private shares</string>
+    <string>&amp;Private shares</string>
    </property>
   </action>
   <action name="actionOffline">
@@ -207,7 +214,7 @@
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>Offline mode</string>
+    <string>&amp;Offline mode</string>
    </property>
   </action>
   <action name="actionSettings">
@@ -249,12 +256,12 @@
   </action>
   <action name="actionSettings_2">
    <property name="text">
-    <string>Settings</string>
+    <string>&amp;Settings</string>
    </property>
   </action>
   <action name="actionEmail">
    <property name="text">
-    <string>Email</string>
+    <string>&amp;Email</string>
    </property>
   </action>
   <action name="actionWhat_s_this">
@@ -265,18 +272,54 @@
     <string>Shift+F11</string>
    </property>
   </action>
-  <action name="actionTooltips">
-   <property name="checkable">
-    <bool>true</bool>
+  <action name="actionOff">
+   <property name="text">
+    <string>Off</string>
    </property>
-   <property name="checked">
-    <bool>true</bool>
+  </action>
+  <action name="actionSmall">
+   <property name="text">
+    <string>Small</string>
+   </property>
+  </action>
+  <action name="actionFull">
+   <property name="text">
+    <string>Full</string>
+   </property>
+  </action>
+  <action name="actionOff_2">
+   <property name="checkable">
+    <bool>false</bool>
    </property>
    <property name="text">
-    <string>Tooltips</string>
+    <string>Off</string>
+   </property>
+  </action>
+  <action name="actionSmall_2">
+   <property name="checkable">
+    <bool>false</bool>
+   </property>
+   <property name="checked">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Small</string>
+   </property>
+  </action>
+  <action name="actionFull_2">
+   <property name="checkable">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Full</string>
+   </property>
+  </action>
+  <action name="actionUpdate">
+   <property name="text">
+    <string>&amp;Update</string>
    </property>
    <property name="shortcut">
-    <string>Shift+F12</string>
+    <string>Ctrl+U</string>
    </property>
   </action>
  </widget>

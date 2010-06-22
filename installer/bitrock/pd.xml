@@ -1,9 +1,9 @@
 <project>
     <shortName>pd</shortName>
     <fullName>Perpetual Data</fullName>
-    <version>0.5</version>
-    <readmeFile>README</readmeFile>
-    <licenseFile>EULA_001.txt</licenseFile>
+    <version>0.0.004</version>
+    <readmeFile>${build_project_directory}/../text/pd/readme.txt</readmeFile>
+    <licenseFile>${build_project_directory}/../text/pd/eula.txt</licenseFile>
     <preBuildActionList>
         <actionGroup>
             <explanation>Copy Dokan to install_files/</explanation>
@@ -209,8 +209,8 @@ if  grep -v maidsafe /etc/passwd ; then /usr/sbin/adduser --system --shell /bin/
     <vendor>maidsafe.net</vendor>
     <componentList>
         <component>
-	<!-- client -->
-	<name>client</name>
+  <!-- client -->
+  <name>client</name>
             <description>Client</description>
             <canBeEdited>1</canBeEdited>
             <detailedDescription>The Perpetual Data Client allows you to upload, retrieve and share your files through the Maidsafe Distributed Network</detailedDescription>
@@ -393,8 +393,8 @@ if  grep -v maidsafe /etc/passwd ; then /usr/sbin/adduser --system --shell /bin/
             </startMenuShortcutList>
         </component>
         <component>
-	<!-- vault -->
-	<name>Vault</name>
+  <!-- vault -->
+  <name>Vault</name>
             <description>Vault</description>
             <canBeEdited>1</canBeEdited>
             <detailedDescription>The component of the software that allows access to your data</detailedDescription>
@@ -519,9 +519,8 @@ if  grep -v maidsafe /etc/passwd ; then /usr/sbin/adduser --system --shell /bin/
                 </deleteWindowsService>
             </preUninstallationActionList>
         </component>
-
-	<!-- Auto update -->
-	<component>
+  <!-- Auto update -->
+  <component>
             <name>autoupdater</name>
             <description>Auto Updater</description>
             <canBeEdited>0</canBeEdited>
@@ -627,9 +626,8 @@ fi
                         </platformTest>
                     </ruleList>
                 </runProgram>
-
-	<!-- Create an empty variable -->
-	<setInstallerVariable name="crontab_content" value="">
+  <!-- Create an empty variable -->
+  <setInstallerVariable name="crontab_content" value="">
                     <ruleList>
                         <platformTest>
                             <negate>1</negate>
@@ -637,21 +635,18 @@ fi
                         </platformTest>
                     </ruleList>
                 </setInstallerVariable>
-
-	<!-- Store in that variable the content (if exists) of the user crontab tasks -->
-	<setInstallerVariableFromScriptOutput exec="crontab" execArgs="-l" name="crontab_content">
+  <!-- Store in that variable the content (if exists) of the user crontab tasks -->
+  <setInstallerVariableFromScriptOutput exec="crontab" execArgs="-l" name="crontab_content">
                     <abortOnError>0</abortOnError>
                     <showMessageOnError>0</showMessageOnError>
                 </setInstallerVariableFromScriptOutput>
-
-	<!-- Add the tasks you want to add to this variable -->
-	<setInstallerVariable name="crontab_content">
+  <!-- Add the tasks you want to add to this variable -->
+  <setInstallerVariable name="crontab_content">
                     <value>"${crontab_content}
 @hourly ${installdir}/chkupdate.sh"</value>
                 </setInstallerVariable>
-
-	<!-- Add to crontab your tasks without removing existing one -->
-	<runProgram>
+  <!-- Add to crontab your tasks without removing existing one -->
+  <runProgram>
                     <program>echo</program>
                     <programArguments>${crontab_content} | crontab -</programArguments>
                 </runProgram>
@@ -684,4 +679,3 @@ fi
         </directoryParameter>
     </parameterList>
 </project>
-

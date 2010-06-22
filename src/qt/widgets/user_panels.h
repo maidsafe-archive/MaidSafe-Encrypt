@@ -21,6 +21,7 @@
 
 // std
 #include <string>
+#include "qt/client/client_controller.h"
 
 // generated
 #include "ui_user_panels.h"
@@ -77,6 +78,8 @@ class UserPanels : public QWidget {
   void setConvList(QList<QString> theList);
 
   void setEmailLabel(QString mess);
+  void setHintLevel(ClientController::HintLevel level);
+  void updateTooltips();
 
   // Enable disable user panels
   /*!
@@ -87,7 +90,8 @@ class UserPanels : public QWidget {
 
   signals:
     // Notify a change in the number of unread messages
-    void unreadMessages(int messages);
+  void unreadMessages(int messages);
+  void publicUsernameChosen();
 
   private slots:
 
@@ -107,7 +111,7 @@ class UserPanels : public QWidget {
     // 'My Files' button has been clicked
     void onMyFilesClicked();
     void onEmailsClicked();
-    void onCurrentChanged(int i);
+    void onItemClicked(QListWidgetItem* item);
 
  private:
 
@@ -135,6 +139,7 @@ class UserPanels : public QWidget {
 #endif
   // track the active panel
   int panel_;
+  ClientController::HintLevel level_;
 
  protected:
   void changeEvent(QEvent *event);

@@ -1,5 +1,6 @@
 <RCC>
   <qresource prefix="icons/64">
+    <file alias="Triangle64">64/Triangle320.png</file>
     <file>64/maidsafe-triangle.png</file>
     <file>64/VaultGrey-64.png</file>
     <file alias="messages">64/Message-64.png</file>
@@ -19,6 +20,16 @@
     <file>translations/pd_translation_ga.qm</file>
   </qresource>
   <qresource prefix="icons/32">
+    <file alias="Triangle-offline">32/triangle-offline.png</file>
+    <file alias="Triangle">32/maidsafe-triangle.png</file>
+    <file alias="Home">32x32/actions/go-home.png</file>
+    <file alias="Back">32x32/actions/go-previous.png</file>
+    <file alias="Contact_new">32x32/actions/contact-new.png</file>
+    <file alias="Share_Tab">32x32/places/network-workgroup.png</file>
+    <file alias="Files_Tab">32x32/places/user-home.png</file>
+    <file alias="Contact_Tab">32x32/apps/system-users.png</file>
+    <file alias="Log_Tab">32x32/apps/internet-news-reader.png</file>
+    <file alias="Email_Tab">32x32/apps/internet-mail.png</file>
     <file>32/Color Picker_32.png</file>
     <file>32/smily-select.png</file>
     <file>32/text-select.png</file>

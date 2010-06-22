@@ -15,6 +15,7 @@
 #include "qt/widgets/file_browser.h"
 
 #include <QDebug>
+#include <QDesktopServices>
 #include <QFileDialog>
 #include <QFileIconProvider>
 #include <QInputDialog>
@@ -47,9 +48,10 @@ namespace fs = boost::filesystem;
 
 FileBrowser::FileBrowser(QWidget* parent) : QDialog(parent), init_(false) {
   ui_.setupUi(this);
-  setWindowIcon(QPixmap(":/icons/64/64/maidsafe-triangle.png"));
+  setWindowIcon(QPixmap(":/icons/32/Triangle"));
   this->setWindowFlags(Qt::WindowMinMaxButtonsHint | Qt::WindowCloseButtonHint);
   // theWatcher_ = new QFileSystemWatcher;
+  setAcceptDrops(true);
   ui_.driveTreeWidget->setAcceptDrops(true);
   ui_.driveTreeWidget->viewport()->installEventFilter(this);
   ui_.driveListWidget->installEventFilter(this);
@@ -70,6 +72,9 @@ FileBrowser::FileBrowser(QWidget* parent) : QDialog(parent), init_(false) {
 
   connect(ui_.backButton, SIGNAL(clicked(bool)),
           this,           SLOT(onBackClicked(bool)));
+
+  connect(ui_.homeButton, SIGNAL(clicked(bool)),
+          this,           SLOT(onHomeClicked(bool)));
 
   connect(ui_.driveListWidget, SIGNAL(itemDoubleClicked(QListWidgetItem*)),
           this,           SLOT(onListItemDoubleClicked(QListWidgetItem*)));
@@ -574,6 +579,10 @@ void FileBrowser::onBackClicked(bool) {
   }
 }
 
+void FileBrowser::onHomeClicked(bool) {
+  populateDirectory("/");
+}
+
 void FileBrowser::populateDirectory(QString dir) {
     currentDir_ = dir;
   switch (viewMode_) {
@@ -941,7 +950,7 @@ void FileBrowser::onItemDoubleClicked(QTreeWidgetItem* item, int) {
       msgBox.setText(tr("Please wait for the file transfer to finish."));
       msgBox.exec();
     } else {
-      QString path = rootPath_ + currentDir_ + item->text(0);
+      QString path = getFullFilePath(rootPath_ + currentDir_ + item->text(0));
       openFileFromDir(path);
     }
   }
@@ -971,6 +980,7 @@ void FileBrowser::openFileFromDir(const QString path) {
                    << path;
       }
 #elif defined(PD_POSIX)
+
       QString command;
       QStringList parameters;
       try {
@@ -992,6 +1002,18 @@ void FileBrowser::openFileFromDir(const QString path) {
         myProcess_.reset(new QProcess);
         myProcess_->start(command, parameters);
       }
+
+      /*  QUrl youhome(path); filee path not open
+
+        qDebug() << "### youhome.toString() " << youhome.toString();
+
+        QUrl file(youhome.toLocalFile().prepend("File://"));
+
+        qDebug() << "### youhome.toLocalFile() " << file.toString();
+
+      QDesktopServices::openUrl(QURL::fromLocalFile(file));
+      */
+
 #elif defined(PD_APPLE)
       QString command("open");
       QStringList parameters;
@@ -1053,6 +1075,8 @@ void FileBrowser::onReadFileCompleted(int success, const QString& filepath) {
                                             "Local", Qt::CaseSensitive));
       }
     }
+    QString qtPath = getFullFilePath(rootPath_ + filepath);
+    openFileFromDir(qtPath);
   }
 }
 

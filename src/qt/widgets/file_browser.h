@@ -143,6 +143,7 @@ class FileBrowser : public QDialog {
     void onViewGroupClicked(QAction* action);
     void onSortGroupClicked(QAction* action);
     void onBackClicked(bool);
+    void onHomeClicked(bool);
     void onUploadClicked(bool);
     void onOpenError(QProcess::ProcessError);
     void onOpenStarted();

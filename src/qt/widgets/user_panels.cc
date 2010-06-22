@@ -37,7 +37,6 @@
 #include "qt/widgets/user_inbox.h"
 #include "qt/widgets/vault_info.h"
 #include "qt/widgets/public_username.h"
-#include "qt/client/client_controller.h"
 #include "qt/client/user_space_filesystem.h"
 
 namespace {
@@ -49,8 +48,9 @@ UserPanels::UserPanels(QWidget* parent)
       contacts_(NULL),
       panel_(-1) {
   ui_.setupUi(this);
+  level_ = ClientController::instance()->FULL;
 
-  ui_.tabWidget_2->setContextMenuPolicy(Qt::CustomContextMenu);
+  ui_.toolBarListWidget->setContextMenuPolicy(Qt::CustomContextMenu);
 
   public_username_ = new PublicUsername;
 #ifdef PD_LIGHT
@@ -66,8 +66,8 @@ UserPanels::UserPanels(QWidget* parent)
   connect(ui_.emailButton, SIGNAL(clicked(bool)),
           this,                SLOT(onEmailsClicked())); */
 
-  connect(ui_.tabWidget_2, SIGNAL(currentChanged(int)),
-          this,                 SLOT(onCurrentChanged(int)));
+  connect(ui_.toolBarListWidget, SIGNAL(itemClicked(QListWidgetItem*)),
+          this,                 SLOT(onItemClicked(QListWidgetItem*)));
 
   // tabBar shares menu builder
 
@@ -80,8 +80,6 @@ UserPanels::UserPanels(QWidget* parent)
   menuContacts->addAction(sortAlpha);
   menuContacts->addAction(sortContacted);
   menuContacts->addAction(sortRecent);
-
-  ui_.tabWidget_2->setContextMenuPolicy(Qt::CustomContextMenu);
 
   // tabbar Shares menu builder
 
@@ -97,7 +95,7 @@ UserPanels::UserPanels(QWidget* parent)
 
   // connectors signals/slots
 
-  connect(ui_.tabWidget_2, SIGNAL(customContextMenuRequested(const QPoint &)),
+  connect(ui_.toolBarListWidget, SIGNAL(customContextMenuRequested(const QPoint &)),
              this,         SLOT(customContentsMenu(const QPoint &)));
 
   connect(sortAlpha, SIGNAL(triggered()),
@@ -130,37 +128,50 @@ void UserPanels::CloseFileBrowser() {
 #endif
 
 void UserPanels::onPublicUsernameChosen() {
-  if (ui_.tabWidget_2->currentWidget() == public_username_) {
-    ui_.tabWidget_2->removeTab(0);
+  if (ui_.userStackedWidget->currentWidget() == public_username_) {
+    ui_.toolBarListWidget->clear();
   }
 
-  if (ui_.tabWidget_2->count() > 1) {
+  if (ui_.toolBarListWidget->count() > 1) {
   } else {
-    QPixmap contactIcon_  = QPixmap(":/icons/32/contacts");
-    QPixmap shareIcon_    = QPixmap(":/icons/32/shares");
-    QPixmap logIcon_      = QPixmap(":/icons/32/log");
-    QPixmap emailIcon_    = QPixmap(":/icons/32/email");
-    QPixmap myFilesIcon_  = QPixmap(":/icons/32/32/VaultGrey-32.png");
+    QPixmap contactIcon_  = QPixmap(":icons/32/Contact_Tab");
+    QPixmap shareIcon_    = QPixmap(":icons/32/Share_Tab");
+    QPixmap logIcon_      = QPixmap(":icons/32/Log_Tab");
+    QPixmap emailIcon_    = QPixmap(":icons/32/Email_Tab");
+    QPixmap myFilesIcon_  = QPixmap(":icons/32/Files_Tab");
 
-    ui_.tabWidget_2->addTab(contacts_ = new Contacts, contactIcon_, "");
-    ui_.tabWidget_2->addTab(shares_   = new Shares, shareIcon_, "");
-    ui_.tabWidget_2->addTab(logs_     = new MessageLogs, logIcon_, "");
-    ui_.tabWidget_2->addTab(logs_     = new MessageLogs, myFilesIcon_, "");
-    ui_.tabWidget_2->addTab(logs_     = new MessageLogs, emailIcon_, "");
+    QListWidgetItem *contact = new QListWidgetItem(contactIcon_, tr("Contacts"), ui_.toolBarListWidget);
+    QListWidgetItem *share = new QListWidgetItem(shareIcon_, tr("Shares"), ui_.toolBarListWidget);
+    QListWidgetItem *log = new QListWidgetItem(logIcon_, tr("Logs"), ui_.toolBarListWidget);
+    QListWidgetItem *email = new QListWidgetItem(emailIcon_, tr("Email"), ui_.toolBarListWidget);
+    QListWidgetItem *myFiles = new QListWidgetItem(myFilesIcon_, tr("My Files"), ui_.toolBarListWidget);
 
-    ui_.tabWidget_2->setTabToolTip(0, "Contacts");
-    ui_.tabWidget_2->setTabToolTip(1, "Shares");
-    ui_.tabWidget_2->setTabToolTip(2, "Message Log");
-    ui_.tabWidget_2->setTabToolTip(3, "My Files");
-    ui_.tabWidget_2->setTabToolTip(4, "Emails");
+    contact->setToolTip("Contacts");
+    share->setToolTip("Shares");
+    log->setToolTip("Logs");
+    email->setToolTip("Email");
+    myFiles->setToolTip("My Files");
 
-    ui_.tabWidget_2->setTabWhatsThis(0, "All Contacts are here");
+    contact->setTextAlignment(Qt::AlignHCenter | Qt::AlignBottom);
+    share->setTextAlignment(Qt::AlignHCenter | Qt::AlignBottom);
+    log->setTextAlignment(Qt::AlignHCenter | Qt::AlignBottom);
+    email->setTextAlignment(Qt::AlignHCenter | Qt::AlignBottom);
+    myFiles->setTextAlignment(Qt::AlignHCenter | Qt::AlignBottom);
+
+    ui_.userStackedWidget->addWidget(contacts_ = new Contacts);
+    ui_.userStackedWidget->addWidget(shares_ = new Shares);
+    ui_.userStackedWidget->addWidget(logs_ = new MessageLogs);
+
+    this->adjustSize();
   }
 
-  ui_.tabWidget_2->setEnabled(true);
-  ui_.tabWidget_2->setCurrentWidget(contacts_);
+  emit publicUsernameChosen();
+
+  ui_.userStackedWidget->setEnabled(true);
+  ui_.userStackedWidget->setCurrentWidget(contacts_);
   activatePanel(true);
   ui_.public_username->setText(ClientController::instance()->publicUsername());
+  updateTooltips();
 
 #ifdef PD_LIGHT
   browser_->setActive(true);
@@ -182,14 +193,25 @@ void UserPanels::onEmailsClicked() {
   inbox_->show();
 }
 
-void UserPanels::onCurrentChanged(int i) {
-  if (i == 3) {
+void UserPanels::onItemClicked(QListWidgetItem* item) {
+  const QString username = ClientController::instance()->publicUsername();
+
+  if (username.isEmpty()) {
+    if (item->text() == tr("My Files")) {
+      onMyFilesClicked();
+      return;
+    }
+  }
+  if (item->text() == tr("My Files")) {
     onMyFilesClicked();
-    ui_.tabWidget_2->setCurrentWidget(contacts_);
-    int curr = ui_.tabWidget_2->currentIndex();
-  } else if (i == 4) {
+  } else if (item->text() == tr("Email")) {
     onEmailsClicked();
-    ui_.tabWidget_2->setCurrentWidget(contacts_);
+  } else if (item->text() == tr("Logs")) {
+    ui_.userStackedWidget->setCurrentWidget(logs_);
+  } else if (item->text() == tr("Shares")) {
+    ui_.userStackedWidget->setCurrentWidget(shares_);
+  } else if (item->text() == tr("Contacts")) {
+    ui_.userStackedWidget->setCurrentWidget(contacts_);
   }
   activatePanel(true);
 }
@@ -212,7 +234,7 @@ void UserPanels::activatePanel(bool active) {
     panel->reset();
   }
 
-  if (Panel* panel = static_cast<Panel*>(ui_.tabWidget_2->currentWidget())) {
+  if (Panel* panel = static_cast<Panel*>(ui_.userStackedWidget->currentWidget())) {
     panel->setActive(active);
   }
 }
@@ -223,75 +245,49 @@ void UserPanels::setActive(bool active) {
 
     qDebug() << "UserPanels::setActive - public name:" << username;
 
-    if (ui_.tabWidget_2->count() < 2)
-        ui_.tabWidget_2->removeTab(0);
+    if (ui_.userStackedWidget->count() < 2)
+      ui_.userStackedWidget->removeWidget(public_username_);
 
     if (username.isEmpty()) {
-      ui_.tabWidget_2->clear();
-      ui_.tabWidget_2->setEnabled(true);
-//      ui_.listWidget->item(0)->setFlags(Qt::NoItemFlags);
-//      ui_.listWidget->item(1)->setFlags(Qt::NoItemFlags);
-//      ui_.listWidget->item(2)->setFlags(Qt::NoItemFlags);
-//      ui_.listWidget->item(3)->setFlags(Qt::ItemIsSelectable|
-//                                        Qt::ItemIsUserCheckable|
-//                                        Qt::ItemIsEnabled);
-//      ui_.listWidget->item(4)->setFlags(Qt::NoItemFlags);
-//      ui_.listWidget->item(5)->setFlags(Qt::NoItemFlags);
-//      ui_.listWidget->setCurrentRow(0);
-//      static_cast<Panel*>(ui_.stackedWidget->widget(3))->reset();
-      ui_.tabWidget_2->addTab(public_username_, "");
-      ui_.tabWidget_2->setCurrentWidget(public_username_);
-//      ui_.user_public_username->clear();
-//      ui_.my_files_button->setEnabled(true);
+      ui_.toolBarListWidget->clear();
+      ui_.toolBarListWidget->setEnabled(true);
+
+      ui_.userStackedWidget->addWidget(public_username_);
+      ui_.userStackedWidget->setCurrentWidget(public_username_);
+
+      QPixmap myFilesIcon_  = QPixmap(":icons/32/Files_Tab");
+      QListWidgetItem *myFiles = new QListWidgetItem(myFilesIcon_, tr("My Files"), ui_.toolBarListWidget);
+      myFiles->setTextAlignment(Qt::AlignHCenter | Qt::AlignBottom);
+      myFiles->setToolTip("My Files");
+
     } else {
       onPublicUsernameChosen();
     }
   } else {
-//    for (int n = 0; n < ui_.listWidget->count(); n++) {
-//      ui_.listWidget->item(n)->setFlags(Qt::ItemIsSelectable|
-//                                        Qt::ItemIsUserCheckable|
-//                                        Qt::ItemIsEnabled);
-//    }
-//    ui_.listWidget->item(4)->setFlags(Qt::NoItemFlags);
-//    ui_.listWidget->item(5)->setFlags(Qt::NoItemFlags);
     QList<Panel*> panels = findChildren<Panel*>();
     foreach(Panel* panel, panels) {
       panel->reset();
     }
-    // To clear the Public Username field for the next user
-    // Change 6 to appropriate panel number
-    // if more panels are added to the stack
-//    PublicUsername* p = static_cast<PublicUsername*>(
-//                       ui_.stackedWidget->widget(6));
+
     public_username_->clearPubUsername();
-//    ui_.user_public_username->clear();
-//    ui_.my_files_button->setEnabled(true);
+
   }
 }
 
 void UserPanels::customContentsMenu(const QPoint &pos) {
-  // QPoint point = contacts_->mapFromGlobal(QPoint(0,0));
-  // QPoint point2 = shares_->mapFromGlobal(QPoint(0,0));
-  QTabBar * tabBar = qobject_cast<QTabBar *>(ui_.tabWidget_2->childAt(pos));
-  if (!tabBar)
-      return;
-  QPoint pos2 = tabBar->mapFromParent(pos);
-  int tabIndex = tabBar->tabAt(pos2);
+  QPoint pos2 = ui_.toolBarListWidget->mapFromParent(pos);
+  QListWidgetItem* item = ui_.toolBarListWidget->itemAt(pos); 
 
-  if (tabIndex == 0) {
+  if (item->text() == "Contacts") {
     // Contacts
-    QPoint globalPos = ui_.tabWidget_2->mapToGlobal(pos);
+    QPoint globalPos = ui_.toolBarListWidget->mapToGlobal(pos);
     menuContacts->exec(globalPos);
   }
-  if (tabIndex ==1) {
+  if (item->text() == "Shares") {
     // Shares
-    QPoint globalPos = ui_.tabWidget_2->mapToGlobal(pos);
+    QPoint globalPos = ui_.toolBarListWidget->mapToGlobal(pos);
     menuShares->exec(globalPos);
   }
-  // if ((pos.x() < 58) && (pos.y() < 40)) {
-  // QPoint globalPos = ui_.tabWidget_2->mapToGlobal(pos);
-  // menuContacts->exec(globalPos);
-  // }
 }
 
 void UserPanels::addConvToList(QString) {
@@ -345,6 +341,19 @@ void UserPanels::onSortShareRecentClicked() {
 
 void UserPanels::setEmailLabel(QString mess) {
 //  ui_.lblEmails->setText(mess);
+}
+
+void UserPanels::setHintLevel(ClientController::HintLevel level) {
+  level_ = level;
+  updateTooltips();
+}
+
+void UserPanels::updateTooltips() {
+  ui_.toolBarListWidget->item(0)->setToolTip(ClientController::instance()->getContactTooltip(level_));
+  ui_.toolBarListWidget->item(1)->setToolTip(ClientController::instance()->getSharesTooltip(level_));
+  ui_.toolBarListWidget->item(2)->setToolTip(ClientController::instance()->getLogsTooltip(level_));
+  ui_.toolBarListWidget->item(3)->setToolTip(ClientController::instance()->getMyFilesTooltip(level_));
+  ui_.toolBarListWidget->item(4)->setToolTip(ClientController::instance()->getEmailTooltip(level_));
 }
 
 void UserPanels::changeEvent(QEvent *event) {
