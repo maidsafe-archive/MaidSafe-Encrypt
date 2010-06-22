@@ -38,20 +38,20 @@
 #include "protobuf/maidsafe_messages.pb.h"
 #include "tests/maidsafe/cached_keys.h"
 #include "tests/maidsafe/mocksessionsingleton.h"
+#include "tests/maidsafe/networktest.h"
+#include "tests/maidsafe/testcallback.h"
 
 namespace fs = boost::filesystem;
 
-namespace test_immessaging {
-static const boost::uint8_t K(4);
-}  // namespace test_immessaging
+namespace maidsafe {
 
-namespace {
+namespace test {
 
-maidsafe::InstantMessage get_im_from_bp_message(const std::string &ser_bpmsg,
-    const std::string &priv_key, maidsafe::MessageType *type) {
-  maidsafe::InstantMessage im;
+InstantMessage GetImFromBpMessage(const std::string &ser_bpmsg,
+    const std::string &priv_key, MessageType *type) {
+  InstantMessage im;
   crypto::Crypto co;
-  maidsafe::BufferPacketMessage bpmsg;
+  BufferPacketMessage bpmsg;
   if (!bpmsg.ParseFromString(ser_bpmsg))
     return im;
   *type = bpmsg.type();
@@ -62,11 +62,11 @@ maidsafe::InstantMessage get_im_from_bp_message(const std::string &ser_bpmsg,
   return im;
 }
 
-std::string get_strmsg_from_bp_message(const std::string &ser_bpmsg,
-    const std::string &priv_key, maidsafe::MessageType *type,
+std::string GetStrMsgFromBpMsg(const std::string &ser_bpmsg,
+    const std::string &priv_key, MessageType *type,
     std::string *sender) {
   crypto::Crypto co;
-  maidsafe::BufferPacketMessage bpmsg;
+  BufferPacketMessage bpmsg;
   if (!bpmsg.ParseFromString(ser_bpmsg))
     return "";
   *type = bpmsg.type();
@@ -77,40 +77,16 @@ std::string get_strmsg_from_bp_message(const std::string &ser_bpmsg,
       crypto::STRING_STRING, aes_key);
 }
 
-class SMCallback {
+class ImMessagingTest : public testing::Test {
  public:
-  SMCallback() : result_(kNack), result_arrived_(false) {
-  }
-  void Callback(const std::string &res) {
-    maidsafe::GenericResponse maid_response;
-    if (!maid_response.ParseFromString(res)) {
-      result_ = kNack;
-    } else {
-      result_ = static_cast<MaidsafeRpcResult> (maid_response.result());
-    }
-    result_arrived_ = true;
-  }
-  void Reset() {
-    result_arrived_ = false;
-    result_ = kNack;
-  }
-  MaidsafeRpcResult result_;
-  bool result_arrived_;
-};
-
-class TestImMessaging : public testing::Test {
- public:
-  TestImMessaging() : vault_dir_(file_system::TempDir() /
-                          ("maidsafe_TestVaults_" + base::RandomString(6))),
-                      kad_config_file_(vault_dir_ / ".kadconfig"),
-                      bootstrapping_vault_(),
+  ImMessagingTest() : network_test_("IM"),
                       ctc1_trans_(),
                       ctc2_trans_(),
-                      ss_(maidsafe::SessionSingleton::getInstance()),
+                      ss_(SessionSingleton::getInstance()),
                       publicusername_("Teh contact"),
                       ctc1_ep_(),
                       ctc2_ep_(),
-                      sm_(),
+                      sm_(network_test_.store_manager()),
                       keys_(),
                       sm_rec_msg_(),
                       alt_ctc_conn_(0),
@@ -118,90 +94,27 @@ class TestImMessaging : public testing::Test {
                       latest_ctc_updated_(),
                       latest_status_(100),
                       alt_ctc_rec_msgs_() {
-    try {
-      if (fs::exists(vault_dir_))
-        fs::remove_all(vault_dir_);
-    }
-    catch(const std::exception &e_) {
-      printf("%s\n", e_.what());
-    }
-    fs::create_directories(vault_dir_);
     keys_.clear();
     cached_keys::MakeKeys(3, &keys_);
   }
-  ~TestImMessaging() {
-    try {
-      if (fs::exists(vault_dir_))
-        fs::remove_all(vault_dir_);
-    }
-    catch(const std::exception &e_) {
-      printf("%s\n", e_.what());
-    }
-  }
  protected:
   void SetUp() {
-    crypto::Crypto co;
-    crypto::RsaKeyPair keys;
-    keys.GenerateKeys(maidsafe::kRsaKeySize);
-    std::string signed_key = co.AsymSign(keys.public_key(), "",
-                             keys.private_key(), crypto::STRING_STRING);
-    std::string public_key = keys.public_key();
-    std::string private_key = keys.private_key();
-    std::string pmid = co.Hash(signed_key, "", crypto::STRING_STRING, false);
-    fs::path local_dir(vault_dir_ / ("Vault_" +
-          base::EncodeToHex(pmid).substr(0, 8)));
-    if (!fs::exists(fs::path(local_dir))) {
-      printf("creating_directories - %s\n", local_dir.string().c_str());
-      fs::create_directories(local_dir);
-    }
-    bootstrapping_vault_.reset(new maidsafe_vault::PDVault(public_key,
-                               private_key, signed_key, local_dir, 0, false,
-                               false, kad_config_file_, 1073741824, 0,
-                               test_immessaging::K));
-    bootstrapping_vault_->Start(true);
-    ASSERT_EQ(maidsafe_vault::kVaultStarted,
-            bootstrapping_vault_->vault_status());
-    base::KadConfig kad_config;
-    base::KadConfig::Contact *kad_contact = kad_config.add_contact();
-    kad_contact->set_node_id(
-        base::EncodeToHex(bootstrapping_vault_->node_id()));
-    kad_contact->set_ip(bootstrapping_vault_->host_ip());
-    kad_contact->set_port(bootstrapping_vault_->host_port());
-    kad_contact->set_local_ip(bootstrapping_vault_->local_host_ip());
-    kad_contact->set_local_port(bootstrapping_vault_->local_host_port());
-    // default location in Maidsafestoremanager
-    std::fstream output(".kadconfig",
-                        std::ios::out | std::ios::trunc | std::ios::binary);
-    ASSERT_TRUE(kad_config.SerializeToOstream(&output));
-    output.close();
-    printf("Vault 0 started.\n");
-    boost::shared_ptr<maidsafe::ChunkStore> cstore(
-        new maidsafe::ChunkStore("client", 0, 0));
-    cstore->Init();
-    sm_.reset(new maidsafe::MaidsafeStoreManager(cstore, test_immessaging::K));
-    SMCallback cb;
-    fs::path db_path;
-    sm_->Init(0, boost::bind(&SMCallback::Callback, &cb, _1), db_path);
-    while (!cb.result_arrived_) {
-      boost::this_thread::sleep(boost::posix_time::milliseconds(20));
-    }
-    ASSERT_EQ(kAck, cb.result_);
-    printf("maidstoremanager started ...\n");
-
+    ss_->ResetSession();
+    ASSERT_TRUE(network_test_.Init());
     ss_->SetConnectionStatus(0);
     sm_->SetSessionEndPoint();
     sm_->SetInstantMessageNotifier(
-        boost::bind(&TestImMessaging::SmOnMessageNotifier, this, _1),
-        boost::bind(&TestImMessaging::SmStatusUpdate, this, _1, _2));
+        boost::bind(&ImMessagingTest::SmOnMessageNotifier, this, _1),
+        boost::bind(&ImMessagingTest::SmStatusUpdate, this, _1, _2));
 
     // starting alternative transport
     ctc1_trans_.reset(new transport::TransportUDT);
     ASSERT_TRUE(ctc1_trans_->RegisterOnSend(boost::bind(
-          &TestImMessaging::SendNotifier, this, _1, _2)));
+          &ImMessagingTest::SendNotifier, this, _1, _2)));
     ASSERT_TRUE(ctc1_trans_->RegisterOnServerDown(boost::bind(
-          &TestImMessaging::OnServerDown, this, _1, _2, _3)));
+          &ImMessagingTest::OnServerDown, this, _1, _2, _3)));
     ASSERT_TRUE(ctc1_trans_->RegisterOnMessage(boost::bind(
-          &TestImMessaging::UDTTransMsgArrived, this, _1, _2, _3, _4)));
+          &ImMessagingTest::UDTTransMsgArrived, this, _1, _2, _3, _4)));
     ASSERT_EQ(0, ctc1_trans_->Start(0));
     boost::asio::ip::address addr;
     base::GetLocalAddress(&addr);
@@ -214,11 +127,11 @@ class TestImMessaging : public testing::Test {
 
     ctc2_trans_.reset(new transport::TransportUDT);
     ASSERT_TRUE(ctc2_trans_->RegisterOnSend(boost::bind(
-          &TestImMessaging::SendNotifier, this, _1, _2)));
+          &ImMessagingTest::SendNotifier, this, _1, _2)));
     ASSERT_TRUE(ctc2_trans_->RegisterOnServerDown(boost::bind(
-          &TestImMessaging::OnServerDown, this, _1, _2, _3)));
+          &ImMessagingTest::OnServerDown, this, _1, _2, _3)));
     ASSERT_TRUE(ctc2_trans_->RegisterOnMessage(boost::bind(
-          &TestImMessaging::UDTTransMsgArrived, this, _1, _2, _3, _4)));
+          &ImMessagingTest::UDTTransMsgArrived, this, _1, _2, _3, _4)));
     ASSERT_EQ(0, ctc2_trans_->Start(0));
     ctc2_ep_.add_ip(addr.to_string());
     ctc2_ep_.add_ip(addr.to_string());
@@ -228,7 +141,7 @@ class TestImMessaging : public testing::Test {
     ctc2_ep_.add_port(0);
 
     // Adding contact information to session
-    ss_->AddKey(maidsafe::MPID, publicusername_, keys_.at(0).private_key(),
+    ss_->AddKey(MPID, publicusername_, keys_.at(0).private_key(),
                 keys_.at(0).public_key(), "");
     ASSERT_EQ(0, ss_->AddContact("contact1", keys_.at(1).public_key(), "", "",
         "", 'U', 1, 2, "", 'C', 0, 0));
@@ -239,17 +152,6 @@ class TestImMessaging : public testing::Test {
     ASSERT_EQ(0, ss_->AddLiveContact("contact1", ctc1_ep_, 0));
   }
   void TearDown() {
-    printf("starting TearDown\n");
-    SMCallback cb;
-    sm_->Close(boost::bind(&SMCallback::Callback, &cb, _1), true);
-    while (!cb.result_arrived_) {
-      boost::this_thread::sleep(boost::posix_time::milliseconds(20));
-    }
-    bootstrapping_vault_->StopRvPing();
-    bootstrapping_vault_->Stop();
-    ASSERT_EQ(kAck, cb.result_);
-    fs::remove(kad_config_file_);
-    fs::remove(fs::path(".kadconfig"));
     ctc1_trans_->Stop();
     ctc2_trans_->Stop();
     ss_->ResetSession();
@@ -259,29 +161,24 @@ class TestImMessaging : public testing::Test {
     latest_ctc_updated_.clear();
     latest_status_ = 100;
     alt_ctc_rec_msgs_.clear();
-    if (fs::exists("client"))
-        fs::remove_all("client");
-    printf("finished TearDown\n");
   }
 
-  fs::path vault_dir_, kad_config_file_;
-  boost::shared_ptr<maidsafe_vault::PDVault> bootstrapping_vault_;
+  NetworkTest network_test_;
+  SessionSingleton *ss_;
+  boost::shared_ptr<TestStoreManager> sm_;
   boost::shared_ptr<transport::Transport> ctc1_trans_, ctc2_trans_;
-  maidsafe::SessionSingleton *ss_;
   std::string publicusername_;
-  maidsafe::EndPoint ctc1_ep_, ctc2_ep_;
-  boost::shared_ptr<maidsafe::MaidsafeStoreManager> sm_;
+  EndPoint ctc1_ep_, ctc2_ep_;
   std::vector<crypto::RsaKeyPair> keys_;
   std::string sm_rec_msg_;
   boost::uint32_t alt_ctc_conn_;
   std::string sender_, latest_ctc_updated_;
   int latest_status_;
   std::vector<std::string> alt_ctc_rec_msgs_;
+
  private:
-  void SendNotifier(const boost::uint32_t&, const bool&) {
-  }
-  void OnServerDown(const bool&, const std::string&, const boost::uint16_t&) {
-  }
+  void SendNotifier(const boost::uint32_t&, const bool&) {}
+  void OnServerDown(const bool&, const std::string&, const boost::uint16_t&) {}
   void UDTTransMsgArrived(const std::string &msg, const boost::uint32_t &id,
       const boost::int16_t&, const float&) {
     alt_ctc_conn_ = id;
@@ -297,45 +194,48 @@ class TestImMessaging : public testing::Test {
     latest_ctc_updated_ = contactname;
     latest_status_ = status;
   }
+
+  ImMessagingTest(const ImMessagingTest&);
+  ImMessagingTest &operator=(const ImMessagingTest&);
 };
 
-TEST_F(TestImMessaging, FUNC_MAID_SendMessages) {
+TEST_F(ImMessagingTest, FUNC_MAID_SendMessages) {
   std::vector<std::string> recs;
   recs.push_back("contact1");
-  std::map<std::string, maidsafe::ReturnCode> results;
+  std::map<std::string, ReturnCode> results;
   std::string msg("Hello World\n");
-  sm_->SendMessage(recs, msg, maidsafe::INSTANT_MSG, &results);
+  sm_->SendMessage(recs, msg, INSTANT_MSG, &results);
   while (alt_ctc_rec_msgs_.size() < size_t(2)) {
     boost::this_thread::sleep(boost::posix_time::milliseconds(2));
   }
   ASSERT_EQ(size_t(2), alt_ctc_rec_msgs_.size());
-  std::map<std::string, maidsafe::ReturnCode>::iterator it;
+  std::map<std::string, ReturnCode>::iterator it;
   it = results.find("contact1");
   ASSERT_TRUE(it != results.end());
-  ASSERT_EQ(maidsafe::kSuccess, it->second);
+  ASSERT_EQ(kSuccess, it->second);
 
-  maidsafe::GenericPacket gp;
+  GenericPacket gp;
   ASSERT_TRUE(gp.ParseFromString(alt_ctc_rec_msgs_[0]));
   crypto::Crypto co;
   ASSERT_TRUE(co.AsymCheckSig(gp.data(), gp.signature(),
-      ss_->PublicKey(maidsafe::MPID), crypto::STRING_STRING));
+      ss_->PublicKey(MPID), crypto::STRING_STRING));
 
   std::string sender;
-  maidsafe::MessageType type;
+  MessageType type;
 
-  maidsafe::InstantMessage im = get_im_from_bp_message(gp.data(),
+  InstantMessage im = GetImFromBpMessage(gp.data(),
       keys_.at(1).private_key(), &type);
-  ASSERT_EQ(maidsafe::HELLO_PING, type);
+  ASSERT_EQ(HELLO_PING, type);
   ASSERT_EQ(publicusername_, im.sender());
 
   gp.Clear();
   ASSERT_TRUE(gp.ParseFromString(alt_ctc_rec_msgs_[1]));
   ASSERT_TRUE(co.AsymCheckSig(gp.data(), gp.signature(),
-      ss_->PublicKey(maidsafe::MPID), crypto::STRING_STRING));
+      ss_->PublicKey(MPID), crypto::STRING_STRING));
 
-  std::string rec_msg = get_strmsg_from_bp_message(gp.data(),
+  std::string rec_msg = GetStrMsgFromBpMsg(gp.data(),
       keys_.at(1).private_key(), &type, &sender);
-  ASSERT_EQ(maidsafe::INSTANT_MSG, type);
+  ASSERT_EQ(INSTANT_MSG, type);
   ASSERT_EQ(publicusername_, sender);
   ASSERT_EQ(msg, rec_msg);
 
@@ -345,32 +245,32 @@ TEST_F(TestImMessaging, FUNC_MAID_SendMessages) {
   results.clear();
   gp.Clear();
 
-  sm_->SendMessage(recs, msg, maidsafe::INSTANT_MSG, &results);
+  sm_->SendMessage(recs, msg, INSTANT_MSG, &results);
   while (alt_ctc_rec_msgs_.empty()) {
     boost::this_thread::sleep(boost::posix_time::milliseconds(2));
   }
   ASSERT_EQ(size_t(1), alt_ctc_rec_msgs_.size());
   it = results.find("contact1");
   ASSERT_TRUE(it != results.end());
-  ASSERT_EQ(maidsafe::kSuccess, it->second);
+  ASSERT_EQ(kSuccess, it->second);
   ASSERT_TRUE(gp.ParseFromString(alt_ctc_rec_msgs_[0]));
   ASSERT_TRUE(co.AsymCheckSig(gp.data(), gp.signature(),
-      ss_->PublicKey(maidsafe::MPID), crypto::STRING_STRING));
+      ss_->PublicKey(MPID), crypto::STRING_STRING));
 
-  rec_msg = get_strmsg_from_bp_message(gp.data(),
+  rec_msg = GetStrMsgFromBpMsg(gp.data(),
       keys_.at(1).private_key(), &type, &sender);
   ASSERT_EQ(publicusername_, sender);
   ASSERT_EQ(msg, rec_msg);
-  ASSERT_EQ(maidsafe::INSTANT_MSG, type);
+  ASSERT_EQ(INSTANT_MSG, type);
 
   boost::this_thread::sleep(boost::posix_time::seconds(
-      maidsafe::kConnectionTimeout + 1));
+      kConnectionTimeout + 1));
   alt_ctc_rec_msgs_.clear();
   msg = "Third message";
   results.clear();
   gp.Clear();
 
-  sm_->SendMessage(recs, msg, maidsafe::INSTANT_MSG, &results);
+  sm_->SendMessage(recs, msg, INSTANT_MSG, &results);
   while (alt_ctc_rec_msgs_.size() < size_t(2)) {
     boost::this_thread::sleep(boost::posix_time::milliseconds(2));
   }
@@ -378,76 +278,76 @@ TEST_F(TestImMessaging, FUNC_MAID_SendMessages) {
   ASSERT_FALSE(alt_ctc_rec_msgs_.empty());
   it = results.find("contact1");
   ASSERT_TRUE(it != results.end());
-  ASSERT_EQ(maidsafe::kSuccess, it->second);
+  ASSERT_EQ(kSuccess, it->second);
   ASSERT_EQ(size_t(2), alt_ctc_rec_msgs_.size());
   ASSERT_TRUE(gp.ParseFromString(alt_ctc_rec_msgs_[0]));
   ASSERT_TRUE(co.AsymCheckSig(gp.data(), gp.signature(),
-      ss_->PublicKey(maidsafe::MPID), crypto::STRING_STRING));
+      ss_->PublicKey(MPID), crypto::STRING_STRING));
 
   im.Clear();
-  im = get_im_from_bp_message(gp.data(),
+  im = GetImFromBpMessage(gp.data(),
       keys_.at(1).private_key(), &type);
-  ASSERT_EQ(maidsafe::HELLO_PING, type);
+  ASSERT_EQ(HELLO_PING, type);
   ASSERT_EQ(publicusername_, im.sender());
 
   gp.Clear();
   ASSERT_TRUE(gp.ParseFromString(alt_ctc_rec_msgs_[1]));
   ASSERT_TRUE(co.AsymCheckSig(gp.data(), gp.signature(),
-      ss_->PublicKey(maidsafe::MPID), crypto::STRING_STRING));
+      ss_->PublicKey(MPID), crypto::STRING_STRING));
 
-  rec_msg = get_strmsg_from_bp_message(gp.data(),
+  rec_msg = GetStrMsgFromBpMsg(gp.data(),
       keys_.at(1).private_key(), &type, &sender);
-  ASSERT_EQ(maidsafe::INSTANT_MSG, type);
+  ASSERT_EQ(INSTANT_MSG, type);
   ASSERT_EQ(publicusername_, sender);
   ASSERT_EQ(msg, rec_msg);
 }
 
-TEST_F(TestImMessaging, FUNC_MAID_SendReceiveMessages) {
-  maidsafe::MockSessionSingleton client1_ss;
-  client1_ss.AddKey(maidsafe::MPID, "contact1", keys_.at(1).private_key(),
+TEST_F(ImMessagingTest, FUNC_MAID_SendReceiveMessages) {
+  MockSessionSingleton client1_ss;
+  client1_ss.AddKey(MPID, "contact1", keys_.at(1).private_key(),
                 keys_.at(1).public_key(), "");
   ASSERT_EQ(0, client1_ss.AddContact(publicusername_, keys_.at(0).public_key(),
         "", "", "", 'U', 1, 2, "", 'C', 0, 0));
-  maidsafe::IMHandler client1_imh(&client1_ss);
+  IMHandler client1_imh(&client1_ss);
   client1_ss.SetEp(ctc1_ep_);
 
   std::vector<std::string> recs;
   recs.push_back("contact1");
-  std::map<std::string, maidsafe::ReturnCode> results;
+  std::map<std::string, ReturnCode> results;
   std::string msg("Hello World\n");
-  sm_->SendMessage(recs, msg, maidsafe::INSTANT_MSG, &results);
+  sm_->SendMessage(recs, msg, INSTANT_MSG, &results);
   while (alt_ctc_rec_msgs_.empty()) {
     boost::this_thread::sleep(boost::posix_time::milliseconds(2));
   }
   boost::this_thread::sleep(boost::posix_time::seconds(2));
   ASSERT_EQ(size_t(2), alt_ctc_rec_msgs_.size());
-  std::map<std::string, maidsafe::ReturnCode>::iterator it;
+  std::map<std::string, ReturnCode>::iterator it;
   it = results.find("contact1");
   ASSERT_TRUE(it != results.end());
-  ASSERT_EQ(maidsafe::kSuccess, it->second);
+  ASSERT_EQ(kSuccess, it->second);
 
-  maidsafe::GenericPacket gp;
+  GenericPacket gp;
   ASSERT_TRUE(gp.ParseFromString(alt_ctc_rec_msgs_[0]));
   crypto::Crypto co;
   ASSERT_TRUE(co.AsymCheckSig(gp.data(), gp.signature(),
-      ss_->PublicKey(maidsafe::MPID), crypto::STRING_STRING));
+      ss_->PublicKey(MPID), crypto::STRING_STRING));
 
   std::string sender;
-  maidsafe::MessageType type;
+  MessageType type;
 
-  maidsafe::InstantMessage im = get_im_from_bp_message(gp.data(),
+  InstantMessage im = GetImFromBpMessage(gp.data(),
       keys_.at(1).private_key(), &type);
-  ASSERT_EQ(maidsafe::HELLO_PING, type);
+  ASSERT_EQ(HELLO_PING, type);
   ASSERT_EQ(publicusername_, im.sender());
 
   gp.Clear();
   ASSERT_TRUE(gp.ParseFromString(alt_ctc_rec_msgs_[1]));
   ASSERT_TRUE(co.AsymCheckSig(gp.data(), gp.signature(),
-      ss_->PublicKey(maidsafe::MPID), crypto::STRING_STRING));
+      ss_->PublicKey(MPID), crypto::STRING_STRING));
 
-  std::string rec_msg = get_strmsg_from_bp_message(gp.data(),
+  std::string rec_msg = GetStrMsgFromBpMsg(gp.data(),
       keys_.at(1).private_key(), &type, &sender);
-  ASSERT_EQ(maidsafe::INSTANT_MSG, type);
+  ASSERT_EQ(INSTANT_MSG, type);
   ASSERT_EQ(publicusername_, sender);
   ASSERT_EQ(msg, rec_msg);
 
@@ -465,7 +365,7 @@ TEST_F(TestImMessaging, FUNC_MAID_SendReceiveMessages) {
   alt_ctc_rec_msgs_.clear();
   results.clear();
   msg = "What up!!!";
-  sm_->SendMessage(recs, msg, maidsafe::INSTANT_MSG, &results);
+  sm_->SendMessage(recs, msg, INSTANT_MSG, &results);
   while (alt_ctc_rec_msgs_.empty()) {
     boost::this_thread::sleep(boost::posix_time::milliseconds(2));
   }
@@ -473,7 +373,7 @@ TEST_F(TestImMessaging, FUNC_MAID_SendReceiveMessages) {
   ASSERT_EQ(size_t(1), alt_ctc_rec_msgs_.size());
   it = results.find("contact1");
   ASSERT_TRUE(it != results.end());
-  ASSERT_EQ(maidsafe::kSuccess, it->second);
+  ASSERT_EQ(kSuccess, it->second);
   ASSERT_TRUE(client1_imh.ValidateMessage(alt_ctc_rec_msgs_[0], &type,
       &val_msg));
   ASSERT_EQ(msg, val_msg);
@@ -488,13 +388,13 @@ TEST_F(TestImMessaging, FUNC_MAID_SendReceiveMessages) {
   ASSERT_EQ(msg, sm_rec_msg_);
 }
 
-TEST_F(TestImMessaging, FUNC_MAID_ReceiveEndPointMsg) {
-  maidsafe::MockSessionSingleton client2_ss;
-  client2_ss.AddKey(maidsafe::MPID, "contact2", keys_.at(2).private_key(),
+TEST_F(ImMessagingTest, FUNC_MAID_ReceiveEndPointMsg) {
+  MockSessionSingleton client2_ss;
+  client2_ss.AddKey(MPID, "contact2", keys_.at(2).private_key(),
                 keys_.at(2).public_key(), "");
   ASSERT_EQ(0, client2_ss.AddContact(publicusername_, keys_.at(0).public_key(),
         "", "", "", 'U', 1, 2, "", 'C', 0, 0));
-  maidsafe::IMHandler client2_imh(&client2_ss);
+  IMHandler client2_imh(&client2_ss);
   client2_ss.SetEp(ctc2_ep_);
   client2_ss.SetConnectionStatus(0);
   std::string ser_msg(client2_imh.CreateMessageEndpoint(publicusername_));
@@ -524,31 +424,31 @@ TEST_F(TestImMessaging, FUNC_MAID_ReceiveEndPointMsg) {
   // Sending a message to new contact
   std::vector<std::string> recs;
   recs.push_back("contact2");
-  std::map<std::string, maidsafe::ReturnCode> results;
+  std::map<std::string, ReturnCode> results;
   msg = "Hello dude\n";
-  sm_->SendMessage(recs, msg, maidsafe::INSTANT_MSG, &results);
+  sm_->SendMessage(recs, msg, INSTANT_MSG, &results);
   while (alt_ctc_rec_msgs_.empty()) {
     boost::this_thread::sleep(boost::posix_time::milliseconds(2));
   }
   boost::this_thread::sleep(boost::posix_time::seconds(2));
   ASSERT_EQ(size_t(1), alt_ctc_rec_msgs_.size());
-  std::map<std::string, maidsafe::ReturnCode>::iterator it;
+  std::map<std::string, ReturnCode>::iterator it;
   it = results.find("contact2");
   ASSERT_TRUE(it != results.end());
-  ASSERT_EQ(maidsafe::kSuccess, it->second);
+  ASSERT_EQ(kSuccess, it->second);
 
-  maidsafe::GenericPacket gp;
+  GenericPacket gp;
   ASSERT_TRUE(gp.ParseFromString(alt_ctc_rec_msgs_[0]));
   crypto::Crypto co;
   ASSERT_TRUE(co.AsymCheckSig(gp.data(), gp.signature(),
-      ss_->PublicKey(maidsafe::MPID), crypto::STRING_STRING));
+      ss_->PublicKey(MPID), crypto::STRING_STRING));
 
   std::string sender;
-  maidsafe::MessageType type;
+  MessageType type;
 
-  std::string rec_msg = get_strmsg_from_bp_message(gp.data(),
+  std::string rec_msg = GetStrMsgFromBpMsg(gp.data(),
       keys_.at(2).private_key(), &type, &sender);
-  ASSERT_EQ(maidsafe::INSTANT_MSG, type);
+  ASSERT_EQ(INSTANT_MSG, type);
   ASSERT_EQ(publicusername_, sender);
   ASSERT_EQ(msg, rec_msg);
 
@@ -558,11 +458,11 @@ TEST_F(TestImMessaging, FUNC_MAID_ReceiveEndPointMsg) {
 
   // Letting connection timeout and then send a new msg
   boost::this_thread::sleep(boost::posix_time::seconds(
-      maidsafe::kConnectionTimeout + 1));
+      kConnectionTimeout + 1));
   alt_ctc_rec_msgs_.clear();
   results.clear();
   msg = "Another message for contact2";
-  sm_->SendMessage(recs, msg, maidsafe::INSTANT_MSG, &results);
+  sm_->SendMessage(recs, msg, INSTANT_MSG, &results);
   while (alt_ctc_rec_msgs_.empty()) {
     boost::this_thread::sleep(boost::posix_time::milliseconds(2));
   }
@@ -570,31 +470,31 @@ TEST_F(TestImMessaging, FUNC_MAID_ReceiveEndPointMsg) {
   ASSERT_EQ(size_t(2), alt_ctc_rec_msgs_.size());
   it = results.find("contact2");
   ASSERT_TRUE(it != results.end());
-  ASSERT_EQ(maidsafe::kSuccess, it->second);
+  ASSERT_EQ(kSuccess, it->second);
 
   gp.Clear();
   ASSERT_TRUE(gp.ParseFromString(alt_ctc_rec_msgs_[0]));
   ASSERT_TRUE(co.AsymCheckSig(gp.data(), gp.signature(),
-      ss_->PublicKey(maidsafe::MPID), crypto::STRING_STRING));
+      ss_->PublicKey(MPID), crypto::STRING_STRING));
 
-  maidsafe::InstantMessage im = get_im_from_bp_message(gp.data(),
+  InstantMessage im = GetImFromBpMessage(gp.data(),
       keys_.at(2).private_key(), &type);
-  ASSERT_EQ(maidsafe::HELLO_PING, type);
+  ASSERT_EQ(HELLO_PING, type);
   ASSERT_EQ(publicusername_, im.sender());
 
   gp.Clear();
   ASSERT_TRUE(gp.ParseFromString(alt_ctc_rec_msgs_[1]));
   ASSERT_TRUE(co.AsymCheckSig(gp.data(), gp.signature(),
-      ss_->PublicKey(maidsafe::MPID), crypto::STRING_STRING));
+      ss_->PublicKey(MPID), crypto::STRING_STRING));
 
-  rec_msg = get_strmsg_from_bp_message(gp.data(),
+  rec_msg = GetStrMsgFromBpMsg(gp.data(),
       keys_.at(2).private_key(), &type, &sender);
-  ASSERT_EQ(maidsafe::INSTANT_MSG, type);
+  ASSERT_EQ(INSTANT_MSG, type);
   ASSERT_EQ(publicusername_, sender);
   ASSERT_EQ(msg, rec_msg);
 }
 
-TEST_F(TestImMessaging, FUNC_MAID_SendLogOutMsg) {
+TEST_F(ImMessagingTest, FUNC_MAID_SendLogOutMsg) {
   sm_->SendLogOutMessage("contact2");
   sm_->SendLogOutMessage("contact1");
   while (alt_ctc_rec_msgs_.empty()) {
@@ -602,36 +502,36 @@ TEST_F(TestImMessaging, FUNC_MAID_SendLogOutMsg) {
   }
   boost::this_thread::sleep(boost::posix_time::seconds(2));
   ASSERT_EQ(size_t(2), alt_ctc_rec_msgs_.size());
-  maidsafe::GenericPacket gp;
+  GenericPacket gp;
   ASSERT_TRUE(gp.ParseFromString(alt_ctc_rec_msgs_[0]));
   crypto::Crypto co;
   ASSERT_TRUE(co.AsymCheckSig(gp.data(), gp.signature(),
-      ss_->PublicKey(maidsafe::MPID), crypto::STRING_STRING));
+      ss_->PublicKey(MPID), crypto::STRING_STRING));
 
   std::string sender;
-  maidsafe::MessageType type;
+  MessageType type;
 
-  maidsafe::InstantMessage im = get_im_from_bp_message(gp.data(),
+  InstantMessage im = GetImFromBpMessage(gp.data(),
       keys_.at(1).private_key(), &type);
-  ASSERT_EQ(maidsafe::HELLO_PING, type);
+  ASSERT_EQ(HELLO_PING, type);
   ASSERT_EQ(publicusername_, im.sender());
 
   gp.Clear();
   ASSERT_TRUE(gp.ParseFromString(alt_ctc_rec_msgs_[1]));
   ASSERT_TRUE(co.AsymCheckSig(gp.data(), gp.signature(),
-      ss_->PublicKey(maidsafe::MPID), crypto::STRING_STRING));
+      ss_->PublicKey(MPID), crypto::STRING_STRING));
 
   im.Clear();
-  im = get_im_from_bp_message(gp.data(),
+  im = GetImFromBpMessage(gp.data(),
       keys_.at(1).private_key(), &type);
-  ASSERT_EQ(maidsafe::LOGOUT_PING, type);
+  ASSERT_EQ(LOGOUT_PING, type);
   ASSERT_EQ(publicusername_, im.sender());
 
   ctc1_trans_->Stop();
   sm_->SendLogOutMessage("contact1");
 }
 
-TEST_F(TestImMessaging, FUNC_MAID_SendPresenceMsg) {
+TEST_F(ImMessagingTest, FUNC_MAID_SendPresenceMsg) {
   ASSERT_FALSE(sm_->SendPresence("contact2"));
   ASSERT_TRUE(sm_->SendPresence("contact1"));
   while (alt_ctc_rec_msgs_.empty()) {
@@ -639,65 +539,65 @@ TEST_F(TestImMessaging, FUNC_MAID_SendPresenceMsg) {
   }
   boost::this_thread::sleep(boost::posix_time::seconds(2));
   ASSERT_EQ(size_t(1), alt_ctc_rec_msgs_.size());
-  maidsafe::GenericPacket gp;
+  GenericPacket gp;
   ASSERT_TRUE(gp.ParseFromString(alt_ctc_rec_msgs_[0]));
   crypto::Crypto co;
   ASSERT_TRUE(co.AsymCheckSig(gp.data(), gp.signature(),
-      ss_->PublicKey(maidsafe::MPID), crypto::STRING_STRING));
+      ss_->PublicKey(MPID), crypto::STRING_STRING));
 
   std::string sender;
-  maidsafe::MessageType type;
+  MessageType type;
 
-  maidsafe::InstantMessage im = get_im_from_bp_message(gp.data(),
+  InstantMessage im = GetImFromBpMessage(gp.data(),
       keys_.at(1).private_key(), &type);
-  ASSERT_EQ(maidsafe::HELLO_PING, type);
+  ASSERT_EQ(HELLO_PING, type);
   ASSERT_EQ(publicusername_, im.sender());
   ASSERT_EQ(ss_->ConnectionStatus(), im.status());
 
   std::vector<std::string> recs;
   recs.push_back("contact1");
-  std::map<std::string, maidsafe::ReturnCode> results;
+  std::map<std::string, ReturnCode> results;
   std::string msg("Hello World\n");
   alt_ctc_rec_msgs_.clear();
   boost::this_thread::sleep(boost::posix_time::seconds(2));
-  sm_->SendMessage(recs, msg, maidsafe::INSTANT_MSG, &results);
+  sm_->SendMessage(recs, msg, INSTANT_MSG, &results);
   while (alt_ctc_rec_msgs_.size() < size_t(1)) {
     boost::this_thread::sleep(boost::posix_time::milliseconds(2));
   }
   ASSERT_EQ(size_t(1), alt_ctc_rec_msgs_.size());
-  std::map<std::string, maidsafe::ReturnCode>::iterator it;
+  std::map<std::string, ReturnCode>::iterator it;
   it = results.find("contact1");
   ASSERT_TRUE(it != results.end());
-  ASSERT_EQ(maidsafe::kSuccess, it->second);
+  ASSERT_EQ(kSuccess, it->second);
 
   gp.Clear();
   ASSERT_TRUE(gp.ParseFromString(alt_ctc_rec_msgs_[0]));
   ASSERT_TRUE(co.AsymCheckSig(gp.data(), gp.signature(),
-      ss_->PublicKey(maidsafe::MPID), crypto::STRING_STRING));
+      ss_->PublicKey(MPID), crypto::STRING_STRING));
 
-  std::string rec_msg = get_strmsg_from_bp_message(gp.data(),
+  std::string rec_msg = GetStrMsgFromBpMsg(gp.data(),
       keys_.at(1).private_key(), &type, &sender);
   ASSERT_EQ(msg, rec_msg);
   ASSERT_EQ(publicusername_, sender);
-  ASSERT_EQ(maidsafe::INSTANT_MSG, type);
+  ASSERT_EQ(INSTANT_MSG, type);
 
 
   ctc1_trans_->Stop();
   ASSERT_FALSE(sm_->SendPresence("contact1"));
   int ctc1_status(100);
-  ASSERT_EQ(maidsafe::kLiveContactNotFound, ss_->LiveContactStatus("contact1",
+  ASSERT_EQ(kLiveContactNotFound, ss_->LiveContactStatus("contact1",
       &ctc1_status));
   ASSERT_EQ(std::string("contact1"), latest_ctc_updated_);
   ASSERT_EQ(1, latest_status_);
 }
 
-TEST_F(TestImMessaging, FUNC_MAID_ReceiveLogOutMsg) {
-  maidsafe::MockSessionSingleton client1_ss;
-  client1_ss.AddKey(maidsafe::MPID, "contact1", keys_.at(1).private_key(),
+TEST_F(ImMessagingTest, FUNC_MAID_ReceiveLogOutMsg) {
+  MockSessionSingleton client1_ss;
+  client1_ss.AddKey(MPID, "contact1", keys_.at(1).private_key(),
                 keys_.at(1).public_key(), "");
   ASSERT_EQ(0, client1_ss.AddContact(publicusername_, keys_.at(0).public_key(),
         "", "", "", 'U', 1, 2, "", 'C', 0, 0));
-  maidsafe::IMHandler client1_imh(&client1_ss);
+  IMHandler client1_imh(&client1_ss);
   client1_ss.SetEp(ctc1_ep_);
   client1_ss.SetConnectionStatus(0);
   std::string ser_msg(client1_imh.CreateLogOutMessage(publicusername_));
@@ -708,7 +608,7 @@ TEST_F(TestImMessaging, FUNC_MAID_ReceiveLogOutMsg) {
   ASSERT_EQ(0, ctc2_trans_->Send(ser_msg, c_id, true));
   boost::this_thread::sleep(boost::posix_time::seconds(2));
   int ctc1_status(100);
-  ASSERT_EQ(maidsafe::kLiveContactNotFound, ss_->LiveContactStatus("contact1",
+  ASSERT_EQ(kLiveContactNotFound, ss_->LiveContactStatus("contact1",
       &ctc1_status));
   ASSERT_EQ(std::string("contact1"), latest_ctc_updated_);
   ASSERT_EQ(1, latest_status_);
@@ -731,13 +631,13 @@ TEST_F(TestImMessaging, FUNC_MAID_ReceiveLogOutMsg) {
   ser_msg = client1_imh.CreateLogOutMessage(publicusername_);
   ASSERT_EQ(0, ctc2_trans_->Send(ser_msg, c_id, false));
   boost::this_thread::sleep(boost::posix_time::seconds(2));
-  ASSERT_EQ(maidsafe::kLiveContactNotFound, ss_->LiveContactStatus("contact1",
+  ASSERT_EQ(kLiveContactNotFound, ss_->LiveContactStatus("contact1",
       &ctc1_status));
   ASSERT_EQ(std::string("contact1"), latest_ctc_updated_);
   ASSERT_EQ(1, latest_status_);
 }
 
-TEST_F(TestImMessaging, FUNC_MAID_InvalidNewConnection) {
+TEST_F(ImMessagingTest, FUNC_MAID_InvalidNewConnection) {
   boost::uint32_t c_id(0);
   ASSERT_EQ(0, ctc2_trans_->ConnectToSend(ss_->Ep().ip(0), ss_->Ep().port(0),
       ss_->Ep().ip(1), ss_->Ep().port(1), ss_->Ep().ip(2), ss_->Ep().port(2),
@@ -747,68 +647,68 @@ TEST_F(TestImMessaging, FUNC_MAID_InvalidNewConnection) {
   ASSERT_EQ(std::string(""), latest_ctc_updated_);
   ASSERT_EQ(100, latest_status_);
   int ctc2_status(100);
-  ASSERT_EQ(maidsafe::kLiveContactNotFound,
+  ASSERT_EQ(kLiveContactNotFound,
       ss_->LiveContactStatus("contact2", &ctc2_status));
 
   // Checking transport connection was closed
   ASSERT_NE(0, ctc2_trans_->Send("abcdefg", c_id, true));
 }
 
-TEST_F(TestImMessaging, FUNC_MAID_HandleTwoConverstions) {
-  maidsafe::MockSessionSingleton client2_ss;
-  client2_ss.AddKey(maidsafe::MPID, "contact2", keys_.at(2).private_key(),
+TEST_F(ImMessagingTest, FUNC_MAID_HandleTwoConverstions) {
+  MockSessionSingleton client2_ss;
+  client2_ss.AddKey(MPID, "contact2", keys_.at(2).private_key(),
                 keys_.at(2).public_key(), "");
   ASSERT_EQ(0, client2_ss.AddContact(publicusername_, keys_.at(0).public_key(),
         "", "", "", 'U', 1, 2, "", 'C', 0, 0));
-  maidsafe::IMHandler client2_imh(&client2_ss);
+  IMHandler client2_imh(&client2_ss);
   client2_ss.SetEp(ctc2_ep_);
   client2_ss.SetConnectionStatus(0);
 
-  maidsafe::MockSessionSingleton client1_ss;
-  client1_ss.AddKey(maidsafe::MPID, "contact1", keys_.at(1).private_key(),
+  MockSessionSingleton client1_ss;
+  client1_ss.AddKey(MPID, "contact1", keys_.at(1).private_key(),
                 keys_.at(1).public_key(), "");
   ASSERT_EQ(0, client1_ss.AddContact(publicusername_, keys_.at(0).public_key(),
         "", "", "", 'U', 1, 2, "", 'C', 0, 0));
-  maidsafe::IMHandler client1_imh(&client1_ss);
+  IMHandler client1_imh(&client1_ss);
   client1_ss.SetEp(ctc1_ep_);
 
   std::vector<std::string> recs;
   recs.push_back("contact1");
-  std::map<std::string, maidsafe::ReturnCode> results;
+  std::map<std::string, ReturnCode> results;
   std::string msg("Hello World\n");
-  sm_->SendMessage(recs, msg, maidsafe::INSTANT_MSG, &results);
+  sm_->SendMessage(recs, msg, INSTANT_MSG, &results);
   while (alt_ctc_rec_msgs_.empty()) {
     boost::this_thread::sleep(boost::posix_time::milliseconds(2));
   }
   boost::this_thread::sleep(boost::posix_time::seconds(2));
   ASSERT_EQ(size_t(2), alt_ctc_rec_msgs_.size());
-  std::map<std::string, maidsafe::ReturnCode>::iterator it;
+  std::map<std::string, ReturnCode>::iterator it;
   it = results.find("contact1");
   ASSERT_TRUE(it != results.end());
-  ASSERT_EQ(maidsafe::kSuccess, it->second);
+  ASSERT_EQ(kSuccess, it->second);
 
-  maidsafe::GenericPacket gp;
+  GenericPacket gp;
   ASSERT_TRUE(gp.ParseFromString(alt_ctc_rec_msgs_[0]));
   crypto::Crypto co;
   ASSERT_TRUE(co.AsymCheckSig(gp.data(), gp.signature(),
-      ss_->PublicKey(maidsafe::MPID), crypto::STRING_STRING));
+      ss_->PublicKey(MPID), crypto::STRING_STRING));
 
   std::string sender;
-  maidsafe::MessageType type;
+  MessageType type;
 
-  maidsafe::InstantMessage im = get_im_from_bp_message(gp.data(),
+  InstantMessage im = GetImFromBpMessage(gp.data(),
       keys_.at(1).private_key(), &type);
-  ASSERT_EQ(maidsafe::HELLO_PING, type);
+  ASSERT_EQ(HELLO_PING, type);
   ASSERT_EQ(publicusername_, im.sender());
 
   gp.Clear();
   ASSERT_TRUE(gp.ParseFromString(alt_ctc_rec_msgs_[1]));
   ASSERT_TRUE(co.AsymCheckSig(gp.data(), gp.signature(),
-      ss_->PublicKey(maidsafe::MPID), crypto::STRING_STRING));
+      ss_->PublicKey(MPID), crypto::STRING_STRING));
 
-  std::string rec_msg = get_strmsg_from_bp_message(gp.data(),
+  std::string rec_msg = GetStrMsgFromBpMsg(gp.data(),
       keys_.at(1).private_key(), &type, &sender);
-  ASSERT_EQ(maidsafe::INSTANT_MSG, type);
+  ASSERT_EQ(INSTANT_MSG, type);
   ASSERT_EQ(publicusername_, sender);
   ASSERT_EQ(msg, rec_msg);
 
@@ -850,22 +750,22 @@ TEST_F(TestImMessaging, FUNC_MAID_HandleTwoConverstions) {
   recs.clear();
   recs.push_back("contact2");
   msg = "Hello dude";
-  sm_->SendMessage(recs, msg, maidsafe::INSTANT_MSG, &results);
+  sm_->SendMessage(recs, msg, INSTANT_MSG, &results);
   while (alt_ctc_rec_msgs_.empty()) {
     boost::this_thread::sleep(boost::posix_time::milliseconds(2));
   }
   ASSERT_EQ(size_t(1), alt_ctc_rec_msgs_.size());
   it = results.find("contact2");
   ASSERT_TRUE(it != results.end());
-  ASSERT_EQ(maidsafe::kSuccess, it->second);
+  ASSERT_EQ(kSuccess, it->second);
   gp.Clear();
   ASSERT_TRUE(gp.ParseFromString(alt_ctc_rec_msgs_[0]));
   ASSERT_TRUE(co.AsymCheckSig(gp.data(), gp.signature(),
-      ss_->PublicKey(maidsafe::MPID), crypto::STRING_STRING));
+      ss_->PublicKey(MPID), crypto::STRING_STRING));
 
-  rec_msg = get_strmsg_from_bp_message(gp.data(),
+  rec_msg = GetStrMsgFromBpMsg(gp.data(),
       keys_.at(2).private_key(), &type, &sender);
-  ASSERT_EQ(maidsafe::INSTANT_MSG, type);
+  ASSERT_EQ(INSTANT_MSG, type);
   ASSERT_EQ(publicusername_, sender);
   ASSERT_EQ(msg, rec_msg);
 
@@ -882,129 +782,64 @@ TEST_F(TestImMessaging, FUNC_MAID_HandleTwoConverstions) {
   ASSERT_EQ(0, ctc2_trans_->Send(ser_msg, c2_id, false));
   boost::this_thread::sleep(boost::posix_time::seconds(2));
   ctc2_status = 100;
-  ASSERT_EQ(maidsafe::kLiveContactNotFound, ss_->LiveContactStatus("contact2",
+  ASSERT_EQ(kLiveContactNotFound, ss_->LiveContactStatus("contact2",
       &ctc2_status));
   ASSERT_EQ(std::string("contact2"), latest_ctc_updated_);
   ASSERT_EQ(1, latest_status_);
 }
 
-class TestCCImMessaging : public testing::Test {
+class CCImMessagingTest : public testing::Test {
  public:
-  TestCCImMessaging() : vault_dir_(file_system::TempDir() /
-                          ("maidsafe_TestVaults_" + base::RandomString(6))),
-                      kad_config_file_(vault_dir_ / ".kadconfig"),
-                      bootstrapping_vault_(),
-                      ss1_(new maidsafe::MockSessionSingleton),
-                      ss2_(new maidsafe::MockSessionSingleton),
-                      publicusername1_("contact1"),
-                      publicusername2_("contact2"),
-                      sm1_(),
-                      sm2_(),
-                      keys_(),
-                      sm_rec_msg_(),
-                      sender_(),
-                      latest_ctc_updated_(),
-                      latest_status_(100) {
-    try {
-      if (fs::exists(vault_dir_))
-        fs::remove_all(vault_dir_);
-    }
-    catch(const std::exception &e_) {
-      printf("%s\n", e_.what());
-    }
-    fs::create_directories(vault_dir_);
+  CCImMessagingTest() : network_test_("CCIM"),
+                        ss1_(SessionSingleton::getInstance()),
+                        ss2_(new MockSessionSingleton),
+                        publicusername1_("contact1"),
+                        publicusername2_("contact2"),
+                        sm1_(network_test_.store_manager()),
+                        sm2_(),
+                        keys_(),
+                        sm_rec_msg_(),
+                        sender_(),
+                        latest_ctc_updated_(),
+                        latest_status_(100) {
     keys_.clear();
     cached_keys::MakeKeys(2, &keys_);
   }
-  ~TestCCImMessaging() {
-    try {
-      if (fs::exists(vault_dir_))
-        fs::remove_all(vault_dir_);
-    }
-    catch(const std::exception &e_) {
-      printf("%s\n", e_.what());
-    }
-    delete ss1_;
+  ~CCImMessagingTest() {
     delete ss2_;
   }
  protected:
   void SetUp() {
-    crypto::Crypto co;
-    crypto::RsaKeyPair keys;
-    keys.GenerateKeys(maidsafe::kRsaKeySize);
-    std::string signed_key = co.AsymSign(keys.public_key(), "",
-                             keys.private_key(), crypto::STRING_STRING);
-    std::string public_key = keys.public_key();
-    std::string private_key = keys.private_key();
-    std::string pmid = co.Hash(signed_key, "", crypto::STRING_STRING, false);
-    fs::path local_dir(vault_dir_ / ("Vault_" +
-          base::EncodeToHex(pmid).substr(0, 8)));
-    if (!fs::exists(fs::path(local_dir))) {
-      printf("creating_directories - %s\n", local_dir.string().c_str());
-      fs::create_directories(local_dir);
-    }
-    bootstrapping_vault_.reset(new maidsafe_vault::PDVault(public_key,
-                               private_key, signed_key, local_dir, 0, false,
-                               false, kad_config_file_, 1073741824, 0,
-                               test_immessaging::K));
-    bootstrapping_vault_->Start(true);
-    ASSERT_EQ(maidsafe_vault::kVaultStarted,
-            bootstrapping_vault_->vault_status());
-    base::KadConfig kad_config;
-    base::KadConfig::Contact *kad_contact = kad_config.add_contact();
-    kad_contact->set_node_id(
-        base::EncodeToHex(bootstrapping_vault_->node_id()));
-    kad_contact->set_ip(bootstrapping_vault_->host_ip());
-    kad_contact->set_port(bootstrapping_vault_->host_port());
-    kad_contact->set_local_ip(bootstrapping_vault_->local_host_ip());
-    kad_contact->set_local_port(bootstrapping_vault_->local_host_port());
-    // default location in Maidsafestoremanager
-    std::fstream output(".kadconfig",
-                        std::ios::out | std::ios::trunc | std::ios::binary);
-    ASSERT_TRUE(kad_config.SerializeToOstream(&output));
-    output.close();
-    printf("Vault 0 started.\n");
-    boost::shared_ptr<maidsafe::ChunkStore> cstore1(
-        new maidsafe::ChunkStore("client1", 0, 0));
-    boost::shared_ptr<maidsafe::ChunkStore> cstore2(
-        new maidsafe::ChunkStore("client2", 0, 0));
-    cstore1->Init();
+    ss1_->ResetSession();
+    ASSERT_TRUE(network_test_.Init());
+    boost::shared_ptr<ChunkStore> cstore2(new ChunkStore(
+        network_test_.test_dir().string() + "/ChunkStore2", 0, 0));
     cstore2->Init();
-    sm1_.reset(new maidsafe::MaidsafeStoreManager(cstore1, test_immessaging::K,
-                                                  ss1_));
-    sm2_.reset(new maidsafe::MaidsafeStoreManager(cstore2, test_immessaging::K,
-                                                  ss2_));
-    SMCallback cb;
-    fs::path db_path;
-    sm1_->Init(0, boost::bind(&SMCallback::Callback, &cb, _1), db_path);
-    while (!cb.result_arrived_) {
-      boost::this_thread::sleep(boost::posix_time::milliseconds(20));
+    sm2_.reset(new TestStoreManager(cstore2, network_test_.K(), ss2_));
+    CallbackObject callback;
+    sm2_->Init(
+      boost::bind(&CallbackObject::ReturnCodeCallback, &callback, _1), 0);
+    int result = callback.WaitForReturnCodeResult();
+    if (result != kSuccess) {
+      printf("StoreManager2 Init failed - %i\n", result);
+      FAIL();
     }
-    ASSERT_EQ(kAck, cb.result_);
-    printf("maidstoremanager1 started ...\n");
-    cb.Reset();
-    sm2_->Init(0, boost::bind(&SMCallback::Callback, &cb, _1), db_path);
-    while (!cb.result_arrived_) {
-      boost::this_thread::sleep(boost::posix_time::milliseconds(20));
-    }
-    ASSERT_EQ(kAck, cb.result_);
-    printf("maidstoremanager2 started ...\n");
 
     ss1_->SetConnectionStatus(0);
     ss2_->SetConnectionStatus(0);
     sm1_->SetSessionEndPoint();
     sm2_->SetSessionEndPoint();
     sm1_->SetInstantMessageNotifier(
-        boost::bind(&TestCCImMessaging::SmOnMessageNotifier, this, _1),
-        boost::bind(&TestCCImMessaging::SmStatusUpdate, this, _1, _2));
+        boost::bind(&CCImMessagingTest::SmOnMessageNotifier, this, _1),
+        boost::bind(&CCImMessagingTest::SmStatusUpdate, this, _1, _2));
     sm2_->SetInstantMessageNotifier(
-        boost::bind(&TestCCImMessaging::SmOnMessageNotifier, this, _1),
-        boost::bind(&TestCCImMessaging::SmStatusUpdate, this, _1, _2));
+        boost::bind(&CCImMessagingTest::SmOnMessageNotifier, this, _1),
+        boost::bind(&CCImMessagingTest::SmStatusUpdate, this, _1, _2));
 
     // Adding contact information to session
-    ss1_->AddKey(maidsafe::MPID, publicusername1_, keys_.at(0).private_key(),
+    ss1_->AddKey(MPID, publicusername1_, keys_.at(0).private_key(),
                 keys_.at(0).public_key(), "");
-    ss2_->AddKey(maidsafe::MPID, publicusername2_, keys_.at(1).private_key(),
+    ss2_->AddKey(MPID, publicusername2_, keys_.at(1).private_key(),
                 keys_.at(1).public_key(), "");
     ASSERT_EQ(0, ss1_->AddContact(publicusername2_, keys_.at(1).public_key(),
         "", "", "", 'U', 1, 2, "", 'C', 0, 0));
@@ -1013,21 +848,11 @@ class TestCCImMessaging : public testing::Test {
   }
   void TearDown() {
     printf("starting TearDown\n");
-    SMCallback cb;
-    sm1_->Close(boost::bind(&SMCallback::Callback, &cb, _1), true);
-    while (!cb.result_arrived_) {
-      boost::this_thread::sleep(boost::posix_time::milliseconds(20));
-    }
-    cb.Reset();
-    sm2_->Close(boost::bind(&SMCallback::Callback, &cb, _1), true);
-    while (!cb.result_arrived_) {
-      boost::this_thread::sleep(boost::posix_time::milliseconds(20));
-    }
-    bootstrapping_vault_->StopRvPing();
-    bootstrapping_vault_->Stop();
-    ASSERT_EQ(kAck, cb.result_);
-    fs::remove(kad_config_file_);
-    fs::remove(fs::path(".kadconfig"));
+    CallbackObject callback;
+    sm2_->Close(
+        boost::bind(&CallbackObject::ReturnCodeCallback, &callback, _1), true);
+    callback.WaitForReturnCodeResult();
+
     ss1_->ResetSession();
     ss2_->ResetSession();
     sm_rec_msg_.clear();
@@ -1046,11 +871,11 @@ class TestCCImMessaging : public testing::Test {
     printf("finished TearDown\n");
   }
 
-  fs::path vault_dir_, kad_config_file_;
-  boost::shared_ptr<maidsafe_vault::PDVault> bootstrapping_vault_;
-  maidsafe::MockSessionSingleton *ss1_, *ss2_;
+  NetworkTest network_test_;
+  SessionSingleton *ss1_;
+  MockSessionSingleton *ss2_;
   std::string publicusername1_, publicusername2_;
-  boost::shared_ptr<maidsafe::MaidsafeStoreManager> sm1_, sm2_;
+  boost::shared_ptr<TestStoreManager> sm1_, sm2_;
   std::vector<crypto::RsaKeyPair> keys_;
   std::string sm_rec_msg_;
   std::string sender_, latest_ctc_updated_;
@@ -1069,7 +894,7 @@ class TestCCImMessaging : public testing::Test {
 };
 
 
-TEST_F(TestCCImMessaging, FUNC_MAID_TestImSendPresenceAndMsgs) {
+TEST_F(CCImMessagingTest, FUNC_MAID_TestImSendPresenceAndMsgs) {
   // Asuming sm1 gets presence  of sm2
   ss1_->AddLiveContact(publicusername2_, ss2_->Ep(), 0);
   ASSERT_TRUE(sm1_->SendPresence(publicusername2_));
@@ -1086,17 +911,17 @@ TEST_F(TestCCImMessaging, FUNC_MAID_TestImSendPresenceAndMsgs) {
   std::string msg("message 1 from contact1");
   std::vector<std::string> recs;
   recs.push_back(publicusername2_);
-  std::map<std::string, maidsafe::ReturnCode> results;
+  std::map<std::string, ReturnCode> results;
   boost::this_thread::sleep(boost::posix_time::seconds(2));
-  sm1_->SendMessage(recs, msg, maidsafe::INSTANT_MSG, &results);
+  sm1_->SendMessage(recs, msg, INSTANT_MSG, &results);
   while (sm_rec_msg_.empty()) {
     boost::this_thread::sleep(boost::posix_time::milliseconds(2));
   }
   ASSERT_EQ(msg, sm_rec_msg_);
-  std::map<std::string, maidsafe::ReturnCode>::iterator it;
+  std::map<std::string, ReturnCode>::iterator it;
   it = results.find(publicusername2_);
   ASSERT_TRUE(it != results.end());
-  ASSERT_EQ(maidsafe::kSuccess, it->second);
+  ASSERT_EQ(kSuccess, it->second);
   sm_rec_msg_.clear();
   boost::this_thread::sleep(boost::posix_time::seconds(2));
 
@@ -1104,14 +929,14 @@ TEST_F(TestCCImMessaging, FUNC_MAID_TestImSendPresenceAndMsgs) {
   results.empty();
   recs.clear();
   recs.push_back(publicusername1_);
-  sm2_->SendMessage(recs, msg, maidsafe::INSTANT_MSG, &results);
+  sm2_->SendMessage(recs, msg, INSTANT_MSG, &results);
   while (sm_rec_msg_.empty()) {
     boost::this_thread::sleep(boost::posix_time::milliseconds(2));
   }
   ASSERT_EQ(msg, sm_rec_msg_);
   it = results.find(publicusername1_);
   ASSERT_TRUE(it != results.end());
-  ASSERT_EQ(maidsafe::kSuccess, it->second);
+  ASSERT_EQ(kSuccess, it->second);
   boost::this_thread::sleep(boost::posix_time::seconds(2));
 
   msg = "message 2 from contact1";
@@ -1120,14 +945,14 @@ TEST_F(TestCCImMessaging, FUNC_MAID_TestImSendPresenceAndMsgs) {
   sm_rec_msg_.clear();
   recs.clear();
   recs.push_back(publicusername2_);
-  sm1_->SendMessage(recs, msg, maidsafe::INSTANT_MSG, &results);
+  sm1_->SendMessage(recs, msg, INSTANT_MSG, &results);
   while (sm_rec_msg_.empty()) {
     boost::this_thread::sleep(boost::posix_time::milliseconds(2));
   }
   ASSERT_EQ(msg, sm_rec_msg_);
   it = results.find(publicusername2_);
   ASSERT_TRUE(it != results.end());
-  ASSERT_EQ(maidsafe::kSuccess, it->second);
+  ASSERT_EQ(kSuccess, it->second);
   boost::this_thread::sleep(boost::posix_time::seconds(2));
 
   msg = "message 2 from contact2";
@@ -1136,14 +961,14 @@ TEST_F(TestCCImMessaging, FUNC_MAID_TestImSendPresenceAndMsgs) {
   sm_rec_msg_.clear();
   recs.clear();
   recs.push_back(publicusername1_);
-  sm2_->SendMessage(recs, msg, maidsafe::INSTANT_MSG, &results);
+  sm2_->SendMessage(recs, msg, INSTANT_MSG, &results);
   while (sm_rec_msg_.empty()) {
     boost::this_thread::sleep(boost::posix_time::milliseconds(2));
   }
   ASSERT_EQ(msg, sm_rec_msg_);
   it = results.find(publicusername1_);
   ASSERT_TRUE(it != results.end());
-  ASSERT_EQ(maidsafe::kSuccess, it->second);
+  ASSERT_EQ(kSuccess, it->second);
   boost::this_thread::sleep(boost::posix_time::seconds(2));
 
   msg = "message 3 from contact1";
@@ -1152,14 +977,14 @@ TEST_F(TestCCImMessaging, FUNC_MAID_TestImSendPresenceAndMsgs) {
   sm_rec_msg_.clear();
   recs.clear();
   recs.push_back(publicusername2_);
-  sm1_->SendMessage(recs, msg, maidsafe::INSTANT_MSG, &results);
+  sm1_->SendMessage(recs, msg, INSTANT_MSG, &results);
   while (sm_rec_msg_.empty()) {
     boost::this_thread::sleep(boost::posix_time::milliseconds(2));
   }
   ASSERT_EQ(msg, sm_rec_msg_);
   it = results.find(publicusername2_);
   ASSERT_TRUE(it != results.end());
-  ASSERT_EQ(maidsafe::kSuccess, it->second);
+  ASSERT_EQ(kSuccess, it->second);
   boost::this_thread::sleep(boost::posix_time::seconds(2));
 
   msg = "message 3 from contact2";
@@ -1168,14 +993,14 @@ TEST_F(TestCCImMessaging, FUNC_MAID_TestImSendPresenceAndMsgs) {
   sm_rec_msg_.clear();
   recs.clear();
   recs.push_back(publicusername1_);
-  sm2_->SendMessage(recs, msg, maidsafe::INSTANT_MSG, &results);
+  sm2_->SendMessage(recs, msg, INSTANT_MSG, &results);
   while (sm_rec_msg_.empty()) {
     boost::this_thread::sleep(boost::posix_time::milliseconds(2));
   }
   ASSERT_EQ(msg, sm_rec_msg_);
   it = results.find(publicusername1_);
   ASSERT_TRUE(it != results.end());
-  ASSERT_EQ(maidsafe::kSuccess, it->second);
+  ASSERT_EQ(kSuccess, it->second);
   boost::this_thread::sleep(boost::posix_time::seconds(2));
 
   msg = "message 4 from contact1";
@@ -1184,14 +1009,14 @@ TEST_F(TestCCImMessaging, FUNC_MAID_TestImSendPresenceAndMsgs) {
   sm_rec_msg_.clear();
   recs.clear();
   recs.push_back(publicusername2_);
-  sm1_->SendMessage(recs, msg, maidsafe::INSTANT_MSG, &results);
+  sm1_->SendMessage(recs, msg, INSTANT_MSG, &results);
   while (sm_rec_msg_.empty()) {
     boost::this_thread::sleep(boost::posix_time::milliseconds(2));
   }
   ASSERT_EQ(msg, sm_rec_msg_);
   it = results.find(publicusername2_);
   ASSERT_TRUE(it != results.end());
-  ASSERT_EQ(maidsafe::kSuccess, it->second);
+  ASSERT_EQ(kSuccess, it->second);
   boost::this_thread::sleep(boost::posix_time::seconds(2));
 
   msg = "message 4 from contact2";
@@ -1200,14 +1025,14 @@ TEST_F(TestCCImMessaging, FUNC_MAID_TestImSendPresenceAndMsgs) {
   sm_rec_msg_.clear();
   recs.clear();
   recs.push_back(publicusername1_);
-  sm2_->SendMessage(recs, msg, maidsafe::INSTANT_MSG, &results);
+  sm2_->SendMessage(recs, msg, INSTANT_MSG, &results);
   while (sm_rec_msg_.empty()) {
     boost::this_thread::sleep(boost::posix_time::milliseconds(2));
   }
   ASSERT_EQ(msg, sm_rec_msg_);
   it = results.find(publicusername1_);
   ASSERT_TRUE(it != results.end());
-  ASSERT_EQ(maidsafe::kSuccess, it->second);
+  ASSERT_EQ(kSuccess, it->second);
   boost::this_thread::sleep(boost::posix_time::seconds(2));
 
   msg = "message 5 from contact1";
@@ -1216,14 +1041,14 @@ TEST_F(TestCCImMessaging, FUNC_MAID_TestImSendPresenceAndMsgs) {
   sm_rec_msg_.clear();
   recs.clear();
   recs.push_back(publicusername2_);
-  sm1_->SendMessage(recs, msg, maidsafe::INSTANT_MSG, &results);
+  sm1_->SendMessage(recs, msg, INSTANT_MSG, &results);
   while (sm_rec_msg_.empty()) {
     boost::this_thread::sleep(boost::posix_time::milliseconds(2));
   }
   ASSERT_EQ(msg, sm_rec_msg_);
   it = results.find(publicusername2_);
   ASSERT_TRUE(it != results.end());
-  ASSERT_EQ(maidsafe::kSuccess, it->second);
+  ASSERT_EQ(kSuccess, it->second);
   boost::this_thread::sleep(boost::posix_time::seconds(2));
 
   msg = "message 5 from contact2";
@@ -1232,14 +1057,14 @@ TEST_F(TestCCImMessaging, FUNC_MAID_TestImSendPresenceAndMsgs) {
   sm_rec_msg_.clear();
   recs.clear();
   recs.push_back(publicusername1_);
-  sm2_->SendMessage(recs, msg, maidsafe::INSTANT_MSG, &results);
+  sm2_->SendMessage(recs, msg, INSTANT_MSG, &results);
   while (sm_rec_msg_.empty()) {
     boost::this_thread::sleep(boost::posix_time::milliseconds(2));
   }
   ASSERT_EQ(msg, sm_rec_msg_);
   it = results.find(publicusername1_);
   ASSERT_TRUE(it != results.end());
-  ASSERT_EQ(maidsafe::kSuccess, it->second);
+  ASSERT_EQ(kSuccess, it->second);
   boost::this_thread::sleep(boost::posix_time::seconds(2));
 
   msg = "message 6 from contact2";
@@ -1248,14 +1073,14 @@ TEST_F(TestCCImMessaging, FUNC_MAID_TestImSendPresenceAndMsgs) {
   sm_rec_msg_.clear();
   recs.clear();
   recs.push_back(publicusername1_);
-  sm2_->SendMessage(recs, msg, maidsafe::INSTANT_MSG, &results);
+  sm2_->SendMessage(recs, msg, INSTANT_MSG, &results);
   while (sm_rec_msg_.empty()) {
     boost::this_thread::sleep(boost::posix_time::milliseconds(2));
   }
   ASSERT_EQ(msg, sm_rec_msg_);
   it = results.find(publicusername1_);
   ASSERT_TRUE(it != results.end());
-  ASSERT_EQ(maidsafe::kSuccess, it->second);
+  ASSERT_EQ(kSuccess, it->second);
   boost::this_thread::sleep(boost::posix_time::seconds(2));
 
   sm2_->SendLogOutMessage(publicusername1_);
@@ -1266,7 +1091,7 @@ TEST_F(TestCCImMessaging, FUNC_MAID_TestImSendPresenceAndMsgs) {
   ASSERT_NE(0, ss1_->LiveContactStatus(publicusername2_, &status));
 }
 
-TEST_F(TestCCImMessaging, FUNC_MAID_TestImRecPresenceAndSendMsgs) {
+TEST_F(CCImMessagingTest, FUNC_MAID_TestImRecPresenceAndSendMsgs) {
   // Asuming sm1 gets presence  of sm2
   ss1_->AddLiveContact(publicusername2_, ss2_->Ep(), 0);
   ASSERT_TRUE(sm1_->SendPresence(publicusername2_));
@@ -1283,17 +1108,17 @@ TEST_F(TestCCImMessaging, FUNC_MAID_TestImRecPresenceAndSendMsgs) {
   std::string msg("message 1 from contact2");
   std::vector<std::string> recs;
   recs.push_back(publicusername1_);
-  std::map<std::string, maidsafe::ReturnCode> results;
+  std::map<std::string, ReturnCode> results;
   boost::this_thread::sleep(boost::posix_time::seconds(2));
-  sm2_->SendMessage(recs, msg, maidsafe::INSTANT_MSG, &results);
+  sm2_->SendMessage(recs, msg, INSTANT_MSG, &results);
   while (sm_rec_msg_.empty()) {
     boost::this_thread::sleep(boost::posix_time::milliseconds(2));
   }
   ASSERT_EQ(msg, sm_rec_msg_);
-  std::map<std::string, maidsafe::ReturnCode>::iterator it;
+  std::map<std::string, ReturnCode>::iterator it;
   it = results.find(publicusername1_);
   ASSERT_TRUE(it != results.end());
-  ASSERT_EQ(maidsafe::kSuccess, it->second);
+  ASSERT_EQ(kSuccess, it->second);
   sm_rec_msg_.clear();
   boost::this_thread::sleep(boost::posix_time::seconds(2));
 
@@ -1301,14 +1126,14 @@ TEST_F(TestCCImMessaging, FUNC_MAID_TestImRecPresenceAndSendMsgs) {
   results.empty();
   recs.clear();
   recs.push_back(publicusername2_);
-  sm1_->SendMessage(recs, msg, maidsafe::INSTANT_MSG, &results);
+  sm1_->SendMessage(recs, msg, INSTANT_MSG, &results);
   while (sm_rec_msg_.empty()) {
     boost::this_thread::sleep(boost::posix_time::milliseconds(2));
   }
   ASSERT_EQ(msg, sm_rec_msg_);
   it = results.find(publicusername2_);
   ASSERT_TRUE(it != results.end());
-  ASSERT_EQ(maidsafe::kSuccess, it->second);
+  ASSERT_EQ(kSuccess, it->second);
   boost::this_thread::sleep(boost::posix_time::seconds(2));
 
   msg = "message 2 from contact2";
@@ -1317,14 +1142,14 @@ TEST_F(TestCCImMessaging, FUNC_MAID_TestImRecPresenceAndSendMsgs) {
   sm_rec_msg_.clear();
   recs.clear();
   recs.push_back(publicusername1_);
-  sm2_->SendMessage(recs, msg, maidsafe::INSTANT_MSG, &results);
+  sm2_->SendMessage(recs, msg, INSTANT_MSG, &results);
   while (sm_rec_msg_.empty()) {
     boost::this_thread::sleep(boost::posix_time::milliseconds(2));
   }
   ASSERT_EQ(msg, sm_rec_msg_);
   it = results.find(publicusername1_);
   ASSERT_TRUE(it != results.end());
-  ASSERT_EQ(maidsafe::kSuccess, it->second);
+  ASSERT_EQ(kSuccess, it->second);
   boost::this_thread::sleep(boost::posix_time::seconds(2));
 
   msg = "message 2 from contact1";
@@ -1333,14 +1158,14 @@ TEST_F(TestCCImMessaging, FUNC_MAID_TestImRecPresenceAndSendMsgs) {
   sm_rec_msg_.clear();
   recs.clear();
   recs.push_back(publicusername2_);
-  sm1_->SendMessage(recs, msg, maidsafe::INSTANT_MSG, &results);
+  sm1_->SendMessage(recs, msg, INSTANT_MSG, &results);
   while (sm_rec_msg_.empty()) {
     boost::this_thread::sleep(boost::posix_time::milliseconds(2));
   }
   ASSERT_EQ(msg, sm_rec_msg_);
   it = results.find(publicusername2_);
   ASSERT_TRUE(it != results.end());
-  ASSERT_EQ(maidsafe::kSuccess, it->second);
+  ASSERT_EQ(kSuccess, it->second);
   boost::this_thread::sleep(boost::posix_time::seconds(2));
 
   msg = "message 3 from contact2";
@@ -1349,14 +1174,14 @@ TEST_F(TestCCImMessaging, FUNC_MAID_TestImRecPresenceAndSendMsgs) {
   sm_rec_msg_.clear();
   recs.clear();
   recs.push_back(publicusername1_);
-  sm2_->SendMessage(recs, msg, maidsafe::INSTANT_MSG, &results);
+  sm2_->SendMessage(recs, msg, INSTANT_MSG, &results);
   while (sm_rec_msg_.empty()) {
     boost::this_thread::sleep(boost::posix_time::milliseconds(2));
   }
   ASSERT_EQ(msg, sm_rec_msg_);
   it = results.find(publicusername1_);
   ASSERT_TRUE(it != results.end());
-  ASSERT_EQ(maidsafe::kSuccess, it->second);
+  ASSERT_EQ(kSuccess, it->second);
   boost::this_thread::sleep(boost::posix_time::seconds(2));
 
   msg = "message 3 from contact1";
@@ -1365,14 +1190,14 @@ TEST_F(TestCCImMessaging, FUNC_MAID_TestImRecPresenceAndSendMsgs) {
   sm_rec_msg_.clear();
   recs.clear();
   recs.push_back(publicusername2_);
-  sm1_->SendMessage(recs, msg, maidsafe::INSTANT_MSG, &results);
+  sm1_->SendMessage(recs, msg, INSTANT_MSG, &results);
   while (sm_rec_msg_.empty()) {
     boost::this_thread::sleep(boost::posix_time::milliseconds(2));
   }
   ASSERT_EQ(msg, sm_rec_msg_);
   it = results.find(publicusername2_);
   ASSERT_TRUE(it != results.end());
-  ASSERT_EQ(maidsafe::kSuccess, it->second);
+  ASSERT_EQ(kSuccess, it->second);
   boost::this_thread::sleep(boost::posix_time::seconds(2));
 
   msg = "message 4 from contact2";
@@ -1381,14 +1206,14 @@ TEST_F(TestCCImMessaging, FUNC_MAID_TestImRecPresenceAndSendMsgs) {
   sm_rec_msg_.clear();
   recs.clear();
   recs.push_back(publicusername1_);
-  sm2_->SendMessage(recs, msg, maidsafe::INSTANT_MSG, &results);
+  sm2_->SendMessage(recs, msg, INSTANT_MSG, &results);
   while (sm_rec_msg_.empty()) {
     boost::this_thread::sleep(boost::posix_time::milliseconds(2));
   }
   ASSERT_EQ(msg, sm_rec_msg_);
   it = results.find(publicusername1_);
   ASSERT_TRUE(it != results.end());
-  ASSERT_EQ(maidsafe::kSuccess, it->second);
+  ASSERT_EQ(kSuccess, it->second);
   boost::this_thread::sleep(boost::posix_time::seconds(2));
 
   msg = "message 4 from contact1";
@@ -1397,14 +1222,14 @@ TEST_F(TestCCImMessaging, FUNC_MAID_TestImRecPresenceAndSendMsgs) {
   sm_rec_msg_.clear();
   recs.clear();
   recs.push_back(publicusername2_);
-  sm1_->SendMessage(recs, msg, maidsafe::INSTANT_MSG, &results);
+  sm1_->SendMessage(recs, msg, INSTANT_MSG, &results);
   while (sm_rec_msg_.empty()) {
     boost::this_thread::sleep(boost::posix_time::milliseconds(2));
   }
   ASSERT_EQ(msg, sm_rec_msg_);
   it = results.find(publicusername2_);
   ASSERT_TRUE(it != results.end());
-  ASSERT_EQ(maidsafe::kSuccess, it->second);
+  ASSERT_EQ(kSuccess, it->second);
   boost::this_thread::sleep(boost::posix_time::seconds(2));
 
   msg = "message 5 from contact2";
@@ -1413,14 +1238,14 @@ TEST_F(TestCCImMessaging, FUNC_MAID_TestImRecPresenceAndSendMsgs) {
   sm_rec_msg_.clear();
   recs.clear();
   recs.push_back(publicusername1_);
-  sm2_->SendMessage(recs, msg, maidsafe::INSTANT_MSG, &results);
+  sm2_->SendMessage(recs, msg, INSTANT_MSG, &results);
   while (sm_rec_msg_.empty()) {
     boost::this_thread::sleep(boost::posix_time::milliseconds(2));
   }
   ASSERT_EQ(msg, sm_rec_msg_);
   it = results.find(publicusername1_);
   ASSERT_TRUE(it != results.end());
-  ASSERT_EQ(maidsafe::kSuccess, it->second);
+  ASSERT_EQ(kSuccess, it->second);
   boost::this_thread::sleep(boost::posix_time::seconds(2));
 
   msg = "message 5 from contact1";
@@ -1429,14 +1254,14 @@ TEST_F(TestCCImMessaging, FUNC_MAID_TestImRecPresenceAndSendMsgs) {
   sm_rec_msg_.clear();
   recs.clear();
   recs.push_back(publicusername2_);
-  sm1_->SendMessage(recs, msg, maidsafe::INSTANT_MSG, &results);
+  sm1_->SendMessage(recs, msg, INSTANT_MSG, &results);
   while (sm_rec_msg_.empty()) {
     boost::this_thread::sleep(boost::posix_time::milliseconds(2));
   }
   ASSERT_EQ(msg, sm_rec_msg_);
   it = results.find(publicusername2_);
   ASSERT_TRUE(it != results.end());
-  ASSERT_EQ(maidsafe::kSuccess, it->second);
+  ASSERT_EQ(kSuccess, it->second);
   boost::this_thread::sleep(boost::posix_time::seconds(2));
 
   msg = "message 6 from contact1";
@@ -1445,14 +1270,14 @@ TEST_F(TestCCImMessaging, FUNC_MAID_TestImRecPresenceAndSendMsgs) {
   sm_rec_msg_.clear();
   recs.clear();
   recs.push_back(publicusername2_);
-  sm1_->SendMessage(recs, msg, maidsafe::INSTANT_MSG, &results);
+  sm1_->SendMessage(recs, msg, INSTANT_MSG, &results);
   while (sm_rec_msg_.empty()) {
     boost::this_thread::sleep(boost::posix_time::milliseconds(2));
   }
   ASSERT_EQ(msg, sm_rec_msg_);
   it = results.find(publicusername2_);
   ASSERT_TRUE(it != results.end());
-  ASSERT_EQ(maidsafe::kSuccess, it->second);
+  ASSERT_EQ(kSuccess, it->second);
   boost::this_thread::sleep(boost::posix_time::seconds(2));
 
   sm2_->SendLogOutMessage(publicusername1_);
@@ -1463,7 +1288,7 @@ TEST_F(TestCCImMessaging, FUNC_MAID_TestImRecPresenceAndSendMsgs) {
   ASSERT_NE(0, ss1_->LiveContactStatus(publicusername2_, &status));
 }
 
-TEST_F(TestCCImMessaging, FUNC_MAID_TestMultipleImToContact) {
+TEST_F(CCImMessagingTest, FUNC_MAID_TestMultipleImToContact) {
   // Asuming sm1 gets presence  of sm2
   ss1_->AddLiveContact(publicusername2_, ss2_->Ep(), 0);
   ASSERT_TRUE(sm1_->SendPresence(publicusername2_));
@@ -1480,17 +1305,17 @@ TEST_F(TestCCImMessaging, FUNC_MAID_TestMultipleImToContact) {
   std::string msg("message 1 from contact1");
   std::vector<std::string> recs;
   recs.push_back(publicusername2_);
-  std::map<std::string, maidsafe::ReturnCode> results;
+  std::map<std::string, ReturnCode> results;
   boost::this_thread::sleep(boost::posix_time::seconds(2));
-  sm1_->SendMessage(recs, msg, maidsafe::INSTANT_MSG, &results);
+  sm1_->SendMessage(recs, msg, INSTANT_MSG, &results);
   while (sm_rec_msg_.empty()) {
     boost::this_thread::sleep(boost::posix_time::milliseconds(2));
   }
   ASSERT_EQ(msg, sm_rec_msg_);
-  std::map<std::string, maidsafe::ReturnCode>::iterator it;
+  std::map<std::string, ReturnCode>::iterator it;
   it = results.find(publicusername2_);
   ASSERT_TRUE(it != results.end());
-  ASSERT_EQ(maidsafe::kSuccess, it->second);
+  ASSERT_EQ(kSuccess, it->second);
   sm_rec_msg_.clear();
   boost::this_thread::sleep(boost::posix_time::seconds(2));
 
@@ -1501,14 +1326,14 @@ TEST_F(TestCCImMessaging, FUNC_MAID_TestMultipleImToContact) {
   sm_rec_msg_.clear();
   recs.clear();
   recs.push_back(publicusername2_);
-  sm1_->SendMessage(recs, msg, maidsafe::INSTANT_MSG, &results);
+  sm1_->SendMessage(recs, msg, INSTANT_MSG, &results);
   while (sm_rec_msg_.empty()) {
     boost::this_thread::sleep(boost::posix_time::milliseconds(2));
   }
   ASSERT_EQ(msg, sm_rec_msg_);
   it = results.find(publicusername2_);
   ASSERT_TRUE(it != results.end());
-  ASSERT_EQ(maidsafe::kSuccess, it->second);
+  ASSERT_EQ(kSuccess, it->second);
   boost::this_thread::sleep(boost::posix_time::seconds(2));
 
   msg = "message 3 from contact1";
@@ -1517,14 +1342,14 @@ TEST_F(TestCCImMessaging, FUNC_MAID_TestMultipleImToContact) {
   sm_rec_msg_.clear();
   recs.clear();
   recs.push_back(publicusername2_);
-  sm1_->SendMessage(recs, msg, maidsafe::INSTANT_MSG, &results);
+  sm1_->SendMessage(recs, msg, INSTANT_MSG, &results);
   while (sm_rec_msg_.empty()) {
     boost::this_thread::sleep(boost::posix_time::milliseconds(2));
   }
   ASSERT_EQ(msg, sm_rec_msg_);
   it = results.find(publicusername2_);
   ASSERT_TRUE(it != results.end());
-  ASSERT_EQ(maidsafe::kSuccess, it->second);
+  ASSERT_EQ(kSuccess, it->second);
   boost::this_thread::sleep(boost::posix_time::seconds(2));
 
   msg = "message 4 from contact1";
@@ -1533,14 +1358,14 @@ TEST_F(TestCCImMessaging, FUNC_MAID_TestMultipleImToContact) {
   sm_rec_msg_.clear();
   recs.clear();
   recs.push_back(publicusername2_);
-  sm1_->SendMessage(recs, msg, maidsafe::INSTANT_MSG, &results);
+  sm1_->SendMessage(recs, msg, INSTANT_MSG, &results);
   while (sm_rec_msg_.empty()) {
     boost::this_thread::sleep(boost::posix_time::milliseconds(2));
   }
   ASSERT_EQ(msg, sm_rec_msg_);
   it = results.find(publicusername2_);
   ASSERT_TRUE(it != results.end());
-  ASSERT_EQ(maidsafe::kSuccess, it->second);
+  ASSERT_EQ(kSuccess, it->second);
   boost::this_thread::sleep(boost::posix_time::seconds(2));
 
   msg = "message 5 from contact1";
@@ -1549,14 +1374,14 @@ TEST_F(TestCCImMessaging, FUNC_MAID_TestMultipleImToContact) {
   sm_rec_msg_.clear();
   recs.clear();
   recs.push_back(publicusername2_);
-  sm1_->SendMessage(recs, msg, maidsafe::INSTANT_MSG, &results);
+  sm1_->SendMessage(recs, msg, INSTANT_MSG, &results);
   while (sm_rec_msg_.empty()) {
     boost::this_thread::sleep(boost::posix_time::milliseconds(2));
   }
   ASSERT_EQ(msg, sm_rec_msg_);
   it = results.find(publicusername2_);
   ASSERT_TRUE(it != results.end());
-  ASSERT_EQ(maidsafe::kSuccess, it->second);
+  ASSERT_EQ(kSuccess, it->second);
   boost::this_thread::sleep(boost::posix_time::seconds(2));
 
   msg = "message 6 from contact1";
@@ -1565,14 +1390,14 @@ TEST_F(TestCCImMessaging, FUNC_MAID_TestMultipleImToContact) {
   sm_rec_msg_.clear();
   recs.clear();
   recs.push_back(publicusername2_);
-  sm1_->SendMessage(recs, msg, maidsafe::INSTANT_MSG, &results);
+  sm1_->SendMessage(recs, msg, INSTANT_MSG, &results);
   while (sm_rec_msg_.empty()) {
     boost::this_thread::sleep(boost::posix_time::milliseconds(2));
   }
   ASSERT_EQ(msg, sm_rec_msg_);
   it = results.find(publicusername2_);
   ASSERT_TRUE(it != results.end());
-  ASSERT_EQ(maidsafe::kSuccess, it->second);
+  ASSERT_EQ(kSuccess, it->second);
   boost::this_thread::sleep(boost::posix_time::seconds(2));
 
   msg = "message 1 from contact2";
@@ -1581,14 +1406,14 @@ TEST_F(TestCCImMessaging, FUNC_MAID_TestMultipleImToContact) {
   sm_rec_msg_.clear();
   recs.clear();
   recs.push_back(publicusername1_);
-  sm2_->SendMessage(recs, msg, maidsafe::INSTANT_MSG, &results);
+  sm2_->SendMessage(recs, msg, INSTANT_MSG, &results);
   while (sm_rec_msg_.empty()) {
     boost::this_thread::sleep(boost::posix_time::milliseconds(2));
   }
   ASSERT_EQ(msg, sm_rec_msg_);
   it = results.find(publicusername1_);
   ASSERT_TRUE(it != results.end());
-  ASSERT_EQ(maidsafe::kSuccess, it->second);
+  ASSERT_EQ(kSuccess, it->second);
   boost::this_thread::sleep(boost::posix_time::seconds(2));
 
   sm2_->SendLogOutMessage(publicusername1_);
@@ -1599,4 +1424,7 @@ TEST_F(TestCCImMessaging, FUNC_MAID_TestMultipleImToContact) {
   ASSERT_NE(0, ss1_->LiveContactStatus(publicusername2_, &status));
 }
 
-}  // namespace
+}  // namespace test
+
+}  // namespace maidsafe
+

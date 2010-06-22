@@ -73,10 +73,8 @@ void PrepareCallbackResults() {
   callback_messages_.clear();
 }
 
-static void GeneralCallback(const std::string &result) {
-  maidsafe::GenericResponse result_msg;
-  if ((!result_msg.ParseFromString(result))||
-      (result_msg.result() != kAck)) {
+static void GeneralCallback(const maidsafe::ReturnCode &result) {
+  if (result != maidsafe::kSuccess) {
     callback_succeeded_ = false;
     callback_timed_out_ = false;
   } else {
@@ -269,11 +267,11 @@ class RunPDVaults {
                       clients_[client_idx]->chunkstore, testvault::K));
         clients_[client_idx]->msm = sm_local_;
         clients_[client_idx]->msm->ss_ = &clients_[client_idx]->mss;
-        clients_[client_idx]->msm->kad_config_location_ =
-            kad_config_path_.string();
+//        clients_[client_idx]->msm->kad_config_location_ =
+//            kad_config_path_.string();
         testpdvault::PrepareCallbackResults();
-        clients_[client_idx]->msm->Init(0,
-            boost::bind(&testpdvault::GeneralCallback, _1), "");
+        clients_[client_idx]->msm->Init(
+            boost::bind(&testpdvault::GeneralCallback, _1), 0);
         testpdvault::WaitFunction(60, &mutex_);
         public_key = clients_[client_idx]->pmid_pub_key;
         private_key = clients_[client_idx]->pmid_priv_key;
@@ -303,12 +301,14 @@ class RunPDVaults {
       }
       if (first) {
         base::KadConfig kad_config;
+        kad::ContactInfo contact_info =
+            (*pdvaults_)[j]->kad_ops_->contact_info();
         base::KadConfig::Contact *kad_contact = kad_config.add_contact();
-        kad_contact->set_node_id(base::EncodeToHex((*pdvaults_)[j]->node_id()));
-        kad_contact->set_ip((*pdvaults_)[j]->host_ip());
-        kad_contact->set_port((*pdvaults_)[j]->host_port());
-        kad_contact->set_local_ip((*pdvaults_)[j]->local_host_ip());
-        kad_contact->set_local_port((*pdvaults_)[j]->local_host_port());
+        kad_contact->set_node_id(base::EncodeToHex(contact_info.node_id()));
+        kad_contact->set_ip(contact_info.ip());
+        kad_contact->set_port(contact_info.port());
+        kad_contact->set_local_ip(contact_info.local_ip());
+        kad_contact->set_local_port(contact_info.local_port());
         std::fstream output(kad_config_path_.string().c_str(),
                             std::ios::out | std::ios::trunc | std::ios::binary);
         kad_config.SerializeToOstream(&output);
@@ -327,9 +327,11 @@ class RunPDVaults {
     printf("*                                               *\n");
     printf("* No. Port   ID                                 *\n");
     for (int l = 0; l < no_of_vaults_; ++l)
-      printf("* %2i  %5i  %s *\n", l, (*pdvaults_)[l]->host_port(),
-             (base::EncodeToHex((*pdvaults_)[l]->node_id()).substr(0, 31) +
-             "...").c_str());
+      printf("* %2i  %5i  %s *\n", l,
+             (*pdvaults_)[l]->kad_ops_->contact_info().port(),
+             (base::EncodeToHex(
+             (*pdvaults_)[l]->kad_ops_->contact_info().node_id()).substr(0, 31)
+             + "...").c_str());
     printf("*                                               *\n");
     if (no_of_clients_ > 0) {
       printf("*           %2i local clients running            *\n",
@@ -338,9 +340,10 @@ class RunPDVaults {
       printf("* No. Port   ID                                 *\n");
       for (int l = 0; l < no_of_clients_; ++l)
         printf("* %2i  %5i  %s... *\n", l,
-               clients_[l]->msm->knode_->host_port(),
-               clients_[l]->msm->knode_->node_id().String()
-               .substr(0, 31).c_str());
+               clients_[l]->msm->kad_ops_->contact_info().port(),
+               (base::EncodeToHex(
+               clients_[l]->msm->kad_ops_->contact_info().node_id()).
+               substr(0, 31) + "...").c_str());
       printf("*                                               *\n");
     }
     printf("*-----------------------------------------------*\n\n");

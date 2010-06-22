@@ -86,7 +86,8 @@ class DataAtlasHandlerTest : public testing::Test {
       count += 10;
     }
     boost::shared_ptr<LocalStoreManager>
-        sm(new LocalStoreManager(client_chunkstore_, test_root_dir_, test_dah::K));
+        sm(new LocalStoreManager(client_chunkstore_, test_dah::K,
+                                 test_root_dir_));
     test::CallbackObject cb;
     sm->Init(boost::bind(&test::CallbackObject::ReturnCodeCallback, &cb, _1),
              0);

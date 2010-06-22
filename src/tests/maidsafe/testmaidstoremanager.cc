@@ -409,7 +409,7 @@ class MockMsmKeyUnique : public MaidsafeStoreManager {
 TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_KeyUnique) {
   MockMsmKeyUnique msm(client_chunkstore_);
   boost::shared_ptr<MockKadOps> mko(new MockKadOps(&msm.transport_handler_,
-      &msm.channel_manager_, kad::CLIENT, "", "", false, false,
+      &msm.channel_manager_, kad::CLIENT, "", "", false, false, test_msm::K,
       client_chunkstore_));
   msm.kad_ops_ = mko;
 
@@ -556,7 +556,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AddToWatchList) {
       new MockClientRpcs(&msm.transport_handler_, &msm.channel_manager_));
   msm.client_rpcs_ = mock_rpcs;
   boost::shared_ptr<MockKadOps> mko(new MockKadOps(&msm.transport_handler_,
-      &msm.channel_manager_, kad::CLIENT, "", "", false, false,
+      &msm.channel_manager_, kad::CLIENT, "", "", false, false, test_msm::K,
       client_chunkstore_));
   msm.kad_ops_ = mko;
   ASSERT_TRUE(client_chunkstore_->is_initialised());
@@ -577,11 +577,11 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AddToWatchList) {
   // Set up data for calls to FindKNodes
   std::vector<std::string> good_pmids, few_pmids;
   std::string bad_result = mock_kadops::MakeFindNodesResponse(
-      mock_kadops::kResultFail, &good_pmids);
+      mock_kadops::kResultFail, test_msm::K, &good_pmids);
   std::string good_result = mock_kadops::MakeFindNodesResponse(
-      mock_kadops::kGood, &good_pmids);
+      mock_kadops::kGood, test_msm::K, &good_pmids);
   std::string few_result = mock_kadops::MakeFindNodesResponse(
-      mock_kadops::kTooFewContacts, &few_pmids);
+      mock_kadops::kTooFewContacts, test_msm::K, &few_pmids);
   std::vector<kad::Contact> contacts;
   {
     kad::FindResponse find_response;
@@ -626,21 +626,21 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AddToWatchList) {
         testing::_))
             .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
                 boost::bind(&test_msm::WatchListOpStageThree,
-                    i + 1 < kKadLowerThreshold,
+                    i + 1 < test_msm::lower_threshold,
                     kAck,
-                    contacts.at(i).node_id().ToStringDecoded(),
+                    contacts.at(i).node_id().String(),
                     _1, _2, &tcc))))                                   // Call 4
             .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
                 boost::bind(&test_msm::WatchListOpStageThree,
                     true,
-                    i + 1 < kKadLowerThreshold ? kAck : kNack,
-                    contacts.at(i).node_id().ToStringDecoded(),
+                    i + 1 < test_msm::lower_threshold ? kAck : kNack,
+                    contacts.at(i).node_id().String(),
                     _1, _2, &tcc))))                                   // Call 5
             .WillRepeatedly(testing::WithArgs<4, 6>(testing::Invoke(
                 boost::bind(&test_msm::WatchListOpStageThree,
                     true,
                     kAck,
-                    contacts.at(i).node_id().ToStringDecoded(),
+                    contacts.at(i).node_id().String(),
                     _1, _2, &tcc))));                           // Calls 6 to 12
   }
 
@@ -1062,7 +1062,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AssessUploadCounts) {
       ASSERT_EQ(kRequestPendingConsensus,
                 msm.AssessUploadCounts(add_to_watchlist_data));
       ASSERT_EQ(-1, add_to_watchlist_data->consensus_upload_copies);
-    } else if (kKadLowerThreshold == 1) {
+    } else if (test_msm::lower_threshold == 1) {
       ASSERT_EQ(kSuccess, msm.AssessUploadCounts(add_to_watchlist_data));
       ASSERT_EQ(2, add_to_watchlist_data->consensus_upload_copies);
     } else {
@@ -1429,7 +1429,7 @@ class MockMsmSendChunkPrep : public MaidsafeStoreManager {
 TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_SendChunkPrep) {
   MockMsmSendChunkPrep msm(client_chunkstore_);
   boost::shared_ptr<MockKadOps> mko(new MockKadOps(&msm.transport_handler_,
-      &msm.channel_manager_, kad::CLIENT, "", "", false, false,
+      &msm.channel_manager_, kad::CLIENT, "", "", false, false, test_msm::K,
       client_chunkstore_));
   msm.kad_ops_ = mko;
 
@@ -1745,7 +1745,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_RemoveFromWatchList) {
       new MockClientRpcs(&msm.transport_handler_, &msm.channel_manager_));
   msm.client_rpcs_ = mock_rpcs;
   boost::shared_ptr<MockKadOps> mko(new MockKadOps(&msm.transport_handler_,
-      &msm.channel_manager_, kad::CLIENT, "", "", false, false,
+      &msm.channel_manager_, kad::CLIENT, "", "", false, false, test_msm::K,
       client_chunkstore_));
   msm.kad_ops_ = mko;
   ASSERT_TRUE(client_chunkstore_->is_initialised());
@@ -1780,11 +1780,11 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_RemoveFromWatchList) {
   // Set up data for calls to FindKNodes
   std::vector<std::string> good_pmids, few_pmids;
   std::string bad_result = mock_kadops::MakeFindNodesResponse(
-      mock_kadops::kResultFail, &good_pmids);
+      mock_kadops::kResultFail, test_msm::K, &good_pmids);
   std::string good_result = mock_kadops::MakeFindNodesResponse(
-      mock_kadops::kGood, &good_pmids);
+      mock_kadops::kGood, test_msm::K, &good_pmids);
   std::string few_result = mock_kadops::MakeFindNodesResponse(
-      mock_kadops::kTooFewContacts, &few_pmids);
+      mock_kadops::kTooFewContacts, test_msm::K, &few_pmids);
   std::vector<kad::Contact> contacts;
   {
     kad::FindResponse find_response;
@@ -1827,21 +1827,21 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_RemoveFromWatchList) {
         testing::_))
             .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
                 boost::bind(&test_msm::WatchListOpStageThree,
-                    i + 1 < kKadLowerThreshold,
+                    i + 1 < test_msm::lower_threshold,
                     kAck,
-                    contacts.at(i).node_id().ToStringDecoded(),
+                    contacts.at(i).node_id().String(),
                     _1, _2, &tcc))))                                   // Call 5
             .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
                 boost::bind(&test_msm::WatchListOpStageThree,
                     true,
-                    i + 1 < kKadLowerThreshold ? kAck : kNack,
-                    contacts.at(i).node_id().ToStringDecoded(),
+                    i + 1 < test_msm::lower_threshold ? kAck : kNack,
+                    contacts.at(i).node_id().String(),
                     _1, _2, &tcc))))                                   // Call 6
             .WillRepeatedly(testing::WithArgs<4, 6>(testing::Invoke(
                 boost::bind(&test_msm::WatchListOpStageThree,
                     true,
                     kAck,
-                    contacts.at(i).node_id().ToStringDecoded(),
+                    contacts.at(i).node_id().String(),
                     _1, _2, &tcc))));                           // Calls 7 to 10
   }
 
@@ -2083,7 +2083,7 @@ class MockMsmStoreLoadPacket : public MaidsafeStoreManager {
 TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_StoreNewPacket) {
   MockMsmStoreLoadPacket msm(client_chunkstore_);
   boost::shared_ptr<MockKadOps> mko(new MockKadOps(&msm.transport_handler_,
-      &msm.channel_manager_, kad::CLIENT, "", "", false, false,
+      &msm.channel_manager_, kad::CLIENT, "", "", false, false, test_msm::K,
       client_chunkstore_));
   msm.kad_ops_ = mko;
 
@@ -2222,7 +2222,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_StoreNewPacket) {
 TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_StoreExistingPacket) {
   MockMsmStoreLoadPacket msm(client_chunkstore_);
   boost::shared_ptr<MockKadOps> mko(new MockKadOps(&msm.transport_handler_,
-      &msm.channel_manager_, kad::CLIENT, "", "", false, false,
+      &msm.channel_manager_, kad::CLIENT, "", "", false, false, test_msm::K,
       client_chunkstore_));
   msm.kad_ops_ = mko;
 
@@ -2342,7 +2342,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_StoreExistingPacket) {
 TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_LoadPacket) {
   MockMsmStoreLoadPacket msm(client_chunkstore_);
   boost::shared_ptr<MockKadOps> mko(new MockKadOps(&msm.transport_handler_,
-      &msm.channel_manager_, kad::CLIENT, "", "", false, false,
+      &msm.channel_manager_, kad::CLIENT, "", "", false, false, test_msm::K,
       client_chunkstore_));
   msm.kad_ops_ = mko;
 
@@ -2770,7 +2770,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_UpdatePacket) {
 }
 
 TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_GetAccountStatus) {
-  MaidsafeStoreManager msm(client_chunkstore_);
+  MaidsafeStoreManager msm(client_chunkstore_, test_msm::K);
   boost::uint64_t offered, given, taken;
   msm.GetAccountStatus(&offered, &given, &taken);
   EXPECT_EQ(boost::uint64_t(0), offered);
@@ -2789,7 +2789,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_UpdateAccountStatus) {
       new MockClientRpcs(&msm.transport_handler_, &msm.channel_manager_));
   msm.client_rpcs_ = mock_rpcs;
   boost::shared_ptr<MockKadOps> mko(new MockKadOps(&msm.transport_handler_,
-      &msm.channel_manager_, kad::CLIENT, "", "", false, false,
+      &msm.channel_manager_, kad::CLIENT, "", "", false, false, test_msm::K,
       client_chunkstore_));
   msm.kad_ops_ = mko;
   ASSERT_TRUE(client_chunkstore_->is_initialised());
@@ -2800,11 +2800,11 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_UpdateAccountStatus) {
   // Set up data for calls to FindKNodes
   std::vector<std::string> good_pmids, few_pmids;
   std::string bad_result = mock_kadops::MakeFindNodesResponse(
-      mock_kadops::kResultFail, &good_pmids);
+      mock_kadops::kResultFail, test_msm::K, &good_pmids);
   std::string good_result = mock_kadops::MakeFindNodesResponse(
-      mock_kadops::kGood, &good_pmids);
+      mock_kadops::kGood, test_msm::K, &good_pmids);
   std::string few_result = mock_kadops::MakeFindNodesResponse(
-      mock_kadops::kTooFewContacts, &few_pmids);
+      mock_kadops::kTooFewContacts, test_msm::K, &few_pmids);
   std::vector<kad::Contact> account_holders;
   {
     kad::FindResponse find_response;
@@ -2855,7 +2855,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_UpdateAccountStatus) {
                 test_msm::AccountStatusValues(i*i, i, i), _1, _2))))        // 7
             .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
                 boost::bind(&test_msm::ThreadedAccountStatusCallback, &tcc,
-                i < kKadUpperThreshold, kAck,
+                i < test_msm::upper_threshold, kAck,
                 account_holders.at(i).node_id().String(), true,
                 test_msm::AccountStatusValues(1, 2, 3), _1, _2))));         // 8
   }
@@ -2926,7 +2926,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_UpdateAccountStatus) {
   msm.UpdateAccountStatus(true);
   tcc.Wait();
   msm.GetAccountStatus(&space_offered, &space_given, &space_taken);
-  if (kKadLowerThreshold > 2) {
+  if (test_msm::lower_threshold > 2) {
     EXPECT_EQ(static_cast<boost::uint64_t>(11), space_offered);
     EXPECT_EQ(static_cast<boost::uint64_t>(22), space_given);
     EXPECT_EQ(static_cast<boost::uint64_t>(33), space_taken);

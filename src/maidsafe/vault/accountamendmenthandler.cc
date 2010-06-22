@@ -206,7 +206,7 @@ void AccountAmendmentHandler::CreateNewAmendment(AccountAmendment amendment) {
       request_expectation_handler_->GetExpectedCallersIds(
           amendment.probable_pendings.front().request);
   bool lookup_required(false);
-  if (account_holders_ids.size() >= size_t(kKadUpperThreshold)) {
+  if (account_holders_ids.size() >= upper_threshold_) {
     // Populate map of Chunk Info holders
     for (size_t i = 0; i < account_holders_ids.size(); ++i) {
       amendment.chunk_info_holders.insert(

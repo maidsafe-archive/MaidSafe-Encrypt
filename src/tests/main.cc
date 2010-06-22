@@ -46,8 +46,8 @@ int main(int argc, char **argv) {
     printf("%s\n", e.what());
   }
   testing::AddGlobalTestEnvironment(new maidsafe::test::localvaults::Env(
-      maidsafe::test::kNetworkSize(), maidsafe::test::pdvaults(),
-      maidsafe::test::kadconfig()));
+      maidsafe::test::K(), maidsafe::test::kNetworkSize(),
+      maidsafe::test::pdvaults(), maidsafe::test::kadconfig()));
 #endif
 
   int result = RUN_ALL_TESTS();

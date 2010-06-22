@@ -50,6 +50,7 @@ typedef std::vector< boost::shared_ptr<maidsafe_vault::PDVault> > LocalVaults;
 typedef MaidsafeStoreManager TestStoreManager;
 typedef boost::shared_ptr<TestStoreManager> TestStoreManagerPtr;
 
+boost::uint8_t K();
 int kNetworkSize();
 LocalVaults *pdvaults();
 fs::path *kadconfig();
@@ -70,6 +71,8 @@ namespace test {
 typedef LocalStoreManager TestStoreManager;
 typedef boost::shared_ptr<TestStoreManager> TestStoreManagerPtr;
 
+boost::uint8_t K();
+
 #endif  // MS_NETWORK_TEST
 
 class NetworkTest {
@@ -87,6 +90,9 @@ class NetworkTest {
   boost::shared_ptr<maidsafe::ChunkStore> chunkstore() { return chunkstore_; }
   boost::shared_ptr<maidsafe::KadOps> kad_ops() { return kad_ops_; }
   TestStoreManagerPtr store_manager() { return store_manager_; }
+  boost::uint8_t K() { return K_; }
+  boost::uint8_t upper_threshold() { return upper_threshold_; }
+  boost::uint8_t lower_threshold() { return lower_threshold_; }
 
  private:
   NetworkTest(const NetworkTest&);
@@ -99,6 +105,7 @@ class NetworkTest {
   boost::shared_ptr<maidsafe::ChunkStore> chunkstore_;
   boost::shared_ptr<maidsafe::KadOps> kad_ops_;
   TestStoreManagerPtr store_manager_;
+  boost::uint8_t K_, upper_threshold_, lower_threshold_;
 };
 
 }  // namespace test

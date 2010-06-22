@@ -64,6 +64,7 @@ class KadOps {
          const std::string &public_key,
          bool port_forwarded,
          bool use_upnp,
+         boost::uint8_t k,
          boost::shared_ptr<ChunkStore> chunkstore);
   virtual ~KadOps() {}
   void Init(const boost::filesystem::path &kad_config,
@@ -172,6 +173,7 @@ class KadOps {
   }
   boost::uint16_t Port() const { return knode_.host_port(); }
   kad::ContactInfo contact_info() const { return knode_.contact_info(); }
+  boost::uint8_t k() const { return K_; }
   friend class TestClientBP;
   friend class test::CBPHandlerTest;
 
@@ -183,6 +185,7 @@ class KadOps {
                     boost::mutex *mutex,
                     boost::condition_variable *cond_var,
                     ReturnCode *result);
+  const boost::uint8_t K_;
   kad::KNode knode_;
   kad::NodeType node_type_;
   boost::int32_t default_time_to_live_;

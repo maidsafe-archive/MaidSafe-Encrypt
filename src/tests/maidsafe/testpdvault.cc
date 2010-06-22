@@ -43,6 +43,7 @@
 #include "tests/maidsafe/cached_keys.h"
 #include "tests/maidsafe/localvaults.h"
 #include "tests/maidsafe/mocksessionsingleton.h"
+#include "tests/maidsafe/testcallback.h"
 
 static bool callback_timed_out_ = true;
 static bool callback_succeeded_ = false;
@@ -96,9 +97,8 @@ void PrepareCallbackResults() {
   callback_messages_.clear();
 }
 
-static void GeneralCallback(const std::string &result) {
-  maidsafe::GenericResponse result_msg;
-  if ((!result_msg.ParseFromString(result)) || (result_msg.result() != kAck)) {
+static void GeneralCallback(const maidsafe::ReturnCode &result) {
+  if (result != maidsafe::kSuccess) {
     callback_succeeded_ = false;
     callback_timed_out_ = false;
   } else {
@@ -191,6 +191,7 @@ static std::vector< boost::shared_ptr<PDVault> > pdvaults_;
 static const int kNumOfClients = 2;
 static const int kNetworkSize = testpdvault::K + kNumOfClients;
 static const int kNumOfTestChunks = kNetworkSize + 1;
+static boost::filesystem::path kadconfig_;
 /**
  * Note: StoreAndGetChunks only works for small K due to resource problems
  *       Recommended are K = 8 and kMinSuccessfulPecentageStore = 50%
@@ -276,12 +277,11 @@ class PDVaultTest : public testing::Test {
     // look up the stopped vaults to flush routing tables
     for (int i = 0; i < kNetworkSize - kNumOfClients; ++i) {
       for (int j = kNetworkSize - kNumOfClients; j < kNetworkSize; ++j) {
-        maidsafe::CallbackObj cb;
-        pdvaults_[i]->kad_ops_->GetNodeContactDetails(
-            kad::KadId(pdvaults_[i]->pmid_),
-            boost::bind(&maidsafe::CallbackObj::CallbackFunc, &cb, _1),
-            false);
-        cb.WaitForCallback();
+        maidsafe::test::CallbackObject cb;
+        pdvaults_[i]->kad_ops_->GetNodeContactDetails(pdvaults_[i]->pmid_,
+            boost::bind(&maidsafe::test::CallbackObject::StringCallback, &cb,
+            _1), false);
+        cb.WaitForStringResult();
       }
     }
 
@@ -297,8 +297,7 @@ class PDVaultTest : public testing::Test {
       clients_[i]->msm = sm_local_;
       clients_[i]->msm->ss_ = &clients_[i]->mss;
       testpdvault::PrepareCallbackResults();
-      clients_[i]->msm->Init(0, boost::bind(&testpdvault::GeneralCallback, _1),
-                             "");
+      clients_[i]->msm->Init(boost::bind(&testpdvault::GeneralCallback, _1), 0);
       testpdvault::WaitFunction(60, &mutex_);
       ASSERT_TRUE(callback_succeeded_);
       ASSERT_FALSE(callback_timed_out_);
@@ -309,9 +308,9 @@ class PDVaultTest : public testing::Test {
              HexSubstr(pdvaults_[vlt]->pmid_).c_str(),
              HexSubstr(clients_[i]->pmid_name).c_str());
       // pdvaults_[vlt]->Stop();
-      fs::path dir(pdvaults_[vlt]->vault_chunkstore_.ChunkStoreDir());
-      boost::uint64_t used(pdvaults_[vlt]->vault_chunkstore_.used_space());
-      boost::uint64_t avlb(pdvaults_[vlt]->vault_chunkstore_.available_space());
+      fs::path dir(pdvaults_[vlt]->vault_chunkstore_->ChunkStoreDir());
+      boost::uint64_t used(pdvaults_[vlt]->vault_chunkstore_->used_space());
+      boost::uint64_t avlb(pdvaults_[vlt]->vault_chunkstore_->available_space());
       fs::path kad_cfg(pdvaults_[vlt]->kad_config_file_);
       pdvaults_[vlt].reset(new PDVault(clients_[i]->pmid_pub_key,
                                        clients_[i]->pmid_priv_key,
@@ -385,8 +384,8 @@ TEST_F(PDVaultTest, FUNC_MAID_StoreAndGetChunks) {
            HexSubstr(account_name).c_str());
     std::set<std::string> closest;
     std::vector<kad::Contact> contacts;
-    clients_[i]->msm->kad_ops_->BlockingFindKClosestNodes(
-        kad::KadId(account_name), &contacts);
+    clients_[i]->msm->kad_ops_->BlockingFindKClosestNodes(account_name,
+                                                          &contacts);
     for (size_t j = 0; j < contacts.size(); ++j) {
       closest.insert(contacts[j].node_id().String());
     }
@@ -429,7 +428,7 @@ TEST_F(PDVaultTest, FUNC_MAID_StoreAndGetChunks) {
 
       for (int vault_no = 0; vault_no < kNetworkSize; ++vault_no) {
         if (stored_chunks.count((*it).first) == 0 &&
-            pdvaults_[vault_no]->vault_chunkstore_.Has((*it).first)) {
+            pdvaults_[vault_no]->vault_chunkstore_->Has((*it).first)) {
           printf("Vault %d (%s) has chunk %s.\n", vault_no,
                  HexSubstr(pdvaults_[vault_no]->pmid_).c_str(),
                  HexSubstr((*it).first).c_str());
@@ -474,7 +473,7 @@ TEST_F(PDVaultTest, FUNC_MAID_StoreAndGetChunks) {
   for (it = chunks.begin(); it != chunks.end(); ++it) {
     bool first_copy(true);
     for (int vault_no = 0; vault_no < kNetworkSize; ++vault_no) {
-      if (pdvaults_[vault_no]->vault_chunkstore_.Has((*it).first)) {
+      if (pdvaults_[vault_no]->vault_chunkstore_->Has((*it).first)) {
         if (first_copy) {
           first_copy = false;
           continue;
@@ -482,7 +481,7 @@ TEST_F(PDVaultTest, FUNC_MAID_StoreAndGetChunks) {
         printf(">> Deleting chunk %s from vault %d\n",
                HexSubstr((*it).first).c_str(), vault_no);
         ASSERT_EQ(0, pdvaults_[vault_no]->
-            vault_chunkstore_.DeleteChunk((*it).first));
+            vault_chunkstore_->DeleteChunk((*it).first));
       }
     }
   }
@@ -511,7 +510,7 @@ TEST_F(PDVaultTest, FUNC_MAID_StoreAndGetChunks) {
     bool first_chunk(true);
     for (it = chunks.begin(); it != chunks.end(); ++it) {
       for (int vault_no = 0; vault_no < kNetworkSize; ++vault_no) {
-        if (pdvaults_[vault_no]->vault_chunkstore_.Has((*it).first)) {
+        if (pdvaults_[vault_no]->vault_chunkstore_->Has((*it).first)) {
           if (first_chunk) {
             first_chunk = false;
             continue;
@@ -519,7 +518,7 @@ TEST_F(PDVaultTest, FUNC_MAID_StoreAndGetChunks) {
           printf(">> Deleting chunk %s from vault %d\n",
                  HexSubstr((*it).first).c_str(), vault_no);
           ASSERT_EQ(0, pdvaults_[vault_no]->
-              vault_chunkstore_.DeleteChunk((*it).first));
+              vault_chunkstore_->DeleteChunk((*it).first));
         }
       }
     }
@@ -595,18 +594,18 @@ TEST_F(PDVaultTest, FUNC_MAID_Cachechunk) {
   co.set_hash_algorithm(crypto::SHA_512);
   std::string content(base::RandomString(10000));
   std::string chunkname(co.Hash(content, "", crypto::STRING_STRING, false));
-  while (pdvaults_[chunk_vault_index]->vault_chunkstore_.Has(chunkname)) {
+  while (pdvaults_[chunk_vault_index]->vault_chunkstore_->Has(chunkname)) {
     content = base::RandomString(10000);
     chunkname = co.Hash(content, "", crypto::STRING_STRING, false);
   }
 
   ASSERT_EQ(kSuccess,
-            pdvaults_[chunk_vault_index]->vault_chunkstore_.Store(chunkname,
+            pdvaults_[chunk_vault_index]->vault_chunkstore_->Store(chunkname,
                                                                   content));
-  kc_cacher_vault = pdvaults_[cache_vault_index]->knode_->contact_info();
+  kc_cacher_vault = pdvaults_[cache_vault_index]->kad_ops_->contact_info();
   std::string ser_kc_cacher_vault = kc_cacher_vault.SerializeAsString();
 
-  kad::Contact peer(pdvaults_[chunk_vault_index]->knode_->contact_info());
+  kad::Contact peer(pdvaults_[chunk_vault_index]->kad_ops_->contact_info());
   maidsafe::GetChunkRequest request;
   request.set_chunkname(chunkname);
   request.set_serialised_cacher_contact(ser_kc_cacher_vault);
@@ -626,10 +625,10 @@ TEST_F(PDVaultTest, FUNC_MAID_Cachechunk) {
   ASSERT_EQ(pdvaults_[chunk_vault_index]->pmid_, response.pmid());
 
   boost::progress_timer t;
-  while (!pdvaults_[cache_vault_index]->vault_chunkstore_.Has(chunkname) &&
+  while (!pdvaults_[cache_vault_index]->vault_chunkstore_->Has(chunkname) &&
          t.elapsed() < 5)
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
-  ASSERT_TRUE(pdvaults_[cache_vault_index]->vault_chunkstore_.Has(chunkname));
+  ASSERT_TRUE(pdvaults_[cache_vault_index]->vault_chunkstore_->Has(chunkname));
 
   transport_handler.StopAll();
   channel_manager.Stop();
@@ -648,9 +647,32 @@ TEST_F(PDVaultTest, FUNC_MAID_Cachechunk) {
 }  // namespace maidsafe_vault
 
 int main(int argc, char **argv) {
+  google::InitGoogleLogging(argv[0]);
+  // setting output to be stderr
+#ifndef HAVE_GLOG
+  bool FLAGS_logtostderr;
+#endif
+  FLAGS_logtostderr = true;
   testing::InitGoogleTest(&argc, argv);
-  testing::AddGlobalTestEnvironment(
-      new localvaults::Env(maidsafe_vault::kNetworkSize,
-                           &maidsafe_vault::pdvaults_, testpdvault::K));
-  return RUN_ALL_TESTS();
+  try {
+    if (boost::filesystem::exists(".kadconfig"))
+      boost::filesystem::remove(".kadconfig");
+  }
+  catch(const std::exception& e) {
+    printf("%s\n", e.what());
+  }
+  testing::AddGlobalTestEnvironment(new maidsafe::test::localvaults::Env(
+      testpdvault::K, maidsafe_vault::kNetworkSize,
+      &maidsafe_vault::pdvaults_, &maidsafe_vault::kadconfig_));
+
+  int result = RUN_ALL_TESTS();
+  try {
+    if (boost::filesystem::exists(".kadconfig"))
+      boost::filesystem::remove(".kadconfig");
+  }
+  catch(const std::exception& e) {
+    printf("%s\n", e.what());
+  }
+  return result;
 }
+

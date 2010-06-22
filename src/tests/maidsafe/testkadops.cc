@@ -37,7 +37,7 @@ class KadOpsTest : public testing::Test {
       channel_manager_(&transport_handler_),
       chunkstore_(new ChunkStore("Chunkstore", 9999999, 0)),
       mko_(&transport_handler_, &channel_manager_, kad::CLIENT, "", "", false,
-           false, chunkstore_),
+           false, test_kadops::K, chunkstore_),
       crypto_(),
       fail_parse_result_(
         mock_kadops::MakeFindNodesResponse(mock_kadops::kFailParse,

@@ -44,6 +44,8 @@ using ::testing::WithArgs;
 
 namespace test_cbph {
 static const boost::uint8_t K(4);
+static const boost::uint8_t upper_threshold(static_cast<boost::uint8_t>
+                                            (K * kMinSuccessfulPecentageStore));
 }  // namespace test_cbph
 
 void execute_cb(kad::VoidFunctorOneString cb, const std::string &result) {
@@ -327,8 +329,9 @@ class MockBPRpcs : public maidsafe::BufferPacketRpcs {
 class MockBPH : public maidsafe::ClientBufferPacketHandler {
  public:
   MockBPH(boost::shared_ptr<maidsafe::BufferPacketRpcs> rpcs,
-          boost::shared_ptr<maidsafe::KadOps> kadops)
-    : maidsafe::ClientBufferPacketHandler(rpcs, kadops) {}
+          boost::shared_ptr<maidsafe::KadOps> kadops,
+          boost::uint8_t upper_threshold)
+    : maidsafe::ClientBufferPacketHandler(rpcs, kadops, upper_threshold) {}
   MOCK_METHOD2(FindNodes,
       void(kad::VoidFunctorOneString,
            boost::shared_ptr<maidsafe::ChangeBPData>));
@@ -430,7 +433,7 @@ class TestClientBP : public testing::Test {
 };
 
 TEST_F(TestClientBP, BEH_MAID_CreateBpOk) {
-  MockBPH cbph(BPMock, kad_ops_);
+  MockBPH cbph(BPMock, kad_ops_, test_cbph::upper_threshold);
   BPCallback cb;
 
   EXPECT_CALL(cbph, FindNodes(_, _))
@@ -455,7 +458,7 @@ TEST_F(TestClientBP, BEH_MAID_CreateBpOk) {
 }
 
 TEST_F(TestClientBP, BEH_MAID_CreateBpFailFindNodes) {
-  MockBPH cbph(BPMock, kad_ops_);
+  MockBPH cbph(BPMock, kad_ops_, test_cbph::upper_threshold);
   BPCallback cb;
 
   EXPECT_CALL(cbph, FindNodes(_, _))
@@ -505,7 +508,7 @@ TEST_F(TestClientBP, BEH_MAID_CreateBpFailFindNodes) {
 }
 
 TEST_F(TestClientBP, BEH_MAID_CreateBpFailRpcs) {
-  MockBPH cbph(BPMock, kad_ops_);
+  MockBPH cbph(BPMock, kad_ops_, test_cbph::upper_threshold);
   BPCallback cb;
 
   EXPECT_CALL(cbph, FindNodes(_, _))
@@ -530,7 +533,7 @@ TEST_F(TestClientBP, BEH_MAID_CreateBpFailRpcs) {
 }
 
 TEST_F(TestClientBP, BEH_MAID_ModifyOwnerInfoOk) {
-  MockBPH cbph(BPMock, kad_ops_);
+  MockBPH cbph(BPMock, kad_ops_, test_cbph::upper_threshold);
   BPCallback cb;
 
   EXPECT_CALL(cbph, FindNodes(_, _))
@@ -556,7 +559,7 @@ TEST_F(TestClientBP, BEH_MAID_ModifyOwnerInfoOk) {
 }
 
 TEST_F(TestClientBP, BEH_MAID_ModifyOwnerInfoFailFindNodes) {
-  MockBPH cbph(BPMock, kad_ops_);
+  MockBPH cbph(BPMock, kad_ops_, test_cbph::upper_threshold);
   BPCallback cb;
 
   EXPECT_CALL(cbph, FindNodes(_, _))
@@ -607,7 +610,7 @@ TEST_F(TestClientBP, BEH_MAID_ModifyOwnerInfoFailFindNodes) {
 }
 
 TEST_F(TestClientBP, BEH_MAID_ModifyOwnerInfoFailRpcs) {
-  MockBPH cbph(BPMock, kad_ops_);
+  MockBPH cbph(BPMock, kad_ops_, test_cbph::upper_threshold);
   BPCallback cb;
 
   EXPECT_CALL(cbph, FindNodes(_, _))
@@ -633,7 +636,7 @@ TEST_F(TestClientBP, BEH_MAID_ModifyOwnerInfoFailRpcs) {
 }
 
 TEST_F(TestClientBP, BEH_MAID_AddMessageOk) {
-  MockBPH cbph(BPMock, kad_ops_);
+  MockBPH cbph(BPMock, kad_ops_, test_cbph::upper_threshold);
   BPCallback cb;
 
   EXPECT_CALL(cbph, FindNodes(_, _))
@@ -667,7 +670,7 @@ TEST_F(TestClientBP, BEH_MAID_AddMessageOk) {
 }
 
 TEST_F(TestClientBP, BEH_MAID_AddMessageFailFindNodes) {
-  MockBPH cbph(BPMock, kad_ops_);
+  MockBPH cbph(BPMock, kad_ops_, test_cbph::upper_threshold);
   BPCallback cb;
 
   EXPECT_CALL(cbph, FindNodes(_, _))
@@ -729,7 +732,7 @@ TEST_F(TestClientBP, BEH_MAID_AddMessageFailFindNodes) {
 }
 
 TEST_F(TestClientBP, BEH_MAID_AddMessageFailRpcs) {
-  MockBPH cbph(BPMock, kad_ops_);
+  MockBPH cbph(BPMock, kad_ops_, test_cbph::upper_threshold);
   BPCallback cb;
 
   EXPECT_CALL(cbph, FindNodes(_, _))
@@ -763,7 +766,7 @@ TEST_F(TestClientBP, BEH_MAID_AddMessageFailRpcs) {
 }
 
 TEST_F(TestClientBP, BEH_MAID_GetMessagesOk) {
-  MockBPH cbph(BPMock, kad_ops_);
+  MockBPH cbph(BPMock, kad_ops_, test_cbph::upper_threshold);
   BPCallback cb;
   GetMsgsHelper helper;
   helper.AddMessage("msg1", keys_.at(1).public_key(), "sender1");
@@ -805,7 +808,7 @@ TEST_F(TestClientBP, BEH_MAID_GetMessagesOk) {
 }
 
 TEST_F(TestClientBP, BEH_MAID_GetMessagesFailFindNodes) {
-  MockBPH cbph(BPMock, kad_ops_);
+  MockBPH cbph(BPMock, kad_ops_, test_cbph::upper_threshold);
   BPCallback cb;
   GetMsgsHelper helper;
   helper.AddMessage("msg1", keys_.at(1).public_key(), "sender1");
@@ -867,7 +870,7 @@ TEST_F(TestClientBP, BEH_MAID_GetMessagesFailFindNodes) {
 }
 
 TEST_F(TestClientBP, BEH_MAID_GetMessagesFailRpcs) {
-  MockBPH cbph(BPMock, kad_ops_);
+  MockBPH cbph(BPMock, kad_ops_, test_cbph::upper_threshold);
   BPCallback cb;
   GetMsgsHelper helper;
   helper.AddMessage("msg1", keys_.at(1).public_key(), "sender1");
@@ -898,7 +901,7 @@ TEST_F(TestClientBP, BEH_MAID_GetMessagesFailRpcs) {
 }
 
 TEST_F(TestClientBP, BEH_MAID_AddPresenceOk) {
-  MockBPH cbph(BPMock, kad_ops_);
+  MockBPH cbph(BPMock, kad_ops_, test_cbph::upper_threshold);
   BPCallback cb;
 
   EXPECT_CALL(cbph, FindNodes(_, _))
@@ -931,7 +934,7 @@ TEST_F(TestClientBP, BEH_MAID_AddPresenceOk) {
 }
 
 TEST_F(TestClientBP, BEH_MAID_AddPresenceFailFindNodes) {
-  MockBPH cbph(BPMock, kad_ops_);
+  MockBPH cbph(BPMock, kad_ops_, test_cbph::upper_threshold);
   BPCallback cb;
 
   EXPECT_CALL(cbph, FindNodes(_, _))
@@ -989,7 +992,7 @@ TEST_F(TestClientBP, BEH_MAID_AddPresenceFailFindNodes) {
 }
 
 TEST_F(TestClientBP, BEH_MAID_AddBPPresenceFailRpcs) {
-  MockBPH cbph(BPMock, kad_ops_);
+  MockBPH cbph(BPMock, kad_ops_, test_cbph::upper_threshold);
   BPCallback cb;
 
   EXPECT_CALL(cbph, FindNodes(_, _))
@@ -1022,7 +1025,7 @@ TEST_F(TestClientBP, BEH_MAID_AddBPPresenceFailRpcs) {
 }
 
 TEST_F(TestClientBP, BEH_MAID_GetPresenceOk) {
-  MockBPH cbph(BPMock, kad_ops_);
+  MockBPH cbph(BPMock, kad_ops_, test_cbph::upper_threshold);
   BPCallback cb;
   GetMsgsHelper helper;
   helper.AddPresence("sender1");
@@ -1071,7 +1074,7 @@ TEST_F(TestClientBP, BEH_MAID_GetPresenceOk) {
 }
 
 TEST_F(TestClientBP, BEH_MAID_GetPresenceFailFindNodes) {
-  MockBPH cbph(BPMock, kad_ops_);
+  MockBPH cbph(BPMock, kad_ops_, test_cbph::upper_threshold);
   BPCallback cb;
   GetMsgsHelper helper;
   helper.AddPresence("sender1");
@@ -1133,7 +1136,7 @@ TEST_F(TestClientBP, BEH_MAID_GetPresenceFailFindNodes) {
 }
 
 TEST_F(TestClientBP, BEH_MAID_GetPresenceFailRpcs) {
-  MockBPH cbph(BPMock, kad_ops_);
+  MockBPH cbph(BPMock, kad_ops_, test_cbph::upper_threshold);
   BPCallback cb;
   GetMsgsHelper helper;
   helper.AddPresence("sender1");

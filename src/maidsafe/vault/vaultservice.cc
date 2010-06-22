@@ -1022,7 +1022,7 @@ void VaultService::AmendAccount(google::protobuf::RpcController*,
                HexSubstr(pmid).c_str());
         for (size_t i = 0; i < close_contacts.size(); ++i) {
           printf("\t-- %s\n", HexSubstr(close_contacts.at(i).node_id().
-                 ToStringDecoded()).c_str());
+                 String()).c_str());
         }
         printf("\n");
 #endif

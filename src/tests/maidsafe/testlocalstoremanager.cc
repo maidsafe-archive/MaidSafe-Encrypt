@@ -89,7 +89,7 @@ class LocalStoreManagerTest : public testing::Test {
       boost::this_thread::sleep(boost::posix_time::milliseconds(10));
       count += 10;
     }
-    sm_.reset(new LocalStoreManager(client_chunkstore_, test_root_dir_, test_lsm::K));
+    sm_.reset(new LocalStoreManager(client_chunkstore_, test_lsm::K, test_root_dir_));
     cb_.Reset();
     sm_->Init(boost::bind(&test::CallbackObject::ReturnCodeCallback, &cb_, _1),
               0);

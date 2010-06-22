@@ -38,9 +38,11 @@ KadOps::KadOps(transport::TransportHandler *transport_handler,
                const std::string &public_key,
                bool port_forwarded,
                bool use_upnp,
+               boost::uint8_t k,
                boost::shared_ptr<ChunkStore> chunkstore)
-    : knode_(channel_manager, transport_handler, type, private_key,
-             public_key, port_forwarded, use_upnp),
+    : K_(k),
+      knode_(channel_manager, transport_handler, type, private_key,
+             public_key, port_forwarded, use_upnp, K_),
       node_type_(type),
       default_time_to_live_(31556926) {
   knode_.set_alternative_store(chunkstore.get());
@@ -87,11 +89,11 @@ void KadOps::Init(const boost::filesystem::path &kad_config,
     if (first_node) {
       boost::asio::ip::address local_ip;
       base::GetLocalAddress(&local_ip);
-      knode_.Join(kad::KadId(pmid, false), kad_config_path.string(),
+      knode_.Join(kad::KadId(pmid), kad_config_path.string(),
           local_ip.to_string(), port, boost::bind(&KadOps::InitCallback, this,
           _1, mutex, cond_var, result));
     } else {
-      knode_.Join(kad::KadId(pmid, false), kad_config_path.string(),
+      knode_.Join(kad::KadId(pmid), kad_config_path.string(),
           boost::bind(&KadOps::InitCallback, this, _1, mutex, cond_var,
           result));
     }
@@ -314,7 +316,7 @@ bool ContactWithinClosest(
     const std::vector<kad::Contact> &closest_contacts) {
   kad::KadId kad_id;
   try {
-    kad_id = kad::KadId(key, false);
+    kad_id = kad::KadId(key);
   }
   catch(const std::exception&) {
     return false;

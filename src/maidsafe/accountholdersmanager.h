@@ -48,8 +48,9 @@ typedef boost::function<void(const ReturnCode&,
 
 class AccountHoldersManager {
  public:
-  explicit AccountHoldersManager(const boost::shared_ptr<KadOps> &kad_ops)
-      : kMaxFailedNodes_(kKadLowerThreshold - 1),
+  AccountHoldersManager(const boost::shared_ptr<KadOps> &kad_ops,
+                        const boost::uint8_t &lower_threshold)
+      : kMaxFailedNodes_(lower_threshold ? lower_threshold - 1 : 0),
         kMaxFailsPerNode_(2),
         kMaxUpdateInterval_(600),
         kad_ops_(kad_ops),

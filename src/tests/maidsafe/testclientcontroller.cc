@@ -39,9 +39,7 @@
 
 namespace fs = boost::filesystem;
 
-namespace cc_test {
-
-static const boost::uint8_t K(4);
+namespace test_cc {
 
 void Sleep(const int &millisecs) {
 #ifdef MS_NETWORK_TEST
@@ -49,7 +47,7 @@ void Sleep(const int &millisecs) {
 #endif
 }
 
-}  // namespace cc_test
+}  // namespace test_cc
 
 namespace maidsafe {
 
@@ -74,7 +72,7 @@ class ClientControllerTest : public testing::Test {
     cc_->ss_ = ss_;
     cc_->initialised_ = true;
 #else
-    cc_->Init(test_cc::K);
+    cc_->Init(network_test_.K());
 #endif
     vcp_.space = 1000000;
     vcp_.directory = (network_test_.test_dir() / "VaultChunkstore").string();

@@ -51,7 +51,7 @@ std::string StringToLowercase(const std::string &str) {
 }
 
 bool ContactHasId(const std::string &id, const kad::Contact &contact) {
-  return contact.node_id().ToStringDecoded() == id;
+  return contact.node_id().String() == id;
 }
 
 }  // namespace maidsafe

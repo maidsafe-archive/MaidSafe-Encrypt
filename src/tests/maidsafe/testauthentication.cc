@@ -34,130 +34,42 @@
 #include "protobuf/maidsafe_messages.pb.h"
 #include "protobuf/maidsafe_service_messages.pb.h"
 #include "tests/maidsafe/cached_keys.h"
+#include "tests/maidsafe/networktest.h"
+#include "tests/maidsafe/testcallback.h"
 
 namespace fs = boost::filesystem;
 
-namespace test_auth {
-
-static const boost::uint8_t K(4);
-
-class FakeCallback {
- public:
-  FakeCallback() : result() {}
-  void CallbackFunc(const std::string &res) {
-    result = res;
-  }
-  void Reset() {
-    result.clear();
-  }
-  std::string result;
-};
-
-void WaitForResult(const FakeCallback &cb, boost::mutex *mutex) {
-  while (true) {
-    {
-      boost::mutex::scoped_lock guard(*mutex);
-      if (!cb.result.empty())
-        return;
-    }
-    boost::this_thread::sleep(boost::posix_time::milliseconds(20));
-  }
-}
-
-void PacketOpCallback(const int &store_manager_result,
-                      boost::mutex *mutex,
-                      boost::condition_variable *cond_var,
-                      int *op_result) {
-  boost::mutex::scoped_lock lock(*mutex);
-  *op_result = store_manager_result;
-  cond_var->notify_one();
-}
-
-std::vector<crypto::RsaKeyPair> keys;
-
-}  // namespace test_auth
-
 namespace maidsafe {
+
+namespace test {
 
 class AuthenticationTest : public testing::Test {
  public:
-  AuthenticationTest() : test_root_dir_(file_system::TempDir() /
-                                        ("maidsafe_TestAuth_" +
-                                         base::RandomString(6))),
-                         ss_(),
-                         sm_(),
-                         client_chunkstore_(),
+  AuthenticationTest() : network_test_("Auth"),
+                         ss_(SessionSingleton::getInstance()),
+                         sm_(network_test_.store_manager()),
                          authentication_(),
                          username_("user1"),
                          pin_("1234"),
                          password_("password1"),
-                         cb_() {}
+                         test_keys_() {}
  protected:
   void SetUp() {
-    try {
-      if (fs::exists(test_root_dir_))
-        fs::remove_all(test_root_dir_);
-      if (fs::exists(file_system::LocalStoreManagerDir()))
-        fs::remove_all(file_system::LocalStoreManagerDir());
-    }
-    catch(const std::exception& e) {
-      printf("%s\n", e.what());
-    }
-    client_chunkstore_.reset(new ChunkStore(test_root_dir_.string(), 0, 0));
-    ASSERT_TRUE(client_chunkstore_->Init());
-    int count(0);
-    while (!client_chunkstore_->is_initialised() && count < 10000) {
-      boost::this_thread::sleep(boost::posix_time::milliseconds(10));
-      count += 10;
-    }
-    sm_.reset(new LocalStoreManager(client_chunkstore_, test_auth::K));
-    sm_->Init(0, boost::bind(&test_auth::FakeCallback::CallbackFunc, &cb_, _1),
-              test_root_dir_);
-    boost::mutex mutex;
-    test_auth::WaitForResult(cb_, &mutex);
-    GenericResponse res;
-    if ((!res.ParseFromString(cb_.result)) ||
-        (res.result() == kNack)) {
-      FAIL();
-      return;
-    }
+    ss_->ResetSession();
+    ASSERT_TRUE(network_test_.Init());
     authentication_.Init(kNoOfSystemPackets, sm_);
     ss_ = SessionSingleton::getInstance();
     ss_->ResetSession();
-    cb_.Reset();
-  }
-  void TearDown() {
-    cb_.Reset();
-    try {
-      cb_.Reset();
-      sm_->Close(boost::bind(&test_auth::FakeCallback::CallbackFunc, &cb_, _1),
-          true);
-      boost::mutex mutex;
-      test_auth::WaitForResult(cb_, &mutex);
-      GenericResponse res;
-      if ((!res.ParseFromString(cb_.result)) ||
-          (res.result() == kNack)) {
-        printf("Failed to close LocalStoreManager.\n");
-      }
-      if (fs::exists(test_root_dir_))
-        fs::remove_all(test_root_dir_);
-      if (fs::exists(file_system::LocalStoreManagerDir()))
-        fs::remove_all(file_system::LocalStoreManagerDir());
-    }
-    catch(const std::exception& e) {
-      printf("%s\n", e.what());
-    }
   }
 
-  fs::path test_root_dir_;
+  NetworkTest network_test_;
   SessionSingleton *ss_;
-  boost::shared_ptr<LocalStoreManager> sm_;
-  boost::shared_ptr<ChunkStore> client_chunkstore_;
+  boost::shared_ptr<TestStoreManager> sm_;
   Authentication authentication_;
   std::string username_;
   std::string pin_;
   std::string password_;
-  test_auth::FakeCallback cb_;
+  std::vector<crypto::RsaKeyPair> test_keys_;
  private:
   explicit AuthenticationTest(const AuthenticationTest&);
   AuthenticationTest &operator=(const AuthenticationTest&);
@@ -434,18 +346,10 @@ TEST_F(AuthenticationTest, FUNC_MAID_RepeatedSaveSessionCallbacks) {
   dm.add_chunk_size(2051);
   dm.set_compression_on(false);
   ser_dm = dm.SerializeAsString();
-  result = kPendingResult;
-  boost::mutex mutex;
-  boost::condition_variable cond_var;
-  VoidFuncOneInt func = boost::bind(&test_auth::PacketOpCallback, _1, &mutex,
-                                    &cond_var, &result);
-  authentication_.SaveSession(ser_dm, func);
-  {
-    boost::mutex::scoped_lock lock(mutex);
-    while (result == kPendingResult)
-      cond_var.wait(lock);
-  }
-  ASSERT_EQ(kSuccess, result) << "Can't save session 1";
+  CallbackObject cb;
+  authentication_.SaveSession(ser_dm, boost::bind(
+      &CallbackObject::ReturnCodeCallback, &cb, _1));
+  ASSERT_EQ(kSuccess, cb.WaitForReturnCodeResult()) << "Can't save session 1";
 
   dm.Clear();
   dm.set_file_hash("filehash2");
@@ -460,14 +364,10 @@ TEST_F(AuthenticationTest, FUNC_MAID_RepeatedSaveSessionCallbacks) {
   dm.add_chunk_size(2052);
   dm.set_compression_on(false);
   ser_dm = dm.SerializeAsString();
-  result = kPendingResult;
-  authentication_.SaveSession(ser_dm, func);
-  {
-    boost::mutex::scoped_lock lock(mutex);
-    while (result == kPendingResult)
-      cond_var.wait(lock);
-  }
-  ASSERT_EQ(kSuccess, result) << "Can't save session 2";
+  cb.Reset();
+  authentication_.SaveSession(ser_dm, boost::bind(
+      &CallbackObject::ReturnCodeCallback, &cb, _1));
+  ASSERT_EQ(kSuccess, cb.WaitForReturnCodeResult()) << "Can't save session 2";
   ASSERT_TRUE(sm_->KeyUnique(tmidsmidname, false));
 }
 
@@ -615,30 +515,20 @@ TEST_F(AuthenticationTest, FUNC_MAID_CreatePublicName) {
 }
 
 TEST_F(AuthenticationTest, FUNC_MAID_InvalidUsernamePassword) {
-  cached_keys::MakeKeys(2, &test_auth::keys);
-  crypto::RsaKeyPair keypair1 = test_auth::keys.at(0);
-  crypto::RsaKeyPair keypair2 = test_auth::keys.at(1);
+  cached_keys::MakeKeys(2, &test_keys_);
+  crypto::RsaKeyPair keypair1 = test_keys_.at(0);
+  crypto::RsaKeyPair keypair2 = test_keys_.at(1);
   boost::shared_ptr<Packet> midPacket(PacketFactory::Factory(MID));
   PacketParams params;
   params["username"] = username_;
   params["pin"] = pin_;
   std::string mid_name = midPacket->PacketName(params);
-  int result(kGeneralError);
-  boost::mutex mutex;
-  boost::condition_variable cond_var;
-  VoidFuncOneInt func = boost::bind(&test_auth::PacketOpCallback, _1, &mutex,
-                                    &cond_var, &result);
   ss_->AddKey(ANMID, "ID", keypair2.private_key(), keypair2.public_key(), "");
+  CallbackObject cb;
   sm_->StorePacket(mid_name, "rubbish data with same mid name", MID,
-      PRIVATE, "", kDoNothingReturnFailure, func);
-  {
-    boost::mutex::scoped_lock lock(mutex);
-    while (result == kGeneralError)
-      cond_var.wait(lock);
-  }
-  ASSERT_EQ(kSuccess, result);
-  result = authentication_.GetUserInfo(username_, pin_);
-  EXPECT_EQ(kUserDoesntExist, result);
+      PRIVATE, "", boost::bind(&CallbackObject::ReturnCodeCallback, &cb, _1));
+  ASSERT_EQ(kSuccess, cb.WaitForReturnCodeResult());
+  EXPECT_EQ(kUserDoesntExist, authentication_.GetUserInfo(username_, pin_));
   while (authentication_.get_smidtimid_result() == kPendingResult)
     boost::this_thread::sleep(boost::posix_time::milliseconds(10));
 }
@@ -648,21 +538,17 @@ TEST_F(AuthenticationTest, FUNC_MAID_CreateMSIDPacket) {
   co.set_symm_algorithm(crypto::AES_256);
   co.set_hash_algorithm(crypto::SHA_512);
   std::string msid_name, pub_key, priv_key;
-  cb_.Reset();
+  CallbackObject cb;
   authentication_.CreateMSIDPacket(boost::bind(
-      &test_auth::FakeCallback::CallbackFunc, &cb_, _1));
-  boost::mutex mutex;
-  test_auth::WaitForResult(cb_, &mutex);
-//  boost::this_thread::sleep(boost::posix_time::seconds(1));
+      &CallbackObject::StringCallback, &cb, _1));
+  std::string cb_result = cb.WaitForStringResult();
   CreateMSIDResult msid_result;
-  ASSERT_TRUE(msid_result.ParseFromString(cb_.result));
+  ASSERT_TRUE(msid_result.ParseFromString(cb_result));
   ASSERT_EQ(kAck, static_cast<int>(msid_result.result()));
   msid_name = msid_result.name();
   priv_key = msid_result.private_key();
   pub_key = msid_result.public_key();
   std::string empty_str;
-  cb_.Reset();
-//  boost::this_thread::sleep(boost::posix_time::seconds(1));
   ASSERT_NE(empty_str, msid_name);
   ASSERT_NE(empty_str, priv_key);
   ASSERT_NE(empty_str, pub_key);
@@ -729,15 +615,6 @@ TEST_F(AuthenticationTest, FUNC_MAID_RegisterLeaveRegister) {
   ASSERT_EQ(kSuccess, result) << "Unable to register user again.";
 }
 
-TEST(AuthenticationTest1, BEH_MAID_TestDestructor) {
-  boost::shared_ptr<ChunkStore> chunkstore(new ChunkStore("tmp", 0, 0));
-  boost::shared_ptr<LocalStoreManager> sm(new LocalStoreManager(chunkstore,
-                                                                test_auth::K));
-  Authentication *auth = new Authentication;
-  auth->Init(kNoOfSystemPackets, sm);
-  boost::this_thread::sleep(boost::posix_time::seconds(3));
-  delete auth;
-  SUCCEED();
-}
+}  // namespace test
 
 }  // namespace maidsafe

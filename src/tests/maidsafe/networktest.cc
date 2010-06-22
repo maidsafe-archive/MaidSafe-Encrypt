@@ -29,15 +29,23 @@ namespace fs = boost::filesystem;
 namespace maidsafe {
 namespace test {
 
+
 #ifdef MS_NETWORK_TEST
 
-const int g_kNetworkSize = kad::K + 2;
+const boost::uint8_t g_K(4);
+const int g_kNetworkSize = g_K + 2;
 LocalVaults g_pdvaults;
 fs::path g_kad_config_file;
 
+boost::uint8_t K() { return g_K; }
 int kNetworkSize() { return g_kNetworkSize; }
 LocalVaults *pdvaults() { return &g_pdvaults; }
 fs::path *kadconfig() { return &g_kad_config_file; }
+
+#else  // MS_NETWORK_TEST
+
+const boost::uint8_t g_K(16);
+boost::uint8_t K() { return g_K; }
 
 #endif  // MS_NETWORK_TEST
 
@@ -57,10 +65,16 @@ NetworkTest::NetworkTest(const std::string &test_name)
                                            "/ChunkStore"), 99999999, 0)),
       kad_ops_(),
 #ifdef MS_NETWORK_TEST
-      store_manager_(new TestStoreManager(chunkstore_)) {
+      store_manager_(new TestStoreManager(chunkstore_, g_K)),
 #else
-      store_manager_(new TestStoreManager(chunkstore_, test_dir_.string())) {
+      store_manager_(new TestStoreManager(chunkstore_, g_K, test_dir_)),
 #endif
+      K_(g_K),
+      upper_threshold_(static_cast<boost::uint8_t>
+                       (g_K * kMinSuccessfulPecentageStore)),
+      lower_threshold_(kMinSuccessfulPecentageStore > .25 ?
+                      static_cast<boost::uint8_t>(g_K * .25) :
+                      upper_threshold_) {
   try {
     if (fs::exists(test_dir_))
       fs::remove_all(test_dir_);

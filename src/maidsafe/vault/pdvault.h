@@ -51,6 +51,8 @@
 namespace maidsafe {
 namespace test {
 class CBPHandlerTest;
+class ImMessagingTest;
+class CCImMessagingTest;
 // This forward declaration is to allow gtest environment to be declared as a
 // friend class
 namespace localvaults {
@@ -62,6 +64,8 @@ class Env;
 namespace maidsafe_vault {
 
 enum VaultStatus {kVaultStarted, kVaultStopping, kVaultStopped};
+
+class RunPDVaults;
 
 /* struct SyncVaultData {
   SyncVaultData() : chunk_names(), num_updated_chunks(0), num_chunks(0),
@@ -227,7 +231,10 @@ class PDVault {
   void StopRvPing() { transport_handler_.StopPingRendezvous(); }
   friend class maidsafe::test::localvaults::Env;
   friend class PDVaultTest;
+  friend class RunPDVaults;
   friend class maidsafe::test::CBPHandlerTest;
+  friend class maidsafe::test::ImMessagingTest;
+  friend class maidsafe::test::CCImMessagingTest;
  private:
   PDVault(const PDVault&);
   PDVault& operator=(const PDVault&);

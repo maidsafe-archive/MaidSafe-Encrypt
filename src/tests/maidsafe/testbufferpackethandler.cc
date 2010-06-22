@@ -104,8 +104,8 @@ class CBPHandlerTest : public testing::Test {
     cached_keys::MakeKeys(2, &keys_);
     bp_rpcs_.reset(new BufferPacketRpcsImpl(
         network_test_.transport_handler(), network_test_.channel_manager()));
-    cbph_.reset(new ClientBufferPacketHandler(bp_rpcs_,
-                network_test_.kad_ops()));
+    cbph_.reset(new ClientBufferPacketHandler(bp_rpcs_, network_test_.kad_ops(),
+                                              network_test_.upper_threshold()));
   }
 
   NetworkTest network_test_;

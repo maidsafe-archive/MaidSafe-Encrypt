@@ -59,9 +59,10 @@ class MockKadOps : public KadOps {
              const std::string &public_key,
              bool port_forwarded,
              bool use_upnp,
+             boost::uint8_t k,
              boost::shared_ptr<ChunkStore> chunkstore)
       : KadOps(transport_handler, channel_manager, type, private_key,
-               public_key, port_forwarded, use_upnp, chunkstore) {}
+               public_key, port_forwarded, use_upnp, k, chunkstore) {}
   MOCK_METHOD1(AddressIsLocal, bool(const kad::Contact &peer));
   MOCK_METHOD1(AddressIsLocal, bool(const kad::ContactInfo &peer));
   MOCK_METHOD3(FindValue, void(const std::string &key,

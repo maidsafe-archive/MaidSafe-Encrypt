@@ -28,6 +28,10 @@
 #include "maidsafe/vault/requestexpectationhandler.h"
 #include "protobuf/maidsafe_service_messages.pb.h"
 
+namespace test_reh {
+static const boost::uint8_t K(8);
+}  // namespace test_reh
+
 namespace maidsafe_vault {
 
 class RequestExpectationHandlerTest : public testing::Test {
@@ -93,7 +97,7 @@ class RequestExpectationHandlerTest : public testing::Test {
     expect_amendment_request_.set_public_key(public_key_);
     expect_amendment_request_.set_public_key_signature(public_key_signature_);
     expect_amendment_request_.set_request_signature(request_signature_);
-    for (boost::uint16_t i = 0; i < kad::K; ++i) {
+    for (boost::uint16_t i = 0; i < test_reh::K; ++i) {
       amender_pmids_.push_back(co_.Hash(base::RandomString(100), "",
                                         crypto::STRING_STRING, false));
       expect_amendment_request_.add_amender_pmids(amender_pmids_.at(i));
@@ -161,7 +165,7 @@ TEST_F(RequestExpectationHandlerTest, BEH_MAID_REH_GetExpectedCallersIds) {
   boost::this_thread::sleep(boost::posix_time::milliseconds(10));
   std::vector<std::string> second_ids;
   expect_amendment_request_.clear_amender_pmids();
-  for (boost::uint16_t i = 0; i < kad::K; ++i) {
+  for (boost::uint16_t i = 0; i < test_reh::K; ++i) {
     second_ids.push_back(co_.Hash(base::RandomString(100), "",
                                   crypto::STRING_STRING, false));
     expect_amendment_request_.add_amender_pmids(second_ids.at(i));
@@ -171,7 +175,7 @@ TEST_F(RequestExpectationHandlerTest, BEH_MAID_REH_GetExpectedCallersIds) {
 
   // Add more expectations
   expect_amendment_request_.clear_amender_pmids();
-  for (boost::uint16_t i = 0; i < kad::K; ++i) {
+  for (boost::uint16_t i = 0; i < test_reh::K; ++i) {
     expect_amendment_request_.add_amender_pmids(co_.Hash(
         base::RandomString(100), "", crypto::STRING_STRING, false));
   }
@@ -260,7 +264,7 @@ TEST_F(RequestExpectationHandlerTest, BEH_MAID_REH_CleanUp) {
   amend_account_request.set_chunkname(first_id);
   std::vector<std::string> result =
       another_expectation_handler.GetExpectedCallersIds(amend_account_request);
-  ASSERT_EQ(kad::K, result.size());
+  ASSERT_EQ(test_reh::K, result.size());
   ASSERT_EQ(test_count - 1, another_expectation_handler.expectations_.size());
   result =
       another_expectation_handler.GetExpectedCallersIds(amend_account_request);
@@ -276,7 +280,7 @@ TEST_F(RequestExpectationHandlerTest, BEH_MAID_REH_CleanUp) {
   amend_account_request.set_chunkname(second_id);
   result =
       another_expectation_handler.GetExpectedCallersIds(amend_account_request);
-  ASSERT_EQ(kad::K, result.size());
+  ASSERT_EQ(test_reh::K, result.size());
   ASSERT_EQ((test_count / 2) - 1,
             another_expectation_handler.expectations_.size());
 

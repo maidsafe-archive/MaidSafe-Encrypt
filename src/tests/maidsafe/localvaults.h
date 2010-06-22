@@ -65,9 +65,9 @@ inline void GeneratePmidStuff(std::string *public_key,
 
 class Env: public testing::Environment {
  public:
-  Env(const int kNetworkSize,
+  Env(const boost::uint8_t &k,
+      const int kNetworkSize,
       std::vector<boost::shared_ptr<maidsafe_vault::PDVault> > *pdvaults,
-      const boost::uint8_t &k,
       fs::path *kadconfig)
       : K_(k),
         vault_dir_(file_system::TempDir() / ("maidsafe_TestVaults_" +

@@ -125,7 +125,7 @@ class VaultServicesTest : public testing::Test {
     ASSERT_TRUE(vault_chunkstore_->Init());
     kad_ops_.reset(new maidsafe::KadOps(&transport_handler_,
         &channel_manager_, kad::VAULT, vault_private_key_, vault_public_key_,
-        false, false, vault_chunkstore_));
+        false, false, test_vault_service::K, vault_chunkstore_));
     kad_ops_->set_transport_id(transport_id);
 
     vault_service_logic_ = new VaultServiceLogic(vault_rpcs_, kad_ops_);
@@ -2337,7 +2337,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesExpectAmendment) {
   request.set_public_key(pub_key);
   request.set_public_key_signature(pub_key_sig);
   std::vector<std::string> amender_pmids;
-  for (boost::uint16_t i = 0; i < kad::K; ++i) {
+  for (boost::uint16_t i = 0; i < test_vault_service::K; ++i) {
     amender_pmids.push_back(co.Hash(base::RandomString(100), "",
                                     crypto::STRING_STRING, false));
     request.add_amender_pmids(amender_pmids.at(i));

@@ -106,7 +106,7 @@ MaidsafeStoreManager::MaidsafeStoreManager(boost::shared_ptr<ChunkStore> cstore,
       im_status_notifier_(),
       im_conn_hdler_(),
       im_handler_(ss_),
-      account_holders_manager_(kad_ops_),
+      account_holders_manager_(kad_ops_, lower_threshold_),
       account_status_manager_() {}
 
 MaidsafeStoreManager::MaidsafeStoreManager(boost::shared_ptr<ChunkStore> cstore,
@@ -135,7 +135,7 @@ MaidsafeStoreManager::MaidsafeStoreManager(boost::shared_ptr<ChunkStore> cstore,
       im_status_notifier_(),
       im_conn_hdler_(),
       im_handler_(ss_),
-      account_holders_manager_(kad_ops_),
+      account_holders_manager_(kad_ops_, lower_threshold_),
       account_status_manager_() {}
 
 void MaidsafeStoreManager::Init(VoidFuncOneInt callback,
@@ -1667,10 +1667,10 @@ void MaidsafeStoreManager::AddToWatchListStageTwo(
     return;
   }
 
-  if (find_response.closest_nodes_size() < kKadUpperThreshold) {
+  if (find_response.closest_nodes_size() < upper_threshold_) {
 #ifdef DEBUG
     printf("In MSM::AddToWatchListStageTwo, Kad lookup failed to find %u nodes;"
-           " found %i nodes.\n", kKadUpperThreshold,
+           " found %i nodes.\n", upper_threshold_,
            find_response.closest_nodes_size());
 #endif
     tasks_handler_.DeleteTask(data->store_data.data_name, kStoreChunk,
@@ -1685,7 +1685,7 @@ void MaidsafeStoreManager::AddToWatchListStageTwo(
   }
 
   data->account_holders = account_holders_manager_.account_holder_group();
-  if (data->account_holders.size() < kKadUpperThreshold) {
+  if (data->account_holders.size() < upper_threshold_) {
 #ifdef DEBUG
     printf("In MSM::AddToWatchListStageTwo, no account holders available.\n");
 #endif
@@ -1711,7 +1711,7 @@ void MaidsafeStoreManager::AddToWatchListStageTwo(
 
   for (size_t i = 0; i < data->account_holders.size(); ++i) {
     WatchListOpData::AccountDataHolder holder(
-        data->account_holders.at(i).node_id().ToStringDecoded());
+        data->account_holders.at(i).node_id().String());
     data->account_data_holders.push_back(holder);
   }
 
@@ -1761,12 +1761,12 @@ void MaidsafeStoreManager::AddToWatchListStageThree(
     ++data->success_count;
   }
 
-  if (data->returned_count < kKadUpperThreshold ||
+  if (data->returned_count < upper_threshold_ ||
       (data->returned_count < data->account_holders.size() &&
-       data->success_count < kKadUpperThreshold)) {
+       data->success_count < upper_threshold_)) {
     // still waiting for consensus
     return;
-  } else if (data->success_count < kKadUpperThreshold) {
+  } else if (data->success_count < upper_threshold_) {
     // failed to get enough positive responses
 #ifdef DEBUG
     printf("In MSM::AddToWatchListStageThree, ExpectAmendment failed.\n");
@@ -2098,12 +2098,12 @@ int MaidsafeStoreManager::GetExpectAmendmentRequests(
   request.set_public_key_signature(store_data.public_key_signature);
   for (size_t i = 0; i < chunk_info_holders.size(); ++i) {
     request.add_amender_pmids(
-        chunk_info_holders.at(i).node_id().ToStringDecoded());
+        chunk_info_holders.at(i).node_id().String());
   }
   for (size_t i = 0; i < account_holders.size(); ++i) {
     std::string signature;
     GetRequestSignature(store_data.data_name, store_data.dir_type,
-        account_holders.at(i).node_id().ToStringDecoded(),
+        account_holders.at(i).node_id().String(),
         store_data.public_key, store_data.public_key_signature,
         store_data.private_key, &signature);
     if (signature.empty()) {
@@ -2579,10 +2579,10 @@ void MaidsafeStoreManager::RemoveFromWatchListStageTwo(
     return;
   }
 
-  if (find_response.closest_nodes_size() < kKadUpperThreshold) {
+  if (find_response.closest_nodes_size() < upper_threshold_) {
 #ifdef DEBUG
     printf("In MSM::RemoveFromWatchListStageTwo, Kad lookup failed to find %u "
-           "nodes; found %u nodes.\n", kKadUpperThreshold,
+           "nodes; found %u nodes.\n", upper_threshold_,
            find_response.closest_nodes_size());
 #endif
     tasks_handler_.DeleteTask(data->store_data.data_name, kDeleteChunk,
@@ -2597,7 +2597,7 @@ void MaidsafeStoreManager::RemoveFromWatchListStageTwo(
   }
 
   data->account_holders = account_holders_manager_.account_holder_group();
-  if (data->account_holders.size() < kKadUpperThreshold) {
+  if (data->account_holders.size() < upper_threshold_) {
 #ifdef DEBUG
     printf("In MSM::RemoveFromWatchListStageTwo, no account holders available."
            "\n");
@@ -2625,7 +2625,7 @@ void MaidsafeStoreManager::RemoveFromWatchListStageTwo(
 
   for (size_t i = 0; i < data->account_holders.size(); ++i) {
     WatchListOpData::AccountDataHolder holder(
-        data->account_holders.at(i).node_id().ToStringDecoded());
+        data->account_holders.at(i).node_id().String());
     data->account_data_holders.push_back(holder);
   }
 
@@ -2675,12 +2675,12 @@ void MaidsafeStoreManager::RemoveFromWatchListStageThree(
     ++data->success_count;
   }
 
-  if (data->returned_count < kKadUpperThreshold ||
+  if (data->returned_count < upper_threshold_ ||
       (data->returned_count < data->account_holders.size() &&
-       data->success_count < kKadUpperThreshold)) {
+       data->success_count < upper_threshold_)) {
     // still waiting for consensus
     return;
-  } else if (data->success_count < kKadUpperThreshold) {
+  } else if (data->success_count < upper_threshold_) {
     // failed to get enough positive responses
 #ifdef DEBUG
     printf("In MSM::RemoveFromWatchListStageThree, ExpectAmendment failed.\n");

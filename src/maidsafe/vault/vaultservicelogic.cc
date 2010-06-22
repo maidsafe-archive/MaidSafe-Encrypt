@@ -49,7 +49,7 @@ VaultServiceLogic::VaultServiceLogic(
           pmid_private_(),
           online_(false),
           online_mutex_(),
-          K_(k),
+          K_(kadops->k()),
           upper_threshold_(
               static_cast<boost::uint16_t>(K_ * kMinSuccessfulPecentageStore)),
           lower_threshold_(kMinSuccessfulPecentageStore > .25 ?
@@ -102,7 +102,7 @@ void VaultServiceLogic::AddToRemoteRefList(
   }
   boost::shared_ptr<AddToReferenceListOpData> data(new AddToReferenceListOpData(
       request, request.chunkname(), found_local_result, callback,
-      transport_id));
+      transport_id, K_));
   kad_ops_->FindKClosestNodes(request.chunkname(),
       boost::bind(static_cast< void(VaultServiceLogic::*)
           (boost::shared_ptr<AddToReferenceListOpData>, std::string) >
@@ -199,7 +199,7 @@ void VaultServiceLogic::RemoteOpStageTwo(boost::shared_ptr<T> data,
   for (size_t i = 0; i < data->contacts.size(); ++i) {
     printf("In VSL::RemoteOpStageTwo (%s), contact #%d is %s.\n",
            HexSubstr(pmid_).c_str(), i,
-           HexSubstr(data->contacts[i].node_id().ToStringDecoded()).c_str());
+           HexSubstr(data->contacts[i].node_id().String()).c_str());
   }
 #endif
 
@@ -225,12 +225,12 @@ void VaultServiceLogic::RemoteOpStageTwo(boost::shared_ptr<T> data,
     // TODO(Team#) trigger transfer of account data to closer node
   }
 
-  if (data->contacts.size() + less_contacts < size_t(kKadUpperThreshold)) {
+  if (data->contacts.size() + less_contacts < upper_threshold_) {
 #ifdef DEBUG
     printf("In VSL::RemoteOpStageTwo for %s (%s), %u contacts + %u (removed) < "
            "success threshold (%u).\n", typeid(data).name(),
            HexSubstr(pmid_).c_str(), data->contacts.size(), less_contacts,
-           kKadUpperThreshold);
+           upper_threshold_);
 #endif
     data->callback(kVaultServiceFindNodesTooFew);
     return;
@@ -358,9 +358,9 @@ void VaultServiceLogic::AssessResult(ReturnCode result,
   if (data->success_count >= upper_threshold_ ||
       data->failure_count > data->data_holders.size() - upper_threshold_) {
 #ifdef DEBUG
-    printf("In VSL::AssessResult for %s (%s), data->success_count (%u) >= kKadUpperThreshold (%u) OR "
-      "data->failure_count (%u) > data->data_holders.size() (%u) - kKadUpperThreshold (%u) (%u), so returning %i.\n", typeid(data).name(), HexSubstr(pmid_).c_str(), data->success_count, kKadUpperThreshold,
-           data->failure_count, data->data_holders.size(), kKadUpperThreshold, data->data_holders.size() - kKadUpperThreshold, result);
+    printf("In VSL::AssessResult for %s (%s), data->success_count (%u) >= upper_threshold_ (%u) OR "
+      "data->failure_count (%u) > data->data_holders.size() (%u) - upper_threshold_ (%u) (%u), so returning %i.\n", typeid(data).name(), HexSubstr(pmid_).c_str(), data->success_count, upper_threshold_,
+           data->failure_count, data->data_holders.size(), upper_threshold_, data->data_holders.size() - upper_threshold_, result);
 #endif
     data->callback(result);
     data->callback_done = true;
