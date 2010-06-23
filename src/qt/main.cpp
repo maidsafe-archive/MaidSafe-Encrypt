@@ -96,7 +96,7 @@ int main(int argc, char *argv[]) {
 
   // apply style sheet
 
-  QFile file(":/qss/defaultWithWhite1.qss");
+  QFile file(":/qss/black_theme.qss");
   file.open(QFile::ReadOnly);
   QString styleSheet = QLatin1String(file.readAll());
 

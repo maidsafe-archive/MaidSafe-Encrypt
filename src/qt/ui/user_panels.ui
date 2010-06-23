@@ -30,19 +30,21 @@
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
-    <widget class="QLabel" name="public_username">
-     <property name="text">
-      <string/>
-     </property>
-    </widget>
-   </item>
-   <item>
     <widget class="QListWidget" name="toolBarListWidget">
      <property name="maximumSize">
       <size>
        <width>16777215</width>
        <height>60</height>
       </size>
+     </property>
+     <property name="autoFillBackground">
+      <bool>true</bool>
+     </property>
+     <property name="showDropIndicator" stdset="0">
+      <bool>false</bool>
+     </property>
+     <property name="dragDropMode">
+      <enum>QAbstractItemView::NoDragDrop</enum>
      </property>
      <property name="iconSize">
       <size>
@@ -55,6 +57,13 @@
      </property>
      <property name="viewMode">
       <enum>QListView::IconMode</enum>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QLabel" name="public_username">
+     <property name="text">
+      <string/>
      </property>
     </widget>
    </item>

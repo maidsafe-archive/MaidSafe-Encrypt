@@ -68,13 +68,10 @@
     <file alias="question">16/question.png</file>
   </qresource>
   <qresource prefix="/qss">
-    <file>defaultWithWhite1.qss</file>
-    <file>defaultWithWhite.qss</file>
-    <file>test2withble.qss</file>
-    <file>test2withtabs.qss</file>
-    <file>grey_purple.qss</file>
-    <file>test2withlabel.qss</file>
+    <file>blue_theme.qss</file>
     <file>green_theme.qss</file>
-    <file>green_test.qss</file>
+    <file>red_theme.qss</file>
+    <file>grey_purple.qss</file>
+    <file>black_theme.qss</file>
   </qresource>
 </RCC>

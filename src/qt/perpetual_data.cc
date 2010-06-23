@@ -165,6 +165,10 @@ void PerpetualData::createActions() {
   actions_[ MANUAL ] = ui_.actionManual;
   actions_[ UPDATE ] = ui_.actionUpdate;
 // actions_[ SAVE_SESSION ] = ui_.actionSave_Session;
+  actions_[ THEME_BLUE ] = ui_.actionBlue;
+  actions_[ THEME_BLACK ] = ui_.actionBlack;
+  actions_[ THEME_RED ] = ui_.actionRed;
+  actions_[ THEME_GREEN ] = ui_.actionGreen;
 
 // Remove Status Menu until implemented
   ui_.menuStatus->setVisible(false);
@@ -211,6 +215,14 @@ void PerpetualData::createActions() {
           this,              SLOT(onManualTriggered()));
   connect(actions_[ UPDATE ], SIGNAL(triggered()),
           this,              SLOT(onUpdateTriggered()));
+  connect(actions_[ THEME_BLACK ], SIGNAL(triggered()),
+          this,              SLOT(onBlackThemeTriggered()));
+  connect(actions_[ THEME_BLUE ], SIGNAL(triggered()),
+          this,              SLOT(onBlueThemeTriggered()));
+  connect(actions_[ THEME_GREEN ], SIGNAL(triggered()),
+          this,              SLOT(onGreenThemeTriggered()));
+  connect(actions_[ THEME_RED ], SIGNAL(triggered()),
+          this,              SLOT(onRedThemeTriggered()));
 }
 
 void PerpetualData::createMenus() {
@@ -594,9 +606,9 @@ void PerpetualData::onMessageReceived(int type,
     if (result != 0) {
       PersonalMessages* mess_ = new PersonalMessages(this, sender);
 
-      QFile file(":/qss/defaultWithWhite1.qss");
-      file.open(QFile::ReadOnly);
-      QString styleSheet = QLatin1String(file.readAll());
+      //QFile file(":/qss/defaultWithWhite1.qss");
+      //file.open(QFile::ReadOnly);
+      //QString styleSheet = QLatin1String(file.readAll());
 
       QPoint loc = this->mapToGlobal(this->pos());
       QRect rec(QApplication::desktop()->availableGeometry(mess_));
@@ -616,7 +628,7 @@ void PerpetualData::onMessageReceived(int type,
         count++;
       }
 
-      mess_->setStyleSheet(styleSheet);
+      //mess_->setStyleSheet(styleSheet);
       mess_->move(loc);
       mess_->setMessage(tr("%1").arg(detail));
       mess_->show();
@@ -902,6 +914,35 @@ void PerpetualData::onBusyTriggered() {
 }
 
 void PerpetualData::onOffline_2Triggered() {
+}
+
+void PerpetualData::onBlackThemeTriggered() {
+  QFile file(":/qss/black_theme.qss");
+  file.open(QFile::ReadOnly);
+  QString styleSheet = QLatin1String(file.readAll());
+
+  qApp->setStyleSheet(styleSheet);
+}
+void PerpetualData::onBlueThemeTriggered() {
+  QFile file(":/qss/blue_theme.qss");
+  file.open(QFile::ReadOnly);
+  QString styleSheet = QLatin1String(file.readAll());
+
+  qApp->setStyleSheet(styleSheet);
+}
+void PerpetualData::onGreenThemeTriggered() {
+  QFile file(":/qss/green_theme.qss");
+  file.open(QFile::ReadOnly);
+  QString styleSheet = QLatin1String(file.readAll());
+
+  qApp->setStyleSheet(styleSheet);
+}
+void PerpetualData::onRedThemeTriggered() {
+  QFile file(":/qss/red_theme.qss");
+  file.open(QFile::ReadOnly);
+  QString styleSheet = QLatin1String(file.readAll());
+
+  qApp->setStyleSheet(styleSheet);
 }
 
 void PerpetualData::onEmailTriggered() {
