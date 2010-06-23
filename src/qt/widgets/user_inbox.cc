@@ -59,6 +59,9 @@ UserInbox::UserInbox(QWidget* parent) : QDialog(parent) {
   connect(ui_.messageListWidget, SIGNAL(itemClicked(QListWidgetItem*)),
           this,                   SLOT(onEmailClicked(QListWidgetItem*)));
 
+  connect(ui_.toolBarListWidget, SIGNAL(itemClicked(QListWidgetItem*)),
+          this,                 SLOT(onItemClicked(QListWidgetItem*)));
+
   ui_.replyGroupBox->setVisible(false);
 }
 
@@ -75,6 +78,10 @@ int UserInbox::populateEmails() {
   if (n != 0) {
     qDebug() << "Couldn't read directory contents";
     return -1;
+  }
+
+  if (children.empty()) {
+     ui_.messageListWidget->addItem(tr("Inbox Empty"));
   }
 
   while (!children.empty()) {
@@ -178,6 +185,26 @@ void UserInbox::onReplyClicked() {
   }
 }
 
+void UserInbox::onDeleteItemClicked() {
+  if (ui_.messageListWidget->currentItem() != NULL &&
+      ui_.messageListWidget->currentItem()->text() != tr("Inbox Empty")) {
+    QListWidgetItem* item = ui_.messageListWidget->currentItem();
+    QString sender = item->text().section(":", 0, 0);
+    QString subject = item->text().section(":", 1, 1);
+
+    QString emailFolder("/Emails/");
+    QString emailMaidsafePath = QString("%1%2_%3.pdmail").arg(emailFolder)
+                                    .arg(subject).arg(sender);
+
+    RemoveDirThread* rdt = new RemoveDirThread(emailMaidsafePath, this);
+
+    connect(rdt,  SIGNAL(removeDirCompleted(int, const QString&)),
+          this, SLOT(onRemoveDirCompleted(int, const QString&)));
+
+    rdt->start();
+  }
+}
+
 void UserInbox::onSaveFileCompleted(int success, const QString& filepath) {
   QListWidgetItem* item = ui_.messageListWidget->currentItem();
 
@@ -223,6 +250,21 @@ void UserInbox::onEmailClicked(QListWidgetItem* item) {
   rft->start();
 }
 
+void UserInbox::onItemClicked(QListWidgetItem* item) {
+  if (item->text() == tr("New Mail")) {
+    sendMail_ = new UserSendMail(this);
+    sendMail_->exec();
+  } else if (item->text() == tr("Sent Mail")) {
+  } else if (item->text() == tr("Inbox")) {
+    populateEmails();
+  } else if (item->text() == tr("Delete Mail")) {
+    if (ui_.messageListWidget->currentItem() != NULL &&
+        ui_.messageListWidget->currentItem()->text() != tr("Inbox Empty")) {
+      onDeleteItemClicked();
+    }
+  }
+}
+
 void UserInbox::onEmailFileCompleted(int success, const QString& filepath) {
   if (success == 0) {
     QString path = rootPath_ + filepath;
@@ -232,8 +274,17 @@ void UserInbox::onEmailFileCompleted(int success, const QString& filepath) {
     QTextStream in(&file);
     QString line = in.readAll();
     ui_.emailDisplayEdit->setHtml(line);
-//    file.remove();
     ui_.replyGroupBox->setVisible(true);
+  }
+}
+
+void UserInbox::onRemoveDirCompleted(int success, const QString& filepath) {
+  if (success == 0) {
+    populateEmails();
+  } else {
+    QMessageBox msgBox;
+    msgBox.setText(tr("An error occured trying to remove %1").arg(filepath));
+    msgBox.exec();
   }
 }
 

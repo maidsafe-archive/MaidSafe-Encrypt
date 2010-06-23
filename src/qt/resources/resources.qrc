@@ -22,6 +22,10 @@
   <qresource prefix="icons/32">
     <file alias="Triangle-offline">32/triangle-offline.png</file>
     <file alias="Triangle">32/maidsafe-triangle.png</file>
+    <file alias="New_Message">32x32/actions/mail-message-new.png</file>
+    <file alias="Reply_Message">32x32/actions/mail-reply-sender.png</file>
+    <file alias="Sent_Messages">32x32/actions/mail-forward.png</file>
+    <file alias="Delete_Mail">32x32/actions/edit-delete.png</file>
     <file alias="Home">32x32/actions/go-home.png</file>
     <file alias="Back">32x32/actions/go-previous.png</file>
     <file alias="Contact_new">32x32/actions/contact-new.png</file>
