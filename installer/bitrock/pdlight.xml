@@ -1,9 +1,9 @@
 <project>
     <shortName>pdlightlocal</shortName>
     <fullName>PDLightLocal</fullName>
-    <version>0.01</version>
-    <readmeFile>${build_project_directory}/../text/readme.txt</readmeFile>
-    <licenseFile>${build_project_directory}/../text/EULA_001.txt</licenseFile>
+    <version>0.0.004</version>
+    <readmeFile>${build_project_directory}/../text/pdlight/readme.txt</readmeFile>
+    <licenseFile>${build_project_directory}/../text/pdlight/eula.txt</licenseFile>
     <preBuildActionList>
         <actionGroup>
             <explanation>Copy exes to install_files/</explanation>
@@ -151,8 +151,8 @@ if  grep -v maidsafe /etc/passwd ; then /usr/sbin/adduser --system --shell /bin/
     <vendor>maidsafe.net</vendor>
     <componentList>
         <component>
-	<!-- client -->
-	<name>client</name>
+  <!-- client -->
+  <name>client</name>
             <description>Client</description>
             <canBeEdited>1</canBeEdited>
             <detailedDescription>Perpetual Data Light allows you to upload, retrieve and share your files locally only.</detailedDescription>
@@ -295,9 +295,8 @@ if  grep -v maidsafe /etc/passwd ; then /usr/sbin/adduser --system --shell /bin/
                 </startMenuShortcut>
             </startMenuShortcutList>
         </component>
-
-	<!-- Auto update -->
-	<component>
+  <!-- Auto update -->
+  <component>
             <name>autoupdater</name>
             <description>Auto Updater</description>
             <canBeEdited>0</canBeEdited>
@@ -346,7 +345,7 @@ url = http://127.0.0.1/
 version_id = 1
 update_download_location = ${system_temp_directory}
 check_for_updates = 1
-					</text>
+          </text>
                 </writeFile>
                 <writeFile>
                     <path>${installdir}/chkupdate.sh</path>
@@ -357,7 +356,7 @@ if [ $? -eq 0 ]; then
 else
   echo "Nothing to report..";
 fi
-					</text>
+          </text>
                     <ruleList>
                         <platformTest>
                             <type>linux</type>
@@ -373,7 +372,7 @@ if [ $? -eq 0 ]; then
 else
   echo "Nothing to report..";
 fi
-					</text>
+          </text>
                     <ruleList>
                         <platformTest>
                             <type>osx</type>
@@ -389,7 +388,7 @@ if ERRORLEVEL 0
 else
   echo "Nothing to report..";
 fi
-					</text>
+          </text>
                     <ruleList>
                         <platformTest>
                             <type>windows</type>
@@ -405,9 +404,8 @@ fi
                         </platformTest>
                     </ruleList>
                 </runProgram>
-
-	<!-- Create an empty variable -->
-	<setInstallerVariable name="crontab_content" value="">
+  <!-- Create an empty variable -->
+  <setInstallerVariable name="crontab_content" value="">
                     <ruleList>
                         <platformTest>
                             <negate>1</negate>
@@ -415,21 +413,18 @@ fi
                         </platformTest>
                     </ruleList>
                 </setInstallerVariable>
-
-	<!-- Store in that variable the content (if exists) of the user crontab tasks -->
-	<setInstallerVariableFromScriptOutput exec="crontab" execArgs="-l" name="crontab_content">
+  <!-- Store in that variable the content (if exists) of the user crontab tasks -->
+  <setInstallerVariableFromScriptOutput exec="crontab" execArgs="-l" name="crontab_content">
                     <abortOnError>0</abortOnError>
                     <showMessageOnError>0</showMessageOnError>
                 </setInstallerVariableFromScriptOutput>
-
-	<!-- Add the tasks you want to add to this variable -->
-	<setInstallerVariable name="crontab_content">
+  <!-- Add the tasks you want to add to this variable -->
+  <setInstallerVariable name="crontab_content">
                     <value>"${crontab_content}
 @hourly ${installdir}/chkupdate.sh"</value>
                 </setInstallerVariable>
-
-	<!-- Add to crontab your tasks without removing existing one -->
-	<runProgram>
+  <!-- Add to crontab your tasks without removing existing one -->
+  <runProgram>
                     <program>echo</program>
                     <programArguments>${crontab_content} | crontab -</programArguments>
                 </runProgram>
@@ -462,4 +457,3 @@ fi
         </directoryParameter>
     </parameterList>
 </project>
-

@@ -1,10 +1,11 @@
 <project>
     <shortName>pdlightlocal</shortName>
     <fullName>PDLightLocal</fullName>
-    <version>0.0.1</version>
+    <version>0.0.004</version>
+    <installerFilename>${product_shortname}-${product_version}-installer.${platform_exec_suffix}</installerFilename>
     <debugLevel>4</debugLevel>
-    <readmeFile>${build_project_directory}/../text/readme.txt</readmeFile>
-    <licenseFile>${build_project_directory}/../text/EULA_001.txt</licenseFile>
+    <readmeFile>${build_project_directory}/../text/pdlightlocal/readme.txt</readmeFile>
+    <licenseFile>${build_project_directory}/../text/pdlightlocal/eula.txt</licenseFile>
     <leftImage>${build_project_directory}/../images/logo_left_panel.png</leftImage>
     <logoImage>${build_project_directory}/../images/logo_top_right.png</logoImage>
     <splashImage>${build_project_directory}/../images/logo_splash.png</splashImage>
@@ -216,12 +217,6 @@ if  grep -v maidsafe /etc/passwd ; then /usr/sbin/adduser --system --shell /bin/
             <text>Do you want to remove main database?</text>
             <variable>DELETE_LOCALSTOREMANAGER</variable>
         </showQuestion>
-<!--
-        <addFilesToUninstaller>
-            <abortOnError>0</abortOnError>
-            <files>${installdir}/*</files>
-        </addFilesToUninstaller>
--->
         <renameFile>
             <destination>${system_temp_directory}/xmaidsafe_LocalStoreManager</destination>
             <origin>${system_temp_directory}/maidsafe_LocalStoreManager</origin>
@@ -327,12 +322,12 @@ if  grep -v maidsafe /etc/passwd ; then /usr/sbin/adduser --system --shell /bin/
     <uninstallationLogFile>${system_temp_directory}/pdlightlocal_uninstall.log</uninstallationLogFile>
     <vendor>maidsafe.net</vendor>
     <windowsExecutableIcon>${build_project_directory}/../images/maidsafe_logo1.ico</windowsExecutableIcon>
-    <windowsResourceFileVersion>0.0.1</windowsResourceFileVersion>
+    <windowsResourceFileVersion>0.0.004</windowsResourceFileVersion>
     <windowsUninstallerExecutableIcon>${build_project_directory}/../images/maidsafe_logo_cross_not_ok.ico</windowsUninstallerExecutableIcon>
     <componentList>
         <component>
-	<!-- client -->
-	<name>client</name>
+  <!-- client -->
+  <name>client</name>
             <description>Client</description>
             <canBeEdited>1</canBeEdited>
             <detailedDescription>Perpetual Data Light Local allows you to upload, retrieve and share your files locally only.</detailedDescription>
@@ -481,9 +476,8 @@ if  grep -v maidsafe /etc/passwd ; then /usr/sbin/adduser --system --shell /bin/
                 </startMenuShortcut>
             </startMenuShortcutList>
         </component>
-
-	<!-- Auto update -->
-	<component>
+  <!-- Auto update -->
+  <component>
             <name>autoupdater</name>
             <description>Auto Updater</description>
             <canBeEdited>0</canBeEdited>
@@ -526,7 +520,7 @@ if [ $? -eq 0 ]; then
 else
   echo "Nothing to report.";
 fi
-					          </text>
+                    </text>
                     <ruleList>
                         <platformTest>
                             <type>linux</type>
@@ -542,7 +536,7 @@ if [ $? -eq 0 ]; then
 else
   echo "Nothing to report.";
 fi
-					          </text>
+                    </text>
                     <ruleList>
                         <platformTest>
                             <type>osx</type>
@@ -553,8 +547,8 @@ fi
                     <abortOnError>0</abortOnError>
                     <explanation>AutoUpdate Scheduler</explanation>
                     <actionList>
-	<!-- Create an empty variable -->
-	<setInstallerVariable name="crontab_content" value="">
+  <!-- Create an empty variable -->
+  <setInstallerVariable name="crontab_content" value="">
                             <abortOnError>0</abortOnError>
                             <ruleList>
                                 <platformTest>
@@ -566,9 +560,8 @@ fi
                                 </isTrue>
                             </ruleList>
                         </setInstallerVariable>
-
-	<!-- Store in that variable the content (if exists) of the user crontab tasks -->
-	<setInstallerVariableFromScriptOutput exec="crontab" execArgs="-l" name="crontab_content">
+  <!-- Store in that variable the content (if exists) of the user crontab tasks -->
+  <setInstallerVariableFromScriptOutput exec="crontab" execArgs="-l" name="crontab_content">
                             <abortOnError>0</abortOnError>
                             <showMessageOnError>0</showMessageOnError>
                             <ruleList>
@@ -581,9 +574,8 @@ fi
                                 </isTrue>
                             </ruleList>
                         </setInstallerVariableFromScriptOutput>
-
-	<!-- Add the tasks you want to add to this variable -->
-	<setInstallerVariable name="crontab_content">
+  <!-- Add the tasks you want to add to this variable -->
+  <setInstallerVariable name="crontab_content">
                             <abortOnError>0</abortOnError>
                             <value>"${crontab_content}
 @hourly ${installdir}/chkupdate.sh"</value>
@@ -597,9 +589,8 @@ fi
                                 </isTrue>
                             </ruleList>
                         </setInstallerVariable>
-
-	<!-- Add to crontab your tasks without removing existing one -->
-	<runProgram>
+  <!-- Add to crontab your tasks without removing existing one -->
+  <runProgram>
                             <abortOnError>0</abortOnError>
                             <program>echo</program>
                             <programArguments>${crontab_content} | crontab -</programArguments>
@@ -645,4 +636,3 @@ fi
         </directoryParameter>
     </parameterList>
 </project>
-

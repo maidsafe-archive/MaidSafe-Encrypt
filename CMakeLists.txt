@@ -827,9 +827,7 @@ ENDIF()
 IF(CMAKE_BUILD_TYPE MATCHES Release)
   INCLUDE(${PD_SOURCE_DIR}/build/maidsafe_FindInstallBuilder.cmake)
   IF(InstallBuilder_BUILDER_EXE AND InstallBuilder_CUSTOMISE_EXE)
-    ADD_CUSTOM_TARGET(perpetualdataInstaller ALL ${InstallBuilder_CUSTOMISE_EXE} build ${PD_SOURCE_DIR}/installer/bitrock/autoup_pd.xml
-                      COMMAND ${InstallBuilder_BUILDER_EXE} build ${PD_SOURCE_DIR}/installer/bitrock/pd.xml DEPENDS perpetualdata vault)
-    ADD_CUSTOM_TARGET(pdlightlocalInstaller ALL ${InstallBuilder_CUSTOMISE_EXE} build ${PD_SOURCE_DIR}/installer/bitrock/autoup_pdlightlocal.xml
-                      COMMAND ${InstallBuilder_BUILDER_EXE} build ${PD_SOURCE_DIR}/installer/bitrock/pdlightlocal.xml DEPENDS pdlightlocal)
+    ADD_CUSTOM_TARGET(perpetualdataInstaller ALL ${InstallBuilder_BUILDER_EXE} build ${PD_SOURCE_DIR}/installer/bitrock/pd.xml DEPENDS perpetualdata vault)
+    ADD_CUSTOM_TARGET(pdlightlocalInstaller ALL ${InstallBuilder_BUILDER_EXE} build ${PD_SOURCE_DIR}/installer/bitrock/pdlightlocal.xml DEPENDS pdlightlocal)
   ENDIF()
 ENDIF()
