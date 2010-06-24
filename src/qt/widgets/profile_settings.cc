@@ -64,17 +64,6 @@ void ProfileSettings::setActive(bool b) {
 
     ui_.pubNameEdit->setText(pub);
 
-//    qDebug() << "ProfileSettings::setActive - avant getinfo";
-//    int n = ClientController::instance()->GetInfo("", &profileInfo);
-//    qDebug() << "ProfileSettings::setActive - got info";
-
-//    if (n != 0) {
-//      QMessageBox::warning(this, tr("Error"),
-//                           QString(tr("contact doesn't exist. %1").arg(pub)));
-//      return;
-//    }
-
-    // qDebug() << profileInfo ;
     maidsafe::PersonalDetails pd =
         maidsafe::SessionSingleton::getInstance()->Pd();
     ui_.fullNameEdit->setText(QString(pd.full_name().c_str()));
@@ -83,7 +72,6 @@ void ProfileSettings::setActive(bool b) {
     ui_.languageEdit->setText(QString(pd.language().c_str()));
     ui_.cityEdit->setText(QString(pd.city().c_str()));
     ui_.countryEdit->setText(QString(pd.country().c_str()));
-    //  QString gender = QString(1, QChar(pd.));
 
     QString gender = QString::fromStdString(pd.gender().c_str());
 

@@ -27,6 +27,27 @@
 UserInbox::UserInbox(QWidget* parent) : QDialog(parent) {
   ui_.setupUi(this);
   setWindowIcon(QPixmap(":/icons/32/Triangle"));
+
+  connect(ui_.replyButton, SIGNAL(clicked()),
+          this,            SLOT(onReplyClicked()));
+
+  connect(ui_.messageListWidget, SIGNAL(itemClicked(QListWidgetItem*)),
+          this,                   SLOT(onEmailClicked(QListWidgetItem*)));
+
+  connect(ui_.toolBarListWidget, SIGNAL(itemClicked(QListWidgetItem*)),
+          this,                 SLOT(onItemClicked(QListWidgetItem*)));
+
+  connect(ClientController::instance(),
+                SIGNAL(emailReceieved(const maidsafe::InstantMessage&)),
+           this, SLOT(onEmailReceived(const maidsafe::InstantMessage&)));
+
+  ui_.replyGroupBox->setVisible(false);
+  ui_.toolBarListWidget->setFlow(QListView::LeftToRight);
+}
+
+UserInbox::~UserInbox() {}
+
+void UserInbox::setActive(bool active) {
   rootPath_ = QString::fromStdString(file_system::MaidsafeHomeDir(
               ClientController::instance()->SessionName()).string());
   QString emailRootPath = QString::fromStdString(
@@ -52,20 +73,7 @@ UserInbox::UserInbox(QWidget* parent) : QDialog(parent) {
     qDebug() << "UserInbox::UserInbox - getattr failed";
 
   populateEmails();
-
-  connect(ui_.replyButton, SIGNAL(clicked()),
-          this,            SLOT(onReplyClicked()));
-
-  connect(ui_.messageListWidget, SIGNAL(itemClicked(QListWidgetItem*)),
-          this,                   SLOT(onEmailClicked(QListWidgetItem*)));
-
-  connect(ui_.toolBarListWidget, SIGNAL(itemClicked(QListWidgetItem*)),
-          this,                 SLOT(onItemClicked(QListWidgetItem*)));
-
-  ui_.replyGroupBox->setVisible(false);
 }
-
-UserInbox::~UserInbox() {}
 
 int UserInbox::populateEmails() {
   ui_.messageListWidget->clear();
@@ -253,6 +261,10 @@ void UserInbox::onEmailClicked(QListWidgetItem* item) {
 void UserInbox::onItemClicked(QListWidgetItem* item) {
   if (item->text() == tr("New Mail")) {
     sendMail_ = new UserSendMail(this);
+      
+    connect(sendMail_,  SIGNAL(sendEmailCompleted(int, const QString&)),
+            this, SLOT(onEmailCompleted(int, const QString&)));
+
     sendMail_->exec();
   } else if (item->text() == tr("Sent Mail")) {
   } else if (item->text() == tr("Inbox")) {
@@ -262,7 +274,13 @@ void UserInbox::onItemClicked(QListWidgetItem* item) {
         ui_.messageListWidget->currentItem()->text() != tr("Inbox Empty")) {
       onDeleteItemClicked();
     }
+  } else if (item->text() == tr("Send/Recieve")) {
+    populateEmails();
   }
+}
+
+void UserInbox::onEmailCompleted(int, const QString& subject) {
+  populateEmails();
 }
 
 void UserInbox::onEmailFileCompleted(int success, const QString& filepath) {
@@ -281,11 +299,17 @@ void UserInbox::onEmailFileCompleted(int success, const QString& filepath) {
 void UserInbox::onRemoveDirCompleted(int success, const QString& filepath) {
   if (success == 0) {
     populateEmails();
+    ui_.replyGroupBox->setVisible(false);
+    ui_.emailDisplayEdit->clear();
   } else {
     QMessageBox msgBox;
     msgBox.setText(tr("An error occured trying to remove %1").arg(filepath));
     msgBox.exec();
   }
+}
+
+void UserInbox::onEmailReceived(const maidsafe::InstantMessage& im) {
+  populateEmails();
 }
 
 void UserInbox::changeEvent(QEvent *event) {

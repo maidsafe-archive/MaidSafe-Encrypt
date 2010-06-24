@@ -56,6 +56,7 @@ UserPanels::UserPanels(QWidget* parent)
 #ifdef PD_LIGHT
   browser_ = new FileBrowser;
 #endif
+  inbox_ = new UserInbox(this);
 
   connect(public_username_, SIGNAL(complete()),
           this,             SLOT(onPublicUsernameChosen()));
@@ -188,8 +189,7 @@ void UserPanels::onMyFilesClicked() {
 }
 
 void UserPanels::onEmailsClicked() {
-  // ui_.lblEmails->setText("");
-  inbox_ = new UserInbox(this);
+  inbox_->setActive(true);
   inbox_->show();
 }
 

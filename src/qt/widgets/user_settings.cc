@@ -92,7 +92,7 @@ void UserSettings::createSettingsMenu() {
   ui_.settingsMenuList->item(1)->setHidden(true);
   ui_.settingsMenuList->item(2)->setHidden(true);
   ui_.settingsMenuList->item(3)->setHidden(true);
-  ui_.settingsMenuList->item(5)->setHidden(true);
+  // ui_.settingsMenuList->item(5)->setHidden(true);
 }
 
 void UserSettings::setState(State state) {

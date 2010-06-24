@@ -34,6 +34,7 @@
     <file alias="Contact_Tab">32x32/apps/system-users.png</file>
     <file alias="Log_Tab">32x32/apps/internet-news-reader.png</file>
     <file alias="Email_Tab">32x32/apps/internet-mail.png</file>
+    <file alias="Send_Recieve">32x32/actions/mail-send-receive.png</file>
     <file>32/Color Picker_32.png</file>
     <file>32/smily-select.png</file>
     <file>32/text-select.png</file>

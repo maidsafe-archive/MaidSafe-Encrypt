@@ -37,6 +37,8 @@ class UserInbox : public QDialog {
   explicit UserInbox(QWidget* parent = 0);
   virtual ~UserInbox();
 
+  virtual void setActive(bool active);
+
  private:
   Ui::UserInbox ui_;
   FileBrowser* browser_;
@@ -55,6 +57,8 @@ class UserInbox : public QDialog {
     void onSendEmailCompleted(int, const QString&);
     void onSaveFileCompleted(int, const QString&);
     void onRemoveDirCompleted(int, const QString&);
+    void onEmailCompleted(int, const QString&);
+    void onEmailReceived(const maidsafe::InstantMessage&);
 
  protected:
   void changeEvent(QEvent *event);
