@@ -121,6 +121,11 @@ class PerpetualData : public QMainWindow {
     void onManualTriggered();
     void onPublicUsernameChosen();
     void onUpdateTriggered();
+    void onBlackThemeTriggered();
+    void onBlueThemeTriggered();
+    void onGreenThemeTriggered();
+    void onRedThemeTriggered();
+
     void onUpdateChecked(int, QProcess::ExitStatus);
 
     void showLoggedOutMenu();
@@ -169,7 +174,11 @@ class PerpetualData : public QMainWindow {
     SMALL,
     FULL,
     MANUAL,
-    UPDATE
+    UPDATE,
+    THEME_GREEN,
+    THEME_BLUE,
+    THEME_BLACK,
+    THEME_RED
     };
   typedef QMap<Action, QAction*> ActionMap;
   ActionMap actions_;

@@ -60,6 +60,10 @@ QMainWindow::separator {
      background-color: transparent;
  }
  
+  QListWidget {
+    background-color: transparent;
+  }
+ 
  QToolButton:hover { /* all types of tool button */
      border: 2px solid #e7e7e7;
      background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,

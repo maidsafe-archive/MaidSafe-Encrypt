@@ -167,10 +167,11 @@ void UserSendMail::onSaveFileCompleted(int success, const QString& filepath) {
   }
 }
 
-void UserSendMail::onSendEmailCompleted(int, const QString& subject) {
+void UserSendMail::onSendEmailCompleted(int success, const QString& subject) {
   QMessageBox msgBox;
   msgBox.setText(tr("Email: %1 sent!").arg(subject));
   msgBox.exec();
+  emit sendEmailCompleted(success, subject);
   this->close();
 }
 

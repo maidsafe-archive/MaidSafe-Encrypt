@@ -104,11 +104,21 @@
     <property name="title">
      <string>Tools</string>
     </property>
+    <widget class="QMenu" name="menuTheme">
+     <property name="title">
+      <string>Theme</string>
+     </property>
+     <addaction name="actionBlue"/>
+     <addaction name="actionBlack"/>
+     <addaction name="actionRed"/>
+     <addaction name="actionGreen"/>
+    </widget>
     <addaction name="actionWord_Processor"/>
     <addaction name="actionSpread_Sheet"/>
     <addaction name="actionPresentation"/>
     <addaction name="actionBrowser"/>
     <addaction name="actionSettings_2"/>
+    <addaction name="menuTheme"/>
    </widget>
    <widget class="QMenu" name="menuHelp">
     <property name="title">
@@ -320,6 +330,26 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+U</string>
+   </property>
+  </action>
+  <action name="actionBlue">
+   <property name="text">
+    <string>Blue</string>
+   </property>
+  </action>
+  <action name="actionBlack">
+   <property name="text">
+    <string>Black</string>
+   </property>
+  </action>
+  <action name="actionRed">
+   <property name="text">
+    <string>Red</string>
+   </property>
+  </action>
+  <action name="actionGreen">
+   <property name="text">
+    <string>Green</string>
    </property>
   </action>
  </widget>

@@ -9,18 +9,21 @@ QMainWindow::separator {
  } 
  
   QMainWindow {
-    background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 #7b9090, stop: 1 lightgreen);
+    background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 #7B7B7B, stop: 1 black);
     font: bold;
+    color: white;
   }
   
   QMessageBox {
-    background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 #7B7B7B, stop: 1 lightgreen);
+    background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 #7B7B7B, stop: 1 black);
     font: bold;
+    color: white;
   } 
   
   QDialog {
-    background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 #7B7B7B, stop: 1 lightgreen);
-    font: bold;  
+    background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 #7B7B7B, stop: 1 black);
+    font: bold;
+    color: white;  
   }
   
   QToolBox::tab {
@@ -62,6 +65,7 @@ QMainWindow::separator {
  
   QListWidget {
     background-color: transparent;
+    color: white;
   }
  
  QToolButton:hover { /* all types of tool button */
@@ -177,7 +181,7 @@ QMainWindow::separator {
      /*background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
                                  stop: 0 #E1E1E1, stop: 0.4 #DDDDDD,
                                  stop: 0.5 #D8D8D8, stop: 1.0 #D3D3D3);*/
-     background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 	lightgreen, stop: 1 #c0c0c0); 
+     background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 	black, stop: 1 #c0c0c0); 
      border: 1px solid #C4C4C3;
      border-bottom-color: #C2C7CB; /* same as the pane color */
      border-top-left-radius: 4px;
@@ -187,7 +191,7 @@ QMainWindow::separator {
  }
 
  QTabBar::tab:selected, QTabBar::tab:hover {
-     background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 	lightgreen, stop: 1 transparent);
+     background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 	black, stop: 1 transparent);
                
      /*background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
                                  stop: 0 #FEFFB9, stop: 0.4 #f4f4f4,
@@ -286,11 +290,10 @@ QLabel {
      border: 1px solid #E0E1EA;
 	 color: black
  }
-
- QListView::item:selected:!active {
-    background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
-                                 stop: 0 white, stop: 1 #E0E1EA);
-	color: black
+ 
+QListView::item:selected:!active {
+  border: none;
+	color: white
  }
 
  QListView::item:selected:active {

@@ -348,9 +348,9 @@ void Contacts::onSendMessageClicked() {
     if (!messageList.contains(contact)) {
       PersonalMessages* mess_ = new PersonalMessages(this, contact);
 
-      QFile file(":/qss/defaultWithWhite1.qss");
-      file.open(QFile::ReadOnly);
-      QString styleSheet = QLatin1String(file.readAll());
+      //QFile file(":/qss/defaultWithWhite1.qss");
+      //file.open(QFile::ReadOnly);
+      //QString styleSheet = QLatin1String(file.readAll());
 
       QPoint loc = this->mapToGlobal(this->pos());
       QRect rec(QApplication::desktop()->availableGeometry(mess_));
@@ -370,7 +370,7 @@ void Contacts::onSendMessageClicked() {
         count++;
       }
 
-      mess_->setStyleSheet(styleSheet);
+//      mess_->setStyleSheet(styleSheet);
       mess_->move(loc);
       mess_->show();
     } else {

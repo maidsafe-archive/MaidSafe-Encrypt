@@ -9,17 +9,17 @@ QMainWindow::separator {
  } 
  
   QMainWindow {
-    background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 #7b9090, stop: 1 lightgreen);
+    background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 #7b9090, stop: 1 	#C25A7C);
     font: bold;
   }
   
   QMessageBox {
-    background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 #7B7B7B, stop: 1 lightgreen);
+    background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 #7B7B7B, stop: 1 	#C25A7C);
     font: bold;
   } 
   
   QDialog {
-    background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 #7B7B7B, stop: 1 lightgreen);
+    background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 #7B7B7B, stop: 1 	#C25A7C);
     font: bold;  
   }
   
@@ -177,7 +177,7 @@ QMainWindow::separator {
      /*background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
                                  stop: 0 #E1E1E1, stop: 0.4 #DDDDDD,
                                  stop: 0.5 #D8D8D8, stop: 1.0 #D3D3D3);*/
-     background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 	lightgreen, stop: 1 #c0c0c0); 
+     background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0  #C25A7C, stop: 1 #c0c0c0); 
      border: 1px solid #C4C4C3;
      border-bottom-color: #C2C7CB; /* same as the pane color */
      border-top-left-radius: 4px;
@@ -187,7 +187,7 @@ QMainWindow::separator {
  }
 
  QTabBar::tab:selected, QTabBar::tab:hover {
-     background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 	lightgreen, stop: 1 transparent);
+     background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 #C25A7C, stop: 1 transparent);
                
      /*background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
                                  stop: 0 #FEFFB9, stop: 0.4 #f4f4f4,

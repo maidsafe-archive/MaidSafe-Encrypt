@@ -43,6 +43,9 @@ class UserSendMail : public QDialog {
 	void onSendEmailCompleted(int, const QString&);
   void onSaveFileCompleted(int, const QString&);
 
+ signals:
+  void sendEmailCompleted(int, const QString&);
+
  protected:
   void changeEvent(QEvent *event);
 };

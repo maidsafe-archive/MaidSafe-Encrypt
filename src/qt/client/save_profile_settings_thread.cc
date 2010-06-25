@@ -36,18 +36,20 @@ void SaveProfileSettingsThread::run() {
   maidsafe::PersonalDetails pd =
           maidsafe::SessionSingleton::getInstance()->Pd();
 
+  pd.set_full_name(theHash_["FullName"].toStdString());
+  pd.set_birthday(theHash_["BirthDay"].toStdString());
+  pd.set_city(theHash_["City"].toStdString());
+  pd.set_country(theHash_["Country"].toStdString());
+  pd.set_gender(theHash_["Gender"].toStdString());
+  pd.set_language(theHash_["Language"].toStdString());
+  pd.set_phone_number(theHash_["Phone"].toStdString());
+
+  maidsafe::SessionSingleton::getInstance()->SetPd(pd);
+
   // TODO(Team): Implement save settings
 
   if (!theHash_["FullName"].isEmpty()) {
   }
-
-  /*profileInfo.push_back(theHash_["FullName"].toStdString());
-  profileInfo.push_back(theHash_["Phone"].toStdString());
-  profileInfo.push_back(theHash_["BirthDay"].toStdString());
-  profileInfo.push_back(theHash_["Gender"].toStdString());
-  profileInfo.push_back(theHash_["Language"].toStdString());
-  profileInfo.push_back(theHash_["City"].toStdString());
-  profileInfo.push_back(theHash_["Country"].toStdString());*/
 
   const bool success = true;
 
