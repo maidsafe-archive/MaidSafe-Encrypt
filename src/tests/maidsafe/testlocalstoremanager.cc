@@ -241,7 +241,7 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_DeleteSystemPacketNotOwner) {
   cb_.Reset();
   sm_->DeletePacket(gp_name, values, MID, PRIVATE, "", boost::bind(
                     &test::CallbackObject::ReturnCodeCallback, &cb_, _1));
-  ASSERT_EQ(kSuccess, cb_.WaitForReturnCodeResult());
+  ASSERT_NE(kSuccess, cb_.WaitForReturnCodeResult());
   ASSERT_FALSE(sm_->KeyUnique(gp_name, false));
 }
 

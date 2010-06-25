@@ -48,7 +48,9 @@ MATCHER_P(EqualsContact, kad_contact, "") {
 
 TEST_F(VaultServiceLogicTest, BEH_MAID_VSL_Offline) {
   boost::shared_ptr<MockVaultRpcs> mock_rpcs(new MockVaultRpcs(NULL, NULL));
-  VaultServiceLogic vsl(mock_rpcs, boost::shared_ptr<maidsafe::KadOps>());
+  VaultServiceLogic vsl(mock_rpcs, boost::shared_ptr<maidsafe::KadOps>(
+      new maidsafe::MockKadOps(NULL, NULL, kad::VAULT, "", "", false, false,
+      test_vault_service_logic::K, boost::shared_ptr<maidsafe::ChunkStore>())));
 
   maidsafe::AddToReferenceListRequest arr;
   boost::mutex mutex;
@@ -95,7 +97,9 @@ TEST_F(VaultServiceLogicTest, BEH_MAID_VSL_Offline) {
 TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_AddToRemoteRefList) {
   // Setup
   boost::shared_ptr<MockVaultRpcs> mock_rpcs(new MockVaultRpcs(NULL, NULL));
-  MockVsl vsl(mock_rpcs, boost::shared_ptr<maidsafe::KadOps>());
+  MockVsl vsl(mock_rpcs, boost::shared_ptr<maidsafe::KadOps>(
+      new maidsafe::MockKadOps(NULL, NULL, kad::VAULT, "", "", false, false,
+      test_vault_service_logic::K, boost::shared_ptr<maidsafe::ChunkStore>())));
   vsl.pmid_ = pmid_;
   vsl.pmid_public_signature_ = pmid_public_signature_;
   vsl.pmid_private_ = pmid_private_;
@@ -309,7 +313,9 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_AddToRemoteRefList) {
 TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_AmendRemoteAccount) {
   // Setup
   boost::shared_ptr<MockVaultRpcs> mock_rpcs(new MockVaultRpcs(NULL, NULL));
-  MockVsl vsl(mock_rpcs, boost::shared_ptr<maidsafe::KadOps>());
+  MockVsl vsl(mock_rpcs, boost::shared_ptr<maidsafe::KadOps>(
+      new maidsafe::MockKadOps(NULL, NULL, kad::VAULT, "", "", false, false,
+      test_vault_service_logic::K, boost::shared_ptr<maidsafe::ChunkStore>())));
   vsl.pmid_ = pmid_;
   vsl.pmid_public_signature_ = pmid_public_signature_;
   vsl.pmid_private_ = pmid_private_;
@@ -529,7 +535,9 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_AmendRemoteAccount) {
 TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_RemoteVaultAbleToStore) {
   // Setup
   boost::shared_ptr<MockVaultRpcs> mock_rpcs(new MockVaultRpcs(NULL, NULL));
-  MockVsl vsl(mock_rpcs, boost::shared_ptr<maidsafe::KadOps>());
+  MockVsl vsl(mock_rpcs, boost::shared_ptr<maidsafe::KadOps>(
+      new maidsafe::MockKadOps(NULL, NULL, kad::VAULT, "", "", false, false,
+      test_vault_service_logic::K, boost::shared_ptr<maidsafe::ChunkStore>())));
   vsl.pmid_ = pmid_;
   vsl.pmid_public_signature_ = pmid_public_signature_;
   vsl.pmid_private_ = pmid_private_;

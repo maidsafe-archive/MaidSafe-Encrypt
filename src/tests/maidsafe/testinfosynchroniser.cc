@@ -51,8 +51,12 @@ class InfoSynchroniserTest : public testing::Test {
     for (size_t i = 0; i < table_size; ++i) {
       std::string tuple_id = co_.Hash(base::RandomString(100), "",
                                       crypto::STRING_STRING, false);
-      base::PublicRoutingTableTuple pdrtt(tuple_id, base::RandomString(13), i,
-                                          "", 0, "", 0, 0, 0);
+      base::PublicRoutingTableTuple pdrtt(tuple_id,
+          boost::lexical_cast<std::string>((base::RandomUint32() % 255)+1)+"."+
+          boost::lexical_cast<std::string>((base::RandomUint32() % 255)+1)+"."+
+          boost::lexical_cast<std::string>((base::RandomUint32() % 255)+1)+"."+
+          boost::lexical_cast<std::string>((base::RandomUint32() % 255)+1),
+          i, "", 0, "", 0, 0, 0);
       routing_table_->AddTuple(pdrtt);
     }
     closest_nodes_.push_back(kad::Contact());
@@ -154,7 +158,7 @@ TEST_F(InfoSynchroniserTest, FUNC_VAULT_InfoSyncTimestamps) {
 }
 
 TEST_F(InfoSynchroniserTest, FUNC_VAULT_InfoSyncRemoveEntry) {
-  const size_t kTestMapSize = 1000;
+  const size_t kTestMapSize = 100;
   while (info_synchroniser_.info_entries_.size() < kTestMapSize) {
     info_synchroniser_.ShouldFetch(co_.Hash(base::RandomString(100), "",
         crypto::STRING_STRING, false), &closest_nodes_);

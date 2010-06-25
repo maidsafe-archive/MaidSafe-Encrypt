@@ -472,10 +472,7 @@ void LocalStoreManager::StorePacket(const std::string &packet_name,
     return;
   }
 
-  ReturnCode rc;
-  if (values.empty()) {
-    rc = StorePacket_InsertToDb(packet_name, ser_gp, public_key, false);
-  }
+  ReturnCode rc = StorePacket_InsertToDb(packet_name, ser_gp, public_key, true);
   ExecReturnCodeCallback(cb, rc);
 }
 

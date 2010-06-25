@@ -56,6 +56,7 @@
 namespace maidsafe {
 class MaidsafeStoreManager;
 namespace test {
+class MsmSetLocalVaultOwnedTest;
 class NetworkTest;
 }  // namespace test
 }  // namespace maidsafe
@@ -362,7 +363,7 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_GetAccountStatus);
   FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_UpdateAccountStatus);
   FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_GetFilteredAverage);
-  friend class MsmSetLocalVaultOwnedTest;
+  friend class test::MsmSetLocalVaultOwnedTest;
   friend class maidsafe_vault::PDVaultTest;
   friend class maidsafe_vault::PDVaultTest_FUNC_MAID_StoreAndGetChunks_Test;
   friend class maidsafe_vault::RunPDVaults;

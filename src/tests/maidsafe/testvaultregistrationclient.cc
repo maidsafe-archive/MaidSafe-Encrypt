@@ -33,6 +33,7 @@
 #include "maidsafe/client/maidstoremanager.h"
 #include "maidsafe/client/packetfactory.h"
 #include "tests/maidsafe/cached_keys.h"
+#include "tests/maidsafe/testcallback.h"
 
 namespace test_vault_reg {
 
@@ -105,6 +106,8 @@ class ResultHandler {
 
 namespace maidsafe {
 
+namespace test {
+
 class MsmSetLocalVaultOwnedTest : public testing::Test {
  public:
   MsmSetLocalVaultOwnedTest()
@@ -128,7 +131,7 @@ class MsmSetLocalVaultOwnedTest : public testing::Test {
             &test_vault_reg::ResultHandler::IsOwnCallback,
             &resulthandler_, _1)) {}
   ~MsmSetLocalVaultOwnedTest() {
-    transport::TransportUDT::CleanUp();
+    transport::TransportUDT::CleanUp(); 
   }
   void SetUp() {
     try {
@@ -141,6 +144,10 @@ class MsmSetLocalVaultOwnedTest : public testing::Test {
     boost::int16_t server_transport_id;
     ASSERT_EQ(0, server_transport_handler_.Register(&server_transport_,
                                                     &server_transport_id));
+    boost::int16_t client_transport_id;
+    msm_.transport_handler_.Register(&msm_.udt_transport_,
+                                     &client_transport_id);
+//    msm_.kad_ops_->set_transport_id(client_transport_id);
     ASSERT_TRUE(msm_.channel_manager_.RegisterNotifiersToTransport());
     ASSERT_TRUE(msm_.transport_handler_.RegisterOnServerDown(boost::bind(
                 &test_vault_reg::HandleDeadServer, _1, _2, _3)));
@@ -156,8 +163,7 @@ class MsmSetLocalVaultOwnedTest : public testing::Test {
     service_channel_->SetService(service_.pservice());
     server_.RegisterChannel(service_.pservice()->GetDescriptor()->name(),
                             service_channel_.get());
-    port_ = msm_.transport_handler_.listening_port(
-                msm_.udt_transport_.transport_id());
+    port_ = msm_.transport_handler_.listening_port(client_transport_id);
   }
   void TearDown() {
     resulthandler_.Reset();
@@ -305,5 +311,7 @@ TEST_F(MsmSetLocalVaultOwnedTest, FUNC_MAID_InvalidSetLocalVaultOwned) {
   ASSERT_EQ(maidsafe::VAULT_IS_DOWN, resulthandler_.result());
   ASSERT_TRUE(resulthandler_.pmid_name().empty());
 }
+
+}  // namespace test
 
 }  // namespace maidsafe

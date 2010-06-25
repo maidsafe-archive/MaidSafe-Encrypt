@@ -190,8 +190,12 @@ class VaultServicesTest : public testing::Test {
 class MockVaultServicesTest : public VaultServicesTest {
  protected:
   MockVaultServicesTest()
-      : mock_vault_service_logic_(boost::shared_ptr<VaultRpcs>(),
-                                  boost::shared_ptr<maidsafe::KadOps>()) {}
+      : mock_vault_service_logic_(
+            boost::shared_ptr<VaultRpcs>(),
+            boost::shared_ptr<maidsafe::KadOps>(new maidsafe::MockKadOps(
+                NULL, NULL, kad::VAULT, "", "", false, false,
+                test_vault_service::K,
+                boost::shared_ptr<maidsafe::ChunkStore>()))) {}
   void SetUp() {
     VaultServicesTest::SetUp();
     // Initialise mock_vault_service_logic
@@ -1164,12 +1168,13 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesGetChunkReferences) {
 
 TEST_F(MockVaultServicesTest, BEH_MAID_ServicesAddToWatchList) {
   delete vault_service_;
-  vault_service_ = new VaultService(vault_pmid_, vault_public_key_,
-                                    vault_private_key_,
-                                    vault_public_key_signature_,
-                                    vault_chunkstore_,
-                                    &mock_vault_service_logic_,
-                                    udt_transport_.transport_id(), kad_ops_);
+  vault_service_ = new VaultService(
+      vault_pmid_, vault_public_key_, vault_private_key_,
+      vault_public_key_signature_, vault_chunkstore_, &mock_vault_service_logic_,
+      udt_transport_.transport_id(), boost::shared_ptr<maidsafe::KadOps>(
+          new maidsafe::MockKadOps(NULL, NULL, kad::VAULT, "", "", false,
+          false, test_vault_service::K,
+          boost::shared_ptr<maidsafe::ChunkStore>())));
 
   maidsafe::GetSyncDataResponse get_sync_data_response;
   vault_service_->AddStartupSyncData(get_sync_data_response);
@@ -1381,12 +1386,13 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesAddToWatchList) {
 
 TEST_F(MockVaultServicesTest, FUNC_MAID_ServicesRemoveFromWatchList) {
   delete vault_service_;
-  vault_service_ = new VaultService(vault_pmid_, vault_public_key_,
-                                    vault_private_key_,
-                                    vault_public_key_signature_,
-                                    vault_chunkstore_,
-                                    &mock_vault_service_logic_,
-                                    udt_transport_.transport_id(), kad_ops_);
+  vault_service_ = new VaultService(
+      vault_pmid_, vault_public_key_, vault_private_key_,
+      vault_public_key_signature_, vault_chunkstore_, &mock_vault_service_logic_,
+      udt_transport_.transport_id(), boost::shared_ptr<maidsafe::KadOps>(
+          new maidsafe::MockKadOps(NULL, NULL, kad::VAULT, "", "", false,
+          false, test_vault_service::K,
+          boost::shared_ptr<maidsafe::ChunkStore>())));
 
   maidsafe::GetSyncDataResponse get_sync_data_response;
   vault_service_->AddStartupSyncData(get_sync_data_response);
@@ -1621,12 +1627,13 @@ TEST_F(MockVaultServicesTest, FUNC_MAID_ServicesRemoveFromWatchList) {
 
 TEST_F(MockVaultServicesTest, BEH_MAID_ServicesAddToReferenceList) {
   delete vault_service_;
-  vault_service_ = new VaultService(vault_pmid_, vault_public_key_,
-                                    vault_private_key_,
-                                    vault_public_key_signature_,
-                                    vault_chunkstore_,
-                                    &mock_vault_service_logic_,
-                                    udt_transport_.transport_id(), kad_ops_);
+  vault_service_ = new VaultService(
+      vault_pmid_, vault_public_key_, vault_private_key_,
+      vault_public_key_signature_, vault_chunkstore_, &mock_vault_service_logic_,
+      udt_transport_.transport_id(), boost::shared_ptr<maidsafe::KadOps>(
+          new maidsafe::MockKadOps(NULL, NULL, kad::VAULT, "", "", false,
+          false, test_vault_service::K,
+          boost::shared_ptr<maidsafe::ChunkStore>())));
 
   maidsafe::GetSyncDataResponse get_sync_data_response;
   vault_service_->AddStartupSyncData(get_sync_data_response);
@@ -1879,15 +1886,18 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesAddToReferenceList) {
 
 TEST_F(MockVaultServicesTest, FUNC_MAID_ServicesAmendAccount) {
   boost::shared_ptr<VaultRpcs> vault_rpcs;
-  boost::shared_ptr<kad::KNode> knode;
-  MockVsl mock_vault_service_logic(vault_rpcs, kad_ops_);
+  boost::shared_ptr<maidsafe::KadOps> mock_kadops(new maidsafe::MockKadOps(
+      &transport_handler_, &channel_manager_, kad::VAULT, vault_private_key_,
+      vault_public_key_, false, false, test_vault_service::K,
+      vault_chunkstore_));
+  MockVsl mock_vault_service_logic(vault_rpcs, mock_kadops);
   delete vault_service_;
   vault_service_ = new VaultService(vault_pmid_, vault_public_key_,
                                     vault_private_key_,
                                     vault_public_key_signature_,
                                     vault_chunkstore_,
-                                    &mock_vault_service_logic_,
-                                    udt_transport_.transport_id(), kad_ops_);
+                                    &mock_vault_service_logic,
+                                    udt_transport_.transport_id(), mock_kadops);
 
   maidsafe::GetSyncDataResponse get_sync_data_response;
   vault_service_->AddStartupSyncData(get_sync_data_response);
@@ -2767,10 +2777,13 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesVaultStatus) {
 }
 
 TEST_F(VaultServicesTest, BEH_MAID_ServicesCreateBP) {
-  VaultService service(vault_pmid_, vault_public_key_, vault_private_key_,
-                       vault_public_key_signature_, vault_chunkstore_,
-                       vault_service_logic_, udt_transport_.transport_id(),
-                       boost::shared_ptr<maidsafe::KadOps>());
+  VaultService service(
+      vault_pmid_, vault_public_key_, vault_private_key_,
+      vault_public_key_signature_, vault_chunkstore_, vault_service_logic_,
+      udt_transport_.transport_id(), boost::shared_ptr<maidsafe::KadOps>(
+          new maidsafe::MockKadOps(NULL, NULL, kad::VAULT, "", "", false,
+          false, test_vault_service::K,
+          boost::shared_ptr<maidsafe::ChunkStore>())));
   rpcprotocol::Controller controller;
   maidsafe::CreateBPRequest request;
   maidsafe::CreateBPResponse response;
@@ -2837,10 +2850,13 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesCreateBP) {
 }
 
 TEST_F(VaultServicesTest, BEH_MAID_ServicesModifyBPInfo) {
-  VaultService service(vault_pmid_, vault_public_key_, vault_private_key_,
-                       vault_public_key_signature_, vault_chunkstore_,
-                       vault_service_logic_, udt_transport_.transport_id(),
-                       boost::shared_ptr<maidsafe::KadOps>());
+  VaultService service(
+      vault_pmid_, vault_public_key_, vault_private_key_,
+      vault_public_key_signature_, vault_chunkstore_, vault_service_logic_,
+      udt_transport_.transport_id(), boost::shared_ptr<maidsafe::KadOps>(
+          new maidsafe::MockKadOps(NULL, NULL, kad::VAULT, "", "", false,
+          false, test_vault_service::K,
+          boost::shared_ptr<maidsafe::ChunkStore>())));
   rpcprotocol::Controller controller;
   maidsafe::CreateBPRequest create_request;
   maidsafe::CreateBPResponse create_response;
@@ -3001,10 +3017,13 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesModifyBPInfo) {
 }
 
 TEST_F(VaultServicesTest, BEH_MAID_ServicesGetBPMessages) {
-  VaultService service(vault_pmid_, vault_public_key_, vault_private_key_,
-                       vault_public_key_signature_, vault_chunkstore_,
-                       vault_service_logic_, udt_transport_.transport_id(),
-                       boost::shared_ptr<maidsafe::KadOps>());
+  VaultService service(
+      vault_pmid_, vault_public_key_, vault_private_key_,
+      vault_public_key_signature_, vault_chunkstore_, vault_service_logic_,
+      udt_transport_.transport_id(), boost::shared_ptr<maidsafe::KadOps>(
+          new maidsafe::MockKadOps(NULL, NULL, kad::VAULT, "", "", false,
+          false, test_vault_service::K,
+          boost::shared_ptr<maidsafe::ChunkStore>())));
   rpcprotocol::Controller controller;
   maidsafe::CreateBPRequest request;
   maidsafe::CreateBPResponse response;
@@ -3080,10 +3099,13 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesGetBPMessages) {
 }
 
 TEST_F(VaultServicesTest, BEH_MAID_ServicesAddBPMessages) {
-  VaultService service(vault_pmid_, vault_public_key_, vault_private_key_,
-                       vault_public_key_signature_, vault_chunkstore_,
-                       vault_service_logic_, udt_transport_.transport_id(),
-                       boost::shared_ptr<maidsafe::KadOps>());
+  VaultService service(
+      vault_pmid_, vault_public_key_, vault_private_key_,
+      vault_public_key_signature_, vault_chunkstore_, vault_service_logic_,
+      udt_transport_.transport_id(), boost::shared_ptr<maidsafe::KadOps>(
+          new maidsafe::MockKadOps(NULL, NULL, kad::VAULT, "", "", false,
+          false, test_vault_service::K,
+          boost::shared_ptr<maidsafe::ChunkStore>())));
   rpcprotocol::Controller controller;
   maidsafe::CreateBPRequest request;
   maidsafe::CreateBPResponse response;
@@ -3270,10 +3292,13 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesAddBPMessages) {
 }
 
 TEST_F(VaultServicesTest, BEH_MAID_ServicesGetBPPresence) {
-  VaultService service(vault_pmid_, vault_public_key_, vault_private_key_,
-                       vault_public_key_signature_, vault_chunkstore_,
-                       vault_service_logic_, udt_transport_.transport_id(),
-                       boost::shared_ptr<maidsafe::KadOps>());
+  VaultService service(
+      vault_pmid_, vault_public_key_, vault_private_key_,
+      vault_public_key_signature_, vault_chunkstore_, vault_service_logic_,
+      udt_transport_.transport_id(), boost::shared_ptr<maidsafe::KadOps>(
+          new maidsafe::MockKadOps(NULL, NULL, kad::VAULT, "", "", false,
+          false, test_vault_service::K,
+          boost::shared_ptr<maidsafe::ChunkStore>())));
   rpcprotocol::Controller controller;
   maidsafe::CreateBPRequest request;
   maidsafe::CreateBPResponse response;
@@ -3397,10 +3422,13 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesGetBPPresence) {
 }
 
 TEST_F(VaultServicesTest, BEH_MAID_ServicesAddBPPresence) {
-  VaultService service(vault_pmid_, vault_public_key_, vault_private_key_,
-                       vault_public_key_signature_, vault_chunkstore_,
-                       vault_service_logic_, udt_transport_.transport_id(),
-                       boost::shared_ptr<maidsafe::KadOps>());
+  VaultService service(
+      vault_pmid_, vault_public_key_, vault_private_key_,
+      vault_public_key_signature_, vault_chunkstore_, vault_service_logic_,
+      udt_transport_.transport_id(), boost::shared_ptr<maidsafe::KadOps>(
+          new maidsafe::MockKadOps(NULL, NULL, kad::VAULT, "", "", false,
+          false, test_vault_service::K,
+          boost::shared_ptr<maidsafe::ChunkStore>())));
   rpcprotocol::Controller controller;
   maidsafe::CreateBPRequest request;
   maidsafe::CreateBPResponse response;

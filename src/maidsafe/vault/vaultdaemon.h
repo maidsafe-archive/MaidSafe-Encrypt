@@ -30,6 +30,12 @@ namespace fs = boost::filesystem;
 
 int WriteToLog(std::string str);
 
+namespace maidsafe {
+namespace test {
+class VaultDaemonRegistrationTest;
+}  // namespace test
+}  // namespace maidsafe
+
 namespace maidsafe_vault {
 
 const boost::uint16_t kRsaKeySize = 4096;
@@ -45,6 +51,7 @@ class VaultDaemon {
   // vault.
   bool StartVault();
   fs::path vault_path() const { return vault_path_; }
+  friend class maidsafe::test::VaultDaemonRegistrationTest;
  private:
   void StopRegistrationService();
   // Start vaultdaemon without an owner.  Once config file is located and read
@@ -79,6 +86,7 @@ class VaultDaemon {
   boost::shared_ptr<RegistrationService> registration_service_;
   boost::mutex config_mutex_;
   boost::uint8_t K_;
+  std::string test_config_postfix_;
   VaultDaemon(const VaultDaemon&);
   VaultDaemon& operator=(const VaultDaemon&);
 };

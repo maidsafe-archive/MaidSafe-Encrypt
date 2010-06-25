@@ -1330,7 +1330,9 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_ValidatePrepResp) {
           (test_root_dir_ / "VaultChunkstore").string(), 999999, 0));
   maidsafe_vault::VaultService vault_service(peer_pmid, peer_pmid_pub,
       peer_pmid_pri, peer_pmid_pub_signature, vault_chunkstore, NULL, 0,
-      boost::shared_ptr<maidsafe::KadOps>());
+      boost::shared_ptr<maidsafe::KadOps>(new maidsafe::MockKadOps(NULL, NULL,
+      kad::CLIENT, "", "", false, false, test_msm::K,
+      boost::shared_ptr<maidsafe::ChunkStore>())));
   StorePrepResponse good_store_prep_response;
   google::protobuf::Closure *done =
       google::protobuf::NewCallback(&google::protobuf::DoNothing);
@@ -2108,7 +2110,8 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_StoreNewPacket) {
   ASSERT_EQ(anmid_pub, public_key);
   ASSERT_EQ(anmid_pub_key_signature, public_key_signature);
   ASSERT_EQ(anmid_pri, private_key);
-  std::string packet_value = base::RandomString(200);
+  std::string packet_value1 = base::RandomString(200);
+  std::string packet_value2 = base::RandomString(200);
 
   // Set up test requirements
   kad::ContactInfo cache_holder;
@@ -2122,15 +2125,6 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_StoreNewPacket) {
   store_response.set_result("Fail");
   store_response.SerializeToString(&ser_kad_store_response_fail);
 
-  //// Set up expectations
-  //EXPECT_CALL(*mko, FindValue(packet_name, true, testing::_, testing::_,
-  //    testing::_))
-  //        .Times(6)
-  //        .WillOnce(testing::Return(-1))  // Call 4
-  //        .WillOnce(DoAll(testing::SetArgumentPointee<2>(cache_holder),
-  //                        testing::Return(kSuccess)))  // Call 5
-  //        .WillRepeatedly(testing::Return(kFindValueFailure));
-
   EXPECT_CALL(msm, SendPacket(testing::_))
       .WillOnce(testing::WithArgs<0>(testing::Invoke(
           boost::bind(&MaidsafeStoreManager::SendPacketCallback, &msm,
@@ -2143,12 +2137,15 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_StoreNewPacket) {
           ser_kad_store_response_fail, _1))))  // Call 6
       .WillOnce(testing::WithArgs<0>(testing::Invoke(
           boost::bind(&MaidsafeStoreManager::SendPacketCallback, &msm,
-          ser_kad_store_response_good, _1))));  // Call 7
+          ser_kad_store_response_good, _1))))  // Call 7
+      .WillOnce(testing::WithArgs<0>(testing::Invoke(
+          boost::bind(&MaidsafeStoreManager::SendPacketCallback, &msm,
+          ser_kad_store_response_good, _1))));  // Call 8
 
   // Call 1 - Check with bad packet name length
   packet_op_result_ = kGeneralError;
   std::string short_key('z', kKeySize - 1);
-  msm.StorePacket(short_key, packet_value, MID, PRIVATE, "", functor_);
+  msm.StorePacket(short_key, packet_value1, MID, PRIVATE, "", functor_);
   {
     boost::mutex::scoped_lock lock(mutex_);
     while (packet_op_result_ == kGeneralError)
@@ -2158,7 +2155,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_StoreNewPacket) {
 
   // Call 2 - Check with bad packet type
   packet_op_result_ = kGeneralError;
-  msm.StorePacket(packet_name, packet_value,
+  msm.StorePacket(packet_name, packet_value1,
       static_cast<PacketType>(PacketType_MIN - 1), PRIVATE, "", functor_);
   {
     boost::mutex::scoped_lock lock(mutex_);
@@ -2169,7 +2166,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_StoreNewPacket) {
 
   // Call 3 - Check with bad dir type
   packet_op_result_ = kGeneralError;
-  msm.StorePacket(packet_name, packet_value, MID,
+  msm.StorePacket(packet_name, packet_value1, MID,
       static_cast<DirType>(PUBLIC_SHARE + 1), "", functor_);
   {
     boost::mutex::scoped_lock lock(mutex_);
@@ -2180,7 +2177,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_StoreNewPacket) {
 
   // Call 4 - SendPacket returns no result
   packet_op_result_ = kGeneralError;
-  msm.StorePacket(packet_name, packet_value, MID, PRIVATE, "", functor_);
+  msm.StorePacket(packet_name, packet_value1, MID, PRIVATE, "", functor_);
   {
     boost::mutex::scoped_lock lock(mutex_);
     while (packet_op_result_ == kGeneralError)
@@ -2190,7 +2187,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_StoreNewPacket) {
 
   // Call 5 - SendPacket returns unparseable result
   packet_op_result_ = kGeneralError;
-  msm.StorePacket(packet_name, packet_value, MID, PRIVATE, "", functor_);
+  msm.StorePacket(packet_name, packet_value1, MID, PRIVATE, "", functor_);
   {
     boost::mutex::scoped_lock lock(mutex_);
     while (packet_op_result_ == kGeneralError)
@@ -2200,7 +2197,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_StoreNewPacket) {
 
   // Call 6 - SendPacket returns failure
   packet_op_result_ = kGeneralError;
-  msm.StorePacket(packet_name, packet_value, MID, PRIVATE, "", functor_);
+  msm.StorePacket(packet_name, packet_value1, MID, PRIVATE, "", functor_);
   {
     boost::mutex::scoped_lock lock(mutex_);
     while (packet_op_result_ == kGeneralError)
@@ -2210,117 +2207,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_StoreNewPacket) {
 
   // Call 7 - SendPacket returns success
   packet_op_result_ = kGeneralError;
-  msm.StorePacket(packet_name, packet_value, MID, PRIVATE, "", functor_);
-  {
-    boost::mutex::scoped_lock lock(mutex_);
-    while (packet_op_result_ == kGeneralError)
-      cond_var_.wait(lock);
-  }
-  ASSERT_EQ(kSuccess, packet_op_result_);
-}
-
-TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_StoreExistingPacket) {
-  MockMsmStoreLoadPacket msm(client_chunkstore_);
-  boost::shared_ptr<MockKadOps> mko(new MockKadOps(&msm.transport_handler_,
-      &msm.channel_manager_, kad::CLIENT, "", "", false, false, test_msm::K,
-      client_chunkstore_));
-  msm.kad_ops_ = mko;
-
-  // Add keys to Session
-  crypto::RsaKeyPair anmid_keys = keys_.at(2);
-  std::string anmid_pri = anmid_keys.private_key();
-  std::string anmid_pub = anmid_keys.public_key();
-  std::string anmid_pub_key_signature = crypto_.AsymSign(anmid_pub, "",
-      anmid_pri, crypto::STRING_STRING);
-  std::string anmid_name = crypto_.Hash(anmid_pub + anmid_pub_key_signature, "",
-      crypto::STRING_STRING, false);
-  SessionSingleton::getInstance()->AddKey(ANMID, anmid_name, anmid_pri,
-      anmid_pub, anmid_pub_key_signature);
-
-  // Set up packet for storing
-  std::string packet_name = crypto_.Hash(base::RandomString(100), "",
-                                         crypto::STRING_STRING, false);
-  std::string key_id, public_key, public_key_signature, private_key;
-  msm.GetPacketSignatureKeys(MID, PRIVATE, "", &key_id, &public_key,
-      &public_key_signature, &private_key);
-  ASSERT_EQ(anmid_name, key_id);
-  ASSERT_EQ(anmid_pub, public_key);
-  ASSERT_EQ(anmid_pub_key_signature, public_key_signature);
-  ASSERT_EQ(anmid_pri, private_key);
-  std::string packet_value = base::RandomString(200);
-
-  // Set up store response
-  std::string ser_kad_store_response_good;
-  kad::StoreResponse store_response;
-  store_response.set_result(kad::kRpcResultSuccess);
-  store_response.SerializeToString(&ser_kad_store_response_good);
-
-  // Set up serialised Kademlia delete responses
-  std::string ser_kad_delete_response_cant_parse("Rubbish");
-  std::string ser_kad_delete_response_empty;
-  std::string ser_kad_delete_response_good, ser_kad_delete_response_fail;
-  kad::DeleteResponse delete_response;
-  delete_response.set_result(kad::kRpcResultSuccess);
-  delete_response.SerializeToString(&ser_kad_delete_response_good);
-  delete_response.set_result("Fail");
-  delete_response.SerializeToString(&ser_kad_delete_response_fail);
-
-  // Set up lists of DeletePacketCallbacks using serialised Kad delete responses
-  const size_t kExistingValueCount(5);
-  std::list< boost::function< void(boost::shared_ptr<DeletePacketData>) > >
-      functors_kad_good;
-  for (size_t i = 0; i < kExistingValueCount - 1; ++i) {
-    functors_kad_good.push_back(boost::bind(
-        &MaidsafeStoreManager::DeletePacketCallback, &msm,
-        ser_kad_delete_response_good, _1));
-  }
-  std::list< boost::function< void(boost::shared_ptr<DeletePacketData>) > >
-      functors_kad_empty(functors_kad_good),
-      functors_kad_cant_parse(functors_kad_good),
-      functors_kad_fail(functors_kad_good);
-  functors_kad_empty.push_back(boost::bind(
-      &MaidsafeStoreManager::DeletePacketCallback, &msm,
-      ser_kad_delete_response_empty, _1));
-  functors_kad_cant_parse.push_back(boost::bind(
-      &MaidsafeStoreManager::DeletePacketCallback, &msm,
-      ser_kad_delete_response_cant_parse, _1));
-  functors_kad_fail.push_back(boost::bind(
-      &MaidsafeStoreManager::DeletePacketCallback, &msm,
-      ser_kad_delete_response_fail, _1));
-  functors_kad_good.push_back(boost::bind(
-      &MaidsafeStoreManager::DeletePacketCallback, &msm,
-      ser_kad_delete_response_good, _1));
-
-  // Set up vector of existing values
-  std::vector<std::string> existing_values;
-  for (size_t i = 0; i < kExistingValueCount; ++i)
-    existing_values.push_back("ExistingValue" + base::IntToString(i));
-
-  // Set up expectations
-                                                                                  //EXPECT_CALL(*mko, FindValue(packet_name, true, testing::_, testing::_,
-                                                                                  //    testing::_))
-                                                                                  //        .Times(8)
-                                                                                  //        .WillRepeatedly(DoAll(testing::SetArgumentPointee<3>(existing_values),
-                                                                                  //                              testing::Return(kSuccess)));
-
-  EXPECT_CALL(msm, SendPacket(testing::_))
-      .WillOnce(testing::WithArgs<0>(testing::Invoke(
-          boost::bind(&MaidsafeStoreManager::SendPacketCallback, &msm,
-          ser_kad_store_response_good, _1))));  // Call 3
-
-  // Call 1 - If exists kDoNothingReturnFailure
-  packet_op_result_ = kGeneralError;
-  msm.StorePacket(packet_name, packet_value, MID, PRIVATE, "", functor_);
-  {
-    boost::mutex::scoped_lock lock(mutex_);
-    while (packet_op_result_ == kGeneralError)
-      cond_var_.wait(lock);
-  }
-  ASSERT_EQ(kSendPacketAlreadyExists, packet_op_result_);
-
-  // Call 2 - If exists kDoNothingReturnSuccess
-  packet_op_result_ = kGeneralError;
-  msm.StorePacket(packet_name, packet_value, MID, PRIVATE, "", functor_);
+  msm.StorePacket(packet_name, packet_value1, MID, PRIVATE, "", functor_);
   {
     boost::mutex::scoped_lock lock(mutex_);
     while (packet_op_result_ == kGeneralError)
@@ -2328,9 +2215,9 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_StoreExistingPacket) {
   }
   ASSERT_EQ(kSuccess, packet_op_result_);
 
-  // Call 3 - If exists kAppend
+  // Call 8 - SendPacket returns success again
   packet_op_result_ = kGeneralError;
-  msm.StorePacket(packet_name, packet_value, MID, PRIVATE, "", functor_);
+  msm.StorePacket(packet_name, packet_value2, MID, PRIVATE, "", functor_);
   {
     boost::mutex::scoped_lock lock(mutex_);
     while (packet_op_result_ == kGeneralError)
