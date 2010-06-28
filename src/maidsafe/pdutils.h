@@ -22,10 +22,11 @@
 * ============================================================================
 */
 
-#ifndef MAIDSAFE_UTILS_H_
-#define MAIDSAFE_UTILS_H_
+#ifndef MAIDSAFE_PDUTILS_H_
+#define MAIDSAFE_PDUTILS_H_
 
 #include <string>
+#include "maidsafe/maidsafe.h"
 
 namespace kad {
 class Contact;
@@ -39,6 +40,26 @@ std::string StringToLowercase(const std::string &str);
 
 bool ContactHasId(const std::string &id, const kad::Contact &contact);
 
+class PdUtils {
+ public:
+  PdUtils() {}
+  ~PdUtils() {}
+  void GetChunkSignatureKeys(DirType dir_type,
+                             const std::string &msid,
+                             std::string *key_id,
+                             std::string *public_key,
+                             std::string *public_key_sig,
+                             std::string *private_key);
+
+  void GetPacketSignatureKeys(PacketType packet_type,
+                              DirType dir_type,
+                              const std::string &msid,
+                              std::string *key_id,
+                              std::string *public_key,
+                              std::string *public_key_sig,
+                              std::string *private_key);
+};
+
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_UTILS_H_
+#endif  // MAIDSAFE_PDUTILS_H_

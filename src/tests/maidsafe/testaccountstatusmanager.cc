@@ -19,7 +19,7 @@
 */
 
 #include <gtest/gtest.h>
-#include "maidsafe/utils.h"
+#include "maidsafe/pdutils.h"
 #include "maidsafe/accountstatusmanager.h"
 
 namespace maidsafe {

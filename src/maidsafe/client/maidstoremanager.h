@@ -307,19 +307,6 @@ class MaidsafeStoreManager : public StoreManagerInterface {
                           const boost::uint64_t &space,
                           const SetLocalVaultOwnedFunctor &functor);
   void LocalVaultOwned(const LocalVaultOwnedFunctor &functor);
-  void GetChunkSignatureKeys(DirType dir_type,
-                             const std::string &msid,
-                             std::string *key_id,
-                             std::string *public_key,
-                             std::string *public_key_sig,
-                             std::string *private_key);
-  void GetPacketSignatureKeys(PacketType packet_type,
-                              DirType dir_type,
-                              const std::string &msid,
-                              std::string *key_id,
-                              std::string *public_key,
-                              std::string *public_key_sig,
-                              std::string *private_key);
   virtual int CreateAccount(const boost::uint64_t &space);
 
   friend void AddToWatchListTask::run();
@@ -511,6 +498,8 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   virtual void SendPacket(boost::shared_ptr<StoreData> store_data);
   void SendPacketCallback(const std::string &ser_kad_store_result,
                           boost::shared_ptr<StoreData> store_data);
+  std::string GetValueFromSignedValue(
+      const std::string &serialised_signed_value);
   virtual void DeletePacketFromNet(
       boost::shared_ptr<DeletePacketData> delete_data);
   void DeletePacketCallback(const std::string &ser_kad_delete_result,

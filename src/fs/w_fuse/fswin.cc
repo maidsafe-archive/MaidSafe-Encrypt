@@ -32,7 +32,7 @@ THE SOFTWARE.
 #include <vector>
 
 #include "maidsafe/client/clientcontroller.h"
-#include "maidsafe/utils.h"
+#include "maidsafe/pdutils.h"
 
 namespace fs = boost::filesystem;
 

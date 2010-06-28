@@ -55,8 +55,6 @@ typedef boost::function<void(const ReturnCode&)> CreateAccountFunctor;
 typedef boost::function<void(const std::string&)> IMNotifier;
 typedef boost::function<void(const std::string&, const int&)> IMStatusNotifier;
 
-// class SessionSingleton;
-
 class StoreManagerInterface {
  public:
   virtual ~StoreManagerInterface() {}
@@ -140,8 +138,6 @@ class StoreManagerInterface {
   virtual void SetSessionEndPoint()=0;
   virtual void SetInstantMessageNotifier(IMNotifier on_msg, IMStatusNotifier
       status_notifier)=0;
-
-//  virtual void ResetSessionSingleton(SessionSingleton *ss)=0;
 };
 
 }  // namespace maidsafe

@@ -26,7 +26,7 @@
 #include <algorithm>
 
 #include "maidsafe/kadops.h"
-#include "maidsafe/utils.h"
+#include "maidsafe/pdutils.h"
 
 namespace maidsafe {
 

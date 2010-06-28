@@ -31,7 +31,7 @@
 
 // core
 #include "fs/filesystem.h"
-#include "maidsafe/utils.h"
+#include "maidsafe/pdutils.h"
 #include "maidsafe/client/contacts.h"
 #include "maidsafe/client/sessionsingleton.h"
 #include "maidsafe/client/privateshares.h"

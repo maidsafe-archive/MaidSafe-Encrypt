@@ -31,7 +31,7 @@
 #include <vector>
 
 #include "maidsafe/chunkstore.h"
-#include "maidsafe/utils.h"
+#include "maidsafe/pdutils.h"
 #include "maidsafe/client/selfencryption.h"
 #include "maidsafe/client/clientcontroller.h"
 #include "tests/maidsafe/networktest.h"

@@ -35,7 +35,7 @@
 
 // core
 #include "qt/client/client_controller.h"
-#include "maidsafe/utils.h"
+#include "maidsafe/pdutils.h"
 
 // local
 #include "qt/widgets/login.h"

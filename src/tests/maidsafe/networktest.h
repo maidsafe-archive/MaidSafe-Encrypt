@@ -109,5 +109,7 @@ class NetworkTest {
 };
 
 }  // namespace test
+
 }  // namespace maidsafe
+
 #endif  // TESTS_MAIDSAFE_NETWORKTEST_H_

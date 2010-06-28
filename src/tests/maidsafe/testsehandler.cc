@@ -32,7 +32,7 @@
 #include "fs/filesystem.h"
 #include "maidsafe/chunkstore.h"
 #include "maidsafe/returncodes.h"
-#include "maidsafe/utils.h"
+#include "maidsafe/pdutils.h"
 #include "maidsafe/client/dataatlashandler.h"
 #include "maidsafe/client/localstoremanager.h"
 #include "maidsafe/client/packetfactory.h"

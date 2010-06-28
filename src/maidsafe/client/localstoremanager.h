@@ -156,13 +156,8 @@ class LocalStoreManager : public StoreManagerInterface {
                             const std::string &rec_public_key,
                             const MessageType &m_type,
                             const boost::uint32_t &timestamp);
-  void SigningPublicKey(PacketType packet_type, DirType dt,
-                        const std::string &msid, std::string *public_key);
-  void SigningPrivateKey(PacketType packet_type, DirType dt,
-                         const std::string &msid, std::string *private_key);
-  void CreateSerialisedSignedValue(const std::string value,
-                                   const PacketType &pt,
-                                   const std::string &msid,
+  void CreateSerialisedSignedValue(const std::string &value,
+                                   const std::string &private_key,
                                    std::string *ser_gp);
   void ExecReturnCodeCallback(VoidFuncOneInt cb, ReturnCode rc);
   void ExecReturnLoadPacketCallback(LoadPacketFunctor cb,

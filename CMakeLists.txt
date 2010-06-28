@@ -211,7 +211,8 @@ IF((NOT WIN32) OR MSVC)
   INCLUDE(${PD_SOURCE_DIR}/build/maidsafe_FindGlog.cmake)
   IF(Glog_FOUND)
     SET(INCLUDE_DIRS ${INCLUDE_DIRS} ${Glog_INCLUDE_DIR})
-    SET(LIBS_DIRS ${LIBS_DIRS} ${Glog_LIBRARY_DIR} ${Glog_LIBRARY_DIR_DEBUG})
+    SET(LIBS_DIRS ${LIBS_DIRS} ${Glog_LIBRARY_DIR})
+    SET(LIBS_DIRS_DEBUG ${LIBS_DIRS_DEBUG} ${Glog_LIBRARY_DIR_DEBUG})
   ENDIF()
 ENDIF()
 
@@ -268,7 +269,7 @@ ENDIF()
 # All other libraries search                                                                      #
 ###################################################################################################
 IF(UNIX)
-  SET(SYS_LIBS  libfuse.a)
+  SET(SYS_LIBS libfuse.a)
   IF(NOT APPLE)
     SET(SYS_LIBS rt c ${SYS_LIBS})
   ENDIF()

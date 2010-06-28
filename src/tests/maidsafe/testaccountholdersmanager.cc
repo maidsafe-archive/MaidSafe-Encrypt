@@ -23,7 +23,7 @@
 */
 
 #include <gtest/gtest.h>
-#include "maidsafe/utils.h"
+#include "maidsafe/pdutils.h"
 #include "maidsafe/accountholdersmanager.h"
 #include "maidsafe/chunkstore.h"
 #include "tests/maidsafe/mockkadops.h"

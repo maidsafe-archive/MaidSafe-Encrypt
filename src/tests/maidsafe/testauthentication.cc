@@ -49,7 +49,7 @@ class AuthenticationTest : public testing::Test {
                          ss_(SessionSingleton::getInstance()),
                          sm_(network_test_.store_manager()),
                          authentication_(),
-                         username_("user1"),
+                         username_("user"),
                          pin_("1234"),
                          password_("password1"),
                          test_keys_() {}
@@ -76,6 +76,7 @@ class AuthenticationTest : public testing::Test {
 };
 
 TEST_F(AuthenticationTest, FUNC_MAID_CreateUserSysPackets) {
+  username_ += "01";
   int result = authentication_.GetUserInfo(username_, pin_);
   EXPECT_EQ(kUserDoesntExist, result) << "User already exists";
   result = authentication_.CreateUserSysPackets(username_, pin_);
@@ -83,6 +84,7 @@ TEST_F(AuthenticationTest, FUNC_MAID_CreateUserSysPackets) {
 }
 
 TEST_F(AuthenticationTest, FUNC_MAID_GoodLogin) {
+  username_ += "02";
   int result = authentication_.GetUserInfo(username_, pin_);
   EXPECT_EQ(kUserDoesntExist, result) << "User already exists";
   result = authentication_.CreateUserSysPackets(username_, pin_);
@@ -143,6 +145,7 @@ TEST_F(AuthenticationTest, FUNC_MAID_GoodLogin) {
 }
 
 TEST_F(AuthenticationTest, FUNC_MAID_LoginNoUser) {
+  username_ += "03";
   std::string ser_dm, ser_dm_login;
   int result = authentication_.GetUserInfo(username_, pin_);
   EXPECT_EQ(kUserDoesntExist, result) << "User already exists";
@@ -172,6 +175,7 @@ TEST_F(AuthenticationTest, FUNC_MAID_LoginNoUser) {
 }
 
 TEST_F(AuthenticationTest, FUNC_MAID_RegisterUserOnce) {
+  username_ += "04";
   DataAtlas data_atlas;
   int result = authentication_.GetUserInfo(username_, pin_);
   EXPECT_EQ(kUserDoesntExist, result) << "User already exists";
@@ -204,6 +208,7 @@ TEST_F(AuthenticationTest, FUNC_MAID_RegisterUserOnce) {
 }
 
 TEST_F(AuthenticationTest, FUNC_MAID_RegisterUserTwice) {
+  username_ += "05";
   int result = authentication_.GetUserInfo(username_, pin_);
   EXPECT_EQ(kUserDoesntExist, result) << "User already exists";
   result = authentication_.CreateUserSysPackets(username_, pin_);
@@ -236,6 +241,7 @@ TEST_F(AuthenticationTest, FUNC_MAID_RegisterUserTwice) {
 }
 
 TEST_F(AuthenticationTest, FUNC_MAID_RepeatedSaveSessionBlocking) {
+  username_ += "06";
   int result = authentication_.GetUserInfo(username_, pin_);
   EXPECT_EQ(kUserDoesntExist, result) << "User already exists";
   result = authentication_.CreateUserSysPackets(username_, pin_);
@@ -302,6 +308,7 @@ TEST_F(AuthenticationTest, FUNC_MAID_RepeatedSaveSessionBlocking) {
 }
 
 TEST_F(AuthenticationTest, FUNC_MAID_RepeatedSaveSessionCallbacks) {
+  username_ += "07";
   int result = authentication_.GetUserInfo(username_, pin_);
   EXPECT_EQ(kUserDoesntExist, result) << "User already exists";
   result = authentication_.CreateUserSysPackets(username_, pin_);
@@ -372,6 +379,7 @@ TEST_F(AuthenticationTest, FUNC_MAID_RepeatedSaveSessionCallbacks) {
 }
 
 TEST_F(AuthenticationTest, FUNC_MAID_ChangeUsername) {
+  username_ += "08";
   int result = authentication_.GetUserInfo(username_, pin_);
   EXPECT_EQ(kUserDoesntExist, result) << "User already exists";
   result = authentication_.CreateUserSysPackets(username_, pin_);
@@ -441,6 +449,7 @@ TEST_F(AuthenticationTest, FUNC_MAID_ChangeUsername) {
 }
 
 TEST_F(AuthenticationTest, FUNC_MAID_ChangePin) {
+  username_ += "09";
   int result = authentication_.GetUserInfo(username_, pin_);
   EXPECT_EQ(kUserDoesntExist, result) << "User already exists";
   result = authentication_.CreateUserSysPackets(username_, pin_);
@@ -504,6 +513,7 @@ TEST_F(AuthenticationTest, FUNC_MAID_ChangePin) {
 }
 
 TEST_F(AuthenticationTest, FUNC_MAID_CreatePublicName) {
+  username_ += "10";
   crypto::Crypto crypto_obj;
   crypto_obj.set_symm_algorithm(crypto::AES_256);
   crypto_obj.set_hash_algorithm(crypto::SHA_512);
@@ -515,6 +525,7 @@ TEST_F(AuthenticationTest, FUNC_MAID_CreatePublicName) {
 }
 
 TEST_F(AuthenticationTest, FUNC_MAID_InvalidUsernamePassword) {
+  username_ += "11";
   cached_keys::MakeKeys(2, &test_keys_);
   crypto::RsaKeyPair keypair1 = test_keys_.at(0);
   crypto::RsaKeyPair keypair2 = test_keys_.at(1);
@@ -527,13 +538,14 @@ TEST_F(AuthenticationTest, FUNC_MAID_InvalidUsernamePassword) {
   CallbackObject cb;
   sm_->StorePacket(mid_name, "rubbish data with same mid name", MID,
       PRIVATE, "", boost::bind(&CallbackObject::ReturnCodeCallback, &cb, _1));
-  ASSERT_EQ(kSuccess, cb.WaitForReturnCodeResult());
+  ASSERT_EQ(kSendPacketFailure, cb.WaitForReturnCodeResult());
   EXPECT_EQ(kUserDoesntExist, authentication_.GetUserInfo(username_, pin_));
   while (authentication_.get_smidtimid_result() == kPendingResult)
     boost::this_thread::sleep(boost::posix_time::milliseconds(10));
 }
 
 TEST_F(AuthenticationTest, FUNC_MAID_CreateMSIDPacket) {
+  username_ += "12";
   crypto::Crypto co;
   co.set_symm_algorithm(crypto::AES_256);
   co.set_hash_algorithm(crypto::SHA_512);
@@ -569,6 +581,7 @@ TEST_F(AuthenticationTest, FUNC_MAID_CreateMSIDPacket) {
 }
 
 TEST_F(AuthenticationTest, FUNC_MAID_RegisterLeaveRegister) {
+  username_ += "13";
   int result = authentication_.GetUserInfo(username_, pin_);
   EXPECT_EQ(kUserDoesntExist, result) << "User already exists";
   result = authentication_.CreateUserSysPackets(username_, pin_);

@@ -31,6 +31,7 @@
 #include "maidsafe/client/clientrpc.h"
 #include "maidsafe/client/maidstoremanager.h"
 #include "maidsafe/client/sessionsingleton.h"
+#include "maidsafe/pdutils.h"
 #include "maidsafe/vault/vaultchunkstore.h"
 #include "maidsafe/vault/vaultservice.h"
 #include "tests/maidsafe/cached_keys.h"
@@ -1116,7 +1117,8 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_GetStoreRequests) {
   ASSERT_NE("", store_prep_request.chunkname());
   ASSERT_NE("", store_chunk_request.chunkname());
   std::string key_id2, public_key2, public_key_signature2, private_key2;
-  msm.GetChunkSignatureKeys(PRIVATE, "", &key_id2, &public_key2,
+  PdUtils pd_utils;
+  pd_utils.GetChunkSignatureKeys(PRIVATE, "", &key_id2, &public_key2,
       &public_key_signature2, &private_key2);
   StoreData st_missing_name("", 10, (kHashable | kNormal), PRIVATE, "", key_id2,
       public_key2, public_key_signature2, private_key2);
@@ -1143,8 +1145,8 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_GetStoreRequests) {
   ASSERT_EQ(kSuccess, SessionSingleton::getInstance()->
       AddPrivateShare(attributes, share_stats, &participants));
   std::string key_id3, public_key3, public_key_signature3, private_key3;
-  msm.GetChunkSignatureKeys(PRIVATE_SHARE, msid_name, &key_id3, &public_key3,
-      &public_key_signature3, &private_key3);
+  pd_utils.GetChunkSignatureKeys(PRIVATE_SHARE, msid_name, &key_id3,
+      &public_key3, &public_key_signature3, &private_key3);
   StoreData st_chunk_private_share(names.at(0), 3, (kHashable | kOutgoing),
       PRIVATE_SHARE, msid_name, key_id3, public_key3, public_key_signature3,
       private_key3);
@@ -1181,7 +1183,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_GetStoreRequests) {
 
   // Check PUBLIC_SHARE chunk
   std::string key_id4, public_key4, public_key_signature4, private_key4;
-  msm.GetChunkSignatureKeys(PUBLIC_SHARE, "", &key_id4, &public_key4,
+  pd_utils.GetChunkSignatureKeys(PUBLIC_SHARE, "", &key_id4, &public_key4,
       &public_key_signature4, &private_key4);
   StoreData st_chunk_public_share_bad(names.at(1), 3, (kHashable | kOutgoing),
       PUBLIC_SHARE, "", key_id4, public_key4, public_key_signature4,
@@ -1207,7 +1209,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_GetStoreRequests) {
       false);
   SessionSingleton::getInstance()->AddKey(MPID, mpid_name, mpid_pri, mpid_pub,
       mpid_pub_sig);
-  msm.GetChunkSignatureKeys(PUBLIC_SHARE, "", &key_id4, &public_key4,
+  pd_utils.GetChunkSignatureKeys(PUBLIC_SHARE, "", &key_id4, &public_key4,
       &public_key_signature4, &private_key4);
   StoreData st_chunk_public_share_good(names.at(1), 3, (kHashable | kOutgoing),
       PUBLIC_SHARE, "", key_id4, public_key4, public_key_signature4,
@@ -1239,7 +1241,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_GetStoreRequests) {
 
   // Check ANONYMOUS chunk
   std::string key_id5, public_key5, public_key_signature5, private_key5;
-  msm.GetChunkSignatureKeys(ANONYMOUS, "", &key_id5, &public_key5,
+  pd_utils.GetChunkSignatureKeys(ANONYMOUS, "", &key_id5, &public_key5,
       &public_key_signature5, &private_key5);
   StoreData st_chunk_anonymous(names.at(2), 3, (kHashable | kOutgoing),
       ANONYMOUS, "", key_id5, public_key5, public_key_signature5, private_key5);
@@ -1267,7 +1269,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_GetStoreRequests) {
 
   // Check PRIVATE chunk
   std::string key_id6, public_key6, public_key_signature6, private_key6;
-  msm.GetChunkSignatureKeys(PRIVATE, "", &key_id6, &public_key6,
+  pd_utils.GetChunkSignatureKeys(PRIVATE, "", &key_id6, &public_key6,
       &public_key_signature6, &private_key6);
   StoreData st_chunk_private(names.at(3), 3, (kHashable | kOutgoing), PRIVATE,
       "", key_id6, public_key6, public_key_signature6, private_key6);
@@ -1439,7 +1441,8 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_SendChunkPrep) {
   std::string chunkname = crypto_.Hash("ddd", "", crypto::STRING_STRING, false);
   client_chunkstore_->AddChunkToOutgoing(chunkname, std::string("ddd"));
   std::string key_id, public_key, public_key_signature, private_key;
-  msm.GetChunkSignatureKeys(PRIVATE, "", &key_id, &public_key,
+  PdUtils pd_utils;
+  pd_utils.GetChunkSignatureKeys(PRIVATE, "", &key_id, &public_key,
                             &public_key_signature, &private_key);
   StoreData store_data(chunkname, 3, (kHashable | kOutgoing), PRIVATE, "",
                        key_id, public_key, public_key_signature, private_key);
@@ -1529,7 +1532,8 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_SendPrepCallback) {
   std::string chunkname = crypto_.Hash("eee", "", crypto::STRING_STRING, false);
   client_chunkstore_->AddChunkToOutgoing(chunkname, std::string("eee"));
   std::string key_id, public_key, public_key_signature, private_key;
-  msm.GetChunkSignatureKeys(PRIVATE, "", &key_id, &public_key,
+  PdUtils pd_utils;
+  pd_utils.GetChunkSignatureKeys(PRIVATE, "", &key_id, &public_key,
       &public_key_signature, &private_key);
   StoreData store_data(chunkname, 3, (kHashable | kOutgoing), PRIVATE, "",
       key_id, public_key, public_key_signature, private_key);
@@ -1624,7 +1628,8 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_SendChunkContent) {
   std::string chunkname = crypto_.Hash("fff", "", crypto::STRING_STRING, false);
   client_chunkstore_->AddChunkToOutgoing(chunkname, std::string("fff"));
   std::string key_id, public_key, public_key_signature, private_key;
-  msm.GetChunkSignatureKeys(PRIVATE, "", &key_id, &public_key,
+  PdUtils pd_utils;
+  pd_utils.GetChunkSignatureKeys(PRIVATE, "", &key_id, &public_key,
       &public_key_signature, &private_key);
   StoreData store_data(chunkname, 3, (kHashable | kOutgoing), PRIVATE, "",
       key_id, public_key, public_key_signature, private_key);
@@ -2104,7 +2109,8 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_StoreNewPacket) {
   std::string packet_name = crypto_.Hash(base::RandomString(100), "",
                                          crypto::STRING_STRING, false);
   std::string key_id, public_key, public_key_signature, private_key;
-  msm.GetPacketSignatureKeys(MID, PRIVATE, "", &key_id, &public_key,
+  PdUtils pd_utils;
+  pd_utils.GetPacketSignatureKeys(MID, PRIVATE, "", &key_id, &public_key,
       &public_key_signature, &private_key);
   ASSERT_EQ(anmid_name, key_id);
   ASSERT_EQ(anmid_pub, public_key);
@@ -2381,7 +2387,8 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_DeletePacket) {
   std::string packet_name = crypto_.Hash(base::RandomString(100), "",
                                          crypto::STRING_STRING, false);
   std::string key_id, public_key, public_key_signature, private_key;
-  msm.GetPacketSignatureKeys(MID, PRIVATE, "", &key_id, &public_key,
+  PdUtils pd_utils;
+  pd_utils.GetPacketSignatureKeys(MID, PRIVATE, "", &key_id, &public_key,
       &public_key_signature, &private_key);
   ASSERT_EQ(anmid_name, key_id);
   ASSERT_EQ(anmid_pub, public_key);
@@ -2529,7 +2536,8 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_UpdatePacket) {
   std::string packet_name(crypto_.Hash(base::RandomString(100), "",
                                        crypto::STRING_STRING, false));
   std::string key_id, public_key, public_key_signature, private_key;
-  msm.GetPacketSignatureKeys(MID, PRIVATE, "", &key_id, &public_key,
+  PdUtils pd_utils;
+  pd_utils.GetPacketSignatureKeys(MID, PRIVATE, "", &key_id, &public_key,
                              &public_key_signature, &private_key);
   ASSERT_EQ(anmid_name, key_id);
   ASSERT_EQ(anmid_pub, public_key);

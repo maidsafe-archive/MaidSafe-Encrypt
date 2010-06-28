@@ -40,7 +40,7 @@
 #include <vector>
 
 #include "maidsafe/maidsafe.h"
-#include "maidsafe/utils.h"
+#include "maidsafe/pdutils.h"
 #include "protobuf/datamaps.pb.h"
 
 namespace fs = boost::filesystem;

@@ -30,7 +30,7 @@
 
 #include "fs/filesystem.h"
 #include "maidsafe/chunkstore.h"
-#include "maidsafe/utils.h"
+#include "maidsafe/pdutils.h"
 #include "maidsafe/client/dataatlashandler.h"
 #include "maidsafe/client/keyatlas.h"
 #include "maidsafe/client/pddir.h"

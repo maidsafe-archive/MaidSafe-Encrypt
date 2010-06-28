@@ -28,7 +28,7 @@
 #include <boost/filesystem/fstream.hpp>
 #include <vector>
 
-#include "maidsafe/utils.h"
+#include "maidsafe/pdutils.h"
 #include "maidsafe/client/dataatlashandler.h"
 #include "maidsafe/client/selfencryption.h"
 #include "maidsafe/client/sessionsingleton.h"

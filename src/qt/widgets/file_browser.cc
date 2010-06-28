@@ -34,7 +34,7 @@
 #include <shellapi.h>
 #endif
 
-#include "maidsafe/utils.h"
+#include "maidsafe/pdutils.h"
 #include "fs/filesystem.h"
 #include "qt/client/client_controller.h"
 #include "qt/client/make_directory_thread.h"

@@ -20,7 +20,7 @@
 #include <map>
 #include <string>
 
-#include "maidsafe/utils.h"
+#include "maidsafe/pdutils.h"
 #include "qt/client/client_controller.h"
 
 

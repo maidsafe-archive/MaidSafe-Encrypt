@@ -37,7 +37,7 @@
 #include <cstdio>
 
 #include "maidsafe/chunkstore.h"
-#include "maidsafe/utils.h"
+#include "maidsafe/pdutils.h"
 #include "maidsafe/client/contacts.h"
 #include "maidsafe/client/dataatlashandler.h"
 #include "maidsafe/client/privateshares.h"
