@@ -30,6 +30,7 @@
 
 #include "fs/filesystem.h"
 #include <boost/filesystem/fstream.hpp>
+#include <boost/thread.hpp>
 #ifdef PD_WIN32
 #include <shlwapi.h>
 #include <shlobj.h>
@@ -195,30 +196,21 @@ int UnMount(const std::string &session_name,
   fs::path db_dir = DbDir(session_name);
   fs::path ms_home_dir = MaidsafeHomeDir(session_name);
   fs::path ms_dir = MaidsafeDir(session_name);
-  try {
-    switch (defcon) {
-      case maidsafe::kDefCon1:
-        fs::remove_all(db_dir);
-        return fs::exists(db_dir) ? maidsafe::kFileSystemUnmountError :
-            maidsafe::kSuccess;
-      case maidsafe::kDefCon2:
-        fs::remove_all(db_dir);
-        fs::remove_all(ms_home_dir);
-        return (fs::exists(db_dir) || fs::exists(ms_home_dir)) ?
-            maidsafe::kFileSystemUnmountError : maidsafe::kSuccess;
-      case maidsafe::kDefCon3:
-        fs::remove_all(ms_dir);
-        return fs::exists(ms_dir) ? maidsafe::kFileSystemUnmountError :
-            maidsafe::kSuccess;
-      default:
-        return maidsafe::kFileSystemUnmountError;
-    }
-  }
-  catch(const std::exception& e) {
-#ifdef DEBUG
-    printf("In file_system::DeleteDirs: %s\n", e.what());
-#endif
-    return maidsafe::kFileSystemException;
+  switch (defcon) {
+    case maidsafe::kDefCon1:
+      return RemoveDir(db_dir, kMaxRemoveDirAttempts) ?  maidsafe::kSuccess :
+          maidsafe::kFileSystemUnmountError;
+    case maidsafe::kDefCon2: {
+      bool success1(RemoveDir(db_dir, kMaxRemoveDirAttempts));
+      bool success2(RemoveDir(ms_home_dir, kMaxRemoveDirAttempts));
+      return (success1 && success2) ?  maidsafe::kSuccess :
+          maidsafe::kFileSystemUnmountError;
+    }    
+    case maidsafe::kDefCon3:
+      return RemoveDir(ms_dir, kMaxRemoveDirAttempts) ?  maidsafe::kSuccess :
+          maidsafe::kFileSystemUnmountError;
+    default:
+      return maidsafe::kFileSystemUnmountError;
   }
 }
 
@@ -238,6 +230,28 @@ int FuseMountPoint(const std::string &session_name) {
 #endif
     return maidsafe::kFileSystemException;
   }
+}
+
+bool RemoveDir(const fs::path &dir, const boost::uint8_t &max_attempts) {
+  bool removed(false);
+  for (boost::uint8_t i = 0; (i < max_attempts) && !removed; ++i) {
+    try {
+      if (fs::exists(dir))
+        fs::remove_all(dir);
+    }
+    catch(const std::exception& e) {
+      printf("In RemoveDir (%i) %s\n", i, e.what());
+    }
+    try {
+      removed = !fs::exists(dir);
+    }
+    catch(const std::exception& e) {
+      printf("In RemoveDir (%i) %s\n", i, e.what());
+    }
+    if (!removed)
+      boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+  }
+  return removed;
 }
 
 }  // namespace file_system

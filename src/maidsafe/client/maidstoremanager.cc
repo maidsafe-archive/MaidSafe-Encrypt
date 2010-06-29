@@ -109,35 +109,6 @@ MaidsafeStoreManager::MaidsafeStoreManager(boost::shared_ptr<ChunkStore> cstore,
       account_holders_manager_(kad_ops_, lower_threshold_),
       account_status_manager_() {}
 
-MaidsafeStoreManager::MaidsafeStoreManager(boost::shared_ptr<ChunkStore> cstore,
-                                           boost::uint8_t k,
-                                           SessionSingleton *ss)
-    : K_(k),
-      upper_threshold_(
-          static_cast<boost::uint16_t>(K_ * kMinSuccessfulPecentageStore)),
-      lower_threshold_(kMinSuccessfulPecentageStore > .25 ?
-          static_cast<boost::uint16_t>(K_ * .25) : upper_threshold_),
-      udt_transport_(),
-      transport_handler_(),
-      channel_manager_(&transport_handler_),
-      client_rpcs_(new ClientRpcs(&transport_handler_, &channel_manager_)),
-      kad_ops_(new KadOps(&transport_handler_, &channel_manager_, kad::CLIENT,
-                          "", "", false, false, K_, cstore)),
-      ss_(ss),
-      tasks_handler_(),
-      client_chunkstore_(cstore),
-      chunk_thread_pool_(),
-      packet_thread_pool_(),
-      store_packet_mutex_(),
-      bprpcs_(new BufferPacketRpcsImpl(&transport_handler_, &channel_manager_)),
-      cbph_(bprpcs_, kad_ops_, upper_threshold_),
-      im_notifier_(),
-      im_status_notifier_(),
-      im_conn_hdler_(),
-      im_handler_(ss_),
-      account_holders_manager_(kad_ops_, lower_threshold_),
-      account_status_manager_() {}
-
 void MaidsafeStoreManager::Init(VoidFuncOneInt callback,
                                 const boost::uint16_t &port) {
   boost::int16_t transport_id;

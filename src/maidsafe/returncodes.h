@@ -194,8 +194,29 @@ enum ReturnCode {
   kLiveContactNotFound = -11012,
   kLiveContactNoEp = -11013,
 
-
   // Self Encryption Handler (-12000)
+  kGeneralEncryptionError = -12001,
+  kEncryptFileFailure = -12002,
+  kEncryptStringFailure = -12003,
+  kEncryptDbFailure = -12004,
+  kDecryptFileFailure = -12005,
+  kDecryptStringFailure = -12006,
+  kDecryptDbFailure = -12007,
+  kEncryptionLocked = -12008,
+  kEncryptionLink = -12009,
+  kEncryptionChunk = -12010,
+  kEncryptionNotForProcessing = -12011,
+  kEncryptionUnknownType = -12012,
+  kEncryptionMDMFailure = -12013,
+  kEncryptionDAHFailure = -12014,
+  kEncryptionDMFailure = -12015,
+  kEncryptionSMFailure = -12016,
+  kEncryptionSmallInput = -12017,
+  kEncryptionKeyGenFailure = -12018,
+  kEncryptionGetDirKeyFailure = -12019,
+  kEncryptionDbMissing = -12020,
+  kEncryptionDbException = -12021,
+  kEncryptionDmNotInMap = -12022,
 
   // Store Task Handler
   kStoreTaskHandlerError = -13001,

@@ -65,9 +65,34 @@ std::string CreateRandomFile(const std::string &filename,
   return file_path.string();
 }
 
+void ModifyUpToDateDms(ModificationType modification_type,
+                       const boost::uint16_t &test_size,
+                       const std::vector<std::string> &keys,
+                       const std::vector<std::string> &enc_dms,
+                       boost::shared_ptr<maidsafe::SEHandler> seh) {
+  switch (modification_type) {
+    case kAdd:
+      for (boost::uint16_t i = 0; i < test_size; ++i)
+        seh->AddToUpToDateDms(keys.at(i), enc_dms.at(i));
+      break;
+    case kGet:
+      for (boost::uint16_t i = 0; i < test_size; ++i)
+        seh->GetFromUpToDateDms(keys.at(i));
+      break;
+    case kRemove:
+      for (boost::uint16_t i = 0; i < test_size; ++i)
+        seh->RemoveFromUpToDateDms(keys.at(i));
+      break;
+    default:
+      break;
+  }
+}
+
 }  // namespace test_seh
 
 namespace maidsafe {
+
+namespace test {
 
 class SEHandlerTest : public testing::Test {
  protected:
@@ -89,17 +114,10 @@ class SEHandlerTest : public testing::Test {
     ss_->SetPassword("password1");
     ss_->SetSessionName(false);
     ss_->SetRootDbKey("whatever");
-    try {
-      if (fs::exists(test_root_dir_))
-        fs::remove_all(test_root_dir_);
-      if (fs::exists(file_system::LocalStoreManagerDir()))
-        fs::remove_all(file_system::LocalStoreManagerDir());
-      if (fs::exists(file_system::MaidsafeDir(ss_->SessionName())))
-        fs::remove_all(file_system::MaidsafeDir(ss_->SessionName()));
-    }
-    catch(const std::exception& e) {
-      printf("%s\n", e.what());
-    }
+    ASSERT_TRUE(file_system::RemoveDir(test_root_dir_, 5));
+    ASSERT_TRUE(file_system::RemoveDir(file_system::LocalStoreManagerDir(), 5));
+    ASSERT_TRUE(file_system::RemoveDir(
+        file_system::MaidsafeDir(ss_->SessionName()), 5));
     client_chunkstore_ = boost::shared_ptr<ChunkStore>(
         new ChunkStore(test_root_dir_.string(), 0, 0));
     ASSERT_TRUE(client_chunkstore_->Init());
@@ -118,12 +136,18 @@ class SEHandlerTest : public testing::Test {
       return;
     }
     cached_keys::MakeKeys(3, &keys_);
-    ss_->AddKey(PMID, "PMID", keys_.at(0).private_key(),
-        keys_.at(0).public_key(), "");
+    crypto::Crypto co;
+    co.set_hash_algorithm(crypto::SHA_512);
+    std::string pmid_sig = co.AsymSign(keys_.at(0).public_key(), "",
+        keys_.at(1).private_key(), crypto::STRING_STRING);
+    std::string pmid = co.Hash(keys_.at(0).public_key() + pmid_sig, "",
+                               crypto::STRING_STRING, false);
+    ss_->AddKey(PMID, pmid, keys_.at(0).private_key(), keys_.at(0).public_key(),
+                pmid_sig);
     ss_->AddKey(MAID, "MAID", keys_.at(1).private_key(),
-        keys_.at(1).public_key(), "");
+                keys_.at(1).public_key(), "");
     ss_->AddKey(MPID, "Me", keys_.at(2).private_key(),
-        keys_.at(2).public_key(), "");
+                keys_.at(2).public_key(), "");
     ASSERT_EQ(0, file_system::Mount(ss_->SessionName(), ss_->DefConLevel()));
     seh_->Init(sm_, client_chunkstore_);
     if (dah_->Init(true) )
@@ -184,21 +208,13 @@ class SEHandlerTest : public testing::Test {
   }
   void TearDown() {
     cb_.Reset();
-    boost::this_thread::sleep(boost::posix_time::seconds(1));
-    try {
-      if (fs::exists(test_root_dir_))
-        fs::remove_all(test_root_dir_);
-      if (fs::exists(file_system::LocalStoreManagerDir()))
-        fs::remove_all(file_system::LocalStoreManagerDir());
-      if (fs::exists(file_system::MaidsafeDir(ss_->SessionName())))
-        fs::remove_all(file_system::MaidsafeDir(ss_->SessionName()));
-    }
-    catch(const std::exception& e) {
-      printf("%s\n", e.what());
-    }
     sm_->Close(boost::bind(&test::CallbackObject::ReturnCodeCallback, &cb_, _1),
                true);
     ASSERT_EQ(kSuccess, cb_.WaitForReturnCodeResult());
+    ASSERT_TRUE(file_system::RemoveDir(test_root_dir_, 5));
+    ASSERT_TRUE(file_system::RemoveDir(file_system::LocalStoreManagerDir(), 5));
+    ASSERT_TRUE(file_system::RemoveDir(
+        file_system::MaidsafeDir(ss_->SessionName()), 5));
   }
   fs::path test_root_dir_;
   boost::shared_ptr<ChunkStore> client_chunkstore_;
@@ -349,7 +365,6 @@ TEST_F(SEHandlerTest, BEH_MAID_DecryptStringWithChunksPrevLoaded) {
   int result = seh_->EncryptString(data, &ser_dm);
   ASSERT_EQ(0, result);
 
-  boost::this_thread::sleep(boost::posix_time::seconds(1));
   std::string dec_string;
   result = seh_->DecryptString(ser_dm, &dec_string);
   ASSERT_EQ(0, result);
@@ -361,14 +376,13 @@ TEST_F(SEHandlerTest, BEH_MAID_DecryptStringWithLoadChunks) {
 
   SelfEncryption se(client_chunkstore_);
   int result = seh_->EncryptString(data, &ser_dm);
-  boost::this_thread::sleep(boost::posix_time::seconds(1));
   ASSERT_EQ(0, result);
   // All dirs are removed on fsys_.Mount() below.  We need to temporarily rename
   // DbDir (which contains dir's db files) to avoid deletion.
   fs::path db_dir_original = file_system::DbDir(ss_->SessionName());
   std::string db_dir_new = "./W";
+  ASSERT_TRUE(file_system::RemoveDir(db_dir_new, 5));
   try {
-    fs::remove_all(db_dir_new);
     fs::rename(db_dir_original, db_dir_new);
   }
   catch(const std::exception &e) {
@@ -378,8 +392,8 @@ TEST_F(SEHandlerTest, BEH_MAID_DecryptStringWithLoadChunks) {
 
   fs::create_directories(file_system::MaidsafeHomeDir(ss_->SessionName()) /
       kRootSubdir[0][0]);
+  ASSERT_TRUE(file_system::RemoveDir(db_dir_original, 5));
   try {
-    fs::remove_all(db_dir_original);
     fs::rename(db_dir_new, db_dir_original);
   }
   catch(const std::exception &e) {
@@ -387,7 +401,6 @@ TEST_F(SEHandlerTest, BEH_MAID_DecryptStringWithLoadChunks) {
   }
   std::string dec_string;
   result = seh_->DecryptString(ser_dm, &dec_string);
-  boost::this_thread::sleep(boost::posix_time::seconds(1));
   ASSERT_EQ(0, result);
 
   ASSERT_EQ(data, dec_string);
@@ -407,12 +420,8 @@ TEST_F(SEHandlerTest, BEH_MAID_DecryptWithChunksPrevLoaded) {
   fs::remove(full_str);
   ASSERT_FALSE(fs::exists(full_str));
 
-  boost::this_thread::sleep(boost::posix_time::seconds(1));
-//  printf("1 - trying to decrypt: %s\n", rel_str.c_str());
   result = seh_->DecryptFile(rel_str);
-//  printf("2\n");
   ASSERT_EQ(0, result);
-//  printf("3 - trying to assert exists: %s\n", full_str.c_str());
   ASSERT_TRUE(fs::exists(full_str));
   hash_after = se.SHA512(fs::path(full_str));
   ASSERT_EQ(hash_before, hash_after);
@@ -429,14 +438,13 @@ TEST_F(SEHandlerTest, BEH_MAID_DecryptWithLoadChunks) {
   fs::path full_path(full_str, fs::native);
   hash_before = se.SHA512(full_path);
   int result = seh_->EncryptFile(rel_str, PRIVATE, "");
-  boost::this_thread::sleep(boost::posix_time::seconds(1));
   ASSERT_EQ(0, result);
   // All dirs are removed on fsys.Mount() below.  We need to temporarily rename
   // DbDir (which contains dir's db files) to avoid deletion.
   fs::path db_dir_original = file_system::DbDir(ss_->SessionName());
   std::string db_dir_new = "./W";
+  ASSERT_TRUE(file_system::RemoveDir(db_dir_new, 5));
   try {
-    fs::remove_all(db_dir_new);
     fs::rename(db_dir_original, db_dir_new);
   }
   catch(const std::exception &e) {
@@ -446,15 +454,14 @@ TEST_F(SEHandlerTest, BEH_MAID_DecryptWithLoadChunks) {
   ASSERT_FALSE(fs::exists(full_str));
   fs::create_directories(file_system::MaidsafeHomeDir(ss_->SessionName()) /
       kRootSubdir[0][0]);
+  ASSERT_TRUE(file_system::RemoveDir(db_dir_original, 5));
   try {
-    fs::remove_all(db_dir_original);
     fs::rename(db_dir_new, db_dir_original);
   }
   catch(const std::exception &e) {
     printf("%s\n", e.what());
   }
   result = seh_->DecryptFile(rel_str);
-  boost::this_thread::sleep(boost::posix_time::seconds(1));
   ASSERT_EQ(0, result);
   ASSERT_TRUE(fs::exists(full_str));
   hash_after = se.SHA512(fs::path(full_str));
@@ -488,9 +495,8 @@ TEST_F(SEHandlerTest, BEH_MAID_EncryptAndDecryptPrivateDb) {
   // Deleting the details of the DB
   fs::remove(db_path);
   ASSERT_FALSE(fs::exists(db_path));
-  ASSERT_EQ(0,
-    seh_->RemoveKeyFromUptodateDms(TidyPath(kRootSubdir[0][0]))) <<
-    "Didn't find the key in the map of DMs.";
+  ASSERT_EQ(0, seh_->RemoveFromUpToDateDms(key)) <<
+      "Didn't find the key in the map of DMs.";
 
   // Test decryption with no record of the directory DB ser_dm
   ASSERT_EQ(0, seh_->DecryptDb(TidyPath(kRootSubdir[0][0]), PRIVATE,
@@ -534,5 +540,78 @@ TEST_F(SEHandlerTest, DISABLED_BEH_MAID_EncryptAndDecryptAnonDb) {
   ASSERT_EQ(hash_before, co.Hash(db_str2_, "", crypto::FILE_STRING, false));
   fs::remove(file_system::MaidsafeDir(ss_->SessionName()) / key);
 }
+
+TEST_F(SEHandlerTest, BEH_MAID_UpToDateDatamapsSingleThread) {
+  const boost::uint16_t kTestSize(100);
+  const boost::uint16_t kTestIndex(base::RandomUint32() % kTestSize);
+  std::vector<std::string> keys(kTestSize, ""), enc_dms(kTestSize, "");
+  for (boost::uint16_t i = 0; i < kTestSize; ++i) {
+    keys.at(i) = base::RandomString(64);
+    enc_dms.at(i) = base::RandomString(200);
+  }
+  std::string test_key(keys.at(kTestIndex));
+  std::string test_enc_dm_before(keys.at(kTestIndex));
+  std::string test_enc_dm_after(keys.at(kTestIndex));
+  while (test_enc_dm_after == test_enc_dm_before)
+    test_enc_dm_after = base::RandomString(200);
+
+  // Add keys that don't equal the test key (usually all except one)
+  for (boost::uint16_t i = 0; i < kTestSize; ++i) {
+    if (keys.at(i) != test_key)
+      seh_->AddToUpToDateDms(keys.at(i), enc_dms.at(i));
+  }
+  size_t map_size = seh_->up_to_date_datamaps_.size();
+
+  // Check trying to retrieve enc_dm returns empty string
+  ASSERT_TRUE(seh_->GetFromUpToDateDms(test_key).empty());
+  ASSERT_EQ(map_size, seh_->up_to_date_datamaps_.size());
+
+  // Check trying to remove non-existant enc_dm fails
+  ASSERT_EQ(kEncryptionDmNotInMap, seh_->RemoveFromUpToDateDms(test_key));
+  ASSERT_EQ(map_size, seh_->up_to_date_datamaps_.size());
+
+  // Check initial addition returns empty string
+  ASSERT_TRUE(seh_->AddToUpToDateDms(test_key, test_enc_dm_before).empty());
+  ASSERT_EQ(map_size + 1, seh_->up_to_date_datamaps_.size());
+
+  // Check we can retrieve enc_dm
+  ASSERT_EQ(test_enc_dm_before, seh_->GetFromUpToDateDms(test_key));
+  ASSERT_EQ(map_size + 1, seh_->up_to_date_datamaps_.size());
+
+  // Check subsequent addition returns previous enc_dm
+  ASSERT_EQ(test_enc_dm_before,
+            seh_->AddToUpToDateDms(test_key, test_enc_dm_after));
+  ASSERT_EQ(map_size + 1, seh_->up_to_date_datamaps_.size());
+
+  // Check we can retrieve updated enc_dm
+  ASSERT_EQ(test_enc_dm_after, seh_->GetFromUpToDateDms(test_key));
+  ASSERT_EQ(map_size + 1, seh_->up_to_date_datamaps_.size());
+
+  // Check we can remove enc_dm
+  ASSERT_EQ(kSuccess, seh_->RemoveFromUpToDateDms(test_key));
+  ASSERT_TRUE(seh_->GetFromUpToDateDms(test_key).empty());
+  ASSERT_EQ(map_size, seh_->up_to_date_datamaps_.size());
+}
+
+TEST_F(SEHandlerTest, BEH_MAID_UpToDateDatamapsMultiThread) {
+  const boost::uint16_t kTestSize(100);
+  std::vector<std::string> keys(kTestSize, ""), enc_dms(kTestSize, "");
+  for (boost::uint16_t i = 0; i < kTestSize; ++i) {
+    keys.at(i) = base::RandomString(64);
+    enc_dms.at(i) = base::RandomString(200);
+    seh_->AddToUpToDateDms(keys.at(i), enc_dms.at(i));
+  }
+  boost::thread thr1(&test_seh::ModifyUpToDateDms, test_seh::kAdd, kTestSize,
+                     keys, enc_dms, seh_);
+  boost::thread thr2(&test_seh::ModifyUpToDateDms, test_seh::kGet, kTestSize,
+                     keys, enc_dms, seh_);
+  boost::thread thr3(&test_seh::ModifyUpToDateDms, test_seh::kRemove, kTestSize,
+                     keys, enc_dms, seh_);
+  thr1.join();
+  thr2.join();
+  thr3.join();
+}
+
+}  // namespace test
 
 }  // namespace maidsafe

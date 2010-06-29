@@ -40,6 +40,8 @@ enum DefConLevels {kDefCon1 = 1, kDefCon2, kDefCon3};
 
 namespace file_system {
 
+const boost::uint8_t kMaxRemoveDirAttempts(5);
+
 fs::path HomeDir();
 fs::path ApplicationDataDir();
 fs::path TempDir();
@@ -57,6 +59,7 @@ int Mount(const std::string &session_name,
 int UnMount(const std::string &session_name,
             const maidsafe::DefConLevels &defcon);
 int FuseMountPoint(const std::string &session_name);
+bool RemoveDir(const fs::path &dir, const boost::uint8_t &max_attempts);
 
 }  // namespace file_system
 

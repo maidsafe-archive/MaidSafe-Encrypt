@@ -28,30 +28,54 @@
 
 #include <boost/filesystem.hpp>
 #include <boost/thread/condition.hpp>
-#include <gtest/gtest_prod.h>
 
 #include <map>
 #include <string>
 
 #include "protobuf/datamaps.pb.h"
+#include "maidsafe/client/sessionsingleton.h"
 #include "maidsafe/maidsafe.h"
 
 namespace fs = boost::filesystem;
 
 namespace maidsafe {
+class SEHandler;
+}  // namespace maidsafe
+
+namespace test_seh {
+enum ModificationType { kAdd, kGet, kRemove };
+void ModifyUpToDateDms(ModificationType modification_type,
+                       const boost::uint16_t &test_size,
+                       const std::vector<std::string> &keys,
+                       const std::vector<std::string> &enc_dms,
+                       boost::shared_ptr<maidsafe::SEHandler> seh);
+}  // namespace test_seh
+
+namespace maidsafe {
+
+namespace test {
+class SEHandlerTest_BEH_MAID_Check_Entry_Test;
+class SEHandlerTest_BEH_MAID_EncryptAndDecryptPrivateDb_Test;
+class SEHandlerTest_BEH_MAID_UpToDateDatamapsSingleThread_Test;
+class SEHandlerTest_BEH_MAID_UpToDateDatamapsMultiThread_Test;
+}  // namespace test
 
 class ChunkStore;
-class SessionSingleton;
 class StoreManagerInterface;
 
-const int kMaxStoreRetries = 2;
-const int kMaxLoadRetries = 2;
-const int kParallelStores = 1;
-const int kParallelLoads = 3;
+//  const int kMaxStoreRetries = 2;
+//  const int kMaxLoadRetries = 2;
+//  const int kParallelStores = 1;
+//  const int kParallelLoads = 3;
 
 class SEHandler {
  public:
-  SEHandler();
+  typedef std::map<std::string, std::string> UpToDateDatamaps;
+  SEHandler() : storem_(),
+                client_chunkstore_(),
+                ss_(SessionSingleton::getInstance()),
+                up_to_date_datamaps_(),
+                up_to_date_datamaps_mutex_() {}
   ~SEHandler() {}
   void Init(boost::shared_ptr<StoreManagerInterface> storem,
             boost::shared_ptr<ChunkStore> client_chunkstore);
@@ -82,17 +106,17 @@ class SEHandler {
                  const std::string &msid,
                  std::string *key,
                  std::string *parent_key);
-  //  Encrypts dir's db and sets ser_dm_ to encrypted datamap of db
+  //  Encrypts dir's db
   int EncryptDb(const std::string &dir_path,
                 const DirType &dir_type,
                 const std::string &dir_key,
                 const std::string &msid,
                 const bool &encrypt_dm,
                 DataMap *dm);
-  //  Decrypts dir's db by extracting datamap from ser_dm_
+  //  Decrypts dir's db
   int DecryptDb(const std::string &dir_path,
                 const DirType &dir_type,
-                const std::string &ser_dm,
+                const std::string &encrypted_dm,
                 const std::string &dir_key,
                 const std::string &msid,
                 bool dm_encrypted,
@@ -101,8 +125,16 @@ class SEHandler {
  private:
   SEHandler &operator=(const SEHandler &);
   SEHandler(const SEHandler &);
-  FRIEND_TEST(SEHandlerTest, BEH_MAID_Check_Entry);
-  FRIEND_TEST(SEHandlerTest, BEH_MAID_EncryptAndDecryptPrivateDb);
+  friend class test::SEHandlerTest_BEH_MAID_Check_Entry_Test;
+  friend class test::SEHandlerTest_BEH_MAID_EncryptAndDecryptPrivateDb_Test;
+  friend class test::SEHandlerTest_BEH_MAID_UpToDateDatamapsSingleThread_Test;
+  friend class test::SEHandlerTest_BEH_MAID_UpToDateDatamapsMultiThread_Test;
+  friend void test_seh::ModifyUpToDateDms(
+      test_seh::ModificationType modification_type,
+      const boost::uint16_t &test_size,
+      const std::vector<std::string> &keys,
+      const std::vector<std::string> &enc_dms,
+      boost::shared_ptr<maidsafe::SEHandler> seh);
   ItemType CheckEntry(const fs::path &full_path,
                       boost::uint64_t *file_size,
                       std::string *file_hash);
@@ -120,7 +152,11 @@ class SEHandler {
                    const DirType &dir_type,
                    const std::string &msid);
   int LoadChunks(const DataMap &dm);
-  int RemoveKeyFromUptodateDms(const std::string &key);
+  // Returns previous value of enc_dm if dir_key exists in map, else returns "".
+  std::string AddToUpToDateDms(const std::string &dir_key,
+                               const std::string &enc_dm);
+  std::string GetFromUpToDateDms(const std::string &dir_key);
+  int RemoveFromUpToDateDms(const std::string &dir_key);
   void PacketOpCallback(const int &store_manager_result,
                         boost::mutex *mutex,
                         boost::condition_variable *cond_var,
@@ -128,7 +164,8 @@ class SEHandler {
   boost::shared_ptr<StoreManagerInterface> storem_;
   boost::shared_ptr<ChunkStore> client_chunkstore_;
   SessionSingleton *ss_;
-  std::map<std::string, std::string> uptodate_datamaps_;
+  UpToDateDatamaps up_to_date_datamaps_;
+  boost::mutex up_to_date_datamaps_mutex_;
 };
 
 }  // namespace maidsafe

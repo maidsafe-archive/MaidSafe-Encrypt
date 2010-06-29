@@ -557,7 +557,7 @@ bool ClientController::CreateUser(const std::string &username,
   ss_->SetSessionName(false);
   std::string root_db_key;
   int res = seh_.GenerateUniqueKey(&root_db_key);
-  if (res != 0) {
+  if (res != kSuccess) {
 #ifdef DEBUG
     printf("In ClientController::CreateUser - Bombing out, no root_db_key.\n");
 #endif

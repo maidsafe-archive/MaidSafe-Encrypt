@@ -58,6 +58,7 @@ class MaidsafeStoreManager;
 namespace test {
 class MsmSetLocalVaultOwnedTest;
 class NetworkTest;
+class CCImMessagingTest;
 }  // namespace test
 }  // namespace maidsafe
 
@@ -229,9 +230,6 @@ struct BPResults {
 class MaidsafeStoreManager : public StoreManagerInterface {
  public:
   MaidsafeStoreManager(boost::shared_ptr<ChunkStore> cstore, boost::uint8_t k);
-  MaidsafeStoreManager(boost::shared_ptr<ChunkStore> cstore,
-                       boost::uint8_t k,
-                       SessionSingleton *ss);
   virtual ~MaidsafeStoreManager() {}
   void Init(VoidFuncOneInt callback, const boost::uint16_t &port);
   void Close(VoidFuncOneInt callback, bool cancel_pending_ops);
@@ -318,6 +316,7 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   friend size_t testpdvault::CheckStoredCopies(
       std::map<std::string, std::string> chunks,
       const int &timeout, boost::shared_ptr<MaidsafeStoreManager> sm);
+  friend class test::CCImMessagingTest;
 
   // Instant messaging send online message
   bool SendPresence(const std::string &contactname);

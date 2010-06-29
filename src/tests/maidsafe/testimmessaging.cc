@@ -815,7 +815,8 @@ class CCImMessagingTest : public testing::Test {
     boost::shared_ptr<ChunkStore> cstore2(new ChunkStore(
         network_test_.test_dir().string() + "/ChunkStore2", 0, 0));
     cstore2->Init();
-    sm2_.reset(new TestStoreManager(cstore2, network_test_.K(), ss2_));
+    sm2_.reset(new TestStoreManager(cstore2, network_test_.K()));
+    sm2_->ss_ = ss2_;
     CallbackObject callback;
     sm2_->Init(
       boost::bind(&CallbackObject::ReturnCodeCallback, &callback, _1), 0);
