@@ -122,8 +122,8 @@ ShareList ClientController::shares(int type, int filterType) const {
   ShareList rv;
   std::list<maidsafe::PrivateShare> ps_list;
   const int n = maidsafe::ClientController::getInstance()->GetShareList(
-                &ps_list, maidsafe::SortingMode(type),
-                maidsafe::ShareFilter(filterType), "");
+                    maidsafe::SortingMode(type),
+                    maidsafe::ShareFilter(filterType), "", &ps_list);
   qDebug() << ps_list.size();
   if (n == 0) {
     while (!ps_list.empty()) {

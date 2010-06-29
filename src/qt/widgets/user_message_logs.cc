@@ -49,7 +49,7 @@ MessageLogs::~MessageLogs() { }
 void MessageLogs::setActive(bool b) {
   if (b && !init_) {
     // Do Any New Instance Stuff
-    init_ = true;    
+    init_ = true;
   }
 }
 
@@ -62,12 +62,12 @@ void MessageLogs::addMessage(QString message) {
 }
 
 void MessageLogs::onMessageReceived(int type,
-                                      const QDateTime&,
-                                      const QString& sender,
-                                      const QString& detail,
-                                      const QString&) {
+                                    const QDateTime&,
+                                    const QString&,
+                                    const QString&,
+                                    const QString&) {
   // TODO(Stephen) :: grab important messages and put in Log
-  if (ClientController::MessageType(type) == ClientController::TEXT) {   
+  if (ClientController::MessageType(type) == ClientController::TEXT) {
     // ui_.logListWidget->insertItem(0, detail);
   }
 }

@@ -158,15 +158,15 @@ class ClientController {
   int DeleteContact(const std::string &public_name);
 
   // Share operations
-  int GetShareList(std::list<maidsafe::PrivateShare> *ps_list,
-                   const SortingMode &sm,
+  int GetShareList(const SortingMode &sm,
                    const ShareFilter &sf,
-                   const std::string &pub_name);
+                   const std::string &pub_name,
+                   std::list<maidsafe::PrivateShare> *ps_list);
   int ShareList(const SortingMode &sm, const ShareFilter &sf,
                 std::list<std::string> *share_list);
-  int GetSortedShareList(std::list<maidsafe::private_share> *ps_list,
-                   const SortingMode &sm,
-                   const std::string &pub_name);
+  int GetSortedShareList(const SortingMode &sm,
+                         const std::string &pub_name,
+                         std::list<maidsafe::private_share> *ps_list);
   int CreateNewShare(const std::string &name,
                      const std::set<std::string> &admins,
                      const std::set<std::string> &readonlys);

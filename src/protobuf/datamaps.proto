@@ -88,9 +88,9 @@ message PersonalDetails {
   optional bytes phone_number = 2;
   optional bytes birthday = 3;
   optional bytes gender = 4;
-  optional bytes language = 5;
+  optional int32 language = 5;
   optional bytes city = 6;
-  optional bytes country = 7;
+  optional int32 country = 7;
 }
 
 message DataAtlas {

@@ -27,7 +27,6 @@
 #ifdef PD_WIN32
 #include <shlwapi.h>
 #endif
-#include <string>
 
 #include <boost/scoped_ptr.hpp>
 #include <boost/foreach.hpp>
@@ -35,6 +34,7 @@
 #include <boost/filesystem/fstream.hpp>
 #include <maidsafe/protobuf/kademlia_service_messages.pb.h>
 #include <cstdio>
+#include <string>
 
 #include "maidsafe/chunkstore.h"
 #include "maidsafe/utils.h"
@@ -244,6 +244,7 @@ int ClientController::Init(boost::uint8_t k) {
 
 }
 */
+
 bool ClientController::JoinKademlia() {
   CC_CallbackResult cb;
   sm_->Init(0, boost::bind(&CC_CallbackResult::CallbackFunc, &cb, _1), "");
@@ -593,11 +594,11 @@ bool ClientController::CreateUser(const std::string &username,
     res += dah->AddElement(TidyPath(kRootSubdir[i][0]),
                            ser_mdm, "", key, true);
     res += seh_.EncryptDb(TidyPath(kRootSubdir[i][0]),
-								          PRIVATE, key, "", true, &dm);
-		printf("%s - %d\n", kRootSubdir[i][0].c_str(), res);
+                          PRIVATE, key, "", true, &dm);
+    printf("%s - %d\n", kRootSubdir[i][0].c_str(), res);
   }
 
-	if (0 != res) {
+  if (0 != res) {
 #ifdef DEBUG
     printf("In ClientController::CreateUser error creating First layer DBs.\n");
 #endif
@@ -1364,15 +1365,16 @@ int ClientController::AddInstantFile(
 
 int ClientController::HandleAddContactRequest(
     const ContactInfo &ci, const std::string &sender) {
+  printf("CC::HandleAddContactRequest - 000000000.\n");
   if (!initialised_) {
 #ifdef DEBUG
     printf("CC::HandleAddContactRequest - Not initialised.\n");
 #endif
     return kClientControllerNotInitialised;
   }
-  // TODO(Team#5#): return choice to the user to accept/reject contact
 
   // Check if contact is on the list and has unconfirmed status
+  printf("CC::HandleAddContactRequest - 1111111111.\n");
   std::string rec_public_key;
   mi_contact mic;
   if (ss_->GetContactInfo(sender, &mic) == 0) {  // Contact exists
@@ -1392,6 +1394,7 @@ int ClientController::HandleAddContactRequest(
     rec_public_key = mic.pub_key_;
   } else {  // Contact didn't exist. Add from scratch.
     // Get contact's public key
+    printf("CC::HandleAddContactRequest - 222222222.\n");
     int result = auth_.PublicUsernamePublicKey(sender, &rec_public_key);
     if (result != kSuccess) {
 #ifdef DEBUG
@@ -1400,22 +1403,13 @@ int ClientController::HandleAddContactRequest(
       return -777;
     }
 
-    Contact c;
-    c.SetPublicName(sender);
-    c.SetPublicKey(rec_public_key);
-    c.SetFullName(ci.name());
-    c.SetOfficePhone(ci.office_number());
-    c.SetBirthday(ci.birthday());
-    c.SetGender(ci.gender().at(0));
-    c.SetLanguage(ci.language());
-    c.SetCountry(ci.country());
-    c.SetCity(ci.city());
-    c.SetConfirmed('C');
-
     // Add to the contacts MI
+    printf("QQQQQQQQQQQQQQQQQQQQQQQQQQQQ\n");
     int n = ss_->AddContact(sender, rec_public_key, ci.name(),
-            ci.office_number(), ci.birthday(), ci.gender().at(0), ci.language(),
-            ci.country(), ci.city(), 'C', 0, 0);
+                            ci.office_number(), ci.birthday(),
+                            ci.gender().empty() ? 'M' : ci.gender().at(0),
+                            ci.language(), ci.country(), ci.city(), 'C', 0, 0);
+    printf("XXXXXXXXXXXXXXXXXXXXXXXXXXXX\n");
     if (n != 0) {
 #ifdef DEBUG
       printf("ClientController::HandleAddContactRequest - "
@@ -1443,13 +1437,13 @@ int ClientController::HandleAddContactRequest(
   ContactNotification *cn = im.mutable_contact_notification();
   ContactInfo *info = cn->mutable_contact();
 
-  info->set_name("Mock");
-  info->set_birthday("Today");
-  info->set_office_number("0987456321");
-  info->set_gender("F");
-  info->set_country(22);
-  info->set_city("Troon");
-  info->set_language(7);
+  info->set_name(ss_->Pd().full_name());
+  info->set_birthday(ss_->Pd().birthday());
+  info->set_office_number(ss_->Pd().phone_number());
+  info->set_gender(ss_->Pd().gender());
+  info->set_country(ss_->Pd().country());
+  info->set_city(ss_->Pd().city());
+  info->set_language(ss_->Pd().language());
 
   cn->set_action(1);
 
@@ -1483,18 +1477,6 @@ int ClientController::HandleAddContactResponse(
 #endif
     return kClientControllerNotInitialised;
   }
-  // Check if contact exists in local session
-  Contact c;
-  c.SetPublicName(sender);
-  c.SetPublicKey("");
-  c.SetFullName(ci.name());
-  c.SetOfficePhone(ci.office_number());
-  c.SetBirthday(ci.birthday());
-  c.SetGender(ci.gender().at(0));
-  c.SetLanguage(ci.language());
-  c.SetCountry(ci.country());
-  c.SetCity(ci.city());
-  c.SetConfirmed('C');
 
   std::vector<maidsafe::Contact> list;
   maidsafe::mi_contact mic;
@@ -1509,7 +1491,8 @@ int ClientController::HandleAddContactResponse(
   n = ss_->UpdateContactFullName(sender, ci.name());
   n += ss_->UpdateContactOfficePhone(sender, ci.office_number());
   n += ss_->UpdateContactBirthday(sender, ci.birthday());
-  n += ss_->UpdateContactGender(sender, ci.gender().at(0));
+  n += ss_->UpdateContactGender(sender,
+                                ci.gender().empty() ? 'M' : ci.gender().at(0));
   n += ss_->UpdateContactLanguage(sender, ci.language());
   n += ss_->UpdateContactCountry(sender, ci.country());
   n += ss_->UpdateContactCity(sender, ci.city());
@@ -1523,10 +1506,13 @@ int ClientController::HandleAddContactResponse(
   return 0;
 }
 
-int ClientController::SendEmail(const std::string &subject, const std::string &msg,
-             const std::vector<std::string> &to, const std::vector<std::string> &cc,
-						 const std::vector<std::string> &bcc, const std::string &conversation) {
- if (!initialised_) {
+int ClientController::SendEmail(const std::string &subject,
+                                const std::string &msg,
+                                const std::vector<std::string> &to,
+                                const std::vector<std::string> &cc,
+                                const std::vector<std::string> &bcc,
+                                const std::string &conversation) {
+  if (!initialised_) {
 #ifdef DEBUG
     printf("CC::SendEmail - Not initialised.\n");
 #endif
@@ -1549,7 +1535,7 @@ int ClientController::SendEmail(const std::string &subject, const std::string &m
   BOOST_FOREACH(std::string contact, cc) {
     contact_to.push_back(contact);
     ccList.append(contact+", ");
-	}
+  }
   BOOST_FOREACH(std::string contact, bcc) {
     contact_to.push_back(contact);
   }
@@ -1586,7 +1572,8 @@ int ClientController::SendEmail(const std::string &subject, const std::string &m
   return res;
 }
 
-int ClientController::SendInstantMessage(const std::string &message,
+int ClientController::SendInstantMessage(
+    const std::string &message,
     const std::vector<std::string> &contact_names,
     const std::string &conversation) {
   if (!initialised_) {
@@ -1640,8 +1627,10 @@ int ClientController::GetInstantMessages(std::list<InstantMessage> *messages) {
   return 0;
 }
 
-int ClientController::SendInstantFile(std::string *filename,
-    const std::string &msg, const std::vector<std::string> &contact_names,
+int ClientController::SendInstantFile(
+    std::string *filename,
+    const std::string &msg,
+    const std::vector<std::string> &contact_names,
     const std::string &conversation) {
   if (!initialised_) {
 #ifdef DEBUG
@@ -1838,13 +1827,13 @@ int ClientController::AddContact(const std::string &public_name) {
   ContactNotification *cn = im.mutable_contact_notification();
   ContactInfo *info = cn->mutable_contact();
 
-  info->set_name("Mock");
-  info->set_birthday("Today");
-  info->set_office_number("0987456321");
-  info->set_gender("F");
-  info->set_country(22);
-  info->set_city("Troon");
-  info->set_language(7);
+  info->set_name(ss_->Pd().full_name());
+  info->set_birthday(ss_->Pd().birthday());
+  info->set_office_number(ss_->Pd().phone_number());
+  info->set_gender(ss_->Pd().gender());
+  info->set_country(ss_->Pd().country());
+  info->set_city(ss_->Pd().city());
+  info->set_language(ss_->Pd().language());
 
   cn->set_action(0);
 
@@ -1985,10 +1974,10 @@ std::string ClientController::GenerateBPInfo() {
 // Share Operations //
 //////////////////////
 
-int ClientController::GetShareList(std::list<maidsafe::PrivateShare> *ps_list,
-                                   const SortingMode &sm,
+int ClientController::GetShareList(const SortingMode &sm,
                                    const ShareFilter &sf,
-                                   const std::string &value) {
+                                   const std::string &value,
+                                   std::list<maidsafe::PrivateShare> *ps_list) {
   if (!initialised_) {
 #ifdef DEBUG
     printf("CC::GetShareList - Not initialised.\n");
@@ -2009,7 +1998,7 @@ int ClientController::GetShareList(std::list<maidsafe::PrivateShare> *ps_list,
 }
 
 int ClientController::ShareList(const SortingMode &sm, const ShareFilter &sf,
-    std::list<std::string> *share_list) {
+                                std::list<std::string> *share_list) {
   std::list<maidsafe::private_share> ps_list;
   int n = ss_->GetShareList(&ps_list, sm, sf);
   if (n != 0)
@@ -2022,9 +2011,9 @@ int ClientController::ShareList(const SortingMode &sm, const ShareFilter &sf,
 }
 
 int ClientController::GetSortedShareList(
-                                  std::list<maidsafe::private_share> *ps_list,
-                                  const SortingMode &sm,
-                                  const std::string &value) {
+    const SortingMode &sm,
+    const std::string &value,
+    std::list<maidsafe::private_share> *ps_list) {
   if (!initialised_) {
 #ifdef DEBUG
     printf("CC::GetShareList - Not initialised.\n");

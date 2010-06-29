@@ -105,7 +105,7 @@ message PrivateShareNotification {
 message EmailNotification {
   required bytes to = 1;
   optional bytes cc = 2;
-  optional bytes bcc = 3; 
+  optional bytes bcc = 3;
 }
 
 message InstantMessage {
@@ -120,7 +120,7 @@ message InstantMessage {
   optional int32 status = 9;
   optional bytes subject = 10;
   optional EmailNotification email_notification = 11;
-	
+
 }
 
 message StoreMessagesResult {

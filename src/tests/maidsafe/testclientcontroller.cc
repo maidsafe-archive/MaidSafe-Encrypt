@@ -627,6 +627,7 @@ TEST_F(ClientControllerTest, FUNC_MAID_LocalControllerContactAddition) {
   maidsafe::ContactInfo ci;
   if (cn.has_contact())
     ci = cn.contact();
+  printf("Putisisisisisiisisisisisiisma chingadisisisisisisisisisisima madreeeeeeeeeeeeee.\n");
   ASSERT_EQ(0, cc_->HandleAddContactRequest(ci, im.sender()));
   printf("Public Username handled the add request.\n");
   ASSERT_FALSE(ss_->GetContactPublicKey(public_username1).empty());
