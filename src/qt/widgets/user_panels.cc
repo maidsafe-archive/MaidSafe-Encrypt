@@ -276,7 +276,7 @@ void UserPanels::setActive(bool active) {
 
 void UserPanels::customContentsMenu(const QPoint &pos) {
   QPoint pos2 = ui_.toolBarListWidget->mapFromParent(pos);
-  QListWidgetItem* item = ui_.toolBarListWidget->itemAt(pos); 
+  QListWidgetItem* item = ui_.toolBarListWidget->itemAt(pos);
 
   if (item->text() == "Contacts") {
     // Contacts
@@ -339,7 +339,7 @@ void UserPanels::onSortShareRecentClicked() {
   shares_->setActive(true);
 }
 
-void UserPanels::setEmailLabel(QString mess) {
+void UserPanels::setEmailLabel(QString) {
 //  ui_.lblEmails->setText(mess);
 }
 

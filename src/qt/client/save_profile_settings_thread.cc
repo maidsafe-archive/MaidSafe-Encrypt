@@ -17,6 +17,8 @@
 // qt
 #include <QDebug>
 
+#include <boost/lexical_cast.hpp>
+
 #include <string>
 #include <vector>
 
@@ -26,12 +28,12 @@
 
 SaveProfileSettingsThread::SaveProfileSettingsThread(
     QHash<QString, QString> theHash, QObject* parent)
-      : WorkerThread(parent), theHash_(theHash) { }
+        : WorkerThread(parent), theHash_(theHash) { }
 
 SaveProfileSettingsThread::~SaveProfileSettingsThread() { }
 
 void SaveProfileSettingsThread::run() {
-  qDebug() << "SaveProfileSettingsThread::run";
+  std::cout << "SaveProfileSettingsThread::run" << std::endl;
 
   maidsafe::PersonalDetails pd =
           maidsafe::SessionSingleton::getInstance()->Pd();
@@ -39,20 +41,26 @@ void SaveProfileSettingsThread::run() {
   pd.set_full_name(theHash_["FullName"].toStdString());
   pd.set_birthday(theHash_["BirthDay"].toStdString());
   pd.set_city(theHash_["City"].toStdString());
-  pd.set_country(theHash_["Country"].toStdString());
-  pd.set_gender(theHash_["Gender"].toStdString());
-  pd.set_language(theHash_["Language"].toStdString());
+  try {
+    pd.set_country(boost::lexical_cast<int>(theHash_["Country"].toStdString()));
+    pd.set_gender(theHash_["Gender"].toStdString());
+    pd.set_language(boost::lexical_cast<int>(theHash_["Language"].toStdString()));
+  }
+  catch(const std::exception &e) {
+    std::cout << e.what() << std::endl;
+  }
   pd.set_phone_number(theHash_["Phone"].toStdString());
 
+  std::cout << "SaveProfileSettingsThread::run - " << pd.country() <<  " - "
+            << theHash_["Country"].toStdString() << std::endl;
+  std::cout << "SaveProfileSettingsThread::run - " << pd.language() <<  " - "
+            << theHash_["Language"].toStdString() << std::endl;
   maidsafe::SessionSingleton::getInstance()->SetPd(pd);
 
   // TODO(Team): Implement save settings
 
-  if (!theHash_["FullName"].isEmpty()) {
-  }
-
+  if (!theHash_["FullName"].isEmpty()) { }
   const bool success = true;
-
   emit completed(success);
 }
 

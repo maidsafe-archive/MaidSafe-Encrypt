@@ -634,6 +634,7 @@ TEST_MS_NET(ClientControllerTest, FUNC, MAID, CC_ContactAddition) {
   maidsafe::ContactInfo ci;
   if (cn.has_contact())
     ci = cn.contact();
+  printf("Putisisisisisiisisisisisiisma chingadisisisisisisisisisisima madreeeeeeeeeeeeee.\n");
   ASSERT_EQ(0, cc_->HandleAddContactRequest(ci, im.sender()));
   ASSERT_FALSE(ss_->GetContactPublicKey(public_username1).empty());
   printf("Public Username confirmed Public Username 1.\n");

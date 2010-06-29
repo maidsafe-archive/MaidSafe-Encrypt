@@ -47,7 +47,7 @@ UserInbox::UserInbox(QWidget* parent) : QDialog(parent) {
 
 UserInbox::~UserInbox() {}
 
-void UserInbox::setActive(bool active) {
+void UserInbox::setActive(bool) {
   rootPath_ = QString::fromStdString(file_system::MaidsafeHomeDir(
               ClientController::instance()->SessionName()).string());
   QString emailRootPath = QString::fromStdString(
@@ -261,7 +261,7 @@ void UserInbox::onEmailClicked(QListWidgetItem* item) {
 void UserInbox::onItemClicked(QListWidgetItem* item) {
   if (item->text() == tr("New Mail")) {
     sendMail_ = new UserSendMail(this);
-      
+
     connect(sendMail_,  SIGNAL(sendEmailCompleted(int, const QString&)),
             this, SLOT(onEmailCompleted(int, const QString&)));
 
@@ -279,7 +279,7 @@ void UserInbox::onItemClicked(QListWidgetItem* item) {
   }
 }
 
-void UserInbox::onEmailCompleted(int, const QString& subject) {
+void UserInbox::onEmailCompleted(int, const QString&) {
   populateEmails();
 }
 
@@ -308,7 +308,7 @@ void UserInbox::onRemoveDirCompleted(int success, const QString& filepath) {
   }
 }
 
-void UserInbox::onEmailReceived(const maidsafe::InstantMessage& im) {
+void UserInbox::onEmailReceived(const maidsafe::InstantMessage&) {
   populateEmails();
 }
 
