@@ -33,7 +33,7 @@ SaveProfileSettingsThread::SaveProfileSettingsThread(
 SaveProfileSettingsThread::~SaveProfileSettingsThread() { }
 
 void SaveProfileSettingsThread::run() {
-  std::cout << "SaveProfileSettingsThread::run" << std::endl;
+  printf("SaveProfileSettingsThread::run");
 
   maidsafe::PersonalDetails pd =
           maidsafe::SessionSingleton::getInstance()->Pd();
@@ -47,14 +47,14 @@ void SaveProfileSettingsThread::run() {
     pd.set_language(boost::lexical_cast<int>(theHash_["Language"].toStdString()));
   }
   catch(const std::exception &e) {
-    std::cout << e.what() << std::endl;
+    printf("In SaveProfileSettingsThread::run() %s\n", e.what());
   }
   pd.set_phone_number(theHash_["Phone"].toStdString());
 
-  std::cout << "SaveProfileSettingsThread::run - " << pd.country() <<  " - "
-            << theHash_["Country"].toStdString() << std::endl;
-  std::cout << "SaveProfileSettingsThread::run - " << pd.language() <<  " - "
-            << theHash_["Language"].toStdString() << std::endl;
+  printf("SaveProfileSettingsThread::run - %i - %s\n", pd.country(),
+         theHash_["Country"].toStdString().c_str());
+  printf("SaveProfileSettingsThread::run - %i - %s\n", pd.language(),
+         theHash_["Language"].toStdString().c_str());
   maidsafe::SessionSingleton::getInstance()->SetPd(pd);
 
   // TODO(Team): Implement save settings
