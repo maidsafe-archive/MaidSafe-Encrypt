@@ -199,7 +199,7 @@ class ImMessagingTest : public testing::Test {
   ImMessagingTest &operator=(const ImMessagingTest&);
 };
 
-TEST_F(ImMessagingTest, FUNC_MAID_SendMessages) {
+TEST_MS_NET(ImMessagingTest, FUNC, MAID, SendMessages) {
   std::vector<std::string> recs;
   recs.push_back("contact1");
   std::map<std::string, ReturnCode> results;
@@ -302,7 +302,7 @@ TEST_F(ImMessagingTest, FUNC_MAID_SendMessages) {
   ASSERT_EQ(msg, rec_msg);
 }
 
-TEST_F(ImMessagingTest, FUNC_MAID_SendReceiveMessages) {
+TEST_MS_NET(ImMessagingTest, FUNC, MAID, SendReceiveMessages) {
   MockSessionSingleton client1_ss;
   client1_ss.AddKey(MPID, "contact1", keys_.at(1).private_key(),
                 keys_.at(1).public_key(), "");
@@ -388,7 +388,7 @@ TEST_F(ImMessagingTest, FUNC_MAID_SendReceiveMessages) {
   ASSERT_EQ(msg, sm_rec_msg_);
 }
 
-TEST_F(ImMessagingTest, FUNC_MAID_ReceiveEndPointMsg) {
+TEST_MS_NET(ImMessagingTest, FUNC, MAID, ReceiveEndPointMsg) {
   MockSessionSingleton client2_ss;
   client2_ss.AddKey(MPID, "contact2", keys_.at(2).private_key(),
                 keys_.at(2).public_key(), "");
@@ -494,7 +494,7 @@ TEST_F(ImMessagingTest, FUNC_MAID_ReceiveEndPointMsg) {
   ASSERT_EQ(msg, rec_msg);
 }
 
-TEST_F(ImMessagingTest, FUNC_MAID_SendLogOutMsg) {
+TEST_MS_NET(ImMessagingTest, FUNC, MAID, SendLogOutMsg) {
   sm_->SendLogOutMessage("contact2");
   sm_->SendLogOutMessage("contact1");
   while (alt_ctc_rec_msgs_.empty()) {
@@ -531,7 +531,7 @@ TEST_F(ImMessagingTest, FUNC_MAID_SendLogOutMsg) {
   sm_->SendLogOutMessage("contact1");
 }
 
-TEST_F(ImMessagingTest, FUNC_MAID_SendPresenceMsg) {
+TEST_MS_NET(ImMessagingTest, FUNC, MAID, SendPresenceMsg) {
   ASSERT_FALSE(sm_->SendPresence("contact2"));
   ASSERT_TRUE(sm_->SendPresence("contact1"));
   while (alt_ctc_rec_msgs_.empty()) {
@@ -591,7 +591,7 @@ TEST_F(ImMessagingTest, FUNC_MAID_SendPresenceMsg) {
   ASSERT_EQ(1, latest_status_);
 }
 
-TEST_F(ImMessagingTest, FUNC_MAID_ReceiveLogOutMsg) {
+TEST_MS_NET(ImMessagingTest, FUNC, MAID, ReceiveLogOutMsg) {
   MockSessionSingleton client1_ss;
   client1_ss.AddKey(MPID, "contact1", keys_.at(1).private_key(),
                 keys_.at(1).public_key(), "");
@@ -637,7 +637,7 @@ TEST_F(ImMessagingTest, FUNC_MAID_ReceiveLogOutMsg) {
   ASSERT_EQ(1, latest_status_);
 }
 
-TEST_F(ImMessagingTest, FUNC_MAID_InvalidNewConnection) {
+TEST_MS_NET(ImMessagingTest, FUNC, MAID, InvalidNewConnection) {
   boost::uint32_t c_id(0);
   ASSERT_EQ(0, ctc2_trans_->ConnectToSend(ss_->Ep().ip(0), ss_->Ep().port(0),
       ss_->Ep().ip(1), ss_->Ep().port(1), ss_->Ep().ip(2), ss_->Ep().port(2),
@@ -654,7 +654,7 @@ TEST_F(ImMessagingTest, FUNC_MAID_InvalidNewConnection) {
   ASSERT_NE(0, ctc2_trans_->Send("abcdefg", c_id, true));
 }
 
-TEST_F(ImMessagingTest, FUNC_MAID_HandleTwoConverstions) {
+TEST_MS_NET(ImMessagingTest, FUNC, MAID, HandleTwoConverstions) {
   MockSessionSingleton client2_ss;
   client2_ss.AddKey(MPID, "contact2", keys_.at(2).private_key(),
                 keys_.at(2).public_key(), "");
@@ -795,7 +795,7 @@ class CCImMessagingTest : public testing::Test {
                         ss2_(new MockSessionSingleton),
                         publicusername1_("contact1"),
                         publicusername2_("contact2"),
-                        sm1_(network_test_.store_manager()),
+                        sm1_(),
                         sm2_(),
                         keys_(),
                         sm_rec_msg_(),
@@ -810,13 +810,20 @@ class CCImMessagingTest : public testing::Test {
   }
  protected:
   void SetUp() {
-    ss1_->ResetSession();
     ASSERT_TRUE(network_test_.Init());
+    sm1_ = network_test_.store_manager();
+    ss1_ = sm1_->ss_;
     boost::shared_ptr<ChunkStore> cstore2(new ChunkStore(
         network_test_.test_dir().string() + "/ChunkStore2", 0, 0));
     cstore2->Init();
+#ifdef MS_NETWORK_TEST
     sm2_.reset(new TestStoreManager(cstore2, network_test_.K()));
+#else
+    sm2_.reset(new TestStoreManager(cstore2, network_test_.K(),
+                                    network_test_.test_dir()));
+#endif
     sm2_->ss_ = ss2_;
+    sm2_->im_handler_.ss_ = ss2_;
     CallbackObject callback;
     sm2_->Init(
       boost::bind(&CallbackObject::ReturnCodeCallback, &callback, _1), 0);
@@ -839,16 +846,15 @@ class CCImMessagingTest : public testing::Test {
 
     // Adding contact information to session
     ss1_->AddKey(MPID, publicusername1_, keys_.at(0).private_key(),
-                keys_.at(0).public_key(), "");
+                 keys_.at(0).public_key(), "");
     ss2_->AddKey(MPID, publicusername2_, keys_.at(1).private_key(),
-                keys_.at(1).public_key(), "");
+                 keys_.at(1).public_key(), "");
     ASSERT_EQ(0, ss1_->AddContact(publicusername2_, keys_.at(1).public_key(),
         "", "", "", 'U', 1, 2, "", 'C', 0, 0));
     ASSERT_EQ(0, ss2_->AddContact(publicusername1_, keys_.at(0).public_key(),
         "", "", "", 'U', 1, 2, "", 'C', 0, 0));
   }
   void TearDown() {
-    printf("starting TearDown\n");
     CallbackObject callback;
     sm2_->Close(
         boost::bind(&CallbackObject::ReturnCodeCallback, &callback, _1), true);
@@ -869,7 +875,6 @@ class CCImMessagingTest : public testing::Test {
     catch(const std::exception &e_) {
       printf("%s\n", e_.what());
     }
-    printf("finished TearDown\n");
   }
 
   NetworkTest network_test_;
@@ -895,12 +900,13 @@ class CCImMessagingTest : public testing::Test {
 };
 
 
-TEST_F(CCImMessagingTest, FUNC_MAID_TestImSendPresenceAndMsgs) {
-  // Asuming sm1 gets presence  of sm2
-  ss1_->AddLiveContact(publicusername2_, ss2_->Ep(), 0);
+TEST_MS_NET(CCImMessagingTest, FUNC, MAID, TestImSendPresenceAndMsgs) {
+  // Assuming sm1 gets presence of sm2
+  ASSERT_EQ(0, ss1_->AddLiveContact(publicusername2_, ss2_->Ep(), 0));
   ASSERT_TRUE(sm1_->SendPresence(publicusername2_));
   while (latest_ctc_updated_.empty())
     boost::this_thread::sleep(boost::posix_time::milliseconds(2));
+
   ASSERT_EQ(publicusername1_, latest_ctc_updated_);
   ASSERT_EQ(ss1_->ConnectionStatus(), latest_status_);
   int status(100);
@@ -1092,7 +1098,7 @@ TEST_F(CCImMessagingTest, FUNC_MAID_TestImSendPresenceAndMsgs) {
   ASSERT_NE(0, ss1_->LiveContactStatus(publicusername2_, &status));
 }
 
-TEST_F(CCImMessagingTest, FUNC_MAID_TestImRecPresenceAndSendMsgs) {
+TEST_MS_NET(CCImMessagingTest, FUNC, MAID, TestImRecPresenceAndSendMsgs) {
   // Asuming sm1 gets presence  of sm2
   ss1_->AddLiveContact(publicusername2_, ss2_->Ep(), 0);
   ASSERT_TRUE(sm1_->SendPresence(publicusername2_));
@@ -1289,7 +1295,7 @@ TEST_F(CCImMessagingTest, FUNC_MAID_TestImRecPresenceAndSendMsgs) {
   ASSERT_NE(0, ss1_->LiveContactStatus(publicusername2_, &status));
 }
 
-TEST_F(CCImMessagingTest, FUNC_MAID_TestMultipleImToContact) {
+TEST_MS_NET(CCImMessagingTest, FUNC, MAID, TestMultipleImToContact) {
   // Asuming sm1 gets presence  of sm2
   ss1_->AddLiveContact(publicusername2_, ss2_->Ep(), 0);
   ASSERT_TRUE(sm1_->SendPresence(publicusername2_));

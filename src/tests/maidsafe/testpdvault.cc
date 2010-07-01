@@ -43,6 +43,7 @@
 #include "tests/maidsafe/cached_keys.h"
 #include "tests/maidsafe/localvaults.h"
 #include "tests/maidsafe/mocksessionsingleton.h"
+#include "tests/maidsafe/networktest.h"
 #include "tests/maidsafe/testcallback.h"
 
 static bool callback_timed_out_ = true;
@@ -186,6 +187,8 @@ void PrintRpcTimings(const rpcprotocol::RpcStatsMap &rpc_timings) {
 }  // namespace testpdvault
 
 namespace maidsafe_vault {
+
+namespace test {
 
 static std::vector< boost::shared_ptr<PDVault> > pdvaults_;
 static const int kNumOfClients = 2;
@@ -364,7 +367,7 @@ class PDVaultTest : public testing::Test {
   PDVaultTest &operator=(const PDVaultTest&);
 };
 
-TEST_F(PDVaultTest, FUNC_MAID_StoreAndGetChunks) {
+TEST_MS_NET(PDVaultTest, FUNC, MAID, StoreAndGetChunks) {
   std::map<std::string, std::string> chunks;
   testpdvault::MakeChunks(clients_, kNumOfTestChunks, test_root_dir_, &chunks);
 
@@ -556,7 +559,7 @@ TEST_F(PDVaultTest, FUNC_MAID_StoreAndGetChunks) {
   }
 }
 
-TEST_F(PDVaultTest, FUNC_MAID_VaultStartStop) {
+TEST_MS_NET(PDVaultTest, FUNC, MAID, VaultStartStop) {
   // check pdvaults can be started and stopped multiple times
   const int kTestVaultNo(kNetworkSize / 2);
   for (int loop = 0; loop < 7; ++loop) {
@@ -570,7 +573,7 @@ TEST_F(PDVaultTest, FUNC_MAID_VaultStartStop) {
   ASSERT_TRUE(pdvaults_[kTestVaultNo]->WaitForSync());
 }
 
-TEST_F(PDVaultTest, FUNC_MAID_Cachechunk) {
+TEST_MS_NET(PDVaultTest, FUNC, MAID, Cachechunk) {
   transport::TransportUDT udt_transport;
   transport::TransportHandler transport_handler;
   boost::int16_t trans_id;
@@ -634,15 +637,17 @@ TEST_F(PDVaultTest, FUNC_MAID_Cachechunk) {
   channel_manager.Stop();
 }
 
-//  TEST_F(PDVaultTest, DISABLED_FUNC_MAID_SwapChunk) {
+//  TEST_MS_NET(PDVaultTest, DISABLED_FUNC, MAID, SwapChunk) {
 //  }
 //
-//  TEST_F(PDVaultTest, DISABLED_FUNC_MAID_VaultValidateChunk) {
+//  TEST_MS_NET(PDVaultTest, DISABLED_FUNC, MAID, VaultValidateChunk) {
 //    // check pre-loaded chunks are not corrupted
 //  }
 //
-//  TEST_F(PDVaultTest, DISABLED_FUNC_MAID_VaultRepublishChunkRef) {
+//  TEST_MS_NET(PDVaultTest, DISABLED_FUNC, MAID, VaultRepublishChunkRef) {
 //  }
+
+}  // namespace test
 
 }  // namespace maidsafe_vault
 
@@ -662,8 +667,8 @@ int main(int argc, char **argv) {
     printf("%s\n", e.what());
   }
   testing::AddGlobalTestEnvironment(new maidsafe::test::localvaults::Env(
-      testpdvault::K, maidsafe_vault::kNetworkSize,
-      &maidsafe_vault::pdvaults_, &maidsafe_vault::kadconfig_));
+      testpdvault::K, maidsafe_vault::test::kNetworkSize,
+      &maidsafe_vault::test::pdvaults_, &maidsafe_vault::test::kadconfig_));
 
   int result = RUN_ALL_TESTS();
   try {

@@ -29,8 +29,7 @@
 
 namespace maidsafe {
 
-IMHandler::IMHandler(SessionSingleton *ss) : ss_(ss), crypto_() {
-}
+IMHandler::IMHandler(SessionSingleton *ss) : ss_(ss), crypto_() {}
 
 std::string IMHandler::CreateMessage(const std::string &msg,
       const std::string &receiver) {

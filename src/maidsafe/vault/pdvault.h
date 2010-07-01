@@ -67,6 +67,12 @@ enum VaultStatus {kVaultStarted, kVaultStopping, kVaultStopped};
 
 class RunPDVaults;
 
+namespace test {
+class PDVaultTest;
+class PDVaultTest_FUNC_MAID_NET_StoreAndGetChunks_Test;
+class PDVaultTest_FUNC_MAID_NET_Cachechunk_Test;
+}  // namespace test
+
 /* struct SyncVaultData {
   SyncVaultData() : chunk_names(), num_updated_chunks(0), num_chunks(0),
     active_updating(0), cb(), is_callbacked(false) {}
@@ -230,7 +236,9 @@ class PDVault {
                  kad::VoidFunctorOneString cb);
   void StopRvPing() { transport_handler_.StopPingRendezvous(); }
   friend class maidsafe::test::localvaults::Env;
-  friend class PDVaultTest;
+  friend class test::PDVaultTest;
+  friend class test::PDVaultTest_FUNC_MAID_NET_StoreAndGetChunks_Test;
+  friend class test::PDVaultTest_FUNC_MAID_NET_Cachechunk_Test;
   friend class RunPDVaults;
   friend class maidsafe::test::CBPHandlerTest;
   friend class maidsafe::test::ImMessagingTest;
@@ -238,11 +246,6 @@ class PDVault {
  private:
   PDVault(const PDVault&);
   PDVault& operator=(const PDVault&);
-  FRIEND_TEST(PDVaultTest, FUNC_MAID_StoreAndGetChunks);
-  FRIEND_TEST(PDVaultTest, FUNC_MAID_GetNonDuplicatedChunk);
-  FRIEND_TEST(PDVaultTest, FUNC_MAID_GetMissingChunk);
-  FRIEND_TEST(PDVaultTest, FUNC_MAID_StoreSystemPacket);
-  FRIEND_TEST(PDVaultTest, FUNC_MAID_Cachechunk);
   void RegisterMaidService();
   void UnRegisterMaidService();
   // This runs in a continuous loop until vault_status_ is not kVaultStarted.

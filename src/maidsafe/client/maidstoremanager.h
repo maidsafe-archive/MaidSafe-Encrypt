@@ -59,6 +59,9 @@ namespace test {
 class MsmSetLocalVaultOwnedTest;
 class NetworkTest;
 class CCImMessagingTest;
+class CCImMessagingTest_FUNC_MAID_NET_TestImSendPresenceAndMsgs_Test;
+class CCImMessagingTest_FUNC_MAID_NET_TestImRecPresenceAndSendMsgs_Test;
+class CCImMessagingTest_FUNC_MAID_NET_TestMultipleImToContact_Test;
 }  // namespace test
 }  // namespace maidsafe
 
@@ -69,9 +72,11 @@ size_t CheckStoredCopies(std::map<std::string, std::string> chunks,
 }  // namespace testpdvault
 
 namespace maidsafe_vault {
-class PDVaultTest;
-class PDVaultTest_FUNC_MAID_StoreAndGetChunks_Test;
 class RunPDVaults;
+namespace test {
+class PDVaultTest;
+class PDVaultTest_FUNC_MAID_NET_StoreAndGetChunks_Test;
+}  // namespace test
 }  // namespace maidsafe_vault
 
 namespace maidsafe {
@@ -307,17 +312,6 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   void LocalVaultOwned(const LocalVaultOwnedFunctor &functor);
   virtual int CreateAccount(const boost::uint64_t &space);
 
-  friend void AddToWatchListTask::run();
-  friend void SendChunkCopyTask::run();
-  friend void StorePacketTask::run();
-  friend void DeleteChunkTask::run();
-  friend void DeletePacketTask::run();
-  friend void UpdatePacketTask::run();
-  friend size_t testpdvault::CheckStoredCopies(
-      std::map<std::string, std::string> chunks,
-      const int &timeout, boost::shared_ptr<MaidsafeStoreManager> sm);
-  friend class test::CCImMessagingTest;
-
   // Instant messaging send online message
   bool SendPresence(const std::string &contactname);
   void SendLogOutMessage(const std::string &contactname);
@@ -332,6 +326,15 @@ class MaidsafeStoreManager : public StoreManagerInterface {
  private:
   MaidsafeStoreManager &operator=(const MaidsafeStoreManager&);
   MaidsafeStoreManager(const MaidsafeStoreManager&);
+  friend void AddToWatchListTask::run();
+  friend void SendChunkCopyTask::run();
+  friend void StorePacketTask::run();
+  friend void DeleteChunkTask::run();
+  friend void DeletePacketTask::run();
+  friend void UpdatePacketTask::run();
+  friend size_t testpdvault::CheckStoredCopies(
+      std::map<std::string, std::string> chunks,
+      const int &timeout, boost::shared_ptr<MaidsafeStoreManager> sm);
   FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_KeyUnique);
   FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_AddToWatchList);
   FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_AssessUploadCounts);
@@ -350,10 +353,19 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_UpdateAccountStatus);
   FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_GetFilteredAverage);
   friend class test::MsmSetLocalVaultOwnedTest;
-  friend class maidsafe_vault::PDVaultTest;
-  friend class maidsafe_vault::PDVaultTest_FUNC_MAID_StoreAndGetChunks_Test;
+  friend class maidsafe_vault::test::PDVaultTest;
+  friend class
+      maidsafe_vault::test::PDVaultTest_FUNC_MAID_NET_StoreAndGetChunks_Test;
   friend class maidsafe_vault::RunPDVaults;
   friend class maidsafe::test::NetworkTest;
+  friend class test::CCImMessagingTest;
+  friend class
+      test::CCImMessagingTest_FUNC_MAID_NET_TestImSendPresenceAndMsgs_Test;
+  friend class
+      test::CCImMessagingTest_FUNC_MAID_NET_TestImRecPresenceAndSendMsgs_Test;
+  friend class
+      test::CCImMessagingTest_FUNC_MAID_NET_TestMultipleImToContact_Test;
+
   // Check the inputs to the public methods are valid
   ReturnCode ValidateInputs(const std::string &name,
                             const PacketType &packet_type,
@@ -554,7 +566,6 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   StoreTasksHandler tasks_handler_;
   boost::shared_ptr<ChunkStore> client_chunkstore_;
   QThreadPool chunk_thread_pool_, packet_thread_pool_;
-  boost::mutex store_packet_mutex_;
   boost::shared_ptr<BufferPacketRpcs> bprpcs_;
   ClientBufferPacketHandler cbph_;
   static int kChunkMaxThreadCount_;

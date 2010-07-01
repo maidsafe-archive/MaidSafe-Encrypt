@@ -32,6 +32,9 @@
 namespace maidsafe {
 
 class SessionSingleton;
+namespace test {
+class CCImMessagingTest;
+}  // namespace test
 
 class IMHandler {
  public:
@@ -43,6 +46,7 @@ class IMHandler {
   std::string CreateMessageEndpoint(const std::string &receiver);
   std::string CreateLogOutMessage(const std::string &receiver);
  private:
+  friend class test::CCImMessagingTest;
   SessionSingleton *ss_;
   crypto::Crypto crypto_;
 };
