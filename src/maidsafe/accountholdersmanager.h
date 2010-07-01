@@ -50,7 +50,7 @@ class AccountHoldersManager {
  public:
   AccountHoldersManager(const boost::shared_ptr<KadOps> &kad_ops,
                         const boost::uint8_t &lower_threshold)
-      : kMaxFailedNodes_(lower_threshold ? lower_threshold - 1 : 0),
+      : kMaxFailedNodes_(lower_threshold > 1 ? lower_threshold - 1 : 1),
         kMaxFailsPerNode_(2),
         kMaxUpdateInterval_(600),
         kad_ops_(kad_ops),

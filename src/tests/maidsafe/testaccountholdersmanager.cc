@@ -352,11 +352,13 @@ TEST_F(AccountHoldersManagerTest, BEH_MAID_AHM_UpdateRequired) {
   ASSERT_TRUE(account_holders_manager_.UpdateRequired());
 
   account_holders_manager_.failed_ids_.clear();
-  for (boost::uint16_t i = 0;
-       i != account_holders_manager_.kMaxFailsPerNode_ - 1; ++i) {
-    account_holders_manager_.failed_ids_.insert(
-        account_holders_manager_.account_holder_group_.back().node_id().
-        String());
+  if (account_holders_manager_.kMaxFailedNodes_ > 1U) {
+    for (boost::uint16_t i = 0;
+         i != account_holders_manager_.kMaxFailsPerNode_ - 1; ++i) {
+      account_holders_manager_.failed_ids_.insert(
+          account_holders_manager_.account_holder_group_.back().node_id().
+          String());
+    }
   }
   account_holders_manager_.last_update_ =
       boost::posix_time::microsec_clock::universal_time();
@@ -364,16 +366,20 @@ TEST_F(AccountHoldersManagerTest, BEH_MAID_AHM_UpdateRequired) {
   account_holders_manager_.failed_ids_.insert(
       account_holders_manager_.account_holder_group_.back().node_id().
       String());
-  ASSERT_EQ(account_holders_manager_.kMaxFailsPerNode_,
-            account_holders_manager_.failed_ids_.count(
-                account_holders_manager_.account_holder_group_.back().node_id().
-                String()));
+  if (account_holders_manager_.kMaxFailedNodes_ > 1U) {
+    ASSERT_EQ(account_holders_manager_.kMaxFailsPerNode_,
+        account_holders_manager_.failed_ids_.count(
+            account_holders_manager_.account_holder_group_.back().node_id().
+            String()));
+  }
   ASSERT_TRUE(account_holders_manager_.UpdateRequired());
 }
 
 TEST_F(AccountHoldersManagerTest, BEH_MAID_AHM_ReportFailure) {
   // Set up expectations
   EXPECT_CALL(*mock_kad_ops_, FindKClosestNodes(account_name_, testing::_))
+      .WillOnce(testing::WithArgs<1>(testing::Invoke(
+          boost::bind(&mock_kadops::RunCallback, good_result_, _1))))
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
           boost::bind(&mock_kadops::RunCallback, good_result_, _1))))
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
@@ -436,7 +442,7 @@ TEST_F(AccountHoldersManagerTest, BEH_MAID_AHM_ReportFailure) {
   for (boost::uint16_t i = 0; i != account_holders_manager_.kMaxFailsPerNode_;
        ++i) {
     account_holders_manager_.ReportFailure(good_id);
-    if (i != account_holders_manager_.kMaxFailsPerNode_ - 1)
+    if (i != account_holders_manager_.kMaxFailsPerNode_ - 1 && i > 0)
       ASSERT_EQ(i + 1, account_holders_manager_.failed_ids_.size());
     else
       ASSERT_TRUE(account_holders_manager_.failed_ids_.empty());
