@@ -125,9 +125,9 @@ ClientController::ClientController() : client_chunkstore_(),
 boost::mutex cc_mutex;
 
 ClientController *ClientController::getInstance() {
-  if (single == 0) {
+  if (single == NULL) {
     boost::mutex::scoped_lock lock(cc_mutex);
-    if (single == 0)
+    if (single == NULL)
       single = new ClientController();
   }
   return single;
@@ -135,7 +135,7 @@ ClientController *ClientController::getInstance() {
 
 void ClientController::Destroy() {
   delete single;
-  single = 0;
+  single = NULL;
 }
 
 int ClientController::Init(boost::uint8_t k) {
@@ -199,68 +199,6 @@ int ClientController::Init(boost::uint8_t k) {
   return 0;
 }
 
-/*int ClientController::Init(SessionSingleton *ss) {
-
-  if (initialised_)
-    return 0;
-  fs::path client_path(file_system::ApplicationDataDir());
-  try {
-    // If main app dir isn't already there, create it
-    if (!fs::exists(client_path) && !fs::create_directories(client_path)) {
-#ifdef DEBUG
-      printf("CC::Init - Couldn't create app path (check permissions?): %s\n",
-             client_path.string().c_str());
-#endif
-      return -2;
-    }
-    client_path /= "client" + base::RandomString(8);
-    while (fs::exists(client_path))
-      client_path = fs::path(client_path.string().substr(0,
-          client_path.string().size()-8) + base::RandomString(8));
-    client_store_ = client_path.string();
-    if (!fs::exists(client_path) && !fs::create_directories(client_path)) {
-#ifdef DEBUG
-      printf("CC::Init -Couldn't create client path (check permissions?): %s\n",
-             client_path.string().c_str());
-#endif
-      return -3;
-    }
-  }
-  catch(const std::exception &e) {
-#ifdef DEBUG
-    printf("CC::Init - Couldn't create path (check permissions?): %s\n",
-           e.what());
-#endif
-    return -4;
-  }
-  client_chunkstore_ = boost::shared_ptr<ChunkStore>
-      (new ChunkStore(client_path.string(), 0, 0));
-  if (!client_chunkstore_->Init()) {
-#ifdef DEBUG
-    printf("CC::Init - Failed to initialise client chunkstore.\n");
-#endif
-    return -5;
-  }
-#ifdef LOCAL_PDVAULT
-  sm_.reset(new LocalStoreManager(client_chunkstore_));
-#else
-  sm_.reset(new MaidsafeStoreManager(client_chunkstore_));
-  sm_->ResetSessionSingleton(ss);
-#endif
-  if (!JoinKademlia()) {
-#ifdef DEBUG
-    printf("CC::Init - Couldn't join Kademlia!\n");
-#endif
-    return -1;
-  }
-  auth_.Init(kNoOfSystemPackets, sm_, ss);
-  ss_ = ss;
-  initialised_ = true;
-  return 0;
-
-}
-*/
-
 bool ClientController::JoinKademlia() {
   CCCallback cb;
   sm_->Init(boost::bind(&CCCallback::ReturnCodeCallback, &cb, _1), 0);
@@ -275,7 +213,7 @@ int ClientController::ParseDa() {
     return kClientControllerNotInitialised;
   }
   DataAtlas data_atlas;
-  if (ser_da_ == "") {
+  if (ser_da_.empty()) {
 #ifdef DEBUG
     printf("CC::ParseDa - TMID brought is \"\".\n");
 #endif

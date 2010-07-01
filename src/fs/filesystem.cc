@@ -240,13 +240,13 @@ bool RemoveDir(const fs::path &dir, const boost::uint8_t &max_attempts) {
         fs::remove_all(dir);
     }
     catch(const std::exception& e) {
-      printf("In RemoveDir (%i) %s\n", i, e.what());
+      printf("In RemoveDir A (%i) %s\n", i, e.what());
     }
     try {
       removed = !fs::exists(dir);
     }
     catch(const std::exception& e) {
-      printf("In RemoveDir (%i) %s\n", i, e.what());
+      printf("In RemoveDir B (%i) %s\n", i, e.what());
     }
     if (!removed)
       boost::this_thread::sleep(boost::posix_time::milliseconds(10));

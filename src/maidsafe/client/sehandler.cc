@@ -39,6 +39,8 @@ void SEHandler::Init(boost::shared_ptr<StoreManagerInterface> storem,
                      boost::shared_ptr<ChunkStore> client_chunkstore) {
   storem_ = storem;
   client_chunkstore_ = client_chunkstore;
+  boost::mutex::scoped_lock lock(up_to_date_datamaps_mutex_);
+  up_to_date_datamaps_.clear();
 }
 
 ItemType SEHandler::CheckEntry(const fs::path &full_path,
@@ -524,7 +526,7 @@ int SEHandler::DecryptDb(const std::string &dir_path,
 //  printf(" msid(%s)\n", msid.c_str());
 #endif
 
-  std::string enc_dm_ser_generic_packet;
+  std::string enc_dm;
   // get dm from up_to_date_ map or DHT
   if (encrypted_dm.empty()) {
     std::string current_enc_dm = GetFromUpToDateDms(dir_key);
@@ -543,28 +545,26 @@ int SEHandler::DecryptDb(const std::string &dir_path,
 #endif
       return kDecryptDbFailure;
     }
-    enc_dm_ser_generic_packet = packet_content[0];
+    std::string enc_dm_ser_generic_packet = packet_content[0];
+    if (dir_type != ANONYMOUS) {
+      GenericPacket gp;
+      if (!gp.ParseFromString(enc_dm_ser_generic_packet)) {
+#ifdef DEBUG
+        printf("Failed to parse generic packet.\n");
+#endif
+        return kDecryptDbFailure;
+      }
+      enc_dm = gp.data();
+      // TODO(Fraser#5#): 2010-06-28 - Check gp signature is valid
+      if (enc_dm.empty()) {
+#ifdef DEBUG
+        printf("Enc dm is empty.\n");
+#endif
+        return kDecryptDbFailure;
+      }
+    }
   } else {
-    enc_dm_ser_generic_packet = encrypted_dm;
-  }
-
-  std::string enc_dm;
-  if (dir_type != ANONYMOUS) {
-    GenericPacket gp;
-    if (!gp.ParseFromString(enc_dm_ser_generic_packet)) {
-#ifdef DEBUG
-      printf("Failed to parse generic packet.\n");
-#endif
-      return kDecryptDbFailure;
-    }
-    enc_dm = gp.data();
-    // TODO(Fraser#5#): 2010-06-28 - Check gp signature is valid
-    if (enc_dm.empty()) {
-#ifdef DEBUG
-      printf("Enc dm is empty.\n");
-#endif
-      return kDecryptDbFailure;
-    }
+    enc_dm = encrypted_dm;
   }
 
   std::string ser_dm = enc_dm;

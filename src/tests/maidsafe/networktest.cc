@@ -78,6 +78,10 @@ NetworkTest::NetworkTest(const std::string &test_name)
   try {
     if (fs::exists(test_dir_))
       fs::remove_all(test_dir_);
+#ifndef MS_NETWORK_TEST
+    if (fs::exists(file_system::LocalStoreManagerDir()))
+      fs::remove_all(file_system::LocalStoreManagerDir());
+#endif
     fs::create_directories(test_dir_);
   }
   catch(const std::exception &e) {
