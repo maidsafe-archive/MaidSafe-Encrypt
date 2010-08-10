@@ -25,6 +25,6 @@ Profile::Profile()
 Profile::~Profile() { }
 
 // static
-Profile Profile::fromContact(maidsafe::Contact*) {
+Profile Profile::fromContact(const QString &pubName) {
   return Profile();
 }

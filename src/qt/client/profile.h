@@ -21,7 +21,6 @@
 #include <QLocale>
 
 // core
-#include "maidsafe/client/contacts.h"
 
 // A Contact's profile
 /*!
@@ -53,7 +52,7 @@ class Profile {
   // Last time contact was seen online (?)
   QDateTime last_contact;
 
-  static Profile fromContact(maidsafe::Contact *mc);
+  static Profile fromContact(const QString &pubName);
 };
 
 

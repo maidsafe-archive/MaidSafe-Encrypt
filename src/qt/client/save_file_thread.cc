@@ -29,8 +29,9 @@ SaveFileThread::~SaveFileThread() { }
 void SaveFileThread::run() {
   qDebug() << "SaveFileThread::run" << filepath_;
 
-  std::string s;
-  int success = ClientController::instance()->getattr(filepath_, &s);
+  QString fileSize;
+  QString lastModified;
+  int success = ClientController::instance()->getattr(filepath_, lastModified, fileSize);
   if (success != 0) {
     success = ClientController::instance()->mknod(filepath_);
     if (success != 0) {

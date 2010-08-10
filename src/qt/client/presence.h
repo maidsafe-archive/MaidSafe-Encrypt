@@ -19,7 +19,6 @@
 #include <QString>
 
 // core
-#include "maidsafe/client/contacts.h"
 
 // Represents a Contact's online presence
 /*!
@@ -53,7 +52,7 @@ class Presence {
   bool operator==(const Presence& other) const;
   bool operator!=(const Presence& other) const;
 
-  static Presence fromContact(maidsafe::Contact *mc);
+  static Presence fromContact(const QString &pubName);
 
  private:
   State state_;

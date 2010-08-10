@@ -20,6 +20,7 @@
 #include <QString>
 #include <QDateTime>
 #include <QDir>
+#include <QStringList>
 
 #include <list>
 #include <map>
@@ -31,6 +32,7 @@
 #include "maidsafe/client/clientinterface.h"
 #include "maidsafe/client/clientcontroller.h"
 #include "maidsafe/client/contacts.h"
+#include "maidsafe/utils.h"
 
 // local
 #include "qt/client/check_for_messages_thread.h"
@@ -80,6 +82,21 @@ class ClientController : public QObject {
       FULL
   };
 
+  enum DefConLevel {kDefCon1 = 1, kDefCon2, kDefCon3};
+
+  enum ItemType {
+  REGULAR_FILE = 0,
+  SMALL_FILE = 1,
+  EMPTY_FILE = 2,
+  LOCKED_FILE = 3,
+  DIRECTORY = 4,
+  EMPTY_DIRECTORY = 5,
+  LINK = 6,
+  MAIDSAFE_CHUNK = 7,
+  NOT_FOR_PROCESSING = 8,
+  UNKNOWN = 9
+};
+
   static ClientController* instance();
   void shutdown();
   bool Init();
@@ -105,6 +122,9 @@ class ClientController : public QObject {
     return maidsafe::SessionSingleton::getInstance()->
            SetConnectionStatus(status);
   }
+  inline std::string TidyPath(std::string str) {
+    return maidsafe::TidyPath(str);
+  }
 
   char DriveLetter();
   bool Logout();
@@ -113,9 +133,9 @@ class ClientController : public QObject {
   // qt file browser methods //
   /////////////////////////////
 
-  int getattr(const QString &path, std::string *ser_mdm);
+  int getattr(const QString &path, QString &lastModified, QString &fileSize);
   int readdir(const QString &path,  // NOLINT
-              std::map<std::string, maidsafe::ItemType> *children);
+              std::map<std::string, ItemType> *children);
   int read(const QString &path);
   int write(const QString &path);
   int rename(const QString &path, const QString &path2);
@@ -124,17 +144,26 @@ class ClientController : public QObject {
   int mknod(const QString &path);
 
   bool CreatePublicUsername(const std::string &public_username);
-  bool CreateUser(const std::string &username,
+  bool CreateUser(const QString &username,
+                  const QString &pin,
+                  const QString &password,
+                  const int &vaultType,
+                  const QString &space,
+                  const QString &port,
+                  const QString &directory);
+  bool CheckUserExists(const std::string &username,
                   const std::string &pin,
-                  const std::string &password,
-                  const maidsafe::VaultConfigParameters &vcp);
-  int CheckUserExists(const std::string &username,
-                  const std::string &pin,
-                  maidsafe::DefConLevels level);
+                  DefConLevel level);
   int CreateNewShare(const std::string &name,
                      const std::set<std::string> &admins,
                      const std::set<std::string> &readonlys);
   bool ValidateUser(const std::string &password);
+
+  int AddInstantFile(const QString &sender, const QString &filename,
+                     const QString &tag,
+                     int sizeLow, int sizeHigh,
+                     const ClientController::ItemType &type,
+                     const QString &s);
 
   ///////////////////////////////
   //// Conversation Handling ////
@@ -155,8 +184,9 @@ class ClientController : public QObject {
   ContactList contacts(int type = 0) const;
   QStringList contactsNames() const;
   int addContact(const QString& name);
+  bool handleAddContactRequest(const QString& name);
   bool removeContact(const QString& name);
-  int GetContactInfo(const std::string &pub_name, maidsafe::mi_contact *mic);
+  QStringList GetContactInfo(const QString &pub_name);
 
   // Shares
   bool createShare(const QString& shareName,
@@ -206,7 +236,7 @@ class ClientController : public QObject {
                        const QString& from,
                        const QString& msg,
                        const QString& conversation);
-  void addedContact(const QString& name, const maidsafe::InstantMessage& im);
+  void addedContact(const QString& name);
   void confirmedContact(const QString& name);
   void deletedContact(const QString& name);
   void addedPrivateShare(const QString& name);
@@ -218,10 +248,14 @@ class ClientController : public QObject {
                      const QString& share_name);
   void shareChanged(const QString& from,
                     const QString& share_name);
-  void fileReceived(const maidsafe::InstantMessage& im);
+  void fileReceived(const QString &sender, const QString &filename,
+                    const QString &tag, int sizeLow, int sizeHigh,
+                    ClientController::ItemType &type);
   void connectionStatusChanged(int status);
   void systemMessage(const QString& message);
-	void emailReceieved(const maidsafe::InstantMessage& im);
+	void emailReceieved(const QString &subject, const QString &conversation,
+                      const QString &message, const QString &sender,
+                      const QString &theDate);
 
   private slots:
     // temporary while we emulate message notifications

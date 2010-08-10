@@ -35,7 +35,6 @@
 
 // core
 #include "qt/client/client_controller.h"
-#include "maidsafe/utils.h"
 
 // local
 #include "qt/widgets/login.h"
@@ -129,7 +128,7 @@ void PerpetualData::onJoinKademliaCompleted(bool b) {
           this, SLOT(onShareReceived(const QString&, const QString&)));
 
   connect(ClientController::instance(),
-                SIGNAL(fileReceived(const maidsafe::InstantMessage&)),
+                SIGNAL(fileReceived(const QString &sender, const QString &filename)),
           this, SLOT(onFileReceived(const maidsafe::InstantMessage&)));
 
   connect(ClientController::instance(),
@@ -137,8 +136,12 @@ void PerpetualData::onJoinKademliaCompleted(bool b) {
           this, SLOT(onConnectionStatusChanged(int)));
 
   connect(ClientController::instance(),
-                SIGNAL(emailReceieved(const maidsafe::InstantMessage&)),
-           this, SLOT(onEmailReceived(const maidsafe::InstantMessage&)));
+                SIGNAL(emailReceieved(const QString &subject, const QString &conversation,
+                                      const QString &message, const QString &sender,
+                                      const QString &date)),
+           this, SLOT(onEmailReceived(const QString &subject, const QString &conversation,
+                                      const QString &message, const QString &sender,
+                                      const QString &date)));
 }
 
 PerpetualData::~PerpetualData() {
@@ -661,10 +664,11 @@ void PerpetualData::onShareReceived(const QString& from,
   SystemTrayIcon::instance()->showMessage(title, message);
 }
 
-void PerpetualData::onEmailReceived(const maidsafe::InstantMessage& im) {
+void PerpetualData::onEmailReceived(const QString &subject, const QString &conversation,
+                                    const QString &message, const QString &sender,
+                                    const QString &date) {
   userPanels_->setEmailLabel("New E-mail!");
   SystemTrayIcon::instance()->showMessage("New Email", "You have new email");
-  maidsafe::EmailNotification en = im.email_notification();
 
   QString emailRootPath = QString::fromStdString(file_system::MaidsafeHomeDir(
                           ClientController::instance()->SessionName()).string())
@@ -681,40 +685,37 @@ void PerpetualData::onEmailReceived(const maidsafe::InstantMessage& im) {
 
   QString emailFolder = "/Emails/";
 
-  std::string tidyRelPathStr = maidsafe::TidyPath(emailFolder.toStdString());
+  std::string tidyRelPathStr = ClientController::instance()->TidyPath(emailFolder.toStdString());
   QString emailFolderPath = QString::fromStdString(tidyRelPathStr);
 
-  std::map<std::string, maidsafe::ItemType> children;
+  std::map<std::string, ClientController::ItemType> children;
   ClientController::instance()->readdir(emailFolderPath, &children);
 
   QString emailFullPath;
   emailFullPath = QString("%1%2_%3.pdmail")
                       .arg(emailRootPath)
-                      .arg(QString::fromStdString(im.subject()))
-                      .arg(QString::fromStdString(im.conversation()));
+                      .arg(subject)
+                      .arg(conversation);
 
   QString emailMaidsafePath;
   emailMaidsafePath = QString("%1%2_%3.pdmail")
                           .arg(emailFolder)
-                          .arg(QString::fromStdString(im.subject()))
-                          .arg(QString::fromStdString(im.conversation()));
+                          .arg(subject)
+                          .arg(conversation);
 
-  std::string tidyEmail = maidsafe::TidyPath(emailMaidsafePath.toStdString());
+  std::string tidyEmail = ClientController::instance()->TidyPath(emailMaidsafePath.toStdString());
   QString tidyEmailMaidsafePath = QString::fromStdString(tidyEmail);
 
-  QDateTime theDate = QDateTime::currentDateTime();
-  theDate.setTime_t(im.date());
-  QString date = theDate.toString("dd/MM/yyyy hh:mm:ss");
   try {
     std::ofstream myfile;
     myfile.open(emailFullPath.toStdString().c_str(), std::ios::app);
     // SAVE AS XML
     QString htmlMessage = tr("From : %1 at %2 <br /> %3 <br /> %4")
         .prepend("<span style=\"background-color:#CCFF99\"><br />")
-        .arg(QString::fromStdString(im.sender()))
+        .arg(sender)
         .arg(date)
-        .arg(QString::fromStdString(im.subject()))
-        .arg(QString::fromStdString(im.message()))
+        .arg(subject)
+        .arg(message)
         .append("</span>");
     myfile << htmlMessage.toStdString();
     myfile.close();
@@ -753,13 +754,13 @@ void PerpetualData::onSaveFileCompleted(int success, const QString& filepath) {
   }
 }
 
-void PerpetualData::onFileReceived(const maidsafe::InstantMessage& im) {
-  maidsafe::InstantFileNotification ifn = im.instantfile_notification();
-
+void PerpetualData::onFileReceived(const QString& sender, const QString& filename,
+                                   const QString& tag, int sizeLow, int sizeHigh,
+                                   const ClientController::ItemType& type) {
   QMessageBox msgBox;
   msgBox.setText(tr("%1 is sending you: %2")
-                 .arg(QString::fromStdString(im.sender()))
-                 .arg(QString::fromStdString(ifn.filename())));
+                 .arg(sender)
+                 .arg(filename));
   msgBox.setStandardButtons(QMessageBox::Save | QMessageBox::Cancel);
   msgBox.setDefaultButton(QMessageBox::Save);
   int ret = msgBox.exec();
@@ -778,8 +779,9 @@ void PerpetualData::onFileReceived(const maidsafe::InstantMessage& im) {
                                       QLineEdit::Normal, "", &ok);
     if (ok && !text.isEmpty()) {
       QString s = QString("My Files\\%1").arg(text);
-      n = maidsafe::ClientController::getInstance()->
-          AddInstantFile(im.instantfile_notification(), s.toStdString());
+      
+      n = ClientController::instance()->AddInstantFile(sender, filename, tag, sizeLow,
+                                                       sizeHigh, type, s);
     }
 #else
 
@@ -788,10 +790,10 @@ void PerpetualData::onFileReceived(const maidsafe::InstantMessage& im) {
              arg(ClientController::instance()->WinDrive());
 #else
       root = QString::fromStdString(file_system::MaidsafeFuseDir(
-          maidsafe::SessionSingleton::getInstance()->SessionName()).string() +
+          ClientController::instance()->SessionName()).string() +
           "/My Files");
 #endif
-      root += "/" + QString::fromStdString(ifn.filename());
+      root += "/" + QString::fromStdString(filename);
       qfd_ = new QFileDialog(this, tr("Save File As..."), root);
       connect(qfd_, SIGNAL(directoryEntered(const QString&)),
               this, SLOT(onDirectoryEntered(const QString&)));
@@ -814,14 +816,14 @@ void PerpetualData::onFileReceived(const maidsafe::InstantMessage& im) {
       s = s.substr(2, s.length()-1);
 #else
       std::string s(file_system::MakeRelativeMSPath(directory.toStdString(),
-          maidsafe::SessionSingleton::getInstance()->SessionName()).string());
+          ClientController::instance()->SessionName()).string());
 #endif
 
 #ifdef DEBUG
       printf("PerpetualData::onFileReceived - Dir chosen: -%s-\n", s.c_str());
 #endif
-      n = maidsafe::ClientController::getInstance()->
-          AddInstantFile(im.instantfile_notification(), s);
+      n = ClientController::Instance()->AddInstantFile(sender, filename, tag, sizeLow,
+        sizeHigh, type, QString::FromStdString(s));
 
 #ifdef DEBUG
       printf("PerpetualData::onFileReceived - Res: %i\n", n);
@@ -830,8 +832,8 @@ void PerpetualData::onFileReceived(const maidsafe::InstantMessage& im) {
       if (n == 0) {
         QString title = tr("File received");
         QString message = tr("'%1' has shared the file '%2' with you")
-                          .arg(QString::fromStdString(im.sender()))
-                          .arg(QString::fromStdString(ifn.filename()));
+                          .arg(sender)
+                          .arg(filename);
 
         SystemTrayIcon::instance()->showMessage(title, message);
       }

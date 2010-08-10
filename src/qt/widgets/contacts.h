@@ -91,8 +91,7 @@ class Contacts : public Panel {
 
     void onDirectoryEntered(const QString&);
     void onContactsBoxTextEdited(const QString &value);
-    void onAddedContact(const QString &name,
-                        const maidsafe::InstantMessage& im);
+    void onAddedContact(const QString &name);
     void onConfirmedContact(const QString &name);
     void onDeletedContact(const QString &name);
     void customContentsMenu(const QPoint &pos);
