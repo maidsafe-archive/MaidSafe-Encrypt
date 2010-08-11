@@ -130,8 +130,15 @@ void PerpetualData::onJoinKademliaCompleted(bool b) {
 
   connect(ClientController::instance(),
                 SIGNAL(fileReceived(const QString &sender,
-                                    const QString &filename)),
-          this, SLOT(onFileReceived(const maidsafe::InstantMessage&)));
+                                    const QString &filename,
+                                    const QString &tag, int sizeLow,
+                                    int sizeHigh,
+                                    const ClientController::ItemType &type)),
+          this, SLOT(onFileReceived(const QString &sender,
+                                    const QString &filename,
+                                    const QString &tag, int sizeLow,
+                                    int sizeHigh,
+                                    const ClientController::ItemType &type)));
 
   connect(ClientController::instance(),
                 SIGNAL(connectionStatusChanged(int)),
