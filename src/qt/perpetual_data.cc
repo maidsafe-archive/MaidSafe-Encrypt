@@ -29,6 +29,7 @@
 #include <QUrl>
 
 #include <list>
+#include <map>
 #include <string>
 #include <iostream>
 #include <fstream>
@@ -128,7 +129,8 @@ void PerpetualData::onJoinKademliaCompleted(bool b) {
           this, SLOT(onShareReceived(const QString&, const QString&)));
 
   connect(ClientController::instance(),
-                SIGNAL(fileReceived(const QString &sender, const QString &filename)),
+                SIGNAL(fileReceived(const QString &sender,
+                                    const QString &filename)),
           this, SLOT(onFileReceived(const maidsafe::InstantMessage&)));
 
   connect(ClientController::instance(),
@@ -136,11 +138,15 @@ void PerpetualData::onJoinKademliaCompleted(bool b) {
           this, SLOT(onConnectionStatusChanged(int)));
 
   connect(ClientController::instance(),
-                SIGNAL(emailReceieved(const QString &subject, const QString &conversation,
-                                      const QString &message, const QString &sender,
+                SIGNAL(emailReceieved(const QString &subject,
+                                      const QString &conversation,
+                                      const QString &message,
+                                      const QString &sender,
                                       const QString &date)),
-           this, SLOT(onEmailReceived(const QString &subject, const QString &conversation,
-                                      const QString &message, const QString &sender,
+           this, SLOT(onEmailReceived(const QString &subject,
+                                      const QString &conversation,
+                                      const QString &message,
+                                      const QString &sender,
                                       const QString &date)));
 }
 
@@ -609,20 +615,20 @@ void PerpetualData::onMessageReceived(int type,
     if (result != 0) {
       PersonalMessages* mess_ = new PersonalMessages(this, sender);
 
-      //QFile file(":/qss/defaultWithWhite1.qss");
-      //file.open(QFile::ReadOnly);
-      //QString styleSheet = QLatin1String(file.readAll());
+      // QFile file(":/qss/defaultWithWhite1.qss");
+      // file.open(QFile::ReadOnly);
+      // QString styleSheet = QLatin1String(file.readAll());
 
       QPoint loc = this->mapToGlobal(this->pos());
       QRect rec(QApplication::desktop()->availableGeometry(mess_));
-      rec.moveTopLeft(QPoint(-420, -255)); 
+      rec.moveTopLeft(QPoint(-420, -255));
 
       int count = 0;
       while (!rec.contains(loc, true)) {
         if (count < 20) {
         loc.setX(loc.x() - 50);
         if (loc.y() > 100)
-          loc.setY(loc.y() - 25);        
+          loc.setY(loc.y() - 25);
         } else {
           loc.setX(400);
           loc.setY(400);
@@ -631,7 +637,7 @@ void PerpetualData::onMessageReceived(int type,
         count++;
       }
 
-      //mess_->setStyleSheet(styleSheet);
+      // mess_->setStyleSheet(styleSheet);
       mess_->move(loc);
       mess_->setMessage(tr("%1").arg(detail));
       mess_->show();
@@ -664,8 +670,10 @@ void PerpetualData::onShareReceived(const QString& from,
   SystemTrayIcon::instance()->showMessage(title, message);
 }
 
-void PerpetualData::onEmailReceived(const QString &subject, const QString &conversation,
-                                    const QString &message, const QString &sender,
+void PerpetualData::onEmailReceived(const QString &subject,
+                                    const QString &conversation,
+                                    const QString &message,
+                                    const QString &sender,
                                     const QString &date) {
   userPanels_->setEmailLabel("New E-mail!");
   SystemTrayIcon::instance()->showMessage("New Email", "You have new email");
@@ -685,7 +693,8 @@ void PerpetualData::onEmailReceived(const QString &subject, const QString &conve
 
   QString emailFolder = "/Emails/";
 
-  std::string tidyRelPathStr = ClientController::instance()->TidyPath(emailFolder.toStdString());
+  std::string tidyRelPathStr =
+      ClientController::instance()->TidyPath(emailFolder.toStdString());
   QString emailFolderPath = QString::fromStdString(tidyRelPathStr);
 
   std::map<std::string, ClientController::ItemType> children;
@@ -703,7 +712,8 @@ void PerpetualData::onEmailReceived(const QString &subject, const QString &conve
                           .arg(subject)
                           .arg(conversation);
 
-  std::string tidyEmail = ClientController::instance()->TidyPath(emailMaidsafePath.toStdString());
+  std::string tidyEmail =
+      ClientController::instance()->TidyPath(emailMaidsafePath.toStdString());
   QString tidyEmailMaidsafePath = QString::fromStdString(tidyEmail);
 
   try {
@@ -754,8 +764,9 @@ void PerpetualData::onSaveFileCompleted(int success, const QString& filepath) {
   }
 }
 
-void PerpetualData::onFileReceived(const QString& sender, const QString& filename,
-                                   const QString& tag, int sizeLow, int sizeHigh,
+void PerpetualData::onFileReceived(const QString& sender,
+                                   const QString& filename, const QString& tag,
+                                   int sizeLow, int sizeHigh,
                                    const ClientController::ItemType& type) {
   QMessageBox msgBox;
   msgBox.setText(tr("%1 is sending you: %2")
@@ -773,16 +784,17 @@ void PerpetualData::onFileReceived(const QString& sender, const QString& filenam
     case QMessageBox::Save: {
       // Save
 #ifdef PD_LIGHT
-    bool ok;
-    QString text = QInputDialog::getText(this, tr("Save File As"),
-                                      tr("Filename"),
-                                      QLineEdit::Normal, "", &ok);
-    if (ok && !text.isEmpty()) {
-      QString s = QString("My Files\\%1").arg(text);
-      
-      n = ClientController::instance()->AddInstantFile(sender, filename, tag, sizeLow,
-                                                       sizeHigh, type, s);
-    }
+      bool ok;
+      QString text = QInputDialog::getText(this, tr("Save File As"),
+                                        tr("Filename"),
+                                        QLineEdit::Normal, "", &ok);
+      if (ok && !text.isEmpty()) {
+        QString s = QString("My Files\\%1").arg(text);
+
+        n = ClientController::instance()->AddInstantFile(sender, filename, tag,
+                                                         sizeLow, sizeHigh,
+                                                         type, s);
+      }
 #else
 
 #ifdef __WIN32__
@@ -793,7 +805,7 @@ void PerpetualData::onFileReceived(const QString& sender, const QString& filenam
           ClientController::instance()->SessionName()).string() +
           "/My Files");
 #endif
-      root += "/" + QString::fromStdString(filename);
+      root += "/" + filename;
       qfd_ = new QFileDialog(this, tr("Save File As..."), root);
       connect(qfd_, SIGNAL(directoryEntered(const QString&)),
               this, SLOT(onDirectoryEntered(const QString&)));
@@ -822,8 +834,9 @@ void PerpetualData::onFileReceived(const QString& sender, const QString& filenam
 #ifdef DEBUG
       printf("PerpetualData::onFileReceived - Dir chosen: -%s-\n", s.c_str());
 #endif
-      n = ClientController::Instance()->AddInstantFile(sender, filename, tag, sizeLow,
-        sizeHigh, type, QString::FromStdString(s));
+      n = ClientController::instance()->AddInstantFile(
+              sender, filename, tag, sizeLow, sizeHigh, type,
+              QString::fromStdString(s));
 
 #ifdef DEBUG
       printf("PerpetualData::onFileReceived - Res: %i\n", n);
@@ -1004,8 +1017,8 @@ void PerpetualData::onUpdateTriggered() {
           this,      SLOT(onUpdateChecked(int, QProcess::ExitStatus)));
 }
 
-void PerpetualData::onUpdateChecked(int code, QProcess::ExitStatus status){
-  if (code == 0){
+void PerpetualData::onUpdateChecked(int code, QProcess::ExitStatus status) {
+  if (code == 0) {
     QMessageBox msgBox;
     msgBox.setText(tr("New Update Available"));
     msgBox.setInformativeText(tr("Would you like to install?"));

@@ -27,6 +27,7 @@
 #include <boost/filesystem.hpp>
 #include <maidsafe/protobuf/general_messages.pb.h>
 #include <maidsafe/protobuf/kademlia_service_messages.pb.h>
+#include <maidsafe/kademlia/knode-api.h>
 #include <maidsafe/transport/transportudt.h>
 
 #include "maidsafe/clientbufferpackethandler.h"
