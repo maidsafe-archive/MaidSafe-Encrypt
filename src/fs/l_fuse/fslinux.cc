@@ -46,7 +46,7 @@
 #include <map>
 
 #include "fs/filesystem.h"
-#include "maidsafe/utils.h"
+#include "maidsafe/pdutils.h"
 #include "maidsafe/client/clientcontroller.h"
 #include "protobuf/datamaps.pb.h"
 
