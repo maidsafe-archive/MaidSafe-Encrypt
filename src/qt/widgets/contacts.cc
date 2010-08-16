@@ -50,13 +50,13 @@ Contacts::Contacts(QWidget* parent)
   sendMessage		= new QAction(tr("Send Message"), this);
   sendFile			= new QAction(tr("Send File"), this);
   deleteContact = new QAction(tr("Delete Contact"), this);
-	sendEmail			= new QAction(tr("Send Email"), this);
+	//sendEmail			= new QAction(tr("Send Email"), this);
 
   menu->addAction(viewProfile);
   menu->addAction(sendMessage);
   menu->addAction(sendFile);
   menu->addAction(deleteContact);
-	menu->addAction(sendEmail);
+	//menu->addAction(sendEmail);
 
   ui_.listWidget->setContextMenuPolicy(Qt::CustomContextMenu);
 

@@ -165,7 +165,7 @@ void PerpetualData::createActions() {
   actions_[ AWAY ] = ui_.actionAway;
   actions_[ BUSY ] = ui_.actionBusy;
   actions_[ OFFLINE_2 ] = ui_.actionOffline_2;
-  actions_[ EMAIL ] = ui_.actionEmail;
+  //actions_[ EMAIL ] = ui_.actionEmail;
   actions_[ OFF ] = ui_.actionOff_2;
   actions_[ SMALL ] = ui_.actionSmall_2;
   actions_[ FULL ] = ui_.actionFull_2;
@@ -208,8 +208,8 @@ void PerpetualData::createActions() {
           this,             SLOT(onBusyTriggered()));
   connect(actions_[ OFFLINE_2 ], SIGNAL(triggered()),
           this,                  SLOT(onOffline_2Triggered()));
-  connect(actions_[ EMAIL ], SIGNAL(triggered()),
-          this,              SLOT(onEmailTriggered()));
+  //connect(actions_[ EMAIL ], SIGNAL(triggered()),
+          //this,              SLOT(onEmailTriggered()));
 // connect(actions_[ SAVE_SESSION ], SIGNAL(triggered()),
 //         this,                     SLOT(onSaveSession()));
   connect(actions_[ OFF ], SIGNAL(triggered()),
