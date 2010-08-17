@@ -402,7 +402,7 @@ class TestClientBP : public testing::Test {
       kad::Contact con(cryp.Hash(boost::lexical_cast<std::string>(i), "",
                        crypto::STRING_STRING, false), "127.0.0.1", 8000 + i,
                        "127.0.0.1", 8000 + i);
-      kad_ops_->knode_.AddContact(con, 0, false);
+//      kad_ops_->knode_.AddContact(con, 0, false);
     }
   }
   void TearDown() {

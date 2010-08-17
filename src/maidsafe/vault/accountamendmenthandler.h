@@ -44,6 +44,23 @@ class AccountHandler;
 class RequestExpectationHandler;
 class VaultServiceLogic;
 
+struct AmendmentResult {
+  AmendmentResult(
+      const std::string &owner_name_,
+      const std::string &chunkname_,
+      const maidsafe::AmendAccountRequest::Amendment &amendment_type_,
+      const boost::uint32_t &result_)
+      : owner_name(owner_name_),
+        chunkname(chunkname_),
+        amendment_type(amendment_type_),
+        result(result_),
+        expiry_time(base::GetEpochTime() + kAccountAmendmentResultTimeout) {}
+  std::string owner_name, chunkname;
+  maidsafe::AmendAccountRequest::Amendment amendment_type;
+  boost::uint32_t result;
+  boost::uint32_t expiry_time;
+};
+
 struct PendingAmending {
   PendingAmending(const maidsafe::AmendAccountRequest *req,
                   maidsafe::AmendAccountResponse *resp,
@@ -149,6 +166,10 @@ class AccountAmendmentHandler {
   int ProcessRequest(const maidsafe::AmendAccountRequest *request,
                      maidsafe::AmendAccountResponse *response,
                      google::protobuf::Closure *done);
+  // Populates list of amendment results in status response, removing them
+  // from the internal list
+  void FetchAmendmentResults(const std::string &owner_name,
+                             maidsafe::AccountStatusResponse *response);
   // Removes expired amendments from set which have timed out - returns a count
   // of the number of entries removed.
   int CleanUp();
@@ -159,6 +180,7 @@ class AccountAmendmentHandler {
   FRIEND_TEST(AccountAmendmentHandlerTest, BEH_MAID_AAH_CreateNewWithExpecteds);
   FRIEND_TEST(AccountAmendmentHandlerTest, BEH_MAID_AAH_AssessAmendment);
   FRIEND_TEST(AccountAmendmentHandlerTest, BEH_MAID_AAH_ProcessRequest);
+  FRIEND_TEST(AccountAmendmentHandlerTest, BEH_MAID_AAH_FetchAmendmentResults);
   FRIEND_TEST(AccountAmendmentHandlerTest, BEH_MAID_AAH_CleanUp);
   FRIEND_TEST(MockVaultServicesTest, BEH_MAID_ServicesAddToWatchList);
   FRIEND_TEST(MockVaultServicesTest, FUNC_MAID_ServicesRemoveFromWatchList);
@@ -178,6 +200,7 @@ class AccountAmendmentHandler {
   RequestExpectationHandler *request_expectation_handler_;
   VaultServiceLogic *vault_service_logic_;
   AccountAmendmentSet amendments_;
+  std::list<AmendmentResult> amendment_results_;
   boost::mutex amendment_mutex_;
   boost::uint8_t upper_threshold_;
 };

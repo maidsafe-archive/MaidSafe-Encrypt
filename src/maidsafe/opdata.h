@@ -71,7 +71,8 @@ struct StoreData {
                   chunk_type(ch_type),
                   system_packet_type(MID),
                   dir_type(directory_type),
-                  callback() {}
+                  callback(),
+                  exclude_peers_() {}
   // Store packet constructor
   StoreData(const std::string &packet_name,
             const std::string &packet_value,
@@ -94,7 +95,8 @@ struct StoreData {
                   chunk_type(kHashable | kNormal),
                   system_packet_type(sys_packet_type),
                   dir_type(directory_type),
-                  callback(cb) {}
+                  callback(cb),
+                  exclude_peers_() {}
   std::string data_name, value;
   boost::uint64_t size;
   std::string msid, key_id, public_key, public_key_signature, private_key;
@@ -102,6 +104,7 @@ struct StoreData {
   PacketType system_packet_type;
   DirType dir_type;
   VoidFuncOneInt callback;
+  std::vector<kad::Contact> exclude_peers_;
 };
 
 struct DeletePacketData {
@@ -196,7 +199,7 @@ struct WatchListOpData {
   typedef SingleOpDataHolder<AddToWatchListResponse> AddToWatchDataHolder;
   typedef SingleOpDataHolder<RemoveFromWatchListResponse>
       RemoveFromWatchDataHolder;
-  explicit WatchListOpData(const StoreData &sd)
+  explicit WatchListOpData(boost::shared_ptr<StoreData> sd)
       : store_data(sd),
         mutex(),
         account_holders(),
@@ -209,7 +212,7 @@ struct WatchListOpData {
         required_upload_copies(),
         consensus_upload_copies(-1),
         payment_values() {}
-  StoreData store_data;
+  boost::shared_ptr<StoreData> store_data;
   boost::mutex mutex;
   std::vector<kad::Contact> account_holders, chunk_info_holders;
   std::vector<AccountDataHolder> account_data_holders;
@@ -225,19 +228,22 @@ struct WatchListOpData {
 // This is used to hold the data required to perform a SendChunkPrep followed by
 // a SendChunkContent operation.
 struct SendChunkData {
-  SendChunkData(const StoreData &sd,
+  SendChunkData(boost::shared_ptr<StoreData> sd,
                 const kad::Contact &node,
                 bool node_local)
       : store_data(sd),
+        task_sub_name(),
         peer(node),
         local(node_local),
         store_prep_request(),
         store_prep_response(),
         store_chunk_request(),
         store_chunk_response(),
-        controller(new rpcprotocol::Controller),
-        attempt(0) { controller->set_timeout(120); }
-  StoreData store_data;
+        controller(new rpcprotocol::Controller) {
+    controller->set_timeout(120);
+  }
+  boost::shared_ptr<StoreData> store_data;
+  std::string task_sub_name;
   kad::Contact peer;
   bool local;
   StorePrepRequest store_prep_request;
@@ -245,7 +251,6 @@ struct SendChunkData {
   StoreChunkRequest store_chunk_request;
   StoreChunkResponse store_chunk_response;
   boost::shared_ptr<rpcprotocol::Controller> controller;
-  boost::uint16_t attempt;
 };
 
 // This is used to hold the data required to send AccountStatusRequests and

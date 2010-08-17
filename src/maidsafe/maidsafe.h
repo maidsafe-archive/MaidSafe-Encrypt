@@ -138,6 +138,12 @@ const std::string kDefaultChunks[kDefaultChunkCount][2] = {
 };
 
 const std::string kAccount("ACCOUNT");
+const std::string kWatchListTaskPrefix("WATCH");
+const std::string kWatchListMasterTaskPrefix("WATCHM");
+const std::string kChunkCopyTaskPrefix("COPY");
+const std::string kChunkCopyMasterTaskPrefix("COPYM");
+const std::string kChunkCopyPrepTaskPrefix("COPYPREP");
+const std::string kChunkCopyDataTaskPrefix("COPYDATA");
 
 // const std::string default_dir_[] = {
 //   "/Documents",
@@ -322,6 +328,8 @@ const int kValidityCheckInterval(120);  // 2 minutes
 const int kCheckPartnerRefDelay(300);  // 5 minutes
 // timeout for account amendment transactions in milliseconds
 const boost::uint64_t kAccountAmendmentTimeout(120000);
+// timeout for account amendment results in seconds
+const boost::uint32_t kAccountAmendmentResultTimeout(1800);  // ½ hour
 // max. no. of account amendments
 const size_t kMaxAccountAmendments(1000);
 // max. no. of repeated account amendments (i.e. for same chunk to same PMID)
@@ -329,15 +337,22 @@ const size_t kMaxRepeatedAccountAmendments(10);
 const int kValidityCheckRetry(2);  // retries for validity check (timeouts)
 const boost::uint8_t kMinChunkCopies(4);
 const int kMaxChunkLoadRetries(3);  // max number of tries to load a chunk
-const int kMaxChunkStoreTries(2);  // max number of tries to store or update a
-                                   // chunk
-const boost::uint8_t kMaxStoreFailures(10);  // max number of failed store tries
+// max number of tries to store or update a chunk
+const int kMaxChunkStoreTries(2);
+// max number of peers to try to store a chunk copy on
+const boost::uint8_t kMaxStoreFailures(10);
+// max number of store retries per peer
+const boost::uint8_t kMaxPerPeerStoreFailures(2);
+// max number of tries to add to watch list for a chunk
+const boost::uint8_t kMaxAddToWatchListFailures(3);
+// max number of tries to remove from watch list for a chunk
+const boost::uint8_t kMaxRemoveFromWatchListFailures(3);
 // TODO(Fraser#5#): 2010-01-29 - Move the kMaxSmallChunkSize to be set and held
 //                               by session depending on connection speed, etc.
 // max size (bytes) of a chunk deemed "small"
 const boost::uint64_t kMaxSmallChunkSize(666666);
-const boost::uint32_t kSaveUpdatesTrigger(10);  // max no of dbs in save queue
-                                                 // before running save queue
+// max no of dbs in save queue before running save queue
+const boost::uint32_t kSaveUpdatesTrigger(10);
 const double kMinSuccessfulPecentageOfUpdating(0.9);
 const double kMinSuccessfulPecentageStore(0.75);
 // port where the service to register a local vault is listening

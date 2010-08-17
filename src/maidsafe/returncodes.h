@@ -218,14 +218,15 @@ enum ReturnCode {
   kEncryptionDbException = -12021,
   kEncryptionDmNotInMap = -12022,
 
-  // Store Task Handler
-  kStoreTaskHandlerError = -13001,
-  kStoreTaskIncorrectParameter = -13002,
-  kStoreTaskAlreadyExists = -13003,
-  kStoreTaskNotFound = -13004,
-  kStoreTaskNotFinished = -13005,
-  kStoreTaskFinishedFail = -13006,
-  kStoreTaskFinishedPass = 0,  // intentionally 0
+  // Store Manager Task Handler
+  kStoreManagerTaskHandlerError = -13001,
+  kStoreManagerTaskIncorrectParameter = -13002,
+  kStoreManagerTaskIncorrectOperation = -13003,
+  kStoreManagerTaskAlreadyExists = -13004,
+  kStoreManagerTaskNotFound = -13005,
+  kStoreManagerTaskNotFinished = -13006,
+  kStoreManagerTaskFinishedFail = -13007,
+  kStoreManagerTaskFinishedPass = 0,  // intentionally 0
 
   // Validator
   kValidatorNoParameters = -14001,

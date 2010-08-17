@@ -176,7 +176,6 @@ class KadOps {
   boost::uint8_t k() const { return K_; }
   friend class TestClientBP;
   friend class test::CBPHandlerTest;
-
  private:
   KadOps(const KadOps&);
   KadOps& operator=(const KadOps&);

@@ -47,7 +47,7 @@
 #include "maidsafe/kadops.h"
 #include "maidsafe/clientbufferpackethandler.h"
 #include "maidsafe/client/storemanager.h"
-#include "maidsafe/client/storetaskshandler.h"
+#include "maidsafe/client/storemanagertaskshandler.h"
 #include "maidsafe/client/imconnectionhandler.h"
 #include "maidsafe/client/imhandler.h"
 
@@ -82,36 +82,20 @@ class PDVaultTest_FUNC_MAID_NET_StoreAndGetChunks_Test;
 namespace maidsafe {
 
 class ClientRpcs;
-
-enum TaskStatus { kPending, kStarted, kCancelled, kCompleted };
-
 class ChunkStore;
 class SessionSingleton;
 
-class AddToWatchListTask : public QRunnable {
- public:
-  AddToWatchListTask(StoreData store_data, MaidsafeStoreManager *msm)
-      : store_data_(store_data),
-        msm_(msm) {}
-  void run();
- private:
-  AddToWatchListTask &operator=(const AddToWatchListTask&);
-  AddToWatchListTask(const AddToWatchListTask&);
-  StoreData store_data_;
-  MaidsafeStoreManager *msm_;
-};
-
 class SendChunkCopyTask : public QRunnable {
  public:
-  SendChunkCopyTask(StoreData store_data,
+  SendChunkCopyTask(boost::shared_ptr<SendChunkData> send_chunk_data,
                     MaidsafeStoreManager *msm)
-      : store_data_(store_data),
+      : send_chunk_data_(send_chunk_data),
         msm_(msm) {}
   void run();
  private:
   SendChunkCopyTask &operator=(const SendChunkCopyTask&);
   SendChunkCopyTask(const SendChunkCopyTask&);
-  StoreData store_data_;
+  boost::shared_ptr<SendChunkData> send_chunk_data_;
   MaidsafeStoreManager *msm_;
 };
 
@@ -126,19 +110,6 @@ class StorePacketTask : public QRunnable {
   StorePacketTask &operator=(const StorePacketTask&);
   StorePacketTask(const StorePacketTask&);
   boost::shared_ptr<StoreData> store_data_;
-  MaidsafeStoreManager *msm_;
-};
-
-class DeleteChunkTask : public QRunnable {
- public:
-  DeleteChunkTask(StoreData store_data, MaidsafeStoreManager *msm)
-      : store_data_(store_data),
-        msm_(msm) {}
-  void run();
- private:
-  DeleteChunkTask &operator=(const DeleteChunkTask&);
-  DeleteChunkTask(const DeleteChunkTask&);
-  StoreData store_data_;
   MaidsafeStoreManager *msm_;
 };
 
@@ -245,9 +216,8 @@ class MaidsafeStoreManager : public StoreManagerInterface {
                  bool check_local,
                  const VoidFuncOneInt &cb);
   bool NotDoneWithUploading();
-  // Adds the chunk to the store queue.  It must already be in the chunkstore.
-  // If the chunk already exists (stored locally or on the net) the function
-  // succeeds.  The function returns as soon as the task is enqueued.
+  // Initialises the chunk storing process. Non-blocking, returns after
+  // sending the AddToWatchListRequest.
   int StoreChunk(const std::string &chunk_name,
                  DirType dir_type,
                  const std::string &msid);
@@ -326,10 +296,8 @@ class MaidsafeStoreManager : public StoreManagerInterface {
  private:
   MaidsafeStoreManager &operator=(const MaidsafeStoreManager&);
   MaidsafeStoreManager(const MaidsafeStoreManager&);
-  friend void AddToWatchListTask::run();
   friend void SendChunkCopyTask::run();
   friend void StorePacketTask::run();
-  friend void DeleteChunkTask::run();
   friend void DeletePacketTask::run();
   friend void UpdatePacketTask::run();
   friend size_t testpdvault::CheckStoredCopies(
@@ -375,7 +343,7 @@ class MaidsafeStoreManager : public StoreManagerInterface {
                           int *return_value,
                           GenericConditionData *generic_cond_data);
   // Sends AddToWatchList requests to each of the k Chunk Info holders.
-  virtual void AddToWatchList(const StoreData& store_data);
+  virtual int AddToWatchList(boost::shared_ptr<StoreData> store_data);
   // Callback of FindNodes.  Sends ExpectAmendment requests.
   void AddToWatchListStageTwo(const std::string &response,
                               boost::shared_ptr<WatchListOpData> data);
@@ -391,7 +359,7 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   // by method calling this one for duration of this function.
   int AssessUploadCounts(boost::shared_ptr<WatchListOpData> data);
   // Sends RemoveFromWatchList requests to each of the k Chunk Info holders.
-  virtual void RemoveFromWatchList(const StoreData &store_data);
+  virtual int RemoveFromWatchList(boost::shared_ptr<StoreData> store_data);
   // Callback of FindNodes.  Sends ExpectAmendment requests.
   void RemoveFromWatchListStageTwo(const std::string &response,
                                    boost::shared_ptr<WatchListOpData> data);
@@ -413,36 +381,27 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   static void GetFilteredAverage(const std::vector<boost::uint64_t> &values,
                                  boost::uint64_t *average,
                                  size_t *n);
-  // Returns the current status of the task and sets *task to the task if found.
-  virtual TaskStatus AssessTaskStatus(const std::string &data_name,
-                                      StoreTaskType task_type,
-                                      StoreTask *task);
   // Blocks until either we're online (returns true) or until task is cancelled
   // or finished (returns false)
-  virtual bool WaitForOnline(const std::string &data_name,
-                             const StoreTaskType &task_type);
-  // Assesses the task status and if task is still running, blocks until online.
-  // If the task is cancelled, this method stops the subtask in the
-  // task_handler_ and deletes the task if no subtasks remain.
-  bool AssessTaskAndOnlineStatus(const std::string &data_name,
-                                 const StoreTaskType &task_type);
+  virtual bool WaitForOnline(const std::string &task_name,
+                             const StoreManagerTaskType &task_type);
   // Set up the requests needed to perform the store RPCs.
   int GetStoreRequests(boost::shared_ptr<SendChunkData> send_chunk_data);
   // Set up the requests needed to perform the ExpectAmendment RPCs.
   int GetExpectAmendmentRequests(
-      const StoreData &store_data,
+      boost::shared_ptr<StoreData> store_data,
       const AmendAccountRequest::Amendment amendment_type,
       const std::vector<kad::Contact> &account_holders,
       const std::vector<kad::Contact> &chunk_info_holders,
       std::vector<ExpectAmendmentRequest> *expect_amendment_requests);
   // Set up the requests needed to perform the AddToWatchList RPCs.
   int GetAddToWatchListRequests(
-      const StoreData &store_data,
+      boost::shared_ptr<StoreData> store_data,
       const std::vector<kad::Contact> &recipients,
       std::vector<AddToWatchListRequest> *add_to_watch_list_requests);
   // Set up the requests needed to perform the RemoveFromWatchList RPCs.
   int GetRemoveFromWatchListRequests(
-      const StoreData &store_data,
+      boost::shared_ptr<StoreData> store_data,
       const std::vector<kad::Contact> &recipients,
       std::vector<RemoveFromWatchListRequest> *remove_from_watch_list_requests);
   // Get the request signature for a chunk / packet.
@@ -454,20 +413,38 @@ class MaidsafeStoreManager : public StoreManagerInterface {
                            const std::string &private_key,
                            std::string *request_signature);
   // Get the request signature for a chunk / packet store task.
-  void GetRequestSignature(const StoreData &store_data,
+  void GetRequestSignature(boost::shared_ptr<StoreData> store_data,
                            const std::string &recipient_id,
                            std::string *request_signature);
-  // Start process of storing a single copy of an individual chunk onto the net
-  virtual int SendChunkPrep(const StoreData &store_data);
-  void SendPrepCallback(boost::shared_ptr<SendChunkData> send_chunk_data);
+  // Called on completion of the StoreChunk root task
+  void StoreChunkTaskCallback(const ReturnCode &result,
+                              const std::string &chunk_name);
+  // Called on completion of the DeleteChunk root task
+  void DeleteChunkTaskCallback(const ReturnCode &result,
+                               const std::string &chunk_name);
+  // Called on completion of an AddToWatchList child task
+  void AddToWatchListTaskCallback(const ReturnCode &result,
+                                  boost::shared_ptr<StoreData> store_data);
+  void RemoveFromWatchListTaskCallback(const ReturnCode &result,
+                                       boost::shared_ptr<StoreData> store_data);
+  // Start process of storing a single copy of an individual chunk onto the net.
+  virtual void StoreChunkCopy(boost::shared_ptr<StoreData> store_data);
+  // Initialise chunk storing preparation.
+  virtual void DoStorePrep(boost::shared_ptr<SendChunkData> send_chunk_data);
+  void ChunkCopyPrepTaskCallback(
+      const ReturnCode &result,
+      boost::shared_ptr<SendChunkData> send_chunk_data);
+  void StorePrepCallback(boost::shared_ptr<SendChunkData> send_chunk_data);
   virtual int ValidatePrepResponse(
       const std::string &peer_node_id,
       const SignedSize &request_signed_size,
       const StorePrepResponse *store_prep_response);
   // Send the actual data content to the peer.
-  virtual int SendChunkContent(
+  virtual void DoStoreChunk(boost::shared_ptr<SendChunkData> send_chunk_data);
+  void ChunkCopyDataTaskCallback(
+      const ReturnCode &result,
       boost::shared_ptr<SendChunkData> send_chunk_data);
-  void SendContentCallback(boost::shared_ptr<SendChunkData> send_chunk_data);
+  void StoreChunkCallback(boost::shared_ptr<SendChunkData> send_chunk_data);
   void LoadChunk_FindCB(const std::string &result,
                         boost::shared_ptr<GetChunkOpData> data);
   void LoadChunk_RefsCB(size_t rsp_idx,
@@ -563,7 +540,7 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   boost::shared_ptr<ClientRpcs> client_rpcs_;
   boost::shared_ptr<KadOps> kad_ops_;
   SessionSingleton *ss_;
-  StoreTasksHandler tasks_handler_;
+  StoreManagerTasksHandler tasks_handler_;
   boost::shared_ptr<ChunkStore> client_chunkstore_;
   QThreadPool chunk_thread_pool_, packet_thread_pool_;
   boost::shared_ptr<BufferPacketRpcs> bprpcs_;

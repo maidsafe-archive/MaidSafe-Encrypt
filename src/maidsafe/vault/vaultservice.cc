@@ -228,6 +228,9 @@ void VaultService::StorePrep(google::protobuf::RpcController*,
                              const maidsafe::StorePrepRequest *request,
                              maidsafe::StorePrepResponse *response,
                              google::protobuf::Closure *done) {
+
+                printf("In VaultService::StorePrep (%s)\n", HexSubstr(pmid_).c_str());
+  
   maidsafe::StoreContract *response_sc = response->mutable_store_contract();
   response_sc->set_pmid(pmid_);
   response_sc->set_public_key(pmid_public_);
@@ -355,6 +358,8 @@ void VaultService::StorePrep(google::protobuf::RpcController*,
     done->Run();
     return;
   }
+
+  printf("In VaultService::StorePrep (%s), inserted prep for %s into map.\n", HexSubstr(pmid_).c_str(), HexSubstr(request->chunkname()).c_str());
 
   done->Run();
 }
@@ -1176,6 +1181,10 @@ void VaultService::AccountStatus(google::protobuf::RpcController*,
     response->set_space_offered(space_offered);
     response->set_space_given(space_given);
     response->set_space_taken(space_taken);
+
+    // return list of amendment results
+    aah_.FetchAmendmentResults(account_pmid, response);
+    
     response->set_result(kAck);
     done->Run();
   }

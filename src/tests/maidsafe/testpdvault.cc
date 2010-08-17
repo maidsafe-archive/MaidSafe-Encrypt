@@ -193,7 +193,7 @@ namespace test {
 static std::vector< boost::shared_ptr<PDVault> > pdvaults_;
 static const int kNumOfClients = 2;
 static const int kNetworkSize = testpdvault::K + kNumOfClients;
-static const int kNumOfTestChunks = kNetworkSize + 1;
+static const int kNumOfTestChunks = 1;  // kNetworkSize + 1;
 static boost::filesystem::path kadconfig_;
 /**
  * Note: StoreAndGetChunks only works for small K due to resource problems
@@ -447,6 +447,10 @@ TEST_MS_NET(PDVaultTest, FUNC, MAID, StoreAndGetChunks) {
                  HexSubstr((*it).first).c_str());
         }
       }
+    }
+    for (int i = 0; i < kNumOfClients; ++i) {
+      printf("%d storing tasks remaining on client %d.\n",
+             clients_[i]->msm->tasks_handler_.TasksCount(), i);
     }
   }
 
