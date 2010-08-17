@@ -44,8 +44,6 @@ class SignedValue;
 class SignedRequest;
 }  // namespace kad
 
-class TestClientBP;
-
 namespace maidsafe {
 
 namespace test {
@@ -173,8 +171,12 @@ class KadOps {
   }
   boost::uint16_t Port() const { return knode_.host_port(); }
   kad::ContactInfo contact_info() const { return knode_.contact_info(); }
+  int AddContact(kad::Contact new_contact,
+                 const float &rtt,
+                 const bool &only_db) {
+    return knode_.AddContact(new_contact, rtt, only_db);
+  }
   boost::uint8_t k() const { return K_; }
-  friend class TestClientBP;
   friend class test::CBPHandlerTest;
  private:
   KadOps(const KadOps&);
