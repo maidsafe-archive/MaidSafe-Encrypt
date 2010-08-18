@@ -93,6 +93,22 @@ QString ClientController::publicUsername() const {
          maidsafe::SessionSingleton::getInstance()->PublicUsername());
 }
 
+bool ClientController::getPendingOps(QList<PendingOps> &ops) {
+  //array<pendingOps> pending;
+  //maidsafe::PendingOps po;
+  //get pendingOps from maisafe and convert to QT PendingOps
+  //maidsafe::ClientController::getInstance()->getPendingOps(pending);
+
+
+  PendingOps op;
+  op.name = "testName.txt";
+  op.transBytes = 1583;
+  op.totalBytes = 10000;
+
+  ops.append(op);
+  return false;
+}
+
 int ClientController::AddInstantFile(const QString &sender, const QString &filename,
                    const QString &tag,
                    int sizeLow, int sizeHigh,

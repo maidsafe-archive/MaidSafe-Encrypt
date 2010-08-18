@@ -65,6 +65,13 @@ typedef boost::function<void(const std::string&,
 class ClientController : public QObject {
   Q_OBJECT
  public:
+
+ struct PendingOps {
+  QString name;
+  int transBytes;
+  int totalBytes;
+};
+
   enum MessageType {
       TEXT,               // Instant message received from someone
       SHARE,              // Someone has shared something
@@ -164,6 +171,8 @@ class ClientController : public QObject {
                      int sizeLow, int sizeHigh,
                      const ClientController::ItemType &type,
                      const QString &s);
+
+  bool getPendingOps(QList<PendingOps> &ops);
 
   ///////////////////////////////
   //// Conversation Handling ////

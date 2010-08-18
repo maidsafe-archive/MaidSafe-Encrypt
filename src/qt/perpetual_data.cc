@@ -44,6 +44,7 @@
 #include "qt/widgets/user_panels.h"
 #include "qt/widgets/system_tray_icon.h"
 #include "qt/widgets/user_settings.h"
+#include "qt/widgets/pending_operations_dialog.h"
 
 #include "qt/client/create_user_thread.h"
 #include "qt/client/join_kademlia_thread.h"
@@ -528,12 +529,18 @@ void PerpetualData::quit() {
 
 void PerpetualData::onQuit() {
   // TODO(Team#5#): 2009-08-18 - confirm quit if something in progress
-  if (state_ != LOGGED_IN) {
-    ClientController::instance()->shutdown();
-    qApp->quit();
+  QList<ClientController::PendingOps> ops;
+
+  if (ClientController::instance()->getPendingOps(ops)) {
+    pendingOps_ = new PendingOperationsDialog;
   } else {
-    quitting_ = true;
-    onLogout();
+    if (state_ != LOGGED_IN) {
+      ClientController::instance()->shutdown();
+      qApp->quit();
+    } else {
+      quitting_ = true;
+      onLogout();
+    }
   }
 }
 
@@ -987,7 +994,7 @@ void PerpetualData::showLoggedOutMenu() {
   actions_[PRIVATE_SHARES]->setEnabled(false);
   actions_[GO_OFFLINE]->setEnabled(false);
   actions_[SETTINGS]->setEnabled(false);
-  actions_[EMAIL]->setEnabled(false);
+//  actions_[EMAIL]->setEnabled(false);
   actions_[OFFLINE_2]->setEnabled(false);
 }
 
@@ -995,7 +1002,7 @@ void PerpetualData::onPublicUsernameChosen() {
   actions_[PRIVATE_SHARES]->setEnabled(true);
   actions_[GO_OFFLINE]->setEnabled(true);
   actions_[SETTINGS]->setEnabled(true);
-  actions_[EMAIL]->setEnabled(true);
+ // actions_[EMAIL]->setEnabled(true);
 }
 
 void PerpetualData::onOffTriggered() {

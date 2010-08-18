@@ -41,6 +41,7 @@ class Progress;
 class PersonalMessages;
 class UserSettings;
 class UserInbox;
+class PendingOperationsDialog;
 #ifdef PD_LIGHT
   class FileBrowser;
 #endif
@@ -240,6 +241,9 @@ class PerpetualData : public QMainWindow {
 
 	// Email Inbox
 	UserInbox* inbox_;
+
+  //Pending Ops
+  PendingOperationsDialog* pendingOps_;
 
 #ifdef PD_LIGHT
   FileBrowser* browser_;

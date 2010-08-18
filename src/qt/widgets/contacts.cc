@@ -74,9 +74,6 @@ Contacts::Contacts(QWidget* parent)
   connect(deleteContact, SIGNAL(triggered()),
           this,        SLOT(onDeleteUserClicked()));
 
-	connect(sendEmail, SIGNAL(triggered()),
-          this,        SLOT(onSendEmailClicked()));
-
   connect(ui_.listWidget, SIGNAL(customContextMenuRequested(const QPoint&)),
             this,         SLOT(customContentsMenu(const QPoint&)));
 
