@@ -48,6 +48,8 @@ static const boost::uint8_t upper_threshold(static_cast<boost::uint8_t>
                                             (K * kMinSuccessfulPecentageStore));
 }  // namespace test_cbph
 
+namespace maidsafe {
+
 void execute_cb(kad::VoidFunctorOneString cb, const std::string &result) {
   boost::this_thread::sleep(boost::posix_time::seconds(1));
   cb(result);
@@ -402,7 +404,7 @@ class TestClientBP : public testing::Test {
       kad::Contact con(cryp.Hash(boost::lexical_cast<std::string>(i), "",
                        crypto::STRING_STRING, false), "127.0.0.1", 8000 + i,
                        "127.0.0.1", 8000 + i);
-      kad_ops_->AddContact(con, 0, false);
+      kad_ops_->knode_.AddContact(con, 0, false);
     }
   }
   void TearDown() {
@@ -1166,3 +1168,4 @@ TEST_F(TestClientBP, BEH_MAID_GetPresenceFailRpcs) {
   ASSERT_EQ(maidsafe::kBPGetPresenceError, cb.result);
 }
 
+}  // namespace maidsafe
