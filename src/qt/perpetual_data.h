@@ -42,6 +42,7 @@ class PersonalMessages;
 class UserSettings;
 class UserInbox;
 class PendingOperationsDialog;
+class UserCalendar;
 #ifdef PD_LIGHT
   class FileBrowser;
 #endif
@@ -116,6 +117,7 @@ class PerpetualData : public QMainWindow {
     void onBusyTriggered();
     void onOffline_2Triggered();
 		void onEmailTriggered();
+    void onCalendarTriggered();
     void onOffTriggered();
     void onSmallTriggered();
     void onFullTriggered();
@@ -176,6 +178,7 @@ class PerpetualData : public QMainWindow {
     AWAY,
     OFFLINE_2,
     EMAIL,
+    CALENDAR,
     OFF,
     SMALL,
     FULL,
@@ -244,6 +247,9 @@ class PerpetualData : public QMainWindow {
 
   //Pending Ops
   PendingOperationsDialog* pendingOps_;
+
+  //User Calendar
+  UserCalendar* userCal_;
 
 #ifdef PD_LIGHT
   FileBrowser* browser_;

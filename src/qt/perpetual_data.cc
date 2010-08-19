@@ -45,6 +45,7 @@
 #include "qt/widgets/system_tray_icon.h"
 #include "qt/widgets/user_settings.h"
 #include "qt/widgets/pending_operations_dialog.h"
+#include "qt/widgets/user_calendar.h"
 
 #include "qt/client/create_user_thread.h"
 #include "qt/client/join_kademlia_thread.h"
@@ -175,6 +176,7 @@ void PerpetualData::createActions() {
   actions_[ AWAY ] = ui_.actionAway;
   actions_[ BUSY ] = ui_.actionBusy;
   actions_[ OFFLINE_2 ] = ui_.actionOffline_2;
+  actions_[ CALENDAR ] = ui_.actionCalendar;
   //actions_[ EMAIL ] = ui_.actionEmail;
   actions_[ OFF ] = ui_.actionOff_2;
   actions_[ SMALL ] = ui_.actionSmall_2;
@@ -218,6 +220,8 @@ void PerpetualData::createActions() {
           this,             SLOT(onBusyTriggered()));
   connect(actions_[ OFFLINE_2 ], SIGNAL(triggered()),
           this,                  SLOT(onOffline_2Triggered()));
+  connect(actions_[ CALENDAR ], SIGNAL(triggered()),
+          this,              SLOT(onCalendarTriggered()));
   //connect(actions_[ EMAIL ], SIGNAL(triggered()),
           //this,              SLOT(onEmailTriggered()));
 // connect(actions_[ SAVE_SESSION ], SIGNAL(triggered()),
@@ -943,6 +947,11 @@ void PerpetualData::onBusyTriggered() {
 }
 
 void PerpetualData::onOffline_2Triggered() {
+}
+
+void PerpetualData::onCalendarTriggered() {
+  userCal_ = new UserCalendar;
+  userCal_->show();
 }
 
 void PerpetualData::onBlackThemeTriggered() {

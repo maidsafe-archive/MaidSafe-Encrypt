@@ -24,17 +24,17 @@
        <widget class="QTreeWidget" name="opTreeWidget">
         <column>
          <property name="text">
-          <string>New Column</string>
+          <string>Name</string>
          </property>
         </column>
         <column>
          <property name="text">
-          <string>New Column</string>
+          <string>Completed</string>
          </property>
         </column>
         <column>
          <property name="text">
-          <string>New Column</string>
+          <string>Operation</string>
          </property>
         </column>
         <item>
@@ -44,10 +44,19 @@
          <property name="text">
           <string>34</string>
          </property>
+         <property name="text">
+          <string/>
+         </property>
         </item>
         <item>
          <property name="text">
           <string>test</string>
+         </property>
+         <property name="text">
+          <string/>
+         </property>
+         <property name="text">
+          <string/>
          </property>
         </item>
        </widget>
