@@ -281,6 +281,8 @@ void MaidsafeStoreManager::StoreChunkTaskCallback(
          kad_ops_->Port(), HexSubstr(chunk_name).c_str(),
          result == kSuccess ? "succeeded" : "failed");
 #endif
+  tasks_handler_.DeleteTask(chunk_name, result);
+  // TODO(Dan#) Fire store completion signal here.
 }
 
 void MaidsafeStoreManager::StorePacket(const std::string &packet_name,

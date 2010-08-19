@@ -175,7 +175,7 @@ int StoreManagerTasksHandler::NotifyTaskFailure(
     return kStoreManagerTaskIncorrectOperation;
   }
   ++task.failures_count;
-  if (task.status == kTaskActive && task.failures_count > task.max_failures) {
+  if (task.status == kTaskActive && task.failures_count >= task.max_failures) {
     task.status = kTaskFailed;
     return NotifyStateChange(task_name, reason);
   }
@@ -201,13 +201,6 @@ int StoreManagerTasksHandler::NotifyStateChange(
          "(%s).\n", HexSubstr(task_name).c_str(),
          success ? "succeeded" : "failed");
 #endif
-  
-  if (task.callback) {
-    mutex_.unlock();
-    printf("-- calling callback for %s (%d) --\n", HexSubstr(task_name).c_str(), reason);
-    task.callback(reason);
-    mutex_.lock();
-  }
 
   // notify parent
   if (!task.parent_name.empty() && tasks_.count(task.parent_name) == 1) {
@@ -226,7 +219,7 @@ int StoreManagerTasksHandler::NotifyStateChange(
       } else {
         printf(" ## 3 parent failures %d+1\n", parent.failures_count);
         ++parent.failures_count;
-        if (parent.failures_count > parent.max_failures) {
+        if (parent.failures_count >= parent.max_failures) {
           printf(" ## 4 parent set to failed\n");
           parent.status = kTaskFailed;
           return NotifyStateChange(task.parent_name, reason);
@@ -234,12 +227,18 @@ int StoreManagerTasksHandler::NotifyStateChange(
       }
     }
   }
+  
+  if (task.callback) {
+    mutex_.unlock();
+    task.callback(reason);
+    mutex_.lock();
+  }
 
   return kSuccess;
 }
 
-/* int StoreManagerTasksHandler::DeleteTask(const std::string &task_name,
-                                         const ReturnCode &callback_argument) {
+int StoreManagerTasksHandler::DeleteTask(
+    const std::string &task_name, const ReturnCode &reason) {
   boost::mutex::scoped_lock lock(mutex_);
   if (tasks_.count(task_name) == 0) {
 #ifdef DEBUG
@@ -248,9 +247,9 @@ int StoreManagerTasksHandler::NotifyStateChange(
 #endif
     return kStoreManagerTaskNotFound;
   }
-  DoDeleteTask(task_name, callback_argument);
+  DoDeleteTask(task_name, reason);
   return kSuccess;
-} */
+}
 
 void StoreManagerTasksHandler::DoDeleteTask(
     const std::string &task_name,

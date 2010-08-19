@@ -129,9 +129,8 @@ class StoreManagerTasksHandler {
   int NotifyTaskFailure(const std::string &task_name, const ReturnCode &reason);
   // Removes the task and its child tasks from the set, regardless of state of
   // the tasks' progress.  If the tasks have callbacks, they're run with
-  // callback_argument before deletion
-/*  int DeleteTask(const std::string &task_name,
-                 const ReturnCode &callback_argument); */
+  // before deletion.
+  int DeleteTask(const std::string &task_name, const ReturnCode &reason);
   // Marks task and children as cancelled, but doesn't remove them from set.
   int CancelTask(const std::string &task_name, const ReturnCode &reason);
   // Marks all tasks as cancelled, but doesn't remove any from the set.

@@ -607,11 +607,11 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AddToWatchList) {
       .WillRepeatedly(testing::WithArgs<1>(testing::Invoke(
           boost::bind(&mock_kadops::RunCallback, bad_result, _1))));   // Call 1
 
-  EXPECT_CALL(*mko, FindKClosestNodes(chunk_names.at(1), testing::_))
+/*  EXPECT_CALL(*mko, FindKClosestNodes(chunk_names.at(1), testing::_))
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
           boost::bind(&mock_kadops::RunCallback, few_result, _1))));   // Call 2
 
-/*  for (int i = 2; i < kTestCount; ++i) {
+  for (int i = 2; i < kTestCount; ++i) {
     EXPECT_CALL(*mko, FindKClosestNodes(chunk_names.at(i), testing::_))
         .WillOnce(testing::WithArgs<1>(testing::Invoke(
             boost::bind(&mock_kadops::RunCallback, good_result, _1))));  // 3-12
