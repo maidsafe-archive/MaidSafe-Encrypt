@@ -99,6 +99,7 @@
     <addaction name="actionPrivate_Shares"/>
     <addaction name="actionOffline"/>
     <addaction name="actionEmail"/>
+    <addaction name="actionCalendar"/>
    </widget>
    <widget class="QMenu" name="menuApplications">
     <property name="title">
@@ -350,6 +351,11 @@
   <action name="actionGreen">
    <property name="text">
     <string>Green</string>
+   </property>
+  </action>
+  <action name="actionCalendar">
+   <property name="text">
+    <string>Calendar</string>
    </property>
   </action>
  </widget>

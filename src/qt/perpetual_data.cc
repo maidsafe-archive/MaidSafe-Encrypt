@@ -44,6 +44,8 @@
 #include "qt/widgets/user_panels.h"
 #include "qt/widgets/system_tray_icon.h"
 #include "qt/widgets/user_settings.h"
+#include "qt/widgets/pending_operations_dialog.h"
+#include "qt/widgets/user_calendar.h"
 
 #include "qt/client/create_user_thread.h"
 #include "qt/client/join_kademlia_thread.h"
@@ -174,7 +176,8 @@ void PerpetualData::createActions() {
   actions_[ AWAY ] = ui_.actionAway;
   actions_[ BUSY ] = ui_.actionBusy;
   actions_[ OFFLINE_2 ] = ui_.actionOffline_2;
-  actions_[ EMAIL ] = ui_.actionEmail;
+  actions_[ CALENDAR ] = ui_.actionCalendar;
+  //actions_[ EMAIL ] = ui_.actionEmail;
   actions_[ OFF ] = ui_.actionOff_2;
   actions_[ SMALL ] = ui_.actionSmall_2;
   actions_[ FULL ] = ui_.actionFull_2;
@@ -217,8 +220,10 @@ void PerpetualData::createActions() {
           this,             SLOT(onBusyTriggered()));
   connect(actions_[ OFFLINE_2 ], SIGNAL(triggered()),
           this,                  SLOT(onOffline_2Triggered()));
-  connect(actions_[ EMAIL ], SIGNAL(triggered()),
-          this,              SLOT(onEmailTriggered()));
+  connect(actions_[ CALENDAR ], SIGNAL(triggered()),
+          this,              SLOT(onCalendarTriggered()));
+  //connect(actions_[ EMAIL ], SIGNAL(triggered()),
+          //this,              SLOT(onEmailTriggered()));
 // connect(actions_[ SAVE_SESSION ], SIGNAL(triggered()),
 //         this,                     SLOT(onSaveSession()));
   connect(actions_[ OFF ], SIGNAL(triggered()),
@@ -528,12 +533,18 @@ void PerpetualData::quit() {
 
 void PerpetualData::onQuit() {
   // TODO(Team#5#): 2009-08-18 - confirm quit if something in progress
-  if (state_ != LOGGED_IN) {
-    ClientController::instance()->shutdown();
-    qApp->quit();
+  QList<ClientController::PendingOps> ops;
+
+  if (ClientController::instance()->getPendingOps(ops)) {
+    pendingOps_ = new PendingOperationsDialog;
   } else {
-    quitting_ = true;
-    onLogout();
+    if (state_ != LOGGED_IN) {
+      ClientController::instance()->shutdown();
+      qApp->quit();
+    } else {
+      quitting_ = true;
+      onLogout();
+    }
   }
 }
 
@@ -938,6 +949,11 @@ void PerpetualData::onBusyTriggered() {
 void PerpetualData::onOffline_2Triggered() {
 }
 
+void PerpetualData::onCalendarTriggered() {
+  userCal_ = new UserCalendar;
+  userCal_->show();
+}
+
 void PerpetualData::onBlackThemeTriggered() {
   QFile file(":/qss/black_theme.qss");
   file.open(QFile::ReadOnly);
@@ -987,7 +1003,7 @@ void PerpetualData::showLoggedOutMenu() {
   actions_[PRIVATE_SHARES]->setEnabled(false);
   actions_[GO_OFFLINE]->setEnabled(false);
   actions_[SETTINGS]->setEnabled(false);
-  actions_[EMAIL]->setEnabled(false);
+//  actions_[EMAIL]->setEnabled(false);
   actions_[OFFLINE_2]->setEnabled(false);
 }
 
@@ -995,7 +1011,7 @@ void PerpetualData::onPublicUsernameChosen() {
   actions_[PRIVATE_SHARES]->setEnabled(true);
   actions_[GO_OFFLINE]->setEnabled(true);
   actions_[SETTINGS]->setEnabled(true);
-  actions_[EMAIL]->setEnabled(true);
+ // actions_[EMAIL]->setEnabled(true);
 }
 
 void PerpetualData::onOffTriggered() {
