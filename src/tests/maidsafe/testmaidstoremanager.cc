@@ -276,7 +276,7 @@ void RunDeletePacketCallbacks(
     std::list< boost::function < void(boost::shared_ptr<
         maidsafe::DeletePacketData>) > > functors,
     boost::shared_ptr<maidsafe::DeletePacketData> delete_data) {
-  while (functors.size()) {
+  while (!functors.empty()) {
     functors.front()(delete_data);
     functors.pop_front();
   }
@@ -286,7 +286,7 @@ void RunUpdatePacketCallbacks(
     std::list< boost::function < void(boost::shared_ptr<
         maidsafe::UpdatePacketData>) > > functors,
     boost::shared_ptr<maidsafe::UpdatePacketData> update_data) {
-  while (functors.size()) {
+  while (!functors.empty()) {
     functors.front()(update_data);
     functors.pop_front();
   }

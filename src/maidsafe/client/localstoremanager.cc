@@ -169,6 +169,9 @@ int LocalStoreManager::StoreChunk(const std::string &chunk_name,
   catch(const std::exception &e) {
 #ifdef DEBUG
     printf("%s\n", e.what());
+    boost::thread thr(boost::bind(&LocalStoreManager::ExecuteReturnSignal, this,
+                                  chunk_name, kSendChunkFailure));
+    return kChunkStorePending;
 #endif
   }
   // Move chunk from Outgoing to Normal.
@@ -180,7 +183,9 @@ int LocalStoreManager::StoreChunk(const std::string &chunk_name,
     printf("In LocalStoreManager::SendContent, failed to change chunk type.\n");
 #endif
   }
-  return kSuccess;
+  boost::thread thr(boost::bind(&LocalStoreManager::ExecuteReturnSignal, this,
+                                chunk_name, kSuccess));
+  return kChunkStorePending;
 }
 
 int LocalStoreManager::DeleteChunk(const std::string &chunk_name,
@@ -1117,5 +1122,13 @@ void LocalStoreManager::CreateSerialisedSignedValue(const std::string value,
   gp.set_signature(co.AsymSign(value, "", private_key, crypto::STRING_STRING));
   gp.SerializeToString(ser_gp);
 }
+
+void LocalStoreManager::ExecuteReturnSignal(const std::string &chunkname,
+                                            ReturnCode rc) {
+  int sleep_seconds((base::RandomInt32() % 5) + 1);
+  boost::this_thread::sleep(boost::posix_time::seconds(sleep_seconds));
+  sig_chunk_uploaded_(chunkname, rc);
+}
+
 
 }  // namespace maidsafe

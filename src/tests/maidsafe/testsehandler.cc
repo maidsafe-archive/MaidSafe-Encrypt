@@ -89,13 +89,11 @@ class SEHandlerTest : public testing::Test {
  protected:
   SEHandlerTest() : test_root_dir_(file_system::TempDir() /
                         ("maidsafe_TestSEH_" + base::RandomString(6))),
-                    client_chunkstore_(),
-                    cb(),
-                    db_str1_(),
-                    db_str2_(),
-                    ss_(SessionSingleton::getInstance()),
-                    keys_() {}
+                    client_chunkstore_(), cb(), db_str1_(), db_str2_(),
+                    ss_(SessionSingleton::getInstance()), keys_() {}
+
   ~SEHandlerTest() {}
+
   void SetUp() {
     ss_->SetUsername("user1");
     ss_->SetPin("1234");
@@ -114,7 +112,7 @@ class SEHandlerTest : public testing::Test {
       printf("%s\n", e.what());
     }
     client_chunkstore_ = boost::shared_ptr<ChunkStore>(
-        new ChunkStore(test_root_dir_.string(), 0, 0));
+                             new ChunkStore(test_root_dir_.string(), 0, 0));
     ASSERT_TRUE(client_chunkstore_->Init());
     int count(0);
     while (!client_chunkstore_->is_initialised() && count < 10000) {
@@ -136,11 +134,11 @@ class SEHandlerTest : public testing::Test {
     }
     cached_keys::MakeKeys(3, &keys_);
     ss_->AddKey(PMID, "PMID", keys_.at(0).private_key(),
-        keys_.at(0).public_key(), "");
+                keys_.at(0).public_key(), "");
     ss_->AddKey(MAID, "MAID", keys_.at(1).private_key(),
-        keys_.at(1).public_key(), "");
+                keys_.at(1).public_key(), "");
     ss_->AddKey(MPID, "Me", keys_.at(2).private_key(),
-        keys_.at(2).public_key(), "");
+                keys_.at(2).public_key(), "");
     ASSERT_EQ(0, file_system::Mount(ss_->SessionName(), ss_->DefConLevel()));
     boost::scoped_ptr<DataAtlasHandler> dah(new DataAtlasHandler());
     boost::scoped_ptr<SEHandler> seh(new SEHandler());
@@ -159,48 +157,20 @@ class SEHandlerTest : public testing::Test {
       mdm.set_tag("");
       mdm.set_file_size_high(0);
       mdm.set_file_size_low(0);
-      boost::uint32_t current_time = base::GetEpochTime();
-      mdm.set_creation_time(current_time);
+      mdm.set_creation_time(base::GetEpochTime());
       mdm.SerializeToString(&ser_mdm);
       if (kRootSubdir[i][1].empty())
         seh->GenerateUniqueKey(&key);
       else
         key = kRootSubdir[i][1];
       fs::create_directories(file_system::MaidsafeHomeDir(ss_->SessionName()) /
-          kRootSubdir[i][0]);
-      dah->AddElement(TidyPath(kRootSubdir[i][0]),
-          ser_mdm, "", key, true);
+                             kRootSubdir[i][0]);
+      dah->AddElement(TidyPath(kRootSubdir[i][0]), ser_mdm, "", key, true);
     }
-
-// *********************************************
-// Anonymous Shares are disabled at the moment *
-// *********************************************
-//    //set up Anon share subdir
-//    fs::path subdir_(kSharesSubdir[1][0], fs::native);
-//    std::string subdir_name_ = subdir_.filename();
-//    MetaDataMap mdm_;
-//    std::string ser_mdm_, key_;
-//    mdm_.set_id(-2);
-//    mdm_.set_display_name(subdir_name_);
-//    mdm_.set_type(EMPTY_DIRECTORY);
-//    mdm_.set_stats("");
-//    mdm_.set_tag("");
-//    mdm_.set_file_size_high(0);
-//    mdm_.set_file_size_low(0);
-//    boost::uint32_t current_time_ = base::GetEpochTime();
-//    mdm_.set_creation_time(current_time_);
-//    mdm_.SerializeToString(&ser_mdm_);
-//    key_ = kSharesSubdir[1][1];
-//    dah->AddElement(TidyPath(kSharesSubdir[1][0]),
-//      ser_mdm_, "", key_, true);
-//
     dah->GetDbPath(TidyPath(kRootSubdir[0][0]), CREATE, &db_str1_);
-// *********************************************
-// Anonymous Shares are disabled at the moment *
-// *********************************************
-//    dah->GetDbPath(TidyPath(kSharesSubdir[1][0]), CREATE, &db_str2_);
     cb.Reset();
   }
+
   void TearDown() {
     cb.Reset();
     boost::this_thread::sleep(boost::posix_time::seconds(1));
@@ -216,12 +186,14 @@ class SEHandlerTest : public testing::Test {
       printf("%s\n", e.what());
     }
   }
+
   fs::path test_root_dir_;
   boost::shared_ptr<ChunkStore> client_chunkstore_;
   test_seh::FakeCallback cb;
   std::string db_str1_, db_str2_;
   SessionSingleton *ss_;
   std::vector<crypto::RsaKeyPair> keys_;
+
  private:
   SEHandlerTest(const SEHandlerTest&);
   SEHandlerTest &operator=(const SEHandlerTest&);
@@ -244,7 +216,7 @@ TEST_F(SEHandlerTest, BEH_MAID_Check_Entry) {
   fs::path rel_path5 = rel_path / "file5";
   fs::path rel_path6 = rel_path / "Dir";
   fs::path rel_path7 = rel_path6 / "EmptyDir";
-  std::string name_too_long = "";
+  std::string name_too_long;
   for (int i = 0; i < 20; i++)
     name_too_long += "NameTooLong";
   fs::path rel_path8 = rel_path / name_too_long;
@@ -273,33 +245,33 @@ TEST_F(SEHandlerTest, BEH_MAID_Check_Entry) {
   fs::path full_path4(test_seh::CreateRandomFile(rel_str4, size4));
   fs::path full_path5(test_seh::CreateRandomFile(rel_str5, size5));
   fs::path full_path6(file_system::MaidsafeHomeDir(ss_->SessionName()) /
-      rel_str6);
+                      rel_str6);
   fs::path full_path7(file_system::MaidsafeHomeDir(ss_->SessionName()) /
-      rel_str7);
+                      rel_str7);
   fs::create_directories(full_path7);
   fs::path full_path8 = test_seh::CreateRandomFile(rel_str8, size8);
   fs::path full_path9 = test_seh::CreateRandomFile(rel_str9, size9);
   crypto::Crypto co;
   co.set_hash_algorithm(crypto::SHA_512);
   std::string hash1(co.Hash(full_path1.string(), "", crypto::FILE_STRING,
-      false));
+                            false));
   std::string hash2(co.Hash(full_path2.string(), "", crypto::FILE_STRING,
-      false));
+                            false));
   std::string hash3(co.Hash(full_path3.string(), "", crypto::FILE_STRING,
-      false));
+                            false));
   std::string hash6, hash7, hash8;
   std::string hash9(co.Hash(full_path9.string(), "", crypto::FILE_STRING,
-      false));
+                            false));
   fs::path before(full_path9);
   fs::path after(full_path9.parent_path() / base::EncodeToHex(hash9));
   fs::rename(before, after);
   full_path9 = after;
-  boost::uint64_t returned_size1(9), returned_size2(9), returned_size3(9);
-  boost::uint64_t returned_size6(9), returned_size7(9), returned_size8(9);
-  boost::uint64_t returned_size9(9);
-  std::string returned_hash1("A"), returned_hash2("A"), returned_hash3("A");
-  std::string returned_hash6("A"), returned_hash7("A"), returned_hash8("A");
-  std::string returned_hash9("A");
+  boost::uint64_t returned_size1(9), returned_size2(9), returned_size3(9),
+                  returned_size6(9), returned_size7(9), returned_size8(9),
+                  returned_size9(9);
+  std::string returned_hash1("A"), returned_hash2("A"), returned_hash3("A"),
+              returned_hash6("A"), returned_hash7("A"), returned_hash8("A"),
+              returned_hash9("A");
   ASSERT_EQ(EMPTY_FILE,
             seh->CheckEntry(full_path1, &returned_size1, &returned_hash1));
   ASSERT_EQ(size1, returned_size1);

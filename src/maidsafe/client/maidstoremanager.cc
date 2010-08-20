@@ -309,15 +309,17 @@ int MaidsafeStoreManager::StoreChunk(const std::string &chunk_name,
   if (chunk_type & kOutgoing) {
     std::string key_id, public_key, public_key_signature, private_key;
     GetChunkSignatureKeys(dir_type, msid, &key_id, &public_key,
-        &public_key_signature, &private_key);
+                          &public_key_signature, &private_key);
     // Task is added needing kMinChunkCopies to succeed.  This figure is amended
     // after AddToWatchList method ascertains actual number of uploads needed.
     tasks_handler_.AddTask(chunk_name, kStoreChunk, chunk_size, kMinChunkCopies,
                            kMaxStoreFailures);
     // chunk_thread_pool_ handles destruction of add_to_watch_list_task.
-    AddToWatchListTask *add_to_watch_list_task = new AddToWatchListTask(
-        StoreData(chunk_name, chunk_size, chunk_type, dir_type, msid, key_id,
-        public_key, public_key_signature, private_key), this);
+    AddToWatchListTask *add_to_watch_list_task =
+        new AddToWatchListTask(StoreData(chunk_name, chunk_size, chunk_type,
+                                         dir_type, msid, key_id, public_key,
+                                         public_key_signature, private_key),
+                               this);
     chunk_thread_pool_.start(add_to_watch_list_task);
     return kSuccess;
   } else {
@@ -849,13 +851,13 @@ void MaidsafeStoreManager::LoadPacketCallback(const std::string &packet_name,
     if (empty)
       ret_value = kFindValueFailure;
   }
-  if ((ret_value == kSuccess) || (attempt + 1 >= kMaxChunkLoadRetries)) {
-    lpf(values, static_cast<ReturnCode>(ret_value));
-    return;
-  } else {
+  if ((ret_value != kSuccess) && (attempt <= kMaxChunkLoadRetries - 1)) {
     kad_ops_->FindValue(kad::KadId(packet_name), false,
                         boost::bind(&MaidsafeStoreManager::LoadPacketCallback,
                                     this, packet_name, attempt + 1, _1, lpf));
+  } else {
+    lpf(values, static_cast<ReturnCode>(ret_value));
+    return;
   }
 }
 

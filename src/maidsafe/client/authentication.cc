@@ -1380,7 +1380,7 @@ int Authentication::StorePacket(const std::string &packet_name,
   VoidFuncOneInt func = boost::bind(&Authentication::PacketOpCallback, this, _1,
                                     &mutex, &cond_var, &result);
   sm_->StorePacket(packet_name, value, type, PRIVATE_SHARE, msid, if_exists,
-      func);
+                   func);
   {
     boost::mutex::scoped_lock lock(mutex);
     while (result == kGeneralError)

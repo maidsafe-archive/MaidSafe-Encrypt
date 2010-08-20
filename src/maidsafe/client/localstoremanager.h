@@ -127,8 +127,6 @@ class LocalStoreManager : public StoreManagerInterface {
   void SetSessionEndPoint() {}
   void SetInstantMessageNotifier(IMNotifier, IMStatusNotifier) {}
 
-//  void ResetSessionSingleton(SessionSingleton *) {};
-
  private:
   LocalStoreManager &operator=(const LocalStoreManager&);
   LocalStoreManager(const LocalStoreManager&);
@@ -164,6 +162,8 @@ class LocalStoreManager : public StoreManagerInterface {
                                    const PacketType &pt,
                                    const std::string &msid,
                                    std::string *ser_gp);
+  void ExecuteReturnSignal(const std::string &chunkname, ReturnCode rc);
+
 
   boost::uint8_t K_;
   boost::uint16_t upper_threshold_;
