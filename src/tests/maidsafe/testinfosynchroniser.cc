@@ -77,9 +77,11 @@ TEST_F(InfoSynchroniserTest, BEH_VAULT_InfoSyncShouldFetch) {
                             false);
   ASSERT_EQ(0, routing_table_->GetClosestContacts(id, 0, &nodes));
   ASSERT_GE(nodes.size(), kMinRoutingTableSize_);
-  // Get a key which doesn't include test node's ID in test_info_sync::K closest node
+  // Get a key which doesn't include test node's ID in test_info_sync::K closest
+  // node
   while (true) {
-    ASSERT_EQ(0, routing_table_->GetClosestContacts(id, test_info_sync::K, &nodes));
+    ASSERT_EQ(0, routing_table_->GetClosestContacts(id, test_info_sync::K,
+                                                    &nodes));
     ASSERT_EQ(test_info_sync::K, nodes.size());
     kad::Contact this_test_contact(pmid_, "", 0);
     std::vector<kad::Contact> closest_nodes;

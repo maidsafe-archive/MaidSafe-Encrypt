@@ -31,10 +31,7 @@ namespace test {
 
 class CallbackObject {
  public:
-   CallbackObject() : result_(),
-                      return_code_(kPendingResult),
-                      mutex_(),
-                      cv_() {}
+  CallbackObject() : result_(), return_code_(kPendingResult), mutex_(), cv_() {}
   void StringCallback(const std::string &result) {
     boost::mutex::scoped_lock lock(mutex_);
     result_ = result;

@@ -402,12 +402,14 @@ TEST_F(AccountHoldersManagerTest, BEH_MAID_AHM_ReportFailure) {
 
   // Call with ID of node not in AccountHolderGroup
   ASSERT_TRUE(account_holders_manager_.failed_ids_.empty());
-  ASSERT_NE(test_ahm::K, account_holders_manager_.account_holder_group().size());
+  ASSERT_NE(test_ahm::K,
+            account_holders_manager_.account_holder_group().size());
   std::string non_entry(co_.Hash(base::RandomString(100), "",
                                  crypto::STRING_STRING, false));
   account_holders_manager_.ReportFailure(non_entry);
   ASSERT_TRUE(account_holders_manager_.failed_ids_.empty());
-  ASSERT_NE(test_ahm::K, account_holders_manager_.account_holder_group().size());
+  ASSERT_NE(test_ahm::K,
+            account_holders_manager_.account_holder_group().size());
 
   // Call with good ID, but while already updating
   account_holders_manager_.update_in_progress_ = true;
@@ -415,7 +417,8 @@ TEST_F(AccountHoldersManagerTest, BEH_MAID_AHM_ReportFailure) {
       at(base::RandomUint32() % test_ahm::K).node_id().String();
   account_holders_manager_.ReportFailure(good_id);
   ASSERT_TRUE(account_holders_manager_.failed_ids_.empty());
-  ASSERT_NE(test_ahm::K, account_holders_manager_.account_holder_group().size());
+  ASSERT_NE(test_ahm::K,
+            account_holders_manager_.account_holder_group().size());
   account_holders_manager_.update_in_progress_ = false;
 
   // Call with kMaxFailedNodes_ single good IDs
@@ -429,14 +432,16 @@ TEST_F(AccountHoldersManagerTest, BEH_MAID_AHM_ReportFailure) {
       ASSERT_TRUE(account_holders_manager_.failed_ids_.empty());
   }
   ASSERT_EQ(good_pmids_.size(), test_ahm::K);
-  ASSERT_EQ(test_ahm::K, account_holders_manager_.account_holder_group().size());
+  ASSERT_EQ(test_ahm::K,
+            account_holders_manager_.account_holder_group().size());
 
   // Call kMaxFailsPerNode_ times with a good ID
   std::string name = co_.Hash(base::RandomString(100), "",
                               crypto::STRING_STRING, false);
   kad::Contact node(name, "192.168.1.1", 6050);
   account_holders_manager_.account_holder_group_.push_back(node);
-  ASSERT_NE(test_ahm::K, account_holders_manager_.account_holder_group().size());
+  ASSERT_NE(test_ahm::K,
+            account_holders_manager_.account_holder_group().size());
   good_id = account_holders_manager_.account_holder_group_.
             at(base::RandomUint32() % test_ahm::K).node_id().String();
   for (boost::uint16_t i = 0; i != account_holders_manager_.kMaxFailsPerNode_;
@@ -447,7 +452,8 @@ TEST_F(AccountHoldersManagerTest, BEH_MAID_AHM_ReportFailure) {
     else
       ASSERT_TRUE(account_holders_manager_.failed_ids_.empty());
   }
-  ASSERT_EQ(test_ahm::K, account_holders_manager_.account_holder_group().size());
+  ASSERT_EQ(test_ahm::K,
+            account_holders_manager_.account_holder_group().size());
 }
 
 }  // namespace maidsafe

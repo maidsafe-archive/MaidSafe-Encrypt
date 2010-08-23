@@ -34,6 +34,15 @@ class AccountStatusManagerTest : public testing::Test {
 };
 
 TEST_F(AccountStatusManagerTest, BEH_MAID_ASM_Init) {
+  EXPECT_EQ(0, ahm_.space_offered_);
+  EXPECT_EQ(0, ahm_.space_given_);
+  EXPECT_EQ(0, ahm_.space_taken_);
+  EXPECT_EQ(0, ahm_.space_reserved_);
+  EXPECT_TRUE(ahm_.reserved_values_.empty());
+  EXPECT_TRUE(ahm_.update_functor_.empty());
+  bool result = boost::thread::id() == ahm_.worker_thread_.get_id();
+  EXPECT_TRUE(result);
+  EXPECT_FALSE(ahm_.awaiting_update_result_);
   EXPECT_TRUE(ahm_.AbleToStore(0));
   EXPECT_FALSE(ahm_.AbleToStore(123));
   ASSERT_EQ(0, ahm_.amendments_since_update_);

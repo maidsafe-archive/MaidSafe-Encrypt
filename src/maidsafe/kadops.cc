@@ -243,7 +243,7 @@ void KadOps::StoreValue(const std::string &key,
 void KadOps::DeleteValue(const std::string &key,
                          const kad::SignedValue &signed_value,
                          const kad::SignedRequest &signed_request,
-                         kad::VoidFunctorOneString callback){
+                         kad::VoidFunctorOneString callback) {
   kad::KadId kad_id;
   if (!GetKadId(key, &kad_id)) {
     callback(kad::kRpcResultFailure);

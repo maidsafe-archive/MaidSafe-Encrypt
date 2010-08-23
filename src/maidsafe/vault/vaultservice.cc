@@ -230,7 +230,7 @@ void VaultService::StorePrep(google::protobuf::RpcController*,
                              google::protobuf::Closure *done) {
 
                 printf("In VaultService::StorePrep (%s)\n", HexSubstr(pmid_).c_str());
-  
+
   maidsafe::StoreContract *response_sc = response->mutable_store_contract();
   response_sc->set_pmid(pmid_);
   response_sc->set_public_key(pmid_public_);
@@ -1184,7 +1184,7 @@ void VaultService::AccountStatus(google::protobuf::RpcController*,
 
     // return list of amendment results
     aah_.FetchAmendmentResults(account_pmid, response);
-    
+
     response->set_result(kAck);
     done->Run();
   }

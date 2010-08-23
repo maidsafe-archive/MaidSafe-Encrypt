@@ -251,7 +251,7 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_AssessAmendment) {
   ASSERT_TRUE(found);
   // Set Chunk Info holders so that kKadStoreThreshold - 2 have responded
   ASSERT_LE(size_t(test_aah::lower_threshold), good_pmids_.size() - 3);
-  for (size_t i = 0; i < static_cast<size_t>(test_aah::upper_threshold - 1); ++i)
+  for (boost::uint8_t i = 0; i < test_aah::upper_threshold - 1; ++i)
     test_amendment.chunk_info_holders.insert(std::pair<std::string, bool>
         (good_pmids_.at(i), true));
   for (size_t i = static_cast<size_t>(test_aah::upper_threshold - 1);
@@ -462,7 +462,7 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_FetchAmendmentResults) {
   google::protobuf::Closure *done = google::protobuf::NewCallback(&cbh,
       &test_aah::CallbacksHolder::callback);
   PendingAmending pending(&request, &response, done);
-  
+
   // Sleep to let timestamps differ.
   boost::this_thread::sleep(boost::posix_time::milliseconds(2));
 
@@ -625,9 +625,9 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_CreateNewAmendment) {
     ASSERT_FALSE((*cih_it).second);
   }
 
-  // Call 5 - FindNodes response good.  Send test_aah::K AmendmentRequests, but with
-  // mis-matching PMIDs so handler doesn't call back with responses (waiting for
-  // further requests from each)
+  // Call 5 - FindNodes response good.  Send test_aah::K AmendmentRequests, but
+  // with mis-matching PMIDs so handler doesn't call back with responses
+  // (waiting for further requests from each)
   ++test_run;
 //  printf("Run %i\n", test_run);
   // Force further test_aah::K probable_pendings into test_amendment
@@ -814,7 +814,8 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_CreateNewWithExpecteds) {
   // Sleep to ensure previous expectation timestamp < this one
   boost::this_thread::sleep(boost::posix_time::milliseconds(2));
   // Some good pmids, but not enough
-  for (boost::uint16_t i = 0; i < test_aah::K - test_aah::upper_threshold + 1; ++i) {
+  for (boost::uint16_t i = 0; i < test_aah::K - test_aah::upper_threshold + 1;
+       ++i) {
     std::string *bad_pmid = expect_amendment_request.mutable_amender_pmids(i);
     *bad_pmid = crypto_.Hash(
         base::RandomString(100), "", crypto::STRING_STRING, false);

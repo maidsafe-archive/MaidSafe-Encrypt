@@ -31,6 +31,9 @@
 #include <maidsafe/transport/transporthandler-api.h>
 #include <maidsafe/transport/transportudt.h>
 
+#include <string>
+#include <vector>
+
 #ifdef MS_NETWORK_TEST
 
 #include "maidsafe/client/maidstoremanager.h"

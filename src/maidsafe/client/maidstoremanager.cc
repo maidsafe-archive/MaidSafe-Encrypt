@@ -246,7 +246,7 @@ int MaidsafeStoreManager::StoreChunk(const std::string &chunk_name,
 #endif
     return kStoreChunkError;
   }
-  
+
   if (chunk_type & kOutgoing) {
     std::string key_id, public_key, public_key_signature, private_key;
     PdUtils pd_utils;
@@ -260,7 +260,7 @@ int MaidsafeStoreManager::StoreChunk(const std::string &chunk_name,
         reserved_space));
     // Add master task for AddToWatchList. Success depends on success of the
     // RPCs and the delayed confirmations from the account holders.
-    // TODO handle confirmations
+    // TODO(Fraser#5#): 23/08/10 - Handle confirmations
     tasks_handler_.AddChildTask(kWatchListMasterTaskPrefix + chunk_name,
                                 chunk_name, kStoreChunk, 1,  // 2,
                                 kMaxAddToWatchListFailures,
@@ -521,7 +521,7 @@ int MaidsafeStoreManager::LoadChunk(const std::string &chunk_name,
   // cancel all outstanding RPCs
   std::list< boost::shared_ptr<rpcprotocol::Controller> >::iterator
       controllers_it = opdata->controllers.begin();
-  while(!opdata->controllers.empty()) {
+  while (!opdata->controllers.empty()) {
     channel_manager_.CancelPendingRequest((*controllers_it)->request_id());
     controllers_it = opdata->controllers.erase(controllers_it);
   }
@@ -960,7 +960,7 @@ int MaidsafeStoreManager::DeleteChunk(const std::string &chunk_name,
       return kDeleteSizeError;
     }
   }
-  
+
   ChunkType new_type(chunk_type);
   if (chunk_type >= 0) {
     // Move chunk to TempCache.
@@ -978,7 +978,7 @@ int MaidsafeStoreManager::DeleteChunk(const std::string &chunk_name,
   #endif
     }
   }
-  
+
   std::string key_id, public_key, public_key_signature, private_key;
   PdUtils pd_utils;
   pd_utils.GetChunkSignatureKeys(dir_type, msid, &key_id, &public_key,
@@ -1928,7 +1928,7 @@ void MaidsafeStoreManager::AddToWatchListStageFour(
             static_cast<ReturnCode>(task_res));
         return;
       }
-      
+
       for (int i = 0; i < data->consensus_upload_copies; ++i)
         StoreChunkCopy(data->store_data);
     }
@@ -2338,7 +2338,9 @@ void MaidsafeStoreManager::DoStorePrep(
     return;
   }
 
-  printf("--- %d before sending prep for %s to %s ---\n", kad_ops_->Port(), HexSubstr(send_chunk_data->store_data->data_name).c_str(), HexSubstr(send_chunk_data->peer.node_id().String()).c_str());
+  printf("--- %d before sending prep for %s to %s ---\n", kad_ops_->Port(),
+         HexSubstr(send_chunk_data->store_data->data_name).c_str(),
+         HexSubstr(send_chunk_data->peer.node_id().String()).c_str());
 
   // Send prep
   google::protobuf::Closure* callback = google::protobuf::NewCallback(this,
@@ -2517,14 +2519,14 @@ void MaidsafeStoreManager::StoreChunkCallback(
 #endif
     result = kSendContentFailure;
   }
-  
+
   if (result != kSuccess) {
     tasks_handler_.NotifyTaskFailure(
         kChunkCopyDataTaskPrefix + send_chunk_data->task_sub_name,
         static_cast<ReturnCode>(result));
     return;
   }
-  
+
   std::string chunkname = send_chunk_data->store_data->data_name;
 #ifdef DEBUG
   printf("In MSM::StoreChunkCallback (%d), successfully stored copy of %s.\n",
@@ -2601,7 +2603,7 @@ int MaidsafeStoreManager::RemoveFromWatchList(
 #endif
     return kGeneralError;
   }
-  
+
   // Find the Chunk Info holders
   boost::shared_ptr<WatchListOpData> data(new WatchListOpData(store_data));
   kad_ops_->FindKClosestNodes(store_data->data_name,
@@ -2773,7 +2775,7 @@ void MaidsafeStoreManager::RemoveFromWatchListStageThree(
       &remove_from_watch_list_requests) != kSuccess) {
 #ifdef DEBUG
     printf("In MSM::RemoveFromWatchListStageThree (%d), failed to generate "
-           "requests.\n",kad_ops_->Port());
+           "requests.\n", kad_ops_->Port());
 #endif
     tasks_handler_.NotifyTaskFailure(
         kWatchListTaskPrefix + data->store_data->data_name, kDeleteChunkError);

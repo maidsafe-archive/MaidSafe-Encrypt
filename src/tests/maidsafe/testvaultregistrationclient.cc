@@ -131,7 +131,7 @@ class MsmSetLocalVaultOwnedTest : public testing::Test {
             &test_vault_reg::ResultHandler::IsOwnCallback,
             &resulthandler_, _1)) {}
   ~MsmSetLocalVaultOwnedTest() {
-    transport::TransportUDT::CleanUp(); 
+    transport::TransportUDT::CleanUp();
   }
   void SetUp() {
     try {

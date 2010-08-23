@@ -1170,8 +1170,9 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesAddToWatchList) {
   delete vault_service_;
   vault_service_ = new VaultService(
       vault_pmid_, vault_public_key_, vault_private_key_,
-      vault_public_key_signature_, vault_chunkstore_, &mock_vault_service_logic_,
-      udt_transport_.transport_id(), boost::shared_ptr<maidsafe::KadOps>(
+      vault_public_key_signature_, vault_chunkstore_,
+      &mock_vault_service_logic_, udt_transport_.transport_id(),
+      boost::shared_ptr<maidsafe::KadOps>(
           new maidsafe::MockKadOps(NULL, NULL, kad::VAULT, "", "", false,
           false, test_vault_service::K,
           boost::shared_ptr<maidsafe::ChunkStore>())));
@@ -1388,8 +1389,9 @@ TEST_F(MockVaultServicesTest, FUNC_MAID_ServicesRemoveFromWatchList) {
   delete vault_service_;
   vault_service_ = new VaultService(
       vault_pmid_, vault_public_key_, vault_private_key_,
-      vault_public_key_signature_, vault_chunkstore_, &mock_vault_service_logic_,
-      udt_transport_.transport_id(), boost::shared_ptr<maidsafe::KadOps>(
+      vault_public_key_signature_, vault_chunkstore_,
+      &mock_vault_service_logic_, udt_transport_.transport_id(),
+      boost::shared_ptr<maidsafe::KadOps>(
           new maidsafe::MockKadOps(NULL, NULL, kad::VAULT, "", "", false,
           false, test_vault_service::K,
           boost::shared_ptr<maidsafe::ChunkStore>())));
@@ -1629,8 +1631,9 @@ TEST_F(MockVaultServicesTest, BEH_MAID_ServicesAddToReferenceList) {
   delete vault_service_;
   vault_service_ = new VaultService(
       vault_pmid_, vault_public_key_, vault_private_key_,
-      vault_public_key_signature_, vault_chunkstore_, &mock_vault_service_logic_,
-      udt_transport_.transport_id(), boost::shared_ptr<maidsafe::KadOps>(
+      vault_public_key_signature_, vault_chunkstore_,
+      &mock_vault_service_logic_, udt_transport_.transport_id(),
+      boost::shared_ptr<maidsafe::KadOps>(
           new maidsafe::MockKadOps(NULL, NULL, kad::VAULT, "", "", false,
           false, test_vault_service::K,
           boost::shared_ptr<maidsafe::ChunkStore>())));

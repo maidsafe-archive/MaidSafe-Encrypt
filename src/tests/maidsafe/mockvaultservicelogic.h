@@ -73,7 +73,7 @@ class KGroup {
     }
     std::string pmid, pmid_private, pmid_public, pmid_public_signature;
   };
-  KGroup(const boost::uint8_t k)
+  explicit KGroup(const boost::uint8_t k)
       : co_(), members_(), serialised_find_nodes_response_() {
     co_.set_symm_algorithm(crypto::AES_256);
     co_.set_hash_algorithm(crypto::SHA_512);
@@ -191,7 +191,7 @@ class MockVsl : public VaultServiceLogic {
 
 class MockVaultServiceLogicTest : public testing::Test {
  protected:
-  MockVaultServiceLogicTest(const boost::uint8_t k)
+  explicit MockVaultServiceLogicTest(const boost::uint8_t k)
       : pmid_(),
         pmid_private_(),
         pmid_public_(),

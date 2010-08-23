@@ -313,7 +313,8 @@ class PDVaultTest : public testing::Test {
       // pdvaults_[vlt]->Stop();
       fs::path dir(pdvaults_[vlt]->vault_chunkstore_->ChunkStoreDir());
       boost::uint64_t used(pdvaults_[vlt]->vault_chunkstore_->used_space());
-      boost::uint64_t avlb(pdvaults_[vlt]->vault_chunkstore_->available_space());
+      boost::uint64_t avlb(
+          pdvaults_[vlt]->vault_chunkstore_->available_space());
       fs::path kad_cfg(pdvaults_[vlt]->kad_config_file_);
       pdvaults_[vlt].reset(new PDVault(clients_[i]->pmid_pub_key,
                                        clients_[i]->pmid_priv_key,

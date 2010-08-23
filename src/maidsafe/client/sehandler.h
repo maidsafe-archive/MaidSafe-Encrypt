@@ -31,6 +31,7 @@
 
 #include <map>
 #include <string>
+#include <vector>
 
 #include "protobuf/datamaps.pb.h"
 #include "maidsafe/client/sessionsingleton.h"

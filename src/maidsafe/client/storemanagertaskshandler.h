@@ -60,8 +60,7 @@ enum StoreManagerTaskStatus {
 
 struct StoreManagerTask {
   StoreManagerTask()
-    : // task_name_(),
-      parent_name(),
+    : parent_name(),
       type(kStoreChunk),
       status(kTaskActive),
       timestamp(0),
@@ -71,14 +70,12 @@ struct StoreManagerTask {
       failures_count(0),
       child_task_count(0),
       callback() {}
-  StoreManagerTask(// const std::string &task_name,
-                   const std::string &parent_name_,
+  StoreManagerTask(const std::string &parent_name_,
                    const StoreManagerTaskType &type_,
                    boost::uint8_t successes_required_,
                    boost::uint8_t max_failures_,
                    VoidFuncOneInt callback_)
-    : // task_name_(task_name),
-      parent_name(parent_name_),
+    : parent_name(parent_name_),
       type(type_),
       status(kTaskActive),
       timestamp(base::GetEpochTime()),
@@ -88,7 +85,6 @@ struct StoreManagerTask {
       failures_count(0),
       child_task_count(0),
       callback(callback_) {}
-  // std::string task_name_;  // unique identifier for the task
   std::string parent_name;  // name of parent task, or empty if root
   StoreManagerTaskType type;
   StoreManagerTaskStatus status;

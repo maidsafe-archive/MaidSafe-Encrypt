@@ -227,7 +227,7 @@ int StoreManagerTasksHandler::NotifyStateChange(
       }
     }
   }
-  
+
   if (task.callback) {
     mutex_.unlock();
     task.callback(reason);

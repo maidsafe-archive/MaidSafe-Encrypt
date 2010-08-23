@@ -84,16 +84,16 @@ TEST_F(MSMTasksHandlerTest, BEH_MAID_StoreTaskCount) {
 
 TEST_F(MSMTasksHandlerTest, BEH_MAID_StoreTaskAddWithoutCallback) {
   EXPECT_EQ(size_t(0), tasks_handler_.TasksCount());
-  
+
   // Add valid task
   EXPECT_EQ(kSuccess, tasks_handler_.AddTask("aaa", kStoreChunk, 1, 0));
-  
+
   // Try to add tasks with invalid parameters
   EXPECT_EQ(kStoreManagerTaskIncorrectParameter,
             tasks_handler_.AddTask("", kStoreChunk, 1, 0));
   EXPECT_EQ(kStoreManagerTaskIncorrectParameter,
             tasks_handler_.AddTask("bbb", kStoreChunk, 0, 0));
-            
+
   // Try to add repeated task
   EXPECT_EQ(kStoreManagerTaskAlreadyExists,
             tasks_handler_.AddTask("aaa", kStoreChunk, 1, 0));
@@ -108,7 +108,7 @@ TEST_F(MSMTasksHandlerTest, BEH_MAID_StoreTaskAddWithoutCallback) {
   // Replace existing store task with delete task
   EXPECT_EQ(kSuccess, tasks_handler_.AddTask("ccc", kDeleteChunk, 1, 0));
   EXPECT_EQ(size_t(2), tasks_handler_.TasksCount());
-  
+
   // Add several valid and invalid tasks on threads
   const size_t kValidCount(370);
   const size_t kValidCountCb(220);
@@ -191,7 +191,7 @@ TEST_F(MSMTasksHandlerTest, BEH_MAID_StoreTaskHierarchy) {
                                           base::IntToString(i - 1),
                                           kStoreChunk, 1, 0));
   }
-  
+
   EXPECT_EQ(size_t(101), tasks_handler_.TasksCount());
   StoreManagerTaskStatus task_status;
   EXPECT_TRUE(tasks_handler_.HasTask("root", NULL, &task_status));
@@ -205,7 +205,7 @@ TEST_F(MSMTasksHandlerTest, BEH_MAID_StoreTaskHierarchy) {
             tasks_handler_.NotifyTaskSuccess("23"));
   EXPECT_EQ(kStoreManagerTaskIncorrectOperation,
             tasks_handler_.NotifyTaskSuccess("98"));
-  EXPECT_EQ(kSuccess,tasks_handler_.NotifyTaskSuccess("99"));
+  EXPECT_EQ(kSuccess, tasks_handler_.NotifyTaskSuccess("99"));
 
   EXPECT_TRUE(tasks_handler_.HasTask("root", NULL, &task_status));
   EXPECT_EQ(kTaskSucceeded, task_status);
@@ -269,14 +269,14 @@ TEST_F(MSMTasksHandlerTest, BEH_MAID_StoreTaskCallbacks) {
   EXPECT_EQ(kTaskActive, task_status);
 
   // success for child_1_1_1, child_1 then will need 1 more
-  EXPECT_EQ(kSuccess,tasks_handler_.NotifyTaskSuccess("child_1_1_1"));
+  EXPECT_EQ(kSuccess, tasks_handler_.NotifyTaskSuccess("child_1_1_1"));
 
   EXPECT_TRUE(tasks_handler_.HasTask("child_1", NULL, &task_status));
   EXPECT_EQ(kTaskActive, task_status);
   EXPECT_EQ(2, counter);
 
   // failure for child_1_2_1, child_1 will fail, root needs one success
-  EXPECT_EQ(kSuccess,tasks_handler_.NotifyTaskFailure("child_1_2_1",
+  EXPECT_EQ(kSuccess, tasks_handler_.NotifyTaskFailure("child_1_2_1",
                                                       kGeneralError));
 
   EXPECT_TRUE(tasks_handler_.HasTask("child_1", NULL, &task_status));
@@ -286,7 +286,7 @@ TEST_F(MSMTasksHandlerTest, BEH_MAID_StoreTaskCallbacks) {
   EXPECT_EQ(5, counter);
 
   // success for child_2_1, results in success for root
-  EXPECT_EQ(kSuccess,tasks_handler_.NotifyTaskSuccess("child_2_1"));
+  EXPECT_EQ(kSuccess, tasks_handler_.NotifyTaskSuccess("child_2_1"));
 
   EXPECT_TRUE(tasks_handler_.HasTask("child_2", NULL, &task_status));
   EXPECT_EQ(kTaskSucceeded, task_status);
@@ -330,7 +330,7 @@ TEST_F(MSMTasksHandlerTest, BEH_MAID_StoreTaskCancelTasks) {
 
   EXPECT_EQ(kStoreManagerTaskNotFound,
             tasks_handler_.CancelTask("abc", kSuccess));
-            
+
   tasks_handler_.CancelAllPendingTasks(kGeneralError);
 
   EXPECT_TRUE(tasks_handler_.HasTask("123", NULL, &task_status));

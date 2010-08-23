@@ -541,19 +541,19 @@ class VaultDaemonRegistrationTest : public testing::Test {
       printf("In Test: %s\n", e.what());
       FAIL();
     }
-    // Make .kadconfig in new Owned dir to avoid overwriting default .kadconfig
-    //fs::path new_kadconfig(test_dir_ / "Owned/.kadconfig");
-    //try {
-    //  fs::create_directories(test_dir_ / "Owned");
-    //  std::fstream output(new_kadconfig.string().c_str(),
-    //      std::ios::out | std::ios::trunc | std::ios::binary);
-    //  output.close();
-    //  ASSERT_TRUE(fs::exists(new_kadconfig));
-    //}
-    //catch(const std::exception &e) {
-    //  printf("In StartVaultDaemon: %s\n", e.what());
-    //  FAIL();
-    //}
+//     Make .kadconfig in new Owned dir to avoid overwriting default .kadconfig
+//    fs::path new_kadconfig(test_dir_ / "Owned/.kadconfig");
+//    try {
+//      fs::create_directories(test_dir_ / "Owned");
+//      std::fstream output(new_kadconfig.string().c_str(),
+//          std::ios::out | std::ios::trunc | std::ios::binary);
+//      output.close();
+//      ASSERT_TRUE(fs::exists(new_kadconfig));
+//    }
+//    catch(const std::exception &e) {
+//      printf("In StartVaultDaemon: %s\n", e.what());
+//      FAIL();
+//    }
     thrd_ = boost::thread(&VaultDaemonRegistrationTest::StartVaultDaemon, this);
   }
   void TearDown() {

@@ -1034,7 +1034,8 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AssessUploadCounts) {
 
   // Only 4 return, all return 2.  Consensus should be 2.
   ++test_run;  // 6
-  add_to_watchlist_data->returned_count = test_msm::K - test_msm::lower_threshold;
+  add_to_watchlist_data->returned_count =
+      test_msm::K - test_msm::lower_threshold;
   add_to_watchlist_data->required_upload_copies.clear();
   add_to_watchlist_data->consensus_upload_copies = -1;
   for (int i = 0; i < test_msm::lower_threshold; ++i) {
@@ -1054,7 +1055,8 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AssessUploadCounts) {
 
   // Only 4 return, one returns 2, rest return 1.  Consensus should be 0.
   ++test_run;  // 7
-  add_to_watchlist_data->returned_count = test_msm::K - test_msm::lower_threshold;
+  add_to_watchlist_data->returned_count =
+      test_msm::K - test_msm::lower_threshold;
   add_to_watchlist_data->required_upload_copies.clear();
   add_to_watchlist_data->consensus_upload_copies = -1;
   for (int i = 0; i < test_msm::lower_threshold; ++i) {
@@ -1081,7 +1083,8 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AssessUploadCounts) {
 
   // Only 3 return, all return 2.  Consensus should be 0.
   ++test_run;  // 8
-  add_to_watchlist_data->returned_count = test_msm::K - test_msm::lower_threshold + 1;
+  add_to_watchlist_data->returned_count =
+      test_msm::K - test_msm::lower_threshold + 1;
   add_to_watchlist_data->required_upload_copies.clear();
   add_to_watchlist_data->consensus_upload_copies = -1;
   for (int i = 0; i < test_msm::lower_threshold - 1; ++i) {
@@ -1433,7 +1436,8 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_ValidatePrepResp) {
                                    const StoreTaskType &task_type));
 }; */
 
-TEST_F(MaidStoreManagerTest, DISABLED_BEH_MAID_MSM_SendChunkPrep) { /*
+TEST_F(MaidStoreManagerTest, DISABLED_BEH_MAID_MSM_SendChunkPrep) {
+  /*
   MockMsmSendChunkPrep msm(client_chunkstore_);
   boost::shared_ptr<MockKadOps> mko(new MockKadOps(&msm.transport_handler_,
       &msm.channel_manager_, kad::CLIENT, "", "", false, false, test_msm::K,
@@ -1526,7 +1530,8 @@ TEST_F(MaidStoreManagerTest, DISABLED_BEH_MAID_MSM_SendChunkPrep) { /*
       boost::shared_ptr<SendChunkData> send_chunk_data));
 }; */
 
-TEST_F(MaidStoreManagerTest, DISABLED_BEH_MAID_MSM_SendPrepCallback) { /*
+TEST_F(MaidStoreManagerTest, DISABLED_BEH_MAID_MSM_SendPrepCallback) {
+  /*
   // Set up test data
   MockMsmSendPrepCallback msm(client_chunkstore_);
   boost::shared_ptr<MockClientRpcs> mock_rpcs(
@@ -1623,7 +1628,8 @@ TEST_F(MaidStoreManagerTest, DISABLED_BEH_MAID_MSM_SendPrepCallback) { /*
   ASSERT_EQ(size_t(0), msm.tasks_handler_.TasksCount());
 */ }
 
-TEST_F(MaidStoreManagerTest, DISABLED_BEH_MAID_MSM_SendChunkContent) { /*
+TEST_F(MaidStoreManagerTest, DISABLED_BEH_MAID_MSM_SendChunkContent) {
+  /*
   MaidsafeStoreManager msm(client_chunkstore_, test_msm::K);
   boost::shared_ptr<MockClientRpcs> mock_rpcs(
       new MockClientRpcs(&msm.transport_handler_, &msm.channel_manager_));
@@ -1749,7 +1755,8 @@ TEST_F(MaidStoreManagerTest, DISABLED_BEH_MAID_MSM_SendChunkContent) { /*
 TEST_F(MaidStoreManagerTest, DISABLED_BEH_MAID_MSM_LoadChunk) {
 }
 
-TEST_F(MaidStoreManagerTest, DISABLED_BEH_MAID_MSM_RemoveFromWatchList) { /*
+TEST_F(MaidStoreManagerTest, DISABLED_BEH_MAID_MSM_RemoveFromWatchList) {
+  /*
   MockMsmKeyUnique msm(client_chunkstore_);
   boost::shared_ptr<MockClientRpcs> mock_rpcs(
       new MockClientRpcs(&msm.transport_handler_, &msm.channel_manager_));
@@ -2771,7 +2778,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_UpdateAccountStatus) {
   EXPECT_EQ(static_cast<boost::uint64_t>(11), space_offered);
   EXPECT_EQ(static_cast<boost::uint64_t>(22), space_given);
   EXPECT_EQ(static_cast<boost::uint64_t>(33), space_taken);
-  
+
   ASSERT_TRUE(SessionSingleton::getInstance()->SetConnectionStatus(0));
   msm.account_holders_manager_.account_holder_group_.clear();
 

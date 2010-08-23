@@ -205,7 +205,7 @@ int UnMount(const std::string &session_name,
       bool success2(RemoveDir(ms_home_dir, kMaxRemoveDirAttempts));
       return (success1 && success2) ?  maidsafe::kSuccess :
           maidsafe::kFileSystemUnmountError;
-    }    
+    }
     case maidsafe::kDefCon3:
       return RemoveDir(ms_dir, kMaxRemoveDirAttempts) ?  maidsafe::kSuccess :
           maidsafe::kFileSystemUnmountError;
