@@ -27,6 +27,7 @@
 
 #include <boost/thread/condition_variable.hpp>
 #include <boost/thread/locks.hpp>
+#include <boost/thread/thread.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <gtest/gtest_prod.h>
 #include <maidsafe/base/crypto.h>
@@ -373,9 +374,11 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   bool GetChunkReferences(const std::string &chunk_name,
                           const std::vector<kad::Contact> &chunk_info_holders,
                           std::vector<std::string> *references);
-  void UpdateAccountStatus(const bool &force = false);
+  void UpdateAccountStatus();
   void UpdateAccountStatusStageTwo(size_t index,
                                    boost::shared_ptr<AccountStatusData> data);
+  void NotifyTaskHandlerOfAccountAmendments(
+      const AccountStatusResponse &account_status_response);
   // Calculates the mean of only the values within sqrt(2) std devs from mean
   // TODO(Team#) move to central place for global usage?
   static void GetFilteredAverage(const std::vector<boost::uint64_t> &values,
@@ -418,7 +421,8 @@ class MaidsafeStoreManager : public StoreManagerInterface {
                            std::string *request_signature);
   // Called on completion of the StoreChunk root task
   void StoreChunkTaskCallback(const ReturnCode &result,
-                              const std::string &chunk_name);
+                              const std::string &chunk_name,
+                              const boost::uint64_t &reserved_space);
   // Called on completion of the DeleteChunk root task
   void DeleteChunkTaskCallback(const ReturnCode &result,
                                const std::string &chunk_name);

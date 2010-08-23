@@ -143,6 +143,8 @@ void MaidsafeStoreManager::Init(VoidFuncOneInt callback,
 #ifdef DEBUG
     printf("\tIn MSM::Init, after Join.  On port %u\n", kad_ops_->Port());
 #endif
+    account_status_manager_.StartUpdating(boost::bind(
+        &MaidsafeStoreManager::UpdateAccountStatus, this));
   }
   callback(result);
 }
@@ -161,6 +163,7 @@ void MaidsafeStoreManager::Close(VoidFuncOneInt callback,
   packet_thread_pool_.waitForDone();
   printf("\tIn MaidsafeStoreManager::Close, packet_thread_pool_ done.\n");
   im_conn_hdler_.Stop();
+  account_status_manager_.StopUpdating();
   kad_ops_->Leave();
 #ifdef DEBUG
 //  printf("\tIn MaidsafeStoreManager::Close, after Leave. "
@@ -251,8 +254,10 @@ int MaidsafeStoreManager::StoreChunk(const std::string &chunk_name,
         &public_key_signature, &private_key);
     // Add root task for this chunk to the handler. Success depends on the child
     // tasks for AddToWatchList and StorePrep/StoreChunk.
+    boost::uint64_t reserved_space = kMinChunkCopies * chunk_size;
     tasks_handler_.AddTask(chunk_name, kStoreChunk, 2, 0, boost::bind(
-        &MaidsafeStoreManager::StoreChunkTaskCallback, this, _1, chunk_name));
+        &MaidsafeStoreManager::StoreChunkTaskCallback, this, _1, chunk_name,
+        reserved_space));
     // Add master task for AddToWatchList. Success depends on success of the
     // RPCs and the delayed confirmations from the account holders.
     // TODO handle confirmations
@@ -266,6 +271,7 @@ int MaidsafeStoreManager::StoreChunk(const std::string &chunk_name,
     boost::shared_ptr<StoreData> store_data(new StoreData(
         chunk_name, chunk_size, chunk_type, dir_type, msid, key_id, public_key,
         public_key_signature, private_key));
+    account_status_manager_.ReserveSpace(reserved_space);
     return AddToWatchList(store_data);
   } else {
     return kStoreChunkError;
@@ -274,7 +280,8 @@ int MaidsafeStoreManager::StoreChunk(const std::string &chunk_name,
 
 void MaidsafeStoreManager::StoreChunkTaskCallback(
     const ReturnCode &result,
-    const std::string &chunk_name) {
+    const std::string &chunk_name,
+    const boost::uint64_t &reserved_space) {
 #ifdef DEBUG
   printf("In MSM::StoreChunkTaskCallback (%d), overall storing process for "
          "%s %s.\n",
@@ -282,6 +289,7 @@ void MaidsafeStoreManager::StoreChunkTaskCallback(
          result == kSuccess ? "succeeded" : "failed");
 #endif
   tasks_handler_.DeleteTask(chunk_name, result);
+  account_status_manager_.UnReserveSpace(reserved_space);
   // TODO(Dan#) Fire store completion signal here.
 }
 
@@ -1187,10 +1195,7 @@ void MaidsafeStoreManager::GetAccountStatus(boost::uint64_t *space_offered,
                                         space_taken);
 }
 
-void MaidsafeStoreManager::UpdateAccountStatus(const bool &force) {
-  if (!force && !account_status_manager_.UpdateRequired())
-    return;
-
+void MaidsafeStoreManager::UpdateAccountStatus() {
   if (ss_->ConnectionStatus() != 0)  // offline
     return;
 
@@ -1277,6 +1282,7 @@ void MaidsafeStoreManager::UpdateAccountStatusStageTwo(
       data->offered_values.push_back(holder.response.space_offered());
       data->given_values.push_back(holder.response.space_given());
       data->taken_values.push_back(holder.response.space_taken());
+      NotifyTaskHandlerOfAccountAmendments(holder.response);
     } else {
       // treat as non-existing account
       data->offered_values.push_back(0);
@@ -1297,7 +1303,7 @@ void MaidsafeStoreManager::UpdateAccountStatusStageTwo(
            "need at least %u.\n",
            kad_ops_->Port(), data->success_count, lower_threshold_);
 #endif
-    // TODO(Team#) possibly schedule retry
+    account_status_manager_.UpdateFailed();
     return;
   }
 
@@ -1306,8 +1312,8 @@ void MaidsafeStoreManager::UpdateAccountStatusStageTwo(
 
   // calculate filtered averages for our account values
   GetFilteredAverage(data->offered_values, &offered_avg, &offered_n);
-  GetFilteredAverage(data->given_values,   &given_avg,   &given_n);
-  GetFilteredAverage(data->taken_values,   &taken_avg,   &taken_n);
+  GetFilteredAverage(data->given_values, &given_avg, &given_n);
+  GetFilteredAverage(data->taken_values, &taken_avg, &taken_n);
 
   // require at least 4 non-outliers of each
   if (offered_n < lower_threshold_ ||
@@ -1319,8 +1325,48 @@ void MaidsafeStoreManager::UpdateAccountStatusStageTwo(
             "reached.\n",
              kad_ops_->Port());
 #endif
+    account_status_manager_.UpdateFailed();
   } else {
     account_status_manager_.SetAccountStatus(offered_avg, given_avg, taken_avg);
+  }
+}
+
+void MaidsafeStoreManager::NotifyTaskHandlerOfAccountAmendments(
+    const AccountStatusResponse &account_status_response) {
+  if (!account_status_response.amendment_results_size())
+    return;
+  for (int i = 0; i < account_status_response.amendment_results_size(); ++i) {
+    const AccountStatusResponse::AmendmentResult &kAmendmentResult =
+        account_status_response.amendment_results(i);
+    if (!kAmendmentResult.IsInitialized())
+      continue;
+    bool success = kAmendmentResult.result() == kAck;
+    if (kAmendmentResult.amendment_type() ==
+        AmendAccountRequest::kSpaceTakenInc) {
+      // client tried to save a chunk
+      if (success) {
+        tasks_handler_.NotifyTaskSuccess(
+            kWatchListTaskPrefix + kAmendmentResult.chunkname());
+      } else {
+        tasks_handler_.NotifyTaskFailure(
+            kWatchListTaskPrefix + kAmendmentResult.chunkname(),
+            kAmendAccountFailure);
+      }
+    } else if (kAmendmentResult.amendment_type() ==
+               AmendAccountRequest::kSpaceTakenDec) {
+      // TODO(Fraser#5#): 19/08/10 - If save and delete chunks both have same
+      //   task names, remove this "else if" and handle both in "if" above.
+
+      // client tried to delete a chunk
+      if (success) {
+        tasks_handler_.NotifyTaskSuccess(
+            kWatchListTaskPrefix + kAmendmentResult.chunkname());
+      } else {
+        tasks_handler_.NotifyTaskFailure(
+            kWatchListTaskPrefix + kAmendmentResult.chunkname(),
+            kAmendAccountFailure);
+      }
+    }
   }
 }
 
@@ -1861,8 +1907,8 @@ void MaidsafeStoreManager::AddToWatchListStageFour(
     boost::uint64_t payment;
     size_t n;
     GetFilteredAverage(data->payment_values, &payment, &n);
-    account_status_manager_.AdviseAmendment(
-        AmendAccountRequest::kSpaceTakenInc, payment);
+    account_status_manager_.AmendmentDone(AmendAccountRequest::kSpaceTakenInc,
+                                          payment);
     data->consensus_upload_copies = 0;
 
     if (data->consensus_upload_copies > 0) {
@@ -2791,7 +2837,7 @@ void MaidsafeStoreManager::RemoveFromWatchListStageFour(
   if (data->success_count >= upper_threshold_) {
     tasks_handler_.NotifyTaskSuccess(
         kWatchListTaskPrefix + data->store_data->data_name);
-    account_status_manager_.AdviseAmendment(
+    account_status_manager_.AmendmentDone(
         AmendAccountRequest::kSpaceTakenDec, data->store_data->size);
     return;
   }
@@ -3227,8 +3273,8 @@ int MaidsafeStoreManager::CreateAccount(const boost::uint64_t &space) {
     return maidsafe::kRequestFailedConsensus;
   }
 
-  account_status_manager_.AdviseAmendment(AmendAccountRequest::kSpaceOffered,
-                                          space);
+  account_status_manager_.AmendmentDone(AmendAccountRequest::kSpaceOffered,
+                                        space);
   return kSuccess;
 }
 

@@ -726,7 +726,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AddToWatchList) {
 
   // Run test calls
   ASSERT_EQ(kStoreChunkError, msm.StoreChunk(chunk_names.at(0), PRIVATE, ""));
-  msm.account_status_manager_.AdviseAmendment(
+  msm.account_status_manager_.AmendmentDone(
       AmendAccountRequest::kSpaceOffered, 100000);
   std::string long_key('a', kKeySize + 1);
   std::string short_key('z', kKeySize - 1);
@@ -2735,27 +2735,27 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_UpdateAccountStatus) {
             .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
                 boost::bind(&test_msm::ThreadedAccountStatusCallback, &tcc,
                 false, kAck, account_holders.at(i).node_id().String(),
-                false, test_msm::AccountStatusValues(0, 0, 0), _1, _2))))   // 4
+                false, test_msm::AccountStatusValues(0, 0, 0), _1, _2))))   // 3
             .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
                 boost::bind(&test_msm::ThreadedAccountStatusCallback, &tcc,
                 i < test_msm::upper_threshold, kAck,
                 account_holders.at(i).node_id().String(), false,
-                test_msm::AccountStatusValues(1, 2, 3), _1, _2))))          // 5
+                test_msm::AccountStatusValues(1, 2, 3), _1, _2))))          // 4
             .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
                 boost::bind(&test_msm::ThreadedAccountStatusCallback, &tcc,
                 i < test_msm::upper_threshold, kNack,
                 account_holders.at(i).node_id().String(), true,
-                test_msm::AccountStatusValues(1, 2, 3), _1, _2))))          // 6
+                test_msm::AccountStatusValues(1, 2, 3), _1, _2))))          // 5
             .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
                 boost::bind(&test_msm::ThreadedAccountStatusCallback, &tcc,
                 i < test_msm::lower_threshold, kAck,
                 account_holders.at(i).node_id().String(), true,
-                test_msm::AccountStatusValues(i*i, i, i), _1, _2))))        // 7
+                test_msm::AccountStatusValues(i*i, i, i), _1, _2))))        // 6
             .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
                 boost::bind(&test_msm::ThreadedAccountStatusCallback, &tcc,
                 i < test_msm::upper_threshold, kAck,
                 account_holders.at(i).node_id().String(), true,
-                test_msm::AccountStatusValues(1, 2, 3), _1, _2))));         // 8
+                test_msm::AccountStatusValues(1, 2, 3), _1, _2))));         // 7
   }
 
   // set default status, reset update requirement
@@ -2764,17 +2764,9 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_UpdateAccountStatus) {
 
   boost::uint64_t space_offered, space_given, space_taken;
 
-  // Call 1 - no update required
-  msm.UpdateAccountStatus(false);
-  msm.GetAccountStatus(&space_offered, &space_given, &space_taken);
-  EXPECT_EQ(static_cast<boost::uint64_t>(11), space_offered);
-  EXPECT_EQ(static_cast<boost::uint64_t>(22), space_given);
-  EXPECT_EQ(static_cast<boost::uint64_t>(33), space_taken);
-
+  // Call 1 - not online
   ASSERT_TRUE(SessionSingleton::getInstance()->SetConnectionStatus(1));
-
-  // Call 2 - not online
-  msm.UpdateAccountStatus(true);
+  msm.UpdateAccountStatus();
   msm.GetAccountStatus(&space_offered, &space_given, &space_taken);
   EXPECT_EQ(static_cast<boost::uint64_t>(11), space_offered);
   EXPECT_EQ(static_cast<boost::uint64_t>(22), space_given);
@@ -2783,8 +2775,8 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_UpdateAccountStatus) {
   ASSERT_TRUE(SessionSingleton::getInstance()->SetConnectionStatus(0));
   msm.account_holders_manager_.account_holder_group_.clear();
 
-  // Call 3 - no account holders
-  msm.UpdateAccountStatus(true);
+  // Call 2 - no account holders
+  msm.UpdateAccountStatus();
   msm.GetAccountStatus(&space_offered, &space_given, &space_taken);
   EXPECT_EQ(static_cast<boost::uint64_t>(11), space_offered);
   EXPECT_EQ(static_cast<boost::uint64_t>(22), space_given);
@@ -2792,16 +2784,16 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_UpdateAccountStatus) {
 
   msm.account_holders_manager_.account_holder_group_ = account_holders;
 
-  // Call 4 - uninitialised responses
-  msm.UpdateAccountStatus(true);
+  // Call 3 - uninitialised responses
+  msm.UpdateAccountStatus();
   tcc.Wait();
   msm.GetAccountStatus(&space_offered, &space_given, &space_taken);
   EXPECT_EQ(static_cast<boost::uint64_t>(11), space_offered);
   EXPECT_EQ(static_cast<boost::uint64_t>(22), space_given);
   EXPECT_EQ(static_cast<boost::uint64_t>(33), space_taken);
 
-  // Call 5 - no values => 0
-  msm.UpdateAccountStatus(true);
+  // Call 4 - no values => 0
+  msm.UpdateAccountStatus();
   tcc.Wait();
   msm.GetAccountStatus(&space_offered, &space_given, &space_taken);
   EXPECT_EQ(static_cast<boost::uint64_t>(0), space_offered);
@@ -2810,8 +2802,8 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_UpdateAccountStatus) {
 
   msm.account_status_manager_.SetAccountStatus(11, 22, 33);
 
-  // Call 6 - kNack => 0
-  msm.UpdateAccountStatus(true);
+  // Call 5 - kNack => 0
+  msm.UpdateAccountStatus();
   tcc.Wait();
   msm.GetAccountStatus(&space_offered, &space_given, &space_taken);
   EXPECT_EQ(static_cast<boost::uint64_t>(0), space_offered);
@@ -2820,8 +2812,8 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_UpdateAccountStatus) {
 
   msm.account_status_manager_.SetAccountStatus(11, 22, 33);
 
-  // Call 7 - no consensus
-  msm.UpdateAccountStatus(true);
+  // Call 6 - no consensus
+  msm.UpdateAccountStatus();
   tcc.Wait();
   msm.GetAccountStatus(&space_offered, &space_given, &space_taken);
   if (test_msm::lower_threshold > 2) {
@@ -2832,8 +2824,8 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_UpdateAccountStatus) {
 
   msm.account_status_manager_.SetAccountStatus(11, 22, 33);
 
-  // Call 8 - success
-  msm.UpdateAccountStatus(true);
+  // Call 7 - success
+  msm.UpdateAccountStatus();
   tcc.Wait();
   msm.GetAccountStatus(&space_offered, &space_given, &space_taken);
   EXPECT_EQ(static_cast<boost::uint64_t>(1), space_offered);

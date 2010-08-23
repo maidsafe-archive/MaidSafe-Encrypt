@@ -21,16 +21,27 @@
 #ifndef MAIDSAFE_ACCOUNTSTATUSMANAGER_H_
 #define MAIDSAFE_ACCOUNTSTATUSMANAGER_H_
 
+#include <boost/asio/deadline_timer.hpp>
+#include <boost/asio/io_service.hpp>
+#include <boost/asio/strand.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
+#include <boost/function.hpp>
 #include <boost/thread/mutex.hpp>
-#include <gtest/gtest_prod.h>
+#include <boost/thread/thread.hpp>
 
-#include "maidsafe/maidsafe.h"
-#include "maidsafe/returncodes.h"
-#include "maidsafe/accountholdersmanager.h"
+#include <set>
+#include <string>
+
 #include "protobuf/maidsafe_service_messages.pb.h"
 
+
 namespace maidsafe {
+
+namespace test {
+class AccountStatusManagerTest_BEH_MAID_ASM_Init_Test;
+class AccountStatusManagerTest_BEH_MAID_ASM_UpdateRequired_Test;
+class AccountStatusManagerTest_BEH_MAID_ASM_AmendmentDone_Test;
+}  // namespace test
 
 class KadOps;
 
@@ -40,36 +51,60 @@ class AccountStatusManager {
       : space_offered_(0),
         space_given_(0),
         space_taken_(0),
-        kMaxUpdateInterval_(600),
+        space_reserved_(0),
+        reserved_values_(),
+        kMaxUpdateInterval_(300000),
+        kFailureRetryInterval(60000),
         kMaxAmendments_(25),
         mutex_(),
-        last_update_(boost::posix_time::neg_infin),
-        amendments_since_update_(0) {}
-  ~AccountStatusManager() {}
-  bool UpdateRequired();
+        amendments_since_update_(0),
+        update_functor_(),
+        io_service_(),
+        strand_(io_service_),
+        timer_(),
+        work_(),
+        worker_thread_(),
+        awaiting_update_result_(false) {}
+  ~AccountStatusManager();
+  void StartUpdating(boost::function<void()> update_functor);
+  void StopUpdating();
   void SetAccountStatus(const boost::uint64_t &space_offered,
                         const boost::uint64_t &space_given,
                         const boost::uint64_t &space_taken);
   void AccountStatus(boost::uint64_t *space_offered,
                      boost::uint64_t *space_given,
                      boost::uint64_t *space_taken);
-  void AdviseAmendment(const AmendAccountRequest::Amendment &amendment_type,
-                       const boost::uint64_t &amendment_value);
+  void ReserveSpace(const boost::uint64_t &reserved_value);
+  void UnReserveSpace(const boost::uint64_t &reserved_value);
+  void AmendmentDone(const AmendAccountRequest::Amendment &amendment_type,
+                     const boost::uint64_t &amendment_value);
+  void UpdateFailed();
   bool AbleToStore(const boost::uint64_t &size);
+  friend class test::AccountStatusManagerTest_BEH_MAID_ASM_Init_Test;
+  friend class test::AccountStatusManagerTest_BEH_MAID_ASM_UpdateRequired_Test;
+  friend class test::AccountStatusManagerTest_BEH_MAID_ASM_AmendmentDone_Test;
  private:
   AccountStatusManager &operator=(const AccountStatusManager&);
   AccountStatusManager(const AccountStatusManager&);
-  FRIEND_TEST(AccountStatusManagerTest, BEH_MAID_ASM_Init);
-  FRIEND_TEST(AccountStatusManagerTest, BEH_MAID_ASM_UpdateRequired);
-  FRIEND_TEST(AccountStatusManagerTest, BEH_MAID_ASM_AdviseAmendment);
+  void Run();
+  void DoUpdate(const boost::system::error_code &error);
   boost::uint64_t space_offered_;
   boost::uint64_t space_given_;
   boost::uint64_t space_taken_;
-  const boost::posix_time::seconds kMaxUpdateInterval_;
-  int kMaxAmendments_;
+  boost::uint64_t space_reserved_;
+  std::multiset<boost::uint64_t> reserved_values_;
+  const boost::posix_time::milliseconds kMaxUpdateInterval_;
+  const boost::posix_time::milliseconds kFailureRetryInterval;
+  const int kMaxAmendments_;
   boost::mutex mutex_;
-  boost::posix_time::ptime last_update_;
   int amendments_since_update_;
+  boost::function<void()> update_functor_;
+  boost::asio::io_service io_service_;
+  boost::asio::strand strand_;
+  boost::shared_ptr<boost::asio::deadline_timer> timer_;
+  boost::shared_ptr<boost::asio::io_service::work> work_;
+  boost::thread worker_thread_;
+  bool awaiting_update_result_;
 };
 
 }  // namespace maidsafe
