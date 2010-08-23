@@ -39,8 +39,13 @@ namespace maidsafe {
 
 namespace test {
 class AccountStatusManagerTest_BEH_MAID_ASM_Init_Test;
-class AccountStatusManagerTest_BEH_MAID_ASM_UpdateRequired_Test;
+class AccountStatusManagerTest_BEH_MAID_ASM_AbleToStore_Test;
+class AccountStatusManagerTest_BEH_MAID_ASM_SetAndGetAccountStatus_Test;
+class AccountStatusManagerTest_BEH_MAID_ASM_ReserveAndUnReserveSpace_Test;
+class AccountStatusManagerTest_BEH_MAID_ASM_StartAndStopUpdating_Test;
+class AccountStatusManagerTest_BEH_MAID_ASM_DoUpdate_Test;
 class AccountStatusManagerTest_BEH_MAID_ASM_AmendmentDone_Test;
+class AccountStatusManagerTest_BEH_MAID_ASM_UpdateFailed_Test;
 }  // namespace test
 
 class KadOps;
@@ -54,7 +59,7 @@ class AccountStatusManager {
         space_reserved_(0),
         reserved_values_(),
         kMaxUpdateInterval_(300000),
-        kFailureRetryInterval(60000),
+        kFailureRetryInterval_(60000),
         kMaxAmendments_(25),
         mutex_(),
         amendments_since_update_(0),
@@ -81,8 +86,16 @@ class AccountStatusManager {
   void UpdateFailed();
   bool AbleToStore(const boost::uint64_t &size);
   friend class test::AccountStatusManagerTest_BEH_MAID_ASM_Init_Test;
-  friend class test::AccountStatusManagerTest_BEH_MAID_ASM_UpdateRequired_Test;
+  friend class test::AccountStatusManagerTest_BEH_MAID_ASM_AbleToStore_Test;
+  friend class
+      test::AccountStatusManagerTest_BEH_MAID_ASM_SetAndGetAccountStatus_Test;
+  friend class
+      test::AccountStatusManagerTest_BEH_MAID_ASM_ReserveAndUnReserveSpace_Test;
+  friend class
+      test::AccountStatusManagerTest_BEH_MAID_ASM_StartAndStopUpdating_Test;
+  friend class test::AccountStatusManagerTest_BEH_MAID_ASM_DoUpdate_Test;
   friend class test::AccountStatusManagerTest_BEH_MAID_ASM_AmendmentDone_Test;
+  friend class test::AccountStatusManagerTest_BEH_MAID_ASM_UpdateFailed_Test;
  private:
   AccountStatusManager &operator=(const AccountStatusManager&);
   AccountStatusManager(const AccountStatusManager&);
@@ -94,7 +107,7 @@ class AccountStatusManager {
   boost::uint64_t space_reserved_;
   std::multiset<boost::uint64_t> reserved_values_;
   const boost::posix_time::milliseconds kMaxUpdateInterval_;
-  const boost::posix_time::milliseconds kFailureRetryInterval;
+  const boost::posix_time::milliseconds kFailureRetryInterval_;
   const int kMaxAmendments_;
   boost::mutex mutex_;
   int amendments_since_update_;

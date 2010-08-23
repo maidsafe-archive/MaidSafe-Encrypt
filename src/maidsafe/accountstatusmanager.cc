@@ -39,8 +39,10 @@ void AccountStatusManager::StartUpdating(
 
 void AccountStatusManager::StopUpdating() {
   boost::mutex::scoped_lock lock(mutex_);
-  if (timer_.get())
+  if (timer_.get()) {
     timer_->cancel();
+    timer_.reset();
+  }
   work_.reset();
   worker_thread_.join();
   update_functor_.clear();
@@ -68,14 +70,17 @@ void AccountStatusManager::DoUpdate(const boost::system::error_code &error) {
     }
   } else {
     boost::mutex::scoped_lock lock(mutex_);
-    if (!awaiting_update_result_ && !update_functor_.empty()) {
-      awaiting_update_result_ = true;
-      strand_.dispatch(update_functor_);
+    if (!update_functor_.empty()) {
+      if (!awaiting_update_result_) {
+        awaiting_update_result_ = true;
+        strand_.dispatch(update_functor_);
+      }
+      // Start new timer running
+      timer_.reset(new boost::asio::deadline_timer(io_service_,
+                                                   kMaxUpdateInterval_));
+      timer_->async_wait(boost::bind(&AccountStatusManager::DoUpdate, this,
+                                     _1));
     }
-    // Start new timer running
-    timer_.reset(new boost::asio::deadline_timer(io_service_,
-                                                 kMaxUpdateInterval_));
-    timer_->async_wait(boost::bind(&AccountStatusManager::DoUpdate, this, _1));
   }
 }
 
@@ -163,7 +168,7 @@ void AccountStatusManager::UpdateFailed() {
   awaiting_update_result_ = false;
   if (!update_functor_.empty()) {
     // Try to reset current timer
-    if (timer_->expires_from_now(kFailureRetryInterval) > 0) {
+    if (timer_->expires_from_now(kFailureRetryInterval_) > 0) {
       // Reset successful - start new asynchronous wait.
       timer_->async_wait(boost::bind(&AccountStatusManager::DoUpdate, this,
                                      _1));
@@ -173,7 +178,7 @@ void AccountStatusManager::UpdateFailed() {
 
 bool AccountStatusManager::AbleToStore(const boost::uint64_t &size) {
   boost::mutex::scoped_lock lock(mutex_);
-  return space_taken_ + size <= space_offered_;
+  return space_taken_ + space_reserved_ + size <= space_offered_;
 }
 
 }  // namespace maidsafe
