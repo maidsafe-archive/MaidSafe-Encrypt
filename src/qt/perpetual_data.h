@@ -41,6 +41,8 @@ class Progress;
 class PersonalMessages;
 class UserSettings;
 class UserInbox;
+class PendingOperationsDialog;
+class UserCalendar;
 #ifdef PD_LIGHT
   class FileBrowser;
 #endif
@@ -115,6 +117,7 @@ class PerpetualData : public QMainWindow {
     void onBusyTriggered();
     void onOffline_2Triggered();
 		void onEmailTriggered();
+    void onCalendarTriggered();
     void onOffTriggered();
     void onSmallTriggered();
     void onFullTriggered();
@@ -140,8 +143,13 @@ class PerpetualData : public QMainWindow {
                            const QString& conversation);
 
     void onShareReceived(const QString&, const QString&);
-    void onFileReceived(const maidsafe::InstantMessage&);
-    void onEmailReceived(const maidsafe::InstantMessage&);
+    void onFileReceived(const QString &sender, const QString &filename,
+                        const QString &tag, int sizeLow, int sizeHigh,
+                        const ClientController::ItemType &type);
+
+    void onEmailReceived(const QString &subject, const QString &conversation,
+                         const QString &message, const QString &sender,
+                         const QString &date);
     void onSaveFileCompleted(int, const QString&);
     void onConnectionStatusChanged(int status);
 
@@ -170,6 +178,7 @@ class PerpetualData : public QMainWindow {
     AWAY,
     OFFLINE_2,
     EMAIL,
+    CALENDAR,
     OFF,
     SMALL,
     FULL,
@@ -235,6 +244,12 @@ class PerpetualData : public QMainWindow {
 
 	// Email Inbox
 	UserInbox* inbox_;
+
+  //Pending Ops
+  PendingOperationsDialog* pendingOps_;
+
+  //User Calendar
+  UserCalendar* userCal_;
 
 #ifdef PD_LIGHT
   FileBrowser* browser_;

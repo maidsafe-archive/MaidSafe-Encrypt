@@ -20,7 +20,6 @@
 #include <map>
 #include <string>
 
-#include "maidsafe/pdutils.h"
 #include "qt/client/client_controller.h"
 
 
@@ -38,8 +37,10 @@ UserInbox::UserInbox(QWidget* parent) : QDialog(parent) {
           this,                 SLOT(onItemClicked(QListWidgetItem*)));
 
   connect(ClientController::instance(),
-                SIGNAL(emailReceieved(const maidsafe::InstantMessage&)),
-           this, SLOT(onEmailReceived(const maidsafe::InstantMessage&)));
+                SIGNAL(emailReceieved(const QString &subject, const QString &conversation,
+                                      const QString &message)),
+           this, SLOT(onEmailReceived(const QString &subject, const QString &conversation,
+                                      const QString &message)));
 
   ui_.replyGroupBox->setVisible(false);
   ui_.toolBarListWidget->setFlow(QListView::LeftToRight);
@@ -68,7 +69,9 @@ void UserInbox::setActive(bool) {
   std::string s;
   QString emails(folder_);
   emails.append("a");
-  int n = ClientController::instance()->getattr(emails, &s);
+  QString lastModified;
+  QString fileSize;
+  int n = ClientController::instance()->getattr(emails, lastModified, fileSize);
   if (n != 0)
     qDebug() << "UserInbox::UserInbox - getattr failed";
 
@@ -79,9 +82,9 @@ int UserInbox::populateEmails() {
   ui_.messageListWidget->clear();
 
   int rowCount = 0;
-//  std::string relPathStr = folder_.toStdString();
-  std::map<std::string, maidsafe::ItemType> children;
-//  std::string tidyRelPathStr = maidsafe::TidyPath(relPathStr);
+
+  std::map<std::string, ClientController::ItemType> children;
+
   int n = ClientController::instance()->readdir(folder_, &children);
   if (n != 0) {
     qDebug() << "Couldn't read directory contents";
@@ -95,24 +98,19 @@ int UserInbox::populateEmails() {
   while (!children.empty()) {
     std::string s = children.begin()->first;
     qDebug() << "children not empty";
-//    maidsafe::ItemType ityp = children.begin()->second;
-    maidsafe::MetaDataMap mdm;
-    std::string ser_mdm;
+
     fs::path path(folder_.toStdString());
     path /= s;
     QString str(path.string().c_str());
-    if (ClientController::instance()->getattr(str, &ser_mdm)) {
+    QString lastModified;
+    QString fileSize;
+    if (ClientController::instance()->getattr(str, lastModified, fileSize)) {
       qDebug() << "drawIconView failed at getattr()";
       return -1;
     }
 
     QString filename = QString::fromStdString(s);
     if (filename.endsWith(".pdmail")) {
-      mdm.ParseFromString(ser_mdm);
-      QDateTime *lastModified = new QDateTime;
-      int linuxtime = mdm.last_modified();
-      lastModified->setTime_t(linuxtime);
-
       QListWidgetItem *newItem = new QListWidgetItem;
       newItem->setText(filename.section("_", 1, 1).remove(".pdmail")
                                 + ":" + filename.section('_', 0, 0));
@@ -308,7 +306,9 @@ void UserInbox::onRemoveDirCompleted(int success, const QString& filepath) {
   }
 }
 
-void UserInbox::onEmailReceived(const maidsafe::InstantMessage&) {
+void UserInbox::onEmailReceived(const QString &subject, const QString &conversation,
+                                const QString &message, const QString &sender,
+                                const QString &date) {
   populateEmails();
 }
 

@@ -29,10 +29,6 @@
 #include <list>
 #include <string>
 
-//
-#include "maidsafe/client/contacts.h"
-#include "maidsafe/client/clientcontroller.h"
-
 // local
 #include "qt/client/add_contact_thread.h"
 #include "qt/client/client_controller.h"
@@ -54,13 +50,13 @@ Contacts::Contacts(QWidget* parent)
   sendMessage		= new QAction(tr("Send Message"), this);
   sendFile			= new QAction(tr("Send File"), this);
   deleteContact = new QAction(tr("Delete Contact"), this);
-	sendEmail			= new QAction(tr("Send Email"), this);
+	//sendEmail			= new QAction(tr("Send Email"), this);
 
   menu->addAction(viewProfile);
   menu->addAction(sendMessage);
   menu->addAction(sendFile);
   menu->addAction(deleteContact);
-	menu->addAction(sendEmail);
+	//menu->addAction(sendEmail);
 
   ui_.listWidget->setContextMenuPolicy(Qt::CustomContextMenu);
 
@@ -77,9 +73,6 @@ Contacts::Contacts(QWidget* parent)
 
   connect(deleteContact, SIGNAL(triggered()),
           this,        SLOT(onDeleteUserClicked()));
-
-	connect(sendEmail, SIGNAL(triggered()),
-          this,        SLOT(onSendEmailClicked()));
 
   connect(ui_.listWidget, SIGNAL(customContextMenuRequested(const QPoint&)),
             this,         SLOT(customContentsMenu(const QPoint&)));
@@ -99,12 +92,8 @@ Contacts::Contacts(QWidget* parent)
   connect(ui_.add, SIGNAL(clicked(bool)),
           this, SLOT(onAddContactClicked()));
 
-  connect(ClientController::instance(),
-          SIGNAL(addedContact(const QString&,
-                              const maidsafe::InstantMessage&)),
-          this,
-          SLOT(onAddedContact(const QString&,
-                              const maidsafe::InstantMessage&)));
+  connect(ClientController::instance(), SIGNAL(addedContact(const QString&)),
+          this, SLOT(onAddedContact(const QString&)));
 
   connect(ClientController::instance(),
           SIGNAL(confirmedContact(const QString&)),
@@ -247,25 +236,23 @@ void Contacts::onViewProfileClicked() {
   }
 
   QListWidgetItem *contact = contacts.front();
-  maidsafe::mi_contact mic;
-  int n = ClientController::instance()->GetContactInfo(
-          contact->text().toStdString(), &mic);
+  QStringList contactInfo = ClientController::instance()->GetContactInfo(contact->text());
 
-  if (n != 0) {
+  /*if (n != 0) {
     QMessageBox::warning(this, tr("Error"),
                          QString(tr("The contact doesn't exist.")));
     return;
-  }
+  }*/
 
   // \TODO QString/html/%1,%2 etc - inline view of details?
   QString details(tr("Public Username: "));
-  details += QString(mic.pub_name_.c_str()) + "\n";
-  details += tr("Full Name: ") + QString(mic.full_name_.c_str()) + "\n";
-  details += tr("Office Phone: ") + QString(mic.office_phone_.c_str()) + "\n";
-  details += tr("Birthday: ") + QString(mic.birthday_.c_str()) + "\n";
-  details += tr("Gender: ") + QString(1, QChar(mic.gender_)) + "\n";
+  details += contactInfo.at(5) + "\n";
+  details += tr("Full Name: ") + contactInfo.at(2) + "\n";
+  details += tr("Office Phone: ") + contactInfo.at(4) + "\n";
+  details += tr("Birthday: ") + contactInfo.at(0) + "\n";
+  details += tr("Gender: ") + contactInfo.at(3) + "\n";
   details += "Language: English\n";
-  details += tr("City: ") + QString(mic.city_.c_str()) + "\n";
+  details += tr("City: ") + contactInfo.at(1) + "\n";
   details += "Country: UK\n";
 
   QMessageBox::information(this, tr("Contact Details"), details);
@@ -433,7 +420,7 @@ void Contacts::onFileSendClicked() {
 
 #else
   root = QString::fromStdString(file_system::MaidsafeFuseDir(
-      maidsafe::SessionSingleton::getInstance()->SessionName()).string() +
+        ClientController::instance()->SessionName()).string() +
       "/My Files");
 
 #endif
@@ -502,14 +489,8 @@ QList<QListWidgetItem *> Contacts::currentContact() {
   return names;
 }
 
-void Contacts::onAddedContact(const QString &name,
-                              const maidsafe::InstantMessage& im) {
-  int n = 0;
-
-  maidsafe::ContactNotification cn = im.contact_notification();
-  maidsafe::ContactInfo ci;
-  if (cn.has_contact())
-    ci = cn.contact();
+void Contacts::onAddedContact(const QString &name) {
+  bool result = true;
 
   qDebug() << "Contacts::onAddedContact()";
 
@@ -522,9 +503,8 @@ void Contacts::onAddedContact(const QString &name,
   switch (ret) {
     case QMessageBox::Yes:
       // yes was clicked
-      n = maidsafe::ClientController::getInstance()->
-          HandleAddContactRequest(ci, name.toStdString());
-      if (n == 0) {
+      result = ClientController::instance()->handleAddContactRequest(name);
+      if (result) {
           QList<QListWidgetItem*> items = ui_.listWidget->findItems(name,
                                 Qt::MatchCaseSensitive);
           if (items.size() == 1) {  // Contact had changed confirmed status only
@@ -687,11 +667,11 @@ void Contacts::onDirectoryEntered(const QString& dir) {
   }
 #else
   root = QString::fromStdString(file_system::MaidsafeFuseDir(
-      maidsafe::SessionSingleton::getInstance()->SessionName()).string());
+     ClientController::instance()->SessionName()).string());
 
   if (!dir.startsWith(root, Qt::CaseInsensitive)) {
     root = QString::fromStdString(file_system::MaidsafeFuseDir(
-        maidsafe::SessionSingleton::getInstance()->SessionName()).string() +
+        ClientController::instance()->SessionName()).string() +
         "/My Files");
     qfd->setDirectory(root);
   }

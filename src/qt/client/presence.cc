@@ -70,6 +70,6 @@ bool Presence::operator!=(const Presence& other) const {
 }
 
 // static
-Presence Presence::fromContact(maidsafe::Contact*) {
+Presence Presence::fromContact(const QString &pubName) {
   return Presence();
 }

@@ -1,4 +1,3 @@
-
 /*
  * copyright maidsafe.net limited 2009
  * The following source code is property of maidsafe.net limited and
@@ -43,25 +42,10 @@ CreateUserThread::~CreateUserThread() { }
 
 void CreateUserThread::run() {
   qDebug() << "CreateUserThread::run";
-//  #ifdef DEBUG
-//    boost::this_thread::sleep(boost::posix_time::seconds(2));
-//    qDebug() << "CheckUserThread::run - After SLEEP";
-//  #endif
-
-  const std::string username = username_.toStdString();
-  const std::string pin = pin_.toStdString();
-  const std::string password = password_.toStdString();
-  const std::string port = port_.toStdString();
-  const std::string space = space_.toStdString();
-
-  maidsafe::VaultConfigParameters vcp;
-  vcp.vault_type = vault_type_;
-  vcp.space = boost::lexical_cast<boost::uint32_t>(space);
-  vcp.port = boost::lexical_cast<boost::uint32_t>(port);
-  vcp.directory = directory_.toStdString();
 
   if (!ClientController::instance()->
-      CreateUser(username, pin, password, vcp)) {
+      CreateUser(username_, pin_, password_, vault_type_,
+                 space_, port_, directory_)) {
     emit completed(false);
   } else {
     emit completed(true);

@@ -58,7 +58,9 @@ class UserInbox : public QDialog {
     void onSaveFileCompleted(int, const QString&);
     void onRemoveDirCompleted(int, const QString&);
     void onEmailCompleted(int, const QString&);
-    void onEmailReceived(const maidsafe::InstantMessage&);
+    void onEmailReceived(const QString &subject, const QString &conversation,
+                         const QString &message, const QString &sender,
+                         const QString &date);
 
  protected:
   void changeEvent(QEvent *event);

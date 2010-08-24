@@ -23,9 +23,6 @@
 // std
 #include <list>
 
-//
-#include "maidsafe/client/contacts.h"
-
 namespace {
 
 QString messageToRichText(QString s) {

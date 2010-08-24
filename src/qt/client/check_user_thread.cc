@@ -38,10 +38,10 @@ void CheckUserThread::run() {
   const std::string username = username_.toStdString();
   const std::string pin = pin_.toStdString();
 
-  int rc = ClientController::instance()->
-                          CheckUserExists(username, pin, maidsafe::kDefCon3);
+  bool result = ClientController::instance()->
+    CheckUserExists(username, pin, ClientController::kDefCon3);
 
-  if (rc == maidsafe::kUserDoesntExist) {
+  if (result) {
     emit completed(false);
   } else {
     emit completed(true);

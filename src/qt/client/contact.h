@@ -39,7 +39,7 @@ class Contact : public QObject {
   void setProfile(const Profile&);
 
   // \TODO make accessors on maidsafe::Contacts const
-  static Contact* fromContact(maidsafe::Contact *mc);
+  static Contact* fromContact(const QString &pubName);
 
   signals:
     // This user's presence has changed.

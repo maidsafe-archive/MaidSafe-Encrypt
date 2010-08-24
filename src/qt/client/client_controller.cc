@@ -16,12 +16,13 @@
 
 // qt
 #include <QObject>
-#include <QStringList>
 #include <QDebug>
 #include <QTimer>
 
 #include <maidsafe/maidsafe-dht.h>
 #include <boost/progress.hpp>
+#include <boost/lexical_cast.hpp>
+
 // std
 #include <list>
 #include <map>
@@ -90,6 +91,44 @@ void ClientController::shutdown() {
 QString ClientController::publicUsername() const {
   return QString::fromStdString(
          maidsafe::SessionSingleton::getInstance()->PublicUsername());
+}
+
+bool ClientController::getPendingOps(QList<PendingOps> &ops) {
+  //array<pendingOps> pending;
+  //maidsafe::PendingOps po;
+  //get pendingOps from maisafe and convert to QT PendingOps
+  //maidsafe::ClientController::getInstance()->getPendingOps(pending);
+
+  PendingOps op;
+  op.name = "testName.txt";
+  op.transBytes = 1583;
+  op.totalBytes = 10000;
+
+  ops.append(op);
+  return false;
+}
+
+int ClientController::AddInstantFile(const QString &sender, const QString &filename,
+                   const QString &tag,
+                   int sizeLow, int sizeHigh,
+                   const ClientController::ItemType &ityp,
+                   const QString &s){
+
+  maidsafe::InstantFileNotification ifn;
+  ifn.set_filename(filename.toStdString());
+
+  maidsafe::MetaDataMap mdm;
+  mdm.set_tag(tag.toStdString());
+  mdm.set_file_size_high(sizeHigh);
+  mdm.set_file_size_low(sizeLow);
+  std::string ser_mdm;
+  mdm.SerializeToString(&ser_mdm);
+  ifn.set_ser_mdm(ser_mdm);
+
+  int n = maidsafe::ClientController::getInstance()->
+          AddInstantFile(ifn, s.toStdString());
+
+  return n;
 }
 
 bool ClientController::createShare(const QString &shareName,
@@ -246,7 +285,7 @@ ContactList ClientController::contacts(int type) const {
   for (unsigned int i = 0; i < contact_list.size(); ++i) {
     // accessors on maidsafe::Contact are non-const so can't pass in const&
     maidsafe::Contact mcontact = contact_list[i];
-    Contact* contact = Contact::fromContact(&mcontact);
+    Contact* contact = Contact::fromContact(QString::fromStdString(mcontact.PublicName()));
     if (mcontact.Confirmed() == 'U')
       contact->setPresence(Presence::INVALID);
     else
@@ -289,6 +328,30 @@ bool ClientController::removeContact(const QString& name) {
   return (n == 0);
 }
 
+bool ClientController::handleAddContactRequest(const QString& name) {
+  maidsafe::mi_contact mic;
+  int n = maidsafe::SessionSingleton::getInstance()->
+          GetContactInfo(name.toStdString(), &mic);
+
+  maidsafe::ContactInfo ci;
+
+  ci.set_birthday(mic.birthday_);
+  ci.set_city(mic.birthday_);
+  ci.set_country(mic.country_);
+  std::string str(1, mic.gender_);
+  ci.set_gender(str);
+  ci.set_language(mic.language_);
+  ci.set_name(mic.full_name_);
+  ci.set_office_number(mic.office_phone_);
+
+  n = maidsafe::ClientController::getInstance()->
+      HandleAddContactRequest(ci, name.toStdString());
+
+  if (n == 0)
+    return true;
+  else
+    return false;
+}
 
 bool ClientController::sendInstantMessage(const QString& txt,
                                           const QList<QString> &to,
@@ -433,7 +496,7 @@ void ClientController::analyseMessage(const maidsafe::InstantMessage& im) {
             {
               qDebug() << "HANDLING AddContactRequest";
 
-              emit addedContact(QString::fromStdString(im.sender()), im);
+              emit addedContact(QString::fromStdString(im.sender()));
               type = CONTACT_REQUEST;
 
               break;
@@ -467,7 +530,55 @@ void ClientController::analyseMessage(const maidsafe::InstantMessage& im) {
             }
     }
   } else if (im.has_instantfile_notification()) {
-    emit fileReceived(im);
+    maidsafe::InstantFileNotification ifn = im.instantfile_notification();
+    maidsafe::MetaDataMap sent_mdm;
+    sent_mdm.ParseFromString(ifn.ser_mdm());
+
+    maidsafe::ItemType mSafeType = sent_mdm.type();
+    ClientController::ItemType ityp;
+    switch (mSafeType) {
+    case maidsafe::DIRECTORY:
+      ityp = DIRECTORY;
+      break;
+    case maidsafe::REGULAR_FILE:
+      ityp = REGULAR_FILE;     
+      break;
+    case maidsafe::SMALL_FILE:
+      ityp = SMALL_FILE;     
+      break;
+    case maidsafe::EMPTY_FILE:
+      ityp = EMPTY_FILE;     
+      break;
+    case maidsafe::LOCKED_FILE:
+      ityp = LOCKED_FILE;      
+      break;
+    case maidsafe::EMPTY_DIRECTORY:
+      ityp = EMPTY_DIRECTORY;     
+      break;
+    case maidsafe::LINK:
+      ityp = LINK;      
+      break;
+    case maidsafe::MAIDSAFE_CHUNK:
+      ityp = MAIDSAFE_CHUNK;      
+      break;
+    case maidsafe::NOT_FOR_PROCESSING:
+      ityp = NOT_FOR_PROCESSING;      
+      break;
+    case maidsafe::UNKNOWN:
+      ityp = UNKNOWN;     
+      break;
+    default:
+      ityp = UNKNOWN;
+      break;
+  }
+
+    int sizeLow = sent_mdm.file_size_low();
+    int sizeHigh = sent_mdm.file_size_high();
+    QString tag = QString::fromStdString(sent_mdm.tag());
+
+    emit fileReceived(QString::fromStdString(im.sender()),
+                      QString::fromStdString(ifn.filename()),
+                      tag, sizeLow, sizeHigh, ityp);
     type = FILE;
   } else if (im.has_privateshare_notification()) {
     // we have added a new private share
@@ -482,7 +593,15 @@ void ClientController::analyseMessage(const maidsafe::InstantMessage& im) {
   } else if (im.has_email_notification()) {
     // TODO(Stephen) :: emit signal to inform GUI of new email and
     // woo only qt stuff from here :)
-    emit emailReceieved(im);
+    QDateTime theDate = QDateTime::currentDateTime();
+    theDate.setTime_t(im.date());
+    QString date = theDate.toString("dd/MM/yyyy hh:mm:ss");
+
+    emit emailReceieved(QString::fromStdString(im.subject()), 
+                        QString::fromStdString(im.conversation()),
+                        QString::fromStdString(im.message()),
+                        QString::fromStdString(im.sender()),
+                        date);
     type = EMAIL;
   }
 
@@ -523,19 +642,53 @@ bool ClientController::CreatePublicUsername(const std::string &pub_username) {
          CreatePublicUsername(pub_username);
 }
 
-bool ClientController::CreateUser(const std::string &username,
-                                  const std::string &pin,
-                                  const std::string &password,
-                                  const maidsafe::VaultConfigParameters &vcp) {
+bool ClientController::CreateUser(const QString &username,
+                                  const QString &pin,
+                                  const QString &password,
+                                  const int &vaultType,
+                                  const QString &space,
+                                  const QString &port,
+                                  const QString &directory) {
+  std::string username_ = username.toStdString();
+  std::string pin_ = pin.toStdString();
+  std::string password_ = password.toStdString();
+  std::string space_ = space.toStdString();
+  std::string port_ = port.toStdString();
+
+  maidsafe::VaultConfigParameters vcp;
+  vcp.vault_type = vaultType;
+  vcp.space = boost::lexical_cast<boost::uint32_t>(space_);
+  vcp.port = boost::lexical_cast<boost::uint32_t>(port_);
+  vcp.directory = directory.toStdString();
+
   return maidsafe::ClientController::getInstance()->CreateUser(
-                          username, pin, password, vcp);
+                          username_, pin_, password_, vcp);
 }
 
-int ClientController::CheckUserExists(const std::string &username,
+bool ClientController::CheckUserExists(const std::string &username,
                                       const std::string &pin,
-                                      maidsafe::DefConLevels level) {
-  return maidsafe::ClientController::getInstance()->CheckUserExists(
-                                    username, pin, level);
+                                      DefConLevel level) {
+  
+maidsafe::DefConLevels defCon;                                     
+if (level == kDefCon1) {
+  defCon = maidsafe::kDefCon1;
+}
+else if(level == kDefCon2) {
+  defCon = maidsafe::kDefCon2;
+}
+else {
+  defCon = maidsafe::kDefCon3;
+}
+
+  bool result = true;
+  int rc = maidsafe::ClientController::getInstance()->CheckUserExists(
+                                    username, pin, defCon);
+
+  if (rc == maidsafe::kUserDoesntExist)
+    result = true;
+  else
+    result = false;    
+  return result;
 }
 
 int ClientController::CreateNewShare(const std::string &name,
@@ -570,22 +723,106 @@ void ClientController::ClearConversations() {
   maidsafe::SessionSingleton::getInstance()->ClearConversations();
 }
 
-int ClientController::GetContactInfo(const std::string &pub_name,
-                                     maidsafe::mi_contact *mic) {
-  return maidsafe::SessionSingleton::getInstance()->GetContactInfo(pub_name,
-                                                                   mic);
+QStringList ClientController::GetContactInfo(const QString &pub_name) {  
+  maidsafe::mi_contact mic;
+  maidsafe::SessionSingleton::getInstance()->GetContactInfo(pub_name.toStdString(), &mic);
+
+  QStringList contact;
+  std::string gender(1, mic.gender_);
+  std::stringstream ss;
+  std::string phone;
+  ss << mic.office_phone_;
+  ss >> phone;
+
+  contact << QString::fromStdString(mic.birthday_) << QString::fromStdString(mic.city_) <<
+    QString::fromStdString(mic.full_name_) << QString::fromStdString(gender) << 
+    QString::fromStdString(phone) << QString::fromStdString(mic.pub_name_);
+
+  return contact;
 }
 
-int ClientController::getattr(const QString &path, std::string *ser_mdm) {
+int ClientController::getattr(const QString &path, QString &lastModified, QString &fileSize) {
+  std::string ser_mdm;
+  maidsafe::MetaDataMap mdm;
   std::string the_path(maidsafe::TidyPath(path.toStdString()));
-  return maidsafe::ClientController::getInstance()->getattr(the_path, ser_mdm);
+  int result = maidsafe::ClientController::getInstance()->getattr(the_path, &ser_mdm);
+  mdm.ParseFromString(ser_mdm);
+
+  QDateTime *mod = new QDateTime;
+  int linuxtime = mdm.last_modified();
+  mod->setTime_t(linuxtime);
+
+  lastModified = mod->toString("dd/MM/yyyy hh:mm");
+  int size = mdm.file_size_low();
+
+  double kbSize = ceil(static_cast<double>(size / 1024));
+
+  std::string s = boost::lexical_cast<std::string>(kbSize);
+  fileSize = QString::fromStdString(s);
+  return result;
 }
 int ClientController::readdir(const QString &path,  // NOLINT
                               std::map<std::string,
-                                       maidsafe::ItemType> *children) {
+                                       ItemType> *children) {
   std::string the_path(maidsafe::TidyPath(path.toStdString()));
-  return maidsafe::ClientController::getInstance()->readdir(the_path,
-                                                            children);
+  std::map<std::string, maidsafe::ItemType> children1;
+  int result = maidsafe::ClientController::getInstance()->readdir(the_path, &children1);
+
+  while (!children1.empty()) {
+    std::string s = children1.begin()->first;
+    maidsafe::ItemType ityp = children1.begin()->second;
+
+  switch (ityp) {
+    case maidsafe::DIRECTORY:
+      children->insert(std::pair<std::string, ClientController::ItemType>(
+      s, DIRECTORY));
+      break;
+    case maidsafe::REGULAR_FILE:
+      children->insert(std::pair<std::string, ClientController::ItemType>(
+      s, REGULAR_FILE));      
+      break;
+    case maidsafe::SMALL_FILE:
+      children->insert(std::pair<std::string, ClientController::ItemType>(
+      s, SMALL_FILE));      
+      break;
+    case maidsafe::EMPTY_FILE:
+      children->insert(std::pair<std::string, ClientController::ItemType>(
+      s, EMPTY_FILE));      
+      break;
+    case maidsafe::LOCKED_FILE:
+      children->insert(std::pair<std::string, ClientController::ItemType>(
+      s, LOCKED_FILE));      
+      break;
+    case maidsafe::EMPTY_DIRECTORY:
+      children->insert(std::pair<std::string, ClientController::ItemType>(
+      s, EMPTY_DIRECTORY));     
+      break;
+    case maidsafe::LINK:
+      children->insert(std::pair<std::string, ClientController::ItemType>(
+      s, LINK));      
+      break;
+    case maidsafe::MAIDSAFE_CHUNK:
+      children->insert(std::pair<std::string, ClientController::ItemType>(
+      s, MAIDSAFE_CHUNK));      
+      break;
+    case maidsafe::NOT_FOR_PROCESSING:
+      children->insert(std::pair<std::string, ClientController::ItemType>(
+      s, NOT_FOR_PROCESSING));      
+      break;
+    case maidsafe::UNKNOWN:
+      children->insert(std::pair<std::string, ClientController::ItemType>(
+      s, UNKNOWN));      
+      break;
+    default:
+      children->insert(std::pair<std::string, ClientController::ItemType>(
+      s, UNKNOWN));
+      break;
+  }
+
+  children1.erase(children1.begin());
+  }
+
+  return result;
 }
 int ClientController::read(const QString &path) {
   std::string the_path(maidsafe::TidyPath(path.toStdString()));
