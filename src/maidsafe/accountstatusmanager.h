@@ -46,30 +46,14 @@ class AccountStatusManagerTest_BEH_MAID_ASM_StartAndStopUpdating_Test;
 class AccountStatusManagerTest_BEH_MAID_ASM_DoUpdate_Test;
 class AccountStatusManagerTest_BEH_MAID_ASM_AmendmentDone_Test;
 class AccountStatusManagerTest_BEH_MAID_ASM_UpdateFailed_Test;
+class FuncAccountStatusManagerTest;
 }  // namespace test
 
 class KadOps;
 
 class AccountStatusManager {
  public:
-  AccountStatusManager()
-      : space_offered_(0),
-        space_given_(0),
-        space_taken_(0),
-        space_reserved_(0),
-        reserved_values_(),
-        kMaxUpdateInterval_(300000),
-        kFailureRetryInterval_(60000),
-        kMaxAmendments_(25),
-        mutex_(),
-        amendments_since_update_(0),
-        update_functor_(),
-        io_service_(),
-        strand_(io_service_),
-        timer_(),
-        work_(),
-        worker_thread_(),
-        awaiting_update_result_(false) {}
+  AccountStatusManager();
   ~AccountStatusManager();
   void StartUpdating(boost::function<void()> update_functor);
   void StopUpdating();
@@ -96,6 +80,7 @@ class AccountStatusManager {
   friend class test::AccountStatusManagerTest_BEH_MAID_ASM_DoUpdate_Test;
   friend class test::AccountStatusManagerTest_BEH_MAID_ASM_AmendmentDone_Test;
   friend class test::AccountStatusManagerTest_BEH_MAID_ASM_UpdateFailed_Test;
+  friend class test::FuncAccountStatusManagerTest;
  private:
   AccountStatusManager &operator=(const AccountStatusManager&);
   AccountStatusManager(const AccountStatusManager&);
@@ -112,6 +97,7 @@ class AccountStatusManager {
   boost::mutex mutex_;
   int amendments_since_update_;
   boost::function<void()> update_functor_;
+  boost::function<void(const boost::system::error_code &error)> wait_functor_;
   boost::asio::io_service io_service_;
   boost::asio::strand strand_;
   boost::shared_ptr<boost::asio::deadline_timer> timer_;

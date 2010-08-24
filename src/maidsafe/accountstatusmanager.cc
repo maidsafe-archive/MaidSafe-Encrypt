@@ -22,6 +22,29 @@
 
 namespace maidsafe {
 
+AccountStatusManager::AccountStatusManager() : space_offered_(0),
+                                               space_given_(0),
+                                               space_taken_(0),
+                                               space_reserved_(0),
+                                               reserved_values_(),
+                                               kMaxUpdateInterval_(300000),
+                                               kFailureRetryInterval_(60000),
+                                               kMaxAmendments_(25),
+                                               mutex_(),
+                                               amendments_since_update_(0),
+                                               update_functor_(),
+                                               wait_functor_(),
+                                               io_service_(),
+                                               strand_(io_service_),
+                                               timer_(),
+                                               work_(),
+                                               worker_thread_(),
+                                               awaiting_update_result_(false) {
+  wait_functor_ = boost::bind(&AccountStatusManager::DoUpdate,
+                              boost::ref(*this), _1);
+}
+
+
 AccountStatusManager::~AccountStatusManager() {
   StopUpdating();
 }
@@ -34,7 +57,7 @@ void AccountStatusManager::StartUpdating(
   worker_thread_ = boost::thread(&AccountStatusManager::Run, this);
   timer_.reset(new boost::asio::deadline_timer(io_service_,
                                                kMaxUpdateInterval_));
-  timer_->async_wait(boost::bind(&AccountStatusManager::DoUpdate, this, _1));
+  timer_->async_wait(wait_functor_);
 }
 
 void AccountStatusManager::StopUpdating() {
@@ -78,8 +101,7 @@ void AccountStatusManager::DoUpdate(const boost::system::error_code &error) {
       // Start new timer running
       timer_.reset(new boost::asio::deadline_timer(io_service_,
                                                    kMaxUpdateInterval_));
-      timer_->async_wait(boost::bind(&AccountStatusManager::DoUpdate, this,
-                                     _1));
+      timer_->async_wait(wait_functor_);
     }
   }
 }
@@ -157,8 +179,7 @@ void AccountStatusManager::AmendmentDone(
       // Reset successful - run update functor & start new asynchronous wait.
       awaiting_update_result_ = true;
       strand_.dispatch(update_functor_);
-      timer_->async_wait(boost::bind(&AccountStatusManager::DoUpdate, this,
-                                     _1));
+      timer_->async_wait(wait_functor_);
     }
   }
 }
@@ -170,8 +191,7 @@ void AccountStatusManager::UpdateFailed() {
     // Try to reset current timer
     if (timer_->expires_from_now(kFailureRetryInterval_) > 0) {
       // Reset successful - start new asynchronous wait.
-      timer_->async_wait(boost::bind(&AccountStatusManager::DoUpdate, this,
-                                     _1));
+      timer_->async_wait(wait_functor_);
     }
   }
 }
