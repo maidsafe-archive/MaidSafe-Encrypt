@@ -39,7 +39,7 @@ namespace fs = boost::filesystem;
 
 namespace test_lsm {
 static const boost::uint8_t K(4);
-static const boost::uint8_t upper_threshold_(static_cast<boost::uint16_t>
+static const boost::uint8_t kUpperThreshold_(static_cast<boost::uint16_t>
                                             (K * kMinSuccessfulPecentageStore));
 }  // namespace test_lsm
 
@@ -492,7 +492,7 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_AddAndGetBufferPacketMessages) {
   ss_->ResetSession();
   ss_->AddKey(MPID, me_pubusername, me_privkey, me_pubkey, me_sigpubkey);
   std::list<ValidatedBufferPacketMessage> messages;
-  ASSERT_EQ(test_lsm::upper_threshold_, sm_->LoadBPMessages(&messages));
+  ASSERT_EQ(test_lsm::kUpperThreshold_, sm_->LoadBPMessages(&messages));
   ASSERT_EQ(size_t(1), messages.size());
   ASSERT_EQ("Juanito", messages.front().sender());
   ASSERT_EQ(test_msg, messages.front().message());
@@ -500,7 +500,7 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_AddAndGetBufferPacketMessages) {
   ASSERT_EQ(INSTANT_MSG, messages.front().type());
 
   // Check message is gone
-  ASSERT_EQ(test_lsm::upper_threshold_, sm_->LoadBPMessages(&messages));
+  ASSERT_EQ(test_lsm::kUpperThreshold_, sm_->LoadBPMessages(&messages));
   ASSERT_EQ(size_t(0), messages.size());
 }
 
@@ -540,7 +540,7 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_AddRequestBufferPacketMessage) {
   ss_->ResetSession();
   ss_->AddKey(MPID, me_pubusername, me_privkey, me_pubkey, me_sigpubkey);
   std::list<ValidatedBufferPacketMessage> messages;
-  ASSERT_EQ(test_lsm::upper_threshold_, sm_->LoadBPMessages(&messages));
+  ASSERT_EQ(test_lsm::kUpperThreshold_, sm_->LoadBPMessages(&messages));
   ASSERT_EQ(size_t(1), messages.size());
   ASSERT_EQ("Juanito", messages.front().sender());
   ASSERT_EQ(test_msg, messages.front().message());
@@ -571,7 +571,7 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_AddRequestBufferPacketMessage) {
   ss_->ResetSession();
   ss_->AddKey(MPID, me_pubusername, me_privkey, me_pubkey, me_sigpubkey);
   messages.clear();
-  ASSERT_EQ(test_lsm::upper_threshold_, sm_->LoadBPMessages(&messages));
+  ASSERT_EQ(test_lsm::kUpperThreshold_, sm_->LoadBPMessages(&messages));
   ASSERT_EQ(size_t(1), messages.size());
   ASSERT_EQ("Juanito", messages.front().sender());
   ASSERT_EQ(test_msg, messages.front().message());

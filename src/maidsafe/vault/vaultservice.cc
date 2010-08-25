@@ -124,7 +124,7 @@ VaultService::VaultService(const std::string &pmid,
                            const boost::int16_t &transport_id,
                            boost::shared_ptr<maidsafe::KadOps> kadops)
     : K_(kadops->k()),
-      upper_threshold_(
+      kUpperThreshold_(
           static_cast<boost::uint16_t>(K_ * kMinSuccessfulPecentageStore)),
       pmid_(pmid),
       pmid_public_(pmid_public),
@@ -140,7 +140,7 @@ VaultService::VaultService(const std::string &pmid,
                                    kMaxRepeatedAccountAmendments,
                                    kAccountAmendmentTimeout),
       aah_(&ah_, &request_expectation_handler_, vault_service_logic_,
-           upper_threshold_),
+           kUpperThreshold_),
       cih_(true),
       bps_(),
       thread_pool_(),

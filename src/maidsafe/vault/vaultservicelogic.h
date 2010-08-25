@@ -285,9 +285,9 @@ class VaultServiceLogic {
   std::string pmid_, pmid_public_key_, pmid_public_signature_, pmid_private_;
   bool online_;
   boost::mutex online_mutex_;
-  boost::uint8_t K_;
-  boost::uint16_t upper_threshold_;
-  boost::uint16_t lower_threshold_;
+  const boost::uint8_t K_;
+  const boost::uint16_t kUpperThreshold_;
+  const boost::uint16_t kLowerThreshold_;
 };
 
 }  // namespace maidsafe_vault

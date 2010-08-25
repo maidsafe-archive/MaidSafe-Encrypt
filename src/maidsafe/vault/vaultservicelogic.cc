@@ -50,10 +50,10 @@ VaultServiceLogic::VaultServiceLogic(
           online_(false),
           online_mutex_(),
           K_(kadops->k()),
-          upper_threshold_(
+          kUpperThreshold_(
               static_cast<boost::uint16_t>(K_ * kMinSuccessfulPecentageStore)),
-          lower_threshold_(kMinSuccessfulPecentageStore > .25 ?
-              static_cast<boost::uint16_t>(K_ * .25) : upper_threshold_) {
+          kLowerThreshold_(kMinSuccessfulPecentageStore > .25 ?
+              static_cast<boost::uint16_t>(K_ * .25) : kUpperThreshold_) {
   base::OnlineController::Instance()->RegisterObserver(0,
       boost::bind(&VaultServiceLogic::SetOnlineStatus, this, _1));
 }
@@ -225,12 +225,12 @@ void VaultServiceLogic::RemoteOpStageTwo(boost::shared_ptr<T> data,
     // TODO(Team#) trigger transfer of account data to closer node
   }
 
-  if (data->contacts.size() + less_contacts < upper_threshold_) {
+  if (data->contacts.size() + less_contacts < kUpperThreshold_) {
 #ifdef DEBUG
     printf("In VSL::RemoteOpStageTwo for %s (%s), %u contacts + %u (removed) < "
            "success threshold (%u).\n", typeid(data).name(),
            HexSubstr(pmid_).c_str(), data->contacts.size(), less_contacts,
-           upper_threshold_);
+           kUpperThreshold_);
 #endif
     data->callback(kVaultServiceFindNodesTooFew);
     return;
@@ -355,12 +355,12 @@ void VaultServiceLogic::RemoteOpStageThree(boost::uint16_t index,
 template<typename T>
 void VaultServiceLogic::AssessResult(ReturnCode result,
                                      boost::shared_ptr<T> data) {
-  if (data->success_count >= upper_threshold_ ||
-      data->failure_count > data->data_holders.size() - upper_threshold_) {
+  if (data->success_count >= kUpperThreshold_ ||
+      data->failure_count > data->data_holders.size() - kUpperThreshold_) {
 #ifdef DEBUG
-    printf("In VSL::AssessResult for %s (%s), data->success_count (%u) >= upper_threshold_ (%u) OR "
-      "data->failure_count (%u) > data->data_holders.size() (%u) - upper_threshold_ (%u) (%u), so returning %i.\n", typeid(data).name(), HexSubstr(pmid_).c_str(), data->success_count, upper_threshold_,
-           data->failure_count, data->data_holders.size(), upper_threshold_, data->data_holders.size() - upper_threshold_, result);
+    printf("In VSL::AssessResult for %s (%s), data->success_count (%u) >= kUpperThreshold_ (%u) OR "
+      "data->failure_count (%u) > data->data_holders.size() (%u) - kUpperThreshold_ (%u) (%u), so returning %i.\n", typeid(data).name(), HexSubstr(pmid_).c_str(), data->success_count, kUpperThreshold_,
+           data->failure_count, data->data_holders.size(), kUpperThreshold_, data->data_holders.size() - kUpperThreshold_, result);
 #endif
     data->callback(result);
     data->callback_done = true;
@@ -371,8 +371,8 @@ template<>
 void VaultServiceLogic::AssessResult(
     ReturnCode result,
     boost::shared_ptr<RemoteAccountStatusOpData> data) {
-  if (data->success_count - data->failure_count >= lower_threshold_ ||
-      data->failure_count > data->data_holders.size() - lower_threshold_) {
+  if (data->success_count - data->failure_count >= kLowerThreshold_ ||
+      data->failure_count > data->data_holders.size() - kLowerThreshold_) {
     data->callback(result);
     data->callback_done = true;
   }

@@ -83,19 +83,23 @@ class NetworkTest {
   explicit NetworkTest(const std::string &test_name);
   ~NetworkTest();
   bool Init();
-  boost::int16_t transport_id() { return transport_id_; }
-  fs::path test_dir() { return test_dir_; }
-  transport::TransportUDT *udt_transport() { return udt_transport_; }
-  transport::TransportHandler *transport_handler() {
+  boost::int16_t transport_id() const { return transport_id_; }
+  fs::path test_dir() const { return test_dir_; }
+  transport::TransportUDT *udt_transport() const { return udt_transport_; }
+  transport::TransportHandler *transport_handler() const {
     return transport_handler_;
   }
-  rpcprotocol::ChannelManager *channel_manager() { return channel_manager_; }
-  boost::shared_ptr<maidsafe::ChunkStore> chunkstore() { return chunkstore_; }
-  boost::shared_ptr<maidsafe::KadOps> kad_ops() { return kad_ops_; }
-  TestStoreManagerPtr store_manager() { return store_manager_; }
-  boost::uint8_t K() { return K_; }
-  boost::uint8_t upper_threshold() { return upper_threshold_; }
-  boost::uint8_t lower_threshold() { return lower_threshold_; }
+  rpcprotocol::ChannelManager *channel_manager() const {
+    return channel_manager_;
+  }
+  boost::shared_ptr<maidsafe::ChunkStore> chunkstore() const {
+    return chunkstore_;
+  }
+  boost::shared_ptr<maidsafe::KadOps> kad_ops() const { return kad_ops_; }
+  TestStoreManagerPtr store_manager() const { return store_manager_; }
+  boost::uint8_t K() const { return K_; }
+  boost::uint8_t kUpperThreshold() const { return kUpperThreshold_; }
+  boost::uint8_t kLowerThreshold() const { return kLowerThreshold_; }
 
  private:
   NetworkTest(const NetworkTest&);
@@ -108,7 +112,7 @@ class NetworkTest {
   boost::shared_ptr<maidsafe::ChunkStore> chunkstore_;
   boost::shared_ptr<maidsafe::KadOps> kad_ops_;
   TestStoreManagerPtr store_manager_;
-  boost::uint8_t K_, upper_threshold_, lower_threshold_;
+  const boost::uint8_t K_, kUpperThreshold_, kLowerThreshold_;
 };
 
 }  // namespace test

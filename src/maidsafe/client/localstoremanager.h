@@ -166,8 +166,8 @@ class LocalStoreManager : public StoreManagerInterface {
   void ExecStringCallback(kad::VoidFunctorOneString cb,
                           MaidsafeRpcResult result);
 
-  boost::uint8_t K_;
-  boost::uint16_t upper_threshold_;
+  const boost::uint8_t K_;
+  const boost::uint16_t kUpperThreshold_;
   CppSQLite3DB db_;
   VaultBufferPacketHandler vbph_;
   boost::mutex mutex_;

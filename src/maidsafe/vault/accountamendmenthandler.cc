@@ -183,7 +183,7 @@ int AccountAmendmentHandler::AssessAmendment(const std::string &owner_pmid,
     (*chunk_info_holders_it).second = true;
     ++amendment->success_count;
     amendment->pendings.push_back(pending);
-    if (amendment->success_count >= upper_threshold_) {  // Overall success
+    if (amendment->success_count >= kUpperThreshold_) {  // Overall success
       if (amendment->account_amendment_result == kAccountAmendmentPending) {
         // Amend actual account
         amendment->account_amendment_result = account_handler_->AmendAccount(
@@ -236,7 +236,7 @@ void AccountAmendmentHandler::CreateNewAmendment(AccountAmendment amendment) {
       request_expectation_handler_->GetExpectedCallersIds(
           amendment.probable_pendings.front().request);
   bool lookup_required(false);
-  if (account_holders_ids.size() >= upper_threshold_) {
+  if (account_holders_ids.size() >= kUpperThreshold_) {
     // Populate map of Chunk Info holders
     for (size_t i = 0; i < account_holders_ids.size(); ++i) {
       amendment.chunk_info_holders.insert(
@@ -292,7 +292,7 @@ void AccountAmendmentHandler::CreateNewAmendmentCallback(
   vault_service_logic_->kadops()->HandleFindCloseNodesResponse(
       find_nodes_response, &contacts, &mutex, &cv, &result);
   if (result == maidsafe::kSuccess && contacts.size() >=
-      size_t(upper_threshold_)) {
+      size_t(kUpperThreshold_)) {
     // Populate map of Chunk Info holders
     for (size_t i = 0; i < contacts.size(); ++i) {
       modified_amendment.chunk_info_holders.insert(std::pair<std::string, bool>(

@@ -70,11 +70,11 @@ NetworkTest::NetworkTest(const std::string &test_name)
       store_manager_(new TestStoreManager(chunkstore_, g_K, test_dir_)),
 #endif
       K_(g_K),
-      upper_threshold_(static_cast<boost::uint8_t>
+      kUpperThreshold_(static_cast<boost::uint8_t>
                        (g_K * kMinSuccessfulPecentageStore)),
-      lower_threshold_(kMinSuccessfulPecentageStore > .25 ?
-                      static_cast<boost::uint8_t>(g_K * .25) :
-                      upper_threshold_) {
+      kLowerThreshold_(kMinSuccessfulPecentageStore > .25 ?
+                       static_cast<boost::uint8_t>(g_K * .25) :
+                       kUpperThreshold_) {
   try {
     if (fs::exists(test_dir_))
       fs::remove_all(test_dir_);

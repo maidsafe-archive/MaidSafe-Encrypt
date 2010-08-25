@@ -164,7 +164,7 @@ class ClientBufferPacketHandler {
   crypto::Crypto crypto_obj_;
   boost::shared_ptr<maidsafe::BufferPacketRpcs> rpcs_;
   boost::shared_ptr<KadOps> kad_ops_;
-  boost::uint16_t upper_threshold_;
+  const boost::uint16_t kUpperThreshold_;
 };
 
 }  // namespace maidsafe

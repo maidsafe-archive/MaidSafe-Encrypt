@@ -55,10 +55,10 @@ PDVault::PDVault(const std::string &pmid_public,
                  const boost::uint64_t &used_space,
                  const boost::uint8_t &k)
     : K_(k),
-      upper_threshold_(
+      kUpperThreshold_(
           static_cast<boost::uint16_t>(K_ * kMinSuccessfulPecentageStore)),
-      lower_threshold_(kMinSuccessfulPecentageStore > .25 ?
-          static_cast<boost::uint16_t>(K_ * .25) : upper_threshold_),
+      kLowerThreshold_(kMinSuccessfulPecentageStore > .25 ?
+          static_cast<boost::uint16_t>(K_ * .25) : kUpperThreshold_),
       port_(port),
       global_udt_transport_(),
       transport_id_(0),

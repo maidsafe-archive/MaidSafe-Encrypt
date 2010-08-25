@@ -535,9 +535,9 @@ class MaidsafeStoreManager : public StoreManagerInterface {
       const boost::uint32_t &conn_id, const std::string &msg);
   bool SendIM(const std::string &msg, const std::string &contactname);
 
-  boost::uint8_t K_;
-  boost::uint16_t upper_threshold_;
-  boost::uint16_t lower_threshold_;
+  const boost::uint8_t K_;
+  const boost::uint16_t kUpperThreshold_;
+  const boost::uint16_t kLowerThreshold_;
   transport::TransportUDT udt_transport_;
   transport::TransportHandler transport_handler_;
   rpcprotocol::ChannelManager channel_manager_;
@@ -549,8 +549,8 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   QThreadPool chunk_thread_pool_, packet_thread_pool_;
   boost::shared_ptr<BufferPacketRpcs> bprpcs_;
   ClientBufferPacketHandler cbph_;
-  static int kChunkMaxThreadCount_;
-  static int kPacketMaxThreadCount_;
+  const int kChunkMaxThreadCount_;
+  const int kPacketMaxThreadCount_;
   IMNotifier im_notifier_;
   IMStatusNotifier im_status_notifier_;
   IMConnectionHandler im_conn_hdler_;

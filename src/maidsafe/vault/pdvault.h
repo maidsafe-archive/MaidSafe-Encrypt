@@ -310,9 +310,9 @@ class PDVault {
   void SwapChunkAcceptChunk(
       boost::shared_ptr<maidsafe::SwapChunkResponse> swap_chunk_response,
       boost::shared_ptr<SwapChunkArgs> swap_chunk_args);
-  boost::uint8_t K_;
-  boost::uint16_t upper_threshold_;
-  boost::uint16_t lower_threshold_;
+  const boost::uint8_t K_;
+  const boost::uint16_t kUpperThreshold_;
+  const boost::uint16_t kLowerThreshold_;
   boost::uint16_t port_;
   transport::TransportUDT global_udt_transport_;
   boost::int16_t transport_id_;

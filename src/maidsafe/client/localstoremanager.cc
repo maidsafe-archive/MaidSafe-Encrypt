@@ -85,7 +85,7 @@ LocalStoreManager::LocalStoreManager(
     const boost::uint8_t &k,
     const fs::path &db_directory)
         : K_(k),
-          upper_threshold_(
+          kUpperThreshold_(
               static_cast<boost::uint16_t>(K_ * kMinSuccessfulPecentageStore)),
           db_(),
           vbph_(),
@@ -775,7 +775,7 @@ int LocalStoreManager::LoadBPMessages(
 #endif
     return 0;
   }
-  return upper_threshold_;
+  return kUpperThreshold_;
 }
 
 int LocalStoreManager::SendMessage(
@@ -843,7 +843,7 @@ int LocalStoreManager::SendMessage(
 }
 
 int LocalStoreManager::LoadBPPresence(std::list<LivePresence>*) {
-  return upper_threshold_;
+  return kUpperThreshold_;
 }
 
 int LocalStoreManager::AddBPPresence(

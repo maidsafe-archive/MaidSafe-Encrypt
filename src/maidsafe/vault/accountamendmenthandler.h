@@ -159,7 +159,7 @@ class AccountAmendmentHandler {
             vault_service_logic_(vault_service_logic),
             amendments_(),
             amendment_mutex_(),
-            upper_threshold_(upper_threshold) {}
+            kUpperThreshold_(upper_threshold) {}
   ~AccountAmendmentHandler() {}
   // Assumes that response->pmid() has already been set and that
   // request->signed_size() validates
@@ -202,7 +202,7 @@ class AccountAmendmentHandler {
   AccountAmendmentSet amendments_;
   std::list<AmendmentResult> amendment_results_;
   boost::mutex amendment_mutex_;
-  boost::uint8_t upper_threshold_;
+  const boost::uint8_t kUpperThreshold_;
 };
 
 }  // namespace maidsafe_vault
