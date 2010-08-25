@@ -22,24 +22,26 @@
 
 namespace maidsafe {
 
-AccountStatusManager::AccountStatusManager() : space_offered_(0),
-                                               space_given_(0),
-                                               space_taken_(0),
-                                               space_reserved_(0),
-                                               reserved_values_(),
-                                               kMaxUpdateInterval_(300000),
-                                               kFailureRetryInterval_(60000),
-                                               kMaxAmendments_(25),
-                                               mutex_(),
-                                               amendments_since_update_(0),
-                                               update_functor_(),
-                                               wait_functor_(),
-                                               io_service_(),
-                                               strand_(io_service_),
-                                               timer_(),
-                                               work_(),
-                                               worker_thread_(),
-                                               awaiting_update_result_(false) {
+AccountStatusManager::AccountStatusManager()
+    : space_offered_(0),
+      space_given_(0),
+      space_taken_(0),
+      space_reserved_(0),
+      reserved_values_(),
+      kMaxUpdateInterval_(300000),
+      kFailureRetryInterval_(60000),
+      kMaxAmendments_(25),
+      mutex_(),
+      amendments_since_update_(0),
+      update_functor_(),
+      wait_functor_(),
+      io_service_(),
+      strand_(io_service_),
+      timer_(),
+      work_(),
+      worker_thread_(),
+      update_done_cond_var_(),
+      awaiting_update_result_(false) {
   wait_functor_ = boost::bind(&AccountStatusManager::DoUpdate,
                               boost::ref(*this), _1);
 }
@@ -62,13 +64,26 @@ void AccountStatusManager::StartUpdating(
 
 void AccountStatusManager::StopUpdating() {
   boost::mutex::scoped_lock lock(mutex_);
+  update_functor_.clear();
   if (timer_.get()) {
     timer_->cancel();
     timer_.reset();
   }
   work_.reset();
   worker_thread_.join();
-  update_functor_.clear();
+  try {
+    bool success = update_done_cond_var_.timed_wait(lock,
+        boost::posix_time::milliseconds(3100),
+        boost::bind(&AccountStatusManager::UpdateDone, this));
+#ifdef DEBUG
+    if (!success)
+      printf("AccountStatusManager::StopUpdating: Failed to wait for update"
+             " completion.\n");
+#endif
+  }
+  catch(const std::exception &e) {
+    printf("AccountStatusManager::StopUpdating: %s\n", e.what());
+  }
 }
 
 void AccountStatusManager::Run() {
@@ -116,6 +131,7 @@ void AccountStatusManager::SetAccountStatus(
   space_taken_ = space_taken;
   amendments_since_update_ = 0;
   awaiting_update_result_ = false;
+  update_done_cond_var_.notify_one();
 }
 
 void AccountStatusManager::AccountStatus(boost::uint64_t *space_offered,
@@ -194,6 +210,7 @@ void AccountStatusManager::UpdateFailed() {
       timer_->async_wait(wait_functor_);
     }
   }
+  update_done_cond_var_.notify_one();
 }
 
 bool AccountStatusManager::AbleToStore(const boost::uint64_t &size) {

@@ -19,6 +19,7 @@
 */
 
 #include <gtest/gtest.h>
+#include <algorithm>
 #include <limits>
 #include "maidsafe/pdutils.h"
 #include "maidsafe/accountstatusmanager.h"
@@ -535,8 +536,7 @@ TEST_F(AccountStatusManagerTest, BEH_MAID_ASM_UpdateFailed) {
 class FuncAccountStatusManagerTest : public testing::Test {
  public:
   enum JobType { kStoreChunk, kDeleteChunk, kVaultStore, kVaultDelete };
-  FuncAccountStatusManagerTest() : asm_(),
-                                   given_(10000),
+  FuncAccountStatusManagerTest() : given_(10000),
                                    taken_(0),
                                    reserved_(0),
                                    update_thread_(),
@@ -547,7 +547,8 @@ class FuncAccountStatusManagerTest : public testing::Test {
                                    update_failure_count_(0),
                                    kMaxThreadCount_(20),
                                    chunk_sizes_(),
-                                   display_output_(false) {
+                                   display_output_(false),
+                                   asm_() {
     // Set AccountStatusManager's repeat timeouts low for test
     const_cast<boost::posix_time::milliseconds&>(asm_.kMaxUpdateInterval_) =
         boost::posix_time::milliseconds(5000);
@@ -595,7 +596,9 @@ class FuncAccountStatusManagerTest : public testing::Test {
       &completed_count, &repeats));
   }
   void ThreadedUpdate() {
-    update_thread_ = boost::thread(&FuncAccountStatusManagerTest::Update, this);
+    if (!update_thread_.joinable())
+      update_thread_ =
+          boost::thread(&FuncAccountStatusManagerTest::Update, this);
   }
   bool ThreadAvailable() { return thread_count_ < kMaxThreadCount_; }
   bool ThreadedJobDone(size_t *count, size_t *target) {
@@ -715,15 +718,15 @@ class FuncAccountStatusManagerTest : public testing::Test {
   boost::uint64_t AsmSpaceGiven() { return asm_.space_given_; }
   boost::uint64_t AsmSpaceTaken() { return asm_.space_taken_; }
   boost::uint64_t AsmSpaceReserved() { return asm_.space_reserved_; }
-  AccountStatusManager asm_;
+  boost::mutex mutex_;
   boost::uint64_t given_, taken_, reserved_;
   boost::thread update_thread_;
-  boost::mutex mutex_;
   boost::condition_variable cond_var_;
   size_t thread_count_, update_success_count_, update_failure_count_;
   const size_t kMaxThreadCount_;
   std::vector<boost::uint32_t> chunk_sizes_;
   bool display_output_;
+  AccountStatusManager asm_;
 };
 
 TEST_F(FuncAccountStatusManagerTest, BEH_MAID_ASM_StoreNotEnoughSpace) {
@@ -753,7 +756,8 @@ TEST_F(FuncAccountStatusManagerTest, BEH_MAID_ASM_StoreNotEnoughSpace) {
   EXPECT_EQ(total_size_of_chunks / 2, AsmSpaceOffered());
   EXPECT_EQ(10000U, given_);
   EXPECT_EQ(given_, AsmSpaceGiven());
-  EXPECT_LE(taken_, AsmSpaceOffered());
+  EXPECT_LE(taken_, AsmSpaceOffered() + *std::max_element(chunk_sizes_.begin(),
+                                                          chunk_sizes_.end()));
   EXPECT_EQ(taken_, AsmSpaceTaken());
   EXPECT_EQ(0U, reserved_);
   EXPECT_EQ(reserved_, AsmSpaceReserved());

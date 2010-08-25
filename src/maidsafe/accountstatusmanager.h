@@ -26,6 +26,7 @@
 #include <boost/asio/strand.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/function.hpp>
+#include <boost/thread/condition_variable.hpp>
 #include <boost/thread/mutex.hpp>
 #include <boost/thread/thread.hpp>
 
@@ -86,6 +87,7 @@ class AccountStatusManager {
   AccountStatusManager(const AccountStatusManager&);
   void Run();
   void DoUpdate(const boost::system::error_code &error);
+  bool UpdateDone() { return !awaiting_update_result_; }
   boost::uint64_t space_offered_;
   boost::uint64_t space_given_;
   boost::uint64_t space_taken_;
@@ -103,6 +105,7 @@ class AccountStatusManager {
   boost::shared_ptr<boost::asio::deadline_timer> timer_;
   boost::shared_ptr<boost::asio::io_service::work> work_;
   boost::thread worker_thread_;
+  boost::condition_variable update_done_cond_var_;
   bool awaiting_update_result_;
 };
 
