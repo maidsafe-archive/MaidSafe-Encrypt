@@ -43,7 +43,7 @@ class PendingOperationsDialog : public QDialog {
   Ui::PendingOperationsDialog ui_;
   QList<ClientController::PendingOps> ops_;
 
-  bool PendingOperationsDialog::getOps(QList<ClientController::PendingOps> ops);
+  bool getOps(QList<ClientController::PendingOps> ops);
  
   enum State {
     PERSONAL,
