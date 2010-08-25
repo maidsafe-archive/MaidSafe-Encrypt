@@ -557,6 +557,7 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   IMHandler im_handler_;
   AccountHoldersManager account_holders_manager_;
   AccountStatusManager account_status_manager_;
+  boost::shared_ptr<AccountStatusData> account_status_update_data_;
 };
 
 }  // namespace maidsafe

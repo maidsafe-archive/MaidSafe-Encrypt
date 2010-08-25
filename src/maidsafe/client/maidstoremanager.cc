@@ -88,7 +88,8 @@ MaidsafeStoreManager::MaidsafeStoreManager(boost::shared_ptr<ChunkStore> cstore,
       im_conn_hdler_(),
       im_handler_(ss_),
       account_holders_manager_(kad_ops_, lower_threshold_),
-      account_status_manager_() {}
+      account_status_manager_(),
+      account_status_update_data_() {}
 
 void MaidsafeStoreManager::Init(VoidFuncOneInt callback,
                                 const boost::uint16_t &port) {
@@ -164,6 +165,17 @@ void MaidsafeStoreManager::Close(VoidFuncOneInt callback,
   printf("\tIn MaidsafeStoreManager::Close, packet_thread_pool_ done.\n");
   im_conn_hdler_.Stop();
   account_status_manager_.StopUpdating();
+  // if an update is in flight, return from callbacks ASAP
+  if (account_status_update_data_.get()) {
+    boost::mutex::scoped_lock lock(account_status_update_data_->mutex);
+    account_status_update_data_->success_count = lower_threshold_;
+    for (size_t i = 0; i < account_status_update_data_->data_holders.size();
+         ++i) {
+      channel_manager_.CancelPendingRequest(account_status_update_data_->
+          data_holders.at(i).controller->request_id());
+    }
+    account_status_manager_.UpdateFailed();
+  }
   kad_ops_->Leave();
 #ifdef DEBUG
 //  printf("\tIn MaidsafeStoreManager::Close, after Leave. "
@@ -1196,19 +1208,24 @@ void MaidsafeStoreManager::GetAccountStatus(boost::uint64_t *space_offered,
 }
 
 void MaidsafeStoreManager::UpdateAccountStatus() {
-  if (ss_->ConnectionStatus() != 0)  // offline
+  if (ss_->ConnectionStatus() != 0) {  // offline
+    account_status_manager_.UpdateFailed();
     return;
+  }
 
   // Find the account holders
-  boost::shared_ptr<AccountStatusData> data(new AccountStatusData);
-  data->contacts = account_holders_manager_.account_holder_group();
-  if (data->contacts.size() < upper_threshold_) {
+  account_status_update_data_ =
+      boost::shared_ptr<AccountStatusData>(new AccountStatusData);
+  account_status_update_data_->contacts =
+      account_holders_manager_.account_holder_group();
+  if (account_status_update_data_->contacts.size() < upper_threshold_) {
 #ifdef DEBUG
     printf("In MSM::UpdateAccountStatus (%d), no account holders available.\n",
            kad_ops_->Port());
 #endif
     // TODO(Team#) possibly schedule retry dependent on AH manager update
     account_holders_manager_.Update();
+    account_status_manager_.UpdateFailed();
     return;
   }
 
@@ -1221,30 +1238,32 @@ void MaidsafeStoreManager::UpdateAccountStatus() {
   account_status_request.set_public_key(ss_->PublicKey(PMID));
   account_status_request.set_public_key_signature(ss_->SignedPublicKey(PMID));
   std::vector<AccountStatusRequest> account_status_requests;
-  for (size_t i = 0; i < data->contacts.size(); ++i) {
+  for (size_t i = 0; i < account_status_update_data_->contacts.size(); ++i) {
     std::string request_signature = co.AsymSign(co.Hash(
         ss_->SignedPublicKey(PMID) + account_holders_manager_.account_name() +
-        data->contacts.at(i).node_id().String(), "",
+        account_status_update_data_->contacts.at(i).node_id().String(), "",
         crypto::STRING_STRING, false), "", ss_->PrivateKey(PMID),
         crypto::STRING_STRING);
     account_status_request.set_request_signature(request_signature);
     account_status_requests.push_back(account_status_request);
     AccountStatusData::AccountStatusDataHolder holder(
-        data->contacts.at(i).node_id().String());
-    data->data_holders.push_back(holder);
+        account_status_update_data_->contacts.at(i).node_id().String());
+    account_status_update_data_->data_holders.push_back(holder);
   }
 
   // Send the requests
-  boost::mutex::scoped_lock lock(data->mutex);
-  for (size_t i = 0; i < data->contacts.size(); ++i) {
+  boost::mutex::scoped_lock lock(account_status_update_data_->mutex);
+  for (size_t i = 0; i < account_status_update_data_->contacts.size(); ++i) {
     google::protobuf::Closure* callback = google::protobuf::NewCallback(this,
-        &MaidsafeStoreManager::UpdateAccountStatusStageTwo, i, data);
-    client_rpcs_->AccountStatus(data->contacts.at(i),
-        kad_ops_->AddressIsLocal(data->contacts.at(i)),
+        &MaidsafeStoreManager::UpdateAccountStatusStageTwo, i,
+        account_status_update_data_);
+    client_rpcs_->AccountStatus(account_status_update_data_->contacts.at(i),
+        kad_ops_->AddressIsLocal(account_status_update_data_->contacts.at(i)),
         udt_transport_.transport_id(),
         &account_status_requests.at(i),
-        &data->data_holders.at(i).response,
-        data->data_holders.at(i).controller.get(), callback);
+        &account_status_update_data_->data_holders.at(i).response,
+        account_status_update_data_->data_holders.at(i).controller.get(),
+        callback);
   }
 }
 
@@ -1304,6 +1323,10 @@ void MaidsafeStoreManager::UpdateAccountStatusStageTwo(
            kad_ops_->Port(), data->success_count, lower_threshold_);
 #endif
     account_status_manager_.UpdateFailed();
+    for (size_t i = 0; i < data->data_holders.size(); ++i) {
+      channel_manager_.CancelPendingRequest(
+          data->data_holders.at(i).controller->request_id());
+    }
     return;
   }
 
@@ -1328,6 +1351,12 @@ void MaidsafeStoreManager::UpdateAccountStatusStageTwo(
     account_status_manager_.UpdateFailed();
   } else {
     account_status_manager_.SetAccountStatus(offered_avg, given_avg, taken_avg);
+  }
+
+  // cancel outstanding rpcs and clear account_status_update_data_
+  for (size_t i = 0; i < data->data_holders.size(); ++i) {
+    channel_manager_.CancelPendingRequest(
+        data->data_holders.at(i).controller->request_id());
   }
 }
 
