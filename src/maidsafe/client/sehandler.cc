@@ -124,8 +124,7 @@ ItemType SEHandler::CheckEntry(const fs::path &full_path,
 }  // end CheckEntry
 
 int SEHandler::EncryptFile(const std::string &rel_entry,
-                           const DirType &dir_type,
-                           const std::string &msid) {
+                           const DirType &dir_type, const std::string &msid) {
   boost::scoped_ptr<DataAtlasHandler> dah(new DataAtlasHandler);
   std::string full_entry(file_system::FullMSPathFromRelPath(rel_entry,
                          ss_->SessionName()).string());
@@ -155,7 +154,6 @@ int SEHandler::EncryptFile(const std::string &rel_entry,
         dm.set_file_hash(file_hash);
         if (se.Encrypt(full_entry, false, &dm) != kSuccess)
           return -2;
-            // insert chunkname with
         StoreChunks(dm, dir_type, msid, rel_entry);
         dm.SerializeToString(&ser_dm);
       }
@@ -212,7 +210,7 @@ int SEHandler::EncryptString(const std::string &data, std::string *ser_dm) {
   if (se.Encrypt(data, true, &dm))
     return -2;
 
-  StoreChunks(dm, PRIVATE, "");
+  StoreChunks(dm, PRIVATE, "", base::EncodeToHex(dm.file_hash()));
   if (!dm.SerializeToString(ser_dm)) {
 #ifdef DEBUG
     printf("SEHandler::EncryptString - Failed to serialize dm\n");
@@ -737,20 +735,21 @@ void SEHandler::StoreChunks(const DataMap &dm, const DirType &dir_type,
                             const std::string &msid, const std::string &path) {
   bool into_map(path.empty() ? false : true);
   for (int i = 0; i < dm.encrypted_chunk_name_size(); ++i) {
-    storem_->StoreChunk(dm.encrypted_chunk_name(i), dir_type, msid);
-    if (into_map) {
-      PendingChunks pc(dm.encrypted_chunk_name(i), path, msid);
-      std::pair<PendingChunksSet::iterator, bool> p =
-          pending_chunks_.insert(pc);
-      if (!p.second) {
+    if (!into_map)
+      continue;
+    PendingChunks pc(dm.encrypted_chunk_name(i), path, msid);
+    std::pair<PendingChunksSet::iterator, bool> p = pending_chunks_.insert(pc);
+    if (!p.second) {
 #ifdef DEBUG
-        printf("SEHandler::StoreChunks - Something really fucking wrong is "
-               "going on in SEHandler with the multi-index for pending "
-               "chunks.\n");
+      printf("SEHandler::StoreChunks - Something really fucking wrong is "
+             "going on in SEHandler with the multi-index for pending "
+             "chunks.\n");
 #endif
-      }
     }
   }
+
+  for (int j = 0; j < dm.encrypted_chunk_name_size(); ++j)
+    storem_->StoreChunk(dm.encrypted_chunk_name(j), dir_type, msid);
 }
 
 int SEHandler::RemoveKeyFromUptodateDms(const std::string &key) {
@@ -774,31 +773,35 @@ void SEHandler::PacketOpCallback(const int &store_manager_result,
 
 void SEHandler::ChunkDone(const std::string &chunkname,
                           maidsafe::ReturnCode rc) {
+//  printf("0000000000 - %s\n", base::EncodeToHex(chunkname).substr(0, 16).c_str());
   boost::mutex::scoped_lock loch_sloy(chunkmap_mutex_);
+//  printf("1111111111 - %s\n", base::EncodeToHex(chunkname).substr(0, 16).c_str());
   PCSbyName &chunkname_index = pending_chunks_.get<by_chunkname>();
   PCSbyName::iterator it = chunkname_index.find(chunkname);
   if (it == chunkname_index.end()) {
 #ifdef DEBUG
     printf("SEHandler::ChunkDone - No record of the chunk %s\n",
-           chunkname.c_str());
-    return;
+           base::EncodeToHex(chunkname).c_str());
 #endif
+    return;
   }
 
+//  printf("2222222222 - %s\n", base::EncodeToHex(chunkname).substr(0, 16).c_str());
   PendingChunks pc = *it;
   PCSbyPath &path_index = pending_chunks_.get<by_path>();
   PCSbyPath::iterator path_it = path_index.find(pc.path);
   if (rc == kSuccess) {
+//    printf("3333333333 - %s\n", base::EncodeToHex(chunkname).substr(0, 16).c_str());
     pc.done = rc;
     chunkname_index.replace(it, pc);
     // Check if all others are done
     if (path_it == path_index.end()) {
-  #ifdef DEBUG
+#ifdef DEBUG
       printf("SEHandler::ChunkDone - No record of the chunk based on file path"
              " %s and that's even worse since we just put one in. LOL. WTF!\n",
              pc.path.c_str());
+#endif
       return;
-  #endif
     }
 
     int total(0), pend(0);
@@ -814,17 +817,21 @@ void SEHandler::ChunkDone(const std::string &chunkname,
       path_index.erase(path_it, path_index.end());
 
       // Notify we're done with this file
+//      printf("100 - %d/%d\n", pend, total);
       file_status_(pc.path, 100);
     } else {
       // Notify percentage
-
+      file_status_(pc.path, (total - pend) * 100 / total);
     }
+//    printf("4444444444 - %s\n", base::EncodeToHex(chunkname).substr(0, 16).c_str());
   } else {
+//    printf("5555555555 - %s\n", base::EncodeToHex(chunkname).substr(0, 16).c_str());
     // TODO(Team#5#): 2010-08-19 - Need to define a proper limit for this
     if (pc.tries < 1) {
       ++pc.tries;
       storem_->StoreChunk(pc.chunkname, pc.dirtype, pc.msid);
     } else {
+//      printf("6666666666 - %s\n", base::EncodeToHex(chunkname).substr(0, 16).c_str());
       // We need to cancel all the other chunks here because it's all
       // pointless. Hopefully we'll have some way of recovering payment from
       // already uploaded chunks.
@@ -833,9 +840,12 @@ void SEHandler::ChunkDone(const std::string &chunkname,
       path_index.erase(path_it, path_index.end());
 
       // Signal to notify upload for this is buggered
+//      printf("Bingo! - %s\n", base::EncodeToHex(chunkname).substr(0, 16).c_str());
       file_status_(pc.path, -1);
     }
+//    printf("7777777777 - %s\n", base::EncodeToHex(chunkname).substr(0, 16).c_str());
   }
+//  printf("8888888888 - %s\n", base::EncodeToHex(chunkname).substr(0, 16).c_str());
 }
 
 bs2::connection SEHandler::ConnectToOnFileNetworkStatus(

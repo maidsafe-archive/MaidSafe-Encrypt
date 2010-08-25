@@ -42,8 +42,7 @@ namespace fs = boost::filesystem;
 
 namespace test_se {
 
-std::string CreateRandomFile(const std::string &filename,
-                             const int &filesize) {
+std::string CreateRandomFile(const std::string &filename, const int &filesize) {
   fs::path file_path(file_system::MaidsafeHomeDir(
       maidsafe::SessionSingleton::getInstance()->SessionName()) / filename);
   fs::ofstream ofs;

@@ -139,6 +139,7 @@ class SEHandler {
   SEHandler(const SEHandler &);
   FRIEND_TEST(SEHandlerTest, BEH_MAID_Check_Entry);
   FRIEND_TEST(SEHandlerTest, BEH_MAID_EncryptAndDecryptPrivateDb);
+  FRIEND_TEST(SEHandlerTest, BEH_MAID_FailureOfChunkEncryptingFile);
   ItemType CheckEntry(const fs::path &full_path, boost::uint64_t *file_size,
                       std::string *file_hash);
 

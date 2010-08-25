@@ -168,6 +168,7 @@ class StoreManagerInterface {
  protected:
   StoreManagerInterface() : sig_chunk_uploaded_() {}
   OnChunkUploaded sig_chunk_uploaded_;
+  boost::mutex signal_mutex_;
 
  private:
   StoreManagerInterface(const StoreManagerInterface&);
