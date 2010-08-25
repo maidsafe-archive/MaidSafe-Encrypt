@@ -18,6 +18,7 @@
 * ============================================================================
 */
 
+#include <boost/format.hpp>
 #include <gtest/gtest.h>
 #include <algorithm>
 #include <limits>
@@ -536,11 +537,11 @@ TEST_F(AccountStatusManagerTest, BEH_MAID_ASM_UpdateFailed) {
 class FuncAccountStatusManagerTest : public testing::Test {
  public:
   enum JobType { kStoreChunk, kDeleteChunk, kVaultStore, kVaultDelete };
-  FuncAccountStatusManagerTest() : given_(10000),
+  FuncAccountStatusManagerTest() : mutex_(),
+                                   given_(10000),
                                    taken_(0),
                                    reserved_(0),
                                    update_thread_(),
-                                   mutex_(),
                                    cond_var_(),
                                    thread_count_(0),
                                    update_success_count_(0),
@@ -630,16 +631,16 @@ class FuncAccountStatusManagerTest : public testing::Test {
       --thread_count_;
       ++(*counter);
       if (display_output_)
-        printf("StoredChunk OK %u:\t%u\tTotal: %u\n", *counter, chunk_size,
-               asm_.space_taken_);
+        printf("%s", (boost::format("StoredChunk OK %1%:\t%2%\tTotal: %3%\n")
+               % *counter % chunk_size % asm_.space_taken_).str().c_str());
       cond_var_.notify_all();
     } else {
       boost::mutex::scoped_lock lock(mutex_);
       --thread_count_;
       ++(*counter);
       if (display_output_)
-        printf("StoredChunk FAIL %u:\t%u\tTotal: %u\n", *counter, chunk_size,
-               asm_.space_taken_);
+        printf("%s", (boost::format("StoredChunk FAIL %1%:\t%2%\tTotal: %3%\n")
+               % *counter % chunk_size % asm_.space_taken_).str().c_str());
       cond_var_.notify_all();
     }
   }
@@ -657,8 +658,9 @@ class FuncAccountStatusManagerTest : public testing::Test {
     --thread_count_;
     ++(*counter);
     if (display_output_)
-      printf("DeletedChunk %u:\t%u\tTotal: %u\n", *counter,
-             chunk_sizes_.at(chunk_number), asm_.space_taken_);
+      printf("%s", (boost::format("DeletedChunk %1%:\t%2%\tTotal: %3%\n") %
+             *counter % chunk_sizes_.at(chunk_number) % asm_.space_taken_).
+             str().c_str());
     cond_var_.notify_all();
   }
   void VaultOp(bool given, size_t *counter) {
