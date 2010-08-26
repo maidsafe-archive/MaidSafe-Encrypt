@@ -12,6 +12,9 @@
     <file alias="help">64/Help-64.png</file>
     <file alias="globe">64/Globe-64.png</file>
   </qresource>
+  <qresource prefix="background">
+    <file>cloud_background.png</file>
+  </qresource>
   <qresource>
     <file>translations/pd_translation_de.qm</file>
     <file>translations/pd_translation_en.qm</file>

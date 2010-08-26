@@ -43,6 +43,7 @@ void AddCalendarEntry::onSave() {
     // Must be heading
   } else {
     // set up variables and emit signal
+    
   }
 }
 

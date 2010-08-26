@@ -27,7 +27,7 @@ PendingOperationsDialog::PendingOperationsDialog(QWidget* parent) : QDialog(pare
 
   getOps(ops_);
 
-    connect(ui_.cancelBtn, SIGNAL(clicked(bool)),
+  connect(ui_.cancelBtn, SIGNAL(clicked(bool)),
           this, SLOT(onCancel()));
 
   connect(ui_.cancelAllBtn, SIGNAL(clicked(bool)),
