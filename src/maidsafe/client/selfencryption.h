@@ -46,23 +46,18 @@ class SelfEncryption {
   explicit SelfEncryption(boost::shared_ptr<ChunkStore> client_chunkstore);
   ~SelfEncryption() {}
   // encrypt entire file
-  int Encrypt(const std::string &entry_str,
-              const bool &is_string,
+  int Encrypt(const std::string &entry_str, const bool &is_string,
               maidsafe::DataMap *dm);
   // decrypt chunks starting at chunklet spanning offset point
-  int Decrypt(const maidsafe::DataMap &dm,
-              const std::string &entry_str,
-              const boost::uint64_t &offset,
-              const bool &overwrite);
-  int Decrypt(const maidsafe::DataMap &dm,
-              const boost::uint64_t &offset,
+  int Decrypt(const maidsafe::DataMap &dm, const std::string &entry_str,
+              const boost::uint64_t &offset, const bool &overwrite);
+  int Decrypt(const maidsafe::DataMap &dm, const boost::uint64_t &offset,
               std::string *decrypted_str);
   std::string SHA512(const fs::path &file_path);
   std::string SHA512(const std::string &content);
   fs::path GetChunkPath(const std::string &chunk_name);
  private:
-  int Decrypt(const maidsafe::DataMap &dm,
-              const boost::uint64_t &offset,
+  int Decrypt(const maidsafe::DataMap &dm, const boost::uint64_t &offset,
               const std::string &path,
               boost::shared_ptr<DataIOHandler> iohandler,
               std::string *decrypted_str);
@@ -81,13 +76,19 @@ class SelfEncryption {
                             maidsafe::DataMap *dm);
   // ensure uniqueness of all chunk hashes (unless chunks are identical)
   // if pre_enc is true, hashes relate to pre-encryption, otherwise post-
-  bool HashUnique(const maidsafe::DataMap &dm,
-                  bool pre_enc,
-                  std::string *hash);
+  bool HashUnique(const maidsafe::DataMap &dm, bool pre_enc, std::string *hash);
   // concatenate copies of hash until desired length reached
   bool ResizeObfuscationHash(const std::string &obfuscate_hash,
                              const boost::uint16_t &length,
                              std::string *resized_obs_hash);
+  int EncryptContent(const std::string &entry_str, const bool &is_string,
+                     maidsafe::DataMap *dm, fs::path *processing_path,
+                     std::map<std::string, fs::path> *to_chunk_store,
+                     boost::shared_ptr<DataIOHandler> iohandler);
+  int AddToChunkStore(const std::map<std::string, fs::path> &to_chunk_store,
+                      const fs::path &processing_path,
+                      boost::shared_ptr<DataIOHandler> iohandler);
+
   FRIEND_TEST(SelfEncryptionTest, BEH_MAID_CheckEntry);
   FRIEND_TEST(SelfEncryptionTest, BEH_MAID_CreateProcessDirectory);
   FRIEND_TEST(SelfEncryptionTest, BEH_MAID_CheckCompressibility);

@@ -21,7 +21,8 @@
 #include "qt/client/client_controller.h"
 
 
-PendingOperationsDialog::PendingOperationsDialog(QWidget* parent) : QDialog(parent) {
+PendingOperationsDialog::PendingOperationsDialog(QWidget* parent)
+    : QDialog(parent), ops_(), pending_files_connection_() {
   ui_.setupUi(this);
   setWindowIcon(QPixmap(":/icons/32/Triangle"));
 
@@ -32,21 +33,27 @@ PendingOperationsDialog::PendingOperationsDialog(QWidget* parent) : QDialog(pare
 
   connect(ui_.cancelAllBtn, SIGNAL(clicked(bool)),
           this, SLOT(onCancelAll()));
+
+  pending_files_connection_ =
+      ClientController::instance()->ConnectToOnFileNetworkStatus(
+          boost::bind(&PendingOperationsDialog::OperationStatus, this, _1, _2));
 }
 
-PendingOperationsDialog::~PendingOperationsDialog() {}
+PendingOperationsDialog::~PendingOperationsDialog() {
+  pending_files_connection_.disconnect();
+}
 
-void PendingOperationsDialog::onCancelAll(){
+void PendingOperationsDialog::onCancelAll() {
   this->close();
   emit opsComplete();
 }
 
-void PendingOperationsDialog::onCancel(){
+void PendingOperationsDialog::onCancel() {
 }
 
 bool PendingOperationsDialog::getOps(QList<ClientController::PendingOps> ops){
     ClientController::instance()->getPendingOps(ops);
-  
+
   if (ops.empty()){
     return false;
   } else {
@@ -61,4 +68,9 @@ void PendingOperationsDialog::changeEvent(QEvent *event) {
     QWidget::changeEvent(event);
   }
 }
+
+void PendingOperationsDialog::OperationStatus(const std::string &file,
+                                              int percentage) {
+}
+
 

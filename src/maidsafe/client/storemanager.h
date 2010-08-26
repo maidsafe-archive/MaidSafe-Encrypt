@@ -25,8 +25,10 @@
 #ifndef MAIDSAFE_CLIENT_STOREMANAGER_H_
 #define MAIDSAFE_CLIENT_STOREMANAGER_H_
 
-#include <boost/thread/condition_variable.hpp>
 #include <boost/function.hpp>
+#include <boost/signals2/signal.hpp>
+#include <boost/thread/condition_variable.hpp>
+
 #include <maidsafe/maidsafe-dht.h>
 #include <maidsafe/base/utils.h>
 
@@ -35,9 +37,16 @@
 #include <string>
 #include <vector>
 
-#include "protobuf/maidsafe_service_messages.pb.h"
 #include "maidsafe/maidsafe.h"
 #include "maidsafe/client/packetfactory.h"
+#include "protobuf/maidsafe_service_messages.pb.h"
+
+namespace bs2 = boost::signals2;
+
+/********************************** Signals **********************************/
+typedef bs2::signal<void(const std::string&, maidsafe::ReturnCode)>
+        OnChunkUploaded;
+/*****************************************************************************/
 
 namespace maidsafe {
 
@@ -49,12 +58,13 @@ enum IfPacketExists {
 };
 
 typedef boost::function<void(const OwnLocalVaultResult&, const std::string&)>
-    SetLocalVaultOwnedFunctor;
+        SetLocalVaultOwnedFunctor;
 
 typedef boost::function<void(const VaultStatus&)> LocalVaultOwnedFunctor;
 
 typedef boost::function<void(const std::vector<std::string>&,
-    const ReturnCode&)> LoadPacketFunctor;
+                             const ReturnCode&)>
+        LoadPacketFunctor;
 
 typedef boost::function<void(const ReturnCode&)> CreateAccountFunctor;
 
@@ -100,7 +110,6 @@ class StoreManagerInterface {
                            const std::string &msid,
                            IfPacketExists if_packet_exists,
                            const VoidFuncOneInt &cb)=0;
-  // Deletes all values for the specified key
   virtual void DeletePacket(const std::string &packet_name,
                             const std::vector<std::string> values,
                             PacketType system_packet_type,
@@ -147,10 +156,24 @@ class StoreManagerInterface {
   virtual bool SendPresence(const std::string &contactname)=0;
   virtual void SendLogOutMessage(const std::string &contactname)=0;
   virtual void SetSessionEndPoint()=0;
-  virtual void SetInstantMessageNotifier(IMNotifier on_msg, IMStatusNotifier
-      status_notifier)=0;
+  virtual void SetInstantMessageNotifier(IMNotifier on_msg,
+                                         IMStatusNotifier status_notifier)=0;
 
-//  virtual void ResetSessionSingleton(SessionSingleton *ss)=0;
+/************************** Signals **************************/
+  bs2::connection ConnectToOnChunkUploaded(
+      const OnChunkUploaded::slot_type &slot) {
+    return sig_chunk_uploaded_.connect(slot);
+  }
+
+ protected:
+  StoreManagerInterface() : sig_chunk_uploaded_() {}
+  OnChunkUploaded sig_chunk_uploaded_;
+  boost::mutex signal_mutex_;
+
+ private:
+  StoreManagerInterface(const StoreManagerInterface&);
+  StoreManagerInterface& operator=(const StoreManagerInterface&);
+/*************************************************************/
 };
 
 }  // namespace maidsafe

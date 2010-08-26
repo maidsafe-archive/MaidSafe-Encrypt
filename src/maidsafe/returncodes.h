@@ -159,6 +159,7 @@ enum ReturnCode {
   kUpdatePacketFailure = -7057,
   kUpdatePacketError = -7058,
   kUpdatePacketParseError = -7059,
+  kChunkStorePending = -7060,
 
   // Message Handler (-8000)
   kConnectionNotExists = -8001,

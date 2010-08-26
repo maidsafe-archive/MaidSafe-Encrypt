@@ -51,18 +51,12 @@ namespace fs = boost::filesystem;
 namespace maidsafe {
 
 SelfEncryption::SelfEncryption(boost::shared_ptr<ChunkStore> client_chunkstore)
-    : client_chunkstore_(client_chunkstore),
-      version_("Mk II"),
-      min_chunks_(3),
-      max_chunks_(40),
-      default_chunk_size_(262144),
+    : client_chunkstore_(client_chunkstore), version_("Mk II"), min_chunks_(3),
+      max_chunks_(40), default_chunk_size_(262144),
       default_chunklet_size_(16384),  // static_cast<boost::uint16_t> MUST be a
                                       // multiple of 2*IV for AES encryption,
                                       // i.e. multiple of 32.
-      min_chunklet_size_(32),
-      compress_(true),
-      file_hash_(),
-      chunk_count_(0) {
+      min_chunklet_size_(32), compress_(true), file_hash_(), chunk_count_(0) {
 #ifdef DEBUG
 //          printf("version_ = %s\n", version_);
 //          printf("min_chunks_ = %u\n", min_chunks_);
@@ -74,36 +68,61 @@ SelfEncryption::SelfEncryption(boost::shared_ptr<ChunkStore> client_chunkstore)
 #endif
 }
 
-int SelfEncryption::Encrypt(const std::string &entry_str,
-                            const bool &is_string,
+int SelfEncryption::Encrypt(const std::string &entry_str, const bool &is_string,
                             maidsafe::DataMap *dm) {
+  std::map<std::string, fs::path> to_chunk_store;
+  fs::path processing_path;
   boost::shared_ptr<DataIOHandler> iohandler;
-
   if (is_string)
     iohandler.reset(new StringIOHandler);
   else
     iohandler.reset(new FileIOHandler);
-
   iohandler->SetData(entry_str, true);
 
+  int n = EncryptContent(entry_str, is_string, dm, &processing_path,
+                         &to_chunk_store, iohandler);
+  if (n != 0) {
+    iohandler.reset();
+    return n;
+  }
+
+  n = AddToChunkStore(to_chunk_store, processing_path, iohandler);
+  iohandler.reset();
+  return n;
+}
+
+int SelfEncryption::EncryptContent(
+    const std::string &entry_str, const bool &is_string,
+    maidsafe::DataMap *dm, fs::path *processing_path,
+    std::map<std::string, fs::path> *to_chunk_store,
+    boost::shared_ptr<DataIOHandler> iohandler) {
+
+
   // check file is encryptable
-  if (CheckEntry(iohandler) != 0)
+  if (CheckEntry(iohandler) != 0) {
+#ifdef DEBUG
+          printf("111111111111111\n");
+#endif
     return -1;
+  }
 
   file_hash_ = base::EncodeToHex(dm->file_hash());
 
   dm->set_se_version(version_);
 
   // create process directory
-  fs::path processing_path;
-  if (!CreateProcessDirectory(&processing_path))
+  if (!CreateProcessDirectory(processing_path)) {
+#ifdef DEBUG
+          printf("222222222222222\n");
+#endif
     return -1;
+  }
 
   // check file to see if it should get compressed
-  bool compress_file = compress_;
+  bool compress_file(compress_);
   if (compress_file) {
     compress_file = (is_string) ? CheckCompressibility("", iohandler) :
-      CheckCompressibility(entry_str, iohandler);
+                                  CheckCompressibility(entry_str, iohandler);
   }
   if (compress_file)
     dm->set_compression_on(true);
@@ -112,14 +131,23 @@ int SelfEncryption::Encrypt(const std::string &entry_str,
   CalculateChunkSizes(iohandler, dm);
 
   // populate pre-encryption hash vector
-  if (!GeneratePreEncHashes(iohandler, dm))
+  if (!GeneratePreEncHashes(iohandler, dm)) {
+#ifdef DEBUG
+          printf("3333333333333333\n");
+#endif
     return -1;
+  }
 
   // Encrypt chunks
-  if (!iohandler->Open())
+  if (!iohandler->Open()) {
+#ifdef DEBUG
+          printf("4444444444444444444\n");
+#endif
     return -1;
+  }
+
   // loop through each chunk
-  for (int chunk_no = 0; chunk_no != chunk_count_; ++chunk_no) {
+  for (int chunk_no = 0; chunk_no < chunk_count_; ++chunk_no) {
     Chunk chunk;
     if (dm->compression_on()) {
       int compression_level = 9;
@@ -188,7 +216,7 @@ int SelfEncryption::Encrypt(const std::string &entry_str,
       chunk.add_chunklet(this_chunklet);
     }
     // assign temporary name for chunk
-    fs::path temp_chunk_name = processing_path;
+    fs::path temp_chunk_name = *processing_path;
     temp_chunk_name /= base::EncodeToHex(dm->chunk_name(chunk_no));
     // remove any old copies of the chunk
     try {
@@ -211,10 +239,21 @@ int SelfEncryption::Encrypt(const std::string &entry_str,
     std::string post_enc_hash = SHA512(temp_chunk_name);
     // ensure uniqueness of post-encryption hash
     // HashUnique(post_enc_hash_, dm, false);
-    client_chunkstore_->AddChunkToOutgoing(post_enc_hash, temp_chunk_name);
+    (*to_chunk_store)[post_enc_hash] = temp_chunk_name;
+//
     // store the post-encryption hash to datamap
     dm->add_encrypted_chunk_name(post_enc_hash);
   }
+  return 0;
+}
+
+int SelfEncryption::AddToChunkStore(
+    const std::map<std::string, fs::path> &to_chunk_store,
+    const fs::path &processing_path,
+    boost::shared_ptr<DataIOHandler> iohandler) {
+  std::map<std::string, fs::path>::const_iterator it = to_chunk_store.begin();
+  for (; it != to_chunk_store.end(); ++it)
+    client_chunkstore_->AddChunkToOutgoing((*it).first, (*it).second);
   iohandler->Close();
   // delete process dir
   try {
@@ -430,13 +469,12 @@ bool SelfEncryption::CreateProcessDirectory(fs::path *processing_path) {
 }
 
 fs::path SelfEncryption::GetChunkPath(const std::string &chunk_name) {
-  return client_chunkstore_->GetChunkPath(chunk_name,
-                                          (kHashable | kOutgoing), true);
+  return client_chunkstore_->GetChunkPath(chunk_name, (kHashable | kOutgoing),
+                                          true);
 }
 
 bool SelfEncryption::CheckCompressibility(
-    const std::string &path,
-    boost::shared_ptr<DataIOHandler> iohandler) {
+    const std::string &path, boost::shared_ptr<DataIOHandler> iohandler) {
   int nElements = sizeof(no_compress_type) / sizeof(no_compress_type[0]);
   if (!path.empty()) {
     std::set<std::string> no_comp(no_compress_type, no_compress_type+nElements);
@@ -496,8 +534,7 @@ bool SelfEncryption::CheckCompressibility(
 }
 
 bool SelfEncryption::CalculateChunkSizes(
-    boost::shared_ptr<DataIOHandler> iohandler,
-    maidsafe::DataMap *dm) {
+    boost::shared_ptr<DataIOHandler> iohandler, maidsafe::DataMap *dm) {
   boost::uint64_t file_size = 0;
   if (!iohandler->Size(&file_size))
     return false;
@@ -563,8 +600,7 @@ int SelfEncryption::ChunkAddition(const char &hex_digit) {
 }
 
 bool SelfEncryption::GeneratePreEncHashes(
-    boost::shared_ptr<DataIOHandler> iohandler,
-    maidsafe::DataMap *dm) {
+    boost::shared_ptr<DataIOHandler> iohandler, maidsafe::DataMap *dm) {
   if (!iohandler->Open())
     return false;
   boost::uint64_t pointer = 0;
@@ -593,8 +629,7 @@ bool SelfEncryption::GeneratePreEncHashes(
   return true;
 }
 
-bool SelfEncryption::HashUnique(const maidsafe::DataMap &dm,
-                                bool pre_enc,
+bool SelfEncryption::HashUnique(const maidsafe::DataMap &dm, bool pre_enc,
                                 std::string *hash) {
 // TODO(Fraser#5#): do validity check or diff (if chunk size > some minimum?)
   int hash_count;

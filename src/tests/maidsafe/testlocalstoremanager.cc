@@ -21,10 +21,11 @@
 * ============================================================================
 */
 #include <gtest/gtest.h>
-#include <maidsafe/protobuf/kademlia_service_messages.pb.h>
 #include <maidsafe/base/utils.h>
+#include <maidsafe/protobuf/kademlia_service_messages.pb.h>
 #include <boost/filesystem/fstream.hpp>
 #include <boost/lexical_cast.hpp>
+#include <boost/signals2/connection.hpp>
 
 #include "fs/filesystem.h"
 #include "maidsafe/chunkstore.h"
@@ -44,8 +45,9 @@ static const boost::uint8_t upper_threshold_(static_cast<boost::uint16_t>
 
 class FakeCallback {
  public:
-  explicit FakeCallback(boost::mutex *m)
-    : result_(), result(maidsafe::kGeneralError), mutex(m) {}
+  explicit FakeCallback(boost::mutex *m) : result_(),
+                                           result(maidsafe::kGeneralError),
+                                           mutex(m) {}
   void CallbackFunc(const std::string &res) {
     result_ = res;
   }
@@ -82,13 +84,41 @@ void wait_for_result_lsm2(const FakeCallback &fcb, boost::mutex *mutex) {
   }
 }
 
-void PacketOpCallback(const int &delete_result,
-                      boost::mutex *mutex,
-                      boost::condition_variable *cond_var,
-                      int *result) {
+void PacketOpCallback(const int &delete_result, boost::mutex *mutex,
+                      boost::condition_variable *cond_var, int *result) {
   boost::mutex::scoped_lock lock(*mutex);
   *result = delete_result;
   cond_var->notify_all();
+}
+
+void CreateChunkage(std::map<std::string, std::string> *chunks_map,
+                    int chunk_number,  fs::path test_root_dir_,
+                    boost::shared_ptr<maidsafe::ChunkStore> client_chunkstore) {
+  crypto::Crypto co;
+  chunks_map->clear();
+  while (chunks_map->size() < size_t(chunk_number)) {
+    std::string chunk(base::RandomString(256 * 1024));
+    std::string name(co.Hash(chunk, "", crypto::STRING_STRING, false));
+    (*chunks_map)[name] = chunk;
+    fs::path chunk_path(test_root_dir_ / base::EncodeToHex(name));
+    fs::ofstream ofs;
+    ofs.open(chunk_path.string().c_str());
+    ofs << chunk;
+    ofs.close();
+    client_chunkstore->AddChunkToOutgoing(name, chunk_path);
+  }
+}
+
+void ChunkDone(const std::string &chunkname, maidsafe::ReturnCode rc,
+               std::map<std::string, std::string> *chunks_map, int *count,
+               boost::mutex *m) {
+  boost::mutex::scoped_lock loch_schmer(*m);
+  ASSERT_EQ(maidsafe::kSuccess, rc);
+  std::map<std::string, std::string>::iterator it = chunks_map->find(chunkname);
+  if (it != chunks_map->end()) {
+    chunks_map->erase(it);
+    --(*count);
+  }
 }
 
 }  // namespace test_lsm
@@ -98,10 +128,7 @@ class LocalStoreManagerTest : public testing::Test {
   LocalStoreManagerTest() : test_root_dir_(file_system::TempDir() /
                                            ("maidsafe_TestStoreManager_" +
                                             base::RandomString(6))),
-                            client_chunkstore_(),
-                            sm_(),
-                            co_(),
-                            mutex_(),
+                            client_chunkstore_(), sm_(), co_(), mutex_(),
                             cb(mutex_),
                             ss_(maidsafe::SessionSingleton::getInstance()),
                             keys_() {}
@@ -132,7 +159,8 @@ class LocalStoreManagerTest : public testing::Test {
     }
     mutex_ = new boost::mutex();
     client_chunkstore_ = boost::shared_ptr<maidsafe::ChunkStore>
-         (new maidsafe::ChunkStore(test_root_dir_.string(), 0, 0));
+                             (new maidsafe::ChunkStore(test_root_dir_.string(),
+                                                       0, 0));
     ASSERT_TRUE(client_chunkstore_->Init());
     int count(0);
     while (!client_chunkstore_->is_initialised() && count < 10000) {
@@ -140,7 +168,6 @@ class LocalStoreManagerTest : public testing::Test {
       count += 10;
     }
     sm_ = new maidsafe::LocalStoreManager(client_chunkstore_, test_lsm::K);
-    // sm_ = new Localsm_();
     sm_->Init(0, boost::bind(&test_lsm::FakeCallback::CallbackFunc, &cb, _1),
               test_root_dir_);
     wait_for_result_lsm(cb, mutex_);
@@ -169,8 +196,8 @@ class LocalStoreManagerTest : public testing::Test {
   void TearDown() {
     ss_->ResetSession();
     cb.Reset();
-    sm_->Close(boost::bind(&test_lsm::FakeCallback::CallbackFunc,
-                                    &cb, _1), true);
+    sm_->Close(boost::bind(&test_lsm::FakeCallback::CallbackFunc, &cb, _1),
+               true);
     wait_for_result_lsm(cb, mutex_);
     maidsafe::GenericResponse res;
     ASSERT_TRUE(res.ParseFromString(cb.result_));
@@ -550,9 +577,17 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_UpdatePacket) {
 }
 
 TEST_F(LocalStoreManagerTest, BEH_MAID_StoreChunk) {
+  std::map<std::string, std::string> chunkies;
+  int count(1), count2(count);
+  boost::mutex m;
   std::string chunk_content = base::RandomString(256 * 1024);
-  std::string chunk_name = co_.Hash(chunk_content, "",
-                           crypto::STRING_STRING, false);
+  std::string chunk_name = co_.Hash(chunk_content, "", crypto::STRING_STRING,
+                                    false);
+  chunkies[chunk_name] = chunk_content;
+  boost::signals2::connection c =
+      sm_->ConnectToOnChunkUploaded(boost::bind(&test_lsm::ChunkDone, _1, _2,
+                                                &chunkies, &count, &m));
+
   std::string hex_chunk_name = base::EncodeToHex(chunk_name);
   fs::path chunk_path(test_root_dir_ / hex_chunk_name);
   fs::ofstream ofs;
@@ -561,12 +596,60 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_StoreChunk) {
   ofs.close();
   client_chunkstore_->AddChunkToOutgoing(chunk_name, chunk_path);
   ASSERT_TRUE(sm_->KeyUnique(chunk_name, false));
+
   sm_->StoreChunk(chunk_name, maidsafe::PRIVATE, "");
+  while (count2 != 0) {
+    boost::this_thread::sleep(boost::posix_time::milliseconds(500));
+    {
+      boost::mutex::scoped_lock loch_juan(m);
+      count2 = count;
+    }
+  }
 
   ASSERT_FALSE(sm_->KeyUnique(chunk_name, false));
   std::string result_str;
   ASSERT_EQ(0, sm_->LoadChunk(chunk_name, &result_str));
   ASSERT_EQ(chunk_content, result_str);
+}
+
+TEST_F(LocalStoreManagerTest, FUNC_MAID_StoreSeveralChunksWithSignals) {
+  std::map<std::string, std::string> chunkies, chunkies2;
+  test_lsm::CreateChunkage(&chunkies, 50, test_root_dir_, client_chunkstore_);
+  printf("Done creating chunks.\n");
+  int count(50), count2(count);
+  boost::mutex m;
+  boost::signals2::connection c =
+      sm_->ConnectToOnChunkUploaded(boost::bind(&test_lsm::ChunkDone, _1, _2,
+                                                &chunkies, &count, &m));
+
+  // Store the chunks
+  {
+    boost::mutex::scoped_lock loch_juan(m);
+    for (std::map<std::string, std::string>::iterator it = chunkies.begin();
+         it != chunkies.end(); ++it) {
+      ASSERT_TRUE(sm_->KeyUnique((*it).first, false));
+      sm_->StoreChunk((*it).first, maidsafe::PRIVATE, "");
+    }
+    chunkies2 = chunkies;
+  }
+  printf("Done adding chunks.\n");
+
+  while (count2 != 0) {
+    boost::this_thread::sleep(boost::posix_time::milliseconds(500));
+    {
+      boost::mutex::scoped_lock loch_juan(m);
+      count2 = count;
+    }
+  }
+  printf("Done collecting results.\n");
+
+  // Evaluate the size
+  ASSERT_TRUE(chunkies.empty());
+  for (std::map<std::string, std::string>::iterator it = chunkies2.begin();
+       it != chunkies2.end(); ++it)
+    ASSERT_FALSE(sm_->KeyUnique((*it).first, false));
+  printf("Done checking assertions.\n");
+  c.disconnect();
 }
 
 TEST_F(LocalStoreManagerTest, BEH_MAID_StoreAndLoadBufferPacket) {

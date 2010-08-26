@@ -48,7 +48,7 @@ class LocalStoreManager : public StoreManagerInterface {
  public:
   explicit LocalStoreManager(boost::shared_ptr<ChunkStore> client_chunkstore,
                              const boost::uint8_t k);
-  virtual ~LocalStoreManager() {}
+  virtual ~LocalStoreManager();
   virtual void Init(int, kad::VoidFunctorOneString cb, fs::path db_directory);
   virtual void Close(kad::VoidFunctorOneString cb, bool);
   virtual void CleanUpTransport() {}
@@ -127,8 +127,6 @@ class LocalStoreManager : public StoreManagerInterface {
   void SetSessionEndPoint() {}
   void SetInstantMessageNotifier(IMNotifier, IMStatusNotifier) {}
 
-//  void ResetSessionSingleton(SessionSingleton *) {};
-
  private:
   LocalStoreManager &operator=(const LocalStoreManager&);
   LocalStoreManager(const LocalStoreManager&);
@@ -164,6 +162,7 @@ class LocalStoreManager : public StoreManagerInterface {
                                    const PacketType &pt,
                                    const std::string &msid,
                                    std::string *ser_gp);
+  void ExecuteReturnSignal(const std::string &chunkname, ReturnCode rc);
 
   boost::uint8_t K_;
   boost::uint16_t upper_threshold_;
@@ -173,6 +172,7 @@ class LocalStoreManager : public StoreManagerInterface {
   std::string local_sm_dir_;
   boost::shared_ptr<ChunkStore> client_chunkstore_;
   SessionSingleton *ss_;
+  std::set<std::string> chunks_pending_;
 };
 
 }  // namespace maidsafe
