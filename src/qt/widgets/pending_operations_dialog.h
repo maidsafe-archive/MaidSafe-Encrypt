@@ -42,8 +42,10 @@ class PendingOperationsDialog : public QDialog {
  private:
   Ui::PendingOperationsDialog ui_;
   QList<ClientController::PendingOps> ops_;
+  bs2::connection pending_files_connection_;
 
   bool getOps(QList<ClientController::PendingOps> ops);
+  void OperationStatus(const std::string &file, int percentage);
 
   enum State {
     PERSONAL,

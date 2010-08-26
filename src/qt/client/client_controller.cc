@@ -541,31 +541,31 @@ void ClientController::analyseMessage(const maidsafe::InstantMessage& im) {
       ityp = DIRECTORY;
       break;
     case maidsafe::REGULAR_FILE:
-      ityp = REGULAR_FILE;     
+      ityp = REGULAR_FILE;
       break;
     case maidsafe::SMALL_FILE:
-      ityp = SMALL_FILE;     
+      ityp = SMALL_FILE;
       break;
     case maidsafe::EMPTY_FILE:
-      ityp = EMPTY_FILE;     
+      ityp = EMPTY_FILE;
       break;
     case maidsafe::LOCKED_FILE:
-      ityp = LOCKED_FILE;      
+      ityp = LOCKED_FILE;
       break;
     case maidsafe::EMPTY_DIRECTORY:
-      ityp = EMPTY_DIRECTORY;     
+      ityp = EMPTY_DIRECTORY;
       break;
     case maidsafe::LINK:
-      ityp = LINK;      
+      ityp = LINK;
       break;
     case maidsafe::MAIDSAFE_CHUNK:
-      ityp = MAIDSAFE_CHUNK;      
+      ityp = MAIDSAFE_CHUNK;
       break;
     case maidsafe::NOT_FOR_PROCESSING:
-      ityp = NOT_FOR_PROCESSING;      
+      ityp = NOT_FOR_PROCESSING;
       break;
     case maidsafe::UNKNOWN:
-      ityp = UNKNOWN;     
+      ityp = UNKNOWN;
       break;
     default:
       ityp = UNKNOWN;
@@ -597,7 +597,7 @@ void ClientController::analyseMessage(const maidsafe::InstantMessage& im) {
     theDate.setTime_t(im.date());
     QString date = theDate.toString("dd/MM/yyyy hh:mm:ss");
 
-    emit emailReceieved(QString::fromStdString(im.subject()), 
+    emit emailReceieved(QString::fromStdString(im.subject()),
                         QString::fromStdString(im.conversation()),
                         QString::fromStdString(im.message()),
                         QString::fromStdString(im.sender()),
@@ -668,8 +668,8 @@ bool ClientController::CreateUser(const QString &username,
 bool ClientController::CheckUserExists(const std::string &username,
                                       const std::string &pin,
                                       DefConLevel level) {
-  
-maidsafe::DefConLevels defCon;                                     
+
+maidsafe::DefConLevels defCon;
 if (level == kDefCon1) {
   defCon = maidsafe::kDefCon1;
 }
@@ -687,7 +687,7 @@ else {
   if (rc == maidsafe::kUserDoesntExist)
     result = true;
   else
-    result = false;    
+    result = false;
   return result;
 }
 
@@ -723,7 +723,7 @@ void ClientController::ClearConversations() {
   maidsafe::SessionSingleton::getInstance()->ClearConversations();
 }
 
-QStringList ClientController::GetContactInfo(const QString &pub_name) {  
+QStringList ClientController::GetContactInfo(const QString &pub_name) {
   maidsafe::mi_contact mic;
   maidsafe::SessionSingleton::getInstance()->GetContactInfo(pub_name.toStdString(), &mic);
 
@@ -735,7 +735,7 @@ QStringList ClientController::GetContactInfo(const QString &pub_name) {
   ss >> phone;
 
   contact << QString::fromStdString(mic.birthday_) << QString::fromStdString(mic.city_) <<
-    QString::fromStdString(mic.full_name_) << QString::fromStdString(gender) << 
+    QString::fromStdString(mic.full_name_) << QString::fromStdString(gender) <<
     QString::fromStdString(phone) << QString::fromStdString(mic.pub_name_);
 
   return contact;
@@ -779,39 +779,39 @@ int ClientController::readdir(const QString &path,  // NOLINT
       break;
     case maidsafe::REGULAR_FILE:
       children->insert(std::pair<std::string, ClientController::ItemType>(
-      s, REGULAR_FILE));      
+      s, REGULAR_FILE));
       break;
     case maidsafe::SMALL_FILE:
       children->insert(std::pair<std::string, ClientController::ItemType>(
-      s, SMALL_FILE));      
+      s, SMALL_FILE));
       break;
     case maidsafe::EMPTY_FILE:
       children->insert(std::pair<std::string, ClientController::ItemType>(
-      s, EMPTY_FILE));      
+      s, EMPTY_FILE));
       break;
     case maidsafe::LOCKED_FILE:
       children->insert(std::pair<std::string, ClientController::ItemType>(
-      s, LOCKED_FILE));      
+      s, LOCKED_FILE));
       break;
     case maidsafe::EMPTY_DIRECTORY:
       children->insert(std::pair<std::string, ClientController::ItemType>(
-      s, EMPTY_DIRECTORY));     
+      s, EMPTY_DIRECTORY));
       break;
     case maidsafe::LINK:
       children->insert(std::pair<std::string, ClientController::ItemType>(
-      s, LINK));      
+      s, LINK));
       break;
     case maidsafe::MAIDSAFE_CHUNK:
       children->insert(std::pair<std::string, ClientController::ItemType>(
-      s, MAIDSAFE_CHUNK));      
+      s, MAIDSAFE_CHUNK));
       break;
     case maidsafe::NOT_FOR_PROCESSING:
       children->insert(std::pair<std::string, ClientController::ItemType>(
-      s, NOT_FOR_PROCESSING));      
+      s, NOT_FOR_PROCESSING));
       break;
     case maidsafe::UNKNOWN:
       children->insert(std::pair<std::string, ClientController::ItemType>(
-      s, UNKNOWN));      
+      s, UNKNOWN));
       break;
     default:
       children->insert(std::pair<std::string, ClientController::ItemType>(
@@ -907,3 +907,9 @@ void ClientController::OnHelloPing(const std::string &contact_name,
   // TODO(Team): update GUI
   printf("contact %s with status %d\n", contact_name.c_str(), status);
 }
+bs2::connection ClientController::ConnectToOnFileNetworkStatus(
+      const OnFileNetworkStatus::slot_type &slot) {
+  return maidsafe::ClientController::getInstance()->
+             ConnectToOnFileNetworkStatus(slot);
+}
+
