@@ -148,6 +148,10 @@ TEST_F(MSMTasksHandlerTest, BEH_MAID_StoreTaskAddChildTask) {
   EXPECT_EQ(kSuccess,
             tasks_handler_.AddChildTask("child", "parent", kStoreChunk, 1, 0));
   EXPECT_EQ(size_t(2), tasks_handler_.TasksCount());
+  EXPECT_EQ(kSuccess, tasks_handler_.CancelTask("parent", kGeneralError));
+  EXPECT_EQ(kStoreManagerTaskParentNotActive,
+            tasks_handler_.AddChildTask("child2", "parent", kStoreChunk, 1, 0));
+  EXPECT_EQ(size_t(2), tasks_handler_.TasksCount());
 }
 
 TEST_F(MSMTasksHandlerTest, BEH_MAID_StoreTaskNotifications) {

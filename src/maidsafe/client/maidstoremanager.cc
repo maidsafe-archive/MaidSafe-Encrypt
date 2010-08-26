@@ -274,7 +274,7 @@ int MaidsafeStoreManager::StoreChunk(const std::string &chunk_name,
     // TODO(Fraser#5#): 23/08/10 - Handle confirmations
     tasks_handler_.AddChildTask(kWatchListMasterTaskPrefix + chunk_name,
                                 chunk_name, kStoreChunk, 1,  // 2,
-                                kMaxAddToWatchListFailures,
+                                kMaxAddToWatchListTries - 1,
                                 boost::bind(&WatchListMasterTaskDebug, _1,
                                             kWatchListMasterTaskPrefix +
                                               chunk_name));
@@ -1641,6 +1641,7 @@ int MaidsafeStoreManager::AddToWatchList(
     return kGeneralError;
   }
 
+  // TODO this block isn't really needed, but removal causes segfault :(
   if (!tasks_handler_.HasTask(
           kWatchListMasterTaskPrefix + store_data->data_name, &task_type,
           &task_status) || task_type != kStoreChunk ||
@@ -1677,26 +1678,25 @@ void MaidsafeStoreManager::AddToWatchListTaskCallback(
     const ReturnCode &result,
     boost::shared_ptr<StoreData> store_data) {
 #ifdef DEBUG
-  printf("In MSM::AddToWatchListTaskCallback (%d) for chunk %s\n",
-         kad_ops_->Port(), HexSubstr(store_data->data_name).c_str());
+//   printf("In MSM::AddToWatchListTaskCallback (%d) for chunk %s\n",
+//          kad_ops_->Port(), HexSubstr(store_data->data_name).c_str());
 #endif
   if (result == kSuccess) {
 #ifdef DEBUG
-    printf("In MSM::AddToWatchListTaskCallback (%d), adding task to wait for "
-           "confirmations (%s).\n",
+    printf("In MSM::AddToWatchListTaskCallback (%d), sucessfully added to "
+           "watch list for %s\n",
            kad_ops_->Port(), HexSubstr(store_data->data_name).c_str());
 #endif
-    // add task to wait for confirmations (will replace old task)
-    tasks_handler_.AddChildTask(
-          kWatchListTaskPrefix + store_data->data_name,
-          kWatchListMasterTaskPrefix + store_data->data_name,
-          kStoreChunk, kUpperThreshold_, K_ - kUpperThreshold_);
   } else {
 #ifdef DEBUG
     printf("In MSM::AddToWatchListTaskCallback (%d), retrying due to failure "
            "(%s).\n",
            kad_ops_->Port(), HexSubstr(store_data->data_name).c_str());
 #endif
+    // cancel confirmation task
+    tasks_handler_.CancelTask(
+        kExpectAmendmentTaskPrefix + store_data->data_name, result);
+     
     // retry, will stop when max no. of failures reached
     AddToWatchList(store_data);
   }
@@ -1783,6 +1783,12 @@ void MaidsafeStoreManager::AddToWatchListStageTwo(
     data->account_data_holders.push_back(holder);
   }
 
+  // add task to wait for confirmations
+  tasks_handler_.AddChildTask(
+        kExpectAmendmentTaskPrefix + data->store_data->data_name,
+        kWatchListMasterTaskPrefix + data->store_data->data_name,
+        kStoreChunk, kUpperThreshold_, K_ - kUpperThreshold_);
+
   // Send ExpectAmendment RPCs
   boost::mutex::scoped_lock lock(data->mutex);
   for (boost::uint16_t j = 0; j < data->account_holders.size(); ++j) {
@@ -1853,6 +1859,7 @@ void MaidsafeStoreManager::AddToWatchListStageThree(
 
   data->expect_amendment_done = true;
   data->returned_count = data->success_count = 0;
+  data->consensus_upload_copies = 0;
 
   // Set up holders for forthcoming AddToWatchList RPCs
   std::vector<AddToWatchListRequest> add_to_watch_list_requests;
@@ -1937,7 +1944,6 @@ void MaidsafeStoreManager::AddToWatchListStageFour(
     GetFilteredAverage(data->payment_values, &payment, &n);
     account_status_manager_.AmendmentDone(AmendAccountRequest::kSpaceTakenInc,
                                           payment);
-    data->consensus_upload_copies = 0;
 
     if (data->consensus_upload_copies > 0) {
       // create chunk copy master task, depends on success of copy uploads
@@ -2116,6 +2122,11 @@ int MaidsafeStoreManager::GetExpectAmendmentRequests(
     std::vector<ExpectAmendmentRequest> *expect_amendment_requests) {
   expect_amendment_requests->clear();
   ExpectAmendmentRequest request;
+
+// printf("In MSM::GetExpectAmendmentRequests - data name = %s, pub key = %s\n",
+//        HexSubstr(store_data->data_name).c_str(),
+//        HexSubstr(store_data->public_key).c_str());
+  
   request.set_amendment_type(amendment_type);
   request.set_chunkname(store_data->data_name);
   request.set_account_pmid(store_data->key_id);

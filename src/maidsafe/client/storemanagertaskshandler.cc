@@ -119,9 +119,14 @@ int StoreManagerTasksHandler::DoAddTask(const std::string &task_name,
     }
 
     StoreManagerTask &parent = tasks_[task.parent_name];
+    if (parent.status != kTaskActive) {
+#ifdef DEBUG
+      printf("In StoreManagerTasksHandler::DoAddTask, parent task is not "
+             "active (%s).\n", HexSubstr(task.parent_name).c_str());
+#endif
+      return kStoreManagerTaskParentNotActive;
+    }
     ++parent.child_task_count;
-    if (parent.status != kTaskActive)
-      task.status = kTaskCancelled;
   }
 
   tasks_[task_name] = task;
@@ -175,7 +180,7 @@ int StoreManagerTasksHandler::NotifyTaskFailure(
     return kStoreManagerTaskIncorrectOperation;
   }
   ++task.failures_count;
-  if (task.status == kTaskActive && task.failures_count >= task.max_failures) {
+  if (task.status == kTaskActive && task.failures_count > task.max_failures) {
     task.status = kTaskFailed;
     return NotifyStateChange(task_name, reason);
   }
@@ -197,32 +202,27 @@ int StoreManagerTasksHandler::NotifyStateChange(
   bool success = task.status == kTaskSucceeded;
 
 #ifdef DEBUG
-  printf("In StoreManagerTasksHandler::NotifyStateChange, task %s completed "
-         "(%s).\n", HexSubstr(task_name).c_str(),
-         success ? "succeeded" : "failed");
+//    printf("In SMTH::NotifyStateChange, task %s completed (%s).\n",
+//           HexSubstr(task_name).c_str(), success ? "succeeded" : "failed");
 #endif
+
+  bool notify_parent(false);
 
   // notify parent
   if (!task.parent_name.empty() && tasks_.count(task.parent_name) == 1) {
     StoreManagerTask &parent = tasks_[task.parent_name];
-    printf(" ## 1 parent found\n");
     if (parent.status == kTaskActive) {
-      printf(" ## 2 parent active\n");
       if (success) {
-        printf(" ## 3 parent successes %d+1\n", parent.success_count);
         ++parent.success_count;
         if (parent.success_count >= parent.successes_required) {
           parent.status = kTaskSucceeded;
-          printf(" ## 4 parent set to succeeded\n");
-          return NotifyStateChange(task.parent_name, reason);
+          notify_parent = true;
         }
       } else {
-        printf(" ## 3 parent failures %d+1\n", parent.failures_count);
         ++parent.failures_count;
-        if (parent.failures_count >= parent.max_failures) {
-          printf(" ## 4 parent set to failed\n");
+        if (parent.failures_count > parent.max_failures) {
           parent.status = kTaskFailed;
-          return NotifyStateChange(task.parent_name, reason);
+          notify_parent = true;
         }
       }
     }
@@ -233,6 +233,9 @@ int StoreManagerTasksHandler::NotifyStateChange(
     task.callback(reason);
     mutex_.lock();
   }
+
+  if (notify_parent)
+    return NotifyStateChange(task.parent_name, reason);
 
   return kSuccess;
 }

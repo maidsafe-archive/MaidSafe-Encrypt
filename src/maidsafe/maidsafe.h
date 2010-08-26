@@ -140,6 +140,7 @@ const std::string kDefaultChunks[kDefaultChunkCount][2] = {
 const std::string kAccount("ACCOUNT");
 const std::string kWatchListTaskPrefix("WATCH");
 const std::string kWatchListMasterTaskPrefix("WATCHM");
+const std::string kExpectAmendmentTaskPrefix("EXPAM");
 const std::string kChunkCopyTaskPrefix("COPY");
 const std::string kChunkCopyMasterTaskPrefix("COPYM");
 const std::string kChunkCopyPrepTaskPrefix("COPYPREP");
@@ -344,7 +345,7 @@ const boost::uint8_t kMaxStoreFailures(10);
 // max number of store retries per peer
 const boost::uint8_t kMaxPerPeerStoreFailures(2);
 // max number of tries to add to watch list for a chunk
-const boost::uint8_t kMaxAddToWatchListFailures(3);
+const boost::uint8_t kMaxAddToWatchListTries(3);
 // max number of tries to remove from watch list for a chunk
 const boost::uint8_t kMaxRemoveFromWatchListFailures(3);
 // TODO(Fraser#5#): 2010-01-29 - Move the kMaxSmallChunkSize to be set and held

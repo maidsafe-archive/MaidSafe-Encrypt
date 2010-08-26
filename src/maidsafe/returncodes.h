@@ -223,10 +223,11 @@ enum ReturnCode {
   kStoreManagerTaskHandlerError = -13001,
   kStoreManagerTaskIncorrectParameter = -13002,
   kStoreManagerTaskIncorrectOperation = -13003,
-  kStoreManagerTaskAlreadyExists = -13004,
-  kStoreManagerTaskNotFound = -13005,
-  kStoreManagerTaskNotFinished = -13006,
-  kStoreManagerTaskFinishedFail = -13007,
+  kStoreManagerTaskParentNotActive = -13004,
+  kStoreManagerTaskAlreadyExists = -13005,
+  kStoreManagerTaskNotFound = -13006,
+  kStoreManagerTaskNotFinished = -13007,
+  kStoreManagerTaskFinishedFail = -13008,
   kStoreManagerTaskFinishedPass = 0,  // intentionally 0
 
   // Validator

@@ -603,7 +603,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AddToWatchList) {
   EXPECT_CALL(*mko, AddressIsLocal(testing::An<const kad::Contact&>()))
       .WillRepeatedly(testing::Return(true));
   EXPECT_CALL(*mko, FindKClosestNodes(chunk_names.at(0), testing::_))
-      .Times(kMaxAddToWatchListFailures)
+      .Times(kMaxAddToWatchListTries)
       .WillRepeatedly(testing::WithArgs<1>(testing::Invoke(
           boost::bind(&mock_kadops::RunCallback, bad_result, _1))));   // Call 1
 
