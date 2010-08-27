@@ -193,7 +193,7 @@ namespace test {
 static std::vector< boost::shared_ptr<PDVault> > pdvaults_;
 static const int kNumOfClients = 2;
 static const int kNetworkSize = testpdvault::K + kNumOfClients;
-static const int kNumOfTestChunks = 1;  // kNetworkSize + 1;
+static const int kNumOfTestChunks = 1;  // kNetworkSize * 1.5;
 static boost::filesystem::path kadconfig_;
 /**
  * Note: StoreAndGetChunks only works for small K due to resource problems
@@ -415,14 +415,17 @@ TEST_MS_NET(PDVaultTest, FUNC, MAID, StoreAndGetChunks) {
          boost::lexical_cast<std::string>(data_size).c_str());
 
   printf("\nWaiting for chunks to get stored...\n");
-  boost::this_thread::sleep(boost::posix_time::seconds(15));
+  boost::this_thread::sleep(boost::posix_time::seconds(5));
 
   printf("\nChecking chunks locally...\n");
 
   // checking for chunks
+  // TODO use callback/signal at end of StoreChunk instead
   std::set<std::string> stored_chunks;
   int iteration = 0;
-  while (stored_chunks.size() < chunks.size() && iteration < 18) {
+  int remaining_tasks = 1;
+  while ((stored_chunks.size() < chunks.size() || remaining_tasks > 0) &&
+         iteration < 18) {
     ++iteration;
     printf("\n-- Sleeping iteration %i --\n\n", iteration);
     boost::this_thread::sleep(boost::posix_time::seconds(10));
@@ -434,7 +437,7 @@ TEST_MS_NET(PDVaultTest, FUNC, MAID, StoreAndGetChunks) {
       for (int vault_no = 0; vault_no < kNetworkSize; ++vault_no) {
         if (stored_chunks.count((*it).first) == 0 &&
             pdvaults_[vault_no]->vault_chunkstore_->Has((*it).first)) {
-          printf("Vault %d (%s) has chunk %s.\n", vault_no,
+          printf("# Vault %d (%s) has chunk %s.\n", vault_no,
                  HexSubstr(pdvaults_[vault_no]->pmid_).c_str(),
                  HexSubstr((*it).first).c_str());
           ++chunk_count;
@@ -445,17 +448,21 @@ TEST_MS_NET(PDVaultTest, FUNC, MAID, StoreAndGetChunks) {
         if (chunk_count >= kNumOfClients) {
           stored_chunks.insert((*it).first);
         } else {
-          printf("Only %d copies of %s stored so far.\n", chunk_count,
+          printf("# Only %d copies of %s stored so far.\n", chunk_count,
                  HexSubstr((*it).first).c_str());
         }
       }
     }
+
+    remaining_tasks = 0;
     for (int i = 0; i < kNumOfClients; ++i) {
-      printf("%d storing tasks remaining on client %d.\n",
+      remaining_tasks += clients_[i]->msm->tasks_handler_.TasksCount();
+      printf("# %d storing tasks remaining on client %d.\n",
              clients_[i]->msm->tasks_handler_.TasksCount(), i);
     }
   }
 
+  ASSERT_EQ(0, remaining_tasks);
   ASSERT_EQ(chunks.size(), stored_chunks.size());
   stored_chunks.clear();
 
