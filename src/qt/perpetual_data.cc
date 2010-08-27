@@ -66,6 +66,9 @@ PerpetualData::PerpetualData(QWidget* parent)
   statusBar()->show();
   statusBar()->addPermanentWidget(message_status_ = new QLabel);
 
+  //ui_.theFrame->setStyleSheet("QFrame#theFrame { border-image: url(:/background/cloud_background.png) 0 0 0 0 stretch stretch;"
+    //"font: bold;}");
+
   createActions();
   createMenus();
   showLoggedOutMenu();

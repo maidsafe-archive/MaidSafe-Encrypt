@@ -21,10 +21,11 @@
 * ============================================================================
 */
 #include <gtest/gtest.h>
-#include <maidsafe/protobuf/kademlia_service_messages.pb.h>
 #include <maidsafe/base/utils.h>
+#include <maidsafe/protobuf/kademlia_service_messages.pb.h>
 #include <boost/filesystem/fstream.hpp>
 #include <boost/lexical_cast.hpp>
+#include <boost/signals2/connection.hpp>
 
 #include "fs/filesystem.h"
 #include "maidsafe/chunkstore.h"
@@ -38,9 +39,42 @@
 namespace fs = boost::filesystem;
 
 namespace test_lsm {
+
 static const boost::uint8_t K(4);
-static const boost::uint8_t kUpperThreshold_(static_cast<boost::uint16_t>
+static const boost::uint8_t upper_threshold_(static_cast<boost::uint16_t>
                                             (K * kMinSuccessfulPecentageStore));
+
+
+void CreateChunkage(std::map<std::string, std::string> *chunks_map,
+                    int chunk_number,  fs::path test_root_dir_,
+                    boost::shared_ptr<maidsafe::ChunkStore> client_chunkstore) {
+  crypto::Crypto co;
+  chunks_map->clear();
+  while (chunks_map->size() < size_t(chunk_number)) {
+    std::string chunk(base::RandomString(256 * 1024));
+    std::string name(co.Hash(chunk, "", crypto::STRING_STRING, false));
+    (*chunks_map)[name] = chunk;
+    fs::path chunk_path(test_root_dir_ / base::EncodeToHex(name));
+    fs::ofstream ofs;
+    ofs.open(chunk_path.string().c_str());
+    ofs << chunk;
+    ofs.close();
+    client_chunkstore->AddChunkToOutgoing(name, chunk_path);
+  }
+}
+
+void ChunkDone(const std::string &chunkname, maidsafe::ReturnCode rc,
+               std::map<std::string, std::string> *chunks_map, int *count,
+               boost::mutex *m) {
+  boost::mutex::scoped_lock loch_schmer(*m);
+  ASSERT_EQ(maidsafe::kSuccess, rc);
+  std::map<std::string, std::string>::iterator it = chunks_map->find(chunkname);
+  if (it != chunks_map->end()) {
+    chunks_map->erase(it);
+    --(*count);
+  }
+}
+
 }  // namespace test_lsm
 
 namespace maidsafe {
@@ -50,9 +84,7 @@ class LocalStoreManagerTest : public testing::Test {
   LocalStoreManagerTest() : test_root_dir_(file_system::TempDir() /
                                            ("maidsafe_TestStoreManager_" +
                                             base::RandomString(6))),
-                            client_chunkstore_(),
-                            sm_(),
-                            co_(),
+                            client_chunkstore_(), sm_(), co_(), mutex_(),
                             cb_(),
                             ss_(SessionSingleton::getInstance()),
                             keys_() {}
@@ -81,17 +113,18 @@ class LocalStoreManagerTest : public testing::Test {
     catch(const std::exception &e) {
       printf("%s\n", e.what());
     }
+    mutex_ = new boost::mutex();
     client_chunkstore_ = boost::shared_ptr<ChunkStore>
-         (new ChunkStore(test_root_dir_.string(), 0, 0));
+                             (new ChunkStore(test_root_dir_.string(),
+                                                       0, 0));
     ASSERT_TRUE(client_chunkstore_->Init());
     int count(0);
     while (!client_chunkstore_->is_initialised() && count < 10000) {
       boost::this_thread::sleep(boost::posix_time::milliseconds(10));
       count += 10;
     }
-    sm_.reset(new LocalStoreManager(client_chunkstore_, test_lsm::K,
-                                    test_root_dir_));
-    cb_.Reset();
+    sm_ = new LocalStoreManager(client_chunkstore_, test_lsm::K,
+                                          test_root_dir_);
     sm_->Init(boost::bind(&test::CallbackObject::ReturnCodeCallback, &cb_, _1),
               0);
     if (cb_.WaitForReturnCodeResult() != kSuccess) {
@@ -101,8 +134,8 @@ class LocalStoreManagerTest : public testing::Test {
     ss_ = SessionSingleton::getInstance();
     co_.set_symm_algorithm(crypto::AES_256);
     co_.set_hash_algorithm(crypto::SHA_512);
-    ss_->AddKey(MPID, "Me", keys_.at(0).private_key(), keys_.at(0).public_key(),
-                "");
+    ss_->AddKey(MPID, "Me", keys_.at(0).private_key(),
+                keys_.at(0).public_key(), "");
     std::string anmid_pubkey_signature(co_.AsymSign(keys_.at(1).public_key(),
                                        "", keys_.at(1).private_key(),
                                        crypto::STRING_STRING));
@@ -119,22 +152,24 @@ class LocalStoreManagerTest : public testing::Test {
     cb_.Reset();
     sm_->Close(boost::bind(&test::CallbackObject::ReturnCodeCallback, &cb_, _1),
                true);
-    ASSERT_EQ(kSuccess, cb_.WaitForReturnCodeResult());
-    try {
-      if (fs::exists(test_root_dir_))
-        fs::remove_all(test_root_dir_);
-      if (fs::exists(file_system::LocalStoreManagerDir()))
-        fs::remove_all(file_system::LocalStoreManagerDir());
-    }
-    catch(const std::exception &e) {
-      printf("%s\n", e.what());
+    if (cb_.WaitForReturnCodeResult() == kSuccess) {
+      try {
+        if (fs::exists(test_root_dir_))
+          fs::remove_all(test_root_dir_);
+        if (fs::exists(file_system::LocalStoreManagerDir()))
+          fs::remove_all(file_system::LocalStoreManagerDir());
+      }
+      catch(const std::exception &e) {
+        printf("%s\n", e.what());
+      }
     }
   }
 
   fs::path test_root_dir_;
   boost::shared_ptr<ChunkStore> client_chunkstore_;
-  boost::shared_ptr<LocalStoreManager> sm_;
+  LocalStoreManager *sm_;
   crypto::Crypto co_;
+  boost::mutex *mutex_;
   test::CallbackObject cb_;
   SessionSingleton *ss_;
   std::vector<crypto::RsaKeyPair> keys_;
@@ -151,20 +186,21 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_RemoveAllPacketsFromKey) {
   // Store packets with same key, different values
   gp_name = co_.Hash("aaa", "", crypto::STRING_STRING, false);
   for (int i = 0; i < 5; ++i) {
-    cb_.Reset();
     gp.set_value("Generic System Packet Data" +
                   boost::lexical_cast<std::string>(i));
-    sm_->StorePacket(gp_name, gp.value(), MID, PRIVATE, "", boost::bind(
-                     &test::CallbackObject::ReturnCodeCallback, &cb_, _1));
+    cb_.Reset();
+    sm_->StorePacket(gp_name, gp.value(), MID, PRIVATE, "",
+                     boost::bind(&test::CallbackObject::ReturnCodeCallback,
+                                 &cb_, _1));
     ASSERT_EQ(kSuccess, cb_.WaitForReturnCodeResult());
   }
 
   // Remove said packets
   cb_.Reset();
   sm_->DeletePacket(gp_name, std::vector<std::string>(), MID, PRIVATE, "",
-       boost::bind(&test::CallbackObject::ReturnCodeCallback, &cb_, _1));
+                    boost::bind(&test::CallbackObject::ReturnCodeCallback,
+                                &cb_, _1));
   ASSERT_EQ(kSuccess, cb_.WaitForReturnCodeResult());
-
   // Ensure they're all gone
   ASSERT_TRUE(sm_->KeyUnique(gp_name, false));
 }
@@ -173,13 +209,15 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_StoreSystemPacket) {
   kad::SignedValue gp;
   gp.set_value("Generic System Packet Data");
   gp.set_value_signature(co_.AsymSign(gp.value(), "",
-                         ss_->PrivateKey(ANMID), crypto::STRING_STRING));
+                         ss_->PrivateKey(ANMID),
+                         crypto::STRING_STRING));
   std::string gp_name = co_.Hash(gp.value() + gp.value_signature(), "",
                         crypto::STRING_STRING, false);
   ASSERT_TRUE(sm_->KeyUnique(gp_name, false));
   cb_.Reset();
-  sm_->StorePacket(gp_name, gp.value(), MID, PRIVATE, "", boost::bind(
-                   &test::CallbackObject::ReturnCodeCallback, &cb_, _1));
+  sm_->StorePacket(gp_name, gp.value(), MID, PRIVATE, "",
+                    boost::bind(&test::CallbackObject::ReturnCodeCallback,
+                                &cb_, _1));
   ASSERT_EQ(kSuccess, cb_.WaitForReturnCodeResult());
   ASSERT_FALSE(sm_->KeyUnique(gp_name, false));
   std::vector<std::string> res;
@@ -194,23 +232,28 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_StoreSystemPacket) {
 TEST_F(LocalStoreManagerTest, BEH_MAID_DeleteSystemPacketOwner) {
   kad::SignedValue gp;
   gp.set_value("Generic System Packet Data");
-  gp.set_value_signature(co_.AsymSign(gp.value(), "", ss_->PrivateKey(ANMID),
+  gp.set_value_signature(co_.AsymSign(gp.value(), "",
+                         ss_->PrivateKey(ANMID),
                          crypto::STRING_STRING));
   std::string gp_name = co_.Hash(gp.value() + gp.value_signature(), "",
                         crypto::STRING_STRING, false);
 
   std::string signed_public_key = co_.AsymSign(keys_.at(2).public_key(), "",
-      keys_.at(2).private_key(), crypto::STRING_STRING);
-  sm_->StorePacket(gp_name, gp.value(), MID, PRIVATE, "", boost::bind(
-                   &test::CallbackObject::ReturnCodeCallback, &cb_, _1));
+                                  keys_.at(2).private_key(),
+                                  crypto::STRING_STRING);
+  cb_.Reset();
+  sm_->StorePacket(gp_name, gp.value(), MID, PRIVATE, "",
+                    boost::bind(&test::CallbackObject::ReturnCodeCallback,
+                                &cb_, _1));
   ASSERT_EQ(kSuccess, cb_.WaitForReturnCodeResult());
 
   ASSERT_FALSE(sm_->KeyUnique(gp_name, false));
 
   std::vector<std::string> values(1, gp.value());
   cb_.Reset();
-  sm_->DeletePacket(gp_name, values, MID, PRIVATE, "", boost::bind(
-                    &test::CallbackObject::ReturnCodeCallback, &cb_, _1));
+  sm_->DeletePacket(gp_name, values, MID, PRIVATE, "",
+                    boost::bind(&test::CallbackObject::ReturnCodeCallback,
+                                &cb_, _1));
   ASSERT_EQ(kSuccess, cb_.WaitForReturnCodeResult());
 
   ASSERT_TRUE(sm_->KeyUnique(gp_name, false));
@@ -219,29 +262,33 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_DeleteSystemPacketOwner) {
 TEST_F(LocalStoreManagerTest, BEH_MAID_DeleteSystemPacketNotOwner) {
   kad::SignedValue gp;
   gp.set_value("Generic System Packet Data");
-  gp.set_value_signature(co_.AsymSign(gp.value(), "", ss_->PrivateKey(ANMID),
+  gp.set_value_signature(co_.AsymSign(gp.value(), "",
+                         ss_->PrivateKey(ANMID),
                          crypto::STRING_STRING));
   std::string gp_name = co_.Hash(gp.value() + gp.value_signature(), "",
-                                 crypto::STRING_STRING, false);
+                        crypto::STRING_STRING, false);
+
   cb_.Reset();
-  sm_->StorePacket(gp_name, gp.value(), MID, PRIVATE, "", boost::bind(
-                   &test::CallbackObject::ReturnCodeCallback, &cb_, _1));
+  sm_->StorePacket(gp_name, gp.value(), MID, PRIVATE, "",
+                    boost::bind(&test::CallbackObject::ReturnCodeCallback,
+                                &cb_, _1));
   ASSERT_EQ(kSuccess, cb_.WaitForReturnCodeResult());
   ASSERT_FALSE(sm_->KeyUnique(gp_name, false));
 
   std::vector<std::string> values(1, gp.value());
-
   std::string anmid_pubkey_signature(co_.AsymSign(keys_.at(2).public_key(),
                                      "", keys_.at(2).private_key(),
                                      crypto::STRING_STRING));
   std::string anmid_name(co_.Hash(keys_.at(2).public_key() +
-      anmid_pubkey_signature, "", crypto::STRING_STRING, false));
+                         anmid_pubkey_signature, "", crypto::STRING_STRING,
+                         false));
   ss_->AddKey(ANMID, anmid_name, keys_.at(2).private_key(),
               keys_.at(2).public_key(), anmid_pubkey_signature);
 
   cb_.Reset();
-  sm_->DeletePacket(gp_name, values, MID, PRIVATE, "", boost::bind(
-                    &test::CallbackObject::ReturnCodeCallback, &cb_, _1));
+  sm_->DeletePacket(gp_name, values, MID, PRIVATE, "",
+                    boost::bind(&test::CallbackObject::ReturnCodeCallback,
+                                &cb_, _1));
   ASSERT_NE(kSuccess, cb_.WaitForReturnCodeResult());
   ASSERT_FALSE(sm_->KeyUnique(gp_name, false));
 }
@@ -250,15 +297,18 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_UpdatePacket) {
   // Store one packet
   kad::SignedValue gp;
   gp.set_value("Generic System Packet Data");
-  gp.set_value_signature(co_.AsymSign(gp.value(), "", ss_->PrivateKey(ANMID),
+  gp.set_value_signature(co_.AsymSign(gp.value(), "",
+                                      ss_->PrivateKey(ANMID),
                                       crypto::STRING_STRING));
   std::string gp_name(co_.Hash(gp.value() + gp.value_signature(), "",
                       crypto::STRING_STRING, false));
 
   cb_.Reset();
-  sm_->StorePacket(gp_name, gp.value(), MID, PRIVATE, "", boost::bind(
-                    &test::CallbackObject::ReturnCodeCallback, &cb_, _1));
+  sm_->StorePacket(gp_name, gp.value(), MID, PRIVATE, "",
+                   boost::bind(&test::CallbackObject::ReturnCodeCallback,
+                                &cb_, _1));
   ASSERT_EQ(kSuccess, cb_.WaitForReturnCodeResult());
+
   std::vector<std::string> res;
   ASSERT_EQ(kSuccess, sm_->LoadPacket(gp_name, &res));
   ASSERT_EQ(size_t(1), res.size());
@@ -268,10 +318,12 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_UpdatePacket) {
   kad::SignedValue new_gp;
   new_gp.set_value("Mis bolas enormes y peludas");
   new_gp.set_value_signature(co_.AsymSign(new_gp.value(), "",
-                             ss_->PrivateKey(ANMID), crypto::STRING_STRING));
+                                          ss_->PrivateKey(ANMID),
+                                          crypto::STRING_STRING));
   cb_.Reset();
   sm_->UpdatePacket(gp_name, gp.value(), new_gp.value(), MID, PRIVATE, "",
-      boost::bind(&test::CallbackObject::ReturnCodeCallback, &cb_, _1));
+                    boost::bind(&test::CallbackObject::ReturnCodeCallback,
+                                &cb_, _1));
   ASSERT_EQ(kSuccess, cb_.WaitForReturnCodeResult());
   res.clear();
   ASSERT_EQ(kSuccess, sm_->LoadPacket(gp_name, &res));
@@ -280,11 +332,13 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_UpdatePacket) {
 
   // Store another value with that same key
   gp.set_value("Mira nada mas que chichotas");
-  gp.set_value_signature(co_.AsymSign(gp.value(), "", ss_->PrivateKey(ANMID),
+  gp.set_value_signature(co_.AsymSign(gp.value(), "",
+                                      ss_->PrivateKey(ANMID),
                                       crypto::STRING_STRING));
   cb_.Reset();
-  sm_->StorePacket(gp_name, gp.value(), MID, PRIVATE, "", boost::bind(
-                    &test::CallbackObject::ReturnCodeCallback, &cb_, _1));
+  sm_->StorePacket(gp_name, gp.value(), MID, PRIVATE, "",
+                   boost::bind(&test::CallbackObject::ReturnCodeCallback,
+                                &cb_, _1));
   ASSERT_EQ(kSuccess, cb_.WaitForReturnCodeResult());
   res.clear();
   ASSERT_EQ(kSuccess, sm_->LoadPacket(gp_name, &res));
@@ -296,11 +350,13 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_UpdatePacket) {
   // Change one of the values
   kad::SignedValue other_gp = gp;
   gp.set_value("En esa cola si me formo");
-  gp.set_value_signature(co_.AsymSign(gp.value(), "", ss_->PrivateKey(ANMID),
+  gp.set_value_signature(co_.AsymSign(gp.value(), "",
+                                      ss_->PrivateKey(ANMID),
                                       crypto::STRING_STRING));
   cb_.Reset();
-  sm_->UpdatePacket(gp_name, new_gp.value(), gp.value(), MID, PRIVATE, "",
-      boost::bind(&test::CallbackObject::ReturnCodeCallback, &cb_, _1));
+  sm_->UpdatePacket(gp_name, gp.value(), new_gp.value(), MID, PRIVATE, "",
+                    boost::bind(&test::CallbackObject::ReturnCodeCallback,
+                                &cb_, _1));
   ASSERT_EQ(kSuccess, cb_.WaitForReturnCodeResult());
   res.clear();
   ASSERT_EQ(kSuccess, sm_->LoadPacket(gp_name, &res));
@@ -315,11 +371,13 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_UpdatePacket) {
   // Store several values with that same key
   for (size_t a = 0; a < 5; ++a) {
     gp.set_value("value" + base::IntToString(a));
-    gp.set_value_signature(co_.AsymSign(gp.value(), "", ss_->PrivateKey(ANMID),
+    gp.set_value_signature(co_.AsymSign(gp.value(), "",
+                                        ss_->PrivateKey(ANMID),
                                         crypto::STRING_STRING));
     cb_.Reset();
-    sm_->StorePacket(gp_name, gp.value(), MID, PRIVATE, "", boost::bind(
-                     &test::CallbackObject::ReturnCodeCallback, &cb_, _1));
+    sm_->StorePacket(gp_name, gp.value(), MID, PRIVATE, "",
+                     boost::bind(&test::CallbackObject::ReturnCodeCallback,
+                                  &cb_, _1));
     ASSERT_EQ(kSuccess, cb_.WaitForReturnCodeResult());
     all_values.insert(gp.SerializeAsString());
   }
@@ -334,9 +392,10 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_UpdatePacket) {
 
   // Try to change one of the values to another one
   cb_.Reset();
-  sm_->UpdatePacket(gp_name, "value0", "value2", MID, PRIVATE, "", boost::bind(
-                    &test::CallbackObject::ReturnCodeCallback, &cb_, _1));
-  ASSERT_EQ(kStoreManagerError, cb_.WaitForReturnCodeResult());
+  sm_->UpdatePacket(gp_name, "value0", "value2", MID, PRIVATE, "",
+                    boost::bind(&test::CallbackObject::ReturnCodeCallback,
+                                &cb_, _1));
+  ASSERT_EQ(kSuccess, cb_.WaitForReturnCodeResult());
   res.clear();
   ASSERT_EQ(kSuccess, sm_->LoadPacket(gp_name, &res));
   ASSERT_EQ(all_values.size(), res.size());
@@ -349,15 +408,17 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_UpdatePacket) {
   crypto::RsaKeyPair rkp;
   rkp.GenerateKeys(4096);
   std::string anmid_pubkey_signature(co_.AsymSign(rkp.public_key(), "",
-      rkp.private_key(), crypto::STRING_STRING));
+                                                  rkp.private_key(),
+                                                  crypto::STRING_STRING));
   std::string anmid_name(co_.Hash(rkp.public_key() + anmid_pubkey_signature, "",
                                   crypto::STRING_STRING, false));
-  ss_->AddKey(ANMID, anmid_name, rkp.private_key(), rkp.public_key(),
-              anmid_pubkey_signature);
+  ss_->AddKey(ANMID, anmid_name, rkp.private_key(),
+              rkp.public_key(), anmid_pubkey_signature);
   cb_.Reset();
-  sm_->UpdatePacket(gp_name, "value0", "value1234", MID, PRIVATE, "",
-      boost::bind(&test::CallbackObject::ReturnCodeCallback, &cb_, _1));
-  ASSERT_EQ(kStoreManagerError, cb_.WaitForReturnCodeResult());
+  sm_->UpdatePacket(gp_name, gp.value(), new_gp.value(), MID, PRIVATE, "",
+                    boost::bind(&test::CallbackObject::ReturnCodeCallback,
+                                &cb_, _1));
+  ASSERT_EQ(kSuccess, cb_.WaitForReturnCodeResult());
   res.clear();
   ASSERT_EQ(kSuccess, sm_->LoadPacket(gp_name, &res));
   ASSERT_EQ(all_values.size(), res.size());
@@ -371,9 +432,17 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_UpdatePacket) {
 }
 
 TEST_F(LocalStoreManagerTest, BEH_MAID_StoreChunk) {
+  std::map<std::string, std::string> chunkies;
+  int count(1), count2(count);
+  boost::mutex m;
   std::string chunk_content = base::RandomString(256 * 1024);
-  std::string chunk_name = co_.Hash(chunk_content, "",
-                           crypto::STRING_STRING, false);
+  std::string chunk_name = co_.Hash(chunk_content, "", crypto::STRING_STRING,
+                                    false);
+  chunkies[chunk_name] = chunk_content;
+  boost::signals2::connection c =
+      sm_->ConnectToOnChunkUploaded(boost::bind(&test_lsm::ChunkDone, _1, _2,
+                                                &chunkies, &count, &m));
+
   std::string hex_chunk_name = base::EncodeToHex(chunk_name);
   fs::path chunk_path(test_root_dir_ / hex_chunk_name);
   fs::ofstream ofs;
@@ -382,7 +451,15 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_StoreChunk) {
   ofs.close();
   client_chunkstore_->AddChunkToOutgoing(chunk_name, chunk_path);
   ASSERT_TRUE(sm_->KeyUnique(chunk_name, false));
+
   sm_->StoreChunk(chunk_name, PRIVATE, "");
+  while (count2 != 0) {
+    boost::this_thread::sleep(boost::posix_time::milliseconds(500));
+    {
+      boost::mutex::scoped_lock loch_juan(m);
+      count2 = count;
+    }
+  }
 
   ASSERT_FALSE(sm_->KeyUnique(chunk_name, false));
   std::string result_str;
@@ -390,9 +467,50 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_StoreChunk) {
   ASSERT_EQ(chunk_content, result_str);
 }
 
+TEST_F(LocalStoreManagerTest, FUNC_MAID_StoreSeveralChunksWithSignals) {
+  std::map<std::string, std::string> chunkies, chunkies2;
+  test_lsm::CreateChunkage(&chunkies, 50, test_root_dir_, client_chunkstore_);
+  printf("Done creating chunks.\n");
+  int count(50), count2(count);
+  boost::mutex m;
+  boost::signals2::connection c =
+      sm_->ConnectToOnChunkUploaded(boost::bind(&test_lsm::ChunkDone, _1, _2,
+                                                &chunkies, &count, &m));
+
+  // Store the chunks
+  {
+    boost::mutex::scoped_lock loch_juan(m);
+    for (std::map<std::string, std::string>::iterator it = chunkies.begin();
+         it != chunkies.end(); ++it) {
+      ASSERT_TRUE(sm_->KeyUnique((*it).first, false));
+      sm_->StoreChunk((*it).first, PRIVATE, "");
+    }
+    chunkies2 = chunkies;
+  }
+  printf("Done adding chunks.\n");
+
+  while (count2 != 0) {
+    boost::this_thread::sleep(boost::posix_time::milliseconds(500));
+    {
+      boost::mutex::scoped_lock loch_juan(m);
+      count2 = count;
+    }
+  }
+  printf("Done collecting results.\n");
+
+  // Evaluate the size
+  ASSERT_TRUE(chunkies.empty());
+  for (std::map<std::string, std::string>::iterator it = chunkies2.begin();
+       it != chunkies2.end(); ++it)
+    ASSERT_FALSE(sm_->KeyUnique((*it).first, false));
+  printf("Done checking assertions.\n");
+  c.disconnect();
+}
+
 TEST_F(LocalStoreManagerTest, BEH_MAID_StoreAndLoadBufferPacket) {
-  std::string bufferpacketname = co_.Hash(ss_->Id(MPID) + ss_->PublicKey(MPID),
-                                          "", crypto::STRING_STRING, false);
+  std::string bufferpacketname = co_.Hash(ss_->Id(MPID) +
+                                 ss_->PublicKey(MPID), "",
+                                 crypto::STRING_STRING, false);
   ASSERT_TRUE(sm_->KeyUnique(bufferpacketname, false));
   ASSERT_EQ(0, sm_->CreateBP());
   ASSERT_FALSE(sm_->KeyUnique(bufferpacketname, false));
@@ -403,8 +521,8 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_StoreAndLoadBufferPacket) {
   ASSERT_EQ(1, buffer_packet.owner_info_size());
   ASSERT_EQ(0, buffer_packet.messages_size());
   GenericPacket gp = buffer_packet.owner_info(0);
-  ASSERT_TRUE(co_.AsymCheckSig(gp.data(), gp.signature(), ss_->PublicKey(MPID),
-                               crypto::STRING_STRING));
+  ASSERT_TRUE(co_.AsymCheckSig(gp.data(), gp.signature(),
+              ss_->PublicKey(MPID), crypto::STRING_STRING));
   BufferPacketInfo bpi;
   ASSERT_TRUE(bpi.ParseFromString(gp.data()));
   ASSERT_EQ(ss_->Id(MPID), bpi.owner());
@@ -412,8 +530,9 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_StoreAndLoadBufferPacket) {
 }
 
 TEST_F(LocalStoreManagerTest, BEH_MAID_ModifyBufferPacketInfo) {
-  std::string bufferpacketname = co_.Hash(ss_->Id(MPID) + ss_->PublicKey(MPID),
-                                          "", crypto::STRING_STRING, false);
+  std::string bufferpacketname = co_.Hash(ss_->Id(MPID) +
+                                 ss_->PublicKey(MPID), "",
+                                 crypto::STRING_STRING, false);
   ASSERT_TRUE(sm_->KeyUnique(bufferpacketname, false));
   ASSERT_EQ(0, sm_->CreateBP());
   ASSERT_FALSE(sm_->KeyUnique(bufferpacketname, false));
@@ -424,8 +543,8 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_ModifyBufferPacketInfo) {
   ASSERT_EQ(1, buffer_packet.owner_info_size());
   ASSERT_EQ(0, buffer_packet.messages_size());
   GenericPacket gp = buffer_packet.owner_info(0);
-  ASSERT_TRUE(co_.AsymCheckSig(gp.data(), gp.signature(), ss_->PublicKey(MPID),
-                               crypto::STRING_STRING));
+  ASSERT_TRUE(co_.AsymCheckSig(gp.data(), gp.signature(),
+              ss_->PublicKey(MPID), crypto::STRING_STRING));
   BufferPacketInfo bpi;
   ASSERT_TRUE(bpi.ParseFromString(gp.data()));
   ASSERT_EQ(ss_->Id(MPID), bpi.owner());
@@ -445,14 +564,15 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_ModifyBufferPacketInfo) {
   gp = buffer_packet.owner_info(0);
   std::string ser_gp;
   ASSERT_TRUE(gp.SerializeToString(&ser_gp));
-  ASSERT_TRUE(co_.AsymCheckSig(gp.data(), gp.signature(), ss_->PublicKey(MPID),
-                               crypto::STRING_STRING));
+  ASSERT_TRUE(co_.AsymCheckSig(gp.data(), gp.signature(),
+              ss_->PublicKey(MPID), crypto::STRING_STRING));
   ASSERT_EQ(ser_info, gp.data());
 }
 
 TEST_F(LocalStoreManagerTest, BEH_MAID_AddAndGetBufferPacketMessages) {
-  std::string bufferpacketname = co_.Hash(ss_->Id(MPID) + ss_->PublicKey(MPID),
-                                          "", crypto::STRING_STRING, false);
+  std::string bufferpacketname = co_.Hash(ss_->Id(MPID) +
+                                 ss_->PublicKey(MPID), "",
+                                 crypto::STRING_STRING, false);
   ASSERT_TRUE(sm_->KeyUnique(bufferpacketname, false));
   ASSERT_EQ(0, sm_->CreateBP());
   ASSERT_FALSE(sm_->KeyUnique(bufferpacketname, false));
@@ -468,8 +588,8 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_AddAndGetBufferPacketMessages) {
   std::string me_pubusername = ss_->Id(MPID);
   std::string me_pubkey = ss_->PublicKey(MPID);
   std::string me_privkey = ss_->PrivateKey(MPID);
-  std::string me_sigpubkey = co_.AsymSign(me_pubkey, "", me_privkey,
-                                          crypto::STRING_STRING);
+  std::string me_sigpubkey = co_.AsymSign(me_pubkey, "",
+                             me_privkey, crypto::STRING_STRING);
 
   // Create the user "Juanito", add to session, then the message and send it
   ss_->ResetSession();
@@ -477,7 +597,8 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_AddAndGetBufferPacketMessages) {
   std::string public_key = keys_.at(2).public_key();
   std::string signed_public_key = co_.AsymSign(public_key, "",
                                   private_key, crypto::STRING_STRING);
-  ss_->AddKey(MPID, "Juanito", private_key, public_key, signed_public_key);
+  ss_->AddKey(MPID, "Juanito", private_key, public_key,
+              signed_public_key);
   ASSERT_EQ(0, ss_->AddContact(me_pubusername, me_pubkey, "", "", "", 'U', 1, 2,
             "", 'C', 0, 0));
 
@@ -486,13 +607,15 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_AddAndGetBufferPacketMessages) {
   pulbicusernames.push_back(me_pubusername);
   std::map<std::string, ReturnCode> add_results;
   ASSERT_EQ(static_cast<int>(pulbicusernames.size()),
-      sm_->SendMessage(pulbicusernames, test_msg, INSTANT_MSG, &add_results));
+            sm_->SendMessage(pulbicusernames, test_msg, INSTANT_MSG,
+                              &add_results));
 
   // Retrive message and check that it is the correct one
   ss_->ResetSession();
-  ss_->AddKey(MPID, me_pubusername, me_privkey, me_pubkey, me_sigpubkey);
+  ss_->AddKey(MPID, me_pubusername, me_privkey, me_pubkey,
+              me_sigpubkey);
   std::list<ValidatedBufferPacketMessage> messages;
-  ASSERT_EQ(test_lsm::kUpperThreshold_, sm_->LoadBPMessages(&messages));
+  ASSERT_EQ(test_lsm::upper_threshold_, sm_->LoadBPMessages(&messages));
   ASSERT_EQ(size_t(1), messages.size());
   ASSERT_EQ("Juanito", messages.front().sender());
   ASSERT_EQ(test_msg, messages.front().message());
@@ -500,21 +623,22 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_AddAndGetBufferPacketMessages) {
   ASSERT_EQ(INSTANT_MSG, messages.front().type());
 
   // Check message is gone
-  ASSERT_EQ(test_lsm::kUpperThreshold_, sm_->LoadBPMessages(&messages));
+  ASSERT_EQ(test_lsm::upper_threshold_, sm_->LoadBPMessages(&messages));
   ASSERT_EQ(size_t(0), messages.size());
 }
 
 TEST_F(LocalStoreManagerTest, BEH_MAID_AddRequestBufferPacketMessage) {
-  std::string bufferpacketname = co_.Hash(ss_->Id(MPID) + ss_->PublicKey(MPID),
-                                          "", crypto::STRING_STRING, false);
+  std::string bufferpacketname = co_.Hash(ss_->Id(MPID) +
+                                 ss_->PublicKey(MPID), "",
+                                 crypto::STRING_STRING, false);
   ASSERT_TRUE(sm_->KeyUnique(bufferpacketname, false));
   ASSERT_EQ(0, sm_->CreateBP());
   ASSERT_FALSE(sm_->KeyUnique(bufferpacketname, false));
   std::string me_pubusername = ss_->Id(MPID);
   std::string me_pubkey = ss_->PublicKey(MPID);
   std::string me_privkey = ss_->PrivateKey(MPID);
-  std::string me_sigpubkey = co_.AsymSign(me_pubkey, "", me_privkey,
-                                          crypto::STRING_STRING);
+  std::string me_sigpubkey = co_.AsymSign(me_pubkey, "",
+                             me_privkey, crypto::STRING_STRING);
 
   // Create the user "Juanito", add to session, then the message and send it
   ss_->ResetSession();
@@ -522,25 +646,27 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_AddRequestBufferPacketMessage) {
   std::string public_key = keys_.at(2).public_key();
   std::string signed_public_key = co_.AsymSign(public_key, "",
                                   private_key, crypto::STRING_STRING);
-  ss_->AddKey(MPID, "Juanito", private_key, public_key, signed_public_key);
+  ss_->AddKey(MPID, "Juanito", private_key, public_key,
+              signed_public_key);
   ASSERT_EQ(0, ss_->AddContact(me_pubusername, me_pubkey, "", "", "", 'U', 1, 2,
             "", 'C', 0, 0));
   std::vector<std::string> pulbicusernames;
   std::string test_msg("There are strange things done in the midnight sun");
   pulbicusernames.push_back(me_pubusername);
   std::map<std::string, ReturnCode> add_results;
-  ASSERT_EQ(0, sm_->SendMessage(pulbicusernames, test_msg, INSTANT_MSG,
-                                &add_results));
+  ASSERT_EQ(0, sm_->SendMessage(pulbicusernames, test_msg,
+            INSTANT_MSG, &add_results));
   add_results.clear();
   ASSERT_EQ(static_cast<int>(pulbicusernames.size()),
-            sm_->SendMessage(pulbicusernames, test_msg, ADD_CONTACT_RQST,
-                             &add_results));
+            sm_->SendMessage(pulbicusernames, test_msg,
+                              ADD_CONTACT_RQST, &add_results));
 
   // Back to "Me"
   ss_->ResetSession();
-  ss_->AddKey(MPID, me_pubusername, me_privkey, me_pubkey, me_sigpubkey);
+  ss_->AddKey(MPID, me_pubusername, me_privkey, me_pubkey,
+              me_sigpubkey);
   std::list<ValidatedBufferPacketMessage> messages;
-  ASSERT_EQ(test_lsm::kUpperThreshold_, sm_->LoadBPMessages(&messages));
+  ASSERT_EQ(test_lsm::upper_threshold_, sm_->LoadBPMessages(&messages));
   ASSERT_EQ(size_t(1), messages.size());
   ASSERT_EQ("Juanito", messages.front().sender());
   ASSERT_EQ(test_msg, messages.front().message());
@@ -549,15 +675,16 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_AddRequestBufferPacketMessage) {
   BufferPacketInfo buffer_packet_info;
   buffer_packet_info.set_owner(ss_->Id(MPID));
   buffer_packet_info.set_owner_publickey(ss_->PublicKey(MPID));
-  buffer_packet_info.add_users(co_.Hash("Juanito", "", crypto::STRING_STRING,
-                                        false));
+  buffer_packet_info.add_users(co_.Hash("Juanito", "",
+                               crypto::STRING_STRING, false));
   std::string ser_info;
   buffer_packet_info.SerializeToString(&ser_info);
   ASSERT_EQ(0, sm_->ModifyBPInfo(ser_info));
 
   // Back to "Juanito"
   ss_->ResetSession();
-  ss_->AddKey(MPID, "Juanito", private_key, public_key, signed_public_key);
+  ss_->AddKey(MPID, "Juanito", private_key, public_key,
+              signed_public_key);
   ASSERT_EQ(0, ss_->AddContact(me_pubusername, me_pubkey, "", "", "", 'U', 1, 2,
             "", 'C', 0, 0));
   pulbicusernames.clear();
@@ -569,9 +696,10 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_AddRequestBufferPacketMessage) {
 
   // Back to "Me"
   ss_->ResetSession();
-  ss_->AddKey(MPID, me_pubusername, me_privkey, me_pubkey, me_sigpubkey);
+  ss_->AddKey(MPID, me_pubusername, me_privkey, me_pubkey,
+              me_sigpubkey);
   messages.clear();
-  ASSERT_EQ(test_lsm::kUpperThreshold_, sm_->LoadBPMessages(&messages));
+  ASSERT_EQ(test_lsm::upper_threshold_, sm_->LoadBPMessages(&messages));
   ASSERT_EQ(size_t(1), messages.size());
   ASSERT_EQ("Juanito", messages.front().sender());
   ASSERT_EQ(test_msg, messages.front().message());

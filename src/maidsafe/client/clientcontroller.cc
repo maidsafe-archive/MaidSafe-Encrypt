@@ -2581,7 +2581,11 @@ int ClientController::RunDbEncQueue() {
     return 0;
 }
 
+#ifdef DEBUG
 bool ClientController::ReadOnly(const std::string &path, bool gui) {
+#else
+bool ClientController::ReadOnly(const std::string &path, bool) {
+#endif
   if (!initialised_) {
 #ifdef DEBUG
     printf("CC::ReadOnly - Not initialised.\n");
@@ -3313,5 +3317,11 @@ std::vector<std::string> ClientController::GetOffLineContacts() {
   }
   return contacts;
 }
+
+bs2::connection ClientController::ConnectToOnFileNetworkStatus(
+      const OnFileNetworkStatus::slot_type &slot) {
+  return seh_.ConnectToOnFileNetworkStatus(slot);
+}
+
 
 }  // namespace maidsafe

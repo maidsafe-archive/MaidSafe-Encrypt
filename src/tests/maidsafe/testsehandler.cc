@@ -25,21 +25,21 @@
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
 #include <boost/scoped_ptr.hpp>
+#include <boost/tuple/tuple.hpp>
 
 #include <gtest/gtest.h>
-#include <limits.h>
 
 #include "fs/filesystem.h"
 #include "maidsafe/chunkstore.h"
-#include "maidsafe/returncodes.h"
+#include "maidsafe/maidsafe.h"
 #include "maidsafe/pdutils.h"
 #include "maidsafe/client/dataatlashandler.h"
+#include "maidsafe/client/dataiohandler.h"
 #include "maidsafe/client/localstoremanager.h"
 #include "maidsafe/client/packetfactory.h"
 #include "maidsafe/client/sehandler.h"
 #include "maidsafe/client/selfencryption.h"
 #include "maidsafe/client/sessionsingleton.h"
-#include "maidsafe/maidsafe.h"
 #include "protobuf/maidsafe_messages.pb.h"
 #include "tests/maidsafe/cached_keys.h"
 #include "tests/maidsafe/testcallback.h"
@@ -87,6 +87,34 @@ void ModifyUpToDateDms(ModificationType modification_type,
       break;
   }
 }
+void FileUpdate(const std::string &file, int percentage, int *result,
+                boost::mutex *mutex) {
+  boost::mutex::scoped_lock loch_lyon(*mutex);
+  printf("%s - %d%%\n", file.c_str(), percentage);
+  *result = percentage;
+}
+
+void MultipleFileUpdate(
+    const std::string &file, int percentage,
+    std::vector<boost::tuple<std::string, std::string, int> > *fileage,
+    boost::mutex *mutex, bool *done, int *received_chunks) {
+  boost::mutex::scoped_lock loch_lyon(*mutex);
+  if (percentage == 100) {
+    ++(*received_chunks);
+  }
+
+  size_t finished(0);
+  for (size_t n = 0; n < fileage->size(); ++n) {
+    if (file == fileage->at(n).get<0>()) {
+      fileage->at(n).get<2>() = percentage;
+    }
+    if (fileage->at(n).get<2>() == 100)
+      ++finished;
+  }
+
+  if (finished == fileage->size())
+    *done = true;
+}
 
 }  // namespace test_seh
 
@@ -97,29 +125,33 @@ namespace test {
 class SEHandlerTest : public testing::Test {
  protected:
   SEHandlerTest() : test_root_dir_(file_system::TempDir() /
-                        ("maidsafe_TestSEH_" + base::RandomString(6))),
-                    client_chunkstore_(),
-                    cb_(),
-                    db_str1_(),
-                    db_str2_(),
-                    ss_(SessionSingleton::getInstance()),
-                    keys_(),
-                    sm_(),
-                    dah_(new DataAtlasHandler()),
-                    seh_(new SEHandler()) {}
+                                   ("maidsafe_TestSEH_" +
+                                       base::RandomString(6))),
+                    client_chunkstore_(), cb_(), db_str1_(), db_str2_(),
+                    ss_(SessionSingleton::getInstance()), keys_(),sm_(), dah_(),
+                    seh_() {}
+
   ~SEHandlerTest() {}
+
   void SetUp() {
     ss_->SetUsername("user1");
     ss_->SetPin("1234");
     ss_->SetPassword("password1");
     ss_->SetSessionName(false);
     ss_->SetRootDbKey("whatever");
-    ASSERT_TRUE(file_system::RemoveDir(test_root_dir_, 5));
-    ASSERT_TRUE(file_system::RemoveDir(file_system::LocalStoreManagerDir(), 5));
-    ASSERT_TRUE(file_system::RemoveDir(
-        file_system::MaidsafeDir(ss_->SessionName()), 5));
+    try {
+      if (fs::exists(test_root_dir_))
+        fs::remove_all(test_root_dir_);
+      if (fs::exists(file_system::LocalStoreManagerDir()))
+        fs::remove_all(file_system::LocalStoreManagerDir());
+      if (fs::exists(file_system::MaidsafeDir(ss_->SessionName())))
+        fs::remove_all(file_system::MaidsafeDir(ss_->SessionName()));
+    }
+    catch(const std::exception& e) {
+      printf("%s\n", e.what());
+    }
     client_chunkstore_ = boost::shared_ptr<ChunkStore>(
-        new ChunkStore(test_root_dir_.string(), 0, 0));
+                             new ChunkStore(test_root_dir_.string(), 0, 0));
     ASSERT_TRUE(client_chunkstore_->Init());
     int count(0);
     while (!client_chunkstore_->is_initialised() && count < 10000) {
@@ -128,29 +160,25 @@ class SEHandlerTest : public testing::Test {
     }
     sm_.reset(new LocalStoreManager(client_chunkstore_, test_seh::K,
                                     test_root_dir_));
-    cb_.Reset();
     sm_->Init(boost::bind(&test::CallbackObject::ReturnCodeCallback, &cb_, _1),
               0);
     if (cb_.WaitForReturnCodeResult() != kSuccess) {
       FAIL();
       return;
     }
+
     cached_keys::MakeKeys(3, &keys_);
-    crypto::Crypto co;
-    co.set_hash_algorithm(crypto::SHA_512);
-    std::string pmid_sig = co.AsymSign(keys_.at(0).public_key(), "",
-        keys_.at(1).private_key(), crypto::STRING_STRING);
-    std::string pmid = co.Hash(keys_.at(0).public_key() + pmid_sig, "",
-                               crypto::STRING_STRING, false);
-    ss_->AddKey(PMID, pmid, keys_.at(0).private_key(), keys_.at(0).public_key(),
-                pmid_sig);
+    ss_->AddKey(PMID, "PMID", keys_.at(0).private_key(),
+                keys_.at(0).public_key(), "");
     ss_->AddKey(MAID, "MAID", keys_.at(1).private_key(),
                 keys_.at(1).public_key(), "");
     ss_->AddKey(MPID, "Me", keys_.at(2).private_key(),
                 keys_.at(2).public_key(), "");
     ASSERT_EQ(0, file_system::Mount(ss_->SessionName(), ss_->DefConLevel()));
+    dah_.reset(new DataAtlasHandler());
+    seh_.reset(new SEHandler());
     seh_->Init(sm_, client_chunkstore_);
-    if (dah_->Init(true) )
+    if (dah_->Init(true))
       FAIL();
 
      //  set up default root subdirs
@@ -164,58 +192,38 @@ class SEHandlerTest : public testing::Test {
       mdm.set_tag("");
       mdm.set_file_size_high(0);
       mdm.set_file_size_low(0);
-      boost::uint32_t current_time = base::GetEpochTime();
-      mdm.set_creation_time(current_time);
+      mdm.set_creation_time(base::GetEpochTime());
       mdm.SerializeToString(&ser_mdm);
       if (kRootSubdir[i][1].empty())
         seh_->GenerateUniqueKey(&key);
       else
         key = kRootSubdir[i][1];
       fs::create_directories(file_system::MaidsafeHomeDir(ss_->SessionName()) /
-          kRootSubdir[i][0]);
-      dah_->AddElement(TidyPath(kRootSubdir[i][0]),
-          ser_mdm, "", key, true);
+                             kRootSubdir[i][0]);
+      dah_->AddElement(TidyPath(kRootSubdir[i][0]), ser_mdm, "", key, true);
     }
-
-// *********************************************
-// Anonymous Shares are disabled at the moment *
-// *********************************************
-//    //set up Anon share subdir
-//    fs::path subdir_(kSharesSubdir[1][0], fs::native);
-//    std::string subdir_name_ = subdir_.filename();
-//    MetaDataMap mdm_;
-//    std::string ser_mdm_, key_;
-//    mdm_.set_id(-2);
-//    mdm_.set_display_name(subdir_name_);
-//    mdm_.set_type(EMPTY_DIRECTORY);
-//    mdm_.set_stats("");
-//    mdm_.set_tag("");
-//    mdm_.set_file_size_high(0);
-//    mdm_.set_file_size_low(0);
-//    boost::uint32_t current_time_ = base::GetEpochTime();
-//    mdm_.set_creation_time(current_time_);
-//    mdm_.SerializeToString(&ser_mdm_);
-//    key_ = kSharesSubdir[1][1];
-//    dah_->AddElement(TidyPath(kSharesSubdir[1][0]),
-//      ser_mdm_, "", key_, true);
-//
     dah_->GetDbPath(TidyPath(kRootSubdir[0][0]), CREATE, &db_str1_);
-// *********************************************
-// Anonymous Shares are disabled at the moment *
-// *********************************************
-//    dah_->GetDbPath(TidyPath(kSharesSubdir[1][0]), CREATE, &db_str2_);
     cb_.Reset();
   }
+
   void TearDown() {
     cb_.Reset();
     sm_->Close(boost::bind(&test::CallbackObject::ReturnCodeCallback, &cb_, _1),
                true);
-    ASSERT_EQ(kSuccess, cb_.WaitForReturnCodeResult());
-    ASSERT_TRUE(file_system::RemoveDir(test_root_dir_, 5));
-    ASSERT_TRUE(file_system::RemoveDir(file_system::LocalStoreManagerDir(), 5));
-    ASSERT_TRUE(file_system::RemoveDir(
-        file_system::MaidsafeDir(ss_->SessionName()), 5));
+    if (cb_.WaitForReturnCodeResult() == kSuccess) {}
+    try {
+      if (fs::exists(test_root_dir_))
+        fs::remove_all(test_root_dir_);
+      if (fs::exists(file_system::LocalStoreManagerDir()))
+        fs::remove_all(file_system::LocalStoreManagerDir());
+      if (fs::exists(file_system::MaidsafeDir(ss_->SessionName())))
+        fs::remove_all(file_system::MaidsafeDir(ss_->SessionName()));
+    }
+    catch(const std::exception& e) {
+      printf("%s\n", e.what());
+    }
   }
+
   fs::path test_root_dir_;
   boost::shared_ptr<ChunkStore> client_chunkstore_;
   test::CallbackObject cb_;
@@ -223,8 +231,9 @@ class SEHandlerTest : public testing::Test {
   SessionSingleton *ss_;
   std::vector<crypto::RsaKeyPair> keys_;
   boost::shared_ptr<LocalStoreManager> sm_;
-  boost::shared_ptr<DataAtlasHandler> dah_;
-  boost::shared_ptr<SEHandler> seh_;
+  boost::scoped_ptr<DataAtlasHandler> dah_;
+  boost::scoped_ptr<SEHandler> seh_;
+
  private:
   SEHandlerTest(const SEHandlerTest&);
   SEHandlerTest &operator=(const SEHandlerTest&);
@@ -239,7 +248,7 @@ TEST_F(SEHandlerTest, BEH_MAID_Check_Entry) {
   fs::path rel_path5 = rel_path / "file5";
   fs::path rel_path6 = rel_path / "Dir";
   fs::path rel_path7 = rel_path6 / "EmptyDir";
-  std::string name_too_long = "";
+  std::string name_too_long;
   for (int i = 0; i < 20; i++)
     name_too_long += "NameTooLong";
   fs::path rel_path8 = rel_path / name_too_long;
@@ -268,33 +277,33 @@ TEST_F(SEHandlerTest, BEH_MAID_Check_Entry) {
   fs::path full_path4(test_seh::CreateRandomFile(rel_str4, size4));
   fs::path full_path5(test_seh::CreateRandomFile(rel_str5, size5));
   fs::path full_path6(file_system::MaidsafeHomeDir(ss_->SessionName()) /
-      rel_str6);
+                      rel_str6);
   fs::path full_path7(file_system::MaidsafeHomeDir(ss_->SessionName()) /
-      rel_str7);
+                      rel_str7);
   fs::create_directories(full_path7);
   fs::path full_path8 = test_seh::CreateRandomFile(rel_str8, size8);
   fs::path full_path9 = test_seh::CreateRandomFile(rel_str9, size9);
   crypto::Crypto co;
   co.set_hash_algorithm(crypto::SHA_512);
   std::string hash1(co.Hash(full_path1.string(), "", crypto::FILE_STRING,
-      false));
+                            false));
   std::string hash2(co.Hash(full_path2.string(), "", crypto::FILE_STRING,
-      false));
+                            false));
   std::string hash3(co.Hash(full_path3.string(), "", crypto::FILE_STRING,
-      false));
+                            false));
   std::string hash6, hash7, hash8;
   std::string hash9(co.Hash(full_path9.string(), "", crypto::FILE_STRING,
-      false));
+                            false));
   fs::path before(full_path9);
   fs::path after(full_path9.parent_path() / base::EncodeToHex(hash9));
   fs::rename(before, after);
   full_path9 = after;
-  boost::uint64_t returned_size1(9), returned_size2(9), returned_size3(9);
-  boost::uint64_t returned_size6(9), returned_size7(9), returned_size8(9);
-  boost::uint64_t returned_size9(9);
-  std::string returned_hash1("A"), returned_hash2("A"), returned_hash3("A");
-  std::string returned_hash6("A"), returned_hash7("A"), returned_hash8("A");
-  std::string returned_hash9("A");
+  boost::uint64_t returned_size1(9), returned_size2(9), returned_size3(9),
+                  returned_size6(9), returned_size7(9), returned_size8(9),
+                  returned_size9(9);
+  std::string returned_hash1("A"), returned_hash2("A"), returned_hash3("A"),
+              returned_hash6("A"), returned_hash7("A"), returned_hash8("A"),
+              returned_hash9("A");
   ASSERT_EQ(EMPTY_FILE,
             seh_->CheckEntry(full_path1, &returned_size1, &returned_hash1));
   ASSERT_EQ(size1, returned_size1);
@@ -326,13 +335,31 @@ TEST_F(SEHandlerTest, BEH_MAID_Check_Entry) {
 }
 
 TEST_F(SEHandlerTest, BEH_MAID_EncryptFile) {
+  // Connect to SEH signal
+  int res(0), res2(res);
+  boost::mutex m;
+  boost::signals2::connection c =
+      seh_->ConnectToOnFileNetworkStatus(boost::bind(&test_seh::FileUpdate, _1,
+                                                     _2, &res, &m));
+
   fs::path rel_path(kRootSubdir[0][0]);
   rel_path /= "file1";
   std::string rel_str = TidyPath(rel_path.string());
 
-  std::string full_str = test_seh::CreateRandomFile(rel_str, 1024);
+  std::string full_str = test_seh::CreateRandomFile(rel_str, 9999);
   int result = seh_->EncryptFile(rel_str, PRIVATE, "");
   ASSERT_EQ(0, result);
+
+  // Wait for signal that file has been succesfully uploaded
+  while (!(res2 == -1 || res2 == 100)) {
+    boost::this_thread::sleep(boost::posix_time::milliseconds(500));
+    {
+      boost::mutex::scoped_lock loch_tulla(m);
+      res2 = res;
+    }
+  }
+  ASSERT_EQ(100, res2);
+  c.disconnect();
 
   // Check the chunks are stored
   std::string ser_dm;
@@ -346,9 +373,27 @@ TEST_F(SEHandlerTest, BEH_MAID_EncryptFile) {
 }
 
 TEST_F(SEHandlerTest, BEH_MAID_EncryptString) {
+  // Connect to SEH signal
+  int res(0), res2(res);
+  boost::mutex m;
+  boost::signals2::connection c =
+      seh_->ConnectToOnFileNetworkStatus(boost::bind(&test_seh::FileUpdate, _1,
+                                                     _2, &res, &m));
+
   std::string data(base::RandomString(1024)), ser_dm;
   int result = seh_->EncryptString(data, &ser_dm);
   ASSERT_EQ(0, result);
+
+  // Wait for signal that file has been succesfully uploaded
+  while (!(res2 == -1 || res2 == 100)) {
+    boost::this_thread::sleep(boost::posix_time::milliseconds(500));
+    {
+      boost::mutex::scoped_lock loch_tulla(m);
+      res2 = res;
+    }
+  }
+  ASSERT_EQ(100, res2);
+  c.disconnect();
 
   // Check the chunks are stored
   maidsafe::DataMap dm;
@@ -359,11 +404,28 @@ TEST_F(SEHandlerTest, BEH_MAID_EncryptString) {
 }
 
 TEST_F(SEHandlerTest, BEH_MAID_DecryptStringWithChunksPrevLoaded) {
-  std::string data(base::RandomString(19891/*1024*/)), ser_dm;
+  // Connect to SEH signal
+  int res(0), res2(res);
+  boost::mutex m;
+  boost::signals2::connection c =
+      seh_->ConnectToOnFileNetworkStatus(boost::bind(&test_seh::FileUpdate, _1,
+                                                     _2, &res, &m));
+  std::string data(base::RandomString(19891)), ser_dm;
 
   SelfEncryption se(client_chunkstore_);
   int result = seh_->EncryptString(data, &ser_dm);
   ASSERT_EQ(0, result);
+
+  // Wait for signal that file has been succesfully uploaded
+  while (!(res2 == -1 || res2 == 100)) {
+    boost::this_thread::sleep(boost::posix_time::milliseconds(500));
+    {
+      boost::mutex::scoped_lock loch_tulla(m);
+      res2 = res;
+    }
+  }
+  ASSERT_EQ(100, res2);
+  c.disconnect();
 
   std::string dec_string;
   result = seh_->DecryptString(ser_dm, &dec_string);
@@ -372,17 +434,36 @@ TEST_F(SEHandlerTest, BEH_MAID_DecryptStringWithChunksPrevLoaded) {
 }
 
 TEST_F(SEHandlerTest, BEH_MAID_DecryptStringWithLoadChunks) {
+  // Connect to SEH signal
+  int res(0), res2(res);
+  boost::mutex m;
+  boost::signals2::connection c =
+      seh_->ConnectToOnFileNetworkStatus(boost::bind(&test_seh::FileUpdate, _1,
+                                                     _2, &res, &m));
+
+  ss_->SetDefConLevel(kDefCon2);
   std::string data(base::RandomString(1024)), ser_dm;
 
   SelfEncryption se(client_chunkstore_);
   int result = seh_->EncryptString(data, &ser_dm);
   ASSERT_EQ(0, result);
+
+  // Wait for signal that file has been succesfully uploaded
+  while (!(res2 == -1 || res2 == 100)) {
+    boost::this_thread::sleep(boost::posix_time::milliseconds(500));
+    {
+      boost::mutex::scoped_lock loch_tulla(m);
+      res2 = res;
+    }
+  }
+  ASSERT_EQ(100, res2);
+
   // All dirs are removed on fsys_.Mount() below.  We need to temporarily rename
   // DbDir (which contains dir's db files) to avoid deletion.
   fs::path db_dir_original = file_system::DbDir(ss_->SessionName());
   std::string db_dir_new = "./W";
-  ASSERT_TRUE(file_system::RemoveDir(db_dir_new, 5));
   try {
+    fs::remove_all(db_dir_new);
     fs::rename(db_dir_original, db_dir_new);
   }
   catch(const std::exception &e) {
@@ -391,9 +472,9 @@ TEST_F(SEHandlerTest, BEH_MAID_DecryptStringWithLoadChunks) {
   ASSERT_EQ(0, file_system::Mount(ss_->SessionName(), ss_->DefConLevel()));
 
   fs::create_directories(file_system::MaidsafeHomeDir(ss_->SessionName()) /
-      kRootSubdir[0][0]);
-  ASSERT_TRUE(file_system::RemoveDir(db_dir_original, 5));
+                                                      kRootSubdir[0][0]);
   try {
+    fs::remove_all(db_dir_original);
     fs::rename(db_dir_new, db_dir_original);
   }
   catch(const std::exception &e) {
@@ -401,25 +482,46 @@ TEST_F(SEHandlerTest, BEH_MAID_DecryptStringWithLoadChunks) {
   }
   std::string dec_string;
   result = seh_->DecryptString(ser_dm, &dec_string);
+  boost::this_thread::sleep(boost::posix_time::seconds(1));
   ASSERT_EQ(0, result);
 
   ASSERT_EQ(data, dec_string);
 }
 
 TEST_F(SEHandlerTest, BEH_MAID_DecryptWithChunksPrevLoaded) {
+  // Connect to SEH signal
+  int res(0), res2(res);
+  boost::mutex m;
+  boost::signals2::connection c =
+      seh_->ConnectToOnFileNetworkStatus(boost::bind(&test_seh::FileUpdate, _1,
+                                                     _2, &res, &m));
+
   fs::path rel_path(kRootSubdir[0][0]);
   rel_path /= "file1";
   std::string rel_str = TidyPath(rel_path.string());
 
-  std::string full_str = test_seh::CreateRandomFile(rel_str, 1024);
+  std::string full_str(test_seh::CreateRandomFile(rel_str, 1026));
   std::string hash_before, hash_after;
   SelfEncryption se(client_chunkstore_);
   hash_before = se.SHA512(fs::path(full_str));
   int result = seh_->EncryptFile(rel_str, PRIVATE, "");
   ASSERT_EQ(0, result);
+
+  // Wait for signal that file has been succesfully uploaded
+  while (!(res2 == -1 || res2 == 100)) {
+    boost::this_thread::sleep(boost::posix_time::milliseconds(500));
+    {
+      boost::mutex::scoped_lock loch_tulla(m);
+      res2 = res;
+    }
+  }
+  ASSERT_EQ(100, res2);
+  c.disconnect();
+
   fs::remove(full_str);
   ASSERT_FALSE(fs::exists(full_str));
 
+  boost::this_thread::sleep(boost::posix_time::seconds(1));
   result = seh_->DecryptFile(rel_str);
   ASSERT_EQ(0, result);
   ASSERT_TRUE(fs::exists(full_str));
@@ -428,23 +530,42 @@ TEST_F(SEHandlerTest, BEH_MAID_DecryptWithChunksPrevLoaded) {
 }
 
 TEST_F(SEHandlerTest, BEH_MAID_DecryptWithLoadChunks) {
+  ss_->SetDefConLevel(kDefCon2);
+  int res(0), res2(res);
+  boost::mutex m;
+  boost::signals2::connection c =
+      seh_->ConnectToOnFileNetworkStatus(boost::bind(&test_seh::FileUpdate, _1,
+                                                     _2, &res, &m));
+
   fs::path rel_path(kRootSubdir[0][0]);
   rel_path /= "file1";
   std::string rel_str = TidyPath(rel_path.string());
 
-  std::string full_str = test_seh::CreateRandomFile(rel_str, 1024);
+  std::string full_str = test_seh::CreateRandomFile(rel_str, 256 * 1024);
   std::string hash_before, hash_after;
   SelfEncryption se(client_chunkstore_);
   fs::path full_path(full_str, fs::native);
   hash_before = se.SHA512(full_path);
   int result = seh_->EncryptFile(rel_str, PRIVATE, "");
   ASSERT_EQ(0, result);
+
+  // Wait for signal that file has been succesfully uploaded
+  while (!(res2 == -1 || res2 == 100)) {
+    boost::this_thread::sleep(boost::posix_time::milliseconds(500));
+    {
+      boost::mutex::scoped_lock loch_tulla(m);
+      res2 = res;
+    }
+  }
+  ASSERT_EQ(100, res2);
+  c.disconnect();
+
   // All dirs are removed on fsys.Mount() below.  We need to temporarily rename
   // DbDir (which contains dir's db files) to avoid deletion.
   fs::path db_dir_original = file_system::DbDir(ss_->SessionName());
   std::string db_dir_new = "./W";
-  ASSERT_TRUE(file_system::RemoveDir(db_dir_new, 5));
   try {
+    fs::remove_all(db_dir_new);
     fs::rename(db_dir_original, db_dir_new);
   }
   catch(const std::exception &e) {
@@ -453,20 +574,91 @@ TEST_F(SEHandlerTest, BEH_MAID_DecryptWithLoadChunks) {
   ASSERT_EQ(0, file_system::Mount(ss_->SessionName(), ss_->DefConLevel()));
   ASSERT_FALSE(fs::exists(full_str));
   fs::create_directories(file_system::MaidsafeHomeDir(ss_->SessionName()) /
-      kRootSubdir[0][0]);
-  ASSERT_TRUE(file_system::RemoveDir(db_dir_original, 5));
+                                                      kRootSubdir[0][0]);
   try {
+    fs::remove_all(db_dir_original);
     fs::rename(db_dir_new, db_dir_original);
   }
   catch(const std::exception &e) {
     printf("%s\n", e.what());
   }
   result = seh_->DecryptFile(rel_str);
+  boost::this_thread::sleep(boost::posix_time::seconds(1));
   ASSERT_EQ(0, result);
   ASSERT_TRUE(fs::exists(full_str));
   hash_after = se.SHA512(fs::path(full_str));
   ASSERT_EQ(hash_before, hash_after);
 }
+
+/*
+//  TEST_F(SEHandlerTest, FUNC_MAID_Decrypt_FailedToLoadChunk) {
+//   boost::shared_ptr<LocalStoreManager> sm_(new LocalStoreManager(rec_mutex));
+//    sm->Init(0, boost::bind(&test_seh::FakeCallback::CallbackFunc, &cb, _1),
+//             test_root_dir_);
+//    boost::scoped_ptr<SEHandler>seh(new SEHandler(sm_.get(), rec_mutex));
+//    boost::scoped_ptr<DataAtlasHandler>dah(new DataAtlasHandler());
+//
+//    fs::path rel_path_(kRootSubdir[0][0]);
+//    rel_path /= "file1";
+//    std::string rel_str = TidyPath(rel_path_.string());
+//
+//    std::string full_str = test_seh::CreateRandomFile(rel_str_);
+//    std::string hash_before_, hash_after_;
+//    SelfEncryption se_;
+//    fs::path full_path_(full_str_, fs::native);
+//    hash_before = se_.SHA512(full_path_);
+//    int result = seh->EncryptFile(rel_str_, PRIVATE, "");
+//    boost::this_thread::sleep(boost::posix_time::seconds(1));
+//    ASSERT_EQ(0, result);
+//    file_system::FileSystem fsys_;
+//    try {
+//      fs::remove_all(fsys_.MaidsafeHomeDir());
+//      //  NB we can't remove DbDir (which contains dir's db files)
+//      //  unless a proper logout/login is run
+//      fs::remove_all(fsys_.ProcessDir());
+//      for (char c = '0'; c <= '9'; c_++) {
+//        std::stringstream out_;
+//        out << c_;
+//        std::string f = file_system::ApplicationDataDir() +
+//                        "/client/" + out_.str();
+//        fs::remove_all(f);
+//        printf("Removing %s\n", f.c_str());
+//      }
+//      for (char c = 'a'; c <= 'f'; c_++) {
+//        std::stringstream out_;
+//        out << c_;
+//        std::string f = file_system::ApplicationDataDir() +
+//                        "client/" + out_.str();
+//        fs::remove_all(f);
+//        printf("Removing %s\n", f.c_str());
+//      }
+//    }
+//    catch(std::exception& e) {
+//      printf("%s\n", e.what());
+//    }
+//    ASSERT_FALSE(fs::exists(full_str_));
+//
+//    std::string ser_dm;
+//    ASSERT_EQ(0, dah->GetDataMap(rel_str_, &ser_dm));
+//    DataMap dm;
+//    ASSERT_TRUE(dm.ParseFromString(ser_dm));
+//    fs::path chunk_path("");
+//    chunk_path = se_.GetChunkPath(dm.encrypted_chunk_name(2));
+//    printf("Removing %s\n", chunk_path.string().c_str());
+//    fs::remove(chunk_path);
+//
+//    fsys_.Mount();
+//    fs::create_directories(fsys_.MaidsafeHomeDir() + kRootSubdir[0][0]);
+//
+//    result = seh->DecryptFile(rel_str_);
+//    boost::this_thread::sleep(boost::posix_time::seconds(1));
+//    ASSERT_EQ(0, result);
+//    ASSERT_FALSE(fs::exists(full_str_));
+//    sm->Close(boost::bind(&test_seh::FakeCallback::CallbackFunc, &cb, _1),
+//              true);
+//    boost::this_thread::sleep(boost::posix_time::milliseconds(500));
+//  }
+*/
 
 TEST_F(SEHandlerTest, BEH_MAID_EncryptAndDecryptPrivateDb) {
   fs::path db_path(db_str1_, fs::native);
@@ -523,93 +715,146 @@ TEST_F(SEHandlerTest, DISABLED_BEH_MAID_EncryptAndDecryptAnonDb) {
 // *********************************************
 // Anonymous Shares are disabled at the moment *
 // *********************************************
-//  ASSERT_EQ(0, seh_->EncryptDb(TidyPath(kSharesSubdir[1][0]),
+//  ASSERT_EQ(0, seh->EncryptDb(TidyPath(kSharesSubdir[1][0]),
 //    ANONYMOUS, key, "", false, &ser_dm));
   fs::remove(db_path);
   ASSERT_FALSE(fs::exists(db_path));
 //  ASSERT_EQ(0,
-//    seh_->RemoveKeyFromUptodateDms(TidyPath(kSharesSubdir[1][0]))) <<
+//    seh->RemoveKeyFromUptodateDms(TidyPath(kSharesSubdir[1][0]))) <<
 //    "Didn't find the key in the map of DMs.";
-//  ASSERT_EQ(0, seh_->DecryptDb(TidyPath(kSharesSubdir[1][0]),
+//  ASSERT_EQ(0, seh->DecryptDb(TidyPath(kSharesSubdir[1][0]),
 //    ANONYMOUS, ser_dm, key, "", false, false));
   ASSERT_TRUE(fs::exists(db_path));
   ASSERT_EQ(hash_before, co.Hash(db_str2_, "", crypto::FILE_STRING, false));
-//  ASSERT_EQ(0, seh_->DecryptDb(TidyPath(kSharesSubdir[1][0]),
+//  ASSERT_EQ(0, seh->DecryptDb(TidyPath(kSharesSubdir[1][0]),
 //    ANONYMOUS, "", key, "", false, false));
   ASSERT_TRUE(fs::exists(db_path));
   ASSERT_EQ(hash_before, co.Hash(db_str2_, "", crypto::FILE_STRING, false));
   fs::remove(file_system::MaidsafeDir(ss_->SessionName()) / key);
 }
 
-TEST_F(SEHandlerTest, BEH_MAID_UpToDateDatamapsSingleThread) {
-  const boost::uint16_t kTestSize(100);
-  const boost::uint16_t kTestIndex(base::RandomUint32() % kTestSize);
-  std::vector<std::string> keys(kTestSize, ""), enc_dms(kTestSize, "");
-  for (boost::uint16_t i = 0; i < kTestSize; ++i) {
-    keys.at(i) = base::RandomString(64);
-    enc_dms.at(i) = base::RandomString(200);
+TEST_F(SEHandlerTest, BEH_MAID_FailureOfChunkEncryptingFile) {
+  // Connect to SEH signal
+  int res(0), res2(res);
+  boost::mutex m;
+  boost::signals2::connection c =
+      seh_->ConnectToOnFileNetworkStatus(boost::bind(&test_seh::FileUpdate, _1,
+                                                    _2, &res, &m));
+  fs::path rel_path(kRootSubdir[0][0]);
+  rel_path /= "file1";
+  std::string rel_entry(TidyPath(rel_path.string()));
+  std::string full_str = test_seh::CreateRandomFile(rel_entry, 66666);
+
+  boost::uint64_t file_size(0);
+  std::string file_hash;
+  ItemType item_type = seh_->CheckEntry(full_str, &file_size, &file_hash);
+  DataMap dm, dm_retrieved;
+  std::string ser_dm_retrieved, ser_dm, ser_mdm, dir_key;
+  SelfEncryption se(client_chunkstore_);
+  if (dah_->GetDataMap(rel_entry, &ser_dm_retrieved) == kSuccess)
+    dm_retrieved.ParseFromString(ser_dm_retrieved);
+
+  int removee(-1);
+  if (ser_dm_retrieved.empty() || dm_retrieved.file_hash() != file_hash) {
+    dm.set_file_hash(file_hash);
+    ASSERT_EQ(kSuccess, se.Encrypt(full_str, false, &dm)) << full_str;
+    int chunkage = dm.chunk_name_size();
+    removee = base::RandomUint32() % chunkage;
+    std::string a(dm.encrypted_chunk_name(removee));
+    printf("ENCRYPTED ALL CHUNKS. SIZE: %d - REMOVEE: %d - CHUNK: %s\n",
+           chunkage, removee, base::EncodeToHex(a).substr(0, 10).c_str());
+
+    // delete one of the chunks
+    try {
+      ChunkType type = client_chunkstore_->chunk_type(a);
+      fs::path chunk_path(client_chunkstore_->GetChunkPath(a, type, false));
+      if (fs::exists(chunk_path)) {
+        fs::remove_all(chunk_path);
+        printf("Deleted chunk %s\n", chunk_path.string().c_str());
+      }
+    }
+    catch(const std::exception &e) {
+#ifdef DEBUG
+      printf("In SelfEncryption::Encrypt -- %s\n", e.what());
+#endif
+      FAIL() << "Couldn't erase chunk";
+    }
+    printf("Before seh->StoreChunks\n");
+    seh_->StoreChunks(dm, PRIVATE, "", rel_entry);
+    printf("After seh->StoreChunks\n");
+    dm.SerializeToString(&ser_dm);
   }
-  std::string test_key(keys.at(kTestIndex));
-  std::string test_enc_dm_before(keys.at(kTestIndex));
-  std::string test_enc_dm_after(keys.at(kTestIndex));
-  while (test_enc_dm_after == test_enc_dm_before)
-    test_enc_dm_after = base::RandomString(200);
 
-  // Add keys that don't equal the test key (usually all except one)
-  for (boost::uint16_t i = 0; i < kTestSize; ++i) {
-    if (keys.at(i) != test_key)
-      seh_->AddToUpToDateDms(keys.at(i), enc_dms.at(i));
+  ASSERT_TRUE(seh_->ProcessMetaData(rel_entry, item_type, file_hash, file_size,
+                                    &ser_mdm));
+  ASSERT_EQ(kSuccess, dah_->AddElement(rel_entry, ser_mdm, ser_dm, dir_key,
+                                       true));
+
+  // Wait for signal that file has been succesfully uploaded
+  while (!(res2 == -1 || res2 == 100)) {
+    boost::this_thread::sleep(boost::posix_time::milliseconds(500));
+    {
+      boost::mutex::scoped_lock loch_tulla(m);
+      res2 = res;
+    }
   }
-  size_t map_size = seh_->up_to_date_datamaps_.size();
 
-  // Check trying to retrieve enc_dm returns empty string
-  ASSERT_TRUE(seh_->GetFromUpToDateDms(test_key).empty());
-  ASSERT_EQ(map_size, seh_->up_to_date_datamaps_.size());
-
-  // Check trying to remove non-existant enc_dm fails
-  ASSERT_EQ(kEncryptionDmNotInMap, seh_->RemoveFromUpToDateDms(test_key));
-  ASSERT_EQ(map_size, seh_->up_to_date_datamaps_.size());
-
-  // Check initial addition returns empty string
-  ASSERT_TRUE(seh_->AddToUpToDateDms(test_key, test_enc_dm_before).empty());
-  ASSERT_EQ(map_size + 1, seh_->up_to_date_datamaps_.size());
-
-  // Check we can retrieve enc_dm
-  ASSERT_EQ(test_enc_dm_before, seh_->GetFromUpToDateDms(test_key));
-  ASSERT_EQ(map_size + 1, seh_->up_to_date_datamaps_.size());
-
-  // Check subsequent addition returns previous enc_dm
-  ASSERT_EQ(test_enc_dm_before,
-            seh_->AddToUpToDateDms(test_key, test_enc_dm_after));
-  ASSERT_EQ(map_size + 1, seh_->up_to_date_datamaps_.size());
-
-  // Check we can retrieve updated enc_dm
-  ASSERT_EQ(test_enc_dm_after, seh_->GetFromUpToDateDms(test_key));
-  ASSERT_EQ(map_size + 1, seh_->up_to_date_datamaps_.size());
-
-  // Check we can remove enc_dm
-  ASSERT_EQ(kSuccess, seh_->RemoveFromUpToDateDms(test_key));
-  ASSERT_TRUE(seh_->GetFromUpToDateDms(test_key).empty());
-  ASSERT_EQ(map_size, seh_->up_to_date_datamaps_.size());
+  ASSERT_EQ(-1, res2);
+  c.disconnect();
+  for (int i = 0; i < dm.encrypted_chunk_name_size(); ++i) {
+    if (i == removee)
+      ASSERT_TRUE(sm_->KeyUnique(dm.encrypted_chunk_name(i), false));
+    else
+      ASSERT_FALSE(sm_->KeyUnique(dm.encrypted_chunk_name(i), false));
+  }
 }
 
-TEST_F(SEHandlerTest, BEH_MAID_UpToDateDatamapsMultiThread) {
-  const boost::uint16_t kTestSize(100);
-  std::vector<std::string> keys(kTestSize, ""), enc_dms(kTestSize, "");
-  for (boost::uint16_t i = 0; i < kTestSize; ++i) {
-    keys.at(i) = base::RandomString(64);
-    enc_dms.at(i) = base::RandomString(200);
-    seh_->AddToUpToDateDms(keys.at(i), enc_dms.at(i));
+TEST_F(SEHandlerTest, BEH_MAID_MultipleFileEncryption) {
+  // Create the files
+  std::vector<boost::tuple<std::string, std::string, int> > fileage;
+  std::vector<std::string> filenames;
+  fs::path root_path(kRootSubdir[0][0]);
+  int total_files(20);
+  boost::mutex m;
+  printf("Start\n");
+  for (int n = 0; n < total_files; ++n) {
+    std::string filename("file" + base::IntToString(n));
+    fs::path rel_path = root_path / fs::path(filename);
+    std::string rel_str = TidyPath(rel_path.string());
+    filenames.push_back(rel_str);
+    std::string full_str = test_seh::CreateRandomFile(rel_str, 999);
+    fileage.push_back(boost::tuple<std::string, std::string, int>(
+                                   rel_str,     full_str,    -2));
   }
-  boost::thread thr1(&test_seh::ModifyUpToDateDms, test_seh::kAdd, kTestSize,
-                     keys, enc_dms, seh_);
-  boost::thread thr2(&test_seh::ModifyUpToDateDms, test_seh::kGet, kTestSize,
-                     keys, enc_dms, seh_);
-  boost::thread thr3(&test_seh::ModifyUpToDateDms, test_seh::kRemove, kTestSize,
-                     keys, enc_dms, seh_);
-  thr1.join();
-  thr2.join();
-  thr3.join();
+  printf("Files created\n");
+
+  // Connect to SEH signal
+  bool done(false), done2(done);
+  int received_chunks(1);
+  boost::signals2::connection c =
+      seh_->ConnectToOnFileNetworkStatus(
+          boost::bind(&test_seh::MultipleFileUpdate, _1, _2, &fileage, &m,
+                      &done, &received_chunks));
+  printf("Connected\n");
+  for (int a = 0; a < total_files; ++a) {
+    int result = seh_->EncryptFile(filenames[a], PRIVATE, "");
+    ASSERT_EQ(0, result);
+  }
+
+  printf("EncryptFile run and about to wait\n");
+  while (!done2) {
+    boost::this_thread::sleep(boost::posix_time::milliseconds(500));
+    {
+      boost::mutex::scoped_lock loch_muick(m);
+      done2 = done;
+    }
+  }
+  printf("Done waiting\n");
+
+  for (int y = 0; y < total_files; ++y) {
+    ASSERT_EQ(100, fileage[y].get<2>());
+  }
+  printf("Checked results\n");
 }
 
 }  // namespace test

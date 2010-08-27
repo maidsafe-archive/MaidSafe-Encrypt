@@ -23,19 +23,11 @@ namespace maidsafe {
 ChunkStore::ChunkStore(const std::string &chunkstore_dir,
                        const boost::uint64_t &available_space,
                        const boost::uint64_t &used_space)
-    : chunkstore_set_(),
-      path_map_(),
-      kChunkstorePath_(chunkstore_dir),
-      is_initialised_(false),
-      initialised_mutex_(),
-      chunkstore_set_mutex_(),
-      kHashableLeaf_("Hashable"),
-      kNonHashableLeaf_("NonHashable"),
-      kNormalLeaf_("Normal"),
-      kCacheLeaf_("Cache"),
-      kOutgoingLeaf_("Outgoing"),
-      kTempCacheLeaf_("TempCache"),
-      available_space_(available_space),
+    : chunkstore_set_(), path_map_(), kChunkstorePath_(chunkstore_dir),
+      is_initialised_(false), initialised_mutex_(), chunkstore_set_mutex_(),
+      kHashableLeaf_("Hashable"), kNonHashableLeaf_("NonHashable"),
+      kNormalLeaf_("Normal"), kCacheLeaf_("Cache"), kOutgoingLeaf_("Outgoing"),
+      kTempCacheLeaf_("TempCache"), available_space_(available_space),
       used_space_(used_space) {}
 
 bool ChunkStore::is_initialised() {
@@ -149,10 +141,8 @@ bool ChunkStore::PopulatePathMap() {
   }
 }
 
-void ChunkStore::FindFiles(const fs::path &root_dir_path,
-                           ChunkType type,
-                           bool hash_check,
-                           bool delete_failures,
+void ChunkStore::FindFiles(const fs::path &root_dir_path, ChunkType type,
+                           bool hash_check, bool delete_failures,
                            boost::uint64_t *filecount,
                            std::list<std::string> *failed_keys) {
   try {
@@ -250,8 +240,7 @@ ChunkType ChunkStore::chunk_type(const std::string &key) {
 }
 
 ChunkType ChunkStore::GetChunkType(const std::string &key,
-                                   const std::string &value,
-                                   bool outgoing) {
+                                   const std::string &value, bool outgoing) {
   // Return type if we already have the chunk's details
   ChunkType type = chunk_type(key);
   if (type != kInvalidChunkType)
@@ -271,8 +260,7 @@ ChunkType ChunkStore::GetChunkType(const std::string &key,
   return type;
 }
 
-ChunkType ChunkStore::GetChunkType(const std::string &key,
-                                   const fs::path &file,
+ChunkType ChunkStore::GetChunkType(const std::string &key, const fs::path &file,
                                    bool outgoing) {
   // Return type if we already have the chunk's details
   ChunkType type = chunk_type(key);
@@ -305,8 +293,7 @@ ChunkType ChunkStore::GetChunkType(const std::string &key,
   }
 }
 
-fs::path ChunkStore::GetChunkPath(const std::string &key,
-                                  ChunkType type,
+fs::path ChunkStore::GetChunkPath(const std::string &key, ChunkType type,
                                   bool create_path) {
   if (key.size() != kKeySize) {
 #ifdef DEBUG
@@ -398,7 +385,7 @@ int ChunkStore::Store(const std::string &key, const fs::path &file) {
 //      printf("Chunk already exists in ChunkStore::StoreChunk.\n");
 //  #endif
     return (type == (kHashable | kCache) || type == (kHashable | kTempCache)) ?
-        ChangeChunkType(key, kHashable | kNormal) : kInvalidChunkType;
+            ChangeChunkType(key, kHashable | kNormal) : kInvalidChunkType;
   }
   ChunkType type = GetChunkType(key, file, false);
   fs::path chunk_path(GetChunkPath(key, type, true));
@@ -466,7 +453,7 @@ int ChunkStore::StoreChunkFunction(const std::string &key,
   }
   catch(const std::exception &ex) {
 #ifdef DEBUG
-    printf("ChunkStore::StoreChunk exception writing chunk: %s\n", ex.what());
+//    printf("ChunkStore::StoreChunk exception writing chunk: %s\n", ex.what());
 #endif
     return kChunkstoreException;
   }
@@ -498,8 +485,8 @@ int ChunkStore::StoreChunkFunction(const std::string &key,
   }
   catch(const std::exception &ex) {
 #ifdef DEBUG
-    printf("ChunkStore::StoreChunk exception writing chunk %s: %s\n",
-           chunk_path.string().c_str(), ex.what());
+//    printf("ChunkStore::StoreChunk exception writing chunk %s: %s\n",
+//           chunk_path.string().c_str(), ex.what());
 #endif
     return kChunkstoreException;
   }

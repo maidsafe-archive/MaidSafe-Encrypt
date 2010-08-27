@@ -238,6 +238,8 @@ class ClientController : public QObject {
   bool IsLocalVaultOwned();
 
   int SaveSession();
+  bs2::connection ConnectToOnFileNetworkStatus(
+      const OnFileNetworkStatus::slot_type &slot);
 
  signals:
   void messageReceived(int type,

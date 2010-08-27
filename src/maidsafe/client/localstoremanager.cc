@@ -87,15 +87,18 @@ LocalStoreManager::LocalStoreManager(
         : K_(k),
           kUpperThreshold_(
               static_cast<boost::uint16_t>(K_ * kMinSuccessfulPecentageStore)),
-          db_(),
-          vbph_(),
-          mutex_(),
+          db_(), vbph_(), mutex_(),
           local_sm_dir_(db_directory.string()),
           client_chunkstore_(client_chunkstore),
           ss_(SessionSingleton::getInstance()) {}
 
+LocalStoreManager::~LocalStoreManager() {
+  while (!chunks_pending_.empty())
+    boost::this_thread::sleep(boost::posix_time::seconds(1));
+}
+
 void LocalStoreManager::Init(VoidFuncOneInt callback,
-                             const boost::uint16_t &/*port*/) {
+                             const boost::uint16_t &port) {
 #ifdef LOCAL_PDVAULT
   // Simulate knode join
 //  boost::this_thread::sleep(boost::posix_time::seconds(3));
@@ -151,13 +154,12 @@ int LocalStoreManager::LoadChunk(const std::string &chunk_name,
   return FindAndLoadChunk(chunk_name, data);
 }
 
-int LocalStoreManager::StoreChunk(const std::string &chunk_name,
-                                  const DirType,
+int LocalStoreManager::StoreChunk(const std::string &chunk_name, const DirType,
                                   const std::string&) {
-#ifdef LOCAL_PDVAULT
-  // Simulate knode lookup in AddToWatchList
+//  #ifdef LOCAL_PDVAULT
+//  // Simulate knode lookup in AddToWatchList
 //  boost::this_thread::sleep(boost::posix_time::seconds(2));
-#endif
+//  #endif
   std::string hex_chunk_name(base::EncodeToHex(chunk_name));
   fs::path file_path(local_sm_dir_ + "/StoreChunks");
   file_path = file_path / hex_chunk_name;
@@ -166,25 +168,48 @@ int LocalStoreManager::StoreChunk(const std::string &chunk_name,
   ChunkType type = client_chunkstore_->chunk_type(chunk_name);
   fs::path current = client_chunkstore_->GetChunkPath(chunk_name, type, false);
   try {
-    if (!fs::exists(file_path)) {
-      fs::copy_file(current, file_path);
+    if (fs::exists(current)) {
+      if (!fs::exists(file_path)) {
+        fs::copy_file(current, file_path);
+      }
+    } else {
+#ifdef DEBUG
+      printf("Chunk(%s) to store doesn't exist.\n", hex_chunk_name.c_str());
+#endif
+      signal_mutex_.lock();
+      chunks_pending_.insert(chunk_name);
+      signal_mutex_.unlock();
+      boost::thread thr(boost::bind(&LocalStoreManager::ExecuteReturnSignal,
+                                    this, chunk_name, kSendChunkFailure));
+      return kChunkStorePending;
     }
   }
   catch(const std::exception &e) {
 #ifdef DEBUG
     printf("%s\n", e.what());
 #endif
+    signal_mutex_.lock();
+    chunks_pending_.insert(chunk_name);
+    signal_mutex_.unlock();
+    boost::thread thr(boost::bind(&LocalStoreManager::ExecuteReturnSignal, this,
+                                  chunk_name, kSendChunkFailure));
+    return kChunkStorePending;
   }
+
   // Move chunk from Outgoing to Normal.
-  ChunkType chunk_type =
-      client_chunkstore_->chunk_type(chunk_name);
+  ChunkType chunk_type = client_chunkstore_->chunk_type(chunk_name);
   ChunkType new_type = chunk_type ^ (kOutgoing | kNormal);
   if (client_chunkstore_->ChangeChunkType(chunk_name, new_type) != 0) {
 #ifdef DEBUG
     printf("In LocalStoreManager::SendContent, failed to change chunk type.\n");
 #endif
   }
-  return kSuccess;
+  signal_mutex_.lock();
+  chunks_pending_.insert(chunk_name);
+  signal_mutex_.unlock();
+  boost::thread thr(boost::bind(&LocalStoreManager::ExecuteReturnSignal, this,
+                                chunk_name, kSuccess));
+  return kChunkStorePending;
 }
 
 int LocalStoreManager::DeleteChunk(const std::string &chunk_name,
@@ -1035,6 +1060,24 @@ void LocalStoreManager::CreateSerialisedSignedValue(
   gp.SerializeToString(ser_gp);
 }
 
+void LocalStoreManager::ExecuteReturnSignal(const std::string &chunkname,
+                                            ReturnCode rc) {
+  int sleep_seconds((base::RandomInt32() % 5) + 1);
+  boost::this_thread::sleep(boost::posix_time::seconds(sleep_seconds));
+  boost::mutex::scoped_lock loch_laggan(signal_mutex_);
+  sig_chunk_uploaded_(chunkname, rc);
+  chunks_pending_.erase(chunkname);
+}
+
+void LocalStoreManager::ExecStringCallback(kad::VoidFunctorOneString cb,
+                                           MaidsafeRpcResult result) {
+  std::string ser_result;
+  GenericResponse response;
+  response.set_result(result);
+  response.SerializeToString(&ser_result);
+  boost::thread t(cb, ser_result);
+}
+
 void LocalStoreManager::ExecReturnCodeCallback(VoidFuncOneInt cb,
                                                ReturnCode rc) {
   boost::thread t(cb, rc);
@@ -1045,15 +1088,6 @@ void LocalStoreManager::ExecReturnLoadPacketCallback(
     std::vector<std::string> results,
     ReturnCode rc) {
   boost::thread t(cb, results, rc);
-}
-
-void LocalStoreManager::ExecStringCallback(kad::VoidFunctorOneString cb,
-                                           MaidsafeRpcResult result) {
-  std::string ser_result;
-  GenericResponse response;
-  response.set_result(result);
-  response.SerializeToString(&ser_result);
-  boost::thread t(cb, ser_result);
 }
 
 }  // namespace maidsafe

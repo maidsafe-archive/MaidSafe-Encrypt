@@ -305,7 +305,7 @@ int FSLinux::ms_access(const char *path, int mask) {
   printf("ms_access path: %s\n", path);
   printf("ms_access mask: %d\n", mask);
 #else
-int FSLinux::ms_access(const char *, int mask) {
+int FSLinux::ms_access(const char *, int) {
 #endif
   return 0;
 }
@@ -511,8 +511,14 @@ int FSLinux::ms_getattr(const char *path, struct stat *stbuf) {
   return res;
 }
 
+#ifdef DEBUG
 int FSLinux::ms_fgetattr(const char *path, struct stat *stbuf,
                          struct fuse_file_info *fi) {
+#else
+int FSLinux::ms_fgetattr(const char *path, struct stat *stbuf,
+                         struct fuse_file_info*) {
+#endif
+
   std::string lpath(path);
 #ifdef DEBUG
   printf("ms_fgetattr PATH: %s -- %d\n", path, fi->flags);
@@ -575,7 +581,11 @@ int FSLinux::ms_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
   return 0;
 }
 
+#ifdef DEBUG
 int FSLinux::ms_mkdir(const char *path, mode_t mode) {
+#else
+int FSLinux::ms_mkdir(const char *path, mode_t) {
+#endif
   std::string lpath(path);
   std::string lpath1(path);
   // if path is not in an authorised dirs, return error "Permission denied"
@@ -646,9 +656,11 @@ int FSLinux::ms_rename(const char *o_path, const char *n_path) {
   return 0;
 }
 
-int FSLinux::ms_statfs(const char *path, struct statvfs *stbuf) {
 #ifdef DEBUG
+int FSLinux::ms_statfs(const char *path, struct statvfs *stbuf) {
   printf("ms_statfs PATH:  %s\n", path);
+#else
+int FSLinux::ms_statfs(const char*, struct statvfs *stbuf) {
 #endif
 
   // TODO(Team): Populate this struct with live info from the account.

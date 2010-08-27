@@ -6,13 +6,15 @@ QMainWindow::separator {
 
  QMainWindow::separator:hover {
      background: #ACACAC;
- } 
+ }
  
-  QMainWindow {
-    background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 #7b9090, stop: 1 lightblue);
+   
+QFrame {
+    border-image: url(:/background/cloud_background.png) 0 0 0 0 stretch stretch;
     font: bold;
-  }
-  
+}
+
+
   QMessageBox {
     background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 #7B7B7B, stop: 1 lightblue);
     font: bold;

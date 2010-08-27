@@ -161,7 +161,8 @@ enum ReturnCode {
   kUpdatePacketFailure = -7057,
   kUpdatePacketError = -7058,
   kUpdatePacketParseError = -7059,
-  kAmendAccountFailure = -7060,
+  kChunkStorePending = -7060,
+  kAmendAccountFailure = -7061,
 
   // KadOps
   kKadConfigException = -8001,

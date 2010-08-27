@@ -43,7 +43,7 @@ void UserCalendar::checkCalendar() {
 void UserCalendar::onCalActivated(const QDate& selected) {
    addCal_ = new AddCalendarEntry;
    QDateTime* date = new QDateTime(selected);
-   date->addSecs(3600 * 12);
+   date->addSecs(3600);
    addCal_->setCalDate(*date);
    addCal_->show();  
 }

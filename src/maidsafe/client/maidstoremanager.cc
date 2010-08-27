@@ -261,7 +261,7 @@ int MaidsafeStoreManager::StoreChunk(const std::string &chunk_name,
   if (chunk_type & kOutgoing) {
     std::string key_id, public_key, public_key_signature, private_key;
     pd_utils_.GetChunkSignatureKeys(dir_type, msid, &key_id, &public_key,
-        &public_key_signature, &private_key);
+                          &public_key_signature, &private_key);
     // Add root task for this chunk to the handler. Success depends on the child
     // tasks for AddToWatchList and StorePrep/StoreChunk.
     boost::uint64_t reserved_space = kMinChunkCopies * chunk_size;
@@ -839,13 +839,13 @@ void MaidsafeStoreManager::LoadPacketCallback(const std::string &packet_name,
     if (empty)
       ret_value = kFindValueFailure;
   }
-  if ((ret_value == kSuccess) || (attempt + 1 >= kMaxChunkLoadRetries)) {
-    lpf(values, static_cast<ReturnCode>(ret_value));
-    return;
-  } else {
+  if ((ret_value != kSuccess) && (attempt <= kMaxChunkLoadRetries - 1)) {
     kad_ops_->FindValue(packet_name, false, boost::bind(
         &MaidsafeStoreManager::LoadPacketCallback, this, packet_name,
         attempt + 1, _1, lpf));
+  } else {
+    lpf(values, static_cast<ReturnCode>(ret_value));
+    return;
   }
 }
 

@@ -245,6 +245,9 @@ class ClientController {
   void RegisterImNotifiers(boost::function<void(const std::string&)> msg_not,
       boost::function<void(const std::string&, const int&)> conn_not);
 
+  bs2::connection ConnectToOnFileNetworkStatus(
+      const OnFileNetworkStatus::slot_type &slot);
+
  private:
   friend class test::ClientControllerTest;
   friend class test::ClientControllerTest_BEH_MAID_CC_HandleMessages_Test;
