@@ -46,6 +46,7 @@
 #include "maidsafe/chunkstore.h"
 #include "maidsafe/opdata.h"
 #include "maidsafe/kadops.h"
+#include "maidsafe/pdutils.h"
 #include "maidsafe/clientbufferpackethandler.h"
 #include "maidsafe/client/storemanager.h"
 #include "maidsafe/client/storemanagertaskshandler.h"
@@ -544,6 +545,7 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   boost::shared_ptr<ClientRpcs> client_rpcs_;
   boost::shared_ptr<KadOps> kad_ops_;
   SessionSingleton *ss_;
+  PdUtils pd_utils_;
   StoreManagerTasksHandler tasks_handler_;
   boost::shared_ptr<ChunkStore> client_chunkstore_;
   QThreadPool chunk_thread_pool_, packet_thread_pool_;

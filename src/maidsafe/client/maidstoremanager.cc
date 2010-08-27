@@ -32,7 +32,6 @@
 #include "maidsafe/bufferpacketrpc.h"
 #include "maidsafe/client/clientrpc.h"
 #include "maidsafe/client/sessionsingleton.h"
-#include "maidsafe/pdutils.h"
 #include "protobuf/maidsafe_messages.pb.h"
 
 // TODO(Fraser#5#): 2009-12-17 - Reconsider use of ValueType when sending
@@ -74,6 +73,7 @@ MaidsafeStoreManager::MaidsafeStoreManager(boost::shared_ptr<ChunkStore> cstore,
       kad_ops_(new KadOps(&transport_handler_, &channel_manager_, kad::CLIENT,
                           "", "", false, false, K_, cstore)),
       ss_(SessionSingleton::getInstance()),
+      pd_utils_(),
       tasks_handler_(),
       client_chunkstore_(cstore),
       chunk_thread_pool_(),
@@ -260,8 +260,7 @@ int MaidsafeStoreManager::StoreChunk(const std::string &chunk_name,
 
   if (chunk_type & kOutgoing) {
     std::string key_id, public_key, public_key_signature, private_key;
-    PdUtils pd_utils;
-    pd_utils.GetChunkSignatureKeys(dir_type, msid, &key_id, &public_key,
+    pd_utils_.GetChunkSignatureKeys(dir_type, msid, &key_id, &public_key,
         &public_key_signature, &private_key);
     // Add root task for this chunk to the handler. Success depends on the child
     // tasks for AddToWatchList and StorePrep/StoreChunk.
@@ -326,8 +325,7 @@ void MaidsafeStoreManager::StorePacket(const std::string &packet_name,
     return;
   }
   std::string key_id, public_key, public_key_signature, private_key;
-  PdUtils pd_utils;
-  pd_utils.GetPacketSignatureKeys(system_packet_type, dir_type, msid, &key_id,
+  pd_utils_.GetPacketSignatureKeys(system_packet_type, dir_type, msid, &key_id,
       &public_key, &public_key_signature, &private_key);
   boost::shared_ptr<StoreData> store_data(new StoreData(packet_name, value,
       system_packet_type, dir_type, msid, key_id, public_key,
@@ -991,8 +989,7 @@ int MaidsafeStoreManager::DeleteChunk(const std::string &chunk_name,
   }
 
   std::string key_id, public_key, public_key_signature, private_key;
-  PdUtils pd_utils;
-  pd_utils.GetChunkSignatureKeys(dir_type, msid, &key_id, &public_key,
+  pd_utils_.GetChunkSignatureKeys(dir_type, msid, &key_id, &public_key,
       &public_key_signature, &private_key);
   tasks_handler_.AddTask(chunk_name, kDeleteChunk, 1, 0);
   tasks_handler_.AddChildTask(kWatchListMasterTaskPrefix + chunk_name,
@@ -1051,8 +1048,7 @@ void MaidsafeStoreManager::DeletePacket(const std::string &packet_name,
     }
   }
   std::string key_id, public_key, public_key_signature, private_key;
-  PdUtils pd_utils;
-  pd_utils.GetPacketSignatureKeys(system_packet_type, dir_type, msid, &key_id,
+  pd_utils_.GetPacketSignatureKeys(system_packet_type, dir_type, msid, &key_id,
       &public_key, &public_key_signature, &private_key);
   boost::shared_ptr<DeletePacketData> delete_data(new DeletePacketData(
       packet_name, vals, system_packet_type, dir_type, msid, key_id,
@@ -1081,8 +1077,7 @@ void MaidsafeStoreManager::UpdatePacket(const std::string &packet_name,
   }
 
   std::string key_id, public_key, public_key_signature, private_key;
-  PdUtils pd_utils;
-  pd_utils.GetPacketSignatureKeys(system_packet_type, dir_type, msid, &key_id,
+  pd_utils_.GetPacketSignatureKeys(system_packet_type, dir_type, msid, &key_id,
                          &public_key, &public_key_signature, &private_key);
   boost::shared_ptr<UpdatePacketData> update_data(new UpdatePacketData(
       packet_name, old_value, new_value, system_packet_type, dir_type, msid,
@@ -2122,11 +2117,6 @@ int MaidsafeStoreManager::GetExpectAmendmentRequests(
     std::vector<ExpectAmendmentRequest> *expect_amendment_requests) {
   expect_amendment_requests->clear();
   ExpectAmendmentRequest request;
-
-// printf("In MSM::GetExpectAmendmentRequests - data name = %s, pub key = %s\n",
-//        HexSubstr(store_data->data_name).c_str(),
-//        HexSubstr(store_data->public_key).c_str());
-  
   request.set_amendment_type(amendment_type);
   request.set_chunkname(store_data->data_name);
   request.set_account_pmid(store_data->key_id);

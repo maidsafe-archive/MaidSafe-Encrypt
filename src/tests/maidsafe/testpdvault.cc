@@ -299,6 +299,7 @@ class PDVaultTest : public testing::Test {
                     clients_[i]->chunkstore, testpdvault::K));
       clients_[i]->msm = sm_local_;
       clients_[i]->msm->ss_ = &clients_[i]->mss;
+      clients_[i]->msm->pd_utils_.ss_ = &clients_[i]->mss;
       testpdvault::PrepareCallbackResults();
       clients_[i]->msm->Init(boost::bind(&testpdvault::GeneralCallback, _1), 0);
       testpdvault::WaitFunction(60, &mutex_);

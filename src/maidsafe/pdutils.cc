@@ -55,6 +55,9 @@ bool ContactHasId(const std::string &id, const kad::Contact &contact) {
   return contact.node_id().String() == id;
 }
 
+PdUtils::PdUtils()
+    : ss_(SessionSingleton::getInstance()) {}
+
 void PdUtils::GetChunkSignatureKeys(DirType dir_type,
                                     const std::string &msid,
                                     std::string *key_id,
@@ -68,10 +71,9 @@ void PdUtils::GetChunkSignatureKeys(DirType dir_type,
   crypto::Crypto co;
   co.set_symm_algorithm(crypto::AES_256);
   co.set_hash_algorithm(crypto::SHA_512);
-  SessionSingleton *ss = SessionSingleton::getInstance();
   switch (dir_type) {
     case PRIVATE_SHARE:
-      if (kSuccess == ss->GetShareKeys(msid, public_key, private_key)) {
+      if (kSuccess == ss_->GetShareKeys(msid, public_key, private_key)) {
         *key_id = msid;
         *public_key_sig =
             co.AsymSign(*public_key, "", *private_key, crypto::STRING_STRING);
@@ -83,10 +85,10 @@ void PdUtils::GetChunkSignatureKeys(DirType dir_type,
       }
       break;
     case PUBLIC_SHARE:
-      *key_id = ss->Id(MPID);
-      *public_key = ss->PublicKey(MPID);
-      *public_key_sig = ss->SignedPublicKey(MPID);
-      *private_key = ss->PrivateKey(MPID);
+      *key_id = ss_->Id(MPID);
+      *public_key = ss_->PublicKey(MPID);
+      *public_key_sig = ss_->SignedPublicKey(MPID);
+      *private_key = ss_->PrivateKey(MPID);
       break;
     case ANONYMOUS:
       *key_id = " ";
@@ -96,10 +98,10 @@ void PdUtils::GetChunkSignatureKeys(DirType dir_type,
       break;
     case PRIVATE:
     default:
-      *key_id = ss->Id(PMID);
-      *public_key = ss->PublicKey(PMID);
-      *public_key_sig = ss->SignedPublicKey(PMID);
-      *private_key = ss->PrivateKey(PMID);
+      *key_id = ss_->Id(PMID);
+      *public_key = ss_->PublicKey(PMID);
+      *public_key_sig = ss_->SignedPublicKey(PMID);
+      *private_key = ss_->PrivateKey(PMID);
       break;
   }
 }
@@ -115,48 +117,47 @@ void PdUtils::GetPacketSignatureKeys(PacketType packet_type,
   public_key->clear();
   public_key_sig->clear();
   private_key->clear();
-  SessionSingleton *ss = SessionSingleton::getInstance();
   switch (packet_type) {
     case MID:
     case ANMID:
-      *key_id = ss->Id(ANMID);
-      *public_key = ss->PublicKey(ANMID);
-      *public_key_sig = ss->SignedPublicKey(ANMID);
-      *private_key = ss->PrivateKey(ANMID);
+      *key_id = ss_->Id(ANMID);
+      *public_key = ss_->PublicKey(ANMID);
+      *public_key_sig = ss_->SignedPublicKey(ANMID);
+      *private_key = ss_->PrivateKey(ANMID);
       break;
     case SMID:
     case ANSMID:
-      *key_id = ss->Id(ANSMID);
-      *public_key = ss->PublicKey(ANSMID);
-      *public_key_sig = ss->SignedPublicKey(ANSMID);
-      *private_key = ss->PrivateKey(ANSMID);
+      *key_id = ss_->Id(ANSMID);
+      *public_key = ss_->PublicKey(ANSMID);
+      *public_key_sig = ss_->SignedPublicKey(ANSMID);
+      *private_key = ss_->PrivateKey(ANSMID);
       break;
     case TMID:
     case ANTMID:
-      *key_id = ss->Id(ANTMID);
-      *public_key = ss->PublicKey(ANTMID);
-      *public_key_sig = ss->SignedPublicKey(ANTMID);
-      *private_key = ss->PrivateKey(ANTMID);
+      *key_id = ss_->Id(ANTMID);
+      *public_key = ss_->PublicKey(ANTMID);
+      *public_key_sig = ss_->SignedPublicKey(ANTMID);
+      *private_key = ss_->PrivateKey(ANTMID);
       break;
     case MPID:
     case ANMPID:
-      *key_id = ss->Id(ANMPID);
-      *public_key = ss->PublicKey(ANMPID);
-      *public_key_sig = ss->SignedPublicKey(ANMPID);
-      *private_key = ss->PrivateKey(ANMPID);
+      *key_id = ss_->Id(ANMPID);
+      *public_key = ss_->PublicKey(ANMPID);
+      *public_key_sig = ss_->SignedPublicKey(ANMPID);
+      *private_key = ss_->PrivateKey(ANMPID);
       break;
     case MAID:
     case ANMAID:
-      *key_id = ss->Id(ANMAID);
-      *public_key = ss->PublicKey(ANMAID);
-      *public_key_sig = ss->SignedPublicKey(ANMAID);
-      *private_key = ss->PrivateKey(ANMAID);
+      *key_id = ss_->Id(ANMAID);
+      *public_key = ss_->PublicKey(ANMAID);
+      *public_key_sig = ss_->SignedPublicKey(ANMAID);
+      *private_key = ss_->PrivateKey(ANMAID);
       break;
     case PMID:
-      *key_id = ss->Id(MAID);
-      *public_key = ss->PublicKey(MAID);
-      *public_key_sig = ss->SignedPublicKey(MAID);
-      *private_key = ss->PrivateKey(MAID);
+      *key_id = ss_->Id(MAID);
+      *public_key = ss_->PublicKey(MAID);
+      *public_key_sig = ss_->SignedPublicKey(MAID);
+      *private_key = ss_->PrivateKey(MAID);
       break;
     case PD_DIR:
     case MSID:

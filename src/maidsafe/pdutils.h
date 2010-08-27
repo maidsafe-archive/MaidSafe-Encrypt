@@ -32,7 +32,15 @@ namespace kad {
 class Contact;
 }  // namespace kad
 
+namespace maidsafe_vault {
+namespace test {
+class PDVaultTest;
+}  // namespace test
+}  // namespace maidsafe_vault
+
 namespace maidsafe {
+
+class SessionSingleton;
 
 std::string TidyPath(const std::string &original_path);
 
@@ -42,7 +50,7 @@ bool ContactHasId(const std::string &id, const kad::Contact &contact);
 
 class PdUtils {
  public:
-  PdUtils() {}
+  PdUtils();
   ~PdUtils() {}
   void GetChunkSignatureKeys(DirType dir_type,
                              const std::string &msid,
@@ -58,6 +66,9 @@ class PdUtils {
                               std::string *public_key,
                               std::string *public_key_sig,
                               std::string *private_key);
+ private:
+  friend class maidsafe_vault::test::PDVaultTest;
+  SessionSingleton *ss_;
 };
 
 }  // namespace maidsafe
