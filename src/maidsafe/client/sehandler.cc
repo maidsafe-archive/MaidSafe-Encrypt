@@ -738,7 +738,9 @@ void SEHandler::StoreChunks(const DataMap &dm, const DirType &dir_type,
     if (!into_map)
       continue;
     PendingChunks pc(dm.encrypted_chunk_name(i), path, msid);
+    chunkmap_mutex_.lock();
     std::pair<PendingChunksSet::iterator, bool> p = pending_chunks_.insert(pc);
+    chunkmap_mutex_.unlock();
     if (!p.second) {
 #ifdef DEBUG
       printf("SEHandler::StoreChunks - Something really fucking wrong is "
@@ -773,9 +775,7 @@ void SEHandler::PacketOpCallback(const int &store_manager_result,
 
 void SEHandler::ChunkDone(const std::string &chunkname,
                           maidsafe::ReturnCode rc) {
-//  printf("0000000000 - %s\n", base::EncodeToHex(chunkname).substr(0, 16).c_str());
   boost::mutex::scoped_lock loch_sloy(chunkmap_mutex_);
-//  printf("1111111111 - %s\n", base::EncodeToHex(chunkname).substr(0, 16).c_str());
   PCSbyName &chunkname_index = pending_chunks_.get<by_chunkname>();
   PCSbyName::iterator it = chunkname_index.find(chunkname);
   if (it == chunkname_index.end()) {
@@ -786,16 +786,17 @@ void SEHandler::ChunkDone(const std::string &chunkname,
     return;
   }
 
-//  printf("2222222222 - %s\n", base::EncodeToHex(chunkname).substr(0, 16).c_str());
   PendingChunks pc = *it;
+  pc.done = rc;
+  chunkname_index.replace(it, pc);
+
   PCSbyPath &path_index = pending_chunks_.get<by_path>();
-  PCSbyPath::iterator path_it = path_index.find(pc.path);
+  std::pair<PCSbyPath::iterator, PCSbyPath::iterator> path_it =
+      path_index.equal_range(pc.path);
+
   if (rc == kSuccess) {
-//    printf("3333333333 - %s\n", base::EncodeToHex(chunkname).substr(0, 16).c_str());
-    pc.done = rc;
-    chunkname_index.replace(it, pc);
     // Check if all others are done
-    if (path_it == path_index.end()) {
+    if (path_it.first == path_it.second) {
 #ifdef DEBUG
       printf("SEHandler::ChunkDone - No record of the chunk based on file path"
              " %s and that's even worse since we just put one in. LOL. WTF!\n",
@@ -805,47 +806,41 @@ void SEHandler::ChunkDone(const std::string &chunkname,
     }
 
     int total(0), pend(0);
-    for (; path_it != path_index.end(); ++path_it) {
-      if ((*path_it).done == kPendingResult) {
+    for (; path_it.first != path_it.second; ++path_it.first) {
+      if ((*path_it.first).done == kPendingResult) {
         ++pend;
       }
       ++total;
     }
+
     if (pend == 0) {
       // Erase traces of the file
-      path_it = path_index.find(pc.path);
-      path_index.erase(path_it, path_index.end());
+      path_it = path_index.equal_range(pc.path);
+      path_index.erase(path_it.first, path_it.second);
 
       // Notify we're done with this file
-//      printf("100 - %d/%d\n", pend, total);
       file_status_(pc.path, 100);
     } else {
       // Notify percentage
       file_status_(pc.path, (total - pend) * 100 / total);
     }
-//    printf("4444444444 - %s\n", base::EncodeToHex(chunkname).substr(0, 16).c_str());
   } else {
-//    printf("5555555555 - %s\n", base::EncodeToHex(chunkname).substr(0, 16).c_str());
     // TODO(Team#5#): 2010-08-19 - Need to define a proper limit for this
     if (pc.tries < 1) {
       ++pc.tries;
       storem_->StoreChunk(pc.chunkname, pc.dirtype, pc.msid);
     } else {
-//      printf("6666666666 - %s\n", base::EncodeToHex(chunkname).substr(0, 16).c_str());
       // We need to cancel all the other chunks here because it's all
       // pointless. Hopefully we'll have some way of recovering payment from
       // already uploaded chunks.
 
       // Delete all entries for this path
-      path_index.erase(path_it, path_index.end());
+      path_index.erase(path_it.first, path_it.second);
 
       // Signal to notify upload for this is buggered
-//      printf("Bingo! - %s\n", base::EncodeToHex(chunkname).substr(0, 16).c_str());
       file_status_(pc.path, -1);
     }
-//    printf("7777777777 - %s\n", base::EncodeToHex(chunkname).substr(0, 16).c_str());
   }
-//  printf("8888888888 - %s\n", base::EncodeToHex(chunkname).substr(0, 16).c_str());
 }
 
 bs2::connection SEHandler::ConnectToOnFileNetworkStatus(

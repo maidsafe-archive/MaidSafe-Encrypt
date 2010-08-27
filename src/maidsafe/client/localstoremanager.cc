@@ -89,14 +89,8 @@ LocalStoreManager::LocalStoreManager(
           ss_(SessionSingleton::getInstance()) {}
 
 LocalStoreManager::~LocalStoreManager() {
-#ifdef DEBUG
-  printf("Afore destruction\n");
-#endif
   while (!chunks_pending_.empty())
     boost::this_thread::sleep(boost::posix_time::seconds(1));
-#ifdef DEBUG
-  printf("After destruction\n");
-#endif
 }
 
 void LocalStoreManager::Init(int, kad::VoidFunctorOneString cb,
