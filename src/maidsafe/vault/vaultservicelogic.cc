@@ -127,9 +127,9 @@ void VaultServiceLogic::AmendRemoteAccount(
   std::string account_name(co.Hash(request.account_pmid() + kAccount, "",
       crypto::STRING_STRING, false));
 #ifdef DEBUG
-  printf("In VSL::AmendRemoteAccount, name of PMID: %s & name of account: %s\n",
-         base::EncodeToHex(request.account_pmid()).c_str(),
-         account_name.c_str());
+//   printf("In VSL::AmendRemoteAccount - PMID: %s, account: %s\n",
+//          HexSubstr(request.account_pmid()).c_str(),
+//          HexSubstr(account_name).c_str());
 #endif
   boost::shared_ptr<AmendRemoteAccountOpData> data(new AmendRemoteAccountOpData(
       request, account_name, found_local_result, callback, transport_id, K_));
@@ -194,13 +194,13 @@ void VaultServiceLogic::RemoteOpStageTwo(boost::shared_ptr<T> data,
   }
 
 #ifdef DEBUG
-  printf("\nIn VSL::RemoteOpStageTwo (%s) - %s\n", HexSubstr(pmid_).c_str(),
-         typeid(data).name());
-  for (size_t i = 0; i < data->contacts.size(); ++i) {
-    printf("In VSL::RemoteOpStageTwo (%s), contact #%d is %s.\n",
-           HexSubstr(pmid_).c_str(), i,
-           HexSubstr(data->contacts[i].node_id().String()).c_str());
-  }
+//   printf("\nIn VSL::RemoteOpStageTwo (%s) - %s\n", HexSubstr(pmid_).c_str(),
+//          typeid(data).name());
+//   for (size_t i = 0; i < data->contacts.size(); ++i) {
+//     printf("In VSL::RemoteOpStageTwo (%s), contact #%d is %s.\n",
+//            HexSubstr(pmid_).c_str(), i,
+//            HexSubstr(data->contacts[i].node_id().String()).c_str());
+//   }
 #endif
 
   size_t less_contacts(0);
@@ -326,10 +326,10 @@ void VaultServiceLogic::RemoteOpStageThree(boost::uint16_t index,
 
   if (result == kSuccess && holder->response.result() != kAck) {
 #ifdef DEBUG
-    printf("In VSL::RemoteOpStageThree for %s (%s), response %u from %s "
-           "is negative (%i).\n", typeid(data).name(), HexSubstr(pmid_).c_str(),
-           index, HexSubstr(holder->node_id).c_str(),
-           holder->response.result());
+//     printf("In VSL::RemoteOpStageThree for %s (%s), response %u from %s "
+//          "is negative (%i).\n", typeid(data).name(), HexSubstr(pmid_).c_str(),
+//            index, HexSubstr(holder->node_id).c_str(),
+//            holder->response.result());
 #endif
     result = kRemoteOpResponseFailed;
   }
@@ -358,9 +358,9 @@ void VaultServiceLogic::AssessResult(ReturnCode result,
   if (data->success_count >= kUpperThreshold_ ||
       data->failure_count > data->data_holders.size() - kUpperThreshold_) {
 #ifdef DEBUG
-    printf("In VSL::AssessResult for %s (%s), data->success_count (%u) >= kUpperThreshold_ (%u) OR "
-      "data->failure_count (%u) > data->data_holders.size() (%u) - kUpperThreshold_ (%u) (%u), so returning %i.\n", typeid(data).name(), HexSubstr(pmid_).c_str(), data->success_count, kUpperThreshold_,
-           data->failure_count, data->data_holders.size(), kUpperThreshold_, data->data_holders.size() - kUpperThreshold_, result);
+//     printf("In VSL::AssessResult for %s (%s), data->success_count (%u) >= kUpperThreshold_ (%u) OR "
+//       "data->failure_count (%u) > data->data_holders.size() (%u) - kUpperThreshold_ (%u) (%u), so returning %i.\n", typeid(data).name(), HexSubstr(pmid_).c_str(), data->success_count, kUpperThreshold_,
+//            data->failure_count, data->data_holders.size(), kUpperThreshold_, data->data_holders.size() - kUpperThreshold_, result);
 #endif
     data->callback(result);
     data->callback_done = true;

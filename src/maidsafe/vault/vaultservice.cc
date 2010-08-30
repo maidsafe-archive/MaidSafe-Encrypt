@@ -228,9 +228,6 @@ void VaultService::StorePrep(google::protobuf::RpcController*,
                              const maidsafe::StorePrepRequest *request,
                              maidsafe::StorePrepResponse *response,
                              google::protobuf::Closure *done) {
-
-                printf("In VaultService::StorePrep (%s)\n", HexSubstr(pmid_).c_str());
-
   maidsafe::StoreContract *response_sc = response->mutable_store_contract();
   response_sc->set_pmid(pmid_);
   response_sc->set_public_key(pmid_public_);
@@ -358,8 +355,6 @@ void VaultService::StorePrep(google::protobuf::RpcController*,
     done->Run();
     return;
   }
-
-  printf("In VaultService::StorePrep (%s), inserted prep for %s into map.\n", HexSubstr(pmid_).c_str(), HexSubstr(request->chunkname()).c_str());
 
   done->Run();
 }
@@ -995,10 +990,10 @@ void VaultService::AmendAccount(google::protobuf::RpcController*,
   }
 
 #ifdef DEBUG
-  printf("VaultService::AmendAccount (%s), from %s for %s.\n",
-         HexSubstr(pmid_).c_str(),
-         HexSubstr(request->signed_size().pmid()).c_str(),
-         HexSubstr(pmid).c_str());
+//   printf("VaultService::AmendAccount (%s), from %s for %s.\n",
+//          HexSubstr(pmid_).c_str(),
+//          HexSubstr(request->signed_size().pmid()).c_str(),
+//          HexSubstr(pmid).c_str());
 #endif
 
   if (ah_.HaveAccount(pmid) == kAccountNotFound) {
