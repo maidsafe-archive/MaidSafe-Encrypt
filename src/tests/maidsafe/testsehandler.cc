@@ -87,6 +87,7 @@ void ModifyUpToDateDms(ModificationType modification_type,
       break;
   }
 }
+
 void FileUpdate(const std::string &file, int percentage, int *result,
                 boost::mutex *mutex) {
   boost::mutex::scoped_lock loch_lyon(*mutex);
@@ -168,10 +169,16 @@ class SEHandlerTest : public testing::Test {
     }
 
     cached_keys::MakeKeys(3, &keys_);
-    ss_->AddKey(PMID, "PMID", keys_.at(0).private_key(),
-                keys_.at(0).public_key(), "");
     ss_->AddKey(MAID, "MAID", keys_.at(1).private_key(),
                 keys_.at(1).public_key(), "");
+    crypto::Crypto co;
+    std::string signature_pmid(co.AsymSign(keys_.at(0).public_key(), "",
+                                           keys_.at(1).private_key(),
+                                           crypto::STRING_STRING));
+    std::string name_pmid(co.Hash(keys_.at(0).public_key() + signature_pmid,
+                                  "", crypto::STRING_STRING, false));
+    ss_->AddKey(PMID, name_pmid, keys_.at(0).private_key(),
+                keys_.at(0).public_key(), signature_pmid);
     ss_->AddKey(MPID, "Me", keys_.at(2).private_key(),
                 keys_.at(2).public_key(), "");
     ASSERT_EQ(0, file_system::Mount(ss_->SessionName(), ss_->DefConLevel()));
@@ -199,7 +206,7 @@ class SEHandlerTest : public testing::Test {
       else
         key = kRootSubdir[i][1];
       fs::create_directories(file_system::MaidsafeHomeDir(ss_->SessionName()) /
-                             kRootSubdir[i][0]);
+                                                          kRootSubdir[i][0]);
       dah_->AddElement(TidyPath(kRootSubdir[i][0]), ser_mdm, "", key, true);
     }
     dah_->GetDbPath(TidyPath(kRootSubdir[0][0]), CREATE, &db_str1_);
@@ -665,40 +672,36 @@ TEST_F(SEHandlerTest, BEH_MAID_EncryptAndDecryptPrivateDb) {
   crypto::Crypto co;
   co.set_hash_algorithm(crypto::SHA_512);
   std::string key = co.Hash("somekey", "", crypto::STRING_STRING, false);
-//  std::string key;
-//  ASSERT_EQ(0, seh_->GenerateUniqueKey(&key));
-//  dah_->GetDirKey(kRootSubdir[0][0], &key);
   ASSERT_TRUE(fs::exists(db_path));
   std::string hash_before = co.Hash(db_str1_, "", crypto::FILE_STRING, false);
-  DataMap dm;
 
   // Create the entry
+  DataMap dm;
   ASSERT_EQ(0, seh_->EncryptDb(TidyPath(kRootSubdir[0][0]), PRIVATE, key,
-            "", true, &dm));
-//  ASSERT_EQ("", ser_dm);
+                               "", true, &dm));
 
-  std::string ser_dm;
   // Test decryption with the directory DB ser_dm in the map
+  std::string ser_dm;
   ASSERT_EQ(0, seh_->DecryptDb(TidyPath(kRootSubdir[0][0]), PRIVATE,
-            ser_dm, key, "", true, false));
+                               ser_dm, key, "", true, false));
   ASSERT_TRUE(fs::exists(db_path));
   ASSERT_EQ(hash_before, co.Hash(db_str1_, "", crypto::FILE_STRING, false));
 
   // Deleting the details of the DB
   fs::remove(db_path);
   ASSERT_FALSE(fs::exists(db_path));
-  ASSERT_EQ(0, seh_->RemoveFromUpToDateDms(key)) <<
-      "Didn't find the key in the map of DMs.";
+  ASSERT_EQ(0, seh_->RemoveFromUpToDateDms(key))
+            << "Didn't find the key in the map of DMs.";
 
   // Test decryption with no record of the directory DB ser_dm
   ASSERT_EQ(0, seh_->DecryptDb(TidyPath(kRootSubdir[0][0]), PRIVATE,
-            ser_dm, key, "", true, false));
+                               ser_dm, key, "", true, false));
   ASSERT_TRUE(fs::exists(db_path));
   ASSERT_EQ(hash_before, co.Hash(db_str1_, "", crypto::FILE_STRING, false));
 
   // Test decryption with the directory DB ser_dm in the map
   ASSERT_EQ(0, seh_->DecryptDb(TidyPath(kRootSubdir[0][0]), PRIVATE,
-            ser_dm, key, "", true, false));
+                               ser_dm, key, "", true, false));
   ASSERT_TRUE(fs::exists(db_path));
   ASSERT_EQ(hash_before, co.Hash(db_str1_, "", crypto::FILE_STRING, false));
   fs::remove(file_system::MaidsafeDir(ss_->SessionName()) / key);
