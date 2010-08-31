@@ -26,7 +26,6 @@
 #include "maidsafe/client/sehandler.h"
 
 #include <boost/filesystem/fstream.hpp>
-#include <vector>
 
 #include "maidsafe/pdutils.h"
 #include "maidsafe/client/dataatlashandler.h"

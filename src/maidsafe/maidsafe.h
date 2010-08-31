@@ -365,12 +365,12 @@ const int kChunkInfoWatcherPendingTimeout = 86400;  // 24 hours
 // time until a chunk holder is not considered active anymore
 const int kChunkInfoRefActiveTimeout = 86400;  // 24 hours
 // min. no. of responses required out of k
-//const boost::uint16_t kK(16);
-//const boost::uint16_t kKadUpperThreshold(static_cast<boost::uint16_t>(kK *
+//  const boost::uint16_t kK(16);
+//  const boost::uint16_t kKadUpperThreshold(static_cast<boost::uint16_t>(kK *
 //                                         kad::kMinSuccessfulPecentageStore));
-//const boost::uint16_t kKadLowerThreshold(
-//  kad::kMinSuccessfulPecentageStore > .25 ?
-//  static_cast<boost::uint16_t>(kK * .25) : kKadUpperThreshold);
+//  const boost::uint16_t kKadLowerThreshold(
+//      kad::kMinSuccessfulPecentageStore > .25 ?
+//      static_cast<boost::uint16_t>(kK * .25) : kKadUpperThreshold);
 
 namespace maidsafe {
 

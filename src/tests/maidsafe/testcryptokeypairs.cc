@@ -147,9 +147,13 @@ TEST(CryptoKeyPairsTest, BEH_MAID_DestroyObjectWithGetKeyReq) {
     thrds.create_thread(boost::bind(&GetKeyPair, ckp, &counter));
   }
   boost::this_thread::sleep(boost::posix_time::seconds(1));
+  printf("1111\n");
   delete ckp;
+  printf("2222\n");
   thrds.join_all();
+  printf("3333\n");
   ASSERT_EQ(1, counter);
+  printf("4444\n");
 }
 
 }  // namespace maidsafe

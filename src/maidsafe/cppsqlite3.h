@@ -29,9 +29,9 @@
 #ifndef MAIDSAFE_CPPSQLITE3_H_
 #define MAIDSAFE_CPPSQLITE3_H_
 
-#include "sqlite3.h"
 #include <cstdio>
 #include <cstring>
+#include "maidsafe/sqlite3.h"
 
 #define CPPSQLITE_ERROR 1000
 

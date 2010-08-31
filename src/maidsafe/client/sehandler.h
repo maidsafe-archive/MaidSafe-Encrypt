@@ -34,6 +34,7 @@
 
 #include <map>
 #include <string>
+#include <vector>
 
 #include "maidsafe/maidsafe.h"
 #include "protobuf/datamaps.pb.h"
