@@ -143,7 +143,7 @@ void PDVault::Start(bool first_node) {
     while (kad_ops_result == maidsafe::kPendingResult)
       cond_var.wait(lock);
   }
-  if (kad_ops_result != kSuccess || chunkstore_result != kSuccess) {
+  if (kad_ops_result != maidsafe::kSuccess || chunkstore_result != kSuccess) {
     SetVaultStatus(kVaultStarted);
     Stop();
     return;

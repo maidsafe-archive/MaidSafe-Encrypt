@@ -354,7 +354,7 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_UpdatePacket) {
                                       ss_->PrivateKey(ANMID),
                                       crypto::STRING_STRING));
   cb_.Reset();
-  sm_->UpdatePacket(gp_name, gp.value(), new_gp.value(), MID, PRIVATE, "",
+  sm_->UpdatePacket(gp_name, new_gp.value(), gp.value(), MID, PRIVATE, "",
                     boost::bind(&test::CallbackObject::ReturnCodeCallback,
                                 &cb_, _1));
   ASSERT_EQ(kSuccess, cb_.WaitForReturnCodeResult());
@@ -395,7 +395,7 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_UpdatePacket) {
   sm_->UpdatePacket(gp_name, "value0", "value2", MID, PRIVATE, "",
                     boost::bind(&test::CallbackObject::ReturnCodeCallback,
                                 &cb_, _1));
-  ASSERT_EQ(kSuccess, cb_.WaitForReturnCodeResult());
+  ASSERT_EQ(kStoreManagerError, cb_.WaitForReturnCodeResult());
   res.clear();
   ASSERT_EQ(kSuccess, sm_->LoadPacket(gp_name, &res));
   ASSERT_EQ(all_values.size(), res.size());
@@ -418,7 +418,7 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_UpdatePacket) {
   sm_->UpdatePacket(gp_name, gp.value(), new_gp.value(), MID, PRIVATE, "",
                     boost::bind(&test::CallbackObject::ReturnCodeCallback,
                                 &cb_, _1));
-  ASSERT_EQ(kSuccess, cb_.WaitForReturnCodeResult());
+  ASSERT_EQ(kStoreManagerError, cb_.WaitForReturnCodeResult());
   res.clear();
   ASSERT_EQ(kSuccess, sm_->LoadPacket(gp_name, &res));
   ASSERT_EQ(all_values.size(), res.size());

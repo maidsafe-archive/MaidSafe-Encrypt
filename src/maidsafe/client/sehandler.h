@@ -34,6 +34,7 @@
 
 #include <map>
 #include <string>
+#include <vector>
 
 #include "maidsafe/maidsafe.h"
 #include "protobuf/datamaps.pb.h"
@@ -151,7 +152,7 @@ class SEHandler {
 
   //  Decrypts dir's db by extracting datamap from ser_dm_
   int DecryptDb(const std::string &dir_path, const DirType &dir_type,
-                const std::string &ser_dm, const std::string &dir_key,
+                const std::string &encrypted_dm, const std::string &dir_key,
                 const std::string &msid, bool dm_encrypted, bool overwrite);
 
   bs2::connection ConnectToOnFileNetworkStatus(
@@ -169,8 +170,7 @@ class SEHandler {
       const boost::uint16_t &test_size,
       const std::vector<std::string> &keys,
       const std::vector<std::string> &enc_dms,
-      boost::shared_ptr<maidsafe::SEHandler> seh); 
-  friend class test::SEHandlerTest_BEH_MAID_EncryptAndDecryptPrivateDb_Test;
+      boost::shared_ptr<maidsafe::SEHandler> seh);
   friend class test::SEHandlerTest_BEH_MAID_FailureOfChunkEncryptingFile_Test;
   ItemType CheckEntry(const fs::path &full_path, boost::uint64_t *file_size,
                       std::string *file_hash);
@@ -198,11 +198,10 @@ class SEHandler {
   boost::shared_ptr<ChunkStore> client_chunkstore_;
   SessionSingleton *ss_;
   std::map<std::string, std::string> up_to_date_datamaps_;
-  boost::signals2::connection connection_to_chunk_uploads_;
-  boost::mutex chunkmap_mutex_;
   PendingChunksSet pending_chunks_;
+  boost::mutex up_to_date_datamaps_mutex_, chunkmap_mutex_;
+  boost::signals2::connection connection_to_chunk_uploads_;
   OnFileNetworkStatus file_status_;
-  boost::mutex up_to_date_datamaps_mutex_;
 };
 
 }  // namespace maidsafe

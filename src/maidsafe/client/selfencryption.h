@@ -28,6 +28,7 @@
 #include <boost/filesystem.hpp>
 #include <gtest/gtest_prod.h>
 
+#include <map>
 #include <string>
 
 #include "fs/filesystem.h"

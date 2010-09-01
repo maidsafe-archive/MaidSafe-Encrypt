@@ -25,13 +25,15 @@
 #include <gmock/gmock.h>
 #include <maidsafe/protobuf/contact_info.pb.h>
 #include <maidsafe/protobuf/kademlia_service_messages.pb.h>
+
 #include <queue>
+
 #include "fs/filesystem.h"
 #include "maidsafe/chunkstore.h"
+#include "maidsafe/pdutils.h"
 #include "maidsafe/client/clientrpc.h"
 #include "maidsafe/client/maidstoremanager.h"
 #include "maidsafe/client/sessionsingleton.h"
-#include "maidsafe/pdutils.h"
 #include "maidsafe/vault/vaultchunkstore.h"
 #include "maidsafe/vault/vaultservice.h"
 #include "tests/maidsafe/cached_keys.h"
@@ -594,7 +596,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AddToWatchList) {
     }
   }
 
-  int send_chunk_count(0);
+//  int send_chunk_count(0);
   boost::mutex mutex;
   boost::condition_variable cond_var;
   test_msm::ThreadedCallContainer tcc(1);
@@ -863,7 +865,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AddToWatchList) {
   boost::mutex::scoped_lock lock(mutex);
 
   // Call 11 - All ATW responses return upload_count of 4
-  /* ++test_run;
+  ++test_run;
   printf("--- call %d ---\n", test_run + 1);
   ASSERT_EQ(kSuccess, msm.StoreChunk(chunk_names.at(test_run), PRIVATE, ""));
   while (send_chunk_count < kMinChunkCopies)
@@ -1756,7 +1758,7 @@ TEST_F(MaidStoreManagerTest, DISABLED_BEH_MAID_MSM_LoadChunk) {
 }
 
 TEST_F(MaidStoreManagerTest, DISABLED_BEH_MAID_MSM_RemoveFromWatchList) {
-  /*
+/*
   MockMsmKeyUnique msm(client_chunkstore_);
   boost::shared_ptr<MockClientRpcs> mock_rpcs(
       new MockClientRpcs(&msm.transport_handler_, &msm.channel_manager_));
@@ -2084,7 +2086,8 @@ TEST_F(MaidStoreManagerTest, DISABLED_BEH_MAID_MSM_RemoveFromWatchList) {
   ASSERT_EQ(kDeleteChunkFailure, delete_chunk_result1);
   ASSERT_EQ(kDeleteChunkFailure, delete_chunk_result2);
   ASSERT_EQ(kSuccess, delete_chunk_result3);
-*/ }
+*/
+}
 
 class MockMsmStoreLoadPacket : public MaidsafeStoreManager {
  public:
@@ -2244,9 +2247,10 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_StoreNewPacket) {
 
 TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_LoadPacket) {
   MockMsmStoreLoadPacket msm(client_chunkstore_);
-  boost::shared_ptr<MockKadOps> mko(new MockKadOps(&msm.transport_handler_,
-      &msm.channel_manager_, kad::CLIENT, "", "", false, false, test_msm::K,
-      client_chunkstore_));
+  boost::shared_ptr<MockKadOps> mko(
+      new MockKadOps(&msm.transport_handler_, &msm.channel_manager_,
+                     kad::CLIENT, "", "", false, false, test_msm::K,
+                     client_chunkstore_));
   msm.kad_ops_ = mko;
 
   // Set up test requirements
@@ -2375,7 +2379,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_LoadPacket) {
             msm.LoadPacket(packet_names.at(test_number), &returned_values));
   ASSERT_EQ(size_t(kValueCount), returned_values.size());
   for (size_t i = 0; i < kValueCount; ++i)
-    ASSERT_EQ(find_response.signed_values(i).SerializeAsString()/*value()*/,
+    ASSERT_EQ(find_response.signed_values(i).SerializeAsString(),
               returned_values.at(i));
 }
 

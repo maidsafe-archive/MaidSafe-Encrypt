@@ -29,6 +29,8 @@
 #include <maidsafe/protobuf/kademlia_service_messages.pb.h>
 #include <maidsafe/transport/transporthandler-api.h>
 
+#include <algorithm>
+
 #include "maidsafe/bufferpacketrpc.h"
 #include "maidsafe/client/clientrpc.h"
 #include "maidsafe/client/sessionsingleton.h"
@@ -745,7 +747,8 @@ int MaidsafeStoreManager::LoadPacket(const std::string &packet_name,
   boost::condition_variable cond_var;
   int op_result(kGeneralError);
   LoadPacket(packet_name, boost::bind(&MaidsafeStoreManager::LoadPacketCallback,
-      this, _1, _2, &mutex, &cond_var, results, &op_result));
+                                      this, _1, _2, &mutex, &cond_var, results,
+                                      &op_result));
   {
     boost::mutex::scoped_lock lock(mutex);
     while (op_result == kGeneralError)
@@ -787,9 +790,9 @@ void MaidsafeStoreManager::LoadPacket(const std::string &packet_name,
     lpf(results, valid);
     return;
   }
-  kad_ops_->FindValue(packet_name, false, boost::bind(
-      &MaidsafeStoreManager::LoadPacketCallback, this, packet_name, 0, _1,
-      lpf));
+  kad_ops_->FindValue(packet_name, false,
+                      boost::bind(&MaidsafeStoreManager::LoadPacketCallback,
+                                  this, packet_name, 1, _1, lpf));
 }
 
 void MaidsafeStoreManager::LoadPacketCallback(const std::string &packet_name,
@@ -852,9 +855,9 @@ void MaidsafeStoreManager::LoadPacketCallback(const std::string &packet_name,
       ret_value = kFindValueFailure;
   }
   if ((ret_value != kSuccess) && (attempt <= kMaxChunkLoadRetries - 1)) {
-    kad_ops_->FindValue(packet_name, false, boost::bind(
-        &MaidsafeStoreManager::LoadPacketCallback, this, packet_name,
-        attempt + 1, _1, lpf));
+    kad_ops_->FindValue(packet_name, false,
+                        boost::bind(&MaidsafeStoreManager::LoadPacketCallback,
+                                    this, packet_name, attempt + 1, _1, lpf));
   } else {
     lpf(values, static_cast<ReturnCode>(ret_value));
     return;
@@ -1662,7 +1665,8 @@ int MaidsafeStoreManager::AddToWatchList(
     return kGeneralError;
   }
 
-  // TODO this block isn't really needed, but removal causes segfault :(
+  // TODO(Team): This block isn't really needed, but removal causes
+  //             segfault :(
   if (!tasks_handler_.HasTask(
           kWatchListMasterTaskPrefix + store_data->data_name, &task_type,
           &task_status) || task_type != kStoreChunk ||
@@ -1714,7 +1718,7 @@ void MaidsafeStoreManager::AddToWatchListTaskCallback(
     // TODO don't reset in case only failed ops are retried!
     tasks_handler_.ResetTaskProgress(
         kAmendmentConfirmationTaskPrefix + store_data->data_name);
-     
+
     // retry, will stop when max no. of failures reached
     AddToWatchList(store_data);
   }

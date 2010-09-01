@@ -97,8 +97,7 @@ LocalStoreManager::~LocalStoreManager() {
     boost::this_thread::sleep(boost::posix_time::seconds(1));
 }
 
-void LocalStoreManager::Init(VoidFuncOneInt callback,
-                             const boost::uint16_t &port) {
+void LocalStoreManager::Init(VoidFuncOneInt callback, const boost::uint16_t&) {
 #ifdef LOCAL_PDVAULT
   // Simulate knode join
 //  boost::this_thread::sleep(boost::posix_time::seconds(3));
@@ -474,7 +473,8 @@ void LocalStoreManager::StorePacket(const std::string &packet_name,
   std::string key_id, public_key, public_key_signature, private_key;
   PdUtils pd_utils;
   pd_utils.GetPacketSignatureKeys(system_packet_type, dir_type, msid, &key_id,
-      &public_key, &public_key_signature, &private_key);
+                                  &public_key, &public_key_signature,
+                                  &private_key);
   MaidsafeValidator msv;
   if (!msv.ValidateSignerId(key_id, public_key, public_key_signature)) {
     ExecReturnCodeCallback(cb, kSendPacketFailure);

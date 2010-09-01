@@ -980,7 +980,7 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_CreateNewWithExpecteds) {
   expected_called_back_count += (test_aah::K - test_aah::upper_threshold + 2);
   ASSERT_EQ(expected_called_back_count, cbh.called_back_count());
   ASSERT_EQ(size_t(test_aah::K), good_responses.size());
-  int kacks(0), knacks(0);
+//  int kacks(0), knacks(0);
   for (int i = 0; i < test_aah::K; ++i) {
     if (i < test_aah::upper_threshold + 2) {
       ASSERT_EQ(kNack, static_cast<int>(good_responses.at(i).result()));
