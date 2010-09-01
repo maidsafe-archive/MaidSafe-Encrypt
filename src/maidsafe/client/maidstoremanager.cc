@@ -255,17 +255,28 @@ int MaidsafeStoreManager::StoreChunk(const std::string &chunk_name,
     std::string key_id, public_key, public_key_signature, private_key;
     pd_utils_.GetChunkSignatureKeys(dir_type, msid, &key_id, &public_key,
                           &public_key_signature, &private_key);
+                          
     // Add root task for this chunk to the handler. Success depends on the child
-    // tasks for AddToWatchList and StorePrep/StoreChunk.
+    // tasks for AddToWatchList, StorePrep/StoreChunk and amendment conf.
     boost::uint64_t reserved_space = kMinChunkCopies * chunk_size;
-    tasks_handler_.AddTask(chunk_name, kStoreChunk, 2, 0, boost::bind(
+    tasks_handler_.AddTask(chunk_name, kStoreChunk, 3, 0, boost::bind(
         &MaidsafeStoreManager::StoreChunkTaskCallback, this, _1, chunk_name,
         reserved_space));
-    // Add master task for AddToWatchList. Success depends on success of the
-    // RPCs and the delayed confirmations from the account holders.
+        
+    // Add master task for AddToWatchList. Success depends on RPC successes.
     tasks_handler_.AddChildTask(kWatchListMasterTaskPrefix + chunk_name,
-                                chunk_name, kStoreChunk, 2,
-                                kMaxAddToWatchListTries - 1);
+                                chunk_name, kStoreChunk, 1,
+                                kMaxAddToWatchListTries - 1, boost::bind(
+                                    &MaidsafeStoreManager::DebugSubTaskCallback,
+                                    this, _1, chunk_name, "WatchListMaster"));
+
+    // Add task to wait for amendment confirmations.
+    tasks_handler_.AddChildTask(kAmendmentConfirmationTaskPrefix + chunk_name,
+                                chunk_name, kStoreChunk, kLowerThreshold_,
+                                K_ - kUpperThreshold_, boost::bind(
+                                    &MaidsafeStoreManager::DebugSubTaskCallback,
+                                    this, _1, chunk_name,
+                                    "AmendmentConfirmation"));
 
     boost::shared_ptr<StoreData> store_data(new StoreData(
         chunk_name, chunk_size, chunk_type, dir_type, msid, key_id, public_key,
@@ -290,6 +301,18 @@ void MaidsafeStoreManager::StoreChunkTaskCallback(
   tasks_handler_.DeleteTask(chunk_name, result);
   account_status_manager_.UnReserveSpace(reserved_space);
   // TODO(Dan#) Fire store completion signal here.
+}
+
+void MaidsafeStoreManager::DebugSubTaskCallback(
+    const ReturnCode &result,
+    const std::string &chunk_name,
+    const std::string &task_info) {
+#ifdef DEBUG
+  printf("In MSM::DebugSubTaskCallback (%d), task \"%s\" for "
+         "%s %s.\n",
+         kad_ops_->Port(), task_info.c_str(), HexSubstr(chunk_name).c_str(),
+         result == kSuccess ? "succeeded" : "failed");
+#endif
 }
 
 void MaidsafeStoreManager::StorePacket(const std::string &packet_name,
@@ -1254,8 +1277,10 @@ void MaidsafeStoreManager::UpdateAccountStatusStageTwo(
     size_t index,
     boost::shared_ptr<AccountStatusData> data) {
   boost::mutex::scoped_lock lock(data->mutex);
-  if (data->success_count >= kLowerThreshold_)
+  if (data->success_count >= kLowerThreshold_) {
+                                              printf("*** Skipping MSM::UpdateAccountStatusStageTwo ***\n");
     return;
+  }
   ++data->returned_count;
 
   AccountStatusData::AccountStatusDataHolder &holder =
@@ -1284,13 +1309,13 @@ void MaidsafeStoreManager::UpdateAccountStatusStageTwo(
       data->offered_values.push_back(holder.response.space_offered());
       data->given_values.push_back(holder.response.space_given());
       data->taken_values.push_back(holder.response.space_taken());
-      NotifyTaskHandlerOfAccountAmendments(holder.response);
     } else {
       // treat as non-existing account
       data->offered_values.push_back(0);
       data->given_values.push_back(0);
       data->taken_values.push_back(0);
     }
+    NotifyTaskHandlerOfAccountAmendments(holder.response);
   }
 
   if (data->returned_count < kLowerThreshold_ ||
@@ -1357,22 +1382,23 @@ void MaidsafeStoreManager::NotifyTaskHandlerOfAccountAmendments(
     if (!kAmendmentResult.IsInitialized())
       continue;
     bool success = kAmendmentResult.result() == kAck;
+#ifdef DEBUG
+    printf("In MSM::NotifyTaskHandlerOfAccountAmendments (%d), "
+            "amendment for %s %s.\n",
+            kad_ops_->Port(),
+            HexSubstr(kAmendmentResult.chunkname()).c_str(),
+            success ? "succeeded" : "failed");
+#endif
     if (kAmendmentResult.amendment_type() ==
         AmendAccountRequest::kSpaceTakenInc) {
       // client tried to save a chunk
-#ifdef DEBUG
-      printf("In MSM::NotifyTaskHandlerOfAccountAmendments (%d), "
-             "amendment for %s %s.\n",
-             kad_ops_->Port(),
-             HexSubstr(kAmendmentResult.chunkname()).c_str(),
-             success ? "succeeded" : "failed");
-#endif
+
       if (success) {
         tasks_handler_.NotifyTaskSuccess(
-            kWatchListTaskPrefix + kAmendmentResult.chunkname());
+            kAmendmentConfirmationTaskPrefix + kAmendmentResult.chunkname());
       } else {
         tasks_handler_.NotifyTaskFailure(
-            kWatchListTaskPrefix + kAmendmentResult.chunkname(),
+            kAmendmentConfirmationTaskPrefix + kAmendmentResult.chunkname(),
             kAmendAccountFailure);
       }
     } else if (kAmendmentResult.amendment_type() ==
@@ -1684,9 +1710,10 @@ void MaidsafeStoreManager::AddToWatchListTaskCallback(
            "(%s).\n",
            kad_ops_->Port(), HexSubstr(store_data->data_name).c_str());
 #endif
-    // cancel confirmation task
-    tasks_handler_.CancelTask(
-        kExpectAmendmentTaskPrefix + store_data->data_name, result);
+    // reset confirmation task
+    // TODO don't reset in case only failed ops are retried!
+    tasks_handler_.ResetTaskProgress(
+        kAmendmentConfirmationTaskPrefix + store_data->data_name);
      
     // retry, will stop when max no. of failures reached
     AddToWatchList(store_data);
@@ -1773,12 +1800,6 @@ void MaidsafeStoreManager::AddToWatchListStageTwo(
         data->account_holders.at(i).node_id().String());
     data->account_data_holders.push_back(holder);
   }
-
-  // add task to wait for confirmations
-  tasks_handler_.AddChildTask(
-        kExpectAmendmentTaskPrefix + data->store_data->data_name,
-        kWatchListMasterTaskPrefix + data->store_data->data_name,
-        kStoreChunk, kUpperThreshold_, K_ - kUpperThreshold_);
 
   // Send ExpectAmendment RPCs
   boost::mutex::scoped_lock lock(data->mutex);
@@ -1941,7 +1962,9 @@ void MaidsafeStoreManager::AddToWatchListStageFour(
       int task_res = tasks_handler_.AddChildTask(
           kChunkCopyMasterTaskPrefix + data->store_data->data_name,
           data->store_data->data_name, kStoreChunk,
-          data->consensus_upload_copies, kMaxStoreFailures);
+          data->consensus_upload_copies, kMaxStoreFailures, boost::bind(
+              &MaidsafeStoreManager::DebugSubTaskCallback, this, _1,
+              data->store_data->data_name, "ChunkCopyMaster"));
       if (task_res != kSuccess) {
 #ifdef DEBUG
         printf("In MSM::AddToWatchListStageFour (%d), could not create master "

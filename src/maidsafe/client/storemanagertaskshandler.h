@@ -123,6 +123,8 @@ class StoreManagerTasksHandler {
   int NotifyTaskSuccess(const std::string &task_name);
   // Increases a task's failure counter, must not have child tasks
   int NotifyTaskFailure(const std::string &task_name, const ReturnCode &reason);
+  // Resets a task's success and failure counters, must not have child tasks
+  int ResetTaskProgress(const std::string &task_name);
   // Removes the task and its child tasks from the set, regardless of state of
   // the tasks' progress.  If the tasks have callbacks, they're run with
   // before deletion.

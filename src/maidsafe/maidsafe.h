@@ -140,7 +140,7 @@ const std::string kDefaultChunks[kDefaultChunkCount][2] = {
 const std::string kAccount("ACCOUNT");
 const std::string kWatchListTaskPrefix("WATCH");
 const std::string kWatchListMasterTaskPrefix("WATCHM");
-const std::string kExpectAmendmentTaskPrefix("EXPAM");
+const std::string kAmendmentConfirmationTaskPrefix("AMCONF");
 const std::string kChunkCopyTaskPrefix("COPY");
 const std::string kChunkCopyMasterTaskPrefix("COPYM");
 const std::string kChunkCopyPrepTaskPrefix("COPYPREP");

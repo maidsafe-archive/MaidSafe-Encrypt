@@ -424,6 +424,10 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   void StoreChunkTaskCallback(const ReturnCode &result,
                               const std::string &chunk_name,
                               const boost::uint64_t &reserved_space);
+  // Called on completion of the root task's child tasks, for debugging only
+  void DebugSubTaskCallback(const ReturnCode &result,
+                            const std::string &chunk_name,
+                            const std::string &task_info);
   // Called on completion of the DeleteChunk root task
   void DeleteChunkTaskCallback(const ReturnCode &result,
                                const std::string &chunk_name);
