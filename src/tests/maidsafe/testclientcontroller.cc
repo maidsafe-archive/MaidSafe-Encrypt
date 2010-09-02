@@ -41,9 +41,11 @@ namespace fs = boost::filesystem;
 
 namespace test_cc {
 
-void Sleep(const int &millisecs) {
 #ifdef MS_NETWORK_TEST
+void Sleep(const int &millisecs) {
   boost::this_thread::sleep(boost::posix_time::milliseconds(millisecs));
+#else
+void Sleep(const int&) {
 #endif
 }
 
@@ -80,7 +82,9 @@ class ClientControllerTest : public testing::Test {
   void TearDown() {
 #ifndef MS_NETWORK_TEST
     cc_->CloseConnection(true);
+    printf("1111\n");
     cc_->Destroy();
+    printf("2222\n");
 #endif
   }
 

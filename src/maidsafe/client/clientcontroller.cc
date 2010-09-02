@@ -42,12 +42,12 @@
 #include "maidsafe/client/dataatlashandler.h"
 #include "maidsafe/client/privateshares.h"
 #include "maidsafe/client/selfencryption.h"
-
 #include "maidsafe/client/sessionsingleton.h"
 #include "maidsafe/client/storemanager.h"
 #include "protobuf/maidsafe_messages.pb.h"
 #include "protobuf/maidsafe_service_messages.pb.h"
 #include "protobuf/packet.pb.h"
+
 #if defined LOCAL_PDVAULT && !defined MS_NETWORK_TEST
   #include "maidsafe/client/localstoremanager.h"
 #else
@@ -92,10 +92,8 @@ ReturnCode CCCallback::WaitForReturnCodeResult() {
   return result;
 }
 
-void PacketOpCallback(const int &store_manager_result,
-                      boost::mutex *mutex,
-                      boost::condition_variable *cond_var,
-                      int *op_result) {
+void PacketOpCallback(const int &store_manager_result, boost::mutex *mutex,
+                      boost::condition_variable *cond_var, int *op_result) {
   boost::mutex::scoped_lock lock(*mutex);
   *op_result = store_manager_result;
   cond_var->notify_one();
@@ -104,25 +102,13 @@ void PacketOpCallback(const int &store_manager_result,
 
 ClientController *ClientController::single = 0;
 
-ClientController::ClientController() : client_chunkstore_(),
-                                       sm_(),
-                                       auth_(),
-                                       ss_(),
-                                       ser_da_(),
-                                       ser_dm_(),
-                                       db_enc_queue_(),
-                                       seh_(),
-                                       instant_messages_(),
-                                       received_messages_(),
-                                       rec_msg_mutex_(),
-                                       clear_messages_thread_(),
-                                       client_store_(),
-                                       initialised_(false),
-                                       logging_out_(false),
-                                       logged_in_(false),
-                                       imn_(),
-                                       K_(0),
-                                       upper_threshold_(0) {}
+ClientController::ClientController()
+    : client_chunkstore_(), sm_(), auth_(), ss_(), ser_da_(), ser_dm_(),
+      db_enc_queue_(), seh_(), instant_messages_(), received_messages_(),
+      rec_msg_mutex_(), clear_messages_thread_(), client_store_(),
+      initialised_(false), logging_out_(false), logged_in_(false), imn_(),
+      K_(0), upper_threshold_(0), to_seh_file_update_(), pending_files_(),
+      pending_files_mutex_() {}
 
 boost::mutex cc_mutex;
 
@@ -136,7 +122,9 @@ ClientController *ClientController::getInstance() {
 }
 
 void ClientController::Destroy() {
+  printf("3333\n");
   delete single;
+  printf("4444\n");
   single = NULL;
 }
 
@@ -197,6 +185,9 @@ int ClientController::Init(boost::uint8_t k) {
   }
   auth_.Init(kNoOfSystemPackets, sm_);
   ss_ = SessionSingleton::getInstance();
+  to_seh_file_update_ = seh_.ConnectToOnFileNetworkStatus(
+                            boost::bind(&ClientController::FileUpdate,
+                                        this, _1, _2));
   initialised_ = true;
   return 0;
 }
@@ -767,6 +758,15 @@ bool ClientController::Logout() {
   printf("ClientController::Logout - After threads done.\n");
 #endif
 
+  bool t(false);
+  while (!t) {
+    {
+      boost::mutex::scoped_lock loch_ba(pending_files_mutex_);
+      t = pending_files_.empty();
+    }
+    boost::this_thread::sleep(boost::posix_time::milliseconds(500));
+  }
+
   file_system::UnMount(ss_->SessionName(), ss_->DefConLevel());
   ss_->ResetSession();
   instant_messages_.clear();
@@ -777,6 +777,7 @@ bool ClientController::Logout() {
   client_chunkstore_->Clear();
   ser_da_.clear();
   ser_dm_.clear();
+  to_seh_file_update_.disconnect();
   logging_out_ = false;
   logged_in_ = false;
   return true;
@@ -1073,8 +1074,7 @@ int ClientController::HandleDeleteContactNotification(
 }
 
 int ClientController::HandleReceivedShare(
-    const PrivateShareNotification &psn,
-    const std::string &name) {
+    const PrivateShareNotification &psn, const std::string &name) {
   if (!initialised_) {
 #ifdef DEBUG
     printf("CC::HandleReceivedShare - Not initialised.\n");
@@ -1228,8 +1228,7 @@ int ClientController::HandleInstantMessage(
 }
 
 int ClientController::AddInstantFile(
-    const InstantFileNotification &ifm,
-    const std::string &location) {
+    const InstantFileNotification &ifm, const std::string &location) {
   if (!initialised_) {
 #ifdef DEBUG
     printf("CC::AddInstantFile - Not initialised.\n");
@@ -1571,8 +1570,7 @@ int ClientController::GetInstantMessages(std::list<InstantMessage> *messages) {
 }
 
 int ClientController::SendInstantFile(
-    std::string *filename,
-    const std::string &msg,
+    std::string *filename, const std::string &msg,
     const std::vector<std::string> &contact_names,
     const std::string &conversation) {
   if (!initialised_) {
@@ -1917,8 +1915,7 @@ std::string ClientController::GenerateBPInfo() {
 // Share Operations //
 //////////////////////
 
-int ClientController::GetShareList(const SortingMode &sm,
-                                   const ShareFilter &sf,
+int ClientController::GetShareList(const SortingMode &sm, const ShareFilter &sf,
                                    const std::string &value,
                                    std::list<maidsafe::PrivateShare> *ps_list) {
   if (!initialised_) {
@@ -1954,8 +1951,7 @@ int ClientController::ShareList(const SortingMode &sm, const ShareFilter &sf,
 }
 
 int ClientController::GetSortedShareList(
-    const SortingMode &sm,
-    const std::string &value,
+    const SortingMode &sm, const std::string &value,
     std::list<maidsafe::private_share> *ps_list) {
   if (!initialised_) {
 #ifdef DEBUG
@@ -2218,8 +2214,7 @@ bool ClientController::VaultContactInfo() {
 }
 
 OwnLocalVaultResult ClientController::SetLocalVaultOwned(
-    const boost::uint32_t &port,
-    const boost::uint64_t &space,
+    const boost::uint32_t &port, const boost::uint64_t &space,
     const std::string &vault_dir) const {
   bool callback_arrived = false;
   OwnLocalVaultResult result;
@@ -2233,10 +2228,8 @@ OwnLocalVaultResult ClientController::SetLocalVaultOwned(
 }
 
 void ClientController::SetLocalVaultOwnedCallback(
-    const OwnLocalVaultResult &result,
-    const std::string &pmid_name,
-    bool *callback_arrived,
-    OwnLocalVaultResult *res) {
+    const OwnLocalVaultResult &result, const std::string &pmid_name,
+    bool *callback_arrived, OwnLocalVaultResult *res) {
   if (result == OWNED_SUCCESS) {
 #ifdef DEBUG
     printf("ClientController::SetLocalVaultOwnedCallback %s -- %s\n",
@@ -2288,7 +2281,16 @@ int ClientController::BackupElement(const std::string &path,
 #endif
     return kClientControllerNotInitialised;
   }
-  return seh_.EncryptFile(path, dir_type, msid);
+  std::pair<std::map<std::string, int>::iterator, bool> p;
+  {
+    boost::mutex::scoped_lock loch_callater(pending_files_mutex_);
+    p = pending_files_.insert(std::pair<std::string, int>(path, 0));
+  }
+  if (p.second) {
+    return seh_.EncryptFile(path, dir_type, msid);
+  }
+
+  return -1;
 }
 
 int ClientController::RetrieveElement(const std::string &path) {
@@ -2327,18 +2329,18 @@ int ClientController::RemoveElement(const std::string &element_path) {
   return 0;
 }
 
-DirType ClientController::GetDirType(const std::string &path_) {
+DirType ClientController::GetDirType(const std::string &path) {
   std::string myfiles = TidyPath(kRootSubdir[0][0]);
 //  std::string pub_shares = TidyPath(kSharesSubdir[1][0]);
   std::string priv_shares = TidyPath(kSharesSubdir[0][0]);
 //  std::string anonymous_shares = TidyPath(kSharesSubdir[1][0]);
-  if (path_ == "/" || path_ == "\\" ||
-      (path_.compare(0, myfiles.size(), myfiles) == 0))
+  if (path == "/" || path == "\\" ||
+      (path.compare(0, myfiles.size(), myfiles) == 0))
     return PRIVATE;
 //  if (path_.compare(0, pub_shares.size(), pub_shares) == 0)
 //    return PUBLIC_SHARE;
-  if (path_.compare(0, priv_shares.size(), priv_shares) == 0) {
-    if (path_.size() == priv_shares.size())
+  if (path.compare(0, priv_shares.size(), priv_shares) == 0) {
+    if (path.size() == priv_shares.size())
       return PRIVATE;
     else
       return PRIVATE_SHARE;
@@ -2350,8 +2352,7 @@ DirType ClientController::GetDirType(const std::string &path_) {
 
 int ClientController::PathDistinction(const std::string &path,
                                       std::string *msid) {
-  std::string path_;
-  path_ = std::string(path);
+  std::string path_loc(path);
 #ifdef DEBUG
   printf("Path in PathDistinction: %s\n", path.c_str());
 #endif
@@ -2359,22 +2360,22 @@ int ClientController::PathDistinction(const std::string &path,
   std::string share("");
   int n = 0;
   // Check if My Files is in the path
-  size_t found = path_.find(search);
+  size_t found = path_loc.find(search);
   if (found != std::string::npos) {
     n = 1;
   } else {
     search = "Shares/Private";
-    found = path_.find(search);
+    found = path_loc.find(search);
     if (found != std::string::npos) {
       n = 2;
-      if (path_.length() == search.length()) {
+      if (path_loc.length() == search.length()) {
 #ifdef DEBUG
         printf("In Shares/Private only.\n");
 #endif
         msid->clear();
         return 0;
       }
-      share = path_.substr(search.length() + 1);
+      share = path_loc.substr(search.length() + 1);
       std::string share_name("");
       for (unsigned int nn = 0; nn < share.length(); nn++) {
         if (share.at(nn) == '/' || share.at(nn) == '\\')
@@ -2397,12 +2398,12 @@ int ClientController::PathDistinction(const std::string &path,
       *msid = ps.Msid();
     } else {
       search = "Shares/Public";
-      found = path_.find(search);
+      found = path_loc.find(search);
       if (found != std::string::npos) {
         n = 3;
       } else {
         search = "Shares/Anonymous";
-        found = path_.find(search);
+        found = path_loc.find(search);
         if (found != std::string::npos)
           n = 4;
       }
@@ -2417,9 +2418,8 @@ int ClientController::PathDistinction(const std::string &path,
 }
 
 int ClientController::GetDb(const std::string &orig_path,
-                            DirType *dir_type,
-                            std::string *msid) {
-  std::string path = orig_path;
+                            DirType *dir_type, std::string *msid) {
+  std::string path(orig_path);
 #ifdef DEBUG
   printf("\t\tCC::GetDb(%s)\n", orig_path.c_str());
 #endif
@@ -2482,36 +2482,35 @@ int ClientController::GetDb(const std::string &orig_path,
   return 0;
 }
 
-int ClientController::SaveDb(const std::string &db_path,
-                             const DirType dir_type,
+int ClientController::SaveDb(const std::string &db_path, const DirType dir_type,
                              const std::string &msid,
                              const bool &immediate_save) {
 #ifdef DEBUG
   printf("\t\tCC::SaveDb %s with MSID = %s\n", db_path.c_str(),
          HexSubstr(msid).c_str());
 #endif
-  std::string parent_path_(""), dir_key_("");
-  fs::path temp_(db_path);
-  parent_path_ = temp_.parent_path().string();
-  if (parent_path_ == "\\" ||
-      parent_path_ == "/" ||
-      parent_path_ == TidyPath(kRootSubdir[1][0]))
+  std::string parent_path, dir_key;
+  fs::path temp(db_path);
+  parent_path = temp.parent_path().string();
+  if (parent_path == "\\" ||
+      parent_path == "/" ||
+      parent_path == TidyPath(kRootSubdir[1][0]))
     return 0;
-  boost::scoped_ptr<DataAtlasHandler> dah_(new DataAtlasHandler());
-  if (dah_->GetDirKey(parent_path_, &dir_key_))
+  boost::scoped_ptr<DataAtlasHandler> dah(new DataAtlasHandler());
+  if (dah->GetDirKey(parent_path, &dir_key))
     // yields dir key for parent of path_
     return -errno;
   if (!immediate_save) {
-    std::pair<std::string, std::string> key_and_msid_(dir_key_, msid);
+    std::pair<std::string, std::string> key_and_msid(dir_key, msid);
     db_enc_queue_.insert(std::pair<std::string,
                                    std::pair<std::string, std::string> >
-                                       (parent_path_, key_and_msid_));
+                                            (parent_path, key_and_msid));
 //    if (db_enc_queue_.size() > kSaveUpdatesTrigger)
     RunDbEncQueue();
     return 0;
   } else {
     DataMap dm;
-    if (seh_.EncryptDb(parent_path_, dir_type, dir_key_, msid, true, &dm) != 0)
+    if (seh_.EncryptDb(parent_path, dir_type, dir_key, msid, true, &dm) != 0)
       return -errno;
   }
     return 0;
@@ -2595,27 +2594,27 @@ bool ClientController::ReadOnly(const std::string &path, bool) {
 #ifdef DEBUG
   printf("\n\t\tCC::ReadOnly, path = %s\t%i\t", path.c_str(), gui);
 #endif
-  std::string parent_path_, dir_key_;
-  fs::path path_(path, fs::native);
-  fs::path parnt_path_ = path_.parent_path();
+  std::string parent_path, dir_key;
+  fs::path fspath(path, fs::native);
+  fs::path parnt_path = fspath.parent_path();
 #ifdef DEBUG
-  printf("and parent_path_ = %s\n", parnt_path_.string().c_str());
+  printf("and parent_path_ = %s\n", parnt_path.string().c_str());
 #endif
   // if path is a root subdir, but not one of preassigned root subdirs,
   // then readonly = true
-  if (parnt_path_.string().empty() ||
-      parnt_path_.string() == "/"||
-      parnt_path_.string() == "\\") {
+  if (parnt_path.string().empty() ||
+      parnt_path.string() == "/"||
+      parnt_path.string() == "\\") {
     for (int i = 0; i < kRootSubdirSize; ++i) {
-      fs::path root_subdir_(TidyPath(kRootSubdir[i][0]), fs::native);
-      if (path_ == root_subdir_) {
+      fs::path root_subdir(TidyPath(kRootSubdir[i][0]), fs::native);
+      if (fspath == root_subdir) {
 #ifdef DEBUG
         printf("Returning false AA.\n");
 #endif
         return false;
       }
     }
-    if (path_.string() == "/" || path_.string() == "\\") {
+    if (fspath.string() == "/" || fspath.string() == "\\") {
 #ifdef DEBUG
       printf("Returning false BB.\n");
 #endif
@@ -2630,18 +2629,18 @@ bool ClientController::ReadOnly(const std::string &path, bool) {
 
   // if path is a Shares subdir, but not one of preassigned Shares subdirs,
   // then readonly = true.
-  fs::path shares_(TidyPath(kRootSubdir[1][0]), fs::native);
-  if (parnt_path_ == shares_) {
-    bool read_only_ = true;
+  fs::path shares(TidyPath(kRootSubdir[1][0]), fs::native);
+  if (parnt_path == shares) {
+    bool read_only(true);
     for (int i = 0; i < kSharesSubdirSize; ++i) {
-      fs::path shares_subdir_(TidyPath(kSharesSubdir[i][0]), fs::native);
-      if (path_ == shares_subdir_)
-        read_only_ = false;
+      fs::path shares_subdir(TidyPath(kSharesSubdir[i][0]), fs::native);
+      if (fspath == shares_subdir)
+        read_only = false;
     }
 #ifdef DEBUG
-    printf("Returning %i CC.\n", static_cast<int>(read_only_));
+    printf("Returning %i CC.\n", static_cast<int>(read_only));
 #endif
-    return read_only_;
+    return read_only;
   }
   // if path is a Shares/Private subdir then readonly = true unless request
   // comes from gui setting up a private share.
@@ -2698,7 +2697,7 @@ char ClientController::DriveLetter() {
     oss << drive;
     std::string dr = oss.str();
     dr += ":";
-    bool exists = true;
+    bool exists(true);
     try {
       exists = fs::exists(dr);
     }
@@ -3323,5 +3322,13 @@ bs2::connection ClientController::ConnectToOnFileNetworkStatus(
   return seh_.ConnectToOnFileNetworkStatus(slot);
 }
 
+void ClientController::FileUpdate(const std::string &file, int percentage) {
+  if (percentage == 100) {
+    {
+      boost::mutex::scoped_lock loch_(pending_files_mutex_);
+      pending_files_.erase(file);
+    }
+  }
+}
 
 }  // namespace maidsafe

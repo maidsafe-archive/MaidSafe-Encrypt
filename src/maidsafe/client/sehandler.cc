@@ -40,7 +40,25 @@ SEHandler::SEHandler() : storem_(), client_chunkstore_(), ss_(),
                          up_to_date_datamaps_mutex_(), chunkmap_mutex_(),
                          connection_to_chunk_uploads_(), file_status_() {}
 
-SEHandler::~SEHandler() { connection_to_chunk_uploads_.disconnect(); }
+SEHandler::~SEHandler() {
+  bool t(false);
+  while (!t) {
+    {
+      boost::mutex::scoped_lock loch_etive(chunkmap_mutex_);
+      t = pending_chunks_.empty();
+//      printf("%d SEH size\n", pending_chunks_.size());
+//      PCSbyName &chunkname_index = pending_chunks_.get<by_chunkname>();
+//      PCSbyName::iterator it = chunkname_index.begin();
+//      while (it != chunkname_index.end()) {
+//        printf("%d\n", (*it).count);
+//        ++it;
+//      }
+    }
+    if (!t)
+      boost::this_thread::sleep(boost::posix_time::milliseconds(100));
+  }
+  connection_to_chunk_uploads_.disconnect();
+}
 
 void SEHandler::Init(boost::shared_ptr<StoreManagerInterface> storem,
                      boost::shared_ptr<ChunkStore> client_chunkstore) {
@@ -206,7 +224,7 @@ int SEHandler::EncryptString(const std::string &data, std::string *ser_dm) {
   if (data.empty())
     return kEncryptionSmallInput;
 
-  maidsafe::DataMap dm;
+  DataMap dm;
   SelfEncryption se(client_chunkstore_);
   ser_dm->clear();
   crypto::Crypto co;
@@ -226,8 +244,7 @@ int SEHandler::EncryptString(const std::string &data, std::string *ser_dm) {
 }
 
 bool SEHandler::ProcessMetaData(const std::string &rel_entry,
-                                const ItemType &type,
-                                const std::string &hash,
+                                const ItemType &type, const std::string &hash,
                                 const boost::uint64_t &file_size,
                                 std::string *ser_mdm) {
   fs::path ms_rel_path(rel_entry);
@@ -331,8 +348,7 @@ int SEHandler::DecryptString(const std::string &ser_dm,
   return kSuccess;
 }
 
-bool SEHandler::MakeElement(const std::string &rel_entry,
-                            const ItemType &type,
+bool SEHandler::MakeElement(const std::string &rel_entry, const ItemType &type,
                             const std::string &directory_key) {
   std::string ser_mdm, ser_dm, dir_key(directory_key);
   if (!ProcessMetaData(rel_entry, type, "", 0, &ser_mdm)) {
@@ -450,7 +466,7 @@ int SEHandler::EncryptDb(const std::string &dir_path, const DirType &dir_type,
   if (previous_enc_dm == enc_dm)
     return kSuccess;
 
-  StoreChunks(*dm, dir_type, msid);
+  StoreChunks(*dm, dir_type, msid, base::EncodeToHex(dir_key));
   if (dir_key.empty()) {  // Means we're not storing to DHT - used by client
                           // controller to get root dbs for adding to DataAtlas.
 #ifdef DEBUG
@@ -673,24 +689,61 @@ int SEHandler::LoadChunks(const DataMap &dm) {
 
 void SEHandler::StoreChunks(const DataMap &dm, const DirType &dir_type,
                             const std::string &msid, const std::string &path) {
-  bool into_map(path.empty() ? false : true);
-  if (into_map) {
-    for (int i = 0; i < dm.encrypted_chunk_name_size(); ++i) {
-      PendingChunks pc(dm.encrypted_chunk_name(i), path, msid);
-      chunkmap_mutex_.lock();
-      std::pair<PendingChunksSet::iterator, bool> p =
-          pending_chunks_.insert(pc);
-      chunkmap_mutex_.unlock();
-      if (!p.second) {
+  ChunksToMultiIndex(dm, msid, path);
+  StoreChunksToNetwork(dm, dir_type, msid);
+}
+
+void SEHandler::ChunksToMultiIndex(const DataMap &dm, const std::string &msid,
+                                   const std::string &path) {
+  if (path.empty()) {
 #ifdef DEBUG
-        printf("SEHandler::StoreChunks - Something really fucking wrong is "
-               "going on in SEHandler with the multi-index for pending "
-               "chunks.\n");
+    printf("SEHandler::StoreChunks - Need summat to index by.\n");
 #endif
+    return;
+  }
+
+  {
+    boost::mutex::scoped_lock loch_eigheach(chunkmap_mutex_);
+    for (int i = 0; i < dm.encrypted_chunk_name_size(); ++i) {
+      PCSbyName &chunkname_index = pending_chunks_.get<by_chunkname>();
+      std::pair<PCSbyName::iterator, PCSbyName::iterator> it =
+          chunkname_index.equal_range(dm.encrypted_chunk_name(i));
+      if (it.first == it.second) {
+        PendingChunks pc(dm.encrypted_chunk_name(i), path, msid, 0);
+        std::pair<PendingChunksSet::iterator, bool> p =
+            pending_chunks_.insert(pc);
+        if (!p.second) {
+#ifdef DEBUG
+          printf("SEHandler::StoreChunks - Something really fucking wrong is "
+                 "going on in SEHandler with the multi-index for pending "
+                 "chunks.\n");
+#endif
+        }
+      } else {
+        int count(0);
+        while (it.first != it.second) {
+          if ((*it.first).count > count)
+            count = (*it.first).count;
+          ++it.first;
+        }
+
+        PendingChunks pc(dm.encrypted_chunk_name(i), path, msid, ++count);
+        std::pair<PendingChunksSet::iterator, bool> p =
+            pending_chunks_.insert(pc);
+        if (!p.second) {
+#ifdef DEBUG
+          printf("SEHandler::StoreChunks - Something really fucking wrong is "
+                 "going on in SEHandler with the multi-index for pending "
+                 "chunks.\n");
+#endif
+        }
       }
     }
   }
+}
 
+void SEHandler::StoreChunksToNetwork(const DataMap &dm, const DirType &dir_type,
+                                     const std::string &msid) {
   for (int j = 0; j < dm.encrypted_chunk_name_size(); ++j)
     storem_->StoreChunk(dm.encrypted_chunk_name(j), dir_type, msid);
 }
@@ -704,12 +757,12 @@ void SEHandler::PacketOpCallback(const int &store_manager_result,
   cond_var->notify_one();
 }
 
-void SEHandler::ChunkDone(const std::string &chunkname,
-                          maidsafe::ReturnCode rc) {
+void SEHandler::ChunkDone(const std::string &chunkname, ReturnCode rc) {
   boost::mutex::scoped_lock loch_sloy(chunkmap_mutex_);
   PCSbyName &chunkname_index = pending_chunks_.get<by_chunkname>();
-  PCSbyName::iterator it = chunkname_index.find(chunkname);
-  if (it == chunkname_index.end()) {
+  std::pair<PCSbyName::iterator, PCSbyName::iterator> it_cn =
+      chunkname_index.equal_range(chunkname);
+  if (it_cn.first == it_cn.second) {
 #ifdef DEBUG
     printf("SEHandler::ChunkDone - No record of the chunk %s\n",
            base::EncodeToHex(chunkname).c_str());
@@ -717,60 +770,59 @@ void SEHandler::ChunkDone(const std::string &chunkname,
     return;
   }
 
-  PendingChunks pc = *it;
-  pc.done = rc;
-  chunkname_index.replace(it, pc);
+  int count(0);
+  std::string path;
+  bool found_pending_chunk(false);
+  while (it_cn.first != it_cn.second && !found_pending_chunk) {
+    if ((*it_cn.first).done == kPendingResult) {
+      PendingChunks pc = *it_cn.first;
+      count = pc.count;
+      path = pc.path;
+      pc.done = rc;
+      chunkname_index.replace(it_cn.first, pc);
+      found_pending_chunk = true;
+    }
+    ++it_cn.first;
+  }
 
-  PCSbyPath &path_index = pending_chunks_.get<by_path>();
-  std::pair<PCSbyPath::iterator, PCSbyPath::iterator> path_it =
-      path_index.equal_range(pc.path);
+  if (!found_pending_chunk) {
+#ifdef DEBUG
+    printf("SEHandler::ChunkDone - No record of the chunk %s needing update\n",
+           base::EncodeToHex(chunkname).c_str());
+#endif
+    return;
+  }
+
+  PCSbyPathCount &pathcount_index = pending_chunks_.get<by_path_count>();
+  std::pair<PCSbyPathCount::iterator, PCSbyPathCount::iterator> it_pc =
+      pathcount_index.equal_range(boost::make_tuple(path, count));
+
+  if (it_pc.first == it_pc.second) {
+#ifdef DEBUG
+    printf("SEHandler::ChunkDone - Well, this is a surprise!\n");
+#endif
+    return;
+  }
 
   if (rc == kSuccess) {
-    // Check if all others are done
-    if (path_it.first == path_it.second) {
-#ifdef DEBUG
-      printf("SEHandler::ChunkDone - No record of the chunk based on file path"
-             " %s and that's even worse since we just put one in. LOL. WTF!\n",
-             pc.path.c_str());
-#endif
-      return;
-    }
-
-    int total(0), pend(0);
-    for (; path_it.first != path_it.second; ++path_it.first) {
-      if ((*path_it.first).done == kPendingResult) {
-        ++pend;
+    int pending(0), finished(0);
+    while (it_pc.first != it_pc.second) {
+      if ((*it_pc.first).done == kPendingResult) {
+        ++pending;
       }
-      ++total;
+      ++finished;
+      ++it_pc.first;
     }
 
-    if (pend == 0) {
-      // Erase traces of the file
-      path_it = path_index.equal_range(pc.path);
-      path_index.erase(path_it.first, path_it.second);
-
-      // Notify we're done with this file
-      file_status_(pc.path, 100);
-    } else {
-      // Notify percentage
-      file_status_(pc.path, (total - pend) * 100 / total);
+    int percentage((finished - pending) * 100 / finished);
+    if (pending == 0) {
+      it_pc = pathcount_index.equal_range(boost::make_tuple(path, count));
+      pathcount_index.erase(it_pc.first, it_pc.second);
     }
+    file_status_(path, percentage);
   } else {
-    // TODO(Team#5#): 2010-08-19 - Need to define a proper limit for this
-    if (pc.tries < 1) {
-      ++pc.tries;
-      storem_->StoreChunk(pc.chunkname, pc.dirtype, pc.msid);
-    } else {
-      // We need to cancel all the other chunks here because it's all
-      // pointless. Hopefully we'll have some way of recovering payment from
-      // already uploaded chunks.
-
-      // Delete all entries for this path
-      path_index.erase(path_it.first, path_it.second);
-
-      // Signal to notify upload for this is buggered
-      file_status_(pc.path, -1);
-    }
+    pathcount_index.erase(it_pc.first, it_pc.second);
+    file_status_(path, -1);
   }
 }
 

@@ -93,8 +93,15 @@ LocalStoreManager::LocalStoreManager(
           ss_(SessionSingleton::getInstance()) {}
 
 LocalStoreManager::~LocalStoreManager() {
-  while (!chunks_pending_.empty())
-    boost::this_thread::sleep(boost::posix_time::seconds(1));
+  bool t(false);
+  while (!t) {
+    {
+      boost::mutex::scoped_lock loch_etive(signal_mutex_);
+      t = chunks_pending_.empty();
+    }
+    if (!t)
+      boost::this_thread::sleep(boost::posix_time::milliseconds(100));
+  }
 }
 
 void LocalStoreManager::Init(VoidFuncOneInt callback, const boost::uint16_t&) {
