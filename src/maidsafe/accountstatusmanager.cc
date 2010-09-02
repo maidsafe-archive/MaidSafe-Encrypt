@@ -86,6 +86,10 @@ void AccountStatusManager::StopUpdating() {
   }
 }
 
+void AccountStatusManager::Update() {
+  DoUpdate(boost::system::error_code());
+}
+
 void AccountStatusManager::Run() {
   while (true) {
     try {

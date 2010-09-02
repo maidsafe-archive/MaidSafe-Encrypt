@@ -56,7 +56,7 @@ static std::list<std::string> callback_messages_;
 
 namespace testpdvault {
 
-static const boost::uint8_t K(4);
+static const boost::uint8_t K(8);
 
 struct ClientData {
   explicit ClientData(const std::string &root_dir)
@@ -191,7 +191,7 @@ namespace maidsafe_vault {
 namespace test {
 
 static std::vector< boost::shared_ptr<PDVault> > pdvaults_;
-static const int kNumOfClients = 2;
+static const int kNumOfClients = 1;
 static const int kNetworkSize = testpdvault::K + kNumOfClients;
 static const int kNumOfTestChunks = 1;  // kNetworkSize * 1.5;
 static boost::filesystem::path kadconfig_;
@@ -429,6 +429,10 @@ TEST_MS_NET(PDVaultTest, FUNC, MAID, StoreAndGetChunks) {
     ++iteration;
     printf("\n-- Sleeping iteration %i --\n\n", iteration);
     boost::this_thread::sleep(boost::posix_time::seconds(10));
+
+    // get amendment results
+    for (int i = 0; i < kNumOfClients; ++i)
+      clients_[i]->msm->account_status_manager_.Update();
 
     for (it = chunks.begin(); it != chunks.end(); ++it) {
       int chunk_count(0);

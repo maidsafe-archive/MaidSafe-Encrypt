@@ -152,7 +152,14 @@ int StoreManagerTasksHandler::NotifyTaskSuccess(const std::string &task_name) {
 #endif
     return kStoreManagerTaskIncorrectOperation;
   }
+  
   ++task.success_count;
+
+// #ifdef DEBUG
+//   printf(">>> SMTH::NotifyTaskSuccess - success %d of %d <<<\n",
+//          task.success_count, task.successes_required);
+// #endif
+
   if (task.status == kTaskActive &&
       task.success_count >= task.successes_required) {
     task.status = kTaskSucceeded;
@@ -180,10 +187,38 @@ int StoreManagerTasksHandler::NotifyTaskFailure(
     return kStoreManagerTaskIncorrectOperation;
   }
   ++task.failures_count;
+
+// #ifdef DEBUG
+//   printf(">>> SMTH::NotifyTaskFailure - failure %d of %d <<<\n",
+//          task.failures_count, task.max_failures);
+// #endif
+  
   if (task.status == kTaskActive && task.failures_count > task.max_failures) {
     task.status = kTaskFailed;
     return NotifyStateChange(task_name, reason);
   }
+  return kSuccess;
+}
+
+int StoreManagerTasksHandler::ResetTaskProgress(const std::string &task_name) {
+  boost::mutex::scoped_lock lock(mutex_);
+  if (tasks_.count(task_name) == 0) {
+#ifdef DEBUG
+    printf("In StoreManagerTasksHandler::ResetTaskProgress, task not found "
+           "(%s).\n", HexSubstr(task_name).c_str());
+#endif
+    return kStoreManagerTaskNotFound;
+  }
+  StoreManagerTask &task = tasks_[task_name];
+  if (task.child_task_count > 0) {
+#ifdef DEBUG
+    printf("In StoreManagerTasksHandler::ResetTaskProgress, cannot modify "
+           "a parent task directly (%s).\n", HexSubstr(task_name).c_str());
+#endif
+    return kStoreManagerTaskIncorrectOperation;
+  }
+  task.success_count = 0;
+  task.failures_count = 0;
   return kSuccess;
 }
 

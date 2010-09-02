@@ -188,13 +188,16 @@ class AccountAmendmentHandler {
   FRIEND_TEST(MockVaultServicesTest, FUNC_MAID_ServicesAmendAccount);
   // Searches and actions the amendment request in an AccountAmendment
   int AssessAmendment(const std::string &owner_pmid,
+                      const std::string &chunkname,
                       const int &amendment_field,
                       const boost::uint64_t &offer_size,
                       const bool &inc,
                       const PendingAmending &pending,
                       AccountAmendment *amendment);
-  void CreateNewAmendment(AccountAmendment amendment);
+  void CreateNewAmendment(AccountAmendment amendment,
+                          const std::string &chunkname);
   void CreateNewAmendmentCallback(AccountAmendment amendment,
+                                  const std::string &chunkname,
                                   std::string find_nodes_response);
   AccountHandler *account_handler_;
   RequestExpectationHandler *request_expectation_handler_;

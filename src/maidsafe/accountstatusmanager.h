@@ -58,6 +58,7 @@ class AccountStatusManager {
   ~AccountStatusManager();
   void StartUpdating(boost::function<void()> update_functor);
   void StopUpdating();
+  void Update();
   void SetAccountStatus(const boost::uint64_t &space_offered,
                         const boost::uint64_t &space_given,
                         const boost::uint64_t &space_taken);
