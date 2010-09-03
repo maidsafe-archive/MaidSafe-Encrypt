@@ -122,9 +122,7 @@ ClientController *ClientController::getInstance() {
 }
 
 void ClientController::Destroy() {
-  printf("3333\n");
   delete single;
-  printf("4444\n");
   single = NULL;
 }
 

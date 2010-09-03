@@ -341,10 +341,14 @@ int Authentication::CreateUserSysPackets(const std::string &username,
       &count, &calledback));
 
   while (system_packets_result_ == kPendingResult) {
+#ifdef DEBUG
     printf(".");
+#endif
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   }
+#ifdef DEBUG
   printf("\n");
+#endif
 
   return system_packets_result_;
 }
@@ -378,8 +382,7 @@ void Authentication::CreateUserSysPackets(const ReturnCode &rc,
 }
 
 void Authentication::CreateSignaturePacket(
-    boost::shared_ptr<SystemPacketCreation> spc,
-    const PacketType &type_da) {
+    boost::shared_ptr<SystemPacketCreation> spc, const PacketType &type_da) {
   crypto::RsaKeyPair kp;
   while (!crypto_key_pairs_.GetKeyPair(&kp)) {
     kp.ClearKeys();
@@ -401,8 +404,7 @@ void Authentication::CreateSignaturePacket(
 }
 
 void Authentication::CreateSignaturePacketKeyUnique(
-    const ReturnCode &rc,
-    boost::shared_ptr<FindSystemPacket> fsp) {
+    const ReturnCode &rc, boost::shared_ptr<FindSystemPacket> fsp) {
   if (rc == kKeyUnique) {
     int n = ss_->AddKey(fsp->pt,
                         boost::any_cast<std::string>(fsp->pp["name"]),
@@ -424,8 +426,7 @@ void Authentication::CreateSignaturePacketKeyUnique(
 }
 
 void Authentication::CreateSignaturePacketStore(
-    const ReturnCode &rc,
-    boost::shared_ptr<FindSystemPacket> fsp) {
+    const ReturnCode &rc, boost::shared_ptr<FindSystemPacket> fsp) {
   if (rc == kSuccess) {
     ++fsp->spc->packet_count;
     switch (fsp->pt) {
@@ -591,8 +592,7 @@ void Authentication::SaveSession(const std::string &ser_da,
 }
 
 void Authentication::UpdateSmidCallback(
-    const ReturnCode &rc,
-    boost::shared_ptr<SaveSessionData> ssd) {
+    const ReturnCode &rc, boost::shared_ptr<SaveSessionData> ssd) {
   if (rc != kSuccess) {
     ssd->vfoi(rc);
 #ifdef DEBUG
@@ -625,8 +625,7 @@ void Authentication::UpdateSmidCallback(
 }
 
 void Authentication::DeleteSmidTmidCallback(
-    const ReturnCode &rc,
-    boost::shared_ptr<SaveSessionData> ssd) {
+    const ReturnCode &rc, boost::shared_ptr<SaveSessionData> ssd) {
   if (rc != kSuccess) {
     ssd->vfoi(rc);
 #ifdef DEBUG
@@ -654,8 +653,7 @@ void Authentication::DeleteSmidTmidCallback(
 }
 
 void Authentication::UpdateMidCallback(
-    const ReturnCode &rc,
-    boost::shared_ptr<SaveSessionData> ssd) {
+    const ReturnCode &rc, boost::shared_ptr<SaveSessionData> ssd) {
   if (rc != kSuccess) {
     ssd->vfoi(rc);
 #ifdef DEBUG
@@ -684,8 +682,7 @@ void Authentication::UpdateMidCallback(
 }
 
 void Authentication::StoreMidTmidCallback(
-    const ReturnCode &rc,
-    boost::shared_ptr<SaveSessionData> ssd) {
+    const ReturnCode &rc, boost::shared_ptr<SaveSessionData> ssd) {
   if (rc != kSuccess) {
     ssd->vfoi(rc);
 #ifdef DEBUG
