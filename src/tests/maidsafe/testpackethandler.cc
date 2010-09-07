@@ -58,7 +58,6 @@ TEST_F(SystemPacketHandlerTest, BEH_MAID_CreateMID) {
   input_param_["username"] = std::string("user1");
   input_param_["pin"] = std::string("1234");
   PacketParams result = midPacket->Create(input_param_);
-
   std::string hashusername = co_.Hash("user1", "", crypto::STRING_STRING,
       false);
   std::string hashpin = co_.Hash("1234", "", crypto::STRING_STRING, false);

@@ -14,6 +14,7 @@
 
 
 #include <boost/filesystem/fstream.hpp>
+#include <boost/scoped_ptr.hpp>
 #include <gtest/gtest.h>
 #include <maidsafe/base/crypto.h>
 #include <maidsafe/base/utils.h>
@@ -67,7 +68,7 @@ bool MakeChunks(const boost::uint32_t &num_chunks,
     while (chunk_size > upper)
       chunk_size = chunk_size / 2;
     chunksize->push_back(chunk_size);
-    value->push_back(base::RandomString(chunksize->at(i)));
+    value->push_back(base::RandomAlphaNumericString(chunksize->at(i)));
     if (hashable) {
       name->push_back(cry_obj->Hash(value->at(i), "", crypto::STRING_STRING,
                                     false));
@@ -116,7 +117,7 @@ bool MakePackets(const boost::uint32_t &num_packets,
     while (packet_size > upper)
       packet_size = packet_size / 2;
     packetsize->push_back(packet_size);
-    std::string data = base::RandomString(packetsize->at(i));
+    std::string data = base::RandomAlphaNumericString(packetsize->at(i));
     maidsafe::GenericPacket gp;
     gp.set_data(data);
     gp.set_signature(cry_obj->AsymSign(data, "", private_key.at(i),
@@ -263,7 +264,7 @@ class ChunkstoreTest : public testing::Test {
  protected:
   ChunkstoreTest()
       : storedir(file_system::TempDir() / ("maidsafe_TestChunkstore"
-                 + base::RandomString(6))),
+                 + base::RandomAlphaNumericString(6))),
         file_path("chunk.txt", fs::native),
         file_content("ABC"),
         hash_file_content(""),
@@ -1707,7 +1708,7 @@ TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreCacheChunk) {
   crypto::Crypto co;
   co.set_symm_algorithm(crypto::AES_256);
   co.set_hash_algorithm(crypto::SHA_512);
-  std::string content(base::RandomString(1001));
+  std::string content(base::RandomAlphaNumericString(1001));
   std::string chunkname(co.Hash(content, "", crypto::STRING_STRING, false));
   ASSERT_EQ(kNoSpaceForCaching, chunkstore->CacheChunk(chunkname, content));
   ASSERT_FALSE(chunkstore->Has(chunkname));
@@ -1716,7 +1717,7 @@ TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreCacheChunk) {
   ASSERT_EQ(boost::uint64_t(0), chunkstore->space_used_by_cache());
   ASSERT_EQ(boost::uint64_t(1000), chunkstore->FreeSpace());
 
-  content = base::RandomString(999);
+  content = base::RandomAlphaNumericString(999);
   chunkname = co.Hash(content, "", crypto::STRING_STRING, false);
   ASSERT_EQ(kSuccess, chunkstore->CacheChunk(chunkname, content));
   ASSERT_TRUE(chunkstore->Has(chunkname));
@@ -1725,7 +1726,7 @@ TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreCacheChunk) {
   ASSERT_EQ(boost::uint64_t(999), chunkstore->space_used_by_cache());
   ASSERT_EQ(boost::uint64_t(1), chunkstore->FreeSpace());
 
-  content = base::RandomString(999);
+  content = base::RandomAlphaNumericString(999);
   chunkname = co.Hash(content, "", crypto::STRING_STRING, false);
   ASSERT_EQ(kNoSpaceForCaching, chunkstore->CacheChunk(chunkname, content));
   ASSERT_FALSE(chunkstore->Has(chunkname));
@@ -1754,7 +1755,7 @@ TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreFreeCacheSpace) {
   int chunks_to_test(10);
   std::vector<std::string> chunknames;
   for (int n = 0; n < chunks_to_test; ++n) {
-    std::string content(base::RandomString(1000));
+    std::string content(base::RandomAlphaNumericString(1000));
     std::string chunkname(co.Hash(content, "", crypto::STRING_STRING, false));
     ASSERT_EQ(kSuccess, chunkstore->CacheChunk(chunkname, content));
     chunknames.push_back(chunkname);
@@ -1780,7 +1781,7 @@ TEST_F(ChunkstoreTest, BEH_MAID_ChunkstoreFreeCacheSpace) {
 
   chunknames.clear();
   for (int y = 0; y < chunks_to_test; ++y) {
-    std::string content(base::RandomString(1000));
+    std::string content(base::RandomAlphaNumericString(1000));
     std::string chunkname(co.Hash(content, "", crypto::STRING_STRING, false));
     ASSERT_EQ(kSuccess, chunkstore->CacheChunk(chunkname, content));
     chunknames.push_back(chunkname);

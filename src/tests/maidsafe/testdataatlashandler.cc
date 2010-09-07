@@ -54,9 +54,10 @@ namespace fs = boost::filesystem;
 
 class DataAtlasHandlerTest : public testing::Test {
  protected:
-  DataAtlasHandlerTest() : test_root_dir_(file_system::TempDir() /
-                               ("maidsafe_TestDAH_" + base::RandomString(6))),
-                           keys_() {}
+  DataAtlasHandlerTest()
+      : test_root_dir_(file_system::TempDir() / ("maidsafe_TestDAH_" +
+                       base::RandomAlphaNumericString(6))),
+        keys_() {}
   ~DataAtlasHandlerTest() { }
   void SetUp() {
     SessionSingleton::getInstance()->ResetSession();

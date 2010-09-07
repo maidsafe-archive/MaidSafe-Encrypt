@@ -82,8 +82,8 @@ class TestCallback {
 class VaultServicesTest : public testing::Test {
  protected:
   VaultServicesTest()
-      : chunkstore_dir_(file_system::TempDir() /
-            ("maidsafe_TestVaultServices_" + base::RandomString(6))),
+      : chunkstore_dir_(file_system::TempDir() / ("maidsafe_TestVaultServices_"
+                        + base::RandomAlphaNumericString(6))),
         vault_pmid_(),
         vault_public_key_(),
         vault_private_key_(),
@@ -3215,9 +3215,8 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesAddBPMessages) {
   bpm.set_sender_id("newuser");
   bpm.set_sender_public_key(newuser_pub_key);
   bpm.set_type(maidsafe::INSTANT_MSG);
-  boost::uint32_t iter = base::RandomUint32() % 1000 +1;
-  std::string aes_key = co.SecurePassword(co.Hash(msg, "",
-                                          crypto::STRING_STRING, false), iter);
+  std::string aes_key =
+      base::RandomString(crypto::AES256_KeySize + crypto::AES256_IVSize);
   bpm.set_rsaenc_key(co.AsymEncrypt(aes_key, "", pub_key,
                                     crypto::STRING_STRING));
   bpm.set_aesenc_message(co.SymmEncrypt(msg, "", crypto::STRING_STRING,

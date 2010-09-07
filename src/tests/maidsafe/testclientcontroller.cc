@@ -416,7 +416,7 @@ TEST_MS_NET(ClientControllerTest, FUNC, MAID, CC_BackupFile) {
   fs::path full_path(file_system::MaidsafeHomeDir(ss_->SessionName()));
   full_path /= rel_path;
   fs::ofstream testfile(full_path.string().c_str());
-  testfile << base::RandomString(1024*1024);
+  testfile << base::RandomAlphaNumericString(1024 * 1024);
   testfile.close();
   maidsafe::SelfEncryption se(network_test_.chunkstore());
   std::string hash_original_file = se.SHA512(full_path);
@@ -491,7 +491,7 @@ TEST_MS_NET(ClientControllerTest, FUNC, MAID, CC_SaveSession) {
   fs::path full_path(file_system::MaidsafeHomeDir(ss_->SessionName()));
   full_path /= rel_path;
   fs::ofstream testfile(full_path.string().c_str());
-  testfile << base::RandomString(1024*1024);
+  testfile << base::RandomAlphaNumericString(1024 * 1024);
   testfile.close();
   maidsafe::SelfEncryption se(network_test_.chunkstore());
   std::string hash_original_file = se.SHA512(full_path);
@@ -781,7 +781,7 @@ TEST_MS_NET(ClientControllerTest, FUNC, MAID, CC_Shares) {
                      "/testencryption.txt";
   fs::path path_(path);
   fs::ofstream testfile(path.c_str());
-  testfile << base::RandomString(1024*1024);
+  testfile << base::RandomAlphaNumericString(1024 * 1024);
   testfile.close();
   std::string hash_original_file = se.SHA512(path_);
   ASSERT_TRUE(cc_->BackupElement(path));

@@ -274,9 +274,8 @@ class GetMsgsHelper {
                   const std::string &rec_pub_key,
                   const std::string &sender) {
     maidsafe::ValidatedBufferPacketMessage bp_msg;
-    boost::uint32_t iter = base::RandomUint32() % 1000 +1;
-    std::string aes_key = co.SecurePassword(co.Hash(msg, "",
-                          crypto::STRING_STRING, false), iter);
+    std::string aes_key =
+        base::RandomString(crypto::AES256_KeySize + crypto::AES256_IVSize);
     bp_msg.set_index(co.AsymEncrypt(aes_key, "", rec_pub_key,
                      crypto::STRING_STRING));
     bp_msg.set_sender(sender);
@@ -344,8 +343,8 @@ class TestClientBP : public testing::Test {
   TestClientBP() : trans_(NULL),
                    trans_han_(NULL),
                    ch_man_(NULL),
-                   test_dir_(file_system::TempDir() /
-                            ("maidsafe_TestClientBP_" + base::RandomString(6))),
+                   test_dir_(file_system::TempDir() / ("maidsafe_TestClientBP_"
+                             + base::RandomAlphaNumericString(6))),
                    kad_config_file_(test_dir_ / ".kadconfig"),
                    chunkstore_(new maidsafe::ChunkStore(
                        (test_dir_ / "ChunkStore").string(), 99999999, 0)),

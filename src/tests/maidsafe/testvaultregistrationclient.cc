@@ -112,7 +112,8 @@ class MsmSetLocalVaultOwnedTest : public testing::Test {
  public:
   MsmSetLocalVaultOwnedTest()
       : test_root_dir_(file_system::TempDir() /
-            ("maidsafe_TestSetLocalVaultOwned_" + base::RandomString(6))),
+            ("maidsafe_TestSetLocalVaultOwned_" +
+            base::RandomAlphaNumericString(6))),
         chunkstore_(new maidsafe::ChunkStore(test_root_dir_.string(), 1000000,
             0)),
         msm_(chunkstore_, test_vault_reg::K),

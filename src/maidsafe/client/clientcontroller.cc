@@ -142,10 +142,10 @@ int ClientController::Init(boost::uint8_t k) {
 #endif
       return -2;
     }
-    client_path /= "client" + base::RandomString(8);
+    client_path /= "client" + base::RandomAlphaNumericString(8);
     while (fs::exists(client_path))
       client_path = fs::path(client_path.string().substr(0,
-          client_path.string().size()-8) + base::RandomString(8));
+          client_path.string().size() - 8) + base::RandomAlphaNumericString(8));
     client_store_ = client_path.string();
     if (!fs::exists(client_path) && !fs::create_directories(client_path)) {
 #ifdef DEBUG

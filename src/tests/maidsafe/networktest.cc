@@ -53,10 +53,10 @@ NetworkTest::NetworkTest(const std::string &test_name)
     : transport_id_(-1),
 #ifdef MS_NETWORK_TEST
       test_dir_(file_system::TempDir() / ("maidsafe_Test" + test_name +
-                                          "_FUNC_" + base::RandomString(6))),
+                "_FUNC_" + base::RandomAlphaNumericString(6))),
 #else
-      test_dir_(file_system::TempDir() /
-                ("maidsafe_Test" + test_name + "_" + base::RandomString(6))),
+      test_dir_(file_system::TempDir() / ("maidsafe_Test" + test_name + "_" +
+                base::RandomAlphaNumericString(6))),
 #endif
       udt_transport_(NULL),
       transport_handler_(NULL),

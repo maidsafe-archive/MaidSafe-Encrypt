@@ -50,30 +50,24 @@ namespace test_seh {
 
 static const boost::uint8_t K(4);
 
-std::string CreateRandomFile(const std::string &filename,
-                             const boost::uint64_t &filesize) {
-  int file_size = static_cast<int>(filesize);
-  if (filesize > INT_MAX)
-    file_size = INT_MAX;
-  std::string file_content = base::RandomString(file_size);
-  fs::path file_path(file_system::MaidsafeHomeDir(
-      maidsafe::SessionSingleton::getInstance()->SessionName()) / filename);
-  fs::ofstream ofs;
-  ofs.open(file_path);
-  ofs << file_content;
-  ofs.close();
-  return file_path.string();
-}
-
 std::string CreateSetFile(const std::string &filename,
                           const std::string &file_content) {
   fs::path file_path(file_system::MaidsafeHomeDir(
       maidsafe::SessionSingleton::getInstance()->SessionName()) / filename);
   fs::ofstream ofs;
-  ofs.open(file_path);
-  ofs << file_content;
+  ofs.open(file_path, std::ofstream::binary | std::ofstream::ate);
+  ofs.write(file_content.data(), file_content.size());
   ofs.close();
   return file_path.string();
+}
+
+std::string CreateRandomFile(const std::string &filename,
+                             const boost::uint64_t &filesize) {
+  int file_size = static_cast<int>(filesize);
+  if (filesize > INT_MAX)
+    file_size = INT_MAX;
+  std::string file_content = base::RandomAlphaNumericString(file_size);
+  return CreateSetFile(filename, file_content);
 }
 
 void ModifyUpToDateDms(ModificationType modification_type,
@@ -144,12 +138,11 @@ namespace test {
 
 class SEHandlerTest : public testing::Test {
  protected:
-  SEHandlerTest() : test_root_dir_(file_system::TempDir() /
-                                   ("maidsafe_TestSEH_" +
-                                       base::RandomString(6))),
+  SEHandlerTest() : test_root_dir_(file_system::TempDir() / ("maidsafe_TestSEH_"
+                                   + base::RandomAlphaNumericString(6))),
                     client_chunkstore_(), cb_(), db_str1_(), db_str2_(),
-                    ss_(SessionSingleton::getInstance()), keys_(),sm_(), dah_(),
-                    seh_() {}
+                    ss_(SessionSingleton::getInstance()), keys_(), sm_(),
+                    dah_(), seh_() {}
 
   ~SEHandlerTest() {}
 
@@ -322,7 +315,12 @@ TEST_F(SEHandlerTest, BEH_MAID_Check_Entry) {
                             false));
   fs::path before(full_path9);
   fs::path after(full_path9.parent_path() / base::EncodeToHex(hash9));
-  fs::rename(before, after);
+  try {
+    fs::rename(before, after);
+  }
+  catch(const std::exception &e) {
+    printf("In SEHandlerTest, BEH_MAID_Check_Entry: ", e.what());
+  }
   full_path9 = after;
   boost::uint64_t returned_size1(9), returned_size2(9), returned_size3(9),
                   returned_size6(9), returned_size7(9), returned_size8(9),

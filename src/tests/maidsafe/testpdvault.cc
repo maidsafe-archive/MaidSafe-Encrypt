@@ -60,7 +60,8 @@ static const boost::uint8_t K(8);
 
 struct ClientData {
   explicit ClientData(const std::string &root_dir)
-    : chunkstore_dir(root_dir + "/ClientChunkstore_" + base::RandomString(8)),
+    : chunkstore_dir(root_dir + "/ClientChunkstore_" +
+                     base::RandomAlphaNumericString(8)),
       mss(),
       pmid_pub_key(),
       pmid_priv_key(),
@@ -202,8 +203,8 @@ static boost::filesystem::path kadconfig_;
 
 class PDVaultTest : public testing::Test {
  protected:
-  PDVaultTest() : test_root_dir_(file_system::TempDir() /
-                      ("maidsafe_TestVault_" + base::RandomString(6))),
+  PDVaultTest() : test_root_dir_(file_system::TempDir() / ("maidsafe_TestVault_"
+                                 + base::RandomAlphaNumericString(6))),
                   clients_(),
                   mutex_(),
                   crypto_() {

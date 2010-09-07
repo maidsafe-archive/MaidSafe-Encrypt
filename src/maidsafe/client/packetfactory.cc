@@ -23,6 +23,7 @@
 */
 
 #include "maidsafe/client/packetfactory.h"
+#include <boost/shared_ptr.hpp>
 #include "maidsafe/client/systempackets.h"
 
 namespace maidsafe {
