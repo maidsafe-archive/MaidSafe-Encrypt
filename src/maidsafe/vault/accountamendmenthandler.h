@@ -81,11 +81,16 @@ struct PendingAmending {
 
 struct AccountAmendment {
   AccountAmendment(const std::string &owner_pmid,
+                   const std::string &chunkname,
+                   const maidsafe::AmendAccountRequest::Amendment
+                      &amendment_type,
                    const int &amendment_field,
                    const boost::uint64_t &offer_amount,
                    const bool &inc,
                    const PendingAmending &pending)
       : pmid(owner_pmid),
+        chunkname(chunkname),
+        amendment_type(amendment_type),
         field(amendment_field),
         offer(offer_amount),
         increase(inc),
@@ -108,6 +113,8 @@ struct AccountAmendment {
     return expiry_time < aa.expiry_time;
   }
   std::string pmid;
+  std::string chunkname;
+  maidsafe::AmendAccountRequest::Amendment amendment_type;
   int field;
   boost::uint64_t offer;
   bool increase;
@@ -189,15 +196,15 @@ class AccountAmendmentHandler {
   // Searches and actions the amendment request in an AccountAmendment
   int AssessAmendment(const std::string &owner_pmid,
                       const std::string &chunkname,
+                      const maidsafe::AmendAccountRequest::Amendment
+                          &amendment_type,
                       const int &amendment_field,
                       const boost::uint64_t &offer_size,
                       const bool &inc,
                       const PendingAmending &pending,
                       AccountAmendment *amendment);
-  void CreateNewAmendment(AccountAmendment amendment,
-                          const std::string &chunkname);
+  void CreateNewAmendment(AccountAmendment amendment);
   void CreateNewAmendmentCallback(AccountAmendment amendment,
-                                  const std::string &chunkname,
                                   std::string find_nodes_response);
   AccountHandler *account_handler_;
   RequestExpectationHandler *request_expectation_handler_;
