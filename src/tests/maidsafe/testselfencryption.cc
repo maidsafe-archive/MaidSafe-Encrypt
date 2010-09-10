@@ -52,7 +52,7 @@ std::string CreateRandomFile(const std::string &filename, const int &filesize) {
     if (filesize > 100000)
       stringsize = 100000;
     int remainingsize = filesize;
-    std::string rand_str = base::RandomString(2 * stringsize);
+    std::string rand_str = base::RandomAlphaNumericString(2 * stringsize);
     std::string file_content;
     int start_pos = 0;
     while (remainingsize) {
@@ -80,7 +80,7 @@ class SelfEncryptionTest : public testing::Test {
  public:
   SelfEncryptionTest()
       : test_root_dir_(file_system::TempDir() /
-            ("maidsafe_TestSE_" + base::RandomString(6))),
+            ("maidsafe_TestSE_" + base::RandomAlphaNumericString(6))),
         ss(SessionSingleton::getInstance()),
         client_chunkstore_(),
         ms_home_path_(),

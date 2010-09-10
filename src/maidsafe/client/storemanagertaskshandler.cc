@@ -317,10 +317,12 @@ void StoreManagerTasksHandler::DeleteChildTasks(
   boost::uint8_t n = tasks_[parent_name].child_task_count;
   tasks_[parent_name].child_task_count = 0;
   for (std::map<std::string, StoreManagerTask>::iterator it = tasks_.begin();
-       it != tasks_.end() && n > 0; ++it) {
+       it != tasks_.end() && n > 0;) {
     if (it->second.parent_name == parent_name) {
       --n;  // to save some time on huge lists
-      DoDeleteTask(it, reason);
+      DoDeleteTask(it++, reason);
+    } else {
+      ++it;
     }
   }
 }

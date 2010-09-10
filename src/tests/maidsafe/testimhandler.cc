@@ -193,9 +193,8 @@ TEST_F(ImHandlerTest, BEH_MAID_ValidateMsgs) {
   maidsafe::BufferPacketMessage bpmsg;
   bpmsg.set_sender_id("contact1");
   bpmsg.set_type(maidsafe::INSTANT_MSG);
-  boost::uint32_t iter(base::RandomUint32() % 1000 +1);
-  std::string aes_key = crypto_.SecurePassword(
-      crypto_.Hash("testmsg", "", crypto::STRING_STRING, false), iter);
+  std::string aes_key =
+      base::RandomString(crypto::AES256_KeySize + crypto::AES256_IVSize);
   bpmsg.set_aesenc_message(crypto_.SymmEncrypt(im.SerializeAsString(), "",
       crypto::STRING_STRING, aes_key));
   bpmsg.set_rsaenc_key(crypto_.AsymEncrypt(aes_key, "",

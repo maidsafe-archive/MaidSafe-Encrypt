@@ -71,7 +71,7 @@ class Env: public testing::Environment {
       fs::path *kadconfig)
       : K_(k),
         vault_dir_(file_system::TempDir() / ("maidsafe_TestVaults_" +
-                   base::RandomString(6))),
+                   base::RandomAlphaNumericString(6))),
         kad_config_file_(vault_dir_ / ".kadconfig"),
         pdvaults_(pdvaults),
         kNetworkSize_(kNetworkSize),

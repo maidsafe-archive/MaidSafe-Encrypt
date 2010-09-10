@@ -977,9 +977,8 @@ std::string LocalStoreManager::CreateMessage(const std::string &message,
   crypto::Crypto co;
   co.set_hash_algorithm(crypto::SHA_512);
   co.set_symm_algorithm(crypto::AES_256);
-  int iter = base::RandomUint32() % 1000 +1;
-  std::string aes_key = co.SecurePassword(co.Hash(message, "",
-                        crypto::STRING_STRING, false), iter);
+  std::string aes_key =
+      base::RandomString(crypto::AES256_KeySize + crypto::AES256_IVSize);
   bpm.set_rsaenc_key(co.AsymEncrypt(aes_key, "", rec_public_key,
                                     crypto::STRING_STRING));
   bpm.set_aesenc_message(co.SymmEncrypt(message, "", crypto::STRING_STRING,

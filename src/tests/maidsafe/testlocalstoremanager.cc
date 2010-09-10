@@ -56,8 +56,8 @@ void CreateChunkage(std::map<std::string, std::string> *chunks_map,
     (*chunks_map)[name] = chunk;
     fs::path chunk_path(test_root_dir_ / base::EncodeToHex(name));
     fs::ofstream ofs;
-    ofs.open(chunk_path.string().c_str());
-    ofs << chunk;
+    ofs.open(chunk_path, std::ofstream::binary | std::ofstream::ate);
+    ofs.write(chunk.data(), chunk.size());
     ofs.close();
     client_chunkstore->AddChunkToOutgoing(name, chunk_path);
   }
@@ -83,7 +83,7 @@ class LocalStoreManagerTest : public testing::Test {
  public:
   LocalStoreManagerTest() : test_root_dir_(file_system::TempDir() /
                                            ("maidsafe_TestStoreManager_" +
-                                            base::RandomString(6))),
+                                            base::RandomAlphaNumericString(6))),
                             client_chunkstore_(), sm_(), co_(), mutex_(),
                             cb_(),
                             ss_(SessionSingleton::getInstance()),
@@ -435,7 +435,7 @@ TEST_F(LocalStoreManagerTest, BEH_MAID_StoreChunk) {
   std::map<std::string, std::string> chunkies;
   int count(1), count2(count);
   boost::mutex m;
-  std::string chunk_content = base::RandomString(256 * 1024);
+  std::string chunk_content = base::RandomAlphaNumericString(256 * 1024);
   std::string chunk_name = co_.Hash(chunk_content, "", crypto::STRING_STRING,
                                     false);
   chunkies[chunk_name] = chunk_content;

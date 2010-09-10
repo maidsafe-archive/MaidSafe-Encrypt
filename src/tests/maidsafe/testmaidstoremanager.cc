@@ -319,20 +319,21 @@ namespace maidsafe {
 
 class MaidStoreManagerTest : public testing::Test {
  protected:
-  MaidStoreManagerTest() : test_root_dir_(file_system::TempDir() /
-                                 ("maidsafe_TestMSM_" + base::RandomString(6))),
-                           client_chunkstore_dir_(test_root_dir_/"Chunkstore"),
-                           client_chunkstore_(),
-                           client_pmid_keys_(),
-                           client_maid_keys_(),
-                           client_pmid_public_signature_(),
-                           client_pmid_(),
-                           mutex_(),
-                           crypto_(),
-                           cond_var_(),
-                           functor_(boost::bind(&test_msm::PacketOpCallback, _1,
-                               &mutex_, &cond_var_, &packet_op_result_)),
-                           keys_() {
+  MaidStoreManagerTest()
+      : test_root_dir_(file_system::TempDir() /
+            ("maidsafe_TestMSM_" + base::RandomAlphaNumericString(6))),
+        client_chunkstore_dir_(test_root_dir_/"Chunkstore"),
+        client_chunkstore_(),
+        client_pmid_keys_(),
+        client_maid_keys_(),
+        client_pmid_public_signature_(),
+        client_pmid_(),
+        mutex_(),
+        crypto_(),
+        cond_var_(),
+        functor_(boost::bind(&test_msm::PacketOpCallback, _1, &mutex_,
+                             &cond_var_, &packet_op_result_)),
+        keys_() {
     try {
       boost::filesystem::remove_all(test_root_dir_);
     }

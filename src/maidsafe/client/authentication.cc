@@ -1384,7 +1384,11 @@ void Authentication::PacketOpCallback(const int &store_manager_result,
 }
 
 std::string Authentication::EncryptedDataMidSmid(boost::uint32_t rid) {
-  std::string password = crypto_.SecurePassword(ss_->Username(),
+  std::string salt = crypto_.Hash(ss_->Pin() + ss_->Username(), "",
+                                  crypto::STRING_STRING, false);
+  if (salt.empty())
+    return "";
+  std::string password = crypto_.SecurePassword(ss_->Username(), salt,
                          boost::lexical_cast<boost::uint16_t>(ss_->Pin()));
   return crypto_.SymmEncrypt(boost::lexical_cast<std::string>(rid), "",
                              crypto::STRING_STRING, password);

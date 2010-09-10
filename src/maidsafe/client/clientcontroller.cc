@@ -142,10 +142,10 @@ int ClientController::Init(boost::uint8_t k) {
 #endif
       return -2;
     }
-    client_path /= "client" + base::RandomString(8);
+    client_path /= "client" + base::RandomAlphaNumericString(8);
     while (fs::exists(client_path))
       client_path = fs::path(client_path.string().substr(0,
-          client_path.string().size()-8) + base::RandomString(8));
+          client_path.string().size() - 8) + base::RandomAlphaNumericString(8));
     client_store_ = client_path.string();
     if (!fs::exists(client_path) && !fs::create_directories(client_path)) {
 #ifdef DEBUG
@@ -292,19 +292,9 @@ int ClientController::SerialiseDa() {
   DataAtlas data_atlas;
   data_atlas.set_root_db_key(ss_->RootDbKey());
   DataMap root_dm, shares_dm;
-//  std::multimap<std::string, int>::iterator p;
-//  {
-//    boost::mutex::scoped_lock loch_callater(pending_files_mutex_);
-//    p = pending_files_.insert(std::pair<std::string, int>(kRoot, 0));
-//  }
   if (AddToPendingFiles(kRoot))
     seh_.EncryptDb(kRoot, PRIVATE, "", "", false, &root_dm);
 
-//  {
-//    boost::mutex::scoped_lock loch_callater(pending_files_mutex_);
-//    p = pending_files_.insert(std::pair<std::string, int>(
-//                                  TidyPath(kRootSubdir[1][0]), 0));
-//  }
   if (AddToPendingFiles(TidyPath(kRootSubdir[1][0]))) {
 #ifdef DEBUG
     int n = seh_.EncryptDb(TidyPath(kRootSubdir[1][0]), PRIVATE, "", "", false,
@@ -315,19 +305,10 @@ int ClientController::SerialiseDa() {
                            &shares_dm);
 #endif
   }
-//  } else {
-//    printf("Fuck you and your Sahres db %s\n", TidyPath(kRootSubdir[1][0]).c_str());
-//  }
   DataMap *dm = data_atlas.add_dms();
   *dm = root_dm;
   dm = data_atlas.add_dms();
   *dm = shares_dm;
-#ifdef DEBUG
-  // printf("data_atlas_.dms(0).file_hash(): %s\n",
-  //   data_atlas_.dms(0).file_hash().substr(0, 10).c_str());
-  // printf("data_atlas_.dms(1).file_hash(): %s\n",
-  //   data_atlas_.dms(1).file_hash().substr(0, 10).c_str());
-#endif
 
   std::list<KeyAtlasRow> keyring;
   ss_->GetKeys(&keyring);
@@ -341,7 +322,9 @@ int ClientController::SerialiseDa() {
     k->set_public_key_signature(kar.signed_public_key_);
     keyring.pop_front();
   }
-//  printf("ClientController::SerialiseDa() - Finished with Keys.\n");
+#ifdef DEBUG
+  printf("ClientController::SerialiseDa() - Finished with Keys.\n");
+#endif
 
   std::vector<maidsafe::mi_contact> contacts;
   ss_->GetContactList(&contacts);
@@ -362,7 +345,9 @@ int ClientController::SerialiseDa() {
     pc->set_rank(contacts[n].rank_);
     pc->set_last_contact(contacts[n].last_contact_);
   }
-//  printf("ClientController::SerialiseDa() - Finished with Contacts.\n");
+#ifdef DEBUG
+  printf("ClientController::SerialiseDa() - Finished with Contacts.\n");
+#endif
 
   std::list<PrivateShare> ps_list;
   ss_->GetFullShareList(ALPHA, kAll, &ps_list);
@@ -387,7 +372,9 @@ int ClientController::SerialiseDa() {
     }
     ps_list.pop_front();
   }
-//  printf("ClientController::SerialiseDa() - Finished with Shares.\n");
+#ifdef DEBUG
+  printf("ClientController::SerialiseDa() - Finished with Shares.\n");
+#endif
 
   PersonalDetails *pd = data_atlas.mutable_pd();
   *pd = ss_->Pd();
@@ -395,18 +382,17 @@ int ClientController::SerialiseDa() {
   ser_da_.clear();
   ser_dm_.clear();
   data_atlas.SerializeToString(&ser_da_);
-//  {
-//    boost::mutex::scoped_lock loch_callater(pending_files_mutex_);
-    crypto::Crypto co;
-    std::string file_hash(base::EncodeToHex(co.Hash(ser_da_, "",
-                                                    crypto::STRING_STRING,
-                                                    false)));
-//    p = pending_files_.insert(std::pair<std::string, int>(file_hash, 0));
-//  }
+
+  crypto::Crypto co;
+  std::string file_hash(base::EncodeToHex(co.Hash(ser_da_, "",
+                                                  crypto::STRING_STRING,
+                                                  false)));
   if (AddToPendingFiles(file_hash))
     seh_.EncryptString(ser_da_, &ser_dm_);
 
-//  printf("ClientController::SerialiseDa() - Serialised.\n");
+#ifdef DEBUG
+  printf("ClientController::SerialiseDa() - Serialised.\n");
+#endif
 
   return 0;
 }

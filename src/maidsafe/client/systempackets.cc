@@ -77,10 +77,14 @@ PacketParams MidPacket::Create(PacketParams params) {
   boost::uint32_t rid = base::RandomUint32();
   while (rid == 0)
     rid = base::RandomUint32();
+  std::string salt = crypto_obj_.Hash(
+      boost::any_cast<std::string>(params["pin"]) +
+      boost::any_cast<std::string>(params["username"]),
+      "", crypto::STRING_STRING, false);
   boost::uint32_t pin = boost::lexical_cast<boost::uint32_t>(boost::any_cast
       <std::string>(params["pin"]));
   std::string password = crypto_obj_.SecurePassword(
-      boost::any_cast<std::string>(params["username"]), pin);
+      boost::any_cast<std::string>(params["username"]), salt, pin);
   result["name"] = PacketName(params);
   result["encRid"] = crypto_obj_.SymmEncrypt(boost::lexical_cast<std::string>
       (rid), "", crypto::STRING_STRING, password);
@@ -97,10 +101,14 @@ PacketParams MidPacket::GetData(const std::string &ser_packet,
       !packet.ParseFromString(ser_packet)) {
     result["data"] = boost::uint32_t(0);
   } else {
+    std::string salt = crypto_obj_.Hash(
+        boost::any_cast<std::string>(params["pin"]) +
+        boost::any_cast<std::string>(params["username"]),
+        "", crypto::STRING_STRING, false);
     boost::uint32_t pin = boost::lexical_cast<boost::uint32_t>(boost::any_cast
         <std::string>(params["pin"]));
     std::string password(crypto_obj_.SecurePassword(
-        boost::any_cast<std::string>(params["username"]), pin));
+        boost::any_cast<std::string>(params["username"]), salt, pin));
     std::string str_rid(crypto_obj_.SymmDecrypt(packet.data(), "",
         crypto::STRING_STRING, password));
     try {
@@ -133,10 +141,14 @@ PacketParams SmidPacket::Create(PacketParams params) {
   if (boost::any_cast<std::string>(params["username"]).empty() ||
       boost::any_cast<std::string>(params["pin"]).empty())
     return result;
+  std::string salt = crypto_obj_.Hash(
+      boost::any_cast<std::string>(params["pin"]) +
+      boost::any_cast<std::string>(params["username"]),
+      "", crypto::STRING_STRING, false);
   boost::uint32_t pin = boost::lexical_cast<boost::uint32_t>
       (boost::any_cast<std::string>(params["pin"]));
   std::string password = crypto_obj_.SecurePassword(
-      boost::any_cast<std::string>(params["username"]), pin);
+      boost::any_cast<std::string>(params["username"]), salt, pin);
   result["encRid"] = crypto_obj_.SymmEncrypt(boost::lexical_cast<std::string>(
       boost::any_cast<boost::uint32_t>(params["rid"])), "",
       crypto::STRING_STRING, password);
@@ -166,8 +178,12 @@ PacketParams TmidPacket::Create(PacketParams params) {
       boost::any_cast<std::string>(params["data"]).empty())
     return result;
 
-  std::string password = crypto_obj_.SecurePassword(
+  std::string salt = crypto_obj_.Hash(boost::lexical_cast<std::string>(
+      boost::any_cast<boost::uint32_t>(params["rid"])) +
       boost::any_cast<std::string>(params["password"]),
+      "", crypto::STRING_STRING, false);
+  std::string password = crypto_obj_.SecurePassword(
+      boost::any_cast<std::string>(params["password"]), salt,
       boost::any_cast<boost::uint32_t>(params["rid"]));
 
   result["data"] = crypto_obj_.SymmEncrypt(boost::any_cast<std::string>(
@@ -185,8 +201,12 @@ PacketParams TmidPacket::GetData(const std::string &ser_packet,
       !packet.ParseFromString(ser_packet)) {
     result["data"] = std::string("");
   } else {
-    std::string secure_passw = crypto_obj_.SecurePassword(
+    std::string salt = crypto_obj_.Hash(boost::lexical_cast<std::string>(
+        boost::any_cast<boost::uint32_t>(params["rid"])) +
         boost::any_cast<std::string>(params["password"]),
+        "", crypto::STRING_STRING, false);
+    std::string secure_passw = crypto_obj_.SecurePassword(
+        boost::any_cast<std::string>(params["password"]), salt,
         boost::any_cast<boost::uint32_t>(params["rid"]));
     result["data"] = crypto_obj_.SymmDecrypt(packet.data(), "",
         crypto::STRING_STRING, secure_passw);

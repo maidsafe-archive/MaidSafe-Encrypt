@@ -25,6 +25,7 @@
 #include <gtest/gtest.h>
 
 #include <boost/filesystem.hpp>
+#include <boost/scoped_ptr.hpp>
 #include <maidsafe/maidsafe-dht.h>
 #include <maidsafe/base/utils.h>
 

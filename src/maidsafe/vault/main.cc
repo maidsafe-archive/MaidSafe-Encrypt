@@ -135,7 +135,8 @@ void GeneratePmidStuff(std::string *public_key,
 
 struct ClientData {
   explicit ClientData(const std::string &root_dir)
-    : chunkstore_dir(root_dir + "/ClientChunkstore_" + base::RandomString(8)),
+    : chunkstore_dir(root_dir + "/ClientChunkstore_" +
+                     base::RandomAlphaNumericString(8)),
       mss(),
       pmid_pub_key(),
       pmid_priv_key(),
@@ -487,7 +488,7 @@ class RunPDVaults {
 
 int main(int argc, char* argv[]) {
   int num_v(16), num_c(0);
-  fs::path root_dir("TestVaults_" + base::RandomString(6));
+  fs::path root_dir("TestVaults_" + base::RandomAlphaNumericString(6));
   fs::path kad_config_path;
   printf("=== Vault Test Network ===\n\n");
   if ((argc == 2) || (argc > 4)) {

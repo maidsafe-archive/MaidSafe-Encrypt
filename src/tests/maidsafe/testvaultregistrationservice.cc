@@ -506,7 +506,7 @@ class VaultDaemonRegistrationTest : public testing::Test {
  public:
   VaultDaemonRegistrationTest() : test_dir_(file_system::TempDir() /
                                             ("maidsafe_TESTDaemon_" +
-                                            base::RandomString(6))),
+                                            base::RandomAlphaNumericString(6))),
                                   finished_(false),
                                   thrd_() {}
   ~VaultDaemonRegistrationTest() {
