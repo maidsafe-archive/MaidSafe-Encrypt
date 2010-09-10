@@ -85,6 +85,7 @@ int AccountAmendmentHandler::ProcessRequest(
       return kAmendAccountCountError;
     }
   }
+  
   // If amendment has already been added assess request, else add new amendment
   if (repeated_count != 0) {
     int amendment_status(kAccountAmendmentError);
@@ -133,7 +134,7 @@ int AccountAmendmentHandler::AssessAmendment(
     const int &amendment_field,
     const boost::uint64_t &offer_size,
     const bool &inc,
-    const PendingAmending &pending,
+    PendingAmending pending,
     AccountAmendment *amendment) {
   // amendment_mutex_ should already be locked by function calling this one,
   // but just in case...
@@ -152,6 +153,19 @@ int AccountAmendmentHandler::AssessAmendment(
     printf("In AAH::AssessAmendment, amendment has incorrect parameters.\n");
 #endif
     return kAccountAmendmentNotFound;
+  }
+
+  if (account_handler_->HaveAccount(owner_pmid) == kAccountNotFound) {
+#ifdef DEBUG
+    printf("In AAH::AssessAmendment, handling amendment for non-existing "
+           "account (%s).\n", HexSubstr(owner_pmid).c_str());
+#endif
+    // respond immediately
+    pending.response->set_result(kNack);
+    if (!pending.responded) {
+      pending.responded = true;
+      pending.done->Run();
+    }
   }
 
   // If we're still waiting for result of FindKNodes, add pending to
@@ -205,7 +219,10 @@ int AccountAmendmentHandler::AssessAmendment(
           (*pendings_it).response->set_result(kAck);
         else
           (*pendings_it).response->set_result(kNack);
-        (*pendings_it).done->Run();
+        if (!(*pendings_it).responded) {
+          (*pendings_it).responded = true;
+          (*pendings_it).done->Run();
+        }
       }
 
       // Clear all pendings now that they've been run

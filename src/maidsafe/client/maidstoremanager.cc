@@ -1280,10 +1280,8 @@ void MaidsafeStoreManager::UpdateAccountStatusStageTwo(
     size_t index,
     boost::shared_ptr<AccountStatusData> data) {
   boost::mutex::scoped_lock lock(data->mutex);
-  if (data->success_count >= kLowerThreshold_) {
-                                              printf("*** Skipping MSM::UpdateAccountStatusStageTwo ***\n");
+  if (data->success_count >= kLowerThreshold_)
     return;
-  }
   ++data->returned_count;
 
   AccountStatusData::AccountStatusDataHolder &holder =
