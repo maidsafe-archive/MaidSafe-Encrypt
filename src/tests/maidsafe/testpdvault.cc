@@ -56,7 +56,7 @@ static std::list<std::string> callback_messages_;
 
 namespace testpdvault {
 
-static const boost::uint8_t K(8);
+static const boost::uint8_t K(4);
 
 struct ClientData {
   explicit ClientData(const std::string &root_dir)

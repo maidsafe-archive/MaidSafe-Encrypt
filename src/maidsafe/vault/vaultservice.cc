@@ -996,9 +996,9 @@ void VaultService::AmendAccount(google::protobuf::RpcController*,
 //          HexSubstr(pmid).c_str());
 #endif
 
-  if (ah_.HaveAccount(pmid) == kAccountNotFound) {
-    if (request->amendment_type() ==
-        maidsafe::AmendAccountRequest::kSpaceOffered) {
+  if (request->amendment_type() ==
+          maidsafe::AmendAccountRequest::kSpaceOffered) {
+    if (ah_.HaveAccount(pmid) == kAccountNotFound) {
       if (ah_.AddAccount(pmid, account_delta) == 0) {
         response->set_result(kAck);
 #ifdef DEBUG
@@ -1013,9 +1013,35 @@ void VaultService::AmendAccount(google::protobuf::RpcController*,
 #endif
       }
     } else {
-      done->Run();
+      int result = ah_.AmendAccount(pmid, 1, account_delta, false);
+      if (result == 0) {
+        response->set_result(kAck);
+      } else {
+  #ifdef DEBUG
+        printf("In VaultService::AmendAccount (%s), failed amending space "
+              "offered by %s (error %d).\n", HexSubstr(pmid_).c_str(),
+              HexSubstr(pmid).c_str(), result);
+  #endif
+      }
+    }
+    done->Run();
+  } else {
+    // TODO(Team#) ensure sender (signer) is a valid chunk info holder
+    // aah_->ProcessRequest() calls done->Run();
+    int result = aah_.ProcessRequest(request, response, done);
+    if (result != 0) {
+#ifdef DEBUG
+      printf("In VaultService::AmendAccount (%s), failed amending account (%s) "
+             "- error %i\n", HexSubstr(pmid_).c_str(), HexSubstr(pmid).c_str(),
+             result);
+#endif
+    }
+
+    if (ah_.HaveAccount(pmid) == kAccountNotFound) {
       std::vector<kad::Contact> close_contacts;
       if (info_synchroniser_.ShouldFetch(pmid, &close_contacts)) {
+        // ensure account holder != account subject
+        maidsafe::RemoveKadContact(pmid, &close_contacts);
 #ifdef DEBUG
         printf("In VaultService::AmendAccount (%s), account to amend (%s) does "
                "not exist.  Fetching it now from:\n", HexSubstr(pmid_).c_str(),
@@ -1029,39 +1055,13 @@ void VaultService::AmendAccount(google::protobuf::RpcController*,
         GetRemoteAccount(pmid, close_contacts);
       } else {
 #ifdef DEBUG
-      printf("In VaultService::AmendAccount (%s), account to amend (%s) does "
-             "not exist.  Not fetching it.\n", HexSubstr(pmid_).c_str(),
-             HexSubstr(pmid).c_str());
+        printf("In VaultService::AmendAccount (%s), account to amend (%s) does "
+              "not exist.  Not fetching it.\n", HexSubstr(pmid_).c_str(),
+              HexSubstr(pmid).c_str());
 #endif
       }
-      return;
     }
-  } else if (request->amendment_type() ==
-             maidsafe::AmendAccountRequest::kSpaceOffered) {
-    int result = ah_.AmendAccount(pmid, 1, account_delta, false);
-    if (result == 0) {
-      response->set_result(kAck);
-    } else {
-#ifdef DEBUG
-      printf("In VaultService::AmendAccount (%s), failed amending space "
-             "offered by %s (error %d).\n", HexSubstr(pmid_).c_str(),
-             HexSubstr(pmid).c_str(), result);
-#endif
-    }
-  } else {
-    // TODO(Team#) ensure sender (signer) is a valid chunk info holder
-    // aah_->ProcessRequest() calls done->Run();
-    int result = aah_.ProcessRequest(request, response, done);
-    if (result != 0) {
-#ifdef DEBUG
-      printf("In VaultService::AmendAccount (%s), failed amending account (%s) "
-             "- error %i\n", HexSubstr(pmid_).c_str(), HexSubstr(pmid).c_str(),
-             result);
-#endif
-    }
-    return;
   }
-  done->Run();
 }
 
 void VaultService::ExpectAmendment(
@@ -1136,8 +1136,11 @@ void VaultService::AccountStatus(google::protobuf::RpcController*,
 #endif
     done->Run();
     std::vector<kad::Contact> close_contacts;
-    if (info_synchroniser_.ShouldFetch(account_pmid, &close_contacts))
+    if (info_synchroniser_.ShouldFetch(account_pmid, &close_contacts)) {
+      // ensure account holder != account subject
+      maidsafe::RemoveKadContact(account_pmid, &close_contacts);
       GetRemoteAccount(account_pmid, close_contacts);
+    }
     return;
   }
 
