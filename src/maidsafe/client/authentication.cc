@@ -313,9 +313,11 @@ int Authentication::GetUserData(const std::string &password,
         return kSuccess;
       }
     }
-
     return kPasswordFailure;
   }
+#ifdef DEBUG
+  printf("Authentication::GetUserData - Using MID TMID\n");
+#endif
   ss_->SetPassword(password);
   return kSuccess;
 }

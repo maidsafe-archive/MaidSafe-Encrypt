@@ -212,7 +212,8 @@ int ClientController::ParseDa() {
   }
   if (!data_atlas.ParseFromString(ser_da_)) {
 #ifdef DEBUG
-    printf("CC::ParseDa - TMID brought doesn't parse as a DA.\n");
+//    data_atlas.ParseFromString(ser_da_);
+    printf("CC::ParseDa AAAA - TMID brought doesn't parse as a DA.\n");
 #endif
     return -9000;
   }
@@ -291,9 +292,32 @@ int ClientController::SerialiseDa() {
   DataAtlas data_atlas;
   data_atlas.set_root_db_key(ss_->RootDbKey());
   DataMap root_dm, shares_dm;
-  seh_.EncryptDb(kRoot, PRIVATE, "", "", false, &root_dm);
-  seh_.EncryptDb(TidyPath(kRootSubdir[1][0]), PRIVATE, "", "", false,
-                  &shares_dm);
+//  std::multimap<std::string, int>::iterator p;
+//  {
+//    boost::mutex::scoped_lock loch_callater(pending_files_mutex_);
+//    p = pending_files_.insert(std::pair<std::string, int>(kRoot, 0));
+//  }
+  if (AddToPendingFiles(kRoot))
+    seh_.EncryptDb(kRoot, PRIVATE, "", "", false, &root_dm);
+
+//  {
+//    boost::mutex::scoped_lock loch_callater(pending_files_mutex_);
+//    p = pending_files_.insert(std::pair<std::string, int>(
+//                                  TidyPath(kRootSubdir[1][0]), 0));
+//  }
+  if (AddToPendingFiles(TidyPath(kRootSubdir[1][0]))) {
+#ifdef DEBUG
+    int n = seh_.EncryptDb(TidyPath(kRootSubdir[1][0]), PRIVATE, "", "", false,
+                           &shares_dm);
+    printf("Shares encryptd db result %d\n", n);
+#else
+    seh_.EncryptDb(TidyPath(kRootSubdir[1][0]), PRIVATE, "", "", false,
+                           &shares_dm);
+#endif
+  }
+//  } else {
+//    printf("Fuck you and your Sahres db %s\n", TidyPath(kRootSubdir[1][0]).c_str());
+//  }
   DataMap *dm = data_atlas.add_dms();
   *dm = root_dm;
   dm = data_atlas.add_dms();
@@ -321,7 +345,7 @@ int ClientController::SerialiseDa() {
 
   std::vector<maidsafe::mi_contact> contacts;
   ss_->GetContactList(&contacts);
-  for (unsigned int n = 0; n < contacts.size(); ++n) {
+  for (size_t n = 0; n < contacts.size(); ++n) {
     PublicContact *pc = data_atlas.add_contacts();
     pc->set_pub_name(contacts[n].pub_name_);
     pc->set_pub_key(contacts[n].pub_key_);
@@ -371,7 +395,16 @@ int ClientController::SerialiseDa() {
   ser_da_.clear();
   ser_dm_.clear();
   data_atlas.SerializeToString(&ser_da_);
-  seh_.EncryptString(ser_da_, &ser_dm_);
+//  {
+//    boost::mutex::scoped_lock loch_callater(pending_files_mutex_);
+    crypto::Crypto co;
+    std::string file_hash(base::EncodeToHex(co.Hash(ser_da_, "",
+                                                    crypto::STRING_STRING,
+                                                    false)));
+//    p = pending_files_.insert(std::pair<std::string, int>(file_hash, 0));
+//  }
+  if (AddToPendingFiles(file_hash))
+    seh_.EncryptString(ser_da_, &ser_dm_);
 
 //  printf("ClientController::SerialiseDa() - Serialised.\n");
 
@@ -458,7 +491,14 @@ bool ClientController::CreateUser(const std::string &username,
   seh_.Init(sm_, client_chunkstore_);
   std::string ser_da, ser_dm;
   ss_->SerialisedKeyRing(&ser_da);
-  result = seh_.EncryptString(ser_da, &ser_dm);
+
+  crypto::Crypto co;
+  std::string hashed(co.Hash(ser_da, "", crypto::STRING_STRING, false));
+  if (AddToPendingFiles(base::EncodeToHex(hashed)))
+    result = seh_.EncryptString(ser_da, &ser_dm);
+  else
+    return false;
+
   if (result != 0) {
 #ifdef DEBUG
     printf("In CC::CreateUser - Cannot SelfEncrypt DA - %i.\n", result);
@@ -533,9 +573,15 @@ bool ClientController::CreateUser(const std::string &username,
     }
     res += dah->AddElement(TidyPath(kRootSubdir[i][0]),
                            ser_mdm, "", key, true);
-    res += seh_.EncryptDb(TidyPath(kRootSubdir[i][0]),
-                          PRIVATE, key, "", true, &dm);
-    printf("%s - %d\n", kRootSubdir[i][0].c_str(), res);
+    if (AddToPendingFiles(TidyPath(kRootSubdir[i][0])))
+      res += seh_.EncryptDb(TidyPath(kRootSubdir[i][0]), PRIVATE, key, "", true,
+                            &dm);
+    else
+      res += -1;
+#ifdef DEBUG
+    printf("In ClientController::CreateUser %s - %d\n",
+           kRootSubdir[i][0].c_str(), res);
+#endif
   }
 
   if (0 != res) {
@@ -569,20 +615,25 @@ bool ClientController::CreateUser(const std::string &username,
     mdm.SerializeToString(&ser_mdm);
     if (kSharesSubdir[i][1].empty()) {  // ie no preassigned key so not public
       seh_.GenerateUniqueKey(&key);
-      res += dah->AddElement(TidyPath(kSharesSubdir[i][0]),
-                             ser_mdm, "", key, true);
-      seh_.EncryptDb(TidyPath(kSharesSubdir[i][0]),
-                      PRIVATE, key, "", true, &dm);
+      res += dah->AddElement(TidyPath(kSharesSubdir[i][0]), ser_mdm, "", key,
+                             true);
+      if (AddToPendingFiles(TidyPath(kSharesSubdir[i][0])))
+        seh_.EncryptDb(TidyPath(kSharesSubdir[i][0]), PRIVATE, key, "", true,
+                       &dm);
+      else
+        res += -1;
     } else {
       key = kSharesSubdir[i][1];
-      res += dah->AddElement(TidyPath(kSharesSubdir[i][0]),
-                             ser_mdm, "", key, true);
-      if (seh_.DecryptDb(TidyPath(kSharesSubdir[i][0]),
-                          ANONYMOUS, "", key, "", true, true)) {
+      res += dah->AddElement(TidyPath(kSharesSubdir[i][0]), ser_mdm, "", key,
+                             true);
+      if (seh_.DecryptDb(TidyPath(kSharesSubdir[i][0]), ANONYMOUS, "", key, "",
+                         true, true)) {
         // ie Public and Anon have never been saved before on the network
-        std::string ser_dm;
-        seh_.EncryptDb(TidyPath(kSharesSubdir[i][0]), ANONYMOUS,
-                        kSharesSubdir[i][1], "", true, &dm);
+        if (AddToPendingFiles(TidyPath(kSharesSubdir[i][0])))
+          res += seh_.EncryptDb(TidyPath(kSharesSubdir[i][0]), ANONYMOUS,
+                                kSharesSubdir[i][1], "", true, &dm);
+        else
+          res += -1;
       }
     }
   }
@@ -742,12 +793,12 @@ bool ClientController::Logout() {
   }
 
   // Sending logout messages to online contacts
-  std::map<std::string, ConnectionDetails> livectcs;
-  ss_->LiveContactMap(&livectcs);
-  for (std::map<std::string, ConnectionDetails>::iterator it = livectcs.begin();
-       it != livectcs.end(); ++it) {
-    sm_->SendLogOutMessage(it->first);
-  }
+//  std::map<std::string, ConnectionDetails> livectcs;
+//  ss_->LiveContactMap(&livectcs);
+//  for (std::map<std::string, ConnectionDetails>::iterator it = livectcs.begin();
+//       it != livectcs.end(); ++it) {
+//    sm_->SendLogOutMessage(it->first);
+//  }
 
   while (sm_->NotDoneWithUploading()) {
     boost::this_thread::sleep(boost::posix_time::seconds(1));
@@ -761,9 +812,21 @@ bool ClientController::Logout() {
     {
       boost::mutex::scoped_lock loch_ba(pending_files_mutex_);
       t = pending_files_.empty();
+#ifdef DEBUG
+      for (std::multimap<std::string, int>::iterator it = pending_files_.begin();
+           it != pending_files_.end(); ++it) {
+        printf("ClientController::Logout - %s pending\n", ((*it).first).c_str());
+      }
+#endif
     }
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   }
+  seh_.ClearPendingChunks();
+//  to_seh_file_update_.disconnect();
+
+#ifdef DEBUG
+  printf("ClientController::Logout - After all files done.\n");
+#endif
 
   file_system::UnMount(ss_->SessionName(), ss_->DefConLevel());
   ss_->ResetSession();
@@ -775,7 +838,6 @@ bool ClientController::Logout() {
   client_chunkstore_->Clear();
   ser_da_.clear();
   ser_dm_.clear();
-  to_seh_file_update_.disconnect();
   logging_out_ = false;
   logged_in_ = false;
   return true;
@@ -845,7 +907,6 @@ bool ClientController::ChangeUsername(const std::string &new_username) {
 #ifdef DEBUG
     printf("CC::ChangeUsername - Not initialised.\n");
 #endif
-    printf("CC::ChangeUsername - Not initialised.\n");
     return false;
   }
   SerialiseDa();
@@ -1049,7 +1110,9 @@ void ClientController::ClearStaleMessages() {
 #endif
     }
   }
+#ifdef DEBUG
   printf("CC::ClearStaleMessages() - Left\n");
+#endif
 }
 
 int ClientController::HandleDeleteContactNotification(
@@ -1305,7 +1368,7 @@ int ClientController::AddInstantFile(
 
 int ClientController::HandleAddContactRequest(
     const ContactInfo &ci, const std::string &sender) {
-  printf("CC::HandleAddContactRequest - 000000000.\n");
+//  printf("CC::HandleAddContactRequest - 000000000.\n");
   if (!initialised_) {
 #ifdef DEBUG
     printf("CC::HandleAddContactRequest - Not initialised.\n");
@@ -1314,7 +1377,7 @@ int ClientController::HandleAddContactRequest(
   }
 
   // Check if contact is on the list and has unconfirmed status
-  printf("CC::HandleAddContactRequest - 1111111111.\n");
+//  printf("CC::HandleAddContactRequest - 1111111111.\n");
   std::string rec_public_key;
   mi_contact mic;
   if (ss_->GetContactInfo(sender, &mic) == 0) {  // Contact exists
@@ -1334,7 +1397,7 @@ int ClientController::HandleAddContactRequest(
     rec_public_key = mic.pub_key_;
   } else {  // Contact didn't exist. Add from scratch.
     // Get contact's public key
-    printf("CC::HandleAddContactRequest - 222222222.\n");
+//    printf("CC::HandleAddContactRequest - 222222222.\n");
     int result = auth_.PublicUsernamePublicKey(sender, &rec_public_key);
     if (result != kSuccess) {
 #ifdef DEBUG
@@ -1344,12 +1407,12 @@ int ClientController::HandleAddContactRequest(
     }
 
     // Add to the contacts MI
-    printf("QQQQQQQQQQQQQQQQQQQQQQQQQQQQ\n");
+//    printf("QQQQQQQQQQQQQQQQQQQQQQQQQQQQ\n");
     int n = ss_->AddContact(sender, rec_public_key, ci.name(),
                             ci.office_number(), ci.birthday(),
                             ci.gender().empty() ? 'M' : ci.gender().at(0),
                             ci.language(), ci.country(), ci.city(), 'C', 0, 0);
-    printf("XXXXXXXXXXXXXXXXXXXXXXXXXXXX\n");
+//    printf("XXXXXXXXXXXXXXXXXXXXXXXXXXXX\n");
     if (n != 0) {
 #ifdef DEBUG
       printf("ClientController::HandleAddContactRequest - "
@@ -1983,11 +2046,15 @@ int ClientController::CreateNewShare(const std::string &name,
   auth_.CreateMSIDPacket(boost::bind(&CCCallback::StringCallback, &cb, _1));
   CreateMSIDResult cmsidr;
   if (!cmsidr.ParseFromString(cb.WaitForStringResult())) {
+#ifdef DEBUG
     printf("Result doesn't parse.\n");
+#endif
     return -30001;
   }
   if (cmsidr.result() != kAck) {
+#ifdef DEBUG
     printf("The creation of the MSID failed.\n");
+#endif
     return -30002;
   }
 
@@ -2279,14 +2346,13 @@ int ClientController::BackupElement(const std::string &path,
 #endif
     return kClientControllerNotInitialised;
   }
-  std::pair<std::map<std::string, int>::iterator, bool> p;
-  {
-    boost::mutex::scoped_lock loch_callater(pending_files_mutex_);
-    p = pending_files_.insert(std::pair<std::string, int>(path, 0));
-  }
-  if (p.second) {
+//  std::multimap<std::string, int>::iterator p;
+//  {
+//    boost::mutex::scoped_lock loch_callater(pending_files_mutex_);
+//    p = pending_files_.insert(std::pair<std::string, int>(path, 0));
+//  }
+  if (AddToPendingFiles(path))
     return seh_.EncryptFile(path, dir_type, msid);
-  }
 
   return -1;
 }
@@ -2494,10 +2560,12 @@ int ClientController::SaveDb(const std::string &db_path, const DirType dir_type,
       parent_path == "/" ||
       parent_path == TidyPath(kRootSubdir[1][0]))
     return 0;
+
   boost::scoped_ptr<DataAtlasHandler> dah(new DataAtlasHandler());
   if (dah->GetDirKey(parent_path, &dir_key))
     // yields dir key for parent of path_
     return -errno;
+
   if (!immediate_save) {
     std::pair<std::string, std::string> key_and_msid(dir_key, msid);
     db_enc_queue_.insert(std::pair<std::string,
@@ -2505,13 +2573,16 @@ int ClientController::SaveDb(const std::string &db_path, const DirType dir_type,
                                             (parent_path, key_and_msid));
 //    if (db_enc_queue_.size() > kSaveUpdatesTrigger)
     RunDbEncQueue();
-    return 0;
   } else {
-    DataMap dm;
-    if (seh_.EncryptDb(parent_path, dir_type, dir_key, msid, true, &dm) != 0)
-      return -errno;
+    if (AddToPendingFiles(parent_path)) {
+      DataMap dm;
+      if (seh_.EncryptDb(parent_path, dir_type, dir_key, msid, true, &dm) != 0)
+        return -errno;
+    } else {
+      return -1;
+    }
   }
-    return 0;
+  return 0;
 }
 
 int ClientController::RemoveDb(const std::string &path) {
@@ -2537,6 +2608,8 @@ int ClientController::RemoveDb(const std::string &path) {
 #endif
   }
   db_enc_queue_.erase(path);
+  RemoveFromPendingFiles(path);
+
   return 0;
 }
 
@@ -2553,6 +2626,7 @@ int ClientController::RunDbEncQueue() {
   printf("CC::RunDbEncQueue - before running the whole list %d\n",
           db_enc_queue_.size());
 #endif
+  std::multimap<std::string, int>::iterator p;
   for (it = db_enc_queue_.begin(); it != db_enc_queue_.end(); ++it) {
     DataMap dm;
     DirType db_type = GetDirType((*it).first);
@@ -2562,15 +2636,26 @@ int ClientController::RunDbEncQueue() {
           HexSubstr((*it).second.first).c_str());
     printf("sec.second: %s\n", HexSubstr((*it).second.second).c_str());
 #endif
-    int int_res = seh_.EncryptDb((*it).first, db_type, (*it).second.first,
-                                  (*it).second.second, true, &dm);
+//    {
+//      boost::mutex::scoped_lock loch_callater(pending_files_mutex_);
+//      p = pending_files_.insert(std::pair<std::string, int>(
+//                                (*it).first, 0));
+//    }
+    int int_res(0);
+    if (AddToPendingFiles((*it).first))
+      int_res = seh_.EncryptDb((*it).first, db_type, (*it).second.first,
+                               (*it).second.second, true, &dm);
+    else
+      int_res = -3;
 #ifdef DEBUG
     printf(" with result %i\n", int_res);
 #endif
     if (int_res != -2)
       result += int_res;
   }
+#ifdef DEBUG
   printf("CC::RunDbEncQueue - after running the whole list %d\n", result);
+#endif
   db_enc_queue_.clear();
   if (result)
     return -1;
@@ -2686,7 +2771,7 @@ bool ClientController::ReadOnly(const std::string &path, bool) {
 char ClientController::DriveLetter() {
   if (!initialised_) {
 #ifdef DEBUG
-    printf("CC::RunDbEncQueue - Not initialised.\n");
+    printf("CC::DriveLetter - Not initialised.\n");
 #endif
     return 'c';
   }
@@ -2756,12 +2841,12 @@ int ClientController::mkdir(const std::string &path) {
          HexSubstr(msid).c_str(), pp.parent_path().string().c_str(), dir_type);
 #endif
   bool immediate_save = true;
-  if (msid.empty()) {
+//  if (msid.empty()) {
     immediate_save = false;
-//    dir_type = maidsafe::PRIVATE;
+    dir_type = maidsafe::PRIVATE;
 //  } else {
 //    dir_type = maidsafe::PRIVATE_SHARE;
-  }
+//  }
   if (SaveDb(path, dir_type, msid, immediate_save)) {
 #ifdef DEBUG
     printf("\t\tIn CC::mkdir, SaveDb(%s) failed.\n", path.c_str());
@@ -2844,24 +2929,24 @@ int ClientController::rename(const std::string &path,
   }
 
   // Target dir db
-  if (msid2.empty()) {
-    if (SaveDb(path2, db_type2, msid2, false)) {
-#ifdef DEBUG
-      printf("\t\tCC::rename failed to save the target db to queue.\n");
-#endif
-      return -1;
-    }
-  } else {
-    fs::path parent_1(path, fs::native);
-    std::string parent_path_1 = parent_1.parent_path().string();
-    fs::path parent_2(path2, fs::native);
-    std::string parent_path_2 = parent_2.parent_path().string();
+  fs::path parent_1(path, fs::native);
+  std::string parent_path_1 = parent_1.parent_path().string();
+  fs::path parent_2(path2, fs::native);
+  std::string parent_path_2 = parent_2.parent_path().string();
 
-    if (parent_path_1 != parent_path_2) {
+  if (parent_path_1 != parent_path_2) {
+    if (msid2.empty()) {
+      if (SaveDb(path2, db_type2, msid2, false)) {
+#ifdef DEBUG
+        printf("\t\tCC::rename failed to save the target db to queue.\n");
+#endif
+        return -1;
+      }
+    } else {
       if (SaveDb(path2, db_type2, msid2, true)) {
-  #ifdef DEBUG
+#ifdef DEBUG
         printf("\t\tCC::rename failed to save the target db immediately.\n");
-  #endif
+#endif
         return -1;
       }
     }
@@ -3235,15 +3320,17 @@ int ClientController::read(const std::string &path) {
 }
 
 int ClientController::write(const std::string &path) {
+#ifdef DEBUG
+  printf("\t\tCC::write %s\n", path.c_str());
+#endif
+
   if (!initialised_) {
 #ifdef DEBUG
     printf("CC::write - Not initialised.\n");
 #endif
     return kClientControllerNotInitialised;
   }
-#ifdef DEBUG
-  printf("\t\tCC::write %s\n", path.c_str());
-#endif
+
   DirType dir_type;
   std::string msid;
   if (GetDb(path, &dir_type, &msid)) {
@@ -3252,21 +3339,24 @@ int ClientController::write(const std::string &path) {
 #endif
     return -1;
   }
+
   if (BackupElement(path, dir_type, msid)) {
 #ifdef DEBUG
     printf("\t\tCC::write BackupElement failed.\n");
 #endif
     return -1;
   }
-  bool immediate = false;
-  if (!msid.empty())
-    immediate = true;
+
+  bool immediate(true);
+//  if (!msid.empty())
+//    immediate = true;
   if (SaveDb(path, dir_type, msid, immediate)) {
 #ifdef DEBUG
     printf("\t\tCC::write SaveDb failed.\n");
 #endif
     return -1;
   }
+
   return 0;
 }
 
@@ -3324,9 +3414,46 @@ void ClientController::FileUpdate(const std::string &file, int percentage) {
   if (percentage == 100) {
     {
       boost::mutex::scoped_lock loch_(pending_files_mutex_);
-      pending_files_.erase(file);
+      std::multimap<std::string, int>::iterator it = pending_files_.find(file);
+      if (it != pending_files_.end()) {
+        pending_files_.erase(it);
+#ifdef DEBUG
+        printf("ClientController::FileUpdate - %s done.\n", file.c_str());
+#endif
+      } else {
+#ifdef DEBUG
+        printf("ClientController::FileUpdate - %s NOT THERE! Once again WTF?\n",
+               file.c_str());
+#endif
+      }
     }
   }
+}
+
+bool ClientController::AddToPendingFiles(const std::string &file) {
+#ifdef DEBUG
+  printf("ClientController::AddToPendingFiles - %s.\n", file.c_str());
+#endif
+  boost::mutex::scoped_lock loch_coulter(pending_files_mutex_);
+  std::multimap<std::string, int>::iterator it =
+      pending_files_.insert(std::pair<std::string, int>(file, 0));
+  if (it == pending_files_.end()) {
+#ifdef DEBUG
+    printf("ClientController::AddToPendingFiles - Failed to insert %s.\n",
+           file.c_str());
+#endif
+    return false;
+  }
+  return true;
+}
+
+bool ClientController::RemoveFromPendingFiles(const std::string &file) {
+  boost::mutex::scoped_lock loch_coulter(pending_files_mutex_);
+  std::multimap<std::string, int>::iterator it = pending_files_.find(file);
+  if (it == pending_files_.end())
+    return false;
+  pending_files_.erase(it);
+  return true;
 }
 
 }  // namespace maidsafe

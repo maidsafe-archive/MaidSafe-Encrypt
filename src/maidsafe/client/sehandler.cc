@@ -38,7 +38,8 @@ namespace maidsafe {
 SEHandler::SEHandler() : storem_(), client_chunkstore_(), ss_(),
                          up_to_date_datamaps_(), pending_chunks_(),
                          up_to_date_datamaps_mutex_(), chunkmap_mutex_(),
-                         connection_to_chunk_uploads_(), file_status_() {}
+                         connection_to_chunk_uploads_(), file_status_(),
+                         path_count_() {}
 
 SEHandler::~SEHandler() {
   bool t(false);
@@ -71,9 +72,10 @@ void SEHandler::Init(boost::shared_ptr<StoreManagerInterface> storem,
   ss_ = SessionSingleton::getInstance();
   storem_ = storem;
   client_chunkstore_ = client_chunkstore;
-  connection_to_chunk_uploads_ =
-      storem_->ConnectToOnChunkUploaded(boost::bind(&SEHandler::ChunkDone,
-                                                    this, _1, _2));
+  if (!connection_to_chunk_uploads_.connected())
+    connection_to_chunk_uploads_ =
+        storem_->ConnectToOnChunkUploaded(boost::bind(&SEHandler::ChunkDone,
+                                                      this, _1, _2));
 }
 
 ItemType SEHandler::CheckEntry(const fs::path &full_path,
@@ -157,6 +159,7 @@ int SEHandler::EncryptFile(const std::string &rel_entry,
   DataMap dm, dm_retrieved;
   std::string ser_dm_retrieved, ser_dm, ser_mdm, dir_key;
   SelfEncryption se(client_chunkstore_);
+//  bool signal(false);
   switch (item_type) {
     // case DIRECTORY:
     // case EMPTY_DIRECTORY:
@@ -174,9 +177,13 @@ int SEHandler::EncryptFile(const std::string &rel_entry,
         dm_retrieved.ParseFromString(ser_dm_retrieved);
       if (ser_dm_retrieved.empty() || dm_retrieved.file_hash() != file_hash) {
         dm.set_file_hash(file_hash);
-        if (se.Encrypt(full_entry, false, &dm) != kSuccess)
+//        std::set<std::string> done_chunks;
+        if (se.Encrypt(full_entry, false, &dm/*, &done_chunks*/) != kSuccess)
           return kEncryptFileFailure;
-        StoreChunks(dm, dir_type, msid, rel_entry);
+//        if (done_chunks.size() != dm.encrypted_chunk_name_size())
+          StoreChunks(dm, dir_type, msid, rel_entry);
+//        else
+//          signal = true;
         dm.SerializeToString(&ser_dm);
       }
       break;
@@ -217,6 +224,13 @@ int SEHandler::EncryptFile(const std::string &rel_entry,
   if (dah->AddElement(rel_entry, ser_mdm, ser_dm, dir_key, true) != kSuccess)
     return kEncryptionDAHFailure;
 
+//    if (signal) {
+//  #ifdef DEBUG
+//      printf("About to signal, chunks were there.\n");
+//  #endif
+//      file_status_(rel_entry, 100);
+//    }
+
   return 0;
 }
 
@@ -230,7 +244,8 @@ int SEHandler::EncryptString(const std::string &data, std::string *ser_dm) {
   crypto::Crypto co;
   co.set_hash_algorithm(crypto::SHA_512);
   dm.set_file_hash(co.Hash(data, "", crypto::STRING_STRING, false));
-  if (se.Encrypt(data, true, &dm))
+//  std::set<std::string> done_chunks;
+  if (se.Encrypt(data, true, &dm/*, &done_chunks*/))
     return kEncryptStringFailure;
 
   StoreChunks(dm, PRIVATE, "", base::EncodeToHex(dm.file_hash()));
@@ -430,6 +445,9 @@ int SEHandler::GetDirKeys(const std::string &dir_path, const std::string &msid,
 int SEHandler::EncryptDb(const std::string &dir_path, const DirType &dir_type,
                          const std::string &dir_key, const std::string &msid,
                          const bool &encrypt_dm, DataMap *dm) {
+#ifdef DEBUG
+  printf("SEHandler::EncryptDb - %s\n", dir_path.c_str());
+#endif
   std::string ser_dm, enc_dm, db_path;
   SelfEncryption se(client_chunkstore_);
   boost::scoped_ptr<DataAtlasHandler> dah(new DataAtlasHandler);
@@ -453,7 +471,8 @@ int SEHandler::EncryptDb(const std::string &dir_path, const DirType &dir_type,
   if (file_hash.empty())
     file_hash = co.Hash(db_path, "", crypto::STRING_STRING, false);
   dm->set_file_hash(file_hash);
-  if (se.Encrypt(db_path, false, dm) != kSuccess)
+//  std::set<std::string> done_chunks;
+  if (se.Encrypt(db_path, false, dm/*, &done_chunks*/) != kSuccess)
     return kEncryptDbFailure;
 
   dm->SerializeToString(&ser_dm);
@@ -466,7 +485,7 @@ int SEHandler::EncryptDb(const std::string &dir_path, const DirType &dir_type,
   if (previous_enc_dm == enc_dm)
     return kSuccess;
 
-  StoreChunks(*dm, dir_type, msid, base::EncodeToHex(dir_key));
+  StoreChunks(*dm, dir_type, msid, dir_path);
   if (dir_key.empty()) {  // Means we're not storing to DHT - used by client
                           // controller to get root dbs for adding to DataAtlas.
 #ifdef DEBUG
@@ -705,40 +724,52 @@ void SEHandler::ChunksToMultiIndex(const DataMap &dm, const std::string &msid,
   {
     boost::mutex::scoped_lock loch_eigheach(chunkmap_mutex_);
     for (int i = 0; i < dm.encrypted_chunk_name_size(); ++i) {
-      PCSbyName &chunkname_index = pending_chunks_.get<by_chunkname>();
-      std::pair<PCSbyName::iterator, PCSbyName::iterator> it =
-          chunkname_index.equal_range(dm.encrypted_chunk_name(i));
-      if (it.first == it.second) {
-        PendingChunks pc(dm.encrypted_chunk_name(i), path, msid, 0);
-        std::pair<PendingChunksSet::iterator, bool> p =
-            pending_chunks_.insert(pc);
-        if (!p.second) {
+/*
+//      PCSbyName &chunkname_index = pending_chunks_.get<by_chunkname>();
+//      std::pair<PCSbyName::iterator, PCSbyName::iterator> it =
+//          chunkname_index.equal_range(dm.encrypted_chunk_name(i));
+//      if (it.first == it.second) {
+*/
+      PendingChunks pc(dm.encrypted_chunk_name(i), path, msid, path_count_);
+      std::pair<PendingChunksSet::iterator, bool> p =
+          pending_chunks_.insert(pc);
+      if (!p.second) {
 #ifdef DEBUG
-          printf("SEHandler::StoreChunks - Something really fucking wrong is "
-                 "going on in SEHandler with the multi-index for pending "
-                 "chunks.\n");
+        printf("SEHandler::StoreChunks - Something really fucking wrong is "
+               "going on in SEHandler with the multi-index for pending "
+               "chunks.\n");
 #endif
-        }
       } else {
-        int count(0);
-        while (it.first != it.second) {
-          if ((*it.first).count > count)
-            count = (*it.first).count;
-          ++it.first;
-        }
-
-        PendingChunks pc(dm.encrypted_chunk_name(i), path, msid, ++count);
-        std::pair<PendingChunksSet::iterator, bool> p =
-            pending_chunks_.insert(pc);
-        if (!p.second) {
 #ifdef DEBUG
-          printf("SEHandler::StoreChunks - Something really fucking wrong is "
-                 "going on in SEHandler with the multi-index for pending "
-                 "chunks.\n");
+        printf("SEHandler::StoreChunks: %s - %s - %llu\n", path.c_str(),
+               base::EncodeToHex(dm.encrypted_chunk_name(i)).c_str(),
+               path_count_);
 #endif
-        }
       }
+/*
+//      } else {
+//        PendingChunks pc(dm.encrypted_chunk_name(i), path, msid, path_count_);
+//        ++path_count_;
+//        std::pair<PendingChunksSet::iterator, bool> p =
+//            pending_chunks_.insert(pc);
+//        if (!p.second) {
+//#ifdef DEBUG
+//          printf("SEHandler::StoreChunks - Something really fucking wrong is "
+//                 "going on in SEHandler with the multi-index for pending "
+//                 "chunks.\n");
+//#endif
+//        } else {
+//#ifdef DEBUG
+//          printf("SEHandler::StoreChunks: Someone before! - %s - %s - %d\n",
+//                 path.c_str(),
+//                 base::EncodeToHex(dm.encrypted_chunk_name(i)).c_str(),
+//                 count);
+//#endif
+//        }
+//      }
+*/
     }
+    ++path_count_;
   }
 }
 
@@ -758,6 +789,10 @@ void SEHandler::PacketOpCallback(const int &store_manager_result,
 }
 
 void SEHandler::ChunkDone(const std::string &chunkname, ReturnCode rc) {
+#ifdef DEBUG
+  printf("SEHandler::ChunkDone - %s - %d\n",
+         base::EncodeToHex(chunkname).c_str(), rc);
+#endif
   boost::mutex::scoped_lock loch_sloy(chunkmap_mutex_);
   PCSbyName &chunkname_index = pending_chunks_.get<by_chunkname>();
   std::pair<PCSbyName::iterator, PCSbyName::iterator> it_cn =
@@ -814,6 +849,10 @@ void SEHandler::ChunkDone(const std::string &chunkname, ReturnCode rc) {
       ++it_pc.first;
     }
 
+#ifdef DEBUG
+    printf("SEHandler::ChunkDone - %s - %d - %d\n", path.c_str(), pending,
+                                                    finished);
+#endif
     int percentage((finished - pending) * 100 / finished);
     if (pending == 0) {
       it_pc = pathcount_index.equal_range(boost::make_tuple(path, count));

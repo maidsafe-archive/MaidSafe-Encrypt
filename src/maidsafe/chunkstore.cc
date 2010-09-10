@@ -423,7 +423,7 @@ int ChunkStore::AddChunkToOutgoing(const std::string &key,
   ChunkType type = GetChunkType(key, file, true);
   fs::path chunk_path(GetChunkPath(key, type, true));
   return (StoreChunkFunction(key, file, chunk_path, type) == kSuccess) ?
-      kSuccess: kChunkstoreFailedStore;
+              kSuccess: kChunkstoreFailedStore;
 }
 
 int ChunkStore::StoreChunkFunction(const std::string &key,

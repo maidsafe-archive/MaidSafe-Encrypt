@@ -177,6 +177,11 @@ class SEHandler {
 
   bs2::connection ConnectToOnFileNetworkStatus(
       const OnFileNetworkStatus::slot_type &slot);
+  void ClearPendingChunks() {
+    boost::mutex::scoped_lock loch_lll(chunkmap_mutex_);
+    pending_chunks_.clear();
+    path_count_ = 0;
+  }
 
  private:
   SEHandler &operator=(const SEHandler &);
@@ -228,6 +233,7 @@ class SEHandler {
   boost::mutex up_to_date_datamaps_mutex_, chunkmap_mutex_;
   boost::signals2::connection connection_to_chunk_uploads_;
   OnFileNetworkStatus file_status_;
+  boost::uint64_t path_count_;
 };
 
 }  // namespace maidsafe

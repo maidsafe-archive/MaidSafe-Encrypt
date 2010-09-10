@@ -69,7 +69,8 @@ SelfEncryption::SelfEncryption(boost::shared_ptr<ChunkStore> client_chunkstore)
 }
 
 int SelfEncryption::Encrypt(const std::string &entry_str, const bool &is_string,
-                            maidsafe::DataMap *dm) {
+                            maidsafe::DataMap *dm/*,
+                            std::set<std::string> *done_chunks*/) {
   std::map<std::string, fs::path> to_chunk_store;
   fs::path processing_path;
   boost::shared_ptr<DataIOHandler> iohandler;
@@ -86,7 +87,8 @@ int SelfEncryption::Encrypt(const std::string &entry_str, const bool &is_string,
     return n;
   }
 
-  n = AddToChunkStore(to_chunk_store, processing_path, iohandler);
+//  done_chunks->clear();
+  n = AddToChunkStore(to_chunk_store, processing_path, iohandler/*, done_chunks*/);
   iohandler.reset();
   return n;
 }
@@ -101,7 +103,7 @@ int SelfEncryption::EncryptContent(
   // check file is encryptable
   if (CheckEntry(iohandler) != 0) {
 #ifdef DEBUG
-          printf("111111111111111\n");
+    printf("111111111111111\n");
 #endif
     return -1;
   }
@@ -113,7 +115,7 @@ int SelfEncryption::EncryptContent(
   // create process directory
   if (!CreateProcessDirectory(processing_path)) {
 #ifdef DEBUG
-          printf("222222222222222\n");
+    printf("222222222222222\n");
 #endif
     return -1;
   }
@@ -133,7 +135,7 @@ int SelfEncryption::EncryptContent(
   // populate pre-encryption hash vector
   if (!GeneratePreEncHashes(iohandler, dm)) {
 #ifdef DEBUG
-          printf("3333333333333333\n");
+    printf("3333333333333333\n");
 #endif
     return -1;
   }
@@ -141,7 +143,7 @@ int SelfEncryption::EncryptContent(
   // Encrypt chunks
   if (!iohandler->Open()) {
 #ifdef DEBUG
-          printf("4444444444444444444\n");
+    printf("4444444444444444444\n");
 #endif
     return -1;
   }
@@ -240,7 +242,7 @@ int SelfEncryption::EncryptContent(
     // ensure uniqueness of post-encryption hash
     // HashUnique(post_enc_hash_, dm, false);
     (*to_chunk_store)[post_enc_hash] = temp_chunk_name;
-//
+
     // store the post-encryption hash to datamap
     dm->add_encrypted_chunk_name(post_enc_hash);
   }
@@ -250,10 +252,15 @@ int SelfEncryption::EncryptContent(
 int SelfEncryption::AddToChunkStore(
     const std::map<std::string, fs::path> &to_chunk_store,
     const fs::path &processing_path,
-    boost::shared_ptr<DataIOHandler> iohandler) {
+    boost::shared_ptr<DataIOHandler> iohandler/*,
+    std::set<std::string> *done_chunks*/) {
   std::map<std::string, fs::path>::const_iterator it = to_chunk_store.begin();
-  for (; it != to_chunk_store.end(); ++it)
-    client_chunkstore_->AddChunkToOutgoing((*it).first, (*it).second);
+  int rc;
+  for (; it != to_chunk_store.end(); ++it) {
+    rc = client_chunkstore_->AddChunkToOutgoing((*it).first, (*it).second);
+//    if (rc == kChunkExistsInChunkstore)
+//      done_chunks->insert((*it).first);
+  }
   iohandler->Close();
   // delete process dir
   try {
