@@ -55,16 +55,12 @@ void KadOps::Init(const boost::filesystem::path &kad_config,
                   boost::mutex *mutex,
                   boost::condition_variable *cond_var,
                   ReturnCode *result) {
-  // If kad config file exists in dir we're in, use that.  If not, try
-  // kad_config, otherwise get default path to file.
   boost::filesystem::path kad_config_path(".kadconfig");
   try {
-    if (!boost::filesystem::exists(kad_config_path)) {
-      if (boost::filesystem::exists(kad_config)) {
-        kad_config_path = kad_config;
-      } else {
-        kad_config_path = (file_system::ApplicationDataDir() / ".kadconfig");
-      }
+    if (boost::filesystem::exists(kad_config)) {
+      kad_config_path = kad_config;
+    } else if (!boost::filesystem::exists(kad_config_path)) {
+      kad_config_path = (file_system::ApplicationDataDir() / ".kadconfig");
     }
     if (!first_node && !boost::filesystem::exists(kad_config_path)) {
 #ifdef DEBUG

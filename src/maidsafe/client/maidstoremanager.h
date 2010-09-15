@@ -57,6 +57,7 @@
 // as friends of MaidsafeStoreManager.
 namespace maidsafe {
 class MaidsafeStoreManager;
+class RunPDClient;
 namespace test {
 class MsmSetLocalVaultOwnedTest;
 class NetworkTest;
@@ -209,7 +210,11 @@ class MaidsafeStoreManager : public StoreManagerInterface {
  public:
   MaidsafeStoreManager(boost::shared_ptr<ChunkStore> cstore, boost::uint8_t k);
   virtual ~MaidsafeStoreManager() {}
-  void Init(VoidFuncOneInt callback, const boost::uint16_t &port);
+  void Init(VoidFuncOneInt callback,
+            const boost::uint16_t &port);
+  void Init(VoidFuncOneInt callback,
+            const boost::filesystem::path &kad_config,
+            const boost::uint16_t &port);
   void Close(VoidFuncOneInt callback, bool cancel_pending_ops);
   void CleanUpTransport();
   void StopRvPing() { transport_handler_.StopPingRendezvous(); }
@@ -327,6 +332,7 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   friend class
       maidsafe_vault::test::PDVaultTest_FUNC_MAID_NET_StoreAndGetChunks_Test;
   friend class maidsafe_vault::RunPDVaults;
+  friend class maidsafe::RunPDClient;
   friend class maidsafe::test::NetworkTest;
   friend class test::CCImMessagingTest;
   friend class
@@ -335,7 +341,8 @@ class MaidsafeStoreManager : public StoreManagerInterface {
       test::CCImMessagingTest_FUNC_MAID_NET_TestImRecPresenceAndSendMsgs_Test;
   friend class
       test::CCImMessagingTest_FUNC_MAID_NET_TestMultipleImToContact_Test;
-
+  void AccountHoldersCallback(const ReturnCode &result,
+                              const std::vector<kad::Contact> &holders);
   // Check the inputs to the public methods are valid
   ReturnCode ValidateInputs(const std::string &name,
                             const PacketType &packet_type,

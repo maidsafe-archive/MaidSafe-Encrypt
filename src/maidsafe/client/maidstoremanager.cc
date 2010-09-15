@@ -94,6 +94,12 @@ MaidsafeStoreManager::MaidsafeStoreManager(boost::shared_ptr<ChunkStore> cstore,
 
 void MaidsafeStoreManager::Init(VoidFuncOneInt callback,
                                 const boost::uint16_t &port) {
+  Init(callback, "", port);
+}
+
+void MaidsafeStoreManager::Init(VoidFuncOneInt callback,
+                                const boost::filesystem::path &kad_config,
+                                const boost::uint16_t &port) {
   boost::int16_t transport_id;
   transport_handler_.Register(&udt_transport_, &transport_id);
   kad_ops_->set_transport_id(transport_id);
@@ -128,12 +134,12 @@ void MaidsafeStoreManager::Init(VoidFuncOneInt callback,
     return;
   }
 #ifdef DEBUG
-//  printf("\tIn MaidsafeStoreManager::Init, before Join.\n");
+  printf("\tIn MaidsafeStoreManager::Init, before Join.\n");
 #endif
   result = kPendingResult;
   boost::mutex mutex;
   boost::condition_variable cond_var;
-  kad_ops_->Init("", false, "", 0, &mutex, &cond_var, &result);
+  kad_ops_->Init(kad_config, false, "", 0, &mutex, &cond_var, &result);
   {
     boost::mutex::scoped_lock lock(mutex);
     while (result == kPendingResult)
@@ -145,10 +151,21 @@ void MaidsafeStoreManager::Init(VoidFuncOneInt callback,
 #ifdef DEBUG
     printf("\tIn MSM::Init, after Join.  On port %u\n", kad_ops_->Port());
 #endif
+    account_holders_manager_.Init(ss_->Id(PMID), boost::bind(
+        &MaidsafeStoreManager::AccountHoldersCallback, this, _1, _2));
     account_status_manager_.StartUpdating(boost::bind(
         &MaidsafeStoreManager::UpdateAccountStatus, this));
   }
   callback(result);
+}
+
+void MaidsafeStoreManager::AccountHoldersCallback(
+    const ReturnCode &result,
+    const std::vector<kad::Contact> &holders) {
+#ifdef DEBUG
+  // printf("MaidsafeStoreManager::AccountHoldersCallback\n");
+#endif
+  account_status_manager_.Update();
 }
 
 void MaidsafeStoreManager::Close(VoidFuncOneInt callback,

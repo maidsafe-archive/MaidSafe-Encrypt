@@ -319,7 +319,7 @@ TEST_F(SEHandlerTest, BEH_MAID_Check_Entry) {
     fs::rename(before, after);
   }
   catch(const std::exception &e) {
-    printf("In SEHandlerTest, BEH_MAID_Check_Entry: ", e.what());
+    printf("In SEHandlerTest, BEH_MAID_Check_Entry: %s\n", e.what());
   }
   full_path9 = after;
   boost::uint64_t returned_size1(9), returned_size2(9), returned_size3(9),

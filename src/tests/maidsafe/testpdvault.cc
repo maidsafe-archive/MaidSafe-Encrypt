@@ -471,6 +471,35 @@ TEST_MS_NET(PDVaultTest, FUNC, MAID, StoreAndGetChunks) {
   ASSERT_EQ(chunks.size(), stored_chunks.size());
   stored_chunks.clear();
 
+  printf("\nGenerating chunk info inventory...\n");
+
+  for (int i = 0; i < kNetworkSize; ++i) {
+    for (it = chunks.begin(); it != chunks.end(); ++it) {
+      ChunkInfo ci;
+      if (pdvaults_[i]->vault_service_->cih_.GetChunkInfo(it->first, &ci) ==
+          kSuccess) {
+        printf("# Vault %d (%s) has chunk info %s:\n", i,
+                HexSubstr(pdvaults_[i]->pmid_).c_str(),
+                HexSubstr((*it).first).c_str());
+        for (std::list<ReferenceListEntry>::iterator ref =
+                ci.reference_list.begin(); ref != ci.reference_list.end();
+                ++ref) {
+          printf("  - reference %s\n", HexSubstr(ref->pmid).c_str());
+        }
+        for (std::list<WatchListEntry>::iterator wtch =
+                ci.watch_list.begin(); wtch != ci.watch_list.end(); ++wtch) {
+          printf("  - watcher %s%s\n", HexSubstr(wtch->pmid).c_str(),
+                 wtch->can_delete ? " (can delete)" : "");
+        }
+        for (std::list<WaitingListEntry>::iterator wait =
+                ci.waiting_list.begin(); wait != ci.waiting_list.end();
+                ++wait) {
+          printf("  - waiting %s\n", HexSubstr(wait->pmid).c_str());
+        }
+      }
+    }
+  }
+
   printf("\nTrying to retrieve stored chunks...\n");
 
   // Check each chunk can be retrieved correctly

@@ -51,6 +51,11 @@
 
 namespace maidsafe_vault {
 
+namespace test {
+class PDVaultTest;
+class PDVaultTest_FUNC_MAID_NET_StoreAndGetChunks_Test;
+}  // namespace test
+
 struct IsOwnedPendingResponse {
   IsOwnedPendingResponse() : callback(NULL), args(NULL) {}
   google::protobuf::Closure* callback;
@@ -300,6 +305,7 @@ class VaultService : public maidsafe::MaidsafeService {
   FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesAddBPMessages);
   FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesGetBPPresence);
   FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesAddBPPresence);
+  friend class test::PDVaultTest_FUNC_MAID_NET_StoreAndGetChunks_Test;
   void DiscardResult(const int&) {}
   bool ValidateSignedSize(const maidsafe::SignedSize &sz);
   bool ValidateStoreContract(const maidsafe::StoreContract &sc);

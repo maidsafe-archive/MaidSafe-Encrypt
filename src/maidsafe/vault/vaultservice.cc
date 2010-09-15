@@ -999,12 +999,12 @@ void VaultService::AmendAccount(google::protobuf::RpcController*,
   if (request->amendment_type() ==
           maidsafe::AmendAccountRequest::kSpaceOffered) {
     if (ah_.HaveAccount(pmid) == kAccountNotFound) {
-      if (ah_.AddAccount(pmid, account_delta) == 0) {
+      if (ah_.AddAccount(pmid, account_delta) == kSuccess) {
         response->set_result(kAck);
 #ifdef DEBUG
-//      printf("In VaultService::AmendAccount (%s), successfully created a new "
-//               "account (%s) of size %llu.\n", HexSubstr(pmid_).c_str(),
-//               HexSubstr(pmid).c_str(), account_delta);
+        printf("In VaultService::AmendAccount (%s), created account (%s) of "
+               "size %llu.\n", HexSubstr(pmid_).c_str(),
+               HexSubstr(pmid).c_str(), account_delta);
 #endif
       } else {
 #ifdef DEBUG
@@ -1014,7 +1014,7 @@ void VaultService::AmendAccount(google::protobuf::RpcController*,
       }
     } else {
       int result = ah_.AmendAccount(pmid, 1, account_delta, false);
-      if (result == 0) {
+      if (result == kSuccess) {
         response->set_result(kAck);
       } else {
   #ifdef DEBUG
@@ -1029,7 +1029,7 @@ void VaultService::AmendAccount(google::protobuf::RpcController*,
     // TODO(Team#) ensure sender (signer) is a valid chunk info holder
     // aah_->ProcessRequest() calls done->Run();
     int result = aah_.ProcessRequest(request, response, done);
-    if (result != 0) {
+    if (result != kSuccess) {
 #ifdef DEBUG
       printf("In VaultService::AmendAccount (%s), failed amending account (%s) "
              "- error %i\n", HexSubstr(pmid_).c_str(), HexSubstr(pmid).c_str(),

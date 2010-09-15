@@ -33,6 +33,7 @@ class Contact;
 }  // namespace kad
 
 namespace maidsafe_vault {
+class RunPDVaults;
 namespace test {
 class PDVaultTest;
 }  // namespace test
@@ -68,6 +69,7 @@ class PdUtils {
                               std::string *private_key);
  private:
   friend class maidsafe_vault::test::PDVaultTest;
+  friend class maidsafe_vault::RunPDVaults;
   SessionSingleton *ss_;
 };
 

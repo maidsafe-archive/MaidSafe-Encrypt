@@ -67,7 +67,7 @@ namespace testpdvault {
 void PrepareCallbackResults() {
   callback_timed_out_ = true;
   callback_succeeded_ = false;
-  callback_content_ = "";
+  callback_content_.clear();
   callback_prepared_ = true;
   callback_packets_.clear();
   callback_messages_.clear();
@@ -146,6 +146,7 @@ struct ClientData {
       msm(),
       pmid_keys(),
       maid_keys(),
+      pending_chunks(),
       stored_chunks() {}
 
   std::string chunkstore_dir;
@@ -154,7 +155,7 @@ struct ClientData {
   boost::shared_ptr<maidsafe::ChunkStore> chunkstore;
   boost::shared_ptr<maidsafe::MaidsafeStoreManager> msm;
   crypto::RsaKeyPair pmid_keys, maid_keys;
-  std::set<std::string> stored_chunks;
+  std::set<std::string> pending_chunks, stored_chunks;
 };
 
 class RunPDVaults {
@@ -247,7 +248,7 @@ class RunPDVaults {
     }
   }
 
-  void SetUp() {
+  bool SetUp() {
     printf("Starting %d vaults and %d clients...\n", no_of_vaults_,
            no_of_clients_);
     boost::posix_time::ptime stop;
@@ -262,18 +263,27 @@ class RunPDVaults {
         clients_[client_idx]->chunkstore =
             boost::shared_ptr<maidsafe::ChunkStore> (new maidsafe::ChunkStore(
             clients_[client_idx]->chunkstore_dir, 0, 0));
-        clients_[client_idx]->chunkstore->Init();
+        if (!clients_[client_idx]->chunkstore->Init()) {
+          printf("Failed initialising chunkstore for client %d.\n",
+                 client_idx + 1);
+          return false;
+        }
         boost::shared_ptr<maidsafe::MaidsafeStoreManager>
             sm_local_(new maidsafe::MaidsafeStoreManager(
                       clients_[client_idx]->chunkstore, testvault::K));
         clients_[client_idx]->msm = sm_local_;
         clients_[client_idx]->msm->ss_ = &clients_[client_idx]->mss;
-//        clients_[client_idx]->msm->kad_config_location_ =
-//            kad_config_path_.string();
+        clients_[client_idx]->msm->pd_utils_.ss_ = &clients_[client_idx]->mss;
         testpdvault::PrepareCallbackResults();
         clients_[client_idx]->msm->Init(
-            boost::bind(&testpdvault::GeneralCallback, _1), 0);
+            boost::bind(&testpdvault::GeneralCallback, _1), kad_config_path_,
+            0);
         testpdvault::WaitFunction(60, &mutex_);
+        if (!callback_succeeded_ || callback_timed_out_) {
+          printf("Failed initialising store manager for client %d.\n",
+                 client_idx + 1);
+          return false;
+        }
         public_key = clients_[client_idx]->pmid_pub_key;
         private_key = clients_[client_idx]->pmid_priv_key;
         signed_key = clients_[client_idx]->pmid_pub_key_sig;
@@ -298,7 +308,7 @@ class RunPDVaults {
       (*pdvaults_)[j]->Start(first);
       if (!(*pdvaults_)[j]->WaitForStartup(10)) {
         printf("Vault %i didn't start properly!\n", j);
-        return;
+        return false;
       }
       if (first) {
         base::KadConfig kad_config;
@@ -340,7 +350,7 @@ class RunPDVaults {
       printf("*                                               *\n");
       printf("* No. Port   ID                                 *\n");
       for (int l = 0; l < no_of_clients_; ++l)
-        printf("* %2i  %5i  %s... *\n", l,
+        printf("* %2i  %5i  %s *\n", l,
                clients_[l]->msm->kad_ops_->contact_info().port(),
                (base::EncodeToHex(
                clients_[l]->msm->kad_ops_->contact_info().node_id()).
@@ -358,8 +368,14 @@ class RunPDVaults {
 //          HexSubstr((*(pdvaults_))[no_of_vaults_ - 1]->node_id()).c_str());
 
     // Wait for account creation and syncing
-    for (int i = 0; i < no_of_vaults_; ++i)
-      (*pdvaults_)[i]->WaitForSync();
+    for (int i = 0; i < no_of_vaults_; ++i) {
+      if (!(*pdvaults_)[i]->WaitForSync()) {
+        printf("Vault %i didn't sunc properly!\n", i);
+        return false;
+      }
+    }
+
+    return true;
   }
 
   void TearDown() {
@@ -401,12 +417,15 @@ class RunPDVaults {
     printf("Finished vault tear down.\n");
   }
 
-  void Process() {
+  /* void Process() {
     crypto::Crypto cryobj_;
     cryobj_.set_hash_algorithm(crypto::SHA_512);
     cryobj_.set_symm_algorithm(crypto::AES_256);
 
     for (int i = 0; i < no_of_clients_; ++i) {
+      // check for status of pending chunks
+      // TODO move from pending_chunks to stored_chunks
+      
       // check for existance of stored chunks
       for (std::set<std::string>::iterator it =
                clients_[i]->stored_chunks.begin();
@@ -438,7 +457,7 @@ class RunPDVaults {
         return;
 
       // store random chunks
-      int no_of_chunks = (total_chunks_stored_ < 500) ?
+      int no_of_chunks = (total_chunks_pending_ < 500) ?
                           base::RandomUint32() % 6 : 0;
       for (int j = 0; j < no_of_chunks; ++j) {
         if (ctrlc_pressed)
@@ -457,14 +476,21 @@ class RunPDVaults {
         ofs_.open(chunk_path.string().c_str());
         ofs_ << chunk_content;
         ofs_.close();
-        clients_[i]->chunkstore->AddChunkToOutgoing(chunk_name, chunk_path);
-        clients_[i]->msm->StoreChunk(chunk_name, maidsafe::PRIVATE, "");
-        clients_[i]->stored_chunks.insert(chunk_name);
-        ++total_chunks_stored_;
+        if (clients_[i]->chunkstore->
+                AddChunkToOutgoing(chunk_name, chunk_path) == kSuccess &&
+            clients_[i]->msm->
+                StoreChunk(chunk_name, maidsafe::PRIVATE, "") == kSuccess) {
+          clients_[i]->pending_chunks.insert(chunk_name);
+          ++total_chunks_pending_;
+        } else {
+          printf("Could not store chunk %s for client %s ...\n",
+               HexSubstr(chunk_name).c_str(),
+               HexSubstr(clients_[i]->pmid_name).c_str());
+        }
         fs::remove(chunk_path);
       }
     }
-  }
+  } */
 
  private:
   RunPDVaults(const RunPDVaults&);
@@ -481,13 +507,13 @@ class RunPDVaults {
   boost::mutex mutex_;
   boost::posix_time::seconds single_function_timeout_;
   std::vector< boost::shared_ptr<ClientData> > clients_;
-  int total_chunks_stored_, total_chunks_retrieved_;
+  int total_chunks_pending_, total_chunks_stored_, total_chunks_retrieved_;
 };
 
 }  // namespace maidsafe_vault
 
 int main(int argc, char* argv[]) {
-  int num_v(16), num_c(0);
+  int num_v(testvault::K), num_c(0);
   fs::path root_dir("TestVaults_" + base::RandomAlphaNumericString(6));
   fs::path kad_config_path;
   printf("=== Vault Test Network ===\n\n");
@@ -551,12 +577,15 @@ int main(int argc, char* argv[]) {
     }
   }
   maidsafe_vault::RunPDVaults vaults(num_v, num_c, root_dir, kad_config_path);
-  vaults.SetUp();
-  signal(SIGINT, ctrlc_handler);
-  while (!ctrlc_pressed) {
-    vaults.Process();
-    if (!ctrlc_pressed)
-      boost::this_thread::sleep(boost::posix_time::seconds(5));
+  if (vaults.SetUp()) {
+    signal(SIGINT, ctrlc_handler);
+    while (!ctrlc_pressed) {
+      // vaults.Process();
+      if (!ctrlc_pressed)
+        boost::this_thread::sleep(boost::posix_time::seconds(5));
+    }
+  } else {
+    printf("\nError during network setup. Terminating...\n\n");
   }
   vaults.TearDown();
   return 0;

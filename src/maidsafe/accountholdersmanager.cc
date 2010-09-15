@@ -51,8 +51,12 @@ void AccountHoldersManager::Update() {
 }
 
 void AccountHoldersManager::UpdateGroup(AccountHolderGroupFunctor callback) {
-  if (account_name_.empty())
+  if (account_name_.empty()) {
+#ifdef DEBUG
+    printf("In AHM::UpdateGroup, no account name set!\n");
+#endif
     return;
+  }
   {
     boost::mutex::scoped_lock lock(mutex_);
     failed_ids_.clear();

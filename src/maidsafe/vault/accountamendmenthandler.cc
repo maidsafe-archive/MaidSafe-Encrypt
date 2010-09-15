@@ -161,8 +161,8 @@ int AccountAmendmentHandler::AssessAmendment(
            "account (%s).\n", HexSubstr(owner_pmid).c_str());
 #endif
     // respond immediately
-    pending.response->set_result(kNack);
     if (!pending.responded) {
+      pending.response->set_result(kNack);
       pending.responded = true;
       pending.done->Run();
     }
@@ -222,6 +222,11 @@ int AccountAmendmentHandler::AssessAmendment(
         if (!(*pendings_it).responded) {
           (*pendings_it).responded = true;
           (*pendings_it).done->Run();
+        } else if (amendment->account_amendment_result == kSuccess) {
+#ifdef DEBUG
+          printf("In AAH::AssessAmendment, can't send positive response for "
+                 "account (%s) amendment!\n", HexSubstr(owner_pmid).c_str());
+#endif
         }
       }
 
@@ -269,13 +274,10 @@ void AccountAmendmentHandler::CreateNewAmendment(AccountAmendment amendment) {
     // Assess probable (enqueued) requests
     while (!amendment.probable_pendings.empty()) {
       boost::mutex::scoped_lock lock(amendment_mutex_);
-      if (AssessAmendment(amendment.pmid, amendment.chunkname,
-          amendment.amendment_type, amendment.field, amendment.offer,
-          amendment.increase, amendment.probable_pendings.front(),
-          &amendment) == kAccountAmendmentNotFound) {
-        amendment.probable_pendings.front().response->set_result(kNack);
-        amendment.probable_pendings.front().done->Run();
-      }
+      AssessAmendment(amendment.pmid, amendment.chunkname,
+                      amendment.amendment_type, amendment.field,
+                      amendment.offer, amendment.increase,
+                      amendment.probable_pendings.front(), &amendment);
       amendment.probable_pendings.pop_front();
     }
   } else {
@@ -327,22 +329,23 @@ void AccountAmendmentHandler::CreateNewAmendmentCallback(
     amendments_.get<by_timestamp>().replace(it, modified_amendment);
     // Assess probable (enqueued) requests
     while (!modified_amendment.probable_pendings.empty()) {
-      if (AssessAmendment(amendment.pmid, amendment.chunkname,
-          amendment.amendment_type, amendment.field, amendment.offer,
-          amendment.increase, modified_amendment.probable_pendings.front(),
-          &modified_amendment) == kAccountAmendmentNotFound) {
-        modified_amendment.probable_pendings.front().response->
-            set_result(kNack);
-        modified_amendment.probable_pendings.front().done->Run();
-      }
+      AssessAmendment(amendment.pmid, amendment.chunkname,
+                      amendment.amendment_type, amendment.field,
+                      amendment.offer, amendment.increase,
+                      modified_amendment.probable_pendings.front(),
+                      &modified_amendment);
       modified_amendment.probable_pendings.pop_front();
     }
     amendments_.get<by_timestamp>().replace(it, modified_amendment);
   } else {
     // Set responses and run callbacks
     while (!modified_amendment.probable_pendings.empty()) {
-      modified_amendment.probable_pendings.front().response->set_result(kNack);
-      modified_amendment.probable_pendings.front().done->Run();
+      if (!modified_amendment.probable_pendings.front().responded) {
+        modified_amendment.probable_pendings.front().response->
+            set_result(kNack);
+        modified_amendment.probable_pendings.front().responded = true;
+        modified_amendment.probable_pendings.front().done->Run();
+      }
       modified_amendment.probable_pendings.pop_front();
     }
     amendments_.get<by_timestamp>().erase(it);
@@ -359,13 +362,19 @@ int AccountAmendmentHandler::CleanUp() {
           (*it).expiry_time < base::GetEpochMilliseconds()) {
       AccountAmendment amendment = *it;
       while (!amendment.probable_pendings.empty()) {
-        amendment.probable_pendings.front().response->set_result(kNack);
-        amendment.probable_pendings.front().done->Run();
+        if (!amendment.probable_pendings.front().responded) {
+          amendment.probable_pendings.front().response->set_result(kNack);
+          amendment.probable_pendings.front().responded = true;
+          amendment.probable_pendings.front().done->Run();
+        }
         amendment.probable_pendings.pop_front();
       }
       while (!amendment.pendings.empty()) {
-        amendment.pendings.front().response->set_result(kNack);
-        amendment.pendings.front().done->Run();
+        if (!amendment.probable_pendings.front().responded) {
+          amendment.pendings.front().response->set_result(kNack);
+          amendment.pendings.front().responded = true;
+          amendment.pendings.front().done->Run();
+        }
         amendment.pendings.pop_front();
       }
       it = amendments_.get<by_timestamp>().erase(it);

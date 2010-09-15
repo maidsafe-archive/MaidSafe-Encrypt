@@ -1348,7 +1348,7 @@ void PDVault::JoinMaidsafeNet() {
   if (routing_table_->GetClosestContacts(pmid_, K_, &close_peers) !=
       kSuccess || close_peers.empty()) {
 #ifdef DEBUG
-    printf("In PDVault::JoinMaidsafeNet (%s), failed to query local"
+    printf("In PDVault::JoinMaidsafeNet (%s), failed to query local "
            "routing table.\n", HexSubstr(pmid_).c_str());
 #endif
     // Start service with uninitialised response
