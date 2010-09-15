@@ -344,6 +344,7 @@ LIST(APPEND STYLE_MAIDSAFE ${SOURCE_FILES_MAIDSAFE_DIR} ${HEADER_FILES_MAIDSAFE_
 FILE(GLOB SOURCE_FILES_MSCLIENT_DIR "${SOURCE_DIR}/maidsafe/client/*.cc")
 FILE(GLOB HEADER_FILES_MSCLIENT_DIR "${SOURCE_DIR}/maidsafe/client/*.h")
 LIST(APPEND ALL_FILES_MSCLIENT_DIR ${SOURCE_FILES_MSCLIENT_DIR} ${HEADER_FILES_MSCLIENT_DIR})
+LIST(REMOVE_ITEM ALL_FILES_MSCLIENT_DIR "${SOURCE_DIR}/maidsafe/client/main.cc")
 LIST(APPEND STYLE_MSCLIENT ${SOURCE_FILES_MSCLIENT_DIR} ${HEADER_FILES_MSCLIENT_DIR})
 
 FILE(GLOB SOURCE_FILES_MSVAULT_DIR "${SOURCE_DIR}/maidsafe/vault/*.cc")
@@ -430,6 +431,7 @@ ADD_EXECUTABLE(TESTclientcontroller_local ${ALL_FILES_TEST_MAIN_DIR} "${SOURCE_D
 ADD_EXECUTABLE(TESTpdvault_net "${SOURCE_DIR}/tests/maidsafe/testpdvault.cc")
 ADD_EXECUTABLE(TESTbufferpackethandler_net ${ALL_FILES_TEST_MAIN_DIR} "${SOURCE_DIR}/tests/maidsafe/testbufferpackethandler.cc")
 ADD_EXECUTABLE(TESTmaidsafe ${ALL_FILES_TEST_MAIDSAFE_DIR})
+ADD_EXECUTABLE(testclient "${SOURCE_DIR}/maidsafe/client/main.cc")
 ADD_EXECUTABLE(testvault "${SOURCE_DIR}/maidsafe/vault/main.cc")
 ADD_EXECUTABLE(TESTimconnectionhandler_net ${ALL_FILES_TEST_MAIN_DIR} "${SOURCE_DIR}/tests/maidsafe/testimconnhandler.cc" "${SOURCE_DIR}/tests/maidsafe/testimmessaging.cc")
 IF(WIN32)
@@ -439,7 +441,7 @@ ELSE()
 ENDIF()
 
 SET(ALL_EXECUTABLES perpetualdata pdlocal pdlightlocal TESTclientcontroller_net TESTauthentication_net TESTclientcontroller_local
-    TESTpdvault_net TESTbufferpackethandler_net TESTmaidsafe testvault TESTimconnectionhandler_net vault) # TESTfuse
+    TESTpdvault_net TESTbufferpackethandler_net TESTmaidsafe testclient testvault TESTimconnectionhandler_net vault) # TESTfuse
 
 ADD_LIBRARY(PDmaidsafelib STATIC ${ALL_FILES_MAIDSAFE_DIR})
 ADD_LIBRARY(PDmsclientlib STATIC ${ALL_FILES_MSCLIENT_DIR})
@@ -479,6 +481,7 @@ IF(NOT MSVC)
   TARGET_LINK_LIBRARIES(TESTauthentication_net ${TEST_LIBS})
   #TARGET_LINK_LIBRARIES(TESTfuse ${TEST_LIBS})
   TARGET_LINK_LIBRARIES(TESTclientcontroller_local PDTESTmsclientlib ${ALL_TARGET_LIBS} ${Gtest_LIBRARY} ${SYS_LIBS})
+  TARGET_LINK_LIBRARIES(testclient PDmsclientlib ${ALL_TARGET_LIBS} ${SYS_LIBS})
   TARGET_LINK_LIBRARIES(testvault PDmsclientlib PDmsvaultlib ${ALL_TARGET_LIBS} ${SYS_LIBS})
 ELSE()
   SET(ALL_TARGET_LIBS ${ALL_TARGET_LIBS} ${QT_LIBRARIES})
@@ -511,6 +514,9 @@ ELSE()
                           PDTESTmsclientlib
                           ${ALL_TARGET_LIBS}
                           debug ${Gtest_LIBRARY_DEBUG} optimized ${Gtest_LIBRARY})
+  TARGET_LINK_LIBRARIES(testclient
+                          PDmsclientlib
+                          ${ALL_TARGET_LIBS})
   TARGET_LINK_LIBRARIES(testvault
                           PDmsclientlib
                           PDmsvaultlib
@@ -521,6 +527,7 @@ ELSE()
     TARGET_LINK_LIBRARIES(pdlightlocal debug ${DLIB})
     TARGET_LINK_LIBRARIES(vault debug ${DLIB})
     TARGET_LINK_LIBRARIES(TESTclientcontroller_local debug ${DLIB})
+    TARGET_LINK_LIBRARIES(testclient debug ${DLIB})
     TARGET_LINK_LIBRARIES(testvault debug ${DLIB})
   ENDFOREACH()
   FOREACH (RLIB ${RELEASE_LIBS})
@@ -529,6 +536,7 @@ ELSE()
     TARGET_LINK_LIBRARIES(pdlightlocal optimized ${RLIB})
     TARGET_LINK_LIBRARIES(vault optimized ${RLIB})
     TARGET_LINK_LIBRARIES(TESTclientcontroller_local optimized ${RLIB})
+    TARGET_LINK_LIBRARIES(testclient optimized ${RLIB})
     TARGET_LINK_LIBRARIES(testvault optimized ${RLIB})
   ENDFOREACH()
 
