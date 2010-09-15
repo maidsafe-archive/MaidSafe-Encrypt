@@ -131,8 +131,16 @@ void LocalStoreManager::Init(VoidFuncOneInt callback, const boost::uint16_t&) {
   }
 }
 
-void LocalStoreManager::Close(VoidFuncOneInt callback,
-                              bool /*cancel_pending_ops*/) {
+void LocalStoreManager::Close(VoidFuncOneInt callback, bool) {
+  bool t(false);
+  while (!t) {
+    {
+      boost::mutex::scoped_lock loch_etive(signal_mutex_);
+      t = chunks_pending_.empty();
+    }
+    if (!t)
+      boost::this_thread::sleep(boost::posix_time::milliseconds(100));
+  }
 #ifdef LOCAL_PDVAULT
   // Simulate chunk threadpool join and knode leave
 //  boost::this_thread::sleep(boost::posix_time::seconds(3));
@@ -192,7 +200,7 @@ int LocalStoreManager::StoreChunk(const std::string &chunk_name, const DirType,
   }
   catch(const std::exception &e) {
 #ifdef DEBUG
-    printf("%s\n", e.what());
+    printf("LocalStoreManager::StoreChunk - Exception: %s\n", e.what());
 #endif
     signal_mutex_.lock();
     chunks_pending_.insert(chunk_name);
@@ -220,8 +228,7 @@ int LocalStoreManager::StoreChunk(const std::string &chunk_name, const DirType,
 
 int LocalStoreManager::DeleteChunk(const std::string &chunk_name,
                                    const boost::uint64_t &chunk_size,
-                                   DirType,
-                                   const std::string &) {
+                                   DirType, const std::string&) {
 #ifdef LOCAL_PDVAULT
   // Simulate knode lookup in RemoveFromWatchList
 //  boost::this_thread::sleep(boost::posix_time::seconds(2));
@@ -388,8 +395,7 @@ void LocalStoreManager::DeletePacket(const std::string &packet_name,
 }
 
 ReturnCode LocalStoreManager::DeletePacket_DeleteFromDb(
-    const std::string &key,
-    const std::vector<std::string> &values,
+    const std::string &key, const std::vector<std::string> &values,
     const std::string &public_key) {
 #ifdef LOCAL_PDVAULT
   // Simulate knode lookup
@@ -501,7 +507,9 @@ void LocalStoreManager::StorePacket(const std::string &packet_name,
     if (!co.AsymCheckSig(sv.value(), sv.value_signature(), public_key,
         crypto::STRING_STRING)) {
       ExecReturnCodeCallback(cb, kSendPacketFailure);
+#ifdef DEBUG
       printf("%s\n", sv.value().c_str());
+#endif
       return;
     }
   }
@@ -811,10 +819,8 @@ int LocalStoreManager::LoadBPMessages(
 }
 
 int LocalStoreManager::SendMessage(
-    const std::vector<std::string> &receivers,
-    const std::string &message,
-    const MessageType &m_type,
-    std::map<std::string, ReturnCode> *add_results) {
+    const std::vector<std::string> &receivers, const std::string &message,
+    const MessageType &m_type, std::map<std::string, ReturnCode> *add_results) {
   if (!add_results)
     return -660;
   if (ss_->Id(MPID) == "")
@@ -1055,8 +1061,7 @@ void LocalStoreManager::LocalVaultOwned(const LocalVaultOwnedFunctor &functor) {
 bool LocalStoreManager::NotDoneWithUploading() { return false; }
 
 void LocalStoreManager::CreateSerialisedSignedValue(
-    const std::string &value,
-    const std::string &private_key,
+    const std::string &value, const std::string &private_key,
     std::string *ser_gp) {
   ser_gp->clear();
   crypto::Crypto co;
@@ -1070,8 +1075,8 @@ void LocalStoreManager::ExecuteReturnSignal(const std::string &chunkname,
                                             ReturnCode rc) {
   int sleep_seconds((base::RandomInt32() % 5) + 1);
   boost::this_thread::sleep(boost::posix_time::seconds(sleep_seconds));
-  boost::mutex::scoped_lock loch_laggan(signal_mutex_);
   sig_chunk_uploaded_(chunkname, rc);
+  boost::mutex::scoped_lock loch_laggan(signal_mutex_);
   chunks_pending_.erase(chunkname);
 }
 
@@ -1090,9 +1095,7 @@ void LocalStoreManager::ExecReturnCodeCallback(VoidFuncOneInt cb,
 }
 
 void LocalStoreManager::ExecReturnLoadPacketCallback(
-    LoadPacketFunctor cb,
-    std::vector<std::string> results,
-    ReturnCode rc) {
+    LoadPacketFunctor cb, std::vector<std::string> results, ReturnCode rc) {
   boost::thread t(cb, results, rc);
 }
 

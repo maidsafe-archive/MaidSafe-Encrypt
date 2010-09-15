@@ -290,6 +290,8 @@ class ClientController {
   std::string GenerateBPInfo();
   std::vector<std::string> GetOffLineContacts();
   void FileUpdate(const std::string &file, int percentage);
+  bool AddToPendingFiles(const std::string &file);
+  bool RemoveFromPendingFiles(const std::string &file);
 
   // Variables
   boost::shared_ptr<ChunkStore> client_chunkstore_;
@@ -312,7 +314,7 @@ class ClientController {
   boost::uint8_t K_;
   boost::uint16_t upper_threshold_;
   bs2::connection to_seh_file_update_;
-  std::map<std::string, int> pending_files_;
+  std::multimap<std::string, int> pending_files_;
   boost::mutex pending_files_mutex_;
 };
 
