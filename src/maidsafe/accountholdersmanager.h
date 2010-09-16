@@ -71,7 +71,10 @@ class AccountHoldersManager {
     boost::mutex::scoped_lock lock(mutex_);
     return account_holder_group_;
   }
-  std::string account_name() { return account_name_; }
+  std::string account_name() {
+    boost::mutex::scoped_lock lock(mutex_);
+    return account_name_;
+  }
   void ReportFailure(const std::string &account_holders_pmid);
  private:
   AccountHoldersManager &operator=(const AccountHoldersManager&);

@@ -165,7 +165,10 @@ void MaidsafeStoreManager::AccountHoldersCallback(
 #ifdef DEBUG
   // printf("MaidsafeStoreManager::AccountHoldersCallback\n");
 #endif
-  account_status_manager_.Update();
+  if (result == kSuccess && holders.size() >= kUpperThreshold_)
+    account_status_manager_.Update();
+  else
+    account_status_manager_.UpdateFailed();
 }
 
 void MaidsafeStoreManager::Close(VoidFuncOneInt callback,
@@ -1289,7 +1292,7 @@ void MaidsafeStoreManager::UpdateAccountStatus() {
         &account_status_requests.at(i),
         &account_status_update_data_->data_holders.at(i).response,
         account_status_update_data_->data_holders.at(i).controller.get(),
-callback);
+        callback);
   }
 }
 
@@ -3239,10 +3242,12 @@ void MaidsafeStoreManager::LocalVaultOwnedCallback(
 }
 
 bool MaidsafeStoreManager::NotDoneWithUploading() {
+#ifdef DEBUG
   printf("MaidsafeStoreManager::NotDoneWithUploading %d -- %d -- %u\n",
          chunk_thread_pool_.activeThreadCount(),
          packet_thread_pool_.activeThreadCount(),
          tasks_handler_.TasksCount());
+#endif
   if (chunk_thread_pool_.activeThreadCount() == 0 &&
       packet_thread_pool_.activeThreadCount() == 0) {
     return false;
@@ -3260,34 +3265,21 @@ int MaidsafeStoreManager::CreateAccount(const boost::uint64_t &space) {
 
   boost::shared_ptr<AmendAccountData> data(new AmendAccountData);
   boost::mutex::scoped_lock lock(data->mutex);
-  account_holders_manager_.Init(ss_->Id(PMID),
-      boost::bind(&MaidsafeStoreManager::AccountHoldersManagerInitCallback,
-                  this, _1, _2, data));
 
 #ifdef DEBUG
-  printf("In MSM::CreateAccount, name of PMID: %s & name of account: %s\n",
-         base::EncodeToHex(ss_->Id(PMID)).c_str(),
-         base::EncodeToHex(account_name).c_str());
+  printf("In MSM::CreateAccount, name of PMID: %s, name of account: %s\n",
+         HexSubstr(ss_->Id(PMID)).c_str(), HexSubstr(account_name).c_str());
 #endif
 
-  // Wait for the account holders to be populated
-  while (data->returned_count == 0)
-    data->condition.wait(lock);
-
-  if (data->success_count == 0) {
-#ifdef DEBUG
-    printf("In MSM::CreateAccount (%d), could not find account holders.\n",
-           kad_ops_->Port());
-#endif
-    return kFindAccountHoldersError;
-  }
+  data->contacts = account_holders_manager_.account_holder_group();
 
   if (data->contacts.size() < kUpperThreshold_) {
 #ifdef DEBUG
-    printf("In MSM::CreateAccount (%d), failed to find %u account holders; "
-           "found %u node(s).\n", kad_ops_->Port(), kUpperThreshold_,
-           data->contacts.size());
+    printf("In MSM::CreateAccount (%d), account holders not available.\n",
+           kad_ops_->Port());
 #endif
+    // TODO(Team#) possibly schedule retry dependent on AH manager update
+    account_holders_manager_.Update();
     return kFindAccountHoldersError;
   }
 
@@ -3346,18 +3338,6 @@ int MaidsafeStoreManager::CreateAccount(const boost::uint64_t &space) {
   account_status_manager_.AmendmentDone(AmendAccountRequest::kSpaceOffered,
                                         space);
   return kSuccess;
-}
-
-void MaidsafeStoreManager::AccountHoldersManagerInitCallback(
-    const ReturnCode &result,
-    const std::vector<kad::Contact> &account_holder_group,
-    boost::shared_ptr<AmendAccountData> data) {
-  boost::mutex::scoped_lock lock(data->mutex);
-  ++data->returned_count;  // to indicate we have a result
-  if (result == kSuccess)
-    ++data->success_count;
-  data->contacts = account_holder_group;
-  data->condition.notify_one();
 }
 
 void MaidsafeStoreManager::AmendAccountCallback(size_t index,

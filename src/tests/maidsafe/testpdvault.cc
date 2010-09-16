@@ -342,8 +342,8 @@ class PDVaultTest : public testing::Test {
 
     // let the clients create their accounts (again)
     for (int i = 0; i < kNumOfClients; ++i) {
-      clients_[i]->msm->CreateAccount(
-          pdvaults_[kNetworkSize - kNumOfClients + i]->available_space());
+      ASSERT_EQ(kSuccess, clients_[i]->msm->CreateAccount(
+          pdvaults_[kNetworkSize - kNumOfClients + i]->available_space()));
     }
 
     printf("--- SetUp completed. ---\n\n");

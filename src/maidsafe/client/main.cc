@@ -209,8 +209,18 @@ class RunPDClient {
       return false;
     }
 
-    if (!client_->returning)
-      client_->msm->CreateAccount(1 << 20);
+    if (!client_->returning) {
+      int tries(0);
+      while (tries < 3 && client_->msm->CreateAccount(1 << 20) != kSuccess) {
+        printf("Retrying to create account...\n");
+        boost::this_thread::sleep(boost::posix_time::seconds(10));
+        ++tries;
+      }
+      if (tries == 3) {
+        printf("Failed creating account.\n");
+        return false;
+      }
+    }
 
     return true;
   }

@@ -519,10 +519,6 @@ class MaidsafeStoreManager : public StoreManagerInterface {
       boost::shared_ptr<SetLocalVaultOwnedCallbackArgs> callback_args);
   void LocalVaultOwnedCallback(
       boost::shared_ptr<LocalVaultOwnedCallbackArgs> callback_args);
-  void AccountHoldersManagerInitCallback(
-      const ReturnCode &result,
-      const std::vector<kad::Contact> &account_holder_group,
-      boost::shared_ptr<AmendAccountData> data);
   void AmendAccountCallback(size_t index,
                             boost::shared_ptr<AmendAccountData> data);
   void ModifyBpCallback(const ReturnCode &rc,
