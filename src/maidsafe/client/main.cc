@@ -240,7 +240,12 @@ class RunPDClient {
     printf("Locally available chunks:\n");
     for (std::map<std::string, std::string>::iterator it = chunks_.begin();
          it != chunks_.end(); ++it) {
-      printf("\t%s (%s)\n", it->first.c_str(), HexSubstr(it->second).c_str());
+      fs::path chunk_path = test_dir_ / base::EncodeToHex(it->second);
+      boost::uint64_t chunk_size(0);
+      if (boost::filesystem::exists(chunk_path))
+        chunk_size = boost::filesystem::file_size(chunk_path);
+      printf(" %s (%s, %llu KB)\n", it->first.c_str(),
+             HexSubstr(it->second).c_str(), chunk_size / 1024);
     }
   }
 
@@ -251,7 +256,8 @@ class RunPDClient {
     }
 
     // generate chunk content and name
-    std::string chunk_content = base::RandomString(1024);
+    boost::uint64_t chunk_size = 1024 << rand() % 10;
+    std::string chunk_content = base::RandomString(chunk_size);
     std::string chunk_name = crypto_.Hash(chunk_content, "",
                                           crypto::STRING_STRING, false);
     fs::path chunk_path(test_dir_);
@@ -261,8 +267,8 @@ class RunPDClient {
     ofs << chunk_content;
     ofs.close();
     chunks_[name] = chunk_name;
-    printf("Chunk '%s' (%s) of size %d created locally.\n", name.c_str(),
-           HexSubstr(chunk_name).c_str(), chunk_content.size());
+    printf("Chunk '%s' (%s) of size %llu KB created locally.\n", name.c_str(),
+           HexSubstr(chunk_name).c_str(), chunk_size / 1024);
     WriteChunkList();
   }
 
@@ -303,6 +309,18 @@ class RunPDClient {
     }
   }
 
+  void Load() {
+    if (chunks_.size() == 0) {
+      printf("No chunks in list.\n");
+      return;
+    }
+
+    for (std::map<std::string, std::string>::iterator it = chunks_.begin();
+         it != chunks_.end(); ++it) {
+      Load(it->first);
+    }
+  }
+
   void Load(const std::string &name) {
     if (chunks_.count(name) == 0) {
       printf("A chunk with name '%s' does not exist.\n", name.c_str());
@@ -312,18 +330,27 @@ class RunPDClient {
     std::string chunk_name(chunks_[name]);
     client_->chunkstore->DeleteChunk(chunk_name);
     std::string data;
-    if (client_->msm->LoadChunk(chunk_name, &data) == kSuccess &&
-        crypto_.Hash(data, "", crypto::STRING_STRING, false) == chunk_name) {
-      printf("Successfully loaded and verified chunk '%s' (%s).\n",
-              name.c_str(), HexSubstr(chunk_name).c_str());
+    boost::uint64_t time_start = base::GetEpochMilliseconds();
+    if (client_->msm->LoadChunk(chunk_name, &data) == kSuccess) {
+      boost::uint64_t time_end = base::GetEpochMilliseconds();
+      printf("Successfully loaded chunk '%s' (%s) in %.2fs.\n",
+             name.c_str(), HexSubstr(chunk_name).c_str(),
+             (time_end - time_start) / 1000.0);
     } else {
-      printf("Could not load and verify chunk '%s' (%s).\n", name.c_str(),
+      printf("Could not load chunk '%s' (%s).\n", name.c_str(),
              HexSubstr(chunk_name).c_str());
+      return;
+    }
+    if (crypto_.Hash(data, "", crypto::STRING_STRING, false) == chunk_name) {
+      printf("Successfully verified chunk '%s'.\n", name.c_str());
+    } else {
+      printf("Could not verify chunk '%s'.\n", name.c_str());
     }
   }
 
   void Delete(const std::string&) {
     printf("Sorry, command not available yet.\n");
+    // client_->msm->DeleteChunk()
   }
 
   void Account() {
@@ -505,19 +532,20 @@ int main(int argc, char* argv[]) {
         } else if (cmd == "help") {
           printf("Available commands:\n"
                  "  list           show a list of previously created chunks\n"
-                 "  create [name]  generate a new chunk with given name\n"
-                 "  remove [name]  delete the named chunk locally\n"
-                 "  store [name]   store a previously created chunk on the "
+                 "  create <name>  generate a new chunk with given name\n"
+                 "  remove <name>  delete the named chunk locally\n"
+                 "  store <name>   store a previously created chunk on the "
                  "network\n"
-                 "  load [name]    load a chunk from the network\n"
-                 "  delete [name]  delete a chunk from the network\n"
+                 "  load [<name>]  load a chunk from the network\n"
+                 "  delete <name>  delete a chunk from the network\n"
                  "  rpc            show timing statistics for executed RPCs\n"
                  "  account        show account status\n"
                  "  help           display this information\n"
                  "  exit, quit, q  terminate the application\n\n"
                  "The argument [name] signifies an arbitrary chunk name "
                  "used as substitute for the hexadecimal hash that identifies "
-                 "a chunk on the network.\n\n");
+                 "a chunk on the network. Where it is optional, omitting it "
+                 "refers to all known chunks.\n\n");
         } else if (cmd == "list") {
           client.List();
         } else if (cmd == "create") {
@@ -539,7 +567,7 @@ int main(int argc, char* argv[]) {
           if (args.size() >= 1)
             client.Load(args[0]);
           else
-            req_args = 1;
+            client.Load();
         } else if (cmd == "delete") {
           if (args.size() >= 1)
             client.Delete(args[0]);
