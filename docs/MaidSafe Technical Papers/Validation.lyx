@@ -56,7 +56,7 @@
 \begin_body
 
 \begin_layout Title
-'peer to peer' Public Key Infrastructure
+"Peer to Peer" Public Key Infrastructure
 \end_layout
 
 \begin_layout Author
@@ -72,13 +72,13 @@ September, 2010
 \end_layout
 
 \begin_layout Abstract
-This paper presents a system of validation that utilises asymmetrical encryption
+This paper presents a system of validation that utilises asymmetric encryption
  to create a Public Key Infrastructure (PKI) in a manner that requires no
  servers or centralised control.
  This method provides an extremely coherent and mathematically secure method
- of validation that can be employed in any modern network or system but
+ of validation that can be employed in any modern network or system, but
  is very well suited to distributed networks and in particular overlay networks
- such as Distributed Hash Tables (DHT's).
+ such as Distributed Hash Tables (DHTs).
  
 \end_layout
 
@@ -175,20 +175,19 @@ PARstart{V}{alidation}
 
  is a requirement for any connecting parties who are to exchange information
  to ensure uniqueness, proof of identity and generally any situation where
- the information requires clarification or authentication.
- This paper presents a system that uses many of the techniques used today,
- such as asymmetric encryption techniques.
+ the information requires verification or authentication.
+ This paper presents a system that employs many of the techniques used today,
+ such as asymmetric encryption.
 \end_layout
 
 \begin_layout Standard
-Another significant differentiator in the system presented is the ability
- for such a system to create multiple key-pairs and restrict a key to identifica
-tion only.
- This key can only identify the node or identity but cannot take any action
- aside from that, or the actions are limited.
- All other (and hopefully significant) actions are the responsibility of
- a non identification key, by this an identification key is the key used
- to validate a particular identity.
+Another significant differentiator in the system presented, is the ability
+ for such a system to create multiple key-pairs and restrict a key's purpose
+ to identification only.
+ Such a key can only be used to validate the identity of a particular node
+ or entity, but can take limited or no further actions aside from that.
+ All other (significant) actions are the responsibility of a non-identification
+ key.
 \end_layout
 
 \begin_layout Standard
@@ -199,7 +198,8 @@ key "1"
 
 \end_inset
 
- for some time now 
+ for some time now.
+ 
 \end_layout
 
 \begin_layout Subsection
@@ -208,11 +208,11 @@ The Issues Addressed by this Paper
 
 \begin_layout Standard
 The issue with today's PKI networks is the balance between trusting a chain
- of control or trusting known entities in a so called 'web of trust system'.
+ of control or trusting known entities in a so called "web of trust system".
  The former has to exist in a manner to be secure at the root and more important
 ly trusted.
  The latter is open to abuse should enough untrustworthy entities manage
- to rate each other as trusted in an manner synonymous with a Sybil attack
+ to rate each other as trusted in a manner synonymous with a Sybil attack
  on such networks where groups surround good entities and effectively intercept
  or hide information.
 \end_layout
@@ -234,17 +234,17 @@ This paper does not require all the operations listed below, but lists these
 \end_layout
 
 \begin_layout Standard
-Hash = Hash function such as SHA or MD5 etc.
+Hash = Hash function such as SHA, MD5, etc.
  
 \end_layout
 
 \begin_layout Standard
-Symm = Symmetrical encryption such as AES, 3DES etc.
+Symm = Symmetric encryption such as AES, 3DES, etc.
  
 \end_layout
 
 \begin_layout Standard
-Asym = Asymmetric encryption such as RSA or ECC etc.
+Asym = Asymmetric encryption such as RSA, ECC, etc.
 \end_layout
 
 \begin_layout Standard
@@ -252,12 +252,12 @@ PBKDF2 = Password-Based Key Derivation Function or similar
 \end_layout
 
 \begin_layout Standard
-Kpriv = private key (used to decrypt public key encrypted data or to sign
+Kpriv = private key (used to decrypt public-key-encrypted data or to sign
  data)
 \end_layout
 
 \begin_layout Standard
-Kpub = public key (used to encrypt)
+Kpub = public key (used to encrypt data or to validate signatures)
 \end_layout
 
 \begin_layout Standard
@@ -299,17 +299,17 @@ Here we assume the perfect algorithm and implementation of such, this is
 
 \end_inset
 
- be decrypted by the holder of the private key 
+ be decrypted by the holder of the corresponding private key 
 \begin_inset Formula $Kpriv$
 \end_inset
 
 .
- Therefor the private key can be considered to be the key to unlock the
+ Therefore the private key can be considered as the key for unlocking the
  data.
- It should be noted, however that the opposite is also true in that data
+ It should be noted however, that the opposite is also true, in that data
  encrypted with the private key can be decrypted by the public key.
  This seems strange and useless (as everyone has access to the public key),
- but is used to excellent effect and described shortly.
+ but is used to excellent effect as described shortly.
 \end_layout
 
 \begin_layout Subsection
@@ -328,12 +328,11 @@ A hash function can be thought of as a digital fingerprint.
  Just as a fingerprint of a person is supposed to be unique, then a digital
  hash function is also supposedly unique.
  We have all heard of two people with identical fingerprints (but perhaps
- have never met any !) and in the digital world it can be possible to get
- two peices of data with the same hash result.
+ have never met any!) and in the digital world it can be possible to get
+ two pieces of data with the same hash result.
  This is referred to as a collision and reduces the security of the hash
  algorithm.
- The more secure the alogirthm then the likelyhood of a collision (or two
- people having the same fingerprint) is reduced.
+ The more secure the algorithm, then the likelihood of a collision is reduced.
  It is very similar to taking more points of reference on an actual fingerprint
  to reduce collisions in that area of science also.
  This is an area where both systems share a similarity in the increasing
@@ -341,28 +340,21 @@ A hash function can be thought of as a digital fingerprint.
 \end_layout
 
 \begin_layout Standard
-In cryptographically secure hashing the data is analysed and a fixed length
- key is produced, this key is called the hash of the data.
- Again similarly with human fingerprinting a hash cannot reveal data just
+In cryptographically secure hashing, the data is analysed and a fixed length
+ key called the hash of the data is produced.
+ Again similarly to human fingerprinting a hash cannot reveal data just
  as a fingerprint cannot reveal a person (i.e.
  you cannot recreate the person from the print) and you cannot recreate
- the data from the hash, otherwise it would be a miraculous compression
- scheme indeed.
+ the data from the hash.
  
 \end_layout
 
 \begin_layout Standard
-Early hash algorithms are considered broken, such as md4, md5 and even early
- SHA schemes, this is a bad representation as they are not broken, they
- simply can allow too many collisions and larger decriptors (keylengths)
- and more efficient algorithms are almost always required.
+Early hash algorithms such as MD4, MD5 and even early SHA are considered
+ broken, in the sense that they simply allow too many collisions to occur.
+ Hence larger descriptors (keylengths) and more efficient algorithms are
+ almost always required.
  
-\end_layout
-
-\begin_layout Standard
-Therefor a hash is merely a best attempt to distinguish a piece of data
- by a fixed length string representation of the contents of the data and
- of only that data
 \begin_inset Foot
 status open
 
@@ -373,8 +365,7 @@ you can see where the problem exists as the logical conclusion is a key
 
 \end_inset
 
-, it is really as simple as that.
- 
+
 \end_layout
 
 \begin_layout Subsection
@@ -404,19 +395,17 @@ reference "sub:Cryptographically-secure-hash"
 \end_layout
 
 \begin_layout Standard
-If we now take a peice of data and hash that data, to produce a fixed length
+If we now take a piece of data and hash that data, to produce a fixed length
  key and encrypt that hash with our private key, anyone can decrypt the
- encrypted hash and then hash the data themselves and confirm it matches
+ encrypted hash and then hash the data themselves to confirm it matches
  the hash that was decrypted.
  This confirms the piece of data passed to you is in fact cryptographically
- guaranteed to be the peice of data the signature refers to, otherwise the
- decrypted hash would be different in which case the data is not in fact
- signed (or hashed and encrypted) by the person with the private key that
- matches the ID of the ID who claimed to sign the data.
+ guaranteed to be the piece of data the signature refers to, otherwise the
+ decrypted hash would be different.
 \end_layout
 
 \begin_layout Standard
-This is digital signing (albeit with some detail missing) as it's simplest.
+This is digital signing (albeit with some detail missing) at its simplest.
  This is as detailed an understanding as is required to manage this paper.
 \end_layout
 
@@ -435,8 +424,8 @@ This validation system requires, as all cryptographically secure validations
  being later tied to an identity and this is one of the fundamental tenets
  of this paper.
  The system this paper proposes will operate equally well with databases,
- DHT's or any key adressable storage system.
- In some cases this system will work outwith such key adressable systems,
+ DHTs or any key addressable storage system.
+ In some cases this system will work outwith such key addressable systems,
  although in a reduced fashion.
 \end_layout
 
@@ -493,11 +482,11 @@ In another small step we can introduce the ability for a revocation system.
 \end_inset
 
  .
- For key revocation to operate the identity packets should be stored in
- a way that retains all information as mutable unless the signer of the
+ For key revocation to operate, the identity packets should be stored in
+ a way that retains all information as immutable, unless the signer of the
  data requests amendment or deletion.
  In this case deletion is not recommended and replacement of the public
- key with a false key (all 0's for instance) would be identified quickly
+ key with a false key (all 0s for instance) would be identified quickly
  as a revoked key.
 \end_layout
 
@@ -545,11 +534,11 @@ name "sub:Passing-ID-between"
 \end_layout
 
 \begin_layout Standard
-Whereas the ID packet may be stored in any key adressable database or network
- as previously stated, there does exist a mathematically secure mechnism
+Whereas the ID packet may be stored in any key addressable database or network
+ as previously stated, there does exist a mathematically secure mechanism
  for doing so.
  This is possible as we have introduced a secure cryptographic hashing mechanism
- which allows us to ensure that it is unliley that we can produce two peices
+ which allows us to ensure that it is unlikely that we can produce two pieces
  of data that will hash collide.
  
 \end_layout
@@ -563,7 +552,7 @@ reference "sub:key-revocation"
 \end_inset
 
  is the hash of the content of the packet, in this case a public key and
- an (optional) signature, which we now know is another hash encrypted.
+ an (optional) signature, which we now know is another encrypted hash.
  Consider a message formatted as shown in Table 1.
 \end_layout
 
@@ -679,13 +668,13 @@ Payload
 \end_layout
 
 \begin_layout Standard
-In this scenario the message is recieved and is allegedly from an ID.
+In this scenario the message is received and is allegedly from an ID.
  The first 2 fields represent the ID packet that would be stored in the
- key addressable storage mechanism decribed earlier.
+ key addressable storage mechanism described earlier.
  Here though we can simply hash the first two fields and confirm the hash
  matches the ID we think the message is from.
- If the message is also signed then this is conformation this message is
- valid.
+ If the message is also signed then this is confirmation of the message's
+ validity.
  If there is no signature, a valid response would be to to take the public
  key in field 1, encrypt a message or challenge back to the sender, or indeed
  simply encrypt the reply the sender requested from you using this key.
@@ -693,18 +682,18 @@ In this scenario the message is recieved and is allegedly from an ID.
 \end_layout
 
 \begin_layout Standard
-It is therefor possible to validate an identity even without a key adressable
+It is therefore possible to validate an identity even without a key addressable
  network as long as all parties send the header fields required to identify
  themselves in the first place.
- The addition of key adressable storage though allows better key revocation
- in cases werhe 
+ However, the addition of key addressable storage allows better key revocation
+ in cases where 
 \begin_inset Formula $Kpriv_{1}$
 \end_inset
 
-may be compriomised, if it is stored on acessable media (such as a hard
- drive somewhere).
- The most efficient schemes would allow checking key validity on ocassion
- and this is possible in two ways.
+may be compromised (e.g.
+ if it is stored on accessible media such as a hard drive).
+ The most efficient schemes would allow checking key validity on occasion
+ and this is possible in two ways as described below.
  
 \end_layout
 
@@ -714,9 +703,10 @@ Key validity checks
 
 \begin_layout Standard
 We can easily tell if a key is valid cryptographically using either of the
- schemes previously decribed, however, there are situations where a cryptographi
-cally valid key is not in fact valid from our perspective and this is when,
- for whatever reason, a key has been revoked.
+ schemes previously described.
+ However, there are situations where a cryptographically valid key is not
+ in fact valid from our perspective and this is when, for whatever reason,
+ a key has been revoked.
  In such cases the system requires to be cryptographically secure in the
  revocation scheme being used and also has to ensure key validity is maintained
  and revoked keys no longer get used.
@@ -731,12 +721,11 @@ reference "sub:Passing-ID-between"
 
 \end_inset
 
- validity is chacked but currency of the key is not and it wil remian cryptograp
-hically valid forever!.
- Unless a check is somehow introduced into the system to tell if a key is
- currently valid as well as cryptographically valid, then there is room
- for abuse.
- Therefor a revocation scheme that can be bypassed would be next to useless.
+ validity is checked but currency of the key is not; a problem since it
+ will remain cryptographically valid forever! Unless a check is introduced
+ into the system to tell if a key is currently valid as well as cryptographicall
+y valid, then there is room for abuse.
+ Therefore a revocation scheme that can be bypassed would be next to useless.
  
 \end_layout
 
@@ -750,12 +739,12 @@ Check validity by looking up key
 \end_layout
 
 \begin_layout Standard
-The valiaidy of a key can be confirmed by forcing a lookup of the key in
+The validity of a key can be confirmed by forcing a lookup of the key in
  the key addressable storage medium.
- A mid way measure may be that keys passed in messages are tested for vaidity
+ A mid way measure may be that keys passed in messages are tested for validity
  at random.
  Either way would remove invalid credentials in a balance between speed
- and efficiency, with the forced lookup being the most efficient form a
+ and efficiency, with the forced lookup being the most efficient from a
  security perspective but perhaps too slow for some implementations.
 \end_layout
 
@@ -764,12 +753,12 @@ Check validity by message passing
 \end_layout
 
 \begin_layout Standard
-This section is a little involved and we need to step back a little and
+This section is somewhat involved and we need to step back a little and
  look again at the structure of the key pairs in the double checked message
  as shown in Table 1.
- It is notable in this case key pair 2 must be valid as they sign key pair
- 1, therefor it follows if key pair 2 is invalid then key pair 1 is automaticall
-y invalidated
+ It is notable in this case that key pair 2 must be valid as they sign key
+ pair 1, therefore it follows if key pair 2 is invalid then key pair 1 is
+ automatically invalidated
 \begin_inset Foot
 status open
 
@@ -791,23 +780,23 @@ Taking this into account we can clearly see the chain of validity in this
 \end_layout
 
 \begin_layout Standard
-In the case of message passing the message should contain both ID packets
+In the case of message passing, the message should contain both ID packets
  as per the table.
  The validity of key 2 is then tested to confirm key 1 is valid.
  This does make sense in the design so far where key 2 is never available
  on a disk or anywhere that can be placed in a position of mistrust.
  To do so we simply encrypt a message back using ID2's public key and the
- sender should be able to answer and / or sign a response.
+ sender should be able to answer and/or sign a response.
  This does though assume the request being made is a request that has come
- from an enitity that is at a higher level than the key1 holding node alone.
+ from an entity that is at a higher level than the key1 holding node alone.
  So this mechanism is only valid for higher level messages and not the lower
  level messages or actions that are restricted to the node level entity.
  
 \end_layout
 
 \begin_layout Standard
-Therefor in this implementation the message passing checking mechanism is
- only effective with a certian message type and therefor in a closed network
+So in this implementation, the message passing checking mechanism is only
+ effective with a certain message type and therefore in a closed network
  or system where message types are in fact known and/or able to be identified.
 \end_layout
 
@@ -819,7 +808,7 @@ key "4"
 
 \end_inset
 
- network can provide such a system as it depends on a node that can be identifei
+ network can provide such a system as it depends on a node that can be identifie
 d and behave, building rank which a user (who has 
 \begin_inset Formula $Kpriv_{2}$
 \end_inset
@@ -829,8 +818,8 @@ d and behave, building rank which a user (who has
 \end_inset
 
 thereby getting the benefits of any quid pro quo relationship with a node
- and the persons rank on the system.
- In this case the person can easily revoke and recreate the key transferring
+ and the person's rank on the system.
+ In this case the person can easily revoke and recreate the key, transferring
  any rank across to the new key.
  
 \end_layout
@@ -840,9 +829,9 @@ Combined with DHT
 \end_layout
 
 \begin_layout Standard
-DHT networks have a particular requirement in common and this is to create
- a network address that is unique.
- Many implementations use various techniques for achieving this such as
+All DHT networks have a particular requirement in common: to create a network
+ address that is unique.
+ There are various techniques for achieving this (e.g.
  chord
 \begin_inset CommandInset citation
 LatexCommand cite
@@ -850,18 +839,19 @@ key "2"
 
 \end_inset
 
- which uses the hash of the IP/PORT combination, Kademlia
+ uses the hash of the IP/PORT combination, Kademlia
 \begin_inset CommandInset citation
 LatexCommand cite
 key "3"
 
 \end_inset
 
- uses a random hash and so on.
+ uses a random hash and so on).
  Using the above method and actually storing the identification packet on
- the network can provide for uniqueness and at the same time a mechanism
- for finding a nodes public key to send information encrypted or to check
- a signature.
+ the network can provide for uniqueness while simultaneously providing a
+ mechanism for finding a node's public key, which can in turn be used to
+ send encrypted information to that node or to validate a signature from
+ that node.
  
 \end_layout
 
@@ -937,8 +927,8 @@ Improvements with security of private keys
 \end_layout
 
 \begin_layout Standard
-If such a system were implemented in a DHT or similar publically connected
- system (as are web servers), then the issue over the security of the private
+If such a system were implemented in a DHT or similar publicly connected
+ system (as web servers are), then the issue over the security of the private
  key is paramount.
  In today’s networks this is achieved via some brute force techniques such
  as firewalls, secured hard drives, private key passwords (which make automatic
@@ -963,14 +953,18 @@ Here, it is assumed that
 \begin_inset Formula $Kpub_{1}$
 \end_inset
 
- and that this key is not located on the machine or node as 
+ and that 
+\begin_inset Formula $Kpriv_{2}$
+\end_inset
+
+ is not located on the machine or node as 
 \begin_inset Formula $Kpriv_{1}$
 \end_inset
 
  has to be.
  The intention now would be to ensure that the node can only identify itself,
- but be limited in it's possible actions.
- In such a case the node acts for some client or person and this person
+ but be limited in its possible actions.
+ In such a case, the node acts for some client or person, and this person
  takes action on the network as that node, perhaps as the node is a node
  that succumbs to some kind of ranking mechanism which allows the person
  using this system to operate in a particular sphere of reference as laid
@@ -989,7 +983,7 @@ Here, it is assumed that
 \end_layout
 
 \begin_layout Standard
-A helpfull addition in this case is to consider the singnature key of this
+A helpful addition in this case is to consider the signature key of this
  identifier packet.
  This can be identified by the person quite easily as shown in 
 \begin_inset CommandInset ref
@@ -1006,15 +1000,15 @@ Conclusions
 \end_layout
 
 \begin_layout Standard
-This paper introduces a particular case for 'non rooted' yet cryptographically
- secure PKI networks to be created, it is envisaged that this method will
- extend with many more capabilities.
+This paper introduces a particular case for "non rooted" yet cryptographically
+ secure PKI networks to be created.
+ It is envisaged that this method will be extended with many more capabilities.
  Such measures may include:
 \end_layout
 
 \begin_layout List
 \labelwidthstring 00.00.0000
-Idnetification of credit card data linking the ID to a known name in another
+Identification of credit card data linking the ID to a known name in another
  secure location.
  People could have a card and a revocation card or perhaps even better all
  done in software using a keying approach as described in this paper.
@@ -1024,13 +1018,8 @@ Idnetification of credit card data linking the ID to a known name in another
 \begin_layout List
 \labelwidthstring 00.00.0000
 Single continuous validation systems where a known ID can be used across
- multiple web sites or on-line systems that require history to operate effectivl
-y.
-\end_layout
-
-\begin_layout List
-\labelwidthstring 00.00.0000
-
+ multiple web sites or on-line systems that require history to operate effective
+ly.
 \end_layout
 
 \begin_layout Bibliography
@@ -1041,7 +1030,7 @@ key "1"
 
 \end_inset
 
-As described by Van Jacobson in this link below, August 30, 2006 HTTP://video.Goo
+As described by Van Jacobson in this link below, August 30, 2006 http://video.Goo
 gle.com/videoplay?docid=-6972678839686672840
 \end_layout
 
@@ -1055,7 +1044,7 @@ key "2"
 
 Stoica, Robert Morris, David Karger, M.
  Frans Kaashoek, and Hari Balakrishnan,Chord: A Scalable Peer-to-peer Lookup
- Service for Internet Applications, .
+ Service for Internet Applications
 \end_layout
 
 \begin_layout Bibliography

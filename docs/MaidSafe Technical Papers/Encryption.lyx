@@ -54,7 +54,7 @@
 \begin_body
 
 \begin_layout Title
-Self encrypting data
+Self Encrypting Data
 \end_layout
 
 \begin_layout Author
@@ -74,13 +74,14 @@ This paper presents a system of encryption that requires no user intervention
  or passwords.
  The resultant data item then has to be saved or stored somewhere as in
  all methods.
- The encryption here is focussed on creating cypher-text (encrypted) objects
- that are extremely strong and closer to perfect in terms of reversibility
- as opposed to known encryption cyphers available today.
- This paper focusses on symmetric encryption, but does not attempt to create
- a new cypher, instead focusses on enhancing modern use of this technology
- to produce highly secure data and to do so in many situations and implementatio
-ns.
+ The encryption here is aimed at creating cipher-text (encrypted) objects
+ that are extremely strong and closer to perfect in terms of reversibility,
+ as opposed to known encryption ciphers available today.
+ This paper focuses on symmetric encryption, but does not introduce a new
+ cipher.
+ Instead the paper describes a method of enhancing the use of this technology
+ to produce highly secure data and, to do so in many situations and implementati
+ons.
  
 \end_layout
 
@@ -175,13 +176,12 @@ PARstart{E}{ncryption}
 
 \end_inset
 
- has been a goal of man since before the times of the Romans and Ceaser
- cyphers (simple replacement cyphers) through Enigma machine cyphers to
- modern day complex matrix manipulations present in abundance in computer
+ has been a goal of man since before the times of the Romans, and Caesar
+ Ciphers (simple replacement ciphers) through Enigma machine ciphers to
+ modern day complex matrix manipulations are present in abundance in computer
  enhanced algorithms.
- This paper takes such algorithms and adds some features in addition to
- direct encryption that clearly shows significant improvements in our use
- of encryption.
+ This paper describes a way to use such algorithms in addition to direct
+ encryption that clearly shows significant improvements in our use of encryption.
  
 \end_layout
 
@@ -190,20 +190,19 @@ The Issues Addressed by this Paper
 \end_layout
 
 \begin_layout Standard
-The issue with today's encryption of data is in just that, we encrypt data,
+The issue with today's encryption of data is in just that; we encrypt data,
  as a whole.
- This reduces immediately the potential set of possible inputs, i.e.
- if we are chasing somebodies bank balance, we may expect the output to
- be roughly the size of a bank statement and guess what? it is! In another
- convention or proposition, a whole piece of data encrypted with a single
- algorithm would only require the algorithm to be broken.
- Almost all encryption cyphers appear to be reduced in effectiveness as
- we understand the mathematics better and have more powerful computers,
- this is unlikely to reduce in the future.
- One may believe then the answer is encrypt bits of files, although this
- would require many passwords or algorithms, like putting more locks on
- a door to make it more secure, it does give people a headache to think
- they may have to remember multiple passwords for each file.
+ This reduces the potential set of possible inputs, i.e.
+ if we are chasing somebody's bank balance, we may expect the output to
+ be roughly the size of a bank statement, and guess what? It is! Furthermore,
+ the security of a whole piece of data encrypted with a single algorithm
+ depends upon just that single algorithm not getting broken.
+ Almost all encryption ciphers appear to reduce in effectiveness as we understan
+d the mathematics better and create more powerful computers.
+ One may believe then, that the answer is to encrypt bits of files.
+ However, this would require many passwords or algorithms; like putting
+ more locks on a door to make it more secure, it gives people a headache
+ to think that they may have to remember multiple passwords for each file.
  This is unlikely to be a successful manoeuvre.
 \end_layout
 
@@ -217,12 +216,12 @@ This paper does not require all the operations listed below, but lists these
 \end_layout
 
 \begin_layout Standard
-Hash = Hash function such as SHA or MD5 etc.
+Hash = Hash function such as SHA, MD5, etc.
  
 \end_layout
 
 \begin_layout Standard
-Symm = Symmetrical encryption such as AES, 3DES etc.
+Symm = Symmetrical encryption such as AES, 3DES, etc.
  
 \end_layout
 
@@ -231,7 +230,7 @@ PBKDF2 = Password-Based Key Derivation Function or similar
 \end_layout
 
 \begin_layout Subsection
-Symmetric encryption
+Symmetric Encryption
 \end_layout
 
 \begin_layout Standard
@@ -245,7 +244,7 @@ This paper will use symmetric encryption as a term to cover all algorithms
 \end_layout
 
 \begin_layout Subsection
-Cryptographically secure hash
+Cryptographically Secure Hash
 \begin_inset CommandInset label
 LatexCommand label
 name "sub:Cryptographically-secure-hash"
@@ -260,12 +259,11 @@ A hash function can be thought of as a digital fingerprint.
  Just as a fingerprint of a person is supposed to be unique, then a digital
  hash function is also supposedly unique.
  We have all heard of two people with identical fingerprints (but perhaps
- have never met any !) and in the digital world it can be possible to get
+ have never met any!) and in the digital world it can be possible to get
  two pieces of data with the same hash result.
  This is referred to as a collision and reduces the security of the hash
  algorithm.
- The more secure the algorithm then the likelihood of a collision (or two
- people having the same fingerprint) is reduced.
+ The more secure the algorithm, then the likelihood of a collision is reduced.
  It is very similar to taking more points of reference on an actual fingerprint
  to reduce collisions in that area of science also.
  This is an area where both systems share a similarity in the increasing
@@ -273,28 +271,20 @@ A hash function can be thought of as a digital fingerprint.
 \end_layout
 
 \begin_layout Standard
-In cryptographically secure hashing the data is analysed and a fixed length
- key is produced, this key is called the hash of the data.
- Again similarly with human fingerprinting a hash cannot reveal data just
+In cryptographically secure hashing, the data is analysed and a fixed length
+ key called the hash of the data is produced.
+ Again similarly to human fingerprinting a hash cannot reveal data just
  as a fingerprint cannot reveal a person (i.e.
  you cannot recreate the person from the print) and you cannot recreate
- the data from the hash, otherwise it would be a miraculous compression
- scheme indeed.
+ the data from the hash.
  
 \end_layout
 
 \begin_layout Standard
-Early hash algorithms are considered broken, such as md4, md5 and even early
- SHA schemes, this is a bad representation as they are not broken, they
- simply can allow too many collisions and larger descriptors (key lengths)
- and more efficient algorithms are almost always required.
- 
-\end_layout
-
-\begin_layout Standard
-Therefore a hash is merely a best attempt to distinguish a piece of data
- by a fixed length string representation of the contents of the data and
- of only that data
+Early hash algorithms such as MD4, MD5 and even early SHA are considered
+ broken, in the sense that they simply allow too many collisions to occur.
+ Hence larger descriptors (keylengths) and more efficient algorithms are
+ almost always required.
 \begin_inset Foot
 status open
 
@@ -305,8 +295,7 @@ you can see where the problem exists as the logical conclusion is a key
 
 \end_inset
 
-, it is really as simple as that.
- 
+
 \end_layout
 
 \begin_layout Section
@@ -331,7 +320,7 @@ name "sub:Overvew"
 \begin_layout Enumerate
 
 \lang english
-Take file and get hash of this.
+Get hash of whole file.
 \end_layout
 
 \begin_layout Enumerate
@@ -349,7 +338,7 @@ Take hash of each chunk.
 \begin_layout Enumerate
 
 \lang english
-Create another chunk by concatenating the hash of the file.
+Create another chunk by concatenating the hashes of other chunks.
 \end_layout
 
 \begin_layout Enumerate
@@ -362,9 +351,8 @@ XOR (or an equivalent logical operation) the chunks together as in a one
 \begin_layout Enumerate
 
 \lang english
-Take the hash from (3) and use the hash of chunk +1 as the key, use the
- hash of chunk +2 as the IV (yes this will force each file to the exact
- same output).
+Take the hash from (3) and use the hash of chunk + 1 as the key, use the
+ hash of chunk + 2 as the IV.
 \end_layout
 
 \begin_layout Enumerate
@@ -372,11 +360,6 @@ Take the hash from (3) and use the hash of chunk +1 as the key, use the
 \lang english
 Rename each with the hash of the new content and save these hashes.
  
-\end_layout
-
-\begin_layout Standard
-For multiple files this is a recursive process which will in itself create
- a large file 
 \end_layout
 
 \begin_layout Subsection
@@ -409,11 +392,11 @@ Take the size of the file
 \begin_inset Formula $(f.size())$
 \end_inset
 
- and calculate number of chunks 
+ and calculate number 
 \begin_inset Formula $n$
 \end_inset
 
-
+ of chunks
 \begin_inset Foot
 status collapsed
 
@@ -440,7 +423,7 @@ Create chunks by taking the first
  and randomise the chunk sizes to remove the possibility of gathering a
  set of similar chunks and associating these with a piece of data.
  This process must allow chunks to be of varying sizes in a manner not calculabl
-e (this is why the hash is used).
+e without the original file (this is why the hash is used).
  Many algorithms can be employed at this stage.
 \end_layout
 
@@ -456,51 +439,77 @@ Obfuscation Step
 \end_layout
 
 \begin_layout Standard
-Repeatedly rehash the file hash, 
+In the obfuscation step, we pollute each chunk with data from other chunks.
 \end_layout
 
 \begin_layout Example
-for (std::str length=
-\begin_inset Formula $H(hf)$
+For 
+\begin_inset Formula $c_{n}$
 \end_inset
 
-; length.size() < file.size(); length+=
-\begin_inset Formula $H(length)$
-\end_inset
-
-).
+, create an identically-sized data chunk by repeatedly rehashing the hash
+ of chunk n + 2 and appending the result, i.e.
  
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\noun off
+\color none
+\lang english
+
+\begin_inset Formula $H(c_{n+2})+H(H(c_{n+2}))+H(H(H(c_{n+2})))+...$
+\end_inset
+
+
 \end_layout
 
 \begin_layout Standard
-This is the XOR (
+This is called the XOR chunk 
+\begin_inset Formula $n$
+\end_inset
+
+ (
+\begin_inset Formula $c_{XORn}$
+\end_inset
+
+) and is unsurprisingly XORed (
 \begin_inset Formula $\bigoplus$
 \end_inset
 
-) chunk.
- The process is now a repeated XOR
+) with chunk 
+\begin_inset Formula $n$
+\end_inset
+
+.
 \begin_inset Foot
 status open
 
 \begin_layout Plain Layout
 In this case we have selected XOR to represent a logical operation to obfuscate
  the data, this is not restrictive in any way and may be replaced by other
- operations to enhance the operation.
+ obfuscation methods.
 \end_layout
 
 \end_inset
 
-operation.
+
 \end_layout
 
 \begin_layout Example
 \align left
 
 \lang english
-\begin_inset Formula $(XORchunk\bigoplus c_{1})\equiv c_{1x},(c{\scriptscriptstyle 1}\bigoplus c{\scriptscriptstyle 2})\equiv c_{2x}\ldots(C_{n}\bigoplus c{\scriptscriptstyle 1})\equiv c_{nx}$
+\begin_inset Formula $c_{XOR1}\bigoplus c_{1}\equiv c_{x1}$
 \end_inset
 
- (rotational operation)
+, 
+\begin_inset Formula $c_{XOR2}\bigoplus c_{2}\equiv c_{x2}$
+\end_inset
+
+, etc.
 \end_layout
 
 \begin_layout Subsection
@@ -508,7 +517,7 @@ Encryption Step
 \end_layout
 
 \begin_layout Standard
-In the encryption stage we require two separate non deterministic pieces
+In the encryption stage, we require two separate non deterministic pieces
  of data, the encryption key (or password) and the Initialisation Vector
  (IV).
  To ensure all data encrypts to the same end result we determine the IV
@@ -538,12 +547,19 @@ Encrypt with key and IV is shown as
 \end_inset
 
 in the following example.
- It is assumed the key size is the hash size and the IV is derived from
- the first portion of the hash of the appropriate chunk hash.
+ It is assumed the key and the IV for chunk 
+\begin_inset Formula $n$
+\end_inset
+
+ are derived from separate portions of the hash of chunk 
+\begin_inset Formula $n+1$
+\end_inset
+
+.
 \end_layout
 
 \begin_layout Example
-\begin_inset Formula $ENC_{[C_{n+1}][C_{n+2}]}(c_{n})\equiv C_{xen}$
+\begin_inset Formula $Enc{}_{[H(c_{n+1})][H(c_{n+1})]}(c_{xn})\equiv c_{xen}$
 \end_inset
 
 
@@ -553,10 +569,10 @@ in the following example.
 Therefore we have the final stage of the data represented as chunks of highly
  obfuscated chunks.
  We than take the hash of each chunk again 
-\begin_inset Formula $H(C_{xen})$
+\begin_inset Formula $H(c_{xen})$
 \end_inset
 
- and rename each chunk by the hash of it's content.
+ and rename each chunk with the hash of its content.
 \end_layout
 
 \begin_layout Subsection
@@ -564,11 +580,10 @@ Data Map
 \end_layout
 
 \begin_layout Standard
-In the previous sections we discovered the process of self encrypting data,
- however, it did leave several as of yet unanswered questions.
- How do we reverse this process to retrieve the plain-text form the cypher
- text chunks.
- The answer is data maps.
+In the previous sections, we described the process of self encrypting data.
+ However, it did leave an important question unanswered.
+ How do we reverse this process to retrieve the plain-text from the cipher-text
+ chunks? The answer is data maps.
  
 \end_layout
 
@@ -580,9 +595,9 @@ reference "sub:Overvew"
 
 \end_inset
 
-steps 1,3 & 7 we collected important data.
- This data alone is enough to reverse this process and this is stored in
- a structure we refer to as a data map.
+ steps 1, 3 & 7 we collected important data.
+ This data alone is enough to reverse the encryption process and this is
+ stored in a structure we refer to as a data map.
  This is described in the following table.
 \end_layout
 
@@ -725,28 +740,29 @@ steps 1,3 & 7 we collected important data.
 
 
 \emph on
-Data Map structure
+ Data Map structure
 \end_layout
 
 \begin_layout Standard
 With this structure the names of all the chunks are in the right hand column
- and all passwords and IV's are stored in the left hand column.
+ and all passwords and IV's (which are derived from the original chunk hashes)
+ are stored in the left hand column.
  The file hash in the top row identifies the data element and acts as the
  unique key for this file.
  Reversing the process is now obvious.
 \end_layout
 
 \begin_layout Enumerate
-Retrieve the chunks as described in right hand column.
+Retrieve the chunks listed in right hand column.
 \end_layout
 
 \begin_layout Enumerate
-Reverse the encryption stage.
+Decrypt each.
  
 \end_layout
 
 \begin_layout Enumerate
-Create a the XOR chunk again.
+Create each XOR chunk again.
 \end_layout
 
 \begin_layout Enumerate
@@ -762,20 +778,16 @@ This is the complete encrypt / decrypt process for each file.
 \end_layout
 
 \begin_layout Subsection
-Data Atlas or recursive data maps
+Data Atlas or Recursive Data Maps
 \end_layout
 
 \begin_layout Standard
-Encrypting multiple files is now a repeated method of a single file.
- This can be carried out very easily by re-cursing though a directory structure,
- creating chunks and storing them somewhere and gathering together lots
- of Data Maps 
+The data maps 
 \begin_inset Formula $(dm)$
 \end_inset
 
-.
- We can concatenate all these into a new piece of data we call the Data
- Atlas 
+ from multiple files can be concatenated into a new structure we call the
+ Data Atlas 
 \begin_inset Formula $(da)$
 \end_inset
 
@@ -786,22 +798,10 @@ Encrypting multiple files is now a repeated method of a single file.
 
 .
  This data atlas is itself now a large piece of data and is fed into the
- process once more.
+ self-encryption process once more.
  This produces a single data map and more chunks.
- These chunks are stored somewhere and the single remaining data atlas is
+ These chunks are stored somewhere and the single remaining data map is
  the key to all the data.
- This is the data map of the data atlas and is a crucial piece of information
- which must be secured by encrypting it, storing it safely somewhere or
- some other mechanism of the readers choice.
- In the maidsafe network this is the encrypted content of the TMID packet
- as described in 
-\begin_inset CommandInset citation
-LatexCommand cite
-key "1"
-
-\end_inset
-
-.
 \end_layout
 
 \begin_layout Section
@@ -812,8 +812,8 @@ Conclusions
 This process allows for multiple data elements to be encrypted in a very
  powerful fashion.
  Indeed there may be some debate as to whether the encryption or obfuscation
- stages cannot be left out (well at least one of them).
- It is decided this is not a bottleneck in such a system as data can be
+ stages cannot be left out (well, at least one of them).
+ It is decided this is not a bottleneck in such a system, as data can be
  processed at speeds in excess of current networking capabilities in many
  cases.
  This is open to further research for differing situations though.
@@ -821,8 +821,8 @@ This process allows for multiple data elements to be encrypted in a very
 \end_layout
 
 \begin_layout Standard
-An important issue here is that all data (with the exception of the dm of
- the da) is encrypted using no user information or input.
+An important issue here is that all data is encrypted using no user information
+ or input.
  This means that if the container for all the chunks is a single container
  then duplicate files will produce the exact same chunks and the storage
  system can automatically remove duplicate information.
@@ -830,17 +830,24 @@ An important issue here is that all data (with the exception of the dm of
 \end_layout
 
 \begin_layout Standard
-Also interesting is the fact that the encryption may be seen as a 'step
- to far', never the less it does indicate that any break in an encryption
- cypher will not reveal any data to an attacker.
+Also interesting is the fact that the encryption may be seen as a 
+\begin_inset Quotes eld
+\end_inset
+
+step too far
+\begin_inset Quotes erd
+\end_inset
+
+; nevertheless it does indicate that any break in an encryption cipher will
+ not reveal any data to an attacker.
  This is a valuable and important point.
  
 \end_layout
 
 \begin_layout Standard
 It is hoped the research in this field will continue and measures of number
- of chunks verses data map size etc.
- would reveal differing results for differing situations.
+ of chunks versus data map size, etc.
+ would reveal interesting scope for optimisations and improvements.
  
 \end_layout
 
