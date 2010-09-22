@@ -1,0 +1,2206 @@
+#LyX 1.6.7 created this file. For more info see http://www.lyx.org/
+\lyxformat 345
+\begin_document
+\begin_header
+\textclass IEEEtran
+\use_default_options false
+\language english
+\inputencoding default
+\font_roman default
+\font_sans default
+\font_typewriter default
+\font_default_family default
+\font_sc false
+\font_osf false
+\font_sf_scale 100
+\font_tt_scale 100
+
+\graphics default
+\paperfontsize default
+\spacing single
+\use_hyperref false
+\papersize default
+\use_geometry false
+\use_amsmath 0
+\use_esint 0
+\cite_engine basic
+\use_bibtopic false
+\paperorientation portrait
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\defskip medskip
+\quotes_language english
+\papercolumns 2
+\papersides 1
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\author "" 
+\author "" 
+\end_header
+
+\begin_body
+
+\begin_layout Title
+Autonomous network
+\end_layout
+
+\begin_layout Author
+David Irvine, david.irvine@maidsafe.net, Fraser Hutchison, Steve muecklisch,
+ maidsafe.net limited (registered in Scotland Sc 297540)
+\end_layout
+
+\begin_layout Date
+September, 2010
+\end_layout
+
+\begin_layout Abstract
+Autonomous networks are a self healing, self managing and most importantly
+ independent of human interference.
+ Such networks will allow technology to grow and provide services that enable
+ the focus on extending capabilities rather than any wasted efforts in maintaini
+ng even simple mechanisms such as storage, scalability and data retention.
+ Such systems will quickly extend to providing a method of highly scaleable
+ platforms that can accomodate real time transactional logic.
+ A workign example of an autonomous network is outlined in this paper.
+\end_layout
+
+\begin_layout Keywords
+security, freedom, privacy, authentication, encryption, autonomous 
+\end_layout
+
+\begin_layout MarkBoth
+maidsafe.net limited company confidential Version 0.1
+\begin_inset ERT
+status collapsed
+
+\begin_layout Plain Layout
+
+}{
+\end_layout
+
+\end_inset
+
+...
+\end_layout
+
+\begin_layout Standard
+\begin_inset CommandInset toc
+LatexCommand tableofcontents
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset FloatList table
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset FloatList algorithm
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout --Separator--
+
+\end_layout
+
+\begin_layout Section
+Introduction
+\end_layout
+
+\begin_layout Standard
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+PARstart{C}{omputing}
+\end_layout
+
+\end_inset
+
+ capability has dramatically evolved in recent years, particularly with
+ much more powerful processing power and available interconnectivity of
+ devices via the Internet.
+ This has allows the creation of remarkable technology that would have appeared
+ space age or the imagination of a science fiction writer comparitively
+ recently.
+ Devices and applications that allow world mapping, video conferencing on
+ the move, instant recording and sharing of nearly any type of information
+ from text to high definition video, the ability to know where you are anywhere
+ in the world and to locate friends, information and tools to help calculate
+ results of questions is without doubt amazing and the ferocity of the innovatio
+n is increasing at a rate hardly imaginable.
+ 
+\end_layout
+
+\begin_layout Standard
+There is a huge downside though and that is the ability to store such data
+ in secure accessible and reliable locations without the requirement for
+ human organization.
+ Today's cloud computing paradigm is an attempt to deliver such a system,
+ but does so in a manner that is more hype than fact.
+ Actuality today's cloud computing is the antithesis of actual or true cloud
+ computing and is merely a marketing attempt to persuade us that an autonomous
+ network has been created.
+ 
+\end_layout
+
+\begin_layout Standard
+This paper delivers a true platform for cloud computing, that ensures human
+ intervention is forbidden and in fact circumvents any attempts to manipulate
+ data or processes.
+\end_layout
+
+\begin_layout Subsection
+Current situation
+\begin_inset CommandInset label
+LatexCommand label
+name "sub:Current-situation"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Given a shared resource in nature then the bargain between sharing parties
+ tends to be physically local and therefor involve only the sharing parties.
+ In society this tends to also be the case, with some notable exceptions
+ where barter has been replaced with money and trust and control partially
+ involves a third party, particularly in credit agreements.
+ 
+\end_layout
+
+\begin_layout Standard
+It is an illogical consideration to have created a technology based solution
+ which requires this demand of trust and to do so in a manner that is almost
+ uncontrolled.
+ Technology tends to be based on logic and certainly the basis of modern
+ computers is based entirely on logic gates and is not, at it's foundation,
+ based on any relinquishment of personal control to any third party.
+ In fact computers at their foundation are based on calculation and processing,
+ storage came much later in the development of the technical revolution.
+ 
+\end_layout
+
+\begin_layout Standard
+Given these observations, it would appear obvious that creating, sharing
+ and retrieving information fed into a computing device by a person should
+ not require that computer to connect to a network of computers with a controlle
+r or guardian that is not a system of pure logic.
+ Given a situation where there is an interconnect of computers, that in
+ effect joins them all together, it would appear that bolting in a system
+ of 'man in the middle' would appear to make no sense what so ever.
+ 
+\end_layout
+
+\begin_layout Standard
+A significant reason for the current situation is the inability for identities
+ to be created, managed and independently controlled.
+ This is a reasonable request from people to make from their technology,
+ but so far has been regarded as impossible by technology professionals.
+ A system of identity management is fundamental for the removal of the illogical
+ situation of today.
+ 
+\end_layout
+
+\begin_layout Subsection
+Pre-requisits 
+\end_layout
+
+\begin_layout Standard
+Prior to attempting this paper it is highly advisable the reader fully understan
+d 
+\emph on
+Self Encrypting Data 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "2"
+
+\end_inset
+
+ 
+\emph default
+and
+\emph on
+ peer to peer public key infrastructure 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "3"
+
+\end_inset
+
+.
+ 
+\emph default
+These papers in themselves define some components that will be used with
+ the system as presented here, in fact the paper 
+\emph on
+peer to peer public key infrastructure 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "3"
+
+\end_inset
+
+ 
+\emph default
+is a fundamental requirement of the autonomous network presented here.
+\end_layout
+
+\begin_layout Subsection
+General conventions
+\end_layout
+
+\begin_layout Itemize
+Node = a network resource which is a process, sometimes referred to as a
+ vault in other papers.
+ This is the computer program that maintains the network and on it's own
+ is not very special.
+ It is in collaboration this node becomes part of a very complex, sophisticated
+ and efficient network.
+\end_layout
+
+\begin_layout Itemize
+H = Hash function such as SHA or MD5 etc.
+ 
+\end_layout
+
+\begin_layout Itemize
+Sym[key](content) = Symmetric encryption 
+\end_layout
+
+\begin_layout Itemize
+SymDec[content] = Symmetric decryption
+\end_layout
+
+\begin_layout Itemize
+Asym[key](content) = Asymmetric encryption 
+\end_layout
+
+\begin_layout Itemize
+AsymDec[content] = Asymmetric decryption
+\end_layout
+
+\begin_layout Itemize
+PBKDF2[key][iter count] = Password-Based Key Derivation Function or similar
+\end_layout
+
+\begin_layout Itemize
+PutV[key][value] = put a Value on the storage system
+\end_layout
+
+\begin_layout Itemize
+GetV[key] = get Value from storage system
+\end_layout
+
+\begin_layout Itemize
+DelV[key] = delete Value from storage system
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\bigoplus$
+\end_inset
+
+= XOR operation
+\end_layout
+
+\begin_layout Itemize
+K = DHT replication factor (Kadmelia is the chosen DHT for this paper)
+\end_layout
+
+\begin_layout Subsection
+Specific conventions
+\end_layout
+
+\begin_layout Subsubsection
+Network identities
+\end_layout
+
+\begin_layout Standard
+As defined in 
+\emph on
+peer to peer public key infrastructure
+\emph default
+ 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "3"
+
+\end_inset
+
+, the ability to create keys that are both cryptographically secure and
+ mathematically deduced is shown.
+ Several of these keys are introduced here as well as additional specific
+ components:
+\end_layout
+
+\begin_layout List
+\labelwidthstring 00.00.0000
+DHT This paper assumes the use of a key addressable network and in this
+ case a Kademlia (Distributed Hash Table) DHT is assumed.
+ There is no requirement for this to be restrictive in any way.
+ The DHT can be replaced with any key addressable network.
+ It is also assumed there is no issue with Network Address Translation (NAT)
+ and all nodes can freely communicate.
+ In this paper it is assumed all keys are signed on the system and only
+ the signatory identity may amend or delete a value.
+ There may be rules as to which identity can store certain information in
+ specific locations.
+ Such an implementation can be found at this URL http://code.google.com/p/maidsafe
+-dht/ .
+ This implements a Kademlia based network and is described in 
+\emph on
+maidsafe distributed hash table
+\emph default
+
+\begin_inset CommandInset citation
+LatexCommand cite
+key "6"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout List
+\labelwidthstring 00.00.0000
+ANMAID The (anonymous maidsafe anonymous identification ) root packet of
+ a chain that reaches as far as the MPID (below).
+ This is a pure packet, which means that the identity is created as 
+\begin_inset Formula $H(Pub_{[ANMAID]}+Sign(priv_{[ANMAID]}))$
+\end_inset
+
+.
+ This identity is never stored on the network, thereby even something encrypted
+ with this private key is not on the network at all.
+ It is assumed this identity is otherwise maintained securely by a system
+ such as 
+\emph on
+maidsafe.net a new network paradigm
+\emph default
+ 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "4"
+
+\end_inset
+
+, this is a separate paper which provides a complete solution, dependent
+ on this paper.
+ 
+\end_layout
+
+\begin_layout List
+\labelwidthstring 00.00.0000
+MAID The (maidsafe anonymous identification) is a packet that is created
+ as follows 
+\begin_inset Formula $H(Pub_{[MAID]}+Sign(priv_{[ANMAID]}))$
+\end_inset
+
+.
+ This identity is stored on the network at the address of the identity,
+ which is as described in 
+\emph on
+peer to peer public key infrastructure
+\emph default
+ 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "3"
+
+\end_inset
+
+.
+ This 
+\begin_inset Formula $Priv_{MAID}$
+\end_inset
+
+ can also be used by another node or component (even a person) to act on
+ the network with the same authority the MPID has.
+ This is an important distinction from many other such systems.
+ The ANMAID is the revocation key for this identity.
+ 
+\end_layout
+
+\begin_layout List
+\labelwidthstring 00.00.0000
+MPID The (maidsafe proxy identification) MPID is a packet that is created
+ by generating a cryptographically secure key pair and signing this with
+ the MAID private key as follows: 
+\begin_inset Formula $H(Pub_{[MPID]}+Sign(priv_{[MAID]}))$
+\end_inset
+
+.
+ The 
+\begin_inset Formula $Priv_{MPID}$
+\end_inset
+
+ has to be stored on the machine that runs the Node process.
+ This is a potential security risk and therefore the system requires that
+ the MPID identity be restricted in capability as far as possible.
+ This paper makes this distinction where possible.
+ The MAID is the revocation key for this identity.
+\end_layout
+
+\begin_layout Section
+Overview
+\end_layout
+
+\begin_layout Subsection
+Proposed solution
+\end_layout
+
+\begin_layout Standard
+The answer to the current issues as described in 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:Current-situation"
+
+\end_inset
+
+ is to redesign networks to require no central control and by implication,
+ no servers as we currently know them, whether centralised or distributed.
+ To achieve this there are several important requirements.
+\end_layout
+
+\begin_layout Subsubsection
+Requirements
+\end_layout
+
+\begin_layout Enumerate
+Encryption of data units to a very high level.
+ This is described in 
+\emph on
+Self encrypting data
+\emph default
+ 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "2"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Enumerate
+A method of validation of nodes as described in
+\emph on
+ peer to peer public key infrastructure
+\emph default
+
+\begin_inset CommandInset citation
+LatexCommand cite
+key "3"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Enumerate
+The ability to randomly select nodes based on a mathematically distributed
+ algorithm that can identify groups of nodes to act as independent certification
+ for network actions (and in some cases arbitration).
+\end_layout
+
+\begin_layout Enumerate
+A method of distributed and verifiable measurement of a nodes capability.
+\end_layout
+
+\begin_layout Enumerate
+A system of distribution of data to ensure geographic protection of replicate
+ information.
+\begin_inset Foot
+status open
+
+\begin_layout Plain Layout
+Here we assume replication as opposed to forward error correction.
+ This is a debate in computer science and may rage on for a while.
+ In this paper we assume a more binary approach to data safety, it is either
+ secure or not as opposed to possibly secure in the forward error correction
+ model.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsubsection
+Improvements
+\end_layout
+
+\begin_layout Standard
+One improvement, but not requirement, is the application of a ranking system
+ to allow a granular approach to Node capability and therefor 
+\emph on
+cost
+\emph default
+ to the network.
+ 
+\end_layout
+
+\begin_layout Subsubsection
+Methodology 
+\end_layout
+
+\begin_layout Standard
+The thinking involved in such a system is very similar to the thought process
+ behind Kademlia itself in many ways.
+ It is also apparently simple at first look but much more complex when deriving
+ the detail and particularly when considering alterations to logic and the
+ consequences of such.
+ 
+\end_layout
+
+\begin_layout Section
+Detailed implementation
+\end_layout
+
+\begin_layout Subsection
+Main components 
+\end_layout
+
+\begin_layout Subsubsection
+Knode
+\end_layout
+
+\begin_layout Standard
+A Kademlia node (knode) each node has an instance of a knode Kademlia is
+ mainly used as the means of finding peers, not for actually storing/retrieving
+ data, this is left to another layer that acts as an overlay to the DHT
+ overlay network itself.
+ 
+\end_layout
+
+\begin_layout Subsubsection
+Kademlia API / RPC's
+\end_layout
+
+\begin_layout Standard
+Please see Table 1.
+ 
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float table
+wide true
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset Tabular
+<lyxtabular version="3" rows="10" columns="3">
+<features>
+<column alignment="center" valignment="top" width="0">
+<column alignment="center" valignment="top" width="0">
+<column alignment="center" valignment="top" width="0">
+<row endhead="true" endfirsthead="true">
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Request
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Response
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Purpose
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $Sign(PMIDkeypair)_{[MAID]}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $NACK||ACK$
+\end_inset
+
+ 
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+SET_OWN
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $RSAenc(Sign(PORT\; number)_{[MAID]})_{PMID}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $NACK||ACK$
+\end_inset
+
+ 
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+SET_PORT
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $RSAenc(Sign(PMID1keypair/space)_{[MAID]})_{PMID}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $NACK||ACK$
+\end_inset
+
+ 
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+ADD_ANOTHER_PMID
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $RSAenc(Sign(Space\: Avail)_{[MAID]})_{PMID}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $RSAenc\; x\; Mb_{[MAID]}$
+\end_inset
+
+
+\begin_inset Formula $ $
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+FREE_SPACE
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $RSAenc(Sign(All\; Space\: Avail)_{[MAID]})_{PMID}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $RSAenc\; List\; dir/space_{[MAID]}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+FREE_SPACE_ALL
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $RSAenc(Sign(All\; Drives)_{[MAID]})_{PMID}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $RSAenc\; List\; dir/space_{[MAID]}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+LIST_STORES
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $RSAenc(Sign(List\; dir/space)_{[MAID]})_{PMID}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $NACK||ACK$
+\end_inset
+
+ 
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+SET_STORES
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $RSAenc(Sign(DeletePMID)_{[MAID]})_{PMID}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $NACK||ACK$
+\end_inset
+
+ 
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+DELETE_ALL
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $RSAenc(Sign(DeletePMIDX)_{[MAID]})_{PMID}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $RSASign(Delete)_{[MAID]}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+DELETE_A_PMID
+\end_layout
+
+\end_inset
+</cell>
+</row>
+</lyxtabular>
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption
+
+\begin_layout Plain Layout
+Node Control RPCs
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float table
+wide true
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset Tabular
+<lyxtabular version="3" rows="13" columns="3">
+<features>
+<column alignment="center" valignment="top" width="0">
+<column alignment="center" valignment="top" width="0">
+<column alignment="center" valignment="top" width="0">
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\emph on
+Request
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\emph on
+Response
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\emph on
+Purpose
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $RSAenc(Sign(SAVE\; name\; size)_{[PMID1]})_{PMID}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $NACK||ACK$
+\end_inset
+
+ 
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+SAVE_DATA
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $RSAenc(Give\; name)_{PMID}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+chunk
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+GET_DATA
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $RSAenc(Sign(name+RND\; DATA)_{[PMID1]})_{PMID}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $RSAenc(Sign(hash)_{[PMID]})_{PMID1}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+VALIDITY_CHECK
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $RSAenc(Sign(++name)_{[PMID1]})_{rankPMID}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $NACK||ACK$
+\end_inset
+
+ 
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+INC_RANK
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $RSAenc(Sign(--name)_{[PMID1]})_{rankPMID}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $NACK||ACK$
+\end_inset
+
+ 
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+DEC_RANK
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $RSAenc(Sign(---name))_{rankPMID}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $NACK||ACK$
+\end_inset
+
+ 
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+REP_DEC_RANK
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $RSAenc(Sign(addReference)_{PMID})_{referencePMID}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $NACK||ACK$
+\end_inset
+
+ 
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+ADD_REF
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $RSAenc(Sign(delReference)_{PMID})_{referencePMID}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $NACK||ACK$
+\end_inset
+
+ 
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+DEL_REF
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $RSAenc(Sign(addmessage)_{allowed\; PMID})_{PMID}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $NACK||ACK$
+\end_inset
+
+ 
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+ADD_MESSAGE
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $RSAenc(Sign(read\; all\; message)_{PMID})_{PMID}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $RSAenc(Sign(msgs))_{PMID}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+READ_MESSAGES
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $RSAenc(Sign(delmessage)_{allowed_{PMID}})_{PMID}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $NACK||ACK$
+\end_inset
+
+ 
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+DEL_MESSAGE
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $RSAenc(Sign(is\; online)_{allowed_{PMID}})_{PMID}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $RSAenc(Sign(IP:port))_{allowedPMID}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+IS_ONLINE
+\end_layout
+
+\end_inset
+</cell>
+</row>
+</lyxtabular>
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption
+
+\begin_layout Plain Layout
+Node General RPCs
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Node Components
+\end_layout
+
+\begin_layout Standard
+Nodes are run as a separate process and largely manage themselves.
+ At the moment, when the software is installed and run, a daemon / service
+ runs which starts an "unowned" node.
+ This listens on the local network for owner control RPC's as defined in
+ Table 1.
+\end_layout
+
+\begin_layout Subsection
+Roles
+\end_layout
+
+\begin_layout Standard
+Nodes hold 3 major roles in a network, comprised of chunk holders, chunk
+ info holders and account holders.
+ A single node is likely to be all of these for multiple chunks.
+\end_layout
+
+\begin_layout Subsubsection
+Chunk holder
+\end_layout
+
+\begin_layout Standard
+For a certain chunk that is stored on the network, a chunk holder keeps
+ the actual copy of the chunk data.
+ For any chunk there should be at least 2 copies on the network, ideally
+ 4 or more.
+ Furthermore, frequently accessed chunks can be cached on nodes other than
+ the official chunk holders, to speed up retrieval along a lookup path.
+ Chunk holders are initially appointed by the client wishing to store a
+ chunk, but will eventually converge to a group of certain quality reflecting
+ the client's reputation.
+\end_layout
+
+\begin_layout Subsubsection
+Chunk info holder
+\end_layout
+
+\begin_layout Standard
+Another node, the chunk info holder, keeps a list of references to a chunk,
+ essentially contact information for the nodes that are known to be chunk
+ holders (see Figure 2).
+ 
+\begin_inset Float figure
+wide false
+sideways false
+status collapsed
+
+\begin_layout Plain Layout
+\begin_inset Caption
+
+\begin_layout Plain Layout
+\begin_inset Graphics
+	filename seq/Reference_List_Add.png
+	scale 40
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+It also holds a list of peers that are "watching" a chunk, which means they
+ uploaded the chunk at some point and are now interested in retaining it
+ on the network.
+ 
+\begin_inset Float figure
+wide false
+sideways false
+status collapsed
+
+\begin_layout Plain Layout
+\begin_inset Caption
+
+\begin_layout Plain Layout
+\begin_inset Graphics
+	filename seq/Watch_List_Add.png
+	scale 40
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+This so-called watch list (see Figure 1) is limited to 250
+\begin_inset Foot
+status open
+
+\begin_layout Plain Layout
+This figure is currently arbitrary and will be calculated based on several
+ network parameters as the logic improves.
+\end_layout
+
+\end_inset
+
+ entries; once it is filled, new watchers are only registered by increasing
+ a counter and including their ID in a checksum.
+ This helps prevent accidental removal of a chunk from the network in case
+ the list becomes empty while there are still peers watching the chunk,
+ but have never been added to the actual list, possibly because it was already
+ full when they first started watching.
+ Because of this wealth of information, the chunk info holder is also responsibl
+e for monitoring the number of active chunk holders on the network, and
+ triggering chunk duplication, repair or removal if said number differs
+ from the desired optimum.
+ Chunk info holders are those K nodes in the network whose IDs are closest
+ to the name of the chunk.
+\end_layout
+
+\begin_layout Subsubsection
+Account holder
+\end_layout
+
+\begin_layout Standard
+In order to maintain fairness on the network, for each node an account is
+ maintained by its account holder.
+ This account initially only holds the amount of storage space a node offers
+ to the network, as well as the space it used on or provided to peer nodes,
+ but will eventually also provide a ranking mechanism.
+ Account amendments are performed every time a storage operation takes place.
+ Ideally, a node would be able to use as much storage space on other nodes
+ as itself provides to the network.
+ If a client's node runs out of space or is unexpectedly removed from the
+ network, they will not be able to store more data until this situation
+ is resolved.
+ They will, always be able to get data from then network, as long as they
+ recover a node to bring back up their payment, in terms of space given.
+ Account holders are those K nodes in the network whose IDs are closest
+ to a key derived from the account subject's ID and a salt, initially intended
+ to ensure no reverse matching of accounts to nodes.
+\end_layout
+
+\begin_layout Subsubsection
+AccountHandler
+\end_layout
+
+\begin_layout Standard
+An AccountHandler is the component of a node that keeps the accounts to
+ whose IDs it is within the K closest nodes on the network, as well as provides
+ functionality to amend and protect these accounts.
+ Each account currently holds the amount of space a node offers, how much
+ of this space is occupied (i.e.
+ provided to the network), and how much space the node used on peer nodes
+ (i.e.
+ taken from the network).
+ It will eventually be extended to manage a rank value based on these attributes
+ as well as additional behaviour tracking statistics.
+ Full account information can only be retrieved by the owner of the account,
+ for privacy reasons.
+ Other nodes are only allowed to confirm whether the owner is authorised
+ to perform a storage operation by checking for enough available space.
+\end_layout
+
+\begin_layout Subsubsection
+ChunkInfoHandler
+\end_layout
+
+\begin_layout Standard
+In the ChunkInfoHandler, information about the chunks with IDs that the
+ node is within the K closest to is kept.
+ This information is comprised of a watch list, a reference list and a waiting
+ list for the watch list, as well as the total number of watchers (including
+ those not on the list), a checksum of their IDs and the size of the chunk
+\begin_inset Foot
+status open
+
+\begin_layout Plain Layout
+Future extensions might see various statistical data in there, such as the
+ number of watchers over certain time periods and the amount of requests
+ for references to a chunk.
+\end_layout
+
+\end_inset
+
+.
+ 
+\end_layout
+
+\begin_layout Standard
+An entry in the watch list currently only consists of the watcher's ID and
+ a flag whether the entry can be deleted.
+ The latter is necessary to keep peers in the list which already deleted
+ themselves from it, but are still providing a payment and will need to
+ get recompensed eventually.
+ The reference list entries keep the IDs of the nodes that hold the chunk,
+ as well as the time they were last seen, which can be used to return only
+ active nodes in a request, yet keep stale nodes in case they come back
+ online.
+ In the waiting list information for all those is held, who intended to
+ add themselves to the watch list but whose payment and storage operations
+ are still pending.
+ Once those are completed, the entry can be committed to the actual watch
+ list; otherwise it will be deleted (or pruned after a long time of inactivity)
+ and previous operations undone.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption
+
+\begin_layout Plain Layout
+\begin_inset Graphics
+	filename seq/Watch_List_Remove.png
+	scale 40
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Since the watch list is limited to currently 250 entries, a checksum is
+ kept to prevent accidental chunk deletions in case a node requested to
+ be removed from the watch list without ever adding themselves, which could
+ also be abused for an attack.
+ So even if the watch list is empty and the number of watchers zero, if
+ something went wrong during the chunk info's lifetime the checksum helps
+ detect it, in which case the chunk would just be kept indefinitely or at
+ least for a very long time (several years)
+\begin_inset Foot
+status open
+
+\begin_layout Plain Layout
+This is a situation that will very likley be overcome as the logic becomes
+ clearer and further research provides a more effective algorithm, allowing
+ the removel of data that is no longer required.
+ Any data that is addressed by the hash of it's content will only be deleted
+ through necessity of reclaiming space, to ensure there are as many revisions
+ as possible of all data.
+\end_layout
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Subsection
+Main Processes
+\end_layout
+
+\begin_layout Subsubsection
+Joining the Network
+\end_layout
+
+\begin_layout Standard
+After successfully joining the Network on the Kademlia layer, an account
+ needs to be created for the client's node, in order to specify how much
+ space is available to be offered to the network.
+ Only when enough of the K Account Holders are aware of this account, further
+ operations demanding payments can succeed.
+ Fraudulent account creations are intended to be detected by peer nodes
+ in future operations, e.g.
+ when storage operations could not be completed.
+\end_layout
+
+\begin_layout Subsubsection
+Storing a Chunk
+\end_layout
+
+\begin_layout Standard
+To store a chunk from a client, we first have to ensure we are entitled
+ to make use of the required storage space on the network.
+ This means that the difference between the space we already used and the
+ space we offered has to be large enough to encompass the size of the chunk
+ in question.
+ We then look up the K Chunk Info Holders and try to add ourselves to their
+ watch list, to signal we are interested in storing (and keeping) the chunk.
+\end_layout
+
+\begin_layout Standard
+Once a Chunk Info Holder has received and validated an AddToWatchList request,
+ it adds the ID of the requesting peer to an internal waiting list, provided
+ the given chunk size is valid.
+ In response the client gets informed how many copies of the chunk they
+ need to upload.
+ This number depends on how many copies of the chunk are already on the
+ network and is derived from the desired minimum amount of chunks (kMinChunkCopi
+es
+\begin_inset Foot
+status open
+
+\begin_layout Plain Layout
+Currently a system wide constant
+\end_layout
+
+\end_inset
+
+), usually lower to spare the client from excessive uploading.
+ The Chunk Info Holder then proceeds to deduct the required payment (which
+ equals the storage space needed) from the client's account, or in case
+ of no storage makes sure there is at least the chunk's size worth of space
+ left.
+ If the chunk didn't exist on the network, the client is asked for a payment
+ kMinChunkCopies times the size of the chunk, independent of how many chunk
+ copies were requested to be uploaded.
+ Otherwise, only a single payment is required, unless the client doesn't
+ end up on the explicit watch list, in which case storing is free.
+ If this payment process triggered by the Chunk Info Holder fails, for example
+ because the client's Node account isn't sufficiently funded, all previous
+ operations are undone.
+ Otherwise the corresponding entry in the aforementioned waiting list is
+ flagged as having completed its payments.
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset Caption
+
+\begin_layout Plain Layout
+\begin_inset Graphics
+	filename seq/Watch_List_Payment.png
+	scale 40
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Meanwhile, the client contacts one node per requested chunk copy, to negotiate
+ a store contract.
+ If the peer node is able to validate the request and can provide enough
+ physical storage space, the client can then proceed to upload the chunk
+ data, making the selected node a Chunk Holder.
+ Upon reception of the chunk the node notifies the Chunk Info Holder for
+ inclusion in the reference list, which also causes the corresponding entry
+ in the waiting list to be flagged as having completed storage.
+ The Chunk Info Holder would then amend the Chunk Holder's account to reflect
+ the additional space it provided to the network.
+\end_layout
+
+\begin_layout Standard
+Once an entry in a Chunk Info Holder's waiting list has successfully completed
+ both payments and storage, it can be committed to the watch list as an
+ actual "watcher".
+ At this point, any superfluous payments that occured from race conditions
+ will be refunded.
+ This concludes the storing process and the chunk can now be retrieved from
+ the network.
+\end_layout
+
+\begin_layout Subsubsection
+Retrieving a Chunk
+\end_layout
+
+\begin_layout Standard
+To retrieve a chunk, the client has to look up and contact the Chunk Info
+ Holders to acquire reference list entries pointing to active Chunk Holders.
+ This is done through a Kademlia FindValue, which would return the ID of
+ a peer that holds a cached copy of the chunk, or an empty value requiring
+ the Client to ask for the Chunk Holders directly.
+ Whatever peer holds a copy of the chunk is then contacted and the chunk
+ data retrieved.
+\end_layout
+
+\begin_layout Subsubsection
+Deleting a Chunk
+\end_layout
+
+\begin_layout Standard
+If clients decide they don't want to keep a file anymore, they remove themselves
+ from the watch lists of the corresponding chunks.
+ Once a watch list becomes empty, i.e.
+ no one is watching that particular chunk anymore, it can be deleted from
+ the network.
+ This means traversing the current reference list and calling a remote delete
+ operation on the chunk holders, recompensing all the peers that made a
+ payment to keep the minimum number of chunks on the network, as well as
+ decrease the space given value in the (former) chunk holders' accounts.
+\end_layout
+
+\begin_layout Subsection
+Maintaining Network Health
+\end_layout
+
+\begin_layout Subsubsection
+Validity checks by Chunk Info Holders
+\end_layout
+
+\begin_layout Standard
+The Chunk Info Holders will be responsible for triggering validity checks
+ on a chunk.
+ This is a relatively simple process and will require a node checks pure
+ chunks as follows.
+ 
+\end_layout
+
+\begin_layout Enumerate
+Identify chunk (say ABC...) 
+\end_layout
+
+\begin_layout Enumerate
+Generate random information (rnd-info)
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $H(content_{ABC..}+rnd-info)\equiv Answer$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+Send rnd-info and chunk identity (ABC...) to one partner node.
+\end_layout
+
+\begin_layout Enumerate
+Request the parter provide his answer.
+\end_layout
+
+\begin_layout Enumerate
+Confirm his answer matches your answer.
+\end_layout
+
+\begin_layout Enumerate
+Repeat for all chunk parters with different rnd-info.
+\end_layout
+
+\begin_layout Standard
+Any discrepancies are reported to chunk info holder and the node at fault
+ is informed, deleted from storage groups of the chunk and his account amended
+ to reflect less space given.
+ This is a part of th system where rank will be adversely affected when
+ it is put in place.
+ Bad chunk holders will lose rank very quickly.
+ 
+\end_layout
+
+\begin_layout Standard
+The triggers from the Chunk Info Holder to the Chunk Holder are time based
+ and will initially start at 2 minutes doubling every time to 20 hours.
+ Each failure will restart this process.
+\end_layout
+
+\begin_layout Subsubsection
+Relocation based on rank
+\end_layout
+
+\begin_layout Standard
+Chunks will be relocated when the Chunk Info Holder notes that any Chunk
+ Holder has lost or gained rank in the system.
+\end_layout
+
+\begin_layout Subsubsection
+Validity checks by Chunk Holders
+\end_layout
+
+\begin_layout Standard
+On request for a chunk to be delivered to another node a Chunk Info holder
+ will trigger an internal validity check.
+ 
+\end_layout
+
+\begin_layout Subsubsection
+Geographic relocation of chunks
+\end_layout
+
+\begin_layout Standard
+The Chunk Info Holder who triggers a validity check will query their own
+ routing table for Chunk Holders of the same status as the current Chunk
+ Holders, but with a longer Round Trip Time (RTT).
+ On finding a node that is further away the data will be moved, preferably
+ with a chunk swap.
+ This swap will be negotiated via the Chunk Info Holder for the remote node
+ in question.
+ 
+\end_layout
+
+\begin_layout Subsubsection
+Caching of chunks
+\end_layout
+
+\begin_layout Standard
+Each lookup and retrieval of data that takes more than one hope will trigger
+ a chunk cache RPC.
+ This RPC will be sent to the last node that did not have the chunk in the
+ iteration.
+ Cached chunks should be located in a cache directory on the node and be
+ part of a First In First Out (FIFO) queue.
+ This queue should only require a chunk removal when th node requires the
+ space an not before.
+\end_layout
+
+\begin_layout Standard
+This simple mechanism ensures data integrity is strengthened, but more important
+ly shares the load of any node that hosts interesting or popular chunks.
+ There are many other advantages, such as resistance to denial of service
+ attack or distributed denial of service attacks, or if web based data is
+ stored (such as a web site) then the more popular it is the more responsive
+ the network will be when data is requested from this web site.
+ This is almost the entire opposite of today's world Wide Web, but is, again,
+ more logical.
+\end_layout
+
+\begin_layout Section
+Conclusions
+\end_layout
+
+\begin_layout Standard
+The system presented is one version of a server-less based authentication
+ system.
+ The
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+label "1"
+key "1"
+
+\end_inset
+
+as described by Van Jacobson in this link below, August 30, 2006 HTTP://video.Goo
+gle.com/videoplay?docid=-6972678839686672840
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+label "2"
+key "2"
+
+\end_inset
+
+David Irvine, Self Encrypting Data, david.irvine@maidsafe.net
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+label "3"
+key "3"
+
+\end_inset
+
+David Irvine, peer to peer public key infrastructure, david.irvine@maidsafe.net
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+label "4"
+key "4"
+
+\end_inset
+
+David Irvine, maidsafe.net, a new network paradigm , david.irvine@maidsafe.net
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+label "5"
+key "5"
+
+\end_inset
+
+David Irvine, Self authentication, david.irvine@maidsafe.net
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+label "6"
+key "6"
+
+\end_inset
+
+David Irvine, maidsafe distributed hash table, david.irvine@maidsafe.net
+\end_layout
+
+\begin_layout Standard
+\begin_inset Note Comment
+status collapsed
+
+\begin_layout Plain Layout
+\begin_inset Note Note
+status collapsed
+
+\begin_layout Plain Layout
+Change this paragraphs style to 'Standard' to enable
+\end_layout
+
+\begin_layout Plain Layout
+BibTeX bibliography generation.
+\end_layout
+
+\begin_layout Plain Layout
+Remember though that your final submission is supposed to have
+\end_layout
+
+\begin_layout Plain Layout
+all the bibliography entries embedded in the latex file.
+ This means
+\end_layout
+
+\begin_layout Plain Layout
+you eventually have to copy the .bbl file into the latex file and
+\end_layout
+
+\begin_layout Plain Layout
+remove the bibtex lines.
+\end_layout
+
+\end_inset
+
+
+\begin_inset CommandInset bibtex
+LatexCommand bibtex
+bibfiles "your_biblio_file"
+options "IEEEbib"
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout BiographyNoPhoto
+\begin_inset ERT
+status collapsed
+
+\begin_layout Plain Layout
+
+{
+\end_layout
+
+\end_inset
+
+David Irvine
+\begin_inset ERT
+status collapsed
+
+\begin_layout Plain Layout
+
+}
+\end_layout
+
+\end_inset
+
+ 
+\lang british
+is a Scottish Engineer and innovator who has spent the last 12 years researching
+ ways to make computers function in a more efficient manner.
+\end_layout
+
+\begin_layout BiographyNoPhoto
+
+\lang british
+He is an Inventor listed on more than 20 patent submissions and was Designer
+ / Project Manager of one of the World's largest private networks (Saudi
+ Aramco, over $300M).
+ He is an experienced Project Manager and has been involved in start up
+ businesses since 1995 and has provided business consultancy to corporates
+ and SMEs in many sectors.
+\end_layout
+
+\begin_layout BiographyNoPhoto
+
+\lang british
+He has presented technology at Google (Seattle), British Computer Society
+ (Christmas Lecture) and many others.
+\end_layout
+
+\begin_layout BiographyNoPhoto
+
+\lang british
+He has spent many years as a lifeboat Helmsman and is a keen sailor when
+ time permits.
+\end_layout
+
+\end_body
+\end_document

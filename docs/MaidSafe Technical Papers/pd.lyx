@@ -1,4 +1,4 @@
-#LyX 1.6.5 created this file. For more info see http://www.lyx.org/
+#LyX 1.6.7 created this file. For more info see http://www.lyx.org/
 \lyxformat 345
 \begin_document
 \begin_header
@@ -1107,15 +1107,21 @@ status open
 \begin_inset Caption
 
 \begin_layout Plain Layout
-\begin_inset Graphics
-	filename seq/Watch_List_Add.png
-	scale 30
-	clip
+Add to Watch List
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:Add-to-Watch"
 
 \end_inset
 
 
 \end_layout
+
+\end_inset
+
+
+\begin_inset Graphics
+	filename img/Watch_List_Add.pdf
 
 \end_inset
 
@@ -1137,14 +1143,21 @@ status open
 \begin_inset Caption
 
 \begin_layout Plain Layout
-\begin_inset Graphics
-	filename seq/Watch_List_Remove.png
-	scale 30
+Remove from Watch List
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:Remove-from-Watch"
 
 \end_inset
 
 
 \end_layout
+
+\end_inset
+
+
+\begin_inset Graphics
+	filename img/Watch_List_Remove.pdf
 
 \end_inset
 
@@ -1314,14 +1327,21 @@ status open
 \begin_inset Caption
 
 \begin_layout Plain Layout
-\begin_inset Graphics
-	filename seq/Reference_List_Add.pdf
-	scale 30
+Add to Reference List
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:Add-to-Reference"
 
 \end_inset
 
 
 \end_layout
+
+\end_inset
+
+
+\begin_inset Graphics
+	filename img/Reference_List_Add.pdf
 
 \end_inset
 
@@ -4015,7 +4035,7 @@ To store a bit of data we firstly need to determine which nodes to store
 
 \begin_layout Standard
 \begin_inset Graphics
-	filename seq/STORE_NEW_CHUNK.pdf
+	filename img/STORE_NEW_CHUNK.pdf
 	lyxscale 45
 	scale 30
 
