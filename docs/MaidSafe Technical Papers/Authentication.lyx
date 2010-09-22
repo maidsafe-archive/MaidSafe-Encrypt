@@ -1,0 +1,911 @@
+#LyX 1.6.7 created this file. For more info see http://www.lyx.org/
+\lyxformat 345
+\begin_document
+\begin_header
+\textclass IEEEtran
+\use_default_options false
+\language english
+\inputencoding default
+\font_roman default
+\font_sans default
+\font_typewriter default
+\font_default_family default
+\font_sc false
+\font_osf false
+\font_sf_scale 100
+\font_tt_scale 100
+
+\graphics default
+\paperfontsize default
+\spacing single
+\use_hyperref false
+\papersize default
+\use_geometry false
+\use_amsmath 0
+\use_esint 0
+\cite_engine basic
+\use_bibtopic false
+\paperorientation portrait
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\defskip medskip
+\quotes_language english
+\papercolumns 2
+\papersides 1
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\author "" 
+\author "" 
+\end_header
+
+\begin_body
+
+\begin_layout Title
+Self authentication 
+\end_layout
+
+\begin_layout Author
+David Irvine, david.irvine@maidsafe.net, maidsafe.net limited (registered in
+ Scotland Sc 297540)
+\end_layout
+
+\begin_layout Date
+September, 2010
+\end_layout
+
+\begin_layout Abstract
+Today all known access mechanisms that grant access to distributed or shared
+ services requires a server or authoritative control in some form.
+ This presents many issues, including security, trust and privacy to name
+ only a few.
+ This paper presents a system of authentication that abolishes the requirements
+ for any user-name or password containers as lists or similar.
+ It also negates the necessity for any server based systems as a login entity
+ for people to connect with prior to gaining access to a system for any
+ reason.
+ 
+\end_layout
+
+\begin_layout Keywords
+security, freedom, privacy, authentication 
+\end_layout
+
+\begin_layout MarkBoth
+maidsafe.net limited company confidential Version 0.1
+\begin_inset ERT
+status collapsed
+
+\begin_layout Plain Layout
+
+}{
+\end_layout
+
+\end_inset
+
+...
+\end_layout
+
+\begin_layout Standard
+\begin_inset CommandInset toc
+LatexCommand tableofcontents
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset FloatList table
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset FloatList algorithm
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout --Separator--
+
+\end_layout
+
+\begin_layout Section
+Introduction
+\end_layout
+
+\begin_layout Standard
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+PARstart{A}{uthentication}
+\end_layout
+
+\end_inset
+
+ allows access to a system at a certain level or privilege.
+ This is generally accepted as the privilege as granted by an authoritative
+ 3rd party who owns or manages the particular service being accessed.
+ In cloud computing or personal computing this is a limiting factor and
+ a significant security risk.
+ Trust in 3rd parties with our innermost thoughts and personal data is something
+ that is arguably not possible, with any radical change in the very structure
+ and fabric of modern society.
+ This paper presents a system where there is no requirement for a 3rd party
+ involvement.
+ 
+\end_layout
+
+\begin_layout Standard
+A significant shift in thinking nowadays is to spread data across multiple
+ sources for security and ease of access.
+ This has led to many privacy concerns as well as an increasing awareness
+ of ownership or otherwise of data.
+ In many cases the ownership is disregarded very easily, but rarely all
+ personal data is surrendered in this way.
+ Many systems offer some level of encryption to ensure privacy of data,
+ but none offer any system of personal access to personal data, privately.
+ There is almost always some form of contract, whether implied or actual
+ between the 3rd party providing a service and the person using the service.
+ In any case the supplier may independently decide or be forced to act on
+ the data, whether deleting encrypted data, going out of business or worse
+ in some cases.
+ 
+\end_layout
+
+\begin_layout Standard
+This situation is a crucial impediment to personal freedom and without a
+ change in technical capabilities that allow the mindset change that appears
+ more prevalent as time goes by, there will be a significant gulf between
+ peoples individual desires and technologies ability to deliver.
+ This in itself may impede progress, innovation and personal freedom, which
+ would be an enormous failure of Science and Engineering to take responsibility
+ for.
+ 
+\end_layout
+
+\begin_layout Standard
+This paper will outline and detail a significant mind shift in access controls
+ that not only answer these issues, but take the current situation and dramatica
+lly alter our relationship with technology, particularly the technology
+ responsible for storing, sharing and developing our most personal thoughts
+ aspirations and desires.
+\end_layout
+
+\begin_layout Subsection
+Conventions Used
+\begin_inset Note Note
+status collapsed
+
+\begin_layout Plain Layout
+This may not be required
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Client : This is the user interaction component of the system and performs
+ most of the synchronous encryption, hashing and key pair generation for
+ asynchronous encryption techniques, as well as presenting a user interface
+ to the person using the technology.
+\end_layout
+
+\begin_layout Standard
+Vault : These are simple computer processes that serve chunks, i.e.
+ they serve data and do not allow or require login from users.
+ The vault process is separate from the client processes and may reside
+ on another machine
+\emph on
+.
+\end_layout
+
+\begin_layout Standard
+H = Hash function such as SHA or MD5 etc.
+ 
+\end_layout
+
+\begin_layout Standard
+Sym[key](content) = Symmetrical encryption 
+\end_layout
+
+\begin_layout Standard
+SymDec[content] = Symmetrical decryption 
+\end_layout
+
+\begin_layout Standard
+PBKDF2[key][iter count] = Password-Based Key Derivation Function or similar
+\end_layout
+
+\begin_layout Standard
+PutV[key][value] = put a Value on the storage system
+\end_layout
+
+\begin_layout Standard
+GetV[key] = get Value from storage system
+\end_layout
+
+\begin_layout Standard
+DelV[key] = delete Value from storage system
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula \[
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Implementation 
+\end_layout
+
+\begin_layout Subsection
+Issue to be solved
+\end_layout
+
+\begin_layout Standard
+Given a shared resource in nature then the bargain between sharing parties
+ tends to be physically local and therefor involve only the sharing parties.
+ In society this tends to also be the case, with some notable exceptions
+ where barter has been replaced with money and trust and control partially
+ involves a third party, particularly in credit agreements.
+ 
+\end_layout
+
+\begin_layout Standard
+It is an illogical consideration to have created a technology based solution
+ which requires this demand of trust and to do so in a manner that is almost
+ uncontrolled.
+ Technology tends to be based on logic and certainly the basis of modern
+ computers is based entirely on logic gates and is not, at it's foundation,
+ based on any relinquishment of personal control to any third party.
+ In fact computers at their foundation are based on calculation and processing,
+ storage came much later in the development of the technical revolution.
+ 
+\end_layout
+
+\begin_layout Standard
+Given these observations, it would appear obvious that creating, sharing
+ and retrieving information fed into a computing device by a person should
+ not require that computer to connect to a network of computers with a controlle
+r or guardian that is not a system of pure logic.
+ Given a situation where there is an interconnect of computers, that in
+ effect joins them all together it would appear that bolting in a system
+ of 'man in the middle' would appear to make no sense what so ever.
+ 
+\end_layout
+
+\begin_layout Standard
+A significant reason for the current situation is the inability for identities
+ to be created, managed and personally controlled.
+ This is a reasonable request from people to make from their technology,
+ but so far has been regarded as impossible by technology professionals.
+ A system of personal identity management is fundamental for the removal
+ of the illogical situation of today.
+ 
+\end_layout
+
+\begin_layout Subsection
+Overview of self authentication
+\end_layout
+
+\begin_layout Subsubsection
+Requirements
+\end_layout
+
+\begin_layout Standard
+Self authentication is a system that requires an accessible storage mechanism
+ that is accessible by the people who will access the system, this may be
+ public (such as a p2p network) or private (such a a storage area network).
+ In any case it must be accessible.
+ this paper assumes that it should also be a key addressable storage system.
+\end_layout
+
+\begin_layout Subsubsection
+Methodology 
+\end_layout
+
+\begin_layout Standard
+Self authentication relies on a system where a person can create a unique
+ key to store a value in the storage system.
+ The value stored with this key should contain an encrypted passport to
+ data.
+ This passport may be cryptographically secure keys and or a list of other
+ keys to make use of the information to be stored and or shared as well
+ as any additional components required.
+\end_layout
+
+\begin_layout Standard
+The location of this initial key should be masked or at least not obvious
+ in the storage mechanism.
+ Further masking should be considered.
+ This simplified approach is the basis for self authentication and is extended
+ into a system that is capable of security in a manner that allows access
+ data to be stored publically and with no additional requirement such as
+ firewalls or access controls.
+ 
+\end_layout
+
+\begin_layout Section
+Detailed implementation
+\end_layout
+
+\begin_layout Subsection
+Creation of an identity 
+\end_layout
+
+\begin_layout Standard
+Here we will assume there are three inputs from the user of the system User-name
+ (U), PIN and password (W).
+ To obfuscate the identifier we use a hash function to hash the user-name
+ and PIN 
+\begin_inset Formula $H(U+PIN)$
+\end_inset
+
+.
+ PBKDF2 is used here to strengthen any password keys used.
+ This is required as user selected passwords are inevitably weak and the
+ user may not know the user-name is also used as a password in the system..
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $GetV_{[H(U+PIN)]}\equiv False$
+\end_inset
+
+ [ Check for uniqueness ]
+\end_layout
+
+\begin_layout Enumerate
+Generate random number (rnd#) 
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $PutV_{[H(U+PIN][Sym_{PBKDF2[U][PIN]}(rnd\#)]}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $Sym_{PBKDF2[W][PIN]}(file-map)\equiv EncMap$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $PutV_{[H(EncMap)][EncMap]}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+In this case we assume the EncMap content hashes to the key and this provides
+ a mechanism for hiding such a value in plain sight.
+ It makes sense for all data stored to be stored in a similar manner, i.e.
+ the key is the hash of the content.
+\end_layout
+
+\begin_layout Subsection
+Login to a system
+\begin_inset CommandInset label
+LatexCommand label
+name "sub:Login-to-a"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $GetV_{[H(U+PIN)]}\equiv IDpkt$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $SymDec_{[PBKDF2[U][PIN]]}(IDpkt)\equiv rnd\#$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $GetV_{[H(U+PIN+rnd\#)]}\equiv Enc-Map$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $SymDec_{[PBKDF2[W][PIN]]}(EncMap)\equiv file-map$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Surrogate identity packets
+\end_layout
+
+\begin_layout Standard
+The previous sections outlined the basic system of authentication.
+ There is an addition to this though for safety reasons.
+ As with any system the write of the ID packet can fail for any reason,
+ this would be catastrophic as all your information or at least access may
+ be gone.
+ To ensure this is not a concerns a method of write after read is implemented.
+ This ensures that any failure in writing of packets is tolerated and non
+ fatal.
+ 
+\end_layout
+
+\begin_layout Subsection
+Updated create user process
+\end_layout
+
+\begin_layout Standard
+The following process an update of the login process to include surrogate
+ Id's.
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $GetV_{[H(U+PIN)]}\equiv False$
+\end_inset
+
+ [ Check for uniqueness of ID packet]
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $GetV_{[H(U+(PIN-1))]}\equiv False$
+\end_inset
+
+ [ Check for uniqueness of surrogate ID packet]
+\end_layout
+
+\begin_layout Enumerate
+Generate random number X 2 (rnd#1 & rnd#2) 
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $PutV_{[H(U+PIN][Sym_{PBKDF2[U][PIN]}(rnd\#1)]}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $PutV_{[H(U+PIN-1][Sym_{PBKDF2[U][PIN-1]}(rnd\#2)]}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $Sym_{PBKDF2[W][PIN]}(file-map)\equiv EncMap1$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $Sym_{PBKDF2[W][PIN-1]}(file-map)\equiv EncMap2$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $PutV_{[H(EncMap1)][EncMap1]}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $PutV_{[H(EncMap2)][EncMap2]}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsubsection
+Updated Login process
+\end_layout
+
+\begin_layout Enumerate
+if (
+\begin_inset Formula $GetV_{[H(U+PIN)]}\equiv IDpkt$
+\end_inset
+
+) else (
+\begin_inset Formula $GetV_{[H(U+PIN-1)]}\equiv IDpkt$
+\end_inset
+
+) in next steps replace PIN with PIN-1 and complete login.
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $SymDec_{[PBKDF2[U][PIN]]}(IDpkt)\equiv rnd\#$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $GetV_{[H(U+PIN+rnd\#)]}\equiv Enc-Map$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $SymDec_{[PBKDF2[W][PIN]]}(EncMap)\equiv file-map1$
+\end_inset
+
+ [this file-map should be maintained until next update]
+\end_layout
+
+\begin_layout Subsubsection
+Logout / save session process
+\end_layout
+
+\begin_layout Enumerate
+Generate random number (rnd#).
+ 
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $Sym_{PBKDF2[W][PIN]}(file-map)\equiv EncMap1$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $PutV_{[H(U+PIN+rnd\#)][EncMap1]}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $PutV_{[H(U+PIN][Sym_{PBKDF2[U][PIN]}(rnd\#)]}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $Sym_{PBKDF2[W][PIN-1]}(file-map)\equiv EncMap2$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $PutV_{[H(U+(PIN-1)+rnd\#)][EncMap2]}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $PutV_{[H(U+PIN-1][Sym_{PBKDF2[U][PIN-1]}(rnd\#)]}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+In some situations the contents of file-map1 may be then deleted from the
+ network should they be updated during a session.
+ This would add considerably to security.
+ This situation is in fact used in the maidsafe network as shown in 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "4"
+
+\end_inset
+
+.
+ In this case the data map of the data atlas is the file-map as shown in
+ 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "2"
+
+\end_inset
+
+.
+ This data map would indicate the location of the chunks of the data atlas.
+ This should be analysed and the data atlas chunks deleted from the network.
+ 
+\end_layout
+
+\begin_layout Standard
+In this case deleting these chunks is a security enhancement and ensures
+ that if any attacker managed to retrieve any IDpkt then the delay in decrypting
+ the data map would hopefully be long enough that a session update has happened
+ and the chunks it refers to are then gone from the network.
+ 
+\end_layout
+
+\begin_layout Subsection
+Enhancement 1 - time based obfuscation
+\end_layout
+
+\begin_layout Standard
+In the previous sections a system of self authentication was detailed which
+ is very effective.
+ The single failure point may be the IDpkt as this is a key/value which
+ is not altering location (key) and can pose a target for any attacker who
+ is monitoring traffic.
+ 
+\end_layout
+
+\begin_layout Standard
+To remove this weakness then an altering piece of data can be introduced
+ in the IDpkt and this is time.
+ This can be either week number, day of year or even minute of day or similar.
+ In this case in 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:Login-to-a"
+
+\end_inset
+
+ point 1 the get value will be recursive starting at the current time slot
+ and decrementing this until the GetV returns true (i.e.
+ with a value).
+ 
+\end_layout
+
+\begin_layout Standard
+This allows for an identity packet that is 'moving' on the storage system
+ and therefor not as open to possible attack.
+ 
+\end_layout
+
+\begin_layout Standard
+A simpler version of this is to use a number in a range as the 'obfustactor'
+ i.e.
+ a range of 50-100, each login then creates packets with 100 as the guess
+ and steps back through to 50.
+ This is traffic intensive though and is a reduced set of fixed values,
+ as opposed to time, it is still more effective than a single packet though.
+ 
+\end_layout
+
+\begin_layout Subsection
+Enhancement 2 - distributed storage system
+\end_layout
+
+\begin_layout Standard
+This system can be enhanced with the introduction of a distributed storage
+ network as described in 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "4"
+
+\end_inset
+
+.
+ This has many advantages including the ability to mask any identity data
+ in a huge address space and with cryptographically secure privileges that
+ can protect inadvertent deletion or any loss of data packets.
+ 
+\end_layout
+
+\begin_layout Subsection
+Enhancement 3 - remove old file-map and ID pkt
+\end_layout
+
+\begin_layout Standard
+A further enhancement would be to clear up after each new session save by
+ deleting the old IDpkt and file-map packets.
+ This ensures that any interception of IDpks's may eventually be decrypted
+ by an attacker, but the time elapsed would be hoped to be sufficient to
+ lead to no data and therefore the user-name and PIN would still be safe.
+ This assumes that the hash function used would be secure enough to not
+ be 'reversed' into meaningful data, which is extremely unlikely.
+ 
+\end_layout
+
+\begin_layout Section
+Conclusions
+\end_layout
+
+\begin_layout Standard
+The system presented is one version of a server-less based authentication
+ system.
+ There is a strong case for this to create true cloud based services with
+ users being in control of their own data and accesses, single minded deciding
+ to add/remove/share any data they wish with any other party.
+ Such a system may be used in a a manner of situations and may be particularly
+ useful in cases where there is a method of providing the payment required
+ to use a service, even anonymously.
+ A system of credits of use of a service can be considered to allow business
+ to create a useful service and allow access based on payment, but not require
+ the individual to divulge any personal information or create some other
+ identity specifically for a single service.
+ 
+\end_layout
+
+\begin_layout Standard
+We demonstrated a working version of such a system for the first time in
+ April 2008 in our offices in Troon, Scotland and as far as we are aware
+ this was the first time in the history a person created their own identity,
+ stored this and managed all their actions without any server requirement
+ and without any 3rd party control.
+ 
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+label "1"
+key "1"
+
+\end_inset
+
+as described by Van Jacobson in this link below, August 30, 2006 HTTP://video.Goo
+gle.com/videoplay?docid=-6972678839686672840
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+label "2"
+key "2"
+
+\end_inset
+
+David Irvine, Self Encrypting Data, david.irvine@maidsafe.net
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+label "3"
+key "3"
+
+\end_inset
+
+David Irvine, peer to peer public key infrastructure, david.irvine@maidsafe.net
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+label "4"
+key "4"
+
+\end_inset
+
+David Irvine, maidsafe.net, a new network paradigm , david.irvine@maidsafe.net
+\end_layout
+
+\begin_layout Standard
+\begin_inset Note Comment
+status collapsed
+
+\begin_layout Plain Layout
+\begin_inset Note Note
+status collapsed
+
+\begin_layout Plain Layout
+Change this paragraphs style to 'Standard' to enable
+\end_layout
+
+\begin_layout Plain Layout
+BibTeX bibliography generation.
+\end_layout
+
+\begin_layout Plain Layout
+Remember though that your final submission is supposed to have
+\end_layout
+
+\begin_layout Plain Layout
+all the bibliography entries embedded in the latex file.
+ This means
+\end_layout
+
+\begin_layout Plain Layout
+you eventually have to copy the .bbl file into the latex file and
+\end_layout
+
+\begin_layout Plain Layout
+remove the bibtex lines.
+\end_layout
+
+\end_inset
+
+
+\begin_inset CommandInset bibtex
+LatexCommand bibtex
+bibfiles "your_biblio_file"
+options "IEEEbib"
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout BiographyNoPhoto
+\begin_inset ERT
+status collapsed
+
+\begin_layout Plain Layout
+
+{
+\end_layout
+
+\end_inset
+
+David Irvine
+\begin_inset ERT
+status collapsed
+
+\begin_layout Plain Layout
+
+}
+\end_layout
+
+\end_inset
+
+ 
+\lang british
+is a Scottish Engineer and innovator who has spent the last 12 years researching
+ ways to make computers function in a more efficient manner.
+\end_layout
+
+\begin_layout BiographyNoPhoto
+
+\lang british
+He is an Inventor listed on more than 20 patent submissions and was Designer
+ / Project Manager of one of the World's largest private networks (Saudi
+ Aramco, over $300M).
+ He is an experienced Project Manager and has been involved in start up
+ businesses since 1995 and has provided business consultancy to corporates
+ and SMEs in many sectors.
+\end_layout
+
+\begin_layout BiographyNoPhoto
+
+\lang british
+He has presented technology at Google (Seattle), British Computer Society
+ (Christmas Lecture) and many others.
+\end_layout
+
+\begin_layout BiographyNoPhoto
+
+\lang british
+He has spent many years as a lifeboat Helmsman and is a keen sailor when
+ time permits.
+\end_layout
+
+\end_body
+\end_document
