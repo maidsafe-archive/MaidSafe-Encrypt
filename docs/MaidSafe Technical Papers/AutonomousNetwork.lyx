@@ -43,11 +43,11 @@
 \begin_body
 
 \begin_layout Title
-Autonomous network
+Autonomous Network
 \end_layout
 
 \begin_layout Author
-David Irvine, david.irvine@maidsafe.net, Fraser Hutchison, Steve muecklisch,
+David Irvine, david.irvine@maidsafe.net, Fraser Hutchison, Steve Mücklisch,
  maidsafe.net limited (registered in Scotland Sc 297540)
 \end_layout
 
@@ -56,24 +56,24 @@ September, 2010
 \end_layout
 
 \begin_layout Abstract
-Autonomous networks are a self healing, self managing and most importantly
+Autonomous networks are self-healing, self-managing and most importantly
  independent of human interference.
- Such networks will allow technology to grow and provide services that enable
- the focus on extending capabilities rather than any wasted efforts in maintaini
-ng even simple mechanisms such as storage, scalability and data retention.
- Such systems will quickly extend to providing a method of highly scaleable
- platforms that can accomodate real time transactional logic.
- A workign example of an autonomous network is outlined in this paper.
+ Such networks will be able to be developed in a way that avoids wasting
+ effort on maintaining even simple mechanisms such as storage, scalability
+ and data retention.
+ Systems like these will quickly extend to providing a method of highly
+ scalable platforms that can accommodate real time transactional logic.
+ A working example of an autonomous network is outlined in this paper.
 \end_layout
 
 \begin_layout Keywords
-security, freedom, privacy, authentication, encryption, autonomous 
+security, freedom, privacy, authentication, encryption, autonomous
 \end_layout
 
 \begin_layout MarkBoth
 maidsafe.net limited company confidential Version 0.1
 \begin_inset ERT
-status collapsed
+status open
 
 \begin_layout Plain Layout
 
@@ -103,14 +103,17 @@ LatexCommand tableofcontents
 \end_layout
 
 \begin_layout Standard
-\begin_inset FloatList algorithm
+\begin_inset FloatList figure
 
 \end_inset
 
 
 \end_layout
 
-\begin_layout --Separator--
+\begin_layout Standard
+\begin_inset Newpage pagebreak
+\end_inset
+
 
 \end_layout
 
@@ -131,28 +134,34 @@ PARstart{C}{omputing}
 
 \end_inset
 
- capability has dramatically evolved in recent years, particularly with
- much more powerful processing power and available interconnectivity of
- devices via the Internet.
- This has allows the creation of remarkable technology that would have appeared
- space age or the imagination of a science fiction writer comparitively
- recently.
+ capability has dramatically increased in recent years, particularly in
+ terms of processing power and available inter-connectivity of devices via
+ the Internet.
+ This has allowed the creation of remarkable technology that would have
+ been considered 
+\begin_inset Quotes eld
+\end_inset
+
+space age
+\begin_inset Quotes erd
+\end_inset
+
+ or the works of a science fiction writer until comparatively recently.
  Devices and applications that allow world mapping, video conferencing on
  the move, instant recording and sharing of nearly any type of information
  from text to high definition video, the ability to know where you are anywhere
  in the world and to locate friends, information and tools to help calculate
- results of questions is without doubt amazing and the ferocity of the innovatio
-n is increasing at a rate hardly imaginable.
+ results of questions is all without doubt amazing.
  
 \end_layout
 
 \begin_layout Standard
-There is a huge downside though and that is the ability to store such data
- in secure accessible and reliable locations without the requirement for
+There is a huge downside though; and that is the ability to store such data
+ in secure, accessible and reliable locations without the requirement for
  human organization.
  Today's cloud computing paradigm is an attempt to deliver such a system,
  but does so in a manner that is more hype than fact.
- Actuality today's cloud computing is the antithesis of actual or true cloud
+ Actually, today's cloud computing is the antithesis of actual or true cloud
  computing and is merely a marketing attempt to persuade us that an autonomous
  network has been created.
  
@@ -165,7 +174,7 @@ This paper delivers a true platform for cloud computing, that ensures human
 \end_layout
 
 \begin_layout Subsection
-Current situation
+Current Situation
 \begin_inset CommandInset label
 LatexCommand label
 name "sub:Current-situation"
@@ -176,22 +185,22 @@ name "sub:Current-situation"
 \end_layout
 
 \begin_layout Standard
-Given a shared resource in nature then the bargain between sharing parties
- tends to be physically local and therefor involve only the sharing parties.
- In society this tends to also be the case, with some notable exceptions
- where barter has been replaced with money and trust and control partially
+Given a shared resource in nature, then the bargain between sharing parties
+ tends to be physically local and therefore involve only the sharing parties.
+ In human society, this tends to also be the case, with some notable exceptions
+ where barter has been replaced with money, and trust and control partially
  involves a third party, particularly in credit agreements.
  
 \end_layout
 
 \begin_layout Standard
-It is an illogical consideration to have created a technology based solution
- which requires this demand of trust and to do so in a manner that is almost
- uncontrolled.
- Technology tends to be based on logic and certainly the basis of modern
- computers is based entirely on logic gates and is not, at it's foundation,
- based on any relinquishment of personal control to any third party.
- In fact computers at their foundation are based on calculation and processing,
+It is strangely illogical then, to have created a technology-based solution
+ which requires this demand of trust, but to have done so in a manner that
+ is almost uncontrolled.
+ Technology tends to be based on logic (certainly modern computers are based
+ entirely on logic gates) and is not at its foundation based on any relinquishme
+nt of personal control to a third party.
+ In fact, computers at their foundation are based on calculation and processing;
  storage came much later in the development of the technical revolution.
  
 \end_layout
@@ -201,34 +210,42 @@ Given these observations, it would appear obvious that creating, sharing
  and retrieving information fed into a computing device by a person should
  not require that computer to connect to a network of computers with a controlle
 r or guardian that is not a system of pure logic.
- Given a situation where there is an interconnect of computers, that in
- effect joins them all together, it would appear that bolting in a system
- of 'man in the middle' would appear to make no sense what so ever.
+ In other words, given a situation where there is an interconnect of computers
+ that effectively joins them all together, it appears that bolting in a
+ system of 
+\begin_inset Quotes eld
+\end_inset
+
+man in the middle
+\begin_inset Quotes erd
+\end_inset
+
+ makes no sense whatsoever.
  
 \end_layout
 
 \begin_layout Standard
 A significant reason for the current situation is the inability for identities
  to be created, managed and independently controlled.
- This is a reasonable request from people to make from their technology,
- but so far has been regarded as impossible by technology professionals.
+ This is a reasonable request for users to make of their technology, but
+ so far has been regarded by technology professionals as impossible to provide.
  A system of identity management is fundamental for the removal of the illogical
  situation of today.
  
 \end_layout
 
 \begin_layout Subsection
-Pre-requisits 
+Prerequisites 
 \end_layout
 
 \begin_layout Standard
-Prior to attempting this paper it is highly advisable the reader fully understan
-d 
+Prior to reading this paper, it is highly advisable that the reader fully
+ understand 
 \emph on
 Self Encrypting Data 
 \begin_inset CommandInset citation
 LatexCommand cite
-key "2"
+key "1"
 
 \end_inset
 
@@ -236,23 +253,24 @@ key "2"
 \emph default
 and
 \emph on
- peer to peer public key infrastructure 
+ Peer to Peer Public Key Infrastructure 
 \begin_inset CommandInset citation
 LatexCommand cite
-key "3"
+key "2"
 
 \end_inset
 
 .
  
 \emph default
-These papers in themselves define some components that will be used with
- the system as presented here, in fact the paper 
+These papers detail some components that will be used with the system presented
+ in this paper; in fact the Public Key Infrastructure (PKI) described in
+ 
 \emph on
-peer to peer public key infrastructure 
+Peer to Peer Public Key Infrastructure 
 \begin_inset CommandInset citation
 LatexCommand cite
-key "3"
+key "2"
 
 \end_inset
 
@@ -262,78 +280,174 @@ is a fundamental requirement of the autonomous network presented here.
 \end_layout
 
 \begin_layout Subsection
-General conventions
+General Conventions
+\end_layout
+
+\begin_layout Standard
+There is scope for confusion when using the term 
+\begin_inset Quotes eld
+\end_inset
+
+key
+\begin_inset Quotes erd
+\end_inset
+
+, as sometimes it refers to a cryptographic key, and at other times it is
+ in respect to the key of a DHT 
+\begin_inset Quotes eld
+\end_inset
+
+key, value
+\begin_inset Quotes erd
+\end_inset
+
+ pair.
+ In order to avoid confusion, cryptographic private and public keys will
+ be referred to as 
+\begin_inset Formula $\mathsf{K_{priv}}$
+\end_inset
+
+ and 
+\begin_inset Formula $\mathsf{K_{pub}}$
+\end_inset
+
+ respectively, and DHT keys simply as keys.
 \end_layout
 
 \begin_layout Itemize
-Node = a network resource which is a process, sometimes referred to as a
+Node ≡ a network resource which is a process, sometimes referred to as a
  vault in other papers.
- This is the computer program that maintains the network and on it's own
+ This is the computer program that maintains the network and on its own
  is not very special.
- It is in collaboration this node becomes part of a very complex, sophisticated
- and efficient network.
+ It is in collaboration that this Node becomes part of a very complex, sophistic
+ated and efficient network.
 \end_layout
 
 \begin_layout Itemize
-H = Hash function such as SHA or MD5 etc.
+\begin_inset Formula $\mathsf{H}$
+\end_inset
+
+ ≡ Hash function such as SHA, MD5, etc.
  
 \end_layout
 
 \begin_layout Itemize
-Sym[key](content) = Symmetric encryption 
-\end_layout
-
-\begin_layout Itemize
-SymDec[content] = Symmetric decryption
-\end_layout
-
-\begin_layout Itemize
-Asym[key](content) = Asymmetric encryption 
-\end_layout
-
-\begin_layout Itemize
-AsymDec[content] = Asymmetric decryption
-\end_layout
-
-\begin_layout Itemize
-PBKDF2[key][iter count] = Password-Based Key Derivation Function or similar
-\end_layout
-
-\begin_layout Itemize
-PutV[key][value] = put a Value on the storage system
-\end_layout
-
-\begin_layout Itemize
-GetV[key] = get Value from storage system
-\end_layout
-
-\begin_layout Itemize
-DelV[key] = delete Value from storage system
-\end_layout
-
-\begin_layout Itemize
-\begin_inset Formula $\bigoplus$
+\begin_inset Formula $\mathsf{PBKDF2_{[Passphrase][Salt][IterCount]}}$
 \end_inset
 
-= XOR operation
+ ≡ Password-Based Key Derivation Function or similar
 \end_layout
 
 \begin_layout Itemize
-K = DHT replication factor (Kadmelia is the chosen DHT for this paper)
+\begin_inset Formula $\mathsf{XXX_{priv}}$
+\end_inset
+
+, 
+\begin_inset Formula $\mathsf{XXX_{pub}}$
+\end_inset
+
+ ≡ Private and public keys respectively of cryptographic key pair named
+ 
+\begin_inset Formula $\mathsf{XXX}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\mathsf{AsymEnc_{[K_{pub}]}(Data)}$
+\end_inset
+
+ ≡ Asymmetrically encrypt 
+\begin_inset Formula $\mathsf{Data}$
+\end_inset
+
+ using 
+\begin_inset Formula $\mathsf{K_{pub}}$
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\mathsf{AsymDec_{[K_{priv}]}(Data)}$
+\end_inset
+
+ ≡ Asymmetrically decrypt 
+\begin_inset Formula $\mathsf{Data}$
+\end_inset
+
+ using 
+\begin_inset Formula $\mathsf{K_{priv}}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\mathsf{Sig{}_{[K_{priv}]}(Data)}$
+\end_inset
+
+ ≡ Create asymmetric signature of 
+\begin_inset Formula $\mathsf{Data}$
+\end_inset
+
+ using 
+\begin_inset Formula $\mathsf{K_{priv}}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\mathsf{+}$
+\end_inset
+
+ ≡ Concatenation
 \end_layout
 
 \begin_layout Subsection
-Specific conventions
+Specific Conventions
 \end_layout
 
 \begin_layout Subsubsection
-Network identities
+Network Identities
 \end_layout
 
 \begin_layout Standard
-As defined in 
+In 
 \emph on
-peer to peer public key infrastructure
+Peer to Peer Public Key Infrastructure
+\emph default
+ 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "2"
+
+\end_inset
+
+, the ability to create cryptographic key pairs that are both secure and
+ mathematically deduced is shown.
+ Several of these cryptographic key pairs with specific roles are introduced
+ here, as well as additional system-specific components:
+\end_layout
+
+\begin_layout Itemize
+\noindent
+DHT: This paper assumes the use of a key addressable network, and in this
+ case a Kademlia Distributed Hash Table (DHT) is assumed.
+ There is no requirement for this to be restrictive in any way.
+ The DHT can be replaced with any key addressable network.
+ It is also assumed there is no issue with Network Address Translation (NAT)
+ and all Nodes can freely communicate.
+ In this paper, it is assumed all cryptographic keys are signed on the system
+ and only the signatory identity may amend or delete a value.
+ There may be rules as to which identity can store certain information in
+ specific locations.
+ Such an implementation can be found at http://code.google.com/p/maidsafe-dht
+ This implements a Kademlia-based network and is described in 
+\emph on
+MaidSafe Distributed Hash Table
 \emph default
  
 \begin_inset CommandInset citation
@@ -342,55 +456,37 @@ key "3"
 
 \end_inset
 
-, the ability to create keys that are both cryptographically secure and
- mathematically deduced is shown.
- Several of these keys are introduced here as well as additional specific
- components:
+
 \end_layout
 
-\begin_layout List
-\labelwidthstring 00.00.0000
-DHT This paper assumes the use of a key addressable network and in this
- case a Kademlia (Distributed Hash Table) DHT is assumed.
- There is no requirement for this to be restrictive in any way.
- The DHT can be replaced with any key addressable network.
- It is also assumed there is no issue with Network Address Translation (NAT)
- and all nodes can freely communicate.
- In this paper it is assumed all keys are signed on the system and only
- the signatory identity may amend or delete a value.
- There may be rules as to which identity can store certain information in
- specific locations.
- Such an implementation can be found at this URL http://code.google.com/p/maidsafe
--dht/ .
- This implements a Kademlia based network and is described in 
-\emph on
-maidsafe distributed hash table
-\emph default
-
-\begin_inset CommandInset citation
-LatexCommand cite
-key "6"
-
+\begin_layout Itemize
+\begin_inset Formula $\mathsf{K}$
 \end_inset
 
-
+ ≡ The DHT replication factor.
 \end_layout
 
-\begin_layout List
-\labelwidthstring 00.00.0000
-ANMAID The (anonymous maidsafe anonymous identification ) root packet of
- a chain that reaches as far as the MPID (below).
+\begin_layout Itemize
+\begin_inset Formula $\mathsf{ANMAID}$
+\end_inset
+
+ ≡ The (ANonymous Maidsafe Anonymous IDentification) packet is the root
+ of a chain that reaches as far as the 
+\begin_inset Formula $\mathsf{PMID}$
+\end_inset
+
+ (below).
  This is a pure packet, which means that the identity is created as 
-\begin_inset Formula $H(Pub_{[ANMAID]}+Sign(priv_{[ANMAID]}))$
+\begin_inset Formula $\mathsf{H(ANMAID_{pub}+Sig_{[ANMAID_{priv}]}(ANMAID_{pub}))}$
 \end_inset
 
 .
  This identity is never stored on the network, thereby even something encrypted
- with this private key is not on the network at all.
- It is assumed this identity is otherwise maintained securely by a system
- such as 
+ with this public key is not on the network at all.
+ It is assumed that this identity is otherwise maintained securely by a
+ system such as that described in 
 \emph on
-maidsafe.net a new network paradigm
+maidsafe: A new network paradigm
 \emph default
  
 \begin_inset CommandInset citation
@@ -399,69 +495,269 @@ key "4"
 
 \end_inset
 
-, this is a separate paper which provides a complete solution, dependent
- on this paper.
- 
+
 \end_layout
 
-\begin_layout List
-\labelwidthstring 00.00.0000
-MAID The (maidsafe anonymous identification) is a packet that is created
- as follows 
-\begin_inset Formula $H(Pub_{[MAID]}+Sign(priv_{[ANMAID]}))$
+\begin_layout Itemize
+\begin_inset Formula $\mathsf{MAID}$
+\end_inset
+
+ ≡ The (Maidsafe Anonymous IDentification) packet has as its identity 
+\begin_inset Formula $\mathsf{H(MAID_{pub}+Sig_{[ANMAID_{priv}]}(MAID_{pub}))}$
 \end_inset
 
 .
- This identity is stored on the network at the address of the identity,
- which is as described in 
+ This packet is stored on the network with its identity as the key (as described
+ in 
 \emph on
-peer to peer public key infrastructure
+Peer to Peer Public Key Infrastructure
 \emph default
  
 \begin_inset CommandInset citation
 LatexCommand cite
-key "3"
+key "2"
 
 \end_inset
 
-.
- This 
-\begin_inset Formula $Priv_{MAID}$
+).
+ The 
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\noun off
+\color none
+
+\begin_inset Formula $\mathsf{MAID}$
 \end_inset
 
- can also be used by another node or component (even a person) to act on
- the network with the same authority the MPID has.
+ c
+\family default
+\series default
+\shape default
+\size default
+\emph default
+\bar default
+\noun default
+\color inherit
+an be used by another Node or component (even a person) to act on the network
+ with the same authority which the 
+\begin_inset Formula $\mathsf{PMID}$
+\end_inset
+
+ has.
  This is an important distinction from many other such systems.
- The ANMAID is the revocation key for this identity.
+ The 
+\begin_inset Formula $\mathsf{ANMAID}$
+\end_inset
+
+ is the revocation key for this identity.
  
 \end_layout
 
-\begin_layout List
-\labelwidthstring 00.00.0000
-MPID The (maidsafe proxy identification) MPID is a packet that is created
- by generating a cryptographically secure key pair and signing this with
- the MAID private key as follows: 
-\begin_inset Formula $H(Pub_{[MPID]}+Sign(priv_{[MAID]}))$
+\begin_layout Itemize
+\begin_inset Formula $\mathsf{PMID}$
+\end_inset
+
+ ≡ The (Proxy Maidsafe IDentification) packet has as its identity 
+\begin_inset Formula $\mathsf{H(PMID_{pub}+Sig_{[MAID_{priv}]}(PMID_{pub}))}$
 \end_inset
 
 .
  The 
-\begin_inset Formula $Priv_{MPID}$
+\begin_inset Formula $\mathsf{PMID_{priv}}$
 \end_inset
 
  has to be stored on the machine that runs the Node process.
  This is a potential security risk and therefore the system requires that
- the MPID identity be restricted in capability as far as possible.
- This paper makes this distinction where possible.
- The MAID is the revocation key for this identity.
+ the 
+\begin_inset Formula $\mathsf{PMID}$
+\end_inset
+
+ identity be restricted in capability as far as possible.
+ The 
+\begin_inset Formula $\mathsf{MAID}$
+\end_inset
+
+ is the revocation key for this identity.
 \end_layout
 
+\begin_layout Subsubsection
+Storing and Deleting Encrypted Data Chunks
+\end_layout
+
+\begin_layout Standard
+The process for storing chunks of data is described in more detail at 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:Storing-a-Chunk"
+
+\end_inset
+
+.
+ However, the storing process essentially involves a group of Nodes brokering
+ a deal between the requesting Node (called the client) and the responding
+ Node (called the vault).
+ The deal is validated by means of a 
+\begin_inset Formula $\mathsf{StoreContract}$
+\end_inset
+
+ which contains an 
+\begin_inset Formula $\mathsf{InnerContract}$
+\end_inset
+
+ which itself contains a 
+\begin_inset Formula $\mathsf{SignedSize}$
+\end_inset
+
+ as detailed below.
+ Deleting a chunk also involves a 
+\begin_inset Formula $\mathsf{SignedSize}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\mathsf{SignedSize}$
+\end_inset
+
+ is a serialisable data object containing:
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+\begin_inset Formula $\mathsf{ChunkSize}$
+\end_inset
+
+ in bytes
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\mathsf{Sig_{[PMID_{priv}]}(ChunkSize)}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\mathsf{PMID}$
+\end_inset
+
+ identity
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\mathsf{PMID_{pub}}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\mathsf{Sig_{[MAID_{priv}]}(PMID_{pub})}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+In the case of storing a chunk, the 
+\begin_inset Formula $\mathsf{PMID}$
+\end_inset
+
+ is owned by the client; for deleting a chunk, it is owned by a Chunk Info
+ Holder (covered below).
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+\begin_inset Formula $\mathsf{InnerContract}$
+\end_inset
+
+ is serialisable data object containing:
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+\begin_inset Formula $\mathsf{ACK}$
+\end_inset
+
+ || 
+\begin_inset Formula $\mathsf{NACK}$
+\end_inset
+
+ (agreement to deal)
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\mathsf{SignedSize}$
+\end_inset
+
+
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+\begin_inset Formula $\mathsf{StoreContract}$
+\end_inset
+
+ is a serialisable data object containing:
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+\begin_inset Formula $\mathsf{InnerContract}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\mathsf{Sig_{[PMID_{priv}]}(InnerContract)}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\mathsf{PMID}$
+\end_inset
+
+ identity
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\mathsf{PMID_{pub}}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\mathsf{Sig_{[MAID_{priv}]}(PMID_{pub})}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+In the case of storing or deleting a chunk, the 
+\begin_inset Formula $\mathsf{PMID}$
+\end_inset
+
+ is owned by the vault.
+\end_layout
+
+\end_deeper
 \begin_layout Section
 Overview
 \end_layout
 
 \begin_layout Subsection
-Proposed solution
+Proposed Solution
 \end_layout
 
 \begin_layout Standard
@@ -474,18 +770,29 @@ reference "sub:Current-situation"
 
  is to redesign networks to require no central control and by implication,
  no servers as we currently know them, whether centralised or distributed.
- To achieve this there are several important requirements.
-\end_layout
-
-\begin_layout Subsubsection
-Requirements
+ To achieve this there are several important requirements:
 \end_layout
 
 \begin_layout Enumerate
 Encryption of data units to a very high level.
  This is described in 
 \emph on
-Self encrypting data
+Self Encrypting Data
+\emph default
+ 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "1"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Enumerate
+A method of validation of Nodes as described in
+\emph on
+ Peer to Peer Public Key Infrastructure
 \emph default
  
 \begin_inset CommandInset citation
@@ -498,32 +805,17 @@ key "2"
 \end_layout
 
 \begin_layout Enumerate
-A method of validation of nodes as described in
-\emph on
- peer to peer public key infrastructure
-\emph default
-
-\begin_inset CommandInset citation
-LatexCommand cite
-key "3"
-
-\end_inset
-
-.
-\end_layout
-
-\begin_layout Enumerate
-The ability to randomly select nodes based on a mathematically distributed
- algorithm that can identify groups of nodes to act as independent certification
+The ability to randomly select Nodes based on a mathematically distributed
+ algorithm that can identify groups of Nodes to act as independent certification
  for network actions (and in some cases arbitration).
 \end_layout
 
 \begin_layout Enumerate
-A method of distributed and verifiable measurement of a nodes capability.
+A method of distributed and verifiable measurement of a Node's capability.
 \end_layout
 
 \begin_layout Enumerate
-A system of distribution of data to ensure geographic protection of replicate
+A system of distribution of data to ensure geographic protection of replicated
  information.
 \begin_inset Foot
 status open
@@ -541,13 +833,9 @@ Here we assume replication as opposed to forward error correction.
 
 \end_layout
 
-\begin_layout Subsubsection
-Improvements
-\end_layout
-
 \begin_layout Standard
 One improvement, but not requirement, is the application of a ranking system
- to allow a granular approach to Node capability and therefor 
+ to allow a granular approach to Node capability and therefore 
 \emph on
 cost
 \emph default
@@ -555,25 +843,21 @@ cost
  
 \end_layout
 
-\begin_layout Subsubsection
-Methodology 
-\end_layout
-
 \begin_layout Standard
 The thinking involved in such a system is very similar to the thought process
  behind Kademlia itself in many ways.
- It is also apparently simple at first look but much more complex when deriving
- the detail and particularly when considering alterations to logic and the
- consequences of such.
+ It is also apparently simple at first glance, but much more complex when
+ deriving the detail and particularly when considering alterations to logic
+ and the consequences of such.
  
 \end_layout
 
 \begin_layout Section
-Detailed implementation
+Components
 \end_layout
 
 \begin_layout Subsection
-Main components 
+Kademlia Component 
 \end_layout
 
 \begin_layout Subsubsection
@@ -581,19 +865,26 @@ Knode
 \end_layout
 
 \begin_layout Standard
-A Kademlia node (knode) each node has an instance of a knode Kademlia is
- mainly used as the means of finding peers, not for actually storing/retrieving
- data, this is left to another layer that acts as an overlay to the DHT
- overlay network itself.
+Each Node on the network has an instance of a Kademlia node (knode) running.
+ Kademlia is mainly used as the means of finding peers, not for actually
+ storing/retrieving data; this is left to another layer that acts as an
+ overlay to the DHT overlay network itself.
  
 \end_layout
 
 \begin_layout Subsubsection
-Kademlia API / RPC's
+Kademlia RPCs
 \end_layout
 
 \begin_layout Standard
-Please see Table 1.
+Please see 
+\begin_inset CommandInset ref
+LatexCommand prettyref
+reference "tab:Kademlia-RPCs"
+
+\end_inset
+
+.
  
 \end_layout
 
@@ -601,38 +892,60 @@ Please see Table 1.
 \begin_inset Float table
 wide true
 sideways false
-status open
+status collapsed
 
 \begin_layout Plain Layout
 \begin_inset Tabular
-<lyxtabular version="3" rows="10" columns="3">
+<lyxtabular version="3" rows="8" columns="4">
 <features>
-<column alignment="center" valignment="top" width="0">
-<column alignment="center" valignment="top" width="0">
-<column alignment="center" valignment="top" width="0">
+<column alignment="center" valignment="middle" width="13mm">
+<column alignment="center" valignment="middle" width="55mm">
+<column alignment="center" valignment="middle" width="30mm">
+<column alignment="center" valignment="middle" width="70mm">
 <row endhead="true" endfirsthead="true">
-<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+<cell alignment="center" valignment="middle" topline="true" leftline="true" usebox="none">
 \begin_inset Text
 
 \begin_layout Plain Layout
-Request
+
+\series bold
+\noun on
+RPC Name
 \end_layout
 
 \end_inset
 </cell>
-<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+<cell alignment="center" valignment="middle" topline="true" leftline="true" usebox="none">
 \begin_inset Text
 
 \begin_layout Plain Layout
-Response
+
+\series bold
+\noun on
+Request Fields
 \end_layout
 
 \end_inset
 </cell>
-<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+<cell alignment="center" valignment="middle" topline="true" leftline="true" usebox="none">
 \begin_inset Text
 
 \begin_layout Plain Layout
+
+\series bold
+\noun on
+Response Fields
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="middle" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\series bold
+\noun on
 Purpose
 \end_layout
 
@@ -640,14 +953,107 @@ Purpose
 </cell>
 </row>
 <row>
-<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+<cell alignment="center" valignment="middle" topline="true" leftline="true" usebox="none">
 \begin_inset Text
 
 \begin_layout Plain Layout
-\begin_inset Formula $Sign(PMIDkeypair)_{[MAID]}$
+Ping
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="middle" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\mathsf{Ping}$
 \end_inset
 
 
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="middle" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\mathsf{ACK}$
+\end_inset
+
+ || 
+\begin_inset Formula $\mathsf{NACK}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="middle" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Check peer is connected.
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="middle" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+FindValue
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="middle" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\mathsf{Key}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="middle" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\mathsf{SignedValue}$
+\end_inset
+
+ (repeated)
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="middle" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Get all values stored under 
+\begin_inset Formula $\mathsf{Key}$
+\end_inset
+
+.
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row endhead="true" endfirsthead="true">
+<cell alignment="center" valignment="middle" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+FindNode
 \end_layout
 
 \end_inset
@@ -656,30 +1062,144 @@ Purpose
 \begin_inset Text
 
 \begin_layout Plain Layout
-\begin_inset Formula $NACK||ACK$
+\begin_inset Formula $\mathsf{Key}$
 \end_inset
 
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="middle" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\mathsf{NodeContactDetails}$
+\end_inset
+
+ (repeated)
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="middle" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Find 
+\begin_inset Formula $\mathsf{K}$
+\end_inset
+
+ closest Nodes to 
+\begin_inset Formula $\mathsf{Key}$
+\end_inset
+
+.
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="middle" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Store
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="middle" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\mathsf{Key}$
+\end_inset
+
+, 
+\begin_inset Formula $\mathsf{SignedValue}$
+\end_inset
+
+, 
+\begin_inset Formula $\mathsf{TTL}$
+\end_inset
+
+, 
+\begin_inset Formula $\mathsf{RequestSignature}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="middle" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\mathsf{ACK}$
+\end_inset
+
+ || 
+\begin_inset Formula $\mathsf{NACK}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="middle" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Store 
+\begin_inset Formula $\mathsf{SignedValue}$
+\end_inset
+
+ under 
+\begin_inset Formula $\mathsf{Key}$
+\end_inset
+
+ for duration of 
+\begin_inset Formula $\mathsf{TTL}$
+\end_inset
+
+.
  
-\end_layout
-
+\begin_inset Formula $\mathsf{RequestSignature}$
 \end_inset
-</cell>
-<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
-\begin_inset Text
 
-\begin_layout Plain Layout
-SET_OWN
+ allows validation of ID of requester.
 \end_layout
 
 \end_inset
 </cell>
 </row>
 <row>
-<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+<cell alignment="center" valignment="middle" topline="true" leftline="true" usebox="none">
 \begin_inset Text
 
 \begin_layout Plain Layout
-\begin_inset Formula $RSAenc(Sign(PORT\; number)_{[MAID]})_{PMID}$
+Delete
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="middle" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\mathsf{Key}$
+\end_inset
+
+, 
+\begin_inset Formula $\mathsf{SignedValue}$
+\end_inset
+
+, 
+\begin_inset Formula $\mathsf{RequestSignature}$
 \end_inset
 
 
@@ -687,34 +1207,76 @@ SET_OWN
 
 \end_inset
 </cell>
-<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+<cell alignment="center" valignment="middle" topline="true" leftline="true" usebox="none">
 \begin_inset Text
 
 \begin_layout Plain Layout
-\begin_inset Formula $NACK||ACK$
+\begin_inset Formula $\mathsf{ACK}$
 \end_inset
 
+ || 
+\begin_inset Formula $\mathsf{NACK}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="middle" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Delete 
+\begin_inset Formula $\mathsf{SignedValue}$
+\end_inset
+
+ under 
+\begin_inset Formula $\mathsf{Key}$
+\end_inset
+
+.
  
-\end_layout
-
+\begin_inset Formula $\mathsf{RequestSignature}$
 \end_inset
-</cell>
-<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
-\begin_inset Text
 
-\begin_layout Plain Layout
-SET_PORT
+ allows validation of ID of requester.
 \end_layout
 
 \end_inset
 </cell>
 </row>
 <row>
-<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+<cell alignment="center" valignment="middle" topline="true" leftline="true" usebox="none">
 \begin_inset Text
 
 \begin_layout Plain Layout
-\begin_inset Formula $RSAenc(Sign(PMID1keypair/space)_{[MAID]})_{PMID}$
+Update
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="middle" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\mathsf{Key}$
+\end_inset
+
+, 
+\begin_inset Formula $\mathsf{OriginalSignedValue}$
+\end_inset
+
+, 
+\begin_inset Formula $\mathsf{NewSignedValue}$
+\end_inset
+
+, 
+\begin_inset Formula $\mathsf{TTL}$
+\end_inset
+
+, 
+\begin_inset Formula $\mathsf{RequestSignature}$
 \end_inset
 
 
@@ -722,34 +1284,68 @@ SET_PORT
 
 \end_inset
 </cell>
-<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+<cell alignment="center" valignment="middle" topline="true" leftline="true" usebox="none">
 \begin_inset Text
 
 \begin_layout Plain Layout
-\begin_inset Formula $NACK||ACK$
+\begin_inset Formula $\mathsf{ACK}$
 \end_inset
 
+ || 
+\begin_inset Formula $\mathsf{NACK}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="middle" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Update 
+\begin_inset Formula $\mathsf{OriginalSignedValue}$
+\end_inset
+
+ under 
+\begin_inset Formula $\mathsf{Key}$
+\end_inset
+
+ with 
+\begin_inset Formula $\mathsf{NewSignedValue}$
+\end_inset
+
+ for duration of 
+\begin_inset Formula $\mathsf{TTL}$
+\end_inset
+
+.
  
-\end_layout
-
+\begin_inset Formula $\mathsf{RequestSignature}$
 \end_inset
-</cell>
-<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
-\begin_inset Text
 
-\begin_layout Plain Layout
-ADD_ANOTHER_PMID
+ allows validation of ID of requester.
 \end_layout
 
 \end_inset
 </cell>
 </row>
 <row>
-<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+<cell alignment="center" valignment="middle" topline="true" bottomline="true" leftline="true" usebox="none">
 \begin_inset Text
 
 \begin_layout Plain Layout
-\begin_inset Formula $RSAenc(Sign(Space\: Avail)_{[MAID]})_{PMID}$
+DownList
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="middle" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\mathsf{NodeContactDetails}$
 \end_inset
 
 
@@ -757,15 +1353,15 @@ ADD_ANOTHER_PMID
 
 \end_inset
 </cell>
-<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+<cell alignment="center" valignment="middle" topline="true" bottomline="true" leftline="true" usebox="none">
 \begin_inset Text
 
 \begin_layout Plain Layout
-\begin_inset Formula $RSAenc\; x\; Mb_{[MAID]}$
+\begin_inset Formula $\mathsf{ACK}$
 \end_inset
 
-
-\begin_inset Formula $ $
+ || 
+\begin_inset Formula $\mathsf{NACK}$
 \end_inset
 
 
@@ -773,186 +1369,12 @@ ADD_ANOTHER_PMID
 
 \end_inset
 </cell>
-<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+<cell alignment="center" valignment="middle" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
 \begin_inset Text
 
 \begin_layout Plain Layout
-FREE_SPACE
-\end_layout
-
-\end_inset
-</cell>
-</row>
-<row>
-<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Plain Layout
-\begin_inset Formula $RSAenc(Sign(All\; Space\: Avail)_{[MAID]})_{PMID}$
-\end_inset
-
-
-\end_layout
-
-\end_inset
-</cell>
-<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Plain Layout
-\begin_inset Formula $RSAenc\; List\; dir/space_{[MAID]}$
-\end_inset
-
-
-\end_layout
-
-\end_inset
-</cell>
-<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Plain Layout
-FREE_SPACE_ALL
-\end_layout
-
-\end_inset
-</cell>
-</row>
-<row>
-<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Plain Layout
-\begin_inset Formula $RSAenc(Sign(All\; Drives)_{[MAID]})_{PMID}$
-\end_inset
-
-
-\end_layout
-
-\end_inset
-</cell>
-<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Plain Layout
-\begin_inset Formula $RSAenc\; List\; dir/space_{[MAID]}$
-\end_inset
-
-
-\end_layout
-
-\end_inset
-</cell>
-<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Plain Layout
-LIST_STORES
-\end_layout
-
-\end_inset
-</cell>
-</row>
-<row>
-<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Plain Layout
-\begin_inset Formula $RSAenc(Sign(List\; dir/space)_{[MAID]})_{PMID}$
-\end_inset
-
-
-\end_layout
-
-\end_inset
-</cell>
-<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Plain Layout
-\begin_inset Formula $NACK||ACK$
-\end_inset
-
- 
-\end_layout
-
-\end_inset
-</cell>
-<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Plain Layout
-SET_STORES
-\end_layout
-
-\end_inset
-</cell>
-</row>
-<row>
-<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Plain Layout
-\begin_inset Formula $RSAenc(Sign(DeletePMID)_{[MAID]})_{PMID}$
-\end_inset
-
-
-\end_layout
-
-\end_inset
-</cell>
-<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Plain Layout
-\begin_inset Formula $NACK||ACK$
-\end_inset
-
- 
-\end_layout
-
-\end_inset
-</cell>
-<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Plain Layout
-DELETE_ALL
-\end_layout
-
-\end_inset
-</cell>
-</row>
-<row>
-<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Plain Layout
-\begin_inset Formula $RSAenc(Sign(DeletePMIDX)_{[MAID]})_{PMID}$
-\end_inset
-
-
-\end_layout
-
-\end_inset
-</cell>
-<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Plain Layout
-\begin_inset Formula $RSASign(Delete)_{[MAID]}$
-\end_inset
-
-
-\end_layout
-
-\end_inset
-</cell>
-<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Plain Layout
-DELETE_A_PMID
+Suggest removing Node from routing table.
+ Confirm Node is disconnected by sending Ping to Node before removal.
 \end_layout
 
 \end_inset
@@ -969,496 +1391,14 @@ DELETE_A_PMID
 \begin_inset Caption
 
 \begin_layout Plain Layout
-Node Control RPCs
-\end_layout
+Kademlia RPCs
+\begin_inset CommandInset label
+LatexCommand label
+name "tab:Kademlia-RPCs"
 
 \end_inset
 
 
-\end_layout
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset Float table
-wide true
-sideways false
-status open
-
-\begin_layout Plain Layout
-\begin_inset Tabular
-<lyxtabular version="3" rows="13" columns="3">
-<features>
-<column alignment="center" valignment="top" width="0">
-<column alignment="center" valignment="top" width="0">
-<column alignment="center" valignment="top" width="0">
-<row>
-<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Plain Layout
-
-\emph on
-Request
-\end_layout
-
-\end_inset
-</cell>
-<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Plain Layout
-
-\emph on
-Response
-\end_layout
-
-\end_inset
-</cell>
-<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Plain Layout
-
-\emph on
-Purpose
-\end_layout
-
-\end_inset
-</cell>
-</row>
-<row>
-<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Plain Layout
-\begin_inset Formula $RSAenc(Sign(SAVE\; name\; size)_{[PMID1]})_{PMID}$
-\end_inset
-
-
-\end_layout
-
-\end_inset
-</cell>
-<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Plain Layout
-\begin_inset Formula $NACK||ACK$
-\end_inset
-
- 
-\end_layout
-
-\end_inset
-</cell>
-<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Plain Layout
-SAVE_DATA
-\end_layout
-
-\end_inset
-</cell>
-</row>
-<row>
-<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Plain Layout
-\begin_inset Formula $RSAenc(Give\; name)_{PMID}$
-\end_inset
-
-
-\end_layout
-
-\end_inset
-</cell>
-<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Plain Layout
-chunk
-\end_layout
-
-\end_inset
-</cell>
-<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Plain Layout
-GET_DATA
-\end_layout
-
-\end_inset
-</cell>
-</row>
-<row>
-<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Plain Layout
-\begin_inset Formula $RSAenc(Sign(name+RND\; DATA)_{[PMID1]})_{PMID}$
-\end_inset
-
-
-\end_layout
-
-\end_inset
-</cell>
-<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Plain Layout
-\begin_inset Formula $RSAenc(Sign(hash)_{[PMID]})_{PMID1}$
-\end_inset
-
-
-\end_layout
-
-\end_inset
-</cell>
-<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Plain Layout
-VALIDITY_CHECK
-\end_layout
-
-\end_inset
-</cell>
-</row>
-<row>
-<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Plain Layout
-\begin_inset Formula $RSAenc(Sign(++name)_{[PMID1]})_{rankPMID}$
-\end_inset
-
-
-\end_layout
-
-\end_inset
-</cell>
-<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Plain Layout
-\begin_inset Formula $NACK||ACK$
-\end_inset
-
- 
-\end_layout
-
-\end_inset
-</cell>
-<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Plain Layout
-INC_RANK
-\end_layout
-
-\end_inset
-</cell>
-</row>
-<row>
-<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Plain Layout
-\begin_inset Formula $RSAenc(Sign(--name)_{[PMID1]})_{rankPMID}$
-\end_inset
-
-
-\end_layout
-
-\end_inset
-</cell>
-<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Plain Layout
-\begin_inset Formula $NACK||ACK$
-\end_inset
-
- 
-\end_layout
-
-\end_inset
-</cell>
-<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Plain Layout
-DEC_RANK
-\end_layout
-
-\end_inset
-</cell>
-</row>
-<row>
-<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Plain Layout
-\begin_inset Formula $RSAenc(Sign(---name))_{rankPMID}$
-\end_inset
-
-
-\end_layout
-
-\end_inset
-</cell>
-<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Plain Layout
-\begin_inset Formula $NACK||ACK$
-\end_inset
-
- 
-\end_layout
-
-\end_inset
-</cell>
-<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Plain Layout
-REP_DEC_RANK
-\end_layout
-
-\end_inset
-</cell>
-</row>
-<row>
-<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Plain Layout
-\begin_inset Formula $RSAenc(Sign(addReference)_{PMID})_{referencePMID}$
-\end_inset
-
-
-\end_layout
-
-\end_inset
-</cell>
-<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Plain Layout
-\begin_inset Formula $NACK||ACK$
-\end_inset
-
- 
-\end_layout
-
-\end_inset
-</cell>
-<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Plain Layout
-ADD_REF
-\end_layout
-
-\end_inset
-</cell>
-</row>
-<row>
-<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Plain Layout
-\begin_inset Formula $RSAenc(Sign(delReference)_{PMID})_{referencePMID}$
-\end_inset
-
-
-\end_layout
-
-\end_inset
-</cell>
-<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Plain Layout
-\begin_inset Formula $NACK||ACK$
-\end_inset
-
- 
-\end_layout
-
-\end_inset
-</cell>
-<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Plain Layout
-DEL_REF
-\end_layout
-
-\end_inset
-</cell>
-</row>
-<row>
-<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Plain Layout
-\begin_inset Formula $RSAenc(Sign(addmessage)_{allowed\; PMID})_{PMID}$
-\end_inset
-
-
-\end_layout
-
-\end_inset
-</cell>
-<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Plain Layout
-\begin_inset Formula $NACK||ACK$
-\end_inset
-
- 
-\end_layout
-
-\end_inset
-</cell>
-<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Plain Layout
-ADD_MESSAGE
-\end_layout
-
-\end_inset
-</cell>
-</row>
-<row>
-<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Plain Layout
-\begin_inset Formula $RSAenc(Sign(read\; all\; message)_{PMID})_{PMID}$
-\end_inset
-
-
-\end_layout
-
-\end_inset
-</cell>
-<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Plain Layout
-\begin_inset Formula $RSAenc(Sign(msgs))_{PMID}$
-\end_inset
-
-
-\end_layout
-
-\end_inset
-</cell>
-<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Plain Layout
-READ_MESSAGES
-\end_layout
-
-\end_inset
-</cell>
-</row>
-<row>
-<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Plain Layout
-\begin_inset Formula $RSAenc(Sign(delmessage)_{allowed_{PMID}})_{PMID}$
-\end_inset
-
-
-\end_layout
-
-\end_inset
-</cell>
-<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Plain Layout
-\begin_inset Formula $NACK||ACK$
-\end_inset
-
- 
-\end_layout
-
-\end_inset
-</cell>
-<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Plain Layout
-DEL_MESSAGE
-\end_layout
-
-\end_inset
-</cell>
-</row>
-<row>
-<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Plain Layout
-\begin_inset Formula $RSAenc(Sign(is\; online)_{allowed_{PMID}})_{PMID}$
-\end_inset
-
-
-\end_layout
-
-\end_inset
-</cell>
-<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Plain Layout
-\begin_inset Formula $RSAenc(Sign(IP:port))_{allowedPMID}$
-\end_inset
-
-
-\end_layout
-
-\end_inset
-</cell>
-<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Plain Layout
-IS_ONLINE
-\end_layout
-
-\end_inset
-</cell>
-</row>
-</lyxtabular>
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Plain Layout
-\begin_inset Caption
-
-\begin_layout Plain Layout
-Node General RPCs
 \end_layout
 
 \end_inset
@@ -1472,52 +1412,2645 @@ Node General RPCs
 \end_layout
 
 \begin_layout Subsection
-Node Components
+Overlay Component
+\end_layout
+
+\begin_layout Subsubsection
+Node
 \end_layout
 
 \begin_layout Standard
 Nodes are run as a separate process and largely manage themselves.
  At the moment, when the software is installed and run, a daemon / service
- runs which starts an "unowned" node.
- This listens on the local network for owner control RPC's as defined in
- Table 1.
+ runs which starts an "unowned" Node.
+ This listens on the local network for owner control RPCs.
 \end_layout
 
-\begin_layout Subsection
+\begin_layout Subsubsection
+Node RPCs
+\end_layout
+
+\begin_layout Standard
+Please see Tables 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "tab:Node-RPCs-(ChunkManagement)"
+
+\end_inset
+
+ - 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "tab:Node-RPCs-(Miscellaneous)"
+
+\end_inset
+
+ on pages 
+\begin_inset CommandInset ref
+LatexCommand pageref
+reference "tab:Node-RPCs-(ChunkManagement)"
+
+\end_inset
+
+ - 
+\begin_inset CommandInset ref
+LatexCommand pageref
+reference "tab:Node-RPCs-(Miscellaneous)"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float table
+wide true
+sideways false
+status collapsed
+
+\begin_layout Plain Layout
+\begin_inset Tabular
+<lyxtabular version="3" rows="8" columns="4">
+<features>
+<column alignment="center" valignment="middle" width="28mm">
+<column alignment="center" valignment="middle" width="50mm">
+<column alignment="center" valignment="middle" width="25mm">
+<column alignment="center" valignment="middle" width="65mm">
+<row>
+<cell alignment="center" valignment="middle" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\series bold
+\noun on
+RPC
+\end_layout
+
+\begin_layout Plain Layout
+
+\series bold
+\noun on
+Name
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="middle" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\series bold
+\noun on
+Request Fields
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="middle" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\series bold
+\noun on
+Response Fields
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="middle" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\series bold
+\noun on
+Purpose
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="middle" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+StorePrep
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="middle" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\mathsf{ChunkName}$
+\end_inset
+
+, 
+\begin_inset Formula $\mathsf{SignedSize}$
+\end_inset
+
+, 
+\begin_inset Formula $\mathsf{RequestSignature}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="middle" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\mathsf{StoreContract}$
+\end_inset
+
+, 
+\begin_inset Formula $\mathsf{ResponseSignature}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="middle" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Make initial agreement between client and vault to store data chunk.
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="middle" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+StoreChunk
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="middle" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\mathsf{ChunkName}$
+\end_inset
+
+, 
+\begin_inset Formula $\mathsf{Data}$
+\end_inset
+
+, 
+\begin_inset Formula $\mathsf{PMID}$
+\end_inset
+
+, 
+\begin_inset Formula $\mathsf{PMID_{pub}}$
+\end_inset
+
+, 
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\noun off
+\color none
+
+\begin_inset Formula $\mathsf{Sig_{[MAID_{priv}]}(PMID_{pub})}$
+\end_inset
+
+, 
+\family default
+\series default
+\shape default
+\size default
+\emph default
+\bar default
+\noun default
+\color inherit
+
+\begin_inset Formula $\mathsf{RequestSignature}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="middle" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\mathsf{ACK}$
+\end_inset
+
+ || 
+\begin_inset Formula $\mathsf{NACK}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="middle" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Store data chunk.
+ 
+\begin_inset Formula $\mathsf{PMID}$
+\end_inset
+
+ belongs to client.
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="middle" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+GetChunk
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="middle" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\mathsf{ChunkName}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="middle" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\mathsf{ACK}$
+\end_inset
+
+ || 
+\begin_inset Formula $\mathsf{NACK}$
+\end_inset
+
+, 
+\begin_inset Formula $\mathsf{Data}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="middle" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Get data chunk.
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="middle" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+CheckChunk
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="middle" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\mathsf{ChunkName}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="middle" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\mathsf{ACK}$
+\end_inset
+
+ || 
+\begin_inset Formula $\mathsf{NACK}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="middle" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Check if the recipient has the chunk.
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="middle" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+DeleteChunk
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="middle" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\mathsf{ChunkName}$
+\end_inset
+
+,
+\begin_inset Formula $\mathsf{SignedSize}$
+\end_inset
+
+, 
+\begin_inset Formula $\mathsf{RequestSignature}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="middle" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\mathsf{ACK}$
+\end_inset
+
+ || 
+\begin_inset Formula $\mathsf{NACK}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="middle" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Delete data chunk.
+ 
+\begin_inset Formula $\mathsf{RequestSignature}$
+\end_inset
+
+formed using Chunk Info Holder's PMID.
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="middle" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+ValidityCheck
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="middle" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\mathsf{ChunkName}$
+\end_inset
+
+, 
+\begin_inset Formula $\mathsf{RandomData}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="middle" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\mathsf{ACK}$
+\end_inset
+
+ || 
+\begin_inset Formula $\mathsf{NACK}$
+\end_inset
+
+, 
+\begin_inset Formula $\mathsf{HashContent}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="middle" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Ensure data chunk is uncorrupted.
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="middle" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+CacheChunk
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="middle" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\mathsf{ChunkName}$
+\end_inset
+
+, 
+\begin_inset Formula $\mathsf{Data}$
+\end_inset
+
+, 
+\begin_inset Formula $\mathsf{PMID}$
+\end_inset
+
+, 
+\begin_inset Formula $\mathsf{PMID_{pub}}$
+\end_inset
+
+, 
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\noun off
+\color none
+
+\begin_inset Formula $\mathsf{Sig_{[MAID_{priv}]}(PMID_{pub})}$
+\end_inset
+
+, 
+\family default
+\series default
+\shape default
+\size default
+\emph default
+\bar default
+\noun default
+\color inherit
+
+\begin_inset Formula $\mathsf{RequestSignature}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="middle" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\mathsf{ACK}$
+\end_inset
+
+ || 
+\begin_inset Formula $\mathsf{NACK}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="middle" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Cache data chunk.
+ 
+\begin_inset Formula $\mathsf{PMID}$
+\end_inset
+
+ belongs to client.
+\end_layout
+
+\end_inset
+</cell>
+</row>
+</lyxtabular>
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption
+
+\begin_layout Plain Layout
+Node RPCs (Chunk Management)
+\begin_inset CommandInset label
+LatexCommand label
+name "tab:Node-RPCs-(ChunkManagement)"
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float table
+wide true
+sideways false
+status collapsed
+
+\begin_layout Plain Layout
+\begin_inset Tabular
+<lyxtabular version="3" rows="5" columns="4">
+<features>
+<column alignment="center" valignment="middle" width="28mm">
+<column alignment="center" valignment="middle" width="50mm">
+<column alignment="center" valignment="middle" width="25mm">
+<column alignment="center" valignment="middle" width="65mm">
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\series bold
+\noun on
+RPC
+\end_layout
+
+\begin_layout Plain Layout
+
+\series bold
+\noun on
+Name
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\series bold
+\noun on
+Request Fields
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\series bold
+\noun on
+Response Fields
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\series bold
+\noun on
+Purpose
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+GetChunkReferences
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\mathsf{ChunkName}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\mathsf{ACK}$
+\end_inset
+
+ || 
+\begin_inset Formula $\mathsf{NACK}$
+\end_inset
+
+, 
+\begin_inset Formula $\mathsf{Refs}$
+\end_inset
+
+(repeated)
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Get Node IDs of holders of data chunk.
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+AddToWatchList
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\mathsf{ChunkName}$
+\end_inset
+
+,
+\begin_inset Formula $\mathsf{SignedSize}$
+\end_inset
+
+, 
+\begin_inset Formula $\mathsf{RequestSignature}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\mathsf{ACK}$
+\end_inset
+
+ || 
+\begin_inset Formula $\mathsf{NACK}$
+\end_inset
+
+, 
+\begin_inset Formula $\mathsf{UploadCount}$
+\end_inset
+
+, 
+\begin_inset Formula $\mathsf{TotalPayment}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Request to be added to the list of watchers for data chunk.
+ 
+\begin_inset Formula $\mathsf{RequestSignature}$
+\end_inset
+
+ formed using client's PMID.
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+RemoveFromWatchList
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\mathsf{ChunkName}$
+\end_inset
+
+, 
+\begin_inset Formula $\mathsf{PMID}$
+\end_inset
+
+, 
+\begin_inset Formula $\mathsf{PMID_{pub}}$
+\end_inset
+
+, 
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\noun off
+\color none
+
+\begin_inset Formula $\mathsf{Sig_{[MAID_{priv}]}(PMID_{pub})}$
+\end_inset
+
+, 
+\family default
+\series default
+\shape default
+\size default
+\emph default
+\bar default
+\noun default
+\color inherit
+
+\begin_inset Formula $\mathsf{RequestSignature}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\mathsf{ACK}$
+\end_inset
+
+ || 
+\begin_inset Formula $\mathsf{NACK}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Request to be removed from the list of watchers for data chunk.
+ 
+\begin_inset Formula $\mathsf{RequestSignature}$
+\end_inset
+
+ formed using client's PMID.
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+AddToReferenceList
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\mathsf{ChunkName}$
+\end_inset
+
+, 
+\begin_inset Formula $\mathsf{StoreContract}$
+\end_inset
+
+,
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\noun off
+\color none
+ 
+\family default
+\series default
+\shape default
+\size default
+\emph default
+\bar default
+\noun default
+\color inherit
+
+\begin_inset Formula $\mathsf{RequestSignature}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\mathsf{ACK}$
+\end_inset
+
+ || 
+\begin_inset Formula $\mathsf{NACK}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Request to be added to the list of Chunk Holders for data chunk.
+ 
+\begin_inset Formula $\mathsf{RequestSignature}$
+\end_inset
+
+ formed using vault's PMID.
+\end_layout
+
+\end_inset
+</cell>
+</row>
+</lyxtabular>
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption
+
+\begin_layout Plain Layout
+Node RPCs (Chunk Information Management)
+\begin_inset CommandInset label
+LatexCommand label
+name "tab:Node-RPCs-(ChunkInfoManagement)"
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float table
+wide true
+sideways false
+status collapsed
+
+\begin_layout Plain Layout
+\begin_inset Tabular
+<lyxtabular version="3" rows="4" columns="4">
+<features>
+<column alignment="center" valignment="middle" width="28mm">
+<column alignment="center" valignment="middle" width="50mm">
+<column alignment="center" valignment="middle" width="25mm">
+<column alignment="center" valignment="middle" width="65mm">
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\series bold
+\noun on
+RPC
+\end_layout
+
+\begin_layout Plain Layout
+
+\series bold
+\noun on
+Name
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\series bold
+\noun on
+Request Fields
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\series bold
+\noun on
+Response Fields
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\series bold
+\noun on
+Purpose
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+AmendAccount
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\mathsf{AmendmentType}$
+\end_inset
+
+, 
+\begin_inset Formula $\mathsf{AccountPMID,}$
+\end_inset
+
+
+\begin_inset Formula $\mathsf{SignedSize}$
+\end_inset
+
+, 
+\begin_inset Formula $\mathsf{ChunkName}$
+\end_inset
+
+(optional)
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\mathsf{ACK}$
+\end_inset
+
+ || 
+\begin_inset Formula $\mathsf{NACK}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+If the 
+\begin_inset Formula $\mathsf{AmendmentType}$
+\end_inset
+
+ is space offered, the request comes from a client and doesn't include a
+ 
+\begin_inset Formula $\mathsf{ChunkName}$
+\end_inset
+
+.
+ Otherwise, the request comes from a Chunk Info Holder and relates to storing
+ or deleting a chunk.
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+ExpectAmendment
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\mathsf{AmendmentType}$
+\end_inset
+
+, 
+\begin_inset Formula $\mathsf{ChunkName}$
+\end_inset
+
+, 
+\begin_inset Formula $\mathsf{PMID}$
+\end_inset
+
+, 
+\begin_inset Formula $\mathsf{PMID_{pub}}$
+\end_inset
+
+, 
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\noun off
+\color none
+
+\begin_inset Formula $\mathsf{Sig_{[MAID_{priv}]}(PMID_{pub})}$
+\end_inset
+
+, 
+\family default
+\series default
+\shape default
+\size default
+\emph default
+\bar default
+\noun default
+\color inherit
+
+\begin_inset Formula $\mathsf{RequestSignature}$
+\end_inset
+
+, 
+\begin_inset Formula $\mathsf{AmenderPMIDs}$
+\end_inset
+
+ (repeated)
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\mathsf{ACK}$
+\end_inset
+
+ || 
+\begin_inset Formula $\mathsf{NACK}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Allows Account Holders to anticipate a forthcoming AmendAccount RPC from
+ each of the 
+\begin_inset Formula $\mathsf{K}$
+\end_inset
+
+ Chunk Info Holders (indicated in 
+\begin_inset Formula $\mathsf{AmenderPMIDs}$
+\end_inset
+
+).
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+AccountStatus
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\mathsf{AccountPMID}$
+\end_inset
+
+, 
+\begin_inset Formula $\mathsf{SpaceRequested}$
+\end_inset
+
+, 
+\begin_inset Formula $\mathsf{PMID_{pub}}$
+\end_inset
+
+, 
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\noun off
+\color none
+
+\begin_inset Formula $\mathsf{Sig_{[MAID_{priv}]}(PMID_{pub})}$
+\end_inset
+
+, 
+\family default
+\series default
+\shape default
+\size default
+\emph default
+\bar default
+\noun default
+\color inherit
+
+\begin_inset Formula $\mathsf{RequestSignature}$
+\end_inset
+
+,
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\mathsf{ACK}$
+\end_inset
+
+ || 
+\begin_inset Formula $\mathsf{NACK}$
+\end_inset
+
+, 
+\begin_inset Formula $\mathsf{SpaceOffered}$
+\end_inset
+
+, 
+\begin_inset Formula $\mathsf{SpaceGiven}$
+\end_inset
+
+, 
+\begin_inset Formula $\mathsf{SpaceTaken}$
+\end_inset
+
+, 
+\begin_inset Formula $\mathsf{AmendmentResults}$
+\end_inset
+
+ (optional, repeated)
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Get the current status of a Node's Account.
+ If the requester is the Account Owner, a list of all account amendments
+ since the last AccountStatus request was made is returned also.
+\end_layout
+
+\end_inset
+</cell>
+</row>
+</lyxtabular>
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption
+
+\begin_layout Plain Layout
+Node RPCs (Account Management)
+\begin_inset CommandInset label
+LatexCommand label
+name "tab:Node-RPCs-(AccountManagement)"
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float table
+wide true
+sideways false
+status collapsed
+
+\begin_layout Plain Layout
+\begin_inset Tabular
+<lyxtabular version="3" rows="5" columns="4">
+<features>
+<column alignment="center" valignment="middle" width="28mm">
+<column alignment="center" valignment="middle" width="50mm">
+<column alignment="center" valignment="middle" width="25mm">
+<column alignment="center" valignment="middle" width="65mm">
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\series bold
+\noun on
+RPC
+\end_layout
+
+\begin_layout Plain Layout
+
+\series bold
+\noun on
+Name
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\series bold
+\noun on
+Request Fields
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\series bold
+\noun on
+Response Fields
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\series bold
+\noun on
+Purpose
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+GetSyncData
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\mathsf{PMID}$
+\end_inset
+
+, 
+\begin_inset Formula $\mathsf{PMID_{pub}}$
+\end_inset
+
+, 
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\noun off
+\color none
+
+\begin_inset Formula $\mathsf{Sig_{[MAID_{priv}]}(PMID_{pub})}$
+\end_inset
+
+, 
+\family default
+\series default
+\shape default
+\size default
+\emph default
+\bar default
+\noun default
+\color inherit
+
+\begin_inset Formula $\mathsf{RequestSignature}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\mathsf{ACK}$
+\end_inset
+
+ || 
+\begin_inset Formula $\mathsf{NACK}$
+\end_inset
+
+, 
+\begin_inset Formula $\mathsf{VaultAccountSet}$
+\end_inset
+
+, 
+\begin_inset Formula $\mathsf{ChunkInfoMap}$
+\end_inset
+
+, 
+\begin_inset Formula $\mathsf{VaultBufferPktMap}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Used by a Node to retrieve serialised containers of data from close peers
+ which it should also be responsible for holding.
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+GetAccount
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\mathsf{AccountPMID}$
+\end_inset
+
+, 
+\begin_inset Formula $\mathsf{PMID}$
+\end_inset
+
+, 
+\begin_inset Formula $\mathsf{PMID_{pub}}$
+\end_inset
+
+, 
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\noun off
+\color none
+
+\begin_inset Formula $\mathsf{Sig_{[MAID_{priv}]}(PMID_{pub})}$
+\end_inset
+
+, 
+\family default
+\series default
+\shape default
+\size default
+\emph default
+\bar default
+\noun default
+\color inherit
+
+\begin_inset Formula $\mathsf{RequestSignature}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\mathsf{ACK}$
+\end_inset
+
+ || 
+\begin_inset Formula $\mathsf{NACK}$
+\end_inset
+
+, 
+\begin_inset Formula $\mathsf{VaultAccount}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Used by a Node to retrieve an individual account from close peers which
+ it should also be responsible for holding.
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+GetChunkInfo
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\mathsf{ChunkName}$
+\end_inset
+
+, 
+\begin_inset Formula $\mathsf{PMID}$
+\end_inset
+
+, 
+\begin_inset Formula $\mathsf{PMID_{pub}}$
+\end_inset
+
+, 
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\noun off
+\color none
+
+\begin_inset Formula $\mathsf{Sig_{[MAID_{priv}]}(PMID_{pub})}$
+\end_inset
+
+, 
+\family default
+\series default
+\shape default
+\size default
+\emph default
+\bar default
+\noun default
+\color inherit
+
+\begin_inset Formula $\mathsf{RequestSignature}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\mathsf{ACK}$
+\end_inset
+
+ || 
+\begin_inset Formula $\mathsf{NACK}$
+\end_inset
+
+, 
+\begin_inset Formula $\mathsf{VaultChunkInfo}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Used by a Node to retrieve info relating to an individual chunk from close
+ peers which it should also be responsible for holding.
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+GetBufferPacket
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\mathsf{BufferPacketName}$
+\end_inset
+
+, 
+\begin_inset Formula $\mathsf{PMID}$
+\end_inset
+
+, 
+\begin_inset Formula $\mathsf{PMID_{pub}}$
+\end_inset
+
+, 
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\noun off
+\color none
+
+\begin_inset Formula $\mathsf{Sig_{[MAID_{priv}]}(PMID_{pub})}$
+\end_inset
+
+, 
+\family default
+\series default
+\shape default
+\size default
+\emph default
+\bar default
+\noun default
+\color inherit
+
+\begin_inset Formula $\mathsf{RequestSignature}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\mathsf{ACK}$
+\end_inset
+
+ || 
+\begin_inset Formula $\mathsf{NACK}$
+\end_inset
+
+, 
+\begin_inset Formula $\mathsf{VaultBufferPacket}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Used by a Node to retrieve an individual buffer packet from close peers
+ which it should also be responsible for holding.
+\end_layout
+
+\end_inset
+</cell>
+</row>
+</lyxtabular>
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption
+
+\begin_layout Plain Layout
+Node RPCs (Synchronisation of Management Data)
+\begin_inset CommandInset label
+LatexCommand label
+name "tab:Node-RPCs-(SynchronisationOfManagementData)"
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float table
+wide true
+sideways false
+status collapsed
+
+\begin_layout Plain Layout
+\begin_inset Tabular
+<lyxtabular version="3" rows="5" columns="4">
+<features>
+<column alignment="center" valignment="middle" width="28mm">
+<column alignment="center" valignment="middle" width="50mm">
+<column alignment="center" valignment="middle" width="25mm">
+<column alignment="center" valignment="middle" width="65mm">
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\series bold
+\noun on
+RPC
+\end_layout
+
+\begin_layout Plain Layout
+
+\series bold
+\noun on
+Name
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\series bold
+\noun on
+Request Fields
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\series bold
+\noun on
+Response Fields
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\series bold
+\noun on
+Purpose
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+CreateBP
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\mathsf{BufferPacketName}$
+\end_inset
+
+, 
+\begin_inset Formula $\mathsf{Data}$
+\end_inset
+
+, 
+\begin_inset Formula $\mathsf{PMID}$
+\end_inset
+
+, 
+\begin_inset Formula $\mathsf{PMID_{pub}}$
+\end_inset
+
+, 
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\noun off
+\color none
+
+\begin_inset Formula $\mathsf{Sig_{[MAID_{priv}]}(PMID_{pub})}$
+\end_inset
+
+, 
+\family default
+\series default
+\shape default
+\size default
+\emph default
+\bar default
+\noun default
+\color inherit
+
+\begin_inset Formula $\mathsf{RequestSignature}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\mathsf{ACK}$
+\end_inset
+
+ || 
+\begin_inset Formula $\mathsf{NACK}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Create a buffer packet.
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+ModifyBPInfo
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\mathsf{BufferPacketName}$
+\end_inset
+
+, 
+\begin_inset Formula $\mathsf{Data}$
+\end_inset
+
+, 
+\begin_inset Formula $\mathsf{PMID}$
+\end_inset
+
+, 
+\begin_inset Formula $\mathsf{PMID_{pub}}$
+\end_inset
+
+, 
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\noun off
+\color none
+
+\begin_inset Formula $\mathsf{Sig_{[MAID_{priv}]}(PMID_{pub})}$
+\end_inset
+
+, 
+\family default
+\series default
+\shape default
+\size default
+\emph default
+\bar default
+\noun default
+\color inherit
+
+\begin_inset Formula $\mathsf{RequestSignature}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\mathsf{ACK}$
+\end_inset
+
+ || 
+\begin_inset Formula $\mathsf{NACK}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Modify a buffer packet's control information (e.g.
+ set permissions).
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+GetBPMessages
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\mathsf{BufferPacketName}$
+\end_inset
+
+, 
+\begin_inset Formula $\mathsf{PMID}$
+\end_inset
+
+, 
+\begin_inset Formula $\mathsf{PMID_{pub}}$
+\end_inset
+
+, 
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\noun off
+\color none
+
+\begin_inset Formula $\mathsf{Sig_{[MAID_{priv}]}(PMID_{pub})}$
+\end_inset
+
+, 
+\family default
+\series default
+\shape default
+\size default
+\emph default
+\bar default
+\noun default
+\color inherit
+
+\begin_inset Formula $\mathsf{RequestSignature}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\mathsf{ACK}$
+\end_inset
+
+ || 
+\begin_inset Formula $\mathsf{NACK}$
+\end_inset
+
+, 
+\begin_inset Formula $\mathsf{Messages}$
+\end_inset
+
+ (repeated)
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Retrieve a buffer packet's messages.
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+AddBPMessage
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\mathsf{BufferPacketName}$
+\end_inset
+
+, 
+\begin_inset Formula $\mathsf{Data}$
+\end_inset
+
+, 
+\begin_inset Formula $\mathsf{PMID}$
+\end_inset
+
+, 
+\begin_inset Formula $\mathsf{PMID_{pub}}$
+\end_inset
+
+, 
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\noun off
+\color none
+
+\begin_inset Formula $\mathsf{Sig_{[MAID_{priv}]}(PMID_{pub})}$
+\end_inset
+
+, 
+\family default
+\series default
+\shape default
+\size default
+\emph default
+\bar default
+\noun default
+\color inherit
+
+\begin_inset Formula $\mathsf{RequestSignature}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\mathsf{ACK}$
+\end_inset
+
+ || 
+\begin_inset Formula $\mathsf{NACK}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Add a message to a buffer packet.
+\end_layout
+
+\end_inset
+</cell>
+</row>
+</lyxtabular>
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption
+
+\begin_layout Plain Layout
+Node RPCs (Buffer Packet Management)
+\begin_inset CommandInset label
+LatexCommand label
+name "tab:Node-RPCs-(BufferPacketManagement)"
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float table
+wide true
+sideways false
+status collapsed
+
+\begin_layout Plain Layout
+\begin_inset Tabular
+<lyxtabular version="3" rows="4" columns="4">
+<features>
+<column alignment="center" valignment="middle" width="28mm">
+<column alignment="center" valignment="middle" width="50mm">
+<column alignment="center" valignment="middle" width="25mm">
+<column alignment="center" valignment="middle" width="65mm">
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\series bold
+\noun on
+RPC
+\end_layout
+
+\begin_layout Plain Layout
+
+\series bold
+\noun on
+Name
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\series bold
+\noun on
+Request Fields
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\series bold
+\noun on
+Response Fields
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\series bold
+\noun on
+Purpose
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+SetLocalVaultOwned
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\mathsf{PMID_{pub}}$
+\end_inset
+
+, 
+\begin_inset Formula $\mathsf{PMID_{priv}}$
+\end_inset
+
+, 
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\noun off
+\color none
+
+\begin_inset Formula $\mathsf{Sig_{[MAID_{priv}]}(PMID_{pub})}$
+\end_inset
+
+, 
+\begin_inset Formula $\mathsf{SpaceOffered}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\mathsf{ACK}$
+\end_inset
+
+ || 
+\begin_inset Formula $\mathsf{NACK}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Take ownership of an unowned Node.
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+LocalVaultOwned
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\mathsf{Owned}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\mathsf{ACK}$
+\end_inset
+
+ || 
+\begin_inset Formula $\mathsf{NACK}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Query a Node's owned status.
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+VaultStatus
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\mathsf{StatusRequest}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\mathsf{StatusResponse}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Used to poll a vault for its current status.
+\end_layout
+
+\end_inset
+</cell>
+</row>
+</lyxtabular>
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption
+
+\begin_layout Plain Layout
+Node RPCs (Miscellaneous)
+\begin_inset CommandInset label
+LatexCommand label
+name "tab:Node-RPCs-(Miscellaneous)"
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsubsection
 Roles
 \end_layout
 
 \begin_layout Standard
-Nodes hold 3 major roles in a network, comprised of chunk holders, chunk
- info holders and account holders.
- A single node is likely to be all of these for multiple chunks.
+Nodes have three major concurrent roles in the network: storing and maintaining
+ encrypted data chunks, maintaining various information about chunks, and
+ maintaining account information about other Nodes (see 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:Accounts"
+
+\end_inset
+
+ below).
+ Nodes are referred to as Chunk Holders, Chunk Info Holders or Account Holders
+ respectively depending on which role we wish to emphasize at the time.
+ (Note however that any single Node is likely to be all of these for multiple
+ chunks and peers simultaneously).
 \end_layout
 
-\begin_layout Subsubsection
-Chunk holder
+\begin_layout Subsection
+Accounts
+\begin_inset CommandInset label
+LatexCommand label
+name "sub:Accounts"
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Standard
-For a certain chunk that is stored on the network, a chunk holder keeps
- the actual copy of the chunk data.
- For any chunk there should be at least 2 copies on the network, ideally
- 4 or more.
- Furthermore, frequently accessed chunks can be cached on nodes other than
- the official chunk holders, to speed up retrieval along a lookup path.
- Chunk holders are initially appointed by the client wishing to store a
- chunk, but will eventually converge to a group of certain quality reflecting
- the client's reputation.
-\end_layout
-
-\begin_layout Subsubsection
-Chunk info holder
+In order to maintain fairness on the network, each Node has an associated
+ account, the name of which can be derived from the Node's PMID identity.
+ The PMID identity should not however be derivable from the account name.
 \end_layout
 
 \begin_layout Standard
-Another node, the chunk info holder, keeps a list of references to a chunk,
- essentially contact information for the nodes that are known to be chunk
- holders (see Figure 2).
+This account details the amount of storage space the Node offers to the
+ network, the space the Node's owner has used on the network, and the space
+ the Node has actually given to the network.
+ The owner uses network space by storing files to the network; the Node
+ gives space by storing and maintaining other users' chunks.
+\end_layout
+
+\begin_layout Standard
+Nodes can only store new data to the network if their account will remain
  
+\begin_inset Quotes eld
+\end_inset
+
+in credit
+\begin_inset Quotes erd
+\end_inset
+
+ (i.e.
+ space offered > space used) after the store operation.
+ Users, regardless of account status, will always be able to get data from
+ then network.
+\end_layout
+
+\begin_layout Standard
+A ranking mechanism which takes these figures (and many other metrics) as
+ inputs will eventually be implemented.
+ Generally, rank will increase with the amount of space offered and given.
+\end_layout
+
+\begin_layout Subsection
+Chunk Holders
+\end_layout
+
+\begin_layout Standard
+For any chunk there should be at least two copies on the network, ideally
+ four or more, each stored on separate Nodes.
+ A Node which stores such a copy is referred to as a Chunk Holder.
+ It is in a Node's interest to store chunks since its rank metric is increased
+ for doing so.
+ Chunks can be moved from one Node to another; as this happens the two correspon
+ding accounts are debited and credited.
+ Frequently accessed chunks can be cached on Nodes other than the official
+ Chunk Holders, to speed up retrieval along a lookup path.
+\end_layout
+
+\begin_layout Subsection
+Chunk Info Holders
+\end_layout
+
+\begin_layout Subsubsection
+Reference Lists
+\end_layout
+
+\begin_layout Standard
+In order to be able to locate a given chunk, a list of Chunk Holders' identities
+ (referred to as a Reference List) is kept on the network.
+ The Reference List is held and maintained by the 
+\begin_inset Formula $\mathsf{K}$
+\end_inset
+
+ Nodes whose IDs are closest to the name of the chunk (see Figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Add-to-Reference"
+
+\end_inset
+
+).
 \begin_inset Float figure
 wide false
 sideways false
@@ -1527,9 +4060,21 @@ status collapsed
 \begin_inset Caption
 
 \begin_layout Plain Layout
+Add to Reference List
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:Add-to-Reference"
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
 \begin_inset Graphics
-	filename seq/Reference_List_Add.png
-	scale 40
+	filename img/Reference_List_Add.pdf
 
 \end_inset
 
@@ -1538,43 +4083,81 @@ status collapsed
 
 \end_inset
 
-
+ Each Node in this group is referred to as a Chunk Info Holder.
 \end_layout
 
-\end_inset
-
-It also holds a list of peers that are "watching" a chunk, which means they
- uploaded the chunk at some point and are now interested in retaining it
- on the network.
- 
-\begin_inset Float figure
-wide false
-sideways false
-status collapsed
-
-\begin_layout Plain Layout
-\begin_inset Caption
-
-\begin_layout Plain Layout
-\begin_inset Graphics
-	filename seq/Watch_List_Add.png
-	scale 40
-
-\end_inset
-
-
+\begin_layout Standard
+A Reference List entry comprises the Chunk Holder's Node ID, and the time
+ it was last contacted by the Chunk Info Holder.
+ This allows the Chunk Info Holder to return only active Chunk Holders in
+ response to a GetChunkReferences request, yet keep details of stale Chunk
+ Holders in case they come back online.
 \end_layout
 
-\end_inset
-
-
+\begin_layout Subsubsection
+Watch Lists
 \end_layout
 
-\end_inset
-
-This so-called watch list (see Figure 1) is limited to 250
+\begin_layout Standard
+The same group also holds a list of peers that are "watching" a chunk (referred
+ to as a Watch List), which means they stored the chunk at some point
 \begin_inset Foot
-status open
+status collapsed
+
+\begin_layout Plain Layout
+If the chunk pre-existed on the network, they may not have actually uploaded
+ the chunk themselves.
+\end_layout
+
+\end_inset
+
+ and are now interested in retaining it on the network (see Figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Add-to-Watch"
+
+\end_inset
+
+).
+\begin_inset Float figure
+wide false
+sideways false
+status collapsed
+
+\begin_layout Plain Layout
+\begin_inset Caption
+
+\begin_layout Plain Layout
+Add to Watch List
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:Add-to-Watch"
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\begin_inset Graphics
+	filename img/Watch_List_Add.pdf
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Watch Lists are currently limited to 250 entries
+\begin_inset Foot
+status collapsed
 
 \begin_layout Plain Layout
 This figure is currently arbitrary and will be calculated based on several
@@ -1583,124 +4166,31 @@ This figure is currently arbitrary and will be calculated based on several
 
 \end_inset
 
- entries; once it is filled, new watchers are only registered by increasing
- a counter and including their ID in a checksum.
- This helps prevent accidental removal of a chunk from the network in case
- the list becomes empty while there are still peers watching the chunk,
- but have never been added to the actual list, possibly because it was already
- full when they first started watching.
- Because of this wealth of information, the chunk info holder is also responsibl
-e for monitoring the number of active chunk holders on the network, and
- triggering chunk duplication, repair or removal if said number differs
- from the desired optimum.
- Chunk info holders are those K nodes in the network whose IDs are closest
- to the name of the chunk.
-\end_layout
-
-\begin_layout Subsubsection
-Account holder
-\end_layout
-
-\begin_layout Standard
-In order to maintain fairness on the network, for each node an account is
- maintained by its account holder.
- This account initially only holds the amount of storage space a node offers
- to the network, as well as the space it used on or provided to peer nodes,
- but will eventually also provide a ranking mechanism.
- Account amendments are performed every time a storage operation takes place.
- Ideally, a node would be able to use as much storage space on other nodes
- as itself provides to the network.
- If a client's node runs out of space or is unexpectedly removed from the
- network, they will not be able to store more data until this situation
- is resolved.
- They will, always be able to get data from then network, as long as they
- recover a node to bring back up their payment, in terms of space given.
- Account holders are those K nodes in the network whose IDs are closest
- to a key derived from the account subject's ID and a salt, initially intended
- to ensure no reverse matching of accounts to nodes.
-\end_layout
-
-\begin_layout Subsubsection
-AccountHandler
-\end_layout
-
-\begin_layout Standard
-An AccountHandler is the component of a node that keeps the accounts to
- whose IDs it is within the K closest nodes on the network, as well as provides
- functionality to amend and protect these accounts.
- Each account currently holds the amount of space a node offers, how much
- of this space is occupied (i.e.
- provided to the network), and how much space the node used on peer nodes
- (i.e.
- taken from the network).
- It will eventually be extended to manage a rank value based on these attributes
- as well as additional behaviour tracking statistics.
- Full account information can only be retrieved by the owner of the account,
- for privacy reasons.
- Other nodes are only allowed to confirm whether the owner is authorised
- to perform a storage operation by checking for enough available space.
-\end_layout
-
-\begin_layout Subsubsection
-ChunkInfoHandler
-\end_layout
-
-\begin_layout Standard
-In the ChunkInfoHandler, information about the chunks with IDs that the
- node is within the K closest to is kept.
- This information is comprised of a watch list, a reference list and a waiting
- list for the watch list, as well as the total number of watchers (including
- those not on the list), a checksum of their IDs and the size of the chunk
-\begin_inset Foot
-status open
-
-\begin_layout Plain Layout
-Future extensions might see various statistical data in there, such as the
- number of watchers over certain time periods and the amount of requests
- for references to a chunk.
-\end_layout
+; once filled, new watchers are only registered by increasing a counter
+ and including their ID in a checksum.
+ A chunk can only be removed from the network once the corresponding Watch
+ List is empty, the counter is zero, and the checksum indicates that all
+ watchers have subsequently removed themselves (see Figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Remove-from-Watch"
 
 \end_inset
 
-.
- 
-\end_layout
-
-\begin_layout Standard
-An entry in the watch list currently only consists of the watcher's ID and
- a flag whether the entry can be deleted.
- The latter is necessary to keep peers in the list which already deleted
- themselves from it, but are still providing a payment and will need to
- get recompensed eventually.
- The reference list entries keep the IDs of the nodes that hold the chunk,
- as well as the time they were last seen, which can be used to return only
- active nodes in a request, yet keep stale nodes in case they come back
- online.
- In the waiting list information for all those is held, who intended to
- add themselves to the watch list but whose payment and storage operations
- are still pending.
- Once those are completed, the entry can be committed to the actual watch
- list; otherwise it will be deleted (or pruned after a long time of inactivity)
- and previous operations undone.
-\end_layout
-
-\begin_layout Standard
+).
 \begin_inset Float figure
 wide false
 sideways false
-status open
-
-\begin_layout Plain Layout
-
-\end_layout
+status collapsed
 
 \begin_layout Plain Layout
 \begin_inset Caption
 
 \begin_layout Plain Layout
-\begin_inset Graphics
-	filename seq/Watch_List_Remove.png
-	scale 40
+Remove from Watch List
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:Remove-from-Watch"
 
 \end_inset
 
@@ -1713,81 +4203,149 @@ status open
 \end_layout
 
 \begin_layout Plain Layout
-
-\end_layout
+\begin_inset Graphics
+	filename img/Watch_List_Remove.pdf
 
 \end_inset
 
 
 \end_layout
 
-\begin_layout Standard
-Since the watch list is limited to currently 250 entries, a checksum is
- kept to prevent accidental chunk deletions in case a node requested to
- be removed from the watch list without ever adding themselves, which could
- also be abused for an attack.
- So even if the watch list is empty and the number of watchers zero, if
- something went wrong during the chunk info's lifetime the checksum helps
- detect it, in which case the chunk would just be kept indefinitely or at
- least for a very long time (several years)
+\end_inset
+
+ So even if the Watch List is empty and the counter is zero, if something
+ went wrong during the Chunk Info's lifetime (e.g.
+ a Node which was never added to the Watch List requested to be removed
+ from it) the checksum helps detect it, in which case the chunk would just
+ be kept indefinitely or at least for a very long time (several years).
 \begin_inset Foot
 status open
 
 \begin_layout Plain Layout
-This is a situation that will very likley be overcome as the logic becomes
- clearer and further research provides a more effective algorithm, allowing
- the removel of data that is no longer required.
- Any data that is addressed by the hash of it's content will only be deleted
- through necessity of reclaiming space, to ensure there are as many revisions
- as possible of all data.
+This is a situation that will very likely be improved as further research
+ should yield a better algorithm for the removal of stale data.
+ Any data that is addressed by the hash of its content will only be deleted
+ through a necessity of reclaiming space.
 \end_layout
 
 \end_inset
 
-.
+
 \end_layout
 
-\begin_layout Subsection
-Main Processes
+\begin_layout Standard
+A Watch List entry comprises the watcher's Node ID and a flag to indicate
+ if the entry can be deleted.
+ The flag allows retention of watchers who have requested their removal
+ from the Watch List, but who are still providing a 
+\begin_inset Quotes eld
+\end_inset
+
+payment
+\begin_inset Quotes erd
+\end_inset
+
+ for the chunk.
+ This permits these ex-watchers to be proper recompensed eventually (once
+ new watchers add themselves to the Watch List).
+\end_layout
+
+\begin_layout Standard
+Because of this wealth of information, Chunk Info Holders are also responsible
+ for monitoring the number of active Chunk Holders on the network, and triggerin
+g chunk validity checks, duplication, repair or removal as required.
+ In future, Chunk Info Holders may also collect various statistics, such
+ as the number of watchers over certain time periods and the amount of requests
+ for references to a chunk.
 \end_layout
 
 \begin_layout Subsubsection
+Waiting Lists
+\end_layout
+
+\begin_layout Standard
+Nodes requesting addition to a Watch List are added to a Waiting List until
+ payment for the chunk either succeeds or fails, and if duplicate chunk
+ copies are needed, until the new Chunk Holders add themselves to the Reference
+ List.
+\end_layout
+
+\begin_layout Subsection
+Account Holders
+\end_layout
+
+\begin_layout Standard
+The 
+\begin_inset Formula $\mathsf{K}$
+\end_inset
+
+ Nodes whose IDs are closest to the name of a Node's account are called
+ Account Holders.
+ Full account information can only be retrieved by the owner of the account,
+ for privacy reasons.
+ Other Nodes are only allowed to confirm whether the owner is authorised
+ to perform a storage operation by checking for enough available space.
+\end_layout
+
+\begin_layout Section
+Main Processes
+\end_layout
+
+\begin_layout Subsection
 Joining the Network
 \end_layout
 
 \begin_layout Standard
-After successfully joining the Network on the Kademlia layer, an account
- needs to be created for the client's node, in order to specify how much
- space is available to be offered to the network.
- Only when enough of the K Account Holders are aware of this account, further
- operations demanding payments can succeed.
- Fraudulent account creations are intended to be detected by peer nodes
+After successfully joining the network on the Kademlia layer, an account
+ needs to be created for the client's Node in order to specify how much
+ space is to be offered to the network.
+ Only once enough of the 
+\begin_inset Formula $\mathsf{K}$
+\end_inset
+
+ Account Holders are aware of this account can further operations demanding
+ payments succeed.
+ Fraudulent account creations are intended to be detected by peer Nodes
  in future operations, e.g.
  when storage operations could not be completed.
 \end_layout
 
-\begin_layout Subsubsection
+\begin_layout Subsection
 Storing a Chunk
+\begin_inset CommandInset label
+LatexCommand label
+name "sub:Storing-a-Chunk"
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Standard
-To store a chunk from a client, we first have to ensure we are entitled
- to make use of the required storage space on the network.
- This means that the difference between the space we already used and the
- space we offered has to be large enough to encompass the size of the chunk
- in question.
- We then look up the K Chunk Info Holders and try to add ourselves to their
- watch list, to signal we are interested in storing (and keeping) the chunk.
+To store a chunk, a client first has to ensure there is enough space in
+ its account (see 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:Accounts"
+
+\end_inset
+
+).
+ It then looks up the 
+\begin_inset Formula $\mathsf{K}$
+\end_inset
+
+ Chunk Info Holders and requests to be added to the Watch List for that
+ chunk.
 \end_layout
 
 \begin_layout Standard
 Once a Chunk Info Holder has received and validated an AddToWatchList request,
- it adds the ID of the requesting peer to an internal waiting list, provided
- the given chunk size is valid.
- In response the client gets informed how many copies of the chunk they
- need to upload.
+ it adds the ID of the requesting peer to the Waiting List.
+ In response, the client gets informed how many copies of the chunk need
+ to be uploaded.
  This number depends on how many copies of the chunk are already on the
- network and is derived from the desired minimum amount of chunks (kMinChunkCopi
+ network and is derived from the desired minimum amount of copies (kMinChunkCopi
 es
 \begin_inset Foot
 status open
@@ -1799,44 +4357,53 @@ Currently a system wide constant
 \end_inset
 
 ), usually lower to spare the client from excessive uploading.
- The Chunk Info Holder then proceeds to deduct the required payment (which
- equals the storage space needed) from the client's account, or in case
- of no storage makes sure there is at least the chunk's size worth of space
- left.
+\end_layout
+
+\begin_layout Standard
+Each Chunk Info Holder then proceeds to look up the 
+\begin_inset Formula $\mathsf{K}$
+\end_inset
+
+ Account Holders of the client's account, and sends each a request to deduct
+ the required payment (which equals the storage space needed) from the client's
+ account.
  If the chunk didn't exist on the network, the client is asked for a payment
  kMinChunkCopies times the size of the chunk, independent of how many chunk
  copies were requested to be uploaded.
- Otherwise, only a single payment is required, unless the client doesn't
- end up on the explicit watch list, in which case storing is free.
- If this payment process triggered by the Chunk Info Holder fails, for example
- because the client's Node account isn't sufficiently funded, all previous
+ If the chunk did pre-exist, then no uploads are required and payment depends
+ on the state of the Watch List.
+ If the Watch List is not full, only a single payment is required, otherwise
+ storing is free.
+ If this payment process triggered by the Chunk Info Holders fails, for
+ example because the client's account isn't sufficiently funded, all previous
  operations are undone.
- Otherwise the corresponding entry in the aforementioned waiting list is
- flagged as having completed its payments.
 \begin_inset Float figure
 wide false
 sideways false
-status open
+status collapsed
 
 \begin_layout Plain Layout
 \begin_inset Caption
 
 \begin_layout Plain Layout
+Payment Finalisation
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:Payment-Finalisation"
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
 \begin_inset Graphics
-	filename seq/Watch_List_Payment.png
-	scale 40
+	filename img/Watch_List_Payment.pdf
 
 \end_inset
 
-
-\end_layout
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Plain Layout
 
 \end_layout
 
@@ -1846,123 +4413,174 @@ status open
 \end_layout
 
 \begin_layout Standard
-Meanwhile, the client contacts one node per requested chunk copy, to negotiate
- a store contract.
- If the peer node is able to validate the request and can provide enough
- physical storage space, the client can then proceed to upload the chunk
- data, making the selected node a Chunk Holder.
- Upon reception of the chunk the node notifies the Chunk Info Holder for
- inclusion in the reference list, which also causes the corresponding entry
- in the waiting list to be flagged as having completed storage.
- The Chunk Info Holder would then amend the Chunk Holder's account to reflect
- the additional space it provided to the network.
+Once the payment process is complete, the corresponding entry in the aforementio
+ned Waiting List is flagged as having been paid for.
+ If the uploading of chunk copies was stipulated, the entry remains in the
+ Waiting List until the new Chunk Holders have contacted the Chunk Info
+ Holders.
+ Otherwise the entry is removed from the Waiting List.
 \end_layout
 
 \begin_layout Standard
-Once an entry in a Chunk Info Holder's waiting list has successfully completed
- both payments and storage, it can be committed to the watch list as an
- actual "watcher".
- At this point, any superfluous payments that occured from race conditions
- will be refunded.
- This concludes the storing process and the chunk can now be retrieved from
+If the client was told to upload chunk copies, it contacts one Node per
+ requested copy to negotiate a store contract.
+ If the peer Node is able to validate the request and can provide enough
+ physical storage space, the client can then proceed to upload the data
+ chunk.
+ Upon successful receipt of the chunk, the new Chunk Holder(s) look up and
+ contact the Chunk Info Holders, requesting inclusion in the Reference List.
+ This also causes the corresponding entry in the Waiting List to be flagged
+ as having completed the storage requirements.
+ The Chunk Info Holders then look up and request the amendment of each of
+ the new Chunk Holders' accounts to reflect the additional space used by
  the network.
 \end_layout
 
-\begin_layout Subsubsection
+\begin_layout Standard
+Once an entry in a Waiting List indicates successful completion of payments
+ (and storage if applicable), the corresponding client can be committed
+ to the Watch List as an actual "watcher".
+ At this point, any superfluous payments that occurred from race conditions
+ will be refunded.
+ This concludes the storing process and the chunk is at this point safely
+ stored on the network.
+\end_layout
+
+\begin_layout Subsection
 Retrieving a Chunk
 \end_layout
 
 \begin_layout Standard
 To retrieve a chunk, the client has to look up and contact the Chunk Info
- Holders to acquire reference list entries pointing to active Chunk Holders.
+ Holders to acquire the current list of active Chunk Holders.
  This is done through a Kademlia FindValue, which would return the ID of
  a peer that holds a cached copy of the chunk, or an empty value requiring
  the Client to ask for the Chunk Holders directly.
- Whatever peer holds a copy of the chunk is then contacted and the chunk
- data retrieved.
+ The first Chunk Holder to confirm that it has the required chunk is used
+ to retrieve the chunk from.
 \end_layout
 
-\begin_layout Subsubsection
+\begin_layout Subsection
 Deleting a Chunk
 \end_layout
 
 \begin_layout Standard
-If clients decide they don't want to keep a file anymore, they remove themselves
- from the watch lists of the corresponding chunks.
- Once a watch list becomes empty, i.e.
- no one is watching that particular chunk anymore, it can be deleted from
+If clients decide they don't want to keep a file any more, they remove themselve
+s from the Watch Lists of the corresponding chunks.
+ Once a Watch List becomes empty, i.e.
+ no one is watching that particular chunk any more, it can be deleted from
  the network.
- This means traversing the current reference list and calling a remote delete
- operation on the chunk holders, recompensing all the peers that made a
+ This means traversing the current Reference List and calling a remote delete
+ operation on the Chunk Holders, recompensing all the peers that made a
  payment to keep the minimum number of chunks on the network, as well as
- decrease the space given value in the (former) chunk holders' accounts.
+ decrease the space given value in the (former) Chunk Holders' accounts.
 \end_layout
 
-\begin_layout Subsection
+\begin_layout Section
 Maintaining Network Health
 \end_layout
 
-\begin_layout Subsubsection
-Validity checks by Chunk Info Holders
+\begin_layout Subsection
+Validity Checks by Chunk Info Holders
 \end_layout
 
 \begin_layout Standard
 The Chunk Info Holders will be responsible for triggering validity checks
  on a chunk.
- This is a relatively simple process and will require a node checks pure
- chunks as follows.
+ When a check is due, a Chunk Holder will be chosen at random and told to
+ initiate a validity check.
+ This is a relatively simple process; for example, given a chunk named as
  
+\begin_inset Formula $\mathsf{ABC}$
+\end_inset
+
+ whose content is 
+\begin_inset Formula $\mathsf{Content_{ABC}}$
+\end_inset
+
+, a Chunk Holder will do the following: 
 \end_layout
 
 \begin_layout Enumerate
-Identify chunk (say ABC...) 
-\end_layout
-
-\begin_layout Enumerate
-Generate random information (rnd-info)
-\end_layout
-
-\begin_layout Enumerate
-\begin_inset Formula $H(content_{ABC..}+rnd-info)\equiv Answer$
+Get the contact details of the other Chunk Holders for 
+\begin_inset Formula $\mathsf{ABC}$
 \end_inset
 
 
 \end_layout
 
 \begin_layout Enumerate
-Send rnd-info and chunk identity (ABC...) to one partner node.
+For each Chunk Holder, send a ValidityCheck request (see 
+\begin_inset CommandInset ref
+LatexCommand prettyref
+reference "tab:Node-RPCs-(ChunkManagement)"
+
+\end_inset
+
+) with a piece of random data (different data for each Node) in the 
+\begin_inset Formula $\mathsf{RandomData}$
+\end_inset
+
+ field
 \end_layout
 
 \begin_layout Enumerate
-Request the parter provide his answer.
+Calculate 
+\begin_inset Formula $\mathsf{H(Content_{ABC}+RandomData)}$
+\end_inset
+
+ and retain this as 
+\begin_inset Formula $\mathsf{Result}$
+\end_inset
+
+
 \end_layout
 
 \begin_layout Enumerate
-Confirm his answer matches your answer.
+Each Chunk Holder's reply should contain 
+\begin_inset Formula $\mathsf{H(Content_{ABC}+RandomData)}$
+\end_inset
+
+ in the 
+\begin_inset Formula $\mathsf{HashContent}$
+\end_inset
+
+ field
 \end_layout
 
 \begin_layout Enumerate
-Repeat for all chunk parters with different rnd-info.
+Confirm each Chunk Holders' 
+\begin_inset Formula $\mathsf{HashContent}$
+\end_inset
+
+ field matches the corresponding 
+\begin_inset Formula $\mathsf{Result}$
+\end_inset
+
+.
 \end_layout
 
 \begin_layout Standard
-Any discrepancies are reported to chunk info holder and the node at fault
- is informed, deleted from storage groups of the chunk and his account amended
- to reflect less space given.
- This is a part of th system where rank will be adversely affected when
+Any discrepancies are reported to the Chunk Info Holders and the Node at
+ fault is informed.
+ If this Node is unable to rectify the fault (e.g.
+ by requesting a fresh copy from a good Chunk Holder and successfully passing
+ a subsequent validity check) it is removed from the Reference List for
+ the chunk and its account is amended to reflect less space given.
+ This is a part of the system where rank will be adversely affected when
  it is put in place.
- Bad chunk holders will lose rank very quickly.
+ Bad Chunk Holders will lose rank very quickly.
  
 \end_layout
 
 \begin_layout Standard
-The triggers from the Chunk Info Holder to the Chunk Holder are time based
+The triggers from the Chunk Info Holder to the Chunk Holder are time-based
  and will initially start at 2 minutes doubling every time to 20 hours.
- Each failure will restart this process.
+ Any failure will reset the schedule.
 \end_layout
 
-\begin_layout Subsubsection
-Relocation based on rank
+\begin_layout Subsection
+Relocation Based on Rank
 \end_layout
 
 \begin_layout Standard
@@ -1970,55 +4588,56 @@ Chunks will be relocated when the Chunk Info Holder notes that any Chunk
  Holder has lost or gained rank in the system.
 \end_layout
 
-\begin_layout Subsubsection
-Validity checks by Chunk Holders
+\begin_layout Subsection
+Validity Checks by Chunk Holders
 \end_layout
 
 \begin_layout Standard
-On request for a chunk to be delivered to another node a Chunk Info holder
+On request for a chunk to be delivered to another Node, a Chunk Info Holder
  will trigger an internal validity check.
  
 \end_layout
 
-\begin_layout Subsubsection
-Geographic relocation of chunks
+\begin_layout Subsection
+Geographic Relocation of Chunks
 \end_layout
 
 \begin_layout Standard
-The Chunk Info Holder who triggers a validity check will query their own
+A Chunk Info Holder that triggers a validity check will query their own
  routing table for Chunk Holders of the same status as the current Chunk
  Holders, but with a longer Round Trip Time (RTT).
- On finding a node that is further away the data will be moved, preferably
+ On finding a Node that is further away the data will be moved, preferably
  with a chunk swap.
- This swap will be negotiated via the Chunk Info Holder for the remote node
+ This swap will be negotiated via the Chunk Info Holder for the remote Node
  in question.
  
 \end_layout
 
-\begin_layout Subsubsection
-Caching of chunks
+\begin_layout Subsection
+Caching of Chunks
 \end_layout
 
 \begin_layout Standard
-Each lookup and retrieval of data that takes more than one hope will trigger
- a chunk cache RPC.
- This RPC will be sent to the last node that did not have the chunk in the
- iteration.
- Cached chunks should be located in a cache directory on the node and be
+When loading a data chunk from the network, if the Kademlia lookup phase
+ took more than one iteration, a copy of the chunk will be cached upon successfu
+l completion of the chunk's retrieval.
+ The CacheChunk RPC will be sent to the last Node contacted during the Kademlia
+ lookup that did not have the chunk.
+ Cached chunks should be located in a cache directory on the Node and be
  part of a First In First Out (FIFO) queue.
- This queue should only require a chunk removal when th node requires the
- space an not before.
+ This queue should only require a chunk removal when the Node requires the
+ space.
 \end_layout
 
 \begin_layout Standard
 This simple mechanism ensures data integrity is strengthened, but more important
-ly shares the load of any node that hosts interesting or popular chunks.
+ly shares the load of any Node that hosts interesting or popular chunks.
  There are many other advantages, such as resistance to denial of service
- attack or distributed denial of service attacks, or if web based data is
- stored (such as a web site) then the more popular it is the more responsive
+ attacks or distributed denial of service attacks, or if web based data
+ is stored (such as a web site) then the more popular it is the more responsive
  the network will be when data is requested from this web site.
- This is almost the entire opposite of today's world Wide Web, but is, again,
- more logical.
+ This is almost the opposite of the case in today's World Wide Web, but
+ is, again, more logical.
 \end_layout
 
 \begin_layout Section
@@ -2026,9 +4645,23 @@ Conclusions
 \end_layout
 
 \begin_layout Standard
-The system presented is one version of a server-less based authentication
- system.
- The
+There are several dramatic improvements over contemporary paradigms described
+ in this single paper.
+ The ideas presented here allow the creation of a serverless network which
+ gives users a chance for the first time ever to retain complete control
+ of their own security and personal information.
+\end_layout
+
+\begin_layout Standard
+They also yield massive potential gains in terms of space (via data deduplicatio
+n), data integrity (via validity checks and autonomous data repair), resilience
+ to churn and attacks (via validity checks, ranking, geographic relocation
+ of chunk copies), and scalability and transfer rates (via chunk caching).
+\end_layout
+
+\begin_layout Standard
+It is no overstatement to say that the autonomous network described in this
+ paper represents a highly significant step forward for the world of computing.
 \end_layout
 
 \begin_layout Bibliography
@@ -2039,8 +4672,7 @@ key "1"
 
 \end_inset
 
-as described by Van Jacobson in this link below, August 30, 2006 HTTP://video.Goo
-gle.com/videoplay?docid=-6972678839686672840
+David Irvine, Self Encrypting Data, david.irvine@maidsafe.net
 \end_layout
 
 \begin_layout Bibliography
@@ -2051,7 +4683,7 @@ key "2"
 
 \end_inset
 
-David Irvine, Self Encrypting Data, david.irvine@maidsafe.net
+David Irvine, Peer to Peer Public Key Infrastructure, david.irvine@maidsafe.net
 \end_layout
 
 \begin_layout Bibliography
@@ -2062,7 +4694,7 @@ key "3"
 
 \end_inset
 
-David Irvine, peer to peer public key infrastructure, david.irvine@maidsafe.net
+David Irvine, MaidSafe Distributed Hash Table, david.irvine@maidsafe.net
 \end_layout
 
 \begin_layout Bibliography
@@ -2073,29 +4705,7 @@ key "4"
 
 \end_inset
 
-David Irvine, maidsafe.net, a new network paradigm , david.irvine@maidsafe.net
-\end_layout
-
-\begin_layout Bibliography
-\begin_inset CommandInset bibitem
-LatexCommand bibitem
-label "5"
-key "5"
-
-\end_inset
-
-David Irvine, Self authentication, david.irvine@maidsafe.net
-\end_layout
-
-\begin_layout Bibliography
-\begin_inset CommandInset bibitem
-LatexCommand bibitem
-label "6"
-key "6"
-
-\end_inset
-
-David Irvine, maidsafe distributed hash table, david.irvine@maidsafe.net
+David Irvine, maidsafe: A new network paradigm, david.irvine@maidsafe.net
 \end_layout
 
 \begin_layout Standard
