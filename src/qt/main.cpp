@@ -20,6 +20,7 @@
 
 // local
 #include "qt/perpetual_data.h"
+#include "qt/widgets/lifestuff_login.h"
 #include "widgets/system_tray_icon.h"
 #include "client/client_controller.h"
 
@@ -82,7 +83,7 @@ int main(int argc, char *argv[]) {
 
   app.setOrganizationDomain("http://www.maidsafe.net");
   app.setOrganizationName("maidsafe.net Ltd.");
-  app.setApplicationName("Perpetual Data");
+  app.setApplicationName("LifeStuff");
   app.setApplicationVersion("0.1");
 
   SystemTrayIcon::instance()->show();
@@ -92,11 +93,11 @@ int main(int argc, char *argv[]) {
 
   // the main application window
   PerpetualData pd;
-  pd.show();
+  pd.hide();
 
   // apply style sheet
 
-  QFile file(":/qss/black_theme.qss");
+  QFile file(":/qss/blue_theme.qss");
   file.open(QFile::ReadOnly);
   QString styleSheet = QLatin1String(file.readAll());
 

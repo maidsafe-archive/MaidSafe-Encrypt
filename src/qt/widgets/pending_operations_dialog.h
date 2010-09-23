@@ -30,6 +30,7 @@ class PendingOperationsDialog : public QDialog {
  public:
   explicit PendingOperationsDialog(QWidget* parent = 0);
   virtual ~PendingOperationsDialog();
+  bool hasPendingOps();
 
   private slots:
     void onCancelAll();
@@ -46,15 +47,6 @@ class PendingOperationsDialog : public QDialog {
 
   bool getOps(QList<ClientController::PendingOps> ops);
   void OperationStatus(const std::string &file, int percentage);
-
-  enum State {
-    PERSONAL,
-    CONNECTION,
-    FILE_TRANSFER,
-    SECURITY,
-    VAULT_INFO,
-    PROFILE
-    };
 
  protected:
   void changeEvent(QEvent *event);

@@ -41,8 +41,6 @@ void SaveFileThread::run() {
   }
 
   success = ClientController::instance()->write(filepath_);
-  this->sleep(3);
-
   emit saveFileCompleted(success, filepath_);
 }
 

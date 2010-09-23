@@ -29,6 +29,9 @@
    <string/>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
+   <property name="topMargin">
+    <number>0</number>
+   </property>
    <item>
     <widget class="QListWidget" name="toolBarListWidget">
      <property name="maximumSize">
@@ -44,7 +47,7 @@
       <bool>false</bool>
      </property>
      <property name="dragDropMode">
-      <enum>QAbstractItemView::NoDragDrop</enum>
+      <enum>QAbstractItemView::DragDrop</enum>
      </property>
      <property name="iconSize">
       <size>
@@ -61,16 +64,16 @@
     </widget>
    </item>
    <item>
+    <widget class="QStackedWidget" name="userStackedWidget">
+     <widget class="QWidget" name="page"/>
+     <widget class="QWidget" name="page_2"/>
+    </widget>
+   </item>
+   <item>
     <widget class="QLabel" name="public_username">
      <property name="text">
       <string/>
      </property>
-    </widget>
-   </item>
-   <item>
-    <widget class="QStackedWidget" name="userStackedWidget">
-     <widget class="QWidget" name="page"/>
-     <widget class="QWidget" name="page_2"/>
     </widget>
    </item>
   </layout>

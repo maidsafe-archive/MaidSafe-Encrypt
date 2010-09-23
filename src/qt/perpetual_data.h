@@ -43,6 +43,8 @@ class UserSettings;
 class UserInbox;
 class PendingOperationsDialog;
 class UserCalendar;
+class LifeStuffLogin;
+class LifeStuffFull;
 #ifdef PD_LIGHT
   class FileBrowser;
 #endif
@@ -101,8 +103,11 @@ class PerpetualData : public QMainWindow {
     //
     void onFailureAcknowledged();
 
+    void onMyFilesClicked();
+
     void onLogout();
     void onAbout();
+    void onOpsComplete();
     void onLogoutUserCompleted(bool);
     void onToggleFullScreen(bool);
     void onApplicationActionTriggered();
@@ -128,6 +133,7 @@ class PerpetualData : public QMainWindow {
     void onBlueThemeTriggered();
     void onGreenThemeTriggered();
     void onRedThemeTriggered();
+    void onFullViewTriggered();
 
     void onUpdateChecked(int, QProcess::ExitStatus);
 
@@ -250,6 +256,10 @@ class PerpetualData : public QMainWindow {
 
   //User Calendar
   UserCalendar* userCal_;
+
+  LifeStuffLogin* lsLogin_;
+
+  LifeStuffFull* lifeStuffFull_;
 
 #ifdef PD_LIGHT
   FileBrowser* browser_;

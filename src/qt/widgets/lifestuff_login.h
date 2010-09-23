@@ -12,8 +12,8 @@
  *      Author: Team
  */
 
-#ifndef QT_WIDGETS_LOGIN_H_
-#define QT_WIDGETS_LOGIN_H_
+#ifndef QT_WIDGETS_LIFESTUFF_LOGIN_H_
+#define QT_WIDGETS_LIFESTUFF_LOGIN_H_
 
 // qt
 #include <QWidget>
@@ -22,7 +22,7 @@
 #include <string>
 
 // generated
-#include "ui_login.h"
+#include "ui_lifestuff_login.h"
 
 // Main Login screen for Perpetual Data
 /*!
@@ -38,12 +38,12 @@
     As usernames and pins are entered we will check to see if they
     are new or existing users.
 */
-class Login : public QWidget {
+class LifeStuffLogin : public QWidget {
   Q_OBJECT
 
  public:
-  explicit Login(QWidget* parent = 0);
-  virtual ~Login();
+  explicit LifeStuffLogin(QWidget* parent = 0);
+  virtual ~LifeStuffLogin();
 
   QString username() const;
   QString pin() const;
@@ -64,6 +64,7 @@ class Login : public QWidget {
   */
   virtual bool focusNextPrevChild(bool next);
   void changeEvent(QEvent *event);
+  bool eventFilter(QObject *obj, QEvent *ev);
 
   signals:
     // Details of an existing user have been entered and 'Login' clicked
@@ -91,7 +92,7 @@ class Login : public QWidget {
     void UserExists_Callback(bool b);
     void UserValidated(bool b);
   private:
-    Ui::LoginScreen ui_;
+    Ui::LifeStuffLogin ui_;
 
     // Update field enabled ness as usernames and pins are changed
     void updateUI();
@@ -116,5 +117,5 @@ class Login : public QWidget {
     State state_;
 };
 
-#endif  // QT_WIDGETS_LOGIN_H_
+#endif  // QT_WIDGETS_LIFESTUFF_LOGIN_H_
 

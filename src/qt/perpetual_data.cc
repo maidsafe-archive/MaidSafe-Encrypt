@@ -46,6 +46,8 @@
 #include "qt/widgets/user_settings.h"
 #include "qt/widgets/pending_operations_dialog.h"
 #include "qt/widgets/user_calendar.h"
+#include "qt/widgets/lifestuff_login.h"
+#include "qt/widgets/lifestuff_fullview.h"
 
 #include "qt/client/create_user_thread.h"
 #include "qt/client/join_kademlia_thread.h"
@@ -60,14 +62,14 @@ PerpetualData::PerpetualData(QWidget* parent)
     : QMainWindow(parent), quitting_(false), login_(NULL), create_(NULL),
       message_status_(NULL), state_(LOGIN) {
   setAttribute(Qt::WA_DeleteOnClose, false);
-  setWindowIcon(QPixmap(":/icons/32/Triangle"));
+  setWindowIcon(QPixmap(":/icons/32/ms_icon_blue.gif"));
   ui_.setupUi(this);
 
   statusBar()->show();
   statusBar()->addPermanentWidget(message_status_ = new QLabel);
 
-  //ui_.theFrame->setStyleSheet("QFrame#theFrame { border-image: url(:/background/cloud_background.png) 0 0 0 0 stretch stretch;"
-    //"font: bold;}");
+  //ui_.TheFrame->setStyleSheet("QFrame#TheFrame { border-image: url(:/background/cloud_top.png) 0 0 0 0 stretch stretch;"
+  //"font: bold;}");
 
   createActions();
   createMenus();
@@ -77,13 +79,14 @@ PerpetualData::PerpetualData(QWidget* parent)
   create_ = new CreateUser;
   progressPage_ = new Progress;
   userPanels_ = new UserPanels;
+  pendingOps_ = new PendingOperationsDialog;
 
   ui_.stackedWidget->addWidget(login_);
   ui_.stackedWidget->addWidget(create_);
   ui_.stackedWidget->addWidget(progressPage_);
   ui_.stackedWidget->addWidget(userPanels_);
 
-  setCentralWidget(ui_.stackedWidget);
+  //setCentralWidget(ui_.stackedWidget);
   ui_.stackedWidget->setCurrentWidget(login_);
 
   JoinKademliaThread *jkt = new JoinKademliaThread(this);
@@ -91,8 +94,10 @@ PerpetualData::PerpetualData(QWidget* parent)
           this, SLOT(onJoinKademliaCompleted(bool)));
   jkt->start();
 
-  login_->StartProgressBar();
-
+  lsLogin_ = new LifeStuffLogin;
+  lsLogin_->show();
+  lsLogin_->StartProgressBar();
+  
   qtTranslator = new QTranslator;
   myAppTranslator = new QTranslator;
   QString locale = QLocale::system().name().left(2);
@@ -105,6 +110,16 @@ PerpetualData::PerpetualData(QWidget* parent)
     qApp->installTranslator(myAppTranslator);
     ui_.retranslateUi(this);
   }
+  
+   connect(lsLogin_, SIGNAL(existingUser()),
+          this,   SLOT(onLoginExistingUser()));
+
+  connect(lsLogin_, SIGNAL(newUser()),
+          this,   SLOT(onLoginNewUser()));
+
+  connect(lsLogin_, SIGNAL(destroyed()),
+          this,   SLOT(onQuit()));
+
 }
 
 void PerpetualData::onJoinKademliaCompleted(bool b) {
@@ -112,9 +127,13 @@ void PerpetualData::onJoinKademliaCompleted(bool b) {
     qDebug() << "U didn't join kademlia, so fuck U!";
     return;
   }
-  login_->reset();
+
+  lsLogin_->reset();
   qDebug() << "PerpetualData::onJoinKademliaCompleted";
   setState(LOGIN);
+
+  connect(ui_.myFilesBtn , SIGNAL(clicked(bool)),
+          this,                SLOT(onMyFilesClicked()));
 
   connect(ClientController::instance(),
           SIGNAL(messageReceived(int,
@@ -160,6 +179,8 @@ void PerpetualData::onJoinKademliaCompleted(bool b) {
                                       const QString &message,
                                       const QString &sender,
                                       const QString &date)));
+
+
 }
 
 PerpetualData::~PerpetualData() {
@@ -247,6 +268,8 @@ void PerpetualData::createActions() {
           this,              SLOT(onGreenThemeTriggered()));
   connect(actions_[ THEME_RED ], SIGNAL(triggered()),
           this,              SLOT(onRedThemeTriggered()));
+  connect(ui_.fullViewBtn, SIGNAL(clicked()),
+          this,            SLOT(onFullViewTriggered()));  
 }
 
 void PerpetualData::createMenus() {
@@ -328,6 +351,11 @@ void PerpetualData::setState(State state) {
         connect(userPanels_, SIGNAL(publicUsernameChosen()),
                 this,         SLOT(onPublicUsernameChosen()));
         userPanels_->setActive(true);
+
+        #ifdef PD_LIGHT
+        browser_ = new FileBrowser;
+        browser_->setActive(true);
+        #endif
         break;
     }
     case LOGGING_OUT:
@@ -366,7 +394,7 @@ void PerpetualData::onLoginExistingUser() {
   qDebug() << "onLoginExistingUser";
   // existing user whose credentials have been verified
   // mount the file system..
-
+  this->show();
   qDebug() << "public name:" << ClientController::instance()->publicUsername();
 
 #ifdef PD_LIGHT
@@ -379,6 +407,7 @@ void PerpetualData::onLoginExistingUser() {
 
 void PerpetualData::onLoginNewUser() {
   setState(SETUP_USER);
+  this->show();
 }
 
 void PerpetualData::onSetupNewUserComplete() {
@@ -538,8 +567,10 @@ void PerpetualData::onQuit() {
   // TODO(Team#5#): 2009-08-18 - confirm quit if something in progress
   QList<ClientController::PendingOps> ops;
 
-  if (ClientController::instance()->getPendingOps(ops)) {
-    pendingOps_ = new PendingOperationsDialog;
+  if (pendingOps_->hasPendingOps()) {
+   connect(pendingOps_,   SIGNAL(opsComplete()),
+      this,             SLOT(onOpsComplete()));
+   pendingOps_->show();
   } else {
     if (state_ != LOGGED_IN) {
       ClientController::instance()->shutdown();
@@ -549,6 +580,16 @@ void PerpetualData::onQuit() {
       onLogout();
     }
   }
+}
+
+void PerpetualData::onOpsComplete() {
+  if (state_ != LOGGED_IN) {
+      ClientController::instance()->shutdown();
+      qApp->quit();
+    } else {
+      quitting_ = true;
+      onLogout();
+    }
 }
 
 void PerpetualData::onAbout() {
@@ -627,6 +668,10 @@ void PerpetualData::onMessageReceived(int type,
                                       const QString& sender,
                                       const QString& detail,
                                       const QString&) {
+  if(lifeStuffFull_->isActive()){
+    // let Lifestuff deal with messages
+    return;
+  }
   boost::progress_timer t;
   if (ClientController::MessageType(type) == ClientController::TEXT) {
     std::list<std::string> theList;
@@ -986,6 +1031,12 @@ void PerpetualData::onRedThemeTriggered() {
   qApp->setStyleSheet(styleSheet);
 }
 
+void PerpetualData::onFullViewTriggered() {
+  lifeStuffFull_ = new LifeStuffFull;
+  lifeStuffFull_->show();
+}             
+
+
 void PerpetualData::onEmailTriggered() {
   userPanels_->setEmailLabel("");
   inbox_ = new UserInbox(this);
@@ -1063,6 +1114,15 @@ void PerpetualData::onUpdateChecked(int code, QProcess::ExitStatus status) {
     msgBox.setText(tr("You are up to date!"));
     msgBox.exec();
   }
+}
+
+void PerpetualData::onMyFilesClicked() {
+#ifdef PD_LIGHT
+  browser_->setActive(true);
+  browser_->show();
+#else
+  UserSpaceFileSystem::instance()->explore(UserSpaceFileSystem::MY_FILES);
+#endif
 }
 
 void PerpetualData::changeEvent(QEvent *event) {

@@ -41,6 +41,8 @@ Contacts::Contacts(QWidget* parent)
   ui_.listWidget->setSelectionMode(QAbstractItemView::ExtendedSelection);
   ui_.contactLineEdit->installEventFilter(this);
   ui_.contactLineEdit->setText(tr("Search Contacts"));
+  ui_.contactLineEdit->setVisible(true);
+  ui_.add->setVisible(true);
   sortType_ = 0;
 
   // to enable displaying of menu pop-up for Users
@@ -206,15 +208,15 @@ void Contacts::addContact(Contact* contact) {
 
   QPixmap pixmap;
   if (contact->presence() == Presence::INVALID) {
-      pixmap = QPixmap(":/icons/16/question");
+      pixmap = QPixmap(":/contact_icons/contact_offline.png");
   } else if (contact->presence() == Presence::AVAILABLE) {
-      pixmap = QPixmap(":/icons/16/tick");
+      pixmap = QPixmap(":/contact_icons/contact_online.png");
   } else if (contact->presence() == Presence::BUSY) {
       // TODO(Team#5#) Correct symbol
   } else if (contact->presence() == Presence::IDLE) {
       // TODO(Team#5#) Correct symbol
   } else {
-      pixmap = QPixmap(":/icons/16/tick");
+      pixmap = QPixmap(":/contact_icons/contact_online.png");
   }
 
   QListWidgetItem* item = new QListWidgetItem;
@@ -536,7 +538,7 @@ void Contacts::onConfirmedContact(const QString &name) {
 
   foreach(QListWidgetItem* item, items) {
     if (item->text() == name) {
-      QPixmap pixmap(":/icons/16/tick");
+      QPixmap pixmap(":/contact_icons/contact_online.png");
       item->setIcon(pixmap);
     }
   }
@@ -549,7 +551,7 @@ void Contacts::onDeletedContact(const QString &name) {
 
   foreach(QListWidgetItem* item, items) {
     if (item->text() == name) {
-      QPixmap pixmap(":/icons/16/question");
+      QPixmap pixmap(":/contact_icons/contact_offline.png");
       item->setIcon(pixmap);
     }
   }
@@ -584,9 +586,9 @@ void Contacts::onContactsBoxTextEdited(const QString&) {
       foreach(Contact* contact, foundContacts_) {
         QPixmap pixmap;
           if (contact->presence() == Presence::INVALID) {
-            pixmap = QPixmap(":/icons/16/question");
+            pixmap = QPixmap(":/contact_icons/contact_offline.png");
           } else {
-            pixmap = QPixmap(":/icons/16/tick");
+            pixmap = QPixmap(":/contact_icons/contact_online.png");
           }
 
         QListWidgetItem* item = new QListWidgetItem;

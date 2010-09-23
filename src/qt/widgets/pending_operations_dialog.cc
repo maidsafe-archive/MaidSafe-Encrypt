@@ -44,8 +44,8 @@ PendingOperationsDialog::~PendingOperationsDialog() {
 }
 
 void PendingOperationsDialog::onCancelAll() {
-  this->close();
   emit opsComplete();
+  this->hide();
 }
 
 void PendingOperationsDialog::onCancel() {
@@ -53,9 +53,8 @@ void PendingOperationsDialog::onCancel() {
 
 bool PendingOperationsDialog::getOps(QList<ClientController::PendingOps> ops){
     ClientController::instance()->getPendingOps(ops);
-
   if (ops.empty()){
-    return false;
+    return true;
   } else {
     return true;
   }
@@ -69,8 +68,35 @@ void PendingOperationsDialog::changeEvent(QEvent *event) {
   }
 }
 
+bool PendingOperationsDialog::hasPendingOps() {
+  if(ui_.opTreeWidget->topLevelItemCount() < 1) {
+    return false;
+  }
+  return true;
+}
+
 void PendingOperationsDialog::OperationStatus(const std::string &file,
                                               int percentage) {
+  QList<QTreeWidgetItem *> items = 
+    ui_.opTreeWidget->findItems(QString::fromStdString(file), Qt::MatchExactly, 0);
+  if (items.empty()) {
+    QTreeWidgetItem *newItem = new QTreeWidgetItem(ui_.opTreeWidget);
+    newItem->setText(0, QString::fromStdString(file));
+    std::string str = base::IntToString(percentage);
+    newItem->setText(1, QString::fromStdString(str));
+  } else {
+    QTreeWidgetItem* theWidget = items[0];
+    if (percentage = 100) {
+      ui_.opTreeWidget->removeItemWidget(theWidget,0);
+    } else {
+      theWidget->setText(0, QString::fromStdString(file));
+      std::string str = base::IntToString(percentage);
+      theWidget->setText(1, QString::fromStdString(str));
+    }
+  }
+  if (ui_.opTreeWidget->topLevelItemCount() < 1){
+    emit opsComplete();
+  }
 }
 
 
