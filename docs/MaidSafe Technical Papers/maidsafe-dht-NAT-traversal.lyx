@@ -56,7 +56,7 @@
 \begin_body
 
 \begin_layout Title
-maidsafe distributed hash table
+DHT based NAT traversal
 \end_layout
 
 \begin_layout Author
@@ -72,18 +72,14 @@ September, 2010
 \end_layout
 
 \begin_layout Abstract
-An effective distributed network requires and addressing mechanism that
- allows a distribution of data in a manner that is designed to overcome
- churn (the unmanageable outage, node failure or unforseen communication
- fault).
- There are several implementaions of such a system, but this paper proposes
- a system that not only provides an efficent churn resistant DHT, but also
- a Network Address Translation (NAT) traversal scheme that allows the DHT
- to efficiently traverse firewalls in a STUN (Simple Traversal of UDP through
- NATs) type fashion without any requirment for STUN servers.
- In addition the capability for fast awareness of infrastructure changes
- allows the implementaiotn of a locking system, thereby enabling amendment
- of data from multiple sources, using multi key signing.
+Today's Distributed Hash Tables (DHT's) and other overlay networks are based
+ on operating without hinderence of real worls issues regardign connectivity
+ between nodes.
+ This is not a problem when operating in a private or controlled environment,
+ but in the transition to peer to peer or fully distributed networks, it
+ becomes a major headache.
+ This paper introduces a pure p2p solution to Network Address Translation
+ (NAT) traversal, which is probably the main problem facing public p2p networks.
 \end_layout
 
 \begin_layout Keywords
@@ -172,467 +168,99 @@ status open
 
 
 \backslash
-PARstart{D}{istributed}
+PARstart{I}{nternet}
 \end_layout
 
 \end_inset
 
- hash tables are a method of storing data in a key / value system in a distribut
-ion that should be set to allow for multimple node failures.
- This is done in Kadmelia by selecting a value for the replication factor
- (
-\begin_inset Formula $\kappa$
-\end_inset
-
-) that is the number defined as the optimum node count in a network that
- will not fail between refresh times 
-\begin_inset Formula $f(t)$
-\end_inset
-
-.
- This 
-\begin_inset Formula $f(t)$
-\end_inset
-
- is generally set to a system wide constant and obeyed by all nodes.
- In an improved version of the refresh as identified in 
-\emph on
-\lang english
-Improving the Performance and Robustness of Kademlia-based Overlay Networks
- 
-\begin_inset CommandInset citation
-LatexCommand cite
-key "6"
-
-\end_inset
-
- this 
-\emph default
-\lang british
-
-\begin_inset Formula $f(t)$
-\end_inset
-
-is not fixed but distributed over a period where nodes should refresh in
- a more random fashion.
- This reduces refresh traffic on the network and allows all the 
-\begin_inset Formula $\kappa$
-\end_inset
-
- nodes to reset their refresh timers.
+ technology allows the interconnect of every device to every other device,
+ in principle.
+ In practice this is not the case and for many reasons devices tend to be
+ behind routers that allow then to go unnoticed or at least act as a proxy
+ device.
+ This helps connect multiple devices to a single publicall addressable IP
+ location.
+ The devices behind the router may have private or classfied private adresses
+ and number in thousands all connected to the Internet and appearing as
+ one single identity.
+ The router will proxy requests and responses in many cases to hide the
+ devices.
  
 \end_layout
 
 \begin_layout Standard
+NAT is a good solution for the lack of publicaly available IP addresses
+ with the current encumbant scheme of IP version 4, IP version 6 will allow
+ more than enough public addresses to exist and in fact provide several
+ addreses for every square meter of the plant.
+ Even with IP6, however there will still be NAT devices around and NAT traversal
+ will still be required.
+\end_layout
 
+\begin_layout Standard
+Several methods exist for traversing NAT devices, including 
+\emph on
+Session Traversal Utilities for NAT (STUN) 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "1"
+
+\end_inset
+
+ 
+\emph default
+which is extended to form
+\emph on
+ Interactive Connectivity Establishment (ICE): A Protocol for Network Address
+ Translator (NAT) Traversal for Offer/Answer Protocols 
+\emph default
+
+\begin_inset CommandInset citation
+LatexCommand cite
+key "2"
+
+\end_inset
+
+.
+ This paper will present a mechanism to exploit these technoligies without
+ the requirement for any servers to exist.
+ This is therefor a solution for distributed protocols that in fact requires
+ a distributed protocol to exist (a good fit).
+\end_layout
+
+\begin_layout Section
+NAT traversal methods
 \end_layout
 
 \begin_layout Subsection
+Router negotiation protocols
+\end_layout
 
-\lang english
-Kademlia
+\begin_layout Subsubsection
+Universal Plug and Play (UPnP)
+\begin_inset CommandInset citation
+LatexCommand cite
+key "5"
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Standard
 
-\lang english
-maidsafe utilises Kademlia
-\begin_inset CommandInset citation
-LatexCommand cite
-key "3"
-
-\end_inset
-
- as the Distributed Hash Table (DHT) of choice.
- This was considered alongside Chord, Chord2, Tapestry and many others.
- Kademlia was chosen as it presented the most random method of distribution
- of nodes and using the XOR searching criteria allowed very fast network
- resolution.
- This is clearly identified and described in the paper
-\begin_inset CommandInset citation
-LatexCommand cite
-key "key-15"
-
-\end_inset
-
-.
- 
 \end_layout
 
-\begin_layout Standard
-
-\lang english
-Standard Kademlia, though, has some limitations and an example of some limitatio
-ns are:
-\end_layout
-
-\begin_layout Itemize
-
-\lang english
-Susceptibility to node failures causing bad routing information to be propagated
- for a longer time than necessary
-\end_layout
-
-\begin_layout Itemize
-
-\lang english
-Reliance on a balanced routing table match the balanced binary tree.
- Standard Kademlia does not put any favour on closer nodes being more important
- (examination of the binary tree routing algorithm will quickly show the
- closest nodes are more important than the very sparse further away (XOR
- distance)) nodes.
- Kademlia does recognise the closer more important nodes in its standard,
- as it does not assist these nodes in any way.
-\end_layout
-
-\begin_layout Itemize
-
-\lang english
-Potential 'race conditions' in republishing values between the k-closest
- nodes to any particular value.
- This is a situation where a value is republished and all k nodes then decide
- to republish in a given interval.
- It is obvious that they will all republish at interval n after a republish
- is seen.
- This means all nodes may in fact be crossing over each others republish
- times, causing the race.
-\end_layout
-
-\begin_layout Standard
-
-\lang english
-These first three potential issues are addressed and analyzed in a paper
-\begin_inset CommandInset citation
-LatexCommand cite
-key "key-16"
-
-\end_inset
-
-.
- These additions have been recognised and improved upon by maidsafe in creating
- perpetualdata.
- Further issues with Kademlia and DHTs in general is the ability to amend
- (or delete) values after publishing.
- This is due to the inherent distributed nature of the values (as the name
- suggests).
- As values are distributed in a pseudo random manner (mathematical predictabilit
-y becomes an issue due to the large amount of variables (routes, nodes,
- node names, locations etc.) and random human input).
- 
-\end_layout
-
-\begin_layout Note
-
-\lang english
-Random here is used to indicate not computationally recognisable with today's
- resources.
-\end_layout
-
-\begin_layout Note
-
-\lang english
-Searches on Kademlia networks are very fast and iterative (
-\emph on
-not recursive
-\emph default
-).
- This means that each node will ask some nodes a question, get answers (hopefull
-y) and from the answers construct a new node list to ask.
- If this were recursive, then a failed node would halt the process; as this
- is iterative then failed nodes simply timeout whilst the search continues
- (this is the 
-\begin_inset Formula $\beta$
-\end_inset
-
-
-\begin_inset Formula $\mbox{}$
-\end_inset
-
- (required replies to continue) requirement, from the 
-\begin_inset Formula $\alpha$
-\end_inset
-
- (parallel level) searches).
- As Kademlia uses a binary tree and XOR searching the search time per iteration
- is 
-\begin_inset Formula $\mathcal{O}\ln n$
-\end_inset
-
- (where 
-\begin_inset Formula $\mathcal{O}$
-\end_inset
-
- is network latency and a factor of XOR distance between node IDs (holes
- in address space) and n is number of nodes, not number of possible nodes).
- This figure can be improved upon by the additions shown so far.
- Further examination of the 
-\begin_inset Formula $\mathcal{O}$
-\end_inset
-
- constant may lead to further improvements in search completion times by
- not only using decreasing distance but also decreasing distance with path
- protection (multiple routes protected) by examination of XOR distance between
- parts of the network, particularly where there is binary imbalance in early
- days.
- 
+\begin_layout Subsubsection
+Network Address Translation Port Mapping Protocol (NAT-PMP)
 \end_layout
 
 \begin_layout Subsection
-
-\lang english
-Value Handling
+Hole Punching 
 \end_layout
 
-\begin_layout Standard
-
-\lang english
-In Kademlia there are several methods of ensuring values are consistent
- and protected at the same time.
- The initial value to be considered is K and this should be chosen to be
- the number of random nodes that can be allowed to go offline in a Refresh
- (Refresh) time.
- Also there is a republish time (Repub) which is the initial store of the
- value and sets a time to live (TTL) value on the data.
- 
-\end_layout
-
-\begin_layout Subsubsection
-
-\lang english
-Caching
-\end_layout
-
-\begin_layout Standard
-
-\lang english
-In Kademlia, values are cached distant from their natural location of the
- K closest nodes.
- The TTL is used in this instance to calculate how long a value can live
- and the further away from the K closest determines the TTL value that each
- value has.
- This value is chosen as the reciprocal of the distance from K of the value
- (so 2 steps away the TTL is halved and 4 steps the TTL is quartered etc.).
- 
-\end_layout
-
-\begin_layout Standard
-
-\lang english
-This can present issues when the refresh time (usually 60 mins but configurable)
- is due.
- In this case the node must check it is in the K closest and if so refresh
- (i.e.
- send a store_value) the K closest nodes.
- If a node is not in the K closest then this store RPC should not be sent,
- unless all of the K closest nodes do not have the value and the TTL has
- not expired, in this case only a node with a value which is not in the
- k closest group will republish (the true TTL so reverse of inverse reciprocal)
- to the K closest.
- In maidsafe, 
-\begin_inset Formula $\beta$
-\end_inset
-
- refresh is used to vary in an evenly distributed way the 60 minute intervals
- to reduce potential for race conditions in republishing values.
- If a value is deleted the closest nodes with the value (k closest) should
- be updated with a -1 value and this should not be cached, this prevents
- cached copies actually republishing values that are due to be removed anyway
- (i.e.
- ignoring or overriding the delete instruction)
-\end_layout
-
-\begin_layout Subsubsection
-
-\lang english
-Time To Live Values
-\end_layout
-
-\begin_layout Standard
-
-\lang english
-The TTL can be different for any different type of file, from seconds to
- a figure meaning do not delete ever (i.e.
- -1).
- For fast changing data the TTL should be small, and for unchanging data
- (like digital keys) the TTL should be very large.
- This value is only reset by the storing node unless another algorithm for
- that value type is known by the Kademlia node i.e.
- in the case of vault validity check, it will be by one of the identified
- Kadmelia IDs watching the chunk, so the value will hold the IDs allowed
- to republish the data (also the ID will be allowed to delete himself from
- the list but not the others).
- Using this mechanism, maidsafe uses a 24hr period for reference pointers
- and a 60 day period for signature packets, which will also republish these
- Kademlia values in case of error at every validity check.
- This is done simply as a speed up, as Kademlia values are retrieved much
- faster than maidsafe data.
-\end_layout
-
-\begin_layout Subsection
-
-\lang english
-Delete or modify values
-\end_layout
-
-\begin_layout Subsubsection
-
-\lang english
-Description
-\end_layout
-
-\begin_layout Standard
-
-\lang english
-As previously stated, modifying a value in a distributed hash table is notorious
-ly difficult.
- This is endemic in the very nature of the pseudo random distribution of
- data in such a network (the DHT strength is one of the largest weaknesses
- here).
- If a single value is altered via any method, the value itself may exist
- in many places and it's finding these places that's the problem.
- We have already seen the distribution as random, therefor this implies
- you would be required to search every node in the network (not only closest)
- for copies and make sure they are also altered.
- To make this even more difficult, another node may also be altering the
- value at the same time, thereby causing chaos in the synchronising of data
- on the network, eventually leading to total collapse.
-\end_layout
-
-\begin_layout Standard
-
-\lang english
-This would imply that DHTs are only good read only, however, in the case
- of maidsafe and pd, this negative attribute is turned into a positive and
- essential aspect.
- As noted in the section 
-\begin_inset CommandInset ref
-LatexCommand ref
-reference "alg:Alg-PKIID=SHA512Hash(RSA[pub]+Signed-[RSA[priv]])"
-
-\end_inset
-
-, a PKI network actually requires non changing of identities that are linked
- to a public key.
- In this case this problem described above is fantastic and we're glad we
- have such an issue.
- Added to this fact, even trying to alter the content of a packet of data
- that hashes to the key is an illegal instruction in maidsafe, therefor
- there's a double benefit for us.
- 
-\end_layout
-
-\begin_layout Standard
-
-\lang english
-The only changeable data stored on the Kadmelia network as far as a maidsafe
- implementation is concerned is data deemed as 
-\emph on
-
-\begin_inset Quotes eld
-\end_inset
-
-Multi value one of which should be correct
-\emph default
-
-\begin_inset Quotes erd
-\end_inset
-
-.
- By this it means a value should have several results and as such one of
- the results should be correct, but not necessarily all of them.
- This seems weird but is in fact very simple, basically every value will
- hash to a key or will contain multiple values (maidsafe uses signatures
- in addition to ensure safety through validation) and of each value a correct
- answer should exist in one value.
- 
-\end_layout
-
-\begin_layout Example
-
-\lang english
-maidsafe stores pointers to data chunks (data hashes to a key again) as
- Kademlia values.
- The number of pointers is usually four (4).
- As this is a truly distributed network maidsafe expects nodes to be off
- or damaged or somehow unreachable and expects this on fairly regular terms.
- On retrieving a value, each pointer is tried to see if not only the node
- is there, but also that the node has the data (see Vaults, as data moves
- around an awful lot).
- In this way a dead or incorrect value is allowed and catered for.
- 
-\end_layout
-
-\begin_layout Example
-
-\lang english
-To add to this, maidsafe makes use of a couple of features of the upgrades
- to Kademlia explained earlier.
- One such feature is force-K, to ensure close nodes are given a high priority,
- using the maximisation of near neighbour knowledge.
- A small addition to enhance this aspect is to flag all data cached throughout
- the network as cached and not a value within the k-closest nodes to the
- value.
- In this manner, values retrieved can be tried for validity in the knowledge
- that although unlikely, it may be stale and if so, continue the search
- for the data going to the k-closest nodes to ask for fresh data.
- 
-\end_layout
-
-\begin_layout Example
-
-\lang english
-To get to the k-closest nodes, we require that nodes do not return anything
- but closer nodes.
- On finding no closer being returned would indicate we have got one of the
- k-closest nodes.
- This is where we alter the workings of Kademlia and ask the closest node
- once more for the k-closest nodes to the value were looking for.
- With the force-k addition this would likely include the k-closest nodes
- (this can be further enhanced if necessary by asking all nodes returned
- the same question again and sort the answer by XOR closeness).
- Assuming we have the closest nodes we can do many things but initially
- we can assume we have the valid freshest data.
- This should return pointers (from the above example) that are valid.
- 
-\end_layout
-
-\begin_layout Example
-
-\lang english
-Nodes with flagged cache values will check using this process that they
- are not in the k-closest nodes and timeout (exponentially) the cache value.
- 
-\end_layout
-
-\begin_layout Subsubsection
-
-\lang english
-Locks-get
-\end_layout
-
-\begin_layout Standard
-
-\lang english
-To achieve reliability of data where multiple copies may exist and be altered
- from multiple locations is a problem that requires addressing, before changing
- data.
- Using the above scenario a node intending to alter a piece of data tries
- to get all the k-closest nodes via an iterative search.
- On success each node is sent a lock request which it answers with (Acknowledge)
- ACK or (Negative Acknowledge) NACK.
- Each node can pass this request to its known k-closest nodes.
- On receipt of k ACKs, the node then alters the value.
- On receiving an altered value the holding nodes release the lock.
- Failure to receive a value update in 10 seconds should auto release the
- lock.
- 
-\end_layout
-
-\begin_layout Standard
-
-\lang english
-Two locks in collision (which can still happen) are compared for rank and
- the highest rank gets the lock, the lower of the two gets the NACK.
+\begin_layout Section
+NAT Traversal with a DHT
 \end_layout
 
 \begin_layout Section
@@ -670,8 +298,9 @@ key "1"
 
 \end_inset
 
-As described by Van Jacobson in this link below, August 30, 2006 http://video.Goo
-gle.com/videoplay?docid=-6972678839686672840
+J.
+ Rosenberg, R.
+ Mahy (Cisco) Session Traversal Utilities for NAT (STUN), RFC 5389
 \end_layout
 
 \begin_layout Bibliography
@@ -682,9 +311,10 @@ key "2"
 
 \end_inset
 
-Stoica, Robert Morris, David Karger, M.
- Frans Kaashoek, and Hari Balakrishnan,Chord: A Scalable Peer-to-peer Lookup
- Service for Internet Applications
+J.
+ Rosenberg (Cisco), Interactive Connectivity Establishment (ICE): A Protocol
+ for Network Address Translator (NAT) Traversal for Offer/Answer Protocols,
+ draft-ietf-mmusic-ice-19
 \end_layout
 
 \begin_layout Bibliography
@@ -695,8 +325,12 @@ key "3"
 
 \end_inset
 
-Petar Maymounkov and David Mazirese Kademlia: A Peer-to-peer Information
- System Based on the XOR Metric {petar,dm}@cs.nyu.edu http://Kademlia.scs.cs.nyu.edu
+J.
+ Rosenberg, C.
+ Huitema, and R.
+ Mahy.
+ Traversal using relay NAT (TURN), October 2003.
+ Internet-Draft (Work in Progress).
 \end_layout
 
 \begin_layout Bibliography
@@ -721,9 +355,10 @@ key "5"
 
 
 \lang english
-PETAR MAYMOUNKOV AND DAVID MAZI`RESE Kademlia: A Peer-to-peer Information
- System Based on the XOR Metric {petar,dm}@cs.nyu.edu http://Kademlia.scs.cs.nyu.edu
- 
+UPnP Forum.
+ Internet gateway device (IGD) standardized device control protocol, November
+ 2001.
+ http://www.upnp.org/.
 \end_layout
 
 \begin_layout Bibliography
@@ -736,11 +371,7 @@ key "6"
 
 \end_inset
 
-ANDREAS BINZENH ̈ FER AND HOLGER SCHNABEL.
- Improving the Performance and Robustness of Kademlia-based Overlay Networks
- o University of W ̈ rzburg, Institute of Computer Science u Chair of Distribute
-d Systems, W ̈ rzburg, Germany u Email: binzenhoefer@informatik.uni-wuerzburg.de
- 
+xx
 \end_layout
 
 \begin_layout Standard
@@ -837,6 +468,21 @@ He has presented technology at Google (Seattle), British Computer Society
 \begin_layout BiographyNoPhoto
 He has spent many years as a lifeboat Helmsman and is a keen sailor when
  time permits.
+\end_layout
+
+\begin_layout Appendix
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset External
+	template PDFPages
+	filename Ford.pdf
+	extra LaTeX "pages=-"
+
+\end_inset
+
+
 \end_layout
 
 \end_body
