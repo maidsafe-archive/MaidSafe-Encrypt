@@ -90,7 +90,7 @@ const int kRootSubdirSize = 3;
 const int kSharesSubdirSize = 1;
 
 const std::string kRootSubdir[kRootSubdirSize][2] = {
-  {"/My Files", ""},
+  {"/My Stuff", ""},
   {"/Shares", "" },
   {"/Emails", ""}
 };

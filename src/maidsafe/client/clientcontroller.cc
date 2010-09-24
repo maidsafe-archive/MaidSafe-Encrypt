@@ -225,7 +225,7 @@ int ClientController::ParseDa() {
   }
   ss_->SetRootDbKey(data_atlas.root_db_key());
 
-  if (data_atlas.dms_size() != 2) {
+  if (data_atlas.dms_size() != (kRootSubdirSize + 1)) {
 #ifdef DEBUG
     printf("CC::ParseDa - Wrong number of datamaps in the DA.\n");
 #endif
@@ -256,29 +256,22 @@ int ClientController::ParseDa() {
   if (data_atlas.has_pd())
     ss_->SetPd(data_atlas.pd());
 
-  DataMap dm_root, dm_shares;
+  DataMap dm_root, other_dms;
   dm_root = data_atlas.dms(0);
-  dm_shares = data_atlas.dms(1);
 
-  std::string ser_dm_root, ser_dm_shares;
+  std::string ser_dm_root, other_ser_dms;
   dm_root.SerializeToString(&ser_dm_root);
-  dm_shares.SerializeToString(&ser_dm_shares);
-#ifdef DEBUG
-  // printf("ser_dm_root_ = %s\n", ser_dm_root_);
-#endif
   int i = seh_.DecryptDb(kRoot, PRIVATE, ser_dm_root, "", "", false, false);
-#ifdef DEBUG
-//  printf("CC::ParseDa - result of decrypt root: %i -- (%s)\n", i,
-//         ""/*ser_dm_root.c_str()*/);
-#endif
   if (i != 0)
     return -1;
-  i = seh_.DecryptDb(TidyPath(kRootSubdir[1][0]), PRIVATE, ser_dm_shares,
-                     "", "", false, false);
-#ifdef DEBUG
-//  printf("CC::ParseDa - result of decrypt %s: %i -- (%s)\n",
-//         kRootSubdir[1][0].c_str(), i, ""/*ser_dm_shares.c_str()*/);
-#endif
+
+  for (int n = 0; n < kRootSubdirSize; ++n) {
+    other_dms = data_atlas.dms(n + 1);
+    other_dms.SerializeToString(&other_ser_dms);
+    i += seh_.DecryptDb(TidyPath(kRootSubdir[n][0]), PRIVATE, other_ser_dms,
+                        "", "", false, false);
+  }
+
   return (i == 0) ? 0 : -1;
 }
 
@@ -291,24 +284,29 @@ int ClientController::SerialiseDa() {
   }
   DataAtlas data_atlas;
   data_atlas.set_root_db_key(ss_->RootDbKey());
-  DataMap root_dm, shares_dm;
+  DataMap root_dm, subdirs_dm;
   if (AddToPendingFiles(kRoot))
     seh_.EncryptDb(kRoot, PRIVATE, "", "", false, &root_dm);
-
-  if (AddToPendingFiles(TidyPath(kRootSubdir[1][0]))) {
-#ifdef DEBUG
-    int n = seh_.EncryptDb(TidyPath(kRootSubdir[1][0]), PRIVATE, "", "", false,
-                           &shares_dm);
-    printf("Shares encryptd db result %d\n", n);
-#else
-    seh_.EncryptDb(TidyPath(kRootSubdir[1][0]), PRIVATE, "", "", false,
-                           &shares_dm);
-#endif
-  }
   DataMap *dm = data_atlas.add_dms();
   *dm = root_dm;
-  dm = data_atlas.add_dms();
-  *dm = shares_dm;
+
+  for (int i = 0; i < kRootSubdirSize; ++i) {
+//    dm->Clear();
+    subdirs_dm.Clear();
+    if (AddToPendingFiles(TidyPath(kRootSubdir[i][0]))) {
+#ifdef DEBUG
+      int n = seh_.EncryptDb(TidyPath(kRootSubdir[i][0]), PRIVATE, "", "",
+                             false, &subdirs_dm);
+      printf("%s encrypted db result %d\n",
+             TidyPath(kRootSubdir[i][0]).c_str(), n);
+#else
+      seh_.EncryptDb(TidyPath(kRootSubdir[i][0]), PRIVATE, "", "", false,
+                              &subdirs_dm);
+#endif
+      dm = data_atlas.add_dms();
+      *dm = subdirs_dm;
+    }
+  }
 
   std::list<KeyAtlasRow> keyring;
   ss_->GetKeys(&keyring);
@@ -557,16 +555,16 @@ bool ClientController::CreateUser(const std::string &username,
     } else {
       key = base::DecodeFromHex(kRootSubdir[i][1]);
     }
-    res += dah->AddElement(TidyPath(kRootSubdir[i][0]),
-                           ser_mdm, "", key, true);
+    res += dah->AddElement(TidyPath(kRootSubdir[i][0]), ser_mdm, "", key, true);
+
     if (AddToPendingFiles(TidyPath(kRootSubdir[i][0])))
       res += seh_.EncryptDb(TidyPath(kRootSubdir[i][0]), PRIVATE, key, "", true,
                             &dm);
     else
       res += -1;
 #ifdef DEBUG
-    printf("In ClientController::CreateUser %s - %d\n",
-           kRootSubdir[i][0].c_str(), res);
+    printf("In ClientController::CreateUser %s - %d - %d\n",
+           kRootSubdir[i][0].c_str(), res, dm.encrypted_chunk_name_size());
 #endif
   }
 
@@ -577,9 +575,9 @@ bool ClientController::CreateUser(const std::string &username,
     return false;
   }
 
-
 #ifdef DEBUG
-  printf("In CC::CreateUser - My Files and Shares DONE.\n");
+  printf("In CC::CreateUser - %s and Shares DONE.\n",
+         TidyPath(kRootSubdir[0][0]).c_str());
 #endif
 
   // set up share subdirs
@@ -799,16 +797,16 @@ bool ClientController::Logout() {
       boost::mutex::scoped_lock loch_ba(pending_files_mutex_);
       t = pending_files_.empty();
 #ifdef DEBUG
-      for (std::multimap<std::string, int>::iterator it = pending_files_.begin();
-           it != pending_files_.end(); ++it) {
-        printf("ClientController::Logout - %s pending\n", ((*it).first).c_str());
+      std::multimap<std::string, int>::iterator it = pending_files_.begin();
+      for (; it != pending_files_.end(); ++it) {
+        printf("ClientController::Logout - %s pending\n",
+               ((*it).first).c_str());
       }
 #endif
     }
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
   }
   seh_.ClearPendingChunks();
-//  to_seh_file_update_.disconnect();
 
 #ifdef DEBUG
   printf("ClientController::Logout - After all files done.\n");
@@ -2406,10 +2404,10 @@ int ClientController::PathDistinction(const std::string &path,
 #ifdef DEBUG
   printf("Path in PathDistinction: %s\n", path.c_str());
 #endif
-  std::string search("My Files");
+  std::string search(TidyPath(kRootSubdir[0][0]));
   std::string share("");
   int n = 0;
-  // Check if My Files is in the path
+  // Check if My Stuff is in the path
   size_t found = path_loc.find(search);
   if (found != std::string::npos) {
     n = 1;
