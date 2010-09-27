@@ -85,7 +85,7 @@ int AccountAmendmentHandler::ProcessRequest(
       return kAmendAccountCountError;
     }
   }
-  
+
   // If amendment has already been added assess request, else add new amendment
   if (repeated_count != 0) {
     int amendment_status(kAccountAmendmentError);

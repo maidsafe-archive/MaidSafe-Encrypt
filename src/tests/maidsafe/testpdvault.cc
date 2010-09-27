@@ -421,7 +421,7 @@ TEST_MS_NET(PDVaultTest, FUNC, MAID, StoreAndGetChunks) {
   printf("\nChecking chunks locally...\n");
 
   // checking for chunks
-  // TODO use callback/signal at end of StoreChunk instead
+  // TODO(Team#5#): use callback/signal at end of StoreChunk instead
   std::set<std::string> stored_chunks;
   int iteration = 0;
   int remaining_tasks = 1;

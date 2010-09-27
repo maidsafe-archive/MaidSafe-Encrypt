@@ -781,8 +781,8 @@ bool ClientController::Logout() {
   // Sending logout messages to online contacts
 //  std::map<std::string, ConnectionDetails> livectcs;
 //  ss_->LiveContactMap(&livectcs);
-//  for (std::map<std::string, ConnectionDetails>::iterator it = livectcs.begin();
-//       it != livectcs.end(); ++it) {
+//  for (std::map<std::string, ConnectionDetails>::iterator it =
+//       livectcs.begin(); it != livectcs.end(); ++it) {
 //    sm_->SendLogOutMessage(it->first);
 //  }
 
@@ -799,9 +799,10 @@ bool ClientController::Logout() {
       boost::mutex::scoped_lock loch_ba(pending_files_mutex_);
       t = pending_files_.empty();
 #ifdef DEBUG
-      for (std::multimap<std::string, int>::iterator it = pending_files_.begin();
-           it != pending_files_.end(); ++it) {
-        printf("ClientController::Logout - %s pending\n", ((*it).first).c_str());
+      for (std::multimap<std::string, int>::iterator it =
+           pending_files_.begin(); it != pending_files_.end(); ++it) {
+        printf("ClientController::Logout - %s pending\n",
+               ((*it).first).c_str());
       }
 #endif
     }
