@@ -394,8 +394,7 @@ class MaidsafeStoreManager : public StoreManagerInterface {
                                  size_t *n);
   // Blocks until either we're online (returns true) or until task is cancelled
   // or finished (returns false)
-  virtual bool WaitForOnline(const std::string &task_name,
-                             const StoreManagerTaskType &task_type);
+  virtual bool WaitForOnline(const TaskId &task_id);
   // Set up the requests needed to perform the store RPCs.
   int GetStoreRequests(boost::shared_ptr<SendChunkData> send_chunk_data);
   // Set up the requests needed to perform the ExpectAmendment RPCs.
@@ -428,19 +427,20 @@ class MaidsafeStoreManager : public StoreManagerInterface {
                            const std::string &recipient_id,
                            std::string *request_signature);
   // Called on completion of the StoreChunk root task
-  void StoreChunkTaskCallback(const ReturnCode &result,
-                              const std::string &chunk_name,
+  void StoreChunkTaskCallback(const TaskId &task_id,
+                              const ReturnCode &result,
                               const boost::uint64_t &reserved_space);
   // Called on completion of the root task's child tasks, for debugging only
-  void DebugSubTaskCallback(const ReturnCode &result,
-                            const std::string &chunk_name,
+  void DebugSubTaskCallback(const TaskId &task_id,
+                            const ReturnCode &result,
                             const std::string &task_info);
   // Called on completion of the DeleteChunk root task
-  void DeleteChunkTaskCallback(const ReturnCode &result,
-                               const std::string &chunk_name);
+  void DeleteChunkTaskCallback(const TaskId &task_id,
+                               const ReturnCode &result);
   // Called on completion of an AddToWatchList child task
   void AddToWatchListTaskCallback(const ReturnCode &result,
-                                  boost::shared_ptr<StoreData> store_data);
+                                  boost::shared_ptr<StoreData> store_data,
+                                  const TaskId &amendment_task_id);
   void RemoveFromWatchListTaskCallback(const ReturnCode &result,
                                        boost::shared_ptr<StoreData> store_data);
   // Start process of storing a single copy of an individual chunk onto the net.
@@ -450,7 +450,8 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   void ChunkCopyPrepTaskCallback(
       const ReturnCode &result,
       boost::shared_ptr<SendChunkData> send_chunk_data);
-  void StorePrepCallback(boost::shared_ptr<SendChunkData> send_chunk_data);
+  void StorePrepCallback(const TaskId &prep_task_id,
+                         boost::shared_ptr<SendChunkData> send_chunk_data);
   virtual int ValidatePrepResponse(
       const std::string &peer_node_id,
       const SignedSize &request_signed_size,
@@ -460,7 +461,8 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   void ChunkCopyDataTaskCallback(
       const ReturnCode &result,
       boost::shared_ptr<SendChunkData> send_chunk_data);
-  void StoreChunkCallback(boost::shared_ptr<SendChunkData> send_chunk_data);
+  void StoreChunkCallback(const TaskId &data_task_id,
+                          boost::shared_ptr<SendChunkData> send_chunk_data);
   void LoadChunk_FindCB(const std::string &result,
                         boost::shared_ptr<GetChunkOpData> data);
   void LoadChunk_RefsCB(size_t rsp_idx,

@@ -138,13 +138,6 @@ const std::string kDefaultChunks[kDefaultChunkCount][2] = {
 };
 
 const std::string kAccount("ACCOUNT");
-const std::string kWatchListTaskPrefix("WATCH");
-const std::string kWatchListMasterTaskPrefix("WATCHM");
-const std::string kAmendmentConfirmationTaskPrefix("AMCONF");
-const std::string kChunkCopyTaskPrefix("COPY");
-const std::string kChunkCopyMasterTaskPrefix("COPYM");
-const std::string kChunkCopyPrepTaskPrefix("COPYPREP");
-const std::string kChunkCopyDataTaskPrefix("COPYDATA");
 
 // const std::string default_dir_[] = {
 //   "/Documents",

@@ -597,7 +597,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AddToWatchList) {
     }
   }
 
-//  int send_chunk_count(0);
+  int send_chunk_count(0);
   boost::mutex mutex;
   boost::condition_variable cond_var;
   test_msm::ThreadedCallContainer tcc(1);
@@ -610,7 +610,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AddToWatchList) {
       .WillRepeatedly(testing::WithArgs<1>(testing::Invoke(
           boost::bind(&mock_kadops::RunCallback, bad_result, _1))));   // Call 1
 
-/*  EXPECT_CALL(*mko, FindKClosestNodes(chunk_names.at(1), testing::_))
+  EXPECT_CALL(*mko, FindKClosestNodes(chunk_names.at(1), testing::_))
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
           boost::bind(&mock_kadops::RunCallback, few_result, _1))));   // Call 2
 
@@ -725,7 +725,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AddToWatchList) {
           .Times(3)  // Call 12
           .WillRepeatedly(testing::InvokeWithoutArgs(boost::bind(
               &test_msm::SendChunkCount, &send_chunk_count, &mutex,
-              &cond_var))); */
+              &cond_var)));
 
   // Run test calls
   ASSERT_EQ(kStoreChunkError, msm.StoreChunk(chunk_names.at(0), PRIVATE, ""));
@@ -753,8 +753,6 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AddToWatchList) {
   }
   ASSERT_EQ(size_t(0), msm.tasks_handler_.TasksCount());
 
-  /*
-
   // Call 2 - FindKNodes returns success but not enough contacts
   ++test_run;
   printf("--- call %d ---\n", test_run + 1);
@@ -766,7 +764,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AddToWatchList) {
   }
   ASSERT_EQ(size_t(0), msm.tasks_handler_.TasksCount());
 
-// Call 3 - FindKNodes returns CIHs, but no AHs available
+  // Call 3 - FindKNodes returns CIHs, but no AHs available
   ++test_run;
   printf("--- call %d ---\n", test_run + 1);
   ASSERT_EQ(kSuccess, msm.StoreChunk(chunk_names.at(test_run), PRIVATE, ""));
@@ -872,10 +870,10 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AddToWatchList) {
   while (send_chunk_count < kMinChunkCopies)
     cond_var.wait(lock);
   ASSERT_EQ(size_t(1), msm.tasks_handler_.TasksCount());
-  StoreTask retrieved_task;
-  ASSERT_TRUE(msm.tasks_handler_.Task(chunk_names.at(test_run), kStoreChunk,
-      &retrieved_task));
-  ASSERT_EQ(kMinChunkCopies, retrieved_task.successes_required_);
+//  StoreManagerTask retrieved_task;
+//  ASSERT_TRUE(msm.tasks_handler_.HasTask(chunk_names.at(test_run), kStoreChunk,
+//      &retrieved_task));
+//  ASSERT_EQ(kMinChunkCopies, retrieved_task.successes_required_);
 
   // Call 12 - All ATW responses return upload_count of 3 except one which
   //           returns an upload_count of 0
@@ -886,9 +884,9 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AddToWatchList) {
   while (send_chunk_count < kMinChunkCopies - 1)
     cond_var.wait(lock);
   ASSERT_EQ(size_t(2), msm.tasks_handler_.TasksCount());
-  ASSERT_TRUE(msm.tasks_handler_.Task(chunk_names.at(test_run), kStoreChunk,
-      &retrieved_task));
-  ASSERT_EQ(kMinChunkCopies - 1, retrieved_task.successes_required_); */
+//  ASSERT_TRUE(msm.tasks_handler_.Task(chunk_names.at(test_run), kStoreChunk,
+//      &retrieved_task));
+//  ASSERT_EQ(kMinChunkCopies - 1, retrieved_task.successes_required_);
 }
 
 TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AssessUploadCounts) {
@@ -1118,8 +1116,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_GetStoreRequests) {
     names.push_back(crypto_.Hash(j, "", crypto::STRING_STRING, false));
   }
   boost::shared_ptr<SendChunkData> send_chunk_data(
-      new SendChunkData(boost::shared_ptr<StoreData>(new StoreData()),
-                        kad::Contact(recipient_id, "", 0), true));
+      new SendChunkData(boost::shared_ptr<StoreData>(new StoreData())));
   StorePrepRequest &store_prep_request = send_chunk_data->store_prep_request;
   StoreChunkRequest &store_chunk_request = send_chunk_data->store_chunk_request;
 
@@ -1331,7 +1328,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_ValidatePrepResp) {
       client_pmid_keys_.private_key()));
   client_chunkstore_->AddChunkToOutgoing(chunk_name, chunk_value);
   boost::shared_ptr<SendChunkData> send_chunk_data(
-      new SendChunkData(store_data, kad::Contact(peer_pmid, "", 0), true));
+      new SendChunkData(store_data));
   ASSERT_EQ(kSuccess, msm.GetStoreRequests(send_chunk_data));
   StorePrepRequest store_prep_request = send_chunk_data->store_prep_request;
   StoreChunkRequest store_chunk_request = send_chunk_data->store_chunk_request;
@@ -1434,8 +1431,8 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_ValidatePrepResp) {
       : MaidsafeStoreManager(cstore, test_msm::K) {}
   MOCK_METHOD3(AssessTaskStatus, TaskStatus(const std::string &data_name,
                                             StoreTaskType task_type,
-                                            StoreTask *task));
-  MOCK_METHOD2(WaitForOnline, bool(const std::string &data_name,
+                                            StoreManagerTask *task));
+  MOCK_METHOD2(WaitForOnline, bool(const TaskId &task_id,
                                    const StoreTaskType &task_type));
 }; */
 
@@ -1574,7 +1571,7 @@ TEST_F(MaidStoreManagerTest, DISABLED_BEH_MAID_MSM_SendPrepCallback) {
   // Run tests
   // Call 1 - All OK
   msm.StorePrepCallback(send_chunk_data);
-  StoreTask retrieved_task;
+  StoreManagerTask retrieved_task;
   ASSERT_TRUE(msm.tasks_handler_.Task(chunkname, kStoreChunk, &retrieved_task));
   ASSERT_EQ(boost::uint8_t(1), retrieved_task.active_subtask_count_);
   ASSERT_EQ(1, send_chunk_data->attempt);
@@ -1664,7 +1661,7 @@ TEST_F(MaidStoreManagerTest, DISABLED_BEH_MAID_MSM_SendChunkContent) {
       peer));
   ASSERT_EQ(kSuccess, msm.tasks_handler_.CancelTask(chunkname, kStoreChunk));
   ASSERT_EQ(kStoreCancelledOrDone, msm.DoStoreChunk(send_chunk_data));
-  StoreTask retrieved_task;
+  StoreManagerTask retrieved_task;
   ASSERT_FALSE(msm.tasks_handler_.Task(chunkname, kStoreChunk,
                &retrieved_task));
   ASSERT_EQ(size_t(0), msm.tasks_handler_.TasksCount());
@@ -1912,7 +1909,7 @@ TEST_F(MaidStoreManagerTest, DISABLED_BEH_MAID_MSM_RemoveFromWatchList) {
       chunk_sizes.at(0), static_cast<DirType>(PUBLIC_SHARE + 1), ""));
 
   int test_run(0);
-  StoreTask task;
+  StoreManagerTask task;
   // Call 1 - Didn't provide size and chunk not in local chunkstore
   ASSERT_EQ(kDeleteSizeError,
             msm.DeleteChunk(chunk_names.at(test_run), 0, PRIVATE, ""));
