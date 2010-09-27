@@ -179,7 +179,10 @@ int StoreManagerTasksHandler::DoAddTask(StoreManagerTask task,
     tasks_.modify(parent_iter, increment_child_task_count_);
   }
 
-  tasks_.insert(--(tasks_.end()), task);
+  if (tasks_.empty())
+    tasks_.insert(task);
+  else
+    tasks_.insert(--(tasks_.end()), task);
   if (task.status != kTaskActive && task.callback)
     task.callback(task.task_id, kStoreCancelledOrDone);
   return kSuccess;
