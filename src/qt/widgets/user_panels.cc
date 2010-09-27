@@ -51,11 +51,10 @@ UserPanels::UserPanels(QWidget* parent)
   level_ = ClientController::instance()->FULL;
 
   ui_.toolBarListWidget->setContextMenuPolicy(Qt::CustomContextMenu);
+  ui_.toolBarListWidget->setVisible(false);
 
   public_username_ = new PublicUsername;
-#ifdef PD_LIGHT
-  browser_ = new FileBrowser;
-#endif
+
   inbox_ = new UserInbox(this);
 
   connect(public_username_, SIGNAL(complete()),
@@ -122,9 +121,9 @@ UserPanels::~UserPanels() {}
 
 #ifdef PD_LIGHT
 void UserPanels::CloseFileBrowser() {
-  browser_->setActive(false);
-  browser_->reset();
-  browser_->hide();
+ // browser_->setActive(false);
+ // browser_->reset();
+ // browser_->hide();
 }
 #endif
 
@@ -179,11 +178,11 @@ void UserPanels::onPublicUsernameChosen() {
   ui_.userStackedWidget->setEnabled(true);
   ui_.userStackedWidget->setCurrentWidget(contacts_);
   activatePanel(true);
-  ui_.public_username->setText(ClientController::instance()->publicUsername());
+  //ui_.public_username->setText(ClientController::instance()->publicUsername());
   updateTooltips();
 
 #ifdef PD_LIGHT
-  browser_->setActive(true);
+ // browser_->setActive(true);
 #endif
 }
 

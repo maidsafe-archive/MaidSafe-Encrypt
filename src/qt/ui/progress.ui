@@ -22,7 +22,7 @@
         <string/>
        </property>
        <property name="pixmap">
-        <pixmap resource="../resources/resources.qrc">:/icons/32/Triangle</pixmap>
+        <pixmap resource="../resources/resources.qrc">:/icons/32/ms_icon_blue.png</pixmap>
        </property>
       </widget>
      </item>
@@ -134,6 +134,7 @@
   </layout>
  </widget>
  <resources>
+  <include location="../resources/resources.qrc"/>
   <include location="../resources/resources.qrc"/>
   <include location="../resources/resources.qrc"/>
   <include location="../resources/resources.qrc"/>

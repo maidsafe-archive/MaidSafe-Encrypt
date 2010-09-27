@@ -8,12 +8,20 @@ QMainWindow::separator {
      background: #ACACAC;
  }
  
-   
-QFrame {
-    border-image: url(:/background/cloud_background.png) 0 0 0 0 stretch stretch;
+QMainWindow {
+background-color: white;
+color: black;
+}
+ 
+QFrame#TopFrame {
+    border-image: url(:/background/cloud_top.png) 0 0 0 0 stretch stretch;
     font: bold;
 }
 
+QFrame#BtmFrame {
+    border-image: url(:/background/cloud_bottom.png) 0 0 0 0 stretch stretch;
+    font: bold;
+}
 
   QMessageBox {
     background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 #7B7B7B, stop: 1 lightblue);
@@ -64,6 +72,9 @@ QFrame {
  
   QListWidget {
     background-color: transparent;
+    font-size: 12px;
+    font-family: Arial, ArialBold, sans-serif;
+    font: bold;
   }
  
  QToolButton:hover { /* all types of tool button */
@@ -119,7 +130,7 @@ QFrame {
  }
 
  QMenuBar {
-     background-color:#7B7B7B;
+     background-color:#5593d7;
      color: white;
  }
 
@@ -243,7 +254,7 @@ QDockWidget {
 QLabel {
      border-radius: 4px;
      padding: 2px;
-     color: #FFFFFF;
+     color: #000000;
 }
  
  QTreeView {
@@ -351,9 +362,24 @@ QLabel {
   }
  
  QGroupBox{
-  color: #FFFFFF;
+  color: #000000;
  }
  
  QLineEdit::disabled{
    background-color:lightgrey;
  }
+ 
+ QStatusBar {
+  background-color: #5593d7;
+ }
+ 
+ 
+QLineEdit { 
+border-width: 1px; 
+border-style: inset; 
+border-color: #5593d7; 
+border-radius: 9px; 
+background: #ffffffff; 
+color: #000000; 
+selection-background-color: ltblue; 
+}

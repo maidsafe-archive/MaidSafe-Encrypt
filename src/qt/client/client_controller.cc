@@ -105,7 +105,7 @@ bool ClientController::getPendingOps(QList<PendingOps> &ops) {
   op.totalBytes = 10000;
 
   ops.append(op);
-  return false;
+  return true;
 }
 
 int ClientController::AddInstantFile(const QString &sender, const QString &filename,

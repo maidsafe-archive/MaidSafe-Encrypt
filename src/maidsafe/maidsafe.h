@@ -86,13 +86,14 @@ enum DbInitFlag {CONNECT, CREATE, DISCONNECT};
 const std::string kRoot("/");
 const std::string kKeysDb("/KeysDb");
 
-const int kRootSubdirSize = 3;
+const int kRootSubdirSize = 4;
 const int kSharesSubdirSize = 1;
 
 const std::string kRootSubdir[kRootSubdirSize][2] = {
   {"/My Stuff", ""},
   {"/Shares", "" },
-  {"/Emails", ""}
+  {"/Emails", ""},
+  {"/chat", ""}
 };
 
 const std::string kSharesSubdir[kSharesSubdirSize][2] = {
