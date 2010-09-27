@@ -1,0 +1,489 @@
+#LyX 1.6.7 created this file. For more info see http://www.lyx.org/
+\lyxformat 345
+\begin_document
+\begin_header
+\textclass IEEEtran
+\use_default_options false
+\language british
+\inputencoding default
+\font_roman default
+\font_sans default
+\font_typewriter default
+\font_default_family default
+\font_sc false
+\font_osf false
+\font_sf_scale 100
+\font_tt_scale 100
+
+\graphics default
+\paperfontsize default
+\spacing single
+\use_hyperref true
+\pdf_title "'peer to peer' Public Key Infrastructure"
+\pdf_author "David Irvine"
+\pdf_subject "Validation"
+\pdf_keywords "PKI, DHT, Security "
+\pdf_bookmarks true
+\pdf_bookmarksnumbered false
+\pdf_bookmarksopen false
+\pdf_bookmarksopenlevel 1
+\pdf_breaklinks false
+\pdf_pdfborder true
+\pdf_colorlinks false
+\pdf_backref false
+\pdf_pdfusetitle true
+\papersize default
+\use_geometry false
+\use_amsmath 0
+\use_esint 0
+\cite_engine basic
+\use_bibtopic true
+\paperorientation portrait
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\defskip medskip
+\quotes_language english
+\papercolumns 2
+\papersides 1
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\author "" 
+\author "" 
+\end_header
+
+\begin_body
+
+\begin_layout Title
+DHT based NAT traversal
+\end_layout
+
+\begin_layout Author
+David Irvine, email: david.irvine@maidsafe.net, LifeStuff David
+\end_layout
+
+\begin_layout Right Address
+maidsafe.net limited (registered in Scotland Sc 297540)
+\end_layout
+
+\begin_layout Date
+September, 2010
+\end_layout
+
+\begin_layout Abstract
+Today's Distributed Hash Tables (DHT's) and other overlay networks are based
+ on operating without hinderence of real worls issues regardign connectivity
+ between nodes.
+ This is not a problem when operating in a private or controlled environment,
+ but in the transition to peer to peer or fully distributed networks, it
+ becomes a major headache.
+ This paper introduces a pure p2p solution to Network Address Translation
+ (NAT) traversal, which is probably the main problem facing public p2p networks.
+\end_layout
+
+\begin_layout Keywords
+security, freedom, privacy, DHT, encryption
+\end_layout
+
+\begin_layout MarkBoth
+maidsafe.net limited company confidential Version 0.1
+\begin_inset ERT
+status collapsed
+
+\begin_layout Plain Layout
+
+}{
+\end_layout
+
+\end_inset
+
+...
+\end_layout
+
+\begin_layout Standard
+\begin_inset CommandInset toc
+LatexCommand tableofcontents
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset FloatList table
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset FloatList algorithm
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout --Separator--
+
+\end_layout
+
+\begin_layout Section
+Introduction
+\begin_inset Note Note
+status collapsed
+
+\begin_layout Plain Layout
+Don't panic the section numbering may look different in
+\end_layout
+
+\begin_layout Plain Layout
+LyX but LaTeX uses the correct Roman numerals and
+\end_layout
+
+\begin_layout Plain Layout
+Alpha for section counters.
+\end_layout
+
+\begin_layout Plain Layout
+It's just that LyX doesn't handle counters other than arabic
+\end_layout
+
+\begin_layout Plain Layout
+numerals.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+PARstart{I}{nternet}
+\end_layout
+
+\end_inset
+
+ technology allows the interconnect of every device to every other device,
+ in principle.
+ In practice this is not the case and for many reasons devices tend to be
+ behind routers that allow then to go unnoticed or at least act as a proxy
+ device.
+ This helps connect multiple devices to a single publicall addressable IP
+ location.
+ The devices behind the router may have private or classfied private adresses
+ and number in thousands all connected to the Internet and appearing as
+ one single identity.
+ The router will proxy requests and responses in many cases to hide the
+ devices.
+ 
+\end_layout
+
+\begin_layout Standard
+NAT is a good solution for the lack of publicaly available IP addresses
+ with the current encumbant scheme of IP version 4, IP version 6 will allow
+ more than enough public addresses to exist and in fact provide several
+ addreses for every square meter of the plant.
+ Even with IP6, however there will still be NAT devices around and NAT traversal
+ will still be required.
+\end_layout
+
+\begin_layout Standard
+Several methods exist for traversing NAT devices, including 
+\emph on
+Session Traversal Utilities for NAT (STUN) 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "1"
+
+\end_inset
+
+ 
+\emph default
+which is extended to form
+\emph on
+ Interactive Connectivity Establishment (ICE): A Protocol for Network Address
+ Translator (NAT) Traversal for Offer/Answer Protocols 
+\emph default
+
+\begin_inset CommandInset citation
+LatexCommand cite
+key "2"
+
+\end_inset
+
+.
+ This paper will present a mechanism to exploit these technoligies without
+ the requirement for any servers to exist.
+ This is therefor a solution for distributed protocols that in fact requires
+ a distributed protocol to exist (a good fit).
+\end_layout
+
+\begin_layout Section
+NAT traversal methods
+\end_layout
+
+\begin_layout Subsection
+Router negotiation protocols
+\end_layout
+
+\begin_layout Subsubsection
+Universal Plug and Play (UPnP)
+\begin_inset CommandInset citation
+LatexCommand cite
+key "5"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+
+\end_layout
+
+\begin_layout Subsubsection
+Network Address Translation Port Mapping Protocol (NAT-PMP)
+\end_layout
+
+\begin_layout Subsection
+Hole Punching 
+\end_layout
+
+\begin_layout Section
+NAT Traversal with a DHT
+\end_layout
+
+\begin_layout Section
+Conclusions
+\end_layout
+
+\begin_layout Standard
+This paper introduces a particular case for "non rooted" yet cryptographically
+ secure PKI networks to be created.
+ It is envisaged that this method will be extended with many more capabilities.
+ Such measures may include:
+\end_layout
+
+\begin_layout List
+\labelwidthstring 00.00.0000
+Identification of credit card data linking the ID to a known name in another
+ secure location.
+ People could have a card and a revocation card or perhaps even better all
+ done in software using a keying approach as described in this paper.
+ 
+\end_layout
+
+\begin_layout List
+\labelwidthstring 00.00.0000
+Single continuous validation systems where a known ID can be used across
+ multiple web sites or on-line systems that require history to operate effective
+ly.
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+label "1"
+key "1"
+
+\end_inset
+
+J.
+ Rosenberg, R.
+ Mahy (Cisco) Session Traversal Utilities for NAT (STUN), RFC 5389
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+label "2"
+key "2"
+
+\end_inset
+
+J.
+ Rosenberg (Cisco), Interactive Connectivity Establishment (ICE): A Protocol
+ for Network Address Translator (NAT) Traversal for Offer/Answer Protocols,
+ draft-ietf-mmusic-ice-19
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+label "3"
+key "3"
+
+\end_inset
+
+J.
+ Rosenberg, C.
+ Huitema, and R.
+ Mahy.
+ Traversal using relay NAT (TURN), October 2003.
+ Internet-Draft (Work in Progress).
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+label "4"
+key "4"
+
+\end_inset
+
+David Irvine, maidsafe - a new network paradigm.
+ david.irvine@maidsafe.net
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+label "5"
+key "5"
+
+\end_inset
+
+
+\lang english
+UPnP Forum.
+ Internet gateway device (IGD) standardized device control protocol, November
+ 2001.
+ http://www.upnp.org/.
+\end_layout
+
+\begin_layout Bibliography
+
+\lang english
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+label "6"
+key "6"
+
+\end_inset
+
+xx
+\end_layout
+
+\begin_layout Standard
+\begin_inset Note Comment
+status collapsed
+
+\begin_layout Plain Layout
+\begin_inset Note Note
+status collapsed
+
+\begin_layout Plain Layout
+Change this paragraphs style to 'Standard' to enable
+\end_layout
+
+\begin_layout Plain Layout
+BibTeX bibliography generation.
+\end_layout
+
+\begin_layout Plain Layout
+Remember though that your final submission is supposed to have
+\end_layout
+
+\begin_layout Plain Layout
+all the bibliography entries embedded in the latex file.
+ This means
+\end_layout
+
+\begin_layout Plain Layout
+you eventually have to copy the .bbl file into the latex file and
+\end_layout
+
+\begin_layout Plain Layout
+remove the bibtex lines.
+\end_layout
+
+\end_inset
+
+
+\begin_inset CommandInset bibtex
+LatexCommand bibtex
+bibfiles "your_biblio_file"
+options "IEEEbib"
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout BiographyNoPhoto
+\begin_inset ERT
+status collapsed
+
+\begin_layout Plain Layout
+
+{
+\end_layout
+
+\end_inset
+
+David Irvine
+\begin_inset ERT
+status collapsed
+
+\begin_layout Plain Layout
+
+}
+\end_layout
+
+\end_inset
+
+ is a Scottish Engineer and innovator who has spent the last 12 years researchin
+g ways to make computers function in a more efficient manner.
+\end_layout
+
+\begin_layout BiographyNoPhoto
+He is an Inventor listed on more than 20 patent submissions and was Designer
+ / Project Manager of one of the World's largest private networks (Saudi
+ Aramco, over $300M).
+ He is an experienced Project Manager and has been involved in start up
+ businesses since 1995 and has provided business consultancy to corporates
+ and SMEs in many sectors.
+\end_layout
+
+\begin_layout BiographyNoPhoto
+He has presented technology at Google (Seattle), British Computer Society
+ (Christmas Lecture) and many others.
+\end_layout
+
+\begin_layout BiographyNoPhoto
+He has spent many years as a lifeboat Helmsman and is a keen sailor when
+ time permits.
+\end_layout
+
+\begin_layout Appendix
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset External
+	template PDFPages
+	filename Ford.pdf
+	extra LaTeX "pages=-"
+
+\end_inset
+
+
+\end_layout
+
+\end_body
+\end_document
