@@ -201,8 +201,8 @@ void AccountStatusManager::AmendmentDone(
         break;
     }
     ++amendments_since_update_;
-    if (amendments_since_update_ > kMaxAmendments_ && !awaiting_update_result_ &&
-        !update_functor_.empty()) {
+    if (amendments_since_update_ > kMaxAmendments_ &&
+        !awaiting_update_result_ && !update_functor_.empty()) {
       // Try to reset current timer
       if (timer_->expires_from_now(kMaxUpdateInterval_) > 0) {
         // Reset successful - run update functor & start new asynchronous wait.

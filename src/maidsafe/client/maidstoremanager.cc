@@ -277,7 +277,7 @@ int MaidsafeStoreManager::StoreChunk(const std::string &chunk_name,
     std::string key_id, public_key, public_key_signature, private_key;
     pd_utils_.GetChunkSignatureKeys(dir_type, msid, &key_id, &public_key,
                           &public_key_signature, &private_key);
-                          
+
     boost::uint64_t reserved_space = kMinChunkCopies * chunk_size;
     boost::shared_ptr<StoreData> store_data(new StoreData(
         chunk_name, chunk_size, chunk_type, dir_type, msid, key_id, public_key,
@@ -290,7 +290,7 @@ int MaidsafeStoreManager::StoreChunk(const std::string &chunk_name,
                     reserved_space);
     tasks_handler_.AddTask(chunk_name, kStoreChunk, 3, 0, callback,
                            &store_data->master_task_id);
-        
+
     // Add master task for AddToWatchList. Success depends on RPC successes.
     callback = boost::bind(&MaidsafeStoreManager::DebugSubTaskCallback,
                            this, _1, _2, "WatchListMaster");
@@ -319,15 +319,18 @@ void MaidsafeStoreManager::StoreChunkTaskCallback(
     const TaskId &task_id,
     const ReturnCode &result,
     const boost::uint64_t &reserved_space) {
+  std::string chunkname(tasks_handler_.DataName(task_id));
 #ifdef DEBUG
   printf("In MSM::StoreChunkTaskCallback (%d), overall storing process for "
-         "%s %s.\n",
-         kad_ops_->Port(), HexSubstr(tasks_handler_.DataName(task_id)).c_str(),
+         "%s %s.\n", kad_ops_->Port(), HexSubstr(chunkname).c_str(),
          result == kSuccess ? "succeeded" : "failed");
 #endif
+  // Fire store completion signal.
+  if (!chunkname.empty())
+    sig_chunk_uploaded_(chunkname, result);
+  // Tidy up
   tasks_handler_.DeleteTask(task_id, result);
   account_status_manager_.UnReserveSpace(reserved_space);
-  // TODO(Dan#) Fire store completion signal here.
 }
 
 void MaidsafeStoreManager::DebugSubTaskCallback(
@@ -1718,7 +1721,7 @@ void MaidsafeStoreManager::AddToWatchListTaskCallback(
            kad_ops_->Port(), HexSubstr(store_data->data_name).c_str());
 #endif
     // reset confirmation task
-    // TODO don't reset in case only failed ops are retried!
+    // TODO(Team#5#): don't reset in case only failed ops are retried!
     tasks_handler_.ResetTaskProgress(amendment_task_id);
 
     // retry, will stop when max no. of failures reached

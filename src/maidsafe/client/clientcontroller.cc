@@ -779,8 +779,8 @@ bool ClientController::Logout() {
   // Sending logout messages to online contacts
 //  std::map<std::string, ConnectionDetails> livectcs;
 //  ss_->LiveContactMap(&livectcs);
-//  for (std::map<std::string, ConnectionDetails>::iterator it = livectcs.begin();
-//       it != livectcs.end(); ++it) {
+//  for (std::map<std::string, ConnectionDetails>::iterator it =
+//       livectcs.begin(); it != livectcs.end(); ++it) {
 //    sm_->SendLogOutMessage(it->first);
 //  }
 

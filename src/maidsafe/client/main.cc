@@ -151,7 +151,7 @@ class RunPDClient {
     crypto_.set_symm_algorithm(crypto::AES_256);
     client_.reset(new testpdclient::ClientData(test_dir_.string()));
     ReadChunkList();
-    
+
     std::string maid_priv_key, maid_pub_key, maid_pub_key_sig, maid_name;
     std::string pmid_priv_key, pmid_pub_key, pmid_pub_key_sig, pmid_name;
     client_->returning = ReadClientData(&maid_priv_key, &maid_pub_key,
@@ -176,7 +176,7 @@ class RunPDClient {
                                         crypto::STRING_STRING);
     pmid_name = crypto_.Hash(pmid_pub_key + pmid_pub_key_sig, "",
                              crypto::STRING_STRING, false);
-                             
+
     SessionSingleton::getInstance()->AddKey(maidsafe::MAID, maid_name,
         maid_priv_key, maid_pub_key, maid_pub_key_sig);
     SessionSingleton::getInstance()->AddKey(maidsafe::PMID, pmid_name,
@@ -184,9 +184,7 @@ class RunPDClient {
     SessionSingleton::getInstance()->SetConnectionStatus(0);
   }
 
-  ~RunPDClient() {
-
-  }
+  ~RunPDClient() {}
 
   bool SetUp() {
     printf("Starting client...\n");
@@ -256,7 +254,7 @@ class RunPDClient {
     }
 
     // generate chunk content and name
-    boost::uint64_t chunk_size = 1024 << rand() % 10;
+    boost::uint64_t chunk_size = 1024 << rand() % 10;  // NOLINT Fraser
     std::string chunk_content = base::RandomString(chunk_size);
     std::string chunk_name = crypto_.Hash(chunk_content, "",
                                           crypto::STRING_STRING, false);
@@ -293,7 +291,7 @@ class RunPDClient {
       printf("A chunk with name '%s' does not exist.\n", name.c_str());
       return;
     }
-    
+
     std::string chunk_name(chunks_[name]);
     fs::path chunk_path(test_dir_);
     chunk_path /= base::EncodeToHex(chunk_name);
@@ -442,7 +440,7 @@ class RunPDClient {
   std::string FileToString(const fs::path &file) {
     if (!fs::exists(file))
       return "";
-    
+
     std::ifstream ifs;
     ifs.open(file.string().c_str());
     boost::uint64_t fsize(fs::file_size(file));
@@ -451,7 +449,7 @@ class RunPDClient {
     ifs.close();
     return std::string(static_cast<const char*>(temp.get()), fsize);
   }
-   
+
   RunPDClient(const RunPDClient&);
   RunPDClient &operator=(const RunPDClient&);
   fs::path test_dir_, kad_config_path_;

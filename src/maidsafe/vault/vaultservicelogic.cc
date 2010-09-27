@@ -327,7 +327,7 @@ void VaultServiceLogic::RemoteOpStageThree(boost::uint16_t index,
   if (result == kSuccess && holder->response.result() != kAck) {
 #ifdef DEBUG
 //     printf("In VSL::RemoteOpStageThree for %s (%s), response %u from %s "
-//          "is negative (%i).\n", typeid(data).name(), HexSubstr(pmid_).c_str(),
+//         "is negative (%i).\n", typeid(data).name(), HexSubstr(pmid_).c_str(),
 //            index, HexSubstr(holder->node_id).c_str(),
 //            holder->response.result());
 #endif
