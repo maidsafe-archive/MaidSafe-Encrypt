@@ -145,7 +145,7 @@ message ExpectAmendmentResponse {
 }
 
 message AccountStatusRequest {
-required bytes account_pmid = 1;  // PMID of account being queried
+  required bytes account_pmid = 1;  // PMID of account being queried
   optional uint64 space_requested = 2;
   optional bytes public_key = 3;
   optional bytes public_key_signature = 4;

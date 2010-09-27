@@ -33,6 +33,7 @@
 
 #include "maidsafe/chunkstore.h"
 #include "maidsafe/client/storemanager.h"
+#include "maidsafe/client/storemanagertaskshandler.h"
 
 namespace maidsafe {
 
@@ -49,8 +50,13 @@ struct StoreData {
                 chunk_type(kHashable | kNormal),
                 system_packet_type(MID),
                 dir_type(PRIVATE),
-                callback() {}
-  // Store chunk constructor
+                callback(),
+                exclude_peers(),
+                master_task_id(kRootTask),
+                watchlist_master_task_id(kRootTask),
+                amendment_task_id(kRootTask),
+                chunk_copy_master_task_id(kRootTask) {}
+  // Store chunk & Delete chunk constructor
   StoreData(const std::string &chunk_name,
             const boost::uint64_t &chunk_size,
             ChunkType ch_type,
@@ -72,7 +78,11 @@ struct StoreData {
                   system_packet_type(MID),
                   dir_type(directory_type),
                   callback(),
-                  exclude_peers_() {}
+                  exclude_peers(),
+                  master_task_id(kRootTask),
+                  watchlist_master_task_id(kRootTask),
+                  amendment_task_id(kRootTask),
+                  chunk_copy_master_task_id(kRootTask) {}
   // Store packet constructor
   StoreData(const std::string &packet_name,
             const std::string &packet_value,
@@ -96,7 +106,11 @@ struct StoreData {
                   system_packet_type(sys_packet_type),
                   dir_type(directory_type),
                   callback(cb),
-                  exclude_peers_() {}
+                  exclude_peers(),
+                  master_task_id(kRootTask),
+                  watchlist_master_task_id(kRootTask),
+                  amendment_task_id(kRootTask),
+                  chunk_copy_master_task_id(kRootTask) {}
   std::string data_name, value;
   boost::uint64_t size;
   std::string msid, key_id, public_key, public_key_signature, private_key;
@@ -104,7 +118,9 @@ struct StoreData {
   PacketType system_packet_type;
   DirType dir_type;
   VoidFuncOneInt callback;
-  std::vector<kad::Contact> exclude_peers_;
+  std::vector<kad::Contact> exclude_peers;
+  TaskId master_task_id, watchlist_master_task_id, amendment_task_id;
+  TaskId chunk_copy_master_task_id;
 };
 
 struct DeletePacketData {
@@ -211,7 +227,8 @@ struct WatchListOpData {
         expect_amendment_done(false),
         required_upload_copies(),
         consensus_upload_copies(-1),
-        payment_values() {}
+        payment_values(),
+        task_id(kRootTask) {}
   boost::shared_ptr<StoreData> store_data;
   boost::mutex mutex;
   std::vector<kad::Contact> account_holders, chunk_info_holders;
@@ -223,27 +240,25 @@ struct WatchListOpData {
   std::multiset<int> required_upload_copies;
   int consensus_upload_copies;
   std::vector<boost::uint64_t> payment_values;
+  TaskId task_id;
 };
 
 // This is used to hold the data required to perform a SendChunkPrep followed by
 // a SendChunkContent operation.
 struct SendChunkData {
-  SendChunkData(boost::shared_ptr<StoreData> sd,
-                const kad::Contact &node,
-                bool node_local)
+  explicit SendChunkData(boost::shared_ptr<StoreData> sd)
       : store_data(sd),
-        task_sub_name(),
-        peer(node),
-        local(node_local),
+        peer(),
+        local(false),
         store_prep_request(),
         store_prep_response(),
         store_chunk_request(),
         store_chunk_response(),
-        controller(new rpcprotocol::Controller) {
+        controller(new rpcprotocol::Controller),
+        chunk_copy_task_id(kRootTask) {
     controller->set_timeout(120);
   }
   boost::shared_ptr<StoreData> store_data;
-  std::string task_sub_name;
   kad::Contact peer;
   bool local;
   StorePrepRequest store_prep_request;
@@ -251,6 +266,7 @@ struct SendChunkData {
   StoreChunkRequest store_chunk_request;
   StoreChunkResponse store_chunk_response;
   boost::shared_ptr<rpcprotocol::Controller> controller;
+  TaskId chunk_copy_task_id;
 };
 
 // This is used to hold the data required to send AccountStatusRequests and

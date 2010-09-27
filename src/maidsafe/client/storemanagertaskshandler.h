@@ -26,8 +26,11 @@
 #define MAIDSAFE_CLIENT_STOREMANAGERTASKSHANDLER_H_
 
 #include <boost/function.hpp>
+#include <boost/multi_index_container.hpp>
+#include <boost/multi_index/identity.hpp>
+#include <boost/multi_index/member.hpp>
+#include <boost/multi_index/ordered_index.hpp>
 #include <boost/thread/mutex.hpp>
-#include <gtest/gtest_prod.h>
 #include <maidsafe/base/utils.h>
 #include <maidsafe/kademlia/contact.h>
 
@@ -37,16 +40,32 @@
 
 #include "maidsafe/returncodes.h"
 
+namespace mi = boost::multi_index;
+
 namespace maidsafe {
 
-typedef boost::function<void (const ReturnCode&)> VoidFuncOneInt;
+typedef boost::uint32_t TaskId;
+typedef boost::function<void (const TaskId&, const ReturnCode&)>
+    VoidFuncTaskIdInt;
+
+const TaskId kRootTask(0);
 
 enum StoreManagerTaskType {
   kStoreChunk,
+  kAddToWatchListMaster,
+  kAddToWatchList,
+  kSpaceTakenIncConfirmation,
+  kChunkCopyMaster,
+  kChunkCopy,
+  kChunkCopyPrep,
+  kChunkCopyData,
   kStorePacket,
   kLoadChunk,
   kLoadPacket,
   kDeleteChunk,
+  kRemoveFromWatchListMaster,
+  kRemoveFromWatchList,
+  kSpaceTakenDecConfirmation,
   kDeletePacket,
   kModifyPacket
 };
@@ -55,37 +74,36 @@ enum StoreManagerTaskStatus {
   kTaskActive,
   kTaskSucceeded,
   kTaskFailed,
-  kTaskCancelled
+  kTaskCancelled,
+  kNotATask
 };
 
 struct StoreManagerTask {
-  StoreManagerTask()
-    : parent_name(),
-      type(kStoreChunk),
-      status(kTaskActive),
-      timestamp(0),
-      successes_required(0),
-      max_failures(0),
-      success_count(0),
-      failures_count(0),
-      child_task_count(0),
-      callback() {}
-  StoreManagerTask(const std::string &parent_name_,
-                   const StoreManagerTaskType &type_,
-                   boost::uint8_t successes_required_,
-                   boost::uint8_t max_failures_,
-                   VoidFuncOneInt callback_)
-    : parent_name(parent_name_),
-      type(type_),
-      status(kTaskActive),
-      timestamp(base::GetEpochTime()),
-      successes_required(successes_required_),
-      max_failures(max_failures_),
-      success_count(0),
-      failures_count(0),
-      child_task_count(0),
-      callback(callback_) {}
-  std::string parent_name;  // name of parent task, or empty if root
+  StoreManagerTask(const TaskId &task_id,
+                   const std::string &data_name,
+                   const TaskId &parent_id,
+                   const StoreManagerTaskType &type,
+                   boost::uint8_t successes_required,
+                   boost::uint8_t max_failures,
+                   VoidFuncTaskIdInt callback)
+      : task_id(task_id),
+        data_name(data_name),
+        parent_id(parent_id),
+        type(type),
+        status(kTaskActive),
+        timestamp(base::GetEpochTime()),
+        successes_required(successes_required),
+        max_failures(max_failures),
+        success_count(0),
+        failures_count(0),
+        child_task_count(0),
+        callback(callback) {}
+  bool operator<(const StoreManagerTask &other) const {
+    return task_id < other.task_id;
+  }
+  TaskId task_id;
+  std::string data_name;
+  TaskId parent_id;  // id of parent task, or kRootTask if root
   StoreManagerTaskType type;
   StoreManagerTaskStatus status;
   boost::uint32_t timestamp;  // creation time, to enable purging after timeout
@@ -94,43 +112,79 @@ struct StoreManagerTask {
   boost::uint8_t success_count;
   boost::uint8_t failures_count;
   boost::uint8_t child_task_count;
-  VoidFuncOneInt callback;  // to be run upon success or failure
+  VoidFuncTaskIdInt callback;  // to be run upon success or failure
 };
+
+struct by_task_id {};
+struct by_parent_id {};
+struct by_data_name {};
+
+typedef mi::multi_index_container<
+  StoreManagerTask,
+  mi::indexed_by<
+    mi::ordered_unique<
+      mi::tag<by_task_id>,
+      BOOST_MULTI_INDEX_MEMBER(StoreManagerTask, TaskId, task_id)
+    >,
+    mi::ordered_non_unique<
+      mi::tag<by_parent_id>,
+      BOOST_MULTI_INDEX_MEMBER(StoreManagerTask, TaskId, parent_id)
+    >,
+    mi::ordered_non_unique<
+      mi::tag<by_data_name>,
+      BOOST_MULTI_INDEX_MEMBER(StoreManagerTask, std::string, data_name)
+    >
+  >
+> StoreManagerTaskSet;
+typedef StoreManagerTaskSet::index<by_task_id>::type TasksById;
+typedef StoreManagerTaskSet::index<by_parent_id>::type TasksByParentId;
+typedef StoreManagerTaskSet::index<by_data_name>::type TasksByDataName;
 
 class StoreManagerTasksHandler {
  public:
-  StoreManagerTasksHandler() : mutex_(), tasks_() {}
+  typedef StoreManagerTaskSet::iterator TaskIterator;
+  typedef std::pair<TasksByParentId::iterator,
+                    TasksByParentId::iterator> TaskRangeByParentId;
+  typedef std::pair<TasksByDataName::iterator,
+                    TasksByDataName::iterator> TaskRangeByDataName;
+  StoreManagerTasksHandler();
   ~StoreManagerTasksHandler() {}
   // Count of all tasks in set.
   size_t TasksCount();
-  // Returns false if task not found.
-  bool HasTask(const std::string &task_name, StoreManagerTaskType *type,
-               StoreManagerTaskStatus *status);
-  // Adds a main task with optional callback to be run on completion
-  int AddTask(const std::string &task_name,
+  // Return status for task_id (kNotATask returned if task doesn't exist)
+  StoreManagerTaskStatus Status(const TaskId &task_id);
+  // Returns data_name for task_id, or "" if not found.
+  std::string DataName(const TaskId &task_id);
+  // Yes, I know it's a long function name.
+  TaskId GetOldestActiveTaskByDataNameAndType(const std::string &data_name,
+                                              const StoreManagerTaskType &type);
+  // Adds a main task.  If callback != NULL, it will be run on completion
+  int AddTask(const std::string &data_name,
               const StoreManagerTaskType &type,
               boost::uint8_t successes_required,
               boost::uint8_t max_failures,
-              VoidFuncOneInt callback = NULL);
-  // Adds a child task with optional callback to be run on completion
-  int AddChildTask(const std::string &task_name,
-                   const std::string &parent_name,
+              VoidFuncTaskIdInt callback,
+              TaskId *task_id);
+  // Adds a child task.  If callback != NULL, it will be run on completion
+  int AddChildTask(const std::string &data_name,
+                   const TaskId &parent_id,
                    const StoreManagerTaskType &type,
                    boost::uint8_t successes_required,
                    boost::uint8_t max_failures,
-                   VoidFuncOneInt callback = NULL);
+                   VoidFuncTaskIdInt callback,
+                   TaskId *task_id);
   // Increases a task's success counter, must not have child tasks
-  int NotifyTaskSuccess(const std::string &task_name);
+  int NotifyTaskSuccess(const TaskId &task_id);
   // Increases a task's failure counter, must not have child tasks
-  int NotifyTaskFailure(const std::string &task_name, const ReturnCode &reason);
+  int NotifyTaskFailure(const TaskId &task_id, const ReturnCode &reason);
   // Resets a task's success and failure counters, must not have child tasks
-  int ResetTaskProgress(const std::string &task_name);
+  int ResetTaskProgress(const TaskId &task_id);
   // Removes the task and its child tasks from the set, regardless of state of
   // the tasks' progress.  If the tasks have callbacks, they're run with
   // before deletion.
-  int DeleteTask(const std::string &task_name, const ReturnCode &reason);
+  int DeleteTask(const TaskId &task_id, const ReturnCode &reason);
   // Marks task and children as cancelled, but doesn't remove them from set.
-  int CancelTask(const std::string &task_name, const ReturnCode &reason);
+  int CancelTask(const TaskId &task_id, const ReturnCode &reason);
   // Marks all tasks as cancelled, but doesn't remove any from the set.
   void CancelAllPendingTasks(const ReturnCode &reason);
   // Deletes all tasks from the set, regardless of state of each task's
@@ -139,24 +193,48 @@ class StoreManagerTasksHandler {
  private:
   StoreManagerTasksHandler &operator=(const StoreManagerTasksHandler&);
   StoreManagerTasksHandler(const StoreManagerTasksHandler&);
-  /* FRIEND_TEST(StoreTasksHandlerTest, BEH_MAID_StoreTaskStartSubTask);
-  FRIEND_TEST(StoreTasksHandlerTest, BEH_MAID_StoreTaskStopSubTask);
-  FRIEND_TEST(StoreTasksHandlerTest, BEH_MAID_StoreTaskDelete);
-  FRIEND_TEST(StoreTasksHandlerTest, BEH_MAID_StoreTaskCancelOne);
-  FRIEND_TEST(StoreTasksHandlerTest, BEH_MAID_StoreTaskCancelAll);
-  FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_RemoveFromWatchList); */
-  int DoAddTask(const std::string &task_name, StoreManagerTask task);
-  void DoDeleteTask(const std::string &task_name, const ReturnCode &reason);
-  void DoDeleteTask(std::map<std::string, StoreManagerTask>::iterator it,
-                    const ReturnCode &reason);
-  int NotifyStateChange(const std::string &task_name, const ReturnCode &reason);
-  // recursive, assumes parent is not active anymore
-  void CancelChildTasks(const std::string &parent_name,
+  int DoAddTask(StoreManagerTask task, TaskId *task_id);
+  // NB - Assumes mutex_ already locked when call to this function is made.
+  void DoDeleteTask(TasksById::iterator task_iter, const ReturnCode &reason);
+  // NB - Assumes mutex_ already locked when call to this function is made.
+  int NotifyStateChange(TasksById::iterator task_iter,
                         const ReturnCode &reason);
-  void DeleteChildTasks(const std::string &parent_name,
-                        const ReturnCode &reason);
+  // NB - Assumes mutex_ already locked when call to this function is made.
+  void DeleteChildTasks(const TaskId &parent_id, const ReturnCode &reason);
+  // NB - Assumes mutex_ already locked when call to this function is made.
+  // Recursive, assumes parent is not active anymore
+  void CancelChildTasks(const TaskId &parent_id, const ReturnCode &reason);
+  TaskId GetNextId();
+  // NB - Assumes mutex_ already locked when call to this function is made.
+  // If task_iter == end() returns failure.  If check_no_children, then returns
+  // failure if *task_iter has child tasks.
+  int ValidateTaskId(TasksById::iterator task_iter, bool check_no_children);
+  // The following four methods are only to be used as boost::functions for
+  // updating tasks in the set rather than copy and replace.
+  void IncrementCount(bool successes, StoreManagerTask &task) {  // NOLINT - Fraser
+    successes ? ++task.success_count : ++task.failures_count;
+  }
+  void ResetSuccessFailuresCounts(StoreManagerTask &task) {  // NOLINT - Fraser
+    task.success_count = 0;
+    task.failures_count = 0;
+  }
+  void ModifyChildTaskCount(bool increment, StoreManagerTask &task) {  // NOLINT - Fraser
+    increment ? ++task.child_task_count : --task.child_task_count;
+  }
+  void SetTaskStatus(StoreManagerTaskStatus status, StoreManagerTask &task) {  // NOLINT - Fraser
+    task.status = status;
+  }
   boost::mutex mutex_;
-  std::map<std::string, StoreManagerTask> tasks_;
+  StoreManagerTaskSet tasks_;
+  TaskId last_id_;
+  boost::function<void (StoreManagerTask &task)> increment_success_count_;  // NOLINT - Fraser
+  boost::function<void (StoreManagerTask &task)> increment_failures_count_;  // NOLINT - Fraser
+  boost::function<void (StoreManagerTask &task)> reset_success_failures_count_;  // NOLINT - Fraser
+  boost::function<void (StoreManagerTask &task)> increment_child_task_count_;  // NOLINT - Fraser
+  boost::function<void (StoreManagerTask &task)> decrement_child_task_count_;  // NOLINT - Fraser
+  boost::function<void (StoreManagerTask &task)> set_task_status_to_succeeded_;  // NOLINT - Fraser
+  boost::function<void (StoreManagerTask &task)> set_task_status_to_failed_;  // NOLINT - Fraser
+  boost::function<void (StoreManagerTask &task)> set_task_status_to_cancelled_;  // NOLINT - Fraser
 };
 
 }  // namespace maidsafe
