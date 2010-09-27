@@ -319,15 +319,18 @@ void MaidsafeStoreManager::StoreChunkTaskCallback(
     const TaskId &task_id,
     const ReturnCode &result,
     const boost::uint64_t &reserved_space) {
+  std::string chunkname(tasks_handler_.DataName(task_id));
 #ifdef DEBUG
   printf("In MSM::StoreChunkTaskCallback (%d), overall storing process for "
-         "%s %s.\n",
-         kad_ops_->Port(), HexSubstr(tasks_handler_.DataName(task_id)).c_str(),
+         "%s %s.\n", kad_ops_->Port(), HexSubstr(chunkname).c_str(),
          result == kSuccess ? "succeeded" : "failed");
 #endif
+  // Fire store completion signal.
+  if (!chunkname.empty())
+    sig_chunk_uploaded_(chunkname, result);
+  // Tidy up
   tasks_handler_.DeleteTask(task_id, result);
   account_status_manager_.UnReserveSpace(reserved_space);
-  // TODO(Dan#) Fire store completion signal here.
 }
 
 void MaidsafeStoreManager::DebugSubTaskCallback(
