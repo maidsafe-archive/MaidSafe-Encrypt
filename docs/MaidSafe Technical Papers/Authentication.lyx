@@ -72,7 +72,7 @@ security, freedom, privacy, authentication
 \begin_layout MarkBoth
 maidsafe.net limited company confidential Version 0.1
 \begin_inset ERT
-status collapsed
+status open
 
 \begin_layout Plain Layout
 
@@ -87,22 +87,6 @@ status collapsed
 \begin_layout Standard
 \begin_inset CommandInset toc
 LatexCommand tableofcontents
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset FloatList table
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset FloatList algorithm
 
 \end_inset
 
@@ -242,15 +226,7 @@ key, value
 \begin_inset Formula $\mathsf{K}$
 \end_inset
 
-, a private and public key pair as 
-\begin_inset Formula $\mathsf{K_{priv}}$
-\end_inset
-
- and 
-\begin_inset Formula $\mathsf{K_{pub}}$
-\end_inset
-
- respectively, and DHT keys simply as keys.
+, and DHT keys simply as keys.
 \end_layout
 
 \begin_layout Itemize
@@ -293,67 +269,6 @@ key, value
 
  using 
 \begin_inset Formula $\mathsf{K}$
-\end_inset
-
-
-\end_layout
-
-\begin_layout Itemize
-\begin_inset Formula $\mathsf{XXX_{priv}}$
-\end_inset
-
-, 
-\begin_inset Formula $\mathsf{XXX_{pub}}$
-\end_inset
-
- ≡ Private and public keys respectively of cryptographic key pair named
- 
-\begin_inset Formula $\mathsf{XXX}$
-\end_inset
-
-
-\end_layout
-
-\begin_layout Itemize
-\begin_inset Formula $\mathsf{AsymEnc_{[K_{pub}]}(Data)}$
-\end_inset
-
- ≡ Asymmetrically encrypt 
-\begin_inset Formula $\mathsf{Data}$
-\end_inset
-
- using 
-\begin_inset Formula $\mathsf{K_{pub}}$
-\end_inset
-
- 
-\end_layout
-
-\begin_layout Itemize
-\begin_inset Formula $\mathsf{AsymDec_{[K_{priv}]}(Data)}$
-\end_inset
-
- ≡ Asymmetrically decrypt 
-\begin_inset Formula $\mathsf{Data}$
-\end_inset
-
- using 
-\begin_inset Formula $\mathsf{K_{priv}}$
-\end_inset
-
-
-\end_layout
-
-\begin_layout Itemize
-\begin_inset Formula $\mathsf{Sig{}_{[K_{priv}]}(Data)}$
-\end_inset
-
- ≡ Create asymmetric signature of 
-\begin_inset Formula $\mathsf{Data}$
-\end_inset
-
- using 
-\begin_inset Formula $\mathsf{K_{priv}}$
 \end_inset
 
 
@@ -457,7 +372,7 @@ Detailed implementation
 \end_layout
 
 \begin_layout Subsection
-Creation of an identity 
+Creation of an account
 \end_layout
 
 \begin_layout Standard
@@ -490,25 +405,33 @@ Here we will assume there are three inputs from the user of the system:
 \begin_inset Formula $\mathsf{W}$
 \end_inset
 
-, with the disadvantage that a derivation of the password has to be transmitted
- over the network.
- PBKDF2 is used here to strengthen any password keys used.
+, with the disadvantage that a derivative version of the password has to
+ be transmitted to the system.
+\end_layout
+
+\begin_layout Standard
+PBKDF2 is used here to strengthen any password keys used.
  This is required as user selected passwords are inevitably weak and the
  user may not know the user-name is also used as a password in the system.
  
-\begin_inset Formula $\mathsf{ID}$
+\begin_inset Formula $\mathsf{Account}$
 \end_inset
 
- specifies the identity packet and in the following listings refers to any
- user specific session data, like personal details or an index of further
- data.
+ specifies session data, like user details or an index of references to
+ further data.
+ This packet is located through an Access Packet holding a random number
+ 
+\begin_inset Formula $\mathsf{Rnd\#}$
+\end_inset
+
+.
 \end_layout
 
 \begin_layout Enumerate
 \begin_inset Formula $\mathsf{GetV_{[H(U+S)]}\equiv False}$
 \end_inset
 
- (Check for uniqueness)
+ (Ensure uniqueness)
 \end_layout
 
 \begin_layout Enumerate
@@ -523,18 +446,18 @@ Generate random number
 \begin_inset Formula $\mathsf{PutV_{[H(U+S)]}\left(SymEnc_{[PBKDF2_{[U][S]}]}(Rnd\#)\right)}$
 \end_inset
 
-
+ (Store Access Packet)
 \end_layout
 
 \begin_layout Enumerate
-\begin_inset Formula $\mathsf{PutV_{[H(U+S+Rnd\#)]}\left(SymEnc_{[PBKDF2_{[W][S]}]}(ID)\right)}$
+\begin_inset Formula $\mathsf{PutV_{[H(U+S+Rnd\#)]}\left(SymEnc_{[PBKDF2_{[W][S]}]}(Account)\right)}$
 \end_inset
 
-
+ (Store Account Packet)
 \end_layout
 
 \begin_layout Subsection
-Login to a system
+Login / load session process
 \begin_inset CommandInset label
 LatexCommand label
 name "sub:Login-to-a"
@@ -552,125 +475,18 @@ name "sub:Login-to-a"
 \end_layout
 
 \begin_layout Enumerate
-\begin_inset Formula $\mathsf{SymDec_{[PBKDF2_{[W][S]}]}(GetV_{[H(U+S+Rnd\#)]})\equiv ID}$
+\begin_inset Formula $\mathsf{SymDec_{[PBKDF2_{[W][S]}]}(GetV_{[H(U+S+Rnd\#)]})\equiv Account}$
 \end_inset
 
 
-\end_layout
-
-\begin_layout Subsection
-Surrogate identity packets
 \end_layout
 
 \begin_layout Standard
-The previous sections outlined the basic system of authentication.
- However, this can be extended for safety reasons.
- As with any system, the store operation of the 
-\begin_inset Formula $\mathsf{ID}$
-\end_inset
-
- packet can fail for any reason, which would be catastrophic as all information
- or at least access may be gone.
- To ensure this is not a concern, a method of write after read is implemented.
- This ensures that any failure in writing of packets is tolerated and non-fatal.
- 
-\end_layout
-
-\begin_layout Subsection
-Updated user creation process
-\end_layout
-
-\begin_layout Standard
-The following process an update of the login process to include surrogate
- identity packets.
-\end_layout
-
-\begin_layout Enumerate
-\begin_inset Formula $\mathsf{GetV_{[H(U+S)]}\equiv False}$
-\end_inset
-
- (Check for uniqueness of identity packet)
-\end_layout
-
-\begin_layout Enumerate
-\begin_inset Formula $\mathsf{GetV_{[H(U+(S-1))]}\equiv False}$
-\end_inset
-
- (Check for uniqueness of surrogate identity packet)
-\end_layout
-
-\begin_layout Enumerate
-Generate random number 
+For the following operation, 
 \begin_inset Formula $\mathsf{Rnd\#}$
 \end_inset
 
-
-\end_layout
-
-\begin_layout Enumerate
-\begin_inset Formula $\mathsf{PutV_{[H(U+S)]}\left(SymEnc_{[PBKDF2_{[U][S]}]}(Rnd\#)\right)}$
-\end_inset
-
-
-\end_layout
-
-\begin_layout Enumerate
-\begin_inset Formula $\mathsf{PutV_{[H(U+(S-1)]}\left(SymEnc_{[PBKDF2_{[U][S-1]}]}(Rnd\#)\right)}$
-\end_inset
-
-
-\end_layout
-
-\begin_layout Enumerate
-\begin_inset Formula $\mathsf{PutV_{[H(U+S+Rnd\#)]}\left(SymEnc_{[PBKDF2_{[W][S]}]}(ID)\right)}$
-\end_inset
-
-
-\end_layout
-
-\begin_layout Enumerate
-\begin_inset Formula $\mathsf{PutV_{[H(U+(S-1)+Rnd\#)]}\left(SymEnc_{[PBKDF2_{[W][S-1]}]}(ID)\right)}$
-\end_inset
-
-
-\end_layout
-
-\begin_layout Subsection
-Updated Login process
-\end_layout
-
-\begin_layout Enumerate
-if (
-\begin_inset Formula $\mathsf{GetV_{[H(U+S)]}\equiv DecRnd\#}$
-\end_inset
-
-) else (
-\begin_inset Formula $\mathsf{GetV_{[H(U+(PIN-1))]}\equiv DecRnd\#}$
-\end_inset
-
- and in next steps replace 
-\begin_inset Formula $\mathsf{S}$
-\end_inset
-
- with 
-\begin_inset Formula $\mathsf{S-1}$
-\end_inset
-
-)
-\end_layout
-
-\begin_layout Enumerate
-\begin_inset Formula $\mathsf{SymDec_{[PBKDF2_{[U][S]}]}(DecRnd\#)\equiv Rnd\#}$
-\end_inset
-
-
-\end_layout
-
-\begin_layout Enumerate
-\begin_inset Formula $\mathsf{SymDec_{[PBKDF2_{[W][PIN]}]}\left(GetV_{[H(U+S+Rnd\#)]}\right)\equiv ID}$
-\end_inset
-
-
+ should be kept locally for the duration of the session.
 \end_layout
 
 \begin_layout Subsection
@@ -678,8 +494,76 @@ Logout / save session process
 \end_layout
 
 \begin_layout Enumerate
+Generate new random number 
+\begin_inset Formula $\mathsf{Rnd\#_{new}}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\mathsf{PutV_{[H(U+S+Rnd\#_{new})]}\left(SymEnc_{[PBKDF2_{[W][S]}]}(Account)\right)}$
+\end_inset
+
+ (Store new Account Packet)
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\mathsf{PutV_{[H(U+S)]}\left(SymEnc_{[PBKDF2_{[U][S]}]}(Rnd\#_{new})\right)}$
+\end_inset
+
+ (Update Access Packet)
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\mathsf{DelV_{[H(U+S+Rnd\#)]}}$
+\end_inset
+
+ (Delete old Account Packet)
+\end_layout
+
+\begin_layout Subsection
+Fallback Account Packets
+\end_layout
+
+\begin_layout Standard
+The previous sections outlined the basic system of authentication.
+ However, this can be extended for safety reasons.
+ As with any system, the serialisation and store operation of the account
+ data can fail for any reason, resulting in unreadable data upon retrieval.
+ This would be catastrophic as access to the user's data on the system may
+ be rendered impossible.
+ To reduce any such risk, a fallback copy of an Account Packet (and its
+ Access Packet) is kept, to allow reverting to the previous version in case
+ the current version can't be restored or turns out to have been generated
+ erroneously.
+\end_layout
+
+\begin_layout Subsubsection
+Updated account creation process
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\mathsf{GetV_{[H(U+S)]}\equiv False}$
+\end_inset
+
+ (Ensure uniqueness of Access Packet)
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\mathsf{GetV_{[H(U+(S-1))]}\equiv False}$
+\end_inset
+
+ (Ensure uniqueness of Fallback Access Packet)
+\end_layout
+
+\begin_layout Enumerate
 Generate random number 
 \begin_inset Formula $\mathsf{Rnd\#}$
+\end_inset
+
+ and copy 
+\begin_inset Formula $\mathsf{Rnd\#\rightarrow Rnd\#_{fallback}}$
 \end_inset
 
 
@@ -700,70 +584,143 @@ Generate random number
 \end_layout
 
 \begin_layout Enumerate
-\begin_inset Formula $\mathsf{PutV_{[H(U+S+Rnd\#)]}\left(SymEnc_{[PBKDF2_{[W][S]}]}(ID)\right)}$
+\begin_inset Formula $\mathsf{PutV_{[H(U+S+Rnd\#)]}\left(SymEnc_{[PBKDF2_{[W][S]}]}(Account)\right)}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+In this case, the random numbers in the Access Packets are the same, thus
+ point to the same (unique) Account Packet.
+ Fallback packets are only kept once the Account Packet is updated.
+\end_layout
+
+\begin_layout Subsubsection
+Updated Login process
+\end_layout
+
+\begin_layout Enumerate
+if (
+\begin_inset Formula $\mathsf{GetV_{[H(U+S)]}\equiv EncRnd\#}$
+\end_inset
+
+)
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+\begin_inset Formula $\mathsf{SymDec_{[PBKDF2_{[U][S]}]}(EncRnd\#)\equiv Rnd\#}$
+\end_inset
+
+
+\end_layout
+
+\end_deeper
+\begin_layout Enumerate
+else (or if previous attempt failed)
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+\begin_inset Formula $\mathsf{SymDec_{[PBKDF2_{[U][S-1]}]}\left(GetV_{[H(U+(S-1))]}\right)\equiv Rnd\#}$
+\end_inset
+
+
+\end_layout
+
+\end_deeper
+\begin_layout Enumerate
+\begin_inset Formula $\mathsf{SymDec_{[PBKDF2_{[W][S]}]}\left(GetV_{[H(U+S+Rnd\#)]}\right)\equiv Account}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsubsection
+Logout / save session process
+\end_layout
+
+\begin_layout Enumerate
+Generate new random number 
+\begin_inset Formula $\mathsf{Rnd\#_{new}}$
 \end_inset
 
 
 \end_layout
 
 \begin_layout Enumerate
-\begin_inset Formula $\mathsf{PutV_{[H(U+(S-1)+Rnd\#)]}\left(SymEnc_{[PBKDF2_{[W][S-1]}]}(ID)\right)}$
+\begin_inset Formula $\mathsf{PutV_{[H(U+S+Rnd\#_{new})]}\left(SymEnc_{[PBKDF2_{[W][S]}]}(Account)\right)}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\mathsf{PutV_{[H(U+(S-1)]}\left(SymEnc_{[PBKDF2_{[U][S]}]}(Rnd\#)\right)}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\mathsf{PutV_{[H(U+S)]}\left(SymEnc_{[PBKDF2_{[U][S-1]}]}(Rnd\#_{new})\right)}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\mathsf{DelV_{[H(U+S+Rnd\#_{fallback})]}}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\mathsf{Rnd\#\rightarrow Rnd\#_{fallback}}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\mathsf{Rnd\#_{new}\rightarrow Rnd\#}$
 \end_inset
 
 
 \end_layout
 
 \begin_layout Standard
-In some situations the contents of file-map1 may be then deleted from the
- network should they be updated during a session.
- This would add considerably to security.
- This situation is in fact used in the maidsafe network as shown in 
-\begin_inset CommandInset citation
-LatexCommand cite
-key "4"
-
-\end_inset
-
-.
- In this case the data map of the data atlas is the file-map as shown in
- 
-\begin_inset CommandInset citation
-LatexCommand cite
-key "2"
-
-\end_inset
-
-.
- This data map would indicate the location of the chunks of the data atlas.
- This should be analysed and the data atlas chunks deleted from the network.
- 
-\end_layout
-
-\begin_layout Standard
-In this case deleting these chunks is a security enhancement and ensures
- that if any attacker managed to retrieve any IDpkt then the delay in decrypting
- the data map would hopefully be long enough that a session update has happened
- and the chunks it refers to are then gone from the network.
- 
+The previous Account Packet remains untouched, instead the Fallback Access
+ Packet is redirected to it and the normal Access Packet points to the new
+ Account Packet.
+ The previous Fallback Account Packet is deleted.
+ This is a security measure to hinder slow brute-force attacks on decrypting
+ the Access Packet, which by the time the clear-text random number is obtained
+ would make it obsolete.
 \end_layout
 
 \begin_layout Subsection
-Enhancement 1 - time based obfuscation
+Further enhancements
+\end_layout
+
+\begin_layout Subsubsection
+Time based obfuscation
 \end_layout
 
 \begin_layout Standard
 In the previous sections a system of self authentication was detailed which
  is very effective.
- The single failure point may be the IDpkt as this is a key/value which
- is not altering location (key) and can pose a target for any attacker who
- is monitoring traffic.
- 
+ A potential failure point, however, may be the Access Packets, as those
+ are never altering their location (key) and can pose a target for any attacker
+ who is monitoring data traffic between the user and the system.
 \end_layout
 
 \begin_layout Standard
-To remove this weakness then an altering piece of data can be introduced
- in the IDpkt and this is time.
- This can be either week number, day of year or even minute of day or similar.
+To remove this weakness, a predictably altering piece of data can be introduced,
+ such as time (e.g.
+ week number, day of year or similar).
  In this case in 
 \begin_inset CommandInset ref
 LatexCommand ref
@@ -771,30 +728,34 @@ reference "sub:Login-to-a"
 
 \end_inset
 
- point 1 the get value will be recursive starting at the current time slot
- and decrementing this until the GetV returns true (i.e.
- with a value).
- 
+ the 
+\begin_inset Formula $\mathsf{GetV}$
+\end_inset
+
+ call would be iterative, starting at the current time slot and decrementing
+ until it returns with a value.
+ Access Packets at 
+\begin_inset Quotes eld
+\end_inset
+
+outdated
+\begin_inset Quotes erd
+\end_inset
+
+ locations would be deleted on detection, and updates always stored in the
+ current location, resulting in regularly 
+\begin_inset Quotes eld
+\end_inset
+
+moving
+\begin_inset Quotes erd
+\end_inset
+
+ packets.
 \end_layout
 
-\begin_layout Standard
-This allows for an identity packet that is 'moving' on the storage system
- and therefor not as open to possible attack.
- 
-\end_layout
-
-\begin_layout Standard
-A simpler version of this is to use a number in a range as the 'obfustactor'
- i.e.
- a range of 50-100, each login then creates packets with 100 as the guess
- and steps back through to 50.
- This is traffic intensive though and is a reduced set of fixed values,
- as opposed to time, it is still more effective than a single packet though.
- 
-\end_layout
-
-\begin_layout Subsection
-Enhancement 2 - distributed storage system
+\begin_layout Subsubsection
+Distributed storage system
 \end_layout
 
 \begin_layout Standard
@@ -807,24 +768,9 @@ key "4"
 \end_inset
 
 .
- This has many advantages including the ability to mask any identity data
- in a huge address space and with cryptographically secure privileges that
- can protect inadvertent deletion or any loss of data packets.
- 
-\end_layout
-
-\begin_layout Subsection
-Enhancement 3 - remove old file-map and ID pkt
-\end_layout
-
-\begin_layout Standard
-A further enhancement would be to clear up after each new session save by
- deleting the old IDpkt and file-map packets.
- This ensures that any interception of IDpks's may eventually be decrypted
- by an attacker, but the time elapsed would be hoped to be sufficient to
- lead to no data and therefore the user-name and PIN would still be safe.
- This assumes that the hash function used would be secure enough to not
- be 'reversed' into meaningful data, which is extremely unlikely.
+ This has many advantages including the ability to mask any account data
+ in a large address space and protect with cryptographically secure privileges
+ that can prevent unauthorised deletion or any loss of data packets.
  
 \end_layout
 
@@ -833,26 +779,20 @@ Conclusions
 \end_layout
 
 \begin_layout Standard
-The system presented is one version of a server-less based authentication
- system.
- There is a strong case for this to create true cloud based services with
- users being in control of their own data and accesses, single minded deciding
- to add/remove/share any data they wish with any other party.
- Such a system may be used in a a manner of situations and may be particularly
- useful in cases where there is a method of providing the payment required
- to use a service, even anonymously.
- A system of credits of use of a service can be considered to allow business
- to create a useful service and allow access based on payment, but not require
- the individual to divulge any personal information or create some other
- identity specifically for a single service.
- 
+The system presented is one version of a server-less authentication system.
+ There is a strong case for this to enable true cloud based services with
+ users being in control of their own data and access privileges.
+ Such a system can be applied in a multitude of situations and may be particular
+ly useful with paid services, which would not require the customer to divulge
+ any personal information or create yet another identity specifically for
+ a single service, providing a shared infrastructure exists.
 \end_layout
 
 \begin_layout Standard
 We demonstrated a working version of such a system for the first time in
- April 2008 in our offices in Troon, Scotland and as far as we are aware
- this was the first time in the history a person created their own identity,
- stored this and managed all their actions without any server requirement
+ April 2008 in our offices in Troon, Scotland, and as far as we are aware
+ this was the first time in history a person created their own identity,
+ stored it and managed all their actions without any server requirement
  and without any 3rd party control.
  
 \end_layout
@@ -865,7 +805,7 @@ key "1"
 
 \end_inset
 
-as described by Van Jacobson in this link below, August 30, 2006 HTTP://video.Goo
+as described by Van Jacobson in this link below, August 30, 2006 http://video.Goo
 gle.com/videoplay?docid=-6972678839686672840
 \end_layout
 
@@ -984,10 +924,10 @@ is a Scottish Engineer and innovator who has spent the last 12 years researching
 \begin_layout BiographyNoPhoto
 
 \lang british
-He is an Inventor listed on more than 20 patent submissions and was Designer
- / Project Manager of one of the World's largest private networks (Saudi
+He is an inventor listed on more than 20 patent submissions and was designer
+ / project manager of one of the world's largest private networks (Saudi
  Aramco, over $300M).
- He is an experienced Project Manager and has been involved in start up
+ He is an experienced project manager and has been involved in start up
  businesses since 1995 and has provided business consultancy to corporates
  and SMEs in many sectors.
 \end_layout
@@ -1002,7 +942,7 @@ He has presented technology at Google (Seattle), British Computer Society
 \begin_layout BiographyNoPhoto
 
 \lang british
-He has spent many years as a lifeboat Helmsman and is a keen sailor when
+David has spent many years as a lifeboat Helmsman and is a keen sailor when
  time permits.
 \end_layout
 
