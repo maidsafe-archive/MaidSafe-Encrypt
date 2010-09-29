@@ -1,0 +1,908 @@
+#LyX 1.6.7 created this file. For more info see http://www.lyx.org/
+\lyxformat 345
+\begin_document
+\begin_header
+\textclass IEEEtran
+\use_default_options false
+\language english
+\inputencoding default
+\font_roman default
+\font_sans lmss
+\font_typewriter default
+\font_default_family sfdefault
+\font_sc false
+\font_osf false
+\font_sf_scale 100
+\font_tt_scale 100
+
+\graphics default
+\paperfontsize default
+\spacing single
+\use_hyperref false
+\papersize default
+\use_geometry false
+\use_amsmath 0
+\use_esint 0
+\cite_engine basic
+\use_bibtopic false
+\paperorientation portrait
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\defskip medskip
+\quotes_language english
+\papercolumns 2
+\papersides 1
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\author "" 
+\author "" 
+\end_header
+
+\begin_body
+
+\begin_layout Title
+maidsafe distributed file system
+\end_layout
+
+\begin_layout Author
+David Irvine, david.irvine@maidsafe.net, maidsafe.net limited (registered in
+ Scotland Sc 297540)
+\end_layout
+
+\begin_layout Date
+September, 2010
+\end_layout
+
+\begin_layout Abstract
+Distributed file system's require server's or control nodes.
+ Access to a file system is a security issue that can apparently only be
+ controlled by some kind of authority and this is always a point of failure.
+ These file-systems also require a mechanism to index the file-system.
+ This paper presents a distributed file-system without centralised control
+ or indexing.
+ This file-system also utilises a distributed locking mechanism for data
+ integrity for multi access to any file.
+\end_layout
+
+\begin_layout Keywords
+security, freedom, privacy, file-system 
+\end_layout
+
+\begin_layout MarkBoth
+maidsafe.net limited company confidential Version 0.1
+\begin_inset ERT
+status collapsed
+
+\begin_layout Plain Layout
+
+}{
+\end_layout
+
+\end_inset
+
+...
+\end_layout
+
+\begin_layout Standard
+\begin_inset CommandInset toc
+LatexCommand tableofcontents
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset FloatList table
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset FloatList algorithm
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout --Separator--
+
+\end_layout
+
+\begin_layout Section
+Introduction
+\end_layout
+
+\begin_layout Standard
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+PARstart{F}{ilesystems}
+\end_layout
+
+\end_inset
+
+ are a relatively new and slow changing part of computing.
+ There is disagreement between operating systems and even version of operating
+ systems how to handle access to data via a file-system.
+ This has proven problematic over the years and led to many short term fixes
+ that gain ground and then appear to vanish again.
+ Such systems as CIFS, Andrews, SMB and many others appear to be an answer
+ and for many reasons, occasionally political they lose ground again.
+ It is the intention of this paper to provide a universal file system that
+ implements a minimum set of features that will operate cross platform.
+ 
+\end_layout
+
+\begin_layout Standard
+This system will represent itself to a user as a native file-system on any
+ platform and as such requires low level drivers and code to be installed
+ alongside any application using it.
+ 
+\end_layout
+
+\begin_layout Standard
+A significant advance in distributed locking is employed which allows shares
+ to be easily setup and maintained.
+ 
+\end_layout
+
+\begin_layout Standard
+In addition there is a solution to the problem of location of data, or path
+ sizes, which is limited on every operating system.
+ This paper presents a mechanism to overcome this and allow for an almost
+ infinite number of levels of directory structure to be implemented.
+ 
+\end_layout
+
+\begin_layout Subsection
+Conventions Used
+\begin_inset Note Note
+status collapsed
+
+\begin_layout Plain Layout
+This may not be required
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+There is scope for confusion when using the term 
+\begin_inset Quotes eld
+\end_inset
+
+key
+\begin_inset Quotes erd
+\end_inset
+
+, as sometimes it refers to a cryptographic key, and at other times it is
+ in respect to the key of a DHT 
+\begin_inset Quotes eld
+\end_inset
+
+key, value
+\begin_inset Quotes erd
+\end_inset
+
+ pair.
+ In order to avoid confusion, cryptographic private and public keys will
+ be referred to as 
+\begin_inset Formula $\mathsf{K_{priv}}$
+\end_inset
+
+ and 
+\begin_inset Formula $\mathsf{K_{pub}}$
+\end_inset
+
+ respectively, and DHT keys simply as keys.
+\end_layout
+
+\begin_layout Itemize
+Node ≡ a network resource which is a process, sometimes referred to as a
+ vault in other papers.
+ This is the computer program that maintains the network and on its own
+ is not very special.
+ It is in collaboration that this Node becomes part of a very complex, sophistic
+ated and efficient network.
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\mathsf{H}$
+\end_inset
+
+ ≡ Hash function such as SHA, MD5, etc.
+ 
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\mathsf{PBKDF2_{[Passphrase][Salt][IterCount]}}$
+\end_inset
+
+ ≡ Password-Based Key Derivation Function or similar
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\mathsf{XXX_{priv}}$
+\end_inset
+
+, 
+\begin_inset Formula $\mathsf{XXX_{pub}}$
+\end_inset
+
+ ≡ Private and public keys respectively of cryptographic key pair named
+ 
+\begin_inset Formula $\mathsf{XXX}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\mathsf{AsymEnc_{[K_{pub}]}(Data)}$
+\end_inset
+
+ ≡ Asymmetrically encrypt 
+\begin_inset Formula $\mathsf{Data}$
+\end_inset
+
+ using 
+\begin_inset Formula $\mathsf{K_{pub}}$
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\mathsf{AsymDec_{[K_{priv}]}(Data)}$
+\end_inset
+
+ ≡ Asymmetrically decrypt 
+\begin_inset Formula $\mathsf{Data}$
+\end_inset
+
+ using 
+\begin_inset Formula $\mathsf{K_{priv}}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\mathsf{SymEnc{}_{[PASS]}(Data)}$
+\end_inset
+
+ ≡ Symmetrically encrypt 
+\begin_inset Formula $\mathsf{Data}$
+\end_inset
+
+ using 
+\begin_inset Formula $\mathsf{PASS}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\mathsf{SymDec{}_{[PASS]}(Data)}$
+\end_inset
+
+ ≡ Symmetrically decrypt 
+\begin_inset Formula $\mathsf{Data}$
+\end_inset
+
+ using 
+\begin_inset Formula $\mathsf{PASS}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\mathsf{Sig{}_{[K_{priv}]}(Data)}$
+\end_inset
+
+ ≡ Create asymmetric signature of 
+\begin_inset Formula $\mathsf{Data}$
+\end_inset
+
+ using 
+\begin_inset Formula $\mathsf{K_{priv}}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\mathsf{+}$
+\end_inset
+
+ ≡ Concatenation
+\end_layout
+
+\begin_layout Itemize
+STORE 
+\begin_inset Formula $\equiv$
+\end_inset
+
+ Network or other key addressable storage system 
+\end_layout
+
+\begin_layout Section
+Overview
+\end_layout
+
+\begin_layout Subsection
+Distributed directories
+\end_layout
+
+\begin_layout Standard
+To enable a huge amount of data to be organised into a directory structure
+ (as we are used to) then a new method of data management requires to be
+ employed.
+ In this case we have created a system of divorcing the structure of any
+ data from a tree in one direction.
+ In this paper we present a system where a directory structure may be traversed
+ forward from any point and with efficient implementation back to that point,
+ but no further back unless new knowledge of the structure is gained.
+ 
+\end_layout
+
+\begin_layout Standard
+This has the effect of allowing directory tree's to be free forming rather
+ than tied to any root or base level, although in a way there is a base
+ level that every tree can be traversed from, if implemented correctly and
+ a user decided to traverse a tree from his own root directory or root share
+ directory, in some cases , explained later.
+ In this system a user can have a tree but it is his free forming tree and
+ not a distributed overall root directory.
+\end_layout
+
+\begin_layout Subsubsection
+Process
+\end_layout
+
+\begin_layout Standard
+We have a 
+\begin_inset Formula $parent$
+\end_inset
+
+ directory and wish to create a 
+\begin_inset Formula $child$
+\end_inset
+
+ directory.
+\end_layout
+
+\begin_layout Enumerate
+Create a unique KEY for the 
+\begin_inset Formula $child$
+\end_inset
+
+ directory (i.e.
+ 
+\begin_inset Formula $H(random(\#))$
+\end_inset
+
+) until a unique KEY is found (by checking against 
+\begin_inset Formula $STORE)$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Enumerate
+In 
+\begin_inset Formula $parent$
+\end_inset
+
+ we add the entry for the 
+\begin_inset Formula $child$
+\end_inset
+
+ KEY and send 
+\begin_inset Formula $parent$
+\end_inset
+
+ to 
+\begin_inset Formula $STORE$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Subsubsection
+Encryption of directory entries
+\end_layout
+
+\begin_layout Standard
+This uses a process very similar to the 
+\emph on
+self encrypting data
+\emph default
+ 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "2"
+
+\end_inset
+
+ paper.
+ 
+\end_layout
+
+\begin_layout Standard
+This process is as follows 
+\end_layout
+
+\begin_layout Enumerate
+Encrypt the 
+\begin_inset Formula $child$
+\end_inset
+
+ directory as any other file in 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "2"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+Create an encryption key for the resulting data map, 
+\begin_inset Formula $H(parent_{KEY}+child_{KEY})$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Enumerate
+Create an obfuscation block, 
+\begin_inset Formula $H(child_{KEY}+parent_{KEY})$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Enumerate
+Repeatedly concatenate obfuscation block until equal to data map size.
+\end_layout
+
+\begin_layout Enumerate
+XOR data map with result of 4
+\end_layout
+
+\begin_layout Enumerate
+Encrypt Data map 
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\mathsf{SymEnc{}_{[H(parent_{KEY}+child_{KEY})]}\,(obfuscated\, DM)}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+the data map is then digitally signed and sent to 
+\begin_inset Formula $STORE$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Advantages of distributed directory
+\end_layout
+
+\begin_layout Standard
+With the advent of distributed directories then several issues clear themselves
+ up.
+ 
+\end_layout
+
+\begin_layout Itemize
+We can have an almost infinite traversal of directories now with no limit
+ on depth
+\end_layout
+
+\begin_layout Itemize
+To share data all that is required is sharing a location of a directory
+ and then all the directories below that are automatically shared
+\end_layout
+
+\begin_layout Itemize
+directories now follow a distributed paradigm and are more suited for mass
+ distribution
+\end_layout
+
+\begin_layout Subsection
+Data locks 
+\end_layout
+
+\begin_layout Standard
+If the 
+\begin_inset Formula $STORE$
+\end_inset
+
+ is a file-system or database then data locks are a standard feature.
+ Here we discuss locking in a Distributed Hash Table (DHT) which is problematic.
+ This section assumes a DHT of a similar capability as 
+\emph on
+maidsafe distributed hash table 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "5"
+
+\end_inset
+
+.
+ 
+\end_layout
+
+\begin_layout Standard
+To ensure writes to data are atomic we require a locking mechanism that
+ is solid and allows the network to recover from stale locks, which tend
+ to be an issue.
+ In maidsafe DHT this can be achieved quiet simply and this is efficient
+ due to the speed of the network, via managed connections.
+ 
+\end_layout
+
+\begin_layout Standard
+To write data a node requires to request a lock from the 
+\begin_inset Formula $\kappa$
+\end_inset
+
+ closest nodes to the data (this requires no dead nodes to exist in the
+ DHT or bad things will happen).
+ On receiving a lock each node will confer with the other nodes, if all
+ accept the lock then it is in place.
+ If there is any collision both requests for a lock are rejected.
+ In this case the nodes will back-off for a random time and try again.
+ 
+\end_layout
+
+\begin_layout Standard
+On receiving a lock a node will read the data again, to confirm it is the
+ same version that has been updated and will then update the value.
+ 
+\end_layout
+
+\begin_layout Standard
+There should be a system wide lock duration 
+\emph on
+constant
+\emph default
+ in place that will remove any locks that have gone stale (as they will).
+ 
+\end_layout
+
+\begin_layout Subsubsection
+Securing the shared data
+\end_layout
+
+\begin_layout Standard
+to ensure that only people allowed to amend data the 
+\begin_inset Formula $\kappa$
+\end_inset
+
+ nodes will confirm the signature of any lock request and consequent data
+ amendment requests with the owner of the key that signed the value in place.
+ If this matches the process continues, if the signature validation fails
+ the requests are silently dropped.
+ 
+\end_layout
+
+\begin_layout Subsection
+Private shared directory structure 
+\end_layout
+
+\begin_layout Standard
+To create a private shared directory structure now is very simple.
+ It follows a process which uses technology as described in 
+\emph on
+"peer to peer" Public Key Infrastructure
+\emph default
+
+\begin_inset CommandInset citation
+LatexCommand cite
+key "6"
+
+\end_inset
+
+ as follows.
+\end_layout
+
+\begin_layout Subsubsection
+Create a share
+\end_layout
+
+\begin_layout Enumerate
+Manager creates 
+\begin_inset Formula $SHARE{}_{pub}\,\&\, SHARE_{priv}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $H(SHARE_{pub}\,+Sig{}_{SHARE_{prv}})$
+\end_inset
+
+ is stored on 
+\begin_inset Formula $STORE$
+\end_inset
+
+, this is called the share ID.
+\end_layout
+
+\begin_layout Standard
+The directory entries for the share are now signed with the share ID and
+ sent to 
+\begin_inset Formula $STORE$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Subsubsection
+Join a share
+\end_layout
+
+\begin_layout Enumerate
+USER requests permission from manager to join XXX share, via an encrypted
+ message (signed) to 
+\begin_inset Formula $MANAGER$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+For read only access the MANAGER send the user the KEY and password for
+ the share root directory
+\end_layout
+
+\begin_layout Enumerate
+For admin access MANAGER sends 
+\begin_inset Formula $SHARE_{priv}$
+\end_inset
+
+ to USER via an encrypted message
+\end_layout
+
+\begin_layout Subsection
+Public shared directory structure
+\end_layout
+
+\begin_layout Standard
+Each user may have a public directory structure.
+ This is a very simple version of the above and includes the signature of
+ the directory entry but no encryption.
+ This way anyone can see the data but only the owner can edit it, requiring
+ no locks of course.
+ 
+\end_layout
+
+\begin_layout Standard
+In a system where users have an ID then the root directory should be the
+ hash of the username, then anyone can publish information and it will be
+ found by anyone who merely knows their username.
+ Data will be passed around and browsers addons to find the hash of a username
+ can be created to allow widespread access to data on public shares.
+\end_layout
+
+\begin_layout Subsection
+Anonymous directory structure
+\end_layout
+
+\begin_layout Standard
+A user who creates a directory structure with an anonymous created key pair
+ can publish information anonymously and pass the root KEY to anyone via
+ any mechanism.
+ This is untraceable, especially if a new key pair were created for each
+ 'share'.
+ 
+\end_layout
+
+\begin_layout Section
+Conclusions
+\end_layout
+
+\begin_layout Standard
+This paper has introduced a method of storing data in a distributed network
+ in a manner that is addressable, search-able and very scalable.
+ It is apparent that such system s could in fact supplement or more, the
+ existing world wide web for data sharing.
+ It is not difficult to see that applications that make use of massively
+ shared data and data presented on a native format to users would be an
+ exciting proposition.
+ 
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+label "1"
+key "1"
+
+\end_inset
+
+David Irvine, self authentication, david.irvine@maidsafe.net
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+label "2"
+key "2"
+
+\end_inset
+
+David Irvine, Self Encrypting Data, david.irvine@maidsafe.net
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+label "3"
+key "3"
+
+\end_inset
+
+David Irvine, peer to peer public key infrastructure, david.irvine@maidsafe.net
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+label "4"
+key "4"
+
+\end_inset
+
+David Irvine, maidsafe.net, a new network paradigm , david.irvine@maidsafe.net
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+label "5"
+key "5"
+
+\end_inset
+
+David Irvine, maidsafe distributed hash table, david.irvine@maidsafe.net
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+label "6"
+key "6"
+
+\end_inset
+
+David Irvine, "peer to peer" Public Key Infrastructure, david.irvine@maidsafe.net
+\end_layout
+
+\begin_layout Standard
+\begin_inset Note Comment
+status collapsed
+
+\begin_layout Plain Layout
+\begin_inset Note Note
+status collapsed
+
+\begin_layout Plain Layout
+Change this paragraphs style to 'Standard' to enable
+\end_layout
+
+\begin_layout Plain Layout
+BibTeX bibliography generation.
+\end_layout
+
+\begin_layout Plain Layout
+Remember though that your final submission is supposed to have
+\end_layout
+
+\begin_layout Plain Layout
+all the bibliography entries embedded in the latex file.
+ This means
+\end_layout
+
+\begin_layout Plain Layout
+you eventually have to copy the .bbl file into the latex file and
+\end_layout
+
+\begin_layout Plain Layout
+remove the bibtex lines.
+\end_layout
+
+\end_inset
+
+
+\begin_inset CommandInset bibtex
+LatexCommand bibtex
+bibfiles "your_biblio_file"
+options "IEEEbib"
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout BiographyNoPhoto
+\begin_inset ERT
+status collapsed
+
+\begin_layout Plain Layout
+
+{
+\end_layout
+
+\end_inset
+
+David Irvine
+\begin_inset ERT
+status collapsed
+
+\begin_layout Plain Layout
+
+}
+\end_layout
+
+\end_inset
+
+ 
+\lang british
+is a Scottish Engineer and innovator who has spent the last 12 years researching
+ ways to make computers function in a more efficient manner.
+\end_layout
+
+\begin_layout BiographyNoPhoto
+
+\lang british
+He is an Inventor listed on more than 20 patent submissions and was Designer
+ / Project Manager of one of the World's largest private networks (Saudi
+ Aramco, over $300M).
+ He is an experienced Project Manager and has been involved in start up
+ businesses since 1995 and has provided business consultancy to corporates
+ and SMEs in many sectors.
+\end_layout
+
+\begin_layout BiographyNoPhoto
+
+\lang british
+He has presented technology at Google (Seattle), British Computer Society
+ (Christmas Lecture) and many others.
+\end_layout
+
+\begin_layout BiographyNoPhoto
+
+\lang british
+He has spent many years as a lifeboat Helmsman and is a keen sailor when
+ time permits.
+\end_layout
+
+\end_body
+\end_document
