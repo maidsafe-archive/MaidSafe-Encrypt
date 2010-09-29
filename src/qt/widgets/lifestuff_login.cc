@@ -286,7 +286,8 @@ void LifeStuffLogin::onCreateClicked() {
   Q_ASSERT(!user_exists_);
   Q_ASSERT(validate(ui_.PassEdit));
 
-  emit newUser();
+  emit newUser(ui_.UserEdit->text(), ui_.PinEdit->text(),
+                ui_.PassEdit->text());
   this->hide();
 }
 

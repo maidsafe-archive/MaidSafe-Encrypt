@@ -114,8 +114,12 @@ PerpetualData::PerpetualData(QWidget* parent)
    connect(lsLogin_, SIGNAL(existingUser()),
           this,   SLOT(onLoginExistingUser()));
 
-  connect(lsLogin_, SIGNAL(newUser()),
-          this,   SLOT(onLoginNewUser()));
+  connect(lsLogin_, SIGNAL(newUser(const QString&,
+                                   const QString&,
+                                   const QString&)),
+          this,   SLOT(onLoginNewUser(const QString&,
+                                      const QString&,
+                                      const QString&)));
 
   connect(lsLogin_, SIGNAL(destroyed()),
           this,   SLOT(onQuit()));
@@ -405,8 +409,13 @@ void PerpetualData::onLoginExistingUser() {
 #endif
 }
 
-void PerpetualData::onLoginNewUser() {
+void PerpetualData::onLoginNewUser(const QString& name,
+                                    const QString& pin,
+                                    const QString& password) {
   setState(SETUP_USER);
+  login_->setUsername(name);
+  login_->setPin(pin);
+  login_->setPassword(password);
   this->show();
 }
 

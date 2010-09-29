@@ -75,7 +75,9 @@ class LifeStuffLogin : public QWidget {
     void existingUser();
 
     // Details of a new user have been entered and 'Create' clicked.
-    void newUser();
+    void newUser(const QString& username,
+                 const QString& pin,
+                 const QString& password);
 
   private slots:
     void onUsernameEdited(const QString& text);

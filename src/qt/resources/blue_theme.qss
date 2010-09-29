@@ -13,16 +13,6 @@ background-color: white;
 color: black;
 }
  
-QFrame#TopFrame {
-    border-image: url(:/background/cloud_top.png) 0 0 0 0 stretch stretch;
-    font: bold;
-}
-
-QFrame#BtmFrame {
-    border-image: url(:/background/cloud_bottom.png) 0 0 0 0 stretch stretch;
-    font: bold;
-}
-
   QMessageBox {
     background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 #7B7B7B, stop: 1 lightblue);
     font: bold;

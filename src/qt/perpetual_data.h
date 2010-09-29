@@ -85,7 +85,9 @@ class PerpetualData : public QMainWindow {
     void onLoginExistingUser();
 
     // New user needs creating
-    void onLoginNewUser();
+    void onLoginNewUser(const QString& username,
+                        const QString& pin,
+                        const QString& password);
 
     void onSetupNewUserComplete();
     void onSetupNewUserCancelled();
