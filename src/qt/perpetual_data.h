@@ -21,6 +21,8 @@
 #include <QTranslator>
 #include <QLibraryInfo>
 #include <QProcess>
+#include <QtXml/QDomDocument>
+#include <QtXml/QDomElement>
 
 // local
 #include "qt/client/client_controller.h"
@@ -278,6 +280,8 @@ class PerpetualData : public QMainWindow {
   void asyncMount();
   void asyncCreateUser();
   void asyncUnmount();
+  void hideOpButtons();
+  void showOpButtons();
 
   protected:
   void changeEvent(QEvent *event);
