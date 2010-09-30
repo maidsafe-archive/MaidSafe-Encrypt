@@ -4,12 +4,12 @@
 \begin_header
 \textclass IEEEtran
 \use_default_options false
-\language english
+\language british
 \inputencoding default
 \font_roman default
-\font_sans lmss
+\font_sans default
 \font_typewriter default
-\font_default_family sfdefault
+\font_default_family default
 \font_sc false
 \font_osf false
 \font_sf_scale 100
@@ -43,7 +43,7 @@
 \begin_body
 
 \begin_layout Title
-maidsafe distributed file system
+MaidSafe Distributed File System
 \end_layout
 
 \begin_layout Author
@@ -56,24 +56,25 @@ September, 2010
 \end_layout
 
 \begin_layout Abstract
-Distributed file system's require server's or control nodes.
+Distributed file systems require servers or control nodes.
  Access to a file system is a security issue that can apparently only be
- controlled by some kind of authority and this is always a point of failure.
- These file-systems also require a mechanism to index the file-system.
- This paper presents a distributed file-system without centralised control
+ controlled by some kind of authority, and this is always a potential point
+ of failure.
+ These file systems also require an indexing mechanism.
+ This paper presents a distributed file system without centralised control
  or indexing.
- This file-system also utilises a distributed locking mechanism for data
- integrity for multi access to any file.
+ This file system also utilises a distributed locking mechanism to ensure
+ data integrity in the case of multi-user access to any file.
 \end_layout
 
 \begin_layout Keywords
-security, freedom, privacy, file-system 
+security, freedom, privacy, file systems
 \end_layout
 
 \begin_layout MarkBoth
 maidsafe.net limited company confidential Version 0.1
 \begin_inset ERT
-status collapsed
+status open
 
 \begin_layout Plain Layout
 
@@ -95,22 +96,9 @@ LatexCommand tableofcontents
 \end_layout
 
 \begin_layout Standard
-\begin_inset FloatList table
-
+\begin_inset Newpage pagebreak
 \end_inset
 
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset FloatList algorithm
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout --Separator--
 
 \end_layout
 
@@ -126,39 +114,39 @@ status open
 
 
 \backslash
-PARstart{F}{ilesystems}
+PARstart{F}{ile}
 \end_layout
 
 \end_inset
 
- are a relatively new and slow changing part of computing.
- There is disagreement between operating systems and even version of operating
- systems how to handle access to data via a file-system.
- This has proven problematic over the years and led to many short term fixes
- that gain ground and then appear to vanish again.
- Such systems as CIFS, Andrews, SMB and many others appear to be an answer
- and for many reasons, occasionally political they lose ground again.
- It is the intention of this paper to provide a universal file system that
+ systems are a relatively new and slow-changing part of computing.
+ There are differences between operating systems (and even versions of operating
+ systems) on how they handle access to data via a file system.
+ This has proved to be problematic over the years and has led to many short-term
+ fixes.
+ Systems such as CIFS, Andrews, SMB and many others appear to be an answer,
+ but for many reasons (occasionally political) they lose ground again.
+ It is the intention of this paper to present a universal file system that
  implements a minimum set of features that will operate cross platform.
  
 \end_layout
 
 \begin_layout Standard
-This system will represent itself to a user as a native file-system on any
- platform and as such requires low level drivers and code to be installed
+This system will represent itself to a user as a native file system on any
+ platform, and as such requires low level drivers and code to be installed
  alongside any application using it.
  
 \end_layout
 
 \begin_layout Standard
-A significant advance in distributed locking is employed which allows shares
- to be easily setup and maintained.
+A significant advance in distributed locking is employed which allows shared
+ directories to be easily set up and maintained.
  
 \end_layout
 
 \begin_layout Standard
-In addition there is a solution to the problem of location of data, or path
- sizes, which is limited on every operating system.
+In addition, there is a solution to the problem of location of data, or
+ path sizes, which is limited on every operating system.
  This paper presents a mechanism to overcome this and allow for an almost
  infinite number of levels of directory structure to be implemented.
  
@@ -166,16 +154,6 @@ In addition there is a solution to the problem of location of data, or path
 
 \begin_layout Subsection
 Conventions Used
-\begin_inset Note Note
-status collapsed
-
-\begin_layout Plain Layout
-This may not be required
-\end_layout
-
-\end_inset
-
-
 \end_layout
 
 \begin_layout Standard
@@ -227,13 +205,6 @@ ated and efficient network.
 \end_layout
 
 \begin_layout Itemize
-\begin_inset Formula $\mathsf{PBKDF2_{[Passphrase][Salt][IterCount]}}$
-\end_inset
-
- ≡ Password-Based Key Derivation Function or similar
-\end_layout
-
-\begin_layout Itemize
 \begin_inset Formula $\mathsf{XXX_{priv}}$
 \end_inset
 
@@ -250,55 +221,10 @@ ated and efficient network.
 \end_layout
 
 \begin_layout Itemize
-\begin_inset Formula $\mathsf{AsymEnc_{[K_{pub}]}(Data)}$
-\end_inset
-
- ≡ Asymmetrically encrypt 
-\begin_inset Formula $\mathsf{Data}$
-\end_inset
-
- using 
-\begin_inset Formula $\mathsf{K_{pub}}$
-\end_inset
-
- 
-\end_layout
-
-\begin_layout Itemize
-\begin_inset Formula $\mathsf{AsymDec_{[K_{priv}]}(Data)}$
-\end_inset
-
- ≡ Asymmetrically decrypt 
-\begin_inset Formula $\mathsf{Data}$
-\end_inset
-
- using 
-\begin_inset Formula $\mathsf{K_{priv}}$
-\end_inset
-
-
-\end_layout
-
-\begin_layout Itemize
 \begin_inset Formula $\mathsf{SymEnc{}_{[PASS]}(Data)}$
 \end_inset
 
  ≡ Symmetrically encrypt 
-\begin_inset Formula $\mathsf{Data}$
-\end_inset
-
- using 
-\begin_inset Formula $\mathsf{PASS}$
-\end_inset
-
-
-\end_layout
-
-\begin_layout Itemize
-\begin_inset Formula $\mathsf{SymDec{}_{[PASS]}(Data)}$
-\end_inset
-
- ≡ Symmetrically decrypt 
 \begin_inset Formula $\mathsf{Data}$
 \end_inset
 
@@ -332,220 +258,422 @@ ated and efficient network.
 \end_layout
 
 \begin_layout Itemize
-STORE 
-\begin_inset Formula $\equiv$
+
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\noun off
+\color none
+\begin_inset Formula $\mathsf{\bigoplus}$
 \end_inset
 
- Network or other key addressable storage system 
+ 
+\family default
+\series default
+\shape default
+\size default
+\emph default
+\bar default
+\noun default
+\color inherit
+≡ Bitwise Exclusive Or (XOR)
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\mathsf{STORE}$
+\end_inset
+
+ ≡ Network or other key addressable storage system 
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\mathsf{PutV_{[Key]}(Value)}$
+\end_inset
+
+ ≡ Store 
+\begin_inset Formula $\mathsf{Value}$
+\end_inset
+
+ under 
+\begin_inset Formula $\mathsf{Key}$
+\end_inset
+
+ on 
+\begin_inset Formula $\mathsf{STORE}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Subsection
+Security of Data
+\end_layout
+
+\begin_layout Standard
+In order to achieve data security, nodes requesting a 
+\begin_inset Formula $\mathsf{PutV_{[Key]}(Value)}$
+\end_inset
+
+ should sign both 
+\begin_inset Formula $\mathsf{Value}$
+\end_inset
+
+ and the request itself.
+ 
+\begin_inset Formula $\mathsf{STORE}$
+\end_inset
+
+ must only allow subsequent changes to 
+\begin_inset Formula $\mathsf{Value}$
+\end_inset
+
+ if the request and replacement 
+\begin_inset Formula $\mathsf{Value}$
+\end_inset
+
+ are similarly signed.
 \end_layout
 
 \begin_layout Section
 Overview
 \end_layout
 
-\begin_layout Subsection
-Distributed directories
-\end_layout
-
 \begin_layout Standard
 To enable a huge amount of data to be organised into a directory structure
- (as we are used to) then a new method of data management requires to be
- employed.
- In this case we have created a system of divorcing the structure of any
+ (as we are used to) then a new method of data management is needed.
+ In this case, we have created a system of divorcing the structure of any
  data from a tree in one direction.
- In this paper we present a system where a directory structure may be traversed
- forward from any point and with efficient implementation back to that point,
- but no further back unless new knowledge of the structure is gained.
- 
 \end_layout
 
 \begin_layout Standard
-This has the effect of allowing directory tree's to be free forming rather
- than tied to any root or base level, although in a way there is a base
- level that every tree can be traversed from, if implemented correctly and
- a user decided to traverse a tree from his own root directory or root share
- directory, in some cases , explained later.
- In this system a user can have a tree but it is his free forming tree and
+In this paper we present a system where a directory structure may be traversed
+ forward from any point and with efficient implementation back to that point,
+ but no further back unless new knowledge of the structure is gained.
+ This has the effect of allowing directory trees to be free forming rather
+ than tied to any root or base level.
+ In this system, a user can have a tree, but it is a free forming tree and
  not a distributed overall root directory.
 \end_layout
 
-\begin_layout Subsubsection
-Process
+\begin_layout Section
+Distributed Directories
+\end_layout
+
+\begin_layout Subsection
+General
 \end_layout
 
 \begin_layout Standard
-We have a 
-\begin_inset Formula $parent$
+Every directory has a unique key associated with it, and under which its
+ encrypted contents
+\begin_inset Foot
+status open
+
+\begin_layout Plain Layout
+\begin_inset Quotes eld
 \end_inset
 
- directory and wish to create a 
-\begin_inset Formula $child$
+contents
+\begin_inset Quotes erd
 \end_inset
 
- directory.
+ here does
+\shape italic
+ not 
+\shape default
+mean the files listed in the directory, but rather the structure used to
+ represent the list (e.g.
+ a database)
+\end_layout
+
+\end_inset
+
+ are held on 
+\begin_inset Formula $\mathsf{STORE}$
+\end_inset
+
+.
+ The contents are encrypted (and hence can only be decrypted) by using the
+ keys of the directory and the directory's parent.
+ In this way, a given directory's contents (and hence files and subdirectories)
+ can be recursively decrypted to yield all the levels of subdirectories
+ it may contain.
+ However, without knowledge of the key of the directory's parent, the parent
+ cannot be decrypted.
+\end_layout
+
+\begin_layout Subsection
+Creation Process
+\begin_inset CommandInset label
+LatexCommand label
+name "sub:Creation-Process"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The process to create a subdirectory (
+\begin_inset Formula $\mathsf{Child}$
+\end_inset
+
+) of a directory (
+\begin_inset Formula $\mathsf{Parent}$
+\end_inset
+
+ which has key 
+\begin_inset Formula $\mathsf{ParentKey}$
+\end_inset
+
+) is as follows:
 \end_layout
 
 \begin_layout Enumerate
-Create a unique KEY for the 
-\begin_inset Formula $child$
+Find a random key (
+\begin_inset Formula $\mathsf{ChildKey}$
 \end_inset
 
- directory (i.e.
+) which is unused on 
+\begin_inset Formula $\mathsf{STORE}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+Add a new entry
+\begin_inset Foot
+status open
+
+\begin_layout Plain Layout
+The entry may also contain all required metadata of 
+\begin_inset Formula $\mathsf{Child}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+ which includes 
+\begin_inset Formula $\mathsf{ChildKey}$
+\end_inset
+
+ in 
+\begin_inset Formula $\mathsf{Parent}$
+\end_inset
+
+ to represent 
+\begin_inset Formula $\mathsf{Child}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+Encrypt 
+\begin_inset Formula $\mathsf{Parent}$
+\end_inset
+
+ and 
+\begin_inset Formula $\mathsf{Child}$
+\end_inset
+
+ (yielding 
+\begin_inset Formula $\mathsf{ParentEnc}$
+\end_inset
+
+ and 
+\begin_inset Formula $\mathsf{ChildEnc}$
+\end_inset
+
+ respectively) as described below
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\mathsf{PutV_{[ParentKey]}(ParentEnc)}$
+\end_inset
+
  
-\begin_inset Formula $H(random(\#))$
-\end_inset
-
-) until a unique KEY is found (by checking against 
-\begin_inset Formula $STORE)$
-\end_inset
-
-.
 \end_layout
 
 \begin_layout Enumerate
-In 
-\begin_inset Formula $parent$
+\begin_inset Formula $\mathsf{PutV_{[ChildKey]}(ChildEnc)}$
 \end_inset
 
- we add the entry for the 
-\begin_inset Formula $child$
-\end_inset
 
- KEY and send 
-\begin_inset Formula $parent$
-\end_inset
-
- to 
-\begin_inset Formula $STORE$
-\end_inset
-
-.
 \end_layout
 
-\begin_layout Subsubsection
-Encryption of directory entries
+\begin_layout Subsection
+Encryption of Directory Entries
+\begin_inset CommandInset label
+LatexCommand label
+name "sub:Encryption-of-Directory"
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Standard
-This uses a process very similar to the 
+This uses a process very similar to that described in 
 \emph on
-self encrypting data
+Self Encrypting Data
 \emph default
  
 \begin_inset CommandInset citation
 LatexCommand cite
-key "2"
+key "1"
 
 \end_inset
 
- paper.
- 
-\end_layout
-
-\begin_layout Standard
-This process is as follows 
+.
+ The process is as follows: 
 \end_layout
 
 \begin_layout Enumerate
-Encrypt the 
-\begin_inset Formula $child$
+Self-encrypt the 
+\begin_inset Formula $\mathsf{Child}$
 \end_inset
 
  directory as any other file in 
 \begin_inset CommandInset citation
 LatexCommand cite
-key "2"
+key "1"
 
-\end_inset
-
-
-\end_layout
-
-\begin_layout Enumerate
-Create an encryption key for the resulting data map, 
-\begin_inset Formula $H(parent_{KEY}+child_{KEY})$
 \end_inset
 
 .
-\end_layout
-
-\begin_layout Enumerate
-Create an obfuscation block, 
-\begin_inset Formula $H(child_{KEY}+parent_{KEY})$
+ This yields a datamap (
+\begin_inset Formula $\mathsf{ChildDM}$
 \end_inset
 
-.
+)
 \end_layout
 
 \begin_layout Enumerate
-Repeatedly concatenate obfuscation block until equal to data map size.
-\end_layout
+Where 
+\begin_inset Formula $\mathsf{H(ChildKey+ParentKey)}$
+\end_inset
 
-\begin_layout Enumerate
-XOR data map with result of 4
-\end_layout
+ is named 
+\begin_inset Formula $\mathsf{Obf}$
+\end_inset
 
-\begin_layout Enumerate
-Encrypt Data map 
-\end_layout
+, create a data chunk (
+\begin_inset Formula $\mathsf{ObfChunk}$
+\end_inset
 
-\begin_layout Enumerate
-\begin_inset Formula $\mathsf{SymEnc{}_{[H(parent_{KEY}+child_{KEY})]}\,(obfuscated\, DM)}$
+) which is the same size as 
+\begin_inset Formula $\mathsf{ChildDM}$
+\end_inset
+
+ by repeatedly rehashing 
+\begin_inset Formula $\mathsf{Obf}$
+\end_inset
+
+ and appending the result, i.e.
+ 
+\begin_inset Formula $\mathsf{Obf+H(Obf)+H(H(Obf))+...}$
 \end_inset
 
 
 \end_layout
 
 \begin_layout Enumerate
-the data map is then digitally signed and sent to 
-\begin_inset Formula $STORE$
+Create an obfuscated datamap, 
+\begin_inset Formula $\mathsf{ObfDM}$
+\end_inset
+
+ = 
+\begin_inset Formula $\mathsf{ChildDM\,\bigoplus\, ObfChunk}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+Create a symmetric encryption passphrase, 
+\begin_inset Formula $\mathsf{Pass}$
+\end_inset
+
+ = 
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\noun off
+\color none
+
+\begin_inset Formula $\mathsf{H(ParentKey+ChildKey)}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+Finally, create the encrypted datamap, 
+\begin_inset Formula $\mathsf{EncDM}$
+\end_inset
+
+ = 
+\begin_inset Formula $\mathsf{SymEnc_{[Pass]}(ObfDM)}$
 \end_inset
 
 
 \end_layout
 
 \begin_layout Subsection
-Advantages of distributed directory
-\end_layout
-
-\begin_layout Standard
-With the advent of distributed directories then several issues clear themselves
- up.
- 
+Advantages of Distributed Directories
 \end_layout
 
 \begin_layout Itemize
-We can have an almost infinite traversal of directories now with no limit
- on depth
+We can have an almost infinite traversal of directories with no limit on
+ depth
 \end_layout
 
 \begin_layout Itemize
-To share data all that is required is sharing a location of a directory
+To share data, all that is required is access to a decrypted directory
+\begin_inset Foot
+status open
+
+\begin_layout Plain Layout
+or an encrypted directory along with the keys required for decryption
+\end_layout
+
+\end_inset
+
  and then all the directories below that are automatically shared
 \end_layout
 
 \begin_layout Itemize
-directories now follow a distributed paradigm and are more suited for mass
- distribution
+Directories following a distributed paradigm are more suited for mass distributi
+on
 \end_layout
 
 \begin_layout Subsection
-Data locks 
+Data Locks 
 \end_layout
 
 \begin_layout Standard
 If the 
-\begin_inset Formula $STORE$
+\begin_inset Formula $\mathsf{STORE}$
 \end_inset
 
- is a file-system or database then data locks are a standard feature.
+ is a file system or database, then data locks are a standard feature.
  Here we discuss locking in a Distributed Hash Table (DHT) which is problematic.
  This section assumes a DHT of a similar capability as 
 \emph on
-maidsafe distributed hash table 
+MaidSafe Distributed Hash Table 
 \begin_inset CommandInset citation
 LatexCommand cite
-key "5"
+key "2"
 
 \end_inset
 
@@ -554,30 +682,36 @@ key "5"
 \end_layout
 
 \begin_layout Standard
-To ensure writes to data are atomic we require a locking mechanism that
+To ensure writes to data are atomic, we require a locking mechanism that
  is solid and allows the network to recover from stale locks, which tend
  to be an issue.
- In maidsafe DHT this can be achieved quiet simply and this is efficient
- due to the speed of the network, via managed connections.
+ In a MaidSafe DHT this can be achieved quite simply and is efficient due
+ to the speed of the network, via managed connections.
  
 \end_layout
 
 \begin_layout Standard
-To write data a node requires to request a lock from the 
+To write data, a node requires to request a lock from the 
+\size larger
+
 \begin_inset Formula $\kappa$
 \end_inset
 
- closest nodes to the data (this requires no dead nodes to exist in the
- DHT or bad things will happen).
- On receiving a lock each node will confer with the other nodes, if all
- accept the lock then it is in place.
- If there is any collision both requests for a lock are rejected.
- In this case the nodes will back-off for a random time and try again.
+
+\size default
+ closest nodes to the data (this requires that no dead nodes exist in the
+ DHT).
+ On receiving a lock, each node will confer with the other nodes; if all
+ accept the lock, then it is in place.
+ If there is any collision of two separate requests for a lock, both are
+ rejected.
+ In this case the requesting nodes will back-off for a random time and try
+ again.
  
 \end_layout
 
 \begin_layout Standard
-On receiving a lock a node will read the data again, to confirm it is the
+On receiving a lock, a node will read the data again to confirm it is the
  same version that has been updated and will then update the value.
  
 \end_layout
@@ -591,131 +725,301 @@ constant
  
 \end_layout
 
-\begin_layout Subsubsection
-Securing the shared data
-\end_layout
-
 \begin_layout Standard
-to ensure that only people allowed to amend data the 
+Lock requests will be signed by the sender to allow the 
+\size larger
+
 \begin_inset Formula $\kappa$
 \end_inset
 
- nodes will confirm the signature of any lock request and consequent data
- amendment requests with the owner of the key that signed the value in place.
- If this matches the process continues, if the signature validation fails
- the requests are silently dropped.
+
+\size default
+ recipients to confirm the permissions of the requester.
+ If the signature validation fails, the requests are silently dropped.
  
 \end_layout
 
 \begin_layout Subsection
-Private shared directory structure 
+Private Shared Directory Structures 
 \end_layout
 
 \begin_layout Standard
-To create a private shared directory structure now is very simple.
- It follows a process which uses technology as described in 
+To enable private shared directory structures, two issues need to be addressed;
+ what to use in place of 
+\begin_inset Formula $\mathsf{ParentKey}$
+\end_inset
+
+ for the shared root directory, and how to allow permitted peers access
+ to the decrypted shared root directory.
+\end_layout
+
+\begin_layout Subsubsection
+Creating a Shared Root Directory
+\end_layout
+
+\begin_layout Standard
+Creating a shared root directory is as per 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:Creation-Process"
+
+\end_inset
+
+ above with the exception of the encryption element.
+ The node creating the shared root directory cannot allow peers to know
+ the 
+\begin_inset Formula $\mathsf{ParentKey}$
+\end_inset
+
+ for the directory (for security reasons).
+ A replacement is derived, and the encryption phase is carried out as per
+ 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:Encryption-of-Directory"
+
+\end_inset
+
+.
+ Creating and storing the replacement for 
+\begin_inset Formula $\mathsf{ParentKey}$
+\end_inset
+
+ is done as follows
+\begin_inset Foot
+status open
+
+\begin_layout Plain Layout
+Steps 1 to 3 describe creating a self-signed identity packet as detailed
+ in 
 \emph on
-"peer to peer" Public Key Infrastructure
+"Peer to Peer" Public Key Infrastructure
 \emph default
 
 \begin_inset CommandInset citation
 LatexCommand cite
-key "6"
+key "3"
 
 \end_inset
 
- as follows.
+ 
 \end_layout
 
-\begin_layout Subsubsection
-Create a share
-\end_layout
-
-\begin_layout Enumerate
-Manager creates 
-\begin_inset Formula $SHARE{}_{pub}\,\&\, SHARE_{priv}$
 \end_inset
 
-
+:
 \end_layout
 
 \begin_layout Enumerate
-\begin_inset Formula $H(SHARE_{pub}\,+Sig{}_{SHARE_{prv}})$
+Create a key pair 
+\begin_inset Formula $\mathsf{Share{}_{priv}}$
 \end_inset
 
- is stored on 
-\begin_inset Formula $STORE$
+ and 
+\begin_inset Formula $\mathsf{Share{}_{pub}}$
 \end_inset
 
-, this is called the share ID.
+
+\end_layout
+
+\begin_layout Enumerate
+Create an ID for the share, 
+\begin_inset Formula $\mathsf{ShareID}$
+\end_inset
+
+ = 
+\begin_inset Formula $\mathsf{H(Share_{pub}+Sig{}_{[Share_{priv}]}(Share{}_{pub}))}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\mathsf{PutV_{[ShareID]}(Share_{pub}+Sig{}_{[Share_{priv}]}(Share{}_{pub}))}$
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\mathsf{H(Share_{pub})}$
+\end_inset
+
+ is now used as the replacement for 
+\begin_inset Formula $\mathsf{ParentKey}$
+\end_inset
+
+
 \end_layout
 
 \begin_layout Standard
-The directory entries for the share are now signed with the share ID and
- sent to 
-\begin_inset Formula $STORE$
+Normally a node storing an encrypted datamap 
+\begin_inset Formula $\mathsf{EncDM}$
+\end_inset
+
+ of a private non-shared directory would sign the 
+\begin_inset Formula $\mathsf{PutV_{[DirectoryKey]}(EncDM)}$
+\end_inset
+
+ request and data with a cryptographic private key (
+\begin_inset Formula $\mathsf{K_{priv}}$
+\end_inset
+
+) known only to itself.
+ A single 
+\begin_inset Formula $\mathsf{K_{priv}}$
+\end_inset
+
+ could be used for all directories, regardless of whether they are in the
+ same tree or not.
+\end_layout
+
+\begin_layout Standard
+However, in the case of a shared directory, peers must be able to modify
+ it, i.e.
+ they must be able to sign modified datamaps and requests with the original
+ private key.
+ For this reason, the 
+\begin_inset Formula $\mathsf{Share{}_{priv}}$
+\end_inset
+
+ is used when storing an encrypted datamap of a shared directory.
+ The same 
+\begin_inset Formula $\mathsf{Share{}_{priv}}$
+\end_inset
+
+ is used for all subdirectories of the shared root.
+ However each new shared root directory must have a unique 
+\begin_inset Formula $\mathsf{Share_{priv}}$
+\end_inset
+
+ to allow peer permissions to be assigned on a 
+\begin_inset Quotes eld
+\end_inset
+
+per-shared-directory
+\begin_inset Quotes erd
+\end_inset
+
+ basis.
+\end_layout
+
+\begin_layout Subsubsection
+Getting Access to a Private Shared Directory
+\end_layout
+
+\begin_layout Standard
+The creator of a private shared root directory allocates permissions to
+ selected peers and sends each a signed, encrypted message on successful
+ creation of the directory.
+ All of the peers receive the share name (human-readable as assigned by
+ the creator), 
+\begin_inset Formula $\mathsf{ShareID}$
+\end_inset
+
+, 
+\begin_inset Formula $\mathsf{Share{}_{pub}}$
+\end_inset
+
+, and 
+\begin_inset Formula $\mathsf{ChildKey}$
+\end_inset
+
+.
+ This allows retrieval of the encrypted datamap (from 
+\begin_inset Formula $\mathsf{STORE}$
+\end_inset
+
+ held under 
+\begin_inset Formula $\mathsf{ChildKey}$
+\end_inset
+
+) and its decryption (using 
+\begin_inset Formula $\mathsf{H(Share_{pub})}$
+\end_inset
+
+ and 
+\begin_inset Formula $\mathsf{ChildKey}$
+\end_inset
+
+), i.e.
+ read access to the directory and its subdirectories.
+\end_layout
+
+\begin_layout Standard
+For peers given write access, the message also contains 
+\begin_inset Formula $\mathsf{Share_{priv}}$
+\end_inset
+
+ to enable them to modify the encrypted datamap held on 
+\begin_inset Formula $\mathsf{STORE}$
 \end_inset
 
 .
 \end_layout
 
-\begin_layout Subsubsection
-Join a share
-\end_layout
-
-\begin_layout Enumerate
-USER requests permission from manager to join XXX share, via an encrypted
- message (signed) to 
-\begin_inset Formula $MANAGER$
-\end_inset
-
-
-\end_layout
-
-\begin_layout Enumerate
-For read only access the MANAGER send the user the KEY and password for
- the share root directory
-\end_layout
-
-\begin_layout Enumerate
-For admin access MANAGER sends 
-\begin_inset Formula $SHARE_{priv}$
-\end_inset
-
- to USER via an encrypted message
-\end_layout
-
 \begin_layout Subsection
-Public shared directory structure
+Public Shared Directory Structures
 \end_layout
 
 \begin_layout Standard
-Each user may have a public directory structure.
- This is a very simple version of the above and includes the signature of
- the directory entry but no encryption.
- This way anyone can see the data but only the owner can edit it, requiring
+Each user may also create public shared directory structures; i.e.
+ ones which can be accessed (read-only) by any peer.
+ The process is simpler than the one for private shared directories in that
+ the datamaps need not be encrypted, and there is no need to send a message
+ to a group of peers.
+\end_layout
+
+\begin_layout Standard
+The creator of a public shared directory uses a different cryptographic
+ private key (named 
+\begin_inset Formula $\mathsf{MPID_{priv}}$
+\end_inset
+
+) to sign the datamap and requests.
+ 
+\begin_inset Formula $\mathsf{MPID_{priv}}$
+\end_inset
+
+ is not revealed to any peer and can be used for all public shared directories,
+ regardless of whether they are in the same tree or not.
+ This way anyone can see the data but only the creator can edit it, requiring
  no locks of course.
  
 \end_layout
 
 \begin_layout Standard
-In a system where users have an ID then the root directory should be the
- hash of the username, then anyone can publish information and it will be
- found by anyone who merely knows their username.
- Data will be passed around and browsers addons to find the hash of a username
- can be created to allow widespread access to data on public shares.
-\end_layout
+In order to allow peers to find public shared directories, users should
+ have a publicly-known ID (similar to the concept of an email address).
+ For a node whose public ID is 
+\begin_inset Formula $\mathsf{PublicID}$
+\end_inset
 
-\begin_layout Subsection
-Anonymous directory structure
+, the datamap of its root public shared directory should be stored under
+ 
+\begin_inset Formula $\mathsf{H(PublicID)}$
+\end_inset
+
+.
 \end_layout
 
 \begin_layout Standard
-A user who creates a directory structure with an anonymous created key pair
- can publish information anonymously and pass the root KEY to anyone via
- any mechanism.
- This is untraceable, especially if a new key pair were created for each
- 'share'.
+In this way, any user can publish information and it can be read by any
+ peer who merely knows the user's public ID.
+ Data will be passed around, and browser addons can be created to allow
+ widespread access to data on public shared directories.
+\end_layout
+
+\begin_layout Subsection
+Anonymous Shared Directory Structures
+\end_layout
+
+\begin_layout Standard
+In future, users will also be able to create anonymous shared directory
+ structures.
+ These will be similar to public shared ones, but the keys under which datamaps
+ are stored and any signing keys will not be traceable back to the user
+ concerned.
  
 \end_layout
 
@@ -725,12 +1029,12 @@ Conclusions
 
 \begin_layout Standard
 This paper has introduced a method of storing data in a distributed network
- in a manner that is addressable, search-able and very scalable.
- It is apparent that such system s could in fact supplement or more, the
- existing world wide web for data sharing.
+ in a manner that is addressable, searchable and very scalable.
+ It is apparent that such systems could in fact supplement or replace paradigms
+ used by the existing world wide web for data sharing.
  It is not difficult to see that applications that make use of massively
- shared data and data presented on a native format to users would be an
- exciting proposition.
+ shared data and data presented on a native format to users is an exciting
+ proposition.
  
 \end_layout
 
@@ -742,7 +1046,7 @@ key "1"
 
 \end_inset
 
-David Irvine, self authentication, david.irvine@maidsafe.net
+David Irvine, Self Encrypting Data, david.irvine@maidsafe.net
 \end_layout
 
 \begin_layout Bibliography
@@ -753,7 +1057,7 @@ key "2"
 
 \end_inset
 
-David Irvine, Self Encrypting Data, david.irvine@maidsafe.net
+David Irvine, MaidSafe Distributed Hash Table, david.irvine@maidsafe.net
 \end_layout
 
 \begin_layout Bibliography
@@ -764,49 +1068,16 @@ key "3"
 
 \end_inset
 
-David Irvine, peer to peer public key infrastructure, david.irvine@maidsafe.net
-\end_layout
-
-\begin_layout Bibliography
-\begin_inset CommandInset bibitem
-LatexCommand bibitem
-label "4"
-key "4"
-
-\end_inset
-
-David Irvine, maidsafe.net, a new network paradigm , david.irvine@maidsafe.net
-\end_layout
-
-\begin_layout Bibliography
-\begin_inset CommandInset bibitem
-LatexCommand bibitem
-label "5"
-key "5"
-
-\end_inset
-
-David Irvine, maidsafe distributed hash table, david.irvine@maidsafe.net
-\end_layout
-
-\begin_layout Bibliography
-\begin_inset CommandInset bibitem
-LatexCommand bibitem
-label "6"
-key "6"
-
-\end_inset
-
-David Irvine, "peer to peer" Public Key Infrastructure, david.irvine@maidsafe.net
+David Irvine, "Peer to Peer" Public Key Infrastructure, david.irvine@maidsafe.net
 \end_layout
 
 \begin_layout Standard
 \begin_inset Note Comment
-status collapsed
+status open
 
 \begin_layout Plain Layout
 \begin_inset Note Note
-status collapsed
+status open
 
 \begin_layout Plain Layout
 Change this paragraphs style to 'Standard' to enable
@@ -853,7 +1124,7 @@ options "IEEEbib"
 
 \begin_layout BiographyNoPhoto
 \begin_inset ERT
-status collapsed
+status open
 
 \begin_layout Plain Layout
 
@@ -864,7 +1135,7 @@ status collapsed
 
 David Irvine
 \begin_inset ERT
-status collapsed
+status open
 
 \begin_layout Plain Layout
 
@@ -873,15 +1144,11 @@ status collapsed
 
 \end_inset
 
- 
-\lang british
-is a Scottish Engineer and innovator who has spent the last 12 years researching
- ways to make computers function in a more efficient manner.
+ is a Scottish Engineer and innovator who has spent the last 12 years researchin
+g ways to make computers function in a more efficient manner.
 \end_layout
 
 \begin_layout BiographyNoPhoto
-
-\lang british
 He is an Inventor listed on more than 20 patent submissions and was Designer
  / Project Manager of one of the World's largest private networks (Saudi
  Aramco, over $300M).
@@ -891,15 +1158,11 @@ He is an Inventor listed on more than 20 patent submissions and was Designer
 \end_layout
 
 \begin_layout BiographyNoPhoto
-
-\lang british
 He has presented technology at Google (Seattle), British Computer Society
  (Christmas Lecture) and many others.
 \end_layout
 
 \begin_layout BiographyNoPhoto
-
-\lang british
 He has spent many years as a lifeboat Helmsman and is a keen sailor when
  time permits.
 \end_layout
