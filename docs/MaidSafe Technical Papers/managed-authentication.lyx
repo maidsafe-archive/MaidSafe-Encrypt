@@ -373,6 +373,33 @@ MANAGER sends
 \end_layout
 
 \begin_layout Subsection
+Creating user disk 
+\end_layout
+
+\begin_layout Enumerate
+MANAGER creates a parent directory for USER.
+\end_layout
+
+\begin_layout Enumerate
+MANAGER adds a child directory entry to the parent.
+ 
+\end_layout
+
+\begin_layout Enumerate
+This child directory entry is the company drive.
+ 
+\end_layout
+
+\begin_layout Standard
+In this manner the user has the ability to alter the parent directory and
+ add in his or her own files.
+ This is the root drive of USER and personal information can be stored there.
+ The MANAGER though, has access to this as he or she knows the ID and the
+ passkey to it.
+ 
+\end_layout
+
+\begin_layout Subsection
 Accessing the network
 \end_layout
 
@@ -397,10 +424,6 @@ The USER ID
 \end_inset
 
  is added to the list of ID's authorised access identities
-\end_layout
-
-\begin_layout Enumerate
-
 \end_layout
 
 \begin_layout Subsection
