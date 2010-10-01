@@ -7,9 +7,9 @@
 \language british
 \inputencoding default
 \font_roman default
-\font_sans default
+\font_sans lmss
 \font_typewriter default
-\font_default_family default
+\font_default_family sfdefault
 \font_sc false
 \font_osf false
 \font_sf_scale 100
@@ -19,9 +19,9 @@
 \paperfontsize default
 \spacing single
 \use_hyperref true
-\pdf_title "'peer to peer' Public Key Infrastructure"
+\pdf_title "DHT based Nat  traversal"
 \pdf_author "David Irvine"
-\pdf_subject "Validation"
+\pdf_subject "Networking"
 \pdf_keywords "PKI, DHT, Security "
 \pdf_bookmarks true
 \pdf_bookmarksnumbered false
@@ -73,7 +73,7 @@ September, 2010
 
 \begin_layout Abstract
 Today's Distributed Hash Tables (DHT's) and other overlay networks are based
- on operating without hinderence of real worls issues regardign connectivity
+ on operating without hindrance of real world issues regarding connectivity
  between nodes.
  This is not a problem when operating in a private or controlled environment,
  but in the transition to peer to peer or fully distributed networks, it
@@ -112,14 +112,6 @@ LatexCommand tableofcontents
 
 \begin_layout Standard
 \begin_inset FloatList table
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset FloatList algorithm
 
 \end_inset
 
@@ -175,12 +167,12 @@ PARstart{I}{nternet}
 
  technology allows the interconnect of every device to every other device,
  in principle.
- In practice this is not the case and for many reasons devices tend to be
- behind routers that allow then to go unnoticed or at least act as a proxy
- device.
- This helps connect multiple devices to a single publicall addressable IP
+ In practice, this is not the case and for many reasons devices tend to
+ be behind routers that allow them to go unnoticed or at least act as a
+ proxy device.
+ This helps connect multiple devices to a single publicly addressable IP
  location.
- The devices behind the router may have private or classfied private adresses
+ The devices behind the router may have private or classified private addresses
  and number in thousands all connected to the Internet and appearing as
  one single identity.
  The router will proxy requests and responses in many cases to hide the
@@ -189,10 +181,10 @@ PARstart{I}{nternet}
 \end_layout
 
 \begin_layout Standard
-NAT is a good solution for the lack of publicaly available IP addresses
- with the current encumbant scheme of IP version 4, IP version 6 will allow
- more than enough public addresses to exist and in fact provide several
- addreses for every square meter of the plant.
+NAT is a good solution for the lack of publicly available IP addresses with
+ the current incumbent scheme of IP version 4, IP version 6 will allow more
+ than enough public addresses to exist and in fact provide several addresses
+ for every square meter of the planet.
  Even with IP6, however there will still be NAT devices around and NAT traversal
  will still be required.
 \end_layout
@@ -222,9 +214,9 @@ key "2"
 \end_inset
 
 .
- This paper will present a mechanism to exploit these technoligies without
+ This paper will present a mechanism to exploit these technologies without
  the requirement for any servers to exist.
- This is therefor a solution for distributed protocols that in fact requires
+ This is therefore a solution for distributed protocols that in fact requires
  a distributed protocol to exist (a good fit).
 \end_layout
 
@@ -248,19 +240,350 @@ key "5"
 \end_layout
 
 \begin_layout Standard
+UPnP is a UDT NAT traversal protocol which utilises HTTP over UDP to negotiate
+ a port mapping with an enabled router.
+ This allows a node to appear as though it has a directly connected IP (that
+ of the router) and port combination.
+ From this perspective the node appears directly connected (for that port).
+ 
+\end_layout
 
+\begin_layout Standard
+UPnP is seen as a security risk by many vendors and is supplied on a routing
+ device switched off.
+ 
+\end_layout
+
+\begin_layout Standard
+Care should be taken with the protocol to ensure that a permanent mapping
+ is requested, which would last until requested to be un-mapped or the router
+ is rebooted.
+ The more effective solution is to select a mapping for a period and refresh
+ this every few seconds, to ensure the router device is not congested with
+ stale mappings.
+ 
+\end_layout
+
+\begin_layout Standard
+Many routers will have a low limit of concurrent available UPnP mappings.
 \end_layout
 
 \begin_layout Subsubsection
 Network Address Translation Port Mapping Protocol (NAT-PMP)
 \end_layout
 
+\begin_layout Standard
+NAT-PMP is an upgrade of UPnP to attempt to alleviate the security issues
+ surrounding UPnP, it is currently not provided in many routers, although
+ this may change in the future.
+ Again this is a UDP controlled protocol and as such will not operate in
+ networks that have banned UDP.
+ 
+\end_layout
+
 \begin_layout Subsection
 Hole Punching 
 \end_layout
 
+\begin_layout Standard
+Hole punching can successfully traverse approximately 82%
+\begin_inset CommandInset citation
+LatexCommand cite
+key "6"
+
+\end_inset
+
+of NAT devices.
+ It makes use of the fact that a router will leave a UDP port mapped after
+ sending data out.
+ This is done whether the UDP packet is successfully delivered or not.
+ This is a necessity for a connectionless protocol as the router cannot
+ tell whether the transmission will be successful or whether there is to
+ be a reply (which all well defined protocols using UDP should ensure there
+ is).
+\end_layout
+
+\begin_layout Standard
+The basis of the process is described in Algorithm 1, it is relatively simple
+ and uses this conversation method to operate.
+ It should be noted for BSD type socket API's it is important to ensure
+ the SO_REUSE_ADDR is set, allowing address reuse (very important).
+ Using a UDP overlay type protocol sch as UDT 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "7"
+
+\end_inset
+
+ would introduce some new difficulties here and the connection set-up time-out
+ should be set very small, as the first connection attempt will most likely
+ fail, reducing time-outs makes for more efficient code.
+ 
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float algorithm
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset Caption
+
+\begin_layout Plain Layout
+Let A and B be the two hosts, each in its own private network; N1 and N2
+ are the two NAT devices; S is a public server with a well-known globally
+ reachable IP address.
+ A and B each send a UDP packet to S; the NAT devices N1 and N2 create UDP
+ translation states and assign temporary external port numbers S relays
+ these port numbers back to A and B A and B contact each others' NAT devices
+ directly on the translated ports; the NAT devices use the previously created
+ translation states and send the packets to A and B
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Relay nodes 
+\end_layout
+
+\begin_layout Standard
+TURN is a system where a node will relay informations from a another node
+ behind an unfriendly NAT device.
+ In this case fairness is a major concern as the relay node will have to
+ provide more bandwidth to the fire-walled node.
+ This cannot be handed off to alleviate the burden which is unfortunate.
+ Further research may prove to be very interesting in these cases though.
+ 
+\end_layout
+
 \begin_layout Section
 NAT Traversal with a DHT
+\end_layout
+
+\begin_layout Standard
+Use of a DHT makes no difference to any router negotiation protocol as described
+ above, but can significantly improve the performance and security of UDP
+ hole punching techniques.
+ 
+\end_layout
+
+\begin_layout Subsection
+STUN server functionality in a DHT
+\end_layout
+
+\begin_layout Standard
+A STUN server, generally has 2 network interface cards on different IP addresses
+ (and preferably routes).
+ This allows multiple routes to a node to be confirmed in a manner similar
+ to algorithm 1.
+ In a DHT, there should be no servers and in maidsafe_dht all machines should
+ be able to be unknown in configuration terms, i.e.
+ we cannot presume we will have dual homed machines on the network.
+ This initially would appear to be a problem, whereas in fact it is an advantage.
+ In place of a dual homed server, a DHT has something more powerful, a full
+ network of nodes on different networks that can all message each other
+ and in many ways act like a huge server.
+ Therefore, to emulate a simple dual homes machine that exists on two networks
+ is perhaps one of the simplest tasks we can ask a DHT to perform.
+ A DHT performs these tasks efficiently and without exposing any server
+ location for an attack to be carried out.
+ 
+\end_layout
+
+\begin_layout Standard
+To achieve the STUN type functionality, we simply carry out the process
+ as defined in section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:DHT-hole-punch"
+
+\end_inset
+
+, where we use a node on the network to perform NAT detection and traversal
+ techniques.
+ This negates the requirement for a server, but, how do other clients know
+ which sever to speak to in case of a port restricted situation, where the
+ server requires a message to be sent and relayed to the node we intended.
+ Without this any port restricted node would be unreachable.
+ This is where we use a DHT component that provides us with such capability
+ and this is the routing table or list of contacts.
+ 
+\end_layout
+
+\begin_layout Standard
+In the contact tuple for each contact, where an intermediate node is required
+ (AKA STUN server) a node's address is stored along with the end nodes address.
+ So every node that requires an intermediate, establishes the details of
+ the intermediary and publishes this to the network as part of its contact
+ details.
+ This is extremely effective and simple to implement.
+\end_layout
+
+\begin_layout Subsection
+DHT Hole Punching
+\end_layout
+
+\begin_layout Standard
+The process is very similar to non DHT hole punching, except that for a
+ network to be a pure distributed network there should be no servers, therefore
+ the STUN type server employed in a normal configuration cannot be used.
+ 
+\end_layout
+
+\begin_layout Subsection
+DHT hole punch NAT traversal process
+\begin_inset CommandInset label
+LatexCommand label
+name "sub:DHT-hole-punch"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Booststrap node = [B]; Our node = [U], Other node who is not sharing the
+ same IP as [U] = [O]
+\end_layout
+
+\begin_layout Enumerate
+On initial bootstrap, receive IP and port [B] detects.
+\end_layout
+
+\begin_layout Enumerate
+If IP = a local IP then directly connected [stop]
+\end_layout
+
+\begin_layout Enumerate
+Send Detection packet to [B] which in turn sends a packet to [O].
+ 
+\end_layout
+
+\begin_layout Enumerate
+Both [B] and [O] send message to [U] and await reply.
+\end_layout
+
+\begin_layout Enumerate
+If [O] receives a reply, it messages [B] with success.
+ [B] reports back to [U] that we are behind a full cone NAT.
+ [stop]
+\end_layout
+
+\begin_layout Enumerate
+If [O] cannot get a reply, it asks [B] to message [U] with an attempt to
+ connect to [O] (which may fail), at the same time [O] tries to connect
+ to [U].
+ If successful [O] reports back to [B] with success, and is then behind
+ a port restricted NAT [stop].
+\end_layout
+
+\begin_layout Enumerate
+If 6.
+ fails [U] is behind another type of NAT, probably symmetric, although these
+ is some success at predicting port increment or decrement symmetric NAT
+ devices, it is not efficient enough so [stop] with fail at this point.
+\end_layout
+
+\begin_layout Standard
+On all attempts failing the node should report NAT traversal fail to the
+ application.
+ This is not the final attempt as will be described in 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:TCP-fallback-configuration"
+
+\end_inset
+
+.
+ 
+\end_layout
+
+\begin_layout Standard
+This situation, however, should mean that a server node or an autonomous
+ network node should fail as the remaining options would be bandwidth restrictiv
+e at this time to complete.
+ 
+\end_layout
+
+\begin_layout Subsubsection
+Implementation
+\end_layout
+
+\begin_layout Standard
+The above solution is purely hole punching, items 1 & 2 should always be
+ tested first, on fail, then it is suggested three threads be created and
+ on one thread run the rest of this list to complete the hole punch attempt.
+ On threads 2 and 3 the router negotiations protocols should be attempted
+ (one on each thread).
+ 
+\end_layout
+
+\begin_layout Standard
+If 5 above passes then all thread should be stopped and the node will start
+ another thread to send keep alive messages to [B], otherwise UPnP or NAT-PMP
+ will hopefully pass, it is advisable to accept a NAT-PMP as first choice
+ in this case.
+ 
+\end_layout
+
+\begin_layout Subsection
+Relay request
+\end_layout
+
+\begin_layout Standard
+In situations where all attempts to traverse a NAT fail then the option
+ of relay can be attempted.
+ 
+\end_layout
+
+\begin_layout Standard
+directly connected nodes should create a TCP listening socket on ports 80
+ and 443.
+ This information should also be published in the contact tuple for that
+ node.
+ The UDP port for listening is not important and any port should suffice.
+ 
+\end_layout
+
+\begin_layout Standard
+A relay request from any node is either honoured or not, depending on the
+ configuration chosen.
+\end_layout
+
+\begin_layout Subsection
+TCP fall-back configuration
+\begin_inset CommandInset label
+LatexCommand label
+name "sub:TCP-fallback-configuration"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+There will be networks where UDP is banned completely and all transports
+ depending on this would be made useless.
+ TCP has to be used in this case, but as stated TCP, is very difficult to
+ use to traverse NAT devices, there have been some attempts with TCP hole-punchi
+ng but to no great avail, as the time-outs or time the hole is left open
+ is significantly smaller, giving nodes little chance to sync into a conversatio
+n in time.
+ 
+\end_layout
+
+\begin_layout Standard
+In cases where UDP cannot work in a network we need to rely on a relay type
+ configuration for TCP.
 \end_layout
 
 \begin_layout Section
@@ -268,26 +591,12 @@ Conclusions
 \end_layout
 
 \begin_layout Standard
-This paper introduces a particular case for "non rooted" yet cryptographically
- secure PKI networks to be created.
- It is envisaged that this method will be extended with many more capabilities.
- Such measures may include:
-\end_layout
-
-\begin_layout List
-\labelwidthstring 00.00.0000
-Identification of credit card data linking the ID to a known name in another
- secure location.
- People could have a card and a revocation card or perhaps even better all
- done in software using a keying approach as described in this paper.
+NAT traversal is a huge issue for any peer to peer or distributed solution
+ to networking in IT.
+ It has become increasingly problematic with router manufacturers not rigidly
+ implementing standards in a manner that is either consistent or helpful
+ (in many cases).
  
-\end_layout
-
-\begin_layout List
-\labelwidthstring 00.00.0000
-Single continuous validation systems where a known ID can be used across
- multiple web sites or on-line systems that require history to operate effective
-ly.
 \end_layout
 
 \begin_layout Bibliography
@@ -371,7 +680,20 @@ key "6"
 
 \end_inset
 
-xx
+ http://midcom-p2p.sourceforge.net/
+\end_layout
+
+\begin_layout Bibliography
+
+\lang english
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+label "7"
+key "7"
+
+\end_inset
+
+http://udt.sourceforge.net/
 \end_layout
 
 \begin_layout Standard
