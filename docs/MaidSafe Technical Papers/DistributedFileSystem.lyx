@@ -367,8 +367,8 @@ General
 \end_layout
 
 \begin_layout Standard
-Every directory has a unique key associated with it, and under which its
- encrypted contents
+Every directory has a unique identifier associated with it.
+ Part of this identifier is used as a key under which its encrypted contents
 \begin_inset Foot
 status open
 
@@ -397,12 +397,12 @@ mean the files listed in the directory, but rather the structure used to
 
 .
  The contents are encrypted (and hence can only be decrypted) by using the
- keys of the directory and the directory's parent.
+ identifiers of the directory and the directory's parent.
  In this way, a given directory's contents (and hence files and subdirectories)
  can be recursively decrypted to yield all the levels of subdirectories
  it may contain.
- However, without knowledge of the key of the directory's parent, the parent
- cannot be decrypted.
+ However, without knowledge of the identifier of the directory's parent,
+ the parent cannot be decrypted.
 \end_layout
 
 \begin_layout Subsection
@@ -425,8 +425,8 @@ The process to create a subdirectory (
 \begin_inset Formula $\mathsf{Parent}$
 \end_inset
 
- which has key 
-\begin_inset Formula $\mathsf{ParentKey}$
+ which has identifier 
+\begin_inset Formula $\mathsf{ParentID}$
 \end_inset
 
 ) is as follows:
@@ -445,6 +445,23 @@ Find a random key (
 \end_layout
 
 \begin_layout Enumerate
+Derive the 
+\begin_inset Formula $\mathsf{Child}$
+\end_inset
+
+'s identifier (
+\begin_inset Formula $\mathsf{ChildID}$
+\end_inset
+
+) from 
+\begin_inset Formula $\mathsf{ChildKey}$
+\end_inset
+
+ (e.g.
+ by appending random data)
+\end_layout
+
+\begin_layout Enumerate
 Add a new entry
 \begin_inset Foot
 status open
@@ -460,7 +477,7 @@ The entry may also contain all required metadata of
 \end_inset
 
  which includes 
-\begin_inset Formula $\mathsf{ChildKey}$
+\begin_inset Formula $\mathsf{ChildID}$
 \end_inset
 
  in 
@@ -557,7 +574,7 @@ key "1"
 
 \begin_layout Enumerate
 Where 
-\begin_inset Formula $\mathsf{H(ChildKey+ParentKey)}$
+\begin_inset Formula $\mathsf{H(ChildID+ParentID)}$
 \end_inset
 
  is named 
@@ -611,7 +628,7 @@ Create a symmetric encryption passphrase,
 \noun off
 \color none
 
-\begin_inset Formula $\mathsf{H(ParentKey+ChildKey)}$
+\begin_inset Formula $\mathsf{H(ParentID+ChildID)}$
 \end_inset
 
 
@@ -746,7 +763,7 @@ Private Shared Directory Structures
 \begin_layout Standard
 To enable private shared directory structures, two issues need to be addressed;
  what to use in place of 
-\begin_inset Formula $\mathsf{ParentKey}$
+\begin_inset Formula $\mathsf{ParentID}$
 \end_inset
 
  for the shared root directory, and how to allow permitted peers access
@@ -768,7 +785,7 @@ reference "sub:Creation-Process"
  above with the exception of the encryption element.
  The node creating the shared root directory cannot allow peers to know
  the 
-\begin_inset Formula $\mathsf{ParentKey}$
+\begin_inset Formula $\mathsf{ParentID}$
 \end_inset
 
  for the directory (for security reasons).
@@ -782,7 +799,7 @@ reference "sub:Encryption-of-Directory"
 
 .
  Creating and storing the replacement for 
-\begin_inset Formula $\mathsf{ParentKey}$
+\begin_inset Formula $\mathsf{ParentID}$
 \end_inset
 
  is done as follows
@@ -846,7 +863,7 @@ Create an ID for the share,
 \end_inset
 
  is now used as the replacement for 
-\begin_inset Formula $\mathsf{ParentKey}$
+\begin_inset Formula $\mathsf{ParentID}$
 \end_inset
 
 
