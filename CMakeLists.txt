@@ -172,6 +172,11 @@ FUNCTION(FIND_THIRD_PARTY_PROJECT PROJ_VARIABLE PROJ_SEARCH_REGEX PROJ_SEARCH_DI
   ENDIF()
 ENDFUNCTION()
 
+# When this target is built, it removes all .gcda files from the build directory and its subdirectories
+IF(UNIX)
+  ADD_CUSTOM_TARGET(CleanCoverage COMMAND ${CMAKE_COMMAND} -DSEARCH_DIR=${CMAKE_BINARY_DIR} -P ${PD_SOURCE_DIR}/build/clean_coverage.cmake)
+ENDIF()
+
 
 ###################################################################################################
 # Boost libraries search                                                                          #
