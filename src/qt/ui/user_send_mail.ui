@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>274</width>
-    <height>415</height>
+    <height>420</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -19,35 +19,72 @@
   <property name="windowTitle">
    <string>Mail Message</string>
   </property>
+  <property name="styleSheet">
+   <string notr="true">QFrame#TopFrame {
+background-color: #5593d7;
+}</string>
+  </property>
   <layout class="QGridLayout" name="gridLayout">
-   <item row="0" column="0">
-    <widget class="QLabel" name="lblTo">
-     <property name="text">
-      <string>To :</string>
+   <property name="margin">
+    <number>0</number>
+   </property>
+   <item row="0" column="0" colspan="3">
+    <widget class="QFrame" name="TopFrame">
+     <property name="minimumSize">
+      <size>
+       <width>0</width>
+       <height>50</height>
+      </size>
      </property>
-     <property name="textFormat">
-      <enum>Qt::PlainText</enum>
+     <property name="frameShape">
+      <enum>QFrame::StyledPanel</enum>
+     </property>
+     <property name="frameShadow">
+      <enum>QFrame::Raised</enum>
+     </property>
+     <layout class="QGridLayout" name="gridLayout_2">
+      <item row="0" column="0">
+       <widget class="QLabel" name="label">
+        <property name="text">
+         <string/>
+        </property>
+        <property name="pixmap">
+         <pixmap resource="../resources/resources.qrc">:/icons/32/ms_icon_white.png</pixmap>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item row="2" column="0">
+    <widget class="QLabel" name="lblcc">
+     <property name="text">
+      <string>CC :</string>
      </property>
     </widget>
    </item>
-   <item row="6" column="0">
+   <item row="3" column="0">
+    <widget class="QLabel" name="lblBcc">
+     <property name="text">
+      <string>Bcc :</string>
+     </property>
+    </widget>
+   </item>
+   <item row="4" column="0">
     <widget class="QLabel" name="label_2">
      <property name="text">
       <string>Subject : </string>
      </property>
     </widget>
    </item>
-   <item row="7" column="0">
-    <widget class="QLineEdit" name="subjectTextEdit"/>
-   </item>
-   <item row="8" column="0">
+   <item row="6" column="0" colspan="2">
     <widget class="QLabel" name="lblMessage">
      <property name="text">
       <string>Message :</string>
      </property>
     </widget>
    </item>
-   <item row="9" column="0">
+   <item row="7" column="0" colspan="3">
     <widget class="QTextEdit" name="messageTextEdit">
      <property name="baseSize">
       <size>
@@ -57,7 +94,7 @@
      </property>
     </widget>
    </item>
-   <item row="11" column="0">
+   <item row="8" column="0" colspan="3">
     <layout class="QHBoxLayout" name="horizontalLayout">
      <item>
       <spacer name="horizontalSpacer">
@@ -88,70 +125,33 @@
      </item>
     </layout>
    </item>
-   <item row="2" column="0">
-    <widget class="QLabel" name="lblcc">
-     <property name="text">
-      <string>CC :</string>
-     </property>
-    </widget>
+   <item row="4" column="1">
+    <widget class="QLineEdit" name="subjectTextEdit"/>
    </item>
-   <item row="3" column="0">
-    <widget class="QTextEdit" name="ccTextEdit">
-     <property name="sizePolicy">
-      <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
-       <horstretch>0</horstretch>
-       <verstretch>0</verstretch>
-      </sizepolicy>
-     </property>
-     <property name="maximumSize">
-      <size>
-       <width>16777215</width>
-       <height>25</height>
-      </size>
-     </property>
-    </widget>
+   <item row="2" column="1">
+    <widget class="QLineEdit" name="ccTextEdit"/>
+   </item>
+   <item row="3" column="1">
+    <widget class="QLineEdit" name="bccTextEdit"/>
+   </item>
+   <item row="1" column="1">
+    <widget class="QLineEdit" name="toTextEdit"/>
    </item>
    <item row="1" column="0">
-    <widget class="QTextEdit" name="toTextEdit">
-     <property name="sizePolicy">
-      <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
-       <horstretch>0</horstretch>
-       <verstretch>0</verstretch>
-      </sizepolicy>
-     </property>
-     <property name="maximumSize">
-      <size>
-       <width>16777215</width>
-       <height>25</height>
-      </size>
-     </property>
-     <property name="baseSize">
-      <size>
-       <width>0</width>
-       <height>0</height>
-      </size>
-     </property>
-    </widget>
-   </item>
-   <item row="4" column="0">
-    <widget class="QLabel" name="lblBcc">
+    <widget class="QLabel" name="lblTo">
      <property name="text">
-      <string>Bcc :</string>
+      <string>To :</string>
      </property>
-    </widget>
-   </item>
-   <item row="5" column="0">
-    <widget class="QTextEdit" name="bccTextEdit">
-     <property name="maximumSize">
-      <size>
-       <width>16777215</width>
-       <height>25</height>
-      </size>
+     <property name="textFormat">
+      <enum>Qt::PlainText</enum>
      </property>
     </widget>
    </item>
   </layout>
  </widget>
- <resources/>
+ <resources>
+  <include location="../resources/resources.qrc"/>
+  <include location="../resources/resources.qrc"/>
+ </resources>
  <connections/>
 </ui>

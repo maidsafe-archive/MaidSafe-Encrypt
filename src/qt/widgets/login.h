@@ -49,6 +49,10 @@ class Login : public QWidget {
   QString pin() const;
   QString password() const;
 
+  void setUsername(QString name);
+  void setPin(QString pin);
+  void setPassword(QString pass);
+
   void clearFields() { reset(); }
   void StartProgressBar();
   // Clear all fields, puts focus back to username

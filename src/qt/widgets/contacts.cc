@@ -44,6 +44,7 @@ Contacts::Contacts(QWidget* parent)
   ui_.contactLineEdit->setVisible(true);
   ui_.add->setVisible(true);
   sortType_ = 0;
+  ui_.msgGroupBox->setVisible(false);
 
   // to enable displaying of menu pop-up for Users
   menu = new QMenu(this);
@@ -110,6 +111,7 @@ Contacts::Contacts(QWidget* parent)
 
   connect(ui_.listWidget, SIGNAL(itemSelectionChanged()),
           this,           SLOT(onItemSelectionChanged()));
+
 }
 
 

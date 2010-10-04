@@ -34,21 +34,21 @@ UserSendMail::~UserSendMail() {}
 
 void UserSendMail::addToRecipients(const QList<QString>& to) {
   foreach(QString recipient, to) {
-    ui_.toTextEdit->setPlainText(recipient + "," +
-                                 ui_.toTextEdit->toPlainText());
+    ui_.toTextEdit->setText(recipient + "," +
+                                 ui_.toTextEdit->text());
   }
 }
 
 void UserSendMail::addSingleRecipient(const QString& to) {
-  ui_.toTextEdit->setPlainText(to + "," + ui_.toTextEdit->toPlainText());
+  ui_.toTextEdit->setText(to + "," + ui_.toTextEdit->text());
 }
 
 void UserSendMail::onSendClicked(bool) {
   QString subject = ui_.subjectTextEdit->text();
   QString message = ui_.messageTextEdit->toHtml();
-  QString to = ui_.toTextEdit->toPlainText();
-  QString cc = ui_.ccTextEdit->toPlainText();
-  QString bcc = ui_.bccTextEdit->toPlainText();
+  QString to = ui_.toTextEdit->text();
+  QString cc = ui_.ccTextEdit->text();
+  QString bcc = ui_.bccTextEdit->text();
   QList<QString> toList = to.split(",", QString::SkipEmptyParts);
   QList<QString> ccList = cc.split(",", QString::SkipEmptyParts);
   QList<QString> bccList = bcc.split(",", QString::SkipEmptyParts);
@@ -104,51 +104,39 @@ void UserSendMail::onSendClicked(bool) {
                << emailRootPath;
     }
 
-    QString emailFullPath = QString("%1%2_%3.pdmail").arg(emailRootPath)
-                                                     .arg(subject).arg(conv);
+    QString emailFullPath = QString("%1%2.pdmail").arg(emailRootPath)
+                                                     .arg(conv);
 
     qDebug() << "upload File" << emailFullPath;
 
     QString emailFolder("/Emails/");
-    QString emailMaidsafePath = QString("%1%2_%3.pdmail").arg(emailFolder)
-                                                         .arg(subject)
+    QString emailMaidsafePath = QString("%1%2.pdmail").arg(emailFolder)
                                                          .arg(conv);
     QDateTime theDate = QDateTime::currentDateTime();
     QString date = theDate.toString("dd/MM/yyyy hh:mm:ss");
 
-    qDebug() << "upload File" << emailMaidsafePath;
-    std::ofstream myfile;
-    myfile.open(emailFullPath.toStdString().c_str(), std::ios::app);
-    // SAVE AS XML
-    QString htmlMessage = tr("From : me to %1 at %2 <br /> %3 <br /> %4")
-       .prepend("<span style=\"background-color:#CCFF99\"><br />")
-       .arg(to).arg(date).arg(subject).arg(message).append("</span>");
-    myfile << htmlMessage.toStdString();
+    QDomDocument doc( "EmailML" );
+    QDomElement root = doc.createElement( "email" );
+    doc.appendChild( root );
 
-    /*QFile output(emailFullPath);
+    ClientController::Email e;
+    e.to = to;
+    e.from = ClientController::instance()->publicUsername();
+    e.cc = cc;
+    e.bcc = bcc;
+    e.body = message;
+    e.subject = subject;
 
-    if (!output.open(QFile::WriteOnly | QFile::Text)) {
-         QMessageBox::warning(this, tr("QXmlStream Email"),
-                              tr("Cannot write file %1:\n%2.")
-                              .arg(emailFullPath)
-                              .arg(output.errorString()));
-         return;
-     }
+    root.appendChild(ClientController::instance()->EmailToNode(doc, e));
 
-    QXmlStreamWriter stream(&output);
-    stream.setAutoFormatting(true);
-    stream.writeStartDocument();
+    QFile file( emailFullPath );
+    if( !file.open( QIODevice::Append ) )
+    return;
 
-    stream.writeStartElement("E-Mail");
-    stream.writeAttribute("To", to);
-    stream.writeTextElement("Subject", subject);
-    stream.writeTextElement("Message", message);
-    stream.writeEndElement();
+    QTextStream ts( &file );
+    ts << doc.toString();
 
-    stream.writeEndDocument();
-
-    output.close();*/
-     myfile.close();
+    file.close();
 
     SaveFileThread* sft = new SaveFileThread(emailMaidsafePath, this);
     connect(sft,  SIGNAL(saveFileCompleted(int, const QString&)),
@@ -159,6 +147,8 @@ void UserSendMail::onSendClicked(bool) {
     qDebug() << "Create File Failed";
   }
 }
+
+
 
 void UserSendMail::onSaveFileCompleted(int success, const QString& filepath) {
   qDebug() << "onSaveFileCompleted: " << filepath;

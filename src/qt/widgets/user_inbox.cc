@@ -112,8 +112,7 @@ int UserInbox::populateEmails() {
     QString filename = QString::fromStdString(s);
     if (filename.endsWith(".pdmail")) {
       QListWidgetItem *newItem = new QListWidgetItem;
-      newItem->setText(filename.section("_", 1, 1).remove(".pdmail")
-                                + ":" + filename.section('_', 0, 0));
+      newItem->setText(filename.remove(".pdmail"));
       ui_.messageListWidget->addItem(newItem);
     }
 
@@ -126,7 +125,7 @@ int UserInbox::populateEmails() {
 void UserInbox::onReplyClicked() {
   QListWidgetItem* item = ui_.messageListWidget->currentItem();
   QList<QString> toList, ccList, bccList;
-  QString sender = item->text().section(":", 0, 0);
+  QString sender = item->text();
   QString subject = item->text().section(":", 1, 1);
   toList.push_front(sender);
 
@@ -159,27 +158,40 @@ void UserInbox::onReplyClicked() {
              << emailRootPath;
   }
 
-    QString emailFullPath = QString("%1%2_%3.pdmail").arg(emailRootPath)
-                            .arg(subject).arg(sender);
+    QString emailFullPath = QString("%1%2.pdmail").arg(emailRootPath)
+                            .arg(sender);
 
     QString emailFolder("/Emails/");
-    QString emailMaidsafePath = QString("%1%2_%3.pdmail").arg(emailFolder)
-                                    .arg(subject).arg(sender);
+    QString emailMaidsafePath = QString("%1%2.pdmail").arg(emailFolder)
+                                   .arg(sender);
 
     qDebug() << "upload File" << emailMaidsafePath;
 
     QDateTime theDate = QDateTime::currentDateTime();
     QString date = theDate.toString("dd/MM/yyyy hh:mm:ss");
 
-    std::ofstream myfile;
-    myfile.open(emailFullPath.toStdString().c_str(), std::ios::app);
-      // SAVE AS XML
-    QString htmlMessage = tr("From : me to %1 at %2 <br /> %3 <br /> %4")
-          .prepend("<span style=\"background-color:#CCFF99\"><br />")
-          .arg(sender).arg(date).arg(subject).arg(ui_.textEdit_2->toHtml())
-          .append("</span>");
-    myfile << htmlMessage.toStdString();
-    myfile.close();
+    QDomDocument doc( "EmailML" );
+    QDomElement root = doc.createElement( "email" );
+    doc.appendChild( root );
+
+    ClientController::Email e;
+    e.to = sender;
+    e.from = ClientController::instance()->publicUsername();
+    e.cc = "";
+    e.bcc = "";
+    e.body = htmlMessage;
+    e.subject = subject;
+
+    root.appendChild(ClientController::instance()->EmailToNode(doc, e));
+
+    QFile file( emailFullPath );
+    if( !file.open( QIODevice::Append ) )
+    return;
+
+    QTextStream ts( &file );
+    ts << doc.toString();
+
+    file.close();
 
     SaveFileThread* sft = new SaveFileThread(emailMaidsafePath, this);
     connect(sft,  SIGNAL(saveFileCompleted(int, const QString&)),

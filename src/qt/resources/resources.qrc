@@ -19,6 +19,12 @@
     <file alias="globe">64/Globe-64.png</file>
   </qresource>
   <qresource prefix="menu">
+    <file>calendar_icon_black.png</file>
+    <file>contact_icon_black.png</file>
+    <file>email_icon_black.png</file>
+    <file>files_icon_black.png</file>
+    <file>music_icon_black.png</file>
+    <file>pictures_icon_black.png</file>
     <file>pictures_icon.png</file>
     <file>calendar_icon.png</file>
     <file>contact_icon.png</file>

@@ -395,6 +395,20 @@ bool ClientController::sendEmail(const QString& subject,
   return (n == 0);
 }
 
+QDomElement ClientController::EmailToNode( QDomDocument &d, const ClientController::Email &c )
+{
+   QDomElement em = d.createElement( "contact" );
+
+   em.setAttribute( "from", c.from );
+   em.setAttribute( "to", c.to );
+   em.setAttribute( "cc", c.cc );
+   em.setAttribute( "bcc", c.bcc );
+   em.setAttribute( "body", c.body );
+   em.setAttribute( "subject", c.subject );
+
+   return em;
+} 
+
 bool ClientController::sendInstantFile(const QString& filePath,
                                        const QString& txt,
                                        const QList<QString>& to,

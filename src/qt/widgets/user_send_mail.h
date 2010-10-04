@@ -18,6 +18,8 @@
 
 #include <QWidget>
 #include <QString>
+#include <QtXml/QDomDocument>
+#include <QtXml/QDomElement>
 
 // local
 #include "qt/client/client_controller.h"

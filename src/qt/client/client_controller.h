@@ -21,6 +21,8 @@
 #include <QDateTime>
 #include <QDir>
 #include <QStringList>
+#include <QtXml/QDomDocument>
+#include <QtXml/QDomElement>
 
 #include <list>
 #include <map>
@@ -71,6 +73,16 @@ class ClientController : public QObject {
   int transBytes;
   int totalBytes;
 };
+
+  struct Email {
+    QString from;
+    QString to;
+    QString cc;
+    QString bcc;
+    QString subject;
+    QString body;
+    QDateTime date;
+  };
 
   enum MessageType {
       TEXT,               // Instant message received from someone
@@ -230,6 +242,8 @@ class ClientController : public QObject {
                  const QList<QString>& cc,
                  const QList<QString>& bcc,
                  const QString& conversation);
+
+  QDomElement EmailToNode(QDomDocument &d, const ClientController::Email &c);
 
   // Vault info
   bool PollVaultInfo(QString *chunkstore, boost::uint64_t *offered_space,

@@ -62,10 +62,11 @@ PerpetualData::PerpetualData(QWidget* parent)
     : QMainWindow(parent), quitting_(false), login_(NULL), create_(NULL),
       message_status_(NULL), state_(LOGIN) {
   setAttribute(Qt::WA_DeleteOnClose, false);
+  this->setStatusBar(0);
   setWindowIcon(QPixmap(":/icons/32/ms_icon_blue.gif"));
   ui_.setupUi(this);
 
-  statusBar()->show();
+  statusBar()->hide();
   statusBar()->addPermanentWidget(message_status_ = new QLabel);
 
   //ui_.TheFrame->setStyleSheet("QFrame#TheFrame { border-image: url(:/background/cloud_top.png) 0 0 0 0 stretch stretch;"
@@ -97,6 +98,8 @@ PerpetualData::PerpetualData(QWidget* parent)
   lsLogin_ = new LifeStuffLogin;
   lsLogin_->show();
   lsLogin_->StartProgressBar();
+
+  hideOpButtons();
   
   qtTranslator = new QTranslator;
   myAppTranslator = new QTranslator;
@@ -114,8 +117,12 @@ PerpetualData::PerpetualData(QWidget* parent)
    connect(lsLogin_, SIGNAL(existingUser()),
           this,   SLOT(onLoginExistingUser()));
 
-  connect(lsLogin_, SIGNAL(newUser()),
-          this,   SLOT(onLoginNewUser()));
+  connect(lsLogin_, SIGNAL(newUser(const QString&,
+                                   const QString&,
+                                   const QString&)),
+          this,   SLOT(onLoginNewUser(const QString&,
+                                      const QString&,
+                                      const QString&)));
 
   connect(lsLogin_, SIGNAL(destroyed()),
           this,   SLOT(onQuit()));
@@ -405,8 +412,13 @@ void PerpetualData::onLoginExistingUser() {
 #endif
 }
 
-void PerpetualData::onLoginNewUser() {
+void PerpetualData::onLoginNewUser(const QString& name,
+                                    const QString& pin,
+                                    const QString& password) {
   setState(SETUP_USER);
+  login_->setUsername(name);
+  login_->setPin(pin);
+  login_->setPassword(password);
   this->show();
 }
 
@@ -767,15 +779,13 @@ void PerpetualData::onEmailReceived(const QString &subject,
   ClientController::instance()->readdir(emailFolderPath, &children);
 
   QString emailFullPath;
-  emailFullPath = QString("%1%2_%3.pdmail")
+  emailFullPath = QString("%1%2.pdmail")
                       .arg(emailRootPath)
-                      .arg(subject)
                       .arg(conversation);
 
   QString emailMaidsafePath;
-  emailMaidsafePath = QString("%1%2_%3.pdmail")
+  emailMaidsafePath = QString("%1%2.pdmail")
                           .arg(emailFolder)
-                          .arg(subject)
                           .arg(conversation);
 
   std::string tidyEmail =
@@ -783,19 +793,29 @@ void PerpetualData::onEmailReceived(const QString &subject,
   QString tidyEmailMaidsafePath = QString::fromStdString(tidyEmail);
 
   try {
-    std::ofstream myfile;
-    myfile.open(emailFullPath.toStdString().c_str(), std::ios::app);
-    // SAVE AS XML
-    QString htmlMessage = tr("From : %1 at %2 <br /> %3 <br /> %4")
-        .prepend("<span style=\"background-color:#CCFF99\"><br />")
-        .arg(sender)
-        .arg(date)
-        .arg(subject)
-        .arg(message)
-        .append("</span>");
-    myfile << htmlMessage.toStdString();
-    myfile.close();
+    QDomDocument doc( "EmailML" );
+    QDomElement root = doc.createElement( "email" );
+    doc.appendChild( root );
 
+    ClientController::Email e;
+    e.to = ClientController::instance()->publicUsername();
+    e.from = sender;
+    e.cc = "";
+    e.bcc = "";
+    e.body = message;
+    e.subject = subject;
+
+    root.appendChild(ClientController::instance()->EmailToNode(doc, e));
+
+    QFile file( emailFullPath );
+    if( !file.open( QIODevice::Append ) )
+    return;
+
+    QTextStream ts( &file );
+    ts << doc.toString();
+
+    file.close();
+    
     SaveFileThread* sft = new SaveFileThread(tidyEmailMaidsafePath, this);
     connect(sft,  SIGNAL(saveFileCompleted(int, const QString&)),
           this, SLOT(onSaveFileCompleted(int, const QString&)));
@@ -805,6 +825,7 @@ void PerpetualData::onEmailReceived(const QString &subject,
     qDebug() << "Create File Failed";
   }
 }
+
 
 void PerpetualData::onSaveFileCompleted(int success, const QString& filepath) {
   qDebug() << "onSaveFileCompleted : " << filepath;
@@ -1049,6 +1070,24 @@ void PerpetualData::onLogoutUserCompleted(bool success) {
   onUnmountCompleted(success);
 }
 
+void PerpetualData::hideOpButtons(){
+ ui_.contactBtn->setVisible(false);
+ ui_.emailBtn->setVisible(false);
+ ui_.calendarBtn->setVisible(false);
+ ui_.myFilesBtn->setVisible(false);
+ ui_.picBtn->setVisible(false);
+ ui_.musicBtn->setVisible(false);
+}
+
+void PerpetualData::showOpButtons() {
+ ui_.contactBtn->setVisible(true);
+ ui_.emailBtn->setVisible(true);
+ ui_.calendarBtn->setVisible(true);
+ ui_.myFilesBtn->setVisible(true);
+ ui_.picBtn->setVisible(true);
+ ui_.musicBtn->setVisible(true);
+}
+
 void PerpetualData::showLoggedInMenu() {
   actions_[LOGOUT]->setEnabled(true);
   actions_[OFFLINE_2]->setEnabled(true);
@@ -1064,6 +1103,7 @@ void PerpetualData::showLoggedOutMenu() {
 }
 
 void PerpetualData::onPublicUsernameChosen() {
+  showOpButtons();
   actions_[PRIVATE_SHARES]->setEnabled(true);
   actions_[GO_OFFLINE]->setEnabled(true);
   actions_[SETTINGS]->setEnabled(true);

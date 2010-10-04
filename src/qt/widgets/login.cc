@@ -423,6 +423,16 @@ bool Login::focusNextPrevChild(bool next) {
   return QWidget::focusNextPrevChild(next);
 }
 
+void Login::setUsername(QString name){
+  ui_.username->setText(name);
+}
+void Login::setPin(QString pin){
+  ui_.pin->setText(pin);
+}
+void Login::setPassword(QString pass){
+  ui_.password->setText(pass);
+}
+
 void Login::changeEvent(QEvent *event) {
   if (event->type() == QEvent::LanguageChange) {
     ui_.retranslateUi(this);
