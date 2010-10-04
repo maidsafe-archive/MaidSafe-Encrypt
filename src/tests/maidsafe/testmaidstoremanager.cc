@@ -26,8 +26,6 @@
 #include <maidsafe/protobuf/contact_info.pb.h>
 #include <maidsafe/protobuf/kademlia_service_messages.pb.h>
 
-#include <queue>
-
 #include "fs/filesystem.h"
 #include "maidsafe/chunkstore.h"
 #include "maidsafe/pdutils.h"
@@ -38,6 +36,7 @@
 #include "maidsafe/vault/vaultservice.h"
 #include "tests/maidsafe/cached_keys.h"
 #include "tests/maidsafe/mockkadops.h"
+#include "tests/maidsafe/threadedcallcontainer.h"
 
 namespace test_msm {
 static const boost::uint8_t K(4);
@@ -45,72 +44,6 @@ static const boost::uint8_t upper_threshold(static_cast<boost::uint8_t>
                                            (K * kMinSuccessfulPecentageStore));
 static const boost::uint8_t lower_threshold(kMinSuccessfulPecentageStore > .25 ?
              static_cast<boost::uint8_t >(K * .25) : upper_threshold);
-
-typedef boost::function<void()> VoidFunc;
-
-/**
- * This is a thread pool, which takes boost functors and executes them in order.
- */
-class ThreadedCallContainer {
- public:
-  explicit ThreadedCallContainer(const size_t &num_threads)
-    : running_(false), mutex_(), condition_(), threads_(), callbacks_() {
-    for (size_t i = 0; i < num_threads; ++i) {
-      threads_.push_back(new boost::thread(boost::bind(
-          &ThreadedCallContainer::Run, this)));
-    }
-  }
-  ~ThreadedCallContainer() {
-    {
-      boost::mutex::scoped_lock lock(mutex_);
-      running_ = false;
-      condition_.notify_all();
-    }
-    for (size_t i = 0; i < threads_.size(); ++i) {
-      threads_[i]->join();
-      delete threads_[i];
-    }
-  }
-  void Enqueue(VoidFunc callback) {
-    boost::mutex::scoped_lock lock(mutex_);
-    if (!running_)
-      return;
-    callbacks_.push(callback);
-    condition_.notify_all();
-  }
-  void Wait() {
-    boost::mutex::scoped_lock lock(mutex_);
-    while (running_ && !callbacks_.empty())
-      condition_.wait(lock);
-  }
- private:
-  ThreadedCallContainer(const ThreadedCallContainer&);
-  ThreadedCallContainer &operator=(const ThreadedCallContainer&);
-  void Run() {
-    boost::mutex::scoped_lock lock(mutex_);
-    running_ = true;
-    while (running_) {
-      while (running_ && callbacks_.empty()) {
-        condition_.wait(lock);
-      }
-      while (!callbacks_.empty()) {
-        // grab the first cb from the queue, but allow other threads to operate
-        // while executing it
-        VoidFunc f = callbacks_.front();
-        mutex_.unlock();
-        f();
-        mutex_.lock();
-        callbacks_.pop();
-        condition_.notify_all();
-      }
-    }
-  }
-  bool running_;
-  boost::mutex mutex_;
-  boost::condition_variable condition_;
-  std::vector<boost::thread*> threads_;
-  std::queue<VoidFunc> callbacks_;
-};
 
 void DoneRun(const int &min_delay,
              const int &max_delay,
@@ -147,7 +80,7 @@ void WatchListOpStageThree(bool initialise_response,
                            const std::string &pmid,
                            maidsafe::ExpectAmendmentResponse *response,
                            google::protobuf::Closure *callback,
-                           test_msm::ThreadedCallContainer *tcc) {
+                           maidsafe::ThreadedCallContainer *tcc) {
   if (initialise_response) {
     response->set_result(result);
     response->set_pmid(pmid);
@@ -161,7 +94,7 @@ void AddToWatchListStageFour(bool initialise_response,
                              const boost::uint32_t &upload_count,
                              maidsafe::AddToWatchListResponse *response,
                              google::protobuf::Closure* callback,
-                             test_msm::ThreadedCallContainer *tcc) {
+                             maidsafe::ThreadedCallContainer *tcc) {
   if (initialise_response) {
     response->set_result(result);
     response->set_pmid(pmid);
@@ -176,7 +109,7 @@ void RemoveFromWatchListStageFour(
     const std::string &pmid,
     maidsafe::RemoveFromWatchListResponse *response,
     google::protobuf::Closure* callback,
-    test_msm::ThreadedCallContainer *tcc) {
+    maidsafe::ThreadedCallContainer *tcc) {
   if (initialise_response) {
     response->set_result(result);
     response->set_pmid(pmid);
@@ -213,7 +146,7 @@ void AccountStatusCallback(bool initialise_response,
   callback->Run();
 }
 
-void ThreadedAccountStatusCallback(ThreadedCallContainer *tcc,
+void ThreadedAccountStatusCallback(maidsafe::ThreadedCallContainer *tcc,
                                    bool initialise_response,
                                    const int &result,
                                    const std::string &pmid,
@@ -238,7 +171,7 @@ void AmendAccountCallback(bool initialise_response,
   callback->Run();
 }
 
-void ThreadedAmendAccountCallback(ThreadedCallContainer *tcc,
+void ThreadedAmendAccountCallback(maidsafe::ThreadedCallContainer *tcc,
                                   bool initialise_response,
                                   const int &result,
                                   const std::string &pmid,
@@ -600,7 +533,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AddToWatchList) {
   int send_chunk_count(0);
   boost::mutex mutex;
   boost::condition_variable cond_var;
-  test_msm::ThreadedCallContainer tcc(1);
+  maidsafe::ThreadedCallContainer tcc(1);
 
   // Set expectations
   EXPECT_CALL(*mko, AddressIsLocal(testing::An<const kad::Contact&>()))
@@ -608,16 +541,19 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AddToWatchList) {
   EXPECT_CALL(*mko, FindKClosestNodes(chunk_names.at(0), testing::_))
       .Times(kMaxAddToWatchListTries)
       .WillRepeatedly(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_kadops::RunCallback, bad_result, _1))));   // Call 1
+          boost::bind(&MockKadOps::ThreadedFindKClosestNodesCallback, mko,
+                      bad_result, _1))));   // Call 1
 
   EXPECT_CALL(*mko, FindKClosestNodes(chunk_names.at(1), testing::_))
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_kadops::RunCallback, few_result, _1))));   // Call 2
+          boost::bind(&MockKadOps::ThreadedFindKClosestNodesCallback, mko,
+                      few_result, _1))));   // Call 2
 
   for (int i = 2; i < kTestCount; ++i) {
     EXPECT_CALL(*mko, FindKClosestNodes(chunk_names.at(i), testing::_))
         .WillOnce(testing::WithArgs<1>(testing::Invoke(
-            boost::bind(&mock_kadops::RunCallback, good_result, _1))));  // 3-12
+            boost::bind(&MockKadOps::ThreadedFindKClosestNodesCallback, mko,
+                        good_result, _1))));  // 3-12
   }
 
   for (size_t i = 0; i < contacts.size(); ++i) {
@@ -753,6 +689,8 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AddToWatchList) {
   }
   ASSERT_EQ(size_t(0), msm.tasks_handler_.TasksCount());
 
+  ASSERT_TRUE(false) << "Not fully implemented.";
+
   // Call 2 - FindKNodes returns success but not enough contacts
   ++test_run;
   printf("--- call %d ---\n", test_run + 1);
@@ -887,6 +825,26 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AddToWatchList) {
 //  ASSERT_TRUE(msm.tasks_handler_.Task(chunk_names.at(test_run), kStoreChunk,
 //      &retrieved_task));
 //  ASSERT_EQ(kMinChunkCopies - 1, retrieved_task.successes_required_);
+}
+
+TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_StoreChunkCopy) {
+  ASSERT_TRUE(false) << "Not implemented.";
+}
+
+TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_DoStorePrep) {
+  ASSERT_TRUE(false) << "Not implemented.";
+}
+
+TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_StorePrepCallback) {
+  ASSERT_TRUE(false) << "Not implemented.";
+}
+
+TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_DoStoreChunk) {
+  ASSERT_TRUE(false) << "Not implemented.";
+}
+
+TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_StoreChunkCallback) {
+  ASSERT_TRUE(false) << "Not implemented.";
 }
 
 TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AssessUploadCounts) {
@@ -1434,10 +1392,9 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_ValidatePrepResp) {
                                             StoreManagerTask *task));
   MOCK_METHOD2(WaitForOnline, bool(const TaskId &task_id,
                                    const StoreTaskType &task_type));
-}; */
+};
 
 TEST_F(MaidStoreManagerTest, DISABLED_BEH_MAID_MSM_SendChunkPrep) {
-  /*
   MockMsmSendChunkPrep msm(client_chunkstore_);
   boost::shared_ptr<MockKadOps> mko(new MockKadOps(&msm.transport_handler_,
       &msm.channel_manager_, kad::CLIENT, "", "", false, false, test_msm::K,
@@ -1516,9 +1473,9 @@ TEST_F(MaidStoreManagerTest, DISABLED_BEH_MAID_MSM_SendChunkPrep) {
   // Call 6
   ASSERT_EQ(kSuccess, msm.SendChunkPrep(store_data));
   printf("666666\n");
-*/ }
+}
 
-/* class MockMsmSendPrepCallback : public MaidsafeStoreManager {
+class MockMsmSendPrepCallback : public MaidsafeStoreManager {
  public:
   explicit MockMsmSendPrepCallback(boost::shared_ptr<ChunkStore> cstore)
       : MaidsafeStoreManager(cstore, test_msm::K) {}
@@ -1528,10 +1485,9 @@ TEST_F(MaidStoreManagerTest, DISABLED_BEH_MAID_MSM_SendChunkPrep) {
       const StorePrepResponse *store_prep_response));
   MOCK_METHOD1(SendChunkContent, int(
       boost::shared_ptr<SendChunkData> send_chunk_data));
-}; */
+};
 
 TEST_F(MaidStoreManagerTest, DISABLED_BEH_MAID_MSM_SendPrepCallback) {
-  /*
   // Set up test data
   MockMsmSendPrepCallback msm(client_chunkstore_);
   boost::shared_ptr<MockClientRpcs> mock_rpcs(
@@ -1626,10 +1582,9 @@ TEST_F(MaidStoreManagerTest, DISABLED_BEH_MAID_MSM_SendPrepCallback) {
   ASSERT_FALSE(msm.tasks_handler_.Task(chunkname, kStoreChunk,
                &retrieved_task));
   ASSERT_EQ(size_t(0), msm.tasks_handler_.TasksCount());
-*/ }
+}
 
 TEST_F(MaidStoreManagerTest, DISABLED_BEH_MAID_MSM_SendChunkContent) {
-  /*
   MaidsafeStoreManager msm(client_chunkstore_, test_msm::K);
   boost::shared_ptr<MockClientRpcs> mock_rpcs(
       new MockClientRpcs(&msm.transport_handler_, &msm.channel_manager_));
@@ -1750,10 +1705,7 @@ TEST_F(MaidStoreManagerTest, DISABLED_BEH_MAID_MSM_SendChunkContent) {
   ASSERT_EQ(boost::uint8_t(1), retrieved_task.success_count_);
   ASSERT_EQ((kHashable | kNormal),
             msm.client_chunkstore_->chunk_type(chunkname));
-*/ }
-
-TEST_F(MaidStoreManagerTest, DISABLED_BEH_MAID_MSM_LoadChunk) {
-}
+} */
 
 TEST_F(MaidStoreManagerTest, DISABLED_BEH_MAID_MSM_RemoveFromWatchList) {
 /*
@@ -2085,6 +2037,15 @@ TEST_F(MaidStoreManagerTest, DISABLED_BEH_MAID_MSM_RemoveFromWatchList) {
   ASSERT_EQ(kDeleteChunkFailure, delete_chunk_result2);
   ASSERT_EQ(kSuccess, delete_chunk_result3);
 */
+}
+
+TEST_F(MaidStoreManagerTest, DISABLED_BEH_MAID_MSM_LoadChunk) {
+}
+
+TEST_F(MaidStoreManagerTest, DISABLED_BEH_MAID_MSM_StoreChunk) {
+}
+
+TEST_F(MaidStoreManagerTest, DISABLED_BEH_MAID_MSM_DeleteChunk) {
 }
 
 class MockMsmStoreLoadPacket : public MaidsafeStoreManager {
@@ -2725,7 +2686,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_UpdateAccountStatus) {
 
   // only one thread, so the RPCs are called in order
   // (important for the expected averages)
-  test_msm::ThreadedCallContainer tcc(1);
+  maidsafe::ThreadedCallContainer tcc(1);
 
   // Set expectations
   EXPECT_CALL(*mko, AddressIsLocal(testing::An<const kad::Contact&>()))

@@ -354,8 +354,10 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   // Sends AddToWatchList requests to each of the k Chunk Info holders.
   virtual int AddToWatchList(boost::shared_ptr<StoreData> store_data);
   // Callback of FindNodes.  Sends ExpectAmendment requests.
-  void AddToWatchListStageTwo(const std::string &response,
-                              boost::shared_ptr<WatchListOpData> data);
+  void AddToWatchListStageTwo(
+      const ReturnCode &result,
+      const std::vector<kad::Contact> &chunk_info_holders,
+      boost::shared_ptr<WatchListOpData> data);
   // Callback of ExpectAmendment.  Sends AddToWatchList requests.
   void AddToWatchListStageThree(boost::uint16_t index,
                                 boost::shared_ptr<WatchListOpData> data);
@@ -370,8 +372,10 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   // Sends RemoveFromWatchList requests to each of the k Chunk Info holders.
   virtual int RemoveFromWatchList(boost::shared_ptr<StoreData> store_data);
   // Callback of FindNodes.  Sends ExpectAmendment requests.
-  void RemoveFromWatchListStageTwo(const std::string &response,
-                                   boost::shared_ptr<WatchListOpData> data);
+  void RemoveFromWatchListStageTwo(
+      const ReturnCode &result,
+      const std::vector<kad::Contact> &chunk_info_holders,
+      boost::shared_ptr<WatchListOpData> data);
   // Callback of ExpectAmendment.  Sends RemoveFromWatchList requests.
   void RemoveFromWatchListStageThree(boost::uint16_t index,
                                      boost::shared_ptr<WatchListOpData> data);

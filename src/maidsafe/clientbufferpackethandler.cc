@@ -58,7 +58,7 @@ void ClientBufferPacketHandler::CreateBufferPacket(
       false), "", args.private_key, crypto::STRING_STRING));
 
   FindNodes(boost::bind(&ClientBufferPacketHandler::FindNodesCallback,
-            this, _1, data, transport_id), data);
+            this, _1, _2, data, transport_id), data);
 }
 
 void ClientBufferPacketHandler::ModifyOwnerInfo(
@@ -94,7 +94,7 @@ void ClientBufferPacketHandler::ModifyOwnerInfo(
   data->cb = cb;
   data->type = MODIFY_INFO;
   FindNodes(boost::bind(&ClientBufferPacketHandler::FindNodesCallback,
-            this, _1, data, transport_id), data);
+            this, _1, _2, data, transport_id), data);
 }
 
 void ClientBufferPacketHandler::GetMessages(
@@ -120,7 +120,7 @@ void ClientBufferPacketHandler::GetMessages(
   data->type = GET_MESSAGES;
   data->private_key = args.private_key;
   FindNodes(boost::bind(&ClientBufferPacketHandler::FindNodesCallback,
-            this, _1, data, transport_id), data);
+            this, _1, _2, data, transport_id), data);
 }
 
 void ClientBufferPacketHandler::AddMessage(
@@ -171,7 +171,7 @@ void ClientBufferPacketHandler::AddMessage(
   data->cb = cb;
   data->type = ADD_MESSAGE;
   FindNodes(boost::bind(&ClientBufferPacketHandler::FindNodesCallback,
-            this, _1, data, transport_id), data);
+            this, _1, _2, data, transport_id), data);
 }
 
 void ClientBufferPacketHandler::GetPresence(
@@ -197,7 +197,7 @@ void ClientBufferPacketHandler::GetPresence(
   data->type = GET_PRESENCE;
   data->private_key = args.private_key;
   FindNodes(boost::bind(&ClientBufferPacketHandler::FindNodesCallback,
-            this, _1, data, transport_id), data);
+            this, _1, _2, data, transport_id), data);
 }
 
 void ClientBufferPacketHandler::AddPresence(
@@ -239,11 +239,11 @@ void ClientBufferPacketHandler::AddPresence(
   data->cb = cb;
   data->type = ADD_PRESENCE;
   FindNodes(boost::bind(&ClientBufferPacketHandler::FindNodesCallback,
-            this, _1, data, transport_id), data);
+            this, _1, _2, data, transport_id), data);
 }
 
 void ClientBufferPacketHandler::FindNodes(
-    kad::VoidFunctorOneString cb,
+    VoidFuncIntContacts cb,
     boost::shared_ptr<ChangeBPData> data) {
   switch (data->type) {
     case CREATEBP:
@@ -274,13 +274,11 @@ void ClientBufferPacketHandler::FindNodes(
 }
 
 void ClientBufferPacketHandler::FindNodesCallback(
-    const std::string &result,
+    const ReturnCode &result,
+    const std::vector<kad::Contact> &closest_nodes,
     boost::shared_ptr<ChangeBPData> data,
     const boost::int16_t &transport_id) {
-  kad::FindResponse rslt;
-  if (!rslt.ParseFromString(result) ||
-      rslt.result() != kad::kRpcResultSuccess ||
-      rslt.closest_nodes_size() < kUpperThreshold_) {
+  if (result != kSuccess || closest_nodes.size() < kUpperThreshold_) {
     switch (data->type) {
       case CREATEBP: data->cb(kStoreNewBPError);
                      break;
@@ -306,18 +304,14 @@ void ClientBufferPacketHandler::FindNodesCallback(
     return;
   }
 
-  kad::ContactInfo ci;
   boost::shared_ptr<std::vector<ModifyBPCallbackData> >
       cb_datas(new std::vector<ModifyBPCallbackData>);
-  for (int n = 0; n < rslt.closest_nodes_size(); ++n) {
-    if (!ci.ParseFromString(rslt.closest_nodes(n)))
-      continue;
+  for (size_t n = 0; n < closest_nodes.size(); ++n) {
     ModifyBPCallbackData cb_data;
     cb_data.data = data;
     cb_data.transport_id = transport_id;
     cb_data.ctrl = new rpcprotocol::Controller;
-    kad::Contact ctc(ci);
-    cb_data.ctc = ctc;
+    cb_data.ctc = closest_nodes.at(n);
 
     switch (cb_data.data->type) {
       case CREATEBP:

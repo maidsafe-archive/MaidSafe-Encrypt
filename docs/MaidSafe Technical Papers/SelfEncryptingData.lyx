@@ -19,8 +19,10 @@
 \paperfontsize default
 \spacing single
 \use_hyperref true
+\pdf_title "Self Encrypting Data"
 \pdf_author "David Irvine"
-\pdf_keywords "Security "
+\pdf_subject "Encryption"
+\pdf_keywords "security, freedom, privacy, encryption"
 \pdf_bookmarks true
 \pdf_bookmarksnumbered false
 \pdf_bookmarksopen false
@@ -58,7 +60,7 @@ Self Encrypting Data
 \end_layout
 
 \begin_layout Author
-David Irvine, email: david.irvine@maidsafe.net, LifeStuff David
+David Irvine, email: david.irvine@maidsafe.net, LifeStuff: David
 \end_layout
 
 \begin_layout Right Address
@@ -92,7 +94,7 @@ security, freedom, privacy, encryption
 \begin_layout MarkBoth
 maidsafe.net limited company confidential Version 0.1
 \begin_inset ERT
-status collapsed
+status open
 
 \begin_layout Plain Layout
 
@@ -101,7 +103,7 @@ status collapsed
 
 \end_inset
 
-...
+
 \end_layout
 
 \begin_layout Standard
@@ -114,53 +116,14 @@ LatexCommand tableofcontents
 \end_layout
 
 \begin_layout Standard
-\begin_inset FloatList table
-
+\begin_inset Newpage pagebreak
 \end_inset
 
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset FloatList algorithm
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout --Separator--
 
 \end_layout
 
 \begin_layout Section
 Introduction
-\begin_inset Note Note
-status collapsed
-
-\begin_layout Plain Layout
-Don't panic the section numbering may look different in
-\end_layout
-
-\begin_layout Plain Layout
-LyX but LaTeX uses the correct Roman numerals and
-\end_layout
-
-\begin_layout Plain Layout
-Alpha for section counters.
-\end_layout
-
-\begin_layout Plain Layout
-It's just that LyX doesn't handle counters other than arabic
-\end_layout
-
-\begin_layout Plain Layout
-numerals.
-\end_layout
-
-\end_inset
-
-
 \end_layout
 
 \begin_layout Standard
@@ -299,14 +262,10 @@ you can see where the problem exists as the logical conclusion is a key
 \end_layout
 
 \begin_layout Section
-
-\lang english
 Implementation
 \end_layout
 
 \begin_layout Subsection
-
-\lang english
 Overview
 \begin_inset CommandInset label
 LatexCommand label
@@ -318,46 +277,32 @@ name "sub:Overvew"
 \end_layout
 
 \begin_layout Enumerate
-
-\lang english
 Get hash of whole file.
 \end_layout
 
 \begin_layout Enumerate
-
-\lang english
 Split into several chunks of various sizes.
 \end_layout
 
 \begin_layout Enumerate
-
-\lang english
 Take hash of each chunk.
 \end_layout
 
 \begin_layout Enumerate
-
-\lang english
 Create another chunk by concatenating the hashes of other chunks.
 \end_layout
 
 \begin_layout Enumerate
-
-\lang english
 XOR (or an equivalent logical operation) the chunks together as in a one
  time pad.
 \end_layout
 
 \begin_layout Enumerate
-
-\lang english
 Take the hash from (3) and use the hash of chunk + 1 as the key, use the
  hash of chunk + 2 as the IV.
 \end_layout
 
 \begin_layout Enumerate
-
-\lang english
 Rename each with the hash of the new content and save these hashes.
  
 \end_layout
@@ -368,19 +313,27 @@ File Chunking
 
 \begin_layout Definition
 \align left
-
-\lang english
-\begin_inset Formula $f{\scriptscriptstyle c}\equiv file\: content,\: f{\scriptscriptstyle m}\equiv file\: metadata,\: hf\equiv H(f_{c})$
+\begin_inset Formula $\mathsf{f_{c}}$
 \end_inset
 
+ ≡ file content; 
+\begin_inset Formula $\mathsf{f_{m}}$
+\end_inset
 
+≡ file metadata; 
+\begin_inset Formula $\mathsf{hf}$
+\end_inset
+
+ ≡ 
+\begin_inset Formula $\mathsf{H(f_{c})}$
+\end_inset
+
+.
 \end_layout
 
 \begin_layout Enumerate
-
-\lang english
 Take 
-\begin_inset Formula $hf$
+\begin_inset Formula $\mathsf{hf}$
 \end_inset
 
  and create a structure, which we will refer to as a data map.
@@ -389,16 +342,16 @@ Take
 
 \begin_layout Enumerate
 Take the size of the file 
-\begin_inset Formula $(f.size())$
+\begin_inset Formula $\mathsf{(f.size())}$
 \end_inset
 
  and calculate number 
-\begin_inset Formula $n$
+\begin_inset Formula $\mathsf{n}$
 \end_inset
 
  of chunks
 \begin_inset Foot
-status collapsed
+status open
 
 \begin_layout Plain Layout
 Number of chunks is a setting and depends on implementation, you may wish
@@ -413,11 +366,11 @@ Number of chunks is a setting and depends on implementation, you may wish
 
 \begin_layout Enumerate
 Create chunks by taking the first 
-\begin_inset Formula $n$
+\begin_inset Formula $\mathsf{n}$
 \end_inset
 
  bytes of 
-\begin_inset Formula $hf$
+\begin_inset Formula $\mathsf{hf}$
 \end_inset
 
  and randomise the chunk sizes to remove the possibility of gathering a
@@ -428,8 +381,6 @@ e without the original file (this is why the hash is used).
 \end_layout
 
 \begin_layout Standard
-
-\lang english
 The chunks are created with random size to ensure the set required to recreate
  the file is as large as the number of available chunks in any data store.
 \end_layout
@@ -444,23 +395,13 @@ In the obfuscation step, we pollute each chunk with data from other chunks.
 
 \begin_layout Example
 For 
-\begin_inset Formula $c_{n}$
+\begin_inset Formula $\mathsf{c_{n}}$
 \end_inset
 
 , create an identically-sized data chunk by repeatedly rehashing the hash
  of chunk n + 2 and appending the result, i.e.
  
-\family roman
-\series medium
-\shape up
-\size normal
-\emph off
-\bar no
-\noun off
-\color none
-\lang english
-
-\begin_inset Formula $H(c_{n+2})+H(H(c_{n+2}))+H(H(H(c_{n+2})))+...$
+\begin_inset Formula $\mathsf{H(c_{n+2})+H(H(c_{n+2}))+H(H(H(c_{n+2})))+...}$
 \end_inset
 
 
@@ -468,11 +409,11 @@ For
 
 \begin_layout Standard
 This is called the XOR chunk 
-\begin_inset Formula $n$
+\begin_inset Formula $\mathsf{n}$
 \end_inset
 
  (
-\begin_inset Formula $c_{XORn}$
+\begin_inset Formula $\mathsf{c_{XORn}}$
 \end_inset
 
 ) and is unsurprisingly XORed (
@@ -480,7 +421,7 @@ This is called the XOR chunk
 \end_inset
 
 ) with chunk 
-\begin_inset Formula $n$
+\begin_inset Formula $\mathsf{n}$
 \end_inset
 
 .
@@ -500,13 +441,11 @@ In this case we have selected XOR to represent a logical operation to obfuscate
 
 \begin_layout Example
 \align left
-
-\lang english
-\begin_inset Formula $c_{XOR1}\bigoplus c_{1}\equiv c_{x1}$
+\begin_inset Formula $\mathsf{c_{XOR1}\bigoplus c_{1}\equiv c_{x1}}$
 \end_inset
 
 , 
-\begin_inset Formula $c_{XOR2}\bigoplus c_{2}\equiv c_{x2}$
+\begin_inset Formula $\mathsf{c_{XOR2}\bigoplus c_{2}\equiv c_{x2}}$
 \end_inset
 
 , etc.
@@ -543,23 +482,23 @@ This is an area of debate as to whether this is non deterministic data,
 
 \begin_layout Definition
 Encrypt with key and IV is shown as 
-\begin_inset Formula $Enc_{[key][IV]}(data)$
+\begin_inset Formula $\mathsf{Enc_{[key][IV]}(data)}$
 \end_inset
 
 in the following example.
  It is assumed the key and the IV for chunk 
-\begin_inset Formula $n$
+\begin_inset Formula $\mathsf{n}$
 \end_inset
 
  are derived from separate portions of the hash of chunk 
-\begin_inset Formula $n+1$
+\begin_inset Formula $\mathsf{n+1}$
 \end_inset
 
 .
 \end_layout
 
 \begin_layout Example
-\begin_inset Formula $Enc{}_{[H(c_{n+1})][H(c_{n+1})]}(c_{xn})\equiv c_{xen}$
+\begin_inset Formula $\mathsf{Enc{}_{[H(c_{n+1})][H(c_{n+1})]}(c_{xn})\equiv c_{xen}}$
 \end_inset
 
 
@@ -569,7 +508,7 @@ in the following example.
 Therefore we have the final stage of the data represented as chunks of highly
  obfuscated chunks.
  We than take the hash of each chunk again 
-\begin_inset Formula $H(c_{xen})$
+\begin_inset Formula $\mathsf{H(c_{xen})}$
 \end_inset
 
  and rename each chunk with the hash of its content.
@@ -612,7 +551,7 @@ reference "sub:Overvew"
 \begin_inset Text
 
 \begin_layout Plain Layout
-\begin_inset Formula $fh$
+\begin_inset Formula $\mathsf{fh}$
 \end_inset
 
 
@@ -635,7 +574,7 @@ reference "sub:Overvew"
 \begin_inset Text
 
 \begin_layout Plain Layout
-\begin_inset Formula $H(c_{1})$
+\begin_inset Formula $\mathsf{H(c_{1})}$
 \end_inset
 
 
@@ -647,7 +586,7 @@ reference "sub:Overvew"
 \begin_inset Text
 
 \begin_layout Plain Layout
-\begin_inset Formula $H(c_{xe1})$
+\begin_inset Formula $\mathsf{H(c_{xe1})}$
 \end_inset
 
 
@@ -661,7 +600,7 @@ reference "sub:Overvew"
 \begin_inset Text
 
 \begin_layout Plain Layout
-\begin_inset Formula $H(c_{2})$
+\begin_inset Formula $\mathsf{H(c_{2})}$
 \end_inset
 
 
@@ -673,7 +612,7 @@ reference "sub:Overvew"
 \begin_inset Text
 
 \begin_layout Plain Layout
-\begin_inset Formula $H(c_{xe2})$
+\begin_inset Formula $\mathsf{H(c_{xe2})}$
 \end_inset
 
 
@@ -713,7 +652,7 @@ reference "sub:Overvew"
 \begin_inset Text
 
 \begin_layout Plain Layout
-\begin_inset Formula $H(c_{n})$
+\begin_inset Formula $\mathsf{H(c_{n})}$
 \end_inset
 
 
@@ -725,7 +664,7 @@ reference "sub:Overvew"
 \begin_inset Text
 
 \begin_layout Plain Layout
-\begin_inset Formula $H(c_{xen})$
+\begin_inset Formula $\mathsf{H(c_{xen})}$
 \end_inset
 
 
@@ -783,17 +722,17 @@ Data Atlas or Recursive Data Maps
 
 \begin_layout Standard
 The data maps 
-\begin_inset Formula $(dm)$
+\begin_inset Formula $\mathsf{(dm)}$
 \end_inset
 
  from multiple files can be concatenated into a new structure we call the
  Data Atlas 
-\begin_inset Formula $(da)$
+\begin_inset Formula $\mathsf{(da)}$
 \end_inset
 
 .
  Therefore 
-\begin_inset Formula $dm_{1}+dm_{2}+\ldots dm_{c}\equiv da$
+\begin_inset Formula $\mathsf{dm_{1}+dm_{2}+\ldots dm_{c}\equiv da}$
 \end_inset
 
 .
@@ -859,17 +798,16 @@ key "1"
 
 \end_inset
 
-David Irvine, maidsafe - a new network paradigm.
- david.irvine@maidsafe.net
+David Irvine, maidsafe: A new networking paradigm, david.irvine@maidsafe.net
 \end_layout
 
 \begin_layout Standard
 \begin_inset Note Comment
-status collapsed
+status open
 
 \begin_layout Plain Layout
 \begin_inset Note Note
-status collapsed
+status open
 
 \begin_layout Plain Layout
 Change this paragraphs style to 'Standard' to enable
@@ -916,7 +854,7 @@ options "IEEEbib"
 
 \begin_layout BiographyNoPhoto
 \begin_inset ERT
-status collapsed
+status open
 
 \begin_layout Plain Layout
 
@@ -927,7 +865,7 @@ status collapsed
 
 David Irvine
 \begin_inset ERT
-status collapsed
+status open
 
 \begin_layout Plain Layout
 

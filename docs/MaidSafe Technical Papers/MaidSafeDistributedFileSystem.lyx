@@ -18,7 +18,20 @@
 \graphics default
 \paperfontsize default
 \spacing single
-\use_hyperref false
+\use_hyperref true
+\pdf_title "MaidSafe Distributed File System"
+\pdf_author "David Irvine"
+\pdf_subject "Distributed File Systems"
+\pdf_keywords "security, freedom, privacy, file systems"
+\pdf_bookmarks true
+\pdf_bookmarksnumbered false
+\pdf_bookmarksopen false
+\pdf_bookmarksopenlevel 1
+\pdf_breaklinks false
+\pdf_pdfborder true
+\pdf_colorlinks false
+\pdf_backref false
+\pdf_pdfusetitle true
 \papersize default
 \use_geometry false
 \use_amsmath 0
@@ -47,8 +60,11 @@ MaidSafe Distributed File System
 \end_layout
 
 \begin_layout Author
-David Irvine, david.irvine@maidsafe.net, maidsafe.net limited (registered in
- Scotland Sc 297540)
+David Irvine, email: david.irvine@maidsafe.net, LifeStuff: David
+\end_layout
+
+\begin_layout Right Address
+maidsafe.net limited (registered in Scotland Sc 297540)
 \end_layout
 
 \begin_layout Date
@@ -83,7 +99,7 @@ status open
 
 \end_inset
 
-...
+
 \end_layout
 
 \begin_layout Standard

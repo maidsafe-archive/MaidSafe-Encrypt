@@ -299,31 +299,26 @@ void AccountAmendmentHandler::CreateNewAmendment(AccountAmendment amendment) {
     vault_service_logic_->kadops()->FindKClosestNodes(
         amendment.probable_pendings.front().request.chunkname(),
         boost::bind(&AccountAmendmentHandler::CreateNewAmendmentCallback, this,
-                    amendment, _1));
+                    amendment, _1, _2));
   }
 }
 
 void AccountAmendmentHandler::CreateNewAmendmentCallback(
     AccountAmendment amendment,
-    std::string find_nodes_response) {
+    const maidsafe::ReturnCode &result,
+    const std::vector<kad::Contact> &closest_nodes) {
   boost::mutex::scoped_lock lock(amendment_mutex_);
   AmendmentsByTimestamp::iterator it =
       amendments_.get<by_timestamp>().find(amendment);
   if (it == amendments_.get<by_timestamp>().end())
     return;
   AccountAmendment modified_amendment = *it;
-  std::vector<kad::Contact> contacts;
-  boost::mutex mutex;
-  boost::condition_variable cv;
-  maidsafe::ReturnCode result(maidsafe::kFindNodesError);
-  vault_service_logic_->kadops()->HandleFindCloseNodesResponse(
-      find_nodes_response, &contacts, &mutex, &cv, &result);
-  if (result == maidsafe::kSuccess && contacts.size() >=
+  if (result == maidsafe::kSuccess && closest_nodes.size() >=
       size_t(kUpperThreshold_)) {
     // Populate map of Chunk Info holders
-    for (size_t i = 0; i < contacts.size(); ++i) {
+    for (size_t i = 0; i < closest_nodes.size(); ++i) {
       modified_amendment.chunk_info_holders.insert(std::pair<std::string, bool>(
-          contacts.at(i).node_id().String(), false));
+          closest_nodes.at(i).node_id().String(), false));
     }
     // Update multi-index
     amendments_.get<by_timestamp>().replace(it, modified_amendment);

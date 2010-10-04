@@ -105,8 +105,10 @@ void VaultServiceLogic::AddToRemoteRefList(
       transport_id, K_));
   kad_ops_->FindKClosestNodes(request.chunkname(),
       boost::bind(static_cast< void(VaultServiceLogic::*)
-          (boost::shared_ptr<AddToReferenceListOpData>, std::string) >
-          (&VaultServiceLogic::RemoteOpStageTwo), this, data, _1));
+          (boost::shared_ptr<AddToReferenceListOpData>,
+           const maidsafe::ReturnCode&,
+           const std::vector<kad::Contact>&) >
+          (&VaultServiceLogic::RemoteOpStageTwo), this, data, _1, _2));
 }
 
 void VaultServiceLogic::AmendRemoteAccount(
@@ -135,8 +137,10 @@ void VaultServiceLogic::AmendRemoteAccount(
       request, account_name, found_local_result, callback, transport_id, K_));
   kad_ops_->FindKClosestNodes(account_name, boost::bind(
       static_cast< void(VaultServiceLogic::*)
-          (boost::shared_ptr<AmendRemoteAccountOpData>, std::string) >
-          (&VaultServiceLogic::RemoteOpStageTwo), this, data, _1));
+          (boost::shared_ptr<AmendRemoteAccountOpData>,
+           const maidsafe::ReturnCode&,
+           const std::vector<kad::Contact>&) >
+          (&VaultServiceLogic::RemoteOpStageTwo), this, data, _1, _2));
 }
 
 void VaultServiceLogic::RemoteVaultAbleToStore(
@@ -161,19 +165,18 @@ void VaultServiceLogic::RemoteVaultAbleToStore(
           found_local_result, callback, transport_id, K_));
   kad_ops_->FindKClosestNodes(account_name, boost::bind(
       static_cast< void(VaultServiceLogic::*)
-          (boost::shared_ptr<RemoteAccountStatusOpData>, std::string) >
-          (&VaultServiceLogic::RemoteOpStageTwo), this, data, _1));
+          (boost::shared_ptr<RemoteAccountStatusOpData>,
+           const maidsafe::ReturnCode&,
+           const std::vector<kad::Contact>&) >
+          (&VaultServiceLogic::RemoteOpStageTwo), this, data, _1, _2));
 }
 
 template <typename T>
-void VaultServiceLogic::RemoteOpStageTwo(boost::shared_ptr<T> data,
-                                         std::string find_nodes_response) {
-  // Handle result of Kademlia FindCloseNodes
-  boost::mutex mutex;
-  boost::condition_variable cv;
-  maidsafe::ReturnCode result(maidsafe::kFindNodesError);
-  kad_ops_->HandleFindCloseNodesResponse(find_nodes_response,
-                                         &data->contacts, &mutex, &cv, &result);
+void VaultServiceLogic::RemoteOpStageTwo(
+    boost::shared_ptr<T> data,
+    const maidsafe::ReturnCode &result,
+    const std::vector<kad::Contact> &closest_nodes) {
+  data->contacts = closest_nodes;
   if (result != maidsafe::kSuccess) {
 #ifdef DEBUG
     printf("In VSL::RemoteOpStageTwo for %s (%s), Kad lookup failed -- "

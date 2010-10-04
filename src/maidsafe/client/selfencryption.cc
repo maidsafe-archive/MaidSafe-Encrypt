@@ -50,6 +50,28 @@ namespace fs = boost::filesystem;
 
 namespace maidsafe {
 
+namespace self_encryption_utils {
+
+bool ResizeObfuscationHash(const std::string &input,
+                           const size_t &required_size,
+                           std::string *resized_data) {
+  if (!resized_data)
+    return false;
+  resized_data->clear();
+  resized_data->reserve(required_size);
+  std::string hash(input);
+  crypto::Crypto co;
+  co.set_hash_algorithm(crypto::SHA_512);
+  while (resized_data->size() < required_size) {
+    hash = co.Hash(hash, "", crypto::STRING_STRING, false);
+    resized_data->append(hash);
+  }
+  resized_data->resize(required_size);
+  return true;
+}
+
+}  // namespace self_encryption_utils
+
 SelfEncryption::SelfEncryption(boost::shared_ptr<ChunkStore> client_chunkstore)
     : client_chunkstore_(client_chunkstore), version_("Mk II"), min_chunks_(3),
       max_chunks_(40), default_chunk_size_(262144),
@@ -206,8 +228,8 @@ int SelfEncryption::EncryptContent(
       }
       // adjust size of obfuscate hash to match size of chunklet
       std::string resized_obs_hash;
-      ResizeObfuscationHash(obfuscate_hash, this_chunklet_size,
-                            &resized_obs_hash);
+      self_encryption_utils::ResizeObfuscationHash(obfuscate_hash,
+          this_chunklet_size, &resized_obs_hash);
       // output encrypted chunklet
       std::string post_enc;
       post_enc = enc_crypto.SymmEncrypt(
@@ -399,7 +421,7 @@ int SelfEncryption::Decrypt(const maidsafe::DataMap &dm,
         std::string this_chunklet = chunk.chunklet(i);
         // adjust size of obfuscate hash to match size of chunklet
         std::string resized_obs_hash;
-        ResizeObfuscationHash(obfuscate_hash,
+        self_encryption_utils::ResizeObfuscationHash(obfuscate_hash,
             static_cast<boost::uint16_t>(this_chunklet.size()),
             &resized_obs_hash);
         std::string decrypt;
@@ -668,20 +690,6 @@ bool SelfEncryption::HashUnique(const maidsafe::DataMap &dm, bool pre_enc,
       }
     }
   }
-  return true;
-}
-
-bool SelfEncryption::ResizeObfuscationHash(const std::string &obfuscate_hash,
-                                           const boost::uint16_t &length,
-                                           std::string *resized_obs_hash) {
-  *resized_obs_hash = obfuscate_hash;
-  boost::int32_t length_difference = length - obfuscate_hash.size();
-  std::string appendix = obfuscate_hash;
-  while (length_difference > 0) {
-    resized_obs_hash->append(appendix);
-    length_difference = length - resized_obs_hash->size();
-  }
-  resized_obs_hash->resize(length);
   return true;
 }
 

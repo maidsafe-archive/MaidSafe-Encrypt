@@ -26,7 +26,6 @@
 
 // google crash reporter
 #if defined(PD_LINUX)
-  #include <google/breakpad/common/linux/linux_syscall_support.h>
   #include <google/breakpad/client/linux/handler/exception_handler.h>
 #elif defined(__MSVC__)
   #include <client/windows/handler/exception_handler.h>

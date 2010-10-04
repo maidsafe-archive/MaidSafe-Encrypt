@@ -134,77 +134,86 @@ void KadOps::GetNodeContactDetails(const std::string &node_id,
 }
 
 void KadOps::FindKClosestNodes(const std::string &key,
-                               kad::VoidFunctorOneString callback) {
+                               VoidFuncIntContacts callback) {
   kad::KadId kad_id;
   if (!GetKadId(key, &kad_id)) {
-    callback(kad::kRpcResultFailure);
+    std::vector<kad::Contact> closest_nodes;
+    callback(kFindNodesError, closest_nodes);
     return;
   }
-  knode_.FindKClosestNodes(kad_id, callback);
+  knode_.FindKClosestNodes(kad_id, boost::bind(
+      &KadOps::FindKClosestNodesCallback, this, _1, callback));
+}
+
+void KadOps::FindKClosestNodesCallback(const std::string &response,
+                                       VoidFuncIntContacts callback) {
+//   printf("In KadOps::FindKClosestNodesCallback ...\n");
+  std::vector<kad::Contact> closest_nodes;
+  kad::FindResponse find_response;
+  if (!find_response.ParseFromString(response)) {
+#ifdef DEBUG
+    printf("In KadOps::FindKClosestNodesCallback, can't parse result.\n");
+#endif
+    callback(kFindNodesParseError, closest_nodes);
+    return;
+  }
+
+  if (find_response.result() != kad::kRpcResultSuccess) {
+#ifdef DEBUG
+    printf("In KadOps::FindKClosestNodesCallback, Kademlia RPC failed.\n");
+#endif
+    callback(kFindNodesFailure, closest_nodes);
+    return;
+  }
+
+  for (int i = 0; i < find_response.closest_nodes_size(); ++i) {
+    kad::Contact contact;
+    contact.ParseFromString(find_response.closest_nodes(i));
+    closest_nodes.push_back(contact);
+  }
+
+  callback(kSuccess, closest_nodes);
 }
 
 int KadOps::BlockingFindKClosestNodes(const std::string &key,
                                       std::vector<kad::Contact> *contacts) {
   if (contacts == NULL) {
 #ifdef DEBUG
-    printf("In KadOps::FindKNodes, NULL pointer passed.\n");
+    printf("In KadOps::BlockingFindKClosestNodes, NULL pointer passed.\n");
 #endif
     return kFindNodesError;
   }
   contacts->clear();
   boost::mutex mutex;
   boost::condition_variable cv;
-  ReturnCode result(kFindNodesError);
-  FindKClosestNodes(key, boost::bind(&KadOps::HandleFindCloseNodesResponse,
-                                     this, _1, contacts, &mutex, &cv, &result));
+  ReturnCode result(kGeneralError);
+  FindKClosestNodes(key, boost::bind(&KadOps::BlockingFindKClosestNodesCallback,
+                                     this, _1, _2, contacts, &mutex, &cv,
+                                     &result));
   boost::mutex::scoped_lock lock(mutex);
-  while (result == kFindNodesError)
+  while (result == kGeneralError)
     cv.wait(lock);
   return result;
 }
 
-void KadOps::HandleFindCloseNodesResponse(
-    const std::string &response,
-    std::vector<kad::Contact> *contacts,
+void KadOps::BlockingFindKClosestNodesCallback(
+    const ReturnCode &result_,
+    const std::vector<kad::Contact> &closest_nodes_,
+    std::vector<kad::Contact> *closest_nodes,
     boost::mutex *mutex,
     boost::condition_variable *cv,
     ReturnCode *result) {
-  if (contacts == NULL || mutex == NULL || cv == NULL || result == NULL) {
+  if (closest_nodes == NULL || mutex == NULL || cv == NULL || result == NULL) {
 #ifdef DEBUG
-    printf("In KadOps::HandleFindCloseNodesResponse, NULL pointer passed.\n");
+    printf("In KadOps::BlockingFindKClosestNodesCallback, "
+           "NULL pointer passed.\n");
 #endif
-    return;
-  }
-
-  kad::FindResponse find_response;
-  if (!find_response.ParseFromString(response)) {
-#ifdef DEBUG
-    printf("In KadOps::HandleFindCloseNodesResponse, can't parse result.\n");
-#endif
-    boost::mutex::scoped_lock lock(*mutex);
-    *result = kFindNodesParseError;
-    cv->notify_one();
-    return;
-  }
-
-  if (find_response.result() != kad::kRpcResultSuccess) {
-#ifdef DEBUG
-    printf("In KadOps::HandleFindCloseNodesResponse, Kademlia RPC failed.\n");
-#endif
-    boost::mutex::scoped_lock lock(*mutex);
-    *result = kFindNodesFailure;
-    cv->notify_one();
     return;
   }
 
   boost::mutex::scoped_lock lock(*mutex);
-  for (int i = 0; i < find_response.closest_nodes_size(); ++i) {
-    kad::Contact contact;
-    contact.ParseFromString(find_response.closest_nodes(i));
-    contacts->push_back(contact);
-  }
-
-  *result = kSuccess;
+  *result = result_;
+  *closest_nodes = closest_nodes_;
   cv->notify_one();
 }
 

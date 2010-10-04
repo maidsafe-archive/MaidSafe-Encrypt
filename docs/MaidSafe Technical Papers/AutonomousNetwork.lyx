@@ -4,7 +4,7 @@
 \begin_header
 \textclass IEEEtran
 \use_default_options false
-\language english
+\language british
 \inputencoding default
 \font_roman default
 \font_sans default
@@ -18,7 +18,20 @@
 \graphics default
 \paperfontsize default
 \spacing single
-\use_hyperref false
+\use_hyperref true
+\pdf_title "Autonomous Network"
+\pdf_author "David Irvine, Fraser Hutchison, Steve Mücklisch"
+\pdf_subject "Autonomous Network"
+\pdf_keywords "security, freedom, privacy, authentication, encryption, autonomous"
+\pdf_bookmarks true
+\pdf_bookmarksnumbered false
+\pdf_bookmarksopen false
+\pdf_bookmarksopenlevel 1
+\pdf_breaklinks false
+\pdf_pdfborder true
+\pdf_colorlinks false
+\pdf_backref false
+\pdf_pdfusetitle true
 \papersize default
 \use_geometry false
 \use_amsmath 0
@@ -47,8 +60,12 @@ Autonomous Network
 \end_layout
 
 \begin_layout Author
-David Irvine, david.irvine@maidsafe.net, Fraser Hutchison, Steve Mücklisch,
- maidsafe.net limited (registered in Scotland Sc 297540)
+David Irvine, email: david.irvine@maidsafe.net, LifeStuff: David, Fraser
+ Hutchison, Steve Mücklisch
+\end_layout
+
+\begin_layout Right Address
+maidsafe.net limited (registered in Scotland Sc 297540)
 \end_layout
 
 \begin_layout Date
@@ -82,7 +99,7 @@ status open
 
 \end_inset
 
-...
+
 \end_layout
 
 \begin_layout Standard
@@ -521,29 +538,11 @@ key "2"
 
 ).
  The 
-\family roman
-\series medium
-\shape up
-\size normal
-\emph off
-\bar no
-\noun off
-\color none
-
 \begin_inset Formula $\mathsf{MAID}$
 \end_inset
 
- c
-\family default
-\series default
-\shape default
-\size default
-\emph default
-\bar default
-\noun default
-\color inherit
-an be used by another Node or component (even a person) to act on the network
- with the same authority which the 
+ can be used by another Node or component (even a person) to act on the
+ network with the same authority which the 
 \begin_inset Formula $\mathsf{PMID}$
 \end_inset
 
@@ -756,10 +755,6 @@ In the case of storing or deleting a chunk, the
 Overview
 \end_layout
 
-\begin_layout Subsection
-Proposed Solution
-\end_layout
-
 \begin_layout Standard
 The answer to the current issues as described in 
 \begin_inset CommandInset ref
@@ -892,7 +887,7 @@ reference "tab:Kademlia-RPCs"
 \begin_inset Float table
 wide true
 sideways false
-status collapsed
+status open
 
 \begin_layout Plain Layout
 \begin_inset Tabular
@@ -1466,7 +1461,7 @@ reference "tab:Node-RPCs-(Miscellaneous)"
 \begin_inset Float table
 wide true
 sideways false
-status collapsed
+status open
 
 \begin_layout Plain Layout
 \begin_inset Tabular
@@ -1619,28 +1614,10 @@ StoreChunk
 \end_inset
 
 , 
-\family roman
-\series medium
-\shape up
-\size normal
-\emph off
-\bar no
-\noun off
-\color none
-
 \begin_inset Formula $\mathsf{Sig_{[MAID_{priv}]}(PMID_{pub})}$
 \end_inset
 
 , 
-\family default
-\series default
-\shape default
-\size default
-\emph default
-\bar default
-\noun default
-\color inherit
-
 \begin_inset Formula $\mathsf{RequestSignature}$
 \end_inset
 
@@ -1927,28 +1904,10 @@ CacheChunk
 \end_inset
 
 , 
-\family roman
-\series medium
-\shape up
-\size normal
-\emph off
-\bar no
-\noun off
-\color none
-
 \begin_inset Formula $\mathsf{Sig_{[MAID_{priv}]}(PMID_{pub})}$
 \end_inset
 
 , 
-\family default
-\series default
-\shape default
-\size default
-\emph default
-\bar default
-\noun default
-\color inherit
-
 \begin_inset Formula $\mathsf{RequestSignature}$
 \end_inset
 
@@ -2023,7 +1982,7 @@ name "tab:Node-RPCs-(ChunkManagement)"
 \begin_inset Float table
 wide true
 sideways false
-status collapsed
+status open
 
 \begin_layout Plain Layout
 \begin_inset Tabular
@@ -2237,28 +2196,10 @@ RemoveFromWatchList
 \end_inset
 
 , 
-\family roman
-\series medium
-\shape up
-\size normal
-\emph off
-\bar no
-\noun off
-\color none
-
 \begin_inset Formula $\mathsf{Sig_{[MAID_{priv}]}(PMID_{pub})}$
 \end_inset
 
 , 
-\family default
-\series default
-\shape default
-\size default
-\emph default
-\bar default
-\noun default
-\color inherit
-
 \begin_inset Formula $\mathsf{RequestSignature}$
 \end_inset
 
@@ -2319,25 +2260,7 @@ AddToReferenceList
 \begin_inset Formula $\mathsf{StoreContract}$
 \end_inset
 
-,
-\family roman
-\series medium
-\shape up
-\size normal
-\emph off
-\bar no
-\noun off
-\color none
- 
-\family default
-\series default
-\shape default
-\size default
-\emph default
-\bar default
-\noun default
-\color inherit
-
+, 
 \begin_inset Formula $\mathsf{RequestSignature}$
 \end_inset
 
@@ -2412,7 +2335,7 @@ name "tab:Node-RPCs-(ChunkInfoManagement)"
 \begin_inset Float table
 wide true
 sideways false
-status collapsed
+status open
 
 \begin_layout Plain Layout
 \begin_inset Tabular
@@ -2580,28 +2503,10 @@ ExpectAmendment
 \end_inset
 
 , 
-\family roman
-\series medium
-\shape up
-\size normal
-\emph off
-\bar no
-\noun off
-\color none
-
 \begin_inset Formula $\mathsf{Sig_{[MAID_{priv}]}(PMID_{pub})}$
 \end_inset
 
 , 
-\family default
-\series default
-\shape default
-\size default
-\emph default
-\bar default
-\noun default
-\color inherit
-
 \begin_inset Formula $\mathsf{RequestSignature}$
 \end_inset
 
@@ -2675,28 +2580,10 @@ AccountStatus
 \end_inset
 
 , 
-\family roman
-\series medium
-\shape up
-\size normal
-\emph off
-\bar no
-\noun off
-\color none
-
 \begin_inset Formula $\mathsf{Sig_{[MAID_{priv}]}(PMID_{pub})}$
 \end_inset
 
 , 
-\family default
-\series default
-\shape default
-\size default
-\emph default
-\bar default
-\noun default
-\color inherit
-
 \begin_inset Formula $\mathsf{RequestSignature}$
 \end_inset
 
@@ -2784,7 +2671,7 @@ name "tab:Node-RPCs-(AccountManagement)"
 \begin_inset Float table
 wide true
 sideways false
-status collapsed
+status open
 
 \begin_layout Plain Layout
 \begin_inset Tabular
@@ -2873,28 +2760,10 @@ GetSyncData
 \end_inset
 
 , 
-\family roman
-\series medium
-\shape up
-\size normal
-\emph off
-\bar no
-\noun off
-\color none
-
 \begin_inset Formula $\mathsf{Sig_{[MAID_{priv}]}(PMID_{pub})}$
 \end_inset
 
 , 
-\family default
-\series default
-\shape default
-\size default
-\emph default
-\bar default
-\noun default
-\color inherit
-
 \begin_inset Formula $\mathsf{RequestSignature}$
 \end_inset
 
@@ -2968,28 +2837,10 @@ GetAccount
 \end_inset
 
 , 
-\family roman
-\series medium
-\shape up
-\size normal
-\emph off
-\bar no
-\noun off
-\color none
-
 \begin_inset Formula $\mathsf{Sig_{[MAID_{priv}]}(PMID_{pub})}$
 \end_inset
 
 , 
-\family default
-\series default
-\shape default
-\size default
-\emph default
-\bar default
-\noun default
-\color inherit
-
 \begin_inset Formula $\mathsf{RequestSignature}$
 \end_inset
 
@@ -3055,28 +2906,10 @@ GetChunkInfo
 \end_inset
 
 , 
-\family roman
-\series medium
-\shape up
-\size normal
-\emph off
-\bar no
-\noun off
-\color none
-
 \begin_inset Formula $\mathsf{Sig_{[MAID_{priv}]}(PMID_{pub})}$
 \end_inset
 
 , 
-\family default
-\series default
-\shape default
-\size default
-\emph default
-\bar default
-\noun default
-\color inherit
-
 \begin_inset Formula $\mathsf{RequestSignature}$
 \end_inset
 
@@ -3142,28 +2975,10 @@ GetBufferPacket
 \end_inset
 
 , 
-\family roman
-\series medium
-\shape up
-\size normal
-\emph off
-\bar no
-\noun off
-\color none
-
 \begin_inset Formula $\mathsf{Sig_{[MAID_{priv}]}(PMID_{pub})}$
 \end_inset
 
 , 
-\family default
-\series default
-\shape default
-\size default
-\emph default
-\bar default
-\noun default
-\color inherit
-
 \begin_inset Formula $\mathsf{RequestSignature}$
 \end_inset
 
@@ -3238,7 +3053,7 @@ name "tab:Node-RPCs-(SynchronisationOfManagementData)"
 \begin_inset Float table
 wide true
 sideways false
-status collapsed
+status open
 
 \begin_layout Plain Layout
 \begin_inset Tabular
@@ -3335,28 +3150,10 @@ CreateBP
 \end_inset
 
 , 
-\family roman
-\series medium
-\shape up
-\size normal
-\emph off
-\bar no
-\noun off
-\color none
-
 \begin_inset Formula $\mathsf{Sig_{[MAID_{priv}]}(PMID_{pub})}$
 \end_inset
 
 , 
-\family default
-\series default
-\shape default
-\size default
-\emph default
-\bar default
-\noun default
-\color inherit
-
 \begin_inset Formula $\mathsf{RequestSignature}$
 \end_inset
 
@@ -3421,28 +3218,10 @@ ModifyBPInfo
 \end_inset
 
 , 
-\family roman
-\series medium
-\shape up
-\size normal
-\emph off
-\bar no
-\noun off
-\color none
-
 \begin_inset Formula $\mathsf{Sig_{[MAID_{priv}]}(PMID_{pub})}$
 \end_inset
 
 , 
-\family default
-\series default
-\shape default
-\size default
-\emph default
-\bar default
-\noun default
-\color inherit
-
 \begin_inset Formula $\mathsf{RequestSignature}$
 \end_inset
 
@@ -3504,28 +3283,10 @@ GetBPMessages
 \end_inset
 
 , 
-\family roman
-\series medium
-\shape up
-\size normal
-\emph off
-\bar no
-\noun off
-\color none
-
 \begin_inset Formula $\mathsf{Sig_{[MAID_{priv}]}(PMID_{pub})}$
 \end_inset
 
 , 
-\family default
-\series default
-\shape default
-\size default
-\emph default
-\bar default
-\noun default
-\color inherit
-
 \begin_inset Formula $\mathsf{RequestSignature}$
 \end_inset
 
@@ -3594,28 +3355,10 @@ AddBPMessage
 \end_inset
 
 , 
-\family roman
-\series medium
-\shape up
-\size normal
-\emph off
-\bar no
-\noun off
-\color none
-
 \begin_inset Formula $\mathsf{Sig_{[MAID_{priv}]}(PMID_{pub})}$
 \end_inset
 
 , 
-\family default
-\series default
-\shape default
-\size default
-\emph default
-\bar default
-\noun default
-\color inherit
-
 \begin_inset Formula $\mathsf{RequestSignature}$
 \end_inset
 
@@ -3685,7 +3428,7 @@ name "tab:Node-RPCs-(BufferPacketManagement)"
 \begin_inset Float table
 wide true
 sideways false
-status collapsed
+status open
 
 \begin_layout Plain Layout
 \begin_inset Tabular
@@ -3774,15 +3517,6 @@ SetLocalVaultOwned
 \end_inset
 
 , 
-\family roman
-\series medium
-\shape up
-\size normal
-\emph off
-\bar no
-\noun off
-\color none
-
 \begin_inset Formula $\mathsf{Sig_{[MAID_{priv}]}(PMID_{pub})}$
 \end_inset
 
@@ -4054,7 +3788,7 @@ reference "fig:Add-to-Reference"
 \begin_inset Float figure
 wide false
 sideways false
-status collapsed
+status open
 
 \begin_layout Plain Layout
 \begin_inset Caption
@@ -4102,7 +3836,7 @@ Watch Lists
 The same group also holds a list of peers that are "watching" a chunk (referred
  to as a Watch List), which means they stored the chunk at some point
 \begin_inset Foot
-status collapsed
+status open
 
 \begin_layout Plain Layout
 If the chunk pre-existed on the network, they may not have actually uploaded
@@ -4122,7 +3856,7 @@ reference "fig:Add-to-Watch"
 \begin_inset Float figure
 wide false
 sideways false
-status collapsed
+status open
 
 \begin_layout Plain Layout
 \begin_inset Caption
@@ -4157,7 +3891,7 @@ name "fig:Add-to-Watch"
 \begin_layout Standard
 Watch Lists are currently limited to 250 entries
 \begin_inset Foot
-status collapsed
+status open
 
 \begin_layout Plain Layout
 This figure is currently arbitrary and will be calculated based on several
@@ -4181,7 +3915,7 @@ reference "fig:Remove-from-Watch"
 \begin_inset Float figure
 wide false
 sideways false
-status collapsed
+status open
 
 \begin_layout Plain Layout
 \begin_inset Caption
@@ -4380,7 +4114,7 @@ Each Chunk Info Holder then proceeds to look up the
 \begin_inset Float figure
 wide false
 sideways false
-status collapsed
+status open
 
 \begin_layout Plain Layout
 \begin_inset Caption
@@ -4683,7 +4417,7 @@ key "2"
 
 \end_inset
 
-David Irvine, Peer to Peer Public Key Infrastructure, david.irvine@maidsafe.net
+David Irvine, "Peer to Peer" Public Key Infrastructure, david.irvine@maidsafe.net
 \end_layout
 
 \begin_layout Bibliography
@@ -4705,16 +4439,16 @@ key "4"
 
 \end_inset
 
-David Irvine, maidsafe: A new network paradigm, david.irvine@maidsafe.net
+David Irvine, maidsafe: A new networking paradigm, david.irvine@maidsafe.net
 \end_layout
 
 \begin_layout Standard
 \begin_inset Note Comment
-status collapsed
+status open
 
 \begin_layout Plain Layout
 \begin_inset Note Note
-status collapsed
+status open
 
 \begin_layout Plain Layout
 Change this paragraphs style to 'Standard' to enable
@@ -4761,7 +4495,7 @@ options "IEEEbib"
 
 \begin_layout BiographyNoPhoto
 \begin_inset ERT
-status collapsed
+status open
 
 \begin_layout Plain Layout
 
@@ -4772,7 +4506,7 @@ status collapsed
 
 David Irvine
 \begin_inset ERT
-status collapsed
+status open
 
 \begin_layout Plain Layout
 
@@ -4781,15 +4515,11 @@ status collapsed
 
 \end_inset
 
- 
-\lang british
-is a Scottish Engineer and innovator who has spent the last 12 years researching
- ways to make computers function in a more efficient manner.
+ is a Scottish Engineer and innovator who has spent the last 12 years researchin
+g ways to make computers function in a more efficient manner.
 \end_layout
 
 \begin_layout BiographyNoPhoto
-
-\lang british
 He is an Inventor listed on more than 20 patent submissions and was Designer
  / Project Manager of one of the World's largest private networks (Saudi
  Aramco, over $300M).
@@ -4799,15 +4529,11 @@ He is an Inventor listed on more than 20 patent submissions and was Designer
 \end_layout
 
 \begin_layout BiographyNoPhoto
-
-\lang british
 He has presented technology at Google (Seattle), British Computer Society
  (Christmas Lecture) and many others.
 \end_layout
 
 \begin_layout BiographyNoPhoto
-
-\lang british
 He has spent many years as a lifeboat Helmsman and is a keen sailor when
  time permits.
 \end_layout

@@ -610,21 +610,25 @@ TEST_F(SelfEncryptionTest, BEH_MAID_HashUnique) {
 
 TEST_F(SelfEncryptionTest, BEH_MAID_ResizeObfuscationHash) {
   SelfEncryption se(client_chunkstore_);
-  std::string hash = se.SHA512(static_cast<std::string>("abc"));
+  std::string input("abc");
+  std::string hash = se.SHA512(input);
   ASSERT_EQ(base::EncodeToHex(hash),
         "ddaf35a193617abacc417349ae20413112e6fa4e89a97ea20a9eeee64b55d39a219299"
         "2a274fc1a836ba3c23a3feebbd454d4423643ce80e2a9ac94fa54ca49f");
-  std::string amended_hash;
-  ASSERT_TRUE(se.ResizeObfuscationHash(base::EncodeToHex(hash), 129,
-              &amended_hash));
-  ASSERT_EQ(amended_hash, base::EncodeToHex(hash)+"d");
-  ASSERT_TRUE(se.ResizeObfuscationHash(base::EncodeToHex(hash), 10,
-              &amended_hash));
-  ASSERT_EQ(amended_hash, "ddaf35a193");
-  ASSERT_TRUE(se.ResizeObfuscationHash(base::EncodeToHex(hash), 1280,
-              &amended_hash));
-  ASSERT_EQ(amended_hash, base::EncodeToHex(
-            hash+hash+hash+hash+hash+hash+hash+hash+hash+hash));
+  std::string amended_hash("Rubbish");
+  EXPECT_TRUE(self_encryption_utils::ResizeObfuscationHash(input, 65,
+                                                           &amended_hash));
+  char appended(55);
+  EXPECT_EQ(amended_hash, hash + appended);
+  EXPECT_TRUE(self_encryption_utils::ResizeObfuscationHash(input, 10,
+                                                           &amended_hash));
+  EXPECT_EQ(std::string("\xdd\xaf\x35\xa1\x93\x61\x7a\xba\xcc\x41"),
+            amended_hash);
+  EXPECT_TRUE(self_encryption_utils::ResizeObfuscationHash(input, 200,
+                                                           &amended_hash));
+  EXPECT_EQ(std::string("\x91\xee\x3b\x36\xd\x3e\x5e\xe\xd\xe"),
+            amended_hash.substr(190, 10));
+  EXPECT_FALSE(self_encryption_utils::ResizeObfuscationHash(hash, 10, NULL));
 }
 
 TEST_F(SelfEncryptionTest, BEH_MAID_SelfEncryptFiles) {

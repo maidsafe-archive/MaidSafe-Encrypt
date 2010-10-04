@@ -635,9 +635,8 @@ int SEHandler::EncryptDm(const std::string &dir_path, const std::string &ser_dm,
   enc_hash = co.Hash(parent_key + key, "", crypto::STRING_STRING, false);
   xor_hash = co.Hash(key + parent_key, "", crypto::STRING_STRING, false);
 
-  while (xor_hash_extended.size() < ser_dm.size())
-    xor_hash_extended.append(xor_hash);
-  xor_hash_extended = xor_hash_extended.substr(0, ser_dm.size());
+  self_encryption_utils::ResizeObfuscationHash(xor_hash, ser_dm.size(),
+                                               &xor_hash_extended);
   crypto::Crypto encryptor;
   encryptor.set_symm_algorithm(crypto::AES_256);
   *enc_dm = encryptor.SymmEncrypt(encryptor.Obfuscate(ser_dm, xor_hash_extended,
@@ -670,9 +669,8 @@ int SEHandler::DecryptDm(const std::string &dir_path, const std::string &enc_dm,
   decryptor.set_symm_algorithm(crypto::AES_256);
   intermediate = decryptor.SymmDecrypt(enc_dm, "", crypto::STRING_STRING,
                                        enc_hash);
-  while (xor_hash_extended.size() < intermediate.size())
-    xor_hash_extended.append(xor_hash);
-  xor_hash_extended = xor_hash_extended.substr(0, intermediate.size());
+  self_encryption_utils::ResizeObfuscationHash(xor_hash, intermediate.size(),
+                                               &xor_hash_extended);
 
   *ser_dm = decryptor.Obfuscate(intermediate, xor_hash_extended, crypto::XOR);
   if (ser_dm->empty()) {

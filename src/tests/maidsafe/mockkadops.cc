@@ -58,9 +58,4 @@ std::string MakeFindNodesResponse(const FindNodesResponseType &type,
   return ser_node;
 }
 
-void RunCallback(const std::string &find_nodes_response,
-                 const kad::VoidFunctorOneString &callback) {
-  callback(find_nodes_response);
-}
-
 }  // namespace mock_kadops

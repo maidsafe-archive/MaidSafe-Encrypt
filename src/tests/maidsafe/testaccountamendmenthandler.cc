@@ -611,19 +611,25 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_CreateNewAmendment) {
 
   // Expectations
   EXPECT_CALL(*vsl_.kadops(), FindKClosestNodes(far_chunk_name,
-      testing::An<kad::VoidFunctorOneString>()))
+      testing::An<maidsafe::VoidFuncIntContacts>()))
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_kadops::RunCallback, fail_parse_result_, _1))))
+          boost::bind(&maidsafe::MockKadOps::ThreadedFindKClosestNodesCallback,
+                      vsl_.kadops(), fail_parse_result_, _1))))        // Call 1
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_kadops::RunCallback, fail_result_, _1))))  // Call 2
+          boost::bind(&maidsafe::MockKadOps::ThreadedFindKClosestNodesCallback,
+                      vsl_.kadops(), fail_result_, _1))))              // Call 2
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_kadops::RunCallback, few_result_, _1))))  // Call 3
+          boost::bind(&maidsafe::MockKadOps::ThreadedFindKClosestNodesCallback,
+                      vsl_.kadops(), few_result_, _1))))               // Call 3
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_kadops::RunCallback, good_result_, _1))))  // Call 4
+          boost::bind(&maidsafe::MockKadOps::ThreadedFindKClosestNodesCallback,
+                      vsl_.kadops(), good_result_, _1))))              // Call 4
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_kadops::RunCallback, good_result_, _1))))  // Call 5
+          boost::bind(&maidsafe::MockKadOps::ThreadedFindKClosestNodesCallback,
+                      vsl_.kadops(), good_result_, _1))))              // Call 5
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_kadops::RunCallback, good_result_, _1))));  // Cll 6
+          boost::bind(&maidsafe::MockKadOps::ThreadedFindKClosestNodesCallback,
+                      vsl_.kadops(), good_result_, _1))));             // Call 6
 
   // Call 1 - Fail to parse FindNodes response
   int test_run(0);
@@ -816,7 +822,8 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_CreateNewAmendment) {
   ASSERT_EQ(size_t(3), aah_.amendments_.size());
 
   // Shouldn't re-add amendment
-  aah_.CreateNewAmendmentCallback(test_amendments.at(test_run), good_result_);
+  aah_.CreateNewAmendmentCallback(test_amendments.at(test_run),
+                                  maidsafe::kSuccess, good_contacts_);
   ASSERT_EQ(size_t(3), aah_.amendments_.size());
 }
 
@@ -865,9 +872,10 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_CreateNewWithExpecteds) {
 
   // Expectations
   EXPECT_CALL(*vsl_.kadops(), FindKClosestNodes(far_chunk_name,
-      testing::An<kad::VoidFunctorOneString>()))
+      testing::An<maidsafe::VoidFuncIntContacts>()))
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_kadops::RunCallback, good_result_, _1))));
+          boost::bind(&maidsafe::MockKadOps::ThreadedFindKClosestNodesCallback,
+                      vsl_.kadops(), good_result_, _1))));
 
   maidsafe::ExpectAmendmentRequest expect_amendment_request;
   expect_amendment_request.set_amendment_type(
@@ -1127,18 +1135,23 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_ProcessRequest) {
 
   // Expectations
   EXPECT_CALL(*vsl_.kadops(), FindKClosestNodes(chunk_name,
-      testing::An<kad::VoidFunctorOneString>()))
+      testing::An<maidsafe::VoidFuncIntContacts>()))
       .Times(testing::AtLeast(5))
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_kadops::RunCallback, good_result_, _1))))  // Call 2
+          boost::bind(&maidsafe::MockKadOps::ThreadedFindKClosestNodesCallback,
+                      vsl_.kadops(), good_result_, _1))))              // Call 2
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_kadops::RunCallback, good_result_, _1))))  // Call 3
+          boost::bind(&maidsafe::MockKadOps::ThreadedFindKClosestNodesCallback,
+                      vsl_.kadops(), good_result_, _1))))              // Call 3
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_kadops::RunCallback, good_result_, _1))))  // Call 4
+          boost::bind(&maidsafe::MockKadOps::ThreadedFindKClosestNodesCallback,
+                      vsl_.kadops(), good_result_, _1))))              // Call 4
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_kadops::RunCallback, fail_result_, _1))))  // Call 5
+          boost::bind(&maidsafe::MockKadOps::ThreadedFindKClosestNodesCallback,
+                      vsl_.kadops(), fail_result_, _1))))              // Call 5
       .WillRepeatedly(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_kadops::RunCallback, good_result_, _1))));
+          boost::bind(&maidsafe::MockKadOps::ThreadedFindKClosestNodesCallback,
+                      vsl_.kadops(), good_result_, _1))));
 
   // Call 1 - Request has wrong type
   int test_run(0);
