@@ -313,9 +313,11 @@ int Authentication::GetUserData(const std::string &password,
         return kSuccess;
       }
     }
-
     return kPasswordFailure;
   }
+#ifdef DEBUG
+  printf("Authentication::GetUserData - Using MID TMID\n");
+#endif
   ss_->SetPassword(password);
   return kSuccess;
 }
@@ -340,13 +342,20 @@ int Authentication::CreateUserSysPackets(const std::string &username,
       &Authentication::CreateUserSysPackets, this, _1, username, pin, func,
       &count, &calledback));
 
-  while (system_packets_result_ == kPendingResult)
+  while (system_packets_result_ == kPendingResult) {
+#ifdef DEBUG
+    printf(".");
+#endif
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
+  }
+#ifdef DEBUG
+  printf("\n");
+#endif
 
   return system_packets_result_;
 }
 
-void Authentication::CreateUserSysPackets(const ReturnCode rc,
+void Authentication::CreateUserSysPackets(const ReturnCode &rc,
                                           const std::string &username,
                                           const std::string &pin,
                                           VoidFuncOneInt vfoi,
@@ -375,8 +384,7 @@ void Authentication::CreateUserSysPackets(const ReturnCode rc,
 }
 
 void Authentication::CreateSignaturePacket(
-    boost::shared_ptr<SystemPacketCreation> spc,
-    const PacketType &type_da) {
+    boost::shared_ptr<SystemPacketCreation> spc, const PacketType &type_da) {
   crypto::RsaKeyPair kp;
   while (!crypto_key_pairs_.GetKeyPair(&kp)) {
     kp.ClearKeys();
@@ -398,8 +406,7 @@ void Authentication::CreateSignaturePacket(
 }
 
 void Authentication::CreateSignaturePacketKeyUnique(
-    const ReturnCode &rc,
-    boost::shared_ptr<FindSystemPacket> fsp) {
+    const ReturnCode &rc, boost::shared_ptr<FindSystemPacket> fsp) {
   if (rc == kKeyUnique) {
     int n = ss_->AddKey(fsp->pt,
                         boost::any_cast<std::string>(fsp->pp["name"]),
@@ -414,15 +421,14 @@ void Authentication::CreateSignaturePacketKeyUnique(
         &Authentication::CreateSignaturePacketStore, this, _1, fsp);
     sm_->StorePacket(boost::any_cast<std::string>(fsp->pp["name"]),
                      boost::any_cast<std::string>(fsp->pp["publicKey"]),
-                     fsp->pt, PRIVATE, "", kDoNothingReturnFailure, func);
+                     fsp->pt, PRIVATE, "", func);
   } else {
     // return to CreateSignaturePacket
   }
 }
 
 void Authentication::CreateSignaturePacketStore(
-    const ReturnCode &rc,
-    boost::shared_ptr<FindSystemPacket> fsp) {
+    const ReturnCode &rc, boost::shared_ptr<FindSystemPacket> fsp) {
   if (rc == kSuccess) {
     ++fsp->spc->packet_count;
     switch (fsp->pt) {
@@ -464,7 +470,7 @@ void Authentication::CreateMidPacket(boost::shared_ptr<FindSystemPacket> fsp) {
 
   sm_->StorePacket(boost::any_cast<std::string>(mid_result["name"]),
                    boost::any_cast<std::string>(mid_result["encRid"]),
-                   MID, PRIVATE, "", kDoNothingReturnFailure,
+                   MID, PRIVATE, "",
                    boost::bind(&Authentication::CreateSignaturePacketStore,
                                this, _1, fsp));
 }
@@ -481,7 +487,7 @@ void Authentication::CreateSmidPacket(boost::shared_ptr<FindSystemPacket> fsp) {
   ss_->SetSmidRid(ss_->MidRid());
   sm_->StorePacket(boost::any_cast<std::string>(smid_result["name"]),
                    boost::any_cast<std::string>(smid_result["encRid"]),
-                   SMID, PRIVATE, "", kDoNothingReturnFailure,
+                   SMID, PRIVATE, "",
                    boost::bind(&Authentication::CreateSignaturePacketStore,
                                this, _1, fsp));
 }
@@ -514,7 +520,7 @@ void Authentication::CreateMaidPmidPacket(
   }
   sm_->StorePacket(boost::any_cast<std::string>(result["name"]),
                    boost::any_cast<std::string>(result["publicKey"]),
-                   fsp->pt, PRIVATE, "", kDoNothingReturnFailure,
+                   fsp->pt, PRIVATE, "",
                    boost::bind(&Authentication::CreateSignaturePacketStore,
                                this, _1, fsp));
 }
@@ -537,8 +543,7 @@ int Authentication::CreateTmidPacket(const std::string &username,
   PacketParams tmid_result = tmidPacket->Create(user_params);
   std::string enc_tmid(boost::any_cast<std::string>(tmid_result["data"]));
   std::string name_tmid(boost::any_cast<std::string>(tmid_result["name"]));
-  if (StorePacket(name_tmid, enc_tmid, TMID, kDoNothingReturnFailure, "")
-      != kSuccess) {
+  if (StorePacket(name_tmid, enc_tmid, TMID, "") != kSuccess) {
     ss_->SetMidRid(0);
     ss_->SetSmidRid(0);
     return kAuthenticationError;
@@ -589,8 +594,7 @@ void Authentication::SaveSession(const std::string &ser_da,
 }
 
 void Authentication::UpdateSmidCallback(
-    const ReturnCode &rc,
-    boost::shared_ptr<SaveSessionData> ssd) {
+    const ReturnCode &rc, boost::shared_ptr<SaveSessionData> ssd) {
   if (rc != kSuccess) {
     ssd->vfoi(rc);
 #ifdef DEBUG
@@ -623,8 +627,7 @@ void Authentication::UpdateSmidCallback(
 }
 
 void Authentication::DeleteSmidTmidCallback(
-    const ReturnCode &rc,
-    boost::shared_ptr<SaveSessionData> ssd) {
+    const ReturnCode &rc, boost::shared_ptr<SaveSessionData> ssd) {
   if (rc != kSuccess) {
     ssd->vfoi(rc);
 #ifdef DEBUG
@@ -652,8 +655,7 @@ void Authentication::DeleteSmidTmidCallback(
 }
 
 void Authentication::UpdateMidCallback(
-    const ReturnCode &rc,
-    boost::shared_ptr<SaveSessionData> ssd) {
+    const ReturnCode &rc, boost::shared_ptr<SaveSessionData> ssd) {
   if (rc != kSuccess) {
     ssd->vfoi(rc);
 #ifdef DEBUG
@@ -676,14 +678,13 @@ void Authentication::UpdateMidCallback(
 
   sm_->StorePacket(boost::any_cast<std::string>(tmidresult["name"]),
                    boost::any_cast<std::string>(tmidresult["data"]),
-                   TMID, PRIVATE, "", kDoNothingReturnFailure,
+                   TMID, PRIVATE, "",
                    boost::bind(&Authentication::StoreMidTmidCallback,
                                this, _1, ssd));
 }
 
 void Authentication::StoreMidTmidCallback(
-    const ReturnCode &rc,
-    boost::shared_ptr<SaveSessionData> ssd) {
+    const ReturnCode &rc, boost::shared_ptr<SaveSessionData> ssd) {
   if (rc != kSuccess) {
     ssd->vfoi(rc);
 #ifdef DEBUG
@@ -702,62 +703,17 @@ void Authentication::StoreMidTmidCallback(
 }
 
 int Authentication::SaveSession(const std::string &ser_da) {
-  PacketParams params;
-  PacketParams result;
-  params["username"] = ss_->Username();
-  params["pin"] = ss_->Pin();
-
-  boost::shared_ptr<Packet> midPacket(PacketFactory::Factory(MID));
-  boost::shared_ptr<Packet> smidPacket(PacketFactory::Factory(SMID));
-  boost::shared_ptr<Packet> tmidPacket(PacketFactory::Factory(TMID));
-  if (ss_->MidRid() != ss_->SmidRid()) {
-    params["rid"] = ss_->MidRid();
-    result = smidPacket->Create(params);
-    if (StorePacket(boost::any_cast<std::string>(result["name"]),
-        boost::any_cast<std::string>(result["encRid"]), SMID, kOverwrite, "")
-        != kSuccess) {
-      return kAuthenticationError;
-    }
-
-    params["rid"] = ss_->SmidRid();
-    std::string tmidname(tmidPacket->PacketName(params));
-    GenericPacket gp;
-    gp.ParseFromString(ss_->SmidTmidContent());
-    if (DeletePacket(tmidname, gp.data(), TMID) != kSuccess) {
-      return kAuthenticationError;
-    }
-    ss_->SetSmidRid(ss_->MidRid());
-    ss_->SetSmidTmidContent(ss_->TmidContent());
+  boost::mutex mutex;
+  boost::condition_variable cond_var;
+  int result(kPendingResult);
+  SaveSession(ser_da, boost::bind(&Authentication::PacketOpCallback, this, _1,
+                                  &mutex, &cond_var, &result));
+  {
+    boost::mutex::scoped_lock lock(mutex);
+    while (result == kPendingResult)
+      cond_var.wait(lock);
   }
-
-  PacketParams mid_result = midPacket->Create(params);
-  while (ss_->MidRid() == boost::any_cast<boost::uint32_t>(mid_result["rid"]))
-    mid_result = midPacket->Create(params);
-
-  params["rid"] = boost::any_cast<boost::uint32_t>(mid_result["rid"]);
-  params["password"] = ss_->Password();
-  params["data"] = ser_da;
-  PacketParams tmidresult = tmidPacket->Create(params);
-  if (StorePacket(boost::any_cast<std::string>(tmidresult["name"]),
-      boost::any_cast<std::string>(tmidresult["data"]), TMID,
-      kDoNothingReturnFailure, "") != kSuccess) {
-    return kAuthenticationError;
-  }
-
-  GenericPacket packet;
-  packet.set_data(boost::any_cast<std::string>(tmidresult["data"]));
-  packet.set_signature(crypto_.AsymSign(packet.data(), "",
-      ss_->PrivateKey(ANTMID), crypto::STRING_STRING));
-  ss_->SetTmidContent(packet.SerializeAsString());
-
-  if (StorePacket(boost::any_cast<std::string>(mid_result["name"]),
-      boost::any_cast<std::string>(mid_result["encRid"]), MID, kOverwrite, "")
-      != kSuccess) {
-    return kAuthenticationError;
-  }
-
-  ss_->SetMidRid(boost::any_cast<boost::uint32_t>(mid_result["rid"]));
-  return kSuccess;
+  return result;
 }
 
 int Authentication::RemoveMe(std::list<KeyAtlasRow> sig_keys) {
@@ -855,8 +811,8 @@ int Authentication::CreatePublicName(const std::string &public_username) {
               boost::any_cast<std::string>(result["publicKey"]),
               "");
   if (StorePacket(boost::any_cast<std::string>(result["name"]),
-      boost::any_cast<std::string>(result["publicKey"]), ANMPID,
-      kDoNothingReturnFailure, "") != kSuccess) {
+                  boost::any_cast<std::string>(result["publicKey"]), ANMPID, "")
+      != kSuccess) {
 #ifdef DEBUG
     printf("Authentication::CreatePublicName - Buggered in ANMPID\n");
 #endif
@@ -870,8 +826,8 @@ int Authentication::CreatePublicName(const std::string &public_username) {
                                  ss_->PrivateKey(ANMPID),
                                  crypto::STRING_STRING);
 
-  if (StorePacket(boost::any_cast<std::string>(mpid_result["name"]), data,
-      MPID, kDoNothingReturnFailure, "") != kSuccess) {
+  if (StorePacket(boost::any_cast<std::string>(mpid_result["name"]), data, MPID,
+                  "") != kSuccess) {
 #ifdef DEBUG
     printf("Authentication::CreatePublicName - Buggered in MPID\n");
 #endif
@@ -928,8 +884,8 @@ int Authentication::ChangeUsername(const std::string &ser_da,
     mid_result = midPacket->Create(user_params);
 
   if (StorePacket(boost::any_cast<std::string>(mid_result["name"]),
-      boost::any_cast<std::string>(mid_result["encRid"]), MID,
-      kDoNothingReturnFailure, "") != kSuccess) {
+                  boost::any_cast<std::string>(mid_result["encRid"]), MID, "")
+      != kSuccess) {
 #ifdef DEBUG
     printf("Authentication::ChangeUsername: Can't store new MID\n");
 #endif
@@ -945,8 +901,8 @@ int Authentication::ChangeUsername(const std::string &ser_da,
   user_params["rid"] = new_smid_rid;
   PacketParams smid_result = smidPacket->Create(user_params);
   if (StorePacket(boost::any_cast<std::string>(smid_result["name"]),
-      boost::any_cast<std::string>(smid_result["encRid"]), SMID,
-      kDoNothingReturnFailure, "") != kSuccess) {
+                  boost::any_cast<std::string>(smid_result["encRid"]), SMID, "")
+      != kSuccess) {
 #ifdef DEBUG
     printf("Authentication::ChangeUsername: Can't store new SMID\n");
 #endif
@@ -960,8 +916,8 @@ int Authentication::ChangeUsername(const std::string &ser_da,
   PacketParams tmid_result = tmidPacket->Create(user_params);
   std::string new_mid_tmid(boost::any_cast<std::string>(tmid_result["data"]));
   if (StorePacket(boost::any_cast<std::string>(tmid_result["name"]),
-      boost::any_cast<std::string>(tmid_result["data"]), TMID,
-      kDoNothingReturnFailure, "") != kSuccess) {
+                  boost::any_cast<std::string>(tmid_result["data"]), TMID, "")
+      != kSuccess) {
 #ifdef DEBUG
     printf("Authentication::ChangeUsername: Can't store new TMID\n");
 #endif
@@ -984,7 +940,7 @@ int Authentication::ChangeUsername(const std::string &ser_da,
   tmid_result = tmidPacket->Create(old_user_params);
   std::string new_smid_tmid(boost::any_cast<std::string>(tmid_result["data"]));
   if (StorePacket(boost::any_cast<std::string>(tmid_result["name"]),
-      new_smid_tmid, TMID, kDoNothingReturnFailure, "") != kSuccess) {
+      new_smid_tmid, TMID, "") != kSuccess) {
     return kAuthenticationError;
   }
 
@@ -1091,8 +1047,8 @@ int Authentication::ChangePin(const std::string &ser_da,
     mid_result = midPacket->Create(user_params);
 
   if (StorePacket(boost::any_cast<std::string>(mid_result["name"]),
-      boost::any_cast<std::string>(mid_result["encRid"]), MID,
-      kDoNothingReturnFailure, "") != kSuccess) {
+                  boost::any_cast<std::string>(mid_result["encRid"]), MID, "")
+      != kSuccess) {
     return kAuthenticationError;
   }
 
@@ -1105,8 +1061,8 @@ int Authentication::ChangePin(const std::string &ser_da,
   user_params["rid"] = new_smid_rid;
   PacketParams smid_result = smidPacket->Create(user_params);
   if (StorePacket(boost::any_cast<std::string>(smid_result["name"]),
-      boost::any_cast<std::string>(smid_result["encRid"]), SMID,
-      kDoNothingReturnFailure, "") != kSuccess) {
+                  boost::any_cast<std::string>(smid_result["encRid"]), SMID, "")
+      != kSuccess) {
     return kAuthenticationError;
   }
 
@@ -1117,8 +1073,8 @@ int Authentication::ChangePin(const std::string &ser_da,
   PacketParams tmid_result = tmidPacket->Create(user_params);
   std::string new_mid_tmid(boost::any_cast<std::string>(tmid_result["data"]));
   if (StorePacket(boost::any_cast<std::string>(tmid_result["name"]),
-      boost::any_cast<std::string>(tmid_result["data"]), TMID,
-      kDoNothingReturnFailure, "") != kSuccess) {
+                  boost::any_cast<std::string>(tmid_result["data"]), TMID, "")
+      != kSuccess) {
     return kAuthenticationError;
   }
 
@@ -1138,7 +1094,7 @@ int Authentication::ChangePin(const std::string &ser_da,
   tmid_result = tmidPacket->Create(old_user_params);
   std::string new_smid_tmid(boost::any_cast<std::string>(tmid_result["data"]));
   if (StorePacket(boost::any_cast<std::string>(tmid_result["name"]),
-      new_smid_tmid, TMID, kDoNothingReturnFailure, "") != kSuccess) {
+      new_smid_tmid, TMID, "") != kSuccess) {
     return kAuthenticationError;
   }
 
@@ -1248,8 +1204,9 @@ std::string Authentication::CreateSignaturePackets(const PacketType &type_da,
               "");
 
   if (StorePacket(boost::any_cast<std::string>(result["name"]),
-      boost::any_cast<std::string>(result["publicKey"]), type_da,
-      kDoNothingReturnFailure, "") != kSuccess) {
+                  boost::any_cast<std::string>(result["publicKey"]), type_da,
+                  "")
+      != kSuccess) {
     ss_->RemoveKey(type_da);
     return "";
   }
@@ -1347,7 +1304,7 @@ void Authentication::CreateMSIDPacket(kad::VoidFunctorOneString cb) {
 
   n = StorePacket(boost::any_cast<std::string>(result["name"]),
       boost::any_cast<std::string>(result["publicKey"]), MSID,
-      kDoNothingReturnFailure, boost::any_cast<std::string>(result["name"]));
+      boost::any_cast<std::string>(result["name"]));
   ss_->DeletePrivateShare(atts[0], 0);
 
   StoreChunkResponse result_msg;
@@ -1370,22 +1327,24 @@ void Authentication::CreateMSIDPacket(kad::VoidFunctorOneString cb) {
 int Authentication::StorePacket(const std::string &packet_name,
                                 const std::string &value,
                                 const PacketType &type,
-                                const IfPacketExists &if_exists,
                                 const std::string &msid) {
 // TODO(Fraser#5#): 2010-01-28 - Use callbacks properly to allow several stores
 //                               to happen concurrently.
   boost::mutex mutex;
   boost::condition_variable cond_var;
-  int result(kGeneralError);
+  int result(kPendingResult);
   VoidFuncOneInt func = boost::bind(&Authentication::PacketOpCallback, this, _1,
                                     &mutex, &cond_var, &result);
-  sm_->StorePacket(packet_name, value, type, PRIVATE_SHARE, msid, if_exists,
-                   func);
+  sm_->StorePacket(packet_name, value, type, PRIVATE_SHARE, msid, func);
   {
     boost::mutex::scoped_lock lock(mutex);
-    while (result == kGeneralError)
+    while (result == kPendingResult)
       cond_var.wait(lock);
   }
+#ifdef DEBUG
+  if (result != kSuccess)
+    printf("!!!!!!!!!!!!!!!!!!!!!\nAuthentication::StorePacket %i\n\n", result);
+#endif
   return result;
 }
 
@@ -1396,18 +1355,22 @@ int Authentication::DeletePacket(const std::string &packet_name,
 //                               to happen concurrently.
   boost::mutex mutex;
   boost::condition_variable cond_var;
-  int result(kGeneralError);
+  int result(kPendingResult);
   VoidFuncOneInt func = boost::bind(&Authentication::PacketOpCallback, this, _1,
                                     &mutex, &cond_var, &result);
   std::vector<std::string> values;
-  if ("" != value)
+  if (!value.empty())
     values.push_back(value);
   sm_->DeletePacket(packet_name, values, type, PRIVATE, "", func);
   {
     boost::mutex::scoped_lock lock(mutex);
-    while (result == kGeneralError)
+    while (result == kPendingResult)
       cond_var.wait(lock);
   }
+#ifdef DEBUG
+  if (result != kSuccess)
+    printf("!!!!!!!!!!!!!!!!!!!!\nAuthentication::DeletePacket %i\n\n", result);
+#endif
   return result;
 }
 
@@ -1421,7 +1384,11 @@ void Authentication::PacketOpCallback(const int &store_manager_result,
 }
 
 std::string Authentication::EncryptedDataMidSmid(boost::uint32_t rid) {
-  std::string password = crypto_.SecurePassword(ss_->Username(),
+  std::string salt = crypto_.Hash(ss_->Pin() + ss_->Username(), "",
+                                  crypto::STRING_STRING, false);
+  if (salt.empty())
+    return "";
+  std::string password = crypto_.SecurePassword(ss_->Username(), salt,
                          boost::lexical_cast<boost::uint16_t>(ss_->Pin()));
   return crypto_.SymmEncrypt(boost::lexical_cast<std::string>(rid), "",
                              crypto::STRING_STRING, password);

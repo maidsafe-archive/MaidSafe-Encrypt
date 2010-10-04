@@ -53,7 +53,7 @@ int KeyAtlas::AddKey(const int &packet_type,
   if (it != key_ring_.end())
     key_ring_.erase(packet_type);
   std::string signed_pub_key = signed_public_key;
-  if (signed_pub_key == "")
+  if (signed_pub_key.empty())
     signed_pub_key = co_.AsymSign(public_key, "", private_key,
                                   crypto::STRING_STRING);
   KeyAtlasRow kar(packet_type, packet_id, private_key, public_key,

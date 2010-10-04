@@ -1,0 +1,1173 @@
+#LyX 1.6.7 created this file. For more info see http://www.lyx.org/
+\lyxformat 345
+\begin_document
+\begin_header
+\textclass IEEEtran
+\use_default_options false
+\language british
+\inputencoding default
+\font_roman default
+\font_sans default
+\font_typewriter default
+\font_default_family default
+\font_sc false
+\font_osf false
+\font_sf_scale 100
+\font_tt_scale 100
+
+\graphics default
+\paperfontsize default
+\spacing single
+\use_hyperref true
+\pdf_title "'Peer to Peer' Public Key Infrastructure"
+\pdf_author "David Irvine"
+\pdf_subject "Validation"
+\pdf_keywords "security, freedom, privacy, DHT, encryption"
+\pdf_bookmarks true
+\pdf_bookmarksnumbered false
+\pdf_bookmarksopen false
+\pdf_bookmarksopenlevel 1
+\pdf_breaklinks false
+\pdf_pdfborder true
+\pdf_colorlinks false
+\pdf_backref false
+\pdf_pdfusetitle true
+\papersize default
+\use_geometry false
+\use_amsmath 0
+\use_esint 0
+\cite_engine basic
+\use_bibtopic true
+\paperorientation portrait
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\defskip medskip
+\quotes_language english
+\papercolumns 2
+\papersides 1
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\author "" 
+\author "" 
+\end_header
+
+\begin_body
+
+\begin_layout Title
+"Peer to Peer" Public Key Infrastructure
+\end_layout
+
+\begin_layout Author
+David Irvine, email: david.irvine@maidsafe.net, LifeStuff: David
+\end_layout
+
+\begin_layout Right Address
+maidsafe.net limited (registered in Scotland Sc 297540)
+\end_layout
+
+\begin_layout Date
+September, 2010
+\end_layout
+
+\begin_layout Abstract
+This paper presents a system of validation that utilises asymmetric encryption
+ to create a Public Key Infrastructure (PKI) in a manner that requires no
+ servers or centralised control.
+ This method provides an extremely coherent and mathematically secure method
+ of validation that can be employed in any modern network or system, but
+ is very well suited to distributed networks and in particular overlay networks
+ such as Distributed Hash Tables (DHTs).
+ 
+\end_layout
+
+\begin_layout Keywords
+security, freedom, privacy, DHT, encryption
+\end_layout
+
+\begin_layout MarkBoth
+maidsafe.net limited company confidential Version 0.1
+\begin_inset ERT
+status collapsed
+
+\begin_layout Plain Layout
+
+}{
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset CommandInset toc
+LatexCommand tableofcontents
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset FloatList table
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset FloatList algorithm
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Newpage pagebreak
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Introduction
+\begin_inset Note Note
+status collapsed
+
+\begin_layout Plain Layout
+Don't panic the section numbering may look different in
+\end_layout
+
+\begin_layout Plain Layout
+LyX but LaTeX uses the correct Roman numerals and
+\end_layout
+
+\begin_layout Plain Layout
+Alpha for section counters.
+\end_layout
+
+\begin_layout Plain Layout
+It's just that LyX doesn't handle counters other than arabic
+\end_layout
+
+\begin_layout Plain Layout
+numerals.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+PARstart{V}{alidation}
+\end_layout
+
+\end_inset
+
+ is a requirement for any connecting parties who are to exchange information
+ to ensure uniqueness, proof of identity and generally any situation where
+ the information requires verification or authentication.
+ This paper presents a system that employs many of the techniques used today,
+ such as asymmetric encryption.
+\end_layout
+
+\begin_layout Standard
+Another significant differentiator in the system presented, is the ability
+ for such a system to create multiple key-pairs and restrict a key's purpose
+ to identification only.
+ Such a key can only be used to validate the identity of a particular node
+ or entity, but can take limited or no further actions aside from that.
+ All other (significant) actions are the responsibility of a non-identification
+ key.
+\end_layout
+
+\begin_layout Standard
+This type of system has been the subject of many a wish list
+\begin_inset CommandInset citation
+LatexCommand cite
+key "1"
+
+\end_inset
+
+ for some time now.
+ 
+\end_layout
+
+\begin_layout Subsection
+The Issues Addressed by this Paper
+\end_layout
+
+\begin_layout Standard
+The issue with today's PKI networks is the balance between trusting a chain
+ of control or trusting known entities in a so called "web of trust system".
+ The former has to exist in a manner to be secure at the root and more important
+ly trusted.
+ The latter is open to abuse should enough untrustworthy entities manage
+ to rate each other as trusted in a manner synonymous with a Sybil attack
+ on such networks where groups surround good entities and effectively intercept
+ or hide information.
+\end_layout
+
+\begin_layout Standard
+Both of these systems are very much open to abuse and neither are able to
+ provide a secure system to allow freedom of the creation of identifiable
+ nodes.
+ 
+\end_layout
+
+\begin_layout Subsection
+Conventions Used
+\end_layout
+
+\begin_layout Standard
+This paper does not require all the operations listed below, but lists these
+ for example implementations, which are outlined later.
+\end_layout
+
+\begin_layout Standard
+Hash = Hash function such as SHA, MD5, etc.
+ 
+\end_layout
+
+\begin_layout Standard
+Symm = Symmetric encryption such as AES, 3DES, etc.
+ 
+\end_layout
+
+\begin_layout Standard
+Asym = Asymmetric encryption such as RSA, ECC, etc.
+\end_layout
+
+\begin_layout Standard
+PBKDF2 = Password-Based Key Derivation Function or similar
+\end_layout
+
+\begin_layout Standard
+Kpriv = private key (used to decrypt public-key-encrypted data or to sign
+ data)
+\end_layout
+
+\begin_layout Standard
+Kpub = public key (used to encrypt data or to validate signatures)
+\end_layout
+
+\begin_layout Standard
+netput[K]/[V] = put a value (V) on the network with a key (K).
+\end_layout
+
+\begin_layout Standard
+netget[K] = get value from network using the key (K).
+\end_layout
+
+\begin_layout Subsection
+Asymmetric public key encryption
+\begin_inset CommandInset label
+LatexCommand label
+name "sub:Asymmetric-public-key"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+This paper makes use of public key cryptography.
+ This is a system of encryption that does not require passwords or keys
+ to be passed around, rather it allows the publication of a public key 
+\begin_inset Formula $\mathsf{Kpub}$
+\end_inset
+
+.
+ This key can be thought of as the encryption key, where any data encrypted
+ by this key can only
+\begin_inset Foot
+status open
+
+\begin_layout Plain Layout
+Here we assume the perfect algorithm and implementation of such, this is
+ unlikely to exist in perfection.
+\end_layout
+
+\end_inset
+
+ be decrypted by the holder of the corresponding private key 
+\begin_inset Formula $\mathsf{Kpriv}$
+\end_inset
+
+.
+ Therefore the private key can be considered as the key for unlocking the
+ data.
+ It should be noted however, that the opposite is also true, in that data
+ encrypted with the private key can be decrypted by the public key.
+ This seems strange and useless (as everyone has access to the public key),
+ but is used to excellent effect as described shortly.
+\end_layout
+
+\begin_layout Subsection
+Cryptographically secure hash
+\begin_inset CommandInset label
+LatexCommand label
+name "sub:Cryptographically-secure-hash"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+A hash function can be thought of as a digital fingerprint.
+ Just as a fingerprint of a person is supposed to be unique, then a digital
+ hash function is also supposedly unique.
+ We have all heard of two people with identical fingerprints (but perhaps
+ have never met any!) and in the digital world it can be possible to get
+ two pieces of data with the same hash result.
+ This is referred to as a collision and reduces the security of the hash
+ algorithm.
+ The more secure the algorithm, then the likelihood of a collision is reduced.
+ It is very similar to taking more points of reference on an actual fingerprint
+ to reduce collisions in that area of science also.
+ This is an area where both systems share a similarity in the increasing
+ complexity of measurement and recording of data points of reference.
+\end_layout
+
+\begin_layout Standard
+In cryptographically secure hashing, the data is analysed and a fixed length
+ key called the hash of the data is produced.
+ Again similarly to human fingerprinting a hash cannot reveal data just
+ as a fingerprint cannot reveal a person (i.e.
+ you cannot recreate the person from the print) and you cannot recreate
+ the data from the hash.
+ 
+\end_layout
+
+\begin_layout Standard
+Early hash algorithms such as MD4, MD5 and even early SHA are considered
+ broken, in the sense that they simply allow too many collisions to occur.
+ Hence larger descriptors (keylengths) and more efficient algorithms are
+ almost always required.
+ 
+\begin_inset Foot
+status open
+
+\begin_layout Plain Layout
+you can see where the problem exists as the logical conclusion is a key
+ longer than any known peice of uncompressable data, to ensure no collisions
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Return to asymmetric encryption to produce digital signatures
+\end_layout
+
+\begin_layout Standard
+In 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:Asymmetric-public-key"
+
+\end_inset
+
+ we completed the section with a bit of a laugh at the thought of using
+ a private key to encrypt data that the public key could decrypt.
+ This is, as promised, used to great effect with the addition of hashing
+ as described in 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:Cryptographically-secure-hash"
+
+\end_inset
+
+.
+ 
+\end_layout
+
+\begin_layout Standard
+If we now take a piece of data and hash that data, to produce a fixed length
+ key and encrypt that hash with our private key, anyone can decrypt the
+ encrypted hash and then hash the data themselves to confirm it matches
+ the hash that was decrypted.
+ This confirms the piece of data passed to you is in fact cryptographically
+ guaranteed to be the piece of data the signature refers to, otherwise the
+ decrypted hash would be different.
+\end_layout
+
+\begin_layout Standard
+This is digital signing (albeit with some detail missing) at its simplest.
+ This is as detailed an understanding as is required to manage this paper.
+\end_layout
+
+\begin_layout Section
+Implementation
+\end_layout
+
+\begin_layout Subsection
+Methodology
+\end_layout
+
+\begin_layout Standard
+This validation system requires, as all cryptographically secure validations
+ systems do today, manipulation of key pairs.
+ These key pairs are themselves used to generate the identity rather than
+ being later tied to an identity and this is one of the fundamental tenets
+ of this paper.
+ The system this paper proposes will operate equally well with databases,
+ DHTs or any key addressable storage system.
+ In some cases this system will work outwith such key addressable systems,
+ although in a reduced fashion.
+\end_layout
+
+\begin_layout Subsection
+Simple Configuration
+\end_layout
+
+\begin_layout Standard
+In a relatively simple method, identities are created as follows: 
+\begin_inset Formula $\mathsf{Hash(Kpub_{1})=Identity}$
+\end_inset
+
+.
+ This strictly ensures the identity is mathematically linked to an identity
+ rather than being later tied to one.
+ 
+\begin_inset Float algorithm
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset Caption
+
+\begin_layout Plain Layout
+Hash(Public key) == ID 
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Addition of a key revocation method
+\begin_inset CommandInset label
+LatexCommand label
+name "sub:key-revocation"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+In another small step we can introduce the ability for a revocation system.
+ this is done as follows: 
+\begin_inset Formula $\mathsf{Hash(Kpub_{1}+SignatureKpriv_{2})=Identity}$
+\end_inset
+
+ .
+ For key revocation to operate, the identity packets should be stored in
+ a way that retains all information as immutable, unless the signer of the
+ data requests amendment or deletion.
+ In this case deletion is not recommended and replacement of the public
+ key with a false key (all 0s for instance) would be identified quickly
+ as a revoked key.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float algorithm
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset Caption
+
+\begin_layout Plain Layout
+Hash(Public key + Signature) == ID 
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Alone this would not seem to make sense as we generally wish to have a chosen
+ identity and then secure this with a validation system.
+ Although in some cases the system would be a good enough method, systems
+ such as telephone numbers or bar-codes on product etc.
+ may be facilitated by the system in this simple state.
+ 
+\end_layout
+
+\begin_layout Subsection
+Passing ID between parties
+\begin_inset CommandInset label
+LatexCommand label
+name "sub:Passing-ID-between"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Whereas the ID packet may be stored in any key addressable database or network
+ as previously stated, there does exist a mathematically secure mechanism
+ for doing so.
+ This is possible as we have introduced a secure cryptographic hashing mechanism
+ which allows us to ensure that it is unlikely that we can produce two pieces
+ of data that will hash collide.
+ 
+\end_layout
+
+\begin_layout Standard
+With this in mind and the fact that the ID packet described in 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:key-revocation"
+
+\end_inset
+
+ is the hash of the content of the packet, in this case a public key and
+ an (optional) signature, which we now know is another encrypted hash.
+ Consider a message formatted as shown in Table 1.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float table
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "Flo:table1"
+
+\end_inset
+
+
+\begin_inset Caption
+
+\begin_layout Plain Layout
+\begin_inset OptArg
+status open
+
+\begin_layout Plain Layout
+Message structure
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\begin_inset Tabular
+<lyxtabular version="3" rows="1" columns="5">
+<features>
+<column alignment="center" valignment="top" width="0">
+<column alignment="center" valignment="top" width="0">
+<column alignment="center" valignment="top" width="0">
+<column alignment="center" valignment="top" width="0">
+<column alignment="center" valignment="top" width="0">
+<row interlinespace="1sp">
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\mathsf{Kpub_{1}}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\mathsf{Sig_{Kpriv_{2}}}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\mathsf{Kpub_{2}}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\mathsf{Sig_{Kpriv_{2}}}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Payload
+\end_layout
+
+\end_inset
+</cell>
+</row>
+</lyxtabular>
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+In this scenario the message is received and is allegedly from an ID.
+ The first 2 fields represent the ID packet that would be stored in the
+ key addressable storage mechanism described earlier.
+ Here though we can simply hash the first two fields and confirm the hash
+ matches the ID we think the message is from.
+ If the message is also signed then this is confirmation of the message's
+ validity.
+ If there is no signature, a valid response would be to to take the public
+ key in field 1, encrypt a message or challenge back to the sender, or indeed
+ simply encrypt the reply the sender requested from you using this key.
+ 
+\end_layout
+
+\begin_layout Standard
+It is therefore possible to validate an identity even without a key addressable
+ network as long as all parties send the header fields required to identify
+ themselves in the first place.
+ However, the addition of key addressable storage allows better key revocation
+ in cases where 
+\begin_inset Formula $\mathsf{Kpriv_{1}}$
+\end_inset
+
+may be compromised (e.g.
+ if it is stored on accessible media such as a hard drive).
+ The most efficient schemes would allow checking key validity on occasion
+ and this is possible in two ways as described below.
+ 
+\end_layout
+
+\begin_layout Subsection
+Key validity checks
+\end_layout
+
+\begin_layout Standard
+We can easily tell if a key is valid cryptographically using either of the
+ schemes previously described.
+ However, there are situations where a cryptographically valid key is not
+ in fact valid from our perspective and this is when, for whatever reason,
+ a key has been revoked.
+ In such cases the system requires to be cryptographically secure in the
+ revocation scheme being used and also has to ensure key validity is maintained
+ and revoked keys no longer get used.
+ 
+\end_layout
+
+\begin_layout Standard
+In the scheme described in 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:Passing-ID-between"
+
+\end_inset
+
+ validity is checked but currency of the key is not; a problem since it
+ will remain cryptographically valid forever! Unless a check is introduced
+ into the system to tell if a key is currently valid as well as cryptographicall
+y valid, then there is room for abuse.
+ Therefore a revocation scheme that can be bypassed would be next to useless.
+ 
+\end_layout
+
+\begin_layout Standard
+There are two methods in this paper of ensuring a key is currently valid
+ and these are as follows:
+\end_layout
+
+\begin_layout Subsubsection
+Check validity by looking up key
+\end_layout
+
+\begin_layout Standard
+The validity of a key can be confirmed by forcing a lookup of the key in
+ the key addressable storage medium.
+ A mid way measure may be that keys passed in messages are tested for validity
+ at random.
+ Either way would remove invalid credentials in a balance between speed
+ and efficiency, with the forced lookup being the most efficient from a
+ security perspective but perhaps too slow for some implementations.
+\end_layout
+
+\begin_layout Subsubsection
+Check validity by message passing
+\end_layout
+
+\begin_layout Standard
+This section is somewhat involved and we need to step back a little and
+ look again at the structure of the key pairs in the double checked message
+ as shown in Table 1.
+ It is notable in this case that key pair 2 must be valid as they sign key
+ pair 1, therefore it follows if key pair 2 is invalid then key pair 1 is
+ automatically invalidated
+\begin_inset Foot
+status open
+
+\begin_layout Plain Layout
+This must be true otherwise we are saying key pair 1 is signed by an non
+ existant or invalid key pair 2
+\end_layout
+
+\end_inset
+
+.
+ 
+\end_layout
+
+\begin_layout Standard
+Taking this into account we can clearly see the chain of validity in this
+ case.
+ The chain being a set of two key pairs.
+\end_layout
+
+\begin_layout Standard
+In the case of message passing, the message should contain both ID packets
+ as per the table.
+ The validity of key 2 is then tested to confirm key 1 is valid.
+ This does make sense in the design so far where key 2 is never available
+ on a disk or anywhere that can be placed in a position of mistrust.
+ To do so we simply encrypt a message back using ID2's public key and the
+ sender should be able to answer and/or sign a response.
+ This does though assume the request being made is a request that has come
+ from an entity that is at a higher level than the key1 holding node alone.
+ So this mechanism is only valid for higher level messages and not the lower
+ level messages or actions that are restricted to the node level entity.
+ 
+\end_layout
+
+\begin_layout Standard
+So in this implementation, the message passing checking mechanism is only
+ effective with a certain message type and therefore in a closed network
+ or system where message types are in fact known and/or able to be identified.
+\end_layout
+
+\begin_layout Standard
+The maidsafe
+\begin_inset CommandInset citation
+LatexCommand cite
+key "4"
+
+\end_inset
+
+ network can provide such a system as it depends on a node that can be identifie
+d and behave, building rank which a user (who has 
+\begin_inset Formula $\mathsf{Kpriv_{2}}$
+\end_inset
+
+) can use as the owner of 
+\begin_inset Formula $\mathsf{Kpriv_{1}}$
+\end_inset
+
+thereby getting the benefits of any quid pro quo relationship with a node
+ and the person's rank on the system.
+ In this case the person can easily revoke and recreate the key, transferring
+ any rank across to the new key.
+ 
+\end_layout
+
+\begin_layout Subsection
+Combined with DHT
+\end_layout
+
+\begin_layout Standard
+All DHT networks have a particular requirement in common: to create a network
+ address that is unique.
+ There are various techniques for achieving this (e.g.
+ chord
+\begin_inset CommandInset citation
+LatexCommand cite
+key "2"
+
+\end_inset
+
+ uses the hash of the IP/PORT combination, Kademlia
+\begin_inset CommandInset citation
+LatexCommand cite
+key "3"
+
+\end_inset
+
+ uses a random hash and so on).
+ Using the above method and actually storing the identification packet on
+ the network can provide for uniqueness while simultaneously providing a
+ mechanism for finding a node's public key, which can in turn be used to
+ send encrypted information to that node or to validate a signature from
+ that node.
+ 
+\end_layout
+
+\begin_layout Standard
+This is implemented as follows: 
+\begin_inset Formula $\mathsf{netget[Hash(Kpub_{1})]}$
+\end_inset
+
+to check for uniqueness and if false then the true keys can be stored as
+ follows: 
+\begin_inset Formula $\mathsf{netput[Hash(Kpub_{1})/[Kpub_{1}]}$
+\end_inset
+
+ this is the simple case above without revocation, simply for brevity.
+ 
+\begin_inset Box Boxed
+position "t"
+hor_pos "c"
+has_inner_box 1
+inner_pos "t"
+use_parbox 0
+width "100col%"
+special "none"
+height "1in"
+height_special "totalheight"
+status collapsed
+
+\begin_layout Plain Layout
+The hash size chosen should be of the same length as the network addressing
+ scheme in place for completeness.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float algorithm
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset Caption
+
+\begin_layout Plain Layout
+if (Hash(Public key + Signature) == Unique) then Hash(Public key + Signature)
+ == ID == Network address
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula \[
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Improvements with security of private keys
+\end_layout
+
+\begin_layout Standard
+If such a system were implemented in a DHT or similar publicly connected
+ system (as web servers are), then the issue over the security of the private
+ key is paramount.
+ In today’s networks this is achieved via some brute force techniques such
+ as firewalls, secured hard drives, private key passwords (which make automatic
+ reboot of a server require human intervention) and other custom approaches.
+ There is no obvious improvement in this particular situation of this private
+ key, however, the system presented does have flexibility that the others
+ do not and this is in the ability to reduce the effectiveness or scope
+ of the private key, 
+\begin_inset Formula $\mathsf{Kpriv_{1}}$
+\end_inset
+
+.
+ 
+\end_layout
+
+\begin_layout Standard
+Here, it is assumed that 
+\begin_inset Formula $\mathsf{Kpriv_{2}}$
+\end_inset
+
+ is a key that is used to sign the identification packet for 
+\begin_inset Formula $\mathsf{Kpub_{1}}$
+\end_inset
+
+ and that 
+\begin_inset Formula $\mathsf{Kpriv_{2}}$
+\end_inset
+
+ is not located on the machine or node as 
+\begin_inset Formula $\mathsf{Kpriv_{1}}$
+\end_inset
+
+ has to be.
+ The intention now would be to ensure that the node can only identify itself,
+ but be limited in its possible actions.
+ In such a case, the node acts for some client or person, and this person
+ takes action on the network as that node, perhaps as the node is a node
+ that succumbs to some kind of ranking mechanism which allows the person
+ using this system to operate in a particular sphere of reference as laid
+ out by the rank or effectiveness of the node.
+ In such cases the person would usually maintain the identity of the node
+ and sign/decrypt messages with 
+\begin_inset Formula $\mathsf{Kpriv_{1}}$
+\end_inset
+
+ acting as the ID that 
+\begin_inset Formula $\mathsf{Hash(Kpub_{1}+SignatureKpriv_{2})}$
+\end_inset
+
+ provides.
+ 
+\end_layout
+
+\begin_layout Standard
+A helpful addition in this case is to consider the signature key of this
+ identifier packet.
+ This can be identified by the person quite easily as shown in 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:Passing-ID-between"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Section
+Conclusions
+\end_layout
+
+\begin_layout Standard
+This paper introduces a particular case for "non rooted" yet cryptographically
+ secure PKI networks to be created.
+ It is envisaged that this method will be extended with many more capabilities.
+ Such measures may include:
+\end_layout
+
+\begin_layout List
+\labelwidthstring 00.00.0000
+Identification of credit card data linking the ID to a known name in another
+ secure location.
+ People could have a card and a revocation card or perhaps even better all
+ done in software using a keying approach as described in this paper.
+ 
+\end_layout
+
+\begin_layout List
+\labelwidthstring 00.00.0000
+Single continuous validation systems where a known ID can be used across
+ multiple web sites or on-line systems that require history to operate effective
+ly.
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+label "1"
+key "1"
+
+\end_inset
+
+As described by Van Jacobson in this link below, August 30, 2006 http://video.Goo
+gle.com/videoplay?docid=-6972678839686672840
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+label "2"
+key "2"
+
+\end_inset
+
+Stoica, Robert Morris, David Karger, M.
+ Frans Kaashoek, and Hari Balakrishnan,Chord: A Scalable Peer-to-peer Lookup
+ Service for Internet Applications
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+label "3"
+key "3"
+
+\end_inset
+
+Petar Maymounkov and David Mazirese Kademlia: A Peer-to-peer Information
+ System Based on the XOR Metric {petar,dm}@cs.nyu.edu http://Kademlia.scs.cs.nyu.edu
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+label "4"
+key "4"
+
+\end_inset
+
+David Irvine, maidsafe: A new networking paradigm, david.irvine@maidsafe.net
+\end_layout
+
+\begin_layout Standard
+\begin_inset Note Comment
+status collapsed
+
+\begin_layout Plain Layout
+\begin_inset Note Note
+status collapsed
+
+\begin_layout Plain Layout
+Change this paragraphs style to 'Standard' to enable
+\end_layout
+
+\begin_layout Plain Layout
+BibTeX bibliography generation.
+\end_layout
+
+\begin_layout Plain Layout
+Remember though that your final submission is supposed to have
+\end_layout
+
+\begin_layout Plain Layout
+all the bibliography entries embedded in the latex file.
+ This means
+\end_layout
+
+\begin_layout Plain Layout
+you eventually have to copy the .bbl file into the latex file and
+\end_layout
+
+\begin_layout Plain Layout
+remove the bibtex lines.
+\end_layout
+
+\end_inset
+
+
+\begin_inset CommandInset bibtex
+LatexCommand bibtex
+bibfiles "your_biblio_file"
+options "IEEEbib"
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout BiographyNoPhoto
+\begin_inset ERT
+status collapsed
+
+\begin_layout Plain Layout
+
+{
+\end_layout
+
+\end_inset
+
+David Irvine
+\begin_inset ERT
+status collapsed
+
+\begin_layout Plain Layout
+
+}
+\end_layout
+
+\end_inset
+
+ is a Scottish Engineer and innovator who has spent the last 12 years researchin
+g ways to make computers function in a more efficient manner.
+\end_layout
+
+\begin_layout BiographyNoPhoto
+He is an Inventor listed on more than 20 patent submissions and was Designer
+ / Project Manager of one of the World's largest private networks (Saudi
+ Aramco, over $300M).
+ He is an experienced Project Manager and has been involved in start up
+ businesses since 1995 and has provided business consultancy to corporates
+ and SMEs in many sectors.
+\end_layout
+
+\begin_layout BiographyNoPhoto
+He has presented technology at Google (Seattle), British Computer Society
+ (Christmas Lecture) and many others.
+\end_layout
+
+\begin_layout BiographyNoPhoto
+He has spent many years as a lifeboat Helmsman and is a keen sailor when
+ time permits.
+\end_layout
+
+\end_body
+\end_document

@@ -41,19 +41,39 @@ namespace mi = boost::multi_index;
 namespace maidsafe_vault {
 
 class AccountHandler;
+class RequestExpectationHandler;
 class VaultServiceLogic;
+
+struct AmendmentResult {
+  AmendmentResult(
+      const std::string &owner_name_,
+      const std::string &chunkname_,
+      const maidsafe::AmendAccountRequest::Amendment &amendment_type_,
+      const boost::uint32_t &result_)
+      : owner_name(owner_name_),
+        chunkname(chunkname_),
+        amendment_type(amendment_type_),
+        result(result_),
+        expiry_time(base::GetEpochTime() + kAccountAmendmentResultTimeout) {}
+  std::string owner_name, chunkname;
+  maidsafe::AmendAccountRequest::Amendment amendment_type;
+  boost::uint32_t result;
+  boost::uint32_t expiry_time;
+};
 
 struct PendingAmending {
   PendingAmending(const maidsafe::AmendAccountRequest *req,
                   maidsafe::AmendAccountResponse *resp,
                   google::protobuf::Closure *cb)
-      : request(*req), response(resp), done(cb) {}
+      : request(*req), response(resp), done(cb), responded(false) {}
   ~PendingAmending() {}
   maidsafe::AmendAccountRequest request;
   maidsafe::AmendAccountResponse *response;
   google::protobuf::Closure *done;
+  bool responded;
   bool operator==(const PendingAmending &other) const {
-    return (request.SerializeAsString() == other.request.SerializeAsString());
+    return (request.IsInitialized() && other.request.IsInitialized() &&
+            request.SerializeAsString() == other.request.SerializeAsString());
   }
   bool operator!=(const PendingAmending &other) const {
     return !(*this == other);
@@ -62,11 +82,16 @@ struct PendingAmending {
 
 struct AccountAmendment {
   AccountAmendment(const std::string &owner_pmid,
+                   const std::string &chunkname,
+                   const maidsafe::AmendAccountRequest::Amendment
+                      &amendment_type,
                    const int &amendment_field,
                    const boost::uint64_t &offer_amount,
                    const bool &inc,
                    const PendingAmending &pending)
       : pmid(owner_pmid),
+        chunkname(chunkname),
+        amendment_type(amendment_type),
         field(amendment_field),
         offer(offer_amount),
         increase(inc),
@@ -89,6 +114,8 @@ struct AccountAmendment {
     return expiry_time < aa.expiry_time;
   }
   std::string pmid;
+  std::string chunkname;
+  maidsafe::AmendAccountRequest::Amendment amendment_type;
   int field;
   boost::uint64_t offer;
   bool increase;
@@ -130,20 +157,27 @@ typedef AccountAmendmentSet::index<by_timestamp>::type AmendmentsByTimestamp;
 
 class AccountAmendmentHandler {
  public:
-  AccountAmendmentHandler(AccountHandler *account_handler,
-                          VaultServiceLogic *vault_service_logic,
-                          const boost::uint8_t &upper_threshold)
-      : account_handler_(account_handler),
-        vault_service_logic_(vault_service_logic),
-        amendments_(),
-        amendment_mutex_(),
-        upper_threshold_(upper_threshold) {}
+  AccountAmendmentHandler(
+      AccountHandler *account_handler,
+      RequestExpectationHandler *request_expectation_handler,
+      VaultServiceLogic *vault_service_logic,
+      const boost::uint8_t &upper_threshold)
+          : account_handler_(account_handler),
+            request_expectation_handler_(request_expectation_handler),
+            vault_service_logic_(vault_service_logic),
+            amendments_(),
+            amendment_mutex_(),
+            kUpperThreshold_(upper_threshold) {}
   ~AccountAmendmentHandler() {}
   // Assumes that response->pmid() has already been set and that
   // request->signed_size() validates
   int ProcessRequest(const maidsafe::AmendAccountRequest *request,
                      maidsafe::AmendAccountResponse *response,
                      google::protobuf::Closure *done);
+  // Populates list of amendment results in status response, removing them
+  // from the internal list
+  void FetchAmendmentResults(const std::string &owner_name,
+                             maidsafe::AccountStatusResponse *response);
   // Removes expired amendments from set which have timed out - returns a count
   // of the number of entries removed.
   int CleanUp();
@@ -151,28 +185,37 @@ class AccountAmendmentHandler {
   AccountAmendmentHandler(const AccountAmendmentHandler&);
   AccountAmendmentHandler& operator=(const AccountAmendmentHandler&);
   FRIEND_TEST(AccountAmendmentHandlerTest, BEH_MAID_AAH_CreateNewAmendment);
+  FRIEND_TEST(AccountAmendmentHandlerTest, BEH_MAID_AAH_CreateNewWithExpecteds);
   FRIEND_TEST(AccountAmendmentHandlerTest, BEH_MAID_AAH_AssessAmendment);
   FRIEND_TEST(AccountAmendmentHandlerTest, BEH_MAID_AAH_ProcessRequest);
+  FRIEND_TEST(AccountAmendmentHandlerTest, BEH_MAID_AAH_FetchAmendmentResults);
   FRIEND_TEST(AccountAmendmentHandlerTest, BEH_MAID_AAH_CleanUp);
   FRIEND_TEST(MockVaultServicesTest, BEH_MAID_ServicesAddToWatchList);
-  FRIEND_TEST(MockVaultServicesTest, BEH_MAID_ServicesRemoveFromWatchList);
+  FRIEND_TEST(MockVaultServicesTest, FUNC_MAID_ServicesRemoveFromWatchList);
   FRIEND_TEST(MockVaultServicesTest, BEH_MAID_ServicesAddToReferenceList);
-  FRIEND_TEST(MockVaultServicesTest, BEH_MAID_ServicesAmendAccount);
+  FRIEND_TEST(MockVaultServicesTest, FUNC_MAID_ServicesAmendAccount);
   // Searches and actions the amendment request in an AccountAmendment
   int AssessAmendment(const std::string &owner_pmid,
+                      const std::string &chunkname,
+                      const maidsafe::AmendAccountRequest::Amendment
+                          &amendment_type,
                       const int &amendment_field,
                       const boost::uint64_t &offer_size,
                       const bool &inc,
-                      const PendingAmending &pending,
+                      PendingAmending pending,
                       AccountAmendment *amendment);
-  void CreateNewAmendment(const AccountAmendment &amendment);
-  void CreateNewAmendmentCallback(AccountAmendment amendment,
-                                  std::string find_nodes_response);
+  void CreateNewAmendment(AccountAmendment amendment);
+  void CreateNewAmendmentCallback(
+      AccountAmendment amendment,
+      const maidsafe::ReturnCode &result,
+      const std::vector<kad::Contact> &closest_nodes);
   AccountHandler *account_handler_;
+  RequestExpectationHandler *request_expectation_handler_;
   VaultServiceLogic *vault_service_logic_;
   AccountAmendmentSet amendments_;
+  std::list<AmendmentResult> amendment_results_;
   boost::mutex amendment_mutex_;
-  boost::uint8_t upper_threshold_;
+  const boost::uint8_t kUpperThreshold_;
 };
 
 }  // namespace maidsafe_vault

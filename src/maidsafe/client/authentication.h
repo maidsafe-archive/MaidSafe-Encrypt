@@ -96,7 +96,7 @@ class Authentication {
   int GetUserData(const std::string &password, std::string *ser_da);
   int CreateUserSysPackets(const std::string &username,
                            const std::string &pin);
-  void CreateUserSysPackets(const ReturnCode rc,
+  void CreateUserSysPackets(const ReturnCode &rc,
                             const std::string &username,
                             const std::string &pin,
                             VoidFuncOneInt vfoi,
@@ -149,7 +149,6 @@ class Authentication {
   int StorePacket(const std::string &packet_name,
                   const std::string &value,
                   const PacketType &type,
-                  const IfPacketExists &if_exists,
                   const std::string &msid);
   // Unneccessary, but more efficient/faster to pass packet's value here
   int DeletePacket(const std::string &packet_name,
@@ -178,6 +177,10 @@ class Authentication {
                          boost::shared_ptr<SaveSessionData> ssd);
   void StoreMidTmidCallback(const ReturnCode &rc,
                             boost::shared_ptr<SaveSessionData> ssd);
+  void SaveSessionCallback(const ReturnCode &rc,
+                           ReturnCode *return_code_out,
+                           boost::condition_variable *cond_var,
+                           boost::mutex *mutex);
 
   UserDetails ud_;
   boost::mutex mutex_;

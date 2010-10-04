@@ -23,8 +23,10 @@
 * ============================================================================
 */
 
+#include "maidsafe/maidsafe.h"
 #include "maidsafe/vault/accountamendmenthandler.h"
 #include "maidsafe/vault/accountrepository.h"
+#include "maidsafe/vault/requestexpectationhandler.h"
 #include "tests/maidsafe/mockvaultservicelogic.h"
 #include "tests/maidsafe/mockkadops.h"
 
@@ -85,11 +87,17 @@ class AccountAmendmentHandlerTest : public MockVaultServiceLogicTest {
   AccountAmendmentHandlerTest()
     : MockVaultServiceLogicTest(test_aah::K),
       ah_(true),
-      vsl_(boost::shared_ptr<VaultRpcs>(), boost::shared_ptr<kad::KNode>(),
-           test_aah::K),
-      aah_(&ah_, &vsl_, test_aah::upper_threshold) {}
+      vsl_(boost::shared_ptr<VaultRpcs>(),
+           boost::shared_ptr<maidsafe::KadOps>(new maidsafe::MockKadOps(NULL,
+           NULL, kad::CLIENT, "", "", false, false, test_aah::K,
+           boost::shared_ptr<maidsafe::ChunkStore>()))),
+      reh_(kMaxAccountAmendments, kMaxRepeatedAccountAmendments,
+           kAccountAmendmentTimeout),
+      aah_(&ah_, &reh_, &vsl_, test_aah::upper_threshold) {}
+  ~AccountAmendmentHandlerTest() {}
   AccountHandler ah_;
   MockVsl vsl_;
+  RequestExpectationHandler reh_;
   AccountAmendmentHandler aah_;
 };
 
@@ -105,6 +113,7 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_AssessAmendment) {
       crypto_.Obfuscate(pmid_, std::string(64, -1), crypto::XOR);
   std::string test_account_name = crypto_.Hash(base::RandomString(100), "",
       crypto::STRING_STRING, false);
+  std::vector<maidsafe::AmendAccountRequest> requests;
   std::vector<maidsafe::AmendAccountResponse> responses;
   std::vector<PendingAmending> pendings;
   for (int i = 0; i < kTestRuns; ++i) {
@@ -122,15 +131,17 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_AssessAmendment) {
     mutable_signed_size->set_public_key("IrrelevantPubKey");
     mutable_signed_size->set_public_key_signature("IrrelevantPubKeySig");
     request.set_chunkname(test_account_name);
+    requests.push_back(request);
     google::protobuf::Closure *done = google::protobuf::NewCallback(&cbh,
         &test_aah::CallbacksHolder::callback);
-    PendingAmending pending(&request, &responses.at(i), done);
+    PendingAmending pending(&requests.at(i), &responses.at(i), done);
     pendings.push_back(pending);
     // Sleep to let timestamps differ.
     boost::this_thread::sleep(boost::posix_time::milliseconds(2));
   }
-  AccountAmendment test_amendment(test_account_name, 2, 1000, true,
-                                  pendings.at(0));
+  AccountAmendment test_amendment(test_account_name, test_account_name,
+                                  maidsafe::AmendAccountRequest::kSpaceGivenInc,
+                                  2, 1000, true, pendings.at(0));
   test_amendment.account_name = kad::KadId(test_account_name);
 
   // Add account to AccountHolder and amendment to aah_ so amend can succeed
@@ -152,8 +163,37 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_AssessAmendment) {
   ASSERT_EQ(size_t(1), aah_.amendments_.size());
 
   // Wrong name
-  int result = aah_.AssessAmendment("Wrong", 2, 1000, true,
-                                    pendings.at(test_run), &test_amendment);
+  int result = aah_.AssessAmendment("Wrong", test_account_name,
+    maidsafe::AmendAccountRequest::kSpaceGivenInc, 2, 1000, true,
+    pendings.at(test_run), &test_amendment);
+  ASSERT_EQ(kAccountAmendmentNotFound, result);
+  ASSERT_EQ(test_account_name, test_amendment.account_name.String());
+  ASSERT_EQ(size_t(0), test_amendment.chunk_info_holders.size());
+  ASSERT_EQ(size_t(0), test_amendment.pendings.size());
+  ASSERT_EQ(size_t(1), test_amendment.probable_pendings.size());
+  ASSERT_EQ(exp_time, test_amendment.expiry_time);
+  ASSERT_EQ(boost::uint16_t(0), test_amendment.success_count);
+  ASSERT_EQ(kAccountAmendmentPending, test_amendment.account_amendment_result);
+  ASSERT_EQ(size_t(1), aah_.amendments_.size());
+
+  // Wrong chunkname
+  result = aah_.AssessAmendment(test_account_name, "Wrong",
+    maidsafe::AmendAccountRequest::kSpaceGivenInc, 2, 1000, true,
+    pendings.at(test_run), &test_amendment);
+  ASSERT_EQ(kAccountAmendmentNotFound, result);
+  ASSERT_EQ(test_account_name, test_amendment.account_name.String());
+  ASSERT_EQ(size_t(0), test_amendment.chunk_info_holders.size());
+  ASSERT_EQ(size_t(0), test_amendment.pendings.size());
+  ASSERT_EQ(size_t(1), test_amendment.probable_pendings.size());
+  ASSERT_EQ(exp_time, test_amendment.expiry_time);
+  ASSERT_EQ(boost::uint16_t(0), test_amendment.success_count);
+  ASSERT_EQ(kAccountAmendmentPending, test_amendment.account_amendment_result);
+  ASSERT_EQ(size_t(1), aah_.amendments_.size());
+
+  // Wrong type
+  result = aah_.AssessAmendment(test_account_name, test_account_name,
+    maidsafe::AmendAccountRequest::kSpaceTakenInc, 2, 1000, true,
+    pendings.at(test_run), &test_amendment);
   ASSERT_EQ(kAccountAmendmentNotFound, result);
   ASSERT_EQ(test_account_name, test_amendment.account_name.String());
   ASSERT_EQ(size_t(0), test_amendment.chunk_info_holders.size());
@@ -165,7 +205,8 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_AssessAmendment) {
   ASSERT_EQ(size_t(1), aah_.amendments_.size());
 
   // Wrong field
-  result = aah_.AssessAmendment(test_account_name, 1, 1000, true,
+  result = aah_.AssessAmendment(test_account_name, test_account_name,
+      maidsafe::AmendAccountRequest::kSpaceGivenInc, 1, 1000, true,
       pendings.at(test_run), &test_amendment);
   ASSERT_EQ(kAccountAmendmentNotFound, result);
   ASSERT_EQ(test_account_name, test_amendment.account_name.String());
@@ -178,8 +219,9 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_AssessAmendment) {
   ASSERT_EQ(size_t(1), aah_.amendments_.size());
 
   // Wrong amount
-  result = aah_.AssessAmendment(test_account_name, 2, 1001, true,
-                                pendings.at(test_run), &test_amendment);
+  result = aah_.AssessAmendment(test_account_name, test_account_name,
+      maidsafe::AmendAccountRequest::kSpaceGivenInc, 2, 1001, true,
+      pendings.at(test_run), &test_amendment);
   ASSERT_EQ(kAccountAmendmentNotFound, result);
   ASSERT_EQ(test_account_name, test_amendment.account_name.String());
   ASSERT_EQ(size_t(0), test_amendment.chunk_info_holders.size());
@@ -191,8 +233,9 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_AssessAmendment) {
   ASSERT_EQ(size_t(1), aah_.amendments_.size());
 
   // Wrong flag
-  result = aah_.AssessAmendment(test_account_name, 2, 1000, false,
-                                pendings.at(test_run), &test_amendment);
+  result = aah_.AssessAmendment(test_account_name, test_account_name,
+      maidsafe::AmendAccountRequest::kSpaceGivenInc, 2, 1000, false,
+      pendings.at(test_run), &test_amendment);
   ASSERT_EQ(kAccountAmendmentNotFound, result);
   ASSERT_EQ(test_account_name, test_amendment.account_name.String());
   ASSERT_EQ(size_t(0), test_amendment.chunk_info_holders.size());
@@ -204,8 +247,9 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_AssessAmendment) {
   ASSERT_EQ(size_t(1), aah_.amendments_.size());
 
   // Request already pending
-  result = aah_.AssessAmendment(test_account_name, 2, 1000, true,
-                                pendings.at(0), &test_amendment);
+  result = aah_.AssessAmendment(test_account_name, test_account_name,
+      maidsafe::AmendAccountRequest::kSpaceGivenInc, 2, 1000, true,
+      pendings.at(0), &test_amendment);
   ASSERT_EQ(kAccountAmendmentNotFound, result);
   ASSERT_EQ(test_account_name, test_amendment.account_name.String());
   ASSERT_EQ(size_t(0), test_amendment.chunk_info_holders.size());
@@ -217,8 +261,9 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_AssessAmendment) {
   ASSERT_EQ(size_t(1), aah_.amendments_.size());
 
   // OK
-  result = aah_.AssessAmendment(test_account_name, 2, 1000, true,
-                                pendings.at(test_run), &test_amendment);
+  result = aah_.AssessAmendment(test_account_name, test_account_name,
+      maidsafe::AmendAccountRequest::kSpaceGivenInc, 2, 1000, true,
+      pendings.at(test_run), &test_amendment);
   ASSERT_EQ(kAccountAmendmentUpdated, result);
   ASSERT_EQ(test_account_name, test_amendment.account_name.String());
   ASSERT_EQ(size_t(0), test_amendment.chunk_info_holders.size());
@@ -229,6 +274,10 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_AssessAmendment) {
   ASSERT_EQ(kAccountAmendmentPending, test_amendment.account_amendment_result);
   ASSERT_EQ(size_t(1), aah_.amendments_.size());
 
+  // TODO(Team#) make this work with low K
+  if (test_aah::upper_threshold <= 3)
+    return;
+
   // Run 2 - After FindKNodes response has arrived
   ++test_run;
   AmendmentsByTimestamp::iterator it =
@@ -237,8 +286,7 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_AssessAmendment) {
   ASSERT_TRUE(found);
   // Set Chunk Info holders so that kKadStoreThreshold - 2 have responded
   ASSERT_LE(size_t(test_aah::lower_threshold), good_pmids_.size() - 3);
-  ASSERT_GE(size_t(test_aah::upper_threshold), 3);
-  for (size_t i = 0; i < static_cast<size_t>(test_aah::upper_threshold - 1); ++i)
+  for (boost::uint8_t i = 0; i < test_aah::upper_threshold - 1; ++i)
     test_amendment.chunk_info_holders.insert(std::pair<std::string, bool>
         (good_pmids_.at(i), true));
   for (size_t i = static_cast<size_t>(test_aah::upper_threshold - 1);
@@ -259,8 +307,39 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_AssessAmendment) {
   ASSERT_EQ(size_t(1), aah_.amendments_.size());
 
   // Wrong name
-  result = aah_.AssessAmendment("Wrong", 2, 1000, true, pendings.at(test_run),
-      &test_amendment);
+  result = aah_.AssessAmendment("Wrong", test_account_name,
+      maidsafe::AmendAccountRequest::kSpaceGivenInc, 2, 1000, true,
+      pendings.at(test_run), &test_amendment);
+  ASSERT_EQ(kAccountAmendmentNotFound, result);
+  ASSERT_EQ(test_account_name, test_amendment.account_name.String());
+  ASSERT_EQ(good_pmids_.size(), test_amendment.chunk_info_holders.size());
+  ASSERT_EQ(size_t(0), test_amendment.pendings.size());
+  ASSERT_EQ(size_t(2), test_amendment.probable_pendings.size());
+  ASSERT_EQ(exp_time, test_amendment.expiry_time);
+  ASSERT_EQ(boost::uint16_t(test_aah::upper_threshold - 2),
+            test_amendment.success_count);
+  ASSERT_EQ(kAccountAmendmentPending, test_amendment.account_amendment_result);
+  ASSERT_EQ(size_t(1), aah_.amendments_.size());
+
+  // Wrong chunkname
+  result = aah_.AssessAmendment(test_account_name, "Wrong",
+      maidsafe::AmendAccountRequest::kSpaceGivenInc, 2, 1000, true,
+      pendings.at(test_run), &test_amendment);
+  ASSERT_EQ(kAccountAmendmentNotFound, result);
+  ASSERT_EQ(test_account_name, test_amendment.account_name.String());
+  ASSERT_EQ(good_pmids_.size(), test_amendment.chunk_info_holders.size());
+  ASSERT_EQ(size_t(0), test_amendment.pendings.size());
+  ASSERT_EQ(size_t(2), test_amendment.probable_pendings.size());
+  ASSERT_EQ(exp_time, test_amendment.expiry_time);
+  ASSERT_EQ(boost::uint16_t(test_aah::upper_threshold - 2),
+            test_amendment.success_count);
+  ASSERT_EQ(kAccountAmendmentPending, test_amendment.account_amendment_result);
+  ASSERT_EQ(size_t(1), aah_.amendments_.size());
+
+  // Wrong type
+  result = aah_.AssessAmendment(test_account_name, test_account_name,
+      maidsafe::AmendAccountRequest::kSpaceTakenInc, 2, 1000, true,
+      pendings.at(test_run), &test_amendment);
   ASSERT_EQ(kAccountAmendmentNotFound, result);
   ASSERT_EQ(test_account_name, test_amendment.account_name.String());
   ASSERT_EQ(good_pmids_.size(), test_amendment.chunk_info_holders.size());
@@ -273,7 +352,8 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_AssessAmendment) {
   ASSERT_EQ(size_t(1), aah_.amendments_.size());
 
   // Wrong field
-  result = aah_.AssessAmendment(test_account_name, 1, 1000, true,
+  result = aah_.AssessAmendment(test_account_name, test_account_name,
+      maidsafe::AmendAccountRequest::kSpaceGivenInc, 1, 1000, true,
       pendings.at(test_run), &test_amendment);
   ASSERT_EQ(kAccountAmendmentNotFound, result);
   ASSERT_EQ(test_account_name, test_amendment.account_name.String());
@@ -287,7 +367,8 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_AssessAmendment) {
   ASSERT_EQ(size_t(1), aah_.amendments_.size());
 
   // Wrong amount
-  result = aah_.AssessAmendment(test_account_name, 2, 1001, true,
+  result = aah_.AssessAmendment(test_account_name, test_account_name,
+      maidsafe::AmendAccountRequest::kSpaceGivenInc, 2, 1001, true,
       pendings.at(test_run), &test_amendment);
   ASSERT_EQ(kAccountAmendmentNotFound, result);
   ASSERT_EQ(test_account_name, test_amendment.account_name.String());
@@ -301,7 +382,8 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_AssessAmendment) {
   ASSERT_EQ(size_t(1), aah_.amendments_.size());
 
   // Wrong flag
-  result = aah_.AssessAmendment(test_account_name, 2, 1000,
+  result = aah_.AssessAmendment(test_account_name, test_account_name,
+      maidsafe::AmendAccountRequest::kSpaceGivenInc, 2, 1000,
       false, pendings.at(test_run), &test_amendment);
   ASSERT_EQ(kAccountAmendmentNotFound, result);
   ASSERT_EQ(test_account_name, test_amendment.account_name.String());
@@ -315,7 +397,8 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_AssessAmendment) {
   ASSERT_EQ(size_t(1), aah_.amendments_.size());
 
   // Not in list of Chunk Info holders
-  result = aah_.AssessAmendment(test_account_name, 2, 1000, true,
+  result = aah_.AssessAmendment(test_account_name, test_account_name,
+      maidsafe::AmendAccountRequest::kSpaceGivenInc, 2, 1000, true,
       pendings.at(test_run), &test_amendment);
   ASSERT_EQ(kAccountAmendmentNotFound, result);
   ASSERT_EQ(test_account_name, test_amendment.account_name.String());
@@ -335,7 +418,8 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_AssessAmendment) {
   PendingAmending pending1(&request, pendings.at(test_run).response,
       pendings.at(test_run).done);
 
-  result = aah_.AssessAmendment(test_account_name, 2, 1000, true, pending1,
+  result = aah_.AssessAmendment(test_account_name, test_account_name,
+      maidsafe::AmendAccountRequest::kSpaceGivenInc, 2, 1000, true, pending1,
       &test_amendment);
   ASSERT_EQ(kAccountAmendmentNotFound, result);
   ASSERT_EQ(test_account_name, test_amendment.account_name.String());
@@ -355,7 +439,8 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_AssessAmendment) {
   PendingAmending pending2(&request, pendings.at(test_run).response,
       pendings.at(test_run).done);
 
-  result = aah_.AssessAmendment(test_account_name, 2, 1000, true, pending2,
+  result = aah_.AssessAmendment(test_account_name, test_account_name,
+      maidsafe::AmendAccountRequest::kSpaceGivenInc, 2, 1000, true, pending2,
       &test_amendment);
   ASSERT_EQ(kAccountAmendmentUpdated, result);
   ASSERT_EQ(test_account_name, test_amendment.account_name.String());
@@ -376,7 +461,8 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_AssessAmendment) {
   sz->set_pmid(good_pmids_.at(good_pmids_.size() - 2));
   PendingAmending pending3(&request, pendings.at(test_run).response, done1);
 
-  result = aah_.AssessAmendment(test_account_name, 2, 1000, true, pending3,
+  result = aah_.AssessAmendment(test_account_name, test_account_name,
+      maidsafe::AmendAccountRequest::kSpaceGivenInc, 2, 1000, true, pending3,
       &test_amendment);
   ASSERT_EQ(kAccountAmendmentUpdated, result);
   ASSERT_EQ(test_account_name, test_amendment.account_name.String());
@@ -411,7 +497,8 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_AssessAmendment) {
   sz->set_pmid(good_pmids_.at(good_pmids_.size() - 1));
   PendingAmending pending4(&request, pendings.at(test_run).response, done2);
 
-  result = aah_.AssessAmendment(test_account_name, 2, 1000, true, pending4,
+  result = aah_.AssessAmendment(test_account_name, test_account_name,
+      maidsafe::AmendAccountRequest::kSpaceGivenInc, 2, 1000, true, pending4,
       &test_amendment);
   ASSERT_EQ(kAccountAmendmentFinished, result);
   ASSERT_EQ(test_account_name, test_amendment.account_name.String());
@@ -422,6 +509,65 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_AssessAmendment) {
   ASSERT_EQ(good_pmids_.size(), test_amendment.success_count);
   ASSERT_EQ(kSuccess, test_amendment.account_amendment_result);
   ASSERT_EQ(size_t(1), aah_.amendments_.size());
+}
+
+TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_FetchAmendmentResults) {
+  boost::mutex mutex;
+  boost::condition_variable cv;
+  test_aah::CallbacksHolder cbh(&mutex, &cv);
+  std::string test_account_name = crypto_.Hash(base::RandomString(100), "",
+      crypto::STRING_STRING, false);
+  std::string dummy_account_name = crypto_.Hash(base::RandomString(100), "",
+      crypto::STRING_STRING, false);
+  std::string test_chunkname = crypto_.Hash(base::RandomString(100), "",
+      crypto::STRING_STRING, false);
+  maidsafe::AmendAccountRequest request;
+  maidsafe::AmendAccountResponse response;
+  response.set_pmid(pmid_);
+  request.set_amendment_type(maidsafe::AmendAccountRequest::kSpaceGivenInc);
+  request.set_account_pmid(test_account_name);
+  maidsafe::SignedSize *mutable_signed_size = request.mutable_signed_size();
+  mutable_signed_size->set_data_size(1000);
+  mutable_signed_size->set_pmid(good_pmids_.at(0));
+  mutable_signed_size->set_signature("IrrelevantSig");
+  mutable_signed_size->set_public_key("IrrelevantPubKey");
+  mutable_signed_size->set_public_key_signature("IrrelevantPubKeySig");
+  request.set_chunkname(test_chunkname);
+  google::protobuf::Closure *done = google::protobuf::NewCallback(&cbh,
+      &test_aah::CallbacksHolder::callback);
+  PendingAmending pending(&request, &response, done);
+
+  // Sleep to let timestamps differ.
+  boost::this_thread::sleep(boost::posix_time::milliseconds(2));
+
+  AccountAmendment test_amendment(test_account_name, test_chunkname,
+      maidsafe::AmendAccountRequest::kSpaceGivenInc, 2, 1000, true, pending);
+  test_amendment.account_name = kad::KadId(test_account_name);
+  for (size_t i = 0; i < good_pmids_.size(); ++i)
+    test_amendment.chunk_info_holders.insert(std::pair<std::string, bool>
+        (good_pmids_.at(i), i > 0));
+  test_amendment.success_count = test_aah::upper_threshold;
+
+  // Add account to AccountHolder and amendment to aah_ so amend can succeed
+  ASSERT_EQ(kSuccess, ah_.AddAccount(test_account_name, 999999));
+  std::pair<AccountAmendmentSet::iterator, bool> p =
+      aah_.amendments_.insert(test_amendment);
+  ASSERT_TRUE(p.second);
+
+  ASSERT_EQ(0, aah_.amendment_results_.size());
+  ASSERT_EQ(kSuccess, aah_.ProcessRequest(&request, &response, done));
+  ASSERT_EQ(size_t(0), aah_.amendments_.size());
+  ASSERT_EQ(1, aah_.amendment_results_.size());
+
+  maidsafe::AccountStatusResponse asr;
+  aah_.FetchAmendmentResults(dummy_account_name, &asr);
+  ASSERT_EQ(0, asr.amendment_results_size());
+  aah_.FetchAmendmentResults(test_account_name, &asr);
+  ASSERT_EQ(1, asr.amendment_results_size());
+  ASSERT_EQ(maidsafe::AmendAccountRequest::kSpaceGivenInc,
+            asr.amendment_results(0).amendment_type());
+  ASSERT_EQ(test_chunkname, asr.amendment_results(0).chunkname());
+  ASSERT_EQ(kAck, asr.amendment_results(0).result());
 }
 
 TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_CreateNewAmendment) {
@@ -453,7 +599,8 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_CreateNewAmendment) {
     google::protobuf::Closure *done = google::protobuf::NewCallback(&cbh,
         &test_aah::CallbacksHolder::callback);
     PendingAmending pending(&requests.at(i), &responses.at(i), done);
-    AccountAmendment amendment(test_account_name, 2, 1000, true, pending);
+    AccountAmendment amendment(test_account_name, test_account_name,
+      maidsafe::AmendAccountRequest::kSpaceGivenInc, 2, 1000, true, pending);
     amendment.account_name = kad::KadId(test_account_name);
     test_amendments.push_back(amendment);
     // Sleep to let timestamps differ.
@@ -463,20 +610,26 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_CreateNewAmendment) {
   ASSERT_EQ(kSuccess, ah_.AddAccount(test_account_name, 999999));
 
   // Expectations
-  EXPECT_CALL(*vsl_.kadops(), FindKClosestNodes(kad::KadId(far_chunk_name),
-      testing::An<const kad::VoidFunctorOneString&>()))
+  EXPECT_CALL(*vsl_.kadops(), FindKClosestNodes(far_chunk_name,
+      testing::An<maidsafe::VoidFuncIntContacts>()))
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_kadops::RunCallback, fail_parse_result_, _1))))
+          boost::bind(&maidsafe::MockKadOps::ThreadedFindKClosestNodesCallback,
+                      vsl_.kadops(), fail_parse_result_, _1))))        // Call 1
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_kadops::RunCallback, fail_result_, _1))))  // Call 2
+          boost::bind(&maidsafe::MockKadOps::ThreadedFindKClosestNodesCallback,
+                      vsl_.kadops(), fail_result_, _1))))              // Call 2
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_kadops::RunCallback, few_result_, _1))))  // Call 3
+          boost::bind(&maidsafe::MockKadOps::ThreadedFindKClosestNodesCallback,
+                      vsl_.kadops(), few_result_, _1))))               // Call 3
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_kadops::RunCallback, good_result_, _1))))  // Call 4
+          boost::bind(&maidsafe::MockKadOps::ThreadedFindKClosestNodesCallback,
+                      vsl_.kadops(), good_result_, _1))))              // Call 4
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_kadops::RunCallback, good_result_, _1))))  // Call 5
+          boost::bind(&maidsafe::MockKadOps::ThreadedFindKClosestNodesCallback,
+                      vsl_.kadops(), good_result_, _1))))              // Call 5
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_kadops::RunCallback, good_result_, _1))));  // Cll 6
+          boost::bind(&maidsafe::MockKadOps::ThreadedFindKClosestNodesCallback,
+                      vsl_.kadops(), good_result_, _1))));             // Call 6
 
   // Call 1 - Fail to parse FindNodes response
   int test_run(0);
@@ -554,9 +707,9 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_CreateNewAmendment) {
     ASSERT_FALSE((*cih_it).second);
   }
 
-  // Call 5 - FindNodes response good.  Send test_aah::K AmendmentRequests, but with
-  // mis-matching PMIDs so handler doesn't call back with responses (waiting for
-  // further requests from each)
+  // Call 5 - FindNodes response good.  Send test_aah::K AmendmentRequests, but
+  // with mis-matching PMIDs so handler doesn't call back with responses
+  // (waiting for further requests from each)
   ++test_run;
 //  printf("Run %i\n", test_run);
   // Force further test_aah::K probable_pendings into test_amendment
@@ -669,8 +822,270 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_CreateNewAmendment) {
   ASSERT_EQ(size_t(3), aah_.amendments_.size());
 
   // Shouldn't re-add amendment
-  aah_.CreateNewAmendmentCallback(test_amendments.at(test_run), good_result_);
+  aah_.CreateNewAmendmentCallback(test_amendments.at(test_run),
+                                  maidsafe::kSuccess, good_contacts_);
   ASSERT_EQ(size_t(3), aah_.amendments_.size());
+}
+
+TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_CreateNewWithExpecteds) {
+  // Setup
+  const int kTestRuns(3);
+  vsl_.our_details_ = our_contact_;
+
+  boost::mutex mutex;
+  boost::condition_variable cv;
+  test_aah::CallbacksHolder cbh(&mutex, &cv);
+  // Set chunk name as far as possible from our ID so we don't get added to
+  // vector of close nodes in vsl_.HandleFindKNodesResponse
+  std::string far_chunk_name =
+      crypto_.Obfuscate(pmid_, std::string(64, -1), crypto::XOR);
+  std::string test_account_pmid = crypto_.Hash(base::RandomString(100), "",
+      crypto::STRING_STRING, false);
+  std::string test_account_name = crypto_.Hash(test_account_pmid + kAccount, "",
+      crypto::STRING_STRING, false);
+  std::vector<maidsafe::AmendAccountRequest> requests;
+  std::vector<maidsafe::AmendAccountResponse> responses;
+  for (int i = 0; i < kTestRuns; ++i) {
+    maidsafe::AmendAccountRequest request;
+    request.set_chunkname(far_chunk_name);
+    request.set_amendment_type(maidsafe::AmendAccountRequest::kSpaceGivenInc);
+    request.set_account_pmid(test_account_pmid);
+    requests.push_back(request);
+    maidsafe::AmendAccountResponse response;
+    response.set_pmid(pmid_);
+    responses.push_back(response);
+  }
+  std::vector<AccountAmendment> test_amendments;
+  for (int i = 0; i < kTestRuns; ++i) {
+    google::protobuf::Closure *done = google::protobuf::NewCallback(&cbh,
+        &test_aah::CallbacksHolder::callback);
+    PendingAmending pending(&requests.at(i), &responses.at(i), done);
+    AccountAmendment amendment(test_account_name, test_account_name,
+      maidsafe::AmendAccountRequest::kSpaceGivenInc, 2, 1000, true, pending);
+    amendment.account_name = kad::KadId(test_account_name);
+    test_amendments.push_back(amendment);
+    // Sleep to let timestamps differ.
+    boost::this_thread::sleep(boost::posix_time::milliseconds(2));
+  }
+  // Add account to AccountHolder so amend can succeed
+  ASSERT_EQ(kSuccess, ah_.AddAccount(test_account_name, 999999));
+
+  // Expectations
+  EXPECT_CALL(*vsl_.kadops(), FindKClosestNodes(far_chunk_name,
+      testing::An<maidsafe::VoidFuncIntContacts>()))
+      .WillOnce(testing::WithArgs<1>(testing::Invoke(
+          boost::bind(&maidsafe::MockKadOps::ThreadedFindKClosestNodesCallback,
+                      vsl_.kadops(), good_result_, _1))));
+
+  maidsafe::ExpectAmendmentRequest expect_amendment_request;
+  expect_amendment_request.set_amendment_type(
+      maidsafe::AmendAccountRequest::kSpaceGivenInc);
+  expect_amendment_request.set_chunkname(far_chunk_name);
+  expect_amendment_request.set_account_pmid(test_account_pmid);
+  expect_amendment_request.set_public_key("Unimportant");
+  expect_amendment_request.set_public_key_signature("Unimportant");
+  expect_amendment_request.set_request_signature("Unimportant");
+  for (boost::uint16_t i = 0; i < test_aah::K; ++i) {
+    expect_amendment_request.add_amender_pmids(good_pmids_.at(i));
+    // Push first expectation with too few contacts
+    if (i == test_aah::upper_threshold - 2)
+      ASSERT_EQ(kSuccess, reh_.AddExpectation(expect_amendment_request));
+  }
+  // Sleep to ensure previous expectation timestamp < this one
+  boost::this_thread::sleep(boost::posix_time::milliseconds(2));
+  // Good list of pmids
+  ASSERT_EQ(kSuccess, reh_.AddExpectation(expect_amendment_request));
+
+  // Sleep to ensure previous expectation timestamp < this one
+  boost::this_thread::sleep(boost::posix_time::milliseconds(2));
+  // Some good pmids, but not enough
+  for (boost::uint16_t i = 0; i < test_aah::K - test_aah::upper_threshold + 1;
+       ++i) {
+    std::string *bad_pmid = expect_amendment_request.mutable_amender_pmids(i);
+    *bad_pmid = crypto_.Hash(
+        base::RandomString(100), "", crypto::STRING_STRING, false);
+  }
+  ASSERT_EQ(kSuccess, reh_.AddExpectation(expect_amendment_request));
+
+  // Call 1 - REH fails to provide enough contacts.  FindNodes response good.
+  // Send test_aah::K AmendmentRequests with matching PMIDs to achieve success.
+  int test_run(0);
+  // Force further test_aah::K probable_pendings into test_amendment
+  std::vector<maidsafe::AmendAccountRequest> good_requests;
+  std::vector<maidsafe::AmendAccountResponse> good_responses;
+  for (int i = 0; i < test_aah::K; ++i) {
+    maidsafe::AmendAccountRequest request;
+    maidsafe::SignedSize *sz = request.mutable_signed_size();
+    sz->set_pmid(good_pmids_.at(i));
+    good_requests.push_back(request);
+    maidsafe::AmendAccountResponse resp;
+    resp.set_pmid(pmid_);
+    good_responses.push_back(resp);
+  }
+  for (int i = 0; i < test_aah::K; ++i) {
+    google::protobuf::Closure *done = google::protobuf::NewCallback(&cbh,
+        &test_aah::CallbacksHolder::callback);
+    PendingAmending pending(&good_requests.at(i), &good_responses.at(i), done);
+    test_amendments.at(test_run).probable_pendings.push_back(pending);
+  }
+  aah_.CreateNewAmendment(test_amendments.at(test_run));
+  ASSERT_EQ(size_t(1), aah_.amendments_.size());
+  {
+    boost::mutex::scoped_lock lock(mutex);
+    while (!responses.at(test_run).IsInitialized())
+      cv.wait(lock);
+    for (int i = 0; i < test_aah::K; ++i) {
+      while (!good_responses.at(i).IsInitialized())
+        cv.wait(lock);
+    }
+  }
+
+  int expected_called_back_count(test_aah::K + 1);
+  ASSERT_EQ(expected_called_back_count, cbh.called_back_count());
+  ASSERT_TRUE(responses.at(test_run).IsInitialized());
+  ASSERT_EQ(size_t(test_aah::K), good_responses.size());
+  for (int i = 0; i < test_aah::K; ++i) {
+    ASSERT_TRUE(good_responses.at(i).IsInitialized());
+    ASSERT_EQ(kAck, static_cast<int>(good_responses.at(i).result()));
+  }
+  AmendmentsByTimestamp::iterator it =
+      aah_.amendments_.get<by_timestamp>().find(test_amendments.at(test_run));
+  ASSERT_EQ(size_t(test_aah::K), (*it).success_count);
+  ASSERT_EQ(size_t(0), (*it).pendings.size());
+  ASSERT_EQ(size_t(0), (*it).probable_pendings.size());
+  ASSERT_EQ(size_t(test_aah::K), (*it).chunk_info_holders.size());
+  ASSERT_EQ(kSuccess, (*it).account_amendment_result);
+  for (int i = 0; i < test_aah::K; ++i) {
+    AccountAmendment amd = *it;
+    std::map<std::string, bool>::iterator cih_it =
+        amd.chunk_info_holders.find(good_pmids_.at(i));
+    bool res = amd.chunk_info_holders.end() != cih_it;
+    ASSERT_TRUE(res);
+    ASSERT_TRUE((*cih_it).second);
+  }
+
+  // Call 2 - REH provides enough contacts - FindNodes not called.
+  // Send test_aah::K AmendmentRequests with matching PMIDs to achieve success.
+  ++test_run;
+  good_requests.clear();
+  good_responses.clear();
+  for (int i = 0; i < test_aah::K; ++i) {
+    maidsafe::AmendAccountRequest request;
+    maidsafe::SignedSize *sz = request.mutable_signed_size();
+    sz->set_pmid(good_pmids_.at(i));
+    request.set_chunkname(far_chunk_name);
+    request.set_amendment_type(maidsafe::AmendAccountRequest::kSpaceGivenInc);
+    request.set_account_pmid(test_account_pmid);
+    good_requests.push_back(request);
+    maidsafe::AmendAccountResponse resp;
+    resp.set_pmid(pmid_);
+    good_responses.push_back(resp);
+  }
+  for (int i = 0; i < test_aah::K; ++i) {
+    google::protobuf::Closure *done = google::protobuf::NewCallback(&cbh,
+        &test_aah::CallbacksHolder::callback);
+    PendingAmending pending(&good_requests.at(i), &good_responses.at(i), done);
+    test_amendments.at(test_run).probable_pendings.push_back(pending);
+  }
+  aah_.CreateNewAmendment(test_amendments.at(test_run));
+  ASSERT_EQ(size_t(2), aah_.amendments_.size());
+  {
+    boost::mutex::scoped_lock lock(mutex);
+    while (!responses.at(test_run).IsInitialized())
+      cv.wait(lock);
+    for (int i = 0; i < test_aah::K; ++i) {
+      while (!good_responses.at(i).IsInitialized())
+        cv.wait(lock);
+    }
+  }
+
+  expected_called_back_count += (test_aah::K + 1);
+  ASSERT_EQ(expected_called_back_count, cbh.called_back_count());
+  ASSERT_TRUE(responses.at(test_run).IsInitialized());
+  ASSERT_EQ(size_t(test_aah::K), good_responses.size());
+  for (int i = 0; i < test_aah::K; ++i) {
+    ASSERT_TRUE(good_responses.at(i).IsInitialized());
+    ASSERT_EQ(kAck, static_cast<int>(good_responses.at(i).result()));
+  }
+  it = aah_.amendments_.get<by_timestamp>().find(test_amendments.at(test_run));
+  ASSERT_EQ(size_t(test_aah::K), (*it).success_count);
+  ASSERT_EQ(size_t(0), (*it).pendings.size());
+  ASSERT_EQ(size_t(0), (*it).probable_pendings.size());
+  ASSERT_EQ(size_t(test_aah::K), (*it).chunk_info_holders.size());
+  ASSERT_EQ(kSuccess, (*it).account_amendment_result);
+  for (int i = 0; i < test_aah::K; ++i) {
+    AccountAmendment amd = *it;
+    std::map<std::string, bool>::iterator cih_it =
+        amd.chunk_info_holders.find(good_pmids_.at(i));
+    bool res = amd.chunk_info_holders.end() != cih_it;
+    ASSERT_TRUE(res);
+    ASSERT_TRUE((*cih_it).second);
+  }
+
+  // Call 3 - REH provides enough contacts, but some wrong pmids - FindNodes not
+  // called.
+  ++test_run;
+  good_requests.clear();
+  good_responses.clear();
+  for (int i = 0; i < test_aah::K; ++i) {
+    maidsafe::AmendAccountRequest request;
+    maidsafe::SignedSize *sz = request.mutable_signed_size();
+    sz->set_pmid(good_pmids_.at(i));
+    request.set_chunkname(far_chunk_name);
+    request.set_amendment_type(maidsafe::AmendAccountRequest::kSpaceGivenInc);
+    request.set_account_pmid(test_account_pmid);
+    good_requests.push_back(request);
+    maidsafe::AmendAccountResponse resp;
+    resp.set_pmid(pmid_);
+    good_responses.push_back(resp);
+  }
+  for (int i = 0; i < test_aah::K; ++i) {
+    google::protobuf::Closure *done = google::protobuf::NewCallback(&cbh,
+        &test_aah::CallbacksHolder::callback);
+    PendingAmending pending(&good_requests.at(i), &good_responses.at(i), done);
+    test_amendments.at(test_run).probable_pendings.push_back(pending);
+  }
+  aah_.CreateNewAmendment(test_amendments.at(test_run));
+  ASSERT_EQ(size_t(3), aah_.amendments_.size());
+  {
+    boost::mutex::scoped_lock lock(mutex);
+    while (!responses.at(test_run).IsInitialized())
+      cv.wait(lock);
+    for (int i = 0; i < test_aah::K - test_aah::upper_threshold + 1; ++i) {
+      while (!good_responses.at(i).IsInitialized())
+        cv.wait(lock);
+    }
+  }
+
+  expected_called_back_count += (test_aah::K - test_aah::upper_threshold + 2);
+  ASSERT_EQ(expected_called_back_count, cbh.called_back_count());
+  ASSERT_EQ(size_t(test_aah::K), good_responses.size());
+//  int kacks(0), knacks(0);
+  for (int i = 0; i < test_aah::K; ++i) {
+    if (i < test_aah::upper_threshold + 2) {
+      ASSERT_EQ(kNack, static_cast<int>(good_responses.at(i).result()));
+    } else {
+      ASSERT_FALSE(good_responses.at(i).IsInitialized());
+    }
+  }
+  it = aah_.amendments_.get<by_timestamp>().find(test_amendments.at(test_run));
+  ASSERT_EQ(size_t(test_aah::upper_threshold - 1), (*it).success_count);
+  ASSERT_EQ(size_t(test_aah::upper_threshold - 1), (*it).pendings.size());
+  ASSERT_EQ(size_t(0), (*it).probable_pendings.size());
+  ASSERT_EQ(size_t(test_aah::K), (*it).chunk_info_holders.size());
+  ASSERT_EQ(kAccountAmendmentPending, (*it).account_amendment_result);
+  for (int i = 0; i < test_aah::K - test_aah::upper_threshold + 1; ++i) {
+    AccountAmendment amd = *it;
+    std::map<std::string, bool>::iterator cih_it =
+        amd.chunk_info_holders.find(good_pmids_.at(i));
+    bool res = amd.chunk_info_holders.end() == cih_it;
+    if (i < test_aah::upper_threshold + 2) {
+      EXPECT_TRUE(res);
+    } else {
+      EXPECT_FALSE(res);
+      EXPECT_TRUE((*cih_it).second);
+    }
+  }
 }
 
 TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_ProcessRequest) {
@@ -694,6 +1109,10 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_ProcessRequest) {
   request.set_account_pmid(account_owner);
   maidsafe::SignedSize *sz = request.mutable_signed_size();
   sz->set_data_size(1000);
+  sz->set_pmid("IrrelevantPmid");
+  sz->set_signature("IrrelevantSig");
+  sz->set_public_key("IrrelevantPubKey");
+  sz->set_public_key_signature("IrrelevantPubKeySig");
   request.set_chunkname(chunk_name);
   const maidsafe::AmendAccountRequest kDefaultRequest(request);
   maidsafe::AmendAccountResponse response;
@@ -715,19 +1134,24 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_ProcessRequest) {
   ASSERT_EQ(size_t(11), ah_.accounts_.size());
 
   // Expectations
-  EXPECT_CALL(*vsl_.kadops(), FindKClosestNodes(kad::KadId(chunk_name),
-      testing::An<const kad::VoidFunctorOneString&>()))
+  EXPECT_CALL(*vsl_.kadops(), FindKClosestNodes(chunk_name,
+      testing::An<maidsafe::VoidFuncIntContacts>()))
       .Times(testing::AtLeast(5))
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_kadops::RunCallback, good_result_, _1))))  // Call 2
+          boost::bind(&maidsafe::MockKadOps::ThreadedFindKClosestNodesCallback,
+                      vsl_.kadops(), good_result_, _1))))              // Call 2
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_kadops::RunCallback, good_result_, _1))))  // Call 3
+          boost::bind(&maidsafe::MockKadOps::ThreadedFindKClosestNodesCallback,
+                      vsl_.kadops(), good_result_, _1))))              // Call 3
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_kadops::RunCallback, good_result_, _1))))  // Call 4
+          boost::bind(&maidsafe::MockKadOps::ThreadedFindKClosestNodesCallback,
+                      vsl_.kadops(), good_result_, _1))))              // Call 4
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_kadops::RunCallback, fail_result_, _1))))  // Call 5
+          boost::bind(&maidsafe::MockKadOps::ThreadedFindKClosestNodesCallback,
+                      vsl_.kadops(), fail_result_, _1))))              // Call 5
       .WillRepeatedly(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_kadops::RunCallback, good_result_, _1))));
+          boost::bind(&maidsafe::MockKadOps::ThreadedFindKClosestNodesCallback,
+                      vsl_.kadops(), good_result_, _1))));
 
   // Call 1 - Request has wrong type
   int test_run(0);
@@ -750,7 +1174,8 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_ProcessRequest) {
       &test_aah::CallbacksHolder::callback);
   for (size_t i = 0; i < kMaxRepeatedAccountAmendments - 1; ++i) {
     PendingAmending pending(&request, &response, done);
-    AccountAmendment amendment(account_owner, 2, 1000, true, pending);
+    AccountAmendment amendment(account_owner, chunk_name,
+        maidsafe::AmendAccountRequest::kSpaceGivenInc, 2, 1000, true, pending);
     std::pair<AccountAmendmentSet::iterator, bool> p =
         aah_.amendments_.insert(amendment);
     ASSERT_TRUE(p.second);
@@ -775,7 +1200,9 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_ProcessRequest) {
       &test_aah::CallbacksHolder::callback);
   for (size_t i = 0; i < kMaxAccountAmendments - 1; ++i) {
     PendingAmending pending(&request, &response, done);
-    AccountAmendment amendment(account_owner, 2, 1000 + i, true, pending);
+    AccountAmendment amendment(account_owner, chunk_name,
+        maidsafe::AmendAccountRequest::kSpaceGivenInc, 2, 1000 + i, true,
+        pending);
     std::pair<AccountAmendmentSet::iterator, bool> p =
         aah_.amendments_.insert(amendment);
     ASSERT_TRUE(p.second);
@@ -895,7 +1322,8 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_CleanUp) {
   }
   for (int i = 0; i < 100; ++i) {
     PendingAmending pending(&requests.at(i), &responses.at(i), callbacks.at(i));
-    AccountAmendment amendment(account_owner, 2, 1000, true, pending);
+    AccountAmendment amendment(account_owner, chunk_name,
+        maidsafe::AmendAccountRequest::kSpaceGivenInc, 2, 1000, true, pending);
     std::pair<AccountAmendmentSet::iterator, bool> p =
         aah_.amendments_.insert(amendment);
     ASSERT_TRUE(p.second);

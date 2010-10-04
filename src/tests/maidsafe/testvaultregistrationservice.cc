@@ -35,6 +35,8 @@
 #include "maidsafe/vault/vaultservice.h"
 #include "tests/maidsafe/cached_keys.h"
 
+namespace fs = boost::filesystem;
+
 inline void HandleDeadServer(const bool &, const std::string&,
                              const boost::uint16_t&) {}
 
@@ -351,8 +353,7 @@ TEST_F(VaultRegistrationTest, FUNC_MAID_InvalidRequest) {
   ASSERT_EQ(-1, handler.port());
   ASSERT_EQ(boost::uint64_t(0), handler.available_space());
   // more space requested than available
-  boost::filesystem::space_info info = boost::filesystem::space(
-      boost::filesystem::path("/"));
+  fs::space_info info = fs::space(fs::path("/"));
 
   ctrl.Reset();
   request.Clear();
@@ -497,26 +498,89 @@ int WriteToLog(std::string str) {
   return 0;
 }
 
-void CreateVaultDaemon(const std::string &test_dir, bool *finished) {
-  maidsafe_vault::VaultDaemon daemon(0, test_dir,
-                                     test_vault_registration_service::K);
-  ASSERT_TRUE(daemon.StartVault());
-  daemon.Status();
-  boost::filesystem::path vaultpath = daemon.vault_path();
-  while (!*finished) {
-    boost::this_thread::sleep(boost::posix_time::seconds(1));
+namespace maidsafe {
+
+namespace test {
+
+class VaultDaemonRegistrationTest : public testing::Test {
+ public:
+  VaultDaemonRegistrationTest() : test_dir_(file_system::TempDir() /
+                                            ("maidsafe_TESTDaemon_" +
+                                            base::RandomAlphaNumericString(6))),
+                                  finished_(false),
+                                  thrd_() {}
+  ~VaultDaemonRegistrationTest() {
+    transport::TransportUDT::CleanUp();
   }
-}
+  void StartVaultDaemon() {
+    maidsafe_vault::VaultDaemon daemon(0, (test_dir_ / "Unowned").string(),
+                                       test_vault_registration_service::K);
+    daemon.test_config_postfix_ = "_test_vrs";
+    ASSERT_TRUE(daemon.StartVault());
+    daemon.Status();
+    fs::path vaultpath = daemon.vault_path();
+    while (!finished_) {
+      boost::this_thread::sleep(boost::posix_time::seconds(1));
+    }
+    try {
+      if (fs::exists(vaultpath))
+        fs::remove_all(vaultpath);
+    }
+    catch(const std::exception &e) {
+      printf("In Test: %s\n", e.what());
+    }
+  }
+ protected:
+  void SetUp() {
+    fs::path config(file_system::ApplicationDataDir() / ".config_test_vrs");
+    try {
+      if (fs::exists(config))
+        fs::remove_all(config);
+    }
+    catch(const std::exception &e) {
+      printf("In Test: %s\n", e.what());
+      FAIL();
+    }
+//     Make .kadconfig in new Owned dir to avoid overwriting default .kadconfig
+//    fs::path new_kadconfig(test_dir_ / "Owned/.kadconfig");
+//    try {
+//      fs::create_directories(test_dir_ / "Owned");
+//      std::fstream output(new_kadconfig.string().c_str(),
+//          std::ios::out | std::ios::trunc | std::ios::binary);
+//      output.close();
+//      ASSERT_TRUE(fs::exists(new_kadconfig));
+//    }
+//    catch(const std::exception &e) {
+//      printf("In StartVaultDaemon: %s\n", e.what());
+//      FAIL();
+//    }
+    thrd_ = boost::thread(&VaultDaemonRegistrationTest::StartVaultDaemon, this);
+  }
+  void TearDown() {
+    finished_ = true;
+    thrd_.join();
+    fs::path config(file_system::ApplicationDataDir() / ".config_test_vrs");
+    try {
+      if (fs::exists(config))
+        fs::remove_all(config);
+    }
+    catch(const std::exception &e) {
+      printf("In Test: %s\n", e.what());
+    }
+    try {
+      if (fs::exists(test_dir_))
+        fs::remove_all(test_dir_);
+    }
+    catch(const std::exception &e) {
+      printf("%s\n", e.what());
+    }
+  }
+  fs::path test_dir_;
+  bool finished_;
+  boost::thread thrd_;
+};
 
-TEST(VaultDaemonRegistrationTest, FUNC_MAID_VaultRegistration) {
-  ASSERT_FALSE(boost::filesystem::exists(file_system::ApplicationDataDir() /
-      ".config"));
-  bool finished = false;
-  fs::path test_dir = file_system::TempDir() /
-      ("maidsafe_TESTDaemon_" + base::RandomString(6));
-  boost::thread thrd(CreateVaultDaemon, (test_dir / "Unowned").string(),
-      &finished);
-
+TEST_F(VaultDaemonRegistrationTest, FUNC_MAID_VaultRegistration) {
   transport::TransportUDT client_transport;
   transport::TransportHandler client_transport_handler;
   rpcprotocol::ChannelManager client(&client_transport_handler);
@@ -542,56 +606,55 @@ TEST(VaultDaemonRegistrationTest, FUNC_MAID_VaultRegistration) {
   ctrl.set_timeout(30);
   rpcprotocol::Channel out_channel(&client, &client_transport_handler,
       client_transport_id, "127.0.0.1", kLocalPort, "", 0, "", 0);
-  maidsafe::VaultRegistration::Stub stubservice(&out_channel);
-  maidsafe::SetLocalVaultOwnedRequest request;
+  VaultRegistration::Stub stubservice(&out_channel);
+  SetLocalVaultOwnedRequest request;
   request.set_private_key(keypair.private_key());
   request.set_public_key(keypair.public_key());
   request.set_signed_public_key(cobj.AsymSign(keypair.public_key(), "",
       keypair.private_key(), crypto::STRING_STRING));
   request.set_port(0);
-  request.set_vault_dir((test_dir / "Owned").string());
+  request.set_vault_dir((test_dir_ / "Owned").string());
   request.set_space(1000);
-  maidsafe::SetLocalVaultOwnedResponse response;
+  SetLocalVaultOwnedResponse response;
   google::protobuf::Closure *done1 = google::protobuf::NewCallback<
-      OwnershipSenderHandler, const maidsafe::SetLocalVaultOwnedResponse*,
+      OwnershipSenderHandler, const SetLocalVaultOwnedResponse*,
       rpcprotocol::Controller*>(&senderhandler,
       &OwnershipSenderHandler::Callback, &response, &ctrl);
   stubservice.SetLocalVaultOwned(&ctrl, &request, &response, done1);
   while (!senderhandler.callback_arrived())
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
-  ASSERT_EQ(maidsafe::OWNED_SUCCESS, senderhandler.result());
+  ASSERT_EQ(OWNED_SUCCESS, senderhandler.result());
   ASSERT_EQ(pmid_name, senderhandler.pmid_name());
 
   response.Clear();
   senderhandler.Reset();
   ctrl.Reset();
   google::protobuf::Closure *done2 = google::protobuf::NewCallback<
-      OwnershipSenderHandler, const maidsafe::SetLocalVaultOwnedResponse*,
+      OwnershipSenderHandler, const SetLocalVaultOwnedResponse*,
       rpcprotocol::Controller*>(&senderhandler,
       &OwnershipSenderHandler::Callback, &response, &ctrl);
   stubservice.SetLocalVaultOwned(&ctrl, &request, &response, done2);
   while (!senderhandler.callback_arrived())
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
-  ASSERT_EQ(maidsafe::VAULT_ALREADY_OWNED, senderhandler.result());
+  ASSERT_EQ(VAULT_ALREADY_OWNED, senderhandler.result());
   ASSERT_TRUE(senderhandler.pmid_name().empty());
 
   response.Clear();
   senderhandler.Reset();
   ctrl.Reset();
-  maidsafe::LocalVaultOwnedRequest req;
-  maidsafe::LocalVaultOwnedResponse resp;
+  LocalVaultOwnedRequest req;
+  LocalVaultOwnedResponse resp;
   google::protobuf::Closure *done3 = google::protobuf::NewCallback<
-      OwnershipSenderHandler, const maidsafe::LocalVaultOwnedResponse*,
+      OwnershipSenderHandler, const LocalVaultOwnedResponse*,
       rpcprotocol::Controller*>(&senderhandler,
       &OwnershipSenderHandler::Callback1, &resp, &ctrl);
   stubservice.LocalVaultOwned(&ctrl, &req, &resp, done3);
   while (!senderhandler.callback_arrived())
     boost::this_thread::sleep(boost::posix_time::milliseconds(500));
-  ASSERT_EQ(maidsafe::OWNED, senderhandler.remote_vault_status());
-  finished = true;
-  thrd.join();
-  if (boost::filesystem::exists(test_dir))
-    boost::filesystem::remove_all(test_dir);
-  if (boost::filesystem::exists(file_system::ApplicationDataDir() / ".config"))
-    boost::filesystem::remove_all(file_system::ApplicationDataDir() /".config");
+  ASSERT_EQ(OWNED, senderhandler.remote_vault_status());
 }
+
+}  // namespace test
+
+}  // namespace maidsafe
+

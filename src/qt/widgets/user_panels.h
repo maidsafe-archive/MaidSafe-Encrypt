@@ -108,7 +108,7 @@ class UserPanels : public QWidget {
     // Notification from the Public Username panel that a username was set
     void onPublicUsernameChosen();
 
-    // 'My Files' button has been clicked
+    // 'My Stuff' button has been clicked
     void onMyFilesClicked();
     void onEmailsClicked();
     void onItemClicked(QListWidgetItem* item);

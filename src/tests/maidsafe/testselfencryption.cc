@@ -52,7 +52,7 @@ std::string CreateRandomFile(const std::string &filename, const int &filesize) {
     if (filesize > 100000)
       stringsize = 100000;
     int remainingsize = filesize;
-    std::string rand_str = base::RandomString(2 * stringsize);
+    std::string rand_str = base::RandomAlphaNumericString(2 * stringsize);
     std::string file_content;
     int start_pos = 0;
     while (remainingsize) {
@@ -80,7 +80,7 @@ class SelfEncryptionTest : public testing::Test {
  public:
   SelfEncryptionTest()
       : test_root_dir_(file_system::TempDir() /
-            ("maidsafe_TestSE_" + base::RandomString(6))),
+            ("maidsafe_TestSE_" + base::RandomAlphaNumericString(6))),
         ss(SessionSingleton::getInstance()),
         client_chunkstore_(),
         ms_home_path_(),
@@ -88,6 +88,7 @@ class SelfEncryptionTest : public testing::Test {
   ~SelfEncryptionTest() {}
  protected:
   void SetUp() {
+//    done_chunks_.clear();
     ss->ResetSession();
     ss->SetUsername("user1");
     ss->SetPin(base::IntToString(base::RandomUint32()));
@@ -130,6 +131,7 @@ class SelfEncryptionTest : public testing::Test {
   boost::shared_ptr<ChunkStore> client_chunkstore_;
   fs::path ms_home_path_;
   std::vector<crypto::RsaKeyPair> keys_;
+//  std::set<std::string> done_chunks_;
  private:
   explicit SelfEncryptionTest(const maidsafe::SelfEncryptionTest&);
   SelfEncryptionTest &operator=(const maidsafe::SelfEncryptionTest&);
@@ -608,21 +610,25 @@ TEST_F(SelfEncryptionTest, BEH_MAID_HashUnique) {
 
 TEST_F(SelfEncryptionTest, BEH_MAID_ResizeObfuscationHash) {
   SelfEncryption se(client_chunkstore_);
-  std::string hash = se.SHA512(static_cast<std::string>("abc"));
+  std::string input("abc");
+  std::string hash = se.SHA512(input);
   ASSERT_EQ(base::EncodeToHex(hash),
         "ddaf35a193617abacc417349ae20413112e6fa4e89a97ea20a9eeee64b55d39a219299"
         "2a274fc1a836ba3c23a3feebbd454d4423643ce80e2a9ac94fa54ca49f");
-  std::string amended_hash;
-  ASSERT_TRUE(se.ResizeObfuscationHash(base::EncodeToHex(hash), 129,
-              &amended_hash));
-  ASSERT_EQ(amended_hash, base::EncodeToHex(hash)+"d");
-  ASSERT_TRUE(se.ResizeObfuscationHash(base::EncodeToHex(hash), 10,
-              &amended_hash));
-  ASSERT_EQ(amended_hash, "ddaf35a193");
-  ASSERT_TRUE(se.ResizeObfuscationHash(base::EncodeToHex(hash), 1280,
-              &amended_hash));
-  ASSERT_EQ(amended_hash, base::EncodeToHex(
-            hash+hash+hash+hash+hash+hash+hash+hash+hash+hash));
+  std::string amended_hash("Rubbish");
+  EXPECT_TRUE(self_encryption_utils::ResizeObfuscationHash(input, 65,
+                                                           &amended_hash));
+  char appended(55);
+  EXPECT_EQ(amended_hash, hash + appended);
+  EXPECT_TRUE(self_encryption_utils::ResizeObfuscationHash(input, 10,
+                                                           &amended_hash));
+  EXPECT_EQ(std::string("\xdd\xaf\x35\xa1\x93\x61\x7a\xba\xcc\x41"),
+            amended_hash);
+  EXPECT_TRUE(self_encryption_utils::ResizeObfuscationHash(input, 200,
+                                                           &amended_hash));
+  EXPECT_EQ(std::string("\x91\xee\x3b\x36\xd\x3e\x5e\xe\xd\xe"),
+            amended_hash.substr(190, 10));
+  EXPECT_FALSE(self_encryption_utils::ResizeObfuscationHash(hash, 10, NULL));
 }
 
 TEST_F(SelfEncryptionTest, BEH_MAID_SelfEncryptFiles) {
@@ -649,14 +655,14 @@ TEST_F(SelfEncryptionTest, BEH_MAID_SelfEncryptFiles) {
   dm3.set_file_hash(se.SHA512(path3));
   dm4.set_file_hash(se.SHA512(path4));
   dm5.set_file_hash(se.SHA512(path5));
-  ASSERT_LT(se.Encrypt(path1.string(), false, &dm1), 0);
-  ASSERT_EQ(0, se.Encrypt(path2.string(), false, &dm2));
+  ASSERT_LT(se.Encrypt(path1.string(), false, &dm1/*, &done_chunks_*/), 0);
+  ASSERT_EQ(0, se.Encrypt(path2.string(), false, &dm2/*, &done_chunks_*/));
   ASSERT_EQ(3, dm2.chunk_name_size());
-  ASSERT_EQ(0, se.Encrypt(path3.string(), false, &dm3));
+  ASSERT_EQ(0, se.Encrypt(path3.string(), false, &dm3/*, &done_chunks_*/));
   ASSERT_EQ(3, dm3.chunk_name_size());
-  ASSERT_EQ(0, se.Encrypt(path4.string(), false, &dm4));
+  ASSERT_EQ(0, se.Encrypt(path4.string(), false, &dm4/*, &done_chunks_*/));
   ASSERT_EQ(3, dm4.chunk_name_size());
-  ASSERT_EQ(0, se.Encrypt(path5.string(), false, &dm5));
+  ASSERT_EQ(0, se.Encrypt(path5.string(), false, &dm5/*, &done_chunks_*/));
   ASSERT_EQ(3, dm5.chunk_name_size());
 }
 
@@ -680,10 +686,10 @@ TEST_F(SelfEncryptionTest, BEH_MAID_DecryptFile) {
   dm2.set_file_hash(se.SHA512(path2));
   dm3.set_file_hash(se.SHA512(path3));
   dm4.set_file_hash(se.SHA512(path4));
-  ASSERT_EQ(0, se.Encrypt(path1.string(), false, &dm1));
-  ASSERT_EQ(0, se.Encrypt(path2.string(), false, &dm2));
-  ASSERT_EQ(0, se.Encrypt(path3.string(), false, &dm3));
-  ASSERT_EQ(0, se.Encrypt(path4.string(), false, &dm4));
+  ASSERT_EQ(0, se.Encrypt(path1.string(), false, &dm1/*, &done_chunks_*/));
+  ASSERT_EQ(0, se.Encrypt(path2.string(), false, &dm2/*, &done_chunks_*/));
+  ASSERT_EQ(0, se.Encrypt(path3.string(), false, &dm3/*, &done_chunks_*/));
+  ASSERT_EQ(0, se.Encrypt(path4.string(), false, &dm4/*, &done_chunks_*/));
 
   fs::path decrypted1(path1.string()+".decrypted", fs::native);
   fs::path decrypted2(path2.string()+".decrypted", fs::native);
@@ -715,14 +721,14 @@ TEST_F(SelfEncryptionTest, BEH_MAID_SelfEncryptStrings) {
   dm3.set_file_hash(se.SHA512(str3));
   dm4.set_file_hash(se.SHA512(str4));
   dm5.set_file_hash(se.SHA512(str5));
-  ASSERT_LT(se.Encrypt(str1, true, &dm1), 0);
-  ASSERT_EQ(0, se.Encrypt(str2, true, &dm2));
+  ASSERT_LT(se.Encrypt(str1, true, &dm1/*, &done_chunks_*/), 0);
+  ASSERT_EQ(0, se.Encrypt(str2, true, &dm2/*, &done_chunks_*/));
   ASSERT_EQ(3, dm2.chunk_name_size());
-  ASSERT_EQ(0, se.Encrypt(str3, true, &dm3));
+  ASSERT_EQ(0, se.Encrypt(str3, true, &dm3/*, &done_chunks_*/));
   ASSERT_EQ(3, dm3.chunk_name_size());
-  ASSERT_EQ(0, se.Encrypt(str4, true, &dm4));
+  ASSERT_EQ(0, se.Encrypt(str4, true, &dm4/*, &done_chunks_*/));
   ASSERT_EQ(3, dm4.chunk_name_size());
-  ASSERT_EQ(0, se.Encrypt(str5, true, &dm5));
+  ASSERT_EQ(0, se.Encrypt(str5, true, &dm5/*, &done_chunks_*/));
   ASSERT_EQ(3, dm5.chunk_name_size());
 }
 
@@ -738,10 +744,10 @@ TEST_F(SelfEncryptionTest, BEH_MAID_SelfDecryptString) {
   dm2.set_file_hash(se.SHA512(str2));
   dm3.set_file_hash(se.SHA512(str3));
   dm4.set_file_hash(se.SHA512(str4));
-  ASSERT_EQ(0, se.Encrypt(str1, true, &dm1));
-  ASSERT_EQ(0, se.Encrypt(str2, true, &dm2));
-  ASSERT_EQ(0, se.Encrypt(str3, true, &dm3));
-  ASSERT_EQ(0, se.Encrypt(str4, true, &dm4));
+  ASSERT_EQ(0, se.Encrypt(str1, true, &dm1/*, &done_chunks_*/));
+  ASSERT_EQ(0, se.Encrypt(str2, true, &dm2/*, &done_chunks_*/));
+  ASSERT_EQ(0, se.Encrypt(str3, true, &dm3/*, &done_chunks_*/));
+  ASSERT_EQ(0, se.Encrypt(str4, true, &dm4/*, &done_chunks_*/));
 
   std::string dec1, dec2, dec3, dec4;
 
@@ -783,7 +789,7 @@ TEST_F(SelfEncryptionTest, BEH_MAID_EncryptDecryptStringSerDA) {
   SelfEncryption se(client_chunkstore_);
 
   dm1.set_file_hash(se.SHA512(ser_da));
-  ASSERT_EQ(0, se.Encrypt(ser_da, true, &dm1));
+  ASSERT_EQ(0, se.Encrypt(ser_da, true, &dm1/*, &done_chunks_*/));
 
   std::string dec_str;
   ASSERT_EQ(0, se.Decrypt(dm1, 0, &dec_str));
@@ -815,11 +821,11 @@ TEST_F(SelfEncryptionTest, BEH_MAID_EncryptDecryptFileSerDA) {
     k->set_public_key_signature(co.AsymSign(keys_.at(i).public_key(), "",
         keys_.at(i).private_key(), crypto::STRING_STRING));
     k->set_id(co.Hash(keys_.at(i).public_key() + k->public_key_signature(), "",
-        crypto::STRING_STRING, false));
+                      crypto::STRING_STRING, false));
   }
   std::string filename("ser_da");
   std::fstream output(filename.c_str(),
-    std::ios::out | std::ios::trunc | std::ios::binary);
+                      std::ios::out | std::ios::trunc | std::ios::binary);
   ASSERT_TRUE(da.SerializeToOstream(&output));
   output.close();
 
@@ -828,7 +834,7 @@ TEST_F(SelfEncryptionTest, BEH_MAID_EncryptDecryptFileSerDA) {
 
   SelfEncryption se(client_chunkstore_);
   dm.set_file_hash(se.SHA512(filepath));
-  ASSERT_EQ(0, se.Encrypt(filepath.string(), false, &dm));
+  ASSERT_EQ(0, se.Encrypt(filepath.string(), false, &dm/*, &done_chunks_*/));
 
   fs::path decfilepath(filename + "dec", fs::native);
   ASSERT_EQ(0, se.Decrypt(dm, decfilepath.string(), 0, false));
@@ -836,17 +842,51 @@ TEST_F(SelfEncryptionTest, BEH_MAID_EncryptDecryptFileSerDA) {
   EXPECT_EQ(se.SHA512(filepath), se.SHA512(decfilepath));
 
   std::ifstream input1(filepath.string().c_str(),
-    std::ios::in | std::ios::binary);
+                       std::ios::in | std::ios::binary);
   da.Clear();
   EXPECT_TRUE(da.ParseFromIstream(&input1));
   input1.close();
   std::ifstream input2(decfilepath.string().c_str(),
-    std::ios::in | std::ios::binary);
+                       std::ios::in | std::ios::binary);
   da.Clear();
   EXPECT_TRUE(da.ParseFromIstream(&input2));
   input2.close();
   fs::remove(filepath);
   fs::remove(decfilepath);
 }
+
+/*
+//TEST_F(SelfEncryptionTest, BEH_MAID_EncryptAndCheckDoneChunks) {
+//  std::string test_file1("test01.txt");
+//  std::string test_file2("test02.txt");
+//
+//  fs::path path1(test_se::CreateRandomFile(test_file1, 999), fs::native);
+//  fs::path path2(file_system::MaidsafeHomeDir(
+//                     maidsafe::SessionSingleton::getInstance()->SessionName()) /
+//                 test_file2);
+//  try {
+//    fs::copy_file(path1, path2);
+//  }
+//  catch(const std::exception &e) {
+//    FAIL() << e.what();
+//  }
+//
+//  DataMap dm1, dm2;
+//  SelfEncryption se(client_chunkstore_);
+//  dm1.set_file_hash(se.SHA512(path1));
+//  dm2.set_file_hash(se.SHA512(path2));
+//  ASSERT_EQ(se.Encrypt(path1.string(), false, &dm1, &done_chunks_), 0);
+//  ASSERT_TRUE(done_chunks_.empty());
+//  ASSERT_EQ(se.Encrypt(path2.string(), false, &dm2, &done_chunks_), 0);
+//  ASSERT_EQ(size_t(3), done_chunks_.size());
+//  std::set<std::string>::iterator it;
+//  for (int n = 0; n < dm2.encrypted_chunk_name_size(); ++n) {
+//    ASSERT_EQ(dm1.encrypted_chunk_name(n), dm2.encrypted_chunk_name(n));
+//    it = done_chunks_.find(dm2.encrypted_chunk_name(n));
+//    if (it == done_chunks_.end())
+//      FAIL() << "Chunk missing " << n;
+//  }
+//}
+*/
 
 }  // namespace maidsafe

@@ -16,6 +16,7 @@
 
 // boost
 #include <boost/progress.hpp>
+#include <boost/filesystem/fstream.hpp>
 
 #include "qt/client/send_instant_message_thread.h"
 #include "qt/client/client_controller.h"
@@ -25,12 +26,10 @@
 #include <QMessageBox>
 
 
-LifeStuffFull::LifeStuffFull(QWidget* parent)
-    : QWidget(parent) {
+LifeStuffFull::LifeStuffFull(QWidget* parent) : QWidget(parent) {
   ui_.setupUi(this);
 
-  ContactList contact_list =
-                     ClientController::instance()->contacts(0);
+  ContactList contact_list = ClientController::instance()->contacts(0);
   foreach(Contact* contact, contact_list) {
     addContact(contact);
   }
@@ -39,23 +38,17 @@ LifeStuffFull::LifeStuffFull(QWidget* parent)
   active_ = true;
 
   connect(ui_.contactListWidget, SIGNAL(itemDoubleClicked(QListWidgetItem*)),
-        this,           SLOT(onContactDoubleClicked(QListWidgetItem*)));
+          this, SLOT(onContactDoubleClicked(QListWidgetItem*)));
 
   connect(ui_.sndMessageBtn, SIGNAL(clicked()),
-          this,            SLOT(onSendMessageClicked()));  
+          this,              SLOT(onSendMessageClicked()));
 
   connect(ClientController::instance(),
-          SIGNAL(messageReceived(int,
-                                    const QDateTime&,
-                                    const QString&,
-                                    const QString&,
-                                    const QString&)),
+          SIGNAL(messageReceived(int, const QDateTime&, const QString&,
+                                 const QString&, const QString&)),
           this,
-          SLOT(onMessageReceived(int,
-                                    const QDateTime&,
-                                    const QString&,
-                                    const QString&,
-                                    const QString&)));
+          SLOT(onMessageReceived(int, const QDateTime&, const QString&,
+                                 const QString&, const QString&)));
 }
 
 LifeStuffFull::~LifeStuffFull() {}
@@ -64,8 +57,9 @@ void LifeStuffFull::saveConversation(QString &conv) {
   QString convFilePath;
   convFilePath = chatRootPath_ + conv + ".html";
 
-  std::ofstream myfile;
-  myfile.open(convFilePath.toStdString().c_str(), std::ios::app | std::ios::out);
+  boost::filesystem::fstream myfile;
+  myfile.open(convFilePath.toStdString().c_str(),
+              std::ios::app | std::ios::out);
     // SAVE AS XML
   QString htmlMessage = ui_.messageTextEdit->toHtml();
   myfile << htmlMessage.toStdString();
@@ -78,13 +72,13 @@ void LifeStuffFull::saveConversation(QString &conv) {
 }
 
 void LifeStuffFull::loadConversation(QString &conv) {
-  std::string tidyRelPathStr = ClientController::instance()->TidyPath(chatRootPath_.toStdString()
-                                                 + conv.toStdString() + ".html");
+  std::string tidyRelPathStr =
+      ClientController::instance()->TidyPath(chatRootPath_.toStdString() +
+                                             conv.toStdString() + ".html");
   QString openFilePath = QString::fromStdString(tidyRelPathStr);
   qDebug() << "upload File" << openFilePath;
 
-  ReadFileThread* rft = new ReadFileThread("/chat/" + conv + ".html",
-                                               this);
+  ReadFileThread* rft = new ReadFileThread("/chat/" + conv + ".html", this);
 
   connect(rft,  SIGNAL(readFileCompleted(int, const QString&)),
           this, SLOT(onReadFileCompleted(int, const QString&)));
@@ -92,8 +86,8 @@ void LifeStuffFull::loadConversation(QString &conv) {
   rft->start();
 }
 
-void LifeStuffFull::onReadFileCompleted(int success, const QString& filepath){
-  //if (success == 0) {
+void LifeStuffFull::onReadFileCompleted(int, const QString& filepath) {
+//  if (success == 0) {
   QString path = rootPath_ + filepath;
   QFile file(path);
   if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
@@ -103,12 +97,12 @@ void LifeStuffFull::onReadFileCompleted(int success, const QString& filepath){
   ui_.messageTextEdit->setHtml(line);
   file.close();
   ui_.messageTextEdit->moveCursor(QTextCursor::End, QTextCursor::MoveAnchor);
-  //}
+//  }
 }
 
-void LifeStuffFull::onSaveFileCompleted(int success, const QString& filepath){
-  std::string fullFilePath(rootPath_.toStdString() + filepath.toStdString());  
-  
+void LifeStuffFull::onSaveFileCompleted(int, const QString& filepath) {
+  std::string fullFilePath(rootPath_.toStdString() + filepath.toStdString());
+
   try {
       if (fs::exists(fullFilePath)) {
         fs::remove(fullFilePath);
@@ -127,7 +121,7 @@ void LifeStuffFull::setVariables() {
                               file_system::MaidsafeHomeDir(
                               ClientController::instance()->SessionName())
                                   .string());
-                          
+
  chatRootPath_ = rootPath_ + "/chat/";
 
   try {
@@ -233,7 +227,7 @@ void LifeStuffFull::addContact(Contact* contact) {
   ui_.contactListWidget->addItem(item);
 }
 
-void LifeStuffFull::onSendMessageClicked(){
+void LifeStuffFull::onSendMessageClicked() {
   if (currentContact_ != "" && ui_.msgEntryEdit->toPlainText() != "") {
     QList<QString> conts;
     conts.push_back(currentContact_);
@@ -250,8 +244,7 @@ void LifeStuffFull::onSendMessageClicked(){
   }
 }
 
-void LifeStuffFull::onSendMessageComplete(bool success,
-                                             const QString& text) {
+void LifeStuffFull::onSendMessageComplete(bool success, const QString& text) {
   if (success) {
     QDateTime theDate = QDateTime::currentDateTime();
     // TODO(Team#) use date format from the user's locale
@@ -268,7 +261,7 @@ void LifeStuffFull::onSendMessageComplete(bool success,
   }
   ui_.msgEntryEdit->clear();
   ui_.convListWidget->addItem(currentContact_);
-  
+
   int n = ClientController::instance()->AddConversation(
           currentContact_.toStdString());
 
@@ -279,15 +272,15 @@ void LifeStuffFull::onSendMessageComplete(bool success,
   saveConversation(currentContact_);
 }
 
-void LifeStuffFull::onMessageReceived(int,
-                                      const QDateTime&,
+void LifeStuffFull::onMessageReceived(int, const QDateTime&,
                                       const QString& sender,
                                       const QString& message,
                                       const QString&) {
-  QList<QListWidgetItem *> items = ui_.convListWidget->findItems(sender, Qt::MatchExactly);
+  QList<QListWidgetItem *> items =
+      ui_.convListWidget->findItems(sender, Qt::MatchExactly);
 
   if (sender == currentContact_) {
-    //currently talking to sender 
+    //currently talking to sender
     ui_.messageTextEdit->moveCursor(QTextCursor::End, QTextCursor::MoveAnchor);
     QDateTime theDate = QDateTime::currentDateTime();
     // TODO(Team#) use date format from the user's locale
@@ -304,13 +297,13 @@ void LifeStuffFull::onMessageReceived(int,
     QListWidgetItem* item = new QListWidgetItem(sender);
     item->setBackgroundColor(QColor("lightblue"));
     ui_.convListWidget->addItem(item);
-    QList<QListWidgetItem *> contactItems = 
+    QList<QListWidgetItem *> contactItems =
                     ui_.contactListWidget->findItems(sender, Qt::MatchExactly);
     contactItems[0]->setBackgroundColor(QColor("lightblue"));
   } else {
     // already have conv with person before but not current
     items[0]->setBackgroundColor(QColor("lightblue"));
-    QList<QListWidgetItem *> contactItems = 
+    QList<QListWidgetItem *> contactItems =
                     ui_.contactListWidget->findItems(sender, Qt::MatchExactly);
     contactItems[0]->setBackgroundColor(QColor("lightblue"));
   }

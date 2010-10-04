@@ -70,6 +70,7 @@ message AddToWatchListResponse {
   required uint32 result = 1;
   optional bytes pmid = 2;  // Chunk Info holder's PMID
   optional uint32 upload_count = 3;
+  optional uint64 total_payment = 4;
 }
 
 message RemoveFromWatchListRequest {
@@ -128,6 +129,21 @@ message AmendAccountResponse {
   optional bytes pmid = 2;  // account holder's PMID
 }
 
+message ExpectAmendmentRequest {
+  required AmendAccountRequest.Amendment amendment_type = 1;
+  required bytes chunkname = 2;
+  required bytes account_pmid = 3;  // PMID of account owner (i.e. sender)
+  required bytes public_key = 4;
+  required bytes public_key_signature = 5;
+  required bytes request_signature = 6;
+  repeated bytes amender_pmids = 7;  // the K vaults to expect amendments from
+}
+
+message ExpectAmendmentResponse {
+  required uint32 result = 1;
+  optional bytes pmid = 2;
+}
+
 message AccountStatusRequest {
   required bytes account_pmid = 1;  // PMID of account being queried
   optional uint64 space_requested = 2;
@@ -137,11 +153,17 @@ message AccountStatusRequest {
 }
 
 message AccountStatusResponse {
+  message AmendmentResult {
+    required AmendAccountRequest.Amendment amendment_type = 1;
+    required bytes chunkname = 2;
+    required uint32 result = 3;
+  }
   required uint32 result = 1;
   required bytes pmid = 2;
   optional uint64 space_offered = 3;
   optional uint64 space_given = 4;
   optional uint64 space_taken = 5;
+  repeated AmendmentResult amendment_results = 6;
 }
 
 message CheckChunkRequest {

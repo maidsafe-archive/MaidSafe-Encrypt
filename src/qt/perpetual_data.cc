@@ -876,7 +876,9 @@ void PerpetualData::onFileReceived(const QString& sender,
                                         tr("Filename"),
                                         QLineEdit::Normal, "", &ok);
       if (ok && !text.isEmpty()) {
-        QString s = QString("My Files\\%1").arg(text);
+        QString s = QString::fromStdString(
+                        maidsafe::TidyPath(kRootSubdir[0][0])) +
+                    QString("\\%1").arg(text);
 
         n = ClientController::instance()->AddInstantFile(sender, filename, tag,
                                                          sizeLow, sizeHigh,
@@ -885,12 +887,12 @@ void PerpetualData::onFileReceived(const QString& sender,
 #else
 
 #ifdef __WIN32__
-      root = QString("%1:\\My Files").
-             arg(ClientController::instance()->WinDrive());
+      root = QString("%1:\\").arg(ClientController::instance()->WinDrive()) +
+             QString::fromStdString(maidsafe::TidyPath(kRootSubdir[0][0]));
 #else
       root = QString::fromStdString(file_system::MaidsafeFuseDir(
           ClientController::instance()->SessionName()).string() +
-          "/My Files");
+          kRootSubdir[0][0]);
 #endif
       root += "/" + filename;
       qfd_ = new QFileDialog(this, tr("Save File As..."), root);
@@ -975,7 +977,7 @@ void PerpetualData::onDirectoryEntered(const QString& dir) {
   root = QString(ClientController::instance()->WinDrive());
 
   if (!dir.startsWith(root, Qt::CaseInsensitive)) {
-    root = QString("%1:\\My Files").
+    root = QString("%1:\\" + TidyPath(kRootSubdir[0][0])).
          arg(ClientController::instance()->WinDrive());
     qfd_->setDirectory(root);
   }
@@ -986,7 +988,7 @@ void PerpetualData::onDirectoryEntered(const QString& dir) {
   if (!dir.startsWith(root, Qt::CaseInsensitive)) {
     root = QString::fromStdString(file_system::MaidsafeFuseDir(
         ClientController::instance()->SessionName()).string() +
-        "/My Files");
+        kRootSubdir[0][0]);
     qfd_->setDirectory(root);
   }
 #endif

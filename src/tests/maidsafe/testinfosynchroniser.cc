@@ -51,8 +51,12 @@ class InfoSynchroniserTest : public testing::Test {
     for (size_t i = 0; i < table_size; ++i) {
       std::string tuple_id = co_.Hash(base::RandomString(100), "",
                                       crypto::STRING_STRING, false);
-      base::PublicRoutingTableTuple pdrtt(tuple_id, base::RandomString(13), i,
-                                          "", 0, "", 0, 0, 0);
+      base::PublicRoutingTableTuple pdrtt(tuple_id,
+          boost::lexical_cast<std::string>((base::RandomUint32() % 255)+1)+"."+
+          boost::lexical_cast<std::string>((base::RandomUint32() % 255)+1)+"."+
+          boost::lexical_cast<std::string>((base::RandomUint32() % 255)+1)+"."+
+          boost::lexical_cast<std::string>((base::RandomUint32() % 255)+1),
+          i, "", 0, "", 0, 0, 0);
       routing_table_->AddTuple(pdrtt);
     }
     closest_nodes_.push_back(kad::Contact());
@@ -73,17 +77,18 @@ TEST_F(InfoSynchroniserTest, BEH_VAULT_InfoSyncShouldFetch) {
                             false);
   ASSERT_EQ(0, routing_table_->GetClosestContacts(id, 0, &nodes));
   ASSERT_GE(nodes.size(), kMinRoutingTableSize_);
-  // Get a key which doesn't include test node's ID in test_info_sync::K closest node
+  // Get a key which doesn't include test node's ID in test_info_sync::K closest
+  // node
   while (true) {
-    ASSERT_EQ(0, routing_table_->GetClosestContacts(id, test_info_sync::K, &nodes));
+    ASSERT_EQ(0, routing_table_->GetClosestContacts(id, test_info_sync::K,
+                                                    &nodes));
     ASSERT_EQ(test_info_sync::K, nodes.size());
     kad::Contact this_test_contact(pmid_, "", 0);
     std::vector<kad::Contact> closest_nodes;
     std::for_each(nodes.begin(), nodes.end(), boost::bind(
         &InfoSynchroniser::AddNodeToClosest, &info_synchroniser_, _1,
         &closest_nodes));
-    if (!maidsafe::ContactWithinClosest(kad::KadId(id), this_test_contact,
-                                        closest_nodes))
+    if (!maidsafe::ContactWithinClosest(id, this_test_contact, closest_nodes))
       break;
     else
       id = co_.Hash(base::RandomString(100), "", crypto::STRING_STRING, false);
@@ -124,7 +129,7 @@ TEST_F(InfoSynchroniserTest, BEH_VAULT_InfoSyncShouldFetch) {
   ASSERT_EQ(size_t(2), info_synchroniser_.info_entries_.size());
 }
 
-TEST_F(InfoSynchroniserTest, BEH_VAULT_InfoSyncTimestamps) {
+TEST_F(InfoSynchroniserTest, FUNC_VAULT_InfoSyncTimestamps) {
   const size_t kTestMapSize = 100;
   while (info_synchroniser_.info_entries_.size() < kTestMapSize) {
     info_synchroniser_.ShouldFetch(co_.Hash(base::RandomString(100), "",
@@ -154,7 +159,7 @@ TEST_F(InfoSynchroniserTest, BEH_VAULT_InfoSyncTimestamps) {
   ASSERT_EQ(id2_insertion_time, it->second);
 }
 
-TEST_F(InfoSynchroniserTest, BEH_VAULT_InfoSyncRemoveEntry) {
+TEST_F(InfoSynchroniserTest, FUNC_VAULT_InfoSyncRemoveEntry) {
   const size_t kTestMapSize = 100;
   while (info_synchroniser_.info_entries_.size() < kTestMapSize) {
     info_synchroniser_.ShouldFetch(co_.Hash(base::RandomString(100), "",
@@ -186,7 +191,7 @@ TEST_F(InfoSynchroniserTest, BEH_VAULT_InfoSyncRemoveEntry) {
   ASSERT_TRUE(success);
 }
 
-TEST_F(InfoSynchroniserTest, BEH_VAULT_InfoSyncPruneMap) {
+TEST_F(InfoSynchroniserTest, FUNC_VAULT_InfoSyncPruneMap) {
   const size_t kTestMapSize = 100;
   while (info_synchroniser_.info_entries_.size() < kTestMapSize) {
     info_synchroniser_.ShouldFetch(co_.Hash(base::RandomString(100), "",

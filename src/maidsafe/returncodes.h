@@ -42,6 +42,7 @@ enum ReturnCode {
   kUserExists = -1004,
   kInvalidUsernameOrPin = -1005,
   kPublicUsernameExists = -1006,
+  kAuthenticationTimeout = -1007,
 
   // Buffer Packet Handler
   kBPError = -2001,
@@ -101,11 +102,11 @@ enum ReturnCode {
 
   // Store Managers
   kStoreManagerError = -7001,
+  kStoreManagerInitError = -7002,
   kNotConnected = -7002,
   kLoadChunkFindNodesFailure = -7003,
   kStoreChunkFindNodesFailure = -7004,
   kStoreChunkError = -7005,
-  kStoreCancelledOrDone = -7006,
   kChunkNotInChunkstore = -7007,
   kGetRequestSigError = -7008,
   kGetStorePeerError = -7009,
@@ -130,7 +131,6 @@ enum ReturnCode {
   kDeleteChunkError = -7028,
   kDeleteSizeError = -7029,
   kDeleteChunkFailure = -7030,
-  kDeleteCancelledOrDone = -7031,
   kLoadedChunkEmpty = -7032,
   kGetChunkFailure = -7033,
   kSendPacketError = -7034,
@@ -160,49 +160,75 @@ enum ReturnCode {
   kUpdatePacketError = -7058,
   kUpdatePacketParseError = -7059,
   kChunkStorePending = -7060,
+  kAmendAccountFailure = -7061,
 
-  // Message Handler (-8000)
-  kConnectionNotExists = -8001,
-  kFailedToConnect = -8002,
-  kFailedToSend = -8003,
-  kFailedToStartHandler = -8004,
-  kHandlerAlreadyStarted = -8005,
-  kHandlerNotStarted = -8006,
-  kConnectionAlreadyExists = -8007,
-  kConnectionDown = -8008,
+  // KadOps
+  kKadConfigException = -8001,
+  kKadOpsInitFailure = -8002,
+  kKadIdError = -8003,
 
-  // Private Share Handler (-9000)
+  // Message Handler
+  kConnectionNotExists = -9001,
+  kFailedToConnect = -9002,
+  kFailedToSend = -9003,
+  kFailedToStartHandler = -9004,
+  kHandlerAlreadyStarted = -9005,
+  kHandlerNotStarted = -9006,
+  kConnectionAlreadyExists = -9007,
+  kConnectionDown = -9008,
+
+  // Private Share Handler (-10000)
 
   // Session & FileSystem
-  kEmptyConversationId = -10001,
-  kNonExistentConversation = -10002,
-  kExistingConversation = -10003,
-  kLoadKeysFailure = -10004,
-  kContactListFailure = -10005,
-  kSessionNameEmpty = -10006,
-  kFileSystemMountError = -10007,
-  kFileSystemUnmountError = -10008,
-  kFuseMountPointError = -10009,
-  kFileSystemException = -10010,
-  kAddLiveContactFailure = -10011,
-  kLiveContactNotFound = -10012,
-  kLiveContactNoEp = -10013,
+  kEmptyConversationId = -11001,
+  kNonExistentConversation = -11002,
+  kExistingConversation = -11003,
+  kLoadKeysFailure = -11004,
+  kContactListFailure = -11005,
+  kSessionNameEmpty = -11006,
+  kFileSystemMountError = -11007,
+  kFileSystemUnmountError = -11008,
+  kFuseMountPointError = -11009,
+  kFileSystemException = -11010,
+  kAddLiveContactFailure = -11011,
+  kLiveContactNotFound = -11012,
+  kLiveContactNoEp = -11013,
 
+  // Self Encryption Handler (-12000)
+  kGeneralEncryptionError = -12001,
+  kEncryptFileFailure = -12002,
+  kEncryptStringFailure = -12003,
+  kEncryptDbFailure = -12004,
+  kDecryptFileFailure = -12005,
+  kDecryptStringFailure = -12006,
+  kDecryptDbFailure = -12007,
+  kEncryptionLocked = -12008,
+  kEncryptionLink = -12009,
+  kEncryptionChunk = -12010,
+  kEncryptionNotForProcessing = -12011,
+  kEncryptionUnknownType = -12012,
+  kEncryptionMDMFailure = -12013,
+  kEncryptionDAHFailure = -12014,
+  kEncryptionDMFailure = -12015,
+  kEncryptionSMFailure = -12016,
+  kEncryptionSmallInput = -12017,
+  kEncryptionKeyGenFailure = -12018,
+  kEncryptionGetDirKeyFailure = -12019,
+  kEncryptionDbMissing = -12020,
+  kEncryptionDbException = -12021,
+  kEncryptionDmNotInMap = -12022,
 
-  // Self Encryption Handler (-11000)
-
-  // Store Task Handler
-  kStoreTaskHandlerError = -12001,
-  kStoreTaskIncorrectParameter = -12002,
-  kStoreTaskAlreadyExists = -12003,
-  kStoreTaskNotFound = -12004,
-  kStoreTaskNotFinished = -12005,
-  kStoreTaskFinishedFail = -12006,
-  kStoreTaskFinishedPass = 0,  // intentionally 0
+  // Store Manager Task Handler
+  kStoreManagerTaskHandlerError = -13001,
+  kStoreManagerTaskIncorrectParameter = -13002,
+  kStoreManagerTaskIncorrectOperation = -13003,
+  kStoreManagerTaskParentNotActive = -13004,
+  kStoreManagerTaskNotFound = -13005,
+  kStoreManagerTaskCancelledOrDone = -13006,
 
   // Validator
-  kValidatorNoParameters = -13001,
-  kValidatorNoPrivateKey = -13002
+  kValidatorNoParameters = -14001,
+  kValidatorNoPrivateKey = -14002
 };
 
 }  // namespace maidsafe
@@ -246,16 +272,13 @@ enum ReturnCode {
   kPacketAppendNotFound = -3505,
   kPacketAppendNotOwned = -3506,
   kPacketAppendFailure = -3507,
-  kPacketOverwriteNotFound = -3508,
-  kPacketOverwriteNotOwned = -3509,
-  kPacketOverwriteFailure = -3510,
-  kPacketDeleteNotFound = -3511,
-  kPacketDeleteNotOwned = -3512,
-  kPacketLoadNotFound = -3513,
-  kNoSpaceForCaching = -3514,
-  kNoCacheSpaceToClear = -3515,
+  kPacketDeleteNotFound = -3508,
+  kPacketDeleteNotOwned = -3509,
+  kPacketLoadNotFound = -3510,
+  kNoSpaceForCaching = -3511,
+  kNoCacheSpaceToClear = -3512,
 
-  // Account Handler & Account Amendment Handler
+  // Account Handler & Account Amendment Handler & Request Expectation Handler
   kAccountHandlerNotStarted = -4501,
   kAccountNotFound = -4502,
   kAccountExists = -4503,
@@ -270,6 +293,7 @@ enum ReturnCode {
   kAccountAmendmentNotFound = -4512,
   kAccountAmendmentUpdated = -4513,
   kAccountAmendmentFinished = -4514,
+  kRequestExpectationCountError = -4515,
 
   // Chunk Info Handler
   kChunkInfoHandlerNotStarted = -5501,

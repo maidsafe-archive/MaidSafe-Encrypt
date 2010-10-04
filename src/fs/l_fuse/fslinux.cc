@@ -46,7 +46,7 @@
 #include <map>
 
 #include "fs/filesystem.h"
-#include "maidsafe/utils.h"
+#include "maidsafe/pdutils.h"
 #include "maidsafe/client/clientcontroller.h"
 #include "protobuf/datamaps.pb.h"
 
@@ -229,7 +229,7 @@ int FSLinux::ms_fsync(const char *, int, struct fuse_file_info*) {
 #ifdef DEBUG
 int FSLinux::ms_setxattr(const char *path, const char*, const char*, size_t,
                          int) {
-	printf("ms_setxattr %s\n", path);
+  printf("ms_setxattr %s\n", path);
 #else
 int FSLinux::ms_setxattr(const char *, const char*, const char*, size_t,
                          int) {

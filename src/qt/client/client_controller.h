@@ -34,7 +34,7 @@
 #include "maidsafe/client/clientinterface.h"
 #include "maidsafe/client/clientcontroller.h"
 #include "maidsafe/client/contacts.h"
-#include "maidsafe/utils.h"
+#include "maidsafe/pdutils.h"
 
 // local
 #include "qt/client/check_for_messages_thread.h"
@@ -236,11 +236,11 @@ class ClientController : public QObject {
                        const QList<QString>& to,
                        const QString& conversation);
 
-	bool sendEmail(const QString& subject,
+  bool sendEmail(const QString& subject,
                  const QString& message,
                  const QList<QString>& to,
-								 const QList<QString>& cc,
-								 const QList<QString>& bcc,
+                 const QList<QString>& cc,
+                 const QList<QString>& bcc,
                  const QString& conversation);
 
   QDomElement EmailToNode(QDomDocument &d, const ClientController::Email &c);
@@ -278,7 +278,7 @@ class ClientController : public QObject {
                     ClientController::ItemType &type);
   void connectionStatusChanged(int status);
   void systemMessage(const QString& message);
-	void emailReceieved(const QString &subject, const QString &conversation,
+  void emailReceieved(const QString &subject, const QString &conversation,
                       const QString &message, const QString &sender,
                       const QString &theDate);
 

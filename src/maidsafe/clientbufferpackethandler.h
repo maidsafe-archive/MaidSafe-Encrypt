@@ -57,6 +57,8 @@ enum BpOpType {
   GET_PRESENCE
 };
 
+class KadOps;
+
 struct ChangeBPData {
   ChangeBPData() : create_request(), modify_request(), get_msgs_request(),
                    add_msg_request(), get_presence_request(),
@@ -112,7 +114,7 @@ class ClientBufferPacketHandler {
   static const boost::uint16_t kParallelFindCtcs = 1;
  public:
   ClientBufferPacketHandler(boost::shared_ptr<maidsafe::BufferPacketRpcs> rpcs,
-                            boost::shared_ptr<kad::KNode> knode,
+                            boost::shared_ptr<KadOps> kadops,
                             boost::uint8_t upper_threshold);
   virtual ~ClientBufferPacketHandler() {}
   void CreateBufferPacket(const BPInputParameters &args,
@@ -143,11 +145,13 @@ class ClientBufferPacketHandler {
                    bp_operations_cb cb,
                    const boost::int16_t &transport_id);
  private:
-  virtual void FindNodes(kad::VoidFunctorOneString cb,
+  virtual void FindNodes(maidsafe::VoidFuncIntContacts cb,
                          boost::shared_ptr<ChangeBPData> data);
-  virtual void FindNodesCallback(const std::string &result,
-                                 boost::shared_ptr<ChangeBPData> data,
-                                 const boost::int16_t &transport_id);
+  virtual void FindNodesCallback(
+      const ReturnCode &result,
+      const std::vector<kad::Contact> &closest_nodes,
+      boost::shared_ptr<ChangeBPData> data,
+      const boost::int16_t &transport_id);
   void ActionOnBpDone(
       boost::shared_ptr<std::vector<ModifyBPCallbackData> > cb_datas,
       boost::int16_t index);
@@ -161,8 +165,8 @@ class ClientBufferPacketHandler {
   ClientBufferPacketHandler(const ClientBufferPacketHandler&);
   crypto::Crypto crypto_obj_;
   boost::shared_ptr<maidsafe::BufferPacketRpcs> rpcs_;
-  boost::shared_ptr<kad::KNode> knode_;
-  boost::uint16_t upper_threshold_;
+  boost::shared_ptr<KadOps> kad_ops_;
+  const boost::uint16_t kUpperThreshold_;
 };
 
 }  // namespace maidsafe

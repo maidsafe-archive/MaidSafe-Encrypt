@@ -73,7 +73,7 @@ class KGroup {
     }
     std::string pmid, pmid_private, pmid_public, pmid_public_signature;
   };
-  KGroup(const boost::uint8_t k)
+  explicit KGroup(const boost::uint8_t k)
       : co_(), members_(), serialised_find_nodes_response_() {
     co_.set_symm_algorithm(crypto::AES_256);
     co_.set_hash_algorithm(crypto::SHA_512);
@@ -157,11 +157,8 @@ class MockVaultRpcs : public VaultRpcs {
 class MockVsl : public VaultServiceLogic {
  public:
   MockVsl(const boost::shared_ptr<VaultRpcs> &vault_rpcs,
-          const boost::shared_ptr<kad::KNode> &knode,
-          const boost::uint8_t k)
-      : VaultServiceLogic(vault_rpcs, knode, k) {
-    kad_ops_.reset(new maidsafe::MockKadOps(knode));
-  }
+          const boost::shared_ptr<maidsafe::KadOps> &kadops)
+      : VaultServiceLogic(vault_rpcs, kadops) {}
   boost::shared_ptr<maidsafe::MockKadOps> kadops() {
       return boost::static_pointer_cast<maidsafe::MockKadOps>(kad_ops_);
   }
@@ -194,7 +191,7 @@ class MockVsl : public VaultServiceLogic {
 
 class MockVaultServiceLogicTest : public testing::Test {
  protected:
-  MockVaultServiceLogicTest(const boost::uint8_t k)
+  explicit MockVaultServiceLogicTest(const boost::uint8_t k)
       : pmid_(),
         pmid_private_(),
         pmid_public_(),

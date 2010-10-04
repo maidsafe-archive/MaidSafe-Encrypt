@@ -33,6 +33,7 @@
 
 #include "maidsafe/chunkstore.h"
 #include "maidsafe/client/storemanager.h"
+#include "maidsafe/client/storemanagertaskshandler.h"
 
 namespace maidsafe {
 
@@ -49,9 +50,13 @@ struct StoreData {
                 chunk_type(kHashable | kNormal),
                 system_packet_type(MID),
                 dir_type(PRIVATE),
-                if_packet_exists(kDoNothingReturnFailure),
-                callback() {}
-  // Store chunk constructor
+                callback(),
+                exclude_peers(),
+                master_task_id(kRootTask),
+                watchlist_master_task_id(kRootTask),
+                amendment_task_id(kRootTask),
+                chunk_copy_master_task_id(kRootTask) {}
+  // Store chunk & Delete chunk constructor
   StoreData(const std::string &chunk_name,
             const boost::uint64_t &chunk_size,
             ChunkType ch_type,
@@ -72,8 +77,12 @@ struct StoreData {
                   chunk_type(ch_type),
                   system_packet_type(MID),
                   dir_type(directory_type),
-                  if_packet_exists(kDoNothingReturnFailure),
-                  callback() {}
+                  callback(),
+                  exclude_peers(),
+                  master_task_id(kRootTask),
+                  watchlist_master_task_id(kRootTask),
+                  amendment_task_id(kRootTask),
+                  chunk_copy_master_task_id(kRootTask) {}
   // Store packet constructor
   StoreData(const std::string &packet_name,
             const std::string &packet_value,
@@ -84,7 +93,6 @@ struct StoreData {
             const std::string &pub_key,
             const std::string &pub_key_signature,
             const std::string &priv_key,
-            IfPacketExists if_exists,
             VoidFuncOneInt cb)
                 : data_name(packet_name),
                   value(packet_value),
@@ -97,16 +105,22 @@ struct StoreData {
                   chunk_type(kHashable | kNormal),
                   system_packet_type(sys_packet_type),
                   dir_type(directory_type),
-                  if_packet_exists(if_exists),
-                  callback(cb) {}
+                  callback(cb),
+                  exclude_peers(),
+                  master_task_id(kRootTask),
+                  watchlist_master_task_id(kRootTask),
+                  amendment_task_id(kRootTask),
+                  chunk_copy_master_task_id(kRootTask) {}
   std::string data_name, value;
   boost::uint64_t size;
   std::string msid, key_id, public_key, public_key_signature, private_key;
   ChunkType chunk_type;
   PacketType system_packet_type;
   DirType dir_type;
-  IfPacketExists if_packet_exists;
   VoidFuncOneInt callback;
+  std::vector<kad::Contact> exclude_peers;
+  TaskId master_task_id, watchlist_master_task_id, amendment_task_id;
+  TaskId chunk_copy_master_task_id;
 };
 
 struct DeletePacketData {
@@ -130,24 +144,6 @@ struct DeletePacketData {
                          private_key(priv_key),
                          system_packet_type(sys_packet_type),
                          dir_type(directory_type),
-                         callback(cb),
-                         mutex(),
-                         returned_count(0),
-                         called_back(false) {}
-  // This ctor effectively allows us to use a StoreData struct for deleting
-  // a packet during an OverwritePacket operation
-  DeletePacketData(boost::shared_ptr<StoreData> store_data,
-                   const std::vector<std::string> &vals,
-                   VoidFuncOneInt cb)
-                       : packet_name(store_data->data_name),
-                         values(vals),
-                         msid(store_data->msid),
-                         key_id(store_data->key_id),
-                         public_key(store_data->public_key),
-                         public_key_signature(store_data->public_key_signature),
-                         private_key(store_data->private_key),
-                         system_packet_type(store_data->system_packet_type),
-                         dir_type(store_data->dir_type),
                          callback(cb),
                          mutex(),
                          returned_count(0),
@@ -198,61 +194,71 @@ struct UpdatePacketData {
   boost::mutex mutex;
 };
 
+// This is used within following OpData structs to hold details of a single RPC
+template <typename ResponseType>
+struct SingleOpDataHolder {
+  explicit SingleOpDataHolder(const std::string &id)
+        : node_id(id), response(), controller(new rpcprotocol::Controller) {
+    controller->set_timeout(300);
+  }
+    std::string node_id;
+    ResponseType response;
+    boost::shared_ptr<rpcprotocol::Controller> controller;
+};
+
 // This is used to hold the data required to perform a Kad lookup to get a
-// group of Chunk Info holders, send each an AddToWatchListRequest or
+// group of Chunk Info holders, send the result as part of k
+// ExpectAmendmentRequests, send each CI Holder an AddToWatchListRequest or
 // RemoveFromWatchListRequest and assess the responses.
 struct WatchListOpData {
-  struct AddToWatchDataHolder {
-    explicit AddToWatchDataHolder(const std::string &id)
-        : node_id(id), response(), controller(new rpcprotocol::Controller) {}
-    std::string node_id;
-    AddToWatchListResponse response;
-    boost::shared_ptr<rpcprotocol::Controller> controller;
-  };
-  struct RemoveFromWatchDataHolder {
-    explicit RemoveFromWatchDataHolder(const std::string &id)
-        : node_id(id), response(), controller(new rpcprotocol::Controller) {}
-    std::string node_id;
-    RemoveFromWatchListResponse response;
-    boost::shared_ptr<rpcprotocol::Controller> controller;
-  };
-  explicit WatchListOpData(const StoreData &sd)
+  typedef SingleOpDataHolder<ExpectAmendmentResponse> AccountDataHolder;
+  typedef SingleOpDataHolder<AddToWatchListResponse> AddToWatchDataHolder;
+  typedef SingleOpDataHolder<RemoveFromWatchListResponse>
+      RemoveFromWatchDataHolder;
+  explicit WatchListOpData(boost::shared_ptr<StoreData> sd)
       : store_data(sd),
         mutex(),
-        contacts(),
+        account_holders(),
+        chunk_info_holders(),
         add_to_watchlist_data_holders(),
         remove_from_watchlist_data_holders(),
         returned_count(0),
-        successful_delete_count(0),
+        success_count(0),
+        expect_amendment_done(false),
         required_upload_copies(),
-        consensus_upload_copies(-1) {}
-  StoreData store_data;
+        consensus_upload_copies(-1),
+        payment_values(),
+        task_id(kRootTask) {}
+  boost::shared_ptr<StoreData> store_data;
   boost::mutex mutex;
-  std::vector<kad::Contact> contacts;
+  std::vector<kad::Contact> account_holders, chunk_info_holders;
+  std::vector<AccountDataHolder> account_data_holders;
   std::vector<AddToWatchDataHolder> add_to_watchlist_data_holders;
   std::vector<RemoveFromWatchDataHolder> remove_from_watchlist_data_holders;
-  boost::uint16_t returned_count;
-  boost::uint16_t successful_delete_count;
+  boost::uint16_t returned_count, success_count;
+  bool expect_amendment_done;
   std::multiset<int> required_upload_copies;
   int consensus_upload_copies;
+  std::vector<boost::uint64_t> payment_values;
+  TaskId task_id;
 };
 
 // This is used to hold the data required to perform a SendChunkPrep followed by
 // a SendChunkContent operation.
 struct SendChunkData {
-  SendChunkData(const StoreData &sd,
-                const kad::Contact &node,
-                bool node_local)
+  explicit SendChunkData(boost::shared_ptr<StoreData> sd)
       : store_data(sd),
-        peer(node),
-        local(node_local),
+        peer(),
+        local(false),
         store_prep_request(),
         store_prep_response(),
         store_chunk_request(),
         store_chunk_response(),
         controller(new rpcprotocol::Controller),
-        attempt(0) { controller->set_timeout(30); }
-  StoreData store_data;
+        chunk_copy_task_id(kRootTask) {
+    controller->set_timeout(120);
+  }
+  boost::shared_ptr<StoreData> store_data;
   kad::Contact peer;
   bool local;
   StorePrepRequest store_prep_request;
@@ -260,44 +266,33 @@ struct SendChunkData {
   StoreChunkRequest store_chunk_request;
   StoreChunkResponse store_chunk_response;
   boost::shared_ptr<rpcprotocol::Controller> controller;
-  boost::uint16_t attempt;
+  TaskId chunk_copy_task_id;
 };
 
-// This is used to hold the data required to perform a Kad lookup to get a group
-// of account holders, send each an AccountStatusRequest and assess the
-// responses.
+// This is used to hold the data required to send AccountStatusRequests and
+// assess the responses.
 struct AccountStatusData {
-  struct AccountStatusDataHolder {
-    explicit AccountStatusDataHolder(const std::string &id)
-        : node_id(id), response(), controller(new rpcprotocol::Controller) {}
-    std::string node_id;
-    AccountStatusResponse response;
-    boost::shared_ptr<rpcprotocol::Controller> controller;
-  };
+  typedef SingleOpDataHolder<AccountStatusResponse> AccountStatusDataHolder;
   explicit AccountStatusData()
       : mutex(),
-        condition(),
         contacts(),
         data_holders(),
-        returned_count(0) {}
+        returned_count(0),
+        success_count(0),
+        offered_values(),
+        given_values(),
+        taken_values() {}
   boost::mutex mutex;
-  boost::condition_variable condition;
   std::vector<kad::Contact> contacts;
   std::vector<AccountStatusDataHolder> data_holders;
-  boost::uint16_t returned_count;
+  boost::uint16_t returned_count, success_count;
+  std::vector<boost::uint64_t> offered_values, given_values, taken_values;
 };
 
-// This is used to hold the data required to perform a Kad lookup to get a group
-// of account holders, send each an AmendAccountRequest and assess the
-// responses.
+// This is used to hold the data required to send AmendAccountRequests and
+// assess the responses.
 struct AmendAccountData {
-  struct AmendAccountDataHolder {
-    explicit AmendAccountDataHolder(const std::string &id)
-        : node_id(id), response(), controller(new rpcprotocol::Controller) {}
-    std::string node_id;
-    AmendAccountResponse response;
-    boost::shared_ptr<rpcprotocol::Controller> controller;
-  };
+  typedef SingleOpDataHolder<AmendAccountResponse> AmendAccountDataHolder;
   explicit AmendAccountData()
       : mutex(),
         condition(),

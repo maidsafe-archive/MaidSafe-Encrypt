@@ -24,6 +24,7 @@ THE SOFTWARE.
 
 #include "fs/w_fuse/fswin.h"
 
+#include <winbase.h>
 #include <boost/lexical_cast.hpp>
 
 #include <list>
@@ -31,7 +32,7 @@ THE SOFTWARE.
 #include <vector>
 
 #include "maidsafe/client/clientcontroller.h"
-#include "maidsafe/utils.h"
+#include "maidsafe/pdutils.h"
 
 namespace fs = boost::filesystem;
 
@@ -102,6 +103,42 @@ static void GetMountPoint(char drive, LPWSTR mount_point) {
   mount_point[2] = L'\0';
 }
 
+static void PrintUserName(PDOKAN_FILE_INFO DokanFileInfo) {
+  HANDLE handle;
+  UCHAR buffer[1024];
+  DWORD returnLength;
+  WCHAR accountName[256];
+  WCHAR domainName[256];
+  DWORD accountLength = sizeof(accountName) / sizeof(WCHAR);
+  DWORD domainLength = sizeof(domainName) / sizeof(WCHAR);
+  PTOKEN_USER tokenUser;
+  SID_NAME_USE snu;
+
+  handle = DokanOpenRequestorToken(DokanFileInfo);
+  if (handle == INVALID_HANDLE_VALUE) {
+    DbgPrint(L"  DokanOpenRequestorToken failed\n");
+    return;
+  }
+
+  if (!GetTokenInformation(handle, TokenUser, buffer, sizeof(buffer),
+      &returnLength)) {
+    DbgPrint(L"  GetTokenInformation failed: %d\n", GetLastError());
+    CloseHandle(handle);
+    return;
+  }
+
+  CloseHandle(handle);
+
+  tokenUser = (PTOKEN_USER)buffer;
+  if (!LookupAccountSid(NULL, tokenUser->User.Sid, accountName, &accountLength,
+      domainName, &domainLength, &snu)) {
+    DbgPrint(L"  LookupAccountSid failed: %d\n", GetLastError());
+    return;
+  }
+
+  DbgPrint(L"  AccountName: %s, DomainName: %s\n", accountName, domainName);
+}
+
 static FILETIME GetFileTime(ULONGLONG linuxtime) {
   FILETIME filetime, ft;
   SYSTEMTIME systime;
@@ -132,6 +169,7 @@ static int __stdcall WinCreateFile(const WCHAR *FileName,
   HANDLE handle;
 //  DWORD fileAttr;
   DbgPrint(L"WinCreateFile\nFileName: %s\n", FileName);
+  PrintUserName(DokanFileInfo);
   GetFilePath(filePath, FileName);
 
   std::string relPathStr(WstrToStr(FileName));

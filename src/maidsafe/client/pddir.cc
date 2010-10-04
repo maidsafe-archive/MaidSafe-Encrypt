@@ -40,7 +40,7 @@
 #include <vector>
 
 #include "maidsafe/maidsafe.h"
-#include "maidsafe/utils.h"
+#include "maidsafe/pdutils.h"
 #include "protobuf/datamaps.pb.h"
 
 namespace fs = boost::filesystem;
@@ -629,16 +629,16 @@ int PdDir::GetMetaDataMap(const std::string &file_name, std::string *ser_mdm) {
       mdm.add_file_hash(file_hash);
       mdm.set_stats(q_mdm.fieldValue(4));
       mdm.set_tag(q_mdm.fieldValue(5));
-      mdm.set_file_size_high(boost::lexical_cast<boost::uint32_t>(
-                             q_mdm.fieldValue(6)));
-      mdm.set_file_size_low(boost::lexical_cast<boost::uint32_t>(
-                            q_mdm.fieldValue(7)));
-      mdm.set_creation_time(boost::lexical_cast<boost::uint32_t>(
-                            q_mdm.fieldValue(8)));
-      mdm.set_last_modified(boost::lexical_cast<boost::uint32_t>(
-                            q_mdm.fieldValue(9)));
-      mdm.set_last_access(boost::lexical_cast<boost::uint32_t>(
-                          q_mdm.fieldValue(10)));
+      mdm.set_file_size_high(
+          boost::lexical_cast<boost::uint32_t>(q_mdm.fieldValue(6)));
+      mdm.set_file_size_low(
+          boost::lexical_cast<boost::uint32_t>(q_mdm.fieldValue(7)));
+      mdm.set_creation_time(
+          boost::lexical_cast<boost::uint32_t>(q_mdm.fieldValue(8)));
+      mdm.set_last_modified(
+          boost::lexical_cast<boost::uint32_t>(q_mdm.fieldValue(9)));
+      mdm.set_last_access(
+          boost::lexical_cast<boost::uint32_t>(q_mdm.fieldValue(10)));
       mdm.SerializeToString(ser_mdm);
       return kSuccess;
     }

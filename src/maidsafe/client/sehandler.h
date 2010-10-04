@@ -34,6 +34,7 @@
 
 #include <map>
 #include <string>
+#include <vector>
 
 #include "maidsafe/maidsafe.h"
 #include "protobuf/datamaps.pb.h"
@@ -43,11 +44,33 @@ namespace fs = boost::filesystem;
 namespace mi = boost::multi_index;
 
 /********************************** Signals **********************************/
-typedef bs2::signal<void(const std::string&, int percentage)>
-        OnFileNetworkStatus;
+typedef bs2::signal<void(const std::string&, int)> OnFileNetworkStatus;
 /*****************************************************************************/
 
 namespace maidsafe {
+class SEHandler;
+}  // namespace maidsafe
+
+namespace test_seh {
+enum ModificationType { kAdd, kGet, kRemove };
+void ModifyUpToDateDms(ModificationType modification_type,
+                       const boost::uint16_t &test_size,
+                       const std::vector<std::string> &keys,
+                       const std::vector<std::string> &enc_dms,
+                       boost::shared_ptr<maidsafe::SEHandler> seh);
+}  // namespace test_seh
+
+namespace maidsafe {
+
+namespace test {
+class SEHandlerTest_BEH_MAID_Check_Entry_Test;
+class SEHandlerTest_BEH_MAID_EncryptAndDecryptPrivateDb_Test;
+class SEHandlerTest_BEH_MAID_UpToDateDatamapsSingleThread_Test;
+class SEHandlerTest_BEH_MAID_UpToDateDatamapsMultiThread_Test;
+class SEHandlerTest_BEH_MAID_EncryptAndDecryptPrivateDb_Test;
+class SEHandlerTest_BEH_MAID_FailureOfChunkEncryptingFile_Test;
+class SEHandlerTest_BEH_MAID_FailureSteppedMultipleEqualFiles_Test;
+}  // namespace test
 
 class ChunkStore;
 class SessionSingleton;
@@ -60,26 +83,45 @@ const int kParallelLoads = 3;
 
 struct PendingChunks {
   PendingChunks()
-      : chunkname(), path(), msid(), done(kPendingResult), tries(1),
+      : chunkname(), path(), msid(), done(kPendingResult), tries(1), count(1),
         dirtype(PRIVATE) {}
   PendingChunks(const std::string &chunk_name, const std::string &file_path,
-                const std::string &id)
+                const std::string &id, int the_count)
       : chunkname(chunk_name), path(file_path), msid(id), done(kPendingResult),
-        tries(1), dirtype(PRIVATE) {}
+        tries(1), count(the_count), dirtype(PRIVATE) {}
   std::string chunkname, path, msid;
   ReturnCode done;
   boost::uint8_t tries;
+  int count;
   DirType dirtype;
 };
 
 // tags
 struct by_chunkname {};
+struct by_chunkname_count {};
+struct by_path_count {};
 struct by_path {};
 
 typedef mi::multi_index_container<
   PendingChunks,
   mi::indexed_by<
     mi::ordered_unique<
+      mi::tag<by_chunkname_count>,
+      mi::composite_key<
+        PendingChunks,
+        BOOST_MULTI_INDEX_MEMBER(PendingChunks, std::string, chunkname),
+        BOOST_MULTI_INDEX_MEMBER(PendingChunks, int, count)
+      >
+    >,
+    mi::ordered_non_unique<
+      mi::tag<by_path_count>,
+      mi::composite_key<
+        PendingChunks,
+        BOOST_MULTI_INDEX_MEMBER(PendingChunks, std::string, path),
+        BOOST_MULTI_INDEX_MEMBER(PendingChunks, int, count)
+      >
+    >,
+    mi::ordered_non_unique<
       mi::tag<by_chunkname>,
       BOOST_MULTI_INDEX_MEMBER(PendingChunks, std::string, chunkname)
     >,
@@ -92,9 +134,11 @@ typedef mi::multi_index_container<
 
 typedef PendingChunksSet::index<by_chunkname>::type PCSbyName;
 typedef PendingChunksSet::index<by_path>::type PCSbyPath;
+typedef PendingChunksSet::index<by_path_count>::type PCSbyPathCount;
 
 class SEHandler {
  public:
+  typedef std::map<std::string, std::string> UpToDateDatamaps;
   SEHandler();
   ~SEHandler();
   void Init(boost::shared_ptr<StoreManagerInterface> storem,
@@ -128,18 +172,33 @@ class SEHandler {
 
   //  Decrypts dir's db by extracting datamap from ser_dm_
   int DecryptDb(const std::string &dir_path, const DirType &dir_type,
-                const std::string &ser_dm, const std::string &dir_key,
+                const std::string &encrypted_dm, const std::string &dir_key,
                 const std::string &msid, bool dm_encrypted, bool overwrite);
 
   bs2::connection ConnectToOnFileNetworkStatus(
       const OnFileNetworkStatus::slot_type &slot);
+  void ClearPendingChunks() {
+    boost::mutex::scoped_lock loch_lll(chunkmap_mutex_);
+    pending_chunks_.clear();
+    path_count_ = 0;
+  }
 
  private:
   SEHandler &operator=(const SEHandler &);
   SEHandler(const SEHandler &);
-  FRIEND_TEST(SEHandlerTest, BEH_MAID_Check_Entry);
-  FRIEND_TEST(SEHandlerTest, BEH_MAID_EncryptAndDecryptPrivateDb);
-  FRIEND_TEST(SEHandlerTest, BEH_MAID_FailureOfChunkEncryptingFile);
+  friend class test::SEHandlerTest_BEH_MAID_Check_Entry_Test;
+  friend class test::SEHandlerTest_BEH_MAID_EncryptAndDecryptPrivateDb_Test;
+  friend class test::SEHandlerTest_BEH_MAID_UpToDateDatamapsSingleThread_Test;
+  friend class test::SEHandlerTest_BEH_MAID_UpToDateDatamapsMultiThread_Test;
+  friend class test::SEHandlerTest_BEH_MAID_FailureOfChunkEncryptingFile_Test;
+  friend class
+      test::SEHandlerTest_BEH_MAID_FailureSteppedMultipleEqualFiles_Test;
+  friend void test_seh::ModifyUpToDateDms(
+      test_seh::ModificationType modification_type,
+      const boost::uint16_t &test_size,
+      const std::vector<std::string> &keys,
+      const std::vector<std::string> &enc_dms,
+      boost::shared_ptr<maidsafe::SEHandler> seh);
   ItemType CheckEntry(const fs::path &full_path, boost::uint64_t *file_size,
                       std::string *file_hash);
 
@@ -151,21 +210,30 @@ class SEHandler {
   int DecryptDm(const std::string &dir_path, const std::string &enc_dm,
                 const std::string &msid, std::string *ser_dm);
   void StoreChunks(const DataMap &dm, const DirType &dir_type,
-                   const std::string &msid, const std::string &path = "");
+                   const std::string &msid, const std::string &path);
   int LoadChunks(const DataMap &dm);
-  int RemoveKeyFromUptodateDms(const std::string &key);
+  // Returns previous value of enc_dm if dir_key exists in map, else returns "".
+  std::string AddToUpToDateDms(const std::string &dir_key,
+                               const std::string &enc_dm);
+  std::string GetFromUpToDateDms(const std::string &dir_key);
+  int RemoveFromUpToDateDms(const std::string &dir_key);
   void PacketOpCallback(const int &store_manager_result, boost::mutex *mutex,
                         boost::condition_variable *cond_var, int *op_result);
-  void ChunkDone(const std::string &chunkname, maidsafe::ReturnCode rc);
+  void ChunkDone(const std::string &chunkname, ReturnCode rc);
+  void ChunksToMultiIndex(const DataMap &dm, const std::string &msid,
+                          const std::string &path);
+  void StoreChunksToNetwork(const DataMap &dm, const DirType &dir_type,
+                            const std::string &msid);
 
   boost::shared_ptr<StoreManagerInterface> storem_;
   boost::shared_ptr<ChunkStore> client_chunkstore_;
   SessionSingleton *ss_;
-  std::map<std::string, std::string> uptodate_datamaps_;
-  boost::signals2::connection connection_to_chunk_uploads_;
-  boost::mutex chunkmap_mutex_;
+  std::map<std::string, std::string> up_to_date_datamaps_;
   PendingChunksSet pending_chunks_;
+  boost::mutex up_to_date_datamaps_mutex_, chunkmap_mutex_;
+  boost::signals2::connection connection_to_chunk_uploads_;
   OnFileNetworkStatus file_status_;
+  boost::uint64_t path_count_;
 };
 
 }  // namespace maidsafe

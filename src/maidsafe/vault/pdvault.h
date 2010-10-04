@@ -47,15 +47,31 @@
 #include "maidsafe/vault/vaultservice.h"
 #include "maidsafe/vault/vaultservicelogic.h"
 
+
+namespace maidsafe {
+namespace test {
+class CBPHandlerTest;
+class ImMessagingTest;
+class CCImMessagingTest;
 // This forward declaration is to allow gtest environment to be declared as a
 // friend class
 namespace localvaults {
 class Env;
 }  // namespace localvaults
+}  // namespace test
+}  // namespace maidsafe
 
 namespace maidsafe_vault {
 
 enum VaultStatus {kVaultStarted, kVaultStopping, kVaultStopped};
+
+class RunPDVaults;
+
+namespace test {
+class PDVaultTest;
+class PDVaultTest_FUNC_MAID_NET_StoreAndGetChunks_Test;
+class PDVaultTest_FUNC_MAID_NET_Cachechunk_Test;
+}  // namespace test
 
 /* struct SyncVaultData {
   SyncVaultData() : chunk_names(), num_updated_chunks(0), num_chunks(0),
@@ -187,26 +203,20 @@ class PDVault {
           const boost::uint64_t &available_space,
           const boost::uint64_t &used_space,
           const boost::uint8_t &k);
-  ~PDVault();
+  ~PDVault() {}
   void Start(bool first_node);
   int Stop();
   void CleanUp();
   VaultStatus vault_status();
   void SetVaultStatus(const VaultStatus &vault_status);
-  bool WaitForStartup(const boost::uint16_t timeout);
+  bool WaitForStartup(const boost::uint16_t &timeout);
   bool WaitForSync();
-  std::string node_id() const { return knode_->node_id().String(); }
-  std::string host_ip() const { return knode_->host_ip(); }
-  boost::uint16_t host_port() const { return knode_->host_port(); }
-  std::string local_host_ip() const { return knode_->local_host_ip(); }
-  boost::uint16_t local_host_port() { return knode_->local_host_port(); }
-  std::string rendezvous_ip() const { return knode_->rendezvous_ip(); }
-  boost::uint16_t rendezvous_port() const { return knode_->rendezvous_port(); }
+  std::string pmid() const { return pmid_; }
   inline boost::uint64_t available_space() {
-    return vault_chunkstore_.available_space();
+    return vault_chunkstore_->available_space();
   }
-  inline boost::uint64_t UsedSpace() { return vault_chunkstore_.used_space(); }
-  inline boost::uint64_t FreeSpace() { return vault_chunkstore_.FreeSpace(); }
+  inline boost::uint64_t UsedSpace() { return vault_chunkstore_->used_space(); }
+  inline boost::uint64_t FreeSpace() { return vault_chunkstore_->FreeSpace(); }
 
   void SyncVault(kad::VoidFunctorOneString) {}
   void RepublishChunkRef(kad::VoidFunctorOneString) {}
@@ -224,19 +234,18 @@ class PDVault {
                  const std::string &rendezvous_ip,
                  const boost::uint16_t &rendezvous_port,
                  kad::VoidFunctorOneString cb);
-  void StopRvPing() { transport_handler_->StopPingRendezvous(); }
-  friend class localvaults::Env;
-  friend class PDVaultTest;
+  void StopRvPing() { transport_handler_.StopPingRendezvous(); }
+  friend class maidsafe::test::localvaults::Env;
+  friend class test::PDVaultTest;
+  friend class test::PDVaultTest_FUNC_MAID_NET_StoreAndGetChunks_Test;
+  friend class test::PDVaultTest_FUNC_MAID_NET_Cachechunk_Test;
+  friend class RunPDVaults;
+  friend class maidsafe::test::CBPHandlerTest;
+  friend class maidsafe::test::ImMessagingTest;
+  friend class maidsafe::test::CCImMessagingTest;
  private:
   PDVault(const PDVault&);
   PDVault& operator=(const PDVault&);
-  FRIEND_TEST(PDVaultTest, FUNC_MAID_StoreAndGetChunks);
-  FRIEND_TEST(PDVaultTest, FUNC_MAID_GetNonDuplicatedChunk);
-  FRIEND_TEST(PDVaultTest, FUNC_MAID_GetMissingChunk);
-  FRIEND_TEST(PDVaultTest, FUNC_MAID_StoreSystemPacket);
-  FRIEND_TEST(PDVaultTest, FUNC_MAID_Cachechunk);
-  void KadJoinedCallback(const std::string &result,
-                         boost::mutex *kad_joined_mutex);
   void RegisterMaidService();
   void UnRegisterMaidService();
   // This runs in a continuous loop until vault_status_ is not kVaultStarted.
@@ -301,27 +310,24 @@ class PDVault {
   void SwapChunkAcceptChunk(
       boost::shared_ptr<maidsafe::SwapChunkResponse> swap_chunk_response,
       boost::shared_ptr<SwapChunkArgs> swap_chunk_args);
-  boost::uint8_t K_;
-  boost::uint16_t upper_threshold_;
-  boost::uint16_t lower_threshold_;
+  const boost::uint8_t K_;
+  const boost::uint16_t kUpperThreshold_;
+  const boost::uint16_t kLowerThreshold_;
   boost::uint16_t port_;
   transport::TransportUDT global_udt_transport_;
-  transport::TransportHandler *transport_handler_;
   boost::int16_t transport_id_;
+  transport::TransportHandler transport_handler_;
   rpcprotocol::ChannelManager channel_manager_;
   maidsafe::MaidsafeValidator validator_;
-  boost::shared_ptr<kad::KNode> knode_;
   boost::shared_ptr<VaultRpcs> vault_rpcs_;
+  boost::shared_ptr<VaultChunkStore> vault_chunkstore_;
   boost::shared_ptr<maidsafe::KadOps> kad_ops_;
-  VaultChunkStore vault_chunkstore_;
   boost::shared_ptr<VaultService> vault_service_;
   VaultServiceLogic vault_service_logic_;
-  bool kad_joined_, kad_join_called_back_;
   VaultStatus vault_status_;
   boost::mutex vault_status_mutex_;
   boost::condition_variable vault_status_cond_;
   bool sync_done_, sync_succeeded_;
-  boost::condition_variable kad_join_cond_;
   kad::Contact our_details_;
   std::string pmid_public_, pmid_private_, signed_pmid_public_, pmid_;
   crypto::Crypto co_;

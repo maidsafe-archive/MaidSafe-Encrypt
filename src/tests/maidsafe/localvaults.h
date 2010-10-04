@@ -30,6 +30,7 @@
 #include <boost/filesystem/fstream.hpp>
 #include <boost/thread/thread.hpp>
 #include <gtest/gtest.h>
+#include <maidsafe/maidsafe-dht_config.h>
 #include <maidsafe/base/crypto.h>
 #include <maidsafe/protobuf/general_messages.pb.h>
 #include <string>
@@ -41,9 +42,13 @@
 
 namespace fs = boost::filesystem;
 
+namespace maidsafe {
+
+namespace test {
+
 namespace localvaults {
 
-void GeneratePmidStuff(std::string *public_key,
+inline void GeneratePmidStuff(std::string *public_key,
                        std::string *private_key,
                        std::string *signed_key,
                        std::string *pmid) {
@@ -60,21 +65,22 @@ void GeneratePmidStuff(std::string *public_key,
 
 class Env: public testing::Environment {
  public:
-  Env(const int kNetworkSize,
+  Env(const boost::uint8_t &k,
+      const int kNetworkSize,
       std::vector<boost::shared_ptr<maidsafe_vault::PDVault> > *pdvaults,
-      const boost::uint8_t k)
+      fs::path *kadconfig)
       : K_(k),
         vault_dir_(file_system::TempDir() / ("maidsafe_TestVaults_" +
-                   base::RandomString(6))),
+                   base::RandomAlphaNumericString(6))),
         kad_config_file_(vault_dir_ / ".kadconfig"),
-        crypto_(),
         pdvaults_(pdvaults),
         kNetworkSize_(kNetworkSize),
-        current_nodes_created_(0),
-        mutex_(),
-        single_function_timeout(60) {
-    crypto_.set_hash_algorithm(crypto::SHA_512);
-    crypto_.set_symm_algorithm(crypto::AES_256);
+        current_nodes_created_(0) {
+    *kadconfig = kad_config_file_;
+  }
+
+  ~Env() {
+    transport::TransportUDT::CleanUp();
   }
 
   virtual void SetUp() {
@@ -115,12 +121,14 @@ class Env: public testing::Environment {
       // Set first node as bootstrapping node for others
       if (i == 0) {
         base::KadConfig kad_config;
+        kad::ContactInfo contact_info =
+            (*pdvaults_)[0]->kad_ops_->contact_info();
         base::KadConfig::Contact *kad_contact = kad_config.add_contact();
-        kad_contact->set_node_id(base::EncodeToHex((*pdvaults_)[0]->node_id()));
-        kad_contact->set_ip((*pdvaults_)[0]->host_ip());
-        kad_contact->set_port((*pdvaults_)[0]->host_port());
-        kad_contact->set_local_ip((*pdvaults_)[0]->local_host_ip());
-        kad_contact->set_local_port((*pdvaults_)[0]->local_host_port());
+        kad_contact->set_node_id(base::EncodeToHex(contact_info.node_id()));
+        kad_contact->set_ip(contact_info.ip());
+        kad_contact->set_port(contact_info.port());
+        kad_contact->set_local_ip(contact_info.local_ip());
+        kad_contact->set_local_port(contact_info.local_port());
         std::fstream output(kad_config_file_.string().c_str(),
                             std::ios::out | std::ios::trunc | std::ios::binary);
         ASSERT_TRUE(kad_config.SerializeToOstream(&output));
@@ -129,7 +137,7 @@ class Env: public testing::Environment {
       printf("Vault %i started.\n", i);
     }
 
-    // Make kad config file in ./ for clients' use.
+//    // Make kad config file in ./ for clients' use.
     if (fs::exists(".kadconfig"))
       fs::remove(".kadconfig");
     fs::copy_file(kad_config_file_, ".kadconfig");
@@ -152,8 +160,10 @@ class Env: public testing::Environment {
     printf("*                                               *\n");
     printf("* No. Port   ID                                 *\n");
     for (int l = 0; l < kNetworkSize_; ++l)
-      printf("* %2i  %5i  %s *\n", l, (*pdvaults_)[l]->host_port(),
-             (base::EncodeToHex((*pdvaults_)[l]->node_id()).substr(0, 31)
+      printf("* %2i  %5i  %s *\n", l,
+             (*pdvaults_)[l]->kad_ops_->contact_info().port(),
+             (base::EncodeToHex(
+             (*pdvaults_)[l]->kad_ops_->contact_info().node_id()).substr(0, 31)
              + "...").c_str());
     printf("*                                               *\n");
     printf("*-----------------------------------------------*\n\n");
@@ -178,11 +188,7 @@ class Env: public testing::Environment {
         printf("Vault %i stopped.\n", i);
       else
         printf("Vault %i failed to stop correctly.\n", i);
-    }
-    for (int i = 0; i < current_nodes_created_; ++i) {
-//      if (i == current_nodes_created_ - 1)
-//        (*pdvaults_)[current_nodes_created_ - 1]->CleanUp();
-//      (*pdvaults_)[i].reset();
+      pdvaults_->at(i).reset();
     }
     try {
       if (fs::exists(vault_dir_))
@@ -202,20 +208,19 @@ class Env: public testing::Environment {
     }
   }
 
-  boost::uint8_t K_;
-  fs::path vault_dir_, chunkstore_dir_, kad_config_file_;
-  crypto::Crypto crypto_;
-  std::vector< boost::shared_ptr<maidsafe_vault::PDVault> > *pdvaults_;
-  const int kNetworkSize_;
-  int current_nodes_created_;
-  boost::mutex mutex_;
-  boost::posix_time::seconds single_function_timeout;
-
  private:
   Env(const Env&);
   Env &operator=(const Env&);
+  boost::uint8_t K_;
+  fs::path vault_dir_, chunkstore_dir_, kad_config_file_;
+  std::vector< boost::shared_ptr<maidsafe_vault::PDVault> > *pdvaults_;
+  const int kNetworkSize_;
+  int current_nodes_created_;
 };
 
 }  // namespace localvaults
+}  // namespace test
+}  // namespace maidsafe
+
 
 #endif  // TESTS_MAIDSAFE_LOCALVAULTS_H_

@@ -44,11 +44,17 @@
 #include "maidsafe/vault/chunkinfohandler.h"
 #include "maidsafe/vault/bufferpacketstore.h"
 #include "maidsafe/vault/infosynchroniser.h"
+#include "maidsafe/vault/requestexpectationhandler.h"
 #include "maidsafe/vault/vaultservicelogic.h"
 #include "protobuf/maidsafe_service.pb.h"
 #include "protobuf/maidsafe_messages.pb.h"
 
 namespace maidsafe_vault {
+
+namespace test {
+class PDVaultTest;
+class PDVaultTest_FUNC_MAID_NET_StoreAndGetChunks_Test;
+}  // namespace test
 
 struct IsOwnedPendingResponse {
   IsOwnedPendingResponse() : callback(NULL), args(NULL) {}
@@ -148,120 +154,125 @@ class VaultService : public maidsafe::MaidsafeService {
                const std::string &pmid_public,
                const std::string &pmid_private,
                const std::string &pmid_public_signature,
-               VaultChunkStore *vault_chunkstore,
-               kad::KNode *knode,
+               boost::shared_ptr<VaultChunkStore> vault_chunkstore,
                VaultServiceLogic *vault_service_logic,
                const boost::int16_t &transport_id,
-               const boost::uint8_t k);
+               boost::shared_ptr<maidsafe::KadOps> kadops);
   ~VaultService() {}
   void AddStartupSyncData(
       const maidsafe::GetSyncDataResponse &get_sync_data_response);
-  virtual void StorePrep(google::protobuf::RpcController* controller,
+  virtual void StorePrep(google::protobuf::RpcController *controller,
                          const maidsafe::StorePrepRequest *request,
                          maidsafe::StorePrepResponse *response,
                          google::protobuf::Closure *done);
-  virtual void StoreChunk(google::protobuf::RpcController* controller,
+  virtual void StoreChunk(google::protobuf::RpcController *controller,
                           const maidsafe::StoreChunkRequest *request,
                           maidsafe::StoreChunkResponse *response,
                           google::protobuf::Closure *done);
-  virtual void GetChunk(google::protobuf::RpcController* controller,
+  virtual void GetChunk(google::protobuf::RpcController *controller,
                         const maidsafe::GetChunkRequest *request,
                         maidsafe::GetChunkResponse *response,
                         google::protobuf::Closure *done);
-  virtual void CheckChunk(google::protobuf::RpcController* controller,
+  virtual void CheckChunk(google::protobuf::RpcController *controller,
                           const maidsafe::CheckChunkRequest *request,
                           maidsafe::CheckChunkResponse *response,
                           google::protobuf::Closure *done);
-  virtual void DeleteChunk(google::protobuf::RpcController* controller,
+  virtual void DeleteChunk(google::protobuf::RpcController *controller,
                            const maidsafe::DeleteChunkRequest *request,
                            maidsafe::DeleteChunkResponse *response,
                            google::protobuf::Closure *done);
-  virtual void ValidityCheck(google::protobuf::RpcController* controller,
+  virtual void ValidityCheck(google::protobuf::RpcController *controller,
                              const maidsafe::ValidityCheckRequest *request,
                              maidsafe::ValidityCheckResponse *response,
                              google::protobuf::Closure *done);
-  virtual void SwapChunk(google::protobuf::RpcController* controller,
+  virtual void SwapChunk(google::protobuf::RpcController *controller,
                          const maidsafe::SwapChunkRequest *request,
                          maidsafe::SwapChunkResponse *response,
                          google::protobuf::Closure *done);
-  virtual void CacheChunk(google::protobuf::RpcController* controller,
+  virtual void CacheChunk(google::protobuf::RpcController *controller,
                           const maidsafe::CacheChunkRequest *request,
                           maidsafe::CacheChunkResponse *response,
                           google::protobuf::Closure *done);
   virtual void GetChunkReferences(
-      google::protobuf::RpcController* controller,
+      google::protobuf::RpcController *controller,
       const maidsafe::GetChunkReferencesRequest *request,
       maidsafe::GetChunkReferencesResponse *response,
       google::protobuf::Closure *done);
-  virtual void AddToWatchList(google::protobuf::RpcController* controller,
+  virtual void AddToWatchList(google::protobuf::RpcController *controller,
                               const maidsafe::AddToWatchListRequest *request,
                               maidsafe::AddToWatchListResponse *response,
                               google::protobuf::Closure *done);
   virtual void RemoveFromWatchList(
-      google::protobuf::RpcController* controller,
+      google::protobuf::RpcController *controller,
       const maidsafe::RemoveFromWatchListRequest *request,
       maidsafe::RemoveFromWatchListResponse *response,
       google::protobuf::Closure *done);
   virtual void AddToReferenceList(
-      google::protobuf::RpcController* controller,
+      google::protobuf::RpcController *controller,
       const maidsafe::AddToReferenceListRequest *request,
       maidsafe::AddToReferenceListResponse *response,
       google::protobuf::Closure *done);
-  virtual void AmendAccount(google::protobuf::RpcController* controller,
+  virtual void AmendAccount(google::protobuf::RpcController *controller,
                             const maidsafe::AmendAccountRequest *request,
                             maidsafe::AmendAccountResponse *response,
                             google::protobuf::Closure *done);
-  virtual void AccountStatus(google::protobuf::RpcController* controller,
+  virtual void ExpectAmendment(google::protobuf::RpcController *controller,
+                               const maidsafe::ExpectAmendmentRequest *request,
+                               maidsafe::ExpectAmendmentResponse *response,
+                               google::protobuf::Closure *done);
+  virtual void AccountStatus(google::protobuf::RpcController *controller,
                              const maidsafe::AccountStatusRequest *request,
                              maidsafe::AccountStatusResponse *response,
                              google::protobuf::Closure *done);
-  virtual void GetSyncData(google::protobuf::RpcController* controller,
+  virtual void GetSyncData(google::protobuf::RpcController *controller,
                            const maidsafe::GetSyncDataRequest *request,
                            maidsafe::GetSyncDataResponse *response,
                            google::protobuf::Closure *done);
-  virtual void GetAccount(google::protobuf::RpcController* controller,
+  virtual void GetAccount(google::protobuf::RpcController *controller,
                           const maidsafe::GetAccountRequest *request,
                           maidsafe::GetAccountResponse *response,
                           google::protobuf::Closure *done);
-  virtual void GetChunkInfo(google::protobuf::RpcController* controller,
+  virtual void GetChunkInfo(google::protobuf::RpcController *controller,
                             const maidsafe::GetChunkInfoRequest *request,
                             maidsafe::GetChunkInfoResponse *response,
                             google::protobuf::Closure *done);
-  virtual void GetBufferPacket(google::protobuf::RpcController* controller,
+  virtual void GetBufferPacket(google::protobuf::RpcController *controller,
                                const maidsafe::GetBufferPacketRequest *request,
                                maidsafe::GetBufferPacketResponse *response,
                                google::protobuf::Closure *done);
-  virtual void VaultStatus(google::protobuf::RpcController* controller,
+  virtual void VaultStatus(google::protobuf::RpcController *controller,
                            const maidsafe::VaultStatusRequest *request,
                            maidsafe::VaultStatusResponse *response,
                            google::protobuf::Closure *done);
-  virtual void CreateBP(google::protobuf::RpcController* controller,
+  virtual void CreateBP(google::protobuf::RpcController *controller,
                         const maidsafe::CreateBPRequest *request,
                         maidsafe::CreateBPResponse *response,
                         google::protobuf::Closure *done);
-  virtual void ModifyBPInfo(google::protobuf::RpcController* controller,
+  virtual void ModifyBPInfo(google::protobuf::RpcController *controller,
                             const maidsafe::ModifyBPInfoRequest *request,
                             maidsafe::ModifyBPInfoResponse *response,
                             google::protobuf::Closure *done);
-  virtual void GetBPMessages(google::protobuf::RpcController* controller,
+  virtual void GetBPMessages(google::protobuf::RpcController *controller,
                              const maidsafe::GetBPMessagesRequest *request,
                              maidsafe::GetBPMessagesResponse *response,
                              google::protobuf::Closure *done);
-  virtual void AddBPMessage(google::protobuf::RpcController* controller,
-                            const maidsafe::AddBPMessageRequest* request,
-                            maidsafe::AddBPMessageResponse* response,
-                            google::protobuf::Closure* done);
-  virtual void GetBPPresence(google::protobuf::RpcController* controller,
+  virtual void AddBPMessage(google::protobuf::RpcController *controller,
+                            const maidsafe::AddBPMessageRequest *request,
+                            maidsafe::AddBPMessageResponse *response,
+                            google::protobuf::Closure *done);
+  virtual void GetBPPresence(google::protobuf::RpcController *controller,
                              const maidsafe::GetBPPresenceRequest *request,
                              maidsafe::GetBPPresenceResponse *response,
                              google::protobuf::Closure *done);
-  virtual void AddBPPresence(google::protobuf::RpcController* controller,
-                             const maidsafe::AddBPPresenceRequest* request,
-                             maidsafe::AddBPPresenceResponse* response,
-                             google::protobuf::Closure* done);
+  virtual void AddBPPresence(google::protobuf::RpcController *controller,
+                             const maidsafe::AddBPPresenceRequest *request,
+                             maidsafe::AddBPPresenceResponse *response,
+                             google::protobuf::Closure *done);
   int AddAccount(const std::string &pmid, const boost::uint64_t &offer);
   bool HaveAccount(const std::string &pmid);
  private:
+  VaultService(const VaultService&);
+  VaultService &operator=(const VaultService&);
   FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesValidateSignedSize);
   FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesValidateStoreContract);
   FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesValidateAmendRequest);
@@ -280,9 +291,10 @@ class VaultService : public maidsafe::MaidsafeService {
   FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesCacheChunk);
   FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesGetChunkReferences);
   FRIEND_TEST(MockVaultServicesTest, BEH_MAID_ServicesAddToWatchList);
-  FRIEND_TEST(MockVaultServicesTest, BEH_MAID_ServicesRemoveFromWatchList);
+  FRIEND_TEST(MockVaultServicesTest, FUNC_MAID_ServicesRemoveFromWatchList);
   FRIEND_TEST(MockVaultServicesTest, BEH_MAID_ServicesAddToReferenceList);
-  FRIEND_TEST(MockVaultServicesTest, BEH_MAID_ServicesAmendAccount);
+  FRIEND_TEST(MockVaultServicesTest, FUNC_MAID_ServicesAmendAccount);
+  FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesExpectAmendment);
   FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesGetSyncData);
   FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesGetAccount);
   FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesGetChunkInfo);
@@ -293,8 +305,7 @@ class VaultService : public maidsafe::MaidsafeService {
   FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesAddBPMessages);
   FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesGetBPPresence);
   FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesAddBPPresence);
-  VaultService(const VaultService&);
-  VaultService &operator=(const VaultService&);
+  friend class test::PDVaultTest_FUNC_MAID_NET_StoreAndGetChunks_Test;
   void DiscardResult(const int&) {}
   bool ValidateSignedSize(const maidsafe::SignedSize &sz);
   bool ValidateStoreContract(const maidsafe::StoreContract &sc);
@@ -328,7 +339,7 @@ class VaultService : public maidsafe::MaidsafeService {
                               std::vector<std::string> *close_nodes);
   void FinalisePayment(const std::string &chunk_name,
                        const std::string &pmid,
-                       const int &chunk_size,
+                       const boost::uint64_t &chunk_size,
                        const int &permission_result);
   void DoneAddToReferenceList(const maidsafe::StoreContract &store_contract,
                               const std::string &chunk_name);
@@ -376,16 +387,17 @@ class VaultService : public maidsafe::MaidsafeService {
   // Returns whether the node is within "count" closest nodes (Kademlia closest)
   bool NodeWithinClosest(const std::string &peer_pmid,
                          const boost::uint16_t &count);
-  boost::uint8_t K_;
-  boost::uint16_t upper_threshold_;
+  const boost::uint8_t K_;
+  const boost::uint16_t kUpperThreshold_;
   std::string pmid_, pmid_public_, pmid_private_, pmid_public_signature_;
-  VaultChunkStore *vault_chunkstore_;
-  kad::KNode *knode_;
+  boost::shared_ptr<VaultChunkStore> vault_chunkstore_;
   VaultServiceLogic *vault_service_logic_;
   boost::int16_t transport_id_;
+  boost::shared_ptr<maidsafe::KadOps> kad_ops_;
   typedef std::map<std::string, maidsafe::StoreContract> PrepsReceivedMap;
   PrepsReceivedMap prm_;
   AccountHandler ah_;
+  RequestExpectationHandler request_expectation_handler_;
   AccountAmendmentHandler aah_;
   ChunkInfoHandler cih_;
   BufferPacketStore bps_;

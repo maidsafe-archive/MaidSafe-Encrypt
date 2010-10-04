@@ -31,7 +31,9 @@
 #include <maidsafe/transport/transportudt.h>
 
 #include "fs/filesystem.h"
+#include "maidsafe/chunkstore.h"
 #include "maidsafe/clientbufferpackethandler.h"
+#include "maidsafe/kadops.h"
 #include "maidsafe/client/packetfactory.h"
 #include "tests/maidsafe/cached_keys.h"
 
@@ -42,7 +44,11 @@ using ::testing::WithArgs;
 
 namespace test_cbph {
 static const boost::uint8_t K(4);
+static const boost::uint8_t upper_threshold(static_cast<boost::uint8_t>
+                                            (K * kMinSuccessfulPecentageStore));
 }  // namespace test_cbph
+
+namespace maidsafe {
 
 void execute_cb(kad::VoidFunctorOneString cb, const std::string &result) {
   boost::this_thread::sleep(boost::posix_time::seconds(1));
@@ -167,22 +173,6 @@ void BPAddPresenceCallbackFailed(
   done->Run();
 }
 
-class KadCB {
- public:
-  KadCB() : result() {}
-  void CallbackFunc(const std::string &res) {
-    base::GeneralResponse result_msg;
-    if (!result_msg.ParseFromString(res)) {
-      result_msg.set_result(kad::kRpcResultFailure);
-    }
-    result = result_msg.result();
-  }
-  void Reset() {
-    result = "";
-  }
-  std::string result;
-};
-
 class BPCallback {
  public:
   BPCallback() : result(maidsafe::kGeneralError), msgs() {}
@@ -284,9 +274,8 @@ class GetMsgsHelper {
                   const std::string &rec_pub_key,
                   const std::string &sender) {
     maidsafe::ValidatedBufferPacketMessage bp_msg;
-    boost::uint32_t iter = base::RandomUint32() % 1000 +1;
-    std::string aes_key = co.SecurePassword(co.Hash(msg, "",
-                          crypto::STRING_STRING, false), iter);
+    std::string aes_key =
+        base::RandomString(crypto::AES256_KeySize + crypto::AES256_IVSize);
     bp_msg.set_index(co.AsymEncrypt(aes_key, "", rec_pub_key,
                      crypto::STRING_STRING));
     bp_msg.set_sender(sender);
@@ -341,8 +330,9 @@ class MockBPRpcs : public maidsafe::BufferPacketRpcs {
 class MockBPH : public maidsafe::ClientBufferPacketHandler {
  public:
   MockBPH(boost::shared_ptr<maidsafe::BufferPacketRpcs> rpcs,
-          boost::shared_ptr<kad::KNode> knode)
-    : maidsafe::ClientBufferPacketHandler(rpcs, knode, test_cbph::K) {}
+          boost::shared_ptr<maidsafe::KadOps> kadops,
+          boost::uint8_t upper_threshold)
+    : maidsafe::ClientBufferPacketHandler(rpcs, kadops, upper_threshold) {}
   MOCK_METHOD2(FindNodes,
       void(kad::VoidFunctorOneString,
            boost::shared_ptr<maidsafe::ChangeBPData>));
@@ -353,14 +343,18 @@ class TestClientBP : public testing::Test {
   TestClientBP() : trans_(NULL),
                    trans_han_(NULL),
                    ch_man_(NULL),
-                   knode_(),
+                   test_dir_(file_system::TempDir() / ("maidsafe_TestClientBP_"
+                             + base::RandomAlphaNumericString(6))),
+                   kad_config_file_(test_dir_ / ".kadconfig"),
+                   chunkstore_(new maidsafe::ChunkStore(
+                       (test_dir_ / "ChunkStore").string(), 99999999, 0)),
+                   kad_ops_(),
                    BPMock(),
                    keys_(),
-                   cb_(),
-                   test_dir_(file_system::TempDir() /
-                            ("maidsafe_TestClientBP_" + base::RandomString(6))),
-                   kad_config_file_(test_dir_ / ".kadconfig"),
-                   cryp() {}
+                   cryp() {
+    cryp.set_hash_algorithm(crypto::SHA_512);
+    cryp.set_symm_algorithm(crypto::AES_256);
+  }
 
   ~TestClientBP() {
     transport::TransportUDT::CleanUp();
@@ -374,41 +368,46 @@ class TestClientBP : public testing::Test {
     boost::int16_t trans_id;
     trans_han_->Register(trans_, &trans_id);
     ch_man_ = new rpcprotocol::ChannelManager(trans_han_);
-    knode_.reset(new kad::KNode(ch_man_, trans_han_, kad::VAULT,
-                                keys_.at(0).private_key(),
-                                keys_.at(0).public_key(),
-                                false, false, test_cbph::K));
-    knode_->set_transport_id(trans_id);
+    kad_ops_.reset(new maidsafe::KadOps(trans_han_, ch_man_, kad::VAULT,
+                                        keys_.at(0).private_key(),
+                                        keys_.at(0).public_key(), false, false,
+                                        test_cbph::K, chunkstore_));
+    kad_ops_->set_transport_id(trans_id);
     BPMock.reset(new MockBPRpcs);
     ASSERT_TRUE(ch_man_->RegisterNotifiersToTransport());
     ASSERT_TRUE(trans_han_->RegisterOnServerDown(
-                boost::bind(&kad::KNode::HandleDeadRendezvousServer,
-                            knode_, _1)));
+                boost::bind(&maidsafe::KadOps::HandleDeadRendezvousServer,
+                            kad_ops_, _1)));
     EXPECT_EQ(0, trans_han_->Start(0, trans_id));
     EXPECT_EQ(0, ch_man_->Start());
 
-    cb_.Reset();
-    boost::asio::ip::address local_ip;
-    ASSERT_TRUE(base::GetLocalAddress(&local_ip));
-    knode_->Join(kad_config_file_.string(),
-                 local_ip.to_string(),
-                 trans_->listening_port(),
-                 boost::bind(&KadCB::CallbackFunc, &cb_, _1));
-    while (cb_.result.empty())
-      boost::this_thread::sleep(boost::posix_time::milliseconds(500));
-    ASSERT_EQ(kad::kRpcResultSuccess, cb_.result);
-    ASSERT_TRUE(knode_->is_joined());
+    std::string pmid(cryp.Hash(base::RandomString(200), "",
+                               crypto::STRING_STRING, false));
+    boost::mutex mutex;
+    boost::condition_variable cond_var;
+    maidsafe::ReturnCode return_code(maidsafe::kPendingResult);
+    kad_ops_->Init(kad_config_file_.string(), true, pmid,
+                   trans_->listening_port(), &mutex, &cond_var, &return_code);
+    {
+      boost::mutex::scoped_lock lock(mutex);
+      while (return_code == maidsafe::kPendingResult)
+        cond_var.wait(lock);
+    }
+    if (return_code != maidsafe::kSuccess) {
+      FAIL();
+      return;
+    }
 
     // Adding Contacts
     for (int i = 0; i < kMinChunkCopies + 1; ++i) {
       kad::Contact con(cryp.Hash(boost::lexical_cast<std::string>(i), "",
                        crypto::STRING_STRING, false), "127.0.0.1", 8000 + i,
                        "127.0.0.1", 8000 + i);
-      knode_->AddContact(con, 0, false);
+      kad_ops_->knode_.AddContact(con, 0, false);
     }
   }
   void TearDown() {
-    knode_->Leave();
+    kad_ops_->Leave();
     trans_han_->StopAll();
     ch_man_->Stop();
     delete trans_;
@@ -426,16 +425,16 @@ class TestClientBP : public testing::Test {
   transport::TransportUDT *trans_;
   transport::TransportHandler *trans_han_;
   rpcprotocol::ChannelManager *ch_man_;
-  boost::shared_ptr<kad::KNode> knode_;
+  fs::path test_dir_, kad_config_file_;
+  boost::shared_ptr<maidsafe::ChunkStore> chunkstore_;
+  boost::shared_ptr<maidsafe::KadOps> kad_ops_;
   boost::shared_ptr<MockBPRpcs> BPMock;
   std::vector<crypto::RsaKeyPair> keys_;
-  KadCB cb_;
-  fs::path test_dir_, kad_config_file_;
   crypto::Crypto cryp;
 };
 
 TEST_F(TestClientBP, BEH_MAID_CreateBpOk) {
-  MockBPH cbph(BPMock, knode_);
+  MockBPH cbph(BPMock, kad_ops_, test_cbph::upper_threshold);
   BPCallback cb;
 
   EXPECT_CALL(cbph, FindNodes(_, _))
@@ -460,7 +459,7 @@ TEST_F(TestClientBP, BEH_MAID_CreateBpOk) {
 }
 
 TEST_F(TestClientBP, BEH_MAID_CreateBpFailFindNodes) {
-  MockBPH cbph(BPMock, knode_);
+  MockBPH cbph(BPMock, kad_ops_, test_cbph::upper_threshold);
   BPCallback cb;
 
   EXPECT_CALL(cbph, FindNodes(_, _))
@@ -510,7 +509,7 @@ TEST_F(TestClientBP, BEH_MAID_CreateBpFailFindNodes) {
 }
 
 TEST_F(TestClientBP, BEH_MAID_CreateBpFailRpcs) {
-  MockBPH cbph(BPMock, knode_);
+  MockBPH cbph(BPMock, kad_ops_, test_cbph::upper_threshold);
   BPCallback cb;
 
   EXPECT_CALL(cbph, FindNodes(_, _))
@@ -535,7 +534,7 @@ TEST_F(TestClientBP, BEH_MAID_CreateBpFailRpcs) {
 }
 
 TEST_F(TestClientBP, BEH_MAID_ModifyOwnerInfoOk) {
-  MockBPH cbph(BPMock, knode_);
+  MockBPH cbph(BPMock, kad_ops_, test_cbph::upper_threshold);
   BPCallback cb;
 
   EXPECT_CALL(cbph, FindNodes(_, _))
@@ -561,7 +560,7 @@ TEST_F(TestClientBP, BEH_MAID_ModifyOwnerInfoOk) {
 }
 
 TEST_F(TestClientBP, BEH_MAID_ModifyOwnerInfoFailFindNodes) {
-  MockBPH cbph(BPMock, knode_);
+  MockBPH cbph(BPMock, kad_ops_, test_cbph::upper_threshold);
   BPCallback cb;
 
   EXPECT_CALL(cbph, FindNodes(_, _))
@@ -612,7 +611,7 @@ TEST_F(TestClientBP, BEH_MAID_ModifyOwnerInfoFailFindNodes) {
 }
 
 TEST_F(TestClientBP, BEH_MAID_ModifyOwnerInfoFailRpcs) {
-  MockBPH cbph(BPMock, knode_);
+  MockBPH cbph(BPMock, kad_ops_, test_cbph::upper_threshold);
   BPCallback cb;
 
   EXPECT_CALL(cbph, FindNodes(_, _))
@@ -638,7 +637,7 @@ TEST_F(TestClientBP, BEH_MAID_ModifyOwnerInfoFailRpcs) {
 }
 
 TEST_F(TestClientBP, BEH_MAID_AddMessageOk) {
-  MockBPH cbph(BPMock, knode_);
+  MockBPH cbph(BPMock, kad_ops_, test_cbph::upper_threshold);
   BPCallback cb;
 
   EXPECT_CALL(cbph, FindNodes(_, _))
@@ -672,7 +671,7 @@ TEST_F(TestClientBP, BEH_MAID_AddMessageOk) {
 }
 
 TEST_F(TestClientBP, BEH_MAID_AddMessageFailFindNodes) {
-  MockBPH cbph(BPMock, knode_);
+  MockBPH cbph(BPMock, kad_ops_, test_cbph::upper_threshold);
   BPCallback cb;
 
   EXPECT_CALL(cbph, FindNodes(_, _))
@@ -734,7 +733,7 @@ TEST_F(TestClientBP, BEH_MAID_AddMessageFailFindNodes) {
 }
 
 TEST_F(TestClientBP, BEH_MAID_AddMessageFailRpcs) {
-  MockBPH cbph(BPMock, knode_);
+  MockBPH cbph(BPMock, kad_ops_, test_cbph::upper_threshold);
   BPCallback cb;
 
   EXPECT_CALL(cbph, FindNodes(_, _))
@@ -768,7 +767,7 @@ TEST_F(TestClientBP, BEH_MAID_AddMessageFailRpcs) {
 }
 
 TEST_F(TestClientBP, BEH_MAID_GetMessagesOk) {
-  MockBPH cbph(BPMock, knode_);
+  MockBPH cbph(BPMock, kad_ops_, test_cbph::upper_threshold);
   BPCallback cb;
   GetMsgsHelper helper;
   helper.AddMessage("msg1", keys_.at(1).public_key(), "sender1");
@@ -810,7 +809,7 @@ TEST_F(TestClientBP, BEH_MAID_GetMessagesOk) {
 }
 
 TEST_F(TestClientBP, BEH_MAID_GetMessagesFailFindNodes) {
-  MockBPH cbph(BPMock, knode_);
+  MockBPH cbph(BPMock, kad_ops_, test_cbph::upper_threshold);
   BPCallback cb;
   GetMsgsHelper helper;
   helper.AddMessage("msg1", keys_.at(1).public_key(), "sender1");
@@ -872,7 +871,7 @@ TEST_F(TestClientBP, BEH_MAID_GetMessagesFailFindNodes) {
 }
 
 TEST_F(TestClientBP, BEH_MAID_GetMessagesFailRpcs) {
-  MockBPH cbph(BPMock, knode_);
+  MockBPH cbph(BPMock, kad_ops_, test_cbph::upper_threshold);
   BPCallback cb;
   GetMsgsHelper helper;
   helper.AddMessage("msg1", keys_.at(1).public_key(), "sender1");
@@ -903,7 +902,7 @@ TEST_F(TestClientBP, BEH_MAID_GetMessagesFailRpcs) {
 }
 
 TEST_F(TestClientBP, BEH_MAID_AddPresenceOk) {
-  MockBPH cbph(BPMock, knode_);
+  MockBPH cbph(BPMock, kad_ops_, test_cbph::upper_threshold);
   BPCallback cb;
 
   EXPECT_CALL(cbph, FindNodes(_, _))
@@ -936,7 +935,7 @@ TEST_F(TestClientBP, BEH_MAID_AddPresenceOk) {
 }
 
 TEST_F(TestClientBP, BEH_MAID_AddPresenceFailFindNodes) {
-  MockBPH cbph(BPMock, knode_);
+  MockBPH cbph(BPMock, kad_ops_, test_cbph::upper_threshold);
   BPCallback cb;
 
   EXPECT_CALL(cbph, FindNodes(_, _))
@@ -994,7 +993,7 @@ TEST_F(TestClientBP, BEH_MAID_AddPresenceFailFindNodes) {
 }
 
 TEST_F(TestClientBP, BEH_MAID_AddBPPresenceFailRpcs) {
-  MockBPH cbph(BPMock, knode_);
+  MockBPH cbph(BPMock, kad_ops_, test_cbph::upper_threshold);
   BPCallback cb;
 
   EXPECT_CALL(cbph, FindNodes(_, _))
@@ -1027,7 +1026,7 @@ TEST_F(TestClientBP, BEH_MAID_AddBPPresenceFailRpcs) {
 }
 
 TEST_F(TestClientBP, BEH_MAID_GetPresenceOk) {
-  MockBPH cbph(BPMock, knode_);
+  MockBPH cbph(BPMock, kad_ops_, test_cbph::upper_threshold);
   BPCallback cb;
   GetMsgsHelper helper;
   helper.AddPresence("sender1");
@@ -1076,7 +1075,7 @@ TEST_F(TestClientBP, BEH_MAID_GetPresenceOk) {
 }
 
 TEST_F(TestClientBP, BEH_MAID_GetPresenceFailFindNodes) {
-  MockBPH cbph(BPMock, knode_);
+  MockBPH cbph(BPMock, kad_ops_, test_cbph::upper_threshold);
   BPCallback cb;
   GetMsgsHelper helper;
   helper.AddPresence("sender1");
@@ -1138,7 +1137,7 @@ TEST_F(TestClientBP, BEH_MAID_GetPresenceFailFindNodes) {
 }
 
 TEST_F(TestClientBP, BEH_MAID_GetPresenceFailRpcs) {
-  MockBPH cbph(BPMock, knode_);
+  MockBPH cbph(BPMock, kad_ops_, test_cbph::upper_threshold);
   BPCallback cb;
   GetMsgsHelper helper;
   helper.AddPresence("sender1");
@@ -1168,3 +1167,4 @@ TEST_F(TestClientBP, BEH_MAID_GetPresenceFailRpcs) {
   ASSERT_EQ(maidsafe::kBPGetPresenceError, cb.result);
 }
 
+}  // namespace maidsafe

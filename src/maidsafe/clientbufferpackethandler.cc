@@ -14,15 +14,16 @@
 
 #include "maidsafe/clientbufferpackethandler.h"
 #include <maidsafe/protobuf/kademlia_service_messages.pb.h>
+#include "maidsafe/kadops.h"
 
 namespace maidsafe {
 
 ClientBufferPacketHandler::ClientBufferPacketHandler(
     boost::shared_ptr<maidsafe::BufferPacketRpcs> rpcs,
-    boost::shared_ptr<kad::KNode> knode,
+    boost::shared_ptr<KadOps> kadops,
     boost::uint8_t upper_threshold)
-        : crypto_obj_(), rpcs_(rpcs), knode_(knode),
-          upper_threshold_(upper_threshold) {
+        : crypto_obj_(), rpcs_(rpcs), kad_ops_(kadops),
+          kUpperThreshold_(upper_threshold) {
   crypto_obj_.set_hash_algorithm(crypto::SHA_512);
   crypto_obj_.set_symm_algorithm(crypto::AES_256);
 }
@@ -57,7 +58,7 @@ void ClientBufferPacketHandler::CreateBufferPacket(
       false), "", args.private_key, crypto::STRING_STRING));
 
   FindNodes(boost::bind(&ClientBufferPacketHandler::FindNodesCallback,
-            this, _1, data, transport_id), data);
+            this, _1, _2, data, transport_id), data);
 }
 
 void ClientBufferPacketHandler::ModifyOwnerInfo(
@@ -93,7 +94,7 @@ void ClientBufferPacketHandler::ModifyOwnerInfo(
   data->cb = cb;
   data->type = MODIFY_INFO;
   FindNodes(boost::bind(&ClientBufferPacketHandler::FindNodesCallback,
-            this, _1, data, transport_id), data);
+            this, _1, _2, data, transport_id), data);
 }
 
 void ClientBufferPacketHandler::GetMessages(
@@ -119,7 +120,7 @@ void ClientBufferPacketHandler::GetMessages(
   data->type = GET_MESSAGES;
   data->private_key = args.private_key;
   FindNodes(boost::bind(&ClientBufferPacketHandler::FindNodesCallback,
-            this, _1, data, transport_id), data);
+            this, _1, _2, data, transport_id), data);
 }
 
 void ClientBufferPacketHandler::AddMessage(
@@ -139,10 +140,8 @@ void ClientBufferPacketHandler::AddMessage(
   bpmsg.set_type(m_type);
   bpmsg.set_timestamp(base::GetEpochTime());
   // generating key to encrypt msg with AES
-  boost::uint32_t iter = base::RandomUint32() % 1000 +1;
-  std::string aes_key = crypto_obj_.SecurePassword(
-      crypto_obj_.Hash(message, "", crypto::STRING_STRING, false), iter);
-
+  std::string aes_key =
+      base::RandomString(crypto::AES256_KeySize + crypto::AES256_IVSize);
   bpmsg.set_aesenc_message(crypto_obj_.SymmEncrypt(message, "",
       crypto::STRING_STRING, aes_key));
   // encrypting key with receivers public key
@@ -172,7 +171,7 @@ void ClientBufferPacketHandler::AddMessage(
   data->cb = cb;
   data->type = ADD_MESSAGE;
   FindNodes(boost::bind(&ClientBufferPacketHandler::FindNodesCallback,
-            this, _1, data, transport_id), data);
+            this, _1, _2, data, transport_id), data);
 }
 
 void ClientBufferPacketHandler::GetPresence(
@@ -198,7 +197,7 @@ void ClientBufferPacketHandler::GetPresence(
   data->type = GET_PRESENCE;
   data->private_key = args.private_key;
   FindNodes(boost::bind(&ClientBufferPacketHandler::FindNodesCallback,
-            this, _1, data, transport_id), data);
+            this, _1, _2, data, transport_id), data);
 }
 
 void ClientBufferPacketHandler::AddPresence(
@@ -213,12 +212,7 @@ void ClientBufferPacketHandler::AddPresence(
   LivePresence lp;
   lp.set_contact_id(my_pu);
   EndPoint ep;
-  ep.add_ip(knode_->host_ip());
-  ep.add_port(knode_->host_port());
-  ep.add_ip(knode_->local_host_ip());
-  ep.add_port(knode_->local_host_port());
-  ep.add_ip(knode_->rendezvous_ip());
-  ep.add_port(knode_->rendezvous_port());
+  kad_ops_->SetThisEndpoint(&ep);
   std::string s_ep(ep.SerializeAsString());
   lp.set_end_point(crypto_obj_.AsymEncrypt(s_ep, "", recver_public_key,
                     crypto::STRING_STRING));
@@ -245,48 +239,46 @@ void ClientBufferPacketHandler::AddPresence(
   data->cb = cb;
   data->type = ADD_PRESENCE;
   FindNodes(boost::bind(&ClientBufferPacketHandler::FindNodesCallback,
-            this, _1, data, transport_id), data);
+            this, _1, _2, data, transport_id), data);
 }
 
 void ClientBufferPacketHandler::FindNodes(
-    kad::VoidFunctorOneString cb,
+    VoidFuncIntContacts cb,
     boost::shared_ptr<ChangeBPData> data) {
   switch (data->type) {
     case CREATEBP:
-        knode_->FindKClosestNodes(
-            kad::KadId(data->create_request.bufferpacket_name()), cb);
+        kad_ops_->FindKClosestNodes(data->create_request.bufferpacket_name(),
+                                    cb);
         break;
     case MODIFY_INFO:
-        knode_->FindKClosestNodes(
-            kad::KadId(data->modify_request.bufferpacket_name()), cb);
+        kad_ops_->FindKClosestNodes(data->modify_request.bufferpacket_name(),
+                                    cb);
         break;
     case GET_MESSAGES:
-        knode_->FindKClosestNodes(
-            kad::KadId(data->get_msgs_request.bufferpacket_name()), cb);
+        kad_ops_->FindKClosestNodes(data->get_msgs_request.bufferpacket_name(),
+                                    cb);
         break;
     case ADD_MESSAGE:
-        knode_->FindKClosestNodes(
-            kad::KadId(data->add_msg_request.bufferpacket_name()), cb);
+        kad_ops_->FindKClosestNodes(data->add_msg_request.bufferpacket_name(),
+                                    cb);
         break;
     case GET_PRESENCE:
-        knode_->FindKClosestNodes(
-            kad::KadId(data->get_presence_request.bufferpacket_name()), cb);
+        kad_ops_->FindKClosestNodes(
+            data->get_presence_request.bufferpacket_name(), cb);
         break;
     case ADD_PRESENCE:
-        knode_->FindKClosestNodes(
-            kad::KadId(data->add_presence_request.bufferpacket_name()), cb);
+        kad_ops_->FindKClosestNodes(
+            data->add_presence_request.bufferpacket_name(), cb);
         break;
   }
 }
 
 void ClientBufferPacketHandler::FindNodesCallback(
-    const std::string &result,
+    const ReturnCode &result,
+    const std::vector<kad::Contact> &closest_nodes,
     boost::shared_ptr<ChangeBPData> data,
     const boost::int16_t &transport_id) {
-  kad::FindResponse rslt;
-  if (!rslt.ParseFromString(result) ||
-      rslt.result() != kad::kRpcResultSuccess ||
-      rslt.closest_nodes_size() < upper_threshold_) {
+  if (result != kSuccess || closest_nodes.size() < kUpperThreshold_) {
     switch (data->type) {
       case CREATEBP: data->cb(kStoreNewBPError);
                      break;
@@ -312,18 +304,14 @@ void ClientBufferPacketHandler::FindNodesCallback(
     return;
   }
 
-  kad::ContactInfo ci;
   boost::shared_ptr<std::vector<ModifyBPCallbackData> >
       cb_datas(new std::vector<ModifyBPCallbackData>);
-  for (int n = 0; n < rslt.closest_nodes_size(); ++n) {
-    if (!ci.ParseFromString(rslt.closest_nodes(n)))
-      continue;
+  for (size_t n = 0; n < closest_nodes.size(); ++n) {
     ModifyBPCallbackData cb_data;
     cb_data.data = data;
     cb_data.transport_id = transport_id;
     cb_data.ctrl = new rpcprotocol::Controller;
-    kad::Contact ctc(ci);
-    cb_data.ctc = ctc;
+    cb_data.ctc = closest_nodes.at(n);
 
     switch (cb_data.data->type) {
       case CREATEBP:
@@ -348,7 +336,7 @@ void ClientBufferPacketHandler::FindNodesCallback(
     cb_datas->push_back(cb_data);
   }
 
-  if (cb_datas->size() < upper_threshold_) {
+  if (cb_datas->size() < kUpperThreshold_) {
     switch (data->type) {
       case CREATEBP: data->cb(kStoreNewBPError);
                    break;
@@ -375,11 +363,7 @@ void ClientBufferPacketHandler::FindNodesCallback(
   }
 
   for (size_t a = 0; a < cb_datas->size(); ++a) {
-    bool local = (knode_->CheckContactLocalAddress(
-                      cb_datas->at(a).ctc.node_id(),
-                      cb_datas->at(a).ctc.local_ip(),
-                      cb_datas->at(a).ctc.local_port(),
-                      cb_datas->at(a).ctc.host_ip()) == kad::LOCAL);
+    bool local = kad_ops_->AddressIsLocal(cb_datas->at(a).ctc);
 
     google::protobuf::Closure *done = NULL;
     switch (data->type) {
@@ -538,20 +522,20 @@ void ClientBufferPacketHandler::ActionOnBpDone(
   if (finished) {
     switch (cb_datas->at(index).data->type) {
       case CREATEBP:
-          if (cb_datas->at(index).data->successful_ops >= upper_threshold_)
+          if (cb_datas->at(index).data->successful_ops >= kUpperThreshold_)
             cb_datas->at(index).data->cb(kSuccess);
           else
             cb_datas->at(index).data->cb(kStoreNewBPError);
           break;
       case MODIFY_INFO:
-          if (cb_datas->at(index).data->successful_ops >= upper_threshold_)
+          if (cb_datas->at(index).data->successful_ops >= kUpperThreshold_)
             cb_datas->at(index).data->cb(kSuccess);
           else
             cb_datas->at(index).data->cb(kModifyBPError);
           break;
       case GET_MESSAGES: {
           std::list<ValidatedBufferPacketMessage> msgs;
-          if (cb_datas->at(index).data->successful_ops >= upper_threshold_)
+          if (cb_datas->at(index).data->successful_ops >= kUpperThreshold_)
             cb_datas->at(index).data->cb_getmsgs(kSuccess, msgs, true);
           else
             cb_datas->at(index).data->cb_getmsgs(kBPMessagesRetrievalError,
@@ -559,14 +543,14 @@ void ClientBufferPacketHandler::ActionOnBpDone(
           break;
       }
       case ADD_MESSAGE:
-          if (cb_datas->at(index).data->successful_ops >= upper_threshold_)
+          if (cb_datas->at(index).data->successful_ops >= kUpperThreshold_)
             cb_datas->at(index).data->cb(kSuccess);
           else
             cb_datas->at(index).data->cb(kBPAddMessageError);
           break;
       case GET_PRESENCE: {
           std::list<std::string> lps;
-          if (cb_datas->at(index).data->successful_ops >= upper_threshold_)
+          if (cb_datas->at(index).data->successful_ops >= kUpperThreshold_)
             cb_datas->at(index).data->cb_getpresence(kSuccess, lps, true);
           else
             cb_datas->at(index).data->cb_getpresence(kBPGetPresenceError,
@@ -574,7 +558,7 @@ void ClientBufferPacketHandler::ActionOnBpDone(
           break;
       }
       case ADD_PRESENCE:
-          if (cb_datas->at(index).data->successful_ops >= upper_threshold_)
+          if (cb_datas->at(index).data->successful_ops >= kUpperThreshold_)
             cb_datas->at(index).data->cb(kSuccess);
           else
             cb_datas->at(index).data->cb(kBPAddPresenceError);

@@ -52,8 +52,8 @@ CryptoKeyPairs::~CryptoKeyPairs() {
   }
 }
 
-bool CryptoKeyPairs::StartToCreateKeyPairs(const boost::int16_t
-      &no_of_keypairs) {
+bool CryptoKeyPairs::StartToCreateKeyPairs(
+    const boost::int16_t &no_of_keypairs) {
   {
     boost::mutex::scoped_lock lock(start_mutex_);
     if (started_)

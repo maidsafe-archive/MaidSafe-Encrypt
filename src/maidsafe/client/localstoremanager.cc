@@ -20,8 +20,10 @@
 
 #include "fs/filesystem.h"
 #include "maidsafe/chunkstore.h"
+#include "maidsafe/maidsafevalidator.h"
 #include "maidsafe/client/localstoremanager.h"
 #include "maidsafe/client/sessionsingleton.h"
+#include "maidsafe/pdutils.h"
 #include "protobuf/maidsafe_messages.pb.h"
 #include "protobuf/maidsafe_service_messages.pb.h"
 
@@ -79,28 +81,36 @@ void ExecReturnLoadPacketCallback(const LoadPacketFunctor &cb,
 }
 
 LocalStoreManager::LocalStoreManager(
-    boost::shared_ptr<ChunkStore> client_chunkstore, const boost::uint8_t k)
+    boost::shared_ptr<ChunkStore> client_chunkstore,
+    const boost::uint8_t &k,
+    const fs::path &db_directory)
         : K_(k),
-          upper_threshold_(
+          kUpperThreshold_(
               static_cast<boost::uint16_t>(K_ * kMinSuccessfulPecentageStore)),
           db_(), vbph_(), mutex_(),
-          local_sm_dir_(file_system::LocalStoreManagerDir().string()),
+          local_sm_dir_(db_directory.string()),
           client_chunkstore_(client_chunkstore),
           ss_(SessionSingleton::getInstance()) {}
 
 LocalStoreManager::~LocalStoreManager() {
-  while (!chunks_pending_.empty())
-    boost::this_thread::sleep(boost::posix_time::seconds(1));
+  bool t(false);
+  while (!t) {
+    {
+      boost::mutex::scoped_lock loch_etive(signal_mutex_);
+      t = chunks_pending_.empty();
+    }
+    if (!t)
+      boost::this_thread::sleep(boost::posix_time::milliseconds(100));
+  }
 }
 
-void LocalStoreManager::Init(int, kad::VoidFunctorOneString cb,
-                             fs::path db_directory) {
+void LocalStoreManager::Init(VoidFuncOneInt callback, const boost::uint16_t&) {
 #ifdef LOCAL_PDVAULT
   // Simulate knode join
 //  boost::this_thread::sleep(boost::posix_time::seconds(3));
 #endif
-  if (!db_directory.string().empty())
-    local_sm_dir_ = db_directory.string();
+  if (local_sm_dir_.empty())
+    local_sm_dir_ = file_system::LocalStoreManagerDir().string();
   try {
     if (!fs::exists(local_sm_dir_ + "/StoreChunks")) {
       fs::create_directories(local_sm_dir_ + "/StoreChunks");
@@ -113,15 +123,24 @@ void LocalStoreManager::Init(int, kad::VoidFunctorOneString cb,
       db_.execDML(
         "create table network(key text,value text, primary key(key,value));");
     }
-    boost::thread thr(&ExecuteSuccessCallback, cb, &mutex_);
+    ExecReturnCodeCallback(callback, kSuccess);
   }
   catch(CppSQLite3Exception &e) {  // NOLINT
     std::cerr << e.errorCode() << ":" << e.errorMessage() << std::endl;
-    boost::thread thr(&ExecuteFailureCallback, cb, &mutex_);
+    ExecReturnCodeCallback(callback, kStoreManagerInitError);
   }
 }
 
-void LocalStoreManager::Close(kad::VoidFunctorOneString cb, bool) {
+void LocalStoreManager::Close(VoidFuncOneInt callback, bool) {
+  bool t(false);
+  while (!t) {
+    {
+      boost::mutex::scoped_lock loch_etive(signal_mutex_);
+      t = chunks_pending_.empty();
+    }
+    if (!t)
+      boost::this_thread::sleep(boost::posix_time::milliseconds(100));
+  }
 #ifdef LOCAL_PDVAULT
   // Simulate chunk threadpool join and knode leave
 //  boost::this_thread::sleep(boost::posix_time::seconds(3));
@@ -129,11 +148,11 @@ void LocalStoreManager::Close(kad::VoidFunctorOneString cb, bool) {
   try {
     boost::mutex::scoped_lock loch(mutex_);
     db_.close();
-    boost::thread thr(&ExecuteSuccessCallback, cb, &mutex_);
+    ExecReturnCodeCallback(callback, kSuccess);
   }
   catch(CppSQLite3Exception &e) {  // NOLINT
     std::cerr << e.errorCode() << ":" << e.errorMessage() << std::endl;
-    boost::thread thr(&ExecuteFailureCallback, cb, &mutex_);
+    ExecReturnCodeCallback(callback, kStoreManagerError);
   }
 }
 
@@ -181,7 +200,7 @@ int LocalStoreManager::StoreChunk(const std::string &chunk_name, const DirType,
   }
   catch(const std::exception &e) {
 #ifdef DEBUG
-    printf("%s\n", e.what());
+    printf("LocalStoreManager::StoreChunk - Exception: %s\n", e.what());
 #endif
     signal_mutex_.lock();
     chunks_pending_.insert(chunk_name);
@@ -209,8 +228,7 @@ int LocalStoreManager::StoreChunk(const std::string &chunk_name, const DirType,
 
 int LocalStoreManager::DeleteChunk(const std::string &chunk_name,
                                    const boost::uint64_t &chunk_size,
-                                   DirType,
-                                   const std::string &) {
+                                   DirType, const std::string&) {
 #ifdef LOCAL_PDVAULT
   // Simulate knode lookup in RemoveFromWatchList
 //  boost::this_thread::sleep(boost::posix_time::seconds(2));
@@ -301,9 +319,9 @@ void LocalStoreManager::KeyUnique(const std::string &key,
                                   bool check_local,
                                   const VoidFuncOneInt &cb) {
   if (KeyUnique(key, check_local))
-    boost::thread thr(&ExecReturnCodeCallback, cb, kKeyUnique);
+    ExecReturnCodeCallback(cb, kKeyUnique);
   else
-    boost::thread thr(&ExecReturnCodeCallback, cb, kKeyNotUnique);
+    ExecReturnCodeCallback(cb, kKeyNotUnique);
 }
 
 int LocalStoreManager::LoadPacket(const std::string &packet_name,
@@ -315,7 +333,7 @@ void LocalStoreManager::LoadPacket(const std::string &packetname,
                                    const LoadPacketFunctor &lpf) {
   std::vector<std::string> results;
   ReturnCode rc(static_cast<ReturnCode>(GetValue_FromDB(packetname, &results)));
-  boost::thread thr(&ExecReturnLoadPacketCallback, lpf, results, rc);
+  ExecReturnLoadPacketCallback(lpf, results, rc);
 }
 
 void LocalStoreManager::DeletePacket(const std::string &packet_name,
@@ -324,12 +342,16 @@ void LocalStoreManager::DeletePacket(const std::string &packet_name,
                                      DirType dir_type,
                                      const std::string &msid,
                                      const VoidFuncOneInt &cb) {
-  std::string public_key;
-  SigningPublicKey(system_packet_type, dir_type, msid, &public_key);
-  if (public_key.empty()) {
-    boost::thread thr(&ExecReturnCodeCallback, cb, kNoPublicKeyToCheck);
+  std::string key_id, public_key, public_key_signature, private_key;
+  PdUtils pd_utils;
+  pd_utils.GetPacketSignatureKeys(system_packet_type, dir_type, msid, &key_id,
+      &public_key, &public_key_signature, &private_key);
+  MaidsafeValidator msv;
+  if (!msv.ValidateSignerId(key_id, public_key, public_key_signature)) {
+    ExecReturnCodeCallback(cb, kDeletePacketFailure);
     return;
   }
+
   std::vector<std::string> vals(values);
   bool empty(true);
   for (size_t i = 0; i < vals.size(); ++i) {
@@ -342,11 +364,10 @@ void LocalStoreManager::DeletePacket(const std::string &packet_name,
     ReturnCode res =
         static_cast<ReturnCode>(GetValue_FromDB(packet_name, &vals));
     if (res == kFindValueFailure) {  // packet doesn't exist on net
-      boost::thread thr(&ExecReturnCodeCallback, cb, kSuccess);
+      ExecReturnCodeCallback(cb, kSuccess);
       return;
     } else if (res != kSuccess || vals.empty()) {
-      boost::thread thr(&ExecReturnCodeCallback, cb,
-                        kDeletePacketFindValueFailure);
+      ExecReturnCodeCallback(cb, kDeletePacketFindValueFailure);
       return;
     }
   }
@@ -354,7 +375,7 @@ void LocalStoreManager::DeletePacket(const std::string &packet_name,
   std::vector<std::string> ser_gps;
   for (size_t a = 0; a < values.size(); ++a) {
     std::string ser_gp;
-    CreateSerialisedSignedValue(values[a], system_packet_type, msid, &ser_gp);
+    CreateSerialisedSignedValue(values[a], private_key, &ser_gp);
     ser_gps.push_back(ser_gp);
   }
 
@@ -364,18 +385,17 @@ void LocalStoreManager::DeletePacket(const std::string &packet_name,
     if (sv.ParseFromString(ser_gps[n])) {
       if (!co.AsymCheckSig(sv.value(), sv.value_signature(), public_key,
           crypto::STRING_STRING)) {
-        boost::thread thr(&ExecReturnCodeCallback, cb, kDeletePacketFailure);
+        ExecReturnCodeCallback(cb, kDeletePacketFailure);
         return;
       }
     }
   }
   ReturnCode rc = DeletePacket_DeleteFromDb(packet_name, ser_gps, public_key);
-  boost::thread thr(&ExecReturnCodeCallback, cb, rc);
+  ExecReturnCodeCallback(cb, rc);
 }
 
 ReturnCode LocalStoreManager::DeletePacket_DeleteFromDb(
-    const std::string &key,
-    const std::vector<std::string> &values,
+    const std::string &key, const std::vector<std::string> &values,
     const std::string &public_key) {
 #ifdef LOCAL_PDVAULT
   // Simulate knode lookup
@@ -462,60 +482,47 @@ void LocalStoreManager::StorePacket(const std::string &packet_name,
                                     PacketType system_packet_type,
                                     DirType dir_type,
                                     const std::string& msid,
-                                    IfPacketExists if_packet_exists,
                                     const VoidFuncOneInt &cb) {
-  std::string ser_gp;
-  CreateSerialisedSignedValue(value, system_packet_type, msid, &ser_gp);
-  if (ser_gp.empty()) {
-    boost::thread thr(&ExecReturnCodeCallback, cb, kNoPublicKeyToCheck);
+  std::string key_id, public_key, public_key_signature, private_key;
+  PdUtils pd_utils;
+  pd_utils.GetPacketSignatureKeys(system_packet_type, dir_type, msid, &key_id,
+                                  &public_key, &public_key_signature,
+                                  &private_key);
+  MaidsafeValidator msv;
+  if (!msv.ValidateSignerId(key_id, public_key, public_key_signature)) {
+    ExecReturnCodeCallback(cb, kSendPacketFailure);
     return;
   }
 
-  std::string public_key;
+  std::string ser_gp;
+  CreateSerialisedSignedValue(value, private_key, &ser_gp);
+  if (ser_gp.empty()) {
+    ExecReturnCodeCallback(cb, kSendPacketFailure);
+    return;
+  }
+
   kad::SignedValue sv;
   if (sv.ParseFromString(ser_gp)) {
-    SigningPublicKey(system_packet_type, dir_type, msid, &public_key);
-    if (public_key.empty()) {
-      boost::thread thr(&ExecReturnCodeCallback, cb, kNoPublicKeyToCheck);
+    crypto::Crypto co;
+    if (!co.AsymCheckSig(sv.value(), sv.value_signature(), public_key,
+        crypto::STRING_STRING)) {
+      ExecReturnCodeCallback(cb, kSendPacketFailure);
+#ifdef DEBUG
+      printf("%s\n", sv.value().c_str());
+#endif
       return;
-    } else {
-      crypto::Crypto co;
-      if (!co.AsymCheckSig(sv.value(), sv.value_signature(), public_key,
-          crypto::STRING_STRING)) {
-        boost::thread thr(&ExecReturnCodeCallback, cb, kSendPacketFailure);
-        printf("%s\n", sv.value().c_str());
-        return;
-      }
     }
   }
 
   std::vector<std::string> values;
   int n = GetValue_FromDB(packet_name, &values);
   if (n == kFindValueError) {
-    boost::thread thr(&ExecReturnCodeCallback, cb, kStoreManagerError);
+    ExecReturnCodeCallback(cb, kStoreManagerError);
     return;
   }
 
-  ReturnCode rc;
-  if (values.empty()) {
-    rc = StorePacket_InsertToDb(packet_name, ser_gp, public_key, false);
-  } else {
-    switch (if_packet_exists) {
-      case kDoNothingReturnFailure:
-          rc = kSendPacketFailure;
-          break;
-      case kDoNothingReturnSuccess:
-          rc = kSuccess;
-          break;
-      case kOverwrite:
-          rc = StorePacket_InsertToDb(packet_name, ser_gp, public_key, false);
-          break;
-      case kAppend:
-          rc = StorePacket_InsertToDb(packet_name, ser_gp, public_key, true);
-          break;
-    }
-  }
-  boost::thread thr(&ExecReturnCodeCallback, cb, rc);
+  ReturnCode rc = StorePacket_InsertToDb(packet_name, ser_gp, public_key, true);
+  ExecReturnCodeCallback(cb, rc);
 }
 
 ReturnCode LocalStoreManager::StorePacket_InsertToDb(const std::string &key,
@@ -583,19 +590,31 @@ void LocalStoreManager::UpdatePacket(const std::string &packet_name,
                                      DirType dir_type,
                                      const std::string &msid,
                                      const VoidFuncOneInt &cb) {
+  std::string key_id, public_key, public_key_signature, private_key;
+  PdUtils pd_utils;
+  pd_utils.GetPacketSignatureKeys(system_packet_type, dir_type, msid, &key_id,
+      &public_key, &public_key_signature, &private_key);
+  MaidsafeValidator msv;
+  if (!msv.ValidateSignerId(key_id, public_key, public_key_signature)) {
+    ExecReturnCodeCallback(cb, kUpdatePacketFailure);
+#ifdef DEBUG
+    printf("LSM::UpdatePacket - Signing key doesn't validate.\n");
+#endif
+    return;
+  }
+
   std::string old_ser_gp;
-  CreateSerialisedSignedValue(old_value, system_packet_type, msid, &old_ser_gp);
+  CreateSerialisedSignedValue(old_value, private_key, &old_ser_gp);
   std::string new_ser_gp;
-  CreateSerialisedSignedValue(new_value, system_packet_type, msid, &new_ser_gp);
+  CreateSerialisedSignedValue(new_value, private_key, &new_ser_gp);
   if (old_ser_gp.empty() || new_ser_gp.empty()) {
-    boost::thread thr(&ExecReturnCodeCallback, cb, kNoPublicKeyToCheck);
+    ExecReturnCodeCallback(cb, kNoPublicKeyToCheck);
 #ifdef DEBUG
     printf("LSM::UpdatePacket - Empty old or new.\n");
 #endif
     return;
   }
 
-  std::string public_key;
   kad::SignedValue old_sv, new_sv;
   if (!old_sv.ParseFromString(old_ser_gp) ||
       !new_sv.ParseFromString(new_ser_gp)) {
@@ -604,19 +623,10 @@ void LocalStoreManager::UpdatePacket(const std::string &packet_name,
 #endif
   }
 
-  SigningPublicKey(system_packet_type, dir_type, msid, &public_key);
-  if (public_key.empty()) {
-    boost::thread thr(&ExecReturnCodeCallback, cb, kNoPublicKeyToCheck);
-#ifdef DEBUG
-  printf("LSM::UpdatePacket - No public key.\n");
-#endif
-    return;
-  }
-
   crypto::Crypto co;
   if (!co.AsymCheckSig(old_sv.value(), old_sv.value_signature(), public_key,
       crypto::STRING_STRING)) {
-    boost::thread thr(&ExecReturnCodeCallback, cb, kUpdatePacketFailure);
+    ExecReturnCodeCallback(cb, kUpdatePacketFailure);
 #ifdef DEBUG
     printf("LSM::UpdatePacket - Old fails validation.\n");
 #endif
@@ -627,14 +637,14 @@ void LocalStoreManager::UpdatePacket(const std::string &packet_name,
 #ifdef DEBUG
     printf("LSM::UpdatePacket - New fails validation.\n");
 #endif
-    boost::thread thr(&ExecReturnCodeCallback, cb, kUpdatePacketFailure);
+    ExecReturnCodeCallback(cb, kUpdatePacketFailure);
     return;
   }
 
   std::vector<std::string> values;
   int n = GetValue_FromDB(packet_name, &values);
   if (n == kFindValueError || values.empty()) {
-    boost::thread thr(&ExecReturnCodeCallback, cb, kStoreManagerError);
+    ExecReturnCodeCallback(cb, kStoreManagerError);
 #ifdef DEBUG
     printf("LSM::UpdatePacket - Key not there.\n");
 #endif
@@ -644,7 +654,7 @@ void LocalStoreManager::UpdatePacket(const std::string &packet_name,
   std::set<std::string> the_values(values.begin(), values.end());
   std::set<std::string>::iterator it = the_values.find(old_ser_gp);
   if (it == the_values.end()) {
-    boost::thread thr(&ExecReturnCodeCallback, cb, kStoreManagerError);
+    ExecReturnCodeCallback(cb, kStoreManagerError);
 #ifdef DEBUG
     printf("LSM::UpdatePacket - Old value not there.\n");
 #endif
@@ -652,7 +662,7 @@ void LocalStoreManager::UpdatePacket(const std::string &packet_name,
   }
   it = the_values.find(new_ser_gp);
   if (it != the_values.end()) {
-    boost::thread thr(&ExecReturnCodeCallback, cb, kStoreManagerError);
+    ExecReturnCodeCallback(cb, kStoreManagerError);
 #ifdef DEBUG
     printf("LSM::UpdatePacket - New value already there.\n");
 #endif
@@ -660,7 +670,7 @@ void LocalStoreManager::UpdatePacket(const std::string &packet_name,
   }
 
   ReturnCode rc = UpdatePacketInDb(packet_name, old_ser_gp, new_ser_gp);
-  boost::thread thr(&ExecReturnCodeCallback, cb, rc);
+  ExecReturnCodeCallback(cb, rc);
 }
 
 ReturnCode LocalStoreManager::UpdatePacketInDb(const std::string &key,
@@ -691,91 +701,6 @@ ReturnCode LocalStoreManager::UpdatePacketInDb(const std::string &key,
     printf("Error(%i): %s\n", e.errorCode(),  e.errorMessage());
 #endif
     return kStoreManagerError;
-  }
-}
-
-void LocalStoreManager::SigningPublicKey(PacketType packet_type,
-                                         DirType,
-                                         const std::string &msid,
-                                         std::string *public_key) {
-  public_key->clear();
-  switch (packet_type) {
-    case MID:
-    case ANMID:
-      *public_key = ss_->PublicKey(ANMID);
-      break;
-    case SMID:
-    case ANSMID:
-      *public_key = ss_->PublicKey(ANSMID);
-      break;
-    case TMID:
-    case ANTMID:
-      *public_key = ss_->PublicKey(ANTMID);
-      break;
-    case MPID:
-    case ANMPID:
-      *public_key = ss_->PublicKey(ANMPID);
-      break;
-    case MAID:
-    case ANMAID:
-      *public_key = ss_->PublicKey(ANMAID);
-      break;
-    case PMID:
-      *public_key = ss_->PublicKey(MAID);
-      break;
-    case MSID: {
-      std::string priv_key;
-      if (ss_->GetShareKeys(msid, public_key, &priv_key) != kSuccess)
-        public_key->clear();
-      break;
-    }
-    case PD_DIR:
-      *public_key = ss_->PublicKey(PMID);
-      break;
-    default:
-      break;
-  }
-}
-
-void LocalStoreManager::SigningPrivateKey(PacketType packet_type,
-                                          DirType,
-                                          const std::string &msid,
-                                          std::string *private_key) {
-  private_key->clear();
-  switch (packet_type) {
-    case MID:
-    case ANMID:
-      *private_key = ss_->PrivateKey(ANMID);
-      break;
-    case SMID:
-    case ANSMID:
-      *private_key = ss_->PrivateKey(ANSMID);
-      break;
-    case TMID:
-    case ANTMID:
-      *private_key = ss_->PrivateKey(ANTMID);
-      break;
-    case MPID:
-    case ANMPID:
-      *private_key = ss_->PrivateKey(ANMPID);
-      break;
-    case MAID:
-    case ANMAID:
-      *private_key = ss_->PrivateKey(ANMAID);
-      break;
-    case PMID:
-      *private_key = ss_->PrivateKey(MAID);
-      break;
-    case MSID: {
-      std::string pub_key;
-      ss_->GetShareKeys(msid, &pub_key, private_key);
-      break;
-    }
-    case PD_DIR:
-      *private_key = ss_->PrivateKey(PMID);
-      break;
-    default:
-      break;
   }
 }
 
@@ -890,14 +815,12 @@ int LocalStoreManager::LoadBPMessages(
 #endif
     return 0;
   }
-  return upper_threshold_;
+  return kUpperThreshold_;
 }
 
 int LocalStoreManager::SendMessage(
-    const std::vector<std::string> &receivers,
-    const std::string &message,
-    const MessageType &m_type,
-    std::map<std::string, ReturnCode> *add_results) {
+    const std::vector<std::string> &receivers, const std::string &message,
+    const MessageType &m_type, std::map<std::string, ReturnCode> *add_results) {
   if (!add_results)
     return -660;
   if (ss_->Id(MPID) == "")
@@ -958,7 +881,7 @@ int LocalStoreManager::SendMessage(
 }
 
 int LocalStoreManager::LoadBPPresence(std::list<LivePresence>*) {
-  return upper_threshold_;
+  return kUpperThreshold_;
 }
 
 int LocalStoreManager::AddBPPresence(
@@ -1054,9 +977,8 @@ std::string LocalStoreManager::CreateMessage(const std::string &message,
   crypto::Crypto co;
   co.set_hash_algorithm(crypto::SHA_512);
   co.set_symm_algorithm(crypto::AES_256);
-  int iter = base::RandomUint32() % 1000 +1;
-  std::string aes_key = co.SecurePassword(co.Hash(message, "",
-                        crypto::STRING_STRING, false), iter);
+  std::string aes_key =
+      base::RandomString(crypto::AES256_KeySize + crypto::AES256_IVSize);
   bpm.set_rsaenc_key(co.AsymEncrypt(aes_key, "", rec_public_key,
                                     crypto::STRING_STRING));
   bpm.set_aesenc_message(co.SymmEncrypt(message, "", crypto::STRING_STRING,
@@ -1099,11 +1021,23 @@ int LocalStoreManager::GetValue_FromDB(const std::string &key,
 }
 
 void LocalStoreManager::PollVaultInfo(kad::VoidFunctorOneString cb) {
-  boost::thread thr(&ExecCallbackVaultInfo, cb, &mutex_);
+  VaultCommunication vc;
+  vc.set_chunkstore("/home/Smer/ChunkStore");
+  vc.set_offered_space(base::RandomUint32());
+  boost::uint32_t fspace = base::RandomUint32();
+  while (fspace >= vc.offered_space())
+    fspace = base::RandomUint32();
+  vc.set_free_space(fspace);
+  vc.set_ip("127.0.0.1");
+  vc.set_port((base::RandomUint32() % 64512) + 1000);
+  vc.set_timestamp(base::GetEpochTime());
+  std::string ser_vc;
+  vc.SerializeToString(&ser_vc);
+  boost::thread t(cb, ser_vc);
 }
 
 void LocalStoreManager::VaultContactInfo(kad::VoidFunctorOneString cb) {
-  boost::thread thr(&ExecuteSuccessCallback, cb, &mutex_);
+  ExecStringCallback(cb, kAck);
 }
 
 void LocalStoreManager::SetLocalVaultOwned(const std::string&,
@@ -1126,15 +1060,10 @@ void LocalStoreManager::LocalVaultOwned(const LocalVaultOwnedFunctor &functor) {
 
 bool LocalStoreManager::NotDoneWithUploading() { return false; }
 
-void LocalStoreManager::CreateSerialisedSignedValue(const std::string value,
-                                                    const PacketType &pt,
-                                                    const std::string &msid,
-                                                    std::string *ser_gp) {
-  *ser_gp = "";
-  std::string private_key;
-  SigningPrivateKey(pt, PRIVATE, msid, &private_key);
-  if (private_key.empty())
-    return;
+void LocalStoreManager::CreateSerialisedSignedValue(
+    const std::string &value, const std::string &private_key,
+    std::string *ser_gp) {
+  ser_gp->clear();
   crypto::Crypto co;
   GenericPacket gp;
   gp.set_data(value);
@@ -1146,10 +1075,28 @@ void LocalStoreManager::ExecuteReturnSignal(const std::string &chunkname,
                                             ReturnCode rc) {
   int sleep_seconds((base::RandomInt32() % 5) + 1);
   boost::this_thread::sleep(boost::posix_time::seconds(sleep_seconds));
-  boost::mutex::scoped_lock loch_laggan(signal_mutex_);
   sig_chunk_uploaded_(chunkname, rc);
+  boost::mutex::scoped_lock loch_laggan(signal_mutex_);
   chunks_pending_.erase(chunkname);
 }
 
+void LocalStoreManager::ExecStringCallback(kad::VoidFunctorOneString cb,
+                                           MaidsafeRpcResult result) {
+  std::string ser_result;
+  GenericResponse response;
+  response.set_result(result);
+  response.SerializeToString(&ser_result);
+  boost::thread t(cb, ser_result);
+}
+
+void LocalStoreManager::ExecReturnCodeCallback(VoidFuncOneInt cb,
+                                               ReturnCode rc) {
+  boost::thread t(cb, rc);
+}
+
+void LocalStoreManager::ExecReturnLoadPacketCallback(
+    LoadPacketFunctor cb, std::vector<std::string> results, ReturnCode rc) {
+  boost::thread t(cb, results, rc);
+}
 
 }  // namespace maidsafe

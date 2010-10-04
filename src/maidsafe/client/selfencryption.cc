@@ -50,6 +50,28 @@ namespace fs = boost::filesystem;
 
 namespace maidsafe {
 
+namespace self_encryption_utils {
+
+bool ResizeObfuscationHash(const std::string &input,
+                           const size_t &required_size,
+                           std::string *resized_data) {
+  if (!resized_data)
+    return false;
+  resized_data->clear();
+  resized_data->reserve(required_size);
+  std::string hash(input);
+  crypto::Crypto co;
+  co.set_hash_algorithm(crypto::SHA_512);
+  while (resized_data->size() < required_size) {
+    hash = co.Hash(hash, "", crypto::STRING_STRING, false);
+    resized_data->append(hash);
+  }
+  resized_data->resize(required_size);
+  return true;
+}
+
+}  // namespace self_encryption_utils
+
 SelfEncryption::SelfEncryption(boost::shared_ptr<ChunkStore> client_chunkstore)
     : client_chunkstore_(client_chunkstore), version_("Mk II"), min_chunks_(3),
       max_chunks_(40), default_chunk_size_(262144),
@@ -69,7 +91,8 @@ SelfEncryption::SelfEncryption(boost::shared_ptr<ChunkStore> client_chunkstore)
 }
 
 int SelfEncryption::Encrypt(const std::string &entry_str, const bool &is_string,
-                            maidsafe::DataMap *dm) {
+                            maidsafe::DataMap *dm/*,
+                            std::set<std::string> *done_chunks*/) {
   std::map<std::string, fs::path> to_chunk_store;
   fs::path processing_path;
   boost::shared_ptr<DataIOHandler> iohandler;
@@ -86,7 +109,8 @@ int SelfEncryption::Encrypt(const std::string &entry_str, const bool &is_string,
     return n;
   }
 
-  n = AddToChunkStore(to_chunk_store, processing_path, iohandler);
+//  done_chunks->clear();
+  n = AddToChunkStore(to_chunk_store, processing_path, iohandler/*, done_chunks*/);
   iohandler.reset();
   return n;
 }
@@ -101,7 +125,7 @@ int SelfEncryption::EncryptContent(
   // check file is encryptable
   if (CheckEntry(iohandler) != 0) {
 #ifdef DEBUG
-          printf("111111111111111\n");
+    printf("111111111111111\n");
 #endif
     return -1;
   }
@@ -113,7 +137,7 @@ int SelfEncryption::EncryptContent(
   // create process directory
   if (!CreateProcessDirectory(processing_path)) {
 #ifdef DEBUG
-          printf("222222222222222\n");
+    printf("222222222222222\n");
 #endif
     return -1;
   }
@@ -133,7 +157,7 @@ int SelfEncryption::EncryptContent(
   // populate pre-encryption hash vector
   if (!GeneratePreEncHashes(iohandler, dm)) {
 #ifdef DEBUG
-          printf("3333333333333333\n");
+    printf("3333333333333333\n");
 #endif
     return -1;
   }
@@ -141,7 +165,7 @@ int SelfEncryption::EncryptContent(
   // Encrypt chunks
   if (!iohandler->Open()) {
 #ifdef DEBUG
-          printf("4444444444444444444\n");
+    printf("4444444444444444444\n");
 #endif
     return -1;
   }
@@ -204,8 +228,8 @@ int SelfEncryption::EncryptContent(
       }
       // adjust size of obfuscate hash to match size of chunklet
       std::string resized_obs_hash;
-      ResizeObfuscationHash(obfuscate_hash, this_chunklet_size,
-                            &resized_obs_hash);
+      self_encryption_utils::ResizeObfuscationHash(obfuscate_hash,
+          this_chunklet_size, &resized_obs_hash);
       // output encrypted chunklet
       std::string post_enc;
       post_enc = enc_crypto.SymmEncrypt(
@@ -240,7 +264,7 @@ int SelfEncryption::EncryptContent(
     // ensure uniqueness of post-encryption hash
     // HashUnique(post_enc_hash_, dm, false);
     (*to_chunk_store)[post_enc_hash] = temp_chunk_name;
-//
+
     // store the post-encryption hash to datamap
     dm->add_encrypted_chunk_name(post_enc_hash);
   }
@@ -250,10 +274,15 @@ int SelfEncryption::EncryptContent(
 int SelfEncryption::AddToChunkStore(
     const std::map<std::string, fs::path> &to_chunk_store,
     const fs::path &processing_path,
-    boost::shared_ptr<DataIOHandler> iohandler) {
+    boost::shared_ptr<DataIOHandler> iohandler/*,
+    std::set<std::string> *done_chunks*/) {
   std::map<std::string, fs::path>::const_iterator it = to_chunk_store.begin();
-  for (; it != to_chunk_store.end(); ++it)
-    client_chunkstore_->AddChunkToOutgoing((*it).first, (*it).second);
+  int rc;
+  for (; it != to_chunk_store.end(); ++it) {
+    rc = client_chunkstore_->AddChunkToOutgoing((*it).first, (*it).second);
+//    if (rc == kChunkExistsInChunkstore)
+//      done_chunks->insert((*it).first);
+  }
   iohandler->Close();
   // delete process dir
   try {
@@ -392,7 +421,7 @@ int SelfEncryption::Decrypt(const maidsafe::DataMap &dm,
         std::string this_chunklet = chunk.chunklet(i);
         // adjust size of obfuscate hash to match size of chunklet
         std::string resized_obs_hash;
-        ResizeObfuscationHash(obfuscate_hash,
+        self_encryption_utils::ResizeObfuscationHash(obfuscate_hash,
             static_cast<boost::uint16_t>(this_chunklet.size()),
             &resized_obs_hash);
         std::string decrypt;
@@ -661,20 +690,6 @@ bool SelfEncryption::HashUnique(const maidsafe::DataMap &dm, bool pre_enc,
       }
     }
   }
-  return true;
-}
-
-bool SelfEncryption::ResizeObfuscationHash(const std::string &obfuscate_hash,
-                                           const boost::uint16_t &length,
-                                           std::string *resized_obs_hash) {
-  *resized_obs_hash = obfuscate_hash;
-  boost::int32_t length_difference = length - obfuscate_hash.size();
-  std::string appendix = obfuscate_hash;
-  while (length_difference > 0) {
-    resized_obs_hash->append(appendix);
-    length_difference = length - resized_obs_hash->size();
-  }
-  resized_obs_hash->resize(length);
   return true;
 }
 

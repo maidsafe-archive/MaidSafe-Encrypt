@@ -345,14 +345,14 @@ void Contacts::onSendMessageClicked() {
 
       QPoint loc = this->mapToGlobal(this->pos());
       QRect rec(QApplication::desktop()->availableGeometry(mess_));
-      rec.moveTopLeft(QPoint(-420, -255)); 
+      rec.moveTopLeft(QPoint(-420, -255));
 
       int count = 0;
       while (!rec.contains(loc, true)) {
         if (count < 20) {
         loc.setX(loc.x() - 50);
         if (loc.y() > 100)
-          loc.setY(loc.y() - 25);        
+          loc.setY(loc.y() - 25);
         } else {
           loc.setX(400);
           loc.setY(400);
@@ -419,13 +419,13 @@ void Contacts::onFileSendClicked() {
 #endif
 
 #ifdef __WIN32__
-  root = QString("%1:\\My Files").
+  root = QString("%1:\\" + TidyPath(kRootSubdir[0][0])).
          arg(ClientController::instance()->WinDrive());
 
 #else
   root = QString::fromStdString(file_system::MaidsafeFuseDir(
-        ClientController::instance()->SessionName()).string() +
-      "/My Files");
+             ClientController::instance()->SessionName()).string() +
+             kRootSubdir[0][0]);
 
 #endif
 
@@ -665,7 +665,7 @@ void Contacts::onDirectoryEntered(const QString& dir) {
   root = QString(ClientController::instance()->WinDrive());
 
   if (!dir.startsWith(root, Qt::CaseInsensitive)) {
-    root = QString("%1:\\My Files").
+    root = QString("%1:\\" + TidyPath(kRootSubdir[0][0])).
          arg(ClientController::instance()->WinDrive());
     qfd->setDirectory(root);
   }
@@ -675,8 +675,8 @@ void Contacts::onDirectoryEntered(const QString& dir) {
 
   if (!dir.startsWith(root, Qt::CaseInsensitive)) {
     root = QString::fromStdString(file_system::MaidsafeFuseDir(
-        ClientController::instance()->SessionName()).string() +
-        "/My Files");
+               ClientController::instance()->SessionName()).string() +
+               kRootSubdir[0][0]);
     qfd->setDirectory(root);
   }
 #endif

@@ -54,16 +54,16 @@ class VaultRpcs;
 template <typename T1, typename T2>
 struct RemoteOpData {
   struct RemoteOpHolder {
-    explicit RemoteOpHolder(const std::string &id)
+    explicit RemoteOpHolder(std::string id)
         : node_id(id), response(), controller(new rpcprotocol::Controller) {
-      controller->set_timeout(20);
+      controller->set_timeout(120);
     }
     std::string node_id;
     T2 response;
     boost::shared_ptr<rpcprotocol::Controller> controller;
   };
   RemoteOpData(T1 req,
-               kad::KadId kadkey,
+               std::string kadkey,
                int found_local_res,
                VoidFuncOneInt cb,
                boost::int16_t trans_id,
@@ -83,7 +83,7 @@ struct RemoteOpData {
     data_holders.reserve(k);
   }
   T1 request;
-  kad::KadId kad_key;
+  std::string kad_key;
   int found_local_result;
   VoidFuncOneInt callback;
   boost::int16_t transport_id;
@@ -110,7 +110,7 @@ struct CacheChunkData {
                      cb(),
                      request(),
                      response(),
-                     controller() {}
+                     controller() { controller.set_timeout(300); }
   std::string chunkname;
   kad::ContactInfo kc;
   VoidFuncOneInt cb;
@@ -126,20 +126,22 @@ struct CacheChunkData {
 template <typename T1, typename T2, typename T3>
 struct GetInfoData {
   struct GetInfoOpHolder {
-    GetInfoOpHolder(const kad::Contact &contct, const T1 &req)
+    GetInfoOpHolder(kad::Contact contct, T1 req)
         : contact(contct),
           request(req),
           response(),
-          controller(new rpcprotocol::Controller) {}
+          controller(new rpcprotocol::Controller) {
+      controller->set_timeout(120);
+    }
     kad::Contact contact;
     T1 request;
     T2 response;
     boost::shared_ptr<rpcprotocol::Controller> controller;
   };
   GetInfoData(T3 cb,
-              const boost::int16_t &trans_id,
-              const std::vector<kad::Contact> &contcts,
-              const std::vector<T1> &reqs)
+              boost::int16_t trans_id,
+              std::vector<kad::Contact> contcts,
+              std::vector<T1> reqs)
       : callback(cb),
         transport_id(trans_id),
         mutex(),
@@ -162,13 +164,13 @@ struct GetInfoData {
   boost::uint16_t response_count;
 };
 
-typedef boost::function<void (const ReturnCode&,
+typedef boost::function<void (ReturnCode,
     const VaultAccountSet::VaultAccount&)> VoidFuncIntAccount;
 
-typedef boost::function<void (const ReturnCode&,
+typedef boost::function<void (ReturnCode,
     const ChunkInfoMap::VaultChunkInfo&)> VoidFuncIntChunkInfo;
 
-typedef boost::function<void (const ReturnCode&,
+typedef boost::function<void (ReturnCode,
     const VaultBufferPacketMap::VaultBufferPacket&)> VoidFuncIntBufferPacket;
 
 typedef GetInfoData<maidsafe::GetAccountRequest,
@@ -186,8 +188,7 @@ const size_t kParallelRequests(2);
 class VaultServiceLogic {
  public:
   VaultServiceLogic(const boost::shared_ptr<VaultRpcs> &vault_rpcs,
-                    const boost::shared_ptr<kad::KNode> &knode,
-                    const boost::uint8_t k);
+                    const boost::shared_ptr<maidsafe::KadOps> &kadops);
   virtual ~VaultServiceLogic() {}
   bool Init(const std::string &pmid,
             const std::string &pmid_public_key,
@@ -240,16 +241,18 @@ class VaultServiceLogic {
   FRIEND_TEST(VaultServiceLogicTest, FUNC_MAID_VSL_RemoteVaultAbleToStore);
   FRIEND_TEST(AccountAmendmentHandlerTest, BEH_MAID_AAH_AssessAmendment);
   FRIEND_TEST(AccountAmendmentHandlerTest, BEH_MAID_AAH_CreateNewAmendment);
+  FRIEND_TEST(AccountAmendmentHandlerTest, BEH_MAID_AAH_CreateNewWithExpecteds);
   FRIEND_TEST(AccountAmendmentHandlerTest, BEH_MAID_AAH_ProcessRequest);
-  FRIEND_TEST(MockVaultServicesTest, BEH_MAID_ServicesAmendAccount);
+  FRIEND_TEST(MockVaultServicesTest, FUNC_MAID_ServicesAmendAccount);
   friend class MockVsl;
   friend class MockVaultServicesTest;
   // First callback method in e.g. AmendRemoteAccount operation.  Called once by
-  // knode_->FindKNodes (when finding account holders' details).  T is
+  // kad_ops_->FindKNodes (when finding account holders' details).  T is
   // AmendRemoteAccountOpData or RemoteAccountStatusOpData.
   template <typename T>
   void RemoteOpStageTwo(boost::shared_ptr<T> data,
-                        const std::string &find_nodes_response);
+                        const maidsafe::ReturnCode &result,
+                        const std::vector<kad::Contact> &closest_nodes);
   // Specialisations for sending appropriate RPCs
   template <typename T>
   void SendRpcs(boost::shared_ptr<T> data);
@@ -263,10 +266,10 @@ class VaultServiceLogic {
   void RemoteOpStageThree(boost::uint16_t index, boost::shared_ptr<T> data);
   // Specialisations defining appropriate success conditions
   template <typename T>
-  void AssessResult(const ReturnCode &result, boost::shared_ptr<T> data);
+  void AssessResult(ReturnCode result, boost::shared_ptr<T> data);
   void CacheChunkCallback(boost::shared_ptr<CacheChunkData> data);
   template <typename T>
-  void GetInfoCallback(const boost::uint16_t &index, boost::shared_ptr<T> data);
+  void GetInfoCallback(boost::uint16_t index, boost::shared_ptr<T> data);
   void SendInfoRpc(const boost::uint16_t &index,
                    boost::shared_ptr<GetAccountData> data);
   void SendInfoRpc(const boost::uint16_t &index,
@@ -278,15 +281,14 @@ class VaultServiceLogic {
                                const std::string &recipient_id);
 
   boost::shared_ptr<VaultRpcs> vault_rpcs_;
-  boost::shared_ptr<kad::KNode> knode_;
   boost::shared_ptr<maidsafe::KadOps> kad_ops_;
   kad::Contact our_details_;
   std::string pmid_, pmid_public_key_, pmid_public_signature_, pmid_private_;
   bool online_;
   boost::mutex online_mutex_;
-  boost::uint8_t K_;
-  boost::uint16_t upper_threshold_;
-  boost::uint16_t lower_threshold_;
+  const boost::uint8_t K_;
+  const boost::uint16_t kUpperThreshold_;
+  const boost::uint16_t kLowerThreshold_;
 };
 
 }  // namespace maidsafe_vault

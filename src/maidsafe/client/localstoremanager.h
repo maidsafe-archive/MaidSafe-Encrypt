@@ -31,6 +31,7 @@
 
 #include <list>
 #include <map>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -46,11 +47,12 @@ class ChunkStore;
 
 class LocalStoreManager : public StoreManagerInterface {
  public:
-  explicit LocalStoreManager(boost::shared_ptr<ChunkStore> client_chunkstore,
-                             const boost::uint8_t k);
+  LocalStoreManager(boost::shared_ptr<ChunkStore> client_chunkstore,
+                    const boost::uint8_t &k,
+                    const fs::path &db_directory);
   virtual ~LocalStoreManager();
-  virtual void Init(int, kad::VoidFunctorOneString cb, fs::path db_directory);
-  virtual void Close(kad::VoidFunctorOneString cb, bool);
+  virtual void Init(VoidFuncOneInt callback, const boost::uint16_t &port);
+  virtual void Close(VoidFuncOneInt callback, bool cancel_pending_ops);
   virtual void CleanUpTransport() {}
   virtual void StopRvPing() {}
   virtual bool NotDoneWithUploading();
@@ -79,7 +81,6 @@ class LocalStoreManager : public StoreManagerInterface {
                            PacketType system_packet_type,
                            DirType dir_type,
                            const std::string &msid,
-                           IfPacketExists if_packet_exists,
                            const VoidFuncOneInt &cb);
   // Deletes all values for the specified key
   virtual void DeletePacket(const std::string &packet_name,
@@ -154,18 +155,19 @@ class LocalStoreManager : public StoreManagerInterface {
                             const std::string &rec_public_key,
                             const MessageType &m_type,
                             const boost::uint32_t &timestamp);
-  void SigningPublicKey(PacketType packet_type, DirType dt,
-                        const std::string &msid, std::string *public_key);
-  void SigningPrivateKey(PacketType packet_type, DirType dt,
-                         const std::string &msid, std::string *private_key);
-  void CreateSerialisedSignedValue(const std::string value,
-                                   const PacketType &pt,
-                                   const std::string &msid,
+  void CreateSerialisedSignedValue(const std::string &value,
+                                   const std::string &private_key,
                                    std::string *ser_gp);
+  void ExecStringCallback(kad::VoidFunctorOneString cb,
+                          MaidsafeRpcResult result);
   void ExecuteReturnSignal(const std::string &chunkname, ReturnCode rc);
+  void ExecReturnCodeCallback(VoidFuncOneInt cb, ReturnCode rc);
+  void ExecReturnLoadPacketCallback(LoadPacketFunctor cb,
+                                    std::vector<std::string> results,
+                                    ReturnCode rc);
 
-  boost::uint8_t K_;
-  boost::uint16_t upper_threshold_;
+  const boost::uint8_t K_;
+  const boost::uint16_t kUpperThreshold_;
   CppSQLite3DB db_;
   VaultBufferPacketHandler vbph_;
   boost::mutex mutex_;

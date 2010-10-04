@@ -18,7 +18,11 @@
 * ============================================================================
 */
 
+#include <maidsafe/transport/transporthandler-api.h>
+#include <maidsafe/rpcprotocol/channelmanager-api.h>
+
 #include "tests/maidsafe/mockkadops.h"
+#include "maidsafe/chunkstore.h"
 
 namespace test_kadops {
 static const boost::uint8_t K(4);
@@ -29,7 +33,11 @@ namespace maidsafe {
 class KadOpsTest : public testing::Test {
  protected:
   KadOpsTest()
-    : mko_(boost::shared_ptr<kad::KNode>()),
+    : transport_handler_(),
+      channel_manager_(&transport_handler_),
+      chunkstore_(new ChunkStore("Chunkstore", 9999999, 0)),
+      mko_(&transport_handler_, &channel_manager_, kad::CLIENT, "", "", false,
+           false, test_kadops::K, chunkstore_),
       crypto_(),
       fail_parse_result_(
         mock_kadops::MakeFindNodesResponse(mock_kadops::kFailParse,
@@ -48,6 +56,9 @@ class KadOpsTest : public testing::Test {
     crypto_.set_hash_algorithm(crypto::SHA_512);
     crypto_.set_symm_algorithm(crypto::AES_256);
   }
+  transport::TransportHandler transport_handler_;
+  rpcprotocol::ChannelManager channel_manager_;
+  boost::shared_ptr<ChunkStore> chunkstore_;
   MockKadOps mko_;
   crypto::Crypto crypto_;
   std::vector<std::string> fail_parse_pmids_, fail_pmids_, few_pmids_,
@@ -55,55 +66,59 @@ class KadOpsTest : public testing::Test {
   std::string fail_parse_result_, fail_result_, few_result_, good_result_;
 };
 
-TEST_F(KadOpsTest, BEH_MAID_FindCloseNodes) {
+TEST_F(KadOpsTest, BEH_MAID_BlockingFindKClosestNodes) {
   std::vector<kad::Contact> contacts;
   kad::Contact dummy_contact = kad::Contact(crypto_.Hash("Dummy", "",
       crypto::STRING_STRING, false), "192.168.1.0", 4999);
 
   // Expectations
-  EXPECT_CALL(mko_, FindKClosestNodes(kad::KadId(),
-      testing::An< std::vector<kad::Contact>* >()))
-      .WillRepeatedly(testing::Invoke(&mko_, &MockKadOps::FindCloseNodesReal));
-  EXPECT_CALL(mko_, FindKClosestNodes(kad::KadId(),
-      testing::An<const kad::VoidFunctorOneString&>()))
+  EXPECT_CALL(mko_, FindKClosestNodes("",
+      testing::An<VoidFuncIntContacts>()))
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_kadops::RunCallback, fail_parse_result_, _1))))
+          boost::bind(&MockKadOps::ThreadedFindKClosestNodesCallback, &mko_,
+                      fail_parse_result_, _1))))                       // Call 2
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_kadops::RunCallback, fail_result_, _1))))  // Call 3
+          boost::bind(&MockKadOps::ThreadedFindKClosestNodesCallback, &mko_,
+                      fail_result_, _1))))                             // Call 3
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_kadops::RunCallback, few_result_, _1))))   // Call 4
+          boost::bind(&MockKadOps::ThreadedFindKClosestNodesCallback, &mko_,
+                      few_result_, _1))))                              // Call 4
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_kadops::RunCallback, good_result_, _1))))  // Call 5
+          boost::bind(&MockKadOps::ThreadedFindKClosestNodesCallback, &mko_,
+                      good_result_, _1))))                             // Call 5
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_kadops::RunCallback, good_result_, _1))));      // 6
+          boost::bind(&MockKadOps::ThreadedFindKClosestNodesCallback, &mko_,
+                      good_result_, _1))));                            // Call 6
 
   // Call 1
-  ASSERT_EQ(kFindNodesError, mko_.FindKClosestNodes(kad::KadId(), NULL));
+  ASSERT_EQ(kFindNodesError,
+            mko_.BlockingFindKClosestNodes("", NULL));
 
   // Call 2
   contacts.push_back(dummy_contact);
   ASSERT_EQ(size_t(1), contacts.size());
   ASSERT_EQ(kFindNodesParseError,
-            mko_.FindKClosestNodes(kad::KadId(), &contacts));
+            mko_.BlockingFindKClosestNodes("", &contacts));
   ASSERT_EQ(size_t(0), contacts.size());
 
   // Call 3
   contacts.push_back(dummy_contact);
   ASSERT_EQ(size_t(1), contacts.size());
-  ASSERT_EQ(kFindNodesFailure, mko_.FindKClosestNodes(kad::KadId(), &contacts));
+  ASSERT_EQ(kFindNodesFailure,
+            mko_.BlockingFindKClosestNodes("", &contacts));
   ASSERT_EQ(size_t(0), contacts.size());
 
   // Call 4
-  ASSERT_EQ(kSuccess, mko_.FindKClosestNodes(kad::KadId(), &contacts));
+  ASSERT_EQ(kSuccess, mko_.BlockingFindKClosestNodes("", &contacts));
   ASSERT_EQ(few_pmids_.size(), contacts.size());
 
   // Call 5
-  ASSERT_EQ(kSuccess, mko_.FindKClosestNodes(kad::KadId(), &contacts));
+  ASSERT_EQ(kSuccess, mko_.BlockingFindKClosestNodes("", &contacts));
   ASSERT_EQ(size_t(test_kadops::K), contacts.size());
 
   // Call 6
   contacts.push_back(dummy_contact);
-  ASSERT_EQ(kSuccess, mko_.FindKClosestNodes(kad::KadId(), &contacts));
+  ASSERT_EQ(kSuccess, mko_.BlockingFindKClosestNodes("", &contacts));
   ASSERT_EQ(size_t(test_kadops::K), contacts.size());
 }
 
@@ -123,7 +138,7 @@ TEST_F(KadOpsTest, BEH_MAID_ContactWithinClosest) {
                      "127.0.0.1", 0);
   kad::Contact not_close(base::DecodeFromHex(std::string(2* kKeySize, 'f')),
                          "127.0.0.1", 0);
-  kad::KadId key(std::string(2* kKeySize, '0'));
+  std::string key(kKeySize, '0');
 
   ASSERT_TRUE(ContactWithinClosest(key, close, ctc));
   ASSERT_FALSE(ContactWithinClosest(key, not_close, ctc));
@@ -147,14 +162,11 @@ TEST_F(KadOpsTest, BEH_MAID_RemoveKadContact) {
     ctc.push_back(contact);
   }
   ASSERT_EQ(size_t(3), ctc.size());
-  ASSERT_FALSE(RemoveKadContact(kad::KadId(crypto_.Hash("ddd", "",
-                                           crypto::STRING_STRING, false)),
-                                &ctc));
+  ASSERT_FALSE(RemoveKadContact(crypto_.Hash("ddd", "", crypto::STRING_STRING,
+                                             false), &ctc));
   ASSERT_EQ(size_t(3), ctc.size());
-  ASSERT_TRUE(RemoveKadContact(kad::KadId(crypto_.Hash("bbb", "",
-                                                       crypto::STRING_STRING,
-                                                       false)),
-                               &ctc));
+  ASSERT_TRUE(RemoveKadContact(crypto_.Hash("bbb", "", crypto::STRING_STRING,
+                                            false), &ctc));
   ASSERT_EQ(size_t(2), ctc.size());
 }
 

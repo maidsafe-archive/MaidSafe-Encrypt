@@ -41,8 +41,12 @@ bool InfoSynchroniser::ShouldFetch(const std::string &id,
     return false;
   else
     closest_nodes->clear();
-  if (id == pmid_)
+  if (id == pmid_) {
+#ifdef DEBUG
+    printf("In InfoSynchroniser::ShouldFetch: this is our own PMID.\n");
+#endif
     return false;
+  }
   {
     boost::uint32_t expiry_time(base::GetEpochTime() + kInfoEntryLifespan);
     boost::mutex::scoped_lock lock(mutex_);
@@ -52,6 +56,10 @@ bool InfoSynchroniser::ShouldFetch(const std::string &id,
     if (it != info_entries_.end() &&
         !(info_entries_.key_comp()(id, it->first))) {
       it->second = expiry_time;
+#ifdef DEBUG
+      printf("In InfoSynchroniser::ShouldFetch: Entry already exists (either "
+             "we shouldn't hold this account or we're already fetching it).\n");
+#endif
       return false;
     } else {
       info_entries_.insert(it, InfoEntryMap::value_type(id, expiry_time));
@@ -70,11 +78,13 @@ bool InfoSynchroniser::ShouldFetch(const std::string &id,
   kad::Contact our_contact(pmid_, "", 0);
   std::for_each(nodes.begin(), nodes.end(), boost::bind(
       &InfoSynchroniser::AddNodeToClosest, this, _1, closest_nodes));
-  if (maidsafe::ContactWithinClosest(kad::KadId(id), our_contact,
-                                     *closest_nodes)) {
+  if (maidsafe::ContactWithinClosest(id, our_contact, *closest_nodes)) {
     return true;
   } else {
     closest_nodes->clear();
+#ifdef DEBUG
+    printf("In InfoSynchroniser::ShouldFetch: Not within closest nodes.\n");
+#endif
     return false;
   }
 }
@@ -99,7 +109,9 @@ void InfoSynchroniser::PruneMap() {
 void InfoSynchroniser::AddNodeToClosest(
     const base::PublicRoutingTableTuple &node,
     std::vector<kad::Contact> *closest) {
-  closest->push_back(kad::Contact(node.kademlia_id, "", 0));
+  closest->push_back(kad::Contact(node.kademlia_id, node.host_ip,
+                                  node.host_port, node.host_ip, node.host_port,
+                                  node.rendezvous_ip, node.rendezvous_port));
 }
 
 }  // namespace maidsafe_vault

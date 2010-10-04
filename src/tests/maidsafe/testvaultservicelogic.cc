@@ -48,8 +48,9 @@ MATCHER_P(EqualsContact, kad_contact, "") {
 
 TEST_F(VaultServiceLogicTest, BEH_MAID_VSL_Offline) {
   boost::shared_ptr<MockVaultRpcs> mock_rpcs(new MockVaultRpcs(NULL, NULL));
-  VaultServiceLogic vsl(mock_rpcs, boost::shared_ptr<kad::KNode>(),
-                        test_vault_service_logic::K);
+  VaultServiceLogic vsl(mock_rpcs, boost::shared_ptr<maidsafe::KadOps>(
+      new maidsafe::MockKadOps(NULL, NULL, kad::VAULT, "", "", false, false,
+      test_vault_service_logic::K, boost::shared_ptr<maidsafe::ChunkStore>())));
 
   maidsafe::AddToReferenceListRequest arr;
   boost::mutex mutex;
@@ -96,8 +97,9 @@ TEST_F(VaultServiceLogicTest, BEH_MAID_VSL_Offline) {
 TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_AddToRemoteRefList) {
   // Setup
   boost::shared_ptr<MockVaultRpcs> mock_rpcs(new MockVaultRpcs(NULL, NULL));
-  MockVsl vsl(mock_rpcs, boost::shared_ptr<kad::KNode>(),
-              test_vault_service_logic::K);
+  MockVsl vsl(mock_rpcs, boost::shared_ptr<maidsafe::KadOps>(
+      new maidsafe::MockKadOps(NULL, NULL, kad::VAULT, "", "", false, false,
+      test_vault_service_logic::K, boost::shared_ptr<maidsafe::ChunkStore>())));
   vsl.pmid_ = pmid_;
   vsl.pmid_public_signature_ = pmid_public_signature_;
   vsl.pmid_private_ = pmid_private_;
@@ -147,26 +149,34 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_AddToRemoteRefList) {
   EXPECT_CALL(vsl, AddToRemoteRefList(testing::_, testing::_, testing::_,
                                       testing::_))
       .WillRepeatedly(testing::Invoke(&vsl, &MockVsl::AddToRemoteRefListReal));
-  EXPECT_CALL(*vsl.kadops(), FindKClosestNodes(kad::KadId(far_chunkname),
-      testing::An<const kad::VoidFunctorOneString&>()))
+  EXPECT_CALL(*vsl.kadops(), FindKClosestNodes(far_chunkname,
+      testing::An<maidsafe::VoidFuncIntContacts>()))
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_kadops::RunCallback, fail_parse_result_, _1))))
+          boost::bind(&maidsafe::MockKadOps::ThreadedFindKClosestNodesCallback,
+                      vsl.kadops(), fail_parse_result_, _1))))         // Call 1
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_kadops::RunCallback, fail_result_, _1))))  // Call 2
+          boost::bind(&maidsafe::MockKadOps::ThreadedFindKClosestNodesCallback,
+                      vsl.kadops(), fail_result_, _1))))               // Call 2
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_kadops::RunCallback, few_result_, _1))))  // Call 3
+          boost::bind(&maidsafe::MockKadOps::ThreadedFindKClosestNodesCallback,
+                      vsl.kadops(), few_result_, _1))))                // Call 3
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_kadops::RunCallback, good_result_, _1))))  // Call 4
+          boost::bind(&maidsafe::MockKadOps::ThreadedFindKClosestNodesCallback,
+                      vsl.kadops(), good_result_, _1))))               // Call 4
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_kadops::RunCallback, good_result_, _1))))  // Call 6
+          boost::bind(&maidsafe::MockKadOps::ThreadedFindKClosestNodesCallback,
+                      vsl.kadops(), good_result_, _1))))               // Call 6
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_kadops::RunCallback, good_result_, _1))))  // Call 7
+          boost::bind(&maidsafe::MockKadOps::ThreadedFindKClosestNodesCallback,
+                      vsl.kadops(), good_result_, _1))))               // Call 7
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_kadops::RunCallback, good_result_, _1))));  // 8
-  EXPECT_CALL(*vsl.kadops(), FindKClosestNodes(kad::KadId(pmid_),
-      testing::An<const kad::VoidFunctorOneString&>()))  // Call 5
+          boost::bind(&maidsafe::MockKadOps::ThreadedFindKClosestNodesCallback,
+                      vsl.kadops(), good_result_, _1))));              // Call 8
+  EXPECT_CALL(*vsl.kadops(), FindKClosestNodes(pmid_,
+      testing::An<maidsafe::VoidFuncIntContacts>()))                   // Call 5
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_kadops::RunCallback, good_result_less_one_, _1))));
+          boost::bind(&maidsafe::MockKadOps::ThreadedFindKClosestNodesCallback,
+                      vsl.kadops(), good_result_less_one_, _1))));
 
   for (size_t i = 0; i < good_contacts_.size(); ++i) {
     if (i < good_contacts_.size() - 1) {
@@ -311,8 +321,9 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_AddToRemoteRefList) {
 TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_AmendRemoteAccount) {
   // Setup
   boost::shared_ptr<MockVaultRpcs> mock_rpcs(new MockVaultRpcs(NULL, NULL));
-  MockVsl vsl(mock_rpcs, boost::shared_ptr<kad::KNode>(),
-              test_vault_service_logic::K);
+  MockVsl vsl(mock_rpcs, boost::shared_ptr<maidsafe::KadOps>(
+      new maidsafe::MockKadOps(NULL, NULL, kad::VAULT, "", "", false, false,
+      test_vault_service_logic::K, boost::shared_ptr<maidsafe::ChunkStore>())));
   vsl.pmid_ = pmid_;
   vsl.pmid_public_signature_ = pmid_public_signature_;
   vsl.pmid_private_ = pmid_private_;
@@ -372,24 +383,32 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_AmendRemoteAccount) {
   EXPECT_CALL(vsl, AmendRemoteAccount(testing::_, testing::_, testing::_,
                                       testing::_))
       .WillRepeatedly(testing::Invoke(&vsl, &MockVsl::AmendRemoteAccountReal));
-  EXPECT_CALL(*vsl.kadops(), FindKClosestNodes(kad::KadId(account_name),
-      testing::An<const kad::VoidFunctorOneString&>()))
+  EXPECT_CALL(*vsl.kadops(), FindKClosestNodes(account_name,
+      testing::An<maidsafe::VoidFuncIntContacts>()))
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_kadops::RunCallback, fail_parse_result_, _1))))
+          boost::bind(&maidsafe::MockKadOps::ThreadedFindKClosestNodesCallback,
+                      vsl.kadops(), fail_parse_result_, _1))))         // Call 1
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_kadops::RunCallback, fail_result_, _1))))  // Call 2
+          boost::bind(&maidsafe::MockKadOps::ThreadedFindKClosestNodesCallback,
+                      vsl.kadops(), fail_result_, _1))))               // Call 2
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_kadops::RunCallback, few_result_, _1))))  // Call 3
+          boost::bind(&maidsafe::MockKadOps::ThreadedFindKClosestNodesCallback,
+                      vsl.kadops(), few_result_, _1))))                // Call 3
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_kadops::RunCallback, good_result_, _1))))  // Call 4
+          boost::bind(&maidsafe::MockKadOps::ThreadedFindKClosestNodesCallback,
+                      vsl.kadops(), good_result_, _1))))               // Call 4
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_kadops::RunCallback, good_result_less_one_, _1))))
+          boost::bind(&maidsafe::MockKadOps::ThreadedFindKClosestNodesCallback,
+                      vsl.kadops(), good_result_less_one_, _1))))      // Call 5
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_kadops::RunCallback, good_result_, _1))))  // Call 6
+          boost::bind(&maidsafe::MockKadOps::ThreadedFindKClosestNodesCallback,
+                      vsl.kadops(), good_result_, _1))))               // Call 6
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_kadops::RunCallback, good_result_, _1))))  // Call 7
+          boost::bind(&maidsafe::MockKadOps::ThreadedFindKClosestNodesCallback,
+                      vsl.kadops(), good_result_, _1))))               // Call 7
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_kadops::RunCallback, good_result_, _1))));  // 8
+          boost::bind(&maidsafe::MockKadOps::ThreadedFindKClosestNodesCallback,
+                      vsl.kadops(), good_result_, _1))));              // Call 8
 
   for (size_t i = 0; i < good_contacts_.size(); ++i) {
     if (i < good_contacts_.size() - 1) {
@@ -532,8 +551,9 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_AmendRemoteAccount) {
 TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_RemoteVaultAbleToStore) {
   // Setup
   boost::shared_ptr<MockVaultRpcs> mock_rpcs(new MockVaultRpcs(NULL, NULL));
-  MockVsl vsl(mock_rpcs, boost::shared_ptr<kad::KNode>(),
-              test_vault_service_logic::K);
+  MockVsl vsl(mock_rpcs, boost::shared_ptr<maidsafe::KadOps>(
+      new maidsafe::MockKadOps(NULL, NULL, kad::VAULT, "", "", false, false,
+      test_vault_service_logic::K, boost::shared_ptr<maidsafe::ChunkStore>())));
   vsl.pmid_ = pmid_;
   vsl.pmid_public_signature_ = pmid_public_signature_;
   vsl.pmid_private_ = pmid_private_;
@@ -552,6 +572,7 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_RemoteVaultAbleToStore) {
     if (i < good_contacts_.size() - 1)
       good_responses_less_one.push_back(acc_status_response);
   }
+
   std::vector<maidsafe::AccountStatusResponse>
       bad_pmid_responses(good_responses);
   std::vector<maidsafe::AccountStatusResponse>
@@ -561,7 +582,7 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_RemoteVaultAbleToStore) {
   for (size_t i = test_vault_service_logic::lower_threshold - 1;
        i < good_contacts_.size(); ++i) {
     bad_pmid_responses.at(i).set_pmid(
-        good_contacts_.at(i - 1).node_id().String());
+        good_contacts_.at((i + 1) % good_contacts_.size()).node_id().String());
     too_few_ack_responses.at(i).set_result(kNack);
     fail_initialise_responses.at(i).clear_result();
   }
@@ -580,24 +601,32 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_RemoteVaultAbleToStore) {
       boost::bind(&mock_vsl::CopyResult, _1, &mutex, &cv, &result);
 
   // Expectations
-  EXPECT_CALL(*vsl.kadops(), FindKClosestNodes(kad::KadId(account_name),
-      testing::An<const kad::VoidFunctorOneString&>()))
+  EXPECT_CALL(*vsl.kadops(), FindKClosestNodes(account_name,
+      testing::An<maidsafe::VoidFuncIntContacts>()))
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_kadops::RunCallback, fail_parse_result_, _1))))
+          boost::bind(&maidsafe::MockKadOps::ThreadedFindKClosestNodesCallback,
+                      vsl.kadops(), fail_parse_result_, _1))))         // Call 1
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_kadops::RunCallback, fail_result_, _1))))  // Call 2
+          boost::bind(&maidsafe::MockKadOps::ThreadedFindKClosestNodesCallback,
+                      vsl.kadops(), fail_result_, _1))))               // Call 2
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_kadops::RunCallback, few_result_, _1))))  // Call 3
+          boost::bind(&maidsafe::MockKadOps::ThreadedFindKClosestNodesCallback,
+                      vsl.kadops(), few_result_, _1))))                // Call 3
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_kadops::RunCallback, good_result_, _1))))  // Call 4
+          boost::bind(&maidsafe::MockKadOps::ThreadedFindKClosestNodesCallback,
+                      vsl.kadops(), good_result_, _1))))               // Call 4
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_kadops::RunCallback, good_result_less_one_, _1))))
+          boost::bind(&maidsafe::MockKadOps::ThreadedFindKClosestNodesCallback,
+                      vsl.kadops(), good_result_less_one_, _1))))      // Call 5
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_kadops::RunCallback, good_result_, _1))))  // Call 6
+          boost::bind(&maidsafe::MockKadOps::ThreadedFindKClosestNodesCallback,
+                      vsl.kadops(), good_result_, _1))))               // Call 6
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_kadops::RunCallback, good_result_, _1))))  // Call 7
+          boost::bind(&maidsafe::MockKadOps::ThreadedFindKClosestNodesCallback,
+                      vsl.kadops(), good_result_, _1))))               // Call 7
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_kadops::RunCallback, good_result_, _1))));  // 8
+          boost::bind(&maidsafe::MockKadOps::ThreadedFindKClosestNodesCallback,
+                      vsl.kadops(), good_result_, _1))));              // Call 8
 
   for (size_t i = 0; i < good_contacts_.size(); ++i) {
     if (i < good_contacts_.size() - 1) {
@@ -640,6 +669,7 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_RemoteVaultAbleToStore) {
                               testing::WithArgs<6>(testing::Invoke(
                   boost::bind(&mock_vsl::ThreadedDoneRun, 100, 5000, _1)))));
   }
+
   for (size_t i = 0; i < good_contacts_.size() - 1; ++i) {
       EXPECT_CALL(*mock_rpcs, AccountStatus(EqualsContact(good_contacts_.at(i)),
           false, 0, testing::_, testing::_, testing::_, testing::_))  // Call 5

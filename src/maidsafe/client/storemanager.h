@@ -76,16 +76,13 @@ typedef boost::function<void(const std::string&, const int&)> IMStatusNotifier;
 class StoreManagerInterface {
  public:
   virtual ~StoreManagerInterface() {}
-  virtual void Init(int port,
-                    kad::VoidFunctorOneString cb,
-                    fs::path db_directory)=0;
-  virtual void Close(kad::VoidFunctorOneString cb, bool cancel_pending_ops)=0;
+  virtual void Init(VoidFuncOneInt callback, const boost::uint16_t &port)=0;
+  virtual void Close(VoidFuncOneInt callback, bool cancel_pending_ops)=0;
   virtual void CleanUpTransport()=0;
   virtual void StopRvPing()=0;
   virtual bool NotDoneWithUploading()=0;
   virtual bool KeyUnique(const std::string &key, bool check_local)=0;
-  virtual void KeyUnique(const std::string &key,
-                         bool check_local,
+  virtual void KeyUnique(const std::string &key, bool check_local,
                          const VoidFuncOneInt &cb)=0;
 
   // Chunks
@@ -108,7 +105,6 @@ class StoreManagerInterface {
                            PacketType system_packet_type,
                            DirType dir_type,
                            const std::string &msid,
-                           IfPacketExists if_packet_exists,
                            const VoidFuncOneInt &cb)=0;
   virtual void DeletePacket(const std::string &packet_name,
                             const std::vector<std::string> values,

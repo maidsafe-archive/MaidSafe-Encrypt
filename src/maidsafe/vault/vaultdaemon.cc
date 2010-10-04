@@ -57,7 +57,8 @@ VaultDaemon::VaultDaemon(const int &port, const std::string &vault_dir,
       registration_channel_(),
       registration_service_(),
       config_mutex_(),
-      K_(k) {
+      K_(k),
+      test_config_postfix_() {
   boost::int16_t trans_id;
   transport_handler_.Register(&local_udt_transport_, &trans_id);
   transport_handler_.Register(&global_udt_transport_, &trans_id);
@@ -122,9 +123,9 @@ bool VaultDaemon::TakeOwnership() {
     }
   }
   WriteToLog("Vault has been owned.\n");
-  WriteToLog("Vault ID:         " + base::EncodeToHex(pdvault_->node_id()));
-  WriteToLog("Vault IP & port:  " + pdvault_->host_ip()+":"+
-      base::IntToString(pdvault_->host_port()));
+  WriteToLog("Vault ID:         " + base::EncodeToHex(pdvault_->pmid()));
+//  WriteToLog("Vault IP & port:  " + pdvault_->host_ip()+":"+
+//      base::IntToString(pdvault_->host_port()));
   StopRegistrationService();
   return true;
 }
@@ -142,8 +143,8 @@ int VaultDaemon::SetPaths() {
     WriteToLog(ex_.what());
     return kVaultDaemonException;
   }
-  config_file_ = app_path_ / ".config";
-  kad_config_file_ = app_path_ / ".kadconfig";
+  config_file_ = app_path_ / (".config" + test_config_postfix_);
+  kad_config_file_ = app_path_ / (".kadconfig" + test_config_postfix_);
   return kSuccess;
 }
 
@@ -279,11 +280,28 @@ bool VaultDaemon::StartNotOwnedVault() {
       keys.private_key(), crypto::STRING_STRING);
   std::string temp_pmid = co.Hash(keys.public_key() + signed_pubkey, "",
       crypto::STRING_STRING, true);
-  not_owned_path_ = app_path_ / ("Vault_" + temp_pmid.substr(0, 8));
+  not_owned_path_ = app_path_ / ("Vault_" + temp_pmid.substr(0, 16));
+  try {
+    if (fs::exists(not_owned_path_))
+      fs::remove_all(not_owned_path_);
+    fs::create_directories(not_owned_path_);
+  }
+  catch(const std::exception &e) {
+    WriteToLog("Can't create temp maidsafe vault dir.");
+    WriteToLog(e.what());
+    return false;
+  }
   boost::uint64_t space(1024 * 1024 * 1024);  // 1GB
   pdvault_.reset(new PDVault(keys.public_key(), keys.private_key(),
                              signed_pubkey, not_owned_path_, 0, false, false,
                              kad_config_file_, space, 0, K_));
+  // For testing, create empty .kadconfig in not_owned_path_ to avoid
+  // overwriting real .kadconfig on vault Leave().
+  if (!test_config_postfix_.empty()) {
+    std::fstream output((not_owned_path_.string() + "/.kadconfig").c_str(),
+        std::ios::out | std::ios::trunc | std::ios::binary);
+    output.close();
+  }
   pdvault_->Start(false);
   if (pdvault_->vault_status() == kVaultStopped) {
     WriteToLog("Failed to start a not owned vault - "
@@ -298,9 +316,9 @@ bool VaultDaemon::StartNotOwnedVault() {
   } else {
     WriteToLog("Vault started.  Waiting to be owned.\n");
   }
-  WriteToLog("Vault ID:         " + base::EncodeToHex(pdvault_->node_id()));
-  WriteToLog("Vault IP & port:  " + pdvault_->host_ip() + ":" +
-             base::IntToString(pdvault_->host_port()));
+  WriteToLog("Vault ID:         " + base::EncodeToHex(pdvault_->pmid()));
+//  WriteToLog("Vault IP & port:  " + pdvault_->host_ip() + ":" +
+//             base::IntToString(pdvault_->host_port()));
   WriteToLog("Config file will be written to " + config_file_.string());
   return true;
 }
@@ -310,10 +328,15 @@ int VaultDaemon::StopNotOwnedVault() {
   // TODO(Fraser#5#): 2010-02-26 - Should the old chunkstore be transferred?
   if (result == kSuccess) {
     try {
+      // TODO(Fraser#5#): 2010-06-24 - Merge this kadconfig with one which could
+      //                               passed through as part of Config?
+      fs::create_directories(vault_path_);
+      fs::copy_file((not_owned_path_ / ".kadconfig"),
+                    (vault_path_ / ".kadconfig"));
       fs::remove_all(not_owned_path_);
     }
     catch(const std::exception &e) {
-#ifdef DEUBG
+#ifdef DEBUG
       printf("In VaultDaemon::StopNotOwnedVault, %s\n", e.what());
 #endif
       result = kVaultDaemonException;

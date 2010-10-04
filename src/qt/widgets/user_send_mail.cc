@@ -78,7 +78,7 @@ void UserSendMail::onSendClicked(bool) {
     }
   }
   // generate random conv id
-  // QString conv = QString::fromStdString(base::RandomString(5));
+  // QString conv = QString::fromStdString(base::RandomAlphaNumericString(5));
   QString conv = ClientController::instance()->publicUsername();
 
   SendEmailThread* set = new SendEmailThread(subject, message, toList, ccList,

@@ -63,7 +63,7 @@ int ChunkInfoHandler::PrepareAddToWatchList(const std::string &chunk_name,
 
   // only request uploads if not already waiting
   std::list<WaitingListEntry>::iterator it = ci.waiting_list.begin();
-  while (it->pmid != pmid && it != ci.waiting_list.end()) {
+  while (it != ci.waiting_list.end() && it->pmid != pmid) {
     ++it;
   }
   if (it == ci.waiting_list.end()) {

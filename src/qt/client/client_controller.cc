@@ -32,7 +32,7 @@
 
 // core
 #include "fs/filesystem.h"
-#include "maidsafe/utils.h"
+#include "maidsafe/pdutils.h"
 #include "maidsafe/client/contacts.h"
 #include "maidsafe/client/sessionsingleton.h"
 #include "maidsafe/client/privateshares.h"
@@ -225,9 +225,9 @@ QDir ClientController::shareDirRoot(const QString& name) const {
 
 QDir ClientController::myFilesDirRoot(const QString& name) const {
   qDebug() << "ClientController::myFilesDirRoot:" << name;
-  QString pathInMaidsafe = QString("My Files%1%2")
-                          .arg(QDir::separator())
-                          .arg(name);
+  QString pathInMaidsafe = QString::fromStdString(
+                               maidsafe::TidyPath(kRootSubdir[0][0])) +
+                           QString("%1%2").arg(QDir::separator()).arg(name);
 
 #ifdef PD_WIN32
   QString maidsafeRoot = QString("%1:\\").arg(
@@ -909,9 +909,10 @@ QString ClientController::getEmailTooltip(HintLevel level) {
 }
 QString ClientController::getMyFilesTooltip(HintLevel level) {
   if (level == SMALL) {
-    return "My Files";
+    return QString::fromStdString(TidyPath(kRootSubdir[0][0]));
   } else if (level == FULL) {
-    return "My Files : Use This Tab to manage your protected PD Files";
+    return QString::fromStdString(TidyPath(kRootSubdir[0][0])) +
+           QString(" : Use This Tab to manage your protected PD Files");
   }
   return "";
 }

@@ -23,8 +23,12 @@
 */
 
 #include <maidsafe/base/log.h>
+#include <boost/filesystem.hpp>
 
 #include "gtest/gtest.h"
+
+#include "tests/maidsafe/networktest.h"
+
 int main(int argc, char **argv) {
   google::InitGoogleLogging(argv[0]);
   // setting output to be stderr
@@ -33,5 +37,28 @@ int main(int argc, char **argv) {
 #endif
   FLAGS_logtostderr = true;
   testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
+#ifdef MS_NETWORK_TEST
+  try {
+    if (boost::filesystem::exists(".kadconfig"))
+      boost::filesystem::remove(".kadconfig");
+  }
+  catch(const std::exception& e) {
+    printf("%s\n", e.what());
+  }
+  testing::AddGlobalTestEnvironment(new maidsafe::test::localvaults::Env(
+      maidsafe::test::K(), maidsafe::test::kNetworkSize(),
+      maidsafe::test::pdvaults(), maidsafe::test::kadconfig()));
+#endif
+
+  int result = RUN_ALL_TESTS();
+#ifdef MS_NETWORK_TEST
+  try {
+    if (boost::filesystem::exists(".kadconfig"))
+      boost::filesystem::remove(".kadconfig");
+  }
+  catch(const std::exception& e) {
+    printf("%s\n", e.what());
+  }
+#endif
+  return result;
 }

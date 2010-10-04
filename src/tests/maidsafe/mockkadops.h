@@ -29,6 +29,7 @@
 
 #include "maidsafe/maidsafe.h"
 #include "maidsafe/kadops.h"
+#include "tests/maidsafe/threadedcallcontainer.h"
 
 namespace mock_kadops {
 
@@ -43,39 +44,47 @@ std::string MakeFindNodesResponse(const FindNodesResponseType &type,
                                   const boost::uint8_t k,
                                   std::vector<std::string> *pmids);
 
-void RunCallback(const std::string &find_nodes_response,
-                 const kad::VoidFunctorOneString &callback);
-
 }  // namespace mock_kadops
 
 namespace maidsafe {
 
 class MockKadOps : public KadOps {
  public:
-  explicit MockKadOps(const boost::shared_ptr<kad::KNode> &knode)
-      : KadOps(knode) {}
+  MockKadOps(transport::TransportHandler *transport_handler,
+             rpcprotocol::ChannelManager *channel_manager,
+             kad::NodeType type,
+             const std::string &private_key,
+             const std::string &public_key,
+             bool port_forwarded,
+             bool use_upnp,
+             boost::uint8_t k,
+             boost::shared_ptr<ChunkStore> chunkstore)
+      : KadOps(transport_handler, channel_manager, type, private_key,
+               public_key, port_forwarded, use_upnp, k, chunkstore),
+        tcc_(1) {}
   MOCK_METHOD1(AddressIsLocal, bool(const kad::Contact &peer));
   MOCK_METHOD1(AddressIsLocal, bool(const kad::ContactInfo &peer));
-  MOCK_METHOD3(FindValue, void(const kad::KadId &kad_key,
+  MOCK_METHOD3(FindValue, void(const std::string &key,
                                bool check_local,
-                               const kad::VoidFunctorOneString &cb));
-  MOCK_METHOD5(FindValue, int(const kad::KadId &kad_key,
-                              bool check_local,
-                              kad::ContactInfo *cache_holder,
-                              std::vector<std::string> *values,
-                              std::string *needs_cache_copy_id));
-  MOCK_METHOD2(FindKClosestNodes, void(const kad::KadId &kad_key,
-                                    const kad::VoidFunctorOneString &callback));
-  MOCK_METHOD2(FindKClosestNodes, int(const kad::KadId &kad_key,
-                                   std::vector<kad::Contact> *contacts));
-  int FindCloseNodesReal(const kad::KadId &kad_key,
-                         std::vector<kad::Contact> *contacts) {
-    return KadOps::FindKClosestNodes(kad_key, contacts);
-  }
+                               kad::VoidFunctorOneString callback));
+  MOCK_METHOD2(FindKClosestNodes, void(const std::string &key,
+                                       maidsafe::VoidFuncIntContacts callback));
   MOCK_METHOD4(GetStorePeer, int(const double &ideal_rtt,
                                  const std::vector<kad::Contact> &exclude,
                                  kad::Contact *new_peer,
                                  bool *local));
+//   void RealFindKClosestNodesCallback(const std::string &response,
+//                                      VoidFuncIntContacts callback) {
+//     KadOps::FindKClosestNodesCallback(response, callback);
+//   }
+  void ThreadedFindKClosestNodesCallback(const std::string &response,
+                                         VoidFuncIntContacts callback) {
+    printf("In MockKadOps::ThreadedFindKClosestNodesCallback ...\n");
+    tcc_.Enqueue(boost::bind(&KadOps::FindKClosestNodesCallback, this,
+                             response, callback));
+  }
+ private:
+  ThreadedCallContainer tcc_;
 };
 
 }  // namespace maidsafe
