@@ -107,7 +107,6 @@ enum ReturnCode {
   kLoadChunkFindNodesFailure = -7003,
   kStoreChunkFindNodesFailure = -7004,
   kStoreChunkError = -7005,
-  kStoreCancelledOrDone = -7006,
   kChunkNotInChunkstore = -7007,
   kGetRequestSigError = -7008,
   kGetStorePeerError = -7009,
@@ -132,7 +131,6 @@ enum ReturnCode {
   kDeleteChunkError = -7028,
   kDeleteSizeError = -7029,
   kDeleteChunkFailure = -7030,
-  kDeleteCancelledOrDone = -7031,
   kLoadedChunkEmpty = -7032,
   kGetChunkFailure = -7033,
   kSendPacketError = -7034,
@@ -225,11 +223,8 @@ enum ReturnCode {
   kStoreManagerTaskIncorrectParameter = -13002,
   kStoreManagerTaskIncorrectOperation = -13003,
   kStoreManagerTaskParentNotActive = -13004,
-  kStoreManagerTaskAlreadyExists = -13005,
-  kStoreManagerTaskNotFound = -13006,
-  kStoreManagerTaskNotFinished = -13007,
-  kStoreManagerTaskFinishedFail = -13008,
-  kStoreManagerTaskFinishedPass = 0,  // intentionally 0
+  kStoreManagerTaskNotFound = -13005,
+  kStoreManagerTaskCancelledOrDone = -13006,
 
   // Validator
   kValidatorNoParameters = -14001,

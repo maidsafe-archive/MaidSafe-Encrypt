@@ -7,7 +7,6 @@
 * Version:      1.0
 * Created:      2009-12-18-13.58.04
 * Revision:     none
-* Compiler:     gcc
 * Author:       Fraser Hutchison (fh), fraser.hutchison@maidsafe.net
 * Company:      maidsafe.net limited
 *
@@ -119,43 +118,65 @@ int StoreManagerTasksHandler::AddChildTask(const std::string &data_name,
 int StoreManagerTasksHandler::DoAddTask(StoreManagerTask task,
                                         TaskId *task_id) {
   boost::mutex::scoped_lock lock(mutex_);
+  if (task_id)
+    *task_id = kRootTask;
   if (task.data_name.empty() || task.successes_required == 0) {
 #ifdef DEBUG
     printf("In StoreManagerTasksHandler::DoAddTask, parameter incorrect.\n");
 #endif
     return kStoreManagerTaskIncorrectParameter;
   }
-  if (task_id)
-    *task_id = task.task_id;
 
+  // Locate oldest conflicting task
+  boost::uint32_t oldest(-1);
   TasksByDataName &tasks_by_data_name = tasks_.get<by_data_name>();
+  TasksByDataName::iterator existing_task_iter = tasks_by_data_name.end();
+  ReturnCode existing_task_return_code = kPendingResult;
   TaskRangeByDataName result = tasks_by_data_name.equal_range(task.data_name);
-  for (TasksByDataName::iterator existing_task_iter = result.first;
-       existing_task_iter != result.second; ++existing_task_iter) {
+  while (result.first != result.second) {
     switch (task.type) {
       case kStoreChunk:
-        if ((*existing_task_iter).type == kDeleteChunk)
-          DoDeleteTask(tasks_.project<by_task_id>(existing_task_iter),
-                       kStoreCancelledOrDone);
-        return kSuccess;
+        if ((*result.first).type == kDeleteChunk &&
+            (*result.first).timestamp < oldest) {
+          existing_task_iter = result.first;
+          existing_task_return_code = kStoreManagerTaskCancelledOrDone;
+          oldest = (*result.first).timestamp;
+        }
+        break;
       case kStorePacket:
-        if ((*existing_task_iter).type == kDeletePacket)
-          DoDeleteTask(tasks_.project<by_task_id>(existing_task_iter),
-                       kStoreCancelledOrDone);
-        return kSuccess;
+        if ((*result.first).type == kDeletePacket &&
+            (*result.first).timestamp < oldest) {
+          existing_task_iter = result.first;
+          existing_task_return_code = kStoreManagerTaskCancelledOrDone;
+          oldest = (*result.first).timestamp;
+        }
+        break;
       case kDeleteChunk:
-        if ((*existing_task_iter).type == kStoreChunk)
-          DoDeleteTask(tasks_.project<by_task_id>(existing_task_iter),
-                       kStoreCancelledOrDone);
-        return kSuccess;
+        if ((*result.first).type == kStoreChunk &&
+            (*result.first).timestamp < oldest) {
+          existing_task_iter = result.first;
+          existing_task_return_code = kStoreManagerTaskCancelledOrDone;
+          oldest = (*result.first).timestamp;
+        }
+        break;
       case kDeletePacket:
-        if ((*existing_task_iter).type == kStorePacket)
-          DoDeleteTask(tasks_.project<by_task_id>(existing_task_iter),
-                       kStoreCancelledOrDone);
-        return kSuccess;
+        if ((*result.first).type == kStorePacket &&
+            (*result.first).timestamp < oldest) {
+          existing_task_iter = result.first;
+          existing_task_return_code = kStoreManagerTaskCancelledOrDone;
+          oldest = (*result.first).timestamp;
+        }
+        break;
       default:
         break;
     }
+    ++result.first;
+  }
+  // If conflicting task found, delete it and return.
+  if (existing_task_iter != tasks_by_data_name.end()) {
+    DoDeleteTask(tasks_.project<by_task_id>(existing_task_iter),
+                 existing_task_return_code);
+    return kSuccess;
   }
 
   TasksById &tasks_by_id = tasks_.get<by_task_id>();
@@ -184,7 +205,9 @@ int StoreManagerTasksHandler::DoAddTask(StoreManagerTask task,
   else
     tasks_.insert(--(tasks_.end()), task);
   if (task.status != kTaskActive && task.callback)
-    task.callback(task.task_id, kStoreCancelledOrDone);
+    task.callback(task.task_id, kStoreManagerTaskCancelledOrDone);
+  if (task_id)
+    *task_id = task.task_id;
   return kSuccess;
 }
 
@@ -327,13 +350,13 @@ int StoreManagerTasksHandler::DeleteTask(const TaskId &task_id,
 void StoreManagerTasksHandler::DoDeleteTask(TasksById::iterator task_iter,
                                             const ReturnCode &reason) {
   // Ensure mutex_ is already locked when call to this function is made.
+  DeleteChildTasks((*task_iter).task_id, reason);
+
   if ((*task_iter).callback && (*task_iter).status == kTaskActive) {
     mutex_.unlock();
     (*task_iter).callback((*task_iter).task_id, reason);
     mutex_.lock();
   }
-
-  DeleteChildTasks((*task_iter).task_id, reason);
 
   TasksById &tasks_by_id = tasks_.get<by_task_id>();
   TasksById::iterator parent_iter = tasks_by_id.find((*task_iter).parent_id);
@@ -373,7 +396,7 @@ void StoreManagerTasksHandler::CancelChildTasks(const TaskId &parent_id,
   // Ensure mutex_ is already locked when call to this function is made.
   TasksByParentId &tasks_by_parent_id = tasks_.get<by_parent_id>();
   TaskRangeByParentId p = tasks_by_parent_id.equal_range(parent_id);
-  while (p.first != p.second) {
+  while (p.first != p.second && p.first->status == kTaskActive) {
     tasks_by_parent_id.modify(p.first, set_task_status_to_cancelled_);
     NotifyStateChange(tasks_.project<by_task_id>(p.first++), reason);
   }

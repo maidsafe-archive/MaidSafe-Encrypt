@@ -7,7 +7,6 @@
 * Version:      1.0
 * Created:      2009-12-18-13.58.04
 * Revision:     none
-* Compiler:     gcc
 * Author:       Fraser Hutchison (fh), fraser.hutchison@maidsafe.net
 * Company:      maidsafe.net limited
 *
