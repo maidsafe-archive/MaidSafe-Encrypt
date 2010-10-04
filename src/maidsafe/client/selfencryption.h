@@ -43,6 +43,13 @@ namespace maidsafe {
 
 class ChunkStore;
 
+namespace self_encryption_utils {
+  // Generate a string of required_size from input in a repeatable way
+  bool ResizeObfuscationHash(const std::string &input,
+                             const size_t &required_size,
+                             std::string *resized_data);
+}  // namespace self_encryption_utils
+
 class SelfEncryption {
  public:
   explicit SelfEncryption(boost::shared_ptr<ChunkStore> client_chunkstore);
@@ -79,10 +86,6 @@ class SelfEncryption {
   // ensure uniqueness of all chunk hashes (unless chunks are identical)
   // if pre_enc is true, hashes relate to pre-encryption, otherwise post-
   bool HashUnique(const maidsafe::DataMap &dm, bool pre_enc, std::string *hash);
-  // concatenate copies of hash until desired length reached
-  bool ResizeObfuscationHash(const std::string &obfuscate_hash,
-                             const boost::uint16_t &length,
-                             std::string *resized_obs_hash);
   int EncryptContent(const std::string &entry_str, const bool &is_string,
                      maidsafe::DataMap *dm, fs::path *processing_path,
                      std::map<std::string, fs::path> *to_chunk_store,
