@@ -5,7 +5,7 @@
 \textclass IEEEtran
 \use_default_options false
 \language british
-\inputencoding auto
+\inputencoding default
 \font_roman default
 \font_sans default
 \font_typewriter default
@@ -19,10 +19,10 @@
 \paperfontsize default
 \spacing single
 \use_hyperref true
-\pdf_title "maidsafe distributed hash table"
+\pdf_title "MaidSafe Distributed Hash Table"
 \pdf_author "David Irvine"
-\pdf_subject "DHT"
-\pdf_keywords "PKI, DHT, Security "
+\pdf_subject "Distributed Hash Tables"
+\pdf_keywords "security, freedom, privacy, DHT, encryption"
 \pdf_bookmarks true
 \pdf_bookmarksnumbered false
 \pdf_bookmarksopen false
@@ -56,11 +56,11 @@
 \begin_body
 
 \begin_layout Title
-maidsafe distributed hash table
+MaidSafe Distributed Hash Table
 \end_layout
 
 \begin_layout Author
-David Irvine, email: david.irvine@maidsafe.net, LifeStuff David
+David Irvine, email: david.irvine@maidsafe.net, LifeStuff: David
 \end_layout
 
 \begin_layout Right Address
@@ -72,15 +72,14 @@ September, 2010
 \end_layout
 
 \begin_layout Abstract
-An effective distributed network requires and addressing mechanism that
- allows a distribution of data in a manner that is designed to overcome
- churn (the unmanageable outage, node failure or unforeseen communication
- fault).
+An effective distributed network requires an addressing mechanism and distributi
+on of data that is designed to overcome churn (the unmanageable outage,
+ node failure or unforeseen communication fault).
  There are several implementations of such a system, but this paper proposes
- a system that not only provides an efficient churn resistant DHT, in addition
- the capability for fast awareness of infrastructure changes allows the
- implementation of a locking system, thereby enabling amendment of data
- from multiple sources, using multi key signing.
+ a system that not only provides an efficient churn-resistant DHT, but also
+ has fast awareness of infrastructure changes.
+ This allows the implementation of a locking system, thereby enabling amendment
+ of data from multiple sources.
 \end_layout
 
 \begin_layout Keywords
@@ -99,7 +98,7 @@ status collapsed
 
 \end_inset
 
-...
+
 \end_layout
 
 \begin_layout Standard
@@ -112,22 +111,9 @@ LatexCommand tableofcontents
 \end_layout
 
 \begin_layout Standard
-\begin_inset FloatList table
-
+\begin_inset Newpage pagebreak
 \end_inset
 
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset FloatList algorithm
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout --Separator--
 
 \end_layout
 
@@ -174,12 +160,12 @@ Data validity is achieved in Kadmelia by selecting a value for the replication
 
 ) that is the number defined as the optimum node count in a network that
  will not fail between refresh times 
-\begin_inset Formula $f(t)$
+\begin_inset Formula $\mathsf{f(t)}$
 \end_inset
 
 .
  This 
-\begin_inset Formula $f(t)$
+\begin_inset Formula $\mathsf{f(t)}$
 \end_inset
 
  is generally set to a system wide constant and obeyed by all nodes.
@@ -196,7 +182,7 @@ key "6"
  this 
 \emph default
 
-\begin_inset Formula $f(t)$
+\begin_inset Formula $\mathsf{f(t)}$
 \end_inset
 
 is not fixed but distributed over a period where nodes should refresh in
@@ -236,11 +222,11 @@ also promotes a system of down list, whereby a node that is found to be
 \end_inset
 
  bucket from 
-\begin_inset Formula $13/20$
+\begin_inset Formula $\mathsf{13/20}$
 \end_inset
 
  to 
-\begin_inset Formula $19.8/20$
+\begin_inset Formula $\mathsf{19.8/20}$
 \end_inset
 
  good nodes.
@@ -409,7 +395,7 @@ The TTL is used in this instance to calculate how long a value can live
 ) distance).
  This distance figure may be further analysed to proved a more efficient
  mechanism such as the 
-\begin_inset Formula $1/(\oplus\, distance/current\,\, height\, of\, tree)$
+\begin_inset Formula $\mathsf{1/(\oplus\, distance/current\,\, height\, of\, tree)}$
 \end_inset
 
  to be more effective and accurate.
@@ -492,27 +478,27 @@ splits
 \emph default
 .
  As more nodes are added the 1
-\begin_inset Formula $^{\text{st}}$
+\begin_inset Formula $\mathsf{^{\text{st}}}$
 \end_inset
 
  bucket continues to split up to the point where there are 
-\begin_inset Formula $n-1$
+\begin_inset Formula $\mathsf{n-1}$
 \end_inset
 
  buckets.
  Nodes will continue to be added, which if no node vanished would mean the
  buckets would fill quickly to a maximum node count.
  As each bucket is created it covers an area of the network which is 
-\begin_inset Formula $2^{n}$
+\begin_inset Formula $\mathsf{2^{n}}$
 \end_inset
 
  in size.
  In this case n represents the bucket value starting from 
-\begin_inset Formula $0$
+\begin_inset Formula $\mathsf{0}$
 \end_inset
 
  all the way to 
-\begin_inset Formula $n-1$
+\begin_inset Formula $\mathsf{n-1}$
 \end_inset
 
  
@@ -520,7 +506,7 @@ splits
 \end_inset
 
 the last bucket is 
-\begin_inset Formula $2^{511}$
+\begin_inset Formula $\mathsf{2^{511}}$
 \end_inset
 
  in this case is a 512 bit address size.
@@ -558,12 +544,12 @@ It then becomes obvious that the last bucket covers half of the network
 \begin_layout Standard
 This is vital to understand that as the average distance between all the
  nodes in the last bucket is 
-\begin_inset Formula $2^{n}/(2*\kappa)$
+\begin_inset Formula $\mathsf{2^{n}/(2*\kappa)}$
 \end_inset
 
  which is a significant distance.
  More importantly though the 1
-\begin_inset Formula $^{st}$
+\begin_inset Formula $\mathsf{^{st}}$
 \end_inset
 
  bucket will contain nodes extremely close and in fact in a full network
@@ -587,7 +573,7 @@ Managed connections
 
 \begin_layout Standard
 Unlike other algorithms such as chord where each node maintains 
-\begin_inset Formula $num\, keys/num\, nodes$
+\begin_inset Formula $\mathsf{num\, keys/num\, nodes}$
 \end_inset
 
  in Kademlia based networks each node maintains the keys that are between
@@ -624,7 +610,7 @@ key "5"
 \end_inset
 
  buckets is 
-\begin_inset Formula $n-1$
+\begin_inset Formula $\mathsf{n-1}$
 \end_inset
 
  where n is the size of the network address in bits.
@@ -635,13 +621,13 @@ key "5"
 
  of 20 this means the number of nodes in a routing table is a maximum value
  of 
-\begin_inset Formula $159*20=3180$
+\begin_inset Formula $\mathsf{159*20=3180}$
 \end_inset
 
 .
  The maidsafe_dht default address space size is 512 (SHA512) which would
  equate to a routing table node count of 
-\begin_inset Formula $511*20=10,220$
+\begin_inset Formula $\mathsf{511*20=10,220}$
 \end_inset
 
 , reducing 
@@ -650,7 +636,7 @@ key "5"
 
  to perhaps 4 would dramatically reduce the routing table size to a more
  manageable 
-\begin_inset Formula $511*4=2044$
+\begin_inset Formula $\mathsf{511*4=2044}$
 \end_inset
 
 .
@@ -789,7 +775,7 @@ The bandwidth costs per managed connection is less than 0.5 bytes per second,
 
 \begin_layout Subsection
 Additional logic required for 1
-\begin_inset Formula $^{st}\kappa Bucket$
+\begin_inset Formula $\mathsf{^{st}\kappa Bucket}$
 \end_inset
 
  
@@ -909,7 +895,7 @@ In such network the nodes in one routing table should not be the same nodes
 \begin_layout Standard
 To ensure such a system may work effectively the number of connections required
  is in fact 
-\begin_inset Formula $2*\kappa*n$
+\begin_inset Formula $\mathsf{2*\kappa*n}$
 \end_inset
 
 .
@@ -1366,8 +1352,7 @@ key "3"
 
 \end_inset
 
-David Irvine, maidsafe_dht NAT traversal.
- david.irvine@maidsafe.net
+David Irvine, DHT-based NAT Traversal, david.irvine@maidsafe.net
 \end_layout
 
 \begin_layout Bibliography
@@ -1378,8 +1363,7 @@ key "4"
 
 \end_inset
 
-David Irvine, maidsafe - a new network paradigm.
- david.irvine@maidsafe.net
+David Irvine, maidsafe: A new networking paradigm, david.irvine@maidsafe.net
 \end_layout
 
 \begin_layout Bibliography

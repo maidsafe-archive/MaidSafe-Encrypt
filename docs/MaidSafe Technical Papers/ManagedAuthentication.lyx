@@ -4,12 +4,12 @@
 \begin_header
 \textclass IEEEtran
 \use_default_options false
-\language english
+\language british
 \inputencoding default
 \font_roman default
-\font_sans lmss
+\font_sans default
 \font_typewriter default
-\font_default_family sfdefault
+\font_default_family default
 \font_sc false
 \font_osf false
 \font_sf_scale 100
@@ -18,7 +18,20 @@
 \graphics default
 \paperfontsize default
 \spacing single
-\use_hyperref false
+\use_hyperref true
+\pdf_title "Managed Authentication"
+\pdf_author "David Irvine"
+\pdf_subject "Authentication"
+\pdf_keywords "security, freedom, privacy, authentication"
+\pdf_bookmarks true
+\pdf_bookmarksnumbered false
+\pdf_bookmarksopen false
+\pdf_bookmarksopenlevel 1
+\pdf_breaklinks false
+\pdf_pdfborder true
+\pdf_colorlinks false
+\pdf_backref false
+\pdf_pdfusetitle true
 \papersize default
 \use_geometry false
 \use_amsmath 0
@@ -43,12 +56,15 @@
 \begin_body
 
 \begin_layout Title
-Managed authentication 
+Managed Authentication 
 \end_layout
 
 \begin_layout Author
-David Irvine, david.irvine@maidsafe.net, maidsafe.net limited (registered in
- Scotland Sc 297540)
+David Irvine, email: david.irvine@maidsafe.net, LifeStuff: David
+\end_layout
+
+\begin_layout Right Address
+maidsafe.net limited (registered in Scotland Sc 297540)
 \end_layout
 
 \begin_layout Date
@@ -69,7 +85,7 @@ Today all known access mechanisms that grant access to distributed or shared
 \end_layout
 
 \begin_layout Keywords
-security, freedom, privacy, authentication 
+security, freedom, privacy, authentication
 \end_layout
 
 \begin_layout MarkBoth
@@ -84,7 +100,7 @@ status collapsed
 
 \end_inset
 
-...
+
 \end_layout
 
 \begin_layout Standard
@@ -97,22 +113,9 @@ LatexCommand tableofcontents
 \end_layout
 
 \begin_layout Standard
-\begin_inset FloatList table
-
+\begin_inset Newpage pagebreak
 \end_inset
 
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset FloatList algorithm
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout --Separator--
 
 \end_layout
 
@@ -291,7 +294,7 @@ ated and efficient network.
 \end_layout
 
 \begin_layout Itemize
-\begin_inset Formula $STORE$
+\begin_inset Formula $\mathsf{STORE}$
 \end_inset
 
 
@@ -327,7 +330,7 @@ key "1"
 \begin_layout Enumerate
 USER requests permission from manager to join XXX network, via an encrypted
  message (signed) to 
-\begin_inset Formula $MANAGER@XXX$
+\begin_inset Formula $\mathsf{MANAGER@XXX}$
 \end_inset
 
 
@@ -335,18 +338,18 @@ USER requests permission from manager to join XXX network, via an encrypted
 
 \begin_layout Enumerate
 Manager creates 
-\begin_inset Formula $USER_{pub}\,\&\, USER_{priv}$
+\begin_inset Formula $\mathsf{USER_{pub}\,\&\, USER_{priv}}$
 \end_inset
 
 
 \end_layout
 
 \begin_layout Enumerate
-\begin_inset Formula $H(USER_{pub}\,+Sig{}_{MANAGER_{prv}})$
+\begin_inset Formula $\mathsf{H(USER_{pub}\,+Sig{}_{MANAGER_{prv}})}$
 \end_inset
 
  is stored on 
-\begin_inset Formula $STORE$
+\begin_inset Formula $\mathsf{STORE}$
 \end_inset
 
 , this also will be the access ID for USER
@@ -354,11 +357,11 @@ Manager creates
 
 \begin_layout Enumerate
 Manager creates a 
-\begin_inset Formula $H(USER@XXX)$
+\begin_inset Formula $\mathsf{H(USER@XXX)}$
 \end_inset
 
  packet in 
-\begin_inset Formula $STORE$
+\begin_inset Formula $\mathsf{STORE}$
 \end_inset
 
  (this is the contact address of USER when connected with company XXX)
@@ -366,7 +369,7 @@ Manager creates a
 
 \begin_layout Enumerate
 MANAGER sends 
-\begin_inset Formula $USER_{priv}$
+\begin_inset Formula $\mathsf{USER_{priv}}$
 \end_inset
 
  to USER via an encrypted message.
@@ -420,7 +423,7 @@ key "6"
 
 \begin_layout Enumerate
 The USER ID 
-\begin_inset Formula $H(USER_{pub}\,+Sig{}_{MANAGER_{prv}})$
+\begin_inset Formula $\mathsf{H(USER_{pub}\,+Sig{}_{MANAGER_{prv}})}$
 \end_inset
 
  is added to the list of ID's authorised access identities
@@ -437,7 +440,7 @@ As the USER identity packet is signed by the MANAGER, then the manager can
  To ensure this is absolute, the message type sent cannot be used to verify
  an ID (by sending pub plus signature in a packet for hashing be the recipient)
  and insted a 
-\begin_inset Formula $STORE$
+\begin_inset Formula $\mathsf{STORE}$
 \end_inset
 
  lookup for a valid has to be happen every time.
@@ -476,7 +479,7 @@ key "1"
 
 \end_inset
 
-David Irvine, self authentication, david.irvine@maidsafe.net
+David Irvine, Self-Authentication, david.irvine@maidsafe.net
 \end_layout
 
 \begin_layout Bibliography
@@ -498,7 +501,7 @@ key "3"
 
 \end_inset
 
-David Irvine, peer to peer public key infrastructure, david.irvine@maidsafe.net
+David Irvine, "Peer to Peer" Public Key Infrastructure, david.irvine@maidsafe.net
 \end_layout
 
 \begin_layout Bibliography
@@ -509,7 +512,7 @@ key "4"
 
 \end_inset
 
-David Irvine, maidsafe.net, a new network paradigm , david.irvine@maidsafe.net
+David Irvine, maidsafe: A new networking paradigm , david.irvine@maidsafe.net
 \end_layout
 
 \begin_layout Bibliography
@@ -520,7 +523,7 @@ key "5"
 
 \end_inset
 
-David Irvine, Autonomous network, david.irvine@maidsafe.net
+David Irvine, Autonomous Network, david.irvine@maidsafe.net
 \end_layout
 
 \begin_layout Bibliography
@@ -531,7 +534,7 @@ key "6"
 
 \end_inset
 
-David Irvine, maidsafe distributed file system, david.irvine@maidsafe.net
+David Irvine, MaidSafe Distributed File System, david.irvine@maidsafe.net
 \end_layout
 
 \begin_layout Standard
@@ -607,15 +610,11 @@ status collapsed
 
 \end_inset
 
- 
-\lang british
-is a Scottish Engineer and innovator who has spent the last 12 years researching
- ways to make computers function in a more efficient manner.
+ is a Scottish Engineer and innovator who has spent the last 12 years researchin
+g ways to make computers function in a more efficient manner.
 \end_layout
 
 \begin_layout BiographyNoPhoto
-
-\lang british
 He is an Inventor listed on more than 20 patent submissions and was Designer
  / Project Manager of one of the World's largest private networks (Saudi
  Aramco, over $300M).
@@ -625,15 +624,11 @@ He is an Inventor listed on more than 20 patent submissions and was Designer
 \end_layout
 
 \begin_layout BiographyNoPhoto
-
-\lang british
 He has presented technology at Google (Seattle), British Computer Society
  (Christmas Lecture) and many others.
 \end_layout
 
 \begin_layout BiographyNoPhoto
-
-\lang british
 He has spent many years as a lifeboat Helmsman and is a keen sailor when
  time permits.
 \end_layout

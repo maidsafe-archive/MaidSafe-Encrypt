@@ -19,10 +19,10 @@
 \paperfontsize default
 \spacing single
 \use_hyperref true
-\pdf_title "'peer to peer' Public Key Infrastructure"
+\pdf_title "'Peer to Peer' Public Key Infrastructure"
 \pdf_author "David Irvine"
 \pdf_subject "Validation"
-\pdf_keywords "PKI, DHT, Security "
+\pdf_keywords "security, freedom, privacy, DHT, encryption"
 \pdf_bookmarks true
 \pdf_bookmarksnumbered false
 \pdf_bookmarksopen false
@@ -60,7 +60,7 @@
 \end_layout
 
 \begin_layout Author
-David Irvine, email: david.irvine@maidsafe.net, LifeStuff David
+David Irvine, email: david.irvine@maidsafe.net, LifeStuff: David
 \end_layout
 
 \begin_layout Right Address
@@ -98,7 +98,7 @@ status collapsed
 
 \end_inset
 
-...
+
 \end_layout
 
 \begin_layout Standard
@@ -126,7 +126,10 @@ LatexCommand tableofcontents
 
 \end_layout
 
-\begin_layout --Separator--
+\begin_layout Standard
+\begin_inset Newpage pagebreak
+\end_inset
+
 
 \end_layout
 
@@ -283,7 +286,7 @@ name "sub:Asymmetric-public-key"
 This paper makes use of public key cryptography.
  This is a system of encryption that does not require passwords or keys
  to be passed around, rather it allows the publication of a public key 
-\begin_inset Formula $Kpub$
+\begin_inset Formula $\mathsf{Kpub}$
 \end_inset
 
 .
@@ -300,7 +303,7 @@ Here we assume the perfect algorithm and implementation of such, this is
 \end_inset
 
  be decrypted by the holder of the corresponding private key 
-\begin_inset Formula $Kpriv$
+\begin_inset Formula $\mathsf{Kpriv}$
 \end_inset
 
 .
@@ -435,7 +438,7 @@ Simple Configuration
 
 \begin_layout Standard
 In a relatively simple method, identities are created as follows: 
-\begin_inset Formula $Hash(Kpub_{1})=Identity$
+\begin_inset Formula $\mathsf{Hash(Kpub_{1})=Identity}$
 \end_inset
 
 .
@@ -478,7 +481,7 @@ name "sub:key-revocation"
 \begin_layout Standard
 In another small step we can introduce the ability for a revocation system.
  this is done as follows: 
-\begin_inset Formula $Hash(Kpub_{1}+SignatureKpriv_{2})=Identity$
+\begin_inset Formula $\mathsf{Hash(Kpub_{1}+SignatureKpriv_{2})=Identity}$
 \end_inset
 
  .
@@ -601,7 +604,7 @@ Message structure
 \begin_inset Text
 
 \begin_layout Plain Layout
-\begin_inset Formula $Kpub_{1}$
+\begin_inset Formula $\mathsf{Kpub_{1}}$
 \end_inset
 
 
@@ -613,7 +616,7 @@ Message structure
 \begin_inset Text
 
 \begin_layout Plain Layout
-\begin_inset Formula $Sig_{Kpriv_{2}}$
+\begin_inset Formula $\mathsf{Sig_{Kpriv_{2}}}$
 \end_inset
 
 
@@ -625,7 +628,7 @@ Message structure
 \begin_inset Text
 
 \begin_layout Plain Layout
-\begin_inset Formula $Kpub_{2}$
+\begin_inset Formula $\mathsf{Kpub_{2}}$
 \end_inset
 
 
@@ -637,7 +640,7 @@ Message structure
 \begin_inset Text
 
 \begin_layout Plain Layout
-\begin_inset Formula $Sig_{Kpriv_{2}}$
+\begin_inset Formula $\mathsf{Sig_{Kpriv_{2}}}$
 \end_inset
 
 
@@ -687,7 +690,7 @@ It is therefore possible to validate an identity even without a key addressable
  themselves in the first place.
  However, the addition of key addressable storage allows better key revocation
  in cases where 
-\begin_inset Formula $Kpriv_{1}$
+\begin_inset Formula $\mathsf{Kpriv_{1}}$
 \end_inset
 
 may be compromised (e.g.
@@ -810,11 +813,11 @@ key "4"
 
  network can provide such a system as it depends on a node that can be identifie
 d and behave, building rank which a user (who has 
-\begin_inset Formula $Kpriv_{2}$
+\begin_inset Formula $\mathsf{Kpriv_{2}}$
 \end_inset
 
 ) can use as the owner of 
-\begin_inset Formula $Kpriv_{1}$
+\begin_inset Formula $\mathsf{Kpriv_{1}}$
 \end_inset
 
 thereby getting the benefits of any quid pro quo relationship with a node
@@ -857,12 +860,12 @@ key "3"
 
 \begin_layout Standard
 This is implemented as follows: 
-\begin_inset Formula $netget[Hash(Kpub_{1})]$
+\begin_inset Formula $\mathsf{netget[Hash(Kpub_{1})]}$
 \end_inset
 
 to check for uniqueness and if false then the true keys can be stored as
  follows: 
-\begin_inset Formula $netput[Hash(Kpub_{1})/[Kpub_{1}]$
+\begin_inset Formula $\mathsf{netput[Hash(Kpub_{1})/[Kpub_{1}]}$
 \end_inset
 
  this is the simple case above without revocation, simply for brevity.
@@ -937,7 +940,7 @@ If such a system were implemented in a DHT or similar publicly connected
  key, however, the system presented does have flexibility that the others
  do not and this is in the ability to reduce the effectiveness or scope
  of the private key, 
-\begin_inset Formula $Kpriv_{1}$
+\begin_inset Formula $\mathsf{Kpriv_{1}}$
 \end_inset
 
 .
@@ -946,19 +949,19 @@ If such a system were implemented in a DHT or similar publicly connected
 
 \begin_layout Standard
 Here, it is assumed that 
-\begin_inset Formula $Kpriv_{2}$
+\begin_inset Formula $\mathsf{Kpriv_{2}}$
 \end_inset
 
  is a key that is used to sign the identification packet for 
-\begin_inset Formula $Kpub_{1}$
+\begin_inset Formula $\mathsf{Kpub_{1}}$
 \end_inset
 
  and that 
-\begin_inset Formula $Kpriv_{2}$
+\begin_inset Formula $\mathsf{Kpriv_{2}}$
 \end_inset
 
  is not located on the machine or node as 
-\begin_inset Formula $Kpriv_{1}$
+\begin_inset Formula $\mathsf{Kpriv_{1}}$
 \end_inset
 
  has to be.
@@ -971,11 +974,11 @@ Here, it is assumed that
  out by the rank or effectiveness of the node.
  In such cases the person would usually maintain the identity of the node
  and sign/decrypt messages with 
-\begin_inset Formula $Kpriv_{1}$
+\begin_inset Formula $\mathsf{Kpriv_{1}}$
 \end_inset
 
  acting as the ID that 
-\begin_inset Formula $Hash(Kpub_{1}+SignatureKpriv_{2})$
+\begin_inset Formula $\mathsf{Hash(Kpub_{1}+SignatureKpriv_{2})}$
 \end_inset
 
  provides.
@@ -1067,8 +1070,7 @@ key "4"
 
 \end_inset
 
-David Irvine, maidsafe - a new network paradigm.
- david.irvine@maidsafe.net
+David Irvine, maidsafe: A new networking paradigm, david.irvine@maidsafe.net
 \end_layout
 
 \begin_layout Standard

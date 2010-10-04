@@ -7,9 +7,9 @@
 \language british
 \inputencoding default
 \font_roman default
-\font_sans lmss
+\font_sans default
 \font_typewriter default
-\font_default_family sfdefault
+\font_default_family default
 \font_sc false
 \font_osf false
 \font_sf_scale 100
@@ -19,10 +19,10 @@
 \paperfontsize default
 \spacing single
 \use_hyperref true
-\pdf_title "DHT based Nat  traversal"
+\pdf_title "DHT-based NAT Traversal"
 \pdf_author "David Irvine"
-\pdf_subject "Networking"
-\pdf_keywords "PKI, DHT, Security "
+\pdf_subject "NAT Traversal"
+\pdf_keywords "security, freedom, privacy, DHT, encryption"
 \pdf_bookmarks true
 \pdf_bookmarksnumbered false
 \pdf_bookmarksopen false
@@ -56,11 +56,11 @@
 \begin_body
 
 \begin_layout Title
-DHT based NAT traversal
+DHT-based NAT Traversal
 \end_layout
 
 \begin_layout Author
-David Irvine, email: david.irvine@maidsafe.net, LifeStuff David
+David Irvine, email: david.irvine@maidsafe.net, LifeStuff: David
 \end_layout
 
 \begin_layout Right Address
@@ -98,7 +98,7 @@ status collapsed
 
 \end_inset
 
-...
+
 \end_layout
 
 \begin_layout Standard
@@ -118,7 +118,10 @@ LatexCommand tableofcontents
 
 \end_layout
 
-\begin_layout --Separator--
+\begin_layout Standard
+\begin_inset Newpage pagebreak
+\end_inset
+
 
 \end_layout
 
@@ -650,8 +653,7 @@ key "4"
 
 \end_inset
 
-David Irvine, maidsafe - a new network paradigm.
- david.irvine@maidsafe.net
+David Irvine, maidsafe: A new networking paradigm, david.irvine@maidsafe.net
 \end_layout
 
 \begin_layout Bibliography
@@ -662,8 +664,6 @@ key "5"
 
 \end_inset
 
-
-\lang english
 UPnP Forum.
  Internet gateway device (IGD) standardized device control protocol, November
  2001.
@@ -671,8 +671,6 @@ UPnP Forum.
 \end_layout
 
 \begin_layout Bibliography
-
-\lang english
 \begin_inset CommandInset bibitem
 LatexCommand bibitem
 label "6"
@@ -684,8 +682,6 @@ key "6"
 \end_layout
 
 \begin_layout Bibliography
-
-\lang english
 \begin_inset CommandInset bibitem
 LatexCommand bibitem
 label "7"
@@ -799,7 +795,7 @@ He has spent many years as a lifeboat Helmsman and is a keen sailor when
 \begin_layout Standard
 \begin_inset External
 	template PDFPages
-	filename Ford.pdf
+	filename third_party/Ford.pdf
 	extra LaTeX "pages=-"
 
 \end_inset
