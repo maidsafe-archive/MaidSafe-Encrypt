@@ -1700,7 +1700,8 @@ int MaidsafeStoreManager::AddToWatchList(
 
   // Find the Chunk Info holders
   kad_ops_->FindKClosestNodes(store_data->data_name,
-    boost::bind(&MaidsafeStoreManager::AddToWatchListStageTwo, this, _1, data));
+      boost::bind(&MaidsafeStoreManager::AddToWatchListStageTwo, this, _1, _2,
+                  data));
   return kSuccess;
 }
 
@@ -1730,49 +1731,26 @@ void MaidsafeStoreManager::AddToWatchListTaskCallback(
 }
 
 void MaidsafeStoreManager::AddToWatchListStageTwo(
-    const std::string &response,
+    const ReturnCode &result,
+    const std::vector<kad::Contact> &chunk_info_holders,
     boost::shared_ptr<WatchListOpData> data) {
 #ifdef DEBUG
 //   printf("In MSM::AddToWatchListStageTwo (%d) for chunk %s\n",
 //          kad_ops_->Port(), HexSubstr(data->store_data->data_name).c_str());
 #endif
-  kad::FindResponse find_response;
-  if (!find_response.ParseFromString(response)) {
+
+  if (result != kSuccess || chunk_info_holders.size() < kUpperThreshold_) {
 #ifdef DEBUG
-    printf("In MSM::AddToWatchListStageTwo (%d), can't parse FindNodes result."
-           "\n", kad_ops_->Port());
+    printf("In MSM::AddToWatchListStageTwo (%d), could not find chunk info "
+           "holders for %s.\n", kad_ops_->Port(),
+           HexSubstr(data->store_data->data_name).c_str());
 #endif
     tasks_handler_.NotifyTaskFailure(data->task_id,
                                      kStoreChunkFindNodesFailure);
     return;
   }
 
-  if (find_response.result() != kad::kRpcResultSuccess) {
-#ifdef DEBUG
-    printf("In MSM::AddToWatchListStageTwo (%d), Kademlia RPC failed.\n",
-           kad_ops_->Port());
-#endif
-    tasks_handler_.NotifyTaskFailure(data->task_id,
-                                     kStoreChunkFindNodesFailure);
-    return;
-  }
-
-  if (find_response.closest_nodes_size() < kUpperThreshold_) {
-#ifdef DEBUG
-    printf("In MSM::AddToWatchListStageTwo (%d), Kad lookup failed to find %u "
-           "nodes; found %i nodes.\n", kad_ops_->Port(), kUpperThreshold_,
-           find_response.closest_nodes_size());
-#endif
-    tasks_handler_.NotifyTaskFailure(data->task_id,
-                                     kStoreChunkFindNodesFailure);
-    return;
-  }
-
-  for (int i = 0; i < find_response.closest_nodes_size(); ++i) {
-    kad::Contact contact;
-    contact.ParseFromString(find_response.closest_nodes(i));
-    data->chunk_info_holders.push_back(contact);
-  }
+  data->chunk_info_holders = chunk_info_holders;
 
   data->account_holders = account_holders_manager_.account_holder_group();
   if (data->account_holders.size() < kUpperThreshold_) {
@@ -2617,7 +2595,7 @@ int MaidsafeStoreManager::RemoveFromWatchList(
   // Find the Chunk Info holders
   kad_ops_->FindKClosestNodes(store_data->data_name,
       boost::bind(&MaidsafeStoreManager::RemoveFromWatchListStageTwo, this, _1,
-                  data));
+                  _2, data));
   return kSuccess;
 }
 
@@ -2635,34 +2613,16 @@ void MaidsafeStoreManager::RemoveFromWatchListTaskCallback(
 }
 
 void MaidsafeStoreManager::RemoveFromWatchListStageTwo(
-    const std::string &response,
+    const ReturnCode &result,
+    const std::vector<kad::Contact> &chunk_info_holders,
     boost::shared_ptr<WatchListOpData> data) {
   kad::FindResponse find_response;
-  if (!find_response.ParseFromString(response)) {
-#ifdef DEBUG
-    printf("In MSM::RemoveFromWatchListStageTwo (%d), can't parse FindNodes "
-           "result.\n", kad_ops_->Port());
-#endif
-    tasks_handler_.NotifyTaskFailure(data->task_id,
-                                     kDeleteChunkFindNodesFailure);
-    return;
-  }
 
-  if (find_response.result() != kad::kRpcResultSuccess) {
+  if (result != kSuccess || chunk_info_holders.size() < kUpperThreshold_) {
 #ifdef DEBUG
-    printf("In MSM::RemoveFromWatchListStageTwo (%d), Kademlia RPC failed.\n",
-           kad_ops_->Port());
-#endif
-    tasks_handler_.NotifyTaskFailure(data->task_id,
-                                     kDeleteChunkFindNodesFailure);
-    return;
-  }
-
-  if (find_response.closest_nodes_size() < kUpperThreshold_) {
-#ifdef DEBUG
-    printf("In MSM::RemoveFromWatchListStageTwo (%d), Kad lookup failed to "
-           "find %u nodes; found %u nodes.\n", kad_ops_->Port(),
-           kUpperThreshold_, find_response.closest_nodes_size());
+    printf("In MSM::RemoveFromWatchListStageTwo (%d), could not find chunk "
+           "info holders for %s.\n", kad_ops_->Port(),
+           HexSubstr(data->store_data->data_name).c_str());
 #endif
     tasks_handler_.NotifyTaskFailure(data->task_id,
                                      kDeleteChunkFindNodesFailure);

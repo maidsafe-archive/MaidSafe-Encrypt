@@ -251,7 +251,8 @@ class VaultServiceLogic {
   // AmendRemoteAccountOpData or RemoteAccountStatusOpData.
   template <typename T>
   void RemoteOpStageTwo(boost::shared_ptr<T> data,
-                        std::string find_nodes_response);
+                        const maidsafe::ReturnCode &result,
+                        const std::vector<kad::Contact> &closest_nodes);
   // Specialisations for sending appropriate RPCs
   template <typename T>
   void SendRpcs(boost::shared_ptr<T> data);

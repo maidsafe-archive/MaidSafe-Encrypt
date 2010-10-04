@@ -205,8 +205,10 @@ class AccountAmendmentHandler {
                       PendingAmending pending,
                       AccountAmendment *amendment);
   void CreateNewAmendment(AccountAmendment amendment);
-  void CreateNewAmendmentCallback(AccountAmendment amendment,
-                                  std::string find_nodes_response);
+  void CreateNewAmendmentCallback(
+      AccountAmendment amendment,
+      const maidsafe::ReturnCode &result,
+      const std::vector<kad::Contact> &closest_nodes);
   AccountHandler *account_handler_;
   RequestExpectationHandler *request_expectation_handler_;
   VaultServiceLogic *vault_service_logic_;

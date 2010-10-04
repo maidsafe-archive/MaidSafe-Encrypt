@@ -145,11 +145,13 @@ class ClientBufferPacketHandler {
                    bp_operations_cb cb,
                    const boost::int16_t &transport_id);
  private:
-  virtual void FindNodes(kad::VoidFunctorOneString cb,
+  virtual void FindNodes(maidsafe::VoidFuncIntContacts cb,
                          boost::shared_ptr<ChangeBPData> data);
-  virtual void FindNodesCallback(const std::string &result,
-                                 boost::shared_ptr<ChangeBPData> data,
-                                 const boost::int16_t &transport_id);
+  virtual void FindNodesCallback(
+      const ReturnCode &result,
+      const std::vector<kad::Contact> &closest_nodes,
+      boost::shared_ptr<ChangeBPData> data,
+      const boost::int16_t &transport_id);
   void ActionOnBpDone(
       boost::shared_ptr<std::vector<ModifyBPCallbackData> > cb_datas,
       boost::int16_t index);

@@ -73,17 +73,22 @@ TEST_F(KadOpsTest, BEH_MAID_BlockingFindKClosestNodes) {
 
   // Expectations
   EXPECT_CALL(mko_, FindKClosestNodes("",
-      testing::An<kad::VoidFunctorOneString>()))
+      testing::An<VoidFuncIntContacts>()))
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_kadops::RunCallback, fail_parse_result_, _1))))
+          boost::bind(&MockKadOps::ThreadedFindKClosestNodesCallback, &mko_,
+                      fail_parse_result_, _1))))                       // Call 2
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_kadops::RunCallback, fail_result_, _1))))  // Call 3
+          boost::bind(&MockKadOps::ThreadedFindKClosestNodesCallback, &mko_,
+                      fail_result_, _1))))                             // Call 3
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_kadops::RunCallback, few_result_, _1))))   // Call 4
+          boost::bind(&MockKadOps::ThreadedFindKClosestNodesCallback, &mko_,
+                      few_result_, _1))))                              // Call 4
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_kadops::RunCallback, good_result_, _1))))  // Call 5
+          boost::bind(&MockKadOps::ThreadedFindKClosestNodesCallback, &mko_,
+                      good_result_, _1))))                             // Call 5
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_kadops::RunCallback, good_result_, _1))));      // 6
+          boost::bind(&MockKadOps::ThreadedFindKClosestNodesCallback, &mko_,
+                      good_result_, _1))));                            // Call 6
 
   // Call 1
   ASSERT_EQ(kFindNodesError,

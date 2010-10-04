@@ -27,6 +27,7 @@
 #include "maidsafe/accountholdersmanager.h"
 #include "maidsafe/chunkstore.h"
 #include "tests/maidsafe/mockkadops.h"
+#include "tests/maidsafe/threadedcallcontainer.h"
 
 namespace test_ahm {
 static const boost::uint8_t K(4);
@@ -78,7 +79,15 @@ class AccountHoldersManagerTest : public testing::Test {
         test_cond_var_(),
         test_return_code_(kPendingResult),
         test_account_holders_(),
-        test_functor_() {}
+        test_functor_()
+        /* tcc_(1) */ {}
+  void ClosestNodesThreadedCallback(const std::string &response,
+                                    VoidFuncIntContacts callback) {
+    printf("In ClosestNodesThreadedCallback ...\n");
+//     tcc_.Enqueue(boost::bind(&MockKadOps::RealFindKClosestNodesCallback,
+//                              mock_kad_ops_, response, callback));
+    mock_kad_ops_->ThreadedFindKClosestNodesCallback(response, callback);
+  }
  protected:
   void SetUp() {
     ASSERT_EQ(crypto::SHA_512, co_.hash_algorithm());
@@ -103,16 +112,10 @@ class AccountHoldersManagerTest : public testing::Test {
     boost::mutex::scoped_lock lock(test_mutex_);
     test_return_code_ = return_code;
     test_account_holders_ = account_holders;
-    // Check AMH mutex is locked, failed_ids_ is empty and update_in_progress_
-    // is set to true
-    if (account_holders_manager_.mutex_.try_lock()) {
-      account_holders_manager_.mutex_.unlock();
-      test_return_code_ = kBPError;
-    }
     if (!account_holders_manager_.failed_ids_.empty())
       test_return_code_ = kBPSerialiseError;
-    if (!account_holders_manager_.update_in_progress_)
-      test_return_code_ = kBPInfoSerialiseError;
+     if (account_holders_manager_.update_in_progress_)
+       test_return_code_ = kBPInfoSerialiseError;
     --test_rpcs_in_flight_;
 //    printf("return_code: %i, account_holders.size: %u, test_rpcs_in_flight_: "
 //           "%u\n", return_code, account_holders.size(), test_rpcs_in_flight_);
@@ -156,17 +159,21 @@ class AccountHoldersManagerTest : public testing::Test {
   ReturnCode test_return_code_;
   std::vector<kad::Contact> test_account_holders_;
   AccountHolderGroupFunctor test_functor_;
+  // ThreadedCallContainer tcc_;
 };
 
 TEST_F(AccountHoldersManagerTest, BEH_MAID_AHM_Init) {
   // Set up expectations
   EXPECT_CALL(*mock_kad_ops_, FindKClosestNodes(account_name_, testing::_))
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_kadops::RunCallback, fail_parse_result_, _1))))
+          boost::bind(&AccountHoldersManagerTest::ClosestNodesThreadedCallback,
+                      this, fail_parse_result_, _1))))                 // Call 1
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_kadops::RunCallback, fail_result_, _1))))  // Call 2
+          boost::bind(&AccountHoldersManagerTest::ClosestNodesThreadedCallback,
+                      this, fail_result_, _1))))                       // Call 2
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_kadops::RunCallback, good_result_, _1))));  // Cll 3
+          boost::bind(&AccountHoldersManagerTest::ClosestNodesThreadedCallback,
+                      this, good_result_, _1))));                      // Call 3
 
   // Uninitialised
   ASSERT_TRUE(account_holders_manager_.account_name().empty());
@@ -217,18 +224,23 @@ TEST_F(AccountHoldersManagerTest, BEH_MAID_AHM_UpdateGroup) {
   // Set up expectations
   EXPECT_CALL(*mock_kad_ops_, FindKClosestNodes(account_name_, testing::_))
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_kadops::RunCallback, fail_parse_result_, _1))))
+          boost::bind(&AccountHoldersManagerTest::ClosestNodesThreadedCallback,
+                      this, fail_parse_result_, _1))))                 // Call 1
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_kadops::RunCallback, fail_result_, _1))))  // Call 2
+          boost::bind(&AccountHoldersManagerTest::ClosestNodesThreadedCallback,
+                      this, fail_result_, _1))))                       // Call 2
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_kadops::RunCallback, few_result_, _1))))   // Call 3
+          boost::bind(&AccountHoldersManagerTest::ClosestNodesThreadedCallback,
+                      this, few_result_, _1))))                        // Call 3
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_kadops::RunCallback, good_result_, _1))));  // Cll 4
+          boost::bind(&AccountHoldersManagerTest::ClosestNodesThreadedCallback,
+                      this, good_result_, _1))));                      // Call 4
   std::string good_pmid_account(co_.Hash(good_pmids_.back() + kAccount, "",
                                          crypto::STRING_STRING, false));
   EXPECT_CALL(*mock_kad_ops_, FindKClosestNodes(good_pmid_account, testing::_))
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_kadops::RunCallback, good_result_, _1))));  // Cll 5
+          boost::bind(&AccountHoldersManagerTest::ClosestNodesThreadedCallback,
+                      this, good_result_, _1))));                      // Call 5
 
   // Fake initialisation
   account_holders_manager_.do_nothing_ = boost::bind(
@@ -379,11 +391,11 @@ TEST_F(AccountHoldersManagerTest, BEH_MAID_AHM_ReportFailure) {
   // Set up expectations
   EXPECT_CALL(*mock_kad_ops_, FindKClosestNodes(account_name_, testing::_))
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_kadops::RunCallback, good_result_, _1))))
+          boost::bind(&AccountHoldersManagerTest::ClosestNodesThreadedCallback,
+                      this, good_result_, _1))))
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_kadops::RunCallback, good_result_, _1))))
-      .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&mock_kadops::RunCallback, good_result_, _1))));
+          boost::bind(&AccountHoldersManagerTest::ClosestNodesThreadedCallback,
+                      this, good_result_, _1))));
 
   // Fake initialisation
   account_holders_manager_.do_nothing_ = boost::bind(
@@ -412,7 +424,11 @@ TEST_F(AccountHoldersManagerTest, BEH_MAID_AHM_ReportFailure) {
             account_holders_manager_.account_holder_group().size());
 
   // Call with good ID, but while already updating
-  account_holders_manager_.update_in_progress_ = true;
+  {
+    boost::mutex::scoped_lock lock(account_holders_manager_.mutex_);
+    ASSERT_FALSE(account_holders_manager_.update_in_progress_);
+    account_holders_manager_.update_in_progress_ = true;
+  }
   std::string good_id = account_holders_manager_.account_holder_group_.
       at(base::RandomUint32() % test_ahm::K).node_id().String();
   account_holders_manager_.ReportFailure(good_id);
@@ -432,6 +448,17 @@ TEST_F(AccountHoldersManagerTest, BEH_MAID_AHM_ReportFailure) {
       ASSERT_TRUE(account_holders_manager_.failed_ids_.empty());
   }
   ASSERT_EQ(good_pmids_.size(), test_ahm::K);
+  {
+    // wait for update to finish (replaces contacts)
+    printf("In ReportFailure test, before mutex lock\n");
+    boost::mutex::scoped_lock lock(account_holders_manager_.mutex_);
+    printf("In ReportFailure test, after mutex lock\n");
+    while (account_holders_manager_.update_in_progress_) {
+      printf("In ReportFailure test, waiting for cond var\n");
+      account_holders_manager_.cond_var_.wait(lock);
+    }
+    printf("In ReportFailure test, after mutex scope\n");
+  }
   ASSERT_EQ(test_ahm::K,
             account_holders_manager_.account_holder_group().size());
 
@@ -451,6 +478,12 @@ TEST_F(AccountHoldersManagerTest, BEH_MAID_AHM_ReportFailure) {
       ASSERT_EQ(i + 1, account_holders_manager_.failed_ids_.size());
     else
       ASSERT_TRUE(account_holders_manager_.failed_ids_.empty());
+  }
+  {
+    // wait for update to finish (replaces contacts)
+    boost::mutex::scoped_lock lock(account_holders_manager_.mutex_);
+    while (account_holders_manager_.update_in_progress_)
+      account_holders_manager_.cond_var_.wait(lock);
   }
   ASSERT_EQ(test_ahm::K,
             account_holders_manager_.account_holder_group().size());

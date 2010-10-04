@@ -47,6 +47,7 @@ class SignedRequest;
 namespace maidsafe {
 
 class TestClientBP;
+class MockKadOps;
 
 namespace test {
 class CBPHandlerTest;
@@ -93,20 +94,12 @@ class KadOps {
    * Wrapper for the non-blocking Kademlia function.
    */
   virtual void FindKClosestNodes(const std::string &key,
-                                 kad::VoidFunctorOneString callback);
+                                 VoidFuncIntContacts callback);
   /**
    * Blocking call to Kademlia's FindKClosestNodes.
    */
   int BlockingFindKClosestNodes(const std::string &key,
                                 std::vector<kad::Contact> *contacts);
-  /**
-   * A callback handler for passing to FindKClosestNodes.
-   */
-  void HandleFindCloseNodesResponse(const std::string &response,
-                                    std::vector<kad::Contact> *contacts,
-                                    boost::mutex *mutex,
-                                    boost::condition_variable *cv,
-                                    ReturnCode *result);
   /**
    * Estimates whether a given node is within the K closest to a key.
    */
@@ -164,7 +157,7 @@ class KadOps {
   void HandleDeadRendezvousServer(bool dead_server) {
     knode_.HandleDeadRendezvousServer(dead_server);
   }
-  void SetThisEndpoint(EndPoint *this_endpoint);
+void SetThisEndpoint(EndPoint *this_endpoint);
   void set_transport_id(const boost::int16_t &transport_id) {
     knode_.set_transport_id(transport_id);
   }
@@ -176,6 +169,7 @@ class KadOps {
   boost::uint8_t k() const { return K_; }
   friend class test::CBPHandlerTest;
   friend class TestClientBP;
+  friend class MockKadOps;
  private:
   KadOps(const KadOps&);
   KadOps& operator=(const KadOps&);
@@ -184,6 +178,15 @@ class KadOps {
                     boost::mutex *mutex,
                     boost::condition_variable *cond_var,
                     ReturnCode *result);
+  void FindKClosestNodesCallback(const std::string &response,
+                                 VoidFuncIntContacts callback);
+  void BlockingFindKClosestNodesCallback(
+      const ReturnCode &result_,
+      const std::vector<kad::Contact> &closest_nodes_,
+      std::vector<kad::Contact> *closest_nodes,
+      boost::mutex *mutex,
+      boost::condition_variable *cv,
+      ReturnCode *result);
   const boost::uint8_t K_;
   kad::KNode knode_;
   kad::NodeType node_type_;

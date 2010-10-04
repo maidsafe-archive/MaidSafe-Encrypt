@@ -87,7 +87,8 @@ class AccountHoldersManager {
   FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_AddToWatchList);
   FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_RemoveFromWatchList);
   FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_UpdateAccountStatus);
-  void FindNodesCallback(const std::string &response,
+  void FindNodesCallback(const ReturnCode &result,
+                         const std::vector<kad::Contact> &closest_nodes,
                          AccountHolderGroupFunctor callback);
   void UpdateGroup(AccountHolderGroupFunctor callback);
   bool UpdateRequired();

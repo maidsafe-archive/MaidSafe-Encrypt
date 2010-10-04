@@ -57,6 +57,7 @@ void AccountHoldersManager::Update() {
 }
 
 void AccountHoldersManager::UpdateGroup(AccountHolderGroupFunctor callback) {
+//   printf("*** AccountHoldersManager::UpdateGroup ***\n");
   if (account_name_.empty()) {
 #ifdef DEBUG
     printf("In AHM::UpdateGroup, no account name set!\n");
@@ -71,45 +72,30 @@ void AccountHoldersManager::UpdateGroup(AccountHolderGroupFunctor callback) {
   //                  single request to a good account holder for his closest
   //                  contacts to account_name_;
   kad_ops_->FindKClosestNodes(account_name_, boost::bind(
-      &AccountHoldersManager::FindNodesCallback, this, _1, callback));
+      &AccountHoldersManager::FindNodesCallback, this, _1, _2, callback));
 }
 
 void AccountHoldersManager::FindNodesCallback(
-    const std::string &response,
+    const ReturnCode &result,
+    const std::vector<kad::Contact> &closest_nodes,
     AccountHolderGroupFunctor callback) {
-  kad::FindResponse find_response;
-  ReturnCode result = kSuccess;
-  if (!find_response.ParseFromString(response)) {
-#ifdef DEBUG
-    printf("In AHM::FindNodesCallback, can't parse result.\n");
-#endif
-    result = kFindNodesParseError;
-  } else if (find_response.result() != kad::kRpcResultSuccess) {
-#ifdef DEBUG
-    printf("In AHM::FindNodesCallback, Kademlia RPC failed.\n");
-#endif
-    result = kFindNodesFailure;
-  }
-
-  std::vector<kad::Contact> ahg;
+  std::vector<kad::Contact> account_holder_group;
   {
+//   printf("In AccountHoldersManager::FindNodesCallback, before mutex lock\n");
     boost::mutex::scoped_lock lock(mutex_);
+//   printf("In AccountHoldersManager::FindNodesCallback, after mutex lock\n");
     if (result == kSuccess) {
-      account_holder_group_.clear();
-      for (int i = 0; i < find_response.closest_nodes_size(); ++i) {
-        kad::Contact contact;
-        contact.ParseFromString(find_response.closest_nodes(i));
-        // Vault cannot be AccountHolder for self
-        if (contact.node_id().String() != pmid_)
-          account_holder_group_.push_back(contact);
-      }
-      ahg = account_holder_group_;
       last_update_ = boost::posix_time::microsec_clock::universal_time();
+      account_holder_group = closest_nodes;
+      // Vault cannot be AccountHolder for self
+      RemoveKadContact(pmid_, &account_holder_group);
     }
+    account_holder_group_ = account_holder_group;
     update_in_progress_ = false;
-    cond_var_.notify_one();
+    cond_var_.notify_all();
+//   printf("In AccountHoldersManager::FindNodesCallback, after mutex scope\n");
   }
-  callback(result, ahg);
+  callback(result, account_holder_group);
 }
 
 bool AccountHoldersManager::UpdateRequired() {
