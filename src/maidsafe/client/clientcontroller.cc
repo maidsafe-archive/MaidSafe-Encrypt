@@ -282,6 +282,7 @@ int ClientController::SerialiseDa() {
 #endif
     return kClientControllerNotInitialised;
   }
+
   DataAtlas data_atlas;
   data_atlas.set_root_db_key(ss_->RootDbKey());
   DataMap root_dm, subdirs_dm;
@@ -291,17 +292,14 @@ int ClientController::SerialiseDa() {
   *dm = root_dm;
 
   for (int i = 0; i < kRootSubdirSize; ++i) {
-//    dm->Clear();
     subdirs_dm.Clear();
-    if (AddToPendingFiles(TidyPath(kRootSubdir[i][0]))) {
+    std::string tidy_path(TidyPath(kRootSubdir[i][0]));
+    if (AddToPendingFiles(tidy_path)) {
 #ifdef DEBUG
-      int n = seh_.EncryptDb(TidyPath(kRootSubdir[i][0]), PRIVATE, "", "",
-                             false, &subdirs_dm);
-      printf("%s encrypted db result %d\n",
-             TidyPath(kRootSubdir[i][0]).c_str(), n);
+      int n = seh_.EncryptDb(tidy_path, PRIVATE, "", "", false, &subdirs_dm);
+      printf("%s encrypted db result %d\n", tidy_path.c_str(), n);
 #else
-      seh_.EncryptDb(TidyPath(kRootSubdir[i][0]), PRIVATE, "", "", false,
-                              &subdirs_dm);
+      seh_.EncryptDb(tidy_path, PRIVATE, "", "", false, &subdirs_dm);
 #endif
       dm = data_atlas.add_dms();
       *dm = subdirs_dm;
@@ -3392,6 +3390,11 @@ std::vector<std::string> ClientController::GetOffLineContacts() {
 bs2::connection ClientController::ConnectToOnFileNetworkStatus(
       const OnFileNetworkStatus::slot_type &slot) {
   return seh_.ConnectToOnFileNetworkStatus(slot);
+}
+
+bs2::connection ClientController::ConnectToOnFileAdded(
+      const OnFileAdded::slot_type &slot) {
+  return seh_.ConnectToOnFileAdded(slot);
 }
 
 void ClientController::FileUpdate(const std::string &file, int percentage) {

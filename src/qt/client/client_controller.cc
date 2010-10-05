@@ -40,9 +40,11 @@
 const int MESSAGE_POLL_TIMEOUT_MS = 3000;
 
 namespace {
-  bool contactSortLessThan(const Contact* c1, const Contact* c2) {
-    return c1->publicName() < c2->publicName();
-  }
+
+bool contactSortLessThan(const Contact* c1, const Contact* c2) {
+  return c1->publicName() < c2->publicName();
+}
+
 }
 
 ClientController* ClientController::instance() {
@@ -108,11 +110,12 @@ bool ClientController::getPendingOps(QList<PendingOps> &ops) {
   return true;
 }
 
-int ClientController::AddInstantFile(const QString &sender, const QString &filename,
-                   const QString &tag,
-                   int sizeLow, int sizeHigh,
-                   const ClientController::ItemType &ityp,
-                   const QString &s){
+int ClientController::AddInstantFile(const QString &sender,
+                                     const QString &filename,
+                                     const QString &tag,
+                                     int sizeLow, int sizeHigh,
+                                     const ClientController::ItemType &ityp,
+                                     const QString &s) {
 
   maidsafe::InstantFileNotification ifn;
   ifn.set_filename(filename.toStdString());
@@ -371,11 +374,11 @@ bool ClientController::sendInstantMessage(const QString& txt,
 }
 
 bool ClientController::sendEmail(const QString& subject,
-                        const QString& message,
-                        const QList<QString>& to,
-                        const QList<QString>& cc,
-                        const QList<QString>& bcc,
-                        const QString& conversation) {
+                                 const QString& message,
+                                 const QList<QString>& to,
+                                 const QList<QString>& cc,
+                                 const QList<QString>& bcc,
+                                 const QString& conversation) {
   qDebug() << "ClientController::sendEmail: " << subject;
 
   std::vector<std::string> contacts, stdcc, stdbcc;
@@ -395,8 +398,8 @@ bool ClientController::sendEmail(const QString& subject,
   return (n == 0);
 }
 
-QDomElement ClientController::EmailToNode( QDomDocument &d, const ClientController::Email &c )
-{
+QDomElement ClientController::EmailToNode(QDomDocument &d,
+                                          const ClientController::Email &c) {
    QDomElement em = d.createElement( "contact" );
 
    em.setAttribute( "from", c.from );
@@ -407,7 +410,7 @@ QDomElement ClientController::EmailToNode( QDomDocument &d, const ClientControll
    em.setAttribute( "subject", c.subject );
 
    return em;
-} 
+}
 
 bool ClientController::sendInstantFile(const QString& filePath,
                                        const QString& txt,
@@ -444,8 +447,7 @@ bool ClientController::sendInstantFile(const QString& filePath,
 bool ClientController::PollVaultInfo(QString *chunkstore,
                                      boost::uint64_t *offered_space,
                                      boost::uint64_t *free_space,
-                                     QString *ip,
-                                     boost::uint32_t *port) {
+                                     QString *ip, boost::uint32_t *port) {
   std::string s_chunkstore;
   std::string s_ip;
   bool b = maidsafe::ClientController::getInstance()->PollVaultInfo(
@@ -656,12 +658,9 @@ bool ClientController::CreatePublicUsername(const std::string &pub_username) {
          CreatePublicUsername(pub_username);
 }
 
-bool ClientController::CreateUser(const QString &username,
-                                  const QString &pin,
-                                  const QString &password,
-                                  const int &vaultType,
-                                  const QString &space,
-                                  const QString &port,
+bool ClientController::CreateUser(const QString &username, const QString &pin,
+                                  const QString &password, const int &vaultType,
+                                  const QString &space, const QString &port,
                                   const QString &directory) {
   std::string username_ = username.toStdString();
   std::string pin_ = pin.toStdString();
@@ -739,7 +738,8 @@ void ClientController::ClearConversations() {
 
 QStringList ClientController::GetContactInfo(const QString &pub_name) {
   maidsafe::mi_contact mic;
-  maidsafe::SessionSingleton::getInstance()->GetContactInfo(pub_name.toStdString(), &mic);
+  maidsafe::SessionSingleton::getInstance()->GetContactInfo(
+      pub_name.toStdString(), &mic);
 
   QStringList contact;
   std::string gender(1, mic.gender_);
@@ -755,7 +755,8 @@ QStringList ClientController::GetContactInfo(const QString &pub_name) {
   return contact;
 }
 
-int ClientController::getattr(const QString &path, QString &lastModified, QString &fileSize) {
+int ClientController::getattr(const QString &path, QString &lastModified,
+                              QString &fileSize) {
   std::string ser_mdm;
   maidsafe::MetaDataMap mdm;
   std::string the_path(maidsafe::TidyPath(path.toStdString()));
@@ -775,9 +776,9 @@ int ClientController::getattr(const QString &path, QString &lastModified, QStrin
   fileSize = QString::fromStdString(s);
   return result;
 }
+
 int ClientController::readdir(const QString &path,  // NOLINT
-                              std::map<std::string,
-                                       ItemType> *children) {
+                              std::map<std::string, ItemType> *children) {
   std::string the_path(maidsafe::TidyPath(path.toStdString()));
   std::map<std::string, maidsafe::ItemType> children1;
   int result = maidsafe::ClientController::getInstance()->readdir(the_path, &children1);
@@ -838,14 +839,17 @@ int ClientController::readdir(const QString &path,  // NOLINT
 
   return result;
 }
+
 int ClientController::read(const QString &path) {
   std::string the_path(maidsafe::TidyPath(path.toStdString()));
   return maidsafe::ClientController::getInstance()->read(the_path);
 }
+
 int ClientController::write(const QString &path) {
   std::string the_path(maidsafe::TidyPath(path.toStdString()));
   return maidsafe::ClientController::getInstance()->write(the_path);
 }
+
 int ClientController::rename(const QString &path,
                              const QString &path2) {
   std::string the_path(maidsafe::TidyPath(path.toStdString()));
@@ -853,14 +857,17 @@ int ClientController::rename(const QString &path,
   return maidsafe::ClientController::getInstance()->rename(the_path,
                                                            the_path2);
 }
+
 int ClientController::mkdir(const QString &path) {
   std::string the_path(maidsafe::TidyPath(path.toStdString()));
   return maidsafe::ClientController::getInstance()->mkdir(the_path);
 }
+
 int ClientController::rmdir(const QString &path) {
   std::string the_path(maidsafe::TidyPath(path.toStdString()));
   return maidsafe::ClientController::getInstance()->rmdir(the_path);
 }
+
 int ClientController::mknod(const QString &path) {
   std::string the_path(maidsafe::TidyPath(path.toStdString()));
   return maidsafe::ClientController::getInstance()->mknod(the_path);
@@ -877,7 +884,7 @@ QString ClientController::getContactTooltip(HintLevel level) {
   if (level == SMALL) {
     return "Contacts";
   } else if (level == FULL) {
-    return "Contacts : Use This to communicate and share files with your friends";
+    return "Contacts: Use to communicate and share files with your friends";
   }
   return "";
 }
@@ -886,7 +893,7 @@ QString ClientController::getSharesTooltip(HintLevel level) {
   if (level == SMALL) {
     return "Shares";
   } else if (level == FULL) {
-    return "Shares : Use This Tab to create and modify shares";
+    return "Shares: Use This Tab to create and modify shares";
   }
   return "";
 }
@@ -895,36 +902,43 @@ QString ClientController::getLogsTooltip(HintLevel level) {
   if (level == SMALL) {
     return "Logs";
   } else if (level == FULL) {
-    return "Logs : Use This Tab to View PD Information";
+    return "Logs: Use This Tab to View PD Information";
   }
   return "";
 }
+
 QString ClientController::getEmailTooltip(HintLevel level) {
   if (level == SMALL) {
     return "Email";
   } else if (level == FULL) {
-    return "Email : Use This Tab to view and reply to your emails";
+    return "Email: Use This Tab to view and reply to your emails";
   }
   return "";
 }
+
 QString ClientController::getMyFilesTooltip(HintLevel level) {
   if (level == SMALL) {
     return QString::fromStdString(TidyPath(kRootSubdir[0][0]));
   } else if (level == FULL) {
     return QString::fromStdString(TidyPath(kRootSubdir[0][0])) +
-           QString(" : Use This Tab to manage your protected PD Files");
+           QString(": Use This Tab to manage your protected PD Files");
   }
   return "";
 }
 
 void ClientController::OnHelloPing(const std::string &contact_name,
-        const int &status) {
+                                   const int &status) {
   // TODO(Team): update GUI
   printf("contact %s with status %d\n", contact_name.c_str(), status);
 }
+
 bs2::connection ClientController::ConnectToOnFileNetworkStatus(
-      const OnFileNetworkStatus::slot_type &slot) {
+    const OnFileNetworkStatus::slot_type &slot) {
   return maidsafe::ClientController::getInstance()->
              ConnectToOnFileNetworkStatus(slot);
 }
 
+bs2::connection ClientController::ConnectToOnFileAdded(
+    const OnFileAdded::slot_type &slot) {
+  return maidsafe::ClientController::getInstance()->ConnectToOnFileAdded(slot);
+}

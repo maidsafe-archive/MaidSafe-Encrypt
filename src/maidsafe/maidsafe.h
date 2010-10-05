@@ -49,42 +49,11 @@ const boost::uint32_t kMinRegularFileSize = 512;
 const boost::uint32_t kKeySize = 64;
 // const crypto::hashtype kHashSize(crypto::SHA_512);
 
-struct Key_Type {
-  Key_Type() : package_type(), id(), private_key(), public_key() {}
-  maidsafe::PacketType package_type;
-  std::string id;
-  std::string private_key;
-  std::string public_key;
-};
-
-struct bufferpacket_messages {
-  bufferpacket_messages() : index(), message(), sender(), type() {}
-  std::string index;
-  std::string message;
-  std::string sender;
-  maidsafe::MessageType type;
-};
-
-//  enum BufferPacketType {
-//    MPID, MAID, PMID
-//  };
-
-enum MaidsafeRpcResult {
-  kNack, kAck, kNotRemote, kBusy
-};
-
 const std::string kAnonymousRequestSignature(2 * kKeySize, 'f');
 
 enum DbInitFlag {CONNECT, CREATE, DISCONNECT};
 
-// struct seh_processed_jobs {
-//   std::string path;
-//   int exit_code;
-//   seh_job_type type;
-// };
-
 const std::string kRoot("/");
-const std::string kKeysDb("/KeysDb");
 
 const int kRootSubdirSize = 4;
 const int kSharesSubdirSize = 1;
@@ -93,7 +62,7 @@ const std::string kRootSubdir[kRootSubdirSize][2] = {
   {"/My Stuff", ""},
   {"/Shares", "" },
   {"/Emails", ""},
-  {"/chat", ""}
+  {"/Chat", ""}
 };
 
 const std::string kSharesSubdir[kSharesSubdirSize][2] = {
@@ -366,6 +335,10 @@ const int kChunkInfoRefActiveTimeout = 86400;  // 24 hours
 //      kad::kMinSuccessfulPecentageStore > .25 ?
 //      static_cast<boost::uint16_t>(kK * .25) : kKadUpperThreshold);
 
+enum MaidsafeRpcResult {
+  kNack, kAck, kNotRemote, kBusy
+};
+
 namespace maidsafe {
 
 enum DirType {ANONYMOUS, PRIVATE, PRIVATE_SHARE, PUBLIC_SHARE};
@@ -379,9 +352,10 @@ enum SortingMode { ALPHA, RANK, LAST };
 
 enum ShareFilter { kAll, kRo, kAdmin };
 
-typedef boost::function<void (const maidsafe::ReturnCode&)> VoidFuncOneInt;
-typedef boost::function<void (const ReturnCode&,
-    const std::vector<kad::Contact>&)> VoidFuncIntContacts;
+typedef boost::function<void(const maidsafe::ReturnCode&)> VoidFuncOneInt;
+typedef boost::function<void(const ReturnCode&,
+                             const std::vector<kad::Contact>&)>
+        VoidFuncIntContacts;
 }  // namespace maidsafe
 
 

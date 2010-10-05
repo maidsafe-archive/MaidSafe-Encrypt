@@ -100,7 +100,7 @@ PerpetualData::PerpetualData(QWidget* parent)
   lsLogin_->StartProgressBar();
 
   hideOpButtons();
-  
+
   qtTranslator = new QTranslator;
   myAppTranslator = new QTranslator;
   QString locale = QLocale::system().name().left(2);
@@ -113,7 +113,7 @@ PerpetualData::PerpetualData(QWidget* parent)
     qApp->installTranslator(myAppTranslator);
     ui_.retranslateUi(this);
   }
-  
+
    connect(lsLogin_, SIGNAL(existingUser()),
           this,   SLOT(onLoginExistingUser()));
 
@@ -276,7 +276,7 @@ void PerpetualData::createActions() {
   connect(actions_[ THEME_RED ], SIGNAL(triggered()),
           this,              SLOT(onRedThemeTriggered()));
   connect(ui_.fullViewBtn, SIGNAL(clicked()),
-          this,            SLOT(onFullViewTriggered()));  
+          this,            SLOT(onFullViewTriggered()));
 }
 
 void PerpetualData::createMenus() {
@@ -577,11 +577,9 @@ void PerpetualData::quit() {
 
 void PerpetualData::onQuit() {
   // TODO(Team#5#): 2009-08-18 - confirm quit if something in progress
-  QList<ClientController::PendingOps> ops;
-
   if (pendingOps_->hasPendingOps()) {
    connect(pendingOps_,   SIGNAL(opsComplete()),
-      this,             SLOT(onOpsComplete()));
+           this,          SLOT(onOpsComplete()));
    pendingOps_->show();
   } else {
     if (state_ != LOGGED_IN) {
@@ -596,12 +594,12 @@ void PerpetualData::onQuit() {
 
 void PerpetualData::onOpsComplete() {
   if (state_ != LOGGED_IN) {
-      ClientController::instance()->shutdown();
-      qApp->quit();
-    } else {
-      quitting_ = true;
-      onLogout();
-    }
+    ClientController::instance()->shutdown();
+    qApp->quit();
+  } else {
+    quitting_ = true;
+    onLogout();
+  }
 }
 
 void PerpetualData::onAbout() {
@@ -815,7 +813,7 @@ void PerpetualData::onEmailReceived(const QString &subject,
     ts << doc.toString();
 
     file.close();
-    
+
     SaveFileThread* sft = new SaveFileThread(tidyEmailMaidsafePath, this);
     connect(sft,  SIGNAL(saveFileCompleted(int, const QString&)),
           this, SLOT(onSaveFileCompleted(int, const QString&)));
@@ -1057,7 +1055,7 @@ void PerpetualData::onRedThemeTriggered() {
 void PerpetualData::onFullViewTriggered() {
   lifeStuffFull_ = new LifeStuffFull;
   lifeStuffFull_->show();
-}             
+}
 
 
 void PerpetualData::onEmailTriggered() {

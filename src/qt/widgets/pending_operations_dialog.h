@@ -19,6 +19,8 @@
 #include <QWidget>
 #include <QString>
 
+#include <boost/thread/mutex.hpp>
+
 // local
 #include "qt/client/client_controller.h"
 
@@ -44,8 +46,10 @@ class PendingOperationsDialog : public QDialog {
   Ui::PendingOperationsDialog ui_;
   QList<ClientController::PendingOps> ops_;
   bs2::connection pending_files_connection_;
+  bs2::connection file_added_connection_;
+  boost::mutex pending_files_mutex_;
 
-  bool getOps(QList<ClientController::PendingOps> ops);
+  void FileAdded(const std::string &file);
   void OperationStatus(const std::string &file, int percentage);
 
  protected:

@@ -13,9 +13,10 @@
  */
 #include "qt/widgets/pending_operations_dialog.h"
 
-#include <QMessageBox>
 #include <QDebug>
 #include <QInputDialog>
+#include <QMessageBox>
+#include <QObject>
 #include <QTranslator>
 
 #include "qt/client/client_controller.h"
@@ -26,39 +27,35 @@ PendingOperationsDialog::PendingOperationsDialog(QWidget* parent)
   ui_.setupUi(this);
   setWindowIcon(QPixmap(":/icons/32/Triangle"));
 
-  getOps(ops_);
-
   connect(ui_.cancelBtn, SIGNAL(clicked(bool)),
-          this, SLOT(onCancel()));
+          this,          SLOT(onCancel()));
 
   connect(ui_.cancelAllBtn, SIGNAL(clicked(bool)),
-          this, SLOT(onCancelAll()));
+          this,             SLOT(onCancelAll()));
 
   pending_files_connection_ =
       ClientController::instance()->ConnectToOnFileNetworkStatus(
           boost::bind(&PendingOperationsDialog::OperationStatus, this, _1, _2));
+  file_added_connection_ =
+      ClientController::instance()->ConnectToOnFileAdded(
+          boost::bind(&PendingOperationsDialog::FileAdded, this, _1));
 }
 
 PendingOperationsDialog::~PendingOperationsDialog() {
   pending_files_connection_.disconnect();
+  file_added_connection_.disconnect();
 }
 
 void PendingOperationsDialog::onCancelAll() {
+  {
+    boost::mutex::scoped_lock loch_lochy(pending_files_mutex_);
+    ui_.opTreeWidget->clear();
+  }
   emit opsComplete();
   this->hide();
 }
 
-void PendingOperationsDialog::onCancel() {
-}
-
-bool PendingOperationsDialog::getOps(QList<ClientController::PendingOps> ops){
-    ClientController::instance()->getPendingOps(ops);
-  if (ops.empty()){
-    return true;
-  } else {
-    return true;
-  }
-}
+void PendingOperationsDialog::onCancel() { }
 
 void PendingOperationsDialog::changeEvent(QEvent *event) {
   if (event->type() == QEvent::LanguageChange) {
@@ -69,36 +66,61 @@ void PendingOperationsDialog::changeEvent(QEvent *event) {
 }
 
 bool PendingOperationsDialog::hasPendingOps() {
-  if(ui_.opTreeWidget->topLevelItemCount() < 1) {
-    return false;
+  QObjectList l;
+  {
+    boost::mutex::scoped_lock loch_lochy(pending_files_mutex_);
+    l = ui_.opTreeWidget->children();
   }
-  return true;
+  return l.isEmpty();
 }
 
 void PendingOperationsDialog::OperationStatus(const std::string &file,
                                               int percentage) {
-  QList<QTreeWidgetItem *> items =
+#ifdef DEBUG
+  printf("PendingOperationsDialog::OperationStatus - %s - %d\n",
+         file.c_str(), percentage);
+#endif
+  boost::mutex::scoped_lock loch_lochy(pending_files_mutex_);
+  QList<QTreeWidgetItem*> items =
     ui_.opTreeWidget->findItems(QString::fromStdString(file),
                                 Qt::MatchExactly, 0);
-  if (items.empty()) {
-    QTreeWidgetItem *newItem = new QTreeWidgetItem(ui_.opTreeWidget);
-    newItem->setText(0, QString::fromStdString(file));
-    std::string str = base::IntToString(percentage);
-    newItem->setText(1, QString::fromStdString(str));
+
+  if (items.isEmpty()) {
+#ifdef DEBUG
+    printf("PendingOperationsDialog::OperationStatus - %s not in list\n",
+           file.c_str());
+#endif
+    return;
+  }
+
+  QTreeWidgetItem* theWidget = items.first();
+  if (percentage == 100) {
+    ui_.opTreeWidget->removeItemWidget(theWidget, 0);
+    delete theWidget;
   } else {
-    QTreeWidgetItem* theWidget = items[0];
-    if (percentage == 100) {
-      printf("\n\n\n100000000000000000000000000000000000\n\n\n");
-      ui_.opTreeWidget->removeItemWidget(theWidget, 0);
-    } else {
-      theWidget->setText(0, QString::fromStdString(file));
-      std::string str = base::IntToString(percentage);
-      theWidget->setText(1, QString::fromStdString(str));
-    }
+    std::string str = base::IntToString(percentage);
+    theWidget->setText(1, QString::fromStdString(str));
   }
   if (ui_.opTreeWidget->topLevelItemCount() < 1) {
+#ifdef DEBUG
+    printf("PendingOperationsDialog::OperationStatus - opsComplete signal\n");
+#endif
     emit opsComplete();
+  } else {
+#ifdef DEBUG
+    printf("PendingOperationsDialog::OperationStatus - item count: %d\n",
+           ui_.opTreeWidget->topLevelItemCount());
+#endif
   }
 }
 
+void PendingOperationsDialog::FileAdded(const std::string &file) {
+#ifdef DEBUG
+  printf("PendingOperationsDialog::FileAdded - %s - %d\n", file.c_str(), 0);
+#endif
+  boost::mutex::scoped_lock loch_lochy(pending_files_mutex_);
+  QTreeWidgetItem *newItem = new QTreeWidgetItem(ui_.opTreeWidget);
+  newItem->setText(0, QString::fromStdString(file));
+  newItem->setText(1, tr("0"));
+}
 

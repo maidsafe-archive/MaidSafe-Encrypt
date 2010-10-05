@@ -158,10 +158,8 @@ class ClientController {
                 const std::string &conversation);
   int AddInstantFile(const InstantFileNotification &ifm,
                      const std::string &location);
-  void onInstantMessage(const std::string &message,
-                        const boost::uint32_t&,
-                        const boost::int16_t&,
-                        const double&);
+  void onInstantMessage(const std::string &message, const boost::uint32_t&,
+                        const boost::int16_t&, const double&);
   void SetIMNotifier(IMNotifier imn);
 
   // Contact operations
@@ -247,6 +245,7 @@ class ClientController {
 
   bs2::connection ConnectToOnFileNetworkStatus(
       const OnFileNetworkStatus::slot_type &slot);
+  bs2::connection ConnectToOnFileAdded(const OnFileAdded::slot_type &slot);
 
  private:
   friend class test::ClientControllerTest;
