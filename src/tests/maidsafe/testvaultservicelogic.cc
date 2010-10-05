@@ -153,30 +153,30 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_AddToRemoteRefList) {
       testing::An<maidsafe::VoidFuncIntContacts>()))
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
           boost::bind(&maidsafe::MockKadOps::ThreadedFindKClosestNodesCallback,
-                      vsl.kadops(), fail_parse_result_, _1))))         // Call 1
+                      vsl.kadops().get(), fail_parse_result_, _1))))   // Call 1
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
           boost::bind(&maidsafe::MockKadOps::ThreadedFindKClosestNodesCallback,
-                      vsl.kadops(), fail_result_, _1))))               // Call 2
+                      vsl.kadops().get(), fail_result_, _1))))         // Call 2
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
           boost::bind(&maidsafe::MockKadOps::ThreadedFindKClosestNodesCallback,
-                      vsl.kadops(), few_result_, _1))))                // Call 3
+                      vsl.kadops().get(), few_result_, _1))))          // Call 3
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
           boost::bind(&maidsafe::MockKadOps::ThreadedFindKClosestNodesCallback,
-                      vsl.kadops(), good_result_, _1))))               // Call 4
+                      vsl.kadops().get(), good_result_, _1))))         // Call 4
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
           boost::bind(&maidsafe::MockKadOps::ThreadedFindKClosestNodesCallback,
-                      vsl.kadops(), good_result_, _1))))               // Call 6
+                      vsl.kadops().get(), good_result_, _1))))         // Call 6
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
           boost::bind(&maidsafe::MockKadOps::ThreadedFindKClosestNodesCallback,
-                      vsl.kadops(), good_result_, _1))))               // Call 7
+                      vsl.kadops().get(), good_result_, _1))))         // Call 7
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
           boost::bind(&maidsafe::MockKadOps::ThreadedFindKClosestNodesCallback,
-                      vsl.kadops(), good_result_, _1))));              // Call 8
+                      vsl.kadops().get(), good_result_, _1))));        // Call 8
   EXPECT_CALL(*vsl.kadops(), FindKClosestNodes(pmid_,
       testing::An<maidsafe::VoidFuncIntContacts>()))                   // Call 5
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
           boost::bind(&maidsafe::MockKadOps::ThreadedFindKClosestNodesCallback,
-                      vsl.kadops(), good_result_less_one_, _1))));
+                      vsl.kadops().get(), good_result_less_one_, _1))));
 
   for (size_t i = 0; i < good_contacts_.size(); ++i) {
     if (i < good_contacts_.size() - 1) {
@@ -387,28 +387,28 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_AmendRemoteAccount) {
       testing::An<maidsafe::VoidFuncIntContacts>()))
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
           boost::bind(&maidsafe::MockKadOps::ThreadedFindKClosestNodesCallback,
-                      vsl.kadops(), fail_parse_result_, _1))))         // Call 1
+                      vsl.kadops().get(), fail_parse_result_, _1))))   // Call 1
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
           boost::bind(&maidsafe::MockKadOps::ThreadedFindKClosestNodesCallback,
-                      vsl.kadops(), fail_result_, _1))))               // Call 2
+                      vsl.kadops().get(), fail_result_, _1))))         // Call 2
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
           boost::bind(&maidsafe::MockKadOps::ThreadedFindKClosestNodesCallback,
-                      vsl.kadops(), few_result_, _1))))                // Call 3
+                      vsl.kadops().get(), few_result_, _1))))          // Call 3
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
           boost::bind(&maidsafe::MockKadOps::ThreadedFindKClosestNodesCallback,
-                      vsl.kadops(), good_result_, _1))))               // Call 4
+                      vsl.kadops().get(), good_result_, _1))))         // Call 4
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
           boost::bind(&maidsafe::MockKadOps::ThreadedFindKClosestNodesCallback,
-                      vsl.kadops(), good_result_less_one_, _1))))      // Call 5
+                      vsl.kadops().get(), good_result_less_one_, _1))))   // C 5
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
           boost::bind(&maidsafe::MockKadOps::ThreadedFindKClosestNodesCallback,
-                      vsl.kadops(), good_result_, _1))))               // Call 6
+                      vsl.kadops().get(), good_result_, _1))))         // Call 6
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
           boost::bind(&maidsafe::MockKadOps::ThreadedFindKClosestNodesCallback,
-                      vsl.kadops(), good_result_, _1))))               // Call 7
+                      vsl.kadops().get(), good_result_, _1))))         // Call 7
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
           boost::bind(&maidsafe::MockKadOps::ThreadedFindKClosestNodesCallback,
-                      vsl.kadops(), good_result_, _1))));              // Call 8
+                      vsl.kadops().get(), good_result_, _1))));        // Call 8
 
   for (size_t i = 0; i < good_contacts_.size(); ++i) {
     if (i < good_contacts_.size() - 1) {
@@ -605,28 +605,28 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_RemoteVaultAbleToStore) {
       testing::An<maidsafe::VoidFuncIntContacts>()))
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
           boost::bind(&maidsafe::MockKadOps::ThreadedFindKClosestNodesCallback,
-                      vsl.kadops(), fail_parse_result_, _1))))         // Call 1
+                      vsl.kadops().get(), fail_parse_result_, _1))))   // Call 1
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
           boost::bind(&maidsafe::MockKadOps::ThreadedFindKClosestNodesCallback,
-                      vsl.kadops(), fail_result_, _1))))               // Call 2
+                      vsl.kadops().get(), fail_result_, _1))))         // Call 2
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
           boost::bind(&maidsafe::MockKadOps::ThreadedFindKClosestNodesCallback,
-                      vsl.kadops(), few_result_, _1))))                // Call 3
+                      vsl.kadops().get(), few_result_, _1))))          // Call 3
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
           boost::bind(&maidsafe::MockKadOps::ThreadedFindKClosestNodesCallback,
-                      vsl.kadops(), good_result_, _1))))               // Call 4
+                      vsl.kadops().get(), good_result_, _1))))         // Call 4
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
           boost::bind(&maidsafe::MockKadOps::ThreadedFindKClosestNodesCallback,
-                      vsl.kadops(), good_result_less_one_, _1))))      // Call 5
+                      vsl.kadops().get(), good_result_less_one_, _1))))   // C 5
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
           boost::bind(&maidsafe::MockKadOps::ThreadedFindKClosestNodesCallback,
-                      vsl.kadops(), good_result_, _1))))               // Call 6
+                      vsl.kadops().get(), good_result_, _1))))         // Call 6
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
           boost::bind(&maidsafe::MockKadOps::ThreadedFindKClosestNodesCallback,
-                      vsl.kadops(), good_result_, _1))))               // Call 7
+                      vsl.kadops().get(), good_result_, _1))))         // Call 7
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
           boost::bind(&maidsafe::MockKadOps::ThreadedFindKClosestNodesCallback,
-                      vsl.kadops(), good_result_, _1))));              // Call 8
+                      vsl.kadops().get(), good_result_, _1))));        // Call 8
 
   for (size_t i = 0; i < good_contacts_.size(); ++i) {
     if (i < good_contacts_.size() - 1) {

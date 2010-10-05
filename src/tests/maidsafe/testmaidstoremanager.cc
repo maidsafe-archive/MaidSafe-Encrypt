@@ -541,19 +541,19 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AddToWatchList) {
   EXPECT_CALL(*mko, FindKClosestNodes(chunk_names.at(0), testing::_))
       .Times(kMaxAddToWatchListTries)
       .WillRepeatedly(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&MockKadOps::ThreadedFindKClosestNodesCallback, mko,
+          boost::bind(&MockKadOps::ThreadedFindKClosestNodesCallback, mko.get(),
                       bad_result, _1))));   // Call 1
 
   EXPECT_CALL(*mko, FindKClosestNodes(chunk_names.at(1), testing::_))
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&MockKadOps::ThreadedFindKClosestNodesCallback, mko,
+          boost::bind(&MockKadOps::ThreadedFindKClosestNodesCallback, mko.get(),
                       few_result, _1))));   // Call 2
 
   for (int i = 2; i < kTestCount; ++i) {
     EXPECT_CALL(*mko, FindKClosestNodes(chunk_names.at(i), testing::_))
         .WillOnce(testing::WithArgs<1>(testing::Invoke(
-            boost::bind(&MockKadOps::ThreadedFindKClosestNodesCallback, mko,
-                        good_result, _1))));  // 3-12
+            boost::bind(&MockKadOps::ThreadedFindKClosestNodesCallback,
+                        mko.get(), good_result, _1))));  // 3-12
   }
 
   for (size_t i = 0; i < contacts.size(); ++i) {

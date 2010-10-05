@@ -1936,7 +1936,7 @@ TEST_F(MockVaultServicesTest, FUNC_MAID_ServicesAmendAccount) {
       .Times(testing::AtLeast(6))
       .WillRepeatedly(testing::WithArg<1>(testing::Invoke(
           boost::bind(&maidsafe::MockKadOps::ThreadedFindKClosestNodesCallback,
-                      mock_vault_service_logic.kadops(),
+                      mock_vault_service_logic.kadops().get(),
                       k_group.serialised_find_nodes_response(), _1))));
 
   size_sig = co.AsymSign(boost::lexical_cast<std::string>(chunk_size), "",
