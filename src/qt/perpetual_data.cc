@@ -100,7 +100,7 @@ PerpetualData::PerpetualData(QWidget* parent)
   lsLogin_->StartProgressBar();
 
   hideOpButtons();
-  
+
   qtTranslator = new QTranslator;
   myAppTranslator = new QTranslator;
   QString locale = QLocale::system().name().left(2);
@@ -113,7 +113,7 @@ PerpetualData::PerpetualData(QWidget* parent)
     qApp->installTranslator(myAppTranslator);
     ui_.retranslateUi(this);
   }
-  
+
    connect(lsLogin_, SIGNAL(existingUser()),
           this,   SLOT(onLoginExistingUser()));
 
@@ -276,7 +276,7 @@ void PerpetualData::createActions() {
   connect(actions_[ THEME_RED ], SIGNAL(triggered()),
           this,              SLOT(onRedThemeTriggered()));
   connect(ui_.fullViewBtn, SIGNAL(clicked()),
-          this,            SLOT(onFullViewTriggered()));  
+          this,            SLOT(onFullViewTriggered()));
 }
 
 void PerpetualData::createMenus() {
@@ -765,7 +765,7 @@ void PerpetualData::onEmailReceived(const QString &subject,
   }
   catch(const std::exception &e) {
     qDebug() << "PerpetualData::onEmailReceived - Failed to create "
-             << emailRootPath;
+             << emailRootPath << ": " << e.what();
     return;
   }
 
@@ -815,7 +815,7 @@ void PerpetualData::onEmailReceived(const QString &subject,
     ts << doc.toString();
 
     file.close();
-    
+
     SaveFileThread* sft = new SaveFileThread(tidyEmailMaidsafePath, this);
     connect(sft,  SIGNAL(saveFileCompleted(int, const QString&)),
           this, SLOT(onSaveFileCompleted(int, const QString&)));
@@ -977,8 +977,9 @@ void PerpetualData::onDirectoryEntered(const QString& dir) {
   root = QString(ClientController::instance()->WinDrive());
 
   if (!dir.startsWith(root, Qt::CaseInsensitive)) {
-    root = QString("%1:\\" + TidyPath(kRootSubdir[0][0])).
-         arg(ClientController::instance()->WinDrive());
+    root = QString::fromStdString("%1:\\" +
+           maidsafe::TidyPath(kRootSubdir[0][0])).
+               arg(ClientController::instance()->WinDrive());
     qfd_->setDirectory(root);
   }
 #else
@@ -1057,7 +1058,7 @@ void PerpetualData::onRedThemeTriggered() {
 void PerpetualData::onFullViewTriggered() {
   lifeStuffFull_ = new LifeStuffFull;
   lifeStuffFull_->show();
-}             
+}
 
 
 void PerpetualData::onEmailTriggered() {

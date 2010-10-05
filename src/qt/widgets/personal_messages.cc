@@ -250,8 +250,9 @@ void PersonalMessages::onSendFile() {
 #endif
 
 #ifdef __WIN32__
-  root = QString("%1:\\" + TidyPath(kRootSubdir[0][0])).
-         arg(ClientController::instance()->WinDrive());
+  root = QString::fromStdString("%1:\\" +
+         maidsafe::TidyPath(kRootSubdir[0][0])).
+             arg(ClientController::instance()->WinDrive());
   QFileDialog *qfd = new QFileDialog(this,
                      tr("File to share..."),
                      root, tr("Any file") + "(*)");

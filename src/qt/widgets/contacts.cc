@@ -53,13 +53,13 @@ Contacts::Contacts(QWidget* parent)
   sendMessage		= new QAction(tr("Send Message"), this);
   sendFile			= new QAction(tr("Send File"), this);
   deleteContact = new QAction(tr("Delete Contact"), this);
-	//sendEmail			= new QAction(tr("Send Email"), this);
+  //sendEmail			= new QAction(tr("Send Email"), this);
 
   menu->addAction(viewProfile);
   menu->addAction(sendMessage);
   menu->addAction(sendFile);
   menu->addAction(deleteContact);
-	//menu->addAction(sendEmail);
+  //menu->addAction(sendEmail);
 
   ui_.listWidget->setContextMenuPolicy(Qt::CustomContextMenu);
 
@@ -295,21 +295,21 @@ void Contacts::onDeleteUserClicked() {
 }
 
 void Contacts::onSendEmailClicked() {
-	QList<QListWidgetItem *> contacts = currentContact();
+  QList<QListWidgetItem *> contacts = currentContact();
   if (contacts.size() == 0)
     return;
-	sendMail_ = new UserSendMail(this);
+  sendMail_ = new UserSendMail(this);
 
-	QList<QString> conts;
+  QList<QString> conts;
   if (contacts.size() > 1) {
     foreach(QListWidgetItem *item, contacts) {
       conts.push_back(item->text());
-			sendMail_->addToRecipients(conts);
+      sendMail_->addToRecipients(conts);
     }
   } else {
-		sendMail_->addSingleRecipient(contacts.front()->text());
+    sendMail_->addSingleRecipient(contacts.front()->text());
   }
-	sendMail_->exec();
+  sendMail_->exec();
 }
 
 void Contacts::onSendMessageClicked() {
@@ -419,8 +419,9 @@ void Contacts::onFileSendClicked() {
 #endif
 
 #ifdef __WIN32__
-  root = QString("%1:\\" + TidyPath(kRootSubdir[0][0])).
-         arg(ClientController::instance()->WinDrive());
+  root = QString::fromStdString("%1:\\" +
+         maidsafe::TidyPath(kRootSubdir[0][0])).
+             arg(ClientController::instance()->WinDrive());
 
 #else
   root = QString::fromStdString(file_system::MaidsafeFuseDir(
@@ -665,8 +666,9 @@ void Contacts::onDirectoryEntered(const QString& dir) {
   root = QString(ClientController::instance()->WinDrive());
 
   if (!dir.startsWith(root, Qt::CaseInsensitive)) {
-    root = QString("%1:\\" + TidyPath(kRootSubdir[0][0])).
-         arg(ClientController::instance()->WinDrive());
+    root = QString::fromStdString("%1:\\" +
+           maidsafe::TidyPath(kRootSubdir[0][0])).
+               arg(ClientController::instance()->WinDrive());
     qfd->setDirectory(root);
   }
 #else
