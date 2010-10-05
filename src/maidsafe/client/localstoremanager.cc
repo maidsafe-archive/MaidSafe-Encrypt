@@ -315,8 +315,7 @@ bool LocalStoreManager::KeyUnique(const std::string &key, bool) {
   return result;
 }
 
-void LocalStoreManager::KeyUnique(const std::string &key,
-                                  bool check_local,
+void LocalStoreManager::KeyUnique(const std::string &key, bool check_local,
                                   const VoidFuncOneInt &cb) {
   if (KeyUnique(key, check_local))
     ExecReturnCodeCallback(cb, kKeyUnique);
@@ -339,8 +338,7 @@ void LocalStoreManager::LoadPacket(const std::string &packetname,
 void LocalStoreManager::DeletePacket(const std::string &packet_name,
                                      const std::vector<std::string> values,
                                      PacketType system_packet_type,
-                                     DirType dir_type,
-                                     const std::string &msid,
+                                     DirType dir_type, const std::string &msid,
                                      const VoidFuncOneInt &cb) {
   std::string key_id, public_key, public_key_signature, private_key;
   PdUtils pd_utils;
@@ -480,8 +478,7 @@ ReturnCode LocalStoreManager::DeletePacket_DeleteFromDb(
 void LocalStoreManager::StorePacket(const std::string &packet_name,
                                     const std::string &value,
                                     PacketType system_packet_type,
-                                    DirType dir_type,
-                                    const std::string& msid,
+                                    DirType dir_type, const std::string& msid,
                                     const VoidFuncOneInt &cb) {
   std::string key_id, public_key, public_key_signature, private_key;
   PdUtils pd_utils;
@@ -587,8 +584,7 @@ void LocalStoreManager::UpdatePacket(const std::string &packet_name,
                                      const std::string &old_value,
                                      const std::string &new_value,
                                      PacketType system_packet_type,
-                                     DirType dir_type,
-                                     const std::string &msid,
+                                     DirType dir_type, const std::string &msid,
                                      const VoidFuncOneInt &cb) {
   std::string key_id, public_key, public_key_signature, private_key;
   PdUtils pd_utils;
@@ -884,9 +880,8 @@ int LocalStoreManager::LoadBPPresence(std::list<LivePresence>*) {
   return kUpperThreshold_;
 }
 
-int LocalStoreManager::AddBPPresence(
-    const std::vector<std::string> &receivers,
-    std::map<std::string, ReturnCode>*) {
+int LocalStoreManager::AddBPPresence(const std::vector<std::string> &receivers,
+                                     std::map<std::string, ReturnCode>*) {
   return receivers.size();
 }
 

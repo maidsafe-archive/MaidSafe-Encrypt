@@ -577,11 +577,9 @@ void PerpetualData::quit() {
 
 void PerpetualData::onQuit() {
   // TODO(Team#5#): 2009-08-18 - confirm quit if something in progress
-  QList<ClientController::PendingOps> ops;
-
   if (pendingOps_->hasPendingOps()) {
    connect(pendingOps_,   SIGNAL(opsComplete()),
-      this,             SLOT(onOpsComplete()));
+           this,          SLOT(onOpsComplete()));
    pendingOps_->show();
   } else {
     if (state_ != LOGGED_IN) {
@@ -596,12 +594,12 @@ void PerpetualData::onQuit() {
 
 void PerpetualData::onOpsComplete() {
   if (state_ != LOGGED_IN) {
-      ClientController::instance()->shutdown();
-      qApp->quit();
-    } else {
-      quitting_ = true;
-      onLogout();
-    }
+    ClientController::instance()->shutdown();
+    qApp->quit();
+  } else {
+    quitting_ = true;
+    onLogout();
+  }
 }
 
 void PerpetualData::onAbout() {

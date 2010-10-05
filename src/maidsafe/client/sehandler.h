@@ -45,6 +45,7 @@ namespace mi = boost::multi_index;
 
 /********************************** Signals **********************************/
 typedef bs2::signal<void(const std::string&, int)> OnFileNetworkStatus;
+typedef bs2::signal<void(const std::string&)> OnFileAdded;
 /*****************************************************************************/
 
 namespace maidsafe {
@@ -177,6 +178,8 @@ class SEHandler {
 
   bs2::connection ConnectToOnFileNetworkStatus(
       const OnFileNetworkStatus::slot_type &slot);
+  bs2::connection ConnectToOnFileAdded(const OnFileAdded::slot_type &slot);
+
   void ClearPendingChunks() {
     boost::mutex::scoped_lock loch_lll(chunkmap_mutex_);
     pending_chunks_.clear();
@@ -234,6 +237,7 @@ class SEHandler {
   boost::signals2::connection connection_to_chunk_uploads_;
   OnFileNetworkStatus file_status_;
   boost::uint64_t path_count_;
+  OnFileAdded file_added_;
 };
 
 }  // namespace maidsafe

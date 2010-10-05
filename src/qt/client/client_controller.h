@@ -254,13 +254,11 @@ class ClientController : public QObject {
   int SaveSession();
   bs2::connection ConnectToOnFileNetworkStatus(
       const OnFileNetworkStatus::slot_type &slot);
+  bs2::connection ConnectToOnFileAdded(const OnFileAdded::slot_type &slot);
 
  signals:
-  void messageReceived(int type,
-                       const QDateTime& time,
-                       const QString& from,
-                       const QString& msg,
-                       const QString& conversation);
+  void messageReceived(int type, const QDateTime& time, const QString& from,
+                       const QString& msg, const QString& conversation);
   void addedContact(const QString& name);
   void confirmedContact(const QString& name);
   void deletedContact(const QString& name);

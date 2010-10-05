@@ -39,7 +39,7 @@ SEHandler::SEHandler() : storem_(), client_chunkstore_(), ss_(),
                          up_to_date_datamaps_(), pending_chunks_(),
                          up_to_date_datamaps_mutex_(), chunkmap_mutex_(),
                          connection_to_chunk_uploads_(), file_status_(),
-                         path_count_() {}
+                         path_count_(), file_added_() {}
 
 SEHandler::~SEHandler() {
   bool t(false);
@@ -145,7 +145,7 @@ ItemType SEHandler::CheckEntry(const fs::path &full_path,
     return EMPTY_DIRECTORY;
   }
   return UNKNOWN;
-}  // end CheckEntry
+}
 
 int SEHandler::EncryptFile(const std::string &rel_entry,
                            const DirType &dir_type, const std::string &msid) {
@@ -159,7 +159,6 @@ int SEHandler::EncryptFile(const std::string &rel_entry,
   DataMap dm, dm_retrieved;
   std::string ser_dm_retrieved, ser_dm, ser_mdm, dir_key;
   SelfEncryption se(client_chunkstore_);
-//  bool signal(false);
   switch (item_type) {
     // case DIRECTORY:
     // case EMPTY_DIRECTORY:
@@ -177,13 +176,9 @@ int SEHandler::EncryptFile(const std::string &rel_entry,
         dm_retrieved.ParseFromString(ser_dm_retrieved);
       if (ser_dm_retrieved.empty() || dm_retrieved.file_hash() != file_hash) {
         dm.set_file_hash(file_hash);
-//        std::set<std::string> done_chunks;
-        if (se.Encrypt(full_entry, false, &dm/*, &done_chunks*/) != kSuccess)
+        if (se.Encrypt(full_entry, false, &dm) != kSuccess)
           return kEncryptFileFailure;
-//        if (done_chunks.size() != dm.encrypted_chunk_name_size())
           StoreChunks(dm, dir_type, msid, rel_entry);
-//        else
-//          signal = true;
         dm.SerializeToString(&ser_dm);
       }
       break;
@@ -224,13 +219,6 @@ int SEHandler::EncryptFile(const std::string &rel_entry,
   if (dah->AddElement(rel_entry, ser_mdm, ser_dm, dir_key, true) != kSuccess)
     return kEncryptionDAHFailure;
 
-//    if (signal) {
-//  #ifdef DEBUG
-//      printf("About to signal, chunks were there.\n");
-//  #endif
-//      file_status_(rel_entry, 100);
-//    }
-
   return 0;
 }
 
@@ -244,8 +232,7 @@ int SEHandler::EncryptString(const std::string &data, std::string *ser_dm) {
   crypto::Crypto co;
   co.set_hash_algorithm(crypto::SHA_512);
   dm.set_file_hash(co.Hash(data, "", crypto::STRING_STRING, false));
-//  std::set<std::string> done_chunks;
-  if (se.Encrypt(data, true, &dm/*, &done_chunks*/))
+  if (se.Encrypt(data, true, &dm))
     return kEncryptStringFailure;
 
   StoreChunks(dm, PRIVATE, "", base::EncodeToHex(dm.file_hash()));
@@ -471,8 +458,7 @@ int SEHandler::EncryptDb(const std::string &dir_path, const DirType &dir_type,
   if (file_hash.empty())
     file_hash = co.Hash(db_path, "", crypto::STRING_STRING, false);
   dm->set_file_hash(file_hash);
-//  std::set<std::string> done_chunks;
-  if (se.Encrypt(db_path, false, dm/*, &done_chunks*/) != kSuccess)
+  if (se.Encrypt(db_path, false, dm) != kSuccess)
     return kEncryptDbFailure;
 
   dm->SerializeToString(&ser_dm);
@@ -482,8 +468,14 @@ int SEHandler::EncryptDb(const std::string &dir_path, const DirType &dir_type,
     enc_dm = ser_dm;
 
   std::string previous_enc_dm = AddToUpToDateDms(dir_key, enc_dm);
-  if (previous_enc_dm == enc_dm)
+  if (previous_enc_dm == enc_dm) {
+    file_added_(dir_path);
+#ifdef DEBUG
+    printf("SEHandler::EncryptDb - Found in DMs, whatever that means.\n");
+#endif
+    file_status_(dir_path, 100);
     return kSuccess;
+  }
 
   StoreChunks(*dm, dir_type, msid, dir_path);
   if (dir_key.empty()) {  // Means we're not storing to DHT - used by client
@@ -720,14 +712,9 @@ void SEHandler::ChunksToMultiIndex(const DataMap &dm, const std::string &msid,
   }
 
   {
+    int n(0);
     boost::mutex::scoped_lock loch_eigheach(chunkmap_mutex_);
     for (int i = 0; i < dm.encrypted_chunk_name_size(); ++i) {
-/*
-//      PCSbyName &chunkname_index = pending_chunks_.get<by_chunkname>();
-//      std::pair<PCSbyName::iterator, PCSbyName::iterator> it =
-//          chunkname_index.equal_range(dm.encrypted_chunk_name(i));
-//      if (it.first == it.second) {
-*/
       PendingChunks pc(dm.encrypted_chunk_name(i), path, msid, path_count_);
       std::pair<PendingChunksSet::iterator, bool> p =
           pending_chunks_.insert(pc);
@@ -738,35 +725,18 @@ void SEHandler::ChunksToMultiIndex(const DataMap &dm, const std::string &msid,
                "chunks.\n");
 #endif
       } else {
+        ++n;
 #ifdef DEBUG
         printf("SEHandler::StoreChunks: %s - %s - %llu\n", path.c_str(),
                base::EncodeToHex(dm.encrypted_chunk_name(i)).c_str(),
                path_count_);
 #endif
       }
-/*
-//      } else {
-//        PendingChunks pc(dm.encrypted_chunk_name(i), path, msid, path_count_);
-//        ++path_count_;
-//        std::pair<PendingChunksSet::iterator, bool> p =
-//            pending_chunks_.insert(pc);
-//        if (!p.second) {
-//#ifdef DEBUG
-//          printf("SEHandler::StoreChunks - Something really fucking wrong is "
-//                 "going on in SEHandler with the multi-index for pending "
-//                 "chunks.\n");
-//#endif
-//        } else {
-//#ifdef DEBUG
-//          printf("SEHandler::StoreChunks: Someone before! - %s - %s - %d\n",
-//                 path.c_str(),
-//                 base::EncodeToHex(dm.encrypted_chunk_name(i)).c_str(),
-//                 count);
-//#endif
-//        }
-//      }
-*/
     }
+    if (n == dm.encrypted_chunk_name_size())
+      file_added_(path);
+    else
+      printf("SEHandler::StoreChunks: No notification\n");
     ++path_count_;
   }
 }
@@ -898,6 +868,11 @@ int SEHandler::RemoveFromUpToDateDms(const std::string &dir_key) {
 bs2::connection SEHandler::ConnectToOnFileNetworkStatus(
       const OnFileNetworkStatus::slot_type &slot) {
   return file_status_.connect(slot);
+}
+
+bs2::connection SEHandler::ConnectToOnFileAdded(
+      const OnFileAdded::slot_type &slot) {
+  return file_added_.connect(slot);
 }
 
 }  // namespace maidsafe

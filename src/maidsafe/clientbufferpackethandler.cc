@@ -20,8 +20,7 @@ namespace maidsafe {
 
 ClientBufferPacketHandler::ClientBufferPacketHandler(
     boost::shared_ptr<maidsafe::BufferPacketRpcs> rpcs,
-    boost::shared_ptr<KadOps> kadops,
-    boost::uint8_t upper_threshold)
+    boost::shared_ptr<KadOps> kadops, boost::uint8_t upper_threshold)
         : crypto_obj_(), rpcs_(rpcs), kad_ops_(kadops),
           kUpperThreshold_(upper_threshold) {
   crypto_obj_.set_hash_algorithm(crypto::SHA_512);
@@ -29,8 +28,7 @@ ClientBufferPacketHandler::ClientBufferPacketHandler(
 }
 
 void ClientBufferPacketHandler::CreateBufferPacket(
-    const BPInputParameters &args,
-    bp_operations_cb cb,
+    const BPInputParameters &args, bp_operations_cb cb,
     const boost::int16_t &transport_id) {
   BufferPacket buffer_packet;
   GenericPacket *ser_owner_info = buffer_packet.add_owner_info();
@@ -62,10 +60,8 @@ void ClientBufferPacketHandler::CreateBufferPacket(
 }
 
 void ClientBufferPacketHandler::ModifyOwnerInfo(
-    const BPInputParameters &args,
-    const std::vector<std::string> &users,
-    bp_operations_cb cb,
-    const boost::int16_t &transport_id) {
+    const BPInputParameters &args, const std::vector<std::string> &users,
+    bp_operations_cb cb, const boost::int16_t &transport_id) {
   boost::shared_ptr<ChangeBPData> data(new ChangeBPData);
   BufferPacketInfo buffer_packet_info;
   buffer_packet_info.set_owner(args.sign_id);
@@ -98,8 +94,7 @@ void ClientBufferPacketHandler::ModifyOwnerInfo(
 }
 
 void ClientBufferPacketHandler::GetMessages(
-    const BPInputParameters &args,
-    bp_getmessages_cb cb,
+    const BPInputParameters &args, bp_getmessages_cb cb,
     const boost::int16_t &transport_id) {
   boost::shared_ptr<ChangeBPData> data(new ChangeBPData);
   std::string bpname(crypto_obj_.Hash(args.sign_id + args.public_key, "",
@@ -124,14 +119,10 @@ void ClientBufferPacketHandler::GetMessages(
 }
 
 void ClientBufferPacketHandler::AddMessage(
-    const BPInputParameters &args,
-    const std::string &my_pu,
-    const std::string &recver_public_key,
-    const std::string &receiver_id,
-    const std::string &message,
-    const MessageType &m_type,
-    bp_operations_cb cb,
-    const boost::int16_t &transport_id) {
+    const BPInputParameters &args, const std::string &my_pu,
+    const std::string &recver_public_key, const std::string &receiver_id,
+    const std::string &message, const MessageType &m_type,
+    bp_operations_cb cb, const boost::int16_t &transport_id) {
   boost::shared_ptr<ChangeBPData> data(new ChangeBPData);
 
   BufferPacketMessage bpmsg;
@@ -175,8 +166,7 @@ void ClientBufferPacketHandler::AddMessage(
 }
 
 void ClientBufferPacketHandler::GetPresence(
-    const BPInputParameters &args,
-    bp_getpresence_cb cb,
+    const BPInputParameters &args, bp_getpresence_cb cb,
     const boost::int16_t &transport_id) {
   boost::shared_ptr<ChangeBPData> data(new ChangeBPData);
   std::string bpname(crypto_obj_.Hash(args.sign_id + args.public_key, "",
@@ -201,12 +191,9 @@ void ClientBufferPacketHandler::GetPresence(
 }
 
 void ClientBufferPacketHandler::AddPresence(
-    const BPInputParameters &args,
-    const std::string &my_pu,
-    const std::string &recver_public_key,
-    const std::string &receiver_id,
-    bp_operations_cb cb,
-    const boost::int16_t &transport_id) {
+    const BPInputParameters &args, const std::string &my_pu,
+    const std::string &recver_public_key, const std::string &receiver_id,
+    bp_operations_cb cb, const boost::int16_t &transport_id) {
   boost::shared_ptr<ChangeBPData> data(new ChangeBPData);
 
   LivePresence lp;
@@ -243,8 +230,7 @@ void ClientBufferPacketHandler::AddPresence(
 }
 
 void ClientBufferPacketHandler::FindNodes(
-    VoidFuncIntContacts cb,
-    boost::shared_ptr<ChangeBPData> data) {
+    VoidFuncIntContacts cb, boost::shared_ptr<ChangeBPData> data) {
   switch (data->type) {
     case CREATEBP:
         kad_ops_->FindKClosestNodes(data->create_request.bufferpacket_name(),
@@ -274,10 +260,8 @@ void ClientBufferPacketHandler::FindNodes(
 }
 
 void ClientBufferPacketHandler::FindNodesCallback(
-    const ReturnCode &result,
-    const std::vector<kad::Contact> &closest_nodes,
-    boost::shared_ptr<ChangeBPData> data,
-    const boost::int16_t &transport_id) {
+    const ReturnCode &result, const std::vector<kad::Contact> &closest_nodes,
+    boost::shared_ptr<ChangeBPData> data, const boost::int16_t &transport_id) {
   if (result != kSuccess || closest_nodes.size() < kUpperThreshold_) {
     switch (data->type) {
       case CREATEBP: data->cb(kStoreNewBPError);
@@ -568,8 +552,7 @@ void ClientBufferPacketHandler::ActionOnBpDone(
 }
 
 std::list<ValidatedBufferPacketMessage> ClientBufferPacketHandler::ValidateMsgs(
-    const GetBPMessagesResponse *response,
-    const std::string &private_key) {
+    const GetBPMessagesResponse *response, const std::string &private_key) {
   std::list<ValidatedBufferPacketMessage> result;
   for (int i = 0; i < response->messages_size(); ++i) {
     ValidatedBufferPacketMessage msg;
