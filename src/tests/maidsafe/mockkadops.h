@@ -29,7 +29,7 @@
 
 #include "maidsafe/maidsafe.h"
 #include "maidsafe/kadops.h"
-#include "tests/maidsafe/threadedcallcontainer.h"
+#include "tests/maidsafe/threadpool.h"
 
 namespace mock_kadops {
 
@@ -61,7 +61,7 @@ class MockKadOps : public KadOps {
              boost::shared_ptr<ChunkStore> chunkstore)
       : KadOps(transport_handler, channel_manager, type, private_key,
                public_key, port_forwarded, use_upnp, k, chunkstore),
-        tcc_(1) {}
+        tp_(1) {}
   MOCK_METHOD1(AddressIsLocal, bool(const kad::Contact &peer));
   MOCK_METHOD1(AddressIsLocal, bool(const kad::ContactInfo &peer));
   MOCK_METHOD3(FindValue, void(const std::string &key,
@@ -80,11 +80,11 @@ class MockKadOps : public KadOps {
   void ThreadedFindKClosestNodesCallback(const std::string &response,
                                          VoidFuncIntContacts callback) {
     printf("In MockKadOps::ThreadedFindKClosestNodesCallback ...\n");
-    tcc_.Enqueue(boost::bind(&KadOps::FindKClosestNodesCallback, this,
-                             response, callback));
+    tp_.EnqueueTask(boost::bind(&KadOps::FindKClosestNodesCallback, this,
+                                response, callback));
   }
  private:
-  ThreadedCallContainer tcc_;
+  base::Threadpool tp_;
 };
 
 }  // namespace maidsafe
