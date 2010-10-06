@@ -41,19 +41,23 @@ void ClientBufferPacketHandler::CreateBufferPacket(
 
   boost::shared_ptr<ChangeBPData> data(new ChangeBPData);
   data->cb = cb;
-  data->create_request.set_bufferpacket_name(crypto_obj_.Hash(args.sign_id +
-                                             args.public_key, "",
-                                             crypto::STRING_STRING, false));
+  data->create_request.set_bufferpacket_name(
+      crypto_obj_.Hash(args.sign_id + args.public_key, "",
+                       crypto::STRING_STRING, false));
 
   data->create_request.set_data(buffer_packet.SerializePartialAsString());
   data->create_request.set_pmid(args.sign_id);
   data->create_request.set_public_key(args.public_key);
-  data->create_request.set_signed_public_key(crypto_obj_.AsymSign(
-      args.public_key, "", args.private_key, crypto::STRING_STRING));
-  data->create_request.set_signed_request(crypto_obj_.AsymSign(crypto_obj_.Hash(
-      args.public_key + data->create_request.signed_public_key() +
-      data->create_request.bufferpacket_name(), "", crypto::STRING_STRING,
-      false), "", args.private_key, crypto::STRING_STRING));
+  data->create_request.set_signed_public_key(
+      crypto_obj_.AsymSign(args.public_key, "", args.private_key,
+                           crypto::STRING_STRING));
+  data->create_request.set_signed_request(
+      crypto_obj_.AsymSign(
+          crypto_obj_.Hash(args.public_key +
+                           data->create_request.signed_public_key() +
+                           data->create_request.bufferpacket_name(),
+                           "", crypto::STRING_STRING, false),
+          "", args.private_key, crypto::STRING_STRING));
 
   FindNodes(boost::bind(&ClientBufferPacketHandler::FindNodesCallback,
             this, _1, _2, data, transport_id), data);

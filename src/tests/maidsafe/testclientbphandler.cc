@@ -50,59 +50,62 @@ static const boost::uint8_t upper_threshold(static_cast<boost::uint8_t>
 
 namespace maidsafe {
 
-void execute_cb(kad::VoidFunctorOneString cb, const std::string &result) {
+void GenerateContacts(std::vector<kad::Contact> *cv) {
+  cv->clear();
+  crypto::Crypto co;
+  std::string id(co.Hash("id", "", crypto::STRING_STRING, false));
+  kad::Contact ctc(id, "127.0.0.1", 8888, "127.0.0.1", 8888);
+  std::string ser_ctc;
+  ctc.SerialiseToString(&ser_ctc);
+  for (int n = 0; n < test_cbph::K; ++n) {
+    cv->push_back(ctc);
+  }
+}
+
+void execute_cb(maidsafe::VoidFuncIntContacts cb, maidsafe::ReturnCode &rc,
+                const std::vector<kad::Contact> &cv) {
   boost::this_thread::sleep(boost::posix_time::seconds(1));
-  cb(result);
+  cb(rc, cv);
 }
 
-void FindNodesSucceed(kad::VoidFunctorOneString cb) {
-  kad::FindResponse res;
-  res.set_result(kad::kRpcResultSuccess);
+void FindNodesSucceed(maidsafe::VoidFuncIntContacts cb) {
+  std::vector<kad::Contact> cv;
+  GenerateContacts(&cv);
+  boost::thread thrd(execute_cb, cb, maidsafe::kSuccess, cv);
+}
+
+void FindNodesFailure(maidsafe::VoidFuncIntContacts cb) {
+  std::vector<kad::Contact> cv;
+  GenerateContacts(&cv);
+  boost::thread thrd(execute_cb, cb, maidsafe::kBPError, cv);
+}
+
+void FindNodesFailNoParse(maidsafe::VoidFuncIntContacts cb) {
+  std::vector<kad::Contact> cv;
+  GenerateContacts(&cv);
+  boost::thread thrd(execute_cb, cb, maidsafe::kBPError, cv);
+}
+
+void FindNodesFailNotEnough(maidsafe::VoidFuncIntContacts cb) {
+  std::vector<kad::Contact> cv;
   crypto::Crypto co;
   std::string id(co.Hash("id", "", crypto::STRING_STRING, false));
   kad::Contact ctc(id, "127.0.0.1", 8888, "127.0.0.1", 8888);
-  std::string ser_ctc;
-  ctc.SerialiseToString(&ser_ctc);
-  for (int n = 0; n < test_cbph::K; ++n) {
-    res.add_closest_nodes(ser_ctc);
-  }
-  boost::thread thrd(execute_cb, cb, res.SerializeAsString());
-}
-
-void FindNodesFailure(kad::VoidFunctorOneString cb) {
-  kad::FindResponse res;
-  res.set_result(kad::kRpcResultFailure);
-  boost::thread thrd(execute_cb, cb, res.SerializeAsString());
-}
-
-void FindNodesFailNoParse(kad::VoidFunctorOneString cb) {
-  std::string summat("aaaa");
-  boost::thread thrd(execute_cb, cb, summat);
-}
-
-void FindNodesFailNotEnough(kad::VoidFunctorOneString cb) {
-  kad::FindResponse res;
-  res.set_result(kad::kRpcResultSuccess);
-  crypto::Crypto co;
-  std::string id(co.Hash("id", "", crypto::STRING_STRING, false));
-  std::string ser_ctc;
-  kad::Contact ctc(id, "127.0.0.1", 8888, "127.0.0.1", 8888);
-  ctc.SerialiseToString(&ser_ctc);
   for (int n = 0; n < test_cbph::K/4; ++n) {
-    res.add_closest_nodes(ser_ctc);
+    cv.push_back(ctc);
   }
-  boost::thread thrd(execute_cb, cb, res.SerializeAsString());
+  GenerateContacts(&cv);
+  boost::thread thrd(execute_cb, cb, maidsafe::kBPError, cv);
 }
 
-void FindNodesFailNotContacts(kad::VoidFunctorOneString cb) {
-  kad::FindResponse res;
-  res.set_result(kad::kRpcResultSuccess);
-  for (int n = 0; n < test_cbph::K; ++n) {
-    res.add_closest_nodes("mis huevos en chile verde");
-  }
-  boost::thread thrd(execute_cb, cb, res.SerializeAsString());
+void FindNodesFailNotContacts(maidsafe::VoidFuncIntContacts cb) {
+  std::vector<kad::Contact> cv;
+  GenerateContacts(&cv);
+  boost::thread thrd(execute_cb, cb, maidsafe::kBPError, cv);
 }
 
+/*
+*/
 void BPCallbackFail(const kad::Contact &peer,
                     maidsafe::CreateBPResponse *response,
                     google::protobuf::Closure *done) {
@@ -119,55 +122,49 @@ void BPCallbackSucceed(const kad::Contact &peer,
   done->Run();
 }
 
-void BPInfoCallbackSucceed(
-    const kad::Contact &peer,
-    maidsafe::ModifyBPInfoResponse *response,
-    google::protobuf::Closure *done) {
+void BPInfoCallbackSucceed(const kad::Contact &peer,
+                           maidsafe::ModifyBPInfoResponse *response,
+                           google::protobuf::Closure *done) {
   response->set_result(kAck);
   response->set_pmid_id(peer.node_id().String());
   done->Run();
 }
 
-void BPInfoCallbackFailed(
-    const kad::Contact &peer,
-    maidsafe::ModifyBPInfoResponse *response,
-    google::protobuf::Closure *done) {
+void BPInfoCallbackFailed(const kad::Contact &peer,
+                          maidsafe::ModifyBPInfoResponse *response,
+                          google::protobuf::Closure *done) {
   response->set_result(kNack);
   response->set_pmid_id(peer.node_id().String());
   done->Run();
 }
 
-void BPAddMsgCallbackSucceed(
-    const kad::Contact &peer,
-    maidsafe::AddBPMessageResponse *response,
-    google::protobuf::Closure *done) {
+void BPAddMsgCallbackSucceed(const kad::Contact &peer,
+                             maidsafe::AddBPMessageResponse *response,
+                             google::protobuf::Closure *done) {
   response->set_result(kAck);
   response->set_pmid_id(peer.node_id().String());
   done->Run();
 }
 
-void BPAddMsgCallbackFailed(
-    const kad::Contact &peer,
-    maidsafe::AddBPMessageResponse *response,
-    google::protobuf::Closure *done) {
+void BPAddMsgCallbackFailed(const kad::Contact &peer,
+                            maidsafe::AddBPMessageResponse *response,
+                            google::protobuf::Closure *done) {
   response->set_result(kNack);
   response->set_pmid_id(peer.node_id().String());
   done->Run();
 }
 
-void BPAddPresenceCallbackSucceed(
-    const kad::Contact &peer,
-    maidsafe::AddBPPresenceResponse *response,
-    google::protobuf::Closure *done) {
+void BPAddPresenceCallbackSucceed(const kad::Contact &peer,
+                                  maidsafe::AddBPPresenceResponse *response,
+                                  google::protobuf::Closure *done) {
   response->set_result(kAck);
   response->set_pmid_id(peer.node_id().String());
   done->Run();
 }
 
-void BPAddPresenceCallbackFailed(
-    const kad::Contact &peer,
-    maidsafe::AddBPPresenceResponse *response,
-    google::protobuf::Closure *done) {
+void BPAddPresenceCallbackFailed(const kad::Contact &peer,
+                                 maidsafe::AddBPPresenceResponse *response,
+                                 google::protobuf::Closure *done) {
   response->set_result(kNack);
   response->set_pmid_id(peer.node_id().String());
   done->Run();
@@ -200,10 +197,8 @@ class BPCallback {
         vbpm_set.insert(it->SerializeAsString());
     }
   }
-  void BPGetPresence_CB(
-      const maidsafe::ReturnCode &res,
-      const std::list<std::string> &pres,
-      bool b) {
+  void BPGetPresence_CB(const maidsafe::ReturnCode &res,
+                        const std::list<std::string> &pres, bool b) {
     if (b) {
       result = res;
       presences.clear();
@@ -234,38 +229,34 @@ class BPCallback {
 class GetMsgsHelper {
  public:
   GetMsgsHelper() : msgs(), co() {}
-  void BPGetMsgsCallbackSucceed(
-      const kad::Contact &peer,
-      maidsafe::GetBPMessagesResponse *response,
-      google::protobuf::Closure *done) {
+  void BPGetMsgsCallbackSucceed(const kad::Contact &peer,
+                                maidsafe::GetBPMessagesResponse *response,
+                                google::protobuf::Closure *done) {
     response->set_result(kAck);
     for (size_t i = 0; i < msgs.size(); ++i)
       response->add_messages(msgs.at(i).SerializeAsString());
     response->set_pmid_id(peer.node_id().String());
     done->Run();
   }
-  void BPGetMsgsCallbackFailed(
-      const kad::Contact &peer,
-      maidsafe::GetBPMessagesResponse *response,
-      google::protobuf::Closure *done) {
+  void BPGetMsgsCallbackFailed(const kad::Contact &peer,
+                               maidsafe::GetBPMessagesResponse *response,
+                               google::protobuf::Closure *done) {
     response->set_result(kNack);
     response->set_pmid_id(peer.node_id().String());
     done->Run();
   }
-  void BPGetPresenceCallbackSucceed(
-      const kad::Contact &peer,
-      maidsafe::GetBPPresenceResponse *response,
-      google::protobuf::Closure *done) {
+  void BPGetPresenceCallbackSucceed(const kad::Contact &peer,
+                                    maidsafe::GetBPPresenceResponse *response,
+                                    google::protobuf::Closure *done) {
     response->set_result(kAck);
     for (size_t i = 0; i < presences.size(); ++i)
       response->add_messages(presences.at(i));
     response->set_pmid_id(peer.node_id().String());
     done->Run();
   }
-  void BPGetPresenceCallbackFailed(
-      const kad::Contact &peer,
-      maidsafe::GetBPPresenceResponse *response,
-      google::protobuf::Closure *done) {
+  void BPGetPresenceCallbackFailed(const kad::Contact &peer,
+                                   maidsafe::GetBPPresenceResponse *response,
+                                   google::protobuf::Closure *done) {
     response->set_result(kNack);
     response->set_pmid_id(peer.node_id().String());
     done->Run();
@@ -333,25 +324,19 @@ class MockBPH : public maidsafe::ClientBufferPacketHandler {
           boost::shared_ptr<maidsafe::KadOps> kadops,
           boost::uint8_t upper_threshold)
     : maidsafe::ClientBufferPacketHandler(rpcs, kadops, upper_threshold) {}
-  MOCK_METHOD2(FindNodes,
-      void(kad::VoidFunctorOneString,
-           boost::shared_ptr<maidsafe::ChangeBPData>));
+  MOCK_METHOD2(FindNodes, void(maidsafe::VoidFuncIntContacts,
+                               boost::shared_ptr<maidsafe::ChangeBPData>));
 };
 
 class TestClientBP : public testing::Test {
  public:
-  TestClientBP() : trans_(NULL),
-                   trans_han_(NULL),
-                   ch_man_(NULL),
+  TestClientBP() : trans_(NULL), trans_han_(NULL), ch_man_(NULL),
                    test_dir_(file_system::TempDir() / ("maidsafe_TestClientBP_"
                              + base::RandomAlphaNumericString(6))),
                    kad_config_file_(test_dir_ / ".kadconfig"),
                    chunkstore_(new maidsafe::ChunkStore(
                        (test_dir_ / "ChunkStore").string(), 99999999, 0)),
-                   kad_ops_(),
-                   BPMock(),
-                   keys_(),
-                   cryp() {
+                   kad_ops_(), BPMock(), keys_(), cryp() {
     cryp.set_hash_algorithm(crypto::SHA_512);
     cryp.set_symm_algorithm(crypto::AES_256);
   }
@@ -376,8 +361,8 @@ class TestClientBP : public testing::Test {
     BPMock.reset(new MockBPRpcs);
     ASSERT_TRUE(ch_man_->RegisterNotifiersToTransport());
     ASSERT_TRUE(trans_han_->RegisterOnServerDown(
-                boost::bind(&maidsafe::KadOps::HandleDeadRendezvousServer,
-                            kad_ops_, _1)));
+                    boost::bind(&maidsafe::KadOps::HandleDeadRendezvousServer,
+                                kad_ops_, _1)));
     EXPECT_EQ(0, trans_han_->Start(0, trans_id));
     EXPECT_EQ(0, ch_man_->Start());
 
@@ -401,11 +386,12 @@ class TestClientBP : public testing::Test {
     // Adding Contacts
     for (int i = 0; i < kMinChunkCopies + 1; ++i) {
       kad::Contact con(cryp.Hash(boost::lexical_cast<std::string>(i), "",
-                       crypto::STRING_STRING, false), "127.0.0.1", 8000 + i,
-                       "127.0.0.1", 8000 + i);
+                                 crypto::STRING_STRING, false),
+                       "127.0.0.1", 8000 + i, "127.0.0.1", 8000 + i);
       kad_ops_->knode_.AddContact(con, 0, false);
     }
   }
+
   void TearDown() {
     kad_ops_->Leave();
     trans_han_->StopAll();
@@ -435,21 +421,22 @@ class TestClientBP : public testing::Test {
 
 TEST_F(TestClientBP, BEH_MAID_CreateBpOk) {
   MockBPH cbph(BPMock, kad_ops_, test_cbph::upper_threshold);
-  BPCallback cb;
 
   EXPECT_CALL(cbph, FindNodes(_, _))
       .WillOnce(WithArgs<0>(Invoke(FindNodesSucceed)));
   EXPECT_CALL(*BPMock, CreateBP(_, _, _, _, _, _, _))
       .WillRepeatedly(WithArgs<0, 4, 6>(Invoke(BPCallbackSucceed)));
 
-  std::string signed_pubkey = cryp.AsymSign(keys_.at(1).public_key(), "",
-                              keys_.at(1).private_key(), crypto::STRING_STRING);
+  std::string signed_pubkey(cryp.AsymSign(keys_.at(1).public_key(), "",
+                                          keys_.at(1).private_key(),
+                                          crypto::STRING_STRING));
   maidsafe::BPInputParameters bpip = {cryp.Hash(keys_.at(1).public_key() +
-                                          signed_pubkey, "",
-                                          crypto::STRING_STRING, false),
+                                                signed_pubkey, "",
+                                                crypto::STRING_STRING, false),
                                       keys_.at(1).public_key(),
                                       keys_.at(1).private_key()};
 
+  BPCallback cb;
   cbph.CreateBufferPacket(bpip,
                           boost::bind(&BPCallback::BPOperation_CB, &cb, _1),
                           trans_->transport_id());

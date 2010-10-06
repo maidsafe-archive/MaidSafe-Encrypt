@@ -37,6 +37,7 @@
 #endif
 
 #include <string>
+#include <vector>
 
 #include "maidsafe/returncodes.h"
 #include "protobuf/datamaps.pb.h"
