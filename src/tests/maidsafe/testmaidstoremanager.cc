@@ -36,7 +36,7 @@
 #include "maidsafe/vault/vaultservice.h"
 #include "tests/maidsafe/cached_keys.h"
 #include "tests/maidsafe/mockkadops.h"
-#include "tests/maidsafe/threadedcallcontainer.h"
+#include "tests/maidsafe/threadpool.h"
 
 namespace test_msm {
 static const boost::uint8_t K(4);
@@ -80,12 +80,12 @@ void WatchListOpStageThree(bool initialise_response,
                            const std::string &pmid,
                            maidsafe::ExpectAmendmentResponse *response,
                            google::protobuf::Closure *callback,
-                           maidsafe::ThreadedCallContainer *tcc) {
+                           base::Threadpool *tp) {
   if (initialise_response) {
     response->set_result(result);
     response->set_pmid(pmid);
   }
-  tcc->Enqueue(boost::bind(&google::protobuf::Closure::Run, callback));
+  tp->EnqueueTask(boost::bind(&google::protobuf::Closure::Run, callback));
 }
 
 void AddToWatchListStageFour(bool initialise_response,
@@ -94,13 +94,13 @@ void AddToWatchListStageFour(bool initialise_response,
                              const boost::uint32_t &upload_count,
                              maidsafe::AddToWatchListResponse *response,
                              google::protobuf::Closure* callback,
-                             maidsafe::ThreadedCallContainer *tcc) {
+                             base::Threadpool *tp) {
   if (initialise_response) {
     response->set_result(result);
     response->set_pmid(pmid);
     response->set_upload_count(upload_count);
   }
-  tcc->Enqueue(boost::bind(&google::protobuf::Closure::Run, callback));
+  tp->EnqueueTask(boost::bind(&google::protobuf::Closure::Run, callback));
 }
 
 void RemoveFromWatchListStageFour(
@@ -109,12 +109,12 @@ void RemoveFromWatchListStageFour(
     const std::string &pmid,
     maidsafe::RemoveFromWatchListResponse *response,
     google::protobuf::Closure* callback,
-    maidsafe::ThreadedCallContainer *tcc) {
+    base::Threadpool *tp) {
   if (initialise_response) {
     response->set_result(result);
     response->set_pmid(pmid);
   }
-  tcc->Enqueue(boost::bind(&google::protobuf::Closure::Run, callback));
+  tp->EnqueueTask(boost::bind(&google::protobuf::Closure::Run, callback));
 }
 
 struct AccountStatusValues {
@@ -146,7 +146,7 @@ void AccountStatusCallback(bool initialise_response,
   callback->Run();
 }
 
-void ThreadedAccountStatusCallback(maidsafe::ThreadedCallContainer *tcc,
+void ThreadedAccountStatusCallback(base::Threadpool *tp,
                                    bool initialise_response,
                                    const int &result,
                                    const std::string &pmid,
@@ -154,9 +154,9 @@ void ThreadedAccountStatusCallback(maidsafe::ThreadedCallContainer *tcc,
                                    const AccountStatusValues &values,
                                    maidsafe::AccountStatusResponse *response,
                                    google::protobuf::Closure *callback) {
-  tcc->Enqueue(boost::bind(&AccountStatusCallback, initialise_response, result,
-                           pmid, initialise_values, values, response,
-                           callback));
+  tp->EnqueueTask(boost::bind(&AccountStatusCallback, initialise_response,
+                              result, pmid, initialise_values, values, response,
+                              callback));
 }
 
 void AmendAccountCallback(bool initialise_response,
@@ -171,14 +171,14 @@ void AmendAccountCallback(bool initialise_response,
   callback->Run();
 }
 
-void ThreadedAmendAccountCallback(maidsafe::ThreadedCallContainer *tcc,
+void ThreadedAmendAccountCallback(base::Threadpool *tp,
                                   bool initialise_response,
                                   const int &result,
                                   const std::string &pmid,
                                   maidsafe::AmendAccountResponse *response,
                                   google::protobuf::Closure *callback) {
-  tcc->Enqueue(boost::bind(&AmendAccountCallback, initialise_response, result,
-                           pmid, response, callback));
+  tp->EnqueueTask(boost::bind(&AmendAccountCallback, initialise_response,
+                              result, pmid, response, callback));
 }
 
 int SendChunkCount(int *send_chunk_count,
@@ -533,7 +533,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AddToWatchList) {
   int send_chunk_count(0);
   boost::mutex mutex;
   boost::condition_variable cond_var;
-  maidsafe::ThreadedCallContainer tcc(1);
+  base::Threadpool tp(1);
 
   // Set expectations
   EXPECT_CALL(*mko, AddressIsLocal(testing::An<const kad::Contact&>()))
@@ -570,19 +570,19 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AddToWatchList) {
                     i + 1 < test_msm::lower_threshold,
                     kAck,
                     contacts.at(i).node_id().String(),
-                    _1, _2, &tcc))))                                   // Call 4
+                    _1, _2, &tp))))                                    // Call 4
             .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
                 boost::bind(&test_msm::WatchListOpStageThree,
                     true,
                     i + 1 < test_msm::lower_threshold ? kAck : kNack,
                     contacts.at(i).node_id().String(),
-                    _1, _2, &tcc))))                                   // Call 5
+                    _1, _2, &tp))))                                    // Call 5
             .WillRepeatedly(testing::WithArgs<4, 6>(testing::Invoke(
                 boost::bind(&test_msm::WatchListOpStageThree,
                     true,
                     kAck,
                     contacts.at(i).node_id().String(),
-                    _1, _2, &tcc))));                           // Calls 6 to 12
+                    _1, _2, &tp))));                            // Calls 6 to 12
   }
 
   for (size_t i = 0; i < contacts.size(); ++i) {
@@ -600,14 +600,14 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AddToWatchList) {
                     kAck,
                     contacts.at(i).node_id().String(),
                     kMinChunkCopies,
-                    _1, _2, &tcc))))                                   // Call 6
+                    _1, _2, &tp))))                                    // Call 6
             .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
                 boost::bind(&test_msm::AddToWatchListStageFour,
                     true,
                     i + 1 < test_msm::lower_threshold ? kAck : kNack,
                     contacts.at(i).node_id().String(),
                     kMinChunkCopies,
-                    _1, _2, &tcc))))                                   // Call 7
+                    _1, _2, &tp))))                                    // Call 7
             .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
                 boost::bind(&test_msm::AddToWatchListStageFour,
                     true,
@@ -615,7 +615,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AddToWatchList) {
                     contacts.at((i + 1) %
                         contacts.size()).node_id().String(),
                     kMinChunkCopies,
-                    _1, _2, &tcc))))                                   // Call 8
+                    _1, _2, &tp))))                                    // Call 8
             .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
                 boost::bind(&test_msm::AddToWatchListStageFour,
                     true,
@@ -623,28 +623,28 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AddToWatchList) {
                     contacts.at(i).node_id().String(),
                     kMinChunkCopies +
                         (i + 1 < test_msm::lower_threshold ? 0 : 1),
-                    _1, _2, &tcc))))                                   // Call 9
+                    _1, _2, &tp))))                                    // Call 9
             .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
                 boost::bind(&test_msm::AddToWatchListStageFour,
                     true,
                     kAck,
                     contacts.at(i).node_id().String(),
                     0,
-                    _1, _2, &tcc))))                                  // Call 10
+                    _1, _2, &tp))))                                   // Call 10
             .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
                 boost::bind(&test_msm::AddToWatchListStageFour,
                     true,
                     kAck,
                     contacts.at(i).node_id().String(),
                     kMinChunkCopies,
-                    _1, _2, &tcc))))                                  // Call 11
+                    _1, _2, &tp))))                                   // Call 11
             .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
                 boost::bind(&test_msm::AddToWatchListStageFour,
                     true,
                     kAck,
                     contacts.at(i).node_id().String(),
                     i == 0 ? 0 : kMinChunkCopies - 1,
-                    _1, _2, &tcc))));                                 // Call 12
+                    _1, _2, &tp))));                                  // Call 12
   }
 
   EXPECT_CALL(msm, SendChunkPrep(
@@ -724,7 +724,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AddToWatchList) {
     time_taken += 100;
     boost::this_thread::sleep(boost::posix_time::milliseconds(100));
   }
-  tcc.Wait();
+  ASSERT_TRUE(tp.TimedWait(3000));
   ASSERT_EQ(size_t(0), msm.tasks_handler_.TasksCount());
 
   // Call 5 - ExpectAmendment responses partially unacknowledged
@@ -736,7 +736,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AddToWatchList) {
     time_taken += 100;
     boost::this_thread::sleep(boost::posix_time::milliseconds(100));
   }
-  tcc.Wait();
+  ASSERT_TRUE(tp.TimedWait(3000));
   ASSERT_EQ(size_t(0), msm.tasks_handler_.TasksCount());
 
   // Call 6 - Twelve ATW responses return uninitialised
@@ -748,7 +748,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AddToWatchList) {
     time_taken += 100;
     boost::this_thread::sleep(boost::posix_time::milliseconds(100));
   }
-  tcc.Wait();
+  ASSERT_TRUE(tp.TimedWait(3000));
   ASSERT_EQ(size_t(0), msm.tasks_handler_.TasksCount());
 
   // Call 7 - Twelve ATW responses return kNack
@@ -760,7 +760,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AddToWatchList) {
     time_taken += 100;
     boost::this_thread::sleep(boost::posix_time::milliseconds(100));
   }
-  tcc.Wait();
+  ASSERT_TRUE(tp.TimedWait(3000));
   ASSERT_EQ(size_t(0), msm.tasks_handler_.TasksCount());
 
   // Call 8 - Twelve ATW responses return with wrong PMIDs
@@ -772,7 +772,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AddToWatchList) {
     time_taken += 100;
     boost::this_thread::sleep(boost::posix_time::milliseconds(100));
   }
-  tcc.Wait();
+  ASSERT_TRUE(tp.TimedWait(3000));
   ASSERT_EQ(size_t(0), msm.tasks_handler_.TasksCount());
 
   // Call 9 - Twelve ATW responses return excessive upload_count
@@ -784,7 +784,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AddToWatchList) {
     time_taken += 100;
     boost::this_thread::sleep(boost::posix_time::milliseconds(100));
   }
-  tcc.Wait();
+  ASSERT_TRUE(tp.TimedWait(3000));
   ASSERT_EQ(size_t(0), msm.tasks_handler_.TasksCount());
 
   // Call 10 - All ATW responses return upload_count of 0
@@ -796,7 +796,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AddToWatchList) {
     time_taken += 100;
     boost::this_thread::sleep(boost::posix_time::milliseconds(100));
   }
-  tcc.Wait();
+  ASSERT_TRUE(tp.TimedWait(3000));
   ASSERT_EQ(size_t(0), msm.tasks_handler_.TasksCount());
 
   boost::mutex::scoped_lock lock(mutex);
@@ -2686,7 +2686,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_UpdateAccountStatus) {
 
   // only one thread, so the RPCs are called in order
   // (important for the expected averages)
-  maidsafe::ThreadedCallContainer tcc(1);
+  base::Threadpool tp(1);
 
   // Set expectations
   EXPECT_CALL(*mko, AddressIsLocal(testing::An<const kad::Contact&>()))
@@ -2703,26 +2703,26 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_UpdateAccountStatus) {
         testing::_,
         testing::_))
             .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
-                boost::bind(&test_msm::ThreadedAccountStatusCallback, &tcc,
+                boost::bind(&test_msm::ThreadedAccountStatusCallback, &tp,
                 false, kAck, account_holders.at(i).node_id().String(),
                 false, test_msm::AccountStatusValues(0, 0, 0), _1, _2))))   // 3
             .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
-                boost::bind(&test_msm::ThreadedAccountStatusCallback, &tcc,
+                boost::bind(&test_msm::ThreadedAccountStatusCallback, &tp,
                 i < test_msm::upper_threshold, kAck,
                 account_holders.at(i).node_id().String(), false,
                 test_msm::AccountStatusValues(1, 2, 3), _1, _2))))          // 4
             .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
-                boost::bind(&test_msm::ThreadedAccountStatusCallback, &tcc,
+                boost::bind(&test_msm::ThreadedAccountStatusCallback, &tp,
                 i < test_msm::upper_threshold, kNack,
                 account_holders.at(i).node_id().String(), true,
                 test_msm::AccountStatusValues(1, 2, 3), _1, _2))))          // 5
             .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
-                boost::bind(&test_msm::ThreadedAccountStatusCallback, &tcc,
+                boost::bind(&test_msm::ThreadedAccountStatusCallback, &tp,
                 i < test_msm::lower_threshold, kAck,
                 account_holders.at(i).node_id().String(), true,
                 test_msm::AccountStatusValues(i*i, i, i), _1, _2))))        // 6
             .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
-                boost::bind(&test_msm::ThreadedAccountStatusCallback, &tcc,
+                boost::bind(&test_msm::ThreadedAccountStatusCallback, &tp,
                 i < test_msm::upper_threshold, kAck,
                 account_holders.at(i).node_id().String(), true,
                 test_msm::AccountStatusValues(1, 2, 3), _1, _2))));         // 7
@@ -2756,7 +2756,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_UpdateAccountStatus) {
 
   // Call 3 - uninitialised responses
   msm.UpdateAccountStatus();
-  tcc.Wait();
+  ASSERT_TRUE(tp.TimedWait(3000));
   msm.GetAccountStatus(&space_offered, &space_given, &space_taken);
   EXPECT_EQ(static_cast<boost::uint64_t>(11), space_offered);
   EXPECT_EQ(static_cast<boost::uint64_t>(22), space_given);
@@ -2764,7 +2764,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_UpdateAccountStatus) {
 
   // Call 4 - no values => 0
   msm.UpdateAccountStatus();
-  tcc.Wait();
+  ASSERT_TRUE(tp.TimedWait(3000));
   msm.GetAccountStatus(&space_offered, &space_given, &space_taken);
   EXPECT_EQ(static_cast<boost::uint64_t>(0), space_offered);
   EXPECT_EQ(static_cast<boost::uint64_t>(0), space_given);
@@ -2774,7 +2774,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_UpdateAccountStatus) {
 
   // Call 5 - kNack => 0
   msm.UpdateAccountStatus();
-  tcc.Wait();
+  ASSERT_TRUE(tp.TimedWait(3000));
   msm.GetAccountStatus(&space_offered, &space_given, &space_taken);
   EXPECT_EQ(static_cast<boost::uint64_t>(0), space_offered);
   EXPECT_EQ(static_cast<boost::uint64_t>(0), space_given);
@@ -2784,7 +2784,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_UpdateAccountStatus) {
 
   // Call 6 - no consensus
   msm.UpdateAccountStatus();
-  tcc.Wait();
+  ASSERT_TRUE(tp.TimedWait(3000));
   msm.GetAccountStatus(&space_offered, &space_given, &space_taken);
   if (test_msm::lower_threshold > 2) {
     EXPECT_EQ(static_cast<boost::uint64_t>(11), space_offered);
@@ -2796,7 +2796,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_UpdateAccountStatus) {
 
   // Call 7 - success
   msm.UpdateAccountStatus();
-  tcc.Wait();
+  ASSERT_TRUE(tp.TimedWait(3000));
   msm.GetAccountStatus(&space_offered, &space_given, &space_taken);
   EXPECT_EQ(static_cast<boost::uint64_t>(1), space_offered);
   EXPECT_EQ(static_cast<boost::uint64_t>(2), space_given);

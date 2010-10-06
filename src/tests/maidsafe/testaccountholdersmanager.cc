@@ -27,7 +27,6 @@
 #include "maidsafe/accountholdersmanager.h"
 #include "maidsafe/chunkstore.h"
 #include "tests/maidsafe/mockkadops.h"
-#include "tests/maidsafe/threadedcallcontainer.h"
 
 namespace test_ahm {
 static const boost::uint8_t K(4);
@@ -79,13 +78,10 @@ class AccountHoldersManagerTest : public testing::Test {
         test_cond_var_(),
         test_return_code_(kPendingResult),
         test_account_holders_(),
-        test_functor_()
-        /* tcc_(1) */ {}
+        test_functor_() {}
   void ClosestNodesThreadedCallback(const std::string &response,
                                     VoidFuncIntContacts callback) {
     printf("In ClosestNodesThreadedCallback ...\n");
-//     tcc_.Enqueue(boost::bind(&MockKadOps::RealFindKClosestNodesCallback,
-//                              mock_kad_ops_, response, callback));
     mock_kad_ops_->ThreadedFindKClosestNodesCallback(response, callback);
   }
  protected:
@@ -159,7 +155,6 @@ class AccountHoldersManagerTest : public testing::Test {
   ReturnCode test_return_code_;
   std::vector<kad::Contact> test_account_holders_;
   AccountHolderGroupFunctor test_functor_;
-  // ThreadedCallContainer tcc_;
 };
 
 TEST_F(AccountHoldersManagerTest, BEH_MAID_AHM_Init) {
