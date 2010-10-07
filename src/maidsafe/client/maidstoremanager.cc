@@ -2200,7 +2200,7 @@ int MaidsafeStoreManager::GetRemoveFromWatchListRequests(
   return kSuccess;
 }
 
-void MaidsafeStoreManager::GetRequestSignature(
+void MaidsafeStoreManager::GetRequestSignature (
     const std::string &name,
     const DirType dir_type,
     const std::string &recipient_id,
@@ -2211,9 +2211,22 @@ void MaidsafeStoreManager::GetRequestSignature(
   request_signature->clear();
   if (dir_type == ANONYMOUS) {
     *request_signature = kAnonymousRequestSignature;
+  } else if (name.empty()) {
+#ifdef DEBUG
+    printf("In MSM::GetRequestSignature, the data name is empty.\n");
+#endif
+    return;
+  } else if (recipient_id.empty()) {
+#ifdef DEBUG
+    printf("In MSM::GetRequestSignature, the recipient ID is empty.\n");
+#endif
+    return;
   } else if (public_key.empty() ||
              public_key_signature.empty() ||
              private_key.empty()) {
+#ifdef DEBUG
+    printf("In MSM::GetRequestSignature, a passed key is empty.\n");
+#endif
     return;
   } else {
     crypto::Crypto co;
@@ -2225,7 +2238,7 @@ void MaidsafeStoreManager::GetRequestSignature(
   }
 }
 
-void MaidsafeStoreManager::GetRequestSignature(
+void MaidsafeStoreManager::GetRequestSignature (
     boost::shared_ptr<StoreData> store_data,
     const std::string &recipient_id,
     std::string *request_signature) {

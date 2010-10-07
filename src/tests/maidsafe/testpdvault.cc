@@ -467,8 +467,8 @@ TEST_MS_NET(PDVaultTest, FUNC, MAID, StoreAndGetChunks) {
     }
   }
 
-  ASSERT_EQ(0, remaining_tasks);
-  ASSERT_EQ(chunks.size(), stored_chunks.size());
+  EXPECT_EQ(0, remaining_tasks);
+  EXPECT_EQ(chunks.size(), stored_chunks.size());
   stored_chunks.clear();
 
   printf("\nGenerating chunk info inventory...\n");
