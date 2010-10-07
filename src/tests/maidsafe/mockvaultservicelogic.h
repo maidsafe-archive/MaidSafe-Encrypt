@@ -160,7 +160,7 @@ class MockVsl : public VaultServiceLogic {
           const boost::shared_ptr<maidsafe::KadOps> &kadops)
       : VaultServiceLogic(vault_rpcs, kadops) {}
   boost::shared_ptr<maidsafe::MockKadOps> kadops() {
-      return boost::static_pointer_cast<maidsafe::MockKadOps>(kad_ops_);
+    return boost::static_pointer_cast<maidsafe::MockKadOps>(kad_ops_);
   }
   MOCK_METHOD4(AddToRemoteRefList,
                void(const maidsafe::AddToReferenceListRequest &request,
@@ -191,7 +191,7 @@ class MockVsl : public VaultServiceLogic {
 
 class MockVaultServiceLogicTest : public testing::Test {
  protected:
-  explicit MockVaultServiceLogicTest(const boost::uint8_t k)
+  explicit MockVaultServiceLogicTest(const boost::uint8_t &k)
       : pmid_(),
         pmid_private_(),
         pmid_public_(),

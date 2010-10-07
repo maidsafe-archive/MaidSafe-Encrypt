@@ -41,6 +41,10 @@ namespace mi = boost::multi_index;
 
 namespace maidsafe_vault {
 
+namespace test {
+class AccountAmendmentHandlerTest_BEH_MAID_ProcessRequest_Test;
+}  // namespace test
+
 // TODO(Fraser#5#): 2010-03-29 - Ennumerate and define alert types and struct
 //                               Once done, replace following free function
 inline void PutAlertToPb(const std::string &alert,
@@ -134,7 +138,7 @@ class AccountHandler {
   FRIEND_TEST(AccountHandlerTest, BEH_VAULT_AccountHandlerDelete);
   FRIEND_TEST(AccountHandlerTest, FUNC_VAULT_AccountHandlerPutGetPb);
   FRIEND_TEST(AccountHandlerTest, FUNC_VAULT_AccountHandlerPutGetAccount);
-  FRIEND_TEST(AccountAmendmentHandlerTest, BEH_MAID_AAH_ProcessRequest);
+  friend class test::AccountAmendmentHandlerTest_BEH_MAID_ProcessRequest_Test;
   AccountSet accounts_;
   boost::mutex account_mutex_;
   bool started_;

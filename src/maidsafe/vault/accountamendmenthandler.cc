@@ -107,7 +107,6 @@ int AccountAmendmentHandler::ProcessRequest(
           return kSuccess;
         } else if (amendment_status == kAccountAmendmentFinished) {
           found = true;
-          amendments_.erase(it.first);
           return kSuccess;
         }
         ++it.first;
@@ -323,17 +322,20 @@ void AccountAmendmentHandler::CreateNewAmendmentCallback(
     // Update multi-index
     amendments_.get<by_timestamp>().replace(it, modified_amendment);
     // Assess probable (enqueued) requests
+    int amendment_status(kAccountAmendmentError);
     while (!modified_amendment.probable_pendings.empty()) {
-      AssessAmendment(amendment.pmid, amendment.chunkname,
-                      amendment.amendment_type, amendment.field,
-                      amendment.offer, amendment.increase,
-                      modified_amendment.probable_pendings.front(),
-                      &modified_amendment);
+      amendment_status =
+          AssessAmendment(amendment.pmid, amendment.chunkname,
+                          amendment.amendment_type, amendment.field,
+                          amendment.offer, amendment.increase,
+                          modified_amendment.probable_pendings.front(),
+                          &modified_amendment);
       modified_amendment.probable_pendings.pop_front();
     }
     amendments_.get<by_timestamp>().replace(it, modified_amendment);
   } else {
     // Set responses and run callbacks
+    amendments_.get<by_timestamp>().erase(it);
     while (!modified_amendment.probable_pendings.empty()) {
       if (!modified_amendment.probable_pendings.front().responded) {
         modified_amendment.probable_pendings.front().response->
@@ -343,7 +345,6 @@ void AccountAmendmentHandler::CreateNewAmendmentCallback(
       }
       modified_amendment.probable_pendings.pop_front();
     }
-    amendments_.get<by_timestamp>().erase(it);
   }
 }
 

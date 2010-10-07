@@ -40,6 +40,15 @@ namespace mi = boost::multi_index;
 
 namespace maidsafe_vault {
 
+namespace test {
+class AccountAmendmentHandlerTest_BEH_MAID_AssessAmendment_Test;
+class AccountAmendmentHandlerTest_BEH_MAID_FetchAmendmentResults_Test;
+class AccountAmendmentHandlerTest_BEH_MAID_CreateNewAmendment_Test;
+class AccountAmendmentHandlerTest_BEH_MAID_CreateNewWithExpecteds_Test;
+class AccountAmendmentHandlerTest_BEH_MAID_ProcessRequest_Test;
+class AccountAmendmentHandlerTest_BEH_MAID_CleanUp_Test;
+}  // namespace test
+
 class AccountHandler;
 class RequestExpectationHandler;
 class VaultServiceLogic;
@@ -184,12 +193,15 @@ class AccountAmendmentHandler {
  private:
   AccountAmendmentHandler(const AccountAmendmentHandler&);
   AccountAmendmentHandler& operator=(const AccountAmendmentHandler&);
-  FRIEND_TEST(AccountAmendmentHandlerTest, BEH_MAID_AAH_CreateNewAmendment);
-  FRIEND_TEST(AccountAmendmentHandlerTest, BEH_MAID_AAH_CreateNewWithExpecteds);
-  FRIEND_TEST(AccountAmendmentHandlerTest, BEH_MAID_AAH_AssessAmendment);
-  FRIEND_TEST(AccountAmendmentHandlerTest, BEH_MAID_AAH_ProcessRequest);
-  FRIEND_TEST(AccountAmendmentHandlerTest, BEH_MAID_AAH_FetchAmendmentResults);
-  FRIEND_TEST(AccountAmendmentHandlerTest, BEH_MAID_AAH_CleanUp);
+  friend class test::AccountAmendmentHandlerTest_BEH_MAID_AssessAmendment_Test;
+  friend class
+      test::AccountAmendmentHandlerTest_BEH_MAID_FetchAmendmentResults_Test;
+  friend class
+      test::AccountAmendmentHandlerTest_BEH_MAID_CreateNewAmendment_Test;
+  friend class
+      test::AccountAmendmentHandlerTest_BEH_MAID_CreateNewWithExpecteds_Test;
+  friend class test::AccountAmendmentHandlerTest_BEH_MAID_ProcessRequest_Test;
+  friend class test::AccountAmendmentHandlerTest_BEH_MAID_CleanUp_Test;
   FRIEND_TEST(MockVaultServicesTest, BEH_MAID_ServicesAddToWatchList);
   FRIEND_TEST(MockVaultServicesTest, FUNC_MAID_ServicesRemoveFromWatchList);
   FRIEND_TEST(MockVaultServicesTest, BEH_MAID_ServicesAddToReferenceList);
