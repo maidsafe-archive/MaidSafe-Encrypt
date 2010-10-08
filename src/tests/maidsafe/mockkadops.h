@@ -68,7 +68,7 @@ class MockKadOps : public KadOps {
                                bool check_local,
                                kad::VoidFunctorOneString callback));
   MOCK_METHOD2(FindKClosestNodes, void(const std::string &key,
-                                       maidsafe::VoidFuncIntContacts callback));
+                                       VoidFuncIntContacts callback));
   MOCK_METHOD4(GetStorePeer, int(const double &ideal_rtt,
                                  const std::vector<kad::Contact> &exclude,
                                  kad::Contact *new_peer,
@@ -79,9 +79,11 @@ class MockKadOps : public KadOps {
 //   }
   void ThreadedFindKClosestNodesCallback(const std::string &response,
                                          VoidFuncIntContacts callback) {
-    printf("In MockKadOps::ThreadedFindKClosestNodesCallback ...\n");
     tp_.EnqueueTask(boost::bind(&KadOps::FindKClosestNodesCallback, this,
                                 response, callback));
+  }
+  bool Wait() {
+    return tp_.TimedWait(3000);
   }
  private:
   base::Threadpool tp_;

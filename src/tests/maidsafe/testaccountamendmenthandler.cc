@@ -82,6 +82,8 @@ bool CheckAcc(const std::string &account_pmid,
 
 namespace maidsafe_vault {
 
+namespace test {
+
 class AccountAmendmentHandlerTest : public MockVaultServiceLogicTest {
  protected:
   AccountAmendmentHandlerTest()
@@ -101,7 +103,7 @@ class AccountAmendmentHandlerTest : public MockVaultServiceLogicTest {
   AccountAmendmentHandler aah_;
 };
 
-TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_AssessAmendment) {
+TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AssessAmendment) {
   // Setup
   const int kTestRuns(4);
   boost::mutex mutex;
@@ -511,7 +513,7 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_AssessAmendment) {
   ASSERT_EQ(size_t(1), aah_.amendments_.size());
 }
 
-TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_FetchAmendmentResults) {
+TEST_F(AccountAmendmentHandlerTest, BEH_MAID_FetchAmendmentResults) {
   boost::mutex mutex;
   boost::condition_variable cv;
   test_aah::CallbacksHolder cbh(&mutex, &cv);
@@ -554,10 +556,10 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_FetchAmendmentResults) {
       aah_.amendments_.insert(test_amendment);
   ASSERT_TRUE(p.second);
 
-  ASSERT_EQ(0, aah_.amendment_results_.size());
+  ASSERT_EQ(0U, aah_.amendment_results_.size());
   ASSERT_EQ(kSuccess, aah_.ProcessRequest(&request, &response, done));
-  ASSERT_EQ(size_t(0), aah_.amendments_.size());
-  ASSERT_EQ(1, aah_.amendment_results_.size());
+  ASSERT_EQ(1U, aah_.amendments_.size());
+  ASSERT_EQ(1U, aah_.amendment_results_.size());
 
   maidsafe::AccountStatusResponse asr;
   aah_.FetchAmendmentResults(dummy_account_name, &asr);
@@ -570,7 +572,7 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_FetchAmendmentResults) {
   ASSERT_EQ(kAck, asr.amendment_results(0).result());
 }
 
-TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_CreateNewAmendment) {
+TEST_F(AccountAmendmentHandlerTest, BEH_MAID_CreateNewAmendment) {
   // Setup
   const int kTestRuns(6);
   vsl_.our_details_ = our_contact_;
@@ -599,7 +601,7 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_CreateNewAmendment) {
     google::protobuf::Closure *done = google::protobuf::NewCallback(&cbh,
         &test_aah::CallbacksHolder::callback);
     PendingAmending pending(&requests.at(i), &responses.at(i), done);
-    AccountAmendment amendment(test_account_name, test_account_name,
+    AccountAmendment amendment(test_account_name, far_chunk_name,
       maidsafe::AmendAccountRequest::kSpaceGivenInc, 2, 1000, true, pending);
     amendment.account_name = kad::KadId(test_account_name);
     test_amendments.push_back(amendment);
@@ -610,36 +612,32 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_CreateNewAmendment) {
   ASSERT_EQ(kSuccess, ah_.AddAccount(test_account_name, 999999));
 
   // Expectations
+  boost::function<void(maidsafe::VoidFuncIntContacts)> fail_parse_functor =
+      boost::bind(&maidsafe::MockKadOps::ThreadedFindKClosestNodesCallback,
+                 vsl_.kadops().get(), fail_parse_result_, _1);
+  boost::function<void(maidsafe::VoidFuncIntContacts)> fail_result_functor =
+      boost::bind(&maidsafe::MockKadOps::ThreadedFindKClosestNodesCallback,
+                  vsl_.kadops().get(), fail_result_, _1);
+  boost::function<void(maidsafe::VoidFuncIntContacts)> few_result_functor =
+      boost::bind(&maidsafe::MockKadOps::ThreadedFindKClosestNodesCallback,
+                  vsl_.kadops().get(), few_result_, _1);
+  boost::function<void(maidsafe::VoidFuncIntContacts)> good_result_functor =
+      boost::bind(&maidsafe::MockKadOps::ThreadedFindKClosestNodesCallback,
+                  vsl_.kadops().get(), good_result_, _1);
   EXPECT_CALL(*vsl_.kadops(), FindKClosestNodes(far_chunk_name,
       testing::An<maidsafe::VoidFuncIntContacts>()))
-      .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&maidsafe::MockKadOps::ThreadedFindKClosestNodesCallback,
-                      vsl_.kadops().get(), fail_parse_result_, _1))))  // Call 1
-      .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&maidsafe::MockKadOps::ThreadedFindKClosestNodesCallback,
-                      vsl_.kadops().get(), fail_result_, _1))))        // Call 2
-      .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&maidsafe::MockKadOps::ThreadedFindKClosestNodesCallback,
-                      vsl_.kadops().get(), few_result_, _1))))         // Call 3
-      .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&maidsafe::MockKadOps::ThreadedFindKClosestNodesCallback,
-                      vsl_.kadops().get(), good_result_, _1))))        // Call 4
-      .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&maidsafe::MockKadOps::ThreadedFindKClosestNodesCallback,
-                      vsl_.kadops().get(), good_result_, _1))))        // Call 5
-      .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&maidsafe::MockKadOps::ThreadedFindKClosestNodesCallback,
-                      vsl_.kadops().get(), good_result_, _1))));       // Call 6
+      .WillOnce(testing::WithArgs<1>(testing::Invoke(fail_parse_functor)))
+      .WillOnce(testing::WithArgs<1>(testing::Invoke(fail_result_functor)))
+      .WillOnce(testing::WithArgs<1>(testing::Invoke(few_result_functor)))
+      .WillOnce(testing::WithArgs<1>(testing::Invoke(good_result_functor)))
+      .WillOnce(testing::WithArgs<1>(testing::Invoke(good_result_functor)))
+      .WillOnce(testing::WithArgs<1>(testing::Invoke(good_result_functor)));
 
   // Call 1 - Fail to parse FindNodes response
   int test_run(0);
 //  printf("Run %i\n", test_run);
   aah_.CreateNewAmendment(test_amendments.at(test_run));
-  {
-    boost::mutex::scoped_lock lock(mutex);
-    while (!responses.at(test_run).IsInitialized())
-      cv.wait(lock);
-  }
+  EXPECT_TRUE(vsl_.kadops()->Wait());
   int expected_called_back_count(1);
   ASSERT_EQ(expected_called_back_count, cbh.called_back_count());
   ASSERT_TRUE(responses.at(test_run).IsInitialized());
@@ -650,11 +648,7 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_CreateNewAmendment) {
   ++test_run;
 //  printf("Run %i\n", test_run);
   aah_.CreateNewAmendment(test_amendments.at(test_run));
-  {
-    boost::mutex::scoped_lock lock(mutex);
-    while (!responses.at(test_run).IsInitialized())
-      cv.wait(lock);
-  }
+  EXPECT_TRUE(vsl_.kadops()->Wait());
   ++expected_called_back_count;
   ASSERT_EQ(expected_called_back_count, cbh.called_back_count());
   ASSERT_TRUE(responses.at(test_run).IsInitialized());
@@ -665,11 +659,7 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_CreateNewAmendment) {
   ++test_run;
 //  printf("Run %i\n", test_run);
   aah_.CreateNewAmendment(test_amendments.at(test_run));
-  {
-    boost::mutex::scoped_lock lock(mutex);
-    while (!responses.at(test_run).IsInitialized())
-      cv.wait(lock);
-  }
+  EXPECT_TRUE(vsl_.kadops()->Wait());
   ++expected_called_back_count;
   ASSERT_EQ(expected_called_back_count, cbh.called_back_count());
   ASSERT_TRUE(responses.at(test_run).IsInitialized());
@@ -681,15 +671,9 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_CreateNewAmendment) {
   ++test_run;
 //  printf("Run %i\n", test_run);
   aah_.CreateNewAmendment(test_amendments.at(test_run));
-  {
-    boost::mutex::scoped_lock lock(mutex);
-    while (!responses.at(test_run).IsInitialized())
-      cv.wait(lock);
-  }
-  ++expected_called_back_count;
+  EXPECT_TRUE(vsl_.kadops()->Wait());
   ASSERT_EQ(expected_called_back_count, cbh.called_back_count());
-  ASSERT_TRUE(responses.at(test_run).IsInitialized());
-  ASSERT_EQ(kNack, static_cast<int>(responses.at(test_run).result()));
+  ASSERT_FALSE(responses.at(test_run).IsInitialized());
   ASSERT_EQ(size_t(1), aah_.amendments_.size());
   AmendmentsByTimestamp::iterator it =
       aah_.amendments_.get<by_timestamp>().find(test_amendments.at(test_run));
@@ -729,20 +713,11 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_CreateNewAmendment) {
     test_amendments.at(test_run).probable_pendings.push_back(pending);
   }
   aah_.CreateNewAmendment(test_amendments.at(test_run));
-  {
-    boost::mutex::scoped_lock lock(mutex);
-    while (!responses.at(test_run).IsInitialized())
-      cv.wait(lock);
-  }
-
-  expected_called_back_count += (test_aah::K + 1);
+  EXPECT_TRUE(vsl_.kadops()->Wait());
   ASSERT_EQ(expected_called_back_count, cbh.called_back_count());
-  ASSERT_TRUE(responses.at(test_run).IsInitialized());
-  ASSERT_EQ(kNack, static_cast<int>(responses.at(test_run).result()));
-  for (int i = 0; i < test_aah::K; ++i) {
-    ASSERT_TRUE(bad_responses.at(i).IsInitialized());
-    ASSERT_EQ(kNack, static_cast<int>(bad_responses.at(i).result()));
-  }
+  ASSERT_FALSE(responses.at(test_run).IsInitialized());
+  for (int i = 0; i < test_aah::K; ++i)
+    ASSERT_FALSE(bad_responses.at(i).IsInitialized());
   ASSERT_EQ(size_t(2), aah_.amendments_.size());
   it = aah_.amendments_.get<by_timestamp>().find(test_amendments.at(test_run));
   ASSERT_EQ(size_t(0), (*it).success_count);
@@ -769,6 +744,7 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_CreateNewAmendment) {
   std::vector<maidsafe::AmendAccountResponse> good_responses;
   for (int i = 0; i < test_aah::K; ++i) {
     maidsafe::AmendAccountRequest request;
+    request.set_chunkname(far_chunk_name);
     maidsafe::SignedSize *sz = request.mutable_signed_size();
     sz->set_pmid(good_pmids_.at(i));
     good_requests.push_back(request);
@@ -776,6 +752,7 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_CreateNewAmendment) {
     resp.set_pmid(pmid_);
     good_responses.push_back(resp);
   }
+  test_amendments.at(test_run).probable_pendings.clear();
   for (int i = 0; i < test_aah::K; ++i) {
     google::protobuf::Closure *done = google::protobuf::NewCallback(&cbh,
         &test_aah::CallbacksHolder::callback);
@@ -784,19 +761,10 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_CreateNewAmendment) {
   }
   aah_.CreateNewAmendment(test_amendments.at(test_run));
   ASSERT_EQ(size_t(3), aah_.amendments_.size());
-  {
-    boost::mutex::scoped_lock lock(mutex);
-    while (!responses.at(test_run).IsInitialized())
-      cv.wait(lock);
-    for (int i = 0; i < test_aah::K; ++i) {
-      while (!good_responses.at(i).IsInitialized())
-        cv.wait(lock);
-    }
-  }
+  EXPECT_TRUE(vsl_.kadops()->Wait());
 
-  expected_called_back_count += (test_aah::K + 1);
+  expected_called_back_count += (test_aah::K);
   ASSERT_EQ(expected_called_back_count, cbh.called_back_count());
-  ASSERT_TRUE(responses.at(test_run).IsInitialized());
   ASSERT_EQ(size_t(test_aah::K), good_responses.size());
   for (int i = 0; i < test_aah::K; ++i) {
     ASSERT_TRUE(good_responses.at(i).IsInitialized());
@@ -827,7 +795,7 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_CreateNewAmendment) {
   ASSERT_EQ(size_t(3), aah_.amendments_.size());
 }
 
-TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_CreateNewWithExpecteds) {
+TEST_F(AccountAmendmentHandlerTest, BEH_MAID_CreateNewWithExpecteds) {
   // Setup
   const int kTestRuns(3);
   vsl_.our_details_ = our_contact_;
@@ -860,7 +828,7 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_CreateNewWithExpecteds) {
     google::protobuf::Closure *done = google::protobuf::NewCallback(&cbh,
         &test_aah::CallbacksHolder::callback);
     PendingAmending pending(&requests.at(i), &responses.at(i), done);
-    AccountAmendment amendment(test_account_name, test_account_name,
+    AccountAmendment amendment(test_account_name, far_chunk_name,
       maidsafe::AmendAccountRequest::kSpaceGivenInc, 2, 1000, true, pending);
     amendment.account_name = kad::KadId(test_account_name);
     test_amendments.push_back(amendment);
@@ -917,11 +885,15 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_CreateNewWithExpecteds) {
     maidsafe::AmendAccountRequest request;
     maidsafe::SignedSize *sz = request.mutable_signed_size();
     sz->set_pmid(good_pmids_.at(i));
+    request.set_chunkname(far_chunk_name);
+    request.set_amendment_type(maidsafe::AmendAccountRequest::kSpaceGivenInc);
+    request.set_account_pmid(test_account_pmid);
     good_requests.push_back(request);
     maidsafe::AmendAccountResponse resp;
     resp.set_pmid(pmid_);
     good_responses.push_back(resp);
   }
+  test_amendments.at(test_run).probable_pendings.clear();
   for (int i = 0; i < test_aah::K; ++i) {
     google::protobuf::Closure *done = google::protobuf::NewCallback(&cbh,
         &test_aah::CallbacksHolder::callback);
@@ -930,19 +902,10 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_CreateNewWithExpecteds) {
   }
   aah_.CreateNewAmendment(test_amendments.at(test_run));
   ASSERT_EQ(size_t(1), aah_.amendments_.size());
-  {
-    boost::mutex::scoped_lock lock(mutex);
-    while (!responses.at(test_run).IsInitialized())
-      cv.wait(lock);
-    for (int i = 0; i < test_aah::K; ++i) {
-      while (!good_responses.at(i).IsInitialized())
-        cv.wait(lock);
-    }
-  }
+  EXPECT_TRUE(vsl_.kadops()->Wait());
 
-  int expected_called_back_count(test_aah::K + 1);
+  int expected_called_back_count(test_aah::K);
   ASSERT_EQ(expected_called_back_count, cbh.called_back_count());
-  ASSERT_TRUE(responses.at(test_run).IsInitialized());
   ASSERT_EQ(size_t(test_aah::K), good_responses.size());
   for (int i = 0; i < test_aah::K; ++i) {
     ASSERT_TRUE(good_responses.at(i).IsInitialized());
@@ -981,6 +944,7 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_CreateNewWithExpecteds) {
     resp.set_pmid(pmid_);
     good_responses.push_back(resp);
   }
+  test_amendments.at(test_run).probable_pendings.clear();
   for (int i = 0; i < test_aah::K; ++i) {
     google::protobuf::Closure *done = google::protobuf::NewCallback(&cbh,
         &test_aah::CallbacksHolder::callback);
@@ -991,17 +955,16 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_CreateNewWithExpecteds) {
   ASSERT_EQ(size_t(2), aah_.amendments_.size());
   {
     boost::mutex::scoped_lock lock(mutex);
-    while (!responses.at(test_run).IsInitialized())
-      cv.wait(lock);
     for (int i = 0; i < test_aah::K; ++i) {
-      while (!good_responses.at(i).IsInitialized())
-        cv.wait(lock);
+      cv.wait(lock,
+              boost::bind(&maidsafe::AmendAccountResponse::IsInitialized,
+                          &good_responses.at(i)));
     }
   }
 
-  expected_called_back_count += (test_aah::K + 1);
+  expected_called_back_count += (test_aah::K);
   ASSERT_EQ(expected_called_back_count, cbh.called_back_count());
-  ASSERT_TRUE(responses.at(test_run).IsInitialized());
+  ASSERT_FALSE(responses.at(test_run).IsInitialized());
   ASSERT_EQ(size_t(test_aah::K), good_responses.size());
   for (int i = 0; i < test_aah::K; ++i) {
     ASSERT_TRUE(good_responses.at(i).IsInitialized());
@@ -1039,6 +1002,7 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_CreateNewWithExpecteds) {
     resp.set_pmid(pmid_);
     good_responses.push_back(resp);
   }
+  test_amendments.at(test_run).probable_pendings.clear();
   for (int i = 0; i < test_aah::K; ++i) {
     google::protobuf::Closure *done = google::protobuf::NewCallback(&cbh,
         &test_aah::CallbacksHolder::callback);
@@ -1049,15 +1013,13 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_CreateNewWithExpecteds) {
   ASSERT_EQ(size_t(3), aah_.amendments_.size());
   {
     boost::mutex::scoped_lock lock(mutex);
-    while (!responses.at(test_run).IsInitialized())
-      cv.wait(lock);
     for (int i = 0; i < test_aah::K - test_aah::upper_threshold + 1; ++i) {
-      while (!good_responses.at(i).IsInitialized())
-        cv.wait(lock);
+      cv.timed_wait(lock, boost::posix_time::milliseconds(100),
+                    boost::bind(&maidsafe::AmendAccountResponse::IsInitialized,
+                                &good_responses.at(i)));
     }
   }
 
-  expected_called_back_count += (test_aah::K - test_aah::upper_threshold + 2);
   ASSERT_EQ(expected_called_back_count, cbh.called_back_count());
   ASSERT_EQ(size_t(test_aah::K), good_responses.size());
 //  int kacks(0), knacks(0);
@@ -1088,7 +1050,7 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_CreateNewWithExpecteds) {
   }
 }
 
-TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_ProcessRequest) {
+TEST_F(AccountAmendmentHandlerTest, BEH_MAID_ProcessRequest) {
   // Setup
   vsl_.pmid_ = pmid_;
   vsl_.pmid_public_signature_ = pmid_public_signature_;
@@ -1134,24 +1096,21 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_ProcessRequest) {
   ASSERT_EQ(size_t(11), ah_.accounts_.size());
 
   // Expectations
+  boost::function<void(maidsafe::VoidFuncIntContacts)> fail_result_functor =
+      boost::bind(&maidsafe::MockKadOps::ThreadedFindKClosestNodesCallback,
+                  vsl_.kadops().get(), fail_result_, _1);
+  boost::function<void(maidsafe::VoidFuncIntContacts)> good_result_functor =
+      boost::bind(&maidsafe::MockKadOps::ThreadedFindKClosestNodesCallback,
+                  vsl_.kadops().get(), good_result_, _1);
   EXPECT_CALL(*vsl_.kadops(), FindKClosestNodes(chunk_name,
       testing::An<maidsafe::VoidFuncIntContacts>()))
-      .Times(testing::AtLeast(5))
-      .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&maidsafe::MockKadOps::ThreadedFindKClosestNodesCallback,
-                      vsl_.kadops().get(), good_result_, _1))))        // Call 2
-      .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&maidsafe::MockKadOps::ThreadedFindKClosestNodesCallback,
-                      vsl_.kadops().get(), good_result_, _1))))        // Call 3
-      .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&maidsafe::MockKadOps::ThreadedFindKClosestNodesCallback,
-                      vsl_.kadops().get(), good_result_, _1))))        // Call 4
-      .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&maidsafe::MockKadOps::ThreadedFindKClosestNodesCallback,
-                      vsl_.kadops().get(), fail_result_, _1))))        // Call 5
-      .WillRepeatedly(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&maidsafe::MockKadOps::ThreadedFindKClosestNodesCallback,
-                      vsl_.kadops().get(), good_result_, _1))));
+      .Times(testing::AtLeast(5))  // Calls 2 onwards
+      .WillOnce(testing::WithArgs<1>(testing::Invoke(good_result_functor)))
+      .WillOnce(testing::WithArgs<1>(testing::Invoke(good_result_functor)))
+      .WillOnce(testing::WithArgs<1>(testing::Invoke(good_result_functor)))
+      .WillOnce(testing::WithArgs<1>(testing::Invoke(fail_result_functor)))
+      .WillRepeatedly(testing::WithArgs<1>(
+          testing::Invoke(good_result_functor)));
 
   // Call 1 - Request has wrong type
   int test_run(0);
@@ -1189,6 +1148,7 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_ProcessRequest) {
   ASSERT_EQ(kAmendAccountCountError, aah_.ProcessRequest(&request, &response,
       done));
   ASSERT_EQ(kMaxRepeatedAccountAmendments, aah_.amendments_.size());
+  EXPECT_TRUE(vsl_.kadops()->Wait());
 
   // Call 3 - Check we can't exceed kMaxAccountAmendments
   ++test_run;
@@ -1216,6 +1176,7 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_ProcessRequest) {
   ASSERT_EQ(kAmendAccountCountError, aah_.ProcessRequest(&request, &response,
       done));
   ASSERT_EQ(kMaxAccountAmendments, aah_.amendments_.size());
+  EXPECT_TRUE(vsl_.kadops()->Wait());
 
   // Call 4 - Successfully add new amendment
   ++test_run;
@@ -1228,6 +1189,7 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_ProcessRequest) {
   ASSERT_EQ(kSuccess, aah_.ProcessRequest(&request, &response, done));
   ASSERT_EQ(size_t(1), aah_.amendments_.size());
   ASSERT_TRUE(test_aah::CheckAcc(account_owner, offer, v_used, acc_used, &ah_));
+  EXPECT_TRUE(vsl_.kadops()->Wait());
 
   // Call 5 - Add new amendment but FindNodes result fails which removes amendmt
   ++test_run;
@@ -1238,6 +1200,7 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_ProcessRequest) {
   done = google::protobuf::NewCallback(&cbh,
       &test_aah::CallbacksHolder::callback);
   ASSERT_EQ(kSuccess, aah_.ProcessRequest(&request, &response, done));
+  EXPECT_TRUE(vsl_.kadops()->Wait());
   ASSERT_EQ(size_t(0), aah_.amendments_.size());
   ASSERT_TRUE(test_aah::CheckAcc(account_owner, offer, v_used, acc_used, &ah_));
   ASSERT_EQ(size_t(11), ah_.accounts_.size());
@@ -1245,7 +1208,7 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_ProcessRequest) {
   // Call 6 - Add new amendment and populate FindNodes result with good nodes.
   // Our PMID may get added in vsl->HandleFindKNodesResponse as a closest node.
   // In this case we will end up with 2 amendments pending, the main one (with
-  // 15 good requests) and the new one generated by our PMID.
+  // k - 1 good requests) and the new one generated by our PMID.
   ++test_run;
 //  printf("Run %i\n", test_run);
   aah_.amendments_.clear();
@@ -1271,9 +1234,10 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_ProcessRequest) {
   for (int i = 0; i < test_aah::K; ++i) {
     ASSERT_EQ(kSuccess, aah_.ProcessRequest(&requests.at(i), &responses.at(i),
               callbacks.at(i)));
+    ASSERT_GE(1U, aah_.amendments_.size());
   }
-  while (cbh.called_back_count() < 7 + test_aah::K)
-    boost::this_thread::sleep(boost::posix_time::milliseconds(50));
+  EXPECT_TRUE(vsl_.kadops()->Wait());
+  ASSERT_EQ(4 + test_aah::K, cbh.called_back_count());
   int success_count(0);
   for (int i = 1; i < test_aah::K; ++i) {
     ASSERT_TRUE(responses.at(i).IsInitialized());
@@ -1281,12 +1245,12 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_ProcessRequest) {
       ++success_count;
   }
   ASSERT_EQ(success_count, test_aah::K - 1);
-  ASSERT_EQ(aah_.amendments_.size(), size_t(0));
+  ASSERT_EQ(1U, aah_.amendments_.size());
   ASSERT_TRUE(test_aah::CheckAcc(account_owner, offer, 1000, acc_used, &ah_));
   ASSERT_EQ(size_t(11), ah_.accounts_.size());
 }
 
-TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_CleanUp) {
+TEST_F(AccountAmendmentHandlerTest, BEH_MAID_CleanUp) {
   // Empty set
   ASSERT_EQ(0, aah_.CleanUp());
 
@@ -1370,5 +1334,7 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AAH_CleanUp) {
   ASSERT_EQ(79, aah_.CleanUp());
   ASSERT_TRUE(aah_.amendments_.empty());
 }
+
+}  // namespace test
 
 }  // namespace maidsafe_vault

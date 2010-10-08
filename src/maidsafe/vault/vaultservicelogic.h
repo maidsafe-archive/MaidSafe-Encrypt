@@ -45,6 +45,13 @@ class Contact;
 
 namespace maidsafe_vault {
 
+namespace test {
+class AccountAmendmentHandlerTest_BEH_MAID_AssessAmendment_Test;
+class AccountAmendmentHandlerTest_BEH_MAID_CreateNewAmendment_Test;
+class AccountAmendmentHandlerTest_BEH_MAID_CreateNewWithExpecteds_Test;
+class AccountAmendmentHandlerTest_BEH_MAID_ProcessRequest_Test;
+}  // namespace test
+
 class VaultRpcs;
 
 // This is used to hold the data required to perform a Kad lookup to get a
@@ -239,13 +246,20 @@ class VaultServiceLogic {
   FRIEND_TEST(VaultServiceLogicTest, FUNC_MAID_VSL_AddToRemoteRefList);
   FRIEND_TEST(VaultServiceLogicTest, FUNC_MAID_VSL_AmendRemoteAccount);
   FRIEND_TEST(VaultServiceLogicTest, FUNC_MAID_VSL_RemoteVaultAbleToStore);
-  FRIEND_TEST(AccountAmendmentHandlerTest, BEH_MAID_AAH_AssessAmendment);
-  FRIEND_TEST(AccountAmendmentHandlerTest, BEH_MAID_AAH_CreateNewAmendment);
-  FRIEND_TEST(AccountAmendmentHandlerTest, BEH_MAID_AAH_CreateNewWithExpecteds);
-  FRIEND_TEST(AccountAmendmentHandlerTest, BEH_MAID_AAH_ProcessRequest);
+  FRIEND_TEST(AccountAmendmentHandlerTest, BEH_MAID_AssessAmendment);
+  FRIEND_TEST(AccountAmendmentHandlerTest, BEH_MAID_CreateNewAmendment);
+  FRIEND_TEST(AccountAmendmentHandlerTest, BEH_MAID_CreateNewWithExpecteds);
+  FRIEND_TEST(AccountAmendmentHandlerTest, BEH_MAID_ProcessRequest);
   FRIEND_TEST(MockVaultServicesTest, FUNC_MAID_ServicesAmendAccount);
   friend class MockVsl;
   friend class MockVaultServicesTest;
+  friend class test::AccountAmendmentHandlerTest_BEH_MAID_AssessAmendment_Test;
+  friend class
+      test::AccountAmendmentHandlerTest_BEH_MAID_CreateNewAmendment_Test;
+  friend class
+      test::AccountAmendmentHandlerTest_BEH_MAID_CreateNewWithExpecteds_Test;
+  friend class test::AccountAmendmentHandlerTest_BEH_MAID_ProcessRequest_Test;
+
   // First callback method in e.g. AmendRemoteAccount operation.  Called once by
   // kad_ops_->FindKNodes (when finding account holders' details).  T is
   // AmendRemoteAccountOpData or RemoteAccountStatusOpData.

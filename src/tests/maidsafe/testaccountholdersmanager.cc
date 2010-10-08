@@ -79,11 +79,6 @@ class AccountHoldersManagerTest : public testing::Test {
         test_return_code_(kPendingResult),
         test_account_holders_(),
         test_functor_() {}
-  void ClosestNodesThreadedCallback(const std::string &response,
-                                    VoidFuncIntContacts callback) {
-    printf("In ClosestNodesThreadedCallback ...\n");
-    mock_kad_ops_->ThreadedFindKClosestNodesCallback(response, callback);
-  }
  protected:
   void SetUp() {
     ASSERT_EQ(crypto::SHA_512, co_.hash_algorithm());
@@ -161,14 +156,14 @@ TEST_F(AccountHoldersManagerTest, BEH_MAID_AHM_Init) {
   // Set up expectations
   EXPECT_CALL(*mock_kad_ops_, FindKClosestNodes(account_name_, testing::_))
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&AccountHoldersManagerTest::ClosestNodesThreadedCallback,
-                      this, fail_parse_result_, _1))))                 // Call 1
+          boost::bind(&MockKadOps::ThreadedFindKClosestNodesCallback,
+                      mock_kad_ops_.get(), fail_parse_result_, _1))))  // Call 1
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&AccountHoldersManagerTest::ClosestNodesThreadedCallback,
-                      this, fail_result_, _1))))                       // Call 2
+          boost::bind(&MockKadOps::ThreadedFindKClosestNodesCallback,
+                      mock_kad_ops_.get(), fail_result_, _1))))        // Call 2
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&AccountHoldersManagerTest::ClosestNodesThreadedCallback,
-                      this, good_result_, _1))));                      // Call 3
+          boost::bind(&MockKadOps::ThreadedFindKClosestNodesCallback,
+                      mock_kad_ops_.get(), good_result_, _1))));       // Call 3
 
   // Uninitialised
   ASSERT_TRUE(account_holders_manager_.account_name().empty());
@@ -219,23 +214,23 @@ TEST_F(AccountHoldersManagerTest, BEH_MAID_AHM_UpdateGroup) {
   // Set up expectations
   EXPECT_CALL(*mock_kad_ops_, FindKClosestNodes(account_name_, testing::_))
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&AccountHoldersManagerTest::ClosestNodesThreadedCallback,
-                      this, fail_parse_result_, _1))))                 // Call 1
+          boost::bind(&MockKadOps::ThreadedFindKClosestNodesCallback,
+                      mock_kad_ops_.get(), fail_parse_result_, _1))))  // Call 1
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&AccountHoldersManagerTest::ClosestNodesThreadedCallback,
-                      this, fail_result_, _1))))                       // Call 2
+          boost::bind(&MockKadOps::ThreadedFindKClosestNodesCallback,
+                      mock_kad_ops_.get(), fail_result_, _1))))        // Call 2
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&AccountHoldersManagerTest::ClosestNodesThreadedCallback,
-                      this, few_result_, _1))))                        // Call 3
+          boost::bind(&MockKadOps::ThreadedFindKClosestNodesCallback,
+                      mock_kad_ops_.get(), few_result_, _1))))         // Call 3
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&AccountHoldersManagerTest::ClosestNodesThreadedCallback,
-                      this, good_result_, _1))));                      // Call 4
+          boost::bind(&MockKadOps::ThreadedFindKClosestNodesCallback,
+                      mock_kad_ops_.get(), good_result_, _1))));       // Call 4
   std::string good_pmid_account(co_.Hash(good_pmids_.back() + kAccount, "",
                                          crypto::STRING_STRING, false));
   EXPECT_CALL(*mock_kad_ops_, FindKClosestNodes(good_pmid_account, testing::_))
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&AccountHoldersManagerTest::ClosestNodesThreadedCallback,
-                      this, good_result_, _1))));                      // Call 5
+          boost::bind(&MockKadOps::ThreadedFindKClosestNodesCallback,
+                      mock_kad_ops_.get(), good_result_, _1))));       // Call 5
 
   // Fake initialisation
   account_holders_manager_.do_nothing_ = boost::bind(
@@ -386,11 +381,11 @@ TEST_F(AccountHoldersManagerTest, BEH_MAID_AHM_ReportFailure) {
   // Set up expectations
   EXPECT_CALL(*mock_kad_ops_, FindKClosestNodes(account_name_, testing::_))
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&AccountHoldersManagerTest::ClosestNodesThreadedCallback,
-                      this, good_result_, _1))))
+          boost::bind(&MockKadOps::ThreadedFindKClosestNodesCallback,
+                      mock_kad_ops_.get(), good_result_, _1))))
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
-          boost::bind(&AccountHoldersManagerTest::ClosestNodesThreadedCallback,
-                      this, good_result_, _1))));
+          boost::bind(&MockKadOps::ThreadedFindKClosestNodesCallback,
+                      mock_kad_ops_.get(), good_result_, _1))));
 
   // Fake initialisation
   account_holders_manager_.do_nothing_ = boost::bind(
@@ -445,14 +440,9 @@ TEST_F(AccountHoldersManagerTest, BEH_MAID_AHM_ReportFailure) {
   ASSERT_EQ(good_pmids_.size(), test_ahm::K);
   {
     // wait for update to finish (replaces contacts)
-    printf("In ReportFailure test, before mutex lock\n");
     boost::mutex::scoped_lock lock(account_holders_manager_.mutex_);
-    printf("In ReportFailure test, after mutex lock\n");
-    while (account_holders_manager_.update_in_progress_) {
-      printf("In ReportFailure test, waiting for cond var\n");
+    while (account_holders_manager_.update_in_progress_)
       account_holders_manager_.cond_var_.wait(lock);
-    }
-    printf("In ReportFailure test, after mutex scope\n");
   }
   ASSERT_EQ(test_ahm::K,
             account_holders_manager_.account_holder_group().size());

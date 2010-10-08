@@ -53,8 +53,10 @@ class Threadpool {
   Threadpool(const Threadpool&);
   Threadpool &operator=(const Threadpool&);
   void Run();
-  bool ThreadCountCorrect();
   bool Continue();
+  bool ThreadCountCorrect() {
+    return requested_thread_count_ == running_thread_count_;
+  }
   bool AllTasksDone() { return remaining_tasks_ == 0U; }
   boost::uint16_t requested_thread_count_, running_thread_count_;
   size_t remaining_tasks_;

@@ -1067,6 +1067,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_GetStoreRequests) {
   MaidsafeStoreManager msm(client_chunkstore_, test_msm::K);
   std::string recipient_id = crypto_.Hash("RecipientID", "",
       crypto::STRING_STRING, false);
+  kad::Contact recipient(recipient_id, "127.0.0.1", 0);
   // Make chunk/packet names
   std::vector<std::string> names;
   for (int i = 100; i < 104; ++i) {
@@ -1089,6 +1090,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_GetStoreRequests) {
       &public_key_signature2, &private_key2);
   send_chunk_data->store_data.reset(new StoreData("", 10, (kHashable | kNormal),
       PRIVATE, "", key_id2, public_key2, public_key_signature2, private_key2));
+  send_chunk_data->peer = recipient;
   ASSERT_EQ(kChunkNotInChunkstore, msm.GetStoreRequests(send_chunk_data));
   ASSERT_EQ("", store_prep_request.chunkname());
   ASSERT_EQ("", store_chunk_request.chunkname());
@@ -1118,6 +1120,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_GetStoreRequests) {
   send_chunk_data->store_data.reset(new StoreData(names.at(0), 3,
       (kHashable | kOutgoing), PRIVATE_SHARE, msid_name, key_id3, public_key3,
       public_key_signature3, private_key3));
+  send_chunk_data->peer = recipient;
   ASSERT_EQ(kSuccess, msm.GetStoreRequests(send_chunk_data));
   std::string public_key_signature = crypto_.AsymSign(rsakp.public_key(), "",
       rsakp.private_key(), crypto::STRING_STRING);
@@ -1154,6 +1157,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_GetStoreRequests) {
   send_chunk_data->store_data.reset(new StoreData(names.at(1), 3,
       (kHashable | kOutgoing), PUBLIC_SHARE, "", key_id4, public_key4,
       public_key_signature4, private_key4));
+  send_chunk_data->peer = recipient;
   ASSERT_EQ(kGetRequestSigError, msm.GetStoreRequests(send_chunk_data));
   rsakp = keys_.at(3);
   std::string anmpid_pri = rsakp.private_key();
@@ -1178,6 +1182,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_GetStoreRequests) {
   send_chunk_data->store_data.reset(new StoreData(names.at(1), 3,
       (kHashable | kOutgoing), PUBLIC_SHARE, "", key_id4, public_key4,
       public_key_signature4, private_key4));
+  send_chunk_data->peer = recipient;
   ASSERT_EQ(kSuccess, msm.GetStoreRequests(send_chunk_data));
   request_signature = crypto_.AsymSign(crypto_.Hash(
       mpid_pub_sig + names.at(1) + recipient_id, "", crypto::STRING_STRING,
@@ -1210,6 +1215,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_GetStoreRequests) {
   send_chunk_data->store_data.reset(new StoreData(names.at(2), 3,
       (kHashable | kOutgoing), ANONYMOUS, "", key_id5, public_key5,
       public_key_signature5, private_key5));
+  send_chunk_data->peer = recipient;
   ASSERT_EQ(kSuccess, msm.GetStoreRequests(send_chunk_data));
 
   ASSERT_EQ(names.at(2), store_prep_request.chunkname());
@@ -1238,6 +1244,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_GetStoreRequests) {
   send_chunk_data->store_data.reset(new StoreData(names.at(3), 3,
       (kHashable | kOutgoing), PRIVATE, "", key_id6, public_key6,
       public_key_signature6, private_key6));
+  send_chunk_data->peer = recipient;
   ASSERT_EQ(kSuccess, msm.GetStoreRequests(send_chunk_data));
   request_signature = crypto_.AsymSign(crypto_.Hash(
       client_pmid_public_signature_ + names.at(3) + recipient_id, "",
@@ -1276,6 +1283,8 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_ValidatePrepResp) {
       peer_pmid_pri, crypto::STRING_STRING);
   std::string peer_pmid = crypto_.Hash(peer_pmid_pub + peer_pmid_pub_signature,
       "", crypto::STRING_STRING, false);
+  kad::Contact peer(peer_pmid, "127.0.0.1", 0);
+      
   // Make request
   std::string chunk_value(base::RandomString(163));
   std::string chunk_name(crypto_.Hash(chunk_value, "", crypto::STRING_STRING,
@@ -1287,9 +1296,11 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_ValidatePrepResp) {
   client_chunkstore_->AddChunkToOutgoing(chunk_name, chunk_value);
   boost::shared_ptr<SendChunkData> send_chunk_data(
       new SendChunkData(store_data));
+  send_chunk_data->peer = peer;
   ASSERT_EQ(kSuccess, msm.GetStoreRequests(send_chunk_data));
   StorePrepRequest store_prep_request = send_chunk_data->store_prep_request;
   StoreChunkRequest store_chunk_request = send_chunk_data->store_chunk_request;
+  
   // Make proper response
   boost::shared_ptr<maidsafe_vault::VaultChunkStore> vault_chunkstore(
       new maidsafe_vault::VaultChunkStore(
