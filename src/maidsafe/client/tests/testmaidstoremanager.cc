@@ -724,7 +724,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AddToWatchList) {
     time_taken += 100;
     boost::this_thread::sleep(boost::posix_time::milliseconds(100));
   }
-  ASSERT_TRUE(tp.TimedWait(3000));
+  ASSERT_TRUE(tp.WaitForTasksToFinish(boost::posix_time::milliseconds(3000)));
   ASSERT_EQ(size_t(0), msm.tasks_handler_.TasksCount());
 
   // Call 5 - ExpectAmendment responses partially unacknowledged
@@ -736,7 +736,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AddToWatchList) {
     time_taken += 100;
     boost::this_thread::sleep(boost::posix_time::milliseconds(100));
   }
-  ASSERT_TRUE(tp.TimedWait(3000));
+  ASSERT_TRUE(tp.WaitForTasksToFinish(boost::posix_time::milliseconds(3000)));
   ASSERT_EQ(size_t(0), msm.tasks_handler_.TasksCount());
 
   // Call 6 - Twelve ATW responses return uninitialised
@@ -748,7 +748,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AddToWatchList) {
     time_taken += 100;
     boost::this_thread::sleep(boost::posix_time::milliseconds(100));
   }
-  ASSERT_TRUE(tp.TimedWait(3000));
+  ASSERT_TRUE(tp.WaitForTasksToFinish(boost::posix_time::milliseconds(3000)));
   ASSERT_EQ(size_t(0), msm.tasks_handler_.TasksCount());
 
   // Call 7 - Twelve ATW responses return kNack
@@ -760,7 +760,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AddToWatchList) {
     time_taken += 100;
     boost::this_thread::sleep(boost::posix_time::milliseconds(100));
   }
-  ASSERT_TRUE(tp.TimedWait(3000));
+  ASSERT_TRUE(tp.WaitForTasksToFinish(boost::posix_time::milliseconds(3000)));
   ASSERT_EQ(size_t(0), msm.tasks_handler_.TasksCount());
 
   // Call 8 - Twelve ATW responses return with wrong PMIDs
@@ -772,7 +772,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AddToWatchList) {
     time_taken += 100;
     boost::this_thread::sleep(boost::posix_time::milliseconds(100));
   }
-  ASSERT_TRUE(tp.TimedWait(3000));
+  ASSERT_TRUE(tp.WaitForTasksToFinish(boost::posix_time::milliseconds(3000)));
   ASSERT_EQ(size_t(0), msm.tasks_handler_.TasksCount());
 
   // Call 9 - Twelve ATW responses return excessive upload_count
@@ -784,7 +784,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AddToWatchList) {
     time_taken += 100;
     boost::this_thread::sleep(boost::posix_time::milliseconds(100));
   }
-  ASSERT_TRUE(tp.TimedWait(3000));
+  ASSERT_TRUE(tp.WaitForTasksToFinish(boost::posix_time::milliseconds(3000)));
   ASSERT_EQ(size_t(0), msm.tasks_handler_.TasksCount());
 
   // Call 10 - All ATW responses return upload_count of 0
@@ -796,7 +796,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AddToWatchList) {
     time_taken += 100;
     boost::this_thread::sleep(boost::posix_time::milliseconds(100));
   }
-  ASSERT_TRUE(tp.TimedWait(3000));
+  ASSERT_TRUE(tp.WaitForTasksToFinish(boost::posix_time::milliseconds(3000)));
   ASSERT_EQ(size_t(0), msm.tasks_handler_.TasksCount());
 
   boost::mutex::scoped_lock lock(mutex);
@@ -2767,7 +2767,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_UpdateAccountStatus) {
 
   // Call 3 - uninitialised responses
   msm.UpdateAccountStatus();
-  ASSERT_TRUE(tp.TimedWait(3000));
+  ASSERT_TRUE(tp.WaitForTasksToFinish(boost::posix_time::milliseconds(3000)));
   msm.GetAccountStatus(&space_offered, &space_given, &space_taken);
   EXPECT_EQ(static_cast<boost::uint64_t>(11), space_offered);
   EXPECT_EQ(static_cast<boost::uint64_t>(22), space_given);
@@ -2775,7 +2775,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_UpdateAccountStatus) {
 
   // Call 4 - no values => 0
   msm.UpdateAccountStatus();
-  ASSERT_TRUE(tp.TimedWait(3000));
+  ASSERT_TRUE(tp.WaitForTasksToFinish(boost::posix_time::milliseconds(3000)));
   msm.GetAccountStatus(&space_offered, &space_given, &space_taken);
   EXPECT_EQ(static_cast<boost::uint64_t>(0), space_offered);
   EXPECT_EQ(static_cast<boost::uint64_t>(0), space_given);
@@ -2785,7 +2785,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_UpdateAccountStatus) {
 
   // Call 5 - kNack => 0
   msm.UpdateAccountStatus();
-  ASSERT_TRUE(tp.TimedWait(3000));
+  ASSERT_TRUE(tp.WaitForTasksToFinish(boost::posix_time::milliseconds(3000)));
   msm.GetAccountStatus(&space_offered, &space_given, &space_taken);
   EXPECT_EQ(static_cast<boost::uint64_t>(0), space_offered);
   EXPECT_EQ(static_cast<boost::uint64_t>(0), space_given);
@@ -2795,7 +2795,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_UpdateAccountStatus) {
 
   // Call 6 - no consensus
   msm.UpdateAccountStatus();
-  ASSERT_TRUE(tp.TimedWait(3000));
+  ASSERT_TRUE(tp.WaitForTasksToFinish(boost::posix_time::milliseconds(3000)));
   msm.GetAccountStatus(&space_offered, &space_given, &space_taken);
   if (test_msm::lower_threshold > 2) {
     EXPECT_EQ(static_cast<boost::uint64_t>(11), space_offered);
@@ -2807,7 +2807,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_UpdateAccountStatus) {
 
   // Call 7 - success
   msm.UpdateAccountStatus();
-  ASSERT_TRUE(tp.TimedWait(3000));
+  ASSERT_TRUE(tp.WaitForTasksToFinish(boost::posix_time::milliseconds(3000)));
   msm.GetAccountStatus(&space_offered, &space_given, &space_taken);
   EXPECT_EQ(static_cast<boost::uint64_t>(1), space_offered);
   EXPECT_EQ(static_cast<boost::uint64_t>(2), space_given);

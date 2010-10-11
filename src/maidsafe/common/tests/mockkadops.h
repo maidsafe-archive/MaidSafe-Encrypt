@@ -83,7 +83,7 @@ class MockKadOps : public KadOps {
                                 response, callback));
   }
   bool Wait() {
-    return tp_.TimedWait(3000);
+    return tp_.WaitForTasksToFinish(boost::posix_time::milliseconds(3000));
   }
  private:
   base::Threadpool tp_;
