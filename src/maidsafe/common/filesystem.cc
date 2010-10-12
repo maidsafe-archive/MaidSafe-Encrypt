@@ -28,7 +28,7 @@
  * ==========================================================================
  */
 
-#include "fs/filesystem.h"
+#include "maidsafe/common/filesystem.h"
 #include <boost/filesystem/fstream.hpp>
 #include <boost/thread.hpp>
 #ifdef PD_WIN32
@@ -36,7 +36,7 @@
 #include <shlobj.h>
 #include <sstream>
 #endif
-#include "maidsafe/returncodes.h"
+#include "maidsafe/common/returncodes.h"
 
 namespace fs = boost::filesystem;
 

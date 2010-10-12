@@ -1,13 +1,12 @@
 /*
 * ============================================================================
 *
-* Copyright [2009] maidsafe.net limited
+* Copyright [2010] maidsafe.net limited
 *
 * Description:  none
 * Version:      1.0
-* Created:      2009-08-13-01.01.27
+* Created:      2010-10-12-13.47.13
 * Revision:     none
-* Compiler:     gcc
 * Author:       Team
 * Company:      maidsafe.net limited
 *
@@ -23,11 +22,7 @@
 */
 
 #include <maidsafe/base/log.h>
-#include <boost/filesystem.hpp>
-
 #include "gtest/gtest.h"
-
-#include "maidsafe/common/tests/networktest.h"
 
 int main(int argc, char **argv) {
   google::InitGoogleLogging(argv[0]);
@@ -37,28 +32,5 @@ int main(int argc, char **argv) {
 #endif
   FLAGS_logtostderr = true;
   testing::InitGoogleTest(&argc, argv);
-#ifdef MS_NETWORK_TEST
-  try {
-    if (boost::filesystem::exists(".kadconfig"))
-      boost::filesystem::remove(".kadconfig");
-  }
-  catch(const std::exception& e) {
-    printf("%s\n", e.what());
-  }
-  testing::AddGlobalTestEnvironment(new maidsafe::test::localvaults::Env(
-      maidsafe::test::K(), maidsafe::test::kNetworkSize(),
-      maidsafe::test::pdvaults(), maidsafe::test::kadconfig()));
-#endif
-
-  int result = RUN_ALL_TESTS();
-#ifdef MS_NETWORK_TEST
-  try {
-    if (boost::filesystem::exists(".kadconfig"))
-      boost::filesystem::remove(".kadconfig");
-  }
-  catch(const std::exception& e) {
-    printf("%s\n", e.what());
-  }
-#endif
-  return result;
+  return RUN_ALL_TESTS();
 }

@@ -22,11 +22,13 @@
 * ============================================================================
 */
 
-#ifndef MAIDSAFE_CLIENT_DATAIOHANDLER_H_
-#define MAIDSAFE_CLIENT_DATAIOHANDLER_H_
+#ifndef MAIDSAFE_ENCRYPT_DATAIOHANDLER_H_
+#define MAIDSAFE_ENCRYPT_DATAIOHANDLER_H_
 
 #include <boost/filesystem/fstream.hpp>
 #include <string>
+
+namespace maidsafe {
 
 class DataIOHandler {
  public:
@@ -121,5 +123,7 @@ class FileIOHandler : public DataIOHandler {
   bool read_;
 };
 
-#endif  // MAIDSAFE_CLIENT_DATAIOHANDLER_H_
+}  // namespace maidsafe
+
+#endif  // MAIDSAFE_ENCRYPT_DATAIOHANDLER_H_
 

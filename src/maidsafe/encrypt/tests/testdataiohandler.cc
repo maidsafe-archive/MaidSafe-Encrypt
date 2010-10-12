@@ -13,7 +13,7 @@
 *
 * The following source code is property of maidsafe.net limited and is not
 * meant for external use.  The use of this code is governed by the license
-* file LICENSE.TXT found in the root of this directory and also on
+* file LICENSE.TXT found in_ the root of this directory and also on
 * www.maidsafe.net.
 *
 * You are not free to copy, amend or otherwise use this source code without
@@ -23,13 +23,17 @@
 */
 
 #include <gtest/gtest.h>
-#include <boost/filesystem/fstream.hpp>
-#include <boost/filesystem.hpp>
-#include <boost/cstdint.hpp>
-#include <boost/lexical_cast.hpp>
+//#include <boost/filesystem/fstream.hpp>
+//#include <boost/filesystem.hpp>
+//#include <boost/cstdint.hpp>
+//#include <boost/lexical_cast.hpp>
 #include <maidsafe/base/utils.h>
 
-#include "maidsafe/client/dataiohandler.h"
+#include "maidsafe/encrypt/dataiohandler.h"
+
+namespace maidsafe {
+
+namespace test {
 
 class TestStringIOHandler : public testing::Test {
  public:
@@ -115,50 +119,50 @@ TEST_F(TestStringIOHandler, BEH_MAID_WriteToString) {
 
 class TestFileIOHandler : public testing::Test {
  public:
-  TestFileIOHandler() : handler_(), in_file(), out_file(),
-    data_(base::RandomString(255*1024)), in("in_file"), out("out_file") {
-    in += boost::lexical_cast<std::string>(
-      base::RandomInt32());
-    out += boost::lexical_cast<std::string>(
-      base::RandomInt32());
-  }
+  TestFileIOHandler()
+      : handler_(),
+        in_file_(),
+        out_file_(),
+        data_(base::RandomString(255*1024)),
+        in_("in_file_" + base::IntToString(base::RandomInt32())),
+        out_("out_file_" + base::IntToString(base::RandomInt32())) {}
  protected:
   virtual void SetUp() {
-    ASSERT_EQ("", handler_.GetAsString());
-    in_file.open(in, std::ifstream::binary);
+    ASSERT_TRUE(handler_.GetAsString().empty());
+    in_file_.open(in_, std::ifstream::binary);
   }
   virtual void TearDown() {
     handler_.Reset();
     try {
       if (boost::filesystem::exists(
-          boost::filesystem::path(in)))
-        boost::filesystem::remove(boost::filesystem::path(in));
+          boost::filesystem::path(in_)))
+        boost::filesystem::remove(boost::filesystem::path(in_));
       if (boost::filesystem::exists(
-          boost::filesystem::path(out)))
-        boost::filesystem::remove(boost::filesystem::path(out));
+          boost::filesystem::path(out_)))
+        boost::filesystem::remove(boost::filesystem::path(out_));
     }
     catch(const std::exception&) {
     }
   }
   void WriteDataToInFile() {
-    boost::filesystem::ofstream out_file;
+    boost::filesystem::ofstream out_file_;
     try {
-      out_file.open(in, boost::filesystem::ofstream::binary);
-      out_file.write(data_.c_str(), data_.size());
-      out_file.close();
+      out_file_.open(in_, boost::filesystem::ofstream::binary);
+      out_file_.write(data_.c_str(), data_.size());
+      out_file_.close();
     }
     catch(const std::exception&) {
     }
   }
   std::string ReadDataFromOutFile() {
-    boost::filesystem::ifstream in_file;
+    boost::filesystem::ifstream in_file_;
     boost::uint64_t size = boost::filesystem::file_size(
-      boost::filesystem::path(out));
+      boost::filesystem::path(out_));
     char *data = new char[size];
     try {
-      in_file.open(out, boost::filesystem::ofstream::binary);
-      in_file.read(data, size);
-      out_file.close();
+      in_file_.open(out_, boost::filesystem::ofstream::binary);
+      in_file_.read(data, size);
+      out_file_.close();
     }
     catch(const std::exception&) {
     }
@@ -167,19 +171,19 @@ class TestFileIOHandler : public testing::Test {
     return str;
   }
   FileIOHandler handler_;
-  boost::filesystem::fstream in_file, out_file;
-  std::string data_, in, out;
+  boost::filesystem::fstream in_file_, out_file_;
+  std::string data_, in_, out_;
 };
 
 TEST_F(TestFileIOHandler, BEH_MAID_TestReadFromFile) {
   WriteDataToInFile();
-  ASSERT_TRUE(handler_.SetData(in, true));
+  ASSERT_TRUE(handler_.SetData(in_, true));
   ASSERT_FALSE(handler_.Write("abc", 3));
   unsigned int size(10);
   char *read_data = new char[size];
   ASSERT_FALSE(handler_.Read(read_data, size));
   ASSERT_TRUE(handler_.Open());
-  ASSERT_FALSE(handler_.SetData(in, true));
+  ASSERT_FALSE(handler_.SetData(in_, true));
 
   ASSERT_FALSE(handler_.Write("abc", 3));
   ASSERT_TRUE(handler_.Read(read_data, size));
@@ -199,7 +203,7 @@ TEST_F(TestFileIOHandler, BEH_MAID_TestReadFromFile) {
 
 TEST_F(TestFileIOHandler, BEH_MAID_TestSetGetPointerFile) {
   WriteDataToInFile();
-  handler_.SetData(in, true);
+  handler_.SetData(in_, true);
   ASSERT_FALSE(handler_.SetGetPointer(999));
   unsigned int size(24);
   char *read_data = new char[size];
@@ -214,7 +218,7 @@ TEST_F(TestFileIOHandler, BEH_MAID_TestSetGetPointerFile) {
 }
 
 TEST_F(TestFileIOHandler, BEH_MAID_WriteToFile) {
-  handler_.SetData(out, false);
+  handler_.SetData(out_, false);
   ASSERT_FALSE(handler_.Write("abc", 3));
   unsigned int size(10);
   char *read_data = new char[size];
@@ -235,3 +239,7 @@ TEST_F(TestFileIOHandler, BEH_MAID_WriteToFile) {
   ASSERT_EQ(std::string(""), handler_.GetAsString());
   delete [] read_data;
 }
+
+}  // namespace test
+
+}  // namespace maidsafe

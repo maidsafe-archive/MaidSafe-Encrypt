@@ -22,49 +22,42 @@
 * ============================================================================
 */
 
-#ifndef MAIDSAFE_CLIENT_PACKETFACTORY_H_
-#define MAIDSAFE_CLIENT_PACKETFACTORY_H_
+#ifndef MAIDSAFE_PKI_PACKET_H_
+#define MAIDSAFE_PKI_PACKET_H_
 
 #include <boost/any.hpp>
-#include <gtest/gtest_prod.h>
+#include <boost/shared_ptr.hpp>
 #include <maidsafe/base/crypto.h>
 #include <map>
 #include <string>
 
-#include "protobuf/datamaps.pb.h"
+#include "maidsafe/common/packet.pb.h"
 
 namespace maidsafe {
 
-const boost::uint16_t kRsaKeySize = 4096;  // size to generate RSA keys in bits.
-const boost::uint16_t kNoOfSystemPackets = 8;
+namespace pki {
 
 typedef std::map<std::string, boost::any> PacketParams;
 
 class Packet {
  public:
   Packet();
-  virtual ~Packet();
+  virtual ~Packet() {}
   virtual PacketParams Create(PacketParams params) = 0;
   virtual PacketParams GetData(const std::string &ser_packet,
-      PacketParams params) = 0;
+                               PacketParams params) = 0;
   virtual std::string PacketName(PacketParams params) = 0;
  protected:
   crypto::Crypto crypto_obj_;
   virtual bool ValidateSignature(const GenericPacket &packet,
-      const std::string &public_key);
+                                 const std::string &public_key);
  private:
   Packet &operator=(const Packet&);
   Packet(const Packet&);
 };
 
-class PacketFactory {
- public:
-  static boost::shared_ptr<Packet> Factory(const PacketType type);
- private:
-  PacketFactory &operator=(const PacketFactory&);
-  PacketFactory(const PacketFactory&);
-};
+}  // namespace pki
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_CLIENT_PACKETFACTORY_H_
+#endif  // MAIDSAFE_PKI_PACKET_H_

@@ -1,30 +1,39 @@
 /*
- * copyright maidsafe.net limited 2008
- * The following source code is property of maidsafe.net limited and
- * is not meant for external use. The use of this code is governed
- * by the license file LICENSE.TXT found in the root of this directory and also
- * on www.maidsafe.net.
- *
- * You are not free to copy, amend or otherwise use this source code without
- * explicit written permission of the board of directors of maidsafe.net
- *
- *  Created on: Nov 13, 2008
- *      Author: Team
- */
+* ============================================================================
+*
+* Copyright [2009] maidsafe.net limited
+*
+* Description:  Creates, stores and accesses user details
+* Version:      1.0
+* Created:      2009-01-28-22.18.47
+* Revision:     none
+* Author:       Team
+* Company:      maidsafe.net limited
+*
+* The following source code is property of maidsafe.net limited and is not
+* meant for external use.  The use of this code is governed by the license
+* file LICENSE.TXT found in the root of this directory and also on
+* www.maidsafe.net.
+*
+* You are not free to copy, amend or otherwise use this source code without
+* the explicit written permission of the board of directors of maidsafe.net.
+*
+* ============================================================================
+*/
 
-#include "maidsafe/client/authentication.h"
+#include "maidsafe/passport/authentication.h"
 
-#include <boost/array.hpp>
-#include <boost/lexical_cast.hpp>
-#include <boost/regex.hpp>
-#include <boost/thread/mutex.hpp>
-
-#include <vector>
-
-#include "maidsafe/maidsafe.h"
-#include "protobuf/datamaps.pb.h"
-#include "protobuf/maidsafe_messages.pb.h"
-#include "protobuf/maidsafe_service.pb.h"
+//#include <boost/array.hpp>
+//#include <boost/lexical_cast.hpp>
+//#include <boost/regex.hpp>
+//#include <boost/thread/mutex.hpp>
+//
+//#include <vector>
+//
+//#include "maidsafe/maidsafe.h"
+//#include "protobuf/datamaps.pb.h"
+//#include "protobuf/maidsafe_messages.pb.h"
+//#include "protobuf/maidsafe_service.pb.h"
 
 namespace maidsafe {
 

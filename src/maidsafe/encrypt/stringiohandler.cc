@@ -22,11 +22,14 @@
 * ============================================================================
 */
 
-#include <cstring>
-#include "maidsafe/client/dataiohandler.h"
+#include "maidsafe/encrypt/dataiohandler.h"
 
-StringIOHandler::StringIOHandler() : input_(""), read_(false),
-  isOpen_(false), readptr_(0) {}
+namespace maidsafe {
+
+StringIOHandler::StringIOHandler() : input_(),
+                                     read_(false),
+                                     isOpen_(false),
+                                     readptr_(0) {}
 
 bool StringIOHandler::SetData(const std::string &input, const bool &read) {
   if (isOpen_)
@@ -96,3 +99,5 @@ bool StringIOHandler::SetGetPointer(const unsigned int &pos) {  // NOLINT
     readptr_ = pos;
   return true;
 }
+
+}  // namespace maidsafe

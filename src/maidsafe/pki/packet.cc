@@ -22,41 +22,23 @@
 * ============================================================================
 */
 
-#include "maidsafe/client/packetfactory.h"
-#include <boost/shared_ptr.hpp>
-#include "maidsafe/client/systempackets.h"
+#include "maidsafe/pki/packet.h"
 
 namespace maidsafe {
+
+namespace pki {
 
 Packet::Packet(): crypto_obj_() {
   crypto_obj_.set_hash_algorithm(crypto::SHA_512);
   crypto_obj_.set_symm_algorithm(crypto::AES_256);
 }
 
-Packet::~Packet() {
-}
-
 bool Packet::ValidateSignature(const GenericPacket &packet,
-      const std::string &public_key) {
+                               const std::string &public_key) {
   return crypto_obj_.AsymCheckSig(packet.data(), packet.signature(), public_key,
                                   crypto::STRING_STRING);
 }
 
-boost::shared_ptr<Packet> PacketFactory::Factory(const PacketType type) {
-  switch (type) {
-    case MID:
-      return boost::shared_ptr<Packet>(new MidPacket);
-    case SMID:
-      return boost::shared_ptr<Packet>(new SmidPacket);
-    case TMID:
-      return boost::shared_ptr<Packet>(new TmidPacket);
-    case MPID:
-      return boost::shared_ptr<Packet>(new MpidPacket);
-    case PMID:
-      return boost::shared_ptr<Packet>(new PmidPacket);
-    default:
-      return boost::shared_ptr<Packet>(new SignaturePacket);
-  }
-}
+}  // namespace pki
 
 }  // namespace maidsafe

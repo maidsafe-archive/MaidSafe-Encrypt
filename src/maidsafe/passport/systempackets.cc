@@ -23,12 +23,12 @@
 */
 
 #include "maidsafe/client/systempackets.h"
-#include <boost/lexical_cast.hpp>
-#include <maidsafe/maidsafe-dht.h>
-#include <maidsafe/base/utils.h>
-#include <cstdlib>
-#include <ctime>
-#include <cstdio>
+//#include <boost/lexical_cast.hpp>
+//#include <maidsafe/maidsafe-dht.h>
+//#include <maidsafe/base/utils.h>
+//#include <cstdlib>
+//#include <ctime>
+//#include <cstdio>
 
 namespace maidsafe {
 

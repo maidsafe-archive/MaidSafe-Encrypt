@@ -30,21 +30,18 @@
 //    including an option for no obf. and/or no enc.
 //
 //
-#include "maidsafe/client/selfencryption.h"
+#include "maidsafe/encrypt/selfencryption.h"
 
-#include <boost/filesystem/fstream.hpp>
 #include <boost/scoped_ptr.hpp>
 #include <maidsafe/base/crypto.h>
-#include <maidsafe/maidsafe-dht.h>
 #include <maidsafe/base/utils.h>
 
-#include <cstdio>
+#include <sstream>
 #include <set>
-#include <string>
-#include <vector>
 
-#include "maidsafe/chunkstore.h"
-#include "maidsafe/client/dataiohandler.h"
+#include "maidsafe/common/filesystem.h"
+#include "maidsafe/encrypt/dataiohandler.h"
+#include "maidsafe/encrypt/datamap.pb.h"
 
 namespace fs = boost::filesystem;
 
@@ -72,13 +69,18 @@ bool ResizeObfuscationHash(const std::string &input,
 
 }  // namespace self_encryption_utils
 
-SelfEncryption::SelfEncryption(boost::shared_ptr<ChunkStore> client_chunkstore)
-    : client_chunkstore_(client_chunkstore), version_("Mk II"), min_chunks_(3),
-      max_chunks_(40), default_chunk_size_(262144),
+SelfEncryption::SelfEncryption()
+    : version_("Mk II"),
+      min_chunks_(3),
+      max_chunks_(40),
+      default_chunk_size_(262144),
       default_chunklet_size_(16384),  // static_cast<boost::uint16_t> MUST be a
                                       // multiple of 2*IV for AES encryption,
                                       // i.e. multiple of 32.
-      min_chunklet_size_(32), compress_(true), file_hash_(), chunk_count_(0) {
+      min_chunklet_size_(32),
+      compress_(true),
+      file_hash_(),
+      chunk_count_(0) {
 #ifdef DEBUG
 //          printf("version_ = %s\n", version_);
 //          printf("min_chunks_ = %u\n", min_chunks_);
@@ -90,7 +92,8 @@ SelfEncryption::SelfEncryption(boost::shared_ptr<ChunkStore> client_chunkstore)
 #endif
 }
 
-int SelfEncryption::Encrypt(const std::string &entry_str, const bool &is_string,
+int SelfEncryption::Encrypt(const std::string &entry_str,
+                            bool is_string,
                             maidsafe::DataMap *dm/*,
                             std::set<std::string> *done_chunks*/) {
   std::map<std::string, fs::path> to_chunk_store;
@@ -116,12 +119,12 @@ int SelfEncryption::Encrypt(const std::string &entry_str, const bool &is_string,
 }
 
 int SelfEncryption::EncryptContent(
-    const std::string &entry_str, const bool &is_string,
-    maidsafe::DataMap *dm, fs::path *processing_path,
+    const std::string &entry_str,
+    bool is_string,
+    maidsafe::DataMap *dm,
+    fs::path *processing_path,
     std::map<std::string, fs::path> *to_chunk_store,
     boost::shared_ptr<DataIOHandler> iohandler) {
-
-
   // check file is encryptable
   if (CheckEntry(iohandler) != 0) {
 #ifdef DEBUG
@@ -279,7 +282,11 @@ int SelfEncryption::AddToChunkStore(
   std::map<std::string, fs::path>::const_iterator it = to_chunk_store.begin();
   int rc;
   for (; it != to_chunk_store.end(); ++it) {
-    rc = client_chunkstore_->AddChunkToOutgoing((*it).first, (*it).second);
+/*********************************************************************************/
+//    rc = client_chunkstore_->AddChunkToOutgoing((*it).first, (*it).second);
+    rc = 0;
+/*********************************************************************************/
+
 //    if (rc == kChunkExistsInChunkstore)
 //      done_chunks->insert((*it).first);
   }
@@ -300,7 +307,7 @@ int SelfEncryption::AddToChunkStore(
 int SelfEncryption::Decrypt(const maidsafe::DataMap &dm,
                             const std::string &entry_str,
                             const boost::uint64_t &offset,
-                            const bool &overwrite) {
+                            bool overwrite) {
   try {
     if (fs::exists(entry_str)) {
       if (overwrite)
@@ -498,15 +505,19 @@ bool SelfEncryption::CreateProcessDirectory(fs::path *processing_path) {
 }
 
 fs::path SelfEncryption::GetChunkPath(const std::string &chunk_name) {
-  return client_chunkstore_->GetChunkPath(chunk_name, (kHashable | kOutgoing),
-                                          true);
+/*********************************************************************************/
+//  return client_chunkstore_->GetChunkPath(chunk_name, (kHashable | kOutgoing),
+//                                          true);
+  return fs::path(chunk_name);
+/*********************************************************************************/
 }
 
 bool SelfEncryption::CheckCompressibility(
-    const std::string &path, boost::shared_ptr<DataIOHandler> iohandler) {
-  int nElements = sizeof(no_compress_type) / sizeof(no_compress_type[0]);
+    const std::string &path,
+    boost::shared_ptr<DataIOHandler> iohandler) {
+  int nElements = sizeof(kNoCompressType) / sizeof(kNoCompressType[0]);
   if (!path.empty()) {
-    std::set<std::string> no_comp(no_compress_type, no_compress_type+nElements);
+    std::set<std::string> no_comp(kNoCompressType, kNoCompressType + nElements);
     std::set<std::string>::iterator it;
     try {
       it = no_comp.find(fs::extension(fs::path(path)));
@@ -563,7 +574,8 @@ bool SelfEncryption::CheckCompressibility(
 }
 
 bool SelfEncryption::CalculateChunkSizes(
-    boost::shared_ptr<DataIOHandler> iohandler, maidsafe::DataMap *dm) {
+    boost::shared_ptr<DataIOHandler> iohandler,
+    maidsafe::DataMap *dm) {
   boost::uint64_t file_size = 0;
   if (!iohandler->Size(&file_size))
     return false;
@@ -618,7 +630,7 @@ bool SelfEncryption::CalculateChunkSizes(
   return true;
 }
 
-int SelfEncryption::ChunkAddition(const char &hex_digit) {
+int SelfEncryption::ChunkAddition(char hex_digit) {
   if (hex_digit > 47 && hex_digit < 58)
     return hex_digit-56;
   if (hex_digit > 64 && hex_digit < 71)
@@ -658,7 +670,8 @@ bool SelfEncryption::GeneratePreEncHashes(
   return true;
 }
 
-bool SelfEncryption::HashUnique(const maidsafe::DataMap &dm, bool pre_enc,
+bool SelfEncryption::HashUnique(const maidsafe::DataMap &dm,
+                                bool pre_enc,
                                 std::string *hash) {
 // TODO(Fraser#5#): do validity check or diff (if chunk size > some minimum?)
   int hash_count;

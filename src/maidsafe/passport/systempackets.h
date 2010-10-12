@@ -22,25 +22,28 @@
 * ============================================================================
 */
 
-#ifndef MAIDSAFE_CLIENT_SYSTEMPACKETS_H_
-#define MAIDSAFE_CLIENT_SYSTEMPACKETS_H_
+#ifndef MAIDSAFE_PASSPORT_SYSTEMPACKETS_H_
+#define MAIDSAFE_PASSPORT_SYSTEMPACKETS_H_
 
-#include <boost/cstdint.hpp>
-
-#include <string>
-#include <vector>
-
-#include "protobuf/packet.pb.h"
-#include "maidsafe/client/packetfactory.h"
+//#include <boost/cstdint.hpp>
+//
+//#include <string>
+//#include <vector>
+//
+//#include "maidsafe/common/packet.pb.h"
+#include "maidsafe/pki/packet.h"
 
 namespace maidsafe {
+
+const boost::uint16_t kRsaKeySize = 4096;  // size to generate RSA keys in bits.
+const boost::uint16_t kNoOfSystemPackets = 8;
 
 class SignaturePacket : public Packet {
  public:
   SignaturePacket() {}
   PacketParams Create(PacketParams params);
   PacketParams GetData(const std::string &ser_packet,
-      PacketParams params);
+                       PacketParams params);
   std::string PacketName(PacketParams params);
  private:
   SignaturePacket &operator=(const SignaturePacket&);
@@ -49,7 +52,7 @@ class SignaturePacket : public Packet {
 
 class MidPacket : public Packet {
  public:
-  explicit MidPacket() {}
+  MidPacket() {}
   virtual ~MidPacket() {}
   virtual PacketParams Create(PacketParams params);
   PacketParams GetData(const std::string &ser_packet,
@@ -108,5 +111,5 @@ class MpidPacket : public Packet {
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_CLIENT_SYSTEMPACKETS_H_
+#endif  // MAIDSAFE_PASSPORT_SYSTEMPACKETS_H_
 

@@ -7,8 +7,7 @@
 * Version:      1.0
 * Created:      2009-01-28-22.18.47
 * Revision:     none
-* Compiler:     gcc
-* Author:       Fraser Hutchison (fh), fraser.hutchison@maidsafe.net
+* Author:       Team
 * Company:      maidsafe.net limited
 *
 * The following source code is property of maidsafe.net limited and is not
@@ -22,8 +21,8 @@
 * ============================================================================
 */
 
-#ifndef MAIDSAFE_CLIENT_AUTHENTICATION_H_
-#define MAIDSAFE_CLIENT_AUTHENTICATION_H_
+#ifndef MAIDSAFE_PASSPORT_AUTHENTICATION_H_
+#define MAIDSAFE_PASSPORT_AUTHENTICATION_H_
 
 #include <list>
 #include <string>
@@ -31,10 +30,13 @@
 
 #include "maidsafe/client/sessionsingleton.h"
 #include "maidsafe/client/storemanager.h"
-#include "maidsafe/client/systempackets.h"
-#include "maidsafe/client/cryptokeypairs.h"
+#include "maidsafe/common/cryptokeypairs.h"
+#include "maidsafe/common/returncodes.h"
+#include "maidsafe/passport/systempackets.h"
 
 namespace maidsafe {
+
+typedef boost::function<void(const maidsafe::ReturnCode&)> VoidFuncOneInt;
 
 struct SystemPacketCreation {
   SystemPacketCreation() : vfoi(), packet_count(0), username(), pin(), rid(0) {}
@@ -195,4 +197,4 @@ class Authentication {
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_CLIENT_AUTHENTICATION_H_
+#endif  // MAIDSAFE_PASSPORT_AUTHENTICATION_H_

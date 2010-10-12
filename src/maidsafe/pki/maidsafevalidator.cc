@@ -25,17 +25,14 @@
 #ifndef MAIDSAFE_VALIDATIONIMPL_H_
 #define MAIDSAFE_VALIDATIONIMPL_H_
 
-#include "maidsafe/maidsafevalidator.h"
-
-#include <maidsafe/maidsafe-dht_config.h>
-
-#include <string>
-
-#include "maidsafe/maidsafe.h"
-#include "maidsafe/returncodes.h"
+#include "maidsafe/pki/maidsafevalidator.h"
+#include <maidsafe/base/crypto.h>
+#include "maidsafe/common/returncodes.h"
 
 
 namespace maidsafe {
+
+namespace pki {
 
 bool MaidsafeValidator::ValidateSignerId(const std::string &signer_id,
                                          const std::string &public_key,
@@ -103,5 +100,8 @@ int MaidsafeValidator::CreateRequestSignature(const std::string &private_key,
   return 0;
 }
 
-}  // namespace base
+}  // namespace pki
+
+}  // namespace maidsafe
+
 #endif  // MAIDSAFE_VALIDATIONIMPL_H_

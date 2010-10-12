@@ -22,8 +22,8 @@
  * ============================================================================
  */
 
-#ifndef MAIDSAFE_MAIDSAFEVALIDATOR_H_
-#define MAIDSAFE_MAIDSAFEVALIDATOR_H_
+#ifndef MAIDSAFE_PKI_MAIDSAFEVALIDATOR_H_
+#define MAIDSAFE_PKI_MAIDSAFEVALIDATOR_H_
 
 #include <maidsafe/base/validationinterface.h>
 
@@ -31,6 +31,8 @@
 #include <string>
 
 namespace maidsafe {
+
+namespace pki {
 
 class MaidsafeValidator : public base::SignatureValidator {
  public:
@@ -40,9 +42,8 @@ class MaidsafeValidator : public base::SignatureValidator {
    * Default Ctor, use base class set_id method to set pmid
    */
   explicit MaidsafeValidator(const std::string &pmid)
-    : base::SignatureValidator(pmid) {}
-  MaidsafeValidator()
-    : base::SignatureValidator() {}
+      : base::SignatureValidator(pmid) {}
+  MaidsafeValidator() : base::SignatureValidator() {}
   /**
    * Signer Id is not validated with the following rule:
    *   ID = H(public_key + signed_public_key)
@@ -71,5 +72,7 @@ class MaidsafeValidator : public base::SignatureValidator {
                              std::string *request_signature);
 };
 
+}  // namespace pki
+
 }  // namespace maidsafe
-#endif  // MAIDSAFE_MAIDSAFEVALIDATOR_H_
+#endif  // MAIDSAFE_PKI_MAIDSAFEVALIDATOR_H_

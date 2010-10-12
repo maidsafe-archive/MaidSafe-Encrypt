@@ -22,8 +22,8 @@
 * ============================================================================
 */
 
-#ifndef TESTS_MAIDSAFE_CACHED_KEYS_H_
-#define TESTS_MAIDSAFE_CACHED_KEYS_H_
+#ifndef MAIDSAFE_COMMON_TESTS_CACHED_KEYS_H_
+#define MAIDSAFE_COMMON_TESTS_CACHED_KEYS_H_
 
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/filesystem/fstream.hpp>
@@ -32,9 +32,9 @@
 #include <string>
 #include <vector>
 
-#include "fs/filesystem.h"
 #include "maidsafe/client/cryptokeypairs.h"
-#include "protobuf/packet.pb.h"
+#include "maidsafe/common/filesystem.h"
+#include "maidsafe/common/packet.pb.h"
 
 namespace fs = boost::filesystem;
 
@@ -88,4 +88,4 @@ inline void MakeKeys(const int &key_count,
 
 }  // namespace cached_keys
 
-#endif  // TESTS_MAIDSAFE_CACHED_KEYS_H_
+#endif  // MAIDSAFE_COMMON_TESTS_CACHED_KEYS_H_

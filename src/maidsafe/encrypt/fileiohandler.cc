@@ -22,9 +22,11 @@
 * ============================================================================
 */
 
-#include "maidsafe/client/dataiohandler.h"
+#include "maidsafe/encrypt/dataiohandler.h"
 
 namespace fs = boost::filesystem;
+
+namespace maidsafe {
 
 FileIOHandler::FileIOHandler() : fd_(), p_(), read_(false) {}
 
@@ -110,3 +112,5 @@ bool FileIOHandler::SetGetPointer(const unsigned int &pos) {  // NOLINT
   }
   return true;
 }
+
+}  // namespace maidsafe

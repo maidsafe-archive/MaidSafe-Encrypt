@@ -55,9 +55,9 @@ IF(NOT ${CMAKE_C_COMPILER_WORKS})
 ENDIF()
 
 IF(CMAKE_BUILD_TYPE_DIR MATCHES "Release")
-  SET(PROJECT_NAME pd)
+  SET(PROJECT_NAME PD)
 ELSE()
-  SET(PROJECT_NAME pd_${CMAKE_BUILD_TYPE_DIR})
+  SET(PROJECT_NAME PD_${CMAKE_BUILD_TYPE_DIR})
 ENDIF()
 OPTION (BUILD_SHARED_LIBS "Build shared libraries." OFF)
 
@@ -91,17 +91,6 @@ ENDIF()
 
 ENABLE_TESTING()
 
-IF(UNIX)
-  EXECUTE_PROCESS(COMMAND date +%a%d%m%y OUTPUT_VARIABLE pddate OUTPUT_STRIP_TRAILING_WHITESPACE)
-ELSE()
-  EXECUTE_PROCESS(COMMAND CMD /C DATE /T OUTPUT_VARIABLE pddate OUTPUT_STRIP_TRAILING_WHITESPACE)
-  STRING(REPLACE "/" "" pddate ${pddate})
-  STRING(SUBSTRING ${pddate} 0 4 pddateddmm)
-  STRING(SUBSTRING ${pddate} 6 2 pddateyy)
-  SET(pddate ${pddateddmm}${pddateyy})
-  STRING(REPLACE " " "_" pddate ${pddate})
-ENDIF()
-
 IF(APPLE)
   SET(CMAKE_OSX_SYSROOT "/")
 ENDIF()
@@ -120,7 +109,6 @@ ELSE()
     MESSAGE("Building a package which is NOT OK to release.")
     MESSAGE("---------------------------------------------------------------------------")
   ENDIF()
-  SET(pddate "DEVELOPER_${pddate}")
 ENDIF()
 
 
@@ -158,7 +146,7 @@ ELSEIF(CMAKE_BUILD_TYPE MATCHES "MinSizeRel")
 ENDIF()
 
 # Create CTestCustom.cmake to avoid inclusion of coverage results from third-party code
-FILE(WRITE ${${PROJECT_NAME}_BINARY_DIR}/CTestCustom.cmake "SET(CTEST_CUSTOM_COVERAGE_EXCLUDE \${CTEST_CUSTOM_COVERAGE_EXCLUDE} \"examples/\" \"protobuf/\" \"tests/\" \"tools/\" \"cppsqlite3\")\n\n")
+FILE(WRITE ${${PROJECT_NAME}_BINARY_DIR}/CTestCustom.cmake "SET(CTEST_CUSTOM_COVERAGE_EXCLUDE \${CTEST_CUSTOM_COVERAGE_EXCLUDE} \"examples/\" \"*.pb.*\" \"tests/\" \"tools/\" \"cppsqlite3\")\n\n")
 
 ###################################################################################################
 # Set default directories to be searched for included files and libs                              #
@@ -248,7 +236,7 @@ ENDIF()
 ###################################################################################################
 # Protocol Buffers library search                                                                 #
 ###################################################################################################
-FILE(GLOB PROTO_FILES RELATIVE ${${PROJECT_NAME}_SOURCE_DIR} "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/protobuf/*.proto")
+FILE(GLOB_RECURSE PROTO_FILES RELATIVE ${${PROJECT_NAME}_SOURCE_DIR} "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe/*.proto")
 INCLUDE(${${PROJECT_NAME}_ROOT}/build/maidsafe_FindProtobuf.cmake)
 SET(INCLUDE_DIRS ${INCLUDE_DIRS} ${Protobuf_INCLUDE_DIR})
 SET(LIBS_DIRS ${LIBS_DIRS} ${Protobuf_LIBRARY_DIR})
@@ -317,8 +305,12 @@ FOREACH(library ${SYS_LIBS})
     SET(LIBS_DIRS ${LIBS_DIRS} ${CURRENT_LIBRARY_DIR})
     SET(LIBS_DIRS_DEBUG ${LIBS_DIRS_DEBUG} ${CURRENT_LIBRARY_DIR})
   ELSE()
-    SET(ERROR_MESSAGE "\nCould not find library ${library}.  Run\n")
-    SET(ERROR_MESSAGE "${ERROR_MESSAGE}cmake ../.. -DADD_LIBRARY_DIR=<Path to ${library} directory>")
+    SET(ERROR_MESSAGE "\nCould not find library ${library}.")
+    IF(MSVC)
+      SET(ERROR_MESSAGE "${ERROR_MESSAGE}\nRun cmake from a Visual Studio Command Prompt.")
+    ELSE()
+      SET(ERROR_MESSAGE "${ERROR_MESSAGE}  Run\n${ERROR_MESSAGE_CMAKE_PATH} -DADD_LIBRARY_DIR=<Path to ${library} directory>")
+    ENDIF()
     MESSAGE(FATAL_ERROR "${ERROR_MESSAGE}")
   ENDIF()
   UNSET(CURRENT_LIB CACHE)
@@ -468,12 +460,6 @@ SET(ALL_LIFESTUFF_LIGHT_HEADER_FILES
       ${HEADER_FILES_LIFESTUFF_LIGHT_WIDGETS_DIR}
       ${UIC_FILES_LIFESTUFF_UI_DIR})
 
-FILE(GLOB SOURCE_FILES_PROTOBUF_DIR "${SRC_MAIDSAFE}/protobuf/*.cc")
-FILE(GLOB HEADER_FILES_PROTOBUF_DIR "${SRC_MAIDSAFE}/protobuf/*.h")
-SET(ALL_FILES_PROTOBUF_DIR ${SOURCE_FILES_PROTOBUF_DIR} ${HEADER_FILES_PROTOBUF_DIR})
-SOURCE_GROUP("protobuf Source Files" FILES ${SOURCE_FILES_PROTOBUF_DIR})
-SOURCE_GROUP("protobuf Header Files" FILES ${HEADER_FILES_PROTOBUF_DIR})
-
 FILE(GLOB SOURCE_FILES_VAULT_DIR "${SRC_MAIDSAFE}/vault/*.cc")
 FILE(GLOB HEADER_FILES_VAULT_DIR "${SRC_MAIDSAFE}/vault/*.h")
 SET(STYLE_VAULT ${SOURCE_FILES_VAULT_DIR} ${HEADER_FILES_VAULT_DIR})
@@ -549,15 +535,15 @@ ELSE()
   ADD_EXECUTABLE(vault "${SRC_MAIDSAFE}/vault/unix_deamon.cc")
 ENDIF()
 
-SET(ALL_EXECUTABLES lifestuff lslocal lslightlocal TESTclient TESTcommon TESTvault TESTbufferpackethandler_net TESTclientcontroller_net TESTclientcontroller_local
-    TESTimconnectionhandler_net TESTpdvault_net DEMOclient DEMOvault vault) # TESTfuse
+SET(ALL_EXECUTABLES lifestuff lslocal lslightlocal TESTclient TESTcommon TESTvault TESTbufferpackethandler_net TESTclientcontroller_net
+    TESTclientcontroller_local TESTimconnectionhandler_net TESTpdvault_net DEMOclient DEMOvault vault) # TESTfuse
 
 ADD_LIBRARY(PDclientlib STATIC ${ALL_FILES_CLIENT_DIR})
+ADD_LIBRARY(PDclientfilesystemlib STATIC ${ALL_FILES_CLIENT_FILESYSTEM_DIR})
 ADD_LIBRARY(PDcommonlib STATIC ${ALL_FILES_COMMON_DIR})
 ADD_LIBRARY(PDfuselib STATIC ${ALL_FILES_FUSE_DIR})
 ADD_LIBRARY(PDvaultlib STATIC ${ALL_FILES_VAULT_DIR})
 ADD_LIBRARY(PDTESTclientlib STATIC ${ALL_FILES_CLIENT_DIR})
-ADD_LIBRARY(PDprotobuflib STATIC ${ALL_FILES_PROTOBUF_DIR})
 
 ADD_SUBDIRECTORY(${SRC_MAIDSAFE}/encrypt ${CMAKE_BINARY_DIR}/encrypt)
 ADD_SUBDIRECTORY(${SRC_MAIDSAFE}/passport ${CMAKE_BINARY_DIR}/passport)
@@ -587,12 +573,12 @@ SET(BUILD_SHARED_LIBS OFF)
 
 IF(NOT MSVC)
   SET(SYS_LIBS ${QT_LIBRARIES} ${Boost_LIBRARIES} ${Protobuf_LIBRARY} ${Glog_LIBRARY} ${maidsafe_dht_LIBRARY} ${Udt_LIBRARY} ${Cryptopp_LIBRARY} ${SYS_LIBS})
-  TARGET_LINK_LIBRARIES(lifestuff PDclientlib PDfuselib PDcommonlib PDprotobuflib Encrypt Passport Pki ${Dokan_LIBRARY} ${Breakpad_LIBRARY} ${SYS_LIBS})
+  TARGET_LINK_LIBRARIES(lifestuff PDclientlib PDfuselib PDcommonlib encrypt passport pki ${Dokan_LIBRARY} ${Breakpad_LIBRARY} ${SYS_LIBS})
   TARGET_LINK_LIBRARIES(lslocal PDTESTclientlib ${Dokan_LIBRARY} ${Breakpad_LIBRARY} ${SYS_LIBS})
   TARGET_LINK_LIBRARIES(lslightlocal PDTESTmsclientlib PDmaidsafelib PDpbmsgslib ${Breakpad_LIBRARY} ${SYS_LIBS})
   TARGET_LINK_LIBRARIES(vault PDmsvaultlib ${ALL_TARGET_LIBS} ${Breakpad_LIBRARY} ${SYS_LIBS})
 
-  SET(TEST_LIBS PDclientlib PDvaultlib PDcommonlib PDprotobuflib Encrypt Passport Pki ${Gtest_LIBRARY} ${SYS_LIBS})
+  SET(TEST_LIBS PDclientlib PDvaultlib PDcommonlib encrypt passport pki ${Gtest_LIBRARY} ${SYS_LIBS})
   TARGET_LINK_LIBRARIES(TESTclient ${Gmock_LIBRARY} ${TEST_LIBS})
   TARGET_LINK_LIBRARIES(TESTcommon ${TEST_LIBS})
   #TARGET_LINK_LIBRARIES(TESTfuse ${TEST_LIBS})
@@ -600,100 +586,99 @@ IF(NOT MSVC)
 
   TARGET_LINK_LIBRARIES(TESTbufferpackethandler_net ${TEST_LIBS})
   TARGET_LINK_LIBRARIES(TESTclientcontroller_net ${TEST_LIBS})
-  TARGET_LINK_LIBRARIES(TESTclientcontroller_local PDTESTclientlib PDcommonlib PDprotobuflib ${Gtest_LIBRARY} ${SYS_LIBS})
+  TARGET_LINK_LIBRARIES(TESTclientcontroller_local PDTESTclientlib PDcommonlib ${Gtest_LIBRARY} ${SYS_LIBS})
   TARGET_LINK_LIBRARIES(TESTimconnectionhandler_net ${TEST_LIBS})
   TARGET_LINK_LIBRARIES(TESTpdvault_net ${TEST_LIBS})
 
   TARGET_LINK_LIBRARIES(DEMOclient PDmsclientlib ${ALL_TARGET_LIBS} ${SYS_LIBS})
   TARGET_LINK_LIBRARIES(DEMOvault PDmsclientlib PDmsvaultlib ${ALL_TARGET_LIBS} ${SYS_LIBS})
 ELSE()
-  SET(ALL_TARGET_LIBS ${ALL_TARGET_LIBS} ${QT_LIBRARIES})
   SET(DEBUG_LIBS ${Boost_DATE_TIME_LIBRARY_DEBUG} ${Boost_FILESYSTEM_LIBRARY_DEBUG} ${Boost_THREAD_LIBRARY_DEBUG}
       ${Boost_SYSTEM_LIBRARY_DEBUG} ${Boost_REGEX_LIBRARY_DEBUG} ${Protobuf_LIBRARY_DEBUG} ${Glog_LIBRARY_DEBUG}
       ${maidsafe_dht_LIBRARY_DEBUG} ${Udt_LIBRARY_DEBUG} ${Cryptopp_LIBRARY_DEBUG} ${SYS_LIBS})
   SET(RELEASE_LIBS ${Boost_DATE_TIME_LIBRARY_RELEASE} ${Boost_FILESYSTEM_LIBRARY_RELEASE} ${Boost_THREAD_LIBRARY_RELEASE}
       ${Boost_SYSTEM_LIBRARY_RELEASE} ${Boost_REGEX_LIBRARY_RELEASE} ${Protobuf_LIBRARY} ${Glog_LIBRARY}
-      ${maidsafe_dht_LIBRARY} ${Udt_LIBRARY} ${Cryptopp_LIBRARY}  ${SYS_LIBS})
+      ${maidsafe_dht_LIBRARY} ${Udt_LIBRARY} ${Cryptopp_LIBRARY} ${SYS_LIBS})
 
-  TARGET_LINK_LIBRARIES(lifestuff
-                          PDmsclientlib
-                          ${ALL_TARGET_LIBS}
-                          ${Dokan_LIBRARY}
-                          debug ${Breakpad_LIBRARY_DEBUG} optimized ${Breakpad_LIBRARY})
-  TARGET_LINK_LIBRARIES(lslocal
-                          PDTESTmsclientlib
-                          ${ALL_TARGET_LIBS}
-                          ${Dokan_LIBRARY}
-                          debug ${Breakpad_LIBRARY_DEBUG} optimized ${Breakpad_LIBRARY})
-  TARGET_LINK_LIBRARIES(lslightlocal
-                          PDTESTmsclientlib
-                          ${ALL_TARGET_LIBS}
-                          debug ${Breakpad_LIBRARY_DEBUG} optimized ${Breakpad_LIBRARY})
-  TARGET_LINK_LIBRARIES(vault
-                          PDmsvaultlib
-                          ${ALL_TARGET_LIBS}
-                          debug ${Breakpad_LIBRARY_DEBUG} optimized ${Breakpad_LIBRARY})
-  TARGET_LINK_LIBRARIES(TESTclientcontroller_local
-                          PDTESTmsclientlib
-                          ${ALL_TARGET_LIBS}
-                          debug ${Gtest_LIBRARY_DEBUG} optimized ${Gtest_LIBRARY})
-  TARGET_LINK_LIBRARIES(testclient
-                          PDmsclientlib
-                          ${ALL_TARGET_LIBS})
-  TARGET_LINK_LIBRARIES(testvault
-                          PDmsclientlib
-                          PDmsvaultlib
-                          ${ALL_TARGET_LIBS})
-  FOREACH (DLIB ${DEBUG_LIBS})
-    TARGET_LINK_LIBRARIES(perpetualdata debug ${DLIB})
-    TARGET_LINK_LIBRARIES(pdlocal debug ${DLIB})
-    TARGET_LINK_LIBRARIES(pdlightlocal debug ${DLIB})
-    TARGET_LINK_LIBRARIES(vault debug ${DLIB})
-    TARGET_LINK_LIBRARIES(TESTclientcontroller_local debug ${DLIB})
-    TARGET_LINK_LIBRARIES(testclient debug ${DLIB})
-    TARGET_LINK_LIBRARIES(testvault debug ${DLIB})
-  ENDFOREACH()
-  FOREACH (RLIB ${RELEASE_LIBS})
-    TARGET_LINK_LIBRARIES(perpetualdata optimized ${RLIB})
-    TARGET_LINK_LIBRARIES(pdlocal optimized ${RLIB})
-    TARGET_LINK_LIBRARIES(pdlightlocal optimized ${RLIB})
-    TARGET_LINK_LIBRARIES(vault optimized ${RLIB})
-    TARGET_LINK_LIBRARIES(TESTclientcontroller_local optimized ${RLIB})
-    TARGET_LINK_LIBRARIES(testclient optimized ${RLIB})
-    TARGET_LINK_LIBRARIES(testvault optimized ${RLIB})
-  ENDFOREACH()
-
-  SET(ALL_TARGET_LIBS PDmsclientlib PDmsvaultlib ${ALL_TARGET_LIBS})
-  SET(DEBUG_TEST_LIBS ${Gtest_LIBRARY_DEBUG} ${DEBUG_LIBS})
-  SET(RELEASE_TEST_LIBS ${Gtest_LIBRARY} ${RELEASE_LIBS})
-
-  TARGET_LINK_LIBRARIES(TESTmaidsafe ${ALL_TARGET_LIBS})
-  TARGET_LINK_LIBRARIES(TESTpdvault_net ${ALL_TARGET_LIBS})
-  TARGET_LINK_LIBRARIES(TESTbufferpackethandler_net ${ALL_TARGET_LIBS})
-  TARGET_LINK_LIBRARIES(TESTimconnectionhandler_net ${ALL_TARGET_LIBS})
-  TARGET_LINK_LIBRARIES(TESTclientcontroller_net ${ALL_TARGET_LIBS})
-  TARGET_LINK_LIBRARIES(TESTauthentication_net ${ALL_TARGET_LIBS})
-#  TARGET_LINK_LIBRARIES(TESTfuse ${ALL_TARGET_LIBS})
-
-  TARGET_LINK_LIBRARIES(TESTmaidsafe debug ${Gmock_LIBRARY_DEBUG} optimized ${Gmock_LIBRARY})
-  FOREACH (DLIB ${DEBUG_TEST_LIBS})
-    TARGET_LINK_LIBRARIES(TESTmaidsafe debug ${DLIB})
-    TARGET_LINK_LIBRARIES(TESTpdvault_net debug ${DLIB})
-    TARGET_LINK_LIBRARIES(TESTbufferpackethandler_net debug ${DLIB})
-    TARGET_LINK_LIBRARIES(TESTimconnectionhandler_net debug ${DLIB})
-    TARGET_LINK_LIBRARIES(TESTclientcontroller_net debug ${DLIB})
-    TARGET_LINK_LIBRARIES(TESTauthentication_net debug ${DLIB})
-#    TARGET_LINK_LIBRARIES(TESTfuse debug ${DLIB})
-  ENDFOREACH()
-  FOREACH (RLIB ${RELEASE_TEST_LIBS})
-    TARGET_LINK_LIBRARIES(TESTmaidsafe optimized ${RLIB})
-    TARGET_LINK_LIBRARIES(TESTpdvault_net optimized ${RLIB})
-    TARGET_LINK_LIBRARIES(TESTbufferpackethandler_net optimized ${RLIB})
-    TARGET_LINK_LIBRARIES(TESTimconnectionhandler_net optimized ${RLIB})
-    TARGET_LINK_LIBRARIES(TESTclientcontroller_net optimized ${RLIB})
-    TARGET_LINK_LIBRARIES(TESTauthentication_net optimized ${RLIB})
-#    TARGET_LINK_LIBRARIES(TESTfuse optimized ${RLIB})
-  ENDFOREACH()
+#  TARGET_LINK_LIBRARIES(lifestuff
+#                          PDmsclientlib
+#                          ${ALL_TARGET_LIBS}
+#                          ${Dokan_LIBRARY}
+#                          debug ${Breakpad_LIBRARY_DEBUG} optimized ${Breakpad_LIBRARY})
+#  TARGET_LINK_LIBRARIES(lslocal
+#                          PDTESTmsclientlib
+#                          ${ALL_TARGET_LIBS}
+#                          ${Dokan_LIBRARY}
+#                          debug ${Breakpad_LIBRARY_DEBUG} optimized ${Breakpad_LIBRARY})
+#  TARGET_LINK_LIBRARIES(lslightlocal
+#                          PDTESTmsclientlib
+#                          ${ALL_TARGET_LIBS}
+#                          debug ${Breakpad_LIBRARY_DEBUG} optimized ${Breakpad_LIBRARY})
+#  TARGET_LINK_LIBRARIES(vault
+#                          PDmsvaultlib
+#                          ${ALL_TARGET_LIBS}
+#                          debug ${Breakpad_LIBRARY_DEBUG} optimized ${Breakpad_LIBRARY})
+#  TARGET_LINK_LIBRARIES(TESTclientcontroller_local
+#                          PDTESTmsclientlib
+#                          ${ALL_TARGET_LIBS}
+#                          debug ${Gtest_LIBRARY_DEBUG} optimized ${Gtest_LIBRARY})
+#  TARGET_LINK_LIBRARIES(testclient
+#                          PDmsclientlib
+#                          ${ALL_TARGET_LIBS})
+#  TARGET_LINK_LIBRARIES(testvault
+#                          PDmsclientlib
+#                          PDmsvaultlib
+#                          ${ALL_TARGET_LIBS})
+#  FOREACH (DLIB ${DEBUG_LIBS})
+#    TARGET_LINK_LIBRARIES(perpetualdata debug ${DLIB})
+#    TARGET_LINK_LIBRARIES(pdlocal debug ${DLIB})
+#    TARGET_LINK_LIBRARIES(pdlightlocal debug ${DLIB})
+#    TARGET_LINK_LIBRARIES(vault debug ${DLIB})
+#    TARGET_LINK_LIBRARIES(TESTclientcontroller_local debug ${DLIB})
+#    TARGET_LINK_LIBRARIES(testclient debug ${DLIB})
+#    TARGET_LINK_LIBRARIES(testvault debug ${DLIB})
+#  ENDFOREACH()
+#  FOREACH (RLIB ${RELEASE_LIBS})
+#    TARGET_LINK_LIBRARIES(perpetualdata optimized ${RLIB})
+#    TARGET_LINK_LIBRARIES(pdlocal optimized ${RLIB})
+#    TARGET_LINK_LIBRARIES(pdlightlocal optimized ${RLIB})
+#    TARGET_LINK_LIBRARIES(vault optimized ${RLIB})
+#    TARGET_LINK_LIBRARIES(TESTclientcontroller_local optimized ${RLIB})
+#    TARGET_LINK_LIBRARIES(testclient optimized ${RLIB})
+#    TARGET_LINK_LIBRARIES(testvault optimized ${RLIB})
+#  ENDFOREACH()
+#
+#  SET(ALL_TARGET_LIBS PDmsclientlib PDmsvaultlib ${ALL_TARGET_LIBS})
+#  SET(DEBUG_TEST_LIBS ${Gtest_LIBRARY_DEBUG} ${DEBUG_LIBS})
+#  SET(RELEASE_TEST_LIBS ${Gtest_LIBRARY} ${RELEASE_LIBS})
+#
+#  TARGET_LINK_LIBRARIES(TESTmaidsafe ${ALL_TARGET_LIBS})
+#  TARGET_LINK_LIBRARIES(TESTpdvault_net ${ALL_TARGET_LIBS})
+#  TARGET_LINK_LIBRARIES(TESTbufferpackethandler_net ${ALL_TARGET_LIBS})
+#  TARGET_LINK_LIBRARIES(TESTimconnectionhandler_net ${ALL_TARGET_LIBS})
+#  TARGET_LINK_LIBRARIES(TESTclientcontroller_net ${ALL_TARGET_LIBS})
+#  TARGET_LINK_LIBRARIES(TESTauthentication_net ${ALL_TARGET_LIBS})
+##  TARGET_LINK_LIBRARIES(TESTfuse ${ALL_TARGET_LIBS})
+#
+#  TARGET_LINK_LIBRARIES(TESTmaidsafe debug ${Gmock_LIBRARY_DEBUG} optimized ${Gmock_LIBRARY})
+#  FOREACH (DLIB ${DEBUG_TEST_LIBS})
+#    TARGET_LINK_LIBRARIES(TESTmaidsafe debug ${DLIB})
+#    TARGET_LINK_LIBRARIES(TESTpdvault_net debug ${DLIB})
+#    TARGET_LINK_LIBRARIES(TESTbufferpackethandler_net debug ${DLIB})
+#    TARGET_LINK_LIBRARIES(TESTimconnectionhandler_net debug ${DLIB})
+#    TARGET_LINK_LIBRARIES(TESTclientcontroller_net debug ${DLIB})
+#    TARGET_LINK_LIBRARIES(TESTauthentication_net debug ${DLIB})
+##    TARGET_LINK_LIBRARIES(TESTfuse debug ${DLIB})
+#  ENDFOREACH()
+#  FOREACH (RLIB ${RELEASE_TEST_LIBS})
+#    TARGET_LINK_LIBRARIES(TESTmaidsafe optimized ${RLIB})
+#    TARGET_LINK_LIBRARIES(TESTpdvault_net optimized ${RLIB})
+#    TARGET_LINK_LIBRARIES(TESTbufferpackethandler_net optimized ${RLIB})
+#    TARGET_LINK_LIBRARIES(TESTimconnectionhandler_net optimized ${RLIB})
+#    TARGET_LINK_LIBRARIES(TESTclientcontroller_net optimized ${RLIB})
+#    TARGET_LINK_LIBRARIES(TESTauthentication_net optimized ${RLIB})
+##    TARGET_LINK_LIBRARIES(TESTfuse optimized ${RLIB})
+#  ENDFOREACH()
 ENDIF()
 
 ###################################################################################################
@@ -724,7 +709,7 @@ ELSEIF(UNIX AND NOT APPLE)
   SET_TARGET_PROPERTIES(lifestuff lslocal PROPERTIES COMPILE_FLAGS "-w -DLOCAL_PDVAULT")
   SET(CMAKE_EXE_LINKER_FLAGS_DEBUG "${CMAKE_EXE_LINKER_FLAGS_DEBUG} -pg -fprofile-arcs -ftest-coverage")
 ELSEIF(WIN32)
-  ADD_DEFINITIONS(-DPD_WIN32 -DWIN32 -D_WIN32 -D__WINDOWS__ -D__WIN32__ -DWIN32)
+  ADD_DEFINITIONS(-DPD_WIN32 -DWIN32 -D_WIN32 -D__WINDOWS__ -D__WIN32__ -D_WINDOWS)
   ADD_DEFINITIONS(-DWIN32_LEAN_AND_MEAN -D_WIN32_WINNT=0x501)
   ADD_DEFINITIONS(-D_UNICODE -DUNICODE -D_BIND_TO_CURRENT_VCLIBS_VERSION=1)
   IF(MSVC)
@@ -775,14 +760,6 @@ SET(CTEST_CUSTOM_MAXIMUM_FAILED_TEST_OUTPUT_SIZE 50000)
 SET(CTEST_CONTINUOUS_DURATION 600)
 SET(CTEST_CONTINUOUS_MINIMUM_INTERVAL 60)
 SET(CTEST_START_WITH_EMPTY_BINARY_DIRECTORY true)
-
-IF(CMAKE_BUILD_TYPE MATCHES "Debug")
-  SET(TEST_POSTFIX ${CMAKE_DEBUG_POSTFIX})
-ELSEIF(CMAKE_BUILD_TYPE MATCHES "RelWithDebInfo")
-  SET(TEST_POSTFIX ${CMAKE_RELWITHDEBINFO_POSTFIX})
-ELSEIF(CMAKE_BUILD_TYPE MATCHES "MinSizeRel")
-  SET(TEST_POSTFIX ${CMAKE_MINSIZEREL_POSTFIX})
-ENDIF()
 
 IF(EXCLUDE_TEST)
   SET(EXCLUDED_TESTS ${EXCLUDED_TESTS} ${EXCLUDE_TEST})
@@ -914,9 +891,6 @@ ENDIF(UNIX)
 ###################################################################################################
 # Adding the install targets                                                                      #
 ###################################################################################################
-MESSAGE("")
-MESSAGE("Package version is set to \"${pddate}\"")
-MESSAGE("================================================================================")
 MESSAGE("")
 MESSAGE(${MAIDSAFE_TEST_TYPE_MESSAGE})
 MESSAGE("")
