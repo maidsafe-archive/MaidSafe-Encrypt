@@ -2,8 +2,6 @@
 *~
 *.backup
 *.temp
-build/*
-!build/*.cmake
 desktop.ini
 .kdev4/
 *.kdev4
