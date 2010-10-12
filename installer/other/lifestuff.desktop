@@ -1,3 +1,4 @@
+
 [Desktop Entry]
 Encoding=UTF-8
 Categories=Applications;Internet;GTK
@@ -8,3 +9,4 @@ Terminal=false
 Icon=/usr/share/pixmaps/maidsafe_logo.xpm
 Exec=/usr/bin/perpetualdata
 
+Name[en_GB]=lifestuff

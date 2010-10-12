@@ -1,3 +1,4 @@
+
 [Desktop Entry]
 Encoding=UTF-8
 Categories=Applications;Internet;GTK
@@ -7,3 +8,4 @@ Type=Application
 Icon=/usr/share/pixmaps/maidsafe_logo.xpm
 Exec=pdlocal
 
+Name[en_GB]=lslocal

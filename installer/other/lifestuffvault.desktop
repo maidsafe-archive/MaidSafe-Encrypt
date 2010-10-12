@@ -1,3 +1,4 @@
+
 [Desktop Entry]
 Encoding=UTF-8
 Categories=Applications;Internet;GTK
@@ -8,3 +9,4 @@ Terminal=true
 Icon=/usr/share/pixmaps/maidsafe_logo.xpm
 Exec=vault
 
+Name[en_GB]=lifestuffvault
