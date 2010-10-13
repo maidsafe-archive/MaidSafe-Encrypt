@@ -29,7 +29,8 @@
 //#include <boost/thread/mutex.hpp>
 //
 //#include <vector>
-//
+
+//#include "maidsafe/passport/systempackets.h"
 //#include "maidsafe/maidsafe.h"
 //#include "protobuf/datamaps.pb.h"
 //#include "protobuf/maidsafe_messages.pb.h"
@@ -39,51 +40,9 @@ namespace maidsafe {
 
 namespace passport {
 
-char *utils_trim_right(char *szSource) {
-  char *pszEOS = 0;
-  //  Set pointer to character before terminating NULL
-  pszEOS = szSource + strlen(szSource) - 1;
-  //  iterate backwards until non '_' is found
-  while ((pszEOS >= szSource) && (*pszEOS == ' '))
-    --*pszEOS = '\0';
-  return szSource;
-}
-
-char *utils_trim_left(char *szSource) {
-  char *pszBOS = 0;
-  //  Set pointer to character before terminating NULL
-  // pszEOS = szSource + strlen(szSource) - 1;
-  pszBOS = szSource;
-  //  iterate backwards until non '_' is found
-  while (*pszBOS == ' ')
-    ++*pszBOS;
-  return pszBOS;
-}
-
-char *utils_trim(char *szSource) {
-  return utils_trim_left(utils_trim_right(utils_trim_left(szSource)));
-}
-
-void Authentication::Init(const boost::uint16_t &crypto_key_buffer_count,
-                          boost::shared_ptr<StoreManagerInterface> smgr) {
-  sm_ = smgr;
-  ss_ = SessionSingleton::getInstance();
-  crypto_.set_hash_algorithm(crypto::SHA_512);
-  crypto_.set_symm_algorithm(crypto::AES_256);
+void Authentication::Init(const boost::uint16_t &crypto_key_buffer_count) {
   crypto_key_pairs_.StartToCreateKeyPairs(crypto_key_buffer_count);
 }
-
-/*
-void Authentication::Init(const boost::uint16_t &crypto_key_buffer_count,
-                          boost::shared_ptr<StoreManagerInterface> smgr,
-                          SessionSingleton *ss) {
-  sm_ = smgr;
-  ss_ = ss;
-  crypto_.set_hash_algorithm(crypto::SHA_512);
-  crypto_.set_symm_algorithm(crypto::AES_256);
-  crypto_key_pairs_.StartToCreateKeyPairs(crypto_key_buffer_count);
-}
-*/
 
 int Authentication::GetUserInfo(const std::string &username,
                                 const std::string &pin) {
@@ -118,7 +77,7 @@ int Authentication::GetUserInfo(const std::string &username,
 }
 
 void Authentication::GetMidCallback(const std::vector<std::string> &values,
-                                    const ReturnCode &rc,
+                                    const ReturnCode &return_code,
                                     boost::shared_ptr<UserInfo> ui) {
   bool smid;
   {
@@ -126,7 +85,7 @@ void Authentication::GetMidCallback(const std::vector<std::string> &values,
     smid = ui->smid_calledback;
   }
 
-  if (rc != kSuccess) {
+  if (return_code != kSuccess) {
     ss_->SetMidRid(0);
     {
       boost::mutex::scoped_lock loch(ui->m);
@@ -167,7 +126,7 @@ void Authentication::GetMidCallback(const std::vector<std::string> &values,
 }
 
 void Authentication::GetSmidCallback(const std::vector<std::string> &values,
-                                     const ReturnCode &rc,
+                                     const ReturnCode &return_code,
                                      boost::shared_ptr<UserInfo> ui) {
   bool mid;
   {
@@ -175,7 +134,7 @@ void Authentication::GetSmidCallback(const std::vector<std::string> &values,
     mid = ui->mid_calledback;
   }
 
-  if (rc != kSuccess) {
+  if (return_code != kSuccess) {
     ss_->SetSmidRid(0);
     {
       boost::mutex::scoped_lock loch(ui->m);
@@ -187,7 +146,7 @@ void Authentication::GetSmidCallback(const std::vector<std::string> &values,
 #endif
       ui->func(kUserDoesntExist);
     }
-    get_smidtimid_result_ = rc;
+    get_smidtimid_result_ = return_code;
     return;
   }
 
@@ -210,7 +169,7 @@ void Authentication::GetSmidCallback(const std::vector<std::string> &values,
     if (mid && ss_->MidRid() == 0) {
       ui->func(kUserDoesntExist);
     }
-    get_smidtimid_result_ = rc;
+    get_smidtimid_result_ = return_code;
     return;
   } else {
     GetSmidTmid(ui);
@@ -238,7 +197,7 @@ void Authentication::GetSmidTmid(boost::shared_ptr<UserInfo> ui) {
 }
 
 void Authentication::GetMidTmidCallback(const std::vector<std::string> &values,
-                                        const ReturnCode &rc,
+                                        const ReturnCode &return_code,
                                         boost::shared_ptr<UserInfo> ui) {
   bool smid;
   {
@@ -247,7 +206,7 @@ void Authentication::GetMidTmidCallback(const std::vector<std::string> &values,
     smid = ui->tmid_smid_calledback;
   }
 
-  if (rc != kSuccess) {
+  if (return_code != kSuccess) {
     ss_->SetTmidContent("");
     if (smid && ss_->SmidTmidContent() == "") {
 #ifdef DEBUG
@@ -267,7 +226,7 @@ void Authentication::GetMidTmidCallback(const std::vector<std::string> &values,
 }
 
 void Authentication::GetSmidTmidCallback(const std::vector<std::string> &values,
-                                         const ReturnCode &rc,
+                                         const ReturnCode &return_code,
                                          boost::shared_ptr<UserInfo> ui) {
   bool mid;
   {
@@ -276,7 +235,7 @@ void Authentication::GetSmidTmidCallback(const std::vector<std::string> &values,
     mid = ui->tmid_mid_calledback;
   }
 
-  if (rc != kSuccess) {
+  if (return_code != kSuccess) {
     ss_->SetTmidContent("");
     if (mid && ss_->TmidContent() == "") {
 #ifdef DEBUG
@@ -284,7 +243,7 @@ void Authentication::GetSmidTmidCallback(const std::vector<std::string> &values,
 #endif
       ui->func(kAuthenticationError);
     }
-    get_smidtimid_result_ = rc;
+    get_smidtimid_result_ = return_code;
     return;
   }
 
@@ -293,7 +252,7 @@ void Authentication::GetSmidTmidCallback(const std::vector<std::string> &values,
     printf("Authentication::GetSmidTmidCallback - Values: %d\n", values.size());
 #endif
   ss_->SetSmidTmidContent(values[0]);
-  get_smidtimid_result_ = rc;
+  get_smidtimid_result_ = return_code;
 }
 
 int Authentication::GetUserData(const std::string &password,
@@ -366,7 +325,7 @@ int Authentication::CreateUserSysPackets(const std::string &username,
   return system_packets_result_;
 }
 
-void Authentication::CreateUserSysPackets(const ReturnCode &rc,
+void Authentication::CreateUserSysPackets(const ReturnCode &return_code,
                                           const std::string &username,
                                           const std::string &pin,
                                           VoidFuncOneInt vfoi,
@@ -374,7 +333,7 @@ void Authentication::CreateUserSysPackets(const ReturnCode &rc,
                                           bool *calledback) {
   if (*calledback)
     return;
-  if (rc == kKeyUnique) {
+  if (return_code == kKeyUnique) {
     if (*count == 0) {
       ++*count;
       return;
@@ -406,75 +365,75 @@ void Authentication::CreateSignaturePacket(
   params["privateKey"] = kp.private_key();
   boost::shared_ptr<Packet> sigPacket(PacketFactory::Factory(type_da));
   PacketParams result = sigPacket->Create(params);
-  boost::shared_ptr<FindSystemPacket> fsp(new FindSystemPacket());
-  fsp->spc = spc;
-  fsp->pp = result;
-  fsp->pt = type_da;
+  boost::shared_ptr<FindSystemPacket> find_system_packet_data(new FindSystemPacket());
+  find_system_packet_data->spc = spc;
+  find_system_packet_data->pp = result;
+  find_system_packet_data->pt = type_da;
 
   VoidFuncOneInt func = boost::bind(
-      &Authentication::CreateSignaturePacketKeyUnique, this, _1, fsp);
+      &Authentication::CreateSignaturePacketKeyUnique, this, _1, find_system_packet_data);
   sm_->KeyUnique(boost::any_cast<std::string>(result["name"]), false, func);
 }
 
 void Authentication::CreateSignaturePacketKeyUnique(
-    const ReturnCode &rc, boost::shared_ptr<FindSystemPacket> fsp) {
-  if (rc == kKeyUnique) {
-    int n = ss_->AddKey(fsp->pt,
-                        boost::any_cast<std::string>(fsp->pp["name"]),
-                        boost::any_cast<std::string>(fsp->pp["privateKey"]),
-                        boost::any_cast<std::string>(fsp->pp["publicKey"]),
+    const ReturnCode &return_code, boost::shared_ptr<FindSystemPacket> find_system_packet_data) {
+  if (return_code == kKeyUnique) {
+    int n = ss_->AddKey(find_system_packet_data->pt,
+                        boost::any_cast<std::string>(find_system_packet_data->pp["name"]),
+                        boost::any_cast<std::string>(find_system_packet_data->pp["privateKey"]),
+                        boost::any_cast<std::string>(find_system_packet_data->pp["publicKey"]),
                         "");
     if (n != 0) {
       // return to CreateSignaturePacket
     }
 
     VoidFuncOneInt func = boost::bind(
-        &Authentication::CreateSignaturePacketStore, this, _1, fsp);
-    sm_->StorePacket(boost::any_cast<std::string>(fsp->pp["name"]),
-                     boost::any_cast<std::string>(fsp->pp["publicKey"]),
-                     fsp->pt, PRIVATE, "", func);
+        &Authentication::CreateSignaturePacketStore, this, _1, find_system_packet_data);
+    sm_->StorePacket(boost::any_cast<std::string>(find_system_packet_data->pp["name"]),
+                     boost::any_cast<std::string>(find_system_packet_data->pp["publicKey"]),
+                     find_system_packet_data->pt, PRIVATE, "", func);
   } else {
     // return to CreateSignaturePacket
   }
 }
 
 void Authentication::CreateSignaturePacketStore(
-    const ReturnCode &rc, boost::shared_ptr<FindSystemPacket> fsp) {
-  if (rc == kSuccess) {
-    ++fsp->spc->packet_count;
-    switch (fsp->pt) {
+    const ReturnCode &return_code, boost::shared_ptr<FindSystemPacket> find_system_packet_data) {
+  if (return_code == kSuccess) {
+    ++find_system_packet_data->spc->packet_count;
+    switch (find_system_packet_data->pt) {
       case ANMAID:
-        fsp->pt = MAID;
-        CreateMaidPmidPacket(fsp);
+        find_system_packet_data->pt = MAID;
+        CreateMaidPmidPacket(find_system_packet_data);
         break;
       case ANMID:
-        CreateMidPacket(fsp);
+        CreateMidPacket(find_system_packet_data);
         break;
       case MID:
-        CreateSignaturePacket(fsp->spc, ANSMID);
+        CreateSignaturePacket(find_system_packet_data->spc, ANSMID);
         break;
       case ANSMID:
-        CreateSmidPacket(fsp);
+        CreateSmidPacket(find_system_packet_data);
         break;
       case MAID:
-        fsp->pt = PMID;
-        CreateMaidPmidPacket(fsp);
+        find_system_packet_data->pt = PMID;
+        CreateMaidPmidPacket(find_system_packet_data);
         break;
       default:
-        if (fsp->spc->packet_count == kNoOfSystemPackets)
-          fsp->spc->vfoi(kSuccess);
+        if (find_system_packet_data->spc->packet_count == kNoOfSystemPackets)
+          find_system_packet_data->spc->vfoi(kSuccess);
     }
   } else {
-    ss_->RemoveKey(fsp->pt);
+    ss_->RemoveKey(find_system_packet_data->pt);
   }
 }
 
-void Authentication::CreateMidPacket(boost::shared_ptr<FindSystemPacket> fsp) {
-  fsp->pt = MID;
+void Authentication::CreateMidPacket(boost::shared_ptr<FindSystemPacket> find_system_packet_data) {
+  find_system_packet_data->pt = MID;
   boost::shared_ptr<Packet> midPacket(PacketFactory::Factory(MID));
   PacketParams user_params;
-  user_params["username"] = fsp->spc->username;
-  user_params["pin"] = fsp->spc->pin;
+  user_params["username"] = find_system_packet_data->spc->username;
+  user_params["pin"] = find_system_packet_data->spc->pin;
 
   PacketParams mid_result = midPacket->Create(user_params);
   ss_->SetMidRid(boost::any_cast<boost::uint32_t>(mid_result["rid"]));
@@ -483,15 +442,15 @@ void Authentication::CreateMidPacket(boost::shared_ptr<FindSystemPacket> fsp) {
                    boost::any_cast<std::string>(mid_result["encRid"]),
                    MID, PRIVATE, "",
                    boost::bind(&Authentication::CreateSignaturePacketStore,
-                               this, _1, fsp));
+                               this, _1, find_system_packet_data));
 }
 
-void Authentication::CreateSmidPacket(boost::shared_ptr<FindSystemPacket> fsp) {
-  fsp->pt = SMID;
+void Authentication::CreateSmidPacket(boost::shared_ptr<FindSystemPacket> find_system_packet_data) {
+  find_system_packet_data->pt = SMID;
   boost::shared_ptr<Packet> smidPacket(PacketFactory::Factory(SMID));
   PacketParams user_params;
-  user_params["username"] = fsp->spc->username;
-  user_params["pin"] = fsp->spc->pin;
+  user_params["username"] = find_system_packet_data->spc->username;
+  user_params["pin"] = find_system_packet_data->spc->pin;
   user_params["rid"] = ss_->MidRid();
 
   PacketParams smid_result = smidPacket->Create(user_params);
@@ -500,11 +459,11 @@ void Authentication::CreateSmidPacket(boost::shared_ptr<FindSystemPacket> fsp) {
                    boost::any_cast<std::string>(smid_result["encRid"]),
                    SMID, PRIVATE, "",
                    boost::bind(&Authentication::CreateSignaturePacketStore,
-                               this, _1, fsp));
+                               this, _1, find_system_packet_data));
 }
 
 void Authentication::CreateMaidPmidPacket(
-    boost::shared_ptr<FindSystemPacket> fsp) {
+    boost::shared_ptr<FindSystemPacket> find_system_packet_data) {
   crypto::RsaKeyPair kp;
   while (!crypto_key_pairs_.GetKeyPair(&kp)) {
     kp.ClearKeys();
@@ -512,7 +471,7 @@ void Authentication::CreateMaidPmidPacket(
   }
   boost::shared_ptr<Packet> packet(PacketFactory::Factory(PMID));
   PacketParams user_params;
-  if (fsp->pt == PMID) {
+  if (find_system_packet_data->pt == PMID) {
     user_params["signerPrivateKey"] = ss_->PrivateKey(MAID);
   } else {
     user_params["signerPrivateKey"] = ss_->PrivateKey(ANMAID);
@@ -521,7 +480,7 @@ void Authentication::CreateMaidPmidPacket(
   user_params["privateKey"] = kp.private_key();
 
   PacketParams result = packet->Create(user_params);
-  int n = ss_->AddKey(fsp->pt,
+  int n = ss_->AddKey(find_system_packet_data->pt,
                       boost::any_cast<std::string>(result["name"]),
                       boost::any_cast<std::string>(result["privateKey"]),
                       boost::any_cast<std::string>(result["publicKey"]),
@@ -531,9 +490,9 @@ void Authentication::CreateMaidPmidPacket(
   }
   sm_->StorePacket(boost::any_cast<std::string>(result["name"]),
                    boost::any_cast<std::string>(result["publicKey"]),
-                   fsp->pt, PRIVATE, "",
+                   find_system_packet_data->pt, PRIVATE, "",
                    boost::bind(&Authentication::CreateSignaturePacketStore,
-                               this, _1, fsp));
+                               this, _1, find_system_packet_data));
 }
 
 int Authentication::CreateTmidPacket(const std::string &username,
@@ -605,11 +564,11 @@ void Authentication::SaveSession(const std::string &ser_da,
 }
 
 void Authentication::UpdateSmidCallback(
-    const ReturnCode &rc, boost::shared_ptr<SaveSessionData> ssd) {
-  if (rc != kSuccess) {
-    ssd->vfoi(rc);
+    const ReturnCode &return_code, boost::shared_ptr<SaveSessionData> ssd) {
+  if (return_code != kSuccess) {
+    ssd->vfoi(return_code);
 #ifdef DEBUG
-    printf("Auth::UpdateSmidCallback - Smid kad update failed(%d)\n", rc);
+    printf("Auth::UpdateSmidCallback - Smid kad update failed(%d)\n", return_code);
 #endif
     return;
   }
@@ -638,11 +597,11 @@ void Authentication::UpdateSmidCallback(
 }
 
 void Authentication::DeleteSmidTmidCallback(
-    const ReturnCode &rc, boost::shared_ptr<SaveSessionData> ssd) {
-  if (rc != kSuccess) {
-    ssd->vfoi(rc);
+    const ReturnCode &return_code, boost::shared_ptr<SaveSessionData> ssd) {
+  if (return_code != kSuccess) {
+    ssd->vfoi(return_code);
 #ifdef DEBUG
-    printf("Auth::DeleteSmidTmidCallback - SmidTmid delete failed(%d)\n", rc);
+    printf("Auth::DeleteSmidTmidCallback - SmidTmid delete failed(%d)\n", return_code);
 #endif
     return;
   }
@@ -666,11 +625,11 @@ void Authentication::DeleteSmidTmidCallback(
 }
 
 void Authentication::UpdateMidCallback(
-    const ReturnCode &rc, boost::shared_ptr<SaveSessionData> ssd) {
-  if (rc != kSuccess) {
-    ssd->vfoi(rc);
+    const ReturnCode &return_code, boost::shared_ptr<SaveSessionData> ssd) {
+  if (return_code != kSuccess) {
+    ssd->vfoi(return_code);
 #ifdef DEBUG
-    printf("Auth::UpdateMidCallback - Mid kad update failed(%d)\n", rc);
+    printf("Auth::UpdateMidCallback - Mid kad update failed(%d)\n", return_code);
 #endif
     return;
   }
@@ -695,11 +654,11 @@ void Authentication::UpdateMidCallback(
 }
 
 void Authentication::StoreMidTmidCallback(
-    const ReturnCode &rc, boost::shared_ptr<SaveSessionData> ssd) {
-  if (rc != kSuccess) {
-    ssd->vfoi(rc);
+    const ReturnCode &return_code, boost::shared_ptr<SaveSessionData> ssd) {
+  if (return_code != kSuccess) {
+    ssd->vfoi(return_code);
 #ifdef DEBUG
-    printf("Auth::StoreMidTmidCallback - Mid Tmid store failed(%d)\n", rc);
+    printf("Auth::StoreMidTmidCallback - Mid Tmid store failed(%d)\n", return_code);
 #endif
     return;
   }
@@ -710,7 +669,7 @@ void Authentication::StoreMidTmidCallback(
                        ss_->PrivateKey(ANTMID), crypto::STRING_STRING));
   ss_->SetTmidContent(packet.SerializeAsString());
 
-  ssd->vfoi(rc);
+  ssd->vfoi(return_code);
 }
 
 int Authentication::SaveSession(const std::string &ser_da) {
@@ -1227,12 +1186,12 @@ std::string Authentication::CreateSignaturePackets(const PacketType &type_da,
 }
 
 bool Authentication::CheckUsername(const std::string &username) {
-  std::string username_ = utils_trim(boost::lexical_cast<char*>(username));
+  std::string username_ = UtilsTrim(boost::lexical_cast<char*>(username));
   return (username_.length() >= 4);
 }
 
 bool Authentication::CheckPin(const std::string &pin) {
-  std::string pin_ = utils_trim(boost::lexical_cast<char*>(pin));
+  std::string pin_ = UtilsTrim(boost::lexical_cast<char*>(pin));
   if (pin_ == "0000")
     return false;
   boost::regex re("\\d{4}");
@@ -1240,7 +1199,7 @@ bool Authentication::CheckPin(const std::string &pin) {
 }
 
 bool Authentication::CheckPassword(const std::string &password) {
-  std::string password_ = utils_trim(boost::lexical_cast<char*>(password));
+  std::string password_ = UtilsTrim(boost::lexical_cast<char*>(password));
   return (password_.length() >= 4);
 }
 
@@ -1405,12 +1364,36 @@ std::string Authentication::EncryptedDataMidSmid(boost::uint32_t rid) {
                              crypto::STRING_STRING, password);
 }
 
-void Authentication::CreateSystemPacketsCallback(const ReturnCode &rc) {
-  system_packets_result_ = rc;
+void Authentication::CreateSystemPacketsCallback(const ReturnCode &return_code) {
+  system_packets_result_ = return_code;
 }
 
-void Authentication::GetUserInfoCallback(const ReturnCode &rc) {
-  user_info_result_ = rc;
+void Authentication::GetUserInfoCallback(const ReturnCode &return_code) {
+  user_info_result_ = return_code;
+}
+
+char *Authentication::UtilsTrimRight(char *szSource) {
+  char *pszEOS = NULL;
+  //  Set pointer to character before terminating NULL
+  pszEOS = szSource + strlen(szSource) - 1;
+  //  iterate backwards until non '_' is found
+  while ((pszEOS >= szSource) && (*pszEOS == ' '))
+    --*pszEOS = '\0';
+  return szSource;
+}
+
+char *Authentication::UtilsTrimLeft(char *szSource) {
+  char *pszBOS = NULL;
+  //  Set pointer to first character
+  pszBOS = szSource;
+  //  iterate forwards until non '_' is found
+  while (*pszBOS == ' ')
+    ++*pszBOS;
+  return pszBOS;
+}
+
+char *Authentication::UtilsTrim(char *szSource) {
+  return UtilsTrimLeft(UtilsTrimRight(UtilsTrimLeft(szSource)));
 }
 
 }  // namespace passport

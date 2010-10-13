@@ -22,34 +22,32 @@
 * ============================================================================
 */
 
-#include <stdio.h>
+//#include <stdio.h>
 #include <gtest/gtest.h>
-#include <boost/lexical_cast.hpp>
-#include <string>
-#include <cstdlib>
-#include "maidsafe/client/systempackets.h"
-#include "tests/maidsafe/cached_keys.h"
-
-namespace test_sph {
-
-std::vector<crypto::RsaKeyPair> keys;
-
-}  // namespace test_sph
+//#include <boost/lexical_cast.hpp>
+//#include <string>
+//#include <cstdlib>
+#include "maidsafe/passport/systempackets.h"
 
 namespace maidsafe {
 
+namespace passport {
+
+namespace test {
+
 class SystemPacketsTest : public testing::Test {
  public:
-  SystemPacketsTest() : co_(), input_param_() {}
+  SystemPacketsTest() : co_() {}
  protected:
   virtual void SetUp() {
     co_.set_symm_algorithm(crypto::AES_256);
     co_.set_hash_algorithm(crypto::SHA_512);
-    cached_keys::MakeKeys(5, &test_sph::keys);
   }
   crypto::Crypto co_;  // used for validating
-  PacketParams input_param_;
 };
+
+TEST_F(SystemPacketsTest, BEH_PASSPORT_CreateSigPacket) {
+}
 
 TEST_F(SystemPacketsTest, BEH_MAID_CreateMID) {
   boost::shared_ptr<Packet> midPacket(PacketFactory::Factory(MID));
@@ -282,5 +280,9 @@ TEST_F(SystemPacketsTest, BEH_MAID_GetRidSMID) {
   ASSERT_EQ(boost::any_cast<boost::uint32_t>(input_param_["rid"]),
       boost::any_cast<boost::uint32_t>(recovered_rid["data"]));
 }
+
+}  // namespace test
+
+}  // namespace passport
 
 }  // namespace maidsafe

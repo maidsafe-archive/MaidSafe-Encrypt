@@ -42,11 +42,13 @@ class Packet {
     crypto_obj_.set_symm_algorithm(crypto::AES_256);
   }
   virtual ~Packet() {}
+  int packet_type() const { return packet_type_; }
   std::string name() const { return name_; }
   virtual std::string value() const = 0;
  protected:
   virtual void Initialise() = 0;
   virtual void Clear() = 0;
+  int packet_type_;
   std::string name_;
   crypto::Crypto crypto_obj_;
  private:

@@ -3,7 +3,7 @@
 *
 * Copyright [2009] maidsafe.net limited
 *
-* Description:  Class for manipulating database of user keys
+* Description:  Class for manipulating database of system packets
 * Version:      1.0
 * Created:      09/09/2008 12:14:35 PM
 * Revision:     none
@@ -22,8 +22,8 @@
 * ============================================================================
 */
 
-#ifndef MAIDSAFE_CLIENT_KEYATLAS_H_
-#define MAIDSAFE_CLIENT_KEYATLAS_H_
+#ifndef MAIDSAFE_PASSPORT_SYSTEMPACKETHANDLER_H_
+#define MAIDSAFE_PASSPORT_SYSTEMPACKETHANDLER_H_
 
 #include <boost/multi_index_container.hpp>
 #include <boost/shared_ptr.hpp>
@@ -31,9 +31,11 @@
 #include <list>
 #include <string>
 
-#include "maidsafe/maidsafe.h"
+//#include "maidsafe/maidsafe.h"
 
 namespace maidsafe {
+
+namespace passport {
 
 struct KeyAtlasRow {
   KeyAtlasRow(int type, const std::string &id,
@@ -84,7 +86,9 @@ class KeyAtlas {
   crypto::Crypto co_;
 };
 
+}  // namespace passport
+
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_CLIENT_KEYATLAS_H_
+#endif  // MAIDSAFE_PASSPORT_SYSTEMPACKETHANDLER_H_
 

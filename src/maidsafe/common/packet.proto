@@ -9,22 +9,6 @@ enum MessageType {
 	EMAIL = 5;
 }
 
-enum PacketType {
-  MID = 0;
-  SMID = 1;
-  TMID = 2;
-  MPID = 3;
-  PMID = 4;
-  MAID = 5;
-  ANMID = 6;
-  ANSMID = 7;
-  ANTMID = 8;
-  ANMPID = 9;
-  ANMAID = 10;
-  MSID = 11;
-  PD_DIR = 12;
-}
-
 message EndPoint {
   repeated bytes ip = 1;
   repeated uint32 port = 2;

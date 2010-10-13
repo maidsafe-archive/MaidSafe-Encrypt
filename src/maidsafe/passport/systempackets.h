@@ -37,12 +37,26 @@ namespace maidsafe {
 
 namespace passport {
 
-const boost::uint16_t kRsaKeySize = 4096;  // size to generate RSA keys in bits.
-const boost::uint16_t kNoOfSystemPackets = 8;
+enum PacketType {
+  MID,
+  SMID,
+  TMID,
+  MPID,
+  PMID,
+  MAID,
+  ANMID,
+  ANSMID,
+  ANTMID,
+  ANMPID,
+  ANMAID,
+  MSID,
+  PD_DIR,
+};
 
 class SignaturePacket : public pki::Packet {
  public:
-  SignaturePacket(const std::string &public_key,
+  SignaturePacket(const PacketType &packet_type,
+                  const std::string &public_key,
                   const std::string &private_key,
                   const std::string &signer_private_key);
   virtual ~SignaturePacket() {}

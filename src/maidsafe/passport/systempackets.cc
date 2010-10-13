@@ -23,19 +23,15 @@
 */
 
 #include "maidsafe/passport/systempackets.h"
-#include <boost/lexical_cast.hpp>
-//#include <maidsafe/maidsafe-dht.h>
-#include <maidsafe/base/utils.h>
-//#include <cstdlib>
-//#include <ctime>
-//#include <cstdio>
-#include <boost/concept_check.hpp>
+//#include <boost/lexical_cast.hpp>
+//#include <maidsafe/base/utils.h>
 
 namespace maidsafe {
 
 namespace passport {
 
-SignaturePacket::SignaturePacket(const std::string &public_key,
+SignaturePacket::SignaturePacket(const PacketType &packet_type,
+                                 const std::string &public_key,
                                  const std::string &private_key,
                                  const std::string &signer_private_key)
     : pki::Packet(),

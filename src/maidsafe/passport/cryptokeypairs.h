@@ -23,28 +23,30 @@
 * ============================================================================
 */
 
-#ifndef MAIDSAFE_CLIENT_CRYPTOKEYPAIRS_H_
-#define MAIDSAFE_CLIENT_CRYPTOKEYPAIRS_H_
+#ifndef MAIDSAFE_PASSPORT_CRYPTOKEYPAIRS_H_
+#define MAIDSAFE_PASSPORT_CRYPTOKEYPAIRS_H_
 
 #include <boost/thread.hpp>
 #include <boost/shared_ptr.hpp>
-#include <boost/noncopyable.hpp>
-#include <gtest/gtest_prod.h>
 #include <maidsafe/base/crypto.h>
 #include <list>
 #include <vector>
 
 namespace maidsafe {
 
+namespace passport {
+
 const boost::int8_t kMaxCryptoThreadCount = 10;
 
-class CryptoKeyPairs : public boost::noncopyable {
+class CryptoKeyPairs {
  public:
   CryptoKeyPairs();
   ~CryptoKeyPairs();
   bool StartToCreateKeyPairs(const boost::int16_t &no_of_keypairs);
   bool GetKeyPair(crypto::RsaKeyPair *keypair);
  private:
+  CryptoKeyPairs &operator=(const CryptoKeyPairs&);
+  CryptoKeyPairs(const CryptoKeyPairs&);
   void CreateKeyPair();
   void FinishedCreating();
   boost::int16_t keypairs_done_, keypairs_todo_, pending_requests_;
@@ -55,6 +57,8 @@ class CryptoKeyPairs : public boost::noncopyable {
   bool started_, destroying_this_;
 };
 
+}  // namespace passport
+
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_CLIENT_CRYPTOKEYPAIRS_H_
+#endif  // MAIDSAFE_PASSPORT_CRYPTOKEYPAIRS_H_
