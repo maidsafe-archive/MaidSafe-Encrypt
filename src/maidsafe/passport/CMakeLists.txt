@@ -63,21 +63,30 @@ ELSE()
             ARCHIVE DESTINATION lib)
 ENDIF()
 
-IF(APPLE)
-  SET_TARGET_PROPERTIES(passport PROPERTIES COMPILE_FLAGS "-O2 -fPIC -w -finline-functions")
+
+IF(UNIX)
+  TARGET_LINK_LIBRARIES(passport ${Boost_SYSTEM_LIBRARY_RELEASE} ${maidsafe_dht_LIBRARY} ${Cryptopp_LIBRARY})
   TARGET_LINK_LIBRARIES(TESTpassport passport)
   TARGET_LINK_LIBRARIES(TESTpassport_net passport)
-ELSEIF(UNIX AND NOT APPLE)
-  SET_TARGET_PROPERTIES(passport PROPERTIES COMPILE_FLAGS "-O2 -fPIC -w -pipe -finline-functions")
-  TARGET_LINK_LIBRARIES(TESTpassport passport)
-  TARGET_LINK_LIBRARIES(TESTpassport_net passport)
+  IF(APPLE)
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DOSX -DPD_APPLE -DBSD -D__FreeBSD__=10 -D_FORTIFY_SOURCE=2 -D_FILE_OFFSET_BITS=64")
+    SET(CMAKE_EXE_LINKER_FLAGS_DEBUG "${CMAKE_EXE_LINKER_FLAGS_DEBUG} -lgcov")
+  ELSE()
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DLINUX -DPD_LINUX -DPD_POSIX -Wextra -Wall -Wfloat-equal -Wlong-long -Wstrict-overflow=5 -Wredundant-decls -Wuninitialized -Wunused-function")
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wunused-label -Wunused-parameter -Wunused-value -Wunused-variable -std=c++98 -ansi -D_FORTIFY_SOURCE=2 -fno-stack-protector -D_FILE_OFFSET_BITS=64")
+  ENDIF()
+  SET(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -ggdb -pg -fprofile-arcs -ftest-coverage")
+  SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 -DDEBUG -ggdb -pg -fprofile-arcs -ftest-coverage")
+  SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -Wuninitialized")
+  SET(CMAKE_EXE_LINKER_FLAGS_DEBUG "${CMAKE_EXE_LINKER_FLAGS_DEBUG} -pg -fprofile-arcs -ftest-coverage")
+  SET_TARGET_PROPERTIES(passport PROPERTIES COMPILE_FLAGS "-fPIC -w -finline-functions")
 ELSEIF(WIN32)
   IF(MSVC)
     CMAKE_POLICY(SET CMP0008 NEW)
     TARGET_LINK_LIBRARIES(passport
-                            debug ${Boost_FILESYSTEM_LIBRARY_DEBUG} optimized ${Boost_FILESYSTEM_LIBRARY_RELEASE}
-                            debug ${Boost_SYSTEM_LIBRARY_DEBUG} optimized ${Boost_SYSTEM_LIBRARY_RELEASE}
-                            debug ${maidsafe_dht_LIBRARY_DEBUG} optimized ${maidsafe_dht_LIBRARY}
+#                            debug ${Boost_FILESYSTEM_LIBRARY_DEBUG} optimized ${Boost_FILESYSTEM_LIBRARY_RELEASE}
+#                            debug ${Boost_SYSTEM_LIBRARY_DEBUG} optimized ${Boost_SYSTEM_LIBRARY_RELEASE}
+#                            debug ${maidsafe_dht_LIBRARY_DEBUG} optimized ${maidsafe_dht_LIBRARY}
                             debug ${Cryptopp_LIBRARY_DEBUG} optimized ${Cryptopp_LIBRARY})
     TARGET_LINK_LIBRARIES(TESTpassport passport debug ${Gtest_LIBRARY_DEBUG} optimized ${Gtest_LIBRARY})
     TARGET_LINK_LIBRARIES(TESTpassport_net passport debug ${Gtest_LIBRARY_DEBUG} optimized ${Gtest_LIBRARY})

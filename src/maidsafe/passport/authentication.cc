@@ -37,6 +37,8 @@
 
 namespace maidsafe {
 
+namespace passport {
+
 char *utils_trim_right(char *szSource) {
   char *pszEOS = 0;
   //  Set pointer to character before terminating NULL
@@ -1410,5 +1412,7 @@ void Authentication::CreateSystemPacketsCallback(const ReturnCode &rc) {
 void Authentication::GetUserInfoCallback(const ReturnCode &rc) {
   user_info_result_ = rc;
 }
+
+}  // namespace passport
 
 }  // namespace maidsafe

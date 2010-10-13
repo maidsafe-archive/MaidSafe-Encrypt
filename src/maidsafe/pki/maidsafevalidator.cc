@@ -27,6 +27,7 @@
 
 #include "maidsafe/pki/maidsafevalidator.h"
 #include <maidsafe/base/crypto.h>
+#include <cstdio>
 #include "maidsafe/common/returncodes.h"
 
 

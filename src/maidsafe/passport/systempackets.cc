@@ -22,286 +22,269 @@
 * ============================================================================
 */
 
-#include "maidsafe/client/systempackets.h"
-//#include <boost/lexical_cast.hpp>
+#include "maidsafe/passport/systempackets.h"
+#include <boost/lexical_cast.hpp>
 //#include <maidsafe/maidsafe-dht.h>
-//#include <maidsafe/base/utils.h>
+#include <maidsafe/base/utils.h>
 //#include <cstdlib>
 //#include <ctime>
 //#include <cstdio>
+#include <boost/concept_check.hpp>
 
 namespace maidsafe {
 
-PacketParams SignaturePacket::Create(PacketParams params) {
-  PacketParams result;
-  if (boost::any_cast<std::string>(params["privateKey"]).empty() ||
-      boost::any_cast<std::string>(params["publicKey"]).empty())
-    return result;
+namespace passport {
 
-  result["publicKey"] = boost::any_cast<std::string>(params["publicKey"]);
-  result["privateKey"] = boost::any_cast<std::string>(params["privateKey"]);
-  result["name"] = PacketName(params);
-
-  return result;
+SignaturePacket::SignaturePacket(const std::string &public_key,
+                                 const std::string &private_key,
+                                 const std::string &signer_private_key)
+    : pki::Packet(),
+      public_key_(public_key),
+      private_key_(private_key),
+      signer_private_key_(signer_private_key),
+      signature_() {
+  Initialise();
 }
 
-PacketParams SignaturePacket::GetData(const std::string &ser_packet,
-      PacketParams) {
-  PacketParams result;
-  GenericPacket packet;
-  if (!packet.ParseFromString(ser_packet)) {
-    result["data"] = std::string("");
-  } else {
-    result["data"] = packet.data();
+void SignaturePacket::Initialise() {
+  if (public_key_.empty() || private_key_.empty())
+    return Clear();
+
+  if (signer_private_key_.empty())  // this is a self-signing packet
+    signer_private_key_ = private_key_;
+
+  try {
+    signature_ = crypto_obj_.AsymSign(public_key_, "", signer_private_key_,
+                                      crypto::STRING_STRING);
+    name_ = crypto_obj_.Hash(public_key_ + signature_, "",
+                             crypto::STRING_STRING, false);
   }
-  return result;
-}
-
-std::string SignaturePacket::PacketName(PacketParams params) {
-  if (boost::any_cast<std::string>(params["privateKey"]).empty() ||
-      boost::any_cast<std::string>(params["publicKey"]).empty())
-    return "";
-  return crypto_obj_.Hash(boost::any_cast<std::string>(params["publicKey"]) +
-      crypto_obj_.AsymSign(boost::any_cast<std::string>(params["publicKey"]),
-        "", boost::any_cast<std::string>(params["privateKey"]),
-        crypto::STRING_STRING),
-      "", crypto::STRING_STRING, false);
-}
-
-PacketParams MidPacket::Create(PacketParams params) {
-  PacketParams result;
-  if (boost::any_cast<std::string>(params["username"]).empty() ||
-      boost::any_cast<std::string>(params["pin"]).empty())
-    return result;
-
-  boost::uint32_t rid = base::RandomUint32();
-  while (rid == 0)
-    rid = base::RandomUint32();
-  std::string salt = crypto_obj_.Hash(
-      boost::any_cast<std::string>(params["pin"]) +
-      boost::any_cast<std::string>(params["username"]),
-      "", crypto::STRING_STRING, false);
-  boost::uint32_t pin = boost::lexical_cast<boost::uint32_t>(boost::any_cast
-      <std::string>(params["pin"]));
-  std::string password = crypto_obj_.SecurePassword(
-      boost::any_cast<std::string>(params["username"]), salt, pin);
-  result["name"] = PacketName(params);
-  result["encRid"] = crypto_obj_.SymmEncrypt(boost::lexical_cast<std::string>
-      (rid), "", crypto::STRING_STRING, password);
-  result["rid"] = rid;
-  return result;
-}
-
-PacketParams MidPacket::GetData(const std::string &ser_packet,
-      PacketParams params) {
-  PacketParams result;
-  GenericPacket packet;
-  if (boost::any_cast<std::string>(params["username"]).empty() ||
-      boost::any_cast<std::string>(params["pin"]).empty() ||
-      !packet.ParseFromString(ser_packet)) {
-    result["data"] = boost::uint32_t(0);
-  } else {
-    std::string salt = crypto_obj_.Hash(
-        boost::any_cast<std::string>(params["pin"]) +
-        boost::any_cast<std::string>(params["username"]),
-        "", crypto::STRING_STRING, false);
-    boost::uint32_t pin = boost::lexical_cast<boost::uint32_t>(boost::any_cast
-        <std::string>(params["pin"]));
-    std::string password(crypto_obj_.SecurePassword(
-        boost::any_cast<std::string>(params["username"]), salt, pin));
-    std::string str_rid(crypto_obj_.SymmDecrypt(packet.data(), "",
-        crypto::STRING_STRING, password));
-    try {
-        result["data"] = boost::lexical_cast<boost::uint32_t>(str_rid);
-    }
-    catch(const std::exception &e) {
+  catch(const std::exception &e) {
 #ifdef DEBUG
-      printf("In MidPacket::GetData - %s\n", e.what());
+    printf("MidPacket::Initialise: %s\n", e.what());
 #endif
-      result["data"] = boost::uint32_t(0);
-    }
+    name_.clear();
   }
-  return result;
+  if (name_.empty())
+    Clear();
 }
 
-std::string MidPacket::PacketName(PacketParams params) {
-  if (boost::any_cast<std::string>(params["username"]).empty() ||
-      boost::any_cast<std::string>(params["pin"]).empty())
-    return "";
-  return crypto_obj_.Hash(
-         crypto_obj_.Hash(boost::any_cast<std::string>(params["username"]),
-                          "", crypto::STRING_STRING, false) +
-         crypto_obj_.Hash(boost::any_cast<std::string>(params["pin"]),
-                          "", crypto::STRING_STRING, false), "",
-         crypto::STRING_STRING, false);
+void SignaturePacket::Clear() {
+  name_.clear();
+  public_key_.clear();
+  private_key_.clear();
+  signer_private_key_.clear();
+  signature_.clear();
 }
 
-PacketParams SmidPacket::Create(PacketParams params) {
-  PacketParams result;
-  if (boost::any_cast<std::string>(params["username"]).empty() ||
-      boost::any_cast<std::string>(params["pin"]).empty())
-    return result;
-  std::string salt = crypto_obj_.Hash(
-      boost::any_cast<std::string>(params["pin"]) +
-      boost::any_cast<std::string>(params["username"]),
-      "", crypto::STRING_STRING, false);
-  boost::uint32_t pin = boost::lexical_cast<boost::uint32_t>
-      (boost::any_cast<std::string>(params["pin"]));
-  std::string password = crypto_obj_.SecurePassword(
-      boost::any_cast<std::string>(params["username"]), salt, pin);
-  result["encRid"] = crypto_obj_.SymmEncrypt(boost::lexical_cast<std::string>(
-      boost::any_cast<boost::uint32_t>(params["rid"])), "",
-      crypto::STRING_STRING, password);
 
-  result["name"] = PacketName(params);
-  return result;
+
+MidPacket::MidPacket(const std::string &username,
+                     const std::string &pin,
+                     const std::string &smid_appendix)
+    : pki::Packet(),
+      username_(username),
+      pin_(pin),
+      smid_appendix_(smid_appendix),
+      encrypted_rid_(),
+      salt_(),
+      secure_password_(),
+      rid_(0) {
+  Initialise();
 }
 
-std::string SmidPacket::PacketName(PacketParams params) {
-  if (boost::any_cast<std::string>(params["username"]).empty() ||
-      boost::any_cast<std::string>(params["pin"]).empty())
-    return "";
-  return crypto_obj_.Hash(
-      crypto_obj_.Hash(boost::any_cast<std::string>(params["username"]), "",
-          crypto::STRING_STRING, false) +
-      crypto_obj_.Hash(boost::any_cast<std::string>(params["pin"]), "",
-          crypto::STRING_STRING, false) +
-      "1", "", crypto::STRING_STRING, false);
+void MidPacket::Initialise() {
+  if (username_.empty() || pin_.empty())
+    return Clear();
+
+  rid_ = base::RandomUint32();
+  while (rid_ == 0)
+    rid_ = base::RandomUint32();
+  salt_ = crypto_obj_.Hash(pin_ + username_, "",
+                           crypto::STRING_STRING, false);
+  try {
+    secure_password_ = crypto_obj_.SecurePassword(username_, salt_,
+                       boost::lexical_cast<boost::uint32_t>(pin_));
+    name_ = crypto_obj_.Hash(
+                crypto_obj_.Hash(username_, "", crypto::STRING_STRING, false) +
+                crypto_obj_.Hash(pin_, "", crypto::STRING_STRING, false) +
+                smid_appendix_, "", crypto::STRING_STRING, false);
+    encrypted_rid_ =
+        crypto_obj_.SymmEncrypt(boost::lexical_cast<std::string>(rid_), "",
+                                crypto::STRING_STRING, secure_password_);
+  }
+  catch(const std::exception &e) {
+#ifdef DEBUG
+    printf("MidPacket::Initialise: %s\n", e.what());
+#endif
+    encrypted_rid_.clear();
+  }
+  if (encrypted_rid_.empty())
+    Clear();
 }
 
-PacketParams TmidPacket::Create(PacketParams params) {
-  GenericPacket tmid_packet;
-  PacketParams result;
-  if (boost::any_cast<std::string>(params["username"]).empty() ||
-      boost::any_cast<std::string>(params["password"]).empty() ||
-      boost::any_cast<std::string>(params["pin"]).empty() ||
-      boost::any_cast<std::string>(params["data"]).empty())
-    return result;
-
-  std::string salt = crypto_obj_.Hash(boost::lexical_cast<std::string>(
-      boost::any_cast<boost::uint32_t>(params["rid"])) +
-      boost::any_cast<std::string>(params["password"]),
-      "", crypto::STRING_STRING, false);
-  std::string password = crypto_obj_.SecurePassword(
-      boost::any_cast<std::string>(params["password"]), salt,
-      boost::any_cast<boost::uint32_t>(params["rid"]));
-
-  result["data"] = crypto_obj_.SymmEncrypt(boost::any_cast<std::string>(
-      params["data"]), "", crypto::STRING_STRING, password);
-
-  result["name"] = PacketName(params);
-  return result;
-}
-
-PacketParams TmidPacket::GetData(const std::string &ser_packet,
-      PacketParams params) {
-  PacketParams result;
+boost::uint32_t MidPacket::ParseRid(const std::string &serialised_mid_packet) {
   GenericPacket packet;
-  if (boost::any_cast<std::string>(params["password"]).empty() ||
-      !packet.ParseFromString(ser_packet)) {
-    result["data"] = std::string("");
-  } else {
-    std::string salt = crypto_obj_.Hash(boost::lexical_cast<std::string>(
-        boost::any_cast<boost::uint32_t>(params["rid"])) +
-        boost::any_cast<std::string>(params["password"]),
-        "", crypto::STRING_STRING, false);
-    std::string secure_passw = crypto_obj_.SecurePassword(
-        boost::any_cast<std::string>(params["password"]), salt,
-        boost::any_cast<boost::uint32_t>(params["rid"]));
-    result["data"] = crypto_obj_.SymmDecrypt(packet.data(), "",
-        crypto::STRING_STRING, secure_passw);
+  if (username_.empty() || pin_.empty() ||
+      !packet.ParseFromString(serialised_mid_packet))
+    return 0;
+
+  try {
+    encrypted_rid_ = packet.data();
+    std::string rid(crypto_obj_.SymmDecrypt(encrypted_rid_, "",
+                    crypto::STRING_STRING, secure_password_));
+    rid_ = boost::lexical_cast<boost::uint32_t>(rid);
   }
-  return result;
+  catch(const std::exception &e) {
+#ifdef DEBUG
+    printf("MidPacket::ParseRid: %s\n", e.what());
+#endif
+    rid_ = 0;
+  }
+  if (rid_ == 0)
+    Clear();
+  return rid_;
 }
 
-std::string TmidPacket::PacketName(PacketParams params) {
-  if (boost::any_cast<std::string>(params["username"]).empty() ||
-      boost::any_cast<std::string>(params["pin"]).empty())
-    return "";
-  return crypto_obj_.Hash(
-         crypto_obj_.Hash(boost::any_cast<std::string>(params["username"]), "",
-                          crypto::STRING_STRING, false) +
-         crypto_obj_.Hash(boost::any_cast<std::string>(params["pin"]), "",
-                          crypto::STRING_STRING, false) +
-         crypto_obj_.Hash(boost::lexical_cast<std::string>
-                          (boost::any_cast<boost::uint32_t>(
-                          params["rid"])), "", crypto::STRING_STRING, false),
-         "", crypto::STRING_STRING, false);
+void MidPacket::Clear() {
+  name_.clear();
+  username_.clear();
+  pin_.clear();
+  smid_appendix_.clear();
+  encrypted_rid_.clear();
+  salt_.clear();
+  secure_password_.clear();
+  rid_ = 0;
 }
 
-PacketParams PmidPacket::Create(PacketParams params) {
-  PacketParams result;
-  if (boost::any_cast<std::string>(params["privateKey"]).empty() ||
-      boost::any_cast<std::string>(params["publicKey"]).empty() ||
-      boost::any_cast<std::string>(params["signerPrivateKey"]).empty())
-    return result;
 
-  result["privateKey"] = boost::any_cast<std::string>(params["privateKey"]);
-  result["publicKey"] = boost::any_cast<std::string>(params["publicKey"]);
-  result["signature"] = crypto_obj_.AsymSign(
-      boost::any_cast<std::string>(params["publicKey"]), "",
-      boost::any_cast<std::string>(params["signerPrivateKey"]),
-      crypto::STRING_STRING);
 
-  result["name"] = PacketName(params);
-
-  return result;
+TmidPacket::TmidPacket(const std::string &username,
+                       const std::string &pin,
+                       const std::string &password,
+                       const boost::uint32_t rid,
+                       const std::string &plain_data)
+    : pki::Packet(),
+      username_(username),
+      pin_(pin),
+      password_(password),
+      rid_(rid),
+      plain_data_(plain_data),
+      salt_(),
+      secure_password_(),
+      encrypted_data_() {
+  Initialise();
 }
 
-std::string PmidPacket::PacketName(PacketParams params) {
-  if (boost::any_cast<std::string>(params["publicKey"]).empty() ||
-      boost::any_cast<std::string>(params["signerPrivateKey"]).empty())
-    return "";
-  std::string sig_pubkey(crypto_obj_.AsymSign(
-      boost::any_cast<std::string>(params["publicKey"]), "",
-      boost::any_cast<std::string>(params["signerPrivateKey"]),
-      crypto::STRING_STRING));
-  return crypto_obj_.Hash(
-      boost::any_cast<std::string>(params["publicKey"]) + sig_pubkey, "",
-      crypto::STRING_STRING, false);
+void TmidPacket::Initialise() {
+  if (username_.empty() || pin_.empty() || password_.empty() || rid_ == 0)
+    return Clear();
+
+  try {
+    salt_ = crypto_obj_.Hash(boost::lexical_cast<std::string>(rid_) + password_,
+                             "", crypto::STRING_STRING, false);
+    secure_password_ = crypto_obj_.SecurePassword(password_, salt_, rid_);
+    if (plain_data_.empty())  // Only initialising in order to parse plain data;
+      return;                 // don't need name or enc data.
+    name_ = crypto_obj_.Hash(
+                crypto_obj_.Hash(username_, "", crypto::STRING_STRING, false) +
+                crypto_obj_.Hash(pin_, "", crypto::STRING_STRING, false) +
+                crypto_obj_.Hash(boost::lexical_cast<std::string>(rid_), "",
+                                 crypto::STRING_STRING, false), "",
+                crypto::STRING_STRING, false);
+    encrypted_data_ = crypto_obj_.SymmEncrypt(plain_data_, "",
+                      crypto::STRING_STRING, secure_password_);
+  }
+  catch(const std::exception &e) {
+#ifdef DEBUG
+    printf("TmidPacket::Initialise: %s\n", e.what());
+#endif
+    encrypted_data_.clear();
+  }
+  if (encrypted_data_.empty())
+    Clear();
 }
 
-PacketParams PmidPacket::GetData(const std::string &ser_packet,
-      PacketParams) {
-  PacketParams result;
+std::string TmidPacket::ParsePlainData(
+    const std::string &serialised_tmid_packet) {
   GenericPacket packet;
-  if (!packet.ParseFromString(ser_packet)) {
-    result["data"] = std::string("");
-  } else {
-    result["data"] = packet.data();
+  if (secure_password_.empty() ||
+      !packet.ParseFromString(serialised_tmid_packet))
+    return 0;
+
+  try {
+    encrypted_data_ = packet.data();
+    plain_data_ = crypto_obj_.SymmDecrypt(encrypted_data_, "",
+                  crypto::STRING_STRING, secure_password_);
   }
-  return result;
+  catch(const std::exception &e) {
+#ifdef DEBUG
+    printf("TmidPacket::ParsePlainData: %s\n", e.what());
+#endif
+    plain_data_.clear();
+  }
+  if (plain_data_.empty())
+    Clear();
+  return plain_data_;
 }
 
-PacketParams MpidPacket::Create(PacketParams params) {
-  PacketParams result;
-  if (boost::any_cast<std::string>(params["publicname"]).empty() ||
-      boost::any_cast<std::string>(params["publicKey"]).empty() ||
-      boost::any_cast<std::string>(params["privateKey"]).empty())
-    return result;
-  result["publicKey"] = boost::any_cast<std::string>(params["publicKey"]);
-  result["privateKey"] = boost::any_cast<std::string>(params["privateKey"]);
-  result["name"] = PacketName(params);
-  return result;
+void TmidPacket::Clear() {
+  name_.clear();
+  username_.clear();
+  pin_.clear();
+  password_.clear();
+  rid_ = 0;
+  plain_data_.clear();
+  salt_.clear();
+  secure_password_.clear();
+  encrypted_data_.clear();
 }
 
-std::string MpidPacket::PacketName(PacketParams params) {
-  if (boost::any_cast<std::string>(params["publicname"]).empty())
-    return "";
-  return crypto_obj_.Hash(boost::any_cast<std::string>(params["publicname"]),
-                          "", crypto::STRING_STRING, false);
+
+
+MpidPacket::MpidPacket(const std::string &public_name,
+                       const std::string &public_key,
+                       const std::string &private_key)
+    : pki::Packet(),
+      public_name_(public_name),
+      public_key_(public_key),
+      private_key_(private_key) {
+  Initialise();
 }
 
-PacketParams MpidPacket::GetData(const std::string &ser_packet,
-      PacketParams) {
-  PacketParams result;
+void MpidPacket::Initialise() {
+  if (public_name_.empty() || public_key_.empty() || private_key_.empty())
+    return Clear();
+
+  try {
+    name_ = crypto_obj_.Hash(public_name_, "", crypto::STRING_STRING, false);
+  }
+  catch(const std::exception &e) {
+#ifdef DEBUG
+    printf("MpidPacket::Initialise: %s\n", e.what());
+#endif
+    name_.clear();
+  }
+  if (name_.empty())
+    Clear();
+}
+
+std::string MpidPacket::ParsePublicKey(
+    const std::string &serialised_mpid_packet) {
   GenericPacket packet;
-  if (!packet.ParseFromString(ser_packet)) {
-    result["data"] = std::string("");
-  } else {
-    result["data"] = packet.data();
-  }
-  return result;
+  if (!packet.ParseFromString(serialised_mpid_packet))
+    return "";
+  else
+    return packet.data();
 }
+
+void MpidPacket::Clear() {
+  name_.clear();
+  public_name_.clear();
+  public_key_.clear();
+  private_key_.clear();
+}
+
+}  // namespace passport
 
 }  // namespace maidsafe

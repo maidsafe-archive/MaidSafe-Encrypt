@@ -35,79 +35,82 @@
 
 namespace maidsafe {
 
+namespace passport {
+
 const boost::uint16_t kRsaKeySize = 4096;  // size to generate RSA keys in bits.
 const boost::uint16_t kNoOfSystemPackets = 8;
 
-class SignaturePacket : public Packet {
+class SignaturePacket : public pki::Packet {
  public:
-  SignaturePacket() {}
-  PacketParams Create(PacketParams params);
-  PacketParams GetData(const std::string &ser_packet,
-                       PacketParams params);
-  std::string PacketName(PacketParams params);
+  SignaturePacket(const std::string &public_key,
+                  const std::string &private_key,
+                  const std::string &signer_private_key);
+  virtual ~SignaturePacket() {}
+  virtual std::string value() const { return public_key_; }
+  std::string signature() const { return signature_; }
  private:
   SignaturePacket &operator=(const SignaturePacket&);
   SignaturePacket(const SignaturePacket&);
+  virtual void Initialise();
+  virtual void Clear();
+  std::string public_key_, private_key_, signer_private_key_, signature_;
 };
 
-class MidPacket : public Packet {
+class MidPacket : public pki::Packet {
  public:
-  MidPacket() {}
+  MidPacket(const std::string &username,
+            const std::string &pin,
+            const std::string &smid_appendix);
   virtual ~MidPacket() {}
-  virtual PacketParams Create(PacketParams params);
-  PacketParams GetData(const std::string &ser_packet,
-      PacketParams params);
-  std::string PacketName(PacketParams params);
+  virtual std::string value() const { return encrypted_rid_; }
+  boost::uint32_t ParseRid(const std::string &serialised_mid_packet);
  private:
   MidPacket &operator=(const MidPacket&);
   MidPacket(const MidPacket&);
+  virtual void Initialise();
+  virtual void Clear();
+  std::string username_, pin_, smid_appendix_, encrypted_rid_, salt_;
+  std::string secure_password_;
+  boost::uint32_t rid_;
 };
 
-class SmidPacket : public MidPacket {
+class TmidPacket : public pki::Packet {
  public:
-  SmidPacket() {}
-  PacketParams Create(PacketParams params);
-  std::string PacketName(PacketParams params);
- private:
-  SmidPacket &operator=(const SmidPacket&);
-  SmidPacket(const SmidPacket&);
-};
-
-class TmidPacket : public Packet {
- public:
-  TmidPacket() {}
-  PacketParams Create(PacketParams params);
-  PacketParams GetData(const std::string &ser_packet,
-      PacketParams params);
-  std::string PacketName(PacketParams params);
+  TmidPacket(const std::string &username,
+             const std::string &pin,
+             const std::string &password,
+             const boost::uint32_t rid,
+             const std::string &plain_data);
+  virtual ~TmidPacket() {}
+  virtual std::string value() const { return encrypted_data_; }
+  std::string ParsePlainData(const std::string &serialised_tmid_packet);
  private:
   TmidPacket &operator=(const TmidPacket&);
   TmidPacket(const TmidPacket&);
+  virtual void Initialise();
+  virtual void Clear();
+  std::string username_, pin_, password_;
+  boost::uint32_t rid_;
+  std::string plain_data_, salt_, secure_password_, encrypted_data_;
 };
 
-class PmidPacket : public Packet {
+class MpidPacket : public pki::Packet {
  public:
-  PmidPacket() {}
-  PacketParams Create(PacketParams params);
-  PacketParams GetData(const std::string &ser_packet,
-      PacketParams params);
-  std::string PacketName(PacketParams params);
- private:
-  PmidPacket &operator=(const PmidPacket&);
-  PmidPacket(const PmidPacket&);
-};
-
-class MpidPacket : public Packet {
- public:
-  MpidPacket() {}
-  PacketParams Create(PacketParams params);
-  PacketParams GetData(const std::string &ser_packet,
-      PacketParams params);
-  std::string PacketName(PacketParams params);
+  MpidPacket(const std::string &public_name,
+             const std::string &public_key,
+             const std::string &private_key);
+  virtual ~MpidPacket() {}
+  virtual std::string value() const { return public_key_; }
+  std::string ParsePublicKey(const std::string &serialised_mpid_packet);
  private:
   MpidPacket &operator=(const MpidPacket&);
   MpidPacket(const MpidPacket&);
+  virtual void Initialise();
+  virtual void Clear();
+  std::string public_name_, public_key_, private_key_;
 };
+
+}  // namespace passport
 
 }  // namespace maidsafe
 

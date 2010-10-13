@@ -38,6 +38,8 @@ namespace maidsafe {
 
 typedef boost::function<void(const maidsafe::ReturnCode&)> VoidFuncOneInt;
 
+namespace passport {
+
 struct SystemPacketCreation {
   SystemPacketCreation() : vfoi(), packet_count(0), username(), pin(), rid(0) {}
   VoidFuncOneInt vfoi;
@@ -194,6 +196,8 @@ class Authentication {
   Authentication &operator=(const Authentication &);
   Authentication(const Authentication &);
 };
+
+}  // namespace passport
 
 }  // namespace maidsafe
 

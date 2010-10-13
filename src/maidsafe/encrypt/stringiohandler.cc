@@ -22,6 +22,7 @@
 * ============================================================================
 */
 
+#include <cstring>
 #include "maidsafe/encrypt/dataiohandler.h"
 
 namespace maidsafe {

@@ -25,8 +25,6 @@
 #ifndef MAIDSAFE_PKI_PACKET_H_
 #define MAIDSAFE_PKI_PACKET_H_
 
-#include <boost/any.hpp>
-#include <boost/shared_ptr.hpp>
 #include <maidsafe/base/crypto.h>
 #include <map>
 #include <string>
@@ -37,20 +35,20 @@ namespace maidsafe {
 
 namespace pki {
 
-typedef std::map<std::string, boost::any> PacketParams;
-
 class Packet {
  public:
-  Packet();
+  Packet() : name_(), crypto_obj_() {
+    crypto_obj_.set_hash_algorithm(crypto::SHA_512);
+    crypto_obj_.set_symm_algorithm(crypto::AES_256);
+  }
   virtual ~Packet() {}
-  virtual PacketParams Create(PacketParams params) = 0;
-  virtual PacketParams GetData(const std::string &ser_packet,
-                               PacketParams params) = 0;
-  virtual std::string PacketName(PacketParams params) = 0;
+  std::string name() const { return name_; }
+  virtual std::string value() const = 0;
  protected:
+  virtual void Initialise() = 0;
+  virtual void Clear() = 0;
+  std::string name_;
   crypto::Crypto crypto_obj_;
-  virtual bool ValidateSignature(const GenericPacket &packet,
-                                 const std::string &public_key);
  private:
   Packet &operator=(const Packet&);
   Packet(const Packet&);
