@@ -36,11 +36,10 @@ namespace maidsafe {
 
 namespace passport {
 
-const boost::int8_t kMaxCryptoThreadCount = 10;
-
 class CryptoKeyPairs {
  public:
-  CryptoKeyPairs();
+  CryptoKeyPairs(const boost::uint16_t &rsa_key_size,
+                 const boost::int8_t &max_crypto_thread_count);
   ~CryptoKeyPairs();
   bool StartToCreateKeyPairs(const boost::int16_t &no_of_keypairs);
   bool GetKeyPair(crypto::RsaKeyPair *keypair);
@@ -49,6 +48,8 @@ class CryptoKeyPairs {
   CryptoKeyPairs(const CryptoKeyPairs&);
   void CreateKeyPair();
   void FinishedCreating();
+  const boost::uint16_t kRsaKeySize_;
+  const boost::int8_t kMaxCryptoThreadCount_;
   boost::int16_t keypairs_done_, keypairs_todo_, pending_requests_;
   std::list<crypto::RsaKeyPair> keypairs_;
   std::vector< boost::shared_ptr<boost::thread> > thrds_;

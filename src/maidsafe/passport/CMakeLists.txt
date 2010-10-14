@@ -40,7 +40,7 @@ FILE(GLOB ALL_FILES_PASSPORT_TESTS_DIR "${SRC_MAIDSAFE}/passport/tests/*.cc" "${
 ADD_LIBRARY(passport STATIC ${ALL_FILES_PASSPORT_DIR})
 ADD_EXECUTABLE(TESTpassport ${ALL_FILES_PASSPORT_TESTS_DIR})
 LIST(REMOVE_ITEM ALL_FILES_PASSPORT_TESTS_DIR "${SRC_MAIDSAFE}/passport/tests/passport_tests_main.cc")
-ADD_EXECUTABLE(TESTpassport_net ${NETWORK_TEST} ${SRC_MAIDSAFE}/passport/tests/testauthentication.cc)
+ADD_EXECUTABLE(TESTpassport_net ${NETWORK_TEST} ${SRC_MAIDSAFE}/passport/tests/testpassport.cc)
 
 
 IF(MSVC)

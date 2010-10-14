@@ -33,6 +33,12 @@
 
 namespace fs = boost::filesystem;
 
+namespace maidsafe {
+
+namepsace passport {
+
+namespace test {
+
 class KeyAtlasTest : public testing::Test {
  public:
   KeyAtlasTest() : key_ring_(), keys_() {}
@@ -254,3 +260,8 @@ TEST_F(KeyAtlasTest, BEH_MAID_AmendKeys) {
   }
 }
 
+}  // namespace test
+
+}  // namespace passport
+
+}  // namespace maidsafe

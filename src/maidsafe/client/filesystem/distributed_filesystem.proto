@@ -49,7 +49,7 @@ message Share {
 
 message Key {
   required bytes id = 1;
-  required PacketType type = 2;
+  required int32 type = 2;
   required bytes private_key = 3;
   required bytes public_key = 4;
   required bytes public_key_signature = 5;

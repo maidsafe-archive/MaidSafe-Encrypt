@@ -23,13 +23,19 @@
 */
 
 #include <gtest/gtest.h>
-#include "maidsafe/client/cryptokeypairs.h"
-#include "maidsafe/client/packetfactory.h"
+#include "maidsafe/passport/cryptokeypairs.h"
 
 namespace maidsafe {
 
+namespace passport {
+
+namespace test {
+
+const boost::uint16_t kRsaKeySize(4096);
+const boost::uint8_t kMaxThreadCount(5);
+
 TEST(CryptoKeyPairsTest, BEH_MAID_GetCryptoKey) {
-  CryptoKeyPairs ckp;
+  CryptoKeyPairs ckp(kRsaKeySize, kMaxThreadCount);
   crypto::RsaKeyPair kp;
   ASSERT_FALSE(ckp.GetKeyPair(&kp));
   ASSERT_TRUE(ckp.StartToCreateKeyPairs(1));
@@ -39,7 +45,7 @@ TEST(CryptoKeyPairsTest, BEH_MAID_GetCryptoKey) {
 }
 
 TEST(CryptoKeyPairsTest, FUNC_MAID_GetMultipleCryptoKeys) {
-  CryptoKeyPairs ckp;
+  CryptoKeyPairs ckp(kRsaKeySize, kMaxThreadCount);
   boost::int16_t no_of_keys = 20;
   std::vector<crypto::RsaKeyPair> kps;
   ASSERT_TRUE(ckp.StartToCreateKeyPairs(no_of_keys));
@@ -58,7 +64,7 @@ TEST(CryptoKeyPairsTest, FUNC_MAID_GetMultipleCryptoKeys) {
 }
 
 TEST(CryptoKeyPairsTest, FUNC_MAID_ReuseObject) {
-  CryptoKeyPairs ckp;
+  CryptoKeyPairs ckp(kRsaKeySize, kMaxThreadCount);
   boost::int16_t no_of_keys(5);
   std::vector<crypto::RsaKeyPair> kps;
   ASSERT_TRUE(ckp.StartToCreateKeyPairs(no_of_keys));
@@ -106,7 +112,7 @@ void GetKeys(CryptoKeyPairs *ckp, int *counter, const boost::int16_t &total) {
 }
 
 TEST(CryptoKeyPairsTest, FUNC_MAID_AccessFromDiffThreads) {
-  CryptoKeyPairs ckp;
+  CryptoKeyPairs ckp(kRsaKeySize, kMaxThreadCount);
   boost::int16_t no_of_keys(6), no_of_thrds(4);
   std::vector<crypto::RsaKeyPair> kps;
   ASSERT_TRUE(ckp.StartToCreateKeyPairs(no_of_keys));
@@ -131,7 +137,7 @@ void GetKeyPair(CryptoKeyPairs *ckp, int *counter) {
 }
 
 TEST(CryptoKeyPairsTest, BEH_MAID_DestroyObjectWhileGenKeys) {
-  CryptoKeyPairs *ckp = new CryptoKeyPairs;
+  CryptoKeyPairs *ckp = new CryptoKeyPairs(kRsaKeySize, kMaxThreadCount);
   ckp->StartToCreateKeyPairs(20);
   boost::this_thread::sleep(boost::posix_time::seconds(3));
   delete ckp;
@@ -139,7 +145,7 @@ TEST(CryptoKeyPairsTest, BEH_MAID_DestroyObjectWhileGenKeys) {
 
 
 TEST(CryptoKeyPairsTest, BEH_MAID_DestroyObjectWithGetKeyReq) {
-  CryptoKeyPairs *ckp = new CryptoKeyPairs;
+  CryptoKeyPairs *ckp = new CryptoKeyPairs(kRsaKeySize, kMaxThreadCount);
   ckp->StartToCreateKeyPairs(1);
   boost::thread_group thrds;
   int counter = 0;
@@ -155,5 +161,9 @@ TEST(CryptoKeyPairsTest, BEH_MAID_DestroyObjectWithGetKeyReq) {
   ASSERT_EQ(1, counter);
   printf("4444\n");
 }
+
+}  // namespace test
+
+}  // namespace passport
 
 }  // namespace maidsafe

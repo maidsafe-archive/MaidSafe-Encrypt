@@ -1,14 +1,12 @@
 /*
 * ============================================================================
 *
-* Copyright [2009] maidsafe.net limited
+* Copyright [2010] maidsafe.net limited
 *
-* Description:  Classes of system packets
+* Description:  Setters and getters for system packets
 * Version:      1.0
-* Created:      2009-01-29-00.59.58
+* Created:      14/10/2010 11:43:59
 * Revision:     none
-* Compiler:     gcc
-* Author:       Fraser Hutchison (fh), fraser.hutchison@maidsafe.net
 * Company:      maidsafe.net limited
 *
 * The following source code is property of maidsafe.net limited and is not
@@ -25,12 +23,8 @@
 #ifndef MAIDSAFE_PASSPORT_SYSTEMPACKETS_H_
 #define MAIDSAFE_PASSPORT_SYSTEMPACKETS_H_
 
-//#include <boost/cstdint.hpp>
-//
-//#include <string>
-//#include <vector>
-//
-//#include "maidsafe/common/packet.pb.h"
+#include <boost/cstdint.hpp>
+#include <string>
 #include "maidsafe/pki/packet.h"
 
 namespace maidsafe {
@@ -38,9 +32,11 @@ namespace maidsafe {
 namespace passport {
 
 enum PacketType {
+  UNKNOWN = -1,
   MID,
   SMID,
   TMID,
+  STMID,
   MPID,
   PMID,
   MAID,
@@ -50,8 +46,10 @@ enum PacketType {
   ANMPID,
   ANMAID,
   MSID,
-  PD_DIR,
+  PD_DIR
 };
+
+std::string DebugString(const int &packet_type);
 
 class SignaturePacket : public pki::Packet {
  public:
@@ -63,10 +61,9 @@ class SignaturePacket : public pki::Packet {
   virtual std::string value() const { return public_key_; }
   std::string signature() const { return signature_; }
  private:
-  SignaturePacket &operator=(const SignaturePacket&);
-  SignaturePacket(const SignaturePacket&);
   virtual void Initialise();
   virtual void Clear();
+  bool ValidType();
   std::string public_key_, private_key_, signer_private_key_, signature_;
 };
 
@@ -74,18 +71,20 @@ class MidPacket : public pki::Packet {
  public:
   MidPacket(const std::string &username,
             const std::string &pin,
-            const std::string &smid_appendix);
+            const std::string &smid_appendix,
+            const boost::uint32_t &rid);
   virtual ~MidPacket() {}
   virtual std::string value() const { return encrypted_rid_; }
   boost::uint32_t ParseRid(const std::string &serialised_mid_packet);
+  std::string username() const { return username_; }
+  std::string pin() const { return pin_; }
+  boost::uint32_t rid() const { return rid_; }
  private:
-  MidPacket &operator=(const MidPacket&);
-  MidPacket(const MidPacket&);
   virtual void Initialise();
   virtual void Clear();
-  std::string username_, pin_, smid_appendix_, encrypted_rid_, salt_;
-  std::string secure_password_;
+  std::string username_, pin_, smid_appendix_;
   boost::uint32_t rid_;
+  std::string encrypted_rid_, salt_, secure_password_;
 };
 
 class TmidPacket : public pki::Packet {
@@ -94,13 +93,12 @@ class TmidPacket : public pki::Packet {
              const std::string &pin,
              const std::string &password,
              const boost::uint32_t rid,
-             const std::string &plain_data);
+             const std::string &plain_data,
+             bool surrogate);
   virtual ~TmidPacket() {}
   virtual std::string value() const { return encrypted_data_; }
   std::string ParsePlainData(const std::string &serialised_tmid_packet);
  private:
-  TmidPacket &operator=(const TmidPacket&);
-  TmidPacket(const TmidPacket&);
   virtual void Initialise();
   virtual void Clear();
   std::string username_, pin_, password_;
@@ -117,8 +115,6 @@ class MpidPacket : public pki::Packet {
   virtual std::string value() const { return public_key_; }
   std::string ParsePublicKey(const std::string &serialised_mpid_packet);
  private:
-  MpidPacket &operator=(const MpidPacket&);
-  MpidPacket(const MpidPacket&);
   virtual void Initialise();
   virtual void Clear();
   std::string public_name_, public_key_, private_key_;

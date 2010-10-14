@@ -93,9 +93,8 @@ class Authentication {
         system_packets_result_(kPendingResult),
         user_info_result_(kPendingResult),
         get_smidtimid_result_(kPendingResult),
-        crypto_key_pairs_() { }
+         { }
   ~Authentication() { }
-  void Init(const boost::uint16_t &crypto_key_buffer_count);
   int GetUserInfo(const std::string &username, const std::string &pin);
   int GetUserData(const std::string &password, std::string *ser_da);
   int CreateUserSysPackets(const std::string &username,
@@ -202,7 +201,6 @@ class Authentication {
   boost::shared_ptr<StoreManagerInterface> sm_;
   SessionSingleton *ss_;
   ReturnCode system_packets_result_, user_info_result_, get_smidtimid_result_;
-  CryptoKeyPairs crypto_key_pairs_;
 };
 
 }  // namespace passport

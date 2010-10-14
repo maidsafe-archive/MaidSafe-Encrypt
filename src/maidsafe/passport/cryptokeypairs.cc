@@ -23,17 +23,29 @@
 * ============================================================================
 */
 
-#include "maidsafe/client/cryptokeypairs.h"
-#include "maidsafe/client/packetfactory.h"
+#include "maidsafe/passport/cryptokeypairs.h"
 
 namespace maidsafe {
 
-CryptoKeyPairs::CryptoKeyPairs()
-      : keypairs_done_(0), keypairs_todo_(0), pending_requests_(0), keypairs_(),
-        thrds_(kMaxCryptoThreadCount, boost::shared_ptr<boost::thread>()),
-        keyslist_mutex_(), keys_done_mutex_(), start_mutex_(), req_mutex_(),
-        keys_cond_(), req_cond_(), started_(false), destroying_this_(false) {
-}
+namespace passport {
+
+CryptoKeyPairs::CryptoKeyPairs(const boost::uint16_t &rsa_key_size,
+                               const boost::int8_t &max_crypto_thread_count)
+    : kRsaKeySize_(rsa_key_size),
+      kMaxCryptoThreadCount_(max_crypto_thread_count),
+      keypairs_done_(0),
+      keypairs_todo_(0),
+      pending_requests_(0),
+      keypairs_(),
+      thrds_(kMaxCryptoThreadCount_, boost::shared_ptr<boost::thread>()),
+      keyslist_mutex_(),
+      keys_done_mutex_(),
+      start_mutex_(),
+      req_mutex_(),
+      keys_cond_(),
+      req_cond_(),
+      started_(false),
+      destroying_this_(false) {}
 
 CryptoKeyPairs::~CryptoKeyPairs() {
   destroying_this_ = true;
@@ -87,7 +99,7 @@ void CryptoKeyPairs::CreateKeyPair() {
   bool work_todo = true;
   while (work_todo && !destroying_this_) {
     crypto::RsaKeyPair rsakp;
-    rsakp.GenerateKeys(kRsaKeySize);
+    rsakp.GenerateKeys(kRsaKeySize_);
     {
       boost::mutex::scoped_lock lock(keyslist_mutex_);
       keypairs_.push_back(rsakp);
@@ -96,7 +108,7 @@ void CryptoKeyPairs::CreateKeyPair() {
     {
       boost::mutex::scoped_lock lock(keys_done_mutex_);
       ++keypairs_done_;
-      if (kMaxCryptoThreadCount - (keypairs_todo_ - keypairs_done_) > 0) {
+      if (kMaxCryptoThreadCount_ - (keypairs_todo_ - keypairs_done_) > 0) {
         work_todo = false;
       }
     }
@@ -157,5 +169,7 @@ bool CryptoKeyPairs::GetKeyPair(crypto::RsaKeyPair *keypair) {
   }
   return result;
 }
+
+}  // namespace passport
 
 }  // namespace maidsafe

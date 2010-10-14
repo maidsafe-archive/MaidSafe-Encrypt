@@ -1,14 +1,12 @@
 /*
 * ============================================================================
 *
-* Copyright [2009] maidsafe.net limited
+* Copyright [2010] maidsafe.net limited
 *
-* Description:  Class for manipulating database of user keys
+* Description:  Class for manipulating database of system packets
 * Version:      1.0
-* Created:      09/09/2008 12:14:35 PM
+* Created:      14/10/2010 11:43:59
 * Revision:     none
-* Compiler:     gcc
-* Author:       David Irvine (di), david.irvine@maidsafe.net
 * Company:      maidsafe.net limited
 *
 * The following source code is property of maidsafe.net limited and is not
@@ -22,28 +20,63 @@
 * ============================================================================
 */
 
-#include "maidsafe/client/keyatlas.h"
+#include "maidsafe/passport/systempackethandler.h"
+#include "maidsafe/passport/passportreturncodes.h"
 
-#include <boost/filesystem.hpp>
-#include <maidsafe/base/crypto.h>
-#include <maidsafe/maidsafe-dht.h>
-#include <maidsafe/base/utils.h>
+//#include <boost/filesystem.hpp>
+//#include <maidsafe/base/crypto.h>
+//#include <maidsafe/maidsafe-dht.h>
+//#include <maidsafe/base/utils.h>
+//
+//#include <algorithm>
+//#include <cctype>
+//#include <cstdio>
+//#include <exception>
+//#include <map>
 
-#include <algorithm>
-#include <cctype>
-#include <cstdio>
-#include <exception>
-#include <map>
+//#include "protobuf/datamaps.pb.h"
 
-#include "protobuf/datamaps.pb.h"
-
-namespace fs = boost::filesystem;
 
 namespace maidsafe {
 
-KeyAtlas::KeyAtlas() : key_ring_(), co_() {}
-KeyAtlas::~KeyAtlas() {}
+namespace passport {
 
+bool SystemPacketHandler::AddPacket(boost::shared_ptr<pki::Packet> packet,
+                                    bool force) {
+  boost::mutex::scoped_lock lock(mutex_);
+  std::pair<SystemPacketMap::iterator, bool> result =
+      packets_.insert(SystemPacketMap::value_type(
+          static_cast<PacketType>(packet->packet_type()), packet));
+  if (!result.second) {
+    if (force) {
+      (*result.first).second = packet;
+    } else {
+#ifdef DEBUG
+      printf("SystemPacketHandler::AddPacket: %s already in map.\n",
+             DebugString(packet->packet_type()).c_str());
+#endif
+      return false;
+    }
+  }
+  return true;
+}
+
+boost::shared_ptr<pki::Packet> SystemPacketHandler::Packet(
+    const PacketType &packet_type) {
+  boost::mutex::scoped_lock lock(mutex_);
+  SystemPacketMap::iterator it = packets_.find(packet_type);
+  if (it == packets_.end()) {
+#ifdef DEBUG
+    printf("SystemPacketHandler::Packet: Don't have %s in map.\n",
+            DebugString(packet_type).c_str());
+#endif
+    return boost::shared_ptr<pki::Packet>();
+  }
+  return (*it).second;
+}
+
+
+/*
 int KeyAtlas::AddKey(const int &packet_type,
                      const std::string &packet_id,
                      const std::string &private_key,
@@ -130,5 +163,7 @@ void KeyAtlas::GetKeyRing(std::list<KeyAtlasRow> *keyring) {
 unsigned int KeyAtlas::KeyRingSize() { return key_ring_.size(); }
 
 void KeyAtlas::ClearKeyRing() { key_ring_.clear(); }
+*/
+}  // namespace passport
 
 }  // namespace maidsafe

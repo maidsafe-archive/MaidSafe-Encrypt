@@ -3,7 +3,7 @@
 *
 * Copyright [2009] maidsafe.net limited
 *
-* Description:  Factory for system signature packets
+* Description:  Base class for PKI packets
 * Version:      1.0
 * Created:      2009-01-29-00.23.23
 * Revision:     none
@@ -37,7 +37,8 @@ namespace pki {
 
 class Packet {
  public:
-  Packet() : name_(), crypto_obj_() {
+  explicit Packet(const int &packet_type)
+      : packet_type_(packet_type), name_(), crypto_obj_() {
     crypto_obj_.set_hash_algorithm(crypto::SHA_512);
     crypto_obj_.set_symm_algorithm(crypto::AES_256);
   }
@@ -51,9 +52,6 @@ class Packet {
   int packet_type_;
   std::string name_;
   crypto::Crypto crypto_obj_;
- private:
-  Packet &operator=(const Packet&);
-  Packet(const Packet&);
 };
 
 }  // namespace pki

@@ -40,9 +40,7 @@ namespace maidsafe {
 
 namespace passport {
 
-void Authentication::Init(const boost::uint16_t &crypto_key_buffer_count) {
-  crypto_key_pairs_.StartToCreateKeyPairs(crypto_key_buffer_count);
-}
+
 
 int Authentication::GetUserInfo(const std::string &username,
                                 const std::string &pin) {

@@ -1,14 +1,12 @@
 /*
 * ============================================================================
 *
-* Copyright [2009] maidsafe.net limited
+* Copyright [2010] maidsafe.net limited
 *
 * Description:  Class for manipulating database of system packets
 * Version:      1.0
-* Created:      09/09/2008 12:14:35 PM
+* Created:      14/10/2010 11:43:59
 * Revision:     none
-* Compiler:     gcc
-* Author:       David Irvine (di), david.irvine@maidsafe.net
 * Company:      maidsafe.net limited
 *
 * The following source code is property of maidsafe.net limited and is not
@@ -25,45 +23,30 @@
 #ifndef MAIDSAFE_PASSPORT_SYSTEMPACKETHANDLER_H_
 #define MAIDSAFE_PASSPORT_SYSTEMPACKETHANDLER_H_
 
-#include <boost/multi_index_container.hpp>
 #include <boost/shared_ptr.hpp>
+#include <boost/thread/mutex.hpp>
 
-#include <list>
+#include <map>
 #include <string>
 
-//#include "maidsafe/maidsafe.h"
+#include "maidsafe/passport/systempackets.h"
 
 namespace maidsafe {
 
 namespace passport {
 
-struct KeyAtlasRow {
-  KeyAtlasRow(int type, const std::string &id,
-              const std::string &private_key,
-              const std::string &public_key,
-              const std::string &signed_public_key)
-              : type_(type), id_(id), private_key_(private_key),
-              public_key_(public_key), signed_public_key_(signed_public_key) { }
-  int type_;
-  std::string id_;
-  std::string private_key_;
-  std::string public_key_;
-  std::string signed_public_key_;
-};
-
-typedef boost::multi_index_container<
-  KeyAtlasRow,
-  boost::multi_index::indexed_by<
-    boost::multi_index::ordered_unique<
-      BOOST_MULTI_INDEX_MEMBER(KeyAtlasRow, int, type_)
-    >
-  >
-> KeyAtlasSet;
-
-class KeyAtlas {
+class SystemPacketHandler {
  public:
-  KeyAtlas();
-  ~KeyAtlas();
+  typedef std::map<PacketType, boost::shared_ptr<pki::Packet> > SystemPacketMap;
+  SystemPacketHandler() : packets_(), mutex_() {}
+  ~SystemPacketHandler() {}
+  bool AddPacket(boost::shared_ptr<pki::Packet> packet, bool force);
+  boost::shared_ptr<pki::Packet> Packet(const PacketType &packet_type);
+
+
+
+
+
   // If signed_public_key == "", it is set as signature of given public_key
   // using given private_key.
   int AddKey(const int &packet_type,
@@ -76,14 +59,14 @@ class KeyAtlas {
   std::string PublicKey(const int &packet_type);
   std::string SignedPublicKey(const int &packet_type);
   int RemoveKey(const int &packet_type);
-  void GetKeyRing(std::list<KeyAtlasRow> *keyring);
-  unsigned int KeyRingSize();
+//  void GetKeyRing(std::list<KeyAtlasRow> *keyring);
+  size_t KeyRingSize();
   void ClearKeyRing();
-
  private:
-  std::string SearchKeyring(const int &packet_type, const int &field);
-  KeyAtlasSet key_ring_;
-  crypto::Crypto co_;
+  SystemPacketHandler &operator=(const SystemPacketHandler&);
+  SystemPacketHandler(const SystemPacketHandler&);
+  SystemPacketMap packets_;
+  boost::mutex mutex_;
 };
 
 }  // namespace passport
