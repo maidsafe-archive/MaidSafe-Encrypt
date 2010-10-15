@@ -42,26 +42,53 @@ class Passport {
         kSmidAppendix_("1") {}
   void Init(const boost::uint16_t &crypto_key_buffer_count);
   ~Passport() {}
+  // Creates a MID and SMID which need to have their RID set.  If successful,
+  // names of packets are set in mid_name and smid_name.
   int SetInitialDetails(const std::string &username,
                         const std::string &pin,
                         std::string *mid_name,
                         std::string *smid_name);
-  int SetRid(boost::shared_ptr<MidPacket> mid,
-             boost::shared_ptr<MidPacket> smid);
+  // Sets a new RID for the MID and creates a TMID.  If successful, a *copy* of
+  // the complete packets are set before returning kSuccess.
+  int SetNewUserData(const std::string &password,
+                     const std::string &plain_data,
+                     boost::shared_ptr<MidPacket> mid,
+                     boost::shared_ptr<TmidPacket> tmid);
+  // Sets SMID's RID to MID's RID and generates new RID for MID.  Also creates
+  // new TMID.  If successful, a *copy* of the new and old details are set
+  // before returning kSuccess.
+  int UpdateUserData(const std::string &plain_data,
+                     std::string *mid_old_value,
+                     std::string *smid_old_value,
+                     boost::shared_ptr<MidPacket> updated_mid,
+                     boost::shared_ptr<MidPacket> updated_smid,
+                     boost::shared_ptr<TmidPacket> new_tmid,
+                     boost::shared_ptr<TmidPacket> tmid_for_deletion);
+  // Sets the RID for MID (or SMID) packet, and creates a corresponding TMID (or
+  // STMID) which needs to have its plain_data set.  If successful, name of the
+  // packet is set in tmid_name.
   int InitialiseTmid(const std::string &password,
                      bool surrogate,
                      const std::string &serialised_mid_packet,
                      std::string *tmid_name);
-  int SetUserData(const std::string &plain_data,
-                  boost::shared_ptr<TmidPacket> tmid);
+  // Returns the plain_data from a TMID (or STMID) serialised packet
   int GetUserData(bool surrogate,
                   const std::string &serialised_tmid_packet,
                   std::string *plain_data);
+  // Serialises signature packets only to a keyring
   std::string SerialiseKeyring();
+  // Parses a previously serialised keyring
   int ParseKeyring(const std::string &serialised_keyring);
+  // Removes signature packets from packet_handler_
+  void ClearKeyring();
+  // Creates a new signature packet.  For non-self-signing packets, will fail if
+  // signing packet type is not already in packet_handler_.  If successful, a
+  // *copy* of the packet is set before returning kSuccess.
   int InitialiseSignaturePacket(
       const PacketType &packet_type,
       boost::shared_ptr<SignaturePacket> signature_packet);
+  // Creates a new MPID.  Will fail if ANMPID is not already in packet_handler_.
+  // If successful, a *copy* of the MPID is set before returning kSuccess.
   int InitialiseMpid(const std::string &public_name,
                      boost::shared_ptr<SignaturePacket> mpid);
  private:

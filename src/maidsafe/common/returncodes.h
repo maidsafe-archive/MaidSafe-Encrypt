@@ -35,6 +35,15 @@ enum ReturnCode {
   kUndefined = -3,
   kPendingResult = -4,
 
+  // Authentication
+  kAuthenticationError = -1001,
+//  kPasswordFailure = -1002,
+  kUserDoesntExist = -1003,
+//  kUserExists = -1004,
+//  kInvalidUsernameOrPin = -1005,
+//  kPublicUsernameExists = -1006,
+//  kAuthenticationTimeout = -1007,
+
   // Buffer Packet Handler
   kBPError = -2001,
   kBPSerialiseError = -2002,

@@ -43,11 +43,15 @@
 #include "maidsafe/client/filesystem/distributed_filesystem.pb.h"
 #include "maidsafe/common/packet.pb.h"
 
+namespace maidsafe {
+
 // system constants
 const boost::uint32_t kMinRegularFileSize = 512;
 // This is the size in bytes of the NON-HEX format strings used as keys.  When
 // encoded to hex the string size is doubled.
 const boost::uint32_t kKeySize = 64;
+
+const boost::uint16_t kRsaKeySize = 4096;
 // const crypto::hashtype kHashSize(crypto::SHA_512);
 
 const std::string kAnonymousRequestSignature(2 * kKeySize, 'f');
@@ -184,8 +188,6 @@ enum MaidsafeRpcResult {
   kNack, kAck, kNotRemote, kBusy
 };
 
-namespace maidsafe {
-
 enum DirType {ANONYMOUS, PRIVATE, PRIVATE_SHARE, PUBLIC_SHARE};
 
 enum ValueType {
@@ -201,6 +203,16 @@ typedef boost::function<void(const maidsafe::ReturnCode&)> VoidFuncOneInt;
 typedef boost::function<void(const ReturnCode&,
                              const std::vector<kad::Contact>&)>
         VoidFuncIntContacts;
+
+
+inline std::string HexSubstr(const std::string &non_hex) {
+  std::string hex(base::EncodeToHex(non_hex));
+  if (hex.size() > 16)
+    return (hex.substr(0, 7) + ".." + hex.substr(hex.size() - 7));
+  else
+    return hex;
+}
+
 }  // namespace maidsafe
 
 
@@ -210,13 +222,5 @@ typedef boost::function<void (const maidsafe_vault::ReturnCode&)>
     VoidFuncOneInt;
 
 }  // namespace maidsafe_vault
-
-inline std::string HexSubstr(const std::string &non_hex) {
-  std::string hex(base::EncodeToHex(non_hex));
-  if (hex.size() > 16)
-    return (hex.substr(0, 7) + ".." + hex.substr(hex.size() - 7));
-  else
-    return hex;
-}
 
 #endif  // MAIDSAFE_MAIDSAFE_H_

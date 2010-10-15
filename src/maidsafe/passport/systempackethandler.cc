@@ -95,6 +95,19 @@ int SystemPacketHandler::ParseKeyring(const std::string &serialised_keyring) {
   return success ? kSuccess : kBadSerialisedKeyring;
 }
 
+void SystemPacketHandler::ClearKeyring() {
+  boost::mutex::scoped_lock lock(mutex_);
+  SystemPacketMap::iterator it = packets_.begin();
+  while (it != packets_.end()) {
+    if (IsSignature((*it).first, false)) {
+      packets_.erase(it++);
+    } else {
+      ++it;
+    }
+  }
+}
+
+
 /*
 int KeyAtlas::AddKey(const int &packet_type,
                      const std::string &packet_id,

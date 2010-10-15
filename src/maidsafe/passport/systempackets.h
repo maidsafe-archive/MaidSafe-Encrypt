@@ -107,6 +107,10 @@ class TmidPacket : public pki::Packet {
   virtual ~TmidPacket() {}
   virtual std::string value() const { return encrypted_data_; }
   std::string ParsePlainData(const std::string &serialised_tmid_packet);
+  void SetToSurrogate() { packet_type_ = STMID; }
+  std::string username() const { return username_; }
+  std::string pin() const { return pin_; }
+  std::string password() const { return password_; }
  private:
   virtual void Initialise();
   virtual void Clear();

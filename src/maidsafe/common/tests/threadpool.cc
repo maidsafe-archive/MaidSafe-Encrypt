@@ -126,7 +126,7 @@ bool Threadpool::TimedWait(const boost::posix_time::milliseconds &duration,
     return condition_.timed_wait(lock, duration, predicate);
   }
   catch(const std::exception &e) {
- #ifdef DEBUG
+#ifdef DEBUG
     printf("Threadpool::TimedWait: %s\n", e.what());
 #endif
     return false;

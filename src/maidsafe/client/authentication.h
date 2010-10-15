@@ -24,22 +24,27 @@
 #ifndef MAIDSAFE_CLIENT_AUTHENTICATION_H_
 #define MAIDSAFE_CLIENT_AUTHENTICATION_H_
 
-#include <boost/function.hpp>
-#include <boost/shared_ptr.hpp>
-#include <boost/thread/condition_variable.hpp>
-#include <boost/thread/mutex.hpp>
-#include <maidsafe/base/crypto.h>
-
-#include <list>
+#include <boost/cstdint.hpp>
+//#include <boost/function.hpp>
+//#include <boost/shared_ptr.hpp>
+//#include <boost/thread/condition_variable.hpp>
+//#include <boost/thread/mutex.hpp>
+//#include <maidsafe/base/crypto.h>
+//
+//#include <list>
 #include <string>
-#include <vector>
+//#include <vector>
 
-#include "maidsafe/common/cryptokeypairs.h"
-#include "maidsafe/common/packet.pb.h"
+#include "maidsafe/common/maidsafe.h"
+#include "maidsafe/passport/passport.h"
+
+//#include "maidsafe/common/packet.pb.h"
 #include "maidsafe/common/returncodes.h"
 
 namespace maidsafe {
 
+class StoreManagerInterface;
+class SessionSingleton;
 
 struct SystemPacketCreationData {
   SystemPacketCreationData()
@@ -53,19 +58,21 @@ struct SystemPacketCreationData {
 struct FindSystemPacketData {
   FindSystemPacketData() : system_packet_creation_data(), packet_type() {}
   boost::shared_ptr<SystemPacketCreationData> system_packet_creation_data;
-  PacketType packet_type;
+  passport::PacketType packet_type;
 };
 
 struct UserInfo {
-  UserInfo() : mutex(), mid_calledback(false), smid_calledback(false),
-               tmid_mid_calledback(false), tmid_smid_calledback(false),
-               functor(), username(), pin() {}
+  UserInfo() : mutex(), cond_var(), serialised_mid_packet("Pending"),
+               serialised_smid_packet("Pending"), tmid_mid_calledback(false),
+               tmid_smid_calledback(false), username(), pin() {}
   boost::mutex mutex;
-  bool mid_calledback;
-  bool smid_calledback;
+  boost::condition_variable cond_var;
+  std::string serialised_mid_packet, serialised_smid_packet;
+
+
+
   bool tmid_mid_calledback;
   bool tmid_smid_calledback;
-  VoidFuncOneInt functor;
   std::string username;
   std::string pin;
 };
@@ -84,18 +91,27 @@ struct SaveSessionData {
 
 class Authentication {
  public:
-  Authentication()
-      : mutex_(),
-        system_packets_result_(kPendingResult),
-        user_info_result_(kPendingResult),
-        get_smidtimid_result_(kPendingResult),
-         { }
-  ~Authentication() { }
+  Authentication() : crypto_(),
+                     store_manager_(),
+                     session_singleton_(),
+                     passport_(),
+                     system_packets_result_(kPendingResult),
+                     user_info_result_(kPendingResult),
+                     get_smidtmid_result_(kPendingResult) {}
+  ~Authentication() {}
+  void Init(const boost::uint16_t &crypto_key_buffer_count,
+            boost::shared_ptr<StoreManagerInterface> storemanager,
+            boost::shared_ptr<passport::Passport> passport);
   int GetUserInfo(const std::string &username, const std::string &pin);
+
+
+
+
+
   int GetUserData(const std::string &password, std::string *ser_da);
   int CreateUserSysPackets(const std::string &username,
                            const std::string &pin);
-  void CreateUserSysPackets(const ReturnCode &rc,
+  void CreateUserSysPackets(const ReturnCode &return_code,
                             const std::string &username,
                             const std::string &pin,
                             VoidFuncOneInt vfoi,
@@ -118,12 +134,31 @@ class Authentication {
   int PublicUsernamePublicKey(const std::string &public_username,
                               std::string *public_key);
   void CreateMSIDPacket(kad::VoidFunctorOneString cb);
-  ReturnCode get_smidtimid_result() const {
-    return get_smidtimid_result_;
+  ReturnCode get_smidtmid_result() const {
+    return get_smidtmid_result_;
   }
  private:
-  Authentication &operator=(const Authentication &);
-  Authentication(const Authentication &);
+  Authentication &operator=(const Authentication&);
+  Authentication(const Authentication&);
+  void GetMidSmidCallback(const std::vector<std::string> &values,
+                          const ReturnCode &return_code,
+                          bool surrogate,
+                          boost::shared_ptr<UserInfo> user_info);
+
+
+  bool ResultSet(const ReturnCode *return_code) {
+    return *return_code != kPendingResult;
+  }
+
+
+
+  void GetSmidCallback(const std::vector<std::string> &values,
+                       const ReturnCode &return_code,
+                       boost::shared_ptr<UserInfo> user_info);
+
+
+
+
   std::string CreateSignaturePackets(const PacketType &type_da,
                                      std::string *public_key);
   void CreateSignaturePacket(
@@ -133,20 +168,14 @@ class Authentication {
   bool CheckPin(const std::string &pin);
   bool CheckPassword(const std::string &password);
 
-  void GetMidCallback(const std::vector<std::string> &values,
-                      const ReturnCode &rc,
-                      boost::shared_ptr<UserInfo> ui);
-  void GetSmidCallback(const std::vector<std::string> &values,
-                       const ReturnCode &rc,
-                       boost::shared_ptr<UserInfo> ui);
-  void GetMidTmid(boost::shared_ptr<UserInfo> ui);
-  void GetSmidTmid(boost::shared_ptr<UserInfo> ui);
+  void GetMidTmid(boost::shared_ptr<UserInfo> user_info);
+  void GetSmidTmid(boost::shared_ptr<UserInfo> user_info);
   void GetMidTmidCallback(const std::vector<std::string> &values,
-                          const ReturnCode &rc,
-                          boost::shared_ptr<UserInfo> ui);
+                          const ReturnCode &return_code,
+                          boost::shared_ptr<UserInfo> user_info);
   void GetSmidTmidCallback(const std::vector<std::string> &values,
-                           const ReturnCode &rc,
-                           boost::shared_ptr<UserInfo> ui);
+                           const ReturnCode &return_code,
+                           boost::shared_ptr<UserInfo> user_info);
 
   int StorePacket(const std::string &packet_name,
                   const std::string &value,
@@ -167,7 +196,6 @@ class Authentication {
       const ReturnCode &return_code,
       boost::shared_ptr<FindSystemPacketData> find_system_packet_data);
   void CreateSystemPacketsCallback(const ReturnCode &return_code);
-  void GetUserInfoCallback(const ReturnCode &return_code);
   void CreateMidPacket(
       boost::shared_ptr<FindSystemPacketData> find_system_packet_data);
   void CreateSmidPacket(
@@ -192,12 +220,11 @@ class Authentication {
   char *UtilsTrimLeft(char *szSource);
   char *UtilsTrim(char *szSource);
 
-  boost::mutex mutex_;
   crypto::Crypto crypto_;
-  boost::shared_ptr<StoreManagerInterface> sm_;
-  SessionSingleton *ss_;
-
-  ReturnCode system_packets_result_, user_info_result_, get_smidtimid_result_;
+  boost::shared_ptr<StoreManagerInterface> store_manager_;
+  SessionSingleton *session_singleton_;
+  boost::shared_ptr<passport::Passport> passport_;
+  ReturnCode system_packets_result_, user_info_result_, get_smidtmid_result_;
 };
 
 }  // namespace maidsafe

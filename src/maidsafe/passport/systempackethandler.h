@@ -42,6 +42,7 @@ class SystemPacketHandler {
   boost::shared_ptr<pki::Packet> Packet(const PacketType &packet_type);
   std::string SerialiseKeyring();
   int ParseKeyring(const std::string &serialised_keyring);
+  void ClearKeyring();
 
 
 

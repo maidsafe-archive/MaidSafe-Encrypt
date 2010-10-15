@@ -31,26 +31,17 @@ namespace passport {
 
 enum ReturnCode {
   kSuccess = 0,
-//  kGeneralError = -1,
-//  kSystemPacketHandlerError = -1001,
-
-  kPassportError = -1001,
-  kNoMid = -1002,
-  kNoSmid = -1003,
-  kNoStmid = -1004,
-  kNoTmid = -1005,
-  kNoSigningPacket = -1006,
-  kBadSerialisedMidRid = -1007,
-  kBadSerialisedSmidRid = -1008,
-  kBadSerialisedTmidData = -1009,
-  kBadSerialisedStmidData = -1010,
-  kBadSerialisedKeyring = -1011,
-//  kPasswordFailure = -1002,
-//  kUserDoesntExist = -1003,
-//  kUserExists = -1004,
-//  kInvalidUsernameOrPin = -1005,
-//  kPublicUsernameExists = -1006,
-//  kAuthenticationTimeout = -1007
+  kPassportError = -100001,
+  kNoMid = -100002,
+  kNoSmid = -100003,
+  kNoStmid = -100004,
+  kNoTmid = -100005,
+  kNoSigningPacket = -100006,
+  kBadSerialisedMidRid = -100007,
+  kBadSerialisedSmidRid = -100008,
+  kBadSerialisedTmidData = -100009,
+  kBadSerialisedStmidData = -100010,
+  kBadSerialisedKeyring = -100011
 };
 
 }  // namespace passport

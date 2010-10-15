@@ -23,6 +23,7 @@
 */
 
 #include "maidsafe/client/sessionsingleton.h"
+#include "maidsafe/passport/passport.h"
 #include "protobuf/datamaps.pb.h"
 
 namespace maidsafe {
@@ -31,8 +32,8 @@ SessionSingleton* SessionSingleton::single = NULL;
 boost::mutex ss_mutex;
 
 SessionSingleton::SessionSingleton()
-    : ud_(), ka_(), ch_(), psh_(), conversations_(), live_contacts_(),
-      lc_mutex_() {
+    : ud_(), passport_(new passport::Passport(kRsaKeySize, 5)), ch_(), psh_(),
+      conversations_(), live_contacts_(), lc_mutex_() {
   ResetSession();
 }
 
@@ -74,7 +75,7 @@ bool SessionSingleton::ResetSession() {
   SetEp(ep);
   PersonalDetails pd;
   SetPd(pd);
-  ka_.ClearKeyRing();
+  passport_->ClearKeyring();
   ch_.ClearContacts();
   psh_.MI_ClearPrivateShares();
   conversations_.clear();
