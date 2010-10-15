@@ -211,37 +211,46 @@ struct SingleOpDataHolder {
 // ExpectAmendmentRequests, send each CI Holder an AddToWatchListRequest or
 // RemoveFromWatchListRequest and assess the responses.
 struct WatchListOpData {
-  typedef SingleOpDataHolder<ExpectAmendmentResponse> AccountDataHolder;
   typedef SingleOpDataHolder<AddToWatchListResponse> AddToWatchDataHolder;
   typedef SingleOpDataHolder<RemoveFromWatchListResponse>
       RemoveFromWatchDataHolder;
   explicit WatchListOpData(boost::shared_ptr<StoreData> sd)
       : store_data(sd),
         mutex(),
-        account_holders(),
         chunk_info_holders(),
         add_to_watchlist_data_holders(),
         remove_from_watchlist_data_holders(),
         returned_count(0),
         success_count(0),
-        expect_amendment_done(false),
         required_upload_copies(),
         consensus_upload_copies(-1),
         payment_values(),
         task_id(kRootTask) {}
   boost::shared_ptr<StoreData> store_data;
   boost::mutex mutex;
-  std::vector<kad::Contact> account_holders, chunk_info_holders;
-  std::vector<AccountDataHolder> account_data_holders;
+  std::vector<kad::Contact> chunk_info_holders;
   std::vector<AddToWatchDataHolder> add_to_watchlist_data_holders;
   std::vector<RemoveFromWatchDataHolder> remove_from_watchlist_data_holders;
   boost::uint16_t returned_count, success_count;
-  bool expect_amendment_done;
   std::multiset<int> required_upload_copies;
   int consensus_upload_copies;
   std::vector<boost::uint64_t> payment_values;
   TaskId task_id;
 };
+
+struct ExpectAmendmentOpData {
+  typedef SingleOpDataHolder<ExpectAmendmentResponse> AccountDataHolder;
+  explicit ExpectAmendmentOpData()
+      : mutex(),
+        account_data_holders(),
+        returned_count(0),
+        success_count(0),
+        callback() {}
+  boost::mutex mutex;
+  std::vector<AccountDataHolder> account_data_holders;
+  boost::uint16_t returned_count, success_count;
+  VoidFuncOneInt callback;
+};	
 
 // This is used to hold the data required to perform a SendChunkPrep followed by
 // a SendChunkContent operation.
