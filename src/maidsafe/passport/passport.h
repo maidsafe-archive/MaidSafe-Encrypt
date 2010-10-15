@@ -38,6 +38,7 @@ class Passport {
                     const boost::int8_t &max_crypto_thread_count)
       : packet_handler_(),
         crypto_key_pairs_(rsa_key_size, max_crypto_thread_count),
+        crypto_key_buffer_count_(0),
         kSmidAppendix_("1") {}
   void Init(const boost::uint16_t &crypto_key_buffer_count);
   ~Passport() {}
@@ -45,19 +46,34 @@ class Passport {
                         const std::string &pin,
                         std::string *mid_name,
                         std::string *smid_name);
+  int SetRid(boost::shared_ptr<MidPacket> mid,
+             boost::shared_ptr<MidPacket> smid);
   int InitialiseTmid(const std::string &password,
                      bool surrogate,
                      const std::string &serialised_mid_packet,
                      std::string *tmid_name);
+  int SetUserData(const std::string &plain_data,
+                  boost::shared_ptr<TmidPacket> tmid);
   int GetUserData(bool surrogate,
                   const std::string &serialised_tmid_packet,
                   std::string *plain_data);
-
+  std::string SerialiseKeyring();
+  int ParseKeyring(const std::string &serialised_keyring);
+  int InitialiseSignaturePacket(
+      const PacketType &packet_type,
+      boost::shared_ptr<SignaturePacket> signature_packet);
+  int InitialiseMpid(const std::string &public_name,
+                     boost::shared_ptr<SignaturePacket> mpid);
  private:
   Passport &operator=(const Passport&);
   Passport(const Passport&);
+  int DoInitialiseSignaturePacket(
+      const PacketType &packet_type,
+      const std::string &public_name,
+      boost::shared_ptr<SignaturePacket> signature_packet);
   SystemPacketHandler packet_handler_;
   CryptoKeyPairs crypto_key_pairs_;
+  boost::uint16_t crypto_key_buffer_count_;
   const std::string kSmidAppendix_;
 };
 

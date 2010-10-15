@@ -47,14 +47,6 @@ message Share {
   repeated ShareParticipant participants = 7;
 }
 
-message Key {
-  required bytes id = 1;
-  required int32 type = 2;
-  required bytes private_key = 3;
-  required bytes public_key = 4;
-  required bytes public_key_signature = 5;
-}
-
 message MetaDataMap {
   required int32 id = 1;
   required bytes display_name = 2;
@@ -81,7 +73,7 @@ message PersonalDetails {
 
 message DataAtlas {
   optional bytes root_db_key = 1;
-  repeated Key keys = 2;
+  optional bytes serialised_keyring = 2;
   repeated MetaDataMap mdms = 3;
   repeated DataMap dms = 4;
   repeated PublicContact contacts = 5;

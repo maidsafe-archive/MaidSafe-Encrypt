@@ -21,8 +21,8 @@
 * ============================================================================
 */
 
-#ifndef MAIDSAFE_PASSPORT_AUTHENTICATION_H_
-#define MAIDSAFE_PASSPORT_AUTHENTICATION_H_
+#ifndef MAIDSAFE_CLIENT_AUTHENTICATION_H_
+#define MAIDSAFE_CLIENT_AUTHENTICATION_H_
 
 #include <boost/function.hpp>
 #include <boost/shared_ptr.hpp>
@@ -40,10 +40,6 @@
 
 namespace maidsafe {
 
-typedef boost::function<void(const maidsafe::ReturnCode&)> VoidFuncOneInt;
-
-
-namespace passport {
 
 struct SystemPacketCreationData {
   SystemPacketCreationData()
@@ -200,11 +196,10 @@ class Authentication {
   crypto::Crypto crypto_;
   boost::shared_ptr<StoreManagerInterface> sm_;
   SessionSingleton *ss_;
+
   ReturnCode system_packets_result_, user_info_result_, get_smidtimid_result_;
 };
 
-}  // namespace passport
-
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_PASSPORT_AUTHENTICATION_H_
+#endif  // MAIDSAFE_CLIENT_AUTHENTICATION_H_

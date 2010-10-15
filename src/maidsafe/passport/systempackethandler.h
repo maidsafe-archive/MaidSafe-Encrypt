@@ -25,10 +25,8 @@
 
 #include <boost/shared_ptr.hpp>
 #include <boost/thread/mutex.hpp>
-
 #include <map>
 #include <string>
-
 #include "maidsafe/passport/systempackets.h"
 
 namespace maidsafe {
@@ -42,6 +40,8 @@ class SystemPacketHandler {
   ~SystemPacketHandler() {}
   bool AddPacket(boost::shared_ptr<pki::Packet> packet, bool force);
   boost::shared_ptr<pki::Packet> Packet(const PacketType &packet_type);
+  std::string SerialiseKeyring();
+  int ParseKeyring(const std::string &serialised_keyring);
 
 
 

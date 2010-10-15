@@ -31,6 +31,8 @@ namespace maidsafe {
 
 namespace passport {
 
+class Key;
+
 enum PacketType {
   UNKNOWN = -1,
   MID,
@@ -51,30 +53,37 @@ enum PacketType {
 
 std::string DebugString(const int &packet_type);
 
+bool IsSignature(const int &packet_type, bool check_for_self_signer);
+
 class SignaturePacket : public pki::Packet {
  public:
   SignaturePacket(const PacketType &packet_type,
                   const std::string &public_key,
                   const std::string &private_key,
-                  const std::string &signer_private_key);
+                  const std::string &signer_private_key,
+                  const std::string &public_name);
+  SignaturePacket(const Key &key);
   virtual ~SignaturePacket() {}
   virtual std::string value() const { return public_key_; }
-  std::string signature() const { return signature_; }
+  std::string ParsePublicKey(const std::string &serialised_sig_packet);
+  void PutToKey(Key *key);
+  std::string private_key() const { return private_key_; }
+  std::string public_key_signature() const { return public_key_signature_; }
  private:
   virtual void Initialise();
   virtual void Clear();
-  bool ValidType();
-  std::string public_key_, private_key_, signer_private_key_, signature_;
+  std::string public_key_, private_key_, signer_private_key_;
+  std::string public_key_signature_;
 };
 
 class MidPacket : public pki::Packet {
  public:
   MidPacket(const std::string &username,
             const std::string &pin,
-            const std::string &smid_appendix,
-            const boost::uint32_t &rid);
+            const std::string &smid_appendix);
   virtual ~MidPacket() {}
   virtual std::string value() const { return encrypted_rid_; }
+  void SetRid(const boost::uint32_t rid);
   boost::uint32_t ParseRid(const std::string &serialised_mid_packet);
   std::string username() const { return username_; }
   std::string pin() const { return pin_; }
@@ -104,20 +113,6 @@ class TmidPacket : public pki::Packet {
   std::string username_, pin_, password_;
   boost::uint32_t rid_;
   std::string plain_data_, salt_, secure_password_, encrypted_data_;
-};
-
-class MpidPacket : public pki::Packet {
- public:
-  MpidPacket(const std::string &public_name,
-             const std::string &public_key,
-             const std::string &private_key);
-  virtual ~MpidPacket() {}
-  virtual std::string value() const { return public_key_; }
-  std::string ParsePublicKey(const std::string &serialised_mpid_packet);
- private:
-  virtual void Initialise();
-  virtual void Clear();
-  std::string public_name_, public_key_, private_key_;
 };
 
 }  // namespace passport

@@ -22,7 +22,8 @@
 
 #include "maidsafe/passport/systempackets.h"
 #include <boost/lexical_cast.hpp>
-#include <maidsafe/base/utils.h>
+#include <cstdio>
+#include "maidsafe/passport/signaturepacket.pb.h"
 
 namespace maidsafe {
 
@@ -65,34 +66,76 @@ std::string DebugString(const int &packet_type) {
   }
 };
 
+bool IsSignature(const int &packet_type, bool check_for_self_signer) {
+  switch (packet_type) {
+    case MPID:
+    case PMID:
+    case MAID:
+      return !check_for_self_signer;
+    case ANMID:
+    case ANSMID:
+    case ANTMID:
+    case ANMPID:
+    case ANMAID:
+      return true;
+    default:
+      return false;
+  }
+}
+
 SignaturePacket::SignaturePacket(const PacketType &packet_type,
                                  const std::string &public_key,
                                  const std::string &private_key,
-                                 const std::string &signer_private_key)
+                                 const std::string &signer_private_key,
+                                 const std::string &public_name)
     : pki::Packet(packet_type),
       public_key_(public_key),
       private_key_(private_key),
       signer_private_key_(signer_private_key),
-      signature_() {
+      public_key_signature_() {
+  if (packet_type == MPID) {
+    try {
+      name_ = crypto_obj_.Hash(public_name, "", crypto::STRING_STRING, false);
+    }
+    catch(const std::exception &e) {
+#ifdef DEBUG
+      printf("MpidPacket::Ctor: %s\n", e.what());
+#endif
+      public_key_.clear();
+    }
+  }
   Initialise();
 }
 
+SignaturePacket::SignaturePacket(const Key &key)
+    : pki::Packet(key.packet_type()),
+      public_key_(key.public_key()),
+      private_key_(key.private_key()),
+      signer_private_key_(),
+      public_key_signature_(key.public_key_signature()) {}
+
 void SignaturePacket::Initialise() {
-  if (public_key_.empty() || private_key_.empty() || !ValidType())
+  if (public_key_.empty() || private_key_.empty() ||
+      !IsSignature(packet_type_, false))
     return Clear();
 
-  if (signer_private_key_.empty())  // this is a self-signing packet
-    signer_private_key_ = private_key_;
+  if (signer_private_key_.empty()) {
+    if (IsSignature(packet_type_, true))  // this is a self-signing packet
+      signer_private_key_ = private_key_;
+    else
+      return Clear();
+  }
 
   try {
-    signature_ = crypto_obj_.AsymSign(public_key_, "", signer_private_key_,
-                                      crypto::STRING_STRING);
-    name_ = crypto_obj_.Hash(public_key_ + signature_, "",
-                             crypto::STRING_STRING, false);
+    public_key_signature_ = crypto_obj_.AsymSign(public_key_, "",
+                            signer_private_key_, crypto::STRING_STRING);
+    if (packet_type_ != MPID)
+      name_ = crypto_obj_.Hash(public_key_ + public_key_signature_, "",
+                               crypto::STRING_STRING, false);
   }
   catch(const std::exception &e) {
 #ifdef DEBUG
-    printf("MidPacket::Initialise: %s\n", e.what());
+    printf("SignaturePacket::Initialise: %s\n", e.what());
 #endif
     name_.clear();
   }
@@ -106,35 +149,40 @@ void SignaturePacket::Clear() {
   public_key_.clear();
   private_key_.clear();
   signer_private_key_.clear();
-  signature_.clear();
+  public_key_signature_.clear();
 }
 
-bool SignaturePacket::ValidType() {
-  switch (packet_type_) {
-    case PMID:
-    case MAID:
-    case ANMID:
-    case ANSMID:
-    case ANTMID:
-    case ANMPID:
-    case ANMAID:
-      return true;
-    default:
-      return false;
+std::string SignaturePacket::ParsePublicKey(
+    const std::string &serialised_sig_packet) {
+  GenericPacket packet;
+  if (!packet.ParseFromString(serialised_sig_packet)) {
+#ifdef DEBUG
+    printf("SignaturePacket::ParsePublicKey: Bad packet, or userdata empty.\n");
+#endif
+    return "";
+  } else {
+    return packet.data();
   }
+}
+
+void SignaturePacket::PutToKey(Key *key) {
+  key->set_name(name_);
+  key->set_packet_type(packet_type_);
+  key->set_public_key(public_key_);
+  key->set_private_key(private_key_);
+  key->set_public_key_signature(public_key_signature_);
 }
 
 
 
 MidPacket::MidPacket(const std::string &username,
                      const std::string &pin,
-                     const std::string &smid_appendix,
-                     const boost::uint32_t &rid)
+                     const std::string &smid_appendix)
     : pki::Packet(smid_appendix.empty() ? MID : SMID),
       username_(username),
       pin_(pin),
       smid_appendix_(smid_appendix),
-      rid_(rid),
+      rid_(0),
       encrypted_rid_(),
       salt_(),
       secure_password_() {
@@ -154,15 +202,31 @@ void MidPacket::Initialise() {
                 crypto_obj_.Hash(username_, "", crypto::STRING_STRING, false) +
                 crypto_obj_.Hash(pin_, "", crypto::STRING_STRING, false) +
                 smid_appendix_, "", crypto::STRING_STRING, false);
-    if (rid_ == 0)  // Only initialising in order to parse rid.
-      return;
-    encrypted_rid_ =
-        crypto_obj_.SymmEncrypt(boost::lexical_cast<std::string>(rid_), "",
-                                crypto::STRING_STRING, secure_password_);
   }
   catch(const std::exception &e) {
 #ifdef DEBUG
     printf("MidPacket::Initialise: %s\n", e.what());
+#endif
+    name_.clear();
+  }
+  if (name_.empty())
+    Clear();
+}
+
+void MidPacket::SetRid(const boost::uint32_t rid) {
+  rid_ = rid;
+  try {
+    if (rid_ == 0) {
+      encrypted_rid_.clear();
+    } else {
+      encrypted_rid_ =
+          crypto_obj_.SymmEncrypt(boost::lexical_cast<std::string>(rid_), "",
+                                  crypto::STRING_STRING, secure_password_);
+    }
+  }
+  catch(const std::exception &e) {
+#ifdef DEBUG
+    printf("MidPacket::SetRid: %s\n", e.what());
 #endif
     encrypted_rid_.clear();
   }
@@ -297,55 +361,6 @@ void TmidPacket::Clear() {
   salt_.clear();
   secure_password_.clear();
   encrypted_data_.clear();
-}
-
-
-
-MpidPacket::MpidPacket(const std::string &public_name,
-                       const std::string &public_key,
-                       const std::string &private_key)
-    : pki::Packet(MPID),
-      public_name_(public_name),
-      public_key_(public_key),
-      private_key_(private_key) {
-  Initialise();
-}
-
-void MpidPacket::Initialise() {
-  if (public_name_.empty() || public_key_.empty() || private_key_.empty())
-    return Clear();
-
-  try {
-    name_ = crypto_obj_.Hash(public_name_, "", crypto::STRING_STRING, false);
-  }
-  catch(const std::exception &e) {
-#ifdef DEBUG
-    printf("MpidPacket::Initialise: %s\n", e.what());
-#endif
-    name_.clear();
-  }
-  if (name_.empty())
-    Clear();
-}
-
-std::string MpidPacket::ParsePublicKey(
-    const std::string &serialised_mpid_packet) {
-  GenericPacket packet;
-  if (!packet.ParseFromString(serialised_mpid_packet)) {
-#ifdef DEBUG
-    printf("MpidPacket::ParsePublicKey: Bad packet, or user data empty.\n");
-#endif
-    return "";
-  } else {
-    return packet.data();
-  }
-}
-
-void MpidPacket::Clear() {
-  name_.clear();
-  public_name_.clear();
-  public_key_.clear();
-  private_key_.clear();
 }
 
 }  // namespace passport

@@ -21,20 +21,9 @@
 */
 
 #include "maidsafe/passport/systempackethandler.h"
+#include <cstdio>
 #include "maidsafe/passport/passportreturncodes.h"
-
-//#include <boost/filesystem.hpp>
-//#include <maidsafe/base/crypto.h>
-//#include <maidsafe/maidsafe-dht.h>
-//#include <maidsafe/base/utils.h>
-//
-//#include <algorithm>
-//#include <cctype>
-//#include <cstdio>
-//#include <exception>
-//#include <map>
-
-//#include "protobuf/datamaps.pb.h"
+#include "maidsafe/passport/signaturepacket.pb.h"
 
 
 namespace maidsafe {
@@ -75,6 +64,36 @@ boost::shared_ptr<pki::Packet> SystemPacketHandler::Packet(
   return (*it).second;
 }
 
+std::string SystemPacketHandler::SerialiseKeyring() {
+  Keyring keyring;
+  boost::mutex::scoped_lock lock(mutex_);
+  SystemPacketMap::iterator it = packets_.begin();
+  while (it != packets_.end()) {
+    if (IsSignature((*it).first, false)) {
+      boost::shared_static_cast<SignaturePacket>((*it).second)->
+          PutToKey(keyring.add_key());
+    }
+    ++it;
+  }
+  return keyring.SerializeAsString();
+}
+
+int SystemPacketHandler::ParseKeyring(const std::string &serialised_keyring) {
+  Keyring keyring;
+  if (!keyring.ParseFromString(serialised_keyring)) {
+#ifdef DEBUG
+    printf("SystemPacketHandler::ParseKeyring failed.\n");
+#endif
+    return kBadSerialisedKeyring;
+  }
+  boost::mutex::scoped_lock lock(mutex_);
+  bool success(true);
+  for (int i = 0; i < keyring.key_size(); ++i) {
+    boost::shared_ptr<SignaturePacket> sig(new SignaturePacket(keyring.key(i)));
+    success = success && AddPacket(sig, true);
+  }
+  return success ? kSuccess : kBadSerialisedKeyring;
+}
 
 /*
 int KeyAtlas::AddKey(const int &packet_type,
