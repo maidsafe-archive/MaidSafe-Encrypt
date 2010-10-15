@@ -1752,106 +1752,30 @@ void MaidsafeStoreManager::AddToWatchListStageTwo(
 
   data->chunk_info_holders = chunk_info_holders;
 
-  data->account_holders = account_holders_manager_.account_holder_group();
-  if (data->account_holders.size() < kUpperThreshold_) {
-#ifdef DEBUG
-    printf("In MSM::AddToWatchListStageTwo (%d), no account holders available."
-           "\n", kad_ops_->Port());
-#endif
-    // TODO(Team#) rather schedule retry dependent on AH manager update?
-    account_holders_manager_.Update();
-    tasks_handler_.NotifyTaskFailure(data->task_id, kStoreChunkError);
-    return;
-  }
-
-  // Set up holders for forthcoming ExpectAmendment RPCs
-  std::vector<ExpectAmendmentRequest> expect_amendment_requests;
-  if (GetExpectAmendmentRequests(data->store_data,
-      AmendAccountRequest::kSpaceTakenInc, data->account_holders,
-      data->chunk_info_holders, &expect_amendment_requests) != kSuccess) {
-#ifdef DEBUG
-    printf("In MSM::AddToWatchListStageTwo (%d), failed to generate EA "
-           "requests.\n", kad_ops_->Port());
-#endif
-    tasks_handler_.NotifyTaskFailure(data->task_id, kStoreChunkError);
-    return;
-  }
-
-  for (size_t i = 0; i < data->account_holders.size(); ++i) {
-    WatchListOpData::AccountDataHolder holder(
-        data->account_holders.at(i).node_id().String());
-    data->account_data_holders.push_back(holder);
-  }
-
-  // Send ExpectAmendment RPCs
-  boost::mutex::scoped_lock lock(data->mutex);
-  for (boost::uint16_t j = 0; j < data->account_holders.size(); ++j) {
-    google::protobuf::Closure* callback = google::protobuf::NewCallback(this,
-        &MaidsafeStoreManager::AddToWatchListStageThree, j, data);
-    client_rpcs_->ExpectAmendment(data->account_holders.at(j),
-        kad_ops_->AddressIsLocal(data->account_holders.at(j)),
-        udt_transport_.transport_id(),
-        &expect_amendment_requests.at(j),
-        &data->account_data_holders.at(j).response,
-        data->account_data_holders.at(j).controller.get(), callback);
-  }
+  ExpectAmendment(data->store_data->data_name,
+                  AmendAccountRequest::kSpaceTakenInc,
+                  data->store_data->key_id,
+                  data->store_data->public_key,
+                  data->store_data->public_key_signature,
+                  data->store_data->private_key,
+                  data->store_data->dir_type,
+                  chunk_info_holders,
+                  boost::bind(&MaidsafeStoreManager::AddToWatchListStageThree,
+                              this, _1, data));
 }
 
 void MaidsafeStoreManager::AddToWatchListStageThree(
-    boost::uint16_t index,
+    const ReturnCode &result,
     boost::shared_ptr<WatchListOpData> data) {
   boost::mutex::scoped_lock lock(data->mutex);
+  if (result != kSuccess) {
 #ifdef DEBUG
-//   printf("In MSM::AddToWatchListStageThree (%d) for chunk %s\n",
-//          kad_ops_->Port(), HexSubstr(data->store_data->data_name).c_str());
-#endif
-  if (data->expect_amendment_done)
-    return;
-  ++data->returned_count;
-  WatchListOpData::AccountDataHolder &holder =
-      data->account_data_holders.at(index);
-
-  if (!holder.response.IsInitialized()) {
-#ifdef DEBUG
-    printf("In MSM::AddToWatchListStageThree (%d), response %u is "
-           "uninitialised.\n", kad_ops_->Port(), index);
-#endif
-    account_holders_manager_.ReportFailure(holder.node_id);
-  } else if (holder.response.result() != kAck) {
-#ifdef DEBUG
-    printf("In MSM::AddToWatchListStageThree (%d), response %u has result "
-           "%i.\n", kad_ops_->Port(), index, holder.response.result());
-#endif
-  } else if (holder.response.pmid() != holder.node_id) {
-#ifdef DEBUG
-    printf("In MSM::AddToWatchListStageThree (%d), resp %u from %s has pmid "
-           "%s.\n", kad_ops_->Port(), index,
-           HexSubstr(holder.node_id).c_str(),
-           HexSubstr(holder.response.pmid()).c_str());
-#endif
-    // TODO(Fraser#5#): 2010-01-08 - Send alert to holder.node_id's A/C holders
-  } else {
-    ++data->success_count;
-  }
-
-  if (data->returned_count < kUpperThreshold_ ||
-      (data->returned_count < data->account_holders.size() &&
-       data->success_count < kUpperThreshold_)) {
-    // still waiting for consensus
-    return;
-  } else if (data->success_count < kUpperThreshold_) {
-    // failed to get enough positive responses
-#ifdef DEBUG
-    printf("In MSM::AddToWatchListStageThree (%d), ExpectAmendment failed.\n",
+    printf("In MSM::AddToWatchListStageThree (%d), ExpectAmendment failed.\n", 
            kad_ops_->Port());
 #endif
-    tasks_handler_.NotifyTaskFailure(data->task_id, kRequestFailedConsensus);
+    tasks_handler_.NotifyTaskFailure(data->task_id, result);
     return;
   }
-
-  data->expect_amendment_done = true;
-  data->returned_count = data->success_count = 0;
-  data->consensus_upload_copies = -1;
 
   // Set up holders for forthcoming AddToWatchList RPCs
   std::vector<AddToWatchListRequest> add_to_watch_list_requests;
@@ -1935,6 +1859,7 @@ void MaidsafeStoreManager::AddToWatchListStageFour(
     GetFilteredAverage(data->payment_values, &payment, &n);
     account_status_manager_.AmendmentDone(AmendAccountRequest::kSpaceTakenInc,
                                           payment);
+    // TODO(#Steve) if no payment, success for confirmation task
 
     if (data->consensus_upload_copies > 0) {
       // create chunk copy master task, depends on success of copy uploads
@@ -1969,6 +1894,153 @@ void MaidsafeStoreManager::AddToWatchListStageFour(
     tasks_handler_.NotifyTaskFailure(data->task_id,
                                      static_cast<ReturnCode>(result));
   }
+}
+
+void MaidsafeStoreManager::ExpectAmendment(
+    const std::string &chunkname,
+    const AmendAccountRequest::Amendment &amendment_type,
+    const std::string &pmid,
+    const std::string &public_key,
+    const std::string &public_key_signature,
+    const std::string &private_key,
+    DirType dir_type,
+    const std::vector<kad::Contact> &chunk_info_holders,
+    const VoidFuncOneInt &callback) {
+  std::vector<kad::Contact> account_holders =
+      account_holders_manager_.account_holder_group();
+  if (account_holders.size() < kUpperThreshold_) {
+#ifdef DEBUG
+    printf("In MSM::ExpectAmendment (%d), no account holders available.\n",
+            kad_ops_->Port());
+#endif
+    // TODO(Team#) rather schedule retry dependent on AH manager update?
+    account_holders_manager_.Update();
+    callback(kFindAccountHoldersError);
+    return;
+  }
+
+  if (chunk_info_holders.empty()) {
+#ifdef DEBUG
+    printf("In MSM::ExpectAmendment (%d), no Chunk Info Holders passed.\n",
+            kad_ops_->Port());
+#endif
+    callback(kGeneralError);
+    return;
+  }
+
+  std::vector<ExpectAmendmentRequest> expect_amendment_requests;
+  ExpectAmendmentRequest request;
+  request.set_amendment_type(amendment_type);
+  request.set_chunkname(chunkname);
+  request.set_account_pmid(pmid);
+  request.set_public_key(public_key);
+  request.set_public_key_signature(public_key_signature);
+  for (size_t i = 0; i < chunk_info_holders.size(); ++i) {
+    request.add_amender_pmids(
+        chunk_info_holders.at(i).node_id().String());
+  }
+  for (size_t i = 0; i < account_holders.size(); ++i) {
+    std::string signature;
+    GetRequestSignature(chunkname, dir_type,
+                        account_holders.at(i).node_id().String(),
+                        public_key, public_key_signature, private_key,
+                        &signature);
+    if (signature.empty()) {
+#ifdef DEBUG
+      printf("In MSM::ExpectAmendment (%d), failed to generate request "
+             "signature.\n", kad_ops_->Port());
+#endif
+      callback(kGetRequestSigError);
+      return;
+    }
+    request.set_request_signature(signature);
+    expect_amendment_requests.push_back(request);
+  }
+
+  boost::shared_ptr<ExpectAmendmentOpData> data(new ExpectAmendmentOpData);
+  data->callback = callback;
+
+  // Set up holders for forthcoming RPCs
+  for (size_t i = 0; i < account_holders.size(); ++i) {
+    ExpectAmendmentOpData::AccountDataHolder holder(
+        account_holders.at(i).node_id().String());
+    data->account_data_holders.push_back(holder);
+  }
+
+  // Send ExpectAmendment RPCs
+  boost::mutex::scoped_lock lock(data->mutex);
+  for (size_t j = 0; j < account_holders.size(); ++j) {
+    google::protobuf::Closure* callback = google::protobuf::NewCallback(this,
+        &MaidsafeStoreManager::ExpectAmendmentCallback, j, data);
+    client_rpcs_->ExpectAmendment(account_holders.at(j),
+        kad_ops_->AddressIsLocal(account_holders.at(j)),
+        udt_transport_.transport_id(), &expect_amendment_requests.at(j),
+        &data->account_data_holders.at(j).response,
+        data->account_data_holders.at(j).controller.get(), callback);
+  }
+}
+
+void MaidsafeStoreManager::ExpectAmendmentCallback(
+    size_t index,
+    boost::shared_ptr<ExpectAmendmentOpData> data) {
+  ReturnCode result(kGeneralError);
+  VoidFuncOneInt callback;
+  {
+    boost::mutex::scoped_lock lock(data->mutex);
+#ifdef DEBUG
+//     printf("In MSM::ExpectAmendmentCallback (%d) for chunk %s\n",
+//            kad_ops_->Port(), HexSubstr(data->chunkname).c_str());
+#endif
+    if (data->success_count >= kUpperThreshold_)
+      return;
+    ++data->returned_count;
+    ExpectAmendmentOpData::AccountDataHolder &holder =
+        data->account_data_holders.at(index);
+
+    if (!holder.response.IsInitialized()) {
+#ifdef DEBUG
+      printf("In MSM::ExpectAmendmentCallback (%d), response %u is "
+            "uninitialised.\n", kad_ops_->Port(), index);
+#endif
+      account_holders_manager_.ReportFailure(holder.node_id);
+    } else if (holder.response.result() != kAck) {
+#ifdef DEBUG
+      printf("In MSM::ExpectAmendmentCallback (%d), response %u has result "
+            "%i.\n", kad_ops_->Port(), index, holder.response.result());
+#endif
+    } else if (holder.response.pmid() != holder.node_id) {
+#ifdef DEBUG
+      printf("In MSM::ExpectAmendmentCallback (%d), resp %u from %s has pmid "
+            "%s.\n", kad_ops_->Port(), index,
+            HexSubstr(holder.node_id).c_str(),
+            HexSubstr(holder.response.pmid()).c_str());
+#endif
+      // TODO(Fraser#5#): 2010-01-08 - Send alert to holder.node_id's A/C hldrs
+    } else {
+      ++data->success_count;
+    }
+
+    if (data->returned_count < kUpperThreshold_ ||
+        (data->returned_count < data->account_data_holders.size() &&
+        data->success_count < kUpperThreshold_)) {
+      // still waiting for consensus
+      return;
+    } else if (data->success_count < kUpperThreshold_) {
+      // failed to get enough positive responses
+#ifdef DEBUG
+      printf("In MSM::ExpectAmendmentCallback (%d), not enough positive "
+             "responses.\n", kad_ops_->Port());
+#endif
+      result = kRequestFailedConsensus;
+    } else {
+      result = kSuccess;
+    }
+
+    callback = data->callback;
+  }
+
+  if (callback)
+    callback(result);
 }
 
 int MaidsafeStoreManager::AssessUploadCounts(
@@ -2102,39 +2174,6 @@ int MaidsafeStoreManager::GetStoreRequests(
       store_data->public_key_signature);
   store_chunk_request.set_request_signature(request_signature);
   store_chunk_request.set_data_type(data_type);
-  return kSuccess;
-}
-
-int MaidsafeStoreManager::GetExpectAmendmentRequests(
-    boost::shared_ptr<StoreData> store_data,
-    const AmendAccountRequest::Amendment amendment_type,
-    const std::vector<kad::Contact> &account_holders,
-    const std::vector<kad::Contact> &chunk_info_holders,
-    std::vector<ExpectAmendmentRequest> *expect_amendment_requests) {
-  expect_amendment_requests->clear();
-  ExpectAmendmentRequest request;
-  request.set_amendment_type(amendment_type);
-  request.set_chunkname(store_data->data_name);
-  request.set_account_pmid(store_data->key_id);
-  request.set_public_key(store_data->public_key);
-  request.set_public_key_signature(store_data->public_key_signature);
-  for (size_t i = 0; i < chunk_info_holders.size(); ++i) {
-    request.add_amender_pmids(
-        chunk_info_holders.at(i).node_id().String());
-  }
-  for (size_t i = 0; i < account_holders.size(); ++i) {
-    std::string signature;
-    GetRequestSignature(store_data->data_name, store_data->dir_type,
-        account_holders.at(i).node_id().String(),
-        store_data->public_key, store_data->public_key_signature,
-        store_data->private_key, &signature);
-    if (signature.empty()) {
-      expect_amendment_requests->clear();
-      return kGetRequestSigError;
-    }
-    request.set_request_signature(signature);
-    expect_amendment_requests->push_back(request);
-  }
   return kSuccess;
 }
 
@@ -2629,8 +2668,6 @@ void MaidsafeStoreManager::RemoveFromWatchListStageTwo(
     const ReturnCode &result,
     const std::vector<kad::Contact> &chunk_info_holders,
     boost::shared_ptr<WatchListOpData> data) {
-  kad::FindResponse find_response;
-
   if (result != kSuccess || chunk_info_holders.size() < kUpperThreshold_) {
 #ifdef DEBUG
     printf("In MSM::RemoveFromWatchListStageTwo (%d), could not find chunk "
@@ -2642,107 +2679,34 @@ void MaidsafeStoreManager::RemoveFromWatchListStageTwo(
     return;
   }
 
-  for (int i = 0; i < find_response.closest_nodes_size(); ++i) {
-    kad::Contact contact;
-    contact.ParseFromString(find_response.closest_nodes(i));
-    data->chunk_info_holders.push_back(contact);
-  }
+  data->chunk_info_holders = chunk_info_holders;
 
-  data->account_holders = account_holders_manager_.account_holder_group();
-  if (data->account_holders.size() < kUpperThreshold_) {
-#ifdef DEBUG
-    printf("In MSM::RemoveFromWatchListStageTwo (%d), no account holders "
-           "available.\n", kad_ops_->Port());
-#endif
-    // TODO(Team#) rather schedule retry dependent on AH manager update?
-    account_holders_manager_.Update();
-    tasks_handler_.NotifyTaskFailure(data->task_id, kDeleteChunkError);
-    return;
-  }
-
-  // Set up holders for forthcoming ExpectAmendment RPCs
-  std::vector<ExpectAmendmentRequest> expect_amendment_requests;
-  if (GetExpectAmendmentRequests(data->store_data,
-      AmendAccountRequest::kSpaceTakenDec, data->account_holders,
-      data->chunk_info_holders, &expect_amendment_requests) != kSuccess) {
-#ifdef DEBUG
-    printf("In MSM::RemoveFromWatchListStageTwo (%d), failed to generate EA "
-           "requests.\n", kad_ops_->Port());
-#endif
-    tasks_handler_.NotifyTaskFailure(data->task_id, kDeleteChunkError);
-    return;
-  }
-
-  for (size_t i = 0; i < data->account_holders.size(); ++i) {
-    WatchListOpData::AccountDataHolder holder(
-        data->account_holders.at(i).node_id().String());
-    data->account_data_holders.push_back(holder);
-  }
-
-  // Send ExpectAmendment RPCs
-  boost::mutex::scoped_lock lock(data->mutex);
-  for (boost::uint16_t j = 0; j < data->account_holders.size(); ++j) {
-    google::protobuf::Closure* callback = google::protobuf::NewCallback(this,
-        &MaidsafeStoreManager::RemoveFromWatchListStageThree, j, data);
-    client_rpcs_->ExpectAmendment(data->account_holders.at(j),
-        kad_ops_->AddressIsLocal(data->account_holders.at(j)),
-        udt_transport_.transport_id(),
-        &expect_amendment_requests.at(j),
-        &data->account_data_holders.at(j).response,
-        data->account_data_holders.at(j).controller.get(), callback);
-  }
+  // TODO(Steve#) don't expect amendment in every case (long WL or last entry)
+  ExpectAmendment(data->store_data->data_name,
+                  AmendAccountRequest::kSpaceTakenDec,
+                  data->store_data->key_id,
+                  data->store_data->public_key,
+                  data->store_data->public_key_signature,
+                  data->store_data->private_key,
+                  data->store_data->dir_type,
+                  chunk_info_holders,
+                  boost::bind(
+                      &MaidsafeStoreManager::RemoveFromWatchListStageThree,
+                      this, _1, data));
 }
 
 void MaidsafeStoreManager::RemoveFromWatchListStageThree(
-    boost::uint16_t index,
+    const ReturnCode &result,
     boost::shared_ptr<WatchListOpData> data) {
   boost::mutex::scoped_lock lock(data->mutex);
-  if (data->expect_amendment_done)
-    return;
-  ++data->returned_count;
-  WatchListOpData::AccountDataHolder &holder =
-      data->account_data_holders.at(index);
-
-  if (!holder.response.IsInitialized()) {
+  if (result != kSuccess) {
 #ifdef DEBUG
-    printf("In MSM::RemoveFromWatchListStageThree (%d), response %u is "
-           "uninitialised.\n", kad_ops_->Port(), index);
+    printf("In MSM::RemoveFromWatchListStageThree (%d), ExpectAmendment "
+           "failed.\n", kad_ops_->Port());
 #endif
-    account_holders_manager_.ReportFailure(holder.node_id);
-  } else if (holder.response.result() != kAck) {
-#ifdef DEBUG
-    printf("In MSM::RemoveFromWatchListStageThree (%d), response %u has result "
-           "%i.\n", kad_ops_->Port(), index, holder.response.result());
-#endif
-  } else if (holder.response.pmid() != holder.node_id) {
-#ifdef DEBUG
-    printf("In MSM::RemoveFromWatchListStageThree (%d), resp %u from %s has "
-           "pmid %s.\n", kad_ops_->Port(), index,
-           HexSubstr(holder.node_id).c_str(),
-           HexSubstr(holder.response.pmid()).c_str());
-#endif
-    // TODO(Fraser#5#): 2010-01-08 - Send alert to holder.node_id's A/C holders
-  } else {
-    ++data->success_count;
-  }
-
-  if (data->returned_count < kUpperThreshold_ ||
-      (data->returned_count < data->account_holders.size() &&
-       data->success_count < kUpperThreshold_)) {
-    // still waiting for consensus
-    return;
-  } else if (data->success_count < kUpperThreshold_) {
-    // failed to get enough positive responses
-#ifdef DEBUG
-    printf("In MSM::RemoveFromWatchListStageThree (%d), ExpectAmendment failed."
-           "\n", kad_ops_->Port());
-#endif
-    tasks_handler_.NotifyTaskFailure(data->task_id, kRequestFailedConsensus);
+    tasks_handler_.NotifyTaskFailure(data->task_id, result);
     return;
   }
-
-  data->expect_amendment_done = true;
-  data->returned_count = data->success_count = 0;
 
   // Set up holders for forthcoming RemoveFromWatchList RPCs
   std::vector<RemoveFromWatchListRequest> remove_from_watch_list_requests;

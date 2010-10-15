@@ -45,6 +45,37 @@ static const boost::uint8_t upper_threshold(static_cast<boost::uint8_t>
 static const boost::uint8_t lower_threshold(kMinSuccessfulPecentageStore > .25 ?
              static_cast<boost::uint8_t >(K * .25) : upper_threshold);
 
+class ResultCallbackHandler {
+ public:
+  ResultCallbackHandler()
+    : mutex_(),
+      cond_var_(),
+      result_(maidsafe::kGeneralError),
+      result_received_(false) {}
+  void Callback(const maidsafe::ReturnCode &result) {
+    boost::mutex::scoped_lock lock(mutex_);
+    result_ = result;
+    result_received_ = true;
+    cond_var_.notify_one();
+  }
+  maidsafe::ReturnCode AwaitResult() {
+    boost::mutex::scoped_lock lock(mutex_);
+    cond_var_.wait(lock, boost::bind(&ResultCallbackHandler::Done, this));
+    result_received_ = false;
+    return result_;
+  }
+ private:
+  ResultCallbackHandler &operator=(const ResultCallbackHandler&);
+  ResultCallbackHandler(const ResultCallbackHandler&);
+  bool Done() {
+    return result_received_;
+  }
+  boost::mutex mutex_;
+  boost::condition_variable cond_var_;
+  maidsafe::ReturnCode result_;
+  bool result_received_;
+};
+
 void DoneRun(const int &min_delay,
              const int &max_delay,
              google::protobuf::Closure* callback) {
@@ -73,6 +104,28 @@ void ConditionNotifyNoFlag(int set_return,
   boost::lock_guard<boost::mutex> lock(generic_cond_data->cond_mutex);
   *return_value = set_return;
   generic_cond_data->cond_variable->notify_all();
+}
+
+void ExpectAmendmentCallback(bool initialise_response,
+                             const int &result,
+                             const std::string &pmid,
+                             maidsafe::ExpectAmendmentResponse *response,
+                             google::protobuf::Closure* callback) {
+  if (initialise_response) {
+    response->set_result(result);
+    response->set_pmid(pmid);
+  }
+  callback->Run();
+}
+
+void ThreadedExpectAmendmentCallback(bool initialise_response,
+                                     const int &result,
+                                     const std::string &pmid,
+                                     maidsafe::ExpectAmendmentResponse *rsp,
+                                     google::protobuf::Closure *callback,
+                                     base::Threadpool *tp) {
+  tp->EnqueueTask(boost::bind(&ExpectAmendmentCallback, initialise_response,
+                              result, pmid, rsp, callback));
 }
 
 void WatchListOpStageThree(bool initialise_response,
@@ -485,6 +538,124 @@ class MockClientRpcs : public ClientRpcs {
 
 MATCHER_P(EqualsContact, kad_contact, "") {
   return (arg.Equals(kad_contact));
+}
+
+TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_ExpectAmendment) {
+  MockMsmKeyUnique msm(client_chunkstore_);
+  boost::shared_ptr<MockClientRpcs> mock_rpcs(
+      new MockClientRpcs(&msm.transport_handler_, &msm.channel_manager_));
+  msm.client_rpcs_ = mock_rpcs;
+  boost::shared_ptr<MockKadOps> mko(new MockKadOps(&msm.transport_handler_,
+      &msm.channel_manager_, kad::CLIENT, "", "", false, false, test_msm::K,
+      client_chunkstore_));
+  msm.kad_ops_ = mko;
+  ASSERT_TRUE(client_chunkstore_->is_initialised());
+
+  std::string chunk_value = base::RandomString(1234);
+  std::string chunk_name = crypto_.Hash(chunk_value, "", crypto::STRING_STRING,
+                                        false);
+
+  std::string pmid, public_key, public_key_signature, private_key;
+  PdUtils pd_utils;
+  pd_utils.GetChunkSignatureKeys(PRIVATE, "", &pmid, &public_key,
+                                 &public_key_signature, &private_key);
+
+  std::vector<kad::Contact> account_holders, chunk_info_holders, empty_contacts;
+  for (int i = 0; i < 2 * test_msm::K; ++i) {
+    std::string name(crypto_.Hash(base::IntToString(i) + base::RandomString(23),
+                                  "", crypto::STRING_STRING, false));
+    kad::Contact contact(name, "127.0.0.1", 8000 + i);
+    if (i < test_msm::K)
+      account_holders.push_back(contact);
+    else
+      chunk_info_holders.push_back(contact);
+  }
+  ASSERT_EQ(test_msm::K, account_holders.size());
+  ASSERT_EQ(test_msm::K, chunk_info_holders.size());
+
+  test_msm::ResultCallbackHandler cbh;
+  VoidFuncOneInt cbh_functor(boost::bind(
+      &test_msm::ResultCallbackHandler::Callback, &cbh, _1));
+  base::Threadpool tp(2);
+
+  // Expectations
+  EXPECT_CALL(*mko, AddressIsLocal(testing::An<const kad::Contact&>()))
+      .WillRepeatedly(testing::Return(true));
+  for (size_t i = 0; i < account_holders.size(); ++i) {
+    EXPECT_CALL(*mock_rpcs, ExpectAmendment(
+        EqualsContact(account_holders.at(i)),
+        testing::_,
+        testing::_,
+        testing::_,
+        testing::_,
+        testing::_,
+        testing::_))
+            .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
+                boost::bind(&test_msm::ThreadedExpectAmendmentCallback,
+                    i + 1 < test_msm::upper_threshold,
+                    kAck,
+                    account_holders.at(i).node_id().String(),
+                    _1, _2, &tp))))
+            .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
+                boost::bind(&test_msm::ThreadedExpectAmendmentCallback,
+                    true,
+                    i + 1 < test_msm::upper_threshold ? kAck : kNack,
+                    account_holders.at(i).node_id().String(),
+                    _1, _2, &tp))))
+            .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
+                boost::bind(&test_msm::ThreadedExpectAmendmentCallback,
+                    true,
+                    kAck,
+                    account_holders.at((i + 1) % 
+                        account_holders.size()).node_id().String(),
+                    _1, _2, &tp))))
+            .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
+                boost::bind(&test_msm::ThreadedExpectAmendmentCallback,
+                    true,
+                    kAck,
+                    account_holders.at(i).node_id().String(),
+                    _1, _2, &tp))));
+  }
+
+  // no account holders
+  ASSERT_EQ(0, msm.account_holders_manager_.account_holder_group().size());
+  msm.ExpectAmendment(chunk_name, AmendAccountRequest::kSpaceGivenDec, pmid,
+                      public_key, public_key_signature, private_key, PRIVATE,
+                      chunk_info_holders, cbh_functor);
+  ASSERT_EQ(kFindAccountHoldersError, cbh.AwaitResult());
+
+  {
+    boost::mutex::scoped_lock lock(msm.account_holders_manager_.mutex_);
+    // first try shouldn't have triggered an update, but make sure
+    ASSERT_FALSE(msm.account_holders_manager_.update_in_progress_);
+    msm.account_holders_manager_.account_holder_group_ = account_holders;
+  }
+
+  // no chunk info holders
+  msm.ExpectAmendment(chunk_name, AmendAccountRequest::kSpaceGivenDec, pmid,
+                      public_key, public_key_signature, private_key, PRIVATE,
+                      empty_contacts, cbh_functor);
+  ASSERT_EQ(kGeneralError, cbh.AwaitResult());
+
+  // can't sign request
+  msm.ExpectAmendment(chunk_name, AmendAccountRequest::kSpaceGivenDec, pmid,
+                      public_key, public_key_signature, "", PRIVATE,
+                      chunk_info_holders, cbh_functor);
+  ASSERT_EQ(kGetRequestSigError, cbh.AwaitResult());
+
+  // not enough positive responses - uninitialised, NAck, wrong IDs
+  for (int i = 0; i < 3; ++i) {
+    msm.ExpectAmendment(chunk_name, AmendAccountRequest::kSpaceGivenDec, pmid,
+                        public_key, public_key_signature, private_key, PRIVATE,
+                        chunk_info_holders, cbh_functor);
+    ASSERT_EQ(kRequestFailedConsensus, cbh.AwaitResult());
+  }
+
+  // success
+  msm.ExpectAmendment(chunk_name, AmendAccountRequest::kSpaceGivenDec, pmid,
+                      public_key, public_key_signature, private_key, PRIVATE,
+                      chunk_info_holders, cbh_functor);
+  ASSERT_EQ(kSuccess, cbh.AwaitResult());
 }
 
 TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AddToWatchList) {
