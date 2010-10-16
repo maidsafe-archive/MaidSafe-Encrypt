@@ -71,8 +71,8 @@ int Passport::SetNewUserData(const std::string &password,
 
   // Create TMID
   boost::shared_ptr<TmidPacket> new_tmid(
-      new TmidPacket(retrieved_mid->username(), retrieved_mid->pin(), password,
-                     rid, plain_data, false));
+      new TmidPacket(retrieved_mid->username(), retrieved_mid->pin(), rid,
+                     false, password, plain_data));
   bool success(!retrieved_mid->name().empty() && !tmid->name().empty());
   if (success)
     success = packet_handler_.AddPacket(tmid, false);
@@ -134,8 +134,8 @@ int Passport::UpdateUserData(const std::string &plain_data,
   if (!retrieved_tmid.get())
     return kNoTmid;
   boost::shared_ptr<TmidPacket> tmid(
-      new TmidPacket(retrieved_tmid->username(), retrieved_tmid->pin(),
-                     retrieved_tmid->password(), new_rid, plain_data, false));
+      new TmidPacket(retrieved_tmid->username(), retrieved_tmid->pin(), new_rid,
+                     false, retrieved_tmid->password(), plain_data));
   bool success(!tmid->name().empty());
   if (success) {
     retrieved_tmid->SetToSurrogate();
@@ -170,8 +170,7 @@ int Passport::UpdateUserData(const std::string &plain_data,
   }
 }
 
-int Passport::InitialiseTmid(const std::string &password,
-                             bool surrogate,
+int Passport::InitialiseTmid(bool surrogate,
                              const std::string &serialised_mid_packet,
                              std::string *tmid_name) {
   PacketType mid_type(MID);
@@ -184,7 +183,7 @@ int Passport::InitialiseTmid(const std::string &password,
   if (mid->ParseRid(serialised_mid_packet) == 0)
     return surrogate ? kBadSerialisedSmidRid : kBadSerialisedMidRid;
   boost::shared_ptr<TmidPacket> tmid(new TmidPacket(mid->username(), mid->pin(),
-                                     password, mid->rid(), "", surrogate));
+                                     mid->rid(), surrogate, "", ""));
   bool success(!tmid->name().empty());
   if (success)
     success = packet_handler_.AddPacket(tmid, false);
@@ -193,7 +192,8 @@ int Passport::InitialiseTmid(const std::string &password,
   return success ? kSuccess : kPassportError;
 }
 
-int Passport::GetUserData(bool surrogate,
+int Passport::GetUserData(const std::string &password,
+                          bool surrogate,
                           const std::string &serialised_tmid_packet,
                           std::string *plain_data) {
   PacketType tmid_type(TMID);
@@ -205,7 +205,7 @@ int Passport::GetUserData(bool surrogate,
     return surrogate ? kNoStmid : kNoTmid;
   if (!plain_data)
     return kPassportError;
-  *plain_data = tmid->ParsePlainData(serialised_tmid_packet);
+  *plain_data = tmid->ParsePlainData(password, serialised_tmid_packet);
   if (plain_data->empty())
     return surrogate ? kBadSerialisedStmidData : kBadSerialisedTmidData;
   else
@@ -218,10 +218,6 @@ std::string Passport::SerialiseKeyring() {
 
 int Passport::ParseKeyring(const std::string &serialised_keyring) {
   return packet_handler_.ParseKeyring(serialised_keyring);
-}
-
-void Passport::ClearKeyring() {
-  packet_handler_.ClearKeyring();
 }
 
 int Passport::InitialiseSignaturePacket(
@@ -287,8 +283,6 @@ int Passport::DoInitialiseSignaturePacket(
     return kPassportError;
   }
 }
-
-
 
 
 

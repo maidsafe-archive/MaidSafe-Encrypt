@@ -59,28 +59,24 @@ int Authentication::GetUserInfo(const std::string &username,
       passport_->SetInitialDetails(username, pin, &mid_name, &smid_name);
 
   if (result != kSuccess) {
-    user_info_result_ = kAuthenticationError;
-    get_smidtmid_result_ = kAuthenticationError;
+    tmid_op_status_ = kFailed;
+    stmid_result_ = kFailed;
     return kAuthenticationError;
+  } else {
+    tmid_op_status_ = kPendingMid;
+    stmid_result_ = kPendingMid;
   }
-  user_info_result_ = kPendingResult;
-  get_smidtmid_result_ = kPendingResult;
-
-  boost::shared_ptr<UserInfo> user_info(new UserInfo());
-  user_info->username = username;
-  user_info->pin = pin;
 
   store_manager_->LoadPacket(mid_name, boost::bind(
-      &Authentication::GetMidSmidCallback, this, _1, _2, false, user_info));
+      &Authentication::GetMidSmidCallback, this, _1, _2, false));
   store_manager_->LoadPacket(smid_name, boost::bind(
-      &Authentication::GetMidSmidCallback, this, _1, _2, true, user_info));
+      &Authentication::GetMidSmidCallback, this, _1, _2, true));
 
   bool success(true);
   try {
-    boost::mutex::scoped_lock lock(user_info->mutex);
-    success = user_info->cond_var.timed_wait(lock,
-        boost::posix_time::milliseconds(60000),
-        boost::bind(&Authentication::ResultSet, this, &user_info_result_));
+    boost::mutex::scoped_lock lock(mutex_);
+    success = cond_var_.timed_wait(lock, boost::posix_time::milliseconds(60000),
+              boost::bind(&Authentication::TmidOpDone, this));
   }
   catch(const std::exception &e) {
 #ifdef DEBUG
@@ -89,252 +85,166 @@ int Authentication::GetUserInfo(const std::string &username,
   }
   if (!success) {
 #ifdef DEBUG
-    printf("Authentication::GetUserInfo: timed out.\n");
+    printf("Authentication::GetUserInfo: timed out waiting for TMID.\n");
 #endif
   }
   session_singleton_->SetUsername(username);
   session_singleton_->SetPin(pin);
-  return user_info_result_;
+  {
+    boost::mutex::scoped_lock lock(mutex_);
+    if (tmid_op_status_ == kSucceeded)
+      return kUserExists;
+    if (tmid_op_status_ == kNoUser) {
+      if (stmid_op_status_ == kNoUser || stmid_op_status_ == kFailed)
+        return kUserDoesntExist;
+    }
+  }
+  // Need to wait for STMID result to decide
+  try {
+    boost::mutex::scoped_lock lock(mutex_);
+    success = cond_var_.timed_wait(lock, boost::posix_time::milliseconds(60000),
+              boost::bind(&Authentication::StmidOpDone, this));
+  }
+  catch(const std::exception &e) {
+#ifdef DEBUG
+    printf("Authentication::GetUserInfo: %s\n", e.what());
+#endif
+  }
+  if (!success) {
+#ifdef DEBUG
+    printf("Authentication::GetUserInfo: timed out waiting for STMID.\n");
+#endif
+  }
+  boost::mutex::scoped_lock lock(mutex_);
+  if (stmid_op_status_ == kSucceeded)
+    return kUserExists;
+  if (stmid_op_status_ == kNoUser)
+    return kUserDoesntExist;
+  else
+    return kAuthenticationError;
 }
 
-void Authentication::GetMidSmidCallback(const std::vector<std::string> &values,
+void Authentication::GetMidTmidCallback(const std::vector<std::string> &values,
                                         const ReturnCode &return_code,
-                                        bool surrogate,
-                                        boost::shared_ptr<UserInfo> user_info) {
-  if (return_code != kSuccess || values.empty()) {
-    boost::mutex::scoped_lock lock(user_info->mutex);
-    bool no_mid_or_smid(false);
-    if (surrogate) {
-      user_info->serialised_smid_packet.clear();
-      if (user_info->serialised_mid_packet.empty())
-        no_mid_or_smid = true;
-    } else {
-      user_info->serialised_mid_packet.clear();
-      if (user_info->serialised_smid_packet.empty())
-        no_mid_or_smid = true;
-    }
-    if (no_mid_or_smid) {
-#ifdef DEBUG
-      printf("Authentication::GetMidSmidCallback - No MID or SMID.\n");
-#endif
-      user_info_result_ = kUserDoesntExist;
-      user_info->cond_var.notify_all();
-    }
-    return;
-  }
-
-
-
-
-
-  bool smid;
+                                        bool surrogate) {
+  OpStatus op_status;
   {
-    boost::mutex::scoped_lock lock(user_info->mutex);
-    smid = user_info->smid_calledback;
-  }
-
-  if (return_code != kSuccess) {
-    session_singleton_->SetMidRid(0);
-    {
-      boost::mutex::scoped_lock lock(user_info->mutex);
-      user_info->mid_calledback = true;
+    boost::mutex::scoped_lock lock(mutex_);
+    op_status = (surrogate ? stmid_op_status_ : tmid_op_status_);
+    if (return_code != kSuccess || values.empty()) {
+      if (surrogate) {
+        if (op_status == kPendingMid)
+          stmid_op_status_ = kNoUser;
+        else
+          stmid_op_status_ = kFailed;
+      } else {
+        if (op_status == kPendingMid)
+          tmid_op_status_ = kNoUser;
+        else
+          tmid_op_status_ = kFailed;
+      }
+      cond_var_.notify_all();
+      return;
     }
-    if (smid && session_singleton_->SmidRid() == 0) {
-#ifdef DEBUG
-      printf("Authentication::GetMidCallback - No MID or SMID.\n");
-#endif
-      user_info->functor(kUserDoesntExist);
-    }
-    return;
   }
 
 #ifdef DEBUG
   if (values.size() != 1)
     printf("Authentication::GetMidCallback - Values: %d\n", values.size());
 #endif
-  boost::shared_ptr<Packet> midPacket(PacketFactory::Factory(MID));
-  PacketParams params;
-  params["username"] = user_info->username;
-  params["pin"] = user_info->pin;
-  PacketParams info = midPacket->GetData(values[0], params);
-  session_singleton_->SetMidRid(boost::any_cast<boost::uint32_t>(info["data"]));
-  {
-    boost::mutex::scoped_lock lock(user_info->m);
-    user_info->mid_calledback = true;
-    smid = user_info->smid_calledback;
-  }
-  if (session_singleton_->MidRid() == 0) {
-    if (smid && session_singleton_->SmidRid() == 0) {
-      user_info->func(kUserDoesntExist);
+
+  if (op_status == kPendingMid) {
+    std::string tmid_name;
+    int result = passport->InitialiseTmid(surrogate, values.at(0), &tmid_name);
+    if (result != kSuccess) {
+#ifdef DEBUG
+      printf("Authentication::GetMidTmidCallback - error %i.\n", result);
+#endif
+      boost::mutex::scoped_lock lock(mutex_);
+      if (surrogate)
+        stmid_op_status_ = kFailed;
+      else
+        tmid_op_status_ = kFailed;
+      cond_var_.notify_all();
+      return;
     }
-    return;
+    boost::mutex::scoped_lock lock(mutex_);
+    if (surrogate)
+      stmid_op_status_ = kPendingTmid;
+    else
+      tmid_op_status_ = kPendingTmid;
+    store_manager_->LoadPacket(tmid_name,
+        boost::bind(&Authentication::GetTmidStmidCallback, this, _1, _2,
+                    surrogate, user_info));
   } else {
-    GetMidTmid(user_info);
-  }
-}
-
-void Authentication::GetSmidCallback(const std::vector<std::string> &values,
-                                     const ReturnCode &return_code,
-                                     boost::shared_ptr<UserInfo> user_info) {
-  bool mid;
-  {
-    boost::mutex::scoped_lock lock(user_info->m);
-    mid = user_info->mid_calledback;
-  }
-
-  if (return_code != kSuccess) {
-    session_singleton_->SetSmidRid(0);
-    {
-      boost::mutex::scoped_lock lock(user_info->m);
-      user_info->smid_calledback = true;
+    boost::mutex::scoped_lock lock(mutex_);
+    if (surrogate) {
+      serialised_stmid_packet_ = values.at(0);
+      user_info->stmid_callback_status = UserInfo::kSucceeded;
+      if (user_info->tmid_callback_status == UserInfo::kFailed) {
+        user_info_result_ = kUserExists;
+        cond_var_.notify_all();
+      }
+    } else {
+      serialised_tmid_packet_ = values.at(0);
+      user_info->tmid_callback_status = UserInfo::kSucceeded;
+      user_info_result_ = kUserExists;
+      cond_var_.notify_all();
     }
-    if (mid && session_singleton_->MidRid() == 0) {
-#ifdef DEBUG
-      printf("Authentication::GetSMidCallback - No MID or SMID.\n");
-#endif
-      user_info->func(kUserDoesntExist);
-    }
-    get_smidtmid_result_ = return_code;
-    return;
-  }
-
-#ifdef DEBUG
-  if (values.size() != 1)
-    printf("Authentication::GetSMidCallback - Values: %d\n", values.size());
-#endif
-  boost::shared_ptr<Packet> smidPacket(PacketFactory::Factory(SMID));
-  PacketParams params;
-  params["username"] = user_info->username;
-  params["pin"] = user_info->pin;
-  PacketParams info = smidPacket->GetData(values[0], params);
-  session_singleton_->SetSmidRid(boost::any_cast<boost::uint32_t>(info["data"]));
-  {
-    boost::mutex::scoped_lock lock(user_info->m);
-    user_info->smid_calledback = true;
-    mid = user_info->mid_calledback;
-  }
-  if (session_singleton_->SmidRid() == 0) {
-    if (mid && session_singleton_->MidRid() == 0) {
-      user_info->func(kUserDoesntExist);
-    }
-    get_smidtmid_result_ = return_code;
-    return;
-  } else {
-    GetSmidTmid(user_info);
   }
 }
-/*
-void Authentication::GetMidTmid(boost::shared_ptr<UserInfo> user_info) {
-  boost::shared_ptr<Packet> tmidPacket(PacketFactory::Factory(TMID));
-  PacketParams params;
-  params["username"] = user_info->username;
-  params["pin"] = user_info->pin;
-  params["rid"] = session_singleton_->MidRid();
-  store_manager_->LoadPacket(tmidPacket->PacketName(params),
-      boost::bind(&Authentication::GetMidTmidCallback, this, _1, _2, user_info));
-}
 
-void Authentication::GetSmidTmid(boost::shared_ptr<UserInfo> user_info) {
-  boost::shared_ptr<Packet> tmidPacket(PacketFactory::Factory(TMID));
-  PacketParams params;
-  params["username"] = user_info->username;
-  params["pin"] = user_info->pin;
-  params["rid"] = session_singleton_->SmidRid();
-  store_manager_->LoadPacket(tmidPacket->PacketName(params),
-      boost::bind(&Authentication::GetSmidTmidCallback, this, _1, _2, user_info));
-}
-
-void Authentication::GetMidTmidCallback(const std::vector<std::string> &values,
-                                        const ReturnCode &return_code,
-                                        boost::shared_ptr<UserInfo> user_info) {
-  bool smid;
-  {
-    boost::mutex::scoped_lock lock(user_info->m);
-    user_info->tmid_mid_calledback = true;
-    smid = user_info->tmid_smid_calledback;
-  }
-
-  if (return_code != kSuccess) {
-    session_singleton_->SetTmidContent("");
-    if (smid && session_singleton_->SmidTmidContent() == "") {
-#ifdef DEBUG
-      printf("Authentication::GetMidTmidCallback - No TMIDS found.\n");
-#endif
-      user_info->func(kAuthenticationError);
-    }
-    return;
-  }
-
-#ifdef DEBUG
-  if (values.size() != 1)
-    printf("Authentication::GetMidTmidCallback - Values: %d\n", values.size());
-#endif
-  session_singleton_->SetTmidContent(values[0]);
-  user_info->func(kUserExists);
-}
-
-void Authentication::GetSmidTmidCallback(const std::vector<std::string> &values,
-                                         const ReturnCode &return_code,
-                                         boost::shared_ptr<UserInfo> user_info) {
-  bool mid;
-  {
-    boost::mutex::scoped_lock lock(user_info->m);
-    user_info->tmid_smid_calledback = true;
-    mid = user_info->tmid_mid_calledback;
-  }
-
-  if (return_code != kSuccess) {
-    session_singleton_->SetTmidContent("");
-    if (mid && session_singleton_->TmidContent() == "") {
-#ifdef DEBUG
-      printf("Authentication::GetSmidTmidCallback - No TMIDS found.\n");
-#endif
-      user_info->func(kAuthenticationError);
-    }
-    get_smidtmid_result_ = return_code;
-    return;
-  }
-
-#ifdef DEBUG
-  if (values.size() != 1)
-    printf("Authentication::GetSmidTmidCallback - Values: %d\n", values.size());
-#endif
-  session_singleton_->SetSmidTmidContent(values[0]);
-  get_smidtmid_result_ = return_code;
-}
 
 int Authentication::GetUserData(const std::string &password,
-                                std::string *ser_da) {
+                                std::string *serialised_data_atlas) {
   //  still have not recovered the tmid
-  crypto::RsaKeyPair kp;
-  boost::shared_ptr<Packet> tmidPacket(PacketFactory::Factory(TMID));
-  PacketParams params;
-  params["password"] = password;
-  params["rid"] = session_singleton_->MidRid();
-  PacketParams rec_data = tmidPacket->GetData(session_singleton_->TmidContent(), params);
-  *ser_da = boost::any_cast<std::string>(rec_data["data"]);
-
+  int result = passport->GetUserData(password, false, serialised_tmid_packet_,
+                                     serialised_data_atlas);
   DataMap dm;
-  if (!dm.ParseFromString(*ser_da)) {
+  if (result != kSuccess || !dm.ParseFromString(*serialised_data_atlas)) {
 #ifdef DEBUG
-    printf("Authentication::GetUserData - Ser DM doesn't parse (%s).\n",
-           HexSubstr(session_singleton_->TmidContent()).c_str());
+      printf("Authentication::GetUserData - TMID error %i.\n", result);
 #endif
-    while (get_smidtmid_result_ == kPendingResult)
-      boost::this_thread::sleep(boost::posix_time::milliseconds(50));
-
-    if (get_smidtmid_result_ == kSuccess) {
-      rec_data = tmidPacket->GetData(session_singleton_->SmidTmidContent(), params);
-      *ser_da = boost::any_cast<std::string>(rec_data["data"]);
-      if (dm.ParseFromString(*ser_da)) {
+    try {
+      boost::mutex::scoped_lock lock(mutex_);
+      tmid_op_status_ = kFailed;
+      serialised_tmid_packet_.clear();
+      success = cond_var_.timed_wait(lock,
+          boost::posix_time::milliseconds(60000),
+          boost::bind(&Authentication::SerialisedStmidPacketSet, this));
+    }
+    catch(const std::exception &e) {
+#ifdef DEBUG
+      printf("Authentication::GetUserInfo: %s\n", e.what());
+#endif
+    }
+    if (!success) {
+#ifdef DEBUG
+      printf("Authentication::GetUserInfo: timed out waiting for STMID.\n");
+#endif
+    }
+    if (stmid_op_status_ == kSucceeded) {
+      result = passport->GetUserData(password, true, serialised_stmid_packet_,
+                                     serialised_data_atlas);
+      if (result != kSuccess || !dm.ParseFromString(*serialised_data_atlas)) {
+#ifdef DEBUG
+        printf("Authentication::GetUserData - STMID error %i.\n", result);
+#endif
+        boost::mutex::scoped_lock lock(mutex_);
+        stmid_op_status_ = kFailed;
+        serialised_stmid_packet_.clear();
+      } else {
         session_singleton_->SetPassword(password);
+#ifdef DEBUG
+        printf("Authentication::GetUserData - Using STMID\n");
+#endif
         return kSuccess;
       }
     }
     return kPasswordFailure;
   }
 #ifdef DEBUG
-  printf("Authentication::GetUserData - Using MID TMID\n");
+  printf("Authentication::GetUserData - Using TMID\n");
 #endif
   session_singleton_->SetPassword(password);
   return kSuccess;
@@ -342,6 +252,35 @@ int Authentication::GetUserData(const std::string &password,
 
 int Authentication::CreateUserSysPackets(const std::string &username,
                                          const std::string &pin) {
+  bool already_initialised(false);
+  {
+    boost::mutex::scoped_lock lock(mutex_);
+    if (tmid_op_status_ == kNoUser) {
+      if (stmid_op_status_ == kNoUser || stmid_op_status_ == kFailed)
+        already_initialised = true;
+    } else if (tmid_op_status_ == kFailed) {
+      if (stmid_op_status_ == kNoUser || stmid_op_status_ == kFailed)
+        already_initialised = true;
+    }
+  }
+
+  if (!already_initialised) {
+    std::string mid_name, smid_name;
+    int result =
+        passport_->SetInitialDetails(username, pin, &mid_name, &smid_name);
+
+    if (result != kSuccess) {
+      tmid_op_status_ = kFailed;
+      stmid_result_ = kFailed;
+      return kAuthenticationError;
+    } else {
+      tmid_op_status_ = kPendingMid;
+      stmid_result_ = kPendingMid;
+    }
+  session_singleton_->SetUsername(username);
+  session_singleton_->SetPin(pin);
+
+
   system_packets_result_ = kPendingResult;
   PacketParams params;
   params["username"] = username;
@@ -372,7 +311,7 @@ int Authentication::CreateUserSysPackets(const std::string &username,
 
   return system_packets_result_;
 }
-
+/*
 void Authentication::CreateUserSysPackets(const ReturnCode &return_code,
                                           const std::string &username,
                                           const std::string &pin,
@@ -580,7 +519,7 @@ int Authentication::CreateTmidPacket(const std::string &username,
   return kSuccess;
 }
 
-void Authentication::SaveSession(const std::string &ser_da,
+void Authentication::SaveSession(const std::string &serialised_data_atlas,
                                  const VoidFuncOneInt &cb) {
   PacketParams params, result;
   params["username"] = session_singleton_->Username();
@@ -588,7 +527,7 @@ void Authentication::SaveSession(const std::string &ser_da,
 
   boost::shared_ptr<Packet> smidPacket(PacketFactory::Factory(SMID));
   boost::shared_ptr<SaveSessionData> ssd(new SaveSessionData);
-  ssd->ser_da = ser_da;
+  ssd->serialised_data_atlas = serialised_data_atlas;
   ssd->vfoi = cb;
   ssd->same_mid_smid = false;
 
@@ -687,7 +626,7 @@ void Authentication::UpdateMidCallback(
   params["pin"] = session_singleton_->Pin();
   params["rid"] = ssd->new_mid;
   params["password"] = session_singleton_->Password();
-  params["data"] = ssd->ser_da;
+  params["data"] = ssd->serialised_data_atlas;
   boost::shared_ptr<Packet> tmidPacket(PacketFactory::Factory(TMID));
   PacketParams tmidresult = tmidPacket->Create(params);
 
@@ -720,11 +659,11 @@ void Authentication::StoreMidTmidCallback(
   ssd->vfoi(return_code);
 }
 
-int Authentication::SaveSession(const std::string &ser_da) {
+int Authentication::SaveSession(const std::string &serialised_data_atlas) {
   boost::mutex mutex;
   boost::condition_variable cond_var;
   int result(kPendingResult);
-  SaveSession(ser_da, boost::bind(&Authentication::PacketOpCallback, this, _1,
+  SaveSession(serialised_data_atlas, boost::bind(&Authentication::PacketOpCallback, this, _1,
                                   &mutex, &cond_var, &result));
   {
     boost::mutex::scoped_lock lock(mutex);
@@ -862,7 +801,7 @@ int Authentication::CreatePublicName(const std::string &public_username) {
   return kSuccess;
 }
 
-int Authentication::ChangeUsername(const std::string &ser_da,
+int Authentication::ChangeUsername(const std::string &serialised_data_atlas,
                                    const std::string &new_username) {
   boost::shared_ptr<Packet> midPacket(PacketFactory::Factory(MID));
   boost::shared_ptr<Packet> smidPacket(PacketFactory::Factory(SMID));
@@ -930,7 +869,7 @@ int Authentication::ChangeUsername(const std::string &ser_da,
   //  Creating new MID TMID
   user_params["password"] = session_singleton_->Password();
   user_params["rid"] = boost::any_cast<boost::uint32_t>(mid_result["rid"]);
-  user_params["data"] = ser_da;
+  user_params["data"] = serialised_data_atlas;
   PacketParams tmid_result = tmidPacket->Create(user_params);
   std::string new_mid_tmid(boost::any_cast<std::string>(tmid_result["data"]));
   if (StorePacket(boost::any_cast<std::string>(tmid_result["name"]),
@@ -1025,7 +964,7 @@ int Authentication::ChangeUsername(const std::string &ser_da,
   return kSuccess;
 }
 
-int Authentication::ChangePin(const std::string &ser_da,
+int Authentication::ChangePin(const std::string &serialised_data_atlas,
                               const std::string &new_pin) {
   boost::shared_ptr<Packet> midPacket(PacketFactory::Factory(MID));
   boost::shared_ptr<Packet> smidPacket(PacketFactory::Factory(SMID));
@@ -1087,7 +1026,7 @@ int Authentication::ChangePin(const std::string &ser_da,
   //  Creating new MID TMID
   user_params["password"] = session_singleton_->Password();
   user_params["rid"] = boost::any_cast<boost::uint32_t>(mid_result["rid"]);
-  user_params["data"] = ser_da;
+  user_params["data"] = serialised_data_atlas;
   PacketParams tmid_result = tmidPacket->Create(user_params);
   std::string new_mid_tmid(boost::any_cast<std::string>(tmid_result["data"]));
   if (StorePacket(boost::any_cast<std::string>(tmid_result["name"]),
@@ -1179,11 +1118,11 @@ int Authentication::ChangePin(const std::string &ser_da,
   return kSuccess;
 }
 
-int Authentication::ChangePassword(const std::string &ser_da,
+int Authentication::ChangePassword(const std::string &serialised_data_atlas,
                                    const std::string &new_password) {
   std::string old_password = session_singleton_->Password();
   session_singleton_->SetPassword(new_password);
-  if (SaveSession(ser_da) == kSuccess) {
+  if (SaveSession(serialised_data_atlas) == kSuccess) {
     return kSuccess;
   } else {
     session_singleton_->SetPassword(old_password);

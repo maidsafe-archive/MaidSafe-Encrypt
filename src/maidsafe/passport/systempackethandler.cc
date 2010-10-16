@@ -107,6 +107,11 @@ void SystemPacketHandler::ClearKeyring() {
   }
 }
 
+void SystemPacketHandler::Clear() {
+  boost::mutex::scoped_lock lock(mutex_);
+  packets_.clear();
+}
+
 
 /*
 int KeyAtlas::AddKey(const int &packet_type,

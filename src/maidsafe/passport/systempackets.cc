@@ -279,10 +279,10 @@ void MidPacket::Clear() {
 
 TmidPacket::TmidPacket(const std::string &username,
                        const std::string &pin,
-                       const std::string &password,
                        const boost::uint32_t rid,
-                       const std::string &plain_data,
-                       bool surrogate)
+                       bool surrogate,
+                       const std::string &password,
+                       const std::string &plain_data)
     : pki::Packet(surrogate ? STMID : TMID),
       username_(username),
       pin_(pin),
@@ -296,45 +296,92 @@ TmidPacket::TmidPacket(const std::string &username,
 }
 
 void TmidPacket::Initialise() {
-  if (username_.empty() || pin_.empty() || password_.empty() || rid_ == 0)
+  if (username_.empty() || pin_.empty() || rid_ == 0)
     return Clear();
 
   try {
-    salt_ = crypto_obj_.Hash(boost::lexical_cast<std::string>(rid_) + password_,
-                             "", crypto::STRING_STRING, false);
-    secure_password_ = crypto_obj_.SecurePassword(password_, salt_, rid_);
     name_ = crypto_obj_.Hash(
                 crypto_obj_.Hash(username_, "", crypto::STRING_STRING, false) +
                 crypto_obj_.Hash(pin_, "", crypto::STRING_STRING, false) +
                 crypto_obj_.Hash(boost::lexical_cast<std::string>(rid_), "",
                                  crypto::STRING_STRING, false), "",
                 crypto::STRING_STRING, false);
-    if (plain_data_.empty())  // Only initialising in order to parse plain data.
-      return;
-    encrypted_data_ = crypto_obj_.SymmEncrypt(plain_data_, "",
-                      crypto::STRING_STRING, secure_password_);
   }
   catch(const std::exception &e) {
 #ifdef DEBUG
     printf("TmidPacket::Initialise: %s\n", e.what());
 #endif
-    encrypted_data_.clear();
+    name_.clear();
   }
-  if (encrypted_data_.empty())
+  if (!SetPassword())
+    return;
+  if (!SetPlainData())
+    return;
+  if (name_.empty())
     Clear();
 }
 
-std::string TmidPacket::ParsePlainData(
-    const std::string &serialised_tmid_packet) {
-  GenericPacket packet;
-  if (secure_password_.empty() ||
-      !packet.ParseFromString(serialised_tmid_packet)) {
+bool TmidPacket::SetPassword() {
+  if (password_.empty()) {
+    salt_.clear();
+    secure_password_.clear();
+    return false;
+  }
+  try {
+    salt_ = crypto_obj_.Hash(boost::lexical_cast<std::string>(rid_) + password_,
+                             "", crypto::STRING_STRING, false);
+    secure_password_ = crypto_obj_.SecurePassword(password_, salt_, rid_);
+  }
+  catch(const std::exception &e) {
 #ifdef DEBUG
-    printf("TmidPacket::ParsePlainData: Bad packet, or user data empty.\n");
+    printf("TmidPacket::SetPassword: %s\n", e.what());
+#endif
+    salt_.clear();
+  }
+  if (salt_.empty()) {
+    Clear();
+    return false;
+  } else {
+    return true;
+  }
+}
+
+bool TmidPacket::SetPlainData() {
+  if (plain_data_.empty() || secure_password_.empty()) {
+    encrypted_data_.clear();
+    return false;
+  }
+  try {
+    encrypted_data_ = crypto_obj_.SymmEncrypt(plain_data_, "",
+                      crypto::STRING_STRING, secure_password_);
+  }
+  catch(const std::exception &e) {
+#ifdef DEBUG
+    printf("TmidPacket::SetPlainData: %s\n", e.what());
+#endif
+    encrypted_data_.clear();
+  }
+  if (encrypted_data_.empty()) {
+    Clear();
+    return false;
+  } else {
+    return true;
+  }
+}
+
+std::string TmidPacket::ParsePlainData(
+    const std::string &password,
+    const std::string &serialised_tmid_packet) {
+  password_ = password;
+  if (!SetPassword())
+    return "";
+  GenericPacket packet;
+  if (!packet.ParseFromString(serialised_tmid_packet)) {
+#ifdef DEBUG
+    printf("TmidPacket::ParsePlainData: bad packet.\n");
 #endif
     return "";
   }
-
   try {
     encrypted_data_ = packet.data();
     plain_data_ = crypto_obj_.SymmDecrypt(encrypted_data_, "",

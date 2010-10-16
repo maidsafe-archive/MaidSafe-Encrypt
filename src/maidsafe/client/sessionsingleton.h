@@ -50,8 +50,6 @@ struct UserDetails {
                   username(),
                   pin(),
                   password(),
-                  mid_rid(0),
-                  smid_rid(0),
                   session_name(),
                   root_db_key(),
                   self_encrypting(true),
@@ -69,12 +67,8 @@ struct UserDetails {
   std::string username;
   std::string pin;
   std::string password;
-  boost::uint32_t mid_rid;
-  boost::uint32_t smid_rid;
   std::string session_name;
   std::string root_db_key;
-  std::string tmid_content;
-  std::string smidtmid_content;
   bool self_encrypting;
   std::set<std::string> authorised_users;
   std::set<std::string> maid_authorised_users;
@@ -112,11 +106,7 @@ class SessionSingleton {
   std::string Pin();
   std::string Password();
   std::string PublicUsername();
-  boost::uint32_t MidRid();
-  boost::uint32_t SmidRid();
   std::string SessionName();
-  std::string TmidContent();
-  std::string SmidTmidContent();
   std::string RootDbKey();
   bool SelfEncrypting();
   const std::set<std::string> &AuthorisedUsers();
@@ -137,8 +127,6 @@ class SessionSingleton {
   bool SetPassword(const std::string &password);
   bool SetSessionName(bool clear);
   bool SetRootDbKey(const std::string &root_db_key);
-  bool SetTmidContent(const std::string &tmid_content);
-  bool SetSmidTmidContent(const std::string &smidtmid_content);
   bool SetSelfEncrypting(bool self_encrypting);
   bool SetAuthorisedUsers(
       const std::set<std::string> &authorised_users);

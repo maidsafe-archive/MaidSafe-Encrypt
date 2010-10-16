@@ -100,19 +100,22 @@ class TmidPacket : public pki::Packet {
  public:
   TmidPacket(const std::string &username,
              const std::string &pin,
-             const std::string &password,
              const boost::uint32_t rid,
-             const std::string &plain_data,
-             bool surrogate);
+             bool surrogate,
+             const std::string &password,
+             const std::string &plain_data);
   virtual ~TmidPacket() {}
   virtual std::string value() const { return encrypted_data_; }
-  std::string ParsePlainData(const std::string &serialised_tmid_packet);
+  std::string ParsePlainData(const std::string &password,
+                             const std::string &serialised_tmid_packet);
   void SetToSurrogate() { packet_type_ = STMID; }
   std::string username() const { return username_; }
   std::string pin() const { return pin_; }
   std::string password() const { return password_; }
  private:
   virtual void Initialise();
+  bool SetPassword();
+  bool SetPlainData();
   virtual void Clear();
   std::string username_, pin_, password_;
   boost::uint32_t rid_;

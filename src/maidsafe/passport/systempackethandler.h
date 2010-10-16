@@ -43,6 +43,7 @@ class SystemPacketHandler {
   std::string SerialiseKeyring();
   int ParseKeyring(const std::string &serialised_keyring);
   void ClearKeyring();
+  void Clear();
 
 
 
