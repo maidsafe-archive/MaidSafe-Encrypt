@@ -81,7 +81,8 @@ Today all known access mechanisms that grant access to distributed or shared
  It also negates the necessity for any server based systems as a login entity
  for people to connect with prior to gaining access to a system for any
  reason.
- 
+ In addition this paper allows management of user acess in a distributed
+ network.
 \end_layout
 
 \begin_layout Keywords
@@ -148,10 +149,10 @@ key "1"
 
 \end_inset
 
-with reference to an identity created, managed and maintained in seclusion,
+ with reference to an identity created, managed and maintained in seclusion,
  or in another way of thinking, anonomously.
- In many other situations this is not a situation that is beneficial, in
- some systems, control over access in large groups is required, examples
+ In many other situations this is not beneficial, in some systems, control
+ over access and the ability to manage very large groups is required, examples
  would be corporate networks, military and many others.
  
 \end_layout
@@ -386,7 +387,7 @@ PBKDF2 is used here to strengthen any password keys used.
 
 \begin_layout Standard
 It is important to note that all packets in this process are signed by 2
- seperate ID's called MMID and TMID, these are created as described in 
+ seperate ID's called MID and TMID, these are created as described in 
 \begin_inset CommandInset citation
 LatexCommand cite
 key "3"
@@ -394,8 +395,7 @@ key "3"
 \end_inset
 
 .
- These packets are in turn signed by ANMID and ANTMID for safety.
- On creation of a user the MANAGER maintains a copy of these keys.
+ These packets are in turn signed by MANAGER who keeps a copy of the ID's.
  In this way the manager can find the users ID packets and delete them after
  deleting the data pointed to by the TMID, to revoke access to the system.
  
@@ -715,7 +715,11 @@ Manager creates a
 It should be emphasised that any communcation from USER@anything should
  require check of STORE to ensure the ID is still valid, therefor there
  is no possibility of simply passing the info in a message.
- 
+ This may involve a recursive check on the managers keys to get to the root
+ XXX packet which is the packet signed by the XXX key itself (first user).
+ This is identified as being signed by the XXX Id packet.
+ This ID will be published in many places and found in STORE as a packet
+ simply called XXX and signed by XXX (self signed original packet).
 \end_layout
 
 \begin_layout Subsection
@@ -730,7 +734,7 @@ key "6"
 
 \end_inset
 
-, but uses the userID from 
+, but uses the hash of the userID from 
 \begin_inset CommandInset ref
 LatexCommand ref
 reference "sub:Creation-of-an"
@@ -756,6 +760,8 @@ In this manner the user has the ability to alter the parent directory and
  This is the root drive of USER and personal information can be stored there.
  The MANAGER though, has access to this as he or she knows the ID and the
  passkey to it.
+ This is confirmed by the MANAGERS system periodically, failure to access
+ this would render the users ID locked and access to the network removed.
 \end_layout
 
 \begin_layout Subsection
