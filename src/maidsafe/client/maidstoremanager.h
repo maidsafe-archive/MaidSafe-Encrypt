@@ -295,11 +295,6 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   void SetSessionEndPoint();
   void SetInstantMessageNotifier(IMNotifier on_msg,
                                  IMStatusNotifier status_notifier);
-
-//  void ResetSessionSingleton(SessionSingleton *ss) {
-//    ss_ = ss;
-//  }
-
  private:
   MaidsafeStoreManager &operator=(const MaidsafeStoreManager&);
   MaidsafeStoreManager(const MaidsafeStoreManager&);
@@ -311,6 +306,7 @@ class MaidsafeStoreManager : public StoreManagerInterface {
       std::map<std::string, std::string> chunks,
       const int &timeout, boost::shared_ptr<MaidsafeStoreManager> sm);
   FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_KeyUnique);
+  FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_ExpectAmendment);
   FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_AddToWatchList);
   FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_AssessUploadCounts);
   FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_GetStoreRequests);
@@ -351,35 +347,48 @@ class MaidsafeStoreManager : public StoreManagerInterface {
                           bool is_mutable,
                           int *return_value,
                           GenericConditionData *generic_cond_data);
-  // Sends AddToWatchList requests to each of the k Chunk Info holders.
+  // Finds Chunk Info Holders, continued in further stages.
   virtual int AddToWatchList(boost::shared_ptr<StoreData> store_data);
-  // Callback of FindNodes.  Sends ExpectAmendment requests.
+  // Sends ExpectAmendment requests.
   void AddToWatchListStageTwo(
       const ReturnCode &result,
       const std::vector<kad::Contact> &chunk_info_holders,
       boost::shared_ptr<WatchListOpData> data);
-  // Callback of ExpectAmendment.  Sends AddToWatchList requests.
-  void AddToWatchListStageThree(boost::uint16_t index,
+  // Sends AddToWatchList requests.
+  void AddToWatchListStageThree(const ReturnCode &result,
                                 boost::shared_ptr<WatchListOpData> data);
-  // Callback of AddToWatchList.  Assesses response and if consensus of required
-  // chunk upload copies is achieved, begins new SendChunkCopyTask(s) if needed.
+  // Assesses response and if consensus of required chunk upload copies is
+  // achieved, begins new SendChunkCopyTask(s) if needed.
   void AddToWatchListStageFour(boost::uint16_t index,
                                boost::shared_ptr<WatchListOpData> data);
+  // Prepares and executes ExpectAmendment RPCs.
+  void ExpectAmendment(const std::string &chunkname,
+                       const AmendAccountRequest::Amendment &amendment_type,
+                       const std::string &pmid,
+                       const std::string &public_key,
+                       const std::string &public_key_signature,
+                       const std::string &private_key,
+                       DirType dir_type,
+                       const std::vector<kad::Contact> &chunk_info_holders,
+                       const VoidFuncOneInt &callback);
+  // Assesses results of ExpectAmendment RPCs.
+  void ExpectAmendmentCallback(size_t index,
+                               boost::shared_ptr<ExpectAmendmentOpData> data);
   // Assesses AddToWatchListResponses for consensus of required chunk upload
   // copies.  Returns < 0 if no consensus.  data->mutex should already be locked
   // by method calling this one for duration of this function.
   int AssessUploadCounts(boost::shared_ptr<WatchListOpData> data);
-  // Sends RemoveFromWatchList requests to each of the k Chunk Info holders.
+  // Finds Chunk Info Holders, continued in further stages.
   virtual int RemoveFromWatchList(boost::shared_ptr<StoreData> store_data);
-  // Callback of FindNodes.  Sends ExpectAmendment requests.
+  // Sends ExpectAmendment requests.
   void RemoveFromWatchListStageTwo(
       const ReturnCode &result,
       const std::vector<kad::Contact> &chunk_info_holders,
       boost::shared_ptr<WatchListOpData> data);
-  // Callback of ExpectAmendment.  Sends RemoveFromWatchList requests.
-  void RemoveFromWatchListStageThree(boost::uint16_t index,
+  // Sends RemoveFromWatchList requests.
+  void RemoveFromWatchListStageThree(const ReturnCode &result,
                                      boost::shared_ptr<WatchListOpData> data);
-  // Callback of RemoveFromWatchList, assesses responses.
+  // Assesses responses.
   void RemoveFromWatchListStageFour(boost::uint16_t index,
                                     boost::shared_ptr<WatchListOpData> data);
   // Contact the chunk info holders to retrieve the list of chunk holders
@@ -401,13 +410,6 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   virtual bool WaitForOnline(const TaskId &task_id);
   // Set up the requests needed to perform the store RPCs.
   int GetStoreRequests(boost::shared_ptr<SendChunkData> send_chunk_data);
-  // Set up the requests needed to perform the ExpectAmendment RPCs.
-  int GetExpectAmendmentRequests(
-      boost::shared_ptr<StoreData> store_data,
-      const AmendAccountRequest::Amendment amendment_type,
-      const std::vector<kad::Contact> &account_holders,
-      const std::vector<kad::Contact> &chunk_info_holders,
-      std::vector<ExpectAmendmentRequest> *expect_amendment_requests);
   // Set up the requests needed to perform the AddToWatchList RPCs.
   int GetAddToWatchListRequests(
       boost::shared_ptr<StoreData> store_data,
