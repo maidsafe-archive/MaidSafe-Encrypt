@@ -151,8 +151,8 @@ key "1"
 with reference to an identity created, managed and maintained in seclusion,
  or in another way of thinking, anonomously.
  In many other situations this is not a situation that is beneficial, in
- some situations control over access in large groups is required, such situation
-s would be corporate networks, military and many others.
+ some systems, control over access in large groups is required, examples
+ would be corporate networks, military and many others.
  
 \end_layout
 
@@ -309,31 +309,374 @@ Outline
 \end_layout
 
 \begin_layout Subsection
-Creating a user access key
+Creation of an account
+\begin_inset CommandInset label
+LatexCommand label
+name "sub:Creation-of-an"
+
+\end_inset
+
+
 \end_layout
 
-\begin_layout Enumerate
-USER creates an ID as described in
-\emph on
- self encryption
-\emph default
+\begin_layout Standard
+Here we will assume there are two inputs required by the user of the system:
+ user-name 
+\begin_inset Formula $\mathsf{U}$
+\end_inset
+
+, and password 
+\begin_inset Formula $\mathsf{W}$
+\end_inset
+
+.
+ In addition the system also creates a salt 
+\begin_inset Formula $\mathsf{S}$
+\end_inset
+
+ which is not provided to the user directly, although it is calculable.
+ The salt 
+\begin_inset Formula $\mathsf{S}$
+\end_inset
+
+ is calculated by hashing the U and the hash of the organisation ID (twice)
+ and then reading the result and generate a number between 1000 and 5000
+ e.g.
  
+\begin_inset Formula $ReadHash()$
+\end_inset
+
+ reads a bit from the hash 
+\begin_inset Formula $H(H(U+ORGID))=P\qquad X=ReadHash(P)\; While(X\%4000\leq0)\{X;\}\; X+1000=S$
+\end_inset
+
+.
+ The MANAGER can recreate this ID at any time, but requires the user cannot
+ alter the username.
+\end_layout
+
+\begin_layout Standard
+To generate a unique identifier, we hash the concatenation of the user-name
+ and the salt, 
+\begin_inset Formula $\mathsf{H(U+S)}$
+\end_inset
+
+.
+ 
+\end_layout
+
+\begin_layout Standard
+PBKDF2 is used here to strengthen any password keys used.
+ This is required as user selected passwords are inevitably weak and the
+ user may not know the user-name is also used as a password in the system.
+ 
+\begin_inset Formula $\mathsf{Account}$
+\end_inset
+
+ specifies session data, like user details or an index of references to
+ further data.
+ This packet is located through an Access Packet holding a random number
+ 
+\begin_inset Formula $\mathsf{Rnd\#}$
+\end_inset
+
+.
+ 
+\end_layout
+
+\begin_layout Standard
+It is important to note that all packets in this process are signed by 2
+ seperate ID's called MMID and TMID, these are created as described in 
 \begin_inset CommandInset citation
 LatexCommand cite
-key "1"
+key "3"
 
 \end_inset
 
- or has some other mechanism to send and receive secure communications
+.
+ These packets are in turn signed by ANMID and ANTMID for safety.
+ On creation of a user the MANAGER maintains a copy of these keys.
+ In this way the manager can find the users ID packets and delete them after
+ deleting the data pointed to by the TMID, to revoke access to the system.
+ 
 \end_layout
 
 \begin_layout Enumerate
-USER requests permission from manager to join XXX network, via an encrypted
- message (signed) to 
-\begin_inset Formula $\mathsf{MANAGER@XXX}$
+\begin_inset Formula $\mathsf{GetV_{[H(U+S)]}\equiv False}$
+\end_inset
+
+ (Ensure uniqueness)
+\end_layout
+
+\begin_layout Enumerate
+Generate random number 
+\begin_inset Formula $\mathsf{Rnd\#}$
 \end_inset
 
 
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\mathsf{PutV_{[H(U+S)]}\left(SymEnc_{[PBKDF2_{[U][S]}]}(Rnd\#)\right)}$
+\end_inset
+
+ (Store Access Packet)
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\mathsf{PutV_{[H(U+S+Rnd\#)]}\left(SymEnc_{[PBKDF2_{[W][S]}]}(Account)\right)}$
+\end_inset
+
+ (Store Account Packet)
+\end_layout
+
+\begin_layout Subsection
+Login / load session process
+\begin_inset CommandInset label
+LatexCommand label
+name "sub:Login-to-a"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\mathsf{SymDec_{[PBKDF2_{[U][S]}]}\left(GetV_{[H(U+S)]}\right)\equiv Rnd\#}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\mathsf{SymDec_{[PBKDF2_{[W][S]}]}(GetV_{[H(U+S+Rnd\#)]})\equiv Account}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+For the following operation, 
+\begin_inset Formula $\mathsf{Rnd\#}$
+\end_inset
+
+ should be kept locally for the duration of the session.
+\end_layout
+
+\begin_layout Subsection
+Logout / save session process
+\end_layout
+
+\begin_layout Enumerate
+Generate new random number 
+\begin_inset Formula $\mathsf{Rnd\#_{new}}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\mathsf{PutV_{[H(U+S+Rnd\#_{new})]}\left(SymEnc_{[PBKDF2_{[W][S]}]}(Account)\right)}$
+\end_inset
+
+ (Store new Account Packet)
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\mathsf{PutV_{[H(U+S)]}\left(SymEnc_{[PBKDF2_{[U][S]}]}(Rnd\#_{new})\right)}$
+\end_inset
+
+ (Update Access Packet)
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\mathsf{DelV_{[H(U+S+Rnd\#)]}}$
+\end_inset
+
+ (Delete old Account Packet)
+\end_layout
+
+\begin_layout Subsection
+Fallback Account Packets
+\end_layout
+
+\begin_layout Standard
+The previous sections outlined the basic system of authentication.
+ However, this can be extended for safety reasons.
+ As with any system, the serialisation and store operation of the account
+ data can fail for any reason, resulting in unreadable data upon retrieval.
+ This would be catastrophic as access to the user's data on the system may
+ be rendered impossible.
+ To reduce any such risk, a fallback copy of an Account Packet (and its
+ Access Packet) is kept, to allow reverting to the previous version in case
+ the current version can't be restored or turns out to have been generated
+ erroneously.
+\end_layout
+
+\begin_layout Subsubsection
+Updated account creation process
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\mathsf{GetV_{[H(U+S)]}\equiv False}$
+\end_inset
+
+ (Ensure uniqueness of Access Packet)
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\mathsf{GetV_{[H(U+(S-1))]}\equiv False}$
+\end_inset
+
+ (Ensure uniqueness of Fallback Access Packet)
+\end_layout
+
+\begin_layout Enumerate
+Generate random number 
+\begin_inset Formula $\mathsf{Rnd\#}$
+\end_inset
+
+ and copy 
+\begin_inset Formula $\mathsf{Rnd\#\rightarrow Rnd\#_{fallback}}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\mathsf{PutV_{[H(U+S)]}\left(SymEnc_{[PBKDF2_{[U][S]}]}(Rnd\#)\right)}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\mathsf{PutV_{[H(U+(S-1)]}\left(SymEnc_{[PBKDF2_{[U][S-1]}]}(Rnd\#)\right)}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\mathsf{PutV_{[H(U+S+Rnd\#)]}\left(SymEnc_{[PBKDF2_{[W][S]}]}(Account)\right)}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+In this case, the random numbers in the Access Packets are the same, thus
+ point to the same (unique) Account Packet.
+ Fallback packets are only kept once the Account Packet is updated.
+\end_layout
+
+\begin_layout Subsubsection
+Updated Login process
+\end_layout
+
+\begin_layout Enumerate
+if (
+\begin_inset Formula $\mathsf{GetV_{[H(U+S)]}\equiv EncRnd\#}$
+\end_inset
+
+)
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+\begin_inset Formula $\mathsf{SymDec_{[PBKDF2_{[U][S]}]}(EncRnd\#)\equiv Rnd\#}$
+\end_inset
+
+
+\end_layout
+
+\end_deeper
+\begin_layout Enumerate
+else (or if previous attempt failed)
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+\begin_inset Formula $\mathsf{SymDec_{[PBKDF2_{[U][S-1]}]}\left(GetV_{[H(U+(S-1))]}\right)\equiv Rnd\#}$
+\end_inset
+
+
+\end_layout
+
+\end_deeper
+\begin_layout Enumerate
+\begin_inset Formula $\mathsf{SymDec_{[PBKDF2_{[W][S]}]}\left(GetV_{[H(U+S+Rnd\#)]}\right)\equiv Account}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsubsection
+Logout / save session process
+\end_layout
+
+\begin_layout Enumerate
+Generate new random number 
+\begin_inset Formula $\mathsf{Rnd\#_{new}}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\mathsf{PutV_{[H(U+S+Rnd\#_{new})]}\left(SymEnc_{[PBKDF2_{[W][S]}]}(Account)\right)}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\mathsf{PutV_{[H(U+(S-1)]}\left(SymEnc_{[PBKDF2_{[U][S]}]}(Rnd\#)\right)}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\mathsf{PutV_{[H(U+S)]}\left(SymEnc_{[PBKDF2_{[U][S-1]}]}(Rnd\#_{new})\right)}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\mathsf{DelV_{[H(U+S+Rnd\#_{fallback})]}}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\mathsf{Rnd\#\rightarrow Rnd\#_{fallback}}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\mathsf{Rnd\#_{new}\rightarrow Rnd\#}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The previous Account Packet remains untouched, instead the Fallback Access
+ Packet is redirected to it and the normal Access Packet points to the new
+ Account Packet.
+ The previous Fallback Account Packet is deleted.
+ This is a security measure to hinder slow brute-force attacks on decrypting
+ the Access Packet, which by the time the clear-text random number is obtained
+ would make it obsolete.
+\end_layout
+
+\begin_layout Subsection
+Creating a user identity (publically broadcastable identity)
 \end_layout
 
 \begin_layout Enumerate
@@ -352,27 +695,27 @@ Manager creates
 \begin_inset Formula $\mathsf{STORE}$
 \end_inset
 
-, this also will be the access ID for USER
+, this also will be the ID for USER
 \end_layout
 
 \begin_layout Enumerate
 Manager creates a 
-\begin_inset Formula $\mathsf{H(USER@XXX)}$
+\begin_inset Formula $\mathsf{H(USER@XXX+Sig{}_{MANAGER_{prv}})}$
 \end_inset
 
  packet in 
 \begin_inset Formula $\mathsf{STORE}$
 \end_inset
 
- (this is the contact address of USER when connected with company XXX)
+ (this is the contact address of USER when connected with company XXX),
+ again this is revokable by the manager.
 \end_layout
 
-\begin_layout Enumerate
-MANAGER sends 
-\begin_inset Formula $\mathsf{USER_{priv}}$
-\end_inset
-
- to USER via an encrypted message.
+\begin_layout Standard
+It should be emphasised that any communcation from USER@anything should
+ require check of STORE to ensure the ID is still valid, therefor there
+ is no possibility of simply passing the info in a message.
+ 
 \end_layout
 
 \begin_layout Subsection
@@ -380,7 +723,21 @@ Creating user disk
 \end_layout
 
 \begin_layout Enumerate
-MANAGER creates a parent directory for USER.
+MANAGER creates a parent directory for USER as per 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "6"
+
+\end_inset
+
+, but uses the userID from 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:Creation-of-an"
+
+\end_inset
+
+ as the passkey.
 \end_layout
 
 \begin_layout Enumerate
@@ -399,34 +756,59 @@ In this manner the user has the ability to alter the parent directory and
  This is the root drive of USER and personal information can be stored there.
  The MANAGER though, has access to this as he or she knows the ID and the
  passkey to it.
- 
 \end_layout
 
 \begin_layout Subsection
-Accessing the network
+Further enhancements
 \end_layout
 
-\begin_layout Enumerate
-MANAGER creates a share as described in 
-\emph on
-maidsafe distributed file system
-\emph default
- 
-\begin_inset CommandInset citation
-LatexCommand cite
-key "6"
+\begin_layout Subsubsection
+Time based obfuscation
+\end_layout
+
+\begin_layout Standard
+In the previous sections a system of self authentication was detailed which
+ is very effective.
+ A potential failure point, however, may be the Access Packets, as those
+ are never altering their location (key) and can pose a target for any attacker
+ who is monitoring data traffic between the user and the system.
+\end_layout
+
+\begin_layout Standard
+To remove this weakness, a predictably altering piece of data can be introduced,
+ such as time (e.g.
+ week number, day of year or similar).
+ In this case in 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:Login-to-a"
 
 \end_inset
 
- if none already exist
-\end_layout
-
-\begin_layout Enumerate
-The USER ID 
-\begin_inset Formula $\mathsf{H(USER_{pub}\,+Sig{}_{MANAGER_{prv}})}$
+ the 
+\begin_inset Formula $\mathsf{GetV}$
 \end_inset
 
- is added to the list of ID's authorised access identities
+ call would be iterative, starting at the current time slot and decrementing
+ until it returns with a value.
+ Access Packets at 
+\begin_inset Quotes eld
+\end_inset
+
+outdated
+\begin_inset Quotes erd
+\end_inset
+
+ locations would be deleted on detection, and updates always stored in the
+ current location, resulting in regularly 
+\begin_inset Quotes eld
+\end_inset
+
+moving
+\begin_inset Quotes erd
+\end_inset
+
+ packets.
 \end_layout
 
 \begin_layout Subsection
@@ -447,11 +829,13 @@ As the USER identity packet is signed by the MANAGER, then the manager can
  
 \end_layout
 
-\begin_layout Subsection
-Boostrapping a network 
+\begin_layout Standard
+In addition the users ability to access any data from the network is revoked
+ with the deletions of the MID, SMID and TMID packets.
+ 
 \end_layout
 
-\begin_layout Subsubsection
+\begin_layout Subsection
 N plus P key sharing
 \end_layout
 
@@ -461,6 +845,15 @@ As the initial node has an extreme amount of power and no equal to absorb
  as retiring, leaving or simply becoming hostile) then a mechanism must
  be put into place to ensure this ID is not stand alone.
  
+\end_layout
+
+\begin_layout Standard
+The answer is n+p key sharing scheme where a user can select p users to
+ shre his key with, if there is ever an issue then n of these people are
+ all that are required to recreate the key.
+ This is essential for the first layer of such a system as the root node
+ requires a backup situation in case of emergency or inability of the key
+ to be recovered from the first user for any reason.
 \end_layout
 
 \begin_layout Section

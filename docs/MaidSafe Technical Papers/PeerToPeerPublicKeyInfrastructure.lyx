@@ -87,9 +87,9 @@ security, freedom, privacy, DHT, encryption
 \end_layout
 
 \begin_layout MarkBoth
-maidsafe.net limited company confidential Version 0.1
+maidsafe.net limited company confidential Version 0.2
 \begin_inset ERT
-status collapsed
+status open
 
 \begin_layout Plain Layout
 
@@ -927,6 +927,13 @@ if (Hash(Public key + Signature) == Unique) then Hash(Public key + Signature)
 
 \begin_layout Section
 Improvements with security of private keys
+\begin_inset CommandInset label
+LatexCommand label
+name "sec:Improvements-with-security"
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Standard
@@ -996,6 +1003,238 @@ reference "sub:Passing-ID-between"
 \end_inset
 
 .
+\end_layout
+
+\begin_layout Section
+Selectable ID's
+\end_layout
+
+\begin_layout Standard
+A PKI implementation as described in this paper is extremely secure and
+ resilient to a cryptographic attack, but does suffer form one major deficiency
+ that most readers may spot.
+ In these systems the node ID is a long name (in this case a 512 bit or
+ 64 byte sequence).
+ This is not easily readable for a human and certainly too long to communicate
+ on paper or verbally.
+ The issue is the keys are derived via a hashing mechanism, whereby its
+ very robust, it is not capable of giving decent human communicable ID's.
+ an implementation of selectable id is require, where we can tell the network
+ the name we want, it can check its available and secure it for us.
+ 
+\end_layout
+
+\begin_layout Standard
+This completely flies in the face of the discussion so far, but all is not
+ lost, it is possible.
+\end_layout
+
+\begin_layout Subsection
+Option 1 (the crude version)
+\end_layout
+
+\begin_layout Standard
+In this case we create a key-pair and store an ID packet (ID1), but instead
+ of storing it at the hash of the content (that being the public key plus
+ a signature) we store it at 
+\begin_inset Formula $H(chosen\: name).$
+\end_inset
+
+ We then simply communicate the chosen name to friends who can query the
+ store for the public key.
+\end_layout
+
+\begin_layout Standard
+This would possibly work if the store were secure or perhaps was backed
+ up by another layer that was secure (such as a distributed file-system
+ as described in 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "5"
+
+\end_inset
+
+), however it is not a good idea to design a system based on such inadequacies,
+ so we need to improve on this.
+\end_layout
+
+\begin_layout Subsection
+Option 2 (slight improvement)
+\end_layout
+
+\begin_layout Standard
+Here we an use the method described in 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sec:Improvements-with-security"
+
+\end_inset
+
+ and we have the initial key-pair as a revocation system.
+ This at least allows us to revoke a key, but does not allow us to protect
+ it in the first place and this is dangerous.
+ If the network suffered an attack or even a Byzantine type failure and
+ the chosen name key was lost, then we may have problems.
+ If the key is in fact replaced then somebody has stolen our ID, that is
+ a disaster, particularly is the applications using this did not maintain
+ records of contacts passed along with the original public key, as this
+ would allow an attacker to mimic us and potentially do incredible amount
+ of damage.
+\end_layout
+
+\begin_layout Standard
+This disaster of course assumes many things, than a good implementation
+ would avoid, however it is worth noting the consequences of a value that
+ does not hash to it's ID (breaking our tenet).
+ There appears nothing can be done as we cannot create data and know what
+ it will hash to or reverse the process somehow to define a hash to be equal
+ to a human readable and selectable name.
+ We need to take this one step further.
+\end_layout
+
+\begin_layout Subsection
+Option 3 (preferred)
+\end_layout
+
+\begin_layout Standard
+In this option we take a very simple step that circumvents all of the above
+ issues and attack vector possibilities.
+ It is strange to write this in such a way to lead people through the solution,
+ but it is easier to understand the route to the answer in this case some
+ of the attacks can be very subtle (we have not detailed all of these for
+ the sake of brevity).
+\end_layout
+
+\begin_layout Standard
+In this solution we take the simple step of storing the chosen name chunk
+ twice.
+ Once as above, storing it with the key 
+\begin_inset Formula $H(chosen\: name)$
+\end_inset
+
+ and we also store it in the usual (correct) way which is stored at the
+ key that is the hash of the content, let's call this 
+\begin_inset Formula $K(content)$
+\end_inset
+
+.
+ This key becomes the Id were looking for and it is very secure.
+ What we have done is relegate the 
+\begin_inset Formula $H(chosen\: name)$
+\end_inset
+
+ to a mere mapping effort.
+ In all communication e communicate as 
+\begin_inset Formula $K(content)$
+\end_inset
+
+ except when introducing ourselves.
+ If another person wishes to communicate with us they can check 
+\begin_inset Formula $H(chosen\: name)$
+\end_inset
+
+ or (and this is important) they can confirm against any other form of mapping,
+ such as published information, or if users create a public share directory
+ (immutable) such as in 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "5"
+
+\end_inset
+
+ then the mapping can be also stored there.
+ This would mean the 
+\begin_inset Formula $H(chosen\: name)$
+\end_inset
+
+ would eventually become redundant, which is possible, depending on the
+ configuration of the application implementation.
+ In any case that id is now restricted in it's capabilities and an attack
+ on it would yield no useful information, perhaps an attacker could try
+ and pass off as somebody else, but this would only be for new contacts
+ as all existing contacts communicate with the 
+\begin_inset Formula $K(content)$
+\end_inset
+
+ ID.
+ This also allows a person who has been hacked the ability to recreate his
+ ID.
+\end_layout
+
+\begin_layout Standard
+In the event of a DHT with ranking implemented this attack is near impossible,
+ however there are solutions as described here and using immutable locations
+ for such mapping keys is very valid.
+\end_layout
+
+\begin_layout Subsection
+Option 4 (Multiple Public Names)
+\end_layout
+
+\begin_layout Standard
+As the purpose of the 
+\begin_inset Formula $H(chosen\: name)$
+\end_inset
+
+ packet is to provide a mapping of that name to an ID, there is no reason
+ for not having multiple chosen names that are the same.
+ Uniqueness now is not an issue.
+ It therefore makes sense too replace the content of the 
+\begin_inset Formula $H(chosen\: name)$
+\end_inset
+
+ packet with a simple ID that represents the actual ID of that name.
+ 
+\end_layout
+
+\begin_layout Standard
+As this is no longer unique a system of including some additional information
+ may be useful, such as town, date of birth or similar.
+ to allow multiple identities share this packet and differentiate themselves
+ then perhaps the easiest thing to include is town and country.
+ This information should be signed by the 
+\begin_inset Formula $K(content)$
+\end_inset
+
+ ID.
+ This also ensures safety of the information, as all an attacker could do
+ would be remove a mapping or remap an ID.
+ This is functionally equivalent to adding another map, in this case all
+ we need to do is add another value to the STORE.
+ This is possible as we do not limit values stored by a key, which in a
+ DHT is easy, however in a disk based store or poorly implemented database
+ it could prove more difficult, although in fact such multiple value packets
+ are not required in a secured disk based store.
+ For multiple ID's that are equivalent then storing the hash of the name
+ plus town or department would prove to be secure.
+\end_layout
+
+\begin_layout Subsection
+Option 5 (Validity provision)
+\end_layout
+
+\begin_layout Standard
+The 
+\begin_inset Formula $K(content)$
+\end_inset
+
+ ID is the packet whose content (public name and signature) hashes to the
+ ID of the packet and its location in STORE.
+ In this option another ID can add another value to this packet to provide
+ some validation of that person or ID.
+ The ID is verified by another Chosen Name on the system and does so by
+ adding a signed value to this key.
+ The values should be the persons chosen name and the chosen name of the
+ signing party in clear text with the signature of the signing party saved.
+ This introduces a validation service and the signing party can revoke this
+ signature as he has signed it.
+ 
+\end_layout
+
+\begin_layout Standard
+We also have double checked the user has not tried to switch names or commit
+ some other fraudulent masquerade by tying the signed chosen name to the
+ ID packet.
 \end_layout
 
 \begin_layout Section
@@ -1071,6 +1310,17 @@ key "4"
 \end_inset
 
 David Irvine, maidsafe: A new networking paradigm, david.irvine@maidsafe.net
+\end_layout
+
+\begin_layout Bibliography
+\begin_inset CommandInset bibitem
+LatexCommand bibitem
+label "5"
+key "5"
+
+\end_inset
+
+David Irvine, maidsafe distributed file system, david.irvine@maidsafe.net
 \end_layout
 
 \begin_layout Standard

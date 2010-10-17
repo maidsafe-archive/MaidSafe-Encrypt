@@ -88,7 +88,7 @@ security, freedom, privacy, file systems
 \end_layout
 
 \begin_layout MarkBoth
-maidsafe.net limited company confidential Version 0.1
+maidsafe.net limited company confidential Version 0.2
 \begin_inset ERT
 status open
 
@@ -322,6 +322,7 @@ ated and efficient network.
 \end_inset
 
 .
+ This value is signed.
 \end_layout
 
 \begin_layout Subsection
@@ -333,7 +334,11 @@ In order to achieve data security, nodes requesting a
 \begin_inset Formula $\mathsf{PutV_{[Key]}(Value)}$
 \end_inset
 
- should sign both 
+ 
+\emph on
+must
+\emph default
+ sign both 
 \begin_inset Formula $\mathsf{Value}$
 \end_inset
 
@@ -823,7 +828,7 @@ reference "sub:Encryption-of-Directory"
 status open
 
 \begin_layout Plain Layout
-Steps 1 to 3 describe creating a self-signed identity packet as detailed
+Steps 1 to 6 describe creating a self-signed identity packet as detailed
  in 
 \emph on
 "Peer to Peer" Public Key Infrastructure
@@ -845,6 +850,37 @@ key "3"
 
 \begin_layout Enumerate
 Create a key pair 
+\begin_inset Formula $\mathsf{ShareOwn{}_{priv}}$
+\end_inset
+
+ and 
+\begin_inset Formula $\mathsf{ShareOwn{}_{pub}}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+Create an ID for the share owner, 
+\begin_inset Formula $\mathsf{ShareOwnID}$
+\end_inset
+
+ = 
+\begin_inset Formula $\mathsf{H(ShareOwn_{pub}+Sig{}_{[Shareown_{priv}]}(ShareOwn{}_{pub}))}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\mathsf{PutV_{[ShareOwnID]}(ShareOwn_{pub}+Sig{}_{[ShareOn_{priv}]}(ShareOwn{}_{pub}))}$
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Enumerate
+Create a key pair 
 \begin_inset Formula $\mathsf{Share{}_{priv}}$
 \end_inset
 
@@ -861,14 +897,14 @@ Create an ID for the share,
 \end_inset
 
  = 
-\begin_inset Formula $\mathsf{H(Share_{pub}+Sig{}_{[Share_{priv}]}(Share{}_{pub}))}$
+\begin_inset Formula $\mathsf{H(Share_{pub}+Sig{}_{[ShareOwn_{priv}]}(Share{}_{pub}))}$
 \end_inset
 
 
 \end_layout
 
 \begin_layout Enumerate
-\begin_inset Formula $\mathsf{PutV_{[ShareID]}(Share_{pub}+Sig{}_{[Share_{priv}]}(Share{}_{pub}))}$
+\begin_inset Formula $\mathsf{PutV_{[ShareID]}(Share_{pub}+Sig{}_{[ShareOwn_{priv}]}(Share{}_{pub}))}$
 \end_inset
 
  
@@ -989,6 +1025,49 @@ For peers given write access, the message also contains
 \end_inset
 
 .
+\end_layout
+
+\begin_layout Standard
+For peers given administrator access, the message also contains 
+\begin_inset Formula $\mathsf{ShareOwn_{priv}}$
+\end_inset
+
+ to enable them to alter shareID's, remove users and delete the sharer completel
+y from the 
+\begin_inset Formula $\mathsf{STORE}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Subsubsection
+Revoking Access to a Private Shared Directory
+\end_layout
+
+\begin_layout Standard
+To remove a person from a shared directory an admin creates a new ShareID
+ and keypair.
+ Then the admin locks the root of the share and copies the content to the
+ new root and creates a new Childkey.
+ A message is sent to all contacts (minus the contact being removed) as
+ in the previous section.
+ when a contact receives this, it must start re-reading the share from the
+ new root.
+ 
+\end_layout
+
+\begin_layout Standard
+The admin then copy’s all the existing directory structures (locking each
+ in turn) to the new structure, starting at the new root and deleting the
+ old directories recursively.
+\end_layout
+
+\begin_layout Standard
+The users system will note this action and if a file is opened it will wait
+ on the new directory (and datamap) to become available, if the current
+ directory is locked, otherwise it is safe to store the file as the recursive
+ 'move' has not reached that point yet.
+ 
 \end_layout
 
 \begin_layout Subsection

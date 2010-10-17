@@ -60,8 +60,8 @@ Autonomous Network
 \end_layout
 
 \begin_layout Author
-David Irvine, email: david.irvine@maidsafe.net, LifeStuff: David, Fraser
- Hutchison, Steve Mücklisch
+David Irvine, email: david.irvine@maidsafe.net, LifeStuff: David, Fraser Hutchison
+, Steve Mücklisch
 \end_layout
 
 \begin_layout Right Address
@@ -190,64 +190,7 @@ This paper delivers a true platform for cloud computing, that ensures human
  data or processes.
 \end_layout
 
-\begin_layout Subsection
-Current Situation
-\begin_inset CommandInset label
-LatexCommand label
-name "sub:Current-situation"
-
-\end_inset
-
-
-\end_layout
-
 \begin_layout Standard
-Given a shared resource in nature, then the bargain between sharing parties
- tends to be physically local and therefore involve only the sharing parties.
- In human society, this tends to also be the case, with some notable exceptions
- where barter has been replaced with money, and trust and control partially
- involves a third party, particularly in credit agreements.
- 
-\end_layout
-
-\begin_layout Standard
-It is strangely illogical then, to have created a technology-based solution
- which requires this demand of trust, but to have done so in a manner that
- is almost uncontrolled.
- Technology tends to be based on logic (certainly modern computers are based
- entirely on logic gates) and is not at its foundation based on any relinquishme
-nt of personal control to a third party.
- In fact, computers at their foundation are based on calculation and processing;
- storage came much later in the development of the technical revolution.
- 
-\end_layout
-
-\begin_layout Standard
-Given these observations, it would appear obvious that creating, sharing
- and retrieving information fed into a computing device by a person should
- not require that computer to connect to a network of computers with a controlle
-r or guardian that is not a system of pure logic.
- In other words, given a situation where there is an interconnect of computers
- that effectively joins them all together, it appears that bolting in a
- system of 
-\begin_inset Quotes eld
-\end_inset
-
-man in the middle
-\begin_inset Quotes erd
-\end_inset
-
- makes no sense whatsoever.
- 
-\end_layout
-
-\begin_layout Standard
-A significant reason for the current situation is the inability for identities
- to be created, managed and independently controlled.
- This is a reasonable request for users to make of their technology, but
- so far has been regarded by technology professionals as impossible to provide.
- A system of identity management is fundamental for the removal of the illogical
- situation of today.
  
 \end_layout
 
