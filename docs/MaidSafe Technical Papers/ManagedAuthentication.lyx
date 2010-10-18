@@ -953,7 +953,7 @@ This child directory entry is the organisation drive.
 \end_layout
 
 \begin_layout Standard
-In this manner the user has the ability to alter the parent directory and
+In this manner the user has the ability to alter the child directory and
  add in his or her own files.
  This is the root drive of 
 \begin_inset Formula $\mathsf{User}$
@@ -966,15 +966,15 @@ In this manner the user has the ability to alter the parent directory and
 
  though, has access to this as he or she knows the ID and the passkey to
  it.
- This is confirmed by the 
+ In addition, as 
 \begin_inset Formula $\mathsf{Manager}$
 \end_inset
 
-'s system periodically; failure to access this would render 
+ stores and signs the parent directory, 
 \begin_inset Formula $\mathsf{User}$
 \end_inset
 
-'s ID locked and access to the network removed.
+ cannot alter this or change passwords.
 \end_layout
 
 \begin_layout Subsection
@@ -986,8 +986,8 @@ Time Based Obfuscation
 \end_layout
 
 \begin_layout Standard
-In the previous sections a system of self authentication was detailed which
- is very effective.
+In the previous sections a system of authentication was detailed which is
+ very effective.
  A potential failure point, however, may be the Access Packets, as those
  are never altering their location (key) and can pose a target for any attacker
  who is monitoring data traffic between the user and the system.
@@ -1094,16 +1094,32 @@ As the initial node has an extreme amount of power and no equal to absorb
 \end_layout
 
 \begin_layout Standard
-The answer is an n+p key sharing scheme where a user can select 
+The answer is n+p
+\begin_inset Foot
+status collapsed
+
+\begin_layout Plain Layout
+There are many methods for achieving this, Shamir's scheme is as good as
+ any and an implemention of this is availiable in many crypto libraries
+ such as cryptopp.
+\end_layout
+
+\end_inset
+
+ key sharing scheme where a user can select 
 \begin_inset Formula $\mathsf{p}$
 \end_inset
 
- users with whom to share his key.
+ users to share his key with.
  If there is ever an issue, then 
 \begin_inset Formula $\mathsf{n}$
 \end_inset
 
- of these people are all that are required to recreate the key.
+ of these users are all that are required to recreate the key.
+\end_layout
+
+\begin_layout Section
+BootStrapping the Network
 \end_layout
 
 \begin_layout Section
