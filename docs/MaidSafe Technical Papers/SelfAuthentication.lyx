@@ -195,7 +195,7 @@ Implementation
 \end_layout
 
 \begin_layout Subsection
-Issues to be solved
+Issues to be Solved
 \end_layout
 
 \begin_layout Standard
@@ -341,10 +341,10 @@ key, value
 \end_layout
 
 \begin_layout Itemize
-\begin_inset Formula $\mathsf{DelV_{[Key]}}$
+\begin_inset Formula $\mathsf{DelV_{[Key]}(Value)}$
 \end_inset
 
- ≡ Delete the 
+ ≡ Delete 
 \begin_inset Formula $\mathsf{Value}$
 \end_inset
 
@@ -352,11 +352,16 @@ key, value
 \begin_inset Formula $\mathsf{Key}$
 \end_inset
 
+.
+ 
+\begin_inset Formula $\mathsf{Value}$
+\end_inset
 
+ must be provided as multiple values can be stored under a single key.
 \end_layout
 
 \begin_layout Subsection
-Overview of self-authentication
+Overview of Self-Authentication
 \end_layout
 
 \begin_layout Subsubsection
@@ -397,11 +402,11 @@ The location of this initial key should be masked or at least not obvious
 \end_layout
 
 \begin_layout Section
-Detailed implementation
+Detailed Implementation
 \end_layout
 
 \begin_layout Subsection
-Creation of an account
+Creation of an Account
 \end_layout
 
 \begin_layout Standard
@@ -410,7 +415,7 @@ Here we will assume there are two inputs from the user of the system: user-name
 \begin_inset Formula $\mathsf{U}$
 \end_inset
 
-, password 
+, and password 
 \begin_inset Formula $\mathsf{W}$
 \end_inset
 
@@ -419,18 +424,15 @@ Here we will assume there are two inputs from the user of the system: user-name
 \begin_inset Formula $\mathsf{S}$
 \end_inset
 
- is calculated by hashing the U and W (twice) and then reading the result
- and generate a number between 1000 and 5000 e.g.
- 
-\begin_inset Formula $ReadHash()$
+ is also derived (in a repeatable way) from 
+\begin_inset Formula $\mathsf{U}$
 \end_inset
 
- reads a bit from the hash 
-\begin_inset Formula $H(H(U+W))=P\qquad X=ReadHash(P)\; While(X\%4000\leq0)\{X;\}\; X+1000=S$
+ and 
+\begin_inset Formula $\mathsf{W}$
 \end_inset
 
 .
- 
 \end_layout
 
 \begin_layout Standard
@@ -491,7 +493,7 @@ Generate random number
 \end_layout
 
 \begin_layout Subsection
-Login / load session process
+Login / Load Session Process
 \begin_inset CommandInset label
 LatexCommand label
 name "sub:Login-to-a"
@@ -524,7 +526,7 @@ For the following operation,
 \end_layout
 
 \begin_layout Subsection
-Logout / save session process
+Logout / Save Session Process
 \end_layout
 
 \begin_layout Enumerate
@@ -550,7 +552,7 @@ Generate new random number
 \end_layout
 
 \begin_layout Enumerate
-\begin_inset Formula $\mathsf{DelV_{[H(U+S+Rnd\#)]}}$
+\begin_inset Formula $\mathsf{DelV_{[H(U+S+Rnd\#)]}(OldAccount)}$
 \end_inset
 
  (Delete old Account Packet)
@@ -571,10 +573,16 @@ The previous sections outlined the basic system of authentication.
  Access Packet) is kept, to allow reverting to the previous version in case
  the current version can't be restored or turns out to have been generated
  erroneously.
+ Like the main Access Packet, the fallback Access Packet contains an (encrypted)
+ random number, designated 
+\begin_inset Formula $\mathsf{Rnd\#_{fallback}}$
+\end_inset
+
+.
 \end_layout
 
 \begin_layout Subsubsection
-Updated account creation process
+Updated Account Creation Process
 \end_layout
 
 \begin_layout Enumerate
@@ -588,7 +596,7 @@ Updated account creation process
 \begin_inset Formula $\mathsf{GetV_{[H(U+(S-1))]}\equiv False}$
 \end_inset
 
- (Ensure uniqueness of Fallback Access Packet)
+ (Ensure uniqueness of fallback Access Packet)
 \end_layout
 
 \begin_layout Enumerate
@@ -631,7 +639,7 @@ In this case, the random numbers in the Access Packets are the same, thus
 \end_layout
 
 \begin_layout Subsubsection
-Updated Login process
+Updated Login Process
 \end_layout
 
 \begin_layout Enumerate
@@ -650,20 +658,6 @@ if (
 
 \end_layout
 
-\end_deeper
-\begin_layout Enumerate
-else (or if previous attempt failed)
-\end_layout
-
-\begin_deeper
-\begin_layout Enumerate
-\begin_inset Formula $\mathsf{SymDec_{[PBKDF2_{[U][S-1]}]}\left(GetV_{[H(U+(S-1))]}\right)\equiv Rnd\#}$
-\end_inset
-
-
-\end_layout
-
-\end_deeper
 \begin_layout Enumerate
 \begin_inset Formula $\mathsf{SymDec_{[PBKDF2_{[W][S]}]}\left(GetV_{[H(U+S+Rnd\#)]}\right)\equiv Account}$
 \end_inset
@@ -671,8 +665,49 @@ else (or if previous attempt failed)
 
 \end_layout
 
+\end_deeper
+\begin_layout Enumerate
+else (or if previous attempt failed)
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+\begin_inset Formula $\mathsf{SymDec_{[PBKDF2_{[U][S-1]}]}\left(GetV_{[H(U+(S-1))]}\right)\equiv Rnd\#_{fallback}}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\mathsf{SymDec_{[PBKDF2_{[W][S-1]}]}\left(GetV_{[H(U+S+Rnd\#_{fallback})]}\right)\equiv Account_{fallback}}$
+\end_inset
+
+
+\end_layout
+
+\end_deeper
 \begin_layout Subsubsection
-Logout / save session process
+Updated Logout / Save Session Process
+\end_layout
+
+\begin_layout Standard
+Designate existing 
+\begin_inset Formula $\mathsf{Rnd\#}$
+\end_inset
+
+ as 
+\begin_inset Formula $\mathsf{Rnd\#_{old}}$
+\end_inset
+
+ and 
+\begin_inset Formula $\mathsf{Rnd\#_{fallback}}$
+\end_inset
+
+ as 
+\begin_inset Formula $\mathsf{Rnd\#_{fallback\, old}}$
+\end_inset
+
+
 \end_layout
 
 \begin_layout Enumerate
@@ -684,63 +719,49 @@ Generate new random number
 \end_layout
 
 \begin_layout Enumerate
+\begin_inset Formula $\mathsf{PutV_{[H(U+S)]}\left(SymEnc_{[PBKDF2_{[U][S]}]}(Rnd\#_{new})\right)}$
+\end_inset
+
+ (Update Access Packet with new random number)
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\mathsf{PutV_{[H(U+(S-1)]}\left(SymEnc_{[PBKDF2_{[U][S-1]}]}(Rnd\#_{old})\right)}$
+\end_inset
+
+ (Update fallback Access Packet with old random number)
+\end_layout
+
+\begin_layout Enumerate
 \begin_inset Formula $\mathsf{PutV_{[H(U+S+Rnd\#_{new})]}\left(SymEnc_{[PBKDF2_{[W][S]}]}(Account)\right)}$
 \end_inset
 
-
+ (Update Account Packet using new random number)
 \end_layout
 
 \begin_layout Enumerate
-\begin_inset Formula $\mathsf{PutV_{[H(U+(S-1)]}\left(SymEnc_{[PBKDF2_{[U][S]}]}(Rnd\#)\right)}$
+\begin_inset Formula $\mathsf{DelV_{[H(U+S+Rnd\#_{fallback\, old})]}(Account_{fallback\, old})}$
 \end_inset
 
-
-\end_layout
-
-\begin_layout Enumerate
-\begin_inset Formula $\mathsf{PutV_{[H(U+S)]}\left(SymEnc_{[PBKDF2_{[U][S-1]}]}(Rnd\#_{new})\right)}$
-\end_inset
-
-
-\end_layout
-
-\begin_layout Enumerate
-\begin_inset Formula $\mathsf{DelV_{[H(U+S+Rnd\#_{fallback})]}}$
-\end_inset
-
-
-\end_layout
-
-\begin_layout Enumerate
-\begin_inset Formula $\mathsf{Rnd\#\rightarrow Rnd\#_{fallback}}$
-\end_inset
-
-
-\end_layout
-
-\begin_layout Enumerate
-\begin_inset Formula $\mathsf{Rnd\#_{new}\rightarrow Rnd\#}$
-\end_inset
-
-
+ (Delete old Account Packet)
 \end_layout
 
 \begin_layout Standard
-The previous Account Packet remains untouched, instead the Fallback Access
+The previous Account Packet remains untouched, instead the fallback Access
  Packet is redirected to it and the normal Access Packet points to the new
  Account Packet.
- The previous Fallback Account Packet is deleted.
+ The previous fallback Account Packet is deleted.
  This is a security measure to hinder slow brute-force attacks on decrypting
  the Access Packet, which by the time the clear-text random number is obtained
  would make it obsolete.
 \end_layout
 
 \begin_layout Subsection
-Further enhancements
+Further Enhancements
 \end_layout
 
 \begin_layout Subsubsection
-Time based obfuscation
+Time Based Obfuscation
 \end_layout
 
 \begin_layout Standard
@@ -789,7 +810,7 @@ moving
 \end_layout
 
 \begin_layout Subsubsection
-Distributed storage system
+Distributed Storage System
 \end_layout
 
 \begin_layout Standard
@@ -949,8 +970,8 @@ status collapsed
 
 \end_inset
 
-  is a Scottish Engineer and innovator who has spent the last 12 years researchi
-ng ways to make computers function in a more efficient manner.
+ is a Scottish Engineer and innovator who has spent the last 12 years researchin
+g ways to make computers function in a more efficient manner.
 \end_layout
 
 \begin_layout BiographyNoPhoto

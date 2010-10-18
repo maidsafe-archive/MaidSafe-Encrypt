@@ -866,14 +866,15 @@ Create an ID for the share owner,
 \end_inset
 
  = 
-\begin_inset Formula $\mathsf{H(ShareOwn_{pub}+Sig{}_{[Shareown_{priv}]}(ShareOwn{}_{pub}))}$
+\begin_inset Formula $\mathsf{H(ShareOwn_{pub}+Sig{}_{[ShareOwn_{priv}]}(ShareOwn{}_{pub}))}$
 \end_inset
 
 
 \end_layout
 
 \begin_layout Enumerate
-\begin_inset Formula $\mathsf{PutV_{[ShareOwnID]}(ShareOwn_{pub}+Sig{}_{[ShareOn_{priv}]}(ShareOwn{}_{pub}))}$
+\begin_inset Formula $\mathsf{PutV_{[ShareOwnID]}(ShareOwn_{pub}+}$ $\mathsf{\quad Sig{}_{[ShareOwn_{priv}]}(ShareOwn{}_{pub}))}$
+
 \end_inset
 
  
@@ -1032,8 +1033,11 @@ For peers given administrator access, the message also contains
 \begin_inset Formula $\mathsf{ShareOwn_{priv}}$
 \end_inset
 
- to enable them to alter shareID's, remove users and delete the sharer completel
-y from the 
+ to enable them to alter 
+\begin_inset Formula $\mathsf{ShareID}$
+\end_inset
+
+s, remove users and delete the share completely from the 
 \begin_inset Formula $\mathsf{STORE}$
 \end_inset
 
@@ -1045,26 +1049,34 @@ Revoking Access to a Private Shared Directory
 \end_layout
 
 \begin_layout Standard
-To remove a person from a shared directory an admin creates a new ShareID
+To revoke a peer's access to a shared directory, an administrator creates
+ a new 
+\begin_inset Formula $\mathsf{ShareID}$
+\end_inset
+
  and keypair.
- Then the admin locks the root of the share and copies the content to the
- new root and creates a new Childkey.
- A message is sent to all contacts (minus the contact being removed) as
- in the previous section.
- when a contact receives this, it must start re-reading the share from the
- new root.
+ Then the administrator locks the root of the share, copies the content
+ to the new root and creates a new 
+\begin_inset Formula $\mathsf{ChildKey}$
+\end_inset
+
+.
+ A message is sent to all authorised peers (minus the peer having its access
+ revoked) as in the previous section.
+ When a peer receives such a message, it must start re-reading the share
+ from the new root.
  
 \end_layout
 
 \begin_layout Standard
-The admin then copy’s all the existing directory structures (locking each
- in turn) to the new structure, starting at the new root and deleting the
- old directories recursively.
+The administrator then copies all the existing directory structures (locking
+ each in turn) to the new structure, starting at the new root and deleting
+ the old directories recursively.
 \end_layout
 
 \begin_layout Standard
-The users system will note this action and if a file is opened it will wait
- on the new directory (and datamap) to become available, if the current
+A user's system will note this action and if a file is opened, it will wait
+ for the new directory (and datamap) to become available if the current
  directory is locked, otherwise it is safe to store the file as the recursive
  'move' has not reached that point yet.
  

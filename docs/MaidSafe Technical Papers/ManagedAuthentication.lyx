@@ -140,7 +140,7 @@ PARstart{A}{uthentication}
  allows access to a system at a certain level or privilege.
  This is described in 
 \emph on
-self authentication 
+Self Authentication 
 \emph default
 
 \begin_inset CommandInset citation
@@ -150,10 +150,10 @@ key "1"
 \end_inset
 
  with reference to an identity created, managed and maintained in seclusion,
- or in another way of thinking, anonomously.
- In many other situations this is not beneficial, in some systems, control
- over access and the ability to manage very large groups is required, examples
- would be corporate networks, military and many others.
+ or in another way of thinking, anonymously.
+ In many other situations this is not beneficial; control over access and
+ the ability to manage very large groups is required.
+ Examples include corporate and military networks.
  
 \end_layout
 
@@ -305,12 +305,72 @@ ated and efficient network.
  Network or other key addressable storage system 
 \end_layout
 
+\begin_layout Itemize
+\begin_inset Formula $\mathsf{PutV_{[Key]}(Value)}$
+\end_inset
+
+ ≡ Store 
+\begin_inset Formula $\mathsf{Value}$
+\end_inset
+
+ under 
+\begin_inset Formula $\mathsf{Key}$
+\end_inset
+
+ on 
+\begin_inset Formula $\mathsf{STORE}$
+\end_inset
+
+.
+ This value is signed.
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\mathsf{GetV_{[Key]}}$
+\end_inset
+
+ ≡ Retrieve 
+\begin_inset Formula $\mathsf{Value}$
+\end_inset
+
+ under 
+\begin_inset Formula $\mathsf{Key}$
+\end_inset
+
+ on 
+\begin_inset Formula $\mathsf{STORE}$
+\end_inset
+
+.
+ This value is signed.
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\mathsf{DelV_{[Key]}(Value)}$
+\end_inset
+
+ ≡ Delete 
+\begin_inset Formula $\mathsf{Value}$
+\end_inset
+
+ under 
+\begin_inset Formula $\mathsf{Key}$
+\end_inset
+
+ on 
+\begin_inset Formula $\mathsf{STORE}$
+\end_inset
+
+.
+ This value is signed.
+\end_layout
+
 \begin_layout Section
 Outline
 \end_layout
 
 \begin_layout Subsection
-Creation of an account
+Creation of an Account
 \begin_inset CommandInset label
 LatexCommand label
 name "sub:Creation-of-an"
@@ -321,8 +381,36 @@ name "sub:Creation-of-an"
 \end_layout
 
 \begin_layout Standard
-Here we will assume there are two inputs required by the user of the system:
- user-name 
+Here we will assume a 
+\begin_inset Formula $\mathsf{User}$
+\end_inset
+
+ who is a member of an organisation named 
+\begin_inset Quotes eld
+\end_inset
+
+
+\begin_inset Formula $\mathsf{Org}$
+\end_inset
+
+
+\begin_inset Quotes erd
+\end_inset
+
+ which has an ID on the system named 
+\begin_inset Formula $\mathsf{ID_{Org}}$
+\end_inset
+
+ and a 
+\begin_inset Formula $\mathsf{Manager}$
+\end_inset
+
+ with administator privileges.
+ There are two inputs required by 
+\begin_inset Formula $\mathsf{User}$
+\end_inset
+
+: user-name 
 \begin_inset Formula $\mathsf{U}$
 \end_inset
 
@@ -331,29 +419,28 @@ Here we will assume there are two inputs required by the user of the system:
 \end_inset
 
 .
- In addition the system also creates a salt 
+ A salt 
 \begin_inset Formula $\mathsf{S}$
 \end_inset
 
- which is not provided to the user directly, although it is calculable.
- The salt 
-\begin_inset Formula $\mathsf{S}$
+ is also derived (in a repeatable way) from 
+\begin_inset Formula $\mathsf{U}$
 \end_inset
 
- is calculated by hashing the U and the hash of the organisation ID (twice)
- and then reading the result and generate a number between 1000 and 5000
- e.g.
- 
-\begin_inset Formula $ReadHash()$
-\end_inset
-
- reads a bit from the hash 
-\begin_inset Formula $H(H(U+ORGID))=P\qquad X=ReadHash(P)\; While(X\%4000\leq0)\{X;\}\; X+1000=S$
+ and 
+\begin_inset Formula $\mathsf{ID_{Org}}$
 \end_inset
 
 .
- The MANAGER can recreate this ID at any time, but requires the user cannot
- alter the username.
+ 
+\begin_inset Formula $\mathsf{Manager}$
+\end_inset
+
+ can recreate this ID at any time, but requires that 
+\begin_inset Formula $\mathsf{User}$
+\end_inset
+
+ cannot alter the user-name.
 \end_layout
 
 \begin_layout Standard
@@ -368,7 +455,7 @@ To generate a unique identifier, we hash the concatenation of the user-name
 
 \begin_layout Standard
 PBKDF2 is used here to strengthen any password keys used.
- This is required as user selected passwords are inevitably weak and the
+ This is required as user-selected passwords are inevitably weak and the
  user may not know the user-name is also used as a password in the system.
  
 \begin_inset Formula $\mathsf{Account}$
@@ -386,8 +473,16 @@ PBKDF2 is used here to strengthen any password keys used.
 \end_layout
 
 \begin_layout Standard
-It is important to note that all packets in this process are signed by 2
- seperate ID's called MID and TMID, these are created as described in 
+It is important to note that all packets in this process are signed by two
+ seperate IDs called 
+\begin_inset Formula $\mathsf{MID_{User}}$
+\end_inset
+
+ and 
+\begin_inset Formula $\mathsf{TMID_{User}}$
+\end_inset
+
+ which are created as described in 
 \begin_inset CommandInset citation
 LatexCommand cite
 key "3"
@@ -395,9 +490,21 @@ key "3"
 \end_inset
 
 .
- These packets are in turn signed by MANAGER who keeps a copy of the ID's.
- In this way the manager can find the users ID packets and delete them after
- deleting the data pointed to by the TMID, to revoke access to the system.
+ These packets are in turn signed by 
+\begin_inset Formula $\mathsf{Manager}$
+\end_inset
+
+ who keeps a copy of the IDs.
+ In this way 
+\begin_inset Formula $\mathsf{Manager}$
+\end_inset
+
+ can find the user's ID packets and delete them after deleting the data
+ pointed to by the 
+\begin_inset Formula $\mathsf{TMID_{User}}$
+\end_inset
+
+ to revoke access to the system.
  
 \end_layout
 
@@ -431,7 +538,7 @@ Generate random number
 \end_layout
 
 \begin_layout Subsection
-Login / load session process
+Login / Load Session Process
 \begin_inset CommandInset label
 LatexCommand label
 name "sub:Login-to-a"
@@ -464,7 +571,7 @@ For the following operation,
 \end_layout
 
 \begin_layout Subsection
-Logout / save session process
+Logout / Save Session Process
 \end_layout
 
 \begin_layout Enumerate
@@ -490,7 +597,7 @@ Generate new random number
 \end_layout
 
 \begin_layout Enumerate
-\begin_inset Formula $\mathsf{DelV_{[H(U+S+Rnd\#)]}}$
+\begin_inset Formula $\mathsf{DelV_{[H(U+S+Rnd\#)]}(OldAccount)}$
 \end_inset
 
  (Delete old Account Packet)
@@ -511,10 +618,16 @@ The previous sections outlined the basic system of authentication.
  Access Packet) is kept, to allow reverting to the previous version in case
  the current version can't be restored or turns out to have been generated
  erroneously.
+ Like the main Access Packet, the fallback Access Packet contains an (encrypted)
+ random number, designated 
+\begin_inset Formula $\mathsf{Rnd\#_{fallback}}$
+\end_inset
+
+.
 \end_layout
 
 \begin_layout Subsubsection
-Updated account creation process
+Updated Account Creation Process
 \end_layout
 
 \begin_layout Enumerate
@@ -528,7 +641,7 @@ Updated account creation process
 \begin_inset Formula $\mathsf{GetV_{[H(U+(S-1))]}\equiv False}$
 \end_inset
 
- (Ensure uniqueness of Fallback Access Packet)
+ (Ensure uniqueness of fallback Access Packet)
 \end_layout
 
 \begin_layout Enumerate
@@ -571,7 +684,7 @@ In this case, the random numbers in the Access Packets are the same, thus
 \end_layout
 
 \begin_layout Subsubsection
-Updated Login process
+Updated Login Process
 \end_layout
 
 \begin_layout Enumerate
@@ -590,20 +703,6 @@ if (
 
 \end_layout
 
-\end_deeper
-\begin_layout Enumerate
-else (or if previous attempt failed)
-\end_layout
-
-\begin_deeper
-\begin_layout Enumerate
-\begin_inset Formula $\mathsf{SymDec_{[PBKDF2_{[U][S-1]}]}\left(GetV_{[H(U+(S-1))]}\right)\equiv Rnd\#}$
-\end_inset
-
-
-\end_layout
-
-\end_deeper
 \begin_layout Enumerate
 \begin_inset Formula $\mathsf{SymDec_{[PBKDF2_{[W][S]}]}\left(GetV_{[H(U+S+Rnd\#)]}\right)\equiv Account}$
 \end_inset
@@ -611,8 +710,49 @@ else (or if previous attempt failed)
 
 \end_layout
 
+\end_deeper
+\begin_layout Enumerate
+else (or if previous attempt failed)
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+\begin_inset Formula $\mathsf{SymDec_{[PBKDF2_{[U][S-1]}]}\left(GetV_{[H(U+(S-1))]}\right)\equiv Rnd\#_{fallback}}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\mathsf{SymDec_{[PBKDF2_{[W][S-1]}]}\left(GetV_{[H(U+S+Rnd\#_{fallback})]}\right)\equiv Account_{fallback}}$
+\end_inset
+
+
+\end_layout
+
+\end_deeper
 \begin_layout Subsubsection
-Logout / save session process
+Updated Logout / Save Session Process
+\end_layout
+
+\begin_layout Standard
+Designate existing 
+\begin_inset Formula $\mathsf{Rnd\#}$
+\end_inset
+
+ as 
+\begin_inset Formula $\mathsf{Rnd\#_{old}}$
+\end_inset
+
+ and 
+\begin_inset Formula $\mathsf{Rnd\#_{fallback}}$
+\end_inset
+
+ as 
+\begin_inset Formula $\mathsf{Rnd\#_{fallback\, old}}$
+\end_inset
+
+
 \end_layout
 
 \begin_layout Enumerate
@@ -624,117 +764,172 @@ Generate new random number
 \end_layout
 
 \begin_layout Enumerate
+\begin_inset Formula $\mathsf{PutV_{[H(U+S)]}\left(SymEnc_{[PBKDF2_{[U][S]}]}(Rnd\#_{new})\right)}$
+\end_inset
+
+ (Update Access Packet with new random number)
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\mathsf{PutV_{[H(U+(S-1)]}\left(SymEnc_{[PBKDF2_{[U][S-1]}]}(Rnd\#_{old})\right)}$
+\end_inset
+
+ (Update fallback Access Packet with old random number)
+\end_layout
+
+\begin_layout Enumerate
 \begin_inset Formula $\mathsf{PutV_{[H(U+S+Rnd\#_{new})]}\left(SymEnc_{[PBKDF2_{[W][S]}]}(Account)\right)}$
 \end_inset
 
-
+ (Update Account Packet using new random number)
 \end_layout
 
 \begin_layout Enumerate
-\begin_inset Formula $\mathsf{PutV_{[H(U+(S-1)]}\left(SymEnc_{[PBKDF2_{[U][S]}]}(Rnd\#)\right)}$
+\begin_inset Formula $\mathsf{DelV_{[H(U+S+Rnd\#_{fallback\, old})]}(Account_{fallback\, old})}$
 \end_inset
 
-
-\end_layout
-
-\begin_layout Enumerate
-\begin_inset Formula $\mathsf{PutV_{[H(U+S)]}\left(SymEnc_{[PBKDF2_{[U][S-1]}]}(Rnd\#_{new})\right)}$
-\end_inset
-
-
-\end_layout
-
-\begin_layout Enumerate
-\begin_inset Formula $\mathsf{DelV_{[H(U+S+Rnd\#_{fallback})]}}$
-\end_inset
-
-
-\end_layout
-
-\begin_layout Enumerate
-\begin_inset Formula $\mathsf{Rnd\#\rightarrow Rnd\#_{fallback}}$
-\end_inset
-
-
-\end_layout
-
-\begin_layout Enumerate
-\begin_inset Formula $\mathsf{Rnd\#_{new}\rightarrow Rnd\#}$
-\end_inset
-
-
+ (Delete old Account Packet)
 \end_layout
 
 \begin_layout Standard
-The previous Account Packet remains untouched, instead the Fallback Access
- Packet is redirected to it and the normal Access Packet points to the new
- Account Packet.
- The previous Fallback Account Packet is deleted.
+The previous Account Packet remains untouched.
+ Instead the fallback Access Packet is redirected to it and the normal Access
+ Packet points to the new Account Packet.
+ The previous fallback Account Packet is deleted.
  This is a security measure to hinder slow brute-force attacks on decrypting
  the Access Packet, which by the time the clear-text random number is obtained
  would make it obsolete.
 \end_layout
 
 \begin_layout Subsection
-Creating a user identity (publically broadcastable identity)
+Creating a User Identity (publically broadcastable identity)
 \end_layout
 
 \begin_layout Enumerate
-Manager creates 
-\begin_inset Formula $\mathsf{USER_{pub}\,\&\, USER_{priv}}$
+\begin_inset Formula $\mathsf{Manager}$
+\end_inset
+
+ creates 
+\begin_inset Formula $\mathsf{USER_{priv}}$
+\end_inset
+
+ and 
+\begin_inset Formula $\mathsf{USER_{pub}}$
 \end_inset
 
 
 \end_layout
 
 \begin_layout Enumerate
-\begin_inset Formula $\mathsf{H(USER_{pub}\,+Sig{}_{MANAGER_{prv}})}$
+\begin_inset Formula $\mathsf{H(USER_{pub}\,+Sig{}_{MANAGER_{priv}})}$
 \end_inset
 
  is stored on 
 \begin_inset Formula $\mathsf{STORE}$
 \end_inset
 
-, this also will be the ID for USER
+; this also will be the ID for 
+\begin_inset Formula $\mathsf{User}$
+\end_inset
+
+.
 \end_layout
 
 \begin_layout Enumerate
-Manager creates a 
-\begin_inset Formula $\mathsf{H(USER@XXX+Sig{}_{MANAGER_{prv}})}$
+\begin_inset Formula $\mathsf{Manager}$
+\end_inset
+
+ creates a 
+\begin_inset Formula $\mathsf{H(User@Org+Sig{}_{MANAGER_{priv}})}$
 \end_inset
 
  packet in 
 \begin_inset Formula $\mathsf{STORE}$
 \end_inset
 
- (this is the contact address of USER when connected with company XXX),
- again this is revokable by the manager.
+ (this is the contact address of 
+\begin_inset Formula $\mathsf{User}$
+\end_inset
+
+ when connected with 
+\begin_inset Formula $\mathsf{Org}$
+\end_inset
+
+); again this is revokable by 
+\begin_inset Formula $\mathsf{Manager}$
+\end_inset
+
+.
 \end_layout
 
 \begin_layout Standard
-It should be emphasised that any communcation from USER@anything should
- require check of STORE to ensure the ID is still valid, therefor there
- is no possibility of simply passing the info in a message.
- This may involve a recursive check on the managers keys to get to the root
- XXX packet which is the packet signed by the XXX key itself (first user).
- This is identified as being signed by the XXX Id packet.
- This ID will be published in many places and found in STORE as a packet
- simply called XXX and signed by XXX (self signed original packet).
+It should be emphasised that any communcation from 
+\begin_inset Formula $\mathsf{User@Org}$
+\end_inset
+
+ should require a check of 
+\begin_inset Formula $\mathsf{STORE}$
+\end_inset
+
+ to ensure the ID is still valid; therefore there is no possibility of simply
+ passing the information in a message.
+ This may involve a recursive check on 
+\begin_inset Formula $\mathsf{Manager}$
+\end_inset
+
+'s keys to get to the root 
+\begin_inset Formula $\mathsf{Org}$
+\end_inset
+
+ packet which is the packet signed by the 
+\begin_inset Formula $\mathsf{Org}$
+\end_inset
+
+ key itself (first user).
+ This is identified as being signed by the 
+\begin_inset Formula $\mathsf{ID_{Org}}$
+\end_inset
+
+ packet.
+ This ID will be published in many places and found in 
+\begin_inset Formula $\mathsf{STORE}$
+\end_inset
+
+ as a packet simply called 
+\begin_inset Formula $\mathsf{Org}$
+\end_inset
+
+ and signed by 
+\begin_inset Formula $\mathsf{Org}$
+\end_inset
+
+ (self-signed original packet).
 \end_layout
 
 \begin_layout Subsection
-Creating user disk 
+Creating User Root Directory 
 \end_layout
 
 \begin_layout Enumerate
-MANAGER creates a parent directory for USER as per 
+\begin_inset Formula $\mathsf{Manager}$
+\end_inset
+
+ creates a parent directory for 
+\begin_inset Formula $\mathsf{User}$
+\end_inset
+
+ as per 
 \begin_inset CommandInset citation
 LatexCommand cite
 key "6"
 
 \end_inset
 
-, but uses the hash of the userID from 
+, but uses the hash of the 
+\begin_inset Formula $\mathsf{ID_{User}}$
+\end_inset
+
+ from 
 \begin_inset CommandInset ref
 LatexCommand ref
 reference "sub:Creation-of-an"
@@ -745,31 +940,49 @@ reference "sub:Creation-of-an"
 \end_layout
 
 \begin_layout Enumerate
-MANAGER adds a child directory entry to the parent.
+\begin_inset Formula $\mathsf{Manager}$
+\end_inset
+
+ adds a child directory entry to the parent.
  
 \end_layout
 
 \begin_layout Enumerate
-This child directory entry is the company drive.
+This child directory entry is the organisation drive.
  
 \end_layout
 
 \begin_layout Standard
 In this manner the user has the ability to alter the parent directory and
  add in his or her own files.
- This is the root drive of USER and personal information can be stored there.
- The MANAGER though, has access to this as he or she knows the ID and the
- passkey to it.
- This is confirmed by the MANAGERS system periodically, failure to access
- this would render the users ID locked and access to the network removed.
+ This is the root drive of 
+\begin_inset Formula $\mathsf{User}$
+\end_inset
+
+, and personal information can be stored there.
+ 
+\begin_inset Formula $\mathsf{Manager}$
+\end_inset
+
+ though, has access to this as he or she knows the ID and the passkey to
+ it.
+ This is confirmed by the 
+\begin_inset Formula $\mathsf{Manager}$
+\end_inset
+
+'s system periodically; failure to access this would render 
+\begin_inset Formula $\mathsf{User}$
+\end_inset
+
+'s ID locked and access to the network removed.
 \end_layout
 
 \begin_layout Subsection
-Further enhancements
+Further Enhancements
 \end_layout
 
 \begin_layout Subsubsection
-Time based obfuscation
+Time Based Obfuscation
 \end_layout
 
 \begin_layout Standard
@@ -818,31 +1031,58 @@ moving
 \end_layout
 
 \begin_layout Subsection
-Banning user from network
+Banning User from Network
 \end_layout
 
 \begin_layout Standard
-As the USER identity packet is signed by the MANAGER, then the manager can
- delete this packet.
- This renders the USER access key useless and all access revoked.
+As 
+\begin_inset Formula $\mathsf{ID_{User}}$
+\end_inset
+
+ is signed by 
+\begin_inset Formula $\mathsf{Manager}$
+\end_inset
+
+, then 
+\begin_inset Formula $\mathsf{Manager}$
+\end_inset
+
+ can delete this packet.
+ This renders 
+\begin_inset Formula $\mathsf{User}$
+\end_inset
+
+'s access key useless and all access revoked.
  To ensure this is absolute, the message type sent cannot be used to verify
- an ID (by sending pub plus signature in a packet for hashing be the recipient)
- and insted a 
+ an ID (by sending public key plus signature in a packet for hashing by
+ the recipient) and instead a 
 \begin_inset Formula $\mathsf{STORE}$
 \end_inset
 
- lookup for a valid has to be happen every time.
+ lookup for a valid ID has to happen every time.
  
 \end_layout
 
 \begin_layout Standard
-In addition the users ability to access any data from the network is revoked
- with the deletions of the MID, SMID and TMID packets.
+In addition the user's ability to access any data from the network is revoked
+ with the deletions of the 
+\begin_inset Formula $\mathsf{MID_{User}}$
+\end_inset
+
+, 
+\begin_inset Formula $\mathsf{SMID_{User}}$
+\end_inset
+
+ and 
+\begin_inset Formula $\mathsf{TMID_{User}}$
+\end_inset
+
+ packets.
  
 \end_layout
 
 \begin_layout Subsection
-N plus P key sharing
+N Plus P Key Sharing
 \end_layout
 
 \begin_layout Standard
@@ -854,12 +1094,16 @@ As the initial node has an extreme amount of power and no equal to absorb
 \end_layout
 
 \begin_layout Standard
-The answer is n+p key sharing scheme where a user can select p users to
- shre his key with, if there is ever an issue then n of these people are
- all that are required to recreate the key.
- This is essential for the first layer of such a system as the root node
- requires a backup situation in case of emergency or inability of the key
- to be recovered from the first user for any reason.
+The answer is an n+p key sharing scheme where a user can select 
+\begin_inset Formula $\mathsf{p}$
+\end_inset
+
+ users with whom to share his key.
+ If there is ever an issue, then 
+\begin_inset Formula $\mathsf{n}$
+\end_inset
+
+ of these people are all that are required to recreate the key.
 \end_layout
 
 \begin_layout Section
