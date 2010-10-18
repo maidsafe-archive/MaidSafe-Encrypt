@@ -755,13 +755,13 @@ This child directory entry is the company drive.
 \end_layout
 
 \begin_layout Standard
-In this manner the user has the ability to alter the parent directory and
+In this manner the user has the ability to alter the child directory and
  add in his or her own files.
  This is the root drive of USER and personal information can be stored there.
  The MANAGER though, has access to this as he or she knows the ID and the
- passkey to it.
- This is confirmed by the MANAGERS system periodically, failure to access
- this would render the users ID locked and access to the network removed.
+ passkey to it, in addition as the manager stores and signs he parent dir,
+ the use cannot alter this or change passwords.
+ 
 \end_layout
 
 \begin_layout Subsection
@@ -773,8 +773,8 @@ Time based obfuscation
 \end_layout
 
 \begin_layout Standard
-In the previous sections a system of self authentication was detailed which
- is very effective.
+In the previous sections a system of authentication was detailed which is
+ very effective.
  A potential failure point, however, may be the Access Packets, as those
  are never altering their location (key) and can pose a target for any attacker
  who is monitoring data traffic between the user and the system.
@@ -831,7 +831,7 @@ As the USER identity packet is signed by the MANAGER, then the manager can
 \begin_inset Formula $\mathsf{STORE}$
 \end_inset
 
- lookup for a valid has to be happen every time.
+ lookup for a valid ID has to be happen every time.
  
 \end_layout
 
@@ -854,12 +854,28 @@ As the initial node has an extreme amount of power and no equal to absorb
 \end_layout
 
 \begin_layout Standard
-The answer is n+p key sharing scheme where a user can select p users to
- shre his key with, if there is ever an issue then n of these people are
- all that are required to recreate the key.
+The answer is n+p
+\begin_inset Foot
+status collapsed
+
+\begin_layout Plain Layout
+There are many methods for achieving this, Shamir's scheme is as good as
+ any and an implemention of this is availiable in many crypto libraries
+ such as cryptopp.
+\end_layout
+
+\end_inset
+
+ key sharing scheme where a user can select p users to shre his key with,
+ if there is ever an issue then n of these people are all that are required
+ to recreate the key.
  This is essential for the first layer of such a system as the root node
  requires a backup situation in case of emergency or inability of the key
  to be recovered from the first user for any reason.
+\end_layout
+
+\begin_layout Section
+BootStrapping the Network
 \end_layout
 
 \begin_layout Section
