@@ -1123,6 +1123,57 @@ BootStrapping the Network
 \end_layout
 
 \begin_layout Section
+Hardened security mode
+\end_layout
+
+\begin_layout Standard
+As this system allows access to a distributed filesystem such as 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "6"
+
+\end_inset
+
+ we can achieve a level of security unknown until now.
+ This filesystem can be presented through a File System In Userspace (FUSE)
+ format, thereby appearing like a hard disk to the operating system.
+ On this disk can run any system that runs on a normal hard disk (with the
+ exception of extreme fast transaction services
+\begin_inset Foot
+status collapsed
+
+\begin_layout Plain Layout
+This is only a current limitation and can be overcome even today with a
+ NOSQL policy
+\end_layout
+
+\end_inset
+
+).
+ With this being the case, even applications can be installed on the disk
+ as shares the users can access and presented through a menu system as oone
+ would normally exepct to see on a computer.
+ 
+\end_layout
+
+\begin_layout Standard
+If such systems were built that had no external access capabilities (USB,
+ FireWire, Bluetooth etc.) and had a read only file system (which is possible
+ as this system does not require disk access at all) then a extreme level
+ of security could be obtained.
+ All applications managed as well as virtual disk access with no virus capabilit
+y or no way to write to the hard disk (no trojans) and no requirement for
+ a firewall or intrusion detection system as there is no hard disk.
+ 
+\end_layout
+
+\begin_layout Standard
+Such system would find use in military, financial institutes and organisations
+ requiring 100% control and protection of internal data.
+ 
+\end_layout
+
+\begin_layout Section
 Conclusions
 \end_layout
 
