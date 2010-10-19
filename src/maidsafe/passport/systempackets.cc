@@ -37,10 +37,10 @@ std::string DebugString(const int &packet_type) {
       return "MID";
     case SMID:
       return "SMID";
-    case STMID:
-      return "STMID";
     case TMID:
       return "TMID";
+    case STMID:
+      return "STMID";
     case MPID:
       return "MPID";
     case PMID:
@@ -77,6 +77,7 @@ bool IsSignature(const int &packet_type, bool check_for_self_signer) {
     case ANTMID:
     case ANMPID:
     case ANMAID:
+    case MSID:
       return true;
     default:
       return false;

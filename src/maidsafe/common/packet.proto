@@ -113,10 +113,3 @@ message StoreMessagesResult {
   repeated bytes failed = 3;
 }
 
-message CreateMSIDResult {
-  required uint32 result = 1;
-  optional bytes name = 2;
-  optional bytes private_key = 3;
-  optional bytes public_key = 4;
-}
-

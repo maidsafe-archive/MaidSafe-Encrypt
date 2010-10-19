@@ -853,7 +853,7 @@ int ClientController::SaveSession() {
   }
 
   if (n != kSuccess) {
-    if (n == kFailedToDeleteOldTmid) {
+    if (n == kFailedToDeleteOldPacket) {
 #ifdef DEBUG
       printf("ClientController::SaveSession - Failed to delete old TMID, "
              "otherwise saved session OK.\n");
@@ -901,9 +901,21 @@ bool ClientController::ChangeUsername(const std::string &new_username) {
   SerialiseDa();
 
   int result = auth_.ChangeUsername(ser_dm_, new_username);
-  if (result == kSuccess)
-    return true;
-  return false;
+  if (result != kSuccess) {
+    if (result == kFailedToDeleteOldPacket) {
+#ifdef DEBUG
+      printf("ClientController::SaveSession - Failed to delete old packets, "
+             "otherwise changed username OK.\n");
+#endif
+      return true;
+    } else {
+#ifdef DEBUG
+      printf("ClientController::SaveSession - Failed to change username.\n");
+#endif
+      return false;
+    }
+  }
+  return true;
 }
 
 bool ClientController::ChangePin(const std::string &new_pin) {
@@ -916,9 +928,21 @@ bool ClientController::ChangePin(const std::string &new_pin) {
   SerialiseDa();
 
   int result = auth_.ChangePin(ser_dm_, new_pin);
-  if (result == kSuccess)
-    return true;
-  return false;
+  if (result != kSuccess) {
+    if (result == kFailedToDeleteOldPacket) {
+#ifdef DEBUG
+      printf("ClientController::SaveSession - Failed to delete old packets, "
+             "otherwise changed PIN OK.\n");
+#endif
+      return true;
+    } else {
+#ifdef DEBUG
+      printf("ClientController::SaveSession - Failed to change PIN.\n");
+#endif
+      return false;
+    }
+  }
+  return true;
 }
 
 bool ClientController::ChangePassword(const std::string &new_password) {
@@ -2031,16 +2055,10 @@ int ClientController::CreateNewShare(const std::string &name,
 #endif
     return -30008;
   }
-  CCCallback cb;
-  auth_.CreateMSIDPacket(boost::bind(&CCCallback::StringCallback, &cb, _1));
-  CreateMSIDResult cmsidr;
-  if (!cmsidr.ParseFromString(cb.WaitForStringResult())) {
-#ifdef DEBUG
-    printf("Result doesn't parse.\n");
-#endif
-    return -30001;
-  }
-  if (cmsidr.result() != kAck) {
+  std::string msid_name, msid_public_key, msid_private_key;
+  int result = auth_.CreateMsidPacket(&msid_name, &msid_public_key,
+                                      &msid_private_key);
+  if (result != kSuccess) {
 #ifdef DEBUG
     printf("The creation of the MSID failed.\n");
 #endif
@@ -2050,13 +2068,12 @@ int ClientController::CreateNewShare(const std::string &name,
   std::vector<std::string> attributes;
   attributes.push_back(name);
 #ifdef DEBUG
-  printf("Public key: %s\n", HexSubstr(cmsidr.public_key()).c_str());
-  printf("MSID: %s\n", HexSubstr(cmsidr.name()).c_str());
+  printf("Public key: %s\n", HexSubstr(msid_public_key).c_str());
+  printf("MSID: %s\n", HexSubstr(msid_name).c_str());
 #endif
-  // MSID & keys are needed here
-  attributes.push_back(cmsidr.name());
-  attributes.push_back(cmsidr.public_key());
-  attributes.push_back(cmsidr.private_key());
+  attributes.push_back(msid_name);
+  attributes.push_back(msid_public_key);
+  attributes.push_back(msid_private_key);
 
   std::list<maidsafe::ShareParticipants> participants;
   std::vector<maidsafe::ShareParticipants> parts;
@@ -2120,8 +2137,8 @@ int ClientController::CreateNewShare(const std::string &name,
   PrivateShareNotification *psn =
       im.mutable_privateshare_notification();
   psn->set_name(name);
-  psn->set_msid(cmsidr.name());
-  psn->set_public_key(cmsidr.public_key());
+  psn->set_msid(msid_name);
+  psn->set_public_key(msid_public_key);
   psn->set_dir_db_key(share_dir_key);
   im.set_sender(ss_->PublicUsername());
   im.set_date(base::GetEpochTime());
@@ -2148,7 +2165,7 @@ int ClientController::CreateNewShare(const std::string &name,
   if (admin_recs.size() > 0) {
     std::string *me = psn->add_admins();
     *me = ss_->PublicUsername();
-    psn->set_private_key(cmsidr.private_key());
+    psn->set_private_key(msid_private_key);
     message = std::string("\"");
     message += im.sender() + "\" has added you as an Administrator participant "
                "to share " + name;

@@ -94,6 +94,8 @@ class Passport {
   // kSuccess.
   int ChangePassword(const std::string &new_password,
                      const std::string &plain_data,
+                     std::string *tmid_old_value,
+                     std::string *stmid_old_value,
                      boost::shared_ptr<TmidPacket> updated_tmid,
                      boost::shared_ptr<TmidPacket> updated_stmid);
   // Serialises signature packets only to a keyring
@@ -103,8 +105,9 @@ class Passport {
   // Removes signature packets from packet_handler_
   void ClearKeyring() { packet_handler_.ClearKeyring(); }
   // Creates a new signature packet.  For non-self-signing packets, will fail if
-  // signing packet type is not already in packet_handler_.  If successful, a
-  // *copy* of the packet is set before returning kSuccess.
+  // signing packet type is not already in packet_handler_.  If MSID, it is not
+  // added to the packet_handler_.  If successful, a *copy* of the packet is set
+  // before returning kSuccess.
   int InitialiseSignaturePacket(
       const PacketType &packet_type,
       boost::shared_ptr<SignaturePacket> signature_packet);

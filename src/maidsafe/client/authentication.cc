@@ -23,21 +23,10 @@
 
 #include "maidsafe/client/authentication.h"
 
-//#include <boost/array.hpp>
-//#include <boost/lexical_cast.hpp>
-//#include <boost/regex.hpp>
-//#include <boost/thread/mutex.hpp>
-//
-//#include <vector>
+#include <boost/regex.hpp>
 
 #include "maidsafe/client/sessionsingleton.h"
 #include "maidsafe/client/storemanager.h"
-
-//#include "maidsafe/passport/systempackets.h"
-//#include "maidsafe/maidsafe.h"
-//#include "protobuf/datamaps.pb.h"
-//#include "protobuf/maidsafe_messages.pb.h"
-//#include "protobuf/maidsafe_service.pb.h"
 
 namespace maidsafe {
 
@@ -46,8 +35,6 @@ void Authentication::Init(const boost::uint16_t &crypto_key_buffer_count,
                           boost::shared_ptr<passport::Passport> passport) {
   store_manager_ = storemanager;
   session_singleton_ = SessionSingleton::getInstance();
-  crypto_.set_hash_algorithm(crypto::SHA_512);
-  crypto_.set_symm_algorithm(crypto::AES_256);
   passport_ = passport;
   passport_->Init(crypto_key_buffer_count);
 }
@@ -60,22 +47,23 @@ int Authentication::GetUserInfo(const std::string &username,
 
   if (result != kSuccess) {
     tmid_op_status_ = kFailed;
-    stmid_result_ = kFailed;
+    stmid_op_status_ = kFailed;
     return kAuthenticationError;
   } else {
     tmid_op_status_ = kPendingMid;
-    stmid_result_ = kPendingMid;
+    stmid_op_status_ = kPendingMid;
   }
 
   store_manager_->LoadPacket(mid_name, boost::bind(
-      &Authentication::GetMidSmidCallback, this, _1, _2, false));
+      &Authentication::GetMidTmidCallback, this, _1, _2, false));
   store_manager_->LoadPacket(smid_name, boost::bind(
-      &Authentication::GetMidSmidCallback, this, _1, _2, true));
+      &Authentication::GetMidTmidCallback, this, _1, _2, true));
 
   bool success(true);
   try {
     boost::mutex::scoped_lock lock(mutex_);
-    success = cond_var_.timed_wait(lock, boost::posix_time::milliseconds(60000),
+    success = cond_var_.timed_wait(lock,
+              boost::posix_time::milliseconds(4 * kSingleOpTimeout_),
               boost::bind(&Authentication::TmidOpDone, this));
   }
   catch(const std::exception &e) {
@@ -101,7 +89,8 @@ int Authentication::GetUserInfo(const std::string &username,
   // Need to wait for STMID result to decide
   try {
     boost::mutex::scoped_lock lock(mutex_);
-    success = cond_var_.timed_wait(lock, boost::posix_time::milliseconds(60000),
+    success = cond_var_.timed_wait(lock,
+              boost::posix_time::milliseconds(2 * kSingleOpTimeout_),
               boost::bind(&Authentication::StmidOpDone, this));
   }
   catch(const std::exception &e) {
@@ -148,12 +137,12 @@ void Authentication::GetMidTmidCallback(const std::vector<std::string> &values,
 
 #ifdef DEBUG
   if (values.size() != 1)
-    printf("Authentication::GetMidCallback - Values: %d\n", values.size());
+    printf("Authentication::GetMidTmidCallback - Values: %d\n", values.size());
 #endif
 
   if (op_status == kPendingMid) {
     std::string tmid_name;
-    int result = passport->InitialiseTmid(surrogate, values.at(0), &tmid_name);
+    int result = passport_->InitialiseTmid(surrogate, values.at(0), &tmid_name);
     if (result != kSuccess) {
 #ifdef DEBUG
       printf("Authentication::GetMidTmidCallback - error %i.\n", result);
@@ -171,58 +160,54 @@ void Authentication::GetMidTmidCallback(const std::vector<std::string> &values,
       stmid_op_status_ = kPendingTmid;
     else
       tmid_op_status_ = kPendingTmid;
-    store_manager_->LoadPacket(tmid_name,
-        boost::bind(&Authentication::GetTmidStmidCallback, this, _1, _2,
-                    surrogate, user_info));
+    store_manager_->LoadPacket(tmid_name, boost::bind(
+        &Authentication::GetMidTmidCallback, this, _1, _2, surrogate));
   } else {
     boost::mutex::scoped_lock lock(mutex_);
     if (surrogate) {
       serialised_stmid_packet_ = values.at(0);
-      user_info->stmid_callback_status = UserInfo::kSucceeded;
-      if (user_info->tmid_callback_status == UserInfo::kFailed) {
-        user_info_result_ = kUserExists;
+      stmid_op_status_ = kSucceeded;
+      if (tmid_op_status_ == kFailed)
         cond_var_.notify_all();
-      }
     } else {
       serialised_tmid_packet_ = values.at(0);
-      user_info->tmid_callback_status = UserInfo::kSucceeded;
-      user_info_result_ = kUserExists;
+      tmid_op_status_ = kSucceeded;
       cond_var_.notify_all();
     }
   }
 }
 
-
 int Authentication::GetUserData(const std::string &password,
                                 std::string *serialised_data_atlas) {
   //  still have not recovered the tmid
-  int result = passport->GetUserData(password, false, serialised_tmid_packet_,
-                                     serialised_data_atlas);
+  int result = passport_->GetUserData(password, false, serialised_tmid_packet_,
+                                      serialised_data_atlas);
   DataMap dm;
   if (result != kSuccess || !dm.ParseFromString(*serialised_data_atlas)) {
 #ifdef DEBUG
       printf("Authentication::GetUserData - TMID error %i.\n", result);
 #endif
+    bool success(false);
     try {
       boost::mutex::scoped_lock lock(mutex_);
       tmid_op_status_ = kFailed;
       serialised_tmid_packet_.clear();
       success = cond_var_.timed_wait(lock,
-          boost::posix_time::milliseconds(60000),
-          boost::bind(&Authentication::SerialisedStmidPacketSet, this));
+                boost::posix_time::milliseconds(2 * kSingleOpTimeout_),
+                boost::bind(&Authentication::StmidOpDone, this));
     }
     catch(const std::exception &e) {
 #ifdef DEBUG
-      printf("Authentication::GetUserInfo: %s\n", e.what());
+      printf("Authentication::GetUserData: %s\n", e.what());
 #endif
     }
 #ifdef DEBUG
     if (!success)
-      printf("Authentication::GetUserInfo: timed out waiting for STMID.\n");
+      printf("Authentication::GetUserData: timed out waiting for STMID.\n");
 #endif
     if (stmid_op_status_ == kSucceeded) {
-      result = passport->GetUserData(password, true, serialised_stmid_packet_,
-                                     serialised_data_atlas);
+      result = passport_->GetUserData(password, true, serialised_stmid_packet_,
+                                      serialised_data_atlas);
       if (result != kSuccess || !dm.ParseFromString(*serialised_data_atlas)) {
 #ifdef DEBUG
         printf("Authentication::GetUserData - STMID error %i.\n", result);
@@ -302,7 +287,8 @@ int Authentication::CreateUserSysPackets(const std::string &username,
   bool success(true);
   try {
     boost::mutex::scoped_lock lock(mutex_);
-    success = cond_var_.timed_wait(lock,boost::posix_time::milliseconds(60000),
+    success = cond_var_.timed_wait(lock,
+              boost::posix_time::milliseconds(15 * kSingleOpTimeout_),
               boost::bind(&Authentication::SystemPacketsOpDone, this,
                           pmid_status, anmid_status, antmid_status));
   }
@@ -337,9 +323,9 @@ void Authentication::CreateSignaturePacket(
     boost::mutex::scoped_lock lock(mutex_);
     try {
       success = cond_var_.timed_wait(lock,
-                                     boost::posix_time::milliseconds(60000),
-                                     boost::bind(&Authentication::SignerDone,
-                                                 this, dependent_op_status));
+                boost::posix_time::milliseconds(3 * kSingleOpTimeout_),
+                boost::bind(&Authentication::SignerDone, this,
+                            dependent_op_status));
     }
     catch(const std::exception &e) {
 #ifdef DEBUG
@@ -347,7 +333,7 @@ void Authentication::CreateSignaturePacket(
 #endif
       success = false;
     }
-    success = (dependent_op_status == kSucceeded);
+    success = (*dependent_op_status == kSucceeded);
   }
   if (!success) {
 #ifdef DEBUG
@@ -362,7 +348,7 @@ void Authentication::CreateSignaturePacket(
   // Create packet
   boost::shared_ptr<passport::SignaturePacket> sig_packet;
   int result(kPendingResult);
-  if (packet_type == MPID) {
+  if (packet_type == passport::MPID) {
     if (attempt == 0)
       result = passport_->InitialiseMpid(public_name_, sig_packet);
   } else {
@@ -378,12 +364,50 @@ void Authentication::CreateSignaturePacket(
     return;
   }
 
+  // Check packet name is not already a key on the DHT
+  VoidFuncOneInt func = boost::bind(&Authentication::PacketUniqueCallback, this,
+                                    _1, sig_packet, attempt, op_status);
+  store_manager_->KeyUnique(sig_packet->name(), false, func);
+}
+
+void Authentication::PacketUniqueCallback(const ReturnCode &return_code,
+                                          boost::shared_ptr<pki::Packet> packet,
+                                          boost::uint8_t attempt,
+                                          OpStatus *op_status) {
+  passport::PacketType packet_type =
+      static_cast<passport::PacketType>(packet->packet_type());
+  if (return_code != kKeyUnique) {
+    if ((attempt == kMaxStoreAttempts_ - 1) ||
+        (packet_type == passport::MPID)) {
+      boost::mutex::scoped_lock lock(mutex_);
+#ifdef DEBUG
+      printf("Authentication::PacketUniqueCallback (%i): Failed to store. No "
+             "more retries.\n", packet_type);
+#endif
+      *op_status = kFailed;
+      cond_var_.notify_all();
+      return;
+    } else {
+#ifdef DEBUG
+      printf("Authentication::PacketUniqueCallback (%i): Failed to store. "
+             "Retry %i.\n", packet_type, attempt + 1);
+#endif
+      CreateSignaturePacket(packet_type, attempt + 1, op_status, NULL);
+      return;
+    }
+  }
+
   // Store packet
   VoidFuncOneInt functor = boost::bind(
-      &Authentication::StoreOrDeletePacketCallback, this, _1, packet_type, true,
-      attempt, op_status);
-  store_manager_->StorePacket(sig_packet->name(), sig_packet->value(),
-                              packet_type, PRIVATE, "", functor);
+      &Authentication::StoreOrDeletePacketCallback, this, _1,
+      packet->packet_type(), true, attempt, op_status);
+  if (packet->packet_type() == passport::MSID) {
+    store_manager_->StorePacket(packet->name(), packet->value(),
+                                packet->packet_type(), PRIVATE, "", functor);
+  } else {
+    store_manager_->StorePacket(packet->name(), packet->value(),
+                                packet->packet_type(), PRIVATE, "", functor);
+  }
 }
 
 void Authentication::StoreOrDeletePacketCallback(
@@ -393,7 +417,7 @@ void Authentication::StoreOrDeletePacketCallback(
     boost::uint8_t attempt,
     OpStatus *op_status) {
   bool is_last_attempt = (storing && (attempt == kMaxStoreAttempts_ - 1)) ||
-                         (!storing && (atempt == kMaxDeleteAttempts_ - 1))
+                         (!storing && (attempt == kMaxDeleteAttempts_ - 1));
   {
     boost::mutex::scoped_lock lock(mutex_);
     if (return_code == kSuccess) {
@@ -404,7 +428,7 @@ void Authentication::StoreOrDeletePacketCallback(
 #ifdef DEBUG
       std::string dbg(storing ? "store" : "delete");
       printf("Authentication::StoreOrDeletePktCb (%i): Failed to %s. No "
-             " more retries.\n", packet_type, dbg.c_str());
+             "more retries.\n", packet_type, dbg.c_str());
 #endif
       *op_status = kFailed;
       cond_var_.notify_all();
@@ -446,9 +470,19 @@ int Authentication::CreateTmidPacket(const std::string &username,
 #endif
       return kAuthenticationError;
     }
-    result = StorePacket(mid->name(), mid->value(), MID, "");
+    bool unique((PacketUnique(mid) == kKeyUnique) &&
+                (PacketUnique(tmid) == kKeyUnique));
+    if (!unique) {
+#ifdef DEBUG
+      printf("Authentication::CreateTmidPacket: MID or TMID already exists.\n");
+#endif
+      ++attempt;
+      result = kKeyNotUnique;
+      continue;
+    }
+    result = StorePacket(mid, false);
     if (result == kSuccess)
-      result = StorePacket(tmid->name(), tmid->value(), TMID, "");
+      result = StorePacket(tmid, false);
     ++attempt;
   }
 
@@ -458,6 +492,64 @@ int Authentication::CreateTmidPacket(const std::string &username,
 #endif
     return kAuthenticationError;
   } else {
+    return kSuccess;
+  }
+}
+
+int Authentication::CreateMsidPacket(std::string *msid_name,
+                                     std::string *msid_public_key,
+                                     std::string *msid_private_key) {
+  if (!msid_name || !msid_public_key || !msid_private_key)
+    return kAuthenticationError;
+  msid_name->clear();
+  msid_public_key->clear();
+  msid_private_key->clear();
+
+  boost::shared_ptr<passport::SignaturePacket> msid;
+  int result(kPendingResult);
+  boost::uint8_t attempt(0);
+  std::vector<boost::uint32_t> share_stats(2, 0);
+  while ((result != kSuccess) && (attempt < kMaxStoreAttempts_)) {
+    result = passport_->InitialiseSignaturePacket(passport::MSID, msid);
+    if (result != kSuccess) {
+#ifdef DEBUG
+      printf("Authentication::CreateMsidPacket: failed init.\n");
+#endif
+      return kAuthenticationError;
+    }
+    // Add the share to the session to allow store_manager to retrieve the keys.
+    std::vector<std::string> attributes;
+    attributes.push_back(msid->name());
+    attributes.push_back(msid->name());
+    attributes.push_back(msid->value());  // msid->value == msid->public_key
+    attributes.push_back(msid->private_key());
+    result = session_singleton_->AddPrivateShare(attributes, share_stats, NULL);
+    if (result != kSuccess) {
+#ifdef DEBUG
+      printf("Authentication::CreateMsidPacket: failed adding to session.\n");
+#endif
+      session_singleton_->DeletePrivateShare(msid->name(), 0);
+      return kAuthenticationError;
+    }
+    result = StorePacket(msid, true);
+#ifdef DEBUG
+    if (result != kSuccess)
+      printf("Authentication::CreateMsidPacket: failed storing MSID.\n");
+#endif
+    // Remove the share from the session again to allow CC to add it fully.
+    session_singleton_->DeletePrivateShare(msid->name(), 0);
+    ++attempt;
+  }
+
+  if (result != kSuccess) {
+#ifdef DEBUG
+    printf("Authentication::CreateMsidPacket: failed.\n");
+#endif
+    return kAuthenticationError;
+  } else {
+    *msid_name = msid->name();
+    *msid_public_key = msid->value();
+    *msid_private_key = msid->private_key();
     return kSuccess;
   }
 }
@@ -476,10 +568,11 @@ void Authentication::SaveSession(const std::string &serialised_data_atlas,
 #ifdef DEBUG
     printf("Authentication::SaveSession: failed UpdateUserData.\n");
 #endif
-    return kAuthenticationError;
+    functor(kAuthenticationError);
+    return;
   }
-// TODO(Fraser#5#): 2010-10-18 - Have method for retrying for MID and SMID
-//                               failures independently.
+                                    // TODO(Fraser#5#): 2010-10-18 - Have method for retrying for MID and SMID
+                                    //                               failures independently.
 
   // Update or store SMID
   VoidFuncOneInt callback = boost::bind(&Authentication::SaveSessionCallback,
@@ -487,33 +580,33 @@ void Authentication::SaveSession(const std::string &serialised_data_atlas,
                                         save_session_data);
   if (smid_old_value.empty()) {
     store_manager_->StorePacket(updated_smid->name(), updated_smid->value(),
-                                SMID, PRIVATE, "", callback);
+                                passport::SMID, PRIVATE, "", callback);
   } else {
     store_manager_->UpdatePacket(updated_smid->name(), smid_old_value,
-                                 updated_smid->value(), SMID, PRIVATE, "",
-                                 callback);
+                                 updated_smid->value(), passport::SMID, PRIVATE,
+                                 "", callback);
   }
 
   // Update MID
   callback = boost::bind(&Authentication::SaveSessionCallback, this, _1,
                          updated_mid, save_session_data);
   store_manager_->UpdatePacket(updated_mid->name(), mid_old_value,
-                               updated_mid->value(), MID, PRIVATE, "",
+                               updated_mid->value(), passport::MID, PRIVATE, "",
                                callback);
 
   // Store new TMID
   callback = boost::bind(&Authentication::SaveSessionCallback, this, _1,
                          new_tmid, save_session_data);
-  store_manager_->StorePacket(new_tmid->name(), new_tmid->value(), TMID,
-                              PRIVATE, "", callback);
+  store_manager_->StorePacket(new_tmid->name(), new_tmid->value(),
+                              passport::TMID, PRIVATE, "", callback);
 
   // Delete old STMID
   if (tmid_for_deletion.get()) {
     callback = boost::bind(&Authentication::SaveSessionCallback, this, _1,
                            tmid_for_deletion, save_session_data);
     std::vector<std::string> values(1, tmid_for_deletion->value());
-    store_manager_->DeletePacket(tmid_for_deletion->name(), values, TMID,
-                                 PRIVATE, "", callback);
+    store_manager_->DeletePacket(tmid_for_deletion->name(), values,
+                                 passport::TMID, PRIVATE, "", callback);
   } else {
     boost::mutex::scoped_lock lock(mutex_);
     save_session_data->process_stmid = kSucceeded;
@@ -528,22 +621,22 @@ void Authentication::SaveSessionCallback(
   if (return_code != kSuccess) {
 #ifdef DEBUG
     printf("Authentication::SaveSessionCallback (%i): Return Code %i\n",
-           packet_type, return_code);
+           packet->packet_type(), return_code);
 #endif
     op_status = kFailed;
   }
   boost::mutex::scoped_lock lock(mutex_);
   switch (packet->packet_type()) {
-    case MID:
+    case passport::MID:
       save_session_data->process_mid = op_status;
       break;
-    case SMID:
+    case passport::SMID:
       save_session_data->process_smid = op_status;
       break;
-    case TMID:
+    case passport::TMID:
       save_session_data->process_tmid = op_status;
       break;
-    case STMID:
+    case passport::STMID:
       save_session_data->process_stmid = op_status;
       break;
     default:
@@ -563,8 +656,8 @@ void Authentication::SaveSessionCallback(
   }
   if ((save_session_data->process_stmid == kFailed)) {
     lock.unlock();
-    if (regular_save_session)
-      save_session_data->functor(kFailedToDeleteOldTmid);
+    if (save_session_data->regular_save_session)
+      save_session_data->functor(kFailedToDeleteOldPacket);
     else
       save_session_data->functor(kAuthenticationError);
     return;
@@ -582,7 +675,7 @@ int Authentication::SaveSession(const std::string &serialised_data_atlas) {
   try {
     boost::mutex::scoped_lock lock(mutex_);
     success = cond_var_.timed_wait(lock,
-              boost::posix_time::milliseconds(300000),
+              boost::posix_time::milliseconds(12 * kSingleOpTimeout_),
               boost::bind(&Authentication::PacketOpDone, this, &result));
   }
   catch(const std::exception &e) {
@@ -612,7 +705,8 @@ int Authentication::CreatePublicName(const std::string &public_name) {
   bool success(true);
   try {
     boost::mutex::scoped_lock lock(mutex_);
-    success = cond_var_.timed_wait(lock,boost::posix_time::milliseconds(60000),
+    success = cond_var_.timed_wait(lock,
+              boost::posix_time::milliseconds(6 * kSingleOpTimeout_),
               boost::bind(&Authentication::SystemPacketsOpDone, this,
                           mpid_status, anmpid_status));
   }
@@ -668,7 +762,8 @@ int Authentication::RemoveMe() {
   bool success(true);
   try {
     boost::mutex::scoped_lock lock(mutex_);
-    success = cond_var_.timed_wait(lock,boost::posix_time::milliseconds(120000),
+    success = cond_var_.timed_wait(lock,
+              boost::posix_time::milliseconds(12 * kSingleOpTimeout_),
               boost::bind(&Authentication::SystemPacketsOpDone, this,
                           anmaid_status, antmid_status, anmid_status,
                           ansmid_status, anmpid_status));
@@ -704,9 +799,9 @@ void Authentication::DeletePacket(const passport::PacketType &packet_type,
     boost::mutex::scoped_lock lock(mutex_);
     try {
       success = cond_var_.timed_wait(lock,
-                                     boost::posix_time::milliseconds(60000),
-                                     boost::bind(&Authentication::SignerDone,
-                                                 this, dependent_op_status));
+                boost::posix_time::milliseconds(kSingleOpTimeout_),
+                boost::bind(&Authentication::SignerDone, this,
+                            dependent_op_status));
     }
     catch(const std::exception &e) {
 #ifdef DEBUG
@@ -714,7 +809,7 @@ void Authentication::DeletePacket(const passport::PacketType &packet_type,
 #endif
       success = false;
     }
-    success = (dependent_op_status == kSucceeded);
+    success = (*dependent_op_status == kSucceeded);
   }
   if (!success) {
 #ifdef DEBUG
@@ -774,7 +869,7 @@ int Authentication::ChangeUserData(const std::string &serialised_data_atlas,
 #endif
     return kAuthenticationError;
   }
-// TODO(Fraser#5#): 2010-10-18 - Have method for retrying failures independently
+                                // TODO(Fraser#5#): 2010-10-18 - Have method for retrying failures independently
 
   int store_result(kPendingResult);
   VoidFuncOneInt store_functor = boost::bind(&Authentication::PacketOpCallback,
@@ -785,30 +880,30 @@ int Authentication::ChangeUserData(const std::string &serialised_data_atlas,
   // Store new MID
   VoidFuncOneInt callback = boost::bind(&Authentication::SaveSessionCallback,
                                         this, _1, new_mid, save_new_packets);
-  store_manager_->StorePacket(new_mid->name(), new_mid->value(), MID, PRIVATE,
-                              "", callback);
+  store_manager_->StorePacket(new_mid->name(), new_mid->value(), passport::MID,
+                              PRIVATE, "", callback);
   // Store new SMID
   callback = boost::bind(&Authentication::SaveSessionCallback, this, _1,
                          new_smid, save_new_packets);
-  store_manager_->StorePacket(new_smid->name(), new_smid->value(), SMID,
-                              PRIVATE, "", callback);
+  store_manager_->StorePacket(new_smid->name(), new_smid->value(),
+                              passport::SMID, PRIVATE, "", callback);
   // Store new TMID
   callback = boost::bind(&Authentication::SaveSessionCallback, this, _1,
                          new_tmid, save_new_packets);
-  store_manager_->StorePacket(new_tmid->name(), new_tmid->value(), TMID,
-                              PRIVATE, "", callback);
+  store_manager_->StorePacket(new_tmid->name(), new_tmid->value(),
+                              passport::TMID, PRIVATE, "", callback);
   // Store new STMID
   callback = boost::bind(&Authentication::SaveSessionCallback, this, _1,
                          new_stmid, save_new_packets);
-  store_manager_->StorePacket(new_stmid->name(), new_stmid->value(), TMID,
-                              PRIVATE, "", callback);
+  store_manager_->StorePacket(new_stmid->name(), new_stmid->value(),
+                              passport::TMID, PRIVATE, "", callback);
 
   // Wait for storing to complete
   bool success(true);
   try {
     boost::mutex::scoped_lock lock(mutex_);
     success = cond_var_.timed_wait(lock,
-              boost::posix_time::milliseconds(300000),
+              boost::posix_time::milliseconds(12 * kSingleOpTimeout_),
               boost::bind(&Authentication::PacketOpDone, this, &store_result));
   }
   catch(const std::exception &e) {
@@ -835,31 +930,31 @@ int Authentication::ChangeUserData(const std::string &serialised_data_atlas,
   callback = boost::bind(&Authentication::SaveSessionCallback, this, _1,
                          mid_for_deletion, delete_old_packets);
   std::vector<std::string> values(1, mid_for_deletion->value());
-  store_manager_->DeletePacket(mid_for_deletion->name(), values, MID, PRIVATE,
-                               "", callback);
+  store_manager_->DeletePacket(mid_for_deletion->name(), values, passport::MID,
+                               PRIVATE, "", callback);
   // Delete old SMID
   callback = boost::bind(&Authentication::SaveSessionCallback, this, _1,
                          smid_for_deletion, delete_old_packets);
   values.assign(1, smid_for_deletion->value());
-  store_manager_->DeletePacket(smid_for_deletion->name(), values, SMID, PRIVATE,
-                               "", callback);
+  store_manager_->DeletePacket(smid_for_deletion->name(), values,
+                               passport::SMID, PRIVATE, "", callback);
   // Delete old TMID
   callback = boost::bind(&Authentication::SaveSessionCallback, this, _1,
                          tmid_for_deletion, delete_old_packets);
   values.assign(1, tmid_for_deletion->value());
-  store_manager_->DeletePacket(tmid_for_deletion->name(), values, TMID, PRIVATE,
-                               "", callback);
+  store_manager_->DeletePacket(tmid_for_deletion->name(), values,
+                               passport::TMID, PRIVATE, "", callback);
   // Delete old STMID
   callback = boost::bind(&Authentication::SaveSessionCallback, this, _1,
                          stmid_for_deletion, delete_old_packets);
   values.assign(1, stmid_for_deletion->value());
-  store_manager_->DeletePacket(stmid_for_deletion->name(), values, TMID,
-                               PRIVATE, "", callback);
+  store_manager_->DeletePacket(stmid_for_deletion->name(), values,
+                               passport::TMID, PRIVATE, "", callback);
 
   try {
     boost::mutex::scoped_lock lock(mutex_);
     success = cond_var_.timed_wait(lock,
-              boost::posix_time::milliseconds(300000),
+              boost::posix_time::milliseconds(4 * kSingleOpTimeout_),
               boost::bind(&Authentication::PacketOpDone, this, &delete_result));
   }
   catch(const std::exception &e) {
@@ -868,200 +963,141 @@ int Authentication::ChangeUserData(const std::string &serialised_data_atlas,
 #endif
     success = false;
   }
-  if (!success) {
 #ifdef DEBUG
+  if (!success)
     printf("Authentication::ChangeUserData: timed out deleting.\n");
 #endif
-  }
   // Result of deletions not considered here.
   return store_result;
 }
 
-
-
-
-
-
-
-
 int Authentication::ChangePassword(const std::string &serialised_data_atlas,
                                    const std::string &new_password) {
-  std::string old_password = session_singleton_->Password();
-  session_singleton_->SetPassword(new_password);
-  if (SaveSession(serialised_data_atlas) == kSuccess) {
-    return kSuccess;
-  } else {
-    session_singleton_->SetPassword(old_password);
+  // Get updated packets
+  std::string tmid_old_value, stmid_old_value;
+  boost::shared_ptr<passport::TmidPacket> updated_tmid, updated_stmid;
+  int result = passport_->ChangePassword(new_password, serialised_data_atlas,
+                                         &tmid_old_value, &stmid_old_value,
+                                         updated_tmid, updated_stmid);
+  if (result != kSuccess) {
+#ifdef DEBUG
+    printf("Authentication::ChangePassword: failed ChangePassword.\n");
+#endif
     return kAuthenticationError;
   }
-}
 
-std::string Authentication::CreateSignaturePackets(const PacketType &type_da,
-                                                   std::string *public_key) {
-  PacketParams params;
-  crypto::RsaKeyPair kp;
-  while (!crypto_key_pairs_.GetKeyPair(&kp)) {
-    kp.ClearKeys();
-    crypto_key_pairs_.StartToCreateKeyPairs(kNoOfSystemPackets);
-  }
-  boost::shared_ptr<Packet> sigPacket(PacketFactory::Factory(type_da));
-  params["publicKey"] = kp.public_key();
-  params["privateKey"] = kp.private_key();
-  PacketParams result = sigPacket->Create(params);
-
-  while (!store_manager_->KeyUnique(boost::any_cast<std::string>(result["name"]), false)) {
-    kp.ClearKeys();
-    while (!crypto_key_pairs_.GetKeyPair(&kp)) {
-      kp.ClearKeys();
-      crypto_key_pairs_.StartToCreateKeyPairs(kNoOfSystemPackets);
-    }
-    params["publicKey"] = kp.public_key();
-    params["privateKey"] = kp.private_key();
-    result = sigPacket->Create(params);
-  }
-
-  session_singleton_->AddKey(type_da,
-              boost::any_cast<std::string>(result["name"]),
-              boost::any_cast<std::string>(result["privateKey"]),
-              boost::any_cast<std::string>(result["publicKey"]),
-              "");
-
-  if (StorePacket(boost::any_cast<std::string>(result["name"]),
-                  boost::any_cast<std::string>(result["publicKey"]), type_da,
-                  "")
-      != kSuccess) {
-    session_singleton_->RemoveKey(type_da);
-    return "";
-  }
-
-  *public_key = boost::any_cast<std::string>(result["publicKey"]);
-  return boost::any_cast<std::string>(result["privateKey"]);
-}
-
-bool Authentication::CheckUsername(const std::string &username) {
-  std::string username_ = UtilsTrim(boost::lexical_cast<char*>(username));
-  return (username_.length() >= 4);
-}
-
-bool Authentication::CheckPin(const std::string &pin) {
-  std::string pin_ = UtilsTrim(boost::lexical_cast<char*>(pin));
-  if (pin_ == "0000")
-    return false;
-  boost::regex re("\\d{4}");
-  return boost::regex_match(pin_, re);
-}
-
-bool Authentication::CheckPassword(const std::string &password) {
-  std::string password_ = UtilsTrim(boost::lexical_cast<char*>(password));
-  return (password_.length() >= 4);
-}
-
-int Authentication::PublicUsernamePublicKey(const std::string &public_username,
-                                            std::string *public_key) {
-  PacketParams params;
-  params["publicname"] = public_username;
-  crypto::RsaKeyPair kp;
-  boost::shared_ptr<Packet> mpidPacket(PacketFactory::Factory(MPID));
-
-  std::vector<std::string> packet_content;
-  int result = store_manager_->LoadPacket(mpidPacket->PacketName(params),
-                                         &packet_content);
-  if (result != kSuccess || packet_content.empty())
-    return kUserDoesntExist;
-  std::string ser_generic_packet = packet_content[0];
-  PacketParams mpid_result = mpidPacket->GetData(ser_generic_packet,
-      PacketParams());
-
-  std::string data(boost::any_cast<std::string>(mpid_result["data"]));
-
-  if (data.empty()) {
-    return kAuthenticationError;  // Packet corrupt
-  }
-
-  *public_key = data;
-
-  return kSuccess;
-}
-
-void Authentication::CreateMSIDPacket(kad::VoidFunctorOneString cb) {
-  PacketParams params;
-  crypto::RsaKeyPair kp;
-  while (!crypto_key_pairs_.GetKeyPair(&kp)) {
-    kp.ClearKeys();
-    crypto_key_pairs_.StartToCreateKeyPairs(kNoOfSystemPackets);
-  }
-  boost::shared_ptr<Packet> sigPacket(PacketFactory::Factory(MSID));
-  params["publicKey"] = kp.public_key();
-  params["privateKey"] = kp.private_key();
-  PacketParams result = sigPacket->Create(params);
-
-  int count = 0;
-  while (!store_manager_->KeyUnique(boost::any_cast<std::string>(result["name"]),
-         false) && count < 10) {
-    kp.ClearKeys();
-    while (!crypto_key_pairs_.GetKeyPair(&kp)) {
-      kp.ClearKeys();
-      crypto_key_pairs_.StartToCreateKeyPairs(kNoOfSystemPackets);
-    }
-    params["publicKey"] = kp.public_key();
-    params["privateKey"] = kp.private_key();
-    ++count;
-  }
-
-  if (count > 9) {
-    CreateMSIDResult local_result;
-    local_result.set_result(kNack);
-    std::string ser_local_result;
-    local_result.SerializeToString(&ser_local_result);
-    cb(ser_local_result);
-    return;
-  }
-
-  std::vector<boost::uint32_t> share_stats(2, 0);
-  std::vector<std::string> atts;
-  atts.push_back(boost::any_cast<std::string>(result["name"]));
-  atts.push_back(boost::any_cast<std::string>(result["name"]));
-  atts.push_back(boost::any_cast<std::string>(result["publicKey"]));
-  atts.push_back(boost::any_cast<std::string>(result["privateKey"]));
-  int n = session_singleton_->AddPrivateShare(atts, share_stats, NULL);
-
-  n = StorePacket(boost::any_cast<std::string>(result["name"]),
-      boost::any_cast<std::string>(result["publicKey"]), MSID,
-      boost::any_cast<std::string>(result["name"]));
-  session_singleton_->DeletePrivateShare(atts[0], 0);
-
-  StoreChunkResponse result_msg;
-  CreateMSIDResult local_result;
-  std::string str_local_result;
-  if (n != 0) {
-    local_result.set_result(kNack);
-  } else {
-    local_result.set_result(kAck);
-    local_result.set_private_key(boost::any_cast<std::string>(
-        result["privateKey"]));
-    local_result.set_public_key(boost::any_cast<std::string>(
-        result["publicKey"]));
-    local_result.set_name(boost::any_cast<std::string>(result["name"]));
-  }
-  local_result.SerializeToString(&str_local_result);
-  cb(str_local_result);
-}
-
-int Authentication::StorePacket(const std::string &packet_name,
-                                const std::string &value,
-                                const PacketType &type,
-                                const std::string &msid) {
-// TODO(Fraser#5#): 2010-01-28 - Use callbacks properly to allow several stores
-//                               to happen concurrently.
+// TODO(Fraser#5#): 2010-10-18 - Have method for retrying failures independently
   int result(kPendingResult);
   VoidFuncOneInt functor = boost::bind(&Authentication::PacketOpCallback, this,
                                        _1, &result);
-  store_manager_->StorePacket(packet_name, value, type, PRIVATE_SHARE, msid,
-                              functor);
+  boost::shared_ptr<SaveSessionData>
+      update_packets(new SaveSessionData(functor, false));
+  update_packets->process_mid = kSucceeded;
+  update_packets->process_smid = kSucceeded;
+
+  // Update TMID
+  VoidFuncOneInt callback = boost::bind(&Authentication::SaveSessionCallback,
+                                        this, _1, updated_tmid, update_packets);
+  store_manager_->UpdatePacket(updated_tmid->name(), tmid_old_value,
+                               updated_tmid->value(), passport::TMID,
+                               PRIVATE, "", callback);
+  // Update STMID
+  callback = boost::bind(&Authentication::SaveSessionCallback, this, _1,
+                         updated_stmid, update_packets);
+  store_manager_->UpdatePacket(updated_stmid->name(), stmid_old_value,
+                               updated_stmid->value(), passport::TMID,
+                               PRIVATE, "", callback);
+
+  // Wait for storing to complete
   bool success(true);
   try {
     boost::mutex::scoped_lock lock(mutex_);
-    success = cond_var_.timed_wait(lock, boost::posix_time::milliseconds(60000),
+    success = cond_var_.timed_wait(lock,
+              boost::posix_time::milliseconds(2 * kSingleOpTimeout_),
+              boost::bind(&Authentication::PacketOpDone, this, &result));
+  }
+  catch(const std::exception &e) {
+#ifdef DEBUG
+    printf("Authentication::ChangePassword: storing: %s\n", e.what());
+#endif
+    success = false;
+  }
+  if (!success) {
+#ifdef DEBUG
+    printf("Authentication::ChangePassword: timed out storing.\n");
+#endif
+    return kAuthenticationError;
+  }
+  return result;
+}
+
+bool Authentication::CheckUsername(const std::string &username) {
+  try {
+    return UtilsTrim(username).size() >= 4;
+  }
+  catch(const std::exception &e) {
+#ifdef DEBUG
+    printf("Authentication::CheckUsername: %s\n", e.what());
+#endif
+    return false;
+  }
+}
+
+bool Authentication::CheckPin(std::string pin) {
+  try {
+    pin = UtilsTrim(pin);
+    if (pin == "0000")
+      return false;
+    boost::regex reg_ex("\\d{4}");
+    return boost::regex_match(pin, reg_ex);
+  }
+  catch(const std::exception &e) {
+#ifdef DEBUG
+    printf("Authentication::CheckPin: %s\n", e.what());
+#endif
+    return false;
+  }
+}
+
+bool Authentication::CheckPassword(const std::string &password) {
+  try {
+    return UtilsTrim(password).size() >= 4;
+  }
+  catch(const std::exception &e) {
+#ifdef DEBUG
+    printf("Authentication::CheckPassword: %s\n", e.what());
+#endif
+    return false;
+  }
+}
+
+int Authentication::StorePacket(boost::shared_ptr<pki::Packet> packet,
+                                bool check_uniqueness) {
+  int result(kPendingResult);
+  if (check_uniqueness) {
+    result = PacketUnique(packet);
+    if (result != kKeyUnique) {
+#ifdef DEBUG
+      printf("Authentication::StorePacket: key already exists.\n");
+#endif
+      return result;
+    }
+  }
+  VoidFuncOneInt functor = boost::bind(&Authentication::PacketOpCallback, this,
+                                       _1, &result);
+  DirType dir_type(PRIVATE);
+  std::string msid;
+  if (packet->packet_type() == passport::MSID) {
+    dir_type = PRIVATE_SHARE;
+    msid = packet->name();
+  }
+  store_manager_->StorePacket(packet->name(), packet->value(),
+                              packet->packet_type(), dir_type, msid, functor);
+  bool success(true);
+  try {
+    boost::mutex::scoped_lock lock(mutex_);
+    success = cond_var_.timed_wait(lock,
+              boost::posix_time::milliseconds(kSingleOpTimeout_),
               boost::bind(&Authentication::PacketOpDone, this, &result));
   }
   catch(const std::exception &e) {
@@ -1083,22 +1119,24 @@ int Authentication::StorePacket(const std::string &packet_name,
   return result;
 }
 
-int Authentication::DeletePacket(const std::string &packet_name,
-                                 const std::string &value,
-                                 const PacketType &type) {
-// TODO(Fraser#5#): 2010-01-28 - Use callbacks properly to allow several deletes
-//                               to happen concurrently.
+int Authentication::DeletePacket(boost::shared_ptr<pki::Packet> packet) {
   int result(kPendingResult);
   VoidFuncOneInt functor = boost::bind(&Authentication::PacketOpCallback, this,
                                        _1, &result);
-  std::vector<std::string> values;
-  if (!value.empty())
-    values.push_back(value);
-  store_manager_->DeletePacket(packet_name, values, type, PRIVATE, "", functor);
+  std::vector<std::string> values(1, packet->value());
+  DirType dir_type(PRIVATE);
+  std::string msid;
+  if (packet->packet_type() == passport::MSID) {
+    dir_type = PRIVATE_SHARE;
+    msid = packet->name();
+  }
+  store_manager_->DeletePacket(packet->name(), values, packet->packet_type(),
+                               dir_type, msid, functor);
   bool success(true);
   try {
     boost::mutex::scoped_lock lock(mutex_);
-    success = cond_var_.timed_wait(lock, boost::posix_time::milliseconds(60000),
+    success = cond_var_.timed_wait(lock,
+              boost::posix_time::milliseconds(kSingleOpTimeout_),
               boost::bind(&Authentication::PacketOpDone, this, &result));
   }
   catch(const std::exception &e) {
@@ -1120,26 +1158,44 @@ int Authentication::DeletePacket(const std::string &packet_name,
   return result;
 }
 
+int Authentication::PacketUnique(boost::shared_ptr<pki::Packet> packet) {
+  int result(kPendingResult);
+  VoidFuncOneInt functor = boost::bind(&Authentication::PacketOpCallback, this,
+                                       _1, &result);
+  DirType dir_type(PRIVATE);
+  std::string msid;
+  if (packet->packet_type() == passport::MSID) {
+    dir_type = PRIVATE_SHARE;
+    msid = packet->name();
+  }
+  store_manager_->KeyUnique(packet->name(), false, functor);
+  bool success(true);
+  try {
+    boost::mutex::scoped_lock lock(mutex_);
+    success = cond_var_.timed_wait(lock,
+              boost::posix_time::milliseconds(kSingleOpTimeout_),
+              boost::bind(&Authentication::PacketOpDone, this, &result));
+  }
+  catch(const std::exception &e) {
+#ifdef DEBUG
+    printf("Authentication::PacketUnique: %s\n", e.what());
+#endif
+    success = false;
+  }
+  if (!success) {
+#ifdef DEBUG
+    printf("Authentication::PacketUnique: timed out.\n");
+#endif
+    return kAuthenticationError;
+  }
+  return result;
+}
+
 void Authentication::PacketOpCallback(const ReturnCode &return_code,
                                       int *op_result) {
   boost::mutex::scoped_lock lock(mutex_);
   *op_result = return_code;
-  cond_var_->notify_all();
-}
-
-std::string Authentication::EncryptedDataMidSmid(boost::uint32_t rid) {
-  std::string salt = crypto_.Hash(session_singleton_->Pin() + session_singleton_->Username(), "",
-                                  crypto::STRING_STRING, false);
-  if (salt.empty())
-    return "";
-  std::string password = crypto_.SecurePassword(session_singleton_->Username(), salt,
-                         boost::lexical_cast<boost::uint16_t>(session_singleton_->Pin()));
-  return crypto_.SymmEncrypt(boost::lexical_cast<std::string>(rid), "",
-                             crypto::STRING_STRING, password);
-}
-
-void Authentication::CreateSystemPacketsCallback(const ReturnCode &return_code) {
-  system_packets_result_ = return_code;
+  cond_var_.notify_all();
 }
 
 char *Authentication::UtilsTrimRight(char *szSource) {
@@ -1162,9 +1218,9 @@ char *Authentication::UtilsTrimLeft(char *szSource) {
   return pszBOS;
 }
 
-char *Authentication::UtilsTrim(char *szSource) {
-  return UtilsTrimLeft(UtilsTrimRight(UtilsTrimLeft(szSource)));
+std::string Authentication::UtilsTrim(std::string source) {
+  return UtilsTrimLeft(UtilsTrimRight(UtilsTrimLeft(&source.at(0))));
 }
-*/
+
 
 }  // namespace maidsafe

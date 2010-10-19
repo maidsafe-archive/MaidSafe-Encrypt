@@ -75,7 +75,7 @@ int Passport::SetNewUserData(const std::string &password,
                      false, password, plain_data));
   bool success(!retrieved_mid->name().empty() && !tmid->name().empty());
   if (success)
-    success = packet_handler_.AddPacket(tmid, false);
+    success = packet_handler_.AddPacket(tmid, true);
 
   // Copy packets
   if (success) {
@@ -100,9 +100,6 @@ int Passport::UpdateUserData(const std::string &plain_data,
                              boost::shared_ptr<MidPacket> updated_smid,
                              boost::shared_ptr<TmidPacket> new_tmid,
                              boost::shared_ptr<TmidPacket> tmid_for_deletion) {
-  if (!mid_old_value || !smid_old_value)
-    return kPassportError;
-
   // Sets SMID's RID to MID's RID and generate new RID for MID
   boost::shared_ptr<MidPacket> retrieved_mid =
       boost::shared_static_cast<MidPacket>(packet_handler_.Packet(MID));
@@ -112,8 +109,10 @@ int Passport::UpdateUserData(const std::string &plain_data,
     return kNoMid;
   if (!retrieved_smid.get())
     return kNoSmid;
-  *mid_old_value = retrieved_mid->value();
-  *smid_old_value = retrieved_smid->value();
+  if (mid_old_value)
+    *mid_old_value = retrieved_mid->value();
+  if (smid_old_value)
+    *smid_old_value = retrieved_smid->value();
   boost::uint32_t new_rid(base::RandomUint32()), old_rid(retrieved_mid->rid());
   int retries(0), max_retries(3);
   while ((new_rid == 0 || new_rid == old_rid) && retries < max_retries) {
@@ -304,6 +303,8 @@ int Passport::ChangeUserData(const std::string &new_username,
 
 int Passport::ChangePassword(const std::string &new_password,
                              const std::string &plain_data,
+                             std::string *tmid_old_value,
+                             std::string *stmid_old_value,
                              boost::shared_ptr<TmidPacket> updated_tmid,
                              boost::shared_ptr<TmidPacket> updated_stmid) {
   // Retrieve old packets
@@ -342,6 +343,10 @@ int Passport::ChangePassword(const std::string &new_password,
     return kPassportError;
 
   // Copy packets
+  if (tmid_old_value)
+    *tmid_old_value = retrieved_tmid->value();
+  if (stmid_old_value)
+    *stmid_old_value = retrieved_stmid->value();
   if (updated_tmid.get())
     *updated_tmid = *tmid;
   else
@@ -412,7 +417,7 @@ int Passport::DoInitialiseSignaturePacket(
                           key_pair.private_key(), signer_private_key,
                           public_name));
   bool success(!packet->name().empty());
-  if (success)
+  if (success && (packet_type != MSID))
     success = packet_handler_.AddPacket(packet, true);
   if (success) {
     if (signature_packet.get())
