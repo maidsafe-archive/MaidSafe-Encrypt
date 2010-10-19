@@ -52,25 +52,23 @@ void SessionSingleton::Destroy() {
 }
 
 bool SessionSingleton::ResetSession() {
-  SetDaModified(false);
-  SetDefConLevel(kDefCon3);
-  SetUsername("");
-  SetPin("");
-  SetPassword("");
-  SetSessionName(true);
-  SetRootDbKey("");
-  std::set<std::string> empty_set;
-  SetAuthorisedUsers(empty_set);
-  SetMaidAuthorisedUsers(empty_set);
-  SetMounted(0);
-  SetWinDrive('\0');
-  SetConnectionStatus(1);
-  SetVaultIP("");
-  SetVaultPort(0);
-  EndPoint ep;
-  SetEp(ep);
-  PersonalDetails pd;
-  SetPd(pd);
+  ud_.defconlevel = kDefCon3;
+  ud_.da_modified = false;
+  ud_.username.clear();
+  ud_.pin.clear();
+  ud_.password.clear();
+  ud_.session_name.clear();
+  ud_.root_db_key.clear();
+  ud_.self_encrypting = true;
+  ud_.authorised_users.clear();
+  ud_.maid_authorised_users.clear();
+  ud_.mounted = 0;
+  ud_.win_drive = '\0';
+  ud_.connection_status = 1;
+  ud_.vault_ip.clear();
+  ud_.vault_port = 0;
+  ud_.ep.Clear();
+  ud_.pd.Clear();
   passport_->ClearKeyring();
   ch_.ClearContacts();
   psh_.MI_ClearPrivateShares();
@@ -89,7 +87,6 @@ bool SessionSingleton::DaModified() { return ud_.da_modified; }
 std::string SessionSingleton::Username() { return ud_.username; }
 std::string SessionSingleton::Pin() { return ud_.pin; }
 std::string SessionSingleton::Password() { return ud_.password; }
-std::string SessionSingleton::PublicUsername() { return Id(MPID); }
 std::string SessionSingleton::SessionName() { return ud_.session_name; }
 std::string SessionSingleton::RootDbKey() { return ud_.root_db_key; }
 bool SessionSingleton::SelfEncrypting() { return ud_.self_encrypting; }

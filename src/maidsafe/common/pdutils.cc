@@ -133,6 +133,7 @@ void PdUtils::GetPacketSignatureKeys(PacketType packet_type,
       *private_key = ss_->PrivateKey(ANSMID);
       break;
     case TMID:
+    case STMID:
     case ANTMID:
       *key_id = ss_->Id(ANTMID);
       *public_key = ss_->PublicKey(ANTMID);

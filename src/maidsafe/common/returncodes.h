@@ -39,10 +39,11 @@ enum ReturnCode {
   kAuthenticationError = -1001,
 //  kPasswordFailure = -1002,
   kUserDoesntExist = -1003,
-//  kUserExists = -1004,
+  kUserExists = -1004,
 //  kInvalidUsernameOrPin = -1005,
 //  kPublicUsernameExists = -1006,
 //  kAuthenticationTimeout = -1007,
+  kFailedToDeleteOldTmid = -1008,
 
   // Buffer Packet Handler
   kBPError = -2001,

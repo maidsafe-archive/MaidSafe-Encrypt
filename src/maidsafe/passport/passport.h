@@ -75,6 +75,27 @@ class Passport {
                   bool surrogate,
                   const std::string &serialised_tmid_packet,
                   std::string *plain_data);
+  // Generates new MID, SMID, TMID and STMID packets based on the updated user
+  // data.  If successful, a *copy* of the new and old details are set before
+  // returning kSuccess.
+  int ChangeUserData(const std::string &new_username,
+                     const std::string &new_pin,
+                     const std::string &plain_data,
+                     boost::shared_ptr<MidPacket> mid_for_deletion,
+                     boost::shared_ptr<MidPacket> smid_for_deletion,
+                     boost::shared_ptr<TmidPacket> tmid_for_deletion,
+                     boost::shared_ptr<TmidPacket> stmid_for_deletion,
+                     boost::shared_ptr<MidPacket> new_mid,
+                     boost::shared_ptr<MidPacket> new_smid,
+                     boost::shared_ptr<TmidPacket> new_tmid,
+                     boost::shared_ptr<TmidPacket> new_stmid);
+  // Updates value of TMID and STMID packets based on the updated password.  If
+  // successful, a *copy* of the new and old details are set before returning
+  // kSuccess.
+  int ChangePassword(const std::string &new_password,
+                     const std::string &plain_data,
+                     boost::shared_ptr<TmidPacket> updated_tmid,
+                     boost::shared_ptr<TmidPacket> updated_stmid);
   // Serialises signature packets only to a keyring
   std::string SerialiseKeyring();
   // Parses a previously serialised keyring
@@ -91,6 +112,8 @@ class Passport {
   // If successful, a *copy* of the MPID is set before returning kSuccess.
   int InitialiseMpid(const std::string &public_name,
                      boost::shared_ptr<SignaturePacket> mpid);
+  // Returns a *copy* of the packet.
+  boost::shared_ptr<pki::Packet> Packet(const PacketType &packet_type);
   void Clear() { packet_handler_.Clear(); }
  private:
   Passport &operator=(const Passport&);

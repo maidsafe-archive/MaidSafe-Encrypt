@@ -64,11 +64,7 @@ struct UserDetails {
                   pd() {}
   DefConLevels defconlevel;
   bool da_modified;
-  std::string username;
-  std::string pin;
-  std::string password;
-  std::string session_name;
-  std::string root_db_key;
+  std::string username, pin, password, session_name, root_db_key;
   bool self_encrypting;
   std::set<std::string> authorised_users;
   std::set<std::string> maid_authorised_users;
@@ -105,7 +101,6 @@ class SessionSingleton {
   std::string Username();
   std::string Pin();
   std::string Password();
-  std::string PublicUsername();
   std::string SessionName();
   std::string RootDbKey();
   bool SelfEncrypting();

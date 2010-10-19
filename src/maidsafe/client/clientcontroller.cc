@@ -853,10 +853,17 @@ int ClientController::SaveSession() {
   }
 
   if (n != kSuccess) {
+    if (n == kFailedToDeleteOldTmid) {
 #ifdef DEBUG
-    printf("ClientController::SaveSession - Failed to Save Session.\n");
+      printf("ClientController::SaveSession - Failed to delete old TMID, "
+             "otherwise saved session OK.\n");
 #endif
-    return n;
+    } else {
+#ifdef DEBUG
+      printf("ClientController::SaveSession - Failed to Save Session.\n");
+#endif
+      return n;
+    }
   }
   return 0;
 }

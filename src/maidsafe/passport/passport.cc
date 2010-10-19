@@ -212,6 +212,147 @@ int Passport::GetUserData(const std::string &password,
     return kSuccess;
 }
 
+int Passport::ChangeUserData(const std::string &new_username,
+                             const std::string &new_pin,
+                             const std::string &plain_data,
+                             boost::shared_ptr<MidPacket> mid_for_deletion,
+                             boost::shared_ptr<MidPacket> smid_for_deletion,
+                             boost::shared_ptr<TmidPacket> tmid_for_deletion,
+                             boost::shared_ptr<TmidPacket> stmid_for_deletion,
+                             boost::shared_ptr<MidPacket> new_mid,
+                             boost::shared_ptr<MidPacket> new_smid,
+                             boost::shared_ptr<TmidPacket> new_tmid,
+                             boost::shared_ptr<TmidPacket> new_stmid) {
+  // Retrieve old packets
+  boost::shared_ptr<MidPacket> retrieved_mid =
+      boost::shared_static_cast<MidPacket>(packet_handler_.Packet(MID));
+  boost::shared_ptr<MidPacket> retrieved_smid =
+      boost::shared_static_cast<MidPacket>(packet_handler_.Packet(SMID));
+  boost::shared_ptr<TmidPacket> retrieved_tmid =
+      boost::shared_static_cast<TmidPacket>(packet_handler_.Packet(TMID));
+  boost::shared_ptr<TmidPacket> retrieved_stmid =
+      boost::shared_static_cast<TmidPacket>(packet_handler_.Packet(STMID));
+  if (!retrieved_mid.get())
+    return kNoMid;
+  if (!retrieved_smid.get())
+    return kNoSmid;
+  if (!retrieved_tmid.get())
+    return kNoTmid;
+  if (!retrieved_stmid.get())
+    return kNoStmid;
+
+  // Create new packets
+  boost::shared_ptr<MidPacket> mid(new MidPacket(new_username, new_pin, ""));
+  boost::shared_ptr<MidPacket> smid(new MidPacket(new_username, new_pin,
+                                                  kSmidAppendix_));
+  mid->SetRid(retrieved_mid->rid());
+  smid->SetRid(retrieved_smid->rid());
+  boost::shared_ptr<TmidPacket> tmid(
+      new TmidPacket(new_username, new_pin, mid->rid(), false,
+                     retrieved_tmid->password(), plain_data));
+  boost::shared_ptr<TmidPacket> stmid(
+      new TmidPacket(new_username, new_pin, smid->rid(), true,
+                     retrieved_stmid->password(), plain_data));
+
+  bool success(!mid->name().empty() && !smid->name().empty() &&
+               !tmid->name().empty() && !stmid->name().empty());
+  if (!success)
+    return kPassportError;
+
+  success = packet_handler_.AddPacket(mid, true) &&
+            packet_handler_.AddPacket(smid, true) &&
+            packet_handler_.AddPacket(tmid, true) &&
+            packet_handler_.AddPacket(stmid, true);
+  if (!success)
+    return kPassportError;
+
+  // Copy packets
+  if (mid_for_deletion.get())
+    *mid_for_deletion = *retrieved_mid;
+  else
+    mid_for_deletion.reset(new MidPacket(*retrieved_mid));
+  if (smid_for_deletion.get())
+    *smid_for_deletion = *retrieved_smid;
+  else
+    smid_for_deletion.reset(new MidPacket(*retrieved_smid));
+  if (tmid_for_deletion.get())
+    *tmid_for_deletion = *retrieved_tmid;
+  else
+    tmid_for_deletion.reset(new TmidPacket(*retrieved_tmid));
+  if (stmid_for_deletion.get())
+    *stmid_for_deletion = *retrieved_stmid;
+  else
+    stmid_for_deletion.reset(new TmidPacket(*retrieved_stmid));
+  if (new_mid.get())
+    *new_mid = *mid;
+  else
+    new_mid.reset(new MidPacket(*mid));
+  if (new_smid.get())
+    *new_smid = *smid;
+  else
+    new_smid.reset(new MidPacket(*smid));
+  if (new_tmid.get())
+    *new_tmid = *tmid;
+  else
+    new_tmid.reset(new TmidPacket(*tmid));
+  if (new_stmid.get())
+    *new_stmid = *stmid;
+  else
+    new_stmid.reset(new TmidPacket(*stmid));
+  return kSuccess;
+}
+
+int Passport::ChangePassword(const std::string &new_password,
+                             const std::string &plain_data,
+                             boost::shared_ptr<TmidPacket> updated_tmid,
+                             boost::shared_ptr<TmidPacket> updated_stmid) {
+  // Retrieve old packets
+  boost::shared_ptr<MidPacket> retrieved_mid =
+      boost::shared_static_cast<MidPacket>(packet_handler_.Packet(MID));
+  boost::shared_ptr<MidPacket> retrieved_smid =
+      boost::shared_static_cast<MidPacket>(packet_handler_.Packet(SMID));
+  boost::shared_ptr<TmidPacket> retrieved_tmid =
+      boost::shared_static_cast<TmidPacket>(packet_handler_.Packet(TMID));
+  boost::shared_ptr<TmidPacket> retrieved_stmid =
+      boost::shared_static_cast<TmidPacket>(packet_handler_.Packet(STMID));
+  if (!retrieved_mid.get())
+    return kNoMid;
+  if (!retrieved_smid.get())
+    return kNoSmid;
+  if (!retrieved_tmid.get())
+    return kNoTmid;
+  if (!retrieved_stmid.get())
+    return kNoStmid;
+
+  // Create new packets
+  boost::shared_ptr<TmidPacket> tmid(
+      new TmidPacket(retrieved_tmid->username(), retrieved_tmid->pin(),
+                     retrieved_mid->rid(), false, new_password, plain_data));
+  boost::shared_ptr<TmidPacket> stmid(
+      new TmidPacket(retrieved_stmid->username(), retrieved_stmid->pin(),
+                     retrieved_smid->rid(), true, new_password, plain_data));
+
+  bool success(!tmid->name().empty() && !stmid->name().empty());
+  if (!success)
+    return kPassportError;
+
+  success = packet_handler_.AddPacket(tmid, true) &&
+            packet_handler_.AddPacket(stmid, true);
+  if (!success)
+    return kPassportError;
+
+  // Copy packets
+  if (updated_tmid.get())
+    *updated_tmid = *tmid;
+  else
+    updated_tmid.reset(new TmidPacket(*tmid));
+  if (updated_stmid.get())
+    *updated_stmid = *stmid;
+  else
+    updated_stmid.reset(new TmidPacket(*stmid));
+  return kSuccess;
+}
+
 std::string Passport::SerialiseKeyring() {
   return packet_handler_.SerialiseKeyring();
 }
@@ -284,6 +425,23 @@ int Passport::DoInitialiseSignaturePacket(
   }
 }
 
+boost::shared_ptr<pki::Packet> Passport::Packet(const PacketType &packet_type) {
+  if (IsSignature(packet_type, false)) {
+    return boost::shared_ptr<pki::Packet>(new SignaturePacket(
+        *boost::shared_static_cast<SignaturePacket>(
+            packet_handler_.Packet(packet_type))));
+  } else if (packet_type == MID || packet_type == SMID) {
+    return boost::shared_ptr<pki::Packet>(new MidPacket(
+        *boost::shared_static_cast<MidPacket>(
+            packet_handler_.Packet(packet_type))));
+  } else if (packet_type == TMID || packet_type == STMID) {
+    return boost::shared_ptr<pki::Packet>(new TmidPacket(
+        *boost::shared_static_cast<TmidPacket>(
+            packet_handler_.Packet(packet_type))));
+  } else {
+    return boost::shared_ptr<pki::Packet>();
+  }
+}
 
 
 
