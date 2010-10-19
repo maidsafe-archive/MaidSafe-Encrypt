@@ -659,7 +659,11 @@ if (
 \end_layout
 
 \begin_layout Enumerate
-\begin_inset Formula $\mathsf{SymDec_{[PBKDF2_{[W][S]}]}\left(GetV_{[H(U+S+Rnd\#)]}\right)\equiv Account}$
+\begin_inset Formula $\mathsf{SymDec_{[PBKDF2_{[W][S]}]}\left(GetV_{[H(U+S+Rnd\#)]}\right)}$
+\end_inset
+
+
+\begin_inset Formula $\equiv Account$
 \end_inset
 
 
@@ -672,14 +676,22 @@ else (or if previous attempt failed)
 
 \begin_deeper
 \begin_layout Enumerate
-\begin_inset Formula $\mathsf{SymDec_{[PBKDF2_{[U][S-1]}]}\left(GetV_{[H(U+(S-1))]}\right)\equiv Rnd\#_{fallback}}$
+\begin_inset Formula $\mathsf{SymDec_{[PBKDF2_{[U][S-1]}]}\;}$
+\end_inset
+
+ 
+\begin_inset Formula $\left(GetV_{[H(U+(S-1))]}\right)\equiv Rnd\#_{fallback}$
 \end_inset
 
 
 \end_layout
 
 \begin_layout Enumerate
-\begin_inset Formula $\mathsf{SymDec_{[PBKDF2_{[W][S-1]}]}\left(GetV_{[H(U+S+Rnd\#_{fallback})]}\right)\equiv Account_{fallback}}$
+\begin_inset Formula $\mathsf{SymDec_{[PBKDF2_{[W][S-1]}]}\;}$
+\end_inset
+
+ 
+\begin_inset Formula $\left(GetV_{[H(U+S+Rnd\#_{fallback})]}\right)\equiv Account_{fallback}$
 \end_inset
 
 
