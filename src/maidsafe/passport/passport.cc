@@ -170,7 +170,7 @@ int Passport::UpdateUserData(const std::string &plain_data,
 }
 
 int Passport::InitialiseTmid(bool surrogate,
-                             const std::string &serialised_mid_packet,
+                             const std::string &encrypted_rid,
                              std::string *tmid_name) {
   PacketType mid_type(MID);
   if (surrogate)
@@ -179,7 +179,7 @@ int Passport::InitialiseTmid(bool surrogate,
       boost::shared_static_cast<MidPacket>(packet_handler_.Packet(mid_type));
   if (!mid.get())
     return surrogate ? kNoSmid : kNoMid;
-  if (mid->ParseRid(serialised_mid_packet) == 0)
+  if (mid->DecryptRid(encrypted_rid) == 0)
     return surrogate ? kBadSerialisedSmidRid : kBadSerialisedMidRid;
   boost::shared_ptr<TmidPacket> tmid(new TmidPacket(mid->username(), mid->pin(),
                                      mid->rid(), surrogate, "", ""));
@@ -193,7 +193,7 @@ int Passport::InitialiseTmid(bool surrogate,
 
 int Passport::GetUserData(const std::string &password,
                           bool surrogate,
-                          const std::string &serialised_tmid_packet,
+                          const std::string &encrypted_data,
                           std::string *plain_data) {
   PacketType tmid_type(TMID);
   if (surrogate)
@@ -204,7 +204,7 @@ int Passport::GetUserData(const std::string &password,
     return surrogate ? kNoStmid : kNoTmid;
   if (!plain_data)
     return kPassportError;
-  *plain_data = tmid->ParsePlainData(password, serialised_tmid_packet);
+  *plain_data = tmid->DecryptPlainData(password, encrypted_data);
   if (plain_data->empty())
     return surrogate ? kBadSerialisedStmidData : kBadSerialisedTmidData;
   else

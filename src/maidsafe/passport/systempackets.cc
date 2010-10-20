@@ -113,18 +113,27 @@ SignaturePacket::SignaturePacket(const Key &key)
       public_key_(key.public_key()),
       private_key_(key.private_key()),
       signer_private_key_(),
-      public_key_signature_(key.public_key_signature()) {}
+      public_key_signature_(key.public_key_signature()) {
+  name_ = key.name();
+}
 
 void SignaturePacket::Initialise() {
-  if (public_key_.empty() || private_key_.empty() ||
-      !IsSignature(packet_type_, false))
+  if (!IsSignature(packet_type_, false)) {
+    packet_type_ = UNKNOWN;
+    return Clear();
+  }
+  if (public_key_.empty() || private_key_.empty())
     return Clear();
 
-  if (signer_private_key_.empty()) {
-    if (IsSignature(packet_type_, true))  // this is a self-signing packet
+  if (IsSignature(packet_type_, true)) {  // this is a self-signing packet
+    if (signer_private_key_.empty()) {
       signer_private_key_ = private_key_;
-    else
+    } else if (signer_private_key_ != private_key_) {
       return Clear();
+    }
+  } else if (signer_private_key_.empty() ||
+             (signer_private_key_ == private_key_)) {
+    return Clear();
   }
 
   try {
@@ -145,25 +154,11 @@ void SignaturePacket::Initialise() {
 }
 
 void SignaturePacket::Clear() {
-  packet_type_ = UNKNOWN;
   name_.clear();
   public_key_.clear();
   private_key_.clear();
   signer_private_key_.clear();
   public_key_signature_.clear();
-}
-
-std::string SignaturePacket::ParsePublicKey(
-    const std::string &serialised_sig_packet) {
-  GenericPacket packet;
-  if (!packet.ParseFromString(serialised_sig_packet)) {
-#ifdef DEBUG
-    printf("SignaturePacket::ParsePublicKey: Bad packet, or userdata empty.\n");
-#endif
-    return "";
-  } else {
-    return packet.data();
-  }
 }
 
 void SignaturePacket::PutToKey(Key *key) {
@@ -214,7 +209,7 @@ void MidPacket::Initialise() {
     Clear();
 }
 
-void MidPacket::SetRid(const boost::uint32_t rid) {
+void MidPacket::SetRid(const boost::uint32_t &rid) {
   rid_ = rid;
   try {
     if (rid_ == 0) {
@@ -235,28 +230,24 @@ void MidPacket::SetRid(const boost::uint32_t rid) {
     Clear();
 }
 
-boost::uint32_t MidPacket::ParseRid(const std::string &serialised_mid_packet) {
-  GenericPacket packet;
-  if (username_.empty() || pin_.empty() ||
-      !packet.ParseFromString(serialised_mid_packet)) {
+boost::uint32_t MidPacket::DecryptRid(const std::string &encrypted_rid) {
+  if (username_.empty() || pin_.empty() || encrypted_rid.empty()) {
 #ifdef DEBUG
-    if (smid_appendix_.empty())
-      printf("MidPacket::ParseRid: Bad packet, or user data empty.\n");
-    else
-      printf("SmidPacket::ParseRid: Bad packet, or user data empty.\n");
+    printf("MidPacket::DecryptRid: Bad encrypted RID or user data empty.\n");
 #endif
+    Clear();
     return 0;
   }
 
   try {
-    encrypted_rid_ = packet.data();
+    encrypted_rid_ = encrypted_rid;
     std::string rid(crypto_obj_.SymmDecrypt(encrypted_rid_, "",
                     crypto::STRING_STRING, secure_password_));
     rid_ = boost::lexical_cast<boost::uint32_t>(rid);
   }
   catch(const std::exception &e) {
 #ifdef DEBUG
-    printf("MidPacket::ParseRid: %s\n", e.what());
+    printf("MidPacket::DecryptRid: %s\n", e.what());
 #endif
     rid_ = 0;
   }
@@ -370,27 +361,25 @@ bool TmidPacket::SetPlainData() {
   }
 }
 
-std::string TmidPacket::ParsePlainData(
-    const std::string &password,
-    const std::string &serialised_tmid_packet) {
+std::string TmidPacket::DecryptPlainData(const std::string &password,
+                                         const std::string &encrypted_data) {
   password_ = password;
   if (!SetPassword())
     return "";
-  GenericPacket packet;
-  if (!packet.ParseFromString(serialised_tmid_packet)) {
+  if (encrypted_data.empty()) {
 #ifdef DEBUG
-    printf("TmidPacket::ParsePlainData: bad packet.\n");
+    printf("TmidPacket::DecryptPlainData: bad encrypted data.\n");
 #endif
     return "";
   }
   try {
-    encrypted_data_ = packet.data();
+    encrypted_data_ = encrypted_data;
     plain_data_ = crypto_obj_.SymmDecrypt(encrypted_data_, "",
                   crypto::STRING_STRING, secure_password_);
   }
   catch(const std::exception &e) {
 #ifdef DEBUG
-    printf("TmidPacket::ParsePlainData: %s\n", e.what());
+    printf("TmidPacket::DecryptPlainData: %s\n", e.what());
 #endif
     plain_data_.clear();
   }

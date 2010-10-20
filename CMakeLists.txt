@@ -521,6 +521,7 @@ ADD_EXECUTABLE(TESTcommon ${ALL_FILES_COMMON_TESTS_DIR} ${TESTS_MAIN})
 #ADD_EXECUTABLE(TESTfuse ${ALL_FILES_FUSE_TESTS_DIR})
 ADD_EXECUTABLE(TESTvault ${ALL_FILES_VAULT_TESTS_DIR} ${TESTS_MAIN})
 
+ADD_EXECUTABLE(TESTauthentication_net ${NETWORK_TEST} "${SRC_MAIDSAFE}/client/tests/testauthentication.cc")
 ADD_EXECUTABLE(TESTbufferpackethandler_net ${NETWORK_TEST} "${SRC_MAIDSAFE}/common/tests/testbufferpackethandler.cc")
 ADD_EXECUTABLE(TESTclientcontroller_net ${NETWORK_TEST} "${SRC_MAIDSAFE}/client/tests/testclientcontroller.cc")
 ADD_EXECUTABLE(TESTclientcontroller_local ${NETWORK_TEST} "${SRC_MAIDSAFE}/client/tests/testclientcontroller.cc")
@@ -535,8 +536,8 @@ ELSE()
   ADD_EXECUTABLE(vault "${SRC_MAIDSAFE}/vault/unix_deamon.cc")
 ENDIF()
 
-SET(ALL_EXECUTABLES lifestuff lslocal lslightlocal TESTclient TESTcommon TESTvault TESTbufferpackethandler_net TESTclientcontroller_net
-    TESTclientcontroller_local TESTimconnectionhandler_net TESTpdvault_net DEMOclient DEMOvault vault) # TESTfuse
+SET(ALL_EXECUTABLES lifestuff lslocal lslightlocal TESTclient TESTcommon TESTvault TESTauthentication_net TESTbufferpackethandler_net
+    TESTclientcontroller_net TESTclientcontroller_local TESTimconnectionhandler_net TESTpdvault_net DEMOclient DEMOvault vault) # TESTfuse
 
 ADD_LIBRARY(PDclientlib STATIC ${ALL_FILES_CLIENT_DIR})
 ADD_LIBRARY(PDclientfilesystemlib STATIC ${ALL_FILES_CLIENT_FILESYSTEM_DIR})
@@ -584,6 +585,7 @@ IF(NOT MSVC)
   #TARGET_LINK_LIBRARIES(TESTfuse ${TEST_LIBS})
   TARGET_LINK_LIBRARIES(TESTvault ${TEST_LIBS})
 
+  TARGET_LINK_LIBRARIES(TESTauthentication_net ${TEST_LIBS})
   TARGET_LINK_LIBRARIES(TESTbufferpackethandler_net ${TEST_LIBS})
   TARGET_LINK_LIBRARIES(TESTclientcontroller_net ${TEST_LIBS})
   TARGET_LINK_LIBRARIES(TESTclientcontroller_local PDTESTclientlib PDcommonlib ${Gtest_LIBRARY} ${SYS_LIBS})
@@ -689,6 +691,7 @@ IF(Glog_FOUND)
 ENDIF()
 
 SET_TARGET_PROPERTIES(PDTESTclientlib PROPERTIES COMPILE_FLAGS -DLOCAL_PDVAULT)
+SET_TARGET_PROPERTIES(TESTauthentication_net PROPERTIES COMPILE_FLAGS -DMS_NETWORK_TEST)
 SET_TARGET_PROPERTIES(TESTbufferpackethandler_net PROPERTIES COMPILE_FLAGS -DMS_NETWORK_TEST)
 SET_TARGET_PROPERTIES(TESTclientcontroller_local PROPERTIES COMPILE_FLAGS -DLOCAL_PDVAULT)
 SET_TARGET_PROPERTIES(TESTclientcontroller_net PROPERTIES COMPILE_FLAGS -DMS_NETWORK_TEST)
@@ -830,6 +833,13 @@ FOREACH(TEST_EXECUTABLE ${TEST_EXECUTABLES})
 ENDFOREACH()
 
 IF(NOT ${MAIDSAFE_TEST_TYPE} MATCHES "BEH")
+  LIST(FIND EXCLUDED_TESTS Test_authentication_net TEST_EXCLUDED)
+  IF(TEST_EXCLUDED EQUAL -1)
+    ADD_TEST(Test_authentication_net ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/TESTauthentication_net${TEST_POSTFIX})
+    SET_PROPERTY(TEST Test_authentication_net PROPERTY TIMEOUT ${NETWORK_SYSTEM_TEST_TIMEOUT})
+    SET_PROPERTY(TEST Test_authentication_net PROPERTY LABELS Functional Authentication)
+  ENDIF()
+
   LIST(FIND EXCLUDED_TESTS Test_bufferpackethandler_net TEST_EXCLUDED)
   IF(TEST_EXCLUDED EQUAL -1)
     ADD_TEST(Test_bufferpackethandler_net ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/TESTbufferpackethandler_net${TEST_POSTFIX})

@@ -47,8 +47,8 @@ class Authentication {
                      cond_var_(),
                      tmid_op_status_(kPendingMid),
                      stmid_op_status_(kPendingMid),
-                     serialised_tmid_packet_(),
-                     serialised_stmid_packet_(),
+                     encrypted_tmid_(),
+                     encrypted_stmid_(),
                      public_name_(),
                      kMaxStoreAttempts_(3),
                      kMaxDeleteAttempts_(2),
@@ -184,7 +184,7 @@ class Authentication {
   boost::mutex mutex_;
   boost::condition_variable cond_var_;
   OpStatus tmid_op_status_, stmid_op_status_;
-  std::string serialised_tmid_packet_, serialised_stmid_packet_, public_name_;
+  std::string encrypted_tmid_, encrypted_stmid_, public_name_;
   const boost::uint8_t kMaxStoreAttempts_, kMaxDeleteAttempts_;
   const int kSingleOpTimeout_;
 };

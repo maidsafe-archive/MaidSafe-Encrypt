@@ -21,8 +21,8 @@
 # ============================================================================ #
 
 
-SET(LIBS_DIRS ${Boost_LIBRARY_DIRS} ${maidsafe_dht_LIBRARY_DIR})
-SET(LIBS_DIRS_DEBUG ${Boost_LIBRARY_DIRS} ${maidsafe_dht_LIBRARY_DIR_DEBUG})
+SET(LIBS_DIRS ${maidsafe_dht_LIBRARY_DIR} ${Boost_LIBRARY_DIRS} ${Protobuf_LIBRARY_DIR})
+SET(LIBS_DIRS_DEBUG ${maidsafe_dht_LIBRARY_DIR_DEBUG} ${Boost_LIBRARY_DIRS} ${Protobuf_LIBRARY_DIR_DEBUG})
 SET(TEST_LIBS_DIRS ${LIBS_DIRS} ${Gtest_LIBRARY_DIR})
 SET(TEST_LIBS_DIRS_DEBUG ${LIBS_DIRS_DEBUG} ${Gtest_LIBRARY_DIR_DEBUG})
 
@@ -57,7 +57,7 @@ ELSE()
 ENDIF()
 
 IF(UNIX)
-  TARGET_LINK_LIBRARIES(passport ${maidsafe_dht_LIBRARY} ${Cryptopp_LIBRARY} ${Boost_THREAD_LIBRARY_RELEASE} ${Boost_SYSTEM_LIBRARY_RELEASE} pthread)
+  TARGET_LINK_LIBRARIES(passport ${maidsafe_dht_LIBRARY} ${Cryptopp_LIBRARY} ${Boost_THREAD_LIBRARY_RELEASE} ${Boost_SYSTEM_LIBRARY_RELEASE} ${Protobuf_LIBRARY} pthread)
   TARGET_LINK_LIBRARIES(TESTpassport passport ${Gtest_LIBRARY})
   IF(APPLE)
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DOSX -DPD_APPLE -DBSD -D__FreeBSD__=10 -D_FORTIFY_SOURCE=2 -D_FILE_OFFSET_BITS=64")
@@ -76,7 +76,8 @@ ELSEIF(WIN32)
                             debug ${maidsafe_dht_LIBRARY_DEBUG} optimized ${maidsafe_dht_LIBRARY}
                             debug ${Cryptopp_LIBRARY_DEBUG} optimized ${Cryptopp_LIBRARY}
                             debug ${Boost_THREAD_LIBRARY_DEBUG} optimized ${Boost_THREAD_LIBRARY_RELEASE}
-                            debug ${Boost_SYSTEM_LIBRARY_DEBUG} optimized ${Boost_SYSTEM_LIBRARY_RELEASE})
+                            debug ${Boost_SYSTEM_LIBRARY_DEBUG} optimized ${Boost_SYSTEM_LIBRARY_RELEASE}
+                            debug ${Protobuf_LIBRARY_DEBUG} optimized ${Protobuf_LIBRARY})
     TARGET_LINK_LIBRARIES(TESTpassport passport debug ${Gtest_LIBRARY_DEBUG} optimized ${Gtest_LIBRARY})
     # flag to link to static version of Google Glog
     IF(Glog_FOUND)

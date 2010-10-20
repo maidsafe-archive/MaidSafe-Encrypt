@@ -44,6 +44,7 @@ enum ReturnCode {
   kPublicUsernameExists = -1006,
 //  kAuthenticationTimeout = -1007,
   kFailedToDeleteOldPacket = -1008,
+  kBadPacket = -1009,
 
   // Buffer Packet Handler
   kBPError = -2001,

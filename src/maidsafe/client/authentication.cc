@@ -141,8 +141,13 @@ void Authentication::GetMidTmidCallback(const std::vector<std::string> &values,
 #endif
 
   if (op_status == kPendingMid) {
+    int result(kSuccess);
+    GenericPacket packet;
+    if (!packet.ParseFromString(values.at(0)) || packet.data().empty())
+      result = kBadPacket;
     std::string tmid_name;
-    int result = passport_->InitialiseTmid(surrogate, values.at(0), &tmid_name);
+    if (result = kSuccess)
+      result = passport_->InitialiseTmid(surrogate, packet.data(), &tmid_name);
     if (result != kSuccess) {
 #ifdef DEBUG
       printf("Authentication::GetMidTmidCallback - error %i.\n", result);
@@ -165,12 +170,12 @@ void Authentication::GetMidTmidCallback(const std::vector<std::string> &values,
   } else {
     boost::mutex::scoped_lock lock(mutex_);
     if (surrogate) {
-      serialised_stmid_packet_ = values.at(0);
+      encrypted_stmid_ = values.at(0);
       stmid_op_status_ = kSucceeded;
       if (tmid_op_status_ == kFailed)
         cond_var_.notify_all();
     } else {
-      serialised_tmid_packet_ = values.at(0);
+      encrypted_tmid_ = values.at(0);
       tmid_op_status_ = kSucceeded;
       cond_var_.notify_all();
     }
@@ -180,7 +185,7 @@ void Authentication::GetMidTmidCallback(const std::vector<std::string> &values,
 int Authentication::GetUserData(const std::string &password,
                                 std::string *serialised_data_atlas) {
   //  still have not recovered the tmid
-  int result = passport_->GetUserData(password, false, serialised_tmid_packet_,
+  int result = passport_->GetUserData(password, false, encrypted_tmid_,
                                       serialised_data_atlas);
   DataMap dm;
   if (result != kSuccess || !dm.ParseFromString(*serialised_data_atlas)) {
@@ -191,7 +196,7 @@ int Authentication::GetUserData(const std::string &password,
     try {
       boost::mutex::scoped_lock lock(mutex_);
       tmid_op_status_ = kFailed;
-      serialised_tmid_packet_.clear();
+      encrypted_tmid_.clear();
       success = cond_var_.timed_wait(lock,
                 boost::posix_time::milliseconds(2 * kSingleOpTimeout_),
                 boost::bind(&Authentication::StmidOpDone, this));
@@ -206,7 +211,7 @@ int Authentication::GetUserData(const std::string &password,
       printf("Authentication::GetUserData: timed out waiting for STMID.\n");
 #endif
     if (stmid_op_status_ == kSucceeded) {
-      result = passport_->GetUserData(password, true, serialised_stmid_packet_,
+      result = passport_->GetUserData(password, true, encrypted_stmid_,
                                       serialised_data_atlas);
       if (result != kSuccess || !dm.ParseFromString(*serialised_data_atlas)) {
 #ifdef DEBUG
@@ -214,7 +219,7 @@ int Authentication::GetUserData(const std::string &password,
 #endif
         boost::mutex::scoped_lock lock(mutex_);
         stmid_op_status_ = kFailed;
-        serialised_stmid_packet_.clear();
+        encrypted_stmid_.clear();
       } else {
         session_singleton_->SetPassword(password);
 #ifdef DEBUG

@@ -24,12 +24,32 @@
 #define MAIDSAFE_PASSPORT_SYSTEMPACKETS_H_
 
 #include <boost/cstdint.hpp>
+#include <boost/shared_ptr.hpp>
 #include <string>
 #include "maidsafe/pki/packet.h"
+
+namespace testing {
+class AssertionResult;
+}
 
 namespace maidsafe {
 
 namespace passport {
+
+class MidPacket;
+class TmidPacket;
+
+namespace test {
+testing::AssertionResult Empty(boost::shared_ptr<pki::Packet> packet);
+class SystemPacketsTest_BEH_PASSPORT_CreateSig_Test;
+class SystemPacketsTest_BEH_PASSPORT_PutToAndGetFromKey_Test;
+struct ExpectedMidContent;
+testing::AssertionResult Equal(boost::shared_ptr<ExpectedMidContent> expected,
+                               boost::shared_ptr<MidPacket> mid);
+struct ExpectedTmidContent;
+testing::AssertionResult Equal(boost::shared_ptr<ExpectedTmidContent> expected,
+                               boost::shared_ptr<TmidPacket> mid);
+}  // namespace test
 
 class Key;
 
@@ -65,11 +85,14 @@ class SignaturePacket : public pki::Packet {
   SignaturePacket(const Key &key);
   virtual ~SignaturePacket() {}
   virtual std::string value() const { return public_key_; }
-  std::string ParsePublicKey(const std::string &serialised_sig_packet);
   void PutToKey(Key *key);
   std::string private_key() const { return private_key_; }
   std::string public_key_signature() const { return public_key_signature_; }
  private:
+  friend testing::AssertionResult
+      test::Empty(boost::shared_ptr<pki::Packet> packet);
+  friend class test::SystemPacketsTest_BEH_PASSPORT_CreateSig_Test;
+  friend class test::SystemPacketsTest_BEH_PASSPORT_PutToAndGetFromKey_Test;
   virtual void Initialise();
   virtual void Clear();
   std::string public_key_, private_key_, signer_private_key_;
@@ -83,12 +106,17 @@ class MidPacket : public pki::Packet {
             const std::string &smid_appendix);
   virtual ~MidPacket() {}
   virtual std::string value() const { return encrypted_rid_; }
-  void SetRid(const boost::uint32_t rid);
-  boost::uint32_t ParseRid(const std::string &serialised_mid_packet);
+  void SetRid(const boost::uint32_t &rid);
+  boost::uint32_t DecryptRid(const std::string &encrypted_rid);
   std::string username() const { return username_; }
   std::string pin() const { return pin_; }
   boost::uint32_t rid() const { return rid_; }
  private:
+  friend testing::AssertionResult
+      test::Empty(boost::shared_ptr<pki::Packet> packet);
+  friend testing::AssertionResult
+      test::Equal(boost::shared_ptr<ExpectedMidContent> expected,
+                  boost::shared_ptr<MidPacket> mid);
   virtual void Initialise();
   virtual void Clear();
   std::string username_, pin_, smid_appendix_;
@@ -106,13 +134,18 @@ class TmidPacket : public pki::Packet {
              const std::string &plain_data);
   virtual ~TmidPacket() {}
   virtual std::string value() const { return encrypted_data_; }
-  std::string ParsePlainData(const std::string &password,
-                             const std::string &serialised_tmid_packet);
+  std::string DecryptPlainData(const std::string &password,
+                               const std::string &encrypted_data);
   void SetToSurrogate() { packet_type_ = STMID; }
   std::string username() const { return username_; }
   std::string pin() const { return pin_; }
   std::string password() const { return password_; }
  private:
+  friend testing::AssertionResult
+      test::Empty(boost::shared_ptr<pki::Packet> packet);
+  friend testing::AssertionResult
+      test::Equal(boost::shared_ptr<ExpectedTmidContent> expected,
+                  boost::shared_ptr<TmidPacket> mid);
   virtual void Initialise();
   bool SetPassword();
   bool SetPlainData();
