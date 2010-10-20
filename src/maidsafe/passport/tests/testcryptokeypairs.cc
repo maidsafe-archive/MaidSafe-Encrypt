@@ -34,7 +34,7 @@ namespace test {
 const boost::uint16_t kRsaKeySize(4096);
 const boost::uint8_t kMaxThreadCount(5);
 
-TEST(CryptoKeyPairsTest, BEH_MAID_GetCryptoKey) {
+TEST(CryptoKeyPairsTest, BEH_PASSPORT_GetCryptoKey) {
   CryptoKeyPairs ckp(kRsaKeySize, kMaxThreadCount);
   crypto::RsaKeyPair kp;
   ASSERT_FALSE(ckp.GetKeyPair(&kp));
@@ -44,7 +44,7 @@ TEST(CryptoKeyPairsTest, BEH_MAID_GetCryptoKey) {
   ASSERT_FALSE(kp.private_key().empty());
 }
 
-TEST(CryptoKeyPairsTest, FUNC_MAID_GetMultipleCryptoKeys) {
+TEST(CryptoKeyPairsTest, FUNC_PASSPORT_GetMultipleCryptoKeys) {
   CryptoKeyPairs ckp(kRsaKeySize, kMaxThreadCount);
   boost::int16_t no_of_keys = 20;
   std::vector<crypto::RsaKeyPair> kps;
@@ -63,7 +63,7 @@ TEST(CryptoKeyPairsTest, FUNC_MAID_GetMultipleCryptoKeys) {
   ASSERT_EQ(static_cast<size_t>(no_of_keys), kps.size());
 }
 
-TEST(CryptoKeyPairsTest, FUNC_MAID_ReuseObject) {
+TEST(CryptoKeyPairsTest, FUNC_PASSPORT_ReuseObject) {
   CryptoKeyPairs ckp(kRsaKeySize, kMaxThreadCount);
   boost::int16_t no_of_keys(5);
   std::vector<crypto::RsaKeyPair> kps;
@@ -111,7 +111,7 @@ void GetKeys(CryptoKeyPairs *ckp, int *counter, const boost::int16_t &total) {
   }
 }
 
-TEST(CryptoKeyPairsTest, FUNC_MAID_AccessFromDiffThreads) {
+TEST(CryptoKeyPairsTest, FUNC_PASSPORT_AccessFromDiffThreads) {
   CryptoKeyPairs ckp(kRsaKeySize, kMaxThreadCount);
   boost::int16_t no_of_keys(6), no_of_thrds(4);
   std::vector<crypto::RsaKeyPair> kps;
@@ -136,15 +136,14 @@ void GetKeyPair(CryptoKeyPairs *ckp, int *counter) {
   }
 }
 
-TEST(CryptoKeyPairsTest, BEH_MAID_DestroyObjectWhileGenKeys) {
+TEST(CryptoKeyPairsTest, BEH_PASSPORT_DestroyObjectWhileGenKeys) {
   CryptoKeyPairs *ckp = new CryptoKeyPairs(kRsaKeySize, kMaxThreadCount);
   ckp->StartToCreateKeyPairs(20);
   boost::this_thread::sleep(boost::posix_time::seconds(3));
   delete ckp;
 }
 
-
-TEST(CryptoKeyPairsTest, BEH_MAID_DestroyObjectWithGetKeyReq) {
+TEST(CryptoKeyPairsTest, BEH_PASSPORT_DestroyObjectWithGetKeyReq) {
   CryptoKeyPairs *ckp = new CryptoKeyPairs(kRsaKeySize, kMaxThreadCount);
   ckp->StartToCreateKeyPairs(1);
   boost::thread_group thrds;
@@ -153,13 +152,9 @@ TEST(CryptoKeyPairsTest, BEH_MAID_DestroyObjectWithGetKeyReq) {
     thrds.create_thread(boost::bind(&GetKeyPair, ckp, &counter));
   }
   boost::this_thread::sleep(boost::posix_time::seconds(1));
-  printf("1111\n");
   delete ckp;
-  printf("2222\n");
   thrds.join_all();
-  printf("3333\n");
   ASSERT_EQ(1, counter);
-  printf("4444\n");
 }
 
 }  // namespace test

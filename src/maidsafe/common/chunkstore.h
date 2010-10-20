@@ -32,7 +32,7 @@
 #include <map>
 #include <string>
 
-#include "maidsafe/maidsafe.h"
+#include "maidsafe/common/maidsafe.h"
 
 namespace fs = boost::filesystem;
 

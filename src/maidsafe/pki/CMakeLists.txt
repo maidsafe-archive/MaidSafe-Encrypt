@@ -57,7 +57,7 @@ ELSE()
 ENDIF()
 
 IF(UNIX)
-  TARGET_LINK_LIBRARIES(pki ${Boost_SYSTEM_LIBRARY_RELEASE} ${maidsafe_dht_LIBRARY} ${Cryptopp_LIBRARY} pthread)
+  TARGET_LINK_LIBRARIES(pki ${maidsafe_dht_LIBRARY} ${Cryptopp_LIBRARY} ${Boost_SYSTEM_LIBRARY_RELEASE} pthread)
   TARGET_LINK_LIBRARIES(TESTpki pki ${Gtest_LIBRARY})
   IF(APPLE)
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DOSX -DPD_APPLE -DBSD -D__FreeBSD__=10 -D_FORTIFY_SOURCE=2 -D_FILE_OFFSET_BITS=64")
@@ -66,18 +66,16 @@ IF(UNIX)
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DLINUX -DPD_LINUX -DPD_POSIX -Wextra -Wall -Wfloat-equal -Wlong-long -Wstrict-overflow=5 -Wredundant-decls -Wuninitialized -Wunused-function")
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wunused-label -Wunused-parameter -Wunused-value -Wunused-variable -std=c++98 -ansi -D_FORTIFY_SOURCE=2 -fno-stack-protector -D_FILE_OFFSET_BITS=64")
   ENDIF()
-  SET(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -ggdb -pg -fprofile-arcs -ftest-coverage")
   SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 -DDEBUG -ggdb -pg -fprofile-arcs -ftest-coverage")
   SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -Wuninitialized")
-  SET(CMAKE_EXE_LINKER_FLAGS_DEBUG "${CMAKE_EXE_LINKER_FLAGS_DEBUG} -pg -fprofile-arcs -ftest-coverage")
   SET_TARGET_PROPERTIES(pki PROPERTIES COMPILE_FLAGS "-O3 -fPIC -w -pipe -finline-functions")
 ELSEIF(WIN32)
   IF(MSVC)
     CMAKE_POLICY(SET CMP0008 NEW)
     TARGET_LINK_LIBRARIES(pki
-                            debug ${Boost_SYSTEM_LIBRARY_DEBUG} optimized ${Boost_SYSTEM_LIBRARY_RELEASE}
                             debug ${maidsafe_dht_LIBRARY_DEBUG} optimized ${maidsafe_dht_LIBRARY}
-                            debug ${Cryptopp_LIBRARY_DEBUG} optimized ${Cryptopp_LIBRARY})
+                            debug ${Cryptopp_LIBRARY_DEBUG} optimized ${Cryptopp_LIBRARY}
+                            debug ${Boost_SYSTEM_LIBRARY_DEBUG} optimized ${Boost_SYSTEM_LIBRARY_RELEASE})
     TARGET_LINK_LIBRARIES(TESTpki pki debug ${Gtest_LIBRARY_DEBUG} optimized ${Gtest_LIBRARY})
     # flag to link to static version of Google Glog
     IF(Glog_FOUND)

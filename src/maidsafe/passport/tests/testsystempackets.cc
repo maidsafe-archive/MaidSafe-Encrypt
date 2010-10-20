@@ -22,11 +22,8 @@
 * ============================================================================
 */
 
-//#include <stdio.h>
 #include <gtest/gtest.h>
-//#include <boost/lexical_cast.hpp>
-//#include <string>
-//#include <cstdlib>
+
 #include "maidsafe/passport/systempackets.h"
 
 namespace maidsafe {
@@ -46,10 +43,11 @@ class SystemPacketsTest : public testing::Test {
   crypto::Crypto co_;  // used for validating
 };
 
-TEST_F(SystemPacketsTest, BEH_PASSPORT_CreateSigPacket) {
+TEST_F(SystemPacketsTest, BEH_PASSPORT_CreateSig) {
+  SignaturePacket sig_packet();
 }
-
-TEST_F(SystemPacketsTest, BEH_MAID_CreateMID) {
+/*
+TEST_F(SystemPacketsTest, BEH_PASSPORT_CreateMID) {
   boost::shared_ptr<Packet> midPacket(PacketFactory::Factory(MID));
   input_param_["username"] = std::string("user1");
   input_param_["pin"] = std::string("1234");
@@ -64,7 +62,7 @@ TEST_F(SystemPacketsTest, BEH_MAID_CreateMID) {
             boost::any_cast<boost::uint32_t>(result["rid"]));
 }
 
-TEST_F(SystemPacketsTest, BEH_MAID_GetRidMID) {
+TEST_F(SystemPacketsTest, BEH_PASSPORT_GetRidMID) {
   // simulating signing keys of ANMID
   crypto::RsaKeyPair &keypair = test_sph::keys.at(0);
   boost::shared_ptr<Packet> midPacket(PacketFactory::Factory(MID));
@@ -85,7 +83,7 @@ TEST_F(SystemPacketsTest, BEH_MAID_GetRidMID) {
   ASSERT_EQ(rid, boost::any_cast<boost::uint32_t>(recovered_rid["data"]));
 }
 
-TEST_F(SystemPacketsTest, BEH_MAID_CreateSigPacket) {
+TEST_F(SystemPacketsTest, BEH_PASSPORT_CreateSigPacket) {
   // Signature packets are signed by themselves
   crypto::RsaKeyPair &keypair1 = test_sph::keys.at(0);
   boost::shared_ptr<Packet> sigPacket(PacketFactory::Factory(MAID));
@@ -117,7 +115,7 @@ TEST_F(SystemPacketsTest, BEH_MAID_CreateSigPacket) {
       boost::any_cast<std::string>(rec_data["data"]));
 }
 
-TEST_F(SystemPacketsTest, BEH_MAID_CreateMPID) {
+TEST_F(SystemPacketsTest, BEH_PASSPORT_CreateMPID) {
   crypto::RsaKeyPair &keypair1 = test_sph::keys.at(0);
   crypto::RsaKeyPair &keypair2 = test_sph::keys.at(1);
   boost::shared_ptr<Packet> mpidPacket(PacketFactory::Factory(MPID));
@@ -144,7 +142,7 @@ TEST_F(SystemPacketsTest, BEH_MAID_CreateMPID) {
       boost::any_cast<std::string>(rec_data["data"]));
 }
 
-TEST_F(SystemPacketsTest, BEH_MAID_GetKeyFromPacket) {
+TEST_F(SystemPacketsTest, BEH_PASSPORT_GetKeyFromPacket) {
   crypto::RsaKeyPair &keypair1 = test_sph::keys.at(0);
   crypto::RsaKeyPair &keypair2 = test_sph::keys.at(1);
   crypto::RsaKeyPair &keypair3 = test_sph::keys.at(2);
@@ -192,7 +190,7 @@ TEST_F(SystemPacketsTest, BEH_MAID_GetKeyFromPacket) {
     PacketParams())["data"]));
 }
 
-TEST_F(SystemPacketsTest, BEH_MAID_CreatePMID) {
+TEST_F(SystemPacketsTest, BEH_PASSPORT_CreatePMID) {
   crypto::RsaKeyPair &keypair1 = test_sph::keys.at(0);
   crypto::RsaKeyPair &keypair2 = test_sph::keys.at(1);
   boost::shared_ptr<Packet> pmidPacket(PacketFactory::Factory(PMID));
@@ -208,7 +206,7 @@ TEST_F(SystemPacketsTest, BEH_MAID_CreatePMID) {
   ASSERT_EQ(expected_name, name);
 }
 
-TEST_F(SystemPacketsTest, BEH_MAID_CreateTMID) {
+TEST_F(SystemPacketsTest, BEH_PASSPORT_CreateTMID) {
   boost::shared_ptr<Packet> tmid_packet(PacketFactory::Factory(TMID));
   input_param_["username"] = std::string("user1");
   input_param_["password"] = std::string("passworddelmambofeo");
@@ -230,7 +228,7 @@ TEST_F(SystemPacketsTest, BEH_MAID_CreateTMID) {
       boost::any_cast<std::string>(result["data"]));
 }
 
-TEST_F(SystemPacketsTest, BEH_MAID_GetDataFromTMID) {
+TEST_F(SystemPacketsTest, BEH_PASSPORT_GetDataFromTMID) {
   crypto::RsaKeyPair &keypair1 = test_sph::keys.at(0);
   boost::shared_ptr<Packet> tmid_packet(PacketFactory::Factory(TMID));
   input_param_["username"] = std::string("user1");
@@ -250,7 +248,7 @@ TEST_F(SystemPacketsTest, BEH_MAID_GetDataFromTMID) {
       boost::any_cast<std::string>(rec_data["data"]));
 }
 
-TEST_F(SystemPacketsTest, BEH_MAID_CreateSMID) {
+TEST_F(SystemPacketsTest, BEH_PASSPORT_CreateSMID) {
   boost::shared_ptr<Packet> smidPacket(PacketFactory::Factory(SMID));
   input_param_["username"] = std::string("user1");
   input_param_["pin"] = std::string("1234");
@@ -264,7 +262,7 @@ TEST_F(SystemPacketsTest, BEH_MAID_CreateSMID) {
       boost::any_cast<std::string>(result["name"]));
 }
 
-TEST_F(SystemPacketsTest, BEH_MAID_GetRidSMID) {
+TEST_F(SystemPacketsTest, BEH_PASSPORT_GetRidSMID) {
   crypto::RsaKeyPair &keypair1 = test_sph::keys.at(0);
   boost::shared_ptr<Packet> smidPacket(PacketFactory::Factory(SMID));
   input_param_["username"] = std::string("user1");
@@ -280,7 +278,7 @@ TEST_F(SystemPacketsTest, BEH_MAID_GetRidSMID) {
   ASSERT_EQ(boost::any_cast<boost::uint32_t>(input_param_["rid"]),
       boost::any_cast<boost::uint32_t>(recovered_rid["data"]));
 }
-
+*/
 }  // namespace test
 
 }  // namespace passport

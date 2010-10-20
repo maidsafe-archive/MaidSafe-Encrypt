@@ -31,7 +31,7 @@
 
 #include <cstdio>
 #include <cstring>
-#include "maidsafe/sqlite3.h"
+#include "maidsafe/common/sqlite3.h"
 
 #define CPPSQLITE_ERROR 1000
 

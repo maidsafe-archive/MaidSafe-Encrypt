@@ -29,9 +29,8 @@
 #include <string>
 #include <vector>
 
-#include "gtest/gtest_prod.h"
-#include "protobuf/datamaps.pb.h"
-#include "maidsafe/maidsafe.h"
+#include "maidsafe/client/filesystem/distributed_filesystem.pb.h"
+#include "maidsafe/common/maidsafe.h"
 
 namespace maidsafe {
 
