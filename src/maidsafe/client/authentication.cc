@@ -562,7 +562,7 @@ int Authentication::CreateMsidPacket(std::string *msid_name,
 void Authentication::SaveSession(const std::string &serialised_data_atlas,
                                  const VoidFuncOneInt &functor) {
   boost::shared_ptr<SaveSessionData>
-      save_session_data(new SaveSessionData(functor, true));
+      save_session_data(new SaveSessionData(functor, kRegular));
 
   std::string mid_old_value, smid_old_value;
   boost::shared_ptr<passport::MidPacket> updated_mid, updated_smid;
@@ -623,7 +623,8 @@ void Authentication::SaveSessionCallback(
     boost::shared_ptr<pki::Packet> packet,
     boost::shared_ptr<SaveSessionData> save_session_data) {
   OpStatus op_status(kSucceeded);
-  if (return_code != kSuccess) {
+  if ((save_session_data->op_type == kUnique && return_code != kKeyUnique) ||
+      (save_session_data->op_type != kUnique && return_code != kSuccess)) {
 #ifdef DEBUG
     printf("Authentication::SaveSessionCallback (%i): Return Code %i\n",
            packet->packet_type(), return_code);
@@ -661,7 +662,7 @@ void Authentication::SaveSessionCallback(
   }
   if ((save_session_data->process_stmid == kFailed)) {
     lock.unlock();
-    if (save_session_data->regular_save_session)
+    if (save_session_data->op_type == kRegular)
       save_session_data->functor(kFailedToDeleteOldPacket);
     else
       save_session_data->functor(kAuthenticationError);
@@ -874,46 +875,42 @@ int Authentication::ChangeUserData(const std::string &serialised_data_atlas,
 #endif
     return kAuthenticationError;
   }
-                                // TODO(Fraser#5#): 2010-10-18 - Have method for retrying failures independently
 
-  int store_result(kPendingResult);
-  VoidFuncOneInt store_functor = boost::bind(&Authentication::PacketOpCallback,
-                                             this, _1, &store_result);
+  int uniqueness_result(kPendingResult);
+  VoidFuncOneInt uniqueness_functor = boost::bind(
+      &Authentication::PacketOpCallback, this, _1, &uniqueness_result);
   boost::shared_ptr<SaveSessionData>
-      save_new_packets(new SaveSessionData(store_functor, false));
+      check_uniqueness(new SaveSessionData(uniqueness_functor, kUnique));
 
-  // Store new MID
+  // Check new MID
   VoidFuncOneInt callback = boost::bind(&Authentication::SaveSessionCallback,
-                                        this, _1, new_mid, save_new_packets);
-  store_manager_->StorePacket(new_mid->name(), new_mid->value(), passport::MID,
-                              PRIVATE, "", callback);
-  // Store new SMID
+                                        this, _1, new_mid, check_uniqueness);
+  store_manager_->KeyUnique(new_mid->name(), false, callback);
+  // Check new SMID
   callback = boost::bind(&Authentication::SaveSessionCallback, this, _1,
-                         new_smid, save_new_packets);
-  store_manager_->StorePacket(new_smid->name(), new_smid->value(),
-                              passport::SMID, PRIVATE, "", callback);
-  // Store new TMID
+                         new_smid, check_uniqueness);
+  store_manager_->KeyUnique(new_smid->name(), false, callback);
+  // Check new TMID
   callback = boost::bind(&Authentication::SaveSessionCallback, this, _1,
-                         new_tmid, save_new_packets);
-  store_manager_->StorePacket(new_tmid->name(), new_tmid->value(),
-                              passport::TMID, PRIVATE, "", callback);
-  // Store new STMID
+                         new_tmid, check_uniqueness);
+  store_manager_->KeyUnique(new_tmid->name(), false, callback);
+  // Check new STMID
   callback = boost::bind(&Authentication::SaveSessionCallback, this, _1,
-                         new_stmid, save_new_packets);
-  store_manager_->StorePacket(new_stmid->name(), new_stmid->value(),
-                              passport::TMID, PRIVATE, "", callback);
+                         new_stmid, check_uniqueness);
+  store_manager_->KeyUnique(new_stmid->name(), false, callback);
 
-  // Wait for storing to complete
+  // Wait for checking to complete
   bool success(true);
   try {
     boost::mutex::scoped_lock lock(mutex_);
     success = cond_var_.timed_wait(lock,
               boost::posix_time::milliseconds(12 * kSingleOpTimeout_),
-              boost::bind(&Authentication::PacketOpDone, this, &store_result));
+              boost::bind(&Authentication::PacketOpDone, this,
+                          &uniqueness_result));
   }
   catch(const std::exception &e) {
 #ifdef DEBUG
-    printf("Authentication::ChangeUserData: storing: %s\n", e.what());
+    printf("Authentication::ChangeUserData: checking: %s\n", e.what());
 #endif
     success = false;
   }
@@ -923,57 +920,135 @@ int Authentication::ChangeUserData(const std::string &serialised_data_atlas,
 #endif
     return kAuthenticationError;
   }
+  if (uniqueness_result != kSuccess) {
+#ifdef DEBUG
+    printf("Authentication::ChangeUserData: non-unique packets.\n");
+#endif
+    return kUserExists;
+  }
+
+  int store_result(kPendingResult);
+  boost::uint8_t attempt(0);
+  VoidFuncOneInt store_functor = boost::bind(&Authentication::PacketOpCallback,
+                                             this, _1, &store_result);
+  while ((store_result != kSuccess) && (attempt < kMaxStoreAttempts_)) {
+    boost::shared_ptr<SaveSessionData>
+        save_new_packets(new SaveSessionData(store_functor, kSaveNew));
+
+    // Store new MID
+    VoidFuncOneInt callback = boost::bind(&Authentication::SaveSessionCallback,
+                                          this, _1, new_mid, save_new_packets);
+    store_manager_->StorePacket(new_mid->name(), new_mid->value(),
+                                passport::MID, PRIVATE, "", callback);
+    // Store new SMID
+    callback = boost::bind(&Authentication::SaveSessionCallback, this, _1,
+                           new_smid, save_new_packets);
+    store_manager_->StorePacket(new_smid->name(), new_smid->value(),
+                                passport::SMID, PRIVATE, "", callback);
+    // Store new TMID
+    callback = boost::bind(&Authentication::SaveSessionCallback, this, _1,
+                           new_tmid, save_new_packets);
+    store_manager_->StorePacket(new_tmid->name(), new_tmid->value(),
+                                passport::TMID, PRIVATE, "", callback);
+    // Store new STMID
+    callback = boost::bind(&Authentication::SaveSessionCallback, this, _1,
+                           new_stmid, save_new_packets);
+    store_manager_->StorePacket(new_stmid->name(), new_stmid->value(),
+                                passport::TMID, PRIVATE, "", callback);
+
+    // Wait for storing to complete
+    bool success(true);
+    try {
+      boost::mutex::scoped_lock lock(mutex_);
+      success = cond_var_.timed_wait(lock,
+                boost::posix_time::milliseconds(12 * kSingleOpTimeout_),
+                boost::bind(&Authentication::PacketOpDone, this,
+                            &store_result));
+    }
+    catch(const std::exception &e) {
+#ifdef DEBUG
+      printf("Authentication::ChangeUserData: storing: %s\n", e.what());
+#endif
+      success = false;
+    }
+    if (!success) {
+#ifdef DEBUG
+      printf("Authentication::ChangeUserData: timed out storing attempt %u\n",
+             attempt);
+#endif
+      store_result = kPendingResult;
+    }
+    if (store_result != kSuccess) {
+#ifdef DEBUG
+      printf("Authentication::ChangeUserData: storing packets failed, "
+             "attempt %u\n", attempt);
+#endif
+    }
+    ++attempt;
+  }
+  if (store_result != kSuccess) {
+#ifdef DEBUG
+    printf("Authentication::ChangeUserData: storing packets failed overall.\n");
+#endif
+    // TODO(Fraser#5#): 2010-10-18 - Revert passport
+    return kAuthenticationError;
+  }
 
   // Prepare to delete old packets
   int delete_result(kPendingResult);
+  attempt = 0;
   VoidFuncOneInt delete_functor = boost::bind(&Authentication::PacketOpCallback,
                                              this, _1, &delete_result);
-  boost::shared_ptr<SaveSessionData>
-      delete_old_packets(new SaveSessionData(delete_functor, false));
+  while ((delete_result != kSuccess) && (attempt < kMaxDeleteAttempts_)) {
+    boost::shared_ptr<SaveSessionData>
+        delete_old_packets(new SaveSessionData(delete_functor, kDeleteOld));
 
-  // Delete old MID
-  callback = boost::bind(&Authentication::SaveSessionCallback, this, _1,
-                         mid_for_deletion, delete_old_packets);
-  std::vector<std::string> values(1, mid_for_deletion->value());
-  store_manager_->DeletePacket(mid_for_deletion->name(), values, passport::MID,
-                               PRIVATE, "", callback);
-  // Delete old SMID
-  callback = boost::bind(&Authentication::SaveSessionCallback, this, _1,
-                         smid_for_deletion, delete_old_packets);
-  values.assign(1, smid_for_deletion->value());
-  store_manager_->DeletePacket(smid_for_deletion->name(), values,
-                               passport::SMID, PRIVATE, "", callback);
-  // Delete old TMID
-  callback = boost::bind(&Authentication::SaveSessionCallback, this, _1,
-                         tmid_for_deletion, delete_old_packets);
-  values.assign(1, tmid_for_deletion->value());
-  store_manager_->DeletePacket(tmid_for_deletion->name(), values,
-                               passport::TMID, PRIVATE, "", callback);
-  // Delete old STMID
-  callback = boost::bind(&Authentication::SaveSessionCallback, this, _1,
-                         stmid_for_deletion, delete_old_packets);
-  values.assign(1, stmid_for_deletion->value());
-  store_manager_->DeletePacket(stmid_for_deletion->name(), values,
-                               passport::TMID, PRIVATE, "", callback);
+    // Delete old MID
+    callback = boost::bind(&Authentication::SaveSessionCallback, this, _1,
+                           mid_for_deletion, delete_old_packets);
+    std::vector<std::string> values(1, mid_for_deletion->value());
+    store_manager_->DeletePacket(mid_for_deletion->name(), values,
+                                 passport::MID, PRIVATE, "", callback);
+    // Delete old SMID
+    callback = boost::bind(&Authentication::SaveSessionCallback, this, _1,
+                           smid_for_deletion, delete_old_packets);
+    values.assign(1, smid_for_deletion->value());
+    store_manager_->DeletePacket(smid_for_deletion->name(), values,
+                                 passport::SMID, PRIVATE, "", callback);
+    // Delete old TMID
+    callback = boost::bind(&Authentication::SaveSessionCallback, this, _1,
+                           tmid_for_deletion, delete_old_packets);
+    values.assign(1, tmid_for_deletion->value());
+    store_manager_->DeletePacket(tmid_for_deletion->name(), values,
+                                 passport::TMID, PRIVATE, "", callback);
+    // Delete old STMID
+    callback = boost::bind(&Authentication::SaveSessionCallback, this, _1,
+                           stmid_for_deletion, delete_old_packets);
+    values.assign(1, stmid_for_deletion->value());
+    store_manager_->DeletePacket(stmid_for_deletion->name(), values,
+                                 passport::TMID, PRIVATE, "", callback);
 
-  try {
-    boost::mutex::scoped_lock lock(mutex_);
-    success = cond_var_.timed_wait(lock,
-              boost::posix_time::milliseconds(4 * kSingleOpTimeout_),
-              boost::bind(&Authentication::PacketOpDone, this, &delete_result));
+    try {
+      boost::mutex::scoped_lock lock(mutex_);
+      success = cond_var_.timed_wait(lock,
+                boost::posix_time::milliseconds(4 * kSingleOpTimeout_),
+                boost::bind(&Authentication::PacketOpDone, this,
+                            &delete_result));
+    }
+    catch(const std::exception &e) {
+  #ifdef DEBUG
+      printf("Authentication::ChangeUserData: deleting: %s\n", e.what());
+  #endif
+      success = false;
+    }
+  #ifdef DEBUG
+    if (!success)
+      printf("Authentication::ChangeUserData: timed out deleting.\n");
+  #endif
+    ++attempt;
   }
-  catch(const std::exception &e) {
-#ifdef DEBUG
-    printf("Authentication::ChangeUserData: deleting: %s\n", e.what());
-#endif
-    success = false;
-  }
-#ifdef DEBUG
-  if (!success)
-    printf("Authentication::ChangeUserData: timed out deleting.\n");
-#endif
   // Result of deletions not considered here.
-  return store_result;
+  return kSuccess;
 }
 
 int Authentication::ChangePassword(const std::string &serialised_data_atlas,
@@ -991,12 +1066,11 @@ int Authentication::ChangePassword(const std::string &serialised_data_atlas,
     return kAuthenticationError;
   }
 
-// TODO(Fraser#5#): 2010-10-18 - Have method for retrying failures independently
   int result(kPendingResult);
   VoidFuncOneInt functor = boost::bind(&Authentication::PacketOpCallback, this,
                                        _1, &result);
   boost::shared_ptr<SaveSessionData>
-      update_packets(new SaveSessionData(functor, false));
+      update_packets(new SaveSessionData(functor, kUpdate));
   update_packets->process_mid = kSucceeded;
   update_packets->process_smid = kSucceeded;
 
@@ -1013,7 +1087,7 @@ int Authentication::ChangePassword(const std::string &serialised_data_atlas,
                                updated_stmid->value(), passport::TMID,
                                PRIVATE, "", callback);
 
-  // Wait for storing to complete
+  // Wait for update to complete
   bool success(true);
   try {
     boost::mutex::scoped_lock lock(mutex_);
@@ -1023,13 +1097,13 @@ int Authentication::ChangePassword(const std::string &serialised_data_atlas,
   }
   catch(const std::exception &e) {
 #ifdef DEBUG
-    printf("Authentication::ChangePassword: storing: %s\n", e.what());
+    printf("Authentication::ChangePassword: updating: %s\n", e.what());
 #endif
     success = false;
   }
   if (!success) {
 #ifdef DEBUG
-    printf("Authentication::ChangePassword: timed out storing.\n");
+    printf("Authentication::ChangePassword: timed out updating.\n");
 #endif
     return kAuthenticationError;
   }

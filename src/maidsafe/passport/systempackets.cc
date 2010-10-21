@@ -370,6 +370,9 @@ std::string TmidPacket::DecryptPlainData(const std::string &password,
 #ifdef DEBUG
     printf("TmidPacket::DecryptPlainData: bad encrypted data.\n");
 #endif
+    password_.clear();
+    salt_.clear();
+    secure_password_.clear();
     return "";
   }
   try {

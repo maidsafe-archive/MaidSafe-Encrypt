@@ -50,7 +50,7 @@ class Authentication {
                      encrypted_tmid_(),
                      encrypted_stmid_(),
                      public_name_(),
-                     kMaxStoreAttempts_(3),
+                     kMaxStoreAttempts_(2),
                      kMaxDeleteAttempts_(2),
                      kSingleOpTimeout_(10000) {}
   ~Authentication() {}
@@ -89,17 +89,18 @@ class Authentication {
     kPendingTmid,
     kNoUser
   };
+  enum SaveSessionOpType { kRegular, kSaveNew, kDeleteOld, kUpdate, kUnique };
   struct SaveSessionData {
-    SaveSessionData(VoidFuncOneInt func, bool regular_save_sess)
+    SaveSessionData(VoidFuncOneInt func, SaveSessionOpType op_t)
         : process_mid(kPending),
           process_smid(kPending),
           process_tmid(kPending),
           process_stmid(kPending),
           functor(func),
-          regular_save_session(regular_save_sess) {}
+          op_type(op_t) {}
     OpStatus process_mid, process_smid, process_tmid, process_stmid;
     VoidFuncOneInt functor;
-    bool regular_save_session;
+    SaveSessionOpType op_type;
   };
   Authentication &operator=(const Authentication&);
   Authentication(const Authentication&);
