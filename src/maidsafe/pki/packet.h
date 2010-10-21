@@ -25,7 +25,6 @@
 #ifndef MAIDSAFE_PKI_PACKET_H_
 #define MAIDSAFE_PKI_PACKET_H_
 
-#include <maidsafe/base/crypto.h>
 #include <map>
 #include <string>
 
@@ -37,11 +36,7 @@ namespace pki {
 
 class Packet {
  public:
-  explicit Packet(const int &packet_type)
-      : packet_type_(packet_type), name_(), crypto_obj_() {
-    crypto_obj_.set_hash_algorithm(crypto::SHA_512);
-    crypto_obj_.set_symm_algorithm(crypto::AES_256);
-  }
+  explicit Packet(const int &pkt_type) : packet_type_(pkt_type), name_() {}
   virtual ~Packet() {}
   int packet_type() const { return packet_type_; }
   std::string name() const { return name_; }
@@ -51,7 +46,6 @@ class Packet {
   virtual void Clear() = 0;
   int packet_type_;
   std::string name_;
-  crypto::Crypto crypto_obj_;
 };
 
 }  // namespace pki

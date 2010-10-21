@@ -50,13 +50,9 @@ class Authentication {
                      encrypted_tmid_(),
                      encrypted_stmid_(),
                      public_name_(),
-                     kMaxStoreAttempts_(2),
-                     kMaxDeleteAttempts_(2),
                      kSingleOpTimeout_(10000) {}
   ~Authentication() {}
-  void Init(const boost::uint16_t &crypto_key_buffer_count,
-            boost::shared_ptr<StoreManagerInterface> storemanager,
-            boost::shared_ptr<passport::Passport> passport);
+  void Init(boost::shared_ptr<StoreManagerInterface> sm);
   int GetUserInfo(const std::string &username, const std::string &pin);
   int GetUserData(const std::string &password,
                   std::string *serialised_data_atlas);
@@ -186,7 +182,6 @@ class Authentication {
   boost::condition_variable cond_var_;
   OpStatus tmid_op_status_, stmid_op_status_;
   std::string encrypted_tmid_, encrypted_stmid_, public_name_;
-  const boost::uint8_t kMaxStoreAttempts_, kMaxDeleteAttempts_;
   const int kSingleOpTimeout_;
 };
 

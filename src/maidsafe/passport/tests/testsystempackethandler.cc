@@ -20,6 +20,7 @@
 *
 * ============================================================================
 */
+
 #include <gtest/gtest.h>
 
 #include "maidsafe/passport/systempackethandler.h"

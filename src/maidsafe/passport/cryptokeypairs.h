@@ -8,7 +8,6 @@
 * Version:      1.0
 * Created:      2010-03-18-00.23.23
 * Revision:     none
-* Compiler:     gcc
 * Author:       Jose Cisneros
 * Company:      maidsafe.net limited
 *
@@ -27,7 +26,7 @@
 #define MAIDSAFE_PASSPORT_CRYPTOKEYPAIRS_H_
 
 #include <boost/thread.hpp>
-#include <boost/shared_ptr.hpp>
+#include <boost/tr1/memory.hpp>
 #include <maidsafe/base/crypto.h>
 #include <list>
 #include <vector>
@@ -52,7 +51,7 @@ class CryptoKeyPairs {
   const boost::int8_t kMaxCryptoThreadCount_;
   boost::int16_t keypairs_done_, keypairs_todo_, pending_requests_;
   std::list<crypto::RsaKeyPair> keypairs_;
-  std::vector< boost::shared_ptr<boost::thread> > thrds_;
+  std::vector< std::tr1::shared_ptr<boost::thread> > thrds_;
   boost::mutex keyslist_mutex_, keys_done_mutex_, start_mutex_, req_mutex_;
   boost::condition_variable keys_cond_, req_cond_;
   bool started_, destroying_this_;

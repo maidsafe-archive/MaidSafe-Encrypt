@@ -22,7 +22,7 @@
 
 #include "maidsafe/passport/systempackethandler.h"
 #include <cstdio>
-#include "maidsafe/passport/passportreturncodes.h"
+#include "maidsafe/passport/passportconfig.h"
 #include "maidsafe/passport/signaturepacket.pb.h"
 
 
@@ -30,38 +30,160 @@ namespace maidsafe {
 
 namespace passport {
 
-bool SystemPacketHandler::AddPacket(boost::shared_ptr<pki::Packet> packet,
-                                    bool force) {
+bool SystemPacketHandler::AddPacket(std::tr1::shared_ptr<pki::Packet> packet) {
   boost::mutex::scoped_lock lock(mutex_);
-  std::pair<SystemPacketMap::iterator, bool> result =
-      packets_.insert(SystemPacketMap::value_type(
-          static_cast<PacketType>(packet->packet_type()), packet));
-  if (!result.second) {
-    if (force) {
-      (*result.first).second = packet;
-    } else {
+  SystemPacketMap::iterator it =
+      packets_.find(static_cast<PacketType>(packet->packet_type()));
+  if (it == packets_.end()) {
+    std::pair<SystemPacketMap::iterator, bool> result =
+        packets_.insert(SystemPacketMap::value_type(
+            static_cast<PacketType>(packet->packet_type()),
+            PacketInfo(packet)));
 #ifdef DEBUG
-      printf("SystemPacketHandler::AddPacket: %s already in map.\n",
-             DebugString(packet->packet_type()).c_str());
+    if (!result.second)
+      printf("SystemPacketHandler::AddPacket: Failed for %s.\n",
+              DebugString(packet->packet_type()).c_str());
 #endif
-      return false;
-    }
+    return result.second;
+  } else {
+    (*it).second.pending = packet;
+    return true;
   }
-  return true;
 }
 
-boost::shared_ptr<pki::Packet> SystemPacketHandler::Packet(
-    const PacketType &packet_type) {
+bool SystemPacketHandler::ConfirmPacket(const PacketType &packet_type) {
   boost::mutex::scoped_lock lock(mutex_);
   SystemPacketMap::iterator it = packets_.find(packet_type);
   if (it == packets_.end()) {
 #ifdef DEBUG
-    printf("SystemPacketHandler::Packet: Don't have %s in map.\n",
+    printf("SystemPacketHandler::ConfirmPacket: Missing %s.\n",
             DebugString(packet_type).c_str());
 #endif
-    return boost::shared_ptr<pki::Packet>();
+    return false;
   }
-  return (*it).second;
+  bool dependencies_confirmed(true);
+  switch (packet_type) {
+    case MID:
+      dependencies_confirmed = IsConfirmed(packets_.find(ANMID));
+      break;
+    case SMID:
+      dependencies_confirmed = IsConfirmed(packets_.find(ANSMID));
+      break;
+    case TMID:
+      dependencies_confirmed = IsConfirmed(packets_.find(ANTMID)) &&
+                               IsConfirmed(packets_.find(MID)) &&
+                               IsConfirmed(packets_.find(ANMID));
+      break;
+    case STMID:
+      dependencies_confirmed = IsConfirmed(packets_.find(ANTMID)) &&
+                               IsConfirmed(packets_.find(SMID)) &&
+                               IsConfirmed(packets_.find(ANSMID));
+      break;
+    case MPID:
+      dependencies_confirmed = IsConfirmed(packets_.find(ANMPID));
+      break;
+    case PMID:
+      dependencies_confirmed = IsConfirmed(packets_.find(MAID)) &&
+                               IsConfirmed(packets_.find(ANMAID));
+      break;
+    case MAID:
+      dependencies_confirmed = IsConfirmed(packets_.find(ANMAID));
+      break;
+    default:
+      break;
+  }
+  if (!dependencies_confirmed) {
+#ifdef DEBUG
+    printf("SystemPacketHandler::ConfirmPacket: dependencies for %s not "
+           "confirmed.\n", DebugString(packet_type).c_str());
+#endif
+    return false;
+  } else {
+    (*it).second.stored = (*it).second.pending;
+    (*it).second.pending.reset();
+    return true;
+  }
+}
+
+bool SystemPacketHandler::RevertPacket(const PacketType &packet_type) {
+  boost::mutex::scoped_lock lock(mutex_);
+  SystemPacketMap::iterator it = packets_.find(packet_type);
+  if (it == packets_.end()) {
+#ifdef DEBUG
+    printf("SystemPacketHandler::RevertPacket: Missing %s.\n",
+            DebugString(packet_type).c_str());
+#endif
+    return false;
+  } else {
+    (*it).second.pending.reset();
+    return true;
+  }
+}
+
+std::tr1::shared_ptr<pki::Packet> SystemPacketHandler::Packet(
+    const PacketType &packet_type) {
+  return GetPacket(packet_type, true);
+}
+
+std::tr1::shared_ptr<pki::Packet> SystemPacketHandler::PendingPacket(
+    const PacketType &packet_type) {
+  return GetPacket(packet_type, false);
+}
+
+std::tr1::shared_ptr<pki::Packet> SystemPacketHandler::GetPacket(
+    const PacketType &packet_type,
+    bool confirmed) {
+  std::tr1::shared_ptr<pki::Packet> packet;
+  boost::mutex::scoped_lock lock(mutex_);
+  SystemPacketMap::iterator it = packets_.find(packet_type);
+  if (it == packets_.end()) {
+#ifdef DEBUG
+    printf("SystemPacketHandler::Packet: Missing %s.\n",
+            DebugString(packet_type).c_str());
+#endif
+  } else {
+    std::tr1::shared_ptr<pki::Packet> retrieved_packet;
+    if (confirmed && (*it).second.stored.get()) {
+      retrieved_packet = (*it).second.stored;
+    } else if (!confirmed && (*it).second.pending.get()) {
+      retrieved_packet = (*it).second.pending;
+    }
+    if (retrieved_packet.get()) {
+      // return a copy of the contents
+      if (packet_type == TMID || packet_type == STMID) {
+        packet = std::tr1::shared_ptr<TmidPacket>(new TmidPacket(
+            *std::tr1::static_pointer_cast<TmidPacket>(retrieved_packet)));
+      } else if (packet_type == MID || packet_type == SMID) {
+        packet = std::tr1::shared_ptr<MidPacket>(new MidPacket(
+            *std::tr1::static_pointer_cast<MidPacket>(retrieved_packet)));
+      } else if (IsSignature(packet_type, false)) {
+        packet = std::tr1::shared_ptr<SignaturePacket>(new SignaturePacket(
+            *std::tr1::static_pointer_cast<SignaturePacket>(retrieved_packet)));
+      } else {
+#ifdef DEBUG
+        printf("SystemPacketHandler::Packet: %s type error.\n",
+                DebugString(packet_type).c_str());
+#endif
+      }
+    } else {
+#ifdef DEBUG
+      printf("SystemPacketHandler::Packet: %s not ",
+             DebugString(packet_type).c_str());
+      printf(confirmed ? "confirmed as stored.\n" : "pending confirmation.\n");
+#endif
+    }
+  }
+  return packet;
+}
+
+bool SystemPacketHandler::Confirmed(const PacketType &packet_type) {
+  boost::mutex::scoped_lock lock(mutex_);
+  return IsConfirmed(packets_.find(packet_type));
+}
+
+bool SystemPacketHandler::IsConfirmed(SystemPacketMap::iterator it) {
+  return (it != packets_.end() && !(*it).second.pending.get() &&
+          (*it).second.stored.get());
 }
 
 std::string SystemPacketHandler::SerialiseKeyring() {
@@ -69,8 +191,8 @@ std::string SystemPacketHandler::SerialiseKeyring() {
   boost::mutex::scoped_lock lock(mutex_);
   SystemPacketMap::iterator it = packets_.begin();
   while (it != packets_.end()) {
-    if (IsSignature((*it).first, false)) {
-      boost::shared_static_cast<SignaturePacket>((*it).second)->
+    if (IsSignature((*it).first, false) && (*it).second.stored.get()) {
+      std::tr1::static_pointer_cast<SignaturePacket>((*it).second.stored)->
           PutToKey(keyring.add_key());
     }
     ++it;
@@ -89,8 +211,19 @@ int SystemPacketHandler::ParseKeyring(const std::string &serialised_keyring) {
   boost::mutex::scoped_lock lock(mutex_);
   bool success(true);
   for (int i = 0; i < keyring.key_size(); ++i) {
-    boost::shared_ptr<SignaturePacket> sig(new SignaturePacket(keyring.key(i)));
-    success = success && AddPacket(sig, true);
+    std::tr1::shared_ptr<SignaturePacket> sig_packet(
+        new SignaturePacket(keyring.key(i)));
+    PacketInfo packet_info;
+    packet_info.stored = sig_packet;
+    std::pair<SystemPacketMap::iterator, bool> result =
+        packets_.insert(SystemPacketMap::value_type(
+            static_cast<PacketType>(sig_packet->packet_type()), packet_info));
+#ifdef DEBUG
+    if (!result.second)
+      printf("SystemPacketHandler::ParseKeyring: Failed for %s.\n",
+              DebugString(sig_packet->packet_type()).c_str());
+#endif
+    success = success && result.second;
   }
   return success ? kSuccess : kBadSerialisedKeyring;
 }

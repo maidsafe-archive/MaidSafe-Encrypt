@@ -22,6 +22,7 @@
 
 #include "maidsafe/passport/systempackets.h"
 #include <boost/lexical_cast.hpp>
+#include <maidsafe/base/crypto.h>
 #include <cstdio>
 #include "maidsafe/passport/signaturepacket.pb.h"
 
@@ -96,7 +97,8 @@ SignaturePacket::SignaturePacket(const PacketType &packet_type,
       public_key_signature_() {
   if (packet_type == MPID) {
     try {
-      name_ = crypto_obj_.Hash(public_name, "", crypto::STRING_STRING, false);
+      crypto::Crypto crypto_obj;
+      name_ = crypto_obj.Hash(public_name, "", crypto::STRING_STRING, false);
     }
     catch(const std::exception &e) {
 #ifdef DEBUG
@@ -137,10 +139,11 @@ void SignaturePacket::Initialise() {
   }
 
   try {
-    public_key_signature_ = crypto_obj_.AsymSign(public_key_, "",
+    crypto::Crypto crypto_obj;
+    public_key_signature_ = crypto_obj.AsymSign(public_key_, "",
                             signer_private_key_, crypto::STRING_STRING);
     if (packet_type_ != MPID)
-      name_ = crypto_obj_.Hash(public_key_ + public_key_signature_, "",
+      name_ = crypto_obj.Hash(public_key_ + public_key_signature_, "",
                                crypto::STRING_STRING, false);
   }
   catch(const std::exception &e) {
@@ -189,14 +192,15 @@ void MidPacket::Initialise() {
   if (username_.empty() || pin_.empty())
     return Clear();
 
-  salt_ = crypto_obj_.Hash(pin_ + username_, "",
+  crypto::Crypto crypto_obj;
+  salt_ = crypto_obj.Hash(pin_ + username_, "",
                            crypto::STRING_STRING, false);
   try {
-    secure_password_ = crypto_obj_.SecurePassword(username_, salt_,
+    secure_password_ = crypto_obj.SecurePassword(username_, salt_,
                        boost::lexical_cast<boost::uint32_t>(pin_));
-    name_ = crypto_obj_.Hash(
-                crypto_obj_.Hash(username_, "", crypto::STRING_STRING, false) +
-                crypto_obj_.Hash(pin_, "", crypto::STRING_STRING, false) +
+    name_ = crypto_obj.Hash(
+                crypto_obj.Hash(username_, "", crypto::STRING_STRING, false) +
+                crypto_obj.Hash(pin_, "", crypto::STRING_STRING, false) +
                 smid_appendix_, "", crypto::STRING_STRING, false);
   }
   catch(const std::exception &e) {
@@ -215,9 +219,10 @@ void MidPacket::SetRid(const boost::uint32_t &rid) {
     if (rid_ == 0) {
       encrypted_rid_.clear();
     } else {
+      crypto::Crypto crypto_obj;
       encrypted_rid_ =
-          crypto_obj_.SymmEncrypt(boost::lexical_cast<std::string>(rid_), "",
-                                  crypto::STRING_STRING, secure_password_);
+          crypto_obj.SymmEncrypt(boost::lexical_cast<std::string>(rid_), "",
+                                 crypto::STRING_STRING, secure_password_);
     }
   }
   catch(const std::exception &e) {
@@ -241,7 +246,8 @@ boost::uint32_t MidPacket::DecryptRid(const std::string &encrypted_rid) {
 
   try {
     encrypted_rid_ = encrypted_rid;
-    std::string rid(crypto_obj_.SymmDecrypt(encrypted_rid_, "",
+    crypto::Crypto crypto_obj;
+    std::string rid(crypto_obj.SymmDecrypt(encrypted_rid_, "",
                     crypto::STRING_STRING, secure_password_));
     rid_ = boost::lexical_cast<boost::uint32_t>(rid);
   }
@@ -292,10 +298,11 @@ void TmidPacket::Initialise() {
     return Clear();
 
   try {
-    name_ = crypto_obj_.Hash(
-                crypto_obj_.Hash(username_, "", crypto::STRING_STRING, false) +
-                crypto_obj_.Hash(pin_, "", crypto::STRING_STRING, false) +
-                crypto_obj_.Hash(boost::lexical_cast<std::string>(rid_), "",
+    crypto::Crypto crypto_obj;
+    name_ = crypto_obj.Hash(
+                crypto_obj.Hash(username_, "", crypto::STRING_STRING, false) +
+                crypto_obj.Hash(pin_, "", crypto::STRING_STRING, false) +
+                crypto_obj.Hash(boost::lexical_cast<std::string>(rid_), "",
                                  crypto::STRING_STRING, false), "",
                 crypto::STRING_STRING, false);
   }
@@ -320,9 +327,10 @@ bool TmidPacket::SetPassword() {
     return false;
   }
   try {
-    salt_ = crypto_obj_.Hash(boost::lexical_cast<std::string>(rid_) + password_,
-                             "", crypto::STRING_STRING, false);
-    secure_password_ = crypto_obj_.SecurePassword(password_, salt_, rid_);
+    crypto::Crypto crypto_obj;
+    salt_ = crypto_obj.Hash(boost::lexical_cast<std::string>(rid_) + password_,
+                            "", crypto::STRING_STRING, false);
+    secure_password_ = crypto_obj.SecurePassword(password_, salt_, rid_);
   }
   catch(const std::exception &e) {
 #ifdef DEBUG
@@ -344,7 +352,8 @@ bool TmidPacket::SetPlainData() {
     return false;
   }
   try {
-    encrypted_data_ = crypto_obj_.SymmEncrypt(plain_data_, "",
+    crypto::Crypto crypto_obj;
+    encrypted_data_ = crypto_obj.SymmEncrypt(plain_data_, "",
                       crypto::STRING_STRING, secure_password_);
   }
   catch(const std::exception &e) {
@@ -377,7 +386,8 @@ std::string TmidPacket::DecryptPlainData(const std::string &password,
   }
   try {
     encrypted_data_ = encrypted_data;
-    plain_data_ = crypto_obj_.SymmDecrypt(encrypted_data_, "",
+    crypto::Crypto crypto_obj;
+    plain_data_ = crypto_obj.SymmDecrypt(encrypted_data_, "",
                   crypto::STRING_STRING, secure_password_);
   }
   catch(const std::exception &e) {

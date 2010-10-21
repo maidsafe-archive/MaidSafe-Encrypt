@@ -39,10 +39,13 @@
 #include "maidsafe/client/contacts.h"
 #include "maidsafe/client/privateshares.h"
 #include "maidsafe/client/filesystem/distributed_filesystem.pb.h"
+#include "maidsafe/passport/passportconfig.h"
 
 namespace maidsafe {
 
 class MockSessionSingleton;
+class Authentication;
+
 
 struct UserDetails {
   UserDetails() : defconlevel(kDefCon3),
@@ -149,10 +152,10 @@ class SessionSingleton {
              const std::string &private_key, const std::string &public_key,
              const std::string &signed_public_key);
   int RemoveKey(const PacketType &bpt);
-  std::string Id(const PacketType &bpt);
-  std::string PublicKey(const PacketType &bpt);
-  std::string PrivateKey(const PacketType &bpt);
-  std::string SignedPublicKey(const PacketType &bpt);
+  std::string Id(const passport::PacketType &bpt);
+  std::string PublicKey(const passport::PacketType &bpt);
+  std::string PrivateKey(const passport::PacketType &bpt);
+  std::string SignedPublicKey(const passport::PacketType &bpt);
 
   ///////////////////////////
   //// Contacts Handling ////

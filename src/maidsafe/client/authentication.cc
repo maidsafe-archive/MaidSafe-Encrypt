@@ -30,13 +30,11 @@
 
 namespace maidsafe {
 
-void Authentication::Init(const boost::uint16_t &crypto_key_buffer_count,
-                          boost::shared_ptr<StoreManagerInterface> storemanager,
-                          boost::shared_ptr<passport::Passport> passport) {
-  store_manager_ = storemanager;
+void Authentication::Init(boost::shared_ptr<StoreManagerInterface> sm) {
+  store_manager_ = sm;
   session_singleton_ = SessionSingleton::getInstance();
-  passport_ = passport;
-  passport_->Init(crypto_key_buffer_count);
+  passport_ = session_singleton_->passport_;
+  passport_->Init();
 }
 
 int Authentication::GetUserInfo(const std::string &username,
