@@ -90,7 +90,7 @@ security, freedom, privacy, authentication
 \end_layout
 
 \begin_layout MarkBoth
-maidsafe.net limited company confidential Version 0.1
+maidsafe.net limited company confidential Version 0.2
 \begin_inset ERT
 status collapsed
 
@@ -978,56 +978,155 @@ In this manner the user has the ability to alter the child directory and
 \end_layout
 
 \begin_layout Subsection
-Further Enhancements
-\end_layout
-
-\begin_layout Subsubsection
-Time Based Obfuscation
+BootStrapping the Network
 \end_layout
 
 \begin_layout Standard
-In the previous sections a system of authentication was detailed which is
- very effective.
- A potential failure point, however, may be the Access Packets, as those
- are never altering their location (key) and can pose a target for any attacker
- who is monitoring data traffic between the user and the system.
+An initial ID is required to bootstrap the network of ID's in the store.
+ This ID is created as described in 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "3"
+
+\end_inset
+
+ as a 
+\emph on
+selectable ID
+\emph default
+
+\begin_inset Foot
+status open
+
+\begin_layout Plain Layout
+This is the major claim in the managed distributed authentication patent
+\end_layout
+
+\end_inset
+
+.
+ This ID may be countersigned by another party, such as the company who
+ supplies such a system to a customer
+\begin_inset Foot
+status open
+
+\begin_layout Plain Layout
+This is the check that MS SAN uses to ensure license payments are made
+\end_layout
+
+\end_inset
+
+, assuming that supplier is trusted.
+ In the case of a software supplier, then the suppliers ID can be built
+ in as a trusted party.
+ 
 \end_layout
 
 \begin_layout Standard
-To remove this weakness, a predictably altering piece of data can be introduced,
- such as time (e.g.
- week number, day of year or similar).
- In this case in 
-\begin_inset CommandInset ref
-LatexCommand ref
-reference "sub:Login-to-a"
+This ID is then the 
+\emph on
+root
+\emph default
+ ID of the network, we shall refer to this as 
+\begin_inset Formula $ID_{Net}$
+\end_inset
+
+.
+ The initial user then creates a 
+\begin_inset Formula $\mathsf{ID_{User@Org}}$
+\end_inset
+
+.
+ This ID is signed by the private of the ID associated with 
+\begin_inset Formula $ID_{Org}$
+\end_inset
+
+.
+ 
+\end_layout
+
+\begin_layout Fact
+All client systems accessing this network will test 
+\begin_inset Formula $\mathsf{ID_{User@Org}}$
+\end_inset
+
+ is signed by the ID associated with 
+\begin_inset Formula $ID_{Org}$
+\end_inset
+
+.
+ This is to prevent fraud as any attacker or ID wishing to fraudulently
+ claim they are a valid 
+\begin_inset Formula $ID_{something@Org}$
+\end_inset
+
+ would not have access to the ID associated with 
+\begin_inset Formula $ID_{Org}$
+\end_inset
+
+.
+ 
+\end_layout
+
+\begin_layout Remark
+This is essential as many nodes or network entities may create a 
+\begin_inset Formula $ID_{something@Org}$
+\end_inset
+
+ which cannot and should not be prevented, however only one will have the
+ private key required to validate this ID.
+ This ensures mathematical correctness in testing a proposition such as
+ 
+\begin_inset Formula $ID_{something@Org}$
+\end_inset
+
+ which ensures that the security algorithm is intact and not dependent on
+ obfuscation or obscurity of code or similar.
+\end_layout
+
+\begin_layout Remark
+To check an ID then there is a possibility that the ID who signs the 
+\begin_inset Formula $ID_{something@Org}$
+\end_inset
+
+ is in fact not 
+\begin_inset Formula $ID_{Org}$
+\end_inset
+
+ but another 
+\begin_inset Formula $ID_{something@Org}$
+\end_inset
+
+ (this shoudl be a manager of teh first ID checked).
+ This requires a recursive check until 
+\begin_inset Formula $ID_{Org}$
+\end_inset
+
+ is reached, otherwise the 
+\begin_inset Formula $ID_{something@Org}$
+\end_inset
+
+ is fraudulent and not as expected.
+\end_layout
+
+\begin_layout Remark
+On confirming 
+\begin_inset Formula $ID_{something@Org}$
+\end_inset
+
+ it is assumed that the recipient will maintain the ID associated and possibly
+ sign a validated record and maintain this somehow
+\begin_inset Foot
+status open
+
+\begin_layout Plain Layout
+In MS SAN and MaidSafe this is stored in the data atlas.
+\end_layout
 
 \end_inset
 
- the 
-\begin_inset Formula $\mathsf{GetV}$
-\end_inset
-
- call would be iterative, starting at the current time slot and decrementing
- until it returns with a value.
- Access Packets at 
-\begin_inset Quotes eld
-\end_inset
-
-outdated
-\begin_inset Quotes erd
-\end_inset
-
- locations would be deleted on detection, and updates always stored in the
- current location, resulting in regularly 
-\begin_inset Quotes eld
-\end_inset
-
-moving
-\begin_inset Quotes erd
-\end_inset
-
- packets.
+.
+ 
 \end_layout
 
 \begin_layout Subsection
@@ -1119,10 +1218,6 @@ There are many methods for achieving this, Shamir's scheme is as good as
 \end_layout
 
 \begin_layout Section
-BootStrapping the Network
-\end_layout
-
-\begin_layout Section
 Hardened security mode
 \end_layout
 
@@ -1179,6 +1274,59 @@ Conclusions
 
 \begin_layout Standard
 T
+\end_layout
+
+\begin_layout Section
+Future Works
+\end_layout
+
+\begin_layout Subsection
+Time Based Obfuscation
+\end_layout
+
+\begin_layout Standard
+In the previous sections a system of authentication was detailed which is
+ very effective.
+ A potential failure point, however, may be the Access Packets, as those
+ are never altering their location (key) and can pose a target for any attacker
+ who is monitoring data traffic between the user and the system.
+\end_layout
+
+\begin_layout Standard
+To remove this weakness, a predictably altering piece of data can be introduced,
+ such as time (e.g.
+ week number, day of year or similar).
+ In this case in 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:Login-to-a"
+
+\end_inset
+
+ the 
+\begin_inset Formula $\mathsf{GetV}$
+\end_inset
+
+ call would be iterative, starting at the current time slot and decrementing
+ until it returns with a value.
+ Access Packets at 
+\begin_inset Quotes eld
+\end_inset
+
+outdated
+\begin_inset Quotes erd
+\end_inset
+
+ locations would be deleted on detection, and updates always stored in the
+ current location, resulting in regularly 
+\begin_inset Quotes eld
+\end_inset
+
+moving
+\begin_inset Quotes erd
+\end_inset
+
+ packets.
 \end_layout
 
 \begin_layout Bibliography

@@ -1045,7 +1045,8 @@ key "5"
 \end_inset
 
 ), however it is not a good idea to design a system based on such inadequacies,
- so we need to improve on this.
+ so we need to improve on this as it is not completely mathematically verifiable
+ and depends on less secure methods.
 \end_layout
 
 \begin_layout Subsection
@@ -1073,7 +1074,7 @@ reference "sec:Improvements-with-security"
 \end_layout
 
 \begin_layout Standard
-This disaster of course assumes many things that a good implementation would
+This disaster of course assumes many things that a good implementation should
  avoid; however it is worth noting the consequences of a value that does
  not hash to its ID (breaking our tenet).
  There appears nothing can be done as we cannot create data and know what
