@@ -1,13 +1,12 @@
 /*
 * ============================================================================
 *
-* Copyright [2009] maidsafe.net limited
+* Copyright [2010] maidsafe.net limited
 *
 * Description:  none
 * Version:      1.0
-* Created:      2009-08-12-22.59.40
+* Created:      14/10/2010 11:43:59
 * Revision:     none
-* Compiler:     gcc
 * Author:       Team
 * Company:      maidsafe.net limited
 *
@@ -180,13 +179,13 @@ testing::AssertionResult Empty(std::tr1::shared_ptr<pki::Packet> packet) {
       return testing::AssertionFailure() << "Packet password not empty.";
     if (tmid_packet->rid_ != 0)
       return testing::AssertionFailure() << "Packet rid not 0.";
-    if (!tmid_packet->plain_data_.empty())
+    if (!tmid_packet->plain_text_master_data_.empty())
       return testing::AssertionFailure() << "Packet plain data not empty.";
     if (!tmid_packet->salt_.empty())
       return testing::AssertionFailure() << "Packet salt not empty.";
     if (!tmid_packet->secure_password_.empty())
       return testing::AssertionFailure() << "Packet secure password not empty.";
-    if (!tmid_packet->encrypted_data_.empty())
+    if (!tmid_packet->encrypted_master_data_.empty())
       return testing::AssertionFailure() << "Packet encrypted data not empty.";
   } else if (packet_type != UNKNOWN) {
     return testing::AssertionFailure() << "Invalid packet type.";
@@ -605,7 +604,7 @@ testing::AssertionResult Equal(
     return testing::AssertionFailure() << dbg << " name wrong.";
   if (expected->encrypted_data != tmid->value())
     return testing::AssertionFailure() << dbg << " value wrong.";
-  if (expected->encrypted_data != tmid->encrypted_data_)
+  if (expected->encrypted_data != tmid->encrypted_master_data_)
     return testing::AssertionFailure() << dbg << " encrypted_data wrong.";
   if (expected->username != tmid->username())
     return testing::AssertionFailure() << dbg << " username wrong.";
@@ -613,7 +612,7 @@ testing::AssertionResult Equal(
     return testing::AssertionFailure() << dbg << " pin wrong.";
   if (expected->password != tmid->password())
     return testing::AssertionFailure() << dbg << " password wrong.";
-  if (expected->plain_data != tmid->plain_data_)
+  if (expected->plain_data != tmid->plain_text_master_data_)
     return testing::AssertionFailure() << dbg << " plain_data wrong.";
   if (expected->salt != tmid->salt_)
     return testing::AssertionFailure() << dbg << " salt wrong.";

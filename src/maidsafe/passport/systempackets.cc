@@ -164,6 +164,16 @@ void SignaturePacket::Clear() {
   public_key_signature_.clear();
 }
 
+bool SignaturePacket::Equals(const pki::Packet *other) const {
+  const SignaturePacket *rhs = static_cast<const SignaturePacket*>(other);
+  return packet_type_ == rhs->packet_type_ &&
+         name_ == rhs->name_ &&
+         public_key_ == rhs->public_key_ &&
+         private_key_ == rhs->private_key_ &&
+         signer_private_key_ == rhs->signer_private_key_ &&
+         public_key_signature_ == rhs->public_key_signature_;
+}
+
 void SignaturePacket::PutToKey(Key *key) {
   key->set_name(name_);
   key->set_packet_type(packet_type_);
@@ -273,6 +283,19 @@ void MidPacket::Clear() {
   rid_ = 0;
 }
 
+bool MidPacket::Equals(const pki::Packet *other) const {
+  const MidPacket *rhs = static_cast<const MidPacket*>(other);
+  return packet_type_ == rhs->packet_type_ &&
+         name_ == rhs->name_ &&
+         username_ == rhs->username_ &&
+         pin_ == rhs->pin_ &&
+         smid_appendix_ == rhs->smid_appendix_ &&
+         encrypted_rid_ == rhs->encrypted_rid_ &&
+         salt_ == rhs->salt_ &&
+         secure_password_ == rhs->secure_password_ &&
+         rid_ == rhs->rid_;
+}
+
 
 
 TmidPacket::TmidPacket(const std::string &username,
@@ -280,16 +303,16 @@ TmidPacket::TmidPacket(const std::string &username,
                        const boost::uint32_t rid,
                        bool surrogate,
                        const std::string &password,
-                       const std::string &plain_data)
+                       const std::string &plain_text_master_data)
     : pki::Packet(surrogate ? STMID : TMID),
       username_(username),
       pin_(pin),
       password_(password),
       rid_(rid),
-      plain_data_(plain_data),
+      plain_text_master_data_(plain_text_master_data),
       salt_(),
       secure_password_(),
-      encrypted_data_() {
+      encrypted_master_data_() {
   Initialise();
 }
 
@@ -347,22 +370,22 @@ bool TmidPacket::SetPassword() {
 }
 
 bool TmidPacket::SetPlainData() {
-  if (plain_data_.empty() || secure_password_.empty()) {
-    encrypted_data_.clear();
+  if (plain_text_master_data_.empty() || secure_password_.empty()) {
+    encrypted_master_data_.clear();
     return false;
   }
   try {
     crypto::Crypto crypto_obj;
-    encrypted_data_ = crypto_obj.SymmEncrypt(plain_data_, "",
-                      crypto::STRING_STRING, secure_password_);
+    encrypted_master_data_ = crypto_obj.SymmEncrypt(plain_text_master_data_, "",
+                             crypto::STRING_STRING, secure_password_);
   }
   catch(const std::exception &e) {
 #ifdef DEBUG
     printf("TmidPacket::SetPlainData: %s\n", e.what());
 #endif
-    encrypted_data_.clear();
+    encrypted_master_data_.clear();
   }
-  if (encrypted_data_.empty()) {
+  if (encrypted_master_data_.empty()) {
     Clear();
     return false;
   } else {
@@ -370,12 +393,13 @@ bool TmidPacket::SetPlainData() {
   }
 }
 
-std::string TmidPacket::DecryptPlainData(const std::string &password,
-                                         const std::string &encrypted_data) {
+std::string TmidPacket::DecryptPlainData(
+    const std::string &password,
+    const std::string &encrypted_master_data) {
   password_ = password;
   if (!SetPassword())
     return "";
-  if (encrypted_data.empty()) {
+  if (encrypted_master_data.empty()) {
 #ifdef DEBUG
     printf("TmidPacket::DecryptPlainData: bad encrypted data.\n");
 #endif
@@ -385,20 +409,20 @@ std::string TmidPacket::DecryptPlainData(const std::string &password,
     return "";
   }
   try {
-    encrypted_data_ = encrypted_data;
+    encrypted_master_data_ = encrypted_master_data;
     crypto::Crypto crypto_obj;
-    plain_data_ = crypto_obj.SymmDecrypt(encrypted_data_, "",
-                  crypto::STRING_STRING, secure_password_);
+    plain_text_master_data_ = crypto_obj.SymmDecrypt(encrypted_master_data_, "",
+                              crypto::STRING_STRING, secure_password_);
   }
   catch(const std::exception &e) {
 #ifdef DEBUG
     printf("TmidPacket::DecryptPlainData: %s\n", e.what());
 #endif
-    plain_data_.clear();
+    plain_text_master_data_.clear();
   }
-  if (plain_data_.empty())
+  if (plain_text_master_data_.empty())
     Clear();
-  return plain_data_;
+  return plain_text_master_data_;
 }
 
 void TmidPacket::Clear() {
@@ -407,10 +431,24 @@ void TmidPacket::Clear() {
   pin_.clear();
   password_.clear();
   rid_ = 0;
-  plain_data_.clear();
+  plain_text_master_data_.clear();
   salt_.clear();
   secure_password_.clear();
-  encrypted_data_.clear();
+  encrypted_master_data_.clear();
+}
+
+bool TmidPacket::Equals(const pki::Packet *other) const {
+  const TmidPacket *rhs = static_cast<const TmidPacket*>(other);
+  return packet_type_ == rhs->packet_type_ &&
+         name_ == rhs->name_ &&
+         username_ == rhs->username_ &&
+         pin_ == rhs->pin_ &&
+         password_ == rhs->password_ &&
+         rid_ == rhs->rid_ &&
+         plain_text_master_data_ == rhs->plain_text_master_data_ &&
+         salt_ == rhs->salt_ &&
+         secure_password_ == rhs->secure_password_ &&
+         encrypted_master_data_ == rhs->encrypted_master_data_;
 }
 
 }  // namespace passport

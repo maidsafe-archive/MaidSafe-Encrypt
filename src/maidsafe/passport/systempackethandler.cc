@@ -30,7 +30,8 @@ namespace maidsafe {
 
 namespace passport {
 
-bool SystemPacketHandler::AddPacket(std::tr1::shared_ptr<pki::Packet> packet) {
+bool SystemPacketHandler::AddPendingPacket(
+    std::tr1::shared_ptr<pki::Packet> packet) {
   boost::mutex::scoped_lock lock(mutex_);
   SystemPacketMap::iterator it =
       packets_.find(static_cast<PacketType>(packet->packet_type()));
@@ -51,7 +52,9 @@ bool SystemPacketHandler::AddPacket(std::tr1::shared_ptr<pki::Packet> packet) {
   }
 }
 
-bool SystemPacketHandler::ConfirmPacket(const PacketType &packet_type) {
+int SystemPacketHandler::ConfirmPacket(
+    std::tr1::shared_ptr<pki::Packet> packet) {
+  PacketType packet_type = static_cast<PacketType>(packet->packet_type());
   boost::mutex::scoped_lock lock(mutex_);
   SystemPacketMap::iterator it = packets_.find(packet_type);
   if (it == packets_.end()) {
@@ -59,7 +62,7 @@ bool SystemPacketHandler::ConfirmPacket(const PacketType &packet_type) {
     printf("SystemPacketHandler::ConfirmPacket: Missing %s.\n",
             DebugString(packet_type).c_str());
 #endif
-    return false;
+    return kNoPendingPacket;
   }
   bool dependencies_confirmed(true);
   switch (packet_type) {
@@ -97,8 +100,15 @@ bool SystemPacketHandler::ConfirmPacket(const PacketType &packet_type) {
     printf("SystemPacketHandler::ConfirmPacket: dependencies for %s not "
            "confirmed.\n", DebugString(packet_type).c_str());
 #endif
-    return false;
+    return kMissingDependentPackets;
   } else {
+    if (!(*it).second.pending->Equals(packet.get())) {
+#ifdef DEBUG
+      printf("SystemPacketHandler::ConfirmPacket: input %s != pending %s.\n",
+          DebugString(packet_type).c_str(), DebugString(packet_type).c_str());
+#endif
+      return kPacketsNotEqual;
+    }
     (*it).second.stored = (*it).second.pending;
     (*it).second.pending.reset();
     return true;
@@ -245,95 +255,6 @@ void SystemPacketHandler::Clear() {
   packets_.clear();
 }
 
-
-/*
-int KeyAtlas::AddKey(const int &packet_type,
-                     const std::string &packet_id,
-                     const std::string &private_key,
-                     const std::string &public_key,
-                     const std::string &signed_public_key) {
-  KeyAtlasSet::iterator it = key_ring_.find(packet_type);
-  if (it != key_ring_.end())
-    key_ring_.erase(packet_type);
-  std::string signed_pub_key = signed_public_key;
-  if (signed_pub_key.empty())
-    signed_pub_key = co_.AsymSign(public_key, "", private_key,
-                                  crypto::STRING_STRING);
-  KeyAtlasRow kar(packet_type, packet_id, private_key, public_key,
-                  signed_pub_key);
-  std::pair<KeyAtlasSet::iterator, bool> p = key_ring_.insert(kar);
-  if (p.second)
-    return kSuccess;
-  return kKeyAtlasError;
-}
-
-std::string KeyAtlas::SearchKeyring(const int &packet_type,
-                                    const int &field) {
-  std::string result;
-  if (field < 1 || field > 4) {
-#ifdef DEBUG
-    printf("Wrong column(%d)\n", field);
-#endif
-    return result;
-  }
-  KeyAtlasSet::iterator it = key_ring_.find(packet_type);
-  if (it == key_ring_.end()) {
-#ifdef DEBUG
-    printf("Key type(%d) not present in keyring\n", packet_type);
-#endif
-    return result;
-  }
-  switch (field) {
-    case 1: result = (*it).id_; break;
-    case 2: result = (*it).private_key_; break;
-    case 3: result = (*it).public_key_; break;
-    case 4: result = (*it).signed_public_key_; break;
-  }
-  return result;
-}
-
-std::string KeyAtlas::PackageID(const int &packet_type) {
-  return SearchKeyring(packet_type, 1);
-}
-
-std::string KeyAtlas::PrivateKey(const int &packet_type) {
-  return SearchKeyring(packet_type, 2);
-}
-
-std::string KeyAtlas::PublicKey(const int &packet_type) {
-  return SearchKeyring(packet_type, 3);
-}
-
-std::string KeyAtlas::SignedPublicKey(const int &packet_type) {
-  return SearchKeyring(packet_type, 4);
-}
-
-int KeyAtlas::RemoveKey(const int &packet_type) {
-  KeyAtlasSet::iterator it = key_ring_.find(packet_type);
-  if (it == key_ring_.end()) {
-#ifdef DEBUG
-    printf("Key type(%d) not present in keyring.\n", packet_type);
-#endif
-    return kKeyAtlasError;
-  }
-  key_ring_.erase(packet_type);
-  return kSuccess;
-}
-
-void KeyAtlas::GetKeyRing(std::list<KeyAtlasRow> *keyring) {
-  keyring->clear();
-  KeyAtlasSet::iterator it;
-  for (it = key_ring_.begin(); it != key_ring_.end(); it++) {
-    KeyAtlasRow kar((*it).type_, (*it).id_, (*it).private_key_,
-                    (*it).public_key_, (*it).signed_public_key_);
-    keyring->push_back(kar);
-  }
-}
-
-unsigned int KeyAtlas::KeyRingSize() { return key_ring_.size(); }
-
-void KeyAtlas::ClearKeyRing() { key_ring_.clear(); }
-*/
 }  // namespace passport
 
 }  // namespace maidsafe

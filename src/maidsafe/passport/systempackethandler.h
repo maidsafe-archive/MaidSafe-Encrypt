@@ -38,9 +38,9 @@ class SystemPacketHandler {
   SystemPacketHandler() : packets_(), mutex_() {}
   ~SystemPacketHandler() {}
   // Add packet which is pending confirmation of storing
-  bool AddPacket(std::tr1::shared_ptr<pki::Packet> packet);
+  bool AddPendingPacket(std::tr1::shared_ptr<pki::Packet> packet);
   // Change packet from pending to stored
-  bool ConfirmPacket(const PacketType &packet_type);
+  int ConfirmPacket(std::tr1::shared_ptr<pki::Packet> packet);
   // Removes a pending packet (leaving last stored copy)
   bool RevertPacket(const PacketType &packet_type);
   // Returns a *copy* of the confirmed packet
@@ -53,25 +53,6 @@ class SystemPacketHandler {
   int ParseKeyring(const std::string &serialised_keyring);
   void ClearKeyring();
   void Clear();
-
-
-
-
-
-//  // If signed_public_key == "", it is set as signature of given public_key
-//  // using given private_key.
-//  int AddKey(const int &packet_type,
-//             const std::string &packet_id,
-//             const std::string &private_key,
-//             const std::string &public_key,
-//             const std::string &signed_public_key);
-//  std::string PackageID(const int &packet_type);
-//  std::string PrivateKey(const int &packet_type);
-//  std::string PublicKey(const int &packet_type);
-//  std::string SignedPublicKey(const int &packet_type);
-//  int RemoveKey(const int &packet_type);
-////  void GetKeyRing(std::list<KeyAtlasRow> *keyring);
-//  size_t KeyRingSize();
  private:
   struct PacketInfo {
     PacketInfo() : pending(), stored() {}

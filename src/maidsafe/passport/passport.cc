@@ -41,7 +41,8 @@ int Passport::SetInitialDetails(const std::string &username,
                                                      kSmidAppendix_));
   bool success(!mid->name().empty() && !smid->name().empty());
   if (success) {
-    success = packet_handler_.AddPacket(mid) && packet_handler_.AddPacket(smid);
+    success = packet_handler_.AddPendingPacket(mid) &&
+              packet_handler_.AddPendingPacket(smid);
   }
   if (mid_name)
     *mid_name = mid->name();
@@ -50,69 +51,71 @@ int Passport::SetInitialDetails(const std::string &username,
   return success ? kSuccess : kPassportError;
 }
 
-int Passport::ConfirmInitialDetails(const std::string &mid_name,
-                                    const std::string &smid_name) {
-}
-
 int Passport::SetNewUserData(const std::string &password,
-                             const std::string &plain_data,
+                             const std::string &plain_text_master_data,
                              std::tr1::shared_ptr<MidPacket> mid,
                              std::tr1::shared_ptr<MidPacket> smid,
                              std::tr1::shared_ptr<TmidPacket> tmid) {
   // Set same RID for MID and SMID
-  std::tr1::shared_ptr<MidPacket> retrieved_mid =
-      std::tr1::static_pointer_cast<MidPacket>(
-          packet_handler_.PendingPacket(MID));
-  std::tr1::shared_ptr<MidPacket> retrieved_smid =
-      std::tr1::static_pointer_cast<MidPacket>(
-          packet_handler_.PendingPacket(SMID));
-  if (!retrieved_mid.get())
+  std::tr1::shared_ptr<MidPacket> retrieved_pending_mid (PendingMid());
+  std::tr1::shared_ptr<MidPacket> retrieved_pending_smid(PendingSmid());
+  if (!retrieved_pending_mid.get())
     return kNoMid;
+  if (!retrieved_pending_smid.get())
+    return kNoSmid;
   boost::uint32_t rid(base::RandomUint32());
   int retries(0), max_retries(3);
   while (rid == 0 && retries < max_retries) {
     rid = base::RandomUint32();
     ++retries;
   }
-  retrieved_mid->SetRid(rid);
+  retrieved_pending_mid->SetRid(rid);
+  retrieved_pending_smid->SetRid(rid);
 
   // Create TMID
   std::tr1::shared_ptr<TmidPacket> new_tmid(
-      new TmidPacket(retrieved_mid->username(), retrieved_mid->pin(), rid,
-                     false, password, plain_data));
-  bool success(!retrieved_mid->name().empty() && !tmid->name().empty());
-  if (success)
-    success = packet_handler_.AddPacket(tmid, true);
-
-  // Copy packets
+      new TmidPacket(retrieved_pending_mid->username(),
+                     retrieved_pending_mid->pin(), rid, false, password,
+                     plain_text_master_data));
+  bool success(!retrieved_pending_mid->name().empty() &&
+               !retrieved_pending_smid->name().empty() &&
+               !tmid->name().empty());
   if (success) {
-    if (mid.get())
-      *mid = *retrieved_mid;
-    else
-      mid.reset(new MidPacket(*retrieved_mid));
-    if (tmid.get())
-      *tmid = *new_tmid;
-    else
-      tmid.reset(new TmidPacket(*new_tmid));
+    success = packet_handler_.AddPendingPacket(mid) &&
+              packet_handler_.AddPendingPacket(smid) &&
+              packet_handler_.AddPendingPacket(tmid);
+  }
+
+  if (success) {
+    mid = retrieved_pending_mid;
+    smid = retrieved_pending_smid;
+    tmid = new_tmid;
     return kSuccess;
   } else {
     return kPassportError;
   }
 }
 
-int Passport::UpdateUserData(
-    const std::string &plain_data,
+int Passport::ConfirmNewUserData(std::tr1::shared_ptr<MidPacket> mid,
+                                 std::tr1::shared_ptr<MidPacket> smid,
+                                 std::tr1::shared_ptr<TmidPacket> tmid) {
+  return ConfirmUserData(mid, smid, tmid, std::tr1::shared_ptr<TmidPacket>());
+}
+
+std::string Passport::SerialiseKeyring() {
+  return packet_handler_.SerialiseKeyring();
+}
+
+int Passport::UpdateMasterData(
+    const std::string &plain_text_master_data,
     std::string *mid_old_value,
     std::string *smid_old_value,
     std::tr1::shared_ptr<MidPacket> updated_mid,
     std::tr1::shared_ptr<MidPacket> updated_smid,
     std::tr1::shared_ptr<TmidPacket> new_tmid,
-std::tr1::shared_ptr<TmidPacket> tmid_for_deletion) {
+    std::tr1::shared_ptr<TmidPacket> tmid_for_deletion) {
   // Sets SMID's RID to MID's RID and generate new RID for MID
-  std::tr1::shared_ptr<MidPacket> retrieved_mid =
-      std::tr1::static_pointer_cast<MidPacket>(packet_handler_.Packet(MID));
-  std::tr1::shared_ptr<MidPacket> retrieved_smid =
-      std::tr1::static_pointer_cast<MidPacket>(packet_handler_.Packet(SMID));
+  std::tr1::shared_ptr<MidPacket> retrieved_mid(Mid()), retrieved_smid(Smid());
   if (!retrieved_mid.get())
     return kNoMid;
   if (!retrieved_smid.get())
@@ -130,101 +133,114 @@ std::tr1::shared_ptr<TmidPacket> tmid_for_deletion) {
   retrieved_mid->SetRid(new_rid);
   retrieved_smid->SetRid(old_rid);
 
-  // Retrieve current STMID (which is to be deleted) - won't exist if this is
-  // first update
-  std::tr1::shared_ptr<TmidPacket> retrieved_stmid =
-      std::tr1::static_pointer_cast<TmidPacket>(packet_handler_.Packet(STMID));
-
-  // Set STMID as old TMID and create a new TMID
-  std::tr1::shared_ptr<TmidPacket> retrieved_tmid =
-      std::tr1::static_pointer_cast<TmidPacket>(packet_handler_.Packet(TMID));
+  // Confirmed STMID (which is to be deleted) won't exist if this is first ever
+  // update.  Pending STMID won't exist unless this is a repeat attempt.
+  std::tr1::shared_ptr<TmidPacket> retrieved_tmid(Tmid());
   if (!retrieved_tmid.get())
     return kNoTmid;
+  std::tr1::shared_ptr<TmidPacket> retrieved_stmid(Stmid());
+  std::tr1::shared_ptr<TmidPacket> retrieved_pending_stmid(PendingStmid());
+
   std::tr1::shared_ptr<TmidPacket> tmid(
       new TmidPacket(retrieved_tmid->username(), retrieved_tmid->pin(), new_rid,
-                     false, retrieved_tmid->password(), plain_data));
-  bool success(!tmid->name().empty());
-  if (success) {
-    retrieved_tmid->SetToSurrogate();
-    success = packet_handler_.AddPacket(retrieved_tmid, true);
-  }
-  if (success)
-    success = packet_handler_.AddPacket(tmid, true);
+                     false, retrieved_tmid->password(),
+                     plain_text_master_data));
+  if (tmid->name().empty())
+    return kPassportError;
 
-  // Copy packets
-  if (success) {
-    if (updated_mid.get())
-      *updated_mid = *retrieved_mid;
-    else
-      updated_mid.reset(new MidPacket(*retrieved_mid));
-    if (updated_smid.get())
-      *updated_smid = *retrieved_smid;
-    else
-      updated_smid.reset(new MidPacket(*retrieved_smid));
-    if (new_tmid.get())
-      *new_tmid = *tmid;
-    else
-      new_tmid.reset(new TmidPacket(*tmid));
-    if (retrieved_stmid.get()) {
-      if (tmid_for_deletion.get())
-        *tmid_for_deletion = *retrieved_stmid;
-      else
-        tmid_for_deletion.reset(new TmidPacket(*retrieved_stmid));
-    }
-    return kSuccess;
-  } else {
+  retrieved_tmid->SetToSurrogate();
+  bool success = packet_handler_.AddPendingPacket(retrieved_mid) &&
+                 packet_handler_.AddPendingPacket(retrieved_smid) &&
+                 packet_handler_.AddPendingPacket(tmid) &&
+                 packet_handler_.AddPendingPacket(retrieved_tmid);
+
+  if (!success) {
+    mid_old_value->clear();
+    smid_old_value->clear();
+    packet_handler_.RevertPacket(MID);
+    packet_handler_.RevertPacket(SMID);
+    packet_handler_.RevertPacket(TMID);
+    packet_handler_.RevertPacket(STMID);
     return kPassportError;
   }
+
+  updated_mid = retrieved_mid;
+  updated_smid = retrieved_smid;
+  new_tmid = tmid;
+  if (retrieved_stmid.get() &&
+      (!(retrieved_pending_stmid.get() &&
+      retrieved_pending_stmid->Equals(retrieved_tmid.get())))) {
+    tmid_for_deletion = retrieved_stmid;
+  } else {
+    tmid_for_deletion.reset();
+  }
+  return kSuccess;
+}
+
+int Passport::ConfirmMasterDataUpdate(std::tr1::shared_ptr<MidPacket> mid,
+                                      std::tr1::shared_ptr<MidPacket> smid,
+                                      std::tr1::shared_ptr<TmidPacket> tmid) {
+  return ConfirmUserData(mid, smid, tmid, PendingStmid());
 }
 
 int Passport::InitialiseTmid(bool surrogate,
                              const std::string &encrypted_rid,
                              std::string *tmid_name) {
-  PacketType mid_type(MID);
-  if (surrogate)
-    mid_type = SMID;
-  std::tr1::shared_ptr<MidPacket> mid =
-      std::tr1::static_pointer_cast<MidPacket>(
-          packet_handler_.Packet(mid_type));
-  if (!mid.get())
-    return surrogate ? kNoSmid : kNoMid;
-  if (mid->DecryptRid(encrypted_rid) == 0)
+  std::tr1::shared_ptr<MidPacket>
+      retrieved_pending_mid(surrogate ? PendingSmid() : PendingMid());
+  if (!retrieved_pending_mid.get())
+    return surrogate ? kNoPendingSmid : kNoPendingMid;
+  if (retrieved_pending_mid->DecryptRid(encrypted_rid) == 0)
     return surrogate ? kBadSerialisedSmidRid : kBadSerialisedMidRid;
-  std::tr1::shared_ptr<TmidPacket> tmid(new TmidPacket(
-      mid->username(), mid->pin(), mid->rid(), surrogate, "", ""));
+  std::tr1::shared_ptr<TmidPacket> tmid(
+      new TmidPacket(retrieved_pending_mid->username(),
+                     retrieved_pending_mid->pin(), retrieved_pending_mid->rid(),
+                     surrogate, "", ""));
   bool success(!tmid->name().empty());
   if (success)
-    success = packet_handler_.AddPacket(tmid, false);
-  if (tmid_name)
-    *tmid_name = tmid->name();
-  return success ? kSuccess : kPassportError;
+    success = packet_handler_.AddPendingPacket(tmid);
+  if (success) {
+    if (tmid_name)
+      *tmid_name = tmid->name();
+    return kSuccess;
+  } else {
+    packet_handler_.RevertPacket(TMID);
+    return kPassportError;
+  }
 }
 
 int Passport::GetUserData(const std::string &password,
                           bool surrogate,
-                          const std::string &encrypted_data,
-                          std::string *plain_data) {
-  PacketType tmid_type(TMID);
-  if (surrogate)
-    tmid_type = STMID;
-  std::tr1::shared_ptr<TmidPacket> tmid =
-      std::tr1::static_pointer_cast<TmidPacket>(
-          packet_handler_.Packet(tmid_type));
-  if (!tmid.get())
-    return surrogate ? kNoStmid : kNoTmid;
-  if (!plain_data)
+                          const std::string &encrypted_master_data,
+                          std::string *plain_text_master_data) {
+  std::tr1::shared_ptr<TmidPacket>
+      retrieved_pending_tmid(surrogate ? PendingStmid() : PendingTmid());
+  if (!retrieved_pending_tmid.get())
+    return surrogate ? kNoPendingStmid : kNoPendingTmid;
+  if (!plain_text_master_data)
     return kPassportError;
-  *plain_data = tmid->DecryptPlainData(password, encrypted_data);
-  if (plain_data->empty())
+  *plain_text_master_data =
+      retrieved_pending_tmid->DecryptPlainData(password, encrypted_master_data);
+  if (plain_text_master_data->empty())
     return surrogate ? kBadSerialisedStmidData : kBadSerialisedTmidData;
-  else
+  if (packet_handler_.AddPendingPacket(retrieved_pending_tmid))
     return kSuccess;
+  else
+    return kPassportError;
+}
+
+int Passport::ParseKeyring(const std::string &serialised_keyring) {
+  int result = packet_handler_.ParseKeyring(serialised_keyring);
+  if (result != kSuccess)
+    return result;
+  return ConfirmUserData(PendingMid(), PendingSmid(), PendingTmid(),
+                         PendingStmid());
 }
 
 int Passport::ChangeUserData(
     const std::string &new_username,
     const std::string &new_pin,
-    const std::string &plain_data,
+    const std::string &plain_text_master_data,
     std::tr1::shared_ptr<MidPacket> mid_for_deletion,
     std::tr1::shared_ptr<MidPacket> smid_for_deletion,
     std::tr1::shared_ptr<TmidPacket> tmid_for_deletion,
@@ -233,25 +249,20 @@ int Passport::ChangeUserData(
     std::tr1::shared_ptr<MidPacket> new_smid,
     std::tr1::shared_ptr<TmidPacket> new_tmid,
     std::tr1::shared_ptr<TmidPacket> new_stmid) {
-  // Retrieve old packets
-  std::tr1::shared_ptr<MidPacket> retrieved_mid =
-      std::tr1::static_pointer_cast<MidPacket>(packet_handler_.Packet(MID));
-  std::tr1::shared_ptr<MidPacket> retrieved_smid =
-      std::tr1::static_pointer_cast<MidPacket>(packet_handler_.Packet(SMID));
-  std::tr1::shared_ptr<TmidPacket> retrieved_tmid =
-      std::tr1::static_pointer_cast<TmidPacket>(packet_handler_.Packet(TMID));
-  std::tr1::shared_ptr<TmidPacket> retrieved_stmid =
-      std::tr1::static_pointer_cast<TmidPacket>(packet_handler_.Packet(STMID));
+  std::tr1::shared_ptr<MidPacket> retrieved_mid(Mid());
   if (!retrieved_mid.get())
     return kNoMid;
+  std::tr1::shared_ptr<MidPacket> retrieved_smid(Smid());
   if (!retrieved_smid.get())
     return kNoSmid;
+  std::tr1::shared_ptr<TmidPacket> retrieved_tmid(Tmid());
   if (!retrieved_tmid.get())
     return kNoTmid;
+  std::tr1::shared_ptr<TmidPacket> retrieved_stmid(Stmid());
   if (!retrieved_stmid.get())
     return kNoStmid;
 
-  // Create new packets
+
   std::tr1::shared_ptr<MidPacket> mid(new MidPacket(new_username, new_pin, ""));
   std::tr1::shared_ptr<MidPacket> smid(new MidPacket(new_username, new_pin,
                                                      kSmidAppendix_));
@@ -259,122 +270,96 @@ int Passport::ChangeUserData(
   smid->SetRid(retrieved_smid->rid());
   std::tr1::shared_ptr<TmidPacket> tmid(
       new TmidPacket(new_username, new_pin, mid->rid(), false,
-                     retrieved_tmid->password(), plain_data));
+                     retrieved_tmid->password(), plain_text_master_data));
   std::tr1::shared_ptr<TmidPacket> stmid(
       new TmidPacket(new_username, new_pin, smid->rid(), true,
-                     retrieved_stmid->password(), plain_data));
+                     retrieved_stmid->password(), plain_text_master_data));
 
-  bool success(!mid->name().empty() && !smid->name().empty() &&
-               !tmid->name().empty() && !stmid->name().empty());
-  if (!success)
+  if (mid->name().empty() || smid->name().empty() || tmid->name().empty() ||
+      stmid->name().empty()) {
     return kPassportError;
+  }
 
-  success = packet_handler_.AddPacket(mid, true) &&
-            packet_handler_.AddPacket(smid, true) &&
-            packet_handler_.AddPacket(tmid, true) &&
-            packet_handler_.AddPacket(stmid, true);
-  if (!success)
+  bool success = packet_handler_.AddPendingPacket(mid) &&
+                 packet_handler_.AddPendingPacket(smid) &&
+                 packet_handler_.AddPendingPacket(tmid) &&
+                 packet_handler_.AddPendingPacket(stmid);
+  if (!success) {
+    packet_handler_.RevertPacket(MID);
+    packet_handler_.RevertPacket(SMID);
+    packet_handler_.RevertPacket(TMID);
+    packet_handler_.RevertPacket(STMID);
     return kPassportError;
-
-  // Copy packets
-  if (mid_for_deletion.get())
-    *mid_for_deletion = *retrieved_mid;
-  else
-    mid_for_deletion.reset(new MidPacket(*retrieved_mid));
-  if (smid_for_deletion.get())
-    *smid_for_deletion = *retrieved_smid;
-  else
-    smid_for_deletion.reset(new MidPacket(*retrieved_smid));
-  if (tmid_for_deletion.get())
-    *tmid_for_deletion = *retrieved_tmid;
-  else
-    tmid_for_deletion.reset(new TmidPacket(*retrieved_tmid));
-  if (stmid_for_deletion.get())
-    *stmid_for_deletion = *retrieved_stmid;
-  else
-    stmid_for_deletion.reset(new TmidPacket(*retrieved_stmid));
-  if (new_mid.get())
-    *new_mid = *mid;
-  else
-    new_mid.reset(new MidPacket(*mid));
-  if (new_smid.get())
-    *new_smid = *smid;
-  else
-    new_smid.reset(new MidPacket(*smid));
-  if (new_tmid.get())
-    *new_tmid = *tmid;
-  else
-    new_tmid.reset(new TmidPacket(*tmid));
-  if (new_stmid.get())
-    *new_stmid = *stmid;
-  else
-    new_stmid.reset(new TmidPacket(*stmid));
+  }
+  mid_for_deletion = retrieved_mid;
+  smid_for_deletion = retrieved_smid;
+  tmid_for_deletion = retrieved_tmid;
+  stmid_for_deletion = retrieved_stmid;
+  new_mid = mid;
+  new_smid = smid;
+  new_tmid = tmid;
+  new_stmid = stmid;
   return kSuccess;
 }
 
+int Passport::ConfirmUserDataChange(std::tr1::shared_ptr<MidPacket> mid,
+                                    std::tr1::shared_ptr<MidPacket> smid,
+                                    std::tr1::shared_ptr<TmidPacket> tmid,
+                                    std::tr1::shared_ptr<TmidPacket> stmid) {
+  return ConfirmUserData(mid, smid, tmid, stmid);
+}
+
 int Passport::ChangePassword(const std::string &new_password,
-                             const std::string &plain_data,
+                             const std::string &plain_text_master_data,
                              std::string *tmid_old_value,
                              std::string *stmid_old_value,
                              std::tr1::shared_ptr<TmidPacket> updated_tmid,
                              std::tr1::shared_ptr<TmidPacket> updated_stmid) {
-  // Retrieve old packets
-  std::tr1::shared_ptr<MidPacket> retrieved_mid =
-      std::tr1::static_pointer_cast<MidPacket>(packet_handler_.Packet(MID));
-  std::tr1::shared_ptr<MidPacket> retrieved_smid =
-      std::tr1::static_pointer_cast<MidPacket>(packet_handler_.Packet(SMID));
-  std::tr1::shared_ptr<TmidPacket> retrieved_tmid =
-      std::tr1::static_pointer_cast<TmidPacket>(packet_handler_.Packet(TMID));
-  std::tr1::shared_ptr<TmidPacket> retrieved_stmid =
-      std::tr1::static_pointer_cast<TmidPacket>(packet_handler_.Packet(STMID));
+  std::tr1::shared_ptr<MidPacket> retrieved_mid(Mid());
   if (!retrieved_mid.get())
     return kNoMid;
+  std::tr1::shared_ptr<MidPacket> retrieved_smid(Smid());
   if (!retrieved_smid.get())
     return kNoSmid;
+  std::tr1::shared_ptr<TmidPacket> retrieved_tmid(Tmid());
   if (!retrieved_tmid.get())
     return kNoTmid;
+  std::tr1::shared_ptr<TmidPacket> retrieved_stmid(Stmid());
   if (!retrieved_stmid.get())
     return kNoStmid;
 
-  // Create new packets
   std::tr1::shared_ptr<TmidPacket> tmid(
       new TmidPacket(retrieved_tmid->username(), retrieved_tmid->pin(),
-                     retrieved_mid->rid(), false, new_password, plain_data));
+                     retrieved_mid->rid(), false, new_password,
+                     plain_text_master_data));
   std::tr1::shared_ptr<TmidPacket> stmid(
       new TmidPacket(retrieved_stmid->username(), retrieved_stmid->pin(),
-                     retrieved_smid->rid(), true, new_password, plain_data));
+                     retrieved_smid->rid(), true, new_password,
+                     plain_text_master_data));
 
-  bool success(!tmid->name().empty() && !stmid->name().empty());
-  if (!success)
+  if (tmid->name().empty() || stmid->name().empty())
     return kPassportError;
 
-  success = packet_handler_.AddPacket(tmid, true) &&
-            packet_handler_.AddPacket(stmid, true);
-  if (!success)
+  bool success = packet_handler_.AddPendingPacket(tmid) &&
+                 packet_handler_.AddPendingPacket(stmid);
+  if (!success) {
+    packet_handler_.RevertPacket(TMID);
+    packet_handler_.RevertPacket(STMID);
     return kPassportError;
-
-  // Copy packets
+  }
   if (tmid_old_value)
     *tmid_old_value = retrieved_tmid->value();
   if (stmid_old_value)
     *stmid_old_value = retrieved_stmid->value();
-  if (updated_tmid.get())
-    *updated_tmid = *tmid;
-  else
-    updated_tmid.reset(new TmidPacket(*tmid));
-  if (updated_stmid.get())
-    *updated_stmid = *stmid;
-  else
-    updated_stmid.reset(new TmidPacket(*stmid));
+  updated_tmid = tmid;
+  updated_stmid = stmid;
   return kSuccess;
 }
 
-std::string Passport::SerialiseKeyring() {
-  return packet_handler_.SerialiseKeyring();
-}
-
-int Passport::ParseKeyring(const std::string &serialised_keyring) {
-  return packet_handler_.ParseKeyring(serialised_keyring);
+int Passport::ConfirmPasswordChange(std::tr1::shared_ptr<TmidPacket> tmid,
+                                    std::tr1::shared_ptr<TmidPacket> stmid) {
+  std::tr1::shared_ptr<MidPacket>null_mid;
+  return ConfirmUserData(null_mid, null_mid, tmid, stmid);
 }
 
 int Passport::InitialiseSignaturePacket(
@@ -408,12 +393,10 @@ int Passport::DoInitialiseSignaturePacket(
     default:
       break;
   }
-
   std::string signer_private_key;
   if (signer_type != UNKNOWN) {
     std::tr1::shared_ptr<SignaturePacket> signer =
-        std::tr1::static_pointer_cast<SignaturePacket>(
-            packet_handler_.Packet(signer_type));
+        std::tr1::static_pointer_cast<SignaturePacket>(Packet(signer_type));
     if (!signer.get())
       return kNoSigningPacket;
     signer_private_key = signer->private_key();
@@ -429,38 +412,89 @@ int Passport::DoInitialiseSignaturePacket(
                           public_name));
   bool success(!packet->name().empty());
   if (success && (packet_type != MSID))
-    success = packet_handler_.AddPacket(packet, true);
+    success = packet_handler_.AddPendingPacket(packet);
   if (success) {
-    if (signature_packet.get())
-      *signature_packet = *packet;
-    else
-      signature_packet.reset(new SignaturePacket(*packet));
+    signature_packet = packet;
     return kSuccess;
   } else {
+    if (packet_type != MSID)
+      packet_handler_.RevertPacket(packet_type);
     return kPassportError;
   }
 }
 
-std::tr1::shared_ptr<pki::Packet> Passport::Packet(
-    const PacketType &packet_type) {
-  if (IsSignature(packet_type, false)) {
-    return std::tr1::shared_ptr<pki::Packet>(new SignaturePacket(
-        *std::tr1::static_pointer_cast<SignaturePacket>(
-            packet_handler_.Packet(packet_type))));
-  } else if (packet_type == MID || packet_type == SMID) {
-    return std::tr1::shared_ptr<pki::Packet>(new MidPacket(
-        *std::tr1::static_pointer_cast<MidPacket>(
-            packet_handler_.Packet(packet_type))));
-  } else if (packet_type == TMID || packet_type == STMID) {
-    return std::tr1::shared_ptr<pki::Packet>(new TmidPacket(
-        *std::tr1::static_pointer_cast<TmidPacket>(
-            packet_handler_.Packet(packet_type))));
-  } else {
-    return std::tr1::shared_ptr<pki::Packet>();
-  }
+int Passport::ConfirmSignaturePacket(
+    std::tr1::shared_ptr<SignaturePacket> signature_packet) {
+  if (!signature_packet.get())
+    return kPassportError;
+  else
+    return packet_handler_.ConfirmPacket(signature_packet);
 }
 
+int Passport::RevertSignaturePacket(const PacketType &packet_type) {
+  return packet_handler_.RevertPacket(packet_type) ? kSuccess : kPassportError;
+}
 
+int Passport::ConfirmUserData(std::tr1::shared_ptr<MidPacket> mid,
+                              std::tr1::shared_ptr<MidPacket> smid,
+                              std::tr1::shared_ptr<TmidPacket> tmid,
+                              std::tr1::shared_ptr<TmidPacket> stmid) {
+  int res(kPassportError);
+  if (mid.get() && (kSuccess != (res = packet_handler_.ConfirmPacket(mid))))
+    return res;
+  if (smid.get() && (kSuccess != (res = packet_handler_.ConfirmPacket(smid))))
+    return res;
+  if (tmid.get() && (kSuccess != (res = packet_handler_.ConfirmPacket(tmid))))
+    return res;
+  if (stmid.get())
+    res = packet_handler_.ConfirmPacket(stmid);
+  return res;
+}
+
+int Passport::RevertMidSmidTmidStmid(bool include_mid) {
+  bool mid_success = (include_mid ? packet_handler_.RevertPacket(MID) : true);
+  bool smid_success = (include_mid ? packet_handler_.RevertPacket(SMID) : true);
+  bool tmid_success = packet_handler_.RevertPacket(TMID);
+  bool stmid_success = packet_handler_.RevertPacket(STMID);
+  return (mid_success && smid_success && tmid_success && stmid_success) ?
+         kSuccess : kPassportError;
+}
+
+std::tr1::shared_ptr<MidPacket> Passport::Mid() {
+  return std::tr1::static_pointer_cast<MidPacket>(Packet(MID));
+}
+
+std::tr1::shared_ptr<MidPacket> Passport::Smid() {
+  return std::tr1::static_pointer_cast<MidPacket>(Packet(SMID));
+}
+
+std::tr1::shared_ptr<TmidPacket> Passport::Tmid() {
+  return std::tr1::static_pointer_cast<TmidPacket>(Packet(TMID));
+}
+
+std::tr1::shared_ptr<TmidPacket> Passport::Stmid() {
+  return std::tr1::static_pointer_cast<TmidPacket>(Packet(STMID));
+}
+
+std::tr1::shared_ptr<MidPacket> Passport::PendingMid() {
+  return std::tr1::static_pointer_cast<MidPacket>(
+      packet_handler_.PendingPacket(MID));
+}
+
+std::tr1::shared_ptr<MidPacket> Passport::PendingSmid() {
+  return std::tr1::static_pointer_cast<MidPacket>(
+      packet_handler_.PendingPacket(SMID));
+}
+
+std::tr1::shared_ptr<TmidPacket> Passport::PendingTmid() {
+  return std::tr1::static_pointer_cast<TmidPacket>(
+      packet_handler_.PendingPacket(TMID));
+}
+
+std::tr1::shared_ptr<TmidPacket> Passport::PendingStmid() {
+  return std::tr1::static_pointer_cast<TmidPacket>(
+      packet_handler_.PendingPacket(STMID));
+}
 
 }  // namespace passport
 

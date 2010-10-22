@@ -32,16 +32,23 @@ namespace passport {
 enum ReturnCode {
   kSuccess = 0,
   kPassportError = -100001,
-  kNoMid = -100002,
-  kNoSmid = -100003,
-  kNoStmid = -100004,
-  kNoTmid = -100005,
-  kNoSigningPacket = -100006,
-  kBadSerialisedMidRid = -100007,
-  kBadSerialisedSmidRid = -100008,
-  kBadSerialisedTmidData = -100009,
-  kBadSerialisedStmidData = -100010,
-  kBadSerialisedKeyring = -100011
+  kNoPendingMid = -100002,
+  kNoPendingSmid = -100003,
+  kNoPendingTmid = -100004,
+  kNoPendingStmid = -100005,
+  kNoPendingPacket = -100006,
+  kNoMid = -100007,
+  kNoSmid = -100008,
+  kNoTmid = -100009,
+  kNoStmid = -100010,
+  kNoSigningPacket = -100011,
+  kBadSerialisedMidRid = -100012,
+  kBadSerialisedSmidRid = -100013,
+  kBadSerialisedTmidData = -100014,
+  kBadSerialisedStmidData = -100015,
+  kBadSerialisedKeyring = -100016,
+  kPacketsNotEqual = -100017,
+  kMissingDependentPackets = -100018
 };
 
 enum PacketType {

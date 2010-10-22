@@ -41,6 +41,7 @@ class Packet {
   int packet_type() const { return packet_type_; }
   std::string name() const { return name_; }
   virtual std::string value() const = 0;
+  virtual bool Equals(const Packet *other) const = 0;
  protected:
   virtual void Initialise() = 0;
   virtual void Clear() = 0;

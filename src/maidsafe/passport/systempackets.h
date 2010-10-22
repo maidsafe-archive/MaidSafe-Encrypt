@@ -47,6 +47,7 @@ class SignaturePacket : public pki::Packet {
   SignaturePacket(const Key &key);
   virtual ~SignaturePacket() {}
   virtual std::string value() const { return public_key_; }
+  virtual bool Equals(const pki::Packet *other) const;
   void PutToKey(Key *key);
   std::string private_key() const { return private_key_; }
   std::string public_key_signature() const { return public_key_signature_; }
@@ -68,6 +69,7 @@ class MidPacket : public pki::Packet {
             const std::string &smid_appendix);
   virtual ~MidPacket() {}
   virtual std::string value() const { return encrypted_rid_; }
+  virtual bool Equals(const pki::Packet *other) const;
   void SetRid(const boost::uint32_t &rid);
   boost::uint32_t DecryptRid(const std::string &encrypted_rid);
   std::string username() const { return username_; }
@@ -93,11 +95,12 @@ class TmidPacket : public pki::Packet {
              const boost::uint32_t rid,
              bool surrogate,
              const std::string &password,
-             const std::string &plain_data);
+             const std::string &plain_text_master_data);
   virtual ~TmidPacket() {}
-  virtual std::string value() const { return encrypted_data_; }
+  virtual std::string value() const { return encrypted_master_data_; }
+  virtual bool Equals(const pki::Packet *other) const;
   std::string DecryptPlainData(const std::string &password,
-                               const std::string &encrypted_data);
+                               const std::string &encrypted_master_data);
   void SetToSurrogate() { packet_type_ = STMID; }
   std::string username() const { return username_; }
   std::string pin() const { return pin_; }
@@ -114,7 +117,8 @@ class TmidPacket : public pki::Packet {
   virtual void Clear();
   std::string username_, pin_, password_;
   boost::uint32_t rid_;
-  std::string plain_data_, salt_, secure_password_, encrypted_data_;
+  std::string plain_text_master_data_, salt_, secure_password_;
+  std::string encrypted_master_data_;
 };
 
 }  // namespace passport

@@ -1,12 +1,11 @@
 /*
 * ============================================================================
 *
-* Copyright [2009] maidsafe.net limited
+* Copyright [2010] maidsafe.net limited
 *
 * Version:      1.0
-* Created:      2009-01-28-10.59.46
+* Created:      14/10/2010 11:43:59
 * Revision:     none
-* Compiler:     gcc
 * Author:       Team
 * Company:      maidsafe.net limited
 *
@@ -33,6 +32,7 @@ namespace test {
 
 class SystemPacketHandlerTest : public testing::Test {
  public:
+  typedef std::tr1::shared_ptr<MidPacket> MidPtr;
   SystemPacketHandlerTest() : packet_handler_() {}
  protected:
   void SetUp() {}
@@ -40,7 +40,9 @@ class SystemPacketHandlerTest : public testing::Test {
   SystemPacketHandler packet_handler_;
 };
 
-TEST_F(SystemPacketHandlerTest, BEH_PASSPORT_AddKeys) {
+TEST_F(SystemPacketHandlerTest, BEH_PASSPORT_AddPendingPacket) {
+  MidPtr mid1(new MidPacket("User1", "1111", ""));
+  MidPtr mid2(new MidPacket("User2", "2222", ""));
 }
 
 }  // namespace test
