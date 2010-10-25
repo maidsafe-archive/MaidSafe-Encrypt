@@ -107,6 +107,7 @@ int AccountAmendmentHandler::ProcessRequest(
           return kSuccess;
         } else if (amendment_status == kAccountAmendmentFinished) {
           found = true;
+          amendments_.erase(it.first);
           return kSuccess;
         }
         ++it.first;

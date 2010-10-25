@@ -556,10 +556,10 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_FetchAmendmentResults) {
       aah_.amendments_.insert(test_amendment);
   ASSERT_TRUE(p.second);
 
-  ASSERT_EQ(0U, aah_.amendment_results_.size());
+  ASSERT_EQ(size_t(0), aah_.amendment_results_.size());
   ASSERT_EQ(kSuccess, aah_.ProcessRequest(&request, &response, done));
-  ASSERT_EQ(1U, aah_.amendments_.size());
-  ASSERT_EQ(1U, aah_.amendment_results_.size());
+  ASSERT_EQ(size_t(0), aah_.amendments_.size());
+  ASSERT_EQ(size_t(1), aah_.amendment_results_.size());
 
   maidsafe::AccountStatusResponse asr;
   aah_.FetchAmendmentResults(dummy_account_name, &asr);
@@ -1234,7 +1234,7 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_ProcessRequest) {
   for (int i = 0; i < test_aah::K; ++i) {
     ASSERT_EQ(kSuccess, aah_.ProcessRequest(&requests.at(i), &responses.at(i),
               callbacks.at(i)));
-    ASSERT_GE(1U, aah_.amendments_.size());
+    ASSERT_GE(size_t(1), aah_.amendments_.size());
   }
   EXPECT_TRUE(vsl_.kadops()->Wait());
   ASSERT_EQ(4 + test_aah::K, cbh.called_back_count());
@@ -1245,7 +1245,7 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_ProcessRequest) {
       ++success_count;
   }
   ASSERT_EQ(success_count, test_aah::K - 1);
-  ASSERT_EQ(1U, aah_.amendments_.size());
+  ASSERT_GE(size_t(1), aah_.amendments_.size());
   ASSERT_TRUE(test_aah::CheckAcc(account_owner, offer, 1000, acc_used, &ah_));
   ASSERT_EQ(size_t(11), ah_.accounts_.size());
 }

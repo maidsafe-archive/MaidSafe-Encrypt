@@ -48,10 +48,10 @@ TEST_F(AccountHandlerTest, BEH_VAULT_AccountHandlerAddAndFind) {
 
   std::string pmid("some pmid");
   boost::uint64_t offer(1234567890);
-  ASSERT_EQ(0, ah.AddAccount(pmid, offer));
-  ASSERT_EQ(0, ah.HaveAccount(pmid));
+  ASSERT_EQ(kSuccess, ah.AddAccount(pmid, offer));
+  ASSERT_EQ(kSuccess, ah.HaveAccount(pmid));
   ASSERT_EQ(kAccountExists, ah.AddAccount(pmid, offer));
-  ASSERT_EQ(0, ah.HaveAccount(pmid));
+  ASSERT_EQ(kSuccess, ah.HaveAccount(pmid));
   ASSERT_EQ(size_t(1), ah.accounts_.size());
 }
 
@@ -66,71 +66,131 @@ TEST_F(AccountHandlerTest, BEH_VAULT_AccountHandlerModify) {
   ASSERT_EQ(kAccountWrongAccountField, ah.AmendAccount(pmid, 0, 0, true));
   ASSERT_EQ(kAccountWrongAccountField, ah.AmendAccount(pmid, 4, 0, true));
   ASSERT_EQ(kAccountNotFound, ah.GetAccountInfo(pmid, &offered, &vault_space,
-            &account_used));
+                                                &account_used));
 
+  // create account
   boost::uint64_t offer(1234567890);
-  ASSERT_EQ(0, ah.AddAccount(pmid, offer));
-
-  ASSERT_EQ(0, ah.GetAccountInfo(pmid, &offered, &vault_space, &account_used));
+  ASSERT_EQ(kSuccess, ah.AddAccount(pmid, offer));
+  ASSERT_EQ(kSuccess, ah.GetAccountInfo(pmid, &offered, &vault_space,
+                                        &account_used));
   ASSERT_EQ(offer, offered);
   ASSERT_EQ(boost::uint64_t(0), vault_space);
   ASSERT_EQ(boost::uint64_t(0), account_used);
 
+  // amend space offered
   offer = 3000;
-  ASSERT_EQ(0, ah.AmendAccount(pmid, 1, offer, true));
-  ASSERT_EQ(0, ah.GetAccountInfo(pmid, &offered, &vault_space, &account_used));
+  ASSERT_EQ(kSuccess, ah.AmendAccount(pmid, 1, offer, true));
+  ASSERT_EQ(kSuccess, ah.GetAccountInfo(pmid, &offered, &vault_space,
+                                        &account_used));
   ASSERT_EQ(offer, offered);
   ASSERT_EQ(boost::uint64_t(0), vault_space);
   ASSERT_EQ(boost::uint64_t(0), account_used);
 
+  // increment space given
   boost::uint64_t amount(1500);
-  ASSERT_EQ(0, ah.AmendAccount(pmid, 2, amount, true));
-  ASSERT_EQ(0, ah.GetAccountInfo(pmid, &offered, &vault_space, &account_used));
+  ASSERT_EQ(kSuccess, ah.AmendAccount(pmid, 2, amount, true));
+  ASSERT_EQ(kSuccess, ah.GetAccountInfo(pmid, &offered, &vault_space,
+                                        &account_used));
   ASSERT_EQ(offer, offered);
   ASSERT_EQ(amount, vault_space);
   ASSERT_EQ(boost::uint64_t(0), account_used);
 
-  ASSERT_EQ(kAccountNotEnoughSpace, ah.AmendAccount(pmid, 1, 1000, true));
-  ASSERT_EQ(0, ah.GetAccountInfo(pmid, &offered, &vault_space, &account_used));
+  // try to reduce space offered to below what's already given
+  ASSERT_EQ(kAccountInvalidAmount, ah.AmendAccount(pmid, 1, amount - 10, true));
+  ASSERT_EQ(kSuccess, ah.GetAccountInfo(pmid, &offered, &vault_space,
+                                        &account_used));
   ASSERT_EQ(offer, offered);
   ASSERT_EQ(amount, vault_space);
   ASSERT_EQ(boost::uint64_t(0), account_used);
 
+  // try to give more space than remaining in offer
   ASSERT_EQ(kAccountNotEnoughSpace, ah.AmendAccount(pmid, 2, 1501, true));
-  ASSERT_EQ(0, ah.GetAccountInfo(pmid, &offered, &vault_space, &account_used));
+  ASSERT_EQ(kSuccess, ah.GetAccountInfo(pmid, &offered, &vault_space,
+                                        &account_used));
   ASSERT_EQ(offer, offered);
   ASSERT_EQ(amount, vault_space);
   ASSERT_EQ(boost::uint64_t(0), account_used);
 
-  ASSERT_EQ(0, ah.AmendAccount(pmid, 3, amount, true));
-  ASSERT_EQ(0, ah.GetAccountInfo(pmid, &offered, &vault_space, &account_used));
+  // increment space taken
+  ASSERT_EQ(kSuccess, ah.AmendAccount(pmid, 3, amount, true));
+  ASSERT_EQ(kSuccess, ah.GetAccountInfo(pmid, &offered, &vault_space,
+                                        &account_used));
   ASSERT_EQ(offer, offered);
   ASSERT_EQ(amount, vault_space);
   ASSERT_EQ(amount, account_used);
 
-  ASSERT_EQ(0, ah.AmendAccount(pmid, 3, amount, true));
-  ASSERT_EQ(0, ah.GetAccountInfo(pmid, &offered, &vault_space, &account_used));
+  // increment space taken again, no space remains
+  ASSERT_EQ(kSuccess, ah.AmendAccount(pmid, 3, amount, true));
+  ASSERT_EQ(kSuccess, ah.GetAccountInfo(pmid, &offered, &vault_space,
+                                        &account_used));
   ASSERT_EQ(offer, offered);
   ASSERT_EQ(amount, vault_space);
   ASSERT_EQ(offer, account_used);
 
+  // try to take even more space
   ASSERT_EQ(kAccountNotEnoughSpace, ah.AmendAccount(pmid, 3, 1, true));
-  ASSERT_EQ(0, ah.GetAccountInfo(pmid, &offered, &vault_space, &account_used));
+  ASSERT_EQ(kSuccess, ah.GetAccountInfo(pmid, &offered, &vault_space,
+                                        &account_used));
   ASSERT_EQ(offer, offered);
   ASSERT_EQ(amount, vault_space);
   ASSERT_EQ(offer, account_used);
 
-  ASSERT_EQ(0, ah.AmendAccount(pmid, 3, 2000, false));
-  ASSERT_EQ(0, ah.GetAccountInfo(pmid, &offered, &vault_space, &account_used));
+  // try to reduce space given, amount too high
+  ASSERT_EQ(kAccountInvalidAmount, ah.AmendAccount(pmid, 2, amount + 1, false));
+  ASSERT_EQ(kSuccess, ah.GetAccountInfo(pmid, &offered, &vault_space,
+                                        &account_used));
   ASSERT_EQ(offer, offered);
   ASSERT_EQ(amount, vault_space);
-  ASSERT_EQ(boost::uint64_t(1000), account_used);
+  ASSERT_EQ(offer, account_used);
 
-  ASSERT_EQ(kAccountNotEnoughSpace, ah.AmendAccount(pmid, 2, 1501, false));
-  ASSERT_EQ(0, ah.GetAccountInfo(pmid, &offered, &vault_space, &account_used));
+  // decrement space given to zero
+  ASSERT_EQ(kSuccess, ah.AmendAccount(pmid, 2, amount, false));
+  ASSERT_EQ(kSuccess, ah.GetAccountInfo(pmid, &offered, &vault_space,
+                                        &account_used));
   ASSERT_EQ(offer, offered);
-  ASSERT_EQ(amount, vault_space);
-  ASSERT_EQ(boost::uint64_t(1000), account_used);
+  ASSERT_EQ(boost::uint64_t(0), vault_space);
+  ASSERT_EQ(offer, account_used);
+
+  // try to decrement space given again
+  ASSERT_EQ(kAccountInvalidAmount, ah.AmendAccount(pmid, 2, 1, false));
+  ASSERT_EQ(kSuccess, ah.GetAccountInfo(pmid, &offered, &vault_space,
+                                        &account_used));
+  ASSERT_EQ(offer, offered);
+  ASSERT_EQ(boost::uint64_t(0), vault_space);
+  ASSERT_EQ(offer, account_used);
+
+  // try to reduce space offered to below what's already taken
+  ASSERT_EQ(kAccountInvalidAmount, ah.AmendAccount(pmid, 1, offer - 10, true));
+  ASSERT_EQ(kSuccess, ah.GetAccountInfo(pmid, &offered, &vault_space,
+                                        &account_used));
+  ASSERT_EQ(offer, offered);
+  ASSERT_EQ(boost::uint64_t(0), vault_space);
+  ASSERT_EQ(offer, account_used);
+
+  // decrement space taken
+  ASSERT_EQ(kSuccess, ah.AmendAccount(pmid, 3, offer - 10, false));
+  ASSERT_EQ(kSuccess, ah.GetAccountInfo(pmid, &offered, &vault_space,
+                                        &account_used));
+  ASSERT_EQ(offer, offered);
+  ASSERT_EQ(boost::uint64_t(0), vault_space);
+  ASSERT_EQ(boost::uint64_t(10), account_used);
+
+  // try to decrement space taken by too much
+  ASSERT_EQ(kAccountInvalidAmount, ah.AmendAccount(pmid, 3, 20, false));
+  ASSERT_EQ(kSuccess, ah.GetAccountInfo(pmid, &offered, &vault_space,
+                                        &account_used));
+  ASSERT_EQ(offer, offered);
+  ASSERT_EQ(boost::uint64_t(0), vault_space);
+  ASSERT_EQ(boost::uint64_t(10), account_used);
+
+  // set everything to zero
+  ASSERT_EQ(kSuccess, ah.AmendAccount(pmid, 3, 10, false));
+  ASSERT_EQ(kSuccess, ah.AmendAccount(pmid, 1, 0, true));
+  ASSERT_EQ(kSuccess, ah.GetAccountInfo(pmid, &offered, &vault_space,
+                                        &account_used));
+  ASSERT_EQ(boost::uint64_t(0), offered);
+  ASSERT_EQ(boost::uint64_t(0), vault_space);
+  ASSERT_EQ(boost::uint64_t(0), account_used);
 }
 
 TEST_F(AccountHandlerTest, BEH_VAULT_AccountHandlerDelete) {

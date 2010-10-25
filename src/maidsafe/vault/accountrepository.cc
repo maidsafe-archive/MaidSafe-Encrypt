@@ -88,26 +88,26 @@ int AccountHandler::AmendAccount(const std::string &pmid, const int &field,
   Account row = *it;
   switch (field) {
     case 1: if (amount < row.vault_used || amount < row.account_used)
-              return kAccountNotEnoughSpace;
+              return kAccountInvalidAmount;
             row.offered = amount;
             break;
-    case 2: if (increase) {
-              if ((amount + row.vault_used) > row.offered)
+    case 2: if (increase) {  // increment space given
+              if (row.vault_used + amount > row.offered)
                 return kAccountNotEnoughSpace;
               row.vault_used += amount;
-            } else {
-              if ((row.vault_used - amount) > row.vault_used)
-                return kAccountNotEnoughSpace;
+            } else {  // decrement space given
+              if (amount > row.vault_used)
+                return kAccountInvalidAmount;
               row.vault_used -= amount;
             }
             break;
-    case 3: if (increase) {
-              if ((amount + row.account_used) > row.offered)
+    case 3: if (increase) {  // increment space taken
+              if (row.account_used + amount > row.offered)
                 return kAccountNotEnoughSpace;
               row.account_used += amount;
-            } else {
-              if ((row.account_used - amount) > row.account_used)
-                return kAccountNotEnoughSpace;
+            } else {  // decrement space taken
+              if (amount > row.account_used)
+                return kAccountInvalidAmount;
               row.account_used -= amount;
             }
             break;
