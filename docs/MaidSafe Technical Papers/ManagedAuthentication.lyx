@@ -925,18 +925,7 @@ key "6"
 
 \end_inset
 
-, but uses the hash of the 
-\begin_inset Formula $\mathsf{ID_{User}}$
-\end_inset
-
- from 
-\begin_inset CommandInset ref
-LatexCommand ref
-reference "sub:Creation-of-an"
-
-\end_inset
-
- as the passkey.
+.
 \end_layout
 
 \begin_layout Enumerate
@@ -1222,7 +1211,7 @@ Hardened security mode
 \end_layout
 
 \begin_layout Standard
-As this system allows access to a distributed filesystem such as 
+As this system allows access to a distributed file-system such as 
 \begin_inset CommandInset citation
 LatexCommand cite
 key "6"
@@ -1230,8 +1219,10 @@ key "6"
 \end_inset
 
  we can achieve a level of security unknown until now.
- This filesystem can be presented through a File System In Userspace (FUSE)
- format, thereby appearing like a hard disk to the operating system.
+ This file-system can be presented through a File System In Userspace (FUSE)
+ format (or through a system that can reconstitute files in real time and
+ display them, such as the light versions of LifeStuff [tm] and mssan),
+ thereby appearing like a hard disk to the operating system.
  On this disk can run any system that runs on a normal hard disk (with the
  exception of extreme fast transaction services
 \begin_inset Foot
@@ -1246,8 +1237,8 @@ This is only a current limitation and can be overcome even today with a
 
 ).
  With this being the case, even applications can be installed on the disk
- as shares the users can access and presented through a menu system as oone
- would normally exepct to see on a computer.
+ as shares the users can access and presented through a menu system as one
+ would normally expect to see on a computer.
  
 \end_layout
 
@@ -1268,12 +1259,75 @@ Such system would find use in military, financial institutes and organisations
  
 \end_layout
 
+\begin_layout Subsection
+Multi factor authentication
+\end_layout
+
+\begin_layout Standard
+In some situations there may be a requirement to present more than one method
+ of authentication.
+ As described this system presented makes use of a User name, PIN and password
+ combination, which may or may not require the PIN to be entered.
+ This does not however provide security of theft of the user entered components,
+ i.e.
+ via a key logger, over the shoulder attack or similar.
+ Another factor is required.
+ 
+\end_layout
+
+\begin_layout Standard
+Such a system may be a mobile device such as a phone with a unique serial
+ number (SIM card) that can be registered to the ID in question.
+ Therefore an organisation may provide access to certain ID's for certain
+ privileges, there may also be a requirement for a further check.
+\end_layout
+
+\begin_layout Standard
+In this case a simple solution would be to map the user ID to a telephone
+ number or similar and when access is requested and validated via the encryption
+ keys, a message can be sent to the device.
+ The application at login or access screen will await a code (encrypted
+ with the public key of the ID presented, to prevent man in the middle attacks)
+ to be sent from the organisation to the device.
+ On receipt the application will send this pass-phrase back to the organisation,
+ thereby validating against something the user has (phone) as well as what
+ he knows (user name/password).
+\end_layout
+
 \begin_layout Section
 Conclusions
 \end_layout
 
 \begin_layout Standard
-T
+This paper presents a mechanism for managed access to organisations networks
+ that may exist completely distributed.
+ From this point forward there is occasion for many additional features
+ to be added to this system.
+ If combined with a DHT 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "5"
+
+\end_inset
+
+, distributed databases
+\begin_inset CommandInset citation
+LatexCommand cite
+key "6"
+
+\end_inset
+
+ and a network such as the maidsafe network
+\begin_inset CommandInset citation
+LatexCommand cite
+key "4"
+
+\end_inset
+
+, then this could represent a new paradigm for corporate computing.
+ This would enable remote working, network scalability and security at a
+ level never seen previously.
+ 
 \end_layout
 
 \begin_layout Section
