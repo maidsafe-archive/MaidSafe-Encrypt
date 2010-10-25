@@ -1,0 +1,104 @@
+import "packet.proto";
+
+package maidsafe;
+
+enum ItemType {
+  REGULAR_FILE = 0;
+  SMALL_FILE = 1;
+  EMPTY_FILE = 2;
+  LOCKED_FILE = 3;
+  DIRECTORY = 4;
+  EMPTY_DIRECTORY = 5;
+  LINK = 6;
+  MAIDSAFE_CHUNK = 7;
+  NOT_FOR_PROCESSING = 8;
+  UNKNOWN = 9;
+}
+
+message PublicContact {
+  required bytes pub_name = 1;
+  required bytes pub_key = 2;
+  required bytes full_name = 3;
+  required bytes office_phone = 4;
+  required bytes birthday = 5;
+  required bytes gender = 6;
+  required int32 language = 7;
+  required int32 country = 8;
+  required bytes city = 9;
+  required bytes confirmed = 10;
+  required int32 rank = 11;
+  required int32 last_contact = 12;
+}
+
+message ShareParticipant {
+  required bytes public_name = 1;
+  optional bytes public_name_pub_key = 2;
+  required bytes role = 3;
+}
+
+message Share {
+  required bytes name = 1;
+  required bytes msid = 2;
+  required bytes msid_pub_key = 3;
+  optional bytes msid_pri_key = 4;
+  required int32 rank = 5;
+  required int32 last_view = 6;
+  repeated ShareParticipant participants = 7;
+}
+
+message Key {
+  required bytes id = 1;
+  required PacketType type = 2;
+  required bytes private_key = 3;
+  required bytes public_key = 4;
+  required bytes public_key_signature = 5;
+}
+
+message DataMap {
+  required bytes file_hash = 1;
+  optional bytes se_version = 2;
+  repeated bytes chunk_name = 3;
+  repeated bytes encrypted_chunk_name = 4;
+  repeated uint64 chunk_size = 5;
+  optional bool compression_on = 6 [default=false];
+}
+
+message MetaDataMap {
+  required int32 id = 1;
+  required bytes display_name = 2;
+  required ItemType type = 3;
+  repeated bytes file_hash = 4;
+  optional bytes stats = 5;
+  optional bytes tag = 6;
+  optional int32 file_size_high = 7;
+  optional int32 file_size_low = 8;
+  optional int32 creation_time = 9;
+  optional int32 last_modified = 10;
+  optional int32 last_access = 11;
+}
+
+message Chunk {
+  optional bytes compression_type = 1;
+  repeated bytes chunklet = 2;
+  repeated int32 pre_compression_chunklet_size = 3;
+}
+
+message PersonalDetails {
+  optional bytes full_name = 1;
+  optional bytes phone_number = 2;
+  optional bytes birthday = 3;
+  optional bytes gender = 4;
+  optional int32 language = 5;
+  optional bytes city = 6;
+  optional int32 country = 7;
+}
+
+message DataAtlas {
+  optional bytes root_db_key = 1;
+  repeated Key keys = 2;
+  repeated MetaDataMap mdms = 3;
+  repeated DataMap dms = 4;
+  repeated PublicContact contacts = 5;
+  repeated Share shares = 6;
+  optional PersonalDetails pd = 7;
+}

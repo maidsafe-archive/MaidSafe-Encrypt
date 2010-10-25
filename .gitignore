@@ -2,9 +2,11 @@
 *~
 *.backup
 *.temp
+build/*
+!build/*.cmake
 desktop.ini
 .kdev4/
 *.kdev4
-*.pb.h
-*.pb.cc
+src/protobuf/*.pb.h
+src/protobuf/*.pb.cc
 installer/temp/*

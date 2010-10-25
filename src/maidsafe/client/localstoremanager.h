@@ -35,10 +35,11 @@
 #include <string>
 #include <vector>
 
-#include "maidsafe/common/cppsqlite3.h"
-#include "maidsafe/vault/vaultbufferpackethandler.h"
+#include "maidsafe/cppsqlite3.h"
+#include "maidsafe/vaultbufferpackethandler.h"
 #include "maidsafe/client/sessionsingleton.h"
 #include "maidsafe/client/storemanager.h"
+#include "protobuf/datamaps.pb.h"
 
 namespace maidsafe {
 

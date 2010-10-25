@@ -23,7 +23,6 @@
 */
 
 #include "maidsafe/client/sessionsingleton.h"
-#include "maidsafe/passport/passport.h"
 #include "protobuf/datamaps.pb.h"
 
 namespace maidsafe {
@@ -32,8 +31,8 @@ SessionSingleton* SessionSingleton::single = NULL;
 boost::mutex ss_mutex;
 
 SessionSingleton::SessionSingleton()
-    : ud_(), passport_(new passport::Passport(kRsaKeySize, 5)), ch_(), psh_(),
-      conversations_(), live_contacts_(), lc_mutex_() {
+    : ud_(), ka_(), ch_(), psh_(), conversations_(), live_contacts_(),
+      lc_mutex_() {
   ResetSession();
 }
 
@@ -52,24 +51,30 @@ void SessionSingleton::Destroy() {
 }
 
 bool SessionSingleton::ResetSession() {
-  ud_.defconlevel = kDefCon3;
-  ud_.da_modified = false;
-  ud_.username.clear();
-  ud_.pin.clear();
-  ud_.password.clear();
-  ud_.session_name.clear();
-  ud_.root_db_key.clear();
-  ud_.self_encrypting = true;
-  ud_.authorised_users.clear();
-  ud_.maid_authorised_users.clear();
-  ud_.mounted = 0;
-  ud_.win_drive = '\0';
-  ud_.connection_status = 1;
-  ud_.vault_ip.clear();
-  ud_.vault_port = 0;
-  ud_.ep.Clear();
-  ud_.pd.Clear();
-  passport_->ClearKeyring();
+  SetDaModified(false);
+  SetDefConLevel(kDefCon3);
+  SetUsername("");
+  SetPin("");
+  SetPassword("");
+  SetMidRid(0);
+  SetSmidRid(0);
+  SetTmidContent("");
+  SetSmidTmidContent("");
+  SetSessionName(true);
+  SetRootDbKey("");
+  std::set<std::string> empty_set;
+  SetAuthorisedUsers(empty_set);
+  SetMaidAuthorisedUsers(empty_set);
+  SetMounted(0);
+  SetWinDrive('\0');
+  SetConnectionStatus(1);
+  SetVaultIP("");
+  SetVaultPort(0);
+  EndPoint ep;
+  SetEp(ep);
+  PersonalDetails pd;
+  SetPd(pd);
+  ka_.ClearKeyRing();
   ch_.ClearContacts();
   psh_.MI_ClearPrivateShares();
   conversations_.clear();
@@ -87,7 +92,12 @@ bool SessionSingleton::DaModified() { return ud_.da_modified; }
 std::string SessionSingleton::Username() { return ud_.username; }
 std::string SessionSingleton::Pin() { return ud_.pin; }
 std::string SessionSingleton::Password() { return ud_.password; }
+std::string SessionSingleton::PublicUsername() { return Id(MPID); }
+boost::uint32_t SessionSingleton::MidRid() { return ud_.mid_rid; }
+boost::uint32_t SessionSingleton::SmidRid() { return ud_.smid_rid; }
 std::string SessionSingleton::SessionName() { return ud_.session_name; }
+std::string SessionSingleton::TmidContent() { return ud_.tmid_content; }
+std::string SessionSingleton::SmidTmidContent() { return ud_.smidtmid_content; }
 std::string SessionSingleton::RootDbKey() { return ud_.root_db_key; }
 bool SessionSingleton::SelfEncrypting() { return ud_.self_encrypting; }
 const std::set<std::string> &SessionSingleton::AuthorisedUsers() {
@@ -125,6 +135,14 @@ bool SessionSingleton::SetPassword(const std::string &password) {
   ud_.password = password;
   return true;
 }
+bool SessionSingleton::SetMidRid(const boost::uint32_t &midrid) {
+  ud_.mid_rid = midrid;
+  return true;
+}
+bool SessionSingleton::SetSmidRid(const boost::uint32_t &smidrid) {
+  ud_.smid_rid = smidrid;
+  return true;
+}
 bool SessionSingleton::SetSessionName(bool clear) {
   if (clear) {
     ud_.session_name = "";
@@ -140,6 +158,14 @@ bool SessionSingleton::SetSessionName(bool clear) {
 }
 bool SessionSingleton::SetRootDbKey(const std::string &root_db_key) {
   ud_.root_db_key = root_db_key;
+  return true;
+}
+bool SessionSingleton::SetTmidContent(const std::string &tmid_content) {
+  ud_.tmid_content = tmid_content;
+  return true;
+}
+bool SessionSingleton::SetSmidTmidContent(const std::string &smidtmid_content) {
+  ud_.smidtmid_content = smidtmid_content;
   return true;
 }
 bool SessionSingleton::SetSelfEncrypting(bool self_encrypting) {

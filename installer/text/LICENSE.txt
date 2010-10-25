@@ -1,22 +1,22 @@
-﻿MAIDSAFE.NET LIMITED:  LIFESTUFF LICENCE AGREEMENT
+﻿MAIDSAFE.NET LIMITED:  PERPETUAL DATA LICENCE AGREEMENT
 QUICK SUMMARY
-By clicking the “accept” button below, you are entering into a binding legal licence agreement regarding your use of our Lifestuff Software, our electronic documentation and our Lifestuff Services.
+By clicking the “accept” button below, you are entering into a binding legal licence agreement regarding your use of our Perpetual Data Software, our electronic documentation and our Perpetual Data Services.
 
-The details of the legal agreement are set out below.  Please read the document carefully before clicking “accept”.  If you do not agree to any of the terms of the licence agreement you must click the “reject” button.  If you click the “reject” button you will not be permitted to install our Lifestuff Software or use our Lifestuff Services.
+The details of the legal agreement are set out below.  Please read the document carefully before clicking “accept”.  If you do not agree to any of the terms of the licence agreement you must click the “reject” button.  If you click the “reject” button you will not be permitted to install our Perpetual Data Software or use our Perpetual Data Services.
 
-If you click the “accept” button, you are allowed to install our Lifestuff Software on your computer which will enable you to use our Lifestuff Services for storing data for free.
+If you click the “accept” button, you are allowed to install our Perpetual Data Software on your computer which will enable you to use our Perpetual Data Services for storing data for free.
 
-You may only use our Lifestuff Software and Lifestuff Services for non-commercial (ie not for profit) purposes.
+You may only use our Perpetual Data Software and Perpetual Data Services for non-commercial (ie not for profit) purposes.
 
-Our Lifestuff Software will set aside a reasonable amount of storage on the hard drive of your PC so that other users can store information and data on your PC.  This information and data is encrypted and all files have been split into “data chunks”, so the information and data will be meaningless in this stored state.  Nevertheless, you agree not to tamper with this information and data.
+Our Perpetual Data Software will set aside a reasonable amount of storage on the hard drive of your PC so that other users can store information and data on your PC.  This information and data is encrypted and all files have been split into “data chunks”, so the information and data will be meaningless in this stored state.  Nevertheless, you agree not to tamper with this information and data.
 
-Our Lifestuff Software and Lifestuff Services are free, so we only provide these to you on an “as is” basis and do not give you any warranties in relation to their use.  We also exclude certain types of liability and cap our total liability to you at £6,000 UK Pounds Sterling.
+Our Perpetual Data Software and Perpetual Data Services are free, so we only provide these to you on an “as is” basis and do not give you any warranties in relation to their use.  We also exclude certain types of liability and cap our total liability to you at £6,000 UK Pounds Sterling.
 
-Finally, you agree not to use our Lifestuff Software or Lifestuff Services for commercial purposes, or for storing any information, data or files that are illegal or in breach of copyright.  In particular you may not use our Lifestuff Software or Lifestuff Services for illegally sharing music, movies, books etc or for storing illegal material such as content deemed to be unlawful, threatening, libellous, defamatory, obscene, illegal, or pornographic.
+Finally, you agree not to use our Perpetual Data Software or Perpetual Data Services for commercial purposes, or for storing any information, data or files that are illegal or in breach of copyright.  In particular you may not use our Perpetual Data Software or Perpetual Data Services for illegally sharing music, movies, books etc or for storing illegal material such as content deemed to be unlawful, threatening, libellous, defamatory, obscene, illegal, or pornographic.
 
-IMPORTANT NOTICE: PLEASE READ CAREFULLY BEFORE DOWNLOADING AND / OR INSTALLING THE SOFTWARE: This licence agreement (Licence) is a legal agreement between you (Licensee or you or your) and MAIDSAFE.NET LIMITED, a company incorporated in Scotland (Company Number SC297540) and having its registered office at 82A Portland Street, Troon, Ayrshire, Scotland, United Kingdom, KA10 6QU (Licensor or we or our) for this Lifestuff software product (Software), which includes computer software and online or electronic documentation (Documentation) and the right to use our Lifestuff Services (Services).
+IMPORTANT NOTICE: PLEASE READ CAREFULLY BEFORE DOWNLOADING AND / OR INSTALLING THE SOFTWARE: This licence agreement (Licence) is a legal agreement between you (Licensee or you or your) and MAIDSAFE.NET LIMITED, a company incorporated in Scotland (Company Number SC297540) and having its registered office at 82A Portland Street, Troon, Ayrshire, Scotland, United Kingdom, KA10 6QU (Licensor or we or our) for this Perpetual Data software product (Software), which includes computer software and online or electronic documentation (Documentation) and the right to use our Perpetual Data Services (Services).
 BY INSTALLING THIS SOFTWARE OR BY CLICKING ON THE "ACCEPT" BUTTON BELOW YOU AGREE TO THE TERMS OF THIS LICENCE WHICH WILL BIND YOU AND ANY PERSON YOU PERMIT TO USE THE SOFTWARE OR OUR SERVICES.
-YOU ACKNOWLEDGE AND AGREE THAT THE SOFTWARE WILL SET ASIDE AND USE A REASONABLE QUANTITY OF STORAGE SPACE ON YOUR COMPUTER FOR USE BY OUR LIFESTUFF SERVICES.
+YOU ACKNOWLEDGE AND AGREE THAT THE SOFTWARE WILL SET ASIDE AND USE A REASONABLE QUANTITY OF STORAGE SPACE ON YOUR COMPUTER FOR USE BY OUR PERPETUAL DATA SERVICES.
 
 YOU ACKNOWLEDGE THAT IT IS ILLEGAL FOR YOU TO USE THE SOFTWARE AND OUR SERVICES TO SHARE COPYRIGHTED FILES WITHOUT PERMISSION, AND YOU ACKNOWLEDGE THAT THE USE OF OUR SOFTWARE AND OUR SERVICES DOES NOT CONSTITUTE A LICENCE FOR OBTAINING OR DISTRIBUTING UNAUTHORISED FILES OR FOR INFRINGING ANY PERSON’S COPYRIGHT OR OTHER INTELLECTUAL PROPERTY RIGHTS AND AGREE THAT YOU WILL NOT DO SO.
 IF YOU DO NOT AGREE TO THE TERMS OF THIS LICENCE, WE ARE UNWILLING TO LICENSE THE SOFTWARE TO YOU OR PERMIT YOU TO USE OUR SERVICES AND YOU MUST DISCONTINUE INSTALLATION OF THE SOFTWARE NOW BY CLICKING ON THE "REJECT" BUTTON BELOW.
