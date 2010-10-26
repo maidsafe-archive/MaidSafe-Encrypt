@@ -819,8 +819,8 @@ MESSAGE("=======================================================================
 MESSAGE("")
 IF(NOT MSVC)
   MESSAGE("Build type is set to \"${CMAKE_BUILD_TYPE}\"")
-  IF((NOT MAIDSAFE_DHT_BUILD_TYPE MATCHES "Debug") OR
-     (NOT MAIDSAFE_DHT_BUILD_TYPE MATCHES "RelWithDebInfo") OR
+  IF((NOT MAIDSAFE_DHT_BUILD_TYPE MATCHES "Debug") AND
+     (NOT MAIDSAFE_DHT_BUILD_TYPE MATCHES "RelWithDebInfo") AND
      (NOT MAIDSAFE_DHT_BUILD_TYPE MATCHES "MinSizeRel"))
     SET(MAIDSAFE_DHT_BUILD_TYPE Release)
   ENDIF()
