@@ -58,7 +58,7 @@ NetworkTest::NetworkTest(const std::string &test_name)
       test_dir_(file_system::TempDir() / ("maidsafe_Test" + test_name + "_" +
                 base::RandomAlphaNumericString(6))),
 #endif
-      udt_transport_(NULL),
+      transport_(NULL),
       transport_handler_(NULL),
       channel_manager_(NULL),
       chunkstore_(new maidsafe::ChunkStore(std::string(test_dir_.string() +
@@ -119,8 +119,8 @@ bool NetworkTest::Init() {
   }
 #ifdef MS_NETWORK_TEST
   transport_handler_ = &store_manager_->transport_handler_;
-  udt_transport_ = &store_manager_->udt_transport_;
-  transport_id_ = udt_transport_->transport_id();
+  transport_ = &store_manager_->transport_;
+  transport_id_ = transport_->transport_id();
   channel_manager_ = &store_manager_->channel_manager_;
   kad_ops_ = store_manager_->kad_ops_;
 #endif

@@ -109,7 +109,7 @@ class Env: public testing::Environment {
 
       boost::shared_ptr<maidsafe_vault::PDVault>
           pdvault_local(new maidsafe_vault::PDVault(public_key, private_key,
-                        signed_key, local_dir, 0, false, false,
+                        signed_key, local_dir, 7000 + i, false, false,
                         kad_config_file_, 1073741824, 0, K_));
       pdvaults_->push_back(pdvault_local);
       ++current_nodes_created_;

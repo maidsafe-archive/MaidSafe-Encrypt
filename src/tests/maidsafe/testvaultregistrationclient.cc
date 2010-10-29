@@ -146,14 +146,14 @@ class MsmSetLocalVaultOwnedTest : public testing::Test {
     ASSERT_EQ(0, server_transport_handler_.Register(&server_transport_,
                                                     &server_transport_id));
     boost::int16_t client_transport_id;
-    msm_.transport_handler_.Register(&msm_.udt_transport_,
+    msm_.transport_handler_.Register(&msm_.transport_,
                                      &client_transport_id);
 //    msm_.kad_ops_->set_transport_id(client_transport_id);
     ASSERT_TRUE(msm_.channel_manager_.RegisterNotifiersToTransport());
     ASSERT_TRUE(msm_.transport_handler_.RegisterOnServerDown(boost::bind(
                 &test_vault_reg::HandleDeadServer, _1, _2, _3)));
     ASSERT_EQ(0, msm_.transport_handler_.Start(0,
-                 msm_.udt_transport_.transport_id()));
+                 msm_.transport_.transport_id()));
     ASSERT_EQ(0, msm_.channel_manager_.Start());
     ASSERT_TRUE(server_.RegisterNotifiersToTransport());
     ASSERT_TRUE(server_transport_handler_.RegisterOnServerDown(boost::bind(

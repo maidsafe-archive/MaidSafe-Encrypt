@@ -85,7 +85,7 @@ class NetworkTest {
   bool Init();
   boost::int16_t transport_id() const { return transport_id_; }
   fs::path test_dir() const { return test_dir_; }
-  transport::TransportUDT *udt_transport() const { return udt_transport_; }
+  transport::Transport *transport() const { return transport_; }
   transport::TransportHandler *transport_handler() const {
     return transport_handler_;
   }
@@ -106,7 +106,7 @@ class NetworkTest {
   NetworkTest &operator=(const NetworkTest&);
   boost::int16_t transport_id_;
   fs::path test_dir_;
-  transport::TransportUDT *udt_transport_;
+  transport::Transport *transport_;
   transport::TransportHandler *transport_handler_;
   rpcprotocol::ChannelManager *channel_manager_;
   boost::shared_ptr<maidsafe::ChunkStore> chunkstore_;

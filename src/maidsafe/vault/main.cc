@@ -254,7 +254,7 @@ class RunPDVaults {
     boost::posix_time::ptime stop;
     for (int j = 0; j < no_of_vaults_; ++j) {
       int client_idx = j + no_of_clients_ - no_of_vaults_;
-      boost::uint16_t this_port = 0;
+      boost::uint16_t this_port = static_cast<boost::uint16_t>(j + 7000);
       std::string public_key, private_key, signed_key, node_id;
       if (client_idx >= 0) {
         // taking over vault when creating it

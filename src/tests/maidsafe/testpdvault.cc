@@ -194,7 +194,7 @@ namespace test {
 static std::vector< boost::shared_ptr<PDVault> > pdvaults_;
 static const int kNumOfClients = 1;
 static const int kNetworkSize = testpdvault::K + kNumOfClients;
-static const int kNumOfTestChunks = 1;  // kNetworkSize * 1.5;
+static const int kNumOfTestChunks = kNetworkSize * 1.5;
 static boost::filesystem::path kadconfig_;
 /**
  * Note: StoreAndGetChunks only works for small K due to resource problems
@@ -302,7 +302,8 @@ class PDVaultTest : public testing::Test {
       clients_[i]->msm->ss_ = &clients_[i]->mss;
       clients_[i]->msm->pd_utils_.ss_ = &clients_[i]->mss;
       testpdvault::PrepareCallbackResults();
-      clients_[i]->msm->Init(boost::bind(&testpdvault::GeneralCallback, _1), 0);
+      clients_[i]->msm->Init(boost::bind(&testpdvault::GeneralCallback, _1),
+                             7000 + kNetworkSize + i);
       testpdvault::WaitFunction(60, &mutex_);
       ASSERT_TRUE(callback_succeeded_);
       ASSERT_FALSE(callback_timed_out_);
@@ -314,13 +315,14 @@ class PDVaultTest : public testing::Test {
              HexSubstr(clients_[i]->pmid_name).c_str());
       // pdvaults_[vlt]->Stop();
       fs::path dir(pdvaults_[vlt]->vault_chunkstore_->ChunkStoreDir());
+      boost::uint16_t port(pdvaults_[vlt]->port_);
       boost::uint64_t used(pdvaults_[vlt]->vault_chunkstore_->used_space());
       boost::uint64_t avlb(
           pdvaults_[vlt]->vault_chunkstore_->available_space());
       fs::path kad_cfg(pdvaults_[vlt]->kad_config_file_);
       pdvaults_[vlt].reset(new PDVault(clients_[i]->pmid_pub_key,
                                        clients_[i]->pmid_priv_key,
-                                       clients_[i]->pmid_pub_key_sig, dir, 0,
+                                       clients_[i]->pmid_pub_key_sig, dir, port,
                                        false, false, kad_cfg, avlb, used,
                                        testpdvault::K));
       pdvaults_[vlt]->Start(false);
@@ -346,7 +348,7 @@ class PDVaultTest : public testing::Test {
           pdvaults_[kNetworkSize - kNumOfClients + i]->available_space()));
     }
 
-    printf("--- SetUp completed. ---\n\n");
+    printf("\n--- SetUp completed. ---\n\n");
   }
 
   virtual void TearDown() {
@@ -403,7 +405,8 @@ TEST_MS_NET(PDVaultTest, FUNC, MAID, StoreAndGetChunks) {
              client ? " - client's" : "",
              holder ? " - holder" : "",
              close ? " - close" : "");
-      // ASSERT_FALSE(close && !(!holder ^ !client));
+      EXPECT_TRUE(!close || holder || client);
+      EXPECT_FALSE(client && holder);
     }
   }
 
