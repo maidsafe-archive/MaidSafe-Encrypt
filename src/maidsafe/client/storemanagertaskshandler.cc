@@ -218,7 +218,8 @@ int StoreManagerTasksHandler::NotifyTaskSuccess(const TaskId &task_id) {
   int result(ValidateTaskId(task_iter, true));
   if (result != kSuccess) {
 #ifdef DEBUG
-    printf("StoreManagerTasksHandler::NotifyTaskSuccess, %u fail.\n", task_id);
+    printf("In StoreManagerTasksHandler::NotifyTaskSuccess, task %u invalid.\n",
+           task_id);
 #endif
     return result;
   }
@@ -245,7 +246,8 @@ int StoreManagerTasksHandler::NotifyTaskFailure(const TaskId &task_id,
   int result(ValidateTaskId(task_iter, true));
   if (result != kSuccess) {
 #ifdef DEBUG
-    printf("StoreManagerTasksHandler::NotifyTaskFailure, %u fail.\n", task_id);
+    printf("In StoreManagerTasksHandler::NotifyTaskFailure, task %u invalid.\n",
+           task_id);
 #endif
     return result;
   }
@@ -271,7 +273,8 @@ int StoreManagerTasksHandler::ResetTaskProgress(const TaskId &task_id) {
   int result(ValidateTaskId(task_iter, true));
   if (result != kSuccess) {
 #ifdef DEBUG
-    printf("StoreManagerTasksHandler::ResetTaskProgress, %u fail.\n", task_id);
+    printf("In StoreManagerTasksHandler::ResetTaskProgress, task %u invalid.\n",
+           task_id);
 #endif
     return result;
   }
@@ -339,7 +342,8 @@ int StoreManagerTasksHandler::DeleteTask(const TaskId &task_id,
   int result(ValidateTaskId(task_iter, false));
   if (result != kSuccess) {
 #ifdef DEBUG
-    printf("StoreManagerTasksHandler::DeleteTask, %u fail.\n", task_id);
+    printf("In StoreManagerTasksHandler::DeleteTask, task %u invalid.\n",
+           task_id);
 #endif
     return result;
   }
@@ -370,9 +374,12 @@ void StoreManagerTasksHandler::DeleteChildTasks(const TaskId &parent_id,
                                                 const ReturnCode &reason) {
   // Ensure mutex_ is already locked when call to this function is made.
   TasksByParentId &tasks_by_parent_id = tasks_.get<by_parent_id>();
-  TaskRangeByParentId p = tasks_by_parent_id.equal_range(parent_id);
-  while (p.first != p.second)
-    DoDeleteTask(tasks_.project<by_task_id>(p.first++), reason);
+//  TaskRangeByParentId p = tasks_by_parent_id.equal_range(parent_id);
+//   while (p.first != p.second)
+//     DoDeleteTask(tasks_.project<by_task_id>(p.first++), reason);
+  TasksByParentId::iterator it;
+  while ((it = tasks_by_parent_id.find(parent_id)) != tasks_by_parent_id.end())
+    DoDeleteTask(tasks_.project<by_task_id>(it), reason);
 }
 
 int StoreManagerTasksHandler::CancelTask(const TaskId &task_id,
@@ -383,7 +390,8 @@ int StoreManagerTasksHandler::CancelTask(const TaskId &task_id,
   int result(ValidateTaskId(task_iter, false));
   if (result != kSuccess) {
 #ifdef DEBUG
-    printf("StoreManagerTasksHandler::CancelTask, %u fail.\n", task_id);
+    printf("In StoreManagerTasksHandler::CancelTask, task %u invalid.\n",
+           task_id);
 #endif
     return result;
   }

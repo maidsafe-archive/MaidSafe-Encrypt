@@ -456,7 +456,7 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   void ChunkCopyPrepTaskCallback(
       const ReturnCode &result,
       boost::shared_ptr<SendChunkData> send_chunk_data);
-  void StorePrepCallback(const TaskId &prep_task_id,
+  void StorePrepCallback(TaskId prep_task_id,
                          boost::shared_ptr<SendChunkData> send_chunk_data);
   virtual int ValidatePrepResponse(
       const std::string &peer_node_id,
@@ -467,7 +467,7 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   void ChunkCopyDataTaskCallback(
       const ReturnCode &result,
       boost::shared_ptr<SendChunkData> send_chunk_data);
-  void StoreChunkCallback(const TaskId &data_task_id,
+  void StoreChunkCallback(TaskId data_task_id,
                           boost::shared_ptr<SendChunkData> send_chunk_data);
   void LoadChunk_FindCB(const std::string &result,
                         boost::shared_ptr<GetChunkOpData> data);

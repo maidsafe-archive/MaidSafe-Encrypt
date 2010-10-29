@@ -71,6 +71,16 @@ void TaskCompletionCallback(
                                                                    reason));
 }
 
+void DeleteTaskCallback(
+    const maidsafe::TaskId &task_id,
+    const maidsafe::ReturnCode &reason,
+    std::vector< std::pair<maidsafe::TaskId, maidsafe::ReturnCode> > *cbs,
+    maidsafe::StoreManagerTasksHandler *tasks_handler,
+    maidsafe::TaskId *deletable_task_id) {
+    TaskCompletionCallback(task_id, reason, cbs);
+    tasks_handler->DeleteTask(*deletable_task_id, reason);
+}
+
 }  // namespace test_msm_tasks_handler
 
 namespace maidsafe {
@@ -604,6 +614,34 @@ TEST_F(MSMTasksHandlerTest, BEH_MAID_DeleteTasks) {
     EXPECT_EQ(kTaskActive, tasks_handler_.Status(id));
 
   EXPECT_EQ(kSuccess, tasks_handler_.DeleteTask(root_task_id, kNotConnected));
+  EXPECT_EQ(0U, tasks_handler_.TasksCount());
+  EXPECT_TRUE(TaskReturnsAsExpected(expected_results, results_));
+}
+
+TEST_F(MSMTasksHandlerTest, BEH_MAID_DeleteViaCallback) {
+  std::vector<TaskReturn> expected_results;
+  TaskId root_task_id(kRootTask);
+  EXPECT_EQ(kSuccess,
+            tasks_handler_.AddTask("a", kStoreChunk, 1, 0,
+                boost::bind(&test_msm_tasks_handler::DeleteTaskCallback,
+                            _1, _2, &results_, &tasks_handler_, &root_task_id),
+                &root_task_id));
+  expected_results.push_back(TaskReturn(root_task_id, kSuccess));
+  TaskId task_id(root_task_id);
+  for (int i = 1; i < 100; ++i) {
+    EXPECT_EQ(kSuccess,
+              tasks_handler_.AddChildTask("a", task_id, kStoreChunk, 1, 0,
+                                          functor_, &task_id));
+    expected_results.push_back(TaskReturn(task_id, kSuccess));
+  }
+  std::reverse(expected_results.begin(), expected_results.end());
+
+  EXPECT_EQ(100U, tasks_handler_.TasksCount());
+  TaskId id;
+  for (id = root_task_id; id <= task_id; ++id)
+    EXPECT_EQ(kTaskActive, tasks_handler_.Status(id));
+
+  EXPECT_EQ(kSuccess, tasks_handler_.NotifyTaskSuccess(task_id));
   EXPECT_EQ(0U, tasks_handler_.TasksCount());
   EXPECT_TRUE(TaskReturnsAsExpected(expected_results, results_));
 }

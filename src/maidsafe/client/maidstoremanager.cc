@@ -2400,7 +2400,7 @@ void MaidsafeStoreManager::DoStorePrep(
 
   // Send prep
   google::protobuf::Closure* callback = google::protobuf::NewCallback<
-      MaidsafeStoreManager, const TaskId&, boost::shared_ptr<SendChunkData> >
+      MaidsafeStoreManager, TaskId, boost::shared_ptr<SendChunkData> >
       (this, &MaidsafeStoreManager::StorePrepCallback, prep_task_id,
       send_chunk_data);
   send_chunk_data->store_prep_response.Clear();
@@ -2421,7 +2421,7 @@ void MaidsafeStoreManager::ChunkCopyPrepTaskCallback(
 }
 
 void MaidsafeStoreManager::StorePrepCallback(
-    const TaskId &prep_task_id,
+    TaskId prep_task_id,
     boost::shared_ptr<SendChunkData> send_chunk_data) {
 #ifdef DEBUG
 //   printf("In MSM::StorePrepCallback (%d) for chunk %s\n", kad_ops_->Port(),
@@ -2525,7 +2525,7 @@ void MaidsafeStoreManager::DoStoreChunk(
 
   // Send chunk content
   google::protobuf::Closure* callback = google::protobuf::NewCallback<
-      MaidsafeStoreManager, const TaskId&, boost::shared_ptr<SendChunkData> >
+      MaidsafeStoreManager, TaskId, boost::shared_ptr<SendChunkData> >
       (this, &MaidsafeStoreManager::StoreChunkCallback, data_task_id,
       send_chunk_data);
   client_rpcs_->StoreChunk(send_chunk_data->peer,
@@ -2545,7 +2545,7 @@ void MaidsafeStoreManager::ChunkCopyDataTaskCallback(
 }
 
 void MaidsafeStoreManager::StoreChunkCallback(
-    const TaskId &data_task_id,
+    TaskId data_task_id,
     boost::shared_ptr<SendChunkData> send_chunk_data) {
 #ifdef DEBUG
 //   printf("In MSM::StoreChunkCallback (%d) for chunk %s\n", kad_ops_->Port(),
@@ -2630,7 +2630,6 @@ int MaidsafeStoreManager::RemoveFromWatchList(
   }
 
   // Add sub-task, for potential re-tries
-  TaskId task_id(kRootTask);
   VoidFuncTaskIdInt callback =
       boost::bind(&MaidsafeStoreManager::RemoveFromWatchListTaskCallback, this,
                   _2, store_data);

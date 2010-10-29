@@ -473,7 +473,7 @@ ENDIF()
 SET(ALL_TARGET_LIBS PDmaidsafelib PDfslib PDpbmsgslib)
 
 IF(NOT MSVC)
-  SET(SYS_LIBS ${QT_LIBRARIES} ${Boost_LIBRARIES} ${Protobuf_LIBRARY} ${Glog_LIBRARY} ${maidsafe_dht_LIBRARY} ${Udt_LIBRARY} ${Cryptopp_LIBRARY} ${SYS_LIBS})
+  SET(SYS_LIBS ${QT_LIBRARIES} ${Boost_LIBRARIES} ${Protobuf_LIBRARY} ${maidsafe_dht_LIBRARY} ${Udt_LIBRARY} ${Glog_LIBRARY} ${Cryptopp_LIBRARY} ${SYS_LIBS})
   TARGET_LINK_LIBRARIES(perpetualdata PDmsclientlib ${ALL_TARGET_LIBS} ${Dokan_LIBRARY} ${Breakpad_LIBRARY} ${SYS_LIBS})
   TARGET_LINK_LIBRARIES(pdlocal PDTESTmsclientlib ${ALL_TARGET_LIBS} ${Dokan_LIBRARY} ${Breakpad_LIBRARY} ${SYS_LIBS})
   TARGET_LINK_LIBRARIES(pdlightlocal PDTESTmsclientlib PDmaidsafelib PDpbmsgslib ${Breakpad_LIBRARY} ${SYS_LIBS})
