@@ -234,12 +234,12 @@ SET(LIBS_DIRS_DEBUG ${LIBS_DIRS_DEBUG} ${Protobuf_LIBRARY_DIR_DEBUG})
 ###################################################################################################
 # Google BreakPad library search                                                                  #
 ###################################################################################################
-IF((UNIX AND NOT APPLE) OR MSVC)
-  INCLUDE(${PD_SOURCE_DIR}/build/maidsafe_FindBreakpad.cmake)
-  SET(INCLUDE_DIRS ${INCLUDE_DIRS} ${Breakpad_INCLUDE_DIR})
-  SET(LIBS_DIRS ${LIBS_DIRS} ${Breakpad_LIBRARY_DIR})
-  SET(LIBS_DIRS_DEBUG ${LIBS_DIRS_DEBUG} ${Breakpad_LIBRARY_DIR_DEBUG})
-ENDIF()
+#IF((UNIX AND NOT APPLE) OR MSVC)
+#  INCLUDE(${PD_SOURCE_DIR}/build/maidsafe_FindBreakpad.cmake)
+#  SET(INCLUDE_DIRS ${INCLUDE_DIRS} ${Breakpad_INCLUDE_DIR})
+#  SET(LIBS_DIRS ${LIBS_DIRS} ${Breakpad_LIBRARY_DIR})
+#  SET(LIBS_DIRS_DEBUG ${LIBS_DIRS_DEBUG} ${Breakpad_LIBRARY_DIR_DEBUG})
+#ENDIF()
 
 ###################################################################################################
 # Python library search                                                                           #
