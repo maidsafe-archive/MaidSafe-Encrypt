@@ -92,7 +92,7 @@ int ChunkInfoHandler::PrepareAddToWatchList(const std::string &chunk_name,
 
   ci.waiting_list.push_back(entry);
 
-  return 0;
+  return kSuccess;
 }
 
 bool ChunkInfoHandler::TryCommitToWatchList(const std::string &chunk_name,
@@ -279,7 +279,7 @@ int ChunkInfoHandler::RemoveFromWatchList(const std::string &chunk_name,
     }
   }  // don't recompense if not listed
 
-  return 0;
+  return kSuccess;
 }
 
 int ChunkInfoHandler::AddToReferenceList(const std::string &chunk_name,
@@ -298,20 +298,17 @@ int ChunkInfoHandler::AddToReferenceList(const std::string &chunk_name,
 
   // find existing entry
   std::list<ReferenceListEntry>::iterator it = ci.reference_list.begin();
-  while (it != ci.reference_list.end() && it->pmid != pmid) {
+  while (it != ci.reference_list.end() && it->pmid != pmid)
     ++it;
-  }
+  if (it != ci.reference_list.end())
+    return kChunkInfoRefExists;
 
-  if (it != ci.reference_list.end()) {
-    it->last_seen = base::GetEpochTime();
-  } else {
-    ReferenceListEntry entry;
-    entry.pmid = pmid;
-    entry.last_seen = base::GetEpochTime();
-    ci.reference_list.push_back(entry);
-  }
-
-  return 0;
+  ReferenceListEntry entry;
+  entry.pmid = pmid;
+  entry.last_seen = base::GetEpochTime();
+  ci.reference_list.push_back(entry);
+  
+  return kSuccess;
 }
 
 int ChunkInfoHandler::RemoveFromReferenceList(const std::string &chunk_name,
@@ -340,7 +337,7 @@ int ChunkInfoHandler::RemoveFromReferenceList(const std::string &chunk_name,
 
   ci.reference_list.erase(it);
 
-  return 0;
+  return kSuccess;
 }
 
 int ChunkInfoHandler::GetActiveReferences(const std::string chunk_name,

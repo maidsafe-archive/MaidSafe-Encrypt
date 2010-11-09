@@ -302,7 +302,8 @@ enum ReturnCode {
   kChunkInfoInvalidName = -5503,
   kChunkInfoCannotDelete = -5504,
   kChunkInfoExists = -5505,
-  kChunkInfoNoActiveWatchers = -5506
+  kChunkInfoNoActiveWatchers = -5506,
+  kChunkInfoRefExists = -5507
 
   // Vault Buffer Packet Handler
 };

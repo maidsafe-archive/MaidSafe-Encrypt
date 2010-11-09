@@ -153,7 +153,9 @@ TEST_F(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerAdd) {
   ASSERT_EQ(size_t(2), cih.chunk_infos_[chunk_name].watcher_count);
   ASSERT_EQ(size_t(123), cih.chunk_infos_[chunk_name].chunk_size);
 
-  ASSERT_EQ(kSuccess, cih.AddToReferenceList(chunk_name, "rf0", 123));
+  if (required_references > 0)
+    ASSERT_EQ(kChunkInfoRefExists,
+              cih.AddToReferenceList(chunk_name, "rf0", 123));
   ASSERT_EQ(size_t(required_references),
             cih.chunk_infos_[chunk_name].reference_list.size());
   ASSERT_EQ(kSuccess, cih.GetActiveReferences(chunk_name, &references));
