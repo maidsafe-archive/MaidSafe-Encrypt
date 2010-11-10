@@ -349,25 +349,49 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesValidateAmendRequest) {
 }
 
 TEST_F(VaultServicesTest, BEH_MAID_ServicesValidateIdAndRequest) {
-  std::string pub_key, priv_key, key("xyz"), pmid, sig_pub_key, sig_req;
+  std::string pub_key, priv_key, key("xyz"), pmid, pub_key_sig, req_sig;
   CreateRSAKeys(&pub_key, &priv_key);
+  crypto::Crypto co;
 
   EXPECT_TRUE(vault_service_->ValidateIdAndRequest("abc", "def",
                                                    kAnonymousRequestSignature,
                                                    key, ""));
 
-  CreateSignedRequest(pub_key, priv_key, key, &pmid, &sig_pub_key, &sig_req);
-  EXPECT_TRUE(vault_service_->ValidateIdAndRequest(pub_key, sig_pub_key,
-                                                   sig_req, key, pmid));
+  CreateSignedRequest(pub_key, priv_key, key, &pmid, &pub_key_sig, &req_sig);
+  EXPECT_TRUE(vault_service_->ValidateIdAndRequest(pub_key, pub_key_sig,
+                                                   req_sig, key, pmid));
 
-  EXPECT_FALSE(vault_service_->ValidateIdAndRequest(pub_key, sig_pub_key,
-                                                    sig_req, key, "abcdef"));
+  // new signing method
+  req_sig = co.AsymSign(co.Hash(pub_key_sig + key + vault_pmid_, "",
+       crypto::STRING_STRING, false), "", priv_key, crypto::STRING_STRING);
+  EXPECT_TRUE(vault_service_->ValidateIdAndRequest(pub_key, pub_key_sig,
+                                                   req_sig, key, pmid));
 
-  CreateSignedRequest("123", "456", key, &pmid, &sig_pub_key, &sig_req);
-  EXPECT_FALSE(vault_service_->ValidateIdAndRequest("123", sig_pub_key,
-                                                    sig_req, key, pmid));
+  // self-signed (new)
+  req_sig = co.AsymSign(co.Hash(vault_public_key_signature_ + key + vault_pmid_,
+       "", crypto::STRING_STRING, false), "", vault_private_key_,
+       crypto::STRING_STRING);
+  EXPECT_TRUE(vault_service_->ValidateIdAndRequest(vault_public_key_,
+                                                   vault_public_key_signature_,
+                                                   req_sig, key, vault_pmid_));
+
+  // self-signed (old)
+  CreateSignedRequest(vault_public_key_, vault_private_key_, key, &pmid,
+                      &pub_key_sig, &req_sig);
+  EXPECT_TRUE(vault_service_->ValidateIdAndRequest(vault_public_key_,
+                                                   pub_key_sig, req_sig, key,
+                                                   pmid));
+
+  EXPECT_FALSE(vault_service_->ValidateIdAndRequest(pub_key, pub_key_sig,
+                                                    req_sig, key, "abcdef"));
+
+  CreateSignedRequest("123", "456", key, &pmid, &pub_key_sig, &req_sig);
+  EXPECT_FALSE(vault_service_->ValidateIdAndRequest("123", pub_key_sig,
+                                                    req_sig, key, pmid));
   EXPECT_FALSE(vault_service_->ValidateIdAndRequest("abc", "def", "ghi", key,
                                                     pmid));
+
+  
 }
 
 TEST_F(VaultServicesTest, BEH_MAID_ServicesValidateRequestSignature) {
@@ -520,7 +544,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesStorePrep) {
 
   TestCallback cb_obj;
 
-  for (int i = 0; i < 8; ++i) {
+  for (int i = 0; i <= 8; ++i) {
     printf("--- CASE #%i --- \n", i);
     switch (i) {
       case 0:  // empty request
@@ -535,11 +559,19 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesStorePrep) {
         request.set_chunkname(chunk_name);
         request.set_request_signature("fail");
         break;
-      case 2:  // empty signed_size
+      case 2:  // invalid chunk name
+        request.set_chunkname("fail");
+        request.set_request_signature(co.AsymSign(co.Hash(pub_key_sig + "fail"
+            + vault_pmid_, "", crypto::STRING_STRING, false), "", priv_key,
+            crypto::STRING_STRING));
+        break;
+      case 3:  // empty signed_size
+        request.set_chunkname(chunk_name);
+        request.set_request_signature(req_sig);
         request.clear_signed_size();
         request.set_request_signature(req_sig);
         break;
-      case 3:  // unsigned signed_size
+      case 4:  // unsigned signed_size
         signed_size = request.mutable_signed_size();
         signed_size->set_data_size(chunk_size);
         signed_size->set_signature("fail");
@@ -547,26 +579,31 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesStorePrep) {
         signed_size->set_public_key(pub_key);
         signed_size->set_public_key_signature(pub_key_sig);
         break;
-      case 4:  // invalid chunk name
-        request.set_chunkname("fail");
-        request.set_request_signature(co.AsymSign(co.Hash(pub_key_sig + "fail"
-            + vault_pmid_, "", crypto::STRING_STRING, false), "", priv_key,
-            crypto::STRING_STRING));
+      case 5:  // existing prep
+        signed_size->set_signature(size_sig);
+        {
+          maidsafe::StoreContract sc;
+          vault_service_->prm_.insert(
+              std::pair<std::string, maidsafe::StoreContract>(chunk_name, sc));
+        }
         break;
-      case 5:  // size too big
-        request.set_chunkname(chunk_name);
-        request.set_request_signature(req_sig);
+      case 6:  // existing chunk
+        ASSERT_EQ(size_t(1), vault_service_->prm_.erase(chunk_name));
+        ASSERT_TRUE(vault_service_->StoreChunkLocal(chunk_name, chunk_data));
+        break;
+      case 7:  // size too big
+        ASSERT_TRUE(vault_service_->DeleteChunkLocal(chunk_name));
         signed_size->set_data_size(kAvailableSpace + 1);
         signed_size->set_signature(co.AsymSign(
             boost::lexical_cast<std::string>(kAvailableSpace + 1), "",
             priv_key, crypto::STRING_STRING));
         break;
-      case 6:  // zero size
+      case 8:  // zero size
         signed_size->set_data_size(0);
         signed_size->set_signature(co.AsymSign("0", "", priv_key,
                                    crypto::STRING_STRING));
         break;
-      case 7:  // store to self
+      /* case 9:  // store to self
         signed_size->set_data_size(chunk_size);
         signed_size->set_signature(
             co.AsymSign(boost::lexical_cast<std::string>(chunk_size), "",
@@ -576,9 +613,9 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesStorePrep) {
         signed_size->set_public_key_signature(vault_public_key_signature_);
         request.set_request_signature(co.AsymSign(co.Hash(
             vault_public_key_signature_ + chunk_name + vault_pmid_, "",
-            crypto::STRING_STRING, false), "", priv_key,
+            crypto::STRING_STRING, false), "", vault_private_key_,
             crypto::STRING_STRING));
-        break;
+        break; */
     }
 
     google::protobuf::Closure *done =
@@ -599,6 +636,7 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesStorePrep) {
     response.Clear();
   }
 
+  signed_size->set_data_size(chunk_size);
   signed_size->set_signature(size_sig);
   signed_size->set_pmid(pmid);
   signed_size->set_public_key(pub_key);
@@ -628,6 +666,51 @@ TEST_F(VaultServicesTest, BEH_MAID_ServicesStorePrep) {
     EXPECT_EQ(pmid, signed_size->pmid());
     EXPECT_EQ(pub_key, signed_size->public_key());
     EXPECT_EQ(pub_key_sig, signed_size->public_key_signature());
+    std::string cont_sig = co.AsymSign(store_contract->SerializeAsString(), "",
+        vault_private_key_, crypto::STRING_STRING);
+    EXPECT_EQ(cont_sig, response.response_signature());
+    EXPECT_EQ(kAck, static_cast<int>(inner_contract->result()));
+    response.Clear();
+  }
+
+  ASSERT_EQ(size_t(1), vault_service_->prm_.erase(chunk_name));
+
+  // proper request - store to self
+  signed_size = request.mutable_signed_size();
+  signed_size->set_data_size(chunk_size);
+  std::string size_self_sig(co.AsymSign(
+      boost::lexical_cast<std::string>(chunk_size), "", vault_private_key_,
+      crypto::STRING_STRING));
+  signed_size->set_signature(size_self_sig);
+  signed_size->set_pmid(vault_pmid_);
+  signed_size->set_public_key(vault_public_key_);
+  signed_size->set_public_key_signature(vault_public_key_signature_);
+  request.set_request_signature(co.AsymSign(co.Hash(
+      vault_public_key_signature_ + chunk_name + vault_pmid_, "",
+      crypto::STRING_STRING, false), "", vault_private_key_,
+      crypto::STRING_STRING));
+  {
+    google::protobuf::Closure *done =
+        google::protobuf::NewCallback<TestCallback>(&cb_obj,
+        &TestCallback::CallbackFunction);
+    vault_service_->StorePrep(&controller, &request, &response, done);
+    ASSERT_TRUE(response.IsInitialized());
+    store_contract = response.mutable_store_contract();
+    inner_contract = store_contract->mutable_inner_contract();
+    signed_size = inner_contract->mutable_signed_size();
+    std::string inner_cont_sig = co.AsymSign(
+        inner_contract->SerializeAsString(), "", vault_private_key_,
+        crypto::STRING_STRING);
+    EXPECT_EQ(inner_cont_sig, store_contract->signature());
+    EXPECT_EQ(vault_pmid_, store_contract->pmid());
+    EXPECT_EQ(vault_public_key_, store_contract->public_key());
+    EXPECT_EQ(vault_public_key_signature_,
+              store_contract->public_key_signature());
+    EXPECT_EQ(chunk_size, signed_size->data_size());
+    EXPECT_EQ(size_self_sig, signed_size->signature());
+    EXPECT_EQ(vault_pmid_, signed_size->pmid());
+    EXPECT_EQ(vault_public_key_, signed_size->public_key());
+    EXPECT_EQ(vault_public_key_signature_, signed_size->public_key_signature());
     std::string cont_sig = co.AsymSign(store_contract->SerializeAsString(), "",
         vault_private_key_, crypto::STRING_STRING);
     EXPECT_EQ(cont_sig, response.response_signature());

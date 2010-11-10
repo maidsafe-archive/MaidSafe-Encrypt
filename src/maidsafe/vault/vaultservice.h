@@ -284,6 +284,7 @@ class VaultService : public maidsafe::MaidsafeService {
   FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesStorable);
   FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesLocalStorage);
   FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesNodeWithinClosest);
+  FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesStorePrep);
   FRIEND_TEST(MockVaultServicesTest, BEH_MAID_ServicesStoreChunk);
   FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesGetCheckChunk);
   FRIEND_TEST(VaultServicesTest, BEH_MAID_ServicesDeleteChunk);
@@ -359,7 +360,8 @@ class VaultService : public maidsafe::MaidsafeService {
       const std::string &chunkname,
       const VoidFuncOneInt &callback);
   void AddToRemoteRefList(const std::string &chunkname,
-                          const maidsafe::StoreContract &contract);
+                          const maidsafe::StoreContract &contract,
+                          const VoidFuncOneInt &callback);
   void RemoteVaultAbleToStore(const boost::uint64_t &size,
                               const std::string &account_pmid,
                               const VoidFuncOneInt &callback);
@@ -370,6 +372,8 @@ class VaultService : public maidsafe::MaidsafeService {
                                 const std::string &key,
                                 const T &partial_request,
                                 std::vector<T> *requests);
+  void AddToRemoteRefListCallback(const int &result,
+                                  const std::string &chunkname);
   void GetRemoteAccountCallback(
       const int &result,
       const VaultAccountSet::VaultAccount &vault_account);

@@ -281,16 +281,6 @@ void VaultService::StorePrep(google::protobuf::RpcController*,
     return;
   }
 
-  PrepsReceivedMap::iterator it = prm_.find(request->chunkname());
-  if (it != prm_.end()) {
-#ifdef DEBUG
-    printf("In VaultService::StorePrep (%s), chunk name %s was in map.\n",
-           HexSubstr(pmid_).c_str(), HexSubstr(request->chunkname()).c_str());
-#endif
-    done->Run();
-    return;
-  }
-
   if (!ValidateIdAndRequest(request_sz.public_key(),
        request_sz.public_key_signature(), request->request_signature(),
        request->chunkname(), request_sz.pmid())) {
@@ -303,16 +293,37 @@ void VaultService::StorePrep(google::protobuf::RpcController*,
     return;
   }
 
-  // Check we're not being asked to store ourselves as a chunk holder for
-  // ourself.
-  if (request_sz.pmid() == pmid_) {
+  // Check if we already have another StorePrep.
+  PrepsReceivedMap::iterator it = prm_.find(request->chunkname());
+  if (it != prm_.end()) {
 #ifdef DEBUG
-    printf("In VaultService::StorePrep (%s), trying to store in ourselves "
-           "(chunk %s).\n",
+    printf("In VaultService::StorePrep (%s), prep for %s already received.\n",
            HexSubstr(pmid_).c_str(), HexSubstr(request->chunkname()).c_str());
 #endif
     done->Run();
     return;
+  }
+
+  // Check if we already have the chunk.
+  if (HasChunkLocal(request->chunkname())) {
+    #ifdef DEBUG
+    printf("In VaultService::StorePrep (%s), chunk %s already stored.\n",
+           HexSubstr(pmid_).c_str(), HexSubstr(request->chunkname()).c_str());
+#endif
+    done->Run();
+    // TODO(#Team) delete local chunk copy if we're not on reference list
+    return;
+  }
+
+  // Check if we're being asked to store on our own vault.
+  if (request_sz.pmid() == pmid_) {
+#ifdef DEBUG
+    printf("In VaultService::StorePrep (%s), going to store in our own vault "
+           "(chunk %s).\n",
+           HexSubstr(pmid_).c_str(), HexSubstr(request->chunkname()).c_str());
+#endif
+    // done->Run();
+    // return;
   }
 
   // TODO(Team#5#): check peer's available space
@@ -352,8 +363,6 @@ void VaultService::StorePrep(google::protobuf::RpcController*,
     response_sc->SerializeToString(&ser_response_sc);
     response->set_response_signature(co.AsymSign(ser_response_sc, "",
                                      pmid_private_, crypto::STRING_STRING));
-    done->Run();
-    return;
   }
 
   done->Run();
@@ -422,10 +431,29 @@ void VaultService::StoreChunk(google::protobuf::RpcController*,
     return;
   }
 
-  AddToRemoteRefList(request->chunkname(), it->second);
+  AddToRemoteRefList(request->chunkname(), it->second, boost::bind(
+      &VaultService::AddToRemoteRefListCallback, this, _1,
+      request->chunkname()));
   prm_.erase(request->chunkname());
   response->set_result(kAck);
   done->Run();
+}
+
+void VaultService::AddToRemoteRefListCallback(const int &result,
+                                              const std::string &chunkname) {
+  if (result != kSuccess) {
+#ifdef DEBUG
+    printf("In VaultService::AddToRemoteRefListCallback (%s), could not add to "
+           "reference list for chunk %s (%d).\n",
+           HexSubstr(pmid_).c_str(), HexSubstr(chunkname).c_str(), result);
+#endif
+  } else {
+#ifdef DEBUG
+//     printf("In VaultService::AddToRemoteRefListCallback (%s), added to "
+//            "reference list for chunk %s.\n",
+//            HexSubstr(pmid_).c_str(), HexSubstr(chunkname).c_str());
+#endif
+  }
 }
 
 void VaultService::GetChunk(google::protobuf::RpcController*,
@@ -811,12 +839,20 @@ void VaultService::AddToWatchList(
                                       sz.data_size(), &required_references,
                                       &required_payments)) {
 #ifdef DEBUG
-    printf("In VaultService::AddToWatchList (%s), failed adding to waiting "
+    printf("In VaultService::AddToWatchList (%s), failed to add %s to waiting "
            "list for %s.\n",
-           HexSubstr(pmid_).c_str(), HexSubstr(request->chunkname()).c_str());
+           HexSubstr(pmid_).c_str(), HexSubstr(sz.pmid()).c_str(),
+           HexSubstr(request->chunkname()).c_str());
 #endif
     done->Run();
     return;
+  } else {
+#ifdef DEBUG
+//     printf("In VaultService::AddToWatchList (%s), added %s to waiting "
+//            "list for %s.\n",
+//            HexSubstr(pmid_).c_str(), HexSubstr(sz.pmid()).c_str(),
+//            HexSubstr(request->chunkname()).c_str());
+#endif
   }
 
   boost::uint64_t total_payment = required_payments * sz.data_size();
@@ -956,13 +992,19 @@ void VaultService::AddToReferenceList(
   if (res != 0) {
 #ifdef DEBUG
     printf("In VaultService::AddToReferenceList (%s), failed to add %s to "
-           "reference list for %s: %s.\n", HexSubstr(pmid_).c_str(),
+           "reference list for %s (%d).\n", HexSubstr(pmid_).c_str(),
            HexSubstr(store_contract.pmid()).c_str(),
-           HexSubstr(request->chunkname()).c_str(),
-           (res = kChunkInfoInvalidName) ? "no watchers" : "wrong size");
+           HexSubstr(request->chunkname()).c_str(), res);
 #endif
     done->Run();
     return;
+  } else {
+#ifdef DEBUG
+//     printf("In VaultService::AddToReferenceList (%s), added %s to "
+//            "reference list for %s.\n", HexSubstr(pmid_).c_str(),
+//            HexSubstr(store_contract.pmid()).c_str(),
+//            HexSubstr(request->chunkname()).c_str());
+#endif
   }
 
   response->set_result(kAck);
@@ -2291,7 +2333,8 @@ void VaultService::AmendRemoteAccount(
 }
 
 void VaultService::AddToRemoteRefList(const std::string &chunkname,
-                                      const maidsafe::StoreContract &contract) {
+                                      const maidsafe::StoreContract &contract,
+                                      const VoidFuncOneInt &callback) {
   // try adding to local ref list (fails if no chunk info or watchers)
   int found_local_result = cih_.AddToReferenceList(chunkname, contract.pmid(),
       contract.inner_contract().signed_size().data_size());
@@ -2308,8 +2351,7 @@ void VaultService::AddToRemoteRefList(const std::string &chunkname,
   // thread_pool_ handles destruction of task.
   RemoteTask<maidsafe::AddToReferenceListRequest> *task =
       new RemoteTask<maidsafe::AddToReferenceListRequest>(
-          add_to_ref_list_request, found_local_result,
-          boost::bind(&VaultService::DiscardResult, this, _1),
+          add_to_ref_list_request, found_local_result, callback,
           vault_service_logic_, transport_id_);
   thread_pool_.start(task);
 }
