@@ -31,8 +31,6 @@
 #include <maidsafe/protobuf/kademlia_service_messages.pb.h>
 #include <maidsafe/maidsafe-dht.h>
 #include <maidsafe/base/routingtable.h>
-#include <maidsafe/transport/transportudt.h>
-// #include <maidsafe/transport/transportdb.h>
 
 #include "fs/filesystem.h"
 #include "maidsafe/kadops.h"
@@ -1323,9 +1321,9 @@ void PDVault::JoinMaidsafeNet() {
     return;
   }
 
-  int n(1), result;
+  int n(1), result(kGeneralError);
   // repeatedly try to create our account
-  while (vault_status_ == kVaultStarted &&
+  while (n < 10 && vault_status_ == kVaultStarted &&
          0 != (result = AmendAccount(vault_chunkstore_->available_space()))) {
 #ifdef DEBUG
       printf("PDVault::JoinMaidsafeNet (%s) failed creating account (%d), "
@@ -1333,23 +1331,24 @@ void PDVault::JoinMaidsafeNet() {
 #endif
     ++n;
     const boost::system_time timeout = boost::get_system_time() +
-                                       boost::posix_time::seconds(10);
+                                       boost::posix_time::seconds(12);
     while (boost::detail::get_milliseconds_until(timeout) > 0)
       vault_status_cond_.timed_wait(lock, timeout);
   }
 
-  if (vault_status_ != kVaultStarted) {
-    if (result == 0) {
+  if (result != 0) {
 #ifdef DEBUG
-      printf("In PDVault::JoinMaidsafeNet (%s), amendment successful but "
-             "vault now offline.\n", HexSubstr(pmid_).c_str());
+    printf("In PDVault::JoinMaidsafeNet (%s), giving up after %d attempt(s).\n",
+           HexSubstr(pmid_).c_str(), n);
 #endif
-    } else {
+    sync_done_ = true;
+    vault_status_cond_.notify_all();
+    return;
+  } else if (vault_status_ != kVaultStarted) {
 #ifdef DEBUG
-      printf("In PDVault::JoinMaidsafeNet (%s), vault offline, giving up "
-             "after %d attempt(s).\n", HexSubstr(pmid_).c_str(), n);
+    printf("In PDVault::JoinMaidsafeNet (%s), amendment successful but "
+            "vault now offline.\n", HexSubstr(pmid_).c_str());
 #endif
-    }
     sync_done_ = true;
     vault_status_cond_.notify_all();
     return;

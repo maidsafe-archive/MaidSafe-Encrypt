@@ -212,21 +212,23 @@ void VaultServiceLogic::RemoteOpStageTwo(
   if (RemoveSubjectContact(data))
     ++less_contacts;
 
+  if (data->found_local_result == kSuccess)
+    ++less_contacts;
+
   if (maidsafe::ContactWithinClosest(data->kad_key, our_details_,
                                      data->contacts)) {
-    while (data->contacts.size() + less_contacts > K_)
-      data->contacts.pop_back();  // only need K-x closest now
     // We've already queried/amended the account if we happen to hold it.
-    if (data->found_local_result == kSuccess) {
-      ++less_contacts;
+    if (data->found_local_result == kSuccess)
       ++data->success_count;
-    } else {
+    else
       ++data->failure_count;
-    }
   } else if (data->found_local_result == kSuccess) {
     // We found the account locally, but shouldn't even have it!
     // TODO(Team#) trigger transfer of account data to closer node
   }
+
+  while (data->contacts.size() + less_contacts > K_)
+    data->contacts.pop_back();  // only need K-x closest now
 
   if (data->contacts.size() + less_contacts < kUpperThreshold_) {
 #ifdef DEBUG
@@ -316,6 +318,13 @@ void VaultServiceLogic::RemoteOpStageThree(boost::uint16_t index,
   boost::mutex::scoped_lock lock(data->mutex);
   if (data->callback_done)
     return;
+  if (index >= data->data_holders.size()) {
+#ifdef DEBUG
+    printf("In VSL::RemoteOpStageThree for %s (%s), index %u is invalid.\n",
+           typeid(data).name(), HexSubstr(pmid_).c_str(), index);
+#endif
+    return;
+  }
   typename T::RemoteOpHolder *holder = &data->data_holders.at(index);
   ReturnCode result(kSuccess);
   if (!holder->response.IsInitialized()) {

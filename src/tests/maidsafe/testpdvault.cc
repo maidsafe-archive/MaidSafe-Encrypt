@@ -172,16 +172,17 @@ void MakeChunks(const std::vector< boost::shared_ptr<ClientData> > &clients,
 
 void PrintRpcTimings(const rpcprotocol::RpcStatsMap &rpc_timings) {
   printf("Calls  RPC Name                                            "
-         "min/avg/max\n");
+         "min/avg/max/total\n");
   for (rpcprotocol::RpcStatsMap::const_iterator it = rpc_timings.begin();
        it != rpc_timings.end();
        ++it) {
-    printf("%5llux %-50s  %.2f/%.2f/%.2f s\n",
+    printf("%5llux %-50s  %.2f/%.2f/%.2f/%04.1f s\n",
            it->second.Size(),
            it->first.c_str(),
            it->second.Min() / 1000.0,
            it->second.Mean() / 1000.0,
-           it->second.Max() / 1000.0);
+           it->second.Max() / 1000.0,
+           it->second.Sum() / 1000.0);
   }
 }
 
@@ -406,6 +407,7 @@ TEST_MS_NET(PDVaultTest, FUNC, MAID, StoreAndGetChunks) {
              holder ? " - holder" : "",
              close ? " - close" : "");
       EXPECT_TRUE(!close || holder || client);
+      EXPECT_FALSE(!close && holder);
       EXPECT_FALSE(client && holder);
     }
   }
@@ -427,12 +429,13 @@ TEST_MS_NET(PDVaultTest, FUNC, MAID, StoreAndGetChunks) {
   // TODO(Team#5#): use callback/signal at end of StoreChunk instead
   std::set<std::string> stored_chunks;
   int iteration = 0;
+  const int kMaxIterations = 18;  // 3 minutes
   int remaining_tasks = 1;
-  while ((stored_chunks.size() < chunks.size() || remaining_tasks > 0) &&
+  while (/* (stored_chunks.size() < chunks.size() || remaining_tasks > 0) && */
          iteration < 18) {
     ++iteration;
-    printf("\n-- Sleeping iteration %i --\n\n", iteration);
-    boost::this_thread::sleep(boost::posix_time::seconds(10));
+    printf("\n[ Sleeping iteration %i of %i ]\n\n", iteration, kMaxIterations);
+    boost::this_thread::sleep(boost::posix_time::seconds(kMaxIterations));
 
     // get amendment results
     for (int i = 0; i < kNumOfClients; ++i)
@@ -467,6 +470,21 @@ TEST_MS_NET(PDVaultTest, FUNC, MAID, StoreAndGetChunks) {
       remaining_tasks += clients_[i]->msm->tasks_handler_.TasksCount();
       printf("# %d storing tasks remaining on client %d.\n",
              clients_[i]->msm->tasks_handler_.TasksCount(), i);
+      for (it = chunks.begin(); it != chunks.end(); ++it) {
+        maidsafe::TaskId task_id(clients_[i]->msm->tasks_handler_.
+            GetOldestActiveTaskByDataNameAndType(
+                (*it).first, maidsafe::kSpaceTakenIncConfirmation));
+        if (task_id != maidsafe::kRootTask) {
+          boost::uint8_t successes_required, max_failures, success_count,
+              failures_count;
+          clients_[i]->msm->tasks_handler_.GetTaskProgress(task_id,
+              &successes_required, &max_failures,
+              &success_count, &failures_count);
+          printf("# -> chunk %s: %d of %d succ, %d of %d fail\n",
+                 HexSubstr((*it).first).c_str(), success_count,
+                 successes_required, failures_count, max_failures);
+        }
+      }
     }
   }
 

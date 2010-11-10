@@ -231,7 +231,7 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_AddToRemoteRefList) {
   }
 
   // Call 1 - FindKNodes fails (NULL pointer)
-  vsl.AddToRemoteRefList(request, kSuccess, cb, 0);
+  vsl.AddToRemoteRefList(request, kGeneralError, cb, 0);
   {
     boost::mutex::scoped_lock lock(mutex);
     while (result == kGeneralError) {
@@ -242,7 +242,7 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_AddToRemoteRefList) {
 
   // Call 2 - FindKNodes returns kNack
   result = kGeneralError;
-  vsl.AddToRemoteRefList(request, kSuccess, cb, 0);
+  vsl.AddToRemoteRefList(request, kGeneralError, cb, 0);
   {
     boost::mutex::scoped_lock lock(mutex);
     while (result == kGeneralError) {
@@ -253,7 +253,7 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_AddToRemoteRefList) {
 
   // Call 3 - FindKnodes only returns 1 node
   result = kGeneralError;
-  vsl.AddToRemoteRefList(request, kSuccess, cb, 0);
+  vsl.AddToRemoteRefList(request, kGeneralError, cb, 0);
   {
     boost::mutex::scoped_lock lock(mutex);
     while (result == kGeneralError) {
@@ -264,7 +264,7 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_AddToRemoteRefList) {
 
   // Call 4 - All OK
   result = kGeneralError;
-  vsl.AddToRemoteRefList(request, kSuccess, cb, 0);
+  vsl.AddToRemoteRefList(request, kGeneralError, cb, 0);
   {
     boost::mutex::scoped_lock lock(mutex);
     while (result == kGeneralError) {
@@ -275,7 +275,7 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_AddToRemoteRefList) {
 
   // Call 5 - All OK - we're close to chunkname, so we replace contact 16
   result = kGeneralError;
-  vsl.AddToRemoteRefList(close_request, kSuccess, cb, 0);
+  vsl.AddToRemoteRefList(close_request, kGeneralError, cb, 0);
   {
     boost::mutex::scoped_lock lock(mutex);
     while (result == kGeneralError) {
@@ -286,7 +286,7 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_AddToRemoteRefList) {
 
   // Call 6 - Five responses have incorrect PMID
   result = kGeneralError;
-  vsl.AddToRemoteRefList(request, kSuccess, cb, 0);
+  vsl.AddToRemoteRefList(request, kGeneralError, cb, 0);
   {
     boost::mutex::scoped_lock lock(mutex);
     while (result == kGeneralError) {
@@ -297,7 +297,7 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_AddToRemoteRefList) {
 
   // Call 7 - Five responses return kNack
   result = kGeneralError;
-  vsl.AddToRemoteRefList(request, kSuccess, cb, 0);
+  vsl.AddToRemoteRefList(request, kGeneralError, cb, 0);
   {
     boost::mutex::scoped_lock lock(mutex);
     while (result == kGeneralError) {
@@ -308,7 +308,7 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_AddToRemoteRefList) {
 
   // Call 8 - Five responses don't have result set
   result = kGeneralError;
-  vsl.AddToRemoteRefList(request, kSuccess, cb, 0);
+  vsl.AddToRemoteRefList(request, kGeneralError, cb, 0);
   {
     boost::mutex::scoped_lock lock(mutex);
     while (result == kGeneralError) {
@@ -461,7 +461,7 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_AmendRemoteAccount) {
   }
 
   // Call 1 - FindKNodes fails (NULL pointer)
-  vsl.AmendRemoteAccount(request, kSuccess, cb, 0);
+  vsl.AmendRemoteAccount(request, kGeneralError, cb, 0);
   {
     boost::mutex::scoped_lock lock(mutex);
     while (result == kGeneralError) {
@@ -472,7 +472,7 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_AmendRemoteAccount) {
 
   // Call 2 - FindKNodes returns kNack
   result = kGeneralError;
-  vsl.AmendRemoteAccount(request, kSuccess, cb, 0);
+  vsl.AmendRemoteAccount(request, kGeneralError, cb, 0);
   {
     boost::mutex::scoped_lock lock(mutex);
     while (result == kGeneralError) {
@@ -483,7 +483,7 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_AmendRemoteAccount) {
 
   // Call 3 - FindKnodes only returns 1 node
   result = kGeneralError;
-  vsl.AmendRemoteAccount(request, kSuccess, cb, 0);
+  vsl.AmendRemoteAccount(request, kGeneralError, cb, 0);
   {
     boost::mutex::scoped_lock lock(mutex);
     while (result == kGeneralError) {
@@ -494,7 +494,7 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_AmendRemoteAccount) {
 
   // Call 4 - All OK
   result = kGeneralError;
-  vsl.AmendRemoteAccount(request, kSuccess, cb, 0);
+  vsl.AmendRemoteAccount(request, kGeneralError, cb, 0);
   {
     boost::mutex::scoped_lock lock(mutex);
     while (result == kGeneralError) {
@@ -505,7 +505,7 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_AmendRemoteAccount) {
 
   // Call 5 - All OK - we're close to chunkname, so we replace contact 16
   result = kGeneralError;
-  vsl.AmendRemoteAccount(request, kSuccess, cb, 0);
+  vsl.AmendRemoteAccount(request, kGeneralError, cb, 0);
   {
     boost::mutex::scoped_lock lock(mutex);
     while (result == kGeneralError) {
@@ -516,7 +516,7 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_AmendRemoteAccount) {
 
   // Call 6 - Five responses have incorrect PMID
   result = kGeneralError;
-  vsl.AmendRemoteAccount(request, kSuccess, cb, 0);
+  vsl.AmendRemoteAccount(request, kGeneralError, cb, 0);
   {
     boost::mutex::scoped_lock lock(mutex);
     while (result == kGeneralError) {
@@ -527,7 +527,7 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_AmendRemoteAccount) {
 
   // Call 7 - Five responses return kNack
   result = kGeneralError;
-  vsl.AmendRemoteAccount(request, kSuccess, cb, 0);
+  vsl.AmendRemoteAccount(request, kGeneralError, cb, 0);
   {
     boost::mutex::scoped_lock lock(mutex);
     while (result == kGeneralError) {
@@ -538,7 +538,7 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_AmendRemoteAccount) {
 
   // Call 8 - Five responses don't have result set
   result = kGeneralError;
-  vsl.AmendRemoteAccount(request, kSuccess, cb, 0);
+  vsl.AmendRemoteAccount(request, kGeneralError, cb, 0);
   {
     boost::mutex::scoped_lock lock(mutex);
     while (result == kGeneralError) {
@@ -680,7 +680,7 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_RemoteVaultAbleToStore) {
   }
 
   // Call 1 - FindKNodes fails (NULL pointer)
-  vsl.RemoteVaultAbleToStore(request, kSuccess, cb, 0);
+  vsl.RemoteVaultAbleToStore(request, kGeneralError, cb, 0);
   {
     boost::mutex::scoped_lock lock(mutex);
     while (result == kGeneralError) {
@@ -691,7 +691,7 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_RemoteVaultAbleToStore) {
 
   // Call 2 - FindKNodes returns kNack
   result = kGeneralError;
-  vsl.RemoteVaultAbleToStore(request, kSuccess, cb, 0);
+  vsl.RemoteVaultAbleToStore(request, kGeneralError, cb, 0);
   {
     boost::mutex::scoped_lock lock(mutex);
     while (result == kGeneralError) {
@@ -702,7 +702,7 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_RemoteVaultAbleToStore) {
 
   // Call 3 - FindKnodes only returns 1 node
   result = kGeneralError;
-  vsl.RemoteVaultAbleToStore(request, kSuccess, cb, 0);
+  vsl.RemoteVaultAbleToStore(request, kGeneralError, cb, 0);
   {
     boost::mutex::scoped_lock lock(mutex);
     while (result == kGeneralError) {
@@ -713,7 +713,7 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_RemoteVaultAbleToStore) {
 
   // Call 4 - All OK
   result = kGeneralError;
-  vsl.RemoteVaultAbleToStore(request, kSuccess, cb, 0);
+  vsl.RemoteVaultAbleToStore(request, kGeneralError, cb, 0);
   {
     boost::mutex::scoped_lock lock(mutex);
     while (result == kGeneralError) {
@@ -724,7 +724,7 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_RemoteVaultAbleToStore) {
 
   // Call 5 - All OK - we're close to chunkname, so we replace contact 16
   result = kGeneralError;
-  vsl.RemoteVaultAbleToStore(request, kSuccess, cb, 0);
+  vsl.RemoteVaultAbleToStore(request, kGeneralError, cb, 0);
   {
     boost::mutex::scoped_lock lock(mutex);
     while (result == kGeneralError) {
@@ -735,7 +735,7 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_RemoteVaultAbleToStore) {
 
   // Call 6 - Fourteen responses have incorrect PMID
   result = kGeneralError;
-  vsl.RemoteVaultAbleToStore(request, kSuccess, cb, 0);
+  vsl.RemoteVaultAbleToStore(request, kGeneralError, cb, 0);
   {
     boost::mutex::scoped_lock lock(mutex);
     while (result == kGeneralError) {
@@ -746,7 +746,7 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_RemoteVaultAbleToStore) {
 
   // Call 7 - Fourteen responses return kNack
   result = kGeneralError;
-  vsl.RemoteVaultAbleToStore(request, kSuccess, cb, 0);
+  vsl.RemoteVaultAbleToStore(request, kGeneralError, cb, 0);
   {
     boost::mutex::scoped_lock lock(mutex);
     while (result == kGeneralError) {
@@ -757,7 +757,7 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_VSL_RemoteVaultAbleToStore) {
 
   // Call 8 - Fourteen responses don't have result set
   result = kGeneralError;
-  vsl.RemoteVaultAbleToStore(request, kSuccess, cb, 0);
+  vsl.RemoteVaultAbleToStore(request, kGeneralError, cb, 0);
   {
     boost::mutex::scoped_lock lock(mutex);
     while (result == kGeneralError) {
