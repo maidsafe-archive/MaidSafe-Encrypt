@@ -266,6 +266,31 @@ int StoreManagerTasksHandler::NotifyTaskFailure(const TaskId &task_id,
   return kSuccess;
 }
 
+int StoreManagerTasksHandler::GetTaskProgress(
+    const TaskId &task_id,
+    boost::uint8_t *successes_required,
+    boost::uint8_t *max_failures,
+    boost::uint8_t *success_count,
+    boost::uint8_t *failures_count) {
+  boost::mutex::scoped_lock lock(mutex_);
+  TasksById &tasks_by_id = tasks_.get<by_task_id>();
+  TasksById::iterator task_iter = tasks_by_id.find(task_id);
+  int result(ValidateTaskId(task_iter, true));
+  if (result != kSuccess) {
+#ifdef DEBUG
+    printf("In StoreManagerTasksHandler::GetTaskProgress, task %u invalid.\n",
+           task_id);
+#endif
+    return result;
+  }
+
+  *successes_required = task_iter->successes_required;
+  *max_failures = task_iter->max_failures;
+  *success_count = task_iter->success_count;
+  *failures_count = task_iter->failures_count;
+  return kSuccess;
+}
+
 int StoreManagerTasksHandler::ResetTaskProgress(const TaskId &task_id) {
   boost::mutex::scoped_lock lock(mutex_);
   TasksById &tasks_by_id = tasks_.get<by_task_id>();

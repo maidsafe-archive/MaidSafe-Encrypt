@@ -176,6 +176,12 @@ class StoreManagerTasksHandler {
   int NotifyTaskSuccess(const TaskId &task_id);
   // Increases a task's failure counter, must not have child tasks
   int NotifyTaskFailure(const TaskId &task_id, const ReturnCode &reason);
+  // Retrieves a task's success and failure counters
+  int GetTaskProgress(const TaskId &task_id,
+                      boost::uint8_t *successes_required,
+                      boost::uint8_t *max_failures,
+                      boost::uint8_t *success_count,
+                      boost::uint8_t *failures_count);
   // Resets a task's success and failure counters, must not have child tasks
   int ResetTaskProgress(const TaskId &task_id);
   // Removes the task and its child tasks from the set, regardless of state of

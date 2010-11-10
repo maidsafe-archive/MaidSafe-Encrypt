@@ -416,26 +416,66 @@ TEST_F(MSMTasksHandlerTest, BEH_MAID_Notifications) {
   EXPECT_TRUE(TaskReturnsAsExpected(expected_results, results_));
 }
 
-TEST_F(MSMTasksHandlerTest, BEH_MAID_ResetProgress) {
+TEST_F(MSMTasksHandlerTest, BEH_MAID_GetAndResetProgress) {
+  boost::uint8_t succ_req, max_fail, succ_count, fail_count;
   test_msm_tasks_handler::AddValidTasksWithoutCb(100, &tasks_handler_);
+  EXPECT_EQ(kStoreManagerTaskNotFound,
+            tasks_handler_.GetTaskProgress(kRootTask, &succ_req, &max_fail,
+                                           &succ_count, &fail_count));
+  EXPECT_EQ(kStoreManagerTaskNotFound,
+            tasks_handler_.GetTaskProgress(1000, &succ_req, &max_fail,
+                                           &succ_count, &fail_count));
   EXPECT_EQ(kStoreManagerTaskNotFound,
             tasks_handler_.ResetTaskProgress(kRootTask));
   EXPECT_EQ(kStoreManagerTaskNotFound, tasks_handler_.ResetTaskProgress(1000));
   TaskId task_id(kRootTask);
-  EXPECT_EQ(kSuccess, tasks_handler_.AddTask("a", kStoreChunk, 10, 9, functor_,
-                                             &task_id));
+  EXPECT_EQ(kSuccess,
+            tasks_handler_.AddTask("a", kStoreChunk, 10, 9, functor_,
+                                   &task_id));
+  EXPECT_EQ(kSuccess,
+            tasks_handler_.GetTaskProgress(task_id, &succ_req, &max_fail,
+                                           &succ_count, &fail_count));
+  EXPECT_EQ(boost::uint8_t(10), succ_req);
+  EXPECT_EQ(boost::uint8_t(9), max_fail);
+  EXPECT_EQ(boost::uint8_t(0), succ_count);
+  EXPECT_EQ(boost::uint8_t(0), fail_count);
+  
   for (int i = 0; i < 9; ++i) {
     EXPECT_EQ(kSuccess, tasks_handler_.NotifyTaskSuccess(task_id));
     EXPECT_EQ(kSuccess, tasks_handler_.NotifyTaskFailure(task_id,
                                                          kGeneralError));
     EXPECT_EQ(kTaskActive, tasks_handler_.Status(task_id));
+    EXPECT_EQ(kSuccess,
+              tasks_handler_.GetTaskProgress(task_id, &succ_req, &max_fail,
+                                             &succ_count, &fail_count));
+    EXPECT_EQ(boost::uint8_t(10), succ_req);
+    EXPECT_EQ(boost::uint8_t(9), max_fail);
+    EXPECT_EQ(boost::uint8_t(i + 1), succ_count);
+    EXPECT_EQ(boost::uint8_t(i + 1), fail_count);
   }
+  
   EXPECT_EQ(kSuccess, tasks_handler_.ResetTaskProgress(task_id));
+  EXPECT_EQ(kSuccess,
+            tasks_handler_.GetTaskProgress(task_id, &succ_req, &max_fail,
+                                           &succ_count, &fail_count));
+  EXPECT_EQ(boost::uint8_t(10), succ_req);
+  EXPECT_EQ(boost::uint8_t(9), max_fail);
+  EXPECT_EQ(boost::uint8_t(0), succ_count);
+  EXPECT_EQ(boost::uint8_t(0), fail_count);
+  
   for (int i = 0; i < 9; ++i) {
     EXPECT_EQ(kSuccess, tasks_handler_.NotifyTaskSuccess(task_id));
     EXPECT_EQ(kSuccess, tasks_handler_.NotifyTaskFailure(task_id,
                                                          kGeneralError));
     EXPECT_EQ(kTaskActive, tasks_handler_.Status(task_id));
+
+    EXPECT_EQ(kSuccess,
+              tasks_handler_.GetTaskProgress(task_id, &succ_req, &max_fail,
+                                             &succ_count, &fail_count));
+    EXPECT_EQ(boost::uint8_t(10), succ_req);
+    EXPECT_EQ(boost::uint8_t(9), max_fail);
+    EXPECT_EQ(boost::uint8_t(i + 1), succ_count);
+    EXPECT_EQ(boost::uint8_t(i + 1), fail_count);
   }
 }
 
