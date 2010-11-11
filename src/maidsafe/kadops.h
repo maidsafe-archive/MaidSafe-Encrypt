@@ -88,8 +88,14 @@ class KadOps {
    * Wrapper for the non-blocking Kademlia function.
    */
   virtual void GetNodeContactDetails(const std::string &node_id,
-                                     kad::VoidFunctorOneString callback,
+                                     VoidFuncIntContact callback,
                                      bool local);
+  /**
+   * Blocking call to Kademlia's GetNodeContactDetails.
+   */
+  int BlockingGetNodeContactDetails(const std::string &node_id,
+                                    kad::Contact *contact,
+                                    bool local);
   /**
    * Wrapper for the non-blocking Kademlia function.
    */
@@ -178,6 +184,15 @@ void SetThisEndpoint(EndPoint *this_endpoint);
                     boost::mutex *mutex,
                     boost::condition_variable *cond_var,
                     ReturnCode *result);
+  void GetNodeContactDetailsCallback(const std::string &response,
+                                     VoidFuncIntContact callback);
+  void BlockingGetNodeContactDetailsCallback(
+      const ReturnCode &result_,
+      const kad::Contact &contact_,
+      kad::Contact *contact,
+      boost::mutex *mutex,
+      boost::condition_variable *cv,
+      ReturnCode *result);
   void FindKClosestNodesCallback(const std::string &response,
                                  VoidFuncIntContacts callback);
   void BlockingFindKClosestNodesCallback(

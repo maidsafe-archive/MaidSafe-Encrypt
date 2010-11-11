@@ -1031,8 +1031,10 @@ void LocalStoreManager::PollVaultInfo(kad::VoidFunctorOneString cb) {
   boost::thread t(cb, ser_vc);
 }
 
-void LocalStoreManager::VaultContactInfo(kad::VoidFunctorOneString cb) {
-  ExecStringCallback(cb, kAck);
+bool LocalStoreManager::VaultContactInfo(kad::Contact *contact) {
+  kad::Contact ctc;
+  *contact = ctc;
+  return true;
 }
 
 void LocalStoreManager::SetLocalVaultOwned(const std::string&,

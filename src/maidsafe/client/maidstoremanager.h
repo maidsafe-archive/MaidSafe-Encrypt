@@ -279,7 +279,7 @@ class MaidsafeStoreManager : public StoreManagerInterface {
 
   // Vault
   void PollVaultInfo(kad::VoidFunctorOneString cb);
-  void VaultContactInfo(kad::VoidFunctorOneString cb);
+  bool VaultContactInfo(kad::Contact *contact);
   void SetLocalVaultOwned(const std::string &priv_key,
                           const std::string &pub_key,
                           const std::string &signed_pub_key,
@@ -474,7 +474,8 @@ class MaidsafeStoreManager : public StoreManagerInterface {
                         boost::shared_ptr<GetChunkOpData> data);
   void LoadChunk_RefsCB(size_t rsp_idx,
                         boost::shared_ptr<GetChunkOpData> data);
-  void LoadChunk_HolderCB(const std::string &result,
+  void LoadChunk_HolderCB(const ReturnCode &result,
+                          const kad::Contact &chunk_holder,
                           const std::string &pmid,
                           boost::shared_ptr<GetChunkOpData> data);
   void LoadChunk_CheckCB(std::pair<std::string, size_t> params,

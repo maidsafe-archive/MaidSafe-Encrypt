@@ -66,29 +66,101 @@ class KadOpsTest : public testing::Test {
   std::string fail_parse_result_, fail_result_, few_result_, good_result_;
 };
 
+TEST_F(KadOpsTest, BEH_MAID_BlockingGetNodeContactDetails) {
+  std::string dummy_id(crypto_.Hash("Dummy", "", crypto::STRING_STRING, false));
+  kad::Contact contact, dummy_contact(kad::Contact(dummy_id, "192.168.1.0", 7));
+  std::string ser_contact, ser_dummy_contact;
+  contact.SerialiseToString(&ser_contact);
+  dummy_contact.SerialiseToString(&ser_dummy_contact);
+  kad::FindNodeResult find_result;
+  find_result.set_result(kad::kRpcResultFailure);
+  find_result.set_contact(ser_contact);
+  std::string fail_response_1(find_result.SerializeAsString());
+  find_result.set_result(kad::kRpcResultSuccess);
+  find_result.set_contact("fail");
+  std::string fail_response_2(find_result.SerializeAsString());
+  find_result.set_contact(ser_dummy_contact);
+  std::string good_response(find_result.SerializeAsString());
+
+  ASSERT_EQ(kad::kZeroId, contact.node_id().String());
+
+  // Expectations
+  EXPECT_CALL(mko_, GetNodeContactDetails("fail",
+      testing::An<VoidFuncIntContact>(), false))
+      .WillOnce(testing::WithArgs<0, 1, 2>(testing::Invoke(
+          boost::bind(&MockKadOps::RealGetNodeContactDetails, &mko_,
+                      _1, _2, _3))));                                  // Call 2
+  EXPECT_CALL(mko_, GetNodeContactDetails("",
+      testing::An<VoidFuncIntContact>(), false))
+      .WillOnce(testing::WithArgs<1>(testing::Invoke(
+          boost::bind(&MockKadOps::ThreadedGetNodeContactDetailsCallback, &mko_,
+                      "fail", _1))))                                   // Call 3
+      .WillOnce(testing::WithArgs<1>(testing::Invoke(
+          boost::bind(&MockKadOps::ThreadedGetNodeContactDetailsCallback, &mko_,
+                      fail_response_1, _1))))                          // Call 4
+      .WillOnce(testing::WithArgs<1>(testing::Invoke(
+          boost::bind(&MockKadOps::ThreadedGetNodeContactDetailsCallback, &mko_,
+                      fail_response_2, _1))))                          // Call 5
+      .WillOnce(testing::WithArgs<1>(testing::Invoke(
+          boost::bind(&MockKadOps::ThreadedGetNodeContactDetailsCallback, &mko_,
+                      good_response, _1))));                           // Call 6
+
+  // Call 1
+  ASSERT_EQ(kFindNodesError,
+            mko_.BlockingGetNodeContactDetails("", NULL, false));
+  
+  // Call 2
+  ASSERT_EQ(kFindNodesError,
+            mko_.BlockingGetNodeContactDetails("fail", &contact, false));
+
+  // Call 3
+  ASSERT_EQ(kFindNodesParseError,
+            mko_.BlockingGetNodeContactDetails("", &contact, false));
+  ASSERT_EQ(kad::kZeroId, contact.node_id().String());
+
+  // Call 4
+  ASSERT_EQ(kFindNodesFailure,
+            mko_.BlockingGetNodeContactDetails("", &contact, false));
+  ASSERT_EQ(kad::kZeroId, contact.node_id().String());
+
+  // Call 5
+  ASSERT_EQ(kFindNodesFailure,
+            mko_.BlockingGetNodeContactDetails("", &contact, false));
+  ASSERT_EQ(kad::kZeroId, contact.node_id().String());
+
+  // Call 6
+  ASSERT_EQ(kSuccess, mko_.BlockingGetNodeContactDetails("", &contact, false));
+  ASSERT_EQ(dummy_id, contact.node_id().String());
+}
+
 TEST_F(KadOpsTest, BEH_MAID_BlockingFindKClosestNodes) {
   std::vector<kad::Contact> contacts;
   kad::Contact dummy_contact = kad::Contact(crypto_.Hash("Dummy", "",
       crypto::STRING_STRING, false), "192.168.1.0", 4999);
 
   // Expectations
+  // Expectations
+  EXPECT_CALL(mko_, FindKClosestNodes("fail",
+      testing::An<VoidFuncIntContacts>()))
+      .WillOnce(testing::WithArgs<0, 1>(testing::Invoke(
+          boost::bind(&MockKadOps::RealFindKClosestNodes, &mko_, _1, _2))));
   EXPECT_CALL(mko_, FindKClosestNodes("",
       testing::An<VoidFuncIntContacts>()))
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
           boost::bind(&MockKadOps::ThreadedFindKClosestNodesCallback, &mko_,
-                      fail_parse_result_, _1))))                       // Call 2
+                      fail_parse_result_, _1))))                       // Call 3
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
           boost::bind(&MockKadOps::ThreadedFindKClosestNodesCallback, &mko_,
-                      fail_result_, _1))))                             // Call 3
+                      fail_result_, _1))))                             // Call 4
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
           boost::bind(&MockKadOps::ThreadedFindKClosestNodesCallback, &mko_,
-                      few_result_, _1))))                              // Call 4
+                      few_result_, _1))))                              // Call 5
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
           boost::bind(&MockKadOps::ThreadedFindKClosestNodesCallback, &mko_,
-                      good_result_, _1))))                             // Call 5
+                      good_result_, _1))))                             // Call 6
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
           boost::bind(&MockKadOps::ThreadedFindKClosestNodesCallback, &mko_,
-                      good_result_, _1))));                            // Call 6
+                      good_result_, _1))));                            // Call 7
 
   // Call 1
   ASSERT_EQ(kFindNodesError,
@@ -97,26 +169,33 @@ TEST_F(KadOpsTest, BEH_MAID_BlockingFindKClosestNodes) {
   // Call 2
   contacts.push_back(dummy_contact);
   ASSERT_EQ(size_t(1), contacts.size());
+  ASSERT_EQ(kFindNodesError,
+            mko_.BlockingFindKClosestNodes("fail", &contacts));
+  ASSERT_EQ(size_t(0), contacts.size());
+
+  // Call 3
+  contacts.push_back(dummy_contact);
+  ASSERT_EQ(size_t(1), contacts.size());
   ASSERT_EQ(kFindNodesParseError,
             mko_.BlockingFindKClosestNodes("", &contacts));
   ASSERT_EQ(size_t(0), contacts.size());
 
-  // Call 3
+  // Call 4
   contacts.push_back(dummy_contact);
   ASSERT_EQ(size_t(1), contacts.size());
   ASSERT_EQ(kFindNodesFailure,
             mko_.BlockingFindKClosestNodes("", &contacts));
   ASSERT_EQ(size_t(0), contacts.size());
 
-  // Call 4
+  // Call 5
   ASSERT_EQ(kSuccess, mko_.BlockingFindKClosestNodes("", &contacts));
   ASSERT_EQ(few_pmids_.size(), contacts.size());
 
-  // Call 5
+  // Call 6
   ASSERT_EQ(kSuccess, mko_.BlockingFindKClosestNodes("", &contacts));
   ASSERT_EQ(size_t(test_kadops::K), contacts.size());
 
-  // Call 6
+  // Call 7
   contacts.push_back(dummy_contact);
   ASSERT_EQ(kSuccess, mko_.BlockingFindKClosestNodes("", &contacts));
   ASSERT_EQ(size_t(test_kadops::K), contacts.size());

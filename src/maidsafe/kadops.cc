@@ -123,14 +123,83 @@ bool KadOps::AddressIsLocal(const kad::ContactInfo &peer) {
 }
 
 void KadOps::GetNodeContactDetails(const std::string &node_id,
-                                   kad::VoidFunctorOneString callback,
+                                   VoidFuncIntContact callback,
                                    bool local) {
   kad::KadId kad_id;
   if (!GetKadId(node_id, &kad_id)) {
-    callback(kad::kRpcResultFailure);
+    kad::Contact contact;
+    callback(kFindNodesError, contact);
     return;
   }
-  knode_.GetNodeContactDetails(kad_id, callback, local);
+  knode_.GetNodeContactDetails(kad_id, boost::bind(
+      &KadOps::GetNodeContactDetailsCallback, this, _1, callback), local);
+}
+
+void KadOps::GetNodeContactDetailsCallback(const std::string &response,
+                                           VoidFuncIntContact callback) {
+//   printf("In KadOps::GetNodeContactDetailsCallback ...\n");
+  kad::Contact contact;
+  kad::FindNodeResult find_result;
+  if (!find_result.ParseFromString(response)) {
+#ifdef DEBUG
+    printf("In KadOps::GetNodeContactDetailsCallback, can't parse result.\n");
+#endif
+    callback(kFindNodesParseError, contact);
+    return;
+  }
+
+  if (find_result.result() != kad::kRpcResultSuccess ||
+      !contact.ParseFromString(find_result.contact())) {
+#ifdef DEBUG
+    printf("In KadOps::GetNodeContactDetailsCallback, Kademlia RPC failed.\n");
+#endif
+    callback(kFindNodesFailure, contact);
+    return;
+  }
+
+  callback(kSuccess, contact);
+}
+
+int KadOps::BlockingGetNodeContactDetails(const std::string &key,
+                                          kad::Contact *contact,
+                                          bool local) {
+  if (contact == NULL) {
+#ifdef DEBUG
+    printf("In KadOps::BlockingGetNodeContactDetails, NULL pointer passed.\n");
+#endif
+    return kFindNodesError;
+  }
+  boost::mutex mutex;
+  boost::condition_variable cv;
+  ReturnCode result(kGeneralError);
+  GetNodeContactDetails(key, boost::bind(
+      &KadOps::BlockingGetNodeContactDetailsCallback, this, _1, _2, contact,
+      &mutex, &cv, &result), local);
+  boost::mutex::scoped_lock lock(mutex);
+  while (result == kGeneralError)
+    cv.wait(lock);
+  return result;
+}
+
+void KadOps::BlockingGetNodeContactDetailsCallback(
+    const ReturnCode &result_,
+    const kad::Contact &contact_,
+    kad::Contact *contact,
+    boost::mutex *mutex,
+    boost::condition_variable *cv,
+    ReturnCode *result) {
+  if (contact == NULL || mutex == NULL || cv == NULL || result == NULL) {
+#ifdef DEBUG
+    printf("In KadOps::BlockingGetNodeContactDetailsCallback, "
+           "NULL pointer passed.\n");
+#endif
+    return;
+  }
+
+  boost::mutex::scoped_lock lock(*mutex);
+  *result = result_;
+  *contact = contact_;
+  cv->notify_one();
 }
 
 void KadOps::FindKClosestNodes(const std::string &key,
@@ -311,6 +380,9 @@ bool KadOps::GetKadId(const std::string &key, kad::KadId *kad_id) {
     return true;
   } else {
     *kad_id = kad::KadId();
+#ifdef DEBUG
+    printf("In KadOps::GetKadId, invalid key passed.\n");
+#endif
     return false;
   }
 }

@@ -2230,27 +2230,16 @@ bool ClientController::VaultContactInfo() {
   return true;
 #endif
 
-  CCCallback cb;
-  sm_->VaultContactInfo(boost::bind(&CCCallback::StringCallback, &cb, _1));
-
-  kad::FindNodeResult fnr;
-  if (!fnr.ParseFromString(cb.WaitForStringResult()) ||
-      fnr.result() != kad::kRpcResultSuccess) {
+  kad::Contact vault_contact;
+  if (!sm_->VaultContactInfo(&vault_contact)) {
 #ifdef DEBUG
-    printf("ClientController::VaultContactInfo: failed result.\n");
+    printf("ClientController::VaultContactInfo: getting contact failed.\n");
 #endif
     return false;
   }
 
-  kad::ContactInfo ci;
-  if (!ci.ParseFromString(fnr.contact())) {
-#ifdef DEBUG
-    printf("ClientController::VaultContactInfo: failed parsing as contact.\n");
-#endif
-    return false;
-  }
-
-  if (!ss_->SetVaultIP(ci.ip()) || !ss_->SetVaultPort(ci.port())) {
+  if (!ss_->SetVaultIP(vault_contact.host_ip()) ||
+      !ss_->SetVaultPort(vault_contact.host_port())) {
 #ifdef DEBUG
     printf("ClientController::VaultContactInfo: putting values into session "
            "failed.\n");

@@ -136,7 +136,7 @@ class StoreManagerInterface {
 
   // Vault
   virtual void PollVaultInfo(kad::VoidFunctorOneString cb)=0;
-  virtual void VaultContactInfo(kad::VoidFunctorOneString cb)=0;
+  virtual bool VaultContactInfo(kad::Contact *contact)=0;
   virtual void SetLocalVaultOwned(
       const std::string &priv_key,
       const std::string &pub_key,

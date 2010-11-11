@@ -516,8 +516,8 @@ int MaidsafeStoreManager::LoadChunk(const std::string &chunk_name,
 //             HexSubstr(*it).c_str());
 #endif
       kad_ops_->GetNodeContactDetails(*it, boost::bind(
-            &MaidsafeStoreManager::LoadChunk_HolderCB, this, _1, *it, opdata),
-            false);
+            &MaidsafeStoreManager::LoadChunk_HolderCB, this, _1, _2, *it,
+            opdata), false);
       opdata->chunk_holders[kHolderPending].insert(*it);
       opdata->chunk_holders[kHolderNew].erase(it++);
     }
@@ -692,37 +692,20 @@ void MaidsafeStoreManager::LoadChunk_RefsCB(size_t rsp_idx,
   data->condition.notify_one();
 }
 
-void MaidsafeStoreManager::LoadChunk_HolderCB(const std::string &result,
+void MaidsafeStoreManager::LoadChunk_HolderCB(
+    const ReturnCode &result, const kad::Contact &chunk_holder,
     const std::string &pmid, boost::shared_ptr<GetChunkOpData> data) {
   boost::mutex::scoped_lock lock(data->mutex);
-  bool fail(true);
-  kad::FindNodeResult find_result;
-
-  if (result.empty()) {
+  if (result != kSuccess) {
 #ifdef DEBUG
-    printf("In MSM::LoadChunk_HolderCB (%d), finding node %s timed out.\n",
+    printf("In MSM::LoadChunk_HolderCB (%d), could not get contact for %s.\n",
            kad_ops_->Port(), HexSubstr(pmid).c_str());
 #endif
-  } else if (!find_result.ParseFromString(result)) {
-#ifdef DEBUG
-    printf("In MSM::LoadChunk_HolderCB (%d), can't parse FindNode result.\n",
-           kad_ops_->Port());
-#endif
-  } else if (find_result.result() != kad::kRpcResultSuccess ||
-             !data->chunk_holder_contacts[pmid].ParseFromString(
-                 find_result.contact())) {
-#ifdef DEBUG
-    printf("In MSM::LoadChunk_HolderCB (%d), could't get contact data.\n",
-           kad_ops_->Port());
-#endif
-  } else {
-    fail = false;
-  }
-
-  if (fail)
     data->chunk_holders[kHolderFailed].insert(pmid);
-  else
+  } else {
+    data->chunk_holder_contacts[pmid] = chunk_holder;
     data->chunk_holders[kHolderContactable].insert(pmid);
+  }
 
   data->chunk_holders[kHolderPending].erase(pmid);
   data->condition.notify_one();
@@ -1408,12 +1391,6 @@ void MaidsafeStoreManager::UpdateAccountStatusStageTwo(
 
 void MaidsafeStoreManager::NotifyTaskHandlerOfAccountAmendments(
     const AccountStatusResponse &account_status_response) {
-  if (!account_status_response.amendment_results_size())
-    return;
-#ifdef DEBUG
-  printf("***** MSM::NotifyTaskHandlerOfAccountAmendments (%d) *****\n",
-         kad_ops_->Port());
-#endif
   for (int i = 0; i < account_status_response.amendment_results_size(); ++i) {
     const AccountStatusResponse::AmendmentResult &kAmendmentResult =
         account_status_response.amendment_results(i);
@@ -1422,10 +1399,11 @@ void MaidsafeStoreManager::NotifyTaskHandlerOfAccountAmendments(
     bool success = kAmendmentResult.result() == kAck;
 #ifdef DEBUG
     printf("In MSM::NotifyTaskHandlerOfAccountAmendments (%d), "
-            "amendment for %s %s.\n",
-            kad_ops_->Port(),
-            HexSubstr(kAmendmentResult.chunkname()).c_str(),
-            success ? "succeeded" : "failed");
+           "amendment to %s for %s %s.\n",
+           kad_ops_->Port(),
+           HexSubstr(account_status_response.pmid()).c_str(),
+           HexSubstr(kAmendmentResult.chunkname()).c_str(),
+           success ? "succeeded" : "failed");
 #endif
     TaskId task_id(kRootTask);
     if (kAmendmentResult.amendment_type() ==
@@ -1439,10 +1417,12 @@ void MaidsafeStoreManager::NotifyTaskHandlerOfAccountAmendments(
       task_id = tasks_handler_.GetOldestActiveTaskByDataNameAndType(
           kAmendmentResult.chunkname(), kRemoveFromWatchList);
     }
-    if (success)
+    if (task_id != kRootTask) {
+      if (success)
         tasks_handler_.NotifyTaskSuccess(task_id);
       else
         tasks_handler_.NotifyTaskFailure(task_id, kAmendAccountFailure);
+    }
   }
 }
 
@@ -3027,8 +3007,9 @@ void MaidsafeStoreManager::PollVaultInfoCallback(
   cb(ser_vc);
 }
 
-void MaidsafeStoreManager::VaultContactInfo(kad::VoidFunctorOneString cb) {
-  kad_ops_->GetNodeContactDetails(ss_->Id(PMID), cb, false);
+bool MaidsafeStoreManager::VaultContactInfo(kad::Contact *contact) {
+  return kSuccess == kad_ops_->BlockingGetNodeContactDetails(ss_->Id(PMID),
+                                                             contact, false);
 }
 
 void MaidsafeStoreManager::SetLocalVaultOwned(

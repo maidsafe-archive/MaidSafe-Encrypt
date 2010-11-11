@@ -282,11 +282,9 @@ class PDVaultTest : public testing::Test {
     // look up the stopped vaults to flush routing tables
     for (int i = 0; i < kNetworkSize - kNumOfClients; ++i) {
       for (int j = kNetworkSize - kNumOfClients; j < kNetworkSize; ++j) {
-        maidsafe::test::CallbackObject cb;
-        pdvaults_[i]->kad_ops_->GetNodeContactDetails(pdvaults_[i]->pmid_,
-            boost::bind(&maidsafe::test::CallbackObject::StringCallback, &cb,
-            _1), false);
-        cb.WaitForStringResult();
+        kad::Contact contact;
+        pdvaults_[i]->kad_ops_->BlockingGetNodeContactDetails(
+            pdvaults_[i]->pmid_, &contact, false);
       }
     }
 
@@ -432,10 +430,10 @@ TEST_MS_NET(PDVaultTest, FUNC, MAID, StoreAndGetChunks) {
   const int kMaxIterations = 18;  // 3 minutes
   int remaining_tasks = 1;
   while (/* (stored_chunks.size() < chunks.size() || remaining_tasks > 0) && */
-         iteration < 18) {
+         iteration < kMaxIterations) {
     ++iteration;
     printf("\n[ Sleeping iteration %i of %i ]\n\n", iteration, kMaxIterations);
-    boost::this_thread::sleep(boost::posix_time::seconds(kMaxIterations));
+    boost::this_thread::sleep(boost::posix_time::seconds(10));
 
     // get amendment results
     for (int i = 0; i < kNumOfClients; ++i)

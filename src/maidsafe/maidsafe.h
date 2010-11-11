@@ -354,6 +354,8 @@ enum SortingMode { ALPHA, RANK, LAST };
 enum ShareFilter { kAll, kRo, kAdmin };
 
 typedef boost::function<void(const maidsafe::ReturnCode&)> VoidFuncOneInt;
+typedef boost::function<void(const ReturnCode&, const kad::Contact&)>
+        VoidFuncIntContact;
 typedef boost::function<void(const ReturnCode&,
                              const std::vector<kad::Contact>&)>
         VoidFuncIntContacts;
