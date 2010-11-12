@@ -274,16 +274,6 @@ class RunPDVaults {
         clients_[client_idx]->msm = sm_local_;
         clients_[client_idx]->msm->ss_ = &clients_[client_idx]->mss;
         clients_[client_idx]->msm->pd_utils_.ss_ = &clients_[client_idx]->mss;
-        testpdvault::PrepareCallbackResults();
-        clients_[client_idx]->msm->Init(
-            boost::bind(&testpdvault::GeneralCallback, _1), kad_config_path_,
-            0);
-        testpdvault::WaitFunction(60, &mutex_);
-        if (!callback_succeeded_ || callback_timed_out_) {
-          printf("Failed initialising store manager for client %d.\n",
-                 client_idx + 1);
-          return false;
-        }
         public_key = clients_[client_idx]->pmid_pub_key;
         private_key = clients_[client_idx]->pmid_priv_key;
         signed_key = clients_[client_idx]->pmid_pub_key_sig;
@@ -309,6 +299,19 @@ class RunPDVaults {
       if (!(*pdvaults_)[j]->WaitForStartup(10)) {
         printf("Vault %i didn't start properly!\n", j);
         return false;
+      }
+      if (client_idx >= 0) {
+        // init client's store manager after own vault is up
+        testpdvault::PrepareCallbackResults();
+        clients_[client_idx]->msm->Init(
+            boost::bind(&testpdvault::GeneralCallback, _1), kad_config_path_,
+            0);
+        testpdvault::WaitFunction(60, &mutex_);
+        if (!callback_succeeded_ || callback_timed_out_) {
+          printf("Failed initialising store manager for client %d.\n",
+                 client_idx + 1);
+          return false;
+        }
       }
       if (first) {
         base::KadConfig kad_config;

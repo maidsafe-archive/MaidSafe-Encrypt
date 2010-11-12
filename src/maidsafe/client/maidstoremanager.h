@@ -42,6 +42,7 @@
 #include <string>
 #include <vector>
 
+#include "maidsafe/contactcache.h"
 #include "maidsafe/accountholdersmanager.h"
 #include "maidsafe/accountstatusmanager.h"
 #include "maidsafe/chunkstore.h"
@@ -451,9 +452,11 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   void RemoveFromWatchListTaskCallback(const ReturnCode &result,
                                        boost::shared_ptr<StoreData> store_data);
   // Start process of storing a single copy of an individual chunk onto the net.
-  virtual void StoreChunkCopy(boost::shared_ptr<StoreData> store_data);
+  void StoreChunkCopy(boost::shared_ptr<StoreData> store_data);
+  void StoreChunkCopy(boost::shared_ptr<StoreData> store_data,
+                      const kad::Contact &force_peer);
   // Initialise chunk storing preparation.
-  virtual void DoStorePrep(boost::shared_ptr<SendChunkData> send_chunk_data);
+  void DoStorePrep(boost::shared_ptr<SendChunkData> send_chunk_data);
   void ChunkCopyPrepTaskCallback(
       const ReturnCode &result,
       boost::shared_ptr<SendChunkData> send_chunk_data);
@@ -464,7 +467,7 @@ class MaidsafeStoreManager : public StoreManagerInterface {
       const SignedSize &request_signed_size,
       const StorePrepResponse *store_prep_response);
   // Send the actual data content to the peer.
-  virtual void DoStoreChunk(boost::shared_ptr<SendChunkData> send_chunk_data);
+  void DoStoreChunk(boost::shared_ptr<SendChunkData> send_chunk_data);
   void ChunkCopyDataTaskCallback(
       const ReturnCode &result,
       boost::shared_ptr<SendChunkData> send_chunk_data);
@@ -575,6 +578,7 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   IMStatusNotifier im_status_notifier_;
   IMConnectionHandler im_conn_hdler_;
   IMHandler im_handler_;
+  ContactCache own_vault_;
   AccountHoldersManager account_holders_manager_;
   AccountStatusManager account_status_manager_;
   boost::shared_ptr<AccountStatusData> account_status_update_data_;

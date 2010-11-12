@@ -88,6 +88,7 @@ MaidsafeStoreManager::MaidsafeStoreManager(boost::shared_ptr<ChunkStore> cstore,
       im_status_notifier_(),
       im_conn_hdler_(),
       im_handler_(ss_),
+      own_vault_(kad_ops_),
       account_holders_manager_(kad_ops_, kLowerThreshold_),
       account_status_manager_(),
       account_status_update_data_() {}
@@ -151,6 +152,7 @@ void MaidsafeStoreManager::Init(VoidFuncOneInt callback,
 #ifdef DEBUG
     printf("\tIn MSM::Init, after Join.  On port %u\n", kad_ops_->Port());
 #endif
+    own_vault_.Init(ss_->Id(PMID));
     account_holders_manager_.Init(ss_->Id(PMID), boost::bind(
         &MaidsafeStoreManager::AccountHoldersCallback, this, _1, _2));
     account_status_manager_.StartUpdating(boost::bind(
@@ -1861,6 +1863,12 @@ void MaidsafeStoreManager::AddToWatchListStageFour(
         return;
       }
 
+      // store copy on own vault
+//       kad::Contact vault_contact_;
+//       if (own_vault_.GetContact(&vault_contact_))
+//         StoreChunkCopy(data->store_data, vault_contact_);
+
+      // store copies on peer vaults
       for (int i = 0; i < data->consensus_upload_copies; ++i)
         StoreChunkCopy(data->store_data);
     }
@@ -2268,6 +2276,13 @@ void MaidsafeStoreManager::GetRequestSignature (
 
 void MaidsafeStoreManager::StoreChunkCopy(
     boost::shared_ptr<StoreData> store_data) {
+  kad::Contact contact;
+  StoreChunkCopy(store_data, contact);
+}
+
+void MaidsafeStoreManager::StoreChunkCopy(
+    boost::shared_ptr<StoreData> store_data,
+    const kad::Contact &force_peer) {
 #ifdef DEBUG
 //   printf("In MSM::StoreChunkCopy (%d) for chunk %s\n",
 //          kad_ops_->Port(), HexSubstr(store_data->data_name).c_str());
@@ -2301,28 +2316,34 @@ void MaidsafeStoreManager::StoreChunkCopy(
     return;
   }
 
-  double ideal_rtt = 1.0;
+  if (force_peer.node_id().String() != kad::kZeroId) {
+    printf("*** using forced peer: %s\n", HexSubstr(force_peer.node_id().String()).c_str());
+    send_chunk_data->peer = force_peer;
+  } else {
+    double ideal_rtt = 1.0;
 
-  // Ensure we don't try to store on own vault
-  if (store_data->exclude_peers.empty())
-    store_data->exclude_peers.push_back(kad::Contact(ss_->Id(PMID), "", 0));
-  int peer_result =
-      kad_ops_->GetStorePeer(ideal_rtt, store_data->exclude_peers,
-                             &send_chunk_data->peer, &send_chunk_data->local);
+    // Ensure we don't find own vault
+    if (store_data->exclude_peers.empty())
+      store_data->exclude_peers.push_back(kad::Contact(ss_->Id(PMID), "", 0));
+    int peer_result =
+        kad_ops_->GetStorePeer(ideal_rtt, store_data->exclude_peers,
+                              &send_chunk_data->peer, &send_chunk_data->local);
+
+    // If GetStorePeer failed, record failure
+    if (peer_result != kSuccess) {
+      tasks_handler_.NotifyTaskFailure(send_chunk_data->chunk_copy_task_id,
+                                      kGetStorePeerError);
+  #ifdef DEBUG
+      printf("In MSM::StoreChunkCopy (%d), error getting store peer for %s (%d)."
+            "\n", kad_ops_->Port(), HexSubstr(store_data->data_name).c_str(),
+            peer_result);
+  #endif
+      return;
+    }
+  }
+
   // Ensure next call of StoreChunkCopy doesn't use same vault
   store_data->exclude_peers.push_back(send_chunk_data->peer);
-
-  // If GetStorePeer failed, record failure
-  if (peer_result != kSuccess) {
-    tasks_handler_.NotifyTaskFailure(send_chunk_data->chunk_copy_task_id,
-                                     kGetStorePeerError);
-#ifdef DEBUG
-    printf("In MSM::StoreChunkCopy (%d), error getting store peer for %s (%d)."
-           "\n", kad_ops_->Port(), HexSubstr(store_data->data_name).c_str(),
-           peer_result);
-#endif
-    return;
-  }
 
   DoStorePrep(send_chunk_data);
 }
@@ -3008,8 +3029,10 @@ void MaidsafeStoreManager::PollVaultInfoCallback(
 }
 
 bool MaidsafeStoreManager::VaultContactInfo(kad::Contact *contact) {
-  return kSuccess == kad_ops_->BlockingGetNodeContactDetails(ss_->Id(PMID),
-                                                             contact, false);
+//   return kSuccess == kad_ops_->BlockingGetNodeContactDetails(ss_->Id(PMID),
+//                                                              contact, false);
+  own_vault_.WaitForUpdate();
+  return own_vault_.GetContact(contact);
 }
 
 void MaidsafeStoreManager::SetLocalVaultOwned(
