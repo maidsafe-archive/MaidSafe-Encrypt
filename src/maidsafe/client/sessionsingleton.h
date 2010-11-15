@@ -34,16 +34,18 @@
 #include <string>
 #include <vector>
 
-#include "fs/filesystem.h"
-#include "maidsafe/maidsafe.h"
-#include "maidsafe/client/keyatlas.h"
+#include "maidsafe/common/filesystem.h"
+#include "maidsafe/common/maidsafe.h"
 #include "maidsafe/client/contacts.h"
 #include "maidsafe/client/privateshares.h"
-#include "protobuf/datamaps.pb.h"
+#include "maidsafe/client/filesystem/distributed_filesystem.pb.h"
+#include "maidsafe/passport/passportconfig.h"
 
 namespace maidsafe {
 
 class MockSessionSingleton;
+class Authentication;
+
 
 struct UserDetails {
   UserDetails() : defconlevel(kDefCon3),
@@ -51,8 +53,6 @@ struct UserDetails {
                   username(),
                   pin(),
                   password(),
-                  mid_rid(0),
-                  smid_rid(0),
                   session_name(),
                   root_db_key(),
                   self_encrypting(true),
@@ -67,15 +67,7 @@ struct UserDetails {
                   pd() {}
   DefConLevels defconlevel;
   bool da_modified;
-  std::string username;
-  std::string pin;
-  std::string password;
-  boost::uint32_t mid_rid;
-  boost::uint32_t smid_rid;
-  std::string session_name;
-  std::string root_db_key;
-  std::string tmid_content;
-  std::string smidtmid_content;
+  std::string username, pin, password, session_name, root_db_key;
   bool self_encrypting;
   std::set<std::string> authorised_users;
   std::set<std::string> maid_authorised_users;
@@ -112,12 +104,7 @@ class SessionSingleton {
   std::string Username();
   std::string Pin();
   std::string Password();
-  std::string PublicUsername();
-  boost::uint32_t MidRid();
-  boost::uint32_t SmidRid();
   std::string SessionName();
-  std::string TmidContent();
-  std::string SmidTmidContent();
   std::string RootDbKey();
   bool SelfEncrypting();
   const std::set<std::string> &AuthorisedUsers();
@@ -136,12 +123,8 @@ class SessionSingleton {
   bool SetUsername(const std::string &username);
   bool SetPin(const std::string &pin);
   bool SetPassword(const std::string &password);
-  bool SetMidRid(const boost::uint32_t &midrid);
-  bool SetSmidRid(const boost::uint32_t &smidrid);
   bool SetSessionName(bool clear);
   bool SetRootDbKey(const std::string &root_db_key);
-  bool SetTmidContent(const std::string &tmid_content);
-  bool SetSmidTmidContent(const std::string &smidtmid_content);
   bool SetSelfEncrypting(bool self_encrypting);
   bool SetAuthorisedUsers(
       const std::set<std::string> &authorised_users);
@@ -169,10 +152,10 @@ class SessionSingleton {
              const std::string &private_key, const std::string &public_key,
              const std::string &signed_public_key);
   int RemoveKey(const PacketType &bpt);
-  std::string Id(const PacketType &bpt);
-  std::string PublicKey(const PacketType &bpt);
-  std::string PrivateKey(const PacketType &bpt);
-  std::string SignedPublicKey(const PacketType &bpt);
+  std::string Id(const passport::PacketType &bpt);
+  std::string PublicKey(const passport::PacketType &bpt);
+  std::string PrivateKey(const passport::PacketType &bpt);
+  std::string SignedPublicKey(const passport::PacketType &bpt);
 
   ///////////////////////////
   //// Contacts Handling ////
@@ -295,6 +278,7 @@ class SessionSingleton {
                    int status);
   int DeleteLiveContact(const std::string &contact);
   void ClearLiveContacts();
+  boost::shared_ptr<passport::Passport> passport() { return passport_; }
 
  private:
   friend class MockSessionSingleton;
@@ -304,7 +288,7 @@ class SessionSingleton {
   SessionSingleton();
   ~SessionSingleton() {}
   UserDetails ud_;
-  KeyAtlas ka_;
+  boost::shared_ptr<passport::Passport> passport_;
   ContactsHandler ch_;
   PrivateShareHandler psh_;
   std::set<std::string> conversations_;

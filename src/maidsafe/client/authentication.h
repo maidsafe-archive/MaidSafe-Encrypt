@@ -7,8 +7,7 @@
 * Version:      1.0
 * Created:      2009-01-28-22.18.47
 * Revision:     none
-* Compiler:     gcc
-* Author:       Fraser Hutchison (fh), fraser.hutchison@maidsafe.net
+* Author:       Team
 * Company:      maidsafe.net limited
 *
 * The following source code is property of maidsafe.net limited and is not
@@ -25,172 +24,165 @@
 #ifndef MAIDSAFE_CLIENT_AUTHENTICATION_H_
 #define MAIDSAFE_CLIENT_AUTHENTICATION_H_
 
-#include <list>
+#include <boost/cstdint.hpp>
+
 #include <string>
 #include <vector>
 
-#include "maidsafe/client/sessionsingleton.h"
-#include "maidsafe/client/storemanager.h"
-#include "maidsafe/client/systempackets.h"
-#include "maidsafe/client/cryptokeypairs.h"
+#include "maidsafe/common/maidsafe.h"
+#include "maidsafe/passport/passport.h"
+#include "maidsafe/common/returncodes.h"
 
 namespace maidsafe {
 
-struct SystemPacketCreation {
-  SystemPacketCreation() : vfoi(), packet_count(0), username(), pin(), rid(0) {}
-  VoidFuncOneInt vfoi;
-  int packet_count;
-  std::string username, pin;
-  boost::uint32_t rid;
-};
-
-struct FindSystemPacket {
-  FindSystemPacket() : spc(), pp(), pt() {}
-  boost::shared_ptr<SystemPacketCreation> spc;
-  PacketParams pp;
-  PacketType pt;
-};
-
-struct UserInfo {
-  UserInfo() : m(), mid_calledback(false), smid_calledback(false),
-               tmid_mid_calledback(false), tmid_smid_calledback(false), func(),
-               username(), pin() { }
-  boost::mutex m;
-  bool mid_calledback;
-  bool smid_calledback;
-  bool tmid_mid_calledback;
-  bool tmid_smid_calledback;
-  VoidFuncOneInt func;
-  std::string username;
-  std::string pin;
-};
-
-struct SaveSessionData {
-  std::string ser_da;
-  std::string current_encripted_mid;
-  std::string mid_tmid_data;
-  boost::uint32_t new_mid;
-  VoidFuncOneInt vfoi;
-  bool same_mid_smid;
-};
+class StoreManagerInterface;
+class SessionSingleton;
 
 class Authentication {
  public:
-  Authentication()
-      : ud_(),
-        mutex_(),
-        crypto_(),
-        sm_(),
-        ss_(),
-        system_packets_result_(kPendingResult),
-        user_info_result_(kPendingResult),
-        get_smidtimid_result_(kPendingResult),
-        crypto_key_pairs_() { }
-  ~Authentication() { }
-  void Init(const boost::uint16_t &crypto_key_buffer_count,
-            boost::shared_ptr<StoreManagerInterface> smgr);
-//  void Init(const boost::uint16_t &crypto_key_buffer_count,
-//            boost::shared_ptr<StoreManagerInterface> smgr,
-//            SessionSingleton *ss);
+  Authentication() : store_manager_(),
+                     session_singleton_(),
+                     passport_(),
+                     mutex_(),
+                     cond_var_(),
+                     tmid_op_status_(kPendingMid),
+                     stmid_op_status_(kPendingMid),
+                     encrypted_tmid_(),
+                     encrypted_stmid_(),
+                     public_name_(),
+                     kSingleOpTimeout_(10000) {}
+  ~Authentication() {}
+  void Init(boost::shared_ptr<StoreManagerInterface> sm);
   int GetUserInfo(const std::string &username, const std::string &pin);
-  int GetUserData(const std::string &password, std::string *ser_da);
+  int GetUserData(const std::string &password,
+                  std::string *serialised_data_atlas);
   int CreateUserSysPackets(const std::string &username,
                            const std::string &pin);
-  void CreateUserSysPackets(const ReturnCode &rc,
-                            const std::string &username,
-                            const std::string &pin,
-                            VoidFuncOneInt vfoi,
-                            boost::uint16_t *count,
-                            bool *calledback);
   int CreateTmidPacket(const std::string &username,
                        const std::string &pin,
                        const std::string &password,
-                       const std::string &ser_dm);
-  int SaveSession(const std::string &ser_da);
-  void SaveSession(const std::string &ser_da, const VoidFuncOneInt &cb);
-  int RemoveMe(std::list<KeyAtlasRow> sig_keys);
-  int CreatePublicName(const std::string &public_username);
-  int ChangeUsername(const std::string &ser_da,
+                       const std::string &serialised_datamap);
+  int CreateMsidPacket(std::string *msid_name,
+                       std::string *msid_public_key,
+                       std::string *msid_private_key);
+  void SaveSession(const std::string &serialised_data_atlas,
+                   const VoidFuncOneInt &functor);
+  int SaveSession(const std::string &serialised_data_atlas);
+  int CreatePublicName(const std::string &public_name);
+  int RemoveMe();
+  int ChangeUsername(const std::string &serialised_data_atlas,
                      const std::string &new_username);
-  int ChangePin(const std::string &ser_da,
+  int ChangePin(const std::string &serialised_data_atlas,
                 const std::string &new_pin);
-  int ChangePassword(const std::string &ser_da,
+  int ChangePassword(const std::string &serialised_data_atlas,
                      const std::string &new_password);
-  int PublicUsernamePublicKey(const std::string &public_username,
-                              std::string *public_key);
-  void CreateMSIDPacket(kad::VoidFunctorOneString cb);
-  ReturnCode get_smidtimid_result() {
-    return get_smidtimid_result_;
-  }
  private:
-  std::string CreateSignaturePackets(const PacketType &type_da,
-                                     std::string *public_key);
-  void CreateSignaturePacket(boost::shared_ptr<SystemPacketCreation> spc,
-                             const PacketType &type_da);
+  enum OpStatus {
+    kSucceeded,
+    kFailed,
+    kPending,
+    kPendingMid,
+    kPendingTmid,
+    kNoUser
+  };
+  enum SaveSessionOpType { kRegular, kSaveNew, kDeleteOld, kUpdate, kUnique };
+  struct SaveSessionData {
+    SaveSessionData(VoidFuncOneInt func, SaveSessionOpType op_t)
+        : process_mid(kPending),
+          process_smid(kPending),
+          process_tmid(kPending),
+          process_stmid(kPending),
+          functor(func),
+          op_type(op_t) {}
+    OpStatus process_mid, process_smid, process_tmid, process_stmid;
+    VoidFuncOneInt functor;
+    SaveSessionOpType op_type;
+  };
+  Authentication &operator=(const Authentication&);
+  Authentication(const Authentication&);
+  void GetMidTmidCallback(const std::vector<std::string> &values,
+                          const ReturnCode &return_code,
+                          bool surrogate);
+  // Function waits until dependent_op_status != kPending or timeout before
+  // starting
+  void CreateSignaturePacket(const passport::PacketType &packet_type,
+                             boost::uint8_t attempt,
+                             OpStatus *op_status,
+                             OpStatus *dependent_op_status);
+  void PacketUniqueCallback(const ReturnCode &return_code,
+                            boost::shared_ptr<pki::Packet> packet,
+                            boost::uint8_t attempt,
+                            OpStatus *op_status);
+  void StoreOrDeletePacketCallback(const ReturnCode &return_code,
+                                   const passport::PacketType &packet_type,
+                                   bool storing,
+                                   boost::uint8_t attempt,
+                                   OpStatus *op_status);
+  void SaveSessionCallback(
+      const ReturnCode &return_code,
+      boost::shared_ptr<pki::Packet> packet,
+      boost::shared_ptr<SaveSessionData> save_session_data);
+  void DeletePacket(const passport::PacketType &packet_type,
+                    boost::uint8_t attempt,
+                    OpStatus *op_status,
+                    OpStatus *dependent_op_status);
+  int ChangeUserData(const std::string &serialised_data_atlas,
+                     const std::string &new_username,
+                     const std::string &new_pin);
   bool CheckUsername(const std::string &username);
-  bool CheckPin(const std::string &pin);
+  bool CheckPin(std::string pin);
   bool CheckPassword(const std::string &password);
 
-  void GetMidCallback(const std::vector<std::string> &values,
-                      const ReturnCode &rc,
-                      boost::shared_ptr<UserInfo> ui);
-  void GetSmidCallback(const std::vector<std::string> &values,
-                       const ReturnCode &rc,
-                       boost::shared_ptr<UserInfo> ui);
-  void GetMidTmid(boost::shared_ptr<UserInfo> ui);
-  void GetSmidTmid(boost::shared_ptr<UserInfo> ui);
-  void GetMidTmidCallback(const std::vector<std::string> &values,
-                          const ReturnCode &rc,
-                          boost::shared_ptr<UserInfo> ui);
-  void GetSmidTmidCallback(const std::vector<std::string> &values,
-                           const ReturnCode &rc,
-                           boost::shared_ptr<UserInfo> ui);
-
-  int StorePacket(const std::string &packet_name,
-                  const std::string &value,
-                  const PacketType &type,
-                  const std::string &msid);
-  // Unneccessary, but more efficient/faster to pass packet's value here
-  int DeletePacket(const std::string &packet_name,
-                   const std::string &value,
-                   const PacketType &type);
-  void PacketOpCallback(const int &store_manager_result,
-                        boost::mutex *mutex,
-                        boost::condition_variable *cond_var,
-                        int *op_result);
-  void CreateSignaturePacketKeyUnique(const ReturnCode &rc,
-                                      boost::shared_ptr<FindSystemPacket> fsp);
-  void CreateSignaturePacketStore(const ReturnCode &rc,
-                                  boost::shared_ptr<FindSystemPacket> fsp);
-  void CreateSystemPacketsCallback(const ReturnCode &rc);
-  void GetUserInfoCallback(const ReturnCode &rc);
-  void CreateMidPacket(boost::shared_ptr<FindSystemPacket> fsp);
-  void CreateSmidPacket(boost::shared_ptr<FindSystemPacket> fsp);
-  void CreateMaidPmidPacket(boost::shared_ptr<FindSystemPacket> fsp);
-  std::string EncryptedDataMidSmid(boost::uint32_t rid);
-
-  void UpdateSmidCallback(const ReturnCode &rc,
-                          boost::shared_ptr<SaveSessionData> ssd);
-  void DeleteSmidTmidCallback(const ReturnCode &rc,
-                              boost::shared_ptr<SaveSessionData> ssd);
-  void UpdateMidCallback(const ReturnCode &rc,
-                         boost::shared_ptr<SaveSessionData> ssd);
-  void StoreMidTmidCallback(const ReturnCode &rc,
-                            boost::shared_ptr<SaveSessionData> ssd);
-  void SaveSessionCallback(const ReturnCode &rc,
-                           ReturnCode *return_code_out,
-                           boost::condition_variable *cond_var,
-                           boost::mutex *mutex);
-
-  UserDetails ud_;
+  // Designed to be called as functor in timed_wait - user_info mutex locked
+  bool TmidOpDone() {
+    return (tmid_op_status_ == kSucceeded || tmid_op_status_ == kNoUser ||
+            tmid_op_status_ == kFailed);
+  }
+  // Designed to be called as functor in timed_wait - user_info mutex locked
+  bool StmidOpDone() {
+    return (stmid_op_status_ == kSucceeded || stmid_op_status_ == kNoUser ||
+            stmid_op_status_ == kFailed);
+  }
+  // Designed to be called as functor in timed_wait - user_info mutex locked
+  bool SignerDone(OpStatus *op_status) { return *op_status != kPending; }
+  // Designed to be called as functor in timed_wait - user_info mutex locked
+  bool SystemPacketsOpDone(const OpStatus &op_status1,
+                           const OpStatus &op_status2) {
+    return (op_status1 != kPending) && (op_status2 != kPending);
+  }
+  // Designed to be called as functor in timed_wait - user_info mutex locked
+  bool SystemPacketsOpDone(const OpStatus &op_status1,
+                           const OpStatus &op_status2,
+                           const OpStatus &op_status3) {
+    return SystemPacketsOpDone(op_status1, op_status2) &&
+           (op_status3 != kPending);
+  }
+  // Designed to be called as functor in timed_wait - user_info mutex locked
+  bool SystemPacketsOpDone(const OpStatus &op_status1,
+                           const OpStatus &op_status2,
+                           const OpStatus &op_status3,
+                           const OpStatus &op_status4,
+                           const OpStatus &op_status5) {
+    return SystemPacketsOpDone(op_status1, op_status2, op_status3) &&
+           SystemPacketsOpDone(op_status4, op_status5);
+  }
+  // Designed to be called as functor in timed_wait - user_info mutex locked
+  bool PacketOpDone(int *return_code) { return *return_code != kPendingResult; }
+  int StorePacket(boost::shared_ptr<pki::Packet> packet, bool check_uniqueness);
+  int DeletePacket(boost::shared_ptr<pki::Packet> packet);
+  int PacketUnique(boost::shared_ptr<pki::Packet> packet);
+  void PacketOpCallback(const ReturnCode &return_code, int *op_result);
+  char *UtilsTrimRight(char *szSource);
+  char *UtilsTrimLeft(char *szSource);
+  std::string UtilsTrim(std::string source);
+  boost::shared_ptr<StoreManagerInterface> store_manager_;
+  SessionSingleton *session_singleton_;
+  boost::shared_ptr<passport::Passport> passport_;
   boost::mutex mutex_;
-  crypto::Crypto crypto_;
-  boost::shared_ptr<StoreManagerInterface> sm_;
-  SessionSingleton *ss_;
-  ReturnCode system_packets_result_, user_info_result_, get_smidtimid_result_;
-  CryptoKeyPairs crypto_key_pairs_;
-  Authentication &operator=(const Authentication &);
-  Authentication(const Authentication &);
+  boost::condition_variable cond_var_;
+  OpStatus tmid_op_status_, stmid_op_status_;
+  std::string encrypted_tmid_, encrypted_stmid_, public_name_;
+  const int kSingleOpTimeout_;
 };
 
 }  // namespace maidsafe

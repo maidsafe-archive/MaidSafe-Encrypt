@@ -1,0 +1,16 @@
+package maidsafe;
+
+message DataMap {
+  required bytes file_hash = 1;
+  optional bytes se_version = 2;
+  repeated bytes chunk_name = 3;
+  repeated bytes encrypted_chunk_name = 4;
+  repeated uint64 chunk_size = 5;
+  optional bool compression_on = 6 [default=false];
+}
+
+message Chunk {
+  optional bytes compression_type = 1;
+  repeated bytes chunklet = 2;
+  repeated int32 pre_compression_chunklet_size = 3;
+}
