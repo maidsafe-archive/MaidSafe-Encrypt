@@ -12,7 +12,7 @@
  *      Author: Team
  */
 
-#include "qt/client/contact.h"
+#include "maidsafe/lifestuff/client/contact.h"
 
 Contact::Contact(const QString& publicName, QObject* parent)
     : QObject(parent), publicName_(publicName), presence_(), profile_() { }

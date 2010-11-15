@@ -25,11 +25,11 @@
 #include <QtXml/QDomElement>
 
 // local
-#include "qt/client/client_controller.h"
-#include "qt/widgets/personal_messages.h"
-#include "qt/widgets/user_settings.h"
-#include "qt/widgets/user_inbox.h"
-#include "qt/client/save_file_thread.h"
+#include "maidsafe/lifestuff/client/client_controller.h"
+#include "maidsafe/lifestuff/widgets/personal_messages.h"
+#include "maidsafe/lifestuff/widgets/user_settings.h"
+#include "maidsafe/lifestuff/widgets/user_inbox.h"
+#include "maidsafe/lifestuff/client/save_file_thread.h"
 
 // generated
 #include "ui_pd.h"
@@ -125,7 +125,7 @@ class PerpetualData : public QMainWindow {
     void onAwayTriggered();
     void onBusyTriggered();
     void onOffline_2Triggered();
-		void onEmailTriggered();
+    void onEmailTriggered();
     void onCalendarTriggered();
     void onOffTriggered();
     void onSmallTriggered();
@@ -252,8 +252,8 @@ class PerpetualData : public QMainWindow {
   // User Settings Window
   UserSettings* settings_;
 
-	// Email Inbox
-	UserInbox* inbox_;
+  // Email Inbox
+  UserInbox* inbox_;
 
   //Pending Ops
   PendingOperationsDialog* pendingOps_;

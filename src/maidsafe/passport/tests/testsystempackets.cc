@@ -61,7 +61,6 @@ class SystemPacketsTest : public testing::Test {
     signature_packet_types_.push_back(ANMPID);
     signature_packet_types_.push_back(ANMAID);
     signature_packet_types_.push_back(MSID);
-    packet_types_.push_back(MSID);
     packet_types_.push_back(MID);
     packet_types_.push_back(SMID);
     packet_types_.push_back(TMID);
@@ -334,6 +333,10 @@ TEST_F(SystemPacketsTest, BEH_PASSPORT_PutToAndGetFromKey) {
     EXPECT_EQ(signature_packet_types_.at(i), key.packet_type());
     EXPECT_EQ(key_pair1.public_key(), key.public_key());
     EXPECT_EQ(key_pair1.private_key(), key.private_key());
+    if (signer_private_key == key.private_key())
+      EXPECT_FALSE(key.has_signer_private_key());
+    else
+      EXPECT_EQ(signer_private_key, key.signer_private_key());
     EXPECT_EQ(expected_public_key_signature, key.public_key_signature());
 
     SignaturePtr key_sig_packet(new SignaturePacket(key));
@@ -343,6 +346,7 @@ TEST_F(SystemPacketsTest, BEH_PASSPORT_PutToAndGetFromKey) {
     EXPECT_EQ(signature_packet_types_.at(i), key_sig_packet->packet_type());
     EXPECT_EQ(key_pair1.public_key(), key_sig_packet->public_key_);
     EXPECT_EQ(key_pair1.private_key(), key_sig_packet->private_key());
+    EXPECT_EQ(signer_private_key, key_sig_packet->signer_private_key_);
     EXPECT_EQ(expected_public_key_signature,
               key_sig_packet->public_key_signature());
   }

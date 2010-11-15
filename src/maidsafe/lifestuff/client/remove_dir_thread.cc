@@ -12,13 +12,13 @@
  *      Author: Stephen
  */
 
-#include "qt/client/remove_dir_thread.h"
+#include "maidsafe/lifestuff/client/remove_dir_thread.h"
 
 // qt
 #include <QDebug>
 
 // core
-#include "qt/client/client_controller.h"
+#include "maidsafe/lifestuff/client/client_controller.h"
 
 
 RemoveDirThread::RemoveDirThread(const QString& filepath, QObject* parent)

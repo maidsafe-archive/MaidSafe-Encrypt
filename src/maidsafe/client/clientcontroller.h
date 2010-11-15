@@ -25,8 +25,10 @@
 #ifndef MAIDSAFE_CLIENT_CLIENTCONTROLLER_H_
 #define MAIDSAFE_CLIENT_CLIENTCONTROLLER_H_
 
-#include <gtest/gtest_prod.h>
-#include <maidsafe/base/utils.h>
+#include <boost/function.hpp>
+#include <boost/signals2.hpp>
+#include <boost/thread/condition_variable.hpp>
+#include <boost/thread/mutex.hpp>
 
 #include <list>
 #include <map>
@@ -34,11 +36,15 @@
 #include <string>
 #include <vector>
 
-#include "fs/filesystem.h"
+#include "maidsafe/common/filesystem.h"
+#include "maidsafe/common/maidsafe.h"
+#include "maidsafe/common/maidsafe_service_messages.pb.h"
+#include "maidsafe/common/returncodes.h"
 #include "maidsafe/client/authentication.h"
-#include "maidsafe/client/contacts.h"
-#include "maidsafe/client/privateshares.h"
-#include "maidsafe/client/sehandler.h"
+#include "maidsafe/client/filesystem/distributed_filesystem.pb.h"
+#include "maidsafe/client/filesystem/sehandler.h"
+
+namespace bs2 = boost::signals2;
 
 namespace maidsafe {
 
@@ -51,6 +57,9 @@ class ClientControllerTest_FUNC_MAID_NET_CC_ClearStaleMessages_Test;
 }
 
 class ChunkStore;
+class Contact;
+class PrivateShare;
+struct private_share;
 
 class CCCallback {
  public:
@@ -165,7 +174,7 @@ class ClientController {
   // Contact operations
   int ContactList(const std::string &pub_name,
                   const SortingMode &sm,
-                  std::vector<maidsafe::Contact> *c_list);
+                  std::vector<Contact> *c_list);
   int AddContact(const std::string &public_name);
   int DeleteContact(const std::string &public_name);
 
@@ -173,12 +182,12 @@ class ClientController {
   int GetShareList(const SortingMode &sm,
                    const ShareFilter &sf,
                    const std::string &pub_name,
-                   std::list<maidsafe::PrivateShare> *ps_list);
+                   std::list<PrivateShare> *ps_list);
   int ShareList(const SortingMode &sm, const ShareFilter &sf,
                 std::list<std::string> *share_list);
   int GetSortedShareList(const SortingMode &sm,
                          const std::string &pub_name,
-                         std::list<maidsafe::private_share> *ps_list);
+                         std::list<private_share> *ps_list);
   int CreateNewShare(const std::string &name,
                      const std::set<std::string> &admins,
                      const std::set<std::string> &readonlys);
@@ -205,7 +214,7 @@ class ClientController {
   int rmdir(const std::string &path);
   int getattr(const std::string &path, std::string *ser_mdm);
   int readdir(const std::string &path,  // NOLINT - readdir_r suggested
-              std::map<std::string, ItemType> *children);
+              std::map<fs::path, ItemType> *children);
   int mknod(const std::string &path);
   int unlink(const std::string &path);
   int link(const std::string &path, const std::string &path2);
@@ -282,10 +291,10 @@ class ClientController {
                                   const std::string &pmid_name,
                                   bool *callback_arrived,
                                   OwnLocalVaultResult *res);
-  VaultStatus LocalVaultOwned() const;
-  void LocalVaultOwnedCallback(const VaultStatus &result,
+  VaultOwnershipStatus LocalVaultOwned() const;
+  void LocalVaultOwnedCallback(const VaultOwnershipStatus &result,
                                bool *callback_arrived,
-                               VaultStatus *res);
+                               VaultOwnershipStatus *res);
   std::string GenerateBPInfo();
   std::vector<std::string> GetOffLineContacts();
   void FileUpdate(const std::string &file, int percentage);

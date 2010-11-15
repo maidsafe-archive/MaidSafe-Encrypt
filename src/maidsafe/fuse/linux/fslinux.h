@@ -27,13 +27,13 @@
  * ==========================================================================
  */
 
-#ifndef FS_L_FUSE_FSLINUX_H_
-#define FS_L_FUSE_FSLINUX_H_
+#ifndef MAIDSAFE_FUSE_LINUX_FSLINUX_H_
+#define MAIDSAFE_FUSE_LINUX_FSLINUX_H_
 
 #include <string>
 
 #include "maidsafe/client/clientcontroller.h"
-#include "fs/l_fuse/fusecpp.h"
+#include "maidsafe/fuse/linux/fusecpp.h"
 
 namespace fs_l_fuse {
 
@@ -89,4 +89,4 @@ class FSLinux {
       fuse_file_info *);
 };
 }  // namespace fs_l_fuse
-#endif  // FS_L_FUSE_FSLINUX_H_
+#endif  // MAIDSAFE_FUSE_LINUX_FSLINUX_H_

@@ -11,7 +11,7 @@
  *  Created on: May 18, 2010
  *      Author: Stephen Alexander
  */
-#include "qt/widgets/user_send_mail.h"
+#include "maidsafe/lifestuff/widgets/user_send_mail.h"
 
 #include <QMessageBox>
 #include <QDebug>
@@ -20,7 +20,7 @@
 #include <fstream>
 #include <string>
 
-#include "qt/client/client_controller.h"
+#include "maidsafe/lifestuff/client/client_controller.h"
 
 UserSendMail::UserSendMail(QWidget* parent) : QDialog(parent) {
   ui_.setupUi(this);
@@ -101,7 +101,7 @@ void UserSendMail::onSendClicked(bool) {
     }
     catch(const std::exception &e) {
       qDebug() << "UserSendMail::onSendClicked - Failed to create "
-               << emailRootPath;
+               << emailRootPath << ": " << e.what();
     }
 
     QString emailFullPath = QString("%1%2.pdmail").arg(emailRootPath)

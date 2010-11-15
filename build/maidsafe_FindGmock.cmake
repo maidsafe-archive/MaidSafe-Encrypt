@@ -28,8 +28,7 @@
 #  Variables set and cached by this module are:                                #
 #    Gmock_INCLUDE_DIR, Gmock_LIBRARY_DIR, Gmock_LIBRARY                       #
 #                                                                              #
-#  For MSVC, Gmock_LIBRARY_DIR_DEBUG and Gmock_LIBRARY_DEBUG are also set      #
-#  and cached.                                                                 #
+#  For MSVC, Gmock_LIBRARY_DIR_DEBUG is also set and cached.                   #
 #                                                                              #
 #==============================================================================#
 
@@ -39,6 +38,7 @@ UNSET(Gmock_LIBRARY_DIR CACHE)
 UNSET(Gmock_LIBRARY_DIR_DEBUG CACHE)
 UNSET(Gmock_LIBRARY CACHE)
 UNSET(Gmock_LIBRARY_DEBUG CACHE)
+UNSET(Gmock_LIBRARY_RELEASE CACHE)
 
 IF(GMOCK_LIB_DIR)
   SET(GMOCK_LIB_DIR ${GMOCK_LIB_DIR} CACHE INTERNAL "Path to GoogleMock libraries directory" FORCE)
@@ -61,7 +61,7 @@ ELSE()
   SET(GMOCK_LIBPATH_SUFFIX lib)
 ENDIF()
 
-FIND_LIBRARY(Gmock_LIBRARY NAMES gmock PATHS ${GMOCK_LIB_DIR} ${GMOCK_ROOT_DIR} PATH_SUFFIXES ${GMOCK_LIBPATH_SUFFIX})
+FIND_LIBRARY(Gmock_LIBRARY_RELEASE NAMES gmock PATHS ${GMOCK_LIB_DIR} ${GMOCK_ROOT_DIR} PATH_SUFFIXES ${GMOCK_LIBPATH_SUFFIX})
 IF(MSVC)
   SET(GMOCK_LIBPATH_SUFFIX msvc/Debug)
   FIND_LIBRARY(Gmock_LIBRARY_DEBUG NAMES gmock PATHS ${GMOCK_LIB_DIR} ${GMOCK_ROOT_DIR} PATH_SUFFIXES ${GMOCK_LIBPATH_SUFFIX})
@@ -69,20 +69,22 @@ ENDIF()
 
 FIND_PATH(Gmock_INCLUDE_DIR gmock/gmock.h PATHS ${GMOCK_INC_DIR} ${GMOCK_ROOT_DIR}/include)
 
-GET_FILENAME_COMPONENT(GMOCK_LIBRARY_DIR ${Gmock_LIBRARY} PATH)
+GET_FILENAME_COMPONENT(GMOCK_LIBRARY_DIR ${Gmock_LIBRARY_RELEASE} PATH)
 SET(Gmock_LIBRARY_DIR ${GMOCK_LIBRARY_DIR} CACHE PATH "Path to GoogleMock libraries directory" FORCE)
 IF(MSVC)
   GET_FILENAME_COMPONENT(GMOCK_LIBRARY_DIR_DEBUG ${Gmock_LIBRARY_DEBUG} PATH)
   SET(Gmock_LIBRARY_DIR_DEBUG ${GMOCK_LIBRARY_DIR_DEBUG} CACHE PATH "Path to GoogleMock debug libraries directory" FORCE)
 ENDIF()
 
-IF(NOT Gmock_LIBRARY)
+IF(NOT Gmock_LIBRARY_RELEASE)
   SET(ERROR_MESSAGE "\nCould not find Google Mock.  NO GMOCK LIBRARY - ")
   SET(ERROR_MESSAGE "${ERROR_MESSAGE}You can download it at http://code.google.com/p/googlemock\n")
   SET(ERROR_MESSAGE "${ERROR_MESSAGE}If Google Mock is already installed, run:\n")
   SET(ERROR_MESSAGE "${ERROR_MESSAGE}cmake ../.. -DGMOCK_LIB_DIR=<Path to gmock lib directory> and/or")
   SET(ERROR_MESSAGE "${ERROR_MESSAGE}\ncmake ../.. -DGMOCK_ROOT_DIR=<Path to gmock root directory>")
   MESSAGE(FATAL_ERROR "${ERROR_MESSAGE}")
+ELSE()
+  SET(Gmock_LIBRARY ${Gmock_LIBRARY_RELEASE} CACHE PATH "Path to GoogleMock library" FORCE)
 ENDIF()
 
 IF(MSVC)
@@ -92,6 +94,8 @@ IF(MSVC)
     SET(ERROR_MESSAGE "${ERROR_MESSAGE}If Google Mock is already installed, run:\n")
     SET(ERROR_MESSAGE "${ERROR_MESSAGE}cmake ../.. -DGMOCK_ROOT_DIR=<Path to gmock root directory>")
     MESSAGE(FATAL_ERROR "${ERROR_MESSAGE}")
+  ELSE()
+    SET(Gmock_LIBRARY debug ${Gmock_LIBRARY_DEBUG} optimized ${Gmock_LIBRARY} CACHE PATH "Path to GoogleMock libraries" FORCE)
   ENDIF()
 ENDIF()
 

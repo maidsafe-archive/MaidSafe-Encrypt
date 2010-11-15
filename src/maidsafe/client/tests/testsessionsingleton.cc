@@ -25,19 +25,25 @@
 #include <gtest/gtest.h>
 #include <maidsafe/base/crypto.h>
 
-#include "maidsafe/client/packetfactory.h"
+#include "maidsafe/common/commonutils.h"
 #include "maidsafe/client/sessionsingleton.h"
-#include "tests/maidsafe/cached_keys.h"
+#include "maidsafe/sharedtest/cached_keys.h"
+#include "maidsafe/sharedtest/cachepassport.h"
 
 namespace maidsafe {
 
+namespace test {
+
 class SessionSingletonTest : public testing::Test {
  public:
-  SessionSingletonTest() : ss_() {}
+  SessionSingletonTest() : ss_(SessionSingleton::getInstance()) {}
 
  protected:
   void SetUp() {
-    ss_ = SessionSingleton::getInstance();
+    boost::shared_ptr<passport::test::CachePassport> passport(
+        new passport::test::CachePassport(kRsaKeySize, 5, 10));
+    passport->Init();
+    ss_->passport_ = passport;
     ss_->ResetSession();
   }
   void TearDown() {
@@ -46,8 +52,8 @@ class SessionSingletonTest : public testing::Test {
   SessionSingleton *ss_;
 
  private:
-  explicit SessionSingletonTest(const maidsafe::SessionSingletonTest&);
-  SessionSingletonTest &operator=(const maidsafe::SessionSingletonTest&);
+  explicit SessionSingletonTest(const SessionSingletonTest&);
+  SessionSingletonTest &operator=(const SessionSingletonTest&);
 };
 
 TEST_F(SessionSingletonTest, BEH_MAID_SetsGetsAndResetSession) {
@@ -57,8 +63,6 @@ TEST_F(SessionSingletonTest, BEH_MAID_SetsGetsAndResetSession) {
   ASSERT_EQ("", ss_->Username());
   ASSERT_EQ("", ss_->Pin());
   ASSERT_EQ("", ss_->Password());
-  ASSERT_EQ(boost::uint32_t(0), ss_->MidRid());
-  ASSERT_EQ(boost::uint32_t(0), ss_->SmidRid());
   ASSERT_EQ("", ss_->SessionName());
   ASSERT_EQ("", ss_->RootDbKey());
   ASSERT_EQ(size_t(0), ss_->AuthorisedUsers().size());
@@ -67,9 +71,6 @@ TEST_F(SessionSingletonTest, BEH_MAID_SetsGetsAndResetSession) {
   ASSERT_EQ('\0', ss_->WinDrive());
   ASSERT_EQ("", ss_->VaultIP());
   ASSERT_EQ(boost::uint32_t(0), ss_->VaultPort());
-  std::list<KeyAtlasRow> keys;
-  ss_->GetKeys(&keys);
-  ASSERT_EQ(size_t(0), keys.size());
   std::vector<mi_contact> list;
   ASSERT_EQ(0, ss_->GetContactList(&list));
   ASSERT_EQ(size_t(0), list.size());
@@ -83,8 +84,6 @@ TEST_F(SessionSingletonTest, BEH_MAID_SetsGetsAndResetSession) {
   ASSERT_TRUE(ss_->SetUsername("aaa"));
   ASSERT_TRUE(ss_->SetPin("bbb"));
   ASSERT_TRUE(ss_->SetPassword("ccc"));
-  ASSERT_TRUE(ss_->SetMidRid(22));
-  ASSERT_TRUE(ss_->SetSmidRid(7));
   ASSERT_TRUE(ss_->SetSessionName(false));
   ASSERT_TRUE(ss_->SetRootDbKey("ddd"));
   std::set<std::string> non_empty_set;
@@ -98,7 +97,6 @@ TEST_F(SessionSingletonTest, BEH_MAID_SetsGetsAndResetSession) {
   ASSERT_FALSE(ss_->SetVaultPort(1023));
   ASSERT_FALSE(ss_->SetVaultPort(65536));
   ASSERT_TRUE(ss_->SetVaultPort(7777));
-  ss_->AddKey(ANMID, "id", "pri_key", "pub_key", "");
   ASSERT_EQ(0, ss_->AddContact("pub_name", "pub_key", "full_name",
             "office_phone", "birthday", 'M', 18, 6, "city", 'C', 0, 0));
   std::vector<std::string> attributes;
@@ -117,8 +115,6 @@ TEST_F(SessionSingletonTest, BEH_MAID_SetsGetsAndResetSession) {
   ASSERT_EQ("aaa", ss_->Username());
   ASSERT_EQ("bbb", ss_->Pin());
   ASSERT_EQ("ccc", ss_->Password());
-  ASSERT_EQ(boost::uint32_t(22), ss_->MidRid());
-  ASSERT_EQ(boost::uint32_t(7), ss_->SmidRid());
   ASSERT_NE("", ss_->SessionName());
   ASSERT_EQ("ddd", ss_->RootDbKey());
   ASSERT_EQ(size_t(1), ss_->AuthorisedUsers().size());
@@ -133,12 +129,6 @@ TEST_F(SessionSingletonTest, BEH_MAID_SetsGetsAndResetSession) {
   ASSERT_EQ('N', ss_->WinDrive());
   ASSERT_EQ("132.248.59.1", ss_->VaultIP());
   ASSERT_EQ(boost::uint32_t(7777), ss_->VaultPort());
-  ss_->GetKeys(&keys);
-  ASSERT_EQ(size_t(1), keys.size());
-  ASSERT_EQ(ANMID, keys.front().type_);
-  ASSERT_EQ("id", keys.front().id_);
-  ASSERT_EQ("pri_key", keys.front().private_key_);
-  ASSERT_EQ("pub_key", keys.front().public_key_);
   ASSERT_EQ(0, ss_->GetContactList(&list));
   ASSERT_EQ(size_t(1), list.size());
   ASSERT_EQ("pub_name", list[0].pub_name_);
@@ -174,8 +164,6 @@ TEST_F(SessionSingletonTest, BEH_MAID_SetsGetsAndResetSession) {
   ASSERT_EQ("", ss_->Username());
   ASSERT_EQ("", ss_->Pin());
   ASSERT_EQ("", ss_->Password());
-  ASSERT_EQ(boost::uint32_t(0), ss_->MidRid());
-  ASSERT_EQ(boost::uint32_t(0), ss_->SmidRid());
   ASSERT_EQ("", ss_->SessionName());
   ASSERT_EQ("", ss_->RootDbKey());
   ASSERT_EQ(size_t(0), ss_->AuthorisedUsers().size());
@@ -184,21 +172,21 @@ TEST_F(SessionSingletonTest, BEH_MAID_SetsGetsAndResetSession) {
   ASSERT_EQ('\0', ss_->WinDrive());
   ASSERT_EQ("", ss_->VaultIP());
   ASSERT_EQ(boost::uint32_t(0), ss_->VaultPort());
-  ss_->GetKeys(&keys);
-  ASSERT_EQ(size_t(0), keys.size());
   ASSERT_EQ(0, ss_->GetContactList(&list));
   ASSERT_EQ(size_t(0), list.size());
   ASSERT_EQ(0, ss_->GetFullShareList(ALPHA, kAll, &ps_list));
   ASSERT_EQ(size_t(0), ps_list.size());
 }
 
+/*
 TEST_F(SessionSingletonTest, BEH_MAID_PublicUsername) {
   ASSERT_EQ("", ss_->PublicUsername());
-  ASSERT_EQ("", ss_->Id(MPID));
+  ASSERT_EQ("", ss_->Id(passport::MPID));
   ss_->AddKey(MPID, "Dan Schmidt", "pri_key", "pub_key", "");
   ASSERT_EQ("Dan Schmidt", ss_->PublicUsername());
-  ASSERT_EQ("Dan Schmidt", ss_->Id(MPID));
+  ASSERT_EQ("Dan Schmidt", ss_->Id(passport::MPID));
 }
+*/
 
 TEST_F(SessionSingletonTest, BEH_MAID_SessionName) {
   // Check session is empty
@@ -210,12 +198,9 @@ TEST_F(SessionSingletonTest, BEH_MAID_SessionName) {
   ASSERT_FALSE(ss_->SetSessionName(false));
   ASSERT_EQ("", ss_->SessionName());
 
-  crypto::Crypto c;
-  c.set_hash_algorithm(crypto::SHA_1);
   std::string username("user1");
   std::string pin("1234");
-  std::string session_name =
-      c.Hash(pin + username, "", crypto::STRING_STRING, true);
+  std::string session_name = base::EncodeToHex(SHA1String(pin + username));
 
   // Set the session values
   ASSERT_TRUE(ss_->SetUsername(username));
@@ -230,6 +215,7 @@ TEST_F(SessionSingletonTest, BEH_MAID_SessionName) {
   ASSERT_EQ("", ss_->SessionName());
 }
 
+/*
 TEST_F(SessionSingletonTest, BEH_MAID_SessionKeyRingIO) {
   std::string pub_keys[7];
   std::string pri_keys[7];
@@ -246,15 +232,14 @@ TEST_F(SessionSingletonTest, BEH_MAID_SessionKeyRingIO) {
     k->set_public_key(pub_keys[n]);
     ss_->AddKey(PacketType(n), "id" + base::IntToString(n),
                 pri_keys[n], pub_keys[n], "");
-    k->set_public_key_signature(ss_->SignedPublicKey(PacketType(n)));
+    k->set_public_key_signature(ss_->PublicKeySignature(PacketType(n)));
   }
   // get signed public key
   for (int i = 0; i < 7; i++) {
     std::string public_key = pub_keys[i];
     std::string private_key = pri_keys[i];
-    crypto::Crypto co;
-    ASSERT_TRUE(co.AsymCheckSig(public_key, ss_->SignedPublicKey(PacketType(i)),
-                public_key, crypto::STRING_STRING));
+    ASSERT_TRUE(RSACheckSignedData(public_key,
+        ss_->PublicKeySignature(PacketType(i)), public_key));
   }
 
   std::string ser_da;
@@ -277,6 +262,7 @@ TEST_F(SessionSingletonTest, BEH_MAID_SessionKeyRingIO) {
   ss_->SerialisedKeyRing(&ser_kr);
   ASSERT_EQ(ser_da, ser_kr);
 }
+*/
 
 TEST_F(SessionSingletonTest, BEH_MAID_SessionContactsIO) {
   // Add contacts to the session
@@ -673,5 +659,7 @@ TEST_F(SessionSingletonTest, BEH_MAID_LiveContacts) {
     y += 2;
   }
 }
+
+}  // namespace test
 
 }  // namespace maidsafe

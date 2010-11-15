@@ -24,30 +24,31 @@
 
 #include <maidsafe/maidsafe-dht_config.h>
 
+#include "maidsafe/common/commonutils.h"
 #include "maidsafe/client/imhandler.h"
 #include "maidsafe/client/sessionsingleton.h"
 
 namespace maidsafe {
 
-IMHandler::IMHandler(SessionSingleton *ss) : ss_(ss), crypto_() {}
+IMHandler::IMHandler() : ss_(SessionSingleton::getInstance()), crypto_() {}
 
 std::string IMHandler::CreateMessage(const std::string &msg,
-      const std::string &receiver) {
+                                     const std::string &receiver) {
   maidsafe::BufferPacketMessage bpmsg;
   bpmsg.set_sender_id(ss_->PublicUsername());
   bpmsg.set_type(INSTANT_MSG);
   std::string aes_key =
       base::RandomString(crypto::AES256_KeySize + crypto::AES256_IVSize);
-  bpmsg.set_aesenc_message(crypto_.SymmEncrypt(msg, "",
-      crypto::STRING_STRING, aes_key));
+  bpmsg.set_aesenc_message(crypto_.SymmEncrypt(msg, "", crypto::STRING_STRING,
+                                               aes_key));
   std::string rec_pub_key(ss_->GetContactPublicKey(receiver));
-  bpmsg.set_rsaenc_key(crypto_.AsymEncrypt(aes_key, "",
-      rec_pub_key, crypto::STRING_STRING));
-
+  bpmsg.set_rsaenc_key(crypto_.AsymEncrypt(aes_key, "", rec_pub_key,
+                                           crypto::STRING_STRING));
+  std::string mpid_private;
+  ss_->MPublicID(NULL, NULL, &mpid_private, NULL);
   GenericPacket gp;
   gp.set_data(bpmsg.SerializeAsString());
-  gp.set_signature(crypto_.AsymSign(gp.data(), "", ss_->PrivateKey(MPID),
-      crypto::STRING_STRING));
+  gp.set_signature(RSASign(gp.data(), mpid_private));
   return gp.SerializeAsString();
 }
 
@@ -72,10 +73,11 @@ std::string IMHandler::CreateMessageEndpoint(const std::string &receiver) {
   bpmsg.set_rsaenc_key(crypto_.AsymEncrypt(aes_key, "",
       rec_pub_key, crypto::STRING_STRING));
 
+  std::string mpid_private;
+  ss_->MPublicID(NULL, NULL, &mpid_private, NULL);
   GenericPacket gp;
   gp.set_data(bpmsg.SerializeAsString());
-  gp.set_signature(crypto_.AsymSign(gp.data(), "", ss_->PrivateKey(MPID),
-      crypto::STRING_STRING));
+  gp.set_signature(RSASign(gp.data(), mpid_private));
   return gp.SerializeAsString();
 }
 
@@ -98,10 +100,11 @@ std::string IMHandler::CreateLogOutMessage(const std::string &receiver) {
   bpmsg.set_rsaenc_key(crypto_.AsymEncrypt(aes_key, "",
       rec_pub_key, crypto::STRING_STRING));
 
+  std::string mpid_private;
+  ss_->MPublicID(NULL, NULL, &mpid_private, NULL);
   GenericPacket gp;
   gp.set_data(bpmsg.SerializeAsString());
-  gp.set_signature(crypto_.AsymSign(gp.data(), "", ss_->PrivateKey(MPID),
-      crypto::STRING_STRING));
+  gp.set_signature(RSASign(gp.data(), mpid_private));
   return gp.SerializeAsString();
 }
 
@@ -118,13 +121,14 @@ bool IMHandler::ValidateMessage(const std::string &ser_msg,
     return false;
   }
   std::string send_pub_key(ss_->GetContactPublicKey(bpmsg.sender_id()));
-  if (!crypto_.AsymCheckSig(gp.data(), gp.signature(), send_pub_key,
-                            crypto::STRING_STRING)) {
+  if (!RSACheckSignedData(gp.data(), gp.signature(), send_pub_key)) {
     return false;
   }
 
+  std::string mpid_private;
+  ss_->MPublicID(NULL, NULL, &mpid_private, NULL);
   std::string aes_key(crypto_.AsymDecrypt(bpmsg.rsaenc_key(), "",
-      ss_->PrivateKey(MPID), crypto::STRING_STRING));
+      mpid_private, crypto::STRING_STRING));
   *validated_msg = crypto_.SymmDecrypt(bpmsg.aesenc_message(), "",
       crypto::STRING_STRING, aes_key);
   *type = bpmsg.type();

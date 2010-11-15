@@ -26,25 +26,24 @@
 #ifndef TESTS_MAIDSAFE_MOCKVAULTSERVICELOGIC_H_
 #define TESTS_MAIDSAFE_MOCKVAULTSERVICELOGIC_H_
 
-#include <boost/thread/condition_variable.hpp>
-#include <boost/thread/mutex.hpp>
+#include <boost/cstdint.hpp>
+#include <boost/function.hpp>
 #include <gmock/gmock.h>
-#include <maidsafe/protobuf/kademlia_service_messages.pb.h>
-#include <maidsafe/maidsafe-dht_config.h>
 
 #include <string>
 #include <vector>
 
-#include "maidsafe/client/packetfactory.h"
-#include "maidsafe/maidsafe.h"
+#include "maidsafe/common/commonutils.h"
+#include "maidsafe/common/maidsafe.h"
 #include "maidsafe/vault/vaultrpc.h"
 #include "maidsafe/vault/vaultservicelogic.h"
-#include "protobuf/maidsafe_service_messages.pb.h"
-#include "tests/maidsafe/mockkadops.h"
+#include "maidsafe/common/maidsafe_service_messages.pb.h"
+#include "maidsafe/common/kadops.h"
+#include "maidsafe/sharedtest/mockkadops.h"
 
 namespace mock_vsl {
 
-typedef boost::function<void (const maidsafe_vault::ReturnCode&)>
+typedef boost::function<void (const maidsafe::ReturnCode&)>
     VoidFuncOneInt;
 
 class KGroup {
@@ -63,20 +62,13 @@ class KGroup {
       kp.GenerateKeys(maidsafe::kRsaKeySize);
       pmid_private = kp.private_key();
       pmid_public = kp.public_key();
-      crypto::Crypto co;
-      co.set_symm_algorithm(crypto::AES_256);
-      co.set_hash_algorithm(crypto::SHA_512);
-      pmid_public_signature = co.AsymSign(pmid_public, "", pmid_private,
-                                          crypto::STRING_STRING);
-      pmid = co.Hash(pmid_public + pmid_public_signature, "",
-                     crypto::STRING_STRING, false);
+      pmid_public_signature = maidsafe::RSASign(pmid_public, pmid_private);
+      pmid = maidsafe::SHA512String(pmid_public + pmid_public_signature);
     }
     std::string pmid, pmid_private, pmid_public, pmid_public_signature;
   };
   explicit KGroup(const boost::uint8_t k)
-      : co_(), members_(), serialised_find_nodes_response_() {
-    co_.set_symm_algorithm(crypto::AES_256);
-    co_.set_hash_algorithm(crypto::SHA_512);
+      : members_(), serialised_find_nodes_response_() {
     kad::FindResponse find_response;
     find_response.set_result(kad::kRpcResultSuccess);
     for (int i = 0; i < k; ++i) {
@@ -98,7 +90,6 @@ class KGroup {
       const std::string &chunkname,
       std::vector<maidsafe::AmendAccountRequest> *requests);
  private:
-  crypto::Crypto co_;
   std::vector<Member> members_;
   std::string serialised_find_nodes_response_;
 };
@@ -108,8 +99,8 @@ void CopyResult(const int &response,
                 boost::condition_variable *cv,
                 int *result);
 
-void RunVaultCallback(const maidsafe_vault::ReturnCode &result,
-                      const VoidFuncOneInt &callback);
+void RunVaultCallback(const maidsafe::vault::VaultReturnCode &result,
+                      const maidsafe::vault::VoidFuncOneInt &callback);
 
 void DoneRun(const int &min_delay,
              const int &max_delay,
@@ -121,7 +112,9 @@ void ThreadedDoneRun(const int &min_delay,
 
 }  // namespace mock_vsl
 
-namespace maidsafe_vault {
+namespace maidsafe {
+
+namespace vault {
 
 class MockVaultRpcs : public VaultRpcs {
  public:
@@ -132,24 +125,24 @@ class MockVaultRpcs : public VaultRpcs {
       const kad::Contact &peer,
       bool local,
       const boost::int16_t &transport_id,
-      maidsafe::AddToReferenceListRequest *add_to_reference_list_request,
-      maidsafe::AddToReferenceListResponse *add_to_reference_list_response,
+      AddToReferenceListRequest *add_to_reference_list_request,
+      AddToReferenceListResponse *add_to_reference_list_response,
       rpcprotocol::Controller *controller,
       google::protobuf::Closure *done));
   MOCK_METHOD7(AmendAccount, void(
       const kad::Contact &peer,
       bool local,
       const boost::int16_t &transport_id,
-      maidsafe::AmendAccountRequest *amend_account_request,
-      maidsafe::AmendAccountResponse *amend_account_response,
+      AmendAccountRequest *amend_account_request,
+      AmendAccountResponse *amend_account_response,
       rpcprotocol::Controller *controller,
       google::protobuf::Closure *done));
   MOCK_METHOD7(AccountStatus, void(
       const kad::Contact &peer,
       bool local,
       const boost::int16_t &transport_id,
-      maidsafe::AccountStatusRequest *get_account_status_request,
-      maidsafe::AccountStatusResponse *get_account_status_response,
+      AccountStatusRequest *get_account_status_request,
+      AccountStatusResponse *get_account_status_response,
       rpcprotocol::Controller *controller,
       google::protobuf::Closure *done));
 };
@@ -157,30 +150,30 @@ class MockVaultRpcs : public VaultRpcs {
 class MockVsl : public VaultServiceLogic {
  public:
   MockVsl(const boost::shared_ptr<VaultRpcs> &vault_rpcs,
-          const boost::shared_ptr<maidsafe::KadOps> &kadops)
+          const boost::shared_ptr<KadOps> &kadops)
       : VaultServiceLogic(vault_rpcs, kadops) {}
-  boost::shared_ptr<maidsafe::MockKadOps> kadops() {
-    return boost::static_pointer_cast<maidsafe::MockKadOps>(kad_ops_);
+  boost::shared_ptr<MockKadOps> kadops() {
+    return boost::static_pointer_cast<MockKadOps>(kad_ops_);
   }
   MOCK_METHOD4(AddToRemoteRefList,
-               void(const maidsafe::AddToReferenceListRequest &request,
+               void(const AddToReferenceListRequest &request,
                     const int &found_local_result,
                     const VoidFuncOneInt &callback,
                     const boost::int16_t &transport_id));
   MOCK_METHOD4(AmendRemoteAccount,
-               void(const maidsafe::AmendAccountRequest &request,
+               void(const AmendAccountRequest &request,
                     const int &found_local_result,
                     const VoidFuncOneInt &callback,
                     const boost::int16_t &transport_id));
   void AddToRemoteRefListReal(
-      const maidsafe::AddToReferenceListRequest &request,
+      const AddToReferenceListRequest &request,
       const int &found_local_result,
       const VoidFuncOneInt &callback,
       const boost::int16_t &transport_id) {
     return VaultServiceLogic::AddToRemoteRefList(request, found_local_result,
                                                  callback, transport_id);
   }
-  void AmendRemoteAccountReal(const maidsafe::AmendAccountRequest &request,
+  void AmendRemoteAccountReal(const AmendAccountRequest &request,
                               const int &found_local_result,
                               const VoidFuncOneInt &callback,
                               const boost::int16_t &transport_id) {
@@ -216,17 +209,15 @@ class MockVaultServiceLogicTest : public testing::Test {
         good_contacts_() {}
   virtual ~MockVaultServiceLogicTest() {}
   virtual void SetUp() {
-    crypto_.set_hash_algorithm(crypto::SHA_512);
     crypto_.set_symm_algorithm(crypto::AES_256);
-    pmid_keys_.GenerateKeys(maidsafe::kRsaKeySize);
+    pmid_keys_.GenerateKeys(kRsaKeySize);
     pmid_private_ = pmid_keys_.private_key();
     pmid_public_ = pmid_keys_.public_key();
     // PMID isn't signed by its own private key in production code, but this
     // is quicker rather than generating a new set of keys
     pmid_public_signature_ = crypto_.AsymSign(pmid_public_, "", pmid_private_,
         crypto::STRING_STRING);
-    pmid_ = crypto_.Hash(pmid_public_ + pmid_public_signature_, "",
-        crypto::STRING_STRING, false);
+    pmid_ = SHA512String(pmid_public_ + pmid_public_signature_);
     our_contact_ = kad::Contact(pmid_, "192.168.10.10", 8008);
     std::string ser_our_contact;
     our_contact_.SerialiseToString(&ser_our_contact);
@@ -261,6 +252,8 @@ class MockVaultServiceLogicTest : public testing::Test {
   MockVaultServiceLogicTest &operator=(const MockVaultServiceLogicTest&);
 };
 
-}  // namespace maidsafe_vault
+}  // namespace vault
+
+}  // namespace maidsafe
 
 #endif  // TESTS_MAIDSAFE_MOCKVAULTSERVICELOGIC_H_

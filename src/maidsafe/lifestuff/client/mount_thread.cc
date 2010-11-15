@@ -13,13 +13,13 @@
  *      Author: Team
  */
 
-#include "qt/client/mount_thread.h"
+#include "maidsafe/lifestuff/client/mount_thread.h"
 
 // qt
 #include <QDebug>
 
 // local
-#include "qt/client/user_space_filesystem.h"
+#include "maidsafe/lifestuff/client/user_space_filesystem.h"
 
 
 MountThread::MountThread(MountAction action, QObject* parent)

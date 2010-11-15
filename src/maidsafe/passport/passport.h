@@ -23,6 +23,7 @@
 #define MAIDSAFE_PASSPORT_PASSPORT_H_
 
 #include <boost/cstdint.hpp>
+#include <boost/tr1/memory.hpp>
 
 #include "maidsafe/passport/cryptokeypairs.h"
 #include "maidsafe/passport/systempackethandler.h"
@@ -34,16 +35,16 @@ namespace passport {
 class Passport {
  public:
   // Size to generate RSA keys in bits.
-  explicit Passport(const boost::uint16_t &rsa_key_size,
-                    const boost::int8_t &max_crypto_thread_count)
-      : packet_handler_(),
-        crypto_key_pairs_(rsa_key_size, max_crypto_thread_count),
+  Passport(const boost::uint16_t &rsa_key_size,
+           const boost::int8_t &max_crypto_thread_count)
+      : crypto_key_pairs_(rsa_key_size, max_crypto_thread_count),
+        packet_handler_(),
         kSmidAppendix_("1") {}
 
   // Starts buffering cryptographic key pairs
-  void Init();
+  virtual void Init();
 
-  ~Passport() {}
+  virtual ~Passport() {}
 
   // Used to initilise packet_handler_ in all cases.
   // Creates a pending MID and SMID which need to have their RID set.  If
@@ -87,7 +88,7 @@ class Passport {
   // which case tmid_for_deletion is NULL.  If successful, a copy of the new and
   // old details are set before returning kSuccess.  Can be called repeatedly
   // (with same plain_text_master_data) in case generated new_tmid name is
-  // unsuitable. 
+  // unsuitable.
   int UpdateMasterData(const std::string &plain_text_master_data,
                        std::string *mid_old_value,
                        std::string *smid_old_value,
@@ -204,20 +205,35 @@ class Passport {
   // is reverted to last confirmed version.
   int RevertSignaturePacket(const PacketType &packet_type);
 
-  // Returns a copy of the confirmed packet.
-  std::tr1::shared_ptr<pki::Packet> Packet(const PacketType &packet_type) {
-    return packet_handler_.Packet(packet_type);
+  // Returns a copy of the confirmed or pending packet.
+  std::tr1::shared_ptr<pki::Packet> GetPacket(const PacketType &packet_type,
+                                              bool confirmed) {
+    return packet_handler_.GetPacket(packet_type, confirmed);
   }
+
+  // Removes packet from packet_handler_.
+  int DeletePacket(const PacketType &packet_type) {
+    return packet_handler_.DeletePacket(packet_type);
+  }
+
+  std::string SignaturePacketName(const PacketType &packet_type,
+                                  bool confirmed);
+  std::string SignaturePacketPublicKey(const PacketType &packet_type,
+                                       bool confirmed);
+  std::string SignaturePacketPrivateKey(const PacketType &packet_type,
+                                        bool confirmed);
+  std::string SignaturePacketPublicKeySignature(const PacketType &packet_type,
+                                                bool confirmed);
 
   // Removes all packets from packet_handler_.
   void Clear() { packet_handler_.Clear(); }
 
+ protected:
+  CryptoKeyPairs crypto_key_pairs_;
+
  private:
   Passport &operator=(const Passport&);
   Passport(const Passport&);
-  std::tr1::shared_ptr<pki::Packet> PendingMid(const PacketType &packet_type) {
-    return packet_handler_.Packet(packet_type);
-  }
   int DoInitialiseSignaturePacket(
       const PacketType &packet_type,
       const std::string &public_name,
@@ -236,7 +252,6 @@ class Passport {
   std::tr1::shared_ptr<TmidPacket> PendingTmid();
   std::tr1::shared_ptr<TmidPacket> PendingStmid();
   SystemPacketHandler packet_handler_;
-  CryptoKeyPairs crypto_key_pairs_;
   const std::string kSmidAppendix_;
 };
 

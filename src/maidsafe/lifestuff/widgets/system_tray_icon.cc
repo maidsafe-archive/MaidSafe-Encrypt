@@ -12,7 +12,7 @@
  *      Author: Team
  */
 
-#include "qt/widgets/system_tray_icon.h"
+#include "maidsafe/lifestuff/widgets/system_tray_icon.h"
 
 // qt
 #include <QDebug>

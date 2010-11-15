@@ -13,8 +13,8 @@
  */
 #include <QDebug>
 
-#include "qt/widgets/personal_settings.h"
-#include "qt/client/client_controller.h"
+#include "maidsafe/lifestuff/widgets/personal_settings.h"
+#include "maidsafe/lifestuff/client/client_controller.h"
 
 PersonalSettings::PersonalSettings(QWidget* parent)
     : QWidget(parent), init_(false) {

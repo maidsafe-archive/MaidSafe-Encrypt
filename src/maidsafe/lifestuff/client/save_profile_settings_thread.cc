@@ -12,7 +12,7 @@
  *      Author: Team
  */
 
-#include "qt/client/save_profile_settings_thread.h"
+#include "maidsafe/lifestuff/client/save_profile_settings_thread.h"
 
 // qt
 #include <QDebug>
@@ -23,7 +23,7 @@
 #include <vector>
 
 // core
-#include "qt/client/client_controller.h"
+#include "maidsafe/lifestuff/client/client_controller.h"
 
 
 SaveProfileSettingsThread::SaveProfileSettingsThread(

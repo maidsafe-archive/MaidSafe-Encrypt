@@ -21,7 +21,7 @@
 
 // std
 #include <string>
-#include "qt/client/client_controller.h"
+#include "maidsafe/lifestuff/client/client_controller.h"
 
 // generated
 #include "ui_user_panels.h"

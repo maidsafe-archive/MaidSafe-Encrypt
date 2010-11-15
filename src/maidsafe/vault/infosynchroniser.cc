@@ -25,15 +25,17 @@
 
 #include "maidsafe/vault/infosynchroniser.h"
 
-#include <maidsafe/base/routingtable.h>
+#include <maidsafe/base/utils.h>
 
 #include <algorithm>
 #include <list>
 
-#include "maidsafe/kadops.h"
-#include "maidsafe/maidsafe.h"
+#include "maidsafe/common/kadops.h"
+#include "maidsafe/common/maidsafe.h"
 
-namespace maidsafe_vault {
+namespace maidsafe {
+
+namespace vault {
 
 bool InfoSynchroniser::ShouldFetch(const std::string &id,
                                    std::vector<kad::Contact> *closest_nodes) {
@@ -78,7 +80,7 @@ bool InfoSynchroniser::ShouldFetch(const std::string &id,
   kad::Contact our_contact(pmid_, "", 0);
   std::for_each(nodes.begin(), nodes.end(), boost::bind(
       &InfoSynchroniser::AddNodeToClosest, this, _1, closest_nodes));
-  if (maidsafe::ContactWithinClosest(id, our_contact, *closest_nodes)) {
+  if (ContactWithinClosest(id, our_contact, *closest_nodes)) {
     return true;
   } else {
     closest_nodes->clear();
@@ -114,4 +116,6 @@ void InfoSynchroniser::AddNodeToClosest(
                                   node.rendezvous_ip, node.rendezvous_port));
 }
 
-}  // namespace maidsafe_vault
+}  // namespace vault
+
+}  // namespace maidsafe

@@ -21,10 +21,15 @@
 * ============================================================================
 */
 #include <gtest/gtest.h>
-#include "maidsafe/client/packetfactory.h"
-#include "maidsafe/vaultbufferpackethandler.h"
-#include "tests/maidsafe/cached_keys.h"
+#include <maidsafe/base/utils.h>
+#include "maidsafe/common/vaultbufferpackethandler.h"
+#include "maidsafe/common/commonutils.h"
+#include "maidsafe/sharedtest/cached_keys.h"
 
+namespace maidsafe {
+
+namespace test {
+  
 class VaultBufferPacketHandlerTest : public testing::Test {
  public:
   VaultBufferPacketHandlerTest() : vbph_(),
@@ -37,7 +42,6 @@ class VaultBufferPacketHandlerTest : public testing::Test {
  protected:
   void SetUp() {
     cry_obj_.set_symm_algorithm(crypto::AES_256);
-    cry_obj_.set_hash_algorithm(crypto::SHA_512);
     testuser_ = "testuser";
     cached_keys::MakeKeys(2, &keys_);
     public_key_ = keys_.at(0).public_key();
@@ -45,14 +49,13 @@ class VaultBufferPacketHandlerTest : public testing::Test {
     maidsafe::BufferPacketInfo bpi;
     bpi.set_owner("test bufferpacket");
     bpi.set_owner_publickey(public_key_);
-    bpi.add_users(cry_obj_.Hash(testuser_, "", crypto::STRING_STRING, false));
+    bpi.add_users(SHA512String(testuser_));
     maidsafe::BufferPacket bp;
     maidsafe::GenericPacket *info = bp.add_owner_info();
     std::string ser_bpi;
     bpi.SerializeToString(&ser_bpi);
     info->set_data(ser_bpi);
-    info->set_signature(cry_obj_.AsymSign(ser_bpi, "", private_key_,
-                        crypto::STRING_STRING));
+    info->set_signature(RSASign(ser_bpi, private_key_));
     bp.SerializeToString(&ser_bp_);
   }
   void TearDown() {
@@ -84,8 +87,7 @@ TEST_F(VaultBufferPacketHandlerTest, BEH_MAID_ChangeOwnerInfo) {
   std::string ser_bpi;
   bpi.SerializeToString(&ser_bpi);
   info->set_data(ser_bpi);
-  info->set_signature(cry_obj_.AsymSign(ser_bpi, "", private_key_,
-                      crypto::STRING_STRING));
+  info->set_signature(RSASign(ser_bpi, private_key_));
   std::string ser_gp;
   info->SerializeToString(&ser_gp);
   ASSERT_TRUE(vbph_.ChangeOwnerInfo(ser_gp, public_key_, &ser_bp_));
@@ -100,8 +102,7 @@ TEST_F(VaultBufferPacketHandlerTest, BEH_MAID_ChangeOwnerInfo) {
 
   bpi.SerializeToString(&ser_bpi);
   info->set_data(ser_bpi);
-  info->set_signature(cry_obj_.AsymSign(ser_bpi, "", private_key_,
-                      crypto::STRING_STRING));
+  info->set_signature(RSASign(ser_bpi, private_key_));
   info->SerializeToString(&ser_gp);
   ASSERT_TRUE(vbph_.ChangeOwnerInfo(ser_gp, public_key_, &ser_bp_));
   ASSERT_TRUE(bp_up.ParseFromString(ser_bp_));
@@ -119,9 +120,8 @@ TEST_F(VaultBufferPacketHandlerTest, BEH_MAID_AddGetClearMessages) {
   maidsafe::GenericPacket gp_msg;
   maidsafe::BufferPacketMessage bp_msg;
   bp_msg.set_sender_id("non authuser");
-  std::string signed_public_key = cry_obj_.AsymSign(keys_.at(1).public_key(),
-                                  "", keys_.at(1).private_key(),
-                                  crypto::STRING_STRING);
+  std::string signed_public_key = RSASign(keys_.at(1).public_key(),
+                                          keys_.at(1).private_key());
   std::string enc_key = cry_obj_.AsymEncrypt("key", "", public_key_,
     crypto::STRING_STRING);
   bp_msg.set_rsaenc_key(enc_key);
@@ -132,23 +132,20 @@ TEST_F(VaultBufferPacketHandlerTest, BEH_MAID_AddGetClearMessages) {
   std::string ser_bp_msg;
   bp_msg.SerializeToString(&ser_bp_msg);
   gp_msg.set_data(ser_bp_msg);
-  gp_msg.set_signature(cry_obj_.AsymSign(ser_bp_msg, "",
-      keys_.at(1).private_key(), crypto::STRING_STRING));
+  gp_msg.set_signature(RSASign(ser_bp_msg, keys_.at(1).private_key()));
   gp_msg.SerializeToString(&ser_msg);
   ASSERT_TRUE(vbph_.CheckMsgStructure(ser_msg, &sender, &type));
   ASSERT_EQ("non authuser", sender);
   ASSERT_EQ(maidsafe::INSTANT_MSG, type);
 
-  std::string sender_id = cry_obj_.Hash(keys_.at(1).public_key() +
-      signed_public_key, "", crypto::STRING_STRING, false);
-  std::string hashed_sender_id = cry_obj_.Hash(sender_id, "",
-                                 crypto::STRING_STRING, false);
+  std::string sender_id =
+      SHA512String(keys_.at(1).public_key() + signed_public_key);
+  std::string hashed_sender_id = SHA512String(sender_id);
   bp_msg.set_sender_id(sender_id);
   bp_msg.SerializeToString(&ser_bp_msg);
   bp_msg.set_sender_public_key(keys_.at(1).public_key());
   gp_msg.set_data(ser_bp_msg);
-  gp_msg.set_signature(cry_obj_.AsymSign(ser_bp_msg, "",
-      keys_.at(1).private_key(), crypto::STRING_STRING));
+  gp_msg.set_signature(RSASign(ser_bp_msg, keys_.at(1).private_key()));
   gp_msg.SerializeToString(&ser_msg);
   ASSERT_TRUE(vbph_.CheckMsgStructure(ser_msg, &sender, &type));
   ASSERT_EQ(sender_id, sender);
@@ -169,15 +166,13 @@ TEST_F(VaultBufferPacketHandlerTest, BEH_MAID_AddGetClearMessages) {
   std::string new_ser_bpi;
   bpi.SerializeToString(&new_ser_bpi);
   bp_info_up->set_data(new_ser_bpi);
-  bp_info_up->set_signature(cry_obj_.AsymSign(new_ser_bpi, "", private_key_,
-                            crypto::STRING_STRING));
+  bp_info_up->set_signature(RSASign(new_ser_bpi, private_key_));
   bp.SerializeToString(&ser_bp_);
 
   bp_msg.set_sender_public_key(keys_.at(1).public_key());
   bp_msg.SerializeToString(&ser_bp_msg);
   gp_msg.set_data(ser_bp_msg);
-  gp_msg.set_signature(cry_obj_.AsymSign(ser_bp_msg, "",
-      keys_.at(1).private_key(), crypto::STRING_STRING));
+  gp_msg.set_signature(RSASign(ser_bp_msg, keys_.at(1).private_key()));
   gp_msg.SerializeToString(&ser_msg);
 
   ASSERT_TRUE(vbph_.AddMessage(ser_bp_, ser_msg, signed_public_key,
@@ -215,14 +210,12 @@ TEST_F(VaultBufferPacketHandlerTest, BEH_MAID_AddGetRequestMessages) {
   std::string ser_bp_msg;
   bp_msg.SerializeToString(&ser_bp_msg);
   gp_msg.set_data(ser_bp_msg);
-  gp_msg.set_signature(cry_obj_.AsymSign(ser_bp_msg, "",
-                       keys_.at(1).private_key(), crypto::STRING_STRING));
+  gp_msg.set_signature(RSASign(ser_bp_msg, keys_.at(1).private_key()));
   gp_msg.SerializeToString(&ser_msg);
   ASSERT_TRUE(vbph_.CheckMsgStructure(ser_msg, &sender, &type));
   ASSERT_EQ("non authuser", sender);
-  std::string signed_public_key = cry_obj_.AsymSign(keys_.at(1).public_key(),
-                                  "", keys_.at(1).private_key(),
-                                  crypto::STRING_STRING);
+  std::string signed_public_key = RSASign(keys_.at(1).public_key(),
+                                          keys_.at(1).private_key());
   ASSERT_EQ(maidsafe::ADD_CONTACT_RQST, type);
   ASSERT_FALSE(vbph_.AddMessage(ser_bp_, ser_msg, signed_public_key,
                                &str_bp_updated));
@@ -230,8 +223,7 @@ TEST_F(VaultBufferPacketHandlerTest, BEH_MAID_AddGetRequestMessages) {
   bp_msg.SerializeToString(&ser_bp_msg);
   gp_msg.Clear();
   gp_msg.set_data(ser_bp_msg);
-  gp_msg.set_signature(cry_obj_.AsymSign(ser_bp_msg, "",
-      keys_.at(1).private_key(), crypto::STRING_STRING));
+  gp_msg.set_signature(RSASign(ser_bp_msg, keys_.at(1).private_key()));
   gp_msg.SerializeToString(&ser_msg);
 
   maidsafe::GenericPacket sig_packet;
@@ -257,13 +249,11 @@ TEST_F(VaultBufferPacketHandlerTest, BEH_MAID_AddGetPresence) {
   maidsafe::BufferPacketInfo bpi;
   bpi.ParseFromString(gp_info.data());
   std::string user("el usuario");
-  bpi.add_users(cry_obj_.Hash(user, "", crypto::STRING_STRING, false));
+  bpi.add_users(SHA512String(user));
   for (int i = 0; i < 10; ++i)
-    bpi.add_users(cry_obj_.Hash(user + base::IntToString(i), "",
-                                crypto::STRING_STRING, false));
+    bpi.add_users(SHA512String(user + base::IntToString(i)));
   gp_info.set_data(bpi.SerializeAsString());
-  gp_info.set_signature(cry_obj_.AsymSign(gp_info.data(), "", private_key_,
-                        crypto::STRING_STRING));
+  gp_info.set_signature(RSASign(gp_info.data(), private_key_));
   ASSERT_TRUE(vbph_.ChangeOwnerInfo(gp_info.SerializeAsString(), public_key_,
               &ser_bp_));
 
@@ -278,8 +268,7 @@ TEST_F(VaultBufferPacketHandlerTest, BEH_MAID_AddGetPresence) {
                    crypto::STRING_STRING));
   maidsafe::GenericPacket lp_gp;
   lp_gp.set_data(lp.SerializeAsString());
-  lp_gp.set_signature(cry_obj_.AsymSign(lp_gp.data(), "",
-                      keys_[1].private_key(), crypto::STRING_STRING));
+  lp_gp.set_signature(RSASign(lp_gp.data(), keys_[1].private_key()));
   ASSERT_TRUE(vbph_.AddPresence(lp_gp.SerializeAsString(), &ser_bp_));
 
   std::vector<std::string> msgs;
@@ -287,8 +276,8 @@ TEST_F(VaultBufferPacketHandlerTest, BEH_MAID_AddGetPresence) {
   ASSERT_EQ(size_t(1), msgs.size());
   lp_gp.Clear();
   ASSERT_TRUE(lp_gp.ParseFromString(msgs[0]));
-  ASSERT_TRUE(cry_obj_.AsymCheckSig(lp_gp.data(), lp_gp.signature(),
-              keys_[1].public_key(), crypto::STRING_STRING));
+  ASSERT_TRUE(RSACheckSignedData(lp_gp.data(), lp_gp.signature(),
+                                 keys_[1].public_key()));
   lp.Clear();
   ASSERT_TRUE(lp.ParseFromString(lp_gp.data()));
   ASSERT_EQ(user, lp.contact_id());
@@ -315,8 +304,7 @@ TEST_F(VaultBufferPacketHandlerTest, BEH_MAID_AddGetPresence) {
                    crypto::STRING_STRING));
   lp_gp.Clear();
   lp_gp.set_data(lp.SerializeAsString());
-  lp_gp.set_signature(cry_obj_.AsymSign(lp_gp.data(), "",
-                      keys_[1].private_key(), crypto::STRING_STRING));
+  lp_gp.set_signature(RSASign(lp_gp.data(), keys_[1].private_key()));
   ASSERT_FALSE(vbph_.AddPresence(lp_gp.SerializeAsString(), &ser_bp_));
   msgs.clear();
   ASSERT_TRUE(vbph_.GetPresence(&ser_bp_, &msgs));
@@ -334,16 +322,15 @@ TEST_F(VaultBufferPacketHandlerTest, BEH_MAID_AddGetPresence) {
                      public_key_, crypto::STRING_STRING));
     lp_gp.Clear();
     lp_gp.set_data(lp.SerializeAsString());
-    lp_gp.set_signature(cry_obj_.AsymSign(lp_gp.data(), "",
-                        keys_[1].private_key(), crypto::STRING_STRING));
+    lp_gp.set_signature(RSASign(lp_gp.data(), keys_[1].private_key()));
     ASSERT_TRUE(vbph_.AddPresence(lp_gp.SerializeAsString(), &ser_bp_));
   }
 
   ASSERT_TRUE(vbph_.GetPresence(&ser_bp_, &msgs));
   ASSERT_EQ(size_t(1), msgs.size());
   ASSERT_TRUE(lp_gp.ParseFromString(msgs[0]));
-  ASSERT_TRUE(cry_obj_.AsymCheckSig(lp_gp.data(), lp_gp.signature(),
-              keys_[1].public_key(), crypto::STRING_STRING));
+  ASSERT_TRUE(RSACheckSignedData(lp_gp.data(), lp_gp.signature(),
+                                 keys_[1].public_key()));
   lp.Clear();
   ASSERT_TRUE(lp.ParseFromString(lp_gp.data()));
   ASSERT_EQ(user, lp.contact_id());
@@ -370,8 +357,7 @@ TEST_F(VaultBufferPacketHandlerTest, BEH_MAID_AddGetPresence) {
                      public_key_, crypto::STRING_STRING));
     lp_gp.Clear();
     lp_gp.set_data(lp.SerializeAsString());
-    lp_gp.set_signature(cry_obj_.AsymSign(lp_gp.data(), "",
-                        keys_[1].private_key(), crypto::STRING_STRING));
+    lp_gp.set_signature(RSASign(lp_gp.data(), keys_[1].private_key()));
     ASSERT_TRUE(vbph_.AddPresence(lp_gp.SerializeAsString(), &ser_bp_));
   }
 
@@ -379,8 +365,8 @@ TEST_F(VaultBufferPacketHandlerTest, BEH_MAID_AddGetPresence) {
   ASSERT_EQ(size_t(10), msgs.size());
   for (size_t e = 0; e < msgs.size(); ++e) {
     ASSERT_TRUE(lp_gp.ParseFromString(msgs[e]));
-    ASSERT_TRUE(cry_obj_.AsymCheckSig(lp_gp.data(), lp_gp.signature(),
-                keys_[1].public_key(), crypto::STRING_STRING));
+    ASSERT_TRUE(RSACheckSignedData(lp_gp.data(), lp_gp.signature(),
+                                   keys_[1].public_key()));
     lp.Clear();
     ASSERT_TRUE(lp.ParseFromString(lp_gp.data()));
     ASSERT_EQ(user + base::IntToString(e), lp.contact_id());
@@ -396,3 +382,7 @@ TEST_F(VaultBufferPacketHandlerTest, BEH_MAID_AddGetPresence) {
   ASSERT_TRUE(vbph_.GetPresence(&ser_bp_, &msgs));
   ASSERT_EQ(size_t(0), msgs.size());
 }
+
+}  // namespace test
+
+}  // namespace maidsafe

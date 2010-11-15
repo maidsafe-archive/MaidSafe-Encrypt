@@ -12,18 +12,19 @@
  *      Author: Team
  */
 
-#include "maidsafe/clientbufferpackethandler.h"
-#include <maidsafe/protobuf/kademlia_service_messages.pb.h>
-#include "maidsafe/kadops.h"
+#include "maidsafe/common/clientbufferpackethandler.h"
+#include "maidsafe/common/commonutils.h"
+#include "maidsafe/common/kadops.h"
+#include "maidsafe/common/bufferpacketrpc.h"
+
 
 namespace maidsafe {
 
 ClientBufferPacketHandler::ClientBufferPacketHandler(
-    boost::shared_ptr<maidsafe::BufferPacketRpcs> rpcs,
+    boost::shared_ptr<BufferPacketRpcs> rpcs,
     boost::shared_ptr<KadOps> kadops, boost::uint8_t upper_threshold)
         : crypto_obj_(), rpcs_(rpcs), kad_ops_(kadops),
           kUpperThreshold_(upper_threshold) {
-  crypto_obj_.set_hash_algorithm(crypto::SHA_512);
   crypto_obj_.set_symm_algorithm(crypto::AES_256);
 }
 
@@ -33,31 +34,25 @@ void ClientBufferPacketHandler::CreateBufferPacket(
   BufferPacket buffer_packet;
   GenericPacket *ser_owner_info = buffer_packet.add_owner_info();
   BufferPacketInfo buffer_packet_info;
-  buffer_packet_info.set_owner(args.sign_id);
-  buffer_packet_info.set_owner_publickey(args.public_key);
+  buffer_packet_info.set_owner(args.kPublicUsername);
+  buffer_packet_info.set_owner_publickey(args.kMpidPublicKey);
   ser_owner_info->set_data(buffer_packet_info.SerializeAsString());
-  ser_owner_info->set_signature(crypto_obj_.AsymSign(ser_owner_info->data(),
-                                "", args.private_key, crypto::STRING_STRING));
+  ser_owner_info->set_signature(
+      RSASign(ser_owner_info->data(), args.kMpidPrivateKey));
 
   boost::shared_ptr<ChangeBPData> data(new ChangeBPData);
   data->cb = cb;
   data->create_request.set_bufferpacket_name(
-      crypto_obj_.Hash(args.sign_id + args.public_key, "",
-                       crypto::STRING_STRING, false));
+      SHA512String(args.kPublicUsername + args.kMpidPublicKey));
 
   data->create_request.set_data(buffer_packet.SerializePartialAsString());
-  data->create_request.set_pmid(args.sign_id);
-  data->create_request.set_public_key(args.public_key);
+  data->create_request.set_pmid(args.kPublicUsername);
+  data->create_request.set_public_key(args.kMpidPublicKey);
   data->create_request.set_signed_public_key(
-      crypto_obj_.AsymSign(args.public_key, "", args.private_key,
-                           crypto::STRING_STRING));
-  data->create_request.set_signed_request(
-      crypto_obj_.AsymSign(
-          crypto_obj_.Hash(args.public_key +
-                           data->create_request.signed_public_key() +
-                           data->create_request.bufferpacket_name(),
-                           "", crypto::STRING_STRING, false),
-          "", args.private_key, crypto::STRING_STRING));
+      RSASign(args.kMpidPublicKey, args.kMpidPrivateKey));
+  data->create_request.set_signed_request(RSASign(SHA512String(
+      args.kMpidPublicKey + data->create_request.signed_public_key() +
+      data->create_request.bufferpacket_name()), args.kMpidPrivateKey));
 
   FindNodes(boost::bind(&ClientBufferPacketHandler::FindNodesCallback,
             this, _1, _2, data, transport_id), data);
@@ -68,28 +63,26 @@ void ClientBufferPacketHandler::ModifyOwnerInfo(
     bp_operations_cb cb, const boost::int16_t &transport_id) {
   boost::shared_ptr<ChangeBPData> data(new ChangeBPData);
   BufferPacketInfo buffer_packet_info;
-  buffer_packet_info.set_owner(args.sign_id);
-  buffer_packet_info.set_owner_publickey(args.public_key);
+  buffer_packet_info.set_owner(args.kPublicUsername);
+  buffer_packet_info.set_owner_publickey(args.kMpidPublicKey);
   for (unsigned int i = 0; i < users.size(); ++i)
     buffer_packet_info.add_users(users.at(i));
 
   GenericPacket ser_owner_info;
   ser_owner_info.set_data(buffer_packet_info.SerializeAsString());
-  ser_owner_info.set_signature(crypto_obj_.AsymSign(
-    ser_owner_info.data(), "", args.private_key, crypto::STRING_STRING));
+  ser_owner_info.set_signature(
+      RSASign(ser_owner_info.data(), args.kMpidPrivateKey));
 
   data->modify_request.set_data(ser_owner_info.SerializeAsString());
-  data->modify_request.set_bufferpacket_name(crypto_obj_.Hash(args.sign_id +
-    args.public_key, "", crypto::STRING_STRING, false));
-  data->modify_request.set_pmid(args.sign_id);
-  data->modify_request.set_public_key(args.public_key);
-  data->modify_request.set_signed_public_key(crypto_obj_.AsymSign(
-    args.public_key, "", args.private_key, crypto::STRING_STRING));
-  data->modify_request.set_signed_request(crypto_obj_.AsymSign(crypto_obj_.Hash(
-      args.public_key + data->modify_request.signed_public_key() +
-      data->modify_request.bufferpacket_name(),
-      "", crypto::STRING_STRING, false), "", args.private_key,
-      crypto::STRING_STRING));
+  data->modify_request.set_bufferpacket_name(
+      SHA512String(args.kPublicUsername + args.kMpidPublicKey));
+  data->modify_request.set_pmid(args.kPublicUsername);
+  data->modify_request.set_public_key(args.kMpidPublicKey);
+  data->modify_request.set_signed_public_key(
+      RSASign(args.kMpidPublicKey, args.kMpidPrivateKey));
+  data->modify_request.set_signed_request(RSASign(SHA512String(
+      args.kMpidPublicKey + data->modify_request.signed_public_key() +
+      data->modify_request.bufferpacket_name()), args.kMpidPrivateKey));
 
   data->cb = cb;
   data->type = MODIFY_INFO;
@@ -101,23 +94,20 @@ void ClientBufferPacketHandler::GetMessages(
     const BPInputParameters &args, bp_getmessages_cb cb,
     const boost::int16_t &transport_id) {
   boost::shared_ptr<ChangeBPData> data(new ChangeBPData);
-  std::string bpname(crypto_obj_.Hash(args.sign_id + args.public_key, "",
-                     crypto::STRING_STRING, false));
+  std::string bpname(SHA512String(args.kPublicUsername + args.kMpidPublicKey));
   data->get_msgs_request.set_bufferpacket_name(bpname);
-  data->get_msgs_request.set_public_key(args.public_key);
-  data->get_msgs_request.set_pmid(args.sign_id);
-  std::string pubkey_signature(crypto_obj_.AsymSign(args.public_key, "",
-                               args.private_key, crypto::STRING_STRING));
+  data->get_msgs_request.set_public_key(args.kMpidPublicKey);
+  data->get_msgs_request.set_pmid(args.kPublicUsername);
+  std::string pubkey_signature(RSASign(args.kMpidPublicKey,
+                                       args.kMpidPrivateKey));
   data->get_msgs_request.set_signed_public_key(pubkey_signature);
-  std::string req_signature(crypto_obj_.AsymSign(
-      crypto_obj_.Hash(args.public_key + pubkey_signature + bpname, "",
-                       crypto::STRING_STRING, false),
-      "", args.private_key, crypto::STRING_STRING));
+  std::string req_signature(RSASign(SHA512String(
+      args.kMpidPublicKey + pubkey_signature + bpname), args.kMpidPrivateKey));
   data->get_msgs_request.set_signed_request(req_signature);
 
   data->cb_getmsgs = cb;
   data->type = GET_MESSAGES;
-  data->private_key = args.private_key;
+  data->private_key = args.kMpidPrivateKey;
   FindNodes(boost::bind(&ClientBufferPacketHandler::FindNodesCallback,
             this, _1, _2, data, transport_id), data);
 }
@@ -131,7 +121,7 @@ void ClientBufferPacketHandler::AddMessage(
 
   BufferPacketMessage bpmsg;
   bpmsg.set_sender_id(my_pu);
-  bpmsg.set_sender_public_key(args.public_key);
+  bpmsg.set_sender_public_key(args.kMpidPublicKey);
   bpmsg.set_type(m_type);
   bpmsg.set_timestamp(base::GetEpochTime());
   // generating key to encrypt msg with AES
@@ -146,22 +136,19 @@ void ClientBufferPacketHandler::AddMessage(
 
   GenericPacket ser_bpmsg;
   ser_bpmsg.set_data(bpmsg.SerializeAsString());
-  ser_bpmsg.set_signature(crypto_obj_.AsymSign(
-      ser_bpmsg.data(), "", args.private_key, crypto::STRING_STRING));
+  ser_bpmsg.set_signature(RSASign(ser_bpmsg.data(), args.kMpidPrivateKey));
 
   data->add_msg_request.set_data(ser_bpmsg.SerializeAsString());
 
-  data->add_msg_request.set_bufferpacket_name(crypto_obj_.Hash(receiver_id +
-      recver_public_key, "", crypto::STRING_STRING, false));
-  data->add_msg_request.set_pmid(args.sign_id);
-  data->add_msg_request.set_public_key(args.public_key);
-  data->add_msg_request.set_signed_public_key(crypto_obj_.AsymSign(
-    args.public_key, "", args.private_key, crypto::STRING_STRING));
-  data->add_msg_request.set_signed_request(crypto_obj_.AsymSign(
-      crypto_obj_.Hash(args.public_key +
-      data->add_msg_request.signed_public_key() +
-      data->add_msg_request.bufferpacket_name(), "", crypto::STRING_STRING,
-      false), "", args.private_key, crypto::STRING_STRING));
+  data->add_msg_request.set_bufferpacket_name(
+      SHA512String(receiver_id + recver_public_key));
+  data->add_msg_request.set_pmid(args.kPublicUsername);
+  data->add_msg_request.set_public_key(args.kMpidPublicKey);
+  data->add_msg_request.set_signed_public_key(
+      RSASign(args.kMpidPublicKey, args.kMpidPrivateKey));
+  data->add_msg_request.set_signed_request(RSASign(SHA512String(
+      args.kMpidPublicKey + data->add_msg_request.signed_public_key() +
+      data->add_msg_request.bufferpacket_name()), args.kMpidPrivateKey));
 
   data->cb = cb;
   data->type = ADD_MESSAGE;
@@ -173,23 +160,20 @@ void ClientBufferPacketHandler::GetPresence(
     const BPInputParameters &args, bp_getpresence_cb cb,
     const boost::int16_t &transport_id) {
   boost::shared_ptr<ChangeBPData> data(new ChangeBPData);
-  std::string bpname(crypto_obj_.Hash(args.sign_id + args.public_key, "",
-                     crypto::STRING_STRING, false));
+  std::string bpname(SHA512String(args.kPublicUsername + args.kMpidPublicKey));
   data->get_presence_request.set_bufferpacket_name(bpname);
-  data->get_presence_request.set_public_key(args.public_key);
-  data->get_presence_request.set_pmid(args.sign_id);
-  std::string pubkey_signature(crypto_obj_.AsymSign(args.public_key, "",
-                               args.private_key, crypto::STRING_STRING));
+  data->get_presence_request.set_public_key(args.kMpidPublicKey);
+  data->get_presence_request.set_pmid(args.kPublicUsername);
+  std::string pubkey_signature(RSASign(args.kMpidPublicKey,
+                                       args.kMpidPrivateKey));
   data->get_presence_request.set_signed_public_key(pubkey_signature);
-  std::string req_signature(crypto_obj_.AsymSign(
-      crypto_obj_.Hash(args.public_key + pubkey_signature + bpname, "",
-                       crypto::STRING_STRING, false),
-      "", args.private_key, crypto::STRING_STRING));
+  std::string req_signature(RSASign(SHA512String(args.kMpidPublicKey +
+      pubkey_signature + bpname), args.kMpidPrivateKey));
   data->get_presence_request.set_signed_request(req_signature);
 
   data->cb_getpresence = cb;
   data->type = GET_PRESENCE;
-  data->private_key = args.private_key;
+  data->private_key = args.kMpidPrivateKey;
   FindNodes(boost::bind(&ClientBufferPacketHandler::FindNodesCallback,
             this, _1, _2, data, transport_id), data);
 }
@@ -206,26 +190,21 @@ void ClientBufferPacketHandler::AddPresence(
   kad_ops_->SetThisEndpoint(&ep);
   std::string s_ep(ep.SerializeAsString());
   lp.set_end_point(crypto_obj_.AsymEncrypt(s_ep, "", recver_public_key,
-                    crypto::STRING_STRING));
+                   crypto::STRING_STRING));
 
   GenericPacket ser_lp;
   ser_lp.set_data(lp.SerializeAsString());
-  ser_lp.set_signature(crypto_obj_.AsymSign(ser_lp.data(), "", args.private_key,
-                       crypto::STRING_STRING));
+  ser_lp.set_signature(RSASign(ser_lp.data(), args.kMpidPrivateKey));
 
   data->add_presence_request.set_data(ser_lp.SerializeAsString());
-  std::string bpname(crypto_obj_.Hash(receiver_id + recver_public_key, "",
-                     crypto::STRING_STRING, false));
+  std::string bpname(SHA512String(receiver_id + recver_public_key));
   data->add_presence_request.set_bufferpacket_name(bpname);
-  data->add_presence_request.set_pmid(args.sign_id);
-  data->add_presence_request.set_public_key(args.public_key);
-  std::string pubkey_sig(crypto_obj_.AsymSign(args.public_key, "",
-                         args.private_key, crypto::STRING_STRING));
+  data->add_presence_request.set_pmid(args.kPublicUsername);
+  data->add_presence_request.set_public_key(args.kMpidPublicKey);
+  std::string pubkey_sig(RSASign(args.kMpidPublicKey, args.kMpidPrivateKey));
   data->add_presence_request.set_signed_public_key(pubkey_sig);
-  data->add_presence_request.set_signed_request(crypto_obj_.AsymSign(
-      crypto_obj_.Hash(args.public_key + pubkey_sig + bpname, "",
-                       crypto::STRING_STRING, false),
-      "", args.private_key, crypto::STRING_STRING));
+  data->add_presence_request.set_signed_request(RSASign(SHA512String(
+      args.kMpidPublicKey + pubkey_sig + bpname), args.kMpidPrivateKey));
 
   data->cb = cb;
   data->type = ADD_PRESENCE;

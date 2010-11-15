@@ -11,7 +11,7 @@
  *  Created on: May 17, 2010
  *      Author: Stephen
  */
-#include "qt/client/big_list_delegate.h"
+#include "maidsafe/lifestuff/client/big_list_delegate.h"
 
 #include <QtGui>
 #include <QApplication>	
@@ -24,26 +24,26 @@ BigListDelegate::BigListDelegate(QObject *parent)
 void BigListDelegate::paint(QPainter *painter, const QStyleOptionViewItem &option,
                             const QModelIndex &index) const {
 
-	if(qVariantCanConvert<QString>(index.data())) {
+  if(qVariantCanConvert<QString>(index.data())) {
 
-		QString data = qVariantValue<QString>(index.data());
-		QRect rect(option.rect.topLeft(),QSize(32,32));
+    QString data = qVariantValue<QString>(index.data());
+    QRect rect(option.rect.topLeft(),QSize(32,32));
 
-		QApplication::style()->drawItemPixmap(painter, rect, Qt::AlignLeft, icon_);
+    QApplication::style()->drawItemPixmap(painter, rect, Qt::AlignLeft, icon_);
 
-		rect.moveTo(rect.topRight());
+    rect.moveTo(rect.topRight());
 
-		QApplication::style()->drawItemText(painter, rect, Qt::AlignLeft, option.palette, true, data);
-	}
+    QApplication::style()->drawItemText(painter, rect, Qt::AlignLeft, option.palette, true, data);
+  }
 }
 
 BigListDelegate::~BigListDelegate() { }
 
 QSize BigListDelegate::sizeHint(const QStyleOptionViewItem & /* option */,
                                const QModelIndex & /* index */) const {
-	return QSize(pixelSize, pixelSize);
+  return QSize(pixelSize, pixelSize);
 }
 
 void BigListDelegate::setPixelSize(int size) {
-	pixelSize = size;
+  pixelSize = size;
 }

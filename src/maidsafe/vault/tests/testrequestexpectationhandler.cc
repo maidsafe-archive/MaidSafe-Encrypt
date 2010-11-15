@@ -23,25 +23,31 @@
 */
 
 #include <gtest/gtest.h>
+#include <maidsafe/base/utils.h>
+
 #include <algorithm>
-#include "maidsafe/maidsafe.h"
+
+#include "maidsafe/common/commonutils.h"
+#include "maidsafe/common/maidsafe.h"
+#include "maidsafe/common/maidsafe_service_messages.pb.h"
 #include "maidsafe/vault/requestexpectationhandler.h"
-#include "protobuf/maidsafe_service_messages.pb.h"
+#include "maidsafe/vault/vaultconfig.h"
 
 namespace test_reh {
 static const boost::uint8_t K(8);
 }  // namespace test_reh
 
-namespace maidsafe_vault {
+namespace maidsafe {
+
+namespace vault {
+
+namespace test {
 
 class RequestExpectationHandlerTest : public testing::Test {
  public:
   RequestExpectationHandlerTest()
-      : co_(),
-        chunkname_(co_.Hash(base::RandomString(100), "",
-                            crypto::STRING_STRING, false)),
-        account_pmid_(co_.Hash(base::RandomString(100), "",
-                               crypto::STRING_STRING, false)),
+      : chunkname_(SHA512String(base::RandomString(100))),
+        account_pmid_(SHA512String(base::RandomString(100))),
         public_key_("Insignificant"),
         public_key_signature_("Insignificant"),
         request_signature_("Insignificant"),
@@ -50,8 +56,8 @@ class RequestExpectationHandlerTest : public testing::Test {
         request_expectation_handler_(kMaxAccountAmendments,
                                      kMaxRepeatedAccountAmendments,
                                      kAccountAmendmentTimeout) {}
-  void RunRandomOps(std::vector<maidsafe::ExpectAmendmentRequest> ears) {
-    std::vector<maidsafe::AmendAccountRequest> aars(ears.size());
+  void RunRandomOps(std::vector<ExpectAmendmentRequest> ears) {
+    std::vector<AmendAccountRequest> aars(ears.size());
     std::vector< std::vector<std::string> > input_vectors, output_vectors;
     std::random_shuffle(ears.begin(), ears.end());
     for (size_t i = 0; i != ears.size(); ++i) {
@@ -89,30 +95,27 @@ class RequestExpectationHandlerTest : public testing::Test {
   }
  protected:
   void SetUp() {
-    ASSERT_EQ(crypto::SHA_512, co_.hash_algorithm());
     expect_amendment_request_.set_amendment_type(
-        maidsafe::AmendAccountRequest::kSpaceTakenInc);
+        AmendAccountRequest::kSpaceTakenInc);
     expect_amendment_request_.set_chunkname(chunkname_);
     expect_amendment_request_.set_account_pmid(account_pmid_);
     expect_amendment_request_.set_public_key(public_key_);
     expect_amendment_request_.set_public_key_signature(public_key_signature_);
     expect_amendment_request_.set_request_signature(request_signature_);
     for (boost::uint16_t i = 0; i < test_reh::K; ++i) {
-      amender_pmids_.push_back(co_.Hash(base::RandomString(100), "",
-                                        crypto::STRING_STRING, false));
+      amender_pmids_.push_back(SHA512String(base::RandomString(100)));
       expect_amendment_request_.add_amender_pmids(amender_pmids_.at(i));
     }
   }
   void TearDown() {}
-  crypto::Crypto co_;
   std::string chunkname_, account_pmid_, public_key_, public_key_signature_;
   std::string request_signature_;
   std::vector<std::string> amender_pmids_;
-  maidsafe::ExpectAmendmentRequest expect_amendment_request_;
+  ExpectAmendmentRequest expect_amendment_request_;
   RequestExpectationHandler request_expectation_handler_;
 };
 
-TEST_F(RequestExpectationHandlerTest, BEH_MAID_REH_AddSingleExpectation) {
+TEST_F(RequestExpectationHandlerTest, BEH_MAID_AddSingleExpectation) {
   ASSERT_EQ(kSuccess,
       request_expectation_handler_.AddExpectation(expect_amendment_request_));
   ASSERT_EQ(size_t(1), request_expectation_handler_.expectations_.size());
@@ -121,7 +124,7 @@ TEST_F(RequestExpectationHandlerTest, BEH_MAID_REH_AddSingleExpectation) {
   ASSERT_TRUE(result);
 }
 
-TEST_F(RequestExpectationHandlerTest, BEH_MAID_REH_TooManyExpectations) {
+TEST_F(RequestExpectationHandlerTest, BEH_MAID_TooManyExpectations) {
   std::string new_name(chunkname_);
   for (size_t j = 0; j != request_expectation_handler_.kMaxExpectations_ + 1;
        ++j) {
@@ -140,7 +143,7 @@ TEST_F(RequestExpectationHandlerTest, BEH_MAID_REH_TooManyExpectations) {
   }
 }
 
-TEST_F(RequestExpectationHandlerTest, BEH_MAID_REH_TooManyRepeats) {
+TEST_F(RequestExpectationHandlerTest, BEH_MAID_TooManyRepeats) {
   for (size_t j = 0;
        j != request_expectation_handler_.kMaxRepeatedExpectations_ + 1; ++j) {
     if (j < request_expectation_handler_.kMaxRepeatedExpectations_) {
@@ -156,7 +159,7 @@ TEST_F(RequestExpectationHandlerTest, BEH_MAID_REH_TooManyRepeats) {
   }
 }
 
-TEST_F(RequestExpectationHandlerTest, BEH_MAID_REH_GetExpectedCallersIds) {
+TEST_F(RequestExpectationHandlerTest, BEH_MAID_GetExpectedCallersIds) {
   // Add expectation to be retrieved later
   ASSERT_EQ(kSuccess,
       request_expectation_handler_.AddExpectation(expect_amendment_request_));
@@ -166,8 +169,7 @@ TEST_F(RequestExpectationHandlerTest, BEH_MAID_REH_GetExpectedCallersIds) {
   std::vector<std::string> second_ids;
   expect_amendment_request_.clear_amender_pmids();
   for (boost::uint16_t i = 0; i < test_reh::K; ++i) {
-    second_ids.push_back(co_.Hash(base::RandomString(100), "",
-                                  crypto::STRING_STRING, false));
+    second_ids.push_back(SHA512String(base::RandomString(100)));
     expect_amendment_request_.add_amender_pmids(second_ids.at(i));
   }
   ASSERT_EQ(kSuccess,
@@ -176,8 +178,8 @@ TEST_F(RequestExpectationHandlerTest, BEH_MAID_REH_GetExpectedCallersIds) {
   // Add more expectations
   expect_amendment_request_.clear_amender_pmids();
   for (boost::uint16_t i = 0; i < test_reh::K; ++i) {
-    expect_amendment_request_.add_amender_pmids(co_.Hash(
-        base::RandomString(100), "", crypto::STRING_STRING, false));
+    expect_amendment_request_.add_amender_pmids(
+        SHA512String(base::RandomString(100)));
   }
   std::string new_name(chunkname_);
   for (size_t j = 0; j != request_expectation_handler_.kMaxExpectations_ - 2;
@@ -190,9 +192,9 @@ TEST_F(RequestExpectationHandlerTest, BEH_MAID_REH_GetExpectedCallersIds) {
   }
 
   // Retrieve and check first expectation
-  maidsafe::AmendAccountRequest amend_account_request;
+  AmendAccountRequest amend_account_request;
   amend_account_request.set_amendment_type(
-      maidsafe::AmendAccountRequest::kSpaceTakenInc);
+      AmendAccountRequest::kSpaceTakenInc);
   amend_account_request.set_chunkname(chunkname_);
   amend_account_request.set_account_pmid(account_pmid_);
   std::vector<std::string> result_ids =
@@ -227,13 +229,13 @@ TEST_F(RequestExpectationHandlerTest, BEH_MAID_REH_GetExpectedCallersIds) {
   ASSERT_TRUE(result_ids.empty());
 }
 
-TEST_F(RequestExpectationHandlerTest, BEH_MAID_REH_CleanUp) {
+TEST_F(RequestExpectationHandlerTest, BEH_MAID_CleanUp) {
   // Create handler which times out expectations after 1 second
   RequestExpectationHandler another_expectation_handler(kMaxAccountAmendments,
       kMaxRepeatedAccountAmendments, 1000);
-  maidsafe::AmendAccountRequest amend_account_request;
+  AmendAccountRequest amend_account_request;
   amend_account_request.set_amendment_type(
-      maidsafe::AmendAccountRequest::kSpaceTakenInc);
+      AmendAccountRequest::kSpaceTakenInc);
   amend_account_request.set_account_pmid(account_pmid_);
 
   const size_t test_count(10);
@@ -291,15 +293,15 @@ TEST_F(RequestExpectationHandlerTest, BEH_MAID_REH_CleanUp) {
   ASSERT_TRUE(another_expectation_handler.expectations_.empty());
 }
 
-TEST_F(RequestExpectationHandlerTest, BEH_MAID_REH_Threaded) {
+TEST_F(RequestExpectationHandlerTest, BEH_MAID_Threaded) {
   // Create expectations - need kMaxOpThreads set to >= 5.
   const int kMaxOpThreads(20);
   ASSERT_LT(4, kMaxOpThreads);
   const int kTestThreadCount(base::RandomUint32() % (kMaxOpThreads - 4) + 4);
   printf("Op thread count = %i\n", kTestThreadCount);
-  std::vector< std::vector<maidsafe::ExpectAmendmentRequest> > ears_vecs;
+  std::vector< std::vector<ExpectAmendmentRequest> > ears_vecs;
   for (int i = 0; i != kTestThreadCount; ++i) {
-    std::vector<maidsafe::ExpectAmendmentRequest> ears;
+    std::vector<ExpectAmendmentRequest> ears;
     std::string new_name(chunkname_);
     for (size_t j = 0;
          j != request_expectation_handler_.kMaxExpectations_ / kTestThreadCount;
@@ -336,4 +338,8 @@ TEST_F(RequestExpectationHandlerTest, BEH_MAID_REH_Threaded) {
   ASSERT_TRUE(request_expectation_handler_.expectations_.empty());
 }
 
-}  // namespace maidsafe_vault
+}  // namespace test
+
+}  // namespace vault
+
+}  // namespace maidsafe

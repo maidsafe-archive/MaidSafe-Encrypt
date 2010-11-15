@@ -27,18 +27,19 @@
 
 #include <maidsafe/base/crypto.h>
 #include <string>
-#include "protobuf/packet.pb.h"
+#include "maidsafe/common/packet.pb.h"
 
 namespace maidsafe {
 
 class SessionSingleton;
 namespace test {
 class CCImMessagingTest;
+class MultiImHandlerTest;
 }  // namespace test
 
 class IMHandler {
  public:
-  explicit IMHandler(SessionSingleton *ss);
+  explicit IMHandler();
   std::string CreateMessage(const std::string &msg,
                             const std::string &receiver);
   bool ValidateMessage(const std::string &ser_msg, MessageType *type,
@@ -47,6 +48,7 @@ class IMHandler {
   std::string CreateLogOutMessage(const std::string &receiver);
  private:
   friend class test::CCImMessagingTest;
+  friend class test::MultiImHandlerTest;
   SessionSingleton *ss_;
   crypto::Crypto crypto_;
 };

@@ -19,9 +19,9 @@
 #include <QWidget>
 
 //local
-#include "qt/client/read_file_thread.h"
-#include "qt/client/save_file_thread.h"
-#include "qt/client/contact.h"
+#include "maidsafe/lifestuff/client/read_file_thread.h"
+#include "maidsafe/lifestuff/client/save_file_thread.h"
+#include "maidsafe/lifestuff/client/contact.h"
 
 // generated
 #include "ui_lifestuff_fullview.h"

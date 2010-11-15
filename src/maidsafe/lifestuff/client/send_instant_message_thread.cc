@@ -12,13 +12,13 @@
  *      Author: Stephen Alexander
  */
 
-#include "qt/client/send_instant_message_thread.h"
+#include "maidsafe/lifestuff/client/send_instant_message_thread.h"
 
 // qt
 #include <QDebug>
 
 // core
-#include "qt/client/client_controller.h"
+#include "maidsafe/lifestuff/client/client_controller.h"
 
 SendInstantMessageThread::SendInstantMessageThread(const QString& text,
                                                    const QString& convName,

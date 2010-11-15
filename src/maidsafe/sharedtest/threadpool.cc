@@ -21,7 +21,8 @@
 * ============================================================================
 */
 
-#include "tests/maidsafe/threadpool.h"
+#include "maidsafe/sharedtest/threadpool.h"
+#include <stdio.h>
 
 namespace base {
 

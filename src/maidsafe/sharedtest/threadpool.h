@@ -21,15 +21,14 @@
 * ============================================================================
 */
 
-// TODO remove and replace with maidsafe-dht's identical threadpool
+// TODO(Team) remove and replace with maidsafe-dht's identical threadpool
 
-#ifndef TESTS_MAIDSAFE_THREADPOOL_H_
-#define TESTS_MAIDSAFE_THREADPOOL_H_
+#ifndef MAIDSAFE_SHAREDTEST_THREADPOOL_H_
+#define MAIDSAFE_SHAREDTEST_THREADPOOL_H_
 
 #include <boost/thread/condition_variable.hpp>
 #include <boost/function.hpp>
 #include <boost/thread/thread.hpp>
-#include <gtest/gtest_prod.h>
 #include <queue>
 #include <vector>
 
@@ -66,4 +65,4 @@ class Threadpool {
 
 }  // namespace base
 
-#endif  // TESTS_MAIDSAFE_THREADPOOL_H_
+#endif  // MAIDSAFE_SHAREDTEST_THREADPOOL_H_

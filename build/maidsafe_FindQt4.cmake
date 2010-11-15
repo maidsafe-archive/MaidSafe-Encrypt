@@ -30,10 +30,11 @@
 #                                                                              #
 #  Settable variable to aid with finding QT is QT_ROOT_DIR                     #
 #                                                                              #
-#  Since this module uses the option to include(${QT_USE_FILE}), the only      #
-#  variable set and cached by the FindQt4 module which we need is:             #
-#    QT_LIBRARIES                                                              #
-#  (See documentation of FindQt4 for further info.)                            #
+#  Since this module uses the option to include(${QT_USE_FILE}), the           #
+#  compilation environment is automatically set up with include directories    #
+#  and preprocessor definitions.  The requested QT libs are set up as targets, #
+#  e.g. QT_QTCORE_LIBRARY.  All libs are added to the variable QT_LIBRARIES.   #
+#  See documentation of FindQt4 for further info.                              #
 #                                                                              #
 #==============================================================================#
 
@@ -45,6 +46,7 @@ UNSET(QT_MOC_EXECUTABLE CACHE)
 UNSET(QT_INCLUDE_DIR CACHE)
 UNSET(QT_INCLUDES CACHE)
 
+SET(QT_USE_IMPORTED_TARGETS TRUE)
 IF(QT_ROOT_DIR)
   SET(QT_ROOT_DIR ${QT_ROOT_DIR} CACHE INTERNAL "Path to Qt root directory" FORCE)
   SET(ENV{QTDIR} ${QT_ROOT_DIR})

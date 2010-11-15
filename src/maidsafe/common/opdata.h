@@ -18,12 +18,12 @@
 * ============================================================================
 */
 
-#ifndef MAIDSAFE_OPDATA_H_
-#define MAIDSAFE_OPDATA_H_
+#ifndef MAIDSAFE_CLIENT_OPDATA_H_
+#define MAIDSAFE_CLIENT_OPDATA_H_
 
-#include <boost/thread/condition_variable.hpp>
-#include <boost/thread/locks.hpp>
-#include <maidsafe/maidsafe-dht_config.h>
+
+#include <boost/cstdint.hpp>
+#include <maidsafe/passport/passport.h>
 
 #include <list>
 #include <map>
@@ -31,8 +31,9 @@
 #include <string>
 #include <vector>
 
-#include "maidsafe/chunkstore.h"
-#include "maidsafe/client/storemanager.h"
+#include "maidsafe/common/chunkstore.h"
+#include "maidsafe/common/maidsafe.h"
+#include "maidsafe/common/maidsafe_service.pb.h"
 #include "maidsafe/client/storemanagertaskshandler.h"
 
 namespace maidsafe {
@@ -48,7 +49,7 @@ struct StoreData {
                 public_key_signature(),
                 private_key(),
                 chunk_type(kHashable | kNormal),
-                system_packet_type(MID),
+                system_packet_type(passport::MID),
                 dir_type(PRIVATE),
                 callback(),
                 exclude_peers(),
@@ -75,7 +76,7 @@ struct StoreData {
                   public_key_signature(pub_key_signature),
                   private_key(priv_key),
                   chunk_type(ch_type),
-                  system_packet_type(MID),
+                  system_packet_type(passport::MID),
                   dir_type(directory_type),
                   callback(),
                   exclude_peers(),
@@ -86,7 +87,7 @@ struct StoreData {
   // Store packet constructor
   StoreData(const std::string &packet_name,
             const std::string &packet_value,
-            PacketType sys_packet_type,
+            passport::PacketType sys_packet_type,
             DirType directory_type,
             const std::string &ms_id,
             const std::string &key,
@@ -115,7 +116,7 @@ struct StoreData {
   boost::uint64_t size;
   std::string msid, key_id, public_key, public_key_signature, private_key;
   ChunkType chunk_type;
-  PacketType system_packet_type;
+  passport::PacketType system_packet_type;
   DirType dir_type;
   VoidFuncOneInt callback;
   std::vector<kad::Contact> exclude_peers;
@@ -127,7 +128,7 @@ struct DeletePacketData {
  public:
   DeletePacketData(const std::string &name,
                    const std::vector<std::string> &packet_values,
-                   PacketType sys_packet_type,
+                   passport::PacketType sys_packet_type,
                    DirType directory_type,
                    const std::string &ms_id,
                    const std::string &key,
@@ -151,7 +152,7 @@ struct DeletePacketData {
   std::string packet_name;
   std::vector<std::string> values;
   std::string msid, key_id, public_key, public_key_signature, private_key;
-  PacketType system_packet_type;
+  passport::PacketType system_packet_type;
   DirType dir_type;
   VoidFuncOneInt callback;
   boost::mutex mutex;
@@ -165,7 +166,7 @@ struct UpdatePacketData {
   UpdatePacketData(const std::string &name,
                    const std::string &oldvalue,
                    const std::string &newvalue,
-                   PacketType sys_packet_type,
+                   passport::PacketType sys_packet_type,
                    DirType directory_type,
                    const std::string &ms_id,
                    const std::string &key,
@@ -188,7 +189,7 @@ struct UpdatePacketData {
   std::string packet_name;
   std::string old_value, new_value, msid, key_id, public_key,
               public_key_signature, private_key;
-  PacketType system_packet_type;
+  passport::PacketType system_packet_type;
   DirType dir_type;
   VoidFuncOneInt callback;
   boost::mutex mutex;
@@ -250,7 +251,7 @@ struct ExpectAmendmentOpData {
   std::vector<AccountDataHolder> account_data_holders;
   boost::uint16_t returned_count, success_count;
   VoidFuncOneInt callback;
-};	
+};
 
 // This is used to hold the data required to perform a SendChunkPrep followed by
 // a SendChunkContent operation.
@@ -392,4 +393,4 @@ class GetChunkOpData {
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_OPDATA_H_
+#endif  // MAIDSAFE_CLIENT_OPDATA_H_

@@ -31,15 +31,15 @@
 
 #include <maidsafe/maidsafe-dht.h>
 #include <maidsafe/base/utils.h>
+#include <maidsafe/passport/passport.h>
 
 #include <list>
 #include <map>
 #include <string>
 #include <vector>
 
-#include "maidsafe/maidsafe.h"
-#include "maidsafe/client/packetfactory.h"
-#include "protobuf/maidsafe_service_messages.pb.h"
+#include "maidsafe/common/maidsafe.h"
+#include "maidsafe/common/maidsafe_service_messages.pb.h"
 
 namespace bs2 = boost::signals2;
 
@@ -60,7 +60,8 @@ enum IfPacketExists {
 typedef boost::function<void(const OwnLocalVaultResult&, const std::string&)>
         SetLocalVaultOwnedFunctor;
 
-typedef boost::function<void(const VaultStatus&)> LocalVaultOwnedFunctor;
+typedef boost::function<void(const VaultOwnershipStatus&)>
+    LocalVaultOwnedFunctor;
 
 typedef boost::function<void(const std::vector<std::string>&,
                              const ReturnCode&)>
@@ -70,8 +71,6 @@ typedef boost::function<void(const ReturnCode&)> CreateAccountFunctor;
 
 typedef boost::function<void(const std::string&)> IMNotifier;
 typedef boost::function<void(const std::string&, const int&)> IMStatusNotifier;
-
-// class SessionSingleton;
 
 class StoreManagerInterface {
  public:
@@ -102,20 +101,20 @@ class StoreManagerInterface {
                           const LoadPacketFunctor &lpf)=0;
   virtual void StorePacket(const std::string &packet_name,
                            const std::string &value,
-                           PacketType system_packet_type,
+                           passport::PacketType system_packet_type,
                            DirType dir_type,
                            const std::string &msid,
                            const VoidFuncOneInt &cb)=0;
   virtual void DeletePacket(const std::string &packet_name,
                             const std::vector<std::string> values,
-                            PacketType system_packet_type,
+                            passport::PacketType system_packet_type,
                             DirType dir_type,
                             const std::string &msid,
                             const VoidFuncOneInt &cb)=0;
   virtual void UpdatePacket(const std::string &packet_name,
                             const std::string &old_value,
                             const std::string &new_value,
-                            PacketType system_packet_type,
+                            passport::PacketType system_packet_type,
                             DirType dir_type,
                             const std::string &msid,
                             const VoidFuncOneInt &cb)=0;

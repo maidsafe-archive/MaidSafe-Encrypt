@@ -12,13 +12,13 @@
  *      Author: Stephen
  */
 
-#include "qt/client/get_email_thread.h"
+#include "maidsafe/lifestuff/client/get_email_thread.h"
 
 // qt
 #include <QDebug>
 
 // core
-#include "qt/client/client_controller.h"
+#include "maidsafe/lifestuff/client/client_controller.h"
 
 
 GetEmailThread::GetEmailThread(const QString& subject, QObject* parent)

@@ -19,7 +19,7 @@
 #include <QString>
 #include <QHash>
 
-#include "qt/client/worker_thread.h"
+#include "maidsafe/lifestuff/client/worker_thread.h"
 
 // Worker thread for saving profile settings
 /*!

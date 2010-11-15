@@ -12,7 +12,7 @@
  *      Author: Stephen Alexander
  */
 
-#include "qt/widgets/personal_messages.h"
+#include "maidsafe/lifestuff/widgets/personal_messages.h"
 
 // boost
 #include <boost/progress.hpp>
@@ -32,9 +32,9 @@
 
 #include <string>
 
-#include "qt/client/client_controller.h"
-#include "qt/client/send_instant_message_thread.h"
-#include "qt/widgets/user_panels.h"
+#include "maidsafe/lifestuff/client/client_controller.h"
+#include "maidsafe/lifestuff/client/send_instant_message_thread.h"
+#include "maidsafe/lifestuff/widgets/user_panels.h"
 
 PersonalMessages::PersonalMessages(QWidget* parent, QString name)
     : QMainWindow(parent), active_(false), init_(false), convName_() {
@@ -251,7 +251,7 @@ void PersonalMessages::onSendFile() {
 
 #ifdef __WIN32__
   root = QString::fromStdString("%1:\\" +
-         maidsafe::TidyPath(kRootSubdir[0][0])).
+         maidsafe::TidyPath(maidsafe::kRootSubdir[0][0])).
              arg(ClientController::instance()->WinDrive());
   QFileDialog *qfd = new QFileDialog(this,
                      tr("File to share..."),
@@ -264,7 +264,7 @@ void PersonalMessages::onSendFile() {
 #else
   root = QString::fromStdString(file_system::MaidsafeFuseDir(
              ClientController::instance()->SessionName()).string() +
-             kRootSubdir[0][0]);
+             maidsafe::kRootSubdir[0][0]);
   QStringList fileNames = QFileDialog::getOpenFileNames(this,
       tr("Select a file to send"), root, tr("Any file") + "(*)");
 #endif

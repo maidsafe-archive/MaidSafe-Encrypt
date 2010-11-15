@@ -24,9 +24,16 @@
 
 #include <gtest/gtest.h>
 #include <boost/lexical_cast.hpp>
+#include "maidsafe/common/commonutils.h"
+#include "maidsafe/common/maidsafe.h"
+#include "maidsafe/vault/vaultconfig.h"
 #include "maidsafe/vault/chunkinfohandler.h"
 
-namespace maidsafe_vault {
+namespace maidsafe {
+
+namespace vault {
+
+namespace test {
 
 class ChunkInfoHandlerTest : public testing::Test {
  public:
@@ -36,7 +43,7 @@ class ChunkInfoHandlerTest : public testing::Test {
   void TearDown() {}
 };
 
-TEST_F(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerInit) {
+TEST_F(ChunkInfoHandlerTest, BEH_VAULT_Init) {
   ChunkInfoHandler cih(true);
   ASSERT_TRUE(cih.chunk_infos_.empty());
   ASSERT_FALSE(cih.HasWatchers("some chunk name"));
@@ -47,7 +54,7 @@ TEST_F(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerInit) {
   ASSERT_TRUE(references.empty());
 }
 
-TEST_F(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerChecksum) {
+TEST_F(ChunkInfoHandlerTest, BEH_VAULT_Checksum) {
   ChunkInfoHandler cih(true);
   boost::uint64_t checksum = cih.GetChecksum(base::DecodeFromHex(
       "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"
@@ -55,20 +62,17 @@ TEST_F(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerChecksum) {
   ASSERT_EQ(boost::uint64_t(0xEFCDAB9078563412ll), checksum);
 }
 
-TEST_F(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerAdd) {
+TEST_F(ChunkInfoHandlerTest, BEH_VAULT_Add) {
   ChunkInfoHandler cih(true);
-  crypto::Crypto co;
-  co.set_hash_algorithm(crypto::SHA_512);
 
   const int kNumClients = kMinChunkCopies + kMaxReserveWatchListEntries + 1;
-  std::string chunk_name(co.Hash("chunk", "", crypto::STRING_STRING, false));
+  std::string chunk_name(SHA512String("chunk"));
   std::string client[kNumClients], creditor;
   int required_references, required_payments, refunds;
   std::list<std::string> references;
 
   for (int i = 0; i < kNumClients; ++i) {
-    client[i] = co.Hash("id" + boost::lexical_cast<std::string>(i), "",
-                        crypto::STRING_STRING, false);
+    client[i] = SHA512String("id" + boost::lexical_cast<std::string>(i));
   }
 
   ASSERT_EQ(kChunkInfoInvalidName,
@@ -215,17 +219,15 @@ TEST_F(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerAdd) {
   ASSERT_EQ(size_t(kNumClients), cih.chunk_infos_[chunk_name].watcher_count);
 }
 
-TEST_F(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerRefund) {
+TEST_F(ChunkInfoHandlerTest, BEH_VAULT_Refund) {
   ChunkInfoHandler cih(true);
-  crypto::Crypto co;
-  co.set_hash_algorithm(crypto::SHA_512);
 
-  std::string chunk_name(co.Hash("chunk", "", crypto::STRING_STRING, false));
+  std::string chunk_name(SHA512String("chunk"));
   std::string client[2], creditor;
   int required_references, required_payments, refunds;
 
-  client[0] = co.Hash("id0", "", crypto::STRING_STRING, false);
-  client[1] = co.Hash("id1", "", crypto::STRING_STRING, false);
+  client[0] = SHA512String("id0");
+  client[1] = SHA512String("id1");
 
   ASSERT_EQ(0, cih.PrepareAddToWatchList(chunk_name, client[0], 123,
                                          &required_references,
@@ -254,20 +256,18 @@ TEST_F(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerRefund) {
   ASSERT_EQ(size_t(2), cih.chunk_infos_[chunk_name].watcher_count);
 }
 
-TEST_F(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerRemove) {
+TEST_F(ChunkInfoHandlerTest, BEH_VAULT_Remove) {
   ChunkInfoHandler cih(true);
-  crypto::Crypto co;
-  co.set_hash_algorithm(crypto::SHA_512);
 
   const int kNumClients = kMinChunkCopies + kMaxReserveWatchListEntries + 1;
-  std::string chunk_name(co.Hash("chunk", "", crypto::STRING_STRING, false));
+  std::string chunk_name(SHA512String("chunk"));
   std::string client[kNumClients], creditor;
   std::list<std::string> creditors, references;
-  int required_references, required_payments, refunds, chunk_size;
+  int required_references, required_payments, refunds;
+  boost::uint64_t chunk_size;
 
   for (int i = 0; i < kNumClients; ++i) {
-    client[i] = co.Hash("id" + boost::lexical_cast<std::string>(i), "",
-                        crypto::STRING_STRING, false);
+    client[i] = SHA512String("id" + boost::lexical_cast<std::string>(i));
   }
 
   ASSERT_EQ(size_t(0), cih.chunk_infos_.count(chunk_name));
@@ -413,19 +413,17 @@ TEST_F(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerRemove) {
   ASSERT_TRUE(references.empty());
 }
 
-TEST_F(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerReset) {
+TEST_F(ChunkInfoHandlerTest, BEH_VAULT_Reset) {
   ChunkInfoHandler cih(true);
-  crypto::Crypto co;
-  co.set_hash_algorithm(crypto::SHA_512);
 
-  std::string chunk_name(co.Hash("chunk", "", crypto::STRING_STRING, false));
+  std::string chunk_name(SHA512String("chunk"));
   std::string client[3];
   std::list<std::string> creditors, references;
   int required_references, required_payments;
 
-  client[0] = co.Hash("id0", "", crypto::STRING_STRING, false);
-  client[1] = co.Hash("id1", "", crypto::STRING_STRING, false);
-  client[2] = co.Hash("id2", "", crypto::STRING_STRING, false);
+  client[0] = SHA512String("id0");
+  client[1] = SHA512String("id1");
+  client[2] = SHA512String("id2");
 
   ASSERT_EQ(size_t(0), cih.chunk_infos_.count(chunk_name));
   ASSERT_EQ(0, cih.PrepareAddToWatchList(chunk_name, client[0], 123,
@@ -491,20 +489,19 @@ TEST_F(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerReset) {
   ASSERT_EQ(0, cih.ActiveReferences(chunk_name));
 }
 
-TEST_F(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerFailsafe) {
+TEST_F(ChunkInfoHandlerTest, BEH_VAULT_Failsafe) {
   ChunkInfoHandler cih(true);
-  crypto::Crypto co;
-  co.set_hash_algorithm(crypto::SHA_512);
 
-  std::string chunk_name(co.Hash("chunk", "", crypto::STRING_STRING, false));
-  std::string client1(co.Hash("client1", "", crypto::STRING_STRING, false));
-  std::string client2(co.Hash("client2", "", crypto::STRING_STRING, false));
+  std::string chunk_name(SHA512String("chunk"));
+  std::string client1(SHA512String("client1"));
+  std::string client2(SHA512String("client2"));
 
   ASSERT_FALSE(cih.HasWatchers(chunk_name));
 
   std::string creditor;
   std::list<std::string> creditors, references;
-  int required_references, required_payments, refunds, chunk_size;
+  int required_references, required_payments, refunds;
+  boost::uint64_t chunk_size;
 
   ASSERT_EQ(0, cih.PrepareAddToWatchList(chunk_name, client1, 123,
                                          &required_references,
@@ -530,13 +527,11 @@ TEST_F(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerFailsafe) {
   ASSERT_TRUE(cih.HasWatchers(chunk_name));
 }
 
-TEST_F(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerPruning) {
+TEST_F(ChunkInfoHandlerTest, BEH_VAULT_Pruning) {
   ChunkInfoHandler cih(true);
-  crypto::Crypto co;
-  co.set_hash_algorithm(crypto::SHA_512);
 
-  std::string chunk_name(co.Hash("chunk", "", crypto::STRING_STRING, false));
-  std::string client(co.Hash("client", "", crypto::STRING_STRING, false));
+  std::string chunk_name(SHA512String("chunk"));
+  std::string client(SHA512String("client"));
   std::list< std::pair<std::string, std::string> > entries;
   int required_references, required_payments;
 
@@ -555,7 +550,7 @@ TEST_F(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerPruning) {
   ASSERT_EQ(client, entries.front().second);
 }
 
-TEST_F(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerPutGetPb) {
+TEST_F(ChunkInfoHandlerTest, BEH_VAULT_PutGetPb) {
   ChunkInfoHandler chunk_info_handler1(true), chunk_info_handler2(true);
   std::pair<std::map<std::string, ChunkInfo>::iterator, bool> result;
   const int kNumEntries(749);
@@ -654,7 +649,7 @@ TEST_F(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerPutGetPb) {
   ASSERT_EQ(serialised_chunk_info_map1, serialised_chunk_info_map2);
 }
 
-TEST_F(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerPutGetChunkInfo) {
+TEST_F(ChunkInfoHandlerTest, BEH_VAULT_PutGetChunkInfo) {
   // Test with chunk info handler not started
   ChunkInfoHandler chunk_info_handler(false);
   ChunkInfoMap::VaultChunkInfo vault_chunk_info_put;
@@ -856,4 +851,8 @@ TEST_F(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerPutGetChunkInfo) {
   ASSERT_EQ(kNumEntries + 1, chunk_info_handler.chunk_infos_.size());
 }
 
-}  // namespace maidsafe_vault
+}  // namespace test
+
+}  // namespace vault
+
+}  // namespace maidsafe

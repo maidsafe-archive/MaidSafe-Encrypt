@@ -26,19 +26,23 @@
 #define MAIDSAFE_VAULT_ACCOUNTAMENDMENTHANDLER_H_
 
 #include <boost/multi_index_container.hpp>
-#include <gtest/gtest_prod.h>
 #include <maidsafe/maidsafe-dht.h>
 
 #include <list>
 #include <map>
 #include <string>
+#include <vector>
 
-#include "maidsafe/maidsafe.h"
-#include "protobuf/maidsafe_service_messages.pb.h"
+#include "maidsafe/common/commonutils.h"
+#include "maidsafe/common/maidsafe.h"
+#include "maidsafe/common/maidsafe_service_messages.pb.h"
+#include "maidsafe/vault/vaultconfig.h"
 
 namespace mi = boost::multi_index;
 
-namespace maidsafe_vault {
+namespace maidsafe {
+
+namespace vault {
 
 namespace test {
 class AccountAmendmentHandlerTest_BEH_MAID_AssessAmendment_Test;
@@ -47,6 +51,10 @@ class AccountAmendmentHandlerTest_BEH_MAID_CreateNewAmendment_Test;
 class AccountAmendmentHandlerTest_BEH_MAID_CreateNewWithExpecteds_Test;
 class AccountAmendmentHandlerTest_BEH_MAID_ProcessRequest_Test;
 class AccountAmendmentHandlerTest_BEH_MAID_CleanUp_Test;
+class MockVaultServicesTest_BEH_MAID_AddToWatchList_Test;
+class MockVaultServicesTest_FUNC_MAID_RemoveFromWatchList_Test;
+class MockVaultServicesTest_BEH_MAID_AddToReferenceList_Test;
+class MockVaultServicesTest_FUNC_MAID_AmendAccount_Test;
 }  // namespace test
 
 class AccountHandler;
@@ -54,30 +62,29 @@ class RequestExpectationHandler;
 class VaultServiceLogic;
 
 struct AmendmentResult {
-  AmendmentResult(
-      const std::string &owner_name_,
-      const std::string &chunkname_,
-      const maidsafe::AmendAccountRequest::Amendment &amendment_type_,
-      const boost::uint32_t &result_)
+  AmendmentResult(const std::string &owner_name_,
+                  const std::string &chunkname_,
+                  const AmendAccountRequest::Amendment &amendment_type_,
+                  const boost::uint32_t &result_)
       : owner_name(owner_name_),
         chunkname(chunkname_),
         amendment_type(amendment_type_),
         result(result_),
         expiry_time(base::GetEpochTime() + kAccountAmendmentResultTimeout) {}
   std::string owner_name, chunkname;
-  maidsafe::AmendAccountRequest::Amendment amendment_type;
+  AmendAccountRequest::Amendment amendment_type;
   boost::uint32_t result;
   boost::uint32_t expiry_time;
 };
 
 struct PendingAmending {
-  PendingAmending(const maidsafe::AmendAccountRequest *req,
-                  maidsafe::AmendAccountResponse *resp,
+  PendingAmending(const AmendAccountRequest *req,
+                  AmendAccountResponse *resp,
                   google::protobuf::Closure *cb)
       : request(*req), response(resp), done(cb), responded(false) {}
   ~PendingAmending() {}
-  maidsafe::AmendAccountRequest request;
-  maidsafe::AmendAccountResponse *response;
+  AmendAccountRequest request;
+  AmendAccountResponse *response;
   google::protobuf::Closure *done;
   bool responded;
   bool operator==(const PendingAmending &other) const {
@@ -92,7 +99,7 @@ struct PendingAmending {
 struct AccountAmendment {
   AccountAmendment(const std::string &owner_pmid,
                    const std::string &chunkname,
-                   const maidsafe::AmendAccountRequest::Amendment
+                   const AmendAccountRequest::Amendment
                       &amendment_type,
                    const int &amendment_field,
                    const boost::uint64_t &offer_amount,
@@ -114,17 +121,15 @@ struct AccountAmendment {
     // Add to probable pendings list so that further similar requests don't get
     // added to probable while we're waiting for FindKNodes to return
     probable_pendings.push_back(pending);
-    crypto::Crypto co;
-    co.set_hash_algorithm(crypto::SHA_512);
-    account_name = kad::KadId(co.Hash(pmid + kAccount, "",
-                              crypto::STRING_STRING, false));
+    account_name =
+        kad::KadId(SHA512String(pmid + kAccount));
   }
   bool operator<(const AccountAmendment &aa) const {
     return expiry_time < aa.expiry_time;
   }
   std::string pmid;
   std::string chunkname;
-  maidsafe::AmendAccountRequest::Amendment amendment_type;
+  AmendAccountRequest::Amendment amendment_type;
   int field;
   boost::uint64_t offer;
   bool increase;
@@ -180,13 +185,13 @@ class AccountAmendmentHandler {
   ~AccountAmendmentHandler() {}
   // Assumes that response->pmid() has already been set and that
   // request->signed_size() validates
-  int ProcessRequest(const maidsafe::AmendAccountRequest *request,
-                     maidsafe::AmendAccountResponse *response,
+  int ProcessRequest(const AmendAccountRequest *request,
+                     AmendAccountResponse *response,
                      google::protobuf::Closure *done);
   // Populates list of amendment results in status response, removing them
   // from the internal list
   void FetchAmendmentResults(const std::string &owner_name,
-                             maidsafe::AccountStatusResponse *response);
+                             AccountStatusResponse *response);
   // Removes expired amendments from set which have timed out - returns a count
   // of the number of entries removed.
   int CleanUp();
@@ -202,15 +207,14 @@ class AccountAmendmentHandler {
       test::AccountAmendmentHandlerTest_BEH_MAID_CreateNewWithExpecteds_Test;
   friend class test::AccountAmendmentHandlerTest_BEH_MAID_ProcessRequest_Test;
   friend class test::AccountAmendmentHandlerTest_BEH_MAID_CleanUp_Test;
-  FRIEND_TEST(MockVaultServicesTest, BEH_MAID_ServicesAddToWatchList);
-  FRIEND_TEST(MockVaultServicesTest, FUNC_MAID_ServicesRemoveFromWatchList);
-  FRIEND_TEST(MockVaultServicesTest, BEH_MAID_ServicesAddToReferenceList);
-  FRIEND_TEST(MockVaultServicesTest, FUNC_MAID_ServicesAmendAccount);
+  friend class test::MockVaultServicesTest_BEH_MAID_AddToWatchList_Test;
+  friend class test::MockVaultServicesTest_FUNC_MAID_RemoveFromWatchList_Test;
+  friend class test::MockVaultServicesTest_BEH_MAID_AddToReferenceList_Test;
+  friend class test::MockVaultServicesTest_FUNC_MAID_AmendAccount_Test;
   // Searches and actions the amendment request in an AccountAmendment
   int AssessAmendment(const std::string &owner_pmid,
                       const std::string &chunkname,
-                      const maidsafe::AmendAccountRequest::Amendment
-                          &amendment_type,
+                      const AmendAccountRequest::Amendment &amendment_type,
                       const int &amendment_field,
                       const boost::uint64_t &offer_size,
                       const bool &inc,
@@ -230,6 +234,8 @@ class AccountAmendmentHandler {
   const boost::uint8_t kUpperThreshold_;
 };
 
-}  // namespace maidsafe_vault
+}  // namespace vault
+
+}  // namespace maidsafe
 
 #endif  // MAIDSAFE_VAULT_ACCOUNTAMENDMENTHANDLER_H_

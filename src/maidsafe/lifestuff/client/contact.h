@@ -20,8 +20,8 @@
 #include <QList>
 
 // local
-#include "qt/client/presence.h"
-#include "qt/client/profile.h"
+#include "maidsafe/lifestuff/client/presence.h"
+#include "maidsafe/lifestuff/client/profile.h"
 
 
 class Contact : public QObject {

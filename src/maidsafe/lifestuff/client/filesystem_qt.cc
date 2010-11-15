@@ -12,4 +12,4 @@
  *      Author: Team
  */
 
-#include "qt/client/filesystem_qt.h"
+#include "maidsafe/lifestuff/client/filesystem_qt.h"

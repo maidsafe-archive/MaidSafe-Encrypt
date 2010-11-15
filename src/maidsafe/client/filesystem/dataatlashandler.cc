@@ -22,42 +22,30 @@
 * ============================================================================
 */
 
-#include "maidsafe/client/dataatlashandler.h"
+#include "maidsafe/client/filesystem/dataatlashandler.h"
 
 #include <boost/filesystem.hpp>
-#include <boost/shared_ptr.hpp>
 
-#include <maidsafe/base/crypto.h>
-
-#include <algorithm>
-#include <cctype>
-#include <cstdio>
 #include <exception>
-#include <sstream>
 
-#include "fs/filesystem.h"
-#include "maidsafe/pdutils.h"
-#include "maidsafe/client/pddir.h"
-#include "maidsafe/client/keyatlas.h"
+#include "maidsafe/common/commonutils.h"
+#include "maidsafe/client/filesystem/pddir.h"
+#include "maidsafe/client/clientutils.h"
 #include "maidsafe/client/sessionsingleton.h"
 
 namespace fs = boost::filesystem;
 
 namespace maidsafe {
 
-DataAtlasHandler::DataAtlasHandler() :db_dir_(), dirs_() {
+DataAtlasHandler::DataAtlasHandler() : db_dir_() {
   SessionSingleton *ss = SessionSingleton::getInstance();
   if (!ss->SessionName().empty()) {
-    db_dir_ = file_system::DbDir(ss->SessionName()).string();
+    db_dir_ = file_system::DbDir(ss->SessionName());
   } else {
-    crypto::Crypto c;
-    c.set_hash_algorithm(crypto::SHA_1);
     std::string username = "user1";
     std::string pin = "1234";
-    std::string s = c.Hash(pin+username, "", crypto::STRING_STRING, true);
-    std::string mdir = ".maidsafe" + s;
-    fs::path db_dir(file_system::HomeDir() / mdir / "dir");
-    db_dir_ = db_dir.string();
+    std::string s = ".maidsafe" + base::EncodeToHex(SHA1String(pin + username));
+    db_dir_ = fs::path(file_system::TempDir() / s / "dir");
   }
 }
 
@@ -83,34 +71,30 @@ std::string DataAtlasHandler::GetElementNameFromPath(
 //   printf("\t\tGetElementNameFromPath::GetMetaDataMap %s\n",
 //          element_path.c_str());
 #endif
-  fs::path path(element_path, fs::native);
-  return path.filename();
+  fs::path path(element_path);
+  return path.filename().string();
 }
 
 void DataAtlasHandler::GetDbPath(const std::string &element_path,
                                  DbInitFlag flag,
                                  std::string *db_path) {
-  fs::path path(element_path, fs::native);
+  fs::path path(element_path);
 
   // unless we're creating a new dir db, the one we want is the branch of
   // element_path
   std::string pre_hash_db_name;
   if (flag != CREATE) {
-    pre_hash_db_name = path.parent_path().string() + db_dir_;
+    pre_hash_db_name = path.parent_path().string() + db_dir_.string();
     // if the branch is null, we're making an element in the root, so set
     // pre_hash_db_name to "/"+db_dir_
-    if (path.parent_path().filename() == "")
-      pre_hash_db_name = fs::path("/" + db_dir_, fs::native).string();
+    if (path.parent_path().filename().empty())
+      pre_hash_db_name = fs::path("/" + db_dir_.string()).string();
   } else {
-    pre_hash_db_name = path.string() + db_dir_;
+    pre_hash_db_name = path.string() + db_dir_.string();
   }
 
-  crypto::Crypto co;
-  co.set_hash_algorithm(crypto::SHA_1);
-  *db_path = co.Hash(StringToLowercase(pre_hash_db_name), "",
-                     crypto::STRING_STRING, true);
-
-  fs::path db_path1(db_dir_, fs::native);
+  *db_path = base::EncodeToHex(SHA1String(StringToLowercase(pre_hash_db_name)));
+  fs::path db_path1(db_dir_);
   db_path1 /= *db_path;
   *db_path = db_path1.string();
 }
@@ -236,19 +220,19 @@ int DataAtlasHandler::RemoveElement(const std::string &element_path) {
 }
 
 int DataAtlasHandler::ListFolder(const std::string &element_path,
-                                 std::map<std::string, ItemType> *children) {
+                                 std::map<fs::path, ItemType> *children) {
   int result = kDataAtlasError;
 
   if (element_path == "\\" || element_path == "/") {
     for (int i = 0 ; i < kRootSubdirSize ; i++) {
-      children->insert(std::pair<std::string, ItemType>(
+      children->insert(std::pair<fs::path, ItemType>(
       TidyPath(kRootSubdir[i][0]), DIRECTORY));
     }
     return kSuccess;
   }
 
   // append "/a" to element_path so that GetPdDir finds correct branch
-  fs::path path_(element_path, fs::native);
+  fs::path path_(element_path);
   path_ /= "a";
   std::string element_path_modified = path_.string();
   boost::shared_ptr<PdDir> da_(GetPdDir(element_path_modified,
@@ -392,10 +376,10 @@ int DataAtlasHandler::CopyDb(const std::string &original_path,
 }
 
 int DataAtlasHandler::ListSubDirs(const std::string &element_path,
-                                  std::vector<std::string> *subdirs) {
+                                  std::vector<fs::path> *subdirs) {
   int result = kDataAtlasError;
   // append "/a" to element_path so that GetPdDir finds correct branch
-  fs::path path(element_path, fs::native);
+  fs::path path(element_path);
   path /= "a";
   std::string element_path_modified = path.string();
 
@@ -413,26 +397,21 @@ int DataAtlasHandler::CopySubDbs(const std::string &original_path,
   //        original_path_.c_str(), target_path_.c_str());
 #endif
   int result = kDataAtlasError;
-  std::vector<std::string> subdirs;
+  std::vector<fs::path> subdirs;
   result = ListSubDirs(original_path, &subdirs);
   if (result != kSuccess)
     return result;
   boost::uint16_t i = 0;
   while (i < subdirs.size()) {
-    fs::path orig_path(original_path);
-    fs::path targ_path(target_path);
-    orig_path /= subdirs[i];
-    targ_path /= subdirs[i];
+    fs::path orig_path(original_path / subdirs[i]);
+    fs::path targ_path(target_path / subdirs[i]);
     result = CopySubDbs(orig_path.string(), targ_path.string());
     if (result != kSuccess)
       // ie CopySubDbs failed
       return result;
     ++i;
   }
-  result = CopyDb(original_path, target_path);
-  if (result != kSuccess)
-    return result;
-  return kSuccess;
+  return CopyDb(original_path, target_path);
 }
 
 int DataAtlasHandler::GetDirKey(const std::string &element_path,
@@ -513,7 +492,7 @@ int DataAtlasHandler::ChangeAtime(const std::string &element_path) {
 int DataAtlasHandler::DisconnectPdDir(const std::string &branch_path) {
   int result = kDataAtlasError;
   // append "/a" to branch_path so that GetPdDir finds correct branch
-  fs::path path(branch_path, fs::native);
+  fs::path path(branch_path);
   path /= "a";
   std::string element_path_modified = path.string();
 

@@ -31,8 +31,7 @@
 #    Protobuf_INCLUDE_DIR, Protobuf_LIBRARY_DIR, Protobuf_LIBRARY and          #
 #    Protobuf_PROTOC_EXECUTABLE                                                #
 #                                                                              #
-#  For MSVC, Protobuf_LIBRARY_DIR_DEBUG and Protobuf_LIBRARY_DEBUG are also    #
-#  set and cached.                                                             #
+#  For MSVC, Protobuf_LIBRARY_DIR_DEBUG is also set and cached.                #
 #                                                                              #
 #==============================================================================#
 
@@ -67,8 +66,8 @@ UNSET(Protobuf_LIBRARY_DIR CACHE)
 UNSET(Protobuf_LIBRARY CACHE)
 UNSET(Protobuf_LIBRARY_DIR_DEBUG CACHE)
 UNSET(Protobuf_LIBRARY_DEBUG CACHE)
+UNSET(Protobuf_LIBRARY_RELEASE CACHE)
 UNSET(Protobuf_PROTOC_EXECUTABLE CACHE)
-UNSET(PROTOBUF_LIBRARY_RELEASE CACHE)
 UNSET(PROTOBUF_LIBRARY_DEBUG CACHE)
 UNSET(PROTOC_EXE_RELEASE CACHE)
 
@@ -96,23 +95,23 @@ ELSE()
   SET(PROTOBUF_LIBPATH_SUFFIX lib)
 ENDIF()
 
-FIND_LIBRARY(PROTOBUF_LIBRARY_RELEASE NAMES protobuf libprotobuf PATHS ${PROTOBUF_LIB_DIR} ${PROTOBUF_ROOT_DIR} PATH_SUFFIXES ${PROTOBUF_LIBPATH_SUFFIX})
+FIND_LIBRARY(Protobuf_LIBRARY_RELEASE NAMES protobuf libprotobuf PATHS ${PROTOBUF_LIB_DIR} ${PROTOBUF_ROOT_DIR} PATH_SUFFIXES ${PROTOBUF_LIBPATH_SUFFIX})
 FIND_PROGRAM(PROTOC_EXE_RELEASE NAMES protoc PATHS ${PROTOC_EXE_DIR} ${PROTOBUF_LIB_DIR} ${PROTOBUF_ROOT_DIR} PATH_SUFFIXES ${PROTOBUF_LIBPATH_SUFFIX})
 IF(MSVC)
   SET(PROTOBUF_LIBPATH_SUFFIX vsprojects/Debug)
-  FIND_LIBRARY(PROTOBUF_LIBRARY_DEBUG NAMES libprotobuf PATHS ${PROTOBUF_LIB_DIR} ${PROTOBUF_ROOT_DIR} PATH_SUFFIXES ${PROTOBUF_LIBPATH_SUFFIX})
+  FIND_LIBRARY(Protobuf_LIBRARY_DEBUG NAMES libprotobuf PATHS ${PROTOBUF_LIB_DIR} ${PROTOBUF_ROOT_DIR} PATH_SUFFIXES ${PROTOBUF_LIBPATH_SUFFIX})
 ENDIF()
 
 FIND_PATH(Protobuf_INCLUDE_DIR google/protobuf/service.h PATHS ${PROTOBUF_INC_DIR} ${PROTOBUF_ROOT_DIR}/src)
 
-GET_FILENAME_COMPONENT(PROTOBUF_LIBRARY_DIR ${PROTOBUF_LIBRARY_RELEASE} PATH)
+GET_FILENAME_COMPONENT(PROTOBUF_LIBRARY_DIR ${Protobuf_LIBRARY_RELEASE} PATH)
 SET(Protobuf_LIBRARY_DIR ${PROTOBUF_LIBRARY_DIR} CACHE PATH "Path to Google Protocol Buffers libraries directory" FORCE)
 IF(MSVC)
-  GET_FILENAME_COMPONENT(PROTOBUF_LIBRARY_DIR_DEBUG ${PROTOBUF_LIBRARY_DEBUG} PATH)
+  GET_FILENAME_COMPONENT(PROTOBUF_LIBRARY_DIR_DEBUG ${Protobuf_LIBRARY_DEBUG} PATH)
   SET(Protobuf_LIBRARY_DIR_DEBUG ${PROTOBUF_LIBRARY_DIR_DEBUG} CACHE PATH "Path to Google Protocol Buffers debug libraries directory" FORCE)
 ENDIF()
 
-IF(NOT PROTOBUF_LIBRARY_RELEASE)
+IF(NOT Protobuf_LIBRARY_RELEASE)
   SET(ERROR_MESSAGE "\nCould not find Google Protocol Buffers.  NO PROTOBUF LIBRARY - ")
   SET(ERROR_MESSAGE "${ERROR_MESSAGE}You can download it at http://code.google.com/p/protobuf\n")
   SET(ERROR_MESSAGE "${ERROR_MESSAGE}If protobuf is already installed, run:\n")
@@ -120,18 +119,18 @@ IF(NOT PROTOBUF_LIBRARY_RELEASE)
   SET(ERROR_MESSAGE "${ERROR_MESSAGE}\ncmake ../.. -DPROTOBUF_ROOT_DIR=<Path to protobuf root directory>")
   MESSAGE(FATAL_ERROR "${ERROR_MESSAGE}")
 ELSE()
-  SET(Protobuf_LIBRARY ${PROTOBUF_LIBRARY_RELEASE} CACHE INTERNAL "Path to Google Protocol Buffers library" FORCE)
+  SET(Protobuf_LIBRARY ${Protobuf_LIBRARY_RELEASE} CACHE PATH "Path to Google Protocol Buffers library" FORCE)
 ENDIF()
 
 IF(MSVC)
-  IF(NOT PROTOBUF_LIBRARY_DEBUG)
+  IF(NOT Protobuf_LIBRARY_DEBUG)
     SET(ERROR_MESSAGE "\nCould not find Google Protocol Buffers.  NO *DEBUG* PROTOBUF LIBRARY - ")
     SET(ERROR_MESSAGE "${ERROR_MESSAGE}You can download it at http://code.google.com/p/protobuf\n")
     SET(ERROR_MESSAGE "${ERROR_MESSAGE}If protobuf is already installed, run:\n")
     SET(ERROR_MESSAGE "${ERROR_MESSAGE}cmake ../.. -DPROTOBUF_ROOT_DIR=<Path to protobuf root directory>")
     MESSAGE(FATAL_ERROR "${ERROR_MESSAGE}")
   ELSE()
-    SET(Protobuf_LIBRARY_DEBUG ${PROTOBUF_LIBRARY_DEBUG} CACHE INTERNAL "Path to Google Protocol Buffers debug library" FORCE)
+    SET(Protobuf_LIBRARY debug ${Protobuf_LIBRARY_DEBUG} optimized ${Protobuf_LIBRARY} CACHE PATH "Path to Google Protocol Buffers libraries" FORCE)
   ENDIF()
 ENDIF()
 

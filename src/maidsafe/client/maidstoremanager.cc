@@ -25,16 +25,15 @@
 #include "maidsafe/client/maidstoremanager.h"
 
 #include <boost/filesystem/fstream.hpp>
-#include <maidsafe/protobuf/general_messages.pb.h>
-#include <maidsafe/protobuf/kademlia_service_messages.pb.h>
-#include <maidsafe/transport/transporthandler-api.h>
 
 #include <algorithm>
 
-#include "maidsafe/bufferpacketrpc.h"
+#include "maidsafe/common/bufferpacketrpc.h"
+#include "maidsafe/common/commonutils.h"
+#include "maidsafe/common/kadops.h"
+#include "maidsafe/common/opdata.h"
 #include "maidsafe/client/clientrpc.h"
 #include "maidsafe/client/sessionsingleton.h"
-#include "protobuf/maidsafe_messages.pb.h"
 
 // TODO(Fraser#5#): 2009-12-17 - Reconsider use of ValueType when sending
 //                               chunks/packets for storing.  If client chooses
@@ -75,7 +74,7 @@ MaidsafeStoreManager::MaidsafeStoreManager(boost::shared_ptr<ChunkStore> cstore,
       kad_ops_(new KadOps(&transport_handler_, &channel_manager_, kad::CLIENT,
                           "", "", false, false, K_, cstore)),
       ss_(SessionSingleton::getInstance()),
-      pd_utils_(),
+      client_utils_(),
       tasks_handler_(),
       client_chunkstore_(cstore),
       chunk_thread_pool_(),
@@ -87,7 +86,7 @@ MaidsafeStoreManager::MaidsafeStoreManager(boost::shared_ptr<ChunkStore> cstore,
       im_notifier_(),
       im_status_notifier_(),
       im_conn_hdler_(),
-      im_handler_(ss_),
+      im_handler_(),
       own_vault_(kad_ops_),
       account_holders_manager_(kad_ops_, kLowerThreshold_),
       account_status_manager_(),
@@ -146,14 +145,20 @@ void MaidsafeStoreManager::Init(VoidFuncOneInt callback,
     while (result == kPendingResult)
       cond_var.wait(lock);
   }
+
+  std::string pmid_public_key;
+  if (result == kSuccess)
+    result = static_cast<ReturnCode>(
+             ss_->ProxyMID(NULL, &pmid_public_key, NULL, NULL));
+
   if (result == kSuccess) {
     chunk_thread_pool_.setMaxThreadCount(kChunkMaxThreadCount_);
     packet_thread_pool_.setMaxThreadCount(kPacketMaxThreadCount_);
 #ifdef DEBUG
     printf("\tIn MSM::Init, after Join.  On port %u\n", kad_ops_->Port());
 #endif
-    own_vault_.Init(ss_->Id(PMID));
-    account_holders_manager_.Init(ss_->Id(PMID), boost::bind(
+    own_vault_.Init(pmid_public_key);
+    account_holders_manager_.Init(pmid_public_key, boost::bind(
         &MaidsafeStoreManager::AccountHoldersCallback, this, _1, _2));
     account_status_manager_.StartUpdating(boost::bind(
         &MaidsafeStoreManager::UpdateAccountStatus, this));
@@ -189,7 +194,7 @@ void MaidsafeStoreManager::Close(VoidFuncOneInt callback,
   im_conn_hdler_.Stop();
   account_status_manager_.StopUpdating();
   // if an update is in flight, return from callbacks ASAP
-  if (account_status_update_data_.get()) {
+  if (account_status_update_data_) {
     boost::mutex::scoped_lock lock(account_status_update_data_->mutex);
     account_status_update_data_->success_count = kLowerThreshold_;
     for (size_t i = 0; i < account_status_update_data_->data_holders.size();
@@ -217,12 +222,13 @@ void MaidsafeStoreManager::CleanUpTransport() {
   // transport::TransportUDT::CleanUp();
 }
 
-ReturnCode MaidsafeStoreManager::ValidateInputs(const std::string &name,
-                                                const PacketType &packet_type,
-                                                const DirType &dir_type) {
+ReturnCode MaidsafeStoreManager::ValidateInputs(
+    const std::string &name,
+    const passport::PacketType &packet_type,
+    const DirType &dir_type) {
   if (name.size() != kKeySize)
     return kIncorrectKeySize;
-  if (packet_type < PacketType_MIN || packet_type > PacketType_MAX)
+  if (packet_type < passport::MID || packet_type > passport::PD_DIR)
     return kPacketUnknownType;
   if (dir_type < ANONYMOUS || dir_type > PUBLIC_SHARE)
     return kDirUnknownType;
@@ -236,7 +242,7 @@ int MaidsafeStoreManager::StoreChunk(const std::string &chunk_name,
 //   printf("In MSM::StoreChunk (%d) for chunk %s\n",
 //          kad_ops_->Port(), HexSubstr(chunk_name).c_str());
 #endif
-  ReturnCode valid = ValidateInputs(chunk_name, PacketType_MIN, dir_type);
+  ReturnCode valid = ValidateInputs(chunk_name, passport::MID, dir_type);
   if (valid != kSuccess) {
 #ifdef DEBUG
     printf("In MSM::StoreChunk (%d), invalid input (%i).\n",
@@ -277,8 +283,8 @@ int MaidsafeStoreManager::StoreChunk(const std::string &chunk_name,
 
   if (chunk_type & kOutgoing) {
     std::string key_id, public_key, public_key_signature, private_key;
-    pd_utils_.GetChunkSignatureKeys(dir_type, msid, &key_id, &public_key,
-                          &public_key_signature, &private_key);
+    client_utils_.GetChunkSignatureKeys(dir_type, msid, &key_id, &public_key,
+                                        &public_key_signature, &private_key);
 
     boost::uint64_t reserved_space = kMinChunkCopies * chunk_size;
     boost::shared_ptr<StoreData> store_data(new StoreData(
@@ -350,7 +356,7 @@ void MaidsafeStoreManager::DebugSubTaskCallback(
 
 void MaidsafeStoreManager::StorePacket(const std::string &packet_name,
                                        const std::string &value,
-                                       PacketType system_packet_type,
+                                       passport::PacketType system_packet_type,
                                        DirType dir_type,
                                        const std::string &msid,
                                        const VoidFuncOneInt &cb) {
@@ -370,8 +376,8 @@ void MaidsafeStoreManager::StorePacket(const std::string &packet_name,
     return;
   }
   std::string key_id, public_key, public_key_signature, private_key;
-  pd_utils_.GetPacketSignatureKeys(system_packet_type, dir_type, msid, &key_id,
-      &public_key, &public_key_signature, &private_key);
+  client_utils_.GetPacketSignatureKeys(system_packet_type, dir_type, msid,
+      &key_id, &public_key, &public_key_signature, &private_key);
   boost::shared_ptr<StoreData> store_data(new StoreData(packet_name, value,
       system_packet_type, dir_type, msid, key_id, public_key,
       public_key_signature, private_key, cb));
@@ -403,7 +409,7 @@ int MaidsafeStoreManager::LoadChunk(const std::string &chunk_name,
   }
 
   data->clear();
-  ReturnCode valid = ValidateInputs(chunk_name, PacketType_MIN, PRIVATE);
+  ReturnCode valid = ValidateInputs(chunk_name, passport::MID, PRIVATE);
   if (valid != kSuccess) {
 #ifdef DEBUG
     printf("In MSM::LoadChunk (%d), invalid input (%i).\n",
@@ -606,7 +612,7 @@ int MaidsafeStoreManager::LoadChunk(const std::string &chunk_name,
 // TODO(Fraser#5#): 2009-08-31 - Store cache copy to needs_cache_copy_id
     // if (!opdata->needs_cache_copy_id.empty())
     //   CacheChunk(*data, !opdata->needs_cache_copy_id);
-
+  client_chunkstore_->Store(chunk_name, *data);
   return kSuccess;
 }
 
@@ -795,7 +801,7 @@ void MaidsafeStoreManager::LoadPacket(const std::string &packet_name,
 //         kad_ops_->Port(), HexSubstr(packet_name).c_str());
 #endif
   std::vector<std::string> results;
-  ReturnCode valid = ValidateInputs(packet_name, PacketType_MIN, PRIVATE);
+  ReturnCode valid = ValidateInputs(packet_name, passport::MID, PRIVATE);
   if (valid != kSuccess) {
 #ifdef DEBUG
     printf("In MSM::LoadPacket2 (%d), invalid input.  Error %i\n",
@@ -921,7 +927,7 @@ void MaidsafeStoreManager::KeyUnique(const std::string &key,
 //  printf("In MaidsafeStoreManager::KeyUnique2 (%i), key = %s\n",
 //         kad_ops_->Port(), HexSubstr(key).c_str());
 #endif
-  ReturnCode valid = ValidateInputs(key, PacketType_MIN, PRIVATE);
+  ReturnCode valid = ValidateInputs(key, passport::MID, PRIVATE);
   if (valid != kSuccess) {
     cb(kStoreManagerError);
     return;
@@ -964,7 +970,7 @@ int MaidsafeStoreManager::DeleteChunk(const std::string &chunk_name,
 //  printf("In MaidsafeStoreManager::DeleteChunk (%i), chunk_name = %s\n",
 //         kad_ops_->Port(), HexSubstr(chunk_name).c_str());
 #endif
-  ReturnCode valid = ValidateInputs(chunk_name, PacketType_MIN, dir_type);
+  ReturnCode valid = ValidateInputs(chunk_name, passport::MID, dir_type);
   if (valid != kSuccess) {
 #ifdef DEBUG
     printf("In MSM::DeleteChunk (%d), invalid input.  Error %i\n",
@@ -1018,7 +1024,7 @@ int MaidsafeStoreManager::DeleteChunk(const std::string &chunk_name,
   }
 
   std::string key_id, public_key, public_key_signature, private_key;
-  pd_utils_.GetChunkSignatureKeys(dir_type, msid, &key_id, &public_key,
+  client_utils_.GetChunkSignatureKeys(dir_type, msid, &key_id, &public_key,
       &public_key_signature, &private_key);
 
   boost::shared_ptr<StoreData> store_data(new StoreData(
@@ -1051,7 +1057,7 @@ void MaidsafeStoreManager::DeleteChunkTaskCallback(const TaskId &task_id,
 
 void MaidsafeStoreManager::DeletePacket(const std::string &packet_name,
                                         const std::vector<std::string> values,
-                                        PacketType system_packet_type,
+                                        passport::PacketType system_packet_type,
                                         DirType dir_type,
                                         const std::string &msid,
                                         const VoidFuncOneInt &cb) {
@@ -1085,8 +1091,8 @@ void MaidsafeStoreManager::DeletePacket(const std::string &packet_name,
     }
   }
   std::string key_id, public_key, public_key_signature, private_key;
-  pd_utils_.GetPacketSignatureKeys(system_packet_type, dir_type, msid, &key_id,
-      &public_key, &public_key_signature, &private_key);
+  client_utils_.GetPacketSignatureKeys(system_packet_type, dir_type, msid,
+      &key_id, &public_key, &public_key_signature, &private_key);
   boost::shared_ptr<DeletePacketData> delete_data(new DeletePacketData(
       packet_name, vals, system_packet_type, dir_type, msid, key_id,
       public_key, public_key_signature, private_key, cb));
@@ -1099,7 +1105,7 @@ void MaidsafeStoreManager::DeletePacket(const std::string &packet_name,
 void MaidsafeStoreManager::UpdatePacket(const std::string &packet_name,
                                         const std::string &old_value,
                                         const std::string &new_value,
-                                        PacketType system_packet_type,
+                                        passport::PacketType system_packet_type,
                                         DirType dir_type,
                                         const std::string &msid,
                                         const VoidFuncOneInt &cb) {
@@ -1114,8 +1120,8 @@ void MaidsafeStoreManager::UpdatePacket(const std::string &packet_name,
   }
 
   std::string key_id, public_key, public_key_signature, private_key;
-  pd_utils_.GetPacketSignatureKeys(system_packet_type, dir_type, msid, &key_id,
-                         &public_key, &public_key_signature, &private_key);
+  client_utils_.GetPacketSignatureKeys(system_packet_type, dir_type, msid,
+      &key_id, &public_key, &public_key_signature, &private_key);
   boost::shared_ptr<UpdatePacketData> update_data(new UpdatePacketData(
       packet_name, old_value, new_value, system_packet_type, dir_type, msid,
       key_id, public_key, public_key_signature, private_key, cb));
@@ -1129,27 +1135,20 @@ void MaidsafeStoreManager::UpdatePacket(const std::string &packet_name,
 
 void MaidsafeStoreManager::UpdatePacketOnNetwork(
     boost::shared_ptr<UpdatePacketData> update_data) {
-  crypto::Crypto co;
   kad::VoidFunctorOneString cb(boost::bind(
                                   &MaidsafeStoreManager::UpdatePacketCallback,
                                   this, _1, update_data));
   boost::mutex::scoped_lock lock(update_data->mutex);
   kad::SignedValue osv;
   osv.set_value(update_data->old_value);
-  osv.set_value_signature(co.AsymSign(osv.value(), "", update_data->private_key,
-                                      crypto::STRING_STRING));
+  osv.set_value_signature(RSASign(osv.value(), update_data->private_key));
   kad::SignedValue nsv;
   nsv.set_value(update_data->new_value);
-  nsv.set_value_signature(co.AsymSign(nsv.value(), "", update_data->private_key,
-                                      crypto::STRING_STRING));
+  nsv.set_value_signature(RSASign(nsv.value(), update_data->private_key));
 
-  std::string request_signature(co.AsymSign(
-                                    co.Hash(update_data->public_key +
-                                            update_data->public_key_signature +
-                                            update_data->packet_name,
-                                            "", crypto::STRING_STRING, false),
-                                "", update_data->private_key,
-                                crypto::STRING_STRING));
+  std::string request_signature(RSASign(SHA512String(
+      update_data->public_key + update_data->public_key_signature +
+      update_data->packet_name), update_data->private_key));
   kad::SignedRequest sr;
   sr.set_signer_id(update_data->key_id);
   sr.set_public_key(update_data->public_key);
@@ -1261,20 +1260,26 @@ void MaidsafeStoreManager::UpdateAccountStatus() {
   }
 
   // Create the requests
-  crypto::Crypto co;
-  co.set_symm_algorithm(crypto::AES_256);
-  co.set_hash_algorithm(crypto::SHA_512);
   AccountStatusRequest account_status_request;
-  account_status_request.set_account_pmid(ss_->Id(PMID));
-  account_status_request.set_public_key(ss_->PublicKey(PMID));
-  account_status_request.set_public_key_signature(ss_->SignedPublicKey(PMID));
+  std::string pmid_id, pmid_public_key, pmid_private_key;
+  std::string pmid_public_key_signature;
+  if (ss_->ProxyMID(&pmid_id, &pmid_public_key, &pmid_private_key,
+                    &pmid_public_key_signature) != kSuccess) {
+#ifdef DEBUG
+    printf("In MSM::UpdateAccountStatus (%d), Don't have a PMID.\n",
+           kad_ops_->Port());
+#endif
+    return;
+  }
+  account_status_request.set_account_pmid(pmid_id);
+  account_status_request.set_public_key(pmid_public_key);
+  account_status_request.set_public_key_signature(pmid_public_key_signature);
   std::vector<AccountStatusRequest> account_status_requests;
   for (size_t i = 0; i < account_status_update_data_->contacts.size(); ++i) {
-    std::string request_signature = co.AsymSign(co.Hash(
-        ss_->SignedPublicKey(PMID) + account_holders_manager_.account_name() +
-        account_status_update_data_->contacts.at(i).node_id().String(), "",
-        crypto::STRING_STRING, false), "", ss_->PrivateKey(PMID),
-        crypto::STRING_STRING);
+    std::string request_signature = RSASign(SHA512String(
+        pmid_public_key_signature + account_holders_manager_.account_name() +
+        account_status_update_data_->contacts.at(i).node_id().String()),
+        pmid_private_key);
     account_status_request.set_request_signature(request_signature);
     account_status_requests.push_back(account_status_request);
     AccountStatusData::AccountStatusDataHolder holder(
@@ -1430,10 +1435,22 @@ void MaidsafeStoreManager::NotifyTaskHandlerOfAccountAmendments(
 
 ////////////// BUFFER PACKET //////////////
 
+BPInputParameters MaidsafeStoreManager::GetBPInputParameters() {
+  std::string mpid_public, mpid_private;
+  if (ss_->MPublicID(NULL, &mpid_public, &mpid_private, NULL) != kSuccess) {
+#ifdef DEBUG
+    printf("In MSM::GetBPInputParameters (%d), no MPID.\n", kad_ops_->Port());
+#endif
+    return BPInputParameters("", "", "");
+  } else {
+    return BPInputParameters(ss_->PublicUsername(), mpid_public, mpid_private);
+  }
+}
+
 int MaidsafeStoreManager::CreateBP() {
-  BPInputParameters bpip = {ss_->Id(MPID),
-                            ss_->PublicKey(MPID),
-                            ss_->PrivateKey(MPID)};
+  BPInputParameters bpip = GetBPInputParameters();
+  if (bpip.kPublicUsername.empty())
+    return kGetKeyFailure;
   boost::shared_ptr<BPResults> bp_results(new BPResults);
   bp_results->finished = false;
   boost::mutex::scoped_lock loch_glascarnoch(bp_results->mutex);
@@ -1447,9 +1464,9 @@ int MaidsafeStoreManager::CreateBP() {
 }
 
 int MaidsafeStoreManager::ModifyBPInfo(const std::string &info) {
-  BPInputParameters bpip = {ss_->Id(MPID),
-                            ss_->PublicKey(MPID),
-                            ss_->PrivateKey(MPID)};
+  BPInputParameters bpip = GetBPInputParameters();
+  if (bpip.kPublicUsername.empty())
+    return kGetKeyFailure;
   boost::shared_ptr<BPResults> bp_results(new BPResults);
   bp_results->finished = false;
   BufferPacketInfo buffer_packet_info;
@@ -1473,10 +1490,9 @@ int MaidsafeStoreManager::LoadBPMessages(
     std::list<ValidatedBufferPacketMessage> *messages) {
   if (!messages)
     return kBPError;
-
-  BPInputParameters bpip = {ss_->Id(MPID),
-                            ss_->PublicKey(MPID),
-                            ss_->PrivateKey(MPID)};
+  BPInputParameters bpip = GetBPInputParameters();
+  if (bpip.kPublicUsername.empty())
+    return kGetKeyFailure;
   boost::shared_ptr<VBPMessages> bpm(new VBPMessages);
   boost::mutex::scoped_lock loch_oich(bpm->mutex);
   cbph_.GetMessages(bpip,
@@ -1502,9 +1518,9 @@ int MaidsafeStoreManager::SendMessage(
     const std::string &message,
     const MessageType &type,
     std::map<std::string, ReturnCode> *add_results) {
-  BPInputParameters bpip = {ss_->Id(MPID),
-                            ss_->PublicKey(MPID),
-                            ss_->PrivateKey(MPID)};
+  BPInputParameters bpip = GetBPInputParameters();
+  if (bpip.kPublicUsername.empty())
+    return kGetKeyFailure;
   boost::shared_ptr<BPResults> bp_results(new BPResults);
   bp_results->returned_count = 0;
   bp_results->results = add_results;
@@ -1524,7 +1540,7 @@ int MaidsafeStoreManager::SendMessage(
     while (it != recs.end()) {
       if (SendIM(message, *it)) {
         bp_results->results->insert(std::pair<std::string, ReturnCode>
-                                             (*it,         kSuccess));
+                                             (*it, kSuccess));
         it = recs.erase(it);
       } else {
         ++it;
@@ -1561,10 +1577,9 @@ int MaidsafeStoreManager::SendMessage(
 int MaidsafeStoreManager::LoadBPPresence(std::list<LivePresence> *messages) {
   if (!messages)
     return kBPError;
-
-  BPInputParameters bpip = {ss_->Id(MPID),
-                            ss_->PublicKey(MPID),
-                            ss_->PrivateKey(MPID)};
+  BPInputParameters bpip = GetBPInputParameters();
+  if (bpip.kPublicUsername.empty())
+    return kGetKeyFailure;
   boost::shared_ptr<PresenceMessages> bp_pm(new PresenceMessages);
   boost::mutex::scoped_lock loch_shin(bp_pm->mutex);
   cbph_.GetPresence(bpip,
@@ -1593,10 +1608,9 @@ int MaidsafeStoreManager::AddBPPresence(
     return kBPError;
   if (receivers.empty())
     return kSuccess;
-
-  BPInputParameters bpip = {ss_->Id(MPID),
-                            ss_->PublicKey(MPID),
-                            ss_->PrivateKey(MPID)};
+  BPInputParameters bpip = GetBPInputParameters();
+  if (bpip.kPublicUsername.empty())
+    return kGetKeyFailure;
   boost::shared_ptr<BPResults> bp_results(new BPResults);
   bp_results->returned_count = 0;
   bp_results->results = add_results;
@@ -1752,7 +1766,7 @@ void MaidsafeStoreManager::AddToWatchListStageThree(
   boost::mutex::scoped_lock lock(data->mutex);
   if (result != kSuccess) {
 #ifdef DEBUG
-    printf("In MSM::AddToWatchListStageThree (%d), ExpectAmendment failed.\n", 
+    printf("In MSM::AddToWatchListStageThree (%d), ExpectAmendment failed.\n",
            kad_ops_->Port());
 #endif
     tasks_handler_.NotifyTaskFailure(data->task_id, result);
@@ -2144,11 +2158,9 @@ int MaidsafeStoreManager::GetStoreRequests(
     mutable_signed_size->set_public_key_signature(" ");
     store_prep_request.set_request_signature(request_signature);
   } else {
-    crypto::Crypto co;
-    co.set_symm_algorithm(crypto::AES_256);
-    mutable_signed_size->set_signature(
-        co.AsymSign(boost::lexical_cast<std::string>(chunk_size),
-                    "", store_data->private_key, crypto::STRING_STRING));
+    mutable_signed_size->set_signature(RSASign(
+        boost::lexical_cast<std::string>(chunk_size),
+        store_data->private_key));
     mutable_signed_size->set_public_key(store_data->public_key);
     mutable_signed_size->set_public_key_signature(
         store_data->public_key_signature);
@@ -2170,16 +2182,13 @@ int MaidsafeStoreManager::GetAddToWatchListRequests(
     const std::vector<kad::Contact> &recipients,
     std::vector<AddToWatchListRequest> *add_to_watch_list_requests) {
   add_to_watch_list_requests->clear();
-  crypto::Crypto co;
-  co.set_symm_algorithm(crypto::AES_256);
-  co.set_hash_algorithm(crypto::SHA_512);
   AddToWatchListRequest request;
   request.set_chunkname(store_data->data_name);
   SignedSize *mutable_signed_size = request.mutable_signed_size();
   mutable_signed_size->set_data_size(store_data->size);
-  mutable_signed_size->set_signature(
-      co.AsymSign(boost::lexical_cast<std::string>(store_data->size), "",
-                  store_data->private_key, crypto::STRING_STRING));
+  mutable_signed_size->set_signature(RSASign(
+      boost::lexical_cast<std::string>(store_data->size),
+      store_data->private_key));
   mutable_signed_size->set_pmid(store_data->key_id);
   mutable_signed_size->set_public_key(store_data->public_key);
   mutable_signed_size->set_public_key_signature(
@@ -2204,9 +2213,6 @@ int MaidsafeStoreManager::GetRemoveFromWatchListRequests(
     const std::vector<kad::Contact> &recipients,
     std::vector<RemoveFromWatchListRequest> *remove_from_watch_list_requests) {
   remove_from_watch_list_requests->clear();
-  crypto::Crypto co;
-  co.set_symm_algorithm(crypto::AES_256);
-  co.set_hash_algorithm(crypto::SHA_512);
   RemoveFromWatchListRequest request;
   request.set_chunkname(store_data->data_name);
   request.set_pmid(store_data->key_id);
@@ -2227,7 +2233,7 @@ int MaidsafeStoreManager::GetRemoveFromWatchListRequests(
   return kSuccess;
 }
 
-void MaidsafeStoreManager::GetRequestSignature (
+void MaidsafeStoreManager::GetRequestSignature(
     const std::string &name,
     const DirType dir_type,
     const std::string &recipient_id,
@@ -2256,16 +2262,13 @@ void MaidsafeStoreManager::GetRequestSignature (
 #endif
     return;
   } else {
-    crypto::Crypto co;
-    co.set_symm_algorithm(crypto::AES_256);
-    co.set_hash_algorithm(crypto::SHA_512);
-    *request_signature = co.AsymSign(co.Hash(public_key_signature + name +
-        recipient_id, "", crypto::STRING_STRING, false), "", private_key,
-        crypto::STRING_STRING);
+    *request_signature =
+        RSASign(SHA512String(public_key_signature + name + recipient_id),
+                private_key);
   }
 }
 
-void MaidsafeStoreManager::GetRequestSignature (
+void MaidsafeStoreManager::GetRequestSignature(
     boost::shared_ptr<StoreData> store_data,
     const std::string &recipient_id,
     std::string *request_signature) {
@@ -2323,8 +2326,10 @@ void MaidsafeStoreManager::StoreChunkCopy(
     double ideal_rtt = 1.0;
 
     // Ensure we don't find own vault
+    std::string pmid_id;
+    ss_->ProxyMID(&pmid_id, NULL, NULL, NULL);
     if (store_data->exclude_peers.empty())
-      store_data->exclude_peers.push_back(kad::Contact(ss_->Id(PMID), "", 0));
+      store_data->exclude_peers.push_back(kad::Contact(pmid_id, "", 0));
     int peer_result =
         kad_ops_->GetStorePeer(ideal_rtt, store_data->exclude_peers,
                               &send_chunk_data->peer, &send_chunk_data->local);
@@ -2332,7 +2337,7 @@ void MaidsafeStoreManager::StoreChunkCopy(
     // If GetStorePeer failed, record failure
     if (peer_result != kSuccess) {
       tasks_handler_.NotifyTaskFailure(send_chunk_data->chunk_copy_task_id,
-                                      kGetStorePeerError);
+                                       kGetStorePeerError);
   #ifdef DEBUG
       printf("In MSM::StoreChunkCopy (%d), error getting store peer for %s (%d)."
             "\n", kad_ops_->Port(), HexSubstr(store_data->data_name).c_str(),
@@ -2475,22 +2480,19 @@ int MaidsafeStoreManager::ValidatePrepResponse(
   // Check response is kAck & peer PMID validates
   if (inner_contract.result() != kAck)
     return kSendPrepFailure;
-  crypto::Crypto co;
-  co.set_hash_algorithm(crypto::SHA_512);
-  if (store_contract.pmid() != co.Hash(store_contract.public_key() +
-      store_contract.public_key_signature(), "", crypto::STRING_STRING, false))
+  if (store_contract.pmid() != SHA512String(store_contract.public_key() +
+      store_contract.public_key_signature()))
     return kSendPrepInvalidId;
   // Check peer correctly signed StoreContract and InnerContract
   std::string ser_store_contract, ser_inner_contract;
   store_contract.SerializeToString(&ser_store_contract);
   inner_contract.SerializeToString(&ser_inner_contract);
-  if (!co.AsymCheckSig(ser_store_contract,
-                       store_prep_response->response_signature(),
-                       store_contract.public_key(),
-                       crypto::STRING_STRING))
+  if (!RSACheckSignedData(ser_store_contract,
+                          store_prep_response->response_signature(),
+                          store_contract.public_key()))
     return kSendPrepInvalidResponseSignature;
-  if (!co.AsymCheckSig(ser_inner_contract, store_contract.signature(),
-                       store_contract.public_key(), crypto::STRING_STRING))
+  if (!RSACheckSignedData(ser_inner_contract, store_contract.signature(),
+                          store_contract.public_key()))
     return kSendPrepInvalidContractSignature;
   return kSuccess;
 }
@@ -2832,17 +2834,13 @@ void MaidsafeStoreManager::GetChunkCallback(bool *done,
 }
 
 void MaidsafeStoreManager::SendPacket(boost::shared_ptr<StoreData> store_data) {
-  crypto::Crypto co;
-  co.set_symm_algorithm(crypto::AES_256);
-  co.set_hash_algorithm(crypto::SHA_512);
   kad::SignedValue signed_value;
   signed_value.set_value(store_data->value);
-  signed_value.set_value_signature(co.AsymSign(store_data->value, "",
-      store_data->private_key, crypto::STRING_STRING));
-  std::string signed_request = co.AsymSign(co.Hash(store_data->public_key +
-      store_data->public_key_signature + store_data->data_name, "",
-      crypto::STRING_STRING, false), "", store_data->private_key,
-      crypto::STRING_STRING);
+  signed_value.set_value_signature(RSASign(store_data->value,
+                                           store_data->private_key));
+  std::string signed_request = RSASign(SHA512String(store_data->public_key +
+      store_data->public_key_signature + store_data->data_name),
+      store_data->private_key);
   kad::SignedRequest sr;
   sr.set_signer_id(store_data->key_id);
   sr.set_public_key(store_data->public_key);
@@ -2899,21 +2897,17 @@ std::string MaidsafeStoreManager::GetValueFromSignedValue(
 
 void MaidsafeStoreManager::DeletePacketFromNet(
     boost::shared_ptr<DeletePacketData> delete_data) {
-  crypto::Crypto co;
-  co.set_symm_algorithm(crypto::AES_256);
-  co.set_hash_algorithm(crypto::SHA_512);
   kad::VoidFunctorOneString cb = boost::bind(
       &MaidsafeStoreManager::DeletePacketCallback, this, _1, delete_data);
   boost::mutex::scoped_lock lock(delete_data->mutex);
   for (size_t i = 0; i < delete_data->values.size(); ++i) {
     kad::SignedValue signed_value;
     signed_value.set_value(delete_data->values.at(i));
-    signed_value.set_value_signature(co.AsymSign(delete_data->values.at(i), "",
-        delete_data->private_key, crypto::STRING_STRING));
-    std::string signed_request = co.AsymSign(co.Hash(delete_data->public_key +
-        delete_data->public_key_signature + delete_data->packet_name,
-        "", crypto::STRING_STRING, false), "", delete_data->private_key,
-        crypto::STRING_STRING);
+    signed_value.set_value_signature(RSASign(delete_data->values.at(i),
+                                             delete_data->private_key));
+    std::string signed_request = RSASign(SHA512String(
+        delete_data->public_key + delete_data->public_key_signature +
+        delete_data->packet_name), delete_data->private_key);
     kad::SignedRequest sr;
     sr.set_signer_id(delete_data->key_id);
     sr.set_public_key(delete_data->public_key);
@@ -2978,8 +2972,11 @@ void MaidsafeStoreManager::PollVaultInfo(kad::VoidFunctorOneString cb) {
   std::string ser_vc;
   vc.SerializeToString(&ser_vc);
   crypto::Crypto co;
-  std::string enc_ser_vc = co.AsymEncrypt(ser_vc, "", ss_->PublicKey(PMID),
-                           crypto::STRING_STRING);
+  std::string pmid_public_key;
+  if (ss_->ProxyMID(NULL, &pmid_public_key, NULL, NULL) != kSuccess)
+    return;
+  std::string enc_ser_vc = co.AsymEncrypt(ser_vc, "", pmid_public_key,
+                                          crypto::STRING_STRING);
   VaultStatusResponse vault_status_response;
   google::protobuf::Closure *done =
       google::protobuf::NewCallback<MaidsafeStoreManager,
@@ -3007,9 +3004,15 @@ void MaidsafeStoreManager::PollVaultInfoCallback(
     return;
   }
 
+  std::string pmid_private_key;
+  if (ss_->ProxyMID(NULL, NULL, &pmid_private_key, NULL) != kSuccess) {
+    cb("FAIL");
+    return;
+  }
+
   crypto::Crypto co;
   std::string unenc = co.AsymDecrypt(response->encrypted_response(), "",
-                      ss_->PrivateKey(PMID), crypto::STRING_STRING);
+                                     pmid_private_key, crypto::STRING_STRING);
 
   VaultCommunication vc;
   if (!vc.ParseFromString(unenc)) {
@@ -3029,8 +3032,10 @@ void MaidsafeStoreManager::PollVaultInfoCallback(
 }
 
 bool MaidsafeStoreManager::VaultContactInfo(kad::Contact *contact) {
-//   return kSuccess == kad_ops_->BlockingGetNodeContactDetails(ss_->Id(PMID),
-//                                                              contact, false);
+//  std::string pmid_name;
+//  ss_->ProxyMID(&pmid_name, NULL, NULL, NULL);
+//  return kSuccess == kad_ops_->BlockingGetNodeContactDetails(pmid_name,
+//                                                             contact, false);
   own_vault_.WaitForUpdate();
   return own_vault_.GetContact(contact);
 }
@@ -3104,7 +3109,7 @@ void MaidsafeStoreManager::LocalVaultOwnedCallback(
       callback_args->cb(ISOWNRPC_CANCELLED);
     return;
   }
-  VaultStatus result = callback_args->response->status();
+  VaultOwnershipStatus result = callback_args->response->status();
   callback_args->cb(result);
 }
 
@@ -3124,18 +3129,23 @@ bool MaidsafeStoreManager::NotDoneWithUploading() {
 }
 
 int MaidsafeStoreManager::CreateAccount(const boost::uint64_t &space) {
-  crypto::Crypto co;
-  co.set_symm_algorithm(crypto::AES_256);
-  co.set_hash_algorithm(crypto::SHA_512);
-  std::string account_name = co.Hash(ss_->Id(PMID) + kAccount, "",
-                                     crypto::STRING_STRING, false);
+  std::string pmid_id, pmid_public_key, pmid_private_key;
+  std::string pmid_public_key_signature;
+  if (ss_->ProxyMID(&pmid_id, &pmid_public_key, &pmid_private_key,
+                    &pmid_public_key_signature) != kSuccess) {
+#ifdef DEBUG
+    printf("In MSM::CreateAccount (%d), Don't have PMID.\n", kad_ops_->Port());
+#endif
+    return kGetKeyFailure;
+  }
 
+  std::string account_name = SHA512String(pmid_id + kAccount);
   boost::shared_ptr<AmendAccountData> data(new AmendAccountData);
   boost::mutex::scoped_lock lock(data->mutex);
 
 #ifdef DEBUG
   printf("In MSM::CreateAccount, name of PMID: %s, name of account: %s\n",
-         HexSubstr(ss_->Id(PMID)).c_str(), HexSubstr(account_name).c_str());
+         HexSubstr(pmid_id).c_str(), HexSubstr(account_name).c_str());
 #endif
 
   data->contacts = account_holders_manager_.account_holder_group();
@@ -3155,14 +3165,12 @@ int MaidsafeStoreManager::CreateAccount(const boost::uint64_t &space) {
   request.set_amendment_type(AmendAccountRequest::kSpaceOffered);
   SignedSize *mutable_signed_size = request.mutable_signed_size();
   mutable_signed_size->set_data_size(space);
-  mutable_signed_size->set_pmid(ss_->Id(PMID));
+  mutable_signed_size->set_pmid(pmid_id);
   mutable_signed_size->set_signature(
-      co.AsymSign(boost::lexical_cast<std::string>(space),
-                                     "", ss_->PrivateKey(PMID),
-                                     crypto::STRING_STRING));
-  mutable_signed_size->set_public_key(ss_->PublicKey(PMID));
-  mutable_signed_size->set_public_key_signature(ss_->SignedPublicKey(PMID));
-  request.set_account_pmid(ss_->Id(PMID));
+      RSASign(boost::lexical_cast<std::string>(space), pmid_private_key));
+  mutable_signed_size->set_public_key(pmid_public_key);
+  mutable_signed_size->set_public_key_signature(pmid_public_key_signature);
+  request.set_account_pmid(pmid_id);
   for (boost::uint16_t i = 0; i < data->contacts.size(); ++i) {
     AmendAccountData::AmendAccountDataHolder holder(
         data->contacts.at(i).node_id().String());
@@ -3314,12 +3322,14 @@ std::string MaidsafeStoreManager::ValidatePresence(
   if (publickey.empty())
     return result;
 
-  crypto::Crypto co;
-  if (!co.AsymCheckSig(gp.data(), gp.signature(), publickey,
-      crypto::STRING_STRING))
+  if (!RSACheckSignedData(gp.data(), gp.signature(), publickey))
     return result;
 
-  result = co.AsymDecrypt(lp.end_point(), "", ss_->PrivateKey(MPID),
+  std::string mpid_private_key;
+  if (ss_->MPublicID(NULL, NULL, &mpid_private_key, NULL) != kSuccess)
+    return result;
+  crypto::Crypto co;
+  result = co.AsymDecrypt(lp.end_point(), "", mpid_private_key,
                           crypto::STRING_STRING);
   if (result.empty())
     return result;

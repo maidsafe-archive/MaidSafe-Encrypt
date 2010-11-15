@@ -20,13 +20,16 @@
 #ifndef MAIDSAFE_VAULT_BUFFERPACKETSTORE_H_
 #define MAIDSAFE_VAULT_BUFFERPACKETSTORE_H_
 
+#include <boost/thread/mutex.hpp>
+
 #include <string>
 #include <map>
 
-#include "maidsafe/maidsafe.h"
-#include "protobuf/sync_data.pb.h"
+#include "maidsafe/common/sync_data.pb.h"
 
-namespace maidsafe_vault {
+namespace maidsafe {
+
+namespace vault {
 
 class BufferPacketStore {
  public:
@@ -47,6 +50,8 @@ class BufferPacketStore {
   boost::mutex bp_store_mutex_;
 };
 
-}  // namespace maidsafe_vault
+}  // namespace vault
+
+}  // namespace maidsafe
 
 #endif  // MAIDSAFE_VAULT_BUFFERPACKETSTORE_H_

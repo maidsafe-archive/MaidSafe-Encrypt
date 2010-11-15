@@ -11,7 +11,9 @@
  *  Created on: May 18, 2010
  *      Author: Stephen Alexander
  */
-#include "qt/widgets/user_inbox.h"
+#include "maidsafe/lifestuff/widgets/user_inbox.h"
+
+#include <boost/filesystem.hpp>
 
 #include <QMessageBox>
 #include <QDebug>
@@ -20,7 +22,7 @@
 #include <map>
 #include <string>
 
-#include "qt/client/client_controller.h"
+#include "maidsafe/lifestuff/client/client_controller.h"
 
 
 UserInbox::UserInbox(QWidget* parent) : QDialog(parent) {
@@ -61,7 +63,8 @@ void UserInbox::setActive(bool) {
       boost::filesystem::create_directories(emailRootPath.toStdString());
   }
   catch(const std::exception &e) {
-    qDebug() << "UserInbox::UserInbox - Failed to create " << emailRootPath;
+    qDebug() << "UserInbox::UserInbox - Failed to create " << emailRootPath <<
+      ": " << e.what();
   }
 
   folder_ = "/Emails/";
@@ -83,7 +86,7 @@ int UserInbox::populateEmails() {
 
   int rowCount = 0;
 
-  std::map<std::string, ClientController::ItemType> children;
+  std::map<fs::path, ClientController::ItemType> children;
 
   int n = ClientController::instance()->readdir(folder_, &children);
   if (n != 0) {
@@ -96,7 +99,7 @@ int UserInbox::populateEmails() {
   }
 
   while (!children.empty()) {
-    std::string s = children.begin()->first;
+    fs::path s = children.begin()->first;
     qDebug() << "children not empty";
 
     fs::path path(folder_.toStdString());
@@ -109,7 +112,7 @@ int UserInbox::populateEmails() {
       return -1;
     }
 
-    QString filename = QString::fromStdString(s);
+    QString filename = QString::fromStdString(s.string());
     if (filename.endsWith(".pdmail")) {
       QListWidgetItem *newItem = new QListWidgetItem;
       newItem->setText(filename.remove(".pdmail"));
@@ -155,7 +158,7 @@ void UserInbox::onReplyClicked() {
   }
   catch(const std::exception &e) {
     qDebug() << "UserInbox::onReplyClicked - Failed to create "
-             << emailRootPath;
+             << emailRootPath << ": " << e.what();
   }
 
     QString emailFullPath = QString("%1%2.pdmail").arg(emailRootPath)

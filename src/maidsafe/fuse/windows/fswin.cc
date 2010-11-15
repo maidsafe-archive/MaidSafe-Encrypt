@@ -22,7 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
-#include "fs/w_fuse/fswin.h"
+#include "maidsafe/fuse/windows/fswin.h"
 
 #include <winbase.h>
 #include <boost/lexical_cast.hpp>
@@ -32,7 +32,8 @@ THE SOFTWARE.
 #include <vector>
 
 #include "maidsafe/client/clientcontroller.h"
-#include "maidsafe/pdutils.h"
+#include "maidsafe/client/clientutils.h"
+#include "maidsafe/client/sessionsingleton.h"
 
 namespace fs = boost::filesystem;
 
@@ -180,7 +181,7 @@ static int __stdcall WinCreateFile(const WCHAR *FileName,
   // (if we have the file already in the DA)
   bool created_cache_dir_ = false;
   fs::path rel_path_(relPathStr);
-  fs::path branch_path_ = rel_path_.branch_path();
+  fs::path branch_path_ = rel_path_.parent_path();
 
   //  std::cout << "relPathStr = " << relPathStr;
   //  std::cout << " and branch_path_ = " << branch_path_ << std::endl;
@@ -748,10 +749,10 @@ static int __stdcall WinFindFiles(const WCHAR *FileName,
   GetFilePath(filePath, FileName);
   std::string relPathStr(WstrToStr(FileName));
   wcscat(filePath, yenStar);
-  std::map<std::string, maidsafe::ItemType> children;
+  std::map<fs::path, maidsafe::ItemType> children;
   maidsafe::ClientController::getInstance()->readdir(relPathStr, &children);
   while (!children.empty()) {
-    std::string s = children.begin()->first;
+    fs::path s = children.begin()->first;
     maidsafe::ItemType ityp = children.begin()->second;
     maidsafe::MetaDataMap mdm;
     std::string ser_mdm;
@@ -763,7 +764,7 @@ static int __stdcall WinFindFiles(const WCHAR *FileName,
       return -1;
     }
     mdm.ParseFromString(ser_mdm);
-    const char *charpath(s.c_str());
+    const char *charpath(s.string().c_str());
       memset(&findData, 0, sizeof(WIN32_FIND_DATAW));
     if (ityp == maidsafe::DIRECTORY || ityp == maidsafe::EMPTY_DIRECTORY) {
       findData.dwFileAttributes = FILE_ATTRIBUTE_DIRECTORY;

@@ -12,8 +12,8 @@
  *      Author: Stephen Alexander
  */
 
-#include "qt/widgets/security_settings.h"
-#include "qt/client/client_controller.h"
+#include "maidsafe/lifestuff/widgets/security_settings.h"
+#include "maidsafe/lifestuff/client/client_controller.h"
 
 SecuritySettings::SecuritySettings(QWidget* parent) : QWidget(parent) {
   ui_.setupUi(this);

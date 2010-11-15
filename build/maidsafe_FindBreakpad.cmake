@@ -28,8 +28,7 @@
 #  Variables set and cached by this module are:                                #
 #    Breakpad_INCLUDE_DIR, Breakpad_LIBRARY_DIR, Breakpad_LIBRARY              #
 #                                                                              #
-#  For MSVC, Breakpad_LIBRARY_DIR_DEBUG and Breakpad_LIBRARY_DEBUG are also    #
-#  set and cached.                                                             #
+#  For MSVC, Breakpad_LIBRARY_DIR_DEBUG is also set and cached.                #
 #                                                                              #
 #==============================================================================#
 
@@ -39,6 +38,7 @@ UNSET(Breakpad_LIBRARY_DIR CACHE)
 UNSET(Breakpad_LIBRARY_DIR_DEBUG CACHE)
 UNSET(Breakpad_LIBRARY CACHE)
 UNSET(Breakpad_LIBRARY_DEBUG CACHE)
+UNSET(Breakpad_LIBRARY_RELEASE CACHE)
 
 IF(BREAKPAD_LIB_DIR)
   SET(BREAKPAD_LIB_DIR ${BREAKPAD_LIB_DIR} CACHE INTERNAL "Path to Breakpad library directory" FORCE)
@@ -61,7 +61,7 @@ ELSE()
   SET(BREAKPAD_LIBPATH_SUFFIX src/.libs)
 ENDIF()
 
-FIND_LIBRARY(Breakpad_LIBRARY NAMES libbreakpad_client.a exception_handler PATHS ${BREAKPAD_LIB_DIR} ${BREAKPAD_ROOT_DIR} PATH_SUFFIXES ${BREAKPAD_LIBPATH_SUFFIX})
+FIND_LIBRARY(Breakpad_LIBRARY_RELEASE NAMES libbreakpad_client.a exception_handler PATHS ${BREAKPAD_LIB_DIR} ${BREAKPAD_ROOT_DIR} PATH_SUFFIXES ${BREAKPAD_LIBPATH_SUFFIX})
 IF(MSVC)
   SET(BREAKPAD_LIBPATH_SUFFIX src/client/windows/Debug)
   FIND_LIBRARY(Breakpad_LIBRARY_DEBUG NAMES exception_handler PATHS ${BREAKPAD_LIB_DIR} ${BREAKPAD_ROOT_DIR} PATH_SUFFIXES ${BREAKPAD_LIBPATH_SUFFIX})
@@ -75,20 +75,22 @@ ELSE(APPLE)
   FIND_PATH(Breakpad_INCLUDE_DIR client/mac/handler/exception_handler.h PATHS ${BREAKPAD_INC_DIR} ${BREAKPAD_ROOT_DIR} PATH_SUFFIXES google/breakpad/ src/)
 ENDIF()
 
-GET_FILENAME_COMPONENT(BREAKPAD_LIBRARY_DIR ${Breakpad_LIBRARY} PATH)
+GET_FILENAME_COMPONENT(BREAKPAD_LIBRARY_DIR ${Breakpad_LIBRARY_RELEASE} PATH)
 SET(Breakpad_LIBRARY_DIR ${BREAKPAD_LIBRARY_DIR} CACHE PATH "Path to Google Breakpad libraries directory" FORCE)
 IF(MSVC)
   GET_FILENAME_COMPONENT(BREAKPAD_LIBRARY_DIR_DEBUG ${Breakpad_LIBRARY_DEBUG} PATH)
   SET(Breakpad_LIBRARY_DIR_DEBUG ${BREAKPAD_LIBRARY_DIR_DEBUG} CACHE PATH "Path to Google Breakpad debug libraries directory" FORCE)
 ENDIF()
 
-IF(NOT Breakpad_LIBRARY)
+IF(NOT Breakpad_LIBRARY_RELEASE)
   SET(ERROR_MESSAGE "\nCould not find Google Breakpad.  NO BREAKPAD LIBRARY - ")
   SET(ERROR_MESSAGE "${ERROR_MESSAGE}You can download it at http://code.google.com/p/google-breakpad\n")
   SET(ERROR_MESSAGE "${ERROR_MESSAGE}If Google Breakpad is already installed, run:\n")
   SET(ERROR_MESSAGE "${ERROR_MESSAGE}cmake ../.. -DBREAKPAD_LIB_DIR=<Path to Breakpad lib directory> and/or")
   SET(ERROR_MESSAGE "${ERROR_MESSAGE}\ncmake ../.. -DBREAKPAD_ROOT_DIR=<Path to Breakpad root directory>")
   MESSAGE(FATAL_ERROR "${ERROR_MESSAGE}")
+ELSE()
+  SET(Breakpad_LIBRARY ${Breakpad_LIBRARY_RELEASE} CACHE PATH "Path to Google Breakpad library" FORCE)
 ENDIF()
 
 IF(MSVC)
@@ -99,6 +101,8 @@ IF(MSVC)
     SET(ERROR_MESSAGE "${ERROR_MESSAGE}cmake ../.. -DBREAKPAD_LIB_DIR=<Path to Breakpad lib directory> and/or")
     SET(ERROR_MESSAGE "${ERROR_MESSAGE}\ncmake ../.. -DBREAKPAD_ROOT_DIR=<Path to Breakpad root directory>")
     MESSAGE(FATAL_ERROR "${ERROR_MESSAGE}")
+  ELSE()
+    SET(Breakpad_LIBRARY debug ${Breakpad_LIBRARY_DEBUG} optimized ${Breakpad_LIBRARY} CACHE PATH "Path to Google Breakpad libraries" FORCE)
   ENDIF()
 ENDIF()
 

@@ -20,15 +20,14 @@
 
 // TODO(Steve#) auto-update contact
 
-#ifndef MAIDSAFE_CONTACTCACHE_H_
-#define MAIDSAFE_CONTACTCACHE_H_
+#ifndef MAIDSAFE_COMMON_CONTACTCACHE_H_
+#define MAIDSAFE_COMMON_CONTACTCACHE_H_
 
 #include <boost/bind.hpp>
 #include <boost/thread/condition_variable.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/function.hpp>
 #include <boost/thread/mutex.hpp>
-#include <gtest/gtest_prod.h>
 #include <maidsafe/kademlia/contact.h>
 #include <maidsafe/kademlia/kadid.h>
 
@@ -36,10 +35,12 @@
 #include <string>
 #include <vector>
 
-#include "maidsafe/maidsafe.h"
-#include "maidsafe/returncodes.h"
+#include "maidsafe/common/maidsafe.h"
+#include "maidsafe/common/returncodes.h"
 
 namespace maidsafe {
+
+namespace test { class ContactCacheTest_BEH_MAID_CTC_Update_Test; }
 
 class KadOps;
 // class ContactCache;
@@ -73,7 +74,7 @@ class ContactCache {
   ContactCache &operator=(const ContactCache&);
   ContactCache(const ContactCache&);
   // friend class ContactCache;
-  FRIEND_TEST(ContactCacheTest, BEH_MAID_CTC_Update);
+  friend class test::ContactCacheTest_BEH_MAID_CTC_Update_Test;
   void DoUpdate();
   void GetNodeContactDetailsCallback(const ReturnCode &result,
                                      const kad::Contact &contact);
@@ -89,4 +90,4 @@ class ContactCache {
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_ACCOUNTHOLDERSMANAGER_H_
+#endif  // MAIDSAFE_COMMON_CONTACTCACHE_H_

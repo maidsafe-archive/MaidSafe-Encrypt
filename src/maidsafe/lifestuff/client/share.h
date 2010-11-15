@@ -22,7 +22,7 @@
 #include <QFlags>
 #include <QStringList>
 
-#include "qt/client/contact.h"
+#include "maidsafe/lifestuff/client/contact.h"
 
 // Representation of a Share
 /*!

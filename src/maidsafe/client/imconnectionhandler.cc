@@ -22,10 +22,10 @@
 * ============================================================================
 */
 
+#include "maidsafe/client/imconnectionhandler.h"
 #include <boost/bind.hpp>
 #include <utility>
-#include "maidsafe/client/imconnectionhandler.h"
-#include "protobuf/packet.pb.h"
+#include "maidsafe/common/packet.pb.h"
 
 namespace maidsafe {
 

@@ -22,23 +22,20 @@
 * ============================================================================
 */
 
-#ifndef MAIDSAFE_VAULTBUFFERPACKETHANDLER_H_
-#define MAIDSAFE_VAULTBUFFERPACKETHANDLER_H_
+#ifndef MAIDSAFE_COMMON_VAULTBUFFERPACKETHANDLER_H_
+#define MAIDSAFE_COMMON_VAULTBUFFERPACKETHANDLER_H_
 
-#include <maidsafe/base/crypto.h>
-#include <maidsafe/base/utils.h>
-#include <list>
 #include <string>
 #include <vector>
 
-#include "maidsafe/maidsafe.h"
-#include "protobuf/packet.pb.h"
+#include "maidsafe/common/packet.pb.h"
 
 namespace maidsafe {
 
 class VaultBufferPacketHandler {
  public:
-  VaultBufferPacketHandler();
+  VaultBufferPacketHandler() {}
+  ~VaultBufferPacketHandler() {}
   bool ValidateOwnerSignature(const std::string &public_key,
                               const std::string &ser_bufferpacket);
   bool GetMessages(std::string *ser_bp, std::vector<std::string> *msgs);
@@ -58,11 +55,10 @@ class VaultBufferPacketHandler {
   bool AddPresence(const std::string &ser_message, std::string *ser_bp);
 
  private:
-  crypto::Crypto crypto_obj_;
   VaultBufferPacketHandler &operator=(const VaultBufferPacketHandler);
   VaultBufferPacketHandler(const VaultBufferPacketHandler&);
 };
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_VAULTBUFFERPACKETHANDLER_H_
+#endif  // MAIDSAFE_COMMON_VAULTBUFFERPACKETHANDLER_H_

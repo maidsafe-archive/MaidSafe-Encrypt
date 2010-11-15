@@ -22,22 +22,25 @@
 * ============================================================================
 */
 
-#ifndef MAIDSAFE_PDUTILS_H_
-#define MAIDSAFE_PDUTILS_H_
+#ifndef MAIDSAFE_CLIENT_CLIENTUTILS_H_
+#define MAIDSAFE_CLIENT_CLIENTUTILS_H_
 
+#include <maidsafe/passport/passport.h>
 #include <string>
-#include "maidsafe/maidsafe.h"
+#include "maidsafe/common/maidsafe.h"
 
-namespace kad {
-class Contact;
-}  // namespace kad
+namespace kad { class Contact; }
 
-namespace maidsafe_vault {
+namespace maidsafe {
+
+namespace vault {
 class RunPDVaults;
 namespace test {
 class PDVaultTest;
 }  // namespace test
-}  // namespace maidsafe_vault
+}  // namespace vault
+
+}  // namespace maidsafe
 
 namespace maidsafe {
 
@@ -47,20 +50,17 @@ std::string TidyPath(const std::string &original_path);
 
 std::string StringToLowercase(const std::string &str);
 
-bool ContactHasId(const std::string &id, const kad::Contact &contact);
-
-class PdUtils {
+class ClientUtils {
  public:
-  PdUtils();
-  ~PdUtils() {}
+  ClientUtils();
+  ~ClientUtils() {}
   void GetChunkSignatureKeys(DirType dir_type,
                              const std::string &msid,
                              std::string *key_id,
                              std::string *public_key,
                              std::string *public_key_sig,
                              std::string *private_key);
-
-  void GetPacketSignatureKeys(PacketType packet_type,
+  void GetPacketSignatureKeys(passport::PacketType packet_type,
                               DirType dir_type,
                               const std::string &msid,
                               std::string *key_id,
@@ -68,11 +68,11 @@ class PdUtils {
                               std::string *public_key_sig,
                               std::string *private_key);
  private:
-  friend class maidsafe_vault::test::PDVaultTest;
-  friend class maidsafe_vault::RunPDVaults;
+  friend class vault::test::PDVaultTest;
+  friend class vault::RunPDVaults;
   SessionSingleton *ss_;
 };
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_PDUTILS_H_
+#endif  // MAIDSAFE_CLIENT_CLIENTUTILS_H_

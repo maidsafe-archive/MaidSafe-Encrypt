@@ -12,7 +12,7 @@
  *      Author: Team
  */
 
-#include "qt/widgets/progress.h"
+#include "maidsafe/lifestuff/widgets/progress.h"
 
 // qt
 #include <QDebug>

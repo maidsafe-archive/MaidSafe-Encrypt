@@ -1,33 +1,40 @@
 /*
- * copyright maidsafe.net limited 2008
- * The following source code is property of maidsafe.net limited and
- * is not meant for external use. The use of this code is governed
- * by the license file LICENSE.TXT found in teh root of this directory and also
- * on www.maidsafe.net.
- *
- * You are not free to copy, amend or otherwise use this source code without
- * explicit written permission of the board of directors of maidsafe.net
- *
- *  Created on: Sep 29, 2008
- *      Author: Haiyang, Jose
- */
+* ============================================================================
+*
+* Copyright [2009] maidsafe.net limited
+*
+* Description:  Derived chunk store class.
+* Version:      1.0
+* Created:      2009-02-21-23.55.54
+* Revision:     none
+* Author:       Team
+* Company:      maidsafe.net limited
+*
+* The following source code is property of maidsafe.net limited and is not
+* meant for external use.  The use of this code is governed by the license
+* file LICENSE.TXT found in the root of this directory and also on
+* www.maidsafe.net.
+*
+* You are not free to copy, amend or otherwise use this source code without
+* the explicit written permission of the board of directors of maidsafe.net.
+*
+* ============================================================================
+*/
 
 #include "maidsafe/vault/vaultchunkstore.h"
+#include <maidsafe/base/utils.h>
+#include "maidsafe/common/returncodes.h"
+#include "maidsafe/vault/vaultconfig.h"
 
-#include <boost/filesystem/fstream.hpp>
-#include <boost/scoped_array.hpp>
-#include <boost/thread/mutex.hpp>
+namespace maidsafe {
 
-#include <set>
+namespace vault {
 
-namespace maidsafe_vault {
-
-maidsafe::ChunkInfo VaultChunkStore::GetOldestChecked() {
-  maidsafe::ChunkInfo chunk;
+ChunkInfo VaultChunkStore::GetOldestChecked() {
+  ChunkInfo chunk;
   {
     boost::mutex::scoped_lock lock(chunkstore_set_mutex_);
-    maidsafe::chunk_set_by_last_checked::iterator itr =
-        chunkstore_set_.get<1>().begin();
+    chunk_set_by_last_checked::iterator itr = chunkstore_set_.get<1>().begin();
     chunk = *itr;
   }
   return chunk;
@@ -54,11 +61,11 @@ int VaultChunkStore::LoadRandomChunk(std::string *key, std::string *value) {
 #endif
     return kChunkstoreError;
   }
-  maidsafe::ChunkType type = (maidsafe::kHashable | maidsafe::kNormal);
+  ChunkType type = (kHashable | kNormal);
   boost::uint64_t hashable_count(0);
   {
     boost::mutex::scoped_lock lock(chunkstore_set_mutex_);
-    maidsafe::chunk_set_by_chunk_type &sorted_index =
+    chunk_set_by_chunk_type &sorted_index =
         chunkstore_set_.get<maidsafe::chunk_type>();
     hashable_count = sorted_index.count(type);
   }
@@ -68,8 +75,8 @@ int VaultChunkStore::LoadRandomChunk(std::string *key, std::string *value) {
       % hashable_count);
   {
     boost::mutex::scoped_lock lock(chunkstore_set_mutex_);
-    maidsafe::chunk_set_by_chunk_type::iterator itr =
-         chunkstore_set_.get<maidsafe::chunk_type>().begin();
+    chunk_set_by_chunk_type::iterator itr =
+        chunkstore_set_.get<maidsafe::chunk_type>().begin();
     for (int i = 0; i < randindex; ++i, ++itr) {}
     *key = (*itr).non_hex_name_;
     // check we've got the correct type
@@ -90,9 +97,9 @@ void VaultChunkStore::GetAllChunks(std::list<std::string> *chunk_names) {
     return;
   }
   boost::mutex::scoped_lock lock(chunkstore_set_mutex_);
-  for (maidsafe::chunk_set_by_non_hex_name::iterator itr =
-       chunkstore_set_.get<maidsafe::non_hex_name>().begin();
-       itr != chunkstore_set_.get<maidsafe::non_hex_name>().end(); ++itr) {
+  for (chunk_set_by_non_hex_name::iterator itr =
+       chunkstore_set_.get<non_hex_name>().begin();
+       itr != chunkstore_set_.get<non_hex_name>().end(); ++itr) {
     chunk_names->push_back((*itr).non_hex_name_);
   }
 }
@@ -108,10 +115,10 @@ int VaultChunkStore::HashCheckAllChunks(bool delete_failures,
   }
   boost::uint64_t filecount;
   bool result(true);
-  for (maidsafe::path_map_iterator path_map_itr = path_map_.begin();
+  for (path_map_iterator path_map_itr = path_map_.begin();
        path_map_itr != path_map_.end(); ++path_map_itr) {
-    maidsafe::ChunkType type = path_map_itr->first;
-    if (type & maidsafe::kHashable) {
+    ChunkType type = path_map_itr->first;
+    if (type & kHashable) {
       FindFiles(path_map_itr->second, type, true, delete_failures, &filecount,
                 failed_keys);
     }
@@ -137,7 +144,7 @@ int VaultChunkStore::CacheChunk(const std::string &key,
   if (!EnoughSpace(value.size()))
     return kNoSpaceForCaching;
 
-  maidsafe::ChunkType ct(maidsafe::kHashable | maidsafe::kCache);
+  ChunkType ct(kHashable | kCache);
   fs::path store_path = GetChunkPath(key, ct, true);
   int n = StoreChunkFunction(key, value, store_path, ct);
   if (n != kSuccess)
@@ -153,14 +160,13 @@ int VaultChunkStore::FreeCacheSpace(const boost::uint64_t &space_to_clear) {
 
   {
     boost::mutex::scoped_lock lock(chunkstore_set_mutex_);
-    maidsafe::ChunkInfo chunk;
+    ChunkInfo chunk;
     boost::uint64_t cleared_so_far(0);
-    maidsafe::chunk_set_by_last_checked::iterator itr =
-        chunkstore_set_.get<1>().begin();
+    chunk_set_by_last_checked::iterator itr = chunkstore_set_.get<1>().begin();
     while (cleared_so_far < space_to_clear &&
         itr != chunkstore_set_.get<1>().end()) {
       chunk = *itr;
-      if (chunk.type_ & maidsafe::kCache) {
+      if (chunk.type_ & kCache) {
         fs::path p(GetChunkPath(chunk.non_hex_name_, chunk.type_, false));
         try {
           fs::remove_all(p);
@@ -184,4 +190,6 @@ bool VaultChunkStore::EnoughSpace(const boost::uint64_t &length) {
   return true;
 }
 
-}  // namespace maidsafe_vault
+}  // namespace vault
+
+}  // namespace maidsafe

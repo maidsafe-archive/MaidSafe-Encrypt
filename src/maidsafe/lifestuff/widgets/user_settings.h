@@ -20,13 +20,13 @@
 #include <QString>
 
 // local
-#include "qt/client/client_controller.h"
-#include "qt/widgets/personal_settings.h"
-#include "qt/widgets/vault_info.h"
-#include "qt/widgets/connection_settings.h"
-#include "qt/widgets/file_transfer_settings.h"
-#include "qt/widgets/security_settings.h"
-#include "qt/widgets/profile_settings.h"
+#include "maidsafe/lifestuff/client/client_controller.h"
+#include "maidsafe/lifestuff/widgets/personal_settings.h"
+#include "maidsafe/lifestuff/widgets/vault_info.h"
+#include "maidsafe/lifestuff/widgets/connection_settings.h"
+#include "maidsafe/lifestuff/widgets/file_transfer_settings.h"
+#include "maidsafe/lifestuff/widgets/security_settings.h"
+#include "maidsafe/lifestuff/widgets/profile_settings.h"
 #include "ui_user_settings.h"
 
 class SecuritySettings;

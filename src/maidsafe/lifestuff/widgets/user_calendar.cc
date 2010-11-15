@@ -11,14 +11,14 @@
  *  Created on: Aug 18th, 2010
  *      Author: Stephen Alexander
  */
-#include "qt/widgets/user_calendar.h"
+#include "maidsafe/lifestuff/widgets/user_calendar.h"
 
 #include <QMessageBox>
 #include <QDebug>
 #include <QInputDialog>
 #include <QTranslator>
 
-#include "qt/client/client_controller.h"
+#include "maidsafe/lifestuff/client/client_controller.h"
 
 UserCalendar::UserCalendar(QWidget* parent) : QDialog(parent) {
   ui_.setupUi(this);

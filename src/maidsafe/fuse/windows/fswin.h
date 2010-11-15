@@ -22,8 +22,8 @@
 * ============================================================================
 */
 
-#ifndef FS_W_FUSE_FSWIN_H_
-#define FS_W_FUSE_FSWIN_H_
+#ifndef MAIDSAFE_FUSE_WINDOWS_FSWIN_H_
+#define MAIDSAFE_FUSE_WINDOWS_FSWIN_H_
 
 #include <windows.h>
 #include <dokan.h>
@@ -38,4 +38,4 @@ bool UnMount(char drive);
 
 }  // namespace fs_w_fuse
 
-#endif  // FS_W_FUSE_FSWIN_H_
+#endif  // MAIDSAFE_FUSE_WINDOWS_FSWIN_H_

@@ -22,7 +22,7 @@
 *
 * ============================================================================
 */
-
+/*
 #include "maidsafe/vault/validitycheck.h"
 #include <boost/bind.hpp>
 #include <maidsafe/base/utils.h>
@@ -31,17 +31,19 @@
 
 namespace fs = boost::filesystem;
 
-namespace maidsafe_vault {
+namespace maidsafe {
+
+namespace vault {
 
 ValCheck::ValCheck(
                   const boost::shared_ptr<PDVault> pdvault,
                   const std::string &chunkstore_dir)
-        : db_path_(chunkstore_dir, fs::native),
+        : db_path_(chunkstore_dir),
           pdvault_(pdvault),
           db_(), started_(false) {
   db_path_ /= "valchk.db";
 }
-/*
+
 bool ValCheck::Start(bool reuse_database) {
 
   std::string fname_str = db_path_.file_string();
@@ -219,11 +221,8 @@ void ValCheck::CheckValidity_Callback(const dht::entry &result,
   if (result["result"].string() == kAck) {
     std::string remote_hash = result["hashcontent"].string();
     std::string content;
-    crypto::Crypto cry_obj;
-    cry_obj.set_symm_algorithm(crypto::AES_256);
-    cry_obj.set_hash_algorithm(crypto::SHA_512);
     node_->ReadChunkContent(chunk_name, content);
-    hcontent = cry_obj.Hash(content+random_data,"",crypto::STRING_STRING,false);
+    hcontent = SHA512String(content + random_data);
     if (hcontent == remote_hash)
       chunkstatus = CORRECT;
   }
@@ -415,5 +414,8 @@ bool ValCheck::PartnerExists(const std::string &node_id,
   }
   return true;
 }
+
+}  // namespace vault
+
+}  // namespace maidsafe
 */
-}  // namespace maidsafe_vault

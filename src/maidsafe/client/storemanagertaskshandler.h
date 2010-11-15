@@ -31,13 +31,11 @@
 #include <boost/multi_index/ordered_index.hpp>
 #include <boost/thread/mutex.hpp>
 #include <maidsafe/base/utils.h>
-#include <maidsafe/kademlia/contact.h>
 
 #include <string>
 #include <map>
-#include <vector>
 
-#include "maidsafe/returncodes.h"
+#include "maidsafe/common/returncodes.h"
 
 namespace mi = boost::multi_index;
 

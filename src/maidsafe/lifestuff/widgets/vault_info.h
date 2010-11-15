@@ -18,7 +18,7 @@
 #include <QTimer>
 
 // local
-#include "qt/widgets/panel.h"
+#include "maidsafe/lifestuff/widgets/panel.h"
 
 // generated
 #include "ui_user_vault_info.h"

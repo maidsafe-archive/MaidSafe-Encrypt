@@ -17,10 +17,13 @@
 * ============================================================================
 */
 
-#include "tests/maidsafe/mockkadops.h"
+#include "maidsafe/sharedtest/mockkadops.h"
 
 #include <string>
 #include <vector>
+
+#include "maidsafe/common/commonutils.h"
+#include "maidsafe/common/maidsafe.h"
 
 namespace mock_kadops {
 
@@ -29,8 +32,6 @@ std::string MakeFindNodesResponse(const FindNodesResponseType &type,
                                   std::vector<std::string> *pmids) {
   if (type == kFailParse)
     return "It's not going to parse.";
-  crypto::Crypto co;
-  co.set_hash_algorithm(crypto::SHA_512);
   std::string ser_node;
   kad::FindResponse find_response;
   if (type == kResultFail)
@@ -42,10 +43,9 @@ std::string MakeFindNodesResponse(const FindNodesResponseType &type,
     contact_count = 1;
   // Set all IDs close to value of account we're going to be looking for to
   // avoid test node replacing one of these after the kad FindCloseNodes
-  std::string account_owner(co.Hash("Account Owner", "", crypto::STRING_STRING,
-      false));
-  std::string account_name(co.Hash(account_owner + kAccount, "",
-      crypto::STRING_STRING, false));
+  std::string account_owner(maidsafe::SHA512String("Account Owner"));
+  std::string account_name =
+      maidsafe::SHA512String(account_owner + maidsafe::kAccount);
   char x = 'a';
   for (int i = 0; i < contact_count; ++i, ++x) {
     std::string name = account_name.replace(account_name.size() - 1, 1, 1, x);

@@ -25,31 +25,41 @@
 #ifndef MAIDSAFE_VAULT_PDVAULT_H_
 #define MAIDSAFE_VAULT_PDVAULT_H_
 
-#include <boost/scoped_ptr.hpp>
+#include <boost/filesystem.hpp>
+//#include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/thread/condition_variable.hpp>
 #include <boost/thread/mutex.hpp>
-#include <maidsafe/base/crypto.h>
-#include <maidsafe/maidsafe-dht.h>
+#include <maidsafe/kademlia/contact.h>
+#include <maidsafe/maidsafe-dht_config.h>
+#include <maidsafe/pki/maidsafevalidator.h>
+#include <maidsafe/rpcprotocol/channel-api.h>
+#include <maidsafe/rpcprotocol/channelmanager-api.h>
 #include <maidsafe/transport/transportudt.h>
 // #include <maidsafe/transport/transportdb.h>
-#include <maidsafe/base/utils.h>
+#include <maidsafe/transport/transporthandler-api.h>
 #include <QThreadPool>
 
-#include <list>
 #include <string>
 #include <utility>
 #include <vector>
 
-#include "maidsafe/maidsafevalidator.h"
-#include "maidsafe/opdata.h"
 #include "maidsafe/vault/vaultchunkstore.h"
-#include "maidsafe/vault/vaultrpc.h"
-#include "maidsafe/vault/vaultservice.h"
 #include "maidsafe/vault/vaultservicelogic.h"
 
 
+namespace fs = boost::filesystem;
+
 namespace maidsafe {
+
+struct AmendAccountData;
+class SignedSize;
+class KadOps;
+class CheckChunkResponse;
+class GetBPMessagesResponse;
+class GetChunkResponse;
+class SwapChunkResponse;
+
 namespace test {
 class CBPHandlerTest;
 class ImMessagingTest;
@@ -60,19 +70,20 @@ namespace localvaults {
 class Env;
 }  // namespace localvaults
 }  // namespace test
-}  // namespace maidsafe
 
-namespace maidsafe_vault {
+namespace vault {
 
-enum VaultStatus {kVaultStarted, kVaultStopping, kVaultStopped};
-
-class RunPDVaults;
+class VaultService;
+class VaultRpcs;
 
 namespace test {
+class RunPDVaults;
 class PDVaultTest;
 class PDVaultTest_FUNC_MAID_NET_StoreAndGetChunks_Test;
 class PDVaultTest_FUNC_MAID_NET_Cachechunk_Test;
 }  // namespace test
+
+enum VaultStatus {kVaultStarted, kVaultStopping, kVaultStopped};
 
 /* struct SyncVaultData {
   SyncVaultData() : chunk_names(), num_updated_chunks(0), num_chunks(0),
@@ -240,7 +251,7 @@ class PDVault {
   friend class test::PDVaultTest;
   friend class test::PDVaultTest_FUNC_MAID_NET_StoreAndGetChunks_Test;
   friend class test::PDVaultTest_FUNC_MAID_NET_Cachechunk_Test;
-  friend class RunPDVaults;
+  friend class test::RunPDVaults;
   friend class maidsafe::test::CBPHandlerTest;
   friend class maidsafe::test::ImMessagingTest;
   friend class maidsafe::test::CCImMessagingTest;
@@ -253,13 +264,13 @@ class PDVault {
   void PrunePendingOperations();
   // Removes this vault's ID from reference list for chunkname.
   int RemoveFromRefList(const std::string &chunkname,
-                        const maidsafe::SignedSize &signed_size);
+                        const SignedSize &signed_size);
   // Runs in a worker thread to remove this vault's ID from a chunk ref packet.
   void RemoveFromRefPacket(const std::string &chunkname,
-                           const maidsafe::SignedSize &signed_size);
+                           const SignedSize &signed_size);
   int AmendAccount(const boost::uint64_t &space_offered);
   void AmendAccountCallback(size_t index,
-                            boost::shared_ptr<maidsafe::AmendAccountData> data);
+                            boost::shared_ptr<AmendAccountData> data);
   // Send request to kad-closest and k-th closest peers for their maidsafe info.
   void JoinMaidsafeNet();
   void GetSyncDataCallback(bool *done,
@@ -276,14 +287,14 @@ class PDVault {
       boost::shared_ptr<GetAlivePartner> partner_data,
       kad::Contact remote);
   void ValidityCheckCallback(
-    boost::shared_ptr<maidsafe::ValidityCheckResponse> validity_check_response,
+    boost::shared_ptr<ValidityCheckResponse> validity_check_response,
     boost::shared_ptr<ValidityCheckArgs> validity_check_args);
   void IterativeSyncVault_SyncChunk(
       const std::string& result,
       boost::shared_ptr<SyncVaultData> data,
       std::string chunk_name, kad::Contact remote);
   void IterativeSyncVault_UpdateChunk(
-      boost::shared_ptr<maidsafe::GetChunkResponse> get_chunk_response,
+      boost::shared_ptr<GetChunkResponse> get_chunk_response,
       boost::shared_ptr<SynchArgs> synch_args);
   void IterativePublishChunkRef(
       boost::shared_ptr<RepublishChunkRefData> data);
@@ -291,12 +302,15 @@ class PDVault {
       boost::shared_ptr<RepublishChunkRefData> data);
 */
   void CheckChunk(boost::shared_ptr<GetArgs> get_args);
-  void CheckChunkCallback(boost::shared_ptr<maidsafe::CheckChunkResponse>
-      check_chunk_response, boost::shared_ptr<GetArgs> get_args);
-  void GetMessagesCallback(boost::shared_ptr<maidsafe::GetBPMessagesResponse>
-      get_messages_response, boost::shared_ptr<GetArgs> get_args);
-  void GetChunkCallback(boost::shared_ptr<maidsafe::GetChunkResponse>
-      get_chunk_response, boost::shared_ptr<GetArgs> get_args);
+  void CheckChunkCallback(
+      boost::shared_ptr<CheckChunkResponse> check_chunk_response,
+      boost::shared_ptr<GetArgs> get_args);
+  void GetMessagesCallback(
+      boost::shared_ptr<GetBPMessagesResponse> get_messages_response,
+      boost::shared_ptr<GetArgs> get_args);
+  void GetChunkCallback(
+      boost::shared_ptr<GetChunkResponse> get_chunk_response,
+      boost::shared_ptr<GetArgs> get_args);
   void RetryGetChunk(boost::shared_ptr<struct LoadChunkData> data);
   void FindChunkRef(boost::shared_ptr<struct LoadChunkData> data);
   void FindChunkRefCallback(const std::string &result,
@@ -306,10 +320,10 @@ class PDVault {
                    const std::string &signed_public_key,
                    kad::VoidFunctorOneString cb);
   void SwapChunkSendChunk(
-      boost::shared_ptr<maidsafe::SwapChunkResponse> swap_chunk_response,
+      boost::shared_ptr<SwapChunkResponse> swap_chunk_response,
       boost::shared_ptr<SwapChunkArgs> swap_chunk_args);
   void SwapChunkAcceptChunk(
-      boost::shared_ptr<maidsafe::SwapChunkResponse> swap_chunk_response,
+      boost::shared_ptr<SwapChunkResponse> swap_chunk_response,
       boost::shared_ptr<SwapChunkArgs> swap_chunk_args);
   const boost::uint8_t K_;
   const boost::uint16_t kUpperThreshold_;
@@ -319,10 +333,10 @@ class PDVault {
   // transport::TransportDb transport_;
   transport::TransportHandler transport_handler_;
   rpcprotocol::ChannelManager channel_manager_;
-  maidsafe::MaidsafeValidator validator_;
+  pki::MaidsafeValidator validator_;
   boost::shared_ptr<VaultRpcs> vault_rpcs_;
   boost::shared_ptr<VaultChunkStore> vault_chunkstore_;
-  boost::shared_ptr<maidsafe::KadOps> kad_ops_;
+  boost::shared_ptr<KadOps> kad_ops_;
   boost::shared_ptr<VaultService> vault_service_;
   VaultServiceLogic vault_service_logic_;
   VaultStatus vault_status_;
@@ -331,7 +345,6 @@ class PDVault {
   bool sync_done_, sync_succeeded_;
   kad::Contact our_details_;
   std::string pmid_public_, pmid_private_, signed_pmid_public_, pmid_;
-  crypto::Crypto co_;
   boost::shared_ptr<rpcprotocol::Channel> svc_channel_;
   fs::path kad_config_file_;
   QThreadPool thread_pool_;
@@ -339,6 +352,8 @@ class PDVault {
   boost::shared_ptr<base::PublicRoutingTableHandler> routing_table_;
 };
 
-}  // namespace maidsafe_vault
+}  // namespace vault
+
+}  // namespace maidsafe
 
 #endif  // MAIDSAFE_VAULT_PDVAULT_H_

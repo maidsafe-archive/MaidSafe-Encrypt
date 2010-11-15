@@ -22,15 +22,20 @@
 * ============================================================================
 */
 
-#ifndef MAIDSAFE_CLIENT_DATAATLASHANDLER_H_
-#define MAIDSAFE_CLIENT_DATAATLASHANDLER_H_
+#ifndef MAIDSAFE_CLIENT_FILESYSTEM_DATAATLASHANDLER_H_
+#define MAIDSAFE_CLIENT_FILESYSTEM_DATAATLASHANDLER_H_
+
+#include <boost/filesystem.hpp>
+#include <boost/shared_ptr.hpp>
 
 #include <map>
 #include <string>
 #include <vector>
 
-#include "maidsafe/client/filesystem/distributed_filesystem.pb.h"
 #include "maidsafe/common/maidsafe.h"
+#include "maidsafe/client/filesystem/distributed_filesystem.pb.h"
+
+namespace fs = boost::filesystem;
 
 namespace maidsafe {
 
@@ -57,7 +62,7 @@ class DataAtlasHandler {
                         // amend MDMs for files only
   int RemoveElement(const std::string &element_path);
   int ListFolder(const std::string &element_path,
-                 std::map<std::string, ItemType> *children);
+                 std::map<fs::path, ItemType> *children);
   int RenameElement(const std::string &original_path,
                     const std::string &target_path,
                     bool force);
@@ -81,14 +86,13 @@ class DataAtlasHandler {
   int CopyDb(const std::string &original_path_,
              const std::string &target_path_);
   int ListSubDirs(const std::string &element_path,
-                  std::vector<std::string> *subdirs_);
+                  std::vector<fs::path> *subdirs_);
   int CopySubDbs(const std::string &original_path_,
                  const std::string &target_path_);
   boost::shared_ptr<KeyAtlas> GetKeysDb(DbInitFlag flag_, int *result);
-  std::string db_dir_;
-  std::map<std::string, PdDir*> dirs_;
+  fs::path db_dir_;
 };
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_CLIENT_DATAATLASHANDLER_H_
+#endif  // MAIDSAFE_CLIENT_FILESYSTEM_DATAATLASHANDLER_H_

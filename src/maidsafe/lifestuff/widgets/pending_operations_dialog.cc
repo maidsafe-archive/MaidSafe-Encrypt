@@ -11,7 +11,7 @@
  *  Created on: Aug 16th, 2010
  *      Author: Stephen Alexander
  */
-#include "qt/widgets/pending_operations_dialog.h"
+#include "maidsafe/lifestuff/widgets/pending_operations_dialog.h"
 
 #include <QDebug>
 #include <QInputDialog>
@@ -19,7 +19,7 @@
 #include <QObject>
 #include <QTranslator>
 
-#include "qt/client/client_controller.h"
+#include "maidsafe/lifestuff/client/client_controller.h"
 
 
 PendingOperationsDialog::PendingOperationsDialog(QWidget* parent)

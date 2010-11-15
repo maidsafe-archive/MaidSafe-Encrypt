@@ -19,7 +19,7 @@
 #include <QString>
 
 // local
-#include "qt/widgets/panel.h"
+#include "maidsafe/lifestuff/widgets/panel.h"
 
 // generated
 #include "ui_user_message_logs.h"

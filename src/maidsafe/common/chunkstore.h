@@ -12,8 +12,8 @@
  *      Author: Team
  */
 
-#ifndef MAIDSAFE_CHUNKSTORE_H_
-#define MAIDSAFE_CHUNKSTORE_H_
+#ifndef MAIDSAFE_COMMON_CHUNKSTORE_H_
+#define MAIDSAFE_COMMON_CHUNKSTORE_H_
 
 #include <boost/cstdint.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
@@ -24,19 +24,36 @@
 #include <boost/multi_index/ordered_index.hpp>
 #include <boost/multi_index/sequenced_index.hpp>
 #include <boost/thread/mutex.hpp>
-#include <gtest/gtest_prod.h>
 #include <maidsafe/base/alternativestore.h>
-#include <maidsafe/base/crypto.h>
-#include <maidsafe/maidsafe-dht.h>
 #include <list>
 #include <map>
 #include <string>
 
-#include "maidsafe/common/maidsafe.h"
 
 namespace fs = boost::filesystem;
 
 namespace maidsafe {
+
+namespace test {
+class ChunkstoreTest_BEH_MAID_StoreChunk_Test;
+class ChunkstoreTest_BEH_MAID_AddChunkToOutgoing_Test;
+class ChunkstoreTest_BEH_MAID_DeleteChunk_Test;
+class ChunkstoreTest_BEH_MAID_HashCheckChunk_Test;
+class ChunkstoreTest_BEH_MAID_ChangeChunkType_Test;
+class ChunkstoreTest_BEH_MAID_ChunkType_Test;
+class ChunkstoreTest_BEH_MAID_Space_Test;
+class ChunkstoreTest_BEH_MAID_ReuseDirectory_Test;
+class ChunkstoreTest_BEH_MAID_Clear_Test;
+class ChunkstoreTest_BEH_MAID_ThreadedChangeType_Test;
+}  // namespace test
+
+namespace vault {
+namespace test {
+class VaultChunkstoreTest_BEH_MAID_LoadRandomChunk_Test;
+class VaultChunkstoreTest_BEH_MAID_HashCheckChunk_Test;
+class VaultChunkstoreTest_BEH_MAID_FreeCacheSpace_Test;
+}  // namespace test
+}  // namespace vault
 
 // ChunkType defines which directory chunk is held in.  Chunks must have type
 // comprised of one primary and one secondary type.  NB signed data doesn't get
@@ -145,6 +162,19 @@ class ChunkStore : public base::AlternativeStore {
   ChunkType chunk_type(const std::string &key);
   inline std::string ChunkStoreDir() { return kChunkstorePath_.string(); }
  protected:
+  friend class test::ChunkstoreTest_BEH_MAID_StoreChunk_Test;
+  friend class test::ChunkstoreTest_BEH_MAID_AddChunkToOutgoing_Test;
+  friend class test::ChunkstoreTest_BEH_MAID_DeleteChunk_Test;
+  friend class test::ChunkstoreTest_BEH_MAID_HashCheckChunk_Test;
+  friend class test::ChunkstoreTest_BEH_MAID_ChangeChunkType_Test;
+  friend class test::ChunkstoreTest_BEH_MAID_ChunkType_Test;
+  friend class test::ChunkstoreTest_BEH_MAID_Space_Test;
+  friend class test::ChunkstoreTest_BEH_MAID_ReuseDirectory_Test;
+  friend class test::ChunkstoreTest_BEH_MAID_Clear_Test;
+  friend class test::ChunkstoreTest_BEH_MAID_ThreadedChangeType_Test;
+  friend class vault::test::VaultChunkstoreTest_BEH_MAID_LoadRandomChunk_Test;
+  friend class vault::test::VaultChunkstoreTest_BEH_MAID_HashCheckChunk_Test;
+  friend class vault::test::VaultChunkstoreTest_BEH_MAID_FreeCacheSpace_Test;
   ChunkStore(const ChunkStore&);
   ChunkStore& operator=(const ChunkStore&);
   void set_is_initialised(bool value);
@@ -203,4 +233,4 @@ class ChunkStore : public base::AlternativeStore {
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_CHUNKSTORE_H_
+#endif  // MAIDSAFE_COMMON_CHUNKSTORE_H_

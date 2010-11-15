@@ -13,8 +13,8 @@
  */
 
 
-#include "qt/widgets/connection_settings.h"
-#include "qt/client/client_controller.h"
+#include "maidsafe/lifestuff/widgets/connection_settings.h"
+#include "maidsafe/lifestuff/client/client_controller.h"
 
 ConnectionSettings::ConnectionSettings(QWidget* parent) : QWidget(parent) {
   ui_.setupUi(this);

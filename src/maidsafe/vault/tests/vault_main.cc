@@ -35,12 +35,13 @@
 #include <vector>
 #include <fstream>  // NOLINT (Fraser) - for protobuf config file
 
-#include "maidsafe/chunkstore.h"
+#include "maidsafe/common/commonutils.h"
+#include "maidsafe/common/chunkstore.h"
+#include "maidsafe/common/kadops.h"
+#include "maidsafe/common/maidsafe_messages.pb.h"
 #include "maidsafe/client/maidstoremanager.h"
-#include "maidsafe/client/systempackets.h"
 #include "maidsafe/vault/pdvault.h"
-#include "protobuf/maidsafe_messages.pb.h"
-#include "tests/maidsafe/mocksessionsingleton.h"
+#include "maidsafe/sharedtest/mocksessionsingleton.h"
 
 namespace fs = boost::filesystem;
 
@@ -116,21 +117,22 @@ void WaitFunction(int seconds, boost::mutex* mutex) {
 
 }  // namespace testpdvault
 
-namespace maidsafe_vault {
+namespace maidsafe {
+
+namespace vault {
+
+namespace test {
 
 void GeneratePmidStuff(std::string *public_key,
                        std::string *private_key,
                        std::string *signed_key,
                        std::string *pmid) {
-  crypto::Crypto co_;
-  co_.set_hash_algorithm(crypto::SHA_512);
   crypto::RsaKeyPair keys;
-  keys.GenerateKeys(maidsafe::kRsaKeySize);
-  *signed_key = co_.AsymSign(keys.public_key(), "", keys.private_key(),
-    crypto::STRING_STRING);
+  keys.GenerateKeys(kRsaKeySize);
+  *signed_key = RSASign(keys.public_key(), keys.private_key());
   *public_key = keys.public_key();
   *private_key = keys.private_key();
-  *pmid = co_.Hash(*signed_key, "", crypto::STRING_STRING, false);
+  *pmid = SHA512String(*signed_key);
 }
 
 struct ClientData {
@@ -150,10 +152,10 @@ struct ClientData {
       stored_chunks() {}
 
   std::string chunkstore_dir;
-  maidsafe::MockSessionSingleton mss;
+  MockSessionSingleton mss;
   std::string pmid_pub_key, pmid_priv_key, pmid_pub_key_sig, pmid_name;
-  boost::shared_ptr<maidsafe::ChunkStore> chunkstore;
-  boost::shared_ptr<maidsafe::MaidsafeStoreManager> msm;
+  boost::shared_ptr<ChunkStore> chunkstore;
+  boost::shared_ptr<MaidsafeStoreManager> msm;
   crypto::RsaKeyPair pmid_keys, maid_keys;
   std::set<std::string> pending_chunks, stored_chunks;
 };
@@ -171,7 +173,6 @@ class RunPDVaults {
         kad_config_(),
         vault_dirs_(),
         mutices_(),
-        crypto_(),
         pdvaults_(new std::vector< boost::shared_ptr<PDVault> >),
         current_nodes_created_(0),
         mutex_(),
@@ -182,45 +183,41 @@ class RunPDVaults {
     if (kad_config_path_.empty())
       kad_config_path_ = test_dir / ".kadconfig";
     fs::create_directories(test_dir_);
-    crypto_.set_hash_algorithm(crypto::SHA_512);
-    crypto_.set_symm_algorithm(crypto::AES_256);
     for (int i = 0; i < no_of_clients_; ++i) {
       boost::shared_ptr<ClientData> client(new ClientData(test_dir_.string()));
       clients_.push_back(client);
+      clients_[i]->mss.CreateTestPackets("");
       printf("Generating MAID Keys for client %d of %d...\n", i + 1,
              no_of_clients_);
-      clients_[i]->maid_keys.GenerateKeys(maidsafe::kRsaKeySize);
-      std::string maid_priv_key = clients_[i]->maid_keys.private_key();
-      std::string maid_pub_key = clients_[i]->maid_keys.public_key();
-      std::string maid_pub_key_sig = crypto_.AsymSign(maid_pub_key, "",
-          maid_priv_key, crypto::STRING_STRING);
-      std::string maid_name = crypto_.Hash(maid_pub_key + maid_pub_key_sig, "",
-                                           crypto::STRING_STRING, false);
-      clients_[i]->mss.AddKey(maidsafe::MAID, maid_name, maid_priv_key,
-                              maid_pub_key, maid_pub_key_sig);
-      printf(" >> public key:   %s\n", HexSubstr(maid_pub_key).c_str());
-      printf(" >> pub key sig:  %s\n", HexSubstr(maid_pub_key_sig).c_str());
-      printf(" >> hash/name:    %s\n", HexSubstr(maid_name).c_str());
+//      clients_[i]->maid_keys.GenerateKeys(kRsaKeySize);
+//      std::string maid_priv_key = clients_[i]->maid_keys.private_key();
+//      std::string maid_pub_key = clients_[i]->maid_keys.public_key();
+//      std::string maid_pub_key_sig = RSASign(maid_pub_key, maid_priv_key);
+//      std::string maid_name = SHA512String(maid_pub_key + maid_pub_key_sig);
+//      clients_[i]->mss.AddKey(passport::MAID, maid_name, maid_priv_key,
+//                              maid_pub_key, maid_pub_key_sig);
+      printf(" >> public key:   %s\n", HexSubstr(clients_[i]->
+             mss.PublicKey(passport::MAID, true)).c_str());
+      printf(" >> pub key sig:  %s\n", HexSubstr(clients_[i]->
+             mss.PublicKeySignature(passport::MAID, true)).c_str());
+      printf(" >> hash/name:    %s\n", HexSubstr(clients_[i]->
+             mss.Id(passport::MAID, true)).c_str());
 
       printf("Generating PMID Keys for client %d of %d...\n", i + 1,
              no_of_clients_);
-      clients_[i]->pmid_keys.GenerateKeys(maidsafe::kRsaKeySize);
-      clients_[i]->pmid_priv_key = clients_[i]->pmid_keys.private_key();
-      clients_[i]->pmid_pub_key = clients_[i]->pmid_keys.public_key();
-      clients_[i]->pmid_pub_key_sig = crypto_.AsymSign(
-          clients_[i]->pmid_pub_key, "", maid_priv_key, crypto::STRING_STRING);
-      clients_[i]->pmid_name = crypto_.Hash(
-          clients_[i]->pmid_pub_key + clients_[i]->pmid_pub_key_sig, "",
-          crypto::STRING_STRING, false);
-      clients_[i]->mss.AddKey(maidsafe::PMID,
-          clients_[i]->pmid_name, clients_[i]->pmid_priv_key,
-          clients_[i]->pmid_pub_key, clients_[i]->pmid_pub_key_sig);
-      printf(" >> public key:   %s\n",
-             HexSubstr(clients_[i]->pmid_pub_key).c_str());
-      printf(" >> pub key sig:  %s\n",
-             HexSubstr(clients_[i]->pmid_pub_key_sig).c_str());
-      printf(" >> hash/name:    %s\n",
-             HexSubstr(clients_[i]->pmid_name).c_str());
+//      clients_[i]->pmid_keys.GenerateKeys(kRsaKeySize);
+//      clients_[i]->pmid_priv_key = clients_[i]->pmid_keys.private_key();
+//      clients_[i]->pmid_pub_key = clients_[i]->pmid_keys.public_key();
+//      clients_[i]->pmid_pub_key_sig = RSASign(
+//          clients_[i]->pmid_pub_key, maid_priv_key);
+//      clients_[i]->pmid_name = SHA512String(
+//          clients_[i]->pmid_pub_key + clients_[i]->pmid_pub_key_sig);
+//      clients_[i]->mss.AddKey(PMID, clients_[i]->pmid_name,
+//          clients_[i]->pmid_priv_key, clients_[i]->pmid_pub_key,
+//          clients_[i]->pmid_pub_key_sig);
+      printf(" >> public key:   %s\n", HexSubstr(clients_[i]->mss.PublicKey(passport::PMID, true)).c_str());
+      printf(" >> pub key sig:  %s\n", HexSubstr(clients_[i]->mss.PublicKeySignature(passport::PMID, true)).c_str());
+      printf(" >> hash/name:    %s\n", HexSubstr(clients_[i]->mss.Id(passport::PMID, true)).c_str());
       clients_[i]->mss.SetConnectionStatus(0);
     }
   }
@@ -260,20 +257,18 @@ class RunPDVaults {
         // taking over vault when creating it
         printf("Setting up client %d of %d...\n", client_idx + 1,
                no_of_clients_);
-        clients_[client_idx]->chunkstore =
-            boost::shared_ptr<maidsafe::ChunkStore> (new maidsafe::ChunkStore(
-            clients_[client_idx]->chunkstore_dir, 0, 0));
+        clients_[client_idx]->chunkstore = boost::shared_ptr<ChunkStore>(
+            new ChunkStore(clients_[client_idx]->chunkstore_dir, 0, 0));
         if (!clients_[client_idx]->chunkstore->Init()) {
           printf("Failed initialising chunkstore for client %d.\n",
                  client_idx + 1);
           return false;
         }
-        boost::shared_ptr<maidsafe::MaidsafeStoreManager>
-            sm_local_(new maidsafe::MaidsafeStoreManager(
-                      clients_[client_idx]->chunkstore, testvault::K));
+        boost::shared_ptr<MaidsafeStoreManager>sm_local_(
+            new MaidsafeStoreManager(
+                clients_[client_idx]->chunkstore, testvault::K));
         clients_[client_idx]->msm = sm_local_;
         clients_[client_idx]->msm->ss_ = &clients_[client_idx]->mss;
-        clients_[client_idx]->msm->pd_utils_.ss_ = &clients_[client_idx]->mss;
         public_key = clients_[client_idx]->pmid_pub_key;
         private_key = clients_[client_idx]->pmid_priv_key;
         signed_key = clients_[client_idx]->pmid_pub_key_sig;
@@ -288,10 +283,9 @@ class RunPDVaults {
         fs::create_directories(dir);
       }
       vault_dirs_.push_back(dir);
-      boost::shared_ptr<maidsafe_vault::PDVault>
-          pdvault_local(new maidsafe_vault::PDVault(public_key, private_key,
-          signed_key, dir, this_port, false, false, kad_config_path_,
-          1073741824, 0, testvault::K));
+      boost::shared_ptr<PDVault> pdvault_local(new PDVault(public_key,
+          private_key, signed_key, dir, this_port, false, false,
+          kad_config_path_, 1073741824, 0, testvault::K));
       pdvaults_->push_back(pdvault_local);
       ++current_nodes_created_;
       bool first = ((j == 0) && (!fs::exists(kad_config_path_)));
@@ -394,7 +388,7 @@ class RunPDVaults {
       printf("Trying to stop vault %i.\n", i);
       success = false;
       (*pdvaults_)[i]->Stop();
-      if ((*pdvaults_)[i]->vault_status() != maidsafe_vault::kVaultStarted)
+      if ((*pdvaults_)[i]->vault_status() != kVaultStarted)
         printf("Vault %i stopped.\n", i);
       else
         printf("Vault %i failed to stop correctly.\n", i);
@@ -421,10 +415,6 @@ class RunPDVaults {
   }
 
   /* void Process() {
-    crypto::Crypto cryobj_;
-    cryobj_.set_hash_algorithm(crypto::SHA_512);
-    cryobj_.set_symm_algorithm(crypto::AES_256);
-
     for (int i = 0; i < no_of_clients_; ++i) {
       // check for status of pending chunks
       // TODO move from pending_chunks to stored_chunks
@@ -440,7 +430,7 @@ class RunPDVaults {
         clients_[i]->chunkstore->DeleteChunk(*it);
         std::string data;
         if (0 == clients_[i]->msm->LoadChunk(*it, &data) &&
-            *it == crypto_.Hash(data, "", crypto::STRING_STRING, false)) {
+            *it == SHA512String(data)) {
           printf("Successfully loaded chunk %s for client %s. (%d/%d)\n",
                  HexSubstr(*it).c_str(),
                  HexSubstr(clients_[i]->pmid_name).c_str(),
@@ -468,8 +458,7 @@ class RunPDVaults {
 
         std::string chunk_content =
             base::RandomString(base::RandomInt32() % 10000 * 10 + 10);
-        std::string chunk_name = cryobj_.Hash(chunk_content, "",
-                                              crypto::STRING_STRING, false);
+        std::string chunk_name = SHA512String(chunk_content);
         fs::path chunk_path(test_dir_);
         printf("Storing chunk %s for client %s ...\n",
                HexSubstr(chunk_name).c_str(),
@@ -482,7 +471,7 @@ class RunPDVaults {
         if (clients_[i]->chunkstore->
                 AddChunkToOutgoing(chunk_name, chunk_path) == kSuccess &&
             clients_[i]->msm->
-                StoreChunk(chunk_name, maidsafe::PRIVATE, "") == kSuccess) {
+                StoreChunk(chunk_name, PRIVATE, "") == kSuccess) {
           clients_[i]->pending_chunks.insert(chunk_name);
           ++total_chunks_pending_;
         } else {
@@ -504,7 +493,6 @@ class RunPDVaults {
   base::KadConfig kad_config_;
   std::vector<fs::path> vault_dirs_;
   std::vector< boost::shared_ptr<boost::mutex> > mutices_;
-  crypto::Crypto crypto_;
   boost::shared_ptr< std::vector< boost::shared_ptr<PDVault> > > pdvaults_;
   int current_nodes_created_;
   boost::mutex mutex_;
@@ -513,7 +501,11 @@ class RunPDVaults {
   int total_chunks_pending_, total_chunks_stored_, total_chunks_retrieved_;
 };
 
-}  // namespace maidsafe_vault
+}  // namespace test
+
+}  // namespace vault
+
+}  // namespace maidsafe
 
 int main(int argc, char* argv[]) {
   int num_v(testvault::K), num_c(0);
@@ -579,7 +571,8 @@ int main(int argc, char* argv[]) {
       kad_config_path = file;
     }
   }
-  maidsafe_vault::RunPDVaults vaults(num_v, num_c, root_dir, kad_config_path);
+  maidsafe::vault::test::RunPDVaults vaults(num_v, num_c, root_dir,
+                                            kad_config_path);
   if (vaults.SetUp()) {
     signal(SIGINT, ctrlc_handler);
     while (!ctrlc_pressed) {

@@ -30,8 +30,8 @@
 #include <maidsafe/transport/transportudt.h>
 #include <maidsafe/base/utils.h>
 #include "maidsafe/client/imconnectionhandler.h"
-#include "protobuf/packet.pb.h"
-#include "tests/maidsafe/networktest.h"
+#include "maidsafe/common/packet.pb.h"
+#include "maidsafe/sharedtest/networktest.h"
 
 class IMConnectionHandlerTest : public testing::Test {
  public:

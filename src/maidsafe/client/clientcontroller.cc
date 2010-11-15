@@ -28,30 +28,18 @@
 #include <shlwapi.h>
 #endif
 
-#include <boost/scoped_ptr.hpp>
 #include <boost/foreach.hpp>
-#include <boost/thread/mutex.hpp>
-#include <boost/filesystem/fstream.hpp>
-#include <maidsafe/protobuf/kademlia_service_messages.pb.h>
-#include <cstdio>
-#include <string>
 
-#include "maidsafe/chunkstore.h"
-#include "maidsafe/pdutils.h"
-#include "maidsafe/client/contacts.h"
-#include "maidsafe/client/dataatlashandler.h"
-#include "maidsafe/client/privateshares.h"
-#include "maidsafe/client/selfencryption.h"
+#include "maidsafe/common/chunkstore.h"
+#include "maidsafe/common/commonutils.h"
+#include "maidsafe/client/filesystem/dataatlashandler.h"
+#include "maidsafe/client/clientutils.h"
 #include "maidsafe/client/sessionsingleton.h"
-#include "maidsafe/client/storemanager.h"
-#include "protobuf/maidsafe_messages.pb.h"
-#include "protobuf/maidsafe_service_messages.pb.h"
-#include "protobuf/packet.pb.h"
 
 #if defined LOCAL_PDVAULT && !defined MS_NETWORK_TEST
-  #include "maidsafe/client/localstoremanager.h"
+#include "maidsafe/client/localstoremanager.h"
 #else
-  #include "maidsafe/client/maidstoremanager.h"
+#include "maidsafe/client/maidstoremanager.h"
 #endif
 
 namespace maidsafe {
@@ -181,7 +169,7 @@ int ClientController::Init(boost::uint8_t k) {
 #endif
     return -1;
   }
-  auth_.Init(kNoOfSystemPackets, sm_);
+  auth_.Init(sm_);
   ss_ = SessionSingleton::getInstance();
   to_seh_file_update_ = seh_.ConnectToOnFileNetworkStatus(
                             boost::bind(&ClientController::FileUpdate,
@@ -232,12 +220,13 @@ int ClientController::ParseDa() {
     return -9002;
   }
 
-  std::list<Key> keys;
-  for (int n = 0; n < data_atlas.keys_size(); ++n) {
-    Key k = data_atlas.keys(n);
-    keys.push_back(k);
+  if (!data_atlas.has_serialised_keyring()) {
+#ifdef DEBUG
+    printf("CC::ParseDa - DA doesn't have a serialised keyring.\n");
+#endif
+    return -9003;
   }
-  ss_->LoadKeys(&keys);
+  ss_->ParseKeyring(data_atlas.serialised_keyring());
 
   std::list<PublicContact> contacts;
   for (int n = 0; n < data_atlas.contacts_size(); ++n) {
@@ -256,7 +245,7 @@ int ClientController::ParseDa() {
   if (data_atlas.has_pd())
     ss_->SetPd(data_atlas.pd());
 
-  DataMap dm_root, other_dms;
+  encrypt::DataMap dm_root, other_dms;
   dm_root = data_atlas.dms(0);
 
   std::string ser_dm_root, other_ser_dms;
@@ -285,10 +274,10 @@ int ClientController::SerialiseDa() {
 
   DataAtlas data_atlas;
   data_atlas.set_root_db_key(ss_->RootDbKey());
-  DataMap root_dm, subdirs_dm;
+  encrypt::DataMap root_dm, subdirs_dm;
   if (AddToPendingFiles(kRoot))
     seh_.EncryptDb(kRoot, PRIVATE, "", "", false, &root_dm);
-  DataMap *dm = data_atlas.add_dms();
+  encrypt::DataMap *dm = data_atlas.add_dms();
   *dm = root_dm;
 
   for (int i = 0; i < kRootSubdirSize; ++i) {
@@ -306,23 +295,19 @@ int ClientController::SerialiseDa() {
     }
   }
 
-  std::list<KeyAtlasRow> keyring;
-  ss_->GetKeys(&keyring);
-  while (!keyring.empty()) {
-    KeyAtlasRow kar = keyring.front();
-    Key *k = data_atlas.add_keys();
-    k->set_type(maidsafe::PacketType(kar.type_));
-    k->set_id(kar.id_);
-    k->set_private_key(kar.private_key_);
-    k->set_public_key(kar.public_key_);
-    k->set_public_key_signature(kar.signed_public_key_);
-    keyring.pop_front();
+  std::string serialised_keyring = ss_->SerialiseKeyring();
+  if (serialised_keyring.empty()) {
+#ifdef DEBUG
+    printf("ClientController::SerialiseDa() - Serialising keyring failed.\n");
+#endif
+    return -1;
   }
+  data_atlas.set_serialised_keyring(serialised_keyring);
 #ifdef DEBUG
   printf("ClientController::SerialiseDa() - Finished with Keys.\n");
 #endif
 
-  std::vector<maidsafe::mi_contact> contacts;
+  std::vector<mi_contact> contacts;
   ss_->GetContactList(&contacts);
   for (size_t n = 0; n < contacts.size(); ++n) {
     PublicContact *pc = data_atlas.add_contacts();
@@ -379,10 +364,7 @@ int ClientController::SerialiseDa() {
   ser_dm_.clear();
   data_atlas.SerializeToString(&ser_da_);
 
-  crypto::Crypto co;
-  std::string file_hash(base::EncodeToHex(co.Hash(ser_da_, "",
-                                                  crypto::STRING_STRING,
-                                                  false)));
+  std::string file_hash(base::EncodeToHex(SHA512String(ser_da_)));
   if (AddToPendingFiles(file_hash))
     seh_.EncryptString(ser_da_, &ser_dm_);
 
@@ -404,13 +386,7 @@ int ClientController::CheckUserExists(const std::string &username,
   }
   ss_->ResetSession();
   ss_->SetDefConLevel(level);
-  int result = auth_.GetUserInfo(username, pin);
-  if (result != kSuccess) {
-    while (auth_.get_smidtimid_result() == kPendingResult) {
-      boost::this_thread::sleep(boost::posix_time::milliseconds(10));
-    }
-  }
-  return result;
+  return auth_.GetUserInfo(username, pin);
 }
 
 bool ClientController::CreateUser(const std::string &username,
@@ -435,8 +411,7 @@ bool ClientController::CreateUser(const std::string &username,
     return false;
   } else {
 #ifdef DEBUG
-    printf("In CC::CreateUser - auth_.CreateUserSysPackets DONE - %u.\n",
-           ss_->KeyRingSize());
+    printf("In CC::CreateUser - auth_.CreateUserSysPackets DONE.\n");
 #endif
   }
 
@@ -471,11 +446,10 @@ bool ClientController::CreateUser(const std::string &username,
 
   client_chunkstore_->Init();
   seh_.Init(sm_, client_chunkstore_);
-  std::string ser_da, ser_dm;
-  ss_->SerialisedKeyRing(&ser_da);
+  std::string ser_da(ss_->SerialiseKeyring());
 
-  crypto::Crypto co;
-  std::string hashed(co.Hash(ser_da, "", crypto::STRING_STRING, false));
+  std::string hashed(SHA512String(ser_da));
+  std::string ser_dm;
   if (AddToPendingFiles(base::EncodeToHex(hashed)))
     result = seh_.EncryptString(ser_da, &ser_dm);
   else
@@ -536,7 +510,7 @@ bool ClientController::CreateUser(const std::string &username,
   // set up root subdirs
   for (int i = 0; i < kRootSubdirSize; ++i) {
     MetaDataMap mdm;
-    DataMap dm;
+    encrypt::DataMap dm;
     std::string ser_mdm, key;
     mdm.set_id(-2);
     mdm.set_display_name(TidyPath(kRootSubdir[i][0]));
@@ -580,10 +554,10 @@ bool ClientController::CreateUser(const std::string &username,
 
   // set up share subdirs
   for (int i = 0; i < kSharesSubdirSize; ++i) {
-    fs::path subdir(kSharesSubdir[i][0], fs::native);
-    std::string subdir_name = subdir.filename();
+    fs::path subdir(kSharesSubdir[i][0]);
+    std::string subdir_name = subdir.filename().string();
     MetaDataMap mdm;
-    DataMap dm;
+    encrypt::DataMap dm;
     std::string ser_mdm, key;
     mdm.set_id(-2);
     mdm.set_display_name(subdir_name);
@@ -875,9 +849,7 @@ bool ClientController::LeaveMaidsafeNetwork() {
 #endif
     return false;
   }
-  std::list<KeyAtlasRow> keys;
-  ss_->GetKeys(&keys);
-  if (auth_.RemoveMe(keys) == kSuccess) {
+  if (auth_.RemoveMe() == kSuccess) {
 //      try {
 //        fs::remove_all(file_system::MaidsafeDir(ss_->SessionName()));
 //      }
@@ -1180,17 +1152,17 @@ int ClientController::HandleReceivedShare(
     attributes[3] = psn.private_key();
 
     // Get the public key of the contacts
-    std::vector<maidsafe::Contact> contact_list;
+    std::vector<Contact> contact_list;
 
     for (int n = 0; n < psn.admins_size(); n++) {
       if (psn.admins(n) ==
           ss_->PublicUsername())
         continue;  // Not to add myself to the share DB
-      maidsafe::ShareParticipants sp;
+      ShareParticipants sp;
       sp.id = psn.admins(n);
       sp.role = 'A';
       contact_list.clear();
-      maidsafe::mi_contact mic;
+      mi_contact mic;
       int r = ss_->GetContactInfo(psn.admins(n), &mic);
       // GetContactList(dbName, contact_list, psn.admins(n), false);
       if (r == 0) {
@@ -1210,11 +1182,11 @@ int ClientController::HandleReceivedShare(
     }
 
     for (int n = 0; n < psn.readonlys_size(); n++) {
-      maidsafe::ShareParticipants sp;
+      ShareParticipants sp;
       sp.id = psn.readonlys(n);
       sp.role = 'R';
       contact_list.clear();
-      maidsafe::mi_contact mic;
+      mi_contact mic;
       int r = ss_->GetContactInfo(psn.admins(n), &mic);
       if (r == 0) {
         sp.public_key = mic.pub_key_;
@@ -1311,10 +1283,10 @@ int ClientController::AddInstantFile(
   }
   fs::path path(TidyPath(kRootSubdir[0][0]));
 
-  maidsafe::MetaDataMap sent_mdm;
+  MetaDataMap sent_mdm;
   sent_mdm.ParseFromString(ifm.ser_mdm());
 
-  maidsafe::MetaDataMap mdm;
+  MetaDataMap mdm;
   mdm.set_id(-2);
   mdm.set_display_name(ifm.filename());
   mdm.set_type(sent_mdm.type());
@@ -1335,7 +1307,7 @@ int ClientController::AddInstantFile(
   } else {
     // TODO(Dan#5#): 2009-06-25 - Make sure location is the correct path
     path_with_filename = fs::path(TidyPath(location));
-    mdm.set_display_name(path_with_filename.filename());
+    mdm.set_display_name(path_with_filename.filename().string());
   }
   std::string ser_mdm;
   mdm.SerializeToString(&ser_mdm);
@@ -1494,8 +1466,8 @@ int ClientController::HandleAddContactResponse(
     return kClientControllerNotInitialised;
   }
 
-  std::vector<maidsafe::Contact> list;
-  maidsafe::mi_contact mic;
+  std::vector<Contact> list;
+  mi_contact mic;
   int n = ss_->GetContactInfo(sender, &mic);
   if (n != 0) {
 #ifdef DEBUG
@@ -1696,7 +1668,7 @@ int ClientController::SendInstantFile(
       im.mutable_instantfile_notification();
   ifm->set_ser_mdm(ser_mdm);
   ifm->set_ser_dm(ser_dm);
-  ifm->set_filename(p_filename.filename());
+  ifm->set_filename(p_filename.filename().string());
   im.set_sender(SessionSingleton::getInstance()->PublicUsername());
   im.set_date(base::GetEpochTime());
   im.set_conversation(conversation);
@@ -1704,9 +1676,9 @@ int ClientController::SendInstantFile(
   if (msg.empty()) {
     message = "\"";
     message += im.sender() + "\" has sent you file " +
-              p_filename.filename();
+               p_filename.filename().string();
   } else {
-    message = msg + " - Filename: " + p_filename.filename();
+    message = msg + " - Filename: " + p_filename.filename().string();
   }
   im.set_message(message);
 
@@ -1741,8 +1713,6 @@ void ClientController::onInstantMessage(const std::string &message,
   }
 
   BufferPacketMessage bpm;
-  crypto::Crypto co;
-  co.set_symm_algorithm(crypto::AES_256);
   if (!bpm.ParseFromString(gp.data())) {
     return;
   }
@@ -1752,13 +1722,19 @@ void ClientController::onInstantMessage(const std::string &message,
     return;
   }
 
-  if (!co.AsymCheckSig(gp.data(), gp.signature(), senders_pk,
-      crypto::STRING_STRING)) {
+  if (!RSACheckSignedData(gp.data(), gp.signature(), senders_pk)) {
     return;
   }
-  std::string aes_key = co.AsymDecrypt(bpm.rsaenc_key(), "",
-                        maidsafe::SessionSingleton::getInstance()->
-                        PrivateKey(maidsafe::MPID), crypto::STRING_STRING);
+
+  std::string mpid_private_key;
+  if (SessionSingleton::getInstance()->MPublicID(NULL, NULL, &mpid_private_key,
+                                                 NULL) != kSuccess) {
+    return;
+  }
+  crypto::Crypto co;
+  co.set_symm_algorithm(crypto::AES_256);
+  std::string aes_key = co.AsymDecrypt(bpm.rsaenc_key(), "", mpid_private_key,
+                                       crypto::STRING_STRING);
   std::string instant_message(co.SymmDecrypt(bpm.aesenc_message(),
                               "", crypto::STRING_STRING, aes_key));
   InstantMessage im;
@@ -1780,20 +1756,20 @@ void ClientController::SetIMNotifier(IMNotifier imn) {
 
 int ClientController::ContactList(const std::string &pub_name,
                                   const SortingMode &sm,
-                                  std::vector<maidsafe::Contact> *c_list) {
+                                  std::vector<Contact> *c_list) {
   if (!initialised_) {
 #ifdef DEBUG
     printf("CC::ContactList - Not initialised.\n");
 #endif
     return kClientControllerNotInitialised;
   }
-  std::vector<maidsafe::mi_contact> mic_list;
+  std::vector<mi_contact> mic_list;
   if (pub_name.empty()) {
     int n = ss_->GetContactList(&mic_list, sm);
     if (n != 0)
       return n;
   } else {
-    maidsafe::mi_contact mic;
+    mi_contact mic;
     int n = ss_->GetContactInfo(pub_name, &mic);
     if (n != 0)
       return n;
@@ -1861,7 +1837,7 @@ int ClientController::AddContact(const std::string &public_name) {
   std::string ser_im;
   im.SerializeToString(&ser_im);
 
-  maidsafe::Contact c;
+  Contact c;
   c.SetPublicName(public_name);
   c.SetPublicKey(public_key);
   c.SetConfirmed('U');
@@ -1973,14 +1949,18 @@ std::string ClientController::GenerateBPInfo() {
 #endif
     return "";
   }
-  BufferPacketInfo bpi;
-  bpi.set_owner(ss_->Id(MPID));
-  bpi.set_owner_publickey(ss_->PublicKey(MPID));
-  crypto::Crypto co;
-  co.set_hash_algorithm(crypto::SHA_512);
-  for (size_t n = 0; n < contacts.size(); ++n) {
-    bpi.add_users(co.Hash(contacts[n], "", crypto::STRING_STRING, false));
+  std::string mpid_public_key;
+  if (ss_->MPublicID(NULL, &mpid_public_key, NULL, NULL) != kSuccess) {
+#ifdef DEBUG
+    printf("CC::GenerateBPInfo() - Don't have MPID.\n");
+#endif
+    return "";
   }
+  BufferPacketInfo bpi;
+  bpi.set_owner(ss_->PublicUsername());
+  bpi.set_owner_publickey(mpid_public_key);
+  for (size_t n = 0; n < contacts.size(); ++n)
+    bpi.add_users(SHA512String(contacts[n]));
   std::string ser_bpi(bpi.SerializeAsString());
   return ser_bpi;
 }
@@ -1991,7 +1971,7 @@ std::string ClientController::GenerateBPInfo() {
 
 int ClientController::GetShareList(const SortingMode &sm, const ShareFilter &sf,
                                    const std::string &value,
-                                   std::list<maidsafe::PrivateShare> *ps_list) {
+                                   std::list<PrivateShare> *ps_list) {
   if (!initialised_) {
 #ifdef DEBUG
     printf("CC::GetShareList - Not initialised.\n");
@@ -2013,7 +1993,7 @@ int ClientController::GetShareList(const SortingMode &sm, const ShareFilter &sf,
 
 int ClientController::ShareList(const SortingMode &sm, const ShareFilter &sf,
                                 std::list<std::string> *share_list) {
-  std::list<maidsafe::private_share> ps_list;
+  std::list<private_share> ps_list;
   int n = ss_->GetShareList(&ps_list, sm, sf);
   if (n != 0)
     return n;
@@ -2026,7 +2006,7 @@ int ClientController::ShareList(const SortingMode &sm, const ShareFilter &sf,
 
 int ClientController::GetSortedShareList(
     const SortingMode &sm, const std::string &value,
-    std::list<maidsafe::private_share> *ps_list) {
+    std::list<private_share> *ps_list) {
   if (!initialised_) {
 #ifdef DEBUG
     printf("CC::GetShareList - Not initialised.\n");
@@ -2075,16 +2055,16 @@ int ClientController::CreateNewShare(const std::string &name,
   attributes.push_back(msid_public_key);
   attributes.push_back(msid_private_key);
 
-  std::list<maidsafe::ShareParticipants> participants;
-  std::vector<maidsafe::ShareParticipants> parts;
+  std::list<ShareParticipants> participants;
+  std::vector<ShareParticipants> parts;
   std::vector<std::string> admin_recs;
   std::set<std::string>::const_iterator it;
   for (it = admins.begin(); it != admins.end(); ++it) {
-    std::vector<maidsafe::Contact> c_list;
-    maidsafe::mi_contact mic;
+    std::vector<Contact> c_list;
+    mi_contact mic;
     int n = ss_->GetContactInfo(*it, &mic);
     if (n == 0) {
-      maidsafe::ShareParticipants sp;
+      ShareParticipants sp;
       sp.id = *it;
       sp.public_key = mic.pub_key_;
       sp.role = 'A';
@@ -2095,11 +2075,11 @@ int ClientController::CreateNewShare(const std::string &name,
   }
   std::vector<std::string> ro_recs;
   for (it = readonlys.begin(); it != readonlys.end(); ++it) {
-    std::vector<maidsafe::Contact> c_list;
-    maidsafe::mi_contact mic;
+    std::vector<Contact> c_list;
+    mi_contact mic;
     int n = ss_->GetContactInfo(*it, &mic);
     if (n == 0) {
-      maidsafe::ShareParticipants sp;
+      ShareParticipants sp;
       sp.id = *it;
       sp.public_key = mic.pub_key_;
       sp.role = 'R';
@@ -2278,10 +2258,16 @@ OwnLocalVaultResult ClientController::SetLocalVaultOwned(
     const std::string &vault_dir) const {
   bool callback_arrived = false;
   OwnLocalVaultResult result;
-  sm_->SetLocalVaultOwned(ss_->PrivateKey(PMID), ss_->PublicKey(PMID),
-      ss_->SignedPublicKey(PMID), port, vault_dir, space,
+  std::string pmid_public_key, pmid_private_key, pmid_public_key_signature;
+  if (ss_->ProxyMID(NULL, &pmid_public_key, &pmid_private_key,
+                    &pmid_public_key_signature) != kSuccess) {
+    return INVALID_RSA_KEYS;
+  }
+  sm_->SetLocalVaultOwned(pmid_private_key, pmid_public_key,
+      pmid_public_key_signature, port, vault_dir, space,
       boost::bind(&ClientController::SetLocalVaultOwnedCallback,
-      const_cast<ClientController*>(this), _1, _2, &callback_arrived, &result));
+                  const_cast<ClientController*>(this), _1, _2,
+                  &callback_arrived, &result));
   while (!callback_arrived)
     boost::this_thread::sleep(boost::posix_time::milliseconds(50));
   return result;
@@ -2290,12 +2276,18 @@ OwnLocalVaultResult ClientController::SetLocalVaultOwned(
 void ClientController::SetLocalVaultOwnedCallback(
     const OwnLocalVaultResult &result, const std::string &pmid_name,
     bool *callback_arrived, OwnLocalVaultResult *res) {
+  std::string pmid_id;
+  if (ss_->ProxyMID(&pmid_id, NULL, NULL, NULL) != kSuccess) {
+    *res = INVALID_RSA_KEYS;
+    *callback_arrived = true;
+    return;
+  }
   if (result == OWNED_SUCCESS) {
 #ifdef DEBUG
     printf("ClientController::SetLocalVaultOwnedCallback %s -- %s\n",
-           HexSubstr(ss_->Id(PMID)).c_str(), HexSubstr(pmid_name).c_str());
+           HexSubstr(pmid_id).c_str(), HexSubstr(pmid_name).c_str());
 #endif
-    if (pmid_name == ss_->Id(PMID)) {
+    if (pmid_name == pmid_id) {
       *res = result;
     } else {
       // FAILURE -- incorrect pmid name returned by the vault
@@ -2311,8 +2303,8 @@ bool ClientController::IsLocalVaultOwned() {
   return (LocalVaultOwned() != NOT_OWNED);
 }
 
-VaultStatus ClientController::LocalVaultOwned() const {
-  VaultStatus result;
+VaultOwnershipStatus ClientController::LocalVaultOwned() const {
+  VaultOwnershipStatus result;
   bool callback_arrived = false;
   sm_->LocalVaultOwned(boost::bind(&ClientController::LocalVaultOwnedCallback,
       const_cast<ClientController*>(this), _1, &callback_arrived, &result));
@@ -2321,9 +2313,10 @@ VaultStatus ClientController::LocalVaultOwned() const {
   return result;
 }
 
-void ClientController::LocalVaultOwnedCallback(const VaultStatus &result,
-                                               bool *callback_arrived,
-                                               VaultStatus *res) {
+void ClientController::LocalVaultOwnedCallback(
+    const VaultOwnershipStatus &result,
+    bool *callback_arrived,
+    VaultOwnershipStatus *res) {
   *res = result;
   *callback_arrived = true;
 }
@@ -2382,7 +2375,8 @@ int ClientController::RemoveElement(const std::string &element_path) {
   }
   catch(const std::exception &e) {
 #ifdef DEBUG
-    printf("ClientController::RemoveElement - Failed to remove.\n");
+    printf("ClientController::RemoveElement - Failed to remove: %s.\n",
+           e.what());
 #endif
   }
   return 0;
@@ -2486,7 +2480,7 @@ int ClientController::GetDb(const std::string &orig_path,
   if (path.size() <= 1) {  // i.e. root
     parent_path = path;
   } else {
-    fs::path parent(path, fs::native);
+    fs::path parent(path);
     parent_path = parent.parent_path().string();
     if (parent_path.empty())
       parent_path = "/";
@@ -2514,7 +2508,8 @@ int ClientController::GetDb(const std::string &orig_path,
   }
   catch(const std::exception &e) {
 #ifdef DEBUG
-    printf("ClientController::GetDb - Problems with the db path.\n");
+    printf("ClientController::GetDb - Problems with the db path: %s\n",
+           e.what());
 #endif
   }
   if (dah->GetDirKey(parent_path, &dir_key)) {
@@ -2570,7 +2565,7 @@ int ClientController::SaveDb(const std::string &db_path, const DirType dir_type,
     RunDbEncQueue();
   } else {
     if (AddToPendingFiles(parent_path)) {
-      DataMap dm;
+      encrypt::DataMap dm;
       if (seh_.EncryptDb(parent_path, dir_type, dir_key, msid, true, &dm) != 0)
         return -errno;
     } else {
@@ -2623,7 +2618,7 @@ int ClientController::RunDbEncQueue() {
 #endif
   std::multimap<std::string, int>::iterator p;
   for (it = db_enc_queue_.begin(); it != db_enc_queue_.end(); ++it) {
-    DataMap dm;
+    encrypt::DataMap dm;
     DirType db_type = GetDirType((*it).first);
 #ifdef DEBUG
     printf("\t\tCC::RunDbEncQueue: first: %s\ttype: %i\tsec.first: %s\t",
@@ -2673,7 +2668,7 @@ bool ClientController::ReadOnly(const std::string &path, bool) {
   printf("\n\t\tCC::ReadOnly, path = %s\t%i\t", path.c_str(), gui);
 #endif
   std::string parent_path, dir_key;
-  fs::path fspath(path, fs::native);
+  fs::path fspath(path);
   fs::path parnt_path = fspath.parent_path();
 #ifdef DEBUG
   printf("and parent_path_ = %s\n", parnt_path.string().c_str());
@@ -2684,7 +2679,7 @@ bool ClientController::ReadOnly(const std::string &path, bool) {
       parnt_path.string() == "/"||
       parnt_path.string() == "\\") {
     for (int i = 0; i < kRootSubdirSize; ++i) {
-      fs::path root_subdir(TidyPath(kRootSubdir[i][0]), fs::native);
+      fs::path root_subdir(TidyPath(kRootSubdir[i][0]));
       if (fspath == root_subdir) {
 #ifdef DEBUG
         printf("Returning false AA.\n");
@@ -2707,11 +2702,11 @@ bool ClientController::ReadOnly(const std::string &path, bool) {
 
   // if path is a Shares subdir, but not one of preassigned Shares subdirs,
   // then readonly = true.
-  fs::path shares(TidyPath(kRootSubdir[1][0]), fs::native);
+  fs::path shares(TidyPath(kRootSubdir[1][0]));
   if (parnt_path == shares) {
     bool read_only(true);
     for (int i = 0; i < kSharesSubdirSize; ++i) {
-      fs::path shares_subdir(TidyPath(kSharesSubdir[i][0]), fs::native);
+      fs::path shares_subdir(TidyPath(kSharesSubdir[i][0]));
       if (fspath == shares_subdir)
         read_only = false;
     }
@@ -2722,7 +2717,7 @@ bool ClientController::ReadOnly(const std::string &path, bool) {
   }
   // if path is a Shares/Private subdir then readonly = true unless request
   // comes from gui setting up a private share.
-//  fs::path private_shares_(TidyPath(kSharesSubdir[0][0]), fs::native);
+//  fs::path private_shares_(TidyPath(kSharesSubdir[0][0]));
 //  if (parnt_path_ == private_shares_) {
 //    return false
     std::string msid;
@@ -2838,9 +2833,9 @@ int ClientController::mkdir(const std::string &path) {
   bool immediate_save = true;
 //  if (msid.empty()) {
     immediate_save = false;
-    dir_type = maidsafe::PRIVATE;
+    dir_type = PRIVATE;
 //  } else {
-//    dir_type = maidsafe::PRIVATE_SHARE;
+//    dir_type = PRIVATE_SHARE;
 //  }
   if (SaveDb(path, dir_type, msid, immediate_save)) {
 #ifdef DEBUG
@@ -2864,7 +2859,7 @@ int ClientController::mkdir(const std::string &path) {
   if (msid.empty())
     immediate_save = false;
 //  else
-//    dir_type = maidsafe::PRIVATE_SHARE;
+//    dir_type = PRIVATE_SHARE;
 
   if (SaveDb(imaginary_.string(), dir_type, msid, immediate_save)) {
 #ifdef DEBUG
@@ -2924,9 +2919,9 @@ int ClientController::rename(const std::string &path,
   }
 
   // Target dir db
-  fs::path parent_1(path, fs::native);
+  fs::path parent_1(path);
   std::string parent_path_1 = parent_1.parent_path().string();
-  fs::path parent_2(path2, fs::native);
+  fs::path parent_2(path2);
   std::string parent_path_2 = parent_2.parent_path().string();
 
   if (parent_path_1 != parent_path_2) {
@@ -2964,7 +2959,7 @@ int ClientController::rmdir(const std::string &path) {
   std::string msid;
   if (GetDb(path, &dir_type, &msid))
     return -1;
-  std::map<std::string, ItemType> children;
+  std::map<fs::path, ItemType> children;
   boost::scoped_ptr<DataAtlasHandler> dah_(new DataAtlasHandler());
   dah_->ListFolder(path, &children);
   if (children.size())  // ie the dir is not empty
@@ -3017,7 +3012,7 @@ int ClientController::getattr(const std::string &path, std::string *ser_mdm) {
 }
 
 int ClientController::readdir(const std::string &path,  // NOLINT
-                              std::map<std::string, ItemType> *children) {
+                              std::map<fs::path, ItemType> *children) {
   if (!initialised_) {
 #ifdef DEBUG
     printf("CC::readdir - Not initialised.\n");
@@ -3124,7 +3119,7 @@ int ClientController::link(const std::string &path, const std::string &path2) {
     return -1;
   std::string ms_old_rel_entry_ = path;
   std::string ms_new_rel_entry_ = path2;
-  fs::path n_path(ms_new_rel_entry_, fs::native);
+  fs::path n_path(ms_new_rel_entry_);
 
   std::string new_rel_root_ = n_path.parent_path().string();
 
@@ -3168,7 +3163,7 @@ int ClientController::cpdir(const std::string &path,
     return -1;
   std::string ms_old_rel_entry_ = path;
   std::string ms_new_rel_entry_ = path2;
-  fs::path n_path(ms_new_rel_entry_, fs::native);
+  fs::path n_path(ms_new_rel_entry_);
 
   std::string new_rel_root_ = n_path.parent_path().string();
   std::string new_dir_key_;

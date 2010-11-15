@@ -12,7 +12,7 @@
  *      Author: Team
  */
 
-#include "qt/perpetual_data.h"
+#include "maidsafe/lifestuff/perpetual_data.h"
 
 // qt
 #include <QDebug>
@@ -35,25 +35,25 @@
 #include <fstream>
 
 // core
-#include "qt/client/client_controller.h"
+#include "maidsafe/lifestuff/client/client_controller.h"
 
 // local
-#include "qt/widgets/login.h"
-#include "qt/widgets/create_user.h"
-#include "qt/widgets/progress.h"
-#include "qt/widgets/user_panels.h"
-#include "qt/widgets/system_tray_icon.h"
-#include "qt/widgets/user_settings.h"
-#include "qt/widgets/pending_operations_dialog.h"
-#include "qt/widgets/user_calendar.h"
-#include "qt/widgets/lifestuff_login.h"
-#include "qt/widgets/lifestuff_fullview.h"
+#include "maidsafe/lifestuff/widgets/login.h"
+#include "maidsafe/lifestuff/widgets/create_user.h"
+#include "maidsafe/lifestuff/widgets/progress.h"
+#include "maidsafe/lifestuff/widgets/user_panels.h"
+#include "maidsafe/lifestuff/widgets/system_tray_icon.h"
+#include "maidsafe/lifestuff/widgets/user_settings.h"
+#include "maidsafe/lifestuff/widgets/pending_operations_dialog.h"
+#include "maidsafe/lifestuff/widgets/user_calendar.h"
+#include "maidsafe/lifestuff/widgets/lifestuff_login.h"
+#include "maidsafe/lifestuff/widgets/lifestuff_fullview.h"
 
-#include "qt/client/create_user_thread.h"
-#include "qt/client/join_kademlia_thread.h"
-#include "qt/client/mount_thread.h"
-#include "qt/client/save_session_thread.h"
-#include "qt/client/user_space_filesystem.h"
+#include "maidsafe/lifestuff/client/create_user_thread.h"
+#include "maidsafe/lifestuff/client/join_kademlia_thread.h"
+#include "maidsafe/lifestuff/client/mount_thread.h"
+#include "maidsafe/lifestuff/client/save_session_thread.h"
+#include "maidsafe/lifestuff/client/user_space_filesystem.h"
 
 // generated
 #include "ui_about.h"
@@ -773,7 +773,7 @@ void PerpetualData::onEmailReceived(const QString &subject,
       ClientController::instance()->TidyPath(emailFolder.toStdString());
   QString emailFolderPath = QString::fromStdString(tidyRelPathStr);
 
-  std::map<std::string, ClientController::ItemType> children;
+  std::map<fs::path, ClientController::ItemType> children;
   ClientController::instance()->readdir(emailFolderPath, &children);
 
   QString emailFullPath;
@@ -875,7 +875,7 @@ void PerpetualData::onFileReceived(const QString& sender,
                                         QLineEdit::Normal, "", &ok);
       if (ok && !text.isEmpty()) {
         QString s = QString::fromStdString(
-                        maidsafe::TidyPath(kRootSubdir[0][0])) +
+                        maidsafe::TidyPath(maidsafe::kRootSubdir[0][0])) +
                     QString("\\%1").arg(text);
 
         n = ClientController::instance()->AddInstantFile(sender, filename, tag,
@@ -886,11 +886,12 @@ void PerpetualData::onFileReceived(const QString& sender,
 
 #ifdef __WIN32__
       root = QString("%1:\\").arg(ClientController::instance()->WinDrive()) +
-             QString::fromStdString(maidsafe::TidyPath(kRootSubdir[0][0]));
+             QString::fromStdString(maidsafe::TidyPath(
+             maidsafe::kRootSubdir[0][0]));
 #else
       root = QString::fromStdString(file_system::MaidsafeFuseDir(
           ClientController::instance()->SessionName()).string() +
-          kRootSubdir[0][0]);
+          maidsafe::kRootSubdir[0][0]);
 #endif
       root += "/" + filename;
       qfd_ = new QFileDialog(this, tr("Save File As..."), root);
@@ -976,7 +977,7 @@ void PerpetualData::onDirectoryEntered(const QString& dir) {
 
   if (!dir.startsWith(root, Qt::CaseInsensitive)) {
     root = QString::fromStdString("%1:\\" +
-           maidsafe::TidyPath(kRootSubdir[0][0])).
+           maidsafe::TidyPath(maidsafe::kRootSubdir[0][0])).
                arg(ClientController::instance()->WinDrive());
     qfd_->setDirectory(root);
   }
@@ -987,7 +988,7 @@ void PerpetualData::onDirectoryEntered(const QString& dir) {
   if (!dir.startsWith(root, Qt::CaseInsensitive)) {
     root = QString::fromStdString(file_system::MaidsafeFuseDir(
         ClientController::instance()->SessionName()).string() +
-        kRootSubdir[0][0]);
+        maidsafe::kRootSubdir[0][0]);
     qfd_->setDirectory(root);
   }
 #endif

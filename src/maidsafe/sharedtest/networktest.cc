@@ -19,10 +19,11 @@
 * ============================================================================
 */
 
-#include "tests/maidsafe/networktest.h"
+#include "maidsafe/sharedtest/networktest.h"
 
-#include "maidsafe/chunkstore.h"
-#include "tests/maidsafe/testcallback.h"
+#include "maidsafe/common/filesystem.h"
+#include "maidsafe/common/chunkstore.h"
+#include "maidsafe/sharedtest/testcallback.h"
 
 namespace fs = boost::filesystem;
 
@@ -61,8 +62,8 @@ NetworkTest::NetworkTest(const std::string &test_name)
       transport_(NULL),
       transport_handler_(NULL),
       channel_manager_(NULL),
-      chunkstore_(new maidsafe::ChunkStore(std::string(test_dir_.string() +
-                                           "/ChunkStore"), 99999999, 0)),
+      chunkstore_(new ChunkStore(std::string(test_dir_.string() +
+                                 "/ChunkStore"), 99999999, 0)),
       kad_ops_(),
 #ifdef MS_NETWORK_TEST
       store_manager_(new TestStoreManager(chunkstore_, g_K)),

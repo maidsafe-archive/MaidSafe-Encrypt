@@ -22,9 +22,9 @@
 #include <QtXml/QDomElement>
 
 // local
-#include "qt/client/client_controller.h"
-#include "qt/client/send_email_thread.h"
-#include "qt/client/save_file_thread.h"
+#include "maidsafe/lifestuff/client/client_controller.h"
+#include "maidsafe/lifestuff/client/send_email_thread.h"
+#include "maidsafe/lifestuff/client/save_file_thread.h"
 
 #include "ui_user_send_mail.h"
 

@@ -27,7 +27,6 @@
 
 #include <boost/filesystem.hpp>
 #include <boost/thread/mutex.hpp>
-#include <gtest/gtest_prod.h>
 
 #include <list>
 #include <map>
@@ -36,13 +35,22 @@
 #include <vector>
 
 #include "maidsafe/common/cppsqlite3.h"
-#include "maidsafe/vault/vaultbufferpackethandler.h"
-#include "maidsafe/client/sessionsingleton.h"
+#include "maidsafe/common/vaultbufferpackethandler.h"
 #include "maidsafe/client/storemanager.h"
+
+
+namespace fs = boost::filesystem;
 
 namespace maidsafe {
 
+namespace test {
+class CCImMessagingTest;
+class LocalStoreManagerTest_BEH_MAID_AddAndGetBufferPacketMessages_Test;
+class LocalStoreManagerTest_BEH_MAID_AddRequestBufferPacketMessage_Test;
+}  // namespace test
+
 class ChunkStore;
+class SessionSingleton;
 
 class LocalStoreManager : public StoreManagerInterface {
  public:
@@ -77,21 +85,21 @@ class LocalStoreManager : public StoreManagerInterface {
                           const LoadPacketFunctor &lpf);
   virtual void StorePacket(const std::string &packet_name,
                            const std::string &value,
-                           PacketType system_packet_type,
+                           passport::PacketType system_packet_type,
                            DirType dir_type,
                            const std::string &msid,
                            const VoidFuncOneInt &cb);
   // Deletes all values for the specified key
   virtual void DeletePacket(const std::string &packet_name,
                             const std::vector<std::string> values,
-                            PacketType system_packet_type,
+                            passport::PacketType system_packet_type,
                             DirType dir_type,
                             const std::string &msid,
                             const VoidFuncOneInt &cb);
   virtual void UpdatePacket(const std::string &packet_name,
                             const std::string &old_value,
                             const std::string &new_value,
-                            PacketType system_packet_type,
+                            passport::PacketType system_packet_type,
                             DirType dir_type,
                             const std::string &msid,
                             const VoidFuncOneInt &cb);
@@ -126,10 +134,14 @@ class LocalStoreManager : public StoreManagerInterface {
   void SendLogOutMessage(const std::string &) {}
   void SetSessionEndPoint() {}
   void SetInstantMessageNotifier(IMNotifier, IMStatusNotifier) {}
-
  private:
+  friend class
+      test::LocalStoreManagerTest_BEH_MAID_AddAndGetBufferPacketMessages_Test;
+  friend class
+      test::LocalStoreManagerTest_BEH_MAID_AddRequestBufferPacketMessage_Test;
   LocalStoreManager &operator=(const LocalStoreManager&);
   LocalStoreManager(const LocalStoreManager&);
+  friend class test::CCImMessagingTest;
   bool ValidateGenericPacket(std::string ser_gp, std::string public_key);
   ReturnCode StorePacket_InsertToDb(const std::string &key,
                                     const std::string &value,

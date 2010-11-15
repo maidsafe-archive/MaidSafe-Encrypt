@@ -35,6 +35,8 @@ namespace maidsafe {
 
 namespace passport {
 
+namespace test { class CachePassport; }
+
 class CryptoKeyPairs {
  public:
   CryptoKeyPairs(const boost::uint16_t &rsa_key_size,
@@ -45,6 +47,7 @@ class CryptoKeyPairs {
  private:
   CryptoKeyPairs &operator=(const CryptoKeyPairs&);
   CryptoKeyPairs(const CryptoKeyPairs&);
+  friend class test::CachePassport;
   void CreateKeyPair();
   void FinishedCreating();
   const boost::uint16_t kRsaKeySize_;

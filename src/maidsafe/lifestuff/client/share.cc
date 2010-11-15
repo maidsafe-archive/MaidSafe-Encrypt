@@ -12,7 +12,7 @@
  *      Author: Team
  */
 
-#include "qt/client/share.h"
+#include "maidsafe/lifestuff/client/share.h"
 
 Share::Share(const QString& name)
     : name_(name) { }

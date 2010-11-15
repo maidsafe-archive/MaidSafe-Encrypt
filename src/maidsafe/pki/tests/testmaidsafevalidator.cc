@@ -23,7 +23,9 @@
  */
 
 #include <gtest/gtest.h>
+#include <maidsafe/base/crypto.h>
 #include <maidsafe/base/utils.h>
+#include "maidsafe/common/commonutils.h"
 #include "maidsafe/common/returncodes.h"
 #include "maidsafe/pki/maidsafevalidator.h"
 #include "maidsafe/pki/packet.h"
@@ -54,8 +56,8 @@ class TestMSValidator : public testing::Test {
 };
 
 TEST_F(TestMSValidator, BEH_MAID_TestValidateSignerID) {
-  std::string id(co_.Hash(keys_.at(0).public_key() + signed_public_key_, "",
-      crypto::STRING_STRING, false));
+  std::string id = co_.Hash((keys_.at(0).public_key() + signed_public_key_), "",
+                            crypto::STRING_STRING, false);
   ASSERT_TRUE(validator_.ValidateSignerId(id, keys_.at(0).public_key(),
       signed_public_key_));
   ASSERT_FALSE(validator_.ValidateSignerId(id, keys_.at(1).public_key(),
@@ -66,13 +68,13 @@ TEST_F(TestMSValidator, BEH_MAID_TestValidateSignerID) {
 
 TEST_F(TestMSValidator, BEH_MAID_TestValidateSignedRequest) {
   std::string rec_id(co_.Hash(base::RandomString(10), "", crypto::STRING_STRING,
-      false));
+                              false));
   validator_.set_id(rec_id);
   std::string key(co_.Hash(base::RandomString(10), "", crypto::STRING_STRING,
-      false));
-  std::string signed_request(co_.AsymSign(co_.Hash(signed_public_key_ + key +
-      rec_id, "", crypto::STRING_STRING, false), "", keys_.at(0).private_key(),
-      crypto::STRING_STRING));
+                           false));
+  std::string signed_request(co_.AsymSign(co_.Hash((
+      signed_public_key_ + key + rec_id), "", crypto::STRING_STRING, false), "",
+      keys_.at(0).private_key(), crypto::STRING_STRING));
   ASSERT_TRUE(validator_.ValidateRequest(signed_request,
       keys_.at(0).public_key(), signed_public_key_, key));
   ASSERT_FALSE(validator_.ValidateRequest(signed_request,

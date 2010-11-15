@@ -12,7 +12,7 @@
  *      Author: Team
  */
 
-#include "qt/widgets/messages.h"
+#include "maidsafe/lifestuff/widgets/messages.h"
 
 // qt
 #include <QMessageBox>

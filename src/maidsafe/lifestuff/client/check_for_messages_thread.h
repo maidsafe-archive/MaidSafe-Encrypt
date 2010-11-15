@@ -17,7 +17,7 @@
 
 #include <boost/cstdint.hpp>
 #include <boost/thread/mutex.hpp>
-#include "qt/client/worker_thread.h"
+#include "maidsafe/lifestuff/client/worker_thread.h"
 
 class CheckForMessagesThread : public QThread {
   Q_OBJECT

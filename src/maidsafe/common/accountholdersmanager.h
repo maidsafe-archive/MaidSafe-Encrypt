@@ -19,29 +19,37 @@
 * ============================================================================
 */
 
-#ifndef MAIDSAFE_ACCOUNTHOLDERSMANAGER_H_
-#define MAIDSAFE_ACCOUNTHOLDERSMANAGER_H_
+#ifndef MAIDSAFE_COMMON_ACCOUNTHOLDERSMANAGER_H_
+#define MAIDSAFE_COMMON_ACCOUNTHOLDERSMANAGER_H_
 
-#include <boost/bind.hpp>
-#include <boost/thread/condition_variable.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/function.hpp>
+#include <boost/thread/condition_variable.hpp>
 #include <boost/thread/mutex.hpp>
-#include <gtest/gtest_prod.h>
-#include <maidsafe/kademlia/contact.h>
-#include <maidsafe/kademlia/kadid.h>
 
 #include <set>
 #include <string>
 #include <vector>
 
-#include "maidsafe/maidsafe.h"
-#include "maidsafe/returncodes.h"
+#include "maidsafe/common/returncodes.h"
+
+namespace kad { class Contact; }
 
 namespace maidsafe {
 
-class KadOps;
+namespace test {
 class AccountHoldersManagerTest;
+class AccountHoldersManagerTest_BEH_MAID_AHM_Init_Test;
+class AccountHoldersManagerTest_BEH_MAID_AHM_UpdateGroup_Test;
+class AccountHoldersManagerTest_BEH_MAID_AHM_UpdateRequired_Test;
+class AccountHoldersManagerTest_BEH_MAID_AHM_ReportFailure_Test;
+class MaidStoreManagerTest_BEH_MAID_MSM_ExpectAmendment_Test;
+class MaidStoreManagerTest_BEH_MAID_MSM_AddToWatchList_Test;
+class MaidStoreManagerTest_BEH_MAID_MSM_RemoveFromWatchList_Test;
+class MaidStoreManagerTest_BEH_MAID_MSM_UpdateAccountStatus_Test;
+}  // namespace test
+
+class KadOps;
 
 typedef boost::function<void(const ReturnCode&,
     const std::vector<kad::Contact>&)> AccountHolderGroupFunctor;
@@ -79,15 +87,15 @@ class AccountHoldersManager {
  private:
   AccountHoldersManager &operator=(const AccountHoldersManager&);
   AccountHoldersManager(const AccountHoldersManager&);
-  friend class AccountHoldersManagerTest;
-  FRIEND_TEST(AccountHoldersManagerTest, BEH_MAID_AHM_Init);
-  FRIEND_TEST(AccountHoldersManagerTest, BEH_MAID_AHM_UpdateGroup);
-  FRIEND_TEST(AccountHoldersManagerTest, BEH_MAID_AHM_UpdateRequired);
-  FRIEND_TEST(AccountHoldersManagerTest, BEH_MAID_AHM_ReportFailure);
-  FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_ExpectAmendment);
-  FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_AddToWatchList);
-  FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_RemoveFromWatchList);
-  FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_UpdateAccountStatus);
+  friend class test::AccountHoldersManagerTest;
+  friend class test::AccountHoldersManagerTest_BEH_MAID_AHM_Init_Test;
+  friend class test::AccountHoldersManagerTest_BEH_MAID_AHM_UpdateGroup_Test;
+  friend class test::AccountHoldersManagerTest_BEH_MAID_AHM_UpdateRequired_Test;
+  friend class test::AccountHoldersManagerTest_BEH_MAID_AHM_ReportFailure_Test;
+  friend class test::MaidStoreManagerTest_BEH_MAID_MSM_ExpectAmendment_Test;
+  friend class test::MaidStoreManagerTest_BEH_MAID_MSM_AddToWatchList_Test;
+  friend class test::MaidStoreManagerTest_BEH_MAID_MSM_RemoveFromWatchList_Test;
+  friend class test::MaidStoreManagerTest_BEH_MAID_MSM_UpdateAccountStatus_Test;
   void FindNodesCallback(const ReturnCode &result,
                          const std::vector<kad::Contact> &closest_nodes,
                          AccountHolderGroupFunctor callback);
@@ -109,4 +117,4 @@ class AccountHoldersManager {
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_ACCOUNTHOLDERSMANAGER_H_
+#endif  // MAIDSAFE_COMMON_ACCOUNTHOLDERSMANAGER_H_

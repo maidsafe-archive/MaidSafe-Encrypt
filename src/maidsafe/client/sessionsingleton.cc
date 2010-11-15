@@ -23,8 +23,8 @@
 */
 
 #include "maidsafe/client/sessionsingleton.h"
-#include "maidsafe/passport/passport.h"
-#include "protobuf/datamaps.pb.h"
+#include <boost/tr1/memory.hpp>
+#include "maidsafe/common/commonutils.h"
 
 namespace maidsafe {
 
@@ -57,6 +57,7 @@ bool SessionSingleton::ResetSession() {
   ud_.username.clear();
   ud_.pin.clear();
   ud_.password.clear();
+  ud_.public_username.clear();
   ud_.session_name.clear();
   ud_.root_db_key.clear();
   ud_.self_encrypting = true;
@@ -87,6 +88,7 @@ bool SessionSingleton::DaModified() { return ud_.da_modified; }
 std::string SessionSingleton::Username() { return ud_.username; }
 std::string SessionSingleton::Pin() { return ud_.pin; }
 std::string SessionSingleton::Password() { return ud_.password; }
+std::string SessionSingleton::PublicUsername() { return ud_.public_username; }
 std::string SessionSingleton::SessionName() { return ud_.session_name; }
 std::string SessionSingleton::RootDbKey() { return ud_.root_db_key; }
 bool SessionSingleton::SelfEncrypting() { return ud_.self_encrypting; }
@@ -125,16 +127,17 @@ bool SessionSingleton::SetPassword(const std::string &password) {
   ud_.password = password;
   return true;
 }
+bool SessionSingleton::SetPublicUsername(const std::string &public_username) {
+  ud_.public_username = public_username;
+  return true;
+}
 bool SessionSingleton::SetSessionName(bool clear) {
   if (clear) {
     ud_.session_name = "";
   } else {
     if (Username() == "" || Pin() == "")
       return false;
-    crypto::Crypto c;
-    c.set_hash_algorithm(crypto::SHA_1);
-    ud_.session_name =
-        c.Hash(Pin()+Username(), "", crypto::STRING_STRING, true);
+    ud_.session_name = base::EncodeToHex(SHA1String(Pin() + Username()));
   }
   return true;
 }
@@ -193,74 +196,117 @@ bool SessionSingleton::SetPd(const PersonalDetails &pd) {
 // Key ring operations //
 /////////////////////////
 
-int SessionSingleton::LoadKeys(std::list<Key> *keys) {
-  if (keys->empty())
-    return kLoadKeysFailure;
+int SessionSingleton::ParseKeyring(const std::string &serialised_keyring) {
+  return passport_->ParseKeyring(serialised_keyring);
+}
 
-  int n = 0;
-  while (!keys->empty()) {
-    Key k = keys->front();
-    keys->pop_front();
-    AddKey(k.type(), k.id(), k.private_key(), k.public_key(),
-        k.public_key_signature());
-    ++n;
+std::string SessionSingleton::SerialiseKeyring() {
+  return passport_->SerialiseKeyring();
+}
+
+int SessionSingleton::ProxyMID(std::string *id,
+                               std::string *public_key,
+                               std::string *private_key,
+                               std::string *public_key_signature) {
+  return GetKey(passport::PMID, id, public_key, private_key,
+                public_key_signature);
+}
+
+int SessionSingleton::MPublicID(std::string *id,
+                                std::string *public_key,
+                                std::string *private_key,
+                                std::string *public_key_signature) {
+  return GetKey(passport::MPID, id, public_key, private_key,
+                public_key_signature);
+}
+
+int SessionSingleton::GetKey(const passport::PacketType &packet_type,
+                             std::string *id,
+                             std::string *public_key,
+                             std::string *private_key,
+                             std::string *public_key_signature) {
+  std::tr1::shared_ptr<passport::SignaturePacket> packet(
+      std::tr1::static_pointer_cast<passport::SignaturePacket>(
+          passport_->GetPacket(packet_type, true)));
+  int result(packet ? kSuccess : kGetKeyFailure);
+  if (id) {
+    if (result == kSuccess)
+      *id = packet->name();
+    else
+      id->clear();
   }
-
-  return n;
-}
-
-void SessionSingleton::GetKeys(std::list<KeyAtlasRow> *keys) {
-  keys->clear();
-  ka_.GetKeyRing(keys);
-}
-
-void SessionSingleton::SerialisedKeyRing(std::string *ser_kr) {
-  DataAtlas da;
-  std::list<KeyAtlasRow> keys;
-  GetKeys(&keys);
-  while (!keys.empty()) {
-    KeyAtlasRow kar = keys.front();
-    Key *k = da.add_keys();
-    k->set_type(PacketType(kar.type_));
-    k->set_id(kar.id_);
-    k->set_private_key(kar.private_key_);
-    k->set_public_key(kar.public_key_);
-    k->set_public_key_signature(kar.signed_public_key_);
-    keys.pop_front();
+  if (public_key) {
+    if (result == kSuccess)
+      *public_key = packet->value();
+    else
+      public_key->clear();
   }
-  da.SerializeToString(ser_kr);
+  if (private_key) {
+    if (result == kSuccess)
+      *private_key = packet->private_key();
+    else
+      private_key->clear();
+  }
+  if (public_key_signature) {
+    if (result == kSuccess)
+      *public_key_signature = packet->public_key_signature();
+    else
+      public_key_signature->clear();
+  }
+  return result;
 }
 
-int SessionSingleton::AddKey(const PacketType &bpt,
-                             const std::string &id,
-                             const std::string &private_key,
-                             const std::string &public_key,
-                             const std::string &signed_public_key) {
-  return ka_.AddKey(bpt, id, private_key, public_key, signed_public_key);
+bool SessionSingleton::CreateTestPackets(const std::string &public_username) {
+  passport_->Init();
+  std::tr1::shared_ptr<passport::SignaturePacket>
+      pkt(new passport::SignaturePacket);
+  if (passport_->InitialiseSignaturePacket(passport::ANMAID, pkt) != kSuccess)
+    return false;
+  if (passport_->ConfirmSignaturePacket(pkt) != kSuccess)
+    return false;
+  if (passport_->InitialiseSignaturePacket(passport::MAID, pkt) != kSuccess)
+    return false;
+  if (passport_->ConfirmSignaturePacket(pkt) != kSuccess)
+    return false;
+  if (passport_->InitialiseSignaturePacket(passport::PMID, pkt) != kSuccess)
+    return false;
+  if (passport_->ConfirmSignaturePacket(pkt) != kSuccess)
+    return false;
+  if (public_username.empty())
+    return true;
+  if (passport_->InitialiseSignaturePacket(passport::ANMPID, pkt) != kSuccess)
+    return false;
+  if (passport_->ConfirmSignaturePacket(pkt) != kSuccess)
+    return false;
+  if (passport_->InitialiseMpid(public_username, pkt) != kSuccess)
+    return false;
+  if (passport_->ConfirmSignaturePacket(pkt) != kSuccess)
+    return false;
+  SetPublicUsername(public_username);
+    return true;
 }
 
-int SessionSingleton::RemoveKey(const PacketType &bpt) {
-  return ka_.RemoveKey(bpt);
+std::string SessionSingleton::Id(const passport::PacketType &packet_type,
+                                 bool confirmed_as_stored) {
+  return passport_->SignaturePacketName(packet_type, confirmed_as_stored);
 }
 
-std::string SessionSingleton::Id(const PacketType &bpt) {
-  return ka_.PackageID(bpt);
+std::string SessionSingleton::PublicKey(const passport::PacketType &packet_type,
+                                        bool confirmed_as_stored) {
+  return passport_->SignaturePacketPublicKey(packet_type, confirmed_as_stored);
 }
 
-std::string SessionSingleton::PublicKey(const PacketType &bpt) {
-  return ka_.PublicKey(bpt);
+std::string SessionSingleton::PrivateKey(
+    const passport::PacketType &packet_type,
+    bool confirmed_as_stored) {
+  return passport_->SignaturePacketPrivateKey(packet_type, confirmed_as_stored);
 }
 
-std::string SessionSingleton::PrivateKey(const PacketType &bpt) {
-  return ka_.PrivateKey(bpt);
-}
-
-std::string SessionSingleton::SignedPublicKey(const PacketType &bpt) {
-  return ka_.SignedPublicKey(bpt);
-}
-
-unsigned int SessionSingleton::KeyRingSize() {
-  return ka_.KeyRingSize();
+std::string SessionSingleton::PublicKeySignature(
+    const passport::PacketType &packet_type,
+    bool confirmed_as_stored) {
+  return passport_->SignaturePacketPublicKeySignature(packet_type,
+                                                      confirmed_as_stored);
 }
 
 ////////////////////////
@@ -345,8 +391,7 @@ int SessionSingleton::GetContactInfo(const std::string &pub_name,
                                      mi_contact *mic) {
   return ch_.GetContactInfo(pub_name, mic);
 }
-std::string SessionSingleton::GetContactPublicKey(
-    const std::string &pub_name) {
+std::string SessionSingleton::GetContactPublicKey(const std::string &pub_name) {
   mi_contact mic;
   if (ch_.GetContactInfo(pub_name, &mic) != 0)
     return "";
@@ -442,9 +487,9 @@ int SessionSingleton::GetShareKeys(const std::string &msid,
   *private_key = ps.MsidPriKey();
   return 0;
 }
-int SessionSingleton::GetShareList(
-    std::list<maidsafe::private_share> *ps_list,
-    const SortingMode &sm, const ShareFilter &sf) {
+int SessionSingleton::GetShareList(std::list<private_share> *ps_list,
+                                   const SortingMode &sm,
+                                   const ShareFilter &sf) {
   return psh_.MI_GetShareList(ps_list, sm, sf);
 }
 int SessionSingleton::GetFullShareList(const SortingMode &sm,

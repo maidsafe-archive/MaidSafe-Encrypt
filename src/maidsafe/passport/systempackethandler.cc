@@ -32,6 +32,8 @@ namespace passport {
 
 bool SystemPacketHandler::AddPendingPacket(
     std::tr1::shared_ptr<pki::Packet> packet) {
+  if (!packet)
+    return false;
   boost::mutex::scoped_lock lock(mutex_);
   SystemPacketMap::iterator it =
       packets_.find(static_cast<PacketType>(packet->packet_type()));
@@ -54,10 +56,12 @@ bool SystemPacketHandler::AddPendingPacket(
 
 int SystemPacketHandler::ConfirmPacket(
     std::tr1::shared_ptr<pki::Packet> packet) {
+  if (!packet)
+    return kNullPointer;
   PacketType packet_type = static_cast<PacketType>(packet->packet_type());
   boost::mutex::scoped_lock lock(mutex_);
   SystemPacketMap::iterator it = packets_.find(packet_type);
-  if (it == packets_.end()) {
+  if (it == packets_.end() || !(*it).second.pending) {
 #ifdef DEBUG
     printf("SystemPacketHandler::ConfirmPacket: Missing %s.\n",
             DebugString(packet_type).c_str());
@@ -111,7 +115,7 @@ int SystemPacketHandler::ConfirmPacket(
     }
     (*it).second.stored = (*it).second.pending;
     (*it).second.pending.reset();
-    return true;
+    return kSuccess;
   }
 }
 
@@ -130,16 +134,6 @@ bool SystemPacketHandler::RevertPacket(const PacketType &packet_type) {
   }
 }
 
-std::tr1::shared_ptr<pki::Packet> SystemPacketHandler::Packet(
-    const PacketType &packet_type) {
-  return GetPacket(packet_type, true);
-}
-
-std::tr1::shared_ptr<pki::Packet> SystemPacketHandler::PendingPacket(
-    const PacketType &packet_type) {
-  return GetPacket(packet_type, false);
-}
-
 std::tr1::shared_ptr<pki::Packet> SystemPacketHandler::GetPacket(
     const PacketType &packet_type,
     bool confirmed) {
@@ -153,12 +147,12 @@ std::tr1::shared_ptr<pki::Packet> SystemPacketHandler::GetPacket(
 #endif
   } else {
     std::tr1::shared_ptr<pki::Packet> retrieved_packet;
-    if (confirmed && (*it).second.stored.get()) {
+    if (confirmed && (*it).second.stored) {
       retrieved_packet = (*it).second.stored;
-    } else if (!confirmed && (*it).second.pending.get()) {
+    } else if (!confirmed && (*it).second.pending) {
       retrieved_packet = (*it).second.pending;
     }
-    if (retrieved_packet.get()) {
+    if (retrieved_packet) {
       // return a copy of the contents
       if (packet_type == TMID || packet_type == STMID) {
         packet = std::tr1::shared_ptr<TmidPacket>(new TmidPacket(
@@ -192,8 +186,7 @@ bool SystemPacketHandler::Confirmed(const PacketType &packet_type) {
 }
 
 bool SystemPacketHandler::IsConfirmed(SystemPacketMap::iterator it) {
-  return (it != packets_.end() && !(*it).second.pending.get() &&
-          (*it).second.stored.get());
+  return (it != packets_.end() && !(*it).second.pending && (*it).second.stored);
 }
 
 std::string SystemPacketHandler::SerialiseKeyring() {
@@ -201,7 +194,7 @@ std::string SystemPacketHandler::SerialiseKeyring() {
   boost::mutex::scoped_lock lock(mutex_);
   SystemPacketMap::iterator it = packets_.begin();
   while (it != packets_.end()) {
-    if (IsSignature((*it).first, false) && (*it).second.stored.get()) {
+    if (IsSignature((*it).first, false) && (*it).second.stored) {
       std::tr1::static_pointer_cast<SignaturePacket>((*it).second.stored)->
           PutToKey(keyring.add_key());
     }
@@ -212,7 +205,8 @@ std::string SystemPacketHandler::SerialiseKeyring() {
 
 int SystemPacketHandler::ParseKeyring(const std::string &serialised_keyring) {
   Keyring keyring;
-  if (!keyring.ParseFromString(serialised_keyring)) {
+  if (serialised_keyring.empty() ||
+      !keyring.ParseFromString(serialised_keyring)) {
 #ifdef DEBUG
     printf("SystemPacketHandler::ParseKeyring failed.\n");
 #endif
@@ -235,7 +229,7 @@ int SystemPacketHandler::ParseKeyring(const std::string &serialised_keyring) {
 #endif
     success = success && result.second;
   }
-  return success ? kSuccess : kBadSerialisedKeyring;
+  return success ? kSuccess : kKeyringNotEmpty;
 }
 
 void SystemPacketHandler::ClearKeyring() {
@@ -247,6 +241,20 @@ void SystemPacketHandler::ClearKeyring() {
     } else {
       ++it;
     }
+  }
+}
+
+int SystemPacketHandler::DeletePacket(const PacketType &packet_type) {
+  boost::mutex::scoped_lock lock(mutex_);
+  size_t deleted_count = packets_.erase(packet_type);
+  if (deleted_count == 0U) {
+#ifdef DEBUG
+    printf("SystemPacketHandler::DeletePacket: Missing %s.\n",
+            DebugString(packet_type).c_str());
+#endif
+    return kNoPacket;
+  } else {
+    return kSuccess;
   }
 }
 

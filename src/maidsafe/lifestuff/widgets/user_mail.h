@@ -20,9 +20,9 @@
 #include <QString>
 
 // local
-#include "qt/client/client_controller.h"
-#include "qt/widgets/user_inbox.h"
-#include "qt/widgets/user_send_mail.h"
+#include "maidsafe/lifestuff/client/client_controller.h"
+#include "maidsafe/lifestuff/widgets/user_inbox.h"
+#include "maidsafe/lifestuff/widgets/user_send_mail.h"
 
 #include "ui_user_mail.h"
 

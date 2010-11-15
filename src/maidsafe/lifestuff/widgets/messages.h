@@ -20,11 +20,11 @@
 #include <QTimer>
 
 // core
-#include "protobuf/packet.pb.h"
+#include "maidsafe/common/packet.pb.h"
 
 // local
-#include "qt/client/client_controller.h"
-#include "qt/widgets/panel.h"
+#include "maidsafe/lifestuff/client/client_controller.h"
+#include "maidsafe/lifestuff/widgets/panel.h"
 
 // generated
 #include "ui_user_messages_panel.h"

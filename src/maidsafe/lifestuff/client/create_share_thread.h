@@ -21,7 +21,7 @@
 #include <set>
 #include <string>
 
-#include "qt/client/worker_thread.h"
+#include "maidsafe/lifestuff/client/worker_thread.h"
 
 // Worker thread for shares
 /*!

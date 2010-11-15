@@ -11,21 +11,18 @@
  *  Created on: Nov 13, 2008
  *      Author: Team
  */
+
+#include "maidsafe/client/localstoremanager.h"
+
 #include <boost/filesystem/fstream.hpp>
 #include <boost/scoped_ptr.hpp>
-#include <maidsafe/protobuf/signed_kadvalue.pb.h>
+#include <maidsafe/pki/maidsafevalidator.h>
 
-#include <vector>
-#include <set>
-
-#include "fs/filesystem.h"
-#include "maidsafe/chunkstore.h"
-#include "maidsafe/maidsafevalidator.h"
-#include "maidsafe/client/localstoremanager.h"
+#include "maidsafe/common/chunkstore.h"
+#include "maidsafe/common/commonutils.h"
+#include "maidsafe/common/maidsafe_messages.pb.h"
 #include "maidsafe/client/sessionsingleton.h"
-#include "maidsafe/pdutils.h"
-#include "protobuf/maidsafe_messages.pb.h"
-#include "protobuf/maidsafe_service_messages.pb.h"
+#include "maidsafe/client/clientutils.h"
 
 namespace fs = boost::filesystem;
 
@@ -307,7 +304,8 @@ bool LocalStoreManager::KeyUnique(const std::string &key, bool) {
     }
     catch(const std::exception &e) {
 #ifdef DEBUG
-      printf("LocalStoreManager::KeyUnique - Failed to check path existance\n");
+      printf("LocalStoreManager::KeyUnique - Failed check path existance: %s\n",
+             e.what());
 #endif
       return false;
     }
@@ -337,14 +335,14 @@ void LocalStoreManager::LoadPacket(const std::string &packetname,
 
 void LocalStoreManager::DeletePacket(const std::string &packet_name,
                                      const std::vector<std::string> values,
-                                     PacketType system_packet_type,
+                                     passport::PacketType system_packet_type,
                                      DirType dir_type, const std::string &msid,
                                      const VoidFuncOneInt &cb) {
   std::string key_id, public_key, public_key_signature, private_key;
-  PdUtils pd_utils;
-  pd_utils.GetPacketSignatureKeys(system_packet_type, dir_type, msid, &key_id,
-      &public_key, &public_key_signature, &private_key);
-  MaidsafeValidator msv;
+  ClientUtils client_utils;
+  client_utils.GetPacketSignatureKeys(system_packet_type, dir_type, msid,
+      &key_id, &public_key, &public_key_signature, &private_key);
+  pki::MaidsafeValidator msv;
   if (!msv.ValidateSignerId(key_id, public_key, public_key_signature)) {
     ExecReturnCodeCallback(cb, kDeletePacketFailure);
     return;
@@ -377,12 +375,10 @@ void LocalStoreManager::DeletePacket(const std::string &packet_name,
     ser_gps.push_back(ser_gp);
   }
 
-  crypto::Crypto co;
   for (size_t n = 0; n < ser_gps.size(); ++n) {
     kad::SignedValue sv;
     if (sv.ParseFromString(ser_gps[n])) {
-      if (!co.AsymCheckSig(sv.value(), sv.value_signature(), public_key,
-          crypto::STRING_STRING)) {
+      if (!RSACheckSignedData(sv.value(), sv.value_signature(), public_key)) {
         ExecReturnCodeCallback(cb, kDeletePacketFailure);
         return;
       }
@@ -413,9 +409,8 @@ ReturnCode LocalStoreManager::DeletePacket_DeleteFromDb(
     } else {
       kad::SignedValue ksv;
       if (ksv.ParseFromString(base::DecodeFromHex(q.getStringField(0)))) {
-        crypto::Crypto co;
-        if (!co.AsymCheckSig(ksv.value(), ksv.value_signature(), public_key,
-            crypto::STRING_STRING)) {
+        if (!RSACheckSignedData(ksv.value(), ksv.value_signature(),
+                                public_key)) {
 #ifdef DEBUG
           printf("LocalStoreManager::DeletePacket_DeleteFromDb - "
                  "current value failed validation.\n");
@@ -477,15 +472,14 @@ ReturnCode LocalStoreManager::DeletePacket_DeleteFromDb(
 
 void LocalStoreManager::StorePacket(const std::string &packet_name,
                                     const std::string &value,
-                                    PacketType system_packet_type,
+                                    passport::PacketType system_packet_type,
                                     DirType dir_type, const std::string& msid,
                                     const VoidFuncOneInt &cb) {
   std::string key_id, public_key, public_key_signature, private_key;
-  PdUtils pd_utils;
-  pd_utils.GetPacketSignatureKeys(system_packet_type, dir_type, msid, &key_id,
-                                  &public_key, &public_key_signature,
-                                  &private_key);
-  MaidsafeValidator msv;
+  ClientUtils client_utils;
+  client_utils.GetPacketSignatureKeys(system_packet_type, dir_type, msid,
+      &key_id, &public_key, &public_key_signature, &private_key);
+  pki::MaidsafeValidator msv;
   if (!msv.ValidateSignerId(key_id, public_key, public_key_signature)) {
     ExecReturnCodeCallback(cb, kSendPacketFailure);
     return;
@@ -500,9 +494,7 @@ void LocalStoreManager::StorePacket(const std::string &packet_name,
 
   kad::SignedValue sv;
   if (sv.ParseFromString(ser_gp)) {
-    crypto::Crypto co;
-    if (!co.AsymCheckSig(sv.value(), sv.value_signature(), public_key,
-        crypto::STRING_STRING)) {
+    if (!RSACheckSignedData(sv.value(), sv.value_signature(), public_key)) {
       ExecReturnCodeCallback(cb, kSendPacketFailure);
 #ifdef DEBUG
       printf("%s\n", sv.value().c_str());
@@ -542,9 +534,7 @@ ReturnCode LocalStoreManager::StorePacket_InsertToDb(const std::string &key,
       std::string dec_value = base::DecodeFromHex(q.getStringField(0));
       kad::SignedValue sv;
       if (sv.ParseFromString(dec_value)) {
-        crypto::Crypto co;
-        if (!co.AsymCheckSig(sv.value(), sv.value_signature(), pub_key,
-            crypto::STRING_STRING)) {
+        if (!RSACheckSignedData(sv.value(), sv.value_signature(), pub_key)) {
 #ifdef DEBUG
           printf("LocalStoreManager::StorePacket_InsertToDb - "
                  "Signature didn't validate.\n");
@@ -583,14 +573,14 @@ ReturnCode LocalStoreManager::StorePacket_InsertToDb(const std::string &key,
 void LocalStoreManager::UpdatePacket(const std::string &packet_name,
                                      const std::string &old_value,
                                      const std::string &new_value,
-                                     PacketType system_packet_type,
+                                     passport::PacketType system_packet_type,
                                      DirType dir_type, const std::string &msid,
                                      const VoidFuncOneInt &cb) {
   std::string key_id, public_key, public_key_signature, private_key;
-  PdUtils pd_utils;
-  pd_utils.GetPacketSignatureKeys(system_packet_type, dir_type, msid, &key_id,
-      &public_key, &public_key_signature, &private_key);
-  MaidsafeValidator msv;
+  ClientUtils client_utils;
+  client_utils.GetPacketSignatureKeys(system_packet_type, dir_type, msid,
+      &key_id, &public_key, &public_key_signature, &private_key);
+  pki::MaidsafeValidator msv;
   if (!msv.ValidateSignerId(key_id, public_key, public_key_signature)) {
     ExecReturnCodeCallback(cb, kUpdatePacketFailure);
 #ifdef DEBUG
@@ -619,17 +609,16 @@ void LocalStoreManager::UpdatePacket(const std::string &packet_name,
 #endif
   }
 
-  crypto::Crypto co;
-  if (!co.AsymCheckSig(old_sv.value(), old_sv.value_signature(), public_key,
-      crypto::STRING_STRING)) {
+  if (!RSACheckSignedData(old_sv.value(), old_sv.value_signature(),
+                          public_key)) {
     ExecReturnCodeCallback(cb, kUpdatePacketFailure);
 #ifdef DEBUG
     printf("LSM::UpdatePacket - Old fails validation.\n");
 #endif
     return;
   }
-  if (!co.AsymCheckSig(new_sv.value(), new_sv.value_signature(), public_key,
-      crypto::STRING_STRING)) {
+  if (!RSACheckSignedData(new_sv.value(), new_sv.value_signature(),
+                          public_key)) {
 #ifdef DEBUG
     printf("LSM::UpdatePacket - New fails validation.\n");
 #endif
@@ -703,46 +692,40 @@ ReturnCode LocalStoreManager::UpdatePacketInDb(const std::string &key,
 bool LocalStoreManager::ValidateGenericPacket(std::string ser_gp,
                                               std::string public_key) {
   GenericPacket gp;
-  crypto::Crypto co;
   if (!gp.ParseFromString(ser_gp))
     return false;
-  if (!co.AsymCheckSig(gp.data(), gp.signature(), public_key,
-      crypto::STRING_STRING))
-    return false;
-  return true;
+  return RSACheckSignedData(gp.data(), gp.signature(), public_key);
 }
 
 ////////////// BUFFER PACKET //////////////
 
 int LocalStoreManager::CreateBP() {
-  if (ss_->Id(MPID) == "")
+  std::string mpid_public, mpid_private;
+  if (ss_->MPublicID(NULL, &mpid_public, &mpid_private, NULL) != kSuccess)
     return -666;
 
   std::string bufferpacketname(BufferPacketName()), ser_packet;
   BufferPacket buffer_packet;
   GenericPacket *ser_owner_info = buffer_packet.add_owner_info();
   BufferPacketInfo buffer_packet_info;
-  buffer_packet_info.set_owner(ss_->Id(MPID));
-  buffer_packet_info.set_owner_publickey(ss_->PublicKey(MPID));
+  buffer_packet_info.set_owner(ss_->PublicUsername());
+  buffer_packet_info.set_owner_publickey(mpid_public);
   ser_owner_info->set_data(buffer_packet_info.SerializeAsString());
-  crypto::Crypto co;
-  ser_owner_info->set_signature(co.AsymSign(ser_owner_info->data(), "",
-                                ss_->PrivateKey(MPID), crypto::STRING_STRING));
+  ser_owner_info->set_signature(RSASign(ser_owner_info->data(), mpid_private));
   buffer_packet.SerializeToString(&ser_packet);
   return FlushDataIntoChunk(bufferpacketname, ser_packet, false);
 }
 
 int LocalStoreManager::ModifyBPInfo(const std::string &info) {
-  if (ss_->Id(MPID) == "")
+  std::string mpid_public, mpid_private;
+  if (ss_->MPublicID(NULL, &mpid_public, &mpid_private, NULL) != kSuccess)
     return -666;
 
   std::string bp_in_chunk;
   std::string bufferpacketname(BufferPacketName()), ser_gp;
   GenericPacket gp;
   gp.set_data(info);
-  crypto::Crypto co;
-  gp.set_signature(co.AsymSign(gp.data(), "", ss_->PrivateKey(MPID),
-                   crypto::STRING_STRING));
+  gp.set_signature(RSASign(gp.data(), mpid_private));
   gp.SerializeToString(&ser_gp);
   if (FindAndLoadChunk(bufferpacketname, &bp_in_chunk) != 0) {
 #ifdef DEBUG
@@ -752,7 +735,7 @@ int LocalStoreManager::ModifyBPInfo(const std::string &info) {
     return -1;
   }
   std::string new_bp;
-  if (!vbph_.ChangeOwnerInfo(ser_gp, ss_->PublicKey(MPID), &bp_in_chunk)) {
+  if (!vbph_.ChangeOwnerInfo(ser_gp, mpid_public, &bp_in_chunk)) {
 #ifdef DEBUG
     printf("LocalStoreManager::ModifyBPInfo - Failed to change owner info.\n");
 #endif
@@ -769,7 +752,8 @@ int LocalStoreManager::ModifyBPInfo(const std::string &info) {
 
 int LocalStoreManager::LoadBPMessages(
     std::list<ValidatedBufferPacketMessage> *messages) {
-  if (ss_->Id(MPID) == "") {
+  std::string mpid_private;
+  if (ss_->MPublicID(NULL, NULL, &mpid_private, NULL) != kSuccess) {
 #ifdef DEBUG
     printf("LocalStoreManager::LoadBPMessages - No MPID.\n");
 #endif
@@ -798,7 +782,7 @@ int LocalStoreManager::LoadBPMessages(
     ValidatedBufferPacketMessage valid_message;
     if (valid_message.ParseFromString(msgs[n])) {
       std::string aes_key = co.AsymDecrypt(valid_message.index(), "",
-                            ss_->PrivateKey(MPID), crypto::STRING_STRING);
+                            mpid_private, crypto::STRING_STRING);
       valid_message.set_message(co.SymmDecrypt(valid_message.message(),
                                 "", crypto::STRING_STRING, aes_key));
       valid_message.set_index("");
@@ -819,7 +803,7 @@ int LocalStoreManager::SendMessage(
     const MessageType &m_type, std::map<std::string, ReturnCode> *add_results) {
   if (!add_results)
     return -660;
-  if (ss_->Id(MPID) == "")
+  if (ss_->MPublicID(NULL, NULL, NULL, NULL) != kSuccess)
     return -666;
 
   std::set<std::string> sss(receivers.begin(), receivers.end());
@@ -833,7 +817,7 @@ int LocalStoreManager::SendMessage(
   }
   for (size_t n = 0; n < recs.size(); ++n)
     add_results->insert(std::pair<std::string, ReturnCode>
-                                 (recs[n],     kBPAwaitingCallback));
+                                 (recs[n], kBPAwaitingCallback));
 
   std::string bp_in_chunk, ser_gp;
   int successes = 0;
@@ -893,6 +877,10 @@ int LocalStoreManager::FindAndLoadChunk(const std::string &chunkname,
   // Simulate knode lookup
 //  boost::this_thread::sleep(boost::posix_time::seconds(2));
 #endif
+
+  if (client_chunkstore_->Load(chunkname, data) == kSuccess)
+    return kSuccess;
+
   std::string hex_chunkname(base::EncodeToHex(chunkname));
   fs::path file_path(local_sm_dir_ + "/StoreChunks");
   file_path = file_path / hex_chunkname;
@@ -917,6 +905,7 @@ int LocalStoreManager::FindAndLoadChunk(const std::string &chunkname,
 #endif
     return -1;
   }
+  client_chunkstore_->Store(chunkname, *data);
   return 0;
 }
 
@@ -945,32 +934,36 @@ int LocalStoreManager::FlushDataIntoChunk(const std::string &chunkname,
 #endif
     return -1;
   }
+  client_chunkstore_->Store(chunkname, data);
   return 0;
 }
 
 std::string LocalStoreManager::BufferPacketName() {
-  return BufferPacketName(ss_->Id(MPID), ss_->PublicKey(MPID));
+  std::string mpid_public;
+  if (ss_->MPublicID(NULL, &mpid_public, NULL, NULL) != kSuccess)
+    return "";
+  return BufferPacketName(ss_->PublicUsername(), mpid_public);
 }
 
 std::string LocalStoreManager::BufferPacketName(const std::string &pub_username,
                                                 const std::string &public_key) {
-  crypto::Crypto co;
-  co.set_hash_algorithm(crypto::SHA_512);
-  return co.Hash(pub_username + public_key, "", crypto::STRING_STRING, false);
+  return SHA512String(pub_username + public_key);
 }
 
 std::string LocalStoreManager::CreateMessage(const std::string &message,
                                              const std::string &rec_public_key,
                                              const MessageType &m_type,
                                              const boost::uint32_t &timestamp) {
+  std::string mpid_public, mpid_private;
+  if (ss_->MPublicID(NULL, &mpid_public, &mpid_private, NULL) != kSuccess)
+    return "";
   BufferPacketMessage bpm;
   GenericPacket gp;
 
-  bpm.set_sender_id(ss_->Id(MPID));
-  bpm.set_sender_public_key(ss_->PublicKey(MPID));
+  bpm.set_sender_id(ss_->PublicUsername());
+  bpm.set_sender_public_key(mpid_public);
   bpm.set_type(m_type);
   crypto::Crypto co;
-  co.set_hash_algorithm(crypto::SHA_512);
   co.set_symm_algorithm(crypto::AES_256);
   std::string aes_key =
       base::RandomString(crypto::AES256_KeySize + crypto::AES256_IVSize);
@@ -982,8 +975,7 @@ std::string LocalStoreManager::CreateMessage(const std::string &message,
   std::string ser_bpm;
   bpm.SerializeToString(&ser_bpm);
   gp.set_data(ser_bpm);
-  gp.set_signature(co.AsymSign(gp.data(), "", ss_->PrivateKey(MPID),
-                   crypto::STRING_STRING));
+  gp.set_signature(RSASign(gp.data(), mpid_private));
   std::string ser_gp;
   gp.SerializeToString(&ser_gp);
   return ser_gp;
@@ -1044,10 +1036,7 @@ void LocalStoreManager::SetLocalVaultOwned(const std::string&,
                                            const std::string&,
                                            const boost::uint64_t&,
                                            const SetLocalVaultOwnedFunctor &f) {
-  crypto::Crypto co;
-  co.set_hash_algorithm(crypto::SHA_512);
-  std::string pmid_name = co.Hash(pub_key + signed_pub_key, "",
-                          crypto::STRING_STRING, false);
+  std::string pmid_name = SHA512String(pub_key + signed_pub_key);
   boost::thread thr(f, OWNED_SUCCESS, pmid_name);
 }
 
@@ -1061,10 +1050,9 @@ void LocalStoreManager::CreateSerialisedSignedValue(
     const std::string &value, const std::string &private_key,
     std::string *ser_gp) {
   ser_gp->clear();
-  crypto::Crypto co;
   GenericPacket gp;
   gp.set_data(value);
-  gp.set_signature(co.AsymSign(value, "", private_key, crypto::STRING_STRING));
+  gp.set_signature(RSASign(value, private_key));
   gp.SerializeToString(ser_gp);
 }
 

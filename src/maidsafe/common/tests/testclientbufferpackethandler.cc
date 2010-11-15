@@ -24,18 +24,15 @@
 
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
-#include <boost/lexical_cast.hpp>
-#include <boost/filesystem.hpp>
-#include <maidsafe/protobuf/general_messages.pb.h>
-#include <maidsafe/protobuf/kademlia_service_messages.pb.h>
-#include <maidsafe/transport/transportudt.h>
 
-#include "fs/filesystem.h"
-#include "maidsafe/chunkstore.h"
-#include "maidsafe/clientbufferpackethandler.h"
-#include "maidsafe/kadops.h"
-#include "maidsafe/client/packetfactory.h"
-#include "tests/maidsafe/cached_keys.h"
+#include "maidsafe/common/maidsafe.h"
+#include "maidsafe/common/commonutils.h"
+#include "maidsafe/common/bufferpacketrpc.h"
+#include "maidsafe/common/chunkstore.h"
+#include "maidsafe/common/clientbufferpackethandler.h"
+#include "maidsafe/common/filesystem.h"
+#include "maidsafe/common/kadops.h"
+#include "maidsafe/sharedtest/cached_keys.h"
 
 using ::testing::_;
 using ::testing::Invoke;
@@ -45,15 +42,14 @@ using ::testing::WithArgs;
 namespace test_cbph {
 static const boost::uint8_t K(4);
 static const boost::uint8_t upper_threshold(static_cast<boost::uint8_t>
-                                            (K * kMinSuccessfulPecentageStore));
+             (K * maidsafe::kMinSuccessfulPecentageStore));
 }  // namespace test_cbph
 
 namespace maidsafe {
 
 void GenerateContacts(std::vector<kad::Contact> *cv) {
   cv->clear();
-  crypto::Crypto co;
-  std::string id(co.Hash("id", "", crypto::STRING_STRING, false));
+  std::string id(SHA512String("id"));
   kad::Contact ctc(id, "127.0.0.1", 8888, "127.0.0.1", 8888);
   std::string ser_ctc;
   ctc.SerialiseToString(&ser_ctc);
@@ -88,8 +84,7 @@ void FindNodesFailNoParse(maidsafe::VoidFuncIntContacts cb) {
 
 void FindNodesFailNotEnough(maidsafe::VoidFuncIntContacts cb) {
   std::vector<kad::Contact> cv;
-  crypto::Crypto co;
-  std::string id(co.Hash("id", "", crypto::STRING_STRING, false));
+  std::string id(SHA512String("id"));
   kad::Contact ctc(id, "127.0.0.1", 8888, "127.0.0.1", 8888);
   for (int n = 0; n < test_cbph::K/4; ++n) {
     cv.push_back(ctc);
@@ -336,11 +331,7 @@ class TestClientBP : public testing::Test {
                    kad_config_file_(test_dir_ / ".kadconfig"),
                    chunkstore_(new maidsafe::ChunkStore(
                        (test_dir_ / "ChunkStore").string(), 99999999, 0)),
-                   kad_ops_(), BPMock(), keys_(), cryp() {
-    cryp.set_hash_algorithm(crypto::SHA_512);
-    cryp.set_symm_algorithm(crypto::AES_256);
-  }
-
+                   kad_ops_(), BPMock(), keys_() {}
   ~TestClientBP() {
     transport::TransportUDT::CleanUp();
   }
@@ -366,8 +357,7 @@ class TestClientBP : public testing::Test {
     EXPECT_EQ(0, trans_han_->Start(0, trans_id));
     EXPECT_EQ(0, ch_man_->Start());
 
-    std::string pmid(cryp.Hash(base::RandomString(200), "",
-                               crypto::STRING_STRING, false));
+    std::string pmid(SHA512String(base::RandomString(200)));
     boost::mutex mutex;
     boost::condition_variable cond_var;
     maidsafe::ReturnCode return_code(maidsafe::kPendingResult);
@@ -385,8 +375,7 @@ class TestClientBP : public testing::Test {
 
     // Adding Contacts
     for (int i = 0; i < kMinChunkCopies + 1; ++i) {
-      kad::Contact con(cryp.Hash(boost::lexical_cast<std::string>(i), "",
-                                 crypto::STRING_STRING, false),
+      kad::Contact con(SHA512String(boost::lexical_cast<std::string>(i)),
                        "127.0.0.1", 8000 + i, "127.0.0.1", 8000 + i);
       kad_ops_->knode_.AddContact(con, 0, false);
     }
@@ -411,12 +400,11 @@ class TestClientBP : public testing::Test {
   transport::TransportUDT *trans_;
   transport::TransportHandler *trans_han_;
   rpcprotocol::ChannelManager *ch_man_;
-  fs::path test_dir_, kad_config_file_;
+  boost::filesystem::path test_dir_, kad_config_file_;
   boost::shared_ptr<maidsafe::ChunkStore> chunkstore_;
   boost::shared_ptr<maidsafe::KadOps> kad_ops_;
   boost::shared_ptr<MockBPRpcs> BPMock;
   std::vector<crypto::RsaKeyPair> keys_;
-  crypto::Crypto cryp;
 };
 
 TEST_F(TestClientBP, BEH_MAID_CreateBpOk) {
@@ -427,14 +415,11 @@ TEST_F(TestClientBP, BEH_MAID_CreateBpOk) {
   EXPECT_CALL(*BPMock, CreateBP(_, _, _, _, _, _, _))
       .WillRepeatedly(WithArgs<0, 4, 6>(Invoke(BPCallbackSucceed)));
 
-  std::string signed_pubkey(cryp.AsymSign(keys_.at(1).public_key(), "",
-                                          keys_.at(1).private_key(),
-                                          crypto::STRING_STRING));
-  maidsafe::BPInputParameters bpip = {cryp.Hash(keys_.at(1).public_key() +
-                                                signed_pubkey, "",
-                                                crypto::STRING_STRING, false),
-                                      keys_.at(1).public_key(),
-                                      keys_.at(1).private_key()};
+  std::string signed_pubkey(RSASign(keys_.at(1).public_key(),
+                                    keys_.at(1).private_key()));
+  maidsafe::BPInputParameters bpip(
+      SHA512String(keys_.at(1).public_key() + signed_pubkey),
+      keys_.at(1).public_key(), keys_.at(1).private_key());
 
   BPCallback cb;
   cbph.CreateBufferPacket(bpip,
@@ -455,13 +440,11 @@ TEST_F(TestClientBP, BEH_MAID_CreateBpFailFindNodes) {
       .WillOnce(WithArgs<0>(Invoke(FindNodesFailNotEnough)))
       .WillOnce(WithArgs<0>(Invoke(FindNodesFailNotContacts)));
 
-  std::string signed_pubkey = cryp.AsymSign(keys_.at(1).public_key(), "",
-                              keys_.at(1).private_key(), crypto::STRING_STRING);
-  maidsafe::BPInputParameters bpip = {cryp.Hash(keys_.at(1).public_key() +
-                                          signed_pubkey, "",
-                                          crypto::STRING_STRING, false),
-                                      keys_.at(1).public_key(),
-                                      keys_.at(1).private_key()};
+  std::string signed_pubkey = RSASign(keys_.at(1).public_key(),
+                                      keys_.at(1).private_key());
+  maidsafe::BPInputParameters bpip(
+      SHA512String(keys_.at(1).public_key() + signed_pubkey),
+      keys_.at(1).public_key(), keys_.at(1).private_key());
 
   cbph.CreateBufferPacket(bpip,
                           boost::bind(&BPCallback::BPOperation_CB, &cb, _1),
@@ -504,13 +487,11 @@ TEST_F(TestClientBP, BEH_MAID_CreateBpFailRpcs) {
   EXPECT_CALL(*BPMock, CreateBP(_, _, _, _, _, _, _))
       .WillRepeatedly(WithArgs<0, 4, 6>(Invoke(BPCallbackFail)));
 
-  std::string signed_pubkey = cryp.AsymSign(keys_.at(1).public_key(), "",
-                              keys_.at(1).private_key(), crypto::STRING_STRING);
-  maidsafe::BPInputParameters bpip = {cryp.Hash(keys_.at(1).public_key() +
-                                          signed_pubkey, "",
-                                          crypto::STRING_STRING, false),
-                                      keys_.at(1).public_key(),
-                                      keys_.at(1).private_key()};
+  std::string signed_pubkey = RSASign(keys_.at(1).public_key(),
+                                      keys_.at(1).private_key());
+  maidsafe::BPInputParameters bpip(
+      SHA512String(keys_.at(1).public_key() + signed_pubkey),
+      keys_.at(1).public_key(), keys_.at(1).private_key());
 
   cbph.CreateBufferPacket(bpip,
                           boost::bind(&BPCallback::BPOperation_CB, &cb, _1),
@@ -529,13 +510,11 @@ TEST_F(TestClientBP, BEH_MAID_ModifyOwnerInfoOk) {
   EXPECT_CALL(*BPMock, ModifyBPInfo(_, _, _, _, _, _, _))
       .WillRepeatedly(WithArgs<0, 4, 6>(Invoke(BPInfoCallbackSucceed)));
 
-  std::string signed_pubkey = cryp.AsymSign(keys_.at(1).public_key(), "",
-                              keys_.at(1).private_key(), crypto::STRING_STRING);
-  maidsafe::BPInputParameters bpip = {cryp.Hash(keys_.at(1).public_key() +
-                                          signed_pubkey, "",
-                                          crypto::STRING_STRING, false),
-                                      keys_.at(1).public_key(),
-                                      keys_.at(1).private_key()};
+  std::string signed_pubkey = RSASign(keys_.at(1).public_key(),
+                                      keys_.at(1).private_key());
+  maidsafe::BPInputParameters bpip(
+      SHA512String(keys_.at(1).public_key() + signed_pubkey),
+      keys_.at(1).public_key(), keys_.at(1).private_key());
 
   std::vector<std::string> users;
   cbph.ModifyOwnerInfo(bpip, users,
@@ -556,13 +535,11 @@ TEST_F(TestClientBP, BEH_MAID_ModifyOwnerInfoFailFindNodes) {
       .WillOnce(WithArgs<0>(Invoke(FindNodesFailNotEnough)))
       .WillOnce(WithArgs<0>(Invoke(FindNodesFailNotContacts)));
 
-  std::string signed_pubkey = cryp.AsymSign(keys_.at(1).public_key(), "",
-                              keys_.at(1).private_key(), crypto::STRING_STRING);
-  maidsafe::BPInputParameters bpip = {cryp.Hash(keys_.at(1).public_key() +
-                                          signed_pubkey, "",
-                                          crypto::STRING_STRING, false),
-                                      keys_.at(1).public_key(),
-                                      keys_.at(1).private_key()};
+  std::string signed_pubkey = RSASign(keys_.at(1).public_key(),
+                                      keys_.at(1).private_key());
+  maidsafe::BPInputParameters bpip(
+      SHA512String(keys_.at(1).public_key() + signed_pubkey),
+      keys_.at(1).public_key(), keys_.at(1).private_key());
 
   std::vector<std::string> users;
   cbph.ModifyOwnerInfo(bpip, users,
@@ -606,13 +583,11 @@ TEST_F(TestClientBP, BEH_MAID_ModifyOwnerInfoFailRpcs) {
   EXPECT_CALL(*BPMock, ModifyBPInfo(_, _, _, _, _, _, _))
       .WillRepeatedly(WithArgs<0, 4, 6>(Invoke(BPInfoCallbackFailed)));
 
-  std::string signed_pubkey = cryp.AsymSign(keys_.at(1).public_key(), "",
-                              keys_.at(1).private_key(), crypto::STRING_STRING);
-  maidsafe::BPInputParameters bpip = {cryp.Hash(keys_.at(1).public_key() +
-                                          signed_pubkey, "",
-                                          crypto::STRING_STRING, false),
-                                      keys_.at(1).public_key(),
-                                      keys_.at(1).private_key()};
+  std::string signed_pubkey = RSASign(keys_.at(1).public_key(),
+                                      keys_.at(1).private_key());
+  maidsafe::BPInputParameters bpip(
+      SHA512String(keys_.at(1).public_key() + signed_pubkey),
+      keys_.at(1).public_key(), keys_.at(1).private_key());
 
   std::vector<std::string> users;
   cbph.ModifyOwnerInfo(bpip, users,
@@ -632,21 +607,15 @@ TEST_F(TestClientBP, BEH_MAID_AddMessageOk) {
   EXPECT_CALL(*BPMock, AddBPMessage(_, _, _, _, _, _, _))
       .WillRepeatedly(WithArgs<0, 4, 6>(Invoke(BPAddMsgCallbackSucceed)));
 
-  std::string signed_pubkey = cryp.AsymSign(keys_.at(1).public_key(), "",
-                                            keys_.at(1).private_key(),
-                                            crypto::STRING_STRING);
-  maidsafe::BPInputParameters bpip = {cryp.Hash(keys_.at(1).public_key() +
-                                          signed_pubkey, "",
-                                          crypto::STRING_STRING, false),
-                                      keys_.at(1).public_key(),
-                                      keys_.at(1).private_key()};
+  std::string signed_pubkey = RSASign(keys_.at(1).public_key(),
+                                      keys_.at(1).private_key());
+  maidsafe::BPInputParameters bpip(
+      SHA512String(keys_.at(1).public_key() + signed_pubkey),
+      keys_.at(1).public_key(), keys_.at(1).private_key());
 
   // creating info of receiver
-  signed_pubkey = cryp.AsymSign(keys_.at(2).public_key(), "",
-                                keys_.at(2).private_key(),
-                                crypto::STRING_STRING);
-  std::string recv_id = cryp.Hash(keys_.at(2).public_key() + signed_pubkey, "",
-                                  crypto::STRING_STRING, false);
+  signed_pubkey = RSASign(keys_.at(2).public_key(), keys_.at(2).private_key());
+  std::string recv_id = SHA512String(keys_.at(2).public_key() + signed_pubkey);
 
   cbph.AddMessage(bpip, "", keys_.at(2).public_key(), recv_id, "Hello World",
                   maidsafe::ADD_CONTACT_RQST,
@@ -667,21 +636,15 @@ TEST_F(TestClientBP, BEH_MAID_AddMessageFailFindNodes) {
       .WillOnce(WithArgs<0>(Invoke(FindNodesFailNotEnough)))
       .WillOnce(WithArgs<0>(Invoke(FindNodesFailNotContacts)));
 
-  std::string signed_pubkey = cryp.AsymSign(keys_.at(1).public_key(), "",
-                                            keys_.at(1).private_key(),
-                                            crypto::STRING_STRING);
-  maidsafe::BPInputParameters bpip = {cryp.Hash(keys_.at(1).public_key() +
-                                          signed_pubkey, "",
-                                          crypto::STRING_STRING, false),
-                                      keys_.at(1).public_key(),
-                                      keys_.at(1).private_key()};
+  std::string signed_pubkey = RSASign(keys_.at(1).public_key(),
+                                      keys_.at(1).private_key());
+  maidsafe::BPInputParameters bpip(
+      SHA512String(keys_.at(1).public_key() + signed_pubkey),
+      keys_.at(1).public_key(), keys_.at(1).private_key());
 
   // creating info of receiver
-  signed_pubkey = cryp.AsymSign(keys_.at(2).public_key(), "",
-                                keys_.at(2).private_key(),
-                                crypto::STRING_STRING);
-  std::string recv_id = cryp.Hash(keys_.at(2).public_key() + signed_pubkey, "",
-                                  crypto::STRING_STRING, false);
+  signed_pubkey = RSASign(keys_.at(2).public_key(), keys_.at(2).private_key());
+  std::string recv_id = SHA512String(keys_.at(2).public_key() + signed_pubkey);
 
   cbph.AddMessage(bpip, "", keys_.at(2).public_key(), recv_id, "Hello World",
                   maidsafe::ADD_CONTACT_RQST,
@@ -728,21 +691,15 @@ TEST_F(TestClientBP, BEH_MAID_AddMessageFailRpcs) {
   EXPECT_CALL(*BPMock, AddBPMessage(_, _, _, _, _, _, _))
       .WillRepeatedly(WithArgs<0, 4, 6>(Invoke(BPAddMsgCallbackFailed)));
 
-  std::string signed_pubkey = cryp.AsymSign(keys_.at(1).public_key(), "",
-                                            keys_.at(1).private_key(),
-                                            crypto::STRING_STRING);
-  maidsafe::BPInputParameters bpip = {cryp.Hash(keys_.at(1).public_key() +
-                                          signed_pubkey, "",
-                                          crypto::STRING_STRING, false),
-                                      keys_.at(1).public_key(),
-                                      keys_.at(1).private_key()};
+  std::string signed_pubkey = RSASign(keys_.at(1).public_key(),
+                                      keys_.at(1).private_key());
+  maidsafe::BPInputParameters bpip(
+      SHA512String(keys_.at(1).public_key() + signed_pubkey),
+      keys_.at(1).public_key(), keys_.at(1).private_key());
 
   // creating info of receiver
-  signed_pubkey = cryp.AsymSign(keys_.at(2).public_key(), "",
-                                keys_.at(2).private_key(),
-                                crypto::STRING_STRING);
-  std::string recv_id = cryp.Hash(keys_.at(2).public_key() + signed_pubkey, "",
-                                  crypto::STRING_STRING, false);
+  signed_pubkey = RSASign(keys_.at(2).public_key(), keys_.at(2).private_key());
+  std::string recv_id = SHA512String(keys_.at(2).public_key() + signed_pubkey);
 
   cbph.AddMessage(bpip, "", keys_.at(2).public_key(), recv_id, "Hello World",
                   maidsafe::ADD_CONTACT_RQST,
@@ -767,14 +724,11 @@ TEST_F(TestClientBP, BEH_MAID_GetMessagesOk) {
       .WillRepeatedly(WithArgs<0, 4, 6>(Invoke(&helper,
                       &GetMsgsHelper::BPGetMsgsCallbackSucceed)));
 
-  std::string signed_pub_key = cryp.AsymSign(keys_.at(1).public_key(), "",
-                                             keys_.at(1).private_key(),
-                                             crypto::STRING_STRING);
-  maidsafe::BPInputParameters bpip = {cryp.Hash(keys_.at(1).public_key() +
-                                                signed_pub_key, "",
-                                                crypto::STRING_STRING, false),
-                                      keys_.at(1).public_key(),
-                                      keys_.at(1).private_key()};
+  std::string signed_pubkey = RSASign(keys_.at(1).public_key(),
+                                      keys_.at(1).private_key());
+  maidsafe::BPInputParameters bpip(
+      SHA512String(keys_.at(1).public_key() + signed_pubkey),
+      keys_.at(1).public_key(), keys_.at(1).private_key());
 
   cbph.GetMessages(bpip,
                    boost::bind(&BPCallback::BPGetMsgs_CB, &cb, _1, _2, _3),
@@ -809,21 +763,14 @@ TEST_F(TestClientBP, BEH_MAID_GetMessagesFailFindNodes) {
       .WillOnce(WithArgs<0>(Invoke(FindNodesFailNotEnough)))
       .WillOnce(WithArgs<0>(Invoke(FindNodesFailNotContacts)));
 
-  std::string signed_pubkey = cryp.AsymSign(keys_.at(1).public_key(), "",
-                                            keys_.at(1).private_key(),
-                                            crypto::STRING_STRING);
-  maidsafe::BPInputParameters bpip = {cryp.Hash(keys_.at(1).public_key() +
-                                          signed_pubkey, "",
-                                          crypto::STRING_STRING, false),
-                                      keys_.at(1).public_key(),
-                                      keys_.at(1).private_key()};
-
+  std::string signed_pubkey = RSASign(keys_.at(1).public_key(),
+                                      keys_.at(1).private_key());
+  maidsafe::BPInputParameters bpip(
+      SHA512String(keys_.at(1).public_key() + signed_pubkey),
+      keys_.at(1).public_key(), keys_.at(1).private_key());
   // creating info of receiver
-  signed_pubkey = cryp.AsymSign(keys_.at(2).public_key(), "",
-                                keys_.at(2).private_key(),
-                                crypto::STRING_STRING);
-  std::string recv_id = cryp.Hash(keys_.at(2).public_key() + signed_pubkey, "",
-                                  crypto::STRING_STRING, false);
+  signed_pubkey = RSASign(keys_.at(2).public_key(), keys_.at(2).private_key());
+  std::string recv_id = SHA512String(keys_.at(2).public_key() + signed_pubkey);
 
   cbph.GetMessages(bpip,
                    boost::bind(&BPCallback::BPGetMsgs_CB, &cb, _1, _2, _3),
@@ -871,14 +818,11 @@ TEST_F(TestClientBP, BEH_MAID_GetMessagesFailRpcs) {
       .WillRepeatedly(WithArgs<0, 4, 6>(Invoke(&helper,
                       &GetMsgsHelper::BPGetMsgsCallbackFailed)));
 
-  std::string signed_pub_key = cryp.AsymSign(keys_.at(1).public_key(), "",
-                                             keys_.at(1).private_key(),
-                                             crypto::STRING_STRING);
-  maidsafe::BPInputParameters bpip = {cryp.Hash(keys_.at(1).public_key() +
-                                                signed_pub_key, "",
-                                                crypto::STRING_STRING, false),
-                                      keys_.at(1).public_key(),
-                                      keys_.at(1).private_key()};
+  std::string signed_pubkey = RSASign(keys_.at(1).public_key(),
+                                      keys_.at(1).private_key());
+  maidsafe::BPInputParameters bpip(
+      SHA512String(keys_.at(1).public_key() + signed_pubkey),
+      keys_.at(1).public_key(), keys_.at(1).private_key());
 
   cbph.GetMessages(bpip,
                    boost::bind(&BPCallback::BPGetMsgs_CB, &cb, _1, _2, _3),
@@ -897,21 +841,15 @@ TEST_F(TestClientBP, BEH_MAID_AddPresenceOk) {
   EXPECT_CALL(*BPMock, AddBPPresence(_, _, _, _, _, _, _))
       .WillRepeatedly(WithArgs<0, 4, 6>(Invoke(BPAddPresenceCallbackSucceed)));
 
-  std::string signed_pubkey = cryp.AsymSign(keys_.at(1).public_key(), "",
-                                            keys_.at(1).private_key(),
-                                            crypto::STRING_STRING);
-  maidsafe::BPInputParameters bpip = {cryp.Hash(keys_.at(1).public_key() +
-                                          signed_pubkey, "",
-                                          crypto::STRING_STRING, false),
-                                      keys_.at(1).public_key(),
-                                      keys_.at(1).private_key()};
+  std::string signed_pubkey = RSASign(keys_.at(1).public_key(),
+                                      keys_.at(1).private_key());
+  maidsafe::BPInputParameters bpip(
+      SHA512String(keys_.at(1).public_key() + signed_pubkey),
+      keys_.at(1).public_key(), keys_.at(1).private_key());
 
   // creating info of receiver
-  signed_pubkey = cryp.AsymSign(keys_.at(2).public_key(), "",
-                                keys_.at(2).private_key(),
-                                crypto::STRING_STRING);
-  std::string recv_id = cryp.Hash(keys_.at(2).public_key() + signed_pubkey, "",
-                                  crypto::STRING_STRING, false);
+  signed_pubkey = RSASign(keys_.at(2).public_key(), keys_.at(2).private_key());
+  std::string recv_id = SHA512String(keys_.at(2).public_key() + signed_pubkey);
 
   cbph.AddPresence(bpip, "", keys_.at(2).public_key(), recv_id,
                    boost::bind(&BPCallback::BPOperation_CB, &cb, _1),
@@ -931,21 +869,15 @@ TEST_F(TestClientBP, BEH_MAID_AddPresenceFailFindNodes) {
       .WillOnce(WithArgs<0>(Invoke(FindNodesFailNotEnough)))
       .WillOnce(WithArgs<0>(Invoke(FindNodesFailNotContacts)));
 
-  std::string signed_pubkey = cryp.AsymSign(keys_.at(1).public_key(), "",
-                                            keys_.at(1).private_key(),
-                                            crypto::STRING_STRING);
-  maidsafe::BPInputParameters bpip = {cryp.Hash(keys_.at(1).public_key() +
-                                          signed_pubkey, "",
-                                          crypto::STRING_STRING, false),
-                                      keys_.at(1).public_key(),
-                                      keys_.at(1).private_key()};
+  std::string signed_pubkey = RSASign(keys_.at(1).public_key(),
+                                      keys_.at(1).private_key());
+  maidsafe::BPInputParameters bpip(
+      SHA512String(keys_.at(1).public_key() + signed_pubkey),
+      keys_.at(1).public_key(), keys_.at(1).private_key());
 
   // creating info of receiver
-  signed_pubkey = cryp.AsymSign(keys_.at(2).public_key(), "",
-                                keys_.at(2).private_key(),
-                                crypto::STRING_STRING);
-  std::string recv_id = cryp.Hash(keys_.at(2).public_key() + signed_pubkey, "",
-                                  crypto::STRING_STRING, false);
+  signed_pubkey = RSASign(keys_.at(2).public_key(), keys_.at(2).private_key());
+  std::string recv_id = SHA512String(keys_.at(2).public_key() + signed_pubkey);
 
   cbph.AddPresence(bpip, "", keys_.at(2).public_key(), recv_id,
                    boost::bind(&BPCallback::BPOperation_CB, &cb, _1),
@@ -988,21 +920,15 @@ TEST_F(TestClientBP, BEH_MAID_AddBPPresenceFailRpcs) {
   EXPECT_CALL(*BPMock, AddBPPresence(_, _, _, _, _, _, _))
       .WillRepeatedly(WithArgs<0, 4, 6>(Invoke(BPAddPresenceCallbackFailed)));
 
-  std::string signed_pubkey = cryp.AsymSign(keys_.at(1).public_key(), "",
-                                            keys_.at(1).private_key(),
-                                            crypto::STRING_STRING);
-  maidsafe::BPInputParameters bpip = {cryp.Hash(keys_.at(1).public_key() +
-                                          signed_pubkey, "",
-                                          crypto::STRING_STRING, false),
-                                      keys_.at(1).public_key(),
-                                      keys_.at(1).private_key()};
+  std::string signed_pubkey = RSASign(keys_.at(1).public_key(),
+                                      keys_.at(1).private_key());
+  maidsafe::BPInputParameters bpip(
+      SHA512String(keys_.at(1).public_key() + signed_pubkey),
+      keys_.at(1).public_key(), keys_.at(1).private_key());
 
   // creating info of receiver
-  signed_pubkey = cryp.AsymSign(keys_.at(2).public_key(), "",
-                                keys_.at(2).private_key(),
-                                crypto::STRING_STRING);
-  std::string recv_id = cryp.Hash(keys_.at(2).public_key() + signed_pubkey, "",
-                                  crypto::STRING_STRING, false);
+  signed_pubkey = RSASign(keys_.at(2).public_key(), keys_.at(2).private_key());
+  std::string recv_id = SHA512String(keys_.at(2).public_key() + signed_pubkey);
 
   cbph.AddPresence(bpip, "", keys_.at(2).public_key(), recv_id,
                    boost::bind(&BPCallback::BPOperation_CB, &cb, _1),
@@ -1026,14 +952,11 @@ TEST_F(TestClientBP, BEH_MAID_GetPresenceOk) {
       .WillRepeatedly(WithArgs<0, 4, 6>(Invoke(&helper,
                       &GetMsgsHelper::BPGetPresenceCallbackSucceed)));
 
-  std::string signed_pub_key = cryp.AsymSign(keys_.at(1).public_key(), "",
-                                             keys_.at(1).private_key(),
-                                             crypto::STRING_STRING);
-  maidsafe::BPInputParameters bpip = {cryp.Hash(keys_.at(1).public_key() +
-                                                signed_pub_key, "",
-                                                crypto::STRING_STRING, false),
-                                      keys_.at(1).public_key(),
-                                      keys_.at(1).private_key()};
+  std::string signed_pubkey = RSASign(keys_.at(1).public_key(),
+                                      keys_.at(1).private_key());
+  maidsafe::BPInputParameters bpip(
+      SHA512String(keys_.at(1).public_key() + signed_pubkey),
+      keys_.at(1).public_key(), keys_.at(1).private_key());
 
   cbph.GetPresence(bpip,
                    boost::bind(&BPCallback::BPGetPresence_CB, &cb, _1, _2, _3),
@@ -1075,21 +998,15 @@ TEST_F(TestClientBP, BEH_MAID_GetPresenceFailFindNodes) {
       .WillOnce(WithArgs<0>(Invoke(FindNodesFailNotEnough)))
       .WillOnce(WithArgs<0>(Invoke(FindNodesFailNotContacts)));
 
-  std::string signed_pubkey = cryp.AsymSign(keys_.at(1).public_key(), "",
-                                            keys_.at(1).private_key(),
-                                            crypto::STRING_STRING);
-  maidsafe::BPInputParameters bpip = {cryp.Hash(keys_.at(1).public_key() +
-                                          signed_pubkey, "",
-                                          crypto::STRING_STRING, false),
-                                      keys_.at(1).public_key(),
-                                      keys_.at(1).private_key()};
+  std::string signed_pubkey = RSASign(keys_.at(1).public_key(),
+                                      keys_.at(1).private_key());
+  maidsafe::BPInputParameters bpip(
+      SHA512String(keys_.at(1).public_key() + signed_pubkey),
+      keys_.at(1).public_key(), keys_.at(1).private_key());
 
   // creating info of receiver
-  signed_pubkey = cryp.AsymSign(keys_.at(2).public_key(), "",
-                                keys_.at(2).private_key(),
-                                crypto::STRING_STRING);
-  std::string recv_id = cryp.Hash(keys_.at(2).public_key() + signed_pubkey, "",
-                                  crypto::STRING_STRING, false);
+  signed_pubkey = RSASign(keys_.at(2).public_key(), keys_.at(2).private_key());
+  std::string recv_id = SHA512String(keys_.at(2).public_key() + signed_pubkey);
 
   cbph.GetPresence(bpip,
                    boost::bind(&BPCallback::BPGetPresence_CB, &cb, _1, _2, _3),
@@ -1137,14 +1054,11 @@ TEST_F(TestClientBP, BEH_MAID_GetPresenceFailRpcs) {
       .WillRepeatedly(WithArgs<0, 4, 6>(Invoke(&helper,
                       &GetMsgsHelper::BPGetPresenceCallbackFailed)));
 
-  std::string signed_pub_key = cryp.AsymSign(keys_.at(1).public_key(), "",
-                                             keys_.at(1).private_key(),
-                                             crypto::STRING_STRING);
-  maidsafe::BPInputParameters bpip = {cryp.Hash(keys_.at(1).public_key() +
-                                                signed_pub_key, "",
-                                                crypto::STRING_STRING, false),
-                                      keys_.at(1).public_key(),
-                                      keys_.at(1).private_key()};
+  std::string signed_pubkey = RSASign(keys_.at(1).public_key(),
+                                       keys_.at(1).private_key());
+  maidsafe::BPInputParameters bpip(
+      SHA512String(keys_.at(1).public_key() + signed_pubkey),
+      keys_.at(1).public_key(), keys_.at(1).private_key());
 
   cbph.GetPresence(bpip,
                    boost::bind(&BPCallback::BPGetPresence_CB, &cb, _1, _2, _3),

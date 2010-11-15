@@ -22,7 +22,7 @@
 #include <boost/thread/mutex.hpp>
 
 // local
-#include "qt/client/client_controller.h"
+#include "maidsafe/lifestuff/client/client_controller.h"
 
 #include "ui_pending_operations_dialog.h"
 

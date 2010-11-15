@@ -24,24 +24,21 @@
 
 #include <gtest/gtest.h>
 
-#include "fs/filesystem.h"
-#include "maidsafe/chunkstore.h"
+#include "maidsafe/common/commonutils.h"
+#include "maidsafe/common/filesystem.h"
+#include "maidsafe/common/maidsafe_messages.pb.h"
+#include "maidsafe/common/maidsafe_service_messages.pb.h"
 #include "maidsafe/client/authentication.h"
-#include "maidsafe/client/dataatlashandler.h"
 #include "maidsafe/client/localstoremanager.h"
-#include "maidsafe/client/packetfactory.h"
-#include "protobuf/datamaps.pb.h"
-#include "protobuf/maidsafe_messages.pb.h"
-#include "protobuf/maidsafe_service_messages.pb.h"
-#include "tests/maidsafe/cached_keys.h"
-#include "tests/maidsafe/networktest.h"
-#include "tests/maidsafe/testcallback.h"
+#include "maidsafe/client/sessionsingleton.h"
+#include "maidsafe/client/filesystem/dataatlashandler.h"
+#include "maidsafe/encrypt/datamap.pb.h"
+#include "maidsafe/sharedtest/testcallback.h"
+#include "maidsafe/sharedtest/networktest.h"
 
 namespace fs = boost::filesystem;
 
 namespace maidsafe {
-
-namespace passport {
 
 namespace test {
 
@@ -59,7 +56,7 @@ class AuthenticationTest : public testing::Test {
   void SetUp() {
     ss_->ResetSession();
     ASSERT_TRUE(network_test_.Init());
-    authentication_.Init(kNoOfSystemPackets, sm_);
+    authentication_.Init(sm_);
     ss_ = SessionSingleton::getInstance();
     ss_->ResetSession();
   }
@@ -77,7 +74,7 @@ class AuthenticationTest : public testing::Test {
   AuthenticationTest &operator=(const AuthenticationTest&);
 };
 
-TEST_MS_NET(AuthenticationTest, FUNC, PASSPORT, CreateUserSysPackets) {
+TEST_MS_NET(AuthenticationTest, FUNC, MAID, CreateUserSysPackets) {
   username_ += "01";
   int result = authentication_.GetUserInfo(username_, pin_);
   EXPECT_EQ(kUserDoesntExist, result) << "User already exists";
@@ -85,14 +82,14 @@ TEST_MS_NET(AuthenticationTest, FUNC, PASSPORT, CreateUserSysPackets) {
   ASSERT_EQ(kSuccess, result) << "Unable to register user";
 }
 
-TEST_MS_NET(AuthenticationTest, FUNC, PASSPORT, GoodLogin) {
+TEST_MS_NET(AuthenticationTest, FUNC, MAID, GoodLogin) {
   username_ += "02";
   int result = authentication_.GetUserInfo(username_, pin_);
   EXPECT_EQ(kUserDoesntExist, result) << "User already exists";
   result = authentication_.CreateUserSysPackets(username_, pin_);
   ASSERT_EQ(kSuccess, result) << "Unable to register user";
 
-  DataMap dm;
+  encrypt::DataMap dm;
   dm.set_file_hash("filehash");
   dm.add_chunk_name("chunk1");
   dm.add_chunk_name("chunk2");
@@ -123,8 +120,6 @@ TEST_MS_NET(AuthenticationTest, FUNC, PASSPORT, GoodLogin) {
   ASSERT_EQ(username_, ss_->Username()) << "Saved username_ doesn't correspond";
   ASSERT_EQ(pin_, ss_->Pin()) << "Saved pin_ doesn't correspond";
   ASSERT_EQ(password_, ss_->Password()) << "Saved password_ doesn't correspond";
-  while (authentication_.get_smidtimid_result() == kPendingResult)
-    boost::this_thread::sleep(boost::posix_time::milliseconds(10));
 
   result = authentication_.SaveSession(ser_dm);
   ASSERT_EQ(kSuccess, result);
@@ -142,18 +137,16 @@ TEST_MS_NET(AuthenticationTest, FUNC, PASSPORT, GoodLogin) {
             "DA recoverd from login different from DA stored in registration";
   ASSERT_EQ(username_, ss_->Username()) << "Saved username_ doesn't correspond";
   ASSERT_EQ(pin_, ss_->Pin()) << "Saved pin_ doesn't correspond";
-  while (authentication_.get_smidtimid_result() == kPendingResult)
-    boost::this_thread::sleep(boost::posix_time::milliseconds(10));
 }
 
-TEST_MS_NET(AuthenticationTest, FUNC, PASSPORT, LoginNoUser) {
+TEST_MS_NET(AuthenticationTest, FUNC, MAID, LoginNoUser) {
   username_ += "03";
   std::string ser_dm, ser_dm_login;
   int result = authentication_.GetUserInfo(username_, pin_);
   EXPECT_EQ(kUserDoesntExist, result) << "User already exists";
   result = authentication_.CreateUserSysPackets(username_, pin_);
   ASSERT_EQ(kSuccess, result) << "Unable to register user";
-  DataMap dm;
+  encrypt::DataMap dm;
   dm.set_file_hash("filehash");
   dm.add_chunk_name("chunk1");
   dm.add_chunk_name("chunk2");
@@ -172,20 +165,16 @@ TEST_MS_NET(AuthenticationTest, FUNC, PASSPORT, LoginNoUser) {
   ASSERT_EQ(kUserExists, result) << "User does not exist";
   result = authentication_.GetUserData("password_tonto", &ser_dm_login);
   ASSERT_EQ(kPasswordFailure, result);
-  while (authentication_.get_smidtimid_result() == kPendingResult)
-    boost::this_thread::sleep(boost::posix_time::milliseconds(10));
 }
 
-TEST_MS_NET(AuthenticationTest, FUNC, PASSPORT, RegisterUserOnce) {
+TEST_MS_NET(AuthenticationTest, FUNC, MAID, RegisterUserOnce) {
   username_ += "04";
   DataAtlas data_atlas;
   int result = authentication_.GetUserInfo(username_, pin_);
   EXPECT_EQ(kUserDoesntExist, result) << "User already exists";
   result = authentication_.CreateUserSysPackets(username_, pin_);
   ASSERT_EQ(kSuccess, result) << "Unable to register user";
-  std::string ser_da;
-  ss_->SerialisedKeyRing(&ser_da);
-  DataMap dm;
+  encrypt::DataMap dm;
   dm.set_file_hash("filehash");
   dm.add_chunk_name("chunk1");
   dm.add_chunk_name("chunk2");
@@ -200,23 +189,20 @@ TEST_MS_NET(AuthenticationTest, FUNC, PASSPORT, RegisterUserOnce) {
   std::string ser_dm = dm.SerializeAsString();
   result = authentication_.CreateTmidPacket(username_, pin_, password_, ser_dm);
   ASSERT_EQ(kSuccess, result) << "Unable to register user";
-  ASSERT_NE("", ser_da);
-  ASSERT_TRUE(data_atlas.ParseFromString(ser_da)) <<
-              "Data Atlas hasn't the correct format";
-  ASSERT_EQ(6, data_atlas.keys_size());
   ASSERT_EQ(username_, ss_->Username()) << "Saved username_ doesn't correspond";
   ASSERT_EQ(pin_, ss_->Pin()) << "Saved pin_ doesn't correspond";
+  boost::this_thread::sleep(boost::posix_time::milliseconds(100));
   ASSERT_EQ(password_, ss_->Password()) << "Saved password_ doesn't correspond";
 }
 
-TEST_MS_NET(AuthenticationTest, FUNC, PASSPORT, RegisterUserTwice) {
+TEST_MS_NET(AuthenticationTest, FUNC, MAID, RegisterUserTwice) {
   username_ += "05";
   int result = authentication_.GetUserInfo(username_, pin_);
   EXPECT_EQ(kUserDoesntExist, result) << "User already exists";
   result = authentication_.CreateUserSysPackets(username_, pin_);
   ASSERT_EQ(kSuccess, result) << "Unable to register user";
 
-  DataMap dm;
+  encrypt::DataMap dm;
   dm.set_file_hash("filehash");
   dm.add_chunk_name("chunk1");
   dm.add_chunk_name("chunk2");
@@ -236,20 +222,16 @@ TEST_MS_NET(AuthenticationTest, FUNC, PASSPORT, RegisterUserTwice) {
   ss_->ResetSession();
   result = authentication_.GetUserInfo(username_, pin_);
   ASSERT_EQ(kUserExists, result) << "The same user was registered twice";
-  // need to wait before exiting because in the background it is getting
-  // the TMID of the user
-  while (authentication_.get_smidtimid_result() == kPendingResult)
-    boost::this_thread::sleep(boost::posix_time::milliseconds(10));
 }
 
-TEST_MS_NET(AuthenticationTest, FUNC, PASSPORT, RepeatedSaveSessionBlocking) {
+TEST_MS_NET(AuthenticationTest, FUNC, MAID, RepeatedSaveSessionBlocking) {
   username_ += "06";
   int result = authentication_.GetUserInfo(username_, pin_);
   EXPECT_EQ(kUserDoesntExist, result) << "User already exists";
   result = authentication_.CreateUserSysPackets(username_, pin_);
   ASSERT_EQ(kSuccess, result) << "Unable to register user";
 
-  DataMap dm;
+  encrypt::DataMap dm;
   dm.set_file_hash("filehash");
   dm.add_chunk_name("chunk1");
   dm.add_chunk_name("chunk2");
@@ -264,17 +246,12 @@ TEST_MS_NET(AuthenticationTest, FUNC, PASSPORT, RepeatedSaveSessionBlocking) {
   std::string ser_dm = dm.SerializeAsString();
   result = authentication_.CreateTmidPacket(username_, pin_, password_, ser_dm);
   ASSERT_EQ(kSuccess, result) << "Unable to register user";
+  std::string original_tmidname;
+  ss_->GetKey(passport::TMID, &original_tmidname, NULL, NULL, NULL);
+  EXPECT_FALSE(original_tmidname.empty());
 
   // store current mid, smid and tmid details to check later whether they remain
   // on the network
-  crypto::Crypto co;
-  co.set_hash_algorithm(crypto::SHA_512);
-  std::string tmidsmidname = co.Hash(
-         co.Hash(ss_->Username(), "", crypto::STRING_STRING, false) +
-         co.Hash(ss_->Pin(), "", crypto::STRING_STRING, false) +
-         co.Hash(boost::lexical_cast<std::string>(ss_->SmidRid()), "",
-                 crypto::STRING_STRING, false),
-         "", crypto::STRING_STRING, false);
   dm.Clear();
   dm.set_file_hash("filehash1");
   dm.add_chunk_name("chunk11");
@@ -306,17 +283,23 @@ TEST_MS_NET(AuthenticationTest, FUNC, PASSPORT, RepeatedSaveSessionBlocking) {
   ser_dm = dm.SerializeAsString();
   result = authentication_.SaveSession(ser_dm);
   ASSERT_EQ(kSuccess, result) << "Can't save session 2";
-  ASSERT_TRUE(sm_->KeyUnique(tmidsmidname, false));
+  std::string tmidname, stmidname;
+  ss_->GetKey(passport::TMID, &tmidname, NULL, NULL, NULL);
+  ss_->GetKey(passport::STMID, &stmidname, NULL, NULL, NULL);
+
+  EXPECT_TRUE(sm_->KeyUnique(original_tmidname, false));
+  EXPECT_FALSE(sm_->KeyUnique(stmidname, false));
+  EXPECT_FALSE(sm_->KeyUnique(tmidname, false));
 }
 
-TEST_MS_NET(AuthenticationTest, FUNC, PASSPORT, RepeatedSaveSessionCallbacks) {
+TEST_MS_NET(AuthenticationTest, FUNC, MAID, RepeatedSaveSessionCallbacks) {
   username_ += "07";
   int result = authentication_.GetUserInfo(username_, pin_);
   EXPECT_EQ(kUserDoesntExist, result) << "User already exists";
   result = authentication_.CreateUserSysPackets(username_, pin_);
   ASSERT_EQ(kSuccess, result) << "Unable to register user";
 
-  DataMap dm;
+  encrypt::DataMap dm;
   dm.set_file_hash("filehash");
   dm.add_chunk_name("chunk1");
   dm.add_chunk_name("chunk2");
@@ -331,17 +314,12 @@ TEST_MS_NET(AuthenticationTest, FUNC, PASSPORT, RepeatedSaveSessionCallbacks) {
   std::string ser_dm = dm.SerializeAsString();
   result = authentication_.CreateTmidPacket(username_, pin_, password_, ser_dm);
   ASSERT_EQ(kSuccess, result) << "Unable to register user";
+  std::string original_tmidname;
+  ss_->GetKey(passport::TMID, &original_tmidname, NULL, NULL, NULL);
+  EXPECT_FALSE(original_tmidname.empty());
 
   // store current mid, smid and tmid details to check later whether they remain
   // on the network
-  crypto::Crypto co;
-  co.set_hash_algorithm(crypto::SHA_512);
-  std::string tmidsmidname = co.Hash(
-         co.Hash(ss_->Username(), "", crypto::STRING_STRING, false) +
-         co.Hash(ss_->Pin(), "", crypto::STRING_STRING, false) +
-         co.Hash(boost::lexical_cast<std::string>(ss_->SmidRid()), "",
-                 crypto::STRING_STRING, false),
-         "", crypto::STRING_STRING, false);
   dm.Clear();
   dm.set_file_hash("filehash1");
   dm.add_chunk_name("chunk11");
@@ -377,17 +355,17 @@ TEST_MS_NET(AuthenticationTest, FUNC, PASSPORT, RepeatedSaveSessionCallbacks) {
   authentication_.SaveSession(ser_dm, boost::bind(
       &CallbackObject::ReturnCodeCallback, &cb, _1));
   ASSERT_EQ(kSuccess, cb.WaitForReturnCodeResult()) << "Can't save session 2";
-  ASSERT_TRUE(sm_->KeyUnique(tmidsmidname, false));
+  EXPECT_TRUE(sm_->KeyUnique(original_tmidname, false));
 }
 
-TEST_MS_NET(AuthenticationTest, FUNC, PASSPORT, ChangeUsername) {
+TEST_MS_NET(AuthenticationTest, FUNC, MAID, ChangeUsername) {
   username_ += "08";
   int result = authentication_.GetUserInfo(username_, pin_);
   EXPECT_EQ(kUserDoesntExist, result) << "User already exists";
   result = authentication_.CreateUserSysPackets(username_, pin_);
   ASSERT_EQ(kSuccess, result) << "Unable to register user";
 
-  DataMap dm;
+  encrypt::DataMap dm;
   dm.set_file_hash("filehash");
   dm.add_chunk_name("chunk1");
   dm.add_chunk_name("chunk2");
@@ -406,30 +384,16 @@ TEST_MS_NET(AuthenticationTest, FUNC, PASSPORT, ChangeUsername) {
   // Save the session to create different TMIDs for MID and SMID
   result = authentication_.SaveSession(ser_dm);
   ASSERT_EQ(kSuccess, result) << "Can't save the session";
-
-  // store current mid, smid and tmid details to check later whether they remain
-  // on the network
-  crypto::Crypto co;
-  co.set_hash_algorithm(crypto::SHA_512);
-  std::string tmidmidname = co.Hash(
-         co.Hash(ss_->Username(), "", crypto::STRING_STRING, false) +
-         co.Hash(ss_->Pin(), "", crypto::STRING_STRING, false) +
-         co.Hash(boost::lexical_cast<std::string>(ss_->MidRid()), "",
-                 crypto::STRING_STRING, false),
-         "", crypto::STRING_STRING, false);
-
-  std::string tmidsmidname = co.Hash(
-         co.Hash(ss_->Username(), "", crypto::STRING_STRING, false) +
-         co.Hash(ss_->Pin(), "", crypto::STRING_STRING, false) +
-         co.Hash(boost::lexical_cast<std::string>(ss_->SmidRid()), "",
-                 crypto::STRING_STRING, false),
-         "", crypto::STRING_STRING, false);
+  std::string original_tmidname, original_stmidname;
+  ss_->GetKey(passport::TMID, &original_tmidname, NULL, NULL, NULL);
+  ss_->GetKey(passport::STMID, &original_stmidname, NULL, NULL, NULL);
+  EXPECT_FALSE(original_tmidname.empty());
+  EXPECT_FALSE(original_stmidname.empty());
 
   ASSERT_EQ(kSuccess, authentication_.ChangeUsername(ser_dm, "el iuserneim"))
             << "Unable to change iuserneim";
   ASSERT_EQ("el iuserneim", ss_->Username()) <<
             "iuserneim is still the old one";
-  ASSERT_NE(ss_->MidRid(), ss_->SmidRid());
 
   result = authentication_.GetUserInfo("el iuserneim", pin_);
 
@@ -437,27 +401,23 @@ TEST_MS_NET(AuthenticationTest, FUNC, PASSPORT, ChangeUsername) {
   std::string ser_dm_login;
   result = authentication_.GetUserData(password_, &ser_dm_login);
   ASSERT_EQ(kSuccess, result) << "Can't login with new iuserneim";
-  while (authentication_.get_smidtimid_result() == kPendingResult)
-    boost::this_thread::sleep(boost::posix_time::milliseconds(10));
 
   result = authentication_.GetUserInfo(username_, pin_);
   ASSERT_EQ(kUserDoesntExist, result);
-  while (authentication_.get_smidtimid_result() == kPendingResult)
-    boost::this_thread::sleep(boost::posix_time::milliseconds(10));
 
   // Check the TMIDs are gone
-  ASSERT_TRUE(sm_->KeyUnique(tmidmidname, false));
-  ASSERT_TRUE(sm_->KeyUnique(tmidsmidname, false));
+  ASSERT_TRUE(sm_->KeyUnique(original_tmidname, false));
+  ASSERT_TRUE(sm_->KeyUnique(original_stmidname, false));
 }
 
-TEST_MS_NET(AuthenticationTest, FUNC, PASSPORT, ChangePin) {
+TEST_MS_NET(AuthenticationTest, FUNC, MAID, ChangePin) {
   username_ += "09";
   int result = authentication_.GetUserInfo(username_, pin_);
   EXPECT_EQ(kUserDoesntExist, result) << "User already exists";
   result = authentication_.CreateUserSysPackets(username_, pin_);
   ASSERT_EQ(kSuccess, result) << "Unable to register user";
 
-  DataMap dm;
+  encrypt::DataMap dm;
   dm.set_file_hash("filehash");
   dm.add_chunk_name("chunk1");
   dm.add_chunk_name("chunk2");
@@ -474,98 +434,49 @@ TEST_MS_NET(AuthenticationTest, FUNC, PASSPORT, ChangePin) {
   ASSERT_EQ(kSuccess, result) << "Unable to register user";
 
   // Save the session to create different TMIDs for MID and SMID
-  std::string tmidcontent = ss_->TmidContent();
   result = authentication_.SaveSession(ser_dm);
   ASSERT_EQ(kSuccess, result) << "Can't save the session";
-
-  // store current mid, smid and tmid details to check later whether they remain
-  // on the network
-  crypto::Crypto co;
-  co.set_hash_algorithm(crypto::SHA_512);
-  std::string tmidmidname = co.Hash(
-         co.Hash(ss_->Username(), "", crypto::STRING_STRING, false) +
-         co.Hash(ss_->Pin(), "", crypto::STRING_STRING, false) +
-         co.Hash(boost::lexical_cast<std::string>(ss_->MidRid()), "",
-                 crypto::STRING_STRING, false),
-         "", crypto::STRING_STRING, false);
-
-  std::string tmidsmidname = co.Hash(
-         co.Hash(ss_->Username(), "", crypto::STRING_STRING, false) +
-         co.Hash(ss_->Pin(), "", crypto::STRING_STRING, false) +
-         co.Hash(boost::lexical_cast<std::string>(ss_->SmidRid()), "",
-                 crypto::STRING_STRING, false),
-         "", crypto::STRING_STRING, false);
-  std::string mid_tmid = ss_->TmidContent();
-  std::string smid_tmid = ss_->SmidTmidContent();
+  std::string original_tmidname, original_stmidname;
+  ss_->GetKey(passport::TMID, &original_tmidname, NULL, NULL, NULL);
+  ss_->GetKey(passport::STMID, &original_stmidname, NULL, NULL, NULL);
+  EXPECT_FALSE(original_tmidname.empty());
+  EXPECT_FALSE(original_stmidname.empty());
 
   ASSERT_EQ(kSuccess, authentication_.ChangePin(ser_dm, "7894"));
   ASSERT_EQ("7894", ss_->Pin()) << "pin_ is still the old one";
-  ASSERT_NE(ss_->MidRid(), ss_->SmidRid());
 
   result = authentication_.GetUserInfo(username_, "7894");
   std::string ser_dm_login;
   result = authentication_.GetUserData(password_, &ser_dm_login);
   ASSERT_EQ(kSuccess, result) << "Can't login with new pin_";
-  while (authentication_.get_smidtimid_result() == kPendingResult)
-    boost::this_thread::sleep(boost::posix_time::milliseconds(10));
   result = authentication_.GetUserInfo(username_, pin_);
   ASSERT_EQ(kUserDoesntExist, result);
-  while (authentication_.get_smidtimid_result() == kPendingResult)
-    boost::this_thread::sleep(boost::posix_time::milliseconds(10));
 }
 
-TEST_MS_NET(AuthenticationTest, FUNC, PASSPORT, CreatePublicName) {
+TEST_MS_NET(AuthenticationTest, FUNC, MAID, CreatePublicName) {
   username_ += "10";
-  crypto::Crypto crypto_obj;
-  crypto_obj.set_symm_algorithm(crypto::AES_256);
-  crypto_obj.set_hash_algorithm(crypto::SHA_512);
   ASSERT_EQ(kSuccess, authentication_.CreatePublicName("el public iuserneim"))
             << "Can't create public username_";
+  ASSERT_EQ(kPublicUsernameAlreadySet,
+            authentication_.CreatePublicName("el public iuserneim"))
+            << "Created public username_ twice";
+  // Reset PublicUsername to allow attempt to save same public name to network.
+  ASSERT_TRUE(ss_->SetPublicUsername(""));
   ASSERT_EQ(kPublicUsernameExists,
             authentication_.CreatePublicName("el public iuserneim"))
             << "Created public username_ twice";
+  authentication_.tmid_op_status_ = Authentication::kFailed;
+  authentication_.stmid_op_status_ = Authentication::kFailed;
 }
 
-TEST_MS_NET(AuthenticationTest, FUNC, PASSPORT, InvalidUsernamePassword) {
+TEST_MS_NET(AuthenticationTest, FUNC, MAID, CreateMSIDPacket) {
   username_ += "11";
-  cached_keys::MakeKeys(2, &test_keys_);
-  crypto::RsaKeyPair keypair1 = test_keys_.at(0);
-  crypto::RsaKeyPair keypair2 = test_keys_.at(1);
-  boost::shared_ptr<Packet> midPacket(PacketFactory::Factory(MID));
-  PacketParams params;
-  params["username"] = username_;
-  params["pin"] = pin_;
-  std::string mid_name = midPacket->PacketName(params);
-  ss_->AddKey(ANMID, "ID", keypair2.private_key(), keypair2.public_key(), "");
-  CallbackObject cb;
-  sm_->StorePacket(mid_name, "rubbish data with same mid name", MID,
-      PRIVATE, "", boost::bind(&CallbackObject::ReturnCodeCallback, &cb, _1));
-  ASSERT_EQ(kSendPacketFailure, cb.WaitForReturnCodeResult());
-  EXPECT_EQ(kUserDoesntExist, authentication_.GetUserInfo(username_, pin_));
-  while (authentication_.get_smidtimid_result() == kPendingResult)
-    boost::this_thread::sleep(boost::posix_time::milliseconds(10));
-}
-
-TEST_MS_NET(AuthenticationTest, FUNC, PASSPORT, CreateMSIDPacket) {
-  username_ += "12";
-  crypto::Crypto co;
-  co.set_symm_algorithm(crypto::AES_256);
-  co.set_hash_algorithm(crypto::SHA_512);
   std::string msid_name, pub_key, priv_key;
-  CallbackObject cb;
-  authentication_.CreateMSIDPacket(boost::bind(
-      &CallbackObject::StringCallback, &cb, _1));
-  std::string cb_result = cb.WaitForStringResult();
-  CreateMSIDResult msid_result;
-  ASSERT_TRUE(msid_result.ParseFromString(cb_result));
-  ASSERT_EQ(kAck, static_cast<int>(msid_result.result()));
-  msid_name = msid_result.name();
-  priv_key = msid_result.private_key();
-  pub_key = msid_result.public_key();
-  std::string empty_str;
-  ASSERT_NE(empty_str, msid_name);
-  ASSERT_NE(empty_str, priv_key);
-  ASSERT_NE(empty_str, pub_key);
+  ASSERT_EQ(kSuccess,
+            authentication_.CreateMsidPacket(&msid_name, &pub_key, &priv_key));
+  ASSERT_FALSE(msid_name.empty());
+  ASSERT_FALSE(priv_key.empty());
+  ASSERT_FALSE(pub_key.empty());
 
   // Check the packet exits
   std::vector<std::string> packet_content;
@@ -576,20 +487,20 @@ TEST_MS_NET(AuthenticationTest, FUNC, PASSPORT, CreateMSIDPacket) {
 
   // Check packet is correct and signed
   ASSERT_EQ(pub_key, gp.data());
-  ASSERT_TRUE(co.AsymCheckSig(gp.data(), gp.signature(), pub_key,
-    crypto::STRING_STRING));
-  ASSERT_EQ(co.Hash(pub_key + gp.signature(), "",
-            crypto::STRING_STRING, false), msid_name);
+  ASSERT_TRUE(RSACheckSignedData(gp.data(), gp.signature(), pub_key));
+  ASSERT_EQ(SHA512String(pub_key + gp.signature()), msid_name);
+  authentication_.tmid_op_status_ = Authentication::kFailed;
+  authentication_.stmid_op_status_ = Authentication::kFailed;
 }
 
-TEST_MS_NET(AuthenticationTest, FUNC, PASSPORT, RegisterLeaveRegister) {
-  username_ += "13";
+TEST_MS_NET(AuthenticationTest, FUNC, MAID, RegisterLeaveRegister) {
+  username_ += "12";
   int result = authentication_.GetUserInfo(username_, pin_);
   EXPECT_EQ(kUserDoesntExist, result) << "User already exists";
   result = authentication_.CreateUserSysPackets(username_, pin_);
   ASSERT_EQ(kSuccess, result) << "Unable to register user";
 
-  DataMap dm;
+  encrypt::DataMap dm;
   dm.set_file_hash("filehash");
   dm.add_chunk_name("chunk1");
   dm.add_chunk_name("chunk2");
@@ -606,9 +517,7 @@ TEST_MS_NET(AuthenticationTest, FUNC, PASSPORT, RegisterLeaveRegister) {
   ASSERT_EQ(kSuccess, result) << "Unable to register user";
 
   //  Remove user.
-  std::list<KeyAtlasRow> keys;
-  ss_->GetKeys(&keys);
-  result = authentication_.RemoveMe(keys);
+  result = authentication_.RemoveMe();
   ASSERT_EQ(kSuccess, result);
   try {
     fs::remove_all(file_system::MaidsafeDir(ss_->SessionName()));
@@ -631,7 +540,5 @@ TEST_MS_NET(AuthenticationTest, FUNC, PASSPORT, RegisterLeaveRegister) {
 }
 
 }  // namespace test
-
-}  // namespace passport
 
 }  // namespace maidsafe

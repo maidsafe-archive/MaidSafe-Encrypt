@@ -12,7 +12,7 @@
  *      Author: Team
  */
 
-#include "qt/widgets/contacts.h"
+#include "maidsafe/lifestuff/widgets/contacts.h"
 
 // boost
 #include <boost/progress.hpp>
@@ -30,9 +30,9 @@
 #include <string>
 
 // local
-#include "qt/client/add_contact_thread.h"
-#include "qt/client/client_controller.h"
-#include "qt/widgets/user_panels.h"
+#include "maidsafe/lifestuff/client/add_contact_thread.h"
+#include "maidsafe/lifestuff/client/client_controller.h"
+#include "maidsafe/lifestuff/widgets/user_panels.h"
 
 Contacts::Contacts(QWidget* parent)
     : Panel(parent), init_(false) {
@@ -420,13 +420,13 @@ void Contacts::onFileSendClicked() {
 
 #ifdef __WIN32__
   root = QString::fromStdString("%1:\\" +
-         maidsafe::TidyPath(kRootSubdir[0][0])).
+         maidsafe::TidyPath(maidsafe::kRootSubdir[0][0])).
              arg(ClientController::instance()->WinDrive());
 
 #else
   root = QString::fromStdString(file_system::MaidsafeFuseDir(
              ClientController::instance()->SessionName()).string() +
-             kRootSubdir[0][0]);
+             maidsafe::kRootSubdir[0][0]);
 
 #endif
 
@@ -667,7 +667,7 @@ void Contacts::onDirectoryEntered(const QString& dir) {
 
   if (!dir.startsWith(root, Qt::CaseInsensitive)) {
     root = QString::fromStdString("%1:\\" +
-           maidsafe::TidyPath(kRootSubdir[0][0])).
+           maidsafe::TidyPath(maidsafe::kRootSubdir[0][0])).
                arg(ClientController::instance()->WinDrive());
     qfd->setDirectory(root);
   }
@@ -678,7 +678,7 @@ void Contacts::onDirectoryEntered(const QString& dir) {
   if (!dir.startsWith(root, Qt::CaseInsensitive)) {
     root = QString::fromStdString(file_system::MaidsafeFuseDir(
                ClientController::instance()->SessionName()).string() +
-               kRootSubdir[0][0]);
+               maidsafe::kRootSubdir[0][0]);
     qfd->setDirectory(root);
   }
 #endif

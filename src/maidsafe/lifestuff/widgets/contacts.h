@@ -22,10 +22,10 @@
 #include <QString>
 
 // local
-#include "qt/widgets/panel.h"
-#include "qt/client/contact.h"
-#include "qt/widgets/personal_messages.h"
-#include "qt/widgets/user_send_mail.h"
+#include "maidsafe/lifestuff/widgets/panel.h"
+#include "maidsafe/lifestuff/client/contact.h"
+#include "maidsafe/lifestuff/widgets/personal_messages.h"
+#include "maidsafe/lifestuff/widgets/user_send_mail.h"
 
 // generated
 #include "ui_user_contacts_panel.h"

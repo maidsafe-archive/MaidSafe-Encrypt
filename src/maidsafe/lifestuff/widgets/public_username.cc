@@ -12,16 +12,16 @@
  *      Author: Team
  */
 
-#include "qt/widgets/public_username.h"
+#include "maidsafe/lifestuff/widgets/public_username.h"
 
 // qt
 #include <QMessageBox>
 
 // core
-#include "qt/client/client_controller.h"
+#include "maidsafe/lifestuff/client/client_controller.h"
 
 // local
-#include "qt/client/create_public_username_thread.h"
+#include "maidsafe/lifestuff/client/create_public_username_thread.h"
 
 PublicUsername::PublicUsername(QWidget* parent)
     : Panel(parent)

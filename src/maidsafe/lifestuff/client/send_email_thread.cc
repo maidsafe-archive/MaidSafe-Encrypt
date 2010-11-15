@@ -12,13 +12,13 @@
  *      Author: Stephen
  */
 
-#include "qt/client/send_email_thread.h"
+#include "maidsafe/lifestuff/client/send_email_thread.h"
 
 // qt
 #include <QDebug>
 
 // core
-#include "qt/client/client_controller.h"
+#include "maidsafe/lifestuff/client/client_controller.h"
 
 
 SendEmailThread::SendEmailThread(const QString& subject,

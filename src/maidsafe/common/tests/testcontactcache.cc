@@ -20,15 +20,17 @@
 
 #include <gtest/gtest.h>
 #include <maidsafe/base/crypto.h>
-#include "maidsafe/contactcache.h"
-#include "maidsafe/chunkstore.h"
-#include "tests/maidsafe/mockkadops.h"
+#include "maidsafe/common/contactcache.h"
+#include "maidsafe/common/chunkstore.h"
+#include "maidsafe/sharedtest/mockkadops.h"
 
 namespace test_ctc {
 static const boost::uint8_t K(4);
 }  // namespace test_cc
 
 namespace maidsafe {
+
+namespace test {
 
 class ContactCacheTest : public testing::Test {
  public:
@@ -143,5 +145,7 @@ TEST_F(ContactCacheTest, BEH_MAID_CTC_Update) {
 
   ASSERT_EQ(last_update, contact_cache_.last_update_);
 }
+
+}  // namespace test
 
 }  // namespace maidsafe

@@ -77,8 +77,8 @@ void DeleteTaskCallback(
     std::vector< std::pair<maidsafe::TaskId, maidsafe::ReturnCode> > *cbs,
     maidsafe::StoreManagerTasksHandler *tasks_handler,
     maidsafe::TaskId *deletable_task_id) {
-    TaskCompletionCallback(task_id, reason, cbs);
-    tasks_handler->DeleteTask(*deletable_task_id, reason);
+  TaskCompletionCallback(task_id, reason, cbs);
+  tasks_handler->DeleteTask(*deletable_task_id, reason);
 }
 
 }  // namespace test_msm_tasks_handler

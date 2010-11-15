@@ -21,7 +21,7 @@
 #include <QString>
 
 // local
-#include "qt/client/client_controller.h"
+#include "maidsafe/lifestuff/client/client_controller.h"
 
 #include "ui_security_settings.h"
 

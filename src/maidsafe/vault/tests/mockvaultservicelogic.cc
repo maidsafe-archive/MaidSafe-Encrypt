@@ -23,7 +23,7 @@
 * ============================================================================
 */
 
-#include "tests/maidsafe/mockvaultservicelogic.h"
+#include "maidsafe/vault/tests/mockvaultservicelogic.h"
 
 #include <boost/lexical_cast.hpp>
 
@@ -48,8 +48,8 @@ void KGroup::MakeAmendAccountRequests(
   for (size_t i = 0; i < members_.size(); ++i) {
     signed_size->set_data_size(data_size);
     signed_size->set_signature(
-        co_.AsymSign(boost::lexical_cast<std::string>(data_size), "",
-                     members_.at(i).pmid_private, crypto::STRING_STRING));
+        maidsafe::RSASign(boost::lexical_cast<std::string>(data_size),
+                          members_.at(i).pmid_private));
     signed_size->set_pmid(members_.at(i).pmid);
     signed_size->set_public_key(members_.at(i).pmid_public);
     signed_size->set_public_key_signature(members_.at(i).pmid_public_signature);
@@ -66,8 +66,8 @@ void CopyResult(const int &response,
   cv->notify_one();
 }
 
-void RunVaultCallback(const maidsafe_vault::ReturnCode &result,
-                      const VoidFuncOneInt &callback) {
+void RunVaultCallback(const maidsafe::vault::VaultReturnCode &result,
+                      const maidsafe::vault::VoidFuncOneInt &callback) {
   callback(result);
 }
 

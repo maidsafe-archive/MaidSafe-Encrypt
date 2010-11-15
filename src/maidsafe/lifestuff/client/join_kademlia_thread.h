@@ -16,7 +16,7 @@
 #ifndef QT_CLIENT_JOIN_KADEMLIA_THREAD_H_
 #define QT_CLIENT_JOIN_KADEMLIA_THREAD_H_
 
-#include "qt/client/worker_thread.h"
+#include "maidsafe/lifestuff/client/worker_thread.h"
 
 // Worker thread for joining the kademlia network
 /*!

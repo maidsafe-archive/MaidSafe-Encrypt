@@ -13,38 +13,32 @@ service MaidsafeService {
   rpc SwapChunk (SwapChunkRequest) returns (SwapChunkResponse);
   rpc CacheChunk (CacheChunkRequest) returns (CacheChunkResponse);
   // chunk info services
-  rpc GetChunkReferences (GetChunkReferencesRequest) returns
-      (GetChunkReferencesResponse);
+  rpc GetChunkReferences (GetChunkReferencesRequest) returns (GetChunkReferencesResponse);
   rpc AddToWatchList (AddToWatchListRequest) returns (AddToWatchListResponse);
-  rpc RemoveFromWatchList (RemoveFromWatchListRequest) returns
-      (RemoveFromWatchListResponse);
-  rpc AddToReferenceList (AddToReferenceListRequest) returns
-      (AddToReferenceListResponse);
+  rpc RemoveFromWatchList (RemoveFromWatchListRequest) returns (RemoveFromWatchListResponse);
+  rpc AddToReferenceList (AddToReferenceListRequest) returns (AddToReferenceListResponse);
   // account services
   rpc AmendAccount (AmendAccountRequest) returns (AmendAccountResponse);
-  rpc ExpectAmendment (ExpectAmendmentRequest) returns
-      (ExpectAmendmentResponse);
+  rpc ExpectAmendment (ExpectAmendmentRequest) returns (ExpectAmendmentResponse);
   rpc AccountStatus (AccountStatusRequest) returns (AccountStatusResponse);
   // synchronisation services
   rpc GetSyncData (GetSyncDataRequest) returns (GetSyncDataResponse);
   rpc GetAccount (GetAccountRequest) returns (GetAccountResponse);
   rpc GetChunkInfo (GetChunkInfoRequest) returns (GetChunkInfoResponse);
-  rpc GetBufferPacket (GetBufferPacketRequest) returns
-      (GetBufferPacketResponse);
+  rpc GetBufferPacket (GetBufferPacketRequest) returns (GetBufferPacketResponse);
   // misc vault services
   rpc VaultStatus (VaultStatusRequest) returns (VaultStatusResponse);
 
   // BP services
-  rpc CreateBP( CreateBPRequest ) returns ( CreateBPResponse );
-  rpc ModifyBPInfo( ModifyBPInfoRequest ) returns ( ModifyBPInfoResponse );
-  rpc GetBPMessages( GetBPMessagesRequest ) returns ( GetBPMessagesResponse );
-  rpc AddBPMessage( AddBPMessageRequest ) returns ( AddBPMessageResponse );
-  rpc GetBPPresence( GetBPPresenceRequest ) returns ( GetBPPresenceResponse );
-  rpc AddBPPresence( AddBPPresenceRequest ) returns ( AddBPPresenceResponse );
+  rpc CreateBP(CreateBPRequest) returns (CreateBPResponse);
+  rpc ModifyBPInfo(ModifyBPInfoRequest) returns (ModifyBPInfoResponse);
+  rpc GetBPMessages(GetBPMessagesRequest) returns (GetBPMessagesResponse);
+  rpc AddBPMessage(AddBPMessageRequest) returns (AddBPMessageResponse);
+  rpc GetBPPresence(GetBPPresenceRequest) returns (GetBPPresenceResponse);
+  rpc AddBPPresence(AddBPPresenceRequest) returns (AddBPPresenceResponse);
 }
 
 service VaultRegistration {
-  rpc SetLocalVaultOwned(SetLocalVaultOwnedRequest) returns
-      (SetLocalVaultOwnedResponse);
+  rpc SetLocalVaultOwned(SetLocalVaultOwnedRequest) returns (SetLocalVaultOwnedResponse);
   rpc LocalVaultOwned(LocalVaultOwnedRequest) returns (LocalVaultOwnedResponse);
 }

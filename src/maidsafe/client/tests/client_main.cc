@@ -31,11 +31,11 @@
 #include <vector>
 #include <fstream>  // NOLINT (Fraser) - for protobuf config file
 
-#include "maidsafe/chunkstore.h"
+#include "maidsafe/common/commonutils.h"
+#include "maidsafe/common/chunkstore.h"
 #include "maidsafe/client/maidstoremanager.h"
 #include "maidsafe/client/sessionsingleton.h"
-#include "maidsafe/client/systempackets.h"
-#include "protobuf/maidsafe_messages.pb.h"
+#include "maidsafe/common/maidsafe_messages.pb.h"
 
 namespace fs = boost::filesystem;
 
@@ -133,54 +133,33 @@ void PrintRpcTimings(const rpcprotocol::RpcStatsMap &rpc_timings) {
 
 namespace maidsafe {
 
+namespace test {
+
 class RunPDClient {
  public:
-  RunPDClient(const fs::path &test_dir,
-              const fs::path &kad_config_path)
+  RunPDClient(const fs::path &test_dir, const fs::path &kad_config_path)
       : test_dir_(test_dir),
         kad_config_path_(kad_config_path),
         kad_config_(),
-        crypto_(),
         mutex_(),
         single_function_timeout_(60),
         client_()  {
     if (kad_config_path_.empty())
       kad_config_path_ = test_dir / ".kadconfig";
     fs::create_directories(test_dir_);
-    crypto_.set_hash_algorithm(crypto::SHA_512);
-    crypto_.set_symm_algorithm(crypto::AES_256);
     client_.reset(new testpdclient::ClientData(test_dir_.string()));
     ReadChunkList();
 
-    std::string maid_priv_key, maid_pub_key, maid_pub_key_sig, maid_name;
-    std::string pmid_priv_key, pmid_pub_key, pmid_pub_key_sig, pmid_name;
-    client_->returning = ReadClientData(&maid_priv_key, &maid_pub_key,
-                                        &pmid_priv_key, &pmid_pub_key);
-    if (!client_->returning) {
+    std::string serialised_keyring;
+    client_->returning = ReadClientData(&serialised_keyring);
+    if (client_->returning) {
+      SessionSingleton::getInstance()->ParseKeyring(serialised_keyring);
+    } else {
       printf("Generating keys...\n");
-      crypto::RsaKeyPair maid_keys, pmid_keys;
-      maid_keys.GenerateKeys(maidsafe::kRsaKeySize);
-      maid_priv_key = maid_keys.private_key();
-      maid_pub_key = maid_keys.public_key();
-      pmid_keys.GenerateKeys(maidsafe::kRsaKeySize);
-      pmid_priv_key = pmid_keys.private_key();
-      pmid_pub_key = pmid_keys.public_key();
-      WriteClientData(maid_priv_key, maid_pub_key, pmid_priv_key, pmid_pub_key);
+      SessionSingleton::getInstance()->CreateTestPackets("");
+      serialised_keyring = SessionSingleton::getInstance()->SerialiseKeyring();
+      WriteClientData(serialised_keyring);
     }
-
-    maid_pub_key_sig = crypto_.AsymSign(maid_pub_key, "", maid_priv_key,
-                                        crypto::STRING_STRING);
-    maid_name = crypto_.Hash(maid_pub_key + maid_pub_key_sig, "",
-                             crypto::STRING_STRING, false);
-    pmid_pub_key_sig = crypto_.AsymSign(pmid_pub_key, "", maid_priv_key,
-                                        crypto::STRING_STRING);
-    pmid_name = crypto_.Hash(pmid_pub_key + pmid_pub_key_sig, "",
-                             crypto::STRING_STRING, false);
-
-    SessionSingleton::getInstance()->AddKey(maidsafe::MAID, maid_name,
-        maid_priv_key, maid_pub_key, maid_pub_key_sig);
-    SessionSingleton::getInstance()->AddKey(maidsafe::PMID, pmid_name,
-        pmid_priv_key, pmid_pub_key, pmid_pub_key_sig);
     SessionSingleton::getInstance()->SetConnectionStatus(0);
   }
 
@@ -189,13 +168,13 @@ class RunPDClient {
   bool SetUp() {
     printf("Starting client...\n");
     boost::posix_time::ptime stop;
-    client_->chunkstore = boost::shared_ptr<maidsafe::ChunkStore> (
-        new maidsafe::ChunkStore(client_->chunkstore_dir, 0, 0));
+    client_->chunkstore = boost::shared_ptr<ChunkStore> (
+        new ChunkStore(client_->chunkstore_dir, 0, 0));
     if (!client_->chunkstore->Init()) {
       printf("Failed initialising chunkstore.\n");
       return false;
     }
-    client_->msm.reset(new maidsafe::MaidsafeStoreManager(
+    client_->msm.reset(new MaidsafeStoreManager(
         client_->chunkstore, testpdclient::K));
 
     testpdclient::PrepareCallbackResults();
@@ -256,8 +235,7 @@ class RunPDClient {
     // generate chunk content and name
     boost::uint64_t chunk_size = 1024 << rand() % 10;  // NOLINT Fraser
     std::string chunk_content = base::RandomString(chunk_size);
-    std::string chunk_name = crypto_.Hash(chunk_content, "",
-                                          crypto::STRING_STRING, false);
+    std::string chunk_name = SHA512String(chunk_content);
     fs::path chunk_path(test_dir_);
     chunk_path /= base::EncodeToHex(chunk_name);
     std::ofstream ofs;
@@ -298,7 +276,7 @@ class RunPDClient {
     if (client_->chunkstore->
             AddChunkToOutgoing(chunk_name, chunk_path) == kSuccess &&
         client_->msm->
-            StoreChunk(chunk_name, maidsafe::PRIVATE, "") == kSuccess) {
+            StoreChunk(chunk_name, PRIVATE, "") == kSuccess) {
       printf("Started storing chunk '%s' (%s)....\n", name.c_str(),
              HexSubstr(chunk_name).c_str());
     } else {
@@ -339,7 +317,7 @@ class RunPDClient {
              HexSubstr(chunk_name).c_str());
       return;
     }
-    if (crypto_.Hash(data, "", crypto::STRING_STRING, false) == chunk_name) {
+    if (SHA512String(data) == chunk_name) {
       printf("Successfully verified chunk '%s'.\n", name.c_str());
     } else {
       printf("Could not verify chunk '%s'.\n", name.c_str());
@@ -398,42 +376,23 @@ class RunPDClient {
     ofs.close();
   }
 
-  bool ReadClientData(std::string *maid_priv, std::string *maid_pub,
-                      std::string *pmid_priv, std::string *pmid_pub) {
+  bool ReadClientData(std::string *serialised_keyring) {
     std::string data(FileToString(test_dir_ / "client.cfg"));
-    boost::tokenizer<> tok(data);
-    std::string fields[4];
-    int idx(0);
-    for (boost::tokenizer<>::iterator it = tok.begin(); it != tok.end();
-          ++it) {
-      if (idx < 4) {
-        fields[idx] = base::DecodeFromHex(*it);
-        ++idx;
-      }
-    }
-    if (idx >= 4) {
-      *maid_priv = fields[0];
-      *maid_pub = fields[1];
-      *pmid_priv = fields[2];
-      *pmid_pub = fields[3];
+    if (!data.empty()) {
+      *serialised_keyring = data;
       return true;
     } else {
+      serialised_keyring->clear();
       return false;
     }
   }
 
-  void WriteClientData(const std::string &maid_priv,
-                       const std::string &maid_pub,
-                       const std::string &pmid_priv,
-                       const std::string &pmid_pub) {
+  void WriteClientData(const std::string &serialised_keyring) {
     fs::path cfg(test_dir_);
     cfg /= "client.cfg";
     std::ofstream ofs;
-    ofs.open(cfg.string().c_str());
-    ofs << base::EncodeToHex(maid_priv) << '\n'
-        << base::EncodeToHex(maid_pub) << '\n'
-        << base::EncodeToHex(pmid_priv) << '\n'
-        << base::EncodeToHex(pmid_pub) << '\n';
+    ofs.open(cfg.string().c_str(), std::ofstream::binary);
+    ofs.write(serialised_keyring.c_str(), serialised_keyring.size());
     ofs.close();
   }
 
@@ -454,14 +413,15 @@ class RunPDClient {
   RunPDClient &operator=(const RunPDClient&);
   fs::path test_dir_, kad_config_path_;
   base::KadConfig kad_config_;
-  crypto::Crypto crypto_;
   boost::mutex mutex_;
   boost::posix_time::seconds single_function_timeout_;
   boost::shared_ptr<testpdclient::ClientData> client_;
   std::map<std::string, std::string> chunks_;
 };
 
-}  // namespace maidsafe_vault
+}  // namespace test
+
+}  // namespace maidsafe
 
 int main(int argc, char* argv[]) {
   fs::path root_dir("TestClient");
@@ -497,7 +457,7 @@ int main(int argc, char* argv[]) {
     }
     kad_config_path = file;
   }
-  maidsafe::RunPDClient client(root_dir, kad_config_path);
+  maidsafe::test::RunPDClient client(root_dir, kad_config_path);
   if (client.SetUp()) {
     bool stop(false);
     printf("\n");

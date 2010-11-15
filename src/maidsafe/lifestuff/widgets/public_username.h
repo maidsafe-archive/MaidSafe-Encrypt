@@ -16,7 +16,7 @@
 #define QT_WIDGETS_PUBLIC_USERNAME_H_
 
 // local
-#include "qt/widgets/panel.h"
+#include "maidsafe/lifestuff/widgets/panel.h"
 
 // generated
 #include "ui_user_public_username_panel.h"

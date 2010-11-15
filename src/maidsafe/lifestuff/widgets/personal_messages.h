@@ -20,8 +20,8 @@
 #include <QStringList>
 
 // local
-#include "qt/client/client_controller.h"
-#include "qt/widgets/smily.h"
+#include "maidsafe/lifestuff/client/client_controller.h"
+#include "maidsafe/lifestuff/widgets/smily.h"
 
 #include "ui_user_personal_message.h"
 

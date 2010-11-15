@@ -12,7 +12,7 @@
  *      Author: Stephen Alexander
  */
 
-#include "qt/widgets/file_browser.h"
+#include "maidsafe/lifestuff/widgets/file_browser.h"
 
 #include <QDebug>
 #include <QDesktopServices>
@@ -34,14 +34,14 @@
 #include <shellapi.h>
 #endif
 
-#include "fs/filesystem.h"
-#include "qt/client/client_controller.h"
-#include "qt/client/make_directory_thread.h"
-#include "qt/client/read_file_thread.h"
-#include "qt/client/remove_dir_thread.h"
-#include "qt/client/rename_file_thread.h"
-#include "qt/client/save_file_thread.h"
-#include "qt/client/user_space_filesystem.h"
+#include "maidsafe/common/filesystem.h"
+#include "maidsafe/lifestuff/client/client_controller.h"
+#include "maidsafe/lifestuff/client/make_directory_thread.h"
+#include "maidsafe/lifestuff/client/read_file_thread.h"
+#include "maidsafe/lifestuff/client/remove_dir_thread.h"
+#include "maidsafe/lifestuff/client/rename_file_thread.h"
+#include "maidsafe/lifestuff/client/save_file_thread.h"
+#include "maidsafe/lifestuff/client/user_space_filesystem.h"
 
 namespace fs = boost::filesystem;
 
@@ -614,7 +614,7 @@ int FileBrowser::drawDetailView() {
   ui_.locationEdit->setText(currentDir_);
 
   int rowCount = 0;
-  std::map<std::string, ClientController::ItemType> children;
+  std::map<fs::path, ClientController::ItemType> children;
 
   ClientController::instance()->readdir(currentDir_, &children);
 
@@ -624,7 +624,7 @@ int FileBrowser::drawDetailView() {
   ui_.driveTreeWidget->setHeaderLabels(columns);
 
   while (!children.empty()) {
-    std::string s = children.begin()->first;
+    fs::path s = children.begin()->first;
     qDebug() << "children not empty";
     ClientController::ItemType ityp = children.begin()->second;
     fs::path path(currentDir_.toStdString());
@@ -643,7 +643,7 @@ int FileBrowser::drawDetailView() {
     if (ityp == ClientController::DIRECTORY || ityp == ClientController::EMPTY_DIRECTORY) {
       // Folder
       QString qtPath = getFullFilePath(rootPath_ + currentDir_
-                                + QString::fromStdString(s));
+                       + QString::fromStdString(s.string()));
       try {
         if (!fs::exists(qtPath.toStdString())) {
           fs::create_directory(qtPath.toStdString());
@@ -655,7 +655,7 @@ int FileBrowser::drawDetailView() {
         qDebug() << "FileBrowser::drawDetailView - Create Directory Failed";
       }
       QIcon theIcon = icon->icon(QFileIconProvider::Folder);
-      QString item = QString::fromStdString(s);
+      QString item = QString::fromStdString(s.string());
       QTreeWidgetItem *newItem = new QTreeWidgetItem(ui_.driveTreeWidget);
       newItem->setIcon(0, theIcon);
       newItem->setText(0, item);
@@ -668,11 +668,11 @@ int FileBrowser::drawDetailView() {
       ui_.driveTreeWidget->insertTopLevelItem(rowCount, newItem);
     } else {
       std::string fullFilePath = rootPath_.toStdString() +
-                                currentDir_.toStdString() + s;
+                                 currentDir_.toStdString() + s.string();
       QIcon theIcon = getAssociatedIconFromPath(
                       QString::fromStdString(fullFilePath));
 
-      QString item = QString::fromStdString(s);
+      QString item = QString::fromStdString(s.string());
       QTreeWidgetItem *newItem = new QTreeWidgetItem(ui_.driveTreeWidget);
       newItem->setIcon(0, theIcon);
       newItem->setText(0, item);
@@ -685,7 +685,8 @@ int FileBrowser::drawDetailView() {
       }
       catch(const std::exception &e) {
 #ifdef DEBUG
-        printf("FileBrowser::drawDetailView - Can't analyse path.\n");
+        printf("FileBrowser::drawDetailView - Can't analyse path - %s\n",
+               e.what());
 #endif
         continue;
       }
@@ -713,14 +714,14 @@ int FileBrowser::drawIconView() {
 
   int rowCount = 0;
 //  std::string relPathStr = currentDir_.toStdString();
-  std::map<std::string, ClientController::ItemType> children;
+  std::map<fs::path, ClientController::ItemType> children;
 
   ClientController::instance()->readdir(currentDir_, &children);
 
 //  qDebug() << "drawIconView: " << QString::fromStdString(relPathStr);
 
   while (!children.empty()) {
-    std::string s = children.begin()->first;
+    fs::path s = children.begin()->first;
     qDebug() << "children not empty";
     ClientController::ItemType ityp = children.begin()->second;
     std::string ser_mdm;
@@ -740,7 +741,7 @@ int FileBrowser::drawIconView() {
     if (ityp == ClientController::DIRECTORY || ityp == ClientController::EMPTY_DIRECTORY) {
       // Folder
       QString qtPath = getFullFilePath(rootPath_ + currentDir_
-                                      + QString::fromStdString(s));
+                       + QString::fromStdString(s.string()));
       if (!fs::exists(qtPath.toStdString())) {
         try {
           fs::create_directory(qtPath.toStdString());
@@ -752,7 +753,7 @@ int FileBrowser::drawIconView() {
         }
       }
       QIcon theIcon = icon->icon(QFileIconProvider::Folder);
-      QString item = QString::fromStdString(s);
+      QString item = QString::fromStdString(s.string());
       QListWidgetItem *newItem = new QListWidgetItem;
       newItem->setIcon(theIcon);
       newItem->setText(item);
@@ -766,11 +767,11 @@ int FileBrowser::drawIconView() {
       ui_.driveListWidget->addItem(newItem);
     } else {
       std::string fullFilePath = rootPath_.toStdString() +
-                                currentDir_.toStdString() + s;
+                                currentDir_.toStdString() + s.string();
       QIcon theIcon = getAssociatedIconFromPath(
                       QString::fromStdString(fullFilePath));
 
-      QString item = QString::fromStdString(s);
+      QString item = QString::fromStdString(s.string());
       QListWidgetItem *newItem = new QListWidgetItem;
       newItem->setIcon(theIcon);
       newItem->setText(item);
@@ -785,7 +786,8 @@ int FileBrowser::drawIconView() {
       }
       catch(const std::exception &e) {
 #ifdef DEBUG
-        printf("FileBrowser::drawIconView - Can't analyse path.\n");
+        printf("FileBrowser::drawIconView - Can't analyse path - %s\n",
+               e.what());
 #endif
         continue;
       }
@@ -828,7 +830,7 @@ int FileBrowser::createTreeDirectory(QString) {
   currentTreeDir_ = "/";
   int rowCount = 0;
 //  std::string relPathStr = currentTreeDir_.toStdString() + dir.toStdString();
-  std::map<std::string, ClientController::ItemType> children;
+  std::map<fs::path, ClientController::ItemType> children;
 
   ClientController::instance()->readdir(currentTreeDir_, &children);
 
@@ -838,7 +840,7 @@ int FileBrowser::createTreeDirectory(QString) {
   ui_.treeViewTreeWidget->setHeaderLabels(columns);
 
   while (!children.empty()) {
-    std::string s = children.begin()->first;
+    fs::path s = children.begin()->first;
     qDebug() << "children not empty";
     ClientController::ItemType ityp = children.begin()->second;
     fs::path path(currentTreeDir_.toStdString());
@@ -856,13 +858,14 @@ int FileBrowser::createTreeDirectory(QString) {
 
     if (ityp == ClientController::DIRECTORY || ityp == ClientController::EMPTY_DIRECTORY) {
       QIcon theIcon = icon->icon(QFileIconProvider::Folder);
-      QString item = QString::fromStdString(s);
+      QString item = QString::fromStdString(s.string());
       QTreeWidgetItem *newItem = new QTreeWidgetItem(ui_.treeViewTreeWidget);
       newItem->setIcon(0, theIcon);
       newItem->setText(0, item);
 
-      std::string relPathStr1 = currentTreeDir_.toStdString() + s + "/";
-      std::map<std::string, ClientController::ItemType> children1;
+      std::string relPathStr1 = currentTreeDir_.toStdString() + s.string() +
+                                "/";
+      std::map<fs::path, ClientController::ItemType> children1;
       ClientController::instance()->readdir(QString::fromStdString(relPathStr1),
                                             &children1);
 
@@ -1163,7 +1166,8 @@ void FileBrowser::uploadFileFromLocal(const QString& filePath) {
     }
     catch(const std::exception &e) {
 #ifdef DEBUG
-      printf("FileBrowser::uploadFileFromLocal - Failed to copy file\n");
+      printf("FileBrowser::uploadFileFromLocal - Failed to copy file - %s\n",
+             e.what());
 #endif
     }
   } else {
@@ -1273,12 +1277,12 @@ void FileBrowser::onItemExpanded(QTreeWidgetItem* item) {
   std::string relPathStr(currentTreeDir_.toStdString() +
                          folder.toStdString() + "/");
   currentTreeDir_ = QString::fromStdString(relPathStr);
-  std::map<std::string, ClientController::ItemType> children;
+  std::map<fs::path, ClientController::ItemType> children;
   ClientController::instance()->readdir(currentTreeDir_, &children);
 //  qDebug() << "Path String : " << QString::fromStdString(relPathStr);
 
   while (!children.empty()) {
-    std::string s = children.begin()->first;
+    fs::path s = children.begin()->first;
     qDebug() << "children not empty";
     ClientController::ItemType ityp = children.begin()->second;
     fs::path path(relPathStr);
@@ -1295,13 +1299,13 @@ void FileBrowser::onItemExpanded(QTreeWidgetItem* item) {
 
     if (ityp == ClientController::DIRECTORY || ityp == ClientController::EMPTY_DIRECTORY) {
       QIcon theIcon = icon->icon(QFileIconProvider::Folder);
-      QString theItem = QString::fromStdString(s);
+      QString theItem = QString::fromStdString(s.string());
       QTreeWidgetItem *newItem = new QTreeWidgetItem(item);
       newItem->setIcon(0, theIcon);
       newItem->setText(0, theItem);
 
-      std::string relPathStr1 = relPathStr + s + "/";
-      std::map<std::string, ClientController::ItemType> children1;
+      std::string relPathStr1 = relPathStr + s.string() + "/";
+      std::map<fs::path, ClientController::ItemType> children1;
       ClientController::instance()->readdir(QString::fromStdString(relPathStr1),
                                             &children1);
       while (!children1.empty()) {
@@ -1418,7 +1422,8 @@ QIcon FileBrowser::getAssociatedIconFromPath(const QString& fullFilePath) {
   }
   catch(const std::exception &e) {
 #ifdef DEBUG
-    printf("FileBrowser::getAssociatedIconFromPath - Failed to asses path\n");
+    printf("FileBrowser::getAssociatedIconFromPath - Failed to asses path%s\n",
+           e.what());
 #endif
   }
 

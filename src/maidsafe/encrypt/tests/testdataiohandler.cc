@@ -23,223 +23,484 @@
 */
 
 #include <gtest/gtest.h>
-//#include <boost/filesystem/fstream.hpp>
-//#include <boost/filesystem.hpp>
+#include <boost/filesystem/fstream.hpp>
+#include <boost/filesystem.hpp>
 //#include <boost/cstdint.hpp>
 //#include <boost/lexical_cast.hpp>
 #include <maidsafe/base/utils.h>
+
+#include <limits>
 
 #include "maidsafe/encrypt/dataiohandler.h"
 
 namespace maidsafe {
 
+namespace encrypt {
+
 namespace test {
 
 class TestStringIOHandler : public testing::Test {
  public:
-  TestStringIOHandler() : handler_(), data_(base::RandomString(255 * 1024)) {}
+  TestStringIOHandler()
+      : kMinSize_(1000),
+        kDataSize_((base::RandomUint32() % 249000) + kMinSize_),
+        // ensure input contains null chars
+        kData_(std::string(10, 0) + base::RandomString(kDataSize_ - 10)),
+        data_(new std::string(kData_)) {}
  protected:
-  virtual void SetUp() {
-    ASSERT_EQ("", handler_.GetAsString());
-  }
-  virtual void TearDown() {
-    handler_.Reset();
-  }
-  StringIOHandler handler_;
-  std::string data_;
+  const size_t kMinSize_, kDataSize_;
+  const std::string kData_;
+  std::tr1::shared_ptr<std::string> data_;
 };
 
 TEST_F(TestStringIOHandler, BEH_MAID_TestReadFromString) {
-  ASSERT_TRUE(handler_.SetData(data_, true));
+  // Check before opening
+  StringIOHandler input_handler(data_, true);
+  EXPECT_EQ(kData_, input_handler.Data());
   boost::uint64_t tempsize;
-  handler_.Size(&tempsize);
-  ASSERT_EQ(boost::uint64_t(255*1024), tempsize);
-  ASSERT_FALSE(handler_.Write("abc", 3));
-  unsigned int size(10);
-  char *read_data = new char[size];
-  ASSERT_FALSE(handler_.Read(read_data, size));
-  ASSERT_TRUE(handler_.Open());
-  ASSERT_FALSE(handler_.SetData(data_, true));
+  EXPECT_TRUE(input_handler.Size(&tempsize));
+  EXPECT_EQ(kDataSize_, tempsize);
+  EXPECT_FALSE(input_handler.Write("a"));
+  size_t test_size(kMinSize_ / 10);
+  std::string read_data("Test");
+  EXPECT_FALSE(input_handler.Read(test_size, &read_data));
+  EXPECT_TRUE(read_data.empty());
+  EXPECT_FALSE(input_handler.SetGetPointer(test_size));
 
-  ASSERT_FALSE(handler_.Write("abc", 3));
-  ASSERT_TRUE(handler_.Read(read_data, size));
-  std::string result(read_data, size);
-  ASSERT_EQ(data_.substr(0, size), result);
-  result.clear();
+  // Check after opening
+  EXPECT_TRUE(input_handler.Open());
+  EXPECT_EQ(kData_, input_handler.Data());
+  EXPECT_FALSE(input_handler.Write("a"));
+  read_data = "Test";
+  EXPECT_TRUE(input_handler.Read(test_size, &read_data));
+  EXPECT_EQ(kData_.substr(0, test_size), read_data);
 
-  ASSERT_TRUE(handler_.Read(read_data, size));
-  result = std::string(read_data, size);
-  ASSERT_EQ(data_.substr(size, size), result);
+  // Read again
+  read_data.clear();
+  EXPECT_TRUE(input_handler.Read(test_size, &read_data));
+  EXPECT_EQ(kData_.substr(test_size, test_size), read_data);
 
-  handler_.Close();
-  handler_.Reset();
-  ASSERT_EQ(std::string(""), handler_.GetAsString());
+  // Read past eof
+  EXPECT_TRUE(input_handler.Read(kDataSize_, &read_data));
+  EXPECT_EQ(kData_.substr(2 * test_size), read_data);
 
-  delete[] read_data;
+  // Read again
+  EXPECT_TRUE(input_handler.Read(test_size, &read_data));
+  EXPECT_TRUE(read_data.empty());
+
+  // Check re-opening while open has no effect
+  EXPECT_TRUE(input_handler.Open());
+  EXPECT_EQ(kData_, input_handler.Data());
+  read_data = "Test";
+  EXPECT_TRUE(input_handler.Read(test_size, &read_data));
+  EXPECT_TRUE(read_data.empty());
+
+  // Check after closing
+  input_handler.Close();
+  EXPECT_EQ(kData_, input_handler.Data());
+  read_data = "Test";
+  EXPECT_FALSE(input_handler.Read(test_size, &read_data));
+  EXPECT_TRUE(read_data.empty());
+
+  // Check re-opening sets get pointer back to 0
+  EXPECT_TRUE(input_handler.Open());
+  EXPECT_EQ(kData_, input_handler.Data());
+  EXPECT_TRUE(input_handler.Read(test_size, &read_data));
+  EXPECT_EQ(kData_.substr(0, test_size), read_data);
+
+  // Check empty string handling
+  std::tr1::shared_ptr<std::string> empty_data(new std::string);
+  StringIOHandler empty_input_handler(empty_data, true);
+  EXPECT_TRUE(empty_input_handler.Data().empty());
+  EXPECT_TRUE(empty_input_handler.Size(&tempsize));
+  EXPECT_EQ(0U, tempsize);
+  EXPECT_TRUE(empty_input_handler.Open());
+  read_data = "Test";
+  EXPECT_TRUE(empty_input_handler.Read(test_size, &read_data));
+  EXPECT_TRUE(read_data.empty());
 }
 
 TEST_F(TestStringIOHandler, BEH_MAID_TestSetGetPointerString) {
-  ASSERT_TRUE(handler_.SetData(data_, true));
-  ASSERT_FALSE(handler_.SetGetPointer(999));
-  unsigned int size(24);
-  char *read_data = new char[size];
-  ASSERT_TRUE(handler_.Open());
-  ASSERT_TRUE(handler_.SetGetPointer(999));
-  ASSERT_TRUE(handler_.Read(read_data, size));
-  std::string result(read_data, size);
-  ASSERT_EQ(data_.substr(999, 24), result);
-  handler_.Close();
+  // Open and apply offset
+  StringIOHandler input_handler(data_, true);
+  size_t test_size(kMinSize_ / 10), offset(kMinSize_ / 2);
+  EXPECT_FALSE(input_handler.SetGetPointer(test_size));
+  std::string read_data;
+  EXPECT_TRUE(input_handler.Open());
+  EXPECT_TRUE(input_handler.SetGetPointer(offset));
+  EXPECT_TRUE(input_handler.Read(test_size, &read_data));
+  EXPECT_EQ(kData_.substr(offset, test_size), read_data);
 
-  delete[] read_data;
+  // Retry with different offset
+  offset = kMinSize_ / 3;
+  EXPECT_TRUE(input_handler.SetGetPointer(offset));
+  EXPECT_TRUE(input_handler.Read(test_size, &read_data));
+  EXPECT_EQ(kData_.substr(offset, test_size), read_data);
+
+  // Retry with offset > file size
+  offset = kDataSize_ + 1;
+  EXPECT_TRUE(input_handler.SetGetPointer(offset));
+  EXPECT_TRUE(input_handler.Read(test_size, &read_data));
+  EXPECT_TRUE(read_data.empty());
 }
 
 TEST_F(TestStringIOHandler, BEH_MAID_WriteToString) {
-  ASSERT_TRUE(handler_.SetData("", false));
-  ASSERT_FALSE(handler_.Write("abc", 3));
-  unsigned int size(10);
-  char *read_data = new char[size];
-  ASSERT_TRUE(handler_.Open());
-  ASSERT_FALSE(handler_.SetData("", false));
-  ASSERT_FALSE(handler_.Read(read_data, size));
-  std::string in_data = base::RandomString(20);
-  std::string result = in_data;
-  ASSERT_TRUE(handler_.Write(in_data.c_str(), in_data.size()));
-  in_data = base::RandomString(10);
-  result += in_data;
-  ASSERT_TRUE(handler_.Write(in_data.c_str(), in_data.size()));
-  ASSERT_EQ(result, handler_.GetAsString());
-  handler_.Close();
+  // Check before opening
+  StringIOHandler output_handler(data_, false);
+  EXPECT_EQ(kData_, output_handler.Data());
   boost::uint64_t tempsize;
-  handler_.Size(&tempsize);
-  ASSERT_EQ(boost::uint64_t(30), tempsize);
-  handler_.Reset();
-  ASSERT_EQ(std::string(""), handler_.GetAsString());
-  delete [] read_data;
+  EXPECT_TRUE(output_handler.Size(&tempsize));
+  EXPECT_EQ(kDataSize_, tempsize);
+  EXPECT_FALSE(output_handler.Write("abc"));
+  size_t test_size(kMinSize_ / 10);
+  std::string read_data("Test");
+  EXPECT_FALSE(output_handler.Read(test_size, &read_data));
+  EXPECT_TRUE(read_data.empty());
+  EXPECT_FALSE(output_handler.SetGetPointer(test_size));
+
+  // Check after opening
+  EXPECT_TRUE(output_handler.Open());
+  EXPECT_TRUE(output_handler.Data().empty());
+  EXPECT_TRUE(output_handler.Size(&tempsize));
+  EXPECT_EQ(0U, tempsize);
+  read_data = "Test";
+  EXPECT_FALSE(output_handler.Read(test_size, &read_data));
+  EXPECT_TRUE(read_data.empty());
+  size_t split(base::RandomUint32() % kDataSize_);
+  std::string part1(kData_.substr(0, split)), part2(kData_.substr(split));
+  EXPECT_TRUE(output_handler.Write(part1));
+  EXPECT_EQ(part1, output_handler.Data());
+  EXPECT_TRUE(output_handler.Size(&tempsize));
+  EXPECT_EQ(split, tempsize);
+
+  // Write again
+  EXPECT_TRUE(output_handler.Write(part2));
+  EXPECT_EQ(kData_, output_handler.Data());
+  EXPECT_TRUE(output_handler.Size(&tempsize));
+  EXPECT_EQ(kDataSize_, tempsize);
+
+  // Write with empty string
+  EXPECT_TRUE(output_handler.Write(""));
+  EXPECT_EQ(kData_, output_handler.Data());
+  EXPECT_TRUE(output_handler.Size(&tempsize));
+  EXPECT_EQ(kDataSize_, tempsize);
+
+  // Check re-opening while open has no effect
+  EXPECT_TRUE(output_handler.Open());
+  EXPECT_EQ(kData_, output_handler.Data());
+  EXPECT_TRUE(output_handler.Size(&tempsize));
+  EXPECT_EQ(kDataSize_, tempsize);
+  EXPECT_TRUE(output_handler.Write("a"));
+  EXPECT_EQ(kData_ + "a", output_handler.Data());
+  EXPECT_TRUE(output_handler.Size(&tempsize));
+  EXPECT_EQ(kDataSize_ + 1, tempsize);
+
+  // Check after closing
+  output_handler.Close();
+  EXPECT_EQ(kData_ + "a", output_handler.Data());
+  EXPECT_TRUE(output_handler.Size(&tempsize));
+  EXPECT_EQ(kDataSize_ + 1, tempsize);
+  EXPECT_FALSE(output_handler.Write("b"));
+  EXPECT_EQ(kData_ + "a", output_handler.Data());
+  EXPECT_TRUE(output_handler.Size(&tempsize));
+  EXPECT_EQ(kDataSize_ + 1, tempsize);
+
+  // Check re-opening after closing clears data
+  EXPECT_TRUE(output_handler.Open());
+  EXPECT_TRUE(output_handler.Data().empty());
+  EXPECT_TRUE(output_handler.Size(&tempsize));
+  EXPECT_EQ(0U, tempsize);
+  EXPECT_TRUE(output_handler.Write(kData_));
+  EXPECT_EQ(kData_, output_handler.Data());
+  EXPECT_TRUE(output_handler.Size(&tempsize));
+  EXPECT_EQ(kDataSize_, tempsize);
 }
+
+namespace test_file_io_handler {
+// TODO(Fraser#5#): Replace with fs::temp_directory_path() from boost 1.45
+fs::path TempDir() {
+#if defined(PD_WIN32)
+  fs::path temp_dir("");
+  if (std::getenv("TEMP"))
+    temp_dir = std::getenv("TEMP");
+  else if (std::getenv("TMP"))
+    temp_dir = std::getenv("TMP");
+#elif defined(P_tmpdir)
+  fs::path temp_dir(P_tmpdir);
+#else
+  fs::path temp_dir("");
+  if (std::getenv("TMPDIR")) {
+    temp_dir = std::getenv("TMPDIR");
+  } else {
+    temp_dir = fs::path("/tmp");
+    try {
+      if (!fs::exists(temp_dir))
+        temp_dir.clear();
+    }
+    catch(const std::exception &e) {
+#ifdef DEBUG
+      printf("In TempDir: %s\n", e.what());
+#endif
+      temp_dir.clear();
+    }
+  }
+#endif
+  size_t last_char = temp_dir.string().size() - 1;
+  if (temp_dir.string()[last_char] == '/' ||
+      temp_dir.string()[last_char] == '\\') {
+    std::string temp_str = temp_dir.string();
+    temp_str.resize(last_char);
+    temp_dir = fs::path(temp_str);
+  }
+  return temp_dir;
+}
+}  // namespace test_file_io_handler
 
 class TestFileIOHandler : public testing::Test {
  public:
   TestFileIOHandler()
-      : handler_(),
-        in_file_(),
-        out_file_(),
-        data_(base::RandomString(255*1024)),
-        in_("in_file_" + base::IntToString(base::RandomInt32())),
-        out_("out_file_" + base::IntToString(base::RandomInt32())) {}
+      : kRootDir_(test_file_io_handler::TempDir() /
+            ("maidsafe_TestIO_" + base::RandomAlphaNumericString(6))),
+        kInputFile_(kRootDir_ / "In.txt"),
+        kOutputFile_(kRootDir_ / "Out.txt"),
+        kMinSize_(10),
+        kDataSize_((base::RandomUint32() % 249) + kMinSize_),
+        // ensure input contains null chars
+        kData_(std::string(10, 0) + base::RandomString(kDataSize_ - 10)) {}
  protected:
-  virtual void SetUp() {
-    ASSERT_TRUE(handler_.GetAsString().empty());
-    in_file_.open(in_, std::ifstream::binary);
-  }
-  virtual void TearDown() {
-    handler_.Reset();
+  void SetUp() {
     try {
-      if (boost::filesystem::exists(
-          boost::filesystem::path(in_)))
-        boost::filesystem::remove(boost::filesystem::path(in_));
-      if (boost::filesystem::exists(
-          boost::filesystem::path(out_)))
-        boost::filesystem::remove(boost::filesystem::path(out_));
+      if (fs::exists(kRootDir_))
+        fs::remove_all(kRootDir_);
+      fs::create_directories(kRootDir_);
+    }
+    catch(const std::exception& e) {
+      printf("%s\n", e.what());
+    }
+  }
+  void TearDown() {
+    try {
+      if (fs::exists(kRootDir_))
+        fs::remove_all(kRootDir_);
+    }
+    catch(const std::exception& e) {
+      printf("%s\n", e.what());
+    }
+  }
+  void WriteDataToInputFile(bool empty_file) {
+    try {
+      fs::ofstream out_file(kInputFile_,
+                            fs::ofstream::binary | fs::ofstream::trunc);
+      if (!empty_file)
+        out_file.write(kData_.c_str(), kDataSize_);
+      out_file.close();
     }
     catch(const std::exception&) {
     }
   }
-  void WriteDataToInFile() {
-    boost::filesystem::ofstream out_file_;
+  std::string ReadDataFromOutputFile() {
+    boost::uint64_t file_size(fs::file_size(kOutputFile_));
+    if (file_size > std::numeric_limits<size_t>::max())
+      return "";
+    size_t size = static_cast<size_t>(file_size);
+    std::tr1::shared_ptr<char> data(new char[size]);
     try {
-      out_file_.open(in_, boost::filesystem::ofstream::binary);
-      out_file_.write(data_.c_str(), data_.size());
-      out_file_.close();
+      fs::ifstream in_file(kOutputFile_, fs::ofstream::binary);
+      in_file.read(data.get(), size);
+      in_file.close();
     }
     catch(const std::exception&) {
     }
+    return std::string(data.get(), size);
   }
-  std::string ReadDataFromOutFile() {
-    boost::filesystem::ifstream in_file_;
-    boost::uint64_t size = boost::filesystem::file_size(
-      boost::filesystem::path(out_));
-    char *data = new char[size];
-    try {
-      in_file_.open(out_, boost::filesystem::ofstream::binary);
-      in_file_.read(data, size);
-      out_file_.close();
-    }
-    catch(const std::exception&) {
-    }
-    std::string str(data, size);
-    delete[] data;
-    return str;
-  }
-  FileIOHandler handler_;
-  boost::filesystem::fstream in_file_, out_file_;
-  std::string data_, in_, out_;
+  const fs::path kRootDir_, kInputFile_, kOutputFile_;
+  const size_t kMinSize_, kDataSize_;
+  const std::string kData_;
 };
 
 TEST_F(TestFileIOHandler, BEH_MAID_TestReadFromFile) {
-  WriteDataToInFile();
-  ASSERT_TRUE(handler_.SetData(in_, true));
-  ASSERT_FALSE(handler_.Write("abc", 3));
-  unsigned int size(10);
-  char *read_data = new char[size];
-  ASSERT_FALSE(handler_.Read(read_data, size));
-  ASSERT_TRUE(handler_.Open());
-  ASSERT_FALSE(handler_.SetData(in_, true));
+  WriteDataToInputFile(false);
 
-  ASSERT_FALSE(handler_.Write("abc", 3));
-  ASSERT_TRUE(handler_.Read(read_data, size));
-  std::string result(read_data, size);
-  ASSERT_EQ(data_.substr(0, size), result);
-  result.clear();
+  // Check using non-existant file
+  FileIOHandler nef_input_handler(fs::path("k.txt"), true);
+  EXPECT_FALSE(nef_input_handler.Open());
+  boost::uint64_t tempsize(999);
+  EXPECT_FALSE(nef_input_handler.Size(&tempsize));
+  EXPECT_EQ(0U, tempsize);
+  EXPECT_FALSE(nef_input_handler.Write("a"));
+  size_t test_size(kMinSize_ / 10);
+  std::string read_data("Test");
+  EXPECT_FALSE(nef_input_handler.Read(test_size, &read_data));
+  EXPECT_TRUE(read_data.empty());
+  EXPECT_FALSE(nef_input_handler.SetGetPointer(test_size));
 
-  ASSERT_TRUE(handler_.Read(read_data, size));
-  result = std::string(read_data, size);
-  ASSERT_EQ(data_.substr(size, size), result);
-  handler_.Close();
-  handler_.Reset();
-  ASSERT_EQ(std::string(""), handler_.GetAsString());
+  // Check before opening
+  FileIOHandler input_handler(kInputFile_, true);
+  EXPECT_TRUE(input_handler.Size(&tempsize));
+  EXPECT_EQ(kDataSize_, tempsize);
+  EXPECT_FALSE(input_handler.Write("a"));
+  read_data = "Test";
+  EXPECT_FALSE(input_handler.Read(test_size, &read_data));
+  EXPECT_TRUE(read_data.empty());
+  EXPECT_FALSE(input_handler.SetGetPointer(test_size));
 
-  delete[] read_data;
+  // Check after opening
+  EXPECT_TRUE(input_handler.Open());
+  EXPECT_FALSE(input_handler.Write("a"));
+  read_data = "Test";
+  EXPECT_TRUE(input_handler.Read(test_size, &read_data));
+  EXPECT_EQ(kData_.substr(0, test_size), read_data);
+
+  // Read again
+  read_data.clear();
+  EXPECT_TRUE(input_handler.Read(test_size, &read_data));
+  EXPECT_EQ(kData_.substr(test_size, test_size), read_data);
+
+  // Read past eof
+  EXPECT_TRUE(input_handler.Read(kDataSize_, &read_data));
+  EXPECT_EQ(kData_.substr(2 * test_size), read_data);
+
+  // Read again
+  EXPECT_TRUE(input_handler.Read(test_size, &read_data));
+  EXPECT_TRUE(read_data.empty());
+
+  // Check re-opening while open has no effect
+  EXPECT_TRUE(input_handler.Open());
+  read_data = "Test";
+  EXPECT_TRUE(input_handler.Read(test_size, &read_data));
+  EXPECT_TRUE(read_data.empty());
+
+  // Check after closing
+  input_handler.Close();
+  read_data = "Test";
+  EXPECT_FALSE(input_handler.Read(test_size, &read_data));
+  EXPECT_TRUE(read_data.empty());
+
+  // Check re-opening sets get pointer back to 0
+  EXPECT_TRUE(input_handler.Open());
+  EXPECT_TRUE(input_handler.Read(test_size, &read_data));
+  EXPECT_EQ(kData_.substr(0, test_size), read_data);
+
+  // Check empty string handling
+  WriteDataToInputFile(true);
+  FileIOHandler empty_input_handler(kInputFile_, true);
+  EXPECT_TRUE(empty_input_handler.Size(&tempsize));
+  EXPECT_EQ(0U, tempsize);
+  EXPECT_TRUE(empty_input_handler.Open());
+  read_data = "Test";
+  EXPECT_TRUE(empty_input_handler.Read(test_size, &read_data));
+  EXPECT_TRUE(read_data.empty());
 }
 
 TEST_F(TestFileIOHandler, BEH_MAID_TestSetGetPointerFile) {
-  WriteDataToInFile();
-  handler_.SetData(in_, true);
-  ASSERT_FALSE(handler_.SetGetPointer(999));
-  unsigned int size(24);
-  char *read_data = new char[size];
-  ASSERT_TRUE(handler_.Open());
-  ASSERT_TRUE(handler_.SetGetPointer(999));
-  ASSERT_TRUE(handler_.Read(read_data, size));
-  std::string result(read_data, size);
-  ASSERT_EQ(data_.substr(999, size), result);
-  handler_.Close();
+  WriteDataToInputFile(false);
 
-  delete[] read_data;
+  // Open and apply offset
+  FileIOHandler input_handler(kInputFile_, true);
+  size_t test_size(kMinSize_ / 10), offset(kMinSize_ / 2);
+  EXPECT_FALSE(input_handler.SetGetPointer(test_size));
+  std::string read_data;
+  EXPECT_TRUE(input_handler.Open());
+  EXPECT_TRUE(input_handler.SetGetPointer(offset));
+  EXPECT_TRUE(input_handler.Read(test_size, &read_data));
+  EXPECT_EQ(kData_.substr(offset, test_size), read_data);
+
+  // Retry with different offset
+  offset = kMinSize_ / 3;
+  EXPECT_TRUE(input_handler.SetGetPointer(offset));
+  EXPECT_TRUE(input_handler.Read(test_size, &read_data));
+  EXPECT_EQ(kData_.substr(offset, test_size), read_data);
+
+  // Retry with offset > file size
+  offset = kDataSize_ + 1;
+  EXPECT_TRUE(input_handler.SetGetPointer(offset));
+  EXPECT_TRUE(input_handler.Read(test_size, &read_data));
+  EXPECT_TRUE(read_data.empty());
 }
 
 TEST_F(TestFileIOHandler, BEH_MAID_WriteToFile) {
-  handler_.SetData(out_, false);
-  ASSERT_FALSE(handler_.Write("abc", 3));
-  unsigned int size(10);
-  char *read_data = new char[size];
-  ASSERT_TRUE(handler_.Open());
-  ASSERT_FALSE(handler_.Read(read_data, size));
-  std::string in_data = base::RandomString(20);
-  std::string result = in_data;
-  ASSERT_TRUE(handler_.Write(in_data.c_str(), in_data.size()));
-  in_data = base::RandomString(10);
-  result += in_data;
-  ASSERT_TRUE(handler_.Write(in_data.c_str(), in_data.size()));
-  handler_.Close();
-  ASSERT_EQ(result, ReadDataFromOutFile());
-  boost::uint64_t tempsize;
-  handler_.Size(&tempsize);
-  ASSERT_EQ(boost::uint64_t(30), tempsize);
-  handler_.Reset();
-  ASSERT_EQ(std::string(""), handler_.GetAsString());
-  delete [] read_data;
+  // Check using non-existant directory
+  FileIOHandler nef_output_handler(fs::path("not/o/k.txt"), false);
+  EXPECT_FALSE(nef_output_handler.Open());
+  boost::uint64_t tempsize(999);
+  EXPECT_FALSE(nef_output_handler.Size(&tempsize));
+  EXPECT_EQ(0U, tempsize);
+  EXPECT_FALSE(nef_output_handler.Write("a"));
+  size_t test_size(kMinSize_ / 10);
+  std::string read_data("Test");
+  EXPECT_FALSE(nef_output_handler.Read(test_size, &read_data));
+  EXPECT_TRUE(read_data.empty());
+  EXPECT_FALSE(nef_output_handler.SetGetPointer(test_size));
+
+  // Check before opening
+  FileIOHandler output_handler(kOutputFile_, false);
+  EXPECT_FALSE(output_handler.Size(&tempsize));
+  EXPECT_EQ(0U, tempsize);
+  EXPECT_FALSE(output_handler.Write("a"));
+  read_data = "Test";
+  EXPECT_FALSE(output_handler.Read(test_size, &read_data));
+  EXPECT_TRUE(read_data.empty());
+  EXPECT_FALSE(output_handler.SetGetPointer(test_size));
+
+  // Check after opening
+  EXPECT_TRUE(output_handler.Open());
+  EXPECT_TRUE(output_handler.Size(&tempsize));
+  EXPECT_EQ(0U, tempsize);
+  read_data = "Test";
+  EXPECT_FALSE(output_handler.Read(test_size, &read_data));
+  EXPECT_TRUE(read_data.empty());
+  size_t split(base::RandomUint32() % kDataSize_);
+  std::string part1(kData_.substr(0, split)), part2(kData_.substr(split));
+  EXPECT_TRUE(output_handler.Write(part1));
+//  EXPECT_EQ(part1, ReadDataFromOutputFile());
+  EXPECT_TRUE(output_handler.Size(&tempsize));
+  EXPECT_EQ(split, tempsize);
+
+  // Write again
+  EXPECT_TRUE(output_handler.Write(part2));
+//  EXPECT_EQ(kData_, ReadDataFromOutputFile());
+  EXPECT_TRUE(output_handler.Size(&tempsize));
+  EXPECT_EQ(kDataSize_, tempsize);
+
+  // Write with empty string
+  EXPECT_TRUE(output_handler.Write(""));
+//  EXPECT_EQ(kData_, ReadDataFromOutputFile());
+  EXPECT_TRUE(output_handler.Size(&tempsize));
+  EXPECT_EQ(kDataSize_, tempsize);
+
+  // Check re-opening while open has no effect
+  EXPECT_TRUE(output_handler.Open());
+//  EXPECT_EQ(kData_, ReadDataFromOutputFile());
+  EXPECT_TRUE(output_handler.Size(&tempsize));
+  EXPECT_EQ(kDataSize_, tempsize);
+  EXPECT_TRUE(output_handler.Write("a"));
+//  EXPECT_EQ(kData_ + "a", ReadDataFromOutputFile());
+  EXPECT_TRUE(output_handler.Size(&tempsize));
+  EXPECT_EQ(kDataSize_ + 1, tempsize);
+
+  // Check after closing
+  output_handler.Close();
+  EXPECT_EQ(kData_ + "a", ReadDataFromOutputFile());
+  EXPECT_TRUE(output_handler.Size(&tempsize));
+  EXPECT_EQ(kDataSize_ + 1, tempsize);
+  EXPECT_FALSE(output_handler.Write("b"));
+  EXPECT_EQ(kData_ + "a", ReadDataFromOutputFile());
+  EXPECT_TRUE(output_handler.Size(&tempsize));
+  EXPECT_EQ(kDataSize_ + 1, tempsize);
+
+  // Check re-opening after closing clears data
+  EXPECT_TRUE(output_handler.Open());
+  EXPECT_TRUE(ReadDataFromOutputFile().empty());
+  EXPECT_TRUE(output_handler.Size(&tempsize));
+  EXPECT_EQ(0U, tempsize);
+  EXPECT_TRUE(output_handler.Write(kData_));
+  EXPECT_EQ(kData_, ReadDataFromOutputFile());
+  EXPECT_TRUE(output_handler.Size(&tempsize));
+  EXPECT_EQ(kDataSize_, tempsize);
 }
 
 }  // namespace test
+
+}  // namespace encrypt
 
 }  // namespace maidsafe

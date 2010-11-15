@@ -19,7 +19,9 @@
 #include <gtest/gtest.h>
 #include "maidsafe/vault/bufferpacketstore.h"
 
-namespace maidsafe_vault {
+namespace maidsafe {
+
+namespace vault {
 
 class BufferPacketStoreTest : public testing::Test {
  public:
@@ -58,4 +60,6 @@ TEST_F(BufferPacketStoreTest, DISABLED_BEH_MAID_BPExportMapToPb) {
   // TODO(Steve#) test ExportMapToPb
 }
 
-}  // namespace maidsafe_vault
+}  // namespace vault
+
+}  // namespace maidsafe

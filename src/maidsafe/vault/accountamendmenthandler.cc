@@ -24,35 +24,34 @@
 
 #include "maidsafe/vault/accountamendmenthandler.h"
 
-#include <vector>
-
+#include "maidsafe/common/kadops.h"
 #include "maidsafe/vault/accountrepository.h"
 #include "maidsafe/vault/requestexpectationhandler.h"
 #include "maidsafe/vault/vaultservicelogic.h"
 
-namespace maidsafe_vault {
+namespace maidsafe {
 
-int AccountAmendmentHandler::ProcessRequest(
-    const maidsafe::AmendAccountRequest *request,
-    maidsafe::AmendAccountResponse *response,
-    google::protobuf::Closure *done) {
+namespace vault {
+
+int AccountAmendmentHandler::ProcessRequest(const AmendAccountRequest *request,
+                                            AmendAccountResponse *response,
+                                            google::protobuf::Closure *done) {
   // Assumes that response->pmid() has already been set and that
   // request->signed_size() validates
   response->set_result(kNack);
-  maidsafe::AmendAccountRequest::Amendment amendment_type =
-      request->amendment_type();
+  AmendAccountRequest::Amendment amendment_type = request->amendment_type();
   bool increase(false);
   int field(2);
-  if (amendment_type == maidsafe::AmendAccountRequest::kSpaceGivenInc ||
-      amendment_type == maidsafe::AmendAccountRequest::kSpaceTakenInc)
+  if (amendment_type == AmendAccountRequest::kSpaceGivenInc ||
+      amendment_type == AmendAccountRequest::kSpaceTakenInc)
     increase = true;
-  if (amendment_type == maidsafe::AmendAccountRequest::kSpaceTakenDec ||
-      amendment_type == maidsafe::AmendAccountRequest::kSpaceTakenInc)
+  if (amendment_type == AmendAccountRequest::kSpaceTakenDec ||
+      amendment_type == AmendAccountRequest::kSpaceTakenInc)
     field = 3;
 
   // Check that we've got valid amendment type
   if (!increase && field == 2 && amendment_type !=
-      maidsafe::AmendAccountRequest::kSpaceGivenDec) {
+      AmendAccountRequest::kSpaceGivenDec) {
     done->Run();
     return kAmendAccountTypeError;
   }
@@ -130,7 +129,7 @@ int AccountAmendmentHandler::ProcessRequest(
 int AccountAmendmentHandler::AssessAmendment(
     const std::string &owner_pmid,
     const std::string &chunkname,
-    const maidsafe::AmendAccountRequest::Amendment &amendment_type,
+    const AmendAccountRequest::Amendment &amendment_type,
     const int &amendment_field,
     const boost::uint64_t &offer_size,
     const bool &inc,
@@ -243,12 +242,12 @@ int AccountAmendmentHandler::AssessAmendment(
 
 void AccountAmendmentHandler::FetchAmendmentResults(
     const std::string &owner_name,
-    maidsafe::AccountStatusResponse *response) {
+    AccountStatusResponse *response) {
   boost::mutex::scoped_lock lock(amendment_mutex_);
   std::list<AmendmentResult>::iterator it = amendment_results_.begin();
   while (it != amendment_results_.end()) {
     if (it->owner_name == owner_name) {
-      maidsafe::AccountStatusResponse::AmendmentResult *amendment_result =
+      AccountStatusResponse::AmendmentResult *amendment_result =
           response->add_amendment_results();
       amendment_result->set_amendment_type(it->amendment_type);
       amendment_result->set_chunkname(it->chunkname);
@@ -313,8 +312,7 @@ void AccountAmendmentHandler::CreateNewAmendmentCallback(
   if (it == amendments_.get<by_timestamp>().end())
     return;
   AccountAmendment modified_amendment = *it;
-  if (result == maidsafe::kSuccess && closest_nodes.size() >=
-      size_t(kUpperThreshold_)) {
+  if (result == kSuccess && closest_nodes.size() >= size_t(kUpperThreshold_)) {
     // Populate map of Chunk Info holders
     for (size_t i = 0; i < closest_nodes.size(); ++i) {
       modified_amendment.chunk_info_holders.insert(std::pair<std::string, bool>(
@@ -391,4 +389,6 @@ int AccountAmendmentHandler::CleanUp() {
   return count;
 }
 
-}  // namespace maidsafe_vault
+}  // namespace vault
+
+}  // namespace maidsafe

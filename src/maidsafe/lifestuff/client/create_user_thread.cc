@@ -12,7 +12,7 @@
  *      Author: Team
  */
 
-#include "qt/client/create_user_thread.h"
+#include "maidsafe/lifestuff/client/create_user_thread.h"
 
 // qt
 #include <QDebug>
@@ -22,7 +22,7 @@
 #include <string>
 
 // core
-#include "qt/client/client_controller.h"
+#include "maidsafe/lifestuff/client/client_controller.h"
 
 // local
 

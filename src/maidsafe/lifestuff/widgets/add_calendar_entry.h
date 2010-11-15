@@ -20,7 +20,7 @@
 #include <QString>
 
 // local
-#include "qt/client/client_controller.h"
+#include "maidsafe/lifestuff/client/client_controller.h"
 
 #include "ui_add_calendar_entry.h"
 

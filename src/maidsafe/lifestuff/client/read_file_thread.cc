@@ -12,13 +12,13 @@
  *      Author: Stephen
  */
 
-#include "qt/client/read_file_thread.h"
+#include "maidsafe/lifestuff/client/read_file_thread.h"
 
 // qt
 #include <QDebug>
 
 // core
-#include "qt/client/client_controller.h"
+#include "maidsafe/lifestuff/client/client_controller.h"
 
 
 ReadFileThread::ReadFileThread(const QString& filepath, QObject* parent)

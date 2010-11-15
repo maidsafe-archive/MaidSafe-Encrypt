@@ -22,8 +22,8 @@
 * ============================================================================
 */
 
-#ifndef MAIDSAFE_RETURNCODES_H_
-#define MAIDSAFE_RETURNCODES_H_
+#ifndef MAIDSAFE_COMMON_RETURNCODES_H_
+#define MAIDSAFE_COMMON_RETURNCODES_H_
 
 namespace maidsafe {
 
@@ -42,6 +42,7 @@ enum ReturnCode {
   kUserExists = -1004,
 //  kInvalidUsernameOrPin = -1005,
   kPublicUsernameExists = -1006,
+  kPublicUsernameAlreadySet = -1007,
 //  kAuthenticationTimeout = -1007,
   kFailedToDeleteOldPacket = -1008,
   kBadPacket = -1009,
@@ -183,15 +184,16 @@ enum ReturnCode {
   kNonExistentConversation = -11002,
   kExistingConversation = -11003,
   kLoadKeysFailure = -11004,
-  kContactListFailure = -11005,
-  kSessionNameEmpty = -11006,
-  kFileSystemMountError = -11007,
-  kFileSystemUnmountError = -11008,
-  kFuseMountPointError = -11009,
-  kFileSystemException = -11010,
-  kAddLiveContactFailure = -11011,
-  kLiveContactNotFound = -11012,
-  kLiveContactNoEp = -11013,
+  kGetKeyFailure = -11005,
+  kContactListFailure = -11006,
+  kSessionNameEmpty = -11007,
+  kFileSystemMountError = -11008,
+  kFileSystemUnmountError = -11009,
+  kFuseMountPointError = -11010,
+  kFileSystemException = -11011,
+  kAddLiveContactFailure = -11012,
+  kLiveContactNotFound = -11013,
+  kLiveContactNoEp = -11014,
 
   // Self Encryption Handler (-12000)
   kGeneralEncryptionError = -12001,
@@ -232,81 +234,4 @@ enum ReturnCode {
 
 }  // namespace maidsafe
 
-namespace maidsafe_vault {
-
-enum ReturnCode {
-  // General
-  kSuccess = maidsafe::kSuccess,
-  kGeneralError = maidsafe::kGeneralError,
-  kVaultOffline = -501,
-
-  // Service
-  kVaultServiceError = -1501,
-  kVaultServiceUninitialisedFunction = -1502,
-  kVaultServiceFindNodesError = -1503,
-  kVaultServiceFindNodesFailure = -1504,
-  kVaultServiceFindNodesTooFew = -1505,
-  kRemoteOpResponseUninitialised = -1506,
-  kRemoteOpResponseFailed = -1507,
-  kRemoteOpResponseError = -1508,
-  kCacheChunkResponseUninitialised = -1509,
-  kCacheChunkResponseError = -1510,
-
-  // Vault
-  kVaultDaemonException = -2501,
-  kVaultDaemonWaitingPwnage = -2502,
-  kVaultDaemonParseError = -2503,
-  kVaultDaemonConfigError = -2504,
-
-  // Vault Chunkstore
-  kChunkstoreError = maidsafe::kChunkstoreError,
-  kInvalidChunkType = maidsafe::kInvalidChunkType,
-  kChunkstoreUninitialised = maidsafe::kChunkstoreUninitialised,
-  kIncorrectKeySize = maidsafe::kIncorrectKeySize,
-  kHashCheckFailure = maidsafe::kHashCheckFailure,
-  kChunkstoreUpdateFailure = -3501,
-  kPacketStoreValueExists = -3502,
-  kPacketStoreFailure = -3503,
-  kPacketAppendValueExists = -3504,
-  kPacketAppendNotFound = -3505,
-  kPacketAppendNotOwned = -3506,
-  kPacketAppendFailure = -3507,
-  kPacketDeleteNotFound = -3508,
-  kPacketDeleteNotOwned = -3509,
-  kPacketLoadNotFound = -3510,
-  kNoSpaceForCaching = -3511,
-  kNoCacheSpaceToClear = -3512,
-
-  // Account Handler & Account Amendment Handler & Request Expectation Handler
-  kAccountHandlerNotStarted = -4501,
-  kAccountNotFound = -4502,
-  kAccountExists = -4503,
-  kAccountDeleteFailed = -4504,
-  kAccountWrongAccountField = -4505,
-  kAccountEmptyAlert = -4506,
-  kAccountNotEnoughSpace = -4507,
-  kAccountInvalidAmount = -4508,
-  kAmendAccountTypeError = -4509,
-  kAmendAccountCountError = -4510,
-  kAccountAmendmentError = -4511,
-  kAccountAmendmentPending = -4512,
-  kAccountAmendmentNotFound = -4513,
-  kAccountAmendmentUpdated = -4514,
-  kAccountAmendmentFinished = -4515,
-  kRequestExpectationCountError = -4516,
-
-  // Chunk Info Handler
-  kChunkInfoHandlerNotStarted = -5501,
-  kChunkInfoInvalidSize = -5502,
-  kChunkInfoInvalidName = -5503,
-  kChunkInfoCannotDelete = -5504,
-  kChunkInfoExists = -5505,
-  kChunkInfoNoActiveWatchers = -5506,
-  kChunkInfoRefExists = -5507
-
-  // Vault Buffer Packet Handler
-};
-
-}  // namespace maidsafe_vault
-
-#endif  // MAIDSAFE_RETURNCODES_H_
+#endif  // MAIDSAFE_COMMON_RETURNCODES_H_

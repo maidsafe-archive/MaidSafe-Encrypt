@@ -27,15 +27,15 @@
 #include <boost/filesystem.hpp>
 #include <boost/thread.hpp>
 #include <maidsafe/transport/transportudt.h>
-#include "fs/filesystem.h"
-#include "maidsafe/chunkstore.h"
-#include "maidsafe/vault/vaultservice.h"
+#include "maidsafe/common/commonutils.h"
+#include "maidsafe/common/chunkstore.h"
+#include "maidsafe/common/filesystem.h"
+#include "maidsafe/common/maidsafe_service_messages.pb.h"
 #include "maidsafe/client/maidstoremanager.h"
-#include "maidsafe/client/packetfactory.h"
-#include "tests/maidsafe/cached_keys.h"
-#include "tests/maidsafe/testcallback.h"
+#include "maidsafe/vault/vaultservice.h"
+#include "maidsafe/sharedtest/cached_keys.h"
 
-namespace test_vault_reg {
+namespace test_vault_reg_client {
 
 static const boost::uint8_t K(4);
 
@@ -52,17 +52,17 @@ class RegistrationServiceHolder {
   void RespondOwn(const bool &failstart) {
     service_.ReplySetLocalVaultOwnedRequest(failstart);
   }
-  void SetServiceVaultStatus(const maidsafe::VaultStatus &status) {
+  void SetServiceVaultStatus(const maidsafe::VaultOwnershipStatus &status) {
     service_.set_status(status);
   }
-  maidsafe_vault::RegistrationService* pservice() { return &service_; }
+  maidsafe::vault::RegistrationService* pservice() { return &service_; }
   void OwnNotifier(const maidsafe::VaultConfig&) {
     own_notification_arrived_ = true;
   }
   void Reset() { own_notification_arrived_ = false; }
   bool own_notification_arrived() const { return own_notification_arrived_; }
  private:
-  maidsafe_vault::RegistrationService service_;
+  maidsafe::vault::RegistrationService service_;
   bool own_notification_arrived_;
 };
 
@@ -76,7 +76,7 @@ class ResultHandler {
   bool callback_arrived() const { return callback_arrived_; }
   std::string pmid_name() const { return pmid_name_; }
   maidsafe::OwnLocalVaultResult result() const { return result_; }
-  maidsafe::VaultStatus local_vault_status() const {
+  maidsafe::VaultOwnershipStatus local_vault_status() const {
     return local_vault_status_;
   }
   void Reset() {
@@ -91,7 +91,7 @@ class ResultHandler {
     result_ = result;
     callback_arrived_ = true;
   }
-  void IsOwnCallback(const maidsafe::VaultStatus &result) {
+  void IsOwnCallback(const maidsafe::VaultOwnershipStatus &result) {
     local_vault_status_ = result;
     callback_arrived_ = true;
   }
@@ -99,12 +99,14 @@ class ResultHandler {
   maidsafe::OwnLocalVaultResult result_;
   std::string pmid_name_;
   bool callback_arrived_;
-  maidsafe::VaultStatus local_vault_status_;
+  maidsafe::VaultOwnershipStatus local_vault_status_;
 };
 
-}  // namespace test_vault_reg
+}  // namespace test_vault_reg_client
 
 namespace maidsafe {
+
+namespace vault {
 
 namespace test {
 
@@ -116,7 +118,7 @@ class MsmSetLocalVaultOwnedTest : public testing::Test {
             base::RandomAlphaNumericString(6))),
         chunkstore_(new maidsafe::ChunkStore(test_root_dir_.string(), 1000000,
             0)),
-        msm_(chunkstore_, test_vault_reg::K),
+        msm_(chunkstore_, test_vault_reg_client::K),
         resulthandler_(),
         service_(),
         port_(0),
@@ -126,10 +128,10 @@ class MsmSetLocalVaultOwnedTest : public testing::Test {
         service_channel_(new rpcprotocol::Channel(&server_,
                                                   &server_transport_handler_)),
         cb_(boost::bind(
-            &test_vault_reg::ResultHandler::SetLocalVaultOwnedCallback,
+            &test_vault_reg_client::ResultHandler::SetLocalVaultOwnedCallback,
             &resulthandler_, _1, _2)),
         cb1_(boost::bind(
-            &test_vault_reg::ResultHandler::IsOwnCallback,
+            &test_vault_reg_client::ResultHandler::IsOwnCallback,
             &resulthandler_, _1)) {}
   ~MsmSetLocalVaultOwnedTest() {
     transport::TransportUDT::CleanUp();
@@ -151,13 +153,13 @@ class MsmSetLocalVaultOwnedTest : public testing::Test {
 //    msm_.kad_ops_->set_transport_id(client_transport_id);
     ASSERT_TRUE(msm_.channel_manager_.RegisterNotifiersToTransport());
     ASSERT_TRUE(msm_.transport_handler_.RegisterOnServerDown(boost::bind(
-                &test_vault_reg::HandleDeadServer, _1, _2, _3)));
+                &test_vault_reg_client::HandleDeadServer, _1, _2, _3)));
     ASSERT_EQ(0, msm_.transport_handler_.Start(0,
                  msm_.transport_.transport_id()));
     ASSERT_EQ(0, msm_.channel_manager_.Start());
     ASSERT_TRUE(server_.RegisterNotifiersToTransport());
     ASSERT_TRUE(server_transport_handler_.RegisterOnServerDown(boost::bind(
-                &test_vault_reg::HandleDeadServer, _1, _2, _3)));
+                &test_vault_reg_client::HandleDeadServer, _1, _2, _3)));
     ASSERT_EQ(0, server_transport_handler_.StartLocal(kLocalPort,
                                                       server_transport_id));
     ASSERT_EQ(0, server_.Start());
@@ -183,8 +185,8 @@ class MsmSetLocalVaultOwnedTest : public testing::Test {
   fs::path test_root_dir_;
   boost::shared_ptr<maidsafe::ChunkStore> chunkstore_;
   maidsafe::MaidsafeStoreManager msm_;
-  test_vault_reg::ResultHandler resulthandler_;
-  test_vault_reg::RegistrationServiceHolder service_;
+  test_vault_reg_client::ResultHandler resulthandler_;
+  test_vault_reg_client::RegistrationServiceHolder service_;
   boost::uint16_t port_;
   transport::TransportUDT server_transport_;
   transport::TransportHandler server_transport_handler_;
@@ -192,22 +194,20 @@ class MsmSetLocalVaultOwnedTest : public testing::Test {
   boost::shared_ptr<rpcprotocol::Channel> service_channel_;
   boost::function<void(const maidsafe::OwnLocalVaultResult&,
       const std::string&)> cb_;
-  boost::function<void(const maidsafe::VaultStatus&)> cb1_;
+  boost::function<void(const VaultOwnershipStatus&)> cb1_;
  private:
   MsmSetLocalVaultOwnedTest(const MsmSetLocalVaultOwnedTest&);
   MsmSetLocalVaultOwnedTest &operator=(const MsmSetLocalVaultOwnedTest&);
 };
 
 TEST_F(MsmSetLocalVaultOwnedTest, BEH_MAID_SetLocalVaultOwned) {
-  crypto::Crypto cobj;
   std::vector<crypto::RsaKeyPair> keys;
   cached_keys::MakeKeys(1, &keys);
   crypto::RsaKeyPair keypair = keys.at(0);
-  cobj.set_hash_algorithm(crypto::SHA_512);
-  std::string signed_public_key = cobj.AsymSign(keypair.public_key(), "",
-      keypair.private_key(), crypto::STRING_STRING);
-  std::string pmid_name = cobj.Hash(keypair.public_key() + signed_public_key,
-    "", crypto::STRING_STRING, false);
+  std::string signed_public_key =
+      maidsafe::RSASign(keypair.public_key(), keypair.private_key());
+  std::string pmid_name =
+      maidsafe::SHA512String(keypair.public_key() + signed_public_key);
 
   msm_.LocalVaultOwned(cb1_);
   while (!resulthandler_.callback_arrived())
@@ -234,17 +234,14 @@ TEST_F(MsmSetLocalVaultOwnedTest, BEH_MAID_SetLocalVaultOwned) {
 }
 
 TEST_F(MsmSetLocalVaultOwnedTest, FUNC_MAID_InvalidSetLocalVaultOwned) {
-  crypto::Crypto cobj;
   std::vector<crypto::RsaKeyPair> keys;
   cached_keys::MakeKeys(1, &keys);
   crypto::RsaKeyPair keypair = keys.at(0);
-  cobj.set_hash_algorithm(crypto::SHA_512);
   std::string priv_key = keypair.private_key();
   std::string pub_key = keypair.public_key();
   // NB - In reality, key passed is PMID which is not self-signed, but no check
   // of this is done by service, so we're OK to pass a slef-signed key here.
-  std::string signed_public_key = cobj.AsymSign(pub_key, "", priv_key,
-      crypto::STRING_STRING);
+  std::string signed_public_key = maidsafe::RSASign(pub_key, priv_key);
 
   msm_.SetLocalVaultOwned(priv_key, pub_key, signed_public_key, port_,
       (test_root_dir_ / "ChunkStore").string(), 1024, cb_);
@@ -314,5 +311,7 @@ TEST_F(MsmSetLocalVaultOwnedTest, FUNC_MAID_InvalidSetLocalVaultOwned) {
 }
 
 }  // namespace test
+
+}  // namespace vault
 
 }  // namespace maidsafe

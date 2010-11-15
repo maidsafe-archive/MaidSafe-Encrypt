@@ -16,8 +16,8 @@
 #define QT_WIDGETS_SHARES_H_
 
 // local
-#include "qt/widgets/panel.h"
-#include "qt/client/client_controller.h"
+#include "maidsafe/lifestuff/widgets/panel.h"
+#include "maidsafe/lifestuff/client/client_controller.h"
 
 // generated
 #include "ui_user_shares_panel.h"

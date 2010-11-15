@@ -25,10 +25,11 @@
 #include <gtest/gtest.h>
 #include <maidsafe/base/crypto.h>
 
-#include "maidsafe/clientbufferpackethandler.h"
+#include "maidsafe/common/clientbufferpackethandler.h"
+#include "maidsafe/common/bufferpacketrpc.h"
 
-#include "tests/maidsafe/cached_keys.h"
-#include "tests/maidsafe/networktest.h"
+#include "maidsafe/sharedtest/cached_keys.h"
+#include "maidsafe/sharedtest/networktest.h"
 
 namespace maidsafe {
 
@@ -97,7 +98,7 @@ class BPCallback {
 class CBPHandlerTest : public testing::Test {
  public:
   CBPHandlerTest()
-      : network_test_("CBPH"), cbph_(), bp_rpcs_(), crypto_(), keys_() {}
+      : network_test_("CBPH"), cbph_(), bp_rpcs_(), keys_() {}
  protected:
   virtual void SetUp() {
     ASSERT_TRUE(network_test_.Init());
@@ -111,7 +112,6 @@ class CBPHandlerTest : public testing::Test {
   NetworkTest network_test_;
   boost::shared_ptr<ClientBufferPacketHandler> cbph_;
   boost::shared_ptr<BufferPacketRpcs> bp_rpcs_;
-  crypto::Crypto crypto_;
   std::vector<crypto::RsaKeyPair> keys_;
 };
 
@@ -119,11 +119,9 @@ TEST_MS_NET(CBPHandlerTest, FUNC, MAID, TestBPHOperations) {
   std::string owner_pubkey(keys_.at(0).public_key()),
               owner_privkey(keys_.at(0).private_key());
   BPCallback cb;
-  std::string signed_pub_key = crypto_.AsymSign(owner_pubkey, "",
-                               owner_privkey, crypto::STRING_STRING);
-  BPInputParameters bpip = {crypto_.Hash("publicname", "",
-                            crypto::STRING_STRING, false), owner_pubkey,
-                            owner_privkey};
+  std::string signed_pub_key = RSASign(owner_pubkey, owner_privkey);
+  BPInputParameters bpip(SHA512String("publicname"), owner_pubkey,
+                         owner_privkey);
 
   std::vector<std::string> users;
   cbph_->ModifyOwnerInfo(bpip, users,
@@ -144,13 +142,11 @@ TEST_MS_NET(CBPHandlerTest, FUNC, MAID, TestBPHOperations) {
   printf("Step 2\n");
 
   std::string sender_id("user1");
-  std::string sender_pmid = crypto_.Hash(keys_.at(1).public_key() +
-      crypto_.AsymSign(keys_.at(1).public_key(), "", keys_.at(1).private_key(),
-      crypto::STRING_STRING), "", crypto::STRING_STRING, false);
-  BPInputParameters bpip1 = {sender_pmid, keys_.at(1).public_key(),
-                             keys_.at(1).private_key()};
-  std::string recv_id = crypto_.Hash("publicname", "", crypto::STRING_STRING,
-                        false);
+  std::string sender_pmid = SHA512String(keys_.at(1).public_key() +
+      RSASign(keys_.at(1).public_key(), keys_.at(1).private_key()));
+  BPInputParameters bpip1(sender_pmid, keys_.at(1).public_key(),
+                          keys_.at(1).private_key());
+  std::string recv_id = SHA512String("publicname");
 
   cb.Reset();
   cbph_->AddMessage(bpip1, sender_id, owner_pubkey, recv_id, "Hello World",
@@ -191,7 +187,7 @@ TEST_MS_NET(CBPHandlerTest, FUNC, MAID, TestBPHOperations) {
   ASSERT_TRUE(cb.presences.empty());
   printf("Step 6\n");
 
-  users.push_back(crypto_.Hash(sender_id, "", crypto::STRING_STRING, false));
+  users.push_back(SHA512String(sender_id));
   cb.Reset();
   cbph_->ModifyOwnerInfo(bpip, users,
                          boost::bind(&BPCallback::BPOperation_CB, &cb, _1),
@@ -248,10 +244,10 @@ TEST_MS_NET(CBPHandlerTest, FUNC, MAID, TestBPHOperations) {
   printf("Step 11\n");
 
   // Request BPs not belonging to the sender
-  bpip1.sign_id = bpip.sign_id;
-  bpip1.public_key = bpip.public_key;
+  BPInputParameters bpip2(bpip.kPublicUsername, bpip.kMpidPublicKey,
+                          keys_.at(1).private_key());
   cb.Reset();
-  cbph_->GetMessages(bpip1,
+  cbph_->GetMessages(bpip2,
                      boost::bind(&BPCallback::BPGetMsgs_CB, &cb, _1, _2, _3),
                      network_test_.transport_id());
   while (cb.result == -1)
@@ -260,7 +256,7 @@ TEST_MS_NET(CBPHandlerTest, FUNC, MAID, TestBPHOperations) {
   printf("Step 12\n");
 
   cb.Reset();
-  cbph_->GetPresence(bpip1,
+  cbph_->GetPresence(bpip2,
                     boost::bind(&BPCallback::BPGetPresence_CB, &cb, _1, _2, _3),
                     network_test_.transport_id());
   while (cb.result == -1)
@@ -270,7 +266,7 @@ TEST_MS_NET(CBPHandlerTest, FUNC, MAID, TestBPHOperations) {
   printf("Step 13\n");
 
   cb.Reset();
-  cbph_->ModifyOwnerInfo(bpip1, users,
+  cbph_->ModifyOwnerInfo(bpip2, users,
                          boost::bind(&BPCallback::BPOperation_CB, &cb, _1),
                          network_test_.transport_id());
   while (cb.result == -1)

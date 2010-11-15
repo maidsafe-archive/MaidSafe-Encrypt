@@ -20,10 +20,10 @@
 
 #include <boost/format.hpp>
 #include <gtest/gtest.h>
+#include <maidsafe/base/utils.h>
 #include <algorithm>
 #include <limits>
-#include "maidsafe/pdutils.h"
-#include "maidsafe/accountstatusmanager.h"
+#include "maidsafe/common/accountstatusmanager.h"
 
 namespace maidsafe {
 
@@ -193,54 +193,54 @@ TEST_F(AccountStatusManagerTest, BEH_MAID_ASM_ReserveAndUnReserveSpace) {
 
 TEST_F(AccountStatusManagerTest, BEH_MAID_ASM_StartAndStopUpdating) {
   EXPECT_TRUE(asm_.update_functor_.empty());
-  bool success = (asm_.work_.get() == NULL);
+  bool success = (!asm_.work_);
   EXPECT_TRUE(success);
   success = (asm_.worker_thread_ == boost::thread());
   EXPECT_TRUE(success);
-  success = (asm_.timer_.get() == NULL);
+  success = (!asm_.timer_);
   EXPECT_TRUE(success);
 
   asm_.StopUpdating();
   EXPECT_TRUE(asm_.update_functor_.empty());
-  success = (asm_.work_.get() == NULL);
+  success = (!asm_.work_);
   EXPECT_TRUE(success);
   success = (asm_.worker_thread_ == boost::thread());
   EXPECT_TRUE(success);
-  success = (asm_.timer_.get() == NULL);
+  success = (!asm_.timer_);
   EXPECT_TRUE(success);
 
   boost::posix_time::ptime expected_expiry_time =
       boost::posix_time::microsec_clock::universal_time() +
       asm_.kMaxUpdateInterval_;
   asm_.StartUpdating(update_functor_);
-  success = (asm_.timer_.get() != NULL);
+  success = (asm_.timer_);
   ASSERT_TRUE(success);
   boost::posix_time::ptime expiry_time = asm_.timer_->expires_at();
   EXPECT_LE((expiry_time - expected_expiry_time).total_milliseconds(), 50);
   EXPECT_FALSE(asm_.update_functor_.empty());
-  success = (asm_.work_.get() != NULL);
+  success = (asm_.work_);
   EXPECT_TRUE(success);
   success = (asm_.worker_thread_ != boost::thread());
   EXPECT_TRUE(success);
 
   asm_.StopUpdating();
   EXPECT_TRUE(asm_.update_functor_.empty());
-  success = (asm_.work_.get() == NULL);
+  success = (!asm_.work_);
   EXPECT_TRUE(success);
   success = (asm_.worker_thread_ == boost::thread());
   EXPECT_TRUE(success);
-  success = (asm_.timer_.get() == NULL);
+  success = (!asm_.timer_);
   EXPECT_TRUE(success);
 
   expected_expiry_time = boost::posix_time::microsec_clock::universal_time() +
                          asm_.kMaxUpdateInterval_;
   asm_.StartUpdating(update_functor_);
-  success = (asm_.timer_.get() != NULL);
+  success = (asm_.timer_);
   ASSERT_TRUE(success);
   expiry_time = asm_.timer_->expires_at();
   EXPECT_LE((expiry_time - expected_expiry_time).total_milliseconds(), 50);
   EXPECT_FALSE(asm_.update_functor_.empty());
-  success = (asm_.work_.get() != NULL);
+  success = (asm_.work_);
   EXPECT_TRUE(success);
   success = (asm_.worker_thread_ != boost::thread());
   EXPECT_TRUE(success);
@@ -480,7 +480,7 @@ TEST_F(AccountStatusManagerTest, BEH_MAID_ASM_UpdateFailed) {
       boost::posix_time::microsec_clock::universal_time() +
       asm_.kMaxUpdateInterval_;
   asm_.StartUpdating(update_functor_);
-  bool success = (asm_.timer_.get() != NULL);
+  bool success = (asm_.timer_);
   ASSERT_TRUE(success);
   boost::posix_time::ptime expiry_time = asm_.timer_->expires_at();
   EXPECT_LE((expiry_time - expected_expiry_time).total_milliseconds(), 50);
@@ -492,7 +492,7 @@ TEST_F(AccountStatusManagerTest, BEH_MAID_ASM_UpdateFailed) {
   expected_expiry_time = boost::posix_time::microsec_clock::universal_time() +
                          asm_.kFailureRetryInterval_;
   asm_.UpdateFailed();
-  success = (asm_.timer_.get() != NULL);
+  success = (asm_.timer_);
   ASSERT_TRUE(success);
   expiry_time = asm_.timer_->expires_at();
   EXPECT_LE((expiry_time - expected_expiry_time).total_milliseconds(), 50);
