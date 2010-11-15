@@ -1,7 +1,7 @@
 <project>
     <shortName>pdlightlocal</shortName>
     <fullName>PDLightLocal</fullName>
-    <version>0.0.004</version>
+    <version>0.0.005</version>
     <readmeFile>${build_project_directory}/../text/pdlight/readme.txt</readmeFile>
     <licenseFile>${build_project_directory}/../text/pdlight/eula.txt</licenseFile>
     <preBuildActionList>

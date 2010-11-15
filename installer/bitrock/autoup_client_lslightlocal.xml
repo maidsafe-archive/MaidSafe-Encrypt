@@ -2,7 +2,7 @@
   <shortName>pdlightlocal</shortName>
   <fullName>PDLightLocal</fullName>
   <vendor>maidsafe.net</vendor>
-  <version>0.0.004</version>
+  <version>0.0.005</version>
   <singleInstanceCheck>1</singleInstanceCheck>
   <requireInstallationByRootUser>1</requireInstallationByRootUser>
   <leftImage>${build_project_directory}/../images/logo_left_panel.png</leftImage>
@@ -11,5 +11,5 @@
   <saveRelativePaths>1</saveRelativePaths>
   <splashImage>${build_project_directory}/../images/logo_splash.png</splashImage>
   <windowsExecutableIcon>${build_project_directory}/../images/maidsafe_logo1.ico</windowsExecutableIcon>
-  <windowsResourceFileVersion>0.0.004</windowsResourceFileVersion>
+  <windowsResourceFileVersion>0.0.005</windowsResourceFileVersion>
 </autoUpdateProject>
