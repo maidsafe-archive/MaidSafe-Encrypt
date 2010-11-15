@@ -56,7 +56,7 @@ static std::list<std::string> callback_messages_;
 
 namespace testpdvault {
 
-static const boost::uint8_t K(4);
+static const boost::uint8_t K(8);
 
 struct ClientData {
   explicit ClientData(const std::string &root_dir)
@@ -195,7 +195,7 @@ namespace test {
 static std::vector< boost::shared_ptr<PDVault> > pdvaults_;
 static const int kNumOfClients = 1;
 static const int kNetworkSize = testpdvault::K + kNumOfClients;
-static const int kNumOfTestChunks = 1;  // kNetworkSize * 1.5;
+static const int kNumOfTestChunks = 3;  // kNetworkSize * 1.5;
 static boost::filesystem::path kadconfig_;
 /**
  * Note: StoreAndGetChunks only works for small K due to resource problems
@@ -434,7 +434,7 @@ TEST_MS_NET(PDVaultTest, FUNC, MAID, StoreAndGetChunks) {
   int iteration = 0;
   const int kMaxIterations = 18;  // 3 minutes
   int remaining_tasks = 1;
-  while ((stored_chunks.size() < chunks.size() || remaining_tasks > 0) &&
+  while (/* (stored_chunks.size() < chunks.size() || remaining_tasks > 0) && */
          iteration < kMaxIterations) {
     ++iteration;
     printf("\n[ Sleeping iteration %i of %i ]\n\n", iteration, kMaxIterations);

@@ -221,6 +221,7 @@ class AccountAmendmentHandler {
       AccountAmendment amendment,
       const maidsafe::ReturnCode &result,
       const std::vector<kad::Contact> &closest_nodes);
+  int DoCleanUp();
   AccountHandler *account_handler_;
   RequestExpectationHandler *request_expectation_handler_;
   VaultServiceLogic *vault_service_logic_;

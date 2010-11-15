@@ -32,7 +32,7 @@
 #include <maidsafe/base/crypto.h>
 #include <maidsafe/maidsafe-dht.h>
 #include <maidsafe/transport/transportudt.h>
-// #include <maidsafe/transport/transportdb.h>
+#include <maidsafe/transport/transportdb.h>
 #include <maidsafe/base/utils.h>
 #include <QThreadPool>
 
@@ -315,8 +315,8 @@ class PDVault {
   const boost::uint16_t kUpperThreshold_;
   const boost::uint16_t kLowerThreshold_;
   boost::uint16_t port_;
-  transport::TransportUDT transport_;
-  // transport::TransportDb transport_;
+  // transport::TransportUDT transport_;
+  transport::TransportDb transport_;
   transport::TransportHandler transport_handler_;
   rpcprotocol::ChannelManager channel_manager_;
   maidsafe::MaidsafeValidator validator_;
