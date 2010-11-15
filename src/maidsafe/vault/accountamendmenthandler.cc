@@ -204,12 +204,11 @@ int AccountAmendmentHandler::AssessAmendment(
         // Amend actual account
         amendment->account_amendment_result = account_handler_->AmendAccount(
             owner_pmid, amendment_field, offer_size, inc);
+        if (!chunkname.empty())
+          amendment_results_.push_back(AmendmentResult(
+              owner_pmid, chunkname, amendment_type,
+              amendment->account_amendment_result == kSuccess ? kAck : kNack));
       }
-
-      if (!chunkname.empty())
-        amendment_results_.push_back(
-            AmendmentResult(owner_pmid, chunkname, amendment_type,
-            amendment->account_amendment_result == kSuccess ? kAck : kNack));
 
       // Set responses and run callbacks
       std::list<PendingAmending>::iterator pendings_it;

@@ -434,7 +434,7 @@ TEST_MS_NET(PDVaultTest, FUNC, MAID, StoreAndGetChunks) {
   int iteration = 0;
   const int kMaxIterations = 18;  // 3 minutes
   int remaining_tasks = 1;
-  while (/* (stored_chunks.size() < chunks.size() || remaining_tasks > 0) && */
+  while ((stored_chunks.size() < chunks.size() || remaining_tasks > 0) &&
          iteration < kMaxIterations) {
     ++iteration;
     printf("\n[ Sleeping iteration %i of %i ]\n\n", iteration, kMaxIterations);
