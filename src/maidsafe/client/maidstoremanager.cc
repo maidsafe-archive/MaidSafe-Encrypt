@@ -146,10 +146,10 @@ void MaidsafeStoreManager::Init(VoidFuncOneInt callback,
       cond_var.wait(lock);
   }
 
-  std::string pmid_public_key;
+  std::string pmid_name;
   if (result == kSuccess)
     result = static_cast<ReturnCode>(
-             ss_->ProxyMID(NULL, &pmid_public_key, NULL, NULL));
+             ss_->ProxyMID(&pmid_name, NULL, NULL, NULL));
 
   if (result == kSuccess) {
     chunk_thread_pool_.setMaxThreadCount(kChunkMaxThreadCount_);
@@ -157,8 +157,8 @@ void MaidsafeStoreManager::Init(VoidFuncOneInt callback,
 #ifdef DEBUG
     printf("\tIn MSM::Init, after Join.  On port %u\n", kad_ops_->Port());
 #endif
-    own_vault_.Init(pmid_public_key);
-    account_holders_manager_.Init(pmid_public_key, boost::bind(
+    own_vault_.Init(pmid_name);
+    account_holders_manager_.Init(pmid_name, boost::bind(
         &MaidsafeStoreManager::AccountHoldersCallback, this, _1, _2));
     account_status_manager_.StartUpdating(boost::bind(
         &MaidsafeStoreManager::UpdateAccountStatus, this));

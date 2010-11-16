@@ -64,6 +64,7 @@ class IMHandler {
   friend class test::ImMessagingTest_FUNC_MAID_NET_SendReceiveMessages_Test;
   friend class test::ImMessagingTest_FUNC_MAID_NET_ReceiveEndPointMsg_Test;
   friend class test::ImMessagingTest_FUNC_MAID_NET_ReceiveLogOutMsg_Test;
+  friend class test::ImMessagingTest_FUNC_MAID_NET_HandleTwoConverstions_Test;
   SessionSingleton *ss_;
   crypto::Crypto crypto_;
 };

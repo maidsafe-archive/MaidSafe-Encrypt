@@ -98,7 +98,7 @@ class ImMessagingTest : public testing::Test {
                       alt_ctc_rec_msgs_(),
                       mpid_public_key_() {
     keys_.clear();
-    cached_keys::MakeKeys(3, &keys_);
+    cached_keys::MakeKeys(2, &keys_);
   }
  protected:
   void SetUp() {
@@ -108,7 +108,7 @@ class ImMessagingTest : public testing::Test {
     passport->Init();
     ss->passport_ = passport;
     ss->ResetSession();
-    ss_->CreateTestPackets(base::RandomAlphaNumericString(10));
+    ss_->CreateTestPackets(publicusername_);
     ASSERT_TRUE(network_test_.Init());
     ss_->SetConnectionStatus(0);
     sm_->SetSessionEndPoint();
@@ -232,7 +232,7 @@ TEST_MS_NET(ImMessagingTest, FUNC, MAID, SendMessages) {
   MessageType type;
 
   InstantMessage im = GetImFromBpMessage(gp.data(),
-      keys_.at(1).private_key(), &type);
+      keys_.at(0).private_key(), &type);
   ASSERT_EQ(HELLO_PING, type);
   ASSERT_EQ(publicusername_, im.sender());
 
@@ -241,7 +241,7 @@ TEST_MS_NET(ImMessagingTest, FUNC, MAID, SendMessages) {
   ASSERT_TRUE(RSACheckSignedData(gp.data(), gp.signature(), mpid_public_key_));
 
   std::string rec_msg = GetStrMsgFromBpMsg(gp.data(),
-      keys_.at(1).private_key(), &type, &sender);
+      keys_.at(0).private_key(), &type, &sender);
   ASSERT_EQ(INSTANT_MSG, type);
   ASSERT_EQ(publicusername_, sender);
   ASSERT_EQ(msg, rec_msg);
@@ -264,7 +264,7 @@ TEST_MS_NET(ImMessagingTest, FUNC, MAID, SendMessages) {
   ASSERT_TRUE(RSACheckSignedData(gp.data(), gp.signature(), mpid_public_key_));
 
   rec_msg = GetStrMsgFromBpMsg(gp.data(),
-      keys_.at(1).private_key(), &type, &sender);
+      keys_.at(0).private_key(), &type, &sender);
   ASSERT_EQ(publicusername_, sender);
   ASSERT_EQ(msg, rec_msg);
   ASSERT_EQ(INSTANT_MSG, type);
@@ -291,7 +291,7 @@ TEST_MS_NET(ImMessagingTest, FUNC, MAID, SendMessages) {
 
   im.Clear();
   im = GetImFromBpMessage(gp.data(),
-      keys_.at(1).private_key(), &type);
+      keys_.at(0).private_key(), &type);
   ASSERT_EQ(HELLO_PING, type);
   ASSERT_EQ(publicusername_, im.sender());
 
@@ -300,7 +300,7 @@ TEST_MS_NET(ImMessagingTest, FUNC, MAID, SendMessages) {
   ASSERT_TRUE(RSACheckSignedData(gp.data(), gp.signature(), mpid_public_key_));
 
   rec_msg = GetStrMsgFromBpMsg(gp.data(),
-      keys_.at(1).private_key(), &type, &sender);
+      keys_.at(0).private_key(), &type, &sender);
   ASSERT_EQ(INSTANT_MSG, type);
   ASSERT_EQ(publicusername_, sender);
   ASSERT_EQ(msg, rec_msg);
@@ -309,8 +309,8 @@ TEST_MS_NET(ImMessagingTest, FUNC, MAID, SendMessages) {
 TEST_MS_NET(ImMessagingTest, FUNC, MAID, SendReceiveMessages) {
   MockSessionSingleton client1_ss;
   client1_ss.CreateTestPackets("contact1");
-  ASSERT_EQ(0, client1_ss.AddContact(publicusername_, keys_.at(0).public_key(),
-        "", "", "", 'U', 1, 2, "", 'C', 0, 0));
+  ASSERT_EQ(0, client1_ss.AddContact(publicusername_, mpid_public_key_, "", "",
+                                     "", 'U', 1, 2, "", 'C', 0, 0));
   IMHandler client1_imh;
   client1_imh.ss_ = &client1_ss;
   client1_ss.SetEp(ctc1_ep_);
@@ -338,7 +338,7 @@ TEST_MS_NET(ImMessagingTest, FUNC, MAID, SendReceiveMessages) {
   MessageType type;
 
   InstantMessage im = GetImFromBpMessage(gp.data(),
-      keys_.at(1).private_key(), &type);
+      keys_.at(0).private_key(), &type);
   ASSERT_EQ(HELLO_PING, type);
   ASSERT_EQ(publicusername_, im.sender());
 
@@ -347,7 +347,7 @@ TEST_MS_NET(ImMessagingTest, FUNC, MAID, SendReceiveMessages) {
   ASSERT_TRUE(RSACheckSignedData(gp.data(), gp.signature(), mpid_public_key_));
 
   std::string rec_msg = GetStrMsgFromBpMsg(gp.data(),
-      keys_.at(1).private_key(), &type, &sender);
+      keys_.at(0).private_key(), &type, &sender);
   ASSERT_EQ(INSTANT_MSG, type);
   ASSERT_EQ(publicusername_, sender);
   ASSERT_EQ(msg, rec_msg);
@@ -392,8 +392,8 @@ TEST_MS_NET(ImMessagingTest, FUNC, MAID, SendReceiveMessages) {
 TEST_MS_NET(ImMessagingTest, FUNC, MAID, ReceiveEndPointMsg) {
   MockSessionSingleton client2_ss;
   client2_ss.CreateTestPackets("contact2");
-  ASSERT_EQ(0, client2_ss.AddContact(publicusername_, keys_.at(0).public_key(),
-        "", "", "", 'U', 1, 2, "", 'C', 0, 0));
+  ASSERT_EQ(0, client2_ss.AddContact(publicusername_, mpid_public_key_, "", "",
+                                     "", 'U', 1, 2, "", 'C', 0, 0));
   IMHandler client2_imh;
   client2_imh.ss_ = &client2_ss;
   client2_ss.SetEp(ctc2_ep_);
@@ -446,7 +446,7 @@ TEST_MS_NET(ImMessagingTest, FUNC, MAID, ReceiveEndPointMsg) {
   MessageType type;
 
   std::string rec_msg = GetStrMsgFromBpMsg(gp.data(),
-      keys_.at(2).private_key(), &type, &sender);
+      keys_.at(1).private_key(), &type, &sender);
   ASSERT_EQ(INSTANT_MSG, type);
   ASSERT_EQ(publicusername_, sender);
   ASSERT_EQ(msg, rec_msg);
@@ -476,7 +476,7 @@ TEST_MS_NET(ImMessagingTest, FUNC, MAID, ReceiveEndPointMsg) {
   ASSERT_TRUE(RSACheckSignedData(gp.data(), gp.signature(), mpid_public_key_));
 
   InstantMessage im = GetImFromBpMessage(gp.data(),
-      keys_.at(2).private_key(), &type);
+      keys_.at(1).private_key(), &type);
   ASSERT_EQ(HELLO_PING, type);
   ASSERT_EQ(publicusername_, im.sender());
 
@@ -485,7 +485,7 @@ TEST_MS_NET(ImMessagingTest, FUNC, MAID, ReceiveEndPointMsg) {
   ASSERT_TRUE(RSACheckSignedData(gp.data(), gp.signature(), mpid_public_key_));
 
   rec_msg = GetStrMsgFromBpMsg(gp.data(),
-      keys_.at(2).private_key(), &type, &sender);
+      keys_.at(1).private_key(), &type, &sender);
   ASSERT_EQ(INSTANT_MSG, type);
   ASSERT_EQ(publicusername_, sender);
   ASSERT_EQ(msg, rec_msg);
@@ -507,7 +507,7 @@ TEST_MS_NET(ImMessagingTest, FUNC, MAID, SendLogOutMsg) {
   MessageType type;
 
   InstantMessage im = GetImFromBpMessage(gp.data(),
-      keys_.at(1).private_key(), &type);
+      keys_.at(0).private_key(), &type);
   ASSERT_EQ(HELLO_PING, type);
   ASSERT_EQ(publicusername_, im.sender());
 
@@ -517,7 +517,7 @@ TEST_MS_NET(ImMessagingTest, FUNC, MAID, SendLogOutMsg) {
 
   im.Clear();
   im = GetImFromBpMessage(gp.data(),
-      keys_.at(1).private_key(), &type);
+      keys_.at(0).private_key(), &type);
   ASSERT_EQ(LOGOUT_PING, type);
   ASSERT_EQ(publicusername_, im.sender());
 
@@ -541,7 +541,7 @@ TEST_MS_NET(ImMessagingTest, FUNC, MAID, SendPresenceMsg) {
   MessageType type;
 
   InstantMessage im = GetImFromBpMessage(gp.data(),
-      keys_.at(1).private_key(), &type);
+      keys_.at(0).private_key(), &type);
   ASSERT_EQ(HELLO_PING, type);
   ASSERT_EQ(publicusername_, im.sender());
   ASSERT_EQ(ss_->ConnectionStatus(), im.status());
@@ -567,7 +567,7 @@ TEST_MS_NET(ImMessagingTest, FUNC, MAID, SendPresenceMsg) {
   ASSERT_TRUE(RSACheckSignedData(gp.data(), gp.signature(), mpid_public_key_));
 
   std::string rec_msg = GetStrMsgFromBpMsg(gp.data(),
-      keys_.at(1).private_key(), &type, &sender);
+      keys_.at(0).private_key(), &type, &sender);
   ASSERT_EQ(msg, rec_msg);
   ASSERT_EQ(publicusername_, sender);
   ASSERT_EQ(INSTANT_MSG, type);
@@ -585,8 +585,8 @@ TEST_MS_NET(ImMessagingTest, FUNC, MAID, SendPresenceMsg) {
 TEST_MS_NET(ImMessagingTest, FUNC, MAID, ReceiveLogOutMsg) {
   MockSessionSingleton client1_ss;
   client1_ss.CreateTestPackets("contact1");
-  ASSERT_EQ(0, client1_ss.AddContact(publicusername_, keys_.at(0).public_key(),
-        "", "", "", 'U', 1, 2, "", 'C', 0, 0));
+  ASSERT_EQ(0, client1_ss.AddContact(publicusername_, mpid_public_key_, "", "",
+                                     "", 'U', 1, 2, "", 'C', 0, 0));
   IMHandler client1_imh;
   client1_imh.ss_ = &client1_ss;
   client1_ss.SetEp(ctc1_ep_);
@@ -648,8 +648,8 @@ TEST_MS_NET(ImMessagingTest, FUNC, MAID, InvalidNewConnection) {
 TEST_MS_NET(ImMessagingTest, FUNC, MAID, HandleTwoConverstions) {
   MockSessionSingleton client2_ss;
   client2_ss.CreateTestPackets("contact2");
-  ASSERT_EQ(0, client2_ss.AddContact(publicusername_, keys_.at(0).public_key(),
-        "", "", "", 'U', 1, 2, "", 'C', 0, 0));
+  ASSERT_EQ(0, client2_ss.AddContact(publicusername_, mpid_public_key_, "", "",
+                                     "", 'U', 1, 2, "", 'C', 0, 0));
   IMHandler client2_imh;
   client2_imh.ss_ = &client2_ss;
   client2_ss.SetEp(ctc2_ep_);
@@ -657,8 +657,8 @@ TEST_MS_NET(ImMessagingTest, FUNC, MAID, HandleTwoConverstions) {
 
   MockSessionSingleton client1_ss;
   client1_ss.CreateTestPackets("contact1");
-  ASSERT_EQ(0, client1_ss.AddContact(publicusername_, keys_.at(0).public_key(),
-        "", "", "", 'U', 1, 2, "", 'C', 0, 0));
+  ASSERT_EQ(0, client1_ss.AddContact(publicusername_, mpid_public_key_, "", "",
+                                     "", 'U', 1, 2, "", 'C', 0, 0));
   IMHandler client1_imh;
   client1_imh.ss_ = &client1_ss;
   client1_ss.SetEp(ctc1_ep_);
@@ -686,7 +686,7 @@ TEST_MS_NET(ImMessagingTest, FUNC, MAID, HandleTwoConverstions) {
   MessageType type;
 
   InstantMessage im = GetImFromBpMessage(gp.data(),
-      keys_.at(1).private_key(), &type);
+      keys_.at(0).private_key(), &type);
   ASSERT_EQ(HELLO_PING, type);
   ASSERT_EQ(publicusername_, im.sender());
 
@@ -695,7 +695,7 @@ TEST_MS_NET(ImMessagingTest, FUNC, MAID, HandleTwoConverstions) {
   ASSERT_TRUE(RSACheckSignedData(gp.data(), gp.signature(), mpid_public_key_));
 
   std::string rec_msg = GetStrMsgFromBpMsg(gp.data(),
-      keys_.at(1).private_key(), &type, &sender);
+      keys_.at(0).private_key(), &type, &sender);
   ASSERT_EQ(INSTANT_MSG, type);
   ASSERT_EQ(publicusername_, sender);
   ASSERT_EQ(msg, rec_msg);
@@ -751,7 +751,7 @@ TEST_MS_NET(ImMessagingTest, FUNC, MAID, HandleTwoConverstions) {
   ASSERT_TRUE(RSACheckSignedData(gp.data(), gp.signature(), mpid_public_key_));
 
   rec_msg = GetStrMsgFromBpMsg(gp.data(),
-      keys_.at(2).private_key(), &type, &sender);
+      keys_.at(1).private_key(), &type, &sender);
   ASSERT_EQ(INSTANT_MSG, type);
   ASSERT_EQ(publicusername_, sender);
   ASSERT_EQ(msg, rec_msg);
@@ -782,24 +782,26 @@ class CCImMessagingTest : public testing::Test {
                         ss2_(new MockSessionSingleton),
                         publicusername1_("contact1"),
                         publicusername2_("contact2"),
+                        mpid_public_key1_(),
+                        mpid_public_key2_(),
                         sm1_(),
                         sm2_(),
-                        keys_(),
                         sm_rec_msg_(),
                         sender_(),
                         latest_ctc_updated_(),
-                        latest_status_(100) {
-    keys_.clear();
-    cached_keys::MakeKeys(2, &keys_);
-  }
+                        latest_status_(100) {}
   ~CCImMessagingTest() {
     delete ss2_;
   }
  protected:
   void SetUp() {
+    boost::shared_ptr<passport::test::CachePassport> passport(
+        new passport::test::CachePassport(kRsaKeySize, 5, 10));
+    passport->Init();
+    ss1_->passport_ = passport;
+    ss1_->CreateTestPackets(publicusername1_);
     ASSERT_TRUE(network_test_.Init());
     sm1_ = network_test_.store_manager();
-    ss1_ = sm1_->ss_;
     boost::shared_ptr<ChunkStore> cstore2(new ChunkStore(
         network_test_.test_dir().string() + "/ChunkStore2", 0, 0));
     cstore2->Init();
@@ -832,12 +834,15 @@ class CCImMessagingTest : public testing::Test {
         boost::bind(&CCImMessagingTest::SmStatusUpdate, this, _1, _2));
 
     // Adding contact information to session
-    ss1_->CreateTestPackets(publicusername1_);
     ss2_->CreateTestPackets(publicusername2_);
-    ASSERT_EQ(0, ss1_->AddContact(publicusername2_, keys_.at(1).public_key(),
-        "", "", "", 'U', 1, 2, "", 'C', 0, 0));
-    ASSERT_EQ(0, ss2_->AddContact(publicusername1_, keys_.at(0).public_key(),
-        "", "", "", 'U', 1, 2, "", 'C', 0, 0));
+    ASSERT_EQ(kSuccess, ss1_->GetKey(passport::MPID, NULL, &mpid_public_key1_,
+                                     NULL, NULL));
+    ASSERT_EQ(kSuccess, ss2_->GetKey(passport::MPID, NULL, &mpid_public_key2_,
+                                     NULL, NULL));
+    ASSERT_EQ(0, ss1_->AddContact(publicusername2_, mpid_public_key2_, "", "",
+                                  "", 'U', 1, 2, "", 'C', 0, 0));
+    ASSERT_EQ(0, ss2_->AddContact(publicusername1_, mpid_public_key1_, "", "",
+                                  "", 'U', 1, 2, "", 'C', 0, 0));
   }
   void TearDown() {
     CallbackObject callback;
@@ -866,8 +871,8 @@ class CCImMessagingTest : public testing::Test {
   SessionSingleton *ss1_;
   MockSessionSingleton *ss2_;
   std::string publicusername1_, publicusername2_;
+  std::string mpid_public_key1_, mpid_public_key2_;
   boost::shared_ptr<TestStoreManager> sm1_, sm2_;
-  std::vector<crypto::RsaKeyPair> keys_;
   std::string sm_rec_msg_;
   std::string sender_, latest_ctc_updated_;
   int latest_status_;

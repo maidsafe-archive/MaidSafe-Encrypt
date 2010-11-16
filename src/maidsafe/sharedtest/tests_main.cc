@@ -34,7 +34,7 @@ int main(int argc, char **argv) {
 #ifndef HAVE_GLOG
   bool FLAGS_logtostderr;
 #endif
-  FLAGS_logtostderr = true;
+//  FLAGS_logtostderr = true;
   testing::InitGoogleTest(&argc, argv);
 #ifdef MS_NETWORK_TEST
   try {
