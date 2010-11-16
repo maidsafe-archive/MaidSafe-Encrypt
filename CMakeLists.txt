@@ -647,7 +647,7 @@ TARGET_LINK_LIBRARIES(lslocal PDlsmclientlib PDfuselib ${QT_QTMAIN_LIBRARY} ${QT
 TARGET_LINK_LIBRARIES(lslightlocal PDlsmclientlib ${QT_QTMAIN_LIBRARY} ${QT_QTGUI_LIBRARY} ${QT_QTXML_LIBRARY})
 TARGET_LINK_LIBRARIES(TESTcommon PDcommonlib ${Boost_DATE_TIME_LIBRARY} ${Gtest_LIBRARY} ${Gmock_LIBRARY})
 TARGET_LINK_LIBRARIES(TESTclientfilesystem PDclientlib ${Gtest_LIBRARY})
-TARGET_LINK_LIBRARIES(TESTclient PDclientlib ${Gtest_LIBRARY} ${Gmock_LIBRARY})
+TARGET_LINK_LIBRARIES(TESTclient PDclientlib PDvaultlib ${Gtest_LIBRARY} ${Gmock_LIBRARY})
 TARGET_LINK_LIBRARIES(TESTvault PDvaultlib PDclientlib ${Gtest_LIBRARY} ${Gmock_LIBRARY})
 TARGET_LINK_LIBRARIES(TESTfuse PDfuselib ${Gtest_LIBRARY})
 TARGET_LINK_LIBRARIES(TESTauthentication_net PDclientlib PDvaultlib ${Gtest_LIBRARY})

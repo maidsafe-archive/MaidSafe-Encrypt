@@ -63,6 +63,7 @@ TEST_F(SessionSingletonTest, BEH_MAID_SetsGetsAndResetSession) {
   ASSERT_EQ("", ss_->Username());
   ASSERT_EQ("", ss_->Pin());
   ASSERT_EQ("", ss_->Password());
+  ASSERT_EQ("", ss_->PublicUsername());
   ASSERT_EQ("", ss_->SessionName());
   ASSERT_EQ("", ss_->RootDbKey());
   ASSERT_EQ(size_t(0), ss_->AuthorisedUsers().size());
@@ -84,6 +85,7 @@ TEST_F(SessionSingletonTest, BEH_MAID_SetsGetsAndResetSession) {
   ASSERT_TRUE(ss_->SetUsername("aaa"));
   ASSERT_TRUE(ss_->SetPin("bbb"));
   ASSERT_TRUE(ss_->SetPassword("ccc"));
+  ASSERT_TRUE(ss_->SetPublicUsername("Dan Schmidt"));
   ASSERT_TRUE(ss_->SetSessionName(false));
   ASSERT_TRUE(ss_->SetRootDbKey("ddd"));
   std::set<std::string> non_empty_set;
@@ -115,6 +117,7 @@ TEST_F(SessionSingletonTest, BEH_MAID_SetsGetsAndResetSession) {
   ASSERT_EQ("aaa", ss_->Username());
   ASSERT_EQ("bbb", ss_->Pin());
   ASSERT_EQ("ccc", ss_->Password());
+  ASSERT_EQ("Dan Schmidt", ss_->PublicUsername());
   ASSERT_NE("", ss_->SessionName());
   ASSERT_EQ("ddd", ss_->RootDbKey());
   ASSERT_EQ(size_t(1), ss_->AuthorisedUsers().size());
@@ -164,6 +167,7 @@ TEST_F(SessionSingletonTest, BEH_MAID_SetsGetsAndResetSession) {
   ASSERT_EQ("", ss_->Username());
   ASSERT_EQ("", ss_->Pin());
   ASSERT_EQ("", ss_->Password());
+  ASSERT_EQ("", ss_->PublicUsername());
   ASSERT_EQ("", ss_->SessionName());
   ASSERT_EQ("", ss_->RootDbKey());
   ASSERT_EQ(size_t(0), ss_->AuthorisedUsers().size());
@@ -177,16 +181,6 @@ TEST_F(SessionSingletonTest, BEH_MAID_SetsGetsAndResetSession) {
   ASSERT_EQ(0, ss_->GetFullShareList(ALPHA, kAll, &ps_list));
   ASSERT_EQ(size_t(0), ps_list.size());
 }
-
-/*
-TEST_F(SessionSingletonTest, BEH_MAID_PublicUsername) {
-  ASSERT_EQ("", ss_->PublicUsername());
-  ASSERT_EQ("", ss_->Id(passport::MPID));
-  ss_->AddKey(MPID, "Dan Schmidt", "pri_key", "pub_key", "");
-  ASSERT_EQ("Dan Schmidt", ss_->PublicUsername());
-  ASSERT_EQ("Dan Schmidt", ss_->Id(passport::MPID));
-}
-*/
 
 TEST_F(SessionSingletonTest, BEH_MAID_SessionName) {
   // Check session is empty

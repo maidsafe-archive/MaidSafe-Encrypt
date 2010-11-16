@@ -35,6 +35,14 @@ class SessionSingleton;
 namespace test {
 class CCImMessagingTest;
 class MultiImHandlerTest;
+class ImMessagingTest_FUNC_MAID_SendReceiveMessages_Test;
+class ImMessagingTest_FUNC_MAID_ReceiveEndPointMsg_Test;
+class ImMessagingTest_FUNC_MAID_ReceiveLogOutMsg_Test;
+class ImMessagingTest_FUNC_MAID_HandleTwoConverstions_Test;
+class ImMessagingTest_FUNC_MAID_NET_SendReceiveMessages_Test;
+class ImMessagingTest_FUNC_MAID_NET_ReceiveEndPointMsg_Test;
+class ImMessagingTest_FUNC_MAID_NET_ReceiveLogOutMsg_Test;
+class ImMessagingTest_FUNC_MAID_NET_HandleTwoConverstions_Test;
 }  // namespace test
 
 class IMHandler {
@@ -49,6 +57,13 @@ class IMHandler {
  private:
   friend class test::CCImMessagingTest;
   friend class test::MultiImHandlerTest;
+  friend class test::ImMessagingTest_FUNC_MAID_SendReceiveMessages_Test;
+  friend class test::ImMessagingTest_FUNC_MAID_ReceiveEndPointMsg_Test;
+  friend class test::ImMessagingTest_FUNC_MAID_ReceiveLogOutMsg_Test;
+  friend class test::ImMessagingTest_FUNC_MAID_HandleTwoConverstions_Test;
+  friend class test::ImMessagingTest_FUNC_MAID_NET_SendReceiveMessages_Test;
+  friend class test::ImMessagingTest_FUNC_MAID_NET_ReceiveEndPointMsg_Test;
+  friend class test::ImMessagingTest_FUNC_MAID_NET_ReceiveLogOutMsg_Test;
   SessionSingleton *ss_;
   crypto::Crypto crypto_;
 };
