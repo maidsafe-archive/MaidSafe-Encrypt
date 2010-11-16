@@ -74,12 +74,11 @@ struct PendingAmending {
   PendingAmending(const maidsafe::AmendAccountRequest *req,
                   maidsafe::AmendAccountResponse *resp,
                   google::protobuf::Closure *cb)
-      : request(*req), response(resp), done(cb), responded(false) {}
+      : request(*req), response(resp), done(cb) {}
   ~PendingAmending() {}
   maidsafe::AmendAccountRequest request;
   maidsafe::AmendAccountResponse *response;
   google::protobuf::Closure *done;
-  bool responded;
   bool operator==(const PendingAmending &other) const {
     return (request.IsInitialized() && other.request.IsInitialized() &&
             request.SerializeAsString() == other.request.SerializeAsString());

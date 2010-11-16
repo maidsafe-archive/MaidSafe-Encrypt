@@ -39,6 +39,15 @@ int AccountAmendmentHandler::ProcessRequest(
   // Assumes that response->pmid() has already been set and that
   // request->signed_size() validates
   response->set_result(kNack);
+  std::string pmid(request->account_pmid());
+  std::string chunkname(request->has_chunkname() ? request->chunkname() : "");
+  boost::uint64_t data_size(request->signed_size().data_size());
+
+  if (account_handler_->HaveAccount(pmid) == kAccountNotFound) {
+    done->Run();
+    return kAccountNotFound;
+  }
+  
   maidsafe::AmendAccountRequest::Amendment amendment_type =
       request->amendment_type();
   bool increase(false);
@@ -58,9 +67,6 @@ int AccountAmendmentHandler::ProcessRequest(
   }
 
   // Check amendment set size is not too large, otherwise try a cleanup
-  std::string pmid(request->account_pmid());
-  std::string chunkname(request->has_chunkname() ? request->chunkname() : "");
-  boost::uint64_t data_size(request->signed_size().data_size());
   boost::mutex::scoped_lock lock(amendment_mutex_);
   bool tried_cleanup(false);
   while (amendments_.size() >= kMaxAccountAmendments ||
@@ -125,19 +131,6 @@ int AccountAmendmentHandler::AssessAmendment(
     return kAccountAmendmentNotFound;
   }
 
-  if (account_handler_->HaveAccount(owner_pmid) == kAccountNotFound) {
-#ifdef DEBUG
-    printf("In AAH::AssessAmendment, handling amendment for non-existing "
-           "account (%s).\n", HexSubstr(owner_pmid).c_str());
-#endif
-    // respond immediately
-    if (!pending.responded) {
-      pending.response->set_result(kNack);
-      pending.responded = true;
-      pending.done->Run();
-    }
-  }
-
   // If we're still waiting for result of FindKNodes, add pending to
   // probable_pendings if it has not already been added
   if (amendment->chunk_info_holders.empty()) {
@@ -185,18 +178,8 @@ int AccountAmendmentHandler::AssessAmendment(
       for (pendings_it = amendment->pendings.begin();
            pendings_it != amendment->pendings.end(); ++pendings_it) {
         if (amendment->account_amendment_result == kSuccess)
-          (*pendings_it).response->set_result(kAck);
-        else
-          (*pendings_it).response->set_result(kNack);
-        if (!(*pendings_it).responded) {
-          (*pendings_it).responded = true;
-          (*pendings_it).done->Run();
-        } else if (amendment->account_amendment_result == kSuccess) {
-#ifdef DEBUG
-          printf("In AAH::AssessAmendment, can't send positive response for "
-                 "account (%s) amendment!\n", HexSubstr(owner_pmid).c_str());
-#endif
-        }
+          pendings_it->response->set_result(kAck);
+        pendings_it->done->Run();
       }
 
       // Clear all pendings now that they've been run
@@ -304,14 +287,13 @@ void AccountAmendmentHandler::CreateNewAmendmentCallback(
     // Set responses and run callbacks
     amendments_.get<by_timestamp>().erase(it);
     while (!modified_amendment.probable_pendings.empty()) {
-      if (!modified_amendment.probable_pendings.front().responded) {
-        modified_amendment.probable_pendings.front().response->
-            set_result(kNack);
-        modified_amendment.probable_pendings.front().responded = true;
-        modified_amendment.probable_pendings.front().done->Run();
-      }
+      modified_amendment.probable_pendings.front().done->Run();
       modified_amendment.probable_pendings.pop_front();
     }
+    if (!modified_amendment.chunkname.empty())
+      amendment_results_.push_back(AmendmentResult(
+          modified_amendment.pmid, modified_amendment.chunkname,
+          modified_amendment.amendment_type, kNack));
   }
 }
 
@@ -329,19 +311,11 @@ int AccountAmendmentHandler::DoCleanUp() {
           (*it).expiry_time < base::GetEpochMilliseconds()) {
       AccountAmendment amendment = *it;
       while (!amendment.probable_pendings.empty()) {
-        if (!amendment.probable_pendings.front().responded) {
-          amendment.probable_pendings.front().response->set_result(kNack);
-          amendment.probable_pendings.front().responded = true;
-          amendment.probable_pendings.front().done->Run();
-        }
+        amendment.probable_pendings.front().done->Run();
         amendment.probable_pendings.pop_front();
       }
       while (!amendment.pendings.empty()) {
-        if (!amendment.probable_pendings.front().responded) {
-          amendment.pendings.front().response->set_result(kNack);
-          amendment.pendings.front().responded = true;
-          amendment.pendings.front().done->Run();
-        }
+        amendment.pendings.front().done->Run();
         amendment.pendings.pop_front();
       }
       if (!amendment.chunkname.empty())

@@ -1068,7 +1068,6 @@ void VaultService::AmendAccount(google::protobuf::RpcController*,
     }
     done->Run();
   } else {
-    // TODO(Team#) ensure sender (signer) is a valid chunk info holder
     // aah_->ProcessRequest() calls done->Run();
     int result = aah_.ProcessRequest(request, response, done);
     if (result != kSuccess) {

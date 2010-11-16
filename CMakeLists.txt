@@ -223,16 +223,6 @@ IF((NOT WIN32) OR MSVC)
 ENDIF()
 
 ###################################################################################################
-# MySQL++ library search                                                                          #
-###################################################################################################
-INCLUDE(${PD_SOURCE_DIR}/build/maidsafe_FindMysqlpp.cmake)
-IF(Mysqlpp_FOUND)
-  SET(INCLUDE_DIRS ${INCLUDE_DIRS} ${Mysqlpp_INCLUDE_DIR} ${Mysql_INCLUDE_DIR})
-  SET(LIBS_DIRS ${LIBS_DIRS} ${Mysqlpp_LIBRARY_DIR} ${Mysql_LIBRARY_DIR})
-  SET(LIBS_DIRS_DEBUG ${LIBS_DIRS_DEBUG} ${Mysqlpp_LIBRARY_DIR_DEBUG} ${Mysql_LIBRARY_DIR_DEBUG})
-ENDIF()
-
-###################################################################################################
 # Protocol Buffers library search                                                                 #
 ###################################################################################################
 FILE(GLOB PROTO_FILES RELATIVE ${SOURCE_DIR} "${SOURCE_DIR}/protobuf/*.proto")
@@ -483,7 +473,7 @@ ENDIF()
 SET(ALL_TARGET_LIBS PDmaidsafelib PDfslib PDpbmsgslib)
 
 IF(NOT MSVC)
-  SET(SYS_LIBS ${QT_LIBRARIES} ${Boost_LIBRARIES} ${Protobuf_LIBRARY} ${maidsafe_dht_LIBRARY} ${Udt_LIBRARY} ${Glog_LIBRARY} ${Cryptopp_LIBRARY} ${Mysqlpp_LIBRARY} ${SYS_LIBS})
+  SET(SYS_LIBS ${QT_LIBRARIES} ${Boost_LIBRARIES} ${Protobuf_LIBRARY} ${maidsafe_dht_LIBRARY} ${Udt_LIBRARY} ${Glog_LIBRARY} ${Cryptopp_LIBRARY} ${SYS_LIBS})
   TARGET_LINK_LIBRARIES(perpetualdata PDmsclientlib ${ALL_TARGET_LIBS} ${Dokan_LIBRARY} ${Breakpad_LIBRARY} ${SYS_LIBS})
   TARGET_LINK_LIBRARIES(pdlocal PDTESTmsclientlib ${ALL_TARGET_LIBS} ${Dokan_LIBRARY} ${Breakpad_LIBRARY} ${SYS_LIBS})
   TARGET_LINK_LIBRARIES(pdlightlocal PDTESTmsclientlib PDmaidsafelib PDpbmsgslib ${Breakpad_LIBRARY} ${SYS_LIBS})
@@ -504,10 +494,10 @@ ELSE()
   SET(ALL_TARGET_LIBS ${ALL_TARGET_LIBS} ${QT_LIBRARIES})
   SET(DEBUG_LIBS ${Boost_DATE_TIME_LIBRARY_DEBUG} ${Boost_FILESYSTEM_LIBRARY_DEBUG} ${Boost_THREAD_LIBRARY_DEBUG}
       ${Boost_SYSTEM_LIBRARY_DEBUG} ${Boost_REGEX_LIBRARY_DEBUG} ${Protobuf_LIBRARY_DEBUG} ${Glog_LIBRARY_DEBUG}
-      ${maidsafe_dht_LIBRARY_DEBUG} ${Udt_LIBRARY_DEBUG} ${Cryptopp_LIBRARY_DEBUG} ${Mysqlpp_LIBRARY} ${SYS_LIBS})
+      ${maidsafe_dht_LIBRARY_DEBUG} ${Udt_LIBRARY_DEBUG} ${Cryptopp_LIBRARY_DEBUG} ${SYS_LIBS})
   SET(RELEASE_LIBS ${Boost_DATE_TIME_LIBRARY_RELEASE} ${Boost_FILESYSTEM_LIBRARY_RELEASE} ${Boost_THREAD_LIBRARY_RELEASE}
       ${Boost_SYSTEM_LIBRARY_RELEASE} ${Boost_REGEX_LIBRARY_RELEASE} ${Protobuf_LIBRARY} ${Glog_LIBRARY}
-      ${maidsafe_dht_LIBRARY} ${Udt_LIBRARY} ${Cryptopp_LIBRARY} ${Mysqlpp_LIBRARY} ${SYS_LIBS})
+      ${maidsafe_dht_LIBRARY} ${Udt_LIBRARY} ${Cryptopp_LIBRARY}  ${SYS_LIBS})
 
   TARGET_LINK_LIBRARIES(perpetualdata
                           PDmsclientlib

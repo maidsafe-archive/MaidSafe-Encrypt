@@ -33,7 +33,7 @@
 #include <maidsafe/base/crypto.h>
 #include <maidsafe/maidsafe-dht_config.h>
 #include <maidsafe/transport/transportudt.h>
-#include <maidsafe/transport/transportdb.h>
+// #include <maidsafe/transport/transportdb.h>
 #include <QThreadPool>
 
 #include <list>
@@ -559,8 +559,8 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   const boost::uint8_t K_;
   const boost::uint16_t kUpperThreshold_;
   const boost::uint16_t kLowerThreshold_;
-  // transport::TransportUDT transport_;
-  transport::TransportDb transport_;
+  transport::TransportUDT transport_;
+  // transport::TransportDb transport_;
   transport::TransportHandler transport_handler_;
   rpcprotocol::ChannelManager channel_manager_;
   boost::shared_ptr<ClientRpcs> client_rpcs_;
