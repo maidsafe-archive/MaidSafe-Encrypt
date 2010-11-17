@@ -101,6 +101,8 @@ int Passport::SetNewUserData(const std::string &password,
 int Passport::ConfirmNewUserData(std::tr1::shared_ptr<MidPacket> mid,
                                  std::tr1::shared_ptr<MidPacket> smid,
                                  std::tr1::shared_ptr<TmidPacket> tmid) {
+  if (!mid || !smid || !tmid)
+    return kNullPointer;
   return ConfirmUserData(mid, smid, tmid, std::tr1::shared_ptr<TmidPacket>());
 }
 
@@ -182,6 +184,8 @@ int Passport::UpdateMasterData(
 int Passport::ConfirmMasterDataUpdate(std::tr1::shared_ptr<MidPacket> mid,
                                       std::tr1::shared_ptr<MidPacket> smid,
                                       std::tr1::shared_ptr<TmidPacket> tmid) {
+  if (!mid || !smid || !tmid)
+    return kNullPointer;
   return ConfirmUserData(mid, smid, tmid, PendingStmid());
 }
 
@@ -312,6 +316,8 @@ int Passport::ConfirmUserDataChange(std::tr1::shared_ptr<MidPacket> mid,
                                     std::tr1::shared_ptr<MidPacket> smid,
                                     std::tr1::shared_ptr<TmidPacket> tmid,
                                     std::tr1::shared_ptr<TmidPacket> stmid) {
+  if (!mid || !smid || !tmid || !stmid)
+    return kNullPointer;
   return ConfirmUserData(mid, smid, tmid, stmid);
 }
 
@@ -364,6 +370,8 @@ int Passport::ChangePassword(const std::string &new_password,
 
 int Passport::ConfirmPasswordChange(std::tr1::shared_ptr<TmidPacket> tmid,
                                     std::tr1::shared_ptr<TmidPacket> stmid) {
+  if (!tmid || !stmid)
+    return kNullPointer;
   std::tr1::shared_ptr<MidPacket>null_mid;
   return ConfirmUserData(null_mid, null_mid, tmid, stmid);
 }
@@ -441,6 +449,8 @@ int Passport::ConfirmSignaturePacket(
 }
 
 int Passport::RevertSignaturePacket(const PacketType &packet_type) {
+  if (!IsSignature(packet_type, false))
+    return kPassportError;
   return packet_handler_.RevertPacket(packet_type) ? kSuccess : kPassportError;
 }
 

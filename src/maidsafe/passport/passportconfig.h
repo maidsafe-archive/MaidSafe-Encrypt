@@ -102,6 +102,8 @@ testing::AssertionResult Equal(
     std::tr1::shared_ptr<ExpectedTmidContent> expected,
     std::tr1::shared_ptr<TmidPacket> mid);
 class SystemPacketHandlerTest_FUNC_PASSPORT_All_Test;
+class PassportTest_FUNC_PASSPORT_SetNewUserData_Test;
+class PassportTest_FUNC_PASSPORT_ConfirmNewUserData_Test;
 }  // namespace test
 
 }  // namespace passport

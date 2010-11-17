@@ -61,7 +61,16 @@ int SystemPacketHandler::ConfirmPacket(
   PacketType packet_type = static_cast<PacketType>(packet->packet_type());
   boost::mutex::scoped_lock lock(mutex_);
   SystemPacketMap::iterator it = packets_.find(packet_type);
-  if (it == packets_.end() || !(*it).second.pending) {
+  if (it == packets_.end()) {
+#ifdef DEBUG
+    printf("SystemPacketHandler::ConfirmPacket: Missing %s.\n",
+            DebugString(packet_type).c_str());
+#endif
+    return kNoPendingPacket;
+  }
+  if (!(*it).second.pending) {
+    if ((*it).second.stored && (*it).second.stored->Equals(packet.get()))
+      return kSuccess;
 #ifdef DEBUG
     printf("SystemPacketHandler::ConfirmPacket: Missing %s.\n",
             DebugString(packet_type).c_str());

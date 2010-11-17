@@ -223,8 +223,7 @@ void MidPacket::Initialise() {
     return Clear();
 
   crypto::Crypto crypto_obj;
-  salt_ = crypto_obj.Hash(pin_ + username_, "",
-                           crypto::STRING_STRING, false);
+  salt_ = crypto_obj.Hash(pin_ + username_, "", crypto::STRING_STRING, false);
   try {
     secure_password_ = crypto_obj.SecurePassword(username_, salt_,
                        boost::lexical_cast<boost::uint32_t>(pin_));

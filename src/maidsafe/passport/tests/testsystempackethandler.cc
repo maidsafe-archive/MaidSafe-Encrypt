@@ -278,10 +278,13 @@ TEST_F(SystemPacketHandlerTest, FUNC_PASSPORT_All) {
     EXPECT_EQ(kSuccess, packet_handler_.ConfirmPacket(*packets1_itr++));
   }
 
-  // Check confirm fails when packets no longer pending
+  // Check confirm succeeds when packets no longer pending
   packets1_itr = packets1_.begin();
-  while (packets1_itr != packets1_.end())
-    EXPECT_EQ(kNoPendingPacket, packet_handler_.ConfirmPacket(*packets1_itr++));
+  packets2_itr = packets2_.begin();
+  while (packets1_itr != packets1_.end()) {
+    EXPECT_EQ(kNoPendingPacket, packet_handler_.ConfirmPacket(*packets2_itr++));
+    EXPECT_EQ(kSuccess, packet_handler_.ConfirmPacket(*packets1_itr++));
+  }
 
   // *********************** Test Getters and Reverting ************************
   // Add pending as well confirmed packets

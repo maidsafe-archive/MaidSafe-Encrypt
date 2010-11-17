@@ -234,19 +234,6 @@ int Authentication::CreateUserSysPackets(const std::string &username,
 #ifdef DEBUG
     printf("Authentication::CreateUserSysPackets - NOT INTIALISED\n");
 #endif
-//    passport_->Clear();
-//    std::string mid_name, smid_name;
-//    int result =
-//        passport_->SetInitialDetails(username, pin, &mid_name, &smid_name);
-//
-//    if (result != kSuccess) {
-//      tmid_op_status_ = kFailed;
-//      stmid_result_ = kFailed;
-//      return kAuthenticationError;
-//    } else {
-//      tmid_op_status_ = kPendingMid;
-//      stmid_result_ = kPendingMid;
-//    }
     return kAuthenticationError;
   }
   session_singleton_->SetUsername(username);
