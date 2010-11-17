@@ -55,7 +55,7 @@ class TestMSValidator : public testing::Test {
   std::vector<crypto::RsaKeyPair> keys_;
 };
 
-TEST_F(TestMSValidator, BEH_MAID_TestValidateSignerID) {
+TEST_F(TestMSValidator, BEH_PKI_TestValidateSignerID) {
   std::string id = co_.Hash((keys_.at(0).public_key() + signed_public_key_), "",
                             crypto::STRING_STRING, false);
   ASSERT_TRUE(validator_.ValidateSignerId(id, keys_.at(0).public_key(),
@@ -66,7 +66,7 @@ TEST_F(TestMSValidator, BEH_MAID_TestValidateSignerID) {
       keys_.at(0).public_key(), signed_public_key_));
 }
 
-TEST_F(TestMSValidator, BEH_MAID_TestValidateSignedRequest) {
+TEST_F(TestMSValidator, BEH_PKI_TestValidateSignedRequest) {
   std::string rec_id(co_.Hash(base::RandomString(10), "", crypto::STRING_STRING,
                               false));
   validator_.set_id(rec_id);
@@ -85,7 +85,7 @@ TEST_F(TestMSValidator, BEH_MAID_TestValidateSignedRequest) {
       keys_.at(0).public_key(), signed_public_key_, "key"));
 }
 
-TEST_F(TestMSValidator, BEH_MAID_TestCreateRequestSignature) {
+TEST_F(TestMSValidator, BEH_PKI_TestCreateRequestSignature) {
   std::list<std::string> params;
   std::string signature;
   ASSERT_EQ(kValidatorNoPrivateKey,
@@ -100,8 +100,8 @@ TEST_F(TestMSValidator, BEH_MAID_TestCreateRequestSignature) {
   ASSERT_EQ(0, validator_.CreateRequestSignature(keys_.at(0).private_key(),
             params, &signature));
   validator_.set_id(a);
-  ASSERT_TRUE(validator_.ValidateRequest(signature, keys_.at(0).public_key(), "",
-              ""));
+  ASSERT_TRUE(validator_.ValidateRequest(signature, keys_.at(0).public_key(),
+              "", ""));
   params.push_back("b");
   params.push_back("c");
   ASSERT_EQ(0, validator_.CreateRequestSignature(keys_.at(0).private_key(),

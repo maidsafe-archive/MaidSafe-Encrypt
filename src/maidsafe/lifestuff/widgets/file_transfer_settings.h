@@ -14,8 +14,8 @@
  */
 
 
-#ifndef QT_WIDGETS_FILE_TRANSFER_SETTINGS_H_
-#define QT_WIDGETS_FILE_TRANSFER_SETTINGS_H_
+#ifndef MAIDSAFE_LIFESTUFF_WIDGETS_FILE_TRANSFER_SETTINGS_H_
+#define MAIDSAFE_LIFESTUFF_WIDGETS_FILE_TRANSFER_SETTINGS_H_
 
 #include <QWidget>
 #include <QString>
@@ -40,4 +40,4 @@ class FileTransferSettings : public QWidget {
   void changeEvent(QEvent *event);
 };
 
-#endif  // QT_WIDGETS_FILE_TRANSFER_SETTINGS_H_
+#endif  //  MAIDSAFE_LIFESTUFF_WIDGETS_FILE_TRANSFER_SETTINGS_H_

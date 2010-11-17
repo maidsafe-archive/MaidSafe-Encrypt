@@ -12,8 +12,8 @@
  *      Author: Stephen
  */
 
-#ifndef QT_CLIENT_CHECK_FOR_MESSAGES_THREAD_H_
-#define QT_CLIENT_CHECK_FOR_MESSAGES_THREAD_H_
+#ifndef MAIDSAFE_LIFESTUFF_CLIENT_CHECK_FOR_MESSAGES_THREAD_H_
+#define MAIDSAFE_LIFESTUFF_CLIENT_CHECK_FOR_MESSAGES_THREAD_H_
 
 #include <boost/cstdint.hpp>
 #include <boost/thread/mutex.hpp>
@@ -39,4 +39,4 @@ class CheckForMessagesThread : public QThread {
     void completed(bool success);
 };
 
-#endif  // QT_CLIENT_CHECK_FOR_MESSAGES_THREAD_H_
+#endif  // MAIDSAFE_LIFESTUFF_CLIENT_CHECK_FOR_MESSAGES_THREAD_H_

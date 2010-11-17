@@ -49,7 +49,7 @@ int main(int argc, char **argv) {
       maidsafe::test::pdvaults(), maidsafe::test::kadconfig()));
 #endif
 
-  int result = RUN_ALL_TESTS();
+  int result(RUN_ALL_TESTS());
 #ifdef MS_NETWORK_TEST
   try {
     if (boost::filesystem::exists(".kadconfig"))
@@ -59,5 +59,6 @@ int main(int argc, char **argv) {
     printf("%s\n", e.what());
   }
 #endif
-  return result;
+  int test_count = testing::UnitTest::GetInstance()->test_to_run_count();
+  return (test_count == 0) ? -1 : result;
 }

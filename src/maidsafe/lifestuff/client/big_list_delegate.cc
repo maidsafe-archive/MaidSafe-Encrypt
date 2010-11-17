@@ -14,18 +14,17 @@
 #include "maidsafe/lifestuff/client/big_list_delegate.h"
 
 #include <QtGui>
-#include <QApplication>	
+#include <QApplication>
 
 BigListDelegate::BigListDelegate(QObject *parent)
      : QAbstractItemDelegate(parent) {
      pixelSize = 12;
- }
+}
 
-void BigListDelegate::paint(QPainter *painter, const QStyleOptionViewItem &option,
+void BigListDelegate::paint(QPainter *painter,
+                            const QStyleOptionViewItem &option,
                             const QModelIndex &index) const {
-
-  if(qVariantCanConvert<QString>(index.data())) {
-
+  if (qVariantCanConvert<QString>(index.data())) {
     QString data = qVariantValue<QString>(index.data());
     QRect rect(option.rect.topLeft(),QSize(32,32));
 
@@ -33,7 +32,8 @@ void BigListDelegate::paint(QPainter *painter, const QStyleOptionViewItem &optio
 
     rect.moveTo(rect.topRight());
 
-    QApplication::style()->drawItemText(painter, rect, Qt::AlignLeft, option.palette, true, data);
+    QApplication::style()->drawItemText(painter, rect, Qt::AlignLeft,
+                                        option.palette, true, data);
   }
 }
 

@@ -41,7 +41,7 @@ class AuthenticationTest_FUNC_MAID_CreatePublicName_Test;
 class AuthenticationTest_FUNC_MAID_CreateMSIDPacket_Test;
 class AuthenticationTest_FUNC_MAID_NET_CreatePublicName_Test;
 class AuthenticationTest_FUNC_MAID_NET_CreateMSIDPacket_Test;
-}  //namespace test
+}  // namespace test
 
 class StoreManagerInterface;
 class SessionSingleton;
@@ -117,7 +117,7 @@ class Authentication {
   friend class test::AuthenticationTest_FUNC_MAID_CreatePublicName_Test;
   friend class test::AuthenticationTest_FUNC_MAID_CreateMSIDPacket_Test;
   friend class test::AuthenticationTest_FUNC_MAID_NET_CreatePublicName_Test;
-  friend class test::AuthenticationTest_FUNC_MAID_NET_CreateMSIDPacket_Test;;
+  friend class test::AuthenticationTest_FUNC_MAID_NET_CreateMSIDPacket_Test;
 
   Authentication &operator=(const Authentication&);
   Authentication(const Authentication&);

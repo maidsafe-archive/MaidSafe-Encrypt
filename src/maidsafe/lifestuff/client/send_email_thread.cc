@@ -22,25 +22,25 @@
 
 
 SendEmailThread::SendEmailThread(const QString& subject,
-																const QString& message,
-																const QList<QString>& to,
-																const QList<QString>& cc,
-																const QList<QString>& bcc,
-																const QString& conversation,
-                                 QObject* parent) :
-                                 WorkerThread(parent),
-                                 subject_(subject), message_(message),
-                                 to_(to), cc_(cc), bcc_(bcc),
-																 conversation_(conversation){																 
-}
+                                 const QString& message,
+                                 const QList<QString>& to,
+                                 const QList<QString>& cc,
+                                 const QList<QString>& bcc,
+                                 const QString& conversation,
+                                 QObject* parent)
+    : WorkerThread(parent),
+      subject_(subject), message_(message),
+      to_(to), cc_(cc), bcc_(bcc),
+      conversation_(conversation) {}
 
 SendEmailThread::~SendEmailThread() { }
 
 void SendEmailThread::run() {
   qDebug() << "SendEmailThread::run" << message_;
 
-  bool success = ClientController::instance()->sendEmail(subject_,
-															message_, to_, cc_, bcc_, conversation_);
+  bool success =
+      ClientController::instance()->sendEmail(subject_, message_, to_, cc_,
+                                              bcc_, conversation_);
 
   emit sendEmailCompleted(success, subject_);
 }

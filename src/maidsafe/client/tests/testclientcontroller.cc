@@ -61,7 +61,7 @@ namespace test {
 class ClientControllerTest : public testing::Test {
  public:
   ClientControllerTest()
-      : network_test_("CC"),
+      : network_test_(),
         cc_(ClientController::getInstance()),
         ss_(SessionSingleton::getInstance()),
         sm_(network_test_.store_manager()),

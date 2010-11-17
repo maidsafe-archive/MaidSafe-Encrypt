@@ -381,8 +381,6 @@ TEST_F(VaultServicesTest, BEH_MAID_ValidateIdAndRequest) {
                                                     req_sig, key, pmid));
   EXPECT_FALSE(vault_service_->ValidateIdAndRequest("abc", "def", "ghi", key,
                                                     pmid));
-
-  
 }
 
 TEST_F(VaultServicesTest, BEH_MAID_ValidateRequestSignature) {

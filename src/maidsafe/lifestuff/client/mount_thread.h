@@ -13,8 +13,8 @@
  *      Author: Team
  */
 
-#ifndef QT_CLIENT_MOUNT_THREAD_H_
-#define QT_CLIENT_MOUNT_THREAD_H_
+#ifndef MAIDSAFE_LIFESTUFF_CLIENT_MOUNT_THREAD_H_
+#define MAIDSAFE_LIFESTUFF_CLIENT_MOUNT_THREAD_H_
 
 #include "maidsafe/lifestuff/client/worker_thread.h"
 
@@ -43,5 +43,5 @@ class MountThread : public WorkerThread {
   MountAction action_;
 };
 
-#endif  // QT_CLIENT_MOUNT_THREAD_H_
+#endif  //  MAIDSAFE_LIFESTUFF_CLIENT_MOUNT_THREAD_H_
 

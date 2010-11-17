@@ -80,7 +80,7 @@ boost::uint8_t K();
 
 class NetworkTest {
  public:
-  explicit NetworkTest(const std::string &test_name);
+  NetworkTest();
   ~NetworkTest();
   bool Init();
   boost::int16_t transport_id() const { return transport_id_; }
@@ -104,6 +104,8 @@ class NetworkTest {
  private:
   NetworkTest(const NetworkTest&);
   NetworkTest &operator=(const NetworkTest&);
+  const testing::TestInfo* const test_info_;
+  std::string test_case_name_;
   boost::int16_t transport_id_;
   fs::path test_dir_;
   transport::Transport *transport_;

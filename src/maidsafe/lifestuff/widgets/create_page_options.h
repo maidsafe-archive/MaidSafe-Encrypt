@@ -12,8 +12,8 @@
  *      Author: Team
  */
 
-#ifndef QT_WIDGETS_CREATE_PAGE_OPTIONS_H_
-#define QT_WIDGETS_CREATE_PAGE_OPTIONS_H_
+#ifndef MAIDSAFE_LIFESTUFF_WIDGETS_CREATE_PAGE_OPTIONS_H_
+#define MAIDSAFE_LIFESTUFF_WIDGETS_CREATE_PAGE_OPTIONS_H_
 
 // qt
 #include <QWizardPage>
@@ -39,5 +39,4 @@ class CreateOptionsPage : public QWizardPage {
   void changeEvent(QEvent *event);
 };
 
-#endif  // QT_WIDGETS_CREATE_PAGE_OPTIONS_H_
-
+#endif  // MAIDSAFE_LIFESTUFF_WIDGETS_CREATE_PAGE_OPTIONS_H_

@@ -12,8 +12,8 @@
  *      Author: Team
  */
 
-#ifndef QT_WIDGETS_CREATE_PAGE_WELCOME_H_
-#define QT_WIDGETS_CREATE_PAGE_WELCOME_H_
+#ifndef MAIDSAFE_LIFESTUFF_WIDGETS_CREATE_PAGE_WELCOME_H_
+#define MAIDSAFE_LIFESTUFF_WIDGETS_CREATE_PAGE_WELCOME_H_
 
 // qt
 #include <QWizardPage>
@@ -37,5 +37,5 @@ class CreateWelcomePage : public QWizardPage {
   void changeEvent(QEvent *event);
 };
 
-#endif  // QT_WIDGETS_CREATE_PAGE_WELCOME_H_
+#endif  //  MAIDSAFE_LIFESTUFF_WIDGETS_CREATE_PAGE_WELCOME_H_
 

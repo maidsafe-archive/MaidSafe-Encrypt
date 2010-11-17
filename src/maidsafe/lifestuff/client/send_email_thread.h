@@ -12,8 +12,8 @@
  *      Author: Stephen
  */
 
-#ifndef QT_CLIENT_SEND_EMAIL_THREAD_H_
-#define QT_CLIENT_SEND_EMAIL_THREAD_H_
+#ifndef MAIDSAFE_LIFESTUFF_CLIENT_SEND_EMAIL_THREAD_H_
+#define MAIDSAFE_LIFESTUFF_CLIENT_SEND_EMAIL_THREAD_H_
 
 #include "maidsafe/lifestuff/client/worker_thread.h"
 
@@ -47,4 +47,4 @@ class SendEmailThread : public WorkerThread {
   void sendEmailCompleted(int, const QString&);
 };
 
-#endif  // QT_CLIENT_SEND_EMAIL_THREAD_H_
+#endif  //  MAIDSAFE_LIFESTUFF_CLIENT_SEND_EMAIL_THREAD_H_

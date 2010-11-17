@@ -12,8 +12,8 @@
  *      Author: Stephen
  */
 
-#ifndef QT_CLIENT_SAVE_PROFILE_SETTINGS_THREAD_H_
-#define QT_CLIENT_SAVE_PROFILE_SETTINGS_THREAD_H_
+#ifndef MAIDSAFE_LIFESTUFF_CLIENT_SAVE_PROFILE_SETTINGS_THREAD_H_
+#define MAIDSAFE_LIFESTUFF_CLIENT_SAVE_PROFILE_SETTINGS_THREAD_H_
 
 #include <QWidget>
 #include <QString>
@@ -41,4 +41,4 @@ class SaveProfileSettingsThread : public WorkerThread {
   QHash<QString, QString> theHash_;
 };
 
-#endif  // QT_CLIENT_SAVE_PROFILE_SETTINGS_THREAD_H_
+#endif  //  MAIDSAFE_LIFESTUFF_CLIENT_SAVE_PROFILE_SETTINGS_THREAD_H_

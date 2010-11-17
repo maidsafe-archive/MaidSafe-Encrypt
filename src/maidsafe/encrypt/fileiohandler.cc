@@ -22,12 +22,12 @@
 * ============================================================================
 */
 
-#include "maidsafe/encrypt/dataiohandler.h"
 #include <boost/filesystem.hpp>
 #include <boost/scoped_ptr.hpp>
 #include <algorithm>
 #include <limits>
 #include <sstream>
+#include "maidsafe/encrypt/dataiohandler.h"
 
 namespace fs = boost::filesystem;
 

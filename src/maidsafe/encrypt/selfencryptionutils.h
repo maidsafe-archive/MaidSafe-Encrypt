@@ -79,7 +79,9 @@ bool ResizeObfuscationHash(const std::string &input,
                            std::string *resized_data);
 // ensure uniqueness of all chunk hashes (unless chunks are identical)
 // if pre_encryption is true, hashes relate to pre-encryption, otherwise post-
-bool HashUnique(const DataMap &data_map, bool pre_encryption, std::string *hash);
+bool HashUnique(const DataMap &data_map,
+                bool pre_encryption,
+                std::string *hash);
 std::string SHA512(const fs::path &file_path);
 std::string SHA512(const std::string &content);
 

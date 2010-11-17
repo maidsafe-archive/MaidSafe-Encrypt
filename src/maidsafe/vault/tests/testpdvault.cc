@@ -731,7 +731,7 @@ int main(int argc, char **argv) {
       testpdvault::K, maidsafe::vault::test::kNetworkSize,
       &maidsafe::vault::test::pdvaults_, &maidsafe::vault::test::kadconfig_));
 
-  int result = RUN_ALL_TESTS();
+  int result(RUN_ALL_TESTS());
   try {
     if (boost::filesystem::exists(".kadconfig"))
       boost::filesystem::remove(".kadconfig");
@@ -739,6 +739,7 @@ int main(int argc, char **argv) {
   catch(const std::exception& e) {
     printf("%s\n", e.what());
   }
-  return result;
+  int test_count = testing::UnitTest::GetInstance()->test_to_run_count();
+  return (test_count == 0) ? -1 : result;
 }
 

@@ -92,7 +92,6 @@ TEST_F(VaultChunkstoreTest, BEH_MAID_Init) {
             chunkstore->HashCheckAllChunks(true, &failed_keys));
   ASSERT_EQ(size_t(0), failed_keys.size());
   ChunkType type = kHashable | kNormal;
-
 }
 
 TEST_F(VaultChunkstoreTest, BEH_MAID_LoadRandomChunk) {

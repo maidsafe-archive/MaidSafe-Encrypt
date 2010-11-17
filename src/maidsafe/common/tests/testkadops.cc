@@ -104,7 +104,7 @@ TEST_F(KadOpsTest, BEH_MAID_BlockingGetNodeContactDetails) {
   // Call 1
   ASSERT_EQ(kFindNodesError,
             mko_.BlockingGetNodeContactDetails("", NULL, false));
-  
+
   // Call 2
   ASSERT_EQ(kFindNodesError,
             mko_.BlockingGetNodeContactDetails("fail", &contact, false));

@@ -26,7 +26,6 @@
 #define MAIDSAFE_VAULT_PDVAULT_H_
 
 #include <boost/filesystem.hpp>
-//#include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/thread/condition_variable.hpp>
 #include <boost/thread/mutex.hpp>
@@ -36,7 +35,6 @@
 #include <maidsafe/rpcprotocol/channel-api.h>
 #include <maidsafe/rpcprotocol/channelmanager-api.h>
 #include <maidsafe/transport/transportudt.h>
-// #include <maidsafe/transport/transportdb.h>
 #include <maidsafe/transport/transporthandler-api.h>
 #include <QThreadPool>
 

@@ -25,6 +25,8 @@
 #include <boost/cstdint.hpp>
 #include <boost/tr1/memory.hpp>
 
+#include <string>
+
 #include "maidsafe/passport/cryptokeypairs.h"
 #include "maidsafe/passport/systempackethandler.h"
 
@@ -247,8 +249,8 @@ class Passport {
   CryptoKeyPairs crypto_key_pairs_;
 
  private:
-  friend class test::PassportTest_FUNC_PASSPORT_SetNewUserData_Test;
-  friend class test::PassportTest_FUNC_PASSPORT_ConfirmNewUserData_Test;
+  friend class test::PassportTest_BEH_PASSPORT_SetNewUserData_Test;
+  friend class test::PassportTest_BEH_PASSPORT_ConfirmNewUserData_Test;
   Passport &operator=(const Passport&);
   Passport(const Passport&);
   int DoInitialiseSignaturePacket(

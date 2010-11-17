@@ -12,8 +12,8 @@
  *      Author: Team
  */
 
-#ifndef QT_WIDGETS_USER_MESSAGE_LOGS_H_
-#define QT_WIDGETS_USER_MESSAGE_LOGS_H_
+#ifndef MAIDSAFE_LIFESTUFF_WIDGETS_USER_MESSAGE_LOGS_H_
+#define MAIDSAFE_LIFESTUFF_WIDGETS_USER_MESSAGE_LOGS_H_
 
 #include <QWidget>
 #include <QString>
@@ -60,4 +60,4 @@ class MessageLogs : public Panel {
     void changeEvent(QEvent *event);
 };
 
-#endif  // QT_WIDGETS_USER_MESSAGE_LOGS_H_
+#endif  //  MAIDSAFE_LIFESTUFF_WIDGETS_USER_MESSAGE_LOGS_H_

@@ -98,7 +98,7 @@ class BPCallback {
 class CBPHandlerTest : public testing::Test {
  public:
   CBPHandlerTest()
-      : network_test_("CBPH"), cbph_(), bp_rpcs_(), keys_() {}
+      : network_test_(), cbph_(), bp_rpcs_(), keys_() {}
  protected:
   virtual void SetUp() {
     ASSERT_TRUE(network_test_.Init());

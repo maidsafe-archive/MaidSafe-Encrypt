@@ -188,7 +188,6 @@ void Authentication::GetMidTmidCallback(const std::vector<std::string> &values,
       stmid_op_status_ = kPendingTmid;
     else
       tmid_op_status_ = kPendingTmid;
-//            std::cout << "\tAUTH LOAD NAME:  " << base::EncodeToBase64(tmid_name) << std::endl;
 
     store_manager_->LoadPacket(tmid_name, boost::bind(
         &Authentication::GetMidTmidCallback, this, _1, _2, surrogate));
@@ -206,7 +205,6 @@ void Authentication::GetMidTmidCallback(const std::vector<std::string> &values,
     } else {
       if (result == kSuccess) {
         encrypted_tmid_ = packet.data();
-//            std::cout << "\tAUTH LOAD VALUE: " << base::EncodeToBase64(encrypted_tmid_) << std::endl;
         tmid_op_status_ = kSucceeded;
       } else {
         tmid_op_status_ = kFailed;
@@ -1241,11 +1239,6 @@ int Authentication::StorePacket(std::tr1::shared_ptr<pki::Packet> packet,
     dir_type = PRIVATE_SHARE;
     msid = packet->name();
   }
-
-//                                        if (packet->packet_type() == passport::TMID) {
-//      std::cout << "STORE NAME:              " << base::EncodeToBase64(packet->name()) << std::endl;
-//      std::cout << "STORE VALUE:             " << base::EncodeToBase64(packet->value()) << std::endl;
-//                                                                                  }
 
   store_manager_->StorePacket(packet->name(), packet->value(),
       static_cast<passport::PacketType>(packet->packet_type()), dir_type, msid,

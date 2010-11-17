@@ -176,7 +176,8 @@ int Passport::UpdateMasterData(
       retrieved_pending_stmid->Equals(retrieved_tmid.get())))) {
     *tmid_for_deletion = *retrieved_stmid;
   } else {
-    tmid_for_deletion = std::tr1::shared_ptr<TmidPacket>();
+    std::tr1::shared_ptr<TmidPacket> empty_tmid(new TmidPacket);
+    *tmid_for_deletion = *empty_tmid;
   }
   return kSuccess;
 }
@@ -379,6 +380,8 @@ int Passport::ConfirmPasswordChange(std::tr1::shared_ptr<TmidPacket> tmid,
 int Passport::InitialiseSignaturePacket(
     const PacketType &packet_type,
     std::tr1::shared_ptr<SignaturePacket> signature_packet) {
+  if (packet_type == MPID)
+    return kPassportError;
   return DoInitialiseSignaturePacket(packet_type, "", signature_packet);
 }
 

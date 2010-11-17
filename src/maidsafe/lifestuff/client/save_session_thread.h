@@ -13,8 +13,8 @@
  *      Author: Team
  */
 
-#ifndef QT_CLIENT_SAVE_SESSION_THREAD_H_
-#define QT_CLIENT_SAVE_SESSION_THREAD_H_
+#ifndef MAIDSAFE_LIFESTUFF_CLIENT_SAVE_SESSION_THREAD_H_
+#define MAIDSAFE_LIFESTUFF_CLIENT_SAVE_SESSION_THREAD_H_
 
 #include "maidsafe/lifestuff/client/worker_thread.h"
 
@@ -39,5 +39,5 @@ class SaveSessionThread : public WorkerThread {
     void completed(int);
 };
 
-#endif  // QT_CLIENT_SAVE_SESSION_THREAD_H_
+#endif  //  MAIDSAFE_LIFESTUFF_CLIENT_SAVE_SESSION_THREAD_H_
 

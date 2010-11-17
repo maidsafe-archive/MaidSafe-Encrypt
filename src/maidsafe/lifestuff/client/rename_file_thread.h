@@ -12,8 +12,8 @@
  *      Author: Stephen
  */
 
-#ifndef QT_CLIENT_RENAME_FILE_THREAD_H_
-#define QT_CLIENT_RENAME_FILE_THREAD_H_
+#ifndef MAIDSAFE_LIFESTUFF_CLIENT_RENAME_FILE_THREAD_H_
+#define MAIDSAFE_LIFESTUFF_CLIENT_RENAME_FILE_THREAD_H_
 
 #include "maidsafe/lifestuff/client/worker_thread.h"
 
@@ -41,4 +41,4 @@ class RenameFileThread : public WorkerThread {
   void renameFileCompleted(int, const QString&, const QString&);
 };
 
-#endif  // QT_CLIENT_RENAME_FILE_THREAD_H_
+#endif  //  MAIDSAFE_LIFESTUFF_CLIENT_RENAME_FILE_THREAD_H_

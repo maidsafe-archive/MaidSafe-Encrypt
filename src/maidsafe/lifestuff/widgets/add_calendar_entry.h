@@ -13,8 +13,8 @@
  */
 
 
-#ifndef QT_WIDGETS_ADD_CALENDAR_ENTRY_H_
-#define QT_WIDGETS_ADD_CALENDAR_ENTRY_H_
+#ifndef MAIDSAFE_LIFESTUFF_WIDGETS_ADD_CALENDAR_ENTRY_H_
+#define MAIDSAFE_LIFESTUFF_WIDGETS_ADD_CALENDAR_ENTRY_H_
 
 #include <QWidget>
 #include <QString>
@@ -52,4 +52,4 @@ class AddCalendarEntry : public QDialog {
   void changeEvent(QEvent *event);
 };
 
-#endif  // QT_WIDGETS_ADD_CALENDAR_ENTRY_H_
+#endif  //  MAIDSAFE_LIFESTUFF_WIDGETS_ADD_CALENDAR_ENTRY_H_

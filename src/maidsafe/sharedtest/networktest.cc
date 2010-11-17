@@ -50,14 +50,16 @@ boost::uint8_t K() { return g_K; }
 
 #endif  // MS_NETWORK_TEST
 
-NetworkTest::NetworkTest(const std::string &test_name)
-    : transport_id_(-1),
+NetworkTest::NetworkTest()
+    : test_info_(testing::UnitTest::GetInstance()->current_test_info()),
+      test_case_name_(test_info_->test_case_name()),
+      transport_id_(-1),
 #ifdef MS_NETWORK_TEST
-      test_dir_(file_system::TempDir() / ("maidsafe_Test" + test_name +
+      test_dir_(file_system::TempDir() / ("maidsafe_Test" + test_case_name_ +
                 "_FUNC_" + base::RandomAlphaNumericString(6))),
 #else
-      test_dir_(file_system::TempDir() / ("maidsafe_Test" + test_name + "_" +
-                base::RandomAlphaNumericString(6))),
+      test_dir_(file_system::TempDir() / ("maidsafe_Test" + test_case_name_ +
+                "_" + base::RandomAlphaNumericString(6))),
 #endif
       transport_(NULL),
       transport_handler_(NULL),

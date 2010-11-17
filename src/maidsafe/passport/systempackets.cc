@@ -187,7 +187,7 @@ void SignaturePacket::PutToKey(Key *key) {
   key->set_packet_type(packet_type_);
   key->set_public_key(public_key_);
   key->set_private_key(private_key_);
-  if(signer_private_key_ != private_key_)
+  if (signer_private_key_ != private_key_)
     key->set_signer_private_key(signer_private_key_);
   key->set_public_key_signature(public_key_signature_);
 }

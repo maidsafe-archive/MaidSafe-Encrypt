@@ -40,11 +40,9 @@
 const int MESSAGE_POLL_TIMEOUT_MS = 3000;
 
 namespace {
-
 bool contactSortLessThan(const Contact* c1, const Contact* c2) {
   return c1->publicName() < c2->publicName();
 }
-
 }
 
 ClientController* ClientController::instance() {
@@ -96,10 +94,10 @@ QString ClientController::publicUsername() const {
 }
 
 bool ClientController::getPendingOps(QList<PendingOps> &ops) {
-  //array<pendingOps> pending;
-  //maidsafe::PendingOps po;
-  //get pendingOps from maisafe and convert to QT PendingOps
-  //maidsafe::ClientController::getInstance()->getPendingOps(pending);
+//  array<pendingOps> pending;
+//  maidsafe::PendingOps po;
+//  get pendingOps from maisafe and convert to QT PendingOps
+//  maidsafe::ClientController::getInstance()->getPendingOps(pending);
 
   PendingOps op;
   op.name = "testName.txt";
@@ -116,7 +114,6 @@ int ClientController::AddInstantFile(const QString &sender,
                                      int sizeLow, int sizeHigh,
                                      const ClientController::ItemType &ityp,
                                      const QString &s) {
-
   maidsafe::InstantFileNotification ifn;
   ifn.set_filename(filename.toStdString());
 
@@ -288,7 +285,8 @@ ContactList ClientController::contacts(int type) const {
   for (unsigned int i = 0; i < contact_list.size(); ++i) {
     // accessors on maidsafe::Contact are non-const so can't pass in const&
     maidsafe::Contact mcontact = contact_list[i];
-    Contact* contact = Contact::fromContact(QString::fromStdString(mcontact.PublicName()));
+    Contact* contact =
+        Contact::fromContact(QString::fromStdString(mcontact.PublicName()));
     if (mcontact.Confirmed() == 'U')
       contact->setPresence(Presence::INVALID);
     else
@@ -400,16 +398,16 @@ bool ClientController::sendEmail(const QString& subject,
 
 QDomElement ClientController::EmailToNode(QDomDocument &d,
                                           const ClientController::Email &c) {
-   QDomElement em = d.createElement( "contact" );
+  QDomElement em = d.createElement( "contact" );
 
-   em.setAttribute( "from", c.from );
-   em.setAttribute( "to", c.to );
-   em.setAttribute( "cc", c.cc );
-   em.setAttribute( "bcc", c.bcc );
-   em.setAttribute( "body", c.body );
-   em.setAttribute( "subject", c.subject );
+  em.setAttribute("from", c.from);
+  em.setAttribute("to", c.to);
+  em.setAttribute("cc", c.cc);
+  em.setAttribute("bcc", c.bcc);
+  em.setAttribute("body", c.body);
+  em.setAttribute("subject", c.subject);
 
-   return em;
+  return em;
 }
 
 bool ClientController::sendInstantFile(const QString& filePath,
@@ -681,17 +679,14 @@ bool ClientController::CreateUser(const QString &username, const QString &pin,
 bool ClientController::CheckUserExists(const std::string &username,
                                       const std::string &pin,
                                       DefConLevel level) {
-
-maidsafe::DefConLevels defCon;
-if (level == kDefCon1) {
-  defCon = maidsafe::kDefCon1;
-}
-else if(level == kDefCon2) {
-  defCon = maidsafe::kDefCon2;
-}
-else {
-  defCon = maidsafe::kDefCon3;
-}
+  maidsafe::DefConLevels defCon;
+  if (level == kDefCon1) {
+    defCon = maidsafe::kDefCon1;
+  } else if (level == kDefCon2) {
+    defCon = maidsafe::kDefCon2;
+  } else {
+    defCon = maidsafe::kDefCon3;
+  }
 
   bool result = true;
   int rc = maidsafe::ClientController::getInstance()->CheckUserExists(
@@ -748,9 +743,12 @@ QStringList ClientController::GetContactInfo(const QString &pub_name) {
   ss << mic.office_phone_;
   ss >> phone;
 
-  contact << QString::fromStdString(mic.birthday_) << QString::fromStdString(mic.city_) <<
-    QString::fromStdString(mic.full_name_) << QString::fromStdString(gender) <<
-    QString::fromStdString(phone) << QString::fromStdString(mic.pub_name_);
+  contact << QString::fromStdString(mic.birthday_) <<
+      QString::fromStdString(mic.city_) <<
+      QString::fromStdString(mic.full_name_) <<
+      QString::fromStdString(gender) <<
+      QString::fromStdString(phone) <<
+      QString::fromStdString(mic.pub_name_);
 
   return contact;
 }

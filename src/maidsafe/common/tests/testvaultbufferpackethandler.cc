@@ -29,7 +29,7 @@
 namespace maidsafe {
 
 namespace test {
-  
+
 class VaultBufferPacketHandlerTest : public testing::Test {
  public:
   VaultBufferPacketHandlerTest() : vbph_(),

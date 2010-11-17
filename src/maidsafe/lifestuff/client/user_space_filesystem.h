@@ -12,8 +12,8 @@
  *      Author: Team
  */
 
-#ifndef QT_CLIENT_USER_SPACE_FILESYSTEM_H_
-#define QT_CLIENT_USER_SPACE_FILESYSTEM_H_
+#ifndef MAIDSAFE_LIFESTUFF_CLIENT_USER_SPACE_FILESYSTEM_H_
+#define MAIDSAFE_LIFESTUFF_CLIENT_USER_SPACE_FILESYSTEM_H_
 
 // qt
 #include <QObject>
@@ -64,7 +64,7 @@ class UserSpaceFileSystem : public QObject {
 
 
 
-#endif  // QT_CLIENT_USER_SPACE_FILESYSTEM_H_
+#endif  //  MAIDSAFE_LIFESTUFF_CLIENT_USER_SPACE_FILESYSTEM_H_
 
 
 

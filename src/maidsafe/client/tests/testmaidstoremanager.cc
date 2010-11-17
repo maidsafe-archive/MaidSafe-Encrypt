@@ -984,8 +984,8 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AddToWatchList) {
     cond_var.wait(lock);
   ASSERT_EQ(size_t(1), msm.tasks_handler_.TasksCount());
 //  StoreManagerTask retrieved_task;
-//  ASSERT_TRUE(msm.tasks_handler_.HasTask(chunk_names.at(test_run), kStoreChunk,
-//      &retrieved_task));
+//  ASSERT_TRUE(msm.tasks_handler_.HasTask(chunk_names.at(test_run),
+//      kStoreChunk, &retrieved_task));
 //  ASSERT_EQ(kMinChunkCopies, retrieved_task.successes_required_);
 
   // Call 12 - All ATW responses return upload_count of 3 except one which

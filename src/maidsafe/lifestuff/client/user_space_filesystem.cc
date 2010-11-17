@@ -130,7 +130,7 @@ bool UserSpaceFileSystem::unmount() {
   if (!n) {
     // TODO(Team#5#): 2009-06-25 - do stuff
     success = false;
-  } 
+  }
 #ifdef PD_LIGHT
   return n;
 #endif

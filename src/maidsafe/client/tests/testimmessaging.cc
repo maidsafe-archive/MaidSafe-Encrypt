@@ -81,7 +81,7 @@ std::string GetStrMsgFromBpMsg(const std::string &ser_bpmsg,
 
 class ImMessagingTest : public testing::Test {
  public:
-  ImMessagingTest() : network_test_("IM"),
+  ImMessagingTest() : network_test_(),
                       ctc1_trans_(),
                       ctc2_trans_(),
                       ss_(SessionSingleton::getInstance()),
@@ -777,7 +777,7 @@ TEST_MS_NET(ImMessagingTest, FUNC, MAID, HandleTwoConverstions) {
 
 class CCImMessagingTest : public testing::Test {
  public:
-  CCImMessagingTest() : network_test_("CCIM"),
+  CCImMessagingTest() : network_test_(),
                         ss1_(SessionSingleton::getInstance()),
                         ss2_(new MockSessionSingleton),
                         publicusername1_("contact1"),

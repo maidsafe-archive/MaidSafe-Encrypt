@@ -311,7 +311,7 @@ int ChunkInfoHandler::AddToReferenceList(const std::string &chunk_name,
   entry.pmid = pmid;
   entry.last_seen = base::GetEpochTime();
   ci.reference_list.push_back(entry);
-  
+
   return kSuccess;
 }
 

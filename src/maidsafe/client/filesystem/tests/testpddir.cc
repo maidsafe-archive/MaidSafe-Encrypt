@@ -1162,7 +1162,8 @@ TEST_F(PdDirTest, BEH_MAID_ModifyViaAddElement) {
   MetaDataMap mdm_recovered1, mdm_recovered2;
   ASSERT_TRUE(mdm1.ParseFromString(ser_mdm1)) << "Couldn't parse mdm1.";
   ASSERT_TRUE(mdm2.ParseFromString(ser_mdm2)) << "Couldn't parse mdm2.";
-  ASSERT_TRUE(mdm_new1.ParseFromString(ser_mdm_new1)) << "Couldn't parse mdm_new1.";
+  ASSERT_TRUE(mdm_new1.ParseFromString(ser_mdm_new1)) <<
+      "Couldn't parse mdm_new1.";
   ASSERT_TRUE(mdm_new2.ParseFromString(ser_mdm_new2)) <<
       "Couldn't parse mdm_new2.";
   ASSERT_TRUE(mdm_recovered1.ParseFromString(ser_mdm_recovered1)) <<

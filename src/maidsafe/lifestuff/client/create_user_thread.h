@@ -13,8 +13,8 @@
  *      Author: Team
  */
 
-#ifndef QT_CLIENT_CREATE_USER_THREAD_H_
-#define QT_CLIENT_CREATE_USER_THREAD_H_
+#ifndef MAIDSAFE_LIFESTUFF_CLIENT_CREATE_USER_THREAD_H_
+#define MAIDSAFE_LIFESTUFF_CLIENT_CREATE_USER_THREAD_H_
 
 #include "maidsafe/lifestuff/client/worker_thread.h"
 
@@ -48,5 +48,5 @@ class CreateUserThread : public WorkerThread {
   QString directory_;
 };
 
-#endif  // QT_CLIENT_CREATE_USER_THREAD_H_
+#endif  //  MAIDSAFE_LIFESTUFF_CLIENT_CREATE_USER_THREAD_H_
 

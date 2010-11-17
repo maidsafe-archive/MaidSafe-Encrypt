@@ -77,8 +77,8 @@ void SEHandler::Init(boost::shared_ptr<StoreManagerInterface> storem,
   client_chunkstore_ = client_chunkstore;
   if (!connection_to_chunk_uploads_.connected())
     connection_to_chunk_uploads_ =
-        store_manager_->ConnectToOnChunkUploaded(boost::bind(&SEHandler::ChunkDone,
-                                                      this, _1, _2));
+        store_manager_->ConnectToOnChunkUploaded(
+            boost::bind(&SEHandler::ChunkDone, this, _1, _2));
 }
 
 ItemType SEHandler::CheckEntry(const fs::path &absolute_path,
@@ -445,7 +445,8 @@ int SEHandler::GetDirKeys(const fs::path &dir_path,
     printf("Keys needed because inside of Shares/Private.\n");
 #endif
     std::string private_key;
-    if (kSuccess != session_singleton_->GetShareKeys(msid, parent_key, &private_key))
+    if (kSuccess != session_singleton_->GetShareKeys(msid, parent_key,
+                                                     &private_key))
       return kEncryptionGetDirKeyFailure;
     *parent_key = SHA512String(*parent_key);
   }
@@ -526,7 +527,8 @@ int SEHandler::EncryptDb(const fs::path &dir_path,
 //    if (dir_type == ANONYMOUS) {
 //      *serialised_data_map = encrypted_data_map_;
 //    } else {
-//      std::string serialised_gp = CreateDataMapPacket(encrypted_data_map_, dir_type, msid);
+//      std::string serialised_gp = CreateDataMapPacket(encrypted_data_map_,
+//                                                      dir_type, msid);
 //      *serialised_data_map = serialised_gp;
 //    }
     return kSuccess;
@@ -868,7 +870,7 @@ void SEHandler::ChunkDone(const std::string &chunkname, ReturnCode rc) {
     }
 
 #ifdef DEBUG
-//    printf("SEHandler::ChunkDone - %s - %d - %d\n", file_path.string().c_str(),
+//   printf("SEHandler::ChunkDone - %s - %d - %d\n", file_path.string().c_str(),
 //           pending, finished);
 #endif
     int percentage((finished - pending) * 100 / finished);
@@ -897,8 +899,8 @@ std::string SEHandler::AddToUpToDateDms(const std::string &dir_key,
       lb->second = encrypted_data_map;
   } else {
     // dir_key doesn't exist
-    up_to_date_datamaps_.insert(lb, UpToDateDatamaps::value_type(dir_key,
-                                                                 encrypted_data_map));
+    up_to_date_datamaps_.insert(lb,
+        UpToDateDatamaps::value_type(dir_key, encrypted_data_map));
   }
   return previous_encrypted_data_map;
 }

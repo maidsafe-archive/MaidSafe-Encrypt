@@ -215,9 +215,12 @@ class RunPDVaults {
 //      clients_[i]->mss.AddKey(PMID, clients_[i]->pmid_name,
 //          clients_[i]->pmid_priv_key, clients_[i]->pmid_pub_key,
 //          clients_[i]->pmid_pub_key_sig);
-      printf(" >> public key:   %s\n", HexSubstr(clients_[i]->mss.PublicKey(passport::PMID, true)).c_str());
-      printf(" >> pub key sig:  %s\n", HexSubstr(clients_[i]->mss.PublicKeySignature(passport::PMID, true)).c_str());
-      printf(" >> hash/name:    %s\n", HexSubstr(clients_[i]->mss.Id(passport::PMID, true)).c_str());
+      printf(" >> public key:   %s\n", HexSubstr(clients_[i]->
+          mss.PublicKey(passport::PMID, true)).c_str());
+      printf(" >> pub key sig:  %s\n", HexSubstr(clients_[i]->
+          mss.PublicKeySignature(passport::PMID, true)).c_str());
+      printf(" >> hash/name:    %s\n", HexSubstr(clients_[i]->
+          mss.Id(passport::PMID, true)).c_str());
       clients_[i]->mss.SetConnectionStatus(0);
     }
   }

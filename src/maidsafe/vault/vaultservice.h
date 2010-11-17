@@ -25,13 +25,6 @@
 #ifndef MAIDSAFE_VAULT_VAULTSERVICE_H_
 #define MAIDSAFE_VAULT_VAULTSERVICE_H_
 
-//#include <boost/compressed_pair.hpp>
-//#include <boost/thread/condition_variable.hpp>
-//#include <boost/tuple/tuple.hpp>
-//#include <boost/tuple/tuple_comparison.hpp>
-//#include <maidsafe/protobuf/contact_info.pb.h>
-//#include <maidsafe/base/crypto.h>
-//#include <maidsafe/base/utils.h>
 #include <QThreadPool>
 
 #include <map>

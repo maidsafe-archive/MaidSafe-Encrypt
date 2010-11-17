@@ -25,8 +25,6 @@
 #include <gtest/gtest.h>
 #include <boost/filesystem/fstream.hpp>
 #include <boost/filesystem.hpp>
-//#include <boost/cstdint.hpp>
-//#include <boost/lexical_cast.hpp>
 #include <maidsafe/base/utils.h>
 
 #include <limits>
@@ -53,7 +51,7 @@ class TestStringIOHandler : public testing::Test {
   std::tr1::shared_ptr<std::string> data_;
 };
 
-TEST_F(TestStringIOHandler, BEH_MAID_TestReadFromString) {
+TEST_F(TestStringIOHandler, BEH_ENCRYPT_TestReadFromString) {
   // Check before opening
   StringIOHandler input_handler(data_, true);
   EXPECT_EQ(kData_, input_handler.Data());
@@ -120,7 +118,7 @@ TEST_F(TestStringIOHandler, BEH_MAID_TestReadFromString) {
   EXPECT_TRUE(read_data.empty());
 }
 
-TEST_F(TestStringIOHandler, BEH_MAID_TestSetGetPointerString) {
+TEST_F(TestStringIOHandler, BEH_ENCRYPT_TestSetGetPointerString) {
   // Open and apply offset
   StringIOHandler input_handler(data_, true);
   size_t test_size(kMinSize_ / 10), offset(kMinSize_ / 2);
@@ -144,7 +142,7 @@ TEST_F(TestStringIOHandler, BEH_MAID_TestSetGetPointerString) {
   EXPECT_TRUE(read_data.empty());
 }
 
-TEST_F(TestStringIOHandler, BEH_MAID_WriteToString) {
+TEST_F(TestStringIOHandler, BEH_ENCRYPT_WriteToString) {
   // Check before opening
   StringIOHandler output_handler(data_, false);
   EXPECT_EQ(kData_, output_handler.Data());
@@ -318,7 +316,7 @@ class TestFileIOHandler : public testing::Test {
   const std::string kData_;
 };
 
-TEST_F(TestFileIOHandler, BEH_MAID_TestReadFromFile) {
+TEST_F(TestFileIOHandler, BEH_ENCRYPT_TestReadFromFile) {
   WriteDataToInputFile(false);
 
   // Check using non-existant file
@@ -392,7 +390,7 @@ TEST_F(TestFileIOHandler, BEH_MAID_TestReadFromFile) {
   EXPECT_TRUE(read_data.empty());
 }
 
-TEST_F(TestFileIOHandler, BEH_MAID_TestSetGetPointerFile) {
+TEST_F(TestFileIOHandler, BEH_ENCRYPT_TestSetGetPointerFile) {
   WriteDataToInputFile(false);
 
   // Open and apply offset
@@ -418,7 +416,7 @@ TEST_F(TestFileIOHandler, BEH_MAID_TestSetGetPointerFile) {
   EXPECT_TRUE(read_data.empty());
 }
 
-TEST_F(TestFileIOHandler, BEH_MAID_WriteToFile) {
+TEST_F(TestFileIOHandler, BEH_ENCRYPT_WriteToFile) {
   // Check using non-existant directory
   FileIOHandler nef_output_handler(fs::path("not/o/k.txt"), false);
   EXPECT_FALSE(nef_output_handler.Open());

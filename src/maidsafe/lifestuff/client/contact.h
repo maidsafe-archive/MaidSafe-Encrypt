@@ -12,8 +12,8 @@
  *      Author: Team
  */
 
-#ifndef QT_CLIENT_CONTACT_H_
-#define QT_CLIENT_CONTACT_H_
+#ifndef MAIDSAFE_LIFESTUFF_CLIENT_CONTACT_H_
+#define MAIDSAFE_LIFESTUFF_CLIENT_CONTACT_H_
 
 // qt
 #include <QObject>
@@ -55,4 +55,4 @@ class Contact : public QObject {
 
 typedef QList<Contact*> ContactList;
 
-#endif  // QT_CLIENT_CONTACT_H_
+#endif  //  MAIDSAFE_LIFESTUFF_CLIENT_CONTACT_H_

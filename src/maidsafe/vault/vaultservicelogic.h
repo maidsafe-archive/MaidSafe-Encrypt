@@ -250,7 +250,8 @@ class VaultServiceLogic {
   friend class test::VaultServiceLogicTest_BEH_MAID_FindKNodes_Test;
   friend class test::VaultServiceLogicTest_FUNC_MAID_AddToRemoteRefList_Test;
   friend class test::VaultServiceLogicTest_FUNC_MAID_AmendRemoteAccount_Test;
-  friend class test::VaultServiceLogicTest_FUNC_MAID_RemoteVaultAbleToStore_Test;
+  friend class
+      test::VaultServiceLogicTest_FUNC_MAID_RemoteVaultAbleToStore_Test;
   friend class MockVsl;
   friend class test::MockVaultServicesTest;
   friend class test::AccountAmendmentHandlerTest_BEH_MAID_AssessAmendment_Test;

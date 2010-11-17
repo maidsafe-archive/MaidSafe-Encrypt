@@ -12,8 +12,8 @@
  *      Author: Team
  */
 
-#ifndef QT_WIDGETS_VAULT_INFO_H_
-#define QT_WIDGETS_VAULT_INFO_H_
+#ifndef MAIDSAFE_LIFESTUFF_WIDGETS_VAULT_INFO_H_
+#define MAIDSAFE_LIFESTUFF_WIDGETS_VAULT_INFO_H_
 
 #include <QTimer>
 
@@ -49,4 +49,4 @@ class VaultInfo : public Panel {
   void changeEvent(QEvent *event);
 };
 
-#endif  // QT_WIDGETS_VAULT_INFO_H_
+#endif  //  MAIDSAFE_LIFESTUFF_WIDGETS_VAULT_INFO_H_

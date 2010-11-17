@@ -58,7 +58,8 @@ void GenerateContacts(std::vector<kad::Contact> *cv) {
   }
 }
 
-void execute_cb(maidsafe::VoidFuncIntContacts cb, maidsafe::ReturnCode &rc,
+void execute_cb(maidsafe::VoidFuncIntContacts cb,
+                const maidsafe::ReturnCode &rc,
                 const std::vector<kad::Contact> &cv) {
   boost::this_thread::sleep(boost::posix_time::seconds(1));
   cb(rc, cv);

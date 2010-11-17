@@ -12,8 +12,8 @@
  *      Author: Team
  */
 
-#ifndef QT_WIDGETS_PANEL_H_
-#define QT_WIDGETS_PANEL_H_
+#ifndef MAIDSAFE_LIFESTUFF_WIDGETS_PANEL_H_
+#define MAIDSAFE_LIFESTUFF_WIDGETS_PANEL_H_
 
 // qt
 #include <QWidget>
@@ -37,4 +37,4 @@ class Panel : public QWidget {
   virtual void setActive(bool) {}
 };
 
-#endif  // QT_WIDGETS_PANEL_H_
+#endif  //  MAIDSAFE_LIFESTUFF_WIDGETS_PANEL_H_

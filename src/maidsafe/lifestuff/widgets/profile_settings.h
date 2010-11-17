@@ -13,8 +13,8 @@
  */
 
 
-#ifndef QT_WIDGETS_PROFILE_SETTINGS_H_
-#define QT_WIDGETS_PROFILE_SETTINGS_H_
+#ifndef MAIDSAFE_LIFESTUFF_WIDGETS_PROFILE_SETTINGS_H_
+#define MAIDSAFE_LIFESTUFF_WIDGETS_PROFILE_SETTINGS_H_
 
 #include <QWidget>
 #include <QString>
@@ -56,4 +56,4 @@ class ProfileSettings : public QWidget {
 };
 
 
-#endif  // QT_WIDGETS_PROFILE_SETTINGS_H_
+#endif  //  MAIDSAFE_LIFESTUFF_WIDGETS_PROFILE_SETTINGS_H_

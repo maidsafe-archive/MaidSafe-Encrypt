@@ -13,8 +13,8 @@
  *      Author: Team
  */
 
-#ifndef QT_CLIENT_ADD_CONTACT_THREAD_H_
-#define QT_CLIENT_ADD_CONTACT_THREAD_H_
+#ifndef MAIDSAFE_LIFESTUFF_CLIENT_ADD_CONTACT_THREAD_H_
+#define MAIDSAFE_LIFESTUFF_CLIENT_ADD_CONTACT_THREAD_H_
 
 #include "maidsafe/lifestuff/client/worker_thread.h"
 
@@ -41,5 +41,5 @@ class AddContactThread : public WorkerThread {
     void completed(int, QString);
 };
 
-#endif  // QT_CLIENT_ADD_CONTACT_THREAD_H_
+#endif  // MAIDSAFE_LIFESTUFF_CLIENT_ADD_CONTACT_THREAD_H_
 

@@ -439,7 +439,7 @@ TEST_F(MSMTasksHandlerTest, BEH_MAID_GetAndResetProgress) {
   EXPECT_EQ(boost::uint8_t(9), max_fail);
   EXPECT_EQ(boost::uint8_t(0), succ_count);
   EXPECT_EQ(boost::uint8_t(0), fail_count);
-  
+
   for (int i = 0; i < 9; ++i) {
     EXPECT_EQ(kSuccess, tasks_handler_.NotifyTaskSuccess(task_id));
     EXPECT_EQ(kSuccess, tasks_handler_.NotifyTaskFailure(task_id,
@@ -453,7 +453,7 @@ TEST_F(MSMTasksHandlerTest, BEH_MAID_GetAndResetProgress) {
     EXPECT_EQ(boost::uint8_t(i + 1), succ_count);
     EXPECT_EQ(boost::uint8_t(i + 1), fail_count);
   }
-  
+
   EXPECT_EQ(kSuccess, tasks_handler_.ResetTaskProgress(task_id));
   EXPECT_EQ(kSuccess,
             tasks_handler_.GetTaskProgress(task_id, &succ_req, &max_fail,
@@ -462,7 +462,7 @@ TEST_F(MSMTasksHandlerTest, BEH_MAID_GetAndResetProgress) {
   EXPECT_EQ(boost::uint8_t(9), max_fail);
   EXPECT_EQ(boost::uint8_t(0), succ_count);
   EXPECT_EQ(boost::uint8_t(0), fail_count);
-  
+
   for (int i = 0; i < 9; ++i) {
     EXPECT_EQ(kSuccess, tasks_handler_.NotifyTaskSuccess(task_id));
     EXPECT_EQ(kSuccess, tasks_handler_.NotifyTaskFailure(task_id,

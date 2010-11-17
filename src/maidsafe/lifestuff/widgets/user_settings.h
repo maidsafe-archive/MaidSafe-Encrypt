@@ -13,8 +13,8 @@
  */
 
 
-#ifndef QT_WIDGETS_USER_SETTINGS_H_
-#define QT_WIDGETS_USER_SETTINGS_H_
+#ifndef MAIDSAFE_LIFESTUFF_WIDGETS_USER_SETTINGS_H_
+#define MAIDSAFE_LIFESTUFF_WIDGETS_USER_SETTINGS_H_
 
 #include <QWidget>
 #include <QString>
@@ -83,4 +83,4 @@ class UserSettings : public QDialog {
   void changeEvent(QEvent *event);
 };
 
-#endif  // QT_WIDGETS_USER_SETTINGS_H_
+#endif  //  MAIDSAFE_LIFESTUFF_WIDGETS_USER_SETTINGS_H_

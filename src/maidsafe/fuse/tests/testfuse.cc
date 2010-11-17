@@ -1360,21 +1360,23 @@ TEST_F(FuseTest, FUNC_FUSE_SharesAndMessages) {
 */
 int main(int argc, char **argv) {
   testing::InitGoogleTest(&argc, argv);
-//#ifdef MAIDSAFE_WIN32
-//  testing::AddGlobalTestEnvironment(
-//      new localvaults::Env(fs_w_fuse::fuse_test::kNetworkSize_,
-//                           fs_w_fuse::fuse_test::kTestK_,
-//                           &fs_w_fuse::fuse_test::pdvaults_));
-//#elif defined(MAIDSAFE_POSIX)
-//  testing::AddGlobalTestEnvironment(
-//      new localvaults::Env(fs_l_fuse::fuse_test::kNetworkSize_,
-//                           fs_l_fuse::fuse_test::kTestK_,
-//                           &fs_l_fuse::fuse_test::pdvaults_));
-//#elif defined(MAIDSAFE_APPLE)
-//  testing::AddGlobalTestEnvironment(
-//      new localvaults::Env(fs_l_fuse::fuse_test::kNetworkSize_,
-//                           fs_l_fuse::fuse_test::kTestK_,
-//                           &fs_l_fuse::fuse_test::pdvaults_));
-//#endif
-  return RUN_ALL_TESTS();
+//  #ifdef MAIDSAFE_WIN32
+//    testing::AddGlobalTestEnvironment(
+//        new localvaults::Env(fs_w_fuse::fuse_test::kNetworkSize_,
+//                             fs_w_fuse::fuse_test::kTestK_,
+//                             &fs_w_fuse::fuse_test::pdvaults_));
+//  #elif defined(MAIDSAFE_POSIX)
+//    testing::AddGlobalTestEnvironment(
+//        new localvaults::Env(fs_l_fuse::fuse_test::kNetworkSize_,
+//                             fs_l_fuse::fuse_test::kTestK_,
+//                             &fs_l_fuse::fuse_test::pdvaults_));
+//  #elif defined(MAIDSAFE_APPLE)
+//    testing::AddGlobalTestEnvironment(
+//        new localvaults::Env(fs_l_fuse::fuse_test::kNetworkSize_,
+//                             fs_l_fuse::fuse_test::kTestK_,
+//                             &fs_l_fuse::fuse_test::pdvaults_));
+//  #endif
+  int result(RUN_ALL_TESTS());
+  int test_count = testing::UnitTest::GetInstance()->test_to_run_count();
+  return (test_count == 0) ? -1 : result;
 }

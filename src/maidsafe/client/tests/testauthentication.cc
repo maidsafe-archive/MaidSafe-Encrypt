@@ -44,7 +44,7 @@ namespace test {
 
 class AuthenticationTest : public testing::Test {
  public:
-  AuthenticationTest() : network_test_("Auth"),
+  AuthenticationTest() : network_test_(),
                          ss_(SessionSingleton::getInstance()),
                          sm_(network_test_.store_manager()),
                          authentication_(),

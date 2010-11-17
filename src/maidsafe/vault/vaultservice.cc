@@ -769,7 +769,6 @@ void VaultService::AddToWatchList(google::protobuf::RpcController*,
                                   const AddToWatchListRequest *request,
                                   AddToWatchListResponse *response,
                                   google::protobuf::Closure *done) {
-
   response->set_pmid(pmid_);
   response->set_upload_count(0);
   response->set_total_payment(0);

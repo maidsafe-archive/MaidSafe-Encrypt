@@ -23,8 +23,8 @@
 * ============================================================================
 */
 
-#ifndef TESTS_MAIDSAFE_MOCKVAULTSERVICELOGIC_H_
-#define TESTS_MAIDSAFE_MOCKVAULTSERVICELOGIC_H_
+#ifndef MAIDSAFE_VAULT_TESTS_MOCKVAULTSERVICELOGIC_H_
+#define MAIDSAFE_VAULT_TESTS_MOCKVAULTSERVICELOGIC_H_
 
 #include <boost/cstdint.hpp>
 #include <boost/function.hpp>
@@ -256,4 +256,4 @@ class MockVaultServiceLogicTest : public testing::Test {
 
 }  // namespace maidsafe
 
-#endif  // TESTS_MAIDSAFE_MOCKVAULTSERVICELOGIC_H_
+#endif  // MAIDSAFE_VAULT_TESTS_MOCKVAULTSERVICELOGIC_H_

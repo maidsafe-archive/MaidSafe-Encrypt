@@ -26,8 +26,8 @@
 //           -Added CppSQLiteDB3::tableExists()
 // // // // // // // // // // // // // // // // // // // //
 // // // // // // // // // // // // // // // // // // // //
-#ifndef MAIDSAFE_CPPSQLITE3_H_
-#define MAIDSAFE_CPPSQLITE3_H_
+#ifndef MAIDSAFE_COMMON_CPPSQLITE3_H_
+#define MAIDSAFE_COMMON_CPPSQLITE3_H_
 
 #include <cstdio>
 #include <cstring>
@@ -313,4 +313,4 @@ class CppSQLite3DB {
     int mnBusyTimeoutMs;
   };
 
-#endif  // MAIDSAFE_CPPSQLITE3_H_
+#endif  // MAIDSAFE_COMMON_CPPSQLITE3_H_

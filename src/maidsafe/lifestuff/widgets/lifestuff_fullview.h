@@ -12,8 +12,8 @@
  *      Author: Team
  */
 
-#ifndef QT_WIDGETS_LIFESTUFF_FULLVIEW_H_
-#define QT_WIDGETS_LIFESTUFF_FULLVIEW_H_
+#ifndef MAIDSAFE_LIFESTUFF_WIDGETS_LIFESTUFF_FULLVIEW_H_
+#define MAIDSAFE_LIFESTUFF_WIDGETS_LIFESTUFF_FULLVIEW_H_
 
 // qt
 #include <QWidget>
@@ -64,5 +64,5 @@ class LifeStuffFull : public QWidget {
   void changeEvent(QEvent *event);
 };
 
-#endif  // QT_WIDGETS_LIFESTUFF_FULLVIEW_H_
+#endif  //  MAIDSAFE_LIFESTUFF_WIDGETS_LIFESTUFF_FULLVIEW_H_
 

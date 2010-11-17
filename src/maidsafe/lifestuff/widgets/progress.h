@@ -12,8 +12,8 @@
  *      Author: Team
  */
 
-#ifndef QT_WIDGETS_PROGRESS_H_
-#define QT_WIDGETS_PROGRESS_H_
+#ifndef MAIDSAFE_LIFESTUFF_WIDGETS_PROGRESS_H_
+#define MAIDSAFE_LIFESTUFF_WIDGETS_PROGRESS_H_
 
 // qt
 #include <QWidget>
@@ -62,5 +62,5 @@ class Progress : public QWidget {
   void changeEvent(QEvent *event);
 };
 
-#endif  // QT_WIDGETS_PROGRESS_H_
+#endif  //  MAIDSAFE_LIFESTUFF_WIDGETS_PROGRESS_H_
 

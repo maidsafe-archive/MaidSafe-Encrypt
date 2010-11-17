@@ -31,8 +31,7 @@
 
 
 #include "maidsafe/encrypt/selfencryptionutils.h"
-//
-//#include <boost/scoped_ptr.hpp>
+
 #include <maidsafe/base/crypto.h>
 #include <maidsafe/base/utils.h>
 
@@ -251,8 +250,9 @@ int DecryptContent(const DataMap &data_map,
       // get chunk
       Chunk chunk;
       std::vector<fs::path>::iterator it = chunk_paths.begin();
-      while(it != chunk_paths.end()) {
-        std::string enc(base::EncodeToHex(data_map.encrypted_chunk_name(chunk_no)));
+      while (it != chunk_paths.end()) {
+        std::string enc =
+            base::EncodeToHex(data_map.encrypted_chunk_name(chunk_no));
         if ((*it).filename().string() ==
             base::EncodeToHex(data_map.encrypted_chunk_name(chunk_no))) {
           break;

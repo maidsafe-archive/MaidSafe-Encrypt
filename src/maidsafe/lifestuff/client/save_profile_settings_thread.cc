@@ -44,7 +44,8 @@ void SaveProfileSettingsThread::run() {
   try {
     pd.set_country(boost::lexical_cast<int>(theHash_["Country"].toStdString()));
     pd.set_gender(theHash_["Gender"].toStdString());
-    pd.set_language(boost::lexical_cast<int>(theHash_["Language"].toStdString()));
+    pd.set_language(
+        boost::lexical_cast<int>(theHash_["Language"].toStdString()));
   }
   catch(const std::exception &e) {
     printf("In SaveProfileSettingsThread::run() %s\n", e.what());

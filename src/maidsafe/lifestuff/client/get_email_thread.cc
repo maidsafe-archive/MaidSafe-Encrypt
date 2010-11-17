@@ -22,14 +22,14 @@
 
 
 GetEmailThread::GetEmailThread(const QString& subject, QObject* parent)
-    :	WorkerThread(parent), subject_(subject) {}
+    : WorkerThread(parent), subject_(subject) {}
 
 GetEmailThread::~GetEmailThread() { }
 
 void GetEmailThread::run() {
-  //qDebug() << "SendEmailThread::run" << text_;
-
-  //int success = ClientController::instance()->newEmailSendMessage();
-
-  //emit sendEmailCompleted(success, text_);
+//  qDebug() << "SendEmailThread::run" << text_;
+//
+//  int success = ClientController::instance()->newEmailSendMessage();
+//
+//  emit sendEmailCompleted(success, text_);
 }

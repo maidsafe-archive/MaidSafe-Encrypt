@@ -31,7 +31,8 @@ void SaveFileThread::run() {
 
   QString fileSize;
   QString lastModified;
-  int success = ClientController::instance()->getattr(filepath_, lastModified, fileSize);
+  int success =
+      ClientController::instance()->getattr(filepath_, lastModified, fileSize);
   if (success != 0) {
     success = ClientController::instance()->mknod(filepath_);
     if (success != 0) {

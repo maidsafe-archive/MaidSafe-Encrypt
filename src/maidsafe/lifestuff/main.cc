@@ -81,7 +81,7 @@ int main(int argc, char *argv[]) {
 */
   qInstallMsgHandler(pdMessageOutput);
 
-  //Set up Internationalization
+  // Set up Internationalization
   QApplication app(argc, argv);
 
   app.setOrganizationDomain("http://www.maidsafe.net");

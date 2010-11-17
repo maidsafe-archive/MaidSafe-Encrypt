@@ -45,7 +45,7 @@ class SignaturePacket : public pki::Packet {
                   const std::string &private_key,
                   const std::string &signer_private_key,
                   const std::string &public_name);
-  SignaturePacket(const Key &key);
+  explicit SignaturePacket(const Key &key);
   virtual ~SignaturePacket() {}
   virtual std::string value() const { return public_key_; }
   virtual bool Equals(const pki::Packet *other) const;

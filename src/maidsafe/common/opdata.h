@@ -18,8 +18,8 @@
 * ============================================================================
 */
 
-#ifndef MAIDSAFE_CLIENT_OPDATA_H_
-#define MAIDSAFE_CLIENT_OPDATA_H_
+#ifndef MAIDSAFE_COMMON_OPDATA_H_
+#define MAIDSAFE_COMMON_OPDATA_H_
 
 
 #include <boost/cstdint.hpp>
@@ -393,4 +393,4 @@ class GetChunkOpData {
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_CLIENT_OPDATA_H_
+#endif  // MAIDSAFE_COMMON_OPDATA_H_

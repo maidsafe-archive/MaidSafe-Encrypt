@@ -12,8 +12,8 @@
  *      Author: Team
  */
 
-#ifndef QT_PERPETUAL_DATA_H_
-#define QT_PERPETUAL_DATA_H_
+#ifndef MAIDSAFE_LIFESTUFF_PERPETUAL_DATA_H_
+#define MAIDSAFE_LIFESTUFF_PERPETUAL_DATA_H_
 
 // qt
 #include <QMainWindow>
@@ -255,10 +255,10 @@ class PerpetualData : public QMainWindow {
   // Email Inbox
   UserInbox* inbox_;
 
-  //Pending Ops
+  // Pending Ops
   PendingOperationsDialog* pendingOps_;
 
-  //User Calendar
+  // User Calendar
   UserCalendar* userCal_;
 
   LifeStuffLogin* lsLogin_;
@@ -287,5 +287,5 @@ class PerpetualData : public QMainWindow {
   void changeEvent(QEvent *event);
 };
 
-#endif  // QT_PERPETUAL_DATA_H_
+#endif  // MAIDSAFE_LIFESTUFF_PERPETUAL_DATA_H_
 

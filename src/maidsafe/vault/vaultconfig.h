@@ -22,8 +22,8 @@
 * ============================================================================
 */
 
-#ifndef MAIDSAFE_VAULT_VAULTRETURNCODES_H_
-#define MAIDSAFE_VAULT_VAULTRETURNCODES_H_
+#ifndef MAIDSAFE_VAULT_VAULTCONFIG_H_
+#define MAIDSAFE_VAULT_VAULTCONFIG_H_
 
 #include <boost/function.hpp>
 
@@ -113,4 +113,4 @@ typedef boost::function<void(const VaultReturnCode&)> VoidFuncOneInt;
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_VAULT_VAULTRETURNCODES_H_
+#endif  // MAIDSAFE_VAULT_VAULTCONFIG_H_

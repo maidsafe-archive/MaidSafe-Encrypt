@@ -47,7 +47,7 @@ class KadOps;
 
 class ContactCache {
  public:
-  ContactCache(const boost::shared_ptr<KadOps> &kad_ops)
+  explicit ContactCache(const boost::shared_ptr<KadOps> &kad_ops)
       : kMaxUpdateInterval_(10),
         kad_ops_(kad_ops),
         pmid_(),

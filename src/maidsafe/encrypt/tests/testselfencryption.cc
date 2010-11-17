@@ -145,7 +145,7 @@ class SelfEncryptionTest : public testing::Test {
 //  std::set<std::string> done_chunks_;
 };
 
-TEST_F(SelfEncryptionTest, BEH_MAID_CheckEntry) {
+TEST_F(SelfEncryptionTest, BEH_ENCRYPT_CheckEntry) {
   fs::path file_path(kInputDir_ / "CheckEntryTest01.txt");
   DataIoHandlerPtr input_handler(new FileIOHandler(file_path, true));
   test_se::CreateRandomFile(file_path, 0);
@@ -165,7 +165,7 @@ TEST_F(SelfEncryptionTest, BEH_MAID_CheckEntry) {
   fs::remove(file_path);
 }
 
-TEST_F(SelfEncryptionTest, BEH_MAID_CheckCompressibility) {
+TEST_F(SelfEncryptionTest, BEH_ENCRYPT_CheckCompressibility) {
   //  make compressible .txt file
   fs::path path1(kInputDir_ / "compressible.txt");
   fs::ofstream ofs1;
@@ -197,7 +197,7 @@ TEST_F(SelfEncryptionTest, BEH_MAID_CheckCompressibility) {
   EXPECT_FALSE(utils::CheckCompressibility(input_handler3));
 }
 
-TEST_F(SelfEncryptionTest, BEH_MAID_ChunkAddition) {
+TEST_F(SelfEncryptionTest, BEH_ENCRYPT_ChunkAddition) {
   EXPECT_EQ(-8, utils::ChunkAddition('0'));
   EXPECT_EQ(-7, utils::ChunkAddition('1'));
   EXPECT_EQ(-6, utils::ChunkAddition('2'));
@@ -224,7 +224,7 @@ TEST_F(SelfEncryptionTest, BEH_MAID_ChunkAddition) {
   EXPECT_EQ(0, utils::ChunkAddition(' '));
 }
 
-TEST_F(SelfEncryptionTest, BEH_MAID_CalculateChunkSizes) {
+TEST_F(SelfEncryptionTest, BEH_ENCRYPT_CalculateChunkSizes) {
   // make file of size larger than (max no of chunks) * (default chunk size)
   fs::path test_file1(kInputDir_ / "CalculateChunkSizesTest01.txt");
   boost::uint64_t file_size1 = kDefaultChunkSize * kMaxChunks * 2;
@@ -464,7 +464,7 @@ TEST_F(SelfEncryptionTest, BEH_MAID_CalculateChunkSizes) {
   data_map.Clear();
 }
 
-TEST_F(SelfEncryptionTest, BEH_MAID_HashFile) {
+TEST_F(SelfEncryptionTest, BEH_ENCRYPT_HashFile) {
   fs::path path1(kInputDir_ / "HashFileTest01.txt");
   fs::ofstream ofs1;
   ofs1.open(path1);
@@ -484,7 +484,7 @@ TEST_F(SelfEncryptionTest, BEH_MAID_HashFile) {
         "9e4900f7e4331b99dec4b5433ac7d329eeb6dd26545e96e55b874be909");
 }
 
-TEST_F(SelfEncryptionTest, BEH_MAID_HashString) {
+TEST_F(SelfEncryptionTest, BEH_ENCRYPT_HashString) {
   EXPECT_EQ(base::EncodeToHex(utils::SHA512(std::string("abc"))),
         "ddaf35a193617abacc417349ae20413112e6fa4e89a97ea20a9eeee64b55d39a219299"
         "2a274fc1a836ba3c23a3feebbd454d4423643ce80e2a9ac94fa54ca49f");
@@ -495,7 +495,7 @@ TEST_F(SelfEncryptionTest, BEH_MAID_HashString) {
         "9e4900f7e4331b99dec4b5433ac7d329eeb6dd26545e96e55b874be909");
 }
 
-TEST_F(SelfEncryptionTest, BEH_MAID_GeneratePreEncryptionHashes) {
+TEST_F(SelfEncryptionTest, BEH_ENCRYPT_GeneratePreEncryptionHashes) {
   fs::path path1(kInputDir_ / "GeneratePreEncryptionHashesTest01.txt");
   fs::ofstream ofs1;
   ofs1.open(path1);
@@ -523,7 +523,7 @@ TEST_F(SelfEncryptionTest, BEH_MAID_GeneratePreEncryptionHashes) {
         "2a274fc1a836ba3c23a3feebbd454d4423643ce80e2a9ac94fa54ca49f");
 }
 
-TEST_F(SelfEncryptionTest, BEH_MAID_HashUnique) {
+TEST_F(SelfEncryptionTest, BEH_ENCRYPT_HashUnique) {
   std::string hash = utils::SHA512(static_cast<std::string>("abc"));
   DataMap data_map;
   data_map.add_chunk_name(hash);
@@ -546,7 +546,7 @@ TEST_F(SelfEncryptionTest, BEH_MAID_HashUnique) {
   EXPECT_EQ(hash, hashafter);
 }
 
-TEST_F(SelfEncryptionTest, BEH_MAID_ResizeObfuscationHash) {
+TEST_F(SelfEncryptionTest, BEH_ENCRYPT_ResizeObfuscationHash) {
   std::string input("abc");
   std::string hash = utils::SHA512(input);
   EXPECT_EQ(base::EncodeToHex(hash),
@@ -565,7 +565,7 @@ TEST_F(SelfEncryptionTest, BEH_MAID_ResizeObfuscationHash) {
   EXPECT_FALSE(utils::ResizeObfuscationHash(hash, 10, NULL));
 }
 
-TEST_F(SelfEncryptionTest, BEH_MAID_SelfEncryptFiles) {
+TEST_F(SelfEncryptionTest, BEH_ENCRYPT_SelfEncryptFiles) {
   fs::path path1(kInputDir_ / "SelfEncryptFilesTest01.txt");
   fs::path path2(kInputDir_ / "SelfEncryptFilesTest02.txt");
   fs::path path3(kInputDir_ / "SelfEncryptFilesTest03.txt");
@@ -613,7 +613,7 @@ std::vector<fs::path> MapToVector(const std::map<std::string, fs::path> &in) {
   return out;
 }
 
-TEST_F(SelfEncryptionTest, BEH_MAID_DecryptFile) {
+TEST_F(SelfEncryptionTest, BEH_ENCRYPT_DecryptFile) {
   fs::path path1(kInputDir_ / "DecryptFileTest01.txt");
   fs::path path2(kInputDir_ / "DecryptFileTest02.txt");
   fs::path path3(kInputDir_ / "DecryptFileTest03.txt");
@@ -670,7 +670,7 @@ TEST_F(SelfEncryptionTest, BEH_MAID_DecryptFile) {
   EXPECT_EQ(utils::SHA512(path4), utils::SHA512(decrypted4));
 }
 
-TEST_F(SelfEncryptionTest, BEH_MAID_SelfEncryptStrings) {
+TEST_F(SelfEncryptionTest, BEH_ENCRYPT_SelfEncryptStrings) {
   StringPtr str1(new std::string(base::RandomString(0)));
   StringPtr str2(new std::string(base::RandomString(2)));
   StringPtr str3(new std::string(base::RandomString(4)));
@@ -705,7 +705,7 @@ TEST_F(SelfEncryptionTest, BEH_MAID_SelfEncryptStrings) {
   EXPECT_EQ(3, data_map5.chunk_name_size());
 }
 
-TEST_F(SelfEncryptionTest, BEH_MAID_SelfDecryptString) {
+TEST_F(SelfEncryptionTest, BEH_ENCRYPT_SelfDecryptString) {
   StringPtr str1(new std::string(base::RandomString(2)));
   StringPtr str2(new std::string(base::RandomString(4)));
   StringPtr str3(new std::string(base::RandomString(24)));
@@ -759,7 +759,7 @@ TEST_F(SelfEncryptionTest, BEH_MAID_SelfDecryptString) {
 }
 
 /*
-TEST_F(SelfEncryptionTest, BEH_MAID_EncryptAndCheckDoneChunks) {
+TEST_F(SelfEncryptionTest, BEH_ENCRYPT_EncryptAndCheckDoneChunks) {
   std::string test_file1("EncryptAndCheckDoneChunksTest01.txt");
   std::string test_file2("EncryptAndCheckDoneChunksTest02.txt");
 
