@@ -53,7 +53,7 @@ class IMConnectionHandlerTest : public testing::Test {
        &maidsafe::IMConnectionHandler::OnMessageArrive, &im_hdlr, _1, _2, _3,
        _4)));
     ASSERT_EQ(0, trans_hndlr.Start(0, trans_id));
-    port = trans_hndlr.listening_port(trans_id);
+    ASSERT_TRUE(trans_hndlr.listening_port(trans_id, &port));
     ASSERT_FALSE(trans->is_stopped());
   }
   void TearDown() {
@@ -64,7 +64,8 @@ class IMConnectionHandlerTest : public testing::Test {
   boost::shared_ptr<transport::Transport> trans;
   transport::TransportHandler trans_hndlr;
   maidsafe::IMConnectionHandler im_hdlr;
-  boost::int16_t trans_id, port;
+  boost::int16_t trans_id;
+  boost::uint16_t port;
   std::string ip;
   std::string msgs_rec, msgs_sent;
   boost::uint32_t new_conn_accepted, ext_conn_id;
