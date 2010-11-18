@@ -117,27 +117,32 @@ class Passport {
   int RevertMasterDataUpdate() { return RevertMidSmidTmidStmid(true); }
 
   // Used when logging in.
-  // Sets the RID for pending MID (or pending SMID) packet, and creates a
-  // corresponding pending TMID (or pending STMID) which needs to have its
-  // password & plain_text_master_data set.  If successful, name of the packet
-  // is set in tmid_name.
+  // Should normally be called after SetInitialDetails, as it needs a pending
+  // MID or SMID to operate on.  Sets the RID for pending MID (or pending SMID)
+  // packet, and creates a corresponding pending TMID (or pending STMID) which
+  // needs to have its password & plain_text_master_data set.  If successful,
+  // name of the packet is set in tmid_name.  MID (or SMID) is left as pending.
   int InitialiseTmid(bool surrogate,
-                     const std::string &serialised_mid_packet,
+                     const std::string &encrypted_rid,
                      std::string *tmid_name);
 
   // Used when logging in.
-  // Returns the plain_text_master_data from a pending TMID (or pending STMID)
-  // serialised packet.
+  // Should normally be called after InitialiseTmid, as it needs a pending
+  // TMID or STMID to operate on.  Sets the encrypted_master_data for pending
+  // TMID (or pending STMID) packet.  If successful, master data is decrypted
+  // and is set in plain_text_master_data.  MID and TMID (or SMID and STMID) are
+  // left as pending.
   int GetUserData(const std::string &password,
                   bool surrogate,
-                  const std::string &serialised_tmid_packet,
+                  const std::string &encrypted_master_data,
                   std::string *plain_text_master_data);
 
   // Used when logging in.
-  // Parses a previously serialised keyring and sets all contained
-  // SignaturePackets as confirmed. Also sets pending MID, SMID, TMID and STMID
-  // as confirmed if their appropriate prerequiste SignaturePackets were added
-  // from the keyring.
+  // Should normally be called after GetUserData, as it needs a pending MID,
+  // SMID, TMID and STMID to operate on.  Parses a previously serialised keyring
+  // and sets all contained SignaturePackets as confirmed. Also sets pending
+  // MID, SMID, TMID and STMID as confirmed if their appropriate prerequiste
+  // SignaturePackets were added from the keyring.
   int ParseKeyring(const std::string &serialised_keyring);
 
   // Used when amending username and/or pin.

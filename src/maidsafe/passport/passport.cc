@@ -275,7 +275,6 @@ int Passport::ChangeUserData(
   if (!retrieved_stmid)
     return kNoStmid;
 
-
   std::tr1::shared_ptr<MidPacket> mid(new MidPacket(new_username, new_pin, ""));
   std::tr1::shared_ptr<MidPacket> smid(new MidPacket(new_username, new_pin,
                                                      kSmidAppendix_));
