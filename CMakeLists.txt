@@ -212,6 +212,9 @@ INCLUDE(${${PROJECT_NAME}_ROOT}/build/maidsafe_FindGtest.cmake)
 SET(INCLUDE_DIRS ${INCLUDE_DIRS} ${Gtest_INCLUDE_DIR})
 SET(LIBS_DIRS ${LIBS_DIRS} ${Gtest_LIBRARY_DIR})
 SET(LIBS_DIRS_DEBUG ${LIBS_DIRS_DEBUG} ${Gtest_LIBRARY_DIR_DEBUG})
+IF(NOT WIN32)
+  SET(Gtest_LIBRARY "${Gtest_LIBRARY};pthread")
+ENDIF()
 
 ###################################################################################################
 # Google Mock library search                                                                      #

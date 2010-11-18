@@ -208,6 +208,8 @@ int Passport::InitialiseTmid(bool surrogate,
   bool success(!tmid->name().empty());
   if (success)
     success = packet_handler_.AddPendingPacket(tmid);
+  if (success)
+    success = packet_handler_.AddPendingPacket(retrieved_pending_mid);
   if (success) {
     *tmid_name = tmid->name();
     return kSuccess;
