@@ -24,6 +24,11 @@ namespace maidsafe_vault {
 bool BufferPacketStore::StoreBP(const std::string &name,
                                 const std::string &ser_bp) {
   boost::mutex::scoped_lock lock(bp_store_mutex_);
+  return DoStoreBP(name, ser_bp);
+}
+
+bool BufferPacketStore::DoStoreBP(const std::string &name,
+                                const std::string &ser_bp) {
   if (buffer_packets_.count(name) == 1)
     return false;
   buffer_packets_[name] = ser_bp;
@@ -59,12 +64,13 @@ bool BufferPacketStore::HasBP(const std::string &name) {
 
 void BufferPacketStore::ImportMapFromPb(
     const VaultBufferPacketMap &vault_bp_map) {
-  for (int i = 0; i < vault_bp_map.vault_buffer_packet_size(); ++i) {
-    InsertBufferPacketFromPb(vault_bp_map.vault_buffer_packet(i));
-  }
+  boost::mutex::scoped_lock lock(bp_store_mutex_);
+  for (int i = 0; i < vault_bp_map.vault_buffer_packet_size(); ++i)
+    DoInsertBufferPacketFromPb(vault_bp_map.vault_buffer_packet(i));
 }
 
 VaultBufferPacketMap BufferPacketStore::ExportMapToPb() {
+  boost::mutex::scoped_lock lock(bp_store_mutex_);
   VaultBufferPacketMap vault_bp_map;
   for (std::map<std::string, std::string>::iterator it =
            buffer_packets_.begin();
@@ -86,13 +92,24 @@ VaultBufferPacketMap BufferPacketStore::ExportMapToPb() {
 
 bool BufferPacketStore::InsertBufferPacketFromPb(
     const VaultBufferPacketMap::VaultBufferPacket &vault_bp) {
+  boost::mutex::scoped_lock lock(bp_store_mutex_);
+  return DoInsertBufferPacketFromPb(vault_bp);
+}
+
+bool BufferPacketStore::DoInsertBufferPacketFromPb(
+    const VaultBufferPacketMap::VaultBufferPacket &vault_bp) {
   maidsafe::BufferPacket bp;
   for (int i = 0; i < vault_bp.owner_info_size(); ++i) {
     maidsafe::GenericPacket *gp = bp.add_owner_info();
     gp->set_data(vault_bp.owner_info(i).data());
     gp->set_signature(vault_bp.owner_info(i).signature());
   }
-  return StoreBP(vault_bp.bufferpacket_name(), bp.SerializeAsString());
+  return DoStoreBP(vault_bp.bufferpacket_name(), bp.SerializeAsString());
+}
+
+void BufferPacketStore::Clear() {
+  boost::mutex::scoped_lock lock(bp_store_mutex_);
+  buffer_packets_.clear();
 }
 
 }   // namespace maidsafe_vault

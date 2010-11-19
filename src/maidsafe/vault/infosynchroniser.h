@@ -56,6 +56,7 @@ class InfoSynchroniser {
                    std::vector<kad::Contact> *closest_nodes);
   void RemoveEntry(const std::string &id);
   void PruneMap();
+  void Clear();
  private:
   InfoSynchroniser(const InfoSynchroniser&);
   InfoSynchroniser& operator=(const InfoSynchroniser&);
@@ -63,6 +64,7 @@ class InfoSynchroniser {
   FRIEND_TEST(InfoSynchroniserTest, FUNC_VAULT_InfoSyncTimestamps);
   FRIEND_TEST(InfoSynchroniserTest, FUNC_VAULT_InfoSyncRemoveEntry);
   FRIEND_TEST(InfoSynchroniserTest, FUNC_VAULT_InfoSyncPruneMap);
+  FRIEND_TEST(InfoSynchroniserTest, BEH_VAULT_InfoSyncClear);
   void AddNodeToClosest(const base::PublicRoutingTableTuple &node,
                         std::vector<kad::Contact> *closest);
   std::string pmid_;

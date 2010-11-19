@@ -70,6 +70,7 @@ class RequestExpectationHandler {
   // Removes expired entries from multimap which have timed out - returns a
   // count of the number of entries removed.
   int CleanUp();
+  void Clear();
  private:
   RequestExpectationHandler(const RequestExpectationHandler&);
   RequestExpectationHandler& operator=(const RequestExpectationHandler&);
@@ -79,6 +80,7 @@ class RequestExpectationHandler {
   FRIEND_TEST(RequestExpectationHandlerTest,
               BEH_MAID_REH_GetExpectedCallersIds);
   FRIEND_TEST(RequestExpectationHandlerTest, BEH_MAID_REH_CleanUp);
+  FRIEND_TEST(RequestExpectationHandlerTest, BEH_MAID_REH_Clear);
   FRIEND_TEST(RequestExpectationHandlerTest, BEH_MAID_REH_Threaded);
   template <typename RequestType>
   std::string GetExpectationIdentifier(const RequestType &request);

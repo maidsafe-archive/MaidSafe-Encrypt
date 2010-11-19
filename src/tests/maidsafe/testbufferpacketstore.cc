@@ -23,39 +23,49 @@ namespace maidsafe_vault {
 
 class BufferPacketStoreTest : public testing::Test {
  public:
-  BufferPacketStoreTest() : bps() {}
+  BufferPacketStoreTest() : bps_() {}
  protected:
-  BufferPacketStore bps;
+  BufferPacketStore bps_;
 };
 
 TEST_F(BufferPacketStoreTest, BEH_MAID_BPStorage) {
   std::string bp_name("Buffer packet name"), bp_data("Buffer packet contents");
   std::string temp;
-  EXPECT_FALSE(bps.HasBP(bp_name));
-  EXPECT_FALSE(bps.LoadBP(bp_name, &temp));
-  EXPECT_FALSE(bps.UpdateBP(bp_name, bp_data));
-  EXPECT_FALSE(bps.DeleteBP(bp_name));
+  EXPECT_FALSE(bps_.HasBP(bp_name));
+  EXPECT_FALSE(bps_.LoadBP(bp_name, &temp));
+  EXPECT_FALSE(bps_.UpdateBP(bp_name, bp_data));
+  EXPECT_FALSE(bps_.DeleteBP(bp_name));
 
-  EXPECT_TRUE(bps.StoreBP(bp_name, bp_data));
-  EXPECT_TRUE(bps.HasBP(bp_name));
-  EXPECT_TRUE(bps.LoadBP(bp_name, &temp));
+  EXPECT_TRUE(bps_.StoreBP(bp_name, bp_data));
+  EXPECT_TRUE(bps_.HasBP(bp_name));
+  EXPECT_TRUE(bps_.LoadBP(bp_name, &temp));
   EXPECT_EQ(bp_data, temp);
 
   bp_data = "New BP contents";
-  EXPECT_TRUE(bps.UpdateBP(bp_name, bp_data));
-  EXPECT_TRUE(bps.LoadBP(bp_name, &temp));
+  EXPECT_TRUE(bps_.UpdateBP(bp_name, bp_data));
+  EXPECT_TRUE(bps_.LoadBP(bp_name, &temp));
   EXPECT_EQ(bp_data, temp);
 
-  EXPECT_TRUE(bps.DeleteBP(bp_name));
-  EXPECT_FALSE(bps.HasBP(bp_name));
+  EXPECT_TRUE(bps_.DeleteBP(bp_name));
+  EXPECT_FALSE(bps_.HasBP(bp_name));
 }
 
 TEST_F(BufferPacketStoreTest, DISABLED_BEH_MAID_BPImportMapFromPb) {
-  // TODO(Steve#) test ImportMapFromPb
+  // TODO(Team#) test ImportMapFromPb
 }
 
 TEST_F(BufferPacketStoreTest, DISABLED_BEH_MAID_BPExportMapToPb) {
-  // TODO(Steve#) test ExportMapToPb
+  // TODO(Team#) test ExportMapToPb
+}
+
+TEST_F(BufferPacketStoreTest, BEH_MAID_BPStoreClean) {
+  ASSERT_EQ(size_t(0), bps_.buffer_packets_.size());
+  boost::uint32_t n(base::RandomUint32() % 50 + 50);
+  for (boost::uint32_t i = 0; i < n; ++i)
+    EXPECT_TRUE(bps_.StoreBP("bp" + base::IntToString(i), "bp data"));
+  ASSERT_EQ(size_t(n), bps_.buffer_packets_.size());
+  bps_.Clear();
+  ASSERT_EQ(size_t(0), bps_.buffer_packets_.size());
 }
 
 }  // namespace maidsafe_vault

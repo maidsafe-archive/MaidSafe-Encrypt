@@ -106,6 +106,11 @@ void InfoSynchroniser::PruneMap() {
   }
 }
 
+void InfoSynchroniser::Clear() {
+  boost::mutex::scoped_lock lock(mutex_);
+  info_entries_.clear();
+}
+
 void InfoSynchroniser::AddNodeToClosest(
     const base::PublicRoutingTableTuple &node,
     std::vector<kad::Contact> *closest) {

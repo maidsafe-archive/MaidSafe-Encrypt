@@ -226,8 +226,10 @@ void PDVault::RegisterMaidService() {
 }
 
 void PDVault::UnRegisterMaidService() {
-  if (vault_service_.get() != NULL)
+  if (vault_service_.get() != NULL) {
+    vault_service_->ClearOperationalData();
     channel_manager_.UnRegisterChannel(vault_service_->GetDescriptor()->name());
+  }
   if (svc_channel_ != NULL)
     svc_channel_.reset();
   if (vault_service_ != NULL)

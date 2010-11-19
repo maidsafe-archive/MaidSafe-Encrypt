@@ -291,6 +291,19 @@ TEST_F(RequestExpectationHandlerTest, BEH_MAID_REH_CleanUp) {
   ASSERT_TRUE(another_expectation_handler.expectations_.empty());
 }
 
+TEST_F(RequestExpectationHandlerTest, BEH_MAID_REH_Clear) {
+  ASSERT_EQ(size_t(0), request_expectation_handler_.expectations_.size());
+  boost::uint32_t n(base::RandomUint32() % 50 + 50);
+  for (boost::uint32_t i = 0; i < n; ++i) {
+    expect_amendment_request_.set_chunkname("chunk" + base::IntToString(i));
+    ASSERT_EQ(kSuccess,
+        request_expectation_handler_.AddExpectation(expect_amendment_request_));
+  }
+  ASSERT_EQ(size_t(n), request_expectation_handler_.expectations_.size());
+  request_expectation_handler_.Clear();
+  ASSERT_EQ(size_t(0), request_expectation_handler_.expectations_.size());
+}
+
 TEST_F(RequestExpectationHandlerTest, BEH_MAID_REH_Threaded) {
   // Create expectations - need kMaxOpThreads set to >= 5.
   const int kMaxOpThreads(20);

@@ -535,5 +535,9 @@ int ChunkInfoHandler::InsertChunkInfoFromPb(
   return kSuccess;
 }
 
+void ChunkInfoHandler::Clear() {
+  boost::mutex::scoped_lock lock(chunk_info_mutex_);
+  chunk_infos_.clear();
+}
 
 }  // namespace maidsafe_vault

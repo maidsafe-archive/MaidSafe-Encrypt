@@ -231,4 +231,15 @@ TEST_F(InfoSynchroniserTest, FUNC_VAULT_InfoSyncPruneMap) {
   }
 }
 
+TEST_F(InfoSynchroniserTest, BEH_VAULT_InfoSyncClear) {
+  const size_t kTestMapSize = 100;
+  while (info_synchroniser_.info_entries_.size() < kTestMapSize) {
+    info_synchroniser_.ShouldFetch(co_.Hash(base::RandomString(100), "",
+        crypto::STRING_STRING, false), &closest_nodes_);
+  }
+  ASSERT_EQ(kTestMapSize, info_synchroniser_.info_entries_.size());
+  info_synchroniser_.Clear();
+  ASSERT_EQ(size_t(0), info_synchroniser_.info_entries_.size());
+}
+
 }  // namespace maidsafe_vault

@@ -856,4 +856,18 @@ TEST_F(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerPutGetChunkInfo) {
   ASSERT_EQ(kNumEntries + 1, chunk_info_handler.chunk_infos_.size());
 }
 
+TEST_F(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerClear) {
+  ChunkInfoHandler cih(true);
+  ASSERT_EQ(size_t(0), cih.chunk_infos_.size());
+  boost::uint32_t n(base::RandomUint32() % 50 + 50);
+  int required_references, required_payments;
+  for (boost::uint32_t i = 0; i < n; ++i)
+    ASSERT_EQ(kSuccess, cih.PrepareAddToWatchList(
+        "chunk" + base::IntToString(i), "client" + base::IntToString(i), 123,
+        &required_references, &required_payments));
+  ASSERT_EQ(size_t(n), cih.chunk_infos_.size());
+  cih.Clear();
+  ASSERT_EQ(size_t(0), cih.chunk_infos_.size());
+}
+
 }  // namespace maidsafe_vault

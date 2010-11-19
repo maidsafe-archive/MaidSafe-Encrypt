@@ -345,4 +345,15 @@ TEST_F(AccountHandlerTest, FUNC_VAULT_AccountHandlerPutGetAccount) {
   ASSERT_EQ(kNumEntries + 1, account_handler.accounts_.size());
 }
 
+TEST_F(AccountHandlerTest, BEH_VAULT_AccountHandlerClear) {
+  AccountHandler ah(true);
+  ASSERT_EQ(size_t(0), ah.accounts_.size());
+  boost::uint32_t n(base::RandomUint32() % 50 + 50);
+  for (boost::uint32_t i = 0; i < n; ++i)
+    ASSERT_EQ(kSuccess, ah.AddAccount("pmid" + base::IntToString(i), 1234));
+  ASSERT_EQ(size_t(n), ah.accounts_.size());
+  ah.Clear();
+  ASSERT_EQ(size_t(0), ah.accounts_.size());
+}
+
 }  // namespace maidsafe_vault

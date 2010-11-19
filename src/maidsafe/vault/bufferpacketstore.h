@@ -20,6 +20,7 @@
 #ifndef MAIDSAFE_VAULT_BUFFERPACKETSTORE_H_
 #define MAIDSAFE_VAULT_BUFFERPACKETSTORE_H_
 
+#include <gtest/gtest_prod.h>
 #include <string>
 #include <map>
 
@@ -40,9 +41,14 @@ class BufferPacketStore {
   VaultBufferPacketMap ExportMapToPb();
   bool InsertBufferPacketFromPb(
       const VaultBufferPacketMap::VaultBufferPacket &vault_bp);
+  void Clear();
  private:
   BufferPacketStore &operator=(const BufferPacketStore);
   BufferPacketStore(const BufferPacketStore&);
+  FRIEND_TEST(BufferPacketStoreTest, BEH_MAID_BPStoreClean);
+  bool DoStoreBP(const std::string &name, const std::string &ser_bp);
+  bool DoInsertBufferPacketFromPb(
+      const VaultBufferPacketMap::VaultBufferPacket &vault_bp);
   std::map<std::string, std::string> buffer_packets_;
   boost::mutex bp_store_mutex_;
 };

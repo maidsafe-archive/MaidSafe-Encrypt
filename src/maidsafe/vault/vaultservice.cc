@@ -1953,6 +1953,16 @@ bool VaultService::HaveAccount(const std::string &pmid) {
   return ah_.HaveAccount(pmid) == kSuccess;
 }
 
+void VaultService::ClearOperationalData() {
+  request_expectation_handler_.Clear();
+  aah_.Clear();
+  ah_.Clear();
+  cih_.Clear();
+  prm_.clear();
+  bps_.Clear();
+  info_synchroniser_.Clear();
+}
+
 bool VaultService::ValidateSignedSize(const maidsafe::SignedSize &sz) {
   if (!sz.IsInitialized()) {
 #ifdef DEBUG

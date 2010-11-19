@@ -129,6 +129,7 @@ class AccountHandler {
   void GetSetFromPb(const VaultAccountSet &vault_account_set);
   int GetAccount(const std::string &pmid, Account *account);
   int InsertAccountFromPb(const VaultAccountSet::VaultAccount &vault_account);
+  void Clear();
  private:
   AccountHandler(const AccountHandler&);
   AccountHandler& operator=(const AccountHandler&);
@@ -138,6 +139,7 @@ class AccountHandler {
   FRIEND_TEST(AccountHandlerTest, BEH_VAULT_AccountHandlerDelete);
   FRIEND_TEST(AccountHandlerTest, FUNC_VAULT_AccountHandlerPutGetPb);
   FRIEND_TEST(AccountHandlerTest, FUNC_VAULT_AccountHandlerPutGetAccount);
+  FRIEND_TEST(AccountHandlerTest, BEH_VAULT_AccountHandlerClear);
   friend class test::AccountAmendmentHandlerTest_BEH_MAID_ProcessRequest_Test;
   AccountSet accounts_;
   boost::mutex account_mutex_;
