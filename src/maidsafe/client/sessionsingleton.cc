@@ -28,28 +28,8 @@
 
 namespace maidsafe {
 
-SessionSingleton* SessionSingleton::single = NULL;
-boost::mutex ss_mutex;
-
-SessionSingleton::SessionSingleton()
-    : ud_(), passport_(new passport::Passport(kRsaKeySize, 5)), ch_(), psh_(),
-      conversations_(), live_contacts_(), lc_mutex_() {
-  ResetSession();
-}
-
-SessionSingleton *SessionSingleton::getInstance() {
-  if (single == NULL) {
-    boost::mutex::scoped_lock lock(ss_mutex);
-    if (single == NULL)
-      single = new SessionSingleton();
-  }
-  return single;
-}
-
-void SessionSingleton::Destroy() {
-  delete single;
-  single = NULL;
-}
+boost::scoped_ptr<SessionSingleton> SessionSingleton::single_;
+boost::once_flag SessionSingleton::flag_ = BOOST_ONCE_INIT;
 
 bool SessionSingleton::ResetSession() {
   ud_.defconlevel = kDefCon3;

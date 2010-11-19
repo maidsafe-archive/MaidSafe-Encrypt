@@ -110,8 +110,11 @@ struct VaultConfigParameters {
 
 class ClientController {
  public:
-  static ClientController *getInstance();
-  static void Destroy();
+  static ClientController* getInstance() {
+    boost::call_once(InitPtr, flag_);
+    return single_.get();
+  }
+  ~ClientController() {}
   int Init(boost::uint8_t k);
   // Close connection to kademlia/stub storage.  Currently with UDT, if
   // clean_up_transport is true, UDT cannot be restarted, so this is a
@@ -265,10 +268,31 @@ class ClientController {
       test::ClientControllerTest_FUNC_MAID_NET_CC_ClearStaleMessages_Test;
 
   // Functions
-  ClientController();
-  ~ClientController() { }
+  ClientController() : client_chunkstore_(),
+                       sm_(),
+                       auth_(),
+                       ss_(),
+                       ser_da_(),
+                       ser_dm_(),
+                       db_enc_queue_(),
+                       seh_(),
+                       instant_messages_(),
+                       received_messages_(),
+                       rec_msg_mutex_(),
+                       clear_messages_thread_(),
+                       client_store_(),
+                       initialised_(false),
+                       logging_out_(false),
+                       logged_in_(false),
+                       imn_(),
+                       K_(0),
+                       upper_threshold_(0),
+                       to_seh_file_update_(),
+                       pending_files_(),
+                       pending_files_mutex_() {}
   ClientController &operator=(const ClientController&);
   ClientController(const ClientController&);
+  static void InitPtr() { single_.reset(new ClientController()); }
   bool JoinKademlia();
   int BackupElement(const std::string &path, const DirType dir_type,
                     const std::string &msid);
@@ -302,6 +326,8 @@ class ClientController {
   bool RemoveFromPendingFiles(const std::string &file);
 
   // Variables
+  static boost::scoped_ptr<ClientController> single_;
+  static boost::once_flag flag_;
   boost::shared_ptr<ChunkStore> client_chunkstore_;
   boost::shared_ptr<StoreManagerInterface> sm_;
   Authentication auth_;

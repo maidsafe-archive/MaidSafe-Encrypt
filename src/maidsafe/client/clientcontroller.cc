@@ -88,31 +88,8 @@ void PacketOpCallback(const int &store_manager_result, boost::mutex *mutex,
 }
 
 
-ClientController *ClientController::single = 0;
-
-ClientController::ClientController()
-    : client_chunkstore_(), sm_(), auth_(), ss_(), ser_da_(), ser_dm_(),
-      db_enc_queue_(), seh_(), instant_messages_(), received_messages_(),
-      rec_msg_mutex_(), clear_messages_thread_(), client_store_(),
-      initialised_(false), logging_out_(false), logged_in_(false), imn_(),
-      K_(0), upper_threshold_(0), to_seh_file_update_(), pending_files_(),
-      pending_files_mutex_() {}
-
-boost::mutex cc_mutex;
-
-ClientController *ClientController::getInstance() {
-  if (single == NULL) {
-    boost::mutex::scoped_lock lock(cc_mutex);
-    if (single == NULL)
-      single = new ClientController();
-  }
-  return single;
-}
-
-void ClientController::Destroy() {
-  delete single;
-  single = NULL;
-}
+boost::scoped_ptr<ClientController> ClientController::single_;
+boost::once_flag ClientController::flag_ = BOOST_ONCE_INIT;
 
 int ClientController::Init(boost::uint8_t k) {
   if (initialised_)

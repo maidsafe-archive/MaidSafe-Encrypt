@@ -25,6 +25,9 @@
 #ifndef MAIDSAFE_CLIENT_SESSIONSINGLETON_H_
 #define MAIDSAFE_CLIENT_SESSIONSINGLETON_H_
 
+#include <boost/utility.hpp>
+#include <boost/thread/once.hpp>
+#include <boost/scoped_ptr.hpp>
 #include <maidsafe/passport/passport.h>
 
 #include <list>
@@ -134,9 +137,12 @@ struct ConnectionDetails {
 
 class SessionSingleton {
  public:
+  static SessionSingleton* getInstance() {
+    boost::call_once(Init, flag_);
+    return single_.get();
+  }
   bool ResetSession();
-  static SessionSingleton* getInstance();
-  static void Destroy();
+  virtual ~SessionSingleton() {}
 
   ///////////////////////////////
   //// User Details Handling ////
@@ -318,6 +324,13 @@ class SessionSingleton {
   void ClearLiveContacts();
 
  protected:
+  SessionSingleton() : ud_(),
+                       passport_(new passport::Passport(kRsaKeySize, 5)),
+                       ch_(),
+                       psh_(),
+                       conversations_(),
+                       live_contacts_(),
+                       lc_mutex_() {}
   // Following four mutators should only be called by Authentication once
   // associated packets are confirmed as stored.
   bool SetUsername(const std::string &username);
@@ -385,14 +398,14 @@ class SessionSingleton {
       test::LocalStoreManagerTest_BEH_MAID_AddRequestBufferPacketMessage_Test;
   SessionSingleton &operator=(const SessionSingleton&);
   SessionSingleton(const SessionSingleton&);
+  static void Init() { single_.reset(new SessionSingleton()); }
   int GetKey(const passport::PacketType &packet_type,
              std::string *id,
              std::string *public_key,
              std::string *private_key,
              std::string *public_key_signature);
-  static SessionSingleton *single;
-  SessionSingleton();
-  virtual ~SessionSingleton() {}
+  static boost::scoped_ptr<SessionSingleton> single_;
+  static boost::once_flag flag_;
   UserDetails ud_;
   boost::shared_ptr<passport::Passport> passport_;
   ContactsHandler ch_;
