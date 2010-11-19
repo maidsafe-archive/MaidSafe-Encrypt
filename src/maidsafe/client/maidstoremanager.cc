@@ -1402,13 +1402,13 @@ void MaidsafeStoreManager::NotifyTaskHandlerOfAccountAmendments(
       continue;
     bool success = kAmendmentResult.result() == kAck;
 #ifdef DEBUG
-    printf("In MSM::NotifyTaskHandlerOfAccountAmendments (%d), "
-           "amendment (type %d) to %s for %s %s.\n",
-           kad_ops_->Port(),
-           kAmendmentResult.amendment_type(),
-           HexSubstr(account_status_response.pmid()).c_str(),
-           HexSubstr(kAmendmentResult.chunkname()).c_str(),
-           success ? "succeeded" : "failed");
+//     printf("In MSM::NotifyTaskHandlerOfAccountAmendments (%d), "
+//            "amendment (type %d) to %s for %s %s.\n",
+//            kad_ops_->Port(),
+//            kAmendmentResult.amendment_type(),
+//            HexSubstr(account_status_response.pmid()).c_str(),
+//            HexSubstr(kAmendmentResult.chunkname()).c_str(),
+//            success ? "succeeded" : "failed");
 #endif
     TaskId task_id(kRootTask);
     if (kAmendmentResult.amendment_type() ==

@@ -1178,7 +1178,7 @@ void PDVault::SwapChunkAcceptChunk(
 int PDVault::AmendAccount(const boost::uint64_t &space_offered) {
   if (vault_status() != kVaultStarted) {
 #ifdef DEBUG
-    printf("In PDVault::AmendAccount, vault (%s) is offline.\n",
+    printf("In PDVault::AmendAccount (%s), vault is offline.\n",
            HexSubstr(pmid_).c_str());
 #endif
     return maidsafe::kTaskCancelledOffline;
@@ -1196,7 +1196,8 @@ int PDVault::AmendAccount(const boost::uint64_t &space_offered) {
   int rslt = kad_ops_->BlockingFindKClosestNodes(account_name, &data->contacts);
   if (rslt != kSuccess) {
 #ifdef DEBUG
-    printf("In PDVault::AmendAccount, Kad lookup failed -- error %i\n", rslt);
+    printf("In PDVault::AmendAccount (%s), Kad lookup failed -- error %i\n",
+           HexSubstr(pmid_).c_str(), rslt);
 #endif
     return maidsafe::kFindAccountHoldersError;
   }
@@ -1209,8 +1210,9 @@ int PDVault::AmendAccount(const boost::uint64_t &space_offered) {
     // create the account on not more than K-1 nodes
     while (data->contacts.size() >= K_) {
 #ifdef DEBUG
-      printf("In PDVault::AmendAccount, skipping %s.\n",
-          HexSubstr(data->contacts.back().node_id().String()).c_str());
+      printf("In PDVault::AmendAccount (%s), skipping %s.\n",
+             HexSubstr(pmid_).c_str(),
+             HexSubstr(data->contacts.back().node_id().String()).c_str());
 #endif
       data->contacts.pop_back();
     }
@@ -1221,8 +1223,9 @@ int PDVault::AmendAccount(const boost::uint64_t &space_offered) {
 
   if (data->contacts.size() < required_contacts) {
 #ifdef DEBUG
-    printf("In PDVault::AmendAccount, Kad lookup failed to find %u nodes; "
-           "found %u node(s).\n", required_contacts, data->contacts.size());
+    printf("In PDVault::AmendAccount (%s), Kad lookup failed to find %u nodes; "
+           "found %u node(s).\n", HexSubstr(pmid_).c_str(), required_contacts,
+           data->contacts.size());
 #endif
     return maidsafe::kFindAccountHoldersError;
   }
@@ -1275,8 +1278,9 @@ int PDVault::AmendAccount(const boost::uint64_t &space_offered) {
 
   if (data->success_count < required_contacts) {
 #ifdef DEBUG
-    printf("In PDVault::AmendAccount, not enough positive responses "
-           "received (%d of %d).\n", data->success_count, required_contacts);
+    printf("In PDVault::AmendAccount (%s), not enough positive responses "
+           "received (%d of %d).\n", HexSubstr(pmid_).c_str(),
+           data->success_count, required_contacts);
 #endif
     return maidsafe::kRequestFailedConsensus;
   }
@@ -1292,18 +1296,19 @@ void PDVault::AmendAccountCallback(
       data->data_holders.at(index);
   if (!holder.response.IsInitialized()) {
 #ifdef DEBUG
-    printf("In PDVault::AmendAccountCallback, response %u is uninitialised.\n",
-           index);
+    printf("In PDVault::AmendAccountCallback (%s), response %u is "
+           "uninitialised.\n", HexSubstr(pmid_).c_str(), index);
 #endif
   } else if (holder.response.result() != kAck) {
 #ifdef DEBUG
-    printf("In PDVault::AmendAccountCallback, response %u has result %i.\n",
-           index, holder.response.result());
+    printf("In PDVault::AmendAccountCallback (%s), response %u has result %i."
+           "\n", HexSubstr(pmid_).c_str(), index, holder.response.result());
 #endif
   } else if (holder.response.pmid() != holder.node_id) {
 #ifdef DEBUG
-    printf("In PDVault::AmendAccountCallback, response %u from %s has PMID "
-           "%s.\n", index, HexSubstr(holder.node_id).c_str(),
+    printf("In PDVault::AmendAccountCallback (%s), response %u from %s has "
+           "PMID %s.\n", HexSubstr(pmid_).c_str(), index,
+           HexSubstr(holder.node_id).c_str(),
            HexSubstr(holder.response.pmid()).c_str());
 #endif
     // TODO(Fraser#5#): Send alert to holder.node_id's A/C holders
@@ -1328,7 +1333,7 @@ void PDVault::JoinMaidsafeNet() {
   while (n < 10 && vault_status_ == kVaultStarted &&
          0 != (result = AmendAccount(vault_chunkstore_->available_space()))) {
 #ifdef DEBUG
-      printf("PDVault::JoinMaidsafeNet (%s) failed creating account (%d), "
+      printf("PDVault::JoinMaidsafeNet (%s), failed creating account (%d), "
              "trying again...\n", HexSubstr(pmid_).c_str(), result);
 #endif
     ++n;

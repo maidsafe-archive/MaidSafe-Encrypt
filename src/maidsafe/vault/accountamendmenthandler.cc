@@ -291,10 +291,10 @@ void AccountAmendmentHandler::CreateNewAmendmentCallback(
       modified_amendment.probable_pendings.front().done->Run();
       modified_amendment.probable_pendings.pop_front();
     }
-    if (!modified_amendment.chunkname.empty())
-      amendment_results_.push_back(AmendmentResult(
-          modified_amendment.pmid, modified_amendment.chunkname,
-          modified_amendment.amendment_type, kNack));
+//     if (!modified_amendment.chunkname.empty())
+//       amendment_results_.push_back(AmendmentResult(
+//           modified_amendment.pmid, modified_amendment.chunkname,
+//           modified_amendment.amendment_type, kNack));
   }
 }
 
@@ -326,10 +326,10 @@ int AccountAmendmentHandler::DoCleanUp(bool expire_all) {
         amendment.pendings.front().done->Run();
         amendment.pendings.pop_front();
       }
-      if (!amendment.chunkname.empty())
-        amendment_results_.push_back(AmendmentResult(
-            amendment.pmid, amendment.chunkname, amendment.amendment_type,
-            kNack));
+//       if (!amendment.chunkname.empty())
+//         amendment_results_.push_back(AmendmentResult(
+//             amendment.pmid, amendment.chunkname, amendment.amendment_type,
+//             kNack));
       it = amendments_.get<by_timestamp>().erase(it);
       ++count;
     }
