@@ -193,13 +193,9 @@ namespace test {
 
 static std::vector< boost::shared_ptr<PDVault> > pdvaults_;
 static const int kNumOfClients = 1;
-static const int kNetworkSize = testpdvault::K + kNumOfClients;
-static const int kNumOfTestChunks = 1;  // kNetworkSize * 1.5;
+static const int kNetworkSize = 2 * testpdvault::K + kNumOfClients;
+static const int kNumOfTestChunks = kNetworkSize * 1.5;
 static boost::filesystem::path kadconfig_;
-/**
- * Note: StoreAndGetChunks only works for small K due to resource problems
- *       Recommended are K = 8 and kMinSuccessfulPecentageStore = 50%
- */
 
 class PDVaultTest : public testing::Test {
  protected:
@@ -421,14 +417,12 @@ TEST_MS_NET(PDVaultTest, FUNC, MAID, StoreAndGetChunks) {
   boost::this_thread::sleep(boost::posix_time::seconds(5));
 
   printf("\nChecking chunks locally...\n");
-
-  // checking for chunks
   // TODO(Team#5#): use callback/signal at end of StoreChunk instead
   std::set<std::string> stored_chunks;
   int iteration = 0;
   const int kMaxIterations = 18;  // 3 minutes
   int remaining_tasks = 1;
-  while (/* (stored_chunks.size() < chunks.size() || remaining_tasks > 0) && */
+  while ((stored_chunks.size() < chunks.size() || remaining_tasks > 0) &&
          iteration < kMaxIterations) {
     ++iteration;
     printf("\n[ Sleeping iteration %i of %i ]\n\n", iteration, kMaxIterations);
@@ -489,8 +483,13 @@ TEST_MS_NET(PDVaultTest, FUNC, MAID, StoreAndGetChunks) {
   EXPECT_EQ(chunks.size(), stored_chunks.size());
   stored_chunks.clear();
 
-  printf("\nGenerating chunk info inventory...\n");
+  printf("\nProcess pending amend account requests...\n");
+  for (int i = 0; i < kNetworkSize; ++i) {
+    pdvaults_[i]->vault_service_->aah_.CleanUp();
+  }
+  boost::this_thread::sleep(boost::posix_time::seconds(3));
 
+  printf("\nGenerating chunk info inventory...\n");
   for (int i = 0; i < kNetworkSize; ++i) {
     for (it = chunks.begin(); it != chunks.end(); ++it) {
       ChunkInfo ci;
@@ -519,8 +518,6 @@ TEST_MS_NET(PDVaultTest, FUNC, MAID, StoreAndGetChunks) {
   }
 
   printf("\nTrying to retrieve stored chunks...\n");
-
-  // Check each chunk can be retrieved correctly
   for (int i = 0; i < kNumOfClients; ++i) {
     for (it = chunks.begin(); it != chunks.end(); ++it) {
       ASSERT_EQ(0, clients_[i]->chunkstore->DeleteChunk((*it).first));
@@ -534,7 +531,6 @@ TEST_MS_NET(PDVaultTest, FUNC, MAID, StoreAndGetChunks) {
   }
 
   printf("\nMaking each chunk unique, but keep references...\n");
-
   // Remove all but one copy of each chunk, but leave reference list showing
   // multiple chunk holders.
   for (it = chunks.begin(); it != chunks.end(); ++it) {
@@ -554,7 +550,6 @@ TEST_MS_NET(PDVaultTest, FUNC, MAID, StoreAndGetChunks) {
   }
 
   printf("\nTrying to retrieve stored (unique) chunks...\n");
-
   // Check each chunk can (still) be retrieved correctly
   for (int i = 0; i < kNumOfClients; ++i) {
     for (it = chunks.begin(); it != chunks.end(); ++it) {
@@ -570,7 +565,6 @@ TEST_MS_NET(PDVaultTest, FUNC, MAID, StoreAndGetChunks) {
 
   if (kNumOfClients >= 2 && kNumOfTestChunks >= 2) {
     printf("\nRemoving all chunks except one...\n");
-
     // Remove all copies of each chunk except the first one, but leave reference
     // list showing multiple chunk holders.
     bool first_chunk(true);
@@ -590,7 +584,6 @@ TEST_MS_NET(PDVaultTest, FUNC, MAID, StoreAndGetChunks) {
     }
 
     printf("\nTrying to retrieve first chunk, fail other chunks...\n");
-
     // Check only first chunk can be retrieved from the net
     for (int i = 0; i < kNumOfClients; ++i) {
       for (it = chunks.begin(); it != chunks.end(); ++it) {

@@ -166,7 +166,8 @@ class MsmSetLocalVaultOwnedTest : public testing::Test {
     service_channel_->SetService(service_.pservice());
     server_.RegisterChannel(service_.pservice()->GetDescriptor()->name(),
                             service_channel_.get());
-    port_ = msm_.transport_handler_.listening_port(client_transport_id);
+    ASSERT_TRUE(msm_.transport_handler_.listening_port(client_transport_id,
+                                                       &port_));
   }
   void TearDown() {
     resulthandler_.Reset();

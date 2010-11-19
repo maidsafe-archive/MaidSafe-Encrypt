@@ -312,7 +312,7 @@ int MaidsafeStoreManager::StoreChunk(const std::string &chunk_name,
                            this, _1, _2, "AmendmentConfirmation");
     tasks_handler_.AddChildTask(chunk_name,
                                 store_data->master_task_id,
-                                kSpaceTakenIncConfirmation, kLowerThreshold_,
+                                kSpaceTakenIncConfirmation, kUpperThreshold_,
                                 K_ - kUpperThreshold_, callback,
                                 &store_data->amendment_task_id);
 
@@ -1307,10 +1307,7 @@ void MaidsafeStoreManager::UpdateAccountStatusStageTwo(
     size_t index,
     boost::shared_ptr<AccountStatusData> data) {
   boost::mutex::scoped_lock lock(data->mutex);
-  if (data->success_count >= kLowerThreshold_)
-    return;
   ++data->returned_count;
-
   AccountStatusData::AccountStatusDataHolder &holder =
       data->data_holders.at(index);
   if (!holder.response.IsInitialized()) {
@@ -1364,6 +1361,9 @@ void MaidsafeStoreManager::UpdateAccountStatusStageTwo(
           data->data_holders.at(i).controller->request_id());
     }
     return;
+  } else if (data->overall_success) {
+    // already successful
+    return;
   }
 
   boost::uint64_t offered_avg, given_avg, taken_avg;
@@ -1378,22 +1378,24 @@ void MaidsafeStoreManager::UpdateAccountStatusStageTwo(
   if (offered_n < kLowerThreshold_ ||
       given_n   < kLowerThreshold_ ||
       taken_n   < kLowerThreshold_) {
+    if (data->returned_count >= data->contacts.size()) {
 #ifdef DEBUG
-    if (data->returned_count >= data->contacts.size())
       printf("In MSM::UpdateAccountStatusStageTwo (%d), no consensus on values "
             "reached.\n",
              kad_ops_->Port());
 #endif
-    account_status_manager_.UpdateFailed();
+      account_status_manager_.UpdateFailed();
+    }
   } else {
     account_status_manager_.SetAccountStatus(offered_avg, given_avg, taken_avg);
+    data->overall_success = true;
   }
 
-  // cancel outstanding rpcs and clear account_status_update_data_
-  for (size_t i = 0; i < data->data_holders.size(); ++i) {
-    channel_manager_.CancelPendingRequest(
-        data->data_holders.at(i).controller->request_id());
-  }
+  // cancel outstanding rpcs
+//   for (size_t i = 0; i < data->data_holders.size(); ++i) {
+//     channel_manager_.CancelPendingRequest(
+//         data->data_holders.at(i).controller->request_id());
+//   }
 }
 
 void MaidsafeStoreManager::NotifyTaskHandlerOfAccountAmendments(
@@ -1406,8 +1408,9 @@ void MaidsafeStoreManager::NotifyTaskHandlerOfAccountAmendments(
     bool success = kAmendmentResult.result() == kAck;
 #ifdef DEBUG
     printf("In MSM::NotifyTaskHandlerOfAccountAmendments (%d), "
-           "amendment to %s for %s %s.\n",
+           "amendment (type %d) to %s for %s %s.\n",
            kad_ops_->Port(),
+           kAmendmentResult.amendment_type(),
            HexSubstr(account_status_response.pmid()).c_str(),
            HexSubstr(kAmendmentResult.chunkname()).c_str(),
            success ? "succeeded" : "failed");
@@ -1878,9 +1881,9 @@ void MaidsafeStoreManager::AddToWatchListStageFour(
       }
 
       // store copy on own vault
-//       kad::Contact vault_contact_;
-//       if (own_vault_.GetContact(&vault_contact_))
-//         StoreChunkCopy(data->store_data, vault_contact_);
+      kad::Contact vault_contact_;
+      if (own_vault_.GetContact(&vault_contact_))
+        StoreChunkCopy(data->store_data, vault_contact_);
 
       // store copies on peer vaults
       for (int i = 0; i < data->consensus_upload_copies; ++i)
@@ -2320,7 +2323,6 @@ void MaidsafeStoreManager::StoreChunkCopy(
   }
 
   if (force_peer.node_id().String() != kad::kZeroId) {
-    printf("*** using forced peer: %s\n", HexSubstr(force_peer.node_id().String()).c_str());
     send_chunk_data->peer = force_peer;
   } else {
     double ideal_rtt = 1.0;

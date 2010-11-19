@@ -272,21 +272,25 @@ TEST_F(VaultServicesTest, BEH_MAID_ValidateStoreContract) {
   sc.set_public_key(pub_key2);
   sc.set_public_key_signature(pub_key_sig2);
   sc.set_signature(RSASign(ic->SerializeAsString(), priv_key2));
-  ASSERT_FALSE(vault_service_->ValidateStoreContract(sc));
+  // self-signed contract
+  ASSERT_TRUE(vault_service_->ValidateStoreContract(sc));
 
   ic->set_result(kAck);
   sc.set_pmid(pmid);
   sc.set_public_key_signature(pub_key_sig);
   sc.set_signature(RSASign(ic->SerializeAsString(), priv_key));
+  // invalid keys
   ASSERT_FALSE(vault_service_->ValidateStoreContract(sc));
 
   sc.set_public_key(pub_key);
   ic->set_result(kNack);
   sc.set_signature(RSASign(ic->SerializeAsString(), priv_key));
+  // negative result
   ASSERT_FALSE(vault_service_->ValidateStoreContract(sc));
 
   ic->set_result(kAck);
   sc.set_signature(RSASign(ic->SerializeAsString(), priv_key));
+  // success
   ASSERT_TRUE(vault_service_->ValidateStoreContract(sc));
 }
 

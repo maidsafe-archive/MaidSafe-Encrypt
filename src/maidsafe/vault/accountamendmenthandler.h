@@ -81,12 +81,11 @@ struct PendingAmending {
   PendingAmending(const AmendAccountRequest *req,
                   AmendAccountResponse *resp,
                   google::protobuf::Closure *cb)
-      : request(*req), response(resp), done(cb), responded(false) {}
+      : request(*req), response(resp), done(cb) {}
   ~PendingAmending() {}
   AmendAccountRequest request;
   AmendAccountResponse *response;
   google::protobuf::Closure *done;
-  bool responded;
   bool operator==(const PendingAmending &other) const {
     return (request.IsInitialized() && other.request.IsInitialized() &&
             request.SerializeAsString() == other.request.SerializeAsString());
@@ -225,6 +224,7 @@ class AccountAmendmentHandler {
       AccountAmendment amendment,
       const maidsafe::ReturnCode &result,
       const std::vector<kad::Contact> &closest_nodes);
+  int DoCleanUp();
   AccountHandler *account_handler_;
   RequestExpectationHandler *request_expectation_handler_;
   VaultServiceLogic *vault_service_logic_;

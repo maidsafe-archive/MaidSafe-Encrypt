@@ -39,6 +39,15 @@ int AccountAmendmentHandler::ProcessRequest(const AmendAccountRequest *request,
   // Assumes that response->pmid() has already been set and that
   // request->signed_size() validates
   response->set_result(kNack);
+  std::string pmid(request->account_pmid());
+  std::string chunkname(request->has_chunkname() ? request->chunkname() : "");
+  boost::uint64_t data_size(request->signed_size().data_size());
+
+  if (account_handler_->HaveAccount(pmid) == kAccountNotFound) {
+    done->Run();
+    return kAccountNotFound;
+  }
+  
   AmendAccountRequest::Amendment amendment_type = request->amendment_type();
   bool increase(false);
   int field(2);
@@ -56,28 +65,14 @@ int AccountAmendmentHandler::ProcessRequest(const AmendAccountRequest *request,
     return kAmendAccountTypeError;
   }
 
-  // Check amendment set size is not too large
-  std::string pmid(request->account_pmid());
-  std::string chunkname(request->has_chunkname() ? request->chunkname() : "");
-  boost::uint64_t data_size(request->signed_size().data_size());
-  size_t total_count(0), repeated_count(0);
-  {
-    boost::mutex::scoped_lock lock(amendment_mutex_);
-    total_count = amendments_.size();
-    repeated_count = amendments_.count(boost::make_tuple(pmid, field,
-        data_size, increase));
-  }
-
+  // Check amendment set size is not too large, otherwise try a cleanup
+  boost::mutex::scoped_lock lock(amendment_mutex_);
   bool tried_cleanup(false);
-  while (total_count >= kMaxAccountAmendments ||
-         repeated_count >= kMaxRepeatedAccountAmendments) {
+  while (amendments_.size() >= kMaxAccountAmendments ||
+         amendments_.count(boost::make_tuple(pmid, field, data_size, increase))
+             >= kMaxRepeatedAccountAmendments) {
     if (!tried_cleanup) {
-      if (CleanUp() != 0) {  // i.e. some deletions were made
-        boost::mutex::scoped_lock lock(amendment_mutex_);
-        total_count = amendments_.size();
-        repeated_count = amendments_.count(boost::make_tuple(pmid, field,
-            data_size, increase));
-      }
+      DoCleanUp();
       tried_cleanup = true;
     } else {
       done->Run();
@@ -86,43 +81,31 @@ int AccountAmendmentHandler::ProcessRequest(const AmendAccountRequest *request,
   }
 
   // If amendment has already been added assess request, else add new amendment
-  if (repeated_count != 0) {
-    int amendment_status(kAccountAmendmentError);
-    bool found(false);
-    {
-      boost::mutex::scoped_lock lock(amendment_mutex_);
-      std::pair<AccountAmendmentSet::iterator,
-                AccountAmendmentSet::iterator> it;
-      it = amendments_.equal_range(boost::make_tuple(pmid, field, data_size,
-                                                     increase));
-      while (it.first != it.second) {
-        AccountAmendment amendment = (*it.first);
-        amendment_status = AssessAmendment(pmid, chunkname, amendment_type,
-            field, data_size, increase, PendingAmending(request, response,
-            done), &amendment);
-        if (amendment_status == kAccountAmendmentUpdated) {
-          found = true;
-          amendments_.replace(it.first, amendment);
-          return kSuccess;
-        } else if (amendment_status == kAccountAmendmentFinished) {
-          found = true;
-          amendments_.erase(it.first);
-          return kSuccess;
-        }
-        ++it.first;
-      }
-    }  // mutex unlocked
-
-    if (!found) {
-      AccountAmendment amendment(pmid, chunkname, amendment_type, field,
-          data_size, increase, PendingAmending(request, response, done));
-      CreateNewAmendment(amendment);
+  int amendment_status(kAccountAmendmentError);
+  bool found(false);
+  std::pair<AccountAmendmentSet::iterator, AccountAmendmentSet::iterator> it;
+  it = amendments_.equal_range(boost::make_tuple(pmid, field, data_size,
+                                                 increase));
+  while (it.first != it.second) {
+    AccountAmendment amendment = (*it.first);
+    amendment_status = AssessAmendment(pmid, chunkname, amendment_type, field,
+        data_size, increase, PendingAmending(request, response, done),
+        &amendment);
+    if (amendment_status == kAccountAmendmentUpdated) {
+      found = true;
+      amendments_.replace(it.first, amendment);
+      return kSuccess;
+    } else if (amendment_status == kAccountAmendmentFinished) {
+      found = true;
+      amendments_.erase(it.first);
+      return kSuccess;
     }
-  } else {
-    AccountAmendment amendment(pmid, chunkname, amendment_type, field,
-        data_size, increase, PendingAmending(request, response, done));
-    CreateNewAmendment(amendment);
+    ++it.first;
   }
+
+  if (!found)
+    CreateNewAmendment(AccountAmendment(pmid, chunkname, amendment_type, field,
+        data_size, increase, PendingAmending(request, response, done)));
   return kSuccess;
 }
 
@@ -135,13 +118,6 @@ int AccountAmendmentHandler::AssessAmendment(
     const bool &inc,
     PendingAmending pending,
     AccountAmendment *amendment) {
-  // amendment_mutex_ should already be locked by function calling this one,
-  // but just in case...
-  boost::mutex::scoped_try_lock lock(amendment_mutex_);
-#ifdef DEBUG
-  if (lock.owns_lock())
-    printf("In AAH::AssessAmendment, amendment_mutex_ wasn't locked.\n");
-#endif
   if (amendment->pmid != owner_pmid ||
       amendment->chunkname != chunkname ||
       amendment->amendment_type != amendment_type ||
@@ -152,19 +128,6 @@ int AccountAmendmentHandler::AssessAmendment(
     printf("In AAH::AssessAmendment, amendment has incorrect parameters.\n");
 #endif
     return kAccountAmendmentNotFound;
-  }
-
-  if (account_handler_->HaveAccount(owner_pmid) == kAccountNotFound) {
-#ifdef DEBUG
-    printf("In AAH::AssessAmendment, handling amendment for non-existing "
-           "account (%s).\n", HexSubstr(owner_pmid).c_str());
-#endif
-    // respond immediately
-    if (!pending.responded) {
-      pending.response->set_result(kNack);
-      pending.responded = true;
-      pending.done->Run();
-    }
   }
 
   // If we're still waiting for result of FindKNodes, add pending to
@@ -203,30 +166,19 @@ int AccountAmendmentHandler::AssessAmendment(
         // Amend actual account
         amendment->account_amendment_result = account_handler_->AmendAccount(
             owner_pmid, amendment_field, offer_size, inc);
+        if (!chunkname.empty())
+          amendment_results_.push_back(AmendmentResult(
+              owner_pmid, chunkname, amendment_type,
+              amendment->account_amendment_result == kSuccess ? kAck : kNack));
       }
-
-      if (!chunkname.empty())
-        amendment_results_.push_back(
-            AmendmentResult(owner_pmid, chunkname, amendment_type,
-            amendment->account_amendment_result == kSuccess ? kAck : kNack));
 
       // Set responses and run callbacks
       std::list<PendingAmending>::iterator pendings_it;
       for (pendings_it = amendment->pendings.begin();
            pendings_it != amendment->pendings.end(); ++pendings_it) {
         if (amendment->account_amendment_result == kSuccess)
-          (*pendings_it).response->set_result(kAck);
-        else
-          (*pendings_it).response->set_result(kNack);
-        if (!(*pendings_it).responded) {
-          (*pendings_it).responded = true;
-          (*pendings_it).done->Run();
-        } else if (amendment->account_amendment_result == kSuccess) {
-#ifdef DEBUG
-          printf("In AAH::AssessAmendment, can't send positive response for "
-                 "account (%s) amendment!\n", HexSubstr(owner_pmid).c_str());
-#endif
-        }
+          pendings_it->response->set_result(kAck);
+        pendings_it->done->Run();
       }
 
       // Clear all pendings now that they've been run
@@ -272,7 +224,6 @@ void AccountAmendmentHandler::CreateNewAmendment(AccountAmendment amendment) {
     }
     // Assess probable (enqueued) requests
     while (!amendment.probable_pendings.empty()) {
-      boost::mutex::scoped_lock lock(amendment_mutex_);
       AssessAmendment(amendment.pmid, amendment.chunkname,
                       amendment.amendment_type, amendment.field,
                       amendment.offer, amendment.increase,
@@ -282,17 +233,15 @@ void AccountAmendmentHandler::CreateNewAmendment(AccountAmendment amendment) {
   } else {
     lookup_required = true;
   }
-  {
-    boost::mutex::scoped_lock lock(amendment_mutex_);
-    std::pair<AmendmentsByTimestamp::iterator, bool> p =
-        amendments_.get<by_timestamp>().insert(amendment);
-    if (!p.second) {  // amendment exists
+  
+  std::pair<AmendmentsByTimestamp::iterator, bool> p =
+      amendments_.get<by_timestamp>().insert(amendment);
+  if (!p.second) {  // amendment exists
 #ifdef DEBUG
-      printf("In AAH::CreateNewAmendment, already a pending amendment with "
-             "these parameters.\n");
+    printf("In AAH::CreateNewAmendment, already a pending amendment with "
+            "these parameters.\n");
 #endif
-      return;
-    }
+    return;
   }
   if (lookup_required) {
     vault_service_logic_->kadops()->FindKClosestNodes(
@@ -336,20 +285,23 @@ void AccountAmendmentHandler::CreateNewAmendmentCallback(
     // Set responses and run callbacks
     amendments_.get<by_timestamp>().erase(it);
     while (!modified_amendment.probable_pendings.empty()) {
-      if (!modified_amendment.probable_pendings.front().responded) {
-        modified_amendment.probable_pendings.front().response->
-            set_result(kNack);
-        modified_amendment.probable_pendings.front().responded = true;
-        modified_amendment.probable_pendings.front().done->Run();
-      }
+      modified_amendment.probable_pendings.front().done->Run();
       modified_amendment.probable_pendings.pop_front();
     }
+    if (!modified_amendment.chunkname.empty())
+      amendment_results_.push_back(AmendmentResult(
+          modified_amendment.pmid, modified_amendment.chunkname,
+          modified_amendment.amendment_type, kNack));
   }
 }
 
 int AccountAmendmentHandler::CleanUp() {
-  int count(0);
   boost::mutex::scoped_lock lock(amendment_mutex_);
+  return DoCleanUp();
+}
+
+int AccountAmendmentHandler::DoCleanUp() {
+  int count(0);
   {
     AmendmentsByTimestamp::iterator it =
         amendments_.get<by_timestamp>().begin();
@@ -357,21 +309,17 @@ int AccountAmendmentHandler::CleanUp() {
           (*it).expiry_time < base::GetEpochMilliseconds()) {
       AccountAmendment amendment = *it;
       while (!amendment.probable_pendings.empty()) {
-        if (!amendment.probable_pendings.front().responded) {
-          amendment.probable_pendings.front().response->set_result(kNack);
-          amendment.probable_pendings.front().responded = true;
-          amendment.probable_pendings.front().done->Run();
-        }
+        amendment.probable_pendings.front().done->Run();
         amendment.probable_pendings.pop_front();
       }
       while (!amendment.pendings.empty()) {
-        if (!amendment.probable_pendings.front().responded) {
-          amendment.pendings.front().response->set_result(kNack);
-          amendment.pendings.front().responded = true;
-          amendment.pendings.front().done->Run();
-        }
+        amendment.pendings.front().done->Run();
         amendment.pendings.pop_front();
       }
+      if (!amendment.chunkname.empty())
+        amendment_results_.push_back(AmendmentResult(
+            amendment.pmid, amendment.chunkname, amendment.amendment_type,
+            kNack));
       it = amendments_.get<by_timestamp>().erase(it);
       ++count;
     }

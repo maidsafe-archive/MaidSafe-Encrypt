@@ -1050,7 +1050,6 @@ void VaultService::AmendAccount(google::protobuf::RpcController*,
     }
     done->Run();
   } else {
-    // TODO(Team#) ensure sender (signer) is a valid chunk info holder
     // aah_->ProcessRequest() calls done->Run();
     int result = aah_.ProcessRequest(request, response, done);
     if (result != kSuccess) {
@@ -1988,14 +1987,14 @@ bool VaultService::ValidateStoreContract(const StoreContract &sc) {
 #endif
     return false;
   }
-  if (sc.pmid() == sc.inner_contract().signed_size().pmid()) {
-#ifdef DEBUG
-    printf("In VaultService::ValidateStoreContract, PMIDs of contract and "
-           "signed size can't be identical (%s).\n",
-           HexSubstr(sc.pmid()).c_str());
-#endif
-    return false;
-  }
+//   if (sc.pmid() == sc.inner_contract().signed_size().pmid()) {
+// #ifdef DEBUG
+//     printf("In VaultService::ValidateStoreContract, PMIDs of contract and "
+//            "signed size can't be identical (%s).\n",
+//            HexSubstr(sc.pmid()).c_str());
+// #endif
+//     return false;
+//   }
   return true;
 }
 
@@ -2201,13 +2200,17 @@ void VaultService::FinalisePayment(const std::string &chunk_name,
 void VaultService::DoneAddToReferenceList(const StoreContract &store_contract,
                                           const std::string &chunk_name) {
   int chunk_size(store_contract.inner_contract().signed_size().data_size());
+  std::string vault_pmid(store_contract.pmid());
   std::string client_pmid(store_contract.inner_contract().signed_size().pmid());
 
   // amend account for chunk holder (= sender)
   AmendRemoteAccount(AmendAccountRequest::kSpaceGivenInc, chunk_size,
                      store_contract.pmid(), chunk_name);
 
-  cih_.SetStoringDone(chunk_name, client_pmid);
+  // only accept chunk as stored if it's not on the client's own vault
+  if (vault_pmid != client_pmid)
+    cih_.SetStoringDone(chunk_name, client_pmid);
+  
   std::string creditor;
   int refunds;
   if (cih_.TryCommitToWatchList(chunk_name, client_pmid, &creditor, &refunds)) {

@@ -85,7 +85,6 @@ class ClientControllerTest : public testing::Test {
   void TearDown() {
 #ifndef MS_NETWORK_TEST
     cc_->CloseConnection(true);
-    cc_->Destroy();
 #endif
   }
 
