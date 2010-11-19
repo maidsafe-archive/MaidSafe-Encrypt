@@ -40,7 +40,7 @@
 #include <maidsafe/transport/transporthandler-api.h>
 #include <string>
 
-#include "maidsafe/returncodes.h"
+#include "maidsafe/common/returncodes.h"
 
 namespace maidsafe {
 

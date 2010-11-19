@@ -27,7 +27,12 @@
 #include <algorithm>
 #include <utility>
 
-namespace maidsafe_vault {
+#include "maidsafe/common/maidsafe.h"
+#include "maidsafe/vault/vaultconfig.h"
+
+namespace maidsafe {
+
+namespace vault {
 
 void AccountHandler::set_started(bool started) {
   boost::mutex::scoped_lock lock(account_mutex_);
@@ -233,4 +238,6 @@ int AccountHandler::InsertAccountFromPb(
   return kSuccess;
 }
 
-}  // namespace maidsafe_vault
+}  // namespace vault
+
+}  // namespace maidsafe

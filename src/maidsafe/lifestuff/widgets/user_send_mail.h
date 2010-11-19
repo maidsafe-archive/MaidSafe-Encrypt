@@ -13,8 +13,8 @@
  */
 
 
-#ifndef QT_WIDGETS_USER_SEND_MAIL_H_
-#define QT_WIDGETS_USER_SEND_MAIL_H_
+#ifndef MAIDSAFE_LIFESTUFF_WIDGETS_USER_SEND_MAIL_H_
+#define MAIDSAFE_LIFESTUFF_WIDGETS_USER_SEND_MAIL_H_
 
 #include <QWidget>
 #include <QString>
@@ -22,9 +22,9 @@
 #include <QtXml/QDomElement>
 
 // local
-#include "qt/client/client_controller.h"
-#include "qt/client/send_email_thread.h"
-#include "qt/client/save_file_thread.h"
+#include "maidsafe/lifestuff/client/client_controller.h"
+#include "maidsafe/lifestuff/client/send_email_thread.h"
+#include "maidsafe/lifestuff/client/save_file_thread.h"
 
 #include "ui_user_send_mail.h"
 
@@ -52,4 +52,4 @@ class UserSendMail : public QDialog {
   void changeEvent(QEvent *event);
 };
 
-#endif  // QT_WIDGETS_USER_SEND_MAIL_H_
+#endif  //  MAIDSAFE_LIFESTUFF_WIDGETS_USER_SEND_MAIL_H_

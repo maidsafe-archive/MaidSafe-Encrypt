@@ -24,9 +24,14 @@
 
 #include <gtest/gtest.h>
 #include "maidsafe/vault/accountrepository.h"
+#include "maidsafe/vault/vaultconfig.h"
 
 
-namespace maidsafe_vault {
+namespace maidsafe {
+
+namespace vault {
+
+namespace test {
 
 class AccountHandlerTest : public testing::Test {
  public:
@@ -36,12 +41,12 @@ class AccountHandlerTest : public testing::Test {
   void TearDown() {}
 };
 
-TEST_F(AccountHandlerTest, BEH_VAULT_AccountHandlerInit) {
+TEST_F(AccountHandlerTest, BEH_VAULT_Init) {
   AccountHandler ah(true);
   ASSERT_EQ(size_t(0), ah.accounts_.size());
 }
 
-TEST_F(AccountHandlerTest, BEH_VAULT_AccountHandlerAddAndFind) {
+TEST_F(AccountHandlerTest, BEH_VAULT_AddAndFind) {
   AccountHandler ah(true);
   ASSERT_EQ(size_t(0), ah.accounts_.size());
   ASSERT_EQ(kAccountNotFound, ah.HaveAccount("AAAAAAAAA"));
@@ -55,7 +60,7 @@ TEST_F(AccountHandlerTest, BEH_VAULT_AccountHandlerAddAndFind) {
   ASSERT_EQ(size_t(1), ah.accounts_.size());
 }
 
-TEST_F(AccountHandlerTest, BEH_VAULT_AccountHandlerModify) {
+TEST_F(AccountHandlerTest, BEH_VAULT_Modify) {
   AccountHandler ah(true);
   ASSERT_EQ(size_t(0), ah.accounts_.size());
   std::string pmid("some pmid");
@@ -193,7 +198,7 @@ TEST_F(AccountHandlerTest, BEH_VAULT_AccountHandlerModify) {
   ASSERT_EQ(boost::uint64_t(0), account_used);
 }
 
-TEST_F(AccountHandlerTest, BEH_VAULT_AccountHandlerDelete) {
+TEST_F(AccountHandlerTest, BEH_VAULT_Delete) {
   AccountHandler ah(true);
   ASSERT_EQ(size_t(0), ah.accounts_.size());
   std::string pmid("some pmid");
@@ -210,7 +215,7 @@ TEST_F(AccountHandlerTest, BEH_VAULT_AccountHandlerDelete) {
   ASSERT_EQ(kAccountNotFound, ah.DeleteAccount(pmid));
 }
 
-TEST_F(AccountHandlerTest, FUNC_VAULT_AccountHandlerPutGetPb) {
+TEST_F(AccountHandlerTest, FUNC_VAULT_PutGetPb) {
   AccountHandler account_handler1(true), account_handler2(true);
   std::pair<AccountSet::iterator, bool> result;
   const int kNumEntries(23);
@@ -255,7 +260,7 @@ TEST_F(AccountHandlerTest, FUNC_VAULT_AccountHandlerPutGetPb) {
   ASSERT_EQ(serialised_vault_account_set1, serialised_vault_account_set2);
 }
 
-TEST_F(AccountHandlerTest, FUNC_VAULT_AccountHandlerPutGetAccount) {
+TEST_F(AccountHandlerTest, FUNC_VAULT_PutGetAccount) {
   // Test with account handler not started
   AccountHandler account_handler(false);
   VaultAccountSet::VaultAccount vault_account_put;
@@ -345,4 +350,8 @@ TEST_F(AccountHandlerTest, FUNC_VAULT_AccountHandlerPutGetAccount) {
   ASSERT_EQ(kNumEntries + 1, account_handler.accounts_.size());
 }
 
-}  // namespace maidsafe_vault
+}  // namespace test
+
+}  // namespace vault
+
+}  // namespace maidsafe

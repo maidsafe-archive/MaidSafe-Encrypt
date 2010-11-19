@@ -12,8 +12,8 @@
  *      Author: Team
  */
 
-#ifndef QT_WIDGETS_USER_PANELS_H_
-#define QT_WIDGETS_USER_PANELS_H_
+#ifndef MAIDSAFE_LIFESTUFF_WIDGETS_USER_PANELS_H_
+#define MAIDSAFE_LIFESTUFF_WIDGETS_USER_PANELS_H_
 
 // qt
 #include <QWidget>
@@ -21,7 +21,7 @@
 
 // std
 #include <string>
-#include "qt/client/client_controller.h"
+#include "maidsafe/lifestuff/client/client_controller.h"
 
 // generated
 #include "ui_user_panels.h"
@@ -145,5 +145,5 @@ class UserPanels : public QWidget {
   void changeEvent(QEvent *event);
 };
 
-#endif  // QT_WIDGETS_USER_PANELS_H_
+#endif  //  MAIDSAFE_LIFESTUFF_WIDGETS_USER_PANELS_H_
 

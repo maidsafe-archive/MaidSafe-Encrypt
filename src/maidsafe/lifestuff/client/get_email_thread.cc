@@ -12,24 +12,24 @@
  *      Author: Stephen
  */
 
-#include "qt/client/get_email_thread.h"
+#include "maidsafe/lifestuff/client/get_email_thread.h"
 
 // qt
 #include <QDebug>
 
 // core
-#include "qt/client/client_controller.h"
+#include "maidsafe/lifestuff/client/client_controller.h"
 
 
 GetEmailThread::GetEmailThread(const QString& subject, QObject* parent)
-    :	WorkerThread(parent), subject_(subject) {}
+    : WorkerThread(parent), subject_(subject) {}
 
 GetEmailThread::~GetEmailThread() { }
 
 void GetEmailThread::run() {
-  //qDebug() << "SendEmailThread::run" << text_;
-
-  //int success = ClientController::instance()->newEmailSendMessage();
-
-  //emit sendEmailCompleted(success, text_);
+//  qDebug() << "SendEmailThread::run" << text_;
+//
+//  int success = ClientController::instance()->newEmailSendMessage();
+//
+//  emit sendEmailCompleted(success, text_);
 }

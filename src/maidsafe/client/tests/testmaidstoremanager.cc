@@ -23,26 +23,30 @@
 
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
+#include <maidsafe/base/utils.h>
 #include <maidsafe/protobuf/contact_info.pb.h>
 #include <maidsafe/protobuf/kademlia_service_messages.pb.h>
 
-#include "fs/filesystem.h"
-#include "maidsafe/chunkstore.h"
-#include "maidsafe/pdutils.h"
+#include "maidsafe/common/chunkstore.h"
+#include "maidsafe/common/commonutils.h"
+#include "maidsafe/common/filesystem.h"
+#include "maidsafe/common/opdata.h"
+#include "maidsafe/client/clientutils.h"
 #include "maidsafe/client/clientrpc.h"
 #include "maidsafe/client/maidstoremanager.h"
 #include "maidsafe/client/sessionsingleton.h"
 #include "maidsafe/vault/vaultchunkstore.h"
 #include "maidsafe/vault/vaultservice.h"
-#include "tests/maidsafe/cached_keys.h"
-#include "tests/maidsafe/mockkadops.h"
-#include "tests/maidsafe/threadpool.h"
+#include "maidsafe/sharedtest/cached_keys.h"
+#include "maidsafe/sharedtest/mockkadops.h"
+#include "maidsafe/sharedtest/threadpool.h"
 
 namespace test_msm {
 static const boost::uint8_t K(4);
 static const boost::uint8_t upper_threshold(static_cast<boost::uint8_t>
-                                           (K * kMinSuccessfulPecentageStore));
-static const boost::uint8_t lower_threshold(kMinSuccessfulPecentageStore > .25 ?
+                            (K * maidsafe::kMinSuccessfulPecentageStore));
+static const boost::uint8_t lower_threshold(
+             maidsafe::kMinSuccessfulPecentageStore > .25 ?
              static_cast<boost::uint8_t >(K * .25) : upper_threshold);
 
 class ResultCallbackHandler {
@@ -303,6 +307,8 @@ void RunLoadPacketCallback(const kad::VoidFunctorOneString &cb,
 
 namespace maidsafe {
 
+namespace test {
+
 class MaidStoreManagerTest : public testing::Test {
  protected:
   MaidStoreManagerTest()
@@ -315,11 +321,18 @@ class MaidStoreManagerTest : public testing::Test {
         client_pmid_public_signature_(),
         client_pmid_(),
         mutex_(),
-        crypto_(),
         cond_var_(),
         functor_(boost::bind(&test_msm::PacketOpCallback, _1, &mutex_,
                              &cond_var_, &packet_op_result_)),
-        keys_() {
+        keys_(),
+        mpid_name_(),
+        mpid_public_key_(),
+        mpid_private_key_(),
+        mpid_public_key_signature_(),
+        maid_name_(),
+        maid_public_key_(),
+        maid_private_key_(),
+        maid_public_key_signature_() {
     try {
       boost::filesystem::remove_all(test_root_dir_);
     }
@@ -327,28 +340,14 @@ class MaidStoreManagerTest : public testing::Test {
       printf("In MaidStoreManagerTest ctor - %s\n", e.what());
     }
     fs::create_directories(test_root_dir_);
-    crypto_.set_hash_algorithm(crypto::SHA_512);
-    crypto_.set_symm_algorithm(crypto::AES_256);
-    cached_keys::MakeKeys(5, &keys_);
-    client_maid_keys_ = keys_.at(0);
-    std::string maid_pri = client_maid_keys_.private_key();
-    std::string maid_pub = client_maid_keys_.public_key();
-    std::string maid_pub_key_signature = crypto_.AsymSign(maid_pub, "",
-        maid_pri, crypto::STRING_STRING);
-    std::string maid_name = crypto_.Hash(maid_pub + maid_pub_key_signature, "",
-        crypto::STRING_STRING, false);
-    SessionSingleton::getInstance()->AddKey(MAID, maid_name, maid_pri, maid_pub,
-        maid_pub_key_signature);
-    client_pmid_keys_ = keys_.at(1);
-    std::string pmid_pri = client_pmid_keys_.private_key();
-    std::string pmid_pub = client_pmid_keys_.public_key();
-    client_pmid_public_signature_ = crypto_.AsymSign(pmid_pub, "",
-        maid_pri, crypto::STRING_STRING);
-    client_pmid_ = crypto_.Hash(pmid_pub + client_pmid_public_signature_, "",
-                                crypto::STRING_STRING, false);
-    SessionSingleton::getInstance()->AddKey(PMID, client_pmid_, pmid_pri,
-        pmid_pub, client_pmid_public_signature_);
-    SessionSingleton::getInstance()->SetConnectionStatus(0);
+    cached_keys::MakeKeys(3, &keys_);
+    SessionSingleton *ss(SessionSingleton::getInstance());
+    ss->CreateTestPackets(base::RandomAlphaNumericString(10));
+    ss->GetKey(passport::MPID, &mpid_name_, &mpid_public_key_,
+               &mpid_private_key_, &mpid_public_key_signature_);
+    ss->GetKey(passport::MAID, &maid_name_, &maid_public_key_,
+               &maid_private_key_, &maid_public_key_signature_);
+    ss->SetConnectionStatus(0);
   }
 
   virtual ~MaidStoreManagerTest() {
@@ -371,18 +370,27 @@ class MaidStoreManagerTest : public testing::Test {
       count += 10;
     }
   }
-  virtual void TearDown() {}
+  virtual void TearDown() {
+    try {
+      boost::filesystem::remove_all(test_root_dir_);
+    }
+    catch(const std::exception &e) {
+      printf("In MaidStoreManagerTest dtor - %s\n", e.what());
+    }
+  }
 
   fs::path test_root_dir_, client_chunkstore_dir_;
   boost::shared_ptr<ChunkStore> client_chunkstore_;
   crypto::RsaKeyPair client_pmid_keys_, client_maid_keys_;
   std::string client_pmid_public_signature_, client_pmid_;
   boost::mutex mutex_;
-  crypto::Crypto crypto_;
   boost::condition_variable cond_var_;
   int packet_op_result_;
   VoidFuncOneInt functor_;
   std::vector<crypto::RsaKeyPair> keys_;
+  std::string mpid_name_, mpid_public_key_, mpid_private_key_;
+  std::string mpid_public_key_signature_, maid_name_, maid_public_key_;
+  std::string maid_private_key_, maid_public_key_signature_;
 
  private:
   MaidStoreManagerTest(const MaidStoreManagerTest&);
@@ -406,10 +414,8 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_KeyUnique) {
   // Set up test requirements
   std::vector<std::string> keys;
   const size_t kTestCount(7);
-  for (size_t i = 0; i < kTestCount; ++i) {
-    keys.push_back(crypto_.Hash(base::RandomString(100), "",
-                                crypto::STRING_STRING, false));
-  }
+  for (size_t i = 0; i < kTestCount; ++i)
+    keys.push_back(SHA512String(base::RandomString(100)));
   std::string ser_result_empty, ser_result_unparsable("Bleh"), ser_result_fail;
   std::string ser_result_no_values, ser_result_cached_copy, ser_result_good;
   kad::FindResponse find_response;
@@ -552,18 +558,17 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_ExpectAmendment) {
   ASSERT_TRUE(client_chunkstore_->is_initialised());
 
   std::string chunk_value = base::RandomString(1234);
-  std::string chunk_name = crypto_.Hash(chunk_value, "", crypto::STRING_STRING,
-                                        false);
+  std::string chunk_name = SHA512String(chunk_value);
 
   std::string pmid, public_key, public_key_signature, private_key;
-  PdUtils pd_utils;
-  pd_utils.GetChunkSignatureKeys(PRIVATE, "", &pmid, &public_key,
-                                 &public_key_signature, &private_key);
+  ClientUtils client_utils;
+  client_utils.GetChunkSignatureKeys(PRIVATE, "", &pmid, &public_key,
+                                     &public_key_signature, &private_key);
 
   std::vector<kad::Contact> account_holders, chunk_info_holders, empty_contacts;
   for (int i = 0; i < 2 * test_msm::K; ++i) {
-    std::string name(crypto_.Hash(base::IntToString(i) + base::RandomString(23),
-                                  "", crypto::STRING_STRING, false));
+    std::string name =
+        SHA512String(base::IntToString(i) + base::RandomString(23));
     kad::Contact contact(name, "127.0.0.1", 8000 + i);
     if (i < test_msm::K)
       account_holders.push_back(contact);
@@ -606,7 +611,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_ExpectAmendment) {
                 boost::bind(&test_msm::ThreadedExpectAmendmentCallback,
                     true,
                     kAck,
-                    account_holders.at((i + 1) % 
+                    account_holders.at((i + 1) %
                         account_holders.size()).node_id().String(),
                     _1, _2, &tp))))
             .WillOnce(testing::WithArgs<4, 6>(testing::Invoke(
@@ -675,8 +680,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AddToWatchList) {
   for (int i = 0; i < kTestCount; ++i) {
     boost::uint64_t chunk_size = 396 + i;
     std::string chunk_value = base::RandomString(chunk_size);
-    std::string chunk_name = crypto_.Hash(chunk_value, "",
-                                          crypto::STRING_STRING, false);
+    std::string chunk_name = SHA512String(chunk_value);
     ASSERT_EQ(kSuccess,
               client_chunkstore_->AddChunkToOutgoing(chunk_name, chunk_value));
     chunk_names.push_back(chunk_name);
@@ -980,8 +984,8 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AddToWatchList) {
     cond_var.wait(lock);
   ASSERT_EQ(size_t(1), msm.tasks_handler_.TasksCount());
 //  StoreManagerTask retrieved_task;
-//  ASSERT_TRUE(msm.tasks_handler_.HasTask(chunk_names.at(test_run), kStoreChunk,
-//      &retrieved_task));
+//  ASSERT_TRUE(msm.tasks_handler_.HasTask(chunk_names.at(test_run),
+//      kStoreChunk, &retrieved_task));
 //  ASSERT_EQ(kMinChunkCopies, retrieved_task.successes_required_);
 
   // Call 12 - All ATW responses return upload_count of 3 except one which
@@ -1024,8 +1028,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AssessUploadCounts) {
   // Set up test data
   const boost::uint64_t chunk_size(932);
   std::string chunk_value = base::RandomString(chunk_size);
-  std::string chunk_name = crypto_.Hash(chunk_value, "", crypto::STRING_STRING,
-                                        false);
+  std::string chunk_name = SHA512String(chunk_value);
 
   boost::shared_ptr<StoreData> store_data(new StoreData(chunk_name, chunk_size,
                                           (kHashable | kNormal), PRIVATE, "",
@@ -1037,8 +1040,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AssessUploadCounts) {
       add_to_watchlist_data(new WatchListOpData(store_data));
   for (size_t i = 0; i < test_msm::K; ++i) {
     WatchListOpData::AddToWatchDataHolder
-        hldr(crypto_.Hash(base::IntToString(i * i), "", crypto::STRING_STRING,
-                          false));
+        hldr(SHA512String(base::IntToString(i * i)));
     add_to_watchlist_data->add_to_watchlist_data_holders.push_back(hldr);
   }
 
@@ -1236,15 +1238,12 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AssessUploadCounts) {
 
 TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_GetStoreRequests) {
   MaidsafeStoreManager msm(client_chunkstore_, test_msm::K);
-  std::string recipient_id = crypto_.Hash("RecipientID", "",
-      crypto::STRING_STRING, false);
+  std::string recipient_id = SHA512String("RecipientID");
   kad::Contact recipient(recipient_id, "127.0.0.1", 0);
   // Make chunk/packet names
   std::vector<std::string> names;
-  for (int i = 100; i < 104; ++i) {
-    std::string j(base::IntToString(i));
-    names.push_back(crypto_.Hash(j, "", crypto::STRING_STRING, false));
-  }
+  for (int i = 100; i < 104; ++i)
+    names.push_back(SHA512String(base::IntToString(i)));
   boost::shared_ptr<SendChunkData> send_chunk_data(
       new SendChunkData(boost::shared_ptr<StoreData>(new StoreData())));
   StorePrepRequest &store_prep_request = send_chunk_data->store_prep_request;
@@ -1256,8 +1255,8 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_GetStoreRequests) {
   ASSERT_NE("", store_prep_request.chunkname());
   ASSERT_NE("", store_chunk_request.chunkname());
   std::string key_id2, public_key2, public_key_signature2, private_key2;
-  PdUtils pd_utils;
-  pd_utils.GetChunkSignatureKeys(PRIVATE, "", &key_id2, &public_key2,
+  ClientUtils client_utils;
+  client_utils.GetChunkSignatureKeys(PRIVATE, "", &key_id2, &public_key2,
       &public_key_signature2, &private_key2);
   send_chunk_data->store_data.reset(new StoreData("", 10, (kHashable | kNormal),
       PRIVATE, "", key_id2, public_key2, public_key_signature2, private_key2));
@@ -1267,8 +1266,8 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_GetStoreRequests) {
   ASSERT_EQ("", store_chunk_request.chunkname());
 
   // Check PRIVATE_SHARE chunk
-  std::string msid_name = crypto_.Hash("b", "", crypto::STRING_STRING, false);
-  crypto::RsaKeyPair rsakp = keys_.at(2);
+  std::string msid_name = SHA512String("b");
+  crypto::RsaKeyPair rsakp = keys_.at(0);
   std::vector<std::string> attributes;
   attributes.push_back("PrivateShare");
   attributes.push_back(msid_name);
@@ -1284,7 +1283,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_GetStoreRequests) {
   ASSERT_EQ(kSuccess, SessionSingleton::getInstance()->
       AddPrivateShare(attributes, share_stats, &participants));
   std::string key_id3, public_key3, public_key_signature3, private_key3;
-  pd_utils.GetChunkSignatureKeys(PRIVATE_SHARE, msid_name, &key_id3,
+  client_utils.GetChunkSignatureKeys(PRIVATE_SHARE, msid_name, &key_id3,
       &public_key3, &public_key_signature3, &private_key3);
   ASSERT_EQ(kSuccess,
       client_chunkstore_->AddChunkToOutgoing(names.at(0), std::string("100")));
@@ -1293,15 +1292,12 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_GetStoreRequests) {
       public_key_signature3, private_key3));
   send_chunk_data->peer = recipient;
   ASSERT_EQ(kSuccess, msm.GetStoreRequests(send_chunk_data));
-  std::string public_key_signature = crypto_.AsymSign(rsakp.public_key(), "",
-      rsakp.private_key(), crypto::STRING_STRING);
-  std::string request_signature = crypto_.AsymSign(crypto_.Hash(
-      public_key_signature + names.at(0) + recipient_id, "",
-      crypto::STRING_STRING, false), "", rsakp.private_key(),
-      crypto::STRING_STRING);
+  std::string public_key_signature =
+      RSASign(rsakp.public_key(), rsakp.private_key());
+  std::string request_signature = RSASign(SHA512String(
+      public_key_signature + names.at(0) + recipient_id), rsakp.private_key());
   std::string size_signature(
-      crypto_.AsymSign(boost::lexical_cast<std::string>(3), "",
-                       rsakp.private_key(), crypto::STRING_STRING));
+      RSASign(boost::lexical_cast<std::string>(3), rsakp.private_key()));
 
   ASSERT_EQ(names.at(0), store_prep_request.chunkname());
   ASSERT_EQ(size_t(3), store_prep_request.signed_size().data_size());
@@ -1322,7 +1318,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_GetStoreRequests) {
 
   // Check PUBLIC_SHARE chunk
   std::string key_id4, public_key4, public_key_signature4, private_key4;
-  pd_utils.GetChunkSignatureKeys(PUBLIC_SHARE, "", &key_id4, &public_key4,
+  client_utils.GetChunkSignatureKeys(PUBLIC_SHARE, "", &key_id4, &public_key4,
       &public_key_signature4, &private_key4);
   client_chunkstore_->AddChunkToOutgoing(names.at(1), std::string("101"));
   send_chunk_data->store_data.reset(new StoreData(names.at(1), 3,
@@ -1330,57 +1326,39 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_GetStoreRequests) {
       public_key_signature4, private_key4));
   send_chunk_data->peer = recipient;
   ASSERT_EQ(kGetRequestSigError, msm.GetStoreRequests(send_chunk_data));
-  rsakp = keys_.at(3);
-  std::string anmpid_pri = rsakp.private_key();
-  std::string anmpid_pub = rsakp.public_key();
-  std::string anmpid_pub_sig = crypto_.AsymSign(anmpid_pub, "", anmpid_pri,
-      crypto::STRING_STRING);
-  std::string anmpid_name = crypto_.Hash("Anmpid", "", crypto::STRING_STRING,
-      false);
-  SessionSingleton::getInstance()->AddKey(ANMPID, anmpid_name, anmpid_pri,
-      anmpid_pub, anmpid_pub_sig);
-  rsakp = keys_.at(4);
-  std::string mpid_pri = rsakp.private_key();
-  std::string mpid_pub = rsakp.public_key();
-  std::string mpid_pub_sig = crypto_.AsymSign(mpid_pub, "",
-      anmpid_pri, crypto::STRING_STRING);
-  std::string mpid_name = crypto_.Hash("PublicName", "", crypto::STRING_STRING,
-      false);
-  SessionSingleton::getInstance()->AddKey(MPID, mpid_name, mpid_pri, mpid_pub,
-      mpid_pub_sig);
-  pd_utils.GetChunkSignatureKeys(PUBLIC_SHARE, "", &key_id4, &public_key4,
+  client_utils.GetChunkSignatureKeys(PUBLIC_SHARE, "", &key_id4, &public_key4,
       &public_key_signature4, &private_key4);
   send_chunk_data->store_data.reset(new StoreData(names.at(1), 3,
       (kHashable | kOutgoing), PUBLIC_SHARE, "", key_id4, public_key4,
       public_key_signature4, private_key4));
   send_chunk_data->peer = recipient;
   ASSERT_EQ(kSuccess, msm.GetStoreRequests(send_chunk_data));
-  request_signature = crypto_.AsymSign(crypto_.Hash(
-      mpid_pub_sig + names.at(1) + recipient_id, "", crypto::STRING_STRING,
-      false), "", mpid_pri, crypto::STRING_STRING);
-  size_signature = crypto_.AsymSign(boost::lexical_cast<std::string>(3), "",
-                                    mpid_pri, crypto::STRING_STRING);
+  request_signature = RSASign(SHA512String(mpid_public_key_signature_ +
+      names.at(1) + recipient_id), mpid_private_key_);
+  size_signature = RSASign(boost::lexical_cast<std::string>(3),
+                           mpid_private_key_);
 
   ASSERT_EQ(names.at(1), store_prep_request.chunkname());
   ASSERT_EQ(size_t(3), store_prep_request.signed_size().data_size());
-  ASSERT_EQ(mpid_name, store_prep_request.signed_size().pmid());
-  ASSERT_EQ(mpid_pub, store_prep_request.signed_size().public_key());
-  ASSERT_EQ(mpid_pub_sig,
-      store_prep_request.signed_size().public_key_signature());
+  ASSERT_EQ(mpid_name_, store_prep_request.signed_size().pmid());
+  ASSERT_EQ(mpid_public_key_, store_prep_request.signed_size().public_key());
+  ASSERT_EQ(mpid_public_key_signature_,
+            store_prep_request.signed_size().public_key_signature());
   ASSERT_EQ(size_signature, store_prep_request.signed_size().signature());
   ASSERT_EQ(request_signature, store_prep_request.request_signature());
 
   ASSERT_EQ(names.at(1), store_chunk_request.chunkname());
   ASSERT_EQ("101", store_chunk_request.data());
-  ASSERT_EQ(mpid_name, store_chunk_request.pmid());
-  ASSERT_EQ(mpid_pub, store_chunk_request.public_key());
-  ASSERT_EQ(mpid_pub_sig, store_chunk_request.public_key_signature());
+  ASSERT_EQ(mpid_name_, store_chunk_request.pmid());
+  ASSERT_EQ(mpid_public_key_, store_chunk_request.public_key());
+  ASSERT_EQ(mpid_public_key_signature_,
+            store_chunk_request.public_key_signature());
   ASSERT_EQ(request_signature, store_chunk_request.request_signature());
   ASSERT_EQ(DATA, store_chunk_request.data_type());
 
   // Check ANONYMOUS chunk
   std::string key_id5, public_key5, public_key_signature5, private_key5;
-  pd_utils.GetChunkSignatureKeys(ANONYMOUS, "", &key_id5, &public_key5,
+  client_utils.GetChunkSignatureKeys(ANONYMOUS, "", &key_id5, &public_key5,
       &public_key_signature5, &private_key5);
   client_chunkstore_->AddChunkToOutgoing(names.at(2), std::string("102"));
   send_chunk_data->store_data.reset(new StoreData(names.at(2), 3,
@@ -1409,7 +1387,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_GetStoreRequests) {
 
   // Check PRIVATE chunk
   std::string key_id6, public_key6, public_key_signature6, private_key6;
-  pd_utils.GetChunkSignatureKeys(PRIVATE, "", &key_id6, &public_key6,
+  client_utils.GetChunkSignatureKeys(PRIVATE, "", &key_id6, &public_key6,
       &public_key_signature6, &private_key6);
   client_chunkstore_->AddChunkToOutgoing(names.at(3), std::string("103"));
   send_chunk_data->store_data.reset(new StoreData(names.at(3), 3,
@@ -1417,12 +1395,11 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_GetStoreRequests) {
       public_key_signature6, private_key6));
   send_chunk_data->peer = recipient;
   ASSERT_EQ(kSuccess, msm.GetStoreRequests(send_chunk_data));
-  request_signature = crypto_.AsymSign(crypto_.Hash(
-      client_pmid_public_signature_ + names.at(3) + recipient_id, "",
-      crypto::STRING_STRING, false), "", client_pmid_keys_.private_key(),
-      crypto::STRING_STRING);
-  size_signature = crypto_.AsymSign(boost::lexical_cast<std::string>(3), "",
-      client_pmid_keys_.private_key(), crypto::STRING_STRING);
+  request_signature = RSASign(SHA512String(
+      client_pmid_public_signature_ + names.at(3) + recipient_id),
+      client_pmid_keys_.private_key());
+  size_signature = RSASign(boost::lexical_cast<std::string>(3),
+                           client_pmid_keys_.private_key());
 
   ASSERT_EQ(names.at(3), store_prep_request.chunkname());
   ASSERT_EQ(size_t(3), store_prep_request.signed_size().data_size());
@@ -1447,19 +1424,16 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_GetStoreRequests) {
 TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_ValidatePrepResp) {
   MaidsafeStoreManager msm(client_chunkstore_, test_msm::K);
   // Make peer keys
-  crypto::RsaKeyPair peer_pmid_keys = keys_.at(2);
+  crypto::RsaKeyPair peer_pmid_keys = keys_.at(0);
   std::string peer_pmid_pri = peer_pmid_keys.private_key();
   std::string peer_pmid_pub = peer_pmid_keys.public_key();
-  std::string peer_pmid_pub_signature = crypto_.AsymSign(peer_pmid_pub, "",
-      peer_pmid_pri, crypto::STRING_STRING);
-  std::string peer_pmid = crypto_.Hash(peer_pmid_pub + peer_pmid_pub_signature,
-      "", crypto::STRING_STRING, false);
+  std::string peer_pmid_pub_signature = RSASign(peer_pmid_pub, peer_pmid_pri);
+  std::string peer_pmid = SHA512String(peer_pmid_pub + peer_pmid_pub_signature);
   kad::Contact peer(peer_pmid, "127.0.0.1", 0);
-      
+
   // Make request
   std::string chunk_value(base::RandomString(163));
-  std::string chunk_name(crypto_.Hash(chunk_value, "", crypto::STRING_STRING,
-      false));
+  std::string chunk_name(SHA512String(chunk_value));
   boost::shared_ptr<StoreData> store_data(new StoreData(chunk_name,
       chunk_value.size(), (kHashable | kOutgoing), PRIVATE, "", client_pmid_,
       client_pmid_keys_.public_key(), client_pmid_public_signature_,
@@ -1471,12 +1445,12 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_ValidatePrepResp) {
   ASSERT_EQ(kSuccess, msm.GetStoreRequests(send_chunk_data));
   StorePrepRequest store_prep_request = send_chunk_data->store_prep_request;
   StoreChunkRequest store_chunk_request = send_chunk_data->store_chunk_request;
-  
+
   // Make proper response
-  boost::shared_ptr<maidsafe_vault::VaultChunkStore> vault_chunkstore(
-      new maidsafe_vault::VaultChunkStore(
+  boost::shared_ptr<vault::VaultChunkStore> vault_chunkstore(
+      new vault::VaultChunkStore(
           (test_root_dir_ / "VaultChunkstore").string(), 999999, 0));
-  maidsafe_vault::VaultService vault_service(peer_pmid, peer_pmid_pub,
+  vault::VaultService vault_service(peer_pmid, peer_pmid_pub,
       peer_pmid_pri, peer_pmid_pub_signature, vault_chunkstore, NULL, 0,
       boost::shared_ptr<maidsafe::KadOps>(new maidsafe::MockKadOps(NULL, NULL,
       kad::CLIENT, "", "", false, false, test_msm::K,
@@ -1535,28 +1509,27 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_ValidatePrepResp) {
   // PMID doesn't validate
   store_prep_response = good_store_prep_response;
   mutable_store_contract = store_prep_response.mutable_store_contract();
-  std::string wrong_pmid = crypto_.Hash(base::RandomString(100), "",
-      crypto::STRING_STRING, false);
+  std::string wrong_pmid = SHA512String(base::RandomString(100));
   mutable_store_contract->set_pmid(wrong_pmid);
   ASSERT_EQ(kSendPrepInvalidId, msm.ValidatePrepResponse(wrong_pmid,
       store_prep_request.signed_size(), &store_prep_response));
 
   // PMID didn't sign StoreContract correctly
   store_prep_response = good_store_prep_response;
-  store_prep_response.set_response_signature(crypto_.AsymSign(
-      base::RandomString(100), "", peer_pmid_pri, crypto::STRING_STRING));
+  store_prep_response.set_response_signature(RSASign(base::RandomString(100),
+                                                     peer_pmid_pri));
   ASSERT_EQ(kSendPrepInvalidResponseSignature, msm.ValidatePrepResponse(
       peer_pmid, store_prep_request.signed_size(), &store_prep_response));
 
   // PMID didn't sign InnerContract correctly
   store_prep_response = good_store_prep_response;
   mutable_store_contract = store_prep_response.mutable_store_contract();
-  mutable_store_contract->set_signature(crypto_.AsymSign(base::RandomString(99),
-      "", peer_pmid_pri, crypto::STRING_STRING));
+  mutable_store_contract->set_signature(RSASign(base::RandomString(99),
+                                                peer_pmid_pri));
   std::string ser_bad_contract;
   mutable_store_contract->SerializeToString(&ser_bad_contract);
-  store_prep_response.set_response_signature(crypto_.AsymSign(ser_bad_contract,
-      "", peer_pmid_pri, crypto::STRING_STRING));
+  store_prep_response.set_response_signature(RSASign(ser_bad_contract,
+                                                     peer_pmid_pri));
   ASSERT_EQ(kSendPrepInvalidContractSignature, msm.ValidatePrepResponse(
       peer_pmid, store_prep_request.signed_size(), &store_prep_response));
 
@@ -1584,15 +1557,15 @@ TEST_F(MaidStoreManagerTest, DISABLED_BEH_MAID_MSM_SendChunkPrep) {
   msm.kad_ops_ = mko;
 
   // Set up test data
-  std::string chunkname = crypto_.Hash("ddd", "", crypto::STRING_STRING, false);
+  std::string chunkname = SHA512String("ddd");
   client_chunkstore_->AddChunkToOutgoing(chunkname, std::string("ddd"));
   std::string key_id, public_key, public_key_signature, private_key;
-  PdUtils pd_utils;
-  pd_utils.GetChunkSignatureKeys(PRIVATE, "", &key_id, &public_key,
-                            &public_key_signature, &private_key);
+  ClientUtils client_utils;
+  client_utils.GetChunkSignatureKeys(PRIVATE, "", &key_id, &public_key,
+                                     &public_key_signature, &private_key);
   StoreData store_data(chunkname, 3, (kHashable | kOutgoing), PRIVATE, "",
                        key_id, public_key, public_key_signature, private_key);
-  std::string peername = crypto_.Hash("peer", "", crypto::STRING_STRING, false);
+  std::string peername = SHA512String("peer");
   kad::Contact peer(peername, "192.192.1.1", 9999);
   ASSERT_EQ(kSuccess, msm.tasks_handler_.AddTask(store_data.data_name,
             kStoreChunk, store_data.size, kMinChunkCopies, kMaxStoreFailures));
@@ -1675,15 +1648,15 @@ TEST_F(MaidStoreManagerTest, DISABLED_BEH_MAID_MSM_SendPrepCallback) {
   boost::shared_ptr<MockClientRpcs> mock_rpcs(
       new MockClientRpcs(&msm.transport_handler_, &msm.channel_manager_));
   msm.client_rpcs_ = mock_rpcs;
-  std::string chunkname = crypto_.Hash("eee", "", crypto::STRING_STRING, false);
+  std::string chunkname = SHA512String("eee");
   client_chunkstore_->AddChunkToOutgoing(chunkname, std::string("eee"));
   std::string key_id, public_key, public_key_signature, private_key;
-  PdUtils pd_utils;
-  pd_utils.GetChunkSignatureKeys(PRIVATE, "", &key_id, &public_key,
+  ClientUtils client_utils;
+  client_utils.GetChunkSignatureKeys(PRIVATE, "", &key_id, &public_key,
       &public_key_signature, &private_key);
   StoreData store_data(chunkname, 3, (kHashable | kOutgoing), PRIVATE, "",
       key_id, public_key, public_key_signature, private_key);
-  std::string peername = crypto_.Hash("peer", "", crypto::STRING_STRING, false);
+  std::string peername = SHA512String("peer");
   kad::Contact peer(peername, "192.192.1.1", 9999);
   ASSERT_EQ(kSuccess, msm.tasks_handler_.AddTask(chunkname, kStoreChunk,
       store_data.size, kMinChunkCopies, kMaxStoreFailures));
@@ -1771,15 +1744,15 @@ TEST_F(MaidStoreManagerTest, DISABLED_BEH_MAID_MSM_SendChunkContent) {
   boost::shared_ptr<MockClientRpcs> mock_rpcs(
       new MockClientRpcs(&msm.transport_handler_, &msm.channel_manager_));
   msm.client_rpcs_ = mock_rpcs;
-  std::string chunkname = crypto_.Hash("fff", "", crypto::STRING_STRING, false);
+  std::string chunkname = SHA512String("fff");
   client_chunkstore_->AddChunkToOutgoing(chunkname, std::string("fff"));
   std::string key_id, public_key, public_key_signature, private_key;
-  PdUtils pd_utils;
-  pd_utils.GetChunkSignatureKeys(PRIVATE, "", &key_id, &public_key,
+  ClientUtils client_utils;
+  client_utils.GetChunkSignatureKeys(PRIVATE, "", &key_id, &public_key,
       &public_key_signature, &private_key);
   StoreData store_data(chunkname, 3, (kHashable | kOutgoing), PRIVATE, "",
       key_id, public_key, public_key_signature, private_key);
-  std::string peername = crypto_.Hash("peer", "", crypto::STRING_STRING, false);
+  std::string peername = SHA512String("peer");
   kad::Contact peer(peername, "192.192.1.1", 9999);
   ASSERT_TRUE(msm.ss_->SetConnectionStatus(0));
   boost::shared_ptr<SendChunkData>
@@ -1910,8 +1883,7 @@ TEST_F(MaidStoreManagerTest, DISABLED_BEH_MAID_MSM_RemoveFromWatchList) {
   for (int i = 0; i < kTestCount; ++i) {
     boost::uint64_t chunk_size = 661 + i;
     std::string chunk_value = base::RandomString(chunk_size);
-    std::string chunk_name = crypto_.Hash(chunk_value, "",
-                                          crypto::STRING_STRING, false);
+    std::string chunk_name = SHA512String(chunk_value);
     if (i > 0) {
       ASSERT_EQ(kSuccess, client_chunkstore_->AddChunkToOutgoing(chunk_name,
           chunk_value));
@@ -2249,23 +2221,20 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_StoreNewPacket) {
   msm.kad_ops_ = mko;
 
   // Add keys to Session
-  crypto::RsaKeyPair anmid_keys = keys_.at(2);
+  crypto::RsaKeyPair anmid_keys = keys_.at(0);
   std::string anmid_pri = anmid_keys.private_key();
   std::string anmid_pub = anmid_keys.public_key();
-  std::string anmid_pub_key_signature = crypto_.AsymSign(anmid_pub, "",
-      anmid_pri, crypto::STRING_STRING);
-  std::string anmid_name = crypto_.Hash(anmid_pub + anmid_pub_key_signature, "",
-      crypto::STRING_STRING, false);
-  SessionSingleton::getInstance()->AddKey(ANMID, anmid_name, anmid_pri,
+  std::string anmid_pub_key_signature = RSASign(anmid_pub, anmid_pri);
+  std::string anmid_name = SHA512String(anmid_pub + anmid_pub_key_signature);
+/*  SessionSingleton::getInstance()->AddKey(ANMID, anmid_name, anmid_pri,
       anmid_pub, anmid_pub_key_signature);
 
   // Set up packet for storing
-  std::string packet_name = crypto_.Hash(base::RandomString(100), "",
-                                         crypto::STRING_STRING, false);
+  std::string packet_name = SHA512String(base::RandomString(100));
   std::string key_id, public_key, public_key_signature, private_key;
-  PdUtils pd_utils;
-  pd_utils.GetPacketSignatureKeys(MID, PRIVATE, "", &key_id, &public_key,
-      &public_key_signature, &private_key);
+  ClientUtils client_utils;
+  client_utils.GetPacketSignatureKeys(passport::MID, PRIVATE, "", &key_id,
+      &public_key, &public_key_signature, &private_key);
   ASSERT_EQ(anmid_name, key_id);
   ASSERT_EQ(anmid_pub, public_key);
   ASSERT_EQ(anmid_pub_key_signature, public_key_signature);
@@ -2383,7 +2352,8 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_StoreNewPacket) {
     while (packet_op_result_ == kGeneralError)
       cond_var_.wait(lock);
   }
-  ASSERT_EQ(kSuccess, packet_op_result_);
+  ASSERT_EQ(kSuccess, packet_op_result_);*/
+  FAIL();
 }
 
 TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_LoadPacket) {
@@ -2399,8 +2369,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_LoadPacket) {
   const size_t kTestCount(8);
   packet_names.push_back("InvalidName");
   for (size_t i = 1; i < kTestCount; ++i) {
-    packet_names.push_back(crypto_.Hash(base::RandomString(100), "",
-                                        crypto::STRING_STRING, false));
+    packet_names.push_back(SHA512String(base::RandomString(100)));
   }
   const size_t kValueCount(5);
   std::string ser_result_empty, ser_result_unparsable("Bleh"), ser_result_fail;
@@ -2528,23 +2497,20 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_DeletePacket) {
   MockMsmStoreLoadPacket msm(client_chunkstore_);
 
   // Add keys to Session
-  crypto::RsaKeyPair anmid_keys = keys_.at(2);
+  crypto::RsaKeyPair anmid_keys = keys_.at(0);
   std::string anmid_pri = anmid_keys.private_key();
   std::string anmid_pub = anmid_keys.public_key();
-  std::string anmid_pub_key_signature = crypto_.AsymSign(anmid_pub, "",
-      anmid_pri, crypto::STRING_STRING);
-  std::string anmid_name = crypto_.Hash(anmid_pub + anmid_pub_key_signature, "",
-      crypto::STRING_STRING, false);
-  SessionSingleton::getInstance()->AddKey(ANMID, anmid_name, anmid_pri,
+  std::string anmid_pub_key_signature = RSASign(anmid_pub, anmid_pri);
+  std::string anmid_name = SHA512String(anmid_pub + anmid_pub_key_signature);
+/*  SessionSingleton::getInstance()->AddKey(ANMID, anmid_name, anmid_pri,
                                           anmid_pub, anmid_pub_key_signature);
 
   // Set up packet for deletion
-  std::string packet_name = crypto_.Hash(base::RandomString(100), "",
-                                         crypto::STRING_STRING, false);
+  std::string packet_name = SHA512String(base::RandomString(100));
   std::string key_id, public_key, public_key_signature, private_key;
-  PdUtils pd_utils;
-  pd_utils.GetPacketSignatureKeys(MID, PRIVATE, "", &key_id, &public_key,
-      &public_key_signature, &private_key);
+  ClientUtils client_utils;
+  client_utils.GetPacketSignatureKeys(passport::MID, PRIVATE, "", &key_id,
+      &public_key, &public_key_signature, &private_key);
   ASSERT_EQ(anmid_name, key_id);
   ASSERT_EQ(anmid_pub, public_key);
   ASSERT_EQ(anmid_pub_key_signature, public_key_signature);
@@ -2670,30 +2636,28 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_DeletePacket) {
     while (packet_op_result_ == kGeneralError)
       cond_var_.wait(lock);
   }
-  ASSERT_EQ(kSuccess, packet_op_result_);
+  ASSERT_EQ(kSuccess, packet_op_result_);*/
+  FAIL();
 }
 
 TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_UpdatePacket) {
   MockMsmStoreLoadPacket msm(client_chunkstore_);
 
   // Add keys to Session
-  crypto::RsaKeyPair anmid_keys = keys_.at(2);
+  crypto::RsaKeyPair anmid_keys = keys_.at(0);
   std::string anmid_pri(anmid_keys.private_key());
   std::string anmid_pub(anmid_keys.public_key());
-  std::string anmid_pub_key_signature(crypto_.AsymSign(anmid_pub, "", anmid_pri,
-                                                       crypto::STRING_STRING));
-  std::string anmid_name(crypto_.Hash(anmid_pub + anmid_pub_key_signature, "",
-                                      crypto::STRING_STRING, false));
-  SessionSingleton::getInstance()->AddKey(ANMID, anmid_name, anmid_pri,
+  std::string anmid_pub_key_signature(RSASign(anmid_pub, anmid_pri));
+  std::string anmid_name(SHA512String(anmid_pub + anmid_pub_key_signature));
+/*  SessionSingleton::getInstance()->AddKey(ANMID, anmid_name, anmid_pri,
                                           anmid_pub, anmid_pub_key_signature);
 
   // Set up packet for deletion
-  std::string packet_name(crypto_.Hash(base::RandomString(100), "",
-                                       crypto::STRING_STRING, false));
+  std::string packet_name(SHA512String(base::RandomString(100)));
   std::string key_id, public_key, public_key_signature, private_key;
-  PdUtils pd_utils;
-  pd_utils.GetPacketSignatureKeys(MID, PRIVATE, "", &key_id, &public_key,
-                             &public_key_signature, &private_key);
+  ClientUtils client_utils;
+  client_utils.GetPacketSignatureKeys(passport::MID, PRIVATE, "", &key_id,
+      &public_key, &public_key_signature, &private_key);
   ASSERT_EQ(anmid_name, key_id);
   ASSERT_EQ(anmid_pub, public_key);
   ASSERT_EQ(anmid_pub_key_signature, public_key_signature);
@@ -2816,7 +2780,8 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_UpdatePacket) {
     while (packet_op_result_ == kGeneralError)
       cond_var_.wait(lock);
   }
-  ASSERT_EQ(kSuccess, packet_op_result_);
+  ASSERT_EQ(kSuccess, packet_op_result_);*/
+  FAIL();
 }
 
 TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_GetAccountStatus) {
@@ -2844,8 +2809,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_UpdateAccountStatus) {
   msm.kad_ops_ = mko;
   ASSERT_TRUE(client_chunkstore_->is_initialised());
 
-  std::string account_name = crypto_.Hash(client_pmid_ + kAccount, "",
-      crypto::STRING_STRING, false);
+  std::string account_name = SHA512String(client_pmid_ + kAccount);
 
   // Set up data for calls to FindKNodes
   std::vector<std::string> good_pmids, few_pmids;
@@ -3047,14 +3011,13 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_GetFilteredAverage) {
   msm.client_rpcs_ = mock_rpcs;
   ASSERT_TRUE(client_chunkstore_->is_initialised());
 
-  std::string account_name = crypto_.Hash(client_pmid_ + kAccount, "",
-      crypto::STRING_STRING, false);
+  std::string account_name = SHA512String(client_pmid_ + kAccount);
 
   // Set up data for calls to FindKNodes
   std::vector<kad::Contact> account_holders, few_account_holders;
   for (boost::uint16_t i = 0; i < test_msm::K; ++i) {
-    kad::Contact contact(crypto_.Hash(base::IntToString(i * i), "",
-        crypto::STRING_STRING, false), "192.168.10." + base::IntToString(i), 8000 + i,
+    kad::Contact contact(SHA512String(base::IntToString(i * i)),
+        "192.168.10." + base::IntToString(i), 8000 + i,
         "192.168.10." + base::IntToString(i), 8000 + i);
     account_holders.push_back(contact);
     if (i >= kKadStoreThreshold)
@@ -3133,5 +3096,7 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_GetFilteredAverage) {
   printf(">> Call 6\n");
   ASSERT_EQ(kSuccess, msm.AmendAccount(1234));
 } */
+
+}  // namespace test
 
 }  // namespace maidsafe

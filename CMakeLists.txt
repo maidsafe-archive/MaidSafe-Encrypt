@@ -212,6 +212,9 @@ INCLUDE(${${PROJECT_NAME}_ROOT}/build/maidsafe_FindGtest.cmake)
 SET(INCLUDE_DIRS ${INCLUDE_DIRS} ${Gtest_INCLUDE_DIR})
 SET(LIBS_DIRS ${LIBS_DIRS} ${Gtest_LIBRARY_DIR})
 SET(LIBS_DIRS_DEBUG ${LIBS_DIRS_DEBUG} ${Gtest_LIBRARY_DIR_DEBUG})
+IF(NOT WIN32)
+  SET(Gtest_LIBRARY "${Gtest_LIBRARY};pthread")
+ENDIF()
 
 ###################################################################################################
 # Google Mock library search                                                                      #
@@ -265,39 +268,44 @@ ELSE()
 ENDIF()
 
 ###################################################################################################
-# maidsafe-dht, cryptopp and udt library search                                                   #
-###################################################################################################
-INCLUDE(${${PROJECT_NAME}_ROOT}/build/maidsafe_FindMaidsafeDht.cmake)
-SET(INCLUDE_DIRS ${INCLUDE_DIRS} ${maidsafe_dht_INCLUDE_DIR})
-SET(LIBS_DIRS ${LIBS_DIRS} ${maidsafe_dht_LIBRARY_DIR})
-SET(LIBS_DIRS_DEBUG ${LIBS_DIRS_DEBUG} ${maidsafe_dht_LIBRARY_DIR_DEBUG})
-
-###################################################################################################
-# Dokan library search                                                                            #
+# Dokan / Fuse library search                                                                     #
 ###################################################################################################
 IF(WIN32)
   INCLUDE(${${PROJECT_NAME}_ROOT}/build/maidsafe_FindDokan.cmake)
   SET(INCLUDE_DIRS ${INCLUDE_DIRS} ${Dokan_INCLUDE_DIR})
   SET(LIBS_DIRS ${LIBS_DIRS} ${Dokan_LIBRARY_DIR})
   SET(LIBS_DIRS_DEBUG ${LIBS_DIRS_DEBUG} ${Dokan_LIBRARY_DIR})
+  SET(Fuse_LIBRARY ${Dokan_LIBRARY})
+ELSE()
+  FIND_LIBRARY(Fuse_LIBRARY libfuse.a)
+  IF(Fuse_LIBRARY)
+    MESSAGE("-- Found library ${Fuse_LIBRARY}")
+    GET_FILENAME_COMPONENT(Fuse_LIBRARY_DIR ${Fuse_LIBRARY} PATH)
+    SET(LIBS_DIRS ${LIBS_DIRS} ${Fuse_LIBRARY_DIR})
+    SET(LIBS_DIRS_DEBUG ${LIBS_DIRS_DEBUG} ${Fuse_LIBRARY_DIR})
+  ELSE()
+    SET(ERROR_MESSAGE "\nCould not find library libfuse.a.")
+    SET(ERROR_MESSAGE "${ERROR_MESSAGE}  Run\n${ERROR_MESSAGE_CMAKE_PATH} -DADD_LIBRARY_DIR=<Path to libfuse.a directory>")
+    MESSAGE(FATAL_ERROR "${ERROR_MESSAGE}")
+  ENDIF()
 ENDIF()
 
 ###################################################################################################
-# All other libraries search                                                                      #
+# All other libraries (except maidsafe_dht) search                                                #
 ###################################################################################################
 IF(UNIX)
-  SET(SYS_LIBS libfuse.a)
+  SET(OTHER_LIBS dl pthread)
   IF(NOT APPLE)
-    SET(SYS_LIBS rt c ${SYS_LIBS})
+    SET(OTHER_LIBS rt c m ${OTHER_LIBS})
   ENDIF()
 ELSEIF(WIN32)
   IF(MSVC)
-    SET(SYS_LIBS ws2_32 odbc32 odbccp32 WSock32 IPHlpApi)
+    SET(OTHER_LIBS ws2_32 odbc32 odbccp32 WSock32 IPHlpApi)
   ELSE()
-    SET(SYS_LIBS advapi32 ws2_32 iphlpapi mswsock)
+    SET(OTHER_LIBS advapi32 ws2_32 iphlpapi mswsock)
   ENDIF()
 ENDIF()
-FOREACH(library ${SYS_LIBS})
+FOREACH(library ${OTHER_LIBS})
   FIND_LIBRARY(CURRENT_LIB ${library})
   IF(CURRENT_LIB)
     MESSAGE("-- Found library ${CURRENT_LIB}")
@@ -316,11 +324,21 @@ FOREACH(library ${SYS_LIBS})
   UNSET(CURRENT_LIB CACHE)
 ENDFOREACH()
 
+###################################################################################################
+# maidsafe-dht, cryptopp and udt library search                                                   #
+###################################################################################################
+INCLUDE(${${PROJECT_NAME}_ROOT}/build/maidsafe_FindMaidsafeDht.cmake)
+SET(INCLUDE_DIRS ${INCLUDE_DIRS} ${maidsafe_dht_INCLUDE_DIR})
+SET(LIBS_DIRS ${LIBS_DIRS} ${maidsafe_dht_LIBRARY_DIR})
+SET(LIBS_DIRS_DEBUG ${LIBS_DIRS_DEBUG} ${maidsafe_dht_LIBRARY_DIR_DEBUG})
+
+
 LIST(REMOVE_DUPLICATES LIBS_DIRS)
 LIST(REMOVE_DUPLICATES LIBS_DIRS_DEBUG)
 LINK_DIRECTORIES(${CMAKE_ARCHIVE_OUTPUT_DIRECTORY})
 
 INCLUDE_DIRECTORIES(${${PROJECT_NAME}_SOURCE_DIR})
+INCLUDE_DIRECTORIES(${${PROJECT_NAME}_BINARY_DIR})
 LIST(REMOVE_DUPLICATES INCLUDE_DIRS)
 INCLUDE_DIRECTORIES(AFTER SYSTEM ${INCLUDE_DIRS})
 
@@ -371,6 +389,14 @@ FILE(GLOB HEADER_FILES_CLIENT_DIR "${SRC_MAIDSAFE}/client/*.h")
 SET(ALL_FILES_CLIENT_DIR ${SOURCE_FILES_CLIENT_DIR} ${HEADER_FILES_CLIENT_DIR})
 SET(STYLE_CLIENT ${ALL_FILES_CLIENT_DIR})
 LIST(REMOVE_ITEM ALL_FILES_CLIENT_DIR "${SRC_MAIDSAFE}/client/main.cc")
+SET(ALL_FILES_LOCALSTOREMANAGER_CLIENT_DIR ${ALL_FILES_CLIENT_DIR})
+LIST(REMOVE_ITEM ALL_FILES_LOCALSTOREMANAGER_CLIENT_DIR "${SRC_MAIDSAFE}/client/maidstoremanager.cc")
+LIST(REMOVE_ITEM ALL_FILES_LOCALSTOREMANAGER_CLIENT_DIR "${SRC_MAIDSAFE}/client/maidstoremanager.h")
+LIST(REMOVE_ITEM ALL_FILES_LOCALSTOREMANAGER_CLIENT_DIR "${SRC_MAIDSAFE}/client/clientrpc.cc")
+LIST(REMOVE_ITEM ALL_FILES_LOCALSTOREMANAGER_CLIENT_DIR "${SRC_MAIDSAFE}/client/clientrpc.h")
+LIST(REMOVE_ITEM ALL_FILES_LOCALSTOREMANAGER_CLIENT_DIR "${SRC_MAIDSAFE}/client/storemanagertaskshandler.cc")
+LIST(REMOVE_ITEM ALL_FILES_LOCALSTOREMANAGER_CLIENT_DIR "${SRC_MAIDSAFE}/client/storemanagertaskshandler.h")
+LIST(REMOVE_ITEM ALL_FILES_LOCALSTOREMANAGER_CLIENT_DIR "${SRC_MAIDSAFE}/client/opdata.h")
 SOURCE_GROUP("client Source Files" FILES ${SOURCE_FILES_CLIENT_DIR})
 SOURCE_GROUP("client Header Files" FILES ${HEADER_FILES_CLIENT_DIR})
 
@@ -381,11 +407,11 @@ SET(STYLE_CLIENT_FILESYSTEM ${ALL_FILES_CLIENT_FILESYSTEM_DIR})
 SOURCE_GROUP("client filesystem Source Files" FILES ${SOURCE_FILES_CLIENT_FILESYSTEM_DIR})
 SOURCE_GROUP("client filesystem Header Files" FILES ${HEADER_FILES_CLIENT_FILESYSTEM_DIR})
 
-FILE(GLOB SOURCE_FILES_COMMON_DIR "${SRC_MAIDSAFE}/common/*.cc")
+FILE(GLOB SOURCE_FILES_COMMON_DIR "${SRC_MAIDSAFE}/common/*.c*")
 FILE(GLOB HEADER_FILES_COMMON_DIR "${SRC_MAIDSAFE}/common/*.h")
 SET(ALL_FILES_COMMON_DIR ${SOURCE_FILES_COMMON_DIR} ${HEADER_FILES_COMMON_DIR})
 SET(STYLE_COMMON ${ALL_FILES_COMMON_DIR})
-LIST(REMOVE_ITEM STYLE_COMMON "${SRC_MAIDSAFE}/common/sqlite3.cc")
+LIST(REMOVE_ITEM STYLE_COMMON "${SRC_MAIDSAFE}/common/sqlite3.c")
 LIST(REMOVE_ITEM STYLE_COMMON "${SRC_MAIDSAFE}/common/sqlite3.h")
 SOURCE_GROUP("common Source Files" FILES ${SOURCE_FILES_COMMON_DIR})
 SOURCE_GROUP("common Header Files" FILES ${HEADER_FILES_COMMON_DIR})
@@ -424,12 +450,9 @@ LIST(REMOVE_ITEM SOURCE_FILES_LIFESTUFF_WIDGETS_DIR "${SRC_MAIDSAFE}/lifestuff/w
 LIST(REMOVE_ITEM HEADER_FILES_LIFESTUFF_WIDGETS_DIR "${SRC_MAIDSAFE}/lifestuff/widgets/file_browser.h")
 QT4_WRAP_CPP(MOC_FILES_LIFESTUFF_WIDGETS_DIR ${HEADER_FILES_LIFESTUFF_WIDGETS_DIR})
 QT4_WRAP_CPP(MOC_FILES_LIFESTUFF_LIGHT_WIDGETS_DIR ${HEADER_FILES_LIFESTUFF_LIGHT_WIDGETS_DIR})
-SOURCE_GROUP("lifestuff widgets Source Files" FILES ${SOURCE_FILES_LIFESTUFF_WIDGETS_DIR})
-SOURCE_GROUP("lifestuff widgets Header Files" FILES ${HEADER_FILES_LIFESTUFF_WIDGETS_DIR})
-SOURCE_GROUP("lifestuff widgets MOC Files" FILES ${MOC_FILES_LIFESTUFF_WIDGETS_DIR})
-SOURCE_GROUP("lifestuff light widgets Source Files" FILES ${SOURCE_FILES_LIFESTUFF_LIGHT_WIDGETS_DIR})
-SOURCE_GROUP("lifestuff light widgets Header Files" FILES ${HEADER_FILES_LIFESTUFF_LIGHT_WIDGETS_DIR})
-SOURCE_GROUP("lifestuff light widgets MOC Files" FILES ${MOC_FILES_LIFESTUFF_LIGHT_WIDGETS_DIR})
+SOURCE_GROUP("lifestuff widgets Source Files" FILES ${SOURCE_FILES_LIFESTUFF_LIGHT_WIDGETS_DIR})
+SOURCE_GROUP("lifestuff widgets Header Files" FILES ${HEADER_FILES_LIFESTUFF_LIGHT_WIDGETS_DIR})
+SOURCE_GROUP("lifestuff widgets MOC Files" FILES ${MOC_FILES_LIFESTUFF_LIGHT_WIDGETS_DIR})
 
 FILE(GLOB QRC_FILES_LIFESTUFF_RESOURCES_DIR "${SRC_MAIDSAFE}/lifestuff/resources/*.qrc")
 QT4_ADD_RESOURCES(RESOURCE_FILES_LIFESTUFF_RESOURCES_DIR ${QRC_FILES_LIFESTUFF_RESOURCES_DIR})
@@ -437,28 +460,27 @@ SOURCE_GROUP("lifestuff Resource Files" FILES ${RESOURCE_FILES_LIFESTUFF_RESOURC
 
 FILE(GLOB UI_FILES_LIFESTUFF_UI_DIR "${SRC_MAIDSAFE}/lifestuff/ui/*.ui")
 QT4_WRAP_UI(UIC_FILES_LIFESTUFF_UI_DIR ${UI_FILES_LIFESTUFF_UI_DIR})
+SOURCE_GROUP("lifestuff UI Files" FILES ${UI_FILES_LIFESTUFF_UI_DIR})
 SOURCE_GROUP("lifestuff UI Compiled Files" FILES ${UIC_FILES_LIFESTUFF_UI_DIR})
 
 SET(ALL_LIFESTUFF_SOURCE_FILES
       ${SOURCE_FILES_LIFESTUFF_DIR} ${MOC_FILES_LIFESTUFF_DIR}
       ${SOURCE_FILES_LIFESTUFF_CLIENT_DIR} ${MOC_FILES_LIFESTUFF_CLIENT_DIR}
       ${SOURCE_FILES_LIFESTUFF_WIDGETS_DIR} ${MOC_FILES_LIFESTUFF_WIDGETS_DIR}
-      ${RESOURCE_FILES_LIFESTUFF_RESOURCES_DIR})
+      ${RESOURCE_FILES_LIFESTUFF_RESOURCES_DIR} ${UI_FILES_LIFESTUFF_UI_DIR} ${UIC_FILES_LIFESTUFF_UI_DIR})
 SET(ALL_LIFESTUFF_HEADER_FILES
       ${HEADER_FILES_LIFESTUFF_DIR}
       ${HEADER_FILES_LIFESTUFF_CLIENT_DIR}
-      ${HEADER_FILES_LIFESTUFF_WIDGETS_DIR}
-      ${UIC_FILES_LIFESTUFF_UI_DIR})
+      ${HEADER_FILES_LIFESTUFF_WIDGETS_DIR})
 SET(ALL_LIFESTUFF_LIGHT_SOURCE_FILES
       ${SOURCE_FILES_LIFESTUFF_DIR} ${MOC_FILES_LIFESTUFF_DIR}
       ${SOURCE_FILES_LIFESTUFF_CLIENT_DIR} ${MOC_FILES_LIFESTUFF_CLIENT_DIR}
       ${SOURCE_FILES_LIFESTUFF_LIGHT_WIDGETS_DIR} ${MOC_FILES_LIFESTUFF_LIGHT_WIDGETS_DIR}
-      ${RESOURCE_FILES_LIFESTUFF_RESOURCES_DIR})
+      ${RESOURCE_FILES_LIFESTUFF_RESOURCES_DIR} ${UI_FILES_LIFESTUFF_UI_DIR} ${UIC_FILES_LIFESTUFF_UI_DIR})
 SET(ALL_LIFESTUFF_LIGHT_HEADER_FILES
       ${HEADER_FILES_LIFESTUFF_DIR}
       ${HEADER_FILES_LIFESTUFF_CLIENT_DIR}
-      ${HEADER_FILES_LIFESTUFF_LIGHT_WIDGETS_DIR}
-      ${UIC_FILES_LIFESTUFF_UI_DIR})
+      ${HEADER_FILES_LIFESTUFF_LIGHT_WIDGETS_DIR})
 
 FILE(GLOB SOURCE_FILES_VAULT_DIR "${SRC_MAIDSAFE}/vault/*.cc")
 FILE(GLOB HEADER_FILES_VAULT_DIR "${SRC_MAIDSAFE}/vault/*.h")
@@ -474,15 +496,12 @@ SOURCE_GROUP("vault Header Files" FILES ${HEADER_FILES_VAULT_DIR})
 FILE(GLOB ALL_FILES_CLIENT_TESTS_DIR "${SRC_MAIDSAFE}/client/tests/*.cc" "${SRC_MAIDSAFE}/client/tests/*.h")
 LIST(REMOVE_ITEM ALL_FILES_CLIENT_TESTS_DIR "${SRC_MAIDSAFE}/client/tests/client_main.cc")
 LIST(REMOVE_ITEM ALL_FILES_CLIENT_TESTS_DIR "${SRC_MAIDSAFE}/client/tests/testclientcontroller.cc")
-#LIST(REMOVE_ITEM ALL_FILES_CLIENT_TESTS_DIR "${SRC_MAIDSAFE}/client/tests/testimmessaging.cc")
+LIST(REMOVE_ITEM ALL_FILES_CLIENT_TESTS_DIR "${SRC_MAIDSAFE}/client/tests/testimmessaging.cc")
+
+FILE(GLOB ALL_FILES_CLIENT_FILESYSTEM_TESTS_DIR "${SRC_MAIDSAFE}/client/filesystem/tests/*.cc" "${SRC_MAIDSAFE}/client/filesystem/tests/*.h")
 
 FILE(GLOB ALL_FILES_COMMON_TESTS_DIR "${SRC_MAIDSAFE}/common/tests/*.cc" "${SRC_MAIDSAFE}/common/tests/*.h")
-LIST(REMOVE_ITEM ALL_FILES_COMMON_TESTS_DIR "${SRC_MAIDSAFE}/common/tests/tests_main.cc")
-LIST(REMOVE_ITEM ALL_FILES_COMMON_TESTS_DIR "${SRC_MAIDSAFE}/common/tests/networktest.cc")
-LIST(REMOVE_ITEM ALL_FILES_COMMON_TESTS_DIR "${SRC_MAIDSAFE}/common/tests/networktest.h")
 LIST(REMOVE_ITEM ALL_FILES_COMMON_TESTS_DIR "${SRC_MAIDSAFE}/common/tests/testbufferpackethandler.cc")
-SET(TESTS_MAIN "${SRC_MAIDSAFE}/common/tests/tests_main.cc")
-SET(NETWORK_TEST ${TESTS_MAIN} "${SRC_MAIDSAFE}/common/tests/networktest.cc" "${SRC_MAIDSAFE}/common/tests/networktest.h")
 
 FILE(GLOB ALL_FILES_FUSE_TESTS_DIR "${SRC_MAIDSAFE}/fuse/tests/*.cc" "${SRC_MAIDSAFE}/fuse/tests/*.h")
 
@@ -490,22 +509,27 @@ FILE(GLOB ALL_FILES_VAULT_TESTS_DIR "${SRC_MAIDSAFE}/vault/tests/*.cc" "${SRC_MA
 LIST(REMOVE_ITEM ALL_FILES_VAULT_TESTS_DIR "${SRC_MAIDSAFE}/vault/tests/vault_main.cc")
 LIST(REMOVE_ITEM ALL_FILES_VAULT_TESTS_DIR "${SRC_MAIDSAFE}/vault/tests/testpdvault.cc")
 
+SET(NETWORK_TEST_FILES
+      "${SRC_MAIDSAFE}/sharedtest/networktest.cc"
+      "${SRC_MAIDSAFE}/sharedtest/networktest.h"
+      "${SRC_MAIDSAFE}/sharedtest/localvaults.h"
+      "${SRC_MAIDSAFE}/sharedtest/tests_main.cc")
 
 ###################################################################################################
 # All Platforms:  Add exes and Create all PD libs                                                 #
 ###################################################################################################
 IF(APPLE)
-  ADD_EXECUTABLE(lifestuff MACOSX_BUNDLE ${ALL_LIFESTUFF_SOURCE_FILES})
-  ADD_EXECUTABLE(lslocal MACOSX_BUNDLE ${ALL_LIFESTUFF_SOURCE_FILES})
-  ADD_EXECUTABLE(lslightlocal MACOSX_BUNDLE ${ALL_LIFESTUFF_LIGHT_SOURCE_FILES})
+  ADD_EXECUTABLE(lifestuff MACOSX_BUNDLE ${ALL_LIFESTUFF_SOURCE_FILES} ${ALL_LIFESTUFF_HEADER_FILES})
+  ADD_EXECUTABLE(lslocal MACOSX_BUNDLE ${ALL_LIFESTUFF_SOURCE_FILES} ${ALL_LIFESTUFF_HEADER_FILES})
+  ADD_EXECUTABLE(lslightlocal MACOSX_BUNDLE ${ALL_LIFESTUFF_LIGHT_SOURCE_FILES} ${ALL_LIFESTUFF_LIGHT_HEADER_FILES})
 ELSEIF((UNIX AND NOT APPLE) OR MSVC)
-  ADD_EXECUTABLE(lifestuff ${ALL_LIFESTUFF_SOURCE_FILES})
-  ADD_EXECUTABLE(lslocal ${ALL_LIFESTUFF_SOURCE_FILES})
-  ADD_EXECUTABLE(lslightlocal ${ALL_LIFESTUFF_LIGHT_SOURCE_FILES})
+  ADD_EXECUTABLE(lifestuff ${ALL_LIFESTUFF_SOURCE_FILES} ${ALL_LIFESTUFF_HEADER_FILES})
+  ADD_EXECUTABLE(lslocal ${ALL_LIFESTUFF_SOURCE_FILES} ${ALL_LIFESTUFF_HEADER_FILES})
+  ADD_EXECUTABLE(lslightlocal ${ALL_LIFESTUFF_LIGHT_SOURCE_FILES} ${ALL_LIFESTUFF_LIGHT_HEADER_FILES})
 ELSEIF(WIN32)
-  ADD_EXECUTABLE(lifestuff WIN32 ${ALL_LIFESTUFF_SOURCE_FILES})
-  ADD_EXECUTABLE(lslocal WIN32 ${ALL_LIFESTUFF_SOURCE_FILES})
-  ADD_EXECUTABLE(lslightlocal WIN32 ${ALL_LIFESTUFF_LIGHT_SOURCE_FILES})
+  ADD_EXECUTABLE(lifestuff WIN32 ${ALL_LIFESTUFF_SOURCE_FILES} ${ALL_LIFESTUFF_HEADER_FILES})
+  ADD_EXECUTABLE(lslocal WIN32 ${ALL_LIFESTUFF_SOURCE_FILES} ${ALL_LIFESTUFF_HEADER_FILES})
+  ADD_EXECUTABLE(lslightlocal WIN32 ${ALL_LIFESTUFF_LIGHT_SOURCE_FILES} ${ALL_LIFESTUFF_LIGHT_HEADER_FILES})
 ENDIF()
 IF(MSVC)
   SET_TARGET_PROPERTIES(lifestuff lslocal lslightlocal PROPERTIES WIN32_EXECUTABLE TRUE)
@@ -516,35 +540,78 @@ SET(FUNCTIONAL_TEST_TIMEOUT 600)
 SET(LOCAL_SYSTEM_TEST_TIMEOUT 1800)
 SET(NETWORK_SYSTEM_TEST_TIMEOUT 3600)
 
-ADD_EXECUTABLE(TESTclient ${ALL_FILES_CLIENT_TESTS_DIR} ${TESTS_MAIN})
-ADD_EXECUTABLE(TESTcommon ${ALL_FILES_COMMON_TESTS_DIR} ${TESTS_MAIN})
-#ADD_EXECUTABLE(TESTfuse ${ALL_FILES_FUSE_TESTS_DIR})
-ADD_EXECUTABLE(TESTvault ${ALL_FILES_VAULT_TESTS_DIR} ${TESTS_MAIN})
+ADD_EXECUTABLE(TESTcommon
+                 ${ALL_FILES_COMMON_TESTS_DIR}
+                 "${SRC_MAIDSAFE}/sharedtest/chunkstoreops.h"
+                 "${SRC_MAIDSAFE}/sharedtest/mockkadops.cc"
+                 "${SRC_MAIDSAFE}/sharedtest/mockkadops.h"
+                 "${SRC_MAIDSAFE}/sharedtest/threadpool.cc"
+                 "${SRC_MAIDSAFE}/sharedtest/threadpool.h"
+                 "${SRC_MAIDSAFE}/sharedtest/tests_main.cc")
+ADD_EXECUTABLE(TESTclientfilesystem
+                 ${ALL_FILES_CLIENT_FILESYSTEM_TESTS_DIR}
+                 "${SRC_MAIDSAFE}/sharedtest/tests_main.cc")
+ADD_EXECUTABLE(TESTclient
+                 ${ALL_FILES_CLIENT_TESTS_DIR}
+                 "${SRC_MAIDSAFE}/sharedtest/cached_keys.h"
+                 "${SRC_MAIDSAFE}/sharedtest/cachepassport.h"
+                 "${SRC_MAIDSAFE}/sharedtest/mockkadops.cc"
+                 "${SRC_MAIDSAFE}/sharedtest/mockkadops.h"
+                 "${SRC_MAIDSAFE}/sharedtest/networktest.cc"
+                 "${SRC_MAIDSAFE}/sharedtest/networktest.h"
+                 "${SRC_MAIDSAFE}/sharedtest/threadpool.cc"
+                 "${SRC_MAIDSAFE}/sharedtest/threadpool.h"
+                 "${SRC_MAIDSAFE}/sharedtest/tests_main.cc")
 
-ADD_EXECUTABLE(TESTauthentication_net ${NETWORK_TEST} "${SRC_MAIDSAFE}/client/tests/testauthentication.cc")
-ADD_EXECUTABLE(TESTbufferpackethandler_net ${NETWORK_TEST} "${SRC_MAIDSAFE}/common/tests/testbufferpackethandler.cc")
-ADD_EXECUTABLE(TESTclientcontroller_net ${NETWORK_TEST} "${SRC_MAIDSAFE}/client/tests/testclientcontroller.cc")
-ADD_EXECUTABLE(TESTclientcontroller_local ${NETWORK_TEST} "${SRC_MAIDSAFE}/client/tests/testclientcontroller.cc")
-ADD_EXECUTABLE(TESTimconnectionhandler_net ${NETWORK_TEST} "${SRC_MAIDSAFE}/client/tests/testimconnhandler.cc" "${SRC_MAIDSAFE}/client/tests/testimmessaging.cc")
-ADD_EXECUTABLE(TESTpdvault_net "${SRC_MAIDSAFE}/vault/tests/testpdvault.cc")
+ADD_EXECUTABLE(TESTfuse EXCLUDE_FROM_ALL
+                 ${ALL_FILES_FUSE_TESTS_DIR})
+ADD_EXECUTABLE(TESTvault
+                 ${ALL_FILES_VAULT_TESTS_DIR}
+                 "${SRC_MAIDSAFE}/sharedtest/chunkstoreops.h"
+                 "${SRC_MAIDSAFE}/sharedtest/mockkadops.cc"
+                 "${SRC_MAIDSAFE}/sharedtest/mockkadops.h"
+                 "${SRC_MAIDSAFE}/sharedtest/threadpool.cc"
+                 "${SRC_MAIDSAFE}/sharedtest/threadpool.h"
+                 "${SRC_MAIDSAFE}/sharedtest/tests_main.cc")
+ADD_EXECUTABLE(TESTauthentication_net
+                 ${NETWORK_TEST_FILES}
+                 "${SRC_MAIDSAFE}/client/tests/testauthentication.cc")
+ADD_EXECUTABLE(TESTbufferpackethandler_net
+                 ${NETWORK_TEST_FILES}
+                 "${SRC_MAIDSAFE}/sharedtest/cached_keys.h"
+                 "${SRC_MAIDSAFE}/common/tests/testbufferpackethandler.cc")
+ADD_EXECUTABLE(TESTclientcontroller_net
+                 ${NETWORK_TEST_FILES}
+                 "${SRC_MAIDSAFE}/client/tests/testclientcontroller.cc")
+ADD_EXECUTABLE(TESTclientcontroller_local
+                 ${NETWORK_TEST_FILES}
+                 "${SRC_MAIDSAFE}/client/tests/testclientcontroller.cc")
+ADD_EXECUTABLE(TESTimconnectionhandler_net
+                 ${NETWORK_TEST_FILES}
+                 "${SRC_MAIDSAFE}/client/tests/testimconnhandler.cc"
+                 "${SRC_MAIDSAFE}/client/tests/testimmessaging.cc")
+ADD_EXECUTABLE(TESTpdvault_net
+                 "${SRC_MAIDSAFE}/vault/tests/testpdvault.cc")
 
-ADD_EXECUTABLE(DEMOclient "${SRC_MAIDSAFE}/client/tests/client_main.cc")
-ADD_EXECUTABLE(DEMOvault "${SRC_MAIDSAFE}/vault/tests/vault_main.cc")
+ADD_EXECUTABLE(DEMOclient
+                 "${SRC_MAIDSAFE}/client/tests/client_main.cc")
+ADD_EXECUTABLE(DEMOvault
+                 "${SRC_MAIDSAFE}/vault/tests/vault_main.cc")
 IF(WIN32)
   ADD_EXECUTABLE(vault "${SRC_MAIDSAFE}/vault/win_service.cc")
 ELSE()
   ADD_EXECUTABLE(vault "${SRC_MAIDSAFE}/vault/unix_deamon.cc")
 ENDIF()
 
-SET(ALL_EXECUTABLES lifestuff lslocal lslightlocal TESTclient TESTcommon TESTvault TESTauthentication_net TESTbufferpackethandler_net
-    TESTclientcontroller_net TESTclientcontroller_local TESTimconnectionhandler_net TESTpdvault_net DEMOclient DEMOvault vault) # TESTfuse
+SET(ALL_EXECUTABLES lifestuff lslocal lslightlocal TESTcommon TESTclientfilesystem TESTclient TESTvault TESTauthentication_net TESTbufferpackethandler_net
+    TESTclientcontroller_net TESTclientcontroller_local TESTimconnectionhandler_net TESTpdvault_net TESTfuse DEMOclient DEMOvault vault)
 
 ADD_LIBRARY(PDclientlib STATIC ${ALL_FILES_CLIENT_DIR})
+ADD_LIBRARY(PDlsmclientlib STATIC ${ALL_FILES_LOCALSTOREMANAGER_CLIENT_DIR})
 ADD_LIBRARY(PDclientfilesystemlib STATIC ${ALL_FILES_CLIENT_FILESYSTEM_DIR})
 ADD_LIBRARY(PDcommonlib STATIC ${ALL_FILES_COMMON_DIR})
 ADD_LIBRARY(PDfuselib STATIC ${ALL_FILES_FUSE_DIR})
 ADD_LIBRARY(PDvaultlib STATIC ${ALL_FILES_VAULT_DIR})
-ADD_LIBRARY(PDTESTclientlib STATIC ${ALL_FILES_CLIENT_DIR})
 
 ADD_SUBDIRECTORY(${SRC_MAIDSAFE}/encrypt ${CMAKE_BINARY_DIR}/encrypt)
 ADD_SUBDIRECTORY(${SRC_MAIDSAFE}/passport ${CMAKE_BINARY_DIR}/passport)
@@ -572,116 +639,30 @@ ENDIF()
 ADD_DEFINITIONS(-DSTATICLIB)
 SET(BUILD_SHARED_LIBS OFF)
 
-IF(NOT MSVC)
-  SET(SYS_LIBS ${QT_LIBRARIES} ${Boost_LIBRARIES} ${Protobuf_LIBRARY} ${maidsafe_dht_LIBRARY} ${Udt_LIBRARY} ${Glog_LIBRARY} ${Cryptopp_LIBRARY} ${SYS_LIBS})
-  TARGET_LINK_LIBRARIES(lifestuff PDclientlib PDfuselib PDcommonlib encrypt passport pki ${Dokan_LIBRARY} ${Breakpad_LIBRARY} ${SYS_LIBS})
-  TARGET_LINK_LIBRARIES(lslocal PDTESTclientlib ${Dokan_LIBRARY} ${Breakpad_LIBRARY} ${SYS_LIBS})
-  TARGET_LINK_LIBRARIES(lslightlocal PDTESTmsclientlib PDmaidsafelib PDpbmsgslib ${Breakpad_LIBRARY} ${SYS_LIBS})
-  TARGET_LINK_LIBRARIES(vault PDmsvaultlib ${ALL_TARGET_LIBS} ${Breakpad_LIBRARY} ${SYS_LIBS})
+TARGET_LINK_LIBRARIES(PDcommonlib passport ${Boost_FILESYSTEM_LIBRARY})
+TARGET_LINK_LIBRARIES(PDclientfilesystemlib PDcommonlib encrypt pki ${Boost_DATE_TIME_LIBRARY})
+TARGET_LINK_LIBRARIES(PDlsmclientlib PDclientfilesystemlib ${QT_QTCORE_LIBRARY} ${Boost_REGEX_LIBRARY})
+TARGET_LINK_LIBRARIES(PDclientlib PDclientfilesystemlib ${QT_QTCORE_LIBRARY} ${Boost_REGEX_LIBRARY})
+TARGET_LINK_LIBRARIES(PDvaultlib PDcommonlib pki ${QT_QTCORE_LIBRARY} ${Boost_DATE_TIME_LIBRARY})
+TARGET_LINK_LIBRARIES(PDfuselib ${Fuse_LIBRARY} ${Boost_SYSTEM_LIBRARY})
+TARGET_LINK_LIBRARIES(lifestuff PDclientlib PDfuselib ${QT_QTMAIN_LIBRARY} ${QT_QTGUI_LIBRARY} ${QT_QTXML_LIBRARY})
+TARGET_LINK_LIBRARIES(lslocal PDlsmclientlib PDfuselib ${QT_QTMAIN_LIBRARY} ${QT_QTGUI_LIBRARY} ${QT_QTXML_LIBRARY})
+TARGET_LINK_LIBRARIES(lslightlocal PDlsmclientlib ${QT_QTMAIN_LIBRARY} ${QT_QTGUI_LIBRARY} ${QT_QTXML_LIBRARY})
+TARGET_LINK_LIBRARIES(TESTcommon PDcommonlib ${Boost_DATE_TIME_LIBRARY} ${Gtest_LIBRARY} ${Gmock_LIBRARY})
+TARGET_LINK_LIBRARIES(TESTclientfilesystem PDclientlib ${Gtest_LIBRARY})
+TARGET_LINK_LIBRARIES(TESTclient PDclientlib PDvaultlib ${Gtest_LIBRARY} ${Gmock_LIBRARY})
+TARGET_LINK_LIBRARIES(TESTvault PDvaultlib PDclientlib ${Gtest_LIBRARY} ${Gmock_LIBRARY})
+TARGET_LINK_LIBRARIES(TESTfuse PDfuselib ${Gtest_LIBRARY})
+TARGET_LINK_LIBRARIES(TESTauthentication_net PDclientlib PDvaultlib ${Gtest_LIBRARY})
+TARGET_LINK_LIBRARIES(TESTbufferpackethandler_net PDclientlib PDvaultlib ${Gtest_LIBRARY})
+TARGET_LINK_LIBRARIES(TESTclientcontroller_net PDclientlib PDvaultlib ${Gtest_LIBRARY})
+TARGET_LINK_LIBRARIES(TESTclientcontroller_local PDlsmclientlib ${Gtest_LIBRARY})
+TARGET_LINK_LIBRARIES(TESTimconnectionhandler_net PDclientlib PDvaultlib ${Gtest_LIBRARY})
+TARGET_LINK_LIBRARIES(TESTpdvault_net PDclientlib PDvaultlib ${Gtest_LIBRARY})
+TARGET_LINK_LIBRARIES(DEMOclient PDclientlib)
+TARGET_LINK_LIBRARIES(DEMOvault PDclientlib PDvaultlib)
+TARGET_LINK_LIBRARIES(vault PDvaultlib)
 
-  SET(TEST_LIBS PDclientlib PDvaultlib PDcommonlib encrypt passport pki ${Gtest_LIBRARY} ${SYS_LIBS})
-  TARGET_LINK_LIBRARIES(TESTclient ${Gmock_LIBRARY} ${TEST_LIBS})
-  TARGET_LINK_LIBRARIES(TESTcommon ${TEST_LIBS})
-  #TARGET_LINK_LIBRARIES(TESTfuse ${TEST_LIBS})
-  TARGET_LINK_LIBRARIES(TESTvault ${TEST_LIBS})
-
-  TARGET_LINK_LIBRARIES(TESTauthentication_net ${TEST_LIBS})
-  TARGET_LINK_LIBRARIES(TESTbufferpackethandler_net ${TEST_LIBS})
-  TARGET_LINK_LIBRARIES(TESTclientcontroller_net ${TEST_LIBS})
-  TARGET_LINK_LIBRARIES(TESTclientcontroller_local PDTESTclientlib PDcommonlib ${Gtest_LIBRARY} ${SYS_LIBS})
-  TARGET_LINK_LIBRARIES(TESTimconnectionhandler_net ${TEST_LIBS})
-  TARGET_LINK_LIBRARIES(TESTpdvault_net ${TEST_LIBS})
-
-  TARGET_LINK_LIBRARIES(DEMOclient PDmsclientlib ${ALL_TARGET_LIBS} ${SYS_LIBS})
-  TARGET_LINK_LIBRARIES(DEMOvault PDmsclientlib PDmsvaultlib ${ALL_TARGET_LIBS} ${SYS_LIBS})
-ELSE()
-  SET(DEBUG_LIBS ${Boost_DATE_TIME_LIBRARY_DEBUG} ${Boost_FILESYSTEM_LIBRARY_DEBUG} ${Boost_THREAD_LIBRARY_DEBUG}
-      ${Boost_SYSTEM_LIBRARY_DEBUG} ${Boost_REGEX_LIBRARY_DEBUG} ${Protobuf_LIBRARY_DEBUG} ${Glog_LIBRARY_DEBUG}
-      ${maidsafe_dht_LIBRARY_DEBUG} ${Udt_LIBRARY_DEBUG} ${Cryptopp_LIBRARY_DEBUG} ${SYS_LIBS})
-  SET(RELEASE_LIBS ${Boost_DATE_TIME_LIBRARY_RELEASE} ${Boost_FILESYSTEM_LIBRARY_RELEASE} ${Boost_THREAD_LIBRARY_RELEASE}
-      ${Boost_SYSTEM_LIBRARY_RELEASE} ${Boost_REGEX_LIBRARY_RELEASE} ${Protobuf_LIBRARY} ${Glog_LIBRARY}
-      ${maidsafe_dht_LIBRARY} ${Udt_LIBRARY} ${Cryptopp_LIBRARY} ${SYS_LIBS})
-
-#  TARGET_LINK_LIBRARIES(lifestuff
-#                          PDmsclientlib
-#                          ${ALL_TARGET_LIBS}
-#                          ${Dokan_LIBRARY}
-#                          debug ${Breakpad_LIBRARY_DEBUG} optimized ${Breakpad_LIBRARY})
-#  TARGET_LINK_LIBRARIES(lslocal
-#                          PDTESTmsclientlib
-#                          ${ALL_TARGET_LIBS}
-#                          ${Dokan_LIBRARY}
-#                          debug ${Breakpad_LIBRARY_DEBUG} optimized ${Breakpad_LIBRARY})
-#  TARGET_LINK_LIBRARIES(lslightlocal
-#                          PDTESTmsclientlib
-#                          ${ALL_TARGET_LIBS}
-#                          debug ${Breakpad_LIBRARY_DEBUG} optimized ${Breakpad_LIBRARY})
-#  TARGET_LINK_LIBRARIES(vault
-#                          PDmsvaultlib
-#                          ${ALL_TARGET_LIBS}
-#                          debug ${Breakpad_LIBRARY_DEBUG} optimized ${Breakpad_LIBRARY})
-#  TARGET_LINK_LIBRARIES(TESTclientcontroller_local
-#                          PDTESTmsclientlib
-#                          ${ALL_TARGET_LIBS}
-#                          debug ${Gtest_LIBRARY_DEBUG} optimized ${Gtest_LIBRARY})
-#  TARGET_LINK_LIBRARIES(testclient
-#                          PDmsclientlib
-#                          ${ALL_TARGET_LIBS})
-#  TARGET_LINK_LIBRARIES(testvault
-#                          PDmsclientlib
-#                          PDmsvaultlib
-#                          ${ALL_TARGET_LIBS})
-#  FOREACH (DLIB ${DEBUG_LIBS})
-#    TARGET_LINK_LIBRARIES(perpetualdata debug ${DLIB})
-#    TARGET_LINK_LIBRARIES(pdlocal debug ${DLIB})
-#    TARGET_LINK_LIBRARIES(pdlightlocal debug ${DLIB})
-#    TARGET_LINK_LIBRARIES(vault debug ${DLIB})
-#    TARGET_LINK_LIBRARIES(TESTclientcontroller_local debug ${DLIB})
-#    TARGET_LINK_LIBRARIES(testclient debug ${DLIB})
-#    TARGET_LINK_LIBRARIES(testvault debug ${DLIB})
-#  ENDFOREACH()
-#  FOREACH (RLIB ${RELEASE_LIBS})
-#    TARGET_LINK_LIBRARIES(perpetualdata optimized ${RLIB})
-#    TARGET_LINK_LIBRARIES(pdlocal optimized ${RLIB})
-#    TARGET_LINK_LIBRARIES(pdlightlocal optimized ${RLIB})
-#    TARGET_LINK_LIBRARIES(vault optimized ${RLIB})
-#    TARGET_LINK_LIBRARIES(TESTclientcontroller_local optimized ${RLIB})
-#    TARGET_LINK_LIBRARIES(testclient optimized ${RLIB})
-#    TARGET_LINK_LIBRARIES(testvault optimized ${RLIB})
-#  ENDFOREACH()
-#
-#  SET(ALL_TARGET_LIBS PDmsclientlib PDmsvaultlib ${ALL_TARGET_LIBS})
-#  SET(DEBUG_TEST_LIBS ${Gtest_LIBRARY_DEBUG} ${DEBUG_LIBS})
-#  SET(RELEASE_TEST_LIBS ${Gtest_LIBRARY} ${RELEASE_LIBS})
-#
-#  TARGET_LINK_LIBRARIES(TESTmaidsafe ${ALL_TARGET_LIBS})
-#  TARGET_LINK_LIBRARIES(TESTpdvault_net ${ALL_TARGET_LIBS})
-#  TARGET_LINK_LIBRARIES(TESTbufferpackethandler_net ${ALL_TARGET_LIBS})
-#  TARGET_LINK_LIBRARIES(TESTimconnectionhandler_net ${ALL_TARGET_LIBS})
-#  TARGET_LINK_LIBRARIES(TESTclientcontroller_net ${ALL_TARGET_LIBS})
-#  TARGET_LINK_LIBRARIES(TESTauthentication_net ${ALL_TARGET_LIBS})
-##  TARGET_LINK_LIBRARIES(TESTfuse ${ALL_TARGET_LIBS})
-#
-#  TARGET_LINK_LIBRARIES(TESTmaidsafe debug ${Gmock_LIBRARY_DEBUG} optimized ${Gmock_LIBRARY})
-#  FOREACH (DLIB ${DEBUG_TEST_LIBS})
-#    TARGET_LINK_LIBRARIES(TESTmaidsafe debug ${DLIB})
-#    TARGET_LINK_LIBRARIES(TESTpdvault_net debug ${DLIB})
-#    TARGET_LINK_LIBRARIES(TESTbufferpackethandler_net debug ${DLIB})
-#    TARGET_LINK_LIBRARIES(TESTimconnectionhandler_net debug ${DLIB})
-#    TARGET_LINK_LIBRARIES(TESTclientcontroller_net debug ${DLIB})
-#    TARGET_LINK_LIBRARIES(TESTauthentication_net debug ${DLIB})
-##    TARGET_LINK_LIBRARIES(TESTfuse debug ${DLIB})
-#  ENDFOREACH()
-#  FOREACH (RLIB ${RELEASE_TEST_LIBS})
-#    TARGET_LINK_LIBRARIES(TESTmaidsafe optimized ${RLIB})
-#    TARGET_LINK_LIBRARIES(TESTpdvault_net optimized ${RLIB})
-#    TARGET_LINK_LIBRARIES(TESTbufferpackethandler_net optimized ${RLIB})
-#    TARGET_LINK_LIBRARIES(TESTimconnectionhandler_net optimized ${RLIB})
-#    TARGET_LINK_LIBRARIES(TESTclientcontroller_net optimized ${RLIB})
-#    TARGET_LINK_LIBRARIES(TESTauthentication_net optimized ${RLIB})
-##    TARGET_LINK_LIBRARIES(TESTfuse optimized ${RLIB})
-#  ENDFOREACH()
-ENDIF()
 
 ###################################################################################################
 # Compiler and linker flags - after all targets declared                                          #
@@ -689,8 +670,9 @@ ENDIF()
 IF(Glog_FOUND)
   ADD_DEFINITIONS(-DHAVE_GLOG)
 ENDIF()
+ADD_DEFINITIONS(-DBOOST_FILESYSTEM_NO_DEPRECATED -DBOOST_FILESYSTEM_VERSION=3)
 
-SET_TARGET_PROPERTIES(PDTESTclientlib PROPERTIES COMPILE_FLAGS -DLOCAL_PDVAULT)
+SET_TARGET_PROPERTIES(PDlsmclientlib PROPERTIES COMPILE_FLAGS -DLOCAL_PDVAULT)
 SET_TARGET_PROPERTIES(TESTauthentication_net PROPERTIES COMPILE_FLAGS -DMS_NETWORK_TEST)
 SET_TARGET_PROPERTIES(TESTbufferpackethandler_net PROPERTIES COMPILE_FLAGS -DMS_NETWORK_TEST)
 SET_TARGET_PROPERTIES(TESTclientcontroller_local PROPERTIES COMPILE_FLAGS -DLOCAL_PDVAULT)
@@ -780,10 +762,12 @@ IF(INCLUDE_TEST)
   UNSET(INCLUDE_TEST CACHE)
 ENDIF()
 
-SET(TEST_EXECUTABLES TESTclient TESTcommon TESTvault TESTencrypt TESTpassport TESTpki)  # TESTfuse
+SET(TEST_EXECUTABLES TESTclient TESTclientfilesystem TESTcommon TESTvault TESTencrypt TESTpassport TESTpki TESTfuse)
 FOREACH(TEST_EXECUTABLE ${TEST_EXECUTABLES})
   IF(TEST_EXECUTABLE STREQUAL "TESTclient")
     SET(GTEST_SOURCE_FILES ${ALL_FILES_CLIENT_TESTS_DIR})
+  ELSEIF(TEST_EXECUTABLE STREQUAL "TESTclientfilesystem")
+    SET(GTEST_SOURCE_FILES ${ALL_FILES_CLIENT_FILESYSTEM_TESTS_DIR})
   ELSEIF(TEST_EXECUTABLE STREQUAL "TESTcommon")
     SET(GTEST_SOURCE_FILES ${ALL_FILES_COMMON_TESTS_DIR})
   ELSEIF(TEST_EXECUTABLE STREQUAL "TESTvault")
@@ -794,6 +778,8 @@ FOREACH(TEST_EXECUTABLE ${TEST_EXECUTABLES})
     SET(GTEST_SOURCE_FILES ${ALL_FILES_PASSPORT_TESTS_DIR})
   ELSEIF(TEST_EXECUTABLE STREQUAL "TESTpki")
     SET(GTEST_SOURCE_FILES ${ALL_FILES_PKI_TESTS_DIR})
+  ELSEIF(TEST_EXECUTABLE STREQUAL "TESTfuse")
+    SET(GTEST_SOURCE_FILES ${ALL_FILES_FUSE_TESTS_DIR})
   ENDIF()
   FOREACH(GTEST_SOURCE_FILE ${GTEST_SOURCE_FILES})
     FILE(STRINGS ${GTEST_SOURCE_FILE} GTEST_NAMES REGEX ^TEST)
@@ -868,13 +854,6 @@ IF(NOT ${MAIDSAFE_TEST_TYPE} MATCHES "BEH")
     SET_PROPERTY(TEST Test_imconnectionhandler_net PROPERTY LABELS Functional InstantMessaging)
   ENDIF()
 
-  LIST(FIND EXCLUDED_TESTS Test_passport_net TEST_EXCLUDED)
-  IF(TEST_EXCLUDED EQUAL -1)
-    ADD_TEST(Test_passport_net ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/TESTpassport_net${TEST_POSTFIX})
-    SET_PROPERTY(TEST Test_passport_net PROPERTY TIMEOUT ${NETWORK_SYSTEM_TEST_TIMEOUT})
-    SET_PROPERTY(TEST Test_passport_net PROPERTY LABELS Functional Passport)
-  ENDIF()
-
   LIST(FIND EXCLUDED_TESTS Test_pdvault_net TEST_EXCLUDED)
   IF(TEST_EXCLUDED EQUAL -1)
     ADD_TEST(Test_pdvault_net ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/TESTpdvault_net${TEST_POSTFIX})
@@ -888,7 +867,7 @@ IF(NOT ${MAIDSAFE_TEST_TYPE} MATCHES "BEH")
       ADD_TEST(STYLE_CHECK ${${PROJECT_NAME}_ROOT}/build/tools/cpplint.py ${STYLE_ALL})
       SET_PROPERTY(TEST STYLE_CHECK PROPERTY LABELS Functional CodingStyle)
     ELSE()
-      ADD_TEST(STYLE_CHECK finderrorsall.bat)
+      ADD_TEST(STYLE_CHECK ${${PROJECT_NAME}_ROOT}/build/tools/finderrorsall.bat)
       SET_PROPERTY(TEST STYLE_CHECK PROPERTY LABELS Functional CodingStyle)
     ENDIF()
   ENDIF()

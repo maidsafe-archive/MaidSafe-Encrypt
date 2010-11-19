@@ -13,14 +13,14 @@
  */
 
 
-#ifndef QT_WIDGETS_CONNECTION_SETTINGS_H_
-#define QT_WIDGETS_CONNECTION_SETTINGS_H_
+#ifndef MAIDSAFE_LIFESTUFF_WIDGETS_CONNECTION_SETTINGS_H_
+#define MAIDSAFE_LIFESTUFF_WIDGETS_CONNECTION_SETTINGS_H_
 
 #include <QWidget>
 #include <QString>
 
 // local
-#include "qt/client/client_controller.h"
+#include "maidsafe/lifestuff/client/client_controller.h"
 
 #include "ui_connection_settings.h"
 
@@ -40,5 +40,5 @@ class ConnectionSettings : public QWidget {
   void changeEvent(QEvent *event);
 };
 
-#endif  // QT_WIDGETS_CONNECTION_SETTINGS_H_
+#endif  //  MAIDSAFE_LIFESTUFF_WIDGETS_CONNECTION_SETTINGS_H_
 

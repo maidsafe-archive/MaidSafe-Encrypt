@@ -12,7 +12,7 @@
  *      Author: Team
  */
 
-#include "qt/client/save_profile_settings_thread.h"
+#include "maidsafe/lifestuff/client/save_profile_settings_thread.h"
 
 // qt
 #include <QDebug>
@@ -23,7 +23,7 @@
 #include <vector>
 
 // core
-#include "qt/client/client_controller.h"
+#include "maidsafe/lifestuff/client/client_controller.h"
 
 
 SaveProfileSettingsThread::SaveProfileSettingsThread(
@@ -44,7 +44,8 @@ void SaveProfileSettingsThread::run() {
   try {
     pd.set_country(boost::lexical_cast<int>(theHash_["Country"].toStdString()));
     pd.set_gender(theHash_["Gender"].toStdString());
-    pd.set_language(boost::lexical_cast<int>(theHash_["Language"].toStdString()));
+    pd.set_language(
+        boost::lexical_cast<int>(theHash_["Language"].toStdString()));
   }
   catch(const std::exception &e) {
     printf("In SaveProfileSettingsThread::run() %s\n", e.what());

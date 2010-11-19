@@ -25,19 +25,32 @@
 #ifndef MAIDSAFE_VAULT_CHUNKINFOHANDLER_H_
 #define MAIDSAFE_VAULT_CHUNKINFOHANDLER_H_
 
-#include <gtest/gtest_prod.h>
 #include <maidsafe/maidsafe-dht.h>
 
-#include <algorithm>
 #include <list>
 #include <map>
 #include <string>
 #include <utility>
 
-#include "maidsafe/maidsafe.h"
-#include "protobuf/sync_data.pb.h"
+#include "maidsafe/common/sync_data.pb.h"
 
-namespace maidsafe_vault {
+namespace maidsafe {
+
+namespace vault {
+
+namespace test {
+class ChunkInfoHandlerTest_BEH_VAULT_Init_Test;
+class ChunkInfoHandlerTest_BEH_VAULT_Checksum_Test;
+class ChunkInfoHandlerTest_BEH_VAULT_Add_Test;
+class ChunkInfoHandlerTest_BEH_VAULT_Refund_Test;
+class ChunkInfoHandlerTest_BEH_VAULT_Remove_Test;
+class ChunkInfoHandlerTest_BEH_VAULT_Reset_Test;
+class ChunkInfoHandlerTest_BEH_VAULT_Failsafe_Test;
+class ChunkInfoHandlerTest_BEH_VAULT_Pruning_Test;
+class ChunkInfoHandlerTest_BEH_VAULT_PutGetPb_Test;
+class ChunkInfoHandlerTest_BEH_VAULT_PutGetChunkInfo_Test;
+class MockVaultServicesTest_BEH_MAID_StoreChunk_Test;
+}  // namespace test
 
 enum ResetReason {kReasonStoringFailed, kReasonPaymentFailed, kReasonStale};
 
@@ -175,7 +188,7 @@ class ChunkInfoHandler {
                            std::list<std::string> *references);
   int RemoveFromWatchList(const std::string &chunk_name,
                           const std::string &pmid,
-                          int *chunk_size,
+                          boost::uint64_t *chunk_size,
                           std::list<std::string> *creditors,
                           std::list<std::string> *references);
   int AddToReferenceList(const std::string &chunk_name,
@@ -183,7 +196,7 @@ class ChunkInfoHandler {
                          const boost::uint64_t &chunk_size);
   int RemoveFromReferenceList(const std::string &chunk_name,
                               const std::string &pmid,
-                              int *chunk_size);
+                              boost::uint64_t *chunk_size);
   int GetActiveReferences(const std::string chunk_name,
                           std::list<std::string> *references);
   void SetStoringDone(const std::string &chunk_name, const std::string &pmid);
@@ -196,17 +209,17 @@ class ChunkInfoHandler {
   int InsertChunkInfoFromPb(
       const ChunkInfoMap::VaultChunkInfo &vault_chunk_info);
  private:
-  FRIEND_TEST(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerInit);
-  FRIEND_TEST(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerChecksum);
-  FRIEND_TEST(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerAdd);
-  FRIEND_TEST(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerRefund);
-  FRIEND_TEST(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerRemove);
-  FRIEND_TEST(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerReset);
-  FRIEND_TEST(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerFailsafe);
-  FRIEND_TEST(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerPruning);
-  FRIEND_TEST(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerPutGetPb);
-  FRIEND_TEST(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerPutGetChunkInfo);
-  FRIEND_TEST(MockVaultServicesTest, BEH_MAID_ServicesStoreChunk);
+  friend class test::ChunkInfoHandlerTest_BEH_VAULT_Init_Test;
+  friend class test::ChunkInfoHandlerTest_BEH_VAULT_Checksum_Test;
+  friend class test::ChunkInfoHandlerTest_BEH_VAULT_Add_Test;
+  friend class test::ChunkInfoHandlerTest_BEH_VAULT_Refund_Test;
+  friend class test::ChunkInfoHandlerTest_BEH_VAULT_Remove_Test;
+  friend class test::ChunkInfoHandlerTest_BEH_VAULT_Reset_Test;
+  friend class test::ChunkInfoHandlerTest_BEH_VAULT_Failsafe_Test;
+  friend class test::ChunkInfoHandlerTest_BEH_VAULT_Pruning_Test;
+  friend class test::ChunkInfoHandlerTest_BEH_VAULT_PutGetPb_Test;
+  friend class test::ChunkInfoHandlerTest_BEH_VAULT_PutGetChunkInfo_Test;
+  friend class test::MockVaultServicesTest_BEH_MAID_StoreChunk_Test;
   bool HasWatchers(const std::string &chunk_name);
   int ActiveReferences(const std::string &chunk_name);
   void ClearReferenceList(const std::string &chunk_name,
@@ -219,6 +232,8 @@ class ChunkInfoHandler {
   bool started_;
 };
 
-}  // namespace maidsafe_vault
+}  // namespace vault
+
+}  // namespace maidsafe
 
 #endif  // MAIDSAFE_VAULT_CHUNKINFOHANDLER_H_

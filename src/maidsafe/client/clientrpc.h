@@ -29,8 +29,8 @@
 
 #include <string>
 
-#include "maidsafe/maidsafe.h"
-#include "protobuf/maidsafe_service.pb.h"
+#include "maidsafe/common/maidsafe.h"
+#include "maidsafe/common/maidsafe_service.pb.h"
 
 namespace maidsafe {
 

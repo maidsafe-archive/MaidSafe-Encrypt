@@ -26,15 +26,17 @@
 #include <windows.h>
 #include <stdio.h>
 #include <boost/date_time/posix_time/posix_time.hpp>
+/*
 #ifdef __MSVC__
-  #include <client/windows/handler/exception_handler.h>
+#include <client/windows/handler/exception_handler.h>
 #endif
+*/
 #include <string>
 #include "maidsafe/vault/vaultdaemon.h"
 
 #define LOGFILE "VaultService.txt"
 const int kSleepTime = 10000;  // milliseconds
-
+/*
 #ifdef __MSVC__
 static bool DumpCallback(const wchar_t*,
                          const wchar_t* minidump_id,
@@ -48,6 +50,7 @@ static bool DumpCallback(const wchar_t*,
   return succeeded;
 }
 #endif
+*/
 
 int WriteToLog(char* str) {
   FILE* log;
@@ -77,10 +80,12 @@ void ControlHandler(DWORD request);
 int InitService();
 
 int main() {
+/*
 #ifdef __MSVC__
   google_breakpad::ExceptionHandler eh(L".", NULL, DumpCallback,
       NULL, google_breakpad::ExceptionHandler::HANDLER_ALL);
 #endif
+*/
   const size_t kMax(8);
   wchar_t service_name_[kMax];
   mbstowcs(service_name_, "PDVault", kMax);
@@ -136,7 +141,7 @@ void ServiceMain() {
   SetServiceStatus(hStatus, &ServiceStatus);
 
   // Start the vault by instantiating a VaultDaemon
-  maidsafe_vault::VaultDaemon vault_daemon(0, "", 4);
+  maidsafe::vault::VaultDaemon vault_daemon(0, "", 4);
   if (!vault_daemon.StartVault()) {
     ServiceStatus.dwCurrentState = SERVICE_STOPPED;
     ServiceStatus.dwWin32ExitCode = -1;

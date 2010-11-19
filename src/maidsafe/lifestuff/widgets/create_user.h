@@ -12,8 +12,8 @@
  *      Author: Team
  */
 
-#ifndef QT_WIDGETS_CREATE_USER_H_
-#define QT_WIDGETS_CREATE_USER_H_
+#ifndef MAIDSAFE_LIFESTUFF_WIDGETS_CREATE_USER_H_
+#define MAIDSAFE_LIFESTUFF_WIDGETS_CREATE_USER_H_
 
 // std
 
@@ -86,5 +86,5 @@ class CreateUser : public QWidget {
   void changeEvent(QEvent *event);
 };
 
-#endif  // QT_WIDGETS_CREATE_USER_H_
+#endif  //  MAIDSAFE_LIFESTUFF_WIDGETS_CREATE_USER_H_
 

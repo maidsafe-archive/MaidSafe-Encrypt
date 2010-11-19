@@ -12,8 +12,8 @@
  *      Author: Stephen Alexander
  */
 
-#ifndef QT_WIDGETS_SMILY_H_
-#define QT_WIDGETS_SMILY_H_
+#ifndef MAIDSAFE_LIFESTUFF_WIDGETS_SMILY_H_
+#define MAIDSAFE_LIFESTUFF_WIDGETS_SMILY_H_
 
 #include "ui_smily.h"
 
@@ -34,4 +34,4 @@ class Smily : public QDialog {
 };
 
 
-#endif  // QT_WIDGETS_SMILY_H_
+#endif  //  MAIDSAFE_LIFESTUFF_WIDGETS_SMILY_H_

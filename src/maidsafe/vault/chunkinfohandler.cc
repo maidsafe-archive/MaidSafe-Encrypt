@@ -24,8 +24,12 @@
 
 #include "maidsafe/vault/chunkinfohandler.h"
 #include <algorithm>
+#include "maidsafe/common/maidsafe.h"
+#include "maidsafe/vault/vaultconfig.h"
 
-namespace maidsafe_vault {
+namespace maidsafe {
+
+namespace vault {
 
 void ChunkInfoHandler::set_started(bool started) {
   boost::mutex::scoped_lock lock(chunk_info_mutex_);
@@ -204,7 +208,7 @@ void ChunkInfoHandler::ResetAddToWatchList(const std::string &chunk_name,
 
 int ChunkInfoHandler::RemoveFromWatchList(const std::string &chunk_name,
                                           const std::string &pmid,
-                                          int *chunk_size,
+                                          boost::uint64_t *chunk_size,
                                           std::list<std::string> *creditors,
                                           std::list<std::string> *references) {
   boost::mutex::scoped_lock lock(chunk_info_mutex_);
@@ -307,13 +311,13 @@ int ChunkInfoHandler::AddToReferenceList(const std::string &chunk_name,
   entry.pmid = pmid;
   entry.last_seen = base::GetEpochTime();
   ci.reference_list.push_back(entry);
-  
+
   return kSuccess;
 }
 
 int ChunkInfoHandler::RemoveFromReferenceList(const std::string &chunk_name,
                                               const std::string &pmid,
-                                              int *chunk_size) {
+                                              boost::uint64_t *chunk_size) {
   boost::mutex::scoped_lock lock(chunk_info_mutex_);
   if (!started_)
     return kChunkInfoHandlerNotStarted;
@@ -536,4 +540,6 @@ int ChunkInfoHandler::InsertChunkInfoFromPb(
 }
 
 
-}  // namespace maidsafe_vault
+}  // namespace vault
+
+}  // namespace maidsafe

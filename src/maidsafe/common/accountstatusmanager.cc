@@ -18,7 +18,7 @@
 * ============================================================================
 */
 
-#include "maidsafe/accountstatusmanager.h"
+#include "maidsafe/common/accountstatusmanager.h"
 
 namespace maidsafe {
 
@@ -65,7 +65,7 @@ void AccountStatusManager::StartUpdating(
 void AccountStatusManager::StopUpdating() {
   boost::mutex::scoped_lock lock(mutex_);
   update_functor_.clear();
-  if (timer_.get()) {
+  if (timer_) {
     timer_->cancel();
     timer_.reset();
   }

@@ -18,18 +18,16 @@
 * ============================================================================
 */
 
-#ifndef TESTS_MAIDSAFE_MOCKKADOPS_H_
-#define TESTS_MAIDSAFE_MOCKKADOPS_H_
+#ifndef MAIDSAFE_SHAREDTEST_MOCKKADOPS_H_
+#define MAIDSAFE_SHAREDTEST_MOCKKADOPS_H_
 
 #include <gmock/gmock.h>
-#include <maidsafe/maidsafe-dht_config.h>
 
 #include <vector>
 #include <string>
 
-#include "maidsafe/maidsafe.h"
-#include "maidsafe/kadops.h"
-#include "tests/maidsafe/threadpool.h"
+#include "maidsafe/common/kadops.h"
+#include "maidsafe/sharedtest/threadpool.h"
 
 namespace mock_kadops {
 
@@ -104,4 +102,4 @@ void ThreadedFindKClosestNodesCallback(const std::string &response,
 
 }  // namespace maidsafe
 
-#endif  // TESTS_MAIDSAFE_MOCKKADOPS_H_
+#endif  // MAIDSAFE_SHAREDTEST_MOCKKADOPS_H_

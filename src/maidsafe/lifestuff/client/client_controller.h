@@ -12,8 +12,8 @@
  *      Author: Team
  */
 
-#ifndef QT_CLIENT_CLIENT_CONTROLLER_H_
-#define QT_CLIENT_CLIENT_CONTROLLER_H_
+#ifndef MAIDSAFE_LIFESTUFF_CLIENT_CLIENT_CONTROLLER_H_
+#define MAIDSAFE_LIFESTUFF_CLIENT_CLIENT_CONTROLLER_H_
 
 // qt
 #include <QObject>
@@ -34,14 +34,15 @@
 #include "maidsafe/client/clientinterface.h"
 #include "maidsafe/client/clientcontroller.h"
 #include "maidsafe/client/contacts.h"
-#include "maidsafe/pdutils.h"
+#include "maidsafe/client/sessionsingleton.h"
+#include "maidsafe/client/clientutils.h"
 
 // local
-#include "qt/client/check_for_messages_thread.h"
-#include "qt/client/contact.h"
-#include "qt/client/profile.h"
-#include "qt/client/presence.h"
-#include "qt/client/share.h"
+#include "maidsafe/lifestuff/client/check_for_messages_thread.h"
+#include "maidsafe/lifestuff/client/contact.h"
+#include "maidsafe/lifestuff/client/profile.h"
+#include "maidsafe/lifestuff/client/presence.h"
+#include "maidsafe/lifestuff/client/share.h"
 
 // Wrapper for maidsafe::ClientController
 /*!
@@ -154,7 +155,7 @@ class ClientController : public QObject {
 
   int getattr(const QString &path, QString &lastModified, QString &fileSize);
   int readdir(const QString &path,  // NOLINT
-              std::map<std::string, ItemType> *children);
+              std::map<fs::path, ItemType> *children);
   int read(const QString &path);
   int write(const QString &path);
   int rename(const QString &path, const QString &path2);
@@ -295,7 +296,7 @@ class ClientController : public QObject {
   CheckForMessagesThread *cfmt_;
 };
 
-#endif  // QT_CLIENT_CLIENT_CONTROLLER_H_
+#endif  //  MAIDSAFE_LIFESTUFF_CLIENT_CLIENT_CONTROLLER_H_
 
 
 

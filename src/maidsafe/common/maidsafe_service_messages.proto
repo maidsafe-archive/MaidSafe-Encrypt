@@ -5,7 +5,7 @@
 // PMID" and the recipient's is known as "vault's PMID".
 
 import "maidsafe/common/packet.proto";
-import "maidsafe/vault/sync_data.proto";
+import "maidsafe/common/sync_data.proto";
 
 package maidsafe;
 
@@ -251,9 +251,9 @@ message GetSyncDataRequest {
 
 message GetSyncDataResponse {
   required uint32 result = 1;
-  optional maidsafe_vault.VaultAccountSet vault_account_set = 2;
-  optional maidsafe_vault.ChunkInfoMap chunk_info_map = 3;
-  optional maidsafe_vault.VaultBufferPacketMap vault_buffer_packet_map = 4;
+  optional maidsafe.vault.VaultAccountSet vault_account_set = 2;
+  optional maidsafe.vault.ChunkInfoMap chunk_info_map = 3;
+  optional maidsafe.vault.VaultBufferPacketMap vault_buffer_packet_map = 4;
 }
 
 message GetAccountRequest {
@@ -266,7 +266,7 @@ message GetAccountRequest {
 
 message GetAccountResponse {
   required uint32 result = 1;
-  optional maidsafe_vault.VaultAccountSet.VaultAccount vault_account = 2;
+  optional maidsafe.vault.VaultAccountSet.VaultAccount vault_account = 2;
 }
 
 message GetChunkInfoRequest {
@@ -279,7 +279,7 @@ message GetChunkInfoRequest {
 
 message GetChunkInfoResponse {
   required uint32 result = 1;
-  optional maidsafe_vault.ChunkInfoMap.VaultChunkInfo vault_chunk_info = 2;
+  optional maidsafe.vault.ChunkInfoMap.VaultChunkInfo vault_chunk_info = 2;
 }
 
 message GetBufferPacketRequest {
@@ -292,7 +292,7 @@ message GetBufferPacketRequest {
 
 message GetBufferPacketResponse {
   required uint32 result = 1;
-  optional maidsafe_vault.VaultBufferPacketMap.VaultBufferPacket vault_buffer_packet = 2;
+  optional maidsafe.vault.VaultBufferPacketMap.VaultBufferPacket vault_buffer_packet = 2;
 }
 
 message VaultCommunication {
@@ -342,7 +342,7 @@ message SetLocalVaultOwnedResponse {
   optional bytes pmid_name = 2;
 }
 
-enum VaultStatus {
+enum VaultOwnershipStatus {
   NOT_OWNED = 0;
   OWNED = 1;
   DOWN = 2;
@@ -352,7 +352,7 @@ enum VaultStatus {
 message LocalVaultOwnedRequest {}
 
 message LocalVaultOwnedResponse {
-  required VaultStatus status = 1;
+  required VaultOwnershipStatus status = 1;
 }
 
 // Buffer Packet Ops

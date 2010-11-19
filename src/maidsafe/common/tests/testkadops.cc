@@ -21,8 +21,9 @@
 #include <maidsafe/transport/transporthandler-api.h>
 #include <maidsafe/rpcprotocol/channelmanager-api.h>
 
-#include "tests/maidsafe/mockkadops.h"
-#include "maidsafe/chunkstore.h"
+#include "maidsafe/sharedtest/mockkadops.h"
+#include "maidsafe/common/commonutils.h"
+#include "maidsafe/common/chunkstore.h"
 
 namespace test_kadops {
 static const boost::uint8_t K(4);
@@ -38,7 +39,6 @@ class KadOpsTest : public testing::Test {
       chunkstore_(new ChunkStore("Chunkstore", 9999999, 0)),
       mko_(&transport_handler_, &channel_manager_, kad::CLIENT, "", "", false,
            false, test_kadops::K, chunkstore_),
-      crypto_(),
       fail_parse_result_(
         mock_kadops::MakeFindNodesResponse(mock_kadops::kFailParse,
                                            test_kadops::K,
@@ -52,22 +52,18 @@ class KadOpsTest : public testing::Test {
                                            &few_pmids_)),
       good_result_(mock_kadops::MakeFindNodesResponse(mock_kadops::kGood,
                                                       test_kadops::K,
-                                                      &good_pmids_)) {
-    crypto_.set_hash_algorithm(crypto::SHA_512);
-    crypto_.set_symm_algorithm(crypto::AES_256);
-  }
+                                                      &good_pmids_)) {}
   transport::TransportHandler transport_handler_;
   rpcprotocol::ChannelManager channel_manager_;
   boost::shared_ptr<ChunkStore> chunkstore_;
   MockKadOps mko_;
-  crypto::Crypto crypto_;
   std::vector<std::string> fail_parse_pmids_, fail_pmids_, few_pmids_,
                            good_pmids_;
   std::string fail_parse_result_, fail_result_, few_result_, good_result_;
 };
 
 TEST_F(KadOpsTest, BEH_MAID_BlockingGetNodeContactDetails) {
-  std::string dummy_id(crypto_.Hash("Dummy", "", crypto::STRING_STRING, false));
+  std::string dummy_id(SHA512String("Dummy"));
   kad::Contact contact, dummy_contact(kad::Contact(dummy_id, "192.168.1.0", 7));
   std::string ser_contact, ser_dummy_contact;
   contact.SerialiseToString(&ser_contact);
@@ -108,7 +104,7 @@ TEST_F(KadOpsTest, BEH_MAID_BlockingGetNodeContactDetails) {
   // Call 1
   ASSERT_EQ(kFindNodesError,
             mko_.BlockingGetNodeContactDetails("", NULL, false));
-  
+
   // Call 2
   ASSERT_EQ(kFindNodesError,
             mko_.BlockingGetNodeContactDetails("fail", &contact, false));
@@ -135,8 +131,8 @@ TEST_F(KadOpsTest, BEH_MAID_BlockingGetNodeContactDetails) {
 
 TEST_F(KadOpsTest, BEH_MAID_BlockingFindKClosestNodes) {
   std::vector<kad::Contact> contacts;
-  kad::Contact dummy_contact = kad::Contact(crypto_.Hash("Dummy", "",
-      crypto::STRING_STRING, false), "192.168.1.0", 4999);
+  kad::Contact dummy_contact = kad::Contact(SHA512String("Dummy"),
+                                            "192.168.1.0", 4999);
 
   // Expectations
   // Expectations
@@ -225,27 +221,13 @@ TEST_F(KadOpsTest, BEH_MAID_ContactWithinClosest) {
 
 TEST_F(KadOpsTest, BEH_MAID_RemoveKadContact) {
   std::vector<kad::Contact> ctc;
-  {
-    kad::Contact contact(crypto_.Hash("aaa", "", crypto::STRING_STRING, false),
-                         "127.0.0.1", 0);
-    ctc.push_back(contact);
-  }
-  {
-    kad::Contact contact(crypto_.Hash("bbb", "", crypto::STRING_STRING, false),
-                         "127.0.0.1", 0);
-    ctc.push_back(contact);
-  }
-  {
-    kad::Contact contact(crypto_.Hash("ccc", "", crypto::STRING_STRING, false),
-                                      "127.0.0.1", 0);
-    ctc.push_back(contact);
-  }
+  ctc.push_back(kad::Contact(SHA512String("aaa"), "127.0.0.1", 0));
+  ctc.push_back(kad::Contact(SHA512String("bbb"), "127.0.0.1", 0));
+  ctc.push_back(kad::Contact(SHA512String("ccc"), "127.0.0.1", 0));
   ASSERT_EQ(size_t(3), ctc.size());
-  ASSERT_FALSE(RemoveKadContact(crypto_.Hash("ddd", "", crypto::STRING_STRING,
-                                             false), &ctc));
+  ASSERT_FALSE(RemoveKadContact(SHA512String("ddd"), &ctc));
   ASSERT_EQ(size_t(3), ctc.size());
-  ASSERT_TRUE(RemoveKadContact(crypto_.Hash("bbb", "", crypto::STRING_STRING,
-                                            false), &ctc));
+  ASSERT_TRUE(RemoveKadContact(SHA512String("bbb"), &ctc));
   ASSERT_EQ(size_t(2), ctc.size());
 }
 

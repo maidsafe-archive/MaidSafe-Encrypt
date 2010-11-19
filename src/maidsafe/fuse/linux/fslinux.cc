@@ -26,7 +26,7 @@
  *
  * ==========================================================================
  */
-#include "fs/l_fuse/fslinux.h"
+#include "maidsafe/fuse/linux/fslinux.h"
 
 #include <boost/filesystem/convenience.hpp>
 #include <boost/bind.hpp>
@@ -45,10 +45,11 @@
 #include <cstdlib>
 #include <map>
 
-#include "fs/filesystem.h"
-#include "maidsafe/pdutils.h"
+#include "maidsafe/common/filesystem.h"
+#include "maidsafe/client/clientutils.h"
 #include "maidsafe/client/clientcontroller.h"
-#include "protobuf/datamaps.pb.h"
+#include "maidsafe/client/sessionsingleton.h"
+#include "maidsafe/client/filesystem/distributed_filesystem.pb.h"
 
 
 
@@ -553,7 +554,7 @@ int FSLinux::ms_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
   printf("ms_readdir PATH:  %s\n", path);
 #endif
 
-  std::map<std::string, maidsafe::ItemType> children;
+  std::map<fs::path, maidsafe::ItemType> children;
   if (maidsafe::ClientController::getInstance()->readdir(
       maidsafe::TidyPath(lpath), &children) != 0)
     return -errno;
@@ -563,8 +564,8 @@ int FSLinux::ms_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
   filler(buf, ".", NULL, 0);
   filler(buf, "..", NULL, 0);
   while (!children.empty()) {
-    std::string s = children.begin()->first;
-    filler(buf, s.c_str(), NULL, 0);
+    fs::path s = children.begin()->first;
+    filler(buf, s.string().c_str(), NULL, 0);
     children.erase(children.begin());
   }
 
@@ -757,7 +758,7 @@ int FSLinux::ms_rmdir(const char *path) {
       maidsafe::TidyPath(lpath), gui_private_share))
     return -13;
 
-  std::map<std::string, maidsafe::ItemType> children;
+  std::map<fs::path, maidsafe::ItemType> children;
   maidsafe::ClientController::getInstance()->readdir(
       maidsafe::TidyPath(lpath), &children);
   if (!children.empty())

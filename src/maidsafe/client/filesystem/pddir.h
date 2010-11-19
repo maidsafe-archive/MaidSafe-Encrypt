@@ -47,66 +47,73 @@
 // primary key(file_hash, id)
 
 
-#ifndef MAIDSAFE_CLIENT_PDDIR_H_
-#define MAIDSAFE_CLIENT_PDDIR_H_
+#ifndef MAIDSAFE_CLIENT_FILESYSTEM_PDDIR_H_
+#define MAIDSAFE_CLIENT_FILESYSTEM_PDDIR_H_
 
+#include <boost/filesystem.hpp>
 #include <boost/shared_ptr.hpp>
-#include <gtest/gtest_prod.h>
 
 #include <map>
 #include <string>
 #include <vector>
 
-#include "maidsafe/cppsqlite3.h"
-#include "maidsafe/maidsafe.h"
+#include "maidsafe/common/maidsafe.h"
+#include "maidsafe/client/filesystem/distributed_filesystem.pb.h"
+
+class CppSQLite3DB;
+
+namespace fs = boost::filesystem;
 
 namespace maidsafe {
 
+namespace test { class DataAtlasHandlerTest_BEH_MAID_AddGetDataMapDetail_Test; }
+
 class PdDir {
  public:
-  PdDir() : db_name_(""), db_(), connected_(false) {}
-  PdDir(const std::string &db_name, DbInitFlag flag_, int *result_);
+  PdDir() : db_(), db_name_(""), connected_(false) {}
+  PdDir(const fs::path &db_name, DbInitFlag flag, int *result);
   ~PdDir();
   // retrieve dir_key so that db can be built
-  int GetDirKey(const std::string &file_name, std::string *dir_key);
+  int GetDirKey(const fs::path &file_name, std::string *dir_key);
   // returns the file's id in the db
-  int GetIdFromName(const std::string &file_name);
+  int GetIdFromName(const fs::path &file_name);
   // returns TRUE if the DM exists for the file
   bool DataMapExists(const int &id);
   // returns TRUE if the DM exists for the file
   bool DataMapExists(const std::string &file_hash);
   int AddElement(const std::string &ser_mdm,
                  const std::string &ser_dm,
-                 const std::string &dir_key="");
+                 const std::string &dir_key);
   // amend MDMs for files only
   int ModifyMetaDataMap(const std::string &ser_mdm, const std::string &ser_dm);
-  int RemoveElement(const std::string &file_name);
-  int ListFolder(std::map<std::string, ItemType> *children);
-  int ListSubDirs(std::vector<std::string> *subdirs_);
+  int RemoveElement(const fs::path &file_name);
+  int ListFolder(std::map<fs::path, ItemType> *children);
+  int ListSubDirs(std::vector<fs::path> *subdirs_);
   int GetDataMapFromHash(const std::string &file_hash, std::string *ser_dm);
-  int GetDataMap(const std::string &file_name, std::string *ser_dm);
-  int GetMetaDataMap(const std::string &file_name, std::string *ser_mdm);
-  int ChangeCtime(const std::string &file_name);
-  int ChangeMtime(const std::string &file_name);
-  int ChangeAtime(const std::string &file_name);
+  int GetDataMap(const fs::path &file_name, std::string *ser_dm);
+  int GetMetaDataMap(const fs::path &file_name, std::string *ser_mdm);
+  int ChangeCtime(const fs::path &file_name);
+  int ChangeMtime(const fs::path &file_name);
+  int ChangeAtime(const fs::path &file_name);
 
  private:
+  friend class test::DataAtlasHandlerTest_BEH_MAID_AddGetDataMapDetail_Test;
   int Init(DbInitFlag flag);
   // call one of connect, create, or build
-  FRIEND_TEST(DataAtlasHandlerTest, BEH_MAID_AddGetDataMapDetail);
   int Connect();
   // connect to existing db in folder
   int Create();
   // create default empty db when mkdir is called
   int Disconnect();
   // disconnect from current db.
-  int ChangeTime(const std::string &file_name, char time_type);
-  std::string db_name_;
+  int ChangeTime(const fs::path &file_name, char time_type);
+  void SanitiseSingleQuotes(std::string *str);
   boost::shared_ptr<CppSQLite3DB> db_;
+  fs::path db_name_;
   bool connected_;
 };
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_CLIENT_PDDIR_H_
+#endif  // MAIDSAFE_CLIENT_FILESYSTEM_PDDIR_H_
 

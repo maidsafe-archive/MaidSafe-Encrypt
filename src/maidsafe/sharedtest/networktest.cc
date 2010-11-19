@@ -19,10 +19,11 @@
 * ============================================================================
 */
 
-#include "tests/maidsafe/networktest.h"
+#include "maidsafe/sharedtest/networktest.h"
 
-#include "maidsafe/chunkstore.h"
-#include "tests/maidsafe/testcallback.h"
+#include "maidsafe/common/filesystem.h"
+#include "maidsafe/common/chunkstore.h"
+#include "maidsafe/sharedtest/testcallback.h"
 
 namespace fs = boost::filesystem;
 
@@ -49,20 +50,22 @@ boost::uint8_t K() { return g_K; }
 
 #endif  // MS_NETWORK_TEST
 
-NetworkTest::NetworkTest(const std::string &test_name)
-    : transport_id_(-1),
+NetworkTest::NetworkTest()
+    : test_info_(testing::UnitTest::GetInstance()->current_test_info()),
+      test_case_name_(test_info_->test_case_name()),
+      transport_id_(-1),
 #ifdef MS_NETWORK_TEST
-      test_dir_(file_system::TempDir() / ("maidsafe_Test" + test_name +
+      test_dir_(file_system::TempDir() / ("maidsafe_Test" + test_case_name_ +
                 "_FUNC_" + base::RandomAlphaNumericString(6))),
 #else
-      test_dir_(file_system::TempDir() / ("maidsafe_Test" + test_name + "_" +
-                base::RandomAlphaNumericString(6))),
+      test_dir_(file_system::TempDir() / ("maidsafe_Test" + test_case_name_ +
+                "_" + base::RandomAlphaNumericString(6))),
 #endif
       transport_(NULL),
       transport_handler_(NULL),
       channel_manager_(NULL),
-      chunkstore_(new maidsafe::ChunkStore(std::string(test_dir_.string() +
-                                           "/ChunkStore"), 99999999, 0)),
+      chunkstore_(new ChunkStore(std::string(test_dir_.string() +
+                                 "/ChunkStore"), 99999999, 0)),
       kad_ops_(),
 #ifdef MS_NETWORK_TEST
       store_manager_(new TestStoreManager(chunkstore_, g_K)),

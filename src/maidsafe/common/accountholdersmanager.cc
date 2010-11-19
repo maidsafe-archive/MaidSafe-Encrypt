@@ -19,14 +19,16 @@
 * ============================================================================
 */
 
-#include "maidsafe/accountholdersmanager.h"
+#include "maidsafe/common/accountholdersmanager.h"
 
 #include <maidsafe/base/crypto.h>
+#include <maidsafe/kademlia/contact.h>
+#include <maidsafe/kademlia/kadid.h>
 
 #include <algorithm>
 
-#include "maidsafe/kadops.h"
-#include "maidsafe/pdutils.h"
+#include "maidsafe/common/kadops.h"
+#include "maidsafe/common/commonutils.h"
 
 namespace maidsafe {
 
@@ -45,9 +47,7 @@ void AccountHoldersManager::Init(const std::string &pmid,
   boost::mutex::scoped_lock lock(mutex_);
   do_nothing_ = boost::bind(&AccountHoldersManager::DoNothing, this, _1, _2);
   pmid_ = pmid;
-  crypto::Crypto co;
-  co.set_hash_algorithm(crypto::SHA_512);
-  account_name_ = co.Hash(pmid_ + kAccount, "", crypto::STRING_STRING, false);
+  account_name_ = SHA512String(pmid_ + kAccount);
   UpdateGroup(callback);
 }
 

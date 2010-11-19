@@ -12,7 +12,7 @@
  *      Author: Team
  */
 
-#include "qt/widgets/create_page_welcome.h"
+#include "maidsafe/lifestuff/widgets/create_page_welcome.h"
 
 // qt
 #include <QDebug>

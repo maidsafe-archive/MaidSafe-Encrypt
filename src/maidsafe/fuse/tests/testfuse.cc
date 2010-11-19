@@ -24,16 +24,16 @@
 
 #include <gtest/gtest.h>
 
-#include "tests/maidsafe/localvaults.h"
+#include "maidsafe/sharedtest/localvaults.h"
 
 #if defined MAIDSAFE_WIN32
-#include "fs/w_fuse/fswin.h"
+#include "maidsafe/fuse/windows/fswin.h"
 #elif defined MAIDSAFE_POSIX
-#include "fs/l_fuse/fslinux.h"
+#include "maidsafe/fuse/linux/fslinux.h"
 #elif defined MAIDSAFE_APPLE
-#include "fs/l_fuse/fslinux.h"  // NOLINT
+#include "maidsafe/fuse/linux/fslinux.h"  // NOLINT
 #endif
-
+/*
 
 #if defined MAIDSAFE_WIN32
 namespace fs_w_fuse {
@@ -45,7 +45,7 @@ namespace fs_l_fuse {
 
 namespace fuse_test {
 
-static std::vector< boost::shared_ptr<maidsafe_vault::PDVault> > pdvaults_;
+static std::vector< boost::shared_ptr<vault::PDVault> > pdvaults_;
 static const int kNetworkSize_ = 16;
 static const int kTestK_ = 4;
 static bool logged_in_;
@@ -145,8 +145,8 @@ bool CreateRandomFile(const std::string &filename,
     success = (fs::exists(filename) && (fs::file_size(filename) == size));
     if (success) {
       fs::path file_path(filename);
-      maidsafe::SelfEncryption se;
-      *hash = se.SHA512(file_path);
+      maidsafe::SelfEncryption self_encryption;
+      *hash = self_encryption.SHA512(file_path);
     } else {
       *hash = "";
     }
@@ -244,19 +244,19 @@ void CreateUserLoginMount(maidsafe::ClientController *cc,
   char drive = cc->DriveLetter();
   std::string mount_point(1, drive);
   mount_point += ":\\";
-  *mount_path = fs::path(mount_point, fs::native);
+  *mount_path = fs::path(mount_point);
   Mount(drive);
   ASSERT_TRUE(ss->SetWinDrive(drive));
 #elif defined(MAIDSAFE_POSIX)
   file_system::FileSystem fsys;
   std::string mount_point = fsys.MaidsafeFuseDir();
-  *mount_path = fs::path(mount_point, fs::native);
+  *mount_path = fs::path(mount_point);
   std::string debug_mode("-d");
   ASSERT_TRUE(fsl.Mount(mount_point, debug_mode));
 #elif defined(MAIDSAFE_APPLE)
   file_system::FileSystem fsys;
   std::string mount_point = fsys.MaidsafeFuseDir();
-  *mount_path = fs::path(mount_point, fs::native);
+  *mount_path = fs::path(mount_point);
   std::string debug_mode("-d");
   ASSERT_TRUE(fsm.Mount(mount_point, debug_mode));
 #endif
@@ -335,7 +335,7 @@ TEST_F(FuseTest, FUNC_FUSE_RepeatedMount) {
     ASSERT_TRUE(fs::exists(mount_path_));
     printf("Logged in.\n");
     // read root dir
-//    mount_path_ = fs::path("M:\\My Files", fs::native);
+//    mount_path_ = fs::path("M:\\My Files");
 //    fs::directory_iterator end_itr;
 //    for (fs::directory_iterator itr(mount_path_); itr != end_itr; ++itr) {
 //      printf("%s\n", itr->path().string().c_str());
@@ -478,10 +478,10 @@ TEST_F(FuseTest, FUNC_FUSE_MyFiles) {
   success = fuse_test::CreateRandomFile(fuse_test::test_myfile_[4].string(),
                                         100, &fuse_test::pre_hash_myfile_[4]);
   boost::this_thread::sleep(boost::posix_time::seconds(60));
-  maidsafe::SelfEncryption se;
+  maidsafe::SelfEncryption self_encryption;
   for (int i = 0; i < 5; ++i) {
     ASSERT_EQ(fuse_test::pre_hash_myfile_[i],
-              se.SHA512(fuse_test::test_myfile_[i]));
+              self_encryption.SHA512(fuse_test::test_myfile_[i]));
     boost::this_thread::sleep(boost::posix_time::seconds(5));
   }
 
@@ -519,7 +519,7 @@ TEST_F(FuseTest, FUNC_FUSE_MyFiles) {
   for (int i = 0; i < 5; ++i) {
     ASSERT_TRUE(fs::exists(fuse_test::test_myfile_[i]));
     ASSERT_EQ(fuse_test::pre_hash_myfile_[i],
-              se.SHA512(fuse_test::test_myfile_[i]));
+              self_encryption.SHA512(fuse_test::test_myfile_[i]));
     boost::this_thread::sleep(boost::posix_time::seconds(5));
   }
 
@@ -534,7 +534,7 @@ TEST_F(FuseTest, FUNC_FUSE_MyFiles) {
   ASSERT_FALSE(fs::exists(test_dir_1));
   ASSERT_TRUE(fs::exists(new_test_dir_1));
   ASSERT_TRUE(fs::exists(new_file_4));
-  ASSERT_EQ(fuse_test::pre_hash_myfile_[4], se.SHA512(new_file_4));
+  ASSERT_EQ(fuse_test::pre_hash_myfile_[4], self_encryption.SHA512(new_file_4));
 
   // 06. Logout, then create user 2.
   // -------------------------------
@@ -817,7 +817,7 @@ TEST_F(FuseTest, FUNC_FUSE_SharesAndMessages) {
 //  boost::this_thread::sleep(boost::posix_time::seconds(60));
 //  for (int i = 0; i < 5; ++i) {
 //    ASSERT_EQ(fuse_test::pre_hash_share_[i],
-//              se.SHA512(fuse_test::test_share_[i]));
+//              self_encryption.SHA512(fuse_test::test_share_[i]));
 //    boost::this_thread::sleep(boost::posix_time::seconds(5));
 //  }
 
@@ -881,8 +881,8 @@ TEST_F(FuseTest, FUNC_FUSE_SharesAndMessages) {
 //    ASSERT_TRUE(fs::exists(fuse_test::test_share_[i]));
 //    boost::this_thread::sleep(boost::posix_time::seconds(10));
 //    printf("pre_hash[%i] = %s\n", i, fuse_test::pre_hash_share_[i].c_str());
-//    std::string hash = se.SHA512(fuse_test::test_share_[i]);
-//    printf("se.SHA512(fuse_test::test_share_[%i]) = %s\n",
+//    std::string hash = self_encryption.SHA512(fuse_test::test_share_[i]);
+//    printf("self_encryption.SHA512(fuse_test::test_share_[%i]) = %s\n",
 //           i,
 //           hash.c_str());
 //    ASSERT_EQ(fuse_test::pre_hash_share_[i], hash);
@@ -1001,10 +1001,10 @@ TEST_F(FuseTest, FUNC_FUSE_SharesAndMessages) {
                                          100, &fuse_test::pre_hash_share_[9]);
   boost::this_thread::sleep(boost::posix_time::seconds(60));
 
-  maidsafe::SelfEncryption se;
+  maidsafe::SelfEncryption self_encryption;
   for (int i = 5; i < 10; ++i) {
     ASSERT_EQ(fuse_test::pre_hash_share_[i],
-              se.SHA512(fuse_test::test_share_[i]));
+              self_encryption.SHA512(fuse_test::test_share_[i]));
     boost::this_thread::sleep(boost::posix_time::seconds(5));
   }
 
@@ -1071,8 +1071,8 @@ TEST_F(FuseTest, FUNC_FUSE_SharesAndMessages) {
     ASSERT_TRUE(fs::exists(fuse_test::test_share_[i]));
     boost::this_thread::sleep(boost::posix_time::seconds(10));
     printf("pre_hash[%i] = %s\n", i, fuse_test::pre_hash_share_[i].c_str());
-    std::string hash = se.SHA512(fuse_test::test_share_[i]);
-    printf("se.SHA512(fuse_test::test_share_[%i]) = %s\n",
+    std::string hash = self_encryption.SHA512(fuse_test::test_share_[i]);
+    printf("self_encryption.SHA512(fuse_test::test_share_[%i]) = %s\n",
            i,
            hash.c_str());
     ASSERT_EQ(fuse_test::pre_hash_share_[i], hash);
@@ -1152,8 +1152,8 @@ TEST_F(FuseTest, FUNC_FUSE_SharesAndMessages) {
     ASSERT_TRUE(fs::exists(fuse_test::test_share_[i]));
     boost::this_thread::sleep(boost::posix_time::seconds(10));
     printf("pre_hash[%i] = %s\n", i, fuse_test::pre_hash_share_[i].c_str());
-    std::string hash = se.SHA512(fuse_test::test_share_[i]);
-    printf("se.SHA512(fuse_test::test_share_[%i]) = %s\n",
+    std::string hash = self_encryption.SHA512(fuse_test::test_share_[i]);
+    printf("self_encryption.SHA512(fuse_test::test_share_[%i]) = %s\n",
            i,
            hash.c_str());
     ASSERT_EQ(fuse_test::pre_hash_share_[i], hash);
@@ -1264,8 +1264,8 @@ TEST_F(FuseTest, FUNC_FUSE_SharesAndMessages) {
   ASSERT_TRUE(fs::exists(new_test_file_5));
   boost::this_thread::sleep(boost::posix_time::seconds(10));
   printf("pre_hash[5] = %s\n", fuse_test::pre_hash_share_[5].c_str());
-  hash = se.SHA512(new_test_file_5);
-  printf("se.SHA512(new_test_file_5) = %s\n", hash.c_str());
+  hash = self_encryption.SHA512(new_test_file_5);
+  printf("self_encryption.SHA512(new_test_file_5) = %s\n", hash.c_str());
   ASSERT_EQ(fuse_test::pre_hash_share_[5], hash);
 
   // Check deletion of file 6
@@ -1279,8 +1279,8 @@ TEST_F(FuseTest, FUNC_FUSE_SharesAndMessages) {
   ASSERT_TRUE(fs::exists(fuse_test::test_share_[7]));
   boost::this_thread::sleep(boost::posix_time::seconds(10));
   printf("pre_hash[7] = %s\n", fuse_test::pre_hash_share_[7].c_str());
-  hash = se.SHA512(fuse_test::test_share_[7]);
-  printf("se.SHA512(fuse_test::test_share_[7]) = %s\n", hash.c_str());
+  hash = self_encryption.SHA512(fuse_test::test_share_[7]);
+  printf("self_encryption.SHA512(fuse_test::test_share_[7]) = %s\n", hash.c_str());
   ASSERT_EQ(fuse_test::pre_hash_share_[7], hash);
 
   // Check file 8 is unmodified
@@ -1288,8 +1288,8 @@ TEST_F(FuseTest, FUNC_FUSE_SharesAndMessages) {
   ASSERT_TRUE(fs::exists(fuse_test::test_share_[8]));
   boost::this_thread::sleep(boost::posix_time::seconds(10));
   printf("pre_hash[8] = %s\n", fuse_test::pre_hash_share_[8].c_str());
-  hash = se.SHA512(fuse_test::test_share_[8]);
-  printf("se.SHA512(fuse_test::test_share_[8]) = %s\n", hash.c_str());
+  hash = self_encryption.SHA512(fuse_test::test_share_[8]);
+  printf("self_encryption.SHA512(fuse_test::test_share_[8]) = %s\n", hash.c_str());
   ASSERT_EQ(fuse_test::pre_hash_share_[8], hash);
 
   // Check modifications to "TestDir1" affecting file 9
@@ -1299,8 +1299,8 @@ TEST_F(FuseTest, FUNC_FUSE_SharesAndMessages) {
   ASSERT_TRUE(fs::exists(new_test_file_9));
   boost::this_thread::sleep(boost::posix_time::seconds(10));
   printf("pre_hash[9] = %s\n", fuse_test::pre_hash_share_[9].c_str());
-  hash = se.SHA512(new_test_file_9);
-  printf("se.SHA512(new_test_file_9) = %s\n", hash.c_str());
+  hash = self_encryption.SHA512(new_test_file_9);
+  printf("self_encryption.SHA512(new_test_file_9) = %s\n", hash.c_str());
   ASSERT_EQ(fuse_test::pre_hash_share_[9], hash);
 
 
@@ -1335,8 +1335,8 @@ TEST_F(FuseTest, FUNC_FUSE_SharesAndMessages) {
   test_sent_file /= kRootSubdir[0][0];
   test_sent_file /= "test2.txt";
   ASSERT_TRUE(fs::exists(test_sent_file));
-  hash = se.SHA512(test_sent_file);
-  printf("se.SHA512(test_sent_file) = %s\n", hash.c_str());
+  hash = self_encryption.SHA512(test_sent_file);
+  printf("self_encryption.SHA512(test_sent_file) = %s\n", hash.c_str());
   // message 4 from user 1 - instant message
   im2 = messages.front();
   messages.pop_front();
@@ -1357,24 +1357,26 @@ TEST_F(FuseTest, FUNC_FUSE_SharesAndMessages) {
 }
 
 }  // namespace fs_w_fuse or fs_l_fuse or fs_m_fuse
-
+*/
 int main(int argc, char **argv) {
   testing::InitGoogleTest(&argc, argv);
-#ifdef MAIDSAFE_WIN32
-  testing::AddGlobalTestEnvironment(
-      new localvaults::Env(fs_w_fuse::fuse_test::kNetworkSize_,
-                           fs_w_fuse::fuse_test::kTestK_,
-                           &fs_w_fuse::fuse_test::pdvaults_));
-#elif defined(MAIDSAFE_POSIX)
-  testing::AddGlobalTestEnvironment(
-      new localvaults::Env(fs_l_fuse::fuse_test::kNetworkSize_,
-                           fs_l_fuse::fuse_test::kTestK_,
-                           &fs_l_fuse::fuse_test::pdvaults_));
-#elif defined(MAIDSAFE_APPLE)
-  testing::AddGlobalTestEnvironment(
-      new localvaults::Env(fs_l_fuse::fuse_test::kNetworkSize_,
-                           fs_l_fuse::fuse_test::kTestK_,
-                           &fs_l_fuse::fuse_test::pdvaults_));
-#endif
-  return RUN_ALL_TESTS();
+//  #ifdef MAIDSAFE_WIN32
+//    testing::AddGlobalTestEnvironment(
+//        new localvaults::Env(fs_w_fuse::fuse_test::kNetworkSize_,
+//                             fs_w_fuse::fuse_test::kTestK_,
+//                             &fs_w_fuse::fuse_test::pdvaults_));
+//  #elif defined(MAIDSAFE_POSIX)
+//    testing::AddGlobalTestEnvironment(
+//        new localvaults::Env(fs_l_fuse::fuse_test::kNetworkSize_,
+//                             fs_l_fuse::fuse_test::kTestK_,
+//                             &fs_l_fuse::fuse_test::pdvaults_));
+//  #elif defined(MAIDSAFE_APPLE)
+//    testing::AddGlobalTestEnvironment(
+//        new localvaults::Env(fs_l_fuse::fuse_test::kNetworkSize_,
+//                             fs_l_fuse::fuse_test::kTestK_,
+//                             &fs_l_fuse::fuse_test::pdvaults_));
+//  #endif
+  int result(RUN_ALL_TESTS());
+  int test_count = testing::UnitTest::GetInstance()->test_to_run_count();
+  return (test_count == 0) ? -1 : result;
 }

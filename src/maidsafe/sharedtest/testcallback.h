@@ -18,13 +18,13 @@
 * ============================================================================
 */
 
-#ifndef TESTS_MAIDSAFE_TESTCALLBACK_H_
-#define TESTS_MAIDSAFE_TESTCALLBACK_H_
+#ifndef MAIDSAFE_SHAREDTEST_TESTCALLBACK_H_
+#define MAIDSAFE_SHAREDTEST_TESTCALLBACK_H_
 
 #include <boost/thread/condition.hpp>
 #include <boost/thread/mutex.hpp>
 #include <string>
-#include "maidsafe/returncodes.h"
+#include "maidsafe/common/returncodes.h"
 
 namespace maidsafe {
 namespace test {
@@ -79,4 +79,4 @@ class CallbackObject {
 }  // namespace test
 }  // namespace maidsafe
 
-#endif  // TESTS_MAIDSAFE_TESTCALLBACK_H_
+#endif  // MAIDSAFE_SHAREDTEST_TESTCALLBACK_H_

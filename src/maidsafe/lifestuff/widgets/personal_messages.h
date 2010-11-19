@@ -12,16 +12,16 @@
  *      Author: Stephen Alexander
  */
 
-#ifndef QT_WIDGETS_PERSONAL_MESSAGES_H_
-#define QT_WIDGETS_PERSONAL_MESSAGES_H_
+#ifndef MAIDSAFE_LIFESTUFF_WIDGETS_PERSONAL_MESSAGES_H_
+#define MAIDSAFE_LIFESTUFF_WIDGETS_PERSONAL_MESSAGES_H_
 
 #include <QWidget>
 #include <QString>
 #include <QStringList>
 
 // local
-#include "qt/client/client_controller.h"
-#include "qt/widgets/smily.h"
+#include "maidsafe/lifestuff/client/client_controller.h"
+#include "maidsafe/lifestuff/widgets/smily.h"
 
 #include "ui_user_personal_message.h"
 
@@ -96,4 +96,4 @@ class PersonalMessages : public QMainWindow {
   MessageList messages_;
 };
 
-#endif  // QT_WIDGETS_PERSONAL_MESSAGES_H_
+#endif  //  MAIDSAFE_LIFESTUFF_WIDGETS_PERSONAL_MESSAGES_H_

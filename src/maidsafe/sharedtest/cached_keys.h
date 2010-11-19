@@ -22,39 +22,47 @@
 * ============================================================================
 */
 
-#ifndef MAIDSAFE_COMMON_TESTS_CACHED_KEYS_H_
-#define MAIDSAFE_COMMON_TESTS_CACHED_KEYS_H_
+#ifndef MAIDSAFE_SHAREDTEST_CACHED_KEYS_H_
+#define MAIDSAFE_SHAREDTEST_CACHED_KEYS_H_
 
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/filesystem/fstream.hpp>
-#include <gtest/gtest.h>
+#include <maidsafe/base/crypto.h>
+#include <maidsafe/passport/passport.h>
 
 #include <string>
 #include <vector>
 
-#include "maidsafe/client/cryptokeypairs.h"
 #include "maidsafe/common/filesystem.h"
-#include "maidsafe/common/packet.pb.h"
+#include "maidsafe/passport/signaturepacket.pb.h"
 
 namespace fs = boost::filesystem;
 
 namespace cached_keys {
 
 inline void MakeKeys(const int &key_count,
-                     std::vector<crypto::RsaKeyPair> *keys) {
+                     std::vector<crypto::RsaKeyPair> *keys,
+                     bool for_passport = false) {
   keys->clear();
-  fs::path key_file(file_system::TempDir() /
+  fs::path key_file;
+  if (for_passport) {
+    key_file = fs::path(file_system::TempDir() /
+      ("maidsafe_CachedTestPassportKeys" + boost::posix_time::to_simple_string(
+      boost::posix_time::second_clock::local_time()).substr(0, 11) + ".tmp"));
+  } else {
+    key_file = fs::path(file_system::TempDir() /
       ("maidsafe_CachedTestCryptoKeys" + boost::posix_time::to_simple_string(
-      boost::posix_time::second_clock::local_time()).substr(0, 11)));
-  maidsafe::BufferPacket keys_buffer;
+      boost::posix_time::second_clock::local_time()).substr(0, 11) + ".tmp"));
+  }
+  maidsafe::passport::Keyring keyring;
   try {
     fs::ifstream fin(key_file, std::ifstream::binary);
-    if (fin.good() && keys_buffer.ParseFromIstream(&fin) &&
-        keys_buffer.messages_size() > 0) {
-      for (int i = 0; i < keys_buffer.messages_size(); ++i) {
+    if (fin.good() && keyring.ParseFromIstream(&fin) &&
+        keyring.key_size() > 0) {
+      for (int i = 0; i < keyring.key_size(); ++i) {
         crypto::RsaKeyPair keypair;
-        keypair.set_public_key(keys_buffer.messages(i).data());
-        keypair.set_private_key(keys_buffer.messages(i).signature());
+        keypair.set_public_key(keyring.key(i).public_key());
+        keypair.set_private_key(keyring.key(i).private_key());
         if (!keypair.public_key().empty() && !keypair.private_key().empty()) {
           keys->push_back(keypair);
         }
@@ -67,7 +75,7 @@ inline void MakeKeys(const int &key_count,
   }
   int need_keys = key_count - static_cast<int>(keys->size());
   if (need_keys > 0) {
-    maidsafe::CryptoKeyPairs kps;
+    maidsafe::passport::CryptoKeyPairs kps(4096, 5);
     kps.StartToCreateKeyPairs(need_keys);
     boost::this_thread::sleep(boost::posix_time::milliseconds(100));
     for (int i = 0; i < need_keys; ++i) {
@@ -75,17 +83,22 @@ inline void MakeKeys(const int &key_count,
       if (!kps.GetKeyPair(&rsakp))
         break;
       keys->push_back(rsakp);
-      maidsafe::GenericPacket *gp = keys_buffer.add_messages();
-      gp->set_data(rsakp.public_key());
-      gp->set_signature(rsakp.private_key());
+      maidsafe::passport::Key *key = keyring.add_key();
+      key->set_public_key(rsakp.public_key());
+      key->set_private_key(rsakp.private_key());
+      // These are required fields for keyring keys, but not needed here
+      key->set_name("B");
+      key->set_packet_type(0);
+      key->set_public_key_signature("o");
+      key->set_signer_private_key("b");
     }
     std::ofstream ofs(key_file.string().c_str(),
                       std::ofstream::trunc | std::ofstream::binary);
-    keys_buffer.SerializeToOstream(&ofs);
+    keyring.SerializeToOstream(&ofs);
     ofs.close();
   }
 }
 
 }  // namespace cached_keys
 
-#endif  // MAIDSAFE_COMMON_TESTS_CACHED_KEYS_H_
+#endif  // MAIDSAFE_SHAREDTEST_CACHED_KEYS_H_

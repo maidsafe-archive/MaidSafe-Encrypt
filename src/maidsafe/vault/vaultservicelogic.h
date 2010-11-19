@@ -25,31 +25,38 @@
 #ifndef MAIDSAFE_VAULT_VAULTSERVICELOGIC_H_
 #define MAIDSAFE_VAULT_VAULTSERVICELOGIC_H_
 
-#include <boost/thread/condition_variable.hpp>
+#include <boost/shared_ptr.hpp>
+#include <boost/cstdint.hpp>
 #include <boost/thread/mutex.hpp>
-#include <gtest/gtest_prod.h>
-#include <maidsafe/rpcprotocol/channel-api.h>
-#include <maidsafe/protobuf/contact_info.pb.h>
+#include <maidsafe/kademlia/contact.h>
 
 #include <string>
 #include <vector>
 
-#include "maidsafe/maidsafe.h"
-#include "maidsafe/kadops.h"
-#include "protobuf/maidsafe_service_messages.pb.h"
+#include "maidsafe/common/maidsafe.h"
+#include "maidsafe/common/maidsafe_service_messages.pb.h"
+#include "maidsafe/vault/vaultconfig.h"
 
 namespace kad {
 class KNode;
-class Contact;
 }  // namespace kad
+namespace maidsafe { class KadOps; }
 
-namespace maidsafe_vault {
+namespace maidsafe {
+
+namespace vault {
 
 namespace test {
+class MockVaultServicesTest;
 class AccountAmendmentHandlerTest_BEH_MAID_AssessAmendment_Test;
 class AccountAmendmentHandlerTest_BEH_MAID_CreateNewAmendment_Test;
 class AccountAmendmentHandlerTest_BEH_MAID_CreateNewWithExpecteds_Test;
 class AccountAmendmentHandlerTest_BEH_MAID_ProcessRequest_Test;
+class MockVaultServicesTest_FUNC_MAID_AmendAccount_Test;
+class VaultServiceLogicTest_BEH_MAID_FindKNodes_Test;
+class VaultServiceLogicTest_FUNC_MAID_AddToRemoteRefList_Test;
+class VaultServiceLogicTest_FUNC_MAID_AmendRemoteAccount_Test;
+class VaultServiceLogicTest_FUNC_MAID_RemoteVaultAbleToStore_Test;
 }  // namespace test
 
 class VaultRpcs;
@@ -102,14 +109,14 @@ struct RemoteOpData {
   bool callback_done;
 };
 
-typedef RemoteOpData<maidsafe::AddToReferenceListRequest,
-    maidsafe::AddToReferenceListResponse> AddToReferenceListOpData;
+typedef RemoteOpData<AddToReferenceListRequest, AddToReferenceListResponse>
+    AddToReferenceListOpData;
 
-typedef RemoteOpData<maidsafe::AmendAccountRequest,
-    maidsafe::AmendAccountResponse> AmendRemoteAccountOpData;
+typedef RemoteOpData<AmendAccountRequest, AmendAccountResponse>
+    AmendRemoteAccountOpData;
 
-typedef RemoteOpData<maidsafe::AccountStatusRequest,
-    maidsafe::AccountStatusResponse> RemoteAccountStatusOpData;
+typedef RemoteOpData<AccountStatusRequest, AccountStatusResponse>
+    RemoteAccountStatusOpData;
 
 struct CacheChunkData {
   CacheChunkData() : chunkname(),
@@ -121,8 +128,8 @@ struct CacheChunkData {
   std::string chunkname;
   kad::ContactInfo kc;
   VoidFuncOneInt cb;
-  maidsafe::CacheChunkRequest request;
-  maidsafe::CacheChunkResponse response;
+  CacheChunkRequest request;
+  CacheChunkResponse response;
   rpcprotocol::Controller controller;
 };
 
@@ -171,54 +178,52 @@ struct GetInfoData {
   boost::uint16_t response_count;
 };
 
-typedef boost::function<void (ReturnCode,
+typedef boost::function<void (VaultReturnCode,
     const VaultAccountSet::VaultAccount&)> VoidFuncIntAccount;
 
-typedef boost::function<void (ReturnCode,
+typedef boost::function<void (VaultReturnCode,
     const ChunkInfoMap::VaultChunkInfo&)> VoidFuncIntChunkInfo;
 
-typedef boost::function<void (ReturnCode,
+typedef boost::function<void (VaultReturnCode,
     const VaultBufferPacketMap::VaultBufferPacket&)> VoidFuncIntBufferPacket;
 
-typedef GetInfoData<maidsafe::GetAccountRequest,
-    maidsafe::GetAccountResponse, VoidFuncIntAccount> GetAccountData;
+typedef GetInfoData<GetAccountRequest, GetAccountResponse, VoidFuncIntAccount>
+    GetAccountData;
 
-typedef GetInfoData<maidsafe::GetChunkInfoRequest,
-    maidsafe::GetChunkInfoResponse, VoidFuncIntChunkInfo> GetChunkInfoData;
+typedef GetInfoData<GetChunkInfoRequest, GetChunkInfoResponse,
+                    VoidFuncIntChunkInfo> GetChunkInfoData;
 
-typedef GetInfoData<maidsafe::GetBufferPacketRequest,
-    maidsafe::GetBufferPacketResponse, VoidFuncIntBufferPacket>
-    GetBufferPacketData;
+typedef GetInfoData<GetBufferPacketRequest, GetBufferPacketResponse,
+                    VoidFuncIntBufferPacket> GetBufferPacketData;
 
 const size_t kParallelRequests(2);
 
 class VaultServiceLogic {
  public:
   VaultServiceLogic(const boost::shared_ptr<VaultRpcs> &vault_rpcs,
-                    const boost::shared_ptr<maidsafe::KadOps> &kadops);
+                    const boost::shared_ptr<KadOps> &kadops);
   virtual ~VaultServiceLogic() {}
   bool Init(const std::string &pmid,
             const std::string &pmid_public_key,
             const std::string &pmid_public_signature,
             const std::string &pmid_private);
   bool online();
-  boost::shared_ptr<maidsafe::KadOps> kadops() { return kad_ops_; }
+  boost::shared_ptr<KadOps> kadops() { return kad_ops_; }
   void SetOnlineStatus(bool online);
   // Call which looks up Chunk Info holders and sends each an
   // AddToReferenceListRequest to add this vault's ID to ref list for chunkname.
-  virtual void AddToRemoteRefList(
-      const maidsafe::AddToReferenceListRequest &request,
-      const int &found_local_result,
-      const VoidFuncOneInt &callback,
-      const boost::int16_t &transport_id);
+  virtual void AddToRemoteRefList(const AddToReferenceListRequest &request,
+                                  const int &found_local_result,
+                                  const VoidFuncOneInt &callback,
+                                  const boost::int16_t &transport_id);
   // Amend account of PMID requesting to be added to Watch List or Ref List.
-  virtual void AmendRemoteAccount(const maidsafe::AmendAccountRequest &request,
+  virtual void AmendRemoteAccount(const AmendAccountRequest &request,
                                   const int &found_local_result,
                                   const VoidFuncOneInt &callback,
                                   const boost::int16_t &transport_id);
   // Call which looks up account holders and sends each an
   // AccountStatusRequest to establish if the account owner has space to store
-  void RemoteVaultAbleToStore(maidsafe::AccountStatusRequest request,
+  void RemoteVaultAbleToStore(AccountStatusRequest request,
                               const int &found_local_result,
                               const VoidFuncOneInt &callback,
                               const boost::int16_t &transport_id);
@@ -228,44 +233,40 @@ class VaultServiceLogic {
                   VoidFuncOneInt callback,
                   const boost::int16_t &transport_id);
   void GetAccount(const std::vector<kad::Contact> &close_contacts,
-                  const std::vector<maidsafe::GetAccountRequest> &requests,
+                  const std::vector<GetAccountRequest> &requests,
                   VoidFuncIntAccount callback,
                   const boost::int16_t &transport_id);
   void GetChunkInfo(const std::vector<kad::Contact> &close_contacts,
-                    const std::vector<maidsafe::GetChunkInfoRequest> &requests,
+                    const std::vector<GetChunkInfoRequest> &requests,
                     VoidFuncIntChunkInfo callback,
                     const boost::int16_t &transport_id);
   void GetBufferPacket(const std::vector<kad::Contact> &close_contacts,
-      const std::vector<maidsafe::GetBufferPacketRequest> &requests,
+      const std::vector<GetBufferPacketRequest> &requests,
       VoidFuncIntBufferPacket callback,
       const boost::int16_t &transport_id);
  private:
   VaultServiceLogic(const VaultServiceLogic&);
   VaultServiceLogic &operator=(const VaultServiceLogic&);
-  FRIEND_TEST(VaultServiceLogicTest, BEH_MAID_VSL_FindKNodes);
-  FRIEND_TEST(VaultServiceLogicTest, FUNC_MAID_VSL_AddToRemoteRefList);
-  FRIEND_TEST(VaultServiceLogicTest, FUNC_MAID_VSL_AmendRemoteAccount);
-  FRIEND_TEST(VaultServiceLogicTest, FUNC_MAID_VSL_RemoteVaultAbleToStore);
-  FRIEND_TEST(AccountAmendmentHandlerTest, BEH_MAID_AssessAmendment);
-  FRIEND_TEST(AccountAmendmentHandlerTest, BEH_MAID_CreateNewAmendment);
-  FRIEND_TEST(AccountAmendmentHandlerTest, BEH_MAID_CreateNewWithExpecteds);
-  FRIEND_TEST(AccountAmendmentHandlerTest, BEH_MAID_ProcessRequest);
-  FRIEND_TEST(MockVaultServicesTest, FUNC_MAID_ServicesAmendAccount);
+  friend class test::VaultServiceLogicTest_BEH_MAID_FindKNodes_Test;
+  friend class test::VaultServiceLogicTest_FUNC_MAID_AddToRemoteRefList_Test;
+  friend class test::VaultServiceLogicTest_FUNC_MAID_AmendRemoteAccount_Test;
+  friend class
+      test::VaultServiceLogicTest_FUNC_MAID_RemoteVaultAbleToStore_Test;
   friend class MockVsl;
-  friend class MockVaultServicesTest;
+  friend class test::MockVaultServicesTest;
   friend class test::AccountAmendmentHandlerTest_BEH_MAID_AssessAmendment_Test;
   friend class
       test::AccountAmendmentHandlerTest_BEH_MAID_CreateNewAmendment_Test;
   friend class
       test::AccountAmendmentHandlerTest_BEH_MAID_CreateNewWithExpecteds_Test;
   friend class test::AccountAmendmentHandlerTest_BEH_MAID_ProcessRequest_Test;
-
+  friend class test::MockVaultServicesTest_FUNC_MAID_AmendAccount_Test;
   // First callback method in e.g. AmendRemoteAccount operation.  Called once by
   // kad_ops_->FindKNodes (when finding account holders' details).  T is
   // AmendRemoteAccountOpData or RemoteAccountStatusOpData.
   template <typename T>
   void RemoteOpStageTwo(boost::shared_ptr<T> data,
-                        const maidsafe::ReturnCode &result,
+                        const ReturnCode &result,
                         const std::vector<kad::Contact> &closest_nodes);
   // Specialisations for sending appropriate RPCs
   template <typename T>
@@ -280,7 +281,7 @@ class VaultServiceLogic {
   void RemoteOpStageThree(boost::uint16_t index, boost::shared_ptr<T> data);
   // Specialisations defining appropriate success conditions
   template <typename T>
-  void AssessResult(ReturnCode result, boost::shared_ptr<T> data);
+  void AssessResult(VaultReturnCode result, boost::shared_ptr<T> data);
   void CacheChunkCallback(boost::shared_ptr<CacheChunkData> data);
   template <typename T>
   void GetInfoCallback(boost::uint16_t index, boost::shared_ptr<T> data);
@@ -295,7 +296,7 @@ class VaultServiceLogic {
                                const std::string &recipient_id);
 
   boost::shared_ptr<VaultRpcs> vault_rpcs_;
-  boost::shared_ptr<maidsafe::KadOps> kad_ops_;
+  boost::shared_ptr<KadOps> kad_ops_;
   kad::Contact our_details_;
   std::string pmid_, pmid_public_key_, pmid_public_signature_, pmid_private_;
   bool online_;
@@ -305,6 +306,8 @@ class VaultServiceLogic {
   const boost::uint16_t kLowerThreshold_;
 };
 
-}  // namespace maidsafe_vault
+}  // namespace vault
+
+}  // namespace maidsafe
 
 #endif  // MAIDSAFE_VAULT_VAULTSERVICELOGIC_H_

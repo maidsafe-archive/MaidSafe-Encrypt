@@ -1,17 +1,17 @@
 <installerInformation>
-  <versionId>00004</versionId>
-  <version>0.0.004</version>
+  <versionId>00005</versionId>
+  <version>0.0.005</version>
   <platformFileList>
     <platformFile>
-      <filename>pdlightlocal-0.0.004-installer.exe</filename>
+      <filename>pdlightlocal-0.0.005-installer.exe</filename>
       <platform>windows</platform>
     </platformFile>
     <platformFile>
-      <filename>pdlightlocal-0.0.004-installer.bin</filename>
+      <filename>pdlightlocal-0.0.005-installer.bin</filename>
       <platform>linux</platform>
     </platformFile>
     <platformFile>
-      <filename>pdlightlocal-0.0.004-installer.tgz</filename>
+      <filename>pdlightlocal-0.0.005-installer.tgz</filename>
       <platform>osx</platform>
     </platformFile>
   </platformFileList>

@@ -12,8 +12,8 @@
  *      Author: Team
  */
 
-#ifndef QT_WIDGETS_CONTACTS_H_
-#define QT_WIDGETS_CONTACTS_H_
+#ifndef MAIDSAFE_LIFESTUFF_WIDGETS_CONTACTS_H_
+#define MAIDSAFE_LIFESTUFF_WIDGETS_CONTACTS_H_
 
 #include <QWidget>
 #include <QMenu>
@@ -22,10 +22,10 @@
 #include <QString>
 
 // local
-#include "qt/widgets/panel.h"
-#include "qt/client/contact.h"
-#include "qt/widgets/personal_messages.h"
-#include "qt/widgets/user_send_mail.h"
+#include "maidsafe/lifestuff/widgets/panel.h"
+#include "maidsafe/lifestuff/client/contact.h"
+#include "maidsafe/lifestuff/widgets/personal_messages.h"
+#include "maidsafe/lifestuff/widgets/user_send_mail.h"
 
 // generated
 #include "ui_user_contacts_panel.h"
@@ -102,4 +102,4 @@ class Contacts : public Panel {
     void changeEvent(QEvent *event);
 };
 
-#endif  // QT_WIDGETS_CONTACTS_H_
+#endif  //  MAIDSAFE_LIFESTUFF_WIDGETS_CONTACTS_H_

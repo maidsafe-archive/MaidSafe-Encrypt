@@ -13,13 +13,13 @@
  *      Author: Team
  */
 
-#include "qt/client/create_public_username_thread.h"
+#include "maidsafe/lifestuff/client/create_public_username_thread.h"
 
 // qt
 #include <QDebug>
 
 // core
-#include "qt/client/client_controller.h"
+#include "maidsafe/lifestuff/client/client_controller.h"
 
 
 CreatePublicUsernameThread::CreatePublicUsernameThread(const QString& username,

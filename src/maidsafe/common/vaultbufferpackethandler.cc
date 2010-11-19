@@ -12,14 +12,11 @@
  *      Author: Team
  */
 
-#include "maidsafe/vaultbufferpackethandler.h"
+#include "maidsafe/common/vaultbufferpackethandler.h"
+#include "maidsafe/common/commonutils.h"
+#include "maidsafe/common/maidsafe.h"
 
 namespace maidsafe {
-
-VaultBufferPacketHandler::VaultBufferPacketHandler() : crypto_obj_() {
-  crypto_obj_.set_hash_algorithm(crypto::SHA_512);
-  crypto_obj_.set_symm_algorithm(crypto::AES_256);
-}
 
 bool VaultBufferPacketHandler::CheckMsgStructure(const std::string &ser_message,
                                                  std::string *sender_id,
@@ -56,8 +53,8 @@ bool VaultBufferPacketHandler::ValidateOwnerSignature(
   BufferPacket bp;
   if (!bp.ParseFromString(ser_bufferpacket))
     return false;
-  return crypto_obj_.AsymCheckSig(bp.owner_info(0).data(),
-    bp.owner_info(0).signature(), public_key, crypto::STRING_STRING);
+  return RSACheckSignedData(bp.owner_info(0).data(),
+                            bp.owner_info(0).signature(), public_key);
 }
 
 bool VaultBufferPacketHandler::GetMessages(std::string *ser_bp,
@@ -182,8 +179,7 @@ bool VaultBufferPacketHandler::AddMessage(const std::string &current_bp,
   if (bpm.type() != INSTANT_MSG && bpm.type()!= EMAIL &&
       bpm.type() != ADD_CONTACT_RQST) {
     public_key = bpm.sender_public_key();
-    std::string id(crypto_obj_.Hash(public_key + signed_public_key, "",
-                                    crypto::STRING_STRING, false));
+    std::string id(SHA512String(public_key + signed_public_key));
     if (id != bpm.sender_id()) {
 #ifdef DEBUG
       printf("VBPH::AddMessage - Invalid sender_id.\n");
@@ -194,16 +190,14 @@ bool VaultBufferPacketHandler::AddMessage(const std::string &current_bp,
     public_key = bpm.sender_public_key();
   }
 
-  if (!crypto_obj_.AsymCheckSig(message.data(), message.signature(),
-    public_key, crypto::STRING_STRING)) {
+  if (!RSACheckSignedData(message.data(), message.signature(), public_key)) {
 #ifdef DEBUG
     printf("VBPH::AddMessage - Invalid message signature.\n");
 #endif
     return false;
   }
 
-  std::string hashed_sender_id(crypto_obj_.Hash(bpm.sender_id(), "",
-                                                crypto::STRING_STRING, false));
+  std::string hashed_sender_id(SHA512String(bpm.sender_id()));
   if (bpm.type() != ADD_CONTACT_RQST) {
     BufferPacketInfo bpi;
     bpi.ParseFromString(bufferpacket.owner_info(0).data());
@@ -285,9 +279,7 @@ bool VaultBufferPacketHandler::AddPresence(const std::string &ser_message,
   }
 
   std::string sender_id(lp.contact_id());
-  std::string hashed_sender_id(crypto_obj_.Hash(sender_id, "",
-                                                crypto::STRING_STRING,
-                                                false));
+  std::string hashed_sender_id(SHA512String(sender_id));
   BufferPacketInfo bpi;
   bpi.ParseFromString(bufferpacket.owner_info(0).data());
   bool flag = false;

@@ -24,7 +24,7 @@
 #include <QProcess>
 #include <QPixmap>
 
-#include "qt/client/big_list_delegate.h"
+#include "maidsafe/lifestuff/client/big_list_delegate.h"
 
 #include "ui_file_browser.h"
 

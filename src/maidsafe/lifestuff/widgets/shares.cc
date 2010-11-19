@@ -12,7 +12,7 @@
  *      Author: Team
  */
 
-#include "qt/widgets/shares.h"
+#include "maidsafe/lifestuff/widgets/shares.h"
 
 // qt
 #include <QMessageBox>
@@ -23,10 +23,10 @@
 #include <QInputDialog>
 
 // local
-#include "qt/widgets/share_participants.h"
-#include "qt/client/client_controller.h"
-#include "qt/client/create_share_thread.h"
-#include "qt/client/user_space_filesystem.h"
+#include "maidsafe/lifestuff/widgets/share_participants.h"
+#include "maidsafe/lifestuff/client/client_controller.h"
+#include "maidsafe/lifestuff/client/create_share_thread.h"
+#include "maidsafe/lifestuff/client/user_space_filesystem.h"
 
 
 Shares::Shares(QWidget* parent)

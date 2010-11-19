@@ -12,7 +12,7 @@
  *      Author: Team
  */
 
-#include "qt/widgets/vault_info.h"
+#include "maidsafe/lifestuff/widgets/vault_info.h"
 
 // boost
 #include <boost/lexical_cast.hpp>
@@ -28,7 +28,7 @@
 #include <string>
 
 // local
-#include "qt/client/client_controller.h"
+#include "maidsafe/lifestuff/client/client_controller.h"
 
 
 VaultInfo::VaultInfo(QWidget* parent)

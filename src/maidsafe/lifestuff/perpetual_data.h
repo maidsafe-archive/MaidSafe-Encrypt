@@ -12,8 +12,8 @@
  *      Author: Team
  */
 
-#ifndef QT_PERPETUAL_DATA_H_
-#define QT_PERPETUAL_DATA_H_
+#ifndef MAIDSAFE_LIFESTUFF_PERPETUAL_DATA_H_
+#define MAIDSAFE_LIFESTUFF_PERPETUAL_DATA_H_
 
 // qt
 #include <QMainWindow>
@@ -25,11 +25,11 @@
 #include <QtXml/QDomElement>
 
 // local
-#include "qt/client/client_controller.h"
-#include "qt/widgets/personal_messages.h"
-#include "qt/widgets/user_settings.h"
-#include "qt/widgets/user_inbox.h"
-#include "qt/client/save_file_thread.h"
+#include "maidsafe/lifestuff/client/client_controller.h"
+#include "maidsafe/lifestuff/widgets/personal_messages.h"
+#include "maidsafe/lifestuff/widgets/user_settings.h"
+#include "maidsafe/lifestuff/widgets/user_inbox.h"
+#include "maidsafe/lifestuff/client/save_file_thread.h"
 
 // generated
 #include "ui_pd.h"
@@ -125,7 +125,7 @@ class PerpetualData : public QMainWindow {
     void onAwayTriggered();
     void onBusyTriggered();
     void onOffline_2Triggered();
-		void onEmailTriggered();
+    void onEmailTriggered();
     void onCalendarTriggered();
     void onOffTriggered();
     void onSmallTriggered();
@@ -252,13 +252,13 @@ class PerpetualData : public QMainWindow {
   // User Settings Window
   UserSettings* settings_;
 
-	// Email Inbox
-	UserInbox* inbox_;
+  // Email Inbox
+  UserInbox* inbox_;
 
-  //Pending Ops
+  // Pending Ops
   PendingOperationsDialog* pendingOps_;
 
-  //User Calendar
+  // User Calendar
   UserCalendar* userCal_;
 
   LifeStuffLogin* lsLogin_;
@@ -287,5 +287,5 @@ class PerpetualData : public QMainWindow {
   void changeEvent(QEvent *event);
 };
 
-#endif  // QT_PERPETUAL_DATA_H_
+#endif  // MAIDSAFE_LIFESTUFF_PERPETUAL_DATA_H_
 

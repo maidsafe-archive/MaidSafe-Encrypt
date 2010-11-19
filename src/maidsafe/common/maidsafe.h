@@ -22,8 +22,8 @@
 * ============================================================================
 */
 
-#ifndef MAIDSAFE_MAIDSAFE_H_
-#define MAIDSAFE_MAIDSAFE_H_
+#ifndef MAIDSAFE_COMMON_MAIDSAFE_H_
+#define MAIDSAFE_COMMON_MAIDSAFE_H_
 
 #include <boost/cstdint.hpp>
 #include <maidsafe/maidsafe-dht.h>
@@ -38,10 +38,9 @@
 
 #include <string>
 #include <vector>
-
 #include "maidsafe/common/returncodes.h"
-#include "maidsafe/client/filesystem/distributed_filesystem.pb.h"
-#include "maidsafe/common/packet.pb.h"
+
+namespace kad { class Contact; }
 
 namespace maidsafe {
 
@@ -57,6 +56,8 @@ const boost::uint16_t kRsaKeySize = 4096;
 const std::string kAnonymousRequestSignature(2 * kKeySize, 'f');
 
 enum DbInitFlag {CONNECT, CREATE, DISCONNECT};
+
+const size_t kMaxPath(255);
 
 const std::string kRoot("/");
 
@@ -199,12 +200,11 @@ enum SortingMode { ALPHA, RANK, LAST };
 
 enum ShareFilter { kAll, kRo, kAdmin };
 
-typedef boost::function<void(const maidsafe::ReturnCode&)> VoidFuncOneInt;
+typedef boost::function<void(const ReturnCode&)> VoidFuncOneInt;
 typedef boost::function<void(const ReturnCode&, const kad::Contact&)>
         VoidFuncIntContact;
 typedef boost::function<void(const ReturnCode&,
-                             const std::vector<kad::Contact>&)>
-        VoidFuncIntContacts;
+    const std::vector<kad::Contact>&)> VoidFuncIntContacts;
 
 
 inline std::string HexSubstr(const std::string &non_hex) {
@@ -217,12 +217,4 @@ inline std::string HexSubstr(const std::string &non_hex) {
 
 }  // namespace maidsafe
 
-
-namespace maidsafe_vault {
-
-typedef boost::function<void (const maidsafe_vault::ReturnCode&)>
-    VoidFuncOneInt;
-
-}  // namespace maidsafe_vault
-
-#endif  // MAIDSAFE_MAIDSAFE_H_
+#endif  // MAIDSAFE_COMMON_MAIDSAFE_H_

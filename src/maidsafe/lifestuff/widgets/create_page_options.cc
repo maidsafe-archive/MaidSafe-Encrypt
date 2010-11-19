@@ -12,12 +12,12 @@
  *      Author: Team
  */
 
-#include "qt/widgets/create_page_options.h"
+#include "maidsafe/lifestuff/widgets/create_page_options.h"
 
 // qt
 #include <QDebug>
 
-#include "qt/client/client_controller.h"
+#include "maidsafe/lifestuff/client/client_controller.h"
 
 CreateOptionsPage::CreateOptionsPage(QWidget* parent)
     : QWizardPage(parent) {

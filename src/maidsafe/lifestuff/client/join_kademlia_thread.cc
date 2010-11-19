@@ -13,13 +13,13 @@
  *      Author: Team
  */
 
-#include "qt/client/join_kademlia_thread.h"
+#include "maidsafe/lifestuff/client/join_kademlia_thread.h"
 
 // qt
 #include <QDebug>
 
 // core
-#include "qt/client/client_controller.h"
+#include "maidsafe/lifestuff/client/client_controller.h"
 
 JoinKademliaThread::JoinKademliaThread(QObject* parent)
     : WorkerThread(parent) { }

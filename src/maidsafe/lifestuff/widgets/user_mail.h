@@ -13,16 +13,16 @@
  */
 
 
-#ifndef QT_WIDGETS_USER_MAIL_H_
-#define QT_WIDGETS_USER_MAIL_H_
+#ifndef MAIDSAFE_LIFESTUFF_WIDGETS_USER_MAIL_H_
+#define MAIDSAFE_LIFESTUFF_WIDGETS_USER_MAIL_H_
 
 #include <QWidget>
 #include <QString>
 
 // local
-#include "qt/client/client_controller.h"
-#include "qt/widgets/user_inbox.h"
-#include "qt/widgets/user_send_mail.h"
+#include "maidsafe/lifestuff/client/client_controller.h"
+#include "maidsafe/lifestuff/widgets/user_inbox.h"
+#include "maidsafe/lifestuff/widgets/user_send_mail.h"
 
 #include "ui_user_mail.h"
 
@@ -55,4 +55,4 @@ class UserMail : public QDialog {
   void changeEvent(QEvent *event);
 };
 
-#endif  // QT_WIDGETS_USER_MAIL_H_
+#endif  //  MAIDSAFE_LIFESTUFF_WIDGETS_USER_MAIL_H_

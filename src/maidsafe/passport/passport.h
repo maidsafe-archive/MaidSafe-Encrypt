@@ -23,6 +23,9 @@
 #define MAIDSAFE_PASSPORT_PASSPORT_H_
 
 #include <boost/cstdint.hpp>
+#include <boost/tr1/memory.hpp>
+
+#include <string>
 
 #include "maidsafe/passport/cryptokeypairs.h"
 #include "maidsafe/passport/systempackethandler.h"
@@ -34,16 +37,16 @@ namespace passport {
 class Passport {
  public:
   // Size to generate RSA keys in bits.
-  explicit Passport(const boost::uint16_t &rsa_key_size,
-                    const boost::int8_t &max_crypto_thread_count)
-      : packet_handler_(),
-        crypto_key_pairs_(rsa_key_size, max_crypto_thread_count),
+  Passport(const boost::uint16_t &rsa_key_size,
+           const boost::int8_t &max_crypto_thread_count)
+      : crypto_key_pairs_(rsa_key_size, max_crypto_thread_count),
+        packet_handler_(),
         kSmidAppendix_("1") {}
 
   // Starts buffering cryptographic key pairs
-  void Init();
+  virtual void Init();
 
-  ~Passport() {}
+  virtual ~Passport() {}
 
   // Used to initilise packet_handler_ in all cases.
   // Creates a pending MID and SMID which need to have their RID set.  If
@@ -68,7 +71,10 @@ class Passport {
                      std::tr1::shared_ptr<TmidPacket> tmid);
 
   // Used when creating a new user.
-  // Confirms MID, SMID and TMID are successfully stored.
+  // Confirms MID, SMID and TMID are successfully stored.  mid, smid and tmid
+  // as set by SetNewUserData must be passed in.  If method returns failure, it
+  // can safely be retried (e.g. after dependent packets have been confirmed) or
+  // else SetNewUserData should be used to regenerate pending packets.
   int ConfirmNewUserData(std::tr1::shared_ptr<MidPacket> mid,
                          std::tr1::shared_ptr<MidPacket> smid,
                          std::tr1::shared_ptr<TmidPacket> tmid);
@@ -87,7 +93,7 @@ class Passport {
   // which case tmid_for_deletion is NULL.  If successful, a copy of the new and
   // old details are set before returning kSuccess.  Can be called repeatedly
   // (with same plain_text_master_data) in case generated new_tmid name is
-  // unsuitable. 
+  // unsuitable.
   int UpdateMasterData(const std::string &plain_text_master_data,
                        std::string *mid_old_value,
                        std::string *smid_old_value,
@@ -97,7 +103,10 @@ class Passport {
                        std::tr1::shared_ptr<TmidPacket> tmid_for_deletion);
 
   // Used when saving a session.
-  // Confirms MID, SMID TMID and STMID are successfully stored.
+  // Confirms MID, SMID and TMID are successfully stored.  mid, smid and tmid
+  // as set by UpdateMasterData must be passed in.  If method returns failure,
+  // it can safely be retried (e.g. after dependent packets have been confirmed)
+  // or else UpdateMasterData should be used to regenerate pending packets.
   int ConfirmMasterDataUpdate(std::tr1::shared_ptr<MidPacket> mid,
                               std::tr1::shared_ptr<MidPacket> smid,
                               std::tr1::shared_ptr<TmidPacket> tmid);
@@ -108,27 +117,32 @@ class Passport {
   int RevertMasterDataUpdate() { return RevertMidSmidTmidStmid(true); }
 
   // Used when logging in.
-  // Sets the RID for pending MID (or pending SMID) packet, and creates a
-  // corresponding pending TMID (or pending STMID) which needs to have its
-  // password & plain_text_master_data set.  If successful, name of the packet
-  // is set in tmid_name.
+  // Should normally be called after SetInitialDetails, as it needs a pending
+  // MID or SMID to operate on.  Sets the RID for pending MID (or pending SMID)
+  // packet, and creates a corresponding pending TMID (or pending STMID) which
+  // needs to have its password & plain_text_master_data set.  If successful,
+  // name of the packet is set in tmid_name.  MID (or SMID) is left as pending.
   int InitialiseTmid(bool surrogate,
-                     const std::string &serialised_mid_packet,
+                     const std::string &encrypted_rid,
                      std::string *tmid_name);
 
   // Used when logging in.
-  // Returns the plain_text_master_data from a pending TMID (or pending STMID)
-  // serialised packet.
+  // Should normally be called after InitialiseTmid, as it needs a pending
+  // TMID or STMID to operate on.  Sets the encrypted_master_data for pending
+  // TMID (or pending STMID) packet.  If successful, master data is decrypted
+  // and is set in plain_text_master_data.  MID and TMID (or SMID and STMID) are
+  // left as pending.
   int GetUserData(const std::string &password,
                   bool surrogate,
-                  const std::string &serialised_tmid_packet,
+                  const std::string &encrypted_master_data,
                   std::string *plain_text_master_data);
 
   // Used when logging in.
-  // Parses a previously serialised keyring and sets all contained
-  // SignaturePackets as confirmed. Also sets pending MID, SMID, TMID and STMID
-  // as confirmed if their appropriate prerequiste SignaturePackets were added
-  // from the keyring.
+  // Should normally be called after GetUserData, as it needs a pending MID,
+  // SMID, TMID and STMID to operate on.  Parses a previously serialised keyring
+  // and sets all contained SignaturePackets as confirmed. Also sets pending
+  // MID, SMID, TMID and STMID as confirmed if their appropriate prerequiste
+  // SignaturePackets were added from the keyring.
   int ParseKeyring(const std::string &serialised_keyring);
 
   // Used when amending username and/or pin.
@@ -148,7 +162,11 @@ class Passport {
                      std::tr1::shared_ptr<TmidPacket> new_stmid);
 
   // Used when amending username and/or pin.
-  // Confirms MID, SMID TMID and STMID are successfully stored.
+  // Confirms MID, SMID TMID and STMID are successfully stored.  mid, smid, tmid
+  // and stmid as set by ChangeUserData must be passed in.  If method returns
+  // failure, it can safely be retried (e.g. after dependent packets have been
+  // confirmed) or else ChangeUserData should be used to regenerate pending
+  // packets.
   int ConfirmUserDataChange(std::tr1::shared_ptr<MidPacket> mid,
                             std::tr1::shared_ptr<MidPacket> smid,
                             std::tr1::shared_ptr<TmidPacket> tmid,
@@ -171,7 +189,10 @@ class Passport {
                      std::tr1::shared_ptr<TmidPacket> updated_stmid);
 
   // Used when amending user's password.
-  // Confirms TMID and STMID are successfully stored.
+  // Confirms TMID and STMID are successfully stored.  tmid and stmid as set by
+  // ChangePassword must be passed in.  If method returns failure, it can safely
+  // be retried (e.g. after dependent packets have been confirmed) or else
+  // ChangePassword should be used to regenerate pending packets.
   int ConfirmPasswordChange(std::tr1::shared_ptr<TmidPacket> tmid,
                             std::tr1::shared_ptr<TmidPacket> stmid);
 
@@ -196,7 +217,9 @@ class Passport {
   int InitialiseMpid(const std::string &public_name,
                      std::tr1::shared_ptr<SignaturePacket> mpid);
 
-  // Confirms signature_packet is successfully stored.
+  // Confirms signature_packet is successfully stored.  A copy of the stored
+  // packet must be passed in for verification.  If method returns failure, it
+  // can safely be retried (e.g. after dependent packets have been confirmed).
   int ConfirmSignaturePacket(
       std::tr1::shared_ptr<SignaturePacket> signature_packet);
 
@@ -204,20 +227,37 @@ class Passport {
   // is reverted to last confirmed version.
   int RevertSignaturePacket(const PacketType &packet_type);
 
-  // Returns a copy of the confirmed packet.
-  std::tr1::shared_ptr<pki::Packet> Packet(const PacketType &packet_type) {
-    return packet_handler_.Packet(packet_type);
+  // Returns a copy of the confirmed or pending packet.
+  std::tr1::shared_ptr<pki::Packet> GetPacket(const PacketType &packet_type,
+                                              bool confirmed) {
+    return packet_handler_.GetPacket(packet_type, confirmed);
   }
+
+  // Removes packet from packet_handler_.
+  int DeletePacket(const PacketType &packet_type) {
+    return packet_handler_.DeletePacket(packet_type);
+  }
+
+  std::string SignaturePacketName(const PacketType &packet_type,
+                                  bool confirmed);
+  std::string SignaturePacketPublicKey(const PacketType &packet_type,
+                                       bool confirmed);
+  std::string SignaturePacketPrivateKey(const PacketType &packet_type,
+                                        bool confirmed);
+  std::string SignaturePacketPublicKeySignature(const PacketType &packet_type,
+                                                bool confirmed);
 
   // Removes all packets from packet_handler_.
   void Clear() { packet_handler_.Clear(); }
 
+ protected:
+  CryptoKeyPairs crypto_key_pairs_;
+
  private:
+  friend class test::PassportTest_BEH_PASSPORT_SetNewUserData_Test;
+  friend class test::PassportTest_BEH_PASSPORT_ConfirmNewUserData_Test;
   Passport &operator=(const Passport&);
   Passport(const Passport&);
-  std::tr1::shared_ptr<pki::Packet> PendingMid(const PacketType &packet_type) {
-    return packet_handler_.Packet(packet_type);
-  }
   int DoInitialiseSignaturePacket(
       const PacketType &packet_type,
       const std::string &public_name,
@@ -236,7 +276,6 @@ class Passport {
   std::tr1::shared_ptr<TmidPacket> PendingTmid();
   std::tr1::shared_ptr<TmidPacket> PendingStmid();
   SystemPacketHandler packet_handler_;
-  CryptoKeyPairs crypto_key_pairs_;
   const std::string kSmidAppendix_;
 };
 

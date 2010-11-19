@@ -12,8 +12,8 @@
  *      Author: Team
  */
 
-#ifndef QT_WIDGETS_SHARE_PARTICIPANTS_H_
-#define QT_WIDGETS_SHARE_PARTICIPANTS_H_
+#ifndef MAIDSAFE_LIFESTUFF_WIDGETS_SHARE_PARTICIPANTS_H_
+#define MAIDSAFE_LIFESTUFF_WIDGETS_SHARE_PARTICIPANTS_H_
 
 // qt
 #include <QDialog>
@@ -38,4 +38,4 @@ class ShareParticipantsChoice : public QDialog {
   void changeEvent(QEvent *event);
 };
 
-#endif  // QT_WIDGETS_SHARE_PARTICIPANTS_H_
+#endif  //  MAIDSAFE_LIFESTUFF_WIDGETS_SHARE_PARTICIPANTS_H_

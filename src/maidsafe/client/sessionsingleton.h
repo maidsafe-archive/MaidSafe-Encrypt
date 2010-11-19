@@ -25,8 +25,10 @@
 #ifndef MAIDSAFE_CLIENT_SESSIONSINGLETON_H_
 #define MAIDSAFE_CLIENT_SESSIONSINGLETON_H_
 
-#include <boost/thread/thread.hpp>
-#include <maidsafe/base/crypto.h>
+#include <boost/utility.hpp>
+#include <boost/thread/once.hpp>
+#include <boost/scoped_ptr.hpp>
+#include <maidsafe/passport/passport.h>
 
 #include <list>
 #include <map>
@@ -34,18 +36,61 @@
 #include <string>
 #include <vector>
 
-#include "maidsafe/common/filesystem.h"
-#include "maidsafe/common/maidsafe.h"
 #include "maidsafe/client/contacts.h"
 #include "maidsafe/client/privateshares.h"
 #include "maidsafe/client/filesystem/distributed_filesystem.pb.h"
-#include "maidsafe/passport/passportconfig.h"
+#include "maidsafe/common/filesystem.h"
+#include "maidsafe/common/maidsafe.h"
 
 namespace maidsafe {
 
-class MockSessionSingleton;
-class Authentication;
+namespace vault {
+namespace test {
+class RunPDVaults;
+class PDVaultTest;
+}  // namespace test
+}  // namespace vault
 
+namespace test {
+class SessionSingletonTest;
+class RunPDClient;
+class DataAtlasHandlerTest;
+class ImHandlerTest;
+class MultiImHandlerTest;
+class ImMessagingTest;
+class CCImMessagingTest;
+class LocalStoreManagerTest;
+class MaidStoreManagerTest;
+class SEHandlerTest;
+class SessionSingletonTest_BEH_MAID_SetsGetsAndResetSession_Test;
+class SessionSingletonTest_BEH_MAID_SessionName_Test;
+class AuthenticationTest_FUNC_MAID_RepeatedSaveSessionBlocking_Test;
+class AuthenticationTest_FUNC_MAID_RepeatedSaveSessionCallbacks_Test;
+class AuthenticationTest_FUNC_MAID_ChangeUsername_Test;
+class AuthenticationTest_FUNC_MAID_ChangePin_Test;
+class AuthenticationTest_FUNC_MAID_CreatePublicName_Test;
+class AuthenticationTest_FUNC_MAID_NET_RepeatedSaveSessionBlocking_Test;
+class AuthenticationTest_FUNC_MAID_NET_RepeatedSaveSessionCallbacks_Test;
+class AuthenticationTest_FUNC_MAID_NET_ChangeUsername_Test;
+class AuthenticationTest_FUNC_MAID_NET_ChangePin_Test;
+class AuthenticationTest_FUNC_MAID_NET_CreatePublicName_Test;
+class ImMessagingTest_FUNC_MAID_SendReceiveMessages_Test;
+class ImMessagingTest_FUNC_MAID_ReceiveEndPointMsg_Test;
+class ImMessagingTest_FUNC_MAID_ReceiveLogOutMsg_Test;
+class ImMessagingTest_FUNC_MAID_HandleTwoConverstions_Test;
+class ImMessagingTest_FUNC_MAID_NET_SendReceiveMessages_Test;
+class ImMessagingTest_FUNC_MAID_NET_ReceiveEndPointMsg_Test;
+class ImMessagingTest_FUNC_MAID_NET_ReceiveLogOutMsg_Test;
+class ImMessagingTest_FUNC_MAID_NET_HandleTwoConverstions_Test;
+class ImHandlerTest_BEH_MAID_Create_ValidateMsg_Test;
+class LocalStoreManagerTest_BEH_MAID_DeleteSystemPacketNotOwner_Test;
+class LocalStoreManagerTest_BEH_MAID_UpdatePacket_Test;
+class LocalStoreManagerTest_BEH_MAID_AddAndGetBufferPacketMessages_Test;
+class LocalStoreManagerTest_BEH_MAID_AddRequestBufferPacketMessage_Test;
+}  // namespace test
+
+class Authentication;
+class ClientUtils;
 
 struct UserDetails {
   UserDetails() : defconlevel(kDefCon3),
@@ -53,6 +98,7 @@ struct UserDetails {
                   username(),
                   pin(),
                   password(),
+                  public_username(),
                   session_name(),
                   root_db_key(),
                   self_encrypting(true),
@@ -67,7 +113,8 @@ struct UserDetails {
                   pd() {}
   DefConLevels defconlevel;
   bool da_modified;
-  std::string username, pin, password, session_name, root_db_key;
+  std::string username, pin, password, public_username, session_name;
+  std::string root_db_key;
   bool self_encrypting;
   std::set<std::string> authorised_users;
   std::set<std::string> maid_authorised_users;
@@ -90,9 +137,12 @@ struct ConnectionDetails {
 
 class SessionSingleton {
  public:
+  static SessionSingleton* getInstance() {
+    boost::call_once(Init, flag_);
+    return single_.get();
+  }
   bool ResetSession();
-  static SessionSingleton* getInstance();
-  static void Destroy();
+  virtual ~SessionSingleton() {}
 
   ///////////////////////////////
   //// User Details Handling ////
@@ -104,6 +154,7 @@ class SessionSingleton {
   std::string Username();
   std::string Pin();
   std::string Password();
+  std::string PublicUsername();
   std::string SessionName();
   std::string RootDbKey();
   bool SelfEncrypting();
@@ -120,9 +171,6 @@ class SessionSingleton {
   // Mutators
   bool SetDefConLevel(DefConLevels defconlevel);
   bool SetDaModified(bool da_modified);
-  bool SetUsername(const std::string &username);
-  bool SetPin(const std::string &pin);
-  bool SetPassword(const std::string &password);
   bool SetSessionName(bool clear);
   bool SetRootDbKey(const std::string &root_db_key);
   bool SetSelfEncrypting(bool self_encrypting);
@@ -142,20 +190,16 @@ class SessionSingleton {
   //// Key Ring Handling ////
   ///////////////////////////
 
-  int LoadKeys(std::list<Key> *keys);
-  void GetKeys(std::list<KeyAtlasRow> *keys);
-  void SerialisedKeyRing(std::string *ser_kr);
-  unsigned int KeyRingSize();
-  // If signed_public_key == "", it is set as signature of given public_key
-  // using given private_key.
-  int AddKey(const PacketType &bpt, const std::string &id,
-             const std::string &private_key, const std::string &public_key,
-             const std::string &signed_public_key);
-  int RemoveKey(const PacketType &bpt);
-  std::string Id(const passport::PacketType &bpt);
-  std::string PublicKey(const passport::PacketType &bpt);
-  std::string PrivateKey(const passport::PacketType &bpt);
-  std::string SignedPublicKey(const passport::PacketType &bpt);
+  int ParseKeyring(const std::string &serialised_keyring);
+  std::string SerialiseKeyring();
+  int ProxyMID(std::string *id,
+               std::string *public_key,
+               std::string *private_key,
+               std::string *public_key_signature);
+  int MPublicID(std::string *id,
+                std::string *public_key,
+                std::string *private_key,
+                std::string *public_key_signature);
 
   ///////////////////////////
   //// Contacts Handling ////
@@ -226,7 +270,7 @@ class SessionSingleton {
   int GetShareKeys(const std::string &msid,
                    std::string *public_key,
                    std::string *private_key);
-  int GetShareList(std::list<maidsafe::private_share> *ps_list,
+  int GetShareList(std::list<private_share> *ps_list,
                    const SortingMode &sm, const ShareFilter &sf);
   int GetFullShareList(const SortingMode &sm, const ShareFilter &sf,
                         std::list<PrivateShare> *ps_list);
@@ -278,15 +322,90 @@ class SessionSingleton {
                    int status);
   int DeleteLiveContact(const std::string &contact);
   void ClearLiveContacts();
-  boost::shared_ptr<passport::Passport> passport() { return passport_; }
+
+ protected:
+  SessionSingleton() : ud_(),
+                       passport_(new passport::Passport(kRsaKeySize, 5)),
+                       ch_(),
+                       psh_(),
+                       conversations_(),
+                       live_contacts_(),
+                       lc_mutex_() {}
+  // Following four mutators should only be called by Authentication once
+  // associated packets are confirmed as stored.
+  bool SetUsername(const std::string &username);
+  bool SetPin(const std::string &pin);
+  bool SetPassword(const std::string &password);
+  bool SetPublicUsername(const std::string &public_username);
+  // Creates ANMAID, MAID, PMID.  Also ANMPID & MPID if public_username not "".
+  bool CreateTestPackets(const std::string &public_username);
+  std::string Id(const passport::PacketType &packet_type,
+                 bool confirmed_as_stored);
+  std::string PublicKey(const passport::PacketType &packet_type,
+                        bool confirmed_as_stored);
+  std::string PrivateKey(const passport::PacketType &packet_type,
+                         bool confirmed_as_stored);
+  std::string PublicKeySignature(const passport::PacketType &packet_type,
+                                 bool confirmed_as_stored);
 
  private:
+  friend class Authentication;
+  friend class ClientUtils;
   friend class MockSessionSingleton;
+  friend class test::SessionSingletonTest;
+  friend class test::RunPDClient;
+  friend class vault::test::RunPDVaults;
+  friend class vault::test::PDVaultTest;
+  friend class test::DataAtlasHandlerTest;
+  friend class test::ImHandlerTest;
+  friend class test::MultiImHandlerTest;
+  friend class test::ImMessagingTest;
+  friend class test::LocalStoreManagerTest;
+  friend class test::MaidStoreManagerTest;
+  friend class test::SEHandlerTest;
+  friend class test::CCImMessagingTest;
+  friend class test::SessionSingletonTest_BEH_MAID_SetsGetsAndResetSession_Test;
+  friend class test::SessionSingletonTest_BEH_MAID_SessionName_Test;
+  friend class
+      test::AuthenticationTest_FUNC_MAID_RepeatedSaveSessionBlocking_Test;
+  friend class
+      test::AuthenticationTest_FUNC_MAID_RepeatedSaveSessionCallbacks_Test;
+  friend class test::AuthenticationTest_FUNC_MAID_ChangeUsername_Test;
+  friend class test::AuthenticationTest_FUNC_MAID_ChangePin_Test;
+  friend class test::AuthenticationTest_FUNC_MAID_CreatePublicName_Test;
+  friend class
+      test::AuthenticationTest_FUNC_MAID_NET_RepeatedSaveSessionBlocking_Test;
+  friend class
+      test::AuthenticationTest_FUNC_MAID_NET_RepeatedSaveSessionCallbacks_Test;
+  friend class test::AuthenticationTest_FUNC_MAID_NET_ChangeUsername_Test;
+  friend class test::AuthenticationTest_FUNC_MAID_NET_ChangePin_Test;
+  friend class test::AuthenticationTest_FUNC_MAID_NET_CreatePublicName_Test;
+  friend class test::ImMessagingTest_FUNC_MAID_SendReceiveMessages_Test;
+  friend class test::ImMessagingTest_FUNC_MAID_ReceiveEndPointMsg_Test;
+  friend class test::ImMessagingTest_FUNC_MAID_ReceiveLogOutMsg_Test;
+  friend class test::ImMessagingTest_FUNC_MAID_HandleTwoConverstions_Test;
+  friend class test::ImMessagingTest_FUNC_MAID_NET_SendReceiveMessages_Test;
+  friend class test::ImMessagingTest_FUNC_MAID_NET_ReceiveEndPointMsg_Test;
+  friend class test::ImMessagingTest_FUNC_MAID_NET_ReceiveLogOutMsg_Test;
+  friend class test::ImMessagingTest_FUNC_MAID_NET_HandleTwoConverstions_Test;
+  friend class test::ImHandlerTest_BEH_MAID_Create_ValidateMsg_Test;
+  friend class
+      test::LocalStoreManagerTest_BEH_MAID_DeleteSystemPacketNotOwner_Test;
+  friend class test::LocalStoreManagerTest_BEH_MAID_UpdatePacket_Test;
+  friend class
+      test::LocalStoreManagerTest_BEH_MAID_AddAndGetBufferPacketMessages_Test;
+  friend class
+      test::LocalStoreManagerTest_BEH_MAID_AddRequestBufferPacketMessage_Test;
   SessionSingleton &operator=(const SessionSingleton&);
   SessionSingleton(const SessionSingleton&);
-  static SessionSingleton *single;
-  SessionSingleton();
-  ~SessionSingleton() {}
+  static void Init() { single_.reset(new SessionSingleton()); }
+  int GetKey(const passport::PacketType &packet_type,
+             std::string *id,
+             std::string *public_key,
+             std::string *private_key,
+             std::string *public_key_signature);
+  static boost::scoped_ptr<SessionSingleton> single_;
+  static boost::once_flag flag_;
   UserDetails ud_;
   boost::shared_ptr<passport::Passport> passport_;
   ContactsHandler ch_;

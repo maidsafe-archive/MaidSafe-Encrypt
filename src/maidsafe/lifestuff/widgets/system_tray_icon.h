@@ -12,8 +12,8 @@
  *      Author: Team
  */
 
-#ifndef QT_WIDGETS_SYSTEM_TRAY_ICON_H_
-#define QT_WIDGETS_SYSTEM_TRAY_ICON_H_
+#ifndef MAIDSAFE_LIFESTUFF_WIDGETS_SYSTEM_TRAY_ICON_H_
+#define MAIDSAFE_LIFESTUFF_WIDGETS_SYSTEM_TRAY_ICON_H_
 
 #include <QEvent>
 #include <QObject>
@@ -55,4 +55,4 @@ class SystemTrayIcon : public QSystemTrayIcon {
   QAction* action_send_file_;
 };
 
-#endif  // QT_WIDGETS_SYSTEM_TRAY_ICON_H_
+#endif  //  MAIDSAFE_LIFESTUFF_WIDGETS_SYSTEM_TRAY_ICON_H_

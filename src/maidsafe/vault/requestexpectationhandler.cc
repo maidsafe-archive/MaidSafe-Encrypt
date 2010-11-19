@@ -26,13 +26,15 @@
 
 #include <boost/lexical_cast.hpp>
 
-#include "maidsafe/returncodes.h"
-#include "protobuf/maidsafe_service_messages.pb.h"
+#include "maidsafe/common/maidsafe_service_messages.pb.h"
+#include "maidsafe/vault/vaultconfig.h"
 
-namespace maidsafe_vault {
+namespace maidsafe {
+
+namespace vault {
 
 int RequestExpectationHandler::AddExpectation(
-    const maidsafe::ExpectAmendmentRequest &expect_amendment_request) {
+    const ExpectAmendmentRequest &expect_amendment_request) {
   std::string expectation_identifier =
         GetExpectationIdentifier(expect_amendment_request);
   // Check group size is not too large
@@ -68,7 +70,7 @@ int RequestExpectationHandler::AddExpectation(
 }
 
 std::vector<std::string> RequestExpectationHandler::GetExpectedCallersIds(
-    const maidsafe::AmendAccountRequest &amend_account_request) {
+    const AmendAccountRequest &amend_account_request) {
   std::string expectation_identifier =
       GetExpectationIdentifier(amend_account_request);
   std::pair<ExpectedCallersMultiMap::iterator,
@@ -114,4 +116,6 @@ std::string RequestExpectationHandler::GetExpectationIdentifier(
          boost::lexical_cast<std::string>(request.amendment_type());
 }
 
-}  // namespace maidsafe_vault
+}  // namespace vault
+
+}  // namespace maidsafe

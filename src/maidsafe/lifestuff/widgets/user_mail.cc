@@ -11,12 +11,12 @@
  *  Created on: May 18, 2010
  *      Author: Stephen Alexander
  */
-#include "qt/widgets/user_mail.h"
+#include "maidsafe/lifestuff/widgets/user_mail.h"
 
 #include <QMessageBox>
 #include <QDebug>
 
-#include "qt/client/client_controller.h"
+#include "maidsafe/lifestuff/client/client_controller.h"
 
 
 UserMail::UserMail(QWidget* parent) : QDialog(parent) {

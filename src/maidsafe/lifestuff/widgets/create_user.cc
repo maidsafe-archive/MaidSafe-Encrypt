@@ -12,7 +12,7 @@
  *      Author: Team
  */
 
-#include "qt/widgets/create_user.h"
+#include "maidsafe/lifestuff/widgets/create_user.h"
 
 // qt
 #include <QDebug>
@@ -21,17 +21,17 @@
 
 // core
 #include <maidsafe/maidsafe-dht.h>
-#include "protobuf/maidsafe_service_messages.pb.h"
-#include "fs/filesystem.h"
+#include "maidsafe/common/maidsafe_service_messages.pb.h"
+#include "maidsafe/common/filesystem.h"
 
 // local
 
 // generated
-#include "qt/widgets/create_page_welcome.h"
-#include "qt/widgets/create_page_license.h"
-#include "qt/widgets/create_page_localvault_setup.h"
-#include "qt/widgets/create_page_options.h"
-#include "qt/widgets/create_page_complete.h"
+#include "maidsafe/lifestuff/widgets/create_page_welcome.h"
+#include "maidsafe/lifestuff/widgets/create_page_license.h"
+#include "maidsafe/lifestuff/widgets/create_page_localvault_setup.h"
+#include "maidsafe/lifestuff/widgets/create_page_options.h"
+#include "maidsafe/lifestuff/widgets/create_page_complete.h"
 
 
 CreateUser::CreateUser(QWidget* parent)

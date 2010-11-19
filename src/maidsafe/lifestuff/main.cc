@@ -19,41 +19,43 @@
 #include <QDebug>
 
 // local
-#include "qt/perpetual_data.h"
-#include "qt/widgets/lifestuff_login.h"
+#include "maidsafe/lifestuff/perpetual_data.h"
+#include "maidsafe/lifestuff/widgets/lifestuff_login.h"
 #include "widgets/system_tray_icon.h"
 #include "client/client_controller.h"
 
+/*
 // google crash reporter
-// #if defined(PD_LINUX)
-//   #include <google/breakpad/client/linux/handler/exception_handler.h>
-// #elif defined(__MSVC__)
-//   #include <client/windows/handler/exception_handler.h>
-// #endif
-// 
-// #if defined(PD_LINUX)
-// static bool DumpCallback(const char*,
-//                          const char *dump_id,
-//                          void*,
-//                          bool succeeded) {
-//   if (succeeded) {
-//     printf("%s is dumped.\n", dump_id);
-//   }
-//   return succeeded;
-// }
-// #elif defined(__MSVC__)
-// static bool DumpCallback(const wchar_t*,
-//                          const wchar_t* minidump_id,
-//                          void*,
-//                          EXCEPTION_POINTERS*,
-//                          MDRawAssertionInfo*,
-//                          bool succeeded) {
-//   if (succeeded) {
-//     wprintf(L"%s is dumped.\n", minidump_id);
-//   }
-//   return succeeded;
-// }
-// #endif
+#if defined(PD_LINUX)
+  #include <google/breakpad/client/linux/handler/exception_handler.h>
+#elif defined(__MSVC__)
+  #include <client/windows/handler/exception_handler.h>
+#endif
+
+#if defined(PD_LINUX)
+static bool DumpCallback(const char*,
+                         const char *dump_id,
+                         void*,
+                         bool succeeded) {
+  if (succeeded) {
+    printf("%s is dumped.\n", dump_id);
+  }
+  return succeeded;
+}
+#elif defined(__MSVC__)
+static bool DumpCallback(const wchar_t*,
+                         const wchar_t* minidump_id,
+                         void*,
+                         EXCEPTION_POINTERS*,
+                         MDRawAssertionInfo*,
+                         bool succeeded) {
+  if (succeeded) {
+    wprintf(L"%s is dumped.\n", minidump_id);
+  }
+  return succeeded;
+}
+#endif
+*/
 
 void pdMessageOutput(QtMsgType type, const char* msg) {
   switch (type) {
@@ -69,15 +71,17 @@ void pdMessageOutput(QtMsgType type, const char* msg) {
 }
 
 int main(int argc, char *argv[]) {
-// #ifdef PD_LINUX
-//   google_breakpad::ExceptionHandler eh(".", NULL, DumpCallback, NULL, true);
-// #elif defined(__MSVC__)
-//   google_breakpad::ExceptionHandler eh(L".", NULL, DumpCallback,
-//       NULL, google_breakpad::ExceptionHandler::HANDLER_ALL);
-// #endif
+/*
+#ifdef PD_LINUX
+  google_breakpad::ExceptionHandler eh(".", NULL, DumpCallback, NULL, true);
+#elif defined(__MSVC__)
+  google_breakpad::ExceptionHandler eh(L".", NULL, DumpCallback,
+      NULL, google_breakpad::ExceptionHandler::HANDLER_ALL);
+#endif
+*/
   qInstallMsgHandler(pdMessageOutput);
 
-  //Set up Internationalization
+  // Set up Internationalization
   QApplication app(argc, argv);
 
   app.setOrganizationDomain("http://www.maidsafe.net");

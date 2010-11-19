@@ -25,14 +25,11 @@
 #ifndef MAIDSAFE_CLIENT_MAIDSTOREMANAGER_H_
 #define MAIDSAFE_CLIENT_MAIDSTOREMANAGER_H_
 
+#include <boost/filesystem.hpp>
 #include <boost/thread/condition_variable.hpp>
 #include <boost/thread/locks.hpp>
 #include <boost/thread/thread.hpp>
 #include <boost/tuple/tuple.hpp>
-#include <gtest/gtest_prod.h>
-#include <maidsafe/base/crypto.h>
-#include <maidsafe/maidsafe-dht_config.h>
-#include <maidsafe/transport/transportudt.h>
 // #include <maidsafe/transport/transportdb.h>
 #include <QThreadPool>
 
@@ -42,53 +39,75 @@
 #include <string>
 #include <vector>
 
-#include "maidsafe/contactcache.h"
-#include "maidsafe/accountholdersmanager.h"
-#include "maidsafe/accountstatusmanager.h"
-#include "maidsafe/chunkstore.h"
-#include "maidsafe/opdata.h"
-#include "maidsafe/kadops.h"
-#include "maidsafe/pdutils.h"
-#include "maidsafe/clientbufferpackethandler.h"
+#include "maidsafe/common/accountholdersmanager.h"
+#include "maidsafe/common/accountstatusmanager.h"
+#include "maidsafe/common/clientbufferpackethandler.h"
+#include "maidsafe/common/contactcache.h"
+#include "maidsafe/client/clientutils.h"
 #include "maidsafe/client/storemanager.h"
 #include "maidsafe/client/storemanagertaskshandler.h"
 #include "maidsafe/client/imconnectionhandler.h"
 #include "maidsafe/client/imhandler.h"
 
-// These forward declarations are to allow PDVaultTest functions to be declared
-// as friends of MaidsafeStoreManager.
-namespace maidsafe {
-class MaidsafeStoreManager;
-class RunPDClient;
-namespace test {
-class MsmSetLocalVaultOwnedTest;
-class NetworkTest;
-class CCImMessagingTest;
-class CCImMessagingTest_FUNC_MAID_NET_TestImSendPresenceAndMsgs_Test;
-class CCImMessagingTest_FUNC_MAID_NET_TestImRecPresenceAndSendMsgs_Test;
-class CCImMessagingTest_FUNC_MAID_NET_TestMultipleImToContact_Test;
-}  // namespace test
-}  // namespace maidsafe
-
+namespace maidsafe { class MaidsafeStoreManager; }
 namespace testpdvault {
 size_t CheckStoredCopies(std::map<std::string, std::string> chunks,
                          const int &timeout_seconds,
                          boost::shared_ptr<maidsafe::MaidsafeStoreManager> sm);
 }  // namespace testpdvault
 
-namespace maidsafe_vault {
-class RunPDVaults;
+namespace maidsafe {
+
+namespace vault {
 namespace test {
+class RunPDVaults;
+class MsmSetLocalVaultOwnedTest;
 class PDVaultTest;
 class PDVaultTest_FUNC_MAID_NET_StoreAndGetChunks_Test;
 }  // namespace test
-}  // namespace maidsafe_vault
+}  // namespace vault
 
-namespace maidsafe {
+namespace test {
+class NetworkTest;
+class CCImMessagingTest;
+class CCImMessagingTest_FUNC_MAID_NET_TestImSendPresenceAndMsgs_Test;
+class CCImMessagingTest_FUNC_MAID_NET_TestImRecPresenceAndSendMsgs_Test;
+class CCImMessagingTest_FUNC_MAID_NET_TestMultipleImToContact_Test;
+class MaidStoreManagerTest_BEH_MAID_MSM_KeyUnique_Test;
+class MaidStoreManagerTest_BEH_MAID_MSM_ExpectAmendment_Test;
+class MaidStoreManagerTest_BEH_MAID_MSM_AddToWatchList_Test;
+class MaidStoreManagerTest_BEH_MAID_MSM_AssessUploadCounts_Test;
+class MaidStoreManagerTest_BEH_MAID_MSM_GetStoreRequests_Test;
+class MaidStoreManagerTest_BEH_MAID_MSM_ValidatePrepResp_Test;
+class MaidStoreManagerTest_BEH_MAID_MSM_SendChunkPrep_Test;
+class MaidStoreManagerTest_BEH_MAID_MSM_SendPrepCallback_Test;
+class MaidStoreManagerTest_BEH_MAID_MSM_SendChunkContent_Test;
+class MaidStoreManagerTest_BEH_MAID_MSM_RemoveFromWatchList_Test;
+class MaidStoreManagerTest_BEH_MAID_MSM_StoreNewPacket_Test;
+class MaidStoreManagerTest_BEH_MAID_MSM_StoreExistingPacket_Test;
+class MaidStoreManagerTest_BEH_MAID_MSM_LoadPacket_Test;
+class MaidStoreManagerTest_BEH_MAID_MSM_DeletePacket_Test;
+class MaidStoreManagerTest_BEH_MAID_MSM_UpdatePacket_Test;
+class MaidStoreManagerTest_BEH_MAID_MSM_GetAccountStatus_Test;
+class MaidStoreManagerTest_BEH_MAID_MSM_UpdateAccountStatus_Test;
+class MaidStoreManagerTest_BEH_MAID_MSM_GetFilteredAverage_Test;
+class RunPDClient;
+}  // namespace test
 
+class BufferPacketRpcs;
 class ClientRpcs;
 class ChunkStore;
 class SessionSingleton;
+struct SendChunkData;
+struct StoreData;
+struct DeletePacketData;
+struct UpdatePacketData;
+struct GenericConditionData;
+struct WatchListOpData;
+struct ExpectAmendmentOpData;
+struct AccountStatusData;
+struct AmendAccountData;
+class GetChunkOpData;
 
 class SendChunkCopyTask : public QRunnable {
  public:
@@ -233,7 +252,7 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   // Adds the packet to the priority store queue for uploading as a Kad k,v pair
   void StorePacket(const std::string &packet_name,
                    const std::string &value,
-                   PacketType system_packet_type,
+                   passport::PacketType system_packet_type,
                    DirType dir_type,
                    const std::string &msid,
                    const VoidFuncOneInt &cb);
@@ -250,14 +269,14 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   // Deletes all values for the specified key
   void DeletePacket(const std::string &packet_name,
                     const std::vector<std::string> values,
-                    PacketType system_packet_type,
+                    passport::PacketType system_packet_type,
                     DirType dir_type,
                     const std::string &msid,
                     const VoidFuncOneInt &cb);
   virtual void UpdatePacket(const std::string &packet_name,
                             const std::string &old_value,
                             const std::string &new_value,
-                            PacketType system_packet_type,
+                            passport::PacketType system_packet_type,
                             DirType dir_type,
                             const std::string &msid,
                             const VoidFuncOneInt &cb);
@@ -307,31 +326,30 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   friend size_t testpdvault::CheckStoredCopies(
       std::map<std::string, std::string> chunks,
       const int &timeout, boost::shared_ptr<MaidsafeStoreManager> sm);
-  FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_KeyUnique);
-  FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_ExpectAmendment);
-  FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_AddToWatchList);
-  FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_AssessUploadCounts);
-  FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_GetStoreRequests);
-  FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_ValidatePrepResp);
-  FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_SendChunkPrep);
-  FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_SendPrepCallback);
-  FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_SendChunkContent);
-  FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_RemoveFromWatchList);
-  FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_StoreNewPacket);
-  FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_StoreExistingPacket);
-  FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_LoadPacket);
-  FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_DeletePacket);
-  FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_UpdatePacket);
-  FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_GetAccountStatus);
-  FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_UpdateAccountStatus);
-  FRIEND_TEST(MaidStoreManagerTest, BEH_MAID_MSM_GetFilteredAverage);
-  friend class test::MsmSetLocalVaultOwnedTest;
-  friend class maidsafe_vault::test::PDVaultTest;
-  friend class
-      maidsafe_vault::test::PDVaultTest_FUNC_MAID_NET_StoreAndGetChunks_Test;
-  friend class maidsafe_vault::RunPDVaults;
-  friend class maidsafe::RunPDClient;
-  friend class maidsafe::test::NetworkTest;
+  friend class test::MaidStoreManagerTest_BEH_MAID_MSM_KeyUnique_Test;
+  friend class test::MaidStoreManagerTest_BEH_MAID_MSM_ExpectAmendment_Test;
+  friend class test::MaidStoreManagerTest_BEH_MAID_MSM_AddToWatchList_Test;
+  friend class test::MaidStoreManagerTest_BEH_MAID_MSM_AssessUploadCounts_Test;
+  friend class test::MaidStoreManagerTest_BEH_MAID_MSM_GetStoreRequests_Test;
+  friend class test::MaidStoreManagerTest_BEH_MAID_MSM_ValidatePrepResp_Test;
+  friend class test::MaidStoreManagerTest_BEH_MAID_MSM_SendChunkPrep_Test;
+  friend class test::MaidStoreManagerTest_BEH_MAID_MSM_SendPrepCallback_Test;
+  friend class test::MaidStoreManagerTest_BEH_MAID_MSM_SendChunkContent_Test;
+  friend class test::MaidStoreManagerTest_BEH_MAID_MSM_RemoveFromWatchList_Test;
+  friend class test::MaidStoreManagerTest_BEH_MAID_MSM_StoreNewPacket_Test;
+  friend class test::MaidStoreManagerTest_BEH_MAID_MSM_StoreExistingPacket_Test;
+  friend class test::MaidStoreManagerTest_BEH_MAID_MSM_LoadPacket_Test;
+  friend class test::MaidStoreManagerTest_BEH_MAID_MSM_DeletePacket_Test;
+  friend class test::MaidStoreManagerTest_BEH_MAID_MSM_UpdatePacket_Test;
+  friend class test::MaidStoreManagerTest_BEH_MAID_MSM_GetAccountStatus_Test;
+  friend class test::MaidStoreManagerTest_BEH_MAID_MSM_UpdateAccountStatus_Test;
+  friend class test::MaidStoreManagerTest_BEH_MAID_MSM_GetFilteredAverage_Test;
+  friend class vault::test::MsmSetLocalVaultOwnedTest;
+  friend class vault::test::PDVaultTest;
+  friend class vault::test::PDVaultTest_FUNC_MAID_NET_StoreAndGetChunks_Test;
+  friend class vault::test::RunPDVaults;
+  friend class test::RunPDClient;
+  friend class test::NetworkTest;
   friend class test::CCImMessagingTest;
   friend class
       test::CCImMessagingTest_FUNC_MAID_NET_TestImSendPresenceAndMsgs_Test;
@@ -343,7 +361,7 @@ class MaidsafeStoreManager : public StoreManagerInterface {
                               const std::vector<kad::Contact> &holders);
   // Check the inputs to the public methods are valid
   ReturnCode ValidateInputs(const std::string &name,
-                            const PacketType &packet_type,
+                            const passport::PacketType &packet_type,
                             const DirType &dir_type);
   void AddStorePacketTask(const StoreData &store_data,
                           bool is_mutable,
@@ -534,16 +552,17 @@ class MaidsafeStoreManager : public StoreManagerInterface {
       boost::shared_ptr<LocalVaultOwnedCallbackArgs> callback_args);
   void AmendAccountCallback(size_t index,
                             boost::shared_ptr<AmendAccountData> data);
+  BPInputParameters GetBPInputParameters();
   void ModifyBpCallback(const ReturnCode &rc,
                         boost::shared_ptr<BPResults> pm);
   void AddToBpCallback(const ReturnCode &rc,
                        const std::string &receiver,
                        boost::shared_ptr<BPResults> results);
-  void LoadMessagesCallback(const maidsafe::ReturnCode &res,
+  void LoadMessagesCallback(const ReturnCode &res,
                             const std::list<ValidatedBufferPacketMessage> &msgs,
                             bool b,
                             boost::shared_ptr<VBPMessages> vbpms);
-  void LoadPresenceCallback(const maidsafe::ReturnCode &res,
+  void LoadPresenceCallback(const ReturnCode &res,
                             const std::list<std::string> &pres,
                             bool b,
                             boost::shared_ptr<PresenceMessages> pm);
@@ -566,7 +585,7 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   boost::shared_ptr<ClientRpcs> client_rpcs_;
   boost::shared_ptr<KadOps> kad_ops_;
   SessionSingleton *ss_;
-  PdUtils pd_utils_;
+  ClientUtils client_utils_;
   StoreManagerTasksHandler tasks_handler_;
   boost::shared_ptr<ChunkStore> client_chunkstore_;
   QThreadPool chunk_thread_pool_, packet_thread_pool_;

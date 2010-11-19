@@ -14,8 +14,8 @@
 
 // Delegate Class for displaying Big List View Items
 
-#ifndef QT_CLIENT_BIG_LIST_DELEGATE_H_
-#define QT_CLIENT_BIG_LIST_DELEGATE_H_
+#ifndef MAIDSAFE_LIFESTUFF_CLIENT_BIG_LIST_DELEGATE_H_
+#define MAIDSAFE_LIFESTUFF_CLIENT_BIG_LIST_DELEGATE_H_
 
 #include <QAbstractItemDelegate>
 #include <QFontMetrics>
@@ -26,29 +26,28 @@ class QAbstractItemModel;
 class QObject;
 class QPainter;
 
-static const int ItemSize = 256;		
+static const int ItemSize = 256;
 
 class BigListDelegate : public QAbstractItemDelegate {
      Q_OBJECT
 
  public:
      explicit BigListDelegate(QObject *parent = 0);
-		 virtual ~BigListDelegate();
+     virtual ~BigListDelegate();
 
      void paint(QPainter *painter, const QStyleOptionViewItem &option,
                 const QModelIndex &index) const;
 
      QSize sizeHint(const QStyleOptionViewItem &option,
-                    const QModelIndex &index ) const;
+                    const QModelIndex &index) const;
 
  public slots:
      void setPixelSize(int size);
 
  private:
      int pixelSize;
-		 QPixmap icon_;
-		 QString text1, text2, text3;
+     QPixmap icon_;
+     QString text1, text2, text3;
+};
 
- };
-
-#endif
+#endif  // MAIDSAFE_LIFESTUFF_CLIENT_BIG_LIST_DELEGATE_H_

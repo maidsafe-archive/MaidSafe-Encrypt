@@ -13,15 +13,15 @@
  *      Author: Team
  */
 
-#ifndef QT_CLIENT_CREATE_SHARE_THREAD_H_
-#define QT_CLIENT_CREATE_SHARE_THREAD_H_
+#ifndef MAIDSAFE_LIFESTUFF_CLIENT_CREATE_SHARE_THREAD_H_
+#define MAIDSAFE_LIFESTUFF_CLIENT_CREATE_SHARE_THREAD_H_
 
 #include <QStringList>
 
 #include <set>
 #include <string>
 
-#include "qt/client/worker_thread.h"
+#include "maidsafe/lifestuff/client/worker_thread.h"
 
 // Worker thread for shares
 /*!
@@ -49,5 +49,5 @@ class CreateShareThread : public WorkerThread {
   QStringList roSet_;
 };
 
-#endif  // QT_CLIENT_CREATE_SHARE_THREAD_H_
+#endif  //  MAIDSAFE_LIFESTUFF_CLIENT_CREATE_SHARE_THREAD_H_
 

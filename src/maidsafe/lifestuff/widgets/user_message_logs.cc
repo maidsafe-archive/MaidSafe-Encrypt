@@ -12,7 +12,7 @@
  *      Author: Team
  */
 
-#include "qt/widgets/user_message_logs.h"
+#include "maidsafe/lifestuff/widgets/user_message_logs.h"
 
 // qt
 #include <QDebug>
@@ -20,8 +20,8 @@
 #include <QStringList>
 
 // local
-#include "qt/client/client_controller.h"
-#include "qt/widgets/user_panels.h"
+#include "maidsafe/lifestuff/client/client_controller.h"
+#include "maidsafe/lifestuff/widgets/user_panels.h"
 
 MessageLogs::MessageLogs(QWidget* parent)
     : Panel(parent), init_(false) {

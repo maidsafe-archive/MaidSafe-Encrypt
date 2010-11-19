@@ -12,7 +12,7 @@
  *      Author: Team
  */
 
-#include "qt/widgets/lifestuff_login.h"
+#include "maidsafe/lifestuff/widgets/lifestuff_login.h"
 
 // qt
 #include <QDebug>
@@ -21,12 +21,12 @@
 #include <maidsafe/maidsafe-dht.h>
 
 // std
-#include <limits.h>
+#include <limits>
 
 // core
-#include "protobuf/maidsafe_service_messages.pb.h"
-#include "qt/client/check_user_thread.h"
-#include "qt/client/validate_user_thread.h"
+#include "maidsafe/common/maidsafe_service_messages.pb.h"
+#include "maidsafe/lifestuff/client/check_user_thread.h"
+#include "maidsafe/lifestuff/client/validate_user_thread.h"
 
 // local
 namespace {

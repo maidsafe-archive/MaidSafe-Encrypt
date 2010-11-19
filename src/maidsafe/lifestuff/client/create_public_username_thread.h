@@ -12,10 +12,10 @@
  *      Author: Team
  */
 
-#ifndef QT_CLIENT_CREATE_PUBLIC_USERNAME_THREAD_H_
-#define QT_CLIENT_CREATE_PUBLIC_USERNAME_THREAD_H_
+#ifndef MAIDSAFE_LIFESTUFF_CLIENT_CREATE_PUBLIC_USERNAME_THREAD_H_
+#define MAIDSAFE_LIFESTUFF_CLIENT_CREATE_PUBLIC_USERNAME_THREAD_H_
 
-#include "qt/client/worker_thread.h"
+#include "maidsafe/lifestuff/client/worker_thread.h"
 
 // Worker thread for creating the pulbic username of users
 /*!
@@ -37,5 +37,5 @@ class CreatePublicUsernameThread : public WorkerThread {
   QString username_;
 };
 
-#endif  // QT_CLIENT_CREATE_PUBLIC_USERNAME_THREAD_H_
+#endif  //  MAIDSAFE_LIFESTUFF_CLIENT_CREATE_PUBLIC_USERNAME_THREAD_H_
 

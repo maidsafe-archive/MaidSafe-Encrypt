@@ -12,8 +12,8 @@
  *      Author: Team
  */
 
-#ifndef QT_WIDGETS_CREATE_PAGE_LICENSE_H_
-#define QT_WIDGETS_CREATE_PAGE_LICENSE_H_
+#ifndef MAIDSAFE_LIFESTUFF_WIDGETS_CREATE_PAGE_LICENSE_H_
+#define MAIDSAFE_LIFESTUFF_WIDGETS_CREATE_PAGE_LICENSE_H_
 
 // qt
 #include <QWizardPage>
@@ -43,5 +43,5 @@ class CreateLicensePage : public QWizardPage {
   void changeEvent(QEvent *event);
 };
 
-#endif  // QT_WIDGETS_CREATE_PAGE_LICENSE_H_
+#endif  //  MAIDSAFE_LIFESTUFF_WIDGETS_CREATE_PAGE_LICENSE_H_
 

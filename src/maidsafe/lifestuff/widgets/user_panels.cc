@@ -12,7 +12,7 @@
  *      Author: Team
  */
 
-#include "qt/widgets/user_panels.h"
+#include "maidsafe/lifestuff/widgets/user_panels.h"
 
 // qt
 #include <QDebug>
@@ -23,21 +23,21 @@
 
 
 // local
-#include "qt/widgets/panel.h"
-#include "qt/widgets/messages.h"
+#include "maidsafe/lifestuff/widgets/panel.h"
+#include "maidsafe/lifestuff/widgets/messages.h"
 
 #ifdef PD_LIGHT
-#include "qt/widgets/file_browser.h"
+#include "maidsafe/lifestuff/widgets/file_browser.h"
 #endif
 
-#include "qt/widgets/shares.h"
-#include "qt/widgets/contacts.h"
-#include "qt/widgets/user_message_logs.h"
-#include "qt/widgets/personal_messages.h"
-#include "qt/widgets/user_inbox.h"
-#include "qt/widgets/vault_info.h"
-#include "qt/widgets/public_username.h"
-#include "qt/client/user_space_filesystem.h"
+#include "maidsafe/lifestuff/widgets/shares.h"
+#include "maidsafe/lifestuff/widgets/contacts.h"
+#include "maidsafe/lifestuff/widgets/user_message_logs.h"
+#include "maidsafe/lifestuff/widgets/personal_messages.h"
+#include "maidsafe/lifestuff/widgets/user_inbox.h"
+#include "maidsafe/lifestuff/widgets/vault_info.h"
+#include "maidsafe/lifestuff/widgets/public_username.h"
+#include "maidsafe/lifestuff/client/user_space_filesystem.h"
 
 namespace {
 }
@@ -149,16 +149,16 @@ void UserPanels::onPublicUsernameChosen() {
     QListWidgetItem *email = new QListWidgetItem(emailIcon_, tr("Email"),
                                                  ui_.toolBarListWidget);
     QListWidgetItem *myFiles =
-        new QListWidgetItem(myFilesIcon_,
-                            tr(maidsafe::TidyPath(kRootSubdir[0][0]).c_str()),
+        new QListWidgetItem(myFilesIcon_, tr(maidsafe::TidyPath(
+                            maidsafe::kRootSubdir[0][0]).c_str()),
                             ui_.toolBarListWidget);
 
     contact->setToolTip("Contacts");
     share->setToolTip("Shares");
     log->setToolTip("Logs");
     email->setToolTip("Email");
-    myFiles->setToolTip(
-        QString::fromStdString(maidsafe::TidyPath(kRootSubdir[0][0])));
+    myFiles->setToolTip(QString::fromStdString(maidsafe::TidyPath(
+        maidsafe::kRootSubdir[0][0])));
 
     contact->setTextAlignment(Qt::AlignHCenter | Qt::AlignBottom);
     share->setTextAlignment(Qt::AlignHCenter | Qt::AlignBottom);
@@ -204,12 +204,14 @@ void UserPanels::onItemClicked(QListWidgetItem* item) {
   const QString username = ClientController::instance()->publicUsername();
 
   if (username.isEmpty()) {
-    if (item->text() == tr(maidsafe::TidyPath(kRootSubdir[0][0]).c_str())) {
+    if (item->text() ==
+        tr(maidsafe::TidyPath(maidsafe::kRootSubdir[0][0]).c_str())) {
       onMyFilesClicked();
       return;
     }
   }
-  if (item->text() == tr(maidsafe::TidyPath(kRootSubdir[0][0]).c_str())) {
+  if (item->text() ==
+      tr(maidsafe::TidyPath(maidsafe::kRootSubdir[0][0]).c_str())) {
     onMyFilesClicked();
   } else if (item->text() == tr("Email")) {
     onEmailsClicked();
@@ -264,12 +266,12 @@ void UserPanels::setActive(bool active) {
 
       QPixmap myFilesIcon_  = QPixmap(":icons/32/Files_Tab");
       QListWidgetItem *myFiles =
-          new QListWidgetItem(myFilesIcon_,
-                              tr(maidsafe::TidyPath(kRootSubdir[0][0]).c_str()),
+          new QListWidgetItem(myFilesIcon_, tr(maidsafe::TidyPath(
+                              maidsafe::kRootSubdir[0][0]).c_str()),
                               ui_.toolBarListWidget);
       myFiles->setTextAlignment(Qt::AlignHCenter | Qt::AlignBottom);
-      myFiles->setToolTip(
-          QString::fromStdString(maidsafe::TidyPath(kRootSubdir[0][0])));
+      myFiles->setToolTip(QString::fromStdString(maidsafe::TidyPath(
+          maidsafe::kRootSubdir[0][0])));
 
     } else {
       onPublicUsernameChosen();

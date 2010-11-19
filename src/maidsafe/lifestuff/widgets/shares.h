@@ -12,12 +12,12 @@
  *      Author: Team
  */
 
-#ifndef QT_WIDGETS_SHARES_H_
-#define QT_WIDGETS_SHARES_H_
+#ifndef MAIDSAFE_LIFESTUFF_WIDGETS_SHARES_H_
+#define MAIDSAFE_LIFESTUFF_WIDGETS_SHARES_H_
 
 // local
-#include "qt/widgets/panel.h"
-#include "qt/client/client_controller.h"
+#include "maidsafe/lifestuff/widgets/panel.h"
+#include "maidsafe/lifestuff/client/client_controller.h"
 
 // generated
 #include "ui_user_shares_panel.h"
@@ -72,4 +72,4 @@ class Shares : public Panel {
   void complete();
 };
 
-#endif  // QT_WIDGETS_SHARES_H_
+#endif  //  MAIDSAFE_LIFESTUFF_WIDGETS_SHARES_H_

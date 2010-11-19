@@ -11,14 +11,14 @@
  *  Created on: Mar 26, 2009
  *      Author: Team
  */
-#include "qt/widgets/share_participants.h"
+#include "maidsafe/lifestuff/widgets/share_participants.h"
 
 // qt
 #include <QListWidget>
 #include <QListWidgetItem>
 
 // local
-#include "qt/client/client_controller.h"
+#include "maidsafe/lifestuff/client/client_controller.h"
 
 
 ShareParticipantsChoice::ShareParticipantsChoice(QWidget* parent,

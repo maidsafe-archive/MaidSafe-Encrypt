@@ -18,16 +18,13 @@
 * ============================================================================
 */
 
-#include "maidsafe/kadops.h"
-
-#include <maidsafe/protobuf/kademlia_service_messages.pb.h>
-#include <maidsafe/protobuf/signed_kadvalue.pb.h>
+#include "maidsafe/common/kadops.h"
 
 #include <algorithm>
 
-#include "fs/filesystem.h"
-#include "maidsafe/chunkstore.h"
-#include "protobuf/packet.pb.h"
+#include "maidsafe/common/filesystem.h"
+#include "maidsafe/common/chunkstore.h"
+#include "maidsafe/common/packet.pb.h"
 
 namespace maidsafe {
 
@@ -45,7 +42,7 @@ KadOps::KadOps(transport::TransportHandler *transport_handler,
              public_key, port_forwarded, use_upnp, K_),
       node_type_(type),
       default_time_to_live_(31556926) {
-  knode_.set_alternative_store(chunkstore.get());
+      knode_.set_alternative_store(chunkstore.get());
 }
 
 void KadOps::Init(const boost::filesystem::path &kad_config,

@@ -24,10 +24,9 @@
 
 #include <maidsafe/base/log.h>
 #include <boost/filesystem.hpp>
+#include <gtest/gtest.h>
 
-#include "gtest/gtest.h"
-
-#include "maidsafe/common/tests/networktest.h"
+#include "maidsafe/sharedtest/networktest.h"
 
 int main(int argc, char **argv) {
   google::InitGoogleLogging(argv[0]);
@@ -35,7 +34,7 @@ int main(int argc, char **argv) {
 #ifndef HAVE_GLOG
   bool FLAGS_logtostderr;
 #endif
-  FLAGS_logtostderr = true;
+//  FLAGS_logtostderr = true;
   testing::InitGoogleTest(&argc, argv);
 #ifdef MS_NETWORK_TEST
   try {
@@ -50,7 +49,7 @@ int main(int argc, char **argv) {
       maidsafe::test::pdvaults(), maidsafe::test::kadconfig()));
 #endif
 
-  int result = RUN_ALL_TESTS();
+  int result(RUN_ALL_TESTS());
 #ifdef MS_NETWORK_TEST
   try {
     if (boost::filesystem::exists(".kadconfig"))
@@ -60,5 +59,6 @@ int main(int argc, char **argv) {
     printf("%s\n", e.what());
   }
 #endif
-  return result;
+  int test_count = testing::UnitTest::GetInstance()->test_to_run_count();
+  return (test_count == 0) ? -1 : result;
 }

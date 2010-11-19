@@ -12,11 +12,12 @@
  *      Author: Team
  */
 
-#include "maidsafe/chunkstore.h"
+#include "maidsafe/common/chunkstore.h"
 
 #include <boost/filesystem/fstream.hpp>
 #include <boost/scoped_array.hpp>
-#include <boost/thread/mutex.hpp>
+#include "maidsafe/common/commonutils.h"
+#include "maidsafe/common/maidsafe.h"
 
 namespace maidsafe {
 
@@ -151,13 +152,13 @@ void ChunkStore::FindFiles(const fs::path &root_dir_path, ChunkType type,
     std::string non_hex_name;
     fs::directory_iterator end_itr;
     for (fs::directory_iterator itr(root_dir_path); itr != end_itr; ++itr) {
-  //    printf("Iter at %s\n", itr->path().filename().c_str());
+  //    printf("Iter at %s\n", itr->path().filename().string().c_str());
       if (fs::is_directory(itr->status())) {
         FindFiles(itr->path(), type, hash_check, delete_failures, filecount,
                   failed_keys);
       } else  {
         ++(*filecount);
-        non_hex_name = base::DecodeFromHex(itr->path().filename());
+        non_hex_name = base::DecodeFromHex(itr->path().filename().string());
         boost::uint64_t size = fs::file_size(itr->path());
         if (size >= 2) {
           ChunkInfo chunk(non_hex_name,
@@ -250,9 +251,7 @@ ChunkType ChunkStore::GetChunkType(const std::string &key,
     type = kOutgoing;
   else
     type = kNormal;
-  crypto::Crypto crypto;
-  crypto.set_hash_algorithm(crypto::SHA_512);
-  if (key == crypto.Hash(value, "", crypto::STRING_STRING, false)) {
+  if (key == SHA512String(value)) {
     type |= kHashable;
   } else {
     type |= kNonHashable;
@@ -271,11 +270,9 @@ ChunkType ChunkStore::GetChunkType(const std::string &key, const fs::path &file,
     type = kOutgoing;
   else
     type = kNormal;
-  crypto::Crypto crypto;
-  crypto.set_hash_algorithm(crypto::SHA_512);
   try {
     if (fs::exists(file)) {
-      if (key == crypto.Hash(file.string(), "", crypto::FILE_STRING, false)) {
+      if (key == SHA512File(file)) {
         type |= kHashable;
       } else {
         type |= kNonHashable;
@@ -359,12 +356,14 @@ int ChunkStore::Store(const std::string &key, const std::string &value) {
            HexSubstr(key).c_str());
 #endif
 // If chunk is cached and is hashable, change type to kNormal.  If chunk is
-// in Outgoing dir, leave it there.
+// in Outgoing dir, leave it there.  If chunk is non-hashable, update it.
     ChunkType type = chunk_type(key);
     if ((type & kOutgoing) == kOutgoing)
       return kSuccess;
-    return (type == (kHashable | kCache) || type == (kHashable | kTempCache)) ?
-        ChangeChunkType(key, kHashable | kNormal) : kInvalidChunkType;
+    if (type == (kHashable | kCache) || type == (kHashable | kTempCache))
+      return ChangeChunkType(key, kHashable | kNormal);
+    if ((type & kNonHashable) != kNonHashable)
+      return kInvalidChunkType;
   }
   ChunkType type = GetChunkType(key, value, false);
   fs::path chunk_path(GetChunkPath(key, type, true));
@@ -377,15 +376,17 @@ int ChunkStore::Store(const std::string &key, const fs::path &file) {
     return valid;
   if (Has(key)) {
 // If chunk is cached and is hashable, change type to kNormal.  If chunk is
-// in Outgoing dir, leave it there.
+// in Outgoing dir, leave it there.  If chunk is non-hashable, update it.
     ChunkType type = chunk_type(key);
     if ((type & kOutgoing) == kOutgoing)
       return kSuccess;
 //  #ifdef DEBUG
 //      printf("Chunk already exists in ChunkStore::StoreChunk.\n");
 //  #endif
-    return (type == (kHashable | kCache) || type == (kHashable | kTempCache)) ?
-            ChangeChunkType(key, kHashable | kNormal) : kInvalidChunkType;
+    if (type == (kHashable | kCache) || type == (kHashable | kTempCache))
+      return ChangeChunkType(key, kHashable | kNormal);
+    if ((type & kNonHashable) != kNonHashable)
+      return kInvalidChunkType;
   }
   ChunkType type = GetChunkType(key, file, false);
   fs::path chunk_path(GetChunkPath(key, type, true));
@@ -423,7 +424,7 @@ int ChunkStore::AddChunkToOutgoing(const std::string &key,
   ChunkType type = GetChunkType(key, file, true);
   fs::path chunk_path(GetChunkPath(key, type, true));
   return (StoreChunkFunction(key, file, chunk_path, type) == kSuccess) ?
-              kSuccess: kChunkstoreFailedStore;
+      kSuccess: kChunkstoreFailedStore;
 }
 
 int ChunkStore::StoreChunkFunction(const std::string &key,
@@ -451,7 +452,7 @@ int ChunkStore::StoreChunkFunction(const std::string &key,
     }
     return kSuccess;
   }
-  catch(const std::exception &ex) {
+  catch(const std::exception&) {
 #ifdef DEBUG
 //    printf("ChunkStore::StoreChunk exception writing chunk: %s\n", ex.what());
 #endif
@@ -466,7 +467,7 @@ int ChunkStore::StoreChunkFunction(const std::string &key,
   try {
     if (fs::exists(chunk_path))
       fs::remove_all(chunk_path);
-    fs::copy_file(input_file, chunk_path);
+    fs::rename(input_file, chunk_path);
     boost::uint64_t chunk_size(fs::file_size(chunk_path));
     // If the chunk is hashable then set last checked time to now, otherwise
     // set it to max allowable time.
@@ -483,7 +484,7 @@ int ChunkStore::StoreChunkFunction(const std::string &key,
     }
     return kSuccess;
   }
-  catch(const std::exception &ex) {
+  catch(const std::exception&) {
 #ifdef DEBUG
 //    printf("ChunkStore::StoreChunk exception writing chunk %s: %s\n",
 //           chunk_path.string().c_str(), ex.what());
@@ -637,10 +638,7 @@ int ChunkStore::HashCheckChunk(const std::string &key,
   if (chunk_size != fs::file_size(chunk_path))
     return kHashCheckFailure;
 
-  crypto::Crypto crypto;
-  crypto.set_hash_algorithm(crypto::SHA_512);
-  std::string file_hash = crypto.Hash(chunk_path.string(), "",
-                                      crypto::FILE_STRING, false);
+  std::string file_hash = SHA512File(chunk_path);
   return file_hash == non_hex_filename ? kSuccess : kHashCheckFailure;
 }
 

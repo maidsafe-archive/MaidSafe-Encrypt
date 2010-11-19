@@ -11,14 +11,14 @@
  *  Created on: Aug 19th, 2010
  *      Author: Stephen Alexander
  */
-#include "qt/widgets/add_calendar_entry.h"
+#include "maidsafe/lifestuff/widgets/add_calendar_entry.h"
 
 #include <QMessageBox>
 #include <QDebug>
 #include <QInputDialog>
 #include <QTranslator>
 
-#include "qt/client/client_controller.h"
+#include "maidsafe/lifestuff/client/client_controller.h"
 
 
 AddCalendarEntry::AddCalendarEntry(QWidget* parent) : QDialog(parent) {

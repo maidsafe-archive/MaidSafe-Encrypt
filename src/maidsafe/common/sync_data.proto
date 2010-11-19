@@ -1,5 +1,5 @@
 import "maidsafe/common/packet.proto";
-package maidsafe_vault;
+package maidsafe.vault;
 
 message VaultAccountSet {
   message VaultAccount {

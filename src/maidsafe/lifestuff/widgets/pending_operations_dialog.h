@@ -13,8 +13,8 @@
  */
 
 
-#ifndef QT_WIDGETS_PENDING_OPERATIONS_DIALOG_H_
-#define QT_WIDGETS_PENDING_OPERATIONS_DIALOG_H_
+#ifndef MAIDSAFE_LIFESTUFF_WIDGETS_PENDING_OPERATIONS_DIALOG_H_
+#define MAIDSAFE_LIFESTUFF_WIDGETS_PENDING_OPERATIONS_DIALOG_H_
 
 #include <QWidget>
 #include <QString>
@@ -22,7 +22,7 @@
 #include <boost/thread/mutex.hpp>
 
 // local
-#include "qt/client/client_controller.h"
+#include "maidsafe/lifestuff/client/client_controller.h"
 
 #include "ui_pending_operations_dialog.h"
 
@@ -56,4 +56,4 @@ class PendingOperationsDialog : public QDialog {
   void changeEvent(QEvent *event);
 };
 
-#endif  // QT_WIDGETS_PENDING_OPERATIONS_DIALOG_H_
+#endif  //  MAIDSAFE_LIFESTUFF_WIDGETS_PENDING_OPERATIONS_DIALOG_H_

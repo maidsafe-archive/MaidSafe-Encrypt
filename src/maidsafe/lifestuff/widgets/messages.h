@@ -12,19 +12,19 @@
  *      Author: Team
  */
 
-#ifndef QT_WIDGETS_MESSAGES_H_
-#define QT_WIDGETS_MESSAGES_H_
+#ifndef MAIDSAFE_LIFESTUFF_WIDGETS_MESSAGES_H_
+#define MAIDSAFE_LIFESTUFF_WIDGETS_MESSAGES_H_
 
 // qt
 #include <QDateTime>
 #include <QTimer>
 
 // core
-#include "protobuf/packet.pb.h"
+#include "maidsafe/common/packet.pb.h"
 
 // local
-#include "qt/client/client_controller.h"
-#include "qt/widgets/panel.h"
+#include "maidsafe/lifestuff/client/client_controller.h"
+#include "maidsafe/lifestuff/widgets/panel.h"
 
 // generated
 #include "ui_user_messages_panel.h"
@@ -101,4 +101,4 @@ class Messages : public Panel {
   void changeEvent(QEvent *event);
 };
 
-#endif  // QT_WIDGETS_MESSAGES_H_
+#endif  //  MAIDSAFE_LIFESTUFF_WIDGETS_MESSAGES_H_

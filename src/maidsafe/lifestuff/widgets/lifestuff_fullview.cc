@@ -12,14 +12,14 @@
  *      Author: Team
  */
 
-#include "qt/widgets/lifestuff_fullview.h"
+#include "maidsafe/lifestuff/widgets/lifestuff_fullview.h"
 
 // boost
 #include <boost/progress.hpp>
 #include <boost/filesystem/fstream.hpp>
 
-#include "qt/client/send_instant_message_thread.h"
-#include "qt/client/client_controller.h"
+#include "maidsafe/lifestuff/client/send_instant_message_thread.h"
+#include "maidsafe/lifestuff/client/client_controller.h"
 
 // qt
 #include <QDebug>
@@ -129,7 +129,8 @@ void LifeStuffFull::setVariables() {
       boost::filesystem::create_directories(chatRootPath_.toStdString());
   }
   catch(const std::exception &e) {
-    qDebug() << "UserInbox::UserInbox - Failed to create " << chatRootPath_;
+    qDebug() << "UserInbox::UserInbox - Failed to create " << chatRootPath_ <<
+      ": " << e.what();
   }
   QString folder = "/chat/";
   QString lastModified;

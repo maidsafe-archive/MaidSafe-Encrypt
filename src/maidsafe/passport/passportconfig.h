@@ -42,13 +42,16 @@ enum ReturnCode {
   kNoTmid = -100009,
   kNoStmid = -100010,
   kNoSigningPacket = -100011,
-  kBadSerialisedMidRid = -100012,
-  kBadSerialisedSmidRid = -100013,
-  kBadSerialisedTmidData = -100014,
-  kBadSerialisedStmidData = -100015,
-  kBadSerialisedKeyring = -100016,
-  kPacketsNotEqual = -100017,
-  kMissingDependentPackets = -100018
+  kNoPacket = -100012,
+  kBadSerialisedMidRid = -100013,
+  kBadSerialisedSmidRid = -100014,
+  kBadSerialisedTmidData = -100015,
+  kBadSerialisedStmidData = -100016,
+  kBadSerialisedKeyring = -100017,
+  kKeyringNotEmpty = -100018,
+  kPacketsNotEqual = -100019,
+  kMissingDependentPackets = -100020,
+  kNullPointer = -100021
 };
 
 enum PacketType {
@@ -58,8 +61,8 @@ enum PacketType {
   TMID,
   STMID,
   MPID,
-  PMID,
   MAID,
+  PMID,
   ANMID,
   ANSMID,
   ANTMID,
@@ -69,7 +72,7 @@ enum PacketType {
   PD_DIR
 };
 
-const boost::uint16_t kCryptoKeyBufferCount(5);
+const boost::uint16_t kCryptoKeyBufferCount(6);
 
 }  // namespace passport
 }  // namespace maidsafe
@@ -98,6 +101,9 @@ struct ExpectedTmidContent;
 testing::AssertionResult Equal(
     std::tr1::shared_ptr<ExpectedTmidContent> expected,
     std::tr1::shared_ptr<TmidPacket> mid);
+class SystemPacketHandlerTest_FUNC_PASSPORT_All_Test;
+class PassportTest_BEH_PASSPORT_SetNewUserData_Test;
+class PassportTest_BEH_PASSPORT_ConfirmNewUserData_Test;
 }  // namespace test
 
 }  // namespace passport

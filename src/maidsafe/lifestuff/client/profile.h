@@ -12,8 +12,8 @@
  *      Author: Team
  */
 
-#ifndef QT_CLIENT_PROFILE_H_
-#define QT_CLIENT_PROFILE_H_
+#ifndef MAIDSAFE_LIFESTUFF_CLIENT_PROFILE_H_
+#define MAIDSAFE_LIFESTUFF_CLIENT_PROFILE_H_
 
 // qt
 #include <QString>
@@ -56,4 +56,4 @@ class Profile {
 };
 
 
-#endif  // QT_CLIENT_PROFILE_H_
+#endif  //  MAIDSAFE_LIFESTUFF_CLIENT_PROFILE_H_

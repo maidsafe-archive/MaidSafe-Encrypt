@@ -12,10 +12,10 @@
  *      Author: Stephen
  */
 
-#ifndef QT_CLIENT_SAVE_FILE_THREAD_H_
-#define QT_CLIENT_SAVE_FILE_THREAD_H_
+#ifndef MAIDSAFE_LIFESTUFF_CLIENT_SAVE_FILE_THREAD_H_
+#define MAIDSAFE_LIFESTUFF_CLIENT_SAVE_FILE_THREAD_H_
 
-#include "qt/client/worker_thread.h"
+#include "maidsafe/lifestuff/client/worker_thread.h"
 
 // Worker thread for creating the pulbic username of users
 /*!
@@ -39,4 +39,4 @@ class SaveFileThread : public WorkerThread {
   void saveFileCompleted(int, const QString&);
 };
 
-#endif  // QT_CLIENT_SAVE_FILE_THREAD_H_
+#endif  //  MAIDSAFE_LIFESTUFF_CLIENT_SAVE_FILE_THREAD_H_

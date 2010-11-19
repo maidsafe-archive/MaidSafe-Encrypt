@@ -25,8 +25,8 @@
 
 #include <boost/cstdint.hpp>
 #include <boost/tr1/memory.hpp>
+#include <maidsafe/pki/packet.h>
 #include <string>
-#include "maidsafe/pki/packet.h"
 #include "maidsafe/passport/passportconfig.h"
 
 namespace maidsafe {
@@ -39,12 +39,13 @@ bool IsSignature(const int &packet_type, bool check_for_self_signer);
 
 class SignaturePacket : public pki::Packet {
  public:
+  SignaturePacket();
   SignaturePacket(const PacketType &packet_type,
                   const std::string &public_key,
                   const std::string &private_key,
                   const std::string &signer_private_key,
                   const std::string &public_name);
-  SignaturePacket(const Key &key);
+  explicit SignaturePacket(const Key &key);
   virtual ~SignaturePacket() {}
   virtual std::string value() const { return public_key_; }
   virtual bool Equals(const pki::Packet *other) const;
@@ -64,6 +65,7 @@ class SignaturePacket : public pki::Packet {
 
 class MidPacket : public pki::Packet {
  public:
+  MidPacket();
   MidPacket(const std::string &username,
             const std::string &pin,
             const std::string &smid_appendix);
@@ -90,6 +92,7 @@ class MidPacket : public pki::Packet {
 
 class TmidPacket : public pki::Packet {
  public:
+  TmidPacket();
   TmidPacket(const std::string &username,
              const std::string &pin,
              const boost::uint32_t rid,

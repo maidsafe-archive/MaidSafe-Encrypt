@@ -18,27 +18,21 @@
 * ============================================================================
 */
 
-#ifndef MAIDSAFE_KADOPS_H_
-#define MAIDSAFE_KADOPS_H_
+#ifndef MAIDSAFE_COMMON_KADOPS_H_
+#define MAIDSAFE_COMMON_KADOPS_H_
 
 #include <boost/filesystem.hpp>
 #include <boost/thread/condition_variable.hpp>
-#include <boost/thread/locks.hpp>
-#include <maidsafe/maidsafe-dht_config.h>
+#include <boost/thread/mutex.hpp>
+#include <maidsafe/kademlia/knode-api.h>
 
 #include <string>
 #include <vector>
 
-#include "maidsafe/maidsafe.h"
+#include "maidsafe/common/maidsafe.h"
 
-namespace transport {
-class TransportHandler;
-}  // namespace transport
-
-namespace rpcprotocol {
-class ChannelManager;
-}  // namespace rpcprotocol
-
+namespace transport { class TransportHandler; }
+namespace rpcprotocol { class ChannelManager; }
 namespace kad {
 class SignedValue;
 class SignedRequest;
@@ -49,10 +43,7 @@ namespace maidsafe {
 class TestClientBP;
 class MockKadOps;
 
-namespace test {
-class CBPHandlerTest;
-}  // namespace test
-
+namespace test { class CBPHandlerTest; }
 class ChunkStore;
 class EndPoint;
 
@@ -232,4 +223,4 @@ bool RemoveKadContact(const std::string &key,
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_KADOPS_H_
+#endif  // MAIDSAFE_COMMON_KADOPS_H_

@@ -12,7 +12,7 @@
  *      Author: Team
  */
 
-#include "qt/client/user_space_filesystem.h"
+#include "maidsafe/lifestuff/client/user_space_filesystem.h"
 
 // qt
 #include <QObject>
@@ -30,19 +30,19 @@
 #include <string>
 
 // core
-#include "fs/filesystem.h"
+#include "maidsafe/common/filesystem.h"
 
 // 3rd party
 #if defined(PD_WIN32)
 #ifndef PD_LIGHT
-  #include "fs/w_fuse/fswin.h"
+#include "maidsafe/fuse/windows/fswin.h"
 #endif
 #elif defined(PD_POSIX)
-#include "fs/l_fuse/fslinux.h"
+#include "maidsafe/fuse/linux/fslinux.h"
 #endif
 
 // local
-#include "qt/client/client_controller.h"
+#include "maidsafe/lifestuff/client/client_controller.h"
 
 class UserSpaceFileSystem::UserSpaceFileSystemImpl {
  public:
@@ -130,7 +130,7 @@ bool UserSpaceFileSystem::unmount() {
   if (!n) {
     // TODO(Team#5#): 2009-06-25 - do stuff
     success = false;
-  } 
+  }
 #ifdef PD_LIGHT
   return n;
 #endif

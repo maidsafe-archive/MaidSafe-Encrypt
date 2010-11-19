@@ -25,25 +25,21 @@
 #ifndef MAIDSAFE_CLIENT_PRIVATESHARES_H_
 #define MAIDSAFE_CLIENT_PRIVATESHARES_H_
 
-#include <boost/scoped_ptr.hpp>
-#include <boost/shared_ptr.hpp>
 #include <boost/multi_index/composite_key.hpp>
 #include <boost/multi_index_container.hpp>
 #include <boost/multi_index/ordered_index.hpp>
 #include <boost/multi_index/identity.hpp>
 #include <boost/multi_index/member.hpp>
-#include <gtest/gtest_prod.h>
-
-#include <maidsafe/base/utils.h>
-#include <maidsafe/maidsafe-dht_config.h>
 
 #include <string>
 #include <list>
 #include <vector>
 
-#include "maidsafe/maidsafe.h"
+#include "maidsafe/common/maidsafe.h"
 
 namespace maidsafe {
+
+namespace test { class PrivateSharesTest_BEH_MAID_MI_DecideInclusion_Test; }
 
 struct ShareParticipants {
   ShareParticipants() : id(), public_key(), role('R') {}
@@ -173,13 +169,6 @@ typedef boost::multi_index::multi_index_container<
 > private_share_participant_set;
 
 class PrivateShareHandler {
- private:
-  private_share_set pss_;
-  private_share_participant_set psps_;
-  void DecideInclusion(const private_share &ps,
-                       const ShareFilter &sf,
-                       std::list<maidsafe::private_share> *ps_list);
-  FRIEND_TEST(PrivateSharesTest, BEH_MAID_MI_DecideInclusion);
  public:
   PrivateShareHandler() : pss_(), psps_() { }
   // Multi Index
@@ -202,6 +191,13 @@ class PrivateShareHandler {
   int MI_GetParticipantsList(const std::string &value, const int &field,
                              std::list<share_participant> *sp_list);
   void MI_ClearPrivateShares();
+ private:
+  friend class test::PrivateSharesTest_BEH_MAID_MI_DecideInclusion_Test;
+  private_share_set pss_;
+  private_share_participant_set psps_;
+  void DecideInclusion(const private_share &ps,
+                       const ShareFilter &sf,
+                       std::list<maidsafe::private_share> *ps_list);
 };
 
 }  // namespace

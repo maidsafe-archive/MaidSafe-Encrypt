@@ -30,7 +30,9 @@ int main(int argc, char **argv) {
 #ifndef HAVE_GLOG
   bool FLAGS_logtostderr;
 #endif
-  FLAGS_logtostderr = true;
+//  FLAGS_logtostderr = true;
   testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
+  int result(RUN_ALL_TESTS());
+  int test_count = testing::UnitTest::GetInstance()->test_to_run_count();
+  return (test_count == 0) ? -1 : result;
 }

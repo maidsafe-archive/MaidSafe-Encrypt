@@ -26,22 +26,26 @@
 #define MAIDSAFE_VAULT_ACCOUNTREPOSITORY_H_
 
 #include <boost/multi_index_container.hpp>
-#include <gtest/gtest_prod.h>
 #include <maidsafe/maidsafe-dht.h>
 
 #include <list>
 #include <string>
-#include <vector>
 
-#include "maidsafe/maidsafe.h"
-#include "protobuf/maidsafe_service_messages.pb.h"
-#include "protobuf/sync_data.pb.h"
+#include "maidsafe/common/maidsafe_service_messages.pb.h"
 
 namespace mi = boost::multi_index;
 
-namespace maidsafe_vault {
+namespace maidsafe {
+
+namespace vault {
 
 namespace test {
+class AccountHandlerTest_BEH_VAULT_Init_Test;
+class AccountHandlerTest_BEH_VAULT_AddAndFind_Test;
+class AccountHandlerTest_BEH_VAULT_Modify_Test;
+class AccountHandlerTest_BEH_VAULT_Delete_Test;
+class AccountHandlerTest_FUNC_VAULT_PutGetPb_Test;
+class AccountHandlerTest_FUNC_VAULT_PutGetAccount_Test;
 class AccountAmendmentHandlerTest_BEH_MAID_ProcessRequest_Test;
 }  // namespace test
 
@@ -132,18 +136,20 @@ class AccountHandler {
  private:
   AccountHandler(const AccountHandler&);
   AccountHandler& operator=(const AccountHandler&);
-  FRIEND_TEST(AccountHandlerTest, BEH_VAULT_AccountHandlerInit);
-  FRIEND_TEST(AccountHandlerTest, BEH_VAULT_AccountHandlerAddAndFind);
-  FRIEND_TEST(AccountHandlerTest, BEH_VAULT_AccountHandlerModify);
-  FRIEND_TEST(AccountHandlerTest, BEH_VAULT_AccountHandlerDelete);
-  FRIEND_TEST(AccountHandlerTest, FUNC_VAULT_AccountHandlerPutGetPb);
-  FRIEND_TEST(AccountHandlerTest, FUNC_VAULT_AccountHandlerPutGetAccount);
+  friend class test::AccountHandlerTest_BEH_VAULT_Init_Test;
+  friend class test::AccountHandlerTest_BEH_VAULT_AddAndFind_Test;
+  friend class test::AccountHandlerTest_BEH_VAULT_Modify_Test;
+  friend class test::AccountHandlerTest_BEH_VAULT_Delete_Test;
+  friend class test::AccountHandlerTest_FUNC_VAULT_PutGetPb_Test;
+  friend class test::AccountHandlerTest_FUNC_VAULT_PutGetAccount_Test;
   friend class test::AccountAmendmentHandlerTest_BEH_MAID_ProcessRequest_Test;
   AccountSet accounts_;
   boost::mutex account_mutex_;
   bool started_;
 };
 
-}  // namespace maidsafe_vault
+}  // namespace vault
+
+}  // namespace maidsafe
 
 #endif  // MAIDSAFE_VAULT_ACCOUNTREPOSITORY_H_

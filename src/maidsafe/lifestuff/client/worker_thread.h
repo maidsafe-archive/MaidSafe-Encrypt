@@ -12,8 +12,8 @@
  *      Author: Team
  */
 
-#ifndef QT_CLIENT_WORKER_THREAD_H_
-#define QT_CLIENT_WORKER_THREAD_H_
+#ifndef MAIDSAFE_LIFESTUFF_CLIENT_WORKER_THREAD_H_
+#define MAIDSAFE_LIFESTUFF_CLIENT_WORKER_THREAD_H_
 
 #include <QThread>
 
@@ -35,5 +35,5 @@ class WorkerThread : public QThread {
     void completed(bool success);
 };
 
-#endif  // QT_CLIENT_WORKER_THREAD_H_
+#endif  //  MAIDSAFE_LIFESTUFF_CLIENT_WORKER_THREAD_H_
 

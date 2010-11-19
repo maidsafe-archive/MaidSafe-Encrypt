@@ -22,21 +22,25 @@
 * ============================================================================
 */
 
-#ifndef MAIDSAFE_CLIENTBUFFERPACKETHANDLER_H_
-#define MAIDSAFE_CLIENTBUFFERPACKETHANDLER_H_
+#ifndef MAIDSAFE_COMMON_CLIENTBUFFERPACKETHANDLER_H_
+#define MAIDSAFE_COMMON_CLIENTBUFFERPACKETHANDLER_H_
 
-#include <boost/thread/mutex.hpp>
+#include <boost/function.hpp>
+#include <boost/shared_ptr.hpp>
+#include <maidsafe/kademlia/contact.h>
 #include <boost/cstdint.hpp>
-#include <gtest/gtest_prod.h>
 #include <maidsafe/base/crypto.h>
 
 #include <list>
-#include <vector>
 #include <string>
+#include <vector>
 
-#include "maidsafe/maidsafe.h"
-#include "maidsafe/bufferpacketrpc.h"
-#include "protobuf/packet.pb.h"
+#include "maidsafe/common/maidsafe.h"
+#include "maidsafe/common/returncodes.h"
+#include "maidsafe/common/maidsafe_service.pb.h"
+#include "maidsafe/common/packet.pb.h"
+
+namespace rpcprotocol { class Controller; }
 
 namespace maidsafe {
 
@@ -57,6 +61,7 @@ enum BpOpType {
   GET_PRESENCE
 };
 
+class BufferPacketRpcs;
 class KadOps;
 
 struct ChangeBPData {
@@ -106,14 +111,20 @@ struct ModifyBPCallbackData {
 };
 
 struct BPInputParameters {
-  std::string sign_id, public_key, private_key;
+  BPInputParameters(const std::string &public_username,
+                    const std::string &mpid_public_key,
+                    const std::string &mpid_private_key)
+    : kPublicUsername(public_username),
+      kMpidPublicKey(mpid_public_key),
+      kMpidPrivateKey(mpid_private_key) {}
+  const std::string kPublicUsername, kMpidPublicKey, kMpidPrivateKey;
 };
 
 class ClientBufferPacketHandler {
   static const boost::uint16_t kParallelStores = 1;
   static const boost::uint16_t kParallelFindCtcs = 1;
  public:
-  ClientBufferPacketHandler(boost::shared_ptr<maidsafe::BufferPacketRpcs> rpcs,
+  ClientBufferPacketHandler(boost::shared_ptr<BufferPacketRpcs> rpcs,
                             boost::shared_ptr<KadOps> kadops,
                             boost::uint8_t upper_threshold);
   virtual ~ClientBufferPacketHandler() {}
@@ -145,7 +156,7 @@ class ClientBufferPacketHandler {
                    bp_operations_cb cb,
                    const boost::int16_t &transport_id);
  private:
-  virtual void FindNodes(maidsafe::VoidFuncIntContacts cb,
+  virtual void FindNodes(VoidFuncIntContacts cb,
                          boost::shared_ptr<ChangeBPData> data);
   virtual void FindNodesCallback(
       const ReturnCode &result,
@@ -164,11 +175,11 @@ class ClientBufferPacketHandler {
   ClientBufferPacketHandler &operator=(const ClientBufferPacketHandler);
   ClientBufferPacketHandler(const ClientBufferPacketHandler&);
   crypto::Crypto crypto_obj_;
-  boost::shared_ptr<maidsafe::BufferPacketRpcs> rpcs_;
+  boost::shared_ptr<BufferPacketRpcs> rpcs_;
   boost::shared_ptr<KadOps> kad_ops_;
   const boost::uint16_t kUpperThreshold_;
 };
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_CLIENTBUFFERPACKETHANDLER_H_
+#endif  // MAIDSAFE_COMMON_CLIENTBUFFERPACKETHANDLER_H_

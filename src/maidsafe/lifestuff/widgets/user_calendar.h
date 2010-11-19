@@ -13,15 +13,15 @@
  */
 
 
-#ifndef QT_WIDGETS_USER_CALENDAR_H_
-#define QT_WIDGETS_USER_CALENDAR_H_
+#ifndef MAIDSAFE_LIFESTUFF_WIDGETS_USER_CALENDAR_H_
+#define MAIDSAFE_LIFESTUFF_WIDGETS_USER_CALENDAR_H_
 
 #include <QWidget>
 #include <QString>
 
 // local
-#include "qt/client/client_controller.h"
-#include "qt/widgets/add_calendar_entry.h"
+#include "maidsafe/lifestuff/client/client_controller.h"
+#include "maidsafe/lifestuff/widgets/add_calendar_entry.h"
 
 #include "ui_user_calendar.h"
 
@@ -48,4 +48,4 @@ class UserCalendar : public QDialog {
   void changeEvent(QEvent *event);
 };
 
-#endif  // QT_WIDGETS_USER_CALENDAR_H_
+#endif  //  MAIDSAFE_LIFESTUFF_WIDGETS_USER_CALENDAR_H_

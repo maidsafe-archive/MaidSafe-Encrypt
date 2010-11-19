@@ -12,7 +12,7 @@
  *      Author: Team
  */
 
-#include "qt/client/client_controller.h"
+#include "maidsafe/lifestuff/client/client_controller.h"
 
 // qt
 #include <QObject>
@@ -31,8 +31,8 @@
 #include <vector>
 
 // core
-#include "fs/filesystem.h"
-#include "maidsafe/pdutils.h"
+#include "maidsafe/common/filesystem.h"
+#include "maidsafe/client/clientutils.h"
 #include "maidsafe/client/contacts.h"
 #include "maidsafe/client/sessionsingleton.h"
 #include "maidsafe/client/privateshares.h"
@@ -40,11 +40,9 @@
 const int MESSAGE_POLL_TIMEOUT_MS = 3000;
 
 namespace {
-
 bool contactSortLessThan(const Contact* c1, const Contact* c2) {
   return c1->publicName() < c2->publicName();
 }
-
 }
 
 ClientController* ClientController::instance() {
@@ -87,7 +85,6 @@ void ClientController::StopCheckingMessages() {
 
 void ClientController::shutdown() {
   maidsafe::ClientController::getInstance()->CloseConnection(true);
-  maidsafe::ClientController::getInstance()->Destroy();
 }
 
 QString ClientController::publicUsername() const {
@@ -96,10 +93,10 @@ QString ClientController::publicUsername() const {
 }
 
 bool ClientController::getPendingOps(QList<PendingOps> &ops) {
-  //array<pendingOps> pending;
-  //maidsafe::PendingOps po;
-  //get pendingOps from maisafe and convert to QT PendingOps
-  //maidsafe::ClientController::getInstance()->getPendingOps(pending);
+//  array<pendingOps> pending;
+//  maidsafe::PendingOps po;
+//  get pendingOps from maisafe and convert to QT PendingOps
+//  maidsafe::ClientController::getInstance()->getPendingOps(pending);
 
   PendingOps op;
   op.name = "testName.txt";
@@ -116,7 +113,6 @@ int ClientController::AddInstantFile(const QString &sender,
                                      int sizeLow, int sizeHigh,
                                      const ClientController::ItemType &ityp,
                                      const QString &s) {
-
   maidsafe::InstantFileNotification ifn;
   ifn.set_filename(filename.toStdString());
 
@@ -229,7 +225,7 @@ QDir ClientController::shareDirRoot(const QString& name) const {
 QDir ClientController::myFilesDirRoot(const QString& name) const {
   qDebug() << "ClientController::myFilesDirRoot:" << name;
   QString pathInMaidsafe = QString::fromStdString(
-                               maidsafe::TidyPath(kRootSubdir[0][0])) +
+                           maidsafe::TidyPath(maidsafe::kRootSubdir[0][0])) +
                            QString("%1%2").arg(QDir::separator()).arg(name);
 
 #ifdef PD_WIN32
@@ -288,7 +284,8 @@ ContactList ClientController::contacts(int type) const {
   for (unsigned int i = 0; i < contact_list.size(); ++i) {
     // accessors on maidsafe::Contact are non-const so can't pass in const&
     maidsafe::Contact mcontact = contact_list[i];
-    Contact* contact = Contact::fromContact(QString::fromStdString(mcontact.PublicName()));
+    Contact* contact =
+        Contact::fromContact(QString::fromStdString(mcontact.PublicName()));
     if (mcontact.Confirmed() == 'U')
       contact->setPresence(Presence::INVALID);
     else
@@ -400,16 +397,16 @@ bool ClientController::sendEmail(const QString& subject,
 
 QDomElement ClientController::EmailToNode(QDomDocument &d,
                                           const ClientController::Email &c) {
-   QDomElement em = d.createElement( "contact" );
+  QDomElement em = d.createElement( "contact" );
 
-   em.setAttribute( "from", c.from );
-   em.setAttribute( "to", c.to );
-   em.setAttribute( "cc", c.cc );
-   em.setAttribute( "bcc", c.bcc );
-   em.setAttribute( "body", c.body );
-   em.setAttribute( "subject", c.subject );
+  em.setAttribute("from", c.from);
+  em.setAttribute("to", c.to);
+  em.setAttribute("cc", c.cc);
+  em.setAttribute("bcc", c.bcc);
+  em.setAttribute("body", c.body);
+  em.setAttribute("subject", c.subject);
 
-   return em;
+  return em;
 }
 
 bool ClientController::sendInstantFile(const QString& filePath,
@@ -553,40 +550,40 @@ void ClientController::analyseMessage(const maidsafe::InstantMessage& im) {
     maidsafe::ItemType mSafeType = sent_mdm.type();
     ClientController::ItemType ityp;
     switch (mSafeType) {
-    case maidsafe::DIRECTORY:
-      ityp = DIRECTORY;
-      break;
-    case maidsafe::REGULAR_FILE:
-      ityp = REGULAR_FILE;
-      break;
-    case maidsafe::SMALL_FILE:
-      ityp = SMALL_FILE;
-      break;
-    case maidsafe::EMPTY_FILE:
-      ityp = EMPTY_FILE;
-      break;
-    case maidsafe::LOCKED_FILE:
-      ityp = LOCKED_FILE;
-      break;
-    case maidsafe::EMPTY_DIRECTORY:
-      ityp = EMPTY_DIRECTORY;
-      break;
-    case maidsafe::LINK:
-      ityp = LINK;
-      break;
-    case maidsafe::MAIDSAFE_CHUNK:
-      ityp = MAIDSAFE_CHUNK;
-      break;
-    case maidsafe::NOT_FOR_PROCESSING:
-      ityp = NOT_FOR_PROCESSING;
-      break;
-    case maidsafe::UNKNOWN:
-      ityp = UNKNOWN;
-      break;
-    default:
-      ityp = UNKNOWN;
-      break;
-  }
+      case maidsafe::DIRECTORY:
+        ityp = DIRECTORY;
+        break;
+      case maidsafe::REGULAR_FILE:
+        ityp = REGULAR_FILE;
+        break;
+      case maidsafe::SMALL_FILE:
+        ityp = SMALL_FILE;
+        break;
+      case maidsafe::EMPTY_FILE:
+        ityp = EMPTY_FILE;
+        break;
+      case maidsafe::LOCKED_FILE:
+        ityp = LOCKED_FILE;
+        break;
+      case maidsafe::EMPTY_DIRECTORY:
+        ityp = EMPTY_DIRECTORY;
+        break;
+      case maidsafe::LINK:
+        ityp = LINK;
+        break;
+      case maidsafe::MAIDSAFE_CHUNK:
+        ityp = MAIDSAFE_CHUNK;
+        break;
+      case maidsafe::NOT_FOR_PROCESSING:
+        ityp = NOT_FOR_PROCESSING;
+        break;
+      case maidsafe::UNKNOWN:
+        ityp = UNKNOWN;
+        break;
+      default:
+        ityp = UNKNOWN;
+        break;
+    }
 
     int sizeLow = sent_mdm.file_size_low();
     int sizeHigh = sent_mdm.file_size_high();
@@ -681,17 +678,14 @@ bool ClientController::CreateUser(const QString &username, const QString &pin,
 bool ClientController::CheckUserExists(const std::string &username,
                                       const std::string &pin,
                                       DefConLevel level) {
-
-maidsafe::DefConLevels defCon;
-if (level == kDefCon1) {
-  defCon = maidsafe::kDefCon1;
-}
-else if(level == kDefCon2) {
-  defCon = maidsafe::kDefCon2;
-}
-else {
-  defCon = maidsafe::kDefCon3;
-}
+  maidsafe::DefConLevels defCon;
+  if (level == kDefCon1) {
+    defCon = maidsafe::kDefCon1;
+  } else if (level == kDefCon2) {
+    defCon = maidsafe::kDefCon2;
+  } else {
+    defCon = maidsafe::kDefCon3;
+  }
 
   bool result = true;
   int rc = maidsafe::ClientController::getInstance()->CheckUserExists(
@@ -748,9 +742,12 @@ QStringList ClientController::GetContactInfo(const QString &pub_name) {
   ss << mic.office_phone_;
   ss >> phone;
 
-  contact << QString::fromStdString(mic.birthday_) << QString::fromStdString(mic.city_) <<
-    QString::fromStdString(mic.full_name_) << QString::fromStdString(gender) <<
-    QString::fromStdString(phone) << QString::fromStdString(mic.pub_name_);
+  contact << QString::fromStdString(mic.birthday_) <<
+      QString::fromStdString(mic.city_) <<
+      QString::fromStdString(mic.full_name_) <<
+      QString::fromStdString(gender) <<
+      QString::fromStdString(phone) <<
+      QString::fromStdString(mic.pub_name_);
 
   return contact;
 }
@@ -778,61 +775,59 @@ int ClientController::getattr(const QString &path, QString &lastModified,
 }
 
 int ClientController::readdir(const QString &path,  // NOLINT
-                              std::map<std::string, ItemType> *children) {
+                              std::map<fs::path, ItemType> *children) {
   std::string the_path(maidsafe::TidyPath(path.toStdString()));
-  std::map<std::string, maidsafe::ItemType> children1;
-  int result = maidsafe::ClientController::getInstance()->readdir(the_path, &children1);
+  std::map<fs::path, maidsafe::ItemType> children1;
+  int result = maidsafe::ClientController::getInstance()->readdir(the_path,
+                                                                  &children1);
 
   while (!children1.empty()) {
-    std::string s = children1.begin()->first;
+    fs::path s = children1.begin()->first;
     maidsafe::ItemType ityp = children1.begin()->second;
 
-  switch (ityp) {
-    case maidsafe::DIRECTORY:
-      children->insert(std::pair<std::string, ClientController::ItemType>(
-      s, DIRECTORY));
-      break;
-    case maidsafe::REGULAR_FILE:
-      children->insert(std::pair<std::string, ClientController::ItemType>(
-      s, REGULAR_FILE));
-      break;
-    case maidsafe::SMALL_FILE:
-      children->insert(std::pair<std::string, ClientController::ItemType>(
-      s, SMALL_FILE));
-      break;
-    case maidsafe::EMPTY_FILE:
-      children->insert(std::pair<std::string, ClientController::ItemType>(
-      s, EMPTY_FILE));
-      break;
-    case maidsafe::LOCKED_FILE:
-      children->insert(std::pair<std::string, ClientController::ItemType>(
-      s, LOCKED_FILE));
-      break;
-    case maidsafe::EMPTY_DIRECTORY:
-      children->insert(std::pair<std::string, ClientController::ItemType>(
-      s, EMPTY_DIRECTORY));
-      break;
-    case maidsafe::LINK:
-      children->insert(std::pair<std::string, ClientController::ItemType>(
-      s, LINK));
-      break;
-    case maidsafe::MAIDSAFE_CHUNK:
-      children->insert(std::pair<std::string, ClientController::ItemType>(
-      s, MAIDSAFE_CHUNK));
-      break;
-    case maidsafe::NOT_FOR_PROCESSING:
-      children->insert(std::pair<std::string, ClientController::ItemType>(
-      s, NOT_FOR_PROCESSING));
-      break;
-    case maidsafe::UNKNOWN:
-      children->insert(std::pair<std::string, ClientController::ItemType>(
-      s, UNKNOWN));
-      break;
-    default:
-      children->insert(std::pair<std::string, ClientController::ItemType>(
-      s, UNKNOWN));
-      break;
-  }
+    switch (ityp) {
+      case maidsafe::DIRECTORY:
+        children->insert(std::pair<fs::path, ClientController::ItemType>(
+        s, DIRECTORY));
+        break;
+      case maidsafe::REGULAR_FILE:
+        children->insert(std::pair<fs::path, ClientController::ItemType>(
+        s, REGULAR_FILE));
+        break;
+      case maidsafe::SMALL_FILE:
+        children->insert(std::pair<fs::path, ClientController::ItemType>(
+        s, SMALL_FILE));
+        break;
+      case maidsafe::EMPTY_FILE:
+        children->insert(std::pair<fs::path, ClientController::ItemType>(
+        s, EMPTY_FILE));
+        break;
+      case maidsafe::LOCKED_FILE:
+        children->insert(std::pair<fs::path, ClientController::ItemType>(
+        s, LOCKED_FILE));
+        break;
+      case maidsafe::EMPTY_DIRECTORY:
+        children->insert(std::pair<fs::path, ClientController::ItemType>(
+        s, EMPTY_DIRECTORY));
+        break;
+      case maidsafe::LINK:
+        children->insert(std::pair<fs::path, ClientController::ItemType>(
+        s, LINK));
+        break;
+      case maidsafe::MAIDSAFE_CHUNK:
+        children->insert(std::pair<fs::path, ClientController::ItemType>(
+        s, MAIDSAFE_CHUNK));
+        break;
+      case maidsafe::NOT_FOR_PROCESSING:
+        children->insert(std::pair<fs::path, ClientController::ItemType>(
+        s, NOT_FOR_PROCESSING));
+        break;
+      case maidsafe::UNKNOWN:
+      default:
+        children->insert(std::pair<fs::path, ClientController::ItemType>(
+        s, UNKNOWN));
+        break;
+    }
 
   children1.erase(children1.begin());
   }
@@ -918,9 +913,9 @@ QString ClientController::getEmailTooltip(HintLevel level) {
 
 QString ClientController::getMyFilesTooltip(HintLevel level) {
   if (level == SMALL) {
-    return QString::fromStdString(TidyPath(kRootSubdir[0][0]));
+    return QString::fromStdString(TidyPath(maidsafe::kRootSubdir[0][0]));
   } else if (level == FULL) {
-    return QString::fromStdString(TidyPath(kRootSubdir[0][0])) +
+    return QString::fromStdString(TidyPath(maidsafe::kRootSubdir[0][0])) +
            QString(": Use This Tab to manage your protected PD Files");
   }
   return "";

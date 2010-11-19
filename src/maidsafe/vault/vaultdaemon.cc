@@ -1,30 +1,38 @@
 /*
- * copyright maidsafe.net limited 2008
- * The following source code is property of maidsafe.net limited and
- * is not meant for external use. The use of this code is governed
- * by the license file LICENSE.TXT found in the root of this directory and also
- * on www.maidsafe.net.
- *
- * You are not free to copy, amend or otherwise use this source code without
- * explicit written permission of the board of directors of maidsafe.net
- *
- *  Created on: Dec 16, 2008
- *      Author: Haiyang
- */
+* ============================================================================
+*
+* Copyright [2009] maidsafe.net limited
+*
+* Description:  Daemon for running a PD vault.
+* Version:      1.0
+* Created:      2009-02-21-23.55.54
+* Revision:     none
+* Author:       Team
+* Company:      maidsafe.net limited
+*
+* The following source code is property of maidsafe.net limited and is not
+* meant for external use.  The use of this code is governed by the license
+* file LICENSE.TXT found in the root of this directory and also on
+* www.maidsafe.net.
+*
+* You are not free to copy, amend or otherwise use this source code without
+* the explicit written permission of the board of directors of maidsafe.net.
+*
+* ============================================================================
+*/
 
 #include "maidsafe/vault/vaultdaemon.h"
 
-#include <boost/date_time/posix_time/posix_time.hpp>
-#include <boost/filesystem/fstream.hpp>
 #include <google/protobuf/descriptor.h>
 #ifdef PD_WIN32
 #include <shlwapi.h>
 #endif
-#include <iostream>  // NOLINT Fraser - required for handling .config file
-
-#include "fs/filesystem.h"
+#include <fstream>  // NOLINT (Fraser)
+#include "maidsafe/common/commonutils.h"
+#include "maidsafe/common/filesystem.h"
 #include "maidsafe/vault/pdvault.h"
-#include "protobuf/maidsafe_messages.pb.h"
+#include "maidsafe/vault/vaultservice.h"
+#include "maidsafe/common/maidsafe_messages.pb.h"
 
 namespace fs = boost::filesystem;
 
@@ -32,12 +40,13 @@ namespace fs = boost::filesystem;
 //    int WriteToLog(std::string str) { return 0; }
 //  #endif
 
-namespace maidsafe_vault {
+namespace maidsafe {
+
+namespace vault {
 
 VaultDaemon::VaultDaemon(const int &port, const std::string &vault_dir,
                          const boost::uint8_t k)
     : pdvault_(),
-      val_check_(),
       is_owned_(false),
       config_file_(),
       kad_config_file_(),
@@ -70,14 +79,14 @@ VaultDaemon::~VaultDaemon() {
   boost::posix_time::ptime now = boost::posix_time::second_clock::local_time();
   stop += boost::posix_time::to_simple_string(now);
   WriteToLog(stop);
-  if (pdvault_.get() != NULL) {
+  if (pdvault_) {
     pdvault_->Stop();
     pdvault_->CleanUp();
   }
 }
 
 void VaultDaemon::StopRegistrationService() {
-//  if (registration_service_.get() != NULL) {
+//  if (registration_service_) {
 //    local_udt_transport_.Stop();
 //    channel_manager_.ClearChannels();
 //  }
@@ -88,8 +97,7 @@ void VaultDaemon::Status() {
   WriteToLog("OK");
 }
 
-void VaultDaemon::RegistrationNotification(
-    const maidsafe::VaultConfig &vconfig) {
+void VaultDaemon::RegistrationNotification(const VaultConfig &vconfig) {
   boost::mutex::scoped_lock gaurd(config_mutex_);
   std::fstream output(config_file_.string().c_str(),
       std::ios::out | std::ios::trunc | std::ios::binary);
@@ -179,7 +187,7 @@ bool VaultDaemon::StartVault() {
   } else {
     registration_channel_.reset(new rpcprotocol::Channel(&channel_manager_,
         &transport_handler_));
-    registration_service_.reset(new maidsafe_vault::RegistrationService(
+    registration_service_.reset(new RegistrationService(
         boost::bind(&VaultDaemon::RegistrationNotification, this, _1)));
     registration_channel_->SetService(registration_service_.get());
     channel_manager_.RegisterChannel(
@@ -206,8 +214,8 @@ bool VaultDaemon::StartVault() {
     if (!StartOwnedVault()) {
       return false;
     } else {
-      if (registration_service_.get() != NULL)
-        registration_service_->set_status(maidsafe::OWNED);
+      if (registration_service_)
+        registration_service_->set_status(OWNED);
       is_owned_ = true;
     }
   }
@@ -230,7 +238,7 @@ int VaultDaemon::ReadConfigInfo() {
   }
   std::ifstream input(config_file_.string().c_str(),
                       std::ios::in | std::ios::binary);
-  maidsafe::VaultConfig vault_config;
+  VaultConfig vault_config;
   if (!vault_config.ParseFromIstream(&input)) {
     WriteToLog("Failed to parse configuration file.\n");
     return kVaultDaemonParseError;
@@ -273,13 +281,11 @@ int VaultDaemon::ReadConfigInfo() {
 }
 
 bool VaultDaemon::StartNotOwnedVault() {
-  crypto::Crypto co;
   crypto::RsaKeyPair keys;
   keys.GenerateKeys(kRsaKeySize);
-  std::string signed_pubkey = co.AsymSign(keys.public_key(), "",
-      keys.private_key(), crypto::STRING_STRING);
-  std::string temp_pmid = co.Hash(keys.public_key() + signed_pubkey, "",
-      crypto::STRING_STRING, true);
+  std::string signed_pubkey = RSASign(keys.public_key(), keys.private_key());
+  std::string temp_pmid = base::EncodeToHex(SHA512String(
+      keys.public_key() + signed_pubkey));
   not_owned_path_ = app_path_ / ("Vault_" + temp_pmid.substr(0, 16));
   try {
     if (fs::exists(not_owned_path_))
@@ -346,7 +352,7 @@ int VaultDaemon::StopNotOwnedVault() {
 }
 
 bool VaultDaemon::StartOwnedVault() {
-  if (pdvault_.get() != NULL)
+  if (pdvault_)
     return false;
   // If kadconfig already exists in vault dir, use that.  If not use the one
   // in app_dir_.  If neither exists, start a new network.
@@ -372,8 +378,10 @@ bool VaultDaemon::StartOwnedVault() {
     WriteToLog("Failed To Start Owned Vault with info in config file");
     return false;
   }
-  registration_service_->set_status(maidsafe::OWNED);
+  registration_service_->set_status(OWNED);
   return true;
 }
 
-}  // namespace maidsafe_vault
+}  // namespace vault
+
+}  // namespace maidsafe

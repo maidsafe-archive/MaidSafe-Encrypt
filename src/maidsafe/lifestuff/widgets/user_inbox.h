@@ -13,20 +13,20 @@
  */
 
 
-#ifndef QT_WIDGETS_USER_INBOX_H_
-#define QT_WIDGETS_USER_INBOX_H_
+#ifndef MAIDSAFE_LIFESTUFF_WIDGETS_USER_INBOX_H_
+#define MAIDSAFE_LIFESTUFF_WIDGETS_USER_INBOX_H_
 
 #include <QWidget>
 #include <QString>
 
 // local
-#include "qt/client/client_controller.h"
-#include "qt/client/read_file_thread.h"
-#include "qt/client/send_email_thread.h"
-#include "qt/client/remove_dir_thread.h"
-#include "qt/client/save_file_thread.h"
-#include "qt/widgets/user_send_mail.h"
-#include "qt/widgets/file_browser.h"
+#include "maidsafe/lifestuff/client/client_controller.h"
+#include "maidsafe/lifestuff/client/read_file_thread.h"
+#include "maidsafe/lifestuff/client/send_email_thread.h"
+#include "maidsafe/lifestuff/client/remove_dir_thread.h"
+#include "maidsafe/lifestuff/client/save_file_thread.h"
+#include "maidsafe/lifestuff/widgets/user_send_mail.h"
+#include "maidsafe/lifestuff/widgets/file_browser.h"
 
 #include "ui_user_inbox.h"
 
@@ -66,4 +66,4 @@ class UserInbox : public QDialog {
   void changeEvent(QEvent *event);
 };
 
-#endif  // QT_WIDGETS_USER_INBOX_H_
+#endif  // MAIDSAFE_LIFESTUFF_WIDGETS_USER_INBOX_H_

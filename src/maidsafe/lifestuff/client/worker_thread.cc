@@ -12,7 +12,7 @@
  *      Author: Team
  */
 
-#include "qt/client/worker_thread.h"
+#include "maidsafe/lifestuff/client/worker_thread.h"
 
 // qt
 #include <QDebug>

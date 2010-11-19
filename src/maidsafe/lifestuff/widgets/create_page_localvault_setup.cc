@@ -12,19 +12,20 @@
  *      Author: Team
  */
 
-#include "qt/widgets/create_page_localvault_setup.h"
+#include "maidsafe/lifestuff/widgets/create_page_localvault_setup.h"
 
 // qt
 #include <QDebug>
 #include <QFileDialog>
 #include <QMessageBox>
+#include <QString>
 #include <QValidator>
 
 #include <boost/filesystem.hpp>
 #include <boost/lexical_cast.hpp>
 
-#include "fs/filesystem.h"
-#include "qt/client/client_controller.h"
+#include "maidsafe/common/filesystem.h"
+#include "maidsafe/lifestuff/client/client_controller.h"
 
 // Must be at least a 2 digit number
 class SpaceValidator : public QIntValidator {
@@ -63,18 +64,20 @@ CreateLocalVaultPage::CreateLocalVaultPage(QWidget* parent)
 CreateLocalVaultPage::~CreateLocalVaultPage() { }
 
 void CreateLocalVaultPage::cleanupPage() {
-  boost::filesystem::path chunkdir(QDir::homePath().toStdString());
+  boost::filesystem::path chunkdir(file_system::HomeDir());
   boost::filesystem::space_info info;
   try {
     if ("/" != chunkdir.root_directory())
       info = boost::filesystem::space(boost::filesystem::path("/"));
     else
       info = boost::filesystem::space(boost::filesystem::path(
-                 chunkdir.root_name() + chunkdir.root_directory()));
+                 chunkdir.root_name().string() +
+                 chunkdir.root_directory().string()));
   }
   catch(const std::exception &e) {
 #ifdef DEBUG
-    printf("CreateLocalVaultPage::cleanupPage - Couldn't read space.\n");
+    printf("CreateLocalVaultPage::cleanupPage - Couldn't read space: %s\n",
+           e.what());
 #endif
   }
   availableSpace_ = boost::lexical_cast<std::string>

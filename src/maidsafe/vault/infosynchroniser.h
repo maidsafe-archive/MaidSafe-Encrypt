@@ -26,7 +26,6 @@
 #ifndef MAIDSAFE_VAULT_INFOSYNCHRONISER_H_
 #define MAIDSAFE_VAULT_INFOSYNCHRONISER_H_
 
-#include <gtest/gtest_prod.h>
 #include <maidsafe/kademlia/contact.h>
 #include <boost/cstdint.hpp>
 #include <boost/shared_ptr.hpp>
@@ -41,7 +40,16 @@ class PublicRoutingTableHandler;
 struct PublicRoutingTableTuple;
 }  // namespace base
 
-namespace maidsafe_vault {
+namespace maidsafe {
+
+namespace vault {
+
+namespace test {
+class InfoSynchroniserTest_BEH_VAULT_InfoSyncShouldFetch_Test;
+class InfoSynchroniserTest_FUNC_VAULT_InfoSyncTimestamps_Test;
+class InfoSynchroniserTest_FUNC_VAULT_InfoSyncRemoveEntry_Test;
+class InfoSynchroniserTest_FUNC_VAULT_InfoSyncPruneMap_Test;
+}  // namespace test
 
 const boost::uint16_t kInfoEntryLifespan = 120;  // seconds
 
@@ -59,10 +67,10 @@ class InfoSynchroniser {
  private:
   InfoSynchroniser(const InfoSynchroniser&);
   InfoSynchroniser& operator=(const InfoSynchroniser&);
-  FRIEND_TEST(InfoSynchroniserTest, BEH_VAULT_InfoSyncShouldFetch);
-  FRIEND_TEST(InfoSynchroniserTest, FUNC_VAULT_InfoSyncTimestamps);
-  FRIEND_TEST(InfoSynchroniserTest, FUNC_VAULT_InfoSyncRemoveEntry);
-  FRIEND_TEST(InfoSynchroniserTest, FUNC_VAULT_InfoSyncPruneMap);
+  friend class test::InfoSynchroniserTest_BEH_VAULT_InfoSyncShouldFetch_Test;
+  friend class test::InfoSynchroniserTest_FUNC_VAULT_InfoSyncTimestamps_Test;
+  friend class test::InfoSynchroniserTest_FUNC_VAULT_InfoSyncRemoveEntry_Test;
+  friend class test::InfoSynchroniserTest_FUNC_VAULT_InfoSyncPruneMap_Test;
   void AddNodeToClosest(const base::PublicRoutingTableTuple &node,
                         std::vector<kad::Contact> *closest);
   std::string pmid_;
@@ -72,6 +80,8 @@ class InfoSynchroniser {
   boost::uint8_t K_;
 };
 
-}  // namespace maidsafe_vault
+}  // namespace vault
+
+}  // namespace maidsafe
 
 #endif  // MAIDSAFE_VAULT_INFOSYNCHRONISER_H_

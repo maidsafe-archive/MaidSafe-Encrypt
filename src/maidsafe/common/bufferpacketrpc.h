@@ -22,16 +22,21 @@
 * ============================================================================
 */
 
-#ifndef MAIDSAFE_BUFFERPACKETRPC_H_
-#define MAIDSAFE_BUFFERPACKETRPC_H_
+#ifndef MAIDSAFE_COMMON_BUFFERPACKETRPC_H_
+#define MAIDSAFE_COMMON_BUFFERPACKETRPC_H_
 
-#include <maidsafe/maidsafe-dht.h>
-#include <maidsafe/base/log.h>
+#include <boost/cstdint.hpp>
 
 #include <string>
 
-#include "maidsafe/maidsafe.h"
-#include "protobuf/maidsafe_service.pb.h"
+#include "maidsafe/common/maidsafe_service.pb.h"
+
+namespace kad { class Contact; }
+namespace transport { class TransportHandler; }
+namespace rpcprotocol {
+class Controller;
+class ChannelManager;
+}  // namespace rpcprotocol
 
 namespace maidsafe {
 
@@ -140,4 +145,4 @@ class BufferPacketRpcsImpl : public BufferPacketRpcs {
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_BUFFERPACKETRPC_H_
+#endif  // MAIDSAFE_COMMON_BUFFERPACKETRPC_H_

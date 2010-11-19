@@ -28,7 +28,6 @@
 #include <boost/cstdint.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/thread/mutex.hpp>
-#include <gtest/gtest_prod.h>
 #include <map>
 #include <string>
 #include <vector>
@@ -38,7 +37,18 @@ class AmendAccountRequest;
 class ExpectAmendmentRequest;
 }  // namespace maidsafe
 
-namespace maidsafe_vault {
+namespace maidsafe {
+
+namespace vault {
+
+namespace test {
+class RequestExpectationHandlerTest_BEH_MAID_AddSingleExpectation_Test;
+class RequestExpectationHandlerTest_BEH_MAID_TooManyExpectations_Test;
+class RequestExpectationHandlerTest_BEH_MAID_TooManyRepeats_Test;
+class RequestExpectationHandlerTest_BEH_MAID_GetExpectedCallersIds_Test;
+class RequestExpectationHandlerTest_BEH_MAID_CleanUp_Test;
+class RequestExpectationHandlerTest_BEH_MAID_Threaded_Test;
+}  // namespace test
 
 struct ExpectedCallers {
   ExpectedCallers(const std::vector<std::string> &ids,
@@ -63,23 +73,25 @@ class RequestExpectationHandler {
         mutex_() {}
   ~RequestExpectationHandler() {}
   // Assumes that request has already been validated
-  int AddExpectation(
-      const maidsafe::ExpectAmendmentRequest &expect_amendment_request);
+  int AddExpectation(const ExpectAmendmentRequest &expect_amendment_request);
   std::vector<std::string> GetExpectedCallersIds(
-      const maidsafe::AmendAccountRequest &amend_account_request);
+      const AmendAccountRequest &amend_account_request);
   // Removes expired entries from multimap which have timed out - returns a
   // count of the number of entries removed.
   int CleanUp();
  private:
   RequestExpectationHandler(const RequestExpectationHandler&);
   RequestExpectationHandler& operator=(const RequestExpectationHandler&);
-  FRIEND_TEST(RequestExpectationHandlerTest, BEH_MAID_REH_AddSingleExpectation);
-  FRIEND_TEST(RequestExpectationHandlerTest, BEH_MAID_REH_TooManyExpectations);
-  FRIEND_TEST(RequestExpectationHandlerTest, BEH_MAID_REH_TooManyRepeats);
-  FRIEND_TEST(RequestExpectationHandlerTest,
-              BEH_MAID_REH_GetExpectedCallersIds);
-  FRIEND_TEST(RequestExpectationHandlerTest, BEH_MAID_REH_CleanUp);
-  FRIEND_TEST(RequestExpectationHandlerTest, BEH_MAID_REH_Threaded);
+  friend class
+      test::RequestExpectationHandlerTest_BEH_MAID_AddSingleExpectation_Test;
+  friend class
+      test::RequestExpectationHandlerTest_BEH_MAID_TooManyExpectations_Test;
+  friend class
+      test::RequestExpectationHandlerTest_BEH_MAID_TooManyRepeats_Test;
+  friend class
+      test::RequestExpectationHandlerTest_BEH_MAID_GetExpectedCallersIds_Test;
+  friend class test::RequestExpectationHandlerTest_BEH_MAID_CleanUp_Test;
+  friend class test::RequestExpectationHandlerTest_BEH_MAID_Threaded_Test;
   template <typename RequestType>
   std::string GetExpectationIdentifier(const RequestType &request);
   const size_t kMaxExpectations_;
@@ -89,6 +101,8 @@ class RequestExpectationHandler {
   boost::mutex mutex_;
 };
 
-}  // namespace maidsafe_vault
+}  // namespace vault
+
+}  // namespace maidsafe
 
 #endif  // MAIDSAFE_VAULT_REQUESTEXPECTATIONHANDLER_H_

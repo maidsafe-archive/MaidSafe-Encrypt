@@ -13,10 +13,10 @@
  *      Author: Team
  */
 
-#ifndef QT_CLIENT_VALIDATE_USER_THREAD_H_
-#define QT_CLIENT_VALIDATE_USER_THREAD_H_
+#ifndef MAIDSAFE_LIFESTUFF_CLIENT_VALIDATE_USER_THREAD_H_
+#define MAIDSAFE_LIFESTUFF_CLIENT_VALIDATE_USER_THREAD_H_
 
-#include "qt/client/worker_thread.h"
+#include "maidsafe/lifestuff/client/worker_thread.h"
 
 // Worker thread for validating users
 /*!
@@ -37,5 +37,5 @@ class ValidateUserThread : public WorkerThread {
   QString password_;
 };
 
-#endif  // QT_CLIENT_VALIDATE_USER_THREAD_H_
+#endif  //  MAIDSAFE_LIFESTUFF_CLIENT_VALIDATE_USER_THREAD_H_
 

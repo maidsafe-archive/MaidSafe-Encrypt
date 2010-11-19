@@ -12,7 +12,7 @@
  *      Author: Team
  */
 
-#include "qt/client/profile.h"
+#include "maidsafe/lifestuff/client/profile.h"
 
 // qt
 #include <QApplication>

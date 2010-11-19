@@ -19,8 +19,8 @@
 * ============================================================================
 */
 
-#ifndef TESTS_MAIDSAFE_NETWORKTEST_H_
-#define TESTS_MAIDSAFE_NETWORKTEST_H_
+#ifndef MAIDSAFE_SHAREDTEST_NETWORKTEST_H_
+#define MAIDSAFE_SHAREDTEST_NETWORKTEST_H_
 
 #include <boost/cstdint.hpp>
 #include <boost/filesystem.hpp>
@@ -37,7 +37,7 @@
 #ifdef MS_NETWORK_TEST
 
 #include "maidsafe/client/maidstoremanager.h"
-#include "tests/maidsafe/localvaults.h"
+#include "maidsafe/sharedtest/localvaults.h"
 
 #define TEST_MS_NET(test_fixture, test_type, test_name_prefix, test_name)\
   TEST_F(test_fixture, FUNC_##test_name_prefix##_NET_##test_name)
@@ -49,7 +49,7 @@ class KadOps;
 
 namespace test {
 
-typedef std::vector< boost::shared_ptr<maidsafe_vault::PDVault> > LocalVaults;
+typedef std::vector< boost::shared_ptr<vault::PDVault> > LocalVaults;
 typedef MaidsafeStoreManager TestStoreManager;
 typedef boost::shared_ptr<TestStoreManager> TestStoreManagerPtr;
 
@@ -80,7 +80,7 @@ boost::uint8_t K();
 
 class NetworkTest {
  public:
-  explicit NetworkTest(const std::string &test_name);
+  NetworkTest();
   ~NetworkTest();
   bool Init();
   boost::int16_t transport_id() const { return transport_id_; }
@@ -104,6 +104,8 @@ class NetworkTest {
  private:
   NetworkTest(const NetworkTest&);
   NetworkTest &operator=(const NetworkTest&);
+  const testing::TestInfo* const test_info_;
+  std::string test_case_name_;
   boost::int16_t transport_id_;
   fs::path test_dir_;
   transport::Transport *transport_;
@@ -119,4 +121,4 @@ class NetworkTest {
 
 }  // namespace maidsafe
 
-#endif  // TESTS_MAIDSAFE_NETWORKTEST_H_
+#endif  // MAIDSAFE_SHAREDTEST_NETWORKTEST_H_

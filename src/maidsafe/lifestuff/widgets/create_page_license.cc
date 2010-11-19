@@ -12,7 +12,7 @@
  *      Author: Team
  */
 
-#include "qt/widgets/create_page_license.h"
+#include "maidsafe/lifestuff/widgets/create_page_license.h"
 
 // qt
 #include <QDebug>

@@ -22,46 +22,32 @@
 * ============================================================================
 */
 
-#include "maidsafe/client/pddir.h"
+#include "maidsafe/client/filesystem/pddir.h"
 
 #include <boost/filesystem.hpp>
 #include <boost/lexical_cast.hpp>
 
-#include <maidsafe/maidsafe-dht.h>
-#include <maidsafe/base/crypto.h>
-
-#include <algorithm>
-#include <cctype>
-#include <cstdio>
 #include <exception>
-#include <list>
-#include <map>
-#include <string>
-#include <vector>
 
-#include "maidsafe/maidsafe.h"
-#include "maidsafe/pdutils.h"
-#include "protobuf/datamaps.pb.h"
+#include "maidsafe/common/cppsqlite3.h"
+#include "maidsafe/client/clientutils.h"
 
 namespace fs = boost::filesystem;
 
-void SanitiseSingleQuotes(std::string *str) {
-  for (unsigned int i = 0; i < str->length(); ++i) {
-    if (str->at(i) == '\'') {
-      str->insert(i, "'");
-      ++i;
-    }
-  }
-}
-
 namespace maidsafe {
 
-PdDir::PdDir(const std::string &db_name, DbInitFlag flag, int *result)
-    : db_name_(), db_(), connected_(false) {
-  boost::shared_ptr<CppSQLite3DB> db(new CppSQLite3DB());
-  db_ = db;
-  db_name_.assign(db_name);
-  *result = Init(flag);
+PdDir::PdDir(const fs::path &db_name, DbInitFlag flag, int *result)
+    : db_(), db_name_(db_name), connected_(false) {
+  try {
+    db_ = boost::shared_ptr<CppSQLite3DB>(new CppSQLite3DB);
+    *result = Init(flag);
+  }
+  catch(...) {
+#ifdef DEBUG
+    printf("PdDir ctor\n");
+#endif
+    return;
+  }
 }
 
 PdDir::~PdDir() {
@@ -97,15 +83,14 @@ int PdDir::Connect() {
 #ifdef DEBUG
     // printf("In PdDir Connect: Before open\n");
 #endif
-    db_->open(db_name_.c_str());
+    db_->open(db_name_.string().c_str());
 #ifdef DEBUG
     // printf("In PdDir Connect: After open\n");
 #endif
   }
   catch(const std::exception &e) {
 #ifdef DEBUG
-
-    printf("%s\n", e.what());
+    printf("PdDir::Connect: %s\n", e.what());
 #endif
     return kDBOpenException;
   }
@@ -116,10 +101,8 @@ int PdDir::Connect() {
 int PdDir::Create() {
   if (connected_)
     return kSuccess;
-  // if (fs::exists(db_name_))
-    // return -3;
   try {
-    db_->open(db_name_.c_str());
+    db_->open(db_name_.string().c_str());
     // create table structure
     db_->execDML("drop table if exists mdm");
     db_->execDML("drop table if exists dm");
@@ -141,7 +124,7 @@ int PdDir::Create() {
   }
   catch(const std::exception &e) {
 #ifdef DEBUG
-    printf("%s\n", e.what());
+    printf("PdDir::Create: %s\n", e.what());
 #endif
     return kDBCreateException;
   }
@@ -149,8 +132,8 @@ int PdDir::Create() {
   return kSuccess;
 }
 
-int PdDir::GetDirKey(const std::string &file_name, std::string *dir_key) {
-  *dir_key = "";
+int PdDir::GetDirKey(const fs::path &file_name, std::string *dir_key) {
+  dir_key->clear();
   int id = GetIdFromName(file_name);
   if (id < 0)
     return id;
@@ -158,12 +141,12 @@ int PdDir::GetDirKey(const std::string &file_name, std::string *dir_key) {
     std::string s = "select dir_key from mdm where id=" +
                     base::IntToString(id) + ";";
 #ifdef DEBUG
-    // printf("%s\n", s.c_str());
+    // printf("PdDir::GetDirKey: %s\n", s.c_str());
 #endif
     CppSQLite3Query q_mdm = db_->execQuery(s.c_str());
     if (q_mdm.eof()) {
 #ifdef DEBUG
-      printf("PdDir::GetDirKey key not found.\n");
+      printf("PdDir::GetDirKey: key not found.\n");
 #endif
       return kDBCantFindDirKey;
     } else {
@@ -174,7 +157,7 @@ int PdDir::GetDirKey(const std::string &file_name, std::string *dir_key) {
   }
   catch(const std::exception &e) {
 #ifdef DEBUG
-    printf("%s\n", e.what());
+    printf("PdDir::GetDirKey: %s\n", e.what());
 #endif
     return kDBReadWriteException;
   }
@@ -190,7 +173,7 @@ int PdDir::Disconnect() {
   }
   catch(const std::exception &e) {
 #ifdef DEBUG
-    printf("%s\n", e.what());
+    printf("PdDir::Disconnect: %s\n", e.what());
 #endif
     return kDBCloseException;
   }
@@ -198,8 +181,8 @@ int PdDir::Disconnect() {
   return kSuccess;
 }
 
-int PdDir::GetIdFromName(const std::string &file_name) {
-  std::string name = StringToLowercase(file_name);
+int PdDir::GetIdFromName(const fs::path &file_name) {
+  std::string name = StringToLowercase(file_name.string());
   SanitiseSingleQuotes(&name);
   std::string s = "select id from mdm where name='" + name + "';";
   try {
@@ -212,7 +195,7 @@ int PdDir::GetIdFromName(const std::string &file_name) {
   }
   catch(const std::exception &e) {
 #ifdef DEBUG
-    printf("%s\n", e.what());
+    printf("PdDir::GetIdFromName: %s\n", e.what());
 #endif
     return kDBReadWriteException;
   }
@@ -226,7 +209,7 @@ bool PdDir::DataMapExists(const int &id) {
   }
   catch(const std::exception &e) {
 #ifdef DEBUG
-    printf("%s\n", e.what());
+    printf("PdDir::DataMapExists: %s\n", e.what());
 #endif
     return false;
   }
@@ -241,7 +224,7 @@ bool PdDir::DataMapExists(const std::string &file_hash) {
   }
   catch(const std::exception &e) {
 #ifdef DEBUG
-    printf("%s\n", e.what());
+    printf("PdDir::DataMapExists:%s\n", e.what());
 #endif
     return false;
   }
@@ -255,17 +238,17 @@ int PdDir::AddElement(const std::string &ser_mdm,
     return kSuccess;
 
   MetaDataMap mdm;
-  DataMap dm;
+  encrypt::DataMap dm;
   try {
     if (!mdm.ParseFromString(ser_mdm))
       return kParseDataMapError;
-    if (ser_dm != "")
+    if (!ser_dm.empty())
       if (!dm.ParseFromString(ser_dm))
         return kParseDataMapError;
   }
   catch(const std::exception &e) {
 #ifdef DEBUG
-    printf("%s\n", e.what());
+    printf("PdDir::AddElement: %s\n", e.what());
 #endif
     return kParseDataMapError;
   }
@@ -275,7 +258,7 @@ int PdDir::AddElement(const std::string &ser_mdm,
     int id = GetIdFromName(mdm.display_name());
     if (id < 0) {
 #ifdef DEBUG
-      // printf("Didn't find the mdm.\n");
+      // printf("PdDir::AddElement: Didn't find the mdm.\n");
 #endif
       if (mdm.id() == -2) {
         mdm_exists = false;
@@ -312,7 +295,7 @@ int PdDir::AddElement(const std::string &ser_mdm,
       ins_mdm = stmt.execDML();
       stmt.finalize();
 
-      if (ser_dm != "") {
+      if (!ser_dm.empty()) {
         CppSQLite3Statement stmt1 = db_->compileStatement(
             "insert into dm values(?,?,?);");
         stmt1.bind(1, base::EncodeToHex(dm.file_hash()).c_str());
@@ -325,7 +308,7 @@ int PdDir::AddElement(const std::string &ser_mdm,
         ins_dm = 1;
       }
     } else {  // mdm name is already there
-      if (ser_dm == "") {
+      if (ser_dm.empty()) {
         // if this is a dir, not a file (files should have been handled by
         // ModifyMetaDataMap)
         std::string s = "update mdm set type = ?, stats = ?, tag = ?, ";
@@ -356,7 +339,7 @@ int PdDir::AddElement(const std::string &ser_mdm,
   }
   catch(const std::exception &e) {
 #ifdef DEBUG
-    printf("%s\n", e.what());
+    printf("PdDir::AddElement: %s\n", e.what());
 #endif
     return kDBReadWriteException;
   }
@@ -365,11 +348,11 @@ int PdDir::AddElement(const std::string &ser_mdm,
 
 int PdDir::ModifyMetaDataMap(const std::string &ser_mdm,
                              const std::string &ser_dm) {
-  if (ser_dm == "")  // i.e. a dir
+  if (ser_dm.empty())  // i.e. a dir
     return kModifyElementError;
 
   MetaDataMap mdm;
-  DataMap dm;
+  encrypt::DataMap dm;
   if (!mdm.ParseFromString(ser_mdm))
     return kParseDataMapError;
   if (!dm.ParseFromString(ser_dm))
@@ -378,7 +361,7 @@ int PdDir::ModifyMetaDataMap(const std::string &ser_mdm,
   int id = GetIdFromName(mdm.display_name());
   if (id < 0) {
 #ifdef DEBUG
-    // printf("Didn't find the mdm.\n");
+    // printf("PdDir::ModifyMetaDataMap: Didn't find the mdm.\n");
 #endif
     return kDBCantFindFile;
   }
@@ -403,7 +386,8 @@ int PdDir::ModifyMetaDataMap(const std::string &ser_mdm,
 
     if (modified_elements != 1) {
 #ifdef DEBUG
-      // printf("Updated mdm wrong: %i\n", modified_elements_);
+//      printf("PdDir::ModifyMetaDataMap: Updated mdm wrong: %i\n",
+//             modified_elements);
 #endif
       return kModifyElementError;
     }
@@ -417,7 +401,8 @@ int PdDir::ModifyMetaDataMap(const std::string &ser_mdm,
     stmt1.finalize();
     if (modified_elements < 1) {
 #ifdef DEBUG
-      // printf("Updated dm wrong: %i\n", modified_elements_);
+//      printf("PdDir::ModifyMetaDataMap: Updated dm wrong: %i\n",
+//             modified_elements);
 #endif
       return kModifyElementError;
     }
@@ -425,13 +410,13 @@ int PdDir::ModifyMetaDataMap(const std::string &ser_mdm,
   }
   catch(const std::exception &e) {
 #ifdef DEBUG
-    printf("%s\n", e.what());
+    printf("PdDir::ModifyMetaDataMap: %s\n", e.what());
 #endif
     return kDBReadWriteException;
   }
 }
 
-int PdDir::RemoveElement(const std::string &file_name) {
+int PdDir::RemoveElement(const fs::path &file_name) {
   try {
     bool flag_dm = false;
     bool flag_mdm = false;
@@ -440,7 +425,7 @@ int PdDir::RemoveElement(const std::string &file_name) {
     int id = GetIdFromName(file_name);
     if (id < 0) {
 #ifdef DEBUG
-      // printf("Didn't find the mdm.\n");
+      // printf("PdDir::RemoveElement: Didn't find the mdm.\n");
 #endif
       return kDBCantFindFile;
     }
@@ -448,7 +433,7 @@ int PdDir::RemoveElement(const std::string &file_name) {
     std::string s = "select type from mdm where id=" +
                     base::IntToString(id) + ";";
 #ifdef DEBUG
-    // printf("%s\n", s.c_str());
+    // printf("PdDir::RemoveElement: %s\n", s.c_str());
 #endif
     CppSQLite3Query q_mdm = db_->execQuery(s.c_str());
     type = q_mdm.getIntField(0);
@@ -479,22 +464,22 @@ int PdDir::RemoveElement(const std::string &file_name) {
   }
   catch(const std::exception &e) {
 #ifdef DEBUG
-    printf("%s\n", e.what());
+    printf("PdDir::RemoveElement: %s\n", e.what());
 #endif
     return kDBReadWriteException;
   }
 }
 
-int PdDir::ListFolder(std::map<std::string, ItemType> *children) {
+int PdDir::ListFolder(std::map<fs::path, ItemType> *children) {
   try {
     std::string s = "select display_name, type from mdm;";
 #ifdef DEBUG
-    // printf("%s\n", s.c_str());
+    // printf("PdDir::ListFolder: %s\n", s.c_str());
 #endif
     CppSQLite3Query q_mdm = db_->execQuery(s.c_str());
     while (!q_mdm.eof()) {
 #ifdef DEBUG
-      // printf("%s\n", q_mdm.getStringField(0).c_str());
+      // printf("PdDir::ListFolder: %s\n", q_mdm.getStringField(0).c_str());
 #endif
       children->insert(std::pair<std::string, ItemType>(\
         q_mdm.getStringField(0), ItemType(q_mdm.getIntField(1))));
@@ -504,24 +489,24 @@ int PdDir::ListFolder(std::map<std::string, ItemType> *children) {
   }
   catch(const std::exception &e) {
 #ifdef DEBUG
-    printf("%s\n", e.what());
+    printf("PdDir::ListFolder: %s\n", e.what());
 #endif
     return kDBReadWriteException;
   }
   return kSuccess;
 }
 
-int PdDir::ListSubDirs(std::vector<std::string> *subdirs) {
+int PdDir::ListSubDirs(std::vector<fs::path> *subdirs) {
   // boost::mutex::scoped_lock lock(mutex_);
   try {
     std::string s = "select display_name, type from mdm;";
 #ifdef DEBUG
-    // printf("%s\n", s.c_str());
+    // printf("PdDir::ListSubDirs: %s\n", s.c_str());
 #endif
     CppSQLite3Query q_mdm = db_->execQuery(s.c_str());
     while (!q_mdm.eof()) {
 #ifdef DEBUG
-      // printf("%s\n", q_mdm.getStringField(0).c_str());
+      // printf("PdDir::ListSubDirs: %s\n", q_mdm.getStringField(0).c_str());
 #endif
       if (q_mdm.getIntField(1) == 4 || q_mdm.getIntField(1) == 5)
         subdirs->push_back(q_mdm.getStringField(0));
@@ -531,7 +516,7 @@ int PdDir::ListSubDirs(std::vector<std::string> *subdirs) {
   }
   catch(const std::exception &e) {
 #ifdef DEBUG
-    printf("%s\n", e.what());
+    printf("PdDir::ListSubDirs: %s\n", e.what());
 #endif
     return kDBReadWriteException;
   }
@@ -546,9 +531,9 @@ int PdDir::GetDataMapFromHash(const std::string &file_hash,
     CppSQLite3Query q_dm = db_->execQuery(s.c_str());
     if (q_dm.eof()) {
 #ifdef DEBUG
-      printf("Couldn't find file.\n");
+      printf("PdDir::GetDataMapFromHash: Couldn't find file.\n");
 #endif
-      *ser_dm = "";
+      ser_dm->clear();
       return kDBCantFindFile;
     } else {
       *ser_dm = base::DecodeFromHex(q_dm.fieldValue(
@@ -558,13 +543,13 @@ int PdDir::GetDataMapFromHash(const std::string &file_hash,
   }
   catch(const std::exception &e) {
 #ifdef DEBUG
-    printf("%s\n", e.what());
+    printf("PdDir::GetDataMapFromHash: %s\n", e.what());
 #endif
     return kDBReadWriteException;
   }
 }
 
-int PdDir::GetDataMap(const std::string &file_name, std::string *ser_dm) {
+int PdDir::GetDataMap(const fs::path &file_name, std::string *ser_dm) {
   int id = GetIdFromName(file_name);
   if (id < 0)
     return kDBCantFindFile;
@@ -575,9 +560,9 @@ int PdDir::GetDataMap(const std::string &file_name, std::string *ser_dm) {
     CppSQLite3Query q_dm = db_->execQuery(s.c_str());
     if (q_dm.eof()) {
 #ifdef DEBUG
-      printf("Couldn't find file.\n");
+      printf("PdDir::GetDataMap: Couldn't find file.\n");
 #endif
-      *ser_dm = "";
+      ser_dm->clear();
       return kDBCantFindFile;
     } else {
       *ser_dm = base::DecodeFromHex(q_dm.fieldValue(
@@ -587,13 +572,13 @@ int PdDir::GetDataMap(const std::string &file_name, std::string *ser_dm) {
   }
   catch(const std::exception &e) {
 #ifdef DEBUG
-    printf("%s\n", e.what());
+    printf("PdDir::GetDataMap: %s\n", e.what());
 #endif
     return kDBReadWriteException;
   }
 }
 
-int PdDir::GetMetaDataMap(const std::string &file_name, std::string *ser_mdm) {
+int PdDir::GetMetaDataMap(const fs::path &file_name, std::string *ser_mdm) {
   // boost::mutex::scoped_lock lock(mutex1_);
 #ifdef DEBUG
   // printf("\t\tPdDir::GetMetaDataMap %s\n", file_name.c_str());
@@ -608,7 +593,7 @@ int PdDir::GetMetaDataMap(const std::string &file_name, std::string *ser_mdm) {
                     base::IntToString(id) + ";";
     CppSQLite3Query q_dm = db_->execQuery(s.c_str());
     if (q_dm.eof())
-      file_hash = "";
+      file_hash.clear();
     else
       file_hash = base::DecodeFromHex(q_dm.fieldValue(
                   static_cast<unsigned int>(0)));
@@ -617,9 +602,9 @@ int PdDir::GetMetaDataMap(const std::string &file_name, std::string *ser_mdm) {
     CppSQLite3Query q_mdm = db_->execQuery(s.c_str());
     if (q_mdm.eof()) {
 #ifdef DEBUG
-      printf("Couldn't find file.\n");
+      printf("PdDir::GetMetaDataMap: Couldn't find file.\n");
 #endif
-      *ser_mdm = "";
+      ser_mdm->clear();
       return kDBCantFindFile;
     } else {
       MetaDataMap mdm;
@@ -645,13 +630,13 @@ int PdDir::GetMetaDataMap(const std::string &file_name, std::string *ser_mdm) {
   }
   catch(const std::exception &e) {
 #ifdef DEBUG
-    printf("%s\n", e.what());
+    printf("PdDir::GetMetaDataMap: %s\n", e.what());
 #endif
     return kDBReadWriteException;
   }
 }
 
-int PdDir::ChangeTime(const std::string &file_name, char time_type) {
+int PdDir::ChangeTime(const fs::path &file_name, char time_type) {
   int id = GetIdFromName(file_name);
   if (id < 0)
     return kDBCantFindFile;
@@ -678,12 +663,12 @@ int PdDir::ChangeTime(const std::string &file_name, char time_type) {
     // stmt.bind(1, (const unsigned char)current_time);
     stmt.bind(1, static_cast<int>(current_time));
     stmt.bind(2, id);
-    int modified_elements_ = stmt.execDML();
+    int modified_elements = stmt.execDML();
     stmt.finalize();
 
-    if (modified_elements_ != 1) {
+    if (modified_elements != 1) {
 #ifdef DEBUG
-      // printf("Updated mdm wrong: %i\n", modified_elements_);
+//      printf("PdDir::ChangeTime: Updated mdm wrong: %i\n", modified_elements);
 #endif
       return kModifyElementError;
     }
@@ -691,22 +676,31 @@ int PdDir::ChangeTime(const std::string &file_name, char time_type) {
   }
   catch(const std::exception &e) {
 #ifdef DEBUG
-    printf("%s\n", e.what());
+    printf("PdDir::ChangeTime: %s\n", e.what());
 #endif
     return kDBReadWriteException;
   }
 }
 
-int PdDir::ChangeCtime(const std::string &file_name) {
+int PdDir::ChangeCtime(const fs::path &file_name) {
   return ChangeTime(file_name, 'C');
 }
 
-int PdDir::ChangeMtime(const std::string &file_name) {
+int PdDir::ChangeMtime(const fs::path &file_name) {
   return ChangeTime(file_name, 'M');
 }
 
-int PdDir::ChangeAtime(const std::string &file_name) {
+int PdDir::ChangeAtime(const fs::path &file_name) {
   return ChangeTime(file_name, 'A');
+}
+
+void PdDir::SanitiseSingleQuotes(std::string *str) {
+  for (size_t i = 0; i < str->size(); ++i) {
+    if (str->at(i) == '\'') {
+      str->insert(i, "'");
+      ++i;
+    }
+  }
 }
 
 }  // namespace maidsafe

@@ -23,26 +23,22 @@
 
 #include <gtest/gtest.h>
 #include <boost/filesystem.hpp>
-#include <maidsafe/base/crypto.h>
 
 #include <string>
 #include <vector>
 
-#include "fs/filesystem.h"
-#include "maidsafe/chunkstore.h"
-#include "maidsafe/pdutils.h"
-#include "maidsafe/client/dataatlashandler.h"
-#include "maidsafe/client/keyatlas.h"
-#include "maidsafe/client/pddir.h"
-#include "maidsafe/client/clientcontroller.h"
-#include "maidsafe/client/selfencryption.h"
+#include "maidsafe/common/chunkstore.h"
+#include "maidsafe/client/filesystem/dataatlashandler.h"
+#include "maidsafe/client/filesystem/pddir.h"
+#include "maidsafe/client/filesystem/sehandler.h"
+#include "maidsafe/client/clientutils.h"
 #include "maidsafe/client/localstoremanager.h"
-#include "maidsafe/client/packetfactory.h"
-#include "protobuf/datamaps.pb.h"
-#include "protobuf/maidsafe_messages.pb.h"
-#include "protobuf/maidsafe_service_messages.pb.h"
-#include "tests/maidsafe/cached_keys.h"
-#include "tests/maidsafe/testcallback.h"
+#include "maidsafe/client/sessionsingleton.h"
+#include "maidsafe/sharedtest/cachepassport.h"
+#include "maidsafe/sharedtest/testcallback.h"
+
+
+namespace fs = boost::filesystem;
 
 namespace test_dah {
 static const boost::uint8_t K(4);
@@ -50,30 +46,36 @@ static const boost::uint8_t K(4);
 
 namespace maidsafe {
 
-namespace fs = boost::filesystem;
+namespace test {
 
 class DataAtlasHandlerTest : public testing::Test {
  protected:
   DataAtlasHandlerTest()
       : test_root_dir_(file_system::TempDir() / ("maidsafe_TestDAH_" +
-                       base::RandomAlphaNumericString(6))),
-        keys_() {}
+                       base::RandomAlphaNumericString(6))) {}
   ~DataAtlasHandlerTest() { }
   void SetUp() {
-    SessionSingleton::getInstance()->ResetSession();
-    SessionSingleton::getInstance()->SetUsername("user1");
-    SessionSingleton::getInstance()->SetPin("1234");
-    SessionSingleton::getInstance()->SetPassword("password1");
-    SessionSingleton::getInstance()->SetSessionName(false);
-    SessionSingleton::getInstance()->SetRootDbKey("whatever");
+    SessionSingleton *ss(SessionSingleton::getInstance());
+    boost::shared_ptr<passport::test::CachePassport> passport(
+        new passport::test::CachePassport(kRsaKeySize, 5, 10));
+    passport->Init();
+    ss->passport_ = passport;
+    ss->ResetSession();
+    ss->CreateTestPackets("PublicName");
+    ss->SetUsername("user1");
+    ss->SetPin("1234");
+    ss->SetPassword("password1");
+    ss->SetSessionName(false);
+    ss->SetRootDbKey("whatever");
     try {
       if (fs::exists(test_root_dir_))
         fs::remove_all(test_root_dir_);
       if (fs::exists(file_system::LocalStoreManagerDir()))
         fs::remove_all(file_system::LocalStoreManagerDir());
-      std::string session_name = SessionSingleton::getInstance()->SessionName();
+      std::string session_name = ss->SessionName();
       if (fs::exists(file_system::MaidsafeDir(session_name)))
         fs::remove_all(file_system::MaidsafeDir(session_name));
+      fs::create_directories(test_root_dir_);
     }
     catch(const std::exception& e) {
       printf("%s\n", e.what());
@@ -96,15 +98,8 @@ class DataAtlasHandlerTest : public testing::Test {
       FAIL();
       return;
     }
-    cached_keys::MakeKeys(3, &keys_);
-    SessionSingleton::getInstance()->AddKey(PMID, "PMID",
-        keys_.at(0).private_key(), keys_.at(0).public_key(), "");
-    SessionSingleton::getInstance()->AddKey(MAID, "MAID",
-        keys_.at(1).private_key(), keys_.at(1).public_key(), "");
-    SessionSingleton::getInstance()->AddKey(MPID, "Me",
-        keys_.at(2).private_key(), keys_.at(2).public_key(), "");
-    ASSERT_EQ(0, file_system::Mount(SessionSingleton::getInstance()->
-        SessionName(), SessionSingleton::getInstance()->DefConLevel()));
+    ASSERT_EQ(0, file_system::Mount(ss->
+        SessionName(), ss->DefConLevel()));
     boost::scoped_ptr<DataAtlasHandler> dah(new DataAtlasHandler());
     boost::shared_ptr<SEHandler> seh(new SEHandler());
     seh->Init(sm, client_chunkstore_);
@@ -130,7 +125,7 @@ class DataAtlasHandlerTest : public testing::Test {
       else
         key = kRootSubdir[i][1];
       fs::create_directories(file_system::MaidsafeHomeDir(
-          SessionSingleton::getInstance()->SessionName()) / kRootSubdir[i][0]);
+          ss->SessionName()) / kRootSubdir[i][0]);
       dah->AddElement(TidyPath(kRootSubdir[i][0]), ser_mdm, "", key,
                        true);
     }
@@ -150,10 +145,9 @@ class DataAtlasHandlerTest : public testing::Test {
     }
   }
   fs::path test_root_dir_;
-  std::vector<crypto::RsaKeyPair> keys_;
  private:
-  explicit DataAtlasHandlerTest(const maidsafe::DataAtlasHandlerTest&);
-  DataAtlasHandlerTest &operator=(const maidsafe::DataAtlasHandlerTest&);
+  explicit DataAtlasHandlerTest(const DataAtlasHandlerTest&);
+  DataAtlasHandlerTest &operator=(const DataAtlasHandlerTest&);
 };
 
 TEST_F(DataAtlasHandlerTest, BEH_MAID_AddGetDataMapDetail) {
@@ -161,18 +155,18 @@ TEST_F(DataAtlasHandlerTest, BEH_MAID_AddGetDataMapDetail) {
   // also checks to retrieve metadata for a filepath
   // checks the testDataMap existance
   boost::scoped_ptr<DataAtlasHandler> dah_(new DataAtlasHandler());
-  const char* kDataBaseFile = "kdataatlas.db";
+  fs::path kDataBaseFile(test_root_dir_ / "kdataatlas.db");
   if (fs::exists(kDataBaseFile))
     fs::remove(kDataBaseFile);
   int result_;
-  PdDir data_atlas(kDataBaseFile, CREATE, &result_);
+  PdDir data_atlas(kDataBaseFile.string().c_str(), CREATE, &result_);
 
   std::string ser_dm, ser_mdm;
   std::string file_name = "Doc1.doc";
   std::string file_hash = "file hash1";
 
   // Creating DataMap
-  DataMap dm;
+  encrypt::DataMap dm;
   dm.set_file_hash(file_hash);
   dm.add_chunk_name("chunk1");
   dm.add_chunk_name("chunk2");
@@ -198,7 +192,7 @@ TEST_F(DataAtlasHandlerTest, BEH_MAID_AddGetDataMapDetail) {
   mdm.SerializeToString(&ser_mdm);
 
   // Adding it to the DataAtlas
-  ASSERT_EQ(0, data_atlas.AddElement(ser_mdm, ser_dm)) <<
+  ASSERT_EQ(0, data_atlas.AddElement(ser_mdm, ser_dm, "")) <<
             "DataMap and Metadata of file were not added to DataAtlas";
 
   // Getting the dataMap
@@ -210,7 +204,7 @@ TEST_F(DataAtlasHandlerTest, BEH_MAID_AddGetDataMapDetail) {
   ASSERT_EQ(0, data_atlas.GetMetaDataMap(file_name, &meta_data_map)) <<
             "Didn't retrieve MetaDataMap from DataAtlas";
 
-  DataMap recovered_dm;
+  encrypt::DataMap recovered_dm;
   MetaDataMap recovered_mdm;
 
   // check serialised DM = original DM (mdm will have changed
@@ -288,7 +282,7 @@ TEST_F(DataAtlasHandlerTest, BEH_MAID_AddGetDataMapDAH) {
   std::string file_hash = "file hash1";
 
   // Creating DataMap
-  DataMap dm;
+  encrypt::DataMap dm;
   dm.set_file_hash(file_hash);
   dm.add_chunk_name("chunk1");
   dm.add_chunk_name("chunk2");
@@ -324,7 +318,7 @@ TEST_F(DataAtlasHandlerTest, BEH_MAID_AddGetDataMapDAH) {
   ASSERT_EQ(0, dah_->GetMetaDataMap(element_path, &meta_data_map)) <<
             "Didn't retrieve MetaDataMap from DataAtlas";
 
-  DataMap recovered_dm;
+  encrypt::DataMap recovered_dm;
   MetaDataMap recovered_mdm;
 
   // check serialised DM = original DM (mdm will have changed due
@@ -399,7 +393,7 @@ TEST_F(DataAtlasHandlerTest, BEH_MAID_ObscureFilename) {
   std::string file_hash("file hash obscure");
 
   // Creating DataMap
-  DataMap dm;
+  encrypt::DataMap dm;
   dm.set_file_hash(file_hash);
   dm.add_chunk_name("chunk1");
   dm.add_chunk_name("chunk2");
@@ -435,7 +429,7 @@ TEST_F(DataAtlasHandlerTest, BEH_MAID_ObscureFilename) {
   ASSERT_EQ(0, dah_->GetMetaDataMap(element_path, &meta_data_map)) <<
             "Didn't retrieve MetaDataMap from DataAtlas";
 
-  DataMap recovered_dm;
+  encrypt::DataMap recovered_dm;
   MetaDataMap recovered_mdm;
 
   // check serialised DM = original DM (mdm will have changed due
@@ -506,7 +500,7 @@ TEST_F(DataAtlasHandlerTest, BEH_MAID_RemoveMSFileAndPath) {
   std::string file_hash = "file hash1";
 
   // Creating DataMap
-  DataMap dm;
+  encrypt::DataMap dm;
   dm.set_file_hash(file_hash);
   dm.add_chunk_name("fraser");
   dm.add_chunk_name("douglas");
@@ -541,7 +535,7 @@ TEST_F(DataAtlasHandlerTest, BEH_MAID_RemoveMSFileAndPath) {
   ASSERT_EQ(0, dah_->GetMetaDataMap(element_path, &ser_mdmrecovered)) <<
             "Didn't retrieve MetaDataMap from DataAtlas";
 
-  DataMap recovered_dm;
+  encrypt::DataMap recovered_dm;
   MetaDataMap recovered_mdm;
 
   // Check DM is sucessfully removed from the DataAtlas
@@ -576,7 +570,7 @@ TEST_F(DataAtlasHandlerTest, BEH_MAID_CopyMSFile) {
   std::string file_hash_exists = "file hash exists";
 
   // Creating DataMaps
-  DataMap dm_original, dm_exists;
+  encrypt::DataMap dm_original, dm_exists;
   dm_original.set_file_hash(file_hash_original);
   dm_original.add_chunk_name("chunk1_original");
   dm_original.add_chunk_name("chunk2_original");
@@ -643,7 +637,7 @@ TEST_F(DataAtlasHandlerTest, BEH_MAID_CopyMSFile) {
             &ser_mdmrecovered_exists)) <<
             "Didn't retrieve MetaDataMap from DataAtlas";
 
-  DataMap recovered_dm_copy1, recovered_dm_exists, recovered_dm_copy2;
+  encrypt::DataMap recovered_dm_copy1, recovered_dm_exists, recovered_dm_copy2;
   MetaDataMap recovered_mdmcopy1, recovered_mdmexists, recovered_mdmcopy2;
 
   // Check file is not copied to non-existent dir
@@ -720,7 +714,7 @@ TEST_F(DataAtlasHandlerTest, BEH_MAID_RenameMSFile) {
   std::string file_hash_exists = "file hash exists";
 
   // Creating DataMaps
-  DataMap dm_original, dm_exists;
+  encrypt::DataMap dm_original, dm_exists;
   dm_original.set_file_hash(file_hash_original);
   dm_original.add_chunk_name("chunk1_original");
   dm_original.add_chunk_name("chunk2_original");
@@ -787,7 +781,7 @@ TEST_F(DataAtlasHandlerTest, BEH_MAID_RenameMSFile) {
             &ser_mdmrecovered_exists)) <<
             "Didn't retrieve MetaDataMap from DataAtlas";
 
-  DataMap recovered_dm_copy1, recovered_dm_exists, recovered_dm_copy2;
+  encrypt::DataMap recovered_dm_copy1, recovered_dm_exists, recovered_dm_copy2;
   MetaDataMap recovered_mdmcopy1, recovered_mdmexists, recovered_mdmcopy2;
 
   // Check file is not renamed to non-existent dir
@@ -939,7 +933,7 @@ TEST_F(DataAtlasHandlerTest, BEH_MAID_RemoveMSFileRepeatedDataMap) {
   std::string file_hash = "file hash1";
 
   // Creating DataMap
-  DataMap dm;
+  encrypt::DataMap dm;
   dm.set_file_hash(file_hash);
   dm.add_chunk_name("chunk1");
   dm.add_chunk_name("chunk2");
@@ -1028,7 +1022,7 @@ TEST_F(DataAtlasHandlerTest, BEH_MAID_AddRepeatedDataMap) {
   std::string file_hash = "file hash1";
 
   // Creating DataMap
-  DataMap dm;
+  encrypt::DataMap dm;
   dm.set_file_hash(file_hash);
   dm.add_chunk_name("chunk1");
   dm.add_chunk_name("chunk2");
@@ -1091,7 +1085,7 @@ TEST_F(DataAtlasHandlerTest, BEH_MAID_AddRepeatedDataMap) {
   ASSERT_EQ(file_hash, recovered_mdm1.file_hash(0));
   ASSERT_EQ(file_hash, recovered_mdm2.file_hash(0));
 
-  DataMap recovered_dm;
+  encrypt::DataMap recovered_dm;
 
   ASSERT_EQ(0, dah_->GetDataMap(element_path1, &ser_dm_recovered1)) <<
             "Didn't retrieve DataMap from DataAtlas";
@@ -1127,7 +1121,7 @@ TEST_F(DataAtlasHandlerTest, BEH_MAID_AddEmptyDir) {
   std::string file_hash = "file hash1";
 
   // Creating DataMap
-  DataMap dm;
+  encrypt::DataMap dm;
   dm.set_file_hash(file_hash);
   dm.add_chunk_name("chunk1");
   dm.add_chunk_name("chunk2");
@@ -1162,7 +1156,7 @@ TEST_F(DataAtlasHandlerTest, BEH_MAID_AddEmptyDir) {
   mdm2.SerializeToString(&ser_mdm2);
 
   MetaDataMap recovered_mdm1, recovered_mdm2;
-  DataMap recovered_dm;
+  encrypt::DataMap recovered_dm;
 
   //  Add and retrieve data for folder
   ASSERT_EQ(0, dah_->AddElement(element_path1, ser_mdm1, "", "Dir Key", true))
@@ -1236,7 +1230,7 @@ TEST_F(DataAtlasHandlerTest, BEH_MAID_EmptyFileHandling) {
   std::string file_hash_regular = "regular file hash";
 
   // Creating DataMap
-  DataMap dm1;
+  encrypt::DataMap dm1;
   dm1.set_file_hash(file_hash_empty);
   dm1.SerializeToString(&ser_dm1);
 
@@ -1256,7 +1250,7 @@ TEST_F(DataAtlasHandlerTest, BEH_MAID_EmptyFileHandling) {
   mdm1.SerializeToString(&ser_mdm1);
 
   MetaDataMap recovered_mdm1;
-  DataMap recovered_dm1;
+  encrypt::DataMap recovered_dm1;
 
   //  Add and retrieve data for file
   ASSERT_EQ(0, dah_->AddElement(element_path, ser_mdm1, ser_dm1, "", true)) <<
@@ -1274,7 +1268,7 @@ TEST_F(DataAtlasHandlerTest, BEH_MAID_EmptyFileHandling) {
   ASSERT_EQ(ser_dm1, ser_dm_recovered1) << "DataMap different from original";
 
   //  Update DataMap
-  DataMap dm2;
+  encrypt::DataMap dm2;
   dm2.set_file_hash(file_hash_regular);
   dm2.add_chunk_name("chunka");
   dm2.add_chunk_name("chunkb");
@@ -1301,7 +1295,7 @@ TEST_F(DataAtlasHandlerTest, BEH_MAID_EmptyFileHandling) {
               "Didn't serialise the MetaDataMap";
 
   MetaDataMap recovered_mdm2;
-  DataMap recovered_dm2;
+  encrypt::DataMap recovered_dm2;
 
   ASSERT_EQ(0, dah_->ModifyMetaDataMap(element_path, ser_mdm2, ser_dm2)) <<
             "Didn't modify DataAtlas";
@@ -1346,5 +1340,7 @@ TEST_F(DataAtlasHandlerTest, BEH_MAID_EmptyFileHandling) {
   ASSERT_NE("", recovered_dm2.encrypted_chunk_name(2)) <<
             "Enc Chunk 3 has not changed in DataMap";
 }
+
+}  // namespace test
 
 }  // namespace maidsafe

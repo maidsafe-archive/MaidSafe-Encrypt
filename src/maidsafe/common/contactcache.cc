@@ -18,8 +18,8 @@
 * ============================================================================
 */
 
-#include "maidsafe/contactcache.h"
-#include "maidsafe/kadops.h"
+#include "maidsafe/common/contactcache.h"
+#include "maidsafe/common/kadops.h"
 
 namespace maidsafe {
 

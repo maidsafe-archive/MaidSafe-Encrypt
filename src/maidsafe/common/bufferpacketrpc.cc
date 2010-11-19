@@ -22,7 +22,11 @@
 * ============================================================================
 */
 
-#include "maidsafe/bufferpacketrpc.h"
+#include "maidsafe/common/bufferpacketrpc.h"
+
+#include <maidsafe/kademlia/contact.h>
+#include <maidsafe/rpcprotocol/channel-api.h>
+#include <maidsafe/transport/transport-api.h>
 
 namespace maidsafe {
 

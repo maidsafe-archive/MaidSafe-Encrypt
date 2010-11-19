@@ -12,13 +12,13 @@
  *      Author: Team
  */
 
-#ifndef QT_WIDGETS_VAULT_INFO_H_
-#define QT_WIDGETS_VAULT_INFO_H_
+#ifndef MAIDSAFE_LIFESTUFF_WIDGETS_VAULT_INFO_H_
+#define MAIDSAFE_LIFESTUFF_WIDGETS_VAULT_INFO_H_
 
 #include <QTimer>
 
 // local
-#include "qt/widgets/panel.h"
+#include "maidsafe/lifestuff/widgets/panel.h"
 
 // generated
 #include "ui_user_vault_info.h"
@@ -49,4 +49,4 @@ class VaultInfo : public Panel {
   void changeEvent(QEvent *event);
 };
 
-#endif  // QT_WIDGETS_VAULT_INFO_H_
+#endif  //  MAIDSAFE_LIFESTUFF_WIDGETS_VAULT_INFO_H_

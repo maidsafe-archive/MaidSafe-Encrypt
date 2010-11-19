@@ -13,20 +13,20 @@
  */
 
 
-#ifndef QT_WIDGETS_USER_SETTINGS_H_
-#define QT_WIDGETS_USER_SETTINGS_H_
+#ifndef MAIDSAFE_LIFESTUFF_WIDGETS_USER_SETTINGS_H_
+#define MAIDSAFE_LIFESTUFF_WIDGETS_USER_SETTINGS_H_
 
 #include <QWidget>
 #include <QString>
 
 // local
-#include "qt/client/client_controller.h"
-#include "qt/widgets/personal_settings.h"
-#include "qt/widgets/vault_info.h"
-#include "qt/widgets/connection_settings.h"
-#include "qt/widgets/file_transfer_settings.h"
-#include "qt/widgets/security_settings.h"
-#include "qt/widgets/profile_settings.h"
+#include "maidsafe/lifestuff/client/client_controller.h"
+#include "maidsafe/lifestuff/widgets/personal_settings.h"
+#include "maidsafe/lifestuff/widgets/vault_info.h"
+#include "maidsafe/lifestuff/widgets/connection_settings.h"
+#include "maidsafe/lifestuff/widgets/file_transfer_settings.h"
+#include "maidsafe/lifestuff/widgets/security_settings.h"
+#include "maidsafe/lifestuff/widgets/profile_settings.h"
 #include "ui_user_settings.h"
 
 class SecuritySettings;
@@ -83,4 +83,4 @@ class UserSettings : public QDialog {
   void changeEvent(QEvent *event);
 };
 
-#endif  // QT_WIDGETS_USER_SETTINGS_H_
+#endif  //  MAIDSAFE_LIFESTUFF_WIDGETS_USER_SETTINGS_H_

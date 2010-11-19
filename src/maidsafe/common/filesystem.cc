@@ -29,8 +29,8 @@
  */
 
 #include "maidsafe/common/filesystem.h"
-#include <boost/filesystem/fstream.hpp>
 #include <boost/thread.hpp>
+#include <stdio.h>
 #ifdef PD_WIN32
 #include <shlwapi.h>
 #include <shlobj.h>
@@ -55,7 +55,7 @@ fs::path HomeDir() {
 
 fs::path ApplicationDataDir() {
 #if defined(PD_POSIX)
-  return fs::path("/var/cache/maidsafe/", fs::native);
+  return fs::path("/var/cache/maidsafe/");
 #elif defined(PD_WIN32)
   fs::path app_path("");
   TCHAR szpth[MAX_PATH];
@@ -66,12 +66,12 @@ fs::path ApplicationDataDir() {
         std::use_facet< std::ctype<char> >(stm.getloc());
     for (size_t i = 0; i < wcslen(szpth); ++i)
       stm << ctfacet.narrow(szpth[i], 0);
-    app_path = fs::path(stm.str(), fs::native);
+    app_path = fs::path(stm.str());
     app_path /= "maidsafe";
   }
   return app_path;
 #elif defined(PD_APPLE)
-  return fs::path("/Library/maidsafe/", fs::native);
+  return fs::path("/Library/maidsafe/");
 #endif
 return fs::path("/tmp");
 }
@@ -90,7 +90,7 @@ fs::path TempDir() {
   if (std::getenv("TMPDIR")) {
     temp_dir = std::getenv("TMPDIR");
   } else {
-    temp_dir = fs::path("/tmp", fs::native);
+    temp_dir = fs::path("/tmp");
     try {
       if (!fs::exists(temp_dir))
         temp_dir.clear();

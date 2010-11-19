@@ -43,28 +43,40 @@ class SystemPacketHandler {
   int ConfirmPacket(std::tr1::shared_ptr<pki::Packet> packet);
   // Removes a pending packet (leaving last stored copy)
   bool RevertPacket(const PacketType &packet_type);
-  // Returns a *copy* of the confirmed packet
-  std::tr1::shared_ptr<pki::Packet> Packet(const PacketType &packet_type);
-  // Returns a *copy* of the pending packet
-  std::tr1::shared_ptr<pki::Packet> PendingPacket(
-      const PacketType &packet_type);
+  // Returns a *copy* of the confirmed or pending packet
+  std::tr1::shared_ptr<pki::Packet> GetPacket(const PacketType &packet_type,
+                                              bool confirmed);
   bool Confirmed(const PacketType &packet_type);
   std::string SerialiseKeyring();
   int ParseKeyring(const std::string &serialised_keyring);
   void ClearKeyring();
+  int DeletePacket(const PacketType &packet_type);
   void Clear();
  private:
   struct PacketInfo {
     PacketInfo() : pending(), stored() {}
     explicit PacketInfo(std::tr1::shared_ptr<pki::Packet> pend)
-        : pending(pend), stored() {}
+        : pending(), stored() {
+      if (pend) {
+        // keep a copy of the contents
+        if (pend->packet_type() == TMID || pend->packet_type() == STMID) {
+          pending = std::tr1::shared_ptr<TmidPacket>(new TmidPacket(
+              *std::tr1::static_pointer_cast<TmidPacket>(pend)));
+        } else if (pend->packet_type() == MID || pend->packet_type() == SMID) {
+          pending = std::tr1::shared_ptr<MidPacket>(new MidPacket(
+              *std::tr1::static_pointer_cast<MidPacket>(pend)));
+        } else if (IsSignature(pend->packet_type(), false)) {
+          pending = std::tr1::shared_ptr<SignaturePacket>(new SignaturePacket(
+              *std::tr1::static_pointer_cast<SignaturePacket>(pend)));
+        }
+      }
+    }
     std::tr1::shared_ptr<pki::Packet> pending, stored;
   };
   typedef std::map<PacketType, PacketInfo> SystemPacketMap;
+  friend class test::SystemPacketHandlerTest_FUNC_PASSPORT_All_Test;
   SystemPacketHandler &operator=(const SystemPacketHandler&);
   SystemPacketHandler(const SystemPacketHandler&);
-  std::tr1::shared_ptr<pki::Packet> GetPacket(const PacketType &packet_type,
-                                              bool confirmed);
   bool IsConfirmed(SystemPacketMap::iterator it);
   SystemPacketMap packets_;
   boost::mutex mutex_;

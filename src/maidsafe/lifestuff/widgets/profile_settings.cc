@@ -11,7 +11,7 @@
  *  Created on: Jan 23, 2010
  *      Author: Stephen Alexander
  */
-#include "qt/widgets/profile_settings.h"
+#include "maidsafe/lifestuff/widgets/profile_settings.h"
 
 #include <QDebug>
 #include <QMessageBox>
@@ -19,7 +19,7 @@
 #include <string>
 #include <vector>
 
-#include "qt/client/client_controller.h"
+#include "maidsafe/lifestuff/client/client_controller.h"
 
 ProfileSettings::ProfileSettings(QWidget* parent)
     : QWidget(parent), init_(false) {

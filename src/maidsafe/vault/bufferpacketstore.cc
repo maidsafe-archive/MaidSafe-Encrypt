@@ -19,7 +19,9 @@
 
 #include "maidsafe/vault/bufferpacketstore.h"
 
-namespace maidsafe_vault {
+namespace maidsafe {
+
+namespace vault {
 
 bool BufferPacketStore::StoreBP(const std::string &name,
                                 const std::string &ser_bp) {
@@ -73,10 +75,10 @@ VaultBufferPacketMap BufferPacketStore::ExportMapToPb() {
     VaultBufferPacketMap::VaultBufferPacket *vbp =
         vault_bp_map.add_vault_buffer_packet();
     vbp->set_bufferpacket_name(it->first);
-    maidsafe::BufferPacket bp;
+    BufferPacket bp;
     bp.ParseFromString(it->second);
     for (int i = 0; i < bp.owner_info_size(); ++i) {
-      maidsafe::GenericPacket *gp = vbp->add_owner_info();
+      GenericPacket *gp = vbp->add_owner_info();
       gp->set_data(bp.owner_info(i).data());
       gp->set_signature(bp.owner_info(i).signature());
     }
@@ -86,13 +88,15 @@ VaultBufferPacketMap BufferPacketStore::ExportMapToPb() {
 
 bool BufferPacketStore::InsertBufferPacketFromPb(
     const VaultBufferPacketMap::VaultBufferPacket &vault_bp) {
-  maidsafe::BufferPacket bp;
+  BufferPacket bp;
   for (int i = 0; i < vault_bp.owner_info_size(); ++i) {
-    maidsafe::GenericPacket *gp = bp.add_owner_info();
+    GenericPacket *gp = bp.add_owner_info();
     gp->set_data(vault_bp.owner_info(i).data());
     gp->set_signature(vault_bp.owner_info(i).signature());
   }
   return StoreBP(vault_bp.bufferpacket_name(), bp.SerializeAsString());
 }
 
-}   // namespace maidsafe_vault
+}  // namespace vault
+
+}  // namespace maidsafe

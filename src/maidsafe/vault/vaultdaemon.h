@@ -1,42 +1,50 @@
 /*
- * copyright maidsafe.net limited 2008
- * The following source code is property of maidsafe.net limited and
- * is not meant for external use. The use of this code is governed
- * by the license file LICENSE.TXT found in the root of this directory and also
- * on www.maidsafe.net.
- *
- * You are not free to copy, amend or otherwise use this source code without
- * explicit written permission of the board of directors of maidsafe.net
- *
- *  Created on: Dec 16, 2008
- *      Author: Haiyang
- */
+* ============================================================================
+*
+* Copyright [2009] maidsafe.net limited
+*
+* Description:  Daemon for running a PD vault.
+* Version:      1.0
+* Created:      2009-02-21-23.55.54
+* Revision:     none
+* Author:       Team
+* Company:      maidsafe.net limited
+*
+* The following source code is property of maidsafe.net limited and is not
+* meant for external use.  The use of this code is governed by the license
+* file LICENSE.TXT found in the root of this directory and also on
+* www.maidsafe.net.
+*
+* You are not free to copy, amend or otherwise use this source code without
+* the explicit written permission of the board of directors of maidsafe.net.
+*
+* ============================================================================
+*/
 
 #ifndef MAIDSAFE_VAULT_VAULTDAEMON_H_
 #define MAIDSAFE_VAULT_VAULTDAEMON_H_
 
 #include <boost/filesystem.hpp>
-#include <maidsafe/base/utils.h>
+#include <maidsafe/transport/transportudt.h>
+#include <maidsafe/transport/transporthandler-api.h>
+#include <maidsafe/rpcprotocol/channel-api.h>
+#include <maidsafe/rpcprotocol/channelmanager-api.h>
 #include <string>
-
-#include "gtest/gtest_prod.h"
-
-#include "maidsafe/maidsafe.h"
-#include "maidsafe/vault/pdvault.h"
-#include "maidsafe/vault/validitycheck.h"
-#include "maidsafe/vault/vaultservice.h"
 
 namespace fs = boost::filesystem;
 
 int WriteToLog(std::string str);
 
 namespace maidsafe {
-namespace test {
-class VaultDaemonRegistrationTest;
-}  // namespace test
-}  // namespace maidsafe
 
-namespace maidsafe_vault {
+class VaultConfig;
+
+namespace vault {
+
+namespace test { class VaultDaemonRegistrationTest; }
+
+class PDVault;
+class RegistrationService;
 
 const boost::uint16_t kRsaKeySize = 4096;
 
@@ -51,7 +59,7 @@ class VaultDaemon {
   // vault.
   bool StartVault();
   fs::path vault_path() const { return vault_path_; }
-  friend class maidsafe::test::VaultDaemonRegistrationTest;
+  friend class test::VaultDaemonRegistrationTest;
  private:
   void StopRegistrationService();
   // Start vaultdaemon without an owner.  Once config file is located and read
@@ -65,14 +73,13 @@ class VaultDaemon {
   void RepublishChunkRef();
   // Do validity check on all chunks held in vault
   void ValidityCheck();
-  void RegistrationNotification(const maidsafe::VaultConfig &vconfig);
+  void RegistrationNotification(const VaultConfig &vconfig);
   bool StartNotOwnedVault();
   bool StartOwnedVault();
   int StopNotOwnedVault();
   int ReadConfigInfo();
 
   boost::shared_ptr<PDVault> pdvault_;
-  boost::shared_ptr<ValCheck> val_check_;
   bool is_owned_;
   fs::path config_file_, kad_config_file_, app_path_, not_owned_path_;
   fs::path vault_path_;
@@ -91,6 +98,8 @@ class VaultDaemon {
   VaultDaemon& operator=(const VaultDaemon&);
 };
 
-}  // namespace maidsafe_vault
+}  // namespace vault
+
+}  // namespace maidsafe
 
 #endif  // MAIDSAFE_VAULT_VAULTDAEMON_H_

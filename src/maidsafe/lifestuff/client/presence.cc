@@ -12,7 +12,7 @@
  *      Author: Team
  */
 
-#include "qt/client/presence.h"
+#include "maidsafe/lifestuff/client/presence.h"
 
 // qt
 #include <QApplication>

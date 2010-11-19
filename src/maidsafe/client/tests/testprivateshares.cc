@@ -31,6 +31,8 @@
 
 namespace maidsafe {
 
+namespace test {
+
 class PrivateSharesTest : public testing::Test {
  protected:
   PrivateSharesTest()
@@ -856,5 +858,7 @@ TEST_F(PrivateSharesTest, BEH_MAID_MI_ShareFilter) {
   ASSERT_EQ(size_t(10), share_list.size()) <<
             "Wrong number back on ALL.";
 }
+
+}  // namespace test
 
 }  // namespace maidsafe

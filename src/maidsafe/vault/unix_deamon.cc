@@ -13,6 +13,7 @@
  */
 
 #include <boost/lexical_cast.hpp>
+#include <maidsafe/base/utils.h>
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -125,7 +126,7 @@ int main(int argc, char* argv[]) {
   std::string prt(argv[1]), path_to_config(argv[2]), k(argv[3]);
   int port = boost::lexical_cast<int>(prt);
   boost::uint8_t K(boost::lexical_cast<boost::uint8_t>(k));
-  maidsafe_vault::VaultDaemon vault_daemon(port, path_to_config, K);
+  maidsafe::vault::VaultDaemon vault_daemon(port, path_to_config, K);
 
   if (!vault_daemon.StartVault())
     exit(EXIT_FAILURE);

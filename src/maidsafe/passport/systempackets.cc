@@ -85,6 +85,13 @@ bool IsSignature(const int &packet_type, bool check_for_self_signer) {
   }
 }
 
+SignaturePacket::SignaturePacket()
+    : pki::Packet(UNKNOWN),
+      public_key_(),
+      private_key_(),
+      signer_private_key_(),
+      public_key_signature_() {}
+
 SignaturePacket::SignaturePacket(const PacketType &packet_type,
                                  const std::string &public_key,
                                  const std::string &private_key,
@@ -114,7 +121,8 @@ SignaturePacket::SignaturePacket(const Key &key)
     : pki::Packet(key.packet_type()),
       public_key_(key.public_key()),
       private_key_(key.private_key()),
-      signer_private_key_(),
+      signer_private_key_(key.has_signer_private_key() ?
+                          key.signer_private_key() : key.private_key()),
       public_key_signature_(key.public_key_signature()) {
   name_ = key.name();
 }
@@ -179,10 +187,22 @@ void SignaturePacket::PutToKey(Key *key) {
   key->set_packet_type(packet_type_);
   key->set_public_key(public_key_);
   key->set_private_key(private_key_);
+  if (signer_private_key_ != private_key_)
+    key->set_signer_private_key(signer_private_key_);
   key->set_public_key_signature(public_key_signature_);
 }
 
 
+
+MidPacket::MidPacket()
+    : pki::Packet(UNKNOWN),
+      username_(),
+      pin_(),
+      smid_appendix_(),
+      rid_(),
+      encrypted_rid_(),
+      salt_(),
+      secure_password_() {}
 
 MidPacket::MidPacket(const std::string &username,
                      const std::string &pin,
@@ -203,8 +223,7 @@ void MidPacket::Initialise() {
     return Clear();
 
   crypto::Crypto crypto_obj;
-  salt_ = crypto_obj.Hash(pin_ + username_, "",
-                           crypto::STRING_STRING, false);
+  salt_ = crypto_obj.Hash(pin_ + username_, "", crypto::STRING_STRING, false);
   try {
     secure_password_ = crypto_obj.SecurePassword(username_, salt_,
                        boost::lexical_cast<boost::uint32_t>(pin_));
@@ -297,6 +316,17 @@ bool MidPacket::Equals(const pki::Packet *other) const {
 }
 
 
+
+TmidPacket::TmidPacket()
+    : pki::Packet(UNKNOWN),
+      username_(),
+      pin_(),
+      password_(),
+      rid_(),
+      plain_text_master_data_(),
+      salt_(),
+      secure_password_(),
+      encrypted_master_data_() {}
 
 TmidPacket::TmidPacket(const std::string &username,
                        const std::string &pin,

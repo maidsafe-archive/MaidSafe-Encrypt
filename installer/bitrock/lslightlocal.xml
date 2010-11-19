@@ -1,7 +1,7 @@
 <project>
     <shortName>pdlightlocal</shortName>
     <fullName>PDLightLocal</fullName>
-    <version>0.0.004</version>
+    <version>0.0.005</version>
     <installerFilename>${product_shortname}-${product_version}-installer.${platform_exec_suffix}</installerFilename>
     <debugLevel>4</debugLevel>
     <readmeFile>${build_project_directory}/../text/pdlightlocal/readme.txt</readmeFile>
@@ -322,7 +322,7 @@ if  grep -v maidsafe /etc/passwd ; then /usr/sbin/adduser --system --shell /bin/
     <uninstallationLogFile>${system_temp_directory}/pdlightlocal_uninstall.log</uninstallationLogFile>
     <vendor>maidsafe.net</vendor>
     <windowsExecutableIcon>${build_project_directory}/../images/maidsafe_logo1.ico</windowsExecutableIcon>
-    <windowsResourceFileVersion>0.0.004</windowsResourceFileVersion>
+    <windowsResourceFileVersion>0.0.005</windowsResourceFileVersion>
     <windowsUninstallerExecutableIcon>${build_project_directory}/../images/maidsafe_logo_cross_not_ok.ico</windowsUninstallerExecutableIcon>
     <componentList>
         <component>

@@ -23,22 +23,21 @@
 * ============================================================================
 */
 
-#ifndef TESTS_MAIDSAFE_LOCALVAULTS_H_
-#define TESTS_MAIDSAFE_LOCALVAULTS_H_
+#ifndef MAIDSAFE_SHAREDTEST_LOCALVAULTS_H_
+#define MAIDSAFE_SHAREDTEST_LOCALVAULTS_H_
 
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
 #include <boost/thread/thread.hpp>
 #include <gtest/gtest.h>
-#include <maidsafe/maidsafe-dht_config.h>
-#include <maidsafe/base/crypto.h>
-#include <maidsafe/protobuf/general_messages.pb.h>
+
 #include <string>
 #include <vector>
-#include "fs/filesystem.h"
-#include "maidsafe/client/authentication.h"
+
+#include "maidsafe/common/commonutils.h"
+#include "maidsafe/common/filesystem.h"
+#include "maidsafe/common/kadops.h"
 #include "maidsafe/vault/pdvault.h"
-#include "protobuf/maidsafe_messages.pb.h"
 
 namespace fs = boost::filesystem;
 
@@ -52,22 +51,19 @@ inline void GeneratePmidStuff(std::string *public_key,
                        std::string *private_key,
                        std::string *signed_key,
                        std::string *pmid) {
-  crypto::Crypto co;
-  co.set_hash_algorithm(crypto::SHA_512);
   crypto::RsaKeyPair keys;
   keys.GenerateKeys(maidsafe::kRsaKeySize);
-  *signed_key = co.AsymSign(keys.public_key(), "", keys.private_key(),
-                            crypto::STRING_STRING);
+  *signed_key = maidsafe::RSASign(keys.public_key(), keys.private_key());
   *public_key = keys.public_key();
   *private_key = keys.private_key();
-  *pmid = co.Hash(*public_key + *signed_key, "", crypto::STRING_STRING, false);
+  *pmid = maidsafe::SHA512String(*public_key + *signed_key);
 }
 
 class Env: public testing::Environment {
  public:
   Env(const boost::uint8_t &k,
       const int kNetworkSize,
-      std::vector<boost::shared_ptr<maidsafe_vault::PDVault> > *pdvaults,
+      std::vector<boost::shared_ptr<vault::PDVault> > *pdvaults,
       fs::path *kadconfig)
       : K_(k),
         vault_dir_(file_system::TempDir() / ("maidsafe_TestVaults_" +
@@ -107,10 +103,10 @@ class Env: public testing::Environment {
         fs::create_directories(local_dir);
       }
 
-      boost::shared_ptr<maidsafe_vault::PDVault>
-          pdvault_local(new maidsafe_vault::PDVault(public_key, private_key,
-                        signed_key, local_dir, 7000 + i, false, false,
-                        kad_config_file_, 1073741824, 0, K_));
+      boost::shared_ptr<vault::PDVault>
+          pdvault_local(new vault::PDVault(public_key, private_key, signed_key,
+                        local_dir, 0, false, false, kad_config_file_,
+                        1073741824, 0, K_));
       pdvaults_->push_back(pdvault_local);
       ++current_nodes_created_;
 
@@ -184,7 +180,7 @@ class Env: public testing::Environment {
       printf("Trying to stop vault %i.\n", i);
       success = false;
       (*pdvaults_)[i]->Stop();
-      if ((*pdvaults_)[i]->vault_status() != maidsafe_vault::kVaultStarted)
+      if ((*pdvaults_)[i]->vault_status() != vault::kVaultStarted)
         printf("Vault %i stopped.\n", i);
       else
         printf("Vault %i failed to stop correctly.\n", i);
@@ -213,7 +209,7 @@ class Env: public testing::Environment {
   Env &operator=(const Env&);
   boost::uint8_t K_;
   fs::path vault_dir_, chunkstore_dir_, kad_config_file_;
-  std::vector< boost::shared_ptr<maidsafe_vault::PDVault> > *pdvaults_;
+  std::vector< boost::shared_ptr<vault::PDVault> > *pdvaults_;
   const int kNetworkSize_;
   int current_nodes_created_;
 };
@@ -223,4 +219,4 @@ class Env: public testing::Environment {
 }  // namespace maidsafe
 
 
-#endif  // TESTS_MAIDSAFE_LOCALVAULTS_H_
+#endif  // MAIDSAFE_SHAREDTEST_LOCALVAULTS_H_

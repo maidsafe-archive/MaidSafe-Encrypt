@@ -12,8 +12,8 @@
  *      Author: Team
  */
 
-#ifndef QT_CLIENT_PRESENCE_H_
-#define QT_CLIENT_PRESENCE_H_
+#ifndef MAIDSAFE_LIFESTUFF_CLIENT_PRESENCE_H_
+#define MAIDSAFE_LIFESTUFF_CLIENT_PRESENCE_H_
 
 // qt
 #include <QString>
@@ -60,4 +60,4 @@ class Presence {
 };
 
 
-#endif  // QT_CLIENT_PRESENCE_H_
+#endif  //  MAIDSAFE_LIFESTUFF_CLIENT_PRESENCE_H_

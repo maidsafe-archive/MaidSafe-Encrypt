@@ -12,8 +12,8 @@
  *      Author: Team
  */
 
-#ifndef QT_CLIENT_SHARE_H_
-#define QT_CLIENT_SHARE_H_
+#ifndef MAIDSAFE_LIFESTUFF_CLIENT_SHARE_H_
+#define MAIDSAFE_LIFESTUFF_CLIENT_SHARE_H_
 
 // qt
 #include <QObject>
@@ -22,7 +22,7 @@
 #include <QFlags>
 #include <QStringList>
 
-#include "qt/client/contact.h"
+#include "maidsafe/lifestuff/client/contact.h"
 
 // Representation of a Share
 /*!
@@ -66,4 +66,4 @@ class Share {
 typedef QList<Share> ShareList;
 
 
-#endif  // QT_CLIENT_SHARE_H_
+#endif  //  MAIDSAFE_LIFESTUFF_CLIENT_SHARE_H_

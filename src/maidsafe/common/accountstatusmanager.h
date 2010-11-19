@@ -18,8 +18,8 @@
 * ============================================================================
 */
 
-#ifndef MAIDSAFE_ACCOUNTSTATUSMANAGER_H_
-#define MAIDSAFE_ACCOUNTSTATUSMANAGER_H_
+#ifndef MAIDSAFE_COMMON_ACCOUNTSTATUSMANAGER_H_
+#define MAIDSAFE_COMMON_ACCOUNTSTATUSMANAGER_H_
 
 #include <boost/asio/deadline_timer.hpp>
 #include <boost/asio/io_service.hpp>
@@ -33,7 +33,7 @@
 #include <set>
 #include <string>
 
-#include "protobuf/maidsafe_service_messages.pb.h"
+#include "maidsafe/common/maidsafe_service_messages.pb.h"
 
 
 namespace maidsafe {
@@ -112,4 +112,4 @@ class AccountStatusManager {
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_ACCOUNTSTATUSMANAGER_H_
+#endif  // MAIDSAFE_COMMON_ACCOUNTSTATUSMANAGER_H_

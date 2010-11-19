@@ -1,45 +1,41 @@
 /*
- * copyright maidsafe.net limited 2008
- * The following source code is property of maidsafe.net limited and
- * is not meant for external use. The use of this code is governed
- * by the license file LICENSE.TXT found in teh root of this directory and also
- * on www.maidsafe.net.
- *
- * You are not free to copy, amend or otherwise use this source code without
- * explicit written permission of the board of directors of maidsafe.net
- *
- *  Created on: Sep 29, 2008
- *      Author: Team
- */
+* ============================================================================
+*
+* Copyright [2009] maidsafe.net limited
+*
+* Description:  Derived chunk store class.
+* Version:      1.0
+* Created:      2009-02-21-23.55.54
+* Revision:     none
+* Author:       Team
+* Company:      maidsafe.net limited
+*
+* The following source code is property of maidsafe.net limited and is not
+* meant for external use.  The use of this code is governed by the license
+* file LICENSE.TXT found in the root of this directory and also on
+* www.maidsafe.net.
+*
+* You are not free to copy, amend or otherwise use this source code without
+* the explicit written permission of the board of directors of maidsafe.net.
+*
+* ============================================================================
+*/
 
 #ifndef MAIDSAFE_VAULT_VAULTCHUNKSTORE_H_
 #define MAIDSAFE_VAULT_VAULTCHUNKSTORE_H_
 
-#include <boost/cstdint.hpp>
-#include <boost/date_time/posix_time/posix_time.hpp>
-#include <boost/filesystem.hpp>
-#include <boost/multi_index_container.hpp>
-#include <boost/multi_index/identity.hpp>
-#include <boost/multi_index/member.hpp>
-#include <boost/multi_index/ordered_index.hpp>
-#include <boost/multi_index/sequenced_index.hpp>
-#include <boost/thread/mutex.hpp>
-#include <gtest/gtest_prod.h>
-#include <maidsafe/base/crypto.h>
-#include <maidsafe/maidsafe-dht.h>
-#include <functional>
 #include <list>
-#include <map>
 #include <string>
-#include <vector>
 
-#include "maidsafe/chunkstore.h"
+#include "maidsafe/common/chunkstore.h"
 
-namespace fs = boost::filesystem;
+namespace maidsafe {
 
-namespace maidsafe_vault {
+namespace vault {
 
-class VaultChunkStore : public maidsafe::ChunkStore {
+namespace test { class VaultChunkstoreTest_BEH_MAID_Space_Test; }
+
+class VaultChunkStore : public ChunkStore {
  public:
   VaultChunkStore(const std::string &chunkstore_dir,
                   const boost::uint64_t &available_space,
@@ -64,24 +60,10 @@ class VaultChunkStore : public maidsafe::ChunkStore {
     return available_space_ - used_space_ - space_used_by_cache_;
   }
  private:
-  FRIEND_TEST(ChunkstoreTest, BEH_MAID_ChunkstoreInit);
-  FRIEND_TEST(ChunkstoreTest, BEH_MAID_ChunkstoreStoreChunk);
-  FRIEND_TEST(ChunkstoreTest, BEH_MAID_ChunkstoreAddChunkToOutgoing);
-  FRIEND_TEST(ChunkstoreTest, BEH_MAID_ChunkstoreDeleteChunk);
-  FRIEND_TEST(ChunkstoreTest, BEH_MAID_ChunkstoreLoadRandomChunk);
-  FRIEND_TEST(ChunkstoreTest, BEH_MAID_ChunkstoreReuseDirectory);
-  FRIEND_TEST(ChunkstoreTest, BEH_MAID_ChunkstoreHashCheckChunk);
-  FRIEND_TEST(ChunkstoreTest, BEH_MAID_ChunkstoreChangeChunkType);
-  FRIEND_TEST(ChunkstoreTest, BEH_MAID_ChunkstoreChunkType);
-  FRIEND_TEST(ChunkstoreTest, BEH_MAID_ChunkstoreSpace);
-  FRIEND_TEST(ChunkstoreTest, BEH_MAID_ChunkstoreCheckAllChunks);
-  FRIEND_TEST(ChunkstoreTest, BEH_MAID_ChunkstoreThreadedChangeType);
-  FRIEND_TEST(ChunkstoreTest, BEH_MAID_ChunkstoreCacheChunk);
-  FRIEND_TEST(ChunkstoreTest, BEH_MAID_ChunkstoreFreeCacheSpace);
-  FRIEND_TEST(ChunkstoreTest, BEH_MAID_ChunkstoreClear);
+  friend class test::VaultChunkstoreTest_BEH_MAID_Space_Test;
   // Returns ChunkInfo for the chunk which was checked the longest time ago.  If
   // several chunks qualify, only the first one is returned.
-  maidsafe::ChunkInfo GetOldestChecked();
+  ChunkInfo GetOldestChecked();
   inline void set_available_space(boost::uint64_t avail) {
     available_space_ = avail;
   }
@@ -89,6 +71,8 @@ class VaultChunkStore : public maidsafe::ChunkStore {
   boost::uint64_t space_used_by_cache_;
 };
 
-}  // namespace maidsafe_vault
+}  // namespace vault
+
+}  // namespace maidsafe
 
 #endif  // MAIDSAFE_VAULT_VAULTCHUNKSTORE_H_

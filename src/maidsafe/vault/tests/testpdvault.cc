@@ -32,19 +32,20 @@
 #include <map>
 #include <vector>
 
-#include "fs/filesystem.h"
-#include "maidsafe/kadops.h"
-#include "maidsafe/chunkstore.h"
+#include "maidsafe/common/commonutils.h"
+#include "maidsafe/common/filesystem.h"
+#include "maidsafe/common/kadops.h"
+#include "maidsafe/common/chunkstore.h"
 #include "maidsafe/client/clientrpc.h"
 #include "maidsafe/client/maidstoremanager.h"
 #include "maidsafe/client/sessionsingleton.h"
-#include "maidsafe/client/systempackets.h"
 #include "maidsafe/vault/pdvault.h"
-#include "tests/maidsafe/cached_keys.h"
-#include "tests/maidsafe/localvaults.h"
-#include "tests/maidsafe/mocksessionsingleton.h"
-#include "tests/maidsafe/networktest.h"
-#include "tests/maidsafe/testcallback.h"
+#include "maidsafe/vault/vaultservice.h"
+#include "maidsafe/sharedtest/cached_keys.h"
+#include "maidsafe/sharedtest/localvaults.h"
+#include "maidsafe/sharedtest/mocksessionsingleton.h"
+#include "maidsafe/sharedtest/networktest.h"
+#include "maidsafe/sharedtest/testcallback.h"
 
 static bool callback_timed_out_ = true;
 static bool callback_succeeded_ = false;
@@ -81,7 +82,7 @@ struct ClientData {
 
 inline void DeleteCallback(const std::string &result) {
   maidsafe::DeleteChunkResponse resp;
-  if (!resp.ParseFromString(result) || resp.result() != kAck) {
+  if (!resp.ParseFromString(result) || resp.result() != maidsafe::kAck) {
     callback_succeeded_ = false;
     callback_timed_out_ = false;
   } else {
@@ -150,15 +151,11 @@ void MakeChunks(const std::vector< boost::shared_ptr<ClientData> > &clients,
                 int no_of_chunks,
                 const fs::path &test_root_dir,
                 std::map<std::string, std::string> *chunks) {
-  crypto::Crypto cryobj_;
-  cryobj_.set_hash_algorithm(crypto::SHA_512);
-  cryobj_.set_symm_algorithm(crypto::AES_256);
   for (int i = 0; i < no_of_chunks; ++i) {
     std::string chunk_content = base::RandomString(100 + i);
-    std::string chunk_name = cryobj_.Hash(chunk_content, "",
-                                          crypto::STRING_STRING, false);
+    std::string chunk_name = maidsafe::SHA512String(chunk_content);
     fs::path chunk_path(test_root_dir / base::EncodeToHex(chunk_name));
-    printf("Chunk %i - %s\n", i, HexSubstr(chunk_name).c_str());
+    printf("Chunk %i - %s\n", i, maidsafe::HexSubstr(chunk_name).c_str());
     std::ofstream ofs_;
     ofs_.open(chunk_path.string().c_str());
     ofs_ << chunk_content;
@@ -188,7 +185,9 @@ void PrintRpcTimings(const rpcprotocol::RpcStatsMap &rpc_timings) {
 
 }  // namespace testpdvault
 
-namespace maidsafe_vault {
+namespace maidsafe {
+
+namespace vault {
 
 namespace test {
 
@@ -203,8 +202,7 @@ class PDVaultTest : public testing::Test {
   PDVaultTest() : test_root_dir_(file_system::TempDir() / ("maidsafe_TestVault_"
                                  + base::RandomAlphaNumericString(6))),
                   clients_(),
-                  mutex_(),
-                  crypto_() {
+                  mutex_() {
     try {
       boost::filesystem::remove_all(test_root_dir_);
     }
@@ -212,8 +210,6 @@ class PDVaultTest : public testing::Test {
       printf("%s\n", e.what());
     }
     fs::create_directories(test_root_dir_);
-    crypto_.set_hash_algorithm(crypto::SHA_512);
-    crypto_.set_symm_algorithm(crypto::AES_256);
 
     for (int i = 0; i < kNumOfClients; ++i) {
       {
@@ -221,43 +217,44 @@ class PDVaultTest : public testing::Test {
             client(new testpdvault::ClientData(test_root_dir_.string()));
         clients_.push_back(client);
       }
+      clients_[i]->mss.CreateTestPackets("");
       printf("Generating MAID Keys for client %d of %d...\n", i + 1,
              kNumOfClients);
-      clients_[i]->maid_keys.GenerateKeys(maidsafe::kRsaKeySize);
-      std::string maid_priv_key = clients_[i]->maid_keys.private_key();
-      std::string maid_pub_key = clients_[i]->maid_keys.public_key();
-      std::string maid_pub_key_sig = crypto_.AsymSign(maid_pub_key, "",
-          maid_priv_key, crypto::STRING_STRING);
-      std::string maid_name = crypto_.Hash(maid_pub_key + maid_pub_key_sig, "",
-                                           crypto::STRING_STRING, false);
-      clients_[i]->mss.AddKey(maidsafe::MAID, maid_name, maid_priv_key,
-                            maid_pub_key, maid_pub_key_sig);
-      printf(" >> public key:   %s\n", HexSubstr(maid_pub_key).c_str());
-      printf(" >> pub key sig:  %s\n", HexSubstr(maid_pub_key_sig).c_str());
-      printf(" >> hash/name:    %s\n", HexSubstr(maid_name).c_str());
+//      clients_[i]->maid_keys.GenerateKeys(kRsaKeySize);
+//      std::string maid_priv_key = clients_[i]->maid_keys.private_key();
+//      std::string maid_pub_key = clients_[i]->maid_keys.public_key();
+//      std::string maid_pub_key_sig = RSASign(maid_pub_key, maid_priv_key);
+//      std::string maid_name = SHA512String(maid_pub_key + maid_pub_key_sig);
+//      clients_[i]->mss.AddKey(MAID, maid_name, maid_priv_key,
+//                            maid_pub_key, maid_pub_key_sig);
+      printf(" >> public key:   %s\n", HexSubstr(clients_[i]->
+             mss.PublicKey(passport::MAID, true)).c_str());
+      printf(" >> pub key sig:  %s\n", HexSubstr(clients_[i]->
+             mss.PublicKeySignature(passport::MAID, true)).c_str());
+      printf(" >> hash/name:    %s\n", HexSubstr(clients_[i]->
+             mss.Id(passport::MAID, true)).c_str());
 
       printf("Generating PMID Keys for client %d of %d...\n", i + 1,
              kNumOfClients);
-      clients_[i]->pmid_keys.GenerateKeys(maidsafe::kRsaKeySize);
-      clients_[i]->pmid_priv_key = clients_[i]->pmid_keys.private_key();
-      clients_[i]->pmid_pub_key = clients_[i]->pmid_keys.public_key();
-      clients_[i]->pmid_pub_key_sig = crypto_.AsymSign(
-          clients_[i]->pmid_pub_key, "", maid_priv_key, crypto::STRING_STRING);
-      clients_[i]->pmid_name = crypto_.Hash(
-          clients_[i]->pmid_pub_key + clients_[i]->pmid_pub_key_sig, "",
-          crypto::STRING_STRING, false);
-      clients_[i]->mss.AddKey(maidsafe::PMID,
-          clients_[i]->pmid_name, clients_[i]->pmid_priv_key,
-          clients_[i]->pmid_pub_key, clients_[i]->pmid_pub_key_sig);
-      printf(" >> public key:   %s\n",
-             HexSubstr(clients_[i]->pmid_pub_key).c_str());
-      printf(" >> pub key sig:  %s\n",
-             HexSubstr(clients_[i]->pmid_pub_key_sig).c_str());
-      printf(" >> hash/name:    %s\n",
-             HexSubstr(clients_[i]->pmid_name).c_str());
+//      clients_[i]->pmid_keys.GenerateKeys(kRsaKeySize);
+//      clients_[i]->pmid_priv_key = clients_[i]->pmid_keys.private_key();
+//      clients_[i]->pmid_pub_key = clients_[i]->pmid_keys.public_key();
+//      clients_[i]->pmid_pub_key_sig =
+//          RSASign(clients_[i]->pmid_pub_key, maid_priv_key);
+//      clients_[i]->pmid_name = SHA512String(
+//          clients_[i]->pmid_pub_key + clients_[i]->pmid_pub_key_sig);
+//      clients_[i]->mss.AddKey(PMID,
+//          clients_[i]->pmid_name, clients_[i]->pmid_priv_key,
+//          clients_[i]->pmid_pub_key, clients_[i]->pmid_pub_key_sig);
+      printf(" >> public key:   %s\n", HexSubstr(clients_[i]->
+             mss.PublicKey(passport::PMID, true)).c_str());
+      printf(" >> pub key sig:  %s\n", HexSubstr(clients_[i]->
+             mss.PublicKeySignature(passport::PMID, true)).c_str());
+      printf(" >> hash/name:    %s\n", HexSubstr(clients_[i]->
+             mss.Id(passport::PMID, true)).c_str());
       clients_[i]->mss.SetConnectionStatus(0);
     }
-    // maidsafe::SessionSingleton::getInstance()->SetConnectionStatus(0);
+    // SessionSingleton::getInstance()->SetConnectionStatus(0);
   }
 
   virtual ~PDVaultTest() {
@@ -287,15 +284,14 @@ class PDVaultTest : public testing::Test {
     // create each client and take over a vault
     for (int i = 0; i < kNumOfClients; ++i) {
       printf("Setting up client %d of %d...\n", i + 1, kNumOfClients);
-      clients_[i]->chunkstore = boost::shared_ptr<maidsafe::ChunkStore>
-          (new maidsafe::ChunkStore(clients_[i]->chunkstore_dir, 0, 0));
+      clients_[i]->chunkstore = boost::shared_ptr<ChunkStore>
+          (new ChunkStore(clients_[i]->chunkstore_dir, 0, 0));
       ASSERT_TRUE(clients_[i]->chunkstore->Init());
-      boost::shared_ptr<maidsafe::MaidsafeStoreManager>
-          sm_local_(new maidsafe::MaidsafeStoreManager(
+      boost::shared_ptr<MaidsafeStoreManager>
+          sm_local_(new MaidsafeStoreManager(
                     clients_[i]->chunkstore, testpdvault::K));
       clients_[i]->msm = sm_local_;
       clients_[i]->msm->ss_ = &clients_[i]->mss;
-      clients_[i]->msm->pd_utils_.ss_ = &clients_[i]->mss;
 
       // poor man's vault takeover
       const size_t vlt(kNetworkSize - kNumOfClients + i);
@@ -365,7 +361,6 @@ class PDVaultTest : public testing::Test {
   fs::path test_root_dir_;
   std::vector< boost::shared_ptr<testpdvault::ClientData> > clients_;
   boost::mutex mutex_;
-  crypto::Crypto crypto_;
 
  private:
   PDVaultTest(const PDVaultTest&);
@@ -386,8 +381,7 @@ TEST_MS_NET(PDVaultTest, FUNC, MAID, StoreAndGetChunks) {
   printf("\n-- Checking accounts locally... --\n");
   for (int i = 0; i < kNumOfClients; ++i) {
     std::string client_pmid(pdvaults_[kNetworkSize - kNumOfClients + i]->pmid_);
-    std::string account_name(crypto_.Hash(client_pmid + kAccount, "",
-                                          crypto::STRING_STRING, false));
+    std::string account_name(SHA512String(client_pmid + kAccount));
     printf("Client %s, account %s:\n", HexSubstr(client_pmid).c_str(),
            HexSubstr(account_name).c_str());
     std::set<std::string> closest;
@@ -414,7 +408,7 @@ TEST_MS_NET(PDVaultTest, FUNC, MAID, StoreAndGetChunks) {
   // store chunks to network with each client
   for (int i = 0; i < kNumOfClients; ++i)
     for (it = chunks.begin(); it != chunks.end(); ++it)
-      clients_[i]->msm->StoreChunk((*it).first, maidsafe::PRIVATE, "");
+      clients_[i]->msm->StoreChunk((*it).first, PRIVATE, "");
   printf("\n-- Enqueued %s chunks for storing, total %s bytes. --\n",
          boost::lexical_cast<std::string>(kNumOfTestChunks).c_str(),
          boost::lexical_cast<std::string>(data_size).c_str());
@@ -532,8 +526,7 @@ TEST_MS_NET(PDVaultTest, FUNC, MAID, StoreAndGetChunks) {
       std::string data;
       ASSERT_EQ(0, clients_[i]->msm->LoadChunk((*it).first, &data));
       ASSERT_EQ(data, (*it).second);
-      ASSERT_EQ((*it).first, crypto_.Hash(data, "", crypto::STRING_STRING,
-                                          false));
+      ASSERT_EQ((*it).first, SHA512String(data));
     }
   }
 
@@ -566,8 +559,7 @@ TEST_MS_NET(PDVaultTest, FUNC, MAID, StoreAndGetChunks) {
       std::string data;
       ASSERT_EQ(0, clients_[i]->msm->LoadChunk((*it).first, &data));
       ASSERT_EQ(data, (*it).second);
-      ASSERT_EQ((*it).first, crypto_.Hash(data, "", crypto::STRING_STRING,
-                                          false));
+      ASSERT_EQ((*it).first, SHA512String(data));
     }
   }
 
@@ -602,8 +594,7 @@ TEST_MS_NET(PDVaultTest, FUNC, MAID, StoreAndGetChunks) {
         if (it == chunks.begin()) {
           ASSERT_EQ(0, clients_[i]->msm->LoadChunk((*it).first, &data));
           ASSERT_EQ(data, (*it).second);
-          ASSERT_EQ((*it).first, crypto_.Hash(data, "", crypto::STRING_STRING,
-                                              false));
+          ASSERT_EQ((*it).first, SHA512String(data));
         } else {
           ASSERT_NE(0, clients_[i]->msm->LoadChunk((*it).first, &data));
         }
@@ -643,7 +634,7 @@ TEST_MS_NET(PDVaultTest, FUNC, MAID, Cachechunk) {
   boost::int16_t trans_id;
   transport_handler.Register(&udt_transport, &trans_id);
   rpcprotocol::ChannelManager channel_manager(&transport_handler);
-  maidsafe::ClientRpcs client_rpcs(&transport_handler, &channel_manager);
+  ClientRpcs client_rpcs(&transport_handler, &channel_manager);
   ASSERT_TRUE(transport_handler.RegisterOnServerDown(boost::bind(
               &testpdvault::DeadRvNotifier, _1, _2, _3)));
   ASSERT_TRUE(channel_manager.RegisterNotifiersToTransport());
@@ -656,14 +647,11 @@ TEST_MS_NET(PDVaultTest, FUNC, MAID, Cachechunk) {
     chunk_vault_index = base::RandomUint32() % kNetworkSize;
 
   kad::ContactInfo kc_cacher_vault;
-  crypto::Crypto co;
-  co.set_symm_algorithm(crypto::AES_256);
-  co.set_hash_algorithm(crypto::SHA_512);
   std::string content(base::RandomString(10000));
-  std::string chunkname(co.Hash(content, "", crypto::STRING_STRING, false));
+  std::string chunkname(SHA512String(content));
   while (pdvaults_[chunk_vault_index]->vault_chunkstore_->Has(chunkname)) {
     content = base::RandomString(10000);
-    chunkname = co.Hash(content, "", crypto::STRING_STRING, false);
+    chunkname = SHA512String(content);
   }
 
   ASSERT_EQ(kSuccess,
@@ -673,10 +661,10 @@ TEST_MS_NET(PDVaultTest, FUNC, MAID, Cachechunk) {
   std::string ser_kc_cacher_vault = kc_cacher_vault.SerializeAsString();
 
   kad::Contact peer(pdvaults_[chunk_vault_index]->kad_ops_->contact_info());
-  maidsafe::GetChunkRequest request;
+  GetChunkRequest request;
   request.set_chunkname(chunkname);
   request.set_serialised_cacher_contact(ser_kc_cacher_vault);
-  maidsafe::GetChunkResponse response;
+  GetChunkResponse response;
   rpcprotocol::Controller controller;
   bool finished(false);
   google::protobuf::Closure *done =
@@ -713,7 +701,9 @@ TEST_MS_NET(PDVaultTest, FUNC, MAID, Cachechunk) {
 
 }  // namespace test
 
-}  // namespace maidsafe_vault
+}  // namespace vault
+
+}  // namespace maidsafe
 
 int main(int argc, char **argv) {
   google::InitGoogleLogging(argv[0]);
@@ -721,7 +711,7 @@ int main(int argc, char **argv) {
 #ifndef HAVE_GLOG
   bool FLAGS_logtostderr;
 #endif
-  FLAGS_logtostderr = true;
+//  FLAGS_logtostderr = true;
   testing::InitGoogleTest(&argc, argv);
   try {
     if (boost::filesystem::exists(".kadconfig"))
@@ -731,10 +721,10 @@ int main(int argc, char **argv) {
     printf("%s\n", e.what());
   }
   testing::AddGlobalTestEnvironment(new maidsafe::test::localvaults::Env(
-      testpdvault::K, maidsafe_vault::test::kNetworkSize,
-      &maidsafe_vault::test::pdvaults_, &maidsafe_vault::test::kadconfig_));
+      testpdvault::K, maidsafe::vault::test::kNetworkSize,
+      &maidsafe::vault::test::pdvaults_, &maidsafe::vault::test::kadconfig_));
 
-  int result = RUN_ALL_TESTS();
+  int result(RUN_ALL_TESTS());
   try {
     if (boost::filesystem::exists(".kadconfig"))
       boost::filesystem::remove(".kadconfig");
@@ -742,6 +732,7 @@ int main(int argc, char **argv) {
   catch(const std::exception& e) {
     printf("%s\n", e.what());
   }
-  return result;
+  int test_count = testing::UnitTest::GetInstance()->test_to_run_count();
+  return (test_count == 0) ? -1 : result;
 }
 

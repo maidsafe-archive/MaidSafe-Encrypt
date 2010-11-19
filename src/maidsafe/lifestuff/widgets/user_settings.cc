@@ -11,16 +11,16 @@
  *  Created on: Jan 23, 2010
  *      Author: Stephen Alexander
  */
-#include "qt/widgets/user_settings.h"
+#include "maidsafe/lifestuff/widgets/user_settings.h"
 
 #include <QMessageBox>
 #include <QDebug>
 #include <QInputDialog>
 #include <QTranslator>
 
-#include "qt/client/client_controller.h"
-#include "qt/client/save_profile_settings_thread.h"
-#include "qt/client/save_security_settings_thread.h"
+#include "maidsafe/lifestuff/client/client_controller.h"
+#include "maidsafe/lifestuff/client/save_profile_settings_thread.h"
+#include "maidsafe/lifestuff/client/save_security_settings_thread.h"
 
 UserSettings::UserSettings(QWidget* parent) : QDialog(parent) {
   ui_.setupUi(this);

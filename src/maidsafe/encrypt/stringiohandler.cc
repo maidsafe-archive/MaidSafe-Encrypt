@@ -23,82 +23,66 @@
 */
 
 #include <cstring>
+#include <limits>
 #include "maidsafe/encrypt/dataiohandler.h"
 
 namespace maidsafe {
 
-StringIOHandler::StringIOHandler() : input_(),
-                                     read_(false),
-                                     isOpen_(false),
-                                     readptr_(0) {}
+namespace encrypt {
 
-bool StringIOHandler::SetData(const std::string &input, const bool &read) {
-  if (isOpen_)
-    return false;
-  input_ = input;
-  read_ = read;
-  return true;
-}
+StringIOHandler::StringIOHandler(std::tr1::shared_ptr<std::string> data,
+                                 bool read)
+    : DataIOHandler(read, kStringIOHandler),
+      data_(data),
+      is_open_(false),
+      readptr_(0) {}
 
 bool StringIOHandler::Open() {
-  isOpen_ = true;
+  if (is_open_)
+    return true;
+  is_open_ = true;
+  if (!kRead_)
+    data_->clear();
   SetGetPointer(0);
   return true;
 }
 
 void StringIOHandler::Close() {
-  isOpen_ = false;
-}
-
-void StringIOHandler::Reset() {
-  isOpen_ = false;
-  input_.clear();
-  readptr_ = 0;
-}
-
-std::string StringIOHandler::GetAsString() const {
-  return input_;
+  is_open_ = false;
 }
 
 bool StringIOHandler::Size(boost::uint64_t *size) {
-  *size = input_.size();
+  *size = data_->size();
   return true;
 }
 
-bool StringIOHandler::Read(char *data, const unsigned int &size) {  // NOLINT
+bool StringIOHandler::Read(const size_t &size, std::string *output) {
+  output->clear();
   // Check we've got read permission
-  if (!isOpen_ || !read_)
+  if (!kRead_ || !is_open_)
     return false;
-
-  if (readptr_ == input_.size())
-    return true;
-
-  memcpy(data, input_.substr(readptr_, size).c_str(),
-    input_.substr(readptr_, size).size());
-
-  readptr_ += size;
-  if (readptr_ >= input_.size())
-    readptr_ = input_.size();
+  try {
+    *output = data_->substr(readptr_, size);
+  } catch(...) {
+  }
+  readptr_ += output->size();
   return true;
 }
 
-bool StringIOHandler::Write(const char *data, const unsigned int &size) {  // NOLINT
-  if (!isOpen_ || read_)
+bool StringIOHandler::Write(const std::string &input) {
+  if (kRead_ || !is_open_)
     return false;
-
-  input_.append(data, size);
+  data_->append(input);
   return true;
 }
 
-bool StringIOHandler::SetGetPointer(const unsigned int &pos) {  // NOLINT
-  if (!isOpen_ || !read_)
+bool StringIOHandler::SetGetPointer(const boost::uint64_t &position) {
+  if (!kRead_ || !is_open_ || position > std::numeric_limits<size_t>::max())
     return false;
-
-  if (pos >= input_.size())
-    readptr_ = input_.size() -1;
-  else
-    readptr_ = pos;
+  readptr_ = static_cast<size_t>(position);
   return true;
 }
+
+}  // namespace encrypt
 
 }  // namespace maidsafe

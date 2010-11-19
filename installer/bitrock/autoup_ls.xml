@@ -2,7 +2,7 @@
   <fullName>Perpetual Data</fullName>
   <shortName>pd</shortName>
   <vendor>maidsafe.net</vendor>
-  <version>0.0.004</version>
+  <version>0.0.005</version>
   <singleInstanceCheck>1</singleInstanceCheck>
   <requireInstallationByRootUser>1</requireInstallationByRootUser>
 </autoUpdateProject>

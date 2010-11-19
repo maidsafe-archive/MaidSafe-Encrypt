@@ -13,14 +13,14 @@
  */
 
 
-#ifndef QT_CLIENT_SAVE_SECURITY_SETTINGS_THREAD_H_
-#define QT_CLIENT_SAVE_SECURITY_SETTINGS_THREAD_H_
+#ifndef MAIDSAFE_LIFESTUFF_CLIENT_SAVE_SECURITY_SETTINGS_THREAD_H_
+#define MAIDSAFE_LIFESTUFF_CLIENT_SAVE_SECURITY_SETTINGS_THREAD_H_
 
 #include <QWidget>
 #include <QString>
 #include <QHash>
 
-#include "qt/client/worker_thread.h"
+#include "maidsafe/lifestuff/client/worker_thread.h"
 
 // Worker thread for saving security information
 /*!
@@ -43,4 +43,4 @@ class SaveSecuritySettingsThread : public WorkerThread {
 };
 
 
-#endif  // QT_CLIENT_SAVE_SECURITY_SETTINGS_THREAD_H_
+#endif  //  MAIDSAFE_LIFESTUFF_CLIENT_SAVE_SECURITY_SETTINGS_THREAD_H_

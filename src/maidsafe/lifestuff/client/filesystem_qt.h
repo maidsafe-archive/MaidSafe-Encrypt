@@ -12,8 +12,8 @@
  *      Author: Team
  */
 
-#ifndef QT_CLIENT_FILESYSTEM_QT_H_
-#define QT_CLIENT_FILESYSTEM_QT_H_
+#ifndef MAIDSAFE_LIFESTUFF_CLIENT_FILESYSTEM_QT_H_
+#define MAIDSAFE_LIFESTUFF_CLIENT_FILESYSTEM_QT_H_
 
 #ifdef WIN32
 #include <windows.h>
@@ -24,4 +24,4 @@
 
 
 
-#endif  // QT_CLIENT_FILESYSTEM_QT_H_
+#endif  //  MAIDSAFE_LIFESTUFF_CLIENT_FILESYSTEM_QT_H_

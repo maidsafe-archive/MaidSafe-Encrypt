@@ -13,15 +13,15 @@
  */
 
 
-#ifndef QT_WIDGETS_PROFILE_SETTINGS_H_
-#define QT_WIDGETS_PROFILE_SETTINGS_H_
+#ifndef MAIDSAFE_LIFESTUFF_WIDGETS_PROFILE_SETTINGS_H_
+#define MAIDSAFE_LIFESTUFF_WIDGETS_PROFILE_SETTINGS_H_
 
 #include <QWidget>
 #include <QString>
 
-#include "qt/client/contact.h"
+#include "maidsafe/lifestuff/client/contact.h"
 // local
-#include "qt/client/client_controller.h"
+#include "maidsafe/lifestuff/client/client_controller.h"
 
 #include "ui_profile_settings.h"
 
@@ -56,4 +56,4 @@ class ProfileSettings : public QWidget {
 };
 
 
-#endif  // QT_WIDGETS_PROFILE_SETTINGS_H_
+#endif  //  MAIDSAFE_LIFESTUFF_WIDGETS_PROFILE_SETTINGS_H_

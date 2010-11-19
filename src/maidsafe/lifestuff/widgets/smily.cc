@@ -12,7 +12,7 @@
  *      Author: Stephen Alexander
  */
 
-#include "qt/widgets/smily.h"
+#include "maidsafe/lifestuff/widgets/smily.h"
 
 Smily::Smily(QWidget* parent) : QDialog(parent) {
   setWindowFlags(Qt::Popup);

@@ -12,8 +12,8 @@
  *      Author: Stephen Alexander
  */
 
-#include "qt/widgets/file_transfer_settings.h"
-#include "qt/client/client_controller.h"
+#include "maidsafe/lifestuff/widgets/file_transfer_settings.h"
+#include "maidsafe/lifestuff/client/client_controller.h"
 
 FileTransferSettings::FileTransferSettings(QWidget* parent) : QWidget(parent) {
   ui_.setupUi(this);

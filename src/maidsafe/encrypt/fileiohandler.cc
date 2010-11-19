@@ -22,53 +22,47 @@
 * ============================================================================
 */
 
+#include <boost/filesystem.hpp>
+#include <boost/scoped_ptr.hpp>
+#include <algorithm>
+#include <limits>
+#include <sstream>
 #include "maidsafe/encrypt/dataiohandler.h"
 
 namespace fs = boost::filesystem;
 
 namespace maidsafe {
 
-FileIOHandler::FileIOHandler() : fd_(), p_(), read_(false) {}
+namespace encrypt {
 
-bool FileIOHandler::SetData(const std::string &iput, const bool &read) {
-  if (fd_.is_open())
-    return false;
-  p_ = fs::path(iput, fs::native);
-  read_ = read;
-  return true;
-}
+FileIOHandler::FileIOHandler(const fs::path &file_path, bool read)
+    : DataIOHandler(read, kFileIOHandler),
+      filestream_(),
+      kPath_(file_path) {}
 
 bool FileIOHandler::Open() {
-  if (read_) {
-    try {
-      fd_.open(p_, std::fstream::in | std::fstream::binary);
-    } catch(...) {
-      return false;
+  if (filestream_.is_open())
+    return true;
+  try {
+    if (kRead_) {
+      filestream_.open(kPath_, fs::fstream::in | fs::fstream::binary);
+    } else {
+      filestream_.open(kPath_, fs::fstream::out | fs::fstream::trunc |
+                       fs::fstream::binary);
     }
-  } else {
-    try {
-      fd_.open(p_, std::fstream::out | std::fstream::binary);
-    } catch(...) {
-      return false;
-    }
+    return filestream_.good();
+  } catch(...) {
+    return false;
   }
-  return true;
 }
 
 void FileIOHandler::Close() {
-  fd_.close();
-}
-
-void FileIOHandler::Reset() {
-  if (fd_.is_open())
-    fd_.close();
-  fd_.clear();
-  p_ = fs::path();
+  filestream_.close();
 }
 
 bool FileIOHandler::Size(boost::uint64_t *size) {
   try {
-    *size = fs::file_size(p_);
+    *size = fs::file_size(kPath_);
   } catch(...) {
     *size = 0;
     return false;
@@ -76,41 +70,56 @@ bool FileIOHandler::Size(boost::uint64_t *size) {
   return true;
 }
 
-bool FileIOHandler::Read(char *data, const unsigned int &size) {  // NOLINT
-  if (!read_ || !fd_.is_open())
+bool FileIOHandler::Read(const size_t &size, std::string *output) {
+  output->clear();
+  if (!kRead_ || !filestream_.is_open() || !filestream_.good())
     return false;
-
   try {
-    fd_.read(data, size);
+    boost::uint64_t current_position = filestream_.tellg();
+    boost::uint64_t file_size = fs::file_size(kPath_);
+    if (current_position >= file_size)
+      return true;
+    boost::uint64_t amount_to_read = std::min((file_size - current_position),
+                                     static_cast<boost::uint64_t>(size));
+    if (amount_to_read > std::numeric_limits<size_t>::max())
+      return false;
+    boost::scoped_ptr<char> buffer(
+        new char[static_cast<size_t>(amount_to_read)]);
+    filestream_.read(buffer.get(), amount_to_read);
+    std::ostringstream oss(std::ostringstream::binary);
+    oss.write(buffer.get(), amount_to_read);
+    *output = oss.str();
   } catch(...) {
     return false;
   }
-
   return true;
 }
 
-bool FileIOHandler::Write(const char *data, const unsigned int &size) {  // NOLINT
-  if (read_ || !fd_.is_open())
+bool FileIOHandler::Write(const std::string &input) {
+  if (kRead_ || !filestream_.is_open() || !filestream_.good())
     return false;
-
   try {
-    fd_.write(data, size);
+    filestream_.write(input.c_str(), input.size());
+    filestream_.close();
+    filestream_.open(kPath_, std::fstream::out | std::fstream::app |
+                     std::fstream::binary);
   } catch(...) {
     return false;
   }
   return true;
 }
 
-bool FileIOHandler::SetGetPointer(const unsigned int &pos) {  // NOLINT
-  if (!fd_.is_open())
+bool FileIOHandler::SetGetPointer(const boost::uint64_t &position) {
+  if (!kRead_ || !filestream_.is_open() || !filestream_.good())
     return false;
-
   try {
-    fd_.seekg(pos, std::ifstream::beg);
-  } catch(std::fstream::failure f) {
+    filestream_.seekg(position, std::ifstream::beg);
+  } catch(...) {
     return false;
   }
   return true;
 }
+
+}  // namespace encrypt
 
 }  // namespace maidsafe

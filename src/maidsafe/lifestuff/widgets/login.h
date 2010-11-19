@@ -12,8 +12,8 @@
  *      Author: Team
  */
 
-#ifndef QT_WIDGETS_LOGIN_H_
-#define QT_WIDGETS_LOGIN_H_
+#ifndef MAIDSAFE_LIFESTUFF_WIDGETS_LOGIN_H_
+#define MAIDSAFE_LIFESTUFF_WIDGETS_LOGIN_H_
 
 // qt
 #include <QWidget>
@@ -120,5 +120,5 @@ class Login : public QWidget {
     State state_;
 };
 
-#endif  // QT_WIDGETS_LOGIN_H_
+#endif  //  MAIDSAFE_LIFESTUFF_WIDGETS_LOGIN_H_
 
