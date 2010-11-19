@@ -290,12 +290,14 @@ struct AccountStatusData {
         success_count(0),
         offered_values(),
         given_values(),
-        taken_values() {}
+        taken_values(),
+        overall_success(false) {}
   boost::mutex mutex;
   std::vector<kad::Contact> contacts;
   std::vector<AccountStatusDataHolder> data_holders;
   boost::uint16_t returned_count, success_count;
   std::vector<boost::uint64_t> offered_values, given_values, taken_values;
+  bool overall_success;
 };
 
 // This is used to hold the data required to send AmendAccountRequests and

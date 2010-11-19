@@ -140,8 +140,8 @@ void PDVault::Start(bool first_node) {
   maidsafe::ReturnCode kad_ops_result = maidsafe::kPendingResult;
   boost::mutex mutex;
   boost::condition_variable cond_var;
-  boost::uint16_t port =
-      transport_handler_.listening_port(transport_.transport_id());
+  boost::uint16_t port;
+  transport_handler_.listening_port(transport_.transport_id(), &port);
   kad_ops_->Init(kad_config_file_, first_node, pmid_, port, &mutex, &cond_var,
                  &kad_ops_result);
 
