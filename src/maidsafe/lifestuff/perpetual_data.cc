@@ -69,8 +69,9 @@ PerpetualData::PerpetualData(QWidget* parent)
   statusBar()->hide();
   statusBar()->addPermanentWidget(message_status_ = new QLabel);
 
-  //ui_.TheFrame->setStyleSheet("QFrame#TheFrame { border-image: url(:/background/cloud_top.png) 0 0 0 0 stretch stretch;"
-  //"font: bold;}");
+//  ui_.TheFrame->setStyleSheet("QFrame#TheFrame {
+//    border-image: url(:/background/cloud_top.png) 0 0 0 0 stretch stretch;"
+//  "font: bold;}");
 
   createActions();
   createMenus();
@@ -87,7 +88,7 @@ PerpetualData::PerpetualData(QWidget* parent)
   ui_.stackedWidget->addWidget(progressPage_);
   ui_.stackedWidget->addWidget(userPanels_);
 
-  //setCentralWidget(ui_.stackedWidget);
+//  setCentralWidget(ui_.stackedWidget);
   ui_.stackedWidget->setCurrentWidget(login_);
 
   JoinKademliaThread *jkt = new JoinKademliaThread(this);
@@ -114,7 +115,7 @@ PerpetualData::PerpetualData(QWidget* parent)
     ui_.retranslateUi(this);
   }
 
-   connect(lsLogin_, SIGNAL(existingUser()),
+  connect(lsLogin_, SIGNAL(existingUser()),
           this,   SLOT(onLoginExistingUser()));
 
   connect(lsLogin_, SIGNAL(newUser(const QString&,
@@ -126,7 +127,6 @@ PerpetualData::PerpetualData(QWidget* parent)
 
   connect(lsLogin_, SIGNAL(destroyed()),
           this,   SLOT(onQuit()));
-
 }
 
 void PerpetualData::onJoinKademliaCompleted(bool b) {
@@ -186,8 +186,6 @@ void PerpetualData::onJoinKademliaCompleted(bool b) {
                                       const QString &message,
                                       const QString &sender,
                                       const QString &date)));
-
-
 }
 
 PerpetualData::~PerpetualData() {
@@ -208,7 +206,7 @@ void PerpetualData::createActions() {
   actions_[ BUSY ] = ui_.actionBusy;
   actions_[ OFFLINE_2 ] = ui_.actionOffline_2;
   actions_[ CALENDAR ] = ui_.actionCalendar;
-  //actions_[ EMAIL ] = ui_.actionEmail;
+//  actions_[ EMAIL ] = ui_.actionEmail;
   actions_[ OFF ] = ui_.actionOff_2;
   actions_[ SMALL ] = ui_.actionSmall_2;
   actions_[ FULL ] = ui_.actionFull_2;
@@ -253,10 +251,10 @@ void PerpetualData::createActions() {
           this,                  SLOT(onOffline_2Triggered()));
   connect(actions_[ CALENDAR ], SIGNAL(triggered()),
           this,              SLOT(onCalendarTriggered()));
-  //connect(actions_[ EMAIL ], SIGNAL(triggered()),
-          //this,              SLOT(onEmailTriggered()));
-// connect(actions_[ SAVE_SESSION ], SIGNAL(triggered()),
-//         this,                     SLOT(onSaveSession()));
+//  connect(actions_[ EMAIL ], SIGNAL(triggered()),
+//          this,              SLOT(onEmailTriggered()));
+//  connect(actions_[ SAVE_SESSION ], SIGNAL(triggered()),
+//          this,                     SLOT(onSaveSession()));
   connect(actions_[ OFF ], SIGNAL(triggered()),
           this,             SLOT(onOffTriggered()));
   connect(actions_[ SMALL ], SIGNAL(triggered()),
@@ -578,9 +576,9 @@ void PerpetualData::quit() {
 void PerpetualData::onQuit() {
   // TODO(Team#5#): 2009-08-18 - confirm quit if something in progress
   if (pendingOps_->hasPendingOps()) {
-   connect(pendingOps_,   SIGNAL(opsComplete()),
-           this,          SLOT(onOpsComplete()));
-   pendingOps_->show();
+    connect(pendingOps_,   SIGNAL(opsComplete()),
+            this,          SLOT(onOpsComplete()));
+    pendingOps_->show();
   } else {
     if (state_ != LOGGED_IN) {
       ClientController::instance()->shutdown();
@@ -678,7 +676,7 @@ void PerpetualData::onMessageReceived(int type,
                                       const QString& sender,
                                       const QString& detail,
                                       const QString&) {
-  if(lifeStuffFull_->isActive()){
+  if (lifeStuffFull_->isActive()) {
     // let Lifestuff deal with messages
     return;
   }
@@ -791,9 +789,9 @@ void PerpetualData::onEmailReceived(const QString &subject,
   QString tidyEmailMaidsafePath = QString::fromStdString(tidyEmail);
 
   try {
-    QDomDocument doc( "EmailML" );
-    QDomElement root = doc.createElement( "email" );
-    doc.appendChild( root );
+    QDomDocument doc("EmailML");
+    QDomElement root = doc.createElement("email");
+    doc.appendChild(root);
 
     ClientController::Email e;
     e.to = ClientController::instance()->publicUsername();
@@ -805,11 +803,11 @@ void PerpetualData::onEmailReceived(const QString &subject,
 
     root.appendChild(ClientController::instance()->EmailToNode(doc, e));
 
-    QFile file( emailFullPath );
-    if( !file.open( QIODevice::Append ) )
-    return;
+    QFile file(emailFullPath);
+    if (!file.open(QIODevice::Append))
+      return;
 
-    QTextStream ts( &file );
+    QTextStream ts(&file);
     ts << doc.toString();
 
     file.close();
@@ -1070,22 +1068,22 @@ void PerpetualData::onLogoutUserCompleted(bool success) {
   onUnmountCompleted(success);
 }
 
-void PerpetualData::hideOpButtons(){
- ui_.contactBtn->setVisible(false);
- ui_.emailBtn->setVisible(false);
- ui_.calendarBtn->setVisible(false);
- ui_.myFilesBtn->setVisible(false);
- ui_.picBtn->setVisible(false);
- ui_.musicBtn->setVisible(false);
+void PerpetualData::hideOpButtons() {
+  ui_.contactBtn->setVisible(false);
+  ui_.emailBtn->setVisible(false);
+  ui_.calendarBtn->setVisible(false);
+  ui_.myFilesBtn->setVisible(false);
+  ui_.picBtn->setVisible(false);
+  ui_.musicBtn->setVisible(false);
 }
 
 void PerpetualData::showOpButtons() {
- ui_.contactBtn->setVisible(true);
- ui_.emailBtn->setVisible(true);
- ui_.calendarBtn->setVisible(true);
- ui_.myFilesBtn->setVisible(true);
- ui_.picBtn->setVisible(true);
- ui_.musicBtn->setVisible(true);
+  ui_.contactBtn->setVisible(true);
+  ui_.emailBtn->setVisible(true);
+  ui_.calendarBtn->setVisible(true);
+  ui_.myFilesBtn->setVisible(true);
+  ui_.picBtn->setVisible(true);
+  ui_.musicBtn->setVisible(true);
 }
 
 void PerpetualData::showLoggedInMenu() {

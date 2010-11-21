@@ -79,6 +79,7 @@ class RequestExpectationHandler {
   // Removes expired entries from multimap which have timed out - returns a
   // count of the number of entries removed.
   int CleanUp();
+  void Clear();
  private:
   RequestExpectationHandler(const RequestExpectationHandler&);
   RequestExpectationHandler& operator=(const RequestExpectationHandler&);

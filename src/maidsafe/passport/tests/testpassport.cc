@@ -1417,10 +1417,10 @@ TEST_P(PassportVPTest, BEH_PASSPORT_ChangeUserDetails) {
   passport_.Clear();
   EXPECT_EQ(kSuccess,
             passport_.SetInitialDetails(kUsername_, kPin_, &temp, &temp));
-  EXPECT_EQ(kSuccess,
-            passport_.InitialiseTmid(false, mid_before_change_->value(), &temp));
-  EXPECT_EQ(kSuccess,
-            passport_.InitialiseTmid(true, smid_before_change_->value(), &temp));
+  EXPECT_EQ(kSuccess, passport_.InitialiseTmid(false,
+                      mid_before_change_->value(), &temp));
+  EXPECT_EQ(kSuccess, passport_.InitialiseTmid(true,
+                      smid_before_change_->value(), &temp));
   EXPECT_EQ(kSuccess, passport_.GetUserData(kPassword_, false,
                       tmid_before_change_->value(), &temp));
   EXPECT_EQ(kSuccess, passport_.GetUserData(kPassword_, true,

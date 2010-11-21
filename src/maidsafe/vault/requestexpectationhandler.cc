@@ -109,6 +109,11 @@ int RequestExpectationHandler::CleanUp() {
   return count;
 }
 
+void RequestExpectationHandler::Clear() {
+  boost::mutex::scoped_lock lock(mutex_);
+  expectations_.clear();
+}
+
 template <typename RequestType>
 std::string RequestExpectationHandler::GetExpectationIdentifier(
     const RequestType &request) {

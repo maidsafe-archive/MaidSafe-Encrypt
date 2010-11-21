@@ -167,22 +167,6 @@ void MakeChunks(const std::vector< boost::shared_ptr<ClientData> > &clients,
   }
 }
 
-void PrintRpcTimings(const rpcprotocol::RpcStatsMap &rpc_timings) {
-  printf("Calls  RPC Name                                            "
-         "min/avg/max/total\n");
-  for (rpcprotocol::RpcStatsMap::const_iterator it = rpc_timings.begin();
-       it != rpc_timings.end();
-       ++it) {
-    printf("%5llux %-50s  %.2f/%.2f/%.2f/%04.1f s\n",
-           it->second.Size(),
-           it->first.c_str(),
-           it->second.Min() / 1000.0,
-           it->second.Mean() / 1000.0,
-           it->second.Max() / 1000.0,
-           it->second.Sum() / 1000.0);
-  }
-}
-
 }  // namespace testpdvault
 
 namespace maidsafe {
@@ -333,15 +317,19 @@ class PDVaultTest : public testing::Test {
       printf("Vault #%d synced.\n", vlt);
     }
 
-    // let the clients create their accounts (again)
+    // let the vaults create their accounts again, to include new vaults
+    for (int i = 0; i < kNetworkSize; ++i) {
+      ASSERT_EQ(kSuccess, pdvaults_[i]->AmendAccount(
+          pdvaults_[i]->available_space()));
+    }
+
+    // wait for internal contact lists to be updated
     for (int i = 0; i < kNumOfClients; ++i) {
-      clients_[i]->msm->own_vault_.WaitForUpdate();
       while (clients_[i]->msm->
                 account_holders_manager_.account_holder_group().size() <
                 clients_[i]->msm->kUpperThreshold_)
         boost::this_thread::sleep(boost::posix_time::seconds(2));
-      ASSERT_EQ(kSuccess, clients_[i]->msm->CreateAccount(
-          pdvaults_[kNetworkSize - kNumOfClients + i]->available_space()));
+      clients_[i]->msm->own_vault_.WaitForUpdate();
     }
 
     printf("\n--- SetUp completed. ---\n\n");
@@ -349,6 +337,9 @@ class PDVaultTest : public testing::Test {
 
   virtual void TearDown() {
     for (int i = 0; i < kNumOfClients; ++i) {
+      printf("\nStatistics for client %d:\n", i + 1);
+      maidsafe::test::localvaults::PrintRpcTimings(
+          clients_[i]->msm->channel_manager_.RpcTimings());
       testpdvault::PrepareCallbackResults();
       clients_[i]->msm->Close(boost::bind(&testpdvault::GeneralCallback, _1),
                              true);
@@ -367,6 +358,10 @@ class PDVaultTest : public testing::Test {
   PDVaultTest &operator=(const PDVaultTest&);
 };
 
+TEST_MS_NET(PDVaultTest, FUNC, MAID, Dummy) {
+  boost::this_thread::sleep(boost::posix_time::seconds(1));
+}
+
 TEST_MS_NET(PDVaultTest, FUNC, MAID, StoreAndGetChunks) {
   std::map<std::string, std::string> chunks;
   testpdvault::MakeChunks(clients_, kNumOfTestChunks, test_root_dir_, &chunks);
@@ -377,32 +372,41 @@ TEST_MS_NET(PDVaultTest, FUNC, MAID, StoreAndGetChunks) {
     data_size += (*it).second.size();
   }
 
-  // make sure accounts for clients are in the right places
+  // make sure accounts are in the right places
+  std::map<std::string, int> client_pmids;
   printf("\n-- Checking accounts locally... --\n");
-  for (int i = 0; i < kNumOfClients; ++i) {
-    std::string client_pmid(pdvaults_[kNetworkSize - kNumOfClients + i]->pmid_);
+  for (int i = 0; i < kNumOfClients; ++i)
+    client_pmids[pdvaults_[kNetworkSize - kNumOfClients + i]->pmid_] = i;
+  for (int i = 0; i < kNetworkSize; ++i) {
+    std::string pmid(pdvaults_[i]->pmid_);
     std::string account_name(SHA512String(client_pmid + kAccount));
-    printf("Client %s, account %s:\n", HexSubstr(client_pmid).c_str(),
-           HexSubstr(account_name).c_str());
+    std::string client_idx(client_pmids.count(pmid) > 0 ?
+      " - client " + base::IntToString(client_pmids[pmid]) : "");
+    printf("Account for %s (name %s)%s:\n", HexSubstr(pmid).c_str(),
+           HexSubstr(account_name).c_str(), client_idx.c_str());
+    
     std::set<std::string> closest;
     std::vector<kad::Contact> contacts;
-    clients_[i]->msm->kad_ops_->BlockingFindKClosestNodes(account_name,
-                                                          &contacts);
+    pdvaults_[i]->kad_ops_->BlockingFindKClosestNodes(account_name, &contacts);
     for (size_t j = 0; j < contacts.size(); ++j) {
       closest.insert(contacts[j].node_id().String());
     }
+    int correct_holders(0);
     for (int j = 0; j < kNetworkSize; ++j) {
-      bool client = pdvaults_[j]->pmid_ == client_pmid;
-      bool holder = pdvaults_[j]->vault_service_->HaveAccount(client_pmid);
+      bool subject = pdvaults_[j]->pmid_ == pmid;
+      bool holder = pdvaults_[j]->vault_service_->HaveAccount(pmid);
       bool close = closest.count(pdvaults_[j]->pmid_) == 1;
       printf(" Vault %s%s%s%s\n", HexSubstr(pdvaults_[j]->pmid_).c_str(),
-             client ? " - client's" : "",
+             subject ? " - subject" : "",
              holder ? " - holder" : "",
              close ? " - close" : "");
-      EXPECT_TRUE(!close || holder || client);
+      // EXPECT_TRUE(!close || holder || subject);
       // EXPECT_FALSE(!close && holder);
-      EXPECT_FALSE(client && holder);
+      EXPECT_FALSE(subject && holder);
+      if (close && holder)
+        ++correct_holders;
     }
+    EXPECT_LE(testpdvault::K * kMinSuccessfulPecentageStore, correct_holders);
   }
 
   // store chunks to network with each client
@@ -600,17 +604,6 @@ TEST_MS_NET(PDVaultTest, FUNC, MAID, StoreAndGetChunks) {
         }
       }
     }
-  }
-
-  for (int i = 0; i < kNumOfClients; ++i) {
-    printf("\nStatistics for client %d:\n", i + 1);
-    testpdvault::PrintRpcTimings(
-        clients_[i]->msm->channel_manager_.RpcTimings());
-  }
-  for (int i = 0; i < kNetworkSize; ++i) {
-    printf("\nStatistics for vault %d:\n", i);
-    testpdvault::PrintRpcTimings(
-        pdvaults_[i]->channel_manager_.RpcTimings());
   }
 }
 

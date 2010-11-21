@@ -362,9 +362,13 @@ void VaultServiceLogic::AssessResult(VaultReturnCode result,
   if (data->success_count >= kUpperThreshold_ ||
       data->failure_count > data->data_holders.size() - kUpperThreshold_) {
 #ifdef DEBUG
-//     printf("In VSL::AssessResult for %s (%s), data->success_count (%u) >= kUpperThreshold_ (%u) OR "
-//       "data->failure_count (%u) > data->data_holders.size() (%u) - kUpperThreshold_ (%u) (%u), so returning %i.\n", typeid(data).name(), HexSubstr(pmid_).c_str(), data->success_count, kUpperThreshold_,
-//            data->failure_count, data->data_holders.size(), kUpperThreshold_, data->data_holders.size() - kUpperThreshold_, result);
+//     printf("In VSL::AssessResult for %s (%s), data->success_count (%u) >= "
+//            "kUpperThreshold_ (%u) OR data->failure_count (%u) > data->data"
+//            "_holders.size() (%u) - kUpperThreshold_ (%u) (%u), so returnin"
+//            "g %i.\n", typeid(data).name(), HexSubstr(pmid_).c_str(),
+//            data->success_count, kUpperThreshold_, data->failure_count,
+//            data->data_holders.size(), kUpperThreshold_,
+//            data->data_holders.size() - kUpperThreshold_, result);
 #endif
     data->callback(result);
     data->callback_done = true;
@@ -442,8 +446,8 @@ void VaultServiceLogic::GetAccount(
       kParallelRequests));
   for (boost::uint16_t i = 0; i < kMaxParallel; ++i) {
     if (i > data->op_holders.size()) {
-      printf("\t**************************\n\tIn VSL::GetAccount, sending op_holder %u of %u!\n\n\n", i,
-             data->op_holders.size());
+      printf("\t**************************\n\tIn VSL::GetAccount, sending "
+             "op_holder %u of %u!\n\n\n", i, data->op_holders.size());
     }
     SendInfoRpc(i, data);
   }
@@ -491,8 +495,8 @@ void VaultServiceLogic::GetInfoCallback(
   if (data->callback_done)
     return;
   if (index > data->op_holders.size()) {
-    printf("\t**************************\n\tIn VSL::GetInfoCallback, asked for op_holder %u of %u!\n\n\n", index,
-           data->op_holders.size());
+    printf("\t**************************\n\tIn VSL::GetInfoCallback, asked "
+           "for op_holder %u of %u!\n\n\n", index, data->op_holders.size());
     return;
   }
   GetAccountResponse &get_account_response =
@@ -513,8 +517,9 @@ void VaultServiceLogic::GetInfoCallback(
       lock.unlock();
       if (next_index < op_holders_size) {
         if (next_index > 6) {
-          printf("\t**************************\n\tIn VSL::GetInfoCallback, sending op_holder %u of %u (op_holders_size = %u)!\n\n\n", next_index,
-                 data->op_holders.size(), op_holders_size);
+          printf("\t**************************\n\tIn VSL::GetInfoCallback, "
+                 "sending op_holder %u of %u (op_holders_size = %u)!\n\n\n",
+                 next_index, data->op_holders.size(), op_holders_size);
           return;
         }
         SendInfoRpc(next_index, data);
@@ -594,8 +599,8 @@ void VaultServiceLogic::SendInfoRpc(const boost::uint16_t &index,
     data->index_of_last_request_sent = index;
   }
   if (index > data->op_holders.size()) {
-    printf("\t**************************\n\tIn VSL::SendInfoRpc, sent with op_holder %u of %u!\n\n\n", index,
-           data->op_holders.size());
+    printf("\t**************************\n\tIn VSL::SendInfoRpc, sent with "
+           "op_holder %u of %u!\n\n\n", index, data->op_holders.size());
     return;
   }
   google::protobuf::Closure* done = google::protobuf::NewCallback<

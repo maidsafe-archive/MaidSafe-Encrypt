@@ -47,7 +47,7 @@ int AccountAmendmentHandler::ProcessRequest(const AmendAccountRequest *request,
     done->Run();
     return kAccountNotFound;
   }
-  
+
   AmendAccountRequest::Amendment amendment_type = request->amendment_type();
   bool increase(false);
   int field(2);
@@ -72,7 +72,7 @@ int AccountAmendmentHandler::ProcessRequest(const AmendAccountRequest *request,
          amendments_.count(boost::make_tuple(pmid, field, data_size, increase))
              >= kMaxRepeatedAccountAmendments) {
     if (!tried_cleanup) {
-      DoCleanUp();
+      DoCleanUp(false);
       tried_cleanup = true;
     } else {
       done->Run();
@@ -176,8 +176,8 @@ int AccountAmendmentHandler::AssessAmendment(
       std::list<PendingAmending>::iterator pendings_it;
       for (pendings_it = amendment->pendings.begin();
            pendings_it != amendment->pendings.end(); ++pendings_it) {
-        if (amendment->account_amendment_result == kSuccess)
-          pendings_it->response->set_result(kAck);
+        pendings_it->response->set_result(
+          amendment->account_amendment_result == kSuccess ? kAck : kNack);
         pendings_it->done->Run();
       }
 
@@ -233,7 +233,7 @@ void AccountAmendmentHandler::CreateNewAmendment(AccountAmendment amendment) {
   } else {
     lookup_required = true;
   }
-  
+
   std::pair<AmendmentsByTimestamp::iterator, bool> p =
       amendments_.get<by_timestamp>().insert(amendment);
   if (!p.second) {  // amendment exists
@@ -285,46 +285,56 @@ void AccountAmendmentHandler::CreateNewAmendmentCallback(
     // Set responses and run callbacks
     amendments_.get<by_timestamp>().erase(it);
     while (!modified_amendment.probable_pendings.empty()) {
+      modified_amendment.probable_pendings.front().response->set_result(kNack);
       modified_amendment.probable_pendings.front().done->Run();
       modified_amendment.probable_pendings.pop_front();
     }
-    if (!modified_amendment.chunkname.empty())
-      amendment_results_.push_back(AmendmentResult(
-          modified_amendment.pmid, modified_amendment.chunkname,
-          modified_amendment.amendment_type, kNack));
+//     if (!modified_amendment.chunkname.empty())
+//       amendment_results_.push_back(AmendmentResult(
+//           modified_amendment.pmid, modified_amendment.chunkname,
+//           modified_amendment.amendment_type, kNack));
   }
 }
 
 int AccountAmendmentHandler::CleanUp() {
   boost::mutex::scoped_lock lock(amendment_mutex_);
-  return DoCleanUp();
+  return DoCleanUp(false);
 }
 
-int AccountAmendmentHandler::DoCleanUp() {
+void AccountAmendmentHandler::Clear() {
+  boost::mutex::scoped_lock lock(amendment_mutex_);
+  DoCleanUp(true);
+}
+
+int AccountAmendmentHandler::DoCleanUp(bool expire_all) {
   int count(0);
   {
     AmendmentsByTimestamp::iterator it =
         amendments_.get<by_timestamp>().begin();
     while (it != amendments_.get<by_timestamp>().end() &&
-          (*it).expiry_time < base::GetEpochMilliseconds()) {
+          (expire_all || (*it).expiry_time < base::GetEpochMilliseconds())) {
       AccountAmendment amendment = *it;
       while (!amendment.probable_pendings.empty()) {
+        amendment.probable_pendings.front().response->set_result(kNack);
         amendment.probable_pendings.front().done->Run();
         amendment.probable_pendings.pop_front();
       }
       while (!amendment.pendings.empty()) {
+        amendment.pendings.front().response->set_result(kNack);
         amendment.pendings.front().done->Run();
         amendment.pendings.pop_front();
       }
-      if (!amendment.chunkname.empty())
-        amendment_results_.push_back(AmendmentResult(
-            amendment.pmid, amendment.chunkname, amendment.amendment_type,
-            kNack));
+//       if (!amendment.chunkname.empty())
+//         amendment_results_.push_back(AmendmentResult(
+//             amendment.pmid, amendment.chunkname, amendment.amendment_type,
+//             kNack));
       it = amendments_.get<by_timestamp>().erase(it);
       ++count;
     }
   }
-  {
+  if (expire_all) {
+    amendment_results_.clear();
+  } else {
     std::list<AmendmentResult>::iterator it = amendment_results_.begin();
     while (it != amendment_results_.end()) {
       if (it->expiry_time < base::GetEpochTime()) {

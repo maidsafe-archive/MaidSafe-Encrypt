@@ -1315,17 +1315,19 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_CleanUp) {
   ASSERT_EQ(20, aah_.CleanUp());
   ASSERT_EQ(size_t(79), aah_.amendments_.size());
 
-  // Set expiry time back on rest
+  // Set expiry time back on 50
   it = aah_.amendments_.get<by_timestamp>().begin();
-  while (it != aah_.amendments_.get<by_timestamp>().end()) {
+  for (int i = 0; i < 50; ++i, ++it) {
     AccountAmendment amendment = *it;
     amendment.expiry_time = base::GetEpochMilliseconds() - 1000;
     aah_.amendments_.get<by_timestamp>().replace(it, amendment);
-    ++it;
     // Sleep to let timestamps differ.
     boost::this_thread::sleep(boost::posix_time::milliseconds(2));
   }
-  ASSERT_EQ(79, aah_.CleanUp());
+  ASSERT_EQ(50, aah_.CleanUp());
+  ASSERT_EQ(size_t(29), aah_.amendments_.size());
+  
+  aah_.Clear();
   ASSERT_TRUE(aah_.amendments_.empty());
 }
 

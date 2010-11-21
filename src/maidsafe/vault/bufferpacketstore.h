@@ -31,6 +31,8 @@ namespace maidsafe {
 
 namespace vault {
 
+namespace test { class BufferPacketStoreTest_BEH_MAID_BPStoreClean_Test; }
+
 class BufferPacketStore {
  public:
   BufferPacketStore() : buffer_packets_(), bp_store_mutex_() {}
@@ -43,9 +45,14 @@ class BufferPacketStore {
   VaultBufferPacketMap ExportMapToPb();
   bool InsertBufferPacketFromPb(
       const VaultBufferPacketMap::VaultBufferPacket &vault_bp);
+  void Clear();
  private:
   BufferPacketStore &operator=(const BufferPacketStore);
   BufferPacketStore(const BufferPacketStore&);
+  friend class test::BufferPacketStoreTest_BEH_MAID_BPStoreClean_Test;
+  bool DoStoreBP(const std::string &name, const std::string &ser_bp);
+  bool DoInsertBufferPacketFromPb(
+      const VaultBufferPacketMap::VaultBufferPacket &vault_bp);
   std::map<std::string, std::string> buffer_packets_;
   boost::mutex bp_store_mutex_;
 };

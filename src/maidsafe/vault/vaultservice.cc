@@ -313,8 +313,7 @@ void VaultService::StorePrep(google::protobuf::RpcController*,
   // Check if we're being asked to store on our own vault.
   if (request_sz.pmid() == pmid_) {
 #ifdef DEBUG
-    printf("In VaultService::StorePrep (%s), going to store in our own vault "
-           "(chunk %s).\n",
+    printf("In VaultService::StorePrep (%s), it's our own vault (chunk %s).\n",
            HexSubstr(pmid_).c_str(), HexSubstr(request->chunkname()).c_str());
 #endif
     // done->Run();
@@ -1007,7 +1006,7 @@ void VaultService::AmendAccount(google::protobuf::RpcController*,
   std::string pmid;
   if (!ValidateAmendRequest(request, &account_delta, &pmid)) {
 #ifdef DEBUG
-    printf("In VaultService::AmendAccount (%s), problem with request.\n",
+    printf("In VaultService::AmendAccount (%s), could not validate request.\n",
            HexSubstr(pmid_).c_str());
 #endif
     done->Run();
@@ -1026,7 +1025,7 @@ void VaultService::AmendAccount(google::protobuf::RpcController*,
       if (ah_.AddAccount(pmid, account_delta) == kSuccess) {
         response->set_result(kAck);
 #ifdef DEBUG
-        printf("In VaultService::AmendAccount (%s), created account (%s) of "
+        printf("In VaultService::AmendAccount (%s), created account for %s of "
                "size %llu.\n", HexSubstr(pmid_).c_str(),
                HexSubstr(pmid).c_str(), account_delta);
 #endif
@@ -1043,24 +1042,25 @@ void VaultService::AmendAccount(google::protobuf::RpcController*,
       } else {
   #ifdef DEBUG
         printf("In VaultService::AmendAccount (%s), failed amending space "
-              "offered by %s (error %d).\n", HexSubstr(pmid_).c_str(),
-              HexSubstr(pmid).c_str(), result);
+               "offered by %s (error %d).\n", HexSubstr(pmid_).c_str(),
+               HexSubstr(pmid).c_str(), result);
   #endif
       }
     }
     done->Run();
   } else {
-    // aah_->ProcessRequest() calls done->Run();
-    int result = aah_.ProcessRequest(request, response, done);
-    if (result != kSuccess) {
+    if (ah_.HaveAccount(pmid) != kAccountNotFound) {
+      // aah_->ProcessRequest() calls done->Run();
+      int result = aah_.ProcessRequest(request, response, done);
+      if (result != kSuccess) {
 #ifdef DEBUG
-      printf("In VaultService::AmendAccount (%s), failed amending account (%s) "
-             "- error %i\n", HexSubstr(pmid_).c_str(), HexSubstr(pmid).c_str(),
-             result);
+        printf("In VaultService::AmendAccount (%s), failed amending account "
+               "(%s) - error %i\n", HexSubstr(pmid_).c_str(),
+               HexSubstr(pmid).c_str(), result);
 #endif
-    }
-
-    if (ah_.HaveAccount(pmid) == kAccountNotFound) {
+      }
+    } else {
+      done->Run();
       std::vector<kad::Contact> close_contacts;
       if (info_synchroniser_.ShouldFetch(pmid, &close_contacts)) {
         // ensure account holder != account subject
@@ -1079,8 +1079,8 @@ void VaultService::AmendAccount(google::protobuf::RpcController*,
       } else {
 #ifdef DEBUG
         printf("In VaultService::AmendAccount (%s), account to amend (%s) does "
-              "not exist.  Not fetching it.\n", HexSubstr(pmid_).c_str(),
-              HexSubstr(pmid).c_str());
+               "not exist.  Not fetching it.\n", HexSubstr(pmid_).c_str(),
+               HexSubstr(pmid).c_str());
 #endif
       }
     }
@@ -1225,7 +1225,7 @@ void VaultService::GetSyncData(google::protobuf::RpcController*,
 #endif
   } else if (!NodeWithinClosest(request->pmid(), K_)) {
 #ifdef DEBUG
-    printf("In VaultService::GetSyncData (%s), requester (%s) not in local"
+    printf("In VaultService::GetSyncData (%s), requester (%s) not in local "
            "routing table's closest k nodes.\n", HexSubstr(pmid_).c_str(),
            HexSubstr(request->pmid()).c_str());
 #endif
@@ -1930,6 +1930,16 @@ bool VaultService::HaveAccount(const std::string &pmid) {
   return ah_.HaveAccount(pmid) == kSuccess;
 }
 
+void VaultService::ClearOperationalData() {
+  request_expectation_handler_.Clear();
+  aah_.Clear();
+  ah_.Clear();
+  cih_.Clear();
+  prm_.clear();
+  bps_.Clear();
+  info_synchroniser_.Clear();
+}
+
 bool VaultService::ValidateSignedSize(const SignedSize &sz) {
   if (!sz.IsInitialized()) {
 #ifdef DEBUG
@@ -2164,7 +2174,7 @@ void VaultService::FinalisePayment(const std::string &chunk_name,
 
     for (std::list<std::string>::iterator it = references.begin();
          it != references.end(); ++it) {
-      // TODO(Team#) delete ref packet and remote chunks
+      // TODO(Team#) delete remote chunks
       // amend account for former chunk holder
       AmendRemoteAccount(AmendAccountRequest::kSpaceGivenDec, chunk_size, *it,
                          chunk_name);
@@ -2210,7 +2220,7 @@ void VaultService::DoneAddToReferenceList(const StoreContract &store_contract,
   // only accept chunk as stored if it's not on the client's own vault
   if (vault_pmid != client_pmid)
     cih_.SetStoringDone(chunk_name, client_pmid);
-  
+
   std::string creditor;
   int refunds;
   if (cih_.TryCommitToWatchList(chunk_name, client_pmid, &creditor, &refunds)) {

@@ -47,10 +47,26 @@ namespace test {
 
 namespace localvaults {
 
+inline void PrintRpcTimings(const rpcprotocol::RpcStatsMap &rpc_timings) {
+  printf("Calls  RPC Name                                            "
+         "min/avg/max/total\n");
+  for (rpcprotocol::RpcStatsMap::const_iterator it = rpc_timings.begin();
+       it != rpc_timings.end();
+       ++it) {
+    printf("%5llux %-50s  %.2f/%.2f/%.2f/%04.1f s\n",
+           it->second.Size(),
+           it->first.c_str(),
+           it->second.Min() / 1000.0,
+           it->second.Mean() / 1000.0,
+           it->second.Max() / 1000.0,
+           it->second.Sum() / 1000.0);
+  }
+}
+
 inline void GeneratePmidStuff(std::string *public_key,
-                       std::string *private_key,
-                       std::string *signed_key,
-                       std::string *pmid) {
+                              std::string *private_key,
+                              std::string *signed_key,
+                              std::string *pmid) {
   crypto::RsaKeyPair keys;
   keys.GenerateKeys(maidsafe::kRsaKeySize);
   *signed_key = maidsafe::RSASign(keys.public_key(), keys.private_key());
@@ -177,7 +193,9 @@ class Env: public testing::Environment {
     bool success(false);
     StopCommunications();
     for (int i = 0; i < current_nodes_created_; ++i) {
-      printf("Trying to stop vault %i.\n", i);
+      printf("\nStatistics for vault %i:\n", i);
+      PrintRpcTimings((*pdvaults_)[i]->channel_manager_.RpcTimings());
+      printf("\nTrying to stop vault %i.\n", i);
       success = false;
       (*pdvaults_)[i]->Stop();
       if ((*pdvaults_)[i]->vault_status() != vault::kVaultStarted)
@@ -195,7 +213,7 @@ class Env: public testing::Environment {
     catch(const std::exception &e_) {
       printf("%s\n", e_.what());
     }
-    printf("Finished vault tear down.\n");
+    printf("\nFinished vault tear down.\n");
   }
 
   void StopCommunications() {

@@ -208,6 +208,7 @@ class ChunkInfoHandler {
   int GetChunkInfo(const std::string &chunk_name, ChunkInfo *chunk_info);
   int InsertChunkInfoFromPb(
       const ChunkInfoMap::VaultChunkInfo &vault_chunk_info);
+  void Clear();
  private:
   friend class test::ChunkInfoHandlerTest_BEH_VAULT_Init_Test;
   friend class test::ChunkInfoHandlerTest_BEH_VAULT_Checksum_Test;

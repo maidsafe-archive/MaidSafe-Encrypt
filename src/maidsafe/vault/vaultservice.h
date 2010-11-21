@@ -294,6 +294,7 @@ class VaultService : public MaidsafeService {
                              google::protobuf::Closure *done);
   int AddAccount(const std::string &pmid, const boost::uint64_t &offer);
   bool HaveAccount(const std::string &pmid);
+  void ClearOperationalData();
  private:
   VaultService(const VaultService&);
   VaultService &operator=(const VaultService&);

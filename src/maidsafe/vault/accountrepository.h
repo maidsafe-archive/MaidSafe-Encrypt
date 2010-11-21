@@ -46,6 +46,7 @@ class AccountHandlerTest_BEH_VAULT_Modify_Test;
 class AccountHandlerTest_BEH_VAULT_Delete_Test;
 class AccountHandlerTest_FUNC_VAULT_PutGetPb_Test;
 class AccountHandlerTest_FUNC_VAULT_PutGetAccount_Test;
+class AccountHandlerTest_BEH_VAULT_AccountHandlerClear_Test;
 class AccountAmendmentHandlerTest_BEH_MAID_ProcessRequest_Test;
 }  // namespace test
 
@@ -133,6 +134,7 @@ class AccountHandler {
   void GetSetFromPb(const VaultAccountSet &vault_account_set);
   int GetAccount(const std::string &pmid, Account *account);
   int InsertAccountFromPb(const VaultAccountSet::VaultAccount &vault_account);
+  void Clear();
  private:
   AccountHandler(const AccountHandler&);
   AccountHandler& operator=(const AccountHandler&);
@@ -142,6 +144,7 @@ class AccountHandler {
   friend class test::AccountHandlerTest_BEH_VAULT_Delete_Test;
   friend class test::AccountHandlerTest_FUNC_VAULT_PutGetPb_Test;
   friend class test::AccountHandlerTest_FUNC_VAULT_PutGetAccount_Test;
+  friend class test::AccountHandlerTest_BEH_VAULT_AccountHandlerClear_Test;
   friend class test::AccountAmendmentHandlerTest_BEH_MAID_ProcessRequest_Test;
   AccountSet accounts_;
   boost::mutex account_mutex_;

@@ -24,34 +24,33 @@
 
 #include <gtest/gtest.h>
 #include <boost/lexical_cast.hpp>
-#include "maidsafe/common/commonutils.h"
-#include "maidsafe/common/kadops.h"
+#include "maidsafe/kadops.h"
 #include "maidsafe/vault/infosynchroniser.h"
 
-namespace maidsafe {
-
-namespace vault {
+namespace maidsafe_vault {
 
 namespace test_info_sync {
 static const boost::uint8_t K(4);
 }  // namespace test_info_sync
 
-namespace test {
-
 class InfoSynchroniserTest : public testing::Test {
  public:
   InfoSynchroniserTest()
-      : pmid_(SHA512String(base::RandomString(100))),
+      : co_(),
+        pmid_(co_.Hash(base::RandomString(100), "",
+                       crypto::STRING_STRING, false)),
         kMinRoutingTableSize_(100),
         routing_table_(new base::PublicRoutingTableHandler()),
         info_synchroniser_(pmid_, routing_table_, test_info_sync::K),
         closest_nodes_() {}
  protected:
   void SetUp() {
+    ASSERT_EQ(crypto::SHA_512, co_.hash_algorithm());
     size_t table_size = (base::RandomUint32() % 999) +
                          kMinRoutingTableSize_;
     for (size_t i = 0; i < table_size; ++i) {
-      std::string tuple_id = SHA512String(base::RandomString(100));
+      std::string tuple_id = co_.Hash(base::RandomString(100), "",
+                                      crypto::STRING_STRING, false);
       base::PublicRoutingTableTuple pdrtt(tuple_id,
           boost::lexical_cast<std::string>((base::RandomUint32() % 255)+1)+"."+
           boost::lexical_cast<std::string>((base::RandomUint32() % 255)+1)+"."+
@@ -63,6 +62,7 @@ class InfoSynchroniserTest : public testing::Test {
     closest_nodes_.push_back(kad::Contact());
   }
   void TearDown() {}
+  crypto::Crypto co_;
   std::string pmid_;
   const size_t kMinRoutingTableSize_;
   boost::shared_ptr<base::PublicRoutingTableHandler> routing_table_;
@@ -73,7 +73,8 @@ class InfoSynchroniserTest : public testing::Test {
 TEST_F(InfoSynchroniserTest, BEH_VAULT_InfoSyncShouldFetch) {
   ASSERT_EQ(size_t(0), info_synchroniser_.info_entries_.size());
   std::list<base::PublicRoutingTableTuple> nodes;
-  std::string id = SHA512String(base::RandomString(100));
+  std::string id = co_.Hash(base::RandomString(100), "", crypto::STRING_STRING,
+                            false);
   ASSERT_EQ(0, routing_table_->GetClosestContacts(id, 0, &nodes));
   ASSERT_GE(nodes.size(), kMinRoutingTableSize_);
   // Get a key which doesn't include test node's ID in test_info_sync::K closest
@@ -87,10 +88,10 @@ TEST_F(InfoSynchroniserTest, BEH_VAULT_InfoSyncShouldFetch) {
     std::for_each(nodes.begin(), nodes.end(), boost::bind(
         &InfoSynchroniser::AddNodeToClosest, &info_synchroniser_, _1,
         &closest_nodes));
-    if (!ContactWithinClosest(id, this_test_contact, closest_nodes))
+    if (!maidsafe::ContactWithinClosest(id, this_test_contact, closest_nodes))
       break;
     else
-      id = SHA512String(base::RandomString(100));
+      id = co_.Hash(base::RandomString(100), "", crypto::STRING_STRING, false);
   }
   ASSERT_FALSE(closest_nodes_.empty());
   ASSERT_FALSE(info_synchroniser_.ShouldFetch(id, &closest_nodes_));
@@ -131,13 +132,15 @@ TEST_F(InfoSynchroniserTest, BEH_VAULT_InfoSyncShouldFetch) {
 TEST_F(InfoSynchroniserTest, FUNC_VAULT_InfoSyncTimestamps) {
   const size_t kTestMapSize = 100;
   while (info_synchroniser_.info_entries_.size() < kTestMapSize) {
-    info_synchroniser_.ShouldFetch(
-        SHA512String(base::RandomString(100)), &closest_nodes_);
+    info_synchroniser_.ShouldFetch(co_.Hash(base::RandomString(100), "",
+        crypto::STRING_STRING, false), &closest_nodes_);
   }
-  std::string id1 = SHA512String(base::RandomString(100));
-  std::string id2 = SHA512String(base::RandomString(100));
+  std::string id1 = co_.Hash(base::RandomString(100), "", crypto::STRING_STRING,
+                             false);
+  std::string id2 = co_.Hash(base::RandomString(100), "", crypto::STRING_STRING,
+                             false);
   while (id1 == id2)
-    id2 = SHA512String(base::RandomString(100));
+    id2 = co_.Hash(base::RandomString(100), "", crypto::STRING_STRING, false);
   info_synchroniser_.ShouldFetch(id1, &closest_nodes_);
   info_synchroniser_.ShouldFetch(id2, &closest_nodes_);
   ASSERT_EQ(kTestMapSize + 2, info_synchroniser_.info_entries_.size());
@@ -159,13 +162,15 @@ TEST_F(InfoSynchroniserTest, FUNC_VAULT_InfoSyncTimestamps) {
 TEST_F(InfoSynchroniserTest, FUNC_VAULT_InfoSyncRemoveEntry) {
   const size_t kTestMapSize = 100;
   while (info_synchroniser_.info_entries_.size() < kTestMapSize) {
-    info_synchroniser_.ShouldFetch(
-        SHA512String(base::RandomString(100)), &closest_nodes_);
+    info_synchroniser_.ShouldFetch(co_.Hash(base::RandomString(100), "",
+        crypto::STRING_STRING, false), &closest_nodes_);
   }
-  std::string id1 = SHA512String(base::RandomString(100));
-  std::string id2 = SHA512String(base::RandomString(100));
+  std::string id1 = co_.Hash(base::RandomString(100), "", crypto::STRING_STRING,
+                             false);
+  std::string id2 = co_.Hash(base::RandomString(100), "", crypto::STRING_STRING,
+                             false);
   while (id1 == id2)
-    id2 = SHA512String(base::RandomString(100));
+    id2 = co_.Hash(base::RandomString(100), "", crypto::STRING_STRING, false);
   info_synchroniser_.ShouldFetch(id1, &closest_nodes_);
   info_synchroniser_.ShouldFetch(id2, &closest_nodes_);
   ASSERT_EQ(kTestMapSize + 2, info_synchroniser_.info_entries_.size());
@@ -189,8 +194,8 @@ TEST_F(InfoSynchroniserTest, FUNC_VAULT_InfoSyncRemoveEntry) {
 TEST_F(InfoSynchroniserTest, FUNC_VAULT_InfoSyncPruneMap) {
   const size_t kTestMapSize = 100;
   while (info_synchroniser_.info_entries_.size() < kTestMapSize) {
-    info_synchroniser_.ShouldFetch(
-        SHA512String(base::RandomString(100)), &closest_nodes_);
+    info_synchroniser_.ShouldFetch(co_.Hash(base::RandomString(100), "",
+        crypto::STRING_STRING, false), &closest_nodes_);
   }
   info_synchroniser_.PruneMap();
   ASSERT_EQ(kTestMapSize, info_synchroniser_.info_entries_.size());
@@ -226,8 +231,20 @@ TEST_F(InfoSynchroniserTest, FUNC_VAULT_InfoSyncPruneMap) {
   }
 }
 
+TEST_F(InfoSynchroniserTest, BEH_VAULT_InfoSyncClear) {
+  const size_t kTestMapSize = 100;
+  while (info_synchroniser_.info_entries_.size() < kTestMapSize) {
+    info_synchroniser_.ShouldFetch(co_.Hash(base::RandomString(100), "",
+        crypto::STRING_STRING, false), &closest_nodes_);
+  }
+  ASSERT_EQ(kTestMapSize, info_synchroniser_.info_entries_.size());
+  info_synchroniser_.Clear();
+  ASSERT_EQ(size_t(0), info_synchroniser_.info_entries_.size());
+}
+
 }  // namespace test
 
 }  // namespace vault
 
 }  // namespace maidsafe
+

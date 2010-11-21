@@ -112,13 +112,13 @@ class PerpetualData : public QMainWindow {
     void onLogout();
     void onAbout();
     void onOpsComplete();
-    void onLogoutUserCompleted(bool);
-    void onToggleFullScreen(bool);
+    void onLogoutUserCompleted(bool success);
+    void onToggleFullScreen(bool b);
     void onApplicationActionTriggered();
     void onQuit();
     void onMyFiles();
     void onPrivateShares();
-    void onGoOffline(bool);
+    void onGoOffline(bool b);
     void onSaveSession();
     void onSettingsTriggered();
     void onOnlineTriggered();

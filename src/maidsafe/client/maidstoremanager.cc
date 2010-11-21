@@ -1407,13 +1407,13 @@ void MaidsafeStoreManager::NotifyTaskHandlerOfAccountAmendments(
       continue;
     bool success = kAmendmentResult.result() == kAck;
 #ifdef DEBUG
-    printf("In MSM::NotifyTaskHandlerOfAccountAmendments (%d), "
-           "amendment (type %d) to %s for %s %s.\n",
-           kad_ops_->Port(),
-           kAmendmentResult.amendment_type(),
-           HexSubstr(account_status_response.pmid()).c_str(),
-           HexSubstr(kAmendmentResult.chunkname()).c_str(),
-           success ? "succeeded" : "failed");
+//     printf("In MSM::NotifyTaskHandlerOfAccountAmendments (%d), "
+//            "amendment (type %d) to %s for %s %s.\n",
+//            kad_ops_->Port(),
+//            kAmendmentResult.amendment_type(),
+//            HexSubstr(account_status_response.pmid()).c_str(),
+//            HexSubstr(kAmendmentResult.chunkname()).c_str(),
+//            success ? "succeeded" : "failed");
 #endif
     TaskId task_id(kRootTask);
     if (kAmendmentResult.amendment_type() ==
@@ -2341,8 +2341,8 @@ void MaidsafeStoreManager::StoreChunkCopy(
       tasks_handler_.NotifyTaskFailure(send_chunk_data->chunk_copy_task_id,
                                        kGetStorePeerError);
   #ifdef DEBUG
-      printf("In MSM::StoreChunkCopy (%d), error getting store peer for %s (%d)."
-            "\n", kad_ops_->Port(), HexSubstr(store_data->data_name).c_str(),
+      printf("In MSM::StoreChunkCopy (%d), error getting store peer for %s (%d)"
+            ".\n", kad_ops_->Port(), HexSubstr(store_data->data_name).c_str(),
             peer_result);
   #endif
       return;

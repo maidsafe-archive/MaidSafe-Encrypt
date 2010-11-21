@@ -49,6 +49,7 @@ class InfoSynchroniserTest_BEH_VAULT_InfoSyncShouldFetch_Test;
 class InfoSynchroniserTest_FUNC_VAULT_InfoSyncTimestamps_Test;
 class InfoSynchroniserTest_FUNC_VAULT_InfoSyncRemoveEntry_Test;
 class InfoSynchroniserTest_FUNC_VAULT_InfoSyncPruneMap_Test;
+class InfoSynchroniserTest_BEH_VAULT_InfoSyncClear_Test;
 }  // namespace test
 
 const boost::uint16_t kInfoEntryLifespan = 120;  // seconds
@@ -64,6 +65,7 @@ class InfoSynchroniser {
                    std::vector<kad::Contact> *closest_nodes);
   void RemoveEntry(const std::string &id);
   void PruneMap();
+  void Clear();
  private:
   InfoSynchroniser(const InfoSynchroniser&);
   InfoSynchroniser& operator=(const InfoSynchroniser&);
@@ -71,6 +73,7 @@ class InfoSynchroniser {
   friend class test::InfoSynchroniserTest_FUNC_VAULT_InfoSyncTimestamps_Test;
   friend class test::InfoSynchroniserTest_FUNC_VAULT_InfoSyncRemoveEntry_Test;
   friend class test::InfoSynchroniserTest_FUNC_VAULT_InfoSyncPruneMap_Test;
+  friend class test::InfoSynchroniserTest_BEH_VAULT_InfoSyncClear_Test;
   void AddNodeToClosest(const base::PublicRoutingTableTuple &node,
                         std::vector<kad::Contact> *closest);
   std::string pmid_;
