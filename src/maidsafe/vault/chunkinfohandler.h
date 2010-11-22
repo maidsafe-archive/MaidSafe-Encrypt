@@ -49,6 +49,7 @@ class ChunkInfoHandlerTest_BEH_VAULT_Failsafe_Test;
 class ChunkInfoHandlerTest_BEH_VAULT_Pruning_Test;
 class ChunkInfoHandlerTest_BEH_VAULT_PutGetPb_Test;
 class ChunkInfoHandlerTest_BEH_VAULT_PutGetChunkInfo_Test;
+class ChunkInfoHandlerTest_BEH_VAULT_Clear_Test;
 class MockVaultServicesTest_BEH_MAID_StoreChunk_Test;
 }  // namespace test
 
@@ -220,6 +221,7 @@ class ChunkInfoHandler {
   friend class test::ChunkInfoHandlerTest_BEH_VAULT_Pruning_Test;
   friend class test::ChunkInfoHandlerTest_BEH_VAULT_PutGetPb_Test;
   friend class test::ChunkInfoHandlerTest_BEH_VAULT_PutGetChunkInfo_Test;
+  friend class test::ChunkInfoHandlerTest_BEH_VAULT_Clear_Test;
   friend class test::MockVaultServicesTest_BEH_MAID_StoreChunk_Test;
   bool HasWatchers(const std::string &chunk_name);
   int ActiveReferences(const std::string &chunk_name);

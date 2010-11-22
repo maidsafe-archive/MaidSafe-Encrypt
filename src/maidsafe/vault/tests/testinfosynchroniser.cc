@@ -24,14 +24,18 @@
 
 #include <gtest/gtest.h>
 #include <boost/lexical_cast.hpp>
-#include "maidsafe/kadops.h"
+#include "maidsafe/common/kadops.h"
 #include "maidsafe/vault/infosynchroniser.h"
-
-namespace maidsafe_vault {
 
 namespace test_info_sync {
 static const boost::uint8_t K(4);
 }  // namespace test_info_sync
+
+namespace maidsafe {
+
+namespace vault {
+
+namespace test {
 
 class InfoSynchroniserTest : public testing::Test {
  public:
@@ -247,4 +251,3 @@ TEST_F(InfoSynchroniserTest, BEH_VAULT_InfoSyncClear) {
 }  // namespace vault
 
 }  // namespace maidsafe
-

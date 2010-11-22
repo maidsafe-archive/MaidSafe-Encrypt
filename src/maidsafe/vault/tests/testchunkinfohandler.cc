@@ -851,7 +851,7 @@ TEST_F(ChunkInfoHandlerTest, BEH_VAULT_PutGetChunkInfo) {
   ASSERT_EQ(kNumEntries + 1, chunk_info_handler.chunk_infos_.size());
 }
 
-TEST_F(ChunkInfoHandlerTest, BEH_VAULT_ChunkInfoHandlerClear) {
+TEST_F(ChunkInfoHandlerTest, BEH_VAULT_Clear) {
   ChunkInfoHandler cih(true);
   ASSERT_EQ(size_t(0), cih.chunk_infos_.size());
   boost::uint32_t n(base::RandomUint32() % 50 + 50);

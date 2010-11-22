@@ -47,6 +47,7 @@ class RequestExpectationHandlerTest_BEH_MAID_TooManyExpectations_Test;
 class RequestExpectationHandlerTest_BEH_MAID_TooManyRepeats_Test;
 class RequestExpectationHandlerTest_BEH_MAID_GetExpectedCallersIds_Test;
 class RequestExpectationHandlerTest_BEH_MAID_CleanUp_Test;
+class RequestExpectationHandlerTest_BEH_MAID_Clear_Test;
 class RequestExpectationHandlerTest_BEH_MAID_Threaded_Test;
 }  // namespace test
 
@@ -92,6 +93,7 @@ class RequestExpectationHandler {
   friend class
       test::RequestExpectationHandlerTest_BEH_MAID_GetExpectedCallersIds_Test;
   friend class test::RequestExpectationHandlerTest_BEH_MAID_CleanUp_Test;
+  friend class test::RequestExpectationHandlerTest_BEH_MAID_Clear_Test;
   friend class test::RequestExpectationHandlerTest_BEH_MAID_Threaded_Test;
   template <typename RequestType>
   std::string GetExpectationIdentifier(const RequestType &request);

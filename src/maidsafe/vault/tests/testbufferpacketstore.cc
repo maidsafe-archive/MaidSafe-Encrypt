@@ -17,6 +17,7 @@
 * ============================================================================
 */
 #include <gtest/gtest.h>
+#include "maidsafe/common/maidsafe.h"
 #include "maidsafe/vault/bufferpacketstore.h"
 
 namespace maidsafe {

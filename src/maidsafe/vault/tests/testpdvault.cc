@@ -379,7 +379,7 @@ TEST_MS_NET(PDVaultTest, FUNC, MAID, StoreAndGetChunks) {
     client_pmids[pdvaults_[kNetworkSize - kNumOfClients + i]->pmid_] = i;
   for (int i = 0; i < kNetworkSize; ++i) {
     std::string pmid(pdvaults_[i]->pmid_);
-    std::string account_name(SHA512String(client_pmid + kAccount));
+    std::string account_name(SHA512String(pmid + kAccount));
     std::string client_idx(client_pmids.count(pmid) > 0 ?
       " - client " + base::IntToString(client_pmids[pmid]) : "");
     printf("Account for %s (name %s)%s:\n", HexSubstr(pmid).c_str(),
