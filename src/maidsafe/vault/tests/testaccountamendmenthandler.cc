@@ -115,9 +115,8 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AssessAmendment) {
   test_aah::CallbacksHolder cbh(&mutex, &cv);
   // Set chunk name as far as possible from our ID so we don't get added to
   // vector of close nodes in vsl_.HandleFindKNodesResponse
-  std::string far_chunk_name =
-      crypto_.Obfuscate(pmid_, std::string(64, -1), crypto::XOR);
-  std::string test_account_name = SHA512String(base::RandomString(100));
+  std::string far_chunk_name(XORObfuscate(pmid_, std::string(64, -1)));
+  std::string test_account_name(SHA512String(base::RandomString(100)));
   std::vector<AmendAccountRequest> requests;
   std::vector<AmendAccountResponse> responses;
   std::vector<PendingAmending> pendings;
@@ -584,9 +583,8 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_CreateNewAmendment) {
   test_aah::CallbacksHolder cbh(&mutex, &cv);
   // Set chunk name as far as possible from our ID so we don't get added to
   // vector of close nodes in vsl_.HandleFindKNodesResponse
-  std::string far_chunk_name =
-      crypto_.Obfuscate(pmid_, std::string(64, -1), crypto::XOR);
-  std::string test_account_name = SHA512String(base::RandomString(100));
+  std::string far_chunk_name(XORObfuscate(pmid_, std::string(64, -1)));
+  std::string test_account_name(SHA512String(base::RandomString(100)));
   std::vector<AmendAccountRequest> requests;
   std::vector<AmendAccountResponse> responses;
   for (int i = 0; i < kTestRuns; ++i) {
@@ -807,10 +805,9 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_CreateNewWithExpecteds) {
   test_aah::CallbacksHolder cbh(&mutex, &cv);
   // Set chunk name as far as possible from our ID so we don't get added to
   // vector of close nodes in vsl_.HandleFindKNodesResponse
-  std::string far_chunk_name =
-      crypto_.Obfuscate(pmid_, std::string(64, -1), crypto::XOR);
-  std::string test_account_pmid = SHA512String(base::RandomString(100));
-  std::string test_account_name = SHA512String(test_account_pmid + kAccount);
+  std::string far_chunk_name(XORObfuscate(pmid_, std::string(64, -1)));
+  std::string test_account_pmid(SHA512String(base::RandomString(100)));
+  std::string test_account_name(SHA512String(test_account_pmid + kAccount));
   std::vector<AmendAccountRequest> requests;
   std::vector<AmendAccountResponse> responses;
   for (int i = 0; i < kTestRuns; ++i) {

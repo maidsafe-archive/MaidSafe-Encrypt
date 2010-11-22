@@ -40,7 +40,6 @@ class ImHandlerTest : public testing::Test {
  public:
   ImHandlerTest() : ss_(SessionSingleton::getInstance()),
                     imhandler_(),
-                    crypto_(),
                     keys_(),
                     mpid_public_key_() {}
   virtual void SetUp() {
@@ -71,7 +70,6 @@ class ImHandlerTest : public testing::Test {
  protected:
   SessionSingleton *ss_;
   IMHandler imhandler_;
-  crypto::Crypto crypto_;
   std::vector<crypto::RsaKeyPair> keys_;
   std::string mpid_public_key_;
 };
@@ -84,11 +82,10 @@ TEST_F(ImHandlerTest, BEH_MAID_InstMsgCreateMsg) {
   BufferPacketMessage bpmsg;
   ASSERT_TRUE(bpmsg.ParseFromString(gp.data()));
   ASSERT_EQ("Me", bpmsg.sender_id());
-  std::string aes_key(crypto_.AsymDecrypt(bpmsg.rsaenc_key(), "",
-      keys_.at(0).private_key(), crypto::STRING_STRING));
+  std::string aes_key(RSADecrypt(bpmsg.rsaenc_key(),
+                                 keys_.at(0).private_key()));
   ASSERT_FALSE(aes_key.empty());
-  ASSERT_EQ("testmsg", crypto_.SymmDecrypt(bpmsg.aesenc_message(), "",
-                                           crypto::STRING_STRING, aes_key));
+  ASSERT_EQ("testmsg", AESDecrypt(bpmsg.aesenc_message(), aes_key));
 }
 
 TEST_F(ImHandlerTest, BEH_MAID_InstMsgCreateEpMsg) {
@@ -99,12 +96,11 @@ TEST_F(ImHandlerTest, BEH_MAID_InstMsgCreateEpMsg) {
   BufferPacketMessage bpmsg;
   ASSERT_TRUE(bpmsg.ParseFromString(gp.data()));
   ASSERT_EQ("Me", bpmsg.sender_id());
-  std::string aes_key(crypto_.AsymDecrypt(bpmsg.rsaenc_key(), "",
-      keys_.at(1).private_key(), crypto::STRING_STRING));
+  std::string aes_key(RSADecrypt(bpmsg.rsaenc_key(),
+                                 keys_.at(1).private_key()));
   ASSERT_FALSE(aes_key.empty());
   InstantMessage im;
-  ASSERT_TRUE(im.ParseFromString(crypto_.SymmDecrypt(bpmsg.aesenc_message(),
-      "", crypto::STRING_STRING, aes_key)));
+  ASSERT_TRUE(im.ParseFromString(AESDecrypt(bpmsg.aesenc_message(), aes_key)));
   ASSERT_TRUE(im.has_endpoint());
   ASSERT_EQ("Me", im.sender());
   ASSERT_EQ(HELLO_PING, bpmsg.type());
@@ -122,12 +118,11 @@ TEST_F(ImHandlerTest, BEH_MAID_InstMsgCreateLogOutMsg) {
   BufferPacketMessage bpmsg;
   ASSERT_TRUE(bpmsg.ParseFromString(gp.data()));
   ASSERT_EQ("Me", bpmsg.sender_id());
-  std::string aes_key(crypto_.AsymDecrypt(bpmsg.rsaenc_key(), "",
-      keys_.at(1).private_key(), crypto::STRING_STRING));
+  std::string aes_key(RSADecrypt(bpmsg.rsaenc_key(),
+                                 keys_.at(1).private_key()));
   ASSERT_FALSE(aes_key.empty());
   InstantMessage im;
-  ASSERT_TRUE(im.ParseFromString(crypto_.SymmDecrypt(bpmsg.aesenc_message(),
-      "", crypto::STRING_STRING, aes_key)));
+  ASSERT_TRUE(im.ParseFromString(AESDecrypt(bpmsg.aesenc_message(), aes_key)));
   ASSERT_EQ("Me", im.sender());
   ASSERT_EQ(LOGOUT_PING, bpmsg.type());
 }
@@ -148,13 +143,11 @@ TEST_F(ImHandlerTest, BEH_MAID_ValidateMsgs) {
   bpmsg.set_sender_id("contact1");
   bpmsg.set_type(INSTANT_MSG);
   boost::uint32_t iter(base::RandomUint32() % 1000 +1);
-  std::string aes_key = crypto_.SecurePassword(
-      base::RandomString(crypto::AES256_KeySize),
-      base::RandomString(crypto::AES256_IVSize), iter);
-  bpmsg.set_aesenc_message(crypto_.SymmEncrypt(im.SerializeAsString(), "",
-      crypto::STRING_STRING, aes_key));
-  bpmsg.set_rsaenc_key(crypto_.AsymEncrypt(aes_key, "",
-      keys_.at(1).public_key(), crypto::STRING_STRING));
+  std::string aes_key(SecurePassword(base::RandomString(crypto::AES256_KeySize),
+                                     base::RandomString(crypto::AES256_IVSize),
+                                     iter));
+  bpmsg.set_aesenc_message(AESEncrypt(im.SerializeAsString(), aes_key));
+  bpmsg.set_rsaenc_key(RSAEncrypt(aes_key, keys_.at(1).public_key()));
 
   GenericPacket gp;
   gp.set_data(bpmsg.SerializeAsString());
@@ -163,8 +156,7 @@ TEST_F(ImHandlerTest, BEH_MAID_ValidateMsgs) {
   ASSERT_FALSE(imhandler_.ValidateMessage(gp.SerializeAsString(),
       &type, &rec_msg));
 
-  bpmsg.set_rsaenc_key(crypto_.AsymEncrypt(aes_key, "", mpid_public_key_,
-                       crypto::STRING_STRING));
+  bpmsg.set_rsaenc_key(RSAEncrypt(aes_key, mpid_public_key_));
   gp.set_data(bpmsg.SerializeAsString());
   gp.set_signature(RSASign(gp.data(), keys_.at(0).private_key()));
   ASSERT_TRUE(imhandler_.ValidateMessage(gp.SerializeAsString(),

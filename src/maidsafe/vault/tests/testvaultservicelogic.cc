@@ -135,8 +135,7 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_AddToRemoteRefList) {
   }
   // Set chunkname as far as possible from our ID so we don't get added to
   // vector of close nodes in vsl.HandleFindKNodesResponse
-  std::string far_chunkname =
-      crypto_.Obfuscate(pmid_, std::string(64, -1), crypto::XOR);
+  std::string far_chunkname(XORObfuscate(pmid_, std::string(64, -1)));
 
   AddToReferenceListRequest request, close_request;
   request.set_chunkname(far_chunkname);

@@ -20,14 +20,6 @@
 
 namespace maidsafe {
 
-ClientBufferPacketHandler::ClientBufferPacketHandler(
-    boost::shared_ptr<BufferPacketRpcs> rpcs,
-    boost::shared_ptr<KadOps> kadops, boost::uint8_t upper_threshold)
-        : crypto_obj_(), rpcs_(rpcs), kad_ops_(kadops),
-          kUpperThreshold_(upper_threshold) {
-  crypto_obj_.set_symm_algorithm(crypto::AES_256);
-}
-
 void ClientBufferPacketHandler::CreateBufferPacket(
     const BPInputParameters &args, bp_operations_cb cb,
     const boost::int16_t &transport_id) {
@@ -127,12 +119,9 @@ void ClientBufferPacketHandler::AddMessage(
   // generating key to encrypt msg with AES
   std::string aes_key =
       base::RandomString(crypto::AES256_KeySize + crypto::AES256_IVSize);
-  bpmsg.set_aesenc_message(crypto_obj_.SymmEncrypt(message, "",
-      crypto::STRING_STRING, aes_key));
+  bpmsg.set_aesenc_message(AESEncrypt(message, aes_key));
   // encrypting key with receivers public key
-  bpmsg.set_rsaenc_key(crypto_obj_.AsymEncrypt(aes_key, "", recver_public_key,
-      crypto::STRING_STRING));
-
+  bpmsg.set_rsaenc_key(RSAEncrypt(aes_key, recver_public_key));
 
   GenericPacket ser_bpmsg;
   ser_bpmsg.set_data(bpmsg.SerializeAsString());
@@ -189,8 +178,7 @@ void ClientBufferPacketHandler::AddPresence(
   EndPoint ep;
   kad_ops_->SetThisEndpoint(&ep);
   std::string s_ep(ep.SerializeAsString());
-  lp.set_end_point(crypto_obj_.AsymEncrypt(s_ep, "", recver_public_key,
-                   crypto::STRING_STRING));
+  lp.set_end_point(RSAEncrypt(s_ep, recver_public_key));
 
   GenericPacket ser_lp;
   ser_lp.set_data(lp.SerializeAsString());
@@ -540,10 +528,8 @@ std::list<ValidatedBufferPacketMessage> ClientBufferPacketHandler::ValidateMsgs(
   for (int i = 0; i < response->messages_size(); ++i) {
     ValidatedBufferPacketMessage msg;
     if (msg.ParseFromString(response->messages(i))) {
-      std::string aes_key = crypto_obj_.AsymDecrypt(msg.index(), "",
-                            private_key, crypto::STRING_STRING);
-      msg.set_message(crypto_obj_.SymmDecrypt(msg.message(), "",
-                      crypto::STRING_STRING, aes_key));
+      std::string aes_key(RSADecrypt(msg.index(), private_key));
+      msg.set_message(AESDecrypt(msg.message(), aes_key));
       msg.set_index("");
       result.push_back(msg);
     }

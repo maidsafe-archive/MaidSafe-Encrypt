@@ -776,15 +776,11 @@ int LocalStoreManager::LoadBPMessages(
     return 0;
   }
   messages->clear();
-  crypto::Crypto co;
-  co.set_symm_algorithm(crypto::AES_256);
   for (size_t n = 0; n < msgs.size(); ++n) {
     ValidatedBufferPacketMessage valid_message;
     if (valid_message.ParseFromString(msgs[n])) {
-      std::string aes_key = co.AsymDecrypt(valid_message.index(), "",
-                            mpid_private, crypto::STRING_STRING);
-      valid_message.set_message(co.SymmDecrypt(valid_message.message(),
-                                "", crypto::STRING_STRING, aes_key));
+      std::string aes_key(AESDecrypt(valid_message.index(), mpid_private));
+      valid_message.set_message(AESDecrypt(valid_message.message(), aes_key));
       valid_message.set_index("");
       messages->push_back(valid_message);
     }
@@ -963,14 +959,10 @@ std::string LocalStoreManager::CreateMessage(const std::string &message,
   bpm.set_sender_id(ss_->PublicUsername());
   bpm.set_sender_public_key(mpid_public);
   bpm.set_type(m_type);
-  crypto::Crypto co;
-  co.set_symm_algorithm(crypto::AES_256);
   std::string aes_key =
       base::RandomString(crypto::AES256_KeySize + crypto::AES256_IVSize);
-  bpm.set_rsaenc_key(co.AsymEncrypt(aes_key, "", rec_public_key,
-                                    crypto::STRING_STRING));
-  bpm.set_aesenc_message(co.SymmEncrypt(message, "", crypto::STRING_STRING,
-                         aes_key));
+  bpm.set_rsaenc_key(RSAEncrypt(aes_key, rec_public_key));
+  bpm.set_aesenc_message(AESEncrypt(message, aes_key));
   bpm.set_timestamp(timestamp);
   std::string ser_bpm;
   bpm.SerializeToString(&ser_bpm);

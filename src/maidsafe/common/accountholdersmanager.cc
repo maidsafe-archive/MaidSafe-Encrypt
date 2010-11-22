@@ -21,7 +21,6 @@
 
 #include "maidsafe/common/accountholdersmanager.h"
 
-#include <maidsafe/base/crypto.h>
 #include <maidsafe/kademlia/contact.h>
 #include <maidsafe/kademlia/kadid.h>
 

@@ -1423,9 +1423,9 @@ void VaultService::VaultStatus(google::protobuf::RpcController*,
 #endif
     return;
   }
-  crypto::Crypto co;
-  std::string decrypted_request = co.AsymDecrypt(request->encrypted_request(),
-                                  "", pmid_private_, crypto::STRING_STRING);
+
+  std::string decrypted_request(RSADecrypt(request->encrypted_request(),
+                                           pmid_private_));
   VaultCommunication vc;
   if (!vc.ParseFromString(decrypted_request)) {
     response->set_result(kNack);
@@ -1453,8 +1453,7 @@ void VaultService::VaultStatus(google::protobuf::RpcController*,
 
   std::string serialised_vc;
   vc.SerializeToString(&serialised_vc);
-  response->set_encrypted_response(co.AsymEncrypt(serialised_vc, "",
-            pmid_public_, crypto::STRING_STRING));
+  response->set_encrypted_response(RSAEncrypt(serialised_vc,pmid_public_));
   response->set_result(kAck);
   done->Run();
 }

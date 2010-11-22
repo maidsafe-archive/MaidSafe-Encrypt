@@ -2973,12 +2973,10 @@ void MaidsafeStoreManager::PollVaultInfo(kad::VoidFunctorOneString cb) {
   vc.set_timestamp(base::GetEpochTime());
   std::string ser_vc;
   vc.SerializeToString(&ser_vc);
-  crypto::Crypto co;
   std::string pmid_public_key;
   if (ss_->ProxyMID(NULL, &pmid_public_key, NULL, NULL) != kSuccess)
     return;
-  std::string enc_ser_vc = co.AsymEncrypt(ser_vc, "", pmid_public_key,
-                                          crypto::STRING_STRING);
+  std::string enc_ser_vc(RSAEncrypt(ser_vc, pmid_public_key));
   VaultStatusResponse vault_status_response;
   google::protobuf::Closure *done =
       google::protobuf::NewCallback<MaidsafeStoreManager,
@@ -3012,9 +3010,8 @@ void MaidsafeStoreManager::PollVaultInfoCallback(
     return;
   }
 
-  crypto::Crypto co;
-  std::string unenc = co.AsymDecrypt(response->encrypted_response(), "",
-                                     pmid_private_key, crypto::STRING_STRING);
+  std::string unenc(RSADecrypt(response->encrypted_response(),
+                               pmid_private_key));
 
   VaultCommunication vc;
   if (!vc.ParseFromString(unenc)) {
@@ -3330,9 +3327,7 @@ std::string MaidsafeStoreManager::ValidatePresence(
   std::string mpid_private_key;
   if (ss_->MPublicID(NULL, NULL, &mpid_private_key, NULL) != kSuccess)
     return result;
-  crypto::Crypto co;
-  result = co.AsymDecrypt(lp.end_point(), "", mpid_private_key,
-                          crypto::STRING_STRING);
+  result = RSADecrypt(lp.end_point(), mpid_private_key);
   if (result.empty())
     return result;
 

@@ -37,11 +37,9 @@ class VaultBufferPacketHandlerTest : public testing::Test {
                                    private_key_(),
                                    testuser_(),
                                    ser_bp_(),
-                                   cry_obj_(),
                                    keys_() {}
  protected:
   void SetUp() {
-    cry_obj_.set_symm_algorithm(crypto::AES_256);
     testuser_ = "testuser";
     cached_keys::MakeKeys(2, &keys_);
     public_key_ = keys_.at(0).public_key();
@@ -67,7 +65,6 @@ class VaultBufferPacketHandlerTest : public testing::Test {
   std::string private_key_;
   std::string testuser_;
   std::string ser_bp_;
-  crypto::Crypto cry_obj_;
   std::vector<crypto::RsaKeyPair> keys_;
 };
 
@@ -122,11 +119,9 @@ TEST_F(VaultBufferPacketHandlerTest, BEH_MAID_AddGetClearMessages) {
   bp_msg.set_sender_id("non authuser");
   std::string signed_public_key = RSASign(keys_.at(1).public_key(),
                                           keys_.at(1).private_key());
-  std::string enc_key = cry_obj_.AsymEncrypt("key", "", public_key_,
-    crypto::STRING_STRING);
+  std::string enc_key(RSAEncrypt("key", public_key_));
   bp_msg.set_rsaenc_key(enc_key);
-  std::string enc_msg = cry_obj_.SymmEncrypt("msj tonto", "",
-                        crypto::STRING_STRING, "key");
+  std::string enc_msg(AESEncrypt("msj tonto", "key"));
   bp_msg.set_aesenc_message(enc_msg);
   bp_msg.set_type(maidsafe::INSTANT_MSG);
   std::string ser_bp_msg;
@@ -197,11 +192,9 @@ TEST_F(VaultBufferPacketHandlerTest, BEH_MAID_AddGetRequestMessages) {
   maidsafe::GenericPacket gp_msg;
   maidsafe::BufferPacketMessage bp_msg;
   bp_msg.set_sender_id("non authuser");
-  std::string enc_key = cry_obj_.AsymEncrypt("key", "", public_key_,
-    crypto::STRING_STRING);
+  std::string enc_key(RSAEncrypt("key", public_key_));
   bp_msg.set_rsaenc_key(enc_key);
-  std::string enc_msg = cry_obj_.SymmEncrypt("msj tonto auth req", "",
-                        crypto::STRING_STRING, "key");
+  std::string enc_msg(AESEncrypt("msj tonto auth req", "key"));
   bp_msg.set_aesenc_message(enc_msg);
   bp_msg.set_type(maidsafe::ADD_CONTACT_RQST);
 
@@ -264,8 +257,7 @@ TEST_F(VaultBufferPacketHandlerTest, BEH_MAID_AddGetPresence) {
     ep.add_ip(base::IntToString(n));
     ep.add_port(n);
   }
-  lp.set_end_point(cry_obj_.AsymEncrypt(ep.SerializeAsString(), "", public_key_,
-                   crypto::STRING_STRING));
+  lp.set_end_point(RSAEncrypt(ep.SerializeAsString(), public_key_));
   maidsafe::GenericPacket lp_gp;
   lp_gp.set_data(lp.SerializeAsString());
   lp_gp.set_signature(RSASign(lp_gp.data(), keys_[1].private_key()));
@@ -281,8 +273,7 @@ TEST_F(VaultBufferPacketHandlerTest, BEH_MAID_AddGetPresence) {
   lp.Clear();
   ASSERT_TRUE(lp.ParseFromString(lp_gp.data()));
   ASSERT_EQ(user, lp.contact_id());
-  std::string dec_ep(cry_obj_.AsymDecrypt(lp.end_point(), "", private_key_,
-                     crypto::STRING_STRING));
+  std::string dec_ep(RSADecrypt(lp.end_point(), private_key_));
   ep.Clear();
   ASSERT_TRUE(ep.ParseFromString(dec_ep));
   for (int a = 0; a < 3; ++a) {
@@ -300,8 +291,7 @@ TEST_F(VaultBufferPacketHandlerTest, BEH_MAID_AddGetPresence) {
     ep.add_ip(base::IntToString(n));
     ep.add_port(n);
   }
-  lp.set_end_point(cry_obj_.AsymEncrypt(ep.SerializeAsString(), "", public_key_,
-                   crypto::STRING_STRING));
+  lp.set_end_point(RSAEncrypt(ep.SerializeAsString(), public_key_));
   lp_gp.Clear();
   lp_gp.set_data(lp.SerializeAsString());
   lp_gp.set_signature(RSASign(lp_gp.data(), keys_[1].private_key()));
@@ -318,8 +308,7 @@ TEST_F(VaultBufferPacketHandlerTest, BEH_MAID_AddGetPresence) {
       ep.add_ip(base::IntToString(n));
       ep.add_port(n);
     }
-    lp.set_end_point(cry_obj_.AsymEncrypt(ep.SerializeAsString(), "",
-                     public_key_, crypto::STRING_STRING));
+    lp.set_end_point(RSAEncrypt(ep.SerializeAsString(), public_key_));
     lp_gp.Clear();
     lp_gp.set_data(lp.SerializeAsString());
     lp_gp.set_signature(RSASign(lp_gp.data(), keys_[1].private_key()));
@@ -334,8 +323,7 @@ TEST_F(VaultBufferPacketHandlerTest, BEH_MAID_AddGetPresence) {
   lp.Clear();
   ASSERT_TRUE(lp.ParseFromString(lp_gp.data()));
   ASSERT_EQ(user, lp.contact_id());
-  dec_ep = cry_obj_.AsymDecrypt(lp.end_point(), "", private_key_,
-                                crypto::STRING_STRING);
+  dec_ep = RSADecrypt(lp.end_point(), private_key_);
   ep.Clear();
   ASSERT_TRUE(ep.ParseFromString(dec_ep));
   for (int a = 0; a < 3; ++a) {
@@ -353,8 +341,7 @@ TEST_F(VaultBufferPacketHandlerTest, BEH_MAID_AddGetPresence) {
       ep.add_ip(base::IntToString(n));
       ep.add_port(n);
     }
-    lp.set_end_point(cry_obj_.AsymEncrypt(ep.SerializeAsString(), "",
-                     public_key_, crypto::STRING_STRING));
+    lp.set_end_point(RSAEncrypt(ep.SerializeAsString(), public_key_));
     lp_gp.Clear();
     lp_gp.set_data(lp.SerializeAsString());
     lp_gp.set_signature(RSASign(lp_gp.data(), keys_[1].private_key()));
@@ -370,8 +357,7 @@ TEST_F(VaultBufferPacketHandlerTest, BEH_MAID_AddGetPresence) {
     lp.Clear();
     ASSERT_TRUE(lp.ParseFromString(lp_gp.data()));
     ASSERT_EQ(user + base::IntToString(e), lp.contact_id());
-    dec_ep = cry_obj_.AsymDecrypt(lp.end_point(), "", private_key_,
-                                  crypto::STRING_STRING);
+    dec_ep = RSADecrypt(lp.end_point(), private_key_);
     ep.Clear();
     ASSERT_TRUE(ep.ParseFromString(dec_ep));
     for (int a = 0; a < 3; ++a) {

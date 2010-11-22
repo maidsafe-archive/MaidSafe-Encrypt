@@ -52,31 +52,25 @@ namespace test {
 InstantMessage GetImFromBpMessage(const std::string &ser_bpmsg,
     const std::string &priv_key, MessageType *type) {
   InstantMessage im;
-  crypto::Crypto co;
   BufferPacketMessage bpmsg;
   if (!bpmsg.ParseFromString(ser_bpmsg))
     return im;
   *type = bpmsg.type();
-  std::string aes_key(co.AsymDecrypt(bpmsg.rsaenc_key(), "", priv_key,
-      crypto::STRING_STRING));
-  im.ParseFromString(co.SymmDecrypt(bpmsg.aesenc_message(), "",
-      crypto::STRING_STRING, aes_key));
+  std::string aes_key(RSADecrypt(bpmsg.rsaenc_key(), priv_key));
+  im.ParseFromString(AESDecrypt(bpmsg.aesenc_message(), aes_key));
   return im;
 }
 
 std::string GetStrMsgFromBpMsg(const std::string &ser_bpmsg,
     const std::string &priv_key, MessageType *type,
     std::string *sender) {
-  crypto::Crypto co;
   BufferPacketMessage bpmsg;
   if (!bpmsg.ParseFromString(ser_bpmsg))
     return "";
   *type = bpmsg.type();
   *sender = bpmsg.sender_id();
-  std::string aes_key(co.AsymDecrypt(bpmsg.rsaenc_key(), "", priv_key,
-      crypto::STRING_STRING));
-  return co.SymmDecrypt(bpmsg.aesenc_message(), "",
-      crypto::STRING_STRING, aes_key);
+  std::string aes_key(RSADecrypt(bpmsg.rsaenc_key(), priv_key));
+  return AESDecrypt(bpmsg.aesenc_message(), aes_key);
 }
 
 class ImMessagingTest : public testing::Test {

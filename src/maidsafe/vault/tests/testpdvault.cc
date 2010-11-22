@@ -24,7 +24,6 @@
 
 #include <boost/progress.hpp>
 #include <gtest/gtest.h>
-#include <maidsafe/base/crypto.h>
 #include <maidsafe/maidsafe-dht.h>
 #include <maidsafe/protobuf/kademlia_service_messages.pb.h>
 #include <maidsafe/base/utils.h>

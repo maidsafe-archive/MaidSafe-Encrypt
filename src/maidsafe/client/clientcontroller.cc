@@ -1708,12 +1708,8 @@ void ClientController::onInstantMessage(const std::string &message,
                                                  NULL) != kSuccess) {
     return;
   }
-  crypto::Crypto co;
-  co.set_symm_algorithm(crypto::AES_256);
-  std::string aes_key = co.AsymDecrypt(bpm.rsaenc_key(), "", mpid_private_key,
-                                       crypto::STRING_STRING);
-  std::string instant_message(co.SymmDecrypt(bpm.aesenc_message(),
-                              "", crypto::STRING_STRING, aes_key));
+  std::string aes_key(RSADecrypt(bpm.rsaenc_key(), mpid_private_key));
+  std::string instant_message(AESDecrypt(bpm.aesenc_message(), aes_key));
   InstantMessage im;
   if (!im.ParseFromString(instant_message)) {
     return;

@@ -30,7 +30,7 @@
 
 namespace maidsafe {
 
-IMHandler::IMHandler() : ss_(SessionSingleton::getInstance()), crypto_() {}
+IMHandler::IMHandler() : ss_(SessionSingleton::getInstance()) {}
 
 std::string IMHandler::CreateMessage(const std::string &msg,
                                      const std::string &receiver) {
@@ -39,11 +39,9 @@ std::string IMHandler::CreateMessage(const std::string &msg,
   bpmsg.set_type(INSTANT_MSG);
   std::string aes_key =
       base::RandomString(crypto::AES256_KeySize + crypto::AES256_IVSize);
-  bpmsg.set_aesenc_message(crypto_.SymmEncrypt(msg, "", crypto::STRING_STRING,
-                                               aes_key));
+  bpmsg.set_aesenc_message(AESEncrypt(msg, aes_key));
   std::string rec_pub_key(ss_->GetContactPublicKey(receiver));
-  bpmsg.set_rsaenc_key(crypto_.AsymEncrypt(aes_key, "", rec_pub_key,
-                                           crypto::STRING_STRING));
+  bpmsg.set_rsaenc_key(RSAEncrypt(aes_key, rec_pub_key));
   std::string mpid_private;
   ss_->MPublicID(NULL, NULL, &mpid_private, NULL);
   GenericPacket gp;
@@ -67,11 +65,9 @@ std::string IMHandler::CreateMessageEndpoint(const std::string &receiver) {
   bpmsg.set_type(HELLO_PING);
   std::string aes_key =
       base::RandomString(crypto::AES256_KeySize + crypto::AES256_IVSize);
-  bpmsg.set_aesenc_message(crypto_.SymmEncrypt(ser_msg, "",
-      crypto::STRING_STRING, aes_key));
+  bpmsg.set_aesenc_message(AESEncrypt(ser_msg, aes_key));
   std::string rec_pub_key(ss_->GetContactPublicKey(receiver));
-  bpmsg.set_rsaenc_key(crypto_.AsymEncrypt(aes_key, "",
-      rec_pub_key, crypto::STRING_STRING));
+  bpmsg.set_rsaenc_key(RSAEncrypt(aes_key, rec_pub_key));
 
   std::string mpid_private;
   ss_->MPublicID(NULL, NULL, &mpid_private, NULL);
@@ -94,11 +90,9 @@ std::string IMHandler::CreateLogOutMessage(const std::string &receiver) {
   bpmsg.set_type(LOGOUT_PING);
   std::string aes_key =
       base::RandomString(crypto::AES256_KeySize + crypto::AES256_IVSize);
-  bpmsg.set_aesenc_message(crypto_.SymmEncrypt(ser_msg, "",
-      crypto::STRING_STRING, aes_key));
+  bpmsg.set_aesenc_message(AESEncrypt(ser_msg, aes_key));
   std::string rec_pub_key(ss_->GetContactPublicKey(receiver));
-  bpmsg.set_rsaenc_key(crypto_.AsymEncrypt(aes_key, "",
-      rec_pub_key, crypto::STRING_STRING));
+  bpmsg.set_rsaenc_key(RSAEncrypt(aes_key, rec_pub_key));
 
   std::string mpid_private;
   ss_->MPublicID(NULL, NULL, &mpid_private, NULL);
@@ -127,10 +121,8 @@ bool IMHandler::ValidateMessage(const std::string &ser_msg,
 
   std::string mpid_private;
   ss_->MPublicID(NULL, NULL, &mpid_private, NULL);
-  std::string aes_key(crypto_.AsymDecrypt(bpmsg.rsaenc_key(), "",
-      mpid_private, crypto::STRING_STRING));
-  *validated_msg = crypto_.SymmDecrypt(bpmsg.aesenc_message(), "",
-      crypto::STRING_STRING, aes_key);
+  std::string aes_key(RSADecrypt(bpmsg.rsaenc_key(), mpid_private));
+  *validated_msg = AESDecrypt(bpmsg.aesenc_message(), aes_key);
   *type = bpmsg.type();
   return true;
 }

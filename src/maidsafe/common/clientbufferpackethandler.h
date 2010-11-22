@@ -29,7 +29,6 @@
 #include <boost/shared_ptr.hpp>
 #include <maidsafe/kademlia/contact.h>
 #include <boost/cstdint.hpp>
-#include <maidsafe/base/crypto.h>
 
 #include <list>
 #include <string>
@@ -126,7 +125,8 @@ class ClientBufferPacketHandler {
  public:
   ClientBufferPacketHandler(boost::shared_ptr<BufferPacketRpcs> rpcs,
                             boost::shared_ptr<KadOps> kadops,
-                            boost::uint8_t upper_threshold);
+                            boost::uint8_t upper_threshold)
+    : rpcs_(rpcs), kad_ops_(kadops), kUpperThreshold_(upper_threshold) {}
   virtual ~ClientBufferPacketHandler() {}
   void CreateBufferPacket(const BPInputParameters &args,
                           bp_operations_cb cb,
@@ -174,7 +174,6 @@ class ClientBufferPacketHandler {
       const std::string &private_key);
   ClientBufferPacketHandler &operator=(const ClientBufferPacketHandler);
   ClientBufferPacketHandler(const ClientBufferPacketHandler&);
-  crypto::Crypto crypto_obj_;
   boost::shared_ptr<BufferPacketRpcs> rpcs_;
   boost::shared_ptr<KadOps> kad_ops_;
   const boost::uint16_t kUpperThreshold_;

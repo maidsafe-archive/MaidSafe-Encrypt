@@ -22,7 +22,6 @@
 
 #include <boost/thread/thread.hpp>
 #include <boost/thread/xtime.hpp>
-#include <maidsafe/base/crypto.h>
 #include <maidsafe/protobuf/general_messages.pb.h>
 #include <maidsafe/maidsafe-dht.h>
 #include <maidsafe/base/utils.h>

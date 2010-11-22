@@ -224,7 +224,7 @@ class BPCallback {
 
 class GetMsgsHelper {
  public:
-  GetMsgsHelper() : msgs(), co() {}
+  GetMsgsHelper() : msgs() {}
   void BPGetMsgsCallbackSucceed(const kad::Contact &peer,
                                 maidsafe::GetBPMessagesResponse *response,
                                 google::protobuf::Closure *done) {
@@ -263,11 +263,10 @@ class GetMsgsHelper {
     maidsafe::ValidatedBufferPacketMessage bp_msg;
     std::string aes_key =
         base::RandomString(crypto::AES256_KeySize + crypto::AES256_IVSize);
-    bp_msg.set_index(co.AsymEncrypt(aes_key, "", rec_pub_key,
-                     crypto::STRING_STRING));
+    bp_msg.set_index(RSAEncrypt(aes_key, rec_pub_key));
     bp_msg.set_sender(sender);
     bp_msg.set_timestamp(base::GetEpochTime());
-    bp_msg.set_message(co.SymmEncrypt(msg, "", crypto::STRING_STRING, aes_key));
+    bp_msg.set_message(AESEncrypt(msg, aes_key));
     bp_msg.set_type(maidsafe::INSTANT_MSG);
     msgs.push_back(bp_msg);
   }
@@ -283,7 +282,6 @@ class GetMsgsHelper {
  private:
   std::vector<maidsafe::ValidatedBufferPacketMessage> msgs;
   std::vector<std::string> presences;
-  crypto::Crypto co;
 };
 
 class MockBPRpcs : public maidsafe::BufferPacketRpcs {

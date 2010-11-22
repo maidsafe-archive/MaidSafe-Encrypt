@@ -23,7 +23,6 @@
 */
 
 #include <gtest/gtest.h>
-#include <maidsafe/base/crypto.h>
 
 #include "maidsafe/common/commonutils.h"
 #include "maidsafe/client/sessionsingleton.h"

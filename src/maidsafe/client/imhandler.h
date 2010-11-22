@@ -25,7 +25,6 @@
 #ifndef MAIDSAFE_CLIENT_IMHANDLER_H_
 #define MAIDSAFE_CLIENT_IMHANDLER_H_
 
-#include <maidsafe/base/crypto.h>
 #include <string>
 #include "maidsafe/common/packet.pb.h"
 
@@ -66,7 +65,6 @@ class IMHandler {
   friend class test::ImMessagingTest_FUNC_MAID_NET_ReceiveLogOutMsg_Test;
   friend class test::ImMessagingTest_FUNC_MAID_NET_HandleTwoConverstions_Test;
   SessionSingleton *ss_;
-  crypto::Crypto crypto_;
 };
 
 }  // namespace maidsafe

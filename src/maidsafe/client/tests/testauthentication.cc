@@ -467,6 +467,7 @@ TEST_MS_NET(AuthenticationTest, FUNC, MAID, CreatePublicName) {
             << "Created public username_ twice";
   authentication_.tmid_op_status_ = Authentication::kFailed;
   authentication_.stmid_op_status_ = Authentication::kFailed;
+  ss_->passport_.reset();
 }
 
 TEST_MS_NET(AuthenticationTest, FUNC, MAID, CreateMSIDPacket) {

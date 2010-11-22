@@ -25,7 +25,6 @@
 #include <boost/lexical_cast.hpp>
 #include <google/protobuf/descriptor.h>
 #include <gtest/gtest.h>
-#include <maidsafe/base/crypto.h>
 #include <maidsafe/protobuf/kademlia_service_messages.pb.h>
 #include <maidsafe/transport/transportudt.h>
 
@@ -2714,10 +2713,7 @@ TEST_F(VaultServicesTest, BEH_MAID_VaultStatus) {
   {
     VaultCommunication vc;
     vc.set_timestamp(0);
-    crypto::Crypto co;
-    std::string enc_req = co.AsymEncrypt(vc.SerializeAsString(), "",
-                                         vault_public_key_,
-                                         crypto::STRING_STRING);
+    std::string enc_req(RSAEncrypt(vc.SerializeAsString(), vault_public_key_));
     request.set_encrypted_request(enc_req);
 
     google::protobuf::Closure *done =
@@ -2727,9 +2723,8 @@ TEST_F(VaultServicesTest, BEH_MAID_VaultStatus) {
     ASSERT_TRUE(response.IsInitialized());
     EXPECT_EQ(kAck, static_cast<int>(response.result()));
 
-    std::string dec_rsp = co.AsymDecrypt(response.encrypted_response(), "",
-                                         vault_private_key_,
-                                         crypto::STRING_STRING);
+    std::string dec_rsp(RSADecrypt(response.encrypted_response(),
+                                   vault_private_key_));
     EXPECT_TRUE(vc.ParseFromString(dec_rsp));
     EXPECT_EQ(vault_chunkstore_->ChunkStoreDir(), vc.chunkstore());
     EXPECT_EQ(vault_chunkstore_->available_space(), vc.offered_space());
@@ -3143,11 +3138,8 @@ TEST_F(VaultServicesTest, BEH_MAID_AddBPMessages) {
   bpm.set_type(INSTANT_MSG);
   std::string aes_key =
       base::RandomString(crypto::AES256_KeySize + crypto::AES256_IVSize);
-  crypto::Crypto co;
-  bpm.set_rsaenc_key(co.AsymEncrypt(aes_key, "", pub_key,
-                                    crypto::STRING_STRING));
-  bpm.set_aesenc_message(co.SymmEncrypt(msg, "", crypto::STRING_STRING,
-                                        aes_key));
+  bpm.set_rsaenc_key(RSAEncrypt(aes_key, pub_key));
+  bpm.set_aesenc_message(AESEncrypt(msg, aes_key));
   bpm.set_timestamp(base::GetEpochTime());
   std::string ser_bpm;
   bpm.SerializeToString(&ser_bpm);

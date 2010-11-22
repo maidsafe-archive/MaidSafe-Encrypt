@@ -19,7 +19,7 @@
 */
 
 #include <gtest/gtest.h>
-#include <maidsafe/base/crypto.h>
+#include "maidsafe/common/commonutils.h"
 #include "maidsafe/common/contactcache.h"
 #include "maidsafe/common/chunkstore.h"
 #include "maidsafe/sharedtest/mockkadops.h"
@@ -35,9 +35,7 @@ namespace test {
 class ContactCacheTest : public testing::Test {
  public:
   ContactCacheTest()
-      : co_(),
-        pmid_(co_.Hash(base::RandomString(100), "",
-                       crypto::STRING_STRING, false)),
+      : pmid_(SHA512String(base::RandomString(100))),
         transport_handler_(),
         channel_manager_(&transport_handler_),
         chunkstore_(new ChunkStore("Chunkstore", 9999999, 0)),
@@ -49,7 +47,6 @@ class ContactCacheTest : public testing::Test {
         good_response_() {}
  protected:
   void SetUp() {
-    ASSERT_EQ(crypto::SHA_512, co_.hash_algorithm());
     kad::Contact empty_contact, contact(kad::Contact(pmid_, "192.168.1.0", 42));
     std::string ser_contact;
     contact.SerialiseToString(&ser_contact);
@@ -61,7 +58,6 @@ class ContactCacheTest : public testing::Test {
     find_result.set_contact(ser_contact);
     good_response_ = find_result.SerializeAsString();
   }
-  crypto::Crypto co_;
   std::string pmid_;
   transport::TransportHandler transport_handler_;
   rpcprotocol::ChannelManager channel_manager_;

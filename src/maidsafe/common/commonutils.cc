@@ -69,4 +69,45 @@ bool RSACheckSignedData(const std::string &input,
                                 crypto::STRING_STRING);
 }
 
+std::string RSAEncrypt(const std::string &input,
+                       const std::string &public_key) {
+  crypto::Crypto string_crypto;
+  return string_crypto.AsymEncrypt(input, "", public_key,
+                                   crypto::STRING_STRING);
+}
+
+std::string RSADecrypt(const std::string &input,
+                       const std::string &private_key) {
+  crypto::Crypto string_crypto;
+  return string_crypto.AsymDecrypt(input, "", private_key,
+                                   crypto::STRING_STRING);
+}
+
+std::string AESEncrypt(const std::string &input,
+                       const std::string &key) {
+  crypto::Crypto string_crypto;
+  string_crypto.set_symm_algorithm(crypto::AES_256);
+  return string_crypto.SymmEncrypt(input, "", crypto::STRING_STRING, key);
+}
+
+std::string AESDecrypt(const std::string &input,
+                       const std::string &key) {
+  crypto::Crypto string_crypto;
+  string_crypto.set_symm_algorithm(crypto::AES_256);
+  return string_crypto.SymmDecrypt(input, "", crypto::STRING_STRING, key);
+}
+
+std::string SecurePassword(const std::string &password,
+                           const std::string &salt,
+                           const boost::uint32_t &pin) {
+  crypto::Crypto pass_crypto;
+  return pass_crypto.SecurePassword(password, salt, pin);
+}
+
+std::string XORObfuscate(const std::string &first,
+                         const std::string &second) {
+  crypto::Crypto obf_crypto;
+  return obf_crypto.Obfuscate(first, second, crypto::XOR);
+}
+
 }  // namespace maidsafe

@@ -209,14 +209,12 @@ class MockVaultServiceLogicTest : public testing::Test {
         good_contacts_() {}
   virtual ~MockVaultServiceLogicTest() {}
   virtual void SetUp() {
-    crypto_.set_symm_algorithm(crypto::AES_256);
     pmid_keys_.GenerateKeys(kRsaKeySize);
     pmid_private_ = pmid_keys_.private_key();
     pmid_public_ = pmid_keys_.public_key();
     // PMID isn't signed by its own private key in production code, but this
     // is quicker rather than generating a new set of keys
-    pmid_public_signature_ = crypto_.AsymSign(pmid_public_, "", pmid_private_,
-        crypto::STRING_STRING);
+    pmid_public_signature_ = RSASign(pmid_public_, pmid_private_);
     pmid_ = SHA512String(pmid_public_ + pmid_public_signature_);
     our_contact_ = kad::Contact(pmid_, "192.168.10.10", 8008);
     std::string ser_our_contact;
@@ -241,7 +239,6 @@ class MockVaultServiceLogicTest : public testing::Test {
   std::string pmid_, pmid_private_, pmid_public_, pmid_public_signature_;
   std::vector<std::string> fail_parse_pmids_, fail_pmids_, few_pmids_;
   std::vector<std::string> good_pmids_;
-  crypto::Crypto crypto_;
   std::string fail_parse_result_, fail_result_, few_result_, good_result_;
   std::string good_result_less_one_;
   kad::Contact our_contact_;
