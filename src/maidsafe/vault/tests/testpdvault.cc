@@ -252,6 +252,7 @@ class PDVaultTest : public testing::Test {
                     clients_[i]->chunkstore, testpdvault::K));
       clients_[i]->msm = sm_local_;
       clients_[i]->msm->ss_ = &clients_[i]->mss;
+      clients_[i]->msm->client_utils_.ss_ = &clients_[i]->mss;
 
       // poor man's vault takeover
       const size_t vlt(kNetworkSize - kNumOfClients + i);
