@@ -63,17 +63,13 @@ struct ClientData {
     : chunkstore_dir(root_dir + "/ClientChunkstore_" +
                      base::RandomAlphaNumericString(8)),
       mss(),
-      pmid_pub_key(),
-      pmid_priv_key(),
-      pmid_pub_key_sig(),
-      pmid_name(),
       chunkstore(),
       msm(),
       pmid_keys(),
       maid_keys() {}
   std::string chunkstore_dir;
   maidsafe::MockSessionSingleton mss;
-  std::string pmid_pub_key, pmid_priv_key, pmid_pub_key_sig, pmid_name;
+  // std::string pmid_pub_key, pmid_priv_key, pmid_pub_key_sig, pmid_name;
   boost::shared_ptr<maidsafe::ChunkStore> chunkstore;
   boost::shared_ptr<maidsafe::MaidsafeStoreManager> msm;
   crypto::RsaKeyPair pmid_keys, maid_keys;
@@ -201,15 +197,7 @@ class PDVaultTest : public testing::Test {
         clients_.push_back(client);
       }
       clients_[i]->mss.CreateTestPackets("");
-      printf("Generating MAID Keys for client %d of %d...\n", i + 1,
-             kNumOfClients);
-//      clients_[i]->maid_keys.GenerateKeys(kRsaKeySize);
-//      std::string maid_priv_key = clients_[i]->maid_keys.private_key();
-//      std::string maid_pub_key = clients_[i]->maid_keys.public_key();
-//      std::string maid_pub_key_sig = RSASign(maid_pub_key, maid_priv_key);
-//      std::string maid_name = SHA512String(maid_pub_key + maid_pub_key_sig);
-//      clients_[i]->mss.AddKey(MAID, maid_name, maid_priv_key,
-//                            maid_pub_key, maid_pub_key_sig);
+      printf("MAID Keys for client %d of %d:\n", i + 1, kNumOfClients);
       printf(" >> public key:   %s\n", HexSubstr(clients_[i]->
              mss.PublicKey(passport::MAID, true)).c_str());
       printf(" >> pub key sig:  %s\n", HexSubstr(clients_[i]->
@@ -217,18 +205,7 @@ class PDVaultTest : public testing::Test {
       printf(" >> hash/name:    %s\n", HexSubstr(clients_[i]->
              mss.Id(passport::MAID, true)).c_str());
 
-      printf("Generating PMID Keys for client %d of %d...\n", i + 1,
-             kNumOfClients);
-//      clients_[i]->pmid_keys.GenerateKeys(kRsaKeySize);
-//      clients_[i]->pmid_priv_key = clients_[i]->pmid_keys.private_key();
-//      clients_[i]->pmid_pub_key = clients_[i]->pmid_keys.public_key();
-//      clients_[i]->pmid_pub_key_sig =
-//          RSASign(clients_[i]->pmid_pub_key, maid_priv_key);
-//      clients_[i]->pmid_name = SHA512String(
-//          clients_[i]->pmid_pub_key + clients_[i]->pmid_pub_key_sig);
-//      clients_[i]->mss.AddKey(PMID,
-//          clients_[i]->pmid_name, clients_[i]->pmid_priv_key,
-//          clients_[i]->pmid_pub_key, clients_[i]->pmid_pub_key_sig);
+      printf("PMID Keys for client %d of %d:\n", i + 1, kNumOfClients);
       printf(" >> public key:   %s\n", HexSubstr(clients_[i]->
              mss.PublicKey(passport::PMID, true)).c_str());
       printf(" >> pub key sig:  %s\n", HexSubstr(clients_[i]->
@@ -280,7 +257,8 @@ class PDVaultTest : public testing::Test {
       const size_t vlt(kNetworkSize - kNumOfClients + i);
       printf("Taking over vault #%d: %s => %s\n", vlt,
              HexSubstr(pdvaults_[vlt]->pmid_).c_str(),
-             HexSubstr(clients_[i]->pmid_name).c_str());
+             HexSubstr(clients_[i]->
+                mss.PublicKey(passport::PMID, true)).c_str());
       // pdvaults_[vlt]->Stop();
       fs::path dir(pdvaults_[vlt]->vault_chunkstore_->ChunkStoreDir());
       boost::uint16_t port(pdvaults_[vlt]->port_);
@@ -288,11 +266,11 @@ class PDVaultTest : public testing::Test {
       boost::uint64_t avlb(
           pdvaults_[vlt]->vault_chunkstore_->available_space());
       fs::path kad_cfg(pdvaults_[vlt]->kad_config_file_);
-      pdvaults_[vlt].reset(new PDVault(clients_[i]->pmid_pub_key,
-                                       clients_[i]->pmid_priv_key,
-                                       clients_[i]->pmid_pub_key_sig, dir, port,
-                                       false, false, kad_cfg, avlb, used,
-                                       testpdvault::K));
+      pdvaults_[vlt].reset(new PDVault(
+          clients_[i]->mss.PublicKey(passport::PMID, true),
+          clients_[i]->mss.PrivateKey(passport::PMID, true),
+          clients_[i]->mss.PublicKeySignature(passport::PMID, true),
+          dir, port, false, false, kad_cfg, avlb, used, testpdvault::K));
       pdvaults_[vlt]->Start(false);
     }
 
