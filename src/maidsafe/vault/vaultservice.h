@@ -264,10 +264,6 @@ class VaultService : public MaidsafeService {
                                const GetBufferPacketRequest *request,
                                GetBufferPacketResponse *response,
                                google::protobuf::Closure *done);
-  virtual void VaultStatus(google::protobuf::RpcController *controller,
-                           const VaultStatusRequest *request,
-                           VaultStatusResponse *response,
-                           google::protobuf::Closure *done);
   virtual void CreateBP(google::protobuf::RpcController *controller,
                         const CreateBPRequest *request,
                         CreateBPResponse *response,

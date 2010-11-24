@@ -1407,57 +1407,6 @@ void VaultService::GetBufferPacket(google::protobuf::RpcController*,
   }
 }
 
-void VaultService::VaultStatus(google::protobuf::RpcController*,
-                               const VaultStatusRequest *request,
-                               VaultStatusResponse *response,
-                               google::protobuf::Closure *done) {
-#ifdef DEBUG
-//  printf("In VaultService::VaultStatus (%i)\n", kad_ops_->Port());
-#endif
-  if (!request->IsInitialized()) {
-    response->set_result(kNack);
-    done->Run();
-#ifdef DEBUG
-    printf("In VaultService::VaultStatus (%s), request isn't initialized.\n",
-           HexSubstr(pmid_).c_str());
-#endif
-    return;
-  }
-
-  std::string decrypted_request(RSADecrypt(request->encrypted_request(),
-                                           pmid_private_));
-  VaultCommunication vc;
-  if (!vc.ParseFromString(decrypted_request)) {
-    response->set_result(kNack);
-#ifdef DEBUG
-    printf("In VaultService::VaultStatus (%s), request didn't parse as a "
-           "VaultCommunication.\n", HexSubstr(pmid_).c_str());
-#endif
-    done->Run();
-    return;
-  }
-
-  if (!vault_chunkstore_->is_initialised()) {
-    response->set_result(kNack);
-#ifdef DEBUG
-    printf("In VaultService::VaultStatus (%s), chunkstore isn't initialised.\n",
-           HexSubstr(pmid_).c_str());
-#endif
-    done->Run();
-    return;
-  }
-
-  vc.set_chunkstore(vault_chunkstore_->ChunkStoreDir());
-  vc.set_offered_space(vault_chunkstore_->available_space());
-  vc.set_free_space(vault_chunkstore_->FreeSpace());
-
-  std::string serialised_vc;
-  vc.SerializeToString(&serialised_vc);
-  response->set_encrypted_response(RSAEncrypt(serialised_vc,pmid_public_));
-  response->set_result(kAck);
-  done->Run();
-}
-
 // BP Services
 void VaultService::CreateBP(google::protobuf::RpcController*,
                             const CreateBPRequest *request,

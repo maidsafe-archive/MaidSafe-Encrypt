@@ -48,24 +48,6 @@ void ExecuteFailureCallback(const kad::VoidFunctorOneString &cb,
   cb(ser_result);
 }
 
-void ExecCallbackVaultInfo(const kad::VoidFunctorOneString &cb,
-                           boost::mutex *mutex) {
-  boost::mutex::scoped_lock loch(*mutex);
-  VaultCommunication vc;
-  vc.set_chunkstore("/home/Smer/ChunkStore");
-  vc.set_offered_space(base::RandomUint32());
-  boost::uint32_t fspace = base::RandomUint32();
-  while (fspace >= vc.offered_space())
-    fspace = base::RandomUint32();
-  vc.set_free_space(fspace);
-  vc.set_ip("127.0.0.1");
-  vc.set_port((base::RandomUint32() % 64512) + 1000);
-  vc.set_timestamp(base::GetEpochTime());
-  std::string ser_vc;
-  vc.SerializeToString(&ser_vc);
-  cb(ser_vc);
-}
-
 void ExecReturnCodeCallback(const VoidFuncOneInt &cb,
                             const ReturnCode rc) {
   cb(rc);
@@ -999,20 +981,11 @@ int LocalStoreManager::GetValue_FromDB(const std::string &key,
   return (results->size() > 0) ? kSuccess : kFindValueFailure;
 }
 
-void LocalStoreManager::PollVaultInfo(kad::VoidFunctorOneString cb) {
-  VaultCommunication vc;
-  vc.set_chunkstore("/home/Smer/ChunkStore");
-  vc.set_offered_space(base::RandomUint32());
-  boost::uint32_t fspace = base::RandomUint32();
-  while (fspace >= vc.offered_space())
-    fspace = base::RandomUint32();
-  vc.set_free_space(fspace);
-  vc.set_ip("127.0.0.1");
-  vc.set_port((base::RandomUint32() % 64512) + 1000);
-  vc.set_timestamp(base::GetEpochTime());
-  std::string ser_vc;
-  vc.SerializeToString(&ser_vc);
-  boost::thread t(cb, ser_vc);
+bool LocalStoreManager::VaultStoreInfo(boost::uint64_t *offered_space,
+                                       boost::uint64_t *free_space) {
+  *offered_space = base::RandomUint32();
+  *free_space = base::RandomUint32() % *offered_space;
+  return true;
 }
 
 bool LocalStoreManager::VaultContactInfo(kad::Contact *contact) {

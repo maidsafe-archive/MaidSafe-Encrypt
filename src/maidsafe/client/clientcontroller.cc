@@ -2138,87 +2138,41 @@ int ClientController::CreateNewShare(const std::string &name,
 // Vault Operations //
 //////////////////////
 
-bool ClientController::PollVaultInfo(std::string *chunkstore,
-                                     boost::uint64_t *offered_space,
-                                     boost::uint64_t *free_space,
-                                     std::string *ip,
-                                     boost::uint32_t *port) {
+bool ClientController::VaultStoreInfo(boost::uint64_t *offered_space,
+                                      boost::uint64_t *free_space) {
   if (!initialised_) {
 #ifdef DEBUG
     printf("CC::PollVaultInfo - Not initialised.\n");
 #endif
     return false;
   }
-  if (ss_->VaultIP().empty() || ss_->VaultPort() == 0) {
-    if (!VaultContactInfo()) {
-      return false;
-    }
-  }
 
-  CCCallback cb;
-  sm_->PollVaultInfo(boost::bind(&CCCallback::StringCallback, &cb, _1));
-  std::string callback_result = cb.WaitForStringResult();
-
-  if (callback_result == "FAIL") {
-#ifdef DEBUG
-    printf("ClientController::PollVaultInfo result FAIL.\n");
-#endif
-    return false;
-  }
-
-  VaultCommunication vc;
-  if (!vc.ParseFromString(callback_result)) {
-#ifdef DEBUG
-    printf("ClientController::PollVaultInfo didn't parse.\n");
-#endif
-    return false;
-  }
-
-  *chunkstore = vc.chunkstore();
-  *offered_space = vc.offered_space();
-  *free_space = vc.free_space();
-  *ip = vc.ip();
-  *port = vc.port();
-
-  if (!ss_->SetVaultIP(*ip) || !ss_->SetVaultPort(*port)) {
-#ifdef DEBUG
-    printf("ClientController::PollVaultInfo: putting values into session "
-           "failed.\n");
-#endif
-    return false;
-  }
-  return true;
+  return sm_->VaultStoreInfo(offered_space, free_space);
 }
 
-bool ClientController::VaultContactInfo() {
+bool ClientController::VaultContactInfo(kad::Contact *contact) {
   if (!initialised_) {
 #ifdef DEBUG
     printf("CC::VaultContactInfo - Not initialised.\n");
 #endif
     return false;
   }
+  
 #ifdef LOCAL_PDVAULT
-  ss_->SetVaultIP("192.168.1.7");
-  ss_->SetVaultPort(55555);
-  return true;
+  {
+    kad::Contact vc("id", "192.168.1.7", 55555);
+    *contact = vc;
+    return true;
+  }
 #endif
 
-  kad::Contact vault_contact;
-  if (!sm_->VaultContactInfo(&vault_contact)) {
+  if (!sm_->VaultContactInfo(contact)) {
 #ifdef DEBUG
     printf("ClientController::VaultContactInfo: getting contact failed.\n");
 #endif
     return false;
   }
 
-  if (!ss_->SetVaultIP(vault_contact.host_ip()) ||
-      !ss_->SetVaultPort(vault_contact.host_port())) {
-#ifdef DEBUG
-    printf("ClientController::VaultContactInfo: putting values into session "
-           "failed.\n");
-#endif
-    return false;
-  }
   return true;
 }
 

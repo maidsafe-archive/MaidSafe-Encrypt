@@ -2677,61 +2677,6 @@ TEST_F(VaultServicesTest, BEH_MAID_GetBufferPacket) {
   vault_service_->routing_table_->Clear();
 }
 
-TEST_F(VaultServicesTest, BEH_MAID_VaultStatus) {
-  rpcprotocol::Controller controller;
-  VaultStatusRequest request;
-  VaultStatusResponse response;
-
-  std::string pub_key, priv_key, pmid, sig_pub_key, sig_req;
-  test_vault_service::CreateRSAKeys(&pub_key, &priv_key);
-  std::string content("This is a data chunk");
-  std::string chunkname(SHA512String(content));
-  test_vault_service::CreateSignedRequest(pub_key, priv_key, chunkname, &pmid,
-                                          &sig_pub_key, &sig_req);
-
-  TestCallback cb_obj;
-
-  for (boost::uint32_t i = 0; i <= 1; ++i) {
-    switch (i) {
-      case 0:  // uninitialized request
-        break;
-      case 1:  // invalid request
-        request.set_encrypted_request("fail");
-        break;
-    }
-
-    google::protobuf::Closure *done =
-        google::protobuf::NewCallback<TestCallback>(&cb_obj,
-        &TestCallback::CallbackFunction);
-    vault_service_->VaultStatus(&controller, &request, &response, done);
-    ASSERT_TRUE(response.IsInitialized());
-    EXPECT_NE(kAck, static_cast<int>(response.result()));
-    response.Clear();
-  }
-
-  // test success
-  {
-    VaultCommunication vc;
-    vc.set_timestamp(0);
-    std::string enc_req(RSAEncrypt(vc.SerializeAsString(), vault_public_key_));
-    request.set_encrypted_request(enc_req);
-
-    google::protobuf::Closure *done =
-        google::protobuf::NewCallback<TestCallback>(&cb_obj,
-        &TestCallback::CallbackFunction);
-    vault_service_->VaultStatus(&controller, &request, &response, done);
-    ASSERT_TRUE(response.IsInitialized());
-    EXPECT_EQ(kAck, static_cast<int>(response.result()));
-
-    std::string dec_rsp(RSADecrypt(response.encrypted_response(),
-                                   vault_private_key_));
-    EXPECT_TRUE(vc.ParseFromString(dec_rsp));
-    EXPECT_EQ(vault_chunkstore_->ChunkStoreDir(), vc.chunkstore());
-    EXPECT_EQ(vault_chunkstore_->available_space(), vc.offered_space());
-    EXPECT_EQ(vault_chunkstore_->FreeSpace(), vc.free_space());
-  }
-}
-
 TEST_F(VaultServicesTest, BEH_MAID_CreateBP) {
   VaultService service(
       vault_pmid_, vault_public_key_, vault_private_key_,

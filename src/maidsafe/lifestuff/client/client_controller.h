@@ -247,8 +247,9 @@ class ClientController : public QObject {
   QDomElement EmailToNode(QDomDocument &d, const ClientController::Email &c);
 
   // Vault info
-  bool PollVaultInfo(QString *chunkstore, boost::uint64_t *offered_space,
-                     boost::uint64_t *free_space, QString *ip,
+  bool PollVaultInfo(boost::uint64_t *offered_space,
+                     boost::uint64_t *free_space,
+                     QString *ip,
                      boost::uint32_t *port);
   bool IsLocalVaultOwned();
 

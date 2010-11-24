@@ -124,11 +124,6 @@ class ClientRpcs {
                           rpcprotocol::Controller *controller,
                           rpcprotocol::Channel *channel,
                           google::protobuf::Closure *done);
-  void PollVaultInfo(const std::string &enc_ser_request,
-                     VaultStatusResponse *response,
-                     rpcprotocol::Controller *controller,
-                     rpcprotocol::Channel *channel,
-                     google::protobuf::Closure *done);
 
  private:
   ClientRpcs(const ClientRpcs&);

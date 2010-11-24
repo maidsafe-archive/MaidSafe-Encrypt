@@ -266,15 +266,4 @@ void ClientRpcs::SetLocalVaultOwned(SetLocalVaultOwnedRequest *request,
   service.SetLocalVaultOwned(controller, request, response, done);
 }
 
-void ClientRpcs::PollVaultInfo(const std::string &enc_ser_request,
-                               VaultStatusResponse *response,
-                               rpcprotocol::Controller *controller,
-                               rpcprotocol::Channel *channel,
-                               google::protobuf::Closure *done) {
-  VaultStatusRequest vsreq;
-  vsreq.set_encrypted_request(enc_ser_request);
-  maidsafe::MaidsafeService::Stub service(channel);
-  service.VaultStatus(controller, &vsreq, response, done);
-}
-
 }  // namespace maidsafe

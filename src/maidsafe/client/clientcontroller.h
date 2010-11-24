@@ -196,12 +196,9 @@ class ClientController {
                      const std::set<std::string> &readonlys);
 
   // Vault operations
-  bool PollVaultInfo(std::string *chunkstore,
-                     boost::uint64_t *offered_space,
-                     boost::uint64_t *free_space,
-                     std::string *ip,
-                     boost::uint32_t *port);
-  bool VaultContactInfo();
+  bool VaultStoreInfo(boost::uint64_t *offered_space,
+                      boost::uint64_t *free_space);
+  bool VaultContactInfo(kad::Contact *contact);
   OwnLocalVaultResult SetLocalVaultOwned(
       const boost::uint32_t &port,
       const boost::uint64_t &space,

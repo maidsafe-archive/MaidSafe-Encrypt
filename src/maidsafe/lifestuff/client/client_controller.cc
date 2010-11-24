@@ -441,21 +441,17 @@ bool ClientController::sendInstantFile(const QString& filePath,
   return (n == 0);
 }
 
-bool ClientController::PollVaultInfo(QString *chunkstore,
-                                     boost::uint64_t *offered_space,
+bool ClientController::PollVaultInfo(boost::uint64_t *offered_space,
                                      boost::uint64_t *free_space,
-                                     QString *ip, boost::uint32_t *port) {
-  std::string s_chunkstore;
-  std::string s_ip;
-  bool b = maidsafe::ClientController::getInstance()->PollVaultInfo(
-           &s_chunkstore, offered_space, free_space, &s_ip, port);
-  if (b) {
-    *chunkstore = QString::fromStdString(s_chunkstore);
-    *ip = QString::fromStdString(s_ip);
-    return true;
-  }
-
-  return false;
+                                     QString *ip,
+                                     boost::uint32_t *port) {
+  kad::Contact vault_contact;
+  bool vault_active = maidsafe::ClientController::getInstance()->
+      VaultContactInfo(&vault_contact);
+  *ip = QString::fromStdString(vault_contact.host_ip());
+  *port = vault_contact.host_port();
+  return maidsafe::ClientController::getInstance()->VaultStoreInfo(
+      offered_space, free_space) && vault_active;
 }
 
 bool ClientController::Logout() {

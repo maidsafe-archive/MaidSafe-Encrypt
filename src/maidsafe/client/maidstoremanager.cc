@@ -2960,71 +2960,13 @@ void MaidsafeStoreManager::DeletePacketCallback(
   }
 }
 
-void MaidsafeStoreManager::PollVaultInfo(kad::VoidFunctorOneString cb) {
-  VaultCommunication vc;
-  vc.set_chunkstore("YES");
-  vc.set_offered_space(0);
-  vc.set_free_space(0);
-  vc.set_ip("YES");
-  vc.set_port(0);
-  vc.set_timestamp(base::GetEpochTime());
-  std::string ser_vc;
-  vc.SerializeToString(&ser_vc);
-  std::string pmid_public_key;
-  if (ss_->ProxyMID(NULL, &pmid_public_key, NULL, NULL) != kSuccess)
-    return;
-  std::string enc_ser_vc(RSAEncrypt(ser_vc, pmid_public_key));
-  VaultStatusResponse vault_status_response;
-  google::protobuf::Closure *done =
-      google::protobuf::NewCallback<MaidsafeStoreManager,
-      const VaultStatusResponse*, kad::VoidFunctorOneString>
-      (this, &MaidsafeStoreManager::PollVaultInfoCallback,
-      &vault_status_response, cb);
-  rpcprotocol::Controller *controller = new rpcprotocol::Controller;
-  rpcprotocol::Channel *channel = new rpcprotocol::Channel(
-      &channel_manager_, &transport_handler_, transport_.transport_id(),
-      ss_->VaultIP(), ss_->VaultPort(), "", 0, "", 0);
-  client_rpcs_->PollVaultInfo(enc_ser_vc, &vault_status_response, controller,
-      channel, done);
-}
-
-void MaidsafeStoreManager::PollVaultInfoCallback(
-    const VaultStatusResponse *response,
-    kad::VoidFunctorOneString cb) {
-  std::string result;
-  if (!response->IsInitialized()) {
-    cb("FAIL");
-    return;
-  }
-  if (response->result() != kAck) {
-    cb("FAIL");
-    return;
-  }
-
-  std::string pmid_private_key;
-  if (ss_->ProxyMID(NULL, NULL, &pmid_private_key, NULL) != kSuccess) {
-    cb("FAIL");
-    return;
-  }
-
-  std::string unenc(RSADecrypt(response->encrypted_response(),
-                               pmid_private_key));
-
-  VaultCommunication vc;
-  if (!vc.ParseFromString(unenc)) {
-    cb("FAIL");
-    return;
-  }
-
-  if (vc.chunkstore().empty() && vc.offered_space() == 0 &&
-      vc.free_space() == 0 && vc.ip().empty() && vc.port() == 0) {
-    cb("FAIL");
-    return;
-  }
-
-  std::string ser_vc;
-  vc.SerializeToString(&ser_vc);
-  cb(ser_vc);
+bool MaidsafeStoreManager::VaultStoreInfo(boost::uint64_t *offered_space,
+                                          boost::uint64_t *free_space) {
+  boost::uint64_t space_given, space_taken;
+  account_status_manager_.AccountStatus(offered_space, &space_given,
+                                        &space_taken);
+  *free_space = *offered_space - space_given;
+  return true;
 }
 
 bool MaidsafeStoreManager::VaultContactInfo(kad::Contact *contact) {

@@ -135,7 +135,8 @@ class StoreManagerInterface {
       std::map<std::string, ReturnCode> *add_results)=0;
 
   // Vault
-  virtual void PollVaultInfo(kad::VoidFunctorOneString cb)=0;
+  virtual bool VaultStoreInfo(boost::uint64_t *offered_space,
+                              boost::uint64_t *free_space)=0;
   virtual bool VaultContactInfo(kad::Contact *contact)=0;
   virtual void SetLocalVaultOwned(
       const std::string &priv_key,

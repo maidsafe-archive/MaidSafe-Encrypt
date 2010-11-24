@@ -295,26 +295,6 @@ message GetBufferPacketResponse {
   optional maidsafe.vault.VaultBufferPacketMap.VaultBufferPacket vault_buffer_packet = 2;
 }
 
-message VaultCommunication {
-  optional bytes chunkstore = 1;
-  optional uint64 offered_space = 2;
-  optional uint64 free_space = 3;
-  optional bytes ip = 4;
-  optional uint32 port = 5;
-  required uint32 timestamp = 6;
-}
-
-message VaultStatusRequest {
-  required bytes encrypted_request = 1;  // Serialised encrypted
-                                         // VaultCommunication
-}
-
-message VaultStatusResponse {
-  required uint32 result = 1;
-  optional bytes encrypted_response = 2;  // Serialised encrypted
-                                          // VaultCommunication
-}
-
 enum OwnLocalVaultResult {
   OWNED_SUCCESS = 0;
   VAULT_ALREADY_OWNED = 1;

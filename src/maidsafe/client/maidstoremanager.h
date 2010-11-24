@@ -299,7 +299,8 @@ class MaidsafeStoreManager : public StoreManagerInterface {
       std::map<std::string, ReturnCode> *add_results);
 
   // Vault
-  void PollVaultInfo(kad::VoidFunctorOneString cb);
+  bool VaultStoreInfo(boost::uint64_t *offered_space,
+                      boost::uint64_t *free_space);
   bool VaultContactInfo(kad::Contact *contact);
   void SetLocalVaultOwned(const std::string &priv_key,
                           const std::string &pub_key,
@@ -545,8 +546,6 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   void UpdatePacketCallback(const std::string &ser_kad_update_result,
                             boost::shared_ptr<UpdatePacketData> delete_data);
   void DoNothingCallback(const std::string&) {}
-  void PollVaultInfoCallback(const VaultStatusResponse *response,
-                             kad::VoidFunctorOneString cb);
   void SetLocalVaultOwnedCallback(
       boost::shared_ptr<SetLocalVaultOwnedCallbackArgs> callback_args);
   void LocalVaultOwnedCallback(

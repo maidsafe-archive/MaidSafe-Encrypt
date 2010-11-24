@@ -46,8 +46,6 @@ bool SessionSingleton::ResetSession() {
   ud_.mounted = 0;
   ud_.win_drive = '\0';
   ud_.connection_status = 1;
-  ud_.vault_ip.clear();
-  ud_.vault_port = 0;
   ud_.ep.Clear();
   ud_.pd.Clear();
   passport_->ClearKeyring();
@@ -61,8 +59,7 @@ bool SessionSingleton::ResetSession() {
 void SessionSingleton::Destroy() {
   passport_.reset();
   single_.reset();
-  flag_.count = 0;
-  flag_.status = 0;
+  flag_ = BOOST_ONCE_INIT;
 }
 
 
@@ -89,8 +86,6 @@ const std::set<std::string> &SessionSingleton::MaidAuthorisedUsers() {
 int SessionSingleton::Mounted() { return ud_.mounted; }
 char SessionSingleton::WinDrive() { return ud_.win_drive; }
 int SessionSingleton::ConnectionStatus() { return ud_.connection_status; }
-std::string SessionSingleton::VaultIP() { return ud_.vault_ip; }
-boost::uint32_t SessionSingleton::VaultPort() { return ud_.vault_port; }
 EndPoint SessionSingleton::Ep() { return ud_.ep; }
 PersonalDetails SessionSingleton::Pd() { return ud_.pd; }
 
@@ -158,18 +153,6 @@ bool SessionSingleton::SetWinDrive(char win_drive) {
 bool SessionSingleton::SetConnectionStatus(int status) {
   ud_.connection_status = status;
   return true;
-}
-bool SessionSingleton::SetVaultIP(const std::string &vault_ip) {
-  ud_.vault_ip = vault_ip;
-  return true;
-}
-bool SessionSingleton::SetVaultPort(const boost::uint32_t &vault_port) {
-  if ((vault_port > 1023 && vault_port < 65536) || vault_port == 0) {
-    ud_.vault_port = vault_port;
-    return true;
-  } else {
-    return false;
-  }
 }
 bool SessionSingleton::SetEp(const EndPoint &ep) {
   ud_.ep = ep;

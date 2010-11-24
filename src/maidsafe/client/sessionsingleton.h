@@ -107,8 +107,6 @@ struct UserDetails {
                   mounted(0),
                   win_drive('\0'),
                   connection_status(0),
-                  vault_ip(),
-                  vault_port(0),
                   ep(),
                   pd() {}
   DefConLevels defconlevel;
@@ -121,8 +119,6 @@ struct UserDetails {
   int mounted;
   char win_drive;
   int connection_status;
-  std::string vault_ip;
-  boost::uint32_t vault_port;
   EndPoint ep;
   PersonalDetails pd;
 };
@@ -164,8 +160,6 @@ class SessionSingleton {
   int Mounted();
   char WinDrive();
   int ConnectionStatus();
-  std::string VaultIP();
-  boost::uint32_t VaultPort();
   EndPoint Ep();
   PersonalDetails Pd();
 
@@ -182,8 +176,6 @@ class SessionSingleton {
   bool SetMounted(int mounted);
   bool SetWinDrive(char win_drive);
   bool SetConnectionStatus(int status);
-  bool SetVaultIP(const std::string &vault_ip);
-  bool SetVaultPort(const boost::uint32_t &vault_port);
   bool SetEp(const EndPoint &ep);
   bool SetPd(const PersonalDetails &pd);
 
