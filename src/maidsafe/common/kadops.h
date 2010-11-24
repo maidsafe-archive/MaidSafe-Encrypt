@@ -40,7 +40,7 @@ class SignedRequest;
 
 namespace maidsafe {
 
-class TestClientBP;
+class ClientBPTest;
 class MockKadOps;
 
 namespace test { class CBPHandlerTest; }
@@ -165,7 +165,7 @@ void SetThisEndpoint(EndPoint *this_endpoint);
   kad::ContactInfo contact_info() const { return knode_.contact_info(); }
   boost::uint8_t k() const { return K_; }
   friend class test::CBPHandlerTest;
-  friend class TestClientBP;
+  friend class ClientBPTest;
   friend class MockKadOps;
  private:
   KadOps(const KadOps&);

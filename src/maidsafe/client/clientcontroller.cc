@@ -342,8 +342,7 @@ int ClientController::SerialiseDa() {
   data_atlas.SerializeToString(&ser_da_);
 
   std::string file_hash(base::EncodeToHex(SHA512String(ser_da_)));
-  if (AddToPendingFiles(file_hash))
-    seh_.EncryptString(ser_da_, &ser_dm_);
+  seh_.EncryptString(ser_da_, &ser_dm_);
 
 #ifdef DEBUG
   printf("ClientController::SerialiseDa() - Serialised.\n");
@@ -427,10 +426,7 @@ bool ClientController::CreateUser(const std::string &username,
 
   std::string hashed(SHA512String(ser_da));
   std::string ser_dm;
-  if (AddToPendingFiles(base::EncodeToHex(hashed)))
-    result = seh_.EncryptString(ser_da, &ser_dm);
-  else
-    return false;
+  result = seh_.EncryptString(ser_da, &ser_dm);
 
   if (result != 0) {
 #ifdef DEBUG

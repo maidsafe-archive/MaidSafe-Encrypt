@@ -236,6 +236,7 @@ class MaidsafeStoreManager : public StoreManagerInterface {
   void Init(VoidFuncOneInt callback,
             const boost::filesystem::path &kad_config,
             const boost::uint16_t &port);
+  void SetPmid(const std::string &pmid_name);
   void Close(VoidFuncOneInt callback, bool cancel_pending_ops);
   void CleanUpTransport();
   void StopRvPing() { transport_handler_.StopPingRendezvous(); }

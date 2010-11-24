@@ -59,6 +59,7 @@ class LocalStoreManager : public StoreManagerInterface {
                     const fs::path &db_directory);
   virtual ~LocalStoreManager();
   virtual void Init(VoidFuncOneInt callback, const boost::uint16_t &port);
+  virtual void SetPmid(const std::string &/*pmid_name*/) {}
   virtual void Close(VoidFuncOneInt callback, bool cancel_pending_ops);
   virtual void CleanUpTransport() {}
   virtual void StopRvPing() {}

@@ -377,9 +377,11 @@ void Authentication::SignaturePacketStoreCallback(
   if (return_code == kSuccess) {
     *op_status = kSucceeded;
     passport_->ConfirmSignaturePacket(packet);
+    if (packet_type == passport::PMID)
+      store_manager_->SetPmid(packet->name());
   } else {
 #ifdef DEBUG
-    printf("Authentication::SignaturePacketStoreCbk (%i): Failed to delete.\n",
+    printf("Authentication::SignaturePacketStoreCbk (%i): Failed to store.\n",
             packet_type);
 #endif
     *op_status = kFailed;

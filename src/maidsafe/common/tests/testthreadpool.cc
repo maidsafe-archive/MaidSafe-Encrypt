@@ -65,16 +65,16 @@ class TestTask {
 
 namespace maidsafe {
 
-class TestThreadPool : public testing::Test {
+class ThreadPoolTest : public testing::Test {
  protected:
-  TestThreadPool() {}
-  ~TestThreadPool() {}
+  ThreadPoolTest() {}
+  ~ThreadPoolTest() {}
  private:
-  TestThreadPool(const TestThreadPool&);
-  TestThreadPool &operator=(const TestThreadPool&);
+  ThreadPoolTest(const ThreadPoolTest&);
+  ThreadPoolTest &operator=(const ThreadPoolTest&);
 };
 
-TEST_F(TestThreadPool, BEH_MAID_ThreadPoolBasic) {
+TEST_F(ThreadPoolTest, BEH_MAID_ThreadPoolBasic) {
   test_threadpool::TestTask task;
   std::vector<int> result_order;
   boost::mutex result_order_mutex;
@@ -97,7 +97,7 @@ TEST_F(TestThreadPool, BEH_MAID_ThreadPoolBasic) {
   ASSERT_EQ(1, result_order.at(3));
 }
 
-TEST_F(TestThreadPool, BEH_MAID_ThreadPoolCancel) {
+TEST_F(ThreadPoolTest, BEH_MAID_ThreadPoolCancel) {
   test_threadpool::TestTask task;
   std::vector<int> result_order;
   boost::mutex result_order_mutex;
@@ -132,7 +132,7 @@ TEST_F(TestThreadPool, BEH_MAID_ThreadPoolCancel) {
   boost::this_thread::sleep(boost::posix_time::milliseconds(3000));
 }
 
-TEST_F(TestThreadPool, BEH_MAID_ThreadPoolClear) {
+TEST_F(ThreadPoolTest, BEH_MAID_ThreadPoolClear) {
   test_threadpool::TestTask task;
   std::vector<int> result_order;
   boost::mutex result_order_mutex;
@@ -163,7 +163,7 @@ TEST_F(TestThreadPool, BEH_MAID_ThreadPoolClear) {
 //  printf("end of BEH_MAID_ThreadPoolClear\n");
 }
 
-TEST_F(TestThreadPool, BEH_MAID_ThreadPoolSizes) {
+TEST_F(ThreadPoolTest, BEH_MAID_ThreadPoolSizes) {
   test_threadpool::TestTask task;
   std::vector<int> result_order;
   boost::mutex result_order_mutex;
@@ -215,7 +215,7 @@ TEST_F(TestThreadPool, BEH_MAID_ThreadPoolSizes) {
   ASSERT_EQ(4, result_order.at(5));
 }
 
-TEST_F(TestThreadPool, BEH_MAID_ThreadPoolResize) {
+TEST_F(ThreadPoolTest, BEH_MAID_ThreadPoolResize) {
   test_threadpool::TestTask task;
   std::vector<int> result_order;
   boost::mutex result_order_mutex;
@@ -262,7 +262,7 @@ TEST_F(TestThreadPool, BEH_MAID_ThreadPoolResize) {
   ASSERT_EQ(4, result_order.at(8));
 }
 
-TEST_F(TestThreadPool, BEH_MAID_ThreadPoolLooped) {
+TEST_F(ThreadPoolTest, BEH_MAID_ThreadPoolLooped) {
   test_threadpool::TestTask task;
   std::vector<int> result_order;
   boost::mutex result_order_mutex;
@@ -280,7 +280,7 @@ TEST_F(TestThreadPool, BEH_MAID_ThreadPoolLooped) {
   ASSERT_EQ(size_t(10), result_order.size());
 }
 
-TEST_F(TestThreadPool, BEH_MAID_ThreadPoolPriority) {
+TEST_F(ThreadPoolTest, BEH_MAID_ThreadPoolPriority) {
   test_threadpool::TestTask task;
   std::vector<int> result_order;
   boost::mutex result_order_mutex;

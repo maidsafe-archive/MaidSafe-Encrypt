@@ -58,6 +58,14 @@ bool SessionSingleton::ResetSession() {
   return true;
 }
 
+void SessionSingleton::Destroy() {
+  passport_.reset();
+  single_.reset();
+  flag_.count = 0;
+  flag_.status = 0;
+}
+
+
 ///////////////////////////////
 //// User Details Handling ////
 ///////////////////////////////

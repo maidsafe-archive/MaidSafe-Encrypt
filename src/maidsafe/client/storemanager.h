@@ -76,6 +76,7 @@ class StoreManagerInterface {
  public:
   virtual ~StoreManagerInterface() {}
   virtual void Init(VoidFuncOneInt callback, const boost::uint16_t &port)=0;
+  virtual void SetPmid(const std::string &pmid_name)=0;
   virtual void Close(VoidFuncOneInt callback, bool cancel_pending_ops)=0;
   virtual void CleanUpTransport()=0;
   virtual void StopRvPing()=0;

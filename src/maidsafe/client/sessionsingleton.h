@@ -143,6 +143,7 @@ class SessionSingleton {
   }
   bool ResetSession();
   virtual ~SessionSingleton() {}
+  void Destroy();
 
   ///////////////////////////////
   //// User Details Handling ////

@@ -145,25 +145,22 @@ void MaidsafeStoreManager::Init(VoidFuncOneInt callback,
     while (result == kPendingResult)
       cond_var.wait(lock);
   }
-
-  std::string pmid_name;
-  if (result == kSuccess)
-    result = static_cast<ReturnCode>(
-             ss_->ProxyMID(&pmid_name, NULL, NULL, NULL));
-
   if (result == kSuccess) {
     chunk_thread_pool_.setMaxThreadCount(kChunkMaxThreadCount_);
     packet_thread_pool_.setMaxThreadCount(kPacketMaxThreadCount_);
 #ifdef DEBUG
     printf("\tIn MSM::Init, after Join.  On port %u\n", kad_ops_->Port());
 #endif
-    own_vault_.Init(pmid_name);
-    account_holders_manager_.Init(pmid_name, boost::bind(
-        &MaidsafeStoreManager::AccountHoldersCallback, this, _1, _2));
-    account_status_manager_.StartUpdating(boost::bind(
-        &MaidsafeStoreManager::UpdateAccountStatus, this));
   }
   callback(result);
+}
+
+void MaidsafeStoreManager::SetPmid(const std::string &pmid_name) {
+  own_vault_.Init(pmid_name);
+  account_holders_manager_.Init(pmid_name, boost::bind(
+      &MaidsafeStoreManager::AccountHoldersCallback, this, _1, _2));
+  account_status_manager_.StartUpdating(boost::bind(
+      &MaidsafeStoreManager::UpdateAccountStatus, this));
 }
 
 void MaidsafeStoreManager::AccountHoldersCallback(

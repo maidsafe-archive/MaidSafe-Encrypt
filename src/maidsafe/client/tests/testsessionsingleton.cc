@@ -208,55 +208,6 @@ TEST_F(SessionSingletonTest, BEH_MAID_SessionName) {
   ASSERT_EQ("", ss_->SessionName());
 }
 
-/*
-TEST_F(SessionSingletonTest, BEH_MAID_SessionKeyRingIO) {
-  std::string pub_keys[7];
-  std::string pri_keys[7];
-  DataAtlas da;
-  std::vector<crypto::RsaKeyPair> crypto_keys;
-  cached_keys::MakeKeys(7, &crypto_keys);
-  for (int n = 0; n < 7; ++n) {
-    pri_keys[n] = crypto_keys.at(n).private_key();
-    pub_keys[n] = crypto_keys.at(n).public_key();
-    Key *k = da.add_keys();
-    k->set_type(PacketType(n));
-    k->set_id("id" + base::IntToString(n));
-    k->set_private_key(pri_keys[n]);
-    k->set_public_key(pub_keys[n]);
-    ss_->AddKey(PacketType(n), "id" + base::IntToString(n),
-                pri_keys[n], pub_keys[n], "");
-    k->set_public_key_signature(ss_->PublicKeySignature(PacketType(n)));
-  }
-  // get signed public key
-  for (int i = 0; i < 7; i++) {
-    std::string public_key = pub_keys[i];
-    std::string private_key = pri_keys[i];
-    ASSERT_TRUE(RSACheckSignedData(public_key,
-        ss_->PublicKeySignature(PacketType(i)), public_key));
-  }
-
-  std::string ser_da;
-  da.SerializeToString(&ser_da);
-
-  std::list<KeyAtlasRow> keys;
-  ss_->GetKeys(&keys);
-  ASSERT_EQ(size_t(7), keys.size());
-  int a = 0;
-  while (!keys.empty()) {
-    ASSERT_EQ(a, keys.front().type_);
-    ASSERT_EQ("id" + base::IntToString(a), keys.front().id_);
-    ASSERT_EQ(pri_keys[a], keys.front().private_key_);
-    ASSERT_EQ(pub_keys[a], keys.front().public_key_);
-    keys.pop_front();
-    ++a;
-  }
-
-  std::string ser_kr;
-  ss_->SerialisedKeyRing(&ser_kr);
-  ASSERT_EQ(ser_da, ser_kr);
-}
-*/
-
 TEST_F(SessionSingletonTest, BEH_MAID_SessionContactsIO) {
   // Add contacts to the session
   for (int n = 0; n < 10; n++) {

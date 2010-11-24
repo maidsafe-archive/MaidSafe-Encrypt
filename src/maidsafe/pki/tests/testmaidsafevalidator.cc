@@ -36,9 +36,9 @@ namespace pki {
 
 namespace test {
 
-class TestMSValidator : public testing::Test {
+class MSValidatorTest : public testing::Test {
  public:
-  TestMSValidator() : co_(), signed_public_key_(), validator_(), keys_() {}
+  MSValidatorTest() : co_(), signed_public_key_(), validator_(), keys_() {}
  protected:
   void SetUp() {
     crypto::RsaKeyPair rsakp;
@@ -55,7 +55,7 @@ class TestMSValidator : public testing::Test {
   std::vector<crypto::RsaKeyPair> keys_;
 };
 
-TEST_F(TestMSValidator, BEH_PKI_TestValidateSignerID) {
+TEST_F(MSValidatorTest, BEH_PKI_TestValidateSignerID) {
   std::string id = co_.Hash((keys_.at(0).public_key() + signed_public_key_), "",
                             crypto::STRING_STRING, false);
   ASSERT_TRUE(validator_.ValidateSignerId(id, keys_.at(0).public_key(),
@@ -66,7 +66,7 @@ TEST_F(TestMSValidator, BEH_PKI_TestValidateSignerID) {
       keys_.at(0).public_key(), signed_public_key_));
 }
 
-TEST_F(TestMSValidator, BEH_PKI_TestValidateSignedRequest) {
+TEST_F(MSValidatorTest, BEH_PKI_TestValidateSignedRequest) {
   std::string rec_id(co_.Hash(base::RandomString(10), "", crypto::STRING_STRING,
                               false));
   validator_.set_id(rec_id);
@@ -85,7 +85,7 @@ TEST_F(TestMSValidator, BEH_PKI_TestValidateSignedRequest) {
       keys_.at(0).public_key(), signed_public_key_, "key"));
 }
 
-TEST_F(TestMSValidator, BEH_PKI_TestCreateRequestSignature) {
+TEST_F(MSValidatorTest, BEH_PKI_TestCreateRequestSignature) {
   std::list<std::string> params;
   std::string signature;
   ASSERT_EQ(kValidatorNoPrivateKey,

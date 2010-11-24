@@ -37,9 +37,9 @@ namespace encrypt {
 
 namespace test {
 
-class TestStringIOHandler : public testing::Test {
+class StringIOHandlerTest : public testing::Test {
  public:
-  TestStringIOHandler()
+  StringIOHandlerTest()
       : kMinSize_(1000),
         kDataSize_((base::RandomUint32() % 249000) + kMinSize_),
         // ensure input contains null chars
@@ -51,7 +51,7 @@ class TestStringIOHandler : public testing::Test {
   std::tr1::shared_ptr<std::string> data_;
 };
 
-TEST_F(TestStringIOHandler, BEH_ENCRYPT_TestReadFromString) {
+TEST_F(StringIOHandlerTest, BEH_ENCRYPT_TestReadFromString) {
   // Check before opening
   StringIOHandler input_handler(data_, true);
   EXPECT_EQ(kData_, input_handler.Data());
@@ -118,7 +118,7 @@ TEST_F(TestStringIOHandler, BEH_ENCRYPT_TestReadFromString) {
   EXPECT_TRUE(read_data.empty());
 }
 
-TEST_F(TestStringIOHandler, BEH_ENCRYPT_TestSetGetPointerString) {
+TEST_F(StringIOHandlerTest, BEH_ENCRYPT_TestSetGetPointerString) {
   // Open and apply offset
   StringIOHandler input_handler(data_, true);
   size_t test_size(kMinSize_ / 10), offset(kMinSize_ / 2);
@@ -142,7 +142,7 @@ TEST_F(TestStringIOHandler, BEH_ENCRYPT_TestSetGetPointerString) {
   EXPECT_TRUE(read_data.empty());
 }
 
-TEST_F(TestStringIOHandler, BEH_ENCRYPT_WriteToString) {
+TEST_F(StringIOHandlerTest, BEH_ENCRYPT_WriteToString) {
   // Check before opening
   StringIOHandler output_handler(data_, false);
   EXPECT_EQ(kData_, output_handler.Data());
@@ -254,9 +254,9 @@ fs::path TempDir() {
 }
 }  // namespace test_file_io_handler
 
-class TestFileIOHandler : public testing::Test {
+class FileIOHandlerTest : public testing::Test {
  public:
-  TestFileIOHandler()
+  FileIOHandlerTest()
       : kRootDir_(test_file_io_handler::TempDir() /
             ("maidsafe_TestIO_" + base::RandomAlphaNumericString(6))),
         kInputFile_(kRootDir_ / "In.txt"),
@@ -316,7 +316,7 @@ class TestFileIOHandler : public testing::Test {
   const std::string kData_;
 };
 
-TEST_F(TestFileIOHandler, BEH_ENCRYPT_TestReadFromFile) {
+TEST_F(FileIOHandlerTest, BEH_ENCRYPT_TestReadFromFile) {
   WriteDataToInputFile(false);
 
   // Check using non-existant file
@@ -390,7 +390,7 @@ TEST_F(TestFileIOHandler, BEH_ENCRYPT_TestReadFromFile) {
   EXPECT_TRUE(read_data.empty());
 }
 
-TEST_F(TestFileIOHandler, BEH_ENCRYPT_TestSetGetPointerFile) {
+TEST_F(FileIOHandlerTest, BEH_ENCRYPT_TestSetGetPointerFile) {
   WriteDataToInputFile(false);
 
   // Open and apply offset
@@ -416,7 +416,7 @@ TEST_F(TestFileIOHandler, BEH_ENCRYPT_TestSetGetPointerFile) {
   EXPECT_TRUE(read_data.empty());
 }
 
-TEST_F(TestFileIOHandler, BEH_ENCRYPT_WriteToFile) {
+TEST_F(FileIOHandlerTest, BEH_ENCRYPT_WriteToFile) {
   // Check using non-existant directory
   FileIOHandler nef_output_handler(fs::path("not/o/k.txt"), false);
   EXPECT_FALSE(nef_output_handler.Open());
