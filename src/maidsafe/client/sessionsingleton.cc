@@ -59,7 +59,8 @@ bool SessionSingleton::ResetSession() {
 void SessionSingleton::Destroy() {
   passport_.reset();
   single_.reset();
-  flag_ = BOOST_ONCE_INIT;
+  flag_.count = 0;
+  flag_.status = 0;
 }
 
 
