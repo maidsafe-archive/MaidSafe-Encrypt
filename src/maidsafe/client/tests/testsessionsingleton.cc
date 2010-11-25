@@ -26,7 +26,6 @@
 
 #include "maidsafe/common/commonutils.h"
 #include "maidsafe/client/sessionsingleton.h"
-#include "maidsafe/sharedtest/cached_keys.h"
 #include "maidsafe/sharedtest/cachepassport.h"
 
 namespace maidsafe {

@@ -30,7 +30,6 @@
 #include <boost/thread/condition_variable.hpp>
 
 #include <maidsafe/maidsafe-dht.h>
-#include <maidsafe/base/utils.h>
 #include <maidsafe/passport/passport.h>
 
 #include <list>

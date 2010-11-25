@@ -36,7 +36,6 @@
 #include "maidsafe/vault/vaultrpc.h"
 #include "maidsafe/vault/vaultservice.h"
 #include "maidsafe/vault/vaultservicelogic.h"
-#include "maidsafe/sharedtest/cached_keys.h"
 #include "maidsafe/vault/tests/mockvaultservicelogic.h"
 
 namespace fs = boost::filesystem;

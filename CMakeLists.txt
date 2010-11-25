@@ -631,6 +631,9 @@ ENDIF()
 IF(UNIX)
   ADD_CUSTOM_TARGET(CleanCoverage COMMAND ${CMAKE_COMMAND} -DSEARCH_DIR=${CMAKE_BINARY_DIR} -P ${${PROJECT_NAME}_ROOT}/build/clean_coverage.cmake)
 ENDIF()
+ADD_CUSTOM_TARGET(AllTestsAndDemos DEPENDS TESTencrypt TESTpassport TESTpki TESTcommon TESTclientfilesystem TESTclient TESTvault TESTfuse TESTauthentication_net
+                    TESTbufferpackethandler_net TESTclientcontroller_net TESTclientcontroller_local TESTimconnectionhandler_net TESTpdvault_net DEMOclient DEMOvault)
+SET(TEST_EXECUTABLES )
 
 
 ###################################################################################################

@@ -25,8 +25,6 @@
 /*
 #include "maidsafe/vault/validitycheck.h"
 #include <boost/bind.hpp>
-#include <maidsafe/base/utils.h>
-#include <maidsafe/base/crypto.h>
 #include <list>
 
 namespace fs = boost::filesystem;

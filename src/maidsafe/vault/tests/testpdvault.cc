@@ -40,7 +40,6 @@
 #include "maidsafe/client/sessionsingleton.h"
 #include "maidsafe/vault/pdvault.h"
 #include "maidsafe/vault/vaultservice.h"
-#include "maidsafe/sharedtest/cached_keys.h"
 #include "maidsafe/sharedtest/localvaults.h"
 #include "maidsafe/sharedtest/mocksessionsingleton.h"
 #include "maidsafe/sharedtest/networktest.h"
