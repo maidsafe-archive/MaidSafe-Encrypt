@@ -83,6 +83,7 @@ class NetworkTest {
   NetworkTest();
   ~NetworkTest();
   bool Init();
+  bool IsLastTest();
   boost::int16_t transport_id() const { return transport_id_; }
   fs::path test_dir() const { return test_dir_; }
   transport::Transport *transport() const { return transport_; }

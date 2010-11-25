@@ -11,4 +11,5 @@ message Key {
 
 message Keyring {
   repeated Key key = 1;
+  optional bytes public_name = 2;
 }

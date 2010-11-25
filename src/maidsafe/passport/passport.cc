@@ -32,6 +32,10 @@ void Passport::Init() {
   crypto_key_pairs_.StartToCreateKeyPairs(kCryptoKeyBufferCount);
 }
 
+void Passport::StopCreatingKeyPairs() {
+  crypto_key_pairs_.Stop();
+}
+
 int Passport::SetInitialDetails(const std::string &username,
                                 const std::string &pin,
                                 std::string *mid_name,
@@ -107,7 +111,7 @@ int Passport::ConfirmNewUserData(std::tr1::shared_ptr<MidPacket> mid,
 }
 
 std::string Passport::SerialiseKeyring() {
-  return packet_handler_.SerialiseKeyring();
+  return packet_handler_.SerialiseKeyring(public_name_);
 }
 
 int Passport::UpdateMasterData(
@@ -240,7 +244,7 @@ int Passport::GetUserData(const std::string &password,
 }
 
 int Passport::ParseKeyring(const std::string &serialised_keyring) {
-  int result = packet_handler_.ParseKeyring(serialised_keyring);
+  int result = packet_handler_.ParseKeyring(serialised_keyring, &public_name_);
   if (result != kSuccess)
     return result;
   return ConfirmUserData(PendingMid(), PendingSmid(), PendingTmid(),
@@ -388,6 +392,7 @@ int Passport::InitialiseSignaturePacket(
 
 int Passport::InitialiseMpid(const std::string &public_name,
                              std::tr1::shared_ptr<SignaturePacket> mpid) {
+  pending_public_name_ = public_name;
   return DoInitialiseSignaturePacket(MPID, public_name, mpid);
 }
 
@@ -448,13 +453,16 @@ int Passport::ConfirmSignaturePacket(
     std::tr1::shared_ptr<SignaturePacket> signature_packet) {
   if (!signature_packet)
     return kPassportError;
-  else
-    return packet_handler_.ConfirmPacket(signature_packet);
+  if (signature_packet->packet_type() == MPID)
+    public_name_ = pending_public_name_;
+  return packet_handler_.ConfirmPacket(signature_packet);
 }
 
 int Passport::RevertSignaturePacket(const PacketType &packet_type) {
   if (!IsSignature(packet_type, false))
     return kPassportError;
+  if (packet_type == MPID)
+    pending_public_name_.clear();
   return packet_handler_.RevertPacket(packet_type) ? kSuccess : kPassportError;
 }
 

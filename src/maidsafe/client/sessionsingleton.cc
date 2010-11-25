@@ -37,7 +37,6 @@ bool SessionSingleton::ResetSession() {
   ud_.username.clear();
   ud_.pin.clear();
   ud_.password.clear();
-  ud_.public_username.clear();
   ud_.session_name.clear();
   ud_.root_db_key.clear();
   ud_.self_encrypting = true;
@@ -57,7 +56,7 @@ bool SessionSingleton::ResetSession() {
 }
 
 void SessionSingleton::Destroy() {
-  passport_.reset();
+  passport_->StopCreatingKeyPairs();
   single_.reset();
   boost::once_flag temp = BOOST_ONCE_INIT;
   flag_ = temp;
@@ -74,7 +73,9 @@ bool SessionSingleton::DaModified() { return ud_.da_modified; }
 std::string SessionSingleton::Username() { return ud_.username; }
 std::string SessionSingleton::Pin() { return ud_.pin; }
 std::string SessionSingleton::Password() { return ud_.password; }
-std::string SessionSingleton::PublicUsername() { return ud_.public_username; }
+std::string SessionSingleton::PublicUsername() {
+    return passport_->public_name();
+}
 std::string SessionSingleton::SessionName() { return ud_.session_name; }
 std::string SessionSingleton::RootDbKey() { return ud_.root_db_key; }
 bool SessionSingleton::SelfEncrypting() { return ud_.self_encrypting; }
@@ -109,10 +110,6 @@ bool SessionSingleton::SetPin(const std::string &pin) {
 }
 bool SessionSingleton::SetPassword(const std::string &password) {
   ud_.password = password;
-  return true;
-}
-bool SessionSingleton::SetPublicUsername(const std::string &public_username) {
-  ud_.public_username = public_username;
   return true;
 }
 bool SessionSingleton::SetSessionName(bool clear) {
@@ -254,8 +251,7 @@ bool SessionSingleton::CreateTestPackets(const std::string &public_username) {
     return false;
   if (passport_->ConfirmSignaturePacket(pkt) != kSuccess)
     return false;
-  SetPublicUsername(public_username);
-    return true;
+  return true;
 }
 
 std::string SessionSingleton::Id(const passport::PacketType &packet_type,

@@ -47,8 +47,9 @@ class SystemPacketHandler {
   std::tr1::shared_ptr<pki::Packet> GetPacket(const PacketType &packet_type,
                                               bool confirmed);
   bool Confirmed(const PacketType &packet_type);
-  std::string SerialiseKeyring();
-  int ParseKeyring(const std::string &serialised_keyring);
+  std::string SerialiseKeyring(const std::string &public_name);
+  int ParseKeyring(const std::string &serialised_keyring,
+                   std::string *public_name);
   void ClearKeyring();
   int DeletePacket(const PacketType &packet_type);
   void Clear();

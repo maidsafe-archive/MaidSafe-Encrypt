@@ -120,6 +120,7 @@ class ClientController {
   // clean_up_transport is true, UDT cannot be restarted, so this is a
   // permanent cessation of the transport layer.
   void CloseConnection(bool clean_up_transport);
+  void Destroy();
   void StopRvPing();
   int ParseDa();
   int SerialiseDa();
@@ -323,8 +324,6 @@ class ClientController {
   bool RemoveFromPendingFiles(const std::string &file);
 
   // Variables
-  static boost::scoped_ptr<ClientController> single_;
-  static boost::once_flag flag_;
   boost::shared_ptr<ChunkStore> client_chunkstore_;
   boost::shared_ptr<StoreManagerInterface> sm_;
   Authentication auth_;
@@ -332,7 +331,6 @@ class ClientController {
   std::string ser_da_, ser_dm_;
   std::map<std::string, std::pair<std::string, std::string> > db_enc_queue_;
   SEHandler seh_;
-  static ClientController *single;
   std::list<InstantMessage> instant_messages_;
   std::map<std::string, boost::uint32_t> received_messages_;
   boost::mutex rec_msg_mutex_;
@@ -347,6 +345,8 @@ class ClientController {
   bs2::connection to_seh_file_update_;
   std::multimap<std::string, int> pending_files_;
   boost::mutex pending_files_mutex_;
+  static boost::once_flag flag_;
+  static boost::scoped_ptr<ClientController> single_;
 };
 
 }  // namespace maidsafe

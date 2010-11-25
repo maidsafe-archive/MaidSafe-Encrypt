@@ -32,6 +32,7 @@
 namespace maidsafe {
 
 Authentication::~Authentication() {
+  passport_->StopCreatingKeyPairs();
   bool tmid_success, stmid_success;
   try {
     boost::mutex::scoped_lock lock(mutex_);
@@ -238,23 +239,23 @@ int Authentication::CreateUserSysPackets(const std::string &username,
   session_singleton_->SetPin(pin);
 
   OpStatus anmaid_status(kPending);
-  CreateSignaturePacket(passport::ANMAID, &anmaid_status, NULL);
+  CreateSignaturePacket(passport::ANMAID, "", &anmaid_status, NULL);
 
   OpStatus anmid_status(kPending);
-  CreateSignaturePacket(passport::ANMID, &anmid_status, NULL);
+  CreateSignaturePacket(passport::ANMID, "", &anmid_status, NULL);
 
   OpStatus ansmid_status(kPending);
-  CreateSignaturePacket(passport::ANSMID, &ansmid_status, NULL);
+  CreateSignaturePacket(passport::ANSMID, "", &ansmid_status, NULL);
 
   OpStatus antmid_status(kPending);
-  CreateSignaturePacket(passport::ANTMID, &antmid_status, NULL);
+  CreateSignaturePacket(passport::ANTMID, "", &antmid_status, NULL);
 
 // TODO(Fraser#5#): 2010-10-18 - Thread these next two?
   OpStatus maid_status(kPending);
-  CreateSignaturePacket(passport::MAID, &maid_status, &anmaid_status);
+  CreateSignaturePacket(passport::MAID, "", &maid_status, &anmaid_status);
 
   OpStatus pmid_status(kPending);
-  CreateSignaturePacket(passport::PMID, &pmid_status, &maid_status);
+  CreateSignaturePacket(passport::PMID, "", &pmid_status, &maid_status);
 
   bool success(true);
   try {
@@ -286,6 +287,7 @@ int Authentication::CreateUserSysPackets(const std::string &username,
 
 void Authentication::CreateSignaturePacket(
     const passport::PacketType &packet_type,
+    const std::string &public_name,
     OpStatus *op_status,
     OpStatus *dependent_op_status) {
   // Wait for dependent op or timeout.
@@ -321,8 +323,7 @@ void Authentication::CreateSignaturePacket(
       sig_packet(new passport::SignaturePacket);
   int result(kPendingResult);
   if (packet_type == passport::MPID)
-    result = passport_->InitialiseMpid(session_singleton_->PublicUsername(),
-                                       sig_packet);
+    result = passport_->InitialiseMpid(public_name, sig_packet);
   else
     result = passport_->InitialiseSignaturePacket(packet_type, sig_packet);
   if (result != kSuccess) {
@@ -720,12 +721,13 @@ int Authentication::CreatePublicName(const std::string &public_name) {
   OpStatus anmpid_status(kSucceeded);
   if (!passport_->GetPacket(passport::ANMPID, true)) {
     anmpid_status = kPending;
-    CreateSignaturePacket(passport::ANMPID, &anmpid_status, NULL);
+    CreateSignaturePacket(passport::ANMPID, "", &anmpid_status, NULL);
   }
 
 // TODO(Fraser#5#): 2010-10-18 - Thread this?
   OpStatus mpid_status(kPending);
-  CreateSignaturePacket(passport::MPID, &mpid_status, &anmpid_status);
+  CreateSignaturePacket(passport::MPID, public_name, &mpid_status,
+                        &anmpid_status);
 
   bool success(true);
   try {
@@ -747,7 +749,6 @@ int Authentication::CreatePublicName(const std::string &public_name) {
   }
 #endif
   if ((anmpid_status == kSucceeded) && (mpid_status == kSucceeded)) {
-    session_singleton_->SetPublicUsername(public_name);
     return kSuccess;
   } else if (mpid_status == kNotUnique) {
     return kPublicUsernameExists;

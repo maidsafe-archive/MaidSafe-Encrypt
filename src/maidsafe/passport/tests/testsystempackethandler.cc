@@ -350,17 +350,23 @@ TEST_F(SystemPacketHandlerTest, FUNC_PASSPORT_All) {
 
   // *********************** Test Serialising and Parsing Keyring **************
   // Check with empty packethandler
-  std::string empty_keyring(packet_handler_.SerialiseKeyring());
+  const std::string kPublicName("Name");
+  std::string retrieved_public_name("AnotherName");
+  std::string empty_keyring(packet_handler_.SerialiseKeyring(""));
   EXPECT_TRUE(empty_keyring.empty());
-  EXPECT_EQ(kBadSerialisedKeyring, packet_handler_.ParseKeyring(empty_keyring));
+  EXPECT_EQ(kBadSerialisedKeyring,
+      packet_handler_.ParseKeyring(empty_keyring, &retrieved_public_name));
+  EXPECT_EQ("AnotherName", retrieved_public_name);
 
   // Check with only pending packets
   packets1_itr = packets1_.begin();
   while (packets1_itr != packets1_.end())
     EXPECT_TRUE(packet_handler_.AddPendingPacket(*packets1_itr++));
-  empty_keyring = packet_handler_.SerialiseKeyring();
+  empty_keyring = packet_handler_.SerialiseKeyring("");
   EXPECT_TRUE(empty_keyring.empty());
-  EXPECT_EQ(kBadSerialisedKeyring, packet_handler_.ParseKeyring(empty_keyring));
+  EXPECT_EQ(kBadSerialisedKeyring,
+      packet_handler_.ParseKeyring(empty_keyring, &retrieved_public_name));
+  EXPECT_EQ("AnotherName", retrieved_public_name);
 
   // Check serialisation with confirmed packets
   packets1_itr = packets1_.begin();
@@ -370,7 +376,7 @@ TEST_F(SystemPacketHandlerTest, FUNC_PASSPORT_All) {
   packets1_itr = packets1_.begin();
   while ((*packets1_itr)->packet_type() != ANMID)
     EXPECT_EQ(kSuccess, packet_handler_.ConfirmPacket(*packets1_itr++));
-  std::string keyring1(packet_handler_.SerialiseKeyring());
+  std::string keyring1(packet_handler_.SerialiseKeyring(kPublicName));
   EXPECT_FALSE(keyring1.empty());
 
   // Check serialisation with different confirmed packets
@@ -385,7 +391,7 @@ TEST_F(SystemPacketHandlerTest, FUNC_PASSPORT_All) {
     EXPECT_TRUE(packet_handler_.AddPendingPacket(*packets2_itr));
     EXPECT_EQ(kSuccess, packet_handler_.ConfirmPacket(*packets2_itr++));
   }
-  std::string keyring2(packet_handler_.SerialiseKeyring());
+  std::string keyring2(packet_handler_.SerialiseKeyring(kPublicName));
   EXPECT_FALSE(keyring2.empty());
   EXPECT_NE(keyring1, keyring2);
 
@@ -393,7 +399,9 @@ TEST_F(SystemPacketHandlerTest, FUNC_PASSPORT_All) {
   packets1_itr = packets1_.begin();
   while (packets1_itr != packets1_.end())
     EXPECT_TRUE(packet_handler_.AddPendingPacket(*packets1_itr++));
-  EXPECT_EQ(kKeyringNotEmpty, packet_handler_.ParseKeyring(keyring1));
+  EXPECT_EQ(kKeyringNotEmpty,
+            packet_handler_.ParseKeyring(keyring1, &retrieved_public_name));
+  EXPECT_EQ("AnotherName", retrieved_public_name);
   packets1_itr = packets1_.begin();
   packets2_itr = packets2_.begin();
   while (packets1_itr != packets1_.end()) {
@@ -426,7 +434,9 @@ TEST_F(SystemPacketHandlerTest, FUNC_PASSPORT_All) {
   }
 
   // Check parsing succeeds to packethandler without signature packets
-  EXPECT_EQ(kSuccess, packet_handler_.ParseKeyring(keyring2));
+  EXPECT_EQ(kSuccess,
+            packet_handler_.ParseKeyring(keyring2, &retrieved_public_name));
+  EXPECT_EQ(kPublicName, retrieved_public_name);
   EXPECT_EQ(12U, packet_handler_.packets_.size());
   packets1_itr = packets1_.begin();
   packets2_itr = packets2_.begin();
@@ -450,7 +460,7 @@ TEST_F(SystemPacketHandlerTest, FUNC_PASSPORT_All) {
   packets1_itr = packets1_.begin();
   while (packets1_itr != packets1_.end())
     EXPECT_TRUE(packet_handler_.AddPendingPacket(*packets1_itr++));
-  std::string keyring3(packet_handler_.SerialiseKeyring());
+  std::string keyring3(packet_handler_.SerialiseKeyring(kPublicName));
   EXPECT_EQ(keyring2, keyring3);
 
   // *********************** Test Delete Packet ********************************

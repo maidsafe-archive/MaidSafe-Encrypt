@@ -41,6 +41,7 @@ class AuthenticationTest_FUNC_MAID_CreatePublicName_Test;
 class AuthenticationTest_FUNC_MAID_CreateMSIDPacket_Test;
 class AuthenticationTest_FUNC_MAID_NET_CreatePublicName_Test;
 class AuthenticationTest_FUNC_MAID_NET_CreateMSIDPacket_Test;
+class ClientControllerTest;
 }  // namespace test
 
 class StoreManagerInterface;
@@ -118,6 +119,7 @@ class Authentication {
   friend class test::AuthenticationTest_FUNC_MAID_CreateMSIDPacket_Test;
   friend class test::AuthenticationTest_FUNC_MAID_NET_CreatePublicName_Test;
   friend class test::AuthenticationTest_FUNC_MAID_NET_CreateMSIDPacket_Test;
+  friend class test::ClientControllerTest;
 
   Authentication &operator=(const Authentication&);
   Authentication(const Authentication&);
@@ -127,6 +129,7 @@ class Authentication {
   // Function waits until dependent_op_status != kPending or timeout before
   // starting
   void CreateSignaturePacket(const passport::PacketType &packet_type,
+                             const std::string &public_name,
                              OpStatus *op_status,
                              OpStatus *dependent_op_status);
   void SignaturePacketUniqueCallback(

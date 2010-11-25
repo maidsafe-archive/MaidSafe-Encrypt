@@ -30,6 +30,7 @@ namespace fs = boost::filesystem;
 namespace maidsafe {
 namespace test {
 
+static int gTestRunCount = 0;
 
 #ifdef MS_NETWORK_TEST
 
@@ -78,6 +79,7 @@ NetworkTest::NetworkTest()
       kLowerThreshold_(kMinSuccessfulPecentageStore > .25 ?
                        static_cast<boost::uint8_t>(g_K * .25) :
                        kUpperThreshold_) {
+  ++gTestRunCount;
   try {
     if (fs::exists(test_dir_))
       fs::remove_all(test_dir_);
@@ -97,18 +99,28 @@ NetworkTest::~NetworkTest() {
   store_manager_->Close(
       boost::bind(&CallbackObject::ReturnCodeCallback, &callback, _1), true);
   callback.WaitForReturnCodeResult();
-#ifdef MS_NETWORK_TEST
-  fs::path cleanup(test_dir_);
-#else
-  fs::path cleanup(file_system::LocalStoreManagerDir());
-#endif
+
+  // Delete test_dir_ after every test
   try {
-    if (fs::exists(cleanup))
-      fs::remove_all(cleanup);
+    if (fs::exists(test_dir_))
+      fs::remove_all(test_dir_);
   }
   catch(const std::exception &e) {
     printf("NetworkTest destructor - filesystem error: %s\n", e.what());
   }
+
+  // Delete LocalStoreManagerDir after last test
+#ifndef MS_NETWORK_TEST
+  if (IsLastTest()) {
+    try {
+      if (fs::exists(file_system::LocalStoreManagerDir()))
+        fs::remove_all(file_system::LocalStoreManagerDir());
+    }
+    catch(const std::exception &e) {
+      printf("NetworkTest destructor - filesystem error: %s\n", e.what());
+    }
+  }
+#endif
 }
 
 bool NetworkTest::Init() {
@@ -128,6 +140,11 @@ bool NetworkTest::Init() {
   kad_ops_ = store_manager_->kad_ops_;
 #endif
   return true;
+}
+
+bool NetworkTest::IsLastTest() {
+//  return testing::UnitTest::GetInstance()->test_to_run_count() == gTestRunCount;
+  return gTestRunCount == 3;
 }
 
 }  // namespace test

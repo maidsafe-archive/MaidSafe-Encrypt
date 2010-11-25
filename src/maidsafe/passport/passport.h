@@ -41,12 +41,16 @@ class Passport {
            const boost::int8_t &max_crypto_thread_count)
       : crypto_key_pairs_(rsa_key_size, max_crypto_thread_count),
         packet_handler_(),
-        kSmidAppendix_("1") {}
+        kSmidAppendix_("1"),
+        pending_public_name_(),
+        public_name_() {}
 
   // Starts buffering cryptographic key pairs
   virtual void Init();
 
   virtual ~Passport() {}
+
+  void StopCreatingKeyPairs();
 
   // Used to initilise packet_handler_ in all cases.
   // Creates a pending MID and SMID which need to have their RID set.  If
@@ -247,6 +251,8 @@ class Passport {
   std::string SignaturePacketPublicKeySignature(const PacketType &packet_type,
                                                 bool confirmed);
 
+  std::string public_name() const { return public_name_; }
+
   // Removes all packets from packet_handler_.
   void Clear() { packet_handler_.Clear(); }
 
@@ -277,6 +283,7 @@ class Passport {
   std::tr1::shared_ptr<TmidPacket> PendingStmid();
   SystemPacketHandler packet_handler_;
   const std::string kSmidAppendix_;
+  std::string pending_public_name_, public_name_;
 };
 
 }  // namespace passport

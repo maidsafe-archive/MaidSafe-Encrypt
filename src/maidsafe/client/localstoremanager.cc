@@ -436,6 +436,7 @@ ReturnCode LocalStoreManager::DeletePacket_DeleteFromDb(
                  " delete <key, value>(%s, %s).\n",
                  hex_key.substr(0, 10).c_str(), HexSubstr(values[n]).c_str());
           printf("%d rows affected\n", a);
+                                printf("\tLocalStoreManager::DeletePacket_DeleteFromDb - %s\n", s.c_str());
 #endif
           return kDeletePacketFailure;
         }
@@ -542,6 +543,7 @@ ReturnCode LocalStoreManager::StorePacket_InsertToDb(const std::string &key,
 #endif
       return kStoreManagerError;
     }
+                                printf("\tLocalStoreManager::StorePacket_InsertToDb - %s\n", s.c_str());
     return kSuccess;
   }
   catch(CppSQLite3Exception &e) {  // NOLINT

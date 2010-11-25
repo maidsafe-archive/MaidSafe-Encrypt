@@ -85,6 +85,9 @@ class ClientControllerTest : public testing::Test {
   void TearDown() {
 #ifndef MS_NETWORK_TEST
     cc_->CloseConnection(true);
+    cc_->auth_.tmid_op_status_ = Authentication::kFailed;
+    cc_->auth_.stmid_op_status_ = Authentication::kFailed;
+    cc_->Destroy();
 #endif
   }
 
@@ -169,6 +172,7 @@ TEST_MS_NET(ClientControllerTest, FUNC, MAID, CC_ChangeDetails) {
   ASSERT_EQ(pin, ss_->Pin());
   ASSERT_EQ(password, ss_->Password());
   printf("User created.\n");
+  ASSERT_EQ(0, cc_->SaveSession());
 //  boost::this_thread::sleep(boost::posix_time::seconds(15));
 
   ASSERT_TRUE(cc_->ChangeUsername("juan.smer"));
@@ -308,9 +312,8 @@ TEST_MS_NET(ClientControllerTest, FUNC, MAID, CC_CreatePubUsername) {
   printf("Logged out.\n");
 }
 
-/*
 TEST_MS_NET(ClientControllerTest, FUNC, MAID, CC_LeaveNetwork) {
-  std::string username ("User4");
+  std::string username("User4");
   std::string pin("4567");
   std::string password("The chubster has landed.");
   ss_ = SessionSingleton::getInstance();
@@ -331,7 +334,7 @@ TEST_MS_NET(ClientControllerTest, FUNC, MAID, CC_LeaveNetwork) {
   ASSERT_TRUE(ss_->Username().empty());
   ASSERT_TRUE(ss_->Pin().empty());
   ASSERT_TRUE(ss_->Password().empty());
-  test_cc::Sleep(60));
+  test_cc::Sleep(60);
   printf("Logged out.\n===========\n\n");
 
   ASSERT_EQ(kUserExists, cc_->CheckUserExists(username, pin, kDefCon3));
@@ -344,7 +347,7 @@ TEST_MS_NET(ClientControllerTest, FUNC, MAID, CC_LeaveNetwork) {
   printf("Logged in.\n==========\n\n");
 
   ASSERT_TRUE(cc_->LeaveMaidsafeNetwork());
-  test_cc::Sleep(60));
+  test_cc::Sleep(60);
   printf("Left maidsafe ='(.\n==================\n\n");
 
   ASSERT_EQ(kUserDoesntExist, cc_->CheckUserExists(username, pin, kDefCon3));
@@ -363,8 +366,6 @@ TEST_MS_NET(ClientControllerTest, FUNC, MAID, CC_LeaveNetwork) {
   ASSERT_TRUE(ss_->Password().empty());
   printf("Logged out.\n===========\n\n");
 }
-
-*/
 
 TEST_MS_NET(ClientControllerTest, FUNC, MAID, CC_BackupFile) {
   std::string username("User5");
