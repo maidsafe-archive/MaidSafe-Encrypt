@@ -155,6 +155,7 @@ class LocalStoreManagerTest : public testing::Test {
         printf("%s\n", e.what());
       }
     }
+    ss_->Destroy();
   }
   fs::path test_root_dir_;
   boost::shared_ptr<ChunkStore> client_chunkstore_;

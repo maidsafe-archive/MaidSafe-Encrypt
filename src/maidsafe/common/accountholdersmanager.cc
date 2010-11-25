@@ -56,7 +56,6 @@ void AccountHoldersManager::Update() {
 }
 
 void AccountHoldersManager::UpdateGroup(AccountHolderGroupFunctor callback) {
-//   printf("*** AccountHoldersManager::UpdateGroup ***\n");
   if (account_name_.empty()) {
 #ifdef DEBUG
     printf("In AHM::UpdateGroup, no account name set!\n");
@@ -80,22 +79,20 @@ void AccountHoldersManager::FindNodesCallback(
     AccountHolderGroupFunctor callback) {
   std::vector<kad::Contact> account_holder_group;
   {
-//   printf("In AccountHoldersManager::FindNodesCallback, before mutex lock\n");
     boost::mutex::scoped_lock lock(mutex_);
-//   printf("In AccountHoldersManager::FindNodesCallback, after mutex lock\n");
     if (result == kSuccess) {
       last_update_ = boost::posix_time::microsec_clock::universal_time();
       account_holder_group = closest_nodes;
       // Vault cannot be AccountHolder for self
-      if (!RemoveKadContact(pmid_, &account_holder_group))
-        if (ContactWithinClosest(account_name_, kad::Contact(pmid_, "", 0),
-                                 account_holder_group))
-          account_holder_group.pop_back();
+      RemoveKadContact(pmid_, &account_holder_group);
+//      if (!RemoveKadContact(pmid_, &account_holder_group))
+//        if (ContactWithinClosest(account_name_, kad::Contact(pmid_, "", 0),
+//                                 account_holder_group))
+//          account_holder_group.pop_back();
     }
     account_holder_group_ = account_holder_group;
     update_in_progress_ = false;
     cond_var_.notify_all();
-//   printf("In AccountHoldersManager::FindNodesCallback, after mutex scope\n");
   }
   callback(result, account_holder_group);
 }
