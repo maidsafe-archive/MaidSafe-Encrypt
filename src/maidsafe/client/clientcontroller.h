@@ -120,7 +120,6 @@ class ClientController {
   // clean_up_transport is true, UDT cannot be restarted, so this is a
   // permanent cessation of the transport layer.
   void CloseConnection(bool clean_up_transport);
-  void Destroy();
   void StopRvPing();
   int ParseDa();
   int SerialiseDa();

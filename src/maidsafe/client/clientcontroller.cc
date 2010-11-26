@@ -692,13 +692,6 @@ void ClientController::CloseConnection(bool clean_up_transport) {
   return;
 }
 
-void ClientController::Destroy() {
-  ss_->Destroy();
-  single_.reset();
-  boost::once_flag temp = BOOST_ONCE_INIT;
-  flag_ = temp;
-}
-
 void ClientController::StopRvPing() {
   if (!initialised_) {
 #ifdef DEBUG

@@ -561,7 +561,7 @@ void Authentication::SaveSessionCallback(
       passport_->ConfirmMasterDataUpdate(save_session_data->mid,
           save_session_data->smid, save_session_data->tmid);
       save_session_data->functor(kFailedToDeleteOldPacket);
-    } else {
+    } else if (save_session_data->op_type != kDeleteOld) {
       passport_->RevertMasterDataUpdate();
       save_session_data->functor(kAuthenticationError);
     }

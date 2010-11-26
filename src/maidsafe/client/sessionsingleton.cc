@@ -55,13 +55,6 @@ bool SessionSingleton::ResetSession() {
   return true;
 }
 
-void SessionSingleton::Destroy() {
-  passport_->StopCreatingKeyPairs();
-  single_.reset();
-  boost::once_flag temp = BOOST_ONCE_INIT;
-  flag_ = temp;
-}
-
 
 ///////////////////////////////
 //// User Details Handling ////

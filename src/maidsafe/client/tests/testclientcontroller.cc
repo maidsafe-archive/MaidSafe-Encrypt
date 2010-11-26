@@ -87,7 +87,7 @@ class ClientControllerTest : public testing::Test {
     cc_->CloseConnection(true);
     cc_->auth_.tmid_op_status_ = Authentication::kFailed;
     cc_->auth_.stmid_op_status_ = Authentication::kFailed;
-    cc_->Destroy();
+    cc_->ss_->passport_->StopCreatingKeyPairs();
 #endif
   }
 

@@ -253,8 +253,8 @@ class Passport {
 
   std::string public_name() const { return public_name_; }
 
-  // Removes all packets from packet_handler_.
-  void Clear() { packet_handler_.Clear(); }
+  // Removes all packets from packet_handler_ and clears public name
+  void Clear();
 
  protected:
   CryptoKeyPairs crypto_key_pairs_;

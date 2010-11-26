@@ -53,6 +53,7 @@ class PDVaultTest;
 
 namespace test {
 class SessionSingletonTest;
+class ClientControllerTest;
 class RunPDClient;
 class DataAtlasHandlerTest;
 class ImHandlerTest;
@@ -138,7 +139,6 @@ class SessionSingleton {
   }
   bool ResetSession();
   virtual ~SessionSingleton() {}
-  void Destroy();
 
   ///////////////////////////////
   //// User Details Handling ////
@@ -344,6 +344,7 @@ class SessionSingleton {
   friend class ClientUtils;
   friend class MockSessionSingleton;
   friend class test::SessionSingletonTest;
+  friend class test::ClientControllerTest;
   friend class test::RunPDClient;
   friend class vault::test::RunPDVaults;
   friend class vault::test::PDVaultTest;

@@ -568,6 +568,12 @@ std::tr1::shared_ptr<TmidPacket> Passport::PendingStmid() {
       packet_handler_.GetPacket(STMID, false));
 }
 
+void Passport::Clear() {
+  public_name_.clear();
+  pending_public_name_.clear();
+  packet_handler_.Clear();
+}
+
 }  // namespace passport
 
 }  // namespace maidsafe

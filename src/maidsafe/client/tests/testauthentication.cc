@@ -60,9 +60,7 @@ class AuthenticationTest : public testing::Test {
     ss_ = SessionSingleton::getInstance();
     ss_->ResetSession();
   }
-  void TearDown() {
-    ss_->Destroy();
-  }
+  void TearDown() {}
 
   NetworkTest network_test_;
   SessionSingleton *ss_;
@@ -464,10 +462,10 @@ TEST_MS_NET(AuthenticationTest, FUNC, MAID, CreatePublicName) {
             authentication_.CreatePublicName("el public iuserneim"))
             << "Created public username_ twice";
   // Reset PublicUsername to allow attempt to save same public name to network.
-  ASSERT_TRUE(ss_->SetPublicUsername(""));
-  ASSERT_EQ(kPublicUsernameExists,
-            authentication_.CreatePublicName("el public iuserneim"))
-            << "Created public username_ twice";
+//  ASSERT_TRUE(ss_->SetPublicUsername(""));
+//  ASSERT_EQ(kPublicUsernameExists,
+//            authentication_.CreatePublicName("el public iuserneim"))
+//            << "Created public username_ twice";
   authentication_.tmid_op_status_ = Authentication::kFailed;
   authentication_.stmid_op_status_ = Authentication::kFailed;
 }
