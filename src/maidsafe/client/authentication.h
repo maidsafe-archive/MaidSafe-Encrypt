@@ -72,22 +72,27 @@ class Authentication {
                        const std::string &pin,
                        const std::string &password,
                        const std::string &serialised_datamap);
-  void SaveSession(const std::string &serialised_data_atlas,
+  void SaveSession(const std::string &serialised_master_datamap,
                    const VoidFuncOneInt &functor);
-  int SaveSession(const std::string &serialised_data_atlas);
+  int SaveSession(const std::string &serialised_master_datamap);
   // Used when logging in.
-  int GetUserData(const std::string &password,
-                  std::string *serialised_data_atlas);
+  void GetMasterDataMap(
+      const std::string &password,
+      boost::shared_ptr<boost::mutex> login_mutex,
+      boost::shared_ptr<boost::condition_variable> login_cond_var,
+      boost::shared_ptr<int> result,
+      boost::shared_ptr<std::string> serialised_master_datamap,
+      boost::shared_ptr<std::string> surrogate_serialised_master_datamap);
   int CreateMsidPacket(std::string *msid_name,
                        std::string *msid_public_key,
                        std::string *msid_private_key);
   int CreatePublicName(const std::string &public_name);
   int RemoveMe();
-  int ChangeUsername(const std::string &serialised_data_atlas,
+  int ChangeUsername(const std::string &serialised_master_datamap,
                      const std::string &new_username);
-  int ChangePin(const std::string &serialised_data_atlas,
+  int ChangePin(const std::string &serialised_master_datamap,
                 const std::string &new_pin);
-  int ChangePassword(const std::string &serialised_data_atlas,
+  int ChangePassword(const std::string &serialised_master_datamap,
                      const std::string &new_password);
   int PublicUsernamePublicKey(const std::string &public_username,
                               std::string *public_key);
@@ -150,7 +155,7 @@ class Authentication {
   void DeletePacketCallback(const ReturnCode &return_code,
                             const passport::PacketType &packet_type,
                             OpStatus *op_status);
-  int ChangeUserData(const std::string &serialised_data_atlas,
+  int ChangeUserData(const std::string &serialised_master_datamap,
                      const std::string &new_username,
                      const std::string &new_pin);
   bool CheckUsername(const std::string &username);

@@ -40,12 +40,10 @@ enum ReturnCode {
   kPasswordFailure = -1002,
   kUserDoesntExist = -1003,
   kUserExists = -1004,
-//  kInvalidUsernameOrPin = -1005,
-  kPublicUsernameExists = -1006,
-  kPublicUsernameAlreadySet = -1007,
-//  kAuthenticationTimeout = -1007,
-  kFailedToDeleteOldPacket = -1008,
-  kBadPacket = -1009,
+  kPublicUsernameExists = -1005,
+  kPublicUsernameAlreadySet = -1006,
+  kFailedToDeleteOldPacket = -1007,
+  kBadPacket = -1008,
 
   // Buffer Packet Handler
   kBPError = -2001,

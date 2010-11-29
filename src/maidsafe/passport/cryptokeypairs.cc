@@ -58,6 +58,7 @@ bool CryptoKeyPairs::StartToCreateKeyPairs(
     if (started_)
       return false;
     started_ = true;
+    stopping_ = false;
   }
   keypairs_todo_ = no_of_keypairs;
   keypairs_done_ = keypairs_.size();

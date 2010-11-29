@@ -588,11 +588,42 @@ bool ClientController::ValidateUser(const std::string &password) {
     return false;
   }
   ser_da_.clear();
-  ser_dm_.clear();
-  int result = auth_.GetUserData(password, &ser_dm_);
 
-  if (result != kSuccess) {
+  boost::shared_ptr<boost::mutex> login_mutex(new boost::mutex);
+  boost::shared_ptr<boost::condition_variable> login_cond_var(
+      new boost::condition_variable);
+  boost::shared_ptr<int> result(new int(kPendingResult));
+  boost::shared_ptr<std::string> serialised_master_datamap(new std::string);
+  boost::shared_ptr<std::string> surrogate_serialised_master_datamap(
+      new std::string);
+  boost::thread(&Authentication::GetMasterDataMap, &auth_, password,
+      login_mutex, login_cond_var, result, serialised_master_datamap,
+      surrogate_serialised_master_datamap);
+  try {
+    boost::mutex::scoped_lock lock(*login_mutex);
+    while (*result == kPendingResult)
+      login_cond_var->wait(lock);
+  }
+  catch(const std::exception &e) {
+#ifdef DEBUG
+    printf("ClientController::ValidateUser: %s\n", e.what());
+#endif
+    return false;
+  }
+
+  if (!serialised_master_datamap->empty()) {
+#ifdef DEBUG
+    printf("ClientController::ValidateUser - Using TMID\n");
+#endif
+    ser_dm_ = *serialised_master_datamap;
+  } else if (!surrogate_serialised_master_datamap->empty()) {
+#ifdef DEBUG
+    printf("ClientController::ValidateUser - Using STMID\n");
+#endif
+    ser_dm_ = *surrogate_serialised_master_datamap;
+  } else {
     // Password validation failed
+    ser_dm_.clear();
     ss_->ResetSession();
 #ifdef DEBUG
     printf("ClientController::ValidateUser - Invalid password.\n");
