@@ -542,31 +542,35 @@ SET(NETWORK_SYSTEM_TEST_TIMEOUT 3600)
 
 ADD_EXECUTABLE(TESTcommon
                  ${ALL_FILES_COMMON_TESTS_DIR}
+                 "${SRC_MAIDSAFE}/sharedtest/cached_keys.h"
                  "${SRC_MAIDSAFE}/sharedtest/chunkstoreops.h"
                  "${SRC_MAIDSAFE}/sharedtest/mockkadops.cc"
                  "${SRC_MAIDSAFE}/sharedtest/mockkadops.h"
+                 "${SRC_MAIDSAFE}/sharedtest/testcallback.h"
                  "${SRC_MAIDSAFE}/sharedtest/threadpool.cc"
                  "${SRC_MAIDSAFE}/sharedtest/threadpool.h"
                  "${SRC_MAIDSAFE}/sharedtest/tests_main.cc")
 ADD_EXECUTABLE(TESTclientfilesystem
                  ${ALL_FILES_CLIENT_FILESYSTEM_TESTS_DIR}
+                 "${SRC_MAIDSAFE}/sharedtest/cachepassport.h"
+                 "${SRC_MAIDSAFE}/sharedtest/testcallback.h"
                  "${SRC_MAIDSAFE}/sharedtest/tests_main.cc")
 ADD_EXECUTABLE(TESTclient
                  ${ALL_FILES_CLIENT_TESTS_DIR}
+                 ${NETWORK_TEST_FILES}
                  "${SRC_MAIDSAFE}/sharedtest/cached_keys.h"
                  "${SRC_MAIDSAFE}/sharedtest/cachepassport.h"
                  "${SRC_MAIDSAFE}/sharedtest/mockkadops.cc"
                  "${SRC_MAIDSAFE}/sharedtest/mockkadops.h"
-                 "${SRC_MAIDSAFE}/sharedtest/networktest.cc"
-                 "${SRC_MAIDSAFE}/sharedtest/networktest.h"
+                 "${SRC_MAIDSAFE}/sharedtest/mocksessionsingleton.h"
                  "${SRC_MAIDSAFE}/sharedtest/threadpool.cc"
-                 "${SRC_MAIDSAFE}/sharedtest/threadpool.h"
-                 "${SRC_MAIDSAFE}/sharedtest/tests_main.cc")
+                 "${SRC_MAIDSAFE}/sharedtest/threadpool.h" )
 
 ADD_EXECUTABLE(TESTfuse EXCLUDE_FROM_ALL
                  ${ALL_FILES_FUSE_TESTS_DIR})
 ADD_EXECUTABLE(TESTvault
                  ${ALL_FILES_VAULT_TESTS_DIR}
+                 "${SRC_MAIDSAFE}/sharedtest/cached_keys.h"
                  "${SRC_MAIDSAFE}/sharedtest/chunkstoreops.h"
                  "${SRC_MAIDSAFE}/sharedtest/mockkadops.cc"
                  "${SRC_MAIDSAFE}/sharedtest/mockkadops.h"
@@ -582,20 +586,27 @@ ADD_EXECUTABLE(TESTbufferpackethandler_net
                  "${SRC_MAIDSAFE}/common/tests/testbufferpackethandler.cc")
 ADD_EXECUTABLE(TESTclientcontroller_net
                  ${NETWORK_TEST_FILES}
+                 "${SRC_MAIDSAFE}/sharedtest/mockclientcontroller.h"
                  "${SRC_MAIDSAFE}/client/tests/testclientcontroller.cc")
 ADD_EXECUTABLE(TESTclientcontroller_local
                  ${NETWORK_TEST_FILES}
+                 "${SRC_MAIDSAFE}/sharedtest/mockclientcontroller.h"
                  "${SRC_MAIDSAFE}/client/tests/testclientcontroller.cc")
 ADD_EXECUTABLE(TESTimconnectionhandler_net
                  ${NETWORK_TEST_FILES}
                  "${SRC_MAIDSAFE}/client/tests/testimconnhandler.cc"
                  "${SRC_MAIDSAFE}/client/tests/testimmessaging.cc")
 ADD_EXECUTABLE(TESTpdvault_net
+                 "${SRC_MAIDSAFE}/sharedtest/localvaults.h"
+                 "${SRC_MAIDSAFE}/sharedtest/mocksessionsingleton.h"
+                 "${SRC_MAIDSAFE}/sharedtest/networktest.h"
+                 "${SRC_MAIDSAFE}/sharedtest/testcallback.h"
                  "${SRC_MAIDSAFE}/vault/tests/testpdvault.cc")
 
 ADD_EXECUTABLE(DEMOclient
                  "${SRC_MAIDSAFE}/client/tests/client_main.cc")
 ADD_EXECUTABLE(DEMOvault
+                 "${SRC_MAIDSAFE}/sharedtest/mocksessionsingleton.h"
                  "${SRC_MAIDSAFE}/vault/tests/vault_main.cc")
 IF(WIN32)
   ADD_EXECUTABLE(vault "${SRC_MAIDSAFE}/vault/win_service.cc")

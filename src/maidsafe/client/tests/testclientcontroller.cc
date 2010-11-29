@@ -89,6 +89,7 @@ class ClientControllerTest : public testing::Test {
     cc_->auth_.stmid_op_status_ = Authentication::kFailed;
     cc_->ss_->passport_->StopCreatingKeyPairs();
 #endif
+    cc_->initialised_ = false;
   }
 
   NetworkTest network_test_;
@@ -101,7 +102,7 @@ class ClientControllerTest : public testing::Test {
   ClientControllerTest &operator=(const ClientControllerTest&);
 };
 
-TEST_MS_NET(ClientControllerTest, FUNC, MAID, CC_LoginSequence) {
+TEST_MS_NET(ClientControllerTest, FUNC, MAID, LoginSequence) {
   std::string username("User1");
   std::string pin("1234");
   std::string password("The beagle has landed.");
@@ -156,7 +157,7 @@ TEST_MS_NET(ClientControllerTest, FUNC, MAID, CC_LoginSequence) {
   printf("Can't log in with fake details.\n");
 }
 
-TEST_MS_NET(ClientControllerTest, FUNC, MAID, CC_ChangeDetails) {
+TEST_MS_NET(ClientControllerTest, FUNC, MAID, ChangeDetails) {
   std::string username("User2");
   std::string pin("2345");
   std::string password("The axolotl has landed.");
@@ -257,7 +258,7 @@ TEST_MS_NET(ClientControllerTest, FUNC, MAID, CC_ChangeDetails) {
   printf("Can't log in with old u/p/w.\n");
 }
 
-TEST_MS_NET(ClientControllerTest, FUNC, MAID, CC_CreatePubUsername) {
+TEST_MS_NET(ClientControllerTest, FUNC, MAID, CreatePubUsername) {
   std::string username("User3");
   std::string pin("3456");
   std::string password("The fanjeeta has landed.");
@@ -312,7 +313,7 @@ TEST_MS_NET(ClientControllerTest, FUNC, MAID, CC_CreatePubUsername) {
   printf("Logged out.\n");
 }
 
-TEST_MS_NET(ClientControllerTest, FUNC, MAID, CC_LeaveNetwork) {
+TEST_MS_NET(ClientControllerTest, FUNC, MAID, LeaveNetwork) {
   std::string username("User4");
   std::string pin("4567");
   std::string password("The chubster has landed.");
@@ -367,7 +368,7 @@ TEST_MS_NET(ClientControllerTest, FUNC, MAID, CC_LeaveNetwork) {
   printf("Logged out.\n===========\n\n");
 }
 
-TEST_MS_NET(ClientControllerTest, FUNC, MAID, CC_BackupFile) {
+TEST_MS_NET(ClientControllerTest, FUNC, MAID, BackupFile) {
   std::string username("User5");
   std::string pin("5678");
   std::string password("The limping dog has landed.");
@@ -435,7 +436,7 @@ TEST_MS_NET(ClientControllerTest, FUNC, MAID, CC_BackupFile) {
   printf("Logged out user.\n");
 }
 
-TEST_MS_NET(ClientControllerTest, FUNC, MAID, CC_SaveSession) {
+TEST_MS_NET(ClientControllerTest, FUNC, MAID, SaveSession) {
   // Create a user
   std::string username("User5andAhalf");
   std::string pin("55678");
@@ -476,18 +477,18 @@ TEST_MS_NET(ClientControllerTest, FUNC, MAID, CC_SaveSession) {
   // Save the session
   ASSERT_EQ(0, cc_->SaveSession());
   printf("\n\n\nSaved the session\n\n\n");
-  boost::this_thread::sleep(boost::posix_time::seconds(60));
-  // Reset the client controller
-  /*
-  printf("Client controller address before: %d\n", cc_);
-  cc_ = NULL;
-  cc_ = ClientController::getInstance();
-  printf("Client controller address after: %d\n", cc_);
-  */
+  boost::this_thread::sleep(boost::posix_time::seconds(10));
   network_test_.chunkstore()->Clear();
   printf("\n\n\nCleared the chunkstore\n\n\n");
   ss_->ResetSession();
+  // Reset the client controller
+  ClientController::single_.reset();
+  boost::once_flag temp = BOOST_ONCE_INIT;
+  ClientController::flag_ = temp;
+  cc_ = ClientController::getInstance();
+  cc_->Init(network_test_.K());
   printf("\n\n\nReset the session\n\n\n");
+
 
   // Remove the local file
   if (fs::exists(full_path))
@@ -531,7 +532,7 @@ TEST_MS_NET(ClientControllerTest, FUNC, MAID, CC_SaveSession) {
       fs::remove(full_path);
 }
 
-TEST_MS_NET(ClientControllerTest, FUNC, MAID, CC_ContactAddition) {
+TEST_MS_NET(ClientControllerTest, FUNC, MAID, ContactAddition) {
   std::string username("User6");
   std::string pin("6789");
   std::string password("The deleted folder has landed.");
@@ -680,7 +681,7 @@ TEST_MS_NET(ClientControllerTest, FUNC, MAID, CC_ContactAddition) {
 }
 
 /*
-TEST_MS_NET(ClientControllerTest, FUNC, MAID, CC_Shares) {
+TEST_MS_NET(ClientControllerTest, FUNC, MAID, Shares) {
   ss_ = SessionSingleton::getInstance();
   ASSERT_TRUE(ss_->Username().empty());
   ASSERT_TRUE(ss_->Pin().empty());
@@ -772,7 +773,7 @@ TEST_MS_NET(ClientControllerTest, FUNC, MAID, CC_Shares) {
 }
 */
 
-TEST_MS_NET(ClientControllerTest, FUNC, MAID, CC_FuseFunctions) {
+TEST_MS_NET(ClientControllerTest, FUNC, MAID, FuseFunctions) {
   std::string username("User7");
   std::string pin("7890");
   std::string password("The pint of lager has landed on the floor.");
@@ -927,7 +928,7 @@ TEST_MS_NET(ClientControllerTest, FUNC, MAID, CC_FuseFunctions) {
   printf("Logged out user.\n");
 }
 
-TEST_MS_NET(ClientControllerTest, BEH, MAID, CC_HandleMessages) {
+TEST_MS_NET(ClientControllerTest, BEH, MAID, HandleMessages) {
   int total_msgs(5);
   boost::uint32_t now(base::GetEpochTime());
   std::list<ValidatedBufferPacketMessage> valid_messages;
@@ -951,7 +952,7 @@ TEST_MS_NET(ClientControllerTest, BEH, MAID, CC_HandleMessages) {
   ASSERT_EQ(size_t(1), cc_->instant_messages_.size());
 }
 
-TEST_MS_NET(ClientControllerTest, FUNC, MAID, CC_ClearStaleMessages) {
+TEST_MS_NET(ClientControllerTest, FUNC, MAID, ClearStaleMessages) {
   size_t total_msgs(5);
   boost::thread thr(&ClientController::ClearStaleMessages, cc_);
   boost::uint32_t now(base::GetEpochTime());

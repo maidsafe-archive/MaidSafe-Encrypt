@@ -69,7 +69,8 @@ LocalStoreManager::LocalStoreManager(
           db_(), vbph_(), mutex_(),
           local_sm_dir_(db_directory.string()),
           client_chunkstore_(client_chunkstore),
-          ss_(SessionSingleton::getInstance()) {}
+          ss_(SessionSingleton::getInstance()),
+          chunks_pending_() {}
 
 LocalStoreManager::~LocalStoreManager() {
   bool t(false);
