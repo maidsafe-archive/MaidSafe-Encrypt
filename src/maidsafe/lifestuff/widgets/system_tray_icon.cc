@@ -116,3 +116,41 @@ void SystemTrayIcon::changeEvent(QEvent*) {
 //  }
 }
 
+void SystemTrayIcon::onLoginMOde()
+{
+    if (menu_) {
+        action_open_->setEnabled(false);  
+        action_data_share_->setEnabled(false);
+        action_send_file_->setEnabled(false);
+        action_quit_->setEnabled(true);
+    }
+}
+
+void SystemTrayIcon::onSetupUserMode()
+{
+    if (menu_) {
+        action_open_->setEnabled(false);  
+        action_data_share_->setEnabled(false);
+        action_send_file_->setEnabled(false);
+        action_quit_->setEnabled(true);
+    }
+}
+
+void SystemTrayIcon::onLoggedInMode()
+{
+    if (menu_) {
+        action_open_->setEnabled(true);  
+        action_data_share_->setEnabled(true);
+        action_send_file_->setEnabled(true);
+    }
+}
+
+void SystemTrayIcon::onLoggingOutMode()
+{
+    if (menu_) {
+        action_open_->setEnabled(false);  
+        action_data_share_->setEnabled(false);
+        action_send_file_->setEnabled(false);
+        action_quit_->setEnabled(false);
+    }
+}
