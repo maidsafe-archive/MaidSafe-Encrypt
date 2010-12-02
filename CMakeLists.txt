@@ -587,10 +587,12 @@ ADD_EXECUTABLE(TESTbufferpackethandler_net
 ADD_EXECUTABLE(TESTclientcontroller_net
                  ${NETWORK_TEST_FILES}
                  "${SRC_MAIDSAFE}/sharedtest/mockclientcontroller.h"
+                 "${SRC_MAIDSAFE}/sharedtest/mocksessionsingleton.h"
                  "${SRC_MAIDSAFE}/client/tests/testclientcontroller.cc")
 ADD_EXECUTABLE(TESTclientcontroller_local
                  ${NETWORK_TEST_FILES}
                  "${SRC_MAIDSAFE}/sharedtest/mockclientcontroller.h"
+                 "${SRC_MAIDSAFE}/sharedtest/mocksessionsingleton.h"
                  "${SRC_MAIDSAFE}/client/tests/testclientcontroller.cc")
 ADD_EXECUTABLE(TESTimconnectionhandler_net
                  ${NETWORK_TEST_FILES}

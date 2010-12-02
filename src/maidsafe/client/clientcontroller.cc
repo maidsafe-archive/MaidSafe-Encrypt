@@ -34,7 +34,6 @@
 #include "maidsafe/common/commonutils.h"
 #include "maidsafe/client/filesystem/dataatlashandler.h"
 #include "maidsafe/client/clientutils.h"
-#include "maidsafe/client/sessionsingleton.h"
 
 #if defined LOCAL_PDVAULT && !defined MS_NETWORK_TEST
 #include "maidsafe/client/localstoremanager.h"
@@ -147,7 +146,6 @@ int ClientController::Init(boost::uint8_t k) {
     return -1;
   }
   auth_.Init(sm_);
-  ss_ = SessionSingleton::getInstance();
   to_seh_file_update_ = seh_.ConnectToOnFileNetworkStatus(
                             boost::bind(&ClientController::FileUpdate,
                                         this, _1, _2));

@@ -22,13 +22,18 @@
 #define MAIDSAFE_SHAREDTEST_MOCKCLIENTCONTROLLER_H_
 
 #include "maidsafe/client/clientcontroller.h"
+#include "maidsafe/sharedtest/mocksessionsingleton.h"
 
 namespace maidsafe {
 
 class MockClientController : public ClientController {
  public:
-  MockClientController() {}
-  ~MockClientController() {}
+  MockClientController() : ClientController() {
+    ss_ = new MockSessionSingleton;
+  }
+  ~MockClientController() {
+    delete ss_;
+  }
 };
 
 }  // namespace maidsafe

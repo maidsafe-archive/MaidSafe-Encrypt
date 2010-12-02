@@ -37,6 +37,7 @@
 #include "maidsafe/client/clientutils.h"
 #include "maidsafe/client/clientcontroller.h"
 #include "maidsafe/client/sessionsingleton.h"
+#include "maidsafe/sharedtest/mockclientcontroller.h"
 #include "maidsafe/sharedtest/networktest.h"
 
 
@@ -554,43 +555,44 @@ TEST_MS_NET(ClientControllerTest, FUNC, MAID, ContactAddition) {
   ASSERT_EQ(public_username, ss_->PublicUsername());
   printf("Public Username created.\n");
 
-  ASSERT_TRUE(cc_->Logout());
-  ASSERT_TRUE(ss_->Username().empty());
-  ASSERT_TRUE(ss_->Pin().empty());
-  ASSERT_TRUE(ss_->Password().empty());
-  printf("Logged out.\n");
+//  ASSERT_TRUE(cc_->Logout());
+//  ASSERT_TRUE(ss_->Username().empty());
+//  ASSERT_TRUE(ss_->Pin().empty());
+//  ASSERT_TRUE(ss_->Password().empty());
+//  printf("Logged out.\n");
 
+  MockClientController cc1;
   std::string username1("User61");
   std::string pin1("67891");
   std::string password1("The deleted folder has landed.1");
   std::string public_username1("el.mambo.nalga1");
 
-  ASSERT_TRUE(cc_->CreateUser(username1, pin1, password1, vcp_));
-  ASSERT_EQ(username1, ss_->Username());
-  ASSERT_EQ(pin1, ss_->Pin());
-  ASSERT_EQ(password1, ss_->Password());
+  ASSERT_TRUE(cc1.CreateUser(username1, pin1, password1, vcp_));
+  ASSERT_EQ(username1, cc1.ss_->Username());
+  ASSERT_EQ(pin1, cc1.ss_->Pin());
+  ASSERT_EQ(password1, cc1.ss_->Password());
   printf("User1 created.\n");
 
-  ASSERT_TRUE(cc_->CreatePublicUsername(public_username1));
-  ASSERT_EQ(public_username1, ss_->PublicUsername());
+  ASSERT_TRUE(cc1.CreatePublicUsername(public_username1));
+  ASSERT_EQ(public_username1, cc1.ss_->PublicUsername());
   printf("Public Username 1 created.\n");
 
-  ASSERT_EQ(0, cc_->AddContact(public_username));
+  ASSERT_EQ(0, cc1.AddContact(public_username));
   printf("Public Username 1 added Public Username.\n");
 
-  ASSERT_TRUE(cc_->Logout());
-  ASSERT_TRUE(ss_->Username().empty());
-  ASSERT_TRUE(ss_->Pin().empty());
-  ASSERT_TRUE(ss_->Password().empty());
-  printf("Logged out 1.\n");
-
-  ASSERT_EQ(kUserExists, cc_->CheckUserExists(username, pin, kDefCon3));
-  ASSERT_TRUE(cc_->ValidateUser(password));
-  ASSERT_EQ(username, ss_->Username());
-  ASSERT_EQ(pin, ss_->Pin());
-  ASSERT_EQ(password, ss_->Password());
-  ASSERT_EQ(public_username, ss_->PublicUsername());
-  printf("Logged in.\n");
+//  ASSERT_TRUE(cc_->Logout());
+//  ASSERT_TRUE(ss_->Username().empty());
+//  ASSERT_TRUE(ss_->Pin().empty());
+//  ASSERT_TRUE(ss_->Password().empty());
+//  printf("Logged out 1.\n");
+//
+//  ASSERT_EQ(kUserExists, cc_->CheckUserExists(username, pin, kDefCon3));
+//  ASSERT_TRUE(cc_->ValidateUser(password));
+//  ASSERT_EQ(username, ss_->Username());
+//  ASSERT_EQ(pin, ss_->Pin());
+//  ASSERT_EQ(password, ss_->Password());
+//  ASSERT_EQ(public_username, ss_->PublicUsername());
+//  printf("Logged in.\n");
 
   ASSERT_TRUE(cc_->GetMessages());
   std::list<InstantMessage> messages;
@@ -612,23 +614,23 @@ TEST_MS_NET(ClientControllerTest, FUNC, MAID, ContactAddition) {
   ASSERT_FALSE(ss_->GetContactPublicKey(public_username1).empty());
   printf("Public Username confirmed Public Username 1.\n");
 
-  ASSERT_TRUE(cc_->Logout());
-  ASSERT_TRUE(ss_->Username().empty());
-  ASSERT_TRUE(ss_->Pin().empty());
-  ASSERT_TRUE(ss_->Password().empty());
-  printf("Logged out.\n");
+//  ASSERT_TRUE(cc_->Logout());
+//  ASSERT_TRUE(ss_->Username().empty());
+//  ASSERT_TRUE(ss_->Pin().empty());
+//  ASSERT_TRUE(ss_->Password().empty());
+//  printf("Logged out.\n");
+//
+//  ASSERT_EQ(kUserExists, cc_->CheckUserExists(username1, pin1, kDefCon3));
+//  ASSERT_TRUE(cc_->ValidateUser(password1));
+//  ASSERT_EQ(username1, ss_->Username());
+//  ASSERT_EQ(pin1, ss_->Pin());
+//  ASSERT_EQ(password1, ss_->Password());
+//  ASSERT_EQ(public_username1, ss_->PublicUsername());
+//  printf("Logged in 1.\n");
 
-  ASSERT_EQ(kUserExists, cc_->CheckUserExists(username1, pin1, kDefCon3));
-  ASSERT_TRUE(cc_->ValidateUser(password1));
-  ASSERT_EQ(username1, ss_->Username());
-  ASSERT_EQ(pin1, ss_->Pin());
-  ASSERT_EQ(password1, ss_->Password());
-  ASSERT_EQ(public_username1, ss_->PublicUsername());
-  printf("Logged in 1.\n");
-
-  ASSERT_TRUE(cc_->GetMessages());
+  ASSERT_TRUE(cc1.GetMessages());
   messages.clear();
-  ASSERT_EQ(0, cc_->GetInstantMessages(&messages));
+  ASSERT_EQ(0, cc1.GetInstantMessages(&messages));
   ASSERT_EQ(size_t(1), messages.size());
   InstantMessage im1 = messages.front();
   ASSERT_TRUE(im1.has_contact_notification());
@@ -640,27 +642,27 @@ TEST_MS_NET(ClientControllerTest, FUNC, MAID, ContactAddition) {
   ContactInfo ci1;
   if (cn1.has_contact())
     ci1 = cn1.contact();
-  ASSERT_EQ(0, cc_->HandleAddContactResponse(ci1, im1.sender()));
+  ASSERT_EQ(0, cc1.HandleAddContactResponse(ci1, im1.sender()));
   printf("Public Username 1 received Public Username confirmation.\n");
 
   std::string text_msg("The arctic trails have their secret tales");
   std::vector<std::string> contact_names;
   contact_names.push_back(public_username);
-  ASSERT_EQ(0, cc_->SendInstantMessage(text_msg, contact_names, ""));
-  printf("Public Username 1 sent txt message  to Public Username.\n");
+  ASSERT_EQ(0, cc1.SendInstantMessage(text_msg, contact_names, ""));
+  printf("Public Username 1 sent txt message to Public Username.\n");
 
-  ASSERT_TRUE(cc_->Logout());
-  ASSERT_TRUE(ss_->Username().empty());
-  ASSERT_TRUE(ss_->Pin().empty());
-  ASSERT_TRUE(ss_->Password().empty());
-  printf("Logged out 1.\n");
-
-  ASSERT_EQ(kUserExists, cc_->CheckUserExists(username, pin, kDefCon3));
-  ASSERT_TRUE(cc_->ValidateUser(password));
-  ASSERT_EQ(username, ss_->Username());
-  ASSERT_EQ(pin, ss_->Pin());
-  ASSERT_EQ(password, ss_->Password());
-  ASSERT_EQ(public_username, ss_->PublicUsername());
+//  ASSERT_TRUE(cc_->Logout());
+//  ASSERT_TRUE(ss_->Username().empty());
+//  ASSERT_TRUE(ss_->Pin().empty());
+//  ASSERT_TRUE(ss_->Password().empty());
+//  printf("Logged out 1.\n");
+//
+//  ASSERT_EQ(kUserExists, cc_->CheckUserExists(username, pin, kDefCon3));
+//  ASSERT_TRUE(cc_->ValidateUser(password));
+//  ASSERT_EQ(username, ss_->Username());
+//  ASSERT_EQ(pin, ss_->Pin());
+//  ASSERT_EQ(password, ss_->Password());
+//  ASSERT_EQ(public_username, ss_->PublicUsername());
 
   ASSERT_TRUE(cc_->GetMessages());
   messages.clear();

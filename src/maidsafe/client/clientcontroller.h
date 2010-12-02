@@ -41,6 +41,7 @@
 #include "maidsafe/common/maidsafe_service_messages.pb.h"
 #include "maidsafe/common/returncodes.h"
 #include "maidsafe/client/authentication.h"
+#include "maidsafe/client/sessionsingleton.h"
 #include "maidsafe/client/filesystem/distributed_filesystem.pb.h"
 #include "maidsafe/client/filesystem/sehandler.h"
 
@@ -56,11 +57,14 @@ class ClientControllerTest_BEH_MAID_HandleMessages_Test;
 class ClientControllerTest_FUNC_MAID_NET_HandleMessages_Test;
 class ClientControllerTest_FUNC_MAID_ClearStaleMessages_Test;
 class ClientControllerTest_FUNC_MAID_NET_ClearStaleMessages_Test;
+class ClientControllerTest_FUNC_MAID_ContactAddition_Test;
+class ClientControllerTest_FUNC_MAID_NET_ContactAddition_Test;
 }
 
 class ChunkStore;
 class Contact;
 class PrivateShare;
+class MockClientController;
 struct private_share;
 
 class CCCallback {
@@ -259,6 +263,7 @@ class ClientController {
   bs2::connection ConnectToOnFileAdded(const OnFileAdded::slot_type &slot);
 
  private:
+  friend class MockClientController;
   friend class test::ClientControllerTest;
   friend class test::ClientControllerTest_FUNC_MAID_SaveSession_Test;
   friend class test::ClientControllerTest_FUNC_MAID_NET_SaveSession_Test;
@@ -266,12 +271,15 @@ class ClientController {
   friend class test::ClientControllerTest_FUNC_MAID_NET_HandleMessages_Test;
   friend class test::ClientControllerTest_FUNC_MAID_ClearStaleMessages_Test;
   friend class test::ClientControllerTest_FUNC_MAID_NET_ClearStaleMessages_Test;
+  friend class test::ClientControllerTest_FUNC_MAID_ContactAddition_Test;
+  friend class test::ClientControllerTest_FUNC_MAID_NET_ContactAddition_Test;
+
 
   // Functions
   ClientController() : client_chunkstore_(),
                        sm_(),
                        auth_(),
-                       ss_(),
+                       ss_(SessionSingleton::getInstance()),
                        ser_da_(),
                        ser_dm_(),
                        db_enc_queue_(),
