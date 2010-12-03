@@ -6,26 +6,14 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>387</width>
-    <height>395</height>
+    <width>461</width>
+    <height>464</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Create User Account</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
-   <property name="spacing">
-    <number>6</number>
-   </property>
-   <property name="topMargin">
-    <number>0</number>
-   </property>
-   <property name="rightMargin">
-    <number>0</number>
-   </property>
-   <property name="bottomMargin">
-    <number>0</number>
-   </property>
    <item>
     <widget class="QLabel" name="label">
      <property name="sizePolicy">
@@ -67,6 +55,16 @@
    <item>
     <layout class="QHBoxLayout" name="horizontalLayout">
      <item>
+      <widget class="QPushButton" name="back">
+       <property name="text">
+        <string>&lt; &amp;Back</string>
+       </property>
+       <property name="shortcut">
+        <string>Alt+B</string>
+       </property>
+      </widget>
+     </item>
+     <item>
       <spacer name="horizontalSpacer">
        <property name="orientation">
         <enum>Qt::Horizontal</enum>
@@ -80,16 +78,12 @@
       </spacer>
      </item>
      <item>
-      <widget class="QPushButton" name="back">
-       <property name="text">
-        <string>&lt; Back</string>
-       </property>
-      </widget>
-     </item>
-     <item>
       <widget class="QPushButton" name="next">
        <property name="text">
-        <string>Next &gt;</string>
+        <string>Ne&amp;xt &gt;</string>
+       </property>
+       <property name="shortcut">
+        <string>Alt+X</string>
        </property>
       </widget>
      </item>
@@ -112,7 +106,10 @@
      <item>
       <widget class="QPushButton" name="cancel">
        <property name="text">
-        <string>Cancel</string>
+        <string>&amp;Cancel</string>
+       </property>
+       <property name="shortcut">
+        <string>Alt+C</string>
        </property>
       </widget>
      </item>

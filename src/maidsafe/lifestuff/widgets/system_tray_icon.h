@@ -44,6 +44,10 @@ class SystemTrayIcon : public QSystemTrayIcon {
 
   private slots:
     void onActivated(QSystemTrayIcon::ActivationReason reason);
+    void onLoginMOde();
+    void onSetupUserMode();
+    void onLoggedInMode();
+    void onLoggingOutMode();
 
  private:
   QMenu* menu_;

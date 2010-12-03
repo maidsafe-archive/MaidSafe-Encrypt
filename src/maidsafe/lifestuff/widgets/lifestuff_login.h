@@ -57,6 +57,8 @@ class LifeStuffLogin : public QWidget {
  protected:
   // handle custom events (for thread safe ui updates)
   virtual bool event(QEvent* event);
+  virtual void mousePressEvent(QMouseEvent *);
+
   // custom tab focus behaviour lets us advance to disabled widgets
   /*!
       can tab forward from username and pin

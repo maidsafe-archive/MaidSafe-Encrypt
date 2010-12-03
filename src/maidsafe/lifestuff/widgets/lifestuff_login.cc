@@ -193,6 +193,7 @@ void LifeStuffLogin::updateUI() {
         ui_.progress_label->setVisible(false);
         ui_.progress_bar->setVisible(false);
         ui_.PassEdit->setEnabled(false);
+        ui_.label->setVisible(true);
         break;
       }
     case EDIT_PIN:
@@ -200,6 +201,7 @@ void LifeStuffLogin::updateUI() {
         ui_.progress_label->setVisible(false);
         ui_.progress_bar->setVisible(false);
         ui_.PassEdit->setEnabled(false);
+        ui_.label->setVisible(true);
         break;
       }
     case WAITING_ON_USER_CHECK:
@@ -209,6 +211,7 @@ void LifeStuffLogin::updateUI() {
         ui_.PassEdit->setEnabled(false);
 
         ui_.progress_label->setText(tr("Checking user details..."));
+        ui_.label->setVisible(false);
         break;
       }
     case EDIT_PASSWORD:
@@ -216,6 +219,7 @@ void LifeStuffLogin::updateUI() {
         ui_.progress_label->setVisible(false);
         ui_.progress_bar->setVisible(false);
         ui_.PassEdit->setEnabled(true);
+        ui_.label->setVisible(true);
         ui_.PassEdit->setFocus(Qt::OtherFocusReason);
         break;
       }
@@ -226,8 +230,15 @@ void LifeStuffLogin::updateUI() {
           ui_.PassEdit->setEnabled(false);
 
           ui_.progress_label->setText(tr("Validating password..."));
+          ui_.label->setVisible(false);
           break;
       }
+
+    default:
+        {
+        ui_.label->setVisible(true);
+        }
+        break;
   }
 
   ui_.loginBtn->setVisible(user_exists_);
@@ -346,9 +357,11 @@ void LifeStuffLogin::reset() {
   ui_.PinEdit->setEchoMode(QLineEdit::Normal);
   ui_.PinEdit->setText("PIN");
 
-  ui_.UserEdit->clear();
+  //ui_.UserEdit->clear();
+  //Qt::OtherFocusReason);
   ui_.UserEdit->setEnabled(true);
   ui_.UserEdit->setFocus(Qt::OtherFocusReason);
+  ui_.UserEdit->selectAll();
 
   updateUI();
 }
@@ -458,10 +471,10 @@ bool LifeStuffLogin::eventFilter(QObject *obj, QEvent *event) {
    } else if (obj == ui_.PinEdit) {
       if (event->type() == QEvent::FocusIn) {
         if (ui_.PinEdit->text() == tr("PIN")) {
-              ui_.PinEdit->clear();
-                 ui_.PinEdit->setEchoMode(QLineEdit::Password);
-           }
-           return true;
+          ui_.PinEdit->clear();
+          ui_.PinEdit->setEchoMode(QLineEdit::Password);
+        }
+        return true;
       } else {
       return false;
       }          
@@ -480,4 +493,21 @@ bool LifeStuffLogin::eventFilter(QObject *obj, QEvent *event) {
    }
 }
 
+void LifeStuffLogin::mousePressEvent(QMouseEvent *event)
+{
+    if (ui_.UserEdit->underMouse()) {        
+        ui_.UserEdit->setEnabled(true);
+        ui_.UserEdit->setFocus();
+        state_ = EDIT_USER;          
+    } else if (ui_.PinEdit->underMouse()) {        
+        ui_.PinEdit->setEnabled(true);
+        ui_.PinEdit->setFocus();
+        state_ = EDIT_PIN;
+  } else if (ui_.PassEdit->underMouse()) {
+      state_ = EDIT_PASSWORD;
+  } 
+
+    updateUI();
+    QWidget::mousePressEvent(event);
+}
 
