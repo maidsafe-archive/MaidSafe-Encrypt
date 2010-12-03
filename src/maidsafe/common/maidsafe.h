@@ -29,11 +29,11 @@
 #include <maidsafe/maidsafe-dht.h>
 #define THIS_MAIDSAFE_DHT_VERSION 24
 #if MAIDSAFE_DHT_VERSION < THIS_MAIDSAFE_DHT_VERSION
-#error This API is not compatible with the installed library.
-#error Please update the maidsafe-dht library.
+#error This API is not compatible with the installed library.\
+  Please update the maidsafe-dht library.
 #elif MAIDSAFE_DHT_VERSION > THIS_MAIDSAFE_DHT_VERSION
-#error This API uses a newer version of the maidsafe-dht library.
-#error Please update this project.
+#error This API uses a newer version of the maidsafe-dht library.\
+  Please update this project.
 #endif
 
 #include <string>

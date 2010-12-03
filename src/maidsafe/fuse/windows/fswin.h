@@ -27,6 +27,13 @@
 
 #include <windows.h>
 #include <dokan.h>
+#if DOKAN_VERSION < 600
+#error This API is not compatible with the installed library.\
+  Please update the dokan library.
+#elif 600 > DOKAN_VERSION
+#error This API uses a newer version of the dokan library.\
+  Please update this project.
+#endif
 
 #include <string>
 

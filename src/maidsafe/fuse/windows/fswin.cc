@@ -1363,7 +1363,7 @@ void Mount(char drive) {
 bool UnMount(char drive) {
   WCHAR mount_point[MAX_PATH];
   GetMountPoint(drive, mount_point);
-  return DokanUnmount(mount_point);
+  return DokanRemoveMountPoint(mount_point);
 }
 
 }  // namespace fs_w_fuse
