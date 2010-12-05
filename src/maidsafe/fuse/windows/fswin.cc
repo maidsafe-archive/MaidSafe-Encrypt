@@ -1259,6 +1259,7 @@ static void CallMount(char drive) {
   GetMountPoint(drive, mount_point);
   Dokan_Options->MountPoint = mount_point;
   Dokan_Options->ThreadCount = 3;
+  Dokan_Options->Version = DOKAN_VERSION;
 #ifdef DEBUG
   Dokan_Options->Options |= DOKAN_OPTION_DEBUG;
 //  Dokan_Options->Options |= DOKAN_OPTION_STDERR;
