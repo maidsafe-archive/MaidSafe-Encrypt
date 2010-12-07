@@ -69,12 +69,7 @@ int Passport::SetNewUserData(const std::string &password,
     return kNoMid;
   if (!retrieved_pending_smid)
     return kNoSmid;
-  boost::uint32_t rid(base::RandomUint32());
-  int retries(0), max_retries(3);
-  while (rid == 0 && retries < max_retries) {
-    rid = base::RandomUint32();
-    ++retries;
-  }
+  std::string rid(base::RandomString((base::RandomUint32() % 64) + 64));
   retrieved_pending_mid->SetRid(rid);
   retrieved_pending_smid->SetRid(rid);
 
@@ -133,10 +128,11 @@ int Passport::UpdateMasterData(
     return kNoSmid;
   *mid_old_value = retrieved_mid->value();
   *smid_old_value = retrieved_smid->value();
-  boost::uint32_t new_rid(base::RandomUint32()), old_rid(retrieved_mid->rid());
+  std::string new_rid(base::RandomString((base::RandomUint32() % 64) + 64));
+  std::string old_rid(retrieved_mid->rid());
   int retries(0), max_retries(3);
-  while ((new_rid == 0 || new_rid == old_rid) && retries < max_retries) {
-    new_rid = base::RandomUint32();
+  while (new_rid == old_rid && retries < max_retries) {
+    new_rid = base::RandomString((base::RandomUint32() % 64) + 64);
     ++retries;
   }
   retrieved_mid->SetRid(new_rid);
@@ -203,7 +199,7 @@ int Passport::InitialiseTmid(bool surrogate,
       retrieved_pending_mid(surrogate ? PendingSmid() : PendingMid());
   if (!retrieved_pending_mid)
     return surrogate ? kNoPendingSmid : kNoPendingMid;
-  if (retrieved_pending_mid->DecryptRid(encrypted_rid) == 0)
+  if (retrieved_pending_mid->DecryptRid(encrypted_rid).empty())
     return surrogate ? kBadSerialisedSmidRid : kBadSerialisedMidRid;
   std::tr1::shared_ptr<TmidPacket> tmid(
       new TmidPacket(retrieved_pending_mid->username(),

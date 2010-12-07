@@ -57,10 +57,10 @@ class SystemPacketHandlerTest : public testing::Test {
         kUsername2_(base::RandomAlphaNumericString(20)),
         kPin1_(boost::lexical_cast<std::string>(NonZeroRnd())),
         kPin2_(boost::lexical_cast<std::string>(NonZeroRnd())),
-        kMidRid1_(NonZeroRnd()),
-        kMidRid2_(NonZeroRnd()),
-        kSmidRid1_(NonZeroRnd()),
-        kSmidRid2_(NonZeroRnd()),
+        kMidRid1_(base::RandomString((base::RandomUint32() % 64) + 64)),
+        kMidRid2_(base::RandomString((base::RandomUint32() % 64) + 64)),
+        kSmidRid1_(base::RandomString((base::RandomUint32() % 64) + 64)),
+        kSmidRid2_(base::RandomString((base::RandomUint32() % 64) + 64)),
         kPassword1_(base::RandomAlphaNumericString(30)),
         kPassword2_(base::RandomAlphaNumericString(30)),
         kPublicName1_(base::RandomAlphaNumericString(30)),
@@ -196,7 +196,7 @@ class SystemPacketHandlerTest : public testing::Test {
   SystemPacketHandler packet_handler_;
   CryptoKeyPairs crypto_key_pairs_;
   const std::string kUsername1_, kUsername2_, kPin1_, kPin2_;
-  const boost::uint32_t kMidRid1_, kMidRid2_, kSmidRid1_, kSmidRid2_;
+  const std::string kMidRid1_, kMidRid2_, kSmidRid1_, kSmidRid2_;
   const std::string kPassword1_, kPassword2_, kPublicName1_, kPublicName2_;
   const std::string kMidPlainTextMasterData1_, kMidPlainTextMasterData2_;
   const std::string kSmidPlainTextMasterData1_, kSmidPlainTextMasterData2_;
