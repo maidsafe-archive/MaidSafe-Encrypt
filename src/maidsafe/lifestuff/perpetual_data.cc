@@ -66,7 +66,7 @@ PerpetualData::PerpetualData(QWidget* parent)
   setWindowIcon(QPixmap(":/icons/32/ms_icon_blue.gif"));
   ui_.setupUi(this);
 
-  statusBar()->hide();
+  //statusBar()->hide();
   statusBar()->addPermanentWidget(message_status_ = new QLabel);
 
 //  ui_.TheFrame->setStyleSheet("QFrame#TheFrame {
