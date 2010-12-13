@@ -87,6 +87,7 @@ PerpetualData::PerpetualData(QWidget* parent)
   //ui_.stackedWidget->addWidget(create_);
   //ui_.stackedWidget->addWidget(progressPage_);
   ui_.stackedWidget->addWidget(userPanels_);
+  
 
   //setCentralWidget(ui_.stackedWidget);
   //ui_.stackedWidget->setCurrentWidget(login_);
@@ -377,6 +378,8 @@ void PerpetualData::setState(State state) {
         emit inLoggedInState();
         enableInputs(true);
         ui_.stackedWidget->setCurrentWidget(userPanels_);
+        const QRect staRect = ui_.stackedWidget->geometry();
+        userPanels_->setGeometry(staRect);
         connect(userPanels_, SIGNAL(unreadMessages(int)),
                 this,        SLOT(onUnreadMessagesChanged(int)));
         connect(userPanels_, SIGNAL(publicUsernameChosen()),

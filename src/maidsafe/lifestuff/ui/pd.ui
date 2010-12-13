@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>284</width>
-    <height>405</height>
+    <height>538</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -829,6 +829,9 @@ QFrame#BtmFrame {
  <resources>
   <include location="../resources/resources.qrc"/>
   <include location="../resources/resources.qrc"/>
+  <include location="../resources/resources.qrc"/>
+  <include location="../resources/resources.qrc"/>
+  <include location="../../../../../Users/maidsafe/.designer/resources/resources.qrc"/>
   <include location="../resources/resources.qrc"/>
  </resources>
  <connections/>

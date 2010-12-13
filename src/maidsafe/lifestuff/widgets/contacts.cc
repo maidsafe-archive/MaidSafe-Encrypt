@@ -38,13 +38,13 @@ Contacts::Contacts(QWidget* parent)
     : Panel(parent), init_(false) {
   ui_.setupUi(this);
   ui_.add->setAutoDefault(true);
-  ui_.listWidget->setSelectionMode(QAbstractItemView::ExtendedSelection);
+  ui_.contactList->setSelectionMode(QAbstractItemView::ExtendedSelection);
   ui_.contactLineEdit->installEventFilter(this);
   ui_.contactLineEdit->setText(tr("Search Contacts"));
   ui_.contactLineEdit->setVisible(true);
   ui_.add->setVisible(true);
   sortType_ = 0;
-  ui_.msgGroupBox->setVisible(false);
+  //ui_.msgGroupBox->setVisible(false);
 
   // to enable displaying of menu pop-up for Users
   menu = new QMenu(this);
@@ -61,7 +61,7 @@ Contacts::Contacts(QWidget* parent)
   menu->addAction(deleteContact);
   //menu->addAction(sendEmail);
 
-  ui_.listWidget->setContextMenuPolicy(Qt::CustomContextMenu);
+  ui_.contactList->setContextMenuPolicy(Qt::CustomContextMenu);
 
   // Signals/Slots
 
@@ -77,7 +77,7 @@ Contacts::Contacts(QWidget* parent)
   connect(deleteContact, SIGNAL(triggered()),
           this,        SLOT(onDeleteUserClicked()));
 
-  connect(ui_.listWidget, SIGNAL(customContextMenuRequested(const QPoint&)),
+  connect(ui_.contactList, SIGNAL(customContextMenuRequested(const QPoint&)),
             this,         SLOT(customContentsMenu(const QPoint&)));
 
   // To enable the return event on the textbox
@@ -106,12 +106,13 @@ Contacts::Contacts(QWidget* parent)
           SIGNAL(deletedContact(const QString&)),
           this, SLOT(onDeletedContact(const QString&)));
 
-  connect(ui_.listWidget, SIGNAL(itemDoubleClicked(QListWidgetItem*)),
+  connect(ui_.contactList, SIGNAL(itemDoubleClicked(QListWidgetItem*)),
           this,           SLOT(onItemDoubleClicked(QListWidgetItem*)));
 
-  connect(ui_.listWidget, SIGNAL(itemSelectionChanged()),
+  connect(ui_.contactList, SIGNAL(itemSelectionChanged()),
           this,           SLOT(onItemSelectionChanged()));
 
+  PopulateMailsList();
 }
 
 
@@ -128,7 +129,7 @@ void Contacts::setActive(bool b) {
 
 void Contacts::reset() {
   // clear the list of contacts
-  ui_.listWidget->clear();
+  ui_.contactList->clear();
 
   qDeleteAll(contacts_);
   contacts_.clear();
@@ -225,7 +226,7 @@ void Contacts::addContact(Contact* contact) {
   item->setText(contact->publicName());
   item->setIcon(pixmap);
 
-  ui_.listWidget->addItem(item);
+  ui_.contactList->addItem(item);
 }
 
 void Contacts::onViewProfileClicked() {
@@ -276,7 +277,7 @@ void Contacts::onDeleteUserClicked() {
   Contact* contact_ = reinterpret_cast<Contact*>(contacts.front());
 
   if (ClientController::instance()->removeContact(contact_->publicName())) {
-    QList<QListWidgetItem*> items = ui_.listWidget->findItems(
+    QList<QListWidgetItem*> items = ui_.contactList->findItems(
                                     contact_->publicName(),
                                     Qt::MatchCaseSensitive);
 
@@ -284,7 +285,7 @@ void Contacts::onDeleteUserClicked() {
     delete contact_;
 
     foreach(QListWidgetItem* item, items) {
-      ui_.listWidget->removeItemWidget(item);
+      ui_.contactList->removeItemWidget(item);
       delete item;
     }
   } else {
@@ -484,7 +485,7 @@ QList<QListWidgetItem *> Contacts::currentContact() {
 //  if (!ui_.listWidget->currentItem())
 //    return NULL;
 
-  const QList<QListWidgetItem *> names = ui_.listWidget->selectedItems();
+  const QList<QListWidgetItem *> names = ui_.contactList->selectedItems();
 
 //  foreach(Contact* contact, contacts_) {
 //    if (contact->publicName() == name)
@@ -510,7 +511,7 @@ void Contacts::onAddedContact(const QString &name) {
       // yes was clicked
       result = ClientController::instance()->handleAddContactRequest(name);
       if (result) {
-          QList<QListWidgetItem*> items = ui_.listWidget->findItems(name,
+          QList<QListWidgetItem*> items = ui_.contactList->findItems(name,
                                 Qt::MatchCaseSensitive);
           if (items.size() == 1) {  // Contact had changed confirmed status only
             onConfirmedContact(name);
@@ -532,7 +533,7 @@ void Contacts::onAddedContact(const QString &name) {
 
 void Contacts::onConfirmedContact(const QString &name) {
   qDebug() << "Contacts::onConfirmedContact()";
-  QList<QListWidgetItem*> items = ui_.listWidget->findItems(name,
+  QList<QListWidgetItem*> items = ui_.contactList->findItems(name,
                                   Qt::MatchCaseSensitive);
 
 //  QMainWindow::statusBar()->showMessage(tr("user : %1 confirmed").arg(name));
@@ -549,7 +550,7 @@ void Contacts::onConfirmedContact(const QString &name) {
 
 void Contacts::onDeletedContact(const QString &name) {
   qDebug() << "Contacts::onConfirmedContact()";
-  QList<QListWidgetItem*> items = ui_.listWidget->findItems(name,
+  QList<QListWidgetItem*> items = ui_.contactList->findItems(name,
                                   Qt::MatchCaseSensitive);
 
   foreach(QListWidgetItem* item, items) {
@@ -585,7 +586,7 @@ void Contacts::onContactsBoxTextEdited(const QString&) {
       }
     }
     if (foundContacts_.count() > 0) {
-      ui_.listWidget->clear();
+      ui_.contactList->clear();
       foreach(Contact* contact, foundContacts_) {
         QPixmap pixmap;
           if (contact->presence() == Presence::INVALID) {
@@ -597,13 +598,13 @@ void Contacts::onContactsBoxTextEdited(const QString&) {
         QListWidgetItem* item = new QListWidgetItem;
         item->setText(contact->publicName());
         item->setIcon(pixmap);
-        ui_.listWidget->addItem(item);
+        ui_.contactList->addItem(item);
        }
     } else {
-      ui_.listWidget->clear();
+      ui_.contactList->clear();
       QListWidgetItem* item = new QListWidgetItem;
       item->setText(tr("No contacts match %1").arg(contact_name));
-      ui_.listWidget->addItem(item);
+      ui_.contactList->addItem(item);
     }
   } else {
     reset();
@@ -631,10 +632,10 @@ bool Contacts::eventFilter(QObject *obj, QEvent *event) {
 }
 
 void Contacts::customContentsMenu(const QPoint &pos) {
-    QPoint globalPos = ui_.listWidget->mapToGlobal(pos);
-    QModelIndex t = ui_.listWidget->indexAt(pos);
-    if (ui_.listWidget->item(t.row()) != NULL) {
-        ui_.listWidget->item(t.row())->setSelected(true);
+    QPoint globalPos = ui_.contactList->mapToGlobal(pos);
+    QModelIndex t = ui_.contactList->indexAt(pos);
+    if (ui_.contactList->item(t.row()) != NULL) {
+        ui_.contactList->item(t.row())->setSelected(true);
         menu->exec(globalPos);
     }
 }
@@ -692,5 +693,31 @@ void Contacts::changeEvent(QEvent *event) {
   }
 }
 
+void Contacts::PopulateMailsList()
+{
+    QPixmap pixMailRead = QPixmap(":/menu/email_icon.png");
+    QPixmap pixMailUnread = QPixmap(":/menu/email_icon_black.png");
+  
+    QStringList mesgList;
+    mesgList << "John       : Hello, how are you doing";
+    mesgList << "Lorraine   : Newsletter";
+    mesgList << "Paul Nic   : Welcome to the fair";
+    mesgList << "Lorraine   : some subject";
+    mesgList << "Henry      : Merry Christmas";
+        
+    QFont listFont = ui_.mailsList->font();
+    listFont.setPointSize(listFont.pointSize() - 1);
+    ui_.mailsList->setFont(listFont);
+    
+    QStringList::const_iterator iter;
+    for(iter = mesgList.begin(); iter != mesgList.end(); iter++) {
+        QListWidgetItem * item = new QListWidgetItem(pixMailUnread, *iter);
+        ui_.mailsList->addItem(item);
+    }
+}
 
+void Contacts::PopulateIMList()
+{
+
+}
 
