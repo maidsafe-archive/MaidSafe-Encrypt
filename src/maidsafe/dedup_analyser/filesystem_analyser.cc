@@ -48,9 +48,10 @@ namespace maidsafe {
 
 void FilesystemAnalyser::ProcessFile(const fs3::path &file_path) {
   FileInfo file_info(file_path);
-  boost::shared_ptr<crypto::Crypto> crypt;
+  crypto::Crypto crypt;
+  crypt.set_hash_algorithm(crypto::SHA_1);
   try {
-    file_info.file_hash = crypt->Hash(file_path.c_str(),"",
+    file_info.file_hash = crypt.Hash(file_path.c_str(),"",
                                        crypto::FILE_STRING, true);
     file_info.file_size = fs3::file_size(file_path);
     if (file_info.file_hash.empty())
