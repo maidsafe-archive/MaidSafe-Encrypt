@@ -28,6 +28,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "filesystem_analyser.h"
 
 #include <maidsafe/base/crypto.h>
+#include <boost/bind/protect.hpp>
 
 
 namespace fs3 = boost::filesystem3;
@@ -76,10 +77,14 @@ void FilesystemAnalyser::ProcessDirectory(const fs3::path &directory_path) {
     fs3::file_status file_stat((*it).status());
     switch (file_stat.type()) {
       case fs3::regular_file:
-        ProcessFile(*it);
+       //  io_service_.post(boost::bind
+       //      (&maidsafe::FilesystemAnalyser::ProcessFile, this, *it));
+      ProcessFile(*it);
         break;
       case fs3::directory_file:
-        ProcessDirectory(*it);
+         io_service_.post(boost::protect(boost::bind
+             (&maidsafe::FilesystemAnalyser::ProcessDirectory, this, *it)));
+       // ProcessDirectory(*it);
         break;
       case fs3::symlink_file:
       case fs3::reparse_file:

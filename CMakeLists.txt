@@ -688,8 +688,7 @@ TARGET_LINK_LIBRARIES(TESTpdvault_net PDclientlib PDvaultlib ${Gtest_LIBRARY})
 TARGET_LINK_LIBRARIES(DEMOclient PDclientlib)
 TARGET_LINK_LIBRARIES(DEMOvault PDclientlib PDvaultlib)
 TARGET_LINK_LIBRARIES(vault PDvaultlib)
-TARGET_LINK_LIBRARIES(dedup_analyser ${QT_QTMAIN_LIBRARY} ${QT_QTGUI_LIBRARY} ${QT_QTXML_LIBRARY} ${Boost_FILESYSTEM_LIBRARY} ${Boost_SYSTEM_LIBRARY}  ${MAIDSAFE_DHT_LIBRARY}  ${CRYPTOPP_LIBRARY} ${Gtest_LIBRARY})
-
+TARGET_LINK_LIBRARIES(dedup_analyser ${QT_QTMAIN_LIBRARY} ${QT_QTGUI_LIBRARY} ${QT_QTXML_LIBRARY} ${Boost_FILESYSTEM_LIBRARY} ${Boost_THREAD_LIBRARY} ${Boost_SYSTEM_LIBRARY}  ${MAIDSAFE_DHT_LIBRARY}  ${CRYPTOPP_LIBRARY} ${Gtest_LIBRARY})
 
 ###################################################################################################
 # Compiler and linker flags - after all targets declared                                          #

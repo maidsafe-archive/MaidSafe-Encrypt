@@ -29,6 +29,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define SRC_IN_MEMORY_RESULT_HOLDER_H_
 
 #include <boost/cstdint.hpp>
+#include <boost/thread/mutex.hpp>
 #include <string>
 #include <vector>
 #include "result_holder.h"
@@ -63,6 +64,9 @@ class InMemoryResultHolder : public ResultHolder {
   std::vector<std::string> error_messages_;
  private:
   bool PrepareResults();
+  boost::mutex result_mutex_;
+  boost::mutex file_precessed_mutex_;
+  boost::mutex handle_failure_mutex_;  
 };
 
 }  // namespace maidsafe

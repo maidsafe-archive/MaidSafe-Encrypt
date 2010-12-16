@@ -51,14 +51,17 @@ boost::uintmax_t InMemoryResultHolder::ErrorsCount() {
 }
 
 void InMemoryResultHolder::HandleFileProcessed(FileInfo file_info) {
+  boost::mutex::scoped_lock lock(file_precessed_mutex_);
   file_infos_.push_back(file_info);
 }
 
 void InMemoryResultHolder::HandleFailure(std::string error_message) {
+  boost::mutex::scoped_lock lock(handle_failure_mutex_);
   error_messages_.push_back(error_message);
 }
 
 bool InMemoryResultHolder::PrepareResults() {
+  boost::mutex::scoped_lock lock(result_mutex_);
   std::sort(file_infos_.begin(), file_infos_.end());
   std::vector<FileInfo>::iterator it(file_infos_.begin());
   if (it == file_infos_.end())
@@ -69,7 +72,7 @@ bool InMemoryResultHolder::PrepareResults() {
   unique_size_ = (*it).file_size;
   duplicate_size_ = 0;
   ++it;
-
+  
   bool previous_unique(true);
   for (it = file_infos_.begin() + 1; it != file_infos_.end(); ++it) {
     if ((*it).file_hash == (*(it - 1)).file_hash) {
@@ -88,6 +91,7 @@ bool InMemoryResultHolder::PrepareResults() {
       unique_size_ += (*it).file_size;
     }
   }
+  
   return true;
 }
 

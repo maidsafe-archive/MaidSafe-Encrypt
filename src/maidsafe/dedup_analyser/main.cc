@@ -35,7 +35,7 @@ int main(int argc, char* argv[]) {
     std::cout << "Usage: Dedup <path to start recursive check>" << std::endl << std::endl;
     return -1;
   }
-
+http://www.
   maidsafe::FilesystemAnalyser filesystem_analyser;
   maidsafe::InMemoryResultHolder in_memory_result_holder;
   in_memory_result_holder.ConnectToFilesystemAnalyser(&filesystem_analyser);
@@ -43,6 +43,8 @@ int main(int argc, char* argv[]) {
   terminal_display.ConnectToFilesystemAnalyser(&filesystem_analyser);
   filesystem_analyser.ProcessDirectory(argv[1]);
 
+  filesystem_analyser.~FilesystemAnalyser(); // make sure all threads completed
+  
   std::cout << std::endl << std::endl << "Processing results..." << std::endl << std::endl;
 
 

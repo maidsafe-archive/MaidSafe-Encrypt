@@ -32,8 +32,12 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <boost/filesystem.hpp>
 #include <boost/signals2.hpp>
 #include <boost/signals2/connection.hpp>
+#include <boost/asio.hpp>
+#include <boost/thread.hpp>
+#include <boost/bind.hpp>
 #include <string>
 #include <utility>
+#include <iostream>
 
 namespace fs3 = boost::filesystem3;
 namespace bs2 = boost::signals2;
@@ -57,7 +61,23 @@ std::string SHA1(const fs3::path &file_path);
 
 class FilesystemAnalyser {
  public:
-  FilesystemAnalyser() : on_file_processed_(), on_failure_() {}
+  FilesystemAnalyser() : on_file_processed_(), on_failure_() {
+    work_.reset(new boost::asio::io_service::work(io_service_));
+
+    if (boost::thread::hardware_concurrency() > 1)
+      cores_ = boost::thread::hardware_concurrency();
+    else
+      cores_ = 4;
+    
+    for (uint i = 0; i < cores_ ; ++i) {
+      thread_group_.create_thread(boost::bind
+              (&boost::asio::io_service::run, &io_service_));
+    }
+  }
+  ~FilesystemAnalyser() {
+    work_.reset();
+    thread_group_.join_all();
+  }
   void ProcessFile(const fs3::path &file_path);
   void ProcessDirectory(const fs3::path &directory_path);
   bs2::connection DoOnFileProcessed(const OnFileProcessed::slot_type &slot);
@@ -70,6 +90,10 @@ class FilesystemAnalyser {
   OnFileProcessed on_file_processed_;
   OnDirectoryEntered on_directory_entered_;
   OnFailure on_failure_;
+  boost::asio::io_service io_service_;
+  boost::shared_ptr<boost::asio::io_service::work> work_;
+  boost::uint16_t cores_;
+  boost::thread_group thread_group_;
 };
 
 }  // namespace maidsafe
