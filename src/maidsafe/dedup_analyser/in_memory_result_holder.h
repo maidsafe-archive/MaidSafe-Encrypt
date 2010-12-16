@@ -30,6 +30,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <boost/cstdint.hpp>
 #include <boost/thread/mutex.hpp>
+#include <boost/interprocess/detail/atomic.hpp>
 #include <string>
 #include <vector>
 #include "result_holder.h"

@@ -31,11 +31,12 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 namespace maidsafe {
 
 void TerminalDisplay::HandleFileProcessed(FileInfo file_info) {
-  std::cout << "." <<std::endl;
+//   std::cout << "." <<std::endl;
 }
 
 void TerminalDisplay::HandleDirectoryEntered(fs3::path directory_path) {
-  std::cout << "\nEntered \n" << directory_path.string().c_str() << std::endl;
+//   std::cout << "\nEntered \n" << directory_path.string().c_str() << std::endl;
+  std::cout << "." ;
 }
 
 void TerminalDisplay::HandleFailure(std::string error_message) {

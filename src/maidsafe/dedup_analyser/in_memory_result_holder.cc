@@ -72,7 +72,7 @@ bool InMemoryResultHolder::PrepareResults() {
   unique_size_ = (*it).file_size;
   duplicate_size_ = 0;
   ++it;
-  
+
   bool previous_unique(true);
   for (it = file_infos_.begin() + 1; it != file_infos_.end(); ++it) {
     if ((*it).file_hash == (*(it - 1)).file_hash) {
@@ -91,7 +91,6 @@ bool InMemoryResultHolder::PrepareResults() {
       unique_size_ += (*it).file_size;
     }
   }
-  
   return true;
 }
 

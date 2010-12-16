@@ -30,22 +30,13 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <maidsafe/base/crypto.h>
 #include <boost/bind/protect.hpp>
 
-
 namespace fs3 = boost::filesystem3;
 namespace bs2 = boost::signals2;
-
+/*
+namespace CryptoPP {
+class CryptoPP;
+}*/
 namespace maidsafe {
-
-// std::string SHA1(const fs3::path &file_path) {
-//   std::string result;
-//   CryptoPP::SHA1 sha1;
-//   try {
-//     CryptoPP::FileSource(file_path.string().c_str(), true,
-//         new CryptoPP::HashFilter(sha1, new CryptoPP::StringSink(result)));
-//   }
-//   catch(...) {}
-//   return result;
-// }
 
 void FilesystemAnalyser::ProcessFile(const fs3::path &file_path) {
   FileInfo file_info(file_path);
@@ -77,13 +68,13 @@ void FilesystemAnalyser::ProcessDirectory(const fs3::path &directory_path) {
     fs3::file_status file_stat((*it).status());
     switch (file_stat.type()) {
       case fs3::regular_file:
-       //  io_service_.post(boost::bind
-       //      (&maidsafe::FilesystemAnalyser::ProcessFile, this, *it));
-      ProcessFile(*it);
+         io_service_.dispatch(boost::bind
+             (&maidsafe::FilesystemAnalyser::ProcessFile, this, *it));
+     // ProcessFile(*it);
         break;
       case fs3::directory_file:
-         io_service_.post(boost::protect(boost::bind
-             (&maidsafe::FilesystemAnalyser::ProcessDirectory, this, *it)));
+         io_service_.dispatch(boost::protect(boost::bind
+        (&maidsafe::FilesystemAnalyser::ProcessDirectory, this, *it)));
        // ProcessDirectory(*it);
         break;
       case fs3::symlink_file:

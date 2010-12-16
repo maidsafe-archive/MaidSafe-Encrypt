@@ -65,7 +65,7 @@ class FilesystemAnalyser {
     work_.reset(new boost::asio::io_service::work(io_service_));
 
     if (boost::thread::hardware_concurrency() > 1)
-      cores_ = boost::thread::hardware_concurrency();
+      cores_ = boost::thread::hardware_concurrency() -1;
     else
       cores_ = 4;
     
@@ -75,6 +75,9 @@ class FilesystemAnalyser {
     }
   }
   ~FilesystemAnalyser() {
+    Stop();
+  }
+  void Stop() {
     work_.reset();
     thread_group_.join_all();
   }

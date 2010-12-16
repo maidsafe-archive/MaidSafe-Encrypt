@@ -26,6 +26,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 #include <iostream>
+#include <boost/filesystem.hpp>
 #include "filesystem_analyser.h"
 #include "in_memory_result_holder.h"
 #include "terminal_display.h"
@@ -35,18 +36,25 @@ int main(int argc, char* argv[]) {
     std::cout << "Usage: Dedup <path to start recursive check>" << std::endl << std::endl;
     return -1;
   }
-http://www.
+  boost::filesystem3::path path(argv[1]);
+  boost::filesystem3::space_info size = boost::filesystem3::space(path);
+  boost::uintmax_t capacity = size.capacity/(1024*1024*1024);
+  boost::uintmax_t free_space = size.free/(1024*1024*1024);
+  
+  std::cout << "Drive capacity is : " << capacity << " GB and of that "
+                                      << capacity-free_space << " GB has been used!" << std::endl;
+
   maidsafe::FilesystemAnalyser filesystem_analyser;
   maidsafe::InMemoryResultHolder in_memory_result_holder;
   in_memory_result_holder.ConnectToFilesystemAnalyser(&filesystem_analyser);
   maidsafe::TerminalDisplay terminal_display;
   terminal_display.ConnectToFilesystemAnalyser(&filesystem_analyser);
   filesystem_analyser.ProcessDirectory(argv[1]);
-
-  filesystem_analyser.~FilesystemAnalyser(); // make sure all threads completed
+  filesystem_analyser.Stop(); // make sure all threads completed
   
   std::cout << std::endl << std::endl << "Processing results..." << std::endl << std::endl;
-
+std::cout << "Drive capacity is : " << capacity << " GB and of that "
+                                      << capacity-free_space << " GB has been used!" << std::endl;
 
   std::cout << "Total processed file count:           " << in_memory_result_holder.UniqueFileCount() + in_memory_result_holder.DuplicateFileCount() << std::endl;
   std::cout << "Total of all processed files' sizes:  " << in_memory_result_holder.TotalUniqueSize() + in_memory_result_holder.TotalDuplicateSize() << std::endl;
