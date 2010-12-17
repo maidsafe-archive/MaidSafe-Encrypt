@@ -61,7 +61,7 @@ void InMemoryResultHolder::HandleFailure(std::string error_message) {
 }
 
 bool InMemoryResultHolder::PrepareResults() {
-  boost::mutex::scoped_lock lock(result_mutex_);
+//   boost::mutex::scoped_lock lock(result_mutex_);
   std::sort(file_infos_.begin(), file_infos_.end());
   std::vector<FileInfo>::iterator it(file_infos_.begin());
   if (it == file_infos_.end())

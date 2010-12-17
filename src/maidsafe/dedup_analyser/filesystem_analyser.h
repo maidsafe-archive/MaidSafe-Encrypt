@@ -38,6 +38,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <string>
 #include <utility>
 #include <iostream>
+#include "maidsafe/base/crypto.h"
 
 namespace fs3 = boost::filesystem3;
 namespace bs2 = boost::signals2;
@@ -59,27 +60,29 @@ typedef bs2::signal<void(std::string)> OnFailure;
 
 std::string SHA1(const fs3::path &file_path);
 
-class FilesystemAnalyser {
+class FilesystemAnalyser  {
  public:
   FilesystemAnalyser() : on_file_processed_(), on_failure_() {
-    work_.reset(new boost::asio::io_service::work(io_service_));
+//     work_.reset(new boost::asio::io_service::work(io_service_));
+//     if (boost::thread::hardware_concurrency() > 1)
+//       cores_ = boost::thread::hardware_concurrency() -1;
+//     else
+//       cores_ = 4;
+//   
+//     for (uint i = 0; i < cores_ ; ++i) {
+//       thread_group_.create_thread(boost::bind
+//               (&boost::asio::io_service::run, &io_service_));
+//     }
+//     boost::shared_ptr<crypto::Crypto> crypt_(new crypto::Crypto);
+//     crypt_->set_hash_algorithm(crypto::Adler_32);
 
-    if (boost::thread::hardware_concurrency() > 1)
-      cores_ = boost::thread::hardware_concurrency() -1;
-    else
-      cores_ = 4;
-    
-    for (uint i = 0; i < cores_ ; ++i) {
-      thread_group_.create_thread(boost::bind
-              (&boost::asio::io_service::run, &io_service_));
-    }
   }
   ~FilesystemAnalyser() {
     Stop();
   }
   void Stop() {
-    work_.reset();
-    thread_group_.join_all();
+//     work_.reset();
+//     thread_group_.join_all();
   }
   void ProcessFile(const fs3::path &file_path);
   void ProcessDirectory(const fs3::path &directory_path);
@@ -95,8 +98,9 @@ class FilesystemAnalyser {
   OnFailure on_failure_;
   boost::asio::io_service io_service_;
   boost::shared_ptr<boost::asio::io_service::work> work_;
-  boost::uint16_t cores_;
-  boost::thread_group thread_group_;
+//   boost::uint16_t cores_;
+//   boost::thread_group thread_group_;
+//   boost::shared_ptr<crypto::Crypto> crypt_;
 };
 
 }  // namespace maidsafe

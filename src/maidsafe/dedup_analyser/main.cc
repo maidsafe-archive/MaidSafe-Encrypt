@@ -45,6 +45,10 @@ int main(int argc, char* argv[]) {
                                       << capacity-free_space << " GB has been used!" << std::endl;
 
   maidsafe::FilesystemAnalyser filesystem_analyser;
+
+  boost::shared_ptr<crypto::Crypto> crypt_(new crypto::Crypto);
+  crypt_->set_hash_algorithm(crypto::Adler_32);
+  
   maidsafe::InMemoryResultHolder in_memory_result_holder;
   in_memory_result_holder.ConnectToFilesystemAnalyser(&filesystem_analyser);
   maidsafe::TerminalDisplay terminal_display;
@@ -53,7 +57,7 @@ int main(int argc, char* argv[]) {
   filesystem_analyser.Stop(); // make sure all threads completed
   
   std::cout << std::endl << std::endl << "Processing results..." << std::endl << std::endl;
-std::cout << "Drive capacity is : " << capacity << " GB and of that "
+  std::cout << "Drive capacity is : " << capacity << " GB and of that "
                                       << capacity-free_space << " GB has been used!" << std::endl;
 
   std::cout << "Total processed file count:           " << in_memory_result_holder.UniqueFileCount() + in_memory_result_holder.DuplicateFileCount() << std::endl;

@@ -29,22 +29,20 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <maidsafe/base/crypto.h>
 #include <boost/bind/protect.hpp>
+#include <boost/filesystem.hpp>
 
 namespace fs3 = boost::filesystem3;
 namespace bs2 = boost::signals2;
-/*
-namespace CryptoPP {
-class CryptoPP;
-}*/
+
 namespace maidsafe {
 
 void FilesystemAnalyser::ProcessFile(const fs3::path &file_path) {
+      crypto::Crypto crypt;
+        crypt.set_hash_algorithm(crypto::SHA_1);
   FileInfo file_info(file_path);
-  crypto::Crypto crypt;
-  crypt.set_hash_algorithm(crypto::SHA_1);
   try {
     file_info.file_hash = crypt.Hash(file_path.c_str(),"",
-                                       crypto::FILE_STRING, true);
+                                       crypto::FILE_STRING, false);
     file_info.file_size = fs3::file_size(file_path);
     if (file_info.file_hash.empty())
       on_failure_(file_path.string() + ": hash failed.");
@@ -65,20 +63,29 @@ void FilesystemAnalyser::ProcessDirectory(const fs3::path &directory_path) {
   }
   on_directory_entered_(directory_path);
   while (it != fs3::directory_iterator()) {
+    if ( fs3::is_symlink(*it)) {
+      ++it;
+      continue;
+    }
     fs3::file_status file_stat((*it).status());
     switch (file_stat.type()) {
-      case fs3::regular_file:
-         io_service_.dispatch(boost::bind
-             (&maidsafe::FilesystemAnalyser::ProcessFile, this, *it));
-     // ProcessFile(*it);
+      case fs3::status_error:
         break;
-      case fs3::directory_file:
-         io_service_.dispatch(boost::protect(boost::bind
-        (&maidsafe::FilesystemAnalyser::ProcessDirectory, this, *it)));
-       // ProcessDirectory(*it);
+      case fs3::file_not_found:
         break;
       case fs3::symlink_file:
+        break;
       case fs3::reparse_file:
+        break;
+      case fs3::regular_file:
+//          io_service_.dispatch(boost::bind
+//              (&maidsafe::FilesystemAnalyser::ProcessFile, this, *it));
+     ProcessFile(*it);
+        break;
+      case fs3::directory_file:
+//         io_service_.dispatch(boost::protect(boost::bind
+ //     (&maidsafe::FilesystemAnalyser::ProcessDirectory, this, *it)));
+         ProcessDirectory(*it);
         break;
       default:
         on_failure_(ec.message());
