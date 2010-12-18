@@ -56,42 +56,42 @@ void FilesystemAnalyser::ProcessFile(const fs3::path &file_path) {
 
 void FilesystemAnalyser::ProcessDirectory(const fs3::path &directory_path) {
   boost::system::error_code ec;
-  fs3::directory_iterator it(directory_path, ec);
-  if (ec) {
-    on_failure_(ec.message());
-    return;
-  }
-  on_directory_entered_(directory_path);
-  while (it != fs3::directory_iterator()) {
-    if ( fs3::is_symlink(*it)) {
+  try {
+  fs3::directory_iterator it(directory_path);
+
+//     if (ec) {
+//       on_failure_(ec.message());
+//       return;
+//     }
+    on_directory_entered_(directory_path);
+    while (it != fs3::directory_iterator()) {
+
+      fs3::file_status file_stat((*it).status());
+
+      switch (file_stat.type()) {
+        case fs3::file_not_found:
+        case fs3::symlink_file:
+        case fs3::reparse_file:
+          break;
+        case fs3::regular_file:
+  //          io_service_.dispatch(boost::bind
+  //              (&maidsafe::FilesystemAnalyser::ProcessFile, this, *it));
+      ProcessFile(*it);
+          break;
+        case fs3::directory_file:
+  //         io_service_.dispatch(boost::protect(boost::bind
+  //     (&maidsafe::FilesystemAnalyser::ProcessDirectory, this, *it)))
+          ProcessDirectory(*it);
+          break;
+        default:
+          on_failure_(ec.message());
+      }
       ++it;
-      continue;
     }
-    fs3::file_status file_stat((*it).status());
-    switch (file_stat.type()) {
-      case fs3::status_error:
-        break;
-      case fs3::file_not_found:
-        break;
-      case fs3::symlink_file:
-        break;
-      case fs3::reparse_file:
-        break;
-      case fs3::regular_file:
-//          io_service_.dispatch(boost::bind
-//              (&maidsafe::FilesystemAnalyser::ProcessFile, this, *it));
-     ProcessFile(*it);
-        break;
-      case fs3::directory_file:
-//         io_service_.dispatch(boost::protect(boost::bind
- //     (&maidsafe::FilesystemAnalyser::ProcessDirectory, this, *it)));
-         ProcessDirectory(*it);
-        break;
-      default:
-        on_failure_(ec.message());
-    }
-    ++it;
+  } catch(const std::exception &ex) {
+    on_failure_(ex.what());
   }
+    
 }
 
 bs2::connection FilesystemAnalyser::DoOnFileProcessed(
