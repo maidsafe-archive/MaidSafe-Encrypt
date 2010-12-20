@@ -204,6 +204,10 @@ SET(LIBS_DIRS_DEBUG ${LIBS_DIRS_DEBUG} ${Boost_LIBRARY_DIRS})
 # Including this file sets up environment with correct dirs / flags - no need to explicitly set
 # anything else other than linking to QT_LIBRARIES as appropriate.
 INCLUDE(${${PROJECT_NAME}_ROOT}/build/maidsafe_FindQt4.cmake)
+IF (NOT WIN32)
+   # these are required for static builds
+  SET(QT_LIBRARIES ${QT_LIBRARIES} z Xrender Xext X11 pcre xcb Xau Xdmcp)
+ENDIF()
 
 ###################################################################################################
 # Google Test library search                                                                      #
@@ -709,13 +713,13 @@ SET(BUILD_SHARED_LIBS OFF)
 
 TARGET_LINK_LIBRARIES(PDcommonlib passport ${Boost_FILESYSTEM_LIBRARY})
 TARGET_LINK_LIBRARIES(PDclientfilesystemlib PDcommonlib encrypt pki ${Boost_DATE_TIME_LIBRARY})
-TARGET_LINK_LIBRARIES(PDlsmclientlib PDclientfilesystemlib ${QT_QTCORE_LIBRARY} ${Boost_REGEX_LIBRARY})
-TARGET_LINK_LIBRARIES(PDclientlib PDclientfilesystemlib ${QT_QTCORE_LIBRARY} ${Boost_REGEX_LIBRARY})
-TARGET_LINK_LIBRARIES(PDvaultlib PDcommonlib pki ${QT_QTCORE_LIBRARY} ${Boost_DATE_TIME_LIBRARY})
+TARGET_LINK_LIBRARIES(PDlsmclientlib PDclientfilesystemlib ${QT_LIBRARIES} ${Boost_REGEX_LIBRARY})
+TARGET_LINK_LIBRARIES(PDclientlib PDclientfilesystemlib ${QT_LIBRARIES} ${Boost_REGEX_LIBRARY})
+TARGET_LINK_LIBRARIES(PDvaultlib PDcommonlib pki ${QT_LIBRARIES} ${Boost_DATE_TIME_LIBRARY})
 TARGET_LINK_LIBRARIES(PDfuselib ${Fuse_LIBRARY} ${Boost_SYSTEM_LIBRARY})
-TARGET_LINK_LIBRARIES(lifestuff PDclientlib PDfuselib ${QT_QTMAIN_LIBRARY} ${QT_QTGUI_LIBRARY} ${QT_QTXML_LIBRARY})
-TARGET_LINK_LIBRARIES(lslocal PDlsmclientlib PDfuselib ${QT_QTMAIN_LIBRARY} ${QT_QTGUI_LIBRARY} ${QT_QTXML_LIBRARY})
-TARGET_LINK_LIBRARIES(lslightlocal PDlsmclientlib ${QT_QTMAIN_LIBRARY} ${QT_QTGUI_LIBRARY} ${QT_QTXML_LIBRARY})
+TARGET_LINK_LIBRARIES(lifestuff PDclientlib PDfuselib ${QT_LIBRARIES})
+TARGET_LINK_LIBRARIES(lslocal PDlsmclientlib PDfuselib ${QT_LIBRARIES})
+TARGET_LINK_LIBRARIES(lslightlocal PDlsmclientlib ${QT_LIBRARIES})
 TARGET_LINK_LIBRARIES(TESTcommon PDcommonlib ${Boost_DATE_TIME_LIBRARY} ${Gtest_LIBRARY} ${Gmock_LIBRARY})
 TARGET_LINK_LIBRARIES(TESTclientfilesystem PDclientlib ${Gtest_LIBRARY})
 TARGET_LINK_LIBRARIES(TESTclient PDclientlib PDvaultlib ${Gtest_LIBRARY} ${Gmock_LIBRARY})
@@ -730,7 +734,7 @@ TARGET_LINK_LIBRARIES(TESTpdvault_net PDclientlib PDvaultlib ${Gtest_LIBRARY})
 TARGET_LINK_LIBRARIES(DEMOclient PDclientlib)
 TARGET_LINK_LIBRARIES(DEMOvault PDclientlib PDvaultlib)
 TARGET_LINK_LIBRARIES(vault PDvaultlib)
-TARGET_LINK_LIBRARIES(dedup_analyser ${QT_QTCORE_LIBRARY} ${QT_QTMAIN_LIBRARY} ${QT_QTGUI_LIBRARY} maidsafe_dht_LIBRARY)
+TARGET_LINK_LIBRARIES(dedup_analyser ${QT_LIBRARIES} maidsafe_dht_LIBRARY)
 
 ###################################################################################################
 # Compiler and linker flags - after all targets declared                                          #
