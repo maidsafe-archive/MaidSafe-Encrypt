@@ -206,7 +206,7 @@ SET(LIBS_DIRS_DEBUG ${LIBS_DIRS_DEBUG} ${Boost_LIBRARY_DIRS})
 INCLUDE(${${PROJECT_NAME}_ROOT}/build/maidsafe_FindQt4.cmake)
 IF (NOT WIN32)
    # these are required for static builds
-  SET(QT_LIBRARIES ${QT_LIBRARIES} z Xrender Xext X11 pcre xcb Xau Xdmcp)
+  SET(QT_LIBRARIES ${QT_LIBRARIES} z Xext X11 pcre xcb Xau Xdmcp)
 ENDIF()
 
 ###################################################################################################
