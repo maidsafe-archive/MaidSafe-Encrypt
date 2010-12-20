@@ -30,7 +30,19 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "filesystem_analyser.h"
 #include "in_memory_result_holder.h"
 #include "terminal_display.h"
+#include <QApplication>
+#include "maidsafe/dedup_analyser/widgets/dedupmainwindow.h"
 
+int main(int argc, char *argv[]) {
+    QApplication app(argc, argv);
+
+    DedupMainWindow mainWin;
+    mainWin.show();
+
+    return app.exec();
+}
+
+/*
 int main(int argc, char* argv[]) {
   if (argc < 2) {
     std::cout << "Usage: Dedup <path to start recursive check>" << std::endl << std::endl;
@@ -73,3 +85,4 @@ int main(int argc, char* argv[]) {
 
   return 0;
 }
+*/
