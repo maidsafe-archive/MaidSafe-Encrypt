@@ -39,7 +39,7 @@ void print_keys(bool done, std::string size) {
     if (done)
       std::cout << "done " << size << std::endl;
     else
-      std::cout << "fucked, right up the arse" << std::endl;
+      std::cout << "No keys !" << std::endl;
 }
 
 int main() {

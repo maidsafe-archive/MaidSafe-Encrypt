@@ -136,7 +136,7 @@ PerpetualData::PerpetualData(QWidget* parent)
 
 void PerpetualData::onJoinKademliaCompleted(bool b) {
   if (!b) {
-    qDebug() << "U didn't join kademlia, so fuck U!";
+    qDebug() << "Didn't join kademlia !";
     return;
   }
 
