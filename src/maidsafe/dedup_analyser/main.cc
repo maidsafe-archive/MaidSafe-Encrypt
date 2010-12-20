@@ -46,8 +46,8 @@ int main(int argc, char* argv[]) {
 
   maidsafe::FilesystemAnalyser filesystem_analyser;
 
-  boost::shared_ptr<crypto::Crypto> crypt_(new crypto::Crypto);
-  crypt_->set_hash_algorithm(crypto::Adler_32);
+//  boost::shared_ptr<crypto::Crypto> crypt_(new crypto::Crypto);
+//  crypt_->set_hash_algorithm(crypto::Adler_32);
   
   maidsafe::InMemoryResultHolder in_memory_result_holder;
   in_memory_result_holder.ConnectToFilesystemAnalyser(&filesystem_analyser);

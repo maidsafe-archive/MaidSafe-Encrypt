@@ -41,8 +41,8 @@ void FilesystemAnalyser::ProcessFile(const fs3::path &file_path) {
         crypt.set_hash_algorithm(crypto::SHA_1);
   FileInfo file_info(file_path);
   try {
-    file_info.file_hash = crypt.Hash(file_path.c_str(),"",
-                                       crypto::FILE_STRING, false);
+    file_info.file_hash = crypt.Hash(file_path.string().c_str(),"",
+                                     crypto::FILE_STRING, false);
     file_info.file_size = fs3::file_size(file_path);
     if (file_info.file_hash.empty())
       on_failure_(file_path.string() + ": hash failed.");
