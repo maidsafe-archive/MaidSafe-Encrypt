@@ -84,6 +84,7 @@ class FilesystemAnalyser  {
 //     work_.reset();
 //     thread_group_.join_all();
   }
+  fs3::path normalise(const fs3::path& dir_path);
   void ProcessFile(const fs3::path &file_path);
   void ProcessDirectory(const fs3::path &directory_path);
   bs2::connection DoOnFileProcessed(const OnFileProcessed::slot_type &slot);

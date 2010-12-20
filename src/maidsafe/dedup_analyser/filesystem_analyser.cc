@@ -26,10 +26,10 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 #include "filesystem_analyser.h"
-
 #include <maidsafe/base/crypto.h>
 #include <boost/bind/protect.hpp>
 #include <boost/filesystem.hpp>
+#include <boost/filesystem/operations.hpp>
 
 namespace fs3 = boost::filesystem3;
 namespace bs2 = boost::signals2;
@@ -54,24 +54,65 @@ void FilesystemAnalyser::ProcessFile(const fs3::path &file_path) {
   }
 }
 
+// from http://stackoverflow.com/questions/1746136/
+//      how-do-i-normalize-a-pathname-using-boostfilesystem
+boost::filesystem3::path FilesystemAnalyser::normalise(const fs3::path& dir_path){
+    boost::filesystem::path result;
+    for(boost::filesystem::path::iterator it=dir_path.begin();
+        it!=dir_path.end();
+        ++it)
+    {
+        if(*it == "..")
+        {
+            // /a/b/.. is not necessarily /a if b is a symbolic link
+            if(boost::filesystem::is_symlink(result) )
+                result /= *it;
+            // /a/b/../.. is not /a/b/.. under most circumstances
+            // We can end up with ..s in our result because of symbolic links
+            else if(result.filename() == "..")
+                result /= *it;
+            // Otherwise it should be safe to resolve the parent
+            else
+                result = result.parent_path();
+        }
+        else if(*it == ".")
+        {
+            // Ignore
+        }
+        else
+        {
+            // Just cat other path entries
+            result /= *it;
+        }
+    }
+    return result;
+}
+
+
 void FilesystemAnalyser::ProcessDirectory(const fs3::path &directory_path) {
+  fs3::path dir_path = normalise(directory_path);
+ // fs3::path dir_path = directory_path;
   boost::system::error_code ec;
   try {
-  fs3::directory_iterator it(directory_path);
-
-//     if (ec) {
-//       on_failure_(ec.message());
-//       return;
-//     }
-    on_directory_entered_(directory_path);
+  fs3::directory_iterator it(dir_path, ec);
+  on_directory_entered_(dir_path);
     while (it != fs3::directory_iterator()) {
-
       fs3::file_status file_stat((*it).status());
+     
+      if (fs3::is_symlink(dir_path) || fs3::is_empty(dir_path)
+         /*|| fs3::file_size(dir_path) == 0*/ || ec ) {
+        ++it;
+        continue;
+      }
 
       switch (file_stat.type()) {
+
         case fs3::file_not_found:
         case fs3::symlink_file:
         case fs3::reparse_file:
+        case fs3::block_file:
+        case fs3::socket_file:
+        case fs3::fifo_file:
           break;
         case fs3::regular_file:
   //          io_service_.dispatch(boost::bind
@@ -81,6 +122,13 @@ void FilesystemAnalyser::ProcessDirectory(const fs3::path &directory_path) {
         case fs3::directory_file:
   //         io_service_.dispatch(boost::protect(boost::bind
   //     (&maidsafe::FilesystemAnalyser::ProcessDirectory, this, *it)))
+
+          if (fs3::is_symlink(*it) || fs3::is_other(*it)
+             || fs3::path(*it) == "/proc"
+             || fs3::path(*it) == "/dev"
+             || fs3::path(*it) == "/sys"
+          )
+            break;
           ProcessDirectory(*it);
           break;
         default:
