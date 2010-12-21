@@ -2,7 +2,7 @@
 #include "ui_pathselector.h"
 #include <QFileSystemModel>
 #include <QDebug>
-#include "boost/fileSystem/path.hpp"
+#include <boost/filesystem/path.hpp>
 
 const int NAME_COL_WID = 200;
 
