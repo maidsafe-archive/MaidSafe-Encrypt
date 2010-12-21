@@ -89,7 +89,7 @@
       </spacer>
      </item>
      <item>
-      <widget class="QPushButton" name="buttonStart">
+      <widget class="QPushButton" name="buttonStartAnalyser">
        <property name="text">
         <string>&amp;Analyse</string>
        </property>
@@ -109,7 +109,7 @@
       </spacer>
      </item>
      <item>
-      <widget class="QPushButton" name="pushButton_4">
+      <widget class="QPushButton" name="exitDedup">
        <property name="text">
         <string>E&amp;xit</string>
        </property>
@@ -132,6 +132,8 @@
    </item>
   </layout>
  </widget>
- <resources/>
+ <resources>
+  <include location="../../lifestuff/resources/resources.qrc"/>
+ </resources>
  <connections/>
 </ui>

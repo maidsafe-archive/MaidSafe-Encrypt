@@ -302,6 +302,8 @@
    </item>
   </layout>
  </widget>
- <resources/>
+ <resources>
+  <include location="../../lifestuff/resources/resources.qrc"/>
+ </resources>
  <connections/>
 </ui>

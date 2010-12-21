@@ -14,8 +14,8 @@
    <string>MSSAN Deduplication Analyser</string>
   </property>
   <property name="windowIcon">
-   <iconset resource="../resources/resources.qrc">
-    <normaloff>:/icons/ms_icon_blue.png</normaloff>:/icons/ms_icon_blue.png</iconset>
+   <iconset resource="../../lifestuff/resources/resources.qrc">
+    <normaloff>:/icons/32/ms_icon_blue.png</normaloff>:/icons/32/ms_icon_blue.png</iconset>
   </property>
   <property name="styleSheet">
    <string notr="true"/>
@@ -76,7 +76,7 @@
   <widget class="QStatusBar" name="statusbar"/>
  </widget>
  <resources>
-  <include location="../resources/resources.qrc"/>
+  <include location="../../lifestuff/resources/resources.qrc"/>
  </resources>
  <connections/>
 </ui>

@@ -15,6 +15,9 @@ public:
     explicit PathSelector(QWidget *parent = 0);
     ~PathSelector();
 
+signals:
+    void analyseNow();    
+
 private:
     Ui::PathSelector *ui;
 };

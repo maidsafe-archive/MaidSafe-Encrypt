@@ -36,7 +36,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 int main(int argc, char *argv[]) {
     QApplication app(argc, argv);
 
-    DedupMainWindow mainWin;
+    DedupMainWindow mainWin;    
     mainWin.show();
 
     return app.exec();
