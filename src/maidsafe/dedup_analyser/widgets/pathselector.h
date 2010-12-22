@@ -18,7 +18,8 @@ public:
     ~PathSelector();
 
 signals:
-    void analyseNow();    
+    void analyseNow();  
+    void exitDedupAnalyser(); //signal from path selector
 
 private:
     /* 
@@ -27,13 +28,20 @@ private:
     void createViewItems();
 
     /*
-    * Filters dupes before adding to list
+    * Filters children before adding to list
+    * for duplicates
     */
-    void addItemToList(QString);
+    void addNonDupeItemToList(const QString&);
 
-    private slots:
-        void itemSelected();
-        void itemDeselected();
+    /*
+    * called after addNonDupeItemToList
+    * removes child items if their parents exist
+    */
+    void removeRedundantItems();
+
+private slots:
+    void addItemsClicked();
+    void removeItemsClicked();
 
 private:
     Ui::PathSelector *ui;

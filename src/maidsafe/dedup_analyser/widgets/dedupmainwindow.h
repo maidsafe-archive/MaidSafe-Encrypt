@@ -74,6 +74,11 @@ private slots:
     */
     void validatePathSelection();
 
+    /*
+    * exit called
+    */
+    void exitRequest();
+
 private:
     Ui::DedupMainWindow *ui;
     PathSelector        * pathSelector_;

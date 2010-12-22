@@ -116,10 +116,19 @@ void DedupMainWindow::setupConnections()
 {
     QObject::connect(pathSelector_, SIGNAL(analyseNow()),
         this, SLOT(validatePathSelection()));
+    QObject::connect(pathSelector_, SIGNAL(exitDedupAnalyser()),
+        this, SLOT(exitRequest()));
 }
 
 void DedupMainWindow::validatePathSelection()
 {
     // TODO: do validation of any sort.. skipping at the moment
     setState(ANALYSE);
+}
+
+void DedupMainWindow::exitRequest()
+{
+    // application is exiting
+    // TODO: do any stuff necessary before exit
+    this->close();
 }
