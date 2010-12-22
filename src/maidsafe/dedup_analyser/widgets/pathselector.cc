@@ -43,8 +43,6 @@ PathSelector::PathSelector(QWidget *parent) :
         this, SLOT(removeItemsClicked()));
     QObject::connect(ui->exitDedup, SIGNAL(clicked()),
         this, SIGNAL(exitDedupAnalyser()));
-    //QObject::connect(ui->selectedPathlistWidget, SIGNAL(dataChanged()),
-    //    this, SLOT(listSelectionUpdated()));
 
     createViewItems();
 }
@@ -171,6 +169,5 @@ void PathSelector::updateAnalyseButton()
     if (ui->selectedPathlistWidget->count() == 0)
         ui->buttonStartAnalyser->setEnabled(false);
     else 
-        ui->buttonStartAnalyser->setEnabled(true);
-    
+        ui->buttonStartAnalyser->setEnabled(true);    
 }

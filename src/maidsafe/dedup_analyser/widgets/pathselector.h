@@ -69,8 +69,7 @@ private:
 private slots:
     void addItemsClicked();
     void removeItemsClicked();
-    //void listSelectionUpdated();
-
+    
 private:
     Ui::PathSelector *ui;
     QFileSystemModel *fileModel_;
