@@ -61,9 +61,15 @@ private:
     */
     void removeRedundantItems();
 
+    /*
+    * enables or disables the analyse button
+    */
+    void updateAnalyseButton();
+
 private slots:
     void addItemsClicked();
     void removeItemsClicked();
+    //void listSelectionUpdated();
 
 private:
     Ui::PathSelector *ui;

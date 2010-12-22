@@ -43,6 +43,8 @@ PathSelector::PathSelector(QWidget *parent) :
         this, SLOT(removeItemsClicked()));
     QObject::connect(ui->exitDedup, SIGNAL(clicked()),
         this, SIGNAL(exitDedupAnalyser()));
+    //QObject::connect(ui->selectedPathlistWidget, SIGNAL(dataChanged()),
+    //    this, SLOT(listSelectionUpdated()));
 
     createViewItems();
 }
@@ -75,6 +77,9 @@ void PathSelector::createViewItems()
         ui->selectedPathlistWidget->setAcceptDrops(true);
         ui->selectedPathlistWidget->setSelectionMode(
 		QAbstractItemView::MultiSelection);
+
+        // analyse button stuff
+        ui->buttonStartAnalyser->setEnabled(false);
     } catch (...) {
         qDebug() << "\nError in PathSelector::createViewItems()";
     }
@@ -91,6 +96,7 @@ void PathSelector::addItemsClicked()
     // remove child items if their parents already exists
     removeRedundantItems();
     
+    updateAnalyseButton();
 
     // [NOTE - IN THE END] clear the selection in tree view
     ui->treeView->clearSelection();
@@ -107,6 +113,7 @@ void PathSelector::removeItemsClicked()
             delete ui->selectedPathlistWidget->takeItem(count);
     }
 
+    updateAnalyseButton();
     // tried with QList<QListWidgetItem*> selection = ui->selectedPathlistWidget->selectedItems();
     // but I need index anyways to call takeItem.. removeItem, does nothing!
 }
@@ -155,4 +162,15 @@ void PathSelector::removeRedundantItems()
             } while(dupeChild == false);
         }
     }
+}
+
+void PathSelector::updateAnalyseButton()
+{
+    // checks if list widget is empty and 
+    // updates the button
+    if (ui->selectedPathlistWidget->count() == 0)
+        ui->buttonStartAnalyser->setEnabled(false);
+    else 
+        ui->buttonStartAnalyser->setEnabled(true);
+    
 }
