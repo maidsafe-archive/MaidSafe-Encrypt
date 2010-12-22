@@ -1,8 +1,31 @@
-#include "pathselector.h"
-#include "ui_pathselector.h"
+/*
+* ============================================================================
+*
+* Copyright [2010] Sigmoid Solutions limited
+*
+* Description:  Locate and allow selection of drives and paths
+* Version:      1.0
+* Created:      2010, 21 / 12
+* Revision:     none
+* Author:       Saidle 
+* Company:      Sigmoid Solutions 
+*
+* The following source code is property of Sigmoid Solutions and is not
+* meant for external use.  The use of this code is governed by the license
+* file LICENSE.TXT found in the root of this directory and also on
+* www.sigmoidsolutions.com
+*
+* You are not free to copy, amend or otherwise use this source code without
+* the explicit written permission of the board of directors of Sigmoid
+* Solutions.
+* ============================================================================
+*/
 #include <QFileSystemModel>
 #include <QDebug>
-#include "boost/fileSystem/path.hpp"
+#include <boost/filesystem/path.hpp>
+#include "pathselector.h"
+#include "ui_pathselector.h"
+
 
 const int NAME_COL_WID = 200;
 
@@ -35,7 +58,9 @@ void PathSelector::createViewItems()
         //tree view stuff goes here
         fileModel_ = new QFileSystemModel;
         fileModel_->setRootPath(QDir::rootPath());
-        fileModel_->setFilter(QDir::NoDotAndDotDot | QDir::Dirs | QDir::NoSymLinks );
+        fileModel_->setFilter(QDir::NoDotAndDotDot |
+                              QDir::Dirs |
+                              QDir::NoSymLinks );
         
         this->ui->treeView->setModel(fileModel_);
 
@@ -48,7 +73,8 @@ void PathSelector::createViewItems()
         // list widget stuff goes here
         ui->selectedPathlistWidget->setDropIndicatorShown(true);
         ui->selectedPathlistWidget->setAcceptDrops(true);
-        ui->selectedPathlistWidget->setSelectionMode(QAbstractItemView::MultiSelection);
+        ui->selectedPathlistWidget->setSelectionMode(
+		QAbstractItemView::MultiSelection);
     } catch (...) {
         qDebug() << "\nError in PathSelector::createViewItems()";
     }
@@ -87,7 +113,8 @@ void PathSelector::removeItemsClicked()
 
 void PathSelector::addNonDupeItemToList(const QString &aItem)
 {
-    QList<QListWidgetItem*> found = ui->selectedPathlistWidget->findItems(aItem, Qt::MatchExactly);
+    QList<QListWidgetItem*> found = ui->selectedPathlistWidget->
+                                        findItems(aItem, Qt::MatchExactly);
     
     if (found.isEmpty()) {
         ui->selectedPathlistWidget->addItem(aItem);
