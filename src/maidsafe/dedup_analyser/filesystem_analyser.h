@@ -31,9 +31,10 @@
 //  #include <boost/thread.hpp>
 //  #include <boost/bind.hpp>
 #include <QObject>
+#include <iostream>
 #include <string>
 #include <utility>
-#include <iostream>
+#include <vector>
 #include "maidsafe/dedup_analyser/display.h"
 #include "maidsafe/base/crypto.h"
 
@@ -69,9 +70,7 @@ class FilesystemAnalyser : public QObject {
 //     work_.reset();
 //     thread_group_.join_all();
   }
-  fs3::path Normalise(const fs3::path &directory_path);
-  void ProcessFile(const fs3::path &file_path);
-  void ProcessDirectory(const fs3::path &directory_path);
+  void ProcessDirectories(std::vector<fs3::path> directory_paths);
  signals:
   void OnFileProcessed(FileInfo file_info);
   void OnDirectoryEntered(fs3::path directory_path);
@@ -79,6 +78,9 @@ class FilesystemAnalyser : public QObject {
  private:
   FilesystemAnalyser(const FilesystemAnalyser&);
   FilesystemAnalyser &operator=(const FilesystemAnalyser&);
+  fs3::path Normalise(const fs3::path &directory_path);
+  void ProcessFile(const fs3::path &file_path);
+  void ProcessDirectory(const fs3::path &directory_path);
   boost::shared_ptr<boost::asio::io_service> asio_service_;
 //  boost::shared_ptr<boost::asio::io_service::work> work_;
 //   boost::uint16_t cores_;

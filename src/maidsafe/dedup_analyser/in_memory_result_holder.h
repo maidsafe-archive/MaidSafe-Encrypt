@@ -29,6 +29,7 @@
 #include <boost/thread/mutex.hpp>
 #include <string>
 #include <vector>
+#include "maidsafe/dedup_analyser/display.h"
 #include "maidsafe/dedup_analyser/result_holder.h"
 
 namespace maidsafe {
@@ -52,6 +53,7 @@ class InMemoryResultHolder : public ResultHolder {
   virtual boost::uintmax_t TotalDuplicateSize();
   virtual boost::uintmax_t ErrorsCount();
   std::vector<std::string> error_messages() const { return error_messages_; }
+  virtual Results GetResults();
  protected:
   virtual void HandleFileProcessed(FileInfo file_info);
   virtual void HandleFailure(std::string error_message);

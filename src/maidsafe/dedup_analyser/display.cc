@@ -21,13 +21,20 @@
 * ============================================================================
 */
 
+#include <boost/bind.hpp>
 #include "maidsafe/dedup_analyser/display.h"
 #include "maidsafe/dedup_analyser/result_holder.h"
 
 namespace maidsafe {
 
-Display::Display(boost::shared_ptr<ResultHolder> result_holder)
-    : result_holder_(result_holder) {}
+Display::Display(boost::shared_ptr<boost::asio::io_service> asio_service,
+                boost::shared_ptr<ResultHolder> result_holder)
+    : asio_service_(asio_service),
+      result_holder_(result_holder),
+      mutex_(),
+      running_(false),
+      timer_(*asio_service_, update_interval_),
+      update_interval_(3000) {}
 
 bool Display::ConnectToFilesystemAnalyser(
     boost::shared_ptr<FilesystemAnalyser> analyser) {
@@ -43,6 +50,50 @@ bool Display::ConnectToFilesystemAnalyser(
       QObject::connect(analyser.get(), SIGNAL(OnFailure(std::string)),
                        result_holder_.get(), SLOT(HandleFailure(std::string)));
 
+}
+
+void Display::StartRunningResultUpdates() {
+  {
+    boost::mutex::scoped_lock lock(mutex_);
+    running_ = true;
+  }
+  timer_.async_wait(boost::bind(&Display::FetchResults, this, _1));
+}
+
+void Display::StopRunningResultUpdates() {
+  {
+    boost::mutex::scoped_lock lock(mutex_);
+    running_ = true;
+  }
+  timer_.cancel();
+}
+
+void Display::set_update_interval(
+    const boost::posix_time::milliseconds &update_interval) {
+  boost::mutex::scoped_lock lock(mutex_);
+  update_interval_ = update_interval;
+}
+
+void Display::FetchResults(const boost::system::error_code &error_code) {
+  if (error_code) {
+    if (error_code != boost::asio::error::operation_aborted)
+      emit OnFailure(error_code.message());
+  } else {
+    emit UpdatedResults(result_holder_->GetResults());
+    timer_.async_wait(boost::bind(&Display::FetchResults, this, _1));
+  }
+}
+
+void Display::HandleFileProcessed(FileInfo file_info) {
+  emit OnFileProcessed(file_info);
+}
+
+void Display::HandleDirectoryEntered(fs3::path directory_path) {
+  emit OnDirectoryEntered(directory_path);
+}
+
+void Display::HandleFailure(std::string error_message) {
+  emit OnFailure(error_message);
 }
 
 }  // namespace maidsafe

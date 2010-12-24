@@ -24,7 +24,9 @@
 #ifndef MAIDSAFE_DEDUP_ANALYSER_DISPLAY_H_
 #define MAIDSAFE_DEDUP_ANALYSER_DISPLAY_H_
 
+#include <boost/asio.hpp>
 #include <boost/filesystem.hpp>
+#include <boost/thread/mutex.hpp>
 #include <QObject>
 
 namespace fs3 = boost::filesystem3;
@@ -44,6 +46,22 @@ struct FileInfo {
 };
 
 struct Results {
+  Results()
+      : unique_file_count(0),
+        duplicate_file_count(0),
+        total_unique_size(0),
+        total_duplicate_size(0),
+        errors_count(0) {}
+  Results(const boost::uintmax_t &unique_file_count_in,
+          const boost::uintmax_t &duplicate_file_count_in,
+          const boost::uintmax_t &total_unique_size_in,
+          const boost::uintmax_t &total_duplicate_size_in,
+          const boost::uintmax_t &errors_count_in)
+      : unique_file_count(unique_file_count_in),
+        duplicate_file_count(duplicate_file_count_in),
+        total_unique_size(total_unique_size_in),
+        total_duplicate_size(total_duplicate_size_in),
+        errors_count(errors_count_in) {}
   boost::uintmax_t unique_file_count, duplicate_file_count, total_unique_size;
   boost::uintmax_t total_duplicate_size, errors_count;
 };
@@ -51,21 +69,33 @@ struct Results {
 class Display : public QObject {
   Q_OBJECT
  public:
-  explicit Display(boost::shared_ptr<ResultHolder> result_holder);
+  Display(boost::shared_ptr<boost::asio::io_service> asio_service,
+          boost::shared_ptr<ResultHolder> result_holder);
   virtual ~Display() {}
   bool ConnectToFilesystemAnalyser(
       boost::shared_ptr<FilesystemAnalyser> analyser);
+  void StartRunningResultUpdates();
+  void StopRunningResultUpdates();
+  void set_update_interval(
+      const boost::posix_time::milliseconds &update_interval);
  signals:
   void OnFileProcessed(FileInfo file_info);
   void OnDirectoryEntered(fs3::path directory_path);
   void OnFailure(std::string error_message);
   void UpdatedResults(Results results);
  public slots:
-  virtual void HandleFileProcessed(FileInfo file_info) = 0;
-  virtual void HandleDirectoryEntered(fs3::path directory_path) = 0;
-  virtual void HandleFailure(std::string error_message) = 0;
+  virtual void HandleFileProcessed(FileInfo file_info);
+  virtual void HandleDirectoryEntered(fs3::path directory_path);
+  virtual void HandleFailure(std::string error_message);
  protected:
+  boost::shared_ptr<boost::asio::io_service> asio_service_;
   boost::shared_ptr<ResultHolder> result_holder_;
+ private:
+  void FetchResults(const boost::system::error_code &error_code);
+  boost::mutex mutex_;
+  bool running_;
+  boost::asio::deadline_timer timer_;
+  boost::posix_time::milliseconds update_interval_;
 };
 
 }  // namespace maidsafe

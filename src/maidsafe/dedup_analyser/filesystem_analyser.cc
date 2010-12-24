@@ -32,6 +32,13 @@ namespace fs3 = boost::filesystem3;
 
 namespace maidsafe {
 
+void FilesystemAnalyser::ProcessDirectories(
+    std::vector<fs3::path> directory_paths) {
+  for (std::vector<fs3::path>::iterator it = directory_paths.begin();
+       it != directory_paths.end(); ++it)
+    ProcessDirectory(*it);
+}
+
 void FilesystemAnalyser::ProcessFile(const fs3::path &file_path) {
   crypto::Crypto crypt;
   crypt.set_hash_algorithm(crypto::SHA_1);

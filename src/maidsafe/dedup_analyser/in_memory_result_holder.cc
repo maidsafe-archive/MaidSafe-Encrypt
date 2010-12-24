@@ -48,6 +48,11 @@ boost::uintmax_t InMemoryResultHolder::ErrorsCount() {
   return error_messages_.size();
 }
 
+Results InMemoryResultHolder::GetResults() {
+  return PrepareResults() ? Results(unique_count_, duplicate_count_,
+      unique_size_, duplicate_size_, error_messages_.size()) : Results();
+}
+
 void InMemoryResultHolder::HandleFileProcessed(FileInfo file_info) {
   boost::mutex::scoped_lock lock(file_processed_mutex_);
   file_infos_.push_back(file_info);

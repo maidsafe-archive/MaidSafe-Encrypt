@@ -3,7 +3,7 @@
 *
 * Copyright [2010] Sigmoid Solutions limited
 *
-* Description:  Derived display class outputting to std::cout
+* Description:  Display class outputting to std::cout
 * Version:      1.0
 * Created:      24-12-2010
 * Revision:     none
@@ -24,21 +24,21 @@
 #ifndef MAIDSAFE_DEDUP_ANALYSER_TERMINAL_DISPLAY_H_
 #define MAIDSAFE_DEDUP_ANALYSER_TERMINAL_DISPLAY_H_
 
-#include "maidsafe/dedup_analyser/filesystem_analyser.h"
+#include <QObject>
 #include "maidsafe/dedup_analyser/display.h"
-#include "maidsafe/dedup_analyser/result_holder.h"
 
 namespace maidsafe {
 
-class TerminalDisplay : public Display {
+class TerminalDisplay : public QObject {
+  Q_OBJECT
  public:
-  explicit TerminalDisplay(boost::shared_ptr<ResultHolder> result_holder)
-      : Display(result_holder) {}
+  explicit TerminalDisplay(boost::shared_ptr<Display> display);
   virtual ~TerminalDisplay() {}
- protected:
-  virtual void HandleFileProcessed(FileInfo file_info);
-  virtual void HandleDirectoryEntered(fs3::path directory_path);
-  virtual void HandleFailure(std::string error_message);
+ public slots:
+  void HandleFileProcessed(FileInfo file_info);
+  void HandleDirectoryEntered(fs3::path directory_path);
+  void HandleFailure(std::string error_message);
+  void HandleResults(Results results);
 };
 
 }  // namespace maidsafe

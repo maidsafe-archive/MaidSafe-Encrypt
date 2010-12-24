@@ -28,6 +28,7 @@
 #include <boost/cstdint.hpp>
 #include <QObject>
 #include "maidsafe/dedup_analyser/filesystem_analyser.h"
+#include "maidsafe/dedup_analyser/display.h"
 
 namespace maidsafe {
 
@@ -43,6 +44,7 @@ class ResultHolder : public QObject {
   virtual boost::uintmax_t TotalUniqueSize() = 0;
   virtual boost::uintmax_t TotalDuplicateSize() = 0;
   virtual boost::uintmax_t ErrorsCount() = 0;
+  virtual Results GetResults() = 0;
  public slots:
   virtual void HandleFileProcessed(FileInfo file_info) = 0;
   virtual void HandleFailure(std::string error_message) = 0;
