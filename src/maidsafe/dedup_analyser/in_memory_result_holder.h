@@ -25,15 +25,14 @@ TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef SRC_IN_MEMORY_RESULT_HOLDER_H_
-#define SRC_IN_MEMORY_RESULT_HOLDER_H_
+#ifndef MAIDSAFE_DEDUP_ANALYSER_IN_MEMORY_RESULT_HOLDER_H_
+#define MAIDSAFE_DEDUP_ANALYSER_IN_MEMORY_RESULT_HOLDER_H_
 
 #include <boost/cstdint.hpp>
 #include <boost/thread/mutex.hpp>
-#include <boost/interprocess/detail/atomic.hpp>
 #include <string>
 #include <vector>
-#include "result_holder.h"
+#include "maidsafe/dedup_analyser/result_holder.h"
 
 namespace maidsafe {
 
@@ -66,10 +65,10 @@ class InMemoryResultHolder : public ResultHolder {
  private:
   bool PrepareResults();
   boost::mutex result_mutex_;
-  boost::mutex file_precessed_mutex_;
-  boost::mutex handle_failure_mutex_;  
+  boost::mutex file_processed_mutex_;
+  boost::mutex handle_failure_mutex_;
 };
 
 }  // namespace maidsafe
 
-#endif  // SRC_IN_MEMORY_RESULT_HOLDER_H_
+#endif  // MAIDSAFE_DEDUP_ANALYSER_IN_MEMORY_RESULT_HOLDER_H_

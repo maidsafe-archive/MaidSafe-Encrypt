@@ -25,36 +25,39 @@ TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef SRC_RESULT_HOLDER_H_
-#define SRC_RESULT_HOLDER_H_
+#ifndef MAIDSAFE_DEDUP_ANALYSER_RESULT_HOLDER_H_
+#define MAIDSAFE_DEDUP_ANALYSER_RESULT_HOLDER_H_
 
 #include <boost/cstdint.hpp>
-#include <boost/signals2.hpp>
-#include "filesystem_analyser.h"
-
-namespace bs2 = boost::signals2;
+#include <QObject>
+#include "maidsafe/dedup_analyser/filesystem_analyser.h"
 
 namespace maidsafe {
 
-class FilesystemAnalyser;
+struct Results {
+  boost::uintmax_t unique_file_count, duplicate_file_count, total_unique_size;
+  boost::uintmax_t total_duplicate_size, errors_count;
+};
 
-class ResultHolder {
+class ResultHolder : public QObject {
+  Q_OBJECT
  public:
-  ResultHolder() : on_file_processed_connection_(), on_failure_connection_() {}
-  virtual ~ResultHolder() { DisconnectFromFilesystemAnalyser(); }
+  ResultHolder() {}
+  virtual ~ResultHolder() { /*DisconnectFromFilesystemAnalyser();*/ }
   void ConnectToFilesystemAnalyser(FilesystemAnalyser *analyser);
-  void DisconnectFromFilesystemAnalyser();
+//  void DisconnectFromFilesystemAnalyser();
   virtual boost::uintmax_t UniqueFileCount() = 0;
   virtual boost::uintmax_t DuplicateFileCount() = 0;
   virtual boost::uintmax_t TotalUniqueSize() = 0;
   virtual boost::uintmax_t TotalDuplicateSize() = 0;
   virtual boost::uintmax_t ErrorsCount() = 0;
- protected:
+ public slots:
   virtual void HandleFileProcessed(FileInfo file_info) = 0;
   virtual void HandleFailure(std::string error_message) = 0;
-  bs2::connection on_file_processed_connection_, on_failure_connection_;
+ signals:
+  void UpdatedResults(Results results);
 };
 
 }  // namespace maidsafe
 
-#endif  // SRC_RESULT_HOLDER_H_
+#endif  // MAIDSAFE_DEDUP_ANALYSER_RESULT_HOLDER_H_

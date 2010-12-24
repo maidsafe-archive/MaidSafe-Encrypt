@@ -25,23 +25,24 @@ TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef SRC_FILESYSTEM_ANALYSER_H_
-#define SRC_FILESYSTEM_ANALYSER_H_
+#ifndef MAIDSAFE_DEDUP_ANALYSER_FILESYSTEM_ANALYSER_H_
+#define MAIDSAFE_DEDUP_ANALYSER_FILESYSTEM_ANALYSER_H_
 
 #include <boost/cstdint.hpp>
 #include <boost/filesystem.hpp>
-#include <boost/signals2.hpp>
-#include <boost/signals2/connection.hpp>
+//  #include <boost/signals2.hpp>
+//  #include <boost/signals2/connection.hpp>
 #include <boost/asio.hpp>
-#include <boost/thread.hpp>
-#include <boost/bind.hpp>
+//  #include <boost/thread.hpp>
+//  #include <boost/bind.hpp>
+#include <QObject>
 #include <string>
 #include <utility>
 #include <iostream>
 #include "maidsafe/base/crypto.h"
 
 namespace fs3 = boost::filesystem3;
-namespace bs2 = boost::signals2;
+//  namespace bs2 = boost::signals2;
 
 namespace maidsafe {
 
@@ -54,21 +55,20 @@ struct FileInfo {
   bool operator < (const FileInfo &r) const { return file_hash < r.file_hash; }
 };
 
-typedef bs2::signal<void(FileInfo)> OnFileProcessed;
-typedef bs2::signal<void(fs3::path)> OnDirectoryEntered;
-typedef bs2::signal<void(std::string)> OnFailure;
 
 std::string SHA1(const fs3::path &file_path);
 
-class FilesystemAnalyser  {
+class FilesystemAnalyser : public QObject {
+  Q_OBJECT
  public:
-  FilesystemAnalyser() : on_file_processed_(), on_failure_() {
+  explicit FilesystemAnalyser(boost::shared_ptr<boost::asio::io_service> io)
+      : asio_service_(io) {
 //     work_.reset(new boost::asio::io_service::work(io_service_));
 //     if (boost::thread::hardware_concurrency() > 1)
 //       cores_ = boost::thread::hardware_concurrency() -1;
 //     else
 //       cores_ = 4;
-//   
+//
 //     for (uint i = 0; i < cores_ ; ++i) {
 //       thread_group_.create_thread(boost::bind
 //               (&boost::asio::io_service::run, &io_service_));
@@ -84,21 +84,18 @@ class FilesystemAnalyser  {
 //     work_.reset();
 //     thread_group_.join_all();
   }
-  fs3::path normalise(const fs3::path& dir_path);
+  fs3::path Normalise(const fs3::path &directory_path);
   void ProcessFile(const fs3::path &file_path);
   void ProcessDirectory(const fs3::path &directory_path);
-  bs2::connection DoOnFileProcessed(const OnFileProcessed::slot_type &slot);
-  bs2::connection DoOnDirectoryEntered(
-      const OnDirectoryEntered::slot_type &slot);
-  bs2::connection DoOnFailure(const OnFailure::slot_type &slot);
+ signals:
+  void OnFileProcessed(FileInfo file_info);
+  void OnDirectoryEntered(fs3::path directory_path);
+  void OnFailure(std::string error_message);
  private:
   FilesystemAnalyser(const FilesystemAnalyser&);
   FilesystemAnalyser &operator=(const FilesystemAnalyser&);
-  OnFileProcessed on_file_processed_;
-  OnDirectoryEntered on_directory_entered_;
-  OnFailure on_failure_;
-  boost::asio::io_service io_service_;
-  boost::shared_ptr<boost::asio::io_service::work> work_;
+  boost::shared_ptr<boost::asio::io_service> asio_service_;
+//  boost::shared_ptr<boost::asio::io_service::work> work_;
 //   boost::uint16_t cores_;
 //   boost::thread_group thread_group_;
 //   boost::shared_ptr<crypto::Crypto> crypt_;
@@ -106,4 +103,4 @@ class FilesystemAnalyser  {
 
 }  // namespace maidsafe
 
-#endif  // SRC_FILESYSTEM_ANALYSER_H_
+#endif  // MAIDSAFE_DEDUP_ANALYSER_FILESYSTEM_ANALYSER_H_

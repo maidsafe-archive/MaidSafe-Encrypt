@@ -25,8 +25,9 @@ TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#include "in_memory_result_holder.h"
+#include "maidsafe/dedup_analyser/in_memory_result_holder.h"
 #include <algorithm>
+#include "maidsafe/dedup_analyser/filesystem_analyser.h"
 
 namespace maidsafe {
 
@@ -51,7 +52,7 @@ boost::uintmax_t InMemoryResultHolder::ErrorsCount() {
 }
 
 void InMemoryResultHolder::HandleFileProcessed(FileInfo file_info) {
-  boost::mutex::scoped_lock lock(file_precessed_mutex_);
+  boost::mutex::scoped_lock lock(file_processed_mutex_);
   file_infos_.push_back(file_info);
 }
 

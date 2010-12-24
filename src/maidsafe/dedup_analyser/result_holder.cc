@@ -25,21 +25,15 @@ TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#include "result_holder.h"
-#include <boost/bind.hpp>
+#include "maidsafe/dedup_analyser/result_holder.h"
 
 namespace maidsafe {
 
 void ResultHolder::ConnectToFilesystemAnalyser(FilesystemAnalyser *analyser) {
-  on_file_processed_connection_ = analyser->DoOnFileProcessed(
-      boost::bind(&ResultHolder::HandleFileProcessed, this, _1));
-  on_failure_connection_ = analyser->DoOnFailure(
-      boost::bind(&ResultHolder::HandleFailure, this, _1));
-}
-
-void ResultHolder::DisconnectFromFilesystemAnalyser() {
-  on_file_processed_connection_.disconnect();
-  on_failure_connection_.disconnect();
+  QObject::connect(analyser, SIGNAL(OnFileProcessed(FileInfo)), this,
+                   SLOT(HandleFileProcessed(FileInfo)));
+  QObject::connect(analyser, SIGNAL(OnFailure(std::string)), this,
+                   SLOT(HandleFailure(std::string)));
 }
 
 }  // namespace maidsafe

@@ -25,34 +25,30 @@ TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef SRC_DISPLAY_H_
-#define SRC_DISPLAY_H_
+#ifndef MAIDSAFE_DEDUP_ANALYSER_DISPLAY_H_
+#define MAIDSAFE_DEDUP_ANALYSER_DISPLAY_H_
 
-#include <boost/signals2.hpp>
-#include "filesystem_analyser.h"
+#include <boost/filesystem.hpp>
+#include <QObject>
+#include "maidsafe/dedup_analyser/filesystem_analyser.h"
 
-namespace bs2 = boost::signals2;
+namespace fs3 = boost::filesystem3;
 
 namespace maidsafe {
 
-class Display {
+class Display : public QObject {
+  Q_OBJECT
  public:
-  Display()
-      : on_file_processed_connection_(),
-        on_directory_entered_connection_(),
-        on_failure_connection_() {}
-  virtual ~Display() { DisconnectFromFilesystemAnalyser(); }
+  Display() {}
+  virtual ~Display() { /*DisconnectFromFilesystemAnalyser();*/ }
   void ConnectToFilesystemAnalyser(FilesystemAnalyser *analyser);
-  void DisconnectFromFilesystemAnalyser();
- protected:
+//  void DisconnectFromFilesystemAnalyser();
+ public slots:
   virtual void HandleFileProcessed(FileInfo file_info) = 0;
   virtual void HandleDirectoryEntered(fs3::path directory_path) = 0;
   virtual void HandleFailure(std::string error_message) = 0;
-  bs2::connection on_file_processed_connection_;
-  bs2::connection on_directory_entered_connection_;
-  bs2::connection on_failure_connection_;
 };
 
 }  // namespace maidsafe
 
-#endif  // SRC_DISPLAY_H_
+#endif  // MAIDSAFE_DEDUP_ANALYSER_DISPLAY_H_

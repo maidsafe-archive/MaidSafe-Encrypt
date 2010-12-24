@@ -25,14 +25,11 @@ TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef SRC_TERMINAL_DISPLAY_H_
-#define SRC_TERMINAL_DISPLAY_H_
+#ifndef MAIDSAFE_DEDUP_ANALYSER_TERMINAL_DISPLAY_H_
+#define MAIDSAFE_DEDUP_ANALYSER_TERMINAL_DISPLAY_H_
 
-#include <boost/signals2.hpp>
-#include "filesystem_analyser.h"
-#include "display.h"
-
-namespace bs2 = boost::signals2;
+#include "maidsafe/dedup_analyser/filesystem_analyser.h"
+#include "maidsafe/dedup_analyser/display.h"
 
 namespace maidsafe {
 
@@ -48,4 +45,4 @@ class TerminalDisplay : public Display {
 
 }  // namespace maidsafe
 
-#endif  // SRC_TERMINAL_DISPLAY_H_
+#endif  // MAIDSAFE_DEDUP_ANALYSER_TERMINAL_DISPLAY_H_

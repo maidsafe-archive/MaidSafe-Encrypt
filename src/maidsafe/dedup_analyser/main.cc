@@ -25,24 +25,24 @@ TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#include <iostream>
 #include <boost/filesystem.hpp>
-#include "filesystem_analyser.h"
-#include "in_memory_result_holder.h"
-#include "terminal_display.h"
+#include <iostream>
 #include <QApplication>
+#include "maidsafe/dedup_analyser/filesystem_analyser.h"
+#include "maidsafe/dedup_analyser/in_memory_result_holder.h"
+#include "maidsafe/dedup_analyser/terminal_display.h"
 #include "maidsafe/dedup_analyser/widgets/dedupmainwindow.h"
-
+/*
 int main(int argc, char *argv[]) {
     QApplication app(argc, argv);
 
-    DedupMainWindow mainWin;    
+    DedupMainWindow mainWin;
     mainWin.show();
 
     return app.exec();
 }
+*/
 
-/*
 int main(int argc, char* argv[]) {
   if (argc < 2) {
     std::cout << "Usage: Dedup <path to start recursive check>" << std::endl << std::endl;
@@ -52,22 +52,20 @@ int main(int argc, char* argv[]) {
   boost::filesystem3::space_info size = boost::filesystem3::space(path);
   boost::uintmax_t capacity = size.capacity/(1024*1024*1024);
   boost::uintmax_t free_space = size.free/(1024*1024*1024);
-  
+
   std::cout << "Drive capacity is : " << capacity << " GB and of that "
                                       << capacity-free_space << " GB has been used!" << std::endl;
 
-  maidsafe::FilesystemAnalyser filesystem_analyser;
+  boost::shared_ptr<boost::asio::io_service> asio_service;
+  maidsafe::FilesystemAnalyser filesystem_analyser(asio_service);
 
-//  boost::shared_ptr<crypto::Crypto> crypt_(new crypto::Crypto);
-//  crypt_->set_hash_algorithm(crypto::Adler_32);
-  
   maidsafe::InMemoryResultHolder in_memory_result_holder;
   in_memory_result_holder.ConnectToFilesystemAnalyser(&filesystem_analyser);
   maidsafe::TerminalDisplay terminal_display;
   terminal_display.ConnectToFilesystemAnalyser(&filesystem_analyser);
   filesystem_analyser.ProcessDirectory(argv[1]);
   filesystem_analyser.Stop(); // make sure all threads completed
-  
+
   std::cout << std::endl << std::endl << "Processing results..." << std::endl << std::endl;
   std::cout << "Drive capacity is : " << capacity << " GB and of that "
                                       << capacity-free_space << " GB has been used!" << std::endl;
@@ -85,4 +83,4 @@ int main(int argc, char* argv[]) {
 
   return 0;
 }
-*/
+

@@ -25,24 +25,17 @@ TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#include "display.h"
-#include <boost/bind.hpp>
+#include "maidsafe/dedup_analyser/display.h"
 
 namespace maidsafe {
 
 void Display::ConnectToFilesystemAnalyser(FilesystemAnalyser *analyser) {
-  on_file_processed_connection_ = analyser->DoOnFileProcessed(
-      boost::bind(&Display::HandleFileProcessed, this, _1));
-  on_directory_entered_connection_ = analyser->DoOnDirectoryEntered(
-      boost::bind(&Display::HandleDirectoryEntered, this, _1));
-  on_failure_connection_ = analyser->DoOnFailure(
-      boost::bind(&Display::HandleFailure, this, _1));
-}
-
-void Display::DisconnectFromFilesystemAnalyser() {
-  on_file_processed_connection_.disconnect();
-  on_directory_entered_connection_.disconnect();
-  on_failure_connection_.disconnect();
+  QObject::connect(analyser, SIGNAL(OnFileProcessed(FileInfo)), this,
+                   SLOT(HandleFileProcessed(FileInfo)));
+  QObject::connect(analyser, SIGNAL(OnDirectoryEntered(fs3::path)), this,
+                   SLOT(HandleDirectoryEntered(fs3::path)));
+  QObject::connect(analyser, SIGNAL(OnFailure(std::string)), this,
+                   SLOT(HandleFailure(std::string)));
 }
 
 }  // namespace maidsafe

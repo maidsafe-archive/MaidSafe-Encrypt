@@ -25,22 +25,22 @@ TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#include "terminal_display.h"
+#include "maidsafe/dedup_analyser/terminal_display.h"
 #include <iostream>
 
 namespace maidsafe {
 
-void TerminalDisplay::HandleFileProcessed(FileInfo file_info) {
-//   std::cout << "." <<std::endl;
+void TerminalDisplay::HandleFileProcessed(FileInfo /*file_info*/) {
+  std::cout << ".";
 }
 
 void TerminalDisplay::HandleDirectoryEntered(fs3::path directory_path) {
-//   std::cout << "\nEntered \n" << directory_path.string().c_str() << std::endl;
-  std::cout << "." ;
+  std::cout << "\nEntered " << directory_path.string().c_str() << std::endl;
+//  std::cout << "." ;
 }
 
 void TerminalDisplay::HandleFailure(std::string error_message) {
-  std::cout << error_message.c_str() <<std::endl;
+  std::cout << error_message.c_str() << std::endl;
 }
 
 }  // namespace maidsafe
