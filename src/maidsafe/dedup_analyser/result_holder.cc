@@ -26,11 +26,6 @@
 
 namespace maidsafe {
 
-void ResultHolder::ConnectToFilesystemAnalyser(FilesystemAnalyser *analyser) {
-  QObject::connect(analyser, SIGNAL(OnFileProcessed(FileInfo)), this,
-                   SLOT(HandleFileProcessed(FileInfo)));
-  QObject::connect(analyser, SIGNAL(OnFailure(std::string)), this,
-                   SLOT(HandleFailure(std::string)));
-}
+ResultHolder::ResultHolder() {}
 
 }  // namespace maidsafe

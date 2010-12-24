@@ -22,16 +22,27 @@
 */
 
 #include "maidsafe/dedup_analyser/display.h"
+#include "maidsafe/dedup_analyser/result_holder.h"
 
 namespace maidsafe {
 
-void Display::ConnectToFilesystemAnalyser(FilesystemAnalyser *analyser) {
-  QObject::connect(analyser, SIGNAL(OnFileProcessed(FileInfo)), this,
-                   SLOT(HandleFileProcessed(FileInfo)));
-  QObject::connect(analyser, SIGNAL(OnDirectoryEntered(fs3::path)), this,
-                   SLOT(HandleDirectoryEntered(fs3::path)));
-  QObject::connect(analyser, SIGNAL(OnFailure(std::string)), this,
-                   SLOT(HandleFailure(std::string)));
+Display::Display(boost::shared_ptr<ResultHolder> result_holder)
+    : result_holder_(result_holder) {}
+
+bool Display::ConnectToFilesystemAnalyser(
+    boost::shared_ptr<FilesystemAnalyser> analyser) {
+  return QObject::connect(analyser.get(), SIGNAL(OnFileProcessed(FileInfo)),
+                          this, SLOT(HandleFileProcessed(FileInfo))) &&
+      QObject::connect(analyser.get(), SIGNAL(OnDirectoryEntered(fs3::path)),
+                       this, SLOT(HandleDirectoryEntered(fs3::path))) &&
+      QObject::connect(analyser.get(), SIGNAL(OnFailure(std::string)), this,
+                       SLOT(HandleFailure(std::string))) &&
+      QObject::connect(analyser.get(), SIGNAL(OnFileProcessed(FileInfo)),
+                       result_holder_.get(),
+                       SLOT(HandleFileProcessed(FileInfo))) &&
+      QObject::connect(analyser.get(), SIGNAL(OnFailure(std::string)),
+                       result_holder_.get(), SLOT(HandleFailure(std::string)));
+
 }
 
 }  // namespace maidsafe

@@ -52,29 +52,32 @@ int main(int argc, char* argv[]) {
   std::cout << "Drive capacity is : " << capacity << " GB and of that "
                                       << capacity-free_space << " GB has been used!" << std::endl;
 
-  boost::shared_ptr<boost::asio::io_service> asio_service;
-  maidsafe::FilesystemAnalyser filesystem_analyser(asio_service);
+  boost::shared_ptr<boost::asio::io_service>
+      asio_service(new boost::asio::io_service);
+  boost::shared_ptr<maidsafe::FilesystemAnalyser>
+      filesystem_analyser(new maidsafe::FilesystemAnalyser(asio_service));
 
-  maidsafe::InMemoryResultHolder in_memory_result_holder;
-  in_memory_result_holder.ConnectToFilesystemAnalyser(&filesystem_analyser);
-  maidsafe::TerminalDisplay terminal_display;
-  terminal_display.ConnectToFilesystemAnalyser(&filesystem_analyser);
-  filesystem_analyser.ProcessDirectory(argv[1]);
-  filesystem_analyser.Stop(); // make sure all threads completed
+  boost::shared_ptr<maidsafe::InMemoryResultHolder>
+      in_memory_result_holder(new maidsafe::InMemoryResultHolder);
+  boost::shared_ptr<maidsafe::TerminalDisplay>
+      terminal_display(new maidsafe::TerminalDisplay(in_memory_result_holder));
+  terminal_display->ConnectToFilesystemAnalyser(filesystem_analyser);
+  filesystem_analyser->ProcessDirectory(argv[1]);
+  filesystem_analyser->Stop(); // make sure all threads completed
 
   std::cout << std::endl << std::endl << "Processing results..." << std::endl << std::endl;
   std::cout << "Drive capacity is : " << capacity << " GB and of that "
                                       << capacity-free_space << " GB has been used!" << std::endl;
 
-  std::cout << "Total processed file count:           " << in_memory_result_holder.UniqueFileCount() + in_memory_result_holder.DuplicateFileCount() << std::endl;
-  std::cout << "Total of all processed files' sizes:  " << in_memory_result_holder.TotalUniqueSize() + in_memory_result_holder.TotalDuplicateSize() << std::endl;
-  std::cout << "Unprocessed file count:               " << in_memory_result_holder.ErrorsCount() << std::endl << std::endl;
-  std::cout << "Unique file count:                    " << in_memory_result_holder.UniqueFileCount() << std::endl;
-  std::cout << "Total of unique files' sizes:         " << in_memory_result_holder.TotalUniqueSize() << std::endl << std::endl;
-  std::cout << "Duplicate file count:                 " << in_memory_result_holder.DuplicateFileCount() << std::endl;
-  std::cout << "Total of duplicate files' sizes:      " << in_memory_result_holder.TotalDuplicateSize() << std::endl << std::endl << std::endl;
-  std::cout << "Duplicate files as a percentage of all files:  " << static_cast<double>(in_memory_result_holder.DuplicateFileCount()) * 100 / (in_memory_result_holder.UniqueFileCount() + in_memory_result_holder.DuplicateFileCount()) << " %" << std::endl;
-  std::cout << "Duplicate size as a percentage of total size:  " << static_cast<float>(in_memory_result_holder.TotalDuplicateSize()) * 100 / (in_memory_result_holder.TotalUniqueSize() + in_memory_result_holder.TotalDuplicateSize()) << " %" <<  std::endl;
+  std::cout << "Total processed file count:           " << in_memory_result_holder->UniqueFileCount() + in_memory_result_holder->DuplicateFileCount() << std::endl;
+  std::cout << "Total of all processed files' sizes:  " << in_memory_result_holder->TotalUniqueSize() + in_memory_result_holder->TotalDuplicateSize() << std::endl;
+  std::cout << "Unprocessed file count:               " << in_memory_result_holder->ErrorsCount() << std::endl << std::endl;
+  std::cout << "Unique file count:                    " << in_memory_result_holder->UniqueFileCount() << std::endl;
+  std::cout << "Total of unique files' sizes:         " << in_memory_result_holder->TotalUniqueSize() << std::endl << std::endl;
+  std::cout << "Duplicate file count:                 " << in_memory_result_holder->DuplicateFileCount() << std::endl;
+  std::cout << "Total of duplicate files' sizes:      " << in_memory_result_holder->TotalDuplicateSize() << std::endl << std::endl << std::endl;
+  std::cout << "Duplicate files as a percentage of all files:  " << static_cast<double>(in_memory_result_holder->DuplicateFileCount()) * 100 / (in_memory_result_holder->UniqueFileCount() + in_memory_result_holder->DuplicateFileCount()) << " %" << std::endl;
+  std::cout << "Duplicate size as a percentage of total size:  " << static_cast<float>(in_memory_result_holder->TotalDuplicateSize()) * 100 / (in_memory_result_holder->TotalUniqueSize() + in_memory_result_holder->TotalDuplicateSize()) << " %" <<  std::endl;
 
 
   return 0;

@@ -26,12 +26,14 @@
 
 #include "maidsafe/dedup_analyser/filesystem_analyser.h"
 #include "maidsafe/dedup_analyser/display.h"
+#include "maidsafe/dedup_analyser/result_holder.h"
 
 namespace maidsafe {
 
 class TerminalDisplay : public Display {
  public:
-  TerminalDisplay() : Display() {}
+  explicit TerminalDisplay(boost::shared_ptr<ResultHolder> result_holder)
+      : Display(result_holder) {}
   virtual ~TerminalDisplay() {}
  protected:
   virtual void HandleFileProcessed(FileInfo file_info);

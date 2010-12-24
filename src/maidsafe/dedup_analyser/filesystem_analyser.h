@@ -27,8 +27,6 @@
 
 #include <boost/cstdint.hpp>
 #include <boost/filesystem.hpp>
-//  #include <boost/signals2.hpp>
-//  #include <boost/signals2/connection.hpp>
 #include <boost/asio.hpp>
 //  #include <boost/thread.hpp>
 //  #include <boost/bind.hpp>
@@ -36,22 +34,12 @@
 #include <string>
 #include <utility>
 #include <iostream>
+#include "maidsafe/dedup_analyser/display.h"
 #include "maidsafe/base/crypto.h"
 
 namespace fs3 = boost::filesystem3;
-//  namespace bs2 = boost::signals2;
 
 namespace maidsafe {
-
-struct FileInfo {
-  explicit FileInfo(const fs3::path &file_path_in)
-      : file_path(file_path_in), file_hash(), file_size(0) {}
-  fs3::path file_path;
-  std::string file_hash;
-  boost::uintmax_t file_size;
-  bool operator < (const FileInfo &r) const { return file_hash < r.file_hash; }
-};
-
 
 std::string SHA1(const fs3::path &file_path);
 
