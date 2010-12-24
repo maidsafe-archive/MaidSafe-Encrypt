@@ -29,7 +29,6 @@
 #include <boost/thread/mutex.hpp>
 #include <string>
 #include <vector>
-#include "maidsafe/dedup_analyser/display.h"
 #include "maidsafe/dedup_analyser/result_holder.h"
 
 namespace maidsafe {

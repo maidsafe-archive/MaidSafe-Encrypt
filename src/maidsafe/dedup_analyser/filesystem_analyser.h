@@ -35,12 +35,14 @@
 #include <string>
 #include <utility>
 #include <vector>
-#include "maidsafe/dedup_analyser/display.h"
 #include "maidsafe/base/crypto.h"
+#include "maidsafe/dedup_analyser/display.h"
 
 namespace fs3 = boost::filesystem3;
 
 namespace maidsafe {
+
+struct FileInfo;
 
 std::string SHA1(const fs3::path &file_path);
 

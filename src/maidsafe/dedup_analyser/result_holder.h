@@ -32,12 +32,12 @@
 
 namespace maidsafe {
 
-class Display;
+struct FileInfo;
 
 class ResultHolder : public QObject {
   Q_OBJECT
  public:
-  ResultHolder();
+  ResultHolder() {}
   virtual ~ResultHolder() {}
   virtual boost::uintmax_t UniqueFileCount() = 0;
   virtual boost::uintmax_t DuplicateFileCount() = 0;

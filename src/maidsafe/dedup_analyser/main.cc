@@ -22,6 +22,7 @@
 */
 
 #include <boost/filesystem.hpp>
+#include <boost/progress.hpp>
 #include <boost/thread.hpp>
 #include <iostream>
 #include <QApplication>
@@ -46,6 +47,7 @@ int main(int argc, char* argv[]) {
     std::cout << "Usage: Dedup <path to start recursive check>" << std::endl << std::endl;
     return -1;
   }
+  boost::progress_timer progress_timer;
   boost::filesystem3::path path(argv[1]);
   boost::filesystem3::space_info size = boost::filesystem3::space(path);
   boost::uintmax_t capacity = size.capacity/(1024*1024*1024);
@@ -89,6 +91,7 @@ int main(int argc, char* argv[]) {
   std::cout << "Total of duplicate files' sizes:      " << in_memory_result_holder->TotalDuplicateSize() << std::endl << std::endl << std::endl;
   std::cout << "Duplicate files as a percentage of all files:  " << static_cast<double>(in_memory_result_holder->DuplicateFileCount()) * 100 / (in_memory_result_holder->UniqueFileCount() + in_memory_result_holder->DuplicateFileCount()) << " %" << std::endl;
   std::cout << "Duplicate size as a percentage of total size:  " << static_cast<float>(in_memory_result_holder->TotalDuplicateSize()) * 100 / (in_memory_result_holder->TotalUniqueSize() + in_memory_result_holder->TotalDuplicateSize()) << " %" <<  std::endl;
+  std::cout << std::endl << "Overall running time: ";
 
   display->StopRunningResultUpdates();
   work.reset();
