@@ -24,10 +24,19 @@
 #ifndef MAIDSAFE_DEDUP_ANALYSER_TERMINAL_DISPLAY_H_
 #define MAIDSAFE_DEDUP_ANALYSER_TERMINAL_DISPLAY_H_
 
+#include <boost/filesystem/path.hpp>
+#include <boost/shared_ptr.hpp>
+#include <boost/thread/mutex.hpp>
 #include <QObject>
 #include "maidsafe/dedup_analyser/display.h"
 
+namespace fs3 = boost::filesystem3;
+
 namespace maidsafe {
+
+struct FileInfo;
+struct Results;
+class Display;
 
 class TerminalDisplay : public QObject {
   Q_OBJECT
@@ -39,6 +48,8 @@ class TerminalDisplay : public QObject {
   void HandleDirectoryEntered(fs3::path directory_path);
   void HandleFailure(std::string error_message);
   void HandleResults(Results results);
+ private:
+  boost::mutex mutex_;
 };
 
 }  // namespace maidsafe

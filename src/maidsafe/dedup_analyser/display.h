@@ -37,6 +37,7 @@ class ResultHolder;
 class FilesystemAnalyser;
 
 struct FileInfo {
+  FileInfo() {}
   explicit FileInfo(const fs3::path &file_path_in)
       : file_path(file_path_in), file_hash(), file_size(0) {}
   fs3::path file_path;

@@ -85,7 +85,6 @@ void Display::FetchResults(const boost::system::error_code &error_code) {
       emit OnFailure(error_code.message());
   } else {
     Results results(result_holder_->GetResults());
-    std::cout << std::endl << "££££££££££££££££££££££££££££££££££££££££££ " << results.unique_file_count << std::endl;
     emit UpdatedResults(results);
     timer_.expires_from_now(update_interval_);
     timer_.async_wait(boost::bind(&Display::FetchResults, this, _1));

@@ -22,7 +22,7 @@
 * ============================================================================
 */
 
-#include "filesystem_analyser.h"
+#include "maidsafe/dedup_analyser/filesystem_analyser.h"
 #include <maidsafe/base/crypto.h>
 //  #include <boost/bind/protect.hpp>
 #include <boost/filesystem.hpp>
