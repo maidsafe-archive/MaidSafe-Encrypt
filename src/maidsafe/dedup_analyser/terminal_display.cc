@@ -53,10 +53,10 @@ void TerminalDisplay::HandleFailure(std::string error_message) {
 }
 
 void TerminalDisplay::HandleResults(Results results) {
-  std::cout << "***************************************" << std::endl;
+  std::cout << std::endl << "************************************" << std::endl;
   std::cout << "Duplicate count: " << results.duplicate_file_count << std::endl;
   std::cout << "Duplicate size:  " << results.total_duplicate_size << std::endl;
-  std::cout << "***************************************" << std::endl;
+  std::cout << "************************************" << std::endl;
 }
 
 }  // namespace maidsafe

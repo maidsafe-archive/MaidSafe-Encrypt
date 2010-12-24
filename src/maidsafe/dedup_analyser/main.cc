@@ -60,6 +60,7 @@ int main(int argc, char* argv[]) {
       work(new boost::asio::io_service::work(*asio_service));
   boost::thread thrd1(boost::bind(&boost::asio::io_service::run, asio_service));
   boost::thread thrd2(boost::bind(&boost::asio::io_service::run, asio_service));
+  boost::thread thrd3(boost::bind(&boost::asio::io_service::run, asio_service));
   boost::shared_ptr<maidsafe::FilesystemAnalyser>
       filesystem_analyser(new maidsafe::FilesystemAnalyser(asio_service));
 
@@ -89,9 +90,11 @@ int main(int argc, char* argv[]) {
   std::cout << "Duplicate files as a percentage of all files:  " << static_cast<double>(in_memory_result_holder->DuplicateFileCount()) * 100 / (in_memory_result_holder->UniqueFileCount() + in_memory_result_holder->DuplicateFileCount()) << " %" << std::endl;
   std::cout << "Duplicate size as a percentage of total size:  " << static_cast<float>(in_memory_result_holder->TotalDuplicateSize()) * 100 / (in_memory_result_holder->TotalUniqueSize() + in_memory_result_holder->TotalDuplicateSize()) << " %" <<  std::endl;
 
+  display->StopRunningResultUpdates();
   work.reset();
   thrd1.join();
   thrd2.join();
+  thrd3.join();
   return 0;
 }
 
