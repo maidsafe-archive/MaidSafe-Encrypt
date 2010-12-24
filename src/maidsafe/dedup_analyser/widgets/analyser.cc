@@ -23,14 +23,33 @@
 #include "analyser.h"
 #include "ui_analyser.h"
 
-Analyser::Analyser(QWidget *parent) :
+namespace maidsafe {
+
+AnalyserWidget::AnalyserWidget(QWidget *parent) :
     QWidget(parent),
-    ui(new Ui::Analyser)
+      ui(new ::Ui::Analyser)/*,
+    spacePercentageMeter(NULL),
+    dupePercentageMeter(NULL)*/
 {
-    ui->setupUi(this);
+    ui->setupUi(this);                             
+
+    QObject::connect(ui->buttonStop, SIGNAL(clicked()),
+      this, SLOT(StopButtonClicked()));
+    QObject::connect( ui->buttonStop, SIGNAL(clicked()),
+      this, SIGNAL(StopScanning()));
+    //spacePercentageMeter = new SpeedoMeter(this);
+    //dupePercentageMeter = new SpeedoMeter(this);
+
+    
 }
 
-Analyser::~Analyser()
+AnalyserWidget::~AnalyserWidget()
 {
     delete ui;
+}
+
+void AnalyserWidget::StopButtonClicked()
+{
+  ui->buttonStop->setEnabled(false);
+}
 }

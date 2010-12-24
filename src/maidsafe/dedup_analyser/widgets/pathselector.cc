@@ -26,17 +26,18 @@
 #include "pathselector.h"
 #include "ui_pathselector.h"
 
+namespace maidsafe {
 
 const int NAME_COL_WID = 200;
 
-PathSelector::PathSelector(QWidget *parent) :
+PathSelectorWidget::PathSelectorWidget(QWidget *parent) :
     QWidget(parent),
-    ui(new Ui::PathSelector), fileModel_(NULL)
+      ui(new ::Ui::PathSelector), fileModel_(NULL)
 {
     ui->setupUi(this);
 
     QObject::connect(this->ui->buttonStartAnalyser, SIGNAL(clicked()),
-        this, SIGNAL(analyseNow()));
+        this, SLOT(AnalyseButtonClicked()));
     QObject::connect(ui->selectButton, SIGNAL(clicked()),
         this, SLOT(addItemsClicked()));
     QObject::connect(ui->deselectButton, SIGNAL(clicked()),
@@ -47,16 +48,16 @@ PathSelector::PathSelector(QWidget *parent) :
     createViewItems();
 }
 
-PathSelector::~PathSelector()
+PathSelectorWidget::~PathSelectorWidget()
 {
     delete ui;
 }
 
-void PathSelector::createViewItems()
+void PathSelectorWidget::createViewItems()
 {
     try {
         //tree view stuff goes here
-        fileModel_ = new QFileSystemModel;
+      fileModel_ = new QFileSystemModel;
         fileModel_->setRootPath(QDir::rootPath());
         fileModel_->setFilter(QDir::NoDotAndDotDot |
                               QDir::Dirs |
@@ -79,11 +80,11 @@ void PathSelector::createViewItems()
         // analyse button stuff
         ui->buttonStartAnalyser->setEnabled(false);
     } catch (...) {
-        qDebug() << "\nError in PathSelector::createViewItems()";
+        qDebug() << "\nError in PathSelectorWidget::createViewItems()";
     }
 }
 
-void PathSelector::addItemsClicked()
+void PathSelectorWidget::addItemsClicked()
 {
     // add items to list widget
     QModelIndexList list = ui->treeView->selectionModel()->selectedIndexes();
@@ -100,7 +101,7 @@ void PathSelector::addItemsClicked()
     ui->treeView->clearSelection();
 }
 
-void PathSelector::removeItemsClicked()
+void PathSelectorWidget::removeItemsClicked()
 {
     int count = ui->selectedPathlistWidget->count() - 1;
     
@@ -116,7 +117,7 @@ void PathSelector::removeItemsClicked()
     // but I need index anyways to call takeItem.. removeItem, does nothing!
 }
 
-void PathSelector::addNonDupeItemToList(const QString &aItem)
+void PathSelectorWidget::addNonDupeItemToList(const QString &aItem)
 {
     QList<QListWidgetItem*> found = ui->selectedPathlistWidget->
                                         findItems(aItem, Qt::MatchExactly);
@@ -127,7 +128,7 @@ void PathSelector::addNonDupeItemToList(const QString &aItem)
 }
 
 
-void PathSelector::removeRedundantItems()
+void PathSelectorWidget::removeRedundantItems()
 {
 
     for (int iterX = ui->selectedPathlistWidget->count()-1; iterX >= 0; --iterX) {
@@ -162,7 +163,7 @@ void PathSelector::removeRedundantItems()
     }
 }
 
-void PathSelector::updateAnalyseButton()
+void PathSelectorWidget::updateAnalyseButton()
 {
     // checks if list widget is empty and 
     // updates the button
@@ -170,4 +171,17 @@ void PathSelector::updateAnalyseButton()
         ui->buttonStartAnalyser->setEnabled(false);
     else 
         ui->buttonStartAnalyser->setEnabled(true);    
+}
+
+void PathSelectorWidget::AnalyseButtonClicked()
+{
+  // create a list for passing to dedupMainWindow
+  std::vector<boost::filesystem3::path> dirs;
+  for (int iter = 0; iter < ui->selectedPathlistWidget->count(); ++iter) {
+    dirs.push_back(ui->selectedPathlistWidget->item(iter)->text().toStdString());
+  }
+
+  emit analyseNow(dirs);
+}
+
 }

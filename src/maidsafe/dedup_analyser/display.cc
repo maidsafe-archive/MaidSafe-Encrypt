@@ -39,16 +39,21 @@ Display::Display(boost::shared_ptr<boost::asio::io_service> asio_service,
 bool Display::ConnectToFilesystemAnalyser(
     boost::shared_ptr<FilesystemAnalyser> analyser) {
   return QObject::connect(analyser.get(), SIGNAL(OnFileProcessed(FileInfo)),
-                          this, SLOT(HandleFileProcessed(FileInfo))) &&
+                          this, SLOT(HandleFileProcessed(FileInfo)),
+                          Qt::DirectConnection) &&
       QObject::connect(analyser.get(), SIGNAL(OnDirectoryEntered(fs3::path)),
-                       this, SLOT(HandleDirectoryEntered(fs3::path))) &&
+                       this, SLOT(HandleDirectoryEntered(fs3::path)),
+                       Qt::DirectConnection) &&
       QObject::connect(analyser.get(), SIGNAL(OnFailure(std::string)), this,
-                       SLOT(HandleFailure(std::string))) &&
+                       SLOT(HandleFailure(std::string)),
+                       Qt::DirectConnection) &&
       QObject::connect(analyser.get(), SIGNAL(OnFileProcessed(FileInfo)),
                        result_holder_.get(),
-                       SLOT(HandleFileProcessed(FileInfo))) &&
+                       SLOT(HandleFileProcessed(FileInfo)),
+                       Qt::DirectConnection) &&
       QObject::connect(analyser.get(), SIGNAL(OnFailure(std::string)),
-                       result_holder_.get(), SLOT(HandleFailure(std::string)));
+                       result_holder_.get(), SLOT(HandleFailure(std::string)),
+                       Qt::DirectConnection);
 
 }
 

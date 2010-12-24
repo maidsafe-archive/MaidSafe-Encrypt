@@ -24,6 +24,7 @@
 #define PATHSELECTOR_H
 
 #include <QWidget>
+#include <boost/filesystem.hpp>
 
 namespace Ui {
     class PathSelector;
@@ -31,16 +32,18 @@ namespace Ui {
 
 class QFileSystemModel;
 
-class PathSelector : public QWidget
+namespace maidsafe {
+
+class PathSelectorWidget : public QWidget
 {
     Q_OBJECT
 
 public:
-    explicit PathSelector(QWidget *parent = 0);
-    ~PathSelector();
+    explicit PathSelectorWidget(QWidget *parent = 0);
+    ~PathSelectorWidget();
 
 signals:
-    void analyseNow();  
+    void analyseNow(std::vector<boost::filesystem3::path>);  
     void exitDedupAnalyser(); //signal from path selector
 
 private:
@@ -69,10 +72,12 @@ private:
 private slots:
     void addItemsClicked();
     void removeItemsClicked();
+    void AnalyseButtonClicked();
     
-private:
-    Ui::PathSelector *ui;
-    QFileSystemModel *fileModel_;
+ private:
+   ::Ui::PathSelector *ui;
+  QFileSystemModel *fileModel_;
 };
 
+} //maidsafe
 #endif // PATHSELECTOR_H

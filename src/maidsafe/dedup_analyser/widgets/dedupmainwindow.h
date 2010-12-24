@@ -24,13 +24,19 @@
 #define DEDUPMAINWINDOW_H
 
 #include <QMainWindow>
+#include <boost/thread.hpp>
+#include "maidsafe/dedup_analyser/filesystem_analyser.h"
+#include "maidsafe/dedup_analyser/in_memory_result_holder.h"
+#include "maidsafe/dedup_analyser/display.h"
 
 namespace Ui {
     class DedupMainWindow;
 }
 
-class PathSelector;
-class Analyser;
+namespace maidsafe {
+
+class PathSelectorWidget;
+class AnalyserWidget;
 
 class DedupMainWindow : public QMainWindow
 {
@@ -94,18 +100,33 @@ private slots:
     /* 
     * Checks if user selected paths are okay!
     */
-    void validatePathSelection();
+    void validatePathSelection(std::vector<boost::filesystem3::path>);
 
     /*
     * exit called
     */
     void exitRequest();
 
-private:
-    Ui::DedupMainWindow *ui;
-    PathSelector        * pathSelector_;
-    Analyser            * analyser_;
+ public slots:
+  void FileProcessed();
+  void StopProcessing();
+  void GetResults(Results);  // gets results from the interface_
+
+ private:
+  ::Ui::DedupMainWindow *ui;
+  PathSelectorWidget *pathSelector_;
+  AnalyserWidget *analyser_;
+  boost::shared_ptr<boost::asio::io_service> asio_service_;
+  boost::shared_ptr<boost::asio::io_service::work> work_;
+  boost::shared_ptr<maidsafe::FilesystemAnalyser> filesystem_analyser_;
+  boost::shared_ptr<maidsafe::InMemoryResultHolder> in_memory_result_holder_;
+  boost::shared_ptr<maidsafe::Display> interface_;
+  boost::thread thrd1_;
+  boost::thread thrd2_;
+  boost::thread thrd3_;
+  std::vector<boost::filesystem3::path> dirs_;
 };
+}  // namespace maidsafe
 
 #endif // DEDUPMAINWINDOW_H
 

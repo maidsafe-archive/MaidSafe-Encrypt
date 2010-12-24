@@ -27,8 +27,7 @@
 
 namespace maidsafe {
 
-TerminalDisplay::TerminalDisplay(boost::shared_ptr<Display> display) {
-  qRegisterMetaType<Results>("Results");
+TerminalDisplay::TerminalDisplay(boost::shared_ptr<Display> display) { 
   QObject::connect(display.get(), SIGNAL(OnFileProcessed(FileInfo)), this,
                    SLOT(HandleFileProcessed(FileInfo)));
   QObject::connect(display.get(), SIGNAL(OnDirectoryEntered(fs3::path)), this,
@@ -36,7 +35,7 @@ TerminalDisplay::TerminalDisplay(boost::shared_ptr<Display> display) {
   QObject::connect(display.get(), SIGNAL(OnFailure(std::string)), this,
                    SLOT(HandleFailure(std::string)));
   QObject::connect(display.get(), SIGNAL(UpdatedResults(Results)), this,
-                   SLOT(HandleResults(Results)));
+    SLOT(HandleResults(Results)), Qt::DirectConnection);
 }
 
 void TerminalDisplay::HandleFileProcessed(FileInfo /*file_info*/) {

@@ -29,16 +29,30 @@ namespace Ui {
     class Analyser;
 }
 
-class Analyser : public QWidget
+namespace maidsafe {
+
+
+//class SpeedoMeter;
+
+class AnalyserWidget : public QWidget
 {
     Q_OBJECT
 
 public:
-    explicit Analyser(QWidget *parent = 0);
-    ~Analyser();
+    explicit AnalyserWidget(QWidget *parent = 0);
+    ~AnalyserWidget();
 
-private:
-    Ui::Analyser *ui;
+ private:
+   ::Ui::Analyser *ui;
+    //SpeedoMeter *spacePercentageMeter;
+    //SpeedoMeter *dupePercentageMeter;
+
+  signals:
+    void StopScanning(); // signal
+
+  public slots:
+    void StopButtonClicked();
 };
 
+} // maidsafe
 #endif // ANALYSER_H
