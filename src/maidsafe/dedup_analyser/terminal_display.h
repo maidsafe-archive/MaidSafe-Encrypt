@@ -28,7 +28,8 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/thread/mutex.hpp>
 #include <QObject>
-#include "maidsafe/dedup_analyser/display.h"
+#include <string>
+#include "maidsafe/dedup_analyser/interface.h"
 
 namespace fs3 = boost::filesystem3;
 
@@ -36,14 +37,14 @@ namespace maidsafe {
 
 struct FileInfo;
 struct Results;
-class Display;
+class Interface;
 
 class TerminalDisplay : public QObject {
   Q_OBJECT
  public:
-  explicit TerminalDisplay(boost::shared_ptr<Display> display);
+  explicit TerminalDisplay(boost::shared_ptr<Interface> interface);
   virtual ~TerminalDisplay() {}
- public slots:
+ public slots:  // NOLINT (fraser)
   void HandleFileProcessed(FileInfo file_info);
   void HandleDirectoryEntered(fs3::path directory_path);
   void HandleFailure(std::string error_message);

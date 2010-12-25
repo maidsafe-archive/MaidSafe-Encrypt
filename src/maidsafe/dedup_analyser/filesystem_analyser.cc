@@ -44,7 +44,7 @@ void FilesystemAnalyser::ProcessFile(const fs3::path &file_path) {
   crypt.set_hash_algorithm(crypto::SHA_1);
   FileInfo file_info(file_path);
   try {
-    file_info.file_hash = crypt.Hash(file_path.string().c_str(),"",
+    file_info.file_hash = crypt.Hash(file_path.string().c_str(), "",
                                      crypto::FILE_STRING, false);
     file_info.file_size = fs3::file_size(file_path);
     if (file_info.file_hash.empty())
@@ -59,22 +59,22 @@ void FilesystemAnalyser::ProcessFile(const fs3::path &file_path) {
 
 // from http://stackoverflow.com/questions/1746136/
 //      how-do-i-normalize-a-pathname-using-boostfilesystem
-fs3::path FilesystemAnalyser::Normalise(const fs3::path &directory_path){
+fs3::path FilesystemAnalyser::Normalise(const fs3::path &directory_path) {
   fs3::path result;
   for (fs3::path::iterator it = directory_path.begin();
        it != directory_path.end(); ++it) {
-    if(*it == "..") {
+    if (*it == "..") {
       // /a/b/.. is not necessarily /a if b is a symbolic link
-      if(fs3::is_symlink(result))
+      if (fs3::is_symlink(result))
         result /= *it;
       // /a/b/../.. is not /a/b/.. under most circumstances
       // We can end up with ..s in our result because of symbolic links
-      else if(result.filename() == "..")
+      else if (result.filename() == "..")
         result /= *it;
       // Otherwise it should be safe to resolve the parent
       else
         result = result.parent_path();
-    } else if(*it == ".") {
+    } else if (*it == ".") {
       // Ignore
     } else {
       // Just cat other path entries

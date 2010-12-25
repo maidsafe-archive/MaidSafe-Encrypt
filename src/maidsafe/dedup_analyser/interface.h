@@ -21,8 +21,8 @@
 * ============================================================================
 */
 
-#ifndef MAIDSAFE_DEDUP_ANALYSER_DISPLAY_H_
-#define MAIDSAFE_DEDUP_ANALYSER_DISPLAY_H_
+#ifndef MAIDSAFE_DEDUP_ANALYSER_INTERFACE_H_
+#define MAIDSAFE_DEDUP_ANALYSER_INTERFACE_H_
 
 #include <boost/asio.hpp>
 #include <boost/filesystem.hpp>
@@ -67,12 +67,12 @@ struct Results {
   boost::uintmax_t total_duplicate_size, errors_count;
 };
 
-class Display : public QObject {
+class Interface : public QObject {
   Q_OBJECT
  public:
-  Display(boost::shared_ptr<boost::asio::io_service> asio_service,
-          boost::shared_ptr<ResultHolder> result_holder);
-  virtual ~Display() {}
+  Interface(boost::shared_ptr<boost::asio::io_service> asio_service,
+            boost::shared_ptr<ResultHolder> result_holder);
+  ~Interface() {}
   bool ConnectToFilesystemAnalyser(
       boost::shared_ptr<FilesystemAnalyser> analyser);
   void StartRunningResultUpdates();
@@ -101,4 +101,4 @@ class Display : public QObject {
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_DEDUP_ANALYSER_DISPLAY_H_
+#endif  // MAIDSAFE_DEDUP_ANALYSER_INTERFACE_H_

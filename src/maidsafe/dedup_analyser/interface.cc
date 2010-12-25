@@ -22,13 +22,13 @@
 */
 
 #include <boost/bind.hpp>
-#include "maidsafe/dedup_analyser/display.h"
+#include "maidsafe/dedup_analyser/interface.h"
 #include "maidsafe/dedup_analyser/result_holder.h"
 
 namespace maidsafe {
 
-Display::Display(boost::shared_ptr<boost::asio::io_service> asio_service,
-                boost::shared_ptr<ResultHolder> result_holder)
+Interface::Interface(boost::shared_ptr<boost::asio::io_service> asio_service,
+                     boost::shared_ptr<ResultHolder> result_holder)
     : asio_service_(asio_service),
       result_holder_(result_holder),
       mutex_(),
@@ -36,7 +36,7 @@ Display::Display(boost::shared_ptr<boost::asio::io_service> asio_service,
       timer_(*asio_service_, update_interval_),
       update_interval_(3000) {}
 
-bool Display::ConnectToFilesystemAnalyser(
+bool Interface::ConnectToFilesystemAnalyser(
     boost::shared_ptr<FilesystemAnalyser> analyser) {
   return QObject::connect(analyser.get(), SIGNAL(OnFileProcessed(FileInfo)),
                           this, SLOT(HandleFileProcessed(FileInfo)),
@@ -54,18 +54,17 @@ bool Display::ConnectToFilesystemAnalyser(
       QObject::connect(analyser.get(), SIGNAL(OnFailure(std::string)),
                        result_holder_.get(), SLOT(HandleFailure(std::string)),
                        Qt::DirectConnection);
-
 }
 
-void Display::StartRunningResultUpdates() {
+void Interface::StartRunningResultUpdates() {
   {
     boost::mutex::scoped_lock lock(mutex_);
     running_ = true;
   }
-  timer_.async_wait(boost::bind(&Display::FetchResults, this, _1));
+  timer_.async_wait(boost::bind(&Interface::FetchResults, this, _1));
 }
 
-void Display::StopRunningResultUpdates() {
+void Interface::StopRunningResultUpdates() {
   {
     boost::mutex::scoped_lock lock(mutex_);
     running_ = true;
@@ -73,13 +72,13 @@ void Display::StopRunningResultUpdates() {
   timer_.cancel();
 }
 
-void Display::set_update_interval(
+void Interface::set_update_interval(
     const boost::posix_time::milliseconds &update_interval) {
   boost::mutex::scoped_lock lock(mutex_);
   update_interval_ = update_interval;
 }
 
-void Display::FetchResults(const boost::system::error_code &error_code) {
+void Interface::FetchResults(const boost::system::error_code &error_code) {
   if (error_code) {
     if (error_code != boost::asio::error::operation_aborted)
       emit OnFailure(error_code.message());
@@ -87,19 +86,19 @@ void Display::FetchResults(const boost::system::error_code &error_code) {
     Results results(result_holder_->GetResults());
     emit UpdatedResults(results);
     timer_.expires_from_now(update_interval_);
-    timer_.async_wait(boost::bind(&Display::FetchResults, this, _1));
+    timer_.async_wait(boost::bind(&Interface::FetchResults, this, _1));
   }
 }
 
-void Display::HandleFileProcessed(FileInfo file_info) {
+void Interface::HandleFileProcessed(FileInfo file_info) {
   emit OnFileProcessed(file_info);
 }
 
-void Display::HandleDirectoryEntered(fs3::path directory_path) {
+void Interface::HandleDirectoryEntered(fs3::path directory_path) {
   emit OnDirectoryEntered(directory_path);
 }
 
-void Display::HandleFailure(std::string error_message) {
+void Interface::HandleFailure(std::string error_message) {
   emit OnFailure(error_message);
 }
 

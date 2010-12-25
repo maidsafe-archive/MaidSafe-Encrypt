@@ -23,60 +23,54 @@
 #ifndef PATHSELECTOR_H
 #define PATHSELECTOR_H
 
-#include <QWidget>
 #include <boost/filesystem.hpp>
+#include <QWidget>
 
-namespace Ui {
-    class PathSelector;
-}
+namespace fs3 = boost::filesystem3;
+
+namespace Ui { class PathSelector; }
 
 class QFileSystemModel;
 
 namespace maidsafe {
 
-class PathSelectorWidget : public QWidget
-{
-    Q_OBJECT
-
-public:
-    explicit PathSelectorWidget(QWidget *parent = 0);
-    ~PathSelectorWidget();
-
-signals:
-    void analyseNow(std::vector<boost::filesystem3::path>);  
-    void exitDedupAnalyser(); //signal from path selector
-
-private:
-    /* 
-    * allocates memory for members
-    */
-    void createViewItems();
-
-    /*
-    * Filters children before adding to list
-    * for duplicates
-    */
-    void addNonDupeItemToList(const QString&);
-
-    /*
-    * called after addNonDupeItemToList
-    * removes child items if their parents exist
-    */
-    void removeRedundantItems();
-
-    /*
-    * enables or disables the analyse button
-    */
-    void updateAnalyseButton();
-
-private slots:
-    void addItemsClicked();
-    void removeItemsClicked();
-    void AnalyseButtonClicked();
-    
+class PathSelectorWidget : public QWidget {
+  Q_OBJECT
+ public:
+  explicit PathSelectorWidget(QWidget *parent);
+  ~PathSelectorWidget() {}
+ signals:
+  void AnalyseNow(std::vector<fs3::path>);  
+  void ExitDedupAnalyser();  // signal from path selector
  private:
-   ::Ui::PathSelector *ui;
-  QFileSystemModel *fileModel_;
+  /* 
+  * allocates memory for members
+  */
+  void CreateViewItems();
+
+  /*
+  * Filters children before adding to list
+  * for duplicates
+  */
+  void AddNonDupeItemToList(const QString&);
+
+  /*
+  * called after addNonDupeItemToList
+  * removes child items if their parents exist
+  */
+  void RemoveRedundantItems();
+
+  /*
+  * enables or disables the analyse button
+  */
+  void UpdateAnalyseButton();
+  boost::shared_ptr<Ui::PathSelector> ui_path_selector_;
+  boost::shared_ptr<QFileSystemModel> file_model_;
+
+ private slots:
+  void AddItemsClicked();
+  void RemoveItemsClicked();
+  void AnalyseButtonClicked();
 };
 
 } //maidsafe

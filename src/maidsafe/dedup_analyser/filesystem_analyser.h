@@ -31,12 +31,11 @@
 //  #include <boost/thread.hpp>
 //  #include <boost/bind.hpp>
 #include <QObject>
-#include <iostream>
 #include <string>
 #include <utility>
 #include <vector>
 #include "maidsafe/base/crypto.h"
-#include "maidsafe/dedup_analyser/display.h"
+#include "maidsafe/dedup_analyser/interface.h"
 
 namespace fs3 = boost::filesystem3;
 
@@ -63,7 +62,6 @@ class FilesystemAnalyser : public QObject {
 //     }
 //     boost::shared_ptr<crypto::Crypto> crypt_(new crypto::Crypto);
 //     crypt_->set_hash_algorithm(crypto::Adler_32);
-
   }
   ~FilesystemAnalyser() {
     Stop();

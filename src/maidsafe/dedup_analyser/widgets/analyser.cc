@@ -20,36 +20,28 @@
 * Solutions.
 * ============================================================================
 */
-#include "analyser.h"
-#include "ui_analyser.h"
+#include "maidsafe/dedup_analyser/widgets/analyser.h"
+#include "ui_analyser.h"  // NOLINT (Fraser) - This is generated during CMake
+                          // and exists outwith normal source directory.
 
 namespace maidsafe {
 
-AnalyserWidget::AnalyserWidget(QWidget *parent) :
-    QWidget(parent),
-      ui(new ::Ui::Analyser)/*,
-    spacePercentageMeter(NULL),
-    dupePercentageMeter(NULL)*/
-{
-    ui->setupUi(this);                             
-
-    QObject::connect(ui->buttonStop, SIGNAL(clicked()),
-      this, SLOT(StopButtonClicked()));
-    QObject::connect( ui->buttonStop, SIGNAL(clicked()),
-      this, SIGNAL(StopScanning()));
-    //spacePercentageMeter = new SpeedoMeter(this);
-    //dupePercentageMeter = new SpeedoMeter(this);
-
-    
+AnalyserWidget::AnalyserWidget(QWidget *parent)
+    : QWidget(parent),
+      ui_analyser_(new Ui::Analyser) {
+//      spacePercentageMeter(NULL),
+//      dupePercentageMeter(NULL) {
+  ui_analyser_->setupUi(this);
+  QObject::connect(ui_analyser_->buttonStop, SIGNAL(clicked()), this,
+                   SLOT(StopButtonClicked()));
+  QObject::connect(ui_analyser_->buttonStop, SIGNAL(clicked()), this,
+                   SIGNAL(StopScanning()));
+//  spacePercentageMeter = new SpeedoMeter(this);
+//  dupePercentageMeter = new SpeedoMeter(this);
 }
 
-AnalyserWidget::~AnalyserWidget()
-{
-    delete ui;
+void AnalyserWidget::StopButtonClicked() {
+  ui_analyser_->buttonStop->setEnabled(false);
 }
 
-void AnalyserWidget::StopButtonClicked()
-{
-  ui->buttonStop->setEnabled(false);
-}
-}
+}  // namespace maidsafe

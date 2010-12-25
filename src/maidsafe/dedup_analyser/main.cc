@@ -24,21 +24,21 @@
 #include <boost/filesystem.hpp>
 #include <boost/progress.hpp>
 #include <boost/thread.hpp>
-#include <iostream>
 #include <QApplication>
+#include <iostream>  // NOLINT (Fraser)
 #include "maidsafe/dedup_analyser/filesystem_analyser.h"
 #include "maidsafe/dedup_analyser/in_memory_result_holder.h"
-#include "maidsafe/dedup_analyser/display.h"
+#include "maidsafe/dedup_analyser/interface.h"
 #include "maidsafe/dedup_analyser/terminal_display.h"
 #include "maidsafe/dedup_analyser/widgets/dedupmainwindow.h"
 
 int main(int argc, char *argv[]) {
-    QApplication app(argc, argv);
+  QApplication app(argc, argv);
 
-    maidsafe::DedupMainWindow mainWin;    
-    mainWin.show();
+  maidsafe::DedupMainWindow mainWin(NULL);
+  mainWin.show();
 
-    return app.exec();
+  return app.exec();
 }
 
 /*
@@ -68,11 +68,11 @@ int main(int argc, char* argv[]) {
 
   boost::shared_ptr<maidsafe::InMemoryResultHolder>
       in_memory_result_holder(new maidsafe::InMemoryResultHolder);
-  boost::shared_ptr<maidsafe::Display> display(
-      new maidsafe::Display(asio_service, in_memory_result_holder));
-  display->ConnectToFilesystemAnalyser(filesystem_analyser);
-  maidsafe::TerminalDisplay terminal_display(display);
-  display->StartRunningResultUpdates();
+  boost::shared_ptr<maidsafe::Interface> interface(
+      new maidsafe::Interface(asio_service, in_memory_result_holder));
+  interface->ConnectToFilesystemAnalyser(filesystem_analyser);
+  maidsafe::TerminalDisplay terminal_display(interface);
+  interface->StartRunningResultUpdates();
   std::vector<boost::filesystem3::path>
       dirs(1, boost::filesystem3::path(argv[1]));
   filesystem_analyser->ProcessDirectories(dirs);
@@ -93,12 +93,11 @@ int main(int argc, char* argv[]) {
   std::cout << "Duplicate size as a percentage of total size:  " << static_cast<float>(in_memory_result_holder->TotalDuplicateSize()) * 100 / (in_memory_result_holder->TotalUniqueSize() + in_memory_result_holder->TotalDuplicateSize()) << " %" <<  std::endl;
   std::cout << std::endl << "Overall running time: ";
 
-  display->StopRunningResultUpdates();
+  interface->StopRunningResultUpdates();
   work.reset();
   thrd1.join();
   thrd2.join();
   thrd3.join();
   return 0;
 }
-
 */

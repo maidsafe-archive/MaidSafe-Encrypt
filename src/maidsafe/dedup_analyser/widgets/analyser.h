@@ -20,39 +20,34 @@
 * Solutions.
 * ============================================================================
 */
-#ifndef ANALYSER_H
-#define ANALYSER_H
 
+#ifndef MAIDSAFE_DEDUP_ANALYSER_WIDGETS_ANALYSER_H_
+#define MAIDSAFE_DEDUP_ANALYSER_WIDGETS_ANALYSER_H_
+
+#include <boost/shared_ptr.hpp>
 #include <QWidget>
 
-namespace Ui {
-    class Analyser;
-}
+namespace Ui { class Analyser; }
 
 namespace maidsafe {
 
+//  class SpeedoMeter;
 
-//class SpeedoMeter;
-
-class AnalyserWidget : public QWidget
-{
+class AnalyserWidget : public QWidget {
     Q_OBJECT
-
-public:
-    explicit AnalyserWidget(QWidget *parent = 0);
-    ~AnalyserWidget();
-
+ public:
+  explicit AnalyserWidget(QWidget *parent);
+  ~AnalyserWidget() {}
+ signals:
+  void StopScanning();
+ public slots:  // NOLINT (Fraser)
+  void StopButtonClicked();
  private:
-   ::Ui::Analyser *ui;
-    //SpeedoMeter *spacePercentageMeter;
-    //SpeedoMeter *dupePercentageMeter;
-
-  signals:
-    void StopScanning(); // signal
-
-  public slots:
-    void StopButtonClicked();
+  boost::shared_ptr<Ui::Analyser> ui_analyser_;
+//  SpeedoMeter *spacePercentageMeter;
+//  SpeedoMeter *dupePercentageMeter;
 };
 
-} // maidsafe
-#endif // ANALYSER_H
+}  // namespace maidsafe
+
+#endif  // MAIDSAFE_DEDUP_ANALYSER_WIDGETS_ANALYSER_H_

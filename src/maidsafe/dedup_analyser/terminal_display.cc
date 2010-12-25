@@ -22,18 +22,18 @@
 */
 
 #include "maidsafe/dedup_analyser/terminal_display.h"
-#include <iostream>
+#include <iostream>  // NOLINT (Fraser)
 
 namespace maidsafe {
 
-TerminalDisplay::TerminalDisplay(boost::shared_ptr<Display> display) {
-  QObject::connect(display.get(), SIGNAL(OnFileProcessed(FileInfo)), this,
+TerminalDisplay::TerminalDisplay(boost::shared_ptr<Interface> interface) {
+  QObject::connect(interface.get(), SIGNAL(OnFileProcessed(FileInfo)), this,
                    SLOT(HandleFileProcessed(FileInfo)), Qt::DirectConnection);
-  QObject::connect(display.get(), SIGNAL(OnDirectoryEntered(fs3::path)), this,
+  QObject::connect(interface.get(), SIGNAL(OnDirectoryEntered(fs3::path)), this,
                    SLOT(HandleDirectoryEntered(fs3::path)));
-  QObject::connect(display.get(), SIGNAL(OnFailure(std::string)), this,
+  QObject::connect(interface.get(), SIGNAL(OnFailure(std::string)), this,
                    SLOT(HandleFailure(std::string)));
-  QObject::connect(display.get(), SIGNAL(UpdatedResults(Results)), this,
+  QObject::connect(interface.get(), SIGNAL(UpdatedResults(Results)), this,
                    SLOT(HandleResults(Results)), Qt::DirectConnection);
 }
 
@@ -54,13 +54,18 @@ void TerminalDisplay::HandleFailure(std::string error_message) {
 
 void TerminalDisplay::HandleResults(Results results) {
   boost::mutex::scoped_lock lock(mutex_);
-  std::cout << std::endl << std::endl << "\t**************************************" << std::endl;
-  std::cout << "\t* Duplicate count: " << results.duplicate_file_count << std::endl;
-  std::cout << "\t* Duplicate size:  " << results.total_duplicate_size << std::endl;
-  std::cout << "\t* Unique count:    " << results.unique_file_count << std::endl;
-  std::cout << "\t* Unique size:     " << results.total_unique_size << std::endl;
+  std::cout << std::endl << std::endl
+            << "\t**********************************" << std::endl;
+  std::cout << "\t* Duplicate count: " << results.duplicate_file_count
+            << std::endl;
+  std::cout << "\t* Duplicate size:  " << results.total_duplicate_size
+            << std::endl;
+  std::cout << "\t* Unique count:    " << results.unique_file_count
+            << std::endl;
+  std::cout << "\t* Unique size:     " << results.total_unique_size
+            << std::endl;
   std::cout << "\t* Error count:     " << results.errors_count << std::endl;
-  std::cout << "\t**************************************" << std::endl << std::endl;
+  std::cout << "\t**********************************" << std::endl << std::endl;
 }
 
 }  // namespace maidsafe
