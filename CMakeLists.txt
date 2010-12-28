@@ -165,8 +165,8 @@ ELSEIF(WIN32) # MinGW builds
   SET(CMAKE_INCLUDE_PATH "c:\\MinGW\\include")
   SET(CMAKE_LIBRARY_PATH "c:\\MinGW\\lib" ${DEFAULT_LIBRARY_DIR})
 ELSE()
-  SET(CMAKE_INCLUDE_PATH "/usr/include")
-  SET(CMAKE_LIBRARY_PATH "/usr/lib" ${DEFAULT_LIBRARY_DIR})
+  SET(CMAKE_INCLUDE_PATH "/usr/local/include /usr/include")
+  SET(CMAKE_LIBRARY_PATH "/usr/local/lib /usr/lib" ${DEFAULT_LIBRARY_DIR})
 ENDIF()
 
 
