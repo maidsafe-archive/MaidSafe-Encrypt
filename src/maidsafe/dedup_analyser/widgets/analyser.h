@@ -31,21 +31,28 @@ namespace Ui { class Analyser; }
 
 namespace maidsafe {
 
-//  class SpeedoMeter;
+class Speedometer;
 
 class AnalyserWidget : public QWidget {
     Q_OBJECT
  public:
   explicit AnalyserWidget(QWidget *parent);
   ~AnalyserWidget() {}
+  void UpdateDupeSpeedometer(double);
+  void UpdateSpaceSpeedometer(double);
+
  signals:
   void StopScanning();
  public slots:  // NOLINT (Fraser)
   void StopButtonClicked();
  private:
   boost::shared_ptr<Ui::Analyser> ui_analyser_;
-//  SpeedoMeter *spacePercentageMeter;
-//  SpeedoMeter *dupePercentageMeter;
+  boost::shared_ptr<Speedometer> space_sm_widget_;
+  boost::shared_ptr<Speedometer> dupe_sm_widget_;
+  int dupe_percentage_;
+  int space_percentage_;
+
+  void PositionSpeedometers();
 };
 
 }  // namespace maidsafe

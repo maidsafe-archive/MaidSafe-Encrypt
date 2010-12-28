@@ -163,7 +163,7 @@ void DedupMainWindow::ValidatePathSelection(std::vector<fs3::path> dirs) {
   // TODO(Fraser#5#): 2010-12-25 - do validation of any sort.. skipping just now
   // We can use boost filesystem to check all drives and dirs (paths) exist
 
-  bool r = QObject::connect(interface_.get(), SIGNAL(UpdatedResults(Results)),
+  QObject::connect(interface_.get(), SIGNAL(UpdatedResults(Results)),
                             this, SLOT(GetResults(Results)),
                             Qt::DirectConnection);
   dirs_ = dirs;
@@ -191,8 +191,24 @@ void DedupMainWindow::StopProcessing() {
 }
 
 void DedupMainWindow::GetResults(Results res) {
-  boost::uintmax_t dupe_count = res.duplicate_file_count;
-  boost::uintmax_t dupe_size = res.total_duplicate_size;
+  try {
+    int total_count = res.unique_file_count + res.duplicate_file_count;
+
+    if (total_count != 0) {
+      double dupe_percentage = (res.duplicate_file_count * 100) / total_count;
+      analyser_widget_.get()->UpdateDupeSpeedometer(dupe_percentage);
+      qDebug() << "\n\nDuplicate % = " << dupe_percentage << "\n\n";
+    }
+
+    total_count = res.total_unique_size + res.total_duplicate_size;
+    if ( total_count != 0 ) {
+      float space_percentage = (res.total_duplicate_size * 100) / total_count;
+      analyser_widget_.get()->UpdateSpaceSpeedometer(space_percentage);
+      qDebug() << "space % = " << space_percentage << "\n\n";
+    }
+  } catch (...) {
+    qDebug() << "\n\n Exception in GetResults\n";
+  }
 }
 
 }  // namespace maidsafe

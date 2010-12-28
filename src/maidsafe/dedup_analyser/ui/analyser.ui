@@ -42,25 +42,6 @@
        </property>
       </widget>
      </item>
-     <item row="1" column="0">
-      <widget class="QDial" name="dial">
-       <property name="minimum">
-        <number>1</number>
-       </property>
-       <property name="maximum">
-        <number>3</number>
-       </property>
-       <property name="singleStep">
-        <number>2</number>
-       </property>
-       <property name="pageStep">
-        <number>1</number>
-       </property>
-      </widget>
-     </item>
-     <item row="1" column="1">
-      <widget class="QDial" name="dial_2"/>
-     </item>
     </layout>
    </item>
    <item>

@@ -21,6 +21,7 @@
 * ============================================================================
 */
 #include "maidsafe/dedup_analyser/widgets/analyser.h"
+#include "maidsafe/dedup_analyser/widgets/speedometer.h"
 #include "ui_analyser.h"  // NOLINT (Fraser) - This is generated during CMake
                           // and exists outwith normal source directory.
 
@@ -28,20 +29,59 @@ namespace maidsafe {
 
 AnalyserWidget::AnalyserWidget(QWidget *parent)
     : QWidget(parent),
-      ui_analyser_(new Ui::Analyser) {
-//      spacePercentageMeter(NULL),
-//      dupePercentageMeter(NULL) {
+      ui_analyser_(new Ui::Analyser),
+      space_sm_widget_(new Speedometer(this)),
+      dupe_sm_widget_(new Speedometer(this)),
+      dupe_percentage_(0),
+      space_percentage_(0) {
+
   ui_analyser_->setupUi(this);
+
   QObject::connect(ui_analyser_->buttonStop, SIGNAL(clicked()), this,
                    SLOT(StopButtonClicked()));
   QObject::connect(ui_analyser_->buttonStop, SIGNAL(clicked()), this,
                    SIGNAL(StopScanning()));
-//  spacePercentageMeter = new SpeedoMeter(this);
-//  dupePercentageMeter = new SpeedoMeter(this);
+
+  PositionSpeedometers();
+
 }
 
 void AnalyserWidget::StopButtonClicked() {
   ui_analyser_->buttonStop->setEnabled(false);
 }
 
-}  // namespace maidsafe
+void AnalyserWidget::PositionSpeedometers() {
+  Ui::Analyser * wid = ui_analyser_.get();
+
+  Speedometer *dupe_wid = dupe_sm_widget_.get();
+  wid->gridLayout->addWidget(dupe_wid, 1, 0);
+  dupe_wid->setRange(0.0, 100.0);
+	dupe_wid->setScale(-1, 2, 10);
+	dupe_wid->setValue(0);
+	dupe_wid->setLabel(tr("Duplicate"));
+
+  Speedometer *space_wid = space_sm_widget_.get();
+  wid->gridLayout->addWidget(space_wid, 1, 1);
+  space_wid->setRange(0.0, 100.0);
+	space_wid->setScale(-1, 2, 10);
+	space_wid->setValue(0);
+	space_wid->setLabel(tr("Space Savings"));
+}
+
+void AnalyserWidget::UpdateDupeSpeedometer(double value) {
+  if (value != dupe_percentage_) {
+    dupe_percentage_ = value;
+    Speedometer *dupe_wid = dupe_sm_widget_.get();
+    dupe_wid->setValue(value);
+  }
+}
+
+void AnalyserWidget::UpdateSpaceSpeedometer(double value) {
+  if (value != space_percentage_) {
+    space_percentage_ = value;
+    Speedometer *space_wid = space_sm_widget_.get();
+    space_wid->setValue(value);
+  }
+}
+
+} // namespace maidsafe
