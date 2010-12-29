@@ -28,34 +28,41 @@
 namespace mock_kadops {
 
 std::string MakeFindNodesResponse(const FindNodesResponseType &type,
-                                  const boost::uint8_t k,
-                                  std::vector<std::string> *pmids) {
-  if (type == kFailParse)
+                                  const std::string &target,
+                                  const boost::uint8_t n,
+                                  std::vector<kad::Contact> *nodes) {
+  std::vector<kad::Contact> contacts;
+  if (type == kFailParse) {
+    if (nodes != NULL)
+      *nodes = contacts;
     return "It's not going to parse.";
-  std::string ser_node;
+  }
+
   kad::FindResponse find_response;
   if (type == kResultFail)
     find_response.set_result(kad::kRpcResultFailure);
   else
     find_response.set_result(kad::kRpcResultSuccess);
-  int contact_count(k);
-  if (type == kTooFewContacts)
-    contact_count = 1;
-  // Set all IDs close to value of account we're going to be looking for to
-  // avoid test node replacing one of these after the kad FindCloseNodes
-  std::string account_owner(maidsafe::SHA512String("Account Owner"));
-  std::string account_name =
-      maidsafe::SHA512String(account_owner + maidsafe::kAccount);
-  char x = 'a';
-  for (int i = 0; i < contact_count; ++i, ++x) {
-    std::string name = account_name.replace(account_name.size() - 1, 1, 1, x);
-    pmids->push_back(name);
-    kad::Contact node(name, "192.168.1.1", 5000 + i);
-    node.SerialiseToString(&ser_node);
-    find_response.add_closest_nodes(ser_node);
+
+  std::string ref_id(target);
+  if (type == kFarContacts)
+    ref_id = maidsafe::XORObfuscate(ref_id, std::string(ref_id.size(), 0xFF));
+  
+  boost::uint8_t orig(ref_id.at(ref_id.size() - 1)), idx(0);
+  while (contacts.size() < n) {
+    boost::uint8_t x = orig ^ idx++;
+    std::string node_id = ref_id.replace(ref_id.size() - 1, 1, 1, x);
+    contacts.push_back(kad::Contact(node_id, "192.168.1.1", 1234));
   }
-  find_response.SerializeToString(&ser_node);
-  return ser_node;
+  for (size_t i = 0; i < contacts.size(); ++i) {
+    std::string ser_contact;
+    contacts[i].SerialiseToString(&ser_contact);
+    find_response.add_closest_nodes(ser_contact);
+  }
+  if (nodes != NULL)
+    *nodes = contacts;
+  
+  return find_response.SerializeAsString();
 }
 
 }  // namespace mock_kadops

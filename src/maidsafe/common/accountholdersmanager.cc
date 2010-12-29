@@ -84,11 +84,11 @@ void AccountHoldersManager::FindNodesCallback(
       last_update_ = boost::posix_time::microsec_clock::universal_time();
       account_holder_group = closest_nodes;
       // Vault cannot be AccountHolder for self
-      RemoveKadContact(pmid_, &account_holder_group);
-//      if (!RemoveKadContact(pmid_, &account_holder_group))
-//        if (ContactWithinClosest(account_name_, kad::Contact(pmid_, "", 0),
-//                                 account_holder_group))
-//          account_holder_group.pop_back();
+      if (!RemoveKadContact(pmid_, &account_holder_group))
+        if (account_holder_group_.size() >= kad_ops_->k() &&
+            ContactWithinClosest(account_name_, kad::Contact(pmid_, "", 0),
+                                 account_holder_group))
+          account_holder_group.pop_back();
     }
     account_holder_group_ = account_holder_group;
     update_in_progress_ = false;

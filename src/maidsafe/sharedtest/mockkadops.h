@@ -32,15 +32,16 @@
 namespace mock_kadops {
 
 enum FindNodesResponseType {
-  kFailParse,
-  kResultFail,
-  kTooFewContacts,
-  kGood
+  kFailParse,  // response won't parse
+  kResultFail,  // negative response
+  kCloseContacts,  // returned contacts are close to target
+  kFarContacts  // returned contacts are far from target
 };
 
 std::string MakeFindNodesResponse(const FindNodesResponseType &type,
-                                  const boost::uint8_t k,
-                                  std::vector<std::string> *pmids);
+                                  const std::string &target,
+                                  const boost::uint8_t n,
+                                  std::vector<kad::Contact> *nodes);
 
 }  // namespace mock_kadops
 

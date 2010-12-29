@@ -154,7 +154,7 @@ class KadOps {
   void HandleDeadRendezvousServer(bool dead_server) {
     knode_.HandleDeadRendezvousServer(dead_server);
   }
-void SetThisEndpoint(EndPoint *this_endpoint);
+  void SetThisEndpoint(EndPoint *this_endpoint);
   void set_transport_id(const boost::int16_t &transport_id) {
     knode_.set_transport_id(transport_id);
   }

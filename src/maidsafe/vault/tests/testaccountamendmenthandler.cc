@@ -113,13 +113,20 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AssessAmendment) {
   boost::mutex mutex;
   boost::condition_variable cv;
   test_aah::CallbacksHolder cbh(&mutex, &cv);
+
   // Set chunk name as far as possible from our ID so we don't get added to
   // vector of close nodes in vsl_.HandleFindKNodesResponse
   std::string far_chunk_name(XORObfuscate(pmid_, std::string(64, -1)));
   std::string test_account_name(SHA512String(base::RandomString(100)));
+  std::vector<kad::Contact> close_contacts;
+  mock_kadops::MakeFindNodesResponse(mock_kadops::kCloseContacts,
+                                     test_account_name, test_aah::K,
+                                     &close_contacts);
+
   std::vector<AmendAccountRequest> requests;
   std::vector<AmendAccountResponse> responses;
   std::vector<PendingAmending> pendings;
+
   for (int i = 0; i < kTestRuns; ++i) {
     AmendAccountResponse response;
     response.set_pmid(pmid_);
@@ -130,7 +137,7 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AssessAmendment) {
     request.set_account_pmid(test_account_name);
     SignedSize *mutable_signed_size = request.mutable_signed_size();
     mutable_signed_size->set_data_size(1000);
-    mutable_signed_size->set_pmid(good_pmids_.at(i));
+    mutable_signed_size->set_pmid(close_contacts.at(i).node_id().String());
     mutable_signed_size->set_signature("IrrelevantSig");
     mutable_signed_size->set_public_key("IrrelevantPubKey");
     mutable_signed_size->set_public_key_signature("IrrelevantPubKeySig");
@@ -290,19 +297,19 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AssessAmendment) {
   bool found = (it != aah_.amendments_.get<by_timestamp>().end());
   ASSERT_TRUE(found);
   // Set Chunk Info holders so that kKadStoreThreshold - 2 have responded
-  ASSERT_LE(size_t(test_aah::lower_threshold), good_pmids_.size() - 3);
+  ASSERT_LE(size_t(test_aah::lower_threshold), close_contacts.size() - 3);
   for (boost::uint8_t i = 0; i < test_aah::upper_threshold - 1; ++i)
     test_amendment.chunk_info_holders.insert(std::pair<std::string, bool>
-        (good_pmids_.at(i), true));
+        (close_contacts.at(i).node_id().String(), true));
   for (size_t i = static_cast<size_t>(test_aah::upper_threshold - 1);
-       i < good_pmids_.size(); ++i)
+       i < close_contacts.size(); ++i)
     test_amendment.chunk_info_holders.insert(std::pair<std::string, bool>
-        (good_pmids_.at(i), false));
+        (close_contacts.at(i).node_id().String(), false));
   test_amendment.success_count = test_aah::upper_threshold - 2;
   aah_.amendments_.get<by_timestamp>().replace(it, test_amendment);
 
   ASSERT_EQ(test_account_name, test_amendment.account_name.String());
-  ASSERT_EQ(good_pmids_.size(), test_amendment.chunk_info_holders.size());
+  ASSERT_EQ(close_contacts.size(), test_amendment.chunk_info_holders.size());
   ASSERT_EQ(size_t(0), test_amendment.pendings.size());
   ASSERT_EQ(size_t(2), test_amendment.probable_pendings.size());
   ASSERT_EQ(exp_time, test_amendment.expiry_time);
@@ -317,7 +324,7 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AssessAmendment) {
                                 true, pendings.at(test_run), &test_amendment);
   ASSERT_EQ(kAccountAmendmentNotFound, result);
   ASSERT_EQ(test_account_name, test_amendment.account_name.String());
-  ASSERT_EQ(good_pmids_.size(), test_amendment.chunk_info_holders.size());
+  ASSERT_EQ(close_contacts.size(), test_amendment.chunk_info_holders.size());
   ASSERT_EQ(size_t(0), test_amendment.pendings.size());
   ASSERT_EQ(size_t(2), test_amendment.probable_pendings.size());
   ASSERT_EQ(exp_time, test_amendment.expiry_time);
@@ -332,7 +339,7 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AssessAmendment) {
                                 true, pendings.at(test_run), &test_amendment);
   ASSERT_EQ(kAccountAmendmentNotFound, result);
   ASSERT_EQ(test_account_name, test_amendment.account_name.String());
-  ASSERT_EQ(good_pmids_.size(), test_amendment.chunk_info_holders.size());
+  ASSERT_EQ(close_contacts.size(), test_amendment.chunk_info_holders.size());
   ASSERT_EQ(size_t(0), test_amendment.pendings.size());
   ASSERT_EQ(size_t(2), test_amendment.probable_pendings.size());
   ASSERT_EQ(exp_time, test_amendment.expiry_time);
@@ -347,7 +354,7 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AssessAmendment) {
                                 true, pendings.at(test_run), &test_amendment);
   ASSERT_EQ(kAccountAmendmentNotFound, result);
   ASSERT_EQ(test_account_name, test_amendment.account_name.String());
-  ASSERT_EQ(good_pmids_.size(), test_amendment.chunk_info_holders.size());
+  ASSERT_EQ(close_contacts.size(), test_amendment.chunk_info_holders.size());
   ASSERT_EQ(size_t(0), test_amendment.pendings.size());
   ASSERT_EQ(size_t(2), test_amendment.probable_pendings.size());
   ASSERT_EQ(exp_time, test_amendment.expiry_time);
@@ -362,7 +369,7 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AssessAmendment) {
                                 true, pendings.at(test_run), &test_amendment);
   ASSERT_EQ(kAccountAmendmentNotFound, result);
   ASSERT_EQ(test_account_name, test_amendment.account_name.String());
-  ASSERT_EQ(good_pmids_.size(), test_amendment.chunk_info_holders.size());
+  ASSERT_EQ(close_contacts.size(), test_amendment.chunk_info_holders.size());
   ASSERT_EQ(size_t(0), test_amendment.pendings.size());
   ASSERT_EQ(size_t(2), test_amendment.probable_pendings.size());
   ASSERT_EQ(exp_time, test_amendment.expiry_time);
@@ -377,7 +384,7 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AssessAmendment) {
                                 true, pendings.at(test_run), &test_amendment);
   ASSERT_EQ(kAccountAmendmentNotFound, result);
   ASSERT_EQ(test_account_name, test_amendment.account_name.String());
-  ASSERT_EQ(good_pmids_.size(), test_amendment.chunk_info_holders.size());
+  ASSERT_EQ(close_contacts.size(), test_amendment.chunk_info_holders.size());
   ASSERT_EQ(size_t(0), test_amendment.pendings.size());
   ASSERT_EQ(size_t(2), test_amendment.probable_pendings.size());
   ASSERT_EQ(exp_time, test_amendment.expiry_time);
@@ -392,7 +399,7 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AssessAmendment) {
                                 false, pendings.at(test_run), &test_amendment);
   ASSERT_EQ(kAccountAmendmentNotFound, result);
   ASSERT_EQ(test_account_name, test_amendment.account_name.String());
-  ASSERT_EQ(good_pmids_.size(), test_amendment.chunk_info_holders.size());
+  ASSERT_EQ(close_contacts.size(), test_amendment.chunk_info_holders.size());
   ASSERT_EQ(size_t(0), test_amendment.pendings.size());
   ASSERT_EQ(size_t(2), test_amendment.probable_pendings.size());
   ASSERT_EQ(exp_time, test_amendment.expiry_time);
@@ -407,7 +414,7 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AssessAmendment) {
                                 true, pendings.at(test_run), &test_amendment);
   ASSERT_EQ(kAccountAmendmentNotFound, result);
   ASSERT_EQ(test_account_name, test_amendment.account_name.String());
-  ASSERT_EQ(good_pmids_.size(), test_amendment.chunk_info_holders.size());
+  ASSERT_EQ(close_contacts.size(), test_amendment.chunk_info_holders.size());
   ASSERT_EQ(size_t(0), test_amendment.pendings.size());
   ASSERT_EQ(size_t(2), test_amendment.probable_pendings.size());
   ASSERT_EQ(exp_time, test_amendment.expiry_time);
@@ -419,7 +426,7 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AssessAmendment) {
   // In list of Chunk Info holders, but having already been accounted for
   AmendAccountRequest request;
   SignedSize *sz = request.mutable_signed_size();
-  sz->set_pmid(good_pmids_.at(0));
+  sz->set_pmid(close_contacts.at(0).node_id().String());
   PendingAmending pending1(&request, pendings.at(test_run).response,
       pendings.at(test_run).done);
 
@@ -428,7 +435,7 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AssessAmendment) {
                                 true, pending1, &test_amendment);
   ASSERT_EQ(kAccountAmendmentNotFound, result);
   ASSERT_EQ(test_account_name, test_amendment.account_name.String());
-  ASSERT_EQ(good_pmids_.size(),
+  ASSERT_EQ(close_contacts.size(),
             test_amendment.chunk_info_holders.size());
   ASSERT_EQ(size_t(0), test_amendment.pendings.size());
   ASSERT_EQ(size_t(2), test_amendment.probable_pendings.size());
@@ -440,7 +447,7 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AssessAmendment) {
   ASSERT_EQ(size_t(1), aah_.amendments_.size());
 
   // In list of Chunk Info holders and not having already been accounted for
-  sz->set_pmid(good_pmids_.at(good_pmids_.size() - 3));
+  sz->set_pmid(close_contacts.at(close_contacts.size() - 3).node_id().String());
   PendingAmending pending2(&request, pendings.at(test_run).response,
       pendings.at(test_run).done);
 
@@ -449,7 +456,7 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AssessAmendment) {
                                 true, pending2, &test_amendment);
   ASSERT_EQ(kAccountAmendmentUpdated, result);
   ASSERT_EQ(test_account_name, test_amendment.account_name.String());
-  ASSERT_EQ(good_pmids_.size(),
+  ASSERT_EQ(close_contacts.size(),
             test_amendment.chunk_info_holders.size());
   ASSERT_EQ(size_t(1), test_amendment.pendings.size());
   ASSERT_EQ(size_t(2), test_amendment.probable_pendings.size());
@@ -463,7 +470,7 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AssessAmendment) {
   // In list of Chunk Info holders and not having already been accounted for
   google::protobuf::Closure *done1 = google::protobuf::NewCallback(&cbh,
       &test_aah::CallbacksHolder::callback);
-  sz->set_pmid(good_pmids_.at(good_pmids_.size() - 2));
+  sz->set_pmid(close_contacts.at(close_contacts.size() - 3).node_id().String());
   PendingAmending pending3(&request, pendings.at(test_run).response, done1);
 
   result = aah_.AssessAmendment(test_account_name, test_account_name,
@@ -471,7 +478,7 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AssessAmendment) {
                                 true, pending3, &test_amendment);
   ASSERT_EQ(kAccountAmendmentUpdated, result);
   ASSERT_EQ(test_account_name, test_amendment.account_name.String());
-  ASSERT_EQ(good_pmids_.size(), test_amendment.chunk_info_holders.size());
+  ASSERT_EQ(close_contacts.size(), test_amendment.chunk_info_holders.size());
   ASSERT_EQ(size_t(0), test_amendment.pendings.size());
   ASSERT_EQ(size_t(2), test_amendment.probable_pendings.size());
   ASSERT_EQ(exp_time, test_amendment.expiry_time);
@@ -489,17 +496,17 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AssessAmendment) {
   test_amendment.success_count = test_amendment.chunk_info_holders.size() - 1;
   aah_.amendments_.get<by_timestamp>().replace(it, test_amendment);
   ASSERT_EQ(test_account_name, test_amendment.account_name.String());
-  ASSERT_EQ(good_pmids_.size(), test_amendment.chunk_info_holders.size());
+  ASSERT_EQ(close_contacts.size(), test_amendment.chunk_info_holders.size());
   ASSERT_EQ(size_t(0), test_amendment.pendings.size());
   ASSERT_EQ(size_t(2), test_amendment.probable_pendings.size());
   ASSERT_EQ(exp_time, test_amendment.expiry_time);
-  ASSERT_EQ(good_pmids_.size() - 1, test_amendment.success_count);
+  ASSERT_EQ(close_contacts.size() - 1, test_amendment.success_count);
   ASSERT_EQ(kSuccess, test_amendment.account_amendment_result);
   ASSERT_EQ(size_t(1), aah_.amendments_.size());
 
   google::protobuf::Closure *done2 = google::protobuf::NewCallback(&cbh,
       &test_aah::CallbacksHolder::callback);
-  sz->set_pmid(good_pmids_.at(good_pmids_.size() - 1));
+  sz->set_pmid(close_contacts.at(close_contacts.size() - 1).node_id().String());
   PendingAmending pending4(&request, pendings.at(test_run).response, done2);
 
   result = aah_.AssessAmendment(test_account_name, test_account_name,
@@ -507,11 +514,11 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_AssessAmendment) {
                                 true, pending4, &test_amendment);
   ASSERT_EQ(kAccountAmendmentFinished, result);
   ASSERT_EQ(test_account_name, test_amendment.account_name.String());
-  ASSERT_EQ(good_pmids_.size(), test_amendment.chunk_info_holders.size());
+  ASSERT_EQ(close_contacts.size(), test_amendment.chunk_info_holders.size());
   ASSERT_EQ(size_t(0), test_amendment.pendings.size());
   ASSERT_EQ(size_t(2), test_amendment.probable_pendings.size());
   ASSERT_EQ(exp_time, test_amendment.expiry_time);
-  ASSERT_EQ(good_pmids_.size(), test_amendment.success_count);
+  ASSERT_EQ(close_contacts.size(), test_amendment.success_count);
   ASSERT_EQ(kSuccess, test_amendment.account_amendment_result);
   ASSERT_EQ(size_t(1), aah_.amendments_.size());
 }
@@ -523,6 +530,10 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_FetchAmendmentResults) {
   std::string test_account_name = SHA512String(base::RandomString(100));
   std::string dummy_account_name = SHA512String(base::RandomString(100));
   std::string test_chunkname = SHA512String(base::RandomString(100));
+  std::vector<kad::Contact> close_contacts;
+  mock_kadops::MakeFindNodesResponse(mock_kadops::kCloseContacts,
+                                     test_account_name, test_aah::K,
+                                     &close_contacts);
   AmendAccountRequest request;
   AmendAccountResponse response;
   response.set_pmid(pmid_);
@@ -530,7 +541,7 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_FetchAmendmentResults) {
   request.set_account_pmid(test_account_name);
   SignedSize *mutable_signed_size = request.mutable_signed_size();
   mutable_signed_size->set_data_size(1000);
-  mutable_signed_size->set_pmid(good_pmids_.at(0));
+  mutable_signed_size->set_pmid(close_contacts.at(0).node_id().String());
   mutable_signed_size->set_signature("IrrelevantSig");
   mutable_signed_size->set_public_key("IrrelevantPubKey");
   mutable_signed_size->set_public_key_signature("IrrelevantPubKeySig");
@@ -546,9 +557,9 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_FetchAmendmentResults) {
                                   AmendAccountRequest::kSpaceGivenInc, 2, 1000,
                                   true, pending);
   test_amendment.account_name = kad::KadId(test_account_name);
-  for (size_t i = 0; i < good_pmids_.size(); ++i)
+  for (size_t i = 0; i < close_contacts.size(); ++i)
     test_amendment.chunk_info_holders.insert(std::pair<std::string, bool>
-        (good_pmids_.at(i), i > 0));
+        (close_contacts.at(i).node_id().String(), i > 0));
   test_amendment.success_count = test_aah::upper_threshold;
 
   // Add account to AccountHolder and amendment to aah_ so amend can succeed
@@ -574,6 +585,8 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_FetchAmendmentResults) {
 }
 
 TEST_F(AccountAmendmentHandlerTest, BEH_MAID_CreateNewAmendment) {
+  FAIL() << "Needs update.";
+/*
   // Setup
   const int kTestRuns(6);
   vsl_.our_details_ = our_contact_;
@@ -793,6 +806,7 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_CreateNewAmendment) {
   aah_.CreateNewAmendmentCallback(test_amendments.at(test_run),
                                   maidsafe::kSuccess, good_contacts_);
   ASSERT_EQ(size_t(3), aah_.amendments_.size());
+*/
 }
 
 TEST_F(AccountAmendmentHandlerTest, BEH_MAID_CreateNewWithExpecteds) {
@@ -808,6 +822,10 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_CreateNewWithExpecteds) {
   std::string far_chunk_name(XORObfuscate(pmid_, std::string(64, -1)));
   std::string test_account_pmid(SHA512String(base::RandomString(100)));
   std::string test_account_name(SHA512String(test_account_pmid + kAccount));
+  std::vector<kad::Contact> close_contacts;
+  std::string close_result = mock_kadops::MakeFindNodesResponse(
+      mock_kadops::kCloseContacts, test_account_name, test_aah::K,
+      &close_contacts);
   std::vector<AmendAccountRequest> requests;
   std::vector<AmendAccountResponse> responses;
   for (int i = 0; i < kTestRuns; ++i) {
@@ -841,7 +859,7 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_CreateNewWithExpecteds) {
       testing::An<VoidFuncIntContacts>()))
       .WillOnce(testing::WithArgs<1>(testing::Invoke(
           boost::bind(&MockKadOps::ThreadedFindKClosestNodesCallback,
-                      vsl_.kadops().get(), good_result_, _1))));
+                      vsl_.kadops().get(), close_result, _1))));
 
   ExpectAmendmentRequest expect_amendment_request;
   expect_amendment_request.set_amendment_type(
@@ -852,7 +870,8 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_CreateNewWithExpecteds) {
   expect_amendment_request.set_public_key_signature("Unimportant");
   expect_amendment_request.set_request_signature("Unimportant");
   for (boost::uint16_t i = 0; i < test_aah::K; ++i) {
-    expect_amendment_request.add_amender_pmids(good_pmids_.at(i));
+    expect_amendment_request.add_amender_pmids(
+        close_contacts.at(i).node_id().String());
     // Push first expectation with too few contacts
     if (i == test_aah::upper_threshold - 2)
       ASSERT_EQ(kSuccess, reh_.AddExpectation(expect_amendment_request));
@@ -881,7 +900,7 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_CreateNewWithExpecteds) {
   for (int i = 0; i < test_aah::K; ++i) {
     AmendAccountRequest request;
     SignedSize *sz = request.mutable_signed_size();
-    sz->set_pmid(good_pmids_.at(i));
+    sz->set_pmid(close_contacts.at(i).node_id().String());
     request.set_chunkname(far_chunk_name);
     request.set_amendment_type(AmendAccountRequest::kSpaceGivenInc);
     request.set_account_pmid(test_account_pmid);
@@ -918,7 +937,7 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_CreateNewWithExpecteds) {
   for (int i = 0; i < test_aah::K; ++i) {
     AccountAmendment amd = *it;
     std::map<std::string, bool>::iterator cih_it =
-        amd.chunk_info_holders.find(good_pmids_.at(i));
+        amd.chunk_info_holders.find(close_contacts.at(i).node_id().String());
     bool res = amd.chunk_info_holders.end() != cih_it;
     ASSERT_TRUE(res);
     ASSERT_TRUE((*cih_it).second);
@@ -932,7 +951,7 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_CreateNewWithExpecteds) {
   for (int i = 0; i < test_aah::K; ++i) {
     AmendAccountRequest request;
     SignedSize *sz = request.mutable_signed_size();
-    sz->set_pmid(good_pmids_.at(i));
+    sz->set_pmid(close_contacts.at(i).node_id().String());
     request.set_chunkname(far_chunk_name);
     request.set_amendment_type(AmendAccountRequest::kSpaceGivenInc);
     request.set_account_pmid(test_account_pmid);
@@ -975,7 +994,7 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_CreateNewWithExpecteds) {
   for (int i = 0; i < test_aah::K; ++i) {
     AccountAmendment amd = *it;
     std::map<std::string, bool>::iterator cih_it =
-        amd.chunk_info_holders.find(good_pmids_.at(i));
+        amd.chunk_info_holders.find(close_contacts.at(i).node_id().String());
     bool res = amd.chunk_info_holders.end() != cih_it;
     ASSERT_TRUE(res);
     ASSERT_TRUE((*cih_it).second);
@@ -989,7 +1008,7 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_CreateNewWithExpecteds) {
   for (int i = 0; i < test_aah::K; ++i) {
     AmendAccountRequest request;
     SignedSize *sz = request.mutable_signed_size();
-    sz->set_pmid(good_pmids_.at(i));
+    sz->set_pmid(close_contacts.at(i).node_id().String());
     request.set_chunkname(far_chunk_name);
     request.set_amendment_type(AmendAccountRequest::kSpaceGivenInc);
     request.set_account_pmid(test_account_pmid);
@@ -1034,7 +1053,7 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_CreateNewWithExpecteds) {
   for (int i = 0; i < test_aah::K - test_aah::upper_threshold + 1; ++i) {
     AccountAmendment amd = *it;
     std::map<std::string, bool>::iterator cih_it =
-        amd.chunk_info_holders.find(good_pmids_.at(i));
+        amd.chunk_info_holders.find(close_contacts.at(i).node_id().String());
     bool res = amd.chunk_info_holders.end() == cih_it;
     if (i < test_aah::upper_threshold + 2) {
       EXPECT_TRUE(res);
@@ -1058,6 +1077,11 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_ProcessRequest) {
   std::string account_owner = SHA512String("Owner");
   std::string account_name = SHA512String(account_owner + kAccount);
   std::string chunk_name = SHA512String("Chunk");
+  std::vector<kad::Contact> close_contacts;
+  std::string close_result = mock_kadops::MakeFindNodesResponse(
+      mock_kadops::kCloseContacts, account_name, test_aah::K, &close_contacts);
+  std::string fail_result = mock_kadops::MakeFindNodesResponse(
+      mock_kadops::kResultFail, account_name, test_aah::K, NULL);
   AmendAccountRequest request;
   request.set_amendment_type(AmendAccountRequest::kSpaceGivenInc);
   request.set_account_pmid(account_owner);
@@ -1090,10 +1114,10 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_ProcessRequest) {
   // Expectations
   boost::function<void(VoidFuncIntContacts)> fail_result_functor =
       boost::bind(&MockKadOps::ThreadedFindKClosestNodesCallback,
-                  vsl_.kadops().get(), fail_result_, _1);
+                  vsl_.kadops().get(), fail_result, _1);
   boost::function<void(VoidFuncIntContacts)> good_result_functor =
       boost::bind(&MockKadOps::ThreadedFindKClosestNodesCallback,
-                  vsl_.kadops().get(), good_result_, _1);
+                  vsl_.kadops().get(), close_result, _1);
   EXPECT_CALL(*vsl_.kadops(), FindKClosestNodes(chunk_name,
       testing::An<VoidFuncIntContacts>()))
       .Times(testing::AtLeast(5))  // Calls 2 onwards
@@ -1215,7 +1239,7 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_ProcessRequest) {
     AmendAccountRequest req(kDefaultRequest);
     AmendAccountResponse resp(kDefaultResponse);
     SignedSize *sz = req.mutable_signed_size();
-    sz->set_pmid(good_pmids_.at(i));
+    sz->set_pmid(close_contacts.at(i).node_id().String());
     requests.push_back(req);
     responses.push_back(resp);
     google::protobuf::Closure *done2 = google::protobuf::NewCallback(&cbh,
@@ -1323,7 +1347,7 @@ TEST_F(AccountAmendmentHandlerTest, BEH_MAID_CleanUp) {
   }
   ASSERT_EQ(50, aah_.CleanUp());
   ASSERT_EQ(size_t(29), aah_.amendments_.size());
-  
+
   aah_.Clear();
   ASSERT_TRUE(aah_.amendments_.empty());
 }

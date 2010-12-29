@@ -189,24 +189,7 @@ class MockVaultServiceLogicTest : public testing::Test {
         pmid_private_(),
         pmid_public_(),
         pmid_public_signature_(),
-        fail_parse_pmids_(),
-        fail_pmids_(),
-        few_pmids_(),
-        good_pmids_(),
-        fail_parse_result_(
-            mock_kadops::MakeFindNodesResponse(mock_kadops::kFailParse, k,
-                                               &fail_parse_pmids_)),
-        fail_result_(
-            mock_kadops::MakeFindNodesResponse(mock_kadops::kResultFail, k,
-                                               &fail_pmids_)),
-        few_result_(
-            mock_kadops::MakeFindNodesResponse(mock_kadops::kTooFewContacts, k,
-                                               &few_pmids_)),
-        good_result_(mock_kadops::MakeFindNodesResponse(mock_kadops::kGood, k,
-                                                        &good_pmids_)),
-        good_result_less_one_(),
-        our_contact_(),
-        good_contacts_() {}
+        our_contact_() {}
   virtual ~MockVaultServiceLogicTest() {}
   virtual void SetUp() {
     pmid_keys_.GenerateKeys(kRsaKeySize);
@@ -217,32 +200,11 @@ class MockVaultServiceLogicTest : public testing::Test {
     pmid_public_signature_ = RSASign(pmid_public_, pmid_private_);
     pmid_ = SHA512String(pmid_public_ + pmid_public_signature_);
     our_contact_ = kad::Contact(pmid_, "192.168.10.10", 8008);
-    std::string ser_our_contact;
-    our_contact_.SerialiseToString(&ser_our_contact);
-    kad::FindResponse find_response, good_find_response_less_one;
-    kad::Contact contact;
-    std::string ser_contact;
-    ASSERT_TRUE(find_response.ParseFromString(good_result_));
-    good_find_response_less_one.set_result(kad::kRpcResultSuccess);
-    for (int i = 0; i < find_response.closest_nodes_size(); ++i) {
-      ser_contact = find_response.closest_nodes(i);
-      ASSERT_TRUE(contact.ParseFromString(ser_contact));
-      good_contacts_.push_back(contact);
-      if (i < find_response.closest_nodes_size() - 1) {
-        good_find_response_less_one.add_closest_nodes(ser_contact);
-      }
-    }
-    good_find_response_less_one.SerializeToString(&good_result_less_one_);
   }
 
   crypto::RsaKeyPair pmid_keys_;
   std::string pmid_, pmid_private_, pmid_public_, pmid_public_signature_;
-  std::vector<std::string> fail_parse_pmids_, fail_pmids_, few_pmids_;
-  std::vector<std::string> good_pmids_;
-  std::string fail_parse_result_, fail_result_, few_result_, good_result_;
-  std::string good_result_less_one_;
   kad::Contact our_contact_;
-  std::vector<kad::Contact> good_contacts_;
 
  private:
   MockVaultServiceLogicTest(const MockVaultServiceLogicTest&);

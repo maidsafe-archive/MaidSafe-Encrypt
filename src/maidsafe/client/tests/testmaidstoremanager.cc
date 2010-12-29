@@ -664,7 +664,9 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_ExpectAmendment) {
   ASSERT_EQ(kSuccess, cbh.AwaitResult());
 }
 
-TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AddToWatchList) {
+TEST_F(MaidStoreManagerTest, DISABLED_BEH_MAID_MSM_AddToWatchList) {
+  FAIL();
+/*
   MockMsmKeyUnique msm(client_chunkstore_);
   boost::shared_ptr<MockClientRpcs> mock_rpcs(
       new MockClientRpcs(&msm.transport_handler_, &msm.channel_manager_));
@@ -865,8 +867,6 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AddToWatchList) {
   }
   ASSERT_EQ(size_t(0), msm.tasks_handler_.TasksCount());
 
-  ASSERT_TRUE(false) << "Not fully implemented.";
-
   // Call 2 - FindKNodes returns success but not enough contacts
   ++test_run;
   printf("--- call %d ---\n", test_run + 1);
@@ -1001,26 +1001,27 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AddToWatchList) {
 //  ASSERT_TRUE(msm.tasks_handler_.Task(chunk_names.at(test_run), kStoreChunk,
 //      &retrieved_task));
 //  ASSERT_EQ(kMinChunkCopies - 1, retrieved_task.successes_required_);
+*/
 }
 
-TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_StoreChunkCopy) {
-  ASSERT_TRUE(false) << "Not implemented.";
+TEST_F(MaidStoreManagerTest, DISABLED_BEH_MAID_MSM_StoreChunkCopy) {
+  FAIL();
 }
 
-TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_DoStorePrep) {
-  ASSERT_TRUE(false) << "Not implemented.";
+TEST_F(MaidStoreManagerTest, DISABLED_BEH_MAID_MSM_DoStorePrep) {
+  FAIL();
 }
 
-TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_StorePrepCallback) {
-  ASSERT_TRUE(false) << "Not implemented.";
+TEST_F(MaidStoreManagerTest, DISABLED_BEH_MAID_MSM_StorePrepCallback) {
+  FAIL();
 }
 
-TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_DoStoreChunk) {
-  ASSERT_TRUE(false) << "Not implemented.";
+TEST_F(MaidStoreManagerTest, DISABLED_BEH_MAID_MSM_DoStoreChunk) {
+  FAIL();
 }
 
-TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_StoreChunkCallback) {
-  ASSERT_TRUE(false) << "Not implemented.";
+TEST_F(MaidStoreManagerTest, DISABLED_BEH_MAID_MSM_StoreChunkCallback) {
+  FAIL();
 }
 
 TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_AssessUploadCounts) {
@@ -1548,9 +1549,11 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_ValidatePrepResp) {
                                             StoreManagerTask *task));
   MOCK_METHOD2(WaitForOnline, bool(const TaskId &task_id,
                                    const StoreTaskType &task_type));
-};
+}; */
 
 TEST_F(MaidStoreManagerTest, DISABLED_BEH_MAID_MSM_SendChunkPrep) {
+  FAIL();
+/*
   MockMsmSendChunkPrep msm(client_chunkstore_);
   boost::shared_ptr<MockKadOps> mko(new MockKadOps(&msm.transport_handler_,
       &msm.channel_manager_, kad::CLIENT, "", "", false, false, test_msm::K,
@@ -1629,9 +1632,10 @@ TEST_F(MaidStoreManagerTest, DISABLED_BEH_MAID_MSM_SendChunkPrep) {
   // Call 6
   ASSERT_EQ(kSuccess, msm.SendChunkPrep(store_data));
   printf("666666\n");
+*/
 }
 
-class MockMsmSendPrepCallback : public MaidsafeStoreManager {
+/* class MockMsmSendPrepCallback : public MaidsafeStoreManager {
  public:
   explicit MockMsmSendPrepCallback(boost::shared_ptr<ChunkStore> cstore)
       : MaidsafeStoreManager(cstore, test_msm::K) {}
@@ -1641,9 +1645,11 @@ class MockMsmSendPrepCallback : public MaidsafeStoreManager {
       const StorePrepResponse *store_prep_response));
   MOCK_METHOD1(SendChunkContent, int(
       boost::shared_ptr<SendChunkData> send_chunk_data));
-};
+}; */
 
 TEST_F(MaidStoreManagerTest, DISABLED_BEH_MAID_MSM_SendPrepCallback) {
+  FAIL();
+/*
   // Set up test data
   MockMsmSendPrepCallback msm(client_chunkstore_);
   boost::shared_ptr<MockClientRpcs> mock_rpcs(
@@ -1738,9 +1744,12 @@ TEST_F(MaidStoreManagerTest, DISABLED_BEH_MAID_MSM_SendPrepCallback) {
   ASSERT_FALSE(msm.tasks_handler_.Task(chunkname, kStoreChunk,
                &retrieved_task));
   ASSERT_EQ(size_t(0), msm.tasks_handler_.TasksCount());
+*/
 }
 
 TEST_F(MaidStoreManagerTest, DISABLED_BEH_MAID_MSM_SendChunkContent) {
+  FAIL();
+/*
   MaidsafeStoreManager msm(client_chunkstore_, test_msm::K);
   boost::shared_ptr<MockClientRpcs> mock_rpcs(
       new MockClientRpcs(&msm.transport_handler_, &msm.channel_manager_));
@@ -1861,9 +1870,11 @@ TEST_F(MaidStoreManagerTest, DISABLED_BEH_MAID_MSM_SendChunkContent) {
   ASSERT_EQ(boost::uint8_t(1), retrieved_task.success_count_);
   ASSERT_EQ((kHashable | kNormal),
             msm.client_chunkstore_->chunk_type(chunkname));
-} */
+*/  
+}
 
 TEST_F(MaidStoreManagerTest, DISABLED_BEH_MAID_MSM_RemoveFromWatchList) {
+  FAIL();
 /*
   MockMsmKeyUnique msm(client_chunkstore_);
   boost::shared_ptr<MockClientRpcs> mock_rpcs(
@@ -2195,12 +2206,15 @@ TEST_F(MaidStoreManagerTest, DISABLED_BEH_MAID_MSM_RemoveFromWatchList) {
 }
 
 TEST_F(MaidStoreManagerTest, DISABLED_BEH_MAID_MSM_LoadChunk) {
+  FAIL();
 }
 
 TEST_F(MaidStoreManagerTest, DISABLED_BEH_MAID_MSM_StoreChunk) {
+  FAIL();
 }
 
 TEST_F(MaidStoreManagerTest, DISABLED_BEH_MAID_MSM_DeleteChunk) {
+  FAIL();
 }
 
 class MockMsmStoreLoadPacket : public MaidsafeStoreManager {
@@ -2813,23 +2827,9 @@ TEST_F(MaidStoreManagerTest, BEH_MAID_MSM_UpdateAccountStatus) {
   std::string account_name = SHA512String(client_pmid_ + kAccount);
 
   // Set up data for calls to FindKNodes
-  std::vector<std::string> good_pmids, few_pmids;
-  std::string bad_result = mock_kadops::MakeFindNodesResponse(
-      mock_kadops::kResultFail, test_msm::K, &good_pmids);
-  std::string good_result = mock_kadops::MakeFindNodesResponse(
-      mock_kadops::kGood, test_msm::K, &good_pmids);
-  std::string few_result = mock_kadops::MakeFindNodesResponse(
-      mock_kadops::kTooFewContacts, test_msm::K, &few_pmids);
   std::vector<kad::Contact> account_holders;
-  {
-    kad::FindResponse find_response;
-    kad::Contact contact;
-    ASSERT_TRUE(find_response.ParseFromString(good_result));
-    for (int i = 0; i < find_response.closest_nodes_size(); ++i) {
-      ASSERT_TRUE(contact.ParseFromString(find_response.closest_nodes(i)));
-      account_holders.push_back(contact);
-    }
-  }
+  std::string close_result = mock_kadops::MakeFindNodesResponse(
+      mock_kadops::kCloseContacts, account_name, test_msm::K, &account_holders);
 
   // only one thread, so the RPCs are called in order
   // (important for the expected averages)

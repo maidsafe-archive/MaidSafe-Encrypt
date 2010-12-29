@@ -101,6 +101,8 @@ TEST_F(VaultServiceLogicTest, BEH_MAID_Offline) {
 }
 
 TEST_F(VaultServiceLogicTest, FUNC_MAID_AddToRemoteRefList) {
+  FAIL() << "Needs update.";
+/*
   // Setup
   boost::shared_ptr<MockVaultRpcs> mock_rpcs(new MockVaultRpcs(NULL, NULL));
   MockVsl vsl(mock_rpcs, boost::shared_ptr<KadOps>(
@@ -319,9 +321,12 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_AddToRemoteRefList) {
     }
   }
   ASSERT_EQ(kRemoteOpResponseUninitialised, result);
+*/
 }
 
 TEST_F(VaultServiceLogicTest, FUNC_MAID_AmendRemoteAccount) {
+  FAIL() << "Needs update.";
+/*
   // Setup
   boost::shared_ptr<MockVaultRpcs> mock_rpcs(new MockVaultRpcs(NULL, NULL));
   MockVsl vsl(mock_rpcs, boost::shared_ptr<KadOps>(
@@ -543,9 +548,12 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_AmendRemoteAccount) {
     }
   }
   ASSERT_EQ(kRemoteOpResponseUninitialised, result);
+*/
 }
 
 TEST_F(VaultServiceLogicTest, FUNC_MAID_RemoteVaultAbleToStore) {
+  FAIL() << "Needs update.";
+/*
   // Setup
   boost::shared_ptr<MockVaultRpcs> mock_rpcs(new MockVaultRpcs(NULL, NULL));
   MockVsl vsl(mock_rpcs, boost::shared_ptr<KadOps>(
@@ -758,6 +766,7 @@ TEST_F(VaultServiceLogicTest, FUNC_MAID_RemoteVaultAbleToStore) {
     }
   }
   ASSERT_EQ(kRemoteOpResponseUninitialised, result);
+*/
 }
 
 }  // namespace test
