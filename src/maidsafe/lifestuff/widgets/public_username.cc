@@ -74,6 +74,12 @@ void PublicUsername::onCreateUsernameClicked() {
   ui_.progressLabel->setVisible(true);
   ui_.progressBar->setVisible(true);
 
+  // we are in process of creating the public user name
+  // so hide the button
+  ui_.create->setVisible(false);
+  // and make the edit box readonly
+  ui_.contactLineEdit->setReadOnly(true);
+
   cput->start();
 }
 
@@ -87,6 +93,11 @@ void PublicUsername::onCreateUsernameCompleted(bool success) {
   }
   ui_.progressLabel->setVisible(false);
   ui_.progressBar->setVisible(false);
+
+  // we are done, show the button again
+  ui_.create->setVisible(true);
+  // and revert the edit box to editable
+  ui_.contactLineEdit->setReadOnly(false);
 }
 
 void PublicUsername::changeEvent(QEvent *event) {

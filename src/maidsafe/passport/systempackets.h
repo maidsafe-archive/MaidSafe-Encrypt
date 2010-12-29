@@ -72,11 +72,11 @@ class MidPacket : public pki::Packet {
   virtual ~MidPacket() {}
   virtual std::string value() const { return encrypted_rid_; }
   virtual bool Equals(const pki::Packet *other) const;
-  void SetRid(const boost::uint32_t &rid);
-  boost::uint32_t DecryptRid(const std::string &encrypted_rid);
+  void SetRid(const std::string &rid);
+  std::string DecryptRid(const std::string &encrypted_rid);
   std::string username() const { return username_; }
   std::string pin() const { return pin_; }
-  boost::uint32_t rid() const { return rid_; }
+  std::string rid() const { return rid_; }
  private:
   friend testing::AssertionResult test::Empty(
       std::tr1::shared_ptr<pki::Packet> packet);
@@ -85,9 +85,8 @@ class MidPacket : public pki::Packet {
       std::tr1::shared_ptr<MidPacket> mid);
   virtual void Initialise();
   virtual void Clear();
-  std::string username_, pin_, smid_appendix_;
-  boost::uint32_t rid_;
-  std::string encrypted_rid_, salt_, secure_password_;
+  std::string username_, pin_, smid_appendix_, rid_, encrypted_rid_, salt_;
+  std::string secure_password_;
 };
 
 class TmidPacket : public pki::Packet {
@@ -95,7 +94,7 @@ class TmidPacket : public pki::Packet {
   TmidPacket();
   TmidPacket(const std::string &username,
              const std::string &pin,
-             const boost::uint32_t rid,
+             const std::string &rid,
              bool surrogate,
              const std::string &password,
              const std::string &plain_text_master_data);
@@ -118,10 +117,8 @@ class TmidPacket : public pki::Packet {
   bool SetPassword();
   bool SetPlainData();
   virtual void Clear();
-  std::string username_, pin_, password_;
-  boost::uint32_t rid_;
-  std::string plain_text_master_data_, salt_, secure_password_;
-  std::string encrypted_master_data_;
+  std::string username_, pin_, password_, rid_, plain_text_master_data_, salt_;
+  std::string secure_password_, encrypted_master_data_;
 };
 
 }  // namespace passport

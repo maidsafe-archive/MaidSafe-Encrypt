@@ -32,6 +32,7 @@
 namespace maidsafe {
 
 Authentication::~Authentication() {
+  passport_->StopCreatingKeyPairs();
   bool tmid_success, stmid_success;
   try {
     boost::mutex::scoped_lock lock(mutex_);
@@ -113,7 +114,7 @@ int Authentication::GetUserInfo(const std::string &username,
   try {
     boost::mutex::scoped_lock lock(mutex_);
     success = cond_var_.timed_wait(lock,
-              boost::posix_time::milliseconds(2 * kSingleOpTimeout_),
+              boost::posix_time::milliseconds(4 * kSingleOpTimeout_),
               boost::bind(&Authentication::StmidOpDone, this));
   }
   catch(const std::exception &e) {
@@ -238,23 +239,23 @@ int Authentication::CreateUserSysPackets(const std::string &username,
   session_singleton_->SetPin(pin);
 
   OpStatus anmaid_status(kPending);
-  CreateSignaturePacket(passport::ANMAID, &anmaid_status, NULL);
+  CreateSignaturePacket(passport::ANMAID, "", &anmaid_status, NULL);
 
   OpStatus anmid_status(kPending);
-  CreateSignaturePacket(passport::ANMID, &anmid_status, NULL);
+  CreateSignaturePacket(passport::ANMID, "", &anmid_status, NULL);
 
   OpStatus ansmid_status(kPending);
-  CreateSignaturePacket(passport::ANSMID, &ansmid_status, NULL);
+  CreateSignaturePacket(passport::ANSMID, "", &ansmid_status, NULL);
 
   OpStatus antmid_status(kPending);
-  CreateSignaturePacket(passport::ANTMID, &antmid_status, NULL);
+  CreateSignaturePacket(passport::ANTMID, "", &antmid_status, NULL);
 
 // TODO(Fraser#5#): 2010-10-18 - Thread these next two?
   OpStatus maid_status(kPending);
-  CreateSignaturePacket(passport::MAID, &maid_status, &anmaid_status);
+  CreateSignaturePacket(passport::MAID, "", &maid_status, &anmaid_status);
 
   OpStatus pmid_status(kPending);
-  CreateSignaturePacket(passport::PMID, &pmid_status, &maid_status);
+  CreateSignaturePacket(passport::PMID, "", &pmid_status, &maid_status);
 
   bool success(true);
   try {
@@ -286,6 +287,7 @@ int Authentication::CreateUserSysPackets(const std::string &username,
 
 void Authentication::CreateSignaturePacket(
     const passport::PacketType &packet_type,
+    const std::string &public_name,
     OpStatus *op_status,
     OpStatus *dependent_op_status) {
   // Wait for dependent op or timeout.
@@ -321,8 +323,7 @@ void Authentication::CreateSignaturePacket(
       sig_packet(new passport::SignaturePacket);
   int result(kPendingResult);
   if (packet_type == passport::MPID)
-    result = passport_->InitialiseMpid(session_singleton_->PublicUsername(),
-                                       sig_packet);
+    result = passport_->InitialiseMpid(public_name, sig_packet);
   else
     result = passport_->InitialiseSignaturePacket(packet_type, sig_packet);
   if (result != kSuccess) {
@@ -447,15 +448,16 @@ int Authentication::CreateTmidPacket(const std::string &username,
   }
 }
 
-void Authentication::SaveSession(const std::string &serialised_data_atlas,
+void Authentication::SaveSession(const std::string &serialised_master_datamap,
                                  const VoidFuncOneInt &functor) {
   std::tr1::shared_ptr<SaveSessionData>
       save_session_data(new SaveSessionData(functor, kRegular));
 
   std::string mid_old_value, smid_old_value;
-  int result(passport_->UpdateMasterData(serialised_data_atlas, &mid_old_value,
-      &smid_old_value, save_session_data->mid, save_session_data->smid,
-      save_session_data->tmid, save_session_data->stmid));
+  int result(passport_->UpdateMasterData(serialised_master_datamap,
+      &mid_old_value, &smid_old_value, save_session_data->mid,
+      save_session_data->smid, save_session_data->tmid,
+      save_session_data->stmid));
   if (result != kSuccess) {
 #ifdef DEBUG
     printf("Authentication::SaveSession: failed UpdateUserData.\n");
@@ -560,7 +562,7 @@ void Authentication::SaveSessionCallback(
       passport_->ConfirmMasterDataUpdate(save_session_data->mid,
           save_session_data->smid, save_session_data->tmid);
       save_session_data->functor(kFailedToDeleteOldPacket);
-    } else {
+    } else if (save_session_data->op_type != kDeleteOld) {
       passport_->RevertMasterDataUpdate();
       save_session_data->functor(kAuthenticationError);
     }
@@ -573,11 +575,11 @@ void Authentication::SaveSessionCallback(
   save_session_data->functor(kSuccess);
 }
 
-int Authentication::SaveSession(const std::string &serialised_data_atlas) {
+int Authentication::SaveSession(const std::string &serialised_master_datamap) {
   int result(kPendingResult);
   VoidFuncOneInt functor = boost::bind(&Authentication::PacketOpCallback, this,
                                        _1, &result);
-  SaveSession(serialised_data_atlas, functor);
+  SaveSession(serialised_master_datamap, functor);
   bool success(true);
   try {
     boost::mutex::scoped_lock lock(mutex_);
@@ -600,59 +602,65 @@ int Authentication::SaveSession(const std::string &serialised_data_atlas) {
   return result;
 }
 
-int Authentication::GetUserData(const std::string &password,
-                                std::string *serialised_data_atlas) {
-  //  still have not recovered the tmid
-  int result = passport_->GetUserData(password, false, encrypted_tmid_,
-                                      serialised_data_atlas);
-  encrypt::DataMap dm;
-  if (result != kSuccess || !dm.ParseFromString(*serialised_data_atlas)) {
+void Authentication::GetMasterDataMap(
+    const std::string &password,
+    boost::shared_ptr<boost::mutex> login_mutex,
+    boost::shared_ptr<boost::condition_variable> login_cond_var,
+    boost::shared_ptr<int> result,
+    boost::shared_ptr<std::string> serialised_master_datamap,
+    boost::shared_ptr<std::string> surrogate_serialised_master_datamap) {
+  boost::mutex::scoped_lock login_lock(*login_mutex);
+  serialised_master_datamap->clear();
+  surrogate_serialised_master_datamap->clear();
+  // Still have not recovered the TMID
+  *result = passport_->GetUserData(password, false, encrypted_tmid_,
+                                   serialised_master_datamap.get());
+  if (*result == kSuccess) {
+    session_singleton_->SetPassword(password);
+    login_cond_var->notify_one();
+  } else {
 #ifdef DEBUG
-      printf("Authentication::GetUserData - TMID error %i.\n", result);
+    printf("Authentication::GetMasterDataMap - TMID error %i.\n", *result);
 #endif
-    bool success(false);
-    try {
-      boost::mutex::scoped_lock lock(mutex_);
-      tmid_op_status_ = kFailed;
-      encrypted_tmid_.clear();
-      success = cond_var_.timed_wait(lock,
-                boost::posix_time::milliseconds(2 * kSingleOpTimeout_),
-                boost::bind(&Authentication::StmidOpDone, this));
-    }
-    catch(const std::exception &e) {
+  }
+  // Wait for and recover the STMID
+  bool success(false);
+  try {
+    boost::mutex::scoped_lock lock(mutex_);
+    tmid_op_status_ = kFailed;
+    encrypted_tmid_.clear();
+    success = cond_var_.timed_wait(lock,
+              boost::posix_time::milliseconds(2 * kSingleOpTimeout_),
+              boost::bind(&Authentication::StmidOpDone, this));
+  }
+  catch(const std::exception &e) {
 #ifdef DEBUG
-      printf("Authentication::GetUserData: %s\n", e.what());
+    printf("Authentication::GetMasterDataMap: %s\n", e.what());
 #endif
-    }
-#ifdef DEBUG
-    if (!success)
-      printf("Authentication::GetUserData: timed out waiting for STMID.\n");
-#endif
-    if (stmid_op_status_ == kSucceeded) {
-      result = passport_->GetUserData(password, true, encrypted_stmid_,
-                                      serialised_data_atlas);
-      if (result != kSuccess || !dm.ParseFromString(*serialised_data_atlas)) {
-#ifdef DEBUG
-        printf("Authentication::GetUserData - STMID error %i.\n", result);
-#endif
-        boost::mutex::scoped_lock lock(mutex_);
-        stmid_op_status_ = kFailed;
-        encrypted_stmid_.clear();
-      } else {
-        session_singleton_->SetPassword(password);
-#ifdef DEBUG
-        printf("Authentication::GetUserData - Using STMID\n");
-#endif
-        return kSuccess;
-      }
-    }
-    return kPasswordFailure;
   }
 #ifdef DEBUG
-  printf("Authentication::GetUserData - Using TMID\n");
+  if (!success)
+    printf("Authentication::GetMasterDataMap: timed out waiting on STMID.\n");
 #endif
-  session_singleton_->SetPassword(password);
-  return kSuccess;
+  if (stmid_op_status_ == kSucceeded) {
+    *result = passport_->GetUserData(password, true, encrypted_stmid_,
+                                     surrogate_serialised_master_datamap.get());
+    if (*result == kSuccess) {
+      session_singleton_->SetPassword(password);
+      return;
+    } else {
+#ifdef DEBUG
+      printf("Authentication::GetMasterDataMap - STMID error %i.\n", *result);
+#endif
+      boost::mutex::scoped_lock lock(mutex_);
+      stmid_op_status_ = kFailed;
+      encrypted_stmid_.clear();
+      *result = kPasswordFailure;
+    }
+  } else {
+    *result = kPasswordFailure;
+  }
+  login_cond_var->notify_one();
 }
 
 int Authentication::CreateMsidPacket(std::string *msid_name,
@@ -720,12 +728,13 @@ int Authentication::CreatePublicName(const std::string &public_name) {
   OpStatus anmpid_status(kSucceeded);
   if (!passport_->GetPacket(passport::ANMPID, true)) {
     anmpid_status = kPending;
-    CreateSignaturePacket(passport::ANMPID, &anmpid_status, NULL);
+    CreateSignaturePacket(passport::ANMPID, "", &anmpid_status, NULL);
   }
 
 // TODO(Fraser#5#): 2010-10-18 - Thread this?
   OpStatus mpid_status(kPending);
-  CreateSignaturePacket(passport::MPID, &mpid_status, &anmpid_status);
+  CreateSignaturePacket(passport::MPID, public_name, &mpid_status,
+                        &anmpid_status);
 
   bool success(true);
   try {
@@ -747,7 +756,6 @@ int Authentication::CreatePublicName(const std::string &public_name) {
   }
 #endif
   if ((anmpid_status == kSucceeded) && (mpid_status == kSucceeded)) {
-    session_singleton_->SetPublicUsername(public_name);
     return kSuccess;
   } else if (mpid_status == kNotUnique) {
     return kPublicUsernameExists;
@@ -884,19 +892,19 @@ void Authentication::DeletePacketCallback(
   cond_var_.notify_all();
 }
 
-int Authentication::ChangeUsername(const std::string &serialised_data_atlas,
+int Authentication::ChangeUsername(const std::string &serialised_master_datamap,
                                    const std::string &new_username) {
-  return ChangeUserData(serialised_data_atlas, new_username,
+  return ChangeUserData(serialised_master_datamap, new_username,
                         session_singleton_->Pin());
 }
 
-int Authentication::ChangePin(const std::string &serialised_data_atlas,
+int Authentication::ChangePin(const std::string &serialised_master_datamap,
                               const std::string &new_pin) {
-  return ChangeUserData(serialised_data_atlas, session_singleton_->Username(),
-                        new_pin);
+  return ChangeUserData(serialised_master_datamap,
+                        session_singleton_->Username(), new_pin);
 }
 
-int Authentication::ChangeUserData(const std::string &serialised_data_atlas,
+int Authentication::ChangeUserData(const std::string &serialised_master_datamap,
                                    const std::string &new_username,
                                    const std::string &new_pin) {
   // Get updated packets
@@ -913,7 +921,7 @@ int Authentication::ChangeUserData(const std::string &serialised_data_atlas,
       delete_old_packets(new SaveSessionData(delete_functor, kDeleteOld));
 
   int result = passport_->ChangeUserData(new_username, new_pin,
-               serialised_data_atlas, delete_old_packets->mid,
+               serialised_master_datamap, delete_old_packets->mid,
                delete_old_packets->smid, delete_old_packets->tmid,
                delete_old_packets->stmid, save_new_packets->mid,
                save_new_packets->smid, save_new_packets->tmid,
@@ -1096,7 +1104,7 @@ int Authentication::ChangeUserData(const std::string &serialised_data_atlas,
   return kSuccess;
 }
 
-int Authentication::ChangePassword(const std::string &serialised_data_atlas,
+int Authentication::ChangePassword(const std::string &serialised_master_datamap,
                                    const std::string &new_password) {
   // Get updated packets
   int result(kPendingResult);
@@ -1107,7 +1115,7 @@ int Authentication::ChangePassword(const std::string &serialised_data_atlas,
   update_packets->process_mid = kSucceeded;
   update_packets->process_smid = kSucceeded;
   std::string tmid_old_value, stmid_old_value;
-  int res = passport_->ChangePassword(new_password, serialised_data_atlas,
+  int res = passport_->ChangePassword(new_password, serialised_master_datamap,
                                       &tmid_old_value, &stmid_old_value,
                                       update_packets->tmid,
                                       update_packets->stmid);

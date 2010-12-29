@@ -66,7 +66,7 @@ PerpetualData::PerpetualData(QWidget* parent)
   setWindowIcon(QPixmap(":/icons/32/ms_icon_blue.gif"));
   ui_.setupUi(this);
 
-  statusBar()->hide();
+  //statusBar()->hide();
   statusBar()->addPermanentWidget(message_status_ = new QLabel);
 
 //  ui_.TheFrame->setStyleSheet("QFrame#TheFrame {
@@ -75,21 +75,22 @@ PerpetualData::PerpetualData(QWidget* parent)
 
   createActions();
   createMenus();
-  showLoggedOutMenu();
+  //showLoggedOutMenu();
   // create the main screens
-  login_ = new Login;
+  //login_ = new Login;
   create_ = new CreateUser;
   progressPage_ = new Progress;
   userPanels_ = new UserPanels;
   pendingOps_ = new PendingOperationsDialog;
 
-  ui_.stackedWidget->addWidget(login_);
-  ui_.stackedWidget->addWidget(create_);
-  ui_.stackedWidget->addWidget(progressPage_);
+  //ui_.stackedWidget->addWidget(login_);
+  //ui_.stackedWidget->addWidget(create_);
+  //ui_.stackedWidget->addWidget(progressPage_);
   ui_.stackedWidget->addWidget(userPanels_);
+  
 
-//  setCentralWidget(ui_.stackedWidget);
-  ui_.stackedWidget->setCurrentWidget(login_);
+  //setCentralWidget(ui_.stackedWidget);
+  //ui_.stackedWidget->setCurrentWidget(login_);
 
   JoinKademliaThread *jkt = new JoinKademliaThread(this);
   connect(jkt,  SIGNAL(completed(bool)),
@@ -97,8 +98,9 @@ PerpetualData::PerpetualData(QWidget* parent)
   jkt->start();
 
   lsLogin_ = new LifeStuffLogin;
-  lsLogin_->show();
-  lsLogin_->StartProgressBar();
+
+  //lsLogin_->show();
+  //lsLogin_->StartProgressBar();
 
   hideOpButtons();
 
@@ -127,11 +129,14 @@ PerpetualData::PerpetualData(QWidget* parent)
 
   connect(lsLogin_, SIGNAL(destroyed()),
           this,   SLOT(onQuit()));
+  
+  initSignals();
+
 }
 
 void PerpetualData::onJoinKademliaCompleted(bool b) {
   if (!b) {
-    qDebug() << "U didn't join kademlia, so fuck U!";
+    qDebug() << "Didn't join kademlia !";
     return;
   }
 
@@ -293,7 +298,7 @@ void PerpetualData::createMenus() {
 }
 
 void PerpetualData::setState(State state) {
-  disconnect(login_, NULL, this, NULL);
+  //disconnect(login_, NULL, this, NULL);
   disconnect(create_, NULL, this, NULL);
   disconnect(progressPage_, NULL, this, NULL);
   disconnect(userPanels_, NULL, this, NULL);
@@ -305,18 +310,30 @@ void PerpetualData::setState(State state) {
   switch (state_) {
     case LOGIN:
     {
-        ui_.stackedWidget->setCurrentWidget(login_);
+        emit inLoginState();
+        // do we need this, lets try showing the main login window
+        // instead of the stacked widget
+        this->hide();
+        lsLogin_->clearFields();
+        lsLogin_->show();
+
+        /*ui_.stackedWidget->setCurrentWidget(login_);
         login_->clearFields();
         connect(login_, SIGNAL(newUser()),
                 this,   SLOT(onLoginNewUser()));
         connect(login_, SIGNAL(existingUser()),
                 this,   SLOT(onLoginExistingUser()));
+                */
         break;
     }
     case SETUP_USER:
     {
+        emit inSetupUserState();
+        this->hide();
         create_->reset();
-        ui_.stackedWidget->setCurrentWidget(create_);
+        positionWidgetInScreenCenter(create_);
+        create_->show();
+        //ui_.stackedWidget->setCurrentWidget(create_);
         connect(create_, SIGNAL(complete()),
                 this,    SLOT(onSetupNewUserComplete()));
         connect(create_, SIGNAL(cancelled()),
@@ -325,12 +342,19 @@ void PerpetualData::setState(State state) {
     }
     case CREATE_USER:
     {
-        ui_.stackedWidget->setCurrentWidget(progressPage_);
+        emit inCreateUserState();
+        //ui_.stackedWidget->setCurrentWidget(progressPage_);
+        ui_.stackedWidget->removeWidget(progressPage_);
+        delete progressPage_; progressPage_ = NULL;
+        progressPage_ = new Progress;
+        this->hide();
         progressPage_->setTitle(tr("Creating User Account"));
         progressPage_->setProgressMessage(
             tr("A user account is being created. This may take some time..."));
         progressPage_->setError(false);
         progressPage_->setCanCancel(false);  // can't cancel it yet
+        positionWidgetInScreenCenter(progressPage_);
+        progressPage_->show();        
         // connect(create_, SIGNAL(cancel()),
         //         this,    SLOT(onCreateCancelled()));
         break;
@@ -349,8 +373,13 @@ void PerpetualData::setState(State state) {
     }
     case LOGGED_IN:
     {
-        showLoggedInMenu();
+        //showLoggedInMenu();
+        statusBar()->show();
+        emit inLoggedInState();
+        enableInputs(true);
         ui_.stackedWidget->setCurrentWidget(userPanels_);
+        const QRect staRect = ui_.stackedWidget->geometry();
+        userPanels_->setGeometry(staRect);
         connect(userPanels_, SIGNAL(unreadMessages(int)),
                 this,        SLOT(onUnreadMessagesChanged(int)));
         connect(userPanels_, SIGNAL(publicUsernameChosen()),
@@ -365,7 +394,10 @@ void PerpetualData::setState(State state) {
     }
     case LOGGING_OUT:
     {
-        showLoggedOutMenu();
+        //showLoggedOutMenu();
+        emit inLoggingOutState();
+        enableInputs(false);
+        ui_.stackedWidget->addWidget(progressPage_);
         ui_.stackedWidget->setCurrentWidget(progressPage_);
         progressPage_->setTitle(tr("Logging out"));
         progressPage_->setProgressMessage(
@@ -399,7 +431,8 @@ void PerpetualData::onLoginExistingUser() {
   qDebug() << "onLoginExistingUser";
   // existing user whose credentials have been verified
   // mount the file system..
-  this->show();
+//  this->show();
+  positionLSWinInCenter();
   qDebug() << "public name:" << ClientController::instance()->publicUsername();
 
 #ifdef PD_LIGHT
@@ -414,10 +447,11 @@ void PerpetualData::onLoginNewUser(const QString& name,
                                     const QString& pin,
                                     const QString& password) {
   setState(SETUP_USER);
-  login_->setUsername(name);
-  login_->setPin(pin);
-  login_->setPassword(password);
-  this->show();
+//  login_->setUsername(name);
+//  login_->setPin(pin);
+//  login_->setPassword(password);
+  
+//  this->show();
 }
 
 void PerpetualData::onSetupNewUserComplete() {
@@ -430,6 +464,8 @@ void PerpetualData::onSetupNewUserComplete() {
 
 void PerpetualData::onSetupNewUserCancelled() {
   // process was cancelled. back to login.
+    // hide the create window
+    create_->hide();
   setState(LOGIN);
 }
 
@@ -458,9 +494,9 @@ void PerpetualData::asyncUnmount() {
 //  }
 
 void PerpetualData::asyncCreateUser() {
-  CreateUserThread* cut = new CreateUserThread(login_->username(),
-                                               login_->pin(),
-                                               login_->password(),
+  CreateUserThread* cut = new CreateUserThread(lsLogin_->username(),
+                                               lsLogin_->pin(),
+                                               lsLogin_->password(),
                                                create_->VaultType(),
                                                create_->SpaceOffered(),
                                                create_->PortChosen(),
@@ -471,6 +507,8 @@ void PerpetualData::asyncCreateUser() {
           this, SLOT(onUserCreationCompleted(bool)));
 
   create_->reset();
+  create_->close();
+ // this->show();
 
   cut->start();
 }
@@ -496,6 +534,9 @@ void PerpetualData::onMountCompleted(bool success) {
   qDebug() << "PerpetualData::onMountCompleted: " << success;
 
   if (success) {
+      //this->show();
+      positionLSWinInCenter();
+      progressPage_->hide();
     const QString pu = ClientController::instance()->publicUsername();
     if (!pu.isEmpty()) {
       statusBar()->showMessage(tr("Logged in: %1").arg(pu));
@@ -520,6 +561,9 @@ void PerpetualData::onUnmountCompleted(bool success) {
   if (success) {
     // TODO(Team#5#): 2009-08-18 - disable the logout action
     statusBar()->showMessage(tr("Logged out"));
+
+    //progressPage_->hide();
+    ui_.stackedWidget->removeWidget(progressPage_);
 
     if (!quitting_)
       setState(LOGIN);
@@ -1183,4 +1227,99 @@ void PerpetualData::onLangChanged(const QString &lang) {
     qApp->installTranslator(myAppTranslator);
     ui_.retranslateUi(this);
   }
+}
+
+void PerpetualData::enableInputs(bool visible)
+{
+    // disable the icons
+    if (visible)
+        showOpButtons();
+    else
+        hideOpButtons();
+
+    ui_.label->setVisible(visible);
+    ui_.label_2->setVisible(visible);
+    ui_.label_3->setVisible(visible);
+    ui_.fullViewBtn->setVisible(visible);
+
+    //ui_.menuFile->setEnabled(visible);
+    ui_.menubar->setVisible(visible);
+}
+
+void PerpetualData::showLoginWindow()
+{
+    positionWidgetInScreenCenter(lsLogin_);
+
+    // do specific tasks
+    lsLogin_->show();
+    lsLogin_->StartProgressBar();
+}
+
+void PerpetualData::positionLSWinInCenter()
+{                              
+    positionWidgetInScreenCenter(this);
+    this->show();
+}
+
+void PerpetualData::positionWidgetInScreenCenter(QWidget *widget)
+{
+    QDesktopWidget *desk = QApplication::desktop();
+    int deskX = desk->width();
+    int deskY = desk->height();
+
+    if (widget) {
+        int x = widget->width();
+        int y = widget->height();
+        widget->setGeometry(deskX/2 - x/2, deskY/2 - y/2, x, y);        
+    }
+}
+
+void PerpetualData::initSignals()
+{
+    QObject::connect(this, SIGNAL(inLoginState()), 
+        SystemTrayIcon::instance(), SLOT(onLoginMOde()));
+    QObject::connect(this, SIGNAL(inSetupUserState()),
+        SystemTrayIcon::instance(), SLOT(onSetupUserMode()));
+    QObject::connect(this, SIGNAL(inCreateUserState()),
+        SystemTrayIcon::instance(), SLOT(onSetupUserMode()));// same as onSetupUserMode  
+    QObject::connect(this, SIGNAL(inLoggedInState()),
+        SystemTrayIcon::instance(), SLOT(onLoggedInMode()));
+    QObject::connect(this, SIGNAL(inLoggingOutState()),
+        SystemTrayIcon::instance(), SLOT(onLoggingOutMode()));
+}
+
+void PerpetualData::onShowWindowRequest()
+{
+    // the pd window needs to be made visible
+    // coz possibly someone clicked on the sys tray icon
+    // but be shouldn't show it when we are in some other window like 
+    // create user wizard or something else.
+
+    // we could check the states as well.
+    switch (state_) {
+        case SETUP_USER: 
+        case CREATE_USER:
+        case LOGIN:
+            {
+                // do nothing, no show
+            }
+            break;
+            
+        case LOGGED_IN:
+        case LOGGING_OUT:
+            {
+                this->show();
+            }
+            break;
+    }             
+}
+
+void PerpetualData::updateTitlebar(const QString& title)
+{
+    // update title bar of PD window
+    QString pdWinTitle = tr("LifeStuff - ");
+    pdWinTitle += title;
+    this->setWindowTitle(pdWinTitle);
+
+    // update title bar of other windows
 }

@@ -358,7 +358,7 @@ class MaidStoreManagerTest : public testing::Test {
     catch(const std::exception &e) {
       printf("In MaidStoreManagerTest dtor - %s\n", e.what());
     }
-    SessionSingleton::getInstance()->Destroy();
+    SessionSingleton::getInstance()->passport_->StopCreatingKeyPairs();
   }
 
   virtual void SetUp() {

@@ -78,6 +78,14 @@ class PerpetualData : public QMainWindow {
     QTranslator* qtTranslator;
     QTranslator* myAppTranslator;
 
+signals:
+    // for updating other parts of the application like sys tray
+    void inLoginState();
+    void inSetupUserState();
+    void inCreateUserState();
+    void inLoggedInState();
+    void inLoggingOutState();
+
   public slots:
     void quit();
 
@@ -166,6 +174,18 @@ class PerpetualData : public QMainWindow {
     void onUnreadMessagesChanged(int count);
 
     void onLangChanged(const QString &lang);
+
+    // slot invoked when login or logout is in progress
+    // and we do not want to process any actions like
+    // button press or menu selection
+    void enableInputs(bool);
+    void positionLSWinInCenter();
+    void positionWidgetInScreenCenter(QWidget *);
+    void onShowWindowRequest();   // example when user click on sys tray icon
+
+public:
+    void showLoginWindow();
+
  private:
   Ui::PerpetualData ui_;
   QFileDialog *qfd_;
@@ -283,6 +303,9 @@ class PerpetualData : public QMainWindow {
   void hideOpButtons();
   void showOpButtons();
 
+  private:
+      void initSignals();
+      void updateTitlebar(const QString&);
   protected:
   void changeEvent(QEvent *event);
 };

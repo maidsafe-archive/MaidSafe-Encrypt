@@ -81,7 +81,6 @@ TEST_F(SessionSingletonTest, BEH_MAID_SetsGetsAndResetSession) {
   ASSERT_TRUE(ss_->SetUsername("aaa"));
   ASSERT_TRUE(ss_->SetPin("bbb"));
   ASSERT_TRUE(ss_->SetPassword("ccc"));
-  ASSERT_TRUE(ss_->SetPublicUsername("Dan Schmidt"));
   ASSERT_TRUE(ss_->SetSessionName(false));
   ASSERT_TRUE(ss_->SetRootDbKey("ddd"));
   std::set<std::string> non_empty_set;

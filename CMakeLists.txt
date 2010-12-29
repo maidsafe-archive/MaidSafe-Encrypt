@@ -165,8 +165,8 @@ ELSEIF(WIN32) # MinGW builds
   SET(CMAKE_INCLUDE_PATH "c:\\MinGW\\include")
   SET(CMAKE_LIBRARY_PATH "c:\\MinGW\\lib" ${DEFAULT_LIBRARY_DIR})
 ELSE()
-  SET(CMAKE_INCLUDE_PATH "/usr/include")
-  SET(CMAKE_LIBRARY_PATH "/usr/lib" ${DEFAULT_LIBRARY_DIR})
+  SET(CMAKE_INCLUDE_PATH "/usr/local/include /usr/include")
+  SET(CMAKE_LIBRARY_PATH "/usr/local/lib /usr/lib" ${DEFAULT_LIBRARY_DIR})
 ENDIF()
 
 
@@ -204,6 +204,10 @@ SET(LIBS_DIRS_DEBUG ${LIBS_DIRS_DEBUG} ${Boost_LIBRARY_DIRS})
 # Including this file sets up environment with correct dirs / flags - no need to explicitly set
 # anything else other than linking to QT_LIBRARIES as appropriate.
 INCLUDE(${${PROJECT_NAME}_ROOT}/build/maidsafe_FindQt4.cmake)
+IF (NOT WIN32)
+  # these are required for static builds
+  SET(QT_LIBRARIES ${QT_LIBRARIES} z Xext X11 pcre xcb Xau Xdmcp)
+ENDIF()
 
 ###################################################################################################
 # Google Test library search                                                                      #
@@ -400,6 +404,7 @@ LIST(REMOVE_ITEM ALL_FILES_LOCALSTOREMANAGER_CLIENT_DIR "${SRC_MAIDSAFE}/client/
 SOURCE_GROUP("client Source Files" FILES ${SOURCE_FILES_CLIENT_DIR})
 SOURCE_GROUP("client Header Files" FILES ${HEADER_FILES_CLIENT_DIR})
 
+
 FILE(GLOB SOURCE_FILES_CLIENT_FILESYSTEM_DIR "${SRC_MAIDSAFE}/client/filesystem/*.cc")
 FILE(GLOB HEADER_FILES_CLIENT_FILESYSTEM_DIR "${SRC_MAIDSAFE}/client/filesystem/*.h")
 SET(ALL_FILES_CLIENT_FILESYSTEM_DIR ${SOURCE_FILES_CLIENT_FILESYSTEM_DIR} ${HEADER_FILES_CLIENT_FILESYSTEM_DIR})
@@ -415,6 +420,51 @@ LIST(REMOVE_ITEM STYLE_COMMON "${SRC_MAIDSAFE}/common/sqlite3.c")
 LIST(REMOVE_ITEM STYLE_COMMON "${SRC_MAIDSAFE}/common/sqlite3.h")
 SOURCE_GROUP("common Source Files" FILES ${SOURCE_FILES_COMMON_DIR})
 SOURCE_GROUP("common Header Files" FILES ${HEADER_FILES_COMMON_DIR})
+
+
+FILE(GLOB SOURCE_FILES_DEDUP_ANALYSER_DIR "${SRC_MAIDSAFE}/dedup_analyser/*.cc")
+FILE(GLOB HEADER_FILES_DEDUP_ANALYSER_DIR "${SRC_MAIDSAFE}/dedup_analyser/*.h")
+SET(STYLE_DEDUP_ANALYSER ${SOURCE_FILES_DEDUP_ANALYSER_DIR} ${HEADER_FILES_DEDUP_ANALYSER_DIR})
+QT4_WRAP_CPP(MOC_FILES_DEDUP_ANALYSER_DIR ${HEADER_FILES_DEDUP_ANALYSER_DIR})
+SOURCE_GROUP("dedup_analyser Source Files" FILES ${SOURCE_FILES_DEDUP_ANALYSER_DIR})
+SOURCE_GROUP("dedup_analyser Header Files" FILES ${HEADER_FILES_DEDUP_ANALYSER_DIR})
+SOURCE_GROUP("dedup_analyser MOC Files" FILES ${MOC_FILES_DEDUP_ANALYSER_DIR})
+
+FILE(GLOB SOURCE_FILES_DEDUP_ANALYSER_WIDGETS_DIR "${SRC_MAIDSAFE}/dedup_analyser/widgets/*.cc")
+FILE(GLOB HEADER_FILES_DEDUP_ANALYSER_WIDGETS_DIR "${SRC_MAIDSAFE}/dedup_analyser/widgets/*.h")
+FILE(GLOB HEADER_FILES_DEDUP_ANALYSER_QWTWIDGETS_DIR "${SRC_MAIDSAFE}/dedup_analyser/qwt_widgets/*.h")
+FILE(GLOB SOURCE_FILES_DEDUP_ANALYSER_QWTWIDGETS_DIR "${SRC_MAIDSAFE}/dedup_analyser/qwt_widgets/*.cc")
+
+SET(STYLE_DEDUP_ANALYSER ${STYLE_DEDUP_ANALYSER} ${SOURCE_FILES_DEDUP_ANALYSER_WIDGETS_DIR} ${HEADER_FILES_DEDUP_ANALYSER_WIDGETS_DIR} ${SOURCE_FILES_DEDUP_ANALYSER_QWTWIDGETS_DIR} ${HEADER_FILES_DEDUP_ANALYSER_QWTWIDGETS_DIR})
+
+QT4_WRAP_CPP(MOC_FILES_DEDUP_ANALYSER_WIDGETS_DIR ${HEADER_FILES_DEDUP_ANALYSER_WIDGETS_DIR})
+QT4_WRAP_CPP(MOC_FILES_DEDUP_ANALYSER_QWTWIDGETS_DIR ${HEADER_FILES_DEDUP_ANALYSER_QWTWIDGETS_DIR})
+SOURCE_GROUP("dedup_analyser widgets Source Files" FILES ${SOURCE_FILES_DEDUP_ANALYSER_WIDGETS_DIR})
+SOURCE_GROUP("dedup_analyser widgets Header Files" FILES ${HEADER_FILES_DEDUP_ANALYSER_WIDGETS_DIR})
+SOURCE_GROUP("dedup_analyser widgets MOC Files" FILES ${MOC_FILES_DEDUP_ANALYSER_WIDGETS_DIR})
+SOURCE_GROUP("dedup_analyser qwt widgets MOC Files" FILES ${MOC_FILES_DEDUP_ANALYSER_QWTWIDGETS_DIR})
+SOURCE_GROUP("dedup_analyser qwt widgets Source files" FILES ${SOURCE_FILES_DEDUP_ANALYSER_QWTWIDGETS_DIR})
+SOURCE_GROUP("dedup_analyser qwt widgets Header files" FILES ${HEADER_FILES_DEDUP_ANALYSER_QWTWIDGETS_DIR})
+
+FILE(GLOB QRC_FILES_DEDUP_ANALYSER_RESOURCES_DIR "${SRC_MAIDSAFE}/dedup_analyser/resources/*.qrc")
+QT4_ADD_RESOURCES(RESOURCE_FILES_DEDUP_ANALYSER_RESOURCES_DIR ${QRC_FILES_DEDUP_ANALYSER_RESOURCES_DIR})
+SOURCE_GROUP("dedup_analyser Resource Files" FILES ${RESOURCE_FILES_DEDUP_ANALYSER_RESOURCES_DIR})
+
+FILE(GLOB UI_FILES_DEDUP_ANALYSER_UI_DIR "${SRC_MAIDSAFE}/dedup_analyser/ui/*.ui")
+QT4_WRAP_UI(UIC_FILES_DEDUP_ANALYSER_UI_DIR ${UI_FILES_DEDUP_ANALYSER_UI_DIR})
+SOURCE_GROUP("dedup_analyser UI Files" FILES ${UI_FILES_DEDUP_ANALYSER_UI_DIR})
+SOURCE_GROUP("dedup_analyser UI Compiled Files" FILES ${UIC_FILES_DEDUP_ANALYSER_UI_DIR})
+
+SET(ALL_DEDUP_ANALYSER_SOURCE_FILES
+      ${SOURCE_FILES_DEDUP_ANALYSER_DIR} ${MOC_FILES_DEDUP_ANALYSER_DIR}
+      ${SOURCE_FILES_DEDUP_ANALYSER_WIDGETS_DIR} ${MOC_FILES_DEDUP_ANALYSER_WIDGETS_DIR}
+      ${RESOURCE_FILES_DEDUP_ANALYSER_RESOURCES_DIR} ${UI_FILES_DEDUP_ANALYSER_UI_DIR} ${UIC_FILES_DEDUP_ANALYSER_UI_DIR} 
+      ${SOURCE_FILES_DEDUP_ANALYSER_QWTWIDGETS_DIR} ${MOC_FILES_DEDUP_ANALYSER_QWTWIDGETS_DIR})
+
+SET(ALL_DEDUP_ANALYSER_HEADER_FILES
+      ${HEADER_FILES_DEDUP_ANALYSER_DIR}
+      ${HEADER_FILES_DEDUP_ANALYSER_WIDGETS_DIR})
+
 
 IF(WIN32)
   FILE(GLOB SOURCE_FILES_FUSE_DIR "${SRC_MAIDSAFE}/fuse/windows/*.cc")
@@ -482,6 +532,7 @@ SET(ALL_LIFESTUFF_LIGHT_HEADER_FILES
       ${HEADER_FILES_LIFESTUFF_CLIENT_DIR}
       ${HEADER_FILES_LIFESTUFF_LIGHT_WIDGETS_DIR})
 
+
 FILE(GLOB SOURCE_FILES_VAULT_DIR "${SRC_MAIDSAFE}/vault/*.cc")
 FILE(GLOB HEADER_FILES_VAULT_DIR "${SRC_MAIDSAFE}/vault/*.h")
 SET(STYLE_VAULT ${SOURCE_FILES_VAULT_DIR} ${HEADER_FILES_VAULT_DIR})
@@ -522,17 +573,20 @@ IF(APPLE)
   ADD_EXECUTABLE(lifestuff MACOSX_BUNDLE ${ALL_LIFESTUFF_SOURCE_FILES} ${ALL_LIFESTUFF_HEADER_FILES})
   ADD_EXECUTABLE(lslocal MACOSX_BUNDLE ${ALL_LIFESTUFF_SOURCE_FILES} ${ALL_LIFESTUFF_HEADER_FILES})
   ADD_EXECUTABLE(lslightlocal MACOSX_BUNDLE ${ALL_LIFESTUFF_LIGHT_SOURCE_FILES} ${ALL_LIFESTUFF_LIGHT_HEADER_FILES})
+  ADD_EXECUTABLE(dedup_analyser MACOSX_BUNDLE ${ALL_DEDUP_ANALYSER_SOURCE_FILES} ${ALL_DEDUP_ANALYSER_HEADER_FILES})
 ELSEIF((UNIX AND NOT APPLE) OR MSVC)
   ADD_EXECUTABLE(lifestuff ${ALL_LIFESTUFF_SOURCE_FILES} ${ALL_LIFESTUFF_HEADER_FILES})
   ADD_EXECUTABLE(lslocal ${ALL_LIFESTUFF_SOURCE_FILES} ${ALL_LIFESTUFF_HEADER_FILES})
   ADD_EXECUTABLE(lslightlocal ${ALL_LIFESTUFF_LIGHT_SOURCE_FILES} ${ALL_LIFESTUFF_LIGHT_HEADER_FILES})
+  ADD_EXECUTABLE(dedup_analyser ${ALL_DEDUP_ANALYSER_SOURCE_FILES} ${ALL_DEDUP_ANALYSER_HEADER_FILES})
 ELSEIF(WIN32)
   ADD_EXECUTABLE(lifestuff WIN32 ${ALL_LIFESTUFF_SOURCE_FILES} ${ALL_LIFESTUFF_HEADER_FILES})
   ADD_EXECUTABLE(lslocal WIN32 ${ALL_LIFESTUFF_SOURCE_FILES} ${ALL_LIFESTUFF_HEADER_FILES})
   ADD_EXECUTABLE(lslightlocal WIN32 ${ALL_LIFESTUFF_LIGHT_SOURCE_FILES} ${ALL_LIFESTUFF_LIGHT_HEADER_FILES})
+  ADD_EXECUTABLE(dedup_analyser WIN32 ${ALL_DEDUP_ANALYSER_SOURCE_FILES} ${ALL_DEDUP_ANALYSER_HEADER_FILES})
 ENDIF()
 IF(MSVC)
-  SET_TARGET_PROPERTIES(lifestuff lslocal lslightlocal PROPERTIES WIN32_EXECUTABLE TRUE)
+  SET_TARGET_PROPERTIES(lifestuff lslocal lslightlocal dedup_analyser PROPERTIES WIN32_EXECUTABLE TRUE)
 ENDIF()
 
 SET(BEHAVIOURAL_TEST_TIMEOUT 60)
@@ -542,31 +596,35 @@ SET(NETWORK_SYSTEM_TEST_TIMEOUT 3600)
 
 ADD_EXECUTABLE(TESTcommon
                  ${ALL_FILES_COMMON_TESTS_DIR}
+                 "${SRC_MAIDSAFE}/sharedtest/cached_keys.h"
                  "${SRC_MAIDSAFE}/sharedtest/chunkstoreops.h"
                  "${SRC_MAIDSAFE}/sharedtest/mockkadops.cc"
                  "${SRC_MAIDSAFE}/sharedtest/mockkadops.h"
+                 "${SRC_MAIDSAFE}/sharedtest/testcallback.h"
                  "${SRC_MAIDSAFE}/sharedtest/threadpool.cc"
                  "${SRC_MAIDSAFE}/sharedtest/threadpool.h"
                  "${SRC_MAIDSAFE}/sharedtest/tests_main.cc")
 ADD_EXECUTABLE(TESTclientfilesystem
                  ${ALL_FILES_CLIENT_FILESYSTEM_TESTS_DIR}
+                 "${SRC_MAIDSAFE}/sharedtest/cachepassport.h"
+                 "${SRC_MAIDSAFE}/sharedtest/testcallback.h"
                  "${SRC_MAIDSAFE}/sharedtest/tests_main.cc")
 ADD_EXECUTABLE(TESTclient
                  ${ALL_FILES_CLIENT_TESTS_DIR}
+                 ${NETWORK_TEST_FILES}
                  "${SRC_MAIDSAFE}/sharedtest/cached_keys.h"
                  "${SRC_MAIDSAFE}/sharedtest/cachepassport.h"
                  "${SRC_MAIDSAFE}/sharedtest/mockkadops.cc"
                  "${SRC_MAIDSAFE}/sharedtest/mockkadops.h"
-                 "${SRC_MAIDSAFE}/sharedtest/networktest.cc"
-                 "${SRC_MAIDSAFE}/sharedtest/networktest.h"
+                 "${SRC_MAIDSAFE}/sharedtest/mocksessionsingleton.h"
                  "${SRC_MAIDSAFE}/sharedtest/threadpool.cc"
-                 "${SRC_MAIDSAFE}/sharedtest/threadpool.h"
-                 "${SRC_MAIDSAFE}/sharedtest/tests_main.cc")
+                 "${SRC_MAIDSAFE}/sharedtest/threadpool.h" )
 
 ADD_EXECUTABLE(TESTfuse EXCLUDE_FROM_ALL
                  ${ALL_FILES_FUSE_TESTS_DIR})
 ADD_EXECUTABLE(TESTvault
                  ${ALL_FILES_VAULT_TESTS_DIR}
+                 "${SRC_MAIDSAFE}/sharedtest/cached_keys.h"
                  "${SRC_MAIDSAFE}/sharedtest/chunkstoreops.h"
                  "${SRC_MAIDSAFE}/sharedtest/mockkadops.cc"
                  "${SRC_MAIDSAFE}/sharedtest/mockkadops.h"
@@ -582,20 +640,29 @@ ADD_EXECUTABLE(TESTbufferpackethandler_net
                  "${SRC_MAIDSAFE}/common/tests/testbufferpackethandler.cc")
 ADD_EXECUTABLE(TESTclientcontroller_net
                  ${NETWORK_TEST_FILES}
+                 "${SRC_MAIDSAFE}/sharedtest/mockclientcontroller.h"
+                 "${SRC_MAIDSAFE}/sharedtest/mocksessionsingleton.h"
                  "${SRC_MAIDSAFE}/client/tests/testclientcontroller.cc")
 ADD_EXECUTABLE(TESTclientcontroller_local
                  ${NETWORK_TEST_FILES}
+                 "${SRC_MAIDSAFE}/sharedtest/mockclientcontroller.h"
+                 "${SRC_MAIDSAFE}/sharedtest/mocksessionsingleton.h"
                  "${SRC_MAIDSAFE}/client/tests/testclientcontroller.cc")
 ADD_EXECUTABLE(TESTimconnectionhandler_net
                  ${NETWORK_TEST_FILES}
                  "${SRC_MAIDSAFE}/client/tests/testimconnhandler.cc"
                  "${SRC_MAIDSAFE}/client/tests/testimmessaging.cc")
 ADD_EXECUTABLE(TESTpdvault_net
+                 "${SRC_MAIDSAFE}/sharedtest/localvaults.h"
+                 "${SRC_MAIDSAFE}/sharedtest/mocksessionsingleton.h"
+                 "${SRC_MAIDSAFE}/sharedtest/networktest.h"
+                 "${SRC_MAIDSAFE}/sharedtest/testcallback.h"
                  "${SRC_MAIDSAFE}/vault/tests/testpdvault.cc")
 
 ADD_EXECUTABLE(DEMOclient
                  "${SRC_MAIDSAFE}/client/tests/client_main.cc")
 ADD_EXECUTABLE(DEMOvault
+                 "${SRC_MAIDSAFE}/sharedtest/mocksessionsingleton.h"
                  "${SRC_MAIDSAFE}/vault/tests/vault_main.cc")
 IF(WIN32)
   ADD_EXECUTABLE(vault "${SRC_MAIDSAFE}/vault/win_service.cc")
@@ -632,7 +699,8 @@ IF(UNIX)
   ADD_CUSTOM_TARGET(CleanCoverage COMMAND ${CMAKE_COMMAND} -DSEARCH_DIR=${CMAKE_BINARY_DIR} -P ${${PROJECT_NAME}_ROOT}/build/clean_coverage.cmake)
 ENDIF()
 ADD_CUSTOM_TARGET(AllTestsAndDemos DEPENDS TESTencrypt TESTpassport TESTpki TESTcommon TESTclientfilesystem TESTclient TESTvault TESTfuse TESTauthentication_net
-                    TESTbufferpackethandler_net TESTclientcontroller_net TESTclientcontroller_local TESTimconnectionhandler_net TESTpdvault_net DEMOclient DEMOvault)
+                    TESTbufferpackethandler_net TESTclientcontroller_net TESTclientcontroller_local TESTimconnectionhandler_net TESTpdvault_net DEMOclient DEMOvault
+                    dedup_analyser)
 SET(TEST_EXECUTABLES )
 
 
@@ -644,13 +712,13 @@ SET(BUILD_SHARED_LIBS OFF)
 
 TARGET_LINK_LIBRARIES(PDcommonlib passport ${Boost_FILESYSTEM_LIBRARY})
 TARGET_LINK_LIBRARIES(PDclientfilesystemlib PDcommonlib encrypt pki ${Boost_DATE_TIME_LIBRARY})
-TARGET_LINK_LIBRARIES(PDlsmclientlib PDclientfilesystemlib ${QT_QTCORE_LIBRARY} ${Boost_REGEX_LIBRARY})
-TARGET_LINK_LIBRARIES(PDclientlib PDclientfilesystemlib ${QT_QTCORE_LIBRARY} ${Boost_REGEX_LIBRARY})
-TARGET_LINK_LIBRARIES(PDvaultlib PDcommonlib pki ${QT_QTCORE_LIBRARY} ${Boost_DATE_TIME_LIBRARY})
+TARGET_LINK_LIBRARIES(PDlsmclientlib PDclientfilesystemlib ${QT_LIBRARIES} ${Boost_REGEX_LIBRARY})
+TARGET_LINK_LIBRARIES(PDclientlib PDclientfilesystemlib ${QT_LIBRARIES} ${Boost_REGEX_LIBRARY})
+TARGET_LINK_LIBRARIES(PDvaultlib PDcommonlib pki ${QT_LIBRARIES} ${Boost_DATE_TIME_LIBRARY})
 TARGET_LINK_LIBRARIES(PDfuselib ${Fuse_LIBRARY} ${Boost_SYSTEM_LIBRARY})
-TARGET_LINK_LIBRARIES(lifestuff PDclientlib PDfuselib ${QT_QTMAIN_LIBRARY} ${QT_QTGUI_LIBRARY} ${QT_QTXML_LIBRARY})
-TARGET_LINK_LIBRARIES(lslocal PDlsmclientlib PDfuselib ${QT_QTMAIN_LIBRARY} ${QT_QTGUI_LIBRARY} ${QT_QTXML_LIBRARY})
-TARGET_LINK_LIBRARIES(lslightlocal PDlsmclientlib ${QT_QTMAIN_LIBRARY} ${QT_QTGUI_LIBRARY} ${QT_QTXML_LIBRARY})
+TARGET_LINK_LIBRARIES(lifestuff PDclientlib PDfuselib ${QT_LIBRARIES})
+TARGET_LINK_LIBRARIES(lslocal PDlsmclientlib PDfuselib ${QT_LIBRARIES})
+TARGET_LINK_LIBRARIES(lslightlocal PDlsmclientlib ${QT_LIBRARIES})
 TARGET_LINK_LIBRARIES(TESTcommon PDcommonlib ${Boost_DATE_TIME_LIBRARY} ${Gtest_LIBRARY} ${Gmock_LIBRARY})
 TARGET_LINK_LIBRARIES(TESTclientfilesystem PDclientlib ${Gtest_LIBRARY})
 TARGET_LINK_LIBRARIES(TESTclient PDclientlib PDvaultlib ${Gtest_LIBRARY} ${Gmock_LIBRARY})
@@ -665,7 +733,7 @@ TARGET_LINK_LIBRARIES(TESTpdvault_net PDclientlib PDvaultlib ${Gtest_LIBRARY})
 TARGET_LINK_LIBRARIES(DEMOclient PDclientlib)
 TARGET_LINK_LIBRARIES(DEMOvault PDclientlib PDvaultlib)
 TARGET_LINK_LIBRARIES(vault PDvaultlib)
-
+TARGET_LINK_LIBRARIES(dedup_analyser ${QT_LIBRARIES} maidsafe_dht_LIBRARY)
 
 ###################################################################################################
 # Compiler and linker flags - after all targets declared                                          #
@@ -951,6 +1019,8 @@ IF(NOT ${MAIDSAFE_TEST_TYPE} MATCHES "BEH")
   LIST(FIND EXCLUDED_TESTS STYLE_CHECK TEST_EXCLUDED)
   IF((TEST_EXCLUDED EQUAL -1) AND PYTHONINTERP_FOUND)
     IF(UNIX)
+      SET(STYLE_ALL ${STYLE_CLIENT} ${STYLE_COMMON} ${STYLE_DEDUP_ANALYSER} ${STYLE_FUSE}
+            ${STYLE_VAULT} ${STYLE_ENCRYPT} ${STYLE_PASSPORT} ${STYLE_PKI})
       ADD_TEST(STYLE_CHECK ${${PROJECT_NAME}_ROOT}/build/tools/cpplint.py ${STYLE_ALL})
       SET_PROPERTY(TEST STYLE_CHECK PROPERTY LABELS Functional CodingStyle)
     ELSE()

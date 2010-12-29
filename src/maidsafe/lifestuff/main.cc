@@ -97,6 +97,7 @@ int main(int argc, char *argv[]) {
   // the main application window
   PerpetualData pd;
   pd.hide();
+  pd.showLoginWindow();
 
   // apply style sheet
 
@@ -112,7 +113,7 @@ int main(int argc, char *argv[]) {
   QObject::connect(SystemTrayIcon::instance(), SIGNAL(quit()),
                    &pd,                        SLOT(quit()));
   QObject::connect(SystemTrayIcon::instance(), SIGNAL(open()),
-                   &pd,                        SLOT(show()));
+                   &pd,                        SLOT(onShowWindowRequest()));
   QObject::connect(SystemTrayIcon::instance(), SIGNAL(close()),
                    &pd,                        SLOT(hide()));
 

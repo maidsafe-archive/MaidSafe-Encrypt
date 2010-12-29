@@ -76,22 +76,12 @@ class SystemPacketsTest : public testing::Test {
     packet_types_.push_back(MSID);
     packet_types_.push_back(PD_DIR);
   }
-  bool GetRids(boost::uint32_t *rid1, boost::uint32_t *rid2) {
-    *rid1 = base::RandomUint32();
-    int retries(0), max_retries(3);
-    while (*rid1 == 0 && retries < max_retries) {
-      *rid1 = base::RandomUint32();
-      ++retries;
-    }
+  bool GetRids(std::string *rid1, std::string *rid2) {
+    *rid1 = base::RandomString((base::RandomUint32() % 64) + 64);
     if (!rid2)
-      return (*rid1 != 0U);
-    *rid2 = base::RandomUint32();
-    retries = 0;
-    while ((*rid2 == 0 || *rid1 == *rid2) && retries < max_retries) {
-      *rid2 = base::RandomUint32();
-      ++retries;
-    }
-    return (*rid1 != 0U && *rid2 != 0U && *rid1 != *rid2);
+      return (!rid1->empty());
+    *rid2 = base::RandomString((base::RandomUint32() % 64) + 64);
+    return (!rid1->empty() && !rid2->empty() && *rid1 != *rid2);
   }
   crypto::Crypto crypto_;
   CryptoKeyPairs crypto_key_pairs_;
@@ -159,7 +149,7 @@ testing::AssertionResult Empty(std::tr1::shared_ptr<pki::Packet> packet) {
       return testing::AssertionFailure() << "Packet pin not empty.";
     if (!mid_packet->smid_appendix_.empty())
       return testing::AssertionFailure() << "Packet smid appendix not empty.";
-    if (mid_packet->rid_ != 0)
+    if (!mid_packet->rid_.empty())
       return testing::AssertionFailure() << "Packet rid not 0.";
     if (!mid_packet->encrypted_rid_.empty())
       return testing::AssertionFailure() << "Packet encrypted rid not empty.";
@@ -176,7 +166,7 @@ testing::AssertionResult Empty(std::tr1::shared_ptr<pki::Packet> packet) {
       return testing::AssertionFailure() << "Packet pin not empty.";
     if (!tmid_packet->password_.empty())
       return testing::AssertionFailure() << "Packet password not empty.";
-    if (tmid_packet->rid_ != 0)
+    if (!tmid_packet->rid_.empty())
       return testing::AssertionFailure() << "Packet rid not 0.";
     if (!tmid_packet->plain_text_master_data_.empty())
       return testing::AssertionFailure() << "Packet plain data not empty.";
@@ -361,7 +351,7 @@ struct ExpectedMidContent {
                      const std::string &salt_in,
                      const std::string &secure_password_in,
                      const PacketType &packet_type_in,
-                     const boost::uint32_t &rid_in)
+                     const std::string &rid_in)
     : mid_name(mid_name_in),
       encrypted_rid(encrypted_rid_in),
       username(username_in),
@@ -374,7 +364,7 @@ struct ExpectedMidContent {
   std::string mid_name, encrypted_rid, username, pin, smid_appendix, salt;
   std::string secure_password;
   PacketType packet_type;
-  boost::uint32_t rid;
+  std::string rid;
 };
 
 testing::AssertionResult Equal(
@@ -426,26 +416,23 @@ TEST_F(SystemPacketsTest, BEH_PASSPORT_CreateMid) {
   std::string expected_secure_password =
       crypto_.SecurePassword(kUsername, expected_salt, kPin);
   std::string expected_mid_name =
-      crypto_.Hash(crypto_.Hash(kUsername, "", crypto::STRING_STRING, false) +
-                   crypto_.Hash(kPinStr, "", crypto::STRING_STRING, false), "",
-                   crypto::STRING_STRING, false);
+      crypto_.Hash(kUsername + kPinStr, "", crypto::STRING_STRING, false);
   mid.reset(new MidPacket(kUsername, kPinStr, ""));
   std::tr1::shared_ptr<ExpectedMidContent> expected_mid_content(
       new ExpectedMidContent(expected_mid_name, "", kUsername, kPinStr, "",
-                             expected_salt, expected_secure_password, MID, 0));
+                             expected_salt, expected_secure_password, MID, ""));
   EXPECT_FALSE(Empty(mid));
   EXPECT_TRUE(Equal(expected_mid_content, mid));
 
   // Check SMID with valid inputs
   std::string expected_smid_name =
-      crypto_.Hash(crypto_.Hash(kUsername, "", crypto::STRING_STRING, false) +
-                   crypto_.Hash(kPinStr, "", crypto::STRING_STRING, false) +
-                   kSmidAppendix, "", crypto::STRING_STRING, false);
+      crypto_.Hash(kUsername + kPinStr + kSmidAppendix, "",
+                   crypto::STRING_STRING, false);
   MidPtr smid(new MidPacket(kUsername, kPinStr, kSmidAppendix));
   std::tr1::shared_ptr<ExpectedMidContent> expected_smid_content(
       new ExpectedMidContent(expected_smid_name, "", kUsername, kPinStr,
                              kSmidAppendix, expected_salt,
-                             expected_secure_password, SMID, 0));
+                             expected_secure_password, SMID, ""));
   EXPECT_FALSE(Empty(smid));
   EXPECT_TRUE(Equal(expected_smid_content, smid));
 }
@@ -455,16 +442,16 @@ TEST_F(SystemPacketsTest, BEH_PASSPORT_SetAndDecryptRid) {
   const boost::uint32_t kPin(base::RandomUint32());
   const std::string kPinStr(boost::lexical_cast<std::string>(kPin));
   const std::string kSmidAppendix(base::RandomAlphaNumericString(20));
-  boost::uint32_t rid1, rid2;
+  std::string rid1, rid2;
   ASSERT_TRUE(GetRids(&rid1, &rid2));
-  const boost::uint32_t kRid1(rid1);
-  const boost::uint32_t kRid2(rid2);
+  const std::string kRid1(rid1);
+  const std::string kRid2(rid2);
 
   // Check with invalid input
   MidPtr mid(new MidPacket(kUsername, kPinStr, ""));
   MidPtr smid(new MidPacket(kUsername, kPinStr, kSmidAppendix));
-  mid->SetRid(0);
-  smid->SetRid(0);
+  mid->SetRid("");
+  smid->SetRid("");
   EXPECT_TRUE(Empty(mid));
   EXPECT_TRUE(Empty(smid));
 
@@ -474,9 +461,7 @@ TEST_F(SystemPacketsTest, BEH_PASSPORT_SetAndDecryptRid) {
   std::string expected_secure_password =
       crypto_.SecurePassword(kUsername, expected_salt, kPin);
   std::string expected_mid_name =
-      crypto_.Hash(crypto_.Hash(kUsername, "", crypto::STRING_STRING, false) +
-                   crypto_.Hash(kPinStr, "", crypto::STRING_STRING, false), "",
-                   crypto::STRING_STRING, false);
+      crypto_.Hash(kUsername + kPinStr, "", crypto::STRING_STRING, false);
   std::string expected_encrypted_rid1 =
           crypto_.SymmEncrypt(boost::lexical_cast<std::string>(kRid1), "",
                               crypto::STRING_STRING, expected_secure_password);
@@ -500,7 +485,7 @@ TEST_F(SystemPacketsTest, BEH_PASSPORT_SetAndDecryptRid) {
   EXPECT_TRUE(Equal(expected_mid_content, mid));
 
   // Check MID reset rid with invalid input
-  mid->SetRid(0);
+  mid->SetRid("");
   EXPECT_TRUE(Empty(mid));
 
   // Check MID decrypt valid encrypted second rid
@@ -516,20 +501,10 @@ TEST_F(SystemPacketsTest, BEH_PASSPORT_SetAndDecryptRid) {
   EXPECT_FALSE(Empty(mid));
   EXPECT_TRUE(Equal(expected_mid_content, mid));
 
-  // Check MID decrypt invalid rids
-  EXPECT_EQ(0U, mid->DecryptRid("Invalid"));
-  EXPECT_TRUE(Empty(mid));
-  mid.reset(new MidPacket(kUsername, kPinStr, ""));
-  mid->SetRid(kRid1);
-  EXPECT_FALSE(Empty(mid));
-  EXPECT_EQ(0U, mid->DecryptRid(""));
-  EXPECT_TRUE(Empty(mid));
-
   // Check SMID SetRid with first valid input
   std::string expected_smid_name =
-      crypto_.Hash(crypto_.Hash(kUsername, "", crypto::STRING_STRING, false) +
-                   crypto_.Hash(kPinStr, "", crypto::STRING_STRING, false) +
-                   kSmidAppendix, "", crypto::STRING_STRING, false);
+      crypto_.Hash(kUsername + kPinStr + kSmidAppendix, "",
+                   crypto::STRING_STRING, false);
   smid.reset(new MidPacket(kUsername, kPinStr, kSmidAppendix));
   smid->SetRid(kRid1);
   std::tr1::shared_ptr<ExpectedMidContent> expected_smid_content(
@@ -547,7 +522,7 @@ TEST_F(SystemPacketsTest, BEH_PASSPORT_SetAndDecryptRid) {
   EXPECT_TRUE(Equal(expected_smid_content, smid));
 
   // Check SMID reset rid with invalid input
-  smid->SetRid(0);
+  smid->SetRid("");
   EXPECT_TRUE(Empty(smid));
 
   // Check SMID decrypt valid encrypted second rid
@@ -562,15 +537,6 @@ TEST_F(SystemPacketsTest, BEH_PASSPORT_SetAndDecryptRid) {
   expected_smid_content->rid = kRid1;
   EXPECT_FALSE(Empty(smid));
   EXPECT_TRUE(Equal(expected_smid_content, smid));
-
-  // Check MID decrypt invalid rids
-  EXPECT_EQ(0U, smid->DecryptRid("Invalid"));
-  EXPECT_TRUE(Empty(smid));
-  smid.reset(new MidPacket(kUsername, kPinStr, kSmidAppendix));
-  smid->SetRid(kRid1);
-  EXPECT_FALSE(Empty(smid));
-  EXPECT_EQ(0U, smid->DecryptRid(""));
-  EXPECT_TRUE(Empty(smid));
 }
 
 struct ExpectedTmidContent {
@@ -583,7 +549,7 @@ struct ExpectedTmidContent {
                       const std::string &salt_in,
                       const std::string &secure_password_in,
                       const PacketType &packet_type_in,
-                      const boost::uint32_t &rid_in)
+                      const std::string &rid_in)
     : tmid_name(tmid_name_in),
       encrypted_data(encrypted_data_in),
       username(username_in),
@@ -597,7 +563,7 @@ struct ExpectedTmidContent {
   std::string tmid_name, encrypted_data, username, pin, password, plain_data;
   std::string salt, secure_password;
   PacketType packet_type;
-  boost::uint32_t rid;
+  std::string rid;
 };
 
 testing::AssertionResult Equal(
@@ -634,27 +600,24 @@ TEST_F(SystemPacketsTest, BEH_PASSPORT_CreateTmid) {
   const boost::uint32_t kPin(base::RandomUint32());
   const std::string kPinStr(boost::lexical_cast<std::string>(kPin));
   const std::string kPassword(base::RandomAlphaNumericString(30));
-  boost::uint32_t rid;
+  std::string rid;
   ASSERT_TRUE(GetRids(&rid, NULL));
-  const boost::uint32_t kRid(rid);
-  const std::string kRidStr(boost::lexical_cast<std::string>(kRid));
+  const std::string kRid(rid);
 
   // Check with invalid inputs
-  TmidPtr tmid(new TmidPacket("", "", 0, false, "", ""));
+  TmidPtr tmid(new TmidPacket("", "", "", false, "", ""));
   EXPECT_TRUE(Empty(tmid));
   tmid.reset(new TmidPacket("", kPinStr, kRid, false, "", ""));
   EXPECT_TRUE(Empty(tmid));
   tmid.reset(new TmidPacket(kUsername, "", kRid, false, "", ""));
   EXPECT_TRUE(Empty(tmid));
-  tmid.reset(new TmidPacket(kUsername, kPinStr, 0, false, "", ""));
+  tmid.reset(new TmidPacket(kUsername, kPinStr, "", false, "", ""));
   EXPECT_TRUE(Empty(tmid));
 
   // Check with valid inputs - no password
   std::string expected_tmid_name =
-      crypto_.Hash(crypto_.Hash(kUsername, "", crypto::STRING_STRING, false) +
-                   crypto_.Hash(kPinStr, "", crypto::STRING_STRING, false) +
-                   crypto_.Hash(kRidStr, "", crypto::STRING_STRING, false), "",
-                   crypto::STRING_STRING, false);
+      crypto_.Hash(kUsername + kPinStr + kRid, "", crypto::STRING_STRING,
+                   false);
 
   tmid.reset(new TmidPacket(kUsername, kPinStr, kRid, false, "", ""));
   std::tr1::shared_ptr<ExpectedTmidContent> expected_tmid_content(
@@ -668,10 +631,17 @@ TEST_F(SystemPacketsTest, BEH_PASSPORT_CreateTmid) {
   EXPECT_TRUE(Equal(expected_tmid_content, tmid));
 
   // Check with valid inputs - including password
-  std::string expected_salt = crypto_.Hash(kRidStr + kPassword, "",
+  std::string expected_salt = crypto_.Hash(kRid + kPassword, "",
                                            crypto::STRING_STRING, false);
+  boost::uint32_t random_no_from_rid(0);
+  int a = 1;
+  for (int i = 0; i < 4; ++i) {
+    boost::uint8_t temp(static_cast<boost::uint8_t>(kRid.at(i)));
+    random_no_from_rid += (temp * a);
+    a *= 256;
+  }
   std::string expected_secure_password =
-      crypto_.SecurePassword(kPassword, expected_salt, kRid);
+      crypto_.SecurePassword(kPassword, expected_salt, random_no_from_rid);
   tmid.reset(new TmidPacket(kUsername, kPinStr, kRid, false, kPassword, ""));
   expected_tmid_content->packet_type = TMID;
   expected_tmid_content->password = kPassword;
@@ -685,22 +655,26 @@ TEST_F(SystemPacketsTest, BEH_PASSPORT_SetAndDecryptData) {
   const boost::uint32_t kPin(base::RandomUint32());
   const std::string kPinStr(boost::lexical_cast<std::string>(kPin));
   const std::string kPassword(base::RandomAlphaNumericString(30));
-  boost::uint32_t rid;
+  std::string rid;
   ASSERT_TRUE(GetRids(&rid, NULL));
-  const boost::uint32_t kRid(rid);
-  const std::string kRidStr(boost::lexical_cast<std::string>(kRid));
+  const std::string kRid(rid);
   const std::string kPlainData(base::RandomString(100000));
 
   // Set plain data
   std::string expected_tmid_name =
-      crypto_.Hash(crypto_.Hash(kUsername, "", crypto::STRING_STRING, false) +
-                   crypto_.Hash(kPinStr, "", crypto::STRING_STRING, false) +
-                   crypto_.Hash(kRidStr, "", crypto::STRING_STRING, false), "",
-                   crypto::STRING_STRING, false);
-  std::string expected_salt = crypto_.Hash(kRidStr + kPassword, "",
+      crypto_.Hash(kUsername + kPinStr + kRid, "", crypto::STRING_STRING,
+                   false);
+  std::string expected_salt = crypto_.Hash(kRid + kPassword, "",
                                            crypto::STRING_STRING, false);
+  boost::uint32_t random_no_from_rid(0);
+  int a = 1;
+  for (int i = 0; i < 4; ++i) {
+    boost::uint8_t temp(static_cast<boost::uint8_t>(kRid.at(i)));
+    random_no_from_rid += (temp * a);
+    a *= 256;
+  }
   std::string expected_secure_password =
-      crypto_.SecurePassword(kPassword, expected_salt, kRid);
+      crypto_.SecurePassword(kPassword, expected_salt, random_no_from_rid);
   std::string expected_encrypted_data =
       crypto_.SymmEncrypt(kPlainData, "", crypto::STRING_STRING,
                           expected_secure_password);

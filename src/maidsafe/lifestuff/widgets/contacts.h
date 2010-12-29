@@ -97,6 +97,9 @@ class Contacts : public Panel {
     void customContentsMenu(const QPoint &pos);
     void DoneAddingContact(int result, QString contact);
 
+    void PopulateMailsList();
+    void PopulateIMList();
+
   protected:
     bool eventFilter(QObject *obj, QEvent *ev);
     void changeEvent(QEvent *event);

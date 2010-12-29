@@ -53,6 +53,7 @@ class PDVaultTest;
 
 namespace test {
 class SessionSingletonTest;
+class ClientControllerTest;
 class RunPDClient;
 class DataAtlasHandlerTest;
 class ImHandlerTest;
@@ -98,7 +99,6 @@ struct UserDetails {
                   username(),
                   pin(),
                   password(),
-                  public_username(),
                   session_name(),
                   root_db_key(),
                   self_encrypting(true),
@@ -111,7 +111,7 @@ struct UserDetails {
                   pd() {}
   DefConLevels defconlevel;
   bool da_modified;
-  std::string username, pin, password, public_username, session_name;
+  std::string username, pin, password, session_name;
   std::string root_db_key;
   bool self_encrypting;
   std::set<std::string> authorised_users;
@@ -139,7 +139,6 @@ class SessionSingleton {
   }
   bool ResetSession();
   virtual ~SessionSingleton() {}
-  void Destroy();
 
   ///////////////////////////////
   //// User Details Handling ////
@@ -324,12 +323,11 @@ class SessionSingleton {
                        conversations_(),
                        live_contacts_(),
                        lc_mutex_() {}
-  // Following four mutators should only be called by Authentication once
+  // Following three mutators should only be called by Authentication once
   // associated packets are confirmed as stored.
   bool SetUsername(const std::string &username);
   bool SetPin(const std::string &pin);
   bool SetPassword(const std::string &password);
-  bool SetPublicUsername(const std::string &public_username);
   // Creates ANMAID, MAID, PMID.  Also ANMPID & MPID if public_username not "".
   bool CreateTestPackets(const std::string &public_username);
   std::string Id(const passport::PacketType &packet_type,
@@ -346,6 +344,7 @@ class SessionSingleton {
   friend class ClientUtils;
   friend class MockSessionSingleton;
   friend class test::SessionSingletonTest;
+  friend class test::ClientControllerTest;
   friend class test::RunPDClient;
   friend class vault::test::RunPDVaults;
   friend class vault::test::PDVaultTest;

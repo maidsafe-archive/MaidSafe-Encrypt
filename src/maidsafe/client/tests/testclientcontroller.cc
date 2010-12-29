@@ -37,6 +37,7 @@
 #include "maidsafe/client/clientutils.h"
 #include "maidsafe/client/clientcontroller.h"
 #include "maidsafe/client/sessionsingleton.h"
+#include "maidsafe/sharedtest/mockclientcontroller.h"
 #include "maidsafe/sharedtest/networktest.h"
 
 
@@ -85,7 +86,11 @@ class ClientControllerTest : public testing::Test {
   void TearDown() {
 #ifndef MS_NETWORK_TEST
     cc_->CloseConnection(true);
+    cc_->auth_.tmid_op_status_ = Authentication::kFailed;
+    cc_->auth_.stmid_op_status_ = Authentication::kFailed;
+    cc_->ss_->passport_->StopCreatingKeyPairs();
 #endif
+    cc_->initialised_ = false;
   }
 
   NetworkTest network_test_;
@@ -98,7 +103,7 @@ class ClientControllerTest : public testing::Test {
   ClientControllerTest &operator=(const ClientControllerTest&);
 };
 
-TEST_MS_NET(ClientControllerTest, FUNC, MAID, CC_LoginSequence) {
+TEST_MS_NET(ClientControllerTest, FUNC, MAID, LoginSequence) {
   std::string username("User1");
   std::string pin("1234");
   std::string password("The beagle has landed.");
@@ -153,7 +158,7 @@ TEST_MS_NET(ClientControllerTest, FUNC, MAID, CC_LoginSequence) {
   printf("Can't log in with fake details.\n");
 }
 
-TEST_MS_NET(ClientControllerTest, FUNC, MAID, CC_ChangeDetails) {
+TEST_MS_NET(ClientControllerTest, FUNC, MAID, ChangeDetails) {
   std::string username("User2");
   std::string pin("2345");
   std::string password("The axolotl has landed.");
@@ -169,6 +174,7 @@ TEST_MS_NET(ClientControllerTest, FUNC, MAID, CC_ChangeDetails) {
   ASSERT_EQ(pin, ss_->Pin());
   ASSERT_EQ(password, ss_->Password());
   printf("User created.\n");
+  ASSERT_EQ(0, cc_->SaveSession());
 //  boost::this_thread::sleep(boost::posix_time::seconds(15));
 
   ASSERT_TRUE(cc_->ChangeUsername("juan.smer"));
@@ -253,7 +259,7 @@ TEST_MS_NET(ClientControllerTest, FUNC, MAID, CC_ChangeDetails) {
   printf("Can't log in with old u/p/w.\n");
 }
 
-TEST_MS_NET(ClientControllerTest, FUNC, MAID, CC_CreatePubUsername) {
+TEST_MS_NET(ClientControllerTest, FUNC, MAID, CreatePubUsername) {
   std::string username("User3");
   std::string pin("3456");
   std::string password("The fanjeeta has landed.");
@@ -308,9 +314,8 @@ TEST_MS_NET(ClientControllerTest, FUNC, MAID, CC_CreatePubUsername) {
   printf("Logged out.\n");
 }
 
-/*
-TEST_MS_NET(ClientControllerTest, FUNC, MAID, CC_LeaveNetwork) {
-  std::string username ("User4");
+TEST_MS_NET(ClientControllerTest, FUNC, MAID, LeaveNetwork) {
+  std::string username("User4");
   std::string pin("4567");
   std::string password("The chubster has landed.");
   ss_ = SessionSingleton::getInstance();
@@ -331,7 +336,7 @@ TEST_MS_NET(ClientControllerTest, FUNC, MAID, CC_LeaveNetwork) {
   ASSERT_TRUE(ss_->Username().empty());
   ASSERT_TRUE(ss_->Pin().empty());
   ASSERT_TRUE(ss_->Password().empty());
-  test_cc::Sleep(60));
+  test_cc::Sleep(60);
   printf("Logged out.\n===========\n\n");
 
   ASSERT_EQ(kUserExists, cc_->CheckUserExists(username, pin, kDefCon3));
@@ -344,7 +349,7 @@ TEST_MS_NET(ClientControllerTest, FUNC, MAID, CC_LeaveNetwork) {
   printf("Logged in.\n==========\n\n");
 
   ASSERT_TRUE(cc_->LeaveMaidsafeNetwork());
-  test_cc::Sleep(60));
+  test_cc::Sleep(60);
   printf("Left maidsafe ='(.\n==================\n\n");
 
   ASSERT_EQ(kUserDoesntExist, cc_->CheckUserExists(username, pin, kDefCon3));
@@ -364,9 +369,7 @@ TEST_MS_NET(ClientControllerTest, FUNC, MAID, CC_LeaveNetwork) {
   printf("Logged out.\n===========\n\n");
 }
 
-*/
-
-TEST_MS_NET(ClientControllerTest, FUNC, MAID, CC_BackupFile) {
+TEST_MS_NET(ClientControllerTest, FUNC, MAID, BackupFile) {
   std::string username("User5");
   std::string pin("5678");
   std::string password("The limping dog has landed.");
@@ -434,7 +437,7 @@ TEST_MS_NET(ClientControllerTest, FUNC, MAID, CC_BackupFile) {
   printf("Logged out user.\n");
 }
 
-TEST_MS_NET(ClientControllerTest, FUNC, MAID, CC_SaveSession) {
+TEST_MS_NET(ClientControllerTest, FUNC, MAID, SaveSession) {
   // Create a user
   std::string username("User5andAhalf");
   std::string pin("55678");
@@ -475,18 +478,18 @@ TEST_MS_NET(ClientControllerTest, FUNC, MAID, CC_SaveSession) {
   // Save the session
   ASSERT_EQ(0, cc_->SaveSession());
   printf("\n\n\nSaved the session\n\n\n");
-  boost::this_thread::sleep(boost::posix_time::seconds(60));
-  // Reset the client controller
-  /*
-  printf("Client controller address before: %d\n", cc_);
-  cc_ = NULL;
-  cc_ = ClientController::getInstance();
-  printf("Client controller address after: %d\n", cc_);
-  */
+  boost::this_thread::sleep(boost::posix_time::seconds(10));
   network_test_.chunkstore()->Clear();
   printf("\n\n\nCleared the chunkstore\n\n\n");
   ss_->ResetSession();
+  // Reset the client controller
+  ClientController::single_.reset();
+  boost::once_flag temp = BOOST_ONCE_INIT;
+  ClientController::flag_ = temp;
+  cc_ = ClientController::getInstance();
+  cc_->Init(network_test_.K());
   printf("\n\n\nReset the session\n\n\n");
+
 
   // Remove the local file
   if (fs::exists(full_path))
@@ -530,7 +533,7 @@ TEST_MS_NET(ClientControllerTest, FUNC, MAID, CC_SaveSession) {
       fs::remove(full_path);
 }
 
-TEST_MS_NET(ClientControllerTest, FUNC, MAID, CC_ContactAddition) {
+TEST_MS_NET(ClientControllerTest, FUNC, MAID, ContactAddition) {
   std::string username("User6");
   std::string pin("6789");
   std::string password("The deleted folder has landed.");
@@ -552,43 +555,44 @@ TEST_MS_NET(ClientControllerTest, FUNC, MAID, CC_ContactAddition) {
   ASSERT_EQ(public_username, ss_->PublicUsername());
   printf("Public Username created.\n");
 
-  ASSERT_TRUE(cc_->Logout());
-  ASSERT_TRUE(ss_->Username().empty());
-  ASSERT_TRUE(ss_->Pin().empty());
-  ASSERT_TRUE(ss_->Password().empty());
-  printf("Logged out.\n");
+//  ASSERT_TRUE(cc_->Logout());
+//  ASSERT_TRUE(ss_->Username().empty());
+//  ASSERT_TRUE(ss_->Pin().empty());
+//  ASSERT_TRUE(ss_->Password().empty());
+//  printf("Logged out.\n");
 
+  MockClientController cc1;
   std::string username1("User61");
   std::string pin1("67891");
   std::string password1("The deleted folder has landed.1");
   std::string public_username1("el.mambo.nalga1");
 
-  ASSERT_TRUE(cc_->CreateUser(username1, pin1, password1, vcp_));
-  ASSERT_EQ(username1, ss_->Username());
-  ASSERT_EQ(pin1, ss_->Pin());
-  ASSERT_EQ(password1, ss_->Password());
+  ASSERT_TRUE(cc1.CreateUser(username1, pin1, password1, vcp_));
+  ASSERT_EQ(username1, cc1.ss_->Username());
+  ASSERT_EQ(pin1, cc1.ss_->Pin());
+  ASSERT_EQ(password1, cc1.ss_->Password());
   printf("User1 created.\n");
 
-  ASSERT_TRUE(cc_->CreatePublicUsername(public_username1));
-  ASSERT_EQ(public_username1, ss_->PublicUsername());
+  ASSERT_TRUE(cc1.CreatePublicUsername(public_username1));
+  ASSERT_EQ(public_username1, cc1.ss_->PublicUsername());
   printf("Public Username 1 created.\n");
 
-  ASSERT_EQ(0, cc_->AddContact(public_username));
+  ASSERT_EQ(0, cc1.AddContact(public_username));
   printf("Public Username 1 added Public Username.\n");
 
-  ASSERT_TRUE(cc_->Logout());
-  ASSERT_TRUE(ss_->Username().empty());
-  ASSERT_TRUE(ss_->Pin().empty());
-  ASSERT_TRUE(ss_->Password().empty());
-  printf("Logged out 1.\n");
-
-  ASSERT_EQ(kUserExists, cc_->CheckUserExists(username, pin, kDefCon3));
-  ASSERT_TRUE(cc_->ValidateUser(password));
-  ASSERT_EQ(username, ss_->Username());
-  ASSERT_EQ(pin, ss_->Pin());
-  ASSERT_EQ(password, ss_->Password());
-  ASSERT_EQ(public_username, ss_->PublicUsername());
-  printf("Logged in.\n");
+//  ASSERT_TRUE(cc_->Logout());
+//  ASSERT_TRUE(ss_->Username().empty());
+//  ASSERT_TRUE(ss_->Pin().empty());
+//  ASSERT_TRUE(ss_->Password().empty());
+//  printf("Logged out 1.\n");
+//
+//  ASSERT_EQ(kUserExists, cc_->CheckUserExists(username, pin, kDefCon3));
+//  ASSERT_TRUE(cc_->ValidateUser(password));
+//  ASSERT_EQ(username, ss_->Username());
+//  ASSERT_EQ(pin, ss_->Pin());
+//  ASSERT_EQ(password, ss_->Password());
+//  ASSERT_EQ(public_username, ss_->PublicUsername());
+//  printf("Logged in.\n");
 
   ASSERT_TRUE(cc_->GetMessages());
   std::list<InstantMessage> messages;
@@ -610,23 +614,23 @@ TEST_MS_NET(ClientControllerTest, FUNC, MAID, CC_ContactAddition) {
   ASSERT_FALSE(ss_->GetContactPublicKey(public_username1).empty());
   printf("Public Username confirmed Public Username 1.\n");
 
-  ASSERT_TRUE(cc_->Logout());
-  ASSERT_TRUE(ss_->Username().empty());
-  ASSERT_TRUE(ss_->Pin().empty());
-  ASSERT_TRUE(ss_->Password().empty());
-  printf("Logged out.\n");
+//  ASSERT_TRUE(cc_->Logout());
+//  ASSERT_TRUE(ss_->Username().empty());
+//  ASSERT_TRUE(ss_->Pin().empty());
+//  ASSERT_TRUE(ss_->Password().empty());
+//  printf("Logged out.\n");
+//
+//  ASSERT_EQ(kUserExists, cc_->CheckUserExists(username1, pin1, kDefCon3));
+//  ASSERT_TRUE(cc_->ValidateUser(password1));
+//  ASSERT_EQ(username1, ss_->Username());
+//  ASSERT_EQ(pin1, ss_->Pin());
+//  ASSERT_EQ(password1, ss_->Password());
+//  ASSERT_EQ(public_username1, ss_->PublicUsername());
+//  printf("Logged in 1.\n");
 
-  ASSERT_EQ(kUserExists, cc_->CheckUserExists(username1, pin1, kDefCon3));
-  ASSERT_TRUE(cc_->ValidateUser(password1));
-  ASSERT_EQ(username1, ss_->Username());
-  ASSERT_EQ(pin1, ss_->Pin());
-  ASSERT_EQ(password1, ss_->Password());
-  ASSERT_EQ(public_username1, ss_->PublicUsername());
-  printf("Logged in 1.\n");
-
-  ASSERT_TRUE(cc_->GetMessages());
+  ASSERT_TRUE(cc1.GetMessages());
   messages.clear();
-  ASSERT_EQ(0, cc_->GetInstantMessages(&messages));
+  ASSERT_EQ(0, cc1.GetInstantMessages(&messages));
   ASSERT_EQ(size_t(1), messages.size());
   InstantMessage im1 = messages.front();
   ASSERT_TRUE(im1.has_contact_notification());
@@ -638,27 +642,27 @@ TEST_MS_NET(ClientControllerTest, FUNC, MAID, CC_ContactAddition) {
   ContactInfo ci1;
   if (cn1.has_contact())
     ci1 = cn1.contact();
-  ASSERT_EQ(0, cc_->HandleAddContactResponse(ci1, im1.sender()));
+  ASSERT_EQ(0, cc1.HandleAddContactResponse(ci1, im1.sender()));
   printf("Public Username 1 received Public Username confirmation.\n");
 
   std::string text_msg("The arctic trails have their secret tales");
   std::vector<std::string> contact_names;
   contact_names.push_back(public_username);
-  ASSERT_EQ(0, cc_->SendInstantMessage(text_msg, contact_names, ""));
-  printf("Public Username 1 sent txt message  to Public Username.\n");
+  ASSERT_EQ(0, cc1.SendInstantMessage(text_msg, contact_names, ""));
+  printf("Public Username 1 sent txt message to Public Username.\n");
 
-  ASSERT_TRUE(cc_->Logout());
-  ASSERT_TRUE(ss_->Username().empty());
-  ASSERT_TRUE(ss_->Pin().empty());
-  ASSERT_TRUE(ss_->Password().empty());
-  printf("Logged out 1.\n");
-
-  ASSERT_EQ(kUserExists, cc_->CheckUserExists(username, pin, kDefCon3));
-  ASSERT_TRUE(cc_->ValidateUser(password));
-  ASSERT_EQ(username, ss_->Username());
-  ASSERT_EQ(pin, ss_->Pin());
-  ASSERT_EQ(password, ss_->Password());
-  ASSERT_EQ(public_username, ss_->PublicUsername());
+//  ASSERT_TRUE(cc_->Logout());
+//  ASSERT_TRUE(ss_->Username().empty());
+//  ASSERT_TRUE(ss_->Pin().empty());
+//  ASSERT_TRUE(ss_->Password().empty());
+//  printf("Logged out 1.\n");
+//
+//  ASSERT_EQ(kUserExists, cc_->CheckUserExists(username, pin, kDefCon3));
+//  ASSERT_TRUE(cc_->ValidateUser(password));
+//  ASSERT_EQ(username, ss_->Username());
+//  ASSERT_EQ(pin, ss_->Pin());
+//  ASSERT_EQ(password, ss_->Password());
+//  ASSERT_EQ(public_username, ss_->PublicUsername());
 
   ASSERT_TRUE(cc_->GetMessages());
   messages.clear();
@@ -679,7 +683,7 @@ TEST_MS_NET(ClientControllerTest, FUNC, MAID, CC_ContactAddition) {
 }
 
 /*
-TEST_MS_NET(ClientControllerTest, FUNC, MAID, CC_Shares) {
+TEST_MS_NET(ClientControllerTest, FUNC, MAID, Shares) {
   ss_ = SessionSingleton::getInstance();
   ASSERT_TRUE(ss_->Username().empty());
   ASSERT_TRUE(ss_->Pin().empty());
@@ -771,7 +775,7 @@ TEST_MS_NET(ClientControllerTest, FUNC, MAID, CC_Shares) {
 }
 */
 
-TEST_MS_NET(ClientControllerTest, FUNC, MAID, CC_FuseFunctions) {
+TEST_MS_NET(ClientControllerTest, FUNC, MAID, FuseFunctions) {
   std::string username("User7");
   std::string pin("7890");
   std::string password("The pint of lager has landed on the floor.");
@@ -926,7 +930,7 @@ TEST_MS_NET(ClientControllerTest, FUNC, MAID, CC_FuseFunctions) {
   printf("Logged out user.\n");
 }
 
-TEST_MS_NET(ClientControllerTest, BEH, MAID, CC_HandleMessages) {
+TEST_MS_NET(ClientControllerTest, BEH, MAID, HandleMessages) {
   int total_msgs(5);
   boost::uint32_t now(base::GetEpochTime());
   std::list<ValidatedBufferPacketMessage> valid_messages;
@@ -950,7 +954,7 @@ TEST_MS_NET(ClientControllerTest, BEH, MAID, CC_HandleMessages) {
   ASSERT_EQ(size_t(1), cc_->instant_messages_.size());
 }
 
-TEST_MS_NET(ClientControllerTest, FUNC, MAID, CC_ClearStaleMessages) {
+TEST_MS_NET(ClientControllerTest, FUNC, MAID, ClearStaleMessages) {
   size_t total_msgs(5);
   boost::thread thr(&ClientController::ClearStaleMessages, cc_);
   boost::uint32_t now(base::GetEpochTime());

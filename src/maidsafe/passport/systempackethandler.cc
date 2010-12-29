@@ -198,7 +198,8 @@ bool SystemPacketHandler::IsConfirmed(SystemPacketMap::iterator it) {
   return (it != packets_.end() && !(*it).second.pending && (*it).second.stored);
 }
 
-std::string SystemPacketHandler::SerialiseKeyring() {
+std::string SystemPacketHandler::SerialiseKeyring(
+    const std::string &public_name) {
   Keyring keyring;
   boost::mutex::scoped_lock lock(mutex_);
   SystemPacketMap::iterator it = packets_.begin();
@@ -209,10 +210,13 @@ std::string SystemPacketHandler::SerialiseKeyring() {
     }
     ++it;
   }
+  if (!public_name.empty())
+    keyring.set_public_name(public_name);
   return keyring.SerializeAsString();
 }
 
-int SystemPacketHandler::ParseKeyring(const std::string &serialised_keyring) {
+int SystemPacketHandler::ParseKeyring(const std::string &serialised_keyring,
+                                      std::string *public_name) {
   Keyring keyring;
   if (serialised_keyring.empty() ||
       !keyring.ParseFromString(serialised_keyring)) {
@@ -238,6 +242,8 @@ int SystemPacketHandler::ParseKeyring(const std::string &serialised_keyring) {
 #endif
     success = success && result.second;
   }
+  if (success && public_name)
+    *public_name = keyring.public_name();
   return success ? kSuccess : kKeyringNotEmpty;
 }
 

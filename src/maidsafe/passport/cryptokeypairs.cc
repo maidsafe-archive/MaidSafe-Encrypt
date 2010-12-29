@@ -45,23 +45,10 @@ CryptoKeyPairs::CryptoKeyPairs(const boost::uint16_t &rsa_key_size,
       keys_cond_(),
       req_cond_(),
       started_(false),
-      destroying_this_(false) {}
+      stopping_(false) {}
 
 CryptoKeyPairs::~CryptoKeyPairs() {
-  destroying_this_ = true;
-  std::vector< std::tr1::shared_ptr<boost::thread> >::iterator it;
-  for (it = thrds_.begin(); it != thrds_.end(); ++it) {
-    if (*it) {
-      (*it)->join();
-    }
-  }
-  // waiting for pending requests to exit
-  {
-    boost::mutex::scoped_lock lock(req_mutex_);
-    while (pending_requests_ > 0) {
-      req_cond_.timed_wait(lock, boost::posix_time::seconds(10));
-    }
-  }
+  Stop();
 }
 
 bool CryptoKeyPairs::StartToCreateKeyPairs(
@@ -71,6 +58,7 @@ bool CryptoKeyPairs::StartToCreateKeyPairs(
     if (started_)
       return false;
     started_ = true;
+    stopping_ = false;
   }
   keypairs_todo_ = no_of_keypairs;
   keypairs_done_ = keypairs_.size();
@@ -96,7 +84,7 @@ void CryptoKeyPairs::CreateKeyPair() {
   boost::this_thread::at_thread_exit(
       std::tr1::bind(&CryptoKeyPairs::FinishedCreating, this));
   bool work_todo = true;
-  while (work_todo && !destroying_this_) {
+  while (work_todo && !stopping_) {
     crypto::RsaKeyPair rsakp;
     rsakp.GenerateKeys(kRsaKeySize_);
     {
@@ -161,12 +149,29 @@ bool CryptoKeyPairs::GetKeyPair(crypto::RsaKeyPair *keypair) {
     {
       boost::mutex::scoped_lock lock(req_mutex_);
       --pending_requests_;
-      if (destroying_this_) {
+      if (stopping_) {
         req_cond_.notify_one();
       }
     }
   }
   return result;
+}
+
+void CryptoKeyPairs::Stop() {
+  stopping_ = true;
+  std::vector< std::tr1::shared_ptr<boost::thread> >::iterator it;
+  for (it = thrds_.begin(); it != thrds_.end(); ++it) {
+    if (*it) {
+      (*it)->join();
+    }
+  }
+  // waiting for pending requests to exit
+  {
+    boost::mutex::scoped_lock lock(req_mutex_);
+    while (pending_requests_ > 0) {
+      req_cond_.timed_wait(lock, boost::posix_time::seconds(10));
+    }
+  }
 }
 
 }  // namespace passport

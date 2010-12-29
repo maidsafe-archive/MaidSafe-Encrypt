@@ -32,7 +32,6 @@
 #include "maidsafe/client/localstoremanager.h"
 #include "maidsafe/client/sessionsingleton.h"
 #include "maidsafe/client/filesystem/dataatlashandler.h"
-#include "maidsafe/encrypt/datamap.pb.h"
 #include "maidsafe/sharedtest/testcallback.h"
 #include "maidsafe/sharedtest/networktest.h"
 
@@ -51,6 +50,7 @@ class AuthenticationTest : public testing::Test {
                          username_("user"),
                          pin_("1234"),
                          password_("password1"),
+                         ser_dm_(base::RandomString(10000)),
                          test_keys_() {}
  protected:
   void SetUp() {
@@ -60,17 +60,44 @@ class AuthenticationTest : public testing::Test {
     ss_ = SessionSingleton::getInstance();
     ss_->ResetSession();
   }
-  void TearDown() {
-    ss_->Destroy();
+  void TearDown() {}
+  int GetMasterDataMap(std::string *ser_dm_login) {
+    boost::shared_ptr<boost::mutex> login_mutex(new boost::mutex);
+    boost::shared_ptr<boost::condition_variable> login_cond_var(
+        new boost::condition_variable);
+    boost::shared_ptr<int> result(new int(kPendingResult));
+    boost::shared_ptr<std::string> serialised_master_datamap(new std::string);
+    boost::shared_ptr<std::string> surrogate_serialised_master_datamap(
+        new std::string);
+    boost::thread(&Authentication::GetMasterDataMap, &authentication_,
+        password_, login_mutex, login_cond_var, result,
+        serialised_master_datamap, surrogate_serialised_master_datamap);
+    try {
+      boost::mutex::scoped_lock lock(*login_mutex);
+      while (*result == kPendingResult)
+        login_cond_var->wait(lock);
+    }
+    catch(const std::exception &e) {
+      printf("GetMasterDataMap: %s\n", e.what());
+      return kPasswordFailure;
+    }
+
+    if (!serialised_master_datamap->empty()) {
+      *ser_dm_login = *serialised_master_datamap;
+    } else if (!surrogate_serialised_master_datamap->empty()) {
+      *ser_dm_login = *surrogate_serialised_master_datamap;
+    } else {
+      ser_dm_login->clear();
+      return kPasswordFailure;
+    }
+    return kSuccess;
   }
 
   NetworkTest network_test_;
   SessionSingleton *ss_;
   boost::shared_ptr<TestStoreManager> sm_;
   Authentication authentication_;
-  std::string username_;
-  std::string pin_;
-  std::string password_;
+  std::string username_, pin_, password_, ser_dm_;
   std::vector<crypto::RsaKeyPair> test_keys_;
  private:
   explicit AuthenticationTest(const AuthenticationTest&);
@@ -79,213 +106,86 @@ class AuthenticationTest : public testing::Test {
 
 TEST_MS_NET(AuthenticationTest, FUNC, MAID, CreateUserSysPackets) {
   username_ += "01";
-  int result = authentication_.GetUserInfo(username_, pin_);
-  EXPECT_EQ(kUserDoesntExist, result) << "User already exists";
-  result = authentication_.CreateUserSysPackets(username_, pin_);
-  ASSERT_EQ(kSuccess, result) << "Unable to register user";
+  EXPECT_EQ(kUserDoesntExist, authentication_.GetUserInfo(username_, pin_));
+  ASSERT_EQ(kSuccess, authentication_.CreateUserSysPackets(username_, pin_));
 }
 
 TEST_MS_NET(AuthenticationTest, FUNC, MAID, GoodLogin) {
   username_ += "02";
-  int result = authentication_.GetUserInfo(username_, pin_);
-  EXPECT_EQ(kUserDoesntExist, result) << "User already exists";
-  result = authentication_.CreateUserSysPackets(username_, pin_);
-  ASSERT_EQ(kSuccess, result) << "Unable to register user";
+  EXPECT_EQ(kUserDoesntExist, authentication_.GetUserInfo(username_, pin_));
+  ASSERT_EQ(kSuccess, authentication_.CreateUserSysPackets(username_, pin_));
+  ASSERT_EQ(kSuccess, authentication_.CreateTmidPacket(username_, pin_,
+                                                       password_, ser_dm_));
 
-  encrypt::DataMap dm;
-  dm.set_file_hash("filehash");
-  dm.add_chunk_name("chunk1");
-  dm.add_chunk_name("chunk2");
-  dm.add_chunk_name("chunk3");
-  dm.add_encrypted_chunk_name("enc_chunk1");
-  dm.add_encrypted_chunk_name("enc_chunk2");
-  dm.add_encrypted_chunk_name("enc_chunk3");
-  dm.add_chunk_size(200);
-  dm.add_chunk_size(210);
-  dm.add_chunk_size(205);
-  dm.set_compression_on(false);
-  std::string ser_dm = dm.SerializeAsString();
-  result = authentication_.CreateTmidPacket(username_, pin_, password_, ser_dm);
-  ASSERT_EQ(kSuccess, result) << "Unable to register user";
-
-  result = authentication_.GetUserInfo(username_, pin_);
-  ASSERT_EQ(kUserExists, result) << "User does not exist";
+  ASSERT_EQ(kUserExists, authentication_.GetUserInfo(username_, pin_));
   std::string ser_dm_login;
-  result = authentication_.GetUserData(password_, &ser_dm_login);
-  ASSERT_EQ(kSuccess, result) << "Unable to get registered user's data";
-  ASSERT_EQ(ser_dm, ser_dm_login) <<
-            "Serialised DA recovered from login empty string";
-  dm.Clear();
-  ASSERT_TRUE(dm.ParseFromString(ser_dm_login)) <<
-              "Data Atlas hasn't the correct format";
-  ASSERT_EQ(ser_dm, ser_dm_login) <<
-            "DA recoverd from login different from DA stored in registration";
-  ASSERT_EQ(username_, ss_->Username()) << "Saved username_ doesn't correspond";
-  ASSERT_EQ(pin_, ss_->Pin()) << "Saved pin_ doesn't correspond";
-  ASSERT_EQ(password_, ss_->Password()) << "Saved password_ doesn't correspond";
+  ASSERT_EQ(kSuccess, GetMasterDataMap(&ser_dm_login));
+  ASSERT_EQ(ser_dm_, ser_dm_login);
+  ASSERT_EQ(username_, ss_->Username());
+  ASSERT_EQ(pin_, ss_->Pin());
+  ASSERT_EQ(password_, ss_->Password());
 
-  result = authentication_.SaveSession(ser_dm);
-  ASSERT_EQ(kSuccess, result);
-  result = authentication_.GetUserInfo(username_, pin_);
-  ASSERT_EQ(kUserExists, result) << "User does not exist";
+  ASSERT_EQ(kSuccess, authentication_.SaveSession(ser_dm_));
+  ASSERT_EQ(kUserExists, authentication_.GetUserInfo(username_, pin_));
   ser_dm_login.clear();
-  result = authentication_.GetUserData(password_, &ser_dm_login);
-  ASSERT_EQ(kSuccess, result) << "Unable to get registered user's data";
-  ASSERT_EQ(ser_dm, ser_dm_login) <<
-            "Serialised DA recovered from login empty string";
-  dm.Clear();
-  ASSERT_TRUE(dm.ParseFromString(ser_dm_login)) <<
-              "Data Atlas hasn't the correct format";
-  ASSERT_EQ(ser_dm, ser_dm_login) <<
-            "DA recoverd from login different from DA stored in registration";
-  ASSERT_EQ(username_, ss_->Username()) << "Saved username_ doesn't correspond";
-  ASSERT_EQ(pin_, ss_->Pin()) << "Saved pin_ doesn't correspond";
+  ASSERT_EQ(kSuccess, GetMasterDataMap(&ser_dm_login));
+  ASSERT_EQ(ser_dm_, ser_dm_login);
+  ASSERT_EQ(username_, ss_->Username());
+  ASSERT_EQ(pin_, ss_->Pin());
 }
 
 TEST_MS_NET(AuthenticationTest, FUNC, MAID, LoginNoUser) {
   username_ += "03";
-  std::string ser_dm, ser_dm_login;
-  int result = authentication_.GetUserInfo(username_, pin_);
-  EXPECT_EQ(kUserDoesntExist, result) << "User already exists";
-  result = authentication_.CreateUserSysPackets(username_, pin_);
-  ASSERT_EQ(kSuccess, result) << "Unable to register user";
-  encrypt::DataMap dm;
-  dm.set_file_hash("filehash");
-  dm.add_chunk_name("chunk1");
-  dm.add_chunk_name("chunk2");
-  dm.add_chunk_name("chunk3");
-  dm.add_encrypted_chunk_name("enc_chunk1");
-  dm.add_encrypted_chunk_name("enc_chunk2");
-  dm.add_encrypted_chunk_name("enc_chunk3");
-  dm.add_chunk_size(200);
-  dm.add_chunk_size(210);
-  dm.add_chunk_size(205);
-  dm.set_compression_on(false);
-  ser_dm = dm.SerializeAsString();
-  result = authentication_.CreateTmidPacket(username_, pin_, password_, ser_dm);
-  ASSERT_EQ(kSuccess, result) << "Unable to register user";
-  result = authentication_.GetUserInfo(username_, pin_);
-  ASSERT_EQ(kUserExists, result) << "User does not exist";
-  result = authentication_.GetUserData("password_tonto", &ser_dm_login);
-  ASSERT_EQ(kPasswordFailure, result);
+  EXPECT_EQ(kUserDoesntExist, authentication_.GetUserInfo(username_, pin_));
+  ASSERT_EQ(kSuccess, authentication_.CreateUserSysPackets(username_, pin_));
+  ASSERT_EQ(kSuccess, authentication_.CreateTmidPacket(username_, pin_,
+                                                       password_, ser_dm_));
+  ASSERT_EQ(kUserExists, authentication_.GetUserInfo(username_, pin_));
+  std::string ser_dm_login;
+  password_ = "password_tonto";
+  ASSERT_EQ(kSuccess, GetMasterDataMap(&ser_dm_login));
+  ASSERT_NE(ser_dm_, ser_dm_login);
 }
 
 TEST_MS_NET(AuthenticationTest, FUNC, MAID, RegisterUserOnce) {
   username_ += "04";
-  DataAtlas data_atlas;
-  int result = authentication_.GetUserInfo(username_, pin_);
-  EXPECT_EQ(kUserDoesntExist, result) << "User already exists";
-  result = authentication_.CreateUserSysPackets(username_, pin_);
-  ASSERT_EQ(kSuccess, result) << "Unable to register user";
-  encrypt::DataMap dm;
-  dm.set_file_hash("filehash");
-  dm.add_chunk_name("chunk1");
-  dm.add_chunk_name("chunk2");
-  dm.add_chunk_name("chunk3");
-  dm.add_encrypted_chunk_name("enc_chunk1");
-  dm.add_encrypted_chunk_name("enc_chunk2");
-  dm.add_encrypted_chunk_name("enc_chunk3");
-  dm.add_chunk_size(200);
-  dm.add_chunk_size(210);
-  dm.add_chunk_size(205);
-  dm.set_compression_on(false);
-  std::string ser_dm = dm.SerializeAsString();
-  result = authentication_.CreateTmidPacket(username_, pin_, password_, ser_dm);
-  ASSERT_EQ(kSuccess, result) << "Unable to register user";
-  ASSERT_EQ(username_, ss_->Username()) << "Saved username_ doesn't correspond";
-  ASSERT_EQ(pin_, ss_->Pin()) << "Saved pin_ doesn't correspond";
-  boost::this_thread::sleep(boost::posix_time::milliseconds(100));
-  ASSERT_EQ(password_, ss_->Password()) << "Saved password_ doesn't correspond";
+  EXPECT_EQ(kUserDoesntExist, authentication_.GetUserInfo(username_, pin_));
+  ASSERT_EQ(kSuccess, authentication_.CreateUserSysPackets(username_, pin_));
+  ASSERT_EQ(kSuccess, authentication_.CreateTmidPacket(username_, pin_,
+                                                       password_, ser_dm_));
+  ASSERT_EQ(username_, ss_->Username());
+  ASSERT_EQ(pin_, ss_->Pin());
+//  boost::this_thread::sleep(boost::posix_time::milliseconds(100));
+  ASSERT_EQ(password_, ss_->Password());
 }
 
 TEST_MS_NET(AuthenticationTest, FUNC, MAID, RegisterUserTwice) {
   username_ += "05";
-  int result = authentication_.GetUserInfo(username_, pin_);
-  EXPECT_EQ(kUserDoesntExist, result) << "User already exists";
-  result = authentication_.CreateUserSysPackets(username_, pin_);
-  ASSERT_EQ(kSuccess, result) << "Unable to register user";
-
-  encrypt::DataMap dm;
-  dm.set_file_hash("filehash");
-  dm.add_chunk_name("chunk1");
-  dm.add_chunk_name("chunk2");
-  dm.add_chunk_name("chunk3");
-  dm.add_encrypted_chunk_name("enc_chunk1");
-  dm.add_encrypted_chunk_name("enc_chunk2");
-  dm.add_encrypted_chunk_name("enc_chunk3");
-  dm.add_chunk_size(200);
-  dm.add_chunk_size(210);
-  dm.add_chunk_size(205);
-  dm.set_compression_on(false);
-  std::string ser_dm = dm.SerializeAsString();
-  result = authentication_.CreateTmidPacket(username_, pin_, password_, ser_dm);
-  ASSERT_EQ(kSuccess, result) << "Unable to register user";
-
-  //  User registered twice.
+  EXPECT_EQ(kUserDoesntExist, authentication_.GetUserInfo(username_, pin_));
+  ASSERT_EQ(kSuccess, authentication_.CreateUserSysPackets(username_, pin_));
+  ASSERT_EQ(kSuccess, authentication_.CreateTmidPacket(username_, pin_,
+                                                       password_, ser_dm_));
   ss_->ResetSession();
-  result = authentication_.GetUserInfo(username_, pin_);
-  ASSERT_EQ(kUserExists, result) << "The same user was registered twice";
+  ASSERT_EQ(kUserExists, authentication_.GetUserInfo(username_, pin_));
 }
 
 TEST_MS_NET(AuthenticationTest, FUNC, MAID, RepeatedSaveSessionBlocking) {
   username_ += "06";
-  int result = authentication_.GetUserInfo(username_, pin_);
-  EXPECT_EQ(kUserDoesntExist, result) << "User already exists";
-  result = authentication_.CreateUserSysPackets(username_, pin_);
-  ASSERT_EQ(kSuccess, result) << "Unable to register user";
-
-  encrypt::DataMap dm;
-  dm.set_file_hash("filehash");
-  dm.add_chunk_name("chunk1");
-  dm.add_chunk_name("chunk2");
-  dm.add_chunk_name("chunk3");
-  dm.add_encrypted_chunk_name("enc_chunk1");
-  dm.add_encrypted_chunk_name("enc_chunk2");
-  dm.add_encrypted_chunk_name("enc_chunk3");
-  dm.add_chunk_size(200);
-  dm.add_chunk_size(210);
-  dm.add_chunk_size(205);
-  dm.set_compression_on(false);
-  std::string ser_dm = dm.SerializeAsString();
-  result = authentication_.CreateTmidPacket(username_, pin_, password_, ser_dm);
-  ASSERT_EQ(kSuccess, result) << "Unable to register user";
+  EXPECT_EQ(kUserDoesntExist, authentication_.GetUserInfo(username_, pin_));
+  ASSERT_EQ(kSuccess, authentication_.CreateUserSysPackets(username_, pin_));
+  ASSERT_EQ(kSuccess, authentication_.CreateTmidPacket(username_, pin_,
+                                                       password_, ser_dm_));
   std::string original_tmidname;
   ss_->GetKey(passport::TMID, &original_tmidname, NULL, NULL, NULL);
   EXPECT_FALSE(original_tmidname.empty());
 
   // store current mid, smid and tmid details to check later whether they remain
   // on the network
-  dm.Clear();
-  dm.set_file_hash("filehash1");
-  dm.add_chunk_name("chunk11");
-  dm.add_chunk_name("chunk21");
-  dm.add_chunk_name("chunk31");
-  dm.add_encrypted_chunk_name("enc_chunk11");
-  dm.add_encrypted_chunk_name("enc_chunk21");
-  dm.add_encrypted_chunk_name("enc_chunk31");
-  dm.add_chunk_size(2001);
-  dm.add_chunk_size(2101);
-  dm.add_chunk_size(2051);
-  dm.set_compression_on(false);
-  ser_dm = dm.SerializeAsString();
-  result = authentication_.SaveSession(ser_dm);
-  ASSERT_EQ(kSuccess, result) << "Can't save session 1";
+  ser_dm_ = base::RandomString(1000);
+  ASSERT_EQ(kSuccess, authentication_.SaveSession(ser_dm_));
 
-  dm.Clear();
-  dm.set_file_hash("filehash2");
-  dm.add_chunk_name("chunk12");
-  dm.add_chunk_name("chunk22");
-  dm.add_chunk_name("chunk32");
-  dm.add_encrypted_chunk_name("enc_chunk12");
-  dm.add_encrypted_chunk_name("enc_chunk22");
-  dm.add_encrypted_chunk_name("enc_chunk32");
-  dm.add_chunk_size(2002);
-  dm.add_chunk_size(2102);
-  dm.add_chunk_size(2052);
-  dm.set_compression_on(false);
-  ser_dm = dm.SerializeAsString();
-  result = authentication_.SaveSession(ser_dm);
-  ASSERT_EQ(kSuccess, result) << "Can't save session 2";
+  ser_dm_ = base::RandomString(1000);
+  ASSERT_EQ(kSuccess, authentication_.SaveSession(ser_dm_));
   std::string tmidname, stmidname;
   ss_->GetKey(passport::TMID, &tmidname, NULL, NULL, NULL);
   ss_->GetKey(passport::STMID, &stmidname, NULL, NULL, NULL);
@@ -297,116 +197,51 @@ TEST_MS_NET(AuthenticationTest, FUNC, MAID, RepeatedSaveSessionBlocking) {
 
 TEST_MS_NET(AuthenticationTest, FUNC, MAID, RepeatedSaveSessionCallbacks) {
   username_ += "07";
-  int result = authentication_.GetUserInfo(username_, pin_);
-  EXPECT_EQ(kUserDoesntExist, result) << "User already exists";
-  result = authentication_.CreateUserSysPackets(username_, pin_);
-  ASSERT_EQ(kSuccess, result) << "Unable to register user";
-
-  encrypt::DataMap dm;
-  dm.set_file_hash("filehash");
-  dm.add_chunk_name("chunk1");
-  dm.add_chunk_name("chunk2");
-  dm.add_chunk_name("chunk3");
-  dm.add_encrypted_chunk_name("enc_chunk1");
-  dm.add_encrypted_chunk_name("enc_chunk2");
-  dm.add_encrypted_chunk_name("enc_chunk3");
-  dm.add_chunk_size(200);
-  dm.add_chunk_size(210);
-  dm.add_chunk_size(205);
-  dm.set_compression_on(false);
-  std::string ser_dm = dm.SerializeAsString();
-  result = authentication_.CreateTmidPacket(username_, pin_, password_, ser_dm);
-  ASSERT_EQ(kSuccess, result) << "Unable to register user";
+  EXPECT_EQ(kUserDoesntExist, authentication_.GetUserInfo(username_, pin_));
+  ASSERT_EQ(kSuccess, authentication_.CreateUserSysPackets(username_, pin_));
+  ASSERT_EQ(kSuccess, authentication_.CreateTmidPacket(username_, pin_,
+                                                       password_, ser_dm_));
   std::string original_tmidname;
   ss_->GetKey(passport::TMID, &original_tmidname, NULL, NULL, NULL);
   EXPECT_FALSE(original_tmidname.empty());
 
   // store current mid, smid and tmid details to check later whether they remain
   // on the network
-  dm.Clear();
-  dm.set_file_hash("filehash1");
-  dm.add_chunk_name("chunk11");
-  dm.add_chunk_name("chunk21");
-  dm.add_chunk_name("chunk31");
-  dm.add_encrypted_chunk_name("enc_chunk11");
-  dm.add_encrypted_chunk_name("enc_chunk21");
-  dm.add_encrypted_chunk_name("enc_chunk31");
-  dm.add_chunk_size(2001);
-  dm.add_chunk_size(2101);
-  dm.add_chunk_size(2051);
-  dm.set_compression_on(false);
-  ser_dm = dm.SerializeAsString();
+  ser_dm_ = base::RandomString(1000);
   CallbackObject cb;
-  authentication_.SaveSession(ser_dm, boost::bind(
+  authentication_.SaveSession(ser_dm_, boost::bind(
       &CallbackObject::ReturnCodeCallback, &cb, _1));
-  ASSERT_EQ(kSuccess, cb.WaitForReturnCodeResult()) << "Can't save session 1";
+  ASSERT_EQ(kSuccess, cb.WaitForReturnCodeResult());
 
-  dm.Clear();
-  dm.set_file_hash("filehash2");
-  dm.add_chunk_name("chunk12");
-  dm.add_chunk_name("chunk22");
-  dm.add_chunk_name("chunk32");
-  dm.add_encrypted_chunk_name("enc_chunk12");
-  dm.add_encrypted_chunk_name("enc_chunk22");
-  dm.add_encrypted_chunk_name("enc_chunk32");
-  dm.add_chunk_size(2002);
-  dm.add_chunk_size(2102);
-  dm.add_chunk_size(2052);
-  dm.set_compression_on(false);
-  ser_dm = dm.SerializeAsString();
+  ser_dm_ = base::RandomString(1000);
   cb.Reset();
-  authentication_.SaveSession(ser_dm, boost::bind(
+  authentication_.SaveSession(ser_dm_, boost::bind(
       &CallbackObject::ReturnCodeCallback, &cb, _1));
-  ASSERT_EQ(kSuccess, cb.WaitForReturnCodeResult()) << "Can't save session 2";
+  ASSERT_EQ(kSuccess, cb.WaitForReturnCodeResult());
   EXPECT_TRUE(sm_->KeyUnique(original_tmidname, false));
 }
 
 TEST_MS_NET(AuthenticationTest, FUNC, MAID, ChangeUsername) {
   username_ += "08";
-  int result = authentication_.GetUserInfo(username_, pin_);
-  EXPECT_EQ(kUserDoesntExist, result) << "User already exists";
-  result = authentication_.CreateUserSysPackets(username_, pin_);
-  ASSERT_EQ(kSuccess, result) << "Unable to register user";
-
-  encrypt::DataMap dm;
-  dm.set_file_hash("filehash");
-  dm.add_chunk_name("chunk1");
-  dm.add_chunk_name("chunk2");
-  dm.add_chunk_name("chunk3");
-  dm.add_encrypted_chunk_name("enc_chunk1");
-  dm.add_encrypted_chunk_name("enc_chunk2");
-  dm.add_encrypted_chunk_name("enc_chunk3");
-  dm.add_chunk_size(200);
-  dm.add_chunk_size(210);
-  dm.add_chunk_size(205);
-  dm.set_compression_on(false);
-  std::string ser_dm = dm.SerializeAsString();
-  result = authentication_.CreateTmidPacket(username_, pin_, password_, ser_dm);
-  ASSERT_EQ(kSuccess, result) << "Unable to register user";
-
+  EXPECT_EQ(kUserDoesntExist, authentication_.GetUserInfo(username_, pin_));
+  ASSERT_EQ(kSuccess, authentication_.CreateUserSysPackets(username_, pin_));
+  ASSERT_EQ(kSuccess, authentication_.CreateTmidPacket(username_, pin_,
+                                                       password_, ser_dm_));
   // Save the session to create different TMIDs for MID and SMID
-  result = authentication_.SaveSession(ser_dm);
-  ASSERT_EQ(kSuccess, result) << "Can't save the session";
+  ASSERT_EQ(kSuccess, authentication_.SaveSession(ser_dm_));
   std::string original_tmidname, original_stmidname;
   ss_->GetKey(passport::TMID, &original_tmidname, NULL, NULL, NULL);
   ss_->GetKey(passport::STMID, &original_stmidname, NULL, NULL, NULL);
   EXPECT_FALSE(original_tmidname.empty());
   EXPECT_FALSE(original_stmidname.empty());
 
-  ASSERT_EQ(kSuccess, authentication_.ChangeUsername(ser_dm, "el iuserneim"))
-            << "Unable to change iuserneim";
-  ASSERT_EQ("el iuserneim", ss_->Username()) <<
-            "iuserneim is still the old one";
+  ASSERT_EQ(kSuccess, authentication_.ChangeUsername(ser_dm_, "el iuserneim"));
+  ASSERT_EQ("el iuserneim", ss_->Username());
 
-  result = authentication_.GetUserInfo("el iuserneim", pin_);
-
-  ASSERT_EQ(kUserExists, result) << "User does not exist";
+  ASSERT_EQ(kUserExists, authentication_.GetUserInfo("el iuserneim", pin_));
   std::string ser_dm_login;
-  result = authentication_.GetUserData(password_, &ser_dm_login);
-  ASSERT_EQ(kSuccess, result) << "Can't login with new iuserneim";
-
-  result = authentication_.GetUserInfo(username_, pin_);
-  ASSERT_EQ(kUserDoesntExist, result);
+  ASSERT_EQ(kSuccess, GetMasterDataMap(&ser_dm_login));
+  ASSERT_EQ(kUserDoesntExist, authentication_.GetUserInfo(username_, pin_));
 
   // Check the TMIDs are gone
   ASSERT_TRUE(sm_->KeyUnique(original_tmidname, false));
@@ -415,59 +250,41 @@ TEST_MS_NET(AuthenticationTest, FUNC, MAID, ChangeUsername) {
 
 TEST_MS_NET(AuthenticationTest, FUNC, MAID, ChangePin) {
   username_ += "09";
-  int result = authentication_.GetUserInfo(username_, pin_);
-  EXPECT_EQ(kUserDoesntExist, result) << "User already exists";
-  result = authentication_.CreateUserSysPackets(username_, pin_);
-  ASSERT_EQ(kSuccess, result) << "Unable to register user";
-
-  encrypt::DataMap dm;
-  dm.set_file_hash("filehash");
-  dm.add_chunk_name("chunk1");
-  dm.add_chunk_name("chunk2");
-  dm.add_chunk_name("chunk3");
-  dm.add_encrypted_chunk_name("enc_chunk1");
-  dm.add_encrypted_chunk_name("enc_chunk2");
-  dm.add_encrypted_chunk_name("enc_chunk3");
-  dm.add_chunk_size(200);
-  dm.add_chunk_size(210);
-  dm.add_chunk_size(205);
-  dm.set_compression_on(false);
-  std::string ser_dm = dm.SerializeAsString();
-  result = authentication_.CreateTmidPacket(username_, pin_, password_, ser_dm);
-  ASSERT_EQ(kSuccess, result) << "Unable to register user";
+  EXPECT_EQ(kUserDoesntExist, authentication_.GetUserInfo(username_, pin_));
+  ASSERT_EQ(kSuccess, authentication_.CreateUserSysPackets(username_, pin_));
+  ASSERT_EQ(kSuccess, authentication_.CreateTmidPacket(username_, pin_,
+                                                       password_, ser_dm_));
 
   // Save the session to create different TMIDs for MID and SMID
-  result = authentication_.SaveSession(ser_dm);
-  ASSERT_EQ(kSuccess, result) << "Can't save the session";
+  ASSERT_EQ(kSuccess, authentication_.SaveSession(ser_dm_));
   std::string original_tmidname, original_stmidname;
   ss_->GetKey(passport::TMID, &original_tmidname, NULL, NULL, NULL);
   ss_->GetKey(passport::STMID, &original_stmidname, NULL, NULL, NULL);
   EXPECT_FALSE(original_tmidname.empty());
   EXPECT_FALSE(original_stmidname.empty());
 
-  ASSERT_EQ(kSuccess, authentication_.ChangePin(ser_dm, "7894"));
-  ASSERT_EQ("7894", ss_->Pin()) << "pin_ is still the old one";
+  ASSERT_EQ(kSuccess, authentication_.ChangePin(ser_dm_, "7894"));
+  ASSERT_EQ("7894", ss_->Pin());
 
-  result = authentication_.GetUserInfo(username_, "7894");
+  ASSERT_EQ(kUserExists, authentication_.GetUserInfo(username_, "7894"));
   std::string ser_dm_login;
-  result = authentication_.GetUserData(password_, &ser_dm_login);
-  ASSERT_EQ(kSuccess, result) << "Can't login with new pin_";
-  result = authentication_.GetUserInfo(username_, pin_);
-  ASSERT_EQ(kUserDoesntExist, result);
+  ASSERT_EQ(kSuccess, GetMasterDataMap(&ser_dm_login));
+  ASSERT_EQ(kUserDoesntExist, authentication_.GetUserInfo(username_, pin_));
+
+  // Check the TMIDs are gone
+  ASSERT_TRUE(sm_->KeyUnique(original_tmidname, false));
+  ASSERT_TRUE(sm_->KeyUnique(original_stmidname, false));
 }
 
 TEST_MS_NET(AuthenticationTest, FUNC, MAID, CreatePublicName) {
   username_ += "10";
-  ASSERT_EQ(kSuccess, authentication_.CreatePublicName("el public iuserneim"))
-            << "Can't create public username_";
+  ASSERT_EQ(kSuccess, authentication_.CreatePublicName("el public iuserneim"));
   ASSERT_EQ(kPublicUsernameAlreadySet,
-            authentication_.CreatePublicName("el public iuserneim"))
-            << "Created public username_ twice";
+            authentication_.CreatePublicName("el public iuserneim"));
   // Reset PublicUsername to allow attempt to save same public name to network.
-  ASSERT_TRUE(ss_->SetPublicUsername(""));
-  ASSERT_EQ(kPublicUsernameExists,
-            authentication_.CreatePublicName("el public iuserneim"))
-            << "Created public username_ twice";
+//  ASSERT_TRUE(ss_->SetPublicUsername(""));
+//  ASSERT_EQ(kPublicUsernameExists,
+//            authentication_.CreatePublicName("el public iuserneim"));
   authentication_.tmid_op_status_ = Authentication::kFailed;
   authentication_.stmid_op_status_ = Authentication::kFailed;
 }
@@ -498,48 +315,28 @@ TEST_MS_NET(AuthenticationTest, FUNC, MAID, CreateMSIDPacket) {
 
 TEST_MS_NET(AuthenticationTest, FUNC, MAID, RegisterLeaveRegister) {
   username_ += "12";
-  int result = authentication_.GetUserInfo(username_, pin_);
-  EXPECT_EQ(kUserDoesntExist, result) << "User already exists";
-  result = authentication_.CreateUserSysPackets(username_, pin_);
-  ASSERT_EQ(kSuccess, result) << "Unable to register user";
-
-  encrypt::DataMap dm;
-  dm.set_file_hash("filehash");
-  dm.add_chunk_name("chunk1");
-  dm.add_chunk_name("chunk2");
-  dm.add_chunk_name("chunk3");
-  dm.add_encrypted_chunk_name("enc_chunk1");
-  dm.add_encrypted_chunk_name("enc_chunk2");
-  dm.add_encrypted_chunk_name("enc_chunk3");
-  dm.add_chunk_size(200);
-  dm.add_chunk_size(210);
-  dm.add_chunk_size(205);
-  dm.set_compression_on(false);
-  std::string ser_dm = dm.SerializeAsString();
-  result = authentication_.CreateTmidPacket(username_, pin_, password_, ser_dm);
-  ASSERT_EQ(kSuccess, result) << "Unable to register user";
+  EXPECT_EQ(kUserDoesntExist, authentication_.GetUserInfo(username_, pin_));
+  ASSERT_EQ(kSuccess, authentication_.CreateUserSysPackets(username_, pin_));
+  ASSERT_EQ(kSuccess, authentication_.CreateTmidPacket(username_, pin_,
+                                                       password_, ser_dm_));
 
   //  Remove user.
-  result = authentication_.RemoveMe();
-  ASSERT_EQ(kSuccess, result);
+  ASSERT_EQ(kSuccess, authentication_.RemoveMe());
   try {
     fs::remove_all(file_system::MaidsafeDir(ss_->SessionName()));
   }
   catch(const std::exception &e) {
-    printf("%s\n", e.what());
-    FAIL();
+    FAIL() << e.what();
   }
 
   //  Check user no longer registered.
   ss_->ResetSession();
-  result = authentication_.GetUserInfo(username_, pin_);
-  ASSERT_NE(kUserExists, result);
+  ASSERT_NE(kUserExists, authentication_.GetUserInfo(username_, pin_));
 
   ss_->ResetSession();
-  result = authentication_.CreateUserSysPackets(username_, pin_);
-  ASSERT_EQ(kSuccess, result) << "Unable to register user again.";
-  result = authentication_.CreateTmidPacket(username_, pin_, password_, ser_dm);
-  ASSERT_EQ(kSuccess, result) << "Unable to register user again.";
+  ASSERT_EQ(kSuccess, authentication_.CreateUserSysPackets(username_, pin_));
+  ASSERT_EQ(kSuccess, authentication_.CreateTmidPacket(username_, pin_,
+                                                       password_, ser_dm_));
 }
 
 }  // namespace test

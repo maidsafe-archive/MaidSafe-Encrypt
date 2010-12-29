@@ -32,6 +32,10 @@ void Passport::Init() {
   crypto_key_pairs_.StartToCreateKeyPairs(kCryptoKeyBufferCount);
 }
 
+void Passport::StopCreatingKeyPairs() {
+  crypto_key_pairs_.Stop();
+}
+
 int Passport::SetInitialDetails(const std::string &username,
                                 const std::string &pin,
                                 std::string *mid_name,
@@ -65,12 +69,7 @@ int Passport::SetNewUserData(const std::string &password,
     return kNoMid;
   if (!retrieved_pending_smid)
     return kNoSmid;
-  boost::uint32_t rid(base::RandomUint32());
-  int retries(0), max_retries(3);
-  while (rid == 0 && retries < max_retries) {
-    rid = base::RandomUint32();
-    ++retries;
-  }
+  std::string rid(base::RandomString((base::RandomUint32() % 64) + 64));
   retrieved_pending_mid->SetRid(rid);
   retrieved_pending_smid->SetRid(rid);
 
@@ -107,7 +106,7 @@ int Passport::ConfirmNewUserData(std::tr1::shared_ptr<MidPacket> mid,
 }
 
 std::string Passport::SerialiseKeyring() {
-  return packet_handler_.SerialiseKeyring();
+  return packet_handler_.SerialiseKeyring(public_name_);
 }
 
 int Passport::UpdateMasterData(
@@ -129,10 +128,11 @@ int Passport::UpdateMasterData(
     return kNoSmid;
   *mid_old_value = retrieved_mid->value();
   *smid_old_value = retrieved_smid->value();
-  boost::uint32_t new_rid(base::RandomUint32()), old_rid(retrieved_mid->rid());
+  std::string new_rid(base::RandomString((base::RandomUint32() % 64) + 64));
+  std::string old_rid(retrieved_mid->rid());
   int retries(0), max_retries(3);
-  while ((new_rid == 0 || new_rid == old_rid) && retries < max_retries) {
-    new_rid = base::RandomUint32();
+  while (new_rid == old_rid && retries < max_retries) {
+    new_rid = base::RandomString((base::RandomUint32() % 64) + 64);
     ++retries;
   }
   retrieved_mid->SetRid(new_rid);
@@ -199,7 +199,7 @@ int Passport::InitialiseTmid(bool surrogate,
       retrieved_pending_mid(surrogate ? PendingSmid() : PendingMid());
   if (!retrieved_pending_mid)
     return surrogate ? kNoPendingSmid : kNoPendingMid;
-  if (retrieved_pending_mid->DecryptRid(encrypted_rid) == 0)
+  if (retrieved_pending_mid->DecryptRid(encrypted_rid).empty())
     return surrogate ? kBadSerialisedSmidRid : kBadSerialisedMidRid;
   std::tr1::shared_ptr<TmidPacket> tmid(
       new TmidPacket(retrieved_pending_mid->username(),
@@ -240,7 +240,7 @@ int Passport::GetUserData(const std::string &password,
 }
 
 int Passport::ParseKeyring(const std::string &serialised_keyring) {
-  int result = packet_handler_.ParseKeyring(serialised_keyring);
+  int result = packet_handler_.ParseKeyring(serialised_keyring, &public_name_);
   if (result != kSuccess)
     return result;
   return ConfirmUserData(PendingMid(), PendingSmid(), PendingTmid(),
@@ -388,6 +388,7 @@ int Passport::InitialiseSignaturePacket(
 
 int Passport::InitialiseMpid(const std::string &public_name,
                              std::tr1::shared_ptr<SignaturePacket> mpid) {
+  pending_public_name_ = public_name;
   return DoInitialiseSignaturePacket(MPID, public_name, mpid);
 }
 
@@ -448,13 +449,16 @@ int Passport::ConfirmSignaturePacket(
     std::tr1::shared_ptr<SignaturePacket> signature_packet) {
   if (!signature_packet)
     return kPassportError;
-  else
-    return packet_handler_.ConfirmPacket(signature_packet);
+  if (signature_packet->packet_type() == MPID)
+    public_name_ = pending_public_name_;
+  return packet_handler_.ConfirmPacket(signature_packet);
 }
 
 int Passport::RevertSignaturePacket(const PacketType &packet_type) {
   if (!IsSignature(packet_type, false))
     return kPassportError;
+  if (packet_type == MPID)
+    pending_public_name_.clear();
   return packet_handler_.RevertPacket(packet_type) ? kSuccess : kPassportError;
 }
 
@@ -558,6 +562,12 @@ std::tr1::shared_ptr<TmidPacket> Passport::PendingTmid() {
 std::tr1::shared_ptr<TmidPacket> Passport::PendingStmid() {
   return std::tr1::static_pointer_cast<TmidPacket>(
       packet_handler_.GetPacket(STMID, false));
+}
+
+void Passport::Clear() {
+  public_name_.clear();
+  pending_public_name_.clear();
+  packet_handler_.Clear();
 }
 
 }  // namespace passport

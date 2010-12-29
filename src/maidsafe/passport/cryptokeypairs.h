@@ -44,6 +44,7 @@ class CryptoKeyPairs {
   ~CryptoKeyPairs();
   bool StartToCreateKeyPairs(const boost::int16_t &no_of_keypairs);
   bool GetKeyPair(crypto::RsaKeyPair *keypair);
+  void Stop();
  private:
   CryptoKeyPairs &operator=(const CryptoKeyPairs&);
   CryptoKeyPairs(const CryptoKeyPairs&);
@@ -57,7 +58,7 @@ class CryptoKeyPairs {
   std::vector< std::tr1::shared_ptr<boost::thread> > thrds_;
   boost::mutex keyslist_mutex_, keys_done_mutex_, start_mutex_, req_mutex_;
   boost::condition_variable keys_cond_, req_cond_;
-  bool started_, destroying_this_;
+  bool started_, stopping_;
 };
 
 }  // namespace passport

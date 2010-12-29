@@ -770,7 +770,7 @@ void SEHandler::ChunksToMultiIndex(const encrypt::DataMap &data_map,
           pending_chunks_.insert(pc);
       if (!p.second) {
 #ifdef DEBUG
-        printf("SEHandler::StoreChunks - Something really fucking wrong is "
+        printf("SEHandler::StoreChunks - Something really wrong is "
                "going on in SEHandler with the multi-index for pending "
                "chunks.\n");
 #endif

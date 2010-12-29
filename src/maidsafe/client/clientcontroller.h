@@ -41,6 +41,7 @@
 #include "maidsafe/common/maidsafe_service_messages.pb.h"
 #include "maidsafe/common/returncodes.h"
 #include "maidsafe/client/authentication.h"
+#include "maidsafe/client/sessionsingleton.h"
 #include "maidsafe/client/filesystem/distributed_filesystem.pb.h"
 #include "maidsafe/client/filesystem/sehandler.h"
 
@@ -50,15 +51,20 @@ namespace maidsafe {
 
 namespace test {
 class ClientControllerTest;
-class ClientControllerTest_BEH_MAID_CC_HandleMessages_Test;
-class ClientControllerTest_FUNC_MAID_NET_CC_HandleMessages_Test;
-class ClientControllerTest_FUNC_MAID_CC_ClearStaleMessages_Test;
-class ClientControllerTest_FUNC_MAID_NET_CC_ClearStaleMessages_Test;
+class ClientControllerTest_FUNC_MAID_SaveSession_Test;
+class ClientControllerTest_FUNC_MAID_NET_SaveSession_Test;
+class ClientControllerTest_BEH_MAID_HandleMessages_Test;
+class ClientControllerTest_FUNC_MAID_NET_HandleMessages_Test;
+class ClientControllerTest_FUNC_MAID_ClearStaleMessages_Test;
+class ClientControllerTest_FUNC_MAID_NET_ClearStaleMessages_Test;
+class ClientControllerTest_FUNC_MAID_ContactAddition_Test;
+class ClientControllerTest_FUNC_MAID_NET_ContactAddition_Test;
 }
 
 class ChunkStore;
 class Contact;
 class PrivateShare;
+class MockClientController;
 struct private_share;
 
 class CCCallback {
@@ -257,18 +263,23 @@ class ClientController {
   bs2::connection ConnectToOnFileAdded(const OnFileAdded::slot_type &slot);
 
  private:
+  friend class MockClientController;
   friend class test::ClientControllerTest;
-  friend class test::ClientControllerTest_BEH_MAID_CC_HandleMessages_Test;
-  friend class test::ClientControllerTest_FUNC_MAID_NET_CC_HandleMessages_Test;
-  friend class test::ClientControllerTest_FUNC_MAID_CC_ClearStaleMessages_Test;
-  friend class
-      test::ClientControllerTest_FUNC_MAID_NET_CC_ClearStaleMessages_Test;
+  friend class test::ClientControllerTest_FUNC_MAID_SaveSession_Test;
+  friend class test::ClientControllerTest_FUNC_MAID_NET_SaveSession_Test;
+  friend class test::ClientControllerTest_BEH_MAID_HandleMessages_Test;
+  friend class test::ClientControllerTest_FUNC_MAID_NET_HandleMessages_Test;
+  friend class test::ClientControllerTest_FUNC_MAID_ClearStaleMessages_Test;
+  friend class test::ClientControllerTest_FUNC_MAID_NET_ClearStaleMessages_Test;
+  friend class test::ClientControllerTest_FUNC_MAID_ContactAddition_Test;
+  friend class test::ClientControllerTest_FUNC_MAID_NET_ContactAddition_Test;
+
 
   // Functions
   ClientController() : client_chunkstore_(),
                        sm_(),
                        auth_(),
-                       ss_(),
+                       ss_(SessionSingleton::getInstance()),
                        ser_da_(),
                        ser_dm_(),
                        db_enc_queue_(),
@@ -323,8 +334,6 @@ class ClientController {
   bool RemoveFromPendingFiles(const std::string &file);
 
   // Variables
-  static boost::scoped_ptr<ClientController> single_;
-  static boost::once_flag flag_;
   boost::shared_ptr<ChunkStore> client_chunkstore_;
   boost::shared_ptr<StoreManagerInterface> sm_;
   Authentication auth_;
@@ -332,7 +341,6 @@ class ClientController {
   std::string ser_da_, ser_dm_;
   std::map<std::string, std::pair<std::string, std::string> > db_enc_queue_;
   SEHandler seh_;
-  static ClientController *single;
   std::list<InstantMessage> instant_messages_;
   std::map<std::string, boost::uint32_t> received_messages_;
   boost::mutex rec_msg_mutex_;
@@ -347,6 +355,8 @@ class ClientController {
   bs2::connection to_seh_file_update_;
   std::multimap<std::string, int> pending_files_;
   boost::mutex pending_files_mutex_;
+  static boost::once_flag flag_;
+  static boost::scoped_ptr<ClientController> single_;
 };
 
 }  // namespace maidsafe

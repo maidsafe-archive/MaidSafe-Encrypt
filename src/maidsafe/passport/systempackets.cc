@@ -211,7 +211,7 @@ MidPacket::MidPacket(const std::string &username,
       username_(username),
       pin_(pin),
       smid_appendix_(smid_appendix),
-      rid_(0),
+      rid_(),
       encrypted_rid_(),
       salt_(),
       secure_password_() {
@@ -227,10 +227,8 @@ void MidPacket::Initialise() {
   try {
     secure_password_ = crypto_obj.SecurePassword(username_, salt_,
                        boost::lexical_cast<boost::uint32_t>(pin_));
-    name_ = crypto_obj.Hash(
-                crypto_obj.Hash(username_, "", crypto::STRING_STRING, false) +
-                crypto_obj.Hash(pin_, "", crypto::STRING_STRING, false) +
-                smid_appendix_, "", crypto::STRING_STRING, false);
+    name_ = crypto_obj.Hash(username_ + pin_ + smid_appendix_, "",
+                            crypto::STRING_STRING, false);
   }
   catch(const std::exception &e) {
 #ifdef DEBUG
@@ -242,16 +240,16 @@ void MidPacket::Initialise() {
     Clear();
 }
 
-void MidPacket::SetRid(const boost::uint32_t &rid) {
+void MidPacket::SetRid(const std::string &rid) {
   rid_ = rid;
   try {
-    if (rid_ == 0) {
+    if (rid_.empty()) {
       encrypted_rid_.clear();
     } else {
       crypto::Crypto crypto_obj;
       encrypted_rid_ =
-          crypto_obj.SymmEncrypt(boost::lexical_cast<std::string>(rid_), "",
-                                 crypto::STRING_STRING, secure_password_);
+          crypto_obj.SymmEncrypt(rid_, "", crypto::STRING_STRING,
+                                 secure_password_);
     }
   }
   catch(const std::exception &e) {
@@ -264,7 +262,7 @@ void MidPacket::SetRid(const boost::uint32_t &rid) {
     Clear();
 }
 
-boost::uint32_t MidPacket::DecryptRid(const std::string &encrypted_rid) {
+std::string MidPacket::DecryptRid(const std::string &encrypted_rid) {
   if (username_.empty() || pin_.empty() || encrypted_rid.empty()) {
 #ifdef DEBUG
     printf("MidPacket::DecryptRid: Bad encrypted RID or user data empty.\n");
@@ -276,17 +274,16 @@ boost::uint32_t MidPacket::DecryptRid(const std::string &encrypted_rid) {
   try {
     encrypted_rid_ = encrypted_rid;
     crypto::Crypto crypto_obj;
-    std::string rid(crypto_obj.SymmDecrypt(encrypted_rid_, "",
-                    crypto::STRING_STRING, secure_password_));
-    rid_ = boost::lexical_cast<boost::uint32_t>(rid);
+    rid_ = crypto_obj.SymmDecrypt(encrypted_rid_, "", crypto::STRING_STRING,
+                                  secure_password_);
   }
   catch(const std::exception &e) {
 #ifdef DEBUG
     printf("MidPacket::DecryptRid: %s\n", e.what());
 #endif
-    rid_ = 0;
+    rid_.clear();
   }
-  if (rid_ == 0)
+  if (rid_.empty())
     Clear();
   return rid_;
 }
@@ -299,7 +296,7 @@ void MidPacket::Clear() {
   encrypted_rid_.clear();
   salt_.clear();
   secure_password_.clear();
-  rid_ = 0;
+  rid_.clear();
 }
 
 bool MidPacket::Equals(const pki::Packet *other) const {
@@ -330,7 +327,7 @@ TmidPacket::TmidPacket()
 
 TmidPacket::TmidPacket(const std::string &username,
                        const std::string &pin,
-                       const boost::uint32_t rid,
+                       const std::string &rid,
                        bool surrogate,
                        const std::string &password,
                        const std::string &plain_text_master_data)
@@ -347,17 +344,13 @@ TmidPacket::TmidPacket(const std::string &username,
 }
 
 void TmidPacket::Initialise() {
-  if (username_.empty() || pin_.empty() || rid_ == 0)
+  if (username_.empty() || pin_.empty() || rid_.empty())
     return Clear();
 
   try {
     crypto::Crypto crypto_obj;
-    name_ = crypto_obj.Hash(
-                crypto_obj.Hash(username_, "", crypto::STRING_STRING, false) +
-                crypto_obj.Hash(pin_, "", crypto::STRING_STRING, false) +
-                crypto_obj.Hash(boost::lexical_cast<std::string>(rid_), "",
-                                 crypto::STRING_STRING, false), "",
-                crypto::STRING_STRING, false);
+    name_ = crypto_obj.Hash(username_ + pin_ + rid_, "", crypto::STRING_STRING,
+                            false);
   }
   catch(const std::exception &e) {
 #ifdef DEBUG
@@ -374,16 +367,23 @@ void TmidPacket::Initialise() {
 }
 
 bool TmidPacket::SetPassword() {
-  if (password_.empty()) {
+  if (password_.empty() || rid_.size() < 4U) {
     salt_.clear();
     secure_password_.clear();
     return false;
   }
   try {
     crypto::Crypto crypto_obj;
-    salt_ = crypto_obj.Hash(boost::lexical_cast<std::string>(rid_) + password_,
-                            "", crypto::STRING_STRING, false);
-    secure_password_ = crypto_obj.SecurePassword(password_, salt_, rid_);
+    salt_ = crypto_obj.Hash(rid_ + password_, "", crypto::STRING_STRING, false);
+    boost::uint32_t random_no_from_rid(0);
+    int a = 1;
+    for (int i = 0; i < 4; ++i) {
+      boost::uint8_t temp(static_cast<boost::uint8_t>(rid_.at(i)));
+      random_no_from_rid += (temp * a);
+      a *= 256;
+    }
+    secure_password_ = crypto_obj.SecurePassword(password_, salt_,
+                                                 random_no_from_rid);
   }
   catch(const std::exception &e) {
 #ifdef DEBUG
@@ -460,7 +460,7 @@ void TmidPacket::Clear() {
   username_.clear();
   pin_.clear();
   password_.clear();
-  rid_ = 0;
+  rid_.clear();
   plain_text_master_data_.clear();
   salt_.clear();
   secure_password_.clear();

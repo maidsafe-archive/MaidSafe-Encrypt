@@ -463,9 +463,9 @@ PBKDF2 is used here to strengthen any password keys used.
 
  specifies session data, like user details or an index of references to
  further data.
- This packet is located through an Access Packet holding a random number
+ This packet is located through an Access Packet holding a random string
  
-\begin_inset Formula $\mathsf{Rnd\#}$
+\begin_inset Formula $\mathsf{RndStr}$
 \end_inset
 
 .
@@ -516,22 +516,22 @@ key "3"
 \end_layout
 
 \begin_layout Enumerate
-Generate random number 
-\begin_inset Formula $\mathsf{Rnd\#}$
+Generate random string 
+\begin_inset Formula $\mathsf{RndStr}$
 \end_inset
 
 
 \end_layout
 
 \begin_layout Enumerate
-\begin_inset Formula $\mathsf{PutV_{[H(U+S)]}\left(SymEnc_{[PBKDF2_{[U][S]}]}(Rnd\#)\right)}$
+\begin_inset Formula $\mathsf{PutV_{[H(U+S)]}\left(SymEnc_{[PBKDF2_{[U][S]}]}(RndStr)\right)}$
 \end_inset
 
  (Store Access Packet)
 \end_layout
 
 \begin_layout Enumerate
-\begin_inset Formula $\mathsf{PutV_{[H(U+S+Rnd\#)]}\left(SymEnc_{[PBKDF2_{[W][S]}]}(Account)\right)}$
+\begin_inset Formula $\mathsf{PutV_{[H(U+S+RndStr)]}\left(SymEnc_{[PBKDF2_{[W][S]}]}(Account)\right)}$
 \end_inset
 
  (Store Account Packet)
@@ -549,14 +549,14 @@ name "sub:Login-to-a"
 \end_layout
 
 \begin_layout Enumerate
-\begin_inset Formula $\mathsf{SymDec_{[PBKDF2_{[U][S]}]}\left(GetV_{[H(U+S)]}\right)\equiv Rnd\#}$
+\begin_inset Formula $\mathsf{SymDec_{[PBKDF2_{[U][S]}]}\left(GetV_{[H(U+S)]}\right)\equiv RndStr}$
 \end_inset
 
 
 \end_layout
 
 \begin_layout Enumerate
-\begin_inset Formula $\mathsf{SymDec_{[PBKDF2_{[W][S]}]}(GetV_{[H(U+S+Rnd\#)]})\equiv Account}$
+\begin_inset Formula $\mathsf{SymDec_{[PBKDF2_{[W][S]}]}(GetV_{[H(U+S+RndStr)]})\equiv Account}$
 \end_inset
 
 
@@ -564,7 +564,7 @@ name "sub:Login-to-a"
 
 \begin_layout Standard
 For the following operation, 
-\begin_inset Formula $\mathsf{Rnd\#}$
+\begin_inset Formula $\mathsf{RndStr}$
 \end_inset
 
  should be kept locally for the duration of the session.
@@ -575,29 +575,29 @@ Logout / Save Session Process
 \end_layout
 
 \begin_layout Enumerate
-Generate new random number 
-\begin_inset Formula $\mathsf{Rnd\#_{new}}$
+Generate new random string 
+\begin_inset Formula $\mathsf{RndStr_{new}}$
 \end_inset
 
 
 \end_layout
 
 \begin_layout Enumerate
-\begin_inset Formula $\mathsf{PutV_{[H(U+S+Rnd\#_{new})]}\left(SymEnc_{[PBKDF2_{[W][S]}]}(Account)\right)}$
+\begin_inset Formula $\mathsf{PutV_{[H(U+S+RndStr_{new})]}\left(SymEnc_{[PBKDF2_{[W][S]}]}(Account)\right)}$
 \end_inset
 
  (Store new Account Packet)
 \end_layout
 
 \begin_layout Enumerate
-\begin_inset Formula $\mathsf{PutV_{[H(U+S)]}\left(SymEnc_{[PBKDF2_{[U][S]}]}(Rnd\#_{new})\right)}$
+\begin_inset Formula $\mathsf{PutV_{[H(U+S)]}\left(SymEnc_{[PBKDF2_{[U][S]}]}(RndStr_{new})\right)}$
 \end_inset
 
  (Update Access Packet)
 \end_layout
 
 \begin_layout Enumerate
-\begin_inset Formula $\mathsf{DelV_{[H(U+S+Rnd\#)]}(OldAccount)}$
+\begin_inset Formula $\mathsf{DelV_{[H(U+S+RndStr)]}(OldAccount)}$
 \end_inset
 
  (Delete old Account Packet)
@@ -619,8 +619,8 @@ The previous sections outlined the basic system of authentication.
  the current version can't be restored or turns out to have been generated
  erroneously.
  Like the main Access Packet, the fallback Access Packet contains an (encrypted)
- random number, designated 
-\begin_inset Formula $\mathsf{Rnd\#_{fallback}}$
+ random string, designated 
+\begin_inset Formula $\mathsf{RndStr_{fallback}}$
 \end_inset
 
 .
@@ -645,40 +645,40 @@ Updated Account Creation Process
 \end_layout
 
 \begin_layout Enumerate
-Generate random number 
-\begin_inset Formula $\mathsf{Rnd\#}$
+Generate random string 
+\begin_inset Formula $\mathsf{RndStr}$
 \end_inset
 
  and copy 
-\begin_inset Formula $\mathsf{Rnd\#\rightarrow Rnd\#_{fallback}}$
+\begin_inset Formula $\mathsf{RndStr\rightarrow RndStr_{fallback}}$
 \end_inset
 
 
 \end_layout
 
 \begin_layout Enumerate
-\begin_inset Formula $\mathsf{PutV_{[H(U+S)]}\left(SymEnc_{[PBKDF2_{[U][S]}]}(Rnd\#)\right)}$
+\begin_inset Formula $\mathsf{PutV_{[H(U+S)]}\left(SymEnc_{[PBKDF2_{[U][S]}]}(RndStr)\right)}$
 \end_inset
 
 
 \end_layout
 
 \begin_layout Enumerate
-\begin_inset Formula $\mathsf{PutV_{[H(U+(S-1)]}\left(SymEnc_{[PBKDF2_{[U][S-1]}]}(Rnd\#)\right)}$
+\begin_inset Formula $\mathsf{PutV_{[H(U+(S-1)]}\left(SymEnc_{[PBKDF2_{[U][S-1]}]}(RndStr)\right)}$
 \end_inset
 
 
 \end_layout
 
 \begin_layout Enumerate
-\begin_inset Formula $\mathsf{PutV_{[H(U+S+Rnd\#)]}\left(SymEnc_{[PBKDF2_{[W][S]}]}(Account)\right)}$
+\begin_inset Formula $\mathsf{PutV_{[H(U+S+RndStr)]}\left(SymEnc_{[PBKDF2_{[W][S]}]}(Account)\right)}$
 \end_inset
 
 
 \end_layout
 
 \begin_layout Standard
-In this case, the random numbers in the Access Packets are the same, thus
+In this case, the random strings in the Access Packets are the same, thus
  point to the same (unique) Account Packet.
  Fallback packets are only kept once the Account Packet is updated.
 \end_layout
@@ -689,7 +689,7 @@ Updated Login Process
 
 \begin_layout Enumerate
 if (
-\begin_inset Formula $\mathsf{GetV_{[H(U+S)]}\equiv EncRnd\#}$
+\begin_inset Formula $\mathsf{GetV_{[H(U+S)]}\equiv EncRndStr}$
 \end_inset
 
 )
@@ -697,14 +697,22 @@ if (
 
 \begin_deeper
 \begin_layout Enumerate
-\begin_inset Formula $\mathsf{SymDec_{[PBKDF2_{[U][S]}]}(EncRnd\#)\equiv Rnd\#}$
+\begin_inset Formula $\mathsf{SymDec_{[PBKDF2_{[U][S]}]}(EncRndStr)\equiv RndStr}$
 \end_inset
 
 
 \end_layout
 
 \begin_layout Enumerate
-\begin_inset Formula $\mathsf{SymDec_{[PBKDF2_{[W][S]}]}\left(GetV_{[H(U+S+Rnd\#)]}\right)\equiv Account}$
+\begin_inset Formula $\mathsf{SymDec_{[PBKDF2_{[W][S]}]}\left(GetV_{[H(U+S+RndStr)]}\right)\equiv}$
+\end_inset
+
+ 
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Formula $\mathsf{Account}$
 \end_inset
 
 
@@ -717,14 +725,37 @@ else (or if previous attempt failed)
 
 \begin_deeper
 \begin_layout Enumerate
-\begin_inset Formula $\mathsf{SymDec_{[PBKDF2_{[U][S-1]}]}\left(GetV_{[H(U+(S-1))]}\right)\equiv Rnd\#_{fallback}}$
+\begin_inset Formula $\mathsf{GetV_{[H(U+(S-1))]}\equiv EncRndStr_{fallback}}$
 \end_inset
 
 
 \end_layout
 
 \begin_layout Enumerate
-\begin_inset Formula $\mathsf{SymDec_{[PBKDF2_{[W][S-1]}]}\left(GetV_{[H(U+S+Rnd\#_{fallback})]}\right)\equiv Account_{fallback}}$
+\begin_inset Formula $\mathsf{SymDec_{[PBKDF2_{[U][S-1]}]}(EncRndStr_{fallback})\equiv}$
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Formula $\mathsf{RndStr_{fallback}}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\mathsf{SymDec_{[PBKDF2_{[W][S-1]}]}\left(GetV_{[H(U+S+RndStr_{fallback})]}\right)}$
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+ 
+\begin_inset Formula $\mathsf{\equiv Account_{fallback}}$
 \end_inset
 
 
@@ -737,55 +768,55 @@ Updated Logout / Save Session Process
 
 \begin_layout Standard
 Designate existing 
-\begin_inset Formula $\mathsf{Rnd\#}$
+\begin_inset Formula $\mathsf{RndStr}$
 \end_inset
 
  as 
-\begin_inset Formula $\mathsf{Rnd\#_{old}}$
+\begin_inset Formula $\mathsf{RndStr_{old}}$
 \end_inset
 
  and 
-\begin_inset Formula $\mathsf{Rnd\#_{fallback}}$
+\begin_inset Formula $\mathsf{RndStr_{fallback}}$
 \end_inset
 
  as 
-\begin_inset Formula $\mathsf{Rnd\#_{fallback\, old}}$
+\begin_inset Formula $\mathsf{RndStr_{fallback\, old}}$
 \end_inset
 
 
 \end_layout
 
 \begin_layout Enumerate
-Generate new random number 
-\begin_inset Formula $\mathsf{Rnd\#_{new}}$
+Generate new random string 
+\begin_inset Formula $\mathsf{RndStr_{new}}$
 \end_inset
 
 
 \end_layout
 
 \begin_layout Enumerate
-\begin_inset Formula $\mathsf{PutV_{[H(U+S)]}\left(SymEnc_{[PBKDF2_{[U][S]}]}(Rnd\#_{new})\right)}$
+\begin_inset Formula $\mathsf{PutV_{[H(U+S)]}\left(SymEnc_{[PBKDF2_{[U][S]}]}(RndStr_{new})\right)}$
 \end_inset
 
- (Update Access Packet with new random number)
+ (Update Access Packet with new random string)
 \end_layout
 
 \begin_layout Enumerate
-\begin_inset Formula $\mathsf{PutV_{[H(U+(S-1)]}\left(SymEnc_{[PBKDF2_{[U][S-1]}]}(Rnd\#_{old})\right)}$
+\begin_inset Formula $\mathsf{PutV_{[H(U+(S-1)]}\left(SymEnc_{[PBKDF2_{[U][S-1]}]}(RndStr_{old})\right)}$
 \end_inset
 
- (Update fallback Access Packet with old random number)
+ (Update fallback Access Packet with old random string)
 \end_layout
 
 \begin_layout Enumerate
-\begin_inset Formula $\mathsf{PutV_{[H(U+S+Rnd\#_{new})]}\left(SymEnc_{[PBKDF2_{[W][S]}]}(Account)\right)}$
+\begin_inset Formula $\mathsf{PutV_{[H(U+S+RndStr_{new})]}\left(SymEnc_{[PBKDF2_{[W][S]}]}(Account)\right)}$
 \end_inset
 
- (Update Account Packet using new random number)
+ (Update Account Packet using new random string)
 \end_layout
 
 \begin_layout Enumerate
-\begin_inset Formula $\mathsf{DelV_{[H(U+S+Rnd\#_{fallback\, old})]}(Account_{fallback\, old})}$
+\begin_inset Formula $\mathsf{DelV_{[H(U+S+RndStr_{fallback\, old})]}(Account_{fallback\, old})}$
 \end_inset
 
  (Delete old Account Packet)
@@ -797,7 +828,7 @@ The previous Account Packet remains untouched.
  Packet points to the new Account Packet.
  The previous fallback Account Packet is deleted.
  This is a security measure to hinder slow brute-force attacks on decrypting
- the Access Packet, which by the time the clear-text random number is obtained
+ the Access Packet, which by the time the clear-text random string is obtained
  would make it obsolete.
 \end_layout
 
@@ -1017,7 +1048,7 @@ This ID is then the
 root
 \emph default
  ID of the network, we shall refer to this as 
-\begin_inset Formula $ID_{Net}$
+\begin_inset Formula $\mathsf{ID_{Net}}$
 \end_inset
 
 .
@@ -1027,7 +1058,7 @@ root
 
 .
  This ID is signed by the private of the ID associated with 
-\begin_inset Formula $ID_{Org}$
+\begin_inset Formula $\mathsf{ID_{Org}}$
 \end_inset
 
 .
@@ -1040,17 +1071,17 @@ All client systems accessing this network will test
 \end_inset
 
  is signed by the ID associated with 
-\begin_inset Formula $ID_{Org}$
+\begin_inset Formula $\mathsf{ID_{Org}}$
 \end_inset
 
 .
  This is to prevent fraud as any attacker or ID wishing to fraudulently
  claim they are a valid 
-\begin_inset Formula $ID_{something@Org}$
+\begin_inset Formula $\mathsf{ID_{something@Org}}$
 \end_inset
 
  would not have access to the ID associated with 
-\begin_inset Formula $ID_{Org}$
+\begin_inset Formula $\mathsf{ID_{Org}}$
 \end_inset
 
 .
@@ -1059,14 +1090,14 @@ All client systems accessing this network will test
 
 \begin_layout Remark
 This is essential as many nodes or network entities may create a 
-\begin_inset Formula $ID_{something@Org}$
+\begin_inset Formula $\mathsf{ID_{something@Org}}$
 \end_inset
 
  which cannot and should not be prevented, however only one will have the
  private key required to validate this ID.
  This ensures mathematical correctness in testing a proposition such as
  
-\begin_inset Formula $ID_{something@Org}$
+\begin_inset Formula $\mathsf{ID_{something@Org}}$
 \end_inset
 
  which ensures that the security algorithm is intact and not dependent on
@@ -1075,24 +1106,24 @@ This is essential as many nodes or network entities may create a
 
 \begin_layout Remark
 To check an ID then there is a possibility that the ID who signs the 
-\begin_inset Formula $ID_{something@Org}$
+\begin_inset Formula $\mathsf{ID_{something@Org}}$
 \end_inset
 
  is in fact not 
-\begin_inset Formula $ID_{Org}$
+\begin_inset Formula $\mathsf{ID_{Org}}$
 \end_inset
 
  but another 
-\begin_inset Formula $ID_{something@Org}$
+\begin_inset Formula $\mathsf{ID_{something@Org}}$
 \end_inset
 
  (this shoudl be a manager of teh first ID checked).
  This requires a recursive check until 
-\begin_inset Formula $ID_{Org}$
+\begin_inset Formula $\mathsf{ID_{Org}}$
 \end_inset
 
  is reached, otherwise the 
-\begin_inset Formula $ID_{something@Org}$
+\begin_inset Formula $\mathsf{ID_{something@Org}}$
 \end_inset
 
  is fraudulent and not as expected.
@@ -1100,7 +1131,7 @@ To check an ID then there is a possibility that the ID who signs the
 
 \begin_layout Remark
 On confirming 
-\begin_inset Formula $ID_{something@Org}$
+\begin_inset Formula $\mathsf{ID_{something@Org}}$
 \end_inset
 
  it is assumed that the recipient will maintain the ID associated and possibly

@@ -546,8 +546,8 @@ TEST_F(PassportTest, BEH_PASSPORT_SetNewUserData) {
   EXPECT_EQ(kPin_, pending_mid->pin());
   EXPECT_EQ(kPin_, pending_smid->pin());
   EXPECT_EQ(kPin_, pending_tmid->pin());
-  boost::uint32_t rid(pending_mid->rid());
-  EXPECT_NE(0U, rid);
+  std::string rid(pending_mid->rid());
+  EXPECT_FALSE(rid.empty());
   EXPECT_EQ(rid, pending_smid->rid());
   EXPECT_EQ(kPassword_, pending_tmid->password());
   // Check *copies* of pointers are returned
@@ -595,7 +595,7 @@ TEST_F(PassportTest, BEH_PASSPORT_SetNewUserData) {
   EXPECT_EQ(kPin_, pending_mid->pin());
   EXPECT_EQ(kPin_, pending_smid->pin());
   EXPECT_EQ(kPin_, pending_tmid->pin());
-  EXPECT_NE(0U, pending_mid->rid());
+  EXPECT_FALSE(pending_mid->rid().empty());
   EXPECT_NE(rid, pending_mid->rid());
   EXPECT_EQ(pending_mid->rid(), pending_smid->rid());
   EXPECT_EQ(kPassword_, pending_tmid->password());
@@ -1162,18 +1162,10 @@ TEST_F(PassportTest, BEH_PASSPORT_Login) {
   EXPECT_TRUE(passport_.GetPacket(STMID, true));
   EXPECT_EQ(kPassportError, passport_.ParseKeyring(kSerialisedKeyring));
 
-  // Try to initialise TMID and STMID with wrong encrypted data
+  // Try to GetUserData with wrong encrypted data
   passport_.Clear();
   EXPECT_EQ(kSuccess, passport_.SetInitialDetails(kUsername_, kPin_, &mid_name_,
                                                   &smid_name_));
-  EXPECT_EQ(kBadSerialisedMidRid, passport_.InitialiseTmid(false, "abc",
-                                                           &tmid_name));
-  EXPECT_EQ(kBadSerialisedSmidRid, passport_.InitialiseTmid(true, "abc",
-                                                            &stmid_name));
-  EXPECT_FALSE(passport_.GetPacket(TMID, false));
-  EXPECT_FALSE(passport_.GetPacket(STMID, false));
-
-  // Try to GetUserData with wrong encrypted data
   EXPECT_EQ(kSuccess, passport_.InitialiseTmid(false, kEncryptedRidMain,
                                                &tmid_name));
   EXPECT_EQ(kSuccess, passport_.InitialiseTmid(true, kEncryptedRidSurrogate,
