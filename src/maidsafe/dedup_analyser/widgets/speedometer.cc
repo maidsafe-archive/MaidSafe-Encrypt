@@ -1,7 +1,7 @@
 #include "speedometer.h"
 
 #include <qpainter.h>
-#include "qwt_dial_needle.h"
+#include "maidsafe/dedup_analyser/qwt_widgets/qwt_dial_needle.h"
 
 namespace maidsafe {
 

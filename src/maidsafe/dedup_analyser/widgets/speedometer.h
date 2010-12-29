@@ -2,7 +2,7 @@
 #define MAIDSAFE_DEDUP_ANALYSER_WIDGETS_SPEEDOMETER_H_
 
 #include <QString>
-#include "qwt_dial.h"
+#include "maidsafe/dedup_analyser/qwt_widgets/qwt_dial.h"
 
 namespace maidsafe {
 
