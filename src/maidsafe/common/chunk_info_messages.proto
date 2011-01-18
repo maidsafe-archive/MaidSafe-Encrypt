@@ -1,0 +1,54 @@
+// ChunkInfo service requests and responses
+
+import "maidsafe/common/maidsafe.proto";
+
+package maidsafe;
+
+message AddToWatchListRequest {
+  required bytes chunkname = 1;
+  required SignedSize signed_size = 2;
+  required bytes request_signature = 3;  // Signed using client's PMID key (PMID
+                                         // details included in signed_size
+}
+
+message AddToWatchListResponse {
+  required bool result = 1;
+  optional bytes pmid = 2;  // Chunk Info holder's PMID
+  optional uint32 upload_count = 3;
+  optional uint64 total_payment = 4;
+}
+
+message RemoveFromWatchListRequest {
+  required bytes chunkname = 1;
+  required bytes pmid = 2;  // client's PMID
+  required bytes public_key = 3;
+  required bytes public_key_signature = 4;
+  required bytes request_signature = 5;
+}
+
+message RemoveFromWatchListResponse {
+  required bool result = 1;
+  optional bytes pmid = 2;  // Chunk Info holder's PMID
+}
+
+message AddToReferenceListRequest {
+  required bytes chunkname = 1;
+  required StoreContract store_contract = 2;
+  required bytes request_signature = 3;  // Signed using vault's PMID key (PMID
+                                         // details included in store_contract)
+}
+
+message AddToReferenceListResponse {
+  required bool result = 1;
+  optional bytes pmid = 2;
+}
+
+message GetChunkReferencesRequest {
+  required bytes chunkname = 1;
+}
+
+message GetChunkReferencesResponse {
+  required bool result = 1;
+  optional bytes pmid = 2;
+  repeated bytes references = 3;
+}

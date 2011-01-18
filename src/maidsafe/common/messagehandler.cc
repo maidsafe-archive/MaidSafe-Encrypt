@@ -4,7 +4,7 @@
 * Copyright [2011] maidsafe.net limited
 *
 * Description:  Class for processing RPC messages.
-* Created:      2011-01-17
+* Created:      2011-01-18
 * Company:      maidsafe.net limited
 *
 * The following source code is property of maidsafe.net limited and is not
@@ -19,31 +19,50 @@
 */
 
 #include "maidsafe/common/messagehandler.h"
-// #include "maidsafe/common/XXX.pb.h"
 
-namespace kademlia {
+#include "maidsafe/common/chunk_messages.pb.h"
+#include "maidsafe/common/chunk_info_messages.pb.h"
+#include "maidsafe/common/account_messages.pb.h"
+#include "maidsafe/common/vault_sync_messages.pb.h"
+#include "maidsafe/common/buffer_messages.pb.h"
+
+namespace maidsafe {
 
 enum MessageType {
-  kStoreChunkRequest = kademlia::kMaxMessageType + 1,
+  // Chunk message types
+  kArrangeStoreRequest = kademlia::kMaxMessageType + 1,
+  kArrangeStoreResponse,
+  kStoreChunkRequest,
   kStoreChunkResponse,
   kGetChunkRequest,
   kGetChunkResponse,
   kHasChunkRequest,
   kHasChunkResponse,
-  kGetChunkReferencesRequest,
-  kGetChunkReferencesResponse,
+  kValidateChunkRequest,
+  kValidateChunkResponse,
+  kDeleteChunkRequest,
+  kDeleteChunkResponse,
+  kDuplicateChunkRequest,
+  kDuplicateChunkResponse,
+  kCacheChunkRequest,
+  kCacheChunkResponse,
+  // ChunkInfo message types
   kAddToWatchListRequest,
   kAddToWatchListResponse,
   kRemoveFromWatchListRequest,
   kRemoveFromWatchListResponse,
   kAddToReferenceListRequest,
   kAddToReferenceListResponse,
+  kGetChunkReferencesRequest,
+  kGetChunkReferencesResponse,
+  // Account message types
   kAmendAccountRequest,
   kAmendAccountResponse,
   kExpectAmendmentRequest,
   kExpectAmendmentResponse,
   kAccountStatusRequest,
   kAccountStatusResponse,
+  // VaultSync message types
   kGetSyncDataRequest,
   kGetSyncDataResponse,
   kGetAccountRequest,
@@ -52,6 +71,7 @@ enum MessageType {
   kGetChunkInfoResponse,
   kGetBufferRequest,
   kGetBufferResponse,
+  // Buffer message types
   kCreateBufferRequest,
   kCreateBufferResponse,
   kModifyBufferInfoRequest,
@@ -65,6 +85,18 @@ enum MessageType {
   kAddBufferPresenceRequest,
   kAddBufferPresenceResponse
 };
+
+std::string MessageHandler::WrapMessage(
+    const protobuf::ArrangeStoreRequest &msg) {
+  return MakeSerialisedWrapperMessage(kArrangeStoreRequest,
+                                      msg.SerializeAsString());
+}
+
+std::string MessageHandler::WrapMessage(
+    const protobuf::ArrangeStoreResponse &msg) {
+  return MakeSerialisedWrapperMessage(kArrangeStoreResponse,
+                                      msg.SerializeAsString());
+}
 
 std::string MessageHandler::WrapMessage(
     const protobuf::StoreChunkRequest &msg) {
@@ -99,14 +131,50 @@ std::string MessageHandler::WrapMessage(const protobuf::HasChunkResponse &msg) {
 }
 
 std::string MessageHandler::WrapMessage(
-    const protobuf::GetChunkReferencesRequest &msg) {
-  return MakeSerialisedWrapperMessage(kGetChunkReferencesRequest,
+    const protobuf::ValidateChunkRequest &msg) {
+  return MakeSerialisedWrapperMessage(kValidateChunkRequest,
                                       msg.SerializeAsString());
 }
 
 std::string MessageHandler::WrapMessage(
-    const protobuf::GetChunkReferencesResponse &msg) {
-  return MakeSerialisedWrapperMessage(kGetChunkReferencesResponse,
+    const protobuf::ValidateChunkResponse &msg) {
+  return MakeSerialisedWrapperMessage(kValidateChunkResponse,
+                                      msg.SerializeAsString());
+}
+
+std::string MessageHandler::WrapMessage(
+    const protobuf::DeleteChunkRequest &msg) {
+  return MakeSerialisedWrapperMessage(kDeleteChunkRequest,
+                                      msg.SerializeAsString());
+}
+
+std::string MessageHandler::WrapMessage(
+    const protobuf::DeleteChunkResponse &msg) {
+  return MakeSerialisedWrapperMessage(kDeleteChunkResponse,
+                                      msg.SerializeAsString());
+}
+
+std::string MessageHandler::WrapMessage(
+    const protobuf::DuplicateChunkRequest &msg) {
+  return MakeSerialisedWrapperMessage(kDuplicateChunkRequest,
+                                      msg.SerializeAsString());
+}
+
+std::string MessageHandler::WrapMessage(
+    const protobuf::DuplicateChunkResponse &msg) {
+  return MakeSerialisedWrapperMessage(kDuplicateChunkResponse,
+                                      msg.SerializeAsString());
+}
+
+std::string MessageHandler::WrapMessage(
+    const protobuf::CacheChunkRequest &msg) {
+  return MakeSerialisedWrapperMessage(kCacheChunkRequest,
+                                      msg.SerializeAsString());
+}
+
+std::string MessageHandler::WrapMessage(
+    const protobuf::CacheChunkResponse &msg) {
+  return MakeSerialisedWrapperMessage(kCacheChunkResponse,
                                       msg.SerializeAsString());
 }
 
@@ -143,6 +211,18 @@ std::string MessageHandler::WrapMessage(
 std::string MessageHandler::WrapMessage(
     const protobuf::AddToReferenceListResponse &msg) {
   return MakeSerialisedWrapperMessage(kAddToReferenceListResponse,
+                                      msg.SerializeAsString());
+}
+
+std::string MessageHandler::WrapMessage(
+    const protobuf::GetChunkReferencesRequest &msg) {
+  return MakeSerialisedWrapperMessage(kGetChunkReferencesRequest,
+                                      msg.SerializeAsString());
+}
+
+std::string MessageHandler::WrapMessage(
+    const protobuf::GetChunkReferencesResponse &msg) {
+  return MakeSerialisedWrapperMessage(kGetChunkReferencesResponse,
                                       msg.SerializeAsString());
 }
 
@@ -310,343 +390,428 @@ void MessageHandler::ProcessSerialisedMessage(const int& message_type,
   *timeout = transport::kImmediateTimeout;
 
   switch (message_type) {
+    case kArrangeStoreRequest: {
+      protobuf::ArrangeStoreRequest in_msg;
+      if (in_msg.ParseFromString(payload) && in_msg.IsInitialized()) {
+        protobuf::ArrangeStoreResponse out_msg;
+        (*on_arrange_store_request_)(info, in_msg, &out_msg);
+        if (!(*response = WrapMessage(out_msg)).empty())
+          *timeout = transport::kDefaultInitialTimeout;
+      }
+      break;
+    }
+    case kArrangeStoreResponse: {
+      protobuf::ArrangeStoreResponse in_msg;
+      if (in_msg.ParseFromString(payload) && in_msg.IsInitialized())
+        (*on_arrange_store_response_)(in_msg);
+      break;
+    }
+
     case kStoreChunkRequest: {
-      protobuf::StoreChunkRequest req;
-      if (req.ParseFromString(payload) && req.IsInitialized()) {
-        protobuf::StoreChunkResponse rsp;
-        (*on_store_chunk_request_)(info, req, &rsp);
-        if (!(*response = WrapMessage(rsp)).empty())
+      protobuf::StoreChunkRequest in_msg;
+      if (in_msg.ParseFromString(payload) && in_msg.IsInitialized()) {
+        protobuf::StoreChunkResponse out_msg;
+        (*on_store_chunk_request_)(info, in_msg, &out_msg);
+        if (!(*response = WrapMessage(out_msg)).empty())
           *timeout = transport::kDefaultInitialTimeout;
       }
       break;
     }
     case kStoreChunkResponse: {
-      protobuf::StoreChunkResponse req;
-      if (req.ParseFromString(payload) && req.IsInitialized())
-        (*on_store_chunk_response_)(req);
+      protobuf::StoreChunkResponse in_msg;
+      if (in_msg.ParseFromString(payload) && in_msg.IsInitialized())
+        (*on_store_chunk_response_)(in_msg);
       break;
     }
 
     case kGetChunkRequest: {
-      protobuf::GetChunkRequest req;
-      if (req.ParseFromString(payload) && req.IsInitialized()) {
-        protobuf::GetChunkResponse rsp;
-        (*on_get_chunk_request_)(info, req, &rsp);
-        if (!(*response = WrapMessage(rsp)).empty())
+      protobuf::GetChunkRequest in_msg;
+      if (in_msg.ParseFromString(payload) && in_msg.IsInitialized()) {
+        protobuf::GetChunkResponse out_msg;
+        (*on_get_chunk_request_)(info, in_msg, &out_msg);
+        if (!(*response = WrapMessage(out_msg)).empty())
           *timeout = transport::kDefaultInitialTimeout;
       }
       break;
     }
     case kGetChunkResponse: {
-      protobuf::GetChunkResponse req;
-      if (req.ParseFromString(payload) && req.IsInitialized())
-        (*on_get_chunk_response_)(req);
+      protobuf::GetChunkResponse in_msg;
+      if (in_msg.ParseFromString(payload) && in_msg.IsInitialized())
+        (*on_get_chunk_response_)(in_msg);
       break;
     }
 
     case kHasChunkRequest: {
-      protobuf::HasChunkRequest req;
-      if (req.ParseFromString(payload) && req.IsInitialized()) {
-        protobuf::HasChunkResponse rsp;
-        (*on_has_chunk_request_)(info, req, &rsp);
-        if (!(*response = WrapMessage(rsp)).empty())
+      protobuf::HasChunkRequest in_msg;
+      if (in_msg.ParseFromString(payload) && in_msg.IsInitialized()) {
+        protobuf::HasChunkResponse out_msg;
+        (*on_has_chunk_request_)(info, in_msg, &out_msg);
+        if (!(*response = WrapMessage(out_msg)).empty())
           *timeout = transport::kDefaultInitialTimeout;
       }
       break;
     }
     case kHasChunkResponse: {
-      protobuf::HasChunkResponse req;
-      if (req.ParseFromString(payload) && req.IsInitialized())
-        (*on_has_chunk_response_)(req);
+      protobuf::HasChunkResponse in_msg;
+      if (in_msg.ParseFromString(payload) && in_msg.IsInitialized())
+        (*on_has_chunk_response_)(in_msg);
       break;
     }
 
-    case kGetChunkReferencesRequest: {
-      protobuf::GetChunkReferencesRequest req;
-      if (req.ParseFromString(payload) && req.IsInitialized()) {
-        protobuf::GetChunkReferencesResponse rsp;
-        (*on_get_chunk_references_request_)(info, req, &rsp);
-        if (!(*response = WrapMessage(rsp)).empty())
+    case kValidateChunkRequest: {
+      protobuf::ValidateChunkRequest in_msg;
+      if (in_msg.ParseFromString(payload) && in_msg.IsInitialized()) {
+        protobuf::ValidateChunkResponse out_msg;
+        (*on_validate_chunk_request_)(info, in_msg, &out_msg);
+        if (!(*response = WrapMessage(out_msg)).empty())
           *timeout = transport::kDefaultInitialTimeout;
       }
       break;
     }
-    case kGetChunkReferencesResponse: {
-      protobuf::GetChunkReferencesResponse req;
-      if (req.ParseFromString(payload) && req.IsInitialized())
-        (*on_get_chunk_references_response_)(req);
+    case kValidateChunkResponse: {
+      protobuf::ValidateChunkResponse in_msg;
+      if (in_msg.ParseFromString(payload) && in_msg.IsInitialized())
+        (*on_validate_chunk_response_)(in_msg);
+      break;
+    }
+
+    case kDeleteChunkRequest: {
+      protobuf::DeleteChunkRequest in_msg;
+      if (in_msg.ParseFromString(payload) && in_msg.IsInitialized()) {
+        protobuf::DeleteChunkResponse out_msg;
+        (*on_delete_chunk_request_)(info, in_msg, &out_msg);
+        if (!(*response = WrapMessage(out_msg)).empty())
+          *timeout = transport::kDefaultInitialTimeout;
+      }
+      break;
+    }
+    case kDeleteChunkResponse: {
+      protobuf::DeleteChunkResponse in_msg;
+      if (in_msg.ParseFromString(payload) && in_msg.IsInitialized())
+        (*on_delete_chunk_response_)(in_msg);
+      break;
+    }
+
+    case kDuplicateChunkRequest: {
+      protobuf::DuplicateChunkRequest in_msg;
+      if (in_msg.ParseFromString(payload) && in_msg.IsInitialized()) {
+        protobuf::DuplicateChunkResponse out_msg;
+        (*on_duplicate_chunk_request_)(info, in_msg, &out_msg);
+        if (!(*response = WrapMessage(out_msg)).empty())
+          *timeout = transport::kDefaultInitialTimeout;
+      }
+      break;
+    }
+    case kDuplicateChunkResponse: {
+      protobuf::DuplicateChunkResponse in_msg;
+      if (in_msg.ParseFromString(payload) && in_msg.IsInitialized())
+        (*on_duplicate_chunk_response_)(in_msg);
+      break;
+    }
+
+    case kCacheChunkRequest: {
+      protobuf::CacheChunkRequest in_msg;
+      if (in_msg.ParseFromString(payload) && in_msg.IsInitialized()) {
+        protobuf::CacheChunkResponse out_msg;
+        (*on_cache_chunk_request_)(info, in_msg, &out_msg);
+        if (!(*response = WrapMessage(out_msg)).empty())
+          *timeout = transport::kDefaultInitialTimeout;
+      }
+      break;
+    }
+    case kCacheChunkResponse: {
+      protobuf::CacheChunkResponse in_msg;
+      if (in_msg.ParseFromString(payload) && in_msg.IsInitialized())
+        (*on_cache_chunk_response_)(in_msg);
       break;
     }
 
     case kAddToWatchListRequest: {
-      protobuf::AddToWatchListRequest req;
-      if (req.ParseFromString(payload) && req.IsInitialized()) {
-        protobuf::AddToWatchListResponse rsp;
-        (*on_add_to_watch_list_request_)(info, req, &rsp);
-        if (!(*response = WrapMessage(rsp)).empty())
+      protobuf::AddToWatchListRequest in_msg;
+      if (in_msg.ParseFromString(payload) && in_msg.IsInitialized()) {
+        protobuf::AddToWatchListResponse out_msg;
+        (*on_add_to_watch_list_request_)(info, in_msg, &out_msg);
+        if (!(*response = WrapMessage(out_msg)).empty())
           *timeout = transport::kDefaultInitialTimeout;
       }
       break;
     }
     case kAddToWatchListResponse: {
-      protobuf::AddToWatchListResponse req;
-      if (req.ParseFromString(payload) && req.IsInitialized())
-        (*on_add_to_watch_list_response_)(req);
+      protobuf::AddToWatchListResponse in_msg;
+      if (in_msg.ParseFromString(payload) && in_msg.IsInitialized())
+        (*on_add_to_watch_list_response_)(in_msg);
       break;
     }
 
     case kRemoveFromWatchListRequest: {
-      protobuf::RemoveFromWatchListRequest req;
-      if (req.ParseFromString(payload) && req.IsInitialized()) {
-        protobuf::RemoveFromWatchListResponse rsp;
-        (*on_remove_from_watch_list_request_)(info, req, &rsp);
-        if (!(*response = WrapMessage(rsp)).empty())
+      protobuf::RemoveFromWatchListRequest in_msg;
+      if (in_msg.ParseFromString(payload) && in_msg.IsInitialized()) {
+        protobuf::RemoveFromWatchListResponse out_msg;
+        (*on_remove_from_watch_list_request_)(info, in_msg, &out_msg);
+        if (!(*response = WrapMessage(out_msg)).empty())
           *timeout = transport::kDefaultInitialTimeout;
       }
       break;
     }
     case kRemoveFromWatchListResponse: {
-      protobuf::RemoveFromWatchListResponse req;
-      if (req.ParseFromString(payload) && req.IsInitialized())
-        (*on_remove_from_watch_list_response_)(req);
+      protobuf::RemoveFromWatchListResponse in_msg;
+      if (in_msg.ParseFromString(payload) && in_msg.IsInitialized())
+        (*on_remove_from_watch_list_response_)(in_msg);
       break;
     }
 
     case kAddToReferenceListRequest: {
-      protobuf::AddToReferenceListRequest req;
-      if (req.ParseFromString(payload) && req.IsInitialized()) {
-        protobuf::AddToReferenceListResponse rsp;
-        (*on_add_to_reference_list_request_)(info, req, &rsp);
-        if (!(*response = WrapMessage(rsp)).empty())
+      protobuf::AddToReferenceListRequest in_msg;
+      if (in_msg.ParseFromString(payload) && in_msg.IsInitialized()) {
+        protobuf::AddToReferenceListResponse out_msg;
+        (*on_add_to_reference_list_request_)(info, in_msg, &out_msg);
+        if (!(*response = WrapMessage(out_msg)).empty())
           *timeout = transport::kDefaultInitialTimeout;
       }
       break;
     }
     case kAddToReferenceListResponse: {
-      protobuf::AddToReferenceListResponse req;
-      if (req.ParseFromString(payload) && req.IsInitialized())
-        (*on_add_to_reference_list_response_)(req);
+      protobuf::AddToReferenceListResponse in_msg;
+      if (in_msg.ParseFromString(payload) && in_msg.IsInitialized())
+        (*on_add_to_reference_list_response_)(in_msg);
+      break;
+    }
+
+    case kGetChunkReferencesRequest: {
+      protobuf::GetChunkReferencesRequest in_msg;
+      if (in_msg.ParseFromString(payload) && in_msg.IsInitialized()) {
+        protobuf::GetChunkReferencesResponse out_msg;
+        (*on_get_chunk_references_request_)(info, in_msg, &out_msg);
+        if (!(*response = WrapMessage(out_msg)).empty())
+          *timeout = transport::kDefaultInitialTimeout;
+      }
+      break;
+    }
+    case kGetChunkReferencesResponse: {
+      protobuf::GetChunkReferencesResponse in_msg;
+      if (in_msg.ParseFromString(payload) && in_msg.IsInitialized())
+        (*on_get_chunk_references_response_)(in_msg);
       break;
     }
 
     case kAmendAccountRequest: {
-      protobuf::AmendAccountRequest req;
-      if (req.ParseFromString(payload) && req.IsInitialized()) {
-        protobuf::AmendAccountResponse rsp;
-        (*on_amend_account_request_)(info, req, &rsp);
-        if (!(*response = WrapMessage(rsp)).empty())
+      protobuf::AmendAccountRequest in_msg;
+      if (in_msg.ParseFromString(payload) && in_msg.IsInitialized()) {
+        protobuf::AmendAccountResponse out_msg;
+        (*on_amend_account_request_)(info, in_msg, &out_msg);
+        if (!(*response = WrapMessage(out_msg)).empty())
           *timeout = transport::kDefaultInitialTimeout;
       }
       break;
     }
     case kAmendAccountResponse: {
-      protobuf::AmendAccountResponse req;
-      if (req.ParseFromString(payload) && req.IsInitialized())
-        (*on_amend_account_response_)(req);
+      protobuf::AmendAccountResponse in_msg;
+      if (in_msg.ParseFromString(payload) && in_msg.IsInitialized())
+        (*on_amend_account_response_)(in_msg);
       break;
     }
 
     case kExpectAmendmentRequest: {
-      protobuf::ExpectAmendmentRequest req;
-      if (req.ParseFromString(payload) && req.IsInitialized()) {
-        protobuf::ExpectAmendmentResponse rsp;
-        (*on_expect_amendment_request_)(info, req, &rsp);
-        if (!(*response = WrapMessage(rsp)).empty())
+      protobuf::ExpectAmendmentRequest in_msg;
+      if (in_msg.ParseFromString(payload) && in_msg.IsInitialized()) {
+        protobuf::ExpectAmendmentResponse out_msg;
+        (*on_expect_amendment_request_)(info, in_msg, &out_msg);
+        if (!(*response = WrapMessage(out_msg)).empty())
           *timeout = transport::kDefaultInitialTimeout;
       }
       break;
     }
     case kExpectAmendmentResponse: {
-      protobuf::ExpectAmendmentResponse req;
-      if (req.ParseFromString(payload) && req.IsInitialized())
-        (*on_expect_amendment_response_)(req);
+      protobuf::ExpectAmendmentResponse in_msg;
+      if (in_msg.ParseFromString(payload) && in_msg.IsInitialized())
+        (*on_expect_amendment_response_)(in_msg);
       break;
     }
 
     case kAccountStatusRequest: {
-      protobuf::AccountStatusRequest req;
-      if (req.ParseFromString(payload) && req.IsInitialized()) {
-        protobuf::AccountStatusResponse rsp;
-        (*on_account_status_request_)(info, req, &rsp);
-        if (!(*response = WrapMessage(rsp)).empty())
+      protobuf::AccountStatusRequest in_msg;
+      if (in_msg.ParseFromString(payload) && in_msg.IsInitialized()) {
+        protobuf::AccountStatusResponse out_msg;
+        (*on_account_status_request_)(info, in_msg, &out_msg);
+        if (!(*response = WrapMessage(out_msg)).empty())
           *timeout = transport::kDefaultInitialTimeout;
       }
       break;
     }
     case kAccountStatusResponse: {
-      protobuf::AccountStatusResponse req;
-      if (req.ParseFromString(payload) && req.IsInitialized())
-        (*on_account_status_response_)(req);
+      protobuf::AccountStatusResponse in_msg;
+      if (in_msg.ParseFromString(payload) && in_msg.IsInitialized())
+        (*on_account_status_response_)(in_msg);
       break;
     }
 
     case kGetSyncDataRequest: {
-      protobuf::GetSyncDataRequest req;
-      if (req.ParseFromString(payload) && req.IsInitialized()) {
-        protobuf::GetSyncDataResponse rsp;
-        (*on_get_sync_data_request_)(info, req, &rsp);
-        if (!(*response = WrapMessage(rsp)).empty())
+      protobuf::GetSyncDataRequest in_msg;
+      if (in_msg.ParseFromString(payload) && in_msg.IsInitialized()) {
+        protobuf::GetSyncDataResponse out_msg;
+        (*on_get_sync_data_request_)(info, in_msg, &out_msg);
+        if (!(*response = WrapMessage(out_msg)).empty())
           *timeout = transport::kDefaultInitialTimeout;
       }
       break;
     }
     case kGetSyncDataResponse: {
-      protobuf::GetSyncDataResponse req;
-      if (req.ParseFromString(payload) && req.IsInitialized())
-        (*on_get_sync_data_response_)(req);
+      protobuf::GetSyncDataResponse in_msg;
+      if (in_msg.ParseFromString(payload) && in_msg.IsInitialized())
+        (*on_get_sync_data_response_)(in_msg);
       break;
     }
 
     case kGetAccountRequest: {
-      protobuf::GetAccountRequest req;
-      if (req.ParseFromString(payload) && req.IsInitialized()) {
-        protobuf::GetAccountResponse rsp;
-        (*on_get_account_request_)(info, req, &rsp);
-        if (!(*response = WrapMessage(rsp)).empty())
+      protobuf::GetAccountRequest in_msg;
+      if (in_msg.ParseFromString(payload) && in_msg.IsInitialized()) {
+        protobuf::GetAccountResponse out_msg;
+        (*on_get_account_request_)(info, in_msg, &out_msg);
+        if (!(*response = WrapMessage(out_msg)).empty())
           *timeout = transport::kDefaultInitialTimeout;
       }
       break;
     }
     case kGetAccountResponse: {
-      protobuf::GetAccountResponse req;
-      if (req.ParseFromString(payload) && req.IsInitialized())
-        (*on_get_account_response_)(req);
+      protobuf::GetAccountResponse in_msg;
+      if (in_msg.ParseFromString(payload) && in_msg.IsInitialized())
+        (*on_get_account_response_)(in_msg);
       break;
     }
 
     case kGetChunkInfoRequest: {
-      protobuf::GetChunkInfoRequest req;
-      if (req.ParseFromString(payload) && req.IsInitialized()) {
-        protobuf::GetChunkInfoResponse rsp;
-        (*on_get_chunk_info_request_)(info, req, &rsp);
-        if (!(*response = WrapMessage(rsp)).empty())
+      protobuf::GetChunkInfoRequest in_msg;
+      if (in_msg.ParseFromString(payload) && in_msg.IsInitialized()) {
+        protobuf::GetChunkInfoResponse out_msg;
+        (*on_get_chunk_info_request_)(info, in_msg, &out_msg);
+        if (!(*response = WrapMessage(out_msg)).empty())
           *timeout = transport::kDefaultInitialTimeout;
       }
       break;
     }
     case kGetChunkInfoResponse: {
-      protobuf::GetChunkInfoResponse req;
-      if (req.ParseFromString(payload) && req.IsInitialized())
-        (*on_get_chunk_info_response_)(req);
+      protobuf::GetChunkInfoResponse in_msg;
+      if (in_msg.ParseFromString(payload) && in_msg.IsInitialized())
+        (*on_get_chunk_info_response_)(in_msg);
       break;
     }
 
     case kGetBufferRequest: {
-      protobuf::GetBufferRequest req;
-      if (req.ParseFromString(payload) && req.IsInitialized()) {
-        protobuf::GetBufferResponse rsp;
-        (*on_get_buffer_request_)(info, req, &rsp);
-        if (!(*response = WrapMessage(rsp)).empty())
+      protobuf::GetBufferRequest in_msg;
+      if (in_msg.ParseFromString(payload) && in_msg.IsInitialized()) {
+        protobuf::GetBufferResponse out_msg;
+        (*on_get_buffer_request_)(info, in_msg, &out_msg);
+        if (!(*response = WrapMessage(out_msg)).empty())
           *timeout = transport::kDefaultInitialTimeout;
       }
       break;
     }
     case kGetBufferResponse: {
-      protobuf::GetBufferResponse req;
-      if (req.ParseFromString(payload) && req.IsInitialized())
-        (*on_get_buffer_response_)(req);
+      protobuf::GetBufferResponse in_msg;
+      if (in_msg.ParseFromString(payload) && in_msg.IsInitialized())
+        (*on_get_buffer_response_)(in_msg);
       break;
     }
 
     case kCreateBufferRequest: {
-      protobuf::CreateBufferRequest req;
-      if (req.ParseFromString(payload) && req.IsInitialized()) {
-        protobuf::CreateBufferResponse rsp;
-        (*on_create_buffer_request_)(info, req, &rsp);
-        if (!(*response = WrapMessage(rsp)).empty())
+      protobuf::CreateBufferRequest in_msg;
+      if (in_msg.ParseFromString(payload) && in_msg.IsInitialized()) {
+        protobuf::CreateBufferResponse out_msg;
+        (*on_create_buffer_request_)(info, in_msg, &out_msg);
+        if (!(*response = WrapMessage(out_msg)).empty())
           *timeout = transport::kDefaultInitialTimeout;
       }
       break;
     }
     case kCreateBufferResponse: {
-      protobuf::CreateBufferResponse req;
-      if (req.ParseFromString(payload) && req.IsInitialized())
-        (*on_create_buffer_response_)(req);
+      protobuf::CreateBufferResponse in_msg;
+      if (in_msg.ParseFromString(payload) && in_msg.IsInitialized())
+        (*on_create_buffer_response_)(in_msg);
       break;
     }
 
     case kModifyBufferInfoRequest: {
-      protobuf::ModifyBufferInfoRequest req;
-      if (req.ParseFromString(payload) && req.IsInitialized()) {
-        protobuf::ModifyBufferInfoResponse rsp;
-        (*on_modify_buffer_info_request_)(info, req, &rsp);
-        if (!(*response = WrapMessage(rsp)).empty())
+      protobuf::ModifyBufferInfoRequest in_msg;
+      if (in_msg.ParseFromString(payload) && in_msg.IsInitialized()) {
+        protobuf::ModifyBufferInfoResponse out_msg;
+        (*on_modify_buffer_info_request_)(info, in_msg, &out_msg);
+        if (!(*response = WrapMessage(out_msg)).empty())
           *timeout = transport::kDefaultInitialTimeout;
       }
       break;
     }
     case kModifyBufferInfoResponse: {
-      protobuf::ModifyBufferInfoResponse req;
-      if (req.ParseFromString(payload) && req.IsInitialized())
-        (*on_modify_buffer_info_response_)(req);
+      protobuf::ModifyBufferInfoResponse in_msg;
+      if (in_msg.ParseFromString(payload) && in_msg.IsInitialized())
+        (*on_modify_buffer_info_response_)(in_msg);
       break;
     }
 
     case kGetBufferMessagesRequest: {
-      protobuf::GetBufferMessagesRequest req;
-      if (req.ParseFromString(payload) && req.IsInitialized()) {
-        protobuf::GetBufferMessagesResponse rsp;
-        (*on_get_buffer_messages_request_)(info, req, &rsp);
-        if (!(*response = WrapMessage(rsp)).empty())
+      protobuf::GetBufferMessagesRequest in_msg;
+      if (in_msg.ParseFromString(payload) && in_msg.IsInitialized()) {
+        protobuf::GetBufferMessagesResponse out_msg;
+        (*on_get_buffer_messages_request_)(info, in_msg, &out_msg);
+        if (!(*response = WrapMessage(out_msg)).empty())
           *timeout = transport::kDefaultInitialTimeout;
       }
       break;
     }
     case kGetBufferMessagesResponse: {
-      protobuf::GetBufferMessagesResponse req;
-      if (req.ParseFromString(payload) && req.IsInitialized())
-        (*on_get_buffer_messages_response_)(req);
+      protobuf::GetBufferMessagesResponse in_msg;
+      if (in_msg.ParseFromString(payload) && in_msg.IsInitialized())
+        (*on_get_buffer_messages_response_)(in_msg);
       break;
     }
 
     case kAddBufferMessageRequest: {
-      protobuf::AddBufferMessageRequest req;
-      if (req.ParseFromString(payload) && req.IsInitialized()) {
-        protobuf::AddBufferMessageResponse rsp;
-        (*on_add_buffer_message_request_)(info, req, &rsp);
-        if (!(*response = WrapMessage(rsp)).empty())
+      protobuf::AddBufferMessageRequest in_msg;
+      if (in_msg.ParseFromString(payload) && in_msg.IsInitialized()) {
+        protobuf::AddBufferMessageResponse out_msg;
+        (*on_add_buffer_message_request_)(info, in_msg, &out_msg);
+        if (!(*response = WrapMessage(out_msg)).empty())
           *timeout = transport::kDefaultInitialTimeout;
       }
       break;
     }
     case kAddBufferMessageResponse: {
-      protobuf::AddBufferMessageResponse req;
-      if (req.ParseFromString(payload) && req.IsInitialized())
-        (*on_add_buffer_message_response_)(req);
+      protobuf::AddBufferMessageResponse in_msg;
+      if (in_msg.ParseFromString(payload) && in_msg.IsInitialized())
+        (*on_add_buffer_message_response_)(in_msg);
       break;
     }
 
     case kGetBufferPresenceRequest: {
-      protobuf::GetBufferPresenceRequest req;
-      if (req.ParseFromString(payload) && req.IsInitialized()) {
-        protobuf::GetBufferPresenceResponse rsp;
-        (*on_get_buffer_presence_request_)(info, req, &rsp);
-        if (!(*response = WrapMessage(rsp)).empty())
+      protobuf::GetBufferPresenceRequest in_msg;
+      if (in_msg.ParseFromString(payload) && in_msg.IsInitialized()) {
+        protobuf::GetBufferPresenceResponse out_msg;
+        (*on_get_buffer_presence_request_)(info, in_msg, &out_msg);
+        if (!(*response = WrapMessage(out_msg)).empty())
           *timeout = transport::kDefaultInitialTimeout;
       }
       break;
     }
     case kGetBufferPresenceResponse: {
-      protobuf::GetBufferPresenceResponse req;
-      if (req.ParseFromString(payload) && req.IsInitialized())
-        (*on_get_buffer_presence_response_)(req);
+      protobuf::GetBufferPresenceResponse in_msg;
+      if (in_msg.ParseFromString(payload) && in_msg.IsInitialized())
+        (*on_get_buffer_presence_response_)(in_msg);
       break;
     }
 
     case kAddBufferPresenceRequest: {
-      protobuf::AddBufferPresenceRequest req;
-      if (req.ParseFromString(payload) && req.IsInitialized()) {
-        protobuf::AddBufferPresenceResponse rsp;
-        (*on_add_buffer_presence_request_)(info, req, &rsp);
-        if (!(*response = WrapMessage(rsp)).empty())
+      protobuf::AddBufferPresenceRequest in_msg;
+      if (in_msg.ParseFromString(payload) && in_msg.IsInitialized()) {
+        protobuf::AddBufferPresenceResponse out_msg;
+        (*on_add_buffer_presence_request_)(info, in_msg, &out_msg);
+        if (!(*response = WrapMessage(out_msg)).empty())
           *timeout = transport::kDefaultInitialTimeout;
       }
       break;
     }
     case kAddBufferPresenceResponse: {
-      protobuf::AddBufferPresenceResponse req;
-      if (req.ParseFromString(payload) && req.IsInitialized())
-        (*on_add_buffer_presence_response_)(req);
+      protobuf::AddBufferPresenceResponse in_msg;
+      if (in_msg.ParseFromString(payload) && in_msg.IsInitialized())
+        (*on_add_buffer_presence_response_)(in_msg);
       break;
     }
 

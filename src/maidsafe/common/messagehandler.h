@@ -4,7 +4,7 @@
 * Copyright [2011] maidsafe.net limited
 *
 * Description:  Class for processing RPC messages.
-* Created:      2011-01-17
+* Created:      2011-01-18
 * Company:      maidsafe.net limited
 *
 * The following source code is property of maidsafe.net limited and is not
@@ -33,28 +33,40 @@ namespace bs2 = boost::signals2;
 namespace maidsafe {
 
 namespace protobuf {
-class StorePrepRequest;
-class StorePrepResponse;
+// Chunk messages
+class ArrangeStoreRequest;
+class ArrangeStoreResponse;
 class StoreChunkRequest;
 class StoreChunkResponse;
 class GetChunkRequest;
 class GetChunkResponse;
 class HasChunkRequest;
 class HasChunkResponse;
-class GetChunkReferencesRequest;
-class GetChunkReferencesResponse;
+class ValidateChunkRequest;
+class ValidateChunkResponse;
+class DeleteChunkRequest;
+class DeleteChunkResponse;
+class DuplicateChunkRequest;
+class DuplicateChunkResponse;
+class CacheChunkRequest;
+class CacheChunkResponse;
+// ChunkInfo messages
 class AddToWatchListRequest;
 class AddToWatchListResponse;
 class RemoveFromWatchListRequest;
 class RemoveFromWatchListResponse;
 class AddToReferenceListRequest;
 class AddToReferenceListResponse;
+class GetChunkReferencesRequest;
+class GetChunkReferencesResponse;
+// Account messages
 class AmendAccountRequest;
 class AmendAccountResponse;
 class ExpectAmendmentRequest;
 class ExpectAmendmentResponse;
 class AccountStatusRequest;
 class AccountStatusResponse;
+// VaultSync messages
 class GetSyncDataRequest;
 class GetSyncDataResponse;
 class GetAccountRequest;
@@ -63,6 +75,7 @@ class GetChunkInfoRequest;
 class GetChunkInfoResponse;
 class GetBufferRequest;
 class GetBufferResponse;
+// Buffer messages
 class CreateBufferRequest;
 class CreateBufferResponse;
 class ModifyBufferInfoRequest;
@@ -80,143 +93,204 @@ class AddBufferPresenceResponse;
 // Highest possible message type ID, use as offset for type extensions.
 const int kMaxMessageType(kademlia::kMaxMessageType);
 
-class MessageHandler : public transport::MessageHandler {
+class MessageHandler : public kademlia::MessageHandler {
  public:
-  // StoreChunk signal pointers
+  // ArrangeStore request signal pointer
+  typedef boost::shared_ptr< bs2::signal< void(const transport::Info&,
+      const protobuf::ArrangeStoreRequest&,
+      protobuf::ArrangeStoreResponse*)> > ArrangeStoreReqSigPtr;
+  // ArrangeStore response signal pointer
+  typedef boost::shared_ptr< bs2::signal< void(
+      const protobuf::ArrangeStoreResponse&)> > ArrangeStoreRspSigPtr;
+  // StoreChunk request signal pointer
   typedef boost::shared_ptr< bs2::signal< void(const transport::Info&,
       const protobuf::StoreChunkRequest&,
       protobuf::StoreChunkResponse*)> > StoreChunkReqSigPtr;
+  // StoreChunk response signal pointer
   typedef boost::shared_ptr< bs2::signal< void(
       const protobuf::StoreChunkResponse&)> > StoreChunkRspSigPtr;
-  // GetChunk signal pointers
+  // GetChunk request signal pointer
   typedef boost::shared_ptr< bs2::signal< void(const transport::Info&,
       const protobuf::GetChunkRequest&,
       protobuf::GetChunkResponse*)> > GetChunkReqSigPtr;
+  // GetChunk response signal pointer
   typedef boost::shared_ptr< bs2::signal< void(
       const protobuf::GetChunkResponse&)> > GetChunkRspSigPtr;
-  // HasChunk signal pointers
+  // HasChunk request signal pointer
   typedef boost::shared_ptr< bs2::signal< void(const transport::Info&,
       const protobuf::HasChunkRequest&,
       protobuf::HasChunkResponse*)> > HasChunkReqSigPtr;
+  // HasChunk response signal pointer
   typedef boost::shared_ptr< bs2::signal< void(
       const protobuf::HasChunkResponse&)> > HasChunkRspSigPtr;
-  // GetChunkReferences signal pointers
+  // ValidateChunk request signal pointer
   typedef boost::shared_ptr< bs2::signal< void(const transport::Info&,
-      const protobuf::GetChunkReferencesRequest&,
-      protobuf::GetChunkReferencesResponse*)> > GetChunkReferencesReqSigPtr;
+      const protobuf::ValidateChunkRequest&,
+      protobuf::ValidateChunkResponse*)> > ValidateChunkReqSigPtr;
+  // ValidateChunk response signal pointer
   typedef boost::shared_ptr< bs2::signal< void(
-      const protobuf::GetChunkReferencesResponse&)> >
-      GetChunkReferencesRspSigPtr;
-  // AddToWatchList signal pointers
+      const protobuf::ValidateChunkResponse&)> > ValidateChunkRspSigPtr;
+  // DeleteChunk request signal pointer
+  typedef boost::shared_ptr< bs2::signal< void(const transport::Info&,
+      const protobuf::DeleteChunkRequest&,
+      protobuf::DeleteChunkResponse*)> > DeleteChunkReqSigPtr;
+  // DeleteChunk response signal pointer
+  typedef boost::shared_ptr< bs2::signal< void(
+      const protobuf::DeleteChunkResponse&)> > DeleteChunkRspSigPtr;
+  // DuplicateChunk request signal pointer
+  typedef boost::shared_ptr< bs2::signal< void(const transport::Info&,
+      const protobuf::DuplicateChunkRequest&,
+      protobuf::DuplicateChunkResponse*)> > DuplicateChunkReqSigPtr;
+  // DuplicateChunk response signal pointer
+  typedef boost::shared_ptr< bs2::signal< void(
+      const protobuf::DuplicateChunkResponse&)> > DuplicateChunkRspSigPtr;
+  // CacheChunk request signal pointer
+  typedef boost::shared_ptr< bs2::signal< void(const transport::Info&,
+      const protobuf::CacheChunkRequest&,
+      protobuf::CacheChunkResponse*)> > CacheChunkReqSigPtr;
+  // CacheChunk response signal pointer
+  typedef boost::shared_ptr< bs2::signal< void(
+      const protobuf::CacheChunkResponse&)> > CacheChunkRspSigPtr;
+  // AddToWatchList request signal pointer
   typedef boost::shared_ptr< bs2::signal< void(const transport::Info&,
       const protobuf::AddToWatchListRequest&,
       protobuf::AddToWatchListResponse*)> > AddToWatchListReqSigPtr;
+  // AddToWatchList response signal pointer
   typedef boost::shared_ptr< bs2::signal< void(
       const protobuf::AddToWatchListResponse&)> > AddToWatchListRspSigPtr;
-  // RemoveFromWatchList signal pointers
+  // RemoveFromWatchList request signal pointer
   typedef boost::shared_ptr< bs2::signal< void(const transport::Info&,
       const protobuf::RemoveFromWatchListRequest&,
       protobuf::RemoveFromWatchListResponse*)> > RemoveFromWatchListReqSigPtr;
+  // RemoveFromWatchList response signal pointer
   typedef boost::shared_ptr< bs2::signal< void(
       const protobuf::RemoveFromWatchListResponse&)> >
       RemoveFromWatchListRspSigPtr;
-  // AddToReferenceList signal pointers
+  // AddToReferenceList request signal pointer
   typedef boost::shared_ptr< bs2::signal< void(const transport::Info&,
       const protobuf::AddToReferenceListRequest&,
       protobuf::AddToReferenceListResponse*)> > AddToReferenceListReqSigPtr;
+  // AddToReferenceList response signal pointer
   typedef boost::shared_ptr< bs2::signal< void(
       const protobuf::AddToReferenceListResponse&)> >
       AddToReferenceListRspSigPtr;
-  // AmendAccount signal pointers
+  // GetChunkReferences request signal pointer
+  typedef boost::shared_ptr< bs2::signal< void(const transport::Info&,
+      const protobuf::GetChunkReferencesRequest&,
+      protobuf::GetChunkReferencesResponse*)> > GetChunkReferencesReqSigPtr;
+  // GetChunkReferences response signal pointer
+  typedef boost::shared_ptr< bs2::signal< void(
+      const protobuf::GetChunkReferencesResponse&)> >
+      GetChunkReferencesRspSigPtr;
+  // AmendAccount request signal pointer
   typedef boost::shared_ptr< bs2::signal< void(const transport::Info&,
       const protobuf::AmendAccountRequest&,
       protobuf::AmendAccountResponse*)> > AmendAccountReqSigPtr;
+  // AmendAccount response signal pointer
   typedef boost::shared_ptr< bs2::signal< void(
       const protobuf::AmendAccountResponse&)> > AmendAccountRspSigPtr;
-  // ExpectAmendment signal pointers
+  // ExpectAmendment request signal pointer
   typedef boost::shared_ptr< bs2::signal< void(const transport::Info&,
       const protobuf::ExpectAmendmentRequest&,
       protobuf::ExpectAmendmentResponse*)> > ExpectAmendmentReqSigPtr;
+  // ExpectAmendment response signal pointer
   typedef boost::shared_ptr< bs2::signal< void(
       const protobuf::ExpectAmendmentResponse&)> > ExpectAmendmentRspSigPtr;
-  // AccountStatus signal pointers
+  // AccountStatus request signal pointer
   typedef boost::shared_ptr< bs2::signal< void(const transport::Info&,
       const protobuf::AccountStatusRequest&,
       protobuf::AccountStatusResponse*)> > AccountStatusReqSigPtr;
+  // AccountStatus response signal pointer
   typedef boost::shared_ptr< bs2::signal< void(
       const protobuf::AccountStatusResponse&)> > AccountStatusRspSigPtr;
-  // GetSyncData signal pointers
+  // GetSyncData request signal pointer
   typedef boost::shared_ptr< bs2::signal< void(const transport::Info&,
       const protobuf::GetSyncDataRequest&,
       protobuf::GetSyncDataResponse*)> > GetSyncDataReqSigPtr;
+  // GetSyncData response signal pointer
   typedef boost::shared_ptr< bs2::signal< void(
       const protobuf::GetSyncDataResponse&)> > GetSyncDataRspSigPtr;
-  // GetAccount signal pointers
+  // GetAccount request signal pointer
   typedef boost::shared_ptr< bs2::signal< void(const transport::Info&,
       const protobuf::GetAccountRequest&,
       protobuf::GetAccountResponse*)> > GetAccountReqSigPtr;
+  // GetAccount response signal pointer
   typedef boost::shared_ptr< bs2::signal< void(
       const protobuf::GetAccountResponse&)> > GetAccountRspSigPtr;
-  // GetChunkInfo signal pointers
+  // GetChunkInfo request signal pointer
   typedef boost::shared_ptr< bs2::signal< void(const transport::Info&,
       const protobuf::GetChunkInfoRequest&,
       protobuf::GetChunkInfoResponse*)> > GetChunkInfoReqSigPtr;
+  // GetChunkInfo response signal pointer
   typedef boost::shared_ptr< bs2::signal< void(
       const protobuf::GetChunkInfoResponse&)> > GetChunkInfoRspSigPtr;
-  // GetBuffer signal pointers
+  // GetBuffer request signal pointer
   typedef boost::shared_ptr< bs2::signal< void(const transport::Info&,
       const protobuf::GetBufferRequest&,
       protobuf::GetBufferResponse*)> > GetBufferReqSigPtr;
+  // GetBuffer response signal pointer
   typedef boost::shared_ptr< bs2::signal< void(
       const protobuf::GetBufferResponse&)> > GetBufferRspSigPtr;
-  // CreateBuffer signal pointers
+  // CreateBuffer request signal pointer
   typedef boost::shared_ptr< bs2::signal< void(const transport::Info&,
       const protobuf::CreateBufferRequest&,
       protobuf::CreateBufferResponse*)> > CreateBufferReqSigPtr;
+  // CreateBuffer response signal pointer
   typedef boost::shared_ptr< bs2::signal< void(
       const protobuf::CreateBufferResponse&)> > CreateBufferRspSigPtr;
-  // ModifyBufferInfo signal pointers
+  // ModifyBufferInfo request signal pointer
   typedef boost::shared_ptr< bs2::signal< void(const transport::Info&,
       const protobuf::ModifyBufferInfoRequest&,
       protobuf::ModifyBufferInfoResponse*)> > ModifyBufferInfoReqSigPtr;
+  // ModifyBufferInfo response signal pointer
   typedef boost::shared_ptr< bs2::signal< void(
       const protobuf::ModifyBufferInfoResponse&)> > ModifyBufferInfoRspSigPtr;
-  // GetBufferMessages signal pointers
+  // GetBufferMessages request signal pointer
   typedef boost::shared_ptr< bs2::signal< void(const transport::Info&,
       const protobuf::GetBufferMessagesRequest&,
       protobuf::GetBufferMessagesResponse*)> > GetBufferMessagesReqSigPtr;
+  // GetBufferMessages response signal pointer
   typedef boost::shared_ptr< bs2::signal< void(
       const protobuf::GetBufferMessagesResponse&)> > GetBufferMessagesRspSigPtr;
-  // AddBufferMessage signal pointers
+  // AddBufferMessage request signal pointer
   typedef boost::shared_ptr< bs2::signal< void(const transport::Info&,
       const protobuf::AddBufferMessageRequest&,
       protobuf::AddBufferMessageResponse*)> > AddBufferMessageReqSigPtr;
+  // AddBufferMessage response signal pointer
   typedef boost::shared_ptr< bs2::signal< void(
       const protobuf::AddBufferMessageResponse&)> > AddBufferMessageRspSigPtr;
-  // GetBufferPresence signal pointers
+  // GetBufferPresence request signal pointer
   typedef boost::shared_ptr< bs2::signal< void(const transport::Info&,
       const protobuf::GetBufferPresenceRequest&,
       protobuf::GetBufferPresenceResponse*)> > GetBufferPresenceReqSigPtr;
+  // GetBufferPresence response signal pointer
   typedef boost::shared_ptr< bs2::signal< void(
       const protobuf::GetBufferPresenceResponse&)> > GetBufferPresenceRspSigPtr;
-  // AddBufferPresence signal pointers
+  // AddBufferPresence request signal pointer
   typedef boost::shared_ptr< bs2::signal< void(const transport::Info&,
       const protobuf::AddBufferPresenceRequest&,
       protobuf::AddBufferPresenceResponse*)> > AddBufferPresenceReqSigPtr;
+  // AddBufferPresence response signal pointer
   typedef boost::shared_ptr< bs2::signal< void(
       const protobuf::AddBufferPresenceResponse&)> > AddBufferPresenceRspSigPtr;
 
   MessageHandler()
-    : on_store_chunk_request_(new StoreChunkReqSigPtr::element_type),
+    : on_arrange_store_request_(new ArrangeStoreReqSigPtr::element_type),
+      on_arrange_store_response_(new ArrangeStoreRspSigPtr::element_type),
+      on_store_chunk_request_(new StoreChunkReqSigPtr::element_type),
       on_store_chunk_response_(new StoreChunkRspSigPtr::element_type),
       on_get_chunk_request_(new GetChunkReqSigPtr::element_type),
       on_get_chunk_response_(new GetChunkRspSigPtr::element_type),
       on_has_chunk_request_(new HasChunkReqSigPtr::element_type),
       on_has_chunk_response_(new HasChunkRspSigPtr::element_type),
-      on_get_chunk_references_request_(
-          new GetChunkReferencesReqSigPtr::element_type),
-      on_get_chunk_references_response_(
-          new GetChunkReferencesRspSigPtr::element_type),
+      on_validate_chunk_request_(new ValidateChunkReqSigPtr::element_type),
+      on_validate_chunk_response_(new ValidateChunkRspSigPtr::element_type),
+      on_delete_chunk_request_(new DeleteChunkReqSigPtr::element_type),
+      on_delete_chunk_response_(new DeleteChunkRspSigPtr::element_type),
+      on_duplicate_chunk_request_(new DuplicateChunkReqSigPtr::element_type),
+      on_duplicate_chunk_response_(new DuplicateChunkRspSigPtr::element_type),
+      on_cache_chunk_request_(new CacheChunkReqSigPtr::element_type),
+      on_cache_chunk_response_(new CacheChunkRspSigPtr::element_type),
       on_add_to_watch_list_request_(new AddToWatchListReqSigPtr::element_type),
       on_add_to_watch_list_response_(new AddToWatchListRspSigPtr::element_type),
       on_remove_from_watch_list_request_(
@@ -227,6 +301,10 @@ class MessageHandler : public transport::MessageHandler {
           new AddToReferenceListReqSigPtr::element_type),
       on_add_to_reference_list_response_(
           new AddToReferenceListRspSigPtr::element_type),
+      on_get_chunk_references_request_(
+          new GetChunkReferencesReqSigPtr::element_type),
+      on_get_chunk_references_response_(
+          new GetChunkReferencesRspSigPtr::element_type),
       on_amend_account_request_(new AmendAccountReqSigPtr::element_type),
       on_amend_account_response_(new AmendAccountRspSigPtr::element_type),
       on_expect_amendment_request_(new ExpectAmendmentReqSigPtr::element_type),
@@ -265,20 +343,30 @@ class MessageHandler : public transport::MessageHandler {
           new AddBufferPresenceRspSigPtr::element_type) {}
   virtual ~MessageHandler() {}
 
+  std::string WrapMessage(const protobuf::ArrangeStoreRequest &msg);
+  std::string WrapMessage(const protobuf::ArrangeStoreResponse &msg);
   std::string WrapMessage(const protobuf::StoreChunkRequest &msg);
   std::string WrapMessage(const protobuf::StoreChunkResponse &msg);
   std::string WrapMessage(const protobuf::GetChunkRequest &msg);
   std::string WrapMessage(const protobuf::GetChunkResponse &msg);
   std::string WrapMessage(const protobuf::HasChunkRequest &msg);
   std::string WrapMessage(const protobuf::HasChunkResponse &msg);
-  std::string WrapMessage(const protobuf::GetChunkReferencesRequest &msg);
-  std::string WrapMessage(const protobuf::GetChunkReferencesResponse &msg);
+  std::string WrapMessage(const protobuf::ValidateChunkRequest &msg);
+  std::string WrapMessage(const protobuf::ValidateChunkResponse &msg);
+  std::string WrapMessage(const protobuf::DeleteChunkRequest &msg);
+  std::string WrapMessage(const protobuf::DeleteChunkResponse &msg);
+  std::string WrapMessage(const protobuf::DuplicateChunkRequest &msg);
+  std::string WrapMessage(const protobuf::DuplicateChunkResponse &msg);
+  std::string WrapMessage(const protobuf::CacheChunkRequest &msg);
+  std::string WrapMessage(const protobuf::CacheChunkResponse &msg);
   std::string WrapMessage(const protobuf::AddToWatchListRequest &msg);
   std::string WrapMessage(const protobuf::AddToWatchListResponse &msg);
   std::string WrapMessage(const protobuf::RemoveFromWatchListRequest &msg);
   std::string WrapMessage(const protobuf::RemoveFromWatchListResponse &msg);
   std::string WrapMessage(const protobuf::AddToReferenceListRequest &msg);
   std::string WrapMessage(const protobuf::AddToReferenceListResponse &msg);
+  std::string WrapMessage(const protobuf::GetChunkReferencesRequest &msg);
+  std::string WrapMessage(const protobuf::GetChunkReferencesResponse &msg);
   std::string WrapMessage(const protobuf::AmendAccountRequest &msg);
   std::string WrapMessage(const protobuf::AmendAccountResponse &msg);
   std::string WrapMessage(const protobuf::ExpectAmendmentRequest &msg);
@@ -306,6 +394,12 @@ class MessageHandler : public transport::MessageHandler {
   std::string WrapMessage(const protobuf::AddBufferPresenceRequest &msg);
   std::string WrapMessage(const protobuf::AddBufferPresenceResponse &msg);
 
+  ArrangeStoreReqSigPtr on_arrange_store_request() {
+    return on_arrange_store_request_;
+  }
+  ArrangeStoreRspSigPtr on_arrange_store_response() {
+    return on_arrange_store_response_;
+  }
   StoreChunkReqSigPtr on_store_chunk_request() {
     return on_store_chunk_request_;
   }
@@ -324,11 +418,29 @@ class MessageHandler : public transport::MessageHandler {
   HasChunkRspSigPtr on_has_chunk_response() {
     return on_has_chunk_response_;
   }
-  GetChunkReferencesReqSigPtr on_get_chunk_references_request() {
-    return on_get_chunk_references_request_;
+  ValidateChunkReqSigPtr on_validate_chunk_request() {
+    return on_validate_chunk_request_;
   }
-  GetChunkReferencesRspSigPtr on_get_chunk_references_response() {
-    return on_get_chunk_references_response_;
+  ValidateChunkRspSigPtr on_validate_chunk_response() {
+    return on_validate_chunk_response_;
+  }
+  DeleteChunkReqSigPtr on_delete_chunk_request() {
+    return on_delete_chunk_request_;
+  }
+  DeleteChunkRspSigPtr on_delete_chunk_response() {
+    return on_delete_chunk_response_;
+  }
+  DuplicateChunkReqSigPtr on_duplicate_chunk_request() {
+    return on_duplicate_chunk_request_;
+  }
+  DuplicateChunkRspSigPtr on_duplicate_chunk_response() {
+    return on_duplicate_chunk_response_;
+  }
+  CacheChunkReqSigPtr on_cache_chunk_request() {
+    return on_cache_chunk_request_;
+  }
+  CacheChunkRspSigPtr on_cache_chunk_response() {
+    return on_cache_chunk_response_;
   }
   AddToWatchListReqSigPtr on_add_to_watch_list_request() {
     return on_add_to_watch_list_request_;
@@ -347,6 +459,12 @@ class MessageHandler : public transport::MessageHandler {
   }
   AddToReferenceListRspSigPtr on_add_to_reference_list_response() {
     return on_add_to_reference_list_response_;
+  }
+  GetChunkReferencesReqSigPtr on_get_chunk_references_request() {
+    return on_get_chunk_references_request_;
+  }
+  GetChunkReferencesRspSigPtr on_get_chunk_references_response() {
+    return on_get_chunk_references_response_;
   }
   AmendAccountReqSigPtr on_amend_account_request() {
     return on_amend_account_request_;
@@ -435,20 +553,30 @@ class MessageHandler : public transport::MessageHandler {
  private:
   MessageHandler(const MessageHandler&);
   MessageHandler& operator=(const MessageHandler&);
+  ArrangeStoreReqSigPtr on_arrange_store_request_;
+  ArrangeStoreRspSigPtr on_arrange_store_response_;
   StoreChunkReqSigPtr on_store_chunk_request_;
   StoreChunkRspSigPtr on_store_chunk_response_;
   GetChunkReqSigPtr on_get_chunk_request_;
   GetChunkRspSigPtr on_get_chunk_response_;
   HasChunkReqSigPtr on_has_chunk_request_;
   HasChunkRspSigPtr on_has_chunk_response_;
-  GetChunkReferencesReqSigPtr on_get_chunk_references_request_;
-  GetChunkReferencesRspSigPtr on_get_chunk_references_response_;
+  ValidateChunkReqSigPtr on_validate_chunk_request_;
+  ValidateChunkRspSigPtr on_validate_chunk_response_;
+  DeleteChunkReqSigPtr on_delete_chunk_request_;
+  DeleteChunkRspSigPtr on_delete_chunk_response_;
+  DuplicateChunkReqSigPtr on_duplicate_chunk_request_;
+  DuplicateChunkRspSigPtr on_duplicate_chunk_response_;
+  CacheChunkReqSigPtr on_cache_chunk_request_;
+  CacheChunkRspSigPtr on_cache_chunk_response_;
   AddToWatchListReqSigPtr on_add_to_watch_list_request_;
   AddToWatchListRspSigPtr on_add_to_watch_list_response_;
   RemoveFromWatchListReqSigPtr on_remove_from_watch_list_request_;
   RemoveFromWatchListRspSigPtr on_remove_from_watch_list_response_;
   AddToReferenceListReqSigPtr on_add_to_reference_list_request_;
   AddToReferenceListRspSigPtr on_add_to_reference_list_response_;
+  GetChunkReferencesReqSigPtr on_get_chunk_references_request_;
+  GetChunkReferencesRspSigPtr on_get_chunk_references_response_;
   AmendAccountReqSigPtr on_amend_account_request_;
   AmendAccountRspSigPtr on_amend_account_response_;
   ExpectAmendmentReqSigPtr on_expect_amendment_request_;
