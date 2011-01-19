@@ -1,4 +1,4 @@
-<?= PrintHeader('Class for processing RPC messages.') ?>
+<?= PrintHeader('Class for processing RPC messages.', $template) ?>
 
 #include "maidsafe/common/messagehandler.h"
 

@@ -55,7 +55,7 @@ function CamelConv($str) {
   return implode('_', $segs);
 }
 
-function PrintHeader($desc) {
+function PrintHeader($desc, $template) {
   print "/*\n"
       . "* ============================================================================\n"
       . "*\n"
@@ -74,7 +74,12 @@ function PrintHeader($desc) {
       . "* the explicit written permission of the board of directors of maidsafe.net.\n"
       . "*\n"
       . "* ============================================================================\n"
-      ."*/\n";
+      . "*/\n\n"
+      . "/**\n"
+      . " * NOTE This file was generated automatically!\n"
+      . " *      Until this notice is removed, make changes only to the template:\n"
+      . " *      -> build/tools/$template\n"
+      . " */\n";
 }
 
 function GenerateFromTemplate($template, $outpath) {
@@ -97,10 +102,10 @@ GenerateFromTemplate('generator/messagehandler.cc.php',
                      '../../src/maidsafe/common/messagehandler.cc');
 
 foreach ($groups as $name => $funcs) {
-//   GenerateFromTemplate('generator/rpc.h.php',
-//                        '../../src/maidsafe/common/' . strtolower($name) . 'rpc.h');
-//   GenerateFromTemplate('generator/rpc.cc.php',
-//                        '../../src/maidsafe/common/' . strtolower($name) . 'rpc.cc');
+  GenerateFromTemplate('generator/rpcs.h.php',
+                       '../../src/maidsafe/common/' . strtolower($name) . 'rpcs.h');
+  GenerateFromTemplate('generator/rpcs.cc.php',
+                       '../../src/maidsafe/common/' . strtolower($name) . 'rpcs.cc');
   GenerateFromTemplate('generator/service.h.php',
                        '../../src/maidsafe/vault/' . strtolower($name) . 'service.h');
   GenerateFromTemplate('generator/service.cc.php',

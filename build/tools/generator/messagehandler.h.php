@@ -1,4 +1,4 @@
-<?= PrintHeader('Class for processing RPC messages.') ?>
+<?= PrintHeader('Class for processing RPC messages.', $template) ?>
 
 #ifndef MAIDSAFE_COMMON_MESSAGEHANDLER_H_
 #define MAIDSAFE_COMMON_MESSAGEHANDLER_H_
@@ -6,6 +6,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/function.hpp>
 #include <boost/signals2/signal.hpp>
+#include <maidsafe/transport/transport.h>
 #include <maidsafe/kademlia/messagehandler.h>
 
 #include <string>

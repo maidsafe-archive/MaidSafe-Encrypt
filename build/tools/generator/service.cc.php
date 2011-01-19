@@ -1,4 +1,4 @@
-<?= PrintHeader("Class providing $name services.") ?>
+<?= PrintHeader("Class providing $name services.", $template) ?>
 
 #include "maidsafe/vault/<?= strtolower($name) ?>service.h"
 
@@ -18,6 +18,6 @@ void <?= $name ?>Service::<?= $func ?>(<?= $ind == 4 ? "\n    " : '' ?>const tra
 }
 
 <?php endforeach; ?>
-}
+} // namespace vault
 
 }  // namespace maidsafe

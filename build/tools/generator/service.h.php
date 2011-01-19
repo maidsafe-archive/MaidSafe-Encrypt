@@ -1,11 +1,11 @@
-<?= PrintHeader("Class providing $name services.") ?>
+<?= PrintHeader("Class providing $name services.", $template) ?>
 
-#ifndef MAIDSAFE_COMMON_<?= strtoupper($name) ?>SERVICE_H_
-#define MAIDSAFE_COMMON_<?= strtoupper($name) ?>SERVICE_H_
+#ifndef MAIDSAFE_VAULT_<?= strtoupper($name) ?>SERVICE_H_
+#define MAIDSAFE_VAULT_<?= strtoupper($name) ?>SERVICE_H_
 
 namespace transport {
 class Info;
-}
+}  // namespace transport
 
 namespace maidsafe {
 
@@ -38,4 +38,4 @@ class <?= $name ?>Service {
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_COMMON_<?= strtoupper($name) ?>SERVICE_H_
+#endif  // MAIDSAFE_VAULT_<?= strtoupper($name) ?>SERVICE_H_
