@@ -1,4 +1,4 @@
-<?= PrintHeader("Class providing $name RPCs.", $template) ?>
+<?= PrintHeader("Provides a class for %$name RPCs.", $template, $filename) ?>
 
 #include "maidsafe/common/<?= strtolower($name) ?>rpcs.h"
 
@@ -11,7 +11,13 @@
 
 namespace maidsafe {
 
-<?php foreach ($funcs as $func): ?>
+<?php foreach ($funcs as $func => $desc): ?>
+/**
+ * Detailed description for <?= $func ?>...
+ *
+ * @param contact The remote node to call %<?= $func ?> on.
+ * @param callback The function to be called with the operation's result.
+ */
 <?php $ind = str_repeat(' ', strlen($func) + strlen($name) + 12); ?>
 void <?= $name ?>Rpcs::<?= $func ?>(const kademlia::Contact &contact,
 <?= $ind . $func ?>Functor callback) {
@@ -41,8 +47,9 @@ void <?= $name ?>Rpcs::<?= $func ?>Callback(
     boost::shared_ptr<MessageHandler> message_handler,
     boost::shared_ptr<transport::Transport> transport) {
   // TODO implement <?= $name ?>Rpcs::<?= $func ?>Callback body
-  // callback(response.result(), ...);
-  callback(false);
+  if (callback)
+    // callback(response.result(), ...);
+    callback(false);
 }
 
 <?php endforeach; ?>

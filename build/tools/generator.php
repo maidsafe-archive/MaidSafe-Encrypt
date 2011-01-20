@@ -3,44 +3,47 @@
 /**
  * This script generates the code for MessageHandler, RPCs and services.
  *
- * NOTE existing files will be overwritten!
+ * @warning Existing files will be overwritten!
  */
+
+$common_dir = '../../src/maidsafe/common/';
+$vault_dir = '../../src/maidsafe/vault/';
 
 $groups = array(
   'Chunk' => array(
-    'ArrangeStore',
-    'StoreChunk',
-    'GetChunk',
-    'HasChunk',
-    'ValidateChunk',
-    'DeleteChunk',
-    'DuplicateChunk',
-    'CacheChunk'
+    'ArrangeStore' => 'Negotiates a contract to store a chunk.',
+    'StoreChunk' => 'Stores a chunk.',
+    'GetChunk' => 'Retrieves a chunk.',
+    'HasChunk' => 'Checks if a chunk is available.',
+    'ValidateChunk' => 'Challenges a vault to prove storage of a chunk.',
+    'DeleteChunk' => 'Triggers deletion of a chunk.',
+    'DuplicateChunk' => 'Triggers duplication of a chunk.',
+    'CacheChunk' => 'Triggers temporary storage of a chunk.'
   ),
   'ChunkInfo' => array(
-    'AddToWatchList',
-    'RemoveFromWatchList',
-    'AddToReferenceList',
-    'GetChunkReferences'
+    'AddToWatchList' => 'Registers interest in a chunk.',
+    'RemoveFromWatchList' => 'Unregisters interest in a chunk.',
+    'AddToReferenceList' => 'Registers a chunk holder.',
+    'GetChunkReferences' => 'Retrieves a list of chunk holders.'
   ),
   'Account' => array(
-    'AmendAccount',
-    'ExpectAmendment',
-    'AccountStatus'
+    'AmendAccount' => 'Executes a transaction on an account.',
+    'ExpectAmendment' => 'Advises of incoming transaction requests.',
+    'AccountStatus' => 'Retrieves current balances in an account.'
   ),
   'VaultSync' => array(
-    'GetSyncData',
-    'GetAccount',
-    'GetChunkInfo',
-    'GetBuffer'
+    'GetSyncData' => 'Retrieves data for vault synchronisation.',
+    'GetAccount' => 'Retrieves %Account data for vault synchronisation',
+    'GetChunkInfo' => 'Retrieves %ChunkInfo data for vault synchronisation',
+    'GetBuffer' => 'Retrieves %Buffer data for vault synchronisation',
   ),
   'Buffer' => array(
-    'CreateBuffer',
-    'ModifyBufferInfo',
-    'GetBufferMessages',
-    'AddBufferMessage',
-    'GetBufferPresence',
-    'AddBufferPresence'
+    'CreateBuffer' => 'Creates a vault buffer.',
+    'ModifyBufferInfo' => 'Changes data contents of a buffer.',
+    'GetBufferMessages' => 'Retrieves messages from a buffer.',
+    'AddBufferMessage' => 'Adds a message to a buffer.',
+    'GetBufferPresence' => 'Retrieves presence data from a buffer.',
+    'AddBufferPresence' => 'Adds presence data to a buffer.'
   )
 );
 
@@ -55,59 +58,56 @@ function CamelConv($str) {
   return implode('_', $segs);
 }
 
-function PrintHeader($desc, $template) {
-  print "/*\n"
-      . "* ============================================================================\n"
-      . "*\n"
-      . "* Copyright [2011] maidsafe.net limited\n"
-      . "*\n"
-      . "* Description:  $desc\n"
-      . "* Created:      " . date("Y-m-d") . "\n"
-      . "* Company:      maidsafe.net limited\n"
-      . "*\n"
-      . "* The following source code is property of maidsafe.net limited and is not\n"
-      . "* meant for external use.  The use of this code is governed by the license\n"
-      . "* file LICENSE.TXT found in the root of this directory and also on\n"
-      . "* www.maidsafe.net.\n"
-      . "*\n"
-      . "* You are not free to copy, amend or otherwise use this source code without\n"
-      . "* the explicit written permission of the board of directors of maidsafe.net.\n"
-      . "*\n"
-      . "* ============================================================================\n"
-      . "*/\n\n"
-      . "/**\n"
-      . " * NOTE This file was generated automatically!\n"
-      . " *      Until this notice is removed, make changes only to the template:\n"
-      . " *      -> build/tools/$template\n"
-      . " */\n";
+function PrintHeader($desc, $template, $filename) {
+?>
+/**
+ * @file  <?= $filename ?>
+
+ * @brief <?= $desc ?>
+
+ * @date  <?= date('Y-m-d') ?>
+
+ *
+ * <em>Copyright <?= date('Y') ?> maidsafe.net limited</em>
+ *
+ * The following source code is property of maidsafe.net limited and is not
+ * meant for external use.  The use of this code is governed by the license
+ * file LICENSE.TXT found in the root of this directory and also on
+ * www.maidsafe.net.
+ *
+ * You are not free to copy, amend or otherwise use this source code without
+ * the explicit written permission of the board of directors of maidsafe.net.
+ *
+ * @attention This source file was generated automatically!
+ *            Until this notice is removed, make changes only to the template:
+ *            @c build/tools/<?= $template ?>
+
+ */
+<?php
 }
 
-function GenerateFromTemplate($template, $outpath) {
+function GenerateFromTemplate($template, $outdir, $filename) {
   global $func_count, $groups, $name, $funcs;
   ob_start();
   include $template;
   $buffer = ob_get_contents();
   ob_end_clean();
-  file_put_contents($outpath, $buffer);
-  print "Generated $outpath\n";
+  file_put_contents($outdir . $filename, $buffer);
+  print "Generated $filename (in $outdir)\n";
 }
 
 print "Generating code for $func_count service functions...\n";
 
 // -----------------------------------------------------------------------------
 
-GenerateFromTemplate('generator/messagehandler.h.php',
-                     '../../src/maidsafe/common/messagehandler.h');
-GenerateFromTemplate('generator/messagehandler.cc.php',
-                     '../../src/maidsafe/common/messagehandler.cc');
+GenerateFromTemplate('generator/messagehandler.h.php', $common_dir, 'messagehandler.h');
+GenerateFromTemplate('generator/messagehandler.cc.php', $common_dir, 'messagehandler.cc');
 
 foreach ($groups as $name => $funcs) {
-  GenerateFromTemplate('generator/rpcs.h.php',
-                       '../../src/maidsafe/common/' . strtolower($name) . 'rpcs.h');
-  GenerateFromTemplate('generator/rpcs.cc.php',
-                       '../../src/maidsafe/common/' . strtolower($name) . 'rpcs.cc');
-  GenerateFromTemplate('generator/service.h.php',
-                       '../../src/maidsafe/vault/' . strtolower($name) . 'service.h');
-  GenerateFromTemplate('generator/service.cc.php',
-                       '../../src/maidsafe/vault/' . strtolower($name) . 'service.cc');
+  GenerateFromTemplate('generator/rpcs.h.php', $common_dir, strtolower($name) . 'rpcs.h');
+  GenerateFromTemplate('generator/rpcs.cc.php', $common_dir, strtolower($name) . 'rpcs.cc');
+  GenerateFromTemplate('generator/service.h.php', $vault_dir, strtolower($name) . 'service.h');
+  GenerateFromTemplate('generator/service.cc.php', $vault_dir, strtolower($name) . 'service.cc');
 }
+
+GenerateFromTemplate('generator/tasks.csv.php', './', 'tasks.csv');
