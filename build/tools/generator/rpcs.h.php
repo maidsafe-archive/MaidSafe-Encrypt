@@ -7,16 +7,12 @@
 #include <boost/function.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/asio/io_service.hpp>
-
-namespace transport {
-class Transport;
-}  // namespace transport
-
-namespace kademlia {
-class Contact;
-}  // namespace kademlia
+#include <maidsafe/transport/transport.h>
+#include <maidsafe/kademlia/contact.h>
 
 namespace maidsafe {
+
+class MessageHandler;
 
 namespace protobuf {
 <?php foreach ($funcs as $func => $desc): ?>

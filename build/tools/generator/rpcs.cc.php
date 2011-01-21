@@ -2,9 +2,7 @@
 
 #include "maidsafe/common/<?= strtolower($name) ?>rpcs.h"
 
-#include <maidsafe/transport/transport.h>
 #include <maidsafe/transport/udttransport.h>
-#include <maidsafe/kademlia/contact.h>
 
 #include "maidsafe/common/messagehandler.h"
 #include "maidsafe/common/<?= CamelConv($name) ?>_messages.pb.h"
@@ -23,8 +21,8 @@ void <?= $name ?>Rpcs::<?= $func ?>(const kademlia::Contact &contact,
 <?= $ind . $func ?>Functor callback) {
   // set up transport & msg handler and connect signals
   boost::shared_ptr<MessageHandler> message_handler;
-  boost::shared_ptr<transport::Transport> transport =
-      new transport::UdtTransport(asio_service_);
+  boost::shared_ptr<transport::Transport> transport(
+      new transport::UdtTransport(asio_service_));
   transport->on_message_received()->connect(boost::bind(
       &MessageHandler::OnMessageReceived, message_handler.get(),
       _1, _2, _3, _4));

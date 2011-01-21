@@ -15,6 +15,9 @@ namespace bs2 = boost::signals2;
 
 namespace maidsafe {
 
+class Securifier;
+class Validator;
+
 namespace protobuf {
 <?php foreach ($groups as $name => $funcs): ?>
 // <?= $name ?> messages
@@ -51,10 +54,12 @@ class MessageHandler : public kademlia::MessageHandler {
       const protobuf::<?= $func ?>Response&)> ><?= strlen($func) > 17 ? "\n      " : ' ' ?><?= $func ?>RspSigPtr;
 <?php endforeach; endforeach; ?>
 
-  MessageHandler()
+  MessageHandler(boost::shared_ptr<Securifier> securifier,
+                 boost::shared_ptr<Validator> validator)
+    : kademlia::MessageHandler(securifier, validator),
 <?php $i = 0; foreach ($groups as $name => $funcs): ?>
 <?php foreach ($funcs as $func => $desc): ?>
-    <?= $i == 0 ? ':' : ' ' ?> on_<?= CamelConv($func) ?>_request_(<?= strlen($func) > 15 ? "\n          " : '' ?>new <?= $func ?>ReqSigPtr::element_type),
+      on_<?= CamelConv($func) ?>_request_(<?= strlen($func) > 15 ? "\n          " : '' ?>new <?= $func ?>ReqSigPtr::element_type),
       on_<?= CamelConv($func) ?>_response_(<?= strlen($func) > 15 ? "\n          " : '' ?>new <?= $func ?>RspSigPtr::element_type)<?= $i == $func_count - 1 ? ' {}' : ',' ?>
 
 <?php ++$i; endforeach; endforeach; ?>
