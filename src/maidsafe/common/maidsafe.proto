@@ -1,4 +1,4 @@
-package maidsafe;
+package maidsafe.protobuf;
 
 message GenericResponse {
   required uint32 result = 1;

@@ -5,7 +5,7 @@
 
 import "maidsafe/common/maidsafe.proto";
 
-package maidsafe;
+package maidsafe.protobuf;
 
 message ArrangeStoreRequest {
   required bytes chunkname = 1;

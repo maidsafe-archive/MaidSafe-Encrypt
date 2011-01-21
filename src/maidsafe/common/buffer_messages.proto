@@ -2,7 +2,7 @@
 
 import "maidsafe/common/maidsafe.proto";
 
-package maidsafe;
+package maidsafe.protobuf;
 
 // define types of messages
 enum MessageType {

@@ -2,7 +2,7 @@
 
 import "maidsafe/common/maidsafe.proto";
 
-package maidsafe;
+package maidsafe.protobuf;
 
 message AmendAccountRequest {
   enum Amendment {
