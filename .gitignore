@@ -7,4 +7,6 @@ desktop.ini
 *.kdev4
 *.pb.h
 *.pb.cc
+*.gen.h
+*.gen.cc
 installer/temp/*

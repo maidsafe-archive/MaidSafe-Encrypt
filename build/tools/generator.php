@@ -8,6 +8,7 @@
 
 $common_dir = '../../src/maidsafe/common/';
 $vault_dir = '../../src/maidsafe/vault/';
+$docs_dir = '../../docs/';
 
 $groups = array(
   'Chunk' => array(
@@ -33,9 +34,9 @@ $groups = array(
   ),
   'VaultSync' => array(
     'GetSyncData' => 'Retrieves data for vault synchronisation.',
-    'GetAccount' => 'Retrieves %Account data for vault synchronisation',
-    'GetChunkInfo' => 'Retrieves %ChunkInfo data for vault synchronisation',
-    'GetBuffer' => 'Retrieves %Buffer data for vault synchronisation',
+    'GetAccount' => 'Retrieves %Account data for vault synchronisation.',
+    'GetChunkInfo' => 'Retrieves %ChunkInfo data for vault synchronisation.',
+    'GetBuffer' => 'Retrieves %Buffer data for vault synchronisation.',
   ),
   'Buffer' => array(
     'CreateBuffer' => 'Creates a vault buffer.',
@@ -86,12 +87,21 @@ function PrintHeader($desc, $template, $filename) {
 <?php
 }
 
-function GenerateFromTemplate($template, $outdir, $filename) {
+function GenExt($filename) {
+  // TODO use a fancy regex replace here
+  return str_replace('.h', '.gen.h', str_replace('.cc', '.gen.cc', $filename));
+}
+
+function GenerateFromTemplate($template, $outdir, $filename, $overwrite_existing = false) {
   global $func_count, $groups, $name, $funcs;
   ob_start();
   include $template;
   $buffer = ob_get_contents();
   ob_end_clean();
+  if (!$overwrite_existing && file_exists($outdir . $filename))
+    $filename = GenExt($filename);
+  else if (file_exists($outdir . GenExt($filename)))
+    unlink($outdir . GenExt($filename));
   file_put_contents($outdir . $filename, $buffer);
   print "Generated $filename (in $outdir)\n";
 }
@@ -100,8 +110,8 @@ print "Generating code for $func_count service functions...\n";
 
 // -----------------------------------------------------------------------------
 
-GenerateFromTemplate('generator/messagehandler.h.php', $common_dir, 'messagehandler.h');
-GenerateFromTemplate('generator/messagehandler.cc.php', $common_dir, 'messagehandler.cc');
+GenerateFromTemplate('generator/messagehandler.h.php', $common_dir, 'messagehandler.h', true);
+GenerateFromTemplate('generator/messagehandler.cc.php', $common_dir, 'messagehandler.cc', true);
 
 foreach ($groups as $name => $funcs) {
   GenerateFromTemplate('generator/rpcs.h.php', $common_dir, strtolower($name) . 'rpcs.h');
@@ -110,4 +120,5 @@ foreach ($groups as $name => $funcs) {
   GenerateFromTemplate('generator/service.cc.php', $vault_dir, strtolower($name) . 'service.cc');
 }
 
-GenerateFromTemplate('generator/tasks.csv.php', './', 'tasks.csv');
+GenerateFromTemplate('generator/tasks.csv.php', $docs_dir, 'tasks.csv', true);
+GenerateFromTemplate('generator/rpcs.html.php', $docs_dir, 'rpcs.html', true);
