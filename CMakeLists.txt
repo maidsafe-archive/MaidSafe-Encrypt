@@ -646,9 +646,11 @@ IF(NOT MSVC)
   ENDFOREACH()
 ENDIF()
 
-# When this target is built, it removes all .gcda files from the build directory and its subdirectories
 IF(UNIX)
+  # When this target is built, it removes all .gcda files from the build directory and its subdirectories
   ADD_CUSTOM_TARGET(CleanCoverage COMMAND ${CMAKE_COMMAND} -DSEARCH_DIR=${CMAKE_BINARY_DIR} -P ${${PROJECT_NAME}_ROOT}/build/clean_coverage.cmake)
+  # This target builds the reference manual using Doxygen
+  ADD_CUSTOM_TARGET(Reference COMMAND doxygen WORKING_DIRECTORY ${${PROJECT_NAME}_ROOT})
 ENDIF()
 ADD_CUSTOM_TARGET(AllTestsAndDemos DEPENDS TESTencrypt TESTpassport TESTpki TESTcommon TESTclientfilesystem TESTclient TESTvault TESTfuse TESTauthentication_net
                     TESTbufferpackethandler_net TESTclientcontroller_net TESTclientcontroller_local TESTimconnectionhandler_net TESTpdvault_net DEMOclient DEMOvault)
