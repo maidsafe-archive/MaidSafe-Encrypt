@@ -1,11 +1,9 @@
 <?= PrintHeader("Provides a class for %$name services.", $template, $filename) ?>
 
-#ifndef MAIDSAFE_VAULT_<?= strtoupper($name) ?>SERVICE_H_
-#define MAIDSAFE_VAULT_<?= strtoupper($name) ?>SERVICE_H_
+#ifndef MAIDSAFE_VAULT_<?= strtoupper(CamelConv($name)) ?>_SERVICE_H_
+#define MAIDSAFE_VAULT_<?= strtoupper(CamelConv($name)) ?>_SERVICE_H_
 
-namespace transport {
-class Info;
-}  // namespace transport
+namespace transport { class Info; }
 
 namespace maidsafe {
 
@@ -56,4 +54,4 @@ class <?= $name ?>Service {
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_VAULT_<?= strtoupper($name) ?>SERVICE_H_
+#endif  // MAIDSAFE_VAULT_<?= strtoupper(CamelConv($name)) ?>_SERVICE_H_

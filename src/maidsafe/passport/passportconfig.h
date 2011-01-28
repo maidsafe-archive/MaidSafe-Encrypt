@@ -72,7 +72,7 @@ enum PacketType {
   PD_DIR
 };
 
-const boost::uint16_t kCryptoKeyBufferCount(6);
+const std::uint16_t kCryptoKeyBufferCount(6);
 
 }  // namespace passport
 }  // namespace maidsafe
@@ -90,17 +90,17 @@ class Key;
 class Passport;
 
 namespace test {
-testing::AssertionResult Empty(std::tr1::shared_ptr<pki::Packet> packet);
+testing::AssertionResult Empty(std::shared_ptr<pki::Packet> packet);
 class SystemPacketsTest_BEH_PASSPORT_CreateSig_Test;
 class SystemPacketsTest_BEH_PASSPORT_PutToAndGetFromKey_Test;
 struct ExpectedMidContent;
 testing::AssertionResult Equal(
-    std::tr1::shared_ptr<ExpectedMidContent> expected,
-    std::tr1::shared_ptr<MidPacket> mid);
+    std::shared_ptr<ExpectedMidContent> expected,
+    std::shared_ptr<MidPacket> mid);
 struct ExpectedTmidContent;
 testing::AssertionResult Equal(
-    std::tr1::shared_ptr<ExpectedTmidContent> expected,
-    std::tr1::shared_ptr<TmidPacket> mid);
+    std::shared_ptr<ExpectedTmidContent> expected,
+    std::shared_ptr<TmidPacket> mid);
 class SystemPacketHandlerTest_FUNC_PASSPORT_All_Test;
 class PassportTest_BEH_PASSPORT_SetNewUserData_Test;
 class PassportTest_BEH_PASSPORT_ConfirmNewUserData_Test;

@@ -23,7 +23,7 @@
 */
 
 #include "maidsafe/passport/cryptokeypairs.h"
-#include <boost/tr1/functional.hpp>
+#include <functional>
 
 namespace maidsafe {
 
@@ -37,7 +37,7 @@ CryptoKeyPairs::CryptoKeyPairs(const boost::uint16_t &rsa_key_size,
       keypairs_todo_(0),
       pending_requests_(0),
       keypairs_(),
-      thrds_(kMaxCryptoThreadCount_, std::tr1::shared_ptr<boost::thread>()),
+      thrds_(kMaxCryptoThreadCount_, std::shared_ptr<boost::thread>()),
       keyslist_mutex_(),
       keys_done_mutex_(),
       start_mutex_(),
@@ -63,9 +63,8 @@ bool CryptoKeyPairs::StartToCreateKeyPairs(
   keypairs_todo_ = no_of_keypairs;
   keypairs_done_ = keypairs_.size();
   boost::int16_t keys_needed = keypairs_todo_ - keypairs_done_;
-  std::vector< std::tr1::shared_ptr<boost::thread> >::iterator it;
   boost::int16_t i = 0;
-  for (it = thrds_.begin(); it != thrds_.end() && i < keys_needed; ++it) {
+  for (auto it = thrds_.begin(); it != thrds_.end() && i < keys_needed; ++it) {
     try {
       it->reset(new boost::thread(&CryptoKeyPairs::CreateKeyPair, this));
       ++i;
@@ -82,7 +81,7 @@ bool CryptoKeyPairs::StartToCreateKeyPairs(
 
 void CryptoKeyPairs::CreateKeyPair() {
   boost::this_thread::at_thread_exit(
-      std::tr1::bind(&CryptoKeyPairs::FinishedCreating, this));
+      std::bind(&CryptoKeyPairs::FinishedCreating, this));
   bool work_todo = true;
   while (work_todo && !stopping_) {
     crypto::RsaKeyPair rsakp;
@@ -159,8 +158,7 @@ bool CryptoKeyPairs::GetKeyPair(crypto::RsaKeyPair *keypair) {
 
 void CryptoKeyPairs::Stop() {
   stopping_ = true;
-  std::vector< std::tr1::shared_ptr<boost::thread> >::iterator it;
-  for (it = thrds_.begin(); it != thrds_.end(); ++it) {
+  for (auto it = thrds_.begin(); it != thrds_.end(); ++it) {
     if (*it) {
       (*it)->join();
     }

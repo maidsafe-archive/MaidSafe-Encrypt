@@ -1,29 +1,25 @@
 <?= PrintHeader("Provides a class for %$name RPCs.", $template, $filename) ?>
 
-#ifndef MAIDSAFE_COMMON_<?= strtoupper($name) ?>RPCS_H_
-#define MAIDSAFE_COMMON_<?= strtoupper($name) ?>RPCS_H_
+#ifndef MAIDSAFE_COMMON_<?= strtoupper(CamelConv($name)) ?>_RPCS_H_
+#define MAIDSAFE_COMMON_<?= strtoupper(CamelConv($name)) ?>_RPCS_H_
 
-#include <boost/cstdint.hpp>
-#include <boost/function.hpp>
-#include <boost/shared_ptr.hpp>
-#include <boost/asio/io_service.hpp>
-#include <maidsafe/transport/transport.h>
-#include <maidsafe/kademlia/contact.h>
+#include <cstdint>
+#include <functional>
+#include <memory>
+#include "boost/asio/io_service.hpp"
+#include "maidsafe-dht/transport/transport.h"
+#include "maidsafe-dht/kademlia/contact.h"
 
 namespace maidsafe {
 
 class MessageHandler;
+class Securifier;
 
 namespace protobuf {
 <?php foreach ($funcs as $func => $desc): ?>
 class <?= $func ?>Response;
 <?php endforeach; ?>
 }  // namespace protobuf
-
-<?php foreach ($funcs as $func => $desc): ?>
-/// Callback executed by <?= $func ?>Callback
-typedef boost::function<void(bool)> <?= $func ?>Functor;
-<?php endforeach; ?>
 
 /**
  * @brief Abstracts functionality to call remote %<?= $name ?> services.
@@ -63,8 +59,15 @@ typedef boost::function<void(bool)> <?= $func ?>Functor;
  */
 class <?= $name ?>Rpcs {
  public:
-  <?= $name ?>Rpcs(boost::shared_ptr<boost::asio::io_service> asio_service)
-    : asio_service_(asio_service) {}
+<?php foreach ($funcs as $func => $desc): ?>
+  /// Callback executed by <?= $func ?>Callback
+  typedef std::function<void(const transport::Info&, const int&)>
+      <?= $func ?>Functor;
+<?php endforeach; ?>
+  <?= $name ?>Rpcs(std::shared_ptr<boost::asio::io_service> asio_service,
+  <?= str_repeat(' ', strlen(name) + 4) ?> std::shared_ptr<Securifier> securifier)
+    : asio_service_(asio_service),
+      securifier_(securifier) {}
 <?php foreach ($funcs as $func => $desc): ?>
   /// <?= $desc ?>
 
@@ -80,14 +83,17 @@ class <?= $name ?>Rpcs {
   void <?= $func ?>Callback(
       const protobuf::<?= $func ?>Response &response,
       <?= $func ?>Functor callback,
-      boost::shared_ptr<MessageHandler> message_handler,
-      boost::shared_ptr<transport::Transport> transport);
+      const transport::TransportCondition &transport_condition,
+      const transport::Info &info,
+      std::shared_ptr<MessageHandler> message_handler,
+      std::shared_ptr<transport::Transport> transport);
 <?php endforeach; ?>
   // TODO private helper methods...
-  boost::shared_ptr<boost::asio::io_service> asio_service_;
+  std::shared_ptr<boost::asio::io_service> asio_service_;
+  std::shared_ptr<Securifier> securifier_;
   // TODO private member variables...
 };
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_COMMON_<?= strtoupper($name) ?>RPCS_H_
+#endif  // MAIDSAFE_COMMON_<?= strtoupper(CamelConv($name)) ?>_RPCS_H_

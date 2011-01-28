@@ -586,10 +586,10 @@ ADD_EXECUTABLE(TESTvault
 ADD_EXECUTABLE(TESTauthentication_net
                  ${NETWORK_TEST_FILES}
                  "${SRC_MAIDSAFE}/client/tests/testauthentication.cc")
-ADD_EXECUTABLE(TESTbufferpackethandler_net
-                 ${NETWORK_TEST_FILES}
-                 "${SRC_MAIDSAFE}/sharedtest/cached_keys.h"
-                 "${SRC_MAIDSAFE}/common/tests/testbufferpackethandler.cc")
+#ADD_EXECUTABLE(TESTbufferpackethandler_net
+#                 ${NETWORK_TEST_FILES}
+#                 "${SRC_MAIDSAFE}/sharedtest/cached_keys.h"
+#                 "${SRC_MAIDSAFE}/common/tests/testbufferpackethandler.cc")
 ADD_EXECUTABLE(TESTclientcontroller_net
                  ${NETWORK_TEST_FILES}
                  "${SRC_MAIDSAFE}/sharedtest/mockclientcontroller.h"
@@ -622,7 +622,7 @@ ELSE()
   ADD_EXECUTABLE(vault "${SRC_MAIDSAFE}/vault/unix_deamon.cc")
 ENDIF()
 
-SET(ALL_EXECUTABLES lifestuff lslocal lslightlocal TESTcommon TESTclientfilesystem TESTclient TESTvault TESTauthentication_net TESTbufferpackethandler_net
+SET(ALL_EXECUTABLES lifestuff lslocal lslightlocal TESTcommon TESTclientfilesystem TESTclient TESTvault TESTauthentication_net #TESTbufferpackethandler_net
     TESTclientcontroller_net TESTclientcontroller_local TESTimconnectionhandler_net TESTpdvault_net TESTfuse DEMOclient DEMOvault vault)
 
 ADD_LIBRARY(PDclientlib STATIC ${ALL_FILES_CLIENT_DIR})
@@ -678,7 +678,7 @@ TARGET_LINK_LIBRARIES(TESTclient PDclientlib PDvaultlib ${Gtest_LIBRARY} ${Gmock
 TARGET_LINK_LIBRARIES(TESTvault PDvaultlib PDclientlib ${Gtest_LIBRARY} ${Gmock_LIBRARY})
 TARGET_LINK_LIBRARIES(TESTfuse PDfuselib ${Gtest_LIBRARY})
 TARGET_LINK_LIBRARIES(TESTauthentication_net PDclientlib PDvaultlib ${Gtest_LIBRARY})
-TARGET_LINK_LIBRARIES(TESTbufferpackethandler_net PDclientlib PDvaultlib ${Gtest_LIBRARY})
+#TARGET_LINK_LIBRARIES(TESTbufferpackethandler_net PDclientlib PDvaultlib ${Gtest_LIBRARY})
 TARGET_LINK_LIBRARIES(TESTclientcontroller_net PDclientlib PDvaultlib ${Gtest_LIBRARY})
 TARGET_LINK_LIBRARIES(TESTclientcontroller_local PDlsmclientlib ${Gtest_LIBRARY})
 TARGET_LINK_LIBRARIES(TESTimconnectionhandler_net PDclientlib PDvaultlib ${Gtest_LIBRARY})
@@ -697,7 +697,7 @@ ADD_DEFINITIONS(-DBOOST_FILESYSTEM_NO_DEPRECATED -DBOOST_FILESYSTEM_VERSION=3)
 
 SET_TARGET_PROPERTIES(PDlsmclientlib PROPERTIES COMPILE_FLAGS -DLOCAL_PDVAULT)
 SET_TARGET_PROPERTIES(TESTauthentication_net PROPERTIES COMPILE_FLAGS -DMS_NETWORK_TEST)
-SET_TARGET_PROPERTIES(TESTbufferpackethandler_net PROPERTIES COMPILE_FLAGS -DMS_NETWORK_TEST)
+#SET_TARGET_PROPERTIES(TESTbufferpackethandler_net PROPERTIES COMPILE_FLAGS -DMS_NETWORK_TEST)
 SET_TARGET_PROPERTIES(TESTclientcontroller_local PROPERTIES COMPILE_FLAGS -DLOCAL_PDVAULT)
 SET_TARGET_PROPERTIES(TESTclientcontroller_net PROPERTIES COMPILE_FLAGS -DMS_NETWORK_TEST)
 SET_TARGET_PROPERTIES(TESTimconnectionhandler_net PROPERTIES COMPILE_FLAGS -DMS_NETWORK_TEST)

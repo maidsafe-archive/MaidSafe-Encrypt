@@ -23,10 +23,10 @@
 #ifndef MAIDSAFE_PASSPORT_SYSTEMPACKETHANDLER_H_
 #define MAIDSAFE_PASSPORT_SYSTEMPACKETHANDLER_H_
 
-#include <boost/thread/mutex.hpp>
-#include <boost/tr1/memory.hpp>
+#include <memory>
 #include <map>
 #include <string>
+#include "boost/thread/mutex.hpp"
 #include "maidsafe/passport/systempackets.h"
 
 namespace maidsafe {
@@ -38,14 +38,14 @@ class SystemPacketHandler {
   SystemPacketHandler() : packets_(), mutex_() {}
   ~SystemPacketHandler() {}
   // Add packet which is pending confirmation of storing
-  bool AddPendingPacket(std::tr1::shared_ptr<pki::Packet> packet);
+  bool AddPendingPacket(std::shared_ptr<pki::Packet> packet);
   // Change packet from pending to stored
-  int ConfirmPacket(std::tr1::shared_ptr<pki::Packet> packet);
+  int ConfirmPacket(std::shared_ptr<pki::Packet> packet);
   // Removes a pending packet (leaving last stored copy)
   bool RevertPacket(const PacketType &packet_type);
   // Returns a *copy* of the confirmed or pending packet
-  std::tr1::shared_ptr<pki::Packet> GetPacket(const PacketType &packet_type,
-                                              bool confirmed);
+  std::shared_ptr<pki::Packet> GetPacket(const PacketType &packet_type,
+                                         bool confirmed);
   bool Confirmed(const PacketType &packet_type);
   std::string SerialiseKeyring(const std::string &public_name);
   int ParseKeyring(const std::string &serialised_keyring,
@@ -56,23 +56,23 @@ class SystemPacketHandler {
  private:
   struct PacketInfo {
     PacketInfo() : pending(), stored() {}
-    explicit PacketInfo(std::tr1::shared_ptr<pki::Packet> pend)
+    explicit PacketInfo(std::shared_ptr<pki::Packet> pend)
         : pending(), stored() {
       if (pend) {
         // keep a copy of the contents
         if (pend->packet_type() == TMID || pend->packet_type() == STMID) {
-          pending = std::tr1::shared_ptr<TmidPacket>(new TmidPacket(
-              *std::tr1::static_pointer_cast<TmidPacket>(pend)));
+          pending = std::shared_ptr<TmidPacket>(new TmidPacket(
+              *std::static_pointer_cast<TmidPacket>(pend)));
         } else if (pend->packet_type() == MID || pend->packet_type() == SMID) {
-          pending = std::tr1::shared_ptr<MidPacket>(new MidPacket(
-              *std::tr1::static_pointer_cast<MidPacket>(pend)));
+          pending = std::shared_ptr<MidPacket>(new MidPacket(
+              *std::static_pointer_cast<MidPacket>(pend)));
         } else if (IsSignature(pend->packet_type(), false)) {
-          pending = std::tr1::shared_ptr<SignaturePacket>(new SignaturePacket(
-              *std::tr1::static_pointer_cast<SignaturePacket>(pend)));
+          pending = std::shared_ptr<SignaturePacket>(new SignaturePacket(
+              *std::static_pointer_cast<SignaturePacket>(pend)));
         }
       }
     }
-    std::tr1::shared_ptr<pki::Packet> pending, stored;
+    std::shared_ptr<pki::Packet> pending, stored;
   };
   typedef std::map<PacketType, PacketInfo> SystemPacketMap;
   friend class test::SystemPacketHandlerTest_FUNC_PASSPORT_All_Test;

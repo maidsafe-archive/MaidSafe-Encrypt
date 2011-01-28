@@ -1,22 +1,20 @@
 <?= PrintHeader('Provides a class for processing messages.', $template, $filename) ?>
 
-#ifndef MAIDSAFE_COMMON_MESSAGEHANDLER_H_
-#define MAIDSAFE_COMMON_MESSAGEHANDLER_H_
+#ifndef MAIDSAFE_COMMON_MESSAGE_HANDLER_H_
+#define MAIDSAFE_COMMON_MESSAGE_HANDLER_H_
 
-#include <boost/shared_ptr.hpp>
-#include <boost/function.hpp>
-#include <boost/signals2/signal.hpp>
-#include <maidsafe/transport/transport.h>
-#include <maidsafe/kademlia/messagehandler.h>
-
+#include <functional>
 #include <string>
+
+#include "boost/signals2/signal.hpp"
+#include "maidsafe-dht/transport/transport.h"
+#include "maidsafe-dht/kademlia/message_handler.h"
 
 namespace bs2 = boost::signals2;
 
 namespace maidsafe {
 
 class Securifier;
-class Validator;
 
 namespace protobuf {
 <?php foreach ($groups as $name => $funcs): ?>
@@ -46,17 +44,17 @@ class MessageHandler : public kademlia::MessageHandler {
 <?php foreach ($groups as $name => $funcs): ?>
 <?php foreach ($funcs as $func => $desc): ?>
   /// %<?= $func ?> request signal pointer
-  typedef boost::shared_ptr< bs2::signal< void(const transport::Info&,
-      const protobuf::<?= $func ?>Request&,
-      protobuf::<?= $func ?>Response*)> > <?= $func ?>ReqSigPtr;
+  typedef std::shared_ptr<bs2::signal<void(const transport::Info&,     // NOLINT
+      const std::string&, const protobuf::<?= $func ?>Request&,
+      protobuf::<?= $func ?>Response*)>> <?= $func ?>ReqSigPtr;
   /// %<?= $func ?> response signal pointer
-  typedef boost::shared_ptr< bs2::signal< void(
-      const protobuf::<?= $func ?>Response&)> ><?= strlen($func) > 17 ? "\n      " : ' ' ?><?= $func ?>RspSigPtr;
+  typedef std::shared_ptr<bs2::signal<void(const transport::Info&,     // NOLINT
+      const std::string&, const protobuf::<?= $func ?>Response&)>>
+      <?= $func ?>RspSigPtr;
 <?php endforeach; endforeach; ?>
 
-  MessageHandler(boost::shared_ptr<Securifier> securifier,
-                 boost::shared_ptr<Validator> validator)
-    : kademlia::MessageHandler(securifier, validator),
+  MessageHandler(std::shared_ptr<Securifier> securifier)
+    : kademlia::MessageHandler(securifier),
 <?php $i = 0; foreach ($groups as $name => $funcs): ?>
 <?php foreach ($funcs as $func => $desc): ?>
       on_<?= CamelConv($func) ?>_request_(<?= strlen($func) > 15 ? "\n          " : '' ?>new <?= $func ?>ReqSigPtr::element_type),
@@ -83,7 +81,9 @@ class MessageHandler : public kademlia::MessageHandler {
  protected:
   virtual void ProcessSerialisedMessage(const int &message_type,
                                         const std::string &payload,
+                                        const std::string &message_signature,
                                         const transport::Info &info,
+                                        bool asymmetrical_encrypted,
                                         std::string *response,
                                         transport::Timeout *timeout);
  private:
@@ -98,4 +98,4 @@ class MessageHandler : public kademlia::MessageHandler {
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_COMMON_MESSAGEHANDLER_H_
+#endif  // MAIDSAFE_COMMON_MESSAGE_HANDLER_H_

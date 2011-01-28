@@ -25,11 +25,11 @@
 #ifndef MAIDSAFE_PASSPORT_CRYPTOKEYPAIRS_H_
 #define MAIDSAFE_PASSPORT_CRYPTOKEYPAIRS_H_
 
-#include <boost/thread.hpp>
-#include <boost/tr1/memory.hpp>
-#include <maidsafe/base/crypto.h>
+#include <memory>
 #include <list>
 #include <vector>
+#include "boost/thread.hpp"
+#include "maidsafe-dht/common/crypto.h"
 
 namespace maidsafe {
 
@@ -55,7 +55,7 @@ class CryptoKeyPairs {
   const boost::int8_t kMaxCryptoThreadCount_;
   boost::int16_t keypairs_done_, keypairs_todo_, pending_requests_;
   std::list<crypto::RsaKeyPair> keypairs_;
-  std::vector< std::tr1::shared_ptr<boost::thread> > thrds_;
+  std::vector< std::shared_ptr<boost::thread> > thrds_;
   boost::mutex keyslist_mutex_, keys_done_mutex_, start_mutex_, req_mutex_;
   boost::condition_variable keys_cond_, req_cond_;
   bool started_, stopping_;

@@ -31,7 +31,7 @@ namespace maidsafe {
 namespace passport {
 
 bool SystemPacketHandler::AddPendingPacket(
-    std::tr1::shared_ptr<pki::Packet> packet) {
+    std::shared_ptr<pki::Packet> packet) {
   if (!packet)
     return false;
   boost::mutex::scoped_lock lock(mutex_);
@@ -55,7 +55,7 @@ bool SystemPacketHandler::AddPendingPacket(
 }
 
 int SystemPacketHandler::ConfirmPacket(
-    std::tr1::shared_ptr<pki::Packet> packet) {
+    std::shared_ptr<pki::Packet> packet) {
   if (!packet)
     return kNullPointer;
   PacketType packet_type = static_cast<PacketType>(packet->packet_type());
@@ -143,10 +143,10 @@ bool SystemPacketHandler::RevertPacket(const PacketType &packet_type) {
   }
 }
 
-std::tr1::shared_ptr<pki::Packet> SystemPacketHandler::GetPacket(
+std::shared_ptr<pki::Packet> SystemPacketHandler::GetPacket(
     const PacketType &packet_type,
     bool confirmed) {
-  std::tr1::shared_ptr<pki::Packet> packet;
+  std::shared_ptr<pki::Packet> packet;
   boost::mutex::scoped_lock lock(mutex_);
   SystemPacketMap::iterator it = packets_.find(packet_type);
   if (it == packets_.end()) {
@@ -155,7 +155,7 @@ std::tr1::shared_ptr<pki::Packet> SystemPacketHandler::GetPacket(
             DebugString(packet_type).c_str());
 #endif
   } else {
-    std::tr1::shared_ptr<pki::Packet> retrieved_packet;
+    std::shared_ptr<pki::Packet> retrieved_packet;
     if (confirmed && (*it).second.stored) {
       retrieved_packet = (*it).second.stored;
     } else if (!confirmed && (*it).second.pending) {
@@ -164,14 +164,14 @@ std::tr1::shared_ptr<pki::Packet> SystemPacketHandler::GetPacket(
     if (retrieved_packet) {
       // return a copy of the contents
       if (packet_type == TMID || packet_type == STMID) {
-        packet = std::tr1::shared_ptr<TmidPacket>(new TmidPacket(
-            *std::tr1::static_pointer_cast<TmidPacket>(retrieved_packet)));
+        packet = std::shared_ptr<TmidPacket>(new TmidPacket(
+            *std::static_pointer_cast<TmidPacket>(retrieved_packet)));
       } else if (packet_type == MID || packet_type == SMID) {
-        packet = std::tr1::shared_ptr<MidPacket>(new MidPacket(
-            *std::tr1::static_pointer_cast<MidPacket>(retrieved_packet)));
+        packet = std::shared_ptr<MidPacket>(new MidPacket(
+            *std::static_pointer_cast<MidPacket>(retrieved_packet)));
       } else if (IsSignature(packet_type, false)) {
-        packet = std::tr1::shared_ptr<SignaturePacket>(new SignaturePacket(
-            *std::tr1::static_pointer_cast<SignaturePacket>(retrieved_packet)));
+        packet = std::shared_ptr<SignaturePacket>(new SignaturePacket(
+            *std::static_pointer_cast<SignaturePacket>(retrieved_packet)));
       } else {
 #ifdef DEBUG
         printf("SystemPacketHandler::Packet: %s type error.\n",
@@ -205,7 +205,7 @@ std::string SystemPacketHandler::SerialiseKeyring(
   SystemPacketMap::iterator it = packets_.begin();
   while (it != packets_.end()) {
     if (IsSignature((*it).first, false) && (*it).second.stored) {
-      std::tr1::static_pointer_cast<SignaturePacket>((*it).second.stored)->
+      std::static_pointer_cast<SignaturePacket>((*it).second.stored)->
           PutToKey(keyring.add_key());
     }
     ++it;
@@ -228,7 +228,7 @@ int SystemPacketHandler::ParseKeyring(const std::string &serialised_keyring,
   boost::mutex::scoped_lock lock(mutex_);
   bool success(true);
   for (int i = 0; i < keyring.key_size(); ++i) {
-    std::tr1::shared_ptr<SignaturePacket> sig_packet(
+    std::shared_ptr<SignaturePacket> sig_packet(
         new SignaturePacket(keyring.key(i)));
     PacketInfo packet_info;
     packet_info.stored = sig_packet;

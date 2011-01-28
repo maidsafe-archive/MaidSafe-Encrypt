@@ -2,12 +2,9 @@
 
 /**
  * This script generates the code for MessageHandler, RPCs and services.
- *
- * @warning Existing files will be overwritten!
  */
 
-$common_dir = '../../src/maidsafe/common/';
-$vault_dir = '../../src/maidsafe/vault/';
+$source_dir = '../../src/maidsafe/';
 $docs_dir = '../../docs/';
 
 $groups = array(
@@ -61,23 +58,23 @@ function CamelConv($str) {
 
 function PrintHeader($desc, $template, $filename) {
 ?>
-/**
+/*******************************************************************************
+ *  Copyright <?= date('Y') ?> maidsafe.net limited                                        *
+ *                                                                             *
+ *  The following source code is property of maidsafe.net limited and is not   *
+ *  meant for external use.  The use of this code is governed by the license   *
+ *  file LICENSE.TXT found in the root of this directory and also on           *
+ *  www.maidsafe.net.                                                          *
+ *                                                                             *
+ *  You are not free to copy, amend or otherwise use this source code without  *
+ *  the explicit written permission of the board of directors of maidsafe.net. *
+ ***************************************************************************//**
  * @file  <?= $filename ?>
 
  * @brief <?= $desc ?>
 
  * @date  <?= date('Y-m-d') ?>
 
- *
- * <em>Copyright <?= date('Y') ?> maidsafe.net limited</em>
- *
- * The following source code is property of maidsafe.net limited and is not
- * meant for external use.  The use of this code is governed by the license
- * file LICENSE.TXT found in the root of this directory and also on
- * www.maidsafe.net.
- *
- * You are not free to copy, amend or otherwise use this source code without
- * the explicit written permission of the board of directors of maidsafe.net.
  *
  * @attention This source file was generated automatically!
  *            Until this notice is removed, make changes only to the template:
@@ -110,14 +107,14 @@ print "Generating code for $func_count service functions...\n";
 
 // -----------------------------------------------------------------------------
 
-GenerateFromTemplate('generator/messagehandler.h.php', $common_dir, 'messagehandler.h', true);
-GenerateFromTemplate('generator/messagehandler.cc.php', $common_dir, 'messagehandler.cc', true);
+GenerateFromTemplate('generator/message_handler.h.php', $source_dir . 'common/', 'message_handler.h', true);
+GenerateFromTemplate('generator/message_handler.cc.php', $source_dir . 'common/', 'message_handler.cc', true);
 
 foreach ($groups as $name => $funcs) {
-  GenerateFromTemplate('generator/rpcs.h.php', $common_dir, strtolower($name) . 'rpcs.h');
-  GenerateFromTemplate('generator/rpcs.cc.php', $common_dir, strtolower($name) . 'rpcs.cc');
-  GenerateFromTemplate('generator/service.h.php', $vault_dir, strtolower($name) . 'service.h');
-  GenerateFromTemplate('generator/service.cc.php', $vault_dir, strtolower($name) . 'service.cc');
+  GenerateFromTemplate('generator/rpcs.h.php', $source_dir . 'common/', CamelConv($name) . '_rpcs.h', true);
+  GenerateFromTemplate('generator/rpcs.cc.php', $source_dir . 'common/', CamelConv($name) . '_rpcs.cc', true);
+  GenerateFromTemplate('generator/service.h.php', $source_dir . 'vault/', CamelConv($name) . '_service.h', true);
+  GenerateFromTemplate('generator/service.cc.php', $source_dir . 'vault/', CamelConv($name) . '_service.cc', true);
 }
 
 GenerateFromTemplate('generator/tasks.csv.php', $docs_dir, 'tasks.csv', true);

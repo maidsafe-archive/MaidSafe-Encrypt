@@ -23,10 +23,10 @@
 #ifndef MAIDSAFE_PASSPORT_SYSTEMPACKETS_H_
 #define MAIDSAFE_PASSPORT_SYSTEMPACKETS_H_
 
-#include <boost/cstdint.hpp>
-#include <boost/tr1/memory.hpp>
-#include <maidsafe/pki/packet.h>
+#include <cstdint>
+#include <memory>
 #include <string>
+#include "maidsafe/pki/packet.h"
 #include "maidsafe/passport/passportconfig.h"
 
 namespace maidsafe {
@@ -54,7 +54,7 @@ class SignaturePacket : public pki::Packet {
   std::string public_key_signature() const { return public_key_signature_; }
  private:
   friend testing::AssertionResult
-      test::Empty(std::tr1::shared_ptr<pki::Packet> packet);
+      test::Empty(std::shared_ptr<pki::Packet> packet);
   friend class test::SystemPacketsTest_BEH_PASSPORT_CreateSig_Test;
   friend class test::SystemPacketsTest_BEH_PASSPORT_PutToAndGetFromKey_Test;
   virtual void Initialise();
@@ -79,14 +79,14 @@ class MidPacket : public pki::Packet {
   std::string rid() const { return rid_; }
  private:
   friend testing::AssertionResult test::Empty(
-      std::tr1::shared_ptr<pki::Packet> packet);
+      std::shared_ptr<pki::Packet> packet);
   friend testing::AssertionResult test::Equal(
-      std::tr1::shared_ptr<ExpectedMidContent> expected,
-      std::tr1::shared_ptr<MidPacket> mid);
+      std::shared_ptr<ExpectedMidContent> expected,
+      std::shared_ptr<MidPacket> mid);
   virtual void Initialise();
   virtual void Clear();
   std::string username_, pin_, smid_appendix_, rid_, encrypted_rid_, salt_;
-  std::string secure_password_;
+  std::string secure_key_, secure_iv_;
 };
 
 class TmidPacket : public pki::Packet {
@@ -109,16 +109,16 @@ class TmidPacket : public pki::Packet {
   std::string password() const { return password_; }
  private:
   friend testing::AssertionResult test::Empty(
-      std::tr1::shared_ptr<pki::Packet> packet);
+      std::shared_ptr<pki::Packet> packet);
   friend testing::AssertionResult test::Equal(
-      std::tr1::shared_ptr<ExpectedTmidContent> expected,
-      std::tr1::shared_ptr<TmidPacket> mid);
+      std::shared_ptr<ExpectedTmidContent> expected,
+      std::shared_ptr<TmidPacket> mid);
   virtual void Initialise();
   bool SetPassword();
   bool SetPlainData();
   virtual void Clear();
   std::string username_, pin_, password_, rid_, plain_text_master_data_, salt_;
-  std::string secure_password_, encrypted_master_data_;
+  std::string secure_key_, secure_iv_, encrypted_master_data_;
 };
 
 }  // namespace passport

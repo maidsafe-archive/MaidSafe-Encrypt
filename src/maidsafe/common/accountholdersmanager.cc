@@ -21,13 +21,12 @@
 
 #include "maidsafe/common/accountholdersmanager.h"
 
-#include <maidsafe/kademlia/contact.h>
-#include <maidsafe/kademlia/kadid.h>
-
 #include <algorithm>
 
-#include "maidsafe/common/kadops.h"
-#include "maidsafe/common/commonutils.h"
+#include "maidsafe-dht/kademlia/contact.h"
+#include "maidsafe-dht/kademlia/node-api.h"
+#include "maidsafe-dht/common/crypto.h"
+#include "maidsafe/common/config.h"
 
 namespace maidsafe {
 
@@ -41,12 +40,13 @@ AccountHoldersManager::~AccountHoldersManager() {
   }
 }
 
-void AccountHoldersManager::Init(const std::string &pmid,
+void AccountHoldersManager::Init(const kademlia::NodeId &pmid,
                                  const AccountHolderGroupFunctor &callback) {
   boost::mutex::scoped_lock lock(mutex_);
   do_nothing_ = boost::bind(&AccountHoldersManager::DoNothing, this, _1, _2);
   pmid_ = pmid;
-  account_name_ = SHA512String(pmid_ + kAccount);
+  account_name_ = kademlia::NodeId(crypto::Hash<crypto::SHA512>(
+      pmid_.String() + kAccount));
   UpdateGroup(callback);
 }
 
@@ -56,9 +56,9 @@ void AccountHoldersManager::Update() {
 }
 
 void AccountHoldersManager::UpdateGroup(AccountHolderGroupFunctor callback) {
-  if (account_name_.empty()) {
+  if (!account_name_.IsValid()) {
 #ifdef DEBUG
-    printf("In AHM::UpdateGroup, no account name set!\n");
+    printf("In AHM::UpdateGroup, no valid account name set.\n");
 #endif
     return;
   }
@@ -69,44 +69,44 @@ void AccountHoldersManager::UpdateGroup(AccountHolderGroupFunctor callback) {
   // TODO(Fraser#5#): 2010-05-12 - Implement better way of updating, e.g. send a
   //                  single request to a good account holder for his closest
   //                  contacts to account_name_;
-  kad_ops_->FindKClosestNodes(account_name_, boost::bind(
+  node_->FindNodes(account_name_, boost::bind(
       &AccountHoldersManager::FindNodesCallback, this, _1, _2, callback));
 }
 
 void AccountHoldersManager::FindNodesCallback(
-    const ReturnCode &result,
-    const std::vector<kad::Contact> &closest_nodes,
+    const int &result,
+    const std::vector<kademlia::Contact> &closest_nodes,
     AccountHolderGroupFunctor callback) {
-  std::vector<kad::Contact> account_holder_group;
+  std::vector<kademlia::Contact> account_holder_group;
   {
     boost::mutex::scoped_lock lock(mutex_);
     if (result == kSuccess) {
       last_update_ = boost::posix_time::microsec_clock::universal_time();
       account_holder_group = closest_nodes;
       // Vault cannot be AccountHolder for self
-      if (!RemoveKadContact(pmid_, &account_holder_group))
-        if (account_holder_group_.size() >= kad_ops_->k() &&
-            ContactWithinClosest(account_name_, kad::Contact(pmid_, "", 0),
-                                 account_holder_group))
-          account_holder_group.pop_back();
+      if (!RemoveContact(pmid_, &account_holder_group) &&
+          account_holder_group_.size() >= node_->k() &&
+          ContactWithinClosest(kademlia::Contact(pmid_, transport::Endpoint()),
+                               account_holder_group, account_name_)) {
+        account_holder_group.pop_back();
+      }
     }
     account_holder_group_ = account_holder_group;
     update_in_progress_ = false;
     cond_var_.notify_all();
   }
-  callback(result, account_holder_group);
+  callback(ReturnCode(result), account_holder_group);
 }
 
 bool AccountHoldersManager::UpdateRequired() {
   if (boost::posix_time::microsec_clock::universal_time() >=
       last_update_ + kMaxUpdateInterval_)
     return true;
-  std::set<std::string> unique_ids(failed_ids_.begin(), failed_ids_.end());
+  std::set<kademlia::NodeId> unique_ids(failed_ids_.begin(), failed_ids_.end());
   if (unique_ids.size() >= kMaxFailedNodes_)
     return true;
   size_t max_single_count(1);
-  for (std::set<std::string>::iterator it = unique_ids.begin();
-       it != unique_ids.end(); ++it) {
+  for (auto it = unique_ids.begin(); it != unique_ids.end(); ++it) {
     size_t this_count = failed_ids_.count(*it);
     if (this_count > max_single_count)
       max_single_count = this_count;
@@ -115,20 +115,19 @@ bool AccountHoldersManager::UpdateRequired() {
 }
 
 void AccountHoldersManager::ReportFailure(
-    const std::string &account_holders_pmid) {
+    const kademlia::NodeId &account_holders_pmid) {
   boost::mutex::scoped_lock lock(mutex_);
   if (update_in_progress_)
     return;
   // Check node is in current vector of account holders
-  std::vector<kad::Contact>::iterator it = std::find_if(
-      account_holder_group_.begin(), account_holder_group_.end(),
-      boost::bind(&ContactHasId, account_holders_pmid, _1));
+  kademlia::Contact contact(account_holders_pmid, transport::Endpoint());
+  auto it = std::find(account_holder_group_.begin(),
+                      account_holder_group_.end(), contact);
   if (it == account_holder_group_.end())
     return;
   failed_ids_.insert(account_holders_pmid);
   if (UpdateRequired())
     UpdateGroup(do_nothing_);
 }
-
 
 }  // namespace maidsafe

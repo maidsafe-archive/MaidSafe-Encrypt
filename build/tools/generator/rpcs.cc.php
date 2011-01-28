@@ -1,11 +1,11 @@
 <?= PrintHeader("Provides a class for %$name RPCs.", $template, $filename) ?>
 
-#include "maidsafe/common/<?= strtolower($name) ?>rpcs.h"
-
-#include <maidsafe/transport/udttransport.h>
-
-#include "maidsafe/common/messagehandler.h"
+#include "maidsafe/common/<?= CamelConv($name) ?>_rpcs.h"
+#include "maidsafe-dht/transport/udttransport.h"
+#include "maidsafe/common/message_handler.h"
 #include "maidsafe/common/<?= CamelConv($name) ?>_messages.pb.h"
+
+namespace arg = std::placeholders;
 
 namespace maidsafe {
 
@@ -20,15 +20,20 @@ namespace maidsafe {
 void <?= $name ?>Rpcs::<?= $func ?>(const kademlia::Contact &contact,
 <?= $ind . $func ?>Functor callback) {
   // set up transport & msg handler and connect signals
-  boost::shared_ptr<MessageHandler> message_handler;
-  boost::shared_ptr<transport::Transport> transport(
+  std::shared_ptr<MessageHandler> message_handler(
+      new MessageHandler(securifier_));
+  std::shared_ptr<transport::Transport> transport(
       new transport::UdtTransport(asio_service_));
-  transport->on_message_received()->connect(boost::bind(
+  transport->on_message_received()->connect(std::bind(
       &MessageHandler::OnMessageReceived, message_handler.get(),
-      _1, _2, _3, _4));
-  message_handler->on_<?= CamelConv($func) ?>_response()->connect(boost::bind(
-      &<?= $name ?>Rpcs::<?= $func ?>Callback, this, _1,
-      callback, message_handler, transport));
+      arg::_1, arg::_2, arg::_3, arg::_4));
+  message_handler->on_<?= CamelConv($func) ?>_response()->connect(std::bind(
+      &<?= $name ?>Rpcs::<?= $func ?>Callback, this, arg::_2,
+      callback, transport::kSuccess, arg::_1, message_handler, transport));
+  message_handler->on_error()->connect(std::bind(
+      &<?= $name ?>Rpcs::<?= $func ?>Callback, this,
+      protobuf::<?= $func ?>Response(), callback, arg::_1,
+      transport::Info(), message_handler, transport));
 
   // assemble the request message
   protobuf::<?= $func ?>Request req;
@@ -42,12 +47,19 @@ void <?= $name ?>Rpcs::<?= $func ?>(const kademlia::Contact &contact,
 void <?= $name ?>Rpcs::<?= $func ?>Callback(
     const protobuf::<?= $func ?>Response &response,
     <?= $func ?>Functor callback,
-    boost::shared_ptr<MessageHandler> message_handler,
-    boost::shared_ptr<transport::Transport> transport) {
-  // TODO implement <?= $name ?>Rpcs::<?= $func ?>Callback body
+    const transport::TransportCondition &transport_condition,
+    const transport::Info &info,
+    std::shared_ptr<MessageHandler> message_handler,
+    std::shared_ptr<transport::Transport> transport) {
+  int result = transport_condition;
+  if (transport_condition == transport::kSuccess && response.IsInitialized()
+      /* && response.result() */) {
+    // TODO implement <?= $name ?>Rpcs::<?= $func ?>Callback body
+  } else {
+    result = -1;
+  }
   if (callback)
-    // callback(response.result(), ...);
-    callback(false);
+    callback(info, result);
 }
 
 <?php endforeach; ?>

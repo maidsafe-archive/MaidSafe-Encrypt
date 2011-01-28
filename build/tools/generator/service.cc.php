@@ -1,7 +1,6 @@
 <?= PrintHeader("Provides a class for %$name services.", $template, $filename) ?>
 
-#include "maidsafe/vault/<?= strtolower($name) ?>service.h"
-
+#include "maidsafe/vault/<?= CamelConv($name) ?>_service.h"
 #include "maidsafe/common/<?= CamelConv($name) ?>_messages.pb.h"
 
 namespace maidsafe {
@@ -25,6 +24,6 @@ void <?= $name ?>Service::<?= $func ?>(<?= $ind == 4 ? "\n    " : '' ?>const tra
 }
 
 <?php endforeach; ?>
-} // namespace vault
+}  // namespace vault
 
 }  // namespace maidsafe

@@ -1,7 +1,6 @@
 <?= PrintHeader('Provides a class for processing messages.', $template, $filename) ?>
 
-#include "maidsafe/common/messagehandler.h"
-
+#include "maidsafe/common/message_handler.h"
 <?php foreach ($groups as $name => $funcs): ?>
 #include "maidsafe/common/<?= CamelConv($name) ?>_messages.pb.h"
 <?php endforeach; ?>
@@ -27,7 +26,8 @@ enum MessageType {
  */
 std::string MessageHandler::WrapMessage(<?= strlen($func) > 9 ? "\n    " : '' ?>const protobuf::<?= $func ?>Request &msg) {
   return MakeSerialisedWrapperMessage(k<?= $func ?>Request,
-                                      msg.SerializeAsString());
+                                      msg.SerializeAsString(),
+                                      kSign | kAsymmetricEncrypt);
 }
 
 /**
@@ -37,15 +37,19 @@ std::string MessageHandler::WrapMessage(<?= strlen($func) > 9 ? "\n    " : '' ?>
  */
 std::string MessageHandler::WrapMessage(<?= strlen($func) > 8 ? "\n    " : '' ?>const protobuf::<?= $func ?>Response &msg) {
   return MakeSerialisedWrapperMessage(k<?= $func ?>Response,
-                                      msg.SerializeAsString());
+                                      msg.SerializeAsString(),
+                                      kSign | kAsymmetricEncrypt);
 }
 
 <?php endforeach; endforeach; ?>
-void MessageHandler::ProcessSerialisedMessage(const int& message_type,
-                                              const std::string& payload,
-                                              const transport::Info& info,
-                                              std::string* response,
-                                              transport::Timeout* timeout) {
+void MessageHandler::ProcessSerialisedMessage(
+    const int &message_type,
+    const std::string &payload,
+    const std::string &message_signature,
+    const transport::Info &info,
+    bool asymmetrical_encrypted,
+    std::string *response,
+    transport::Timeout* timeout) {
   response->clear();
   *timeout = transport::kImmediateTimeout;
 
@@ -53,26 +57,31 @@ void MessageHandler::ProcessSerialisedMessage(const int& message_type,
 <?php foreach ($groups as $name => $funcs): ?>
 <?php foreach ($funcs as $func => $desc): ?>
     case k<?= $func ?>Request: {
+      if (!asymmetrical_encrypted || message_signature.empty())
+        return;
       protobuf::<?= $func ?>Request in_msg;
       if (in_msg.ParseFromString(payload) && in_msg.IsInitialized()) {
         protobuf::<?= $func ?>Response out_msg;
-        (*on_<?= CamelConv($func) ?>_request_)(info, in_msg, &out_msg);
+        (*on_<?= CamelConv($func) ?>_request_)(info, message_signature, in_msg,
+                                               &out_msg);
         *response = WrapMessage(out_msg);
       }
       break;
     }
     case k<?= $func ?>Response: {
+      if (!asymmetrical_encrypted || message_signature.empty())
+        return;
       protobuf::<?= $func ?>Response in_msg;
       if (in_msg.ParseFromString(payload))
-        (*on_<?= CamelConv($func) ?>_response_)(in_msg);
+        (*on_<?= CamelConv($func) ?>_response_)(info, message_signature, in_msg);
       break;
     }
 
 <?php endforeach; endforeach; ?>
     default:
-      transport::MessageHandler::ProcessSerialisedMessage(message_type, payload,
-                                                          info, response,
-                                                          timeout);
+      kademlia::MessageHandler::ProcessSerialisedMessage(
+          message_type, payload, message_signature, info,
+          asymmetrical_encrypted, response, timeout);
   }
 }
 

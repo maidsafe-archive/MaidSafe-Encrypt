@@ -25,20 +25,13 @@
 #ifndef MAIDSAFE_COMMON_BUFFERPACKETRPC_H_
 #define MAIDSAFE_COMMON_BUFFERPACKETRPC_H_
 
-#include <boost/cstdint.hpp>
-
+#include <cstdint>
 #include <string>
 
-#include "maidsafe/common/maidsafe_service.pb.h"
-
-namespace kad { class Contact; }
-namespace transport { class TransportHandler; }
-namespace rpcprotocol {
-class Controller;
-class ChannelManager;
-}  // namespace rpcprotocol
-
 namespace maidsafe {
+
+namespace kademlia { class Contact; }
+namespace transport { class TransportHandler; }
 
 class BufferPacketRpcs {
  public:

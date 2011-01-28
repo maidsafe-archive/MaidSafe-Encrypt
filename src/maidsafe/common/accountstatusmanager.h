@@ -21,19 +21,18 @@
 #ifndef MAIDSAFE_COMMON_ACCOUNTSTATUSMANAGER_H_
 #define MAIDSAFE_COMMON_ACCOUNTSTATUSMANAGER_H_
 
-#include <boost/asio/deadline_timer.hpp>
-#include <boost/asio/io_service.hpp>
-#include <boost/asio/strand.hpp>
-#include <boost/date_time/posix_time/posix_time.hpp>
-#include <boost/function.hpp>
-#include <boost/thread/condition_variable.hpp>
-#include <boost/thread/mutex.hpp>
-#include <boost/thread/thread.hpp>
-
+#include <cstdint>
 #include <set>
 #include <string>
+#include <functional>
 
-#include "maidsafe/common/maidsafe_service_messages.pb.h"
+#include "boost/asio/deadline_timer.hpp"
+#include "boost/asio/io_service.hpp"
+#include "boost/asio/strand.hpp"
+#include "boost/date_time/posix_time/posix_time.hpp"
+#include "boost/thread/condition_variable.hpp"
+#include "boost/thread/mutex.hpp"
+#include "boost/thread/thread.hpp"
 
 
 namespace maidsafe {
@@ -56,19 +55,19 @@ class AccountStatusManager {
  public:
   AccountStatusManager();
   ~AccountStatusManager();
-  void StartUpdating(boost::function<void()> update_functor);
+  void StartUpdating(std::function<void()> update_functor);
   void StopUpdating();
   void Update();
-  void SetAccountStatus(const boost::uint64_t &space_offered,
-                        const boost::uint64_t &space_given,
-                        const boost::uint64_t &space_taken);
-  void AccountStatus(boost::uint64_t *space_offered,
-                     boost::uint64_t *space_given,
-                     boost::uint64_t *space_taken);
-  void ReserveSpace(const boost::uint64_t &reserved_value);
-  void UnReserveSpace(const boost::uint64_t &reserved_value);
-  void AmendmentDone(const AmendAccountRequest::Amendment &amendment_type,
-                     const boost::uint64_t &amendment_value);
+  void SetAccountStatus(const std::uint64_t &space_offered,
+                        const std::uint64_t &space_given,
+                        const std::uint64_t &space_taken);
+  void AccountStatus(std::uint64_t *space_offered,
+                     std::uint64_t *space_given,
+                     std::uint64_t *space_taken);
+  void ReserveSpace(const std::uint64_t &reserved_value);
+  void UnReserveSpace(const std::uint64_t &reserved_value);
+  void AmendmentDone(const AmendAccountRequest::Amendment &amendment_type,  // TODO
+                     const std::uint64_t &amendment_value);
   void UpdateFailed();
   bool AbleToStore(const boost::uint64_t &size);
   friend class test::AccountStatusManagerTest_BEH_MAID_ASM_Init_Test;
@@ -89,22 +88,22 @@ class AccountStatusManager {
   void Run();
   void DoUpdate(const boost::system::error_code &error);
   bool UpdateDone() { return !awaiting_update_result_; }
-  boost::uint64_t space_offered_;
-  boost::uint64_t space_given_;
-  boost::uint64_t space_taken_;
-  boost::uint64_t space_reserved_;
+  std::uint64_t space_offered_;
+  std::uint64_t space_given_;
+  std::uint64_t space_taken_;
+  std::uint64_t space_reserved_;
   std::multiset<boost::uint64_t> reserved_values_;
   const boost::posix_time::milliseconds kMaxUpdateInterval_;
   const boost::posix_time::milliseconds kFailureRetryInterval_;
   const int kMaxAmendments_;
   boost::mutex mutex_;
   int amendments_since_update_;
-  boost::function<void()> update_functor_;
-  boost::function<void(const boost::system::error_code &error)> wait_functor_;
+  std::function<void()> update_functor_;
+  std::function<void(const boost::system::error_code &error)> wait_functor_;
   boost::asio::io_service io_service_;
   boost::asio::strand strand_;
-  boost::shared_ptr<boost::asio::deadline_timer> timer_;
-  boost::shared_ptr<boost::asio::io_service::work> work_;
+  std::shared_ptr<boost::asio::deadline_timer> timer_;
+  std::shared_ptr<boost::asio::io_service::work> work_;
   boost::thread worker_thread_;
   boost::condition_variable update_done_cond_var_;
   bool awaiting_update_result_;

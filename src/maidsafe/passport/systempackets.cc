@@ -21,9 +21,9 @@
 */
 
 #include "maidsafe/passport/systempackets.h"
-#include <boost/lexical_cast.hpp>
-#include <maidsafe/base/crypto.h>
 #include <cstdio>
+#include "boost/lexical_cast.hpp"
+#include "maidsafe-dht/common/crypto.h"
 #include "maidsafe/passport/signaturepacket.pb.h"
 
 namespace maidsafe {
@@ -102,18 +102,8 @@ SignaturePacket::SignaturePacket(const PacketType &packet_type,
       private_key_(private_key),
       signer_private_key_(signer_private_key),
       public_key_signature_() {
-  if (packet_type == MPID) {
-    try {
-      crypto::Crypto crypto_obj;
-      name_ = crypto_obj.Hash(public_name, "", crypto::STRING_STRING, false);
-    }
-    catch(const std::exception &e) {
-#ifdef DEBUG
-      printf("MpidPacket::Ctor: %s\n", e.what());
-#endif
-      public_key_.clear();
-    }
-  }
+  if (packet_type == MPID)
+    name_ = crypto::Hash<crypto::SHA512>(public_name);
   Initialise();
 }
 
@@ -146,20 +136,9 @@ void SignaturePacket::Initialise() {
     return Clear();
   }
 
-  try {
-    crypto::Crypto crypto_obj;
-    public_key_signature_ = crypto_obj.AsymSign(public_key_, "",
-                            signer_private_key_, crypto::STRING_STRING);
-    if (packet_type_ != MPID)
-      name_ = crypto_obj.Hash(public_key_ + public_key_signature_, "",
-                               crypto::STRING_STRING, false);
-  }
-  catch(const std::exception &e) {
-#ifdef DEBUG
-    printf("SignaturePacket::Initialise: %s\n", e.what());
-#endif
-    name_.clear();
-  }
+  public_key_signature_ = crypto::AsymSign(public_key_, signer_private_key_);
+  if (packet_type_ != MPID)
+    name_ = crypto::Hash<crypto::SHA512>(public_key_ + public_key_signature_);
   if (name_.empty())
     Clear();
 }
@@ -202,7 +181,8 @@ MidPacket::MidPacket()
       rid_(),
       encrypted_rid_(),
       salt_(),
-      secure_password_() {}
+      secure_key_(),
+      secure_iv_() {}
 
 MidPacket::MidPacket(const std::string &username,
                      const std::string &pin,
@@ -214,7 +194,8 @@ MidPacket::MidPacket(const std::string &username,
       rid_(),
       encrypted_rid_(),
       salt_(),
-      secure_password_() {
+      secure_key_(),
+      secure_iv_() {
   Initialise();
 }
 
@@ -222,42 +203,23 @@ void MidPacket::Initialise() {
   if (username_.empty() || pin_.empty())
     return Clear();
 
-  crypto::Crypto crypto_obj;
-  salt_ = crypto_obj.Hash(pin_ + username_, "", crypto::STRING_STRING, false);
-  try {
-    secure_password_ = crypto_obj.SecurePassword(username_, salt_,
-                       boost::lexical_cast<boost::uint32_t>(pin_));
-    name_ = crypto_obj.Hash(username_ + pin_ + smid_appendix_, "",
-                            crypto::STRING_STRING, false);
-  }
-  catch(const std::exception &e) {
-#ifdef DEBUG
-    printf("MidPacket::Initialise: %s\n", e.what());
-#endif
-    name_.clear();
-  }
+  salt_ = crypto::Hash<crypto::SHA512>(pin_ + username_);
+  std::string secure_password = crypto::SecurePassword(username_, salt_,
+      boost::lexical_cast<boost::uint32_t>(pin_));
+  secure_key_ = secure_password.substr(0, crypto::AES256_KeySize);
+  secure_iv_ = secure_password.substr(crypto::AES256_KeySize,
+                                      crypto::AES256_IVSize);
+  name_ = crypto::Hash<crypto::SHA512>(username_ + pin_ + smid_appendix_);
   if (name_.empty())
     Clear();
 }
 
 void MidPacket::SetRid(const std::string &rid) {
   rid_ = rid;
-  try {
-    if (rid_.empty()) {
-      encrypted_rid_.clear();
-    } else {
-      crypto::Crypto crypto_obj;
-      encrypted_rid_ =
-          crypto_obj.SymmEncrypt(rid_, "", crypto::STRING_STRING,
-                                 secure_password_);
-    }
-  }
-  catch(const std::exception &e) {
-#ifdef DEBUG
-    printf("MidPacket::SetRid: %s\n", e.what());
-#endif
+  if (rid_.empty())
     encrypted_rid_.clear();
-  }
+  else
+    encrypted_rid_ = crypto::SymmEncrypt(rid_, secure_key_, secure_iv_);
   if (encrypted_rid_.empty())
     Clear();
 }
@@ -271,18 +233,8 @@ std::string MidPacket::DecryptRid(const std::string &encrypted_rid) {
     return 0;
   }
 
-  try {
-    encrypted_rid_ = encrypted_rid;
-    crypto::Crypto crypto_obj;
-    rid_ = crypto_obj.SymmDecrypt(encrypted_rid_, "", crypto::STRING_STRING,
-                                  secure_password_);
-  }
-  catch(const std::exception &e) {
-#ifdef DEBUG
-    printf("MidPacket::DecryptRid: %s\n", e.what());
-#endif
-    rid_.clear();
-  }
+  encrypted_rid_ = encrypted_rid;
+  rid_ = crypto::SymmDecrypt(encrypted_rid_, secure_key_, secure_iv_);
   if (rid_.empty())
     Clear();
   return rid_;
@@ -295,7 +247,8 @@ void MidPacket::Clear() {
   smid_appendix_.clear();
   encrypted_rid_.clear();
   salt_.clear();
-  secure_password_.clear();
+  secure_key_.clear();
+  secure_iv_.clear();
   rid_.clear();
 }
 
@@ -308,7 +261,8 @@ bool MidPacket::Equals(const pki::Packet *other) const {
          smid_appendix_ == rhs->smid_appendix_ &&
          encrypted_rid_ == rhs->encrypted_rid_ &&
          salt_ == rhs->salt_ &&
-         secure_password_ == rhs->secure_password_ &&
+         secure_key_ == rhs->secure_key_ &&
+         secure_iv_ == rhs->secure_iv_ &&
          rid_ == rhs->rid_;
 }
 
@@ -322,7 +276,8 @@ TmidPacket::TmidPacket()
       rid_(),
       plain_text_master_data_(),
       salt_(),
-      secure_password_(),
+      secure_key_(),
+      secure_iv_(),
       encrypted_master_data_() {}
 
 TmidPacket::TmidPacket(const std::string &username,
@@ -338,7 +293,8 @@ TmidPacket::TmidPacket(const std::string &username,
       rid_(rid),
       plain_text_master_data_(plain_text_master_data),
       salt_(),
-      secure_password_(),
+      secure_key_(),
+      secure_iv_(),
       encrypted_master_data_() {
   Initialise();
 }
@@ -347,17 +303,7 @@ void TmidPacket::Initialise() {
   if (username_.empty() || pin_.empty() || rid_.empty())
     return Clear();
 
-  try {
-    crypto::Crypto crypto_obj;
-    name_ = crypto_obj.Hash(username_ + pin_ + rid_, "", crypto::STRING_STRING,
-                            false);
-  }
-  catch(const std::exception &e) {
-#ifdef DEBUG
-    printf("TmidPacket::Initialise: %s\n", e.what());
-#endif
-    name_.clear();
-  }
+  name_ = crypto::Hash<crypto::SHA512>(username_ + pin_ + rid_);
   if (!SetPassword())
     return;
   if (!SetPlainData())
@@ -369,28 +315,25 @@ void TmidPacket::Initialise() {
 bool TmidPacket::SetPassword() {
   if (password_.empty() || rid_.size() < 4U) {
     salt_.clear();
-    secure_password_.clear();
+    secure_key_.clear();
+    secure_iv_.clear();
     return false;
   }
-  try {
-    crypto::Crypto crypto_obj;
-    salt_ = crypto_obj.Hash(rid_ + password_, "", crypto::STRING_STRING, false);
-    boost::uint32_t random_no_from_rid(0);
-    int a = 1;
-    for (int i = 0; i < 4; ++i) {
-      boost::uint8_t temp(static_cast<boost::uint8_t>(rid_.at(i)));
-      random_no_from_rid += (temp * a);
-      a *= 256;
-    }
-    secure_password_ = crypto_obj.SecurePassword(password_, salt_,
-                                                 random_no_from_rid);
+
+  salt_ = crypto::Hash<crypto::SHA512>(rid_ + password_);
+  boost::uint32_t random_no_from_rid(0);
+  int a = 1;
+  for (int i = 0; i < 4; ++i) {
+    boost::uint8_t temp(static_cast<boost::uint8_t>(rid_.at(i)));
+    random_no_from_rid += (temp * a);
+    a *= 256;
   }
-  catch(const std::exception &e) {
-#ifdef DEBUG
-    printf("TmidPacket::SetPassword: %s\n", e.what());
-#endif
-    salt_.clear();
-  }
+
+  std::string secure_password = crypto::SecurePassword(password_, salt_,
+                                                        random_no_from_rid);
+  secure_key_ = secure_password.substr(0, crypto::AES256_KeySize);
+  secure_iv_ = secure_password.substr(crypto::AES256_KeySize,
+                                      crypto::AES256_IVSize);
   if (salt_.empty()) {
     Clear();
     return false;
@@ -400,21 +343,14 @@ bool TmidPacket::SetPassword() {
 }
 
 bool TmidPacket::SetPlainData() {
-  if (plain_text_master_data_.empty() || secure_password_.empty()) {
+  if (plain_text_master_data_.empty() || secure_key_.empty() ||
+      secure_iv_.empty()) {
     encrypted_master_data_.clear();
     return false;
   }
-  try {
-    crypto::Crypto crypto_obj;
-    encrypted_master_data_ = crypto_obj.SymmEncrypt(plain_text_master_data_, "",
-                             crypto::STRING_STRING, secure_password_);
-  }
-  catch(const std::exception &e) {
-#ifdef DEBUG
-    printf("TmidPacket::SetPlainData: %s\n", e.what());
-#endif
-    encrypted_master_data_.clear();
-  }
+
+  encrypted_master_data_ = crypto::SymmEncrypt(plain_text_master_data_,
+                                               secure_key_, secure_iv_);
   if (encrypted_master_data_.empty()) {
     Clear();
     return false;
@@ -435,21 +371,14 @@ std::string TmidPacket::DecryptPlainData(
 #endif
     password_.clear();
     salt_.clear();
-    secure_password_.clear();
+    secure_key_.clear();
+    secure_iv_.clear();
     return "";
   }
-  try {
-    encrypted_master_data_ = encrypted_master_data;
-    crypto::Crypto crypto_obj;
-    plain_text_master_data_ = crypto_obj.SymmDecrypt(encrypted_master_data_, "",
-                              crypto::STRING_STRING, secure_password_);
-  }
-  catch(const std::exception &e) {
-#ifdef DEBUG
-    printf("TmidPacket::DecryptPlainData: %s\n", e.what());
-#endif
-    plain_text_master_data_.clear();
-  }
+
+  encrypted_master_data_ = encrypted_master_data;
+  plain_text_master_data_ = crypto::SymmDecrypt(encrypted_master_data_,
+                                                secure_key_, secure_iv_);
   if (plain_text_master_data_.empty())
     Clear();
   return plain_text_master_data_;
@@ -463,7 +392,8 @@ void TmidPacket::Clear() {
   rid_.clear();
   plain_text_master_data_.clear();
   salt_.clear();
-  secure_password_.clear();
+  secure_key_.clear();
+  secure_iv_.clear();
   encrypted_master_data_.clear();
 }
 
@@ -477,7 +407,8 @@ bool TmidPacket::Equals(const pki::Packet *other) const {
          rid_ == rhs->rid_ &&
          plain_text_master_data_ == rhs->plain_text_master_data_ &&
          salt_ == rhs->salt_ &&
-         secure_password_ == rhs->secure_password_ &&
+         secure_key_ == rhs->secure_key_ &&
+         secure_iv_ == rhs->secure_iv_ &&
          encrypted_master_data_ == rhs->encrypted_master_data_;
 }
 

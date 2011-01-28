@@ -3,7 +3,7 @@
 *
 * Copyright [2009] maidsafe.net limited
 *
-* Description:  Definition of system-wide constants/enums/structs
+* Description:  Definition of project-wide constants/enums/structs
 * Version:      1.0
 * Created:      2009-01-29-00.15.50
 * Revision:     none
@@ -22,35 +22,28 @@
 * ============================================================================
 */
 
-#ifndef MAIDSAFE_COMMON_MAIDSAFE_H_
-#define MAIDSAFE_COMMON_MAIDSAFE_H_
+#ifndef MAIDSAFE_COMMON_CONFIG_H_
+#define MAIDSAFE_COMMON_CONFIG_H_
 
-#include <boost/cstdint.hpp>
-#include <maidsafe/maidsafe-dht.h>
-#define THIS_MAIDSAFE_DHT_VERSION 25
-#if MAIDSAFE_DHT_VERSION < THIS_MAIDSAFE_DHT_VERSION
-#error This API is not compatible with the installed library.\
-  Please update the maidsafe-dht library.
-#elif MAIDSAFE_DHT_VERSION > THIS_MAIDSAFE_DHT_VERSION
-#error This API uses a newer version of the maidsafe-dht library.\
-  Please update this project.
-#endif
-
+#include <cstdint>
 #include <string>
 #include <vector>
-#include "maidsafe/common/returncodes.h"
+#include <functional>
 
-namespace kad { class Contact; }
+#include "maidsafe-dht/common/utils.h"
+#include "maidsafe/common/returncodes.h"
 
 namespace maidsafe {
 
+namespace kademlia { class Contact; }
+
 // system constants
-const boost::uint32_t kMinRegularFileSize = 512;
+const std::uint32_t kMinRegularFileSize = 512;
 // This is the size in bytes of the NON-HEX format strings used as keys.  When
 // encoded to hex the string size is doubled.
-const boost::uint32_t kKeySize = 64;
+const std::uint32_t kKeySize = 64;
 
-const boost::uint16_t kRsaKeySize = 4096;
+const std::uint16_t kRsaKeySize = 4096;
 // const crypto::hashtype kHashSize(crypto::SHA_512);
 
 const std::string kAnonymousRequestSignature(2 * kKeySize, 'f');
@@ -141,53 +134,42 @@ const int kValidityCheckInterval(120);  // 2 minutes
 // delay to check partner references
 const int kCheckPartnerRefDelay(300);  // 5 minutes
 // timeout for account amendment transactions in milliseconds
-const boost::uint64_t kAccountAmendmentTimeout(120000);
+const std::uint64_t kAccountAmendmentTimeout(120000);
 // timeout for account amendment results in seconds
-const boost::uint32_t kAccountAmendmentResultTimeout(1800);  // ½ hour
+const std::uint32_t kAccountAmendmentResultTimeout(1800);  // ½ hour
 // max. no. of account amendments
 const size_t kMaxAccountAmendments(1000);
 // max. no. of repeated account amendments (i.e. for same chunk to same PMID)
 const size_t kMaxRepeatedAccountAmendments(10);
 const int kValidityCheckRetry(2);  // retries for validity check (timeouts)
-const boost::uint8_t kMinChunkCopies(4);
+const std::uint8_t kMinChunkCopies(4);
 const int kMaxChunkLoadRetries(3);  // max number of tries to load a chunk
 // max number of tries to store or update a chunk
 const int kMaxChunkStoreTries(2);
 // max number of peers to try to store a chunk copy on
-const boost::uint8_t kMaxStoreFailures(10);
+const std::uint8_t kMaxStoreFailures(10);
 // max number of store retries per peer
-const boost::uint8_t kMaxPerPeerStoreFailures(2);
+const std::uint8_t kMaxPerPeerStoreFailures(2);
 // max number of tries to add to watch list for a chunk
-const boost::uint8_t kMaxAddToWatchListTries(3);
+const std::uint8_t kMaxAddToWatchListTries(3);
 // max number of tries to remove from watch list for a chunk
-const boost::uint8_t kMaxRemoveFromWatchListFailures(3);
+const std::uint8_t kMaxRemoveFromWatchListFailures(3);
 // TODO(Fraser#5#): 2010-01-29 - Move the kMaxSmallChunkSize to be set and held
 //                               by session depending on connection speed, etc.
 // max size (bytes) of a chunk deemed "small"
-const boost::uint64_t kMaxSmallChunkSize(666666);
+const std::uint64_t kMaxSmallChunkSize(666666);
 // max no of dbs in save queue before running save queue
-const boost::uint32_t kSaveUpdatesTrigger(10);
+const std::uint32_t kSaveUpdatesTrigger(10);
 const double kMinSuccessfulPecentageOfUpdating(0.9);
 const double kMinSuccessfulPecentageStore(0.75);
 // port where the service to register a local vault is listening
-const boost::uint16_t kLocalPort = 5483;
+const std::uint16_t kLocalPort = 5483;
 // additionally paying PMIDs kept in watch lists
 const int kMaxReserveWatchListEntries = 250;
 // time a watcher is kept in the ChunkInfoHandler's waiting list
 const int kChunkInfoWatcherPendingTimeout = 86400;  // 24 hours
 // time until a chunk holder is not considered active anymore
 const int kChunkInfoRefActiveTimeout = 86400;  // 24 hours
-// min. no. of responses required out of k
-//  const boost::uint16_t kK(16);
-//  const boost::uint16_t kKadUpperThreshold(static_cast<boost::uint16_t>(kK *
-//                                         kad::kMinSuccessfulPecentageStore));
-//  const boost::uint16_t kKadLowerThreshold(
-//      kad::kMinSuccessfulPecentageStore > .25 ?
-//      static_cast<boost::uint16_t>(kK * .25) : kKadUpperThreshold);
-
-enum MaidsafeRpcResult {
-  kNack, kAck, kNotRemote, kBusy
-};
 
 enum DirType {ANONYMOUS, PRIVATE, PRIVATE_SHARE, PUBLIC_SHARE};
 
@@ -200,15 +182,15 @@ enum SortingMode { ALPHA, RANK, LAST };
 
 enum ShareFilter { kAll, kRo, kAdmin };
 
-typedef boost::function<void(const ReturnCode&)> VoidFuncOneInt;
-typedef boost::function<void(const ReturnCode&, const kad::Contact&)>
+typedef std::function<void(const ReturnCode&)> VoidFuncOneInt;
+typedef std::function<void(const ReturnCode&, const kademlia::Contact&)>
         VoidFuncIntContact;
-typedef boost::function<void(const ReturnCode&,
-    const std::vector<kad::Contact>&)> VoidFuncIntContacts;
+typedef std::function<void(const ReturnCode&,
+    const std::vector<kademlia::Contact>&)> VoidFuncIntContacts;
 
 
 inline std::string HexSubstr(const std::string &non_hex) {
-  std::string hex(base::EncodeToHex(non_hex));
+  std::string hex(EncodeToHex(non_hex));
   if (hex.size() > 16)
     return (hex.substr(0, 7) + ".." + hex.substr(hex.size() - 7));
   else
@@ -217,4 +199,4 @@ inline std::string HexSubstr(const std::string &non_hex) {
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_COMMON_MAIDSAFE_H_
+#endif  // MAIDSAFE_COMMON_CONFIG_H_

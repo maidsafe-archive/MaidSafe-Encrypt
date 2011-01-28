@@ -15,19 +15,19 @@
 #ifndef MAIDSAFE_COMMON_CHUNKSTORE_H_
 #define MAIDSAFE_COMMON_CHUNKSTORE_H_
 
-#include <boost/cstdint.hpp>
-#include <boost/date_time/posix_time/posix_time.hpp>
-#include <boost/filesystem.hpp>
-#include <boost/multi_index_container.hpp>
-#include <boost/multi_index/identity.hpp>
-#include <boost/multi_index/member.hpp>
-#include <boost/multi_index/ordered_index.hpp>
-#include <boost/multi_index/sequenced_index.hpp>
-#include <boost/thread/mutex.hpp>
-#include <maidsafe/base/alternativestore.h>
+#include <cstdint>
 #include <list>
 #include <map>
 #include <string>
+#include "boost/date_time/posix_time/posix_time.hpp"
+#include "boost/filesystem.hpp"
+#include "boost/multi_index_container.hpp"
+#include "boost/multi_index/identity.hpp"
+#include "boost/multi_index/member.hpp"
+#include "boost/multi_index/ordered_index.hpp"
+#include "boost/multi_index/sequenced_index.hpp"
+#include "boost/thread/mutex.hpp"
+#include "maidsafe-dht/common/alternative_store.h"
 
 
 namespace fs = boost::filesystem;
@@ -72,7 +72,8 @@ const ChunkType kTempCache = 0x08;
 struct ChunkInfo {
   ChunkInfo() : non_hex_name_(),
                 last_checked_(boost::posix_time::min_date_time),
-                type_(kHashable | kNormal) {}
+                type_(kHashable | kNormal),
+                size_(0) {}
   ChunkInfo(const std::string &non_hex_name,
             const boost::posix_time::ptime &last_checked,
             const ChunkType &type,
@@ -133,7 +134,7 @@ struct change_type {
   ChunkType new_type_;
 };
 
-class ChunkStore : public base::AlternativeStore {
+class ChunkStore : public AlternativeStore {
  public:
   ChunkStore(const std::string &chunkstore_dir,
              const boost::uint64_t &available_space,

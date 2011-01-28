@@ -14,10 +14,10 @@
 
 #include "maidsafe/common/chunkstore.h"
 
-#include <boost/filesystem/fstream.hpp>
-#include <boost/scoped_array.hpp>
-#include "maidsafe/common/commonutils.h"
-#include "maidsafe/common/maidsafe.h"
+#include "boost/filesystem/fstream.hpp"
+#include "boost/scoped_array.hpp"
+#include "maidsafe-dht/common/crypto.h"
+#include "maidsafe/common/config.h"
 
 namespace maidsafe {
 
@@ -73,8 +73,8 @@ bool ChunkStore::Init() {
     }
     set_is_initialised(temp_result);
     for (int i = 0; i < kDefaultChunkCount; ++i) {
-      std::string key = base::DecodeFromHex(kDefaultChunks[i][0]);
-      std::string value = base::DecodeFromHex(kDefaultChunks[i][1]);
+      std::string key = DecodeFromHex(kDefaultChunks[i][0]);
+      std::string value = DecodeFromHex(kDefaultChunks[i][1]);
       ChunkType type(kHashable | kNormal);
       fs::path chunk_path(GetChunkPath(key, type, true));
       boost::uint64_t chunk_size(value.size());
@@ -158,7 +158,7 @@ void ChunkStore::FindFiles(const fs::path &root_dir_path, ChunkType type,
                   failed_keys);
       } else  {
         ++(*filecount);
-        non_hex_name = base::DecodeFromHex(itr->path().filename().string());
+        non_hex_name = DecodeFromHex(itr->path().filename().string());
         boost::uint64_t size = fs::file_size(itr->path());
         if (size >= 2) {
           ChunkInfo chunk(non_hex_name,
@@ -251,7 +251,7 @@ ChunkType ChunkStore::GetChunkType(const std::string &key,
     type = kOutgoing;
   else
     type = kNormal;
-  if (key == SHA512String(value)) {
+  if (key == crypto::Hash<crypto::SHA512>(value)) {
     type |= kHashable;
   } else {
     type |= kNonHashable;
@@ -272,7 +272,7 @@ ChunkType ChunkStore::GetChunkType(const std::string &key, const fs::path &file,
     type = kNormal;
   try {
     if (fs::exists(file)) {
-      if (key == SHA512File(file)) {
+      if (key == crypto::HashFile<crypto::SHA512>(file)) {
         type |= kHashable;
       } else {
         type |= kNonHashable;
@@ -306,7 +306,7 @@ fs::path ChunkStore::GetChunkPath(const std::string &key, ChunkType type,
 #endif
     return "";
   }
-  std::string hex_key = base::EncodeToHex(key);
+  std::string hex_key = EncodeToHex(key);
   std::string dir_one, dir_two, dir_three;
   dir_one = hex_key.substr(0, 1);
   dir_two = hex_key.substr(1, 1);
@@ -638,7 +638,7 @@ int ChunkStore::HashCheckChunk(const std::string &key,
   if (chunk_size != fs::file_size(chunk_path))
     return kHashCheckFailure;
 
-  std::string file_hash = SHA512File(chunk_path);
+  std::string file_hash = crypto::HashFile<crypto::SHA512>(chunk_path);
   return file_hash == non_hex_filename ? kSuccess : kHashCheckFailure;
 }
 

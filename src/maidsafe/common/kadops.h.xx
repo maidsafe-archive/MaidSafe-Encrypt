@@ -21,15 +21,14 @@
 #ifndef MAIDSAFE_COMMON_KADOPS_H_
 #define MAIDSAFE_COMMON_KADOPS_H_
 
-#include <boost/filesystem.hpp>
-#include <boost/thread/condition_variable.hpp>
-#include <boost/thread/mutex.hpp>
-#include <maidsafe/kademlia/knode-api.h>
-
 #include <string>
 #include <vector>
 
+#include "boost/filesystem.hpp"
+#include "boost/thread/condition_variable.hpp"
+#include "boost/thread/mutex.hpp"
 #include "maidsafe/common/maidsafe.h"
+#include "maidsafe/kademlia/node-api.h"
 
 namespace transport { class TransportHandler; }
 namespace rpcprotocol { class ChannelManager; }

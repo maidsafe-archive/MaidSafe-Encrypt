@@ -22,11 +22,10 @@
 #ifndef MAIDSAFE_PASSPORT_PASSPORT_H_
 #define MAIDSAFE_PASSPORT_PASSPORT_H_
 
-#include <boost/cstdint.hpp>
-#include <boost/tr1/memory.hpp>
-
+#include <memory>
 #include <string>
 
+#include "boost/cstdint.hpp"
 #include "maidsafe/passport/cryptokeypairs.h"
 #include "maidsafe/passport/systempackethandler.h"
 
@@ -70,18 +69,18 @@ class Passport {
   // plain_text_master_data) in case generated tmid name is unsuitable.
   int SetNewUserData(const std::string &password,
                      const std::string &plain_text_master_data,
-                     std::tr1::shared_ptr<MidPacket> mid,
-                     std::tr1::shared_ptr<MidPacket> smid,
-                     std::tr1::shared_ptr<TmidPacket> tmid);
+                     std::shared_ptr<MidPacket> mid,
+                     std::shared_ptr<MidPacket> smid,
+                     std::shared_ptr<TmidPacket> tmid);
 
   // Used when creating a new user.
   // Confirms MID, SMID and TMID are successfully stored.  mid, smid and tmid
   // as set by SetNewUserData must be passed in.  If method returns failure, it
   // can safely be retried (e.g. after dependent packets have been confirmed) or
   // else SetNewUserData should be used to regenerate pending packets.
-  int ConfirmNewUserData(std::tr1::shared_ptr<MidPacket> mid,
-                         std::tr1::shared_ptr<MidPacket> smid,
-                         std::tr1::shared_ptr<TmidPacket> tmid);
+  int ConfirmNewUserData(std::shared_ptr<MidPacket> mid,
+                         std::shared_ptr<MidPacket> smid,
+                         std::shared_ptr<TmidPacket> tmid);
 
   // Used before saving a session.
   // Copies all confirmed signature packets to a keyring, and returns the
@@ -101,19 +100,19 @@ class Passport {
   int UpdateMasterData(const std::string &plain_text_master_data,
                        std::string *mid_old_value,
                        std::string *smid_old_value,
-                       std::tr1::shared_ptr<MidPacket> updated_mid,
-                       std::tr1::shared_ptr<MidPacket> updated_smid,
-                       std::tr1::shared_ptr<TmidPacket> new_tmid,
-                       std::tr1::shared_ptr<TmidPacket> tmid_for_deletion);
+                       std::shared_ptr<MidPacket> updated_mid,
+                       std::shared_ptr<MidPacket> updated_smid,
+                       std::shared_ptr<TmidPacket> new_tmid,
+                       std::shared_ptr<TmidPacket> tmid_for_deletion);
 
   // Used when saving a session.
   // Confirms MID, SMID and TMID are successfully stored.  mid, smid and tmid
   // as set by UpdateMasterData must be passed in.  If method returns failure,
   // it can safely be retried (e.g. after dependent packets have been confirmed)
   // or else UpdateMasterData should be used to regenerate pending packets.
-  int ConfirmMasterDataUpdate(std::tr1::shared_ptr<MidPacket> mid,
-                              std::tr1::shared_ptr<MidPacket> smid,
-                              std::tr1::shared_ptr<TmidPacket> tmid);
+  int ConfirmMasterDataUpdate(std::shared_ptr<MidPacket> mid,
+                              std::shared_ptr<MidPacket> smid,
+                              std::shared_ptr<TmidPacket> tmid);
 
   // Used when saving a session.
   // Indicates one or all of MID, SMID TMID and STMID failed storing.  All of
@@ -156,14 +155,14 @@ class Passport {
   int ChangeUserData(const std::string &new_username,
                      const std::string &new_pin,
                      const std::string &plain_text_master_data,
-                     std::tr1::shared_ptr<MidPacket> mid_for_deletion,
-                     std::tr1::shared_ptr<MidPacket> smid_for_deletion,
-                     std::tr1::shared_ptr<TmidPacket> tmid_for_deletion,
-                     std::tr1::shared_ptr<TmidPacket> stmid_for_deletion,
-                     std::tr1::shared_ptr<MidPacket> new_mid,
-                     std::tr1::shared_ptr<MidPacket> new_smid,
-                     std::tr1::shared_ptr<TmidPacket> new_tmid,
-                     std::tr1::shared_ptr<TmidPacket> new_stmid);
+                     std::shared_ptr<MidPacket> mid_for_deletion,
+                     std::shared_ptr<MidPacket> smid_for_deletion,
+                     std::shared_ptr<TmidPacket> tmid_for_deletion,
+                     std::shared_ptr<TmidPacket> stmid_for_deletion,
+                     std::shared_ptr<MidPacket> new_mid,
+                     std::shared_ptr<MidPacket> new_smid,
+                     std::shared_ptr<TmidPacket> new_tmid,
+                     std::shared_ptr<TmidPacket> new_stmid);
 
   // Used when amending username and/or pin.
   // Confirms MID, SMID TMID and STMID are successfully stored.  mid, smid, tmid
@@ -171,10 +170,10 @@ class Passport {
   // failure, it can safely be retried (e.g. after dependent packets have been
   // confirmed) or else ChangeUserData should be used to regenerate pending
   // packets.
-  int ConfirmUserDataChange(std::tr1::shared_ptr<MidPacket> mid,
-                            std::tr1::shared_ptr<MidPacket> smid,
-                            std::tr1::shared_ptr<TmidPacket> tmid,
-                            std::tr1::shared_ptr<TmidPacket> stmid);
+  int ConfirmUserDataChange(std::shared_ptr<MidPacket> mid,
+                            std::shared_ptr<MidPacket> smid,
+                            std::shared_ptr<TmidPacket> tmid,
+                            std::shared_ptr<TmidPacket> stmid);
 
   // Used when amending username and/or pin.
   // Indicates one or all of MID, SMID TMID and STMID failed storing.  All of
@@ -189,16 +188,16 @@ class Passport {
                      const std::string &plain_text_master_data,
                      std::string *tmid_old_value,
                      std::string *stmid_old_value,
-                     std::tr1::shared_ptr<TmidPacket> updated_tmid,
-                     std::tr1::shared_ptr<TmidPacket> updated_stmid);
+                     std::shared_ptr<TmidPacket> updated_tmid,
+                     std::shared_ptr<TmidPacket> updated_stmid);
 
   // Used when amending user's password.
   // Confirms TMID and STMID are successfully stored.  tmid and stmid as set by
   // ChangePassword must be passed in.  If method returns failure, it can safely
   // be retried (e.g. after dependent packets have been confirmed) or else
   // ChangePassword should be used to regenerate pending packets.
-  int ConfirmPasswordChange(std::tr1::shared_ptr<TmidPacket> tmid,
-                            std::tr1::shared_ptr<TmidPacket> stmid);
+  int ConfirmPasswordChange(std::shared_ptr<TmidPacket> tmid,
+                            std::shared_ptr<TmidPacket> stmid);
 
   // Used when amending user's password.
   // Indicates TMID and/or STMID failed storing.  Both of these pending packets
@@ -214,26 +213,26 @@ class Passport {
   // the packet is set before returning kSuccess.
   int InitialiseSignaturePacket(
       const PacketType &packet_type,
-      std::tr1::shared_ptr<SignaturePacket> signature_packet);
+      std::shared_ptr<SignaturePacket> signature_packet);
 
   // Creates a new MPID.  Will fail if ANMPID is not already in packet_handler_.
   // If successful, a copy of the MPID is set before returning kSuccess.
   int InitialiseMpid(const std::string &public_name,
-                     std::tr1::shared_ptr<SignaturePacket> mpid);
+                     std::shared_ptr<SignaturePacket> mpid);
 
   // Confirms signature_packet is successfully stored.  A copy of the stored
   // packet must be passed in for verification.  If method returns failure, it
   // can safely be retried (e.g. after dependent packets have been confirmed).
   int ConfirmSignaturePacket(
-      std::tr1::shared_ptr<SignaturePacket> signature_packet);
+      std::shared_ptr<SignaturePacket> signature_packet);
 
   // Indicates packet_type SignaturePacket failed storing.  The pending packet
   // is reverted to last confirmed version.
   int RevertSignaturePacket(const PacketType &packet_type);
 
   // Returns a copy of the confirmed or pending packet.
-  std::tr1::shared_ptr<pki::Packet> GetPacket(const PacketType &packet_type,
-                                              bool confirmed) {
+  std::shared_ptr<pki::Packet> GetPacket(const PacketType &packet_type,
+                                         bool confirmed) {
     return packet_handler_.GetPacket(packet_type, confirmed);
   }
 
@@ -267,20 +266,20 @@ class Passport {
   int DoInitialiseSignaturePacket(
       const PacketType &packet_type,
       const std::string &public_name,
-      std::tr1::shared_ptr<SignaturePacket> signature_packet);
-  int ConfirmUserData(std::tr1::shared_ptr<MidPacket> mid,
-                      std::tr1::shared_ptr<MidPacket> smid,
-                      std::tr1::shared_ptr<TmidPacket> tmid,
-                      std::tr1::shared_ptr<TmidPacket> stmid);
+      std::shared_ptr<SignaturePacket> signature_packet);
+  int ConfirmUserData(std::shared_ptr<MidPacket> mid,
+                      std::shared_ptr<MidPacket> smid,
+                      std::shared_ptr<TmidPacket> tmid,
+                      std::shared_ptr<TmidPacket> stmid);
   int RevertMidSmidTmidStmid(bool include_mid);
-  std::tr1::shared_ptr<MidPacket> Mid();
-  std::tr1::shared_ptr<MidPacket> Smid();
-  std::tr1::shared_ptr<TmidPacket> Tmid();
-  std::tr1::shared_ptr<TmidPacket> Stmid();
-  std::tr1::shared_ptr<MidPacket> PendingMid();
-  std::tr1::shared_ptr<MidPacket> PendingSmid();
-  std::tr1::shared_ptr<TmidPacket> PendingTmid();
-  std::tr1::shared_ptr<TmidPacket> PendingStmid();
+  std::shared_ptr<MidPacket> Mid();
+  std::shared_ptr<MidPacket> Smid();
+  std::shared_ptr<TmidPacket> Tmid();
+  std::shared_ptr<TmidPacket> Stmid();
+  std::shared_ptr<MidPacket> PendingMid();
+  std::shared_ptr<MidPacket> PendingSmid();
+  std::shared_ptr<TmidPacket> PendingTmid();
+  std::shared_ptr<TmidPacket> PendingStmid();
   SystemPacketHandler packet_handler_;
   const std::string kSmidAppendix_;
   std::string pending_public_name_, public_name_;

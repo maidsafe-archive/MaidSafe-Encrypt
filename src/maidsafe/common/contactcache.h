@@ -23,33 +23,28 @@
 #ifndef MAIDSAFE_COMMON_CONTACTCACHE_H_
 #define MAIDSAFE_COMMON_CONTACTCACHE_H_
 
-#include <boost/bind.hpp>
-#include <boost/thread/condition_variable.hpp>
-#include <boost/date_time/posix_time/posix_time.hpp>
-#include <boost/function.hpp>
-#include <boost/thread/mutex.hpp>
-#include <maidsafe/kademlia/contact.h>
-#include <maidsafe/kademlia/kadid.h>
-
 #include <set>
 #include <string>
 #include <vector>
+#include <functional>
 
-#include "maidsafe/common/maidsafe.h"
+#include "boost/thread/condition_variable.hpp"
+#include "boost/date_time/posix_time/posix_time.hpp"
+#include "boost/thread/mutex.hpp"
+#include "maidsafe-dht/kademlia/contact.h"
+#include "maidsafe-dht/kademlia/node_id.h"
 #include "maidsafe/common/returncodes.h"
 
 namespace maidsafe {
 
 namespace test { class ContactCacheTest_BEH_MAID_CTC_Update_Test; }
-
-class KadOps;
-// class ContactCache;
+namespace kademlia { class Node; }
 
 class ContactCache {
  public:
-  explicit ContactCache(const boost::shared_ptr<KadOps> &kad_ops)
+  explicit ContactCache(const boost::shared_ptr<kademlia::Node> &node)
       : kMaxUpdateInterval_(10),
-        kad_ops_(kad_ops),
+        node_(node),
         pmid_(),
         contact_(),
         mutex_(),
@@ -58,11 +53,11 @@ class ContactCache {
         active_(false),
         update_in_progress_(false) {}
   ~ContactCache();
-  void Init(const std::string &pmid_);
+  void Init(const kademlia::NodeId &pmid_);
   void Update();
   void WaitForUpdate();
-  bool GetContact(kad::Contact *contact);
-  std::string pmid() {
+  bool GetContact(kademlia::Contact *contact);
+  kademlia::NodeId pmid() {
     boost::mutex::scoped_lock lock(mutex_);
     return pmid_;
   }
@@ -73,15 +68,14 @@ class ContactCache {
  private:
   ContactCache &operator=(const ContactCache&);
   ContactCache(const ContactCache&);
-  // friend class ContactCache;
   friend class test::ContactCacheTest_BEH_MAID_CTC_Update_Test;
   void DoUpdate();
-  void GetNodeContactDetailsCallback(const ReturnCode &result,
-                                     const kad::Contact &contact);
+  void GetContactCallback(const int &result,
+                          const kademlia::Contact &contact);
   const boost::posix_time::seconds kMaxUpdateInterval_;
-  boost::shared_ptr<KadOps> kad_ops_;
-  std::string pmid_;
-  kad::Contact contact_;
+  boost::shared_ptr<kademlia::Node> node_;
+  kademlia::NodeId pmid_;
+  kademlia::Contact contact_;
   boost::mutex mutex_;
   boost::condition_variable cond_var_;
   boost::posix_time::ptime last_update_;

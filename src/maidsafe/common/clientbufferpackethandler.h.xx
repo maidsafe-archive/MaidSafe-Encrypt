@@ -25,31 +25,26 @@
 #ifndef MAIDSAFE_COMMON_CLIENTBUFFERPACKETHANDLER_H_
 #define MAIDSAFE_COMMON_CLIENTBUFFERPACKETHANDLER_H_
 
-#include <boost/function.hpp>
-#include <boost/shared_ptr.hpp>
-#include <maidsafe/kademlia/contact.h>
-#include <boost/cstdint.hpp>
-
+#include <cstdint>
 #include <list>
 #include <string>
 #include <vector>
+#include <functional>
 
-#include "maidsafe/common/maidsafe.h"
+#include "maidsafe/kademlia/contact.h"
 #include "maidsafe/common/returncodes.h"
-#include "maidsafe/common/maidsafe_service.pb.h"
-#include "maidsafe/common/packet.pb.h"
 
 namespace rpcprotocol { class Controller; }
 
 namespace maidsafe {
 
-typedef boost::function<void(const ReturnCode&)> bp_operations_cb;
-typedef boost::function<void(const ReturnCode&,
-                             const std::list<ValidatedBufferPacketMessage>&,
-                             bool)> bp_getmessages_cb;
-typedef boost::function<void(const ReturnCode&,
-                             const std::list<std::string>&,
-                             bool)> bp_getpresence_cb;
+typedef std::function<void(const ReturnCode&)> bp_operations_cb;
+typedef std::function<void(const ReturnCode&,
+                           const std::list<ValidatedBufferPacketMessage>&,
+                           bool)> bp_getmessages_cb;
+typedef std::function<void(const ReturnCode&,
+                           const std::list<std::string>&,
+                           bool)> bp_getpresence_cb;
 
 enum BpOpType {
   CREATEBP,

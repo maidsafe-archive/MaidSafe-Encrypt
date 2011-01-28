@@ -28,8 +28,6 @@
 #include <map>
 #include <string>
 
-#include "maidsafe/common/packet.pb.h"
-
 namespace maidsafe {
 
 namespace pki {

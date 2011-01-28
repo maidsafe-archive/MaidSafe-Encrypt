@@ -19,7 +19,7 @@
 */
 
 #include "maidsafe/common/contactcache.h"
-#include "maidsafe/common/kadops.h"
+#include "maidsafe-dht/kademlia/node-api.h"
 
 namespace maidsafe {
 
@@ -27,10 +27,10 @@ ContactCache::~ContactCache() {
   WaitForUpdate();
 }
 
-void ContactCache::Init(const std::string& pmid) {
-  if (pmid.empty()) {
+void ContactCache::Init(const kademlia::NodeId& pmid) {
+  if (!pmid.IsValid()) {
 #ifdef DEBUG
-    printf("In ContactCache::Init, passed empty PMID.\n");
+    printf("In ContactCache::Init, no valid PMID set.\n");
 #endif
     return;
   }
@@ -45,9 +45,9 @@ void ContactCache::Init(const std::string& pmid) {
 
 void ContactCache::Update() {
   boost::mutex::scoped_lock lock(mutex_);
-  if (pmid_.empty()) {
+  if (!pmid_.IsValid()) {
 #ifdef DEBUG
-    printf("In ContactCache::Update, no PMID set.\n");
+    printf("In ContactCache::Update, no valid PMID set.\n");
 #endif
     return;
   }
@@ -63,7 +63,7 @@ void ContactCache::WaitForUpdate() {
     cond_var_.wait(lock);
 }
 
-bool ContactCache::GetContact(kad::Contact *contact) {
+bool ContactCache::GetContact(kademlia::Contact *contact) {
   boost::mutex::scoped_lock lock(mutex_);
   if (active_ && contact != NULL) {
     *contact = contact_;
@@ -74,13 +74,12 @@ bool ContactCache::GetContact(kad::Contact *contact) {
 
 void ContactCache::DoUpdate() {
   update_in_progress_ = true;
-  kad_ops_->GetNodeContactDetails(pmid_, boost::bind(
-      &ContactCache::GetNodeContactDetailsCallback, this, _1, _2), false);
+  node_->GetContact(pmid_, boost::bind(&ContactCache::GetContactCallback, this,
+                                       _1, _2));
 }
 
-void ContactCache::GetNodeContactDetailsCallback(
-    const maidsafe::ReturnCode& result,
-    const kad::Contact& contact) {
+void ContactCache::GetContactCallback(const int& result,
+                                      const kademlia::Contact& contact) {
   boost::mutex::scoped_lock lock(mutex_);
   if (result == kSuccess) {
     last_update_ = boost::posix_time::microsec_clock::universal_time();
