@@ -1,35 +1,28 @@
-/*
-* ============================================================================
-*
-* Copyright [2009] maidsafe.net limited
-*
-* Description:  Interface to handle IO operations.
-* Version:      1.0
-* Created:      2009-10-25
-* Revision:     none
-* Compiler:     gcc
-* Author:       Alec Macdonald
-* Company:      maidsafe.net limited
-*
-* The following source code is property of maidsafe.net limited and is not
-* meant for external use.  The use of this code is governed by the license
-* file LICENSE.TXT found in_ the root of this directory and also on
-* www.maidsafe.net.
-*
-* You are not free to copy, amend or otherwise use this source code without
-* the explicit written permission of the board of directors of maidsafe.net.
-*
-* ============================================================================
-*/
+/*******************************************************************************
+ *  Copyright 2009 maidsafe.net limited                                        *
+ *                                                                             *
+ *  The following source code is property of maidsafe.net limited and is not   *
+ *  meant for external use.  The use of this code is governed by the license   *
+ *  file LICENSE.TXT found in the root of this directory and also on           *
+ *  www.maidsafe.net.                                                          *
+ *                                                                             *
+ *  You are not free to copy, amend or otherwise use this source code without  *
+ *  the explicit written permission of the board of directors of maidsafe.net. *
+ ***************************************************************************//**
+ * @file  test_data_io_handler.cc
+ * @brief Tests for the interface to handle IO operations.
+ * @date  2009-10-25
+ */
 
-#include <gtest/gtest.h>
-#include <boost/filesystem/fstream.hpp>
-#include <boost/filesystem.hpp>
-#include <maidsafe/base/utils.h>
-
+#include <cstdint>
 #include <limits>
+#include <memory>
 
-#include "maidsafe/encrypt/dataiohandler.h"
+#include "gtest/gtest.h"
+#include "boost/filesystem/fstream.hpp"
+#include "boost/filesystem.hpp"
+#include "maidsafe-dht/common/utils.h"
+#include "maidsafe-encrypt/data_io_handler.h"
 
 namespace maidsafe {
 
@@ -41,21 +34,21 @@ class StringIOHandlerTest : public testing::Test {
  public:
   StringIOHandlerTest()
       : kMinSize_(1000),
-        kDataSize_((base::RandomUint32() % 249000) + kMinSize_),
+        kDataSize_((RandomUint32() % 249000) + kMinSize_),
         // ensure input contains null chars
-        kData_(std::string(10, 0) + base::RandomString(kDataSize_ - 10)),
+        kData_(std::string(10, 0) + RandomString(kDataSize_ - 10)),
         data_(new std::string(kData_)) {}
  protected:
   const size_t kMinSize_, kDataSize_;
   const std::string kData_;
-  std::tr1::shared_ptr<std::string> data_;
+  std::shared_ptr<std::string> data_;
 };
 
 TEST_F(StringIOHandlerTest, BEH_ENCRYPT_TestReadFromString) {
   // Check before opening
   StringIOHandler input_handler(data_, true);
   EXPECT_EQ(kData_, input_handler.Data());
-  boost::uint64_t tempsize;
+  std::uint64_t tempsize;
   EXPECT_TRUE(input_handler.Size(&tempsize));
   EXPECT_EQ(kDataSize_, tempsize);
   EXPECT_FALSE(input_handler.Write("a"));
@@ -107,7 +100,7 @@ TEST_F(StringIOHandlerTest, BEH_ENCRYPT_TestReadFromString) {
   EXPECT_EQ(kData_.substr(0, test_size), read_data);
 
   // Check empty string handling
-  std::tr1::shared_ptr<std::string> empty_data(new std::string);
+  std::shared_ptr<std::string> empty_data(new std::string);
   StringIOHandler empty_input_handler(empty_data, true);
   EXPECT_TRUE(empty_input_handler.Data().empty());
   EXPECT_TRUE(empty_input_handler.Size(&tempsize));
@@ -146,7 +139,7 @@ TEST_F(StringIOHandlerTest, BEH_ENCRYPT_WriteToString) {
   // Check before opening
   StringIOHandler output_handler(data_, false);
   EXPECT_EQ(kData_, output_handler.Data());
-  boost::uint64_t tempsize;
+  std::uint64_t tempsize;
   EXPECT_TRUE(output_handler.Size(&tempsize));
   EXPECT_EQ(kDataSize_, tempsize);
   EXPECT_FALSE(output_handler.Write("abc"));
@@ -164,7 +157,7 @@ TEST_F(StringIOHandlerTest, BEH_ENCRYPT_WriteToString) {
   read_data = "Test";
   EXPECT_FALSE(output_handler.Read(test_size, &read_data));
   EXPECT_TRUE(read_data.empty());
-  size_t split(base::RandomUint32() % kDataSize_);
+  size_t split(RandomUint32() % kDataSize_);
   std::string part1(kData_.substr(0, split)), part2(kData_.substr(split));
   EXPECT_TRUE(output_handler.Write(part1));
   EXPECT_EQ(part1, output_handler.Data());
@@ -258,13 +251,13 @@ class FileIOHandlerTest : public testing::Test {
  public:
   FileIOHandlerTest()
       : kRootDir_(test_file_io_handler::TempDir() /
-            ("maidsafe_TestIO_" + base::RandomAlphaNumericString(6))),
+            ("maidsafe_TestIO_" + RandomAlphaNumericString(6))),
         kInputFile_(kRootDir_ / "In.txt"),
         kOutputFile_(kRootDir_ / "Out.txt"),
         kMinSize_(10),
-        kDataSize_((base::RandomUint32() % 249) + kMinSize_),
+        kDataSize_((RandomUint32() % 249) + kMinSize_),
         // ensure input contains null chars
-        kData_(std::string(10, 0) + base::RandomString(kDataSize_ - 10)) {}
+        kData_(std::string(10, 0) + RandomString(kDataSize_ - 10)) {}
  protected:
   void SetUp() {
     try {
@@ -297,11 +290,11 @@ class FileIOHandlerTest : public testing::Test {
     }
   }
   std::string ReadDataFromOutputFile() {
-    boost::uint64_t file_size(fs::file_size(kOutputFile_));
+    std::uint64_t file_size(fs::file_size(kOutputFile_));
     if (file_size > std::numeric_limits<size_t>::max())
       return "";
     size_t size = static_cast<size_t>(file_size);
-    std::tr1::shared_ptr<char> data(new char[size]);
+    std::shared_ptr<char> data(new char[size]);
     try {
       fs::ifstream in_file(kOutputFile_, fs::ofstream::binary);
       in_file.read(data.get(), size);
@@ -322,7 +315,7 @@ TEST_F(FileIOHandlerTest, BEH_ENCRYPT_TestReadFromFile) {
   // Check using non-existant file
   FileIOHandler nef_input_handler(fs::path("k.txt"), true);
   EXPECT_FALSE(nef_input_handler.Open());
-  boost::uint64_t tempsize(999);
+  std::uint64_t tempsize(999);
   EXPECT_FALSE(nef_input_handler.Size(&tempsize));
   EXPECT_EQ(0U, tempsize);
   EXPECT_FALSE(nef_input_handler.Write("a"));
@@ -420,7 +413,7 @@ TEST_F(FileIOHandlerTest, BEH_ENCRYPT_WriteToFile) {
   // Check using non-existant directory
   FileIOHandler nef_output_handler(fs::path("not/o/k.txt"), false);
   EXPECT_FALSE(nef_output_handler.Open());
-  boost::uint64_t tempsize(999);
+  std::uint64_t tempsize(999);
   EXPECT_FALSE(nef_output_handler.Size(&tempsize));
   EXPECT_EQ(0U, tempsize);
   EXPECT_FALSE(nef_output_handler.Write("a"));
@@ -447,7 +440,7 @@ TEST_F(FileIOHandlerTest, BEH_ENCRYPT_WriteToFile) {
   read_data = "Test";
   EXPECT_FALSE(output_handler.Read(test_size, &read_data));
   EXPECT_TRUE(read_data.empty());
-  size_t split(base::RandomUint32() % kDataSize_);
+  size_t split(RandomUint32() % kDataSize_);
   std::string part1(kData_.substr(0, split)), part2(kData_.substr(split));
   EXPECT_TRUE(output_handler.Write(part1));
 //  EXPECT_EQ(part1, ReadDataFromOutputFile());

@@ -1,41 +1,40 @@
-/*
-* ============================================================================
-*
-* Copyright [2009] maidsafe.net limited
-*
-* Description:  Self-encrypts/self-decrypts test
-* Version:      1.0
-* Created:      09/09/2008 12:14:35 PM
-* Revision:     none
-* Compiler:     gcc
-* Author:       Team www.maidsafe.net
-* Company:      maidsafe.net limited
-*
-* The following source code is property of maidsafe.net limited and is not
-* meant for external use.  The use of this code is governed by the license
-* file LICENSE.TXT found in the root of this directory and also on
-* www.maidsafe.net.
-*
-* You are not free to copy, amend or otherwise use this source code without
-* the explicit written permission of the board of directors of maidsafe.net.
-*
-* ============================================================================
-*/
+/*******************************************************************************
+ *  Copyright 2008 maidsafe.net limited                                        *
+ *                                                                             *
+ *  The following source code is property of maidsafe.net limited and is not   *
+ *  meant for external use.  The use of this code is governed by the license   *
+ *  file LICENSE.TXT found in the root of this directory and also on           *
+ *  www.maidsafe.net.                                                          *
+ *                                                                             *
+ *  You are not free to copy, amend or otherwise use this source code without  *
+ *  the explicit written permission of the board of directors of maidsafe.net. *
+ ***************************************************************************//**
+ * @file  test_data_io_handler.cc
+ * @brief Tests for the self-incryption engine.
+ * @date  2008-09-09
+ */
 
-#include <boost/filesystem.hpp>
-#include <boost/filesystem/fstream.hpp>
-#include <boost/tr1/memory.hpp>
-#include <gtest/gtest.h>
-#include <maidsafe/base/utils.h>
+#include <memory>
+#include <cstdint>
 
-#include "maidsafe/common/filesystem.h"
-#include "maidsafe/encrypt/dataiohandler.h"
-#include "maidsafe/encrypt/selfencryption.h"
-#include "maidsafe/encrypt/selfencryptionconfig.h"
-#include "maidsafe/encrypt/selfencryptionutils.h"
-#include "maidsafe/encrypt/datamap.pb.h"
+#include "boost/filesystem.hpp"
+#include "boost/filesystem/fstream.hpp"
+#include "gtest/gtest.h"
+#include "maidsafe-dht/common/crypto.h"
+#include "maidsafe-dht/common/utils.h"
+#include "maidsafe-encrypt/config.h"
+#include "maidsafe-encrypt/data_io_handler.h"
+#include "maidsafe-encrypt/data_map.pb.h"
+#include "maidsafe-encrypt/self_encryption.h"
+#include "maidsafe-encrypt/utils.h"
 
 namespace fs = boost::filesystem;
+
+namespace maidsafe {
+
+namespace encrypt {
+
+namespace test {
 
 namespace test_se {
 
@@ -78,16 +77,16 @@ fs::path TempDir() {
 }
 
 fs::path CreateRandomFile(const fs::path &file_path,
-                         const boost::uint64_t &filesize) {
+                         const std::uint64_t &filesize) {
   fs::ofstream ofs(file_path, std::ios::binary | std::ios::out |
                               std::ios::trunc);
   if (filesize != 0) {
     size_t stringsize = (filesize > 100000) ? 100000 :
                         static_cast<size_t>(filesize);
-    boost::uint64_t remainingsize = filesize;
-    std::string rand_str = base::RandomString(2 * stringsize);
+    std::uint64_t remainingsize = filesize;
+    std::string rand_str = RandomString(2 * stringsize);
     std::string file_content;
-    boost::uint64_t start_pos = 0;
+    std::uint64_t start_pos = 0;
     while (remainingsize) {
       srand(17);
       start_pos = rand() % stringsize;  // NOLINT (Fraser)
@@ -108,23 +107,17 @@ fs::path CreateRandomFile(const fs::path &file_path,
 
 }  // namespace test_se
 
-namespace maidsafe {
-
-namespace encrypt {
-
-namespace test {
-
 class SelfEncryptionTest : public testing::Test {
  public:
   SelfEncryptionTest()
       : kRootDir_(test_se::TempDir() /
-            ("maidsafe_TestSE_" + base::RandomAlphaNumericString(6))),
+            ("maidsafe_TestSE_" + RandomAlphaNumericString(6))),
         kInputDir_(kRootDir_ / "Inputs"),
         kOutputDir_(kRootDir_ / "Outputs") {}
   ~SelfEncryptionTest() {}
  protected:
-  typedef std::tr1::shared_ptr<DataIOHandler> DataIoHandlerPtr;
-  typedef std::tr1::shared_ptr<std::string> StringPtr;
+  typedef std::shared_ptr<DataIOHandler> DataIoHandlerPtr;
+  typedef std::shared_ptr<std::string> StringPtr;
   void SetUp() {
     if (fs::exists(kRootDir_))
       fs::remove_all(kRootDir_);
@@ -227,44 +220,44 @@ TEST_F(SelfEncryptionTest, BEH_ENCRYPT_ChunkAddition) {
 TEST_F(SelfEncryptionTest, BEH_ENCRYPT_CalculateChunkSizes) {
   // make file of size larger than (max no of chunks) * (default chunk size)
   fs::path test_file1(kInputDir_ / "CalculateChunkSizesTest01.txt");
-  boost::uint64_t file_size1 = kDefaultChunkSize * kMaxChunks * 2;
+  std::uint64_t file_size1 = kDefaultChunkSize * kMaxChunks * 2;
   fs::path path1(test_se::CreateRandomFile(test_file1, file_size1));
   DataIoHandlerPtr input_handler1(new FileIOHandler(path1, true));
 
   // make file of size exactly (max no of chunks) * (default chunk size)
   fs::path test_file2(kInputDir_ / "CalculateChunkSizesTest02.txt");
-  boost::uint64_t file_size2 = kDefaultChunkSize * kMaxChunks;
+  std::uint64_t file_size2 = kDefaultChunkSize * kMaxChunks;
   fs::path path2(test_se::CreateRandomFile(test_file2, file_size2));
   DataIoHandlerPtr input_handler2(new FileIOHandler(path2, true));
 
   // make file of size between (max no of chunks) * (default chunk size)
   // & (min no of chunks) * (default chunk size)
   fs::path test_file3(kInputDir_ / "CalculateChunkSizesTest03.txt");
-  boost::uint64_t file_size3 = kDefaultChunkSize * (kMaxChunks+kMinChunks)/2;
+  std::uint64_t file_size3 = kDefaultChunkSize * (kMaxChunks+kMinChunks)/2;
   fs::path path3(test_se::CreateRandomFile(test_file3, file_size3));
   DataIoHandlerPtr input_handler3(new FileIOHandler(path3, true));
 
   //  make file of size smaller than (min no of chunks) * (default chunk size)
   fs::path test_file4(kInputDir_ / "CalculateChunkSizesTest04.txt");
-  boost::uint64_t file_size4 = kDefaultChunkSize * kMinChunks/2;
+  std::uint64_t file_size4 = kDefaultChunkSize * kMinChunks/2;
   fs::path path4(test_se::CreateRandomFile(test_file4, file_size4));
   DataIoHandlerPtr input_handler4(new FileIOHandler(path4, true));
 
   //  make file of size 4 bytes
   fs::path test_file5(kInputDir_ / "CalculateChunkSizesTest05.txt");
-  boost::uint64_t file_size5 = 4;
+  std::uint64_t file_size5 = 4;
   fs::path path5(test_se::CreateRandomFile(test_file5, file_size5));
   DataIoHandlerPtr input_handler5(new FileIOHandler(path5, true));
 
   //  set file hash so that each chunk size is unaltered
-  DataMap data_map;
+  protobuf::DataMap data_map;
   std::string file_hash("8888888888888888888888888888888888888888");
-  boost::uint16_t chunk_count(0);
+  std::uint16_t chunk_count(0);
   EXPECT_TRUE(utils::CalculateChunkSizes(file_hash, input_handler1, &data_map,
                                          &chunk_count));
   EXPECT_EQ(kMaxChunks, data_map.chunk_size_size());
   EXPECT_EQ(data_map.chunk_size_size(), chunk_count);
-  boost::uint64_t chunk_size_total(0);
+  std::uint64_t chunk_size_total(0);
   for (int i = 0; i < chunk_count; ++i) {
     EXPECT_EQ(file_size1 / kMaxChunks, data_map.chunk_size(i));
     chunk_size_total += data_map.chunk_size(i);
@@ -476,21 +469,21 @@ TEST_F(SelfEncryptionTest, BEH_ENCRYPT_HashFile) {
   ofs2 << "abcdefghbcdefghicdefghijdefghijkefghijklfghijklmghijklmnhijklmnoijkl"
           "mnopjklmnopqklmnopqrlmnopqrsmnopqrstnopqrstu";
   ofs2.close();
-  EXPECT_EQ(base::EncodeToHex(utils::SHA512(path1)),
+  EXPECT_EQ(EncodeToHex(crypto::HashFile<crypto::SHA512>(path1)),
         "ddaf35a193617abacc417349ae20413112e6fa4e89a97ea20a9eeee64b55d39a219299"
         "2a274fc1a836ba3c23a3feebbd454d4423643ce80e2a9ac94fa54ca49f");
-  EXPECT_EQ(base::EncodeToHex(utils::SHA512(path2)),
+  EXPECT_EQ(EncodeToHex(crypto::HashFile<crypto::SHA512>(path2)),
         "8e959b75dae313da8cf4f72814fc143f8f7779c6eb9f7fa17299aeadb6889018501d28"
         "9e4900f7e4331b99dec4b5433ac7d329eeb6dd26545e96e55b874be909");
 }
 
 TEST_F(SelfEncryptionTest, BEH_ENCRYPT_HashString) {
-  EXPECT_EQ(base::EncodeToHex(utils::SHA512(std::string("abc"))),
+  EXPECT_EQ(EncodeToHex(crypto::Hash<crypto::SHA512>(std::string("abc"))),
         "ddaf35a193617abacc417349ae20413112e6fa4e89a97ea20a9eeee64b55d39a219299"
         "2a274fc1a836ba3c23a3feebbd454d4423643ce80e2a9ac94fa54ca49f");
-  EXPECT_EQ(base::EncodeToHex(utils::SHA512(std::string("abcdefghbcdef"
-        "ghicdefghijdefghijkefghijklfghijklmghijklmnhijklmnoijklmnopjklmnopqklm"
-        "nopqrlmnopqrsmnopqrstnopqrstu"))),
+  EXPECT_EQ(EncodeToHex(crypto::Hash<crypto::SHA512>(std::string(
+        "abcdefghbcdefghicdefghijdefghijkefghijklfghijklmghijklmnhijklmnoijklmn"
+        "opjklmnopqklmnopqrlmnopqrsmnopqrstnopqrstu"))),
         "8e959b75dae313da8cf4f72814fc143f8f7779c6eb9f7fa17299aeadb6889018501d28"
         "9e4900f7e4331b99dec4b5433ac7d329eeb6dd26545e96e55b874be909");
 }
@@ -504,7 +497,7 @@ TEST_F(SelfEncryptionTest, BEH_ENCRYPT_GeneratePreEncryptionHashes) {
           "mnopjklmnopqklmnopqrlmnopqrsmnopqrstnopqrstu";
   ofs1 << "abc";
   ofs1.close();
-  DataMap data_map;
+  protobuf::DataMap data_map;
   data_map.add_chunk_size(3);
   data_map.add_chunk_size(112);
   data_map.add_chunk_size(3);
@@ -512,35 +505,36 @@ TEST_F(SelfEncryptionTest, BEH_ENCRYPT_GeneratePreEncryptionHashes) {
   DataIoHandlerPtr input_handler1(new FileIOHandler(path1, true));
   EXPECT_TRUE(utils::GeneratePreEncryptionHashes(input_handler1, &data_map));
   EXPECT_EQ(3, data_map.chunk_name_size());
-  EXPECT_EQ(base::EncodeToHex(data_map.chunk_name(0)),
+  EXPECT_EQ(EncodeToHex(data_map.chunk_name(0)),
         "ddaf35a193617abacc417349ae20413112e6fa4e89a97ea20a9eeee64b55d39a219299"
         "2a274fc1a836ba3c23a3feebbd454d4423643ce80e2a9ac94fa54ca49f");
-  EXPECT_EQ(base::EncodeToHex(data_map.chunk_name(1)),
+  EXPECT_EQ(EncodeToHex(data_map.chunk_name(1)),
         "8e959b75dae313da8cf4f72814fc143f8f7779c6eb9f7fa17299aeadb6889018501d28"
         "9e4900f7e4331b99dec4b5433ac7d329eeb6dd26545e96e55b874be909");
-  EXPECT_EQ(base::EncodeToHex(data_map.chunk_name(2)),
+  EXPECT_EQ(EncodeToHex(data_map.chunk_name(2)),
         "ddaf35a193617abacc417349ae20413112e6fa4e89a97ea20a9eeee64b55d39a219299"
         "2a274fc1a836ba3c23a3feebbd454d4423643ce80e2a9ac94fa54ca49f");
 }
 
 TEST_F(SelfEncryptionTest, BEH_ENCRYPT_HashUnique) {
-  std::string hash = utils::SHA512(static_cast<std::string>("abc"));
-  DataMap data_map;
+  std::string hash = crypto::Hash<crypto::SHA512>(
+      static_cast<std::string>("abc"));
+  protobuf::DataMap data_map;
   data_map.add_chunk_name(hash);
-  EXPECT_EQ(base::EncodeToHex(data_map.chunk_name(0)),
+  EXPECT_EQ(EncodeToHex(data_map.chunk_name(0)),
         "ddaf35a193617abacc417349ae20413112e6fa4e89a97ea20a9eeee64b55d39a219299"
         "2a274fc1a836ba3c23a3feebbd454d4423643ce80e2a9ac94fa54ca49f");
   EXPECT_TRUE(utils::HashUnique(data_map, true, &hash));
   data_map.add_chunk_name(hash);
-  EXPECT_EQ(base::EncodeToHex(data_map.chunk_name(1)),
+  EXPECT_EQ(EncodeToHex(data_map.chunk_name(1)),
         "9fddaf35a193617abacc417349ae20413112e6fa4e89a97ea20a9eeee64b55d39a2192"
         "992a274fc1a836ba3c23a3feebbd454d4423643ce80e2a9ac94fa54ca4");
   EXPECT_TRUE(utils::HashUnique(data_map, true, &hash));
   data_map.add_chunk_name(hash);
-  EXPECT_EQ(base::EncodeToHex(data_map.chunk_name(2)),
+  EXPECT_EQ(EncodeToHex(data_map.chunk_name(2)),
         "a49fddaf35a193617abacc417349ae20413112e6fa4e89a97ea20a9eeee64b55d39a21"
         "92992a274fc1a836ba3c23a3feebbd454d4423643ce80e2a9ac94fa54c");
-  hash = utils::SHA512(static_cast<std::string>("ab"));
+  hash = crypto::Hash<crypto::SHA512>(static_cast<std::string>("ab"));
   std::string hashafter = hash;
   EXPECT_TRUE(utils::HashUnique(data_map, true, &hashafter));
   EXPECT_EQ(hash, hashafter);
@@ -548,8 +542,8 @@ TEST_F(SelfEncryptionTest, BEH_ENCRYPT_HashUnique) {
 
 TEST_F(SelfEncryptionTest, BEH_ENCRYPT_ResizeObfuscationHash) {
   std::string input("abc");
-  std::string hash = utils::SHA512(input);
-  EXPECT_EQ(base::EncodeToHex(hash),
+  std::string hash = crypto::Hash<crypto::SHA512>(input);
+  EXPECT_EQ(EncodeToHex(hash),
         "ddaf35a193617abacc417349ae20413112e6fa4e89a97ea20a9eeee64b55d39a219299"
         "2a274fc1a836ba3c23a3feebbd454d4423643ce80e2a9ac94fa54ca49f");
   std::string amended_hash("Rubbish");
@@ -576,12 +570,12 @@ TEST_F(SelfEncryptionTest, BEH_ENCRYPT_SelfEncryptFiles) {
   test_se::CreateRandomFile(path3, 4);  // special small file
   test_se::CreateRandomFile(path4, 24);  // small file
   test_se::CreateRandomFile(path5, 1024);  // regular file
-  DataMap data_map1, data_map2, data_map3, data_map4, data_map5;
-  data_map1.set_file_hash(utils::SHA512(path1));
-  data_map2.set_file_hash(utils::SHA512(path2));
-  data_map3.set_file_hash(utils::SHA512(path3));
-  data_map4.set_file_hash(utils::SHA512(path4));
-  data_map5.set_file_hash(utils::SHA512(path5));
+  protobuf::DataMap data_map1, data_map2, data_map3, data_map4, data_map5;
+  data_map1.set_file_hash(crypto::HashFile<crypto::SHA512>(path1));
+  data_map2.set_file_hash(crypto::HashFile<crypto::SHA512>(path2));
+  data_map3.set_file_hash(crypto::HashFile<crypto::SHA512>(path3));
+  data_map4.set_file_hash(crypto::HashFile<crypto::SHA512>(path4));
+  data_map5.set_file_hash(crypto::HashFile<crypto::SHA512>(path5));
   DataIoHandlerPtr input_handler1(new FileIOHandler(path1, true));
   DataIoHandlerPtr input_handler2(new FileIOHandler(path2, true));
   DataIoHandlerPtr input_handler3(new FileIOHandler(path3, true));
@@ -622,11 +616,11 @@ TEST_F(SelfEncryptionTest, BEH_ENCRYPT_DecryptFile) {
   test_se::CreateRandomFile(path2, 4);
   test_se::CreateRandomFile(path3, 24);
   test_se::CreateRandomFile(path4, 1024);
-  DataMap data_map1, data_map2, data_map3, data_map4;
-  data_map1.set_file_hash(utils::SHA512(path1));
-  data_map2.set_file_hash(utils::SHA512(path2));
-  data_map3.set_file_hash(utils::SHA512(path3));
-  data_map4.set_file_hash(utils::SHA512(path4));
+  protobuf::DataMap data_map1, data_map2, data_map3, data_map4;
+  data_map1.set_file_hash(crypto::HashFile<crypto::SHA512>(path1));
+  data_map2.set_file_hash(crypto::HashFile<crypto::SHA512>(path2));
+  data_map3.set_file_hash(crypto::HashFile<crypto::SHA512>(path3));
+  data_map4.set_file_hash(crypto::HashFile<crypto::SHA512>(path4));
   DataIoHandlerPtr input_handler1(new FileIOHandler(path1, true));
   DataIoHandlerPtr input_handler2(new FileIOHandler(path2, true));
   DataIoHandlerPtr input_handler3(new FileIOHandler(path3, true));
@@ -664,24 +658,28 @@ TEST_F(SelfEncryptionTest, BEH_ENCRYPT_DecryptFile) {
   EXPECT_EQ(kSuccess, utils::DecryptContent(data_map4, chunk_paths4, 0,
                                             output_handler4));
 
-  EXPECT_EQ(utils::SHA512(path1), utils::SHA512(decrypted1));
-  EXPECT_EQ(utils::SHA512(path2), utils::SHA512(decrypted2));
-  EXPECT_EQ(utils::SHA512(path3), utils::SHA512(decrypted3));
-  EXPECT_EQ(utils::SHA512(path4), utils::SHA512(decrypted4));
+  EXPECT_EQ(crypto::HashFile<crypto::SHA512>(path1),
+            crypto::HashFile<crypto::SHA512>(decrypted1));
+  EXPECT_EQ(crypto::HashFile<crypto::SHA512>(path2),
+            crypto::HashFile<crypto::SHA512>(decrypted2));
+  EXPECT_EQ(crypto::HashFile<crypto::SHA512>(path3),
+            crypto::HashFile<crypto::SHA512>(decrypted3));
+  EXPECT_EQ(crypto::HashFile<crypto::SHA512>(path4),
+            crypto::HashFile<crypto::SHA512>(decrypted4));
 }
 
 TEST_F(SelfEncryptionTest, BEH_ENCRYPT_SelfEncryptStrings) {
-  StringPtr str1(new std::string(base::RandomString(0)));
-  StringPtr str2(new std::string(base::RandomString(2)));
-  StringPtr str3(new std::string(base::RandomString(4)));
-  StringPtr str4(new std::string(base::RandomString(24)));
-  StringPtr str5(new std::string(base::RandomString(1024)));
-  DataMap data_map1, data_map2, data_map3, data_map4, data_map5;
-  data_map1.set_file_hash(utils::SHA512(*str1));
-  data_map2.set_file_hash(utils::SHA512(*str2));
-  data_map3.set_file_hash(utils::SHA512(*str3));
-  data_map4.set_file_hash(utils::SHA512(*str4));
-  data_map5.set_file_hash(utils::SHA512(*str5));
+  StringPtr str1(new std::string(RandomString(0)));
+  StringPtr str2(new std::string(RandomString(2)));
+  StringPtr str3(new std::string(RandomString(4)));
+  StringPtr str4(new std::string(RandomString(24)));
+  StringPtr str5(new std::string(RandomString(1024)));
+  protobuf::DataMap data_map1, data_map2, data_map3, data_map4, data_map5;
+  data_map1.set_file_hash(crypto::Hash<crypto::SHA512>(*str1));
+  data_map2.set_file_hash(crypto::Hash<crypto::SHA512>(*str2));
+  data_map3.set_file_hash(crypto::Hash<crypto::SHA512>(*str3));
+  data_map4.set_file_hash(crypto::Hash<crypto::SHA512>(*str4));
+  data_map5.set_file_hash(crypto::Hash<crypto::SHA512>(*str5));
   DataIoHandlerPtr input_handler1(new StringIOHandler(str1, true));
   DataIoHandlerPtr input_handler2(new StringIOHandler(str2, true));
   DataIoHandlerPtr input_handler3(new StringIOHandler(str3, true));
@@ -706,15 +704,15 @@ TEST_F(SelfEncryptionTest, BEH_ENCRYPT_SelfEncryptStrings) {
 }
 
 TEST_F(SelfEncryptionTest, BEH_ENCRYPT_SelfDecryptString) {
-  StringPtr str1(new std::string(base::RandomString(2)));
-  StringPtr str2(new std::string(base::RandomString(4)));
-  StringPtr str3(new std::string(base::RandomString(24)));
-  StringPtr str4(new std::string(base::RandomString(1024)));
-  DataMap data_map1, data_map2, data_map3, data_map4;
-  data_map1.set_file_hash(utils::SHA512(*str1));
-  data_map2.set_file_hash(utils::SHA512(*str2));
-  data_map3.set_file_hash(utils::SHA512(*str3));
-  data_map4.set_file_hash(utils::SHA512(*str4));
+  StringPtr str1(new std::string(RandomString(2)));
+  StringPtr str2(new std::string(RandomString(4)));
+  StringPtr str3(new std::string(RandomString(24)));
+  StringPtr str4(new std::string(RandomString(1024)));
+  protobuf::DataMap data_map1, data_map2, data_map3, data_map4;
+  data_map1.set_file_hash(crypto::Hash<crypto::SHA512>(*str1));
+  data_map2.set_file_hash(crypto::Hash<crypto::SHA512>(*str2));
+  data_map3.set_file_hash(crypto::Hash<crypto::SHA512>(*str3));
+  data_map4.set_file_hash(crypto::Hash<crypto::SHA512>(*str4));
   DataIoHandlerPtr input_handler1(new StringIOHandler(str1, true));
   DataIoHandlerPtr input_handler2(new StringIOHandler(str2, true));
   DataIoHandlerPtr input_handler3(new StringIOHandler(str3, true));
