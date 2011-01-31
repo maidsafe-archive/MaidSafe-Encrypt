@@ -87,6 +87,17 @@ ENDIF()
 
 ENABLE_TESTING()
 
+IF(UNIX)
+  EXECUTE_PROCESS(COMMAND date +%a%d%m%y OUTPUT_VARIABLE pddate OUTPUT_STRIP_TRAILING_WHITESPACE)
+ELSE()
+  EXECUTE_PROCESS(COMMAND CMD /C DATE /T OUTPUT_VARIABLE pddate OUTPUT_STRIP_TRAILING_WHITESPACE)
+  STRING(REPLACE "/" "" pddate ${pddate})
+  STRING(SUBSTRING ${pddate} 0 4 pddateddmm)
+  STRING(SUBSTRING ${pddate} 6 2 pddateyy)
+  SET(pddate ${pddateddmm}${pddateyy})
+  STRING(REPLACE " " "_" pddate ${pddate})
+ENDIF()
+
 IF(APPLE)
   SET(CMAKE_OSX_SYSROOT "/")
 ENDIF()
@@ -354,22 +365,14 @@ SET(BEHAVIOURAL_TEST_TIMEOUT 60)
 SET(FUNCTIONAL_TEST_TIMEOUT 600)
 
 ADD_LIBRARY(encrypt STATIC ${ALL_FILES})
-ADD_EXECUTABLE(TESTencrypt ${ALL_FILES_TESTS_DIR})
+SET_TARGET_PROPERTIES(encrypt PROPERTIES OUTPUT_NAME maidsafe_encrypt)
+ADD_EXECUTABLE(TESTencrypt EXCLUDE_FROM_ALL ${ALL_FILES_TESTS_DIR})
 
-IF(MSVC)
-  INSTALL(TARGETS encrypt
-            RUNTIME DESTINATION bin
-            LIBRARY DESTINATION bin
-            ARCHIVE DESTINATION lib)
-ELSE()
+IF(NOT MSVC)
   SET_TARGET_PROPERTIES(TESTencrypt PROPERTIES
                           DEBUG_OUTPUT_NAME TESTencrypt${CMAKE_DEBUG_POSTFIX}
                           RELWITHDEBINFO_OUTPUT_NAME TESTencrypt${CMAKE_RELWITHDEBINFO_POSTFIX}
                           MINSIZEREL_OUTPUT_NAME TESTencrypt${CMAKE_MINSIZEREL_POSTFIX})
-  INSTALL(TARGETS encrypt
-            RUNTIME DESTINATION bin
-            LIBRARY DESTINATION lib
-            ARCHIVE DESTINATION lib)
 ENDIF()
 
 IF(UNIX)
@@ -671,4 +674,83 @@ IF(NOT MSVC)
   MESSAGE("    Options are Release, Debug, RelWithDebInfo, MinSizeRel")
   MESSAGE("================================================================================")
   MESSAGE("")
+ENDIF()
+
+IF(NOT INSTALL_PREFIX)
+  IF(MINGW)
+    SET(CMAKE_INSTALL_PREFIX "/MinGW")
+  ENDIF()
+ELSE()
+  IF(WIN32)
+    STRING(REPLACE "\\" "/" INSTALL_PREFIX ${INSTALL_PREFIX})
+  ENDIF()
+  SET(CMAKE_INSTALL_PREFIX "${INSTALL_PREFIX}")
+ENDIF()
+
+MESSAGE("")
+MESSAGE("Install prefix is set to \"${CMAKE_INSTALL_PREFIX}\"")
+MESSAGE("")
+IF(WIN32)
+  MESSAGE("    To alter this (e.g. to c:\\encrypt),    ${ERROR_MESSAGE_CMAKE_PATH} -DINSTALL_PREFIX=c:\\encrypt")
+ELSE()
+  MESSAGE("    To alter this (e.g. to /usr),           ${ERROR_MESSAGE_CMAKE_PATH} -DINSTALL_PREFIX=/usr")
+ENDIF()
+MESSAGE("================================================================================")
+MESSAGE("")
+
+SET(MAIDSAFE_ENCRYPT_INSTALL_FILES
+      maidsafe-encrypt/data_io_handler.h
+      maidsafe-encrypt/self_encryption.h
+      maidsafe-encrypt/version.h)
+
+# Check the script /build/Win_MSVC/extract_includes.bat matches this list
+FILE(STRINGS ${${PROJECT_NAME}_ROOT}/build/Win_MSVC/extract_includes.bat EXTRACT_INCLUDE_BAT)
+STRING(REPLACE "\\" "/" EXTRACT_INCLUDE_BAT "${EXTRACT_INCLUDE_BAT}")
+FOREACH(MAIDSAFE_INSTALL_FILE ${MAIDSAFE_ENCRYPT_INSTALL_FILES})
+  STRING(REGEX MATCH src/${MAIDSAFE_INSTALL_FILE} FOUND ${EXTRACT_INCLUDE_BAT})
+  IF(NOT FOUND)
+    MESSAGE(FATAL_ERROR "\nUpdate build/Win_MSVC/extract_includes.bat to include ${MAIDSAFE_INSTALL_FILE}\n")
+  ENDIF()
+  SET(ABS_MAIDSAFE_ENCRYPT_INSTALL_FILES ${ABS_MAIDSAFE_ENCRYPT_INSTALL_FILES} ${${PROJECT_NAME}_SOURCE_DIR}/${MAIDSAFE_INSTALL_FILE})
+ENDFOREACH()
+EXECUTE_PROCESS(COMMAND CMD /C "${${PROJECT_NAME}_ROOT}/build/Win_MSVC/extract_includes.bat > NUL 2>&1")
+
+IF(MSVC)
+  INSTALL(TARGETS encrypt
+            RUNTIME DESTINATION bin
+            LIBRARY DESTINATION bin
+            ARCHIVE DESTINATION lib
+          )
+ELSE()
+  INSTALL(TARGETS encrypt
+            RUNTIME DESTINATION bin
+            LIBRARY DESTINATION lib
+            ARCHIVE DESTINATION lib
+          )
+ENDIF()
+
+INSTALL(FILES ${ABS_MAIDSAFE_ENCRYPT_INSTALL_FILES} DESTINATION include/maidsafe-encrypt)
+
+IF(CMAKE_BUILD_TYPE MATCHES "Release")
+  SET(CPACK_PACKAGE_VERSION_MAJOR "0")
+  SET(CPACK_PACKAGE_VERSION_MINOR "1")
+  SET(CPACK_PACKAGE_VERSION_PATCH ${pddate})
+  SET(CPACK_PACKAGE_VERSION ${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH})
+  SET(CPACK_PACKAGE_NAME "maidsafe_encrypt")
+  SET(CPACK_PACKAGE_CONTACT "dev@maidsafe.net")
+  SET(CPACK_PACKAGE_VENDOR "maidsafe.net")
+  SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "MaidSafe-Encrypt")
+  SET(CPACK_PACKAGE_INSTALL_DIRECTORY "maidsafe-encrypt")
+  SET(CPACK_RESOURCE_FILE_README "${${PROJECT_NAME}_ROOT}/docs/readme.txt")
+  IF(UNIX)
+    SET(CPACK_SET_DESTDIR on)
+    SET(CPACK_GENERATOR DEB;RPM;TGZ)
+    MESSAGE("Package install directory is set to \"${CPACK_PACKAGE_INSTALL_DIRECTORY}\"")
+    MESSAGE("================================================================================")
+  ELSE()
+    SET(CPACK_GENERATOR ZIP)
+  ENDIF()
+  INCLUDE(CPack)
+ELSE()
+  FILE(REMOVE ${${PROJECT_NAME}_BINARY_DIR}/CPackConfig.cmake ${${PROJECT_NAME}_BINARY_DIR}/CPackSourceConfig.cmake)
 ENDIF()
