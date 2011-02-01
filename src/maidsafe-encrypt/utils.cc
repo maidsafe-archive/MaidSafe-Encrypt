@@ -17,6 +17,8 @@
  *        directly to MDM without encrypting them.
  * @todo  Allow for different types of obfuscation and encryption, including an
  *        option for no obf. and/or no enc.
+ * @todo  Compress DataMaps as well. If they are too big, chunk them and
+ *        generate recursive DataMaps.
  */
 
 #include "maidsafe-encrypt/utils.h"
@@ -236,7 +238,12 @@ int DecryptContent(const protobuf::DataMap &data_map,
   }
 
   // TODO(Fraser#5#): implement offset
-  if (offset == 0) {
+  if (offset != 0) {
+#ifdef DEBUG
+    printf("Decrypt - non-zero offset not supported.\n");
+#endif
+    return kOffsetError;
+  } else {
     // Decrypt chunklets
     if (!output_handler->Open()) {
 #ifdef DEBUG
@@ -395,6 +402,17 @@ int CheckEntry(std::shared_ptr<DataIOHandler> input_handler) {
   return filesize < 2 ? kInputTooSmall : kSuccess;
 }
 
+/**
+ * Takes a small part from the middle of the input data and tries to compress
+ * it. If that yields a gain of at least 10%, we assume this can be extrapolated
+ * to all the data.
+ *
+ * If the input data is a file, we check its size against a list of known
+ * uncompressible file formats to save above step.
+ *
+ * @param input_handler The data source.
+ * @return True if input data is likely compressible.
+ */
 bool CheckCompressibility(std::shared_ptr<DataIOHandler> input_handler) {
   int nElements = sizeof(kNoCompressType) / sizeof(kNoCompressType[0]);
   if (input_handler->Type() == DataIOHandler::kFileIOHandler) {
@@ -445,6 +463,13 @@ bool CheckCompressibility(std::shared_ptr<DataIOHandler> input_handler) {
   }
 }
 
+/**
+ * @param file_hash Pre-encryption hash of the input data.
+ * @param input_handler The data source.
+ * @param data_map Pointer to the DataMap to be populated.
+ * @param chunk_count Pointer to the number of chunks to be populated.
+ * @return True if operation was successful.
+ */
 bool CalculateChunkSizes(const std::string &file_hash,
                          std::shared_ptr<DataIOHandler> input_handler,
                          protobuf::DataMap *data_map,
@@ -504,6 +529,14 @@ bool CalculateChunkSizes(const std::string &file_hash,
   return true;
 }
 
+/**
+ * The result is a positive or negative int based on the hex character passed
+ * in, to allow for random chunk sizes. '0' returns -8, '1' returns -7, etc...
+ * through to 'f', which returns 7.
+ *
+ * @param hex_digit A hex character, must be between 0 and F.
+ * @return Value to be added to the chunk size.
+ */
 int ChunkAddition(char hex_digit) {
   if (hex_digit > 47 && hex_digit < 58)
     return hex_digit - 56;
@@ -554,42 +587,6 @@ bool ResizeObfuscationHash(const std::string &input,
     resized_data->append(hash);
   }
   resized_data->resize(required_size);
-  return true;
-}
-
-bool HashUnique(const protobuf::DataMap &data_map,
-                bool pre_encryption,
-                std::string *hash) {
-// TODO(Fraser#5#): do validity check or diff (if chunk size > some minimum?)
-  int hash_count;
-  if (pre_encryption)
-    hash_count = data_map.chunk_name_size();
-  else
-    hash_count = data_map.encrypted_chunk_name_size();
-  // check uniqueness of pre-encryption hash
-  if (pre_encryption) {
-    if (hash_count>0) {
-      for (int i = 0; i < hash_count; ++i) {
-        if (*hash == data_map.chunk_name(i)) {
-          char last = hash->at(hash->length() - 1);
-          hash->resize(hash->length() - 1);
-          hash->insert(0, 1, last);
-          HashUnique(data_map, pre_encryption, hash);
-        }
-      }
-    }
-  } else {  // check uniqueness of post-encryption hash
-    if (hash_count>0) {
-      for (int i = 0; i < hash_count; ++i) {
-        if (*hash == data_map.encrypted_chunk_name(i)) {
-          char last = hash->at(hash->length() - 1);
-          hash->resize(hash->length() - 1);
-          hash->insert(0, 1, last);
-          HashUnique(data_map, pre_encryption, hash);
-        }
-      }
-    }
-  }
   return true;
 }
 

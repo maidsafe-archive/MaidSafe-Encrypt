@@ -40,7 +40,8 @@ enum ReturnCode {
   kWrongVersion = -200012,
   kBadChunk = -200013,
   kBadDataMap = -200014,
-  kNullPointer = -200015
+  kNullPointer = -200015,
+  kOffsetError = -200016
 };
 
 const std::string kVersion("Mk II");

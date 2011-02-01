@@ -39,44 +39,36 @@ namespace encrypt {
 
 namespace protobuf { class DataMap; }
 
-// Encrypt input_file.  Derived chunks will be created in output_dir.  If
-// data_map already has entry for file hash, this will be used.
+/// Generate secure chunks from a file.
 int SelfEncryptFile(const fs::path &input_file,
                     const fs::path &output_dir,
                     protobuf::DataMap *data_map);
 
-// Encrypt input_string.  Derived chunks will be created in output_dir.  If
-// data_map already has entry for file hash, this will be used.
+/// Generate secure chunks from a string.
 int SelfEncryptString(const std::string &input_string,
                       const fs::path &output_dir,
                       protobuf::DataMap *data_map);
 
-// Decrypt chunks to output_file starting at chunklet spanning offset point.
-// All neccessary chunks should be available and listed in chunk_paths
-// (preferrably in same order as listed in data_map) and named as hex-encoded
-// encrypted_chunk_name.
+/// Assemble a file from secure chunks.
 int SelfDecryptToFile(const protobuf::DataMap &data_map,
                       const std::vector<fs::path> &chunk_paths,
                       const std::uint64_t &offset,
                       bool overwrite,
                       const fs::path &output_file);
 
-// Decrypt chunks to output_string starting at chunklet spanning offset point.
-// All neccessary chunks should be available and listed in chunk_paths
-// (preferrably in same order as listed in data_map) and named as hex-encoded
-// encrypted_chunk_name.
+/// Assemble a string from secure chunks.
 int SelfDecryptToString(const protobuf::DataMap &data_map,
                         const std::vector<fs::path> &chunk_paths,
                         const boost::uint64_t &offset,
                         std::shared_ptr<std::string> output_string);
 
-/// Encrypt a DataMap to a string
+/// Encrypts a DataMap to a string.
 int EncryptDataMap(const protobuf::DataMap &data_map,
                    const std::string &this_directory_key,
                    const std::string &parent_directory_key,
                    std::string *encrypted_data_map);
 
-/// Decrypt an encrypted DataMap
+/// Decrypts an encrypted DataMap.
 int DecryptDataMap(const std::string &encrypted_data_map,
                    const std::string &this_directory_key,
                    const std::string &parent_directory_key,

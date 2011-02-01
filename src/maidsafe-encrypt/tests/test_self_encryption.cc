@@ -9,8 +9,8 @@
  *  You are not free to copy, amend or otherwise use this source code without  *
  *  the explicit written permission of the board of directors of maidsafe.net. *
  ***************************************************************************//**
- * @file  test_data_io_handler.cc
- * @brief Tests for the self-incryption engine.
+ * @file  test_self_encryption.cc
+ * @brief Tests for the self-encryption engine.
  * @date  2008-09-09
  */
 
@@ -457,37 +457,6 @@ TEST_F(SelfEncryptionTest, BEH_ENCRYPT_CalculateChunkSizes) {
   data_map.Clear();
 }
 
-TEST_F(SelfEncryptionTest, BEH_ENCRYPT_HashFile) {
-  fs::path path1(kInputDir_ / "HashFileTest01.txt");
-  fs::ofstream ofs1;
-  ofs1.open(path1);
-  ofs1 << "abc";
-  ofs1.close();
-  fs::path path2(kInputDir_ / "HashFileTest02.txt");
-  fs::ofstream ofs2;
-  ofs2.open(path2);
-  ofs2 << "abcdefghbcdefghicdefghijdefghijkefghijklfghijklmghijklmnhijklmnoijkl"
-          "mnopjklmnopqklmnopqrlmnopqrsmnopqrstnopqrstu";
-  ofs2.close();
-  EXPECT_EQ(EncodeToHex(crypto::HashFile<crypto::SHA512>(path1)),
-        "ddaf35a193617abacc417349ae20413112e6fa4e89a97ea20a9eeee64b55d39a219299"
-        "2a274fc1a836ba3c23a3feebbd454d4423643ce80e2a9ac94fa54ca49f");
-  EXPECT_EQ(EncodeToHex(crypto::HashFile<crypto::SHA512>(path2)),
-        "8e959b75dae313da8cf4f72814fc143f8f7779c6eb9f7fa17299aeadb6889018501d28"
-        "9e4900f7e4331b99dec4b5433ac7d329eeb6dd26545e96e55b874be909");
-}
-
-TEST_F(SelfEncryptionTest, BEH_ENCRYPT_HashString) {
-  EXPECT_EQ(EncodeToHex(crypto::Hash<crypto::SHA512>(std::string("abc"))),
-        "ddaf35a193617abacc417349ae20413112e6fa4e89a97ea20a9eeee64b55d39a219299"
-        "2a274fc1a836ba3c23a3feebbd454d4423643ce80e2a9ac94fa54ca49f");
-  EXPECT_EQ(EncodeToHex(crypto::Hash<crypto::SHA512>(std::string(
-        "abcdefghbcdefghicdefghijdefghijkefghijklfghijklmghijklmnhijklmnoijklmn"
-        "opjklmnopqklmnopqrlmnopqrsmnopqrstnopqrstu"))),
-        "8e959b75dae313da8cf4f72814fc143f8f7779c6eb9f7fa17299aeadb6889018501d28"
-        "9e4900f7e4331b99dec4b5433ac7d329eeb6dd26545e96e55b874be909");
-}
-
 TEST_F(SelfEncryptionTest, BEH_ENCRYPT_GeneratePreEncryptionHashes) {
   fs::path path1(kInputDir_ / "GeneratePreEncryptionHashesTest01.txt");
   fs::ofstream ofs1;
@@ -514,30 +483,6 @@ TEST_F(SelfEncryptionTest, BEH_ENCRYPT_GeneratePreEncryptionHashes) {
   EXPECT_EQ(EncodeToHex(data_map.chunk_name(2)),
         "ddaf35a193617abacc417349ae20413112e6fa4e89a97ea20a9eeee64b55d39a219299"
         "2a274fc1a836ba3c23a3feebbd454d4423643ce80e2a9ac94fa54ca49f");
-}
-
-TEST_F(SelfEncryptionTest, BEH_ENCRYPT_HashUnique) {
-  std::string hash = crypto::Hash<crypto::SHA512>(
-      static_cast<std::string>("abc"));
-  protobuf::DataMap data_map;
-  data_map.add_chunk_name(hash);
-  EXPECT_EQ(EncodeToHex(data_map.chunk_name(0)),
-        "ddaf35a193617abacc417349ae20413112e6fa4e89a97ea20a9eeee64b55d39a219299"
-        "2a274fc1a836ba3c23a3feebbd454d4423643ce80e2a9ac94fa54ca49f");
-  EXPECT_TRUE(utils::HashUnique(data_map, true, &hash));
-  data_map.add_chunk_name(hash);
-  EXPECT_EQ(EncodeToHex(data_map.chunk_name(1)),
-        "9fddaf35a193617abacc417349ae20413112e6fa4e89a97ea20a9eeee64b55d39a2192"
-        "992a274fc1a836ba3c23a3feebbd454d4423643ce80e2a9ac94fa54ca4");
-  EXPECT_TRUE(utils::HashUnique(data_map, true, &hash));
-  data_map.add_chunk_name(hash);
-  EXPECT_EQ(EncodeToHex(data_map.chunk_name(2)),
-        "a49fddaf35a193617abacc417349ae20413112e6fa4e89a97ea20a9eeee64b55d39a21"
-        "92992a274fc1a836ba3c23a3feebbd454d4423643ce80e2a9ac94fa54c");
-  hash = crypto::Hash<crypto::SHA512>(static_cast<std::string>("ab"));
-  std::string hashafter = hash;
-  EXPECT_TRUE(utils::HashUnique(data_map, true, &hashafter));
-  EXPECT_EQ(hash, hashafter);
 }
 
 TEST_F(SelfEncryptionTest, BEH_ENCRYPT_ResizeObfuscationHash) {
@@ -649,6 +594,8 @@ TEST_F(SelfEncryptionTest, BEH_ENCRYPT_DecryptFile) {
   DataIoHandlerPtr output_handler3(new FileIOHandler(decrypted3, false));
   DataIoHandlerPtr output_handler4(new FileIOHandler(decrypted4, false));
 
+  EXPECT_EQ(kOffsetError, utils::DecryptContent(data_map1, chunk_paths1, 1,
+                                                output_handler1));
   EXPECT_EQ(kSuccess, utils::DecryptContent(data_map1, chunk_paths1, 0,
                                             output_handler1));
   EXPECT_EQ(kSuccess, utils::DecryptContent(data_map2, chunk_paths2, 0,
@@ -741,6 +688,8 @@ TEST_F(SelfEncryptionTest, BEH_ENCRYPT_SelfDecryptString) {
   DataIoHandlerPtr output_handler3(new StringIOHandler(dec3, false));
   DataIoHandlerPtr output_handler4(new StringIOHandler(dec4, false));
 
+  EXPECT_EQ(kOffsetError, utils::DecryptContent(data_map1, chunk_paths1, 1,
+                                                output_handler1));
   EXPECT_EQ(kSuccess, utils::DecryptContent(data_map1, chunk_paths1, 0,
                                             output_handler1));
   EXPECT_EQ(kSuccess, utils::DecryptContent(data_map2, chunk_paths2, 0,
@@ -755,40 +704,6 @@ TEST_F(SelfEncryptionTest, BEH_ENCRYPT_SelfDecryptString) {
   EXPECT_EQ(*str3, *dec3);
   EXPECT_EQ(*str4, *dec4);
 }
-
-/*
-TEST_F(SelfEncryptionTest, BEH_ENCRYPT_EncryptAndCheckDoneChunks) {
-  std::string test_file1("EncryptAndCheckDoneChunksTest01.txt");
-  std::string test_file2("EncryptAndCheckDoneChunksTest02.txt");
-
-  fs::path path1(test_se::CreateRandomFile(test_file1, 999));
-  fs::path path2(MaidsafeHomeDir(
-                     maidsafe::SessionSingleton::getInstance()->SessionName()) /
-                 test_file2);
-  try {
-    fs::copy_file(path1, path2);
-  }
-  catch(const std::exception &e) {
-    FAIL() << e.what();
-  }
-
-  DataMap data_map1, data_map2;
-  SelfEncryption self_encryption;
-  data_map1.set_file_hash(utils::SHA512(path1));
-  data_map2.set_file_hash(utils::SHA512(path2));
-  EXPECT_EQ(utils::Encrypt(path1.string(), false, &data_map1, &done_chunks_), kSuccess);
-  EXPECT_TRUE(done_chunks_.empty());
-  EXPECT_EQ(utils::Encrypt(path2.string(), false, &data_map2, &done_chunks_), kSuccess);
-  EXPECT_EQ(size_t(3), done_chunks_.size());
-  std::set<std::string>::iterator it;
-  for (int n = 0; n < data_map2.encrypted_chunk_name_size(); ++n) {
-    EXPECT_EQ(data_map1.encrypted_chunk_name(n), data_map2.encrypted_chunk_name(n));
-    it = done_chunks_.find(data_map2.encrypted_chunk_name(n));
-    if (it == done_chunks_.end())
-      FAIL() << "Chunk missing " << n;
-  }
-}
-*/
 
 }  // namespace encrypt
 
