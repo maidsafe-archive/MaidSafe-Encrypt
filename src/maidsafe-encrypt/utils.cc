@@ -26,6 +26,7 @@
 #include <set>
 
 #include "maidsafe-dht/common/crypto.h"
+#include "maidsafe-dht/common/log.h"
 #include "maidsafe-dht/common/utils.h"
 #include "maidsafe-encrypt/data_io_handler.h"
 #include "maidsafe-encrypt/data_map.pb.h"
@@ -43,24 +44,24 @@ int EncryptContent(std::shared_ptr<DataIOHandler> input_handler,
                    const fs::path &output_dir,
                    protobuf::DataMap *data_map,
                    std::map<std::string, fs::path> *to_chunk_store) {
-  if (!data_map || !to_chunk_store)
+  if (!data_map || !to_chunk_store || !input_handler.get()) {
+    DLOG(ERROR) << "EncryptContent: One of the pointers is null." << std::endl;
     return kNullPointer;
+  }
   to_chunk_store->clear();
   if (CheckEntry(input_handler) != kSuccess) {
-#ifdef DEBUG
-    printf("EncryptContent: CheckEntry failed.\n");
-#endif
+    DLOG(ERROR) << "EncryptContent: CheckEntry failed." << std::endl;
     return kInputTooSmall;
   }
 
-  std::string file_hash = EncodeToHex(data_map->file_hash());
+  std::string file_hash(EncodeToHex(data_map->file_hash()));
   if (file_hash.empty()) {
     if (input_handler->Type() == DataIOHandler::kFileIOHandler) {
       file_hash = crypto::HashFile<crypto::SHA512>(
-        std::static_pointer_cast<FileIOHandler>(input_handler)->FilePath());
+          std::static_pointer_cast<FileIOHandler>(input_handler)->FilePath());
     } else {
       file_hash = crypto::Hash<crypto::SHA512>(
-        std::static_pointer_cast<StringIOHandler>(input_handler)->Data());
+          std::static_pointer_cast<StringIOHandler>(input_handler)->Data());
     }
   }
   data_map->Clear();
@@ -73,23 +74,18 @@ int EncryptContent(std::shared_ptr<DataIOHandler> input_handler,
 
   std::uint16_t chunk_count(0);
   if (!CalculateChunkSizes(file_hash, input_handler, data_map, &chunk_count)) {
-#ifdef DEBUG
-    printf("EncryptContent: CalculateChunkSizes failed.\n");
-#endif
+    DLOG(ERROR) << "EncryptContent: CalculateChunkSizes failed." << std::endl;
     return kChunkSizeError;
   }
 
   if (!GeneratePreEncryptionHashes(input_handler, data_map)) {
-#ifdef DEBUG
-    printf("EncryptContent: GeneratePreEncryptionHashes failed.\n");
-#endif
+    DLOG(ERROR) << "EncryptContent: GeneratePreEncryptionHashes failed."
+                << std::endl;
     return kPreEncryptionHashError;
   }
 
   if (!input_handler->Open()) {
-#ifdef DEBUG
-    printf("EncryptContent: Failed to open input.\n");
-#endif
+    DLOG(ERROR) << "EncryptContent: Failed to open input." << std::endl;
     return kIoError;
   }
 
@@ -103,17 +99,17 @@ int EncryptContent(std::shared_ptr<DataIOHandler> input_handler,
     }
 
     // initialise counter for amount of data put into chunk
-    std::uint64_t this_chunk_done = 0;
+    std::uint64_t this_chunk_done(0);
 
     // get pre-encryption hashes for use in obfuscation and encryption
-    std::string obfuscate_name =
-        data_map->chunk_name((chunk_no + 2) % chunk_count);
-    std::string encryption_name =
-        data_map->chunk_name((chunk_no + 1) % chunk_count);
-    std::string encryption_key =
-        encryption_name.substr(0, crypto::AES256_KeySize);
-    std::string encryption_iv =
-        encryption_name.substr(crypto::AES256_KeySize, crypto::AES256_IVSize);
+    std::string obfuscate_name = data_map->chunk_name((chunk_no + 2) %
+                                                      chunk_count);
+    std::string encryption_name = data_map->chunk_name((chunk_no + 1) %
+                                                       chunk_count);
+    std::string encryption_key = encryption_name.substr(0,
+                                                        crypto::AES256_KeySize);
+    std::string encryption_iv = encryption_name.substr(crypto::AES256_KeySize,
+                                                       crypto::AES256_IVSize);
 
     // loop through each chunklet
     while (this_chunk_done < data_map->chunk_size(chunk_no)) {
@@ -133,16 +129,18 @@ int EncryptContent(std::shared_ptr<DataIOHandler> input_handler,
 
       // get chunklet from input file/string
       std::string this_chunklet;
-      if (!input_handler->Read(this_chunklet_size, &this_chunklet))
+      if (!input_handler->Read(this_chunklet_size, &this_chunklet)) {
+        DLOG(ERROR) << "EncryptContent: Failed to read size of a chunklet."
+                    << std::endl;
         return kIoError;
+      }
 
       // compress if required and reset this chunklet size
       if (compress) {
         this_chunklet = crypto::Compress(this_chunklet, 9);
         if (this_chunklet.empty()) {
-#ifdef DEBUG
-          printf("Failed to compress chunklet.\n");
-#endif
+          DLOG(ERROR) << "EncryptContent: Failed to compress chunklet."
+                      << std::endl;
           return kCompressionError;
         }
         this_chunklet_size = this_chunklet.size();
@@ -170,9 +168,8 @@ int EncryptContent(std::shared_ptr<DataIOHandler> input_handler,
         fs::remove(temp_chunk_name);
     }
     catch(const std::exception &e) {
-#ifdef DEBUG
-      printf("In Encrypt - %s\n", e.what());
-#endif
+      DLOG(ERROR) << "EncryptContent: Removing exception: " << e.what()
+                  << std::endl;
       return kFilesystemError;
     }
 
@@ -188,9 +185,8 @@ int EncryptContent(std::shared_ptr<DataIOHandler> input_handler,
       fs::rename(temp_chunk_name, correct_chunk_name);
     }
     catch(const std::exception &e) {
-#ifdef DEBUG
-      printf("In Encrypt - %s\n", e.what());
-#endif
+      DLOG(ERROR) << "EncryptContent: Renaming exception: " << e.what()
+                  << std::endl;
       return kFilesystemError;
     }
 
@@ -214,9 +210,7 @@ int DecryptContent(const protobuf::DataMap &data_map,
 
   // if there is no file hash, then the file has never been encrypted
   if (file_hash.empty()) {
-#ifdef DEBUG
-    printf("DecryptContent - File hash empty.\n");
-#endif
+    DLOG(ERROR) << "DecryptContent: File hash empty." << std::endl;
     return kNoFileHash;
   }
 
@@ -229,26 +223,23 @@ int DecryptContent(const protobuf::DataMap &data_map,
   }
 
   if (data_map.self_encryption_version() != kVersion) {
-#ifdef DEBUG
-      printf("Cannot decrypt - incompatible decryption engine (version %s) "
-             "being applied to data encrypted with version %s\n",
-             kVersion.c_str(), data_map.self_encryption_version().c_str());
-#endif
+    DLOG(ERROR) << "DecryptContent: Cannot decrypt - incompatible decryption "
+                   "engine (version " << kVersion << ") being applied to data "
+                   "encrypted with version "
+                << data_map.self_encryption_version() << std::endl;
     return kWrongVersion;
   }
 
   // TODO(Fraser#5#): implement offset
   if (offset != 0) {
-#ifdef DEBUG
-    printf("Decrypt - non-zero offset not supported.\n");
-#endif
+    DLOG(ERROR) << "DecryptContent:  non-zero offset not supported."
+                << std::endl;
     return kOffsetError;
   } else {
     // Decrypt chunklets
     if (!output_handler->Open()) {
-#ifdef DEBUG
-      printf("Decrypt - IOHandler won't open.\n");
-#endif
+      DLOG(ERROR) << "DecryptContent: Output IOhandler failed to open."
+                  << std::endl;
       return kIoError;
     }
 
@@ -268,9 +259,8 @@ int DecryptContent(const protobuf::DataMap &data_map,
       }
 
       if (it == chunk_paths.end()) {
-#ifdef DEBUG
-        printf("Decrypt - Chunk path not provided.\n");
-#endif
+        DLOG(ERROR) << "DecryptContent: Chunk path not provided."
+                    << std::endl;
         return kChunkPathNotFound;
       }
       fs::path chunk_path(*it);
@@ -278,30 +268,28 @@ int DecryptContent(const protobuf::DataMap &data_map,
 
       fs::ifstream fin(chunk_path, std::ifstream::binary);
       if (!fin.good()) {
-#ifdef DEBUG
-        printf("Decrypt - !fin.good()\n");
-#endif
+        DLOG(ERROR) << "DecryptContent: Failed to open ifstream to chunk path."
+                    << std::endl;
         return kIoError;
       }
       if (!chunk.ParseFromIstream(&fin)) {
-#ifdef DEBUG
-        printf("Decrypt - !chunk.ParseFromIstream(&fin)\n");
-#endif
+        DLOG(ERROR) << "DecryptContent: Failed to parse chunk from ifstream."
+                    << std::endl;
         return kBadChunk;
       }
 
       // check if compression was used during encryption
-      bool compressed = (!chunk.compression_type().empty());
+      bool compressed(!chunk.compression_type().empty());
 
       // get pre-encryption hashes for use in de-obfuscation and decryption
-      std::string obfuscate_name =
-          data_map.chunk_name((chunk_no + 2) % chunk_count);
-      std::string encryption_name =
-          data_map.chunk_name((chunk_no + 1) % chunk_count);
-      std::string encryption_key =
-          encryption_name.substr(0, crypto::AES256_KeySize);
-      std::string encryption_iv =
-          encryption_name.substr(crypto::AES256_KeySize, crypto::AES256_IVSize);
+      std::string obfuscate_name(data_map.chunk_name((chunk_no + 2) %
+                                                     chunk_count));
+      std::string encryption_name(data_map.chunk_name((chunk_no + 1) %
+                                                      chunk_count));
+      std::string encryption_key(
+          encryption_name.substr(0, crypto::AES256_KeySize));
+      std::string encryption_iv(encryption_name.substr(crypto::AES256_KeySize,
+                                                       crypto::AES256_IVSize));
 
       // loop through each chunklet
       for (int i = 0; i < chunk.chunklet_size(); ++i) {
@@ -309,12 +297,14 @@ int DecryptContent(const protobuf::DataMap &data_map,
 
         // adjust size of obfuscate hash to match size of chunklet
         std::string resized_obs_hash;
-        utils::ResizeObfuscationHash(obfuscate_name,
+        utils::ResizeObfuscationHash(
+            obfuscate_name,
             static_cast<boost::uint16_t>(this_chunklet.size()),
             &resized_obs_hash);
-        std::string decrypted_chunklet = crypto::XOR(
-            crypto::SymmDecrypt(this_chunklet,encryption_key, encryption_iv),
-            resized_obs_hash);
+        std::string decrypted_chunklet(
+            crypto::XOR(crypto::SymmDecrypt(this_chunklet, encryption_key,
+                                            encryption_iv),
+            resized_obs_hash));
 
         // decompress if required
         if (compressed)
@@ -335,13 +325,13 @@ int EncryptDataMap(const protobuf::DataMap &data_map,
   if (!encrypted_data_map)
     return kNullPointer;
   encrypted_data_map->clear();
-  std::string encrypt_hash = crypto::Hash<crypto::SHA512>(
-      parent_directory_key + this_directory_key);
-  std::string encrypt_key = encrypt_hash.substr(0, crypto::AES256_KeySize);
-  std::string encrypt_iv = encrypt_hash.substr(crypto::AES256_KeySize,
-                                               crypto::AES256_IVSize);
-  std::string xor_hash = crypto::Hash<crypto::SHA512>(
-      this_directory_key + parent_directory_key);
+  std::string encrypt_hash(crypto::Hash<crypto::SHA512>(parent_directory_key +
+                                                        this_directory_key));
+  std::string encrypt_key(encrypt_hash.substr(0, crypto::AES256_KeySize));
+  std::string encrypt_iv(encrypt_hash.substr(crypto::AES256_KeySize,
+                                             crypto::AES256_IVSize));
+  std::string xor_hash(crypto::Hash<crypto::SHA512>(this_directory_key +
+                                                    parent_directory_key));
   std::string serialised_data_map;
   try {
     if (!data_map.SerializeToString(&serialised_data_map))
@@ -365,31 +355,41 @@ int DecryptDataMap(const std::string &encrypted_data_map,
                    const std::string &this_directory_key,
                    const std::string &parent_directory_key,
                    protobuf::DataMap *data_map) {
-  if (!data_map)
+  if (!data_map) {
+    DLOG(ERROR) << "DecryptDataMap: data_map pointer null." << std::endl;
     return kNullPointer;
+  }
+
   data_map->Clear();
-  std::string encrypt_hash = crypto::Hash<crypto::SHA512>(
-      parent_directory_key + this_directory_key);
-  std::string encrypt_key = encrypt_hash.substr(0, crypto::AES256_KeySize);
-  std::string encrypt_iv = encrypt_hash.substr(crypto::AES256_KeySize,
-                                               crypto::AES256_IVSize);
-  std::string xor_hash = crypto::Hash<crypto::SHA512>(
-      this_directory_key + parent_directory_key);
-  std::string intermediate = crypto::SymmDecrypt(encrypted_data_map,
-                                                 encrypt_key, encrypt_iv);
+  std::string encrypt_hash(crypto::Hash<crypto::SHA512>(parent_directory_key +
+                                                        this_directory_key));
+  std::string encrypt_key(encrypt_hash.substr(0, crypto::AES256_KeySize));
+  std::string encrypt_iv(encrypt_hash.substr(crypto::AES256_KeySize,
+                                             crypto::AES256_IVSize));
+  std::string xor_hash(crypto::Hash<crypto::SHA512>(this_directory_key +
+                                                    parent_directory_key));
+  std::string intermediate(crypto::SymmDecrypt(encrypted_data_map,
+                                               encrypt_key, encrypt_iv));
   std::string xor_hash_extended;
   if (intermediate.empty() ||
-      !ResizeObfuscationHash(xor_hash, intermediate.size(), &xor_hash_extended))
+      !ResizeObfuscationHash(xor_hash, intermediate.size(),
+                             &xor_hash_extended)) {
+    DLOG(ERROR) << "DecryptDataMap: Intermediate datamap encryption failed "
+                   "or resizing of obfuscation hash failed." << std::endl;
     return kBadDataMap;
-  std::string serialised_data_map = crypto::XOR(intermediate,
-                                                xor_hash_extended);
+  }
+
+  std::string serialised_data_map(crypto::XOR(intermediate, xor_hash_extended));
   try {
     if (serialised_data_map.empty() ||
         !data_map->ParseFromString(serialised_data_map)) {
+      DLOG(ERROR) << "DecryptDataMap: XORing failed or parsing from datamap "
+                     "failed." << std::endl;
       return kDecryptError;
     }
   }
   catch(const std::exception&) {
+    DLOG(ERROR) << "DecryptDataMap: Parsing datamap exception." << std::endl;
     return kDecryptError;
   }
   return kSuccess;
@@ -417,17 +417,16 @@ bool CheckCompressibility(std::shared_ptr<DataIOHandler> input_handler) {
   int nElements = sizeof(kNoCompressType) / sizeof(kNoCompressType[0]);
   if (input_handler->Type() == DataIOHandler::kFileIOHandler) {
     try {
-      std::string extension = std::static_pointer_cast<FileIOHandler>(
-          input_handler)->FilePath().extension().string();
+      std::string extension(
+          std::static_pointer_cast<FileIOHandler>(
+              input_handler)->FilePath().extension().string());
       std::set<std::string> no_comp(kNoCompressType,
                                     kNoCompressType + nElements);
       if (no_comp.find(extension) != no_comp.end())
         return false;
     }
     catch(const std::exception &e) {
-#ifdef DEBUG
-      printf("In CheckCompressibility - %s\n", e.what());
-#endif
+      DLOG(ERROR) << "CheckCompressibility: " << e.what() << std::endl;
       return false;
     }
   }
@@ -450,15 +449,13 @@ bool CheckCompressibility(std::shared_ptr<DataIOHandler> input_handler) {
     return false;
   }
   input_handler->Close();
-  std::string compressed_test_chunk = crypto::Compress(uncompressed_test_chunk,
-                                                       9);
-  if (!compressed_test_chunk.empty()) {
-    double ratio = compressed_test_chunk.size() / test_chunk_size;
+  std::string test_chunk(crypto::Compress(uncompressed_test_chunk, 9));
+  if (!test_chunk.empty()) {
+    double ratio = test_chunk.size() / test_chunk_size;
     return (ratio <= 0.9);
   } else {
-#ifdef DEBUG
-    printf("Error in checking compressibility.\n");
-#endif
+    DLOG(ERROR) << "CheckCompressibility: Error checking compressibility."
+                << std::endl;
     return false;
   }
 }
@@ -470,62 +467,93 @@ bool CheckCompressibility(std::shared_ptr<DataIOHandler> input_handler) {
  * @param chunk_count Pointer to the number of chunks to be populated.
  * @return True if operation was successful.
  */
+// Limits with fixed 256K chunk size are:
+//    <= kMinAcceptableFileSize ---> to DM
+//    kMinAcceptableFileSize + 1 to
+//        kMinChunks * kDefaultChunkSize - 1 ---> size = fsize / kMinChunks
+//    >= kMinChunks * kDefaultChunkSize ---> fixed size
 bool CalculateChunkSizes(const std::string &file_hash,
                          std::shared_ptr<DataIOHandler> input_handler,
                          protobuf::DataMap *data_map,
                          std::uint16_t *chunk_count) {
-  std::uint64_t file_size = 0;
-  if (!input_handler->Size(&file_size))
+  data_map->set_file_hash(file_hash);
+  std::uint64_t file_size(0);
+  if (!input_handler->Size(&file_size)) {
+    DLOG(ERROR) << "CalculateChunkSizes: Error reading handler size."
+                << std::endl;
     return false;
-  std::uint64_t this_avg_chunk_size = kDefaultChunkSize;
+  }
+
+  if (file_size <= kMinAcceptableFileSize) {
+    DLOG(INFO) << "CalculateChunkSizes: File should go directly into DataMap."
+               << std::endl;
+    return true;
+  }
+
+  std::uint64_t this_chunk_size;
+  bool fixed_chunks(false);
+  if (file_size < kMinChunks * kDefaultChunkSize) {
+    *chunk_count = kMinChunks;
+    this_chunk_size = file_size / kMinChunks;
+  } else {
+    *chunk_count = file_size / kDefaultChunkSize;
+    this_chunk_size = kDefaultChunkSize;
+    fixed_chunks = true;
+  }
 
   // If the file is so large it will split into more chunks than kMaxChunks,
   // resize chunks to yield no more than kMaxChunks
-  if (file_size / kMaxChunks > kDefaultChunkSize) {
-    this_avg_chunk_size = file_size / kMaxChunks;
-    *chunk_count = kMaxChunks;
-  } else if (file_size == 4) {
-    // set chunk_size for file of size 4 bytes to avoid only 2 chunks being
-    // generated
-    this_avg_chunk_size = 1;
-    *chunk_count = 3;
-  } else if (file_size / kMinChunks < kDefaultChunkSize) {
-    // If the file is so small it will split into less chunks than kMinChunks,
-    // resize chunks to yield no less than kMinChunks
-    this_avg_chunk_size = file_size / kMinChunks;
-    // If file is not exactly divisible into the minimum number of chunks,
-    // add 1 to chunk size
-    if (file_size % kMinChunks != 0)
-      ++this_avg_chunk_size;
-    *chunk_count = kMinChunks;
-  } else {
-    // otherwise, select chunk size to yield roughly same sized chunks (i.e. no
-    // tiny last chunk)
-    *chunk_count =
-        static_cast<std::uint16_t>(file_size / this_avg_chunk_size);
-    this_avg_chunk_size = (file_size / *chunk_count);
-  }
+//  if (file_size / kMaxChunks > kDefaultChunkSize) {
+//    this_avg_chunk_size = file_size / kMaxChunks;
+//    *chunk_count = kMaxChunks;
+//  } else if (file_size == 4) {
+//    // set chunk_size for file of size 4 bytes to avoid only 2 chunks being
+//    // generated
+//    this_avg_chunk_size = 1;
+//    *chunk_count = 3;
+//  } else if (file_size / kMinChunks < kDefaultChunkSize) {
+//    // If the file is so small it will split into less chunks than kMinChunks,
+//    // resize chunks to yield no less than kMinChunks
+//    this_avg_chunk_size = file_size / kMinChunks;
+//    // If file is not exactly divisible into the minimum number of chunks,
+//    // add 1 to chunk size
+//    if (file_size % kMinChunks != 0)
+//      ++this_avg_chunk_size;
+//    *chunk_count = kMinChunks;
+//  } else {
+//    // otherwise, select chunk size to yield roughly same sized chunks (i.e. no
+//    // tiny last chunk)
+//    *chunk_count =
+//        static_cast<std::uint16_t>(file_size / this_avg_chunk_size);
+//    this_avg_chunk_size = (file_size / *chunk_count);
+//  }
 
   // iterate through each chunk except the last, adding or subtracting bytes
   // based on the file hash
-  boost::uint64_t remainder = file_size;
-
-  for (int this_chunk = 0; this_chunk < *chunk_count - 1; ++this_chunk) {
+  std::uint64_t remainder(file_size);
+  std::uint16_t limit(fixed_chunks ? *chunk_count : *chunk_count - 1);
+  for (int this_chunk = 0; this_chunk < limit; ++this_chunk) {
     // get maximum ratio to add/subtract from chunks so that we're not left
     // with a negative-sized final chunk should all previous chunks have had
     // maximum bytes added to them.
-    double max_ratio = 1.0 / (kMaxChunks * 16);
-
-    std::uint64_t this_chunk_size =
-        static_cast<std::uint64_t>(this_avg_chunk_size *
-        (1 + (max_ratio * ChunkAddition(file_hash.c_str()[this_chunk]))));
-    if (this_chunk_size == 0)
-      ++this_chunk_size;
+//    double max_ratio = 1.0 / (kMaxChunks * 16);
+//
+//        static_cast<std::uint64_t>(this_avg_chunk_size *
+//        (1 + (max_ratio * ChunkAddition(file_hash.c_str()[this_chunk]))));
+//    if (this_chunk_size == 0)
+//      ++this_chunk_size;
     data_map->add_chunk_size(this_chunk_size);
     remainder -= this_chunk_size;
   }
   // get size of last chunk
-  data_map->add_chunk_size(remainder);
+//  std::cout << remainder << " - " << file_size << " - " << *chunk_count
+//            << std::endl;
+  if (remainder != 0) {
+    data_map->add_chunk_size(remainder);
+    if (fixed_chunks)
+      ++(*chunk_count);
+  }
+
   return true;
 }
 
@@ -549,10 +577,13 @@ int ChunkAddition(char hex_digit) {
 
 bool GeneratePreEncryptionHashes(std::shared_ptr<DataIOHandler> input_handler,
                                  protobuf::DataMap *data_map) {
-  if (!input_handler->Open())
+  if (!input_handler.get() || !input_handler->Open() || !data_map) {
+    DLOG(ERROR) << "GeneratePreEncryptionHashes: Handler null or closed or "
+                   "data_map null." << std::endl;
     return false;
-  std::uint64_t pointer = 0;
+  }
 
+  std::uint64_t pointer(0);
   int chunk_count = data_map->chunk_size_size();
   for (int i = 0; i < chunk_count; ++i) {
     std::uint64_t this_chunk_size = data_map->chunk_size(i);
@@ -562,9 +593,11 @@ bool GeneratePreEncryptionHashes(std::shared_ptr<DataIOHandler> input_handler,
     std::string buffer;
     if (!input_handler->SetGetPointer(pointer) ||
         !input_handler->Read(buffer_size, &buffer)) {
+      DLOG(ERROR) << "GeneratePreEncryptionHashes: Failed to set pointer or"
+                     " to read from the handler." << std::endl;
       return false;
     }
-    std::string pre_encryption_hash = crypto::Hash<crypto::SHA512>(buffer);
+    std::string pre_encryption_hash(crypto::Hash<crypto::SHA512>(buffer));
     pointer += this_chunk_size;
     // ensure uniqueness of all pre-encryption hashes
     // HashUnique(pre_encryption_hash, data_map, true);
@@ -577,8 +610,10 @@ bool GeneratePreEncryptionHashes(std::shared_ptr<DataIOHandler> input_handler,
 bool ResizeObfuscationHash(const std::string &input,
                            const size_t &required_size,
                            std::string *resized_data) {
-  if (!resized_data)
+  if (!resized_data) {
+    DLOG(ERROR) << "ResizeObfuscationHash: resized_data null." << std::endl;
     return false;
+  }
   resized_data->clear();
   resized_data->reserve(required_size);
   std::string hash(input);

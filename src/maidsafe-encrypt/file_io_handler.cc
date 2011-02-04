@@ -23,13 +23,13 @@
 #include "boost/filesystem.hpp"
 #include "boost/scoped_ptr.hpp"
 
-namespace fs = boost::filesystem;
+namespace fs3 = boost::filesystem3;
 
 namespace maidsafe {
 
 namespace encrypt {
 
-FileIOHandler::FileIOHandler(const fs::path &file_path, bool read)
+FileIOHandler::FileIOHandler(const fs3::path &file_path, bool read)
     : DataIOHandler(read, kFileIOHandler),
       filestream_(),
       kPath_(file_path) {}
@@ -39,10 +39,10 @@ bool FileIOHandler::Open() {
     return true;
   try {
     if (kRead_) {
-      filestream_.open(kPath_, fs::fstream::in | fs::fstream::binary);
+      filestream_.open(kPath_, fs3::fstream::in | fs3::fstream::binary);
     } else {
-      filestream_.open(kPath_, fs::fstream::out | fs::fstream::trunc |
-                       fs::fstream::binary);
+      filestream_.open(kPath_, fs3::fstream::out | fs3::fstream::trunc |
+                       fs3::fstream::binary);
     }
     return filestream_.good();
   } catch(...) {
@@ -56,7 +56,7 @@ void FileIOHandler::Close() {
 
 bool FileIOHandler::Size(std::uint64_t *size) {
   try {
-    *size = fs::file_size(kPath_);
+    *size = fs3::file_size(kPath_);
   } catch(...) {
     *size = 0;
     return false;
@@ -70,7 +70,7 @@ bool FileIOHandler::Read(const size_t &size, std::string *output) {
     return false;
   try {
     std::uint64_t current_position = filestream_.tellg();
-    std::uint64_t file_size = fs::file_size(kPath_);
+    std::uint64_t file_size = fs3::file_size(kPath_);
     if (current_position >= file_size)
       return true;
     std::uint64_t amount_to_read = std::min(file_size - current_position,

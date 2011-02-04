@@ -52,6 +52,7 @@ const std::uint64_t kDefaultChunkSize(262144);
 // 2*IV for AES encryption, i.e. multiple of 32.
 const std::uint16_t kDefaultChunkletSize(16384);
 const std::uint16_t kMinChunkletSize(32);
+const std::uint16_t kMinAcceptableFileSize(1024);
 const std::string kNoCompressType[] = {".jpg", ".jpeg", ".jpe", ".jfif",
   ".gif", ".png", ".mp3", ".mp4", ".0", ".000", ".7z", ".ace", ".ain", ".alz",
   ".apz", ".ar", ".arc", ".ari", ".arj", ".axx", ".ba", ".bh", ".bhx", ".boo",
