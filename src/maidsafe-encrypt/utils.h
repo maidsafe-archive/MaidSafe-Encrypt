@@ -24,8 +24,15 @@
 #include <vector>
 
 #include "boost/filesystem.hpp"
+#include "maidsafe-encrypt/data_map.h"
+#include "maidsafe-encrypt/version.h"
 
-namespace fs = boost::filesystem;
+#if MAIDSAFE_ENCRYPT_VERSION < 2
+#error This API is not compatible with the installed library.\
+  Please update the maidsafe-encrypt library.
+#endif
+
+namespace fs = boost::filesystem3;
 
 namespace maidsafe {
 
@@ -33,53 +40,28 @@ namespace encrypt {
 
 class DataIOHandler;
 
-namespace protobuf { class DataMap; }
-
 namespace utils {
 
 /// Generates encrypted chunks from single source input data.
 int EncryptContent(std::shared_ptr<DataIOHandler> input_handler,
                    const fs::path &output_dir,
-                   protobuf::DataMap *data_map,
-                   std::map<std::string, fs::path> *to_chunk_store);
+                   bool try_compression,
+                   DataMap *data_map);
 
 /// Assembles output data from encrypted chunks.
-int DecryptContent(const protobuf::DataMap &data_map,
-                   std::vector<fs::path> chunk_paths,
-                   const std::uint64_t &offset,
+int DecryptContent(const DataMap &data_map,
+                   const fs::path &input_dir,
                    std::shared_ptr<DataIOHandler> output_handler);
 
-/// Serialises, obfuscates and encrypts a DataMap.
-int EncryptDataMap(const protobuf::DataMap &data_map,
-                   const std::string &this_directory_key,
-                   const std::string &parent_directory_key,
-                   std::string *encrypted_data_map);
-
-/// Decrypts, de-obfuscates and deserialises a DataMap.
-int DecryptDataMap(const std::string &encrypted_data_map,
-                   const std::string &this_directory_key,
-                   const std::string &parent_directory_key,
-                   protobuf::DataMap *data_map);
-
-/// Checks if the input data is large enough to chunk.
-int CheckEntry(std::shared_ptr<DataIOHandler> input_handler);
+/// Checks file extension against a list of known uncompressible file formats.
+bool IsCompressedFile(const fs::path &file_path);
 
 /// Estimates whether compression could result in space savings.
 bool CheckCompressibility(std::shared_ptr<DataIOHandler> input_handler);
 
 /// Determines the sizes of the chunks the input data will be split into.
-bool CalculateChunkSizes(const std::string &file_hash,
-                         std::shared_ptr<DataIOHandler> input_handler,
-                         protobuf::DataMap *data_map,
-                         std::uint16_t *chunk_count);
-
-/// Deterministically calculates a variation of chunk size.
-int ChunkAddition(char hex_digit);
-
-/// Populates a DataMap with pre-encryption hashes of all chunks.
-bool GeneratePreEncryptionHashes(
-    std::shared_ptr<DataIOHandler> input_handler,
-    protobuf::DataMap *data_map);
+bool CalculateChunkSizes(std::uint64_t data_size,
+                         std::vector<std::uint32_t> *chunk_sizes);
 
 /// Deterministically expands an input string to the required size.
 bool ResizeObfuscationHash(const std::string &input,

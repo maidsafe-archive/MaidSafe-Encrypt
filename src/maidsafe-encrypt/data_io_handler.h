@@ -24,12 +24,12 @@
 #include "boost/filesystem/fstream.hpp"
 #include "maidsafe-encrypt/version.h"
 
-#if MAIDSAFE_ENCRYPT_VERSION < 1
+#if MAIDSAFE_ENCRYPT_VERSION < 2
 #error This API is not compatible with the installed library.\
   Please update the maidsafe-encrypt library.
 #endif
 
-namespace fs = boost::filesystem;
+namespace fs = boost::filesystem3;
 
 namespace maidsafe {
 
@@ -38,8 +38,6 @@ namespace encrypt {
 class DataIOHandler {
  public:
   enum IOHandlerType { kFileIOHandler, kStringIOHandler };
-  DataIOHandler(bool read, IOHandlerType iohandler_type)
-      : kRead_(read), kIOHandlerType_(iohandler_type) {}
   virtual ~DataIOHandler() {}
 
   /// Opens access to the data
@@ -76,13 +74,18 @@ class DataIOHandler {
   virtual bool SetGetPointer(const std::uint64_t &position) = 0;
   IOHandlerType Type() const { return kIOHandlerType_; }
  protected:
+  DataIOHandler(bool read, IOHandlerType iohandler_type)
+      : kRead_(read), kIOHandlerType_(iohandler_type) {}
   const bool kRead_;
   const IOHandlerType kIOHandlerType_;
+ private:
+  DataIOHandler(const DataIOHandler&);
+  DataIOHandler& operator=(const DataIOHandler&);
 };
 
 class StringIOHandler : public DataIOHandler {
  public:
-  StringIOHandler(std::shared_ptr<std::string> data, bool read);
+  StringIOHandler(std::string *data, bool read);
   ~StringIOHandler() {}
   virtual bool Open();
   virtual void Close();
@@ -92,7 +95,9 @@ class StringIOHandler : public DataIOHandler {
   virtual bool SetGetPointer(const std::uint64_t &position);
   std::string Data() const { return *data_; }
  private:
-  std::shared_ptr<std::string> data_;
+  StringIOHandler(const StringIOHandler&);
+  StringIOHandler& operator=(const StringIOHandler&);
+  std::string *data_;
   bool is_open_;
   size_t readptr_;
 };
@@ -109,6 +114,8 @@ class FileIOHandler : public DataIOHandler {
   virtual bool SetGetPointer(const std::uint64_t &position);
   fs::path FilePath() const { return kPath_; }
  private:
+  FileIOHandler(const FileIOHandler&);
+  FileIOHandler& operator=(const FileIOHandler&);
   fs::fstream filestream_;
   const fs::path kPath_;
 };

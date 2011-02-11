@@ -237,15 +237,6 @@ IF((NOT WIN32) OR MSVC)
 ENDIF()
 
 ###################################################################################################
-# Protocol Buffers library search                                                                 #
-###################################################################################################
-FILE(GLOB_RECURSE PROTO_FILES RELATIVE ${${PROJECT_NAME}_SOURCE_DIR} "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe-encrypt/*.proto")
-INCLUDE(${${PROJECT_NAME}_ROOT}/build/maidsafe_FindProtobuf.cmake)
-SET(INCLUDE_DIRS ${INCLUDE_DIRS} ${Protobuf_INCLUDE_DIR})
-SET(LIBS_DIRS ${LIBS_DIRS} ${Protobuf_LIBRARY_DIR})
-SET(LIBS_DIRS_DEBUG ${LIBS_DIRS_DEBUG} ${Protobuf_LIBRARY_DIR_DEBUG})
-
-###################################################################################################
 # Python library search                                                                           #
 ###################################################################################################
 UNSET(PYTHON_EXECUTABLE CACHE)
@@ -389,7 +380,7 @@ IF(Glog_FOUND)
   ADD_DEFINITIONS(-DHAVE_GLOG)
 ENDIF()
 ADD_DEFINITIONS(-DBOOST_FILESYSTEM_NO_DEPRECATED -DBOOST_FILESYSTEM_VERSION=3)
-TARGET_LINK_LIBRARIES(encrypt maidsafe_dht_LIBRARY ${Boost_FILESYSTEM_LIBRARY} ${Boost_SYSTEM_LIBRARY} ${Protobuf_LIBRARY})
+TARGET_LINK_LIBRARIES(encrypt maidsafe_dht_LIBRARY ${Boost_FILESYSTEM_LIBRARY} ${Boost_SYSTEM_LIBRARY})
 TARGET_LINK_LIBRARIES(TESTencrypt encrypt ${Gtest_LIBRARY})
 IF(UNIX)
   IF(APPLE)
@@ -699,7 +690,9 @@ MESSAGE("=======================================================================
 MESSAGE("")
 
 SET(MAIDSAFE_ENCRYPT_INSTALL_FILES
+      maidsafe-encrypt/config.h
       maidsafe-encrypt/data_io_handler.h
+      maidsafe-encrypt/data_map.h
       maidsafe-encrypt/self_encryption.h
       maidsafe-encrypt/version.h)
 

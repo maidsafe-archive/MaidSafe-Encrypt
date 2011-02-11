@@ -34,17 +34,15 @@ class StringIOHandlerTest : public testing::Test {
       : kMinSize_(1000),
         kDataSize_((RandomUint32() % 249000) + kMinSize_),
         // ensure input contains null chars
-        kData_(std::string(10, 0) + RandomString(kDataSize_ - 10)),
-        data_(new std::string(kData_)) {}
+        kData_(std::string(10, 0) + RandomString(kDataSize_ - 10)) {}
  protected:
   const size_t kMinSize_, kDataSize_;
-  const std::string kData_;
-  std::shared_ptr<std::string> data_;
+  std::string kData_;
 };
 
 TEST_F(StringIOHandlerTest, BEH_ENCRYPT_TestReadFromString) {
   // Check before opening
-  StringIOHandler input_handler(data_, true);
+  StringIOHandler input_handler(&kData_, true);
   EXPECT_EQ(kData_, input_handler.Data());
   std::uint64_t tempsize;
   EXPECT_TRUE(input_handler.Size(&tempsize));
@@ -98,8 +96,8 @@ TEST_F(StringIOHandlerTest, BEH_ENCRYPT_TestReadFromString) {
   EXPECT_EQ(kData_.substr(0, test_size), read_data);
 
   // Check empty string handling
-  std::shared_ptr<std::string> empty_data(new std::string);
-  StringIOHandler empty_input_handler(empty_data, true);
+  std::string empty_data;
+  StringIOHandler empty_input_handler(&empty_data, true);
   EXPECT_TRUE(empty_input_handler.Data().empty());
   EXPECT_TRUE(empty_input_handler.Size(&tempsize));
   EXPECT_EQ(0U, tempsize);
@@ -111,7 +109,7 @@ TEST_F(StringIOHandlerTest, BEH_ENCRYPT_TestReadFromString) {
 
 TEST_F(StringIOHandlerTest, BEH_ENCRYPT_TestSetGetPointerString) {
   // Open and apply offset
-  StringIOHandler input_handler(data_, true);
+  StringIOHandler input_handler(&kData_, true);
   size_t test_size(kMinSize_ / 10), offset(kMinSize_ / 2);
   EXPECT_FALSE(input_handler.SetGetPointer(test_size));
   std::string read_data;
@@ -135,7 +133,7 @@ TEST_F(StringIOHandlerTest, BEH_ENCRYPT_TestSetGetPointerString) {
 
 TEST_F(StringIOHandlerTest, BEH_ENCRYPT_WriteToString) {
   // Check before opening
-  StringIOHandler output_handler(data_, false);
+  StringIOHandler output_handler(&kData_, false);
   EXPECT_EQ(kData_, output_handler.Data());
   std::uint64_t tempsize;
   EXPECT_TRUE(output_handler.Size(&tempsize));

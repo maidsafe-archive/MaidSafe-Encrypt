@@ -20,6 +20,13 @@
 #include <cstdint>
 #include <string>
 
+#include "maidsafe-encrypt/version.h"
+
+#if MAIDSAFE_ENCRYPT_VERSION < 2
+#error This API is not compatible with the installed library.\
+  Please update the maidsafe-encrypt library.
+#endif
+
 namespace maidsafe {
 
 namespace encrypt {
@@ -28,13 +35,13 @@ enum ReturnCode {
   kSuccess = 0,
   kEncryptError = -200001,
   kDecryptError = -200002,
-  kInputTooSmall = -200003,
+  kInvalidInput = -200003,
   kChunkSizeError = -200004,
   kPreEncryptionHashError = -200005,
   kIoError = -200006,
   kCompressionError = -200007,
   kFilesystemError = -200008,
-  kNoFileHash = -200009,
+  kNoDataHash = -200009,
   kChunkPathNotFound = -200010,
   kFileAlreadyExists = -200011,
   kWrongVersion = -200012,
@@ -44,15 +51,25 @@ enum ReturnCode {
   kOffsetError = -200016
 };
 
-const std::string kVersion("Mk II");
-const std::uint16_t kMinChunks(3);
-const std::uint16_t kMaxChunks(40);
-const std::uint64_t kDefaultChunkSize(262144);
-// static_cast<boost::uint16_t>(kDefaultChunkletSize) MUST be a multiple of
-// 2*IV for AES encryption, i.e. multiple of 32.
-const std::uint16_t kDefaultChunkletSize(16384);
-const std::uint16_t kMinChunkletSize(32);
-const std::uint16_t kMinAcceptableFileSize(1024);
+/// Default level of compression for data
+const std::uint16_t kCompressionLevel(9);
+
+/// Minimum number of chunks generated per data item
+const std::uint32_t kMinChunks(3);
+
+/// Maximum size for a chunk, must fit into memory 5 times
+const std::uint32_t kMaxChunkSize(1 << 18);  // 256 KB
+
+/// Maximum size for a chunk to be included directly in the DataMap
+const std::uint32_t kMaxIncludableChunkSize(1 << 8);  // 256 Bytes
+
+/// Maximum supported size for a data item
+const std::uint64_t kMaxDataSize(((1ul << 32) - 1) * kMaxChunkSize);  // < 1 PB
+
+/// Maximum size for a data item to be included directly in the DataMap
+const std::uint32_t kMaxIncludableDataSize(1 << 10);  // 1 KB
+
+/// Array of file extensions indicating already existing compression
 const std::string kNoCompressType[] = {".jpg", ".jpeg", ".jpe", ".jfif",
   ".gif", ".png", ".mp3", ".mp4", ".0", ".000", ".7z", ".ace", ".ain", ".alz",
   ".apz", ".ar", ".arc", ".ari", ".arj", ".axx", ".ba", ".bh", ".bhx", ".boo",
