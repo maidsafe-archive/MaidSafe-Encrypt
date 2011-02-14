@@ -115,16 +115,15 @@ int EncryptContent(std::shared_ptr<DataIOHandler> input_handler,
 
   for (std::uint32_t i = 0; i < chunk_count; ++i) {
     // read the second next chunk and calculate its hash
+    std::uint32_t idx = (i + 2) % 3;
     if (i + 2 < chunk_count) {
-      std::uint32_t idx = (i + 2) % 3;
       if (!input_handler->Read(chunk_sizes[i + 2], &(chunk_content[idx]))) {
         DLOG(ERROR) << "EncryptContent: Failed to read content." << std::endl;
         return kIoError;
       }
       chunk_hash[idx] = crypto::Hash<crypto::SHA512>(chunk_content[idx]);
     } else {
-      std::uint32_t idx = (i + 2) % chunk_count;
-      chunk_hash[idx] = data_map->chunks[idx].pre_hash;
+      chunk_hash[idx] = data_map->chunks[(i + 2) % chunk_count].pre_hash;
       input_handler->Close();
     }
 
@@ -156,10 +155,13 @@ int EncryptContent(std::shared_ptr<DataIOHandler> input_handler,
       ResizeObfuscationHash(chunk_hash[(i + 2) % 3],
                             chunk_content[i % 3].size(), &obfuscation_pad);
 
-      // obfuscate and encrypt chunk data
-      chunk_content[i % 3] = crypto::SymmEncrypt(
-          crypto::XOR(chunk_content[i % 3], obfuscation_pad), encryption_key,
-          encryption_iv);
+      // obfuscate chunk data
+      chunk_content[i % 3] = crypto::XOR(chunk_content[i % 3], obfuscation_pad);
+
+      // encrypt chunk data
+      chunk_content[i % 3] = crypto::SymmEncrypt(chunk_content[i % 3],
+                                                 encryption_key, encryption_iv);
+
       chunk.hash = crypto::Hash<crypto::SHA512>(chunk_content[i % 3]);
       chunk.size = chunk_content[i % 3].size();  // encryption might add padding
       // sic: chunk.content left empty
@@ -225,19 +227,22 @@ int DecryptContent(const DataMap &data_map,
       // read chunk file
       fs::path chunk_path = input_dir / EncodeToHex(chunk.hash);
       try {
+        if (fs::file_size(chunk_path) != std::uintmax_t(chunk.size)) {
+          DLOG(ERROR) << "DecryptContent: Wrong chunk size (actual "
+                      << fs::file_size(chunk_path) << ", expected "
+                      << chunk.size << ") - " << chunk_path.c_str()
+                      << std::endl;
+          return kIoError;
+        }
         fs::ifstream chunk_in(chunk_path, fs::ifstream::binary);
         if (!chunk_in.good()) {
           DLOG(ERROR) << "DecryptContent: Failed to open " << chunk_path.c_str()
                       << std::endl;
           return kIoError;
         }
-        chunk_in >> chunk_content;
+        chunk_content.resize(chunk.size);
+        chunk_in.read(&chunk_content[0], chunk.size);
         chunk_in.close();
-        if (chunk_content.size() != chunk.size) {
-          DLOG(ERROR) << "DecryptContent: Wrong chunk size - "
-                      << chunk_path.c_str() << std::endl;
-          return kIoError;
-        }
       }
       catch(const std::exception &e) {
         DLOG(ERROR) << "DecryptContent: Can't read chunk data from "
@@ -245,18 +250,21 @@ int DecryptContent(const DataMap &data_map,
         return kFilesystemError;
       }
 
-      std::string encryption_hash(data_map.chunks[(i + 1) % chunk_count].hash);
+      std::string encryption_hash(
+          data_map.chunks[(i + 1) % chunk_count].pre_hash);
       std::string encryption_key(
           encryption_hash.substr(0, crypto::AES256_KeySize));
       std::string encryption_iv(
           encryption_hash.substr(crypto::AES256_KeySize,
                                  crypto::AES256_IVSize));
 
-      // decrypt and de-obfuscate chunk data
+      // decrypt chunk data
       chunk_content = crypto::SymmDecrypt(chunk_content, encryption_key,
                                           encryption_iv);
+
+      // de-obfuscate chunk data
       std::string obfuscation_pad;
-      ResizeObfuscationHash(data_map.chunks[(i + 2) % chunk_count].hash,
+      ResizeObfuscationHash(data_map.chunks[(i + 2) % chunk_count].pre_hash,
                             chunk_content.size(), &obfuscation_pad);
       chunk_content = crypto::XOR(chunk_content, obfuscation_pad);
     }

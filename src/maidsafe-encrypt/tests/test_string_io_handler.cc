@@ -34,15 +34,17 @@ class StringIOHandlerTest : public testing::Test {
       : kMinSize_(1000),
         kDataSize_((RandomUint32() % 249000) + kMinSize_),
         // ensure input contains null chars
-        kData_(std::string(10, 0) + RandomString(kDataSize_ - 10)) {}
+        kData_(std::string(10, 0) + RandomString(kDataSize_ - 10)),
+        data_(kData_) {}
  protected:
   const size_t kMinSize_, kDataSize_;
-  std::string kData_;
+  const std::string kData_;
+  std::string data_;
 };
 
 TEST_F(StringIOHandlerTest, BEH_ENCRYPT_TestReadFromString) {
   // Check before opening
-  StringIOHandler input_handler(&kData_, true);
+  StringIOHandler input_handler(&data_, true);
   EXPECT_EQ(kData_, input_handler.Data());
   std::uint64_t tempsize;
   EXPECT_TRUE(input_handler.Size(&tempsize));
@@ -109,7 +111,7 @@ TEST_F(StringIOHandlerTest, BEH_ENCRYPT_TestReadFromString) {
 
 TEST_F(StringIOHandlerTest, BEH_ENCRYPT_TestSetGetPointerString) {
   // Open and apply offset
-  StringIOHandler input_handler(&kData_, true);
+  StringIOHandler input_handler(&data_, true);
   size_t test_size(kMinSize_ / 10), offset(kMinSize_ / 2);
   EXPECT_FALSE(input_handler.SetGetPointer(test_size));
   std::string read_data;
@@ -133,7 +135,7 @@ TEST_F(StringIOHandlerTest, BEH_ENCRYPT_TestSetGetPointerString) {
 
 TEST_F(StringIOHandlerTest, BEH_ENCRYPT_WriteToString) {
   // Check before opening
-  StringIOHandler output_handler(&kData_, false);
+  StringIOHandler output_handler(&data_, false);
   EXPECT_EQ(kData_, output_handler.Data());
   std::uint64_t tempsize;
   EXPECT_TRUE(output_handler.Size(&tempsize));
