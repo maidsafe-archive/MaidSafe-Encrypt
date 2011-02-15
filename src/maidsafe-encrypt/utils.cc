@@ -288,7 +288,8 @@ int DecryptContent(const DataMap &data_map,
 bool IsCompressedFile(const fs::path &file_path) {
   size_t ext_count = sizeof(kNoCompressType) / sizeof(kNoCompressType[0]);
   std::set<std::string> exts(kNoCompressType, kNoCompressType + ext_count);
-  return (exts.find(file_path.extension().string()) != exts.end());
+  return (exts.find(boost::to_lower_copy(file_path.extension().string())) !=
+          exts.end());
 }
 
 /**
