@@ -17,11 +17,8 @@
 #ifndef MAIDSAFE_ENCRYPT_SELF_ENCRYPTION_H_
 #define MAIDSAFE_ENCRYPT_SELF_ENCRYPTION_H_
 
-#include <cstdint>
-#include <memory>
-#include <map>
+#include <iostream>
 #include <string>
-#include <vector>
 
 #include "boost/filesystem.hpp"
 #include "maidsafe-encrypt/data_map.h"
@@ -38,27 +35,38 @@ namespace maidsafe {
 
 namespace encrypt {
 
-/// Generates secure chunks from a file.
-int SelfEncryptFile(const fs::path &input_file,
-                    const fs::path &output_dir,
-                    DataMap *data_map);
+/// Generates secure chunks from a stream.
+int SelfEncrypt(std::istream *input_stream,
+                const fs::path &output_dir,
+                bool try_compression,
+                DataMap *data_map);
 
 /// Generates secure chunks from a string.
-int SelfEncryptString(const std::string &input_string,
-                      const fs::path &output_dir,
-                      DataMap *data_map);
+int SelfEncrypt(const std::string &input_string,
+                const fs::path &output_dir,
+                bool try_compression,
+                DataMap *data_map);
 
-/// Assembles a file from secure chunks.
-int SelfDecryptToFile(const DataMap &data_map,
-                      const fs::path &input_dir,
-                      bool overwrite,
-                      const fs::path &output_file);
+/// Generates secure chunks from a file.
+int SelfEncrypt(const fs::path &input_file,
+                const fs::path &output_dir,
+                DataMap *data_map);
 
-/// Assembles a string from secure chunks.
-int SelfDecryptToString(const DataMap &data_map,
-                        const fs::path &input_dir,
-                        const boost::uint64_t &offset,
-                        std::string *output_string);
+/// Restores data from secure chunks to a stream.
+int SelfDecrypt(const DataMap &data_map,
+                const fs::path &input_dir,
+                std::ostream *output_stream);
+
+/// Restores data from secure chunks to a string.
+int SelfDecrypt(const DataMap &data_map,
+                const fs::path &input_dir,
+                std::string *output_string);
+
+/// Restores data from secure chunks to a file.
+int SelfDecrypt(const DataMap &data_map,
+                const fs::path &input_dir,
+                bool overwrite,
+                const fs::path &output_file);
 
 }  // namespace encrypt
 

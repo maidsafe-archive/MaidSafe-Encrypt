@@ -36,40 +36,47 @@ namespace encrypt {
 
 namespace utils {
 
-int EncryptContent(std::shared_ptr<DataIOHandler> input_handler,
+int EncryptContent(std::istream *input_stream,
                    const fs::path &output_dir,
                    bool try_compression,
                    DataMap *data_map) {
-  if (!data_map || !input_handler.get()) {
+  if (!data_map || !input_stream) {
     DLOG(ERROR) << "EncryptContent: One of the pointers is null." << std::endl;
     return kNullPointer;
   }
 
-  std::uint64_t data_size;
-  if (!input_handler->Size(&data_size) || data_size < 1 ||
-      data_size > kMaxDataSize) {
-    DLOG(ERROR) << "EncryptContent: Input data invalid." << std::endl;
+  // TODO pass size in for proper streaming, avoid seeking
+  input_stream->seekg(0, std::ios::end);
+  std::streampos pos = input_stream->tellg();
+
+  if (!input_stream->good() || pos < 1 || pos > kMaxDataSize) {
+    DLOG(ERROR) << "EncryptContent: Input stream is invalid." << std::endl;
     return kInvalidInput;
   }
+  std::uint64_t data_size(static_cast<std::uint64_t>(pos));
 
-  if (!input_handler->Open() || !input_handler->SetGetPointer(0)) {
-    DLOG(ERROR) << "EncryptContent: Failed to open input." << std::endl;
-    return kIoError;
+  bool compress(false);
+  if (try_compression) {
+    if (2 * data_size > kCompressionSampleSize)
+      input_stream->seekg(0);
+    else
+      input_stream->seekg((data_size - kCompressionSampleSize) / 2);
+    compress = CheckCompressibility(input_stream);
+    if (compress)
+      data_map->compression_type = kGzipCompression;
   }
 
-  bool compress(try_compression && CheckCompressibility(input_handler));
-  if (compress)
-    data_map->compression_type = kGzipCompression;
+  input_stream->seekg(0);
 
   if (data_size <= kMaxIncludableDataSize) {
     // No chunking, include data in DataMap
     data_map->chunks.clear();
-    if (!input_handler->Read(data_size, &(data_map->content))) {
+    data_map->content.resize(data_size);
+    input_stream->read(&(data_map->content[0]), data_size);
+    if (input_stream->bad() || input_stream->gcount() != data_size) {
       DLOG(ERROR) << "EncryptContent: Failed to read content." << std::endl;
       return kIoError;
     }
-    input_handler->Close();
-    data_map->data_hash = crypto::Hash<crypto::SHA512>(data_map->content);
     if (compress) {
       data_map->content = crypto::Compress(data_map->content,
                                            kCompressionLevel);
@@ -80,15 +87,6 @@ int EncryptContent(std::shared_ptr<DataIOHandler> input_handler,
       }
     }
     return kSuccess;
-  }
-
-  // TODO data hash needed?
-  if (input_handler->Type() == DataIOHandler::kFileIOHandler) {
-    data_map->data_hash = crypto::HashFile<crypto::SHA512>(
-        std::static_pointer_cast<FileIOHandler>(input_handler)->FilePath());
-  } else {
-    data_map->data_hash = crypto::Hash<crypto::SHA512>(
-        std::static_pointer_cast<StringIOHandler>(input_handler)->Data());
   }
 
   // FIXME find method to guarantee constant chunk size with compression
@@ -105,8 +103,11 @@ int EncryptContent(std::shared_ptr<DataIOHandler> input_handler,
   std::string chunk_content[3], chunk_hash[3];  // sliding window of size 3
 
   // read the first 2 chunks and calculate their hashes
-  if (!input_handler->Read(chunk_sizes[0], &(chunk_content[0])) ||
-      !input_handler->Read(chunk_sizes[1], &(chunk_content[1]))) {
+  chunk_content[0].resize(chunk_sizes[0]);
+  input_stream->read(&(chunk_content[0][0]), chunk_sizes[0]);
+  chunk_content[1].resize(chunk_sizes[1]);
+  input_stream->read(&(chunk_content[1][0]), chunk_sizes[1]);
+  if (input_stream->bad()) {
     DLOG(ERROR) << "EncryptContent: Failed to read content." << std::endl;
     return kIoError;
   }
@@ -117,14 +118,15 @@ int EncryptContent(std::shared_ptr<DataIOHandler> input_handler,
     // read the second next chunk and calculate its hash
     std::uint32_t idx = (i + 2) % 3;
     if (i + 2 < chunk_count) {
-      if (!input_handler->Read(chunk_sizes[i + 2], &(chunk_content[idx]))) {
+      chunk_content[idx].resize(chunk_sizes[i + 2]);
+      input_stream->read(&(chunk_content[idx][0]), chunk_sizes[i + 2]);
+      if (input_stream->bad() || input_stream->gcount() != chunk_sizes[i + 2]) {
         DLOG(ERROR) << "EncryptContent: Failed to read content." << std::endl;
         return kIoError;
       }
       chunk_hash[idx] = crypto::Hash<crypto::SHA512>(chunk_content[idx]);
     } else {
       chunk_hash[idx] = data_map->chunks[(i + 2) % chunk_count].pre_hash;
-      input_handler->Close();
     }
 
     if (compress) {
@@ -189,12 +191,12 @@ int EncryptContent(std::shared_ptr<DataIOHandler> input_handler,
 
 int DecryptContent(const DataMap &data_map,
                    const fs::path &input_dir,
-                   std::shared_ptr<DataIOHandler> output_handler) {
-  if (!output_handler)
+                   std::ostream *output_stream) {
+  if (!output_stream)
     return kNullPointer;
 
-  if (!output_handler->Open()) {
-    DLOG(ERROR) << "DecryptContent: Output IOhandler failed to open."
+  if (!output_stream->good()) {
+    DLOG(ERROR) << "DecryptContent: Output stream is invalid."
                 << std::endl;
     return kIoError;
   }
@@ -202,20 +204,16 @@ int DecryptContent(const DataMap &data_map,
   std::uint32_t chunk_count(data_map.chunks.size());
   if (chunk_count == 0) {
     if (!data_map.content.empty()) {
-      if (data_map.compression_type == kNoCompression)
-        output_handler->Write(data_map.content);
-      else if (data_map.compression_type == kGzipCompression)
-        output_handler->Write(crypto::Uncompress(data_map.content));
+      if (data_map.compression_type == kNoCompression) {
+        output_stream->write(data_map.content.data(), data_map.content.size());
+      } else if (data_map.compression_type == kGzipCompression) {
+        std::string content(crypto::Uncompress(data_map.content));
+        output_stream->write(content.data(), content.size());
+      }
+      if (output_stream->bad())
+        return kIoError;
     }
-    output_handler->Close();
     return kSuccess;
-  }
-
-  // Decrypt chunklets
-  if (!output_handler->Open()) {
-    DLOG(ERROR) << "DecryptContent: Output IOhandler failed to open."
-                << std::endl;
-    return kIoError;
   }
 
   for (std::uint32_t i = 0; i < chunk_count; ++i) {
@@ -279,10 +277,9 @@ int DecryptContent(const DataMap &data_map,
       return kDecryptError;
     }
 
-    output_handler->Write(chunk_content);
+    output_stream->write(chunk_content.data(), chunk_content.size());
   }
-  output_handler->Close();
-  return kSuccess;
+  return output_stream->bad() ? kIoError : kSuccess;
 }
 
 bool IsCompressedFile(const fs::path &file_path) {
@@ -293,35 +290,29 @@ bool IsCompressedFile(const fs::path &file_path) {
 }
 
 /**
- * Takes a small part from the middle of the input data and tries to compress
- * it. If that yields a gain of at least 10%, we assume this can be extrapolated
- * to all the data.
+ * Reads a small part from the current stream position and tries to compress
+ * it. If that yields savings of at least 10%, we assume this can be
+ * extrapolated to all the data.
  *
- * @param input_handler The data source.
+ * @pre Stream offset at middle of data or an otherwise representative spot.
+ * @param input_stream The data source.
  * @return True if input data is likely compressible.
  */
-bool CheckCompressibility(std::shared_ptr<DataIOHandler> input_handler) {
-  size_t test_chunk_size = 256;
-  size_t pointer = 0;
-  std::uint64_t pre_comp_file_size = 0;
-  if (!input_handler->Size(&pre_comp_file_size))
+bool CheckCompressibility(std::istream* input_stream) {
+  if (!input_stream->good())
     return false;
 
-  if (!input_handler->Open())
+  std::string test_data(kCompressionSampleSize, 0);
+  input_stream->read(&(test_data[0]), kCompressionSampleSize);
+  test_data.resize(input_stream->gcount());
+
+  if (test_data.empty())
     return false;
-  if (2 * test_chunk_size > pre_comp_file_size)
-    test_chunk_size = static_cast<size_t>(pre_comp_file_size);
-  else
-    pointer = static_cast<size_t>(pre_comp_file_size / 2);
-  std::string uncompressed_test_chunk;
-  if (!input_handler->SetGetPointer(pointer) ||
-      !input_handler->Read(test_chunk_size, &uncompressed_test_chunk)) {
-    return false;
-  }
-  input_handler->Close();
-  std::string test_chunk(crypto::Compress(uncompressed_test_chunk, 9));
-  if (!test_chunk.empty()) {
-    double ratio = test_chunk.size() / test_chunk_size;
+
+  std::string compressed_test_data(crypto::Compress(test_data,
+                                                    kCompressionLevel));
+  if (!compressed_test_data.empty()) {
+    double ratio = compressed_test_data.size() / test_data.size();
     return (ratio <= 0.9);
   } else {
     DLOG(ERROR) << "CheckCompressibility: Error checking compressibility."

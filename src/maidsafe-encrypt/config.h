@@ -54,6 +54,9 @@ enum ReturnCode {
 /// Default level of compression for data
 const std::uint16_t kCompressionLevel(9);
 
+/// Amount of data to be tested for compressibility
+const std::uint32_t kCompressionSampleSize = 256;
+
 /// Minimum number of chunks generated per data item
 const std::uint32_t kMinChunks(3);
 
@@ -64,7 +67,7 @@ const std::uint32_t kMaxChunkSize(1 << 18);  // 256 KB
 const std::uint32_t kMaxIncludableChunkSize(1 << 8);  // 256 Bytes
 
 /// Maximum supported size for a data item
-const std::uint64_t kMaxDataSize(((1ul << 32) - 1) * kMaxChunkSize);  // < 1 PB
+const std::uint64_t kMaxDataSize(((1ull << 32) - 1) * kMaxChunkSize);  // < 1 PB
 
 /// Maximum size for a data item to be included directly in the DataMap
 const std::uint32_t kMaxIncludableDataSize(1 << 10);  // 1 KB

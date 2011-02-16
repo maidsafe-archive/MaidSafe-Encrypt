@@ -52,8 +52,7 @@ struct ChunkDetails {
 /// Holds information about the building blocks of a data item
 struct DataMap {
   DataMap()
-    : data_hash(), compression_type(kNoCompression), chunks(), content() {}
-  std::string data_hash;   ///< Hash of the original data item
+    : compression_type(kNoCompression), chunks(), content() {}
   CompressionType compression_type;  ///< Type of compression used for contents
   std::vector<ChunkDetails> chunks;  ///< Information about the chunks
   std::string content;     ///< Data item contents, if small enough

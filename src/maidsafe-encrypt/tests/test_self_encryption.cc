@@ -14,8 +14,10 @@
  * @date  2008-09-09
  */
 
-#include <memory>
 #include <cstdint>
+#include <iostream>
+#include <memory>
+#include <sstream>
 
 #include "boost/filesystem.hpp"
 #include "boost/filesystem/fstream.hpp"
@@ -24,7 +26,6 @@
 #include "maidsafe-dht/common/crypto.h"
 #include "maidsafe-dht/common/utils.h"
 #include "maidsafe-encrypt/config.h"
-#include "maidsafe-encrypt/data_io_handler.h"
 #include "maidsafe-encrypt/data_map.h"
 #include "maidsafe-encrypt/self_encryption.h"
 #include "maidsafe-encrypt/utils.h"
@@ -124,9 +125,6 @@ class SelfEncryptionTest : public testing::Test {
         kChunksDir_(kRootDir_ / "Chunks") {}
   ~SelfEncryptionTest() {}
  protected:
-  typedef std::shared_ptr<DataIOHandler> DataIoHandlerPtr;
-  typedef std::shared_ptr<std::string> StringPtr;
-
   void SetUp() {
     if (fs::exists(kRootDir_))
       fs::remove_all(kRootDir_);
@@ -164,25 +162,18 @@ TEST_F(SelfEncryptionTest, BEH_ENCRYPT_IsCompressedFile) {
 }
 
 TEST_F(SelfEncryptionTest, BEH_ENCRYPT_CheckCompressibility) {
-  //  make compressible .txt file
-  fs::path path1(kFilesDir_ / "compressible.txt");
-  fs::ofstream ofs1;
-  ofs1.open(path1);
+  std::stringstream stream;
+
+  //  make compressible string
   for (int i = 0; i < 1000; ++i)
-    ofs1 << "repeated text ";
-  ofs1.close();
+    stream << "repeated text ";
+  stream.seekg(stream.tellp() / 2);
+  EXPECT_TRUE(utils::CheckCompressibility(&stream));
 
-  //  make incompressible .txt file
-  fs::path path2(kFilesDir_ / "incompressible.txt");
-  fs::ofstream ofs2;
-  ofs2.open(path2);
-  ofs2 << "small text";
-  ofs2.close();
-
-  DataIoHandlerPtr input_handler1(new FileIOHandler(path1, true));
-  DataIoHandlerPtr input_handler2(new FileIOHandler(path2, true));
-  EXPECT_TRUE(utils::CheckCompressibility(input_handler1));
-  EXPECT_FALSE(utils::CheckCompressibility(input_handler2));
+  //  make incompressible string
+  stream.str("small text");
+  stream.seekg(0);
+  EXPECT_FALSE(utils::CheckCompressibility(&stream));
 }
 
 TEST_F(SelfEncryptionTest, BEH_ENCRYPT_CalculateChunkSizes) {
@@ -217,7 +208,7 @@ TEST_F(SelfEncryptionTest, BEH_ENCRYPT_CalculateChunkSizes) {
   data_size = kMaxChunkSize * kMinChunks;
   EXPECT_TRUE(utils::CalculateChunkSizes(data_size, &chunk_sizes));
   EXPECT_EQ(kMinChunks, chunk_sizes.size());
-  for (int i = 0; i < chunk_sizes.size(); ++i)
+  for (size_t i = 0; i < chunk_sizes.size(); ++i)
     EXPECT_EQ(kMaxChunkSize, chunk_sizes[i]);
   EXPECT_EQ(data_size, test_se::TotalChunkSize(chunk_sizes));
 
@@ -234,36 +225,6 @@ TEST_F(SelfEncryptionTest, BEH_ENCRYPT_CalculateChunkSizes) {
       EXPECT_EQ(extra, chunk_sizes[i]);
   EXPECT_EQ(data_size, test_se::TotalChunkSize(chunk_sizes));
 }
-
-/*
-TEST_F(SelfEncryptionTest, BEH_ENCRYPT_GeneratePreEncryptionHashes) {
-  fs::path path1(kInputDir_ / "GeneratePreEncryptionHashesTest01.txt");
-  fs::ofstream ofs1;
-  ofs1.open(path1);
-  ofs1 << "abc";
-  ofs1 << "abcdefghbcdefghicdefghijdefghijkefghijklfghijklmghijklmnhijklmnoijkl"
-          "mnopjklmnopqklmnopqrlmnopqrsmnopqrstnopqrstu";
-  ofs1 << "abc";
-  ofs1.close();
-  protobuf::DataMap data_map;
-  data_map.add_chunk_size(3);
-  data_map.add_chunk_size(112);
-  data_map.add_chunk_size(3);
-
-  DataIoHandlerPtr input_handler1(new FileIOHandler(path1, true));
-  EXPECT_TRUE(utils::GeneratePreEncryptionHashes(input_handler1, &data_map));
-  EXPECT_EQ(3, data_map.chunk_name_size());
-  EXPECT_EQ(EncodeToHex(data_map.chunk_name(0)),
-        "ddaf35a193617abacc417349ae20413112e6fa4e89a97ea20a9eeee64b55d39a219299"
-        "2a274fc1a836ba3c23a3feebbd454d4423643ce80e2a9ac94fa54ca49f");
-  EXPECT_EQ(EncodeToHex(data_map.chunk_name(1)),
-        "8e959b75dae313da8cf4f72814fc143f8f7779c6eb9f7fa17299aeadb6889018501d28"
-        "9e4900f7e4331b99dec4b5433ac7d329eeb6dd26545e96e55b874be909");
-  EXPECT_EQ(EncodeToHex(data_map.chunk_name(2)),
-        "ddaf35a193617abacc417349ae20413112e6fa4e89a97ea20a9eeee64b55d39a219299"
-        "2a274fc1a836ba3c23a3feebbd454d4423643ce80e2a9ac94fa54ca49f");
-}
-*/
 
 TEST_F(SelfEncryptionTest, BEH_ENCRYPT_ResizeObfuscationHash) {
   std::string input("abc");
@@ -284,42 +245,40 @@ TEST_F(SelfEncryptionTest, BEH_ENCRYPT_ResizeObfuscationHash) {
   EXPECT_FALSE(utils::ResizeObfuscationHash(hash, 10, NULL));
 }
 
-TEST_F(SelfEncryptionTest, BEH_ENCRYPT_SelfEnDecryptFile) {
-  fs::path path_in(kFilesDir_ / "SelfEncryptFilesTestIn.dat");
-  fs::path path_out(kFilesDir_ / "SelfEncryptFilesTestOut.dat");
-
+TEST_F(SelfEncryptionTest, BEH_ENCRYPT_SelfEnDecryptStream) {
   {  // Invalid calls
     DataMap data_map;
-    EXPECT_EQ(kInvalidInput, SelfEncryptFile(path_in, kChunksDir_, &data_map));
-    test_se::CreateRandomFile(path_in, 0);
-    EXPECT_EQ(kInvalidInput, SelfEncryptFile(path_in, kChunksDir_, &data_map));
-    test_se::CreateRandomFile(path_in, 1);
-    EXPECT_EQ(kNullPointer, SelfEncryptFile(path_in, kChunksDir_, NULL));
+    std::istringstream stream;
+    EXPECT_EQ(kInvalidInput,
+              SelfEncrypt(&stream, kChunksDir_, false, &data_map));
+    stream.str("test");
+    EXPECT_EQ(kNullPointer,
+              SelfEncrypt(&stream, kChunksDir_, false, NULL));
+    EXPECT_EQ(kNullPointer,
+              SelfEncrypt(NULL, kChunksDir_, false, &data_map));
   }
 
-  {  // Small file, should end up completely in DM
+  {  // Little data, should end up completely in DM
     DataMap data_map;
-    test_se::CreateRandomFile(path_in, kMaxIncludableDataSize);
-    std::string hash_in = crypto::HashFile<crypto::SHA512>(path_in);
-    EXPECT_EQ(kSuccess, SelfEncryptFile(path_in, kChunksDir_, &data_map));
+    std::istringstream stream_in(RandomString(kMaxIncludableDataSize));
+    std::string hash_in = crypto::Hash<crypto::SHA512>(stream_in.str());
+    EXPECT_EQ(kSuccess, SelfEncrypt(&stream_in, kChunksDir_, false, &data_map));
     EXPECT_EQ(0, data_map.chunks.size());
-    EXPECT_EQ(hash_in, data_map.data_hash);
-    if (data_map.compression_type == kNoCompression) {
-      EXPECT_EQ(kMaxIncludableDataSize, data_map.content.size());
-      EXPECT_EQ(hash_in, crypto::Hash<crypto::SHA512>(data_map.content));
-    }
-    ASSERT_EQ(kSuccess,
-              SelfDecryptToFile(data_map, kChunksDir_, true, path_out));
-    EXPECT_EQ(hash_in, crypto::HashFile<crypto::SHA512>(path_out));
+    EXPECT_EQ(kNoCompression, data_map.compression_type);
+    EXPECT_EQ(kMaxIncludableDataSize, data_map.content.size());
+    EXPECT_EQ(hash_in, crypto::Hash<crypto::SHA512>(data_map.content));
+    std::ostringstream stream_out;
+    ASSERT_EQ(kSuccess, SelfDecrypt(data_map, kChunksDir_, &stream_out));
+    EXPECT_EQ(stream_in.str(), stream_out.str());
   }
 
-  {  // File just big enough to chunk
+  {  // Data just big enough to chunk
     DataMap data_map;
-    test_se::CreateRandomFile(path_in, kMaxIncludableDataSize + 1);
-    std::string hash_in = crypto::HashFile<crypto::SHA512>(path_in);
-    EXPECT_EQ(kSuccess, SelfEncryptFile(path_in, kChunksDir_, &data_map));
+    std::istringstream stream_in(RandomString(kMaxIncludableDataSize + 1));
+    std::string hash_in = crypto::Hash<crypto::SHA512>(stream_in.str());
+    EXPECT_EQ(kSuccess, SelfEncrypt(&stream_in, kChunksDir_, false, &data_map));
     EXPECT_EQ(kMinChunks, data_map.chunks.size());
-    EXPECT_EQ(hash_in, data_map.data_hash);
+    EXPECT_EQ(kNoCompression, data_map.compression_type);
     EXPECT_TRUE(data_map.content.empty());
     std::uint64_t total_size(0);
     for (auto it = data_map.chunks.begin(); it < data_map.chunks.end(); ++it) {
@@ -331,24 +290,24 @@ TEST_F(SelfEncryptionTest, BEH_ENCRYPT_SelfEnDecryptFile) {
       EXPECT_GE(kMaxChunkSize, it->size);
       EXPECT_EQ(it->hash, crypto::HashFile<crypto::SHA512>(chunk_path));
       EXPECT_FALSE(it->pre_hash.empty());
+      EXPECT_EQ(it->size, it->pre_size);  // no compression
       total_size += it->pre_size;
     }
     EXPECT_EQ(kMaxIncludableDataSize + 1, total_size);
-    ASSERT_EQ(kSuccess,
-              SelfDecryptToFile(data_map, kChunksDir_, true, path_out));
-    EXPECT_EQ(kMaxIncludableDataSize + 1, fs::file_size(path_out));
-    EXPECT_EQ(hash_in, crypto::HashFile<crypto::SHA512>(path_out));
+    std::ostringstream stream_out;
+    ASSERT_EQ(kSuccess, SelfDecrypt(data_map, kChunksDir_, &stream_out));
+    EXPECT_EQ(stream_in.str(), stream_out.str());
   }
 
   {  // Last chunk ends up in DM
     DataMap data_map;
     std::uint64_t data_size(kMinChunks * kMaxChunkSize +
                             kMaxIncludableChunkSize);
-    test_se::CreateRandomFile(path_in, data_size);
-    std::string hash_in = crypto::HashFile<crypto::SHA512>(path_in);
-    EXPECT_EQ(kSuccess, SelfEncryptFile(path_in, kChunksDir_, &data_map));
+    std::istringstream stream_in(RandomString(data_size));
+    std::string hash_in = crypto::Hash<crypto::SHA512>(stream_in.str());
+    EXPECT_EQ(kSuccess, SelfEncrypt(&stream_in, kChunksDir_, false, &data_map));
     EXPECT_EQ(kMinChunks + 1, data_map.chunks.size());
-    EXPECT_EQ(hash_in, data_map.data_hash);
+    EXPECT_EQ(kNoCompression, data_map.compression_type);
     EXPECT_TRUE(data_map.content.empty());
     std::uint64_t total_size(0);
     std::uint32_t i(0);
@@ -363,8 +322,7 @@ TEST_F(SelfEncryptionTest, BEH_ENCRYPT_SelfEnDecryptFile) {
         EXPECT_EQ(kMaxChunkSize, it->size);
         EXPECT_EQ(it->hash, crypto::HashFile<crypto::SHA512>(chunk_path));
         EXPECT_FALSE(it->pre_hash.empty());
-        if (data_map.compression_type == kNoCompression)
-          EXPECT_EQ(it->pre_size, it->size);
+        EXPECT_EQ(it->size, it->pre_size);  // no compression
         total_size += it->pre_size;
       } else {
         // chunk is included in DataMap
@@ -372,136 +330,194 @@ TEST_F(SelfEncryptionTest, BEH_ENCRYPT_SelfEnDecryptFile) {
         EXPECT_FALSE(it->content.empty());
         EXPECT_EQ(kMaxIncludableChunkSize, it->content.size());
         EXPECT_EQ(it->size, it->content.size());
-        if (data_map.compression_type == kNoCompression) {
-          EXPECT_EQ(it->pre_size, it->content.size());
-          EXPECT_EQ(it->pre_hash, crypto::Hash<crypto::SHA512>(it->content));
-        }
+        EXPECT_EQ(it->pre_size, it->content.size());  // no compression
+        EXPECT_EQ(it->pre_hash, crypto::Hash<crypto::SHA512>(it->content));
         total_size += it->content.size();
       }
       ++i;
     }
     EXPECT_EQ(data_size, total_size);
-    ASSERT_EQ(kSuccess,
-              SelfDecryptToFile(data_map, kChunksDir_, true, path_out));
-    EXPECT_EQ(hash_in, crypto::HashFile<crypto::SHA512>(path_out));
-  }
-
-  {  // Try restoring existing file
-    DataMap data_map;
-    EXPECT_EQ(kFileAlreadyExists,
-              SelfDecryptToFile(data_map, kChunksDir_, false, path_out));
+    std::ostringstream stream_out;
+    ASSERT_EQ(kSuccess, SelfDecrypt(data_map, kChunksDir_, &stream_out));
+    EXPECT_EQ(stream_in.str(), stream_out.str());
   }
 
   {  // First chunk is deleted
     DataMap data_map;
     std::uint64_t data_size((RandomUint32() % kMinChunks + 1) * kMaxChunkSize +
                             RandomUint32() % kMaxIncludableChunkSize);
-    test_se::CreateRandomFile(path_in, data_size);
-    EXPECT_EQ(kSuccess, SelfEncryptFile(path_in, kChunksDir_, &data_map));
+    std::istringstream stream_in(RandomString(data_size));
+    EXPECT_EQ(kSuccess, SelfEncrypt(&stream_in, kChunksDir_, false, &data_map));
     EXPECT_LE(kMinChunks, data_map.chunks.size());
     EXPECT_TRUE(fs::remove(kChunksDir_ / EncodeToHex(data_map.chunks[0].hash)));
+    std::ostringstream stream_out;
     ASSERT_EQ(kFilesystemError,
-              SelfDecryptToFile(data_map, kChunksDir_, true, path_out));
+              SelfDecrypt(data_map, kChunksDir_, &stream_out));
   }
 
   {  // First chunk is changed in size (and contents)
     DataMap data_map;
     std::uint64_t data_size((RandomUint32() % kMinChunks + 1) * kMaxChunkSize +
                             RandomUint32() % kMaxIncludableChunkSize);
-    test_se::CreateRandomFile(path_in, data_size);
-    EXPECT_EQ(kSuccess, SelfEncryptFile(path_in, kChunksDir_, &data_map));
+    std::istringstream stream_in(RandomString(data_size));
+    EXPECT_EQ(kSuccess, SelfEncrypt(&stream_in, kChunksDir_, false, &data_map));
     EXPECT_LE(kMinChunks, data_map.chunks.size());
     test_se::CreateRandomFile(
         kChunksDir_ / EncodeToHex(data_map.chunks[0].hash),
         data_map.chunks[0].size / 2);
-    ASSERT_EQ(kIoError,
-              SelfDecryptToFile(data_map, kChunksDir_, true, path_out));
+    std::ostringstream stream_out;
+    ASSERT_EQ(kIoError, SelfDecrypt(data_map, kChunksDir_, &stream_out));
   }
 
   {  // First chunk is changed only in contents
     DataMap data_map;
     std::uint64_t data_size((RandomUint32() % kMinChunks + 1) * kMaxChunkSize +
                             RandomUint32() % kMaxIncludableChunkSize);
-    test_se::CreateRandomFile(path_in, data_size);
-    EXPECT_EQ(kSuccess, SelfEncryptFile(path_in, kChunksDir_, &data_map));
+    std::istringstream stream_in(RandomString(data_size));
+    EXPECT_EQ(kSuccess, SelfEncrypt(&stream_in, kChunksDir_, false, &data_map));
     EXPECT_LE(kMinChunks, data_map.chunks.size());
     test_se::CreateRandomFile(
         kChunksDir_ / EncodeToHex(data_map.chunks[0].hash),
         data_map.chunks[0].size);
-    ASSERT_EQ(kDecryptError,
-              SelfDecryptToFile(data_map, kChunksDir_, true, path_out));
+    std::ostringstream stream_out;
+    ASSERT_EQ(kDecryptError, SelfDecrypt(data_map, kChunksDir_, &stream_out));
   }
 }
 
-TEST_F(SelfEncryptionTest, DISABLED_BEH_ENCRYPT_SelfEnDecryptString) {
-  FAIL();
+TEST_F(SelfEncryptionTest, BEH_ENCRYPT_SelfEnDecryptString) {
+  {  // Invalid calls
+    DataMap data_map;
+    EXPECT_EQ(kInvalidInput, SelfEncrypt("", kChunksDir_, false, &data_map));
+    EXPECT_EQ(kNullPointer, SelfEncrypt("test", kChunksDir_, false, NULL));
+  }
+
+  {  // Random data test
+    DataMap data_map;
+    std::uint64_t data_size((RandomUint32() % kMinChunks + 1) * kMaxChunkSize +
+                            RandomUint32() % kMaxIncludableChunkSize);
+    std::string string_in(RandomString(data_size));
+    EXPECT_EQ(kSuccess, SelfEncrypt(string_in, kChunksDir_, false, &data_map));
+    EXPECT_LE(kMinChunks, data_map.chunks.size());
+    std::string string_out;
+    ASSERT_EQ(kSuccess, SelfDecrypt(data_map, kChunksDir_, &string_out));
+    ASSERT_EQ(string_in, string_out);
+  }
 }
 
-TEST_F(SelfEncryptionTest, DISABLED_BEH_ENCRYPT_SelfEnDecryptMixed) {
-  FAIL();
+TEST_F(SelfEncryptionTest, BEH_ENCRYPT_SelfEnDecryptFile) {
+  fs::path path_in(kFilesDir_ / "SelfEncryptFilesTestIn.dat");
+  fs::path path_out(kFilesDir_ / "SelfEncryptFilesTestOut.dat");
+
+  {  // Invalid calls
+    DataMap data_map;
+    EXPECT_EQ(kInvalidInput, SelfEncrypt(path_in, kChunksDir_, &data_map));
+    test_se::CreateRandomFile(path_in, 0);
+    EXPECT_EQ(kInvalidInput, SelfEncrypt(path_in, kChunksDir_, &data_map));
+    test_se::CreateRandomFile(path_in, 1);
+    EXPECT_EQ(kNullPointer, SelfEncrypt(path_in, kChunksDir_, NULL));
+  }
+
+  {  // Random data test
+    DataMap data_map;
+    std::uint64_t data_size((RandomUint32() % kMinChunks + 1) * kMaxChunkSize +
+                            RandomUint32() % kMaxIncludableChunkSize);
+    test_se::CreateRandomFile(path_in, data_size);
+    EXPECT_EQ(kSuccess, SelfEncrypt(path_in, kChunksDir_, &data_map));
+    EXPECT_LE(kMinChunks, data_map.chunks.size());
+    ASSERT_EQ(kSuccess, SelfDecrypt(data_map, kChunksDir_, true, path_out));
+    EXPECT_TRUE(fs::exists(path_out));
+    EXPECT_EQ(crypto::HashFile<crypto::SHA512>(path_in),
+              crypto::HashFile<crypto::SHA512>(path_out));
+  }
+
+  {  // Try restoring existing file
+    DataMap data_map;
+    EXPECT_EQ(kFileAlreadyExists,
+              SelfDecrypt(data_map, kChunksDir_, false, path_out));
+  }
 }
 
-TEST_F(SelfEncryptionTest, DISABLED_BEH_ENCRYPT_Benchmark) {
-  FAIL();
-//   const size_t kRunCount(2); //17);
-//   for (size_t run = 0; run < kRunCount; ++run) {
-//     size_t repetitions(1); //(1 << 15) >> std::min(size_t(11), run));
-//     size_t data_size(64 << run);
-//
-//     printf("Timing Self-encryption of %d strings à %d bytes (run %d/%d)...\n",
-//           repetitions, data_size, run + 1, kRunCount);
-//
-//     std::vector<std::shared_ptr<std::string>> contents;
-//     std::vector<protobuf::DataMap> data_maps;
-//     std::vector<DataIoHandlerPtr> io_handlers;
-//     std::vector<std::map<std::string, fs::path>> chunk_maps;
-//     for (size_t i = 0; i < repetitions; ++i) {
-//       StringPtr content(new std::string(RandomString(data_size)));
-//       contents.push_back(content);
-//       protobuf::DataMap data_map;
-//       data_map.set_file_hash(crypto::Hash<crypto::SHA512>(*(contents.back())));
-//       data_maps.push_back(data_map);
-//       DataIoHandlerPtr io_handler(new StringIOHandler(contents.back(), true));
-//       io_handlers.push_back(io_handler);
-//       std::map<std::string, fs::path> chunk_map;
-//       chunk_maps.push_back(chunk_map);
-//     }
-//     ASSERT_EQ(repetitions, contents.size());
-//     ASSERT_EQ(repetitions, data_maps.size());
-//     ASSERT_EQ(repetitions, io_handlers.size());
-//     ASSERT_EQ(repetitions, chunk_maps.size());
-//
-//     boost::timer timer;
-//     for (size_t i = 0; i < repetitions; ++i)
-//       utils::EncryptContent(io_handlers[i], kOutputDir_, &(data_maps[i]),
-//                             &(chunk_maps[i]));
-//     double encryption_time(timer.elapsed());
-//     printf("Self-encrypted %d strings à %d bytes in %.2f seconds "
-//           "(%.3f MB/s).\n", repetitions, data_size, encryption_time,
-//           (repetitions * data_size) / encryption_time / 1048576.0);
-//
-//     std::vector<std::shared_ptr<std::string>> dec_contents;
-//     std::vector<std::vector<fs::path>> chunk_paths;
-//     for (size_t i = 0; i < repetitions; ++i) {
-//       chunk_paths.push_back(MapToVector(chunk_maps[i]));
-//       StringPtr content(new std::string);
-//       dec_contents.push_back(content);
-//       io_handlers[i].reset(new StringIOHandler(dec_contents.back(), false));
-//     }
-//     ASSERT_EQ(repetitions, chunk_paths.size());
-//     ASSERT_EQ(repetitions, dec_contents.size());
-//
-//     timer.restart();
-//     for (size_t i = 0; i < repetitions; ++i)
-//       utils::DecryptContent(data_maps[i], chunk_paths[i], 0, io_handlers[i]);
-//     double decryption_time(timer.elapsed());
-//     printf("Self-decrypted %d strings à %d bytes in %.2f seconds "
-//           "(%.3f MB/s).\n", repetitions, data_size, decryption_time,
-//           (repetitions * data_size) / decryption_time / 1048576.0);
-//
-//     for (size_t i = 0; i < repetitions; ++i)
-//       EXPECT_EQ(*(contents[i]), *(dec_contents[i]));
-//   }
+TEST_F(SelfEncryptionTest, BEH_ENCRYPT_SelfEnDecryptMixed) {
+  {  // String input, file output
+    DataMap data_map;
+    std::uint64_t data_size((RandomUint32() % kMinChunks + 1) * kMaxChunkSize +
+                            RandomUint32() % kMaxIncludableChunkSize);
+    std::string string_in(RandomString(data_size));
+    EXPECT_EQ(kSuccess, SelfEncrypt(string_in, kChunksDir_, false, &data_map));
+    EXPECT_LE(kMinChunks, data_map.chunks.size());
+    fs::path path_out(kFilesDir_ / "SelfEncryptFilesTestOut.dat");
+    ASSERT_EQ(kSuccess, SelfDecrypt(data_map, kChunksDir_, true, path_out));
+    EXPECT_TRUE(fs::exists(path_out));
+    EXPECT_EQ(crypto::Hash<crypto::SHA512>(string_in),
+              crypto::HashFile<crypto::SHA512>(path_out));
+  }
+
+  {  // File input, string output
+    DataMap data_map;
+    std::uint64_t data_size((RandomUint32() % kMinChunks + 1) * kMaxChunkSize +
+                            RandomUint32() % kMaxIncludableChunkSize);
+    fs::path path_in(kFilesDir_ / "SelfEncryptFilesTestIn.dat");
+    test_se::CreateRandomFile(path_in, data_size);
+    EXPECT_EQ(kSuccess, SelfEncrypt(path_in, kChunksDir_, &data_map));
+    EXPECT_LE(kMinChunks, data_map.chunks.size());
+    std::string string_out;
+    ASSERT_EQ(kSuccess, SelfDecrypt(data_map, kChunksDir_, &string_out));
+    EXPECT_EQ(crypto::HashFile<crypto::SHA512>(path_in),
+              crypto::Hash<crypto::SHA512>(string_out));
+  }
+}
+
+TEST_F(SelfEncryptionTest, DISABLED_BEH_ENCRYPT_Compression) {
+  // TODO Test if compression can be toggled, if it's noticable in sizes, and
+  //      if the resulting chunk sizes are constant except for the last one.
+  FAIL() << "Not implemented yet.";
+}
+
+TEST_F(SelfEncryptionTest, DISABLED_FUNC_ENCRYPT_Benchmark) {
+  const size_t kRunCount(17);
+  for (size_t run = 0; run < kRunCount; ++run) {
+    size_t repetitions((1 << 15) >> std::min(size_t(11), run));
+    size_t data_size(64 << run);
+
+    printf("Timing Self-encryption of %d strings à %d bytes (run %d/%d)...\n",
+           repetitions, data_size, run + 1, kRunCount);
+
+    std::vector<std::shared_ptr<std::istringstream>> contents;
+    std::vector<DataMap> data_maps;
+    for (size_t i = 0; i < repetitions; ++i) {
+      std::shared_ptr<std::istringstream> stream_ptr(
+          new std::istringstream(RandomString(data_size)));
+      contents.push_back(stream_ptr);
+    }
+    ASSERT_EQ(repetitions, contents.size());
+    data_maps.resize(repetitions);
+
+    boost::timer timer;
+    for (size_t i = 0; i < repetitions; ++i)
+      SelfEncrypt(contents[i].get(), kChunksDir_, false, &(data_maps[i]));
+    double encryption_time(timer.elapsed());
+    printf("Self-encrypted %d strings à %d bytes in %.2f seconds "
+          "(%.3f MB/s).\n", repetitions, data_size, encryption_time,
+          (repetitions * data_size) / encryption_time / 1048576.0);
+
+    std::vector<std::shared_ptr<std::ostringstream>> dec_contents;
+    for (size_t i = 0; i < repetitions; ++i) {
+      std::shared_ptr<std::ostringstream> stream_ptr(new std::ostringstream);
+      dec_contents.push_back(stream_ptr);
+    }
+    ASSERT_EQ(repetitions, dec_contents.size());
+
+    timer.restart();
+    for (size_t i = 0; i < repetitions; ++i)
+      SelfDecrypt(data_maps[i], kChunksDir_, dec_contents[i].get());
+    double decryption_time(timer.elapsed());
+    printf("Self-decrypted %d strings à %d bytes in %.2f seconds "
+          "(%.3f MB/s).\n", repetitions, data_size, decryption_time,
+          (repetitions * data_size) / decryption_time / 1048576.0);
+
+    for (size_t i = 0; i < repetitions; ++i)
+      EXPECT_EQ(contents[i]->str(), dec_contents[i]->str());
+  }
 }
 
 }  // namespace encrypt

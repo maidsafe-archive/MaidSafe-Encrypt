@@ -18,8 +18,7 @@
 #define MAIDSAFE_ENCRYPT_UTILS_H_
 
 #include <cstdint>
-#include <map>
-#include <memory>
+#include <iostream>
 #include <string>
 #include <vector>
 
@@ -38,12 +37,10 @@ namespace maidsafe {
 
 namespace encrypt {
 
-class DataIOHandler;
-
 namespace utils {
 
 /// Generates encrypted chunks from single source input data.
-int EncryptContent(std::shared_ptr<DataIOHandler> input_handler,
+int EncryptContent(std::istream *input_stream,
                    const fs::path &output_dir,
                    bool try_compression,
                    DataMap *data_map);
@@ -51,13 +48,13 @@ int EncryptContent(std::shared_ptr<DataIOHandler> input_handler,
 /// Assembles output data from encrypted chunks.
 int DecryptContent(const DataMap &data_map,
                    const fs::path &input_dir,
-                   std::shared_ptr<DataIOHandler> output_handler);
+                   std::ostream *output_stream);
 
 /// Checks file extension against a list of known uncompressible file formats.
 bool IsCompressedFile(const fs::path &file_path);
 
 /// Estimates whether compression could result in space savings.
-bool CheckCompressibility(std::shared_ptr<DataIOHandler> input_handler);
+bool CheckCompressibility(std::istream *input_stream);
 
 /// Determines the sizes of the chunks the input data will be split into.
 bool CalculateChunkSizes(std::uint64_t data_size,
