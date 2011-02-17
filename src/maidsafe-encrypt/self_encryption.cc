@@ -16,13 +16,16 @@
 
 #include "maidsafe-encrypt/self_encryption.h"
 
-#include <iostream>
 #include <set>
 #include <sstream>
 
+#include "maidsafe-dht/common/crypto.h"
+#include "maidsafe-dht/common/log.h"
+#include "maidsafe-dht/common/utils.h"
 #include "maidsafe-encrypt/config.h"
-#include "maidsafe-encrypt/data_io_handler.h"
+#include "maidsafe-encrypt/data_map.h"
 #include "maidsafe-encrypt/utils.h"
+#include "boost/filesystem/fstream.hpp"
 
 namespace fs = boost::filesystem3;
 
@@ -46,8 +49,142 @@ int SelfEncrypt(std::istream *input_stream,
                 const fs::path &output_dir,
                 bool try_compression,
                 DataMap *data_map) {
-  return utils::EncryptContent(input_stream, output_dir, try_compression,
-                               data_map);
+  if (!data_map || !input_stream) {
+    DLOG(ERROR) << "EncryptContent: One of the pointers is null." << std::endl;
+    return kNullPointer;
+  }
+
+  // TODO pass size in for proper streaming, avoid seeking
+  input_stream->seekg(0, std::ios::end);
+  std::streampos pos = input_stream->tellg();
+
+  if (!input_stream->good() || pos < 1 || pos > kMaxDataSize) {
+    DLOG(ERROR) << "EncryptContent: Input stream is invalid." << std::endl;
+    return kInvalidInput;
+  }
+  std::uint64_t data_size(static_cast<std::uint64_t>(pos));
+
+  bool compress(false);
+  if (try_compression) {
+    if (2 * data_size > kCompressionSampleSize)
+      input_stream->seekg(0);
+    else
+      input_stream->seekg((data_size - kCompressionSampleSize) / 2);
+    compress = utils::CheckCompressibility(input_stream);
+    if (compress)
+      data_map->compression_type = kGzipCompression;
+  }
+
+  input_stream->seekg(0);
+
+  if (data_size <= kMaxIncludableDataSize) {
+    // No chunking, include data in DataMap
+    data_map->chunks.clear();
+    data_map->content.resize(data_size);
+    input_stream->read(&(data_map->content[0]), data_size);
+    if (input_stream->bad() || input_stream->gcount() != data_size) {
+      DLOG(ERROR) << "EncryptContent: Failed to read content." << std::endl;
+      return kIoError;
+    }
+    if (compress) {
+      data_map->content = crypto::Compress(data_map->content,
+                                           kCompressionLevel);
+      if (data_map->content.empty()) {
+        DLOG(ERROR) << "EncryptContent: Failed to compress content."
+                    << std::endl;
+        return kCompressionError;
+      }
+    }
+    return kSuccess;
+  }
+
+  // FIXME find method to guarantee constant chunk size with compression
+  compress = false;
+  data_map->compression_type = kNoCompression;
+
+  std::vector<std::uint32_t> chunk_sizes;
+  if (!utils::CalculateChunkSizes(data_size, &chunk_sizes) ||
+      chunk_sizes.size() < 3) {
+    DLOG(ERROR) << "EncryptContent: CalculateChunkSizes failed." << std::endl;
+    return kChunkSizeError;
+  }
+
+  std::uint32_t chunk_count(chunk_sizes.size());
+  std::string chunk_content[3], chunk_hash[3];  // sliding window of size 3
+
+  // read the first 2 chunks and calculate their hashes
+  chunk_content[0].resize(chunk_sizes[0]);
+  input_stream->read(&(chunk_content[0][0]), chunk_sizes[0]);
+  chunk_content[1].resize(chunk_sizes[1]);
+  input_stream->read(&(chunk_content[1][0]), chunk_sizes[1]);
+  if (input_stream->bad()) {
+    DLOG(ERROR) << "EncryptContent: Failed to read content." << std::endl;
+    return kIoError;
+  }
+  chunk_hash[0] = crypto::Hash<crypto::SHA512>(chunk_content[0]);
+  chunk_hash[1] = crypto::Hash<crypto::SHA512>(chunk_content[1]);
+
+  for (std::uint32_t i = 0; i < chunk_count; ++i) {
+    // read the second next chunk and calculate its hash
+    std::uint32_t idx = (i + 2) % 3;
+    if (i + 2 < chunk_count) {
+      chunk_content[idx].resize(chunk_sizes[i + 2]);
+      input_stream->read(&(chunk_content[idx][0]), chunk_sizes[i + 2]);
+      if (input_stream->bad() || input_stream->gcount() != chunk_sizes[i + 2]) {
+        DLOG(ERROR) << "EncryptContent: Failed to read content." << std::endl;
+        return kIoError;
+      }
+      chunk_hash[idx] = crypto::Hash<crypto::SHA512>(chunk_content[idx]);
+    } else {
+      chunk_hash[idx] = data_map->chunks[(i + 2) % chunk_count].pre_hash;
+    }
+
+    if (compress) {
+      chunk_content[i % 3] = crypto::Compress(chunk_content[i % 3],
+                                              kCompressionLevel);
+      if (chunk_content[i % 3].empty()) {
+        DLOG(ERROR) << "EncryptContent: Failed to compress chunk content."
+                    << std::endl;
+        return kCompressionError;
+      }
+    }
+
+    ChunkDetails chunk;
+    chunk.pre_hash = chunk_hash[i % 3];
+    chunk.pre_size = chunk_sizes[i];
+
+    if (chunk_sizes[i] <= kMaxIncludableChunkSize) {
+      chunk.content = chunk_content[i % 3];
+      chunk.size = chunk_content[i % 3].size();
+      // sic: chunk.hash left empty
+    } else {
+      chunk_content[i % 3] = utils::SelfEncryptChunk(chunk_content[i % 3],
+                                                     chunk_hash[(i + 1) % 3],
+                                                     chunk_hash[(i + 2) % 3]);
+
+      chunk.hash = crypto::Hash<crypto::SHA512>(chunk_content[i % 3]);
+      chunk.size = chunk_content[i % 3].size();  // encryption might add padding
+      // sic: chunk.content left empty
+
+      // write chunk file
+      fs::path chunk_path = output_dir / EncodeToHex(chunk.hash);
+      try {
+        if (fs::exists(chunk_path))
+          fs::remove(chunk_path);
+        fs::ofstream chunk_out(chunk_path, fs::ofstream::binary);
+        chunk_out << chunk_content[i % 3];
+        chunk_out.close();
+      }
+      catch(const std::exception &e) {
+        DLOG(ERROR) << "EncryptContent: Can't write chunk data to "
+                    << chunk_path.c_str() << " - " << e.what() << std::endl;
+        return kFilesystemError;
+      }
+    }
+
+    data_map->chunks.push_back(chunk);
+  }
+  return kSuccess;
 }
 
 /**
@@ -67,8 +204,7 @@ int SelfEncrypt(const std::string &input_string,
                 bool try_compression,
                 DataMap *data_map) {
   std::istringstream input_stream(input_string);
-  return utils::EncryptContent(&input_stream, output_dir, try_compression,
-                               data_map);
+  return SelfEncrypt(&input_stream, output_dir, try_compression, data_map);
 }
 
 /**
@@ -90,9 +226,8 @@ int SelfEncrypt(const fs::path &input_file,
                 const fs::path &output_dir,
                 DataMap *data_map) {
   fs::ifstream input_stream(input_file, std::ios::in | std::ios::binary);
-  int result(utils::EncryptContent(&input_stream, output_dir,
-                                   utils::IsCompressedFile(input_file),
-                                   data_map));
+  int result(SelfEncrypt(&input_stream, output_dir,
+                         utils::IsCompressedFile(input_file), data_map));
   input_stream.close();
   return result;
 }
@@ -109,7 +244,80 @@ int SelfEncrypt(const fs::path &input_file,
 int SelfDecrypt(const DataMap &data_map,
                 const fs::path &input_dir,
                 std::ostream *output_stream) {
-  return utils::DecryptContent(data_map, input_dir, output_stream);
+  if (!output_stream)
+    return kNullPointer;
+
+  if (!output_stream->good()) {
+    DLOG(ERROR) << "DecryptContent: Output stream is invalid."
+                << std::endl;
+    return kIoError;
+  }
+
+  std::uint32_t chunk_count(data_map.chunks.size());
+  if (chunk_count == 0) {
+    if (!data_map.content.empty()) {
+      if (data_map.compression_type == kNoCompression) {
+        output_stream->write(data_map.content.data(), data_map.content.size());
+      } else if (data_map.compression_type == kGzipCompression) {
+        std::string content(crypto::Uncompress(data_map.content));
+        output_stream->write(content.data(), content.size());
+      }
+      if (output_stream->bad())
+        return kIoError;
+    }
+    return kSuccess;
+  }
+
+  for (std::uint32_t i = 0; i < chunk_count; ++i) {
+    const ChunkDetails &chunk = data_map.chunks[i];
+    std::string chunk_content;
+    if (!chunk.content.empty()) {
+      chunk_content = chunk.content;
+    } else {
+      // read chunk file
+      fs::path chunk_path = input_dir / EncodeToHex(chunk.hash);
+      try {
+        if (fs::file_size(chunk_path) != std::uintmax_t(chunk.size)) {
+          DLOG(ERROR) << "DecryptContent: Wrong chunk size (actual "
+                      << fs::file_size(chunk_path) << ", expected "
+                      << chunk.size << ") - " << chunk_path.c_str()
+                      << std::endl;
+          return kIoError;
+        }
+        fs::ifstream chunk_in(chunk_path, fs::ifstream::binary);
+        if (!chunk_in.good()) {
+          DLOG(ERROR) << "DecryptContent: Failed to open " << chunk_path.c_str()
+                      << std::endl;
+          return kIoError;
+        }
+        chunk_content.resize(chunk.size);
+        chunk_in.read(&chunk_content[0], chunk.size);
+        chunk_in.close();
+      }
+      catch(const std::exception &e) {
+        DLOG(ERROR) << "DecryptContent: Can't read chunk data from "
+                    << chunk_path.c_str() << " - " << e.what() << std::endl;
+        return kFilesystemError;
+      }
+
+      chunk_content = utils::SelfDecryptChunk(
+          chunk_content, data_map.chunks[(i + 1) % chunk_count].pre_hash,
+          data_map.chunks[(i + 2) % chunk_count].pre_hash);
+    }
+
+    if (data_map.compression_type == kGzipCompression)
+      chunk_content = crypto::Uncompress(chunk_content);
+
+    if (chunk_content.size() != chunk.pre_size ||
+        crypto::Hash<crypto::SHA512>(chunk_content) != chunk.pre_hash) {
+      DLOG(ERROR) << "DecryptContent: Failed restoring chunk data."
+                  << std::endl;
+      return kDecryptError;
+    }
+
+    output_stream->write(chunk_content.data(), chunk_content.size());
+  }
+  return output_stream->bad() ? kIoError : kSuccess;
 }
 
 /**
@@ -127,7 +335,7 @@ int SelfDecrypt(const DataMap &data_map,
   if (!output_string)
     return kDecryptError;
   std::ostringstream output_stream;
-  int result(utils::DecryptContent(data_map, input_dir, &output_stream));
+  int result(SelfDecrypt(data_map, input_dir, &output_stream));
   *output_string = output_stream.str();
   return result;
 }
@@ -162,7 +370,7 @@ int SelfDecrypt(const DataMap &data_map,
   }
   fs::ofstream output_stream(output_file, std::ios::out | std::ios::trunc |
                                           std::ios::binary);
-  int result(utils::DecryptContent(data_map, input_dir, &output_stream));
+  int result(SelfDecrypt(data_map, input_dir, &output_stream));
   output_stream.close();
   return result;
 }

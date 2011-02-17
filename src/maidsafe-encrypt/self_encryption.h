@@ -21,7 +21,6 @@
 #include <string>
 
 #include "boost/filesystem.hpp"
-#include "maidsafe-encrypt/data_map.h"
 #include "maidsafe-encrypt/version.h"
 
 #if MAIDSAFE_ENCRYPT_VERSION < 2
@@ -34,6 +33,8 @@ namespace fs = boost::filesystem3;
 namespace maidsafe {
 
 namespace encrypt {
+
+struct DataMap;
 
 /// Generates secure chunks from a stream.
 int SelfEncrypt(std::istream *input_stream,

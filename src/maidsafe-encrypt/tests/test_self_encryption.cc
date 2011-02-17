@@ -245,6 +245,17 @@ TEST_F(SelfEncryptionTest, BEH_ENCRYPT_ResizeObfuscationHash) {
   EXPECT_FALSE(utils::ResizeObfuscationHash(hash, 10, NULL));
 }
 
+TEST_F(SelfEncryptionTest, BEH_ENCRYPT_SelfEnDecryptChunk) {
+  std::string content(RandomString(3000 + RandomUint32() % 1000));
+  std::string hash1(RandomString(64)), hash2(RandomString(64));
+
+  EXPECT_EQ(content, utils::SelfDecryptChunk(
+      utils::SelfEncryptChunk(content, hash1, hash2), hash1, hash2));
+
+  EXPECT_NE(content, utils::SelfDecryptChunk(
+      utils::SelfEncryptChunk(content, hash1, hash2), hash2, hash1));
+}
+
 TEST_F(SelfEncryptionTest, BEH_ENCRYPT_SelfEnDecryptStream) {
   {  // Invalid calls
     DataMap data_map;

@@ -23,13 +23,6 @@
 #include <vector>
 
 #include "boost/filesystem.hpp"
-#include "maidsafe-encrypt/data_map.h"
-#include "maidsafe-encrypt/version.h"
-
-#if MAIDSAFE_ENCRYPT_VERSION < 2
-#error This API is not compatible with the installed library.\
-  Please update the maidsafe-encrypt library.
-#endif
 
 namespace fs = boost::filesystem3;
 
@@ -38,17 +31,6 @@ namespace maidsafe {
 namespace encrypt {
 
 namespace utils {
-
-/// Generates encrypted chunks from single source input data.
-int EncryptContent(std::istream *input_stream,
-                   const fs::path &output_dir,
-                   bool try_compression,
-                   DataMap *data_map);
-
-/// Assembles output data from encrypted chunks.
-int DecryptContent(const DataMap &data_map,
-                   const fs::path &input_dir,
-                   std::ostream *output_stream);
 
 /// Checks file extension against a list of known uncompressible file formats.
 bool IsCompressedFile(const fs::path &file_path);
@@ -64,6 +46,16 @@ bool CalculateChunkSizes(std::uint64_t data_size,
 bool ResizeObfuscationHash(const std::string &input,
                            const size_t &required_size,
                            std::string *resized_data);
+
+/// Applies self-encryption algorithm to the contents of a chunk
+std::string SelfEncryptChunk(const std::string &content,
+                             const std::string &encryption_hash,
+                             const std::string &obfuscation_hash);
+
+/// Applies self-decryption algorithm to the contents of a chunk
+std::string SelfDecryptChunk(const std::string &content,
+                             const std::string &encryption_hash,
+                             const std::string &obfuscation_hash);
 
 }  // namespace utils
 
