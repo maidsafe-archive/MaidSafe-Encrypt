@@ -691,7 +691,6 @@ MESSAGE("")
 
 SET(MAIDSAFE_ENCRYPT_INSTALL_FILES
       maidsafe-encrypt/config.h
-      maidsafe-encrypt/data_io_handler.h
       maidsafe-encrypt/data_map.h
       maidsafe-encrypt/self_encryption.h
       maidsafe-encrypt/version.h)

@@ -148,7 +148,7 @@ bool ResizeObfuscationHash(const std::string &input,
 
 std::string SelfEncryptChunk(const std::string &content,
                              const std::string &encryption_hash,
-                             const std::string &obfuscation_hash){
+                             const std::string &obfuscation_hash) {
   std::string encryption_key(encryption_hash.substr(0, crypto::AES256_KeySize));
   std::string encryption_iv(encryption_hash.substr(crypto::AES256_KeySize,
                                                    crypto::AES256_IVSize));

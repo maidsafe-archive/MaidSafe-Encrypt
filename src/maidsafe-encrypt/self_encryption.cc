@@ -18,6 +18,7 @@
 
 #include <set>
 #include <sstream>
+#include <vector>
 
 #include "maidsafe-dht/common/crypto.h"
 #include "maidsafe-dht/common/log.h"

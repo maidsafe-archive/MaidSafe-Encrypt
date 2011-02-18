@@ -1,4 +1,4 @@
-#!/usr/bin/python2.4
+#!/usr/bin/python
 #
 # Copyright (c) 2009 Google Inc. All rights reserved.
 #
@@ -699,13 +699,7 @@ class FileInfo:
 
     if os.path.exists(fullname):
       project_dir = os.path.dirname(fullname)
-      root_dir = os.path.dirname(fullname)
-      while (root_dir != os.path.dirname(root_dir) and
-             not os.path.exists(os.path.join(root_dir, "maidsafe"))):
-        root_dir = os.path.dirname(root_dir)
-        if os.path.exists(os.path.join(root_dir, "maidsafe")):
-          prefix = os.path.commonprefix([root_dir, project_dir])
-          return fullname[len(prefix) + 1:]
+
       if os.path.exists(os.path.join(project_dir, ".svn")):
         # If there's a .svn file in the current directory, we recursively look
         # up the directory tree for the top of the SVN checkout
@@ -725,10 +719,11 @@ class FileInfo:
              not os.path.exists(os.path.join(root_dir, ".git")) and
              not os.path.exists(os.path.join(root_dir, ".hg"))):
         root_dir = os.path.dirname(root_dir)
-        if (os.path.exists(os.path.join(root_dir, ".git")) or
-            os.path.exists(os.path.join(root_dir, ".hg"))):
-          prefix = os.path.commonprefix([root_dir, project_dir])
-          return fullname[len(prefix) + 1:]
+
+      if (os.path.exists(os.path.join(root_dir, ".git")) or
+          os.path.exists(os.path.join(root_dir, ".hg"))):
+        prefix = os.path.commonprefix([root_dir, project_dir])
+        return fullname[len(prefix) + 1:]
 
     # Don't know what to do; header guard warnings may be wrong...
     return fullname
@@ -1037,7 +1032,8 @@ def GetHeaderGuardCPPVariable(filename):
   filename = re.sub(r'_flymake\.h$', '.h', filename)
 
   fileinfo = FileInfo(filename)
-  return re.sub(r'[-./\s]', '_', fileinfo.RepositoryName()).upper() + '_'
+  repository_name = re.sub(r'src/', '', fileinfo.RepositoryName())
+  return re.sub(r'[-./\s]', '_', repository_name).upper() + '_'
 
 
 def CheckForHeaderGuard(filename, lines, error):
@@ -1741,9 +1737,13 @@ def CheckSpacing(filename, clean_lines, linenum, error):
         # but some lines are exceptions -- e.g. if they're big
         # comment delimiters like:
         # //----------------------------------------------------------
+        # or are an empty C++ style Doxygen comment, like:
+        # ///
         # or they begin with multiple slashes followed by a space:
         # //////// Header comment
         match = (Search(r'[=/-]{4,}\s*$', line[commentend:]) or
+                 Search(r'^/$', line[commentend:]) or
+                 Search(r'^/< ', line[commentend:]) or
                  Search(r'^/+ ', line[commentend:]))
         if not match:
           error(filename, linenum, 'whitespace/comments', 4,
