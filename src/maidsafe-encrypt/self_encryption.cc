@@ -169,16 +169,9 @@ int SelfEncrypt(std::istream *input_stream,
 
       // write chunk file
       fs::path chunk_path = output_dir / EncodeToHex(chunk.hash);
-      try {
-        if (fs::exists(chunk_path))
-          fs::remove(chunk_path);
-        fs::ofstream chunk_out(chunk_path, fs::ofstream::binary);
-        chunk_out << chunk_content[i % 3];
-        chunk_out.close();
-      }
-      catch(const std::exception &e) {
+      if (!utils::WriteFile(chunk_path, chunk_content[i % 3])) {
         DLOG(ERROR) << "EncryptContent: Can't write chunk data to "
-                    << chunk_path.c_str() << " - " << e.what() << std::endl;
+                    << chunk_path.c_str() << std::endl;
         return kFilesystemError;
       }
     }
@@ -277,28 +270,16 @@ int SelfDecrypt(const DataMap &data_map,
     } else {
       // read chunk file
       fs::path chunk_path = input_dir / EncodeToHex(chunk.hash);
-      try {
-        if (fs::file_size(chunk_path) != std::uintmax_t(chunk.size)) {
-          DLOG(ERROR) << "DecryptContent: Wrong chunk size (actual "
-                      << fs::file_size(chunk_path) << ", expected "
-                      << chunk.size << ") - " << chunk_path.c_str()
-                      << std::endl;
-          return kIoError;
-        }
-        fs::ifstream chunk_in(chunk_path, fs::ifstream::binary);
-        if (!chunk_in.good()) {
-          DLOG(ERROR) << "DecryptContent: Failed to open " << chunk_path.c_str()
-                      << std::endl;
-          return kIoError;
-        }
-        chunk_content.resize(chunk.size);
-        chunk_in.read(&chunk_content[0], chunk.size);
-        chunk_in.close();
-      }
-      catch(const std::exception &e) {
+      if (!utils::ReadFile(chunk_path, &chunk_content)) {
         DLOG(ERROR) << "DecryptContent: Can't read chunk data from "
-                    << chunk_path.c_str() << " - " << e.what() << std::endl;
+                    << chunk_path.c_str() << std::endl;
         return kFilesystemError;
+      }
+      if (chunk_content.size() != chunk.size) {
+        DLOG(ERROR) << "DecryptContent: Wrong chunk size (actual "
+                    << chunk_content.size() << ", expected " << chunk.size
+                    << ") - " << chunk_path.c_str() << std::endl;
+        return kIoError;
       }
 
       chunk_content = utils::SelfDecryptChunk(

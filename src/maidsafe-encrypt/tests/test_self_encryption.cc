@@ -245,6 +245,35 @@ TEST_F(SelfEncryptionTest, BEH_ENCRYPT_ResizeObfuscationHash) {
   EXPECT_FALSE(utils::ResizeObfuscationHash(hash, 10, NULL));
 }
 
+TEST_F(SelfEncryptionTest, BEH_ENCRYPT_ReadFile) {
+  fs::path file_path(kChunksDir_ / "test.dat");
+  std::string file_content;
+  EXPECT_FALSE(utils::ReadFile(file_path, NULL));
+  EXPECT_FALSE(utils::ReadFile(file_path, &file_content));
+  EXPECT_TRUE(file_content.empty());
+  test_se::CreateRandomFile(file_path, 3000 + RandomUint32() % 1000);
+  EXPECT_TRUE(utils::ReadFile(file_path, &file_content));
+  EXPECT_EQ(fs::file_size(file_path), file_content.size());
+  EXPECT_EQ(crypto::HashFile<crypto::SHA512>(file_path),
+            crypto::Hash<crypto::SHA512>(file_content));
+}
+
+TEST_F(SelfEncryptionTest, BEH_ENCRYPT_WriteFile) {
+  fs::path file_path(kChunksDir_ / "test.dat");
+  std::string file_content;
+  EXPECT_FALSE(fs::exists(file_path));
+  EXPECT_TRUE(utils::WriteFile(file_path, file_content));
+  EXPECT_TRUE(fs::exists(file_path));
+  EXPECT_EQ(0, fs::file_size(file_path));
+  file_content = RandomString(3000 + RandomUint32() % 1000);
+  EXPECT_TRUE(utils::WriteFile(file_path, file_content));
+  EXPECT_EQ(crypto::Hash<crypto::SHA512>(file_content),
+            crypto::HashFile<crypto::SHA512>(file_path));
+  EXPECT_TRUE(utils::WriteFile(file_path, "moo"));
+  EXPECT_TRUE(utils::ReadFile(file_path, &file_content));
+  EXPECT_EQ("moo", file_content);
+}
+
 TEST_F(SelfEncryptionTest, BEH_ENCRYPT_SelfEnDecryptChunk) {
   std::string content(RandomString(3000 + RandomUint32() % 1000));
   std::string hash1(RandomString(64)), hash2(RandomString(64));

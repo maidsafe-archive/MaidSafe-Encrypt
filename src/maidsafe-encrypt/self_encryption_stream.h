@@ -48,7 +48,6 @@ namespace test {
 class SelfEncryptionStreamTest_BEH_ENCRYPT_DeviceInit_Test;
 class SelfEncryptionStreamTest_BEH_ENCRYPT_DeviceRead_Test;
 class SelfEncryptionStreamTest_BEH_ENCRYPT_DeviceSeek_Test;
-class SelfEncryptionStreamTest_BEH_ENCRYPT_DeviceLoadChunk_Test;
 }
 
 class SelfEncryptionDevice : public io::device<io::input_seekable_device_tag> {
@@ -62,8 +61,6 @@ class SelfEncryptionDevice : public io::device<io::input_seekable_device_tag> {
   friend class test::SelfEncryptionStreamTest_BEH_ENCRYPT_DeviceInit_Test;
   friend class test::SelfEncryptionStreamTest_BEH_ENCRYPT_DeviceRead_Test;
   friend class test::SelfEncryptionStreamTest_BEH_ENCRYPT_DeviceSeek_Test;
-  friend class test::SelfEncryptionStreamTest_BEH_ENCRYPT_DeviceLoadChunk_Test;
-  bool LoadChunk(const fs::path &chunk_path, std::string *content);
   DataMap data_map_;
   fs::path chunk_dir_;
   std::streamsize total_size_;

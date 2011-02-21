@@ -152,20 +152,6 @@ TEST_F(SelfEncryptionStreamTest, BEH_ENCRYPT_DeviceSeek) {
   FAIL() << "Not implemented.";
 }
 
-TEST_F(SelfEncryptionStreamTest, BEH_ENCRYPT_DeviceLoadChunk) {
-  DataMap data_map;
-  SelfEncryptionDevice sed(data_map, kChunksDir_);
-  fs::path chunk_path(kChunksDir_ / "test_chunk.dat");
-  std::string chunk_content;
-  EXPECT_FALSE(sed.LoadChunk(chunk_path, &chunk_content));
-  EXPECT_TRUE(chunk_content.empty());
-  test_ses::CreateRandomFile(chunk_path, 3000 + RandomUint32() % 1000);
-  EXPECT_TRUE(sed.LoadChunk(chunk_path, &chunk_content));
-  EXPECT_EQ(fs::file_size(chunk_path), chunk_content.size());
-  EXPECT_EQ(crypto::HashFile<crypto::SHA512>(chunk_path),
-            crypto::Hash<crypto::SHA512>(chunk_content));
-}
-
 }  // namespace encrypt
 
 }  // namespace test

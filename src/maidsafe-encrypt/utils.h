@@ -47,6 +47,12 @@ bool ResizeObfuscationHash(const std::string &input,
                            const size_t &required_size,
                            std::string *resized_data);
 
+/// Reads the given file and returns the contents as a string
+bool ReadFile(const fs::path &file_path, std::string *content);
+
+/// Writes the given content string to a file, overwriting if applicable
+bool WriteFile(const fs::path &file_path, const std::string &content);
+
 /// Applies self-encryption algorithm to the contents of a chunk
 std::string SelfEncryptChunk(const std::string &content,
                              const std::string &encryption_hash,

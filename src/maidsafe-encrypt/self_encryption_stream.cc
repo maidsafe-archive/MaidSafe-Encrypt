@@ -77,23 +77,6 @@ io::stream_offset SelfEncryptionDevice::seek(io::stream_offset offset,
   return offset_;
 }
 
-bool SelfEncryptionDevice::LoadChunk(const fs::path &chunk_path,
-                                     std::string *content) {
-  try {
-    std::uintmax_t chunk_size(fs::file_size(chunk_path));
-    fs::ifstream chunk_in(chunk_path, fs::ifstream::binary);
-    if (!chunk_in.good())
-      return false;
-    content->resize(chunk_size);
-    chunk_in.read(&((*content)[0]), chunk_size);
-    chunk_in.close();
-  }
-  catch(...) {
-    return false;
-  }
-  return true;
-}
-
 }  // namespace encrypt
 
 }  // namespace maidsafe

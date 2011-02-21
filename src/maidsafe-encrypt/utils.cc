@@ -26,6 +26,7 @@
 #include "maidsafe-dht/common/log.h"
 #include "maidsafe-dht/common/utils.h"
 #include "maidsafe-encrypt/config.h"
+#include "boost/filesystem/fstream.hpp"
 
 namespace fs = boost::filesystem3;
 
@@ -143,6 +144,37 @@ bool ResizeObfuscationHash(const std::string &input,
     resized_data->append(hash);
   }
   resized_data->resize(required_size);
+  return true;
+}
+
+bool ReadFile(const fs::path &file_path, std::string *content) {
+  if (!content)
+    return false;
+  try {
+    std::uintmax_t file_size(fs::file_size(file_path));
+    fs::ifstream file_in(file_path, std::ios::in | std::ios::binary);
+    if (!file_in.good())
+      return false;
+    content->resize(file_size);
+    file_in.read(&((*content)[0]), file_size);
+    file_in.close();
+  }
+  catch(...) {
+    return false;
+  }
+  return true;
+}
+
+bool WriteFile(const fs::path &file_path, const std::string &content) {
+  try {
+    fs::ofstream file_out(file_path, std::ios::out | std::ios::trunc |
+                                     std::ios::binary);
+    file_out.write(content.data(), content.size());
+    file_out.close();
+  }
+  catch(...) {
+    return false;
+  }
   return true;
 }
 
