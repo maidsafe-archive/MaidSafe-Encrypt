@@ -23,12 +23,12 @@
 #include "boost/filesystem.hpp"
 #include "maidsafe-encrypt/version.h"
 
-#if MAIDSAFE_ENCRYPT_VERSION < 2
+#if MAIDSAFE_ENCRYPT_VERSION < 3
 #error This API is not compatible with the installed library.\
   Please update the maidsafe-encrypt library.
 #endif
 
-namespace fs = boost::filesystem3;
+namespace fs = boost::filesystem;
 
 namespace maidsafe {
 

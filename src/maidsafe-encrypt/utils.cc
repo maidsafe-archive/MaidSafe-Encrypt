@@ -28,7 +28,7 @@
 #include "maidsafe-encrypt/config.h"
 #include "boost/filesystem/fstream.hpp"
 
-namespace fs = boost::filesystem3;
+namespace fs = boost::filesystem;
 
 namespace maidsafe {
 

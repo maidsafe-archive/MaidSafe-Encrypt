@@ -28,7 +28,7 @@
 #include "maidsafe-encrypt/utils.h"
 #include "boost/filesystem/fstream.hpp"
 
-namespace fs = boost::filesystem3;
+namespace fs = boost::filesystem;
 
 namespace maidsafe {
 
@@ -110,7 +110,7 @@ int SelfEncrypt(std::istream *input_stream,
     return kChunkSizeError;
   }
 
-  std::uint32_t chunk_count(chunk_sizes.size());
+  size_t chunk_count(chunk_sizes.size());
   std::string chunk_content[3], chunk_hash[3];  // sliding window of size 3
 
   // read the first 2 chunks and calculate their hashes
@@ -125,7 +125,7 @@ int SelfEncrypt(std::istream *input_stream,
   chunk_hash[0] = crypto::Hash<crypto::SHA512>(chunk_content[0]);
   chunk_hash[1] = crypto::Hash<crypto::SHA512>(chunk_content[1]);
 
-  for (std::uint32_t i = 0; i < chunk_count; ++i) {
+  for (size_t i = 0; i < chunk_count; ++i) {
     // read the second next chunk and calculate its hash
     std::uint32_t idx = (i + 2) % 3;
     if (i + 2 < chunk_count) {
@@ -247,7 +247,7 @@ int SelfDecrypt(const DataMap &data_map,
     return kIoError;
   }
 
-  std::uint32_t chunk_count(data_map.chunks.size());
+  size_t chunk_count(data_map.chunks.size());
   if (chunk_count == 0) {
     if (!data_map.content.empty()) {
       if (data_map.compression_type == kNoCompression) {
@@ -262,7 +262,7 @@ int SelfDecrypt(const DataMap &data_map,
     return kSuccess;
   }
 
-  for (std::uint32_t i = 0; i < chunk_count; ++i) {
+  for (size_t i = 0; i < chunk_count; ++i) {
     const ChunkDetails &chunk = data_map.chunks[i];
     std::string chunk_content;
     if (!chunk.content.empty()) {

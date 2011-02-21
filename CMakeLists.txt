@@ -693,6 +693,7 @@ SET(MAIDSAFE_ENCRYPT_INSTALL_FILES
       maidsafe-encrypt/config.h
       maidsafe-encrypt/data_map.h
       maidsafe-encrypt/self_encryption.h
+      maidsafe-encrypt/self_encryption_stream.h
       maidsafe-encrypt/version.h)
 
 # Check the script /build/Win_MSVC/extract_includes.bat matches this list

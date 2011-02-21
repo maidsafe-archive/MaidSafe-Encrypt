@@ -24,7 +24,7 @@
 
 #include "boost/filesystem.hpp"
 
-namespace fs = boost::filesystem3;
+namespace fs = boost::filesystem;
 
 namespace maidsafe {
 

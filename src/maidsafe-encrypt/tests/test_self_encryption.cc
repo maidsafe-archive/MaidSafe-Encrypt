@@ -30,7 +30,7 @@
 #include "maidsafe-encrypt/self_encryption.h"
 #include "maidsafe-encrypt/utils.h"
 
-namespace fs = boost::filesystem3;
+namespace fs = boost::filesystem;
 
 namespace maidsafe {
 

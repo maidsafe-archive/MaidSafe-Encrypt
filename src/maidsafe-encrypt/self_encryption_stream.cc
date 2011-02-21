@@ -19,10 +19,13 @@
 #include <iosfwd>
 #include <string>
 
+#include "maidsafe-dht/common/crypto.h"
+#include "maidsafe-dht/common/log.h"
+#include "maidsafe-dht/common/utils.h"
 #include "maidsafe-encrypt/utils.h"
 #include "boost/filesystem/fstream.hpp"
 
-namespace fs = boost::filesystem3;
+namespace fs = boost::filesystem;
 namespace io = boost::iostreams;
 
 namespace maidsafe {
@@ -43,14 +46,91 @@ SelfEncryptionDevice::SelfEncryptionDevice(const DataMap &data_map,
 }
 
 std::streamsize SelfEncryptionDevice::read(char* s, std::streamsize n) {
-  /* - determine which chunks the offset_ and offset_ + n locations translate to
-   * - iterate over all relevant chunks
-   *   - load chunk, if not already in memory
-   *   - self-decrypt content
-   *   - write to output buffer and increment pointer
-   * - update relevant member vars
-   */
-  return -1;
+  std::streamsize remaining(n);
+  size_t chunk_count(data_map_.chunks.size());
+
+  // determine the first chunk in the range
+  size_t start_chunk_index(0);
+  io::stream_offset start_chunk_offset(0);
+  if (offset_ >= current_chunk_offset_) {
+    start_chunk_index = current_chunk_index_;
+    start_chunk_offset = current_chunk_offset_;
+  }
+  while (start_chunk_index < chunk_count &&
+         start_chunk_offset + data_map_.chunks[start_chunk_index].pre_size <=
+             offset_) {
+    start_chunk_offset += data_map_.chunks[start_chunk_index].pre_size;
+    ++start_chunk_index;
+  }
+  if (start_chunk_index >= chunk_count ||
+      start_chunk_offset >= total_size_)
+    return -1;
+
+  // determine the last chunk in the range
+  size_t end_chunk_index(start_chunk_index);
+  io::stream_offset end_chunk_offset(start_chunk_offset);
+  while (end_chunk_index < chunk_count - 1 &&
+         end_chunk_offset - start_chunk_offset +
+             data_map_.chunks[end_chunk_index].pre_size < n) {
+    end_chunk_offset += data_map_.chunks[end_chunk_index].pre_size;
+    ++end_chunk_index;
+  }
+
+  io::stream_offset chunk_offset(start_chunk_offset);
+  for (size_t chunk_index = start_chunk_index; chunk_index <= end_chunk_index;
+       ++chunk_index, chunk_offset += data_map_.chunks[chunk_index].pre_size) {
+    const ChunkDetails &chunk = data_map_.chunks[chunk_index];
+    if (chunk_index != current_chunk_index_) {
+      if (chunk.content.empty()) {
+        fs::path chunk_path(chunk_dir_ / EncodeToHex(chunk.hash));
+        if (!utils::ReadFile(chunk_path, &current_chunk_content_)) {
+          DLOG(ERROR) << "Can't read chunk data from " << chunk_path.c_str()
+                      << std::endl;
+          return -1;
+        }
+
+        if (current_chunk_content_.size() != chunk.size) {
+          DLOG(ERROR) << "Wrong chunk size (actual "
+                      << current_chunk_content_.size() << ", expected "
+                      << chunk.size << ") - " << chunk_path.c_str()
+                      << std::endl;
+          return -1;
+        }
+
+        current_chunk_content_ = utils::SelfDecryptChunk(
+            current_chunk_content_,
+            data_map_.chunks[(chunk_index + 1) % chunk_count].pre_hash,
+            data_map_.chunks[(chunk_index + 2) % chunk_count].pre_hash);
+      } else {
+        current_chunk_content_ = data_map_.chunks[chunk_index].content;
+      }
+
+      if (data_map_.compression_type == kGzipCompression)
+        current_chunk_content_ = crypto::Uncompress(current_chunk_content_);
+
+      if (current_chunk_content_.size() != chunk.pre_size ||
+          crypto::Hash<crypto::SHA512>(current_chunk_content_) !=
+              chunk.pre_hash) {
+        DLOG(ERROR) << "Failed restoring chunk data." << std::endl;
+        return -1;
+      }
+
+      current_chunk_index_ = chunk_index;
+      current_chunk_offset_ = chunk_offset;
+    }
+
+    io::stream_offset this_offset(0);
+    if (offset_ > chunk_offset)
+      this_offset = offset_ - chunk_offset;
+    size_t size(std::min(remaining, static_cast<std::streamsize>(
+        current_chunk_content_.size() - this_offset)));
+    s = static_cast<char*>(memcpy(s, &(current_chunk_content_[this_offset]),
+                                  size));
+    offset_ += size;
+    remaining -= size;
+  }
+
+  return n - remaining;
 }
 
 io::stream_offset SelfEncryptionDevice::seek(io::stream_offset offset,
