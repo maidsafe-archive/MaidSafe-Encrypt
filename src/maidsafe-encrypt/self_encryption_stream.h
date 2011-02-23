@@ -35,10 +35,12 @@
 namespace fs = boost::filesystem;
 namespace io = boost::iostreams;
 
-namespace boost { namespace iostreams {
+namespace boost {
+namespace iostreams {
 struct input_seekable_device_tag
-    : virtual device_tag, input_seekable, detail::one_head { };
-} }
+    : virtual device_tag, input_seekable, detail::one_head { };  // NOLINT
+}  // namespace iostreams
+}  // namespace boost
 
 namespace maidsafe {
 
@@ -46,7 +48,6 @@ namespace encrypt {
 
 namespace test {
 class SelfEncryptionStreamTest_BEH_ENCRYPT_DeviceInit_Test;
-class SelfEncryptionStreamTest_BEH_ENCRYPT_DeviceRead_Test;
 class SelfEncryptionStreamTest_BEH_ENCRYPT_DeviceSeek_Test;
 }
 
@@ -59,7 +60,6 @@ class SelfEncryptionDevice : public io::device<io::input_seekable_device_tag> {
   io::stream_offset seek(io::stream_offset offset, std::ios_base::seekdir way);
  private:
   friend class test::SelfEncryptionStreamTest_BEH_ENCRYPT_DeviceInit_Test;
-  friend class test::SelfEncryptionStreamTest_BEH_ENCRYPT_DeviceRead_Test;
   friend class test::SelfEncryptionStreamTest_BEH_ENCRYPT_DeviceSeek_Test;
   DataMap data_map_;
   fs::path chunk_dir_;

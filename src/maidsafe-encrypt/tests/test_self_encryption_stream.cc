@@ -118,14 +118,12 @@ class SelfEncryptionStreamTest : public testing::Test {
   SelfEncryptionStreamTest()
       : kRootDir_(test_ses::TempDir() /
             ("maidsafe_TestSES_" + RandomAlphaNumericString(6))),
-        kFilesDir_(kRootDir_ / "Files"),
         kChunksDir_(kRootDir_ / "Chunks") {}
   ~SelfEncryptionStreamTest() {}
  protected:
   void SetUp() {
     if (fs::exists(kRootDir_))
       fs::remove_all(kRootDir_);
-    fs::create_directories(kFilesDir_);
     fs::create_directories(kChunksDir_);
   }
   void TearDown() {
@@ -137,19 +135,257 @@ class SelfEncryptionStreamTest : public testing::Test {
       printf("%s\n", e.what());
     }
   }
-  const fs::path kRootDir_, kFilesDir_, kChunksDir_;
+  const fs::path kRootDir_, kChunksDir_;
 };
 
 TEST_F(SelfEncryptionStreamTest, BEH_ENCRYPT_DeviceInit) {
-  FAIL() << "Not implemented.";
+  DataMap data_map;
+  {
+    SelfEncryptionDevice sed(data_map, kChunksDir_);
+    EXPECT_EQ(kChunksDir_, sed.chunk_dir_);
+    EXPECT_EQ(0, sed.total_size_);
+  }
+  data_map.content = RandomString(123);
+  {
+    SelfEncryptionDevice sed(data_map, kChunksDir_);
+    EXPECT_EQ(123, sed.total_size_);
+  }
+  for (int i = 1; i <= 5; ++i) {
+    ChunkDetails chunk;
+    chunk.pre_size = i * 100;
+    data_map.chunks.push_back(chunk);
+  }
+  {
+    SelfEncryptionDevice sed(data_map, kChunksDir_);
+    EXPECT_EQ(1500, sed.total_size_);
+  }
 }
 
 TEST_F(SelfEncryptionStreamTest, BEH_ENCRYPT_DeviceRead) {
-  FAIL() << "Not implemented.";
+  {
+    DataMap data_map;
+    SelfEncryptionDevice sed(data_map, kChunksDir_);
+    std::string content(10, 0);
+    EXPECT_EQ(-1, sed.read(&(content[0]), 10));
+    EXPECT_EQ(-1, sed.read(&(content[0]), 0));
+  }
+  {  // unencrypted whole content in DataMap
+    DataMap data_map;
+    data_map.content = RandomString(100);
+
+    SelfEncryptionDevice sed(data_map, kChunksDir_);
+    std::string content1(data_map.content.size(), 0);
+    EXPECT_EQ(data_map.content.size(),
+              sed.read(&(content1[0]), data_map.content.size()));
+    EXPECT_EQ(data_map.content, content1);
+    EXPECT_EQ(-1, sed.read(&(content1[0]), data_map.content.size()));
+    EXPECT_EQ(data_map.content, content1);
+    std::string content2(data_map.content.size(), 0);
+    EXPECT_EQ(data_map.content.size() - 10, sed.seek(-10, std::ios_base::end));
+    EXPECT_EQ(10, sed.read(&(content2[0]), data_map.content.size()));
+    EXPECT_EQ(data_map.content.substr(data_map.content.size() - 10),
+              content2.substr(0, 10));
+    std::string content3(data_map.content.size(), 0);
+    EXPECT_EQ(0, sed.seek(0, std::ios_base::beg));
+    EXPECT_EQ(10, sed.read(&(content3[0]), 10));
+    EXPECT_EQ(data_map.content.substr(0, 10), content3.substr(0, 10));
+  }
+  {  // unencrypted chunk in DataMap
+    DataMap data_map;
+    ChunkDetails chunk;
+    chunk.content = RandomString(100);
+    chunk.pre_hash = crypto::Hash<crypto::SHA512>(chunk.content);
+    chunk.pre_size = chunk.content.size();
+    chunk.size = chunk.content.size();
+    data_map.chunks.push_back(chunk);
+
+    SelfEncryptionDevice sed(data_map, kChunksDir_);
+    std::string content1(chunk.content.size(), 0);
+    EXPECT_EQ(chunk.content.size(),
+              sed.read(&(content1[0]), chunk.content.size()));
+    EXPECT_EQ(chunk.content, content1);
+    EXPECT_EQ(-1, sed.read(&(content1[0]), chunk.content.size()));
+    EXPECT_EQ(chunk.content, content1);
+    std::string content2(chunk.content.size(), 0);
+    EXPECT_EQ(chunk.content.size() - 10, sed.seek(-10, std::ios_base::end));
+    EXPECT_EQ(10, sed.read(&(content2[0]), chunk.content.size()));
+    EXPECT_EQ(chunk.content.substr(chunk.content.size() - 10),
+              content2.substr(0, 10));
+    std::string content3(chunk.content.size(), 0);
+    EXPECT_EQ(0, sed.seek(0, std::ios_base::beg));
+    EXPECT_EQ(10, sed.read(&(content3[0]), 10));
+    EXPECT_EQ(chunk.content.substr(0, 10), content3.substr(0, 10));
+  }
+  {  // single chunk in file
+    DataMap data_map;
+    std::string content_orig(RandomString(100));
+    std::string hash_orig(crypto::Hash<crypto::SHA512>(content_orig));
+    std::string content_enc(utils::SelfEncryptChunk(content_orig, hash_orig,
+                                                    hash_orig));
+    std::string hash_enc(crypto::Hash<crypto::SHA512>(content_enc));
+    fs::path chunk_path(kChunksDir_ / EncodeToHex(hash_enc));
+    EXPECT_TRUE(utils::WriteFile(chunk_path, content_enc));
+    ChunkDetails chunk;
+    chunk.pre_hash = hash_orig;
+    chunk.pre_size = content_orig.size();
+    chunk.hash = hash_enc;
+    chunk.size = content_enc.size();
+    data_map.chunks.push_back(chunk);
+
+    SelfEncryptionDevice sed(data_map, kChunksDir_);
+    std::string content1(content_orig.size(), 0);
+    EXPECT_EQ(content_orig.size(),
+              sed.read(&(content1[0]), content_orig.size()));
+    EXPECT_EQ(content_orig, content1);
+    std::string content2(content_orig.size(), 0);
+    test_ses::CreateRandomFile(chunk_path, 123);
+    EXPECT_EQ(-1, sed.read(&(content2[0]), content_orig.size()));
+    EXPECT_TRUE(fs::remove(chunk_path));
+    EXPECT_EQ(-1, sed.read(&(content2[0]), content_orig.size()));
+  }
+  { // read across borders of multiple chunks
+    const size_t kChunkCount(5);
+    const size_t kChunkSize(10);
+    DataMap data_map;
+    std::vector<std::string> content_orig;
+
+    for (size_t i = 0; i < kChunkCount; ++i) {
+      ChunkDetails chunk;
+      content_orig.push_back(std::string(kChunkSize,
+                                         'a' + static_cast<char>(i)));
+      chunk.pre_hash = crypto::Hash<crypto::SHA512>(content_orig.back());
+      chunk.pre_size = content_orig.back().size();
+      data_map.chunks.push_back(chunk);
+    }
+
+    for (size_t i = 0; i < kChunkCount; ++i) {
+      std::string content_enc(utils::SelfEncryptChunk(
+          content_orig[i], data_map.chunks[(i + 1) % kChunkCount].pre_hash,
+          data_map.chunks[(i + 2) % kChunkCount].pre_hash));
+      std::string hash_enc(crypto::Hash<crypto::SHA512>(content_enc));
+      data_map.chunks[i].hash = hash_enc;
+      data_map.chunks[i].size = content_enc.size();
+      EXPECT_TRUE(utils::WriteFile(kChunksDir_ / EncodeToHex(hash_enc),
+                                   content_enc));
+    }
+
+    SelfEncryptionDevice sed(data_map, kChunksDir_);
+
+    // read and check each character in the stream
+    for (size_t i = 0; i < kChunkCount * kChunkSize; ++i) {
+      char c(0);
+      EXPECT_EQ(1, sed.read(&c, 1));
+      EXPECT_EQ('a' + static_cast<char>(i / kChunkSize), c);
+    }
+
+    // read and check each chunk
+    EXPECT_EQ(0, sed.seek(0, std::ios_base::beg));
+    for (size_t i = 0; i < kChunkCount; ++i) {
+      std::string content(kChunkSize, 0);
+      EXPECT_EQ(kChunkSize, sed.read(&(content[0]), kChunkSize));
+      EXPECT_EQ(std::string(kChunkSize, 'a' + static_cast<char>(i)), content);
+    }
+
+    // read half of one chunk and half of the next
+    EXPECT_EQ(kChunkSize / 2, sed.seek(kChunkSize / 2, std::ios_base::beg));
+    for (size_t i = 0; i < kChunkCount - 1; ++i) {
+      std::string content(kChunkSize, 0);
+      EXPECT_EQ(kChunkSize, sed.read(&(content[0]), kChunkSize));
+      EXPECT_EQ(std::string(kChunkSize / 2, 'a' + static_cast<char>(i)).
+                append(kChunkSize / 2, 'b' + static_cast<char>(i)), content);
+    }
+
+    std::string expected_content;
+    for (size_t i = 0; i < kChunkCount; ++i)
+      expected_content.append(kChunkSize, 'a' + static_cast<char>(i));
+
+    // read the whole file
+    EXPECT_EQ(0, sed.seek(0, std::ios_base::beg));
+    std::string content(kChunkCount * kChunkSize, 0);
+    EXPECT_EQ(content.size(), sed.read(&(content[0]), content.size()));
+    EXPECT_EQ(expected_content, content);
+
+    // read the whole file except first and last byte
+    EXPECT_EQ(1, sed.seek(1, std::ios_base::beg));
+    content.resize(kChunkCount * kChunkSize - 2);
+    EXPECT_EQ(content.size(), sed.read(&(content[0]), content.size()));
+    EXPECT_EQ(expected_content.substr(1, content.size()), content);
+  }
 }
 
 TEST_F(SelfEncryptionStreamTest, BEH_ENCRYPT_DeviceSeek) {
-  FAIL() << "Not implemented.";
+  DataMap data_map;
+  {
+    SelfEncryptionDevice sed(data_map, kChunksDir_);
+    EXPECT_EQ(0, sed.offset_);
+    EXPECT_EQ(-1, sed.seek(-1, std::ios_base::beg));
+    EXPECT_EQ(0, sed.offset_);
+    EXPECT_EQ(0, sed.seek(0, std::ios_base::beg));
+    EXPECT_EQ(0, sed.offset_);
+    EXPECT_EQ(-1, sed.seek(1, std::ios_base::beg));
+    EXPECT_EQ(0, sed.offset_);
+
+    EXPECT_EQ(0, sed.seek(0, std::ios_base::cur));
+    EXPECT_EQ(0, sed.offset_);
+    EXPECT_EQ(-1, sed.seek(-1, std::ios_base::cur));
+    EXPECT_EQ(0, sed.offset_);
+    EXPECT_EQ(-1, sed.seek(1, std::ios_base::cur));
+    EXPECT_EQ(0, sed.offset_);
+
+    EXPECT_EQ(0, sed.seek(0, std::ios_base::end));
+    EXPECT_EQ(0, sed.offset_);
+    EXPECT_EQ(-1, sed.seek(-1, std::ios_base::end));
+    EXPECT_EQ(0, sed.offset_);
+    EXPECT_EQ(-1, sed.seek(1, std::ios_base::end));
+    EXPECT_EQ(0, sed.offset_);
+  }
+  for (int i = 1; i <= 5; ++i) {
+    ChunkDetails chunk;
+    chunk.pre_size = i * 100;
+    data_map.chunks.push_back(chunk);
+  }
+  {
+    SelfEncryptionDevice sed(data_map, kChunksDir_);
+    EXPECT_EQ(0, sed.offset_);
+    EXPECT_EQ(-1, sed.seek(-1, std::ios_base::beg));
+    EXPECT_EQ(0, sed.offset_);
+    EXPECT_EQ(123, sed.seek(123, std::ios_base::beg));
+    EXPECT_EQ(123, sed.offset_);
+    EXPECT_EQ(1500, sed.seek(1500, std::ios_base::beg));
+    EXPECT_EQ(1500, sed.offset_);
+    EXPECT_EQ(-1, sed.seek(1501, std::ios_base::beg));
+    EXPECT_EQ(1500, sed.offset_);
+    EXPECT_EQ(0, sed.seek(0, std::ios_base::beg));
+    EXPECT_EQ(0, sed.offset_);
+
+    EXPECT_EQ(0, sed.seek(0, std::ios_base::cur));
+    EXPECT_EQ(0, sed.offset_);
+    EXPECT_EQ(-1, sed.seek(-1, std::ios_base::cur));
+    EXPECT_EQ(0, sed.offset_);
+    EXPECT_EQ(123, sed.seek(123, std::ios_base::cur));
+    EXPECT_EQ(123, sed.offset_);
+    EXPECT_EQ(246, sed.seek(123, std::ios_base::cur));
+    EXPECT_EQ(246, sed.offset_);
+    EXPECT_EQ(-1, sed.seek(1400, std::ios_base::cur));
+    EXPECT_EQ(246, sed.offset_);
+    EXPECT_EQ(123, sed.seek(-123, std::ios_base::cur));
+    EXPECT_EQ(123, sed.offset_);
+    EXPECT_EQ(-1, sed.seek(-124, std::ios_base::cur));
+    EXPECT_EQ(123, sed.offset_);
+    EXPECT_EQ(0, sed.seek(-123, std::ios_base::cur));
+    EXPECT_EQ(0, sed.offset_);
+
+    EXPECT_EQ(-1, sed.seek(1, std::ios_base::end));
+    EXPECT_EQ(0, sed.offset_);
+    EXPECT_EQ(1500, sed.seek(0, std::ios_base::end));
+    EXPECT_EQ(1500, sed.offset_);
+    EXPECT_EQ(500, sed.seek(-1000, std::ios_base::end));
+    EXPECT_EQ(500, sed.offset_);
+    EXPECT_EQ(-1, sed.seek(-1501, std::ios_base::end));
+    EXPECT_EQ(500, sed.offset_);
+    EXPECT_EQ(0, sed.seek(-1500, std::ios_base::end));
+    EXPECT_EQ(0, sed.offset_);
+  }
 }
 
 }  // namespace encrypt

@@ -20,6 +20,7 @@
 #define MAIDSAFE_ENCRYPT_VERSION 3
 
 #include "maidsafe-dht/common/version.h"
+
 #define THIS_MAIDSAFE_DHT_VERSION 25
 #if MAIDSAFE_DHT_VERSION < THIS_MAIDSAFE_DHT_VERSION
 #error This API is not compatible with the installed library.\

@@ -16,6 +16,7 @@
 
 #include "maidsafe-encrypt/self_encryption_stream.h"
 
+#include <algorithm>
 #include <iosfwd>
 #include <string>
 
@@ -41,13 +42,38 @@ SelfEncryptionDevice::SelfEncryptionDevice(const DataMap &data_map,
       current_chunk_index_(0),
       current_chunk_offset_(0),
       current_chunk_content_() {
-  for (auto it = data_map_.chunks.begin(); it != data_map_.chunks.end(); ++it)
-    total_size_ += it->pre_size;
+  if (data_map_.chunks.size() > 0) {
+    for (auto it = data_map_.chunks.begin(); it != data_map_.chunks.end(); ++it)
+      total_size_ += it->pre_size;
+  } else {
+    total_size_ = data_map_.content.size();
+  }
 }
 
 std::streamsize SelfEncryptionDevice::read(char* s, std::streamsize n) {
   std::streamsize remaining(n);
   size_t chunk_count(data_map_.chunks.size());
+
+  if (offset_ >= total_size_)
+    return -1;
+  if (n <= 0)
+    return 0;
+
+  // check for whole content in DataMap
+  if (chunk_count == 0) {
+    std::string content;
+    if (!data_map_.content.empty()) {
+      if (data_map_.compression_type == kNoCompression)
+        content = data_map_.content.data();
+      else if (data_map_.compression_type == kGzipCompression)
+        content = crypto::Uncompress(data_map_.content);
+    }
+    size_t size(std::min(n, static_cast<std::streamsize>(
+        content.size() - offset_)));
+    static_cast<char*>(memcpy(s, &(content[offset_]), size));
+    offset_ += size;
+    return static_cast<std::streamsize>(size);
+  }
 
   // determine the first chunk in the range
   size_t start_chunk_index(0);
@@ -62,16 +88,15 @@ std::streamsize SelfEncryptionDevice::read(char* s, std::streamsize n) {
     start_chunk_offset += data_map_.chunks[start_chunk_index].pre_size;
     ++start_chunk_index;
   }
-  if (start_chunk_index >= chunk_count ||
-      start_chunk_offset >= total_size_)
+  if (start_chunk_index >= chunk_count || start_chunk_offset >= total_size_)
     return -1;
 
   // determine the last chunk in the range
   size_t end_chunk_index(start_chunk_index);
   io::stream_offset end_chunk_offset(start_chunk_offset);
   while (end_chunk_index < chunk_count - 1 &&
-         end_chunk_offset - start_chunk_offset +
-             data_map_.chunks[end_chunk_index].pre_size < n) {
+         end_chunk_offset + data_map_.chunks[end_chunk_index].pre_size <
+             offset_ + n) {
     end_chunk_offset += data_map_.chunks[end_chunk_index].pre_size;
     ++end_chunk_index;
   }
@@ -80,7 +105,7 @@ std::streamsize SelfEncryptionDevice::read(char* s, std::streamsize n) {
   for (size_t chunk_index = start_chunk_index; chunk_index <= end_chunk_index;
        ++chunk_index, chunk_offset += data_map_.chunks[chunk_index].pre_size) {
     const ChunkDetails &chunk = data_map_.chunks[chunk_index];
-    if (chunk_index != current_chunk_index_) {
+    if (current_chunk_content_.empty() || chunk_index != current_chunk_index_) {
       if (chunk.content.empty()) {
         fs::path chunk_path(chunk_dir_ / EncodeToHex(chunk.hash));
         if (!utils::ReadFile(chunk_path, &current_chunk_content_)) {
@@ -124,8 +149,8 @@ std::streamsize SelfEncryptionDevice::read(char* s, std::streamsize n) {
       this_offset = offset_ - chunk_offset;
     size_t size(std::min(remaining, static_cast<std::streamsize>(
         current_chunk_content_.size() - this_offset)));
-    s = static_cast<char*>(memcpy(s, &(current_chunk_content_[this_offset]),
-                                  size));
+    s = static_cast<char*>(mempcpy(s, &(current_chunk_content_[this_offset]),
+                                   size));
     offset_ += size;
     remaining -= size;
   }
@@ -141,7 +166,7 @@ io::stream_offset SelfEncryptionDevice::seek(io::stream_offset offset,
       new_offset = offset;
       break;
     case std::ios_base::cur:
-      new_offset = offset_ + offset_;
+      new_offset = offset_ + offset;
       break;
     case std::ios_base::end:
       new_offset = total_size_ + offset;
