@@ -25,6 +25,7 @@
 #include "maidsafe-dht/common/utils.h"
 #include "maidsafe-encrypt/config.h"
 #include "maidsafe-encrypt/data_map.h"
+#include "maidsafe-encrypt/self_encryption_stream.h"
 #include "maidsafe-encrypt/utils.h"
 #include "boost/filesystem/fstream.hpp"
 
@@ -172,7 +173,7 @@ int SelfEncrypt(std::istream *input_stream,
       if (!utils::WriteFile(chunk_path, chunk_content[i % 3])) {
         DLOG(ERROR) << "EncryptContent: Can't write chunk data to "
                     << chunk_path.c_str() << std::endl;
-        return kFilesystemError;
+        return kIoError;
       }
     }
 
@@ -242,64 +243,40 @@ int SelfDecrypt(const DataMap &data_map,
     return kNullPointer;
 
   if (!output_stream->good()) {
-    DLOG(ERROR) << "DecryptContent: Output stream is invalid."
+    DLOG(ERROR) << "SelfDecrypt: Output stream is invalid."
                 << std::endl;
     return kIoError;
   }
 
-  size_t chunk_count(data_map.chunks.size());
-  if (chunk_count == 0) {
-    if (!data_map.content.empty()) {
-      if (data_map.compression_type == kNoCompression) {
-        output_stream->write(data_map.content.data(), data_map.content.size());
-      } else if (data_map.compression_type == kGzipCompression) {
-        std::string content(crypto::Uncompress(data_map.content));
-        output_stream->write(content.data(), content.size());
-      }
-      if (output_stream->bad())
-        return kIoError;
-    }
-    return kSuccess;
+  SelfEncryptionStream input_stream(data_map, input_dir);
+  input_stream.seekg(0, std::ios::end);
+  std::streamsize total_size(input_stream.tellg());
+  input_stream.seekg(0);
+
+  // input_stream >> output_stream->rdbuf();
+  std::streamsize buffer_size(io::optimal_buffer_size(input_stream));
+  char *buffer = new char[buffer_size];
+  while (input_stream.good()) {
+    input_stream.read(buffer, buffer_size);
+    output_stream->write(buffer, input_stream.gcount());
+  }
+  delete buffer;
+
+  std::streamsize copied_size(output_stream->tellp());
+
+  if (copied_size != total_size) {
+    DLOG(ERROR) << "SelfDecrypt: Amount of data read (" << copied_size
+                << ") does not match total stream size (" << total_size << ")."
+                << std::endl;
+    return kDecryptError;
   }
 
-  for (size_t i = 0; i < chunk_count; ++i) {
-    const ChunkDetails &chunk = data_map.chunks[i];
-    std::string chunk_content;
-    if (!chunk.content.empty()) {
-      chunk_content = chunk.content;
-    } else {
-      // read chunk file
-      fs::path chunk_path = input_dir / EncodeToHex(chunk.hash);
-      if (!utils::ReadFile(chunk_path, &chunk_content)) {
-        DLOG(ERROR) << "DecryptContent: Can't read chunk data from "
-                    << chunk_path.c_str() << std::endl;
-        return kFilesystemError;
-      }
-      if (chunk_content.size() != chunk.size) {
-        DLOG(ERROR) << "DecryptContent: Wrong chunk size (actual "
-                    << chunk_content.size() << ", expected " << chunk.size
-                    << ") - " << chunk_path.c_str() << std::endl;
-        return kIoError;
-      }
-
-      chunk_content = utils::SelfDecryptChunk(
-          chunk_content, data_map.chunks[(i + 1) % chunk_count].pre_hash,
-          data_map.chunks[(i + 2) % chunk_count].pre_hash);
-    }
-
-    if (data_map.compression_type == kGzipCompression)
-      chunk_content = crypto::Uncompress(chunk_content);
-
-    if (chunk_content.size() != chunk.pre_size ||
-        crypto::Hash<crypto::SHA512>(chunk_content) != chunk.pre_hash) {
-      DLOG(ERROR) << "DecryptContent: Failed restoring chunk data."
-                  << std::endl;
-      return kDecryptError;
-    }
-
-    output_stream->write(chunk_content.data(), chunk_content.size());
+  if (!input_stream.eof() || !output_stream->good()) {
+    DLOG(ERROR) << "SelfDecrypt: Stream read operation failed." << std::endl;
+    return kDecryptError;
   }
-  return output_stream->bad() ? kIoError : kSuccess;
+
+  return kSuccess;
 }
 
 /**
@@ -348,7 +325,7 @@ int SelfDecrypt(const DataMap &data_map,
 #ifdef DEBUG
     printf("SelfDecryptToFile: %s\n", e.what());
 #endif
-    return kFilesystemError;
+    return kIoError;
   }
   fs::ofstream output_stream(output_file, std::ios::out | std::ios::trunc |
                                           std::ios::binary);

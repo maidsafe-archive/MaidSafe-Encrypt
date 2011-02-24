@@ -35,13 +35,6 @@
 namespace fs = boost::filesystem;
 namespace io = boost::iostreams;
 
-namespace boost {
-namespace iostreams {
-struct input_seekable_device_tag
-    : virtual device_tag, input_seekable, detail::one_head { };  // NOLINT
-}  // namespace iostreams
-}  // namespace boost
-
 namespace maidsafe {
 
 namespace encrypt {
@@ -51,12 +44,17 @@ class SelfEncryptionStreamTest_BEH_ENCRYPT_DeviceInit_Test;
 class SelfEncryptionStreamTest_BEH_ENCRYPT_DeviceSeek_Test;
 }
 
-class SelfEncryptionDevice : public io::device<io::input_seekable_device_tag> {
+/// Device implementing basic streaming functionality for self-encryption
+class SelfEncryptionDevice {
  public:
+  typedef char char_type;
+  typedef io::seekable_device_tag category;
   SelfEncryptionDevice(const DataMap &data_map, const fs::path &chunk_dir);
   virtual ~SelfEncryptionDevice() {}
-  std::streamsize read(char* s, std::streamsize n);
-  // std::streamsize write(const char_type* s, std::streamsize n);
+  std::streamsize read(char *s, std::streamsize n);
+  std::streamsize write(const char_type*, std::streamsize) {
+    return -1;
+  }
   io::stream_offset seek(io::stream_offset offset, std::ios_base::seekdir way);
  private:
   friend class test::SelfEncryptionStreamTest_BEH_ENCRYPT_DeviceInit_Test;
@@ -70,7 +68,11 @@ class SelfEncryptionDevice : public io::device<io::input_seekable_device_tag> {
   std::string current_chunk_content_;
 };
 
+/// Stream wrapper for SelfEncryptionDevice
 typedef io::stream<SelfEncryptionDevice> SelfEncryptionStream;
+
+/// StreamBuffer wrapper for SelfEncryptionDevice
+typedef io::stream_buffer<SelfEncryptionDevice> SelfEncryptionStreamBuffer;
 
 }  // namespace encrypt
 

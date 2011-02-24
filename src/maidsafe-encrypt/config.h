@@ -35,20 +35,12 @@ enum ReturnCode {
   kSuccess = 0,
   kEncryptError = -200001,
   kDecryptError = -200002,
-  kInvalidInput = -200003,
-  kChunkSizeError = -200004,
-  kPreEncryptionHashError = -200005,
+  kNullPointer = -200003,
+  kFileAlreadyExists = -200004,
+  kInvalidInput = -200005,
   kIoError = -200006,
-  kCompressionError = -200007,
-  kFilesystemError = -200008,
-  kNoDataHash = -200009,
-  kChunkPathNotFound = -200010,
-  kFileAlreadyExists = -200011,
-  kWrongVersion = -200012,
-  kBadChunk = -200013,
-  kBadDataMap = -200014,
-  kNullPointer = -200015,
-  kOffsetError = -200016
+  kChunkSizeError = -200007,
+  kCompressionError = -200008
 };
 
 /// Default level of compression for data

@@ -12,6 +12,7 @@
  * @file  self_encryption_stream.cc
  * @brief Provides self-en/decryption functionality through a stream interface.
  * @date  2011-02-18
+ * @todo  The stream device should be using exceptions.
  */
 
 #include "maidsafe-encrypt/self_encryption_stream.h"
@@ -50,7 +51,7 @@ SelfEncryptionDevice::SelfEncryptionDevice(const DataMap &data_map,
   }
 }
 
-std::streamsize SelfEncryptionDevice::read(char* s, std::streamsize n) {
+std::streamsize SelfEncryptionDevice::read(char *s, std::streamsize n) {
   std::streamsize remaining(n);
   size_t chunk_count(data_map_.chunks.size());
 
@@ -64,7 +65,7 @@ std::streamsize SelfEncryptionDevice::read(char* s, std::streamsize n) {
     std::string content;
     if (!data_map_.content.empty()) {
       if (data_map_.compression_type == kNoCompression)
-        content = data_map_.content.data();
+        content = data_map_.content;
       else if (data_map_.compression_type == kGzipCompression)
         content = crypto::Uncompress(data_map_.content);
     }
@@ -88,8 +89,10 @@ std::streamsize SelfEncryptionDevice::read(char* s, std::streamsize n) {
     start_chunk_offset += data_map_.chunks[start_chunk_index].pre_size;
     ++start_chunk_index;
   }
-  if (start_chunk_index >= chunk_count || start_chunk_offset >= total_size_)
+  if (start_chunk_index >= chunk_count || start_chunk_offset >= total_size_) {
+    DLOG(ERROR) << "read: Could not determine first chunk." << std::endl;
     return -1;
+  }
 
   // determine the last chunk in the range
   size_t end_chunk_index(start_chunk_index);
@@ -103,19 +106,19 @@ std::streamsize SelfEncryptionDevice::read(char* s, std::streamsize n) {
 
   io::stream_offset chunk_offset(start_chunk_offset);
   for (size_t chunk_index = start_chunk_index; chunk_index <= end_chunk_index;
-       ++chunk_index, chunk_offset += data_map_.chunks[chunk_index].pre_size) {
+       chunk_offset += data_map_.chunks[chunk_index].pre_size, ++chunk_index) {
     const ChunkDetails &chunk = data_map_.chunks[chunk_index];
     if (current_chunk_content_.empty() || chunk_index != current_chunk_index_) {
       if (chunk.content.empty()) {
         fs::path chunk_path(chunk_dir_ / EncodeToHex(chunk.hash));
         if (!utils::ReadFile(chunk_path, &current_chunk_content_)) {
-          DLOG(ERROR) << "Can't read chunk data from " << chunk_path.c_str()
-                      << std::endl;
+          DLOG(ERROR) << "read: Can't read chunk data from "
+                      << chunk_path.c_str() << std::endl;
           return -1;
         }
 
         if (current_chunk_content_.size() != chunk.size) {
-          DLOG(ERROR) << "Wrong chunk size (actual "
+          DLOG(ERROR) << "read: Wrong chunk size (actual "
                       << current_chunk_content_.size() << ", expected "
                       << chunk.size << ") - " << chunk_path.c_str()
                       << std::endl;
@@ -136,7 +139,7 @@ std::streamsize SelfEncryptionDevice::read(char* s, std::streamsize n) {
       if (current_chunk_content_.size() != chunk.pre_size ||
           crypto::Hash<crypto::SHA512>(current_chunk_content_) !=
               chunk.pre_hash) {
-        DLOG(ERROR) << "Failed restoring chunk data." << std::endl;
+        DLOG(ERROR) << "read: Failed restoring chunk data." << std::endl;
         return -1;
       }
 
@@ -172,11 +175,14 @@ io::stream_offset SelfEncryptionDevice::seek(io::stream_offset offset,
       new_offset = total_size_ + offset;
       break;
     default:
+      DLOG(ERROR) << "seek: Invalid seek direction passed." << std::endl;
       return -1;
   }
 
-  if (new_offset < 0 || new_offset > total_size_)
+  if (new_offset < 0 || new_offset > total_size_) {
+    DLOG(ERROR) << "seek: Invalid offset passed." << std::endl;
     return -1;
+  }
 
   offset_ = new_offset;
   return offset_;
