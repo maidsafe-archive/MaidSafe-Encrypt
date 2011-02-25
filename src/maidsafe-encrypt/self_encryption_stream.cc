@@ -152,8 +152,9 @@ std::streamsize SelfEncryptionDevice::read(char *s, std::streamsize n) {
       this_offset = offset_ - chunk_offset;
     size_t size(std::min(remaining, static_cast<std::streamsize>(
         current_chunk_content_.size() - this_offset)));
-    s = static_cast<char*>(mempcpy(s, &(current_chunk_content_[this_offset]),
-                                   size));
+    static_cast<char*>(memcpy(s, &(current_chunk_content_[this_offset]), size));
+
+    s += size;
     offset_ += size;
     remaining -= size;
   }
