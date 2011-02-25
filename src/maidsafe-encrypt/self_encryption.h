@@ -19,6 +19,7 @@
 
 #include <iostream>
 #include <string>
+#include <vector>
 
 #include "boost/filesystem.hpp"
 #include "maidsafe-encrypt/version.h"
@@ -68,6 +69,11 @@ int SelfDecrypt(const DataMap &data_map,
                 const fs::path &input_dir,
                 bool overwrite,
                 const fs::path &output_file);
+
+/// Checks for existance of each chunk file referred to by the DataMap.
+bool ChunksExist(const DataMap &data_map,
+                 const fs::path &input_dir,
+                 std::vector<std::string> *missing_chunks);
 
 }  // namespace encrypt
 

@@ -334,6 +334,33 @@ int SelfDecrypt(const DataMap &data_map,
   return result;
 }
 
+/**
+ * Looks through the DataMap and, unless a chunk's content is included, checks
+ * if a file with the hex-encoded pre-encryption hash exists in the given
+ * directory.
+ *
+ * @param data_map DataMap with chunk information.
+ * @param input_dir Location of the chunk files.
+ * @param missing_chunks Pointer to vector to receive list of unavailable
+ *                       chunks' names, or NULL if not needed.
+ * @return True if all chunk files exist, otherwise false;
+ */
+bool ChunksExist(const DataMap &data_map,
+                 const fs::path &input_dir,
+                 std::vector<std::string> *missing_chunks) {
+  bool result(true);
+  if (missing_chunks)
+    missing_chunks->clear();
+  for (auto it = data_map.chunks.begin(); it != data_map.chunks.end(); ++it) {
+    if (it->content.empty() && !fs::exists(input_dir / EncodeToHex(it->hash))) {
+      if (missing_chunks)
+        missing_chunks->push_back(it->hash);
+      result = false;
+    }
+  }
+  return result;
+}
+
 }  // namespace encrypt
 
 }  // namespace maidsafe
