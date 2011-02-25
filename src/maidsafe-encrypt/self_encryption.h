@@ -1,5 +1,5 @@
 /*******************************************************************************
- *  Copyright 2008 maidsafe.net limited                                        *
+ *  Copyright 2008-2011 maidsafe.net limited                                   *
  *                                                                             *
  *  The following source code is property of maidsafe.net limited and is not   *
  *  meant for external use.  The use of this code is governed by the license   *
@@ -24,7 +24,7 @@
 #include "boost/filesystem.hpp"
 #include "maidsafe-encrypt/version.h"
 
-#if MAIDSAFE_ENCRYPT_VERSION < 3
+#if MAIDSAFE_ENCRYPT_VERSION < 4
 #error This API is not compatible with the installed library.\
   Please update the maidsafe-encrypt library.
 #endif
@@ -36,22 +36,26 @@ namespace maidsafe {
 namespace encrypt {
 
 struct DataMap;
+struct SelfEncryptionParams;
 
 /// Generates secure chunks from a stream.
 int SelfEncrypt(std::istream *input_stream,
                 const fs::path &output_dir,
                 bool try_compression,
+                const SelfEncryptionParams &self_encryption_params,
                 DataMap *data_map);
 
 /// Generates secure chunks from a string.
 int SelfEncrypt(const std::string &input_string,
                 const fs::path &output_dir,
                 bool try_compression,
+                const SelfEncryptionParams &self_encryption_params,
                 DataMap *data_map);
 
 /// Generates secure chunks from a file.
 int SelfEncrypt(const fs::path &input_file,
                 const fs::path &output_dir,
+                const SelfEncryptionParams &self_encryption_params,
                 DataMap *data_map);
 
 /// Restores data from secure chunks to a stream.

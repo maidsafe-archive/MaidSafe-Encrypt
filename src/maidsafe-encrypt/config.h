@@ -1,5 +1,5 @@
 /*******************************************************************************
- *  Copyright 2009 maidsafe.net limited                                        *
+ *  Copyright 2009-2011 maidsafe.net limited                                   *
  *                                                                             *
  *  The following source code is property of maidsafe.net limited and is not   *
  *  meant for external use.  The use of this code is governed by the license   *
@@ -22,7 +22,7 @@
 
 #include "maidsafe-encrypt/version.h"
 
-#if MAIDSAFE_ENCRYPT_VERSION < 3
+#if MAIDSAFE_ENCRYPT_VERSION < 4
 #error This API is not compatible with the installed library.\
   Please update the maidsafe-encrypt library.
 #endif
@@ -31,6 +31,7 @@ namespace maidsafe {
 
 namespace encrypt {
 
+/// Codes returned by the self-en/decryption wrapper methods
 enum ReturnCode {
   kSuccess = 0,
   kEncryptError = -200001,
@@ -43,26 +44,34 @@ enum ReturnCode {
   kCompressionError = -200008
 };
 
+/// Parameters for the self-encryption algorithm
+struct SelfEncryptionParams {
+  SelfEncryptionParams()
+    : max_chunk_size(1 << 18),  // 256 KB
+      max_includable_chunk_size(1 << 8),  // 256 Bytes
+      max_includable_data_size(1 << 10) {}  // 1 KB
+  SelfEncryptionParams(const std::uint32_t &max_chunk_size,
+                       const std::uint32_t &max_includable_chunk_size,
+                       const std::uint32_t &max_includable_data_size)
+    : max_chunk_size(max_chunk_size),
+      max_includable_chunk_size(max_includable_chunk_size),
+      max_includable_data_size(max_includable_data_size) {}
+  /// Maximum size for a chunk, must fit into memory 5 times
+  std::uint32_t max_chunk_size;
+  /// Maximum size for a chunk to be included directly in the DataMap
+  std::uint32_t max_includable_chunk_size;
+  /// Maximum size for a data item to be included directly in the DataMap
+  std::uint32_t max_includable_data_size;
+};
+
 /// Default level of compression for data
 const std::uint16_t kCompressionLevel(9);
 
 /// Amount of data to be tested for compressibility
 const std::uint32_t kCompressionSampleSize = 256;
 
-/// Minimum number of chunks generated per data item
+/// Minimum number of chunks generated per data item, dictated by algorithm
 const std::uint32_t kMinChunks(3);
-
-/// Maximum size for a chunk, must fit into memory 5 times
-const std::uint32_t kMaxChunkSize(1 << 18);  // 256 KB
-
-/// Maximum size for a chunk to be included directly in the DataMap
-const std::uint32_t kMaxIncludableChunkSize(1 << 8);  // 256 Bytes
-
-/// Maximum supported size for a data item
-const std::uint64_t kMaxDataSize(((1ull << 32) - 1) * kMaxChunkSize);  // < 1 PB
-
-/// Maximum size for a data item to be included directly in the DataMap
-const std::uint32_t kMaxIncludableDataSize(1 << 10);  // 1 KB
 
 /// Array of file extensions indicating already existing compression
 const std::string kNoCompressType[] = {".jpg", ".jpeg", ".jpe", ".jfif",

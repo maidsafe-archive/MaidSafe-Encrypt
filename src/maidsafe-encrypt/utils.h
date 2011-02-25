@@ -1,5 +1,5 @@
 /*******************************************************************************
- *  Copyright 2008 maidsafe.net limited                                        *
+ *  Copyright 2008-2011 maidsafe.net limited                                   *
  *                                                                             *
  *  The following source code is property of maidsafe.net limited and is not   *
  *  meant for external use.  The use of this code is governed by the license   *
@@ -30,6 +30,8 @@ namespace maidsafe {
 
 namespace encrypt {
 
+struct SelfEncryptionParams;
+
 namespace utils {
 
 /// Checks file extension against a list of known uncompressible file formats.
@@ -39,7 +41,8 @@ bool IsCompressedFile(const fs::path &file_path);
 bool CheckCompressibility(std::istream *input_stream);
 
 /// Determines the sizes of the chunks the input data will be split into.
-bool CalculateChunkSizes(std::uint64_t data_size,
+bool CalculateChunkSizes(const std::uint64_t &data_size,
+                         const SelfEncryptionParams &self_encryption_params,
                          std::vector<std::uint32_t> *chunk_sizes);
 
 /// Deterministically expands an input string to the required size.

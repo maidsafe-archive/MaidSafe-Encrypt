@@ -1,5 +1,5 @@
 /*******************************************************************************
- *  Copyright 2008 maidsafe.net limited                                        *
+ *  Copyright 2008-2011 maidsafe.net limited                                   *
  *                                                                             *
  *  The following source code is property of maidsafe.net limited and is not   *
  *  meant for external use.  The use of this code is governed by the license   *
@@ -44,12 +44,14 @@ namespace encrypt {
  * @param input_stream The stream providing data to self-encrypt.
  * @param output_dir Directory to store derived chunks in.
  * @param try_compression Whether to attempt compression of the data.
+ * @param self_encryption_params Parameters for the self-encryption algorithm.
  * @param data_map DataMap to be populated with chunk metadata.
  * @return Result of the operation.
  */
 int SelfEncrypt(std::istream *input_stream,
                 const fs::path &output_dir,
                 bool try_compression,
+                const SelfEncryptionParams &self_encryption_params,
                 DataMap *data_map) {
   if (!data_map || !input_stream) {
     DLOG(ERROR) << "EncryptContent: One of the pointers is null." << std::endl;
@@ -60,7 +62,7 @@ int SelfEncrypt(std::istream *input_stream,
   input_stream->seekg(0, std::ios::end);
   std::streampos pos = input_stream->tellg();
 
-  if (!input_stream->good() || pos < 1 || pos > kMaxDataSize) {
+  if (!input_stream->good() || pos < 1) {
     DLOG(ERROR) << "EncryptContent: Input stream is invalid." << std::endl;
     return kInvalidInput;
   }
@@ -79,7 +81,7 @@ int SelfEncrypt(std::istream *input_stream,
 
   input_stream->seekg(0);
 
-  if (data_size <= kMaxIncludableDataSize) {
+  if (data_size <= self_encryption_params.max_includable_data_size) {
     // No chunking, include data in DataMap
     data_map->chunks.clear();
     data_map->content.resize(data_size);
@@ -105,7 +107,8 @@ int SelfEncrypt(std::istream *input_stream,
   data_map->compression_type = kNoCompression;
 
   std::vector<std::uint32_t> chunk_sizes;
-  if (!utils::CalculateChunkSizes(data_size, &chunk_sizes) ||
+  if (!utils::CalculateChunkSizes(data_size, self_encryption_params,
+                                  &chunk_sizes) ||
       chunk_sizes.size() < 3) {
     DLOG(ERROR) << "EncryptContent: CalculateChunkSizes failed." << std::endl;
     return kChunkSizeError;
@@ -155,7 +158,7 @@ int SelfEncrypt(std::istream *input_stream,
     chunk.pre_hash = chunk_hash[i % 3];
     chunk.pre_size = chunk_sizes[i];
 
-    if (chunk_sizes[i] <= kMaxIncludableChunkSize) {
+    if (chunk_sizes[i] <= self_encryption_params.max_includable_chunk_size) {
       chunk.content = chunk_content[i % 3];
       chunk.size = chunk_content[i % 3].size();
       // sic: chunk.hash left empty
@@ -191,15 +194,18 @@ int SelfEncrypt(std::istream *input_stream,
  * @param input_string The string providing data to self-encrypt.
  * @param output_dir Directory to store derived chunks in.
  * @param try_compression Whether to attempt compression of the data.
+ * @param self_encryption_params Parameters for the self-encryption algorithm.
  * @param data_map DataMap to be populated with chunk metadata.
  * @return Result of the operation.
  */
 int SelfEncrypt(const std::string &input_string,
                 const fs::path &output_dir,
                 bool try_compression,
+                const SelfEncryptionParams &self_encryption_params,
                 DataMap *data_map) {
   std::istringstream input_stream(input_string);
-  return SelfEncrypt(&input_stream, output_dir, try_compression, data_map);
+  return SelfEncrypt(&input_stream, output_dir, try_compression,
+                     self_encryption_params, data_map);
 }
 
 /**
@@ -214,15 +220,18 @@ int SelfEncrypt(const std::string &input_string,
  *
  * @param input_file The file providing data to self-encrypt.
  * @param output_dir Directory to store derived chunks in.
+ * @param self_encryption_params Parameters for the self-encryption algorithm.
  * @param data_map DataMap to be populated with chunk metadata.
  * @return Result of the operation.
  */
 int SelfEncrypt(const fs::path &input_file,
                 const fs::path &output_dir,
+                const SelfEncryptionParams &self_encryption_params,
                 DataMap *data_map) {
   fs::ifstream input_stream(input_file, std::ios::in | std::ios::binary);
   int result(SelfEncrypt(&input_stream, output_dir,
-                         utils::IsCompressedFile(input_file), data_map));
+                         utils::IsCompressedFile(input_file),
+                         self_encryption_params, data_map));
   input_stream.close();
   return result;
 }

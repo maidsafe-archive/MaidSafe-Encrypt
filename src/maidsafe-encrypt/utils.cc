@@ -1,5 +1,5 @@
 /*******************************************************************************
- *  Copyright 2008 maidsafe.net limited                                        *
+ *  Copyright 2008-2011 maidsafe.net limited                                   *
  *                                                                             *
  *  The following source code is property of maidsafe.net limited and is not   *
  *  meant for external use.  The use of this code is governed by the license   *
@@ -83,10 +83,12 @@ bool CheckCompressibility(std::istream* input_stream) {
  *   >= kMinChunks * kDefaultChunkSize ---> fixed size + remainder
  *
  * @param data_size Size of the input data.
+ * @param self_encryption_params Parameters for the self-encryption algorithm.
  * @param chunk_sizes Pointer to a chunk size vector to be populated.
  * @return True if operation was successful.
  */
-bool CalculateChunkSizes(std::uint64_t data_size,
+bool CalculateChunkSizes(const std::uint64_t &data_size,
+                         const SelfEncryptionParams &self_encryption_params,
                          std::vector<std::uint32_t> *chunk_sizes) {
   if (!chunk_sizes) {
     DLOG(ERROR) << "CalculateChunkSizes: Pointer is NULL."
@@ -94,26 +96,20 @@ bool CalculateChunkSizes(std::uint64_t data_size,
     return false;
   }
 
-  if (data_size <= kMaxIncludableDataSize) {
+  if (data_size <= self_encryption_params.max_includable_data_size) {
     DLOG(ERROR) << "CalculateChunkSizes: Data should go directly into DataMap."
-                << std::endl;
-    return false;
-  }
-
-  if (data_size > kMaxDataSize) {
-    DLOG(ERROR) << "CalculateChunkSizes: Data too big for chunking."
                 << std::endl;
     return false;
   }
 
   std::uint64_t chunk_count, chunk_size;
   bool fixed_chunks(false);
-  if (data_size < kMinChunks * kMaxChunkSize) {
+  if (data_size < kMinChunks * self_encryption_params.max_chunk_size) {
     chunk_count = kMinChunks;
     chunk_size = data_size / kMinChunks;
   } else {
-    chunk_count = data_size / kMaxChunkSize;
-    chunk_size = kMaxChunkSize;
+    chunk_count = data_size / self_encryption_params.max_chunk_size;
+    chunk_size = self_encryption_params.max_chunk_size;
     fixed_chunks = true;
   }
 
