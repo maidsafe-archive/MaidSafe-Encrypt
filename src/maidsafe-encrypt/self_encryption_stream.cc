@@ -34,28 +34,11 @@ namespace maidsafe {
 
 namespace encrypt {
 
-SelfEncryptionDevice::SelfEncryptionDevice(const DataMap &data_map,
-                                           const fs::path &chunk_dir)
-    : data_map_(data_map),
-      chunk_dir_(chunk_dir),
-      total_size_(0),
-      offset_(0),
-      current_chunk_index_(0),
-      current_chunk_offset_(0),
-      current_chunk_content_() {
-  if (data_map_.chunks.size() > 0) {
-    for (auto it = data_map_.chunks.begin(); it != data_map_.chunks.end(); ++it)
-      total_size_ += it->pre_size;
-  } else {
-    total_size_ = data_map_.content.size();
-  }
-}
-
 std::streamsize SelfEncryptionDevice::read(char *s, std::streamsize n) {
   std::streamsize remaining(n);
   size_t chunk_count(data_map_.chunks.size());
 
-  if (offset_ >= total_size_)
+  if (offset_ >= data_map_.size)
     return -1;
   if (n <= 0)
     return 0;
@@ -89,7 +72,8 @@ std::streamsize SelfEncryptionDevice::read(char *s, std::streamsize n) {
     start_chunk_offset += data_map_.chunks[start_chunk_index].pre_size;
     ++start_chunk_index;
   }
-  if (start_chunk_index >= chunk_count || start_chunk_offset >= total_size_) {
+  if (start_chunk_index >= chunk_count ||
+      start_chunk_offset >= data_map_.size) {
     DLOG(ERROR) << "read: Could not determine first chunk." << std::endl;
     return -1;
   }
@@ -173,14 +157,14 @@ io::stream_offset SelfEncryptionDevice::seek(io::stream_offset offset,
       new_offset = offset_ + offset;
       break;
     case std::ios_base::end:
-      new_offset = total_size_ + offset;
+      new_offset = data_map_.size + offset;
       break;
     default:
       DLOG(ERROR) << "seek: Invalid seek direction passed." << std::endl;
       return -1;
   }
 
-  if (new_offset < 0 || new_offset > total_size_) {
+  if (new_offset < 0 || new_offset > data_map_.size) {
     DLOG(ERROR) << "seek: Invalid offset passed." << std::endl;
     return -1;
   }

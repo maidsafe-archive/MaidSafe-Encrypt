@@ -40,7 +40,6 @@ namespace maidsafe {
 namespace encrypt {
 
 namespace test {
-class SelfEncryptionStreamTest_BEH_ENCRYPT_DeviceInit_Test;
 class SelfEncryptionStreamTest_BEH_ENCRYPT_DeviceSeek_Test;
 }
 
@@ -49,7 +48,13 @@ class SelfEncryptionDevice {
  public:
   typedef char char_type;
   typedef io::seekable_device_tag category;
-  SelfEncryptionDevice(const DataMap &data_map, const fs::path &chunk_dir);
+  SelfEncryptionDevice(const DataMap &data_map, const fs::path &chunk_dir)
+      : data_map_(data_map),
+        chunk_dir_(chunk_dir),
+        offset_(0),
+        current_chunk_index_(0),
+        current_chunk_offset_(0),
+        current_chunk_content_() {}
   virtual ~SelfEncryptionDevice() {}
   std::streamsize read(char *s, std::streamsize n);
   std::streamsize write(const char_type*, std::streamsize) {
@@ -57,11 +62,9 @@ class SelfEncryptionDevice {
   }
   io::stream_offset seek(io::stream_offset offset, std::ios_base::seekdir way);
  private:
-  friend class test::SelfEncryptionStreamTest_BEH_ENCRYPT_DeviceInit_Test;
   friend class test::SelfEncryptionStreamTest_BEH_ENCRYPT_DeviceSeek_Test;
   DataMap data_map_;
   fs::path chunk_dir_;
-  std::streamsize total_size_;
   io::stream_offset offset_;
   size_t current_chunk_index_;
   io::stream_offset current_chunk_offset_;

@@ -38,6 +38,11 @@ enum CompressionType {
   kGzipCompression  ///< Use GNU zip compression
 };
 
+/// Available types of self-encryption
+enum SelfEncryptionType {
+  kObfuscate3AES256  ///< Obfuscate over 3 chunks, encrypt with AES256
+};
+
 /// Holds information about a chunk
 struct ChunkDetails {
   ChunkDetails()
@@ -52,9 +57,12 @@ struct ChunkDetails {
 /// Holds information about the building blocks of a data item
 struct DataMap {
   DataMap()
-    : compression_type(kNoCompression), chunks(), content() {}
+    : compression_type(kNoCompression), self_encryption_type(kObfuscate3AES256),
+      chunks(), size(0), content() {}
   CompressionType compression_type;  ///< Type of compression used for contents
+  SelfEncryptionType self_encryption_type;  ///< Type of SE used for chunks
   std::vector<ChunkDetails> chunks;  ///< Information about the chunks
+  std::uint64_t size;      ///< Size of data item
   std::string content;     ///< Data item contents, if small enough
 };
 

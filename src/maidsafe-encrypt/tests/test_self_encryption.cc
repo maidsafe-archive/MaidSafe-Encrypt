@@ -383,6 +383,8 @@ TEST_P(SelfEncryptionParamTest, BEH_ENCRYPT_SelfEnDecryptStream) {
     EXPECT_TRUE(ChunksExist(data_map, kChunksDir_, NULL));
     EXPECT_EQ(0, data_map.chunks.size());
     EXPECT_EQ(kNoCompression, data_map.compression_type);
+    EXPECT_EQ(kObfuscate3AES256, data_map.self_encryption_type);
+    EXPECT_EQ(sep.max_includable_data_size, data_map.size);
     EXPECT_EQ(sep.max_includable_data_size, data_map.content.size());
     EXPECT_EQ(hash_in, crypto::Hash<crypto::SHA512>(data_map.content));
     std::ostringstream stream_out;
@@ -400,6 +402,8 @@ TEST_P(SelfEncryptionParamTest, BEH_ENCRYPT_SelfEnDecryptStream) {
     EXPECT_TRUE(ChunksExist(data_map, kChunksDir_, NULL));
     EXPECT_EQ(kMinChunks, data_map.chunks.size());
     EXPECT_EQ(kNoCompression, data_map.compression_type);
+    EXPECT_EQ(kObfuscate3AES256, data_map.self_encryption_type);
+    EXPECT_EQ(sep.max_includable_data_size + 1, data_map.size);
     EXPECT_TRUE(data_map.content.empty());
     std::uint64_t total_size(0);
     for (auto it = data_map.chunks.begin(); it < data_map.chunks.end(); ++it) {
@@ -431,6 +435,8 @@ TEST_P(SelfEncryptionParamTest, BEH_ENCRYPT_SelfEnDecryptStream) {
     EXPECT_TRUE(ChunksExist(data_map, kChunksDir_, NULL));
     EXPECT_EQ(kMinChunks + 1, data_map.chunks.size());
     EXPECT_EQ(kNoCompression, data_map.compression_type);
+    EXPECT_EQ(kObfuscate3AES256, data_map.self_encryption_type);
+    EXPECT_EQ(data_size, data_map.size);
     EXPECT_TRUE(data_map.content.empty());
     std::uint64_t total_size(0);
     std::uint32_t i(0);

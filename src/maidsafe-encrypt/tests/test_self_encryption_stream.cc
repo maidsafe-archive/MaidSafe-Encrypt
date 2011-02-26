@@ -104,13 +104,6 @@ fs::path CreateRandomFile(const fs::path &file_path,
   return file_path;
 }
 
-std::uint64_t TotalChunkSize(const std::vector<std::uint32_t> &chunk_sizes) {
-  std::uint64_t total(0);
-  for (size_t i = 0; i < chunk_sizes.size(); ++i)
-    total += chunk_sizes[i];
-  return total;
-}
-
 }  // namespace test_ses
 
 class SelfEncryptionStreamTest : public testing::Test {
@@ -138,29 +131,6 @@ class SelfEncryptionStreamTest : public testing::Test {
   const fs::path kRootDir_, kChunksDir_;
 };
 
-TEST_F(SelfEncryptionStreamTest, BEH_ENCRYPT_DeviceInit) {
-  DataMap data_map;
-  {
-    SelfEncryptionDevice sed(data_map, kChunksDir_);
-    EXPECT_EQ(kChunksDir_, sed.chunk_dir_);
-    EXPECT_EQ(0, sed.total_size_);
-  }
-  data_map.content = RandomString(123);
-  {
-    SelfEncryptionDevice sed(data_map, kChunksDir_);
-    EXPECT_EQ(123, sed.total_size_);
-  }
-  for (int i = 1; i <= 5; ++i) {
-    ChunkDetails chunk;
-    chunk.pre_size = i * 100;
-    data_map.chunks.push_back(chunk);
-  }
-  {
-    SelfEncryptionDevice sed(data_map, kChunksDir_);
-    EXPECT_EQ(1500, sed.total_size_);
-  }
-}
-
 TEST_F(SelfEncryptionStreamTest, BEH_ENCRYPT_DeviceRead) {
   {
     DataMap data_map;
@@ -172,6 +142,7 @@ TEST_F(SelfEncryptionStreamTest, BEH_ENCRYPT_DeviceRead) {
   {  // unencrypted whole content in DataMap
     DataMap data_map;
     data_map.content = RandomString(100);
+    data_map.size = data_map.content.size();
 
     SelfEncryptionDevice sed(data_map, kChunksDir_);
     std::string content1(data_map.content.size(), 0);
@@ -198,6 +169,7 @@ TEST_F(SelfEncryptionStreamTest, BEH_ENCRYPT_DeviceRead) {
     chunk.pre_size = chunk.content.size();
     chunk.size = chunk.content.size();
     data_map.chunks.push_back(chunk);
+    data_map.size = chunk.content.size();
 
     SelfEncryptionDevice sed(data_map, kChunksDir_);
     std::string content1(chunk.content.size(), 0);
@@ -231,6 +203,7 @@ TEST_F(SelfEncryptionStreamTest, BEH_ENCRYPT_DeviceRead) {
     chunk.hash = hash_enc;
     chunk.size = content_enc.size();
     data_map.chunks.push_back(chunk);
+    data_map.size = content_orig.size();
 
     SelfEncryptionDevice sed(data_map, kChunksDir_);
     std::string content1(content_orig.size(), 0);
@@ -256,6 +229,7 @@ TEST_F(SelfEncryptionStreamTest, BEH_ENCRYPT_DeviceRead) {
       chunk.pre_hash = crypto::Hash<crypto::SHA512>(content_orig.back());
       chunk.pre_size = content_orig.back().size();
       data_map.chunks.push_back(chunk);
+      data_map.size += chunk.pre_size;
     }
 
     for (size_t i = 0; i < kChunkCount; ++i) {
@@ -343,6 +317,7 @@ TEST_F(SelfEncryptionStreamTest, BEH_ENCRYPT_DeviceSeek) {
     ChunkDetails chunk;
     chunk.pre_size = i * 100;
     data_map.chunks.push_back(chunk);
+    data_map.size += chunk.pre_size;
   }
   {
     SelfEncryptionDevice sed(data_map, kChunksDir_);

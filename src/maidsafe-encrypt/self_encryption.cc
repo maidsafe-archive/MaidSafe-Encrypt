@@ -79,6 +79,9 @@ int SelfEncrypt(std::istream *input_stream,
       data_map->compression_type = kGzipCompression;
   }
 
+  data_map->self_encryption_type = kObfuscate3AES256;
+  data_map->size = data_size;
+
   input_stream->seekg(0);
 
   if (data_size <= self_encryption_params.max_includable_data_size) {
@@ -258,9 +261,6 @@ int SelfDecrypt(const DataMap &data_map,
   }
 
   SelfEncryptionStream input_stream(data_map, input_dir);
-  input_stream.seekg(0, std::ios::end);
-  std::streamsize total_size(input_stream.tellg());
-  input_stream.seekg(0);
 
   // input_stream >> output_stream->rdbuf();
   std::streamsize buffer_size(io::optimal_buffer_size(input_stream));
@@ -273,9 +273,9 @@ int SelfDecrypt(const DataMap &data_map,
 
   std::streamsize copied_size(output_stream->tellp());
 
-  if (copied_size != total_size) {
+  if (copied_size != data_map.size) {
     DLOG(ERROR) << "SelfDecrypt: Amount of data read (" << copied_size
-                << ") does not match total stream size (" << total_size << ")."
+                << ") does not match total data size (" << data_map.size << ")."
                 << std::endl;
     return kDecryptError;
   }
