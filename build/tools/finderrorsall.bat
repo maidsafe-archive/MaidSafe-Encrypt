@@ -1,9 +1,9 @@
 @echo off
 setlocal
 echo Checking files - each "." represents a single file.
-dir ..\..\src\maidsafe\*.cc /s /b >filelist.txt
-dir ..\..\src\maidsafe\*.h /s /b >>filelist.txt
-findstr /i /v "Done Total .pb. sqlite3.h lifestuff\widgets lifestuff\client" filelist.txt > filelist2.txt
+dir ..\..\src\maidsafe-encrypt\*.cc /s /b >filelist.txt
+dir ..\..\src\maidsafe-encrypt\*.h /s /b >>filelist.txt
+findstr /i /v "Done Total .pb." filelist.txt > filelist2.txt
 set currentpath=%cd%
 cd ..\..\
 set rootpath=%cd%
