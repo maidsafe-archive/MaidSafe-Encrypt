@@ -11,3 +11,5 @@ set(CTEST_DROP_METHOD "http")
 set(CTEST_DROP_SITE "dash.maidsafe.net")
 set(CTEST_DROP_LOCATION "/submit.php?project=MaidsafeEncrypt")
 set(CTEST_DROP_SITE_CDASH TRUE)
+set(SITE ${SITE} ${CMAKE_BUILD_TYPE})
+
