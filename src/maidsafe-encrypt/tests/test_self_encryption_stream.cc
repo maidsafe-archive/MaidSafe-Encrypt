@@ -37,44 +37,6 @@ namespace test {
 
 namespace test_ses {
 
-// TODO(Fraser#5#): Replace with fs::temp_directory_path() from boost 1.45
-fs::path TempDir() {
-#if defined(PD_WIN32)
-  fs::path temp_dir("");
-  if (std::getenv("TEMP"))
-    temp_dir = std::getenv("TEMP");
-  else if (std::getenv("TMP"))
-    temp_dir = std::getenv("TMP");
-#elif defined(P_tmpdir)
-  fs::path temp_dir(P_tmpdir);
-#else
-  fs::path temp_dir("");
-  if (std::getenv("TMPDIR")) {
-    temp_dir = std::getenv("TMPDIR");
-  } else {
-    temp_dir = fs::path("/tmp");
-    try {
-      if (!fs::exists(temp_dir))
-        temp_dir.clear();
-    }
-    catch(const std::exception &e) {
-#ifdef DEBUG
-      printf("In TempDir: %s\n", e.what());
-#endif
-      temp_dir.clear();
-    }
-  }
-#endif
-  size_t last_char = temp_dir.string().size() - 1;
-  if (temp_dir.string()[last_char] == '/' ||
-      temp_dir.string()[last_char] == '\\') {
-    std::string temp_str = temp_dir.string();
-    temp_str.resize(last_char);
-    temp_dir = fs::path(temp_str);
-  }
-  return temp_dir;
-}
-
 fs::path CreateRandomFile(const fs::path &file_path,
                           const std::uint64_t &file_size) {
   fs::ofstream ofs(file_path, std::ios::binary | std::ios::out |
@@ -109,32 +71,36 @@ fs::path CreateRandomFile(const fs::path &file_path,
 class SelfEncryptionStreamTest : public testing::Test {
  public:
   SelfEncryptionStreamTest()
-      : kRootDir_(test_ses::TempDir() /
-            ("maidsafe_TestSES_" + RandomAlphaNumericString(6))),
-        kChunksDir_(kRootDir_ / "Chunks") {}
+      : root_dir_(),
+        chunk_dir_() {
+    boost::system::error_code ec;
+    root_dir_ = boost::filesystem::temp_directory_path(ec) /
+        ("maidsafe_TestSES_" + RandomAlphaNumericString(6));
+    chunk_dir_ = root_dir_ / "Chunks";
+  }
   ~SelfEncryptionStreamTest() {}
  protected:
   void SetUp() {
-    if (fs::exists(kRootDir_))
-      fs::remove_all(kRootDir_);
-    fs::create_directories(kChunksDir_);
+    if (fs::exists(root_dir_))
+      fs::remove_all(root_dir_);
+    fs::create_directories(chunk_dir_);
   }
   void TearDown() {
     try {
-      if (fs::exists(kRootDir_))
-        fs::remove_all(kRootDir_);
+      if (fs::exists(root_dir_))
+        fs::remove_all(root_dir_);
     }
     catch(const std::exception& e) {
       printf("%s\n", e.what());
     }
   }
-  const fs::path kRootDir_, kChunksDir_;
+  fs::path root_dir_, chunk_dir_;
 };
 
 TEST_F(SelfEncryptionStreamTest, BEH_ENCRYPT_DeviceRead) {
   {
     DataMap data_map;
-    SelfEncryptionDevice sed(data_map, kChunksDir_);
+    SelfEncryptionDevice sed(data_map, chunk_dir_);
     std::string content(10, 0);
     EXPECT_EQ(-1, sed.read(&(content[0]), 10));
     EXPECT_EQ(-1, sed.read(&(content[0]), 0));
@@ -144,7 +110,7 @@ TEST_F(SelfEncryptionStreamTest, BEH_ENCRYPT_DeviceRead) {
     data_map.content = RandomString(100);
     data_map.size = data_map.content.size();
 
-    SelfEncryptionDevice sed(data_map, kChunksDir_);
+    SelfEncryptionDevice sed(data_map, chunk_dir_);
     std::string content1(data_map.content.size(), 0);
     EXPECT_EQ(data_map.content.size(),
               sed.read(&(content1[0]), data_map.content.size()));
@@ -171,7 +137,7 @@ TEST_F(SelfEncryptionStreamTest, BEH_ENCRYPT_DeviceRead) {
     data_map.chunks.push_back(chunk);
     data_map.size = chunk.content.size();
 
-    SelfEncryptionDevice sed(data_map, kChunksDir_);
+    SelfEncryptionDevice sed(data_map, chunk_dir_);
     std::string content1(chunk.content.size(), 0);
     EXPECT_EQ(chunk.content.size(),
               sed.read(&(content1[0]), chunk.content.size()));
@@ -195,7 +161,7 @@ TEST_F(SelfEncryptionStreamTest, BEH_ENCRYPT_DeviceRead) {
     std::string content_enc(utils::SelfEncryptChunk(content_orig, hash_orig,
                                                     hash_orig));
     std::string hash_enc(crypto::Hash<crypto::SHA512>(content_enc));
-    fs::path chunk_path(kChunksDir_ / EncodeToHex(hash_enc));
+    fs::path chunk_path(chunk_dir_ / EncodeToHex(hash_enc));
     EXPECT_TRUE(utils::WriteFile(chunk_path, content_enc));
     ChunkDetails chunk;
     chunk.pre_hash = hash_orig;
@@ -205,7 +171,7 @@ TEST_F(SelfEncryptionStreamTest, BEH_ENCRYPT_DeviceRead) {
     data_map.chunks.push_back(chunk);
     data_map.size = content_orig.size();
 
-    SelfEncryptionDevice sed(data_map, kChunksDir_);
+    SelfEncryptionDevice sed(data_map, chunk_dir_);
     std::string content1(content_orig.size(), 0);
     EXPECT_EQ(content_orig.size(),
               sed.read(&(content1[0]), content_orig.size()));
@@ -239,11 +205,11 @@ TEST_F(SelfEncryptionStreamTest, BEH_ENCRYPT_DeviceRead) {
       std::string hash_enc(crypto::Hash<crypto::SHA512>(content_enc));
       data_map.chunks[i].hash = hash_enc;
       data_map.chunks[i].size = content_enc.size();
-      EXPECT_TRUE(utils::WriteFile(kChunksDir_ / EncodeToHex(hash_enc),
+      EXPECT_TRUE(utils::WriteFile(chunk_dir_ / EncodeToHex(hash_enc),
                                    content_enc));
     }
 
-    SelfEncryptionDevice sed(data_map, kChunksDir_);
+    SelfEncryptionDevice sed(data_map, chunk_dir_);
 
     // read and check each character in the stream
     for (size_t i = 0; i < kChunkCount * kChunkSize; ++i) {
@@ -290,7 +256,7 @@ TEST_F(SelfEncryptionStreamTest, BEH_ENCRYPT_DeviceRead) {
 TEST_F(SelfEncryptionStreamTest, BEH_ENCRYPT_DeviceSeek) {
   DataMap data_map;
   {
-    SelfEncryptionDevice sed(data_map, kChunksDir_);
+    SelfEncryptionDevice sed(data_map, chunk_dir_);
     EXPECT_EQ(0, sed.offset_);
     EXPECT_EQ(-1, sed.seek(-1, std::ios_base::beg));
     EXPECT_EQ(0, sed.offset_);
@@ -320,7 +286,7 @@ TEST_F(SelfEncryptionStreamTest, BEH_ENCRYPT_DeviceSeek) {
     data_map.size += chunk.pre_size;
   }
   {
-    SelfEncryptionDevice sed(data_map, kChunksDir_);
+    SelfEncryptionDevice sed(data_map, chunk_dir_);
     EXPECT_EQ(0, sed.offset_);
     EXPECT_EQ(-1, sed.seek(-1, std::ios_base::beg));
     EXPECT_EQ(0, sed.offset_);
