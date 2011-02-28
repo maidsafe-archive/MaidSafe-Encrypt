@@ -199,7 +199,7 @@ ENDFUNCTION()
 ###################################################################################################
 # Boost libraries search                                                                          #
 ###################################################################################################
-SET(REQUIRED_BOOST_COMPONENTS date_time filesystem regex system thread)
+SET(REQUIRED_BOOST_COMPONENTS date_time filesystem regex serialization system thread)
 INCLUDE(${${PROJECT_NAME}_ROOT}/build/maidsafe_FindBoost.cmake)
 SET(INCLUDE_DIRS ${INCLUDE_DIRS} ${Boost_INCLUDE_DIR})
 SET(LIBS_DIRS ${LIBS_DIRS} ${Boost_LIBRARY_DIRS})
@@ -377,7 +377,7 @@ IF(Glog_FOUND)
   ADD_DEFINITIONS(-DHAVE_GLOG)
 ENDIF()
 ADD_DEFINITIONS(-DBOOST_FILESYSTEM_NO_DEPRECATED -DBOOST_FILESYSTEM_VERSION=3)
-TARGET_LINK_LIBRARIES(encrypt maidsafe_dht_LIBRARY ${Boost_FILESYSTEM_LIBRARY} ${Boost_SYSTEM_LIBRARY})
+TARGET_LINK_LIBRARIES(encrypt maidsafe_dht_LIBRARY ${Boost_FILESYSTEM_LIBRARY} ${Boost_SERIALIZATION_LIBRARY} ${Boost_SYSTEM_LIBRARY})
 TARGET_LINK_LIBRARIES(TESTencrypt encrypt ${Gtest_LIBRARY})
 IF(UNIX)
   IF(APPLE)

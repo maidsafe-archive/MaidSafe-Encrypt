@@ -19,6 +19,8 @@
 #include <memory>
 #include <sstream>
 
+#include "boost/archive/text_oarchive.hpp"
+#include "boost/archive/text_iarchive.hpp"
 #include "boost/filesystem.hpp"
 #include "boost/filesystem/fstream.hpp"
 #include "boost/timer.hpp"
@@ -197,6 +199,38 @@ class SelfEncryptionParamTest
 
   fs::path root_dir_, file_dir_, chunk_dir_;
 };
+
+TEST_F(SelfEncryptionTest, BEH_ENCRYPT_Serialisation) {
+  DataMap data_map;
+  {
+    data_map.content = "abcdefg";
+    data_map.size = 12345;
+    ChunkDetails chunk;
+    chunk.content = "test123";
+    chunk.size = 10000;
+    data_map.chunks.push_back(chunk);
+    chunk.content = "test456";
+    chunk.size = 2345;
+    data_map.chunks.push_back(chunk);
+  }
+  std::stringstream ser_data_map;
+  {  // serialise DataMap to string stream
+    boost::archive::text_oarchive oa(ser_data_map);
+    oa << data_map;
+  }
+  {
+    DataMap restored_data_map;
+    boost::archive::text_iarchive ia(ser_data_map);
+    ia >> restored_data_map;
+    EXPECT_EQ(data_map.content, restored_data_map.content);
+    EXPECT_EQ(data_map.size, restored_data_map.size);
+    EXPECT_EQ(data_map.chunks.size(), restored_data_map.chunks.size());
+    EXPECT_EQ(data_map.chunks[0].content, restored_data_map.chunks[0].content);
+    EXPECT_EQ(data_map.chunks[0].size, restored_data_map.chunks[0].size);
+    EXPECT_EQ(data_map.chunks[1].content, restored_data_map.chunks[1].content);
+    EXPECT_EQ(data_map.chunks[1].size, restored_data_map.chunks[1].size);
+  }
+}
 
 TEST_F(SelfEncryptionTest, BEH_ENCRYPT_IsCompressedFile) {
   EXPECT_TRUE(utils::IsCompressedFile("test.7z"));

@@ -21,6 +21,8 @@
 #include <string>
 #include <vector>
 
+#include "boost/serialization/string.hpp"
+#include "boost/serialization/vector.hpp"
 #include "maidsafe-encrypt/version.h"
 
 #if MAIDSAFE_ENCRYPT_VERSION < 4
@@ -69,5 +71,35 @@ struct DataMap {
 }  // namespace encrypt
 
 }  // namespace maidsafe
+
+namespace boost {
+
+namespace serialization {
+
+template<class Archive>
+void serialize(Archive &archive,  // NOLINT
+               maidsafe::encrypt::ChunkDetails &chunk_details,
+               const unsigned int /* version */) {
+  archive & chunk_details.hash;
+  archive & chunk_details.size;
+  archive & chunk_details.pre_hash;
+  archive & chunk_details.pre_size;
+  archive & chunk_details.content;
+}
+
+template<class Archive>
+void serialize(Archive &archive,  // NOLINT
+               maidsafe::encrypt::DataMap &data_map,
+               const unsigned int /* version */) {
+  archive & data_map.compression_type;
+  archive & data_map.self_encryption_type;
+  archive & data_map.chunks;
+  archive & data_map.size;
+  archive & data_map.content;
+}
+
+}  // namespace serialization
+
+}  // namespace boost
 
 #endif  // MAIDSAFE_ENCRYPT_DATA_MAP_H_
