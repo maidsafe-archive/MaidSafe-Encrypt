@@ -93,38 +93,44 @@ std::streamsize SelfEncryptionDevice::read(char *s, std::streamsize n) {
        chunk_offset += data_map_.chunks[chunk_index].pre_size, ++chunk_index) {
     const ChunkDetails &chunk = data_map_.chunks[chunk_index];
     if (current_chunk_content_.empty() || chunk_index != current_chunk_index_) {
-      if (chunk.content.empty()) {
-        fs::path chunk_path(chunk_dir_ / EncodeToHex(chunk.hash));
-        if (!utils::ReadFile(chunk_path, &current_chunk_content_)) {
-          DLOG(ERROR) << "read: Can't read chunk data from "
-                      << chunk_path.c_str() << std::endl;
-          return -1;
+      if (current_chunk_content_.empty() ||
+          chunk.pre_hash != data_map_.chunks[current_chunk_index_].pre_hash) {
+        if (chunk.content.empty()) {
+          fs::path chunk_path(chunk_dir_ / EncodeToHex(chunk.hash));
+          if (!utils::ReadFile(chunk_path, &current_chunk_content_)) {
+            DLOG(ERROR) << "read: Can't read chunk data from "
+                        << chunk_path.c_str() << std::endl;
+            return -1;
+          }
+
+          if (current_chunk_content_.size() != chunk.size) {
+            DLOG(ERROR) << "read: Wrong chunk size (actual "
+                        << current_chunk_content_.size() << ", expected "
+                        << chunk.size << ") - " << chunk_path.c_str()
+                        << std::endl;
+            return -1;
+          }
+
+          current_chunk_content_ = utils::SelfDecryptChunk(
+              current_chunk_content_,
+              data_map_.chunks[(chunk_index + 1) % chunk_count].pre_hash,
+              data_map_.chunks[(chunk_index + 2) % chunk_count].pre_hash);
+        } else {
+          current_chunk_content_ = data_map_.chunks[chunk_index].content;
         }
 
-        if (current_chunk_content_.size() != chunk.size) {
-          DLOG(ERROR) << "read: Wrong chunk size (actual "
-                      << current_chunk_content_.size() << ", expected "
-                      << chunk.size << ") - " << chunk_path.c_str()
-                      << std::endl;
+        if (data_map_.compression_type == kGzipCompression)
+          current_chunk_content_ = crypto::Uncompress(current_chunk_content_);
+
+        if (current_chunk_content_.size() != chunk.pre_size ||
+            crypto::Hash<crypto::SHA512>(current_chunk_content_) !=
+                chunk.pre_hash) {
+          DLOG(ERROR) << "read: Failed restoring chunk data." << std::endl;
           return -1;
         }
-
-        current_chunk_content_ = utils::SelfDecryptChunk(
-            current_chunk_content_,
-            data_map_.chunks[(chunk_index + 1) % chunk_count].pre_hash,
-            data_map_.chunks[(chunk_index + 2) % chunk_count].pre_hash);
       } else {
-        current_chunk_content_ = data_map_.chunks[chunk_index].content;
-      }
-
-      if (data_map_.compression_type == kGzipCompression)
-        current_chunk_content_ = crypto::Uncompress(current_chunk_content_);
-
-      if (current_chunk_content_.size() != chunk.pre_size ||
-          crypto::Hash<crypto::SHA512>(current_chunk_content_) !=
-              chunk.pre_hash) {
-        DLOG(ERROR) << "read: Failed restoring chunk data." << std::endl;
-        return -1;
+        // we have a chunk cached with the same contents, no need to reload
+        // DLOG(INFO) << "read: chunk cache hit" << std::endl;
       }
 
       current_chunk_index_ = chunk_index;
