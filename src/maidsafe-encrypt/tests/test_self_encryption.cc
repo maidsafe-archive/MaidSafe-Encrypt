@@ -256,6 +256,13 @@ TEST_F(SelfEncryptionTest, BEH_ENCRYPT_IsCompressedFile) {
 TEST_F(SelfEncryptionTest, BEH_ENCRYPT_CheckCompressibility) {
   std::stringstream stream;
 
+  // null pointer
+  EXPECT_FALSE(utils::CheckCompressibility(NULL));
+
+  // no data
+  EXPECT_FALSE(utils::CheckCompressibility(&stream));
+  stream.clear();
+
   //  make compressible string
   for (int i = 0; i < 1000; ++i)
     stream << "repeated text ";
@@ -271,6 +278,7 @@ TEST_F(SelfEncryptionTest, BEH_ENCRYPT_CheckCompressibility) {
 TEST_P(SelfEncryptionParamTest, BEH_ENCRYPT_CalculateChunkSizes) {
   std::vector<std::uint32_t> chunk_sizes;
   std::uint64_t data_size(0);
+  EXPECT_FALSE(utils::CalculateChunkSizes(data_size, sep_, NULL));
   EXPECT_FALSE(utils::CalculateChunkSizes(data_size, sep_, &chunk_sizes));
   EXPECT_EQ(0, chunk_sizes.size());
 
@@ -387,6 +395,8 @@ TEST_F(SelfEncryptionTest, BEH_ENCRYPT_SelfEnDecryptStreamInvalid) {
             SelfEncrypt(&stream, chunk_dir_, false, sep, NULL));
   EXPECT_EQ(kNullPointer,
             SelfEncrypt(NULL, chunk_dir_, false, sep, &data_map));
+  EXPECT_EQ(kNullPointer, SelfDecrypt(data_map, chunk_dir_,
+                                      static_cast<std::ostringstream*>(NULL)));
 }
 
 TEST_P(SelfEncryptionParamTest, BEH_ENCRYPT_SelfEnDecryptStreamFullInclude) {
@@ -602,6 +612,8 @@ TEST_P(SelfEncryptionParamTest, BEH_ENCRYPT_SelfEnDecryptString) {
     EXPECT_EQ(kInvalidInput, SelfEncrypt("", chunk_dir_, false, sep_,
                                          &data_map));
     EXPECT_EQ(kNullPointer, SelfEncrypt("test", chunk_dir_, false, sep_, NULL));
+    EXPECT_EQ(kNullPointer, SelfDecrypt(data_map, chunk_dir_,
+                                        static_cast<std::string*>(NULL)));
   }
 
   {  // Random data test
@@ -655,6 +667,7 @@ TEST_P(SelfEncryptionParamTest, BEH_ENCRYPT_SelfEnDecryptFile) {
     DataMap data_map;
     EXPECT_EQ(kFileAlreadyExists,
               SelfDecrypt(data_map, chunk_dir_, false, path_out));
+    EXPECT_EQ(kSuccess, SelfDecrypt(data_map, chunk_dir_, true, path_out));
   }
 }
 

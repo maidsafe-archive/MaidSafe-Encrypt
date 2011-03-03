@@ -112,6 +112,7 @@ TEST_F(SelfEncryptionStreamTest, BEH_ENCRYPT_DeviceRead) {
 
     SelfEncryptionDevice sed(data_map, chunk_dir_);
     std::string content1(data_map.content.size(), 0);
+    EXPECT_EQ(0, sed.read(&(content1[0]), 0));
     EXPECT_EQ(data_map.content.size(),
               sed.read(&(content1[0]), data_map.content.size()));
     EXPECT_EQ(data_map.content, content1);
@@ -253,10 +254,20 @@ TEST_F(SelfEncryptionStreamTest, BEH_ENCRYPT_DeviceRead) {
   }
 }
 
+TEST_F(SelfEncryptionStreamTest, BEH_ENCRYPT_DeviceWrite) {
+  // write not implemented, so always expect failure
+  DataMap data_map;
+  SelfEncryptionDevice sed(data_map, chunk_dir_);
+  std::string content(10, 0);
+  EXPECT_EQ(-1, sed.write(&(content[0]), 10));
+}
+
 TEST_F(SelfEncryptionStreamTest, BEH_ENCRYPT_DeviceSeek) {
   DataMap data_map;
   {
     SelfEncryptionDevice sed(data_map, chunk_dir_);
+    EXPECT_EQ(-1, sed.seek(1, static_cast<std::ios_base::seekdir>(-1)));
+
     EXPECT_EQ(0, sed.offset_);
     EXPECT_EQ(-1, sed.seek(-1, std::ios_base::beg));
     EXPECT_EQ(0, sed.offset_);

@@ -318,7 +318,7 @@ int SelfDecrypt(const DataMap &data_map,
                 const fs::path &input_dir,
                 std::string *output_string) {
   if (!output_string)
-    return kDecryptError;
+    return kNullPointer;
   std::ostringstream output_stream;
   int result(SelfDecrypt(data_map, input_dir, &output_stream));
   *output_string = output_stream.str();

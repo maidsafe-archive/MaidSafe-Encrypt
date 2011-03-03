@@ -53,7 +53,7 @@ bool IsCompressedFile(const fs::path &file_path) {
  * @return True if input data is likely compressible.
  */
 bool CheckCompressibility(std::istream* input_stream) {
-  if (!input_stream->good())
+  if (!input_stream || !input_stream->good())
     return false;
 
   std::string test_data(kCompressionSampleSize, 0);
