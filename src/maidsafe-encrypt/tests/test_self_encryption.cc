@@ -521,8 +521,13 @@ TEST_P(SelfEncryptionParamTest, BEH_ENCRYPT_SelfEnDecryptStreamDedup) {
   EXPECT_EQ(kChunkCount * sep_.max_chunk_size, data_map.size);
   EXPECT_TRUE(data_map.content.empty());
   std::uint64_t total_size(0);
+  std::string post_enc_hash;
   for (auto it = data_map.chunks.begin(); it < data_map.chunks.end(); ++it) {
     EXPECT_FALSE(it->hash.empty());
+    if (it == data_map.chunks.begin())
+      post_enc_hash = it->hash;
+    else
+      EXPECT_EQ(post_enc_hash, it->hash);
     EXPECT_TRUE(it->content.empty());
     EXPECT_EQ(sep_.max_chunk_size, it->size);
     EXPECT_EQ(chunk_hash, it->pre_hash);
