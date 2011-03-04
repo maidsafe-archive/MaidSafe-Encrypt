@@ -21,9 +21,9 @@
 #include <sstream>
 #include <vector>
 
-#include "maidsafe-dht/common/crypto.h"
-#include "maidsafe-dht/common/log.h"
-#include "maidsafe-dht/common/utils.h"
+#include "maidsafe/common/crypto.h"
+#include "maidsafe/common/log.h"
+#include "maidsafe/common/utils.h"
 #include "maidsafe-encrypt/config.h"
 #include "maidsafe-encrypt/data_map.h"
 #include "maidsafe-encrypt/self_encryption_stream.h"
@@ -59,7 +59,7 @@ int SelfEncrypt(std::istream *input_stream,
     return kNullPointer;
   }
 
-  // TODO pass size in for proper streaming, avoid seeking
+  // TODO(Steve) pass size in for proper streaming, avoid seeking
   input_stream->seekg(0, std::ios::end);
   std::streampos pos = input_stream->tellg();
 

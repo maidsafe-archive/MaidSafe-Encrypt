@@ -1,8 +1,0 @@
-#!/bin/bash
-svn log -v --xml > logfile.log
-statsvn -output-dir tmp -title "maidsafe.net PerpetualData"  -exclude "pjnath/**:stund/**:libjingle/**" logfile.log . 
-mkdir -p tmp
-cd tmp
-scp -rp * www.maidsafe.net:~/public_html/
-cd ..
-rm -rf tmp

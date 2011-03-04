@@ -18,7 +18,7 @@
 #define MAIDSAFE_ENCRYPT_UTILS_H_
 
 #include <cstdint>
-#include <iostream>
+#include <iostream>  // NOLINT
 #include <string>
 #include <vector>
 

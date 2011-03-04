@@ -15,13 +15,13 @@
  */
 
 #include <cstdint>
-#include <iostream>
+#include <iostream>  // NOLINT
 
 #include "boost/filesystem.hpp"
 #include "boost/filesystem/fstream.hpp"
 #include "gtest/gtest.h"
-#include "maidsafe-dht/common/crypto.h"
-#include "maidsafe-dht/common/utils.h"
+#include "maidsafe/common/crypto.h"
+#include "maidsafe/common/utils.h"
 #include "maidsafe-encrypt/config.h"
 #include "maidsafe-encrypt/data_map.h"
 #include "maidsafe-encrypt/self_encryption_stream.h"

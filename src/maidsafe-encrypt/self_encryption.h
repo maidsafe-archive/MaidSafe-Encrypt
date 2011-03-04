@@ -17,7 +17,7 @@
 #ifndef MAIDSAFE_ENCRYPT_SELF_ENCRYPTION_H_
 #define MAIDSAFE_ENCRYPT_SELF_ENCRYPTION_H_
 
-#include <iostream>
+#include <iostream>  // NOLINT
 #include <string>
 #include <vector>
 

@@ -14,7 +14,7 @@
  * @date  2010-10-12
  */
 
-#include "maidsafe-dht/common/log.h"
+#include "maidsafe/common/log.h"
 #include "gtest/gtest.h"
 
 int main(int argc, char **argv) {

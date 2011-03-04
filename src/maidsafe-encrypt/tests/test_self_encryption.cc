@@ -15,7 +15,7 @@
  */
 
 #include <cstdint>
-#include <iostream>
+#include <iostream>  // NOLINT
 #include <memory>
 #include <sstream>
 
@@ -25,8 +25,8 @@
 #include "boost/filesystem/fstream.hpp"
 #include "boost/timer.hpp"
 #include "gtest/gtest.h"
-#include "maidsafe-dht/common/crypto.h"
-#include "maidsafe-dht/common/utils.h"
+#include "maidsafe/common/crypto.h"
+#include "maidsafe/common/utils.h"
 #include "maidsafe-encrypt/config.h"
 #include "maidsafe-encrypt/data_map.h"
 #include "maidsafe-encrypt/self_encryption.h"
@@ -140,10 +140,10 @@ class SelfEncryptionTest : public testing::Test {
 class SelfEncryptionParamTest
   : public SelfEncryptionTest,
     public testing::WithParamInterface<SelfEncryptionParams> {};
-  // TODO add sep_ and param output
+  // TODO(Steve) add sep_ and param output
 */
 
-// TODO replace this by the above declaration after upgrade to gtest 1.6
+// TODO(Steve) replace this by the above declaration after upgrade to gtest 1.6
 class SelfEncryptionParamTest
   : public testing::TestWithParam<SelfEncryptionParams> {
  public:
@@ -748,8 +748,8 @@ TEST_F(SelfEncryptionTest, BEH_ENCRYPT_ChunksExist) {
 }
 
 TEST_F(SelfEncryptionTest, DISABLED_BEH_ENCRYPT_Compression) {
-  // TODO Test if compression can be toggled, if it's noticable in sizes, and
-  //      if the resulting chunk sizes are constant except for the last one.
+  // TODO(Steve) Test if compression can be toggled, it's noticable in sizes,
+  //             and resulting chunk sizes are constant except for the last one.
   FAIL() << "Not implemented yet.";
 }
 

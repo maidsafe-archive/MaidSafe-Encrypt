@@ -158,24 +158,14 @@ FILE(WRITE ${${PROJECT_NAME}_BINARY_DIR}/CTestCustom.cmake "SET(CTEST_CUSTOM_COV
 ###################################################################################################
 # Set default directories to be searched for included files and libs                              #
 ###################################################################################################
+SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${${PROJECT_NAME}_ROOT}/build)
+
 IF(DEFINED ADD_LIBRARY_DIR)
   IF(DEFAULT_LIBRARY_DIR)
     LIST(REMOVE_DUPLICATES DEFAULT_LIBRARY_DIR)
   ENDIF()
   SET(DEFAULT_LIBRARY_DIR ${DEFAULT_LIBRARY_DIR} ${ADD_LIBRARY_DIR} CACHE PATH "Path to libraries directories" FORCE)
 ENDIF()
-
-IF(MSVC)
-  SET(CMAKE_INCLUDE_PATH "c:\\msvc\\include")
-  SET(CMAKE_LIBRARY_PATH "c:\\msvc\\lib" ${DEFAULT_LIBRARY_DIR})
-ELSEIF(WIN32) # MinGW builds
-  SET(CMAKE_INCLUDE_PATH "c:\\MinGW\\include")
-  SET(CMAKE_LIBRARY_PATH "c:\\MinGW\\lib" ${DEFAULT_LIBRARY_DIR})
-ELSE()
-  SET(CMAKE_INCLUDE_PATH "/usr/local/include /usr/include")
-  SET(CMAKE_LIBRARY_PATH "/usr/local/lib /usr/lib" ${DEFAULT_LIBRARY_DIR})
-ENDIF()
-
 
 # Function to help set <MODULE>_ROOT_DIR for use of following Find Modules
 # Example: For PROJ_VARIABLE set to "BOOST_ROOT_DIR", PROJ_SEARCH_REGEX set to "boost",
@@ -197,21 +187,23 @@ FUNCTION(FIND_THIRD_PARTY_PROJECT PROJ_VARIABLE PROJ_SEARCH_REGEX PROJ_SEARCH_DI
 ENDFUNCTION()
 
 ###################################################################################################
+# MaidSafe Common library search                                                                  #
+###################################################################################################
+INCLUDE(maidsafe_FindCommon)
+SET(INCLUDE_DIRS ${INCLUDE_DIRS} ${MaidSafeCommon_INCLUDE_DIR})
+
+###################################################################################################
 # Boost libraries search                                                                          #
 ###################################################################################################
 SET(REQUIRED_BOOST_COMPONENTS date_time filesystem regex serialization system thread)
-INCLUDE(${${PROJECT_NAME}_ROOT}/build/maidsafe_FindBoost.cmake)
+INCLUDE(maidsafe_FindBoost)
 SET(INCLUDE_DIRS ${INCLUDE_DIRS} ${Boost_INCLUDE_DIR})
-SET(LIBS_DIRS ${LIBS_DIRS} ${Boost_LIBRARY_DIRS})
-SET(LIBS_DIRS_DEBUG ${LIBS_DIRS_DEBUG} ${Boost_LIBRARY_DIRS})
 
 ###################################################################################################
 # Google Test library search                                                                      #
 ###################################################################################################
-INCLUDE(${${PROJECT_NAME}_ROOT}/build/maidsafe_FindGtest.cmake)
+INCLUDE(maidsafe_FindGtest)
 SET(INCLUDE_DIRS ${INCLUDE_DIRS} ${Gtest_INCLUDE_DIR})
-SET(LIBS_DIRS ${LIBS_DIRS} ${Gtest_LIBRARY_DIR})
-SET(LIBS_DIRS_DEBUG ${LIBS_DIRS_DEBUG} ${Gtest_LIBRARY_DIR_DEBUG})
 IF(NOT WIN32)
   SET(Gtest_LIBRARY "${Gtest_LIBRARY};pthread")
 ENDIF()
@@ -219,22 +211,14 @@ ENDIF()
 ###################################################################################################
 # Google Mock library search                                                                      #
 ###################################################################################################
-INCLUDE(${${PROJECT_NAME}_ROOT}/build/maidsafe_FindGmock.cmake)
+INCLUDE(maidsafe_FindGmock)
 SET(INCLUDE_DIRS ${INCLUDE_DIRS} ${Gmock_INCLUDE_DIR})
-SET(LIBS_DIRS ${LIBS_DIRS} ${Gmock_LIBRARY_DIR})
-SET(LIBS_DIRS_DEBUG ${LIBS_DIRS_DEBUG} ${Gmock_LIBRARY_DIR_DEBUG})
 
 ###################################################################################################
-# Google Log library search - Glog can't currently be compiled on Windows with MinGW              #
+# Google Log library search                                                                       #
 ###################################################################################################
-IF((NOT WIN32) OR MSVC)
-  INCLUDE(${${PROJECT_NAME}_ROOT}/build/maidsafe_FindGlog.cmake)
-  IF(Glog_FOUND)
-    SET(INCLUDE_DIRS ${INCLUDE_DIRS} ${Glog_INCLUDE_DIR})
-    SET(LIBS_DIRS ${LIBS_DIRS} ${Glog_LIBRARY_DIR})
-    SET(LIBS_DIRS_DEBUG ${LIBS_DIRS_DEBUG} ${Glog_LIBRARY_DIR_DEBUG})
-  ENDIF()
-ENDIF()
+INCLUDE(maidsafe_FindGlog)
+SET(INCLUDE_DIRS ${INCLUDE_DIRS} ${Glog_INCLUDE_DIR})
 
 ###################################################################################################
 # Python library search                                                                           #
@@ -249,7 +233,7 @@ ELSE()
 ENDIF()
 
 ###################################################################################################
-# All other libraries (except maidsafe_dht) search                                                #
+# All other libraries search                                                                      #
 ###################################################################################################
 IF(UNIX)
   SET(OTHER_LIBS dl pthread)
@@ -281,14 +265,6 @@ FOREACH(library ${OTHER_LIBS})
   ENDIF()
   UNSET(CURRENT_LIB CACHE)
 ENDFOREACH()
-
-###################################################################################################
-# maidsafe-dht, cryptopp and udt library search                                                   #
-###################################################################################################
-INCLUDE(${${PROJECT_NAME}_ROOT}/build/maidsafe_FindMaidsafeDht.cmake)
-SET(INCLUDE_DIRS ${INCLUDE_DIRS} ${maidsafe_dht_INCLUDE_DIR})
-SET(LIBS_DIRS ${LIBS_DIRS} ${maidsafe_dht_LIBRARY_DIR})
-SET(LIBS_DIRS_DEBUG ${LIBS_DIRS_DEBUG} ${maidsafe_dht_LIBRARY_DIR_DEBUG})
 
 
 LIST(REMOVE_DUPLICATES LIBS_DIRS)
@@ -365,7 +341,10 @@ ENDIF()
 
 IF(UNIX)
   # When this target is built, it removes all .gcda files from the build directory and its subdirectories
-  ADD_CUSTOM_TARGET(CleanCoverage COMMAND ${CMAKE_COMMAND} -DSEARCH_DIR=${CMAKE_BINARY_DIR} -P ${${PROJECT_NAME}_ROOT}/build/clean_coverage.cmake)
+  FIND_FILE(CLEAN_COVERAGE_CMAKE clean_coverage.cmake ${MaidSafeCommon_MODULES_DIR})
+  IF(CLEAN_COVERAGE_CMAKE)
+    ADD_CUSTOM_TARGET(CleanCoverage COMMAND ${CMAKE_COMMAND} -DSEARCH_DIR=${CMAKE_BINARY_DIR} -P ${CLEAN_COVERAGE_CMAKE})
+  ENDIF()
   # This target builds the reference manual using Doxygen
   ADD_CUSTOM_TARGET(Reference COMMAND doxygen WORKING_DIRECTORY ${${PROJECT_NAME}_ROOT})
 ENDIF()
@@ -377,7 +356,7 @@ IF(Glog_FOUND)
   ADD_DEFINITIONS(-DHAVE_GLOG)
 ENDIF()
 ADD_DEFINITIONS(-DBOOST_FILESYSTEM_NO_DEPRECATED -DBOOST_FILESYSTEM_VERSION=3)
-TARGET_LINK_LIBRARIES(encrypt maidsafe_dht_LIBRARY ${Boost_FILESYSTEM_LIBRARY} ${Boost_SERIALIZATION_LIBRARY} ${Boost_SYSTEM_LIBRARY})
+TARGET_LINK_LIBRARIES(encrypt maidsafe_common_static ${Boost_FILESYSTEM_LIBRARY} ${Boost_SERIALIZATION_LIBRARY} ${Boost_SYSTEM_LIBRARY})
 TARGET_LINK_LIBRARIES(TESTencrypt encrypt ${Gtest_LIBRARY})
 IF(UNIX)
   IF(APPLE)
@@ -455,10 +434,10 @@ ENDIF()
 # Tests                                                                                           #
 ###################################################################################################
 INCLUDE(CTest)
+INCLUDE(maidsafe_AddGtests)
+
 SET(BEHAVIOURAL_TEST_TIMEOUT 60)
 SET(FUNCTIONAL_TEST_TIMEOUT 600)
-INCLUDE(${${PROJECT_NAME}_ROOT}/build/maidsafe_AddGtests.cmake)
-
 SET(CTEST_CUSTOM_MAXIMUM_PASSED_TEST_OUTPUT_SIZE 50000)
 SET(CTEST_CUSTOM_MAXIMUM_FAILED_TEST_OUTPUT_SIZE 50000)
 SET(CTEST_CONTINUOUS_DURATION 600)
@@ -481,18 +460,14 @@ IF(INCLUDE_TEST)
   UNSET(INCLUDE_TEST CACHE)
 ENDIF()
 
-IF(NOT ${MAIDSAFE_TEST_TYPE} MATCHES "BEH")
-  LIST(FIND EXCLUDED_TESTS STYLE_CHECK TEST_EXCLUDED)
-  IF((TEST_EXCLUDED EQUAL -1) AND PYTHONINTERP_FOUND)
-    IF(UNIX)
-      SET(STYLE_ALL ${ALL_FILES} ${ALL_FILES_TESTS_DIR})
-      ADD_TEST(STYLE_CHECK ${${PROJECT_NAME}_ROOT}/build/tools/cpplint.py ${STYLE_ALL})
-      SET_PROPERTY(TEST STYLE_CHECK PROPERTY LABELS Functional CodingStyle)
-    ELSE()
-      ADD_TEST(STYLE_CHECK ${${PROJECT_NAME}_ROOT}/build/tools/finderrorsall.bat)
-      SET_PROPERTY(TEST STYLE_CHECK PROPERTY LABELS Functional CodingStyle)
-    ENDIF()
+IF(PYTHONINTERP_FOUND)
+  IF(UNIX)
+    ADD_TEST(STYLE_CHECK python ${MaidSafeCommon_TOOLS_DIR}/cpplint.py ${ALL_FILES} ${ALL_FILES_TESTS_DIR})
+  ELSE()
+    STRING(REPLACE "/" "\\\\" STYLE_CHECK_SOURCE ${${PROJECT_NAME}_ROOT})
+    ADD_TEST(STYLE_CHECK ${MaidSafeCommon_TOOLS_DIR}/run_cpplint.bat ${STYLE_CHECK_SOURCE})
   ENDIF()
+  SET_PROPERTY(TEST STYLE_CHECK PROPERTY LABELS Functional CodingStyle)
 ENDIF()
 
 ADD_GTESTS(TESTencrypt)
@@ -525,24 +500,6 @@ MESSAGE("    To exclude a test,                 ${ERROR_MESSAGE_CMAKE_PATH} -DEX
 MESSAGE("    To re-include a test,              ${ERROR_MESSAGE_CMAKE_PATH} -DINCLUDE_TEST=<Test Name>")
 MESSAGE("================================================================================")
 MESSAGE("")
-IF(NOT MSVC)
-  MESSAGE("Build type is set to \"${CMAKE_BUILD_TYPE}\"")
-  IF((NOT MAIDSAFE_DHT_BUILD_TYPE MATCHES "Debug") AND
-     (NOT MAIDSAFE_DHT_BUILD_TYPE MATCHES "RelWithDebInfo") AND
-     (NOT MAIDSAFE_DHT_BUILD_TYPE MATCHES "MinSizeRel"))
-    SET(MAIDSAFE_DHT_BUILD_TYPE Release)
-  ENDIF()
-  MESSAGE("Linking to \"${MAIDSAFE_DHT_BUILD_TYPE}\" build of maidsafe-dht, cryptopp & udt")
-  MESSAGE("")
-  MESSAGE("    To alter build type (e.g. to Debug), ${ERROR_MESSAGE_CMAKE_PATH} -DCMAKE_BUILD_TYPE=Debug")
-  MESSAGE("")
-  MESSAGE("    To link to (e.g. Debug) build of maidsafe-dht, cryptopp & udt,")
-  MESSAGE("                                  ${ERROR_MESSAGE_CMAKE_PATH} -DMAIDSAFE_DHT_BUILD_TYPE=Debug")
-  MESSAGE("")
-  MESSAGE("    Options are Release, Debug, RelWithDebInfo, MinSizeRel")
-  MESSAGE("================================================================================")
-  MESSAGE("")
-ENDIF()
 
 IF(NOT INSTALL_PREFIX)
   IF(MINGW)
@@ -567,23 +524,11 @@ MESSAGE("=======================================================================
 MESSAGE("")
 
 SET(MAIDSAFE_ENCRYPT_INSTALL_FILES
-      maidsafe-encrypt/config.h
-      maidsafe-encrypt/data_map.h
-      maidsafe-encrypt/self_encryption.h
-      maidsafe-encrypt/self_encryption_stream.h
-      maidsafe-encrypt/version.h)
-
-# Check the script /build/Win_MSVC/extract_includes.bat matches this list
-FILE(STRINGS ${${PROJECT_NAME}_ROOT}/build/Win_MSVC/extract_includes.bat EXTRACT_INCLUDE_BAT)
-STRING(REPLACE "\\" "/" EXTRACT_INCLUDE_BAT "${EXTRACT_INCLUDE_BAT}")
-FOREACH(MAIDSAFE_INSTALL_FILE ${MAIDSAFE_ENCRYPT_INSTALL_FILES})
-  STRING(REGEX MATCH src/${MAIDSAFE_INSTALL_FILE} FOUND ${EXTRACT_INCLUDE_BAT})
-  IF(NOT FOUND)
-    MESSAGE(FATAL_ERROR "\nUpdate build/Win_MSVC/extract_includes.bat to include ${MAIDSAFE_INSTALL_FILE}\n")
-  ENDIF()
-  SET(ABS_MAIDSAFE_ENCRYPT_INSTALL_FILES ${ABS_MAIDSAFE_ENCRYPT_INSTALL_FILES} ${${PROJECT_NAME}_SOURCE_DIR}/${MAIDSAFE_INSTALL_FILE})
-ENDFOREACH()
-EXECUTE_PROCESS(COMMAND CMD /C "${${PROJECT_NAME}_ROOT}/build/Win_MSVC/extract_includes.bat > NUL 2>&1")
+      ${${PROJECT_NAME}_SOURCE_DIR}/maidsafe-encrypt/config.h
+      ${${PROJECT_NAME}_SOURCE_DIR}/maidsafe-encrypt/data_map.h
+      ${${PROJECT_NAME}_SOURCE_DIR}/maidsafe-encrypt/self_encryption.h
+      ${${PROJECT_NAME}_SOURCE_DIR}/maidsafe-encrypt/self_encryption_stream.h
+      ${${PROJECT_NAME}_SOURCE_DIR}/maidsafe-encrypt/version.h)
 
 IF(MSVC)
   INSTALL(TARGETS encrypt

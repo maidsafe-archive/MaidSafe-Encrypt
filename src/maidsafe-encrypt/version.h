@@ -10,7 +10,7 @@
  *  the explicit written permission of the board of directors of maidsafe.net. *
  ***************************************************************************//**
  * @file  self_encryption.h
- * @brief Local version definition and DHT version check.
+ * @brief Local version definition and external libs version check.
  * @date  2011-01-31
  */
 
@@ -19,14 +19,14 @@
 
 #define MAIDSAFE_ENCRYPT_VERSION 4
 
-#include "maidsafe-dht/common/version.h"
+#include "maidsafe/common/version.h"
 
-#define THIS_MAIDSAFE_DHT_VERSION 25
-#if MAIDSAFE_DHT_VERSION < THIS_MAIDSAFE_DHT_VERSION
+#define THIS_MAIDSAFE_COMMON_VERSION 1
+#if MAIDSAFE_COMMON_VERSION < THIS_MAIDSAFE_COMMON_VERSION
 #error This API is not compatible with the installed library.\
-  Please update the maidsafe-dht library.
-#elif MAIDSAFE_DHT_VERSION > THIS_MAIDSAFE_DHT_VERSION
-#error This API uses a newer version of the maidsafe-dht library.\
+  Please update the maidsafe-common library.
+#elif MAIDSAFE_COMMON_VERSION > THIS_MAIDSAFE_COMMON_VERSION
+#error This API uses a newer version of the maidsafe-common library.\
   Please update this project.
 #endif
 
