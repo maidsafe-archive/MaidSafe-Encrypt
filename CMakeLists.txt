@@ -324,6 +324,7 @@ SET(ALL_FILES ${SOURCE_FILES} ${HEADER_FILES})
 
 ####    TESTS    ####
 FILE(GLOB ALL_FILES_TESTS_DIR "${SRC_MAIDSAFE}/tests/*.cc" "${SRC_MAIDSAFE}/tests/*.h")
+LIST(REMOVE_ITEM ALL_FILES_TESTS_DIR "${SRC_MAIDSAFE}/tests/encrypt_demo.cc")
 
 ###################################################################################################
 # All Platforms:  Create libs and executables                                                     #
@@ -331,12 +332,17 @@ FILE(GLOB ALL_FILES_TESTS_DIR "${SRC_MAIDSAFE}/tests/*.cc" "${SRC_MAIDSAFE}/test
 ADD_LIBRARY(encrypt STATIC ${ALL_FILES})
 SET_TARGET_PROPERTIES(encrypt PROPERTIES OUTPUT_NAME maidsafe_encrypt)
 ADD_EXECUTABLE(TESTencrypt ${ALL_FILES_TESTS_DIR})
+ADD_EXECUTABLE(DEMOencrypt "${SRC_MAIDSAFE}/tests/encrypt_demo.cc")
 
 IF(NOT MSVC)
   SET_TARGET_PROPERTIES(TESTencrypt PROPERTIES
                           DEBUG_OUTPUT_NAME TESTencrypt${CMAKE_DEBUG_POSTFIX}
                           RELWITHDEBINFO_OUTPUT_NAME TESTencrypt${CMAKE_RELWITHDEBINFO_POSTFIX}
                           MINSIZEREL_OUTPUT_NAME TESTencrypt${CMAKE_MINSIZEREL_POSTFIX})
+  SET_TARGET_PROPERTIES(DEMOencrypt PROPERTIES
+                          DEBUG_OUTPUT_NAME DEMOencrypt${CMAKE_DEBUG_POSTFIX}
+                          RELWITHDEBINFO_OUTPUT_NAME DEMOencrypt${CMAKE_RELWITHDEBINFO_POSTFIX}
+                          MINSIZEREL_OUTPUT_NAME DEMOencrypt${CMAKE_MINSIZEREL_POSTFIX})
 ENDIF()
 
 IF(UNIX)
@@ -358,6 +364,7 @@ ENDIF()
 ADD_DEFINITIONS(-DBOOST_FILESYSTEM_NO_DEPRECATED -DBOOST_FILESYSTEM_VERSION=3)
 TARGET_LINK_LIBRARIES(encrypt maidsafe_common_static ${Boost_FILESYSTEM_LIBRARY} ${Boost_SERIALIZATION_LIBRARY} ${Boost_SYSTEM_LIBRARY})
 TARGET_LINK_LIBRARIES(TESTencrypt encrypt ${Gtest_LIBRARY})
+TARGET_LINK_LIBRARIES(DEMOencrypt encrypt)
 IF(UNIX)
   IF(APPLE)
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DOSX -DBSD -D__FreeBSD__=10 -D_FORTIFY_SOURCE=2 -D_FILE_OFFSET_BITS=64")
@@ -412,7 +419,7 @@ ELSEIF(WIN32)
                               LINK_FLAGS_DEBUG "${LINKER_LIBS_DIRS_DEBUG}"
                               LINK_FLAGS_RELWITHDEBINFO "${LINKER_LIBS_DIRS_DEBUG}"
                               LINK_FLAGS_MINSIZEREL "${LINKER_LIBS_DIRS_DEBUG}")
-    SET_TARGET_PROPERTIES(TESTencrypt PROPERTIES
+    SET_TARGET_PROPERTIES(TESTencrypt DEMOencrypt PROPERTIES
                               COMPILE_FLAGS "/D_CONSOLE /D_VC80_UPGRADE=0x0710 /D_MBCS"
                               LINK_FLAGS "/STACK:1048576"
                               LINK_FLAGS_RELEASE "/OPT:REF /OPT:ICF /LTCG /INCREMENTAL:NO ${TEST_LINKER_LIBS_DIRS_RELEASE}"
@@ -462,7 +469,7 @@ ENDIF()
 
 IF(PYTHONINTERP_FOUND)
   IF(UNIX)
-    ADD_TEST(STYLE_CHECK python ${MaidSafeCommon_TOOLS_DIR}/cpplint.py ${ALL_FILES} ${ALL_FILES_TESTS_DIR})
+    ADD_TEST(STYLE_CHECK python ${MaidSafeCommon_TOOLS_DIR}/cpplint.py ${ALL_FILES} ${ALL_FILES_TESTS_DIR} "${SRC_MAIDSAFE}/tests/encrypt_demo.cc")
   ELSE()
     STRING(REPLACE "/" "\\\\" STYLE_CHECK_SOURCE ${${PROJECT_NAME}_ROOT})
     ADD_TEST(STYLE_CHECK ${MaidSafeCommon_TOOLS_DIR}/run_cpplint.bat ${STYLE_CHECK_SOURCE})
