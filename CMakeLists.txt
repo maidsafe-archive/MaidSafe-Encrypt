@@ -480,7 +480,9 @@ ENDIF()
 ADD_GTESTS(TESTencrypt)
 
 IF(UNIX)
-  SET(MEMORYCHECK_COMMAND "/usr/bin/valgrind --show-reachable=no")
+  SET(MEMORYCHECK_COMMAND "/usr/bin/valgrind --trace-children=yes --quiet --tool=memcheck --leak-check=yes --show-reachable=yes --num-callers=100 --verbose --demangle=yes")
+  SET(MEMORYCHECK_COMMAND_OPTIONS "--trace-children=yes --quiet --tool=memcheck --leak-check=yes --show-reachable=yes --num-callers=100 --verbose --demangle=yes")
+
 ENDIF(UNIX)
 
 ###################################################################################################
