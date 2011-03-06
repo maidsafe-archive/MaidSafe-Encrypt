@@ -14,17 +14,18 @@
  * @date  2011-03-05
  */
 
+#include <array>
 #include <stdio.h>
 #include <string>
 
 #include "boost/algorithm/string.hpp"
 #include "boost/filesystem.hpp"
+#include "boost/format.hpp"
 #include "boost/lexical_cast.hpp"
 #include "maidsafe/common/utils.h"
-#include "maidsafe-encrypt/config.h"
-#include "maidsafe-encrypt/data_map.h"
 #include "maidsafe-encrypt/self_encryption.h"
 #include "maidsafe-encrypt/utils.h"
+#include <set>
 
 namespace fs = boost::filesystem;
 namespace mse = maidsafe::encrypt;
@@ -39,10 +40,24 @@ enum ReturnCodes {
   kSuccess = 0,
   kNoArgumentsError,
   kCommandError,
-  kWrongArgumentsError,
+  kInvalidArgumentsError,
   kGenerateError,
   kEncryptError
 };
+
+/// Formats and scales a byte value with IEC units
+std::string FormatByteValue(const std::uint64_t &value) {
+  const std::array<std::string, 7> kUnits = {
+      "Bytes", "KiB", "MiB", "GiB", "TiB", "PiB", "EiB"
+  };
+  double val(value);
+  size_t mag(0);
+  while (mag < kUnits.size() && val >= 1000.0) {
+    ++mag;
+    val /= 1024.0;
+  }
+  return (boost::format("%.3g %s") % val % kUnits[mag]).str();
+}
 
 int Generate(const int &chunk_size,
              const std::string &pattern,
@@ -80,14 +95,49 @@ int Encrypt(const fs::path &input_path, const fs::path &output_path,
     return kEncryptError;
   }
 
+  bool error(false);
+  std::uint64_t total_size(0), chunks_size(0), meta_size(0);
+  std::set<std::string> chunks;
+
+  printf("Processing %s ...\n", input_path.c_str());
   DataMap data_map;
-  if (SelfEncrypt(input_path, output_path, self_encryption_params, &data_map) !=
-      kSuccess) {
-    printf("Error: Self-encryption failed.\n");
-    return kEncryptError;
+  if (SelfEncrypt(input_path, output_path, self_encryption_params, &data_map) == kSuccess) {
+    total_size += data_map.size;
+    meta_size += sizeof(DataMap) + data_map.content.size();
+    for (auto it = data_map.chunks.begin(); it != data_map.chunks.end(); ++it) {
+      meta_size += sizeof(ChunkDetails) + it->hash.size() +
+                   it->pre_hash.size() + it->content.size();
+      if (!it->hash.empty() && chunks.count(it->hash) == 0) {
+        chunks.insert(it->hash);
+        chunks_size += it->size;
+      }
+    }
+  } else {
+    printf("Error: Self-encryption failed for %s\n", input_path.c_str());
+    error = true;
   }
 
-  return kSuccess;
+  double chunk_ratio(0), meta_ratio(0);
+  if (total_size > 0) {
+    chunk_ratio = 100.0 * chunks_size / total_size;
+    meta_ratio = 100.0 * meta_size / total_size;
+  }
+
+  printf("\nResults:\n"
+         "  Max chunk size: %s\n"
+         "  Data processed: %s\n"
+         "  Unique chunks:  %u\n"
+         "  Size of chunks: %s (%.1f%%)\n"
+         "+ Meta data size: %s (%.1f%%)\n"
+         "= Space required: %s (%.1f%%)\n",
+         FormatByteValue(self_encryption_params.max_chunk_size).c_str(),
+         FormatByteValue(total_size).c_str(), chunks.size(),
+         FormatByteValue(chunks_size).c_str(), chunk_ratio,
+         FormatByteValue(meta_size).c_str(), meta_ratio,
+         FormatByteValue(chunks_size + meta_size).c_str(),
+         chunk_ratio + meta_ratio);
+
+  return error ? kEncryptError : kSuccess;
 }
 
 }  // namespace demo
@@ -107,9 +157,18 @@ int main(int argc, char* argv[]) {
                 "chunk contents. The given\n    character gets repeated, with "
                 "the exception of '#', which results in a\n    random chunk. "
                 "Example: \"gen 128 aabaa#aab file.dat\"\n"
-           "  encrypt <input-file> <output-dir>\n"
+           "  encrypt <input-file> <output-dir> [<chunk-sz> <inc-chunk-sz> "
+              "<inc-data-sz>]\n"
            "    Applies self-encryption to the given file, with chunks being "
-                "stored in the\n    given output directory.\n",
+                "stored in the\n    given output directory. Optional "
+                "parameters, in order, are:\n    - maximum chunk size (bytes)\n"
+                "    - maximum includable chunk size (bytes)\n    - maximum "
+                "includable data size (bytes)\n    Example: \"encrypt file.dat "
+                "chunks/ 262144 256 1024\"\n"
+           /* "  encrypt <input-dir> <output-dir> [<chunk-sz> <inc-chunk-sz> "
+              "<inc-data-sz>]\n"
+           "    Like above, but for each file in the given input directory "
+                "(recursive).\n" */,
            argv[0]);
     return mse::demo::kNoArgumentsError;
   }
@@ -128,6 +187,18 @@ int main(int argc, char* argv[]) {
     if (argc == 4) {
       mse::SelfEncryptionParams sep;
       return mse::demo::Encrypt(argv[2], argv[3], sep);
+    } else if (argc == 7) {
+      try {
+        mse::SelfEncryptionParams sep(
+            boost::lexical_cast<std::uint32_t>(std::string(argv[4])),
+            boost::lexical_cast<std::uint32_t>(std::string(argv[5])),
+            boost::lexical_cast<std::uint32_t>(std::string(argv[6])));
+        return mse::demo::Encrypt(argv[2], argv[3], sep);
+      }
+      catch(...) {
+        printf("Error: Invalid size arguments passed.\n");
+        return mse::demo::kInvalidArgumentsError;
+      }
     }
   } else {
     printf("Error: Unrecognised command '%s'.\n", command.c_str());
@@ -136,5 +207,5 @@ int main(int argc, char* argv[]) {
 
   printf("Error: Wrong number of arguments supplied to command '%s' (%d).\n",
          command.c_str(), argc - 2);
-  return mse::demo::kWrongArgumentsError;
+  return mse::demo::kInvalidArgumentsError;
 }
