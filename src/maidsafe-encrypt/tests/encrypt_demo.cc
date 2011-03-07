@@ -17,6 +17,7 @@
 #include <array>
 #include <stdio.h>
 #include <string>
+#include <set>
 
 #include "boost/algorithm/string.hpp"
 #include "boost/filesystem.hpp"
@@ -25,7 +26,6 @@
 #include "maidsafe/common/utils.h"
 #include "maidsafe-encrypt/self_encryption.h"
 #include "maidsafe-encrypt/utils.h"
-#include <set>
 
 namespace fs = boost::filesystem;
 namespace mse = maidsafe::encrypt;
@@ -101,7 +101,8 @@ int Encrypt(const fs::path &input_path, const fs::path &output_path,
 
   printf("Processing %s ...\n", input_path.c_str());
   DataMap data_map;
-  if (SelfEncrypt(input_path, output_path, self_encryption_params, &data_map) == kSuccess) {
+  if (SelfEncrypt(input_path, output_path, self_encryption_params, &data_map)
+                                                              == kSuccess) {
     total_size += data_map.size;
     meta_size += sizeof(DataMap) + data_map.content.size();
     for (auto it = data_map.chunks.begin(); it != data_map.chunks.end(); ++it) {
@@ -165,10 +166,11 @@ int main(int argc, char* argv[]) {
                 "    - maximum includable chunk size (bytes)\n    - maximum "
                 "includable data size (bytes)\n    Example: \"encrypt file.dat "
                 "chunks/ 262144 256 1024\"\n"
-           /* "  encrypt <input-dir> <output-dir> [<chunk-sz> <inc-chunk-sz> "
-              "<inc-data-sz>]\n"
-           "    Like above, but for each file in the given input directory "
-                "(recursive).\n" */,
+           // "  encrypt <input-dir> <output-dir> [<chunk-sz> <inc-chunk-sz> "
+           //   "<inc-data-sz>]\n"
+           // "    Like above, but for each file in the given input directory "
+           //     "(recursive).\n"
+           ,
            argv[0]);
     return mse::demo::kNoArgumentsError;
   }
