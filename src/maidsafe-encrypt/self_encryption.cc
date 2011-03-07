@@ -59,6 +59,11 @@ int SelfEncrypt(std::istream *input_stream,
     return kNullPointer;
   }
 
+  if (!utils::CheckParams(self_encryption_params)) {
+    DLOG(ERROR) << "EncryptContent: Invalid parameters passed." << std::endl;
+    return kInvalidInput;
+  }
+
   // TODO(Steve) pass size in for proper streaming, avoid seeking
   input_stream->seekg(0, std::ios::end);
   std::streampos pos = input_stream->tellg();
@@ -71,7 +76,7 @@ int SelfEncrypt(std::istream *input_stream,
 
   bool compress(false);
   if (try_compression) {
-    if (2 * data_size > kCompressionSampleSize)
+    if (data_size < 2 * kCompressionSampleSize)
       input_stream->seekg(0);
     else
       input_stream->seekg((data_size - kCompressionSampleSize) / 2);
@@ -83,6 +88,7 @@ int SelfEncrypt(std::istream *input_stream,
   data_map->self_encryption_type = kObfuscate3AES256;
   data_map->size = data_size;
 
+  input_stream->clear();
   input_stream->seekg(0);
 
   if (data_size <= self_encryption_params.max_includable_data_size) {
@@ -250,7 +256,7 @@ int SelfEncrypt(const fs::path &input_file,
                 DataMap *data_map) {
   fs::ifstream input_stream(input_file, std::ios::in | std::ios::binary);
   int result(SelfEncrypt(&input_stream, output_dir,
-                         utils::IsCompressedFile(input_file),
+                         !utils::IsCompressedFile(input_file),
                          self_encryption_params, data_map));
   input_stream.close();
   return result;

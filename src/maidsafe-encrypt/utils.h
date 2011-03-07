@@ -40,6 +40,9 @@ bool IsCompressedFile(const fs::path &file_path);
 /// Estimates whether compression could result in space savings.
 bool CheckCompressibility(std::istream *input_stream);
 
+/// Verifies sanity of parameter values.
+bool CheckParams(const SelfEncryptionParams &self_encryption_params);
+
 /// Determines the sizes of the chunks the input data will be split into.
 bool CalculateChunkSizes(const std::uint64_t &data_size,
                          const SelfEncryptionParams &self_encryption_params,

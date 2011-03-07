@@ -47,9 +47,9 @@ enum ReturnCode {
 /// Parameters for the self-encryption algorithm
 struct SelfEncryptionParams {
   SelfEncryptionParams()
-    : max_chunk_size(1 << 18),  // 256 KB
+    : max_chunk_size(1 << 18),  // 256 KiB
       max_includable_chunk_size(1 << 8),  // 256 Bytes
-      max_includable_data_size(1 << 10) {}  // 1 KB
+      max_includable_data_size(1 << 10) {}  // 1 KiB
   SelfEncryptionParams(const std::uint32_t &max_chunk_size,
                        const std::uint32_t &max_includable_chunk_size,
                        const std::uint32_t &max_includable_data_size)

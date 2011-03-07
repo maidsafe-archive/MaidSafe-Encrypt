@@ -76,6 +76,32 @@ bool CheckCompressibility(std::istream* input_stream) {
 }
 
 /**
+ * @param self_encryption_params Parameters for the self-encryption algorithm.
+ * @return True if parameters sane.
+ */
+bool CheckParams(const SelfEncryptionParams &self_encryption_params) {
+  if (self_encryption_params.max_chunk_size == 0) {
+    DLOG(ERROR) << "CheckParams: Chunk size can't be zero." << std::endl;
+    return false;
+  }
+
+  if (self_encryption_params.max_includable_data_size < kMinChunks - 1) {
+    DLOG(ERROR) << "CheckParams: Max includable data size must be at least "
+                << kMinChunks - 1 << "." << std::endl;
+    return false;
+  }
+
+  if (kMinChunks * self_encryption_params.max_includable_chunk_size >=
+      self_encryption_params.max_includable_data_size) {
+    DLOG(ERROR) << "CheckParams: Max includable data size must be bigger than "
+                   "all includable chunks." << std::endl;
+    return false;
+  }
+
+  return true;
+}
+
+/**
  * Limits with fixed 256K chunk size are:
  *   <= kMaxIncludableDataSize ---> to DM
  *   kMaxIncludableDataSize + 1 to kMinChunks * kDefaultChunkSize - 1 --->
@@ -96,7 +122,8 @@ bool CalculateChunkSizes(const std::uint64_t &data_size,
     return false;
   }
 
-  if (data_size <= self_encryption_params.max_includable_data_size) {
+  if (data_size <= self_encryption_params.max_includable_data_size ||
+      data_size < kMinChunks) {
     DLOG(ERROR) << "CalculateChunkSizes: Data should go directly into DataMap."
                 << std::endl;
     return false;
