@@ -15,9 +15,9 @@
  */
 
 #include <array>
-#include <stdio.h>
-#include <string>
+#include <cstdio>
 #include <set>
+#include <string>
 
 #include "boost/algorithm/string.hpp"
 #include "boost/filesystem.hpp"
@@ -85,8 +85,8 @@ int Generate(const int &chunk_size,
 
 int Encrypt(const fs::path &input_path, const fs::path &output_path,
             const SelfEncryptionParams &self_encryption_params) {
-  if (!fs::exists(input_path) || fs::is_directory(input_path)) {
-    printf("Error: Encryption input file not found.\n");
+  if (!fs::exists(input_path)) {
+    printf("Error: Encryption input path not found.\n");
     return kEncryptError;
   }
 
@@ -97,25 +97,53 @@ int Encrypt(const fs::path &input_path, const fs::path &output_path,
 
   bool error(false);
   std::uint64_t total_size(0), chunks_size(0), meta_size(0);
+  boost::posix_time::time_duration total_duration;
   std::set<std::string> chunks;
+  std::vector<fs::path> files;
 
-  printf("Processing %s ...\n", input_path.c_str());
-  DataMap data_map;
-  if (SelfEncrypt(input_path, output_path, self_encryption_params, &data_map)
-                                                              == kSuccess) {
-    total_size += data_map.size;
-    meta_size += sizeof(DataMap) + data_map.content.size();
-    for (auto it = data_map.chunks.begin(); it != data_map.chunks.end(); ++it) {
-      meta_size += sizeof(ChunkDetails) + it->hash.size() +
-                   it->pre_hash.size() + it->content.size();
-      if (!it->hash.empty() && chunks.count(it->hash) == 0) {
-        chunks.insert(it->hash);
-        chunks_size += it->size;
+  try {
+    if (fs::is_directory(input_path)) {
+      printf("Discovering directory contents ...\n");
+      fs::recursive_directory_iterator directory_it(input_path);
+      while (directory_it != fs::recursive_directory_iterator()) {
+        if (fs::is_regular_file(*directory_it))
+          files.push_back(*directory_it);
+        ++directory_it;
       }
+      printf("Found %u files.\n", files.size());
+    } else {
+      files.push_back(input_path);
     }
-  } else {
-    printf("Error: Self-encryption failed for %s\n", input_path.c_str());
+  }
+  catch(...) {
+    printf("Error: Self-encryption failed while discovering files.\n");
     error = true;
+  }
+
+  for (auto file = files.begin(); file != files.end(); ++file) {
+    printf("Processing %s ...\n", file->c_str());
+    DataMap data_map;
+    boost::posix_time::ptime start_time(
+        boost::posix_time::microsec_clock::universal_time());
+    if (SelfEncrypt(*file, output_path, self_encryption_params, &data_map) ==
+        kSuccess) {
+      total_duration += boost::posix_time::microsec_clock::universal_time() -
+                        start_time;
+      total_size += data_map.size;
+      meta_size += sizeof(DataMap) + data_map.content.size();
+      for (auto it = data_map.chunks.begin(); it != data_map.chunks.end();
+           ++it) {
+        meta_size += sizeof(ChunkDetails) + it->hash.size() +
+                    it->pre_hash.size() + it->content.size();
+        if (!it->hash.empty() && chunks.count(it->hash) == 0) {
+          chunks.insert(it->hash);
+          chunks_size += it->size;
+        }
+      }
+    } else {
+      printf("Error: Self-encryption failed for %s\n", file->c_str());
+      error = true;
+    }
   }
 
   double chunk_ratio(0), meta_ratio(0);
@@ -126,14 +154,15 @@ int Encrypt(const fs::path &input_path, const fs::path &output_path,
 
   printf("\nResults:\n"
          "  Max chunk size: %s\n"
-         "  Data processed: %s\n"
-         "  Unique chunks:  %u\n"
-         "  Size of chunks: %s (%.1f%%)\n"
-         "+ Meta data size: %s (%.1f%%)\n"
-         "= Space required: %s (%.1f%%)\n",
+         "  Data processed: %s in %u files (%s/s)\n"
+         "  Size of chunks: %s in %u files (%.3g%%)\n"
+         "+ Meta data size: %s (%.3g%%)\n"
+         "= Space required: %s (%.3g%%)\n",
          FormatByteValue(self_encryption_params.max_chunk_size).c_str(),
-         FormatByteValue(total_size).c_str(), chunks.size(),
-         FormatByteValue(chunks_size).c_str(), chunk_ratio,
+         FormatByteValue(total_size).c_str(), files.size(),
+         FormatByteValue(1000.0 * total_size /
+                         total_duration.total_milliseconds()).c_str(),
+         FormatByteValue(chunks_size).c_str(), chunks.size(), chunk_ratio,
          FormatByteValue(meta_size).c_str(), meta_ratio,
          FormatByteValue(chunks_size + meta_size).c_str(),
          chunk_ratio + meta_ratio);
@@ -166,11 +195,10 @@ int main(int argc, char* argv[]) {
                 "    - maximum includable chunk size (bytes)\n    - maximum "
                 "includable data size (bytes)\n    Example: \"encrypt file.dat "
                 "chunks/ 262144 256 1024\"\n"
-           // "  encrypt <input-dir> <output-dir> [<chunk-sz> <inc-chunk-sz> "
-           //   "<inc-data-sz>]\n"
-           // "    Like above, but for each file in the given input directory "
-           //     "(recursive).\n"
-           ,
+           "  encrypt <input-dir> <output-dir> [<chunk-sz> <inc-chunk-sz> "
+              "<inc-data-sz>]\n"
+           "    Like above, but for each file in the given input directory "
+                "(recursive).\n",
            argv[0]);
     return mse::demo::kNoArgumentsError;
   }
@@ -195,12 +223,12 @@ int main(int argc, char* argv[]) {
             boost::lexical_cast<std::uint32_t>(std::string(argv[4])),
             boost::lexical_cast<std::uint32_t>(std::string(argv[5])),
             boost::lexical_cast<std::uint32_t>(std::string(argv[6])));
-        return mse::demo::Encrypt(argv[2], argv[3], sep);
+        if (mse::utils::CheckParams(sep))
+          return mse::demo::Encrypt(argv[2], argv[3], sep);
       }
-      catch(...) {
-        printf("Error: Invalid size arguments passed.\n");
-        return mse::demo::kInvalidArgumentsError;
-      }
+      catch(...) {}
+      printf("Error: Invalid size arguments passed.\n");
+      return mse::demo::kInvalidArgumentsError;
     }
   } else {
     printf("Error: Unrecognised command '%s'.\n", command.c_str());
