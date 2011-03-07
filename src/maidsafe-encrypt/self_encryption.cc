@@ -113,8 +113,8 @@ int SelfEncrypt(std::istream *input_stream,
   }
 
   // FIXME find method to guarantee constant chunk size with compression
-  compress = false;
-  data_map->compression_type = kNoCompression;
+//   compress = false;
+//   data_map->compression_type = kNoCompression;
 
   std::vector<std::uint32_t> chunk_sizes;
   if (!utils::CalculateChunkSizes(data_size, self_encryption_params,

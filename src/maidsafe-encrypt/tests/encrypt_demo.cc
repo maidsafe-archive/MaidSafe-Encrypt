@@ -96,7 +96,8 @@ int Encrypt(const fs::path &input_path, const fs::path &output_path,
   }
 
   bool error(false);
-  std::uint64_t total_size(0), chunks_size(0), meta_size(0);
+  std::uint64_t total_size(0), chunks_size(0), uncompressed_chunks_size(0),
+                meta_size(0);
   boost::posix_time::time_duration total_duration;
   std::set<std::string> chunks;
   std::vector<fs::path> files;
@@ -138,6 +139,7 @@ int Encrypt(const fs::path &input_path, const fs::path &output_path,
         if (!it->hash.empty() && chunks.count(it->hash) == 0) {
           chunks.insert(it->hash);
           chunks_size += it->size;
+          uncompressed_chunks_size += it->pre_size;
         }
       }
     } else {
@@ -155,14 +157,16 @@ int Encrypt(const fs::path &input_path, const fs::path &output_path,
   printf("\nResults:\n"
          "  Max chunk size: %s\n"
          "  Data processed: %s in %u files (%s/s)\n"
-         "  Size of chunks: %s in %u files (%.3g%%)\n"
+         "  Size of chunks: %s (uncompressed %s) in %u files (%.3g%%)\n"
          "+ Meta data size: %s (%.3g%%)\n"
          "= Space required: %s (%.3g%%)\n",
          FormatByteValue(self_encryption_params.max_chunk_size).c_str(),
          FormatByteValue(total_size).c_str(), files.size(),
          FormatByteValue(1000.0 * total_size /
                          total_duration.total_milliseconds()).c_str(),
-         FormatByteValue(chunks_size).c_str(), chunks.size(), chunk_ratio,
+         FormatByteValue(chunks_size).c_str(),
+         FormatByteValue(uncompressed_chunks_size).c_str(),
+         chunks.size(), chunk_ratio,
          FormatByteValue(meta_size).c_str(), meta_ratio,
          FormatByteValue(chunks_size + meta_size).c_str(),
          chunk_ratio + meta_ratio);
