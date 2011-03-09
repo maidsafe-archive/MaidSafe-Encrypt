@@ -96,8 +96,8 @@ int Encrypt(const fs::path &input_path, const fs::path &output_path,
   }
 
   bool error(false);
-  std::uint64_t total_size(0), chunks_size(0), uncompressed_chunks_size(0),
-                meta_size(0);
+  std::uint64_t total_size(0), failed_size(0), chunks_size(0),
+                uncompressed_chunks_size(0), meta_size(0);
   boost::posix_time::time_duration total_duration;
   std::set<std::string> chunks;
   std::vector<fs::path> files;
@@ -122,7 +122,15 @@ int Encrypt(const fs::path &input_path, const fs::path &output_path,
   }
 
   for (auto file = files.begin(); file != files.end(); ++file) {
-    printf("Processing %s ...\n", file->c_str());
+    boost::system::error_code ec;
+    std::uint64_t file_size(fs::file_size(*file, ec));
+    printf("Processing %s (%s) ...\n", file->c_str(),
+           FormatByteValue(file_size).c_str());
+    if (file_size == 0)
+      continue;
+
+    total_size += file_size;
+
     DataMap data_map;
     boost::posix_time::ptime start_time(
         boost::posix_time::microsec_clock::universal_time());
@@ -130,7 +138,6 @@ int Encrypt(const fs::path &input_path, const fs::path &output_path,
         kSuccess) {
       total_duration += boost::posix_time::microsec_clock::universal_time() -
                         start_time;
-      total_size += data_map.size;
       meta_size += sizeof(DataMap) + data_map.content.size();
       for (auto it = data_map.chunks.begin(); it != data_map.chunks.end();
            ++it) {
@@ -143,15 +150,17 @@ int Encrypt(const fs::path &input_path, const fs::path &output_path,
         }
       }
     } else {
-      printf("Error: Self-encryption failed for %s\n", file->c_str());
+      failed_size += file_size;
       error = true;
+      printf("Error: Self-encryption failed for %s\n", file->c_str());
     }
   }
 
-  double chunk_ratio(0), meta_ratio(0);
+  double chunk_ratio(0), meta_ratio(0), failed_ratio(0);
   if (total_size > 0) {
     chunk_ratio = 100.0 * chunks_size / total_size;
     meta_ratio = 100.0 * meta_size / total_size;
+    failed_ratio = 100.0 * failed_size / total_size;
   }
 
   printf("\nResults:\n"
@@ -159,6 +168,7 @@ int Encrypt(const fs::path &input_path, const fs::path &output_path,
          "  Data processed: %s in %u files (%s/s)\n"
          "  Size of chunks: %s (uncompressed %s) in %u files (%.3g%%)\n"
          "+ Meta data size: %s (%.3g%%)\n"
+         "+ Failed entries: %s (%.3g%%)\n"
          "= Space required: %s (%.3g%%)\n",
          FormatByteValue(self_encryption_params.max_chunk_size).c_str(),
          FormatByteValue(total_size).c_str(), files.size(),
@@ -168,8 +178,9 @@ int Encrypt(const fs::path &input_path, const fs::path &output_path,
          FormatByteValue(uncompressed_chunks_size).c_str(),
          chunks.size(), chunk_ratio,
          FormatByteValue(meta_size).c_str(), meta_ratio,
-         FormatByteValue(chunks_size + meta_size).c_str(),
-         chunk_ratio + meta_ratio);
+         FormatByteValue(failed_size).c_str(), failed_ratio,
+         FormatByteValue(chunks_size + meta_size + failed_size).c_str(),
+         chunk_ratio + meta_ratio + failed_ratio);
 
   return error ? kEncryptError : kSuccess;
 }
