@@ -19,12 +19,7 @@
 
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8 FATAL_ERROR)
 MESSAGE("================================================================================\n")
-SET(CMAKE_CACHEFILE "${CMAKE_CACHEFILE_DIR}/CMakeCache.txt")
-IF(WIN32)
-  STRING(REPLACE "/" "\\" CMAKE_CACHEFILE ${CMAKE_CACHEFILE})
-ENDIF()
 
-SET(ERROR_MESSAGE "No generator previously specified.  Run:\n")
 SET(ERROR_MESSAGE_CMAKE_PATH "cmake ../../..")
 GET_FILENAME_COMPONENT(CMAKE_BUILD_TYPE_DIR ${CMAKE_BINARY_DIR} NAME)
 
@@ -32,251 +27,39 @@ GET_FILENAME_COMPONENT(CMAKE_BUILD_TYPE_DIR ${CMAKE_BINARY_DIR} NAME)
 IF(CMAKE_BUILD_TYPE_DIR MATCHES "Win_MSVC")
   SET(CMAKE_BUILD_TYPE_DIR Release)
   SET(ERROR_MESSAGE_CMAKE_PATH "   cmake ..\\..")
-  SET(ERROR_MESSAGE "${ERROR_MESSAGE}\tdel ${CMAKE_CACHEFILE}\n")
-  SET(ERROR_MESSAGE "${ERROR_MESSAGE}then run e.g:\n\t${ERROR_MESSAGE_CMAKE_PATH} -G\"Visual Studio 9 2008\"\n\n")
-ELSEIF(UNIX)
-  SET(ERROR_MESSAGE "${ERROR_MESSAGE}\trm ${CMAKE_CACHEFILE}\n")
-  SET(ERROR_MESSAGE "${ERROR_MESSAGE}then run e.g:\n\t${ERROR_MESSAGE_CMAKE_PATH} -G\"CodeBlocks - Unix Makefiles\"\n\n")
-ELSE()
-  SET(ERROR_MESSAGE "${ERROR_MESSAGE}\tdel ${CMAKE_CACHEFILE}\n")
-  SET(ERROR_MESSAGE "${ERROR_MESSAGE}then run e.g:\n\t${ERROR_MESSAGE_CMAKE_PATH} -G\"CodeBlocks - MinGW Makefiles\"\n\n")
+ELSEIF(CMAKE_BUILD_TYPE_DIR MATCHES "kdev")
+  SET(CMAKE_BUILD_TYPE_DIR Debug)
+  SET(KDEV 1)
 ENDIF()
 
-
-
-SET(ERROR_MESSAGE "${ERROR_MESSAGE}To see a full list of generators, run:\n\t${ERROR_MESSAGE_CMAKE_PATH} --help\n")
+SET(ERROR_MESSAGE "No generator previously specified.\nTo see a full list of generators, run:\n\t${ERROR_MESSAGE_CMAKE_PATH} --help\n")
 SET(CMAKE_GEN ${CMAKE_GENERATOR} CACHE INTERNAL "" FORCE)
 IF(NOT ${CMAKE_C_COMPILER_WORKS})
   MESSAGE(FATAL_ERROR ${ERROR_MESSAGE})
 ENDIF()
 
-IF(CMAKE_BUILD_TYPE_DIR MATCHES "Release")
+IF((CMAKE_BUILD_TYPE_DIR MATCHES "Release") OR (DEFINED ${KDEV}))
   SET(PROJECT_NAME MaidSafe-Encrypt)
 ELSE()
   SET(PROJECT_NAME MaidSafe-Encrypt_${CMAKE_BUILD_TYPE_DIR})
 ENDIF()
 OPTION (BUILD_SHARED_LIBS "Build shared libraries." OFF)
 
-FIND_PROGRAM(GITCOMMAND git PATHS ENV ProgramFiles PATH_SUFFIXES "Git/bin")
-SET(UPDATE_TYPE git)
-SET(UPDATE_COMMAND "${GITCOMMAND}")
 
 # This call resets CMAKE_BUILD_TYPE, hence it's copied from CMAKE_BUILD_TYPE_DIR which is set above.
 PROJECT(${PROJECT_NAME})
 SET(CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE_DIR} CACHE INTERNAL "Except for MSVC, the build type is set by running cmake from the appropriate build subdirectory e.g. for a Debug build, \"cd build/Linux/Debug && cmake ../../..\"." FORCE)
 
-SET(${PROJECT_NAME}_ROOT ${PROJECT_SOURCE_DIR})
-SET(${PROJECT_NAME}_SOURCE_DIR ${${PROJECT_NAME}_ROOT}/src)
-SET(SOURCE_DIR ${${PROJECT_NAME}_ROOT}/src)
-
-IF(NOT MAIDSAFE_TEST_TYPE)
-  SET(MAIDSAFE_TEST_TYPE "BEH" CACHE STRING "Choose the type of TEST, options are: _ BEH FUNC" FORCE)
-  SET(MAIDSAFE_TEST_TYPE_MESSAGE "Tests included: Behavioural")
-ELSE()
-  IF(${MAIDSAFE_TEST_TYPE} MATCHES _)
-    SET(MAIDSAFE_TEST_TYPE_MESSAGE "Tests included: All")
-  ELSEIF(${MAIDSAFE_TEST_TYPE} MATCHES BEH)
-    SET(MAIDSAFE_TEST_TYPE_MESSAGE "Tests included: Behavioural")
-  ELSEIF(${MAIDSAFE_TEST_TYPE} MATCHES FUNC)
-    SET(MAIDSAFE_TEST_TYPE_MESSAGE "Tests included: Functional")
-  ELSE()
-    SET(MAIDSAFE_TEST_TYPE "_" CACHE STRING "Choose the type of TEST, options are: _ BEH FUNC" FORCE)
-    SET(MAIDSAFE_TEST_TYPE_MESSAGE "Tests included: All")
-  ENDIF()
-ENDIF()
-
-ENABLE_TESTING()
-
-IF(UNIX)
-  EXECUTE_PROCESS(COMMAND date +%a%d%m%y OUTPUT_VARIABLE pddate OUTPUT_STRIP_TRAILING_WHITESPACE)
-ELSE()
-  EXECUTE_PROCESS(COMMAND CMD /C DATE /T OUTPUT_VARIABLE pddate OUTPUT_STRIP_TRAILING_WHITESPACE)
-  STRING(REPLACE "/" "" pddate ${pddate})
-  STRING(SUBSTRING ${pddate} 0 4 pddateddmm)
-  STRING(SUBSTRING ${pddate} 6 2 pddateyy)
-  SET(pddate ${pddateddmm}${pddateyy})
-  STRING(REPLACE " " "_" pddate ${pddate})
-ENDIF()
-
-IF(APPLE)
-  SET(CMAKE_OSX_SYSROOT "/")
-ENDIF()
-
-IF(CMAKE_BUILD_TYPE MATCHES "Release")
-  IF(MSVC)
-    MESSAGE("---------------------------")
-  ELSE()
-    MESSAGE("Building a package which is OK to release.")
-    MESSAGE("-----------------------------------------------------------------------")
-  ENDIF()
-ELSE()
-  IF(MSVC)
-    MESSAGE("---------------------------")
-  ELSE()
-    MESSAGE("Building a package which is NOT OK to release.")
-    MESSAGE("---------------------------------------------------------------------------")
-  ENDIF()
-ENDIF()
-
-
-# setup a single target path for libraries and executables -
-# this avoids copying all the dlls and exes together
-UNSET(CMAKE_RUNTIME_OUTPUT_DIRECTORY CACHE)
-UNSET(CMAKE_LIBRARY_OUTPUT_DIRECTORY CACHE)
-UNSET(CMAKE_ARCHIVE_OUTPUT_DIRECTORY CACHE)
-IF(MSVC)
-  IF(CMAKE_CL_64)
-    SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${${PROJECT_NAME}_BINARY_DIR}/bin/x64 CACHE PATH "Executable target dir (x64).")
-    SET(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${${PROJECT_NAME}_BINARY_DIR}/bin/x64 CACHE PATH "Shared library target dir (x64).")
-    SET(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${${PROJECT_NAME}_BINARY_DIR}/bin/x64 CACHE PATH "Static library target dir (x64).")
-  ELSE()
-    SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${${PROJECT_NAME}_BINARY_DIR}/bin/win32 CACHE PATH "Executable target dir (win32).")
-    SET(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${${PROJECT_NAME}_BINARY_DIR}/bin/win32 CACHE PATH "Shared library target dir (win32).")
-    SET(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${${PROJECT_NAME}_BINARY_DIR}/bin/win32 CACHE PATH "Static library target dir (win32).")
-  ENDIF()
-ELSE()
-  SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${${PROJECT_NAME}_BINARY_DIR}/bin CACHE PATH "Executable target dir.")
-  SET(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${${PROJECT_NAME}_BINARY_DIR}/bin CACHE PATH "Shared library target dir.")
-  SET(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${${PROJECT_NAME}_BINARY_DIR}/bin CACHE PATH "Static library target dir.")
-ENDIF()
-
-SET(CMAKE_DEBUG_POSTFIX _d)
-SET(CMAKE_RELWITHDEBINFO_POSTFIX _rwdi)
-SET(CMAKE_MINSIZEREL_POSTFIX _msr)
-
-IF(CMAKE_BUILD_TYPE MATCHES "Debug")
-  SET(TEST_POSTFIX ${CMAKE_DEBUG_POSTFIX})
-ELSEIF(CMAKE_BUILD_TYPE MATCHES "RelWithDebInfo")
-  SET(TEST_POSTFIX ${CMAKE_RELWITHDEBINFO_POSTFIX})
-ELSEIF(CMAKE_BUILD_TYPE MATCHES "MinSizeRel")
-  SET(TEST_POSTFIX ${CMAKE_MINSIZEREL_POSTFIX})
-ENDIF()
-
-# Create CTestCustom.cmake to avoid inclusion of coverage results from third-party code
-FILE(WRITE ${${PROJECT_NAME}_BINARY_DIR}/CTestCustom.cmake "SET(CTEST_CUSTOM_COVERAGE_EXCLUDE \${CTEST_CUSTOM_COVERAGE_EXCLUDE} \"*.pb.*\" \"tests/\" \"tools/\")\n\n")
-
-###################################################################################################
-# Set default directories to be searched for included files and libs                              #
-###################################################################################################
-SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${${PROJECT_NAME}_ROOT}/build)
-
-IF(DEFINED ADD_LIBRARY_DIR)
-  IF(DEFAULT_LIBRARY_DIR)
-    LIST(REMOVE_DUPLICATES DEFAULT_LIBRARY_DIR)
-  ENDIF()
-  SET(DEFAULT_LIBRARY_DIR ${DEFAULT_LIBRARY_DIR} ${ADD_LIBRARY_DIR} CACHE PATH "Path to libraries directories" FORCE)
-ENDIF()
-
-# Function to help set <MODULE>_ROOT_DIR for use of following Find Modules
-# Example: For PROJ_VARIABLE set to "BOOST_ROOT_DIR", PROJ_SEARCH_REGEX set to "boost",
-# and PROJ_SEARCH_DIR set to c:\msvc, if "boost_1_41_0" and "boost_1_42_0"
-# are both subdirectories of c:\msvc, then BOOST_ROOT_DIR_CACHED is set
-# and cached to c:\msvc\boost_1_42_0
-FUNCTION(FIND_THIRD_PARTY_PROJECT PROJ_VARIABLE PROJ_SEARCH_REGEX PROJ_SEARCH_DIR)
-  UNSET(${ARGV0}_CACHED CACHE)
-  STRING(REPLACE "/" "\\" PROJ_SEARCH_DIR ${PROJ_SEARCH_DIR})
-  EXECUTE_PROCESS(COMMAND CMD /C DIR ${PROJ_SEARCH_DIR} /A:D /O:-N /B OUTPUT_VARIABLE THIRD_PARTY_ROOT_DIRS ERROR_VARIABLE ERR_VAR)
-  IF(NOT ERR_VAR)
-    STRING(REGEX MATCH "${PROJ_SEARCH_REGEX}[^\n]*" THIRD_PARTY_ROOT_DIR "${THIRD_PARTY_ROOT_DIRS}")
-    IF(NOT THIRD_PARTY_ROOT_DIR)
-      SET(${ARGV0})
-    ELSE()
-      SET(${ARGV0}_CACHED "${PROJ_SEARCH_DIR}\\${THIRD_PARTY_ROOT_DIR}" CACHE PATH "")
-    ENDIF()
-  ENDIF()
-ENDFUNCTION()
-
 ###################################################################################################
 # MaidSafe Common library search                                                                  #
 ###################################################################################################
-INCLUDE(maidsafe_FindCommon)
-SET(INCLUDE_DIRS ${INCLUDE_DIRS} ${MaidSafeCommon_INCLUDE_DIR})
+SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/build)
+INCLUDE(maidsafe_find_common)
 
 ###################################################################################################
-# Boost libraries search                                                                          #
+# Standard setup                                                                                  #
 ###################################################################################################
-SET(REQUIRED_BOOST_COMPONENTS date_time filesystem regex serialization system thread)
-INCLUDE(maidsafe_FindBoost)
-SET(INCLUDE_DIRS ${INCLUDE_DIRS} ${Boost_INCLUDE_DIR})
-
-###################################################################################################
-# Google Test library search                                                                      #
-###################################################################################################
-INCLUDE(maidsafe_FindGtest)
-SET(INCLUDE_DIRS ${INCLUDE_DIRS} ${Gtest_INCLUDE_DIR})
-IF(NOT WIN32)
-  SET(Gtest_LIBRARY "${Gtest_LIBRARY};pthread")
-ENDIF()
-
-###################################################################################################
-# Google Mock library search                                                                      #
-###################################################################################################
-INCLUDE(maidsafe_FindGmock)
-SET(INCLUDE_DIRS ${INCLUDE_DIRS} ${Gmock_INCLUDE_DIR})
-
-###################################################################################################
-# Google Log library search                                                                       #
-###################################################################################################
-INCLUDE(maidsafe_FindGlog)
-SET(INCLUDE_DIRS ${INCLUDE_DIRS} ${Glog_INCLUDE_DIR})
-
-###################################################################################################
-# Python library search                                                                           #
-###################################################################################################
-UNSET(PYTHON_EXECUTABLE CACHE)
-INCLUDE(FindPythonInterp)
-FIND_PACKAGE(PythonInterp)
-IF(PYTHONINTERP_FOUND)
-  MESSAGE("-- Found python executable: style checking enabled.")
-ELSE()
-  MESSAGE("-- Didn't find python executable: style checking disabled.")
-ENDIF()
-
-###################################################################################################
-# All other libraries search                                                                      #
-###################################################################################################
-IF(UNIX)
-  SET(OTHER_LIBS dl pthread)
-  IF(NOT APPLE)
-    SET(OTHER_LIBS rt c m ${OTHER_LIBS})
-  ENDIF()
-ELSEIF(WIN32)
-  IF(MSVC)
-    SET(OTHER_LIBS ws2_32 odbc32 odbccp32 WSock32 IPHlpApi)
-  ELSE()
-    SET(OTHER_LIBS advapi32 ws2_32 iphlpapi mswsock)
-  ENDIF()
-ENDIF()
-FOREACH(library ${OTHER_LIBS})
-  FIND_LIBRARY(CURRENT_LIB ${library})
-  IF(CURRENT_LIB)
-    MESSAGE("-- Found library ${CURRENT_LIB}")
-    GET_FILENAME_COMPONENT(CURRENT_LIBRARY_DIR ${CURRENT_LIB} PATH)
-    SET(LIBS_DIRS ${LIBS_DIRS} ${CURRENT_LIBRARY_DIR})
-    SET(LIBS_DIRS_DEBUG ${LIBS_DIRS_DEBUG} ${CURRENT_LIBRARY_DIR})
-  ELSE()
-    SET(ERROR_MESSAGE "\nCould not find library ${library}.")
-    IF(MSVC)
-      SET(ERROR_MESSAGE "${ERROR_MESSAGE}\nRun cmake from a Visual Studio Command Prompt.")
-    ELSE()
-      SET(ERROR_MESSAGE "${ERROR_MESSAGE}  Run\n${ERROR_MESSAGE_CMAKE_PATH} -DADD_LIBRARY_DIR=<Path to ${library} directory>")
-    ENDIF()
-    MESSAGE(FATAL_ERROR "${ERROR_MESSAGE}")
-  ENDIF()
-  UNSET(CURRENT_LIB CACHE)
-ENDFOREACH()
-
-
-LIST(REMOVE_DUPLICATES LIBS_DIRS)
-LIST(REMOVE_DUPLICATES LIBS_DIRS_DEBUG)
-LINK_DIRECTORIES(${CMAKE_ARCHIVE_OUTPUT_DIRECTORY})
-
-INCLUDE_DIRECTORIES(${${PROJECT_NAME}_SOURCE_DIR})
-INCLUDE_DIRECTORIES(${${PROJECT_NAME}_BINARY_DIR})
-LIST(REMOVE_DUPLICATES INCLUDE_DIRS)
-INCLUDE_DIRECTORIES(AFTER SYSTEM ${INCLUDE_DIRS})
-
-MESSAGE("================================================================================")
+INCLUDE(maidsafe_standard_setup)
 
 ###################################################################################################
 # Cleanup of temporary test folders                                                               #
@@ -315,163 +98,89 @@ ENDIF()
 ###################################################################################################
 # Set up all files as GLOBs                                                                       #
 ###################################################################################################
-SET(SRC_MAIDSAFE "${${PROJECT_NAME}_SOURCE_DIR}/maidsafe-encrypt")
-
 ####    CODE    ####
-FILE(GLOB SOURCE_FILES "${SRC_MAIDSAFE}/*.cc")
-FILE(GLOB HEADER_FILES "${SRC_MAIDSAFE}/*.h")
+FILE(GLOB SOURCE_FILES "${PROJECT_SOURCE_DIR}/src/maidsafe-encrypt/*.cc")
+FILE(GLOB HEADER_FILES "${PROJECT_SOURCE_DIR}/src/maidsafe-encrypt/*.h")
 SET(ALL_FILES ${SOURCE_FILES} ${HEADER_FILES})
 
 ####    TESTS    ####
-FILE(GLOB ALL_FILES_TESTS_DIR "${SRC_MAIDSAFE}/tests/*.cc" "${SRC_MAIDSAFE}/tests/*.h")
-LIST(REMOVE_ITEM ALL_FILES_TESTS_DIR "${SRC_MAIDSAFE}/tests/encrypt_demo.cc")
+FILE(GLOB ALL_FILES_TESTS_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe-encrypt/tests/*.cc" "${PROJECT_SOURCE_DIR}/src/maidsafe-encrypt/tests/*.h")
+LIST(REMOVE_ITEM ALL_FILES_TESTS_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe-encrypt/tests/encrypt_demo.cc")
 
 ###################################################################################################
 # All Platforms:  Create libs and executables                                                     #
 ###################################################################################################
-ADD_LIBRARY(encrypt STATIC ${ALL_FILES})
-SET_TARGET_PROPERTIES(encrypt PROPERTIES OUTPUT_NAME maidsafe_encrypt)
+ADD_LIBRARY(encrypt_static STATIC ${ALL_FILES})
+SET_TARGET_PROPERTIES(encrypt_static PROPERTIES OUTPUT_NAME maidsafe_encrypt)
 ADD_EXECUTABLE(TESTencrypt ${ALL_FILES_TESTS_DIR})
-ADD_EXECUTABLE(DEMOencrypt "${SRC_MAIDSAFE}/tests/encrypt_demo.cc")
+ADD_EXECUTABLE(DEMOencrypt "${PROJECT_SOURCE_DIR}/src/maidsafe-encrypt/tests/encrypt_demo.cc")
 
-IF(NOT MSVC)
-  SET_TARGET_PROPERTIES(TESTencrypt PROPERTIES
-                          DEBUG_OUTPUT_NAME TESTencrypt${CMAKE_DEBUG_POSTFIX}
-                          RELWITHDEBINFO_OUTPUT_NAME TESTencrypt${CMAKE_RELWITHDEBINFO_POSTFIX}
-                          MINSIZEREL_OUTPUT_NAME TESTencrypt${CMAKE_MINSIZEREL_POSTFIX})
-  SET_TARGET_PROPERTIES(DEMOencrypt PROPERTIES
-                          DEBUG_OUTPUT_NAME DEMOencrypt${CMAKE_DEBUG_POSTFIX}
-                          RELWITHDEBINFO_OUTPUT_NAME DEMOencrypt${CMAKE_RELWITHDEBINFO_POSTFIX}
-                          MINSIZEREL_OUTPUT_NAME DEMOencrypt${CMAKE_MINSIZEREL_POSTFIX})
-ENDIF()
+RENAME_EXECUTABLE(TESTencrypt)
+RENAME_EXECUTABLE(DEMOencrypt)
+
+TARGET_LINK_LIBRARIES(encrypt_static
+                        maidsafe_common_static
+                        glog_static
+                        boost_filesystem
+                        boost_serialization
+                        boost_system)
+TARGET_LINK_LIBRARIES(TESTencrypt encrypt_static gtest_static)
+TARGET_LINK_LIBRARIES(DEMOencrypt encrypt_static)
 
 IF(UNIX)
-  # When this target is built, it removes all .gcda files from the build directory and its subdirectories
-  FIND_FILE(CLEAN_COVERAGE_CMAKE clean_coverage.cmake ${MaidSafeCommon_MODULES_DIR})
-  IF(CLEAN_COVERAGE_CMAKE)
-    ADD_CUSTOM_TARGET(CleanCoverage COMMAND ${CMAKE_COMMAND} -DSEARCH_DIR=${CMAKE_BINARY_DIR} -P ${CLEAN_COVERAGE_CMAKE})
-  ENDIF()
   # This target builds the reference manual using Doxygen
-  ADD_CUSTOM_TARGET(Reference COMMAND doxygen WORKING_DIRECTORY ${${PROJECT_NAME}_ROOT})
+  ADD_CUSTOM_TARGET(Reference COMMAND doxygen WORKING_DIRECTORY ${PROJECT_SOURCE_DIR})
 ENDIF()
 
 ###################################################################################################
 # Compiler and linker flags - after all targets declared                                          #
 ###################################################################################################
-IF(Glog_FOUND)
-  ADD_DEFINITIONS(-DHAVE_GLOG)
-ENDIF()
-ADD_DEFINITIONS(-DBOOST_FILESYSTEM_NO_DEPRECATED -DBOOST_FILESYSTEM_VERSION=3)
-TARGET_LINK_LIBRARIES(encrypt maidsafe_common_static ${Boost_FILESYSTEM_LIBRARY} ${Boost_SERIALIZATION_LIBRARY} ${Boost_SYSTEM_LIBRARY})
-TARGET_LINK_LIBRARIES(TESTencrypt encrypt ${Gtest_LIBRARY})
-TARGET_LINK_LIBRARIES(DEMOencrypt encrypt)
-IF(UNIX)
+INCLUDE(maidsafe_standard_flags)
+IF(MSVC)
+  SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /Oi /GF ") #  /wd4503
+  SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /Oi /arch:SSE") #  /wd4503
+  SET_TARGET_PROPERTIES(encrypt_static PROPERTIES
+                          STATIC_LIBRARY_FLAGS_RELEASE "/LTCG")
+  SET_TARGET_PROPERTIES(TESTencrypt DEMOencrypt PROPERTIES
+                          LINK_FLAGS "/STACK:1048576"
+                          LINK_FLAGS_RELEASE "/OPT:REF /OPT:ICF /LTCG /INCREMENTAL:NO ${LINKER_LIBS_DIRS_RELEASE}"
+                          LINK_FLAGS_DEBUG "${LINKER_LIBS_DIRS_DEBUG}"
+                          LINK_FLAGS_RELWITHDEBINFO "${LINKER_LIBS_DIRS_DEBUG}"
+                          LINK_FLAGS_MINSIZEREL "${LINKER_LIBS_DIRS_DEBUG}")
+
+#  SET_TARGET_PROPERTIES(encrypt_static PROPERTIES
+#                            COMPILE_FLAGS "/D_VC80_UPGRADE=0x0710"
+#                            LINK_FLAGS "/STACK:1048576"
+#                            LINK_FLAGS_RELEASE "/OPT:REF /OPT:ICF /LTCG /INCREMENTAL:NO ${LINKER_LIBS_DIRS_RELEASE}"
+#                            LINK_FLAGS_DEBUG "${LINKER_LIBS_DIRS_DEBUG}"
+#                            LINK_FLAGS_RELWITHDEBINFO "${LINKER_LIBS_DIRS_DEBUG}"
+#                            LINK_FLAGS_MINSIZEREL "${LINKER_LIBS_DIRS_DEBUG}")
+#  SET_TARGET_PROPERTIES(TESTencrypt DEMOencrypt PROPERTIES
+#                            COMPILE_FLAGS "/D_CONSOLE /D_VC80_UPGRADE=0x0710 /D_MBCS"
+#                            LINK_FLAGS "/STACK:1048576"
+#                            LINK_FLAGS_RELEASE "/OPT:REF /OPT:ICF /LTCG /INCREMENTAL:NO ${TEST_LINKER_LIBS_DIRS_RELEASE}"
+#                            LINK_FLAGS_DEBUG "${TEST_LINKER_LIBS_DIRS_DEBUG}"
+#                            LINK_FLAGS_RELWITHDEBINFO "/LTCG ${TEST_LINKER_LIBS_DIRS_DEBUG}"
+#                            LINK_FLAGS_MINSIZEREL "/LTCG ${TEST_LINKER_LIBS_DIRS_DEBUG}")
+ELSEIF(UNIX)
   IF(APPLE)
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DOSX -DBSD -D__FreeBSD__=10 -D_FORTIFY_SOURCE=2 -D_FILE_OFFSET_BITS=64")
-    SET(CMAKE_EXE_LINKER_FLAGS_DEBUG "${CMAKE_EXE_LINKER_FLAGS_DEBUG} -lgcov")
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DOSX")
   ELSE()
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DLINUX -Wextra -Wall -Wfloat-equal -Wlong-long -Wstrict-overflow=5 -Wredundant-decls -Wuninitialized -Wunused-function")
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wunused-label -Wunused-parameter -Wunused-value -Wunused-variable -std=c++0x -Weffc++ -D_FORTIFY_SOURCE=2 -fno-stack-protector -D_FILE_OFFSET_BITS=64")
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DLINUX -Wfloat-equal -Wlong-long -Wstrict-overflow=5 -Wredundant-decls -Wuninitialized -Wunused-function")
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wunused-label -Wunused-parameter -Wunused-value -Wunused-variable -fno-stack-protector")
   ENDIF()
-  SET(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -ggdb -pg -fprofile-arcs -ftest-coverage")
-  SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 -DDEBUG -ggdb -pg -fprofile-arcs -ftest-coverage")
   SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -Wuninitialized")
-  SET(CMAKE_EXE_LINKER_FLAGS_DEBUG "${CMAKE_EXE_LINKER_FLAGS_DEBUG} -pg -fprofile-arcs -ftest-coverage")
-  SET_TARGET_PROPERTIES(encrypt PROPERTIES COMPILE_FLAGS "-fPIC -w -finline-functions")
-ELSEIF(WIN32)
-  IF(MSVC)
-    CMAKE_POLICY(SET CMP0008 NEW)
-    # flag to link to static version of Google Glog
-    IF(Glog_FOUND)
-      ADD_DEFINITIONS(-DGOOGLE_GLOG_DLL_DECL=)
-    ENDIF()
-    ADD_DEFINITIONS(-DWIN32 -D_WIN32 -D__WIN32__ -D__WINDOWS__ -D_WINDOWS)
-    ADD_DEFINITIONS(-DWIN32_LEAN_AND_MEAN -D_WIN32_WINNT=0x501)
-    ADD_DEFINITIONS(-D_UNICODE -DUNICODE -D_BIND_TO_CURRENT_VCLIBS_VERSION=1)
-    ADD_DEFINITIONS(-D__MSVC__ -DNOMINMAX -DBOOST_ALL_NO_LIB)
-    SET(CMAKE_CXX_FLAGS_RELEASE "/O2 /Ob2 /Oi /Ot /Oy /GL /D \"NDEBUG\" /EHsc /GF /MT /Gy /W3 /Zi") #  /wd4503
-    SET(CMAKE_CXX_FLAGS_DEBUG "/Od /Oi /Ot /Oy /D \"_DEBUG\" /D \"DEBUG\" /EHsc /MTd /W3 /c /arch:SSE /ZI /TP") #  /wd4503
-    # CMake defaults to passing stack size in LINKER_FLAGS of 10MB.  Set this to windows default of 1MB
-    STRING(REGEX REPLACE "/STACK:[0-9]+" "" CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}")
-    STRING(REGEX REPLACE "/STACK:[0-9]+" "" CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS}")
-    # Given a link dir of "a/b/c", MSVC adds "a/b/c/" AND "a/b/c/CMAKE_BUILD_TYPE" as link dirs, so we
-    # can't just use "LINK_DIRECTORIES" as some Google debug libs have the same name as the release version.
-    FOREACH(LIBS_DIR ${LIBS_DIRS})
-      STRING(REPLACE "\\" "\\\\" LIBS_DIR ${LIBS_DIR})
-      SET(LINKER_LIBS_DIRS_RELEASE "${LINKER_LIBS_DIRS_RELEASE} /LIBPATH:\"${LIBS_DIR}\"")
-    ENDFOREACH()
-    FOREACH(LIBS_DIR ${LIBS_DIRS_DEBUG})
-      STRING(REPLACE "\\" "\\\\" LIBS_DIR ${LIBS_DIR})
-      SET(LINKER_LIBS_DIRS_DEBUG "${LINKER_LIBS_DIRS_DEBUG} /LIBPATH:\"${LIBS_DIR}\"")
-    ENDFOREACH()
-    FOREACH(LIBS_DIR ${TEST_LIBS_DIRS})
-      STRING(REPLACE "\\" "\\\\" LIBS_DIR ${LIBS_DIR})
-      SET(TEST_LINKER_LIBS_DIRS_RELEASE "${TEST_LINKER_LIBS_DIRS_RELEASE} /LIBPATH:\"${LIBS_DIR}\"")
-    ENDFOREACH()
-    FOREACH(LIBS_DIR ${TEST_LIBS_DIRS_DEBUG})
-      STRING(REPLACE "\\" "\\\\" LIBS_DIR ${LIBS_DIR})
-      SET(TEST_LINKER_LIBS_DIRS_DEBUG "${TEST_LINKER_LIBS_DIRS_DEBUG} /LIBPATH:\"${LIBS_DIR}\"")
-    ENDFOREACH()
-    SET_TARGET_PROPERTIES(encrypt PROPERTIES
-                              COMPILE_FLAGS "/D_VC80_UPGRADE=0x0710"
-                              LINK_FLAGS "/STACK:1048576"
-                              LINK_FLAGS_RELEASE "/OPT:REF /OPT:ICF /LTCG /INCREMENTAL:NO ${LINKER_LIBS_DIRS_RELEASE}"
-                              LINK_FLAGS_DEBUG "${LINKER_LIBS_DIRS_DEBUG}"
-                              LINK_FLAGS_RELWITHDEBINFO "${LINKER_LIBS_DIRS_DEBUG}"
-                              LINK_FLAGS_MINSIZEREL "${LINKER_LIBS_DIRS_DEBUG}")
-    SET_TARGET_PROPERTIES(TESTencrypt DEMOencrypt PROPERTIES
-                              COMPILE_FLAGS "/D_CONSOLE /D_VC80_UPGRADE=0x0710 /D_MBCS"
-                              LINK_FLAGS "/STACK:1048576"
-                              LINK_FLAGS_RELEASE "/OPT:REF /OPT:ICF /LTCG /INCREMENTAL:NO ${TEST_LINKER_LIBS_DIRS_RELEASE}"
-                              LINK_FLAGS_DEBUG "${TEST_LINKER_LIBS_DIRS_DEBUG}"
-                              LINK_FLAGS_RELWITHDEBINFO "/LTCG ${TEST_LINKER_LIBS_DIRS_DEBUG}"
-                              LINK_FLAGS_MINSIZEREL "/LTCG ${TEST_LINKER_LIBS_DIRS_DEBUG}")
-  ELSE()
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wfloat-equal -Wlong-long -Wstrict-overflow=5 -D_FORTIFY_SOURCE=2 -fno-stack-protector -D_FILE_OFFSET_BITS=64")
-    SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG") # -g -pg -fprofile-arcs -ftest-coverage")
-    SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O2 -Wuninitialized")
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_FORTIFY_SOURCE=2 -D__MINGW__ -L c:/MinGW/lib/ -L c:/MinGW/mingw32/lib/ -static -mthreads -D_GLIBCXX_USE_WCHAR_T")
-    # SET(CMAKE_EXE_LINKER_FLAGS "-Wl,--enable-auto-import")
-    # SET(CMAKE_EXE_LINKER_FLAGS_DEBUG "${CMAKE_EXE_LINKER_FLAGS_DEBUG} -pg -fprofile-arcs -ftest-coverage")
-    SET_TARGET_PROPERTIES(encrypt PROPERTIES COMPILE_FLAGS "-O2 -mthreads -w -finline-functions -D_WIN32_WINNT=0x0501")
-  ENDIF()
+  SET_TARGET_PROPERTIES(encrypt_static PROPERTIES COMPILE_FLAGS "-fPIC -w -finline-functions")
 ENDIF()
 
 ###################################################################################################
 # Tests                                                                                           #
 ###################################################################################################
-INCLUDE(CTest)
-INCLUDE(maidsafe_AddGtests)
-
-SET(BEHAVIOURAL_TEST_TIMEOUT 60)
-SET(FUNCTIONAL_TEST_TIMEOUT 1000)
-SET(CTEST_CUSTOM_MAXIMUM_PASSED_TEST_OUTPUT_SIZE 50000)
-SET(CTEST_CUSTOM_MAXIMUM_FAILED_TEST_OUTPUT_SIZE 50000)
-SET(CTEST_CONTINUOUS_DURATION 600)
-SET(CTEST_CONTINUOUS_MINIMUM_INTERVAL 60)
-SET(CTEST_START_WITH_EMPTY_BINARY_DIRECTORY true)
-
-IF(EXCLUDE_TEST)
-  SET(EXCLUDED_TESTS ${EXCLUDED_TESTS} ${EXCLUDE_TEST})
-  LIST(REMOVE_DUPLICATES EXCLUDED_TESTS)
-  SET(EXCLUDED_TESTS ${EXCLUDED_TESTS} CACHE INTERNAL "List of tests to exclude from CTest" FORCE)
-  UNSET(EXCLUDE_TEST CACHE)
-ENDIF()
-
-IF(INCLUDE_TEST)
-  IF(EXCLUDED_TESTS)
-    LIST(REMOVE_DUPLICATES EXCLUDED_TESTS)
-    LIST(REMOVE_ITEM EXCLUDED_TESTS ${INCLUDE_TEST})
-  ENDIF()
-  SET(EXCLUDED_TESTS ${EXCLUDED_TESTS} CACHE INTERNAL "List of tests to exclude from CTest" FORCE)
-  UNSET(INCLUDE_TEST CACHE)
-ENDIF()
-
 IF(PYTHONINTERP_FOUND)
   IF(UNIX)
-    ADD_TEST(STYLE_CHECK python ${MaidSafeCommon_TOOLS_DIR}/cpplint.py ${ALL_FILES} ${ALL_FILES_TESTS_DIR} "${SRC_MAIDSAFE}/tests/encrypt_demo.cc")
+    ADD_TEST(STYLE_CHECK python ${MaidSafeCommon_TOOLS_DIR}/cpplint.py ${ALL_FILES} ${ALL_FILES_TESTS_DIR} "${PROJECT_SOURCE_DIR}/src/maidsafe-encrypt/tests/encrypt_demo.cc")
   ELSE()
-    STRING(REPLACE "/" "\\\\" STYLE_CHECK_SOURCE ${${PROJECT_NAME}_ROOT})
+    STRING(REPLACE "/" "\\\\" STYLE_CHECK_SOURCE ${PROJECT_SOURCE_DIR})
     ADD_TEST(STYLE_CHECK ${MaidSafeCommon_TOOLS_DIR}/run_cpplint.bat ${STYLE_CHECK_SOURCE})
   ENDIF()
   SET_PROPERTY(TEST STYLE_CHECK PROPERTY LABELS Functional CodingStyle)
@@ -479,81 +188,24 @@ ENDIF()
 
 ADD_GTESTS(TESTencrypt)
 
-IF(UNIX)
-  SET(MEMORYCHECK_COMMAND "/usr/bin/valgrind --trace-children=yes --quiet --tool=memcheck --leak-check=yes --show-reachable=yes --num-callers=100 --verbose --demangle=yes")
-  SET(MEMORYCHECK_COMMAND_OPTIONS "--trace-children=yes --quiet --tool=memcheck --leak-check=yes --show-reachable=yes --num-callers=100 --verbose --demangle=yes")
-
-ENDIF(UNIX)
+TEST_SUMMARY_OUTPUT()
 
 ###################################################################################################
-# Adding the install targets                                                                      #
+# Install details                                                                                 #
 ###################################################################################################
-MESSAGE("")
-MESSAGE("${MAIDSAFE_TEST_TYPE_MESSAGE}")
-MESSAGE("")
-MESSAGE("    To include all tests,                ${ERROR_MESSAGE_CMAKE_PATH} -DMAIDSAFE_TEST_TYPE=ALL")
-MESSAGE("    To include behavioural tests,        ${ERROR_MESSAGE_CMAKE_PATH} -DMAIDSAFE_TEST_TYPE=BEH")
-MESSAGE("    To include functional tests,        ${ERROR_MESSAGE_CMAKE_PATH} -DMAIDSAFE_TEST_TYPE=FUNC")
-MESSAGE("================================================================================")
-MESSAGE("")
-IF(EXCLUDED_TESTS)
-  MESSAGE("Tests excluded:")
-  FOREACH(EXCLUDED_TEST ${EXCLUDED_TESTS})
-    MESSAGE("-- ${EXCLUDED_TEST}")
-  ENDFOREACH()
-ELSE()
-  MESSAGE("No tests excluded.")
-ENDIF()
-MESSAGE("")
-MESSAGE("    To exclude a test,                 ${ERROR_MESSAGE_CMAKE_PATH} -DEXCLUDE_TEST=<Test Name>")
-MESSAGE("    To re-include a test,              ${ERROR_MESSAGE_CMAKE_PATH} -DINCLUDE_TEST=<Test Name>")
-MESSAGE("================================================================================")
-MESSAGE("")
-
-IF(NOT INSTALL_PREFIX)
-  IF(MINGW)
-    SET(CMAKE_INSTALL_PREFIX "/MinGW")
-  ENDIF()
-ELSE()
-  IF(WIN32)
-    STRING(REPLACE "\\" "/" INSTALL_PREFIX ${INSTALL_PREFIX})
-  ENDIF()
-  SET(CMAKE_INSTALL_PREFIX "${INSTALL_PREFIX}")
-ENDIF()
-
-MESSAGE("")
-MESSAGE("Install prefix is set to \"${CMAKE_INSTALL_PREFIX}\"")
-MESSAGE("")
-IF(WIN32)
-  MESSAGE("    To alter (e.g. to c:\\encrypt),    ${ERROR_MESSAGE_CMAKE_PATH} -DINSTALL_PREFIX=c:\\encrypt")
-ELSE()
-  MESSAGE("    To alter this (e.g. to /usr),           ${ERROR_MESSAGE_CMAKE_PATH} -DINSTALL_PREFIX=/usr")
-ENDIF()
-MESSAGE("================================================================================")
-MESSAGE("")
+INCLUDE(maidsafe_standard_completion)
 
 SET(MAIDSAFE_ENCRYPT_INSTALL_FILES
-      ${${PROJECT_NAME}_SOURCE_DIR}/maidsafe-encrypt/config.h
-      ${${PROJECT_NAME}_SOURCE_DIR}/maidsafe-encrypt/data_map.h
-      ${${PROJECT_NAME}_SOURCE_DIR}/maidsafe-encrypt/self_encryption.h
-      ${${PROJECT_NAME}_SOURCE_DIR}/maidsafe-encrypt/self_encryption_stream.h
-      ${${PROJECT_NAME}_SOURCE_DIR}/maidsafe-encrypt/version.h)
+      ${PROJECT_SOURCE_DIR}/src/maidsafe-encrypt/config.h
+      ${PROJECT_SOURCE_DIR}/src/maidsafe-encrypt/data_map.h
+      ${PROJECT_SOURCE_DIR}/src/maidsafe-encrypt/self_encryption.h
+      ${PROJECT_SOURCE_DIR}/src/maidsafe-encrypt/self_encryption_stream.h
+      ${PROJECT_SOURCE_DIR}/src/maidsafe-encrypt/version.h)
 
-IF(MSVC)
-  INSTALL(TARGETS encrypt
-            RUNTIME DESTINATION bin
-            LIBRARY DESTINATION bin
-            ARCHIVE DESTINATION lib
-          )
-ELSE()
-  INSTALL(TARGETS encrypt
-            RUNTIME DESTINATION bin
-            LIBRARY DESTINATION lib
-            ARCHIVE DESTINATION lib
-          )
-ENDIF()
+INSTALL(TARGETS encrypt_static EXPORT encrypt ARCHIVE DESTINATION lib)
+INSTALL(FILES ${MAIDSAFE_ENCRYPT_INSTALL_FILES} DESTINATION include/maidsafe/maidsafe-encrypt)
+INSTALL(EXPORT encrypt DESTINATION share/maidsafe)
 
-INSTALL(FILES ${MAIDSAFE_ENCRYPT_INSTALL_FILES} DESTINATION include/maidsafe-encrypt)
 
 IF(CMAKE_BUILD_TYPE MATCHES "Release")
   SET(CPACK_PACKAGE_VERSION_MAJOR "0")
@@ -565,7 +217,7 @@ IF(CMAKE_BUILD_TYPE MATCHES "Release")
   SET(CPACK_PACKAGE_VENDOR "maidsafe.net")
   SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "MaidSafe-Encrypt")
   SET(CPACK_PACKAGE_INSTALL_DIRECTORY "maidsafe-encrypt")
-#  SET(CPACK_RESOURCE_FILE_README "${${PROJECT_NAME}_ROOT}/docs/readme.txt")
+#  SET(CPACK_RESOURCE_FILE_README "${PROJECT_SOURCE_DIR}/docs/readme.txt")
   IF(UNIX)
     SET(CPACK_SET_DESTDIR on)
     SET(CPACK_GENERATOR DEB;RPM;TGZ)
@@ -576,5 +228,5 @@ IF(CMAKE_BUILD_TYPE MATCHES "Release")
   ENDIF()
   INCLUDE(CPack)
 ELSE()
-  FILE(REMOVE ${${PROJECT_NAME}_BINARY_DIR}/CPackConfig.cmake ${${PROJECT_NAME}_BINARY_DIR}/CPackSourceConfig.cmake)
+  FILE(REMOVE ${PROJECT_BINARY_DIR}/CPackConfig.cmake ${PROJECT_BINARY_DIR}/CPackSourceConfig.cmake)
 ENDIF()
