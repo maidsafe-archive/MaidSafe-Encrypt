@@ -16,6 +16,7 @@
 
 #include "maidsafe-encrypt/self_encryption.h"
 
+#include <array>
 #include <map>
 #include <set>
 #include <sstream>
@@ -126,7 +127,7 @@ int SelfEncrypt(std::istream *input_stream,
 
   size_t chunk_count(chunk_sizes.size());
   std::map<std::string, size_t> processed_chunks;
-  std::string chunk_content[3], chunk_hash[3];  // sliding window of size 3
+  std::array<std::string, 3> chunk_content, chunk_hash;  // sliding window = 3
 
   // read the first 2 chunks and calculate their hashes
   chunk_content[0].resize(chunk_sizes[0]);
@@ -159,8 +160,33 @@ int SelfEncrypt(std::istream *input_stream,
     chunk.pre_hash = chunk_hash[i % 3];
     chunk.pre_size = chunk_sizes[i];
 
-    if (processed_chunks.count(chunk.pre_hash) > 0) {
-      // we already processed an identical chunk before
+    bool chunk_match(false);
+    /* {
+      auto prev_chunk_it = processed_chunks.find(chunk.pre_hash);
+      if (prev_chunk_it != processed_chunks.end()) {
+        std::string next_hash, next_next_hash;
+        size_t diff = i - prev_chunk_it->second;
+        if (diff > 1) {
+          next_hash = data_map->chunks[(prev_chunk_it->second + 1) %
+                                       chunk_count].pre_hash;
+        } else {
+          next_hash = chunk_hash[(i + 1) % 3];
+        }
+        if (diff > 2) {
+          next_next_hash = data_map->chunks[(prev_chunk_it->second + 2) %
+                                            chunk_count].pre_hash;
+        } else {
+          next_next_hash = chunk_hash[(i + 2) % 3];
+        }
+
+        if (next_hash == chunk_hash[(i + 1) % 3] &&
+            next_next_hash == chunk_hash[(i + 2) % 3])
+          chunk_match = true;
+      }
+    } */
+
+    if (chunk_match) {
+      // we already processed an identical chunk (with same 2 successors) before
       ChunkDetails &prev_chunk =
           data_map->chunks[processed_chunks[chunk.pre_hash]];
       chunk.content = prev_chunk.content;
@@ -184,8 +210,8 @@ int SelfEncrypt(std::istream *input_stream,
         // sic: chunk.hash left empty
       } else {
         chunk_content[i % 3] = utils::SelfEncryptChunk(chunk_content[i % 3],
-                                                      chunk_hash[(i + 1) % 3],
-                                                      chunk_hash[(i + 2) % 3]);
+                                                       chunk_hash[(i + 1) % 3],
+                                                       chunk_hash[(i + 2) % 3]);
 
         chunk.hash = crypto::Hash<crypto::SHA512>(chunk_content[i % 3]);
         chunk.size = chunk_content[i % 3].size();  // encrypt. might add padding

@@ -540,15 +540,70 @@ TEST_P(SelfEncryptionParamTest, BEH_ENCRYPT_SelfEnDecryptStreamLastInclude) {
   ASSERT_PRED_FORMAT2(AssertStringsEqual, stream_in.str(), stream_out.str());
 }
 
+TEST_P(SelfEncryptionParamTest, BEH_ENCRYPT_SelfEnDecryptStreamPattern) {
+  // Check with different sequences of repeating chunks
+  std::string chunk_a(RandomString(sep_.max_chunk_size));
+  std::string chunk_b(RandomString(sep_.max_chunk_size));
+  std::string chunk_c(RandomString(sep_.max_chunk_size));
+
+  for (int i = 0; i < 9; ++i) {
+    DataMap data_map;
+    std::istringstream stream_in;
+    switch (i) {
+      case 0:  // abc
+        stream_in.str(chunk_a + chunk_b + chunk_c);
+        break;
+      case 1:  // aaa
+        stream_in.str(chunk_a + chunk_a + chunk_a);
+        break;
+      case 2:  // aaaab
+        stream_in.str(chunk_a + chunk_a + chunk_a + chunk_a + chunk_b);
+        break;
+      case 3:  // baaaa
+        stream_in.str(chunk_b + chunk_a + chunk_a + chunk_a + chunk_a);
+        break;
+      case 4:  // baaab
+        stream_in.str(chunk_b + chunk_a + chunk_a + chunk_a + chunk_b);
+        break;
+      case 5:  // aaabc
+        stream_in.str(chunk_a + chunk_a + chunk_a + chunk_b + chunk_c);
+        break;
+      case 6:  // aabaab
+        stream_in.str(chunk_a + chunk_a + chunk_b + chunk_a + chunk_a +
+                      chunk_b);
+        break;
+      case 7:  // aabaac
+        stream_in.str(chunk_a + chunk_a + chunk_b + chunk_a + chunk_a +
+                      chunk_b);
+        break;
+      case 8:  // abaca
+        stream_in.str(chunk_a + chunk_b + chunk_a + chunk_c + chunk_a);
+        break;
+    }
+    EXPECT_EQ(kSuccess, SelfEncrypt(&stream_in, chunk_dir_, false, sep_,
+                                    &data_map));
+    EXPECT_TRUE(ChunksExist(data_map, chunk_dir_, NULL));
+    std::ostringstream stream_out;
+    EXPECT_EQ(kSuccess, SelfDecrypt(data_map, chunk_dir_, &stream_out));
+    ASSERT_PRED_FORMAT2(AssertStringsEqual, stream_in.str(), stream_out.str())
+        << "Case " << i;
+  }
+}
+
 TEST_P(SelfEncryptionParamTest, BEH_ENCRYPT_SelfEnDecryptStreamDedup) {
-  // Check de-duplication (identical chunks)
+  // Check de-duplication (identical chunks except for last one)
   DataMap data_map;
   const size_t kChunkCount(5 * kMinChunks);
   std::string chunk_content(RandomString(sep_.max_chunk_size));
+  std::string last_chunk_content(RandomString(sep_.max_chunk_size));
   std::string chunk_hash(crypto::Hash<crypto::SHA512>(chunk_content));
+  std::string last_chunk_hash(crypto::Hash<crypto::SHA512>(last_chunk_content));
+  ASSERT_NE(chunk_hash, last_chunk_hash);
+
   std::string data_content;
-  for (size_t i = 0; i < kChunkCount; ++i)
+  for (size_t i = 0; i < kChunkCount - 1; ++i)
     data_content.append(chunk_content);
+  data_content.append(last_chunk_content);
   std::istringstream stream_in(data_content);
   ASSERT_EQ(kChunkCount * sep_.max_chunk_size, stream_in.str().size());
   std::string hash_in = crypto::Hash<crypto::SHA512>(stream_in.str());
@@ -560,20 +615,27 @@ TEST_P(SelfEncryptionParamTest, BEH_ENCRYPT_SelfEnDecryptStreamDedup) {
   EXPECT_EQ(kObfuscate3AES256, data_map.self_encryption_type);
   EXPECT_EQ(kChunkCount * sep_.max_chunk_size, data_map.size);
   EXPECT_TRUE(data_map.content.empty());
+
   std::uint64_t total_size(0);
   std::string post_enc_hash;
-  for (auto it = data_map.chunks.begin(); it < data_map.chunks.end(); ++it) {
-    EXPECT_FALSE(it->hash.empty());
-    if (it == data_map.chunks.begin())
-      post_enc_hash = it->hash;
+  for (size_t i = 0; i < data_map.chunks.size(); ++i) {
+    EXPECT_FALSE(data_map.chunks[i].hash.empty());
+    if (i == 0)
+      post_enc_hash = data_map.chunks[i].hash;
+    else if (i < data_map.chunks.size() - kMinChunks)
+      EXPECT_EQ(post_enc_hash, data_map.chunks[i].hash);
     else
-      EXPECT_EQ(post_enc_hash, it->hash);
-    EXPECT_TRUE(it->content.empty());
-    EXPECT_EQ(sep_.max_chunk_size, it->size);
-    EXPECT_EQ(chunk_hash, it->pre_hash);
-    EXPECT_EQ(it->size, it->pre_size);  // no compression
-    total_size += it->pre_size;
+      EXPECT_NE(post_enc_hash, data_map.chunks[i].hash);
+    EXPECT_TRUE(data_map.chunks[i].content.empty());
+    EXPECT_EQ(sep_.max_chunk_size, data_map.chunks[i].size);
+    if (i < data_map.chunks.size() - 1)
+      EXPECT_EQ(chunk_hash, data_map.chunks[i].pre_hash);
+    else
+      EXPECT_EQ(last_chunk_hash, data_map.chunks[i].pre_hash);
+    EXPECT_EQ(data_map.chunks[i].size, data_map.chunks[i].pre_size);  // uncompr
+    total_size += data_map.chunks[i].pre_size;
   }
+
   EXPECT_EQ(kChunkCount * sep_.max_chunk_size, total_size);
   std::ostringstream stream_out;
   EXPECT_EQ(kSuccess, SelfDecrypt(data_map, chunk_dir_, &stream_out));
