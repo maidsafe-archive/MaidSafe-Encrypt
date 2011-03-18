@@ -17,15 +17,15 @@
 #ifndef MAIDSAFE_ENCRYPT_VERSION_H_
 #define MAIDSAFE_ENCRYPT_VERSION_H_
 
-#define MAIDSAFE_ENCRYPT_VERSION 4
+#define MAIDSAFE_ENCRYPT_VERSION 5
 
 #include "maidsafe/common/version.h"
 
-#define THIS_MAIDSAFE_COMMON_VERSION 1
-#if MAIDSAFE_COMMON_VERSION < THIS_MAIDSAFE_COMMON_VERSION
+#define THIS_NEEDS_MAIDSAFE_COMMON_VERSION 4
+#if MAIDSAFE_COMMON_VERSION < THIS_NEEDS_MAIDSAFE_COMMON_VERSION
 #error This API is not compatible with the installed library.\
   Please update the maidsafe-common library.
-#elif MAIDSAFE_COMMON_VERSION > THIS_MAIDSAFE_COMMON_VERSION
+#elif MAIDSAFE_COMMON_VERSION > THIS_NEEDS_MAIDSAFE_COMMON_VERSION
 #error This API uses a newer version of the maidsafe-common library.\
   Please update this project.
 #endif

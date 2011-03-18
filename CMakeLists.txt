@@ -60,40 +60,7 @@ INCLUDE(maidsafe_find_common)
 # Standard setup                                                                                  #
 ###################################################################################################
 INCLUDE(maidsafe_standard_setup)
-
-###################################################################################################
-# Cleanup of temporary test folders                                                               #
-###################################################################################################
-IF(WIN32)
-  IF(NOT CLEAN_TEMP)
-    SET(CLEAN_TEMP "OFF" CACHE INTERNAL "Cleanup of temp test folders, options are: ONCE, OFF, ALWAYS" FORCE)
-  ENDIF(NOT CLEAN_TEMP)
-  EXECUTE_PROCESS(COMMAND CMD /C ECHO %TEMP% OUTPUT_VARIABLE temp_path OUTPUT_STRIP_TRAILING_WHITESPACE)
-  STRING(REPLACE "\\" "/" temp_path ${temp_path})
-  FILE(GLOB temp_dirs ${temp_path}/maidsafe_Test*)
-  LIST(LENGTH temp_dirs temp_dir_count)
-  IF(NOT ${temp_dir_count} EQUAL 0)
-    MESSAGE("")
-    IF(CLEAN_TEMP MATCHES ONCE OR CLEAN_TEMP MATCHES ALWAYS)
-      MESSAGE("Cleaning up temporary test folders.\n")
-      FOREACH(temp_dir ${temp_dirs})
-        FILE(REMOVE_RECURSE ${temp_dir})
-        MESSAGE("-- Removed ${temp_dir}")
-      ENDFOREACH()
-    ELSE()
-      MESSAGE("The following temporary test folders could be cleaned up:\n")
-      FOREACH(temp_dir ${temp_dirs})
-        MESSAGE("-- Found ${temp_dir}")
-      ENDFOREACH()
-      MESSAGE("")
-      MESSAGE("To cleanup, run cmake ../.. -DCLEAN_TEMP=ONCE or cmake ../.. -DCLEAN_TEMP=ALWAYS")
-    ENDIF()
-    MESSAGE("================================================================================")
-  ENDIF()
-  IF(NOT CLEAN_TEMP MATCHES ALWAYS)
-    SET(CLEAN_TEMP "OFF" CACHE INTERNAL "Cleanup of temp test folders, options are: ONCE, OFF, ALWAYS" FORCE)
-  ENDIF()
-ENDIF()
+HANDLE_VERSIONS(${PROJECT_SOURCE_DIR}/src/maidsafe-encrypt/version.h)
 
 ###################################################################################################
 # Set up all files as GLOBs                                                                       #
@@ -193,7 +160,7 @@ TEST_SUMMARY_OUTPUT()
 ###################################################################################################
 # Install details                                                                                 #
 ###################################################################################################
-INCLUDE(maidsafe_standard_completion)
+FINAL_MESSAGE()
 
 SET(MAIDSAFE_ENCRYPT_INSTALL_FILES
       ${PROJECT_SOURCE_DIR}/src/maidsafe-encrypt/config.h
@@ -202,9 +169,11 @@ SET(MAIDSAFE_ENCRYPT_INSTALL_FILES
       ${PROJECT_SOURCE_DIR}/src/maidsafe-encrypt/self_encryption_stream.h
       ${PROJECT_SOURCE_DIR}/src/maidsafe-encrypt/version.h)
 
-INSTALL(TARGETS encrypt_static EXPORT encrypt ARCHIVE DESTINATION lib)
+SET(EXPORT_NAME encrypt)
+INSTALL(TARGETS encrypt_static EXPORT ${EXPORT_NAME} ARCHIVE DESTINATION lib)
 INSTALL(FILES ${MAIDSAFE_ENCRYPT_INSTALL_FILES} DESTINATION include/maidsafe/maidsafe-encrypt)
-INSTALL(EXPORT encrypt DESTINATION share/maidsafe)
+INSTALL(EXPORT ${EXPORT_NAME} DESTINATION share/maidsafe)
+ADD_VERSION_INFO_TO_INSTALLED_FILE(${THIS_VERSION})
 
 
 IF(CMAKE_BUILD_TYPE MATCHES "Release")
