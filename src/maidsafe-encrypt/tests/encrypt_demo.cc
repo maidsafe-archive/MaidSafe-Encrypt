@@ -74,7 +74,7 @@ int Generate(const int &chunk_size,
     else
       content.append(chunk_size, pattern[i]);
 
-  if (!utils::WriteFile(file_name, content)) {
+  if (!WriteFile(file_name, content)) {
     printf("Error: Could not write contents to file '%s'.\n",
            file_name.c_str());
     return kGenerateError;
