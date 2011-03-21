@@ -97,7 +97,7 @@ std::streamsize SelfEncryptionDevice::read(char *s, std::streamsize n) {
           chunk.pre_hash != data_map_.chunks[current_chunk_index_].pre_hash) {
         if (chunk.content.empty()) {
           fs::path chunk_path(chunk_dir_ / EncodeToHex(chunk.hash));
-          if (!utils::ReadFile(chunk_path, &current_chunk_content_)) {
+          if (!ReadFile(chunk_path, &current_chunk_content_)) {
             DLOG(ERROR) << "read: Can't read chunk data from "
                         << chunk_path.c_str() << std::endl;
             return -1;

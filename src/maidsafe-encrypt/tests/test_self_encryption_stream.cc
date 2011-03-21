@@ -163,7 +163,7 @@ TEST_F(SelfEncryptionStreamTest, BEH_ENCRYPT_DeviceRead) {
                                                     hash_orig));
     std::string hash_enc(crypto::Hash<crypto::SHA512>(content_enc));
     fs::path chunk_path(chunk_dir_ / EncodeToHex(hash_enc));
-    EXPECT_TRUE(utils::WriteFile(chunk_path, content_enc));
+    EXPECT_TRUE(WriteFile(chunk_path, content_enc));
     ChunkDetails chunk;
     chunk.pre_hash = hash_orig;
     chunk.pre_size = content_orig.size();
@@ -206,7 +206,7 @@ TEST_F(SelfEncryptionStreamTest, BEH_ENCRYPT_DeviceRead) {
       std::string hash_enc(crypto::Hash<crypto::SHA512>(content_enc));
       data_map.chunks[i].hash = hash_enc;
       data_map.chunks[i].size = content_enc.size();
-      EXPECT_TRUE(utils::WriteFile(chunk_dir_ / EncodeToHex(hash_enc),
+      EXPECT_TRUE(WriteFile(chunk_dir_ / EncodeToHex(hash_enc),
                                    content_enc));
     }
 

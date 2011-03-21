@@ -221,7 +221,7 @@ int SelfEncrypt(std::istream *input_stream,
         fs::path chunk_path = output_dir / EncodeToHex(chunk.hash);
         if (!fs::exists(chunk_path)) {
           // only try writing chunk if it hasn't been created before
-          if (!utils::WriteFile(chunk_path, chunk_content[i % 3])) {
+          if (!WriteFile(chunk_path, chunk_content[i % 3])) {
             DLOG(ERROR) << "EncryptContent: Can't write chunk data to "
                         << chunk_path.c_str() << std::endl;
             return kIoError;
