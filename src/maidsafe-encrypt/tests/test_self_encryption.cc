@@ -76,6 +76,13 @@ std::uint64_t TotalChunkSize(const std::vector<std::uint32_t> &chunk_sizes) {
   return total;
 }
 
+size_t CountUniqueChunks(const DataMap &data_map) {
+  std::set<std::string> chunks;
+  for (auto it = data_map.chunks.begin(); it != data_map.chunks.end(); ++it)
+    chunks.insert(it->hash);
+  return chunks.size();
+}
+
 }  // namespace test_se
 
 class SelfEncryptionTest : public testing::Test {
@@ -511,46 +518,72 @@ TEST_P(SelfEncryptionParamTest, BEH_ENCRYPT_SelfEnDecryptStreamLastInclude) {
 
 TEST_P(SelfEncryptionParamTest, BEH_ENCRYPT_SelfEnDecryptStreamPattern) {
   // Check with different sequences of repeating chunks
+  ASSERT_EQ(3, kMinChunks);  // chunk depends on following 2 chunks
   std::string chunk_a(RandomString(sep_.max_chunk_size));
   std::string chunk_b(RandomString(sep_.max_chunk_size));
   std::string chunk_c(RandomString(sep_.max_chunk_size));
 
-  for (int i = 0; i < 9; ++i) {
+  for (int i = 0; i <= 11; ++i) {
     DataMap data_map;
     std::istringstream stream_in;
+    size_t expected_chunks(0);
     switch (i) {
       case 0:  // abc
         stream_in.str(chunk_a + chunk_b + chunk_c);
+        expected_chunks = 3;
         break;
       case 1:  // aaa
         stream_in.str(chunk_a + chunk_a + chunk_a);
+        expected_chunks = 1;
         break;
       case 2:  // aaaab
         stream_in.str(chunk_a + chunk_a + chunk_a + chunk_a + chunk_b);
+        expected_chunks = 4;
         break;
       case 3:  // baaaa
         stream_in.str(chunk_b + chunk_a + chunk_a + chunk_a + chunk_a);
+        expected_chunks = 4;
         break;
-      case 4:  // baaab
+      case 4:  // aabaa
+        stream_in.str(chunk_a + chunk_a + chunk_b + chunk_a + chunk_a);
+        expected_chunks = 4;
+        break;
+      case 5:  // baaab
         stream_in.str(chunk_b + chunk_a + chunk_a + chunk_a + chunk_b);
+        expected_chunks = 5;
         break;
-      case 5:  // aaabc
+      case 6:  // aaabc
         stream_in.str(chunk_a + chunk_a + chunk_a + chunk_b + chunk_c);
+        expected_chunks = 5;
         break;
-      case 6:  // aabaab
+      case 7:  // aabaab
         stream_in.str(chunk_a + chunk_a + chunk_b + chunk_a + chunk_a +
                       chunk_b);
+        expected_chunks = 3;
         break;
-      case 7:  // aabaac
+      case 8:  // aabaac
         stream_in.str(chunk_a + chunk_a + chunk_b + chunk_a + chunk_a +
-                      chunk_b);
+                      chunk_c);
+        expected_chunks = 6;
         break;
-      case 8:  // abaca
+      case 9:  // aabaacaac
+        stream_in.str(chunk_a + chunk_a + chunk_b + chunk_a + chunk_a +
+                      chunk_c + chunk_a + chunk_a + chunk_c);
+        expected_chunks = 6;
+        break;
+      case 10:  // aabaacaab
+        stream_in.str(chunk_a + chunk_a + chunk_b + chunk_a + chunk_a +
+                      chunk_c + chunk_a + chunk_a + chunk_b);
+        expected_chunks = 6;
+        break;
+      case 11:  // abaca
         stream_in.str(chunk_a + chunk_b + chunk_a + chunk_c + chunk_a);
+        expected_chunks = 5;
         break;
     }
     EXPECT_EQ(kSuccess, SelfEncrypt(&stream_in, chunk_dir_, false, sep_,
                                     &data_map));
+    EXPECT_EQ(expected_chunks, test_se::CountUniqueChunks(data_map));
     EXPECT_TRUE(ChunksExist(data_map, chunk_dir_, NULL));
     std::ostringstream stream_out;
     EXPECT_EQ(kSuccess, SelfDecrypt(data_map, chunk_dir_, &stream_out));

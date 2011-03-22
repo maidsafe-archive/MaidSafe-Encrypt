@@ -161,29 +161,31 @@ int SelfEncrypt(std::istream *input_stream,
     chunk.pre_size = chunk_sizes[i];
 
     bool chunk_match(false);
-    /* {
+    {
       auto prev_chunk_it = processed_chunks.find(chunk.pre_hash);
       if (prev_chunk_it != processed_chunks.end()) {
         std::string next_hash, next_next_hash;
         size_t diff = i - prev_chunk_it->second;
-        if (diff > 1) {
+        if (diff > 2) {
           next_hash = data_map->chunks[(prev_chunk_it->second + 1) %
                                        chunk_count].pre_hash;
-        } else {
-          next_hash = chunk_hash[(i + 1) % 3];
-        }
-        if (diff > 2) {
           next_next_hash = data_map->chunks[(prev_chunk_it->second + 2) %
                                             chunk_count].pre_hash;
-        } else {
-          next_next_hash = chunk_hash[(i + 2) % 3];
+        } else if (diff == 2) {
+          next_hash = data_map->chunks[(prev_chunk_it->second + 1) %
+                                       chunk_count].pre_hash;
+          next_next_hash = chunk.pre_hash;
+        } else {  // diff == 1
+          next_hash = chunk.pre_hash;
+          next_next_hash = chunk_hash[(i + 1) % 3];
         }
 
         if (next_hash == chunk_hash[(i + 1) % 3] &&
             next_next_hash == chunk_hash[(i + 2) % 3])
           chunk_match = true;
       }
-    } */
+      // further optimisation: store/check triple of hashes in processed_chunks
+    }
 
     if (chunk_match) {
       // we already processed an identical chunk (with same 2 successors) before
