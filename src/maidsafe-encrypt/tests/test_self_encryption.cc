@@ -216,6 +216,51 @@ class SelfEncryptionParamTest
   const SelfEncryptionParams sep_;
 };
 
+// TODO(Steve) replace this by the above declaration after upgrade to gtest 1.6
+class SelfEncryptionBenchmarkTest
+  : public testing::TestWithParam<SelfEncryptionParams> {
+ public:
+  SelfEncryptionBenchmarkTest()
+      : root_dir_(),
+        file_dir_(),
+        chunk_dir_(),
+        sep_(GetParam()) {
+    boost::system::error_code ec;
+    root_dir_ = boost::filesystem::temp_directory_path(ec) /
+        ("maidsafe_TestSE_" + RandomAlphaNumericString(6));
+    file_dir_ = root_dir_ / "Files";
+    chunk_dir_ = root_dir_ / "Chunks";
+  }
+  virtual ~SelfEncryptionBenchmarkTest() {}
+ protected:
+  void SetUp() {
+    if (fs::exists(root_dir_))
+      fs::remove_all(root_dir_);
+    fs::create_directories(file_dir_);
+    fs::create_directories(chunk_dir_);
+
+    printf("Current SE parameters:\n"
+           "  max chunk size            = %d Bytes\n"
+           "  max includable chunk size = %d Bytes\n"
+           "  max includable data size  = %d bytes\n",
+           sep_.max_chunk_size,
+           sep_.max_includable_chunk_size,
+           sep_.max_includable_data_size);
+  }
+  void TearDown() {
+    try {
+      if (fs::exists(root_dir_))
+        fs::remove_all(root_dir_);
+    }
+    catch(const std::exception& e) {
+      printf("%s\n", e.what());
+    }
+  }
+
+  fs::path root_dir_, file_dir_, chunk_dir_;
+  const SelfEncryptionParams sep_;
+};
+
 TEST_F(SelfEncryptionTest, BEH_ENCRYPT_Serialisation) {
   DataMap data_map;
   {
@@ -885,22 +930,28 @@ TEST_F(SelfEncryptionTest, DISABLED_BEH_ENCRYPT_Compression) {
   FAIL() << "Not implemented yet.";
 }
 
-TEST_P(SelfEncryptionParamTest, FUNC_ENCRYPT_Benchmark) {
-//   printf("Current SE parameters:\n"
-//          "  max chunk size            = %d Bytes\n"
-//          "  max includable chunk size = %d Bytes\n"
-//          "  max includable data size  = %d bytes\n",
-//          sep.max_chunk_size,
-//          sep.max_includable_chunk_size,
-//          sep.max_includable_data_size);
+INSTANTIATE_TEST_CASE_P(VarChunkSizes, SelfEncryptionParamTest, testing::Values(
+    SelfEncryptionParams(1, 0, kMinChunks - 1),  // 1 Byte
+    SelfEncryptionParams(1 << 8, 1 << 5, 1 << 7),  // 256 Bytes
+    SelfEncryptionParams(1 << 18, 1 << 8, 1 << 10)  // 256 KiB (default)
+));
 
-  const size_t kRunCount(17);
+TEST_P(SelfEncryptionBenchmarkTest, FUNC_ENCRYPT_Benchmark) {
+  const size_t kRunCount(16);
   for (size_t run = 0; run < kRunCount; ++run) {
-    size_t repetitions((1 << 15) >> std::min(size_t(11), run));
+    size_t repetitions(0);
     size_t data_size(64 << run);
+    if (data_size <= (1 << 12))
+      repetitions = 1000;
+    else if (data_size <= (1 << 15))
+      repetitions = 100;
+    else
+      repetitions = 10;
 
     printf("Timing Self-encryption of %d strings à %d bytes (run %d/%d)...\n",
            repetitions, data_size, run + 1, kRunCount);
+
+    fs::create_directories(chunk_dir_);
 
     std::vector<std::shared_ptr<std::istringstream>> contents;
     std::vector<DataMap> data_maps;
@@ -916,12 +967,14 @@ TEST_P(SelfEncryptionParamTest, FUNC_ENCRYPT_Benchmark) {
         boost::posix_time::microsec_clock::universal_time();
     for (size_t i = 0; i < repetitions; ++i)
       SelfEncrypt(contents[i].get(), chunk_dir_, false, sep_, &(data_maps[i]));
-    boost::posix_time::time_duration duration =
-        boost::posix_time::microsec_clock::universal_time() - time;
+    std::uint64_t duration =
+        (boost::posix_time::microsec_clock::universal_time() -
+         time).total_microseconds();
+    if (duration == 0)
+      duration = 1;
     printf("Self-encrypted %d strings à %d bytes in %.2f seconds "
-          "(%.3f MB/s).\n", repetitions, data_size,
-          duration.total_milliseconds() / 1000.0,
-          (repetitions * data_size) / duration.total_milliseconds() / 1048.576);
+           "(%.3f MB/s).\n", repetitions, data_size, duration / 1000000.0,
+           (repetitions * data_size) / duration / 1.048576);
 
     std::vector<std::shared_ptr<std::ostringstream>> dec_contents;
     for (size_t i = 0; i < repetitions; ++i) {
@@ -933,30 +986,54 @@ TEST_P(SelfEncryptionParamTest, FUNC_ENCRYPT_Benchmark) {
     time = boost::posix_time::microsec_clock::universal_time();
     for (size_t i = 0; i < repetitions; ++i)
       SelfDecrypt(data_maps[i], chunk_dir_, dec_contents[i].get());
-    duration = boost::posix_time::microsec_clock::universal_time() - time;
-    printf("Self-decrypted %d strings à %d bytes in %.2f seconds "
-          "(%.3f MB/s).\n", repetitions, data_size,
-          duration.total_milliseconds() / 1000.0,
-          (repetitions * data_size) / duration.total_milliseconds() / 1048.576);
+    duration = (boost::posix_time::microsec_clock::universal_time() -
+                time).total_microseconds();
+    if (duration == 0)
+      duration = 1;
 
-    for (size_t i = 0; i < repetitions; ++i)
-      EXPECT_EQ(contents[i]->str(), dec_contents[i]->str());
+    printf("Self-decrypted %d strings à %d bytes in %.2f seconds "
+           "(%.3f MB/s).\n", repetitions, data_size, duration / 1000000.0,
+           (repetitions * data_size) / duration / 1.048576);
+
+//     for (size_t i = 0; i < repetitions; ++i)
+    EXPECT_EQ(contents[0]->str(), dec_contents[0]->str());
+
+    fs::remove_all(chunk_dir_);
   }
 }
 
-INSTANTIATE_TEST_CASE_P(VarChunkSizes, SelfEncryptionParamTest, testing::Values(
-    SelfEncryptionParams(1, 0, kMinChunks - 1),  // 1 Byte
-    SelfEncryptionParams(1 << 8, 1 << 5, 1 << 7),  // 256 Bytes
-    SelfEncryptionParams(1 << 9, 1 << 6, 1 << 8),  // 512 Bytes
-    SelfEncryptionParams(1 << 10, 1 << 7, 1 << 9),  // 1 KiB
-    SelfEncryptionParams(1 << 12, 1 << 8, 1 << 10),  // 4 KiB
-    SelfEncryptionParams(1 << 14, 1 << 8, 1 << 10),  // 16 KiB
-    SelfEncryptionParams(1 << 16, 1 << 8, 1 << 10),  // 64 KiB
-    SelfEncryptionParams(1 << 17, 1 << 8, 1 << 10),  // 128 KiB
-    SelfEncryptionParams(1 << 18, 1 << 8, 1 << 10),  // 256 KiB (default)
-    SelfEncryptionParams(1 << 19, 1 << 8, 1 << 10),  // 512 KiB
-    SelfEncryptionParams(1 << 20, 1 << 8, 1 << 10),  // 1 MiB
-    SelfEncryptionParams(1 << 21, 1 << 8, 1 << 10)  // 2 MiB
+INSTANTIATE_TEST_CASE_P(ChunkSize, SelfEncryptionBenchmarkTest, testing::Values(
+    // Variation in chunk_size
+    SelfEncryptionParams(1 << 8, 0, kMinChunks - 1),  // 256 Bytes
+    SelfEncryptionParams(1 << 10, 0, kMinChunks - 1),  // 1 KiB
+    SelfEncryptionParams(1 << 12, 0, kMinChunks - 1),  // 4 KiB
+    SelfEncryptionParams(1 << 14, 0, kMinChunks - 1),  // 16 KiB
+    SelfEncryptionParams(1 << 16, 0, kMinChunks - 1),  // 64 KiB
+    SelfEncryptionParams(1 << 17, 0, kMinChunks - 1),  // 128 KiB
+    SelfEncryptionParams(1 << 18, 0, kMinChunks - 1),  // 256 KiB (default)
+    SelfEncryptionParams(1 << 19, 0, kMinChunks - 1),  // 512 KiB
+    SelfEncryptionParams(1 << 20, 0, kMinChunks - 1),  // 1 MiB
+    SelfEncryptionParams(1 << 21, 0, kMinChunks - 1)  // 2 MiB
+));
+
+INSTANTIATE_TEST_CASE_P(IncData, SelfEncryptionBenchmarkTest, testing::Values(
+    // Variation in max_includable_data_size
+    SelfEncryptionParams(1 << 18, 0, 1 << 6),  // 64 Bytes
+    SelfEncryptionParams(1 << 18, 0, 1 << 8),  // 256 Bytes
+    SelfEncryptionParams(1 << 18, 0, 1 << 10),  // 1 KiB (default)
+    SelfEncryptionParams(1 << 18, 0, 1 << 12),  // 4 KiB
+    SelfEncryptionParams(1 << 18, 0, 1 << 14),  // 16 KiB
+    SelfEncryptionParams(1 << 18, 0, 1 << 16)  // 64 KiB
+));
+
+INSTANTIATE_TEST_CASE_P(IncChunk, SelfEncryptionBenchmarkTest, testing::Values(
+    // Variation in max_includable_chunk_size
+    SelfEncryptionParams(1 << 18, 1 << 6, 1 << 8),  // 64 Bytes
+    SelfEncryptionParams(1 << 18, 1 << 8, 1 << 10),  // 256 Bytes (default)
+    SelfEncryptionParams(1 << 18, 1 << 10, 1 << 12),  // 1 KiB
+    SelfEncryptionParams(1 << 18, 1 << 12, 1 << 14),  // 4 KiB
+    SelfEncryptionParams(1 << 18, 1 << 14, 1 << 16),  // 16 KiB
+    SelfEncryptionParams(1 << 18, 1 << 16, 1 << 18)  // 64 KiB
 ));
 
 }  // namespace encrypt
