@@ -21,9 +21,11 @@
 #include <iosfwd>
 #include <string>
 
+#include "maidsafe/common/chunk_store.h"
 #include "maidsafe/common/crypto.h"
 #include "maidsafe/common/log.h"
 #include "maidsafe/common/utils.h"
+#include "maidsafe-encrypt/data_map.h"
 #include "maidsafe-encrypt/utils.h"
 #include "boost/filesystem/fstream.hpp"
 
@@ -36,9 +38,9 @@ namespace encrypt {
 
 std::streamsize SelfEncryptionDevice::read(char *s, std::streamsize n) {
   std::streamsize remaining(n);
-  size_t chunk_count(data_map_.chunks.size());
+  size_t chunk_count(data_map_->chunks.size());
 
-  if (offset_ >= data_map_.size)
+  if (offset_ >= data_map_->size)
     return -1;
   if (n <= 0)
     return 0;
@@ -46,11 +48,11 @@ std::streamsize SelfEncryptionDevice::read(char *s, std::streamsize n) {
   // check for whole content in DataMap
   if (chunk_count == 0) {
     std::string content;
-    if (!data_map_.content.empty()) {
-      if (data_map_.compression_type == kNoCompression)
-        content = data_map_.content;
-      else if (data_map_.compression_type == kGzipCompression)
-        content = crypto::Uncompress(data_map_.content);
+    if (!data_map_->content.empty()) {
+      if (data_map_->compression_type == kNoCompression)
+        content = data_map_->content;
+      else if (data_map_->compression_type == kGzipCompression)
+        content = crypto::Uncompress(data_map_->content);
     }
     size_t size(std::min(n, static_cast<std::streamsize>(
         content.size() - offset_)));
@@ -67,13 +69,13 @@ std::streamsize SelfEncryptionDevice::read(char *s, std::streamsize n) {
     start_chunk_offset = current_chunk_offset_;
   }
   while (start_chunk_index < chunk_count &&
-         start_chunk_offset + data_map_.chunks[start_chunk_index].pre_size <=
+         start_chunk_offset + data_map_->chunks[start_chunk_index].pre_size <=
              offset_) {
-    start_chunk_offset += data_map_.chunks[start_chunk_index].pre_size;
+    start_chunk_offset += data_map_->chunks[start_chunk_index].pre_size;
     ++start_chunk_index;
   }
   if (start_chunk_index >= chunk_count ||
-      start_chunk_offset >= data_map_.size) {
+      start_chunk_offset >= data_map_->size) {
     DLOG(ERROR) << "read: Could not determine first chunk." << std::endl;
     return -1;
   }
@@ -82,44 +84,38 @@ std::streamsize SelfEncryptionDevice::read(char *s, std::streamsize n) {
   size_t end_chunk_index(start_chunk_index);
   io::stream_offset end_chunk_offset(start_chunk_offset);
   while (end_chunk_index < chunk_count - 1 &&
-         end_chunk_offset + data_map_.chunks[end_chunk_index].pre_size <
+         end_chunk_offset + data_map_->chunks[end_chunk_index].pre_size <
              offset_ + n) {
-    end_chunk_offset += data_map_.chunks[end_chunk_index].pre_size;
+    end_chunk_offset += data_map_->chunks[end_chunk_index].pre_size;
     ++end_chunk_index;
   }
 
   io::stream_offset chunk_offset(start_chunk_offset);
   for (size_t chunk_index = start_chunk_index; chunk_index <= end_chunk_index;
-       chunk_offset += data_map_.chunks[chunk_index].pre_size, ++chunk_index) {
-    const ChunkDetails &chunk = data_map_.chunks[chunk_index];
+       chunk_offset += data_map_->chunks[chunk_index].pre_size, ++chunk_index) {
+    const ChunkDetails &chunk = data_map_->chunks[chunk_index];
     if (current_chunk_content_.empty() || chunk_index != current_chunk_index_) {
       if (current_chunk_content_.empty() ||
-          chunk.pre_hash != data_map_.chunks[current_chunk_index_].pre_hash) {
+          chunk.pre_hash != data_map_->chunks[current_chunk_index_].pre_hash) {
         if (chunk.content.empty()) {
-          fs::path chunk_path(chunk_dir_ / EncodeToHex(chunk.hash));
-          if (!ReadFile(chunk_path, &current_chunk_content_)) {
-            DLOG(ERROR) << "read: Can't read chunk data from "
-                        << chunk_path.c_str() << std::endl;
-            return -1;
-          }
+          current_chunk_content_ = chunk_store_->Get(chunk.hash);
 
           if (current_chunk_content_.size() != chunk.size) {
             DLOG(ERROR) << "read: Wrong chunk size (actual "
                         << current_chunk_content_.size() << ", expected "
-                        << chunk.size << ") - " << chunk_path.c_str()
-                        << std::endl;
+                        << chunk.size << ")" << std::endl;
             return -1;
           }
 
           current_chunk_content_ = utils::SelfDecryptChunk(
               current_chunk_content_,
-              data_map_.chunks[(chunk_index + 1) % chunk_count].pre_hash,
-              data_map_.chunks[(chunk_index + 2) % chunk_count].pre_hash);
+              data_map_->chunks[(chunk_index + 1) % chunk_count].pre_hash,
+              data_map_->chunks[(chunk_index + 2) % chunk_count].pre_hash);
         } else {
-          current_chunk_content_ = data_map_.chunks[chunk_index].content;
+          current_chunk_content_ = data_map_->chunks[chunk_index].content;
         }
 
-        if (data_map_.compression_type == kGzipCompression)
+        if (data_map_->compression_type == kGzipCompression)
           current_chunk_content_ = crypto::Uncompress(current_chunk_content_);
 
         if (current_chunk_content_.size() != chunk.pre_size ||
@@ -152,6 +148,10 @@ std::streamsize SelfEncryptionDevice::read(char *s, std::streamsize n) {
   return n - remaining;
 }
 
+std::streamsize SelfEncryptionDevice::write(const char *s, std::streamsize n) {
+  return -1;
+}
+
 io::stream_offset SelfEncryptionDevice::seek(io::stream_offset offset,
                                              std::ios_base::seekdir way) {
   io::stream_offset new_offset;
@@ -163,14 +163,14 @@ io::stream_offset SelfEncryptionDevice::seek(io::stream_offset offset,
       new_offset = offset_ + offset;
       break;
     case std::ios_base::end:
-      new_offset = data_map_.size + offset;
+      new_offset = data_map_->size + offset;
       break;
     default:
       DLOG(ERROR) << "seek: Invalid seek direction passed." << std::endl;
       return -1;
   }
 
-  if (new_offset < 0 || new_offset > data_map_.size) {
+  if (new_offset < 0 || new_offset > data_map_->size) {
     DLOG(ERROR) << "seek: Invalid offset passed." << std::endl;
     return -1;
   }

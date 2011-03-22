@@ -18,10 +18,12 @@
 
 #include <array>
 #include <map>
+#include <memory>
 #include <set>
 #include <sstream>
 #include <vector>
 
+#include "maidsafe/common/chunk_store.h"
 #include "maidsafe/common/crypto.h"
 #include "maidsafe/common/log.h"
 #include "maidsafe/common/utils.h"
@@ -41,21 +43,19 @@ namespace encrypt {
  * Splits data from input stream into chunks, compresses them if possible,
  * obfuscates and then encrypts them. Chunk metadata is stored in the DataMap.
  *
- * Derived chunks will be created in output_dir.
- *
  * @param input_stream The stream providing data to self-encrypt.
- * @param output_dir Directory to store derived chunks in.
  * @param try_compression Whether to attempt compression of the data.
  * @param self_encryption_params Parameters for the self-encryption algorithm.
  * @param data_map DataMap to be populated with chunk metadata.
+ * @param chunk_store ChunkStore for resulting chunks.
  * @return Result of the operation.
  */
-int SelfEncrypt(std::istream *input_stream,
-                const fs::path &output_dir,
+int SelfEncrypt(std::shared_ptr<std::istream> input_stream,
                 bool try_compression,
                 const SelfEncryptionParams &self_encryption_params,
-                DataMap *data_map) {
-  if (!data_map || !input_stream) {
+                std::shared_ptr<DataMap> data_map,
+                std::shared_ptr<ChunkStore> chunk_store) {
+  if (!input_stream || !data_map || !chunk_store) {
     DLOG(ERROR) << "EncryptContent: One of the pointers is null." << std::endl;
     return kNullPointer;
   }
@@ -219,15 +219,9 @@ int SelfEncrypt(std::istream *input_stream,
         chunk.size = chunk_content[i % 3].size();  // encrypt. might add padding
         // sic: chunk.content left empty
 
-        // write chunk file
-        fs::path chunk_path = output_dir / EncodeToHex(chunk.hash);
-        if (!fs::exists(chunk_path)) {
-          // only try writing chunk if it hasn't been created before
-          if (!WriteFile(chunk_path, chunk_content[i % 3])) {
-            DLOG(ERROR) << "EncryptContent: Can't write chunk data to "
-                        << chunk_path.c_str() << std::endl;
-            return kIoError;
-          }
+        if (!chunk_store->Store(chunk.hash, chunk_content[i % 3])) {
+          DLOG(ERROR) << "EncryptContent: Could not store chunk." << std::endl;
+          return kEncryptError;
         }
       }
 
@@ -243,23 +237,22 @@ int SelfEncrypt(std::istream *input_stream,
  * Splits data from input string into chunks, compresses them if possible,
  * obfuscates and then encrypts them. Chunk metadata is stored in the DataMap.
  *
- * Derived chunks will be created in output_dir.
- *
  * @param input_string The string providing data to self-encrypt.
- * @param output_dir Directory to store derived chunks in.
  * @param try_compression Whether to attempt compression of the data.
  * @param self_encryption_params Parameters for the self-encryption algorithm.
  * @param data_map DataMap to be populated with chunk metadata.
+ * @param chunk_store ChunkStore for resulting chunks.
  * @return Result of the operation.
  */
 int SelfEncrypt(const std::string &input_string,
-                const fs::path &output_dir,
                 bool try_compression,
                 const SelfEncryptionParams &self_encryption_params,
-                DataMap *data_map) {
-  std::istringstream input_stream(input_string);
-  return SelfEncrypt(&input_stream, output_dir, try_compression,
-                     self_encryption_params, data_map);
+                std::shared_ptr<DataMap> data_map,
+                std::shared_ptr<ChunkStore> chunk_store) {
+  std::shared_ptr<std::istringstream> input_stream(new std::istringstream(
+      input_string));
+  return SelfEncrypt(input_stream, try_compression, self_encryption_params,
+                     data_map, chunk_store);
 }
 
 /**
@@ -270,39 +263,36 @@ int SelfEncrypt(const std::string &input_string,
  * compress the data should be undertaken. Use SelfEncrypt for streams if you
  * want to override this behaviour.
  *
- * Derived chunks will be created in output_dir.
- *
  * @param input_file The file providing data to self-encrypt.
- * @param output_dir Directory to store derived chunks in.
  * @param self_encryption_params Parameters for the self-encryption algorithm.
  * @param data_map DataMap to be populated with chunk metadata.
+ * @param chunk_store ChunkStore for resulting chunks.
  * @return Result of the operation.
  */
 int SelfEncrypt(const fs::path &input_file,
-                const fs::path &output_dir,
                 const SelfEncryptionParams &self_encryption_params,
-                DataMap *data_map) {
-  fs::ifstream input_stream(input_file, std::ios::in | std::ios::binary);
-  int result(SelfEncrypt(&input_stream, output_dir,
-                         !utils::IsCompressedFile(input_file),
-                         self_encryption_params, data_map));
-  input_stream.close();
+                std::shared_ptr<DataMap> data_map,
+                std::shared_ptr<ChunkStore> chunk_store) {
+  std::shared_ptr<fs::ifstream> input_stream(new fs::ifstream(
+      input_file, std::ios::in | std::ios::binary));
+  int result(SelfEncrypt(input_stream, !utils::IsCompressedFile(input_file),
+                         self_encryption_params, data_map, chunk_store));
+  input_stream->close();
   return result;
 }
 
 /**
- * All neccessary chunks should be available in the given directory and named as
- * hex-encoded hashes of their contents.
+ * All required chunks should be available in the given ChunkStore.
  *
  * @param data_map DataMap with chunk information.
- * @param input_dir Location of the chunk files.
- * @param output_stream Pointer to stream receiving resulting data.
+ * @param chunk_store ChunkStore providing required chunks.
+ * @param output_stream Stream receiving resulting data.
  * @return Result of the operation.
  */
-int SelfDecrypt(const DataMap &data_map,
-                const fs::path &input_dir,
-                std::ostream *output_stream) {
-  if (!output_stream)
+int SelfDecrypt(std::shared_ptr<DataMap> data_map,
+                std::shared_ptr<ChunkStore> chunk_store,
+                std::shared_ptr<std::ostream> output_stream) {
+  if (!data_map || !chunk_store || !output_stream)
     return kNullPointer;
 
   if (!output_stream->good()) {
@@ -311,7 +301,7 @@ int SelfDecrypt(const DataMap &data_map,
     return kIoError;
   }
 
-  SelfEncryptionStream input_stream(data_map, input_dir);
+  SelfEncryptionStream input_stream(data_map, chunk_store);
 
   // input_stream >> output_stream->rdbuf();
   std::streamsize buffer_size(io::optimal_buffer_size(input_stream));
@@ -324,10 +314,10 @@ int SelfDecrypt(const DataMap &data_map,
 
   std::streamsize copied_size(output_stream->tellp());
 
-  if (copied_size != data_map.size) {
+  if (copied_size != data_map->size) {
     DLOG(ERROR) << "SelfDecrypt: Amount of data read (" << copied_size
-                << ") does not match total data size (" << data_map.size << ")."
-                << std::endl;
+                << ") does not match total data size (" << data_map->size
+                << ")." << std::endl;
     return kDecryptError;
   }
 
@@ -340,37 +330,35 @@ int SelfDecrypt(const DataMap &data_map,
 }
 
 /**
- * All neccessary chunks should be available in the given directory and named as
- * hex-encoded hashes of their contents.
+ * All required chunks should be available in the given ChunkStore.
  *
  * @param data_map DataMap with chunk information.
- * @param input_dir Location of the chunk files.
- * @param output_string Pointer to string receiving resulting data.
+ * @param chunk_store ChunkStore providing required chunks.
+ * @param output_string String receiving resulting data.
  * @return Result of the operation.
  */
-int SelfDecrypt(const DataMap &data_map,
-                const fs::path &input_dir,
+int SelfDecrypt(std::shared_ptr<DataMap> data_map,
+                std::shared_ptr<ChunkStore> chunk_store,
                 std::string *output_string) {
   if (!output_string)
     return kNullPointer;
-  std::ostringstream output_stream;
-  int result(SelfDecrypt(data_map, input_dir, &output_stream));
-  *output_string = output_stream.str();
+  std::shared_ptr<std::ostringstream> output_stream(new std::ostringstream);
+  int result(SelfDecrypt(data_map, chunk_store, output_stream));
+  *output_string = output_stream->str();
   return result;
 }
 
 /**
- * All neccessary chunks should be available in the given directory and named as
- * hex-encoded hashes of their contents.
+ * All required chunks should be available in the given ChunkStore.
  *
  * @param data_map DataMap with chunk information.
- * @param input_dir Location of the chunk files.
+ * @param chunk_store ChunkStore providing required chunks.
  * @param overwrite Whether to overwrite an already existing output file.
  * @param output_file Path to file receiving resulting data.
  * @return Result of the operation.
  */
-int SelfDecrypt(const DataMap &data_map,
-                const fs::path &input_dir,
+int SelfDecrypt(std::shared_ptr<DataMap> data_map,
+                std::shared_ptr<ChunkStore> chunk_store,
                 bool overwrite,
                 const fs::path &output_file) {
   try {
@@ -387,32 +375,33 @@ int SelfDecrypt(const DataMap &data_map,
 #endif
     return kIoError;
   }
-  fs::ofstream output_stream(output_file, std::ios::out | std::ios::trunc |
-                                          std::ios::binary);
-  int result(SelfDecrypt(data_map, input_dir, &output_stream));
-  output_stream.close();
+  std::shared_ptr<fs::ofstream> output_stream(new fs::ofstream(
+      output_file, std::ios::out | std::ios::trunc | std::ios::binary));
+  int result(SelfDecrypt(data_map, chunk_store, output_stream));
+  output_stream->close();
   return result;
 }
 
 /**
  * Looks through the DataMap and, unless a chunk's content is included, checks
- * if a file with the hex-encoded pre-encryption hash exists in the given
- * directory.
+ * if it exists in the given ChunkStore.
  *
  * @param data_map DataMap with chunk information.
- * @param input_dir Location of the chunk files.
+ * @param chunk_store ChunkStore providing required chunks.
  * @param missing_chunks Pointer to vector to receive list of unavailable
  *                       chunks' names, or NULL if not needed.
- * @return True if all chunk files exist, otherwise false;
+ * @return True if all chunks exist, otherwise false.
  */
-bool ChunksExist(const DataMap &data_map,
-                 const fs::path &input_dir,
+bool ChunksExist(std::shared_ptr<DataMap> data_map,
+                 std::shared_ptr<ChunkStore> chunk_store,
                  std::vector<std::string> *missing_chunks) {
+  if (!data_map || !chunk_store)
+    return false;
   bool result(true);
   if (missing_chunks)
     missing_chunks->clear();
-  for (auto it = data_map.chunks.begin(); it != data_map.chunks.end(); ++it) {
-    if (it->content.empty() && !fs::exists(input_dir / EncodeToHex(it->hash))) {
+  for (auto it = data_map->chunks.begin(); it != data_map->chunks.end(); ++it) {
+    if (it->content.empty() && !chunk_store->Has(it->hash)) {
       if (missing_chunks)
         missing_chunks->push_back(it->hash);
       result = false;

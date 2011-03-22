@@ -19,6 +19,7 @@
 
 #include <cstdint>
 #include <iostream>  // NOLINT
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -38,7 +39,7 @@ namespace utils {
 bool IsCompressedFile(const fs::path &file_path);
 
 /// Estimates whether compression could result in space savings.
-bool CheckCompressibility(std::istream *input_stream);
+bool CheckCompressibility(std::shared_ptr<std::istream> input_stream);
 
 /// Verifies sanity of parameter values.
 bool CheckParams(const SelfEncryptionParams &self_encryption_params);

@@ -18,12 +18,12 @@
 #define MAIDSAFE_ENCRYPT_SELF_ENCRYPTION_H_
 
 #include <iostream>  // NOLINT
+#include <memory>
 #include <string>
 #include <vector>
 
 #include "boost/filesystem.hpp"
 #include "maidsafe-encrypt/config.h"
-#include "maidsafe-encrypt/data_map.h"
 #include "maidsafe-encrypt/version.h"
 
 #if MAIDSAFE_ENCRYPT_VERSION < 4
@@ -35,47 +35,51 @@ namespace fs = boost::filesystem;
 
 namespace maidsafe {
 
+class ChunkStore;
+
 namespace encrypt {
 
+class DataMap;
+
 /// Generates secure chunks from a stream.
-int SelfEncrypt(std::istream *input_stream,
-                const fs::path &output_dir,
+int SelfEncrypt(std::shared_ptr<std::istream> input_stream,
                 bool try_compression,
                 const SelfEncryptionParams &self_encryption_params,
-                DataMap *data_map);
+                std::shared_ptr<DataMap> data_map,
+                std::shared_ptr<ChunkStore> chunk_store);
 
 /// Generates secure chunks from a string.
 int SelfEncrypt(const std::string &input_string,
-                const fs::path &output_dir,
                 bool try_compression,
                 const SelfEncryptionParams &self_encryption_params,
-                DataMap *data_map);
+                std::shared_ptr<DataMap> data_map,
+                std::shared_ptr<ChunkStore> chunk_store);
 
 /// Generates secure chunks from a file.
 int SelfEncrypt(const fs::path &input_file,
-                const fs::path &output_dir,
                 const SelfEncryptionParams &self_encryption_params,
-                DataMap *data_map);
+                std::shared_ptr<DataMap> data_map,
+                std::shared_ptr<ChunkStore> chunk_store);
 
 /// Restores data from secure chunks to a stream.
-int SelfDecrypt(const DataMap &data_map,
-                const fs::path &input_dir,
-                std::ostream *output_stream);
+int SelfDecrypt(std::shared_ptr<DataMap> data_map,
+                std::shared_ptr<ChunkStore> chunk_store,
+                std::shared_ptr<std::ostream> output_stream);
 
 /// Restores data from secure chunks to a string.
-int SelfDecrypt(const DataMap &data_map,
-                const fs::path &input_dir,
+int SelfDecrypt(std::shared_ptr<DataMap> data_map,
+                std::shared_ptr<ChunkStore> chunk_store,
                 std::string *output_string);
 
 /// Restores data from secure chunks to a file.
-int SelfDecrypt(const DataMap &data_map,
-                const fs::path &input_dir,
+int SelfDecrypt(std::shared_ptr<DataMap> data_map,
+                std::shared_ptr<ChunkStore> chunk_store,
                 bool overwrite,
                 const fs::path &output_file);
 
-/// Checks for existance of each chunk file referred to by the DataMap.
-bool ChunksExist(const DataMap &data_map,
-                 const fs::path &input_dir,
+/// Checks for existance of each chunk referred to by the DataMap.
+bool ChunksExist(std::shared_ptr<DataMap> data_map,
+                 std::shared_ptr<ChunkStore> chunk_store,
                  std::vector<std::string> *missing_chunks);
 
 }  // namespace encrypt

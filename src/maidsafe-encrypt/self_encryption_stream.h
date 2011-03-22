@@ -18,13 +18,13 @@
 #define MAIDSAFE_ENCRYPT_SELF_ENCRYPTION_STREAM_H_
 
 #include <iosfwd>
+#include <memory>
 #include <string>
 
 #include "boost/filesystem.hpp"
 #include "boost/iostreams/concepts.hpp"
 #include "boost/iostreams/positioning.hpp"
 #include "boost/iostreams/stream.hpp"
-#include "maidsafe-encrypt/data_map.h"
 #include "maidsafe-encrypt/version.h"
 
 #if MAIDSAFE_ENCRYPT_VERSION < 4
@@ -37,7 +37,11 @@ namespace io = boost::iostreams;
 
 namespace maidsafe {
 
+class ChunkStore;
+
 namespace encrypt {
+
+class DataMap;
 
 namespace test {
 class SelfEncryptionStreamTest_BEH_ENCRYPT_DeviceSeek_Test;
@@ -48,23 +52,22 @@ class SelfEncryptionDevice {
  public:
   typedef char char_type;
   typedef io::seekable_device_tag category;
-  SelfEncryptionDevice(const DataMap &data_map, const fs::path &chunk_dir)
+  SelfEncryptionDevice(std::shared_ptr<DataMap> data_map,
+                       std::shared_ptr<ChunkStore> chunk_store)
       : data_map_(data_map),
-        chunk_dir_(chunk_dir),
+        chunk_store_(chunk_store),
         offset_(0),
         current_chunk_index_(0),
         current_chunk_offset_(0),
         current_chunk_content_() {}
   virtual ~SelfEncryptionDevice() {}
   std::streamsize read(char *s, std::streamsize n);
-  std::streamsize write(const char_type*, std::streamsize) {
-    return -1;
-  }
+  std::streamsize write(const char *s, std::streamsize n);
   io::stream_offset seek(io::stream_offset offset, std::ios_base::seekdir way);
  private:
   friend class test::SelfEncryptionStreamTest_BEH_ENCRYPT_DeviceSeek_Test;
-  DataMap data_map_;
-  fs::path chunk_dir_;
+  std::shared_ptr<DataMap> data_map_;
+  std::shared_ptr<ChunkStore> chunk_store_;
   io::stream_offset offset_;
   size_t current_chunk_index_;
   io::stream_offset current_chunk_offset_;

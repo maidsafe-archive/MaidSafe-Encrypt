@@ -52,7 +52,7 @@ bool IsCompressedFile(const fs::path &file_path) {
  * @param input_stream The data source.
  * @return True if input data is likely compressible.
  */
-bool CheckCompressibility(std::istream* input_stream) {
+bool CheckCompressibility(std::shared_ptr<std::istream> input_stream) {
   if (!input_stream || !input_stream->good())
     return false;
 

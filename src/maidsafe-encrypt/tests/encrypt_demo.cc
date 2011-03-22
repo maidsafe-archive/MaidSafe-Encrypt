@@ -23,7 +23,9 @@
 #include "boost/filesystem.hpp"
 #include "boost/format.hpp"
 #include "boost/lexical_cast.hpp"
+#include "maidsafe/common/file_chunk_store.h"
 #include "maidsafe/common/utils.h"
+#include "maidsafe-encrypt/data_map.h"
 #include "maidsafe-encrypt/self_encryption.h"
 #include "maidsafe-encrypt/utils.h"
 
@@ -121,6 +123,9 @@ int Encrypt(const fs::path &input_path, const fs::path &output_path,
     error = true;
   }
 
+  std::shared_ptr<FileChunkStore> chunk_store(new FileChunkStore(true));
+  chunk_store->Init(output_path);
+
   for (auto file = files.begin(); file != files.end(); ++file) {
     boost::system::error_code ec;
     std::uint64_t file_size(fs::file_size(*file, ec));
@@ -131,15 +136,15 @@ int Encrypt(const fs::path &input_path, const fs::path &output_path,
 
     total_size += file_size;
 
-    DataMap data_map;
+    std::shared_ptr<DataMap> data_map(new DataMap);
     boost::posix_time::ptime start_time(
         boost::posix_time::microsec_clock::universal_time());
-    if (SelfEncrypt(*file, output_path, self_encryption_params, &data_map) ==
+    if (SelfEncrypt(*file, self_encryption_params, data_map, chunk_store) ==
         kSuccess) {
       total_duration += boost::posix_time::microsec_clock::universal_time() -
                         start_time;
-      meta_size += sizeof(DataMap) + data_map.content.size();
-      for (auto it = data_map.chunks.begin(); it != data_map.chunks.end();
+      meta_size += sizeof(DataMap) + data_map->content.size();
+      for (auto it = data_map->chunks.begin(); it != data_map->chunks.end();
            ++it) {
         meta_size += sizeof(ChunkDetails) + it->hash.size() +
                     it->pre_hash.size() + it->content.size();
