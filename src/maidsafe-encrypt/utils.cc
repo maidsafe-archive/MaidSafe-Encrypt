@@ -170,37 +170,6 @@ bool ResizeObfuscationHash(const std::string &input,
   return true;
 }
 
-bool ReadFile(const fs::path &file_path, std::string *content) {
-  if (!content)
-    return false;
-  try {
-    std::uintmax_t file_size(fs::file_size(file_path));
-    fs::ifstream file_in(file_path, std::ios::in | std::ios::binary);
-    if (!file_in.good())
-      return false;
-    content->resize(file_size);
-    file_in.read(&((*content)[0]), file_size);
-    file_in.close();
-  }
-  catch(...) {
-    return false;
-  }
-  return true;
-}
-
-bool WriteFile(const fs::path &file_path, const std::string &content) {
-  try {
-    fs::ofstream file_out(file_path, std::ios::out | std::ios::trunc |
-                                     std::ios::binary);
-    file_out.write(content.data(), content.size());
-    file_out.close();
-  }
-  catch(...) {
-    return false;
-  }
-  return true;
-}
-
 std::string SelfEncryptChunk(const std::string &content,
                              const std::string &encryption_hash,
                              const std::string &obfuscation_hash) {

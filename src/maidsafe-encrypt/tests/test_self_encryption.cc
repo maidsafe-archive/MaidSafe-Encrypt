@@ -291,11 +291,12 @@ TEST_F(SelfEncryptionTest, BEH_ENCRYPT_IsCompressedFile) {
 }
 
 TEST_F(SelfEncryptionTest, BEH_ENCRYPT_CheckCompressibility) {
-  std::shared_ptr<std::stringstream> stream(new std::stringstream);
+  std::shared_ptr<std::stringstream> stream;
 
   // null pointer
-  EXPECT_FALSE(utils::CheckCompressibility(
-      std::shared_ptr<std::stringstream>()));
+  EXPECT_FALSE(utils::CheckCompressibility(stream));
+
+  stream.reset(new std::stringstream(""));
 
   // no data
   EXPECT_FALSE(utils::CheckCompressibility(stream));
@@ -423,6 +424,9 @@ TEST_F(SelfEncryptionTest, BEH_ENCRYPT_SelfEnDecryptStreamInvalid) {
   EXPECT_EQ(kInvalidInput,
             SelfEncrypt(istream, false, sep, data_map, chunk_store));
   sep = SelfEncryptionParams(1, 0, 0);
+  EXPECT_EQ(kInvalidInput,
+            SelfEncrypt(istream, false, sep, data_map, chunk_store));
+  sep = SelfEncryptionParams(1, 10, 10);
   EXPECT_EQ(kInvalidInput,
             SelfEncrypt(istream, false, sep, data_map, chunk_store));
 }
@@ -580,10 +584,16 @@ TEST_P(SelfEncryptionParamTest, BEH_ENCRYPT_SelfEnDecryptStreamNoCapacity) {
 
 TEST_P(SelfEncryptionParamTest, BEH_ENCRYPT_SelfEnDecryptStreamPattern) {
   // Check with different sequences of repeating chunks
+  if (sep_.max_chunk_size < 4)
+    return;  // collisions far too likely
   ASSERT_EQ(3, kMinChunks);  // chunk depends on following 2 chunks
   std::string chunk_a(RandomString(sep_.max_chunk_size));
-  std::string chunk_b(RandomString(sep_.max_chunk_size));
-  std::string chunk_c(RandomString(sep_.max_chunk_size));
+  std::string chunk_b(chunk_a);
+  while (chunk_b == chunk_a)
+    chunk_b = RandomString(sep_.max_chunk_size);
+  std::string chunk_c(chunk_a);
+  while (chunk_c == chunk_a || chunk_c == chunk_b)
+    chunk_c = RandomString(sep_.max_chunk_size);
 
   for (int i = 0; i <= 11; ++i) {
     std::shared_ptr<DataMap> data_map(new DataMap);
@@ -662,7 +672,9 @@ TEST_P(SelfEncryptionParamTest, BEH_ENCRYPT_SelfEnDecryptStreamDedup) {
   std::shared_ptr<ChunkStore> chunk_store(new MemoryChunkStore(true));
   const size_t kChunkCount(5 * kMinChunks);
   std::string chunk_content(RandomString(sep_.max_chunk_size));
-  std::string last_chunk_content(RandomString(sep_.max_chunk_size));
+  std::string last_chunk_content(chunk_content);
+  while (last_chunk_content == chunk_content)
+    last_chunk_content = RandomString(sep_.max_chunk_size);
   std::string chunk_hash(crypto::Hash<crypto::SHA512>(chunk_content));
   std::string last_chunk_hash(crypto::Hash<crypto::SHA512>(last_chunk_content));
   ASSERT_NE(chunk_hash, last_chunk_hash);
