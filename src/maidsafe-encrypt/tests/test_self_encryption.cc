@@ -100,6 +100,7 @@ class SelfEncryptionTest : public testing::Test {
   void SetUp() {
     if (fs::exists(test_dir_))
       fs::remove_all(test_dir_);
+    fs::create_directory(test_dir_);
   }
   void TearDown() {
     try {
@@ -160,6 +161,7 @@ class SelfEncryptionParamTest
   void SetUp() {
     if (fs::exists(test_dir_))
       fs::remove_all(test_dir_);
+    fs::create_directory(test_dir_);
 
     printf("Current SE parameters:\n"
            "  max chunk size            = %d Bytes\n"
@@ -222,6 +224,7 @@ class SelfEncryptionBenchmarkTest
   void SetUp() {
     if (fs::exists(test_dir_))
       fs::remove_all(test_dir_);
+    fs::create_directory(test_dir_);
 
     printf("Current SE parameters:\n"
            "  max chunk size            = %d Bytes\n"
@@ -561,6 +564,20 @@ TEST_P(SelfEncryptionParamTest, BEH_ENCRYPT_SelfEnDecryptStreamLastInclude) {
   ASSERT_PRED_FORMAT2(AssertStringsEqual, stream_in->str(), stream_out->str());
 }
 
+TEST_P(SelfEncryptionParamTest, BEH_ENCRYPT_SelfEnDecryptStreamNoCapacity) {
+  // ChunkStore with too little capacity
+  std::shared_ptr<DataMap> data_map(new DataMap);
+  std::shared_ptr<ChunkStore> chunk_store(new MemoryChunkStore(true));
+  chunk_store->SetCapacity(sep_.max_includable_data_size);
+  std::shared_ptr<std::istringstream> stream_in(new std::istringstream(
+      RandomString(sep_.max_includable_data_size + 1)));
+  std::string hash_in = crypto::Hash<crypto::SHA512>(stream_in->str());
+  EXPECT_EQ(kEncryptError,
+            SelfEncrypt(stream_in, false, sep_, data_map, chunk_store));
+  EXPECT_GT(kMinChunks, data_map->chunks.size());
+  EXPECT_GT(kMinChunks, chunk_store->Count());
+}
+
 TEST_P(SelfEncryptionParamTest, BEH_ENCRYPT_SelfEnDecryptStreamPattern) {
   // Check with different sequences of repeating chunks
   ASSERT_EQ(3, kMinChunks);  // chunk depends on following 2 chunks
@@ -683,7 +700,7 @@ TEST_P(SelfEncryptionParamTest, BEH_ENCRYPT_SelfEnDecryptStreamDedup) {
       EXPECT_EQ(chunk_hash, data_map->chunks[i].pre_hash);
     else
       EXPECT_EQ(last_chunk_hash, data_map->chunks[i].pre_hash);
-    EXPECT_EQ(data_map->chunks[i].size, data_map->chunks[i].pre_size);  // uncompr
+    EXPECT_EQ(data_map->chunks[i].size, data_map->chunks[i].pre_size);  // uncpr
     total_size += data_map->chunks[i].pre_size;
   }
 
