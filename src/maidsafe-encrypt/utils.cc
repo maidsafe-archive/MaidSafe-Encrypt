@@ -159,13 +159,13 @@ bool ResizeObfuscationHash(const std::string &input,
     return false;
 
   resized_data->resize(required_size);
-  size_t remaining(required_size);
-  char *offset(const_cast<char*>(resized_data->data()));
-  while (remaining > 0) {
-    size_t input_size(std::min(input.size(), remaining));
-    memcpy(offset, input.data(), input_size);
-    remaining -= input_size;
-    offset += input_size;
+  size_t input_size(std::min(input.size(), required_size)), copied(input_size);
+  memcpy(&((*resized_data)[0]), input.data(), input_size);
+  while (copied < required_size) {
+    // input_size = std::min(input.size(), required_size - copied);  // slow
+    input_size = std::min(copied, required_size - copied);  // fast
+    memcpy(&((*resized_data)[copied]), resized_data->data(), input_size);
+    copied += input_size;
   }
   return true;
 }

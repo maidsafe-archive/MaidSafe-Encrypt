@@ -386,6 +386,21 @@ TEST_F(SelfEncryptionTest, BEH_ENCRYPT_ResizeObfuscationHash) {
   EXPECT_EQ("abcabcabcab", output);
   EXPECT_TRUE(utils::ResizeObfuscationHash("a", 5, &output));
   EXPECT_EQ("aaaaa", output);
+
+  SelfEncryptionParams sep;
+  const std::string kInput(RandomString(64));
+  const int kRepetitions(25000);
+  boost::posix_time::ptime time =
+        boost::posix_time::microsec_clock::universal_time();
+  for (int i = 0; i < kRepetitions; ++i) {
+    output.clear();
+    utils::ResizeObfuscationHash(kInput, sep.max_chunk_size, &output);
+  }
+  std::uint64_t duration =
+      (boost::posix_time::microsec_clock::universal_time() -
+       time).total_microseconds();
+  printf("Resized hash to %u Bytes %d times in %.2f ms.\n",
+         sep.max_chunk_size, kRepetitions, duration / 1000.0);
 }
 
 TEST_F(SelfEncryptionTest, BEH_ENCRYPT_SelfEnDecryptChunk) {
