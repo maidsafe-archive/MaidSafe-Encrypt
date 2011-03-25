@@ -155,18 +155,18 @@ bool CalculateChunkSizes(const std::uint64_t &data_size,
 bool ResizeObfuscationHash(const std::string &input,
                            const size_t &required_size,
                            std::string *resized_data) {
-  if (!resized_data) {
-    DLOG(ERROR) << "ResizeObfuscationHash: resized_data null." << std::endl;
+  if (input.empty() || !resized_data)
     return false;
-  }
-  resized_data->clear();
-  resized_data->reserve(required_size);
-  std::string hash(input);
-  while (resized_data->size() < required_size) {
-    hash = crypto::Hash<crypto::SHA512>(hash);
-    resized_data->append(hash);
-  }
+
   resized_data->resize(required_size);
+  size_t remaining(required_size);
+  char *offset(const_cast<char*>(resized_data->data()));
+  while (remaining > 0) {
+    size_t input_size(std::min(input.size(), remaining));
+    memcpy(offset, input.data(), input_size);
+    remaining -= input_size;
+    offset += input_size;
+  }
   return true;
 }
 

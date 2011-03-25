@@ -368,22 +368,24 @@ TEST_P(SelfEncryptionParamTest, BEH_ENCRYPT_CalculateChunkSizes) {
 }
 
 TEST_F(SelfEncryptionTest, BEH_ENCRYPT_ResizeObfuscationHash) {
-  std::string input("abc");
-  std::string hash = crypto::Hash<crypto::SHA512>(input);
-  EXPECT_EQ(EncodeToHex(hash),
-        "ddaf35a193617abacc417349ae20413112e6fa4e89a97ea20a9eeee64b55d39a219299"
-        "2a274fc1a836ba3c23a3feebbd454d4423643ce80e2a9ac94fa54ca49f");
-  std::string amended_hash("Rubbish");
-  EXPECT_TRUE(utils::ResizeObfuscationHash(input, 65, &amended_hash));
-  char appended(55);
-  EXPECT_EQ(amended_hash, hash + appended);
-  EXPECT_TRUE(utils::ResizeObfuscationHash(input, 10, &amended_hash));
-  EXPECT_EQ(std::string("\xdd\xaf\x35\xa1\x93\x61\x7a\xba\xcc\x41"),
-            amended_hash);
-  EXPECT_TRUE(utils::ResizeObfuscationHash(input, 200, &amended_hash));
-  EXPECT_EQ(std::string("\x91\xee\x3b\x36\xd\x3e\x5e\xe\xd\xe"),
-            amended_hash.substr(190, 10));
-  EXPECT_FALSE(utils::ResizeObfuscationHash(hash, 10, NULL));
+  std::string output;
+  EXPECT_FALSE(utils::ResizeObfuscationHash("abc", 10, NULL));
+  EXPECT_FALSE(utils::ResizeObfuscationHash("", 10, &output));
+  EXPECT_TRUE(output.empty());
+  EXPECT_TRUE(utils::ResizeObfuscationHash("abc", 0, &output));
+  EXPECT_TRUE(output.empty());
+  EXPECT_TRUE(utils::ResizeObfuscationHash("abc", 1, &output));
+  EXPECT_EQ("a", output);
+  EXPECT_TRUE(utils::ResizeObfuscationHash("abc", 3, &output));
+  EXPECT_EQ("abc", output);
+  EXPECT_TRUE(utils::ResizeObfuscationHash("abc", 4, &output));
+  EXPECT_EQ("abca", output);
+  EXPECT_TRUE(utils::ResizeObfuscationHash("abc", 9, &output));
+  EXPECT_EQ("abcabcabc", output);
+  EXPECT_TRUE(utils::ResizeObfuscationHash("abc", 11, &output));
+  EXPECT_EQ("abcabcabcab", output);
+  EXPECT_TRUE(utils::ResizeObfuscationHash("a", 5, &output));
+  EXPECT_EQ("aaaaa", output);
 }
 
 TEST_F(SelfEncryptionTest, BEH_ENCRYPT_SelfEnDecryptChunk) {
