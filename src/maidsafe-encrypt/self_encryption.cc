@@ -125,6 +125,12 @@ int SelfEncrypt(std::shared_ptr<std::istream> input_stream,
     return kChunkSizeError;
   }
 
+  std::uint32_t tail(0);
+  if (chunk_sizes.back() <= self_encryption_params.max_includable_chunk_size) {
+    tail = chunk_sizes.back();
+    chunk_sizes.pop_back();
+  }
+
   size_t chunk_count(chunk_sizes.size());
   std::map<std::string, size_t> processed_chunks;
   std::array<std::string, 3> chunk_content, chunk_hash;  // sliding window = 3
@@ -191,10 +197,11 @@ int SelfEncrypt(std::shared_ptr<std::istream> input_stream,
       // we already processed an identical chunk (with same 2 successors) before
       ChunkDetails &prev_chunk =
           data_map->chunks[processed_chunks[chunk.pre_hash]];
-      chunk.content = prev_chunk.content;
+      // chunk.content = prev_chunk.content;
       chunk.hash = prev_chunk.hash;
       chunk.size = prev_chunk.size;
       // DLOG(INFO) << "SelfEncrypt: chunk cache hit" << std::endl;
+      data_map->chunks.push_back(chunk);
     } else {
       if (compress) {
         chunk_content[i % 3] = crypto::Compress(chunk_content[i % 3],
@@ -206,30 +213,29 @@ int SelfEncrypt(std::shared_ptr<std::istream> input_stream,
         }
       }
 
-      if (chunk_sizes[i] <= self_encryption_params.max_includable_chunk_size) {
-        chunk.content = chunk_content[i % 3];
-        chunk.size = chunk_content[i % 3].size();
-        // sic: chunk.hash left empty
-      } else {
-        chunk_content[i % 3] = utils::SelfEncryptChunk(chunk_content[i % 3],
-                                                       chunk_hash[(i + 1) % 3],
-                                                       chunk_hash[(i + 2) % 3]);
+      chunk_content[i % 3] = utils::SelfEncryptChunk(chunk_content[i % 3],
+                                                     chunk_hash[(i + 1) % 3],
+                                                     chunk_hash[(i + 2) % 3]);
 
-        chunk.hash = crypto::Hash<crypto::SHA512>(chunk_content[i % 3]);
-        chunk.size = chunk_content[i % 3].size();  // encrypt. might add padding
-        // sic: chunk.content left empty
+      chunk.hash = crypto::Hash<crypto::SHA512>(chunk_content[i % 3]);
+      chunk.size = chunk_content[i % 3].size();  // encrypt. might add padding
+      // sic: chunk.content left empty
 
-        if (!chunk_store->Store(chunk.hash, chunk_content[i % 3])) {
-          DLOG(ERROR) << "EncryptContent: Could not store chunk." << std::endl;
-          return kEncryptError;
-        }
+      if (!chunk_store->Store(chunk.hash, chunk_content[i % 3])) {
+        DLOG(ERROR) << "EncryptContent: Could not store chunk." << std::endl;
+        return kEncryptError;
       }
 
       processed_chunks[chunk.pre_hash] = data_map->chunks.size();
+      data_map->chunks.push_back(chunk);
     }
-
-    data_map->chunks.push_back(chunk);
   }
+
+  if (tail > 0) {
+    data_map->content.resize(tail);
+    input_stream->read(&(data_map->content[0]), tail);
+  }
+
   return kSuccess;
 }
 
@@ -383,8 +389,7 @@ int SelfDecrypt(std::shared_ptr<DataMap> data_map,
 }
 
 /**
- * Looks through the DataMap and, unless a chunk's content is included, checks
- * if it exists in the given ChunkStore.
+ * Looks through the DataMap and checks if it exists in the given ChunkStore.
  *
  * @param data_map DataMap with chunk information.
  * @param chunk_store ChunkStore providing required chunks.
@@ -401,7 +406,7 @@ bool ChunksExist(std::shared_ptr<DataMap> data_map,
   if (missing_chunks)
     missing_chunks->clear();
   for (auto it = data_map->chunks.begin(); it != data_map->chunks.end(); ++it) {
-    if (it->content.empty() && !chunk_store->Has(it->hash)) {
+    if (!chunk_store->Has(it->hash)) {
       if (missing_chunks)
         missing_chunks->push_back(it->hash);
       result = false;

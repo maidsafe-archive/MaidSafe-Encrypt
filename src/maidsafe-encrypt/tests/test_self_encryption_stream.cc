@@ -37,7 +37,7 @@ namespace encrypt {
 
 namespace test {
 
-TEST(SelfEncryptionStreamTest, BEH_ENCRYPT_DeviceRead) {
+TEST(SelfEncryptionDeviceTest, BEH_ENCRYPT_Read) {
   {
     std::shared_ptr<DataMap> data_map(new DataMap);
     std::shared_ptr<ChunkStore> chunk_store(new MemoryChunkStore(true));
@@ -72,31 +72,26 @@ TEST(SelfEncryptionStreamTest, BEH_ENCRYPT_DeviceRead) {
   }
   {  // unencrypted chunk in DataMap
     std::shared_ptr<DataMap> data_map(new DataMap);
-    ChunkDetails chunk;
-    chunk.content = RandomString(100);
-    chunk.pre_hash = crypto::Hash<crypto::SHA512>(chunk.content);
-    chunk.pre_size = chunk.content.size();
-    chunk.size = chunk.content.size();
-    data_map->chunks.push_back(chunk);
-    data_map->size = chunk.content.size();
+    data_map->content = RandomString(100);
+    data_map->size = data_map->content.size();
 
     std::shared_ptr<ChunkStore> chunk_store(new MemoryChunkStore(true));
     SelfEncryptionDevice sed(data_map, chunk_store);
-    std::string content1(chunk.content.size(), 0);
-    EXPECT_EQ(chunk.content.size(),
-              sed.read(&(content1[0]), chunk.content.size()));
-    EXPECT_EQ(chunk.content, content1);
-    EXPECT_EQ(-1, sed.read(&(content1[0]), chunk.content.size()));
-    EXPECT_EQ(chunk.content, content1);
-    std::string content2(chunk.content.size(), 0);
-    EXPECT_EQ(chunk.content.size() - 10, sed.seek(-10, std::ios_base::end));
-    EXPECT_EQ(10, sed.read(&(content2[0]), chunk.content.size()));
-    EXPECT_EQ(chunk.content.substr(chunk.content.size() - 10),
+    std::string content1(data_map->content.size(), 0);
+    EXPECT_EQ(data_map->content.size(),
+              sed.read(&(content1[0]), data_map->content.size()));
+    EXPECT_EQ(data_map->content, content1);
+    EXPECT_EQ(-1, sed.read(&(content1[0]), data_map->content.size()));
+    EXPECT_EQ(data_map->content, content1);
+    std::string content2(data_map->content.size(), 0);
+    EXPECT_EQ(data_map->content.size() - 10, sed.seek(-10, std::ios_base::end));
+    EXPECT_EQ(10, sed.read(&(content2[0]), data_map->content.size()));
+    EXPECT_EQ(data_map->content.substr(data_map->content.size() - 10),
               content2.substr(0, 10));
-    std::string content3(chunk.content.size(), 0);
+    std::string content3(data_map->content.size(), 0);
     EXPECT_EQ(0, sed.seek(0, std::ios_base::beg));
     EXPECT_EQ(10, sed.read(&(content3[0]), 10));
-    EXPECT_EQ(chunk.content.substr(0, 10), content3.substr(0, 10));
+    EXPECT_EQ(data_map->content.substr(0, 10), content3.substr(0, 10));
   }
   {  // single chunk in file
     std::shared_ptr<DataMap> data_map(new DataMap);
@@ -197,7 +192,7 @@ TEST(SelfEncryptionStreamTest, BEH_ENCRYPT_DeviceRead) {
   }
 }
 
-TEST(SelfEncryptionStreamTest, BEH_ENCRYPT_DeviceWrite) {
+TEST(SelfEncryptionDeviceTest, BEH_ENCRYPT_Write) {
   // write not implemented, so always expect failure
   std::shared_ptr<DataMap> data_map(new DataMap);
   std::shared_ptr<ChunkStore> chunk_store(new MemoryChunkStore(true));
@@ -206,7 +201,7 @@ TEST(SelfEncryptionStreamTest, BEH_ENCRYPT_DeviceWrite) {
   EXPECT_EQ(-1, sed.write(&(content[0]), 10));
 }
 
-TEST(SelfEncryptionStreamTest, BEH_ENCRYPT_DeviceSeek) {
+TEST(SelfEncryptionDeviceTest, BEH_ENCRYPT_Seek) {
   std::shared_ptr<DataMap> data_map(new DataMap);
   std::shared_ptr<ChunkStore> chunk_store(new MemoryChunkStore(true));
   {
@@ -283,6 +278,36 @@ TEST(SelfEncryptionStreamTest, BEH_ENCRYPT_DeviceSeek) {
     EXPECT_EQ(0, sed.seek(-1500, std::ios_base::end));
     EXPECT_EQ(0, sed.offset_);
   }
+}
+
+TEST(SelfEncryptionDeviceTest, DISABLED_BEH_ENCRYPT_Flush) {
+  FAIL() << "Not implemented.";
+  {
+    std::shared_ptr<DataMap> data_map(new DataMap);
+    std::shared_ptr<ChunkStore> chunk_store(new MemoryChunkStore(true));
+    SelfEncryptionDevice sed(data_map, chunk_store);
+    // ...
+  }
+}
+
+TEST(SelfEncryptionStreamTest, BEH_ENCRYPT_Dummy) {
+  std::shared_ptr<DataMap> data_map(new DataMap);
+  std::shared_ptr<ChunkStore> chunk_store(new MemoryChunkStore(true));
+  SelfEncryptionStream stream(data_map, chunk_store);
+  std::string test("test");
+  DLOG(INFO) << "write #1" << std::endl;
+  stream.write(test.data(), test.size());
+  DLOG(INFO) << "write #2" << std::endl;
+  stream.write(test.data(), test.size());
+  DLOG(INFO) << "flush" << std::endl;
+  stream.flush();
+  DLOG(INFO) << "write #3" << std::endl;
+  stream.write(test.data(), test.size());
+  DLOG(INFO) << "read" << std::endl;
+  stream.read(&(test[0]), test.size());
+  DLOG(INFO) << "close" << std::endl;
+  stream.close();
+  DLOG(INFO) << "end" << std::endl;
 }
 
 }  // namespace encrypt
