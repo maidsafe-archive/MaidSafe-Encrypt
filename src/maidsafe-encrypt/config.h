@@ -64,9 +64,6 @@ struct SelfEncryptionParams {
   std::uint32_t max_includable_data_size;
 };
 
-/// Default level of compression for data
-const std::uint16_t kCompressionLevel(9);
-
 /// Amount of data to be tested for compressibility
 const std::uint32_t kCompressionSampleSize = 256;
 

@@ -39,7 +39,8 @@ namespace utils {
 bool IsCompressedFile(const fs::path &file_path);
 
 /// Estimates whether compression could result in space savings.
-bool CheckCompressibility(std::shared_ptr<std::istream> input_stream);
+bool CheckCompressibility(const std::string &sample,
+                          const uint32_t &self_encryption_type);
 
 /// Verifies sanity of parameter values.
 bool CheckParams(const SelfEncryptionParams &self_encryption_params);
@@ -49,6 +50,18 @@ bool CalculateChunkSizes(const std::uint64_t &data_size,
                          const SelfEncryptionParams &self_encryption_params,
                          std::vector<std::uint32_t> *chunk_sizes);
 
+/// Compresses a string.
+std::string Compress(const std::string &input,
+                     const uint32_t &self_encryption_type);
+
+/// Uncompresses a string.
+std::string Uncompress(const std::string &input,
+                       const uint32_t &self_encryption_type);
+
+/// Calculates the cryptographic hash of a string.
+std::string Hash(const std::string &input,
+                 const uint32_t &self_encryption_type);
+
 /// Deterministically expands an input string to the required size.
 bool ResizeObfuscationHash(const std::string &input,
                            const size_t &required_size,
@@ -57,12 +70,14 @@ bool ResizeObfuscationHash(const std::string &input,
 /// Applies self-encryption algorithm to the contents of a chunk
 std::string SelfEncryptChunk(const std::string &content,
                              const std::string &encryption_hash,
-                             const std::string &obfuscation_hash);
+                             const std::string &obfuscation_hash,
+                             const uint32_t &self_encryption_type);
 
 /// Applies self-decryption algorithm to the contents of a chunk
 std::string SelfDecryptChunk(const std::string &content,
                              const std::string &encryption_hash,
-                             const std::string &obfuscation_hash);
+                             const std::string &obfuscation_hash,
+                             const uint32_t &self_encryption_type);
 
 }  // namespace utils
 

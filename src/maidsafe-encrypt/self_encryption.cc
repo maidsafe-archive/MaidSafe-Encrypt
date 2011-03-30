@@ -24,7 +24,6 @@
 #include <vector>
 
 #include "maidsafe/common/chunk_store.h"
-#include "maidsafe/common/crypto.h"
 #include "maidsafe/common/log.h"
 #include "maidsafe/common/utils.h"
 #include "maidsafe-encrypt/config.h"
@@ -56,12 +55,12 @@ int SelfEncrypt(std::shared_ptr<std::istream> input_stream,
                 std::shared_ptr<DataMap> data_map,
                 std::shared_ptr<ChunkStore> chunk_store) {
   if (!input_stream || !data_map || !chunk_store) {
-    DLOG(ERROR) << "EncryptContent: One of the pointers is null." << std::endl;
+    DLOG(ERROR) << "SelfEncrypt: One of the pointers is null." << std::endl;
     return kNullPointer;
   }
 
   if (!utils::CheckParams(self_encryption_params)) {
-    DLOG(ERROR) << "EncryptContent: Invalid parameters passed." << std::endl;
+    DLOG(ERROR) << "SelfEncrypt: Invalid parameters passed." << std::endl;
     return kInvalidInput;
   }
 
@@ -70,7 +69,7 @@ int SelfEncrypt(std::shared_ptr<std::istream> input_stream,
   std::streampos pos = input_stream->tellg();
 
   if (!input_stream->good() || pos < 1) {
-    DLOG(ERROR) << "EncryptContent: Input stream is invalid." << std::endl;
+    DLOG(ERROR) << "SelfEncrypt: Input stream is invalid." << std::endl;
     return kInvalidInput;
   }
   std::uint64_t data_size(static_cast<std::uint64_t>(pos));
@@ -81,12 +80,19 @@ int SelfEncrypt(std::shared_ptr<std::istream> input_stream,
       input_stream->seekg(0);
     else
       input_stream->seekg((data_size - kCompressionSampleSize) / 2);
-    compress = utils::CheckCompressibility(input_stream);
-    if (compress)
-      data_map->compression_type = kGzipCompression;
+    std::string test_data(kCompressionSampleSize, 0);
+    input_stream->read(&(test_data[0]), kCompressionSampleSize);
+    test_data.resize(input_stream->gcount());
+    compress = utils::CheckCompressibility(test_data, kCompressionGzip);
   }
 
-  data_map->self_encryption_type = kObfuscate3AES256;
+  data_map->self_encryption_type =
+      kHashingSha512 | kObfuscationRepeated | kCryptoAes256;
+  if (compress)
+    data_map->self_encryption_type |= kCompressionGzip;
+  else
+    data_map->self_encryption_type |= kCompressionNone;
+
   data_map->size = data_size;
 
   input_stream->clear();
@@ -98,30 +104,17 @@ int SelfEncrypt(std::shared_ptr<std::istream> input_stream,
     data_map->content.resize(data_size);
     input_stream->read(&(data_map->content[0]), data_size);
     if (input_stream->bad() || input_stream->gcount() != data_size) {
-      DLOG(ERROR) << "EncryptContent: Failed to read content." << std::endl;
+      DLOG(ERROR) << "SelfEncrypt: Failed to read content." << std::endl;
       return kIoError;
-    }
-    if (compress) {
-      data_map->content = crypto::Compress(data_map->content,
-                                           kCompressionLevel);
-      if (data_map->content.empty()) {
-        DLOG(ERROR) << "EncryptContent: Failed to compress content."
-                    << std::endl;
-        return kCompressionError;
-      }
     }
     return kSuccess;
   }
-
-  // FIXME find method to guarantee constant chunk size with compression
-//   compress = false;
-//   data_map->compression_type = kNoCompression;
 
   std::vector<std::uint32_t> chunk_sizes;
   if (!utils::CalculateChunkSizes(data_size, self_encryption_params,
                                   &chunk_sizes) ||
       chunk_sizes.size() < 3) {
-    DLOG(ERROR) << "EncryptContent: CalculateChunkSizes failed." << std::endl;
+    DLOG(ERROR) << "SelfEncrypt: CalculateChunkSizes failed." << std::endl;
     return kChunkSizeError;
   }
 
@@ -141,11 +134,11 @@ int SelfEncrypt(std::shared_ptr<std::istream> input_stream,
   chunk_content[1].resize(chunk_sizes[1]);
   input_stream->read(&(chunk_content[1][0]), chunk_sizes[1]);
   if (input_stream->bad()) {
-    DLOG(ERROR) << "EncryptContent: Failed to read content." << std::endl;
+    DLOG(ERROR) << "SelfEncrypt: Failed to read content." << std::endl;
     return kIoError;
   }
-  chunk_hash[0] = crypto::Hash<crypto::SHA512>(chunk_content[0]);
-  chunk_hash[1] = crypto::Hash<crypto::SHA512>(chunk_content[1]);
+  chunk_hash[0] = utils::Hash(chunk_content[0], data_map->self_encryption_type);
+  chunk_hash[1] = utils::Hash(chunk_content[1], data_map->self_encryption_type);
 
   for (size_t i = 0; i < chunk_count; ++i) {
     // read the second next chunk and calculate its hash
@@ -154,10 +147,11 @@ int SelfEncrypt(std::shared_ptr<std::istream> input_stream,
       chunk_content[idx].resize(chunk_sizes[i + 2]);
       input_stream->read(&(chunk_content[idx][0]), chunk_sizes[i + 2]);
       if (input_stream->bad() || input_stream->gcount() != chunk_sizes[i + 2]) {
-        DLOG(ERROR) << "EncryptContent: Failed to read content." << std::endl;
+        DLOG(ERROR) << "SelfEncrypt: Failed to read content." << std::endl;
         return kIoError;
       }
-      chunk_hash[idx] = crypto::Hash<crypto::SHA512>(chunk_content[idx]);
+      chunk_hash[idx] = utils::Hash(chunk_content[idx],
+                                    data_map->self_encryption_type);
     } else {
       chunk_hash[idx] = data_map->chunks[(i + 2) % chunk_count].pre_hash;
     }
@@ -203,26 +197,17 @@ int SelfEncrypt(std::shared_ptr<std::istream> input_stream,
       // DLOG(INFO) << "SelfEncrypt: chunk cache hit" << std::endl;
       data_map->chunks.push_back(chunk);
     } else {
-      if (compress) {
-        chunk_content[i % 3] = crypto::Compress(chunk_content[i % 3],
-                                                kCompressionLevel);
-        if (chunk_content[i % 3].empty()) {
-          DLOG(ERROR) << "EncryptContent: Failed to compress chunk content."
-                      << std::endl;
-          return kCompressionError;
-        }
-      }
+      chunk_content[i % 3] = utils::SelfEncryptChunk(
+          chunk_content[i % 3], chunk_hash[(i + 1) % 3],
+          chunk_hash[(i + 2) % 3], data_map->self_encryption_type);
 
-      chunk_content[i % 3] = utils::SelfEncryptChunk(chunk_content[i % 3],
-                                                     chunk_hash[(i + 1) % 3],
-                                                     chunk_hash[(i + 2) % 3]);
-
-      chunk.hash = crypto::Hash<crypto::SHA512>(chunk_content[i % 3]);
-      chunk.size = chunk_content[i % 3].size();  // encrypt. might add padding
+      chunk.hash = utils::Hash(chunk_content[i % 3],
+                               data_map->self_encryption_type);
+      chunk.size = chunk_content[i % 3].size();
       // sic: chunk.content left empty
 
       if (!chunk_store->Store(chunk.hash, chunk_content[i % 3])) {
-        DLOG(ERROR) << "EncryptContent: Could not store chunk." << std::endl;
+        DLOG(ERROR) << "SelfEncrypt: Could not store chunk." << std::endl;
         return kEncryptError;
       }
 

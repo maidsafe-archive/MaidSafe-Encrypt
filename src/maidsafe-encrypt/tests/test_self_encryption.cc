@@ -42,6 +42,9 @@ namespace test {
 
 namespace test_se {
 
+const std::uint32_t kDefaultSelfEncryptionType(
+    kHashingSha512 | kCompressionNone | kObfuscationRepeated | kCryptoAes256);
+
 fs::path CreateRandomFile(const fs::path &file_path,
                           const std::uint64_t &file_size) {
   fs::ofstream ofs(file_path, std::ios::binary | std::ios::out |
@@ -291,27 +294,19 @@ TEST_F(SelfEncryptionTest, BEH_ENCRYPT_IsCompressedFile) {
 }
 
 TEST_F(SelfEncryptionTest, BEH_ENCRYPT_CheckCompressibility) {
-  std::shared_ptr<std::stringstream> stream;
-
-  // null pointer
-  EXPECT_FALSE(utils::CheckCompressibility(stream));
-
-  stream.reset(new std::stringstream(""));
+  // TODO(Steve) add more compression types
 
   // no data
-  EXPECT_FALSE(utils::CheckCompressibility(stream));
-  stream->clear();
+  std::string sample;
+  EXPECT_FALSE(utils::CheckCompressibility(sample, kCompressionGzip));
 
   //  make compressible string
-  for (int i = 0; i < 1000; ++i)
-    *stream << "repeated text ";
-  stream->seekg(stream->tellp() / 2);
-  EXPECT_TRUE(utils::CheckCompressibility(stream));
+  sample = std::string(kCompressionSampleSize, 'x');
+  EXPECT_TRUE(utils::CheckCompressibility(sample, kCompressionGzip));
 
   //  make incompressible string
-  stream->str("small text");
-  stream->seekg(0);
-  EXPECT_FALSE(utils::CheckCompressibility(stream));
+  sample = RandomString(kCompressionSampleSize);
+  EXPECT_FALSE(utils::CheckCompressibility(sample, kCompressionGzip));
 }
 
 TEST_P(SelfEncryptionParamTest, BEH_ENCRYPT_CalculateChunkSizes) {
@@ -408,18 +403,33 @@ TEST_F(SelfEncryptionTest, BEH_ENCRYPT_SelfEnDecryptChunk) {
   std::string hash1(RandomString(64)), hash2(RandomString(64));
   ASSERT_NE(hash1, hash2);
 
-  EXPECT_EQ("", utils::SelfEncryptChunk("", hash1, hash2));
-  EXPECT_EQ("", utils::SelfEncryptChunk(content, "", hash2));
-  EXPECT_EQ("", utils::SelfEncryptChunk(content, hash1, ""));
-  EXPECT_EQ("", utils::SelfDecryptChunk("", hash1, hash2));
-  EXPECT_EQ("", utils::SelfDecryptChunk(content, "", hash2));
-  EXPECT_EQ("", utils::SelfDecryptChunk(content, hash1, ""));
+  // TODO(Steve) parametrise SE type
+
+  EXPECT_EQ("", utils::SelfEncryptChunk("", hash1, hash2,
+                                        test_se::kDefaultSelfEncryptionType));
+  EXPECT_EQ("", utils::SelfEncryptChunk(content, "", hash2,
+                                        test_se::kDefaultSelfEncryptionType));
+  EXPECT_EQ("", utils::SelfEncryptChunk(content, hash1, "",
+                                        test_se::kDefaultSelfEncryptionType));
+  EXPECT_EQ("", utils::SelfEncryptChunk(content, hash1, hash2, 0));
+
+  EXPECT_EQ("", utils::SelfDecryptChunk("", hash1, hash2,
+                                        test_se::kDefaultSelfEncryptionType));
+  EXPECT_EQ("", utils::SelfDecryptChunk(content, "", hash2,
+                                        test_se::kDefaultSelfEncryptionType));
+  EXPECT_EQ("", utils::SelfDecryptChunk(content, hash1, "",
+                                        test_se::kDefaultSelfEncryptionType));
+  EXPECT_EQ("", utils::SelfDecryptChunk(content, hash1, hash2, 0));
 
   EXPECT_PRED_FORMAT2(AssertStringsEqual, content, utils::SelfDecryptChunk(
-      utils::SelfEncryptChunk(content, hash1, hash2), hash1, hash2));
+      utils::SelfEncryptChunk(content, hash1, hash2,
+                              test_se::kDefaultSelfEncryptionType),
+      hash1, hash2, test_se::kDefaultSelfEncryptionType));
 
   EXPECT_NE(content, utils::SelfDecryptChunk(
-      utils::SelfEncryptChunk(content, hash1, hash2), hash2, hash1));
+      utils::SelfEncryptChunk(content, hash1, hash2,
+                              test_se::kDefaultSelfEncryptionType),
+      hash2, hash1, test_se::kDefaultSelfEncryptionType));
 }
 
 TEST_F(SelfEncryptionTest, BEH_ENCRYPT_SelfEnDecryptStreamInvalid) {
@@ -499,8 +509,8 @@ TEST_P(SelfEncryptionParamTest, BEH_ENCRYPT_SelfEnDecryptStreamFullInclude) {
             SelfEncrypt(stream_in, false, sep_, data_map, chunk_store));
   EXPECT_TRUE(ChunksExist(data_map, chunk_store, NULL));
   EXPECT_EQ(0, data_map->chunks.size());
-  EXPECT_EQ(kNoCompression, data_map->compression_type);
-  EXPECT_EQ(kObfuscate3AES256, data_map->self_encryption_type);
+  EXPECT_EQ(test_se::kDefaultSelfEncryptionType,
+            data_map->self_encryption_type);
   EXPECT_EQ(sep_.max_includable_data_size, data_map->size);
   EXPECT_EQ(sep_.max_includable_data_size, data_map->content.size());
   EXPECT_EQ(hash_in, crypto::Hash<crypto::SHA512>(data_map->content));
@@ -520,8 +530,8 @@ TEST_P(SelfEncryptionParamTest, BEH_ENCRYPT_SelfEnDecryptStreamNoInclude) {
             SelfEncrypt(stream_in, false, sep_, data_map, chunk_store));
   EXPECT_TRUE(ChunksExist(data_map, chunk_store, NULL));
   EXPECT_EQ(kMinChunks, data_map->chunks.size());
-  EXPECT_EQ(kNoCompression, data_map->compression_type);
-  EXPECT_EQ(kObfuscate3AES256, data_map->self_encryption_type);
+  EXPECT_EQ(test_se::kDefaultSelfEncryptionType,
+            data_map->self_encryption_type);
   EXPECT_EQ(sep_.max_includable_data_size + 1, data_map->size);
   EXPECT_TRUE(data_map->content.empty());
   std::uint64_t total_size(0);
@@ -555,8 +565,8 @@ TEST_P(SelfEncryptionParamTest, BEH_ENCRYPT_SelfEnDecryptStreamLastInclude) {
             SelfEncrypt(stream_in, false, sep_, data_map, chunk_store));
   EXPECT_TRUE(ChunksExist(data_map, chunk_store, NULL));
   EXPECT_EQ(kMinChunks, data_map->chunks.size());
-  EXPECT_EQ(kNoCompression, data_map->compression_type);
-  EXPECT_EQ(kObfuscate3AES256, data_map->self_encryption_type);
+  EXPECT_EQ(test_se::kDefaultSelfEncryptionType,
+            data_map->self_encryption_type);
   EXPECT_EQ(data_size, data_map->size);
   EXPECT_FALSE(data_map->content.empty());
   std::uint64_t total_size(0);
@@ -699,8 +709,8 @@ TEST_P(SelfEncryptionParamTest, BEH_ENCRYPT_SelfEnDecryptStreamDedup) {
             SelfEncrypt(stream_in, false, sep_, data_map, chunk_store));
   EXPECT_TRUE(ChunksExist(data_map, chunk_store, NULL));
   EXPECT_EQ(kChunkCount, data_map->chunks.size());
-  EXPECT_EQ(kNoCompression, data_map->compression_type);
-  EXPECT_EQ(kObfuscate3AES256, data_map->self_encryption_type);
+  EXPECT_EQ(test_se::kDefaultSelfEncryptionType,
+            data_map->self_encryption_type);
   EXPECT_EQ(kChunkCount * sep_.max_chunk_size, data_map->size);
   EXPECT_TRUE(data_map->content.empty());
 

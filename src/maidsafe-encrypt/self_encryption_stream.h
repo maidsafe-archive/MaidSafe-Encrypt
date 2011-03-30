@@ -55,14 +55,9 @@ class SelfEncryptionDevice {
   typedef char char_type;
   struct category : io::seekable_device_tag, io::flushable_tag {};
   SelfEncryptionDevice(std::shared_ptr<DataMap> data_map,
-                       std::shared_ptr<ChunkStore> chunk_store)
-      : data_map_(data_map),
-        chunk_store_(chunk_store),
-        offset_(0),
-        current_chunk_offset_(0),
-        current_chunk_index_(0),
-        chunk_buffers_(),
-        write_mode_(false) {}
+                       std::shared_ptr<ChunkStore> chunk_store,
+                       SelfEncryptionParams self_encryption_params =
+                           SelfEncryptionParams());
   virtual ~SelfEncryptionDevice() {}
   std::streamsize read(char *s, std::streamsize n);
   std::streamsize write(const char *s, std::streamsize n);
@@ -76,7 +71,9 @@ class SelfEncryptionDevice {
     size_t index;
   };
   bool UpdateCurrentChunkDetails();
-  bool LoadChunkIntoBuffer(const size_t &index);
+  bool LoadChunkIntoBuffer(const size_t &index, ChunkBuffer *chunk_buffer);
+  SelfEncryptionParams self_encryption_params_;
+  uint32_t default_self_encryption_type_;
   std::shared_ptr<DataMap> data_map_;
   std::shared_ptr<ChunkStore> chunk_store_;
   io::stream_offset offset_, current_chunk_offset_;

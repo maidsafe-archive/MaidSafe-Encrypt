@@ -147,7 +147,7 @@ int Encrypt(const fs::path &input_path, const fs::path &output_path,
       for (auto it = data_map->chunks.begin(); it != data_map->chunks.end();
            ++it) {
         meta_size += sizeof(ChunkDetails) + it->hash.size() +
-                    it->pre_hash.size() + it->content.size();
+                    it->pre_hash.size();
         if (!it->hash.empty() && chunks.count(it->hash) == 0) {
           chunks.insert(it->hash);
           chunks_size += it->size;

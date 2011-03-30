@@ -34,15 +34,25 @@ namespace maidsafe {
 
 namespace encrypt {
 
-/// Available types of compression
-enum CompressionType {
-  kNoCompression,   ///< Leave data uncompressed
-  kGzipCompression  ///< Use GNU zip compression
-};
-
 /// Available types of self-encryption
-enum SelfEncryptionType {
-  kObfuscate3AES256  ///< Obfuscate over 3 chunks, encrypt with AES256
+enum SelfEncryptionTypes {
+  // Type of hashing used (first 4 bits)
+  kHashingSha1 = 1,
+  kHashingSha512 = 2,
+  kHashingTiger = 3,
+  kHashingMask = 0xF,
+  // Type of compression used (second 4 bits)
+  kCompressionNone = 1 << 4,
+  kCompressionGzip = 2 << 4,
+  kCompressionMask = 0xF << 4,
+  // Type of obfuscation used (third 4 bits)
+  kObfuscationNone = 1 << 8,
+  kObfuscationRepeated = 2 << 8,
+  kObfuscationMask = 0xF << 8,
+  // Type of cryptography used (fourth 4 bits)
+  kCryptoNone = 1 << 12,
+  kCryptoAes256 = 2 << 12,
+  kCryptoMask = 0xF << 12
 };
 
 /// Holds information about a chunk
@@ -58,10 +68,8 @@ struct ChunkDetails {
 /// Holds information about the building blocks of a data item
 struct DataMap {
   DataMap()
-    : compression_type(kNoCompression), self_encryption_type(kObfuscate3AES256),
-      chunks(), size(0), content() {}
-  CompressionType compression_type;  ///< Type of compression used for contents
-  SelfEncryptionType self_encryption_type;  ///< Type of SE used for chunks
+    : self_encryption_type(0), chunks(), size(0), content() {}
+  std::uint32_t self_encryption_type;  ///< Type of SE used for chunks
   std::vector<ChunkDetails> chunks;  ///< Information about the chunks
   std::uint64_t size;      ///< Size of data item
   std::string content;     ///< Whole data item or last chunk, if small enough
@@ -89,7 +97,6 @@ template<class Archive>
 void serialize(Archive &archive,  // NOLINT
                maidsafe::encrypt::DataMap &data_map,
                const unsigned int /* version */) {
-  archive & data_map.compression_type;
   archive & data_map.self_encryption_type;
   archive & data_map.chunks;
   archive & data_map.size;
