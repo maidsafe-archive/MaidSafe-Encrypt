@@ -20,6 +20,7 @@
 #include <array>
 #include <iosfwd>
 #include <memory>
+#include <set>
 #include <string>
 
 #include "boost/filesystem.hpp"
@@ -71,7 +72,11 @@ class SelfEncryptionDevice {
     size_t index;
   };
   bool UpdateCurrentChunkDetails();
+  bool FinaliseWriting();
   bool LoadChunkIntoBuffer(const size_t &index, ChunkBuffer *chunk_buffer);
+  bool StoreChunkFromBuffer(const ChunkBuffer &chunk_buffer,
+                            const std::string &encryption_hash,
+                            const std::string &obfuscation_hash);
   SelfEncryptionParams self_encryption_params_;
   uint32_t default_self_encryption_type_;
   std::shared_ptr<DataMap> data_map_;
@@ -79,6 +84,7 @@ class SelfEncryptionDevice {
   io::stream_offset offset_, current_chunk_offset_;
   size_t current_chunk_index_;
   std::array<ChunkBuffer, kMinChunks> chunk_buffers_;
+  std::set<size_t> pending_chunks_;
   bool write_mode_;
 };
 

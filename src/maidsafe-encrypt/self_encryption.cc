@@ -64,164 +64,27 @@ int SelfEncrypt(std::shared_ptr<std::istream> input_stream,
     return kInvalidInput;
   }
 
-  // TODO(Steve) pass size in for proper streaming, avoid seeking
-  input_stream->seekg(0, std::ios::end);
-  std::streampos pos = input_stream->tellg();
-
-  if (!input_stream->good() || pos < 1) {
-    DLOG(ERROR) << "SelfEncrypt: Input stream is invalid." << std::endl;
-    return kInvalidInput;
-  }
-  std::uint64_t data_size(static_cast<std::uint64_t>(pos));
-
-  bool compress(false);
-  if (try_compression) {
-    if (data_size < 2 * kCompressionSampleSize)
-      input_stream->seekg(0);
-    else
-      input_stream->seekg((data_size - kCompressionSampleSize) / 2);
-    std::string test_data(kCompressionSampleSize, 0);
-    input_stream->read(&(test_data[0]), kCompressionSampleSize);
-    test_data.resize(input_stream->gcount());
-    compress = utils::CheckCompressibility(test_data, kCompressionGzip);
-  }
-
-  data_map->self_encryption_type =
-      kHashingSha512 | kObfuscationRepeated | kCryptoAes256;
-  if (compress)
-    data_map->self_encryption_type |= kCompressionGzip;
-  else
-    data_map->self_encryption_type |= kCompressionNone;
-
-  data_map->size = data_size;
-
-  input_stream->clear();
-  input_stream->seekg(0);
-
-  if (data_size <= self_encryption_params.max_includable_data_size) {
-    // No chunking, include data in DataMap
-    data_map->chunks.clear();
-    data_map->content.resize(data_size);
-    input_stream->read(&(data_map->content[0]), data_size);
-    if (input_stream->bad() || input_stream->gcount() != data_size) {
-      DLOG(ERROR) << "SelfEncrypt: Failed to read content." << std::endl;
-      return kIoError;
-    }
-    return kSuccess;
-  }
-
-  std::vector<std::uint32_t> chunk_sizes;
-  if (!utils::CalculateChunkSizes(data_size, self_encryption_params,
-                                  &chunk_sizes) ||
-      chunk_sizes.size() < 3) {
-    DLOG(ERROR) << "SelfEncrypt: CalculateChunkSizes failed." << std::endl;
-    return kChunkSizeError;
-  }
-
-  std::uint32_t tail(0);
-  if (chunk_sizes.back() <= self_encryption_params.max_includable_chunk_size) {
-    tail = chunk_sizes.back();
-    chunk_sizes.pop_back();
-  }
-
-  size_t chunk_count(chunk_sizes.size());
-  std::map<std::string, size_t> processed_chunks;
-  std::array<std::string, 3> chunk_content, chunk_hash;  // sliding window = 3
-
-  // read the first 2 chunks and calculate their hashes
-  chunk_content[0].resize(chunk_sizes[0]);
-  input_stream->read(&(chunk_content[0][0]), chunk_sizes[0]);
-  chunk_content[1].resize(chunk_sizes[1]);
-  input_stream->read(&(chunk_content[1][0]), chunk_sizes[1]);
-  if (input_stream->bad()) {
-    DLOG(ERROR) << "SelfEncrypt: Failed to read content." << std::endl;
+  if (!input_stream->good()) {
+    DLOG(ERROR) << "SelfEncrypt: Input stream is invalid."
+                << std::endl;
     return kIoError;
   }
-  chunk_hash[0] = utils::Hash(chunk_content[0], data_map->self_encryption_type);
-  chunk_hash[1] = utils::Hash(chunk_content[1], data_map->self_encryption_type);
 
-  for (size_t i = 0; i < chunk_count; ++i) {
-    // read the second next chunk and calculate its hash
-    std::uint32_t idx = (i + 2) % 3;
-    if (i + 2 < chunk_count) {
-      chunk_content[idx].resize(chunk_sizes[i + 2]);
-      input_stream->read(&(chunk_content[idx][0]), chunk_sizes[i + 2]);
-      if (input_stream->bad() || input_stream->gcount() != chunk_sizes[i + 2]) {
-        DLOG(ERROR) << "SelfEncrypt: Failed to read content." << std::endl;
-        return kIoError;
-      }
-      chunk_hash[idx] = utils::Hash(chunk_content[idx],
-                                    data_map->self_encryption_type);
-    } else {
-      chunk_hash[idx] = data_map->chunks[(i + 2) % chunk_count].pre_hash;
-    }
+  SelfEncryptionStream output_stream(data_map, chunk_store,
+                                     self_encryption_params);
 
-    ChunkDetails chunk;
-    chunk.pre_hash = chunk_hash[i % 3];
-    chunk.pre_size = chunk_sizes[i];
-
-    bool chunk_match(false);
-    {
-      auto prev_chunk_it = processed_chunks.find(chunk.pre_hash);
-      if (prev_chunk_it != processed_chunks.end()) {
-        std::string next_hash, next_next_hash;
-        size_t diff = i - prev_chunk_it->second;
-        if (diff > 2) {
-          next_hash = data_map->chunks[(prev_chunk_it->second + 1) %
-                                       chunk_count].pre_hash;
-          next_next_hash = data_map->chunks[(prev_chunk_it->second + 2) %
-                                            chunk_count].pre_hash;
-        } else if (diff == 2) {
-          next_hash = data_map->chunks[(prev_chunk_it->second + 1) %
-                                       chunk_count].pre_hash;
-          next_next_hash = chunk.pre_hash;
-        } else {  // diff == 1
-          next_hash = chunk.pre_hash;
-          next_next_hash = chunk_hash[(i + 1) % 3];
-        }
-
-        if (next_hash == chunk_hash[(i + 1) % 3] &&
-            next_next_hash == chunk_hash[(i + 2) % 3])
-          chunk_match = true;
-      }
-      // further optimisation: store/check triple of hashes in processed_chunks
-    }
-
-    if (chunk_match) {
-      // we already processed an identical chunk (with same 2 successors) before
-      ChunkDetails &prev_chunk =
-          data_map->chunks[processed_chunks[chunk.pre_hash]];
-      // chunk.content = prev_chunk.content;
-      chunk.hash = prev_chunk.hash;
-      chunk.size = prev_chunk.size;
-      // DLOG(INFO) << "SelfEncrypt: chunk cache hit" << std::endl;
-      data_map->chunks.push_back(chunk);
-    } else {
-      chunk_content[i % 3] = utils::SelfEncryptChunk(
-          chunk_content[i % 3], chunk_hash[(i + 1) % 3],
-          chunk_hash[(i + 2) % 3], data_map->self_encryption_type);
-
-      chunk.hash = utils::Hash(chunk_content[i % 3],
-                               data_map->self_encryption_type);
-      chunk.size = chunk_content[i % 3].size();
-      // sic: chunk.content left empty
-
-      if (!chunk_store->Store(chunk.hash, chunk_content[i % 3])) {
-        DLOG(ERROR) << "SelfEncrypt: Could not store chunk." << std::endl;
-        return kEncryptError;
-      }
-
-      processed_chunks[chunk.pre_hash] = data_map->chunks.size();
-      data_map->chunks.push_back(chunk);
-    }
+  std::streamsize buffer_size(io::optimal_buffer_size(output_stream));
+  char *buffer = new char[buffer_size];
+  while (input_stream->good()) {
+    input_stream->read(buffer, buffer_size);
+    output_stream.write(buffer, input_stream->gcount());
   }
+  delete buffer;
 
-  if (tail > 0) {
-    data_map->content.resize(tail);
-    input_stream->read(&(data_map->content[0]), tail);
+  if (!input_stream->eof() || !output_stream.good()) {
+    DLOG(ERROR) << "SelfEncrypt: Stream operation failed." << std::endl;
+    return kDecryptError;
   }
-
-  return kSuccess;
 }
 
 /**
@@ -313,7 +176,7 @@ int SelfDecrypt(std::shared_ptr<DataMap> data_map,
   }
 
   if (!input_stream.eof() || !output_stream->good()) {
-    DLOG(ERROR) << "SelfDecrypt: Stream read operation failed." << std::endl;
+    DLOG(ERROR) << "SelfDecrypt: Stream operation failed." << std::endl;
     return kDecryptError;
   }
 
