@@ -71,10 +71,11 @@ class SelfEncryptionDevice {
     std::string hash, content;
     size_t index;
   };
+  void InitialiseDataMap(const ChunkBuffer &chunk_buffer);
   bool UpdateCurrentChunkDetails();
   bool FinaliseWriting();
   bool LoadChunkIntoBuffer(const size_t &index, ChunkBuffer *chunk_buffer);
-  bool StoreChunkFromBuffer(const ChunkBuffer &chunk_buffer,
+  bool StoreChunkFromBuffer(ChunkBuffer *chunk_buffer,
                             const std::string &encryption_hash,
                             const std::string &obfuscation_hash);
   SelfEncryptionParams self_encryption_params_;

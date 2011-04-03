@@ -61,7 +61,10 @@ std::streamsize SelfEncryptionDevice::read(char *s, std::streamsize n) {
   if (write_mode_ && !flush())
     return -1;
 
-  if (!UpdateCurrentChunkDetails())
+  if (n == 0)
+    return 0;
+
+  if (offset_ == data_map_->size || !UpdateCurrentChunkDetails())
     return -1;
 
   std::streamsize remaining(n);
@@ -92,7 +95,7 @@ std::streamsize SelfEncryptionDevice::read(char *s, std::streamsize n) {
 }
 
 std::streamsize SelfEncryptionDevice::write(const char *s, std::streamsize n) {
-  DLOG(INFO) << "write " << n << std::endl;
+  // DLOG(INFO) << "write " << n << std::endl;
 
   if (!s || n <= 0)
     return -1;
@@ -180,7 +183,8 @@ std::streamsize SelfEncryptionDevice::write(const char *s, std::streamsize n) {
   while (remaining > 0) {
     ChunkBuffer &chunk_buffer =
         chunk_buffers_[current_chunk_index_ % kMinChunks];
-    if (chunk_buffer.index != current_chunk_index_) {
+    if ((offset_ == 0 && current_chunk_index_ == 0) ||
+        chunk_buffer.index != current_chunk_index_) {
       if (current_chunk_index_ >= data_map_->chunks.size() &&
           data_map_->content.empty()) {
         chunk_buffer.index = current_chunk_index_;
@@ -203,7 +207,7 @@ std::streamsize SelfEncryptionDevice::write(const char *s, std::streamsize n) {
         self_encryption_params_.max_chunk_size - this_offset)));
 
     if (size > 0) {
-      if (this_offset + size < chunk_buffer.content.size())
+      if (this_offset + size > chunk_buffer.content.size())
         chunk_buffer.content.resize(this_offset + size);
       memcpy(&(chunk_buffer.content[this_offset]), s, size);
       chunk_buffer.hash.clear();
@@ -254,35 +258,105 @@ io::stream_offset SelfEncryptionDevice::seek(io::stream_offset offset,
 bool SelfEncryptionDevice::flush() {
   if (!write_mode_)
     return true;
-  DLOG(INFO) << "flush" << std::endl;
+  // DLOG(INFO) << "flush" << std::endl;
 
-  if (data_map_->chunks.empty()) {
-    // TODO(Steve) rearrange buffers in case of 3 small chunks
-    return false;
-  } else {
-    const size_t prev_idx(current_chunk_index_);
-    for (; current_chunk_index_ < prev_idx + kMinChunks; ++current_chunk_index_)
-      if (!FinaliseWriting()) {
-        DLOG(ERROR) << "flush: Could not finalise chunk" << current_chunk_index_
-                    << std::endl;
+  size_t highest_index(0);
+  for (size_t i = 0; i < kMinChunks; ++i)
+    if (chunk_buffers_[i].index > highest_index &&
+        !chunk_buffers_[i].content.empty())
+      highest_index = chunk_buffers_[i].index;
+
+  if ((highest_index == 0 &&
+       chunk_buffers_[highest_index % kMinChunks].content.size() <=
+           self_encryption_params_.max_includable_data_size) ||
+      (data_map_->chunks.size() <= highest_index &&
+       chunk_buffers_[highest_index % kMinChunks].content.size() <=
+           self_encryption_params_.max_includable_chunk_size)) {
+    // store chunk in DataMap
+    if (!StoreChunkFromBuffer(&(chunk_buffers_[highest_index % kMinChunks]),
+                              "", "")) {
+      DLOG(ERROR) << "flush: Could not store in DataMap." << std::endl;
+      return false;
+    }
+  }
+
+  if (data_map_->content.empty() && data_map_->chunks.empty()) {
+    // rearrange buffers in case of 3 small chunks
+    size_t i(0), size(0);
+    for (; i < kMinChunks; ++i)
+      if (chunk_buffers_[i].index == i) {
+        size += chunk_buffers_[i].content.size();
+      } else {
+        chunk_buffers_[i].index = i;
+        chunk_buffers_[i].content.clear();
+      }
+
+    InitialiseDataMap(
+        chunk_buffers_[size / self_encryption_params_.max_chunk_size / 2]);
+    size /= kMinChunks;
+
+    // equally distribute contents and re-calculate hashes
+    for (i = 0; i < kMinChunks; ++i) {
+      if (i < kMinChunks - 1 && chunk_buffers_[i].content.size() > size) {
+        chunk_buffers_[i + 1].content = chunk_buffers_[i].content.substr(size) +
+                                        chunk_buffers_[i + 1].content;
+        chunk_buffers_[i].content.erase(size);
+      }
+      chunk_buffers_[i].hash = utils::Hash(chunk_buffers_[i].content,
+                                           data_map_->self_encryption_type);
+    }
+
+    for (i = 0; i < kMinChunks; ++i)
+      if (!StoreChunkFromBuffer(&(chunk_buffers_[i]),
+                                chunk_buffers_[(i + 1) % kMinChunks].hash,
+                                chunk_buffers_[(i + 2) % kMinChunks].hash)) {
+        DLOG(ERROR) << "flush: Could not store chunk " << i << std::endl;
         return false;
       }
+  } else {
+    // try finalising all the buffers
+    const size_t prev_idx(current_chunk_index_);
+    for (size_t i = prev_idx; i < prev_idx + kMinChunks; ++i) {
+      current_chunk_index_ = chunk_buffers_[i % kMinChunks].index;
+      if (!chunk_buffers_[i % kMinChunks].content.empty() &&
+          !FinaliseWriting()) {
+        DLOG(ERROR) << "flush: Could not finalise chunk "
+                    << current_chunk_index_ << std::endl;
+        return false;
+      }
+    }
+    current_chunk_index_ = prev_idx;
+
+    // (re-)encrypt all the remaining chunks
     while (!pending_chunks_.empty()) {
       size_t idx(*(pending_chunks_.begin()));
+      bool next_buf(chunk_buffers_[(idx + 1) % kMinChunks].index == idx + 1 &&
+                    !chunk_buffers_[(idx + 1) % kMinChunks].hash.empty());
+      bool next2_buf(chunk_buffers_[(idx + 2) % kMinChunks].index == idx + 2 &&
+                     !chunk_buffers_[(idx + 2) % kMinChunks].hash.empty());
       std::string encryption_hash, obfuscation_hash;
-      if (chunk_buffers_[(idx + 1) % kMinChunks].index == idx + 1)
+      if (next_buf)
         encryption_hash = chunk_buffers_[(idx + 1) % kMinChunks].hash;
+      else if (idx == data_map_->chunks.size())
+        encryption_hash = data_map_->chunks[0].pre_hash;
       else
         encryption_hash =
             data_map_->chunks[(idx + 1) % data_map_->chunks.size()].pre_hash;
-      if (chunk_buffers_[(idx + 2) % kMinChunks].index == idx + 2)
+
+      if (next2_buf) {
         obfuscation_hash = chunk_buffers_[(idx + 2) % kMinChunks].hash;
-      else
-        obfuscation_hash =
+      } else if (idx == data_map_->chunks.size()) {
+        if (next_buf)
+          obfuscation_hash = data_map_->chunks[0].pre_hash;
+        else
+          obfuscation_hash = data_map_->chunks[1].pre_hash;
+      } else {
+          obfuscation_hash =
             data_map_->chunks[(idx + 2) % data_map_->chunks.size()].pre_hash;
+      }
 
       if (chunk_buffers_[idx % kMinChunks].index == idx) {
-        if (!StoreChunkFromBuffer(chunk_buffers_[idx % kMinChunks],
+        if (!StoreChunkFromBuffer(&(chunk_buffers_[idx % kMinChunks]),
                                   encryption_hash, obfuscation_hash)) {
           DLOG(ERROR) << "flush: Could not store chunk " << idx << std::endl;
           return false;
@@ -291,7 +365,7 @@ bool SelfEncryptionDevice::flush() {
         // need to re-encrypt a chunk we don't have buffered
         ChunkBuffer chunk_buffer;
         if (!LoadChunkIntoBuffer(idx, &chunk_buffer) ||
-            !StoreChunkFromBuffer(chunk_buffer, encryption_hash,
+            !StoreChunkFromBuffer(&chunk_buffer, encryption_hash,
                                   obfuscation_hash)) {
           DLOG(ERROR) << "flush: Could not load and re-store chunk " << idx
                       << std::endl;
@@ -303,11 +377,19 @@ bool SelfEncryptionDevice::flush() {
   }
 
   write_mode_ = false;
-  return UpdateCurrentChunkDetails();
+  return true;
+}
+
+void SelfEncryptionDevice::InitialiseDataMap(const ChunkBuffer &chunk_buffer) {
+  // TODO(Steve) determine compressibility
+  data_map_->self_encryption_type = default_self_encryption_type_;
+  data_map_->chunks.clear();
+  data_map_->size = 0;
+  data_map_->content.clear();
 }
 
 bool SelfEncryptionDevice::UpdateCurrentChunkDetails() {
-  if (offset_ >= data_map_->size)
+  if (offset_ > data_map_->size)
     return false;
 
   if (offset_ < current_chunk_offset_) {
@@ -333,15 +415,24 @@ bool SelfEncryptionDevice::FinaliseWriting() {
     return false;
   }
 
-  if (!chunk_buffer.hash.empty())
+  if (!chunk_buffer.hash.empty()) {
+//     DLOG(INFO) << "FinaliseWriting: Already hashed chunk "
+//                << current_chunk_index_ << std::endl;
     return true;
+  }
+
+  if (current_chunk_index_ == 0 && data_map_->chunks.empty())
+    InitialiseDataMap(chunk_buffer);
 
   chunk_buffer.hash = utils::Hash(chunk_buffer.content,
                                   data_map_->self_encryption_type);
 
   if (current_chunk_index_ < data_map_->chunks.size() &&
-      data_map_->chunks[current_chunk_index_].pre_hash == chunk_buffer.hash)
+      data_map_->chunks[current_chunk_index_].pre_hash == chunk_buffer.hash) {
+    DLOG(INFO) << "FinaliseWriting: Skipping unchanged chunk "
+               << current_chunk_index_ << std::endl;
     return true;  // nothing actually changed
+  }
 
   if (current_chunk_index_ < kMinChunks - 1) {
     // we are near beginning of stream, just queue dependent chunks
@@ -373,7 +464,7 @@ bool SelfEncryptionDevice::FinaliseWriting() {
     return false;
   }
 
-  if (!StoreChunkFromBuffer(chunk_buffers_[prepred % kMinChunks],
+  if (!StoreChunkFromBuffer(&(chunk_buffers_[prepred % kMinChunks]),
                             encryption_hash, chunk_buffer.hash)) {
     DLOG(ERROR) << "FinaliseWriting: Could not store pre-predecessor of "
                 << current_chunk_index_ << "." << std::endl;
@@ -382,6 +473,7 @@ bool SelfEncryptionDevice::FinaliseWriting() {
 
   pending_chunks_.insert(pred);
   pending_chunks_.insert(current_chunk_index_);
+  return true;
 }
 
 bool SelfEncryptionDevice::LoadChunkIntoBuffer(const size_t &index,
@@ -435,69 +527,68 @@ bool SelfEncryptionDevice::LoadChunkIntoBuffer(const size_t &index,
 }
 
 bool SelfEncryptionDevice::StoreChunkFromBuffer(
-    const ChunkBuffer &chunk_buffer,
+    ChunkBuffer *chunk_buffer,
     const std::string &encryption_hash,
     const std::string &obfuscation_hash) {
-  if (chunk_buffer.hash.empty() || chunk_buffer.content.empty() ||
-      encryption_hash.empty() || obfuscation_hash.empty()) {
-    DLOG(ERROR) << "StoreChunkFromBuffer: Invalid input." << std::endl;
+  if (chunk_buffer->content.empty()) {
+    DLOG(ERROR) << "StoreChunkFromBuffer: Can't store empty chunk."
+                << std::endl;
     return false;
   }
 
-  if (data_map_->chunks.empty()) {
-    // TODO(Steve) determine compressibility
-    data_map_->self_encryption_type = default_self_encryption_type_;
-  }
-
-  if ((data_map_->chunks.empty() && chunk_buffer.content.size() <=
-           self_encryption_params_.max_includable_data_size) ||
-      (data_map_->chunks.size() <= chunk_buffer.index &&
-       chunk_buffer.content.size() <=
-           self_encryption_params_.max_includable_chunk_size)) {
-    data_map_->content = chunk_buffer.content;
-    data_map_->size += chunk_buffer.content.size();
-    pending_chunks_.erase(chunk_buffer.index);
+  if (encryption_hash.empty() && obfuscation_hash.empty()) {
+    data_map_->content = chunk_buffer->content;
+    data_map_->size += chunk_buffer->content.size();
+    pending_chunks_.erase(chunk_buffer->index);
+    chunk_buffer->content.clear();
+    chunk_buffer->hash.clear();
+    DLOG(INFO) << "StoreChunkFromBuffer: Stored chunk " << chunk_buffer->index
+               << " to DataMap." << std::endl;
     return true;
   }
 
-  // TODO(Steve) look for existing chunk with same two successors
+  // TODO(Steve) optimisation: check cache for existing hash triple
 
   std::string encrypted_content(utils::SelfEncryptChunk(
-      chunk_buffer.content, encryption_hash, obfuscation_hash,
+      chunk_buffer->content, encryption_hash, obfuscation_hash,
       data_map_->self_encryption_type));
 
   if (encrypted_content.empty()) {
-    DLOG(ERROR) << "StoreChunkFromBuffer: Could not self-encrypt chunk."
-                << std::endl;
+    DLOG(ERROR) << "StoreChunkFromBuffer: Could not self-encrypt chunk "
+                << chunk_buffer->index << std::endl;
     return false;
   }
 
   std::string hash(utils::Hash(encrypted_content,
                                data_map_->self_encryption_type));
 
-  bool do_store(false);
+  bool do_store(false), added_chunk(false);
 
-  if (chunk_buffer.index >= data_map_->chunks.size()) {
+  if (chunk_buffer->index >= data_map_->chunks.size()) {
     // new chunk
     ChunkDetails chunk;
-    chunk.pre_hash = chunk_buffer.hash;
-    chunk.pre_size = chunk_buffer.content.size();
+    chunk.pre_hash = chunk_buffer->hash;
+    chunk.pre_size = chunk_buffer->content.size();
     chunk.hash = hash;
     chunk.size = encrypted_content.size();
     do_store = true;
     data_map_->chunks.push_back(chunk);
     data_map_->size += chunk.pre_size;
+    added_chunk = true;
   } else {
     // modified chunk
-    ChunkDetails &chunk = data_map_->chunks[chunk_buffer.index];
+    ChunkDetails &chunk = data_map_->chunks[chunk_buffer->index];
     if (chunk.hash != hash) {
-      if (!chunk_store_->Delete(chunk.hash)) {
-        DLOG(WARNING) << "StoreChunkFromBuffer: Could not delete old chunk."
-                      << std::endl;
+      if (chunk_store_->Delete(chunk.hash)) {
+        DLOG(INFO) << "StoreChunkFromBuffer: Deleted old chunk "
+                   << chunk_buffer->index << std::endl;
+      } else {
+        DLOG(WARNING) << "StoreChunkFromBuffer: Could not delete old chunk "
+                      << chunk_buffer->index << std::endl;
       }
       data_map_->size -= chunk.pre_size;
-      chunk.pre_hash = chunk_buffer.hash;
-      chunk.pre_size = chunk_buffer.content.size();
+      chunk.pre_hash = chunk_buffer->hash;
+      chunk.pre_size = chunk_buffer->content.size();
       chunk.hash = hash;
       chunk.size = encrypted_content.size();
       do_store = true;
@@ -505,13 +596,30 @@ bool SelfEncryptionDevice::StoreChunkFromBuffer(
     }
   }
 
-  if (do_store && !chunk_store_->Store(hash, encrypted_content)) {
-    DLOG(ERROR) << "StoreChunkFromBuffer: Could not store chunk."
-                << std::endl;
-    return false;
+  if (do_store) {
+    if (chunk_store_->Store(hash, encrypted_content)) {
+      DLOG(INFO) << "StoreChunkFromBuffer: Stored chunk " << chunk_buffer->index
+                 << " (" << EncodeToHex(hash).substr(0, 8)
+                 << ".., ref #" << chunk_store_->Count(hash) << ") with hashes "
+                 << EncodeToHex(chunk_buffer->hash).substr(0, 8) << ".. | "
+                 << EncodeToHex(encryption_hash).substr(0, 8) << ".. | "
+                 << EncodeToHex(obfuscation_hash).substr(0, 8) << ".."
+                 << std::endl;
+    } else {
+      if (added_chunk) {  // revert addition
+        data_map_->size -= chunk_buffer->content.size();
+        data_map_->chunks.pop_back();
+      }
+      DLOG(ERROR) << "StoreChunkFromBuffer: Could not store chunk "
+                  << chunk_buffer->index << std::endl;
+      return false;
+    }
+  } else {
+    DLOG(INFO) << "StoreChunkFromBuffer: Not going to store chunk "
+               << chunk_buffer->index << std::endl;
   }
 
-  pending_chunks_.erase(chunk_buffer.index);
+  pending_chunks_.erase(chunk_buffer->index);
   return true;
 }
 

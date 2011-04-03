@@ -74,17 +74,30 @@ int SelfEncrypt(std::shared_ptr<std::istream> input_stream,
                                      self_encryption_params);
 
   std::streamsize buffer_size(io::optimal_buffer_size(output_stream));
+  std::streamsize written_size(0);
   char *buffer = new char[buffer_size];
   while (input_stream->good()) {
     input_stream->read(buffer, buffer_size);
     output_stream.write(buffer, input_stream->gcount());
+    written_size += input_stream->gcount();
   }
   delete buffer;
 
+  output_stream.flush();
+
+  if (written_size != data_map->size) {
+    DLOG(ERROR) << "SelfEncrypt: Amount of data written (" << written_size
+                << ") does not match reported data size (" << data_map->size
+                << ")." << std::endl;
+    return kEncryptError;
+  }
+
   if (!input_stream->eof() || !output_stream.good()) {
     DLOG(ERROR) << "SelfEncrypt: Stream operation failed." << std::endl;
-    return kDecryptError;
+    return kEncryptError;
   }
+
+  return kSuccess;
 }
 
 /**

@@ -51,7 +51,7 @@ TEST(SelfEncryptionDeviceTest, BEH_ENCRYPT_Read) {
     SelfEncryptionDevice sed(data_map, chunk_store);
     std::string content(10, 0);
     EXPECT_EQ(-1, sed.read(&(content[0]), 10));
-    EXPECT_EQ(-1, sed.read(&(content[0]), 0));
+    EXPECT_EQ(0, sed.read(&(content[0]), 0));
   }
   {  // unencrypted whole content in DataMap
     std::shared_ptr<DataMap> data_map(new DataMap);
@@ -206,14 +206,14 @@ TEST(SelfEncryptionDeviceTest, BEH_ENCRYPT_Read) {
   }
 }
 
-TEST(SelfEncryptionDeviceTest, BEH_ENCRYPT_Write) {
-  // write not implemented, so always expect failure
-  std::shared_ptr<DataMap> data_map(new DataMap);
-  data_map->self_encryption_type = test_ses::kDefaultSelfEncryptionType;
-  std::shared_ptr<ChunkStore> chunk_store(new MemoryChunkStore(true));
-  SelfEncryptionDevice sed(data_map, chunk_store);
-  std::string content(10, 0);
-  EXPECT_EQ(-1, sed.write(&(content[0]), 10));
+TEST(SelfEncryptionDeviceTest, DISABLED_BEH_ENCRYPT_Write) {
+  FAIL() << "Not implemented.";
+  {
+    std::shared_ptr<DataMap> data_map(new DataMap);
+    data_map->self_encryption_type = test_ses::kDefaultSelfEncryptionType;
+    std::shared_ptr<ChunkStore> chunk_store(new MemoryChunkStore(true));
+    SelfEncryptionDevice sed(data_map, chunk_store);
+  }
 }
 
 TEST(SelfEncryptionDeviceTest, BEH_ENCRYPT_Seek) {
@@ -305,27 +305,6 @@ TEST(SelfEncryptionDeviceTest, DISABLED_BEH_ENCRYPT_Flush) {
     SelfEncryptionDevice sed(data_map, chunk_store);
     // ...
   }
-}
-
-TEST(SelfEncryptionStreamTest, BEH_ENCRYPT_Dummy) {
-  std::shared_ptr<DataMap> data_map(new DataMap);
-  data_map->self_encryption_type = test_ses::kDefaultSelfEncryptionType;
-  std::shared_ptr<ChunkStore> chunk_store(new MemoryChunkStore(true));
-  SelfEncryptionStream stream(data_map, chunk_store);
-  std::string test("test");
-  DLOG(INFO) << "write #1" << std::endl;
-  stream.write(test.data(), test.size());
-  DLOG(INFO) << "write #2" << std::endl;
-  stream.write(test.data(), test.size());
-  DLOG(INFO) << "flush" << std::endl;
-  stream.flush();
-  DLOG(INFO) << "write #3" << std::endl;
-  stream.write(test.data(), test.size());
-  DLOG(INFO) << "read" << std::endl;
-  stream.read(&(test[0]), test.size());
-  DLOG(INFO) << "close" << std::endl;
-  stream.close();
-  DLOG(INFO) << "end" << std::endl;
 }
 
 }  // namespace encrypt
