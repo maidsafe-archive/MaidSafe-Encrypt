@@ -15,6 +15,7 @@
  */
 
 #include <cstdint>
+#include <functional>
 #include <memory>
 #include <iostream>  // NOLINT
 
@@ -44,10 +45,21 @@ const std::uint32_t kDefaultSelfEncryptionType(
 
 }  // namespace test_ses
 
-TEST(SelfEncryptionDeviceTest, BEH_ENCRYPT_Read) {
+class SelfEncryptionDeviceTest : public testing::Test {
+ public:
+  SelfEncryptionDeviceTest()
+      : hash_func_(std::bind(&crypto::Hash<crypto::SHA512>,
+                             std::placeholders::_1)) {}
+  virtual ~SelfEncryptionDeviceTest() {}
+ protected:
+  MemoryChunkStore::HashFunc hash_func_;
+};
+
+TEST_F(SelfEncryptionDeviceTest, BEH_ENCRYPT_Read) {
   {
     std::shared_ptr<DataMap> data_map(new DataMap);
-    std::shared_ptr<ChunkStore> chunk_store(new MemoryChunkStore(true));
+    std::shared_ptr<ChunkStore> chunk_store(
+        new MemoryChunkStore(true, hash_func_));
     SelfEncryptionDevice sed(data_map, chunk_store);
     std::string content(10, 0);
     EXPECT_EQ(-1, sed.read(&(content[0]), 10));
@@ -59,7 +71,8 @@ TEST(SelfEncryptionDeviceTest, BEH_ENCRYPT_Read) {
     data_map->content = RandomString(100);
     data_map->size = data_map->content.size();
 
-    std::shared_ptr<ChunkStore> chunk_store(new MemoryChunkStore(true));
+    std::shared_ptr<ChunkStore> chunk_store(
+        new MemoryChunkStore(true, hash_func_));
     SelfEncryptionDevice sed(data_map, chunk_store);
     std::string content1(data_map->content.size(), 0);
     EXPECT_EQ(0, sed.read(&(content1[0]), 0));
@@ -85,7 +98,8 @@ TEST(SelfEncryptionDeviceTest, BEH_ENCRYPT_Read) {
     data_map->size = data_map->content.size();
     data_map->self_encryption_type = test_ses::kDefaultSelfEncryptionType;
 
-    std::shared_ptr<ChunkStore> chunk_store(new MemoryChunkStore(true));
+    std::shared_ptr<ChunkStore> chunk_store(
+        new MemoryChunkStore(true, hash_func_));
     SelfEncryptionDevice sed(data_map, chunk_store);
     std::string content1(data_map->content.size(), 0);
     EXPECT_EQ(data_map->content.size(),
@@ -106,7 +120,8 @@ TEST(SelfEncryptionDeviceTest, BEH_ENCRYPT_Read) {
   {  // single chunk in file
     std::shared_ptr<DataMap> data_map(new DataMap);
     data_map->self_encryption_type = test_ses::kDefaultSelfEncryptionType;
-    std::shared_ptr<ChunkStore> chunk_store(new MemoryChunkStore(true));
+    std::shared_ptr<ChunkStore> chunk_store(
+        new MemoryChunkStore(true, hash_func_));
     std::string content_orig(RandomString(100));
     std::string hash_orig(crypto::Hash<crypto::SHA512>(content_orig));
     std::string content_enc(utils::SelfEncryptChunk(
@@ -138,7 +153,8 @@ TEST(SelfEncryptionDeviceTest, BEH_ENCRYPT_Read) {
     const size_t kChunkSize(10);
     std::shared_ptr<DataMap> data_map(new DataMap);
     data_map->self_encryption_type = test_ses::kDefaultSelfEncryptionType;
-    std::shared_ptr<ChunkStore> chunk_store(new MemoryChunkStore(true));
+    std::shared_ptr<ChunkStore> chunk_store(
+        new MemoryChunkStore(true, hash_func_));
     std::vector<std::string> content_orig;
 
     for (size_t i = 0; i < kChunkCount; ++i) {
@@ -206,20 +222,22 @@ TEST(SelfEncryptionDeviceTest, BEH_ENCRYPT_Read) {
   }
 }
 
-TEST(SelfEncryptionDeviceTest, DISABLED_BEH_ENCRYPT_Write) {
+TEST_F(SelfEncryptionDeviceTest, DISABLED_BEH_ENCRYPT_Write) {
   FAIL() << "Not implemented.";
   {
     std::shared_ptr<DataMap> data_map(new DataMap);
     data_map->self_encryption_type = test_ses::kDefaultSelfEncryptionType;
-    std::shared_ptr<ChunkStore> chunk_store(new MemoryChunkStore(true));
+    std::shared_ptr<ChunkStore> chunk_store(
+        new MemoryChunkStore(true, hash_func_));
     SelfEncryptionDevice sed(data_map, chunk_store);
   }
 }
 
-TEST(SelfEncryptionDeviceTest, BEH_ENCRYPT_Seek) {
+TEST_F(SelfEncryptionDeviceTest, BEH_ENCRYPT_Seek) {
   std::shared_ptr<DataMap> data_map(new DataMap);
   data_map->self_encryption_type = test_ses::kDefaultSelfEncryptionType;
-  std::shared_ptr<ChunkStore> chunk_store(new MemoryChunkStore(true));
+  std::shared_ptr<ChunkStore> chunk_store(
+      new MemoryChunkStore(true, hash_func_));
   {
     SelfEncryptionDevice sed(data_map, chunk_store);
     EXPECT_EQ(-1, sed.seek(1, static_cast<std::ios_base::seekdir>(-1)));
@@ -296,12 +314,13 @@ TEST(SelfEncryptionDeviceTest, BEH_ENCRYPT_Seek) {
   }
 }
 
-TEST(SelfEncryptionDeviceTest, DISABLED_BEH_ENCRYPT_Flush) {
+TEST_F(SelfEncryptionDeviceTest, DISABLED_BEH_ENCRYPT_Flush) {
   FAIL() << "Not implemented.";
   {
     std::shared_ptr<DataMap> data_map(new DataMap);
     data_map->self_encryption_type = test_ses::kDefaultSelfEncryptionType;
-    std::shared_ptr<ChunkStore> chunk_store(new MemoryChunkStore(true));
+    std::shared_ptr<ChunkStore> chunk_store(
+        new MemoryChunkStore(true, hash_func_));
     SelfEncryptionDevice sed(data_map, chunk_store);
     // ...
   }

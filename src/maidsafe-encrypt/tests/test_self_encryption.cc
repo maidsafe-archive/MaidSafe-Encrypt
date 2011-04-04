@@ -15,6 +15,7 @@
  */
 
 #include <cstdint>
+#include <functional>
 #include <iostream>  // NOLINT
 #include <memory>
 #include <sstream>
@@ -105,7 +106,9 @@ bool VerifyReferenceCount(std::shared_ptr<DataMap> data_map,
 class SelfEncryptionTest : public testing::Test {
  public:
   SelfEncryptionTest()
-      : test_dir_() {
+      : test_dir_(),
+        hash_func_(std::bind(&crypto::Hash<crypto::SHA512>,
+                             std::placeholders::_1)) {
     boost::system::error_code ec;
     test_dir_ = boost::filesystem::temp_directory_path(ec) /
         ("maidsafe_TestSE_" + RandomAlphaNumericString(6));
@@ -151,6 +154,7 @@ class SelfEncryptionTest : public testing::Test {
   }
 
   fs::path test_dir_;
+  MemoryChunkStore::HashFunc hash_func_;
 };
 
 /*
@@ -166,6 +170,8 @@ class SelfEncryptionParamTest
  public:
   SelfEncryptionParamTest()
       : test_dir_(),
+        hash_func_(std::bind(&crypto::Hash<crypto::SHA512>,
+                             std::placeholders::_1)),
         sep_(GetParam()) {
     boost::system::error_code ec;
     test_dir_ = boost::filesystem::temp_directory_path(ec) /
@@ -220,6 +226,7 @@ class SelfEncryptionParamTest
   }
 
   fs::path test_dir_;
+  MemoryChunkStore::HashFunc hash_func_;
   const SelfEncryptionParams sep_;
 };
 
@@ -448,7 +455,8 @@ TEST_F(SelfEncryptionTest, BEH_ENCRYPT_SelfEnDecryptStreamInvalid) {
   // Invalid calls
   SelfEncryptionParams sep;
   std::shared_ptr<DataMap> data_map(new DataMap);
-  std::shared_ptr<ChunkStore> chunk_store(new MemoryChunkStore(true));
+  std::shared_ptr<ChunkStore> chunk_store(
+      new MemoryChunkStore(true, hash_func_));
   std::shared_ptr<std::istringstream> istream(new std::istringstream("test"));
   EXPECT_EQ(kNullPointer, SelfEncrypt(istream, false, sep,
                                       std::shared_ptr<DataMap>(), chunk_store));
@@ -477,7 +485,8 @@ TEST_F(SelfEncryptionTest, BEH_ENCRYPT_SelfEnDecryptStreamInvalid) {
 TEST_P(SelfEncryptionParamTest, BEH_ENCRYPT_SelfEnDecryptStreamTinyData) {
   {  // Only one byte of data
     std::shared_ptr<DataMap> data_map(new DataMap);
-    std::shared_ptr<ChunkStore> chunk_store(new MemoryChunkStore(true));
+    std::shared_ptr<ChunkStore> chunk_store(
+        new MemoryChunkStore(true, hash_func_));
     std::shared_ptr<std::istringstream> stream_in(
         new std::istringstream(RandomString(1)));
     std::string hash_in = crypto::Hash<crypto::SHA512>(stream_in->str());
@@ -491,7 +500,8 @@ TEST_P(SelfEncryptionParamTest, BEH_ENCRYPT_SelfEnDecryptStreamTinyData) {
   }
   {  // Smallest amount of data to allow chunking
     std::shared_ptr<DataMap> data_map(new DataMap);
-    std::shared_ptr<ChunkStore> chunk_store(new MemoryChunkStore(true));
+    std::shared_ptr<ChunkStore> chunk_store(
+        new MemoryChunkStore(true, hash_func_));
     std::shared_ptr<std::istringstream> stream_in(
         new std::istringstream(RandomString(kMinChunks)));
     std::string hash_in = crypto::Hash<crypto::SHA512>(stream_in->str());
@@ -508,7 +518,8 @@ TEST_P(SelfEncryptionParamTest, BEH_ENCRYPT_SelfEnDecryptStreamTinyData) {
 TEST_P(SelfEncryptionParamTest, BEH_ENCRYPT_SelfEnDecryptStreamFullInclude) {
   // Little data, should end up completely in DM
   std::shared_ptr<DataMap> data_map(new DataMap);
-  std::shared_ptr<ChunkStore> chunk_store(new MemoryChunkStore(true));
+  std::shared_ptr<ChunkStore> chunk_store(
+      new MemoryChunkStore(true, hash_func_));
   if (sep_.max_includable_data_size == 0)
     return;
   std::shared_ptr<std::istringstream> stream_in(new std::istringstream(
@@ -531,7 +542,8 @@ TEST_P(SelfEncryptionParamTest, BEH_ENCRYPT_SelfEnDecryptStreamFullInclude) {
 TEST_P(SelfEncryptionParamTest, BEH_ENCRYPT_SelfEnDecryptStreamNoInclude) {
   // Data just big enough to chunk
   std::shared_ptr<DataMap> data_map(new DataMap);
-  std::shared_ptr<ChunkStore> chunk_store(new MemoryChunkStore(true));
+  std::shared_ptr<ChunkStore> chunk_store(
+      new MemoryChunkStore(true, hash_func_));
   std::shared_ptr<std::istringstream> stream_in(new std::istringstream(
       RandomString(sep_.max_includable_data_size + 1)));
   std::string hash_in = crypto::Hash<crypto::SHA512>(stream_in->str());
@@ -562,7 +574,8 @@ TEST_P(SelfEncryptionParamTest, BEH_ENCRYPT_SelfEnDecryptStreamNoInclude) {
 TEST_P(SelfEncryptionParamTest, BEH_ENCRYPT_SelfEnDecryptStreamLastInclude) {
   // Last chunk ends up in DM
   std::shared_ptr<DataMap> data_map(new DataMap);
-  std::shared_ptr<ChunkStore> chunk_store(new MemoryChunkStore(true));
+  std::shared_ptr<ChunkStore> chunk_store(
+      new MemoryChunkStore(true, hash_func_));
   if (sep_.max_includable_chunk_size == 0)
     return;
   std::uint64_t data_size(kMinChunks * sep_.max_chunk_size +
@@ -598,7 +611,8 @@ TEST_P(SelfEncryptionParamTest, BEH_ENCRYPT_SelfEnDecryptStreamLastInclude) {
 TEST_P(SelfEncryptionParamTest, BEH_ENCRYPT_SelfEnDecryptStreamNoCapacity) {
   // ChunkStore with too little capacity
   std::shared_ptr<DataMap> data_map(new DataMap);
-  std::shared_ptr<ChunkStore> chunk_store(new MemoryChunkStore(true));
+  std::shared_ptr<ChunkStore> chunk_store(
+      new MemoryChunkStore(true, hash_func_));
   chunk_store->SetCapacity(sep_.max_includable_data_size);
   std::shared_ptr<std::istringstream> stream_in(new std::istringstream(
       RandomString(sep_.max_includable_data_size + 1)));
@@ -624,7 +638,8 @@ TEST_P(SelfEncryptionParamTest, BEH_ENCRYPT_SelfEnDecryptStreamPattern) {
 
   for (int i = 0; i <= 18; ++i) {
     std::shared_ptr<DataMap> data_map(new DataMap);
-    std::shared_ptr<ChunkStore> chunk_store(new MemoryChunkStore(true));
+    std::shared_ptr<ChunkStore> chunk_store(
+        new MemoryChunkStore(true, hash_func_));
     std::shared_ptr<std::istringstream> stream_in(new std::istringstream);
     size_t expected_chunks(0);
     printf("--- case %d ---\n", i);
@@ -726,7 +741,8 @@ TEST_P(SelfEncryptionParamTest, BEH_ENCRYPT_SelfEnDecryptStreamPattern) {
 TEST_P(SelfEncryptionParamTest, BEH_ENCRYPT_SelfEnDecryptStreamDedup) {
   // Check de-duplication (identical chunks except for last one)
   std::shared_ptr<DataMap> data_map(new DataMap);
-  std::shared_ptr<ChunkStore> chunk_store(new MemoryChunkStore(true));
+  std::shared_ptr<ChunkStore> chunk_store(
+      new MemoryChunkStore(true, hash_func_));
   const size_t kChunkCount(5 * kMinChunks);
   std::string chunk_content(RandomString(sep_.max_chunk_size));
   std::string last_chunk_content(chunk_content);
@@ -784,7 +800,8 @@ TEST_P(SelfEncryptionParamTest, BEH_ENCRYPT_SelfEnDecryptStreamCharacters) {
   // NOTE Test is needed because streams tend to choke on certain characters.
   for (int i = 0; i < 256; ++i) {
     std::shared_ptr<DataMap> data_map(new DataMap);
-    std::shared_ptr<ChunkStore> chunk_store(new MemoryChunkStore(true));
+    std::shared_ptr<ChunkStore> chunk_store(
+        new MemoryChunkStore(true, hash_func_));
     std::uint64_t data_size(RandomUint32() % sep_.max_includable_data_size + 1);
     std::shared_ptr<std::istringstream> stream_in(new std::istringstream(
         std::string(data_size, static_cast<char>(i))));
@@ -802,7 +819,8 @@ TEST_P(SelfEncryptionParamTest, BEH_ENCRYPT_SelfEnDecryptStreamCharacters) {
 TEST_P(SelfEncryptionParamTest, BEH_ENCRYPT_SelfEnDecryptStreamDelChunk) {
   // First chunk is deleted
   std::shared_ptr<DataMap> data_map(new DataMap);
-  std::shared_ptr<ChunkStore> chunk_store(new MemoryChunkStore(true));
+  std::shared_ptr<ChunkStore> chunk_store(
+      new MemoryChunkStore(true, hash_func_));
   std::uint64_t data_size((RandomUint32() % kMinChunks + 1) *
                           sep_.max_chunk_size + kMinChunks +
                           RandomUint32() % sep_.max_chunk_size);
@@ -821,7 +839,8 @@ TEST_P(SelfEncryptionParamTest, BEH_ENCRYPT_SelfEnDecryptStreamDelChunk) {
 TEST_P(SelfEncryptionParamTest, BEH_ENCRYPT_SelfEnDecryptStreamResizeChunk) {
   // First chunk is changed in size (and contents)
   std::shared_ptr<DataMap> data_map(new DataMap);
-  std::shared_ptr<ChunkStore> chunk_store(new MemoryChunkStore(true));
+  std::shared_ptr<ChunkStore> chunk_store(
+      new MemoryChunkStore(true, hash_func_));
   std::uint64_t data_size((RandomUint32() % kMinChunks + 1) *
                           sep_.max_chunk_size + kMinChunks +
                           RandomUint32() % sep_.max_chunk_size);
@@ -841,7 +860,8 @@ TEST_P(SelfEncryptionParamTest, BEH_ENCRYPT_SelfEnDecryptStreamResizeChunk) {
 TEST_P(SelfEncryptionParamTest, BEH_ENCRYPT_SelfEnDecryptStreamCorruptChunk) {
   // First chunk is changed only in contents
   std::shared_ptr<DataMap> data_map(new DataMap);
-  std::shared_ptr<ChunkStore> chunk_store(new MemoryChunkStore(true));
+  std::shared_ptr<ChunkStore> chunk_store(
+      new MemoryChunkStore(true, hash_func_));
   std::uint64_t data_size((RandomUint32() % kMinChunks + 1) *
                           sep_.max_chunk_size + kMinChunks +
                           RandomUint32() % sep_.max_chunk_size);
@@ -861,7 +881,8 @@ TEST_P(SelfEncryptionParamTest, BEH_ENCRYPT_SelfEnDecryptStreamCorruptChunk) {
 TEST_P(SelfEncryptionParamTest, BEH_ENCRYPT_SelfEnDecryptString) {
   {  // Invalid calls
     std::shared_ptr<DataMap> data_map(new DataMap);
-    std::shared_ptr<ChunkStore> chunk_store(new MemoryChunkStore(true));
+    std::shared_ptr<ChunkStore> chunk_store(
+        new MemoryChunkStore(true, hash_func_));
     EXPECT_EQ(kNullPointer,
               SelfEncrypt("test", false, sep_, std::shared_ptr<DataMap>(),
                           chunk_store));
@@ -877,7 +898,8 @@ TEST_P(SelfEncryptionParamTest, BEH_ENCRYPT_SelfEnDecryptString) {
   }
   {  // Empty data test
     std::shared_ptr<DataMap> data_map(new DataMap);
-    std::shared_ptr<ChunkStore> chunk_store(new MemoryChunkStore(true));
+    std::shared_ptr<ChunkStore> chunk_store(
+        new MemoryChunkStore(true, hash_func_));
     EXPECT_EQ(kSuccess,
               SelfEncrypt("", false, sep_, data_map, chunk_store));
     EXPECT_TRUE(ChunksExist(data_map, chunk_store, NULL));
@@ -887,7 +909,8 @@ TEST_P(SelfEncryptionParamTest, BEH_ENCRYPT_SelfEnDecryptString) {
   }
   {  // Small data test
     std::shared_ptr<DataMap> data_map(new DataMap);
-    std::shared_ptr<ChunkStore> chunk_store(new MemoryChunkStore(true));
+    std::shared_ptr<ChunkStore> chunk_store(
+        new MemoryChunkStore(true, hash_func_));
     std::uint64_t data_size(kMinChunks);
     std::string string_in(RandomString(data_size));
     EXPECT_EQ(kSuccess,
@@ -900,7 +923,8 @@ TEST_P(SelfEncryptionParamTest, BEH_ENCRYPT_SelfEnDecryptString) {
   }
   {  // Random data test
     std::shared_ptr<DataMap> data_map(new DataMap);
-    std::shared_ptr<ChunkStore> chunk_store(new MemoryChunkStore(true));
+    std::shared_ptr<ChunkStore> chunk_store(
+        new MemoryChunkStore(true, hash_func_));
     std::uint64_t data_size((RandomUint32() % kMinChunks + 1) *
                             sep_.max_chunk_size + kMinChunks +
                             RandomUint32() % sep_.max_chunk_size);
@@ -922,7 +946,8 @@ TEST_P(SelfEncryptionParamTest, BEH_ENCRYPT_SelfEnDecryptFile) {
 
   {  // Invalid calls
     std::shared_ptr<DataMap> data_map(new DataMap);
-    std::shared_ptr<ChunkStore> chunk_store(new MemoryChunkStore(true));
+    std::shared_ptr<ChunkStore> chunk_store(
+        new MemoryChunkStore(true, hash_func_));
     EXPECT_EQ(kIoError,
               SelfEncrypt(path_in, sep_, data_map, chunk_store));
     test_se::CreateRandomFile(path_in, 1);
@@ -938,7 +963,8 @@ TEST_P(SelfEncryptionParamTest, BEH_ENCRYPT_SelfEnDecryptFile) {
   }
   {  // Empty data test
     std::shared_ptr<DataMap> data_map(new DataMap);
-    std::shared_ptr<ChunkStore> chunk_store(new MemoryChunkStore(true));
+    std::shared_ptr<ChunkStore> chunk_store(
+        new MemoryChunkStore(true, hash_func_));
     test_se::CreateRandomFile(path_in, 0);
     EXPECT_EQ(kSuccess, SelfEncrypt(path_in, sep_, data_map, chunk_store));
     EXPECT_TRUE(ChunksExist(data_map, chunk_store, NULL));
@@ -948,7 +974,8 @@ TEST_P(SelfEncryptionParamTest, BEH_ENCRYPT_SelfEnDecryptFile) {
   }
   {  // Small data test
     std::shared_ptr<DataMap> data_map(new DataMap);
-    std::shared_ptr<ChunkStore> chunk_store(new MemoryChunkStore(true));
+    std::shared_ptr<ChunkStore> chunk_store(
+        new MemoryChunkStore(true, hash_func_));
     std::uint64_t data_size(kMinChunks);
     test_se::CreateRandomFile(path_in, data_size);
     EXPECT_EQ(kSuccess, SelfEncrypt(path_in, sep_, data_map, chunk_store));
@@ -962,7 +989,8 @@ TEST_P(SelfEncryptionParamTest, BEH_ENCRYPT_SelfEnDecryptFile) {
   }
   {  // Random data test
     std::shared_ptr<DataMap> data_map(new DataMap);
-    std::shared_ptr<ChunkStore> chunk_store(new MemoryChunkStore(true));
+    std::shared_ptr<ChunkStore> chunk_store(
+        new MemoryChunkStore(true, hash_func_));
     std::uint64_t data_size((RandomUint32() % kMinChunks + 1) *
                             sep_.max_chunk_size + kMinChunks +
                             RandomUint32() % sep_.max_chunk_size);
@@ -979,7 +1007,8 @@ TEST_P(SelfEncryptionParamTest, BEH_ENCRYPT_SelfEnDecryptFile) {
   }
   {  // Try restoring existing file
     std::shared_ptr<DataMap> data_map(new DataMap);
-    std::shared_ptr<ChunkStore> chunk_store(new MemoryChunkStore(true));
+    std::shared_ptr<ChunkStore> chunk_store(
+        new MemoryChunkStore(true, hash_func_));
     EXPECT_EQ(kFileAlreadyExists,
               SelfDecrypt(data_map, chunk_store, false, path_out));
     EXPECT_EQ(kSuccess, SelfDecrypt(data_map, chunk_store, true, path_out));
@@ -989,7 +1018,8 @@ TEST_P(SelfEncryptionParamTest, BEH_ENCRYPT_SelfEnDecryptFile) {
 TEST_P(SelfEncryptionParamTest, BEH_ENCRYPT_SelfEnDecryptMixed) {
   {  // String input, file output
     std::shared_ptr<DataMap> data_map(new DataMap);
-    std::shared_ptr<ChunkStore> chunk_store(new MemoryChunkStore(true));
+    std::shared_ptr<ChunkStore> chunk_store(
+        new MemoryChunkStore(true, hash_func_));
     std::uint64_t data_size((RandomUint32() % kMinChunks + 1) *
                             sep_.max_chunk_size + kMinChunks +
                             RandomUint32() % sep_.max_chunk_size);
@@ -1009,7 +1039,8 @@ TEST_P(SelfEncryptionParamTest, BEH_ENCRYPT_SelfEnDecryptMixed) {
 
   {  // File input, string output
     std::shared_ptr<DataMap> data_map(new DataMap);
-    std::shared_ptr<ChunkStore> chunk_store(new MemoryChunkStore(true));
+    std::shared_ptr<ChunkStore> chunk_store(
+        new MemoryChunkStore(true, hash_func_));
     std::uint64_t data_size((RandomUint32() % kMinChunks + 1) *
                             sep_.max_chunk_size + kMinChunks +
                             RandomUint32() % sep_.max_chunk_size);
@@ -1029,7 +1060,10 @@ TEST_P(SelfEncryptionParamTest, BEH_ENCRYPT_SelfEnDecryptMixed) {
 
 TEST_F(SelfEncryptionTest, BEH_ENCRYPT_ChunksExist) {
   std::shared_ptr<DataMap> data_map(new DataMap);
-  std::shared_ptr<ChunkStore> chunk_store(new MemoryChunkStore(true));
+  std::shared_ptr<ChunkStore> chunk_store(
+      new MemoryChunkStore(true, hash_func_));
+  EXPECT_FALSE(ChunksExist(std::shared_ptr<DataMap>(), chunk_store, NULL));
+  EXPECT_FALSE(ChunksExist(data_map, std::shared_ptr<ChunkStore>(), NULL));
   EXPECT_TRUE(ChunksExist(data_map, chunk_store, NULL));
   std::vector<std::string> missing_chunks;
   EXPECT_TRUE(ChunksExist(data_map, chunk_store, &missing_chunks));
@@ -1088,7 +1122,8 @@ TEST_P(SelfEncryptionBenchmarkTest, FUNC_ENCRYPT_Benchmark) {
 
     std::vector<std::shared_ptr<std::istringstream>> contents;
     std::vector<std::shared_ptr<DataMap>> data_maps;
-    std::shared_ptr<ChunkStore> chunk_store(new MemoryChunkStore(true));
+    std::shared_ptr<ChunkStore> chunk_store(new MemoryChunkStore(true,
+        std::bind(&crypto::HashFile<crypto::SHA512>, std::placeholders::_1)));
     for (size_t i = 0; i < repetitions; ++i) {
       std::shared_ptr<std::istringstream> stream_ptr(
           new std::istringstream(RandomString(data_size)));

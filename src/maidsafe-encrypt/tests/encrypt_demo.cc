@@ -16,6 +16,7 @@
 
 #include <array>
 #include <cstdio>
+#include <functional>
 #include <set>
 #include <string>
 
@@ -23,6 +24,7 @@
 #include "boost/filesystem.hpp"
 #include "boost/format.hpp"
 #include "boost/lexical_cast.hpp"
+#include "maidsafe/common/crypto.h"
 #include "maidsafe/common/file_chunk_store.h"
 #include "maidsafe/common/utils.h"
 #include "maidsafe-encrypt/data_map.h"
@@ -123,7 +125,8 @@ int Encrypt(const fs::path &input_path, const fs::path &output_path,
     error = true;
   }
 
-  std::shared_ptr<FileChunkStore> chunk_store(new FileChunkStore(true));
+  std::shared_ptr<FileChunkStore> chunk_store(new FileChunkStore(true,
+      std::bind(&crypto::HashFile<crypto::SHA512>, std::placeholders::_1)));
   chunk_store->Init(output_path);
 
   for (auto file = files.begin(); file != files.end(); ++file) {
