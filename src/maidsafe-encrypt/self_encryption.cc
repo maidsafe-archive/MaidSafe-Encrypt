@@ -250,7 +250,8 @@ int SelfDecrypt(std::shared_ptr<DataMap> data_map,
 }
 
 /**
- * Looks through the DataMap and checks if it exists in the given ChunkStore.
+ * Looks through the DataMap and checks if each required chunk exists in the
+ * given ChunkStore.
  *
  * @param data_map DataMap with chunk information.
  * @param chunk_store ChunkStore providing required chunks.
@@ -273,6 +274,27 @@ bool ChunksExist(std::shared_ptr<DataMap> data_map,
       result = false;
     }
   }
+  return result;
+}
+
+/**
+ * Looks through the DataMap and decreases the reference count for each chunk in
+ * the given ChunkStore. The DataMap will be cleared, even if not all chunks
+ * could be deleted.
+ *
+ * @param data_map DataMap with chunk information.
+ * @param chunk_store ChunkStore holding the chunks to be deleted.
+ * @return True if all chunks could be deleted, otherwise false.
+ */
+bool DeleteChunks(std::shared_ptr<DataMap> data_map,
+                  std::shared_ptr<ChunkStore> chunk_store) {
+  if (!data_map || !chunk_store)
+    return false;
+  bool result(true);
+  for (auto it = data_map->chunks.begin(); it != data_map->chunks.end(); ++it)
+    result = chunk_store->Delete(it->hash) && result;
+  DataMap dm;
+  (*data_map) = dm;
   return result;
 }
 

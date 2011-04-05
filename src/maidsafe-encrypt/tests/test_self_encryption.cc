@@ -1048,6 +1048,74 @@ TEST_F(SelfEncryptionTest, BEH_ENCRYPT_ChunksExist) {
   EXPECT_TRUE(missing_chunks.empty());
 }
 
+TEST_F(SelfEncryptionTest, BEH_ENCRYPT_DeleteChunks) {
+  std::shared_ptr<DataMap> data_map(new DataMap);
+  std::shared_ptr<ChunkStore> chunk_store(
+      new MemoryChunkStore(true, hash_func_));
+  EXPECT_FALSE(DeleteChunks(std::shared_ptr<DataMap>(), chunk_store));
+  EXPECT_FALSE(DeleteChunks(data_map, std::shared_ptr<ChunkStore>()));
+  EXPECT_TRUE(DeleteChunks(data_map, chunk_store));
+
+  {
+    ChunkDetails chunk;
+    chunk.hash = crypto::Hash<crypto::SHA512>("chunk1");
+    data_map->chunks.push_back(chunk);
+    chunk.hash = crypto::Hash<crypto::SHA512>("chunk2");
+    data_map->chunks.push_back(chunk);
+  }
+  EXPECT_TRUE(DeleteChunks(data_map, chunk_store));
+  EXPECT_TRUE(data_map->chunks.empty());
+
+  {
+    ChunkDetails chunk;
+    chunk.hash = crypto::Hash<crypto::SHA512>("chunk1");
+    data_map->chunks.push_back(chunk);
+    EXPECT_TRUE(chunk_store->Store(chunk.hash, "moo"));
+    chunk.hash = crypto::Hash<crypto::SHA512>("chunk2");
+    data_map->chunks.push_back(chunk);
+    EXPECT_TRUE(chunk_store->Store(chunk.hash, "boo"));
+    EXPECT_TRUE(chunk_store->Store(crypto::Hash<crypto::SHA512>("chunk3"),
+                                   "foo"));
+  }
+  EXPECT_EQ(3, chunk_store->Count());
+  EXPECT_TRUE(DeleteChunks(data_map, chunk_store));
+  EXPECT_EQ(1, chunk_store->Count());
+  EXPECT_TRUE(data_map->chunks.empty());
+  chunk_store->Clear();
+
+  {
+    ChunkDetails chunk;
+    chunk.hash = crypto::Hash<crypto::SHA512>("chunk1");
+    data_map->chunks.push_back(chunk);
+    EXPECT_TRUE(chunk_store->Store(chunk.hash, "moo"));
+    chunk.hash = crypto::Hash<crypto::SHA512>("chunk2");
+    data_map->chunks.push_back(chunk);
+    EXPECT_TRUE(chunk_store->Store(chunk.hash, "boo"));
+    EXPECT_TRUE(chunk_store->Store(chunk.hash, "foo"));
+  }
+  EXPECT_EQ(2, chunk_store->Count());
+  EXPECT_TRUE(DeleteChunks(data_map, chunk_store));
+  EXPECT_EQ(1, chunk_store->Count());
+  EXPECT_TRUE(data_map->chunks.empty());
+  chunk_store->Clear();
+
+  {
+    ChunkDetails chunk;
+    chunk.hash = crypto::Hash<crypto::SHA512>("chunk1");
+    data_map->chunks.push_back(chunk);
+    EXPECT_TRUE(chunk_store->Store(chunk.hash, "moo"));
+    chunk.hash = crypto::Hash<crypto::SHA512>("chunk2");
+    data_map->chunks.push_back(chunk);
+    EXPECT_TRUE(chunk_store->Store(chunk.hash, "boo"));
+    data_map->chunks.push_back(chunk);
+    EXPECT_TRUE(chunk_store->Store(chunk.hash, "foo"));
+  }
+  EXPECT_EQ(2, chunk_store->Count());
+  EXPECT_TRUE(DeleteChunks(data_map, chunk_store));
+  EXPECT_TRUE(chunk_store->Empty());
+  EXPECT_TRUE(data_map->chunks.empty());
+}
+
 TEST_F(SelfEncryptionTest, DISABLED_BEH_ENCRYPT_Compression) {
   // TODO(Steve) Test if compression can be toggled, it's noticable in sizes,
   //             and resulting chunk sizes are constant except for the last one.

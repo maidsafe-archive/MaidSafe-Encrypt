@@ -82,6 +82,10 @@ bool ChunksExist(std::shared_ptr<DataMap> data_map,
                  std::shared_ptr<ChunkStore> chunk_store,
                  std::vector<std::string> *missing_chunks);
 
+/// Deletes each chunk referred to by the DataMap.
+bool DeleteChunks(std::shared_ptr<DataMap> data_map,
+                  std::shared_ptr<ChunkStore> chunk_store);
+
 }  // namespace encrypt
 
 }  // namespace maidsafe
