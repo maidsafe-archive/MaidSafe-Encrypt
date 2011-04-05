@@ -14,7 +14,9 @@
  * @date  2011-04-05
  */
 
+#include <array>
 #include <cstdint>
+#include <vector>
 
 #include "boost/archive/text_oarchive.hpp"
 #include "boost/archive/text_iarchive.hpp"
@@ -77,31 +79,57 @@ TEST(SelfEncryptionUtilsTest, BEH_IsCompressedFile) {
 }
 
 TEST(SelfEncryptionUtilsTest, BEH_CheckCompressibility) {
-  // TODO(Steve) add more compression types
-
   // no data
-  std::string sample;
-  EXPECT_FALSE(CheckCompressibility(sample, kCompressionGzip));
+  EXPECT_FALSE(CheckCompressibility("", kCompressionNone));
+  EXPECT_FALSE(CheckCompressibility("", kCompressionGzip));
 
   //  make compressible string
-  sample = std::string(kCompressionSampleSize, 'x');
+  std::string sample(kCompressionSampleSize, 'x');
+  EXPECT_FALSE(CheckCompressibility(sample, 0));
+  EXPECT_FALSE(CheckCompressibility(sample, kCompressionNone));
   EXPECT_TRUE(CheckCompressibility(sample, kCompressionGzip));
 
   //  make incompressible string
   sample = RandomString(kCompressionSampleSize);
+  EXPECT_FALSE(CheckCompressibility(sample, 0));
+  EXPECT_FALSE(CheckCompressibility(sample, kCompressionNone));
   EXPECT_FALSE(CheckCompressibility(sample, kCompressionGzip));
 }
 
-TEST(SelfEncryptionUtilsTest, DISABLED_BEH_CheckParams) {
-  FAIL() << "Not implemented.";
+TEST(SelfEncryptionUtilsTest, BEH_CheckParams) {
+  EXPECT_FALSE(CheckParams(SelfEncryptionParams(0, 0, kMinChunks - 1)));
+  EXPECT_FALSE(CheckParams(SelfEncryptionParams(1, 0, 0)));
+  EXPECT_FALSE(CheckParams(SelfEncryptionParams(1, 10, 10)));
+  EXPECT_FALSE(CheckParams(SelfEncryptionParams(10, 0, 10 * kMinChunks + 1)));
+  EXPECT_FALSE(CheckParams(SelfEncryptionParams(10, 10, 10 * kMinChunks)));
+  EXPECT_TRUE(CheckParams(SelfEncryptionParams(1, 0, 2)));
+  EXPECT_TRUE(CheckParams(SelfEncryptionParams(1 << 18, 1 << 8, 1 << 10)));
 }
 
-TEST(SelfEncryptionUtilsTest, DISABLED_BEH_Compress) {
-  FAIL() << "Not implemented.";
+TEST(SelfEncryptionUtilsTest, BEH_Compress) {
+  std::string data_raw(RandomString(123 + RandomUint32() % 456));
+  EXPECT_TRUE(Compress(data_raw, 0).empty());
+  EXPECT_FALSE(Compress("", kCompressionGzip).empty());
+  EXPECT_EQ(data_raw, Compress(data_raw, kCompressionNone));
+  std::string data_gzip(Compress(data_raw, kCompressionGzip));
+  EXPECT_FALSE(data_gzip.empty());
+  EXPECT_NE(data_raw, data_gzip);
+  EXPECT_TRUE(Uncompress(data_gzip, 0).empty());
+  EXPECT_TRUE(Uncompress("", kCompressionNone).empty());
+  EXPECT_EQ(data_raw, Uncompress(data_raw, kCompressionNone));
+  EXPECT_TRUE(Uncompress(data_raw, kCompressionGzip).empty());
+  EXPECT_EQ(data_raw, Uncompress(data_gzip, kCompressionGzip));
 }
 
-TEST(SelfEncryptionUtilsTest, DISABLED_BEH_Hash) {
-  FAIL() << "Not implemented.";
+TEST(SelfEncryptionUtilsTest, BEH_Hash) {
+  std::string data_raw(RandomString(123));
+  EXPECT_EQ("", Hash("", 0));
+  EXPECT_EQ("", Hash(data_raw, 0));
+  EXPECT_EQ(crypto::Hash<crypto::SHA1>(data_raw), Hash(data_raw, kHashingSha1));
+  EXPECT_EQ(crypto::Hash<crypto::SHA512>(data_raw),
+            Hash(data_raw, kHashingSha512));
+  EXPECT_EQ(crypto::Hash<crypto::Tiger>(data_raw),
+            Hash(data_raw, kHashingTiger));
 }
 
 TEST(SelfEncryptionUtilsTest, BEH_ResizeObfuscationHash) {
@@ -141,38 +169,72 @@ TEST(SelfEncryptionUtilsTest, BEH_ResizeObfuscationHash) {
 }
 
 TEST(SelfEncryptionUtilsTest, BEH_SelfEnDecryptChunk) {
-  const std::uint32_t kDefaultSelfEncryptionType(
-    kHashingSha512 | kCompressionNone | kObfuscationRepeated | kCryptoAes256);
+  // leaving out hashing, since it's not relevant
+  const std::array<std::uint32_t, 8> combinations = {
+    kCompressionNone | kObfuscationNone | kCryptoNone,
+    kCompressionNone | kObfuscationNone | kCryptoAes256,
+    kCompressionNone | kObfuscationRepeated | kCryptoNone,
+    kCompressionNone | kObfuscationRepeated | kCryptoAes256,
+    kCompressionGzip | kObfuscationNone | kCryptoNone,
+    kCompressionGzip | kObfuscationNone | kCryptoAes256,
+    kCompressionGzip | kObfuscationRepeated | kCryptoNone,
+    kCompressionGzip | kObfuscationRepeated | kCryptoAes256
+  };
 
   std::string content(RandomString(3000 + RandomUint32() % 1000));
-  std::string hash1(RandomString(64)), hash2(RandomString(64));
-  ASSERT_NE(hash1, hash2);
+  std::string hash1(RandomString(64)), hash2(hash1);
+  while (hash2 == hash1)
+    hash2 = RandomString(64);
 
-  // TODO(Steve) parametrise SE type, *.empty()
+  std::array<std::string, 8> content_enc;
+  for (size_t i = 0; i < combinations.size(); ++i) {
+    EXPECT_TRUE(SelfEncryptChunk("", hash1, hash2, combinations[i]).empty());
+    EXPECT_TRUE(SelfEncryptChunk(content, "", hash2, combinations[i]).empty());
+    EXPECT_TRUE(SelfEncryptChunk(content, hash1, "", combinations[i]).empty());
+    EXPECT_TRUE(SelfEncryptChunk(content, hash1, hash2, 0).empty());
+    EXPECT_TRUE(SelfEncryptChunk(content, hash1, hash2,
+        combinations[i] & (kObfuscationMask | kCryptoMask)).empty());
+    EXPECT_TRUE(SelfEncryptChunk(content, hash1, hash2,
+        combinations[i] & (kCompressionMask | kCryptoMask)).empty());
+    EXPECT_TRUE(SelfEncryptChunk(content, hash1, hash2,
+        combinations[i] & (kCompressionMask | kObfuscationMask)).empty());
+    content_enc[i] = SelfEncryptChunk(content, hash1, hash2, combinations[i]);
+    if (combinations[i] == (kCompressionNone | kObfuscationNone | kCryptoNone))
+      EXPECT_EQ(content, content_enc[i]) << i;
+    else
+      EXPECT_NE(content, content_enc[i]) << i;
+  }
 
-  EXPECT_EQ("", SelfEncryptChunk("", hash1, hash2,
-                                 kDefaultSelfEncryptionType));
-  EXPECT_EQ("", SelfEncryptChunk(content, "", hash2,
-                                 kDefaultSelfEncryptionType));
-  EXPECT_EQ("", SelfEncryptChunk(content, hash1, "",
-                                 kDefaultSelfEncryptionType));
-  EXPECT_EQ("", SelfEncryptChunk(content, hash1, hash2, 0));
+  for (size_t i = 0; i < combinations.size(); ++i) {
+    EXPECT_TRUE(SelfDecryptChunk("", hash1, hash2, combinations[i]).empty());
+    EXPECT_TRUE(SelfDecryptChunk(content_enc[i], "", hash2,
+                                 combinations[i]).empty());
+    EXPECT_TRUE(SelfDecryptChunk(content_enc[i], hash1, "",
+                                 combinations[i]).empty());
+    EXPECT_TRUE(SelfDecryptChunk(content_enc[i], hash1, hash2, 0).empty());
+    EXPECT_TRUE(SelfDecryptChunk(content_enc[i], hash1, hash2,
+        combinations[i] & (kObfuscationMask | kCryptoMask)).empty());
+    EXPECT_TRUE(SelfDecryptChunk(content_enc[i], hash1, hash2,
+        combinations[i] & (kCompressionMask | kCryptoMask)).empty());
+    EXPECT_TRUE(SelfDecryptChunk(content_enc[i], hash1, hash2,
+        combinations[i] & (kCompressionMask | kObfuscationMask)).empty());
 
-  EXPECT_EQ("", SelfDecryptChunk("", hash1, hash2,
-                                 kDefaultSelfEncryptionType));
-  EXPECT_EQ("", SelfDecryptChunk(content, "", hash2,
-                                 kDefaultSelfEncryptionType));
-  EXPECT_EQ("", SelfDecryptChunk(content, hash1, "",
-                                 kDefaultSelfEncryptionType));
-  EXPECT_EQ("", SelfDecryptChunk(content, hash1, hash2, 0));
+    if ((combinations[i] & (kObfuscationMask | kCryptoMask)) ==
+            (kObfuscationNone | kCryptoNone))
+      EXPECT_EQ(content, SelfDecryptChunk(content_enc[i], hash2, hash1,
+                                          combinations[i])) << i;
+    else
+      EXPECT_NE(content, SelfDecryptChunk(content_enc[i], hash2, hash1,
+                                          combinations[i])) << i;
 
-  EXPECT_EQ(content, SelfDecryptChunk(
-      SelfEncryptChunk(content, hash1, hash2, kDefaultSelfEncryptionType),
-      hash1, hash2, kDefaultSelfEncryptionType));
-
-  EXPECT_NE(content, SelfDecryptChunk(
-      SelfEncryptChunk(content, hash1, hash2, kDefaultSelfEncryptionType),
-      hash2, hash1, kDefaultSelfEncryptionType));
+    for (size_t j = 0; j < combinations.size(); ++j)
+      if (i == j)
+        EXPECT_EQ(content, SelfDecryptChunk(content_enc[i], hash1, hash2,
+                                            combinations[j])) << i << " " << j;
+      else
+        EXPECT_NE(content, SelfDecryptChunk(content_enc[i], hash1, hash2,
+                                            combinations[j])) << i << " " << j;
+  }
 }
 
 }  // namespace test

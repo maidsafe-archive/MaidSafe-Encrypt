@@ -42,12 +42,12 @@ bool IsCompressedFile(const fs::path &file_path) {
 }
 
 /**
- * Reads a small part from the current stream position and tries to compress
- * it. If that yields savings of at least 10%, we assume this can be
- * extrapolated to all the data.
+ * Tries to compress the given sample using the specified compression type.
+ * If that yields savings of at least 10%, we assume this can be extrapolated to
+ * all the data.
  *
- * @pre Stream offset at middle of data or an otherwise representative spot.
- * @param input_stream The data source.
+ * @param sample A data sample.
+ * @param self_encryption_params Compression type.
  * @return True if input data is likely compressible.
  */
 bool CheckCompressibility(const std::string &sample,

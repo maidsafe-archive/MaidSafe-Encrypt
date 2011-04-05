@@ -249,19 +249,7 @@ TEST_F(SelfEncryptionTest, BEH_SelfEnDecryptStreamInvalid) {
             SelfDecrypt(std::shared_ptr<DataMap>(), chunk_store, ostream));
   EXPECT_EQ(kNullPointer,
             SelfDecrypt(data_map, std::shared_ptr<ChunkStore>(), ostream));
-  sep = SelfEncryptionParams(0, 0, kMinChunks - 1);
-  EXPECT_EQ(kInvalidInput,
-            SelfEncrypt(istream, false, sep, data_map, chunk_store));
-  sep = SelfEncryptionParams(1, 0, 0);
-  EXPECT_EQ(kInvalidInput,
-            SelfEncrypt(istream, false, sep, data_map, chunk_store));
-  sep = SelfEncryptionParams(1, 10, 10);
-  EXPECT_EQ(kInvalidInput,
-            SelfEncrypt(istream, false, sep, data_map, chunk_store));
-  sep = SelfEncryptionParams(10, 0, 10 * kMinChunks + 1);
-  EXPECT_EQ(kInvalidInput,
-            SelfEncrypt(istream, false, sep, data_map, chunk_store));
-  sep = SelfEncryptionParams(10, 10, 10 * kMinChunks);
+  sep = SelfEncryptionParams(0, 0, 0);
   EXPECT_EQ(kInvalidInput,
             SelfEncrypt(istream, false, sep, data_map, chunk_store));
 }
