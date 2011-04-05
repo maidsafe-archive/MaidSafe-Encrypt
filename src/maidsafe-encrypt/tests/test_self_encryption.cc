@@ -557,15 +557,15 @@ TEST_P(SelfEncryptionParamTest, BEH_ENCRYPT_SelfEnDecryptStreamNoCapacity) {
   std::shared_ptr<DataMap> data_map(new DataMap);
   std::shared_ptr<ChunkStore> chunk_store(
       new MemoryChunkStore(true, hash_func_));
-  chunk_store->SetCapacity(kMinChunks * sep_.max_chunk_size);
+  chunk_store->SetCapacity(sep_.max_chunk_size);
   std::shared_ptr<std::istringstream> stream_in(new std::istringstream(
       RandomString((kMinChunks + 1) * sep_.max_chunk_size)));
   std::string hash_in = crypto::Hash<crypto::SHA512>(stream_in->str());
   EXPECT_EQ(kEncryptError,
             SelfEncrypt(stream_in, false, sep_, data_map, chunk_store));
   EXPECT_TRUE(test_se::VerifyChunks(data_map, chunk_store));
-  EXPECT_LE(kMinChunks, data_map->chunks.size());
-  EXPECT_EQ(kMinChunks, chunk_store->Count());
+  EXPECT_LE(1, data_map->chunks.size());
+  EXPECT_EQ(1, chunk_store->Count());
 }
 
 TEST_P(SelfEncryptionParamTest, BEH_ENCRYPT_SelfEnDecryptStreamPattern) {

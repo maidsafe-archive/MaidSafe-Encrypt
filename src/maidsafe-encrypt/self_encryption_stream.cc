@@ -503,16 +503,18 @@ bool SelfEncryptionDevice::LoadChunkIntoBuffer(const size_t &index,
       chunk_buffer->index = index;
       chunk_buffer->hash.clear();
       chunk_buffer->content = data_map_->content;
-    } else for (size_t i = 0;
-                i < kMinChunks && data_map_->content.size() >
-                    i * self_encryption_params_.max_chunk_size;
-                ++i) {
-      // fill buffers from DM, might span more than just 1
-      chunk_buffers_[i].index = i;
-      chunk_buffers_[i].hash.clear();
-      chunk_buffers_[i].content = data_map_->content.substr(
-          i * self_encryption_params_.max_chunk_size,
-          self_encryption_params_.max_chunk_size);
+    } else {
+      for (size_t i = 0;
+           i < kMinChunks && data_map_->content.size() >
+              i * self_encryption_params_.max_chunk_size;
+           ++i) {
+        // fill buffers from DM, might span more than just 1
+        chunk_buffers_[i].index = i;
+        chunk_buffers_[i].hash.clear();
+        chunk_buffers_[i].content = data_map_->content.substr(
+            i * self_encryption_params_.max_chunk_size,
+            self_encryption_params_.max_chunk_size);
+      }
     }
     return !data_map_->content.empty();
   }
