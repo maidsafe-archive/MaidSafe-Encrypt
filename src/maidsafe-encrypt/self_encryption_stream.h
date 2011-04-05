@@ -55,6 +55,11 @@ class SelfEncryptionDevice {
  public:
   typedef char char_type;
   struct category : io::seekable_device_tag, io::flushable_tag {};
+  struct ChunkBuffer {  // NOTE this should be private, if MSVC were so kind...
+    ChunkBuffer() : hash(), content(), index(0) {}
+    std::string hash, content;
+    size_t index;
+  };
   SelfEncryptionDevice(std::shared_ptr<DataMap> data_map,
                        std::shared_ptr<ChunkStore> chunk_store,
                        SelfEncryptionParams self_encryption_params =
@@ -66,11 +71,6 @@ class SelfEncryptionDevice {
   bool flush();
  private:
   friend class test::SelfEncryptionDeviceTest_BEH_ENCRYPT_Seek_Test;
-  struct ChunkBuffer {
-    ChunkBuffer() : hash(), content(), index(0) {}
-    std::string hash, content;
-    size_t index;
-  };
   void InitialiseDataMap(const ChunkBuffer &chunk_buffer);
   bool UpdateCurrentChunkDetails();
   bool FinaliseWriting();

@@ -45,11 +45,6 @@ bool CheckCompressibility(const std::string &sample,
 /// Verifies sanity of parameter values.
 bool CheckParams(const SelfEncryptionParams &self_encryption_params);
 
-/// Determines the sizes of the chunks the input data will be split into.
-bool CalculateChunkSizes(const std::uint64_t &data_size,
-                         const SelfEncryptionParams &self_encryption_params,
-                         std::vector<std::uint32_t> *chunk_sizes);
-
 /// Compresses a string.
 std::string Compress(const std::string &input,
                      const uint32_t &self_encryption_type);

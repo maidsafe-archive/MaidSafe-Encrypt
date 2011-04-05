@@ -83,56 +83,12 @@ bool CheckParams(const SelfEncryptionParams &self_encryption_params) {
     return false;
   }
 
-  return true;
-}
-
-/**
- * Limits with fixed 256K chunk size are:
- *   <= kMaxIncludableDataSize ---> to DM
- *   kMaxIncludableDataSize + 1 to kMinChunks * kDefaultChunkSize - 1 --->
- *       size = fsize / kMinChunks
- *   >= kMinChunks * kDefaultChunkSize ---> fixed size + remainder
- *
- * @param data_size Size of the input data.
- * @param self_encryption_params Parameters for the self-encryption algorithm.
- * @param chunk_sizes Pointer to a chunk size vector to be populated.
- * @return True if operation was successful.
- */
-bool CalculateChunkSizes(const std::uint64_t &data_size,
-                         const SelfEncryptionParams &self_encryption_params,
-                         std::vector<std::uint32_t> *chunk_sizes) {
-  if (!chunk_sizes) {
-    DLOG(ERROR) << "CalculateChunkSizes: Pointer is NULL."
-                << std::endl;
+  if (kMinChunks * self_encryption_params.max_chunk_size <
+      self_encryption_params.max_includable_data_size) {
+    DLOG(ERROR) << "CheckParams: Max includable data size can't be bigger than "
+                << kMinChunks << " chunks." << std::endl;
     return false;
   }
-
-  if (data_size <= self_encryption_params.max_includable_data_size ||
-      data_size < kMinChunks) {
-    DLOG(ERROR) << "CalculateChunkSizes: Data should go directly into DataMap."
-                << std::endl;
-    return false;
-  }
-
-  std::uint64_t chunk_count, chunk_size;
-  bool fixed_chunks(false);
-  if (data_size < kMinChunks * self_encryption_params.max_chunk_size) {
-    chunk_count = kMinChunks;
-    chunk_size = data_size / kMinChunks;
-  } else {
-    chunk_count = data_size / self_encryption_params.max_chunk_size;
-    chunk_size = self_encryption_params.max_chunk_size;
-    fixed_chunks = true;
-  }
-
-  std::uint64_t remainder(data_size);
-  std::uint64_t limit(fixed_chunks ? chunk_count : chunk_count - 1);
-  for (std::uint64_t i = 0; i < limit; ++i) {
-    chunk_sizes->push_back(chunk_size);
-    remainder -= chunk_size;
-  }
-  if (remainder != 0)
-    chunk_sizes->push_back(remainder);
 
   return true;
 }
