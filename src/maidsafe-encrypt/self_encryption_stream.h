@@ -47,7 +47,12 @@ namespace encrypt {
 class DataMap;
 
 namespace test {
-class SelfEncryptionDeviceTest_BEH_ENCRYPT_Seek_Test;
+class SelfEncryptionDeviceTest_BEH_Seek_Test;
+class SelfEncryptionDeviceTest_BEH_InitialiseDataMap_Test;
+class SelfEncryptionDeviceTest_BEH_UpdateCurrentChunkDetails_Test;
+class SelfEncryptionDeviceTest_BEH_FinaliseWriting_Test;
+class SelfEncryptionDeviceTest_BEH_LoadChunkIntoBuffer_Test;
+class SelfEncryptionDeviceTest_BEH_StoreChunkFromBuffer_Test;
 }
 
 /// Device implementing basic streaming functionality for self-encryption
@@ -70,7 +75,13 @@ class SelfEncryptionDevice {
   io::stream_offset seek(io::stream_offset offset, std::ios_base::seekdir way);
   bool flush();
  private:
-  friend class test::SelfEncryptionDeviceTest_BEH_ENCRYPT_Seek_Test;
+  friend class test::SelfEncryptionDeviceTest_BEH_Seek_Test;
+  friend class test::SelfEncryptionDeviceTest_BEH_InitialiseDataMap_Test;
+  friend class
+      test::SelfEncryptionDeviceTest_BEH_UpdateCurrentChunkDetails_Test;
+  friend class test::SelfEncryptionDeviceTest_BEH_FinaliseWriting_Test;
+  friend class test::SelfEncryptionDeviceTest_BEH_LoadChunkIntoBuffer_Test;
+  friend class test::SelfEncryptionDeviceTest_BEH_StoreChunkFromBuffer_Test;
   void InitialiseDataMap(const ChunkBuffer &chunk_buffer);
   bool UpdateCurrentChunkDetails();
   bool FinaliseWriting();
