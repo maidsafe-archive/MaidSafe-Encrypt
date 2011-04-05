@@ -236,22 +236,23 @@ TEST_F(SelfEncryptionTest, BEH_SelfEnDecryptStreamInvalid) {
   std::shared_ptr<ChunkStore> chunk_store(
       new MemoryChunkStore(true, hash_func_));
   std::shared_ptr<std::istringstream> istream(new std::istringstream("test"));
-  EXPECT_EQ(kNullPointer, SelfEncrypt(istream, false, sep,
-                                      std::shared_ptr<DataMap>(), chunk_store));
-  EXPECT_EQ(kNullPointer, SelfEncrypt(istream, false, sep, data_map,
-                                      std::shared_ptr<ChunkStore>()));
-  EXPECT_EQ(kNullPointer, SelfEncrypt(std::shared_ptr<std::istringstream>(),
-                                      false, sep, data_map, chunk_store));
-  EXPECT_EQ(kNullPointer, SelfDecrypt(data_map, chunk_store,
-                                      std::shared_ptr<std::ostringstream>()));
+  EXPECT_EQ(kNullPointer,
+            SelfEncrypt(istream, sep, std::shared_ptr<DataMap>(), chunk_store));
+  EXPECT_EQ(kNullPointer,
+            SelfEncrypt(istream, sep, data_map, std::shared_ptr<ChunkStore>()));
+  EXPECT_EQ(kNullPointer,
+            SelfEncrypt(std::shared_ptr<std::istringstream>(), sep, data_map,
+                        chunk_store));
+  EXPECT_EQ(kNullPointer,
+            SelfDecrypt(data_map, chunk_store,
+                        std::shared_ptr<std::ostringstream>()));
   std::shared_ptr<std::ostringstream> ostream(new std::ostringstream);
   EXPECT_EQ(kNullPointer,
             SelfDecrypt(std::shared_ptr<DataMap>(), chunk_store, ostream));
   EXPECT_EQ(kNullPointer,
             SelfDecrypt(data_map, std::shared_ptr<ChunkStore>(), ostream));
   sep = SelfEncryptionParams(0, 0, 0);
-  EXPECT_EQ(kInvalidInput,
-            SelfEncrypt(istream, false, sep, data_map, chunk_store));
+  EXPECT_EQ(kInvalidInput, SelfEncrypt(istream, sep, data_map, chunk_store));
 }
 
 TEST_P(SelfEncryptionParamTest, BEH_SelfEnDecryptStreamTinyData) {
@@ -262,8 +263,7 @@ TEST_P(SelfEncryptionParamTest, BEH_SelfEnDecryptStreamTinyData) {
     std::shared_ptr<std::istringstream> stream_in(
         new std::istringstream(RandomString(1)));
     std::string hash_in = crypto::Hash<crypto::SHA512>(stream_in->str());
-    EXPECT_EQ(kSuccess, SelfEncrypt(stream_in, false, sep_, data_map,
-                                    chunk_store));
+    EXPECT_EQ(kSuccess, SelfEncrypt(stream_in, sep_, data_map, chunk_store));
     EXPECT_TRUE(ChunksExist(data_map, chunk_store, NULL));
     std::shared_ptr<std::ostringstream> stream_out(new std::ostringstream);
     EXPECT_EQ(kSuccess, SelfDecrypt(data_map, chunk_store, stream_out));
@@ -277,8 +277,7 @@ TEST_P(SelfEncryptionParamTest, BEH_SelfEnDecryptStreamTinyData) {
     std::shared_ptr<std::istringstream> stream_in(
         new std::istringstream(RandomString(kMinChunks)));
     std::string hash_in = crypto::Hash<crypto::SHA512>(stream_in->str());
-    EXPECT_EQ(kSuccess, SelfEncrypt(stream_in, false, sep_, data_map,
-                                    chunk_store));
+    EXPECT_EQ(kSuccess, SelfEncrypt(stream_in, sep_, data_map, chunk_store));
     EXPECT_TRUE(ChunksExist(data_map, chunk_store, NULL));
     std::shared_ptr<std::ostringstream> stream_out(new std::ostringstream);
     EXPECT_EQ(kSuccess, SelfDecrypt(data_map, chunk_store, stream_out));
@@ -297,8 +296,7 @@ TEST_P(SelfEncryptionParamTest, BEH_SelfEnDecryptStreamFullInclude) {
   std::shared_ptr<std::istringstream> stream_in(new std::istringstream(
       RandomString(sep_.max_includable_data_size)));
   std::string hash_in = crypto::Hash<crypto::SHA512>(stream_in->str());
-  EXPECT_EQ(kSuccess,
-            SelfEncrypt(stream_in, false, sep_, data_map, chunk_store));
+  EXPECT_EQ(kSuccess, SelfEncrypt(stream_in, sep_, data_map, chunk_store));
   EXPECT_TRUE(ChunksExist(data_map, chunk_store, NULL));
   EXPECT_TRUE(test_se::VerifyChunks(data_map, chunk_store));
   EXPECT_EQ(0, data_map->chunks.size());
@@ -319,8 +317,7 @@ TEST_P(SelfEncryptionParamTest, BEH_SelfEnDecryptStreamNoInclude) {
       new MemoryChunkStore(true, hash_func_));
   std::shared_ptr<std::istringstream> stream_in(new std::istringstream(
       RandomString(sep_.max_includable_data_size + 1)));
-  EXPECT_EQ(kSuccess,
-            SelfEncrypt(stream_in, false, sep_, data_map, chunk_store));
+  EXPECT_EQ(kSuccess, SelfEncrypt(stream_in, sep_, data_map, chunk_store));
   EXPECT_TRUE(ChunksExist(data_map, chunk_store, NULL));
   EXPECT_TRUE(test_se::VerifyChunks(data_map, chunk_store));
   EXPECT_LE(kMinChunks, data_map->chunks.size());
@@ -344,8 +341,7 @@ TEST_P(SelfEncryptionParamTest, BEH_SelfEnDecryptStreamLastInclude) {
   std::shared_ptr<std::istringstream> stream_in(new std::istringstream(
       RandomString(data_size)));
   std::string hash_in = crypto::Hash<crypto::SHA512>(stream_in->str());
-  EXPECT_EQ(kSuccess,
-            SelfEncrypt(stream_in, false, sep_, data_map, chunk_store));
+  EXPECT_EQ(kSuccess, SelfEncrypt(stream_in, sep_, data_map, chunk_store));
   EXPECT_TRUE(ChunksExist(data_map, chunk_store, NULL));
   EXPECT_EQ(kMinChunks, data_map->chunks.size());
   EXPECT_EQ(test_se::kDefaultSelfEncryptionType,
@@ -357,9 +353,8 @@ TEST_P(SelfEncryptionParamTest, BEH_SelfEnDecryptStreamLastInclude) {
     EXPECT_FALSE(it->hash.empty());
     EXPECT_TRUE(chunk_store->Validate(it->hash));
     EXPECT_EQ(it->size, chunk_store->Size(it->hash));
-    EXPECT_EQ(sep_.max_chunk_size, it->size);
+    EXPECT_EQ(sep_.max_chunk_size, it->pre_size);
     EXPECT_FALSE(it->pre_hash.empty());
-    EXPECT_EQ(it->size, it->pre_size);  // no compression
     total_size += it->pre_size;
   }
   EXPECT_EQ(data_size, total_size + data_map->content.size());
@@ -374,15 +369,12 @@ TEST_P(SelfEncryptionParamTest, BEH_SelfEnDecryptStreamNoCapacity) {
   std::shared_ptr<DataMap> data_map(new DataMap);
   std::shared_ptr<ChunkStore> chunk_store(
       new MemoryChunkStore(true, hash_func_));
-  chunk_store->SetCapacity(sep_.max_chunk_size);
+  chunk_store->SetCapacity(1);
   std::shared_ptr<std::istringstream> stream_in(new std::istringstream(
       RandomString((kMinChunks + 1) * sep_.max_chunk_size)));
   std::string hash_in = crypto::Hash<crypto::SHA512>(stream_in->str());
-  EXPECT_EQ(kEncryptError,
-            SelfEncrypt(stream_in, false, sep_, data_map, chunk_store));
+  EXPECT_EQ(kEncryptError, SelfEncrypt(stream_in, sep_, data_map, chunk_store));
   EXPECT_TRUE(test_se::VerifyChunks(data_map, chunk_store));
-  EXPECT_LE(1, data_map->chunks.size());
-  EXPECT_EQ(1, chunk_store->Count());
 }
 
 TEST_P(SelfEncryptionParamTest, BEH_SelfEnDecryptStreamPattern) {
@@ -489,8 +481,7 @@ TEST_P(SelfEncryptionParamTest, BEH_SelfEnDecryptStreamPattern) {
         expected_chunks = 5;
         break;
     }
-    EXPECT_EQ(kSuccess,
-              SelfEncrypt(stream_in, false, sep_, data_map, chunk_store));
+    EXPECT_EQ(kSuccess, SelfEncrypt(stream_in, sep_, data_map, chunk_store));
     EXPECT_EQ(expected_chunks, test_se::CountUniqueChunks(data_map));
     EXPECT_EQ(expected_chunks, chunk_store->Count());
     EXPECT_TRUE(ChunksExist(data_map, chunk_store, NULL));
@@ -524,8 +515,7 @@ TEST_P(SelfEncryptionParamTest, BEH_SelfEnDecryptStreamDedup) {
       data_content));
   ASSERT_EQ(kChunkCount * sep_.max_chunk_size, stream_in->str().size());
   std::string hash_in = crypto::Hash<crypto::SHA512>(stream_in->str());
-  EXPECT_EQ(kSuccess,
-            SelfEncrypt(stream_in, false, sep_, data_map, chunk_store));
+  EXPECT_EQ(kSuccess, SelfEncrypt(stream_in, sep_, data_map, chunk_store));
   EXPECT_TRUE(ChunksExist(data_map, chunk_store, NULL));
   EXPECT_TRUE(test_se::VerifyChunks(data_map, chunk_store));
   EXPECT_EQ(kChunkCount, data_map->chunks.size());
@@ -544,12 +534,11 @@ TEST_P(SelfEncryptionParamTest, BEH_SelfEnDecryptStreamDedup) {
       EXPECT_EQ(post_enc_hash, data_map->chunks[i].hash);
     else
       EXPECT_NE(post_enc_hash, data_map->chunks[i].hash);
-    EXPECT_EQ(sep_.max_chunk_size, data_map->chunks[i].size);
+    EXPECT_EQ(sep_.max_chunk_size, data_map->chunks[i].pre_size);
     if (i < data_map->chunks.size() - 1)
       EXPECT_EQ(chunk_hash, data_map->chunks[i].pre_hash);
     else
       EXPECT_EQ(last_chunk_hash, data_map->chunks[i].pre_hash);
-    EXPECT_EQ(data_map->chunks[i].size, data_map->chunks[i].pre_size);  // uncpr
     total_size += data_map->chunks[i].pre_size;
   }
 
@@ -569,8 +558,7 @@ TEST_P(SelfEncryptionParamTest, BEH_SelfEnDecryptStreamCharacters) {
     std::uint64_t data_size(RandomUint32() % sep_.max_includable_data_size + 1);
     std::shared_ptr<std::istringstream> stream_in(new std::istringstream(
         std::string(data_size, static_cast<char>(i))));
-    EXPECT_EQ(kSuccess, SelfEncrypt(stream_in, false, sep_, data_map,
-                                    chunk_store));
+    EXPECT_EQ(kSuccess, SelfEncrypt(stream_in, sep_, data_map, chunk_store));
     EXPECT_TRUE(ChunksExist(data_map, chunk_store, NULL));
     std::shared_ptr<std::ostringstream> stream_out(new std::ostringstream);
     EXPECT_EQ(kSuccess, SelfDecrypt(data_map, chunk_store, stream_out))
@@ -588,8 +576,7 @@ TEST_P(SelfEncryptionParamTest, BEH_SelfEnDecryptStreamDelChunk) {
   std::uint64_t data_size((kMinChunks + 1) * sep_.max_chunk_size);
   std::shared_ptr<std::istringstream> stream_in(new std::istringstream(
       RandomString(data_size)));
-  EXPECT_EQ(kSuccess,
-            SelfEncrypt(stream_in, false, sep_, data_map, chunk_store));
+  EXPECT_EQ(kSuccess, SelfEncrypt(stream_in, sep_, data_map, chunk_store));
   EXPECT_TRUE(ChunksExist(data_map, chunk_store, NULL));
   ASSERT_EQ(kMinChunks + 1, data_map->chunks.size());
   while (chunk_store->Has(data_map->chunks[0].hash))
@@ -611,8 +598,7 @@ TEST_P(SelfEncryptionParamTest, BEH_SelfEnDecryptStreamResizeChunk) {
   std::uint64_t data_size((kMinChunks + 1) * sep_.max_chunk_size);
   std::shared_ptr<std::istringstream> stream_in(new std::istringstream(
       RandomString(data_size)));
-  EXPECT_EQ(kSuccess,
-            SelfEncrypt(stream_in, false, sep_, data_map, chunk_store));
+  EXPECT_EQ(kSuccess, SelfEncrypt(stream_in, sep_, data_map, chunk_store));
   EXPECT_TRUE(ChunksExist(data_map, chunk_store, NULL));
   EXPECT_TRUE(test_se::VerifyChunks(data_map, chunk_store));
   ASSERT_EQ(kMinChunks + 1, data_map->chunks.size());
@@ -635,8 +621,7 @@ TEST_P(SelfEncryptionParamTest, BEH_SelfEnDecryptStreamCorruptChunk) {
   std::string random(stream_in->str());
   while (random == stream_in->str())
     random = RandomString(data_size);
-  EXPECT_EQ(kSuccess,
-            SelfEncrypt(stream_in, false, sep_, data_map, chunk_store));
+  EXPECT_EQ(kSuccess, SelfEncrypt(stream_in, sep_, data_map, chunk_store));
   EXPECT_TRUE(ChunksExist(data_map, chunk_store, NULL));
   EXPECT_TRUE(test_se::VerifyChunks(data_map, chunk_store));
   ASSERT_EQ(kMinChunks + 1, data_map->chunks.size());
@@ -653,9 +638,9 @@ TEST_P(SelfEncryptionParamTest, BEH_SelfEnDecryptString) {
     std::shared_ptr<ChunkStore> chunk_store(
         new MemoryChunkStore(true, hash_func_));
     EXPECT_EQ(kNullPointer,
-              SelfEncrypt("test", false, sep_, std::shared_ptr<DataMap>(),
+              SelfEncrypt(std::string("test"), sep_, std::shared_ptr<DataMap>(),
                           chunk_store));
-    EXPECT_EQ(kNullPointer, SelfEncrypt("test", false, sep_, data_map,
+    EXPECT_EQ(kNullPointer, SelfEncrypt(std::string("test"), sep_, data_map,
                                         std::shared_ptr<ChunkStore>()));
     std::string s;
     EXPECT_EQ(kNullPointer, SelfDecrypt(data_map, chunk_store,
@@ -670,7 +655,7 @@ TEST_P(SelfEncryptionParamTest, BEH_SelfEnDecryptString) {
     std::shared_ptr<ChunkStore> chunk_store(
         new MemoryChunkStore(true, hash_func_));
     EXPECT_EQ(kSuccess,
-              SelfEncrypt("", false, sep_, data_map, chunk_store));
+              SelfEncrypt(std::string(), sep_, data_map, chunk_store));
     EXPECT_TRUE(ChunksExist(data_map, chunk_store, NULL));
     EXPECT_TRUE(test_se::VerifyChunks(data_map, chunk_store));
     std::string string_out;
@@ -683,8 +668,7 @@ TEST_P(SelfEncryptionParamTest, BEH_SelfEnDecryptString) {
         new MemoryChunkStore(true, hash_func_));
     std::uint64_t data_size(kMinChunks);
     std::string string_in(RandomString(data_size));
-    EXPECT_EQ(kSuccess,
-              SelfEncrypt(string_in, false, sep_, data_map, chunk_store));
+    EXPECT_EQ(kSuccess, SelfEncrypt(string_in, sep_, data_map, chunk_store));
     EXPECT_TRUE(ChunksExist(data_map, chunk_store, NULL));
     EXPECT_TRUE(test_se::VerifyChunks(data_map, chunk_store));
     std::string string_out;
@@ -700,8 +684,7 @@ TEST_P(SelfEncryptionParamTest, BEH_SelfEnDecryptString) {
                             sep_.max_chunk_size + kMinChunks +
                             RandomUint32() % sep_.max_chunk_size);
     std::string string_in(RandomString(data_size));
-    EXPECT_EQ(kSuccess,
-              SelfEncrypt(string_in, false, sep_, data_map, chunk_store));
+    EXPECT_EQ(kSuccess, SelfEncrypt(string_in, sep_, data_map, chunk_store));
     EXPECT_TRUE(ChunksExist(data_map, chunk_store, NULL));
     EXPECT_TRUE(test_se::VerifyChunks(data_map, chunk_store));
     std::string string_out;
@@ -719,8 +702,7 @@ TEST_P(SelfEncryptionParamTest, BEH_SelfEnDecryptFile) {
     std::shared_ptr<DataMap> data_map(new DataMap);
     std::shared_ptr<ChunkStore> chunk_store(
         new MemoryChunkStore(true, hash_func_));
-    EXPECT_EQ(kIoError,
-              SelfEncrypt(path_in, sep_, data_map, chunk_store));
+    EXPECT_EQ(kIoError, SelfEncrypt(path_in, sep_, data_map, chunk_store));
     test_se::CreateRandomFile(path_in, 1);
     EXPECT_EQ(kNullPointer,
               SelfEncrypt(path_in, sep_, std::shared_ptr<DataMap>(),
@@ -797,8 +779,7 @@ TEST_P(SelfEncryptionParamTest, BEH_SelfEnDecryptMixed) {
                             sep_.max_chunk_size + kMinChunks +
                             RandomUint32() % sep_.max_chunk_size);
     std::string string_in(RandomString(data_size));
-    EXPECT_EQ(kSuccess,
-              SelfEncrypt(string_in, false, sep_, data_map, chunk_store));
+    EXPECT_EQ(kSuccess, SelfEncrypt(string_in, sep_, data_map, chunk_store));
     EXPECT_TRUE(ChunksExist(data_map, chunk_store, NULL));
     EXPECT_TRUE(test_se::VerifyChunks(data_map, chunk_store));
     fs::path path_out(test_dir_ / "SelfEncryptFilesTestOut.dat");

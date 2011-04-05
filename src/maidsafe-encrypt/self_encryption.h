@@ -43,14 +43,12 @@ class DataMap;
 
 /// Generates secure chunks from a stream.
 int SelfEncrypt(std::shared_ptr<std::istream> input_stream,
-                bool try_compression,
                 const SelfEncryptionParams &self_encryption_params,
                 std::shared_ptr<DataMap> data_map,
                 std::shared_ptr<ChunkStore> chunk_store);
 
 /// Generates secure chunks from a string.
 int SelfEncrypt(const std::string &input_string,
-                bool try_compression,
                 const SelfEncryptionParams &self_encryption_params,
                 std::shared_ptr<DataMap> data_map,
                 std::shared_ptr<ChunkStore> chunk_store);

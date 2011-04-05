@@ -40,7 +40,7 @@ SelfEncryptionDevice::SelfEncryptionDevice(
     std::shared_ptr<ChunkStore> chunk_store,
     SelfEncryptionParams self_encryption_params)
     : self_encryption_params_(self_encryption_params),
-      default_self_encryption_type_(kHashingSha512 | kCompressionNone |
+      default_self_encryption_type_(kHashingSha512 | kCompressionGzip |
                                     kObfuscationRepeated | kCryptoAes256),
       data_map_(data_map),
       chunk_store_(chunk_store),
@@ -389,7 +389,17 @@ bool SelfEncryptionDevice::flush() {
 
 void SelfEncryptionDevice::InitialiseDataMap(const ChunkBuffer &chunk_buffer) {
   // TODO(Steve) determine compressibility
-  data_map_->self_encryption_type = default_self_encryption_type_;
+  size_t offset(0);
+  if (chunk_buffer.content.size() > kCompressionSampleSize)
+    offset = (chunk_buffer.content.size() - kCompressionSampleSize) / 2;
+  if (utils::CheckCompressibility(
+          chunk_buffer.content.substr(offset, kCompressionSampleSize),
+          default_self_encryption_type_))
+    data_map_->self_encryption_type = default_self_encryption_type_;
+  else
+    data_map_->self_encryption_type = kCompressionNone |
+        (default_self_encryption_type_ &
+            (kHashingMask | kObfuscationMask | kCryptoMask));
   data_map_->chunks.clear();
   data_map_->size = 0;
   data_map_->content.clear();
