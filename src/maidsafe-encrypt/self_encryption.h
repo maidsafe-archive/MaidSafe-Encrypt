@@ -39,7 +39,7 @@ class ChunkStore;
 
 namespace encrypt {
 
-class DataMap;
+struct DataMap;
 
 /// Generates secure chunks from a stream.
 int SelfEncrypt(std::shared_ptr<std::istream> input_stream,

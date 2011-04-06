@@ -44,7 +44,7 @@ class ChunkStore;
 
 namespace encrypt {
 
-class DataMap;
+struct DataMap;
 
 namespace test {
 class SelfEncryptionDeviceTest_BEH_Seek_Test;

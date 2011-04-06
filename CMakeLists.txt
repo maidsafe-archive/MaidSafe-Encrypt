@@ -110,10 +110,7 @@ IF(MSVC)
                           STATIC_LIBRARY_FLAGS_RELEASE "/LTCG")
   SET_TARGET_PROPERTIES(TESTencrypt DEMOencrypt PROPERTIES
                           LINK_FLAGS "/STACK:1048576"
-                          LINK_FLAGS_RELEASE "/OPT:REF /OPT:ICF /LTCG /INCREMENTAL:NO ${LINKER_LIBS_DIRS_RELEASE}"
-                          LINK_FLAGS_DEBUG "${LINKER_LIBS_DIRS_DEBUG}"
-                          LINK_FLAGS_RELWITHDEBINFO "${LINKER_LIBS_DIRS_DEBUG}"
-                          LINK_FLAGS_MINSIZEREL "${LINKER_LIBS_DIRS_DEBUG}")
+                          LINK_FLAGS_RELEASE "/OPT:REF /OPT:ICF /LTCG /INCREMENTAL:NO")
 
 #  SET_TARGET_PROPERTIES(encrypt_static PROPERTIES
 #                            COMPILE_FLAGS "/D_VC80_UPGRADE=0x0710"
