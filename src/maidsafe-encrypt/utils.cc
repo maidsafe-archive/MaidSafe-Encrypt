@@ -142,6 +142,8 @@ bool ResizeObfuscationHash(const std::string &input,
     return false;
 
   resized_data->resize(required_size);
+  if (required_size == 0)
+    return true;
   size_t input_size(std::min(input.size(), required_size)), copied(input_size);
   memcpy(&((*resized_data)[0]), input.data(), input_size);
   while (copied < required_size) {
