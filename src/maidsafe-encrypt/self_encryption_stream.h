@@ -22,6 +22,7 @@
 #include <memory>
 #include <set>
 #include <string>
+#include <vector>
 
 #include "boost/filesystem.hpp"
 #include "boost/iostreams/concepts.hpp"
@@ -84,7 +85,7 @@ class SelfEncryptionDevice {
   friend class test::SelfEncryptionDeviceTest_BEH_StoreChunkFromBuffer_Test;
   void InitialiseDataMap(const ChunkBuffer &chunk_buffer);
   bool UpdateCurrentChunkDetails();
-  bool FinaliseWriting();
+  bool FinaliseWriting(const size_t &index);
   bool LoadChunkIntoBuffer(const size_t &index, ChunkBuffer *chunk_buffer);
   bool StoreChunkFromBuffer(ChunkBuffer *chunk_buffer,
                             const std::string &encryption_hash,
@@ -97,6 +98,7 @@ class SelfEncryptionDevice {
   size_t current_chunk_index_;
   std::array<ChunkBuffer, kMinChunks> chunk_buffers_;
   std::set<size_t> pending_chunks_;
+  std::vector<std::string> deletable_chunks_;
   bool write_mode_;
 };
 

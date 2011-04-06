@@ -17,13 +17,10 @@
 #include <cstdint>
 #include <functional>
 #include <memory>
-#include <iostream>  // NOLINT
 
-#include "boost/filesystem.hpp"
-#include "boost/filesystem/fstream.hpp"
 #include "gtest/gtest.h"
-#include "maidsafe/common/memory_chunk_store.h"
 #include "maidsafe/common/crypto.h"
+#include "maidsafe/common/memory_chunk_store.h"
 #include "maidsafe/common/utils.h"
 #include "maidsafe-encrypt/config.h"
 #include "maidsafe-encrypt/data_map.h"
@@ -38,7 +35,7 @@ namespace encrypt {
 
 namespace test {
 
-namespace test_ses {
+namespace test_sed {
 
 const std::uint32_t kDefaultSelfEncryptionType(
     kHashingSha512 | kCompressionNone | kObfuscationRepeated | kCryptoAes256);
@@ -67,7 +64,7 @@ TEST_F(SelfEncryptionDeviceTest, BEH_Read) {
   }
   {  // unencrypted whole content in DataMap
     std::shared_ptr<DataMap> data_map(new DataMap);
-    data_map->self_encryption_type = test_ses::kDefaultSelfEncryptionType;
+    data_map->self_encryption_type = test_sed::kDefaultSelfEncryptionType;
     data_map->content = RandomString(100);
     data_map->size = data_map->content.size();
 
@@ -93,10 +90,10 @@ TEST_F(SelfEncryptionDeviceTest, BEH_Read) {
   }
   {  // unencrypted chunk in DataMap
     std::shared_ptr<DataMap> data_map(new DataMap);
-    data_map->self_encryption_type = test_ses::kDefaultSelfEncryptionType;
+    data_map->self_encryption_type = test_sed::kDefaultSelfEncryptionType;
     data_map->content = RandomString(100);
     data_map->size = data_map->content.size();
-    data_map->self_encryption_type = test_ses::kDefaultSelfEncryptionType;
+    data_map->self_encryption_type = test_sed::kDefaultSelfEncryptionType;
 
     std::shared_ptr<ChunkStore> chunk_store(
         new MemoryChunkStore(true, hash_func_));
@@ -119,14 +116,14 @@ TEST_F(SelfEncryptionDeviceTest, BEH_Read) {
   }
   {  // single chunk in file
     std::shared_ptr<DataMap> data_map(new DataMap);
-    data_map->self_encryption_type = test_ses::kDefaultSelfEncryptionType;
+    data_map->self_encryption_type = test_sed::kDefaultSelfEncryptionType;
     std::shared_ptr<ChunkStore> chunk_store(
         new MemoryChunkStore(true, hash_func_));
     std::string content_orig(RandomString(100));
     std::string hash_orig(crypto::Hash<crypto::SHA512>(content_orig));
     std::string content_enc(utils::SelfEncryptChunk(
         content_orig, hash_orig, hash_orig,
-        test_ses::kDefaultSelfEncryptionType));
+        test_sed::kDefaultSelfEncryptionType));
     std::string hash_enc(crypto::Hash<crypto::SHA512>(content_enc));
     EXPECT_TRUE(chunk_store->Store(hash_enc, content_enc));
     ChunkDetails chunk;
@@ -152,7 +149,7 @@ TEST_F(SelfEncryptionDeviceTest, BEH_Read) {
     const size_t kChunkCount(5);
     const size_t kChunkSize(10);
     std::shared_ptr<DataMap> data_map(new DataMap);
-    data_map->self_encryption_type = test_ses::kDefaultSelfEncryptionType;
+    data_map->self_encryption_type = test_sed::kDefaultSelfEncryptionType;
     std::shared_ptr<ChunkStore> chunk_store(
         new MemoryChunkStore(true, hash_func_));
     std::vector<std::string> content_orig;
@@ -171,7 +168,7 @@ TEST_F(SelfEncryptionDeviceTest, BEH_Read) {
       std::string content_enc(utils::SelfEncryptChunk(
           content_orig[i], data_map->chunks[(i + 1) % kChunkCount].pre_hash,
           data_map->chunks[(i + 2) % kChunkCount].pre_hash,
-          test_ses::kDefaultSelfEncryptionType));
+          test_sed::kDefaultSelfEncryptionType));
       std::string hash_enc(crypto::Hash<crypto::SHA512>(content_enc));
       data_map->chunks[i].hash = hash_enc;
       data_map->chunks[i].size = content_enc.size();
@@ -235,7 +232,7 @@ TEST_F(SelfEncryptionDeviceTest, DISABLED_BEH_Write) {
 
 TEST_F(SelfEncryptionDeviceTest, BEH_Seek) {
   std::shared_ptr<DataMap> data_map(new DataMap);
-  data_map->self_encryption_type = test_ses::kDefaultSelfEncryptionType;
+  data_map->self_encryption_type = test_sed::kDefaultSelfEncryptionType;
   std::shared_ptr<ChunkStore> chunk_store(
       new MemoryChunkStore(true, hash_func_));
   {
@@ -318,7 +315,7 @@ TEST_F(SelfEncryptionDeviceTest, DISABLED_BEH_Flush) {
   FAIL() << "Not implemented.";
   /* {
     std::shared_ptr<DataMap> data_map(new DataMap);
-    data_map->self_encryption_type = test_ses::kDefaultSelfEncryptionType;
+    data_map->self_encryption_type = test_sed::kDefaultSelfEncryptionType;
     std::shared_ptr<ChunkStore> chunk_store(
         new MemoryChunkStore(true, hash_func_));
     SelfEncryptionDevice sed(data_map, chunk_store);
