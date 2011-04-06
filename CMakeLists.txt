@@ -156,6 +156,10 @@ ENDIF()
 
 ADD_GTESTS(TESTencrypt)
 
+# Workaround to allow parameterised test marked "BEH" to have extra time.  Only
+# parameter 3 causes timeout, hence we can't justify marking the test "FUNC"
+SET_PROPERTY(TEST VarChunkSizes/SelfEncryptionParamTest.BEH_SelfEnDecryptStreamPattern/3 PROPERTY TIMEOUT 300)
+
 TEST_SUMMARY_OUTPUT()
 
 ###################################################################################################
