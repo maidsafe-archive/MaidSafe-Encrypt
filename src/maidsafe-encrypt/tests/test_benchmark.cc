@@ -10,7 +10,7 @@
  *  the explicit written permission of the board of directors of maidsafe.net. *
  ***************************************************************************//**
  * @file  test_benchmark.cc
- * @brief Test to benchmark self-encryption.
+ * @brief Stand-alone test to benchmark self-encryption.
  * @date  2011-04-05
  */
 
@@ -21,6 +21,7 @@
 #include "boost/timer.hpp"
 #include "gtest/gtest.h"
 #include "maidsafe/common/crypto.h"
+#include "maidsafe/common/log.h"
 #include "maidsafe/common/memory_chunk_store.h"
 #include "maidsafe/common/utils.h"
 #include "maidsafe-encrypt/config.h"
@@ -85,7 +86,7 @@ TEST_P(SelfEncryptionBenchmarkTest, FUNC_Benchmark) {
     else
       repetitions = 10;
 
-    printf("Timing Self-encryption of %d strings à %d bytes (run %d/%d)...\n",
+    printf("Timing Self-encryption of %d strings at %d bytes (run %d/%d)...\n",
            repetitions, data_size, run + 1, kRunCount);
 
     std::vector<std::shared_ptr<std::istringstream>> contents;
@@ -179,3 +180,16 @@ INSTANTIATE_TEST_CASE_P(IncChunk, SelfEncryptionBenchmarkTest, testing::Values(
 }  // namespace encrypt
 
 }  // namespace maidsafe
+
+int main(int argc, char **argv) {
+  google::InitGoogleLogging(argv[0]);
+  // setting output to be stderr
+  FLAGS_logtostderr = false;
+  // Severity levels are INFO, WARNING, ERROR, and FATAL (0 to 3 respectively).
+  FLAGS_minloglevel = 3;
+
+  testing::InitGoogleTest(&argc, argv);
+  int result(RUN_ALL_TESTS());
+  int test_count = testing::UnitTest::GetInstance()->test_to_run_count();
+  return (test_count == 0) ? -1 : result;
+}

@@ -73,6 +73,7 @@ SET(ALL_FILES ${SOURCE_FILES} ${HEADER_FILES})
 ####    TESTS    ####
 FILE(GLOB ALL_FILES_TESTS_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe-encrypt/tests/*.cc" "${PROJECT_SOURCE_DIR}/src/maidsafe-encrypt/tests/*.h")
 LIST(REMOVE_ITEM ALL_FILES_TESTS_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe-encrypt/tests/encrypt_demo.cc")
+LIST(REMOVE_ITEM ALL_FILES_TESTS_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe-encrypt/tests/test_benchmark.cc")
 
 ###################################################################################################
 # All Platforms:  Create libs and executables                                                     #
@@ -80,9 +81,11 @@ LIST(REMOVE_ITEM ALL_FILES_TESTS_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe-encrypt
 ADD_LIBRARY(encrypt_static STATIC ${ALL_FILES})
 SET_TARGET_PROPERTIES(encrypt_static PROPERTIES OUTPUT_NAME maidsafe_encrypt)
 ADD_EXECUTABLE(TESTencrypt ${ALL_FILES_TESTS_DIR})
+ADD_EXECUTABLE(TESTbenchmark "${PROJECT_SOURCE_DIR}/src/maidsafe-encrypt/tests/test_benchmark.cc")
 ADD_EXECUTABLE(DEMOencrypt "${PROJECT_SOURCE_DIR}/src/maidsafe-encrypt/tests/encrypt_demo.cc")
 
 RENAME_EXECUTABLE(TESTencrypt)
+RENAME_EXECUTABLE(TESTbenchmark)
 RENAME_EXECUTABLE(DEMOencrypt)
 
 TARGET_LINK_LIBRARIES(encrypt_static
@@ -92,6 +95,7 @@ TARGET_LINK_LIBRARIES(encrypt_static
                         boost_serialization
                         boost_system)
 TARGET_LINK_LIBRARIES(TESTencrypt encrypt_static gtest_static)
+TARGET_LINK_LIBRARIES(TESTbenchmark encrypt_static gtest_static)
 TARGET_LINK_LIBRARIES(DEMOencrypt encrypt_static)
 
 IF(UNIX)
@@ -108,7 +112,7 @@ IF(MSVC)
   SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /Oi /arch:SSE") #  /wd4503
   SET_TARGET_PROPERTIES(encrypt_static PROPERTIES
                           STATIC_LIBRARY_FLAGS_RELEASE "/LTCG")
-  SET_TARGET_PROPERTIES(TESTencrypt DEMOencrypt PROPERTIES
+  SET_TARGET_PROPERTIES(TESTencrypt TESTbenchmark DEMOencrypt PROPERTIES
                           LINK_FLAGS "/STACK:1048576"
                           LINK_FLAGS_RELEASE "/OPT:REF /OPT:ICF /LTCG /INCREMENTAL:NO")
 
