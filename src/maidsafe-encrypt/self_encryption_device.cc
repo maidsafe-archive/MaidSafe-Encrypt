@@ -248,6 +248,15 @@ std::streamsize SelfEncryptionDevice::write(const char *s, std::streamsize n) {
 
 io::stream_offset SelfEncryptionDevice::seek(io::stream_offset offset,
                                              std::ios_base::seekdir way) {
+  size_t total_size(data_map_->size);
+  if (write_mode_) {
+    total_size -= data_map_->content.size();
+    for (size_t i = data_map_->chunks.size();
+        i < data_map_->chunks.size() + kMinChunks; ++i)
+      if (chunk_buffers_[i % kMinChunks].index == i)
+        total_size += chunk_buffers_[i % kMinChunks].content.size();
+  }
+
   io::stream_offset new_offset;
   switch (way) {
     case std::ios_base::beg:
@@ -257,14 +266,14 @@ io::stream_offset SelfEncryptionDevice::seek(io::stream_offset offset,
       new_offset = offset_ + offset;
       break;
     case std::ios_base::end:
-      new_offset = data_map_->size + offset;
+      new_offset = total_size + offset;
       break;
     default:
       DLOG(ERROR) << "seek: Invalid seek direction passed." << std::endl;
       return -1;
   }
 
-  if (new_offset < 0 || new_offset > data_map_->size) {
+  if (new_offset < 0 || new_offset > total_size) {
     DLOG(ERROR) << "seek: Invalid offset passed." << std::endl;
     return -1;
   }

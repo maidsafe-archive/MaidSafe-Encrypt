@@ -42,6 +42,29 @@ class SelfEncryptionStreamTest : public testing::Test {
   virtual ~SelfEncryptionStreamTest() {}
  protected:
   MemoryChunkStore::HashFunc hash_func_;
+  testing::AssertionResult AssertStringsEqual(const char* expr1,
+                                              const char* expr2,
+                                              std::string s1,
+                                              std::string s2) {
+    if (s1 == s2)
+      return testing::AssertionSuccess();
+
+    const size_t kLineLength(76);
+
+    s1 = EncodeToBase64(s1);
+    if (s1.size() > kLineLength)
+      s1 = s1.substr(0, kLineLength / 2 - 1) + ".." +
+           s1.substr(s1.size() - kLineLength / 2 - 1);
+
+    s2 = EncodeToBase64(s2);
+    if (s2.size() > kLineLength)
+      s2 = s2.substr(0, kLineLength / 2 - 1) + ".." +
+           s2.substr(s2.size() - kLineLength / 2 - 1);
+
+    return testing::AssertionFailure()
+        << "Strings " << expr1 << " and " << expr2 << " are not equal: \n  "
+        << s1 << "\n  " << s2;
+  }
 };
 
 TEST_F(SelfEncryptionStreamTest, BEH_Append) {
@@ -68,7 +91,7 @@ TEST_F(SelfEncryptionStreamTest, BEH_Append) {
     std::string data_out(100, 0);
     stream2.read(&(data_out[0]), 100);
     EXPECT_EQ(100, stream2.gcount());
-    ASSERT_EQ(EncodeToHex(data.substr(0, 100)), EncodeToHex(data_out));
+    ASSERT_PRED_FORMAT2(AssertStringsEqual, data.substr(0, 100), data_out);
   }
 
   // write next 50 Bytes, should now be stored as 3 chunks at 50 Bytes each
@@ -90,7 +113,7 @@ TEST_F(SelfEncryptionStreamTest, BEH_Append) {
     std::string data_out(150, 0);
     stream2.read(&(data_out[0]), 150);
     EXPECT_EQ(150, stream2.gcount());
-    ASSERT_EQ(EncodeToHex(data.substr(0, 150)), EncodeToHex(data_out));
+    ASSERT_PRED_FORMAT2(AssertStringsEqual, data.substr(0, 150), data_out);
   }
 
   // write next 600 bytes -> 3 chunks at 250 Bytes
@@ -112,7 +135,7 @@ TEST_F(SelfEncryptionStreamTest, BEH_Append) {
     std::string data_out(750, 0);
     stream2.read(&(data_out[0]), 750);
     EXPECT_EQ(750, stream2.gcount());
-    ASSERT_EQ(EncodeToHex(data.substr(0, 750)), EncodeToHex(data_out));
+    ASSERT_PRED_FORMAT2(AssertStringsEqual, data.substr(0, 750), data_out);
   }
 
   // write next 50 bytes -> 3 chunks at 256 Bytes, 32 Bytes in DM
@@ -134,7 +157,7 @@ TEST_F(SelfEncryptionStreamTest, BEH_Append) {
     std::string data_out(800, 0);
     stream2.read(&(data_out[0]), 800);
     EXPECT_EQ(800, stream2.gcount());
-    ASSERT_EQ(EncodeToHex(data.substr(0, 800)), EncodeToHex(data_out));
+    ASSERT_PRED_FORMAT2(AssertStringsEqual, data.substr(0, 800), data_out);
   }
 
   // write next 50 bytes -> 3 chunks at 256 Bytes, 1 at 82 Bytes
@@ -156,7 +179,7 @@ TEST_F(SelfEncryptionStreamTest, BEH_Append) {
     std::string data_out(850, 0);
     stream2.read(&(data_out[0]), 850);
     EXPECT_EQ(850, stream2.gcount());
-    ASSERT_EQ(EncodeToHex(data.substr(0, 850)), EncodeToHex(data_out));
+    ASSERT_PRED_FORMAT2(AssertStringsEqual, data.substr(0, 850), data_out);
   }
 
   // write final 174 bytes -> 4 chunks at 256 Bytes
@@ -178,7 +201,42 @@ TEST_F(SelfEncryptionStreamTest, BEH_Append) {
     std::string data_out(1024, 0);
     stream2.read(&(data_out[0]), 1024);
     EXPECT_EQ(1024, stream2.gcount());
-    ASSERT_EQ(EncodeToHex(data), EncodeToHex(data_out));
+    ASSERT_PRED_FORMAT2(AssertStringsEqual, data, data_out);
+  }
+}
+
+TEST_F(SelfEncryptionStreamTest, BEH_IncrementalWrite) {
+  SelfEncryptionParams sep(100, 0, 2);
+  std::string data(RandomString(10 * sep.max_chunk_size));  // 10 chunks
+
+  std::shared_ptr<DataMap> data_map(new DataMap);
+  std::shared_ptr<ChunkStore> chunk_store(
+      new MemoryChunkStore(true, hash_func_));
+  SelfEncryptionStream stream(data_map, chunk_store, sep);
+
+  // write in small bursts and flush every time
+  size_t offset(0);
+  while (offset < data.size()) {
+    size_t size(60);  // RandomUint32() % sep.max_chunk_size);
+    if (offset + size > data.size())
+      size = data.size() - offset;
+    //stream.seekp(offset);
+    stream.write(&(data[offset]), size);
+    stream.flush();
+    offset += size;
+    EXPECT_EQ(offset, data_map->size);
+    //EXPECT_EQ(offset, stream.tellp());
+
+    // check via separate stream
+    {
+      SelfEncryptionStream stream2(data_map, chunk_store, sep);
+      std::string data_out(data_map->size, 0);
+      stream2.read(&(data_out[0]), data_map->size);
+      EXPECT_EQ(data_map->size, stream2.gcount());
+      // ASSERT_PRED_FORMAT2(AssertStringsEqual, data, data_out);
+      ASSERT_EQ(EncodeToHex(data.substr(0, offset)),
+                EncodeToHex(data_out)) << offset << " Bytes";
+    }
   }
 }
 
