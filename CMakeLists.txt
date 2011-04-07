@@ -171,6 +171,7 @@ SET(MAIDSAFE_ENCRYPT_INSTALL_FILES
       ${PROJECT_SOURCE_DIR}/src/maidsafe-encrypt/config.h
       ${PROJECT_SOURCE_DIR}/src/maidsafe-encrypt/data_map.h
       ${PROJECT_SOURCE_DIR}/src/maidsafe-encrypt/self_encryption.h
+      ${PROJECT_SOURCE_DIR}/src/maidsafe-encrypt/self_encryption_device.h
       ${PROJECT_SOURCE_DIR}/src/maidsafe-encrypt/self_encryption_stream.h
       ${PROJECT_SOURCE_DIR}/src/maidsafe-encrypt/version.h)
 

@@ -18,10 +18,7 @@
 #define MAIDSAFE_ENCRYPT_UTILS_H_
 
 #include <cstdint>
-#include <iostream>  // NOLINT
-#include <memory>
 #include <string>
-#include <vector>
 
 #include "boost/filesystem.hpp"
 

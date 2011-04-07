@@ -17,7 +17,7 @@
 #ifndef MAIDSAFE_ENCRYPT_VERSION_H_
 #define MAIDSAFE_ENCRYPT_VERSION_H_
 
-#define MAIDSAFE_ENCRYPT_VERSION 5
+#define MAIDSAFE_ENCRYPT_VERSION 6
 
 #include "maidsafe/common/version.h"
 

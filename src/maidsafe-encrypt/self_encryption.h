@@ -26,7 +26,7 @@
 #include "maidsafe-encrypt/config.h"
 #include "maidsafe-encrypt/version.h"
 
-#if MAIDSAFE_ENCRYPT_VERSION < 4
+#if MAIDSAFE_ENCRYPT_VERSION < 6
 #error This API is not compatible with the installed library.\
   Please update the maidsafe-encrypt library.
 #endif
@@ -74,15 +74,6 @@ int SelfDecrypt(std::shared_ptr<DataMap> data_map,
                 std::shared_ptr<ChunkStore> chunk_store,
                 bool overwrite,
                 const fs::path &output_file);
-
-/// Checks for existance of each chunk referred to by the DataMap.
-bool ChunksExist(std::shared_ptr<DataMap> data_map,
-                 std::shared_ptr<ChunkStore> chunk_store,
-                 std::vector<std::string> *missing_chunks);
-
-/// Deletes each chunk referred to by the DataMap.
-bool DeleteChunks(std::shared_ptr<DataMap> data_map,
-                  std::shared_ptr<ChunkStore> chunk_store);
 
 }  // namespace encrypt
 

@@ -182,6 +182,109 @@ TEST_F(SelfEncryptionStreamTest, BEH_Append) {
   }
 }
 
+TEST_F(SelfEncryptionStreamTest, BEH_ChunksExist) {
+  std::shared_ptr<DataMap> data_map(new DataMap);
+  std::shared_ptr<ChunkStore> chunk_store(
+      new MemoryChunkStore(true, hash_func_));
+  EXPECT_FALSE(ChunksExist(std::shared_ptr<DataMap>(), chunk_store, NULL));
+  EXPECT_FALSE(ChunksExist(data_map, std::shared_ptr<ChunkStore>(), NULL));
+  EXPECT_TRUE(ChunksExist(data_map, chunk_store, NULL));
+  std::vector<std::string> missing_chunks;
+  EXPECT_TRUE(ChunksExist(data_map, chunk_store, &missing_chunks));
+  EXPECT_TRUE(missing_chunks.empty());
+  missing_chunks.push_back("test chunk name");
+  EXPECT_TRUE(ChunksExist(data_map, chunk_store, &missing_chunks));
+  EXPECT_TRUE(missing_chunks.empty());
+  {
+    ChunkDetails chunk;
+    chunk.hash = crypto::Hash<crypto::SHA512>("chunk1");
+    data_map->chunks.push_back(chunk);
+    chunk.hash = crypto::Hash<crypto::SHA512>("chunk2");
+    data_map->chunks.push_back(chunk);
+  }
+  EXPECT_FALSE(ChunksExist(data_map, chunk_store, NULL));
+  EXPECT_FALSE(ChunksExist(data_map, chunk_store, &missing_chunks));
+  ASSERT_EQ(2, missing_chunks.size());
+  EXPECT_EQ(data_map->chunks[0].hash, missing_chunks[0]);
+  EXPECT_EQ(data_map->chunks[1].hash, missing_chunks[1]);
+  EXPECT_TRUE(chunk_store->Store(data_map->chunks[1].hash, RandomString(123)));
+  EXPECT_FALSE(ChunksExist(data_map, chunk_store, NULL));
+  EXPECT_FALSE(ChunksExist(data_map, chunk_store, &missing_chunks));
+  ASSERT_EQ(1, missing_chunks.size());
+  EXPECT_EQ(data_map->chunks[0].hash, missing_chunks[0]);
+  EXPECT_TRUE(chunk_store->Store(data_map->chunks[0].hash, RandomString(123)));
+  EXPECT_TRUE(ChunksExist(data_map, chunk_store, &missing_chunks));
+  EXPECT_TRUE(missing_chunks.empty());
+}
+
+TEST_F(SelfEncryptionStreamTest, BEH_DeleteChunks) {
+  std::shared_ptr<DataMap> data_map(new DataMap);
+  std::shared_ptr<ChunkStore> chunk_store(
+      new MemoryChunkStore(true, hash_func_));
+  EXPECT_FALSE(DeleteChunks(std::shared_ptr<DataMap>(), chunk_store));
+  EXPECT_FALSE(DeleteChunks(data_map, std::shared_ptr<ChunkStore>()));
+  EXPECT_TRUE(DeleteChunks(data_map, chunk_store));
+
+  {
+    ChunkDetails chunk;
+    chunk.hash = crypto::Hash<crypto::SHA512>("chunk1");
+    data_map->chunks.push_back(chunk);
+    chunk.hash = crypto::Hash<crypto::SHA512>("chunk2");
+    data_map->chunks.push_back(chunk);
+  }
+  EXPECT_TRUE(DeleteChunks(data_map, chunk_store));
+  EXPECT_TRUE(data_map->chunks.empty());
+
+  {
+    ChunkDetails chunk;
+    chunk.hash = crypto::Hash<crypto::SHA512>("chunk1");
+    data_map->chunks.push_back(chunk);
+    EXPECT_TRUE(chunk_store->Store(chunk.hash, "moo"));
+    chunk.hash = crypto::Hash<crypto::SHA512>("chunk2");
+    data_map->chunks.push_back(chunk);
+    EXPECT_TRUE(chunk_store->Store(chunk.hash, "boo"));
+    EXPECT_TRUE(chunk_store->Store(crypto::Hash<crypto::SHA512>("chunk3"),
+                                   "foo"));
+  }
+  EXPECT_EQ(3, chunk_store->Count());
+  EXPECT_TRUE(DeleteChunks(data_map, chunk_store));
+  EXPECT_EQ(1, chunk_store->Count());
+  EXPECT_TRUE(data_map->chunks.empty());
+  chunk_store->Clear();
+
+  {
+    ChunkDetails chunk;
+    chunk.hash = crypto::Hash<crypto::SHA512>("chunk1");
+    data_map->chunks.push_back(chunk);
+    EXPECT_TRUE(chunk_store->Store(chunk.hash, "moo"));
+    chunk.hash = crypto::Hash<crypto::SHA512>("chunk2");
+    data_map->chunks.push_back(chunk);
+    EXPECT_TRUE(chunk_store->Store(chunk.hash, "boo"));
+    EXPECT_TRUE(chunk_store->Store(chunk.hash, "foo"));
+  }
+  EXPECT_EQ(2, chunk_store->Count());
+  EXPECT_TRUE(DeleteChunks(data_map, chunk_store));
+  EXPECT_EQ(1, chunk_store->Count());
+  EXPECT_TRUE(data_map->chunks.empty());
+  chunk_store->Clear();
+
+  {
+    ChunkDetails chunk;
+    chunk.hash = crypto::Hash<crypto::SHA512>("chunk1");
+    data_map->chunks.push_back(chunk);
+    EXPECT_TRUE(chunk_store->Store(chunk.hash, "moo"));
+    chunk.hash = crypto::Hash<crypto::SHA512>("chunk2");
+    data_map->chunks.push_back(chunk);
+    EXPECT_TRUE(chunk_store->Store(chunk.hash, "boo"));
+    data_map->chunks.push_back(chunk);
+    EXPECT_TRUE(chunk_store->Store(chunk.hash, "foo"));
+  }
+  EXPECT_EQ(2, chunk_store->Count());
+  EXPECT_TRUE(DeleteChunks(data_map, chunk_store));
+  EXPECT_TRUE(chunk_store->Empty());
+  EXPECT_TRUE(data_map->chunks.empty());
+}
+
 }  // namespace encrypt
 
 }  // namespace test

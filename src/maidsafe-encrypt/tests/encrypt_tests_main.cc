@@ -22,7 +22,7 @@ int main(int argc, char **argv) {
   // setting output to be stderr
   FLAGS_logtostderr = true;
   // Severity levels are INFO, WARNING, ERROR, and FATAL (0 to 3 respectively).
-  FLAGS_minloglevel = 0;
+  FLAGS_minloglevel = 2;
 
   testing::InitGoogleTest(&argc, argv);
   int result(RUN_ALL_TESTS());

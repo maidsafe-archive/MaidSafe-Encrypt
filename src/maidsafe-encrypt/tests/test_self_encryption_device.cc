@@ -24,7 +24,7 @@
 #include "maidsafe/common/utils.h"
 #include "maidsafe-encrypt/config.h"
 #include "maidsafe-encrypt/data_map.h"
-#include "maidsafe-encrypt/self_encryption_stream.h"
+#include "maidsafe-encrypt/self_encryption_device.h"
 #include "maidsafe-encrypt/utils.h"
 
 namespace fs = boost::filesystem;
