@@ -170,7 +170,7 @@ TEST(SelfEncryptionUtilsTest, BEH_ResizeObfuscationHash) {
 
 TEST(SelfEncryptionUtilsTest, BEH_SelfEnDecryptChunk) {
   // leaving out hashing, since it's not relevant
-  const std::array<std::uint32_t, 8> combinations = {
+  const std::array<std::uint32_t, 8> combinations = { {
     kCompressionNone | kObfuscationNone | kCryptoNone,
     kCompressionNone | kObfuscationNone | kCryptoAes256,
     kCompressionNone | kObfuscationRepeated | kCryptoNone,
@@ -179,7 +179,7 @@ TEST(SelfEncryptionUtilsTest, BEH_SelfEnDecryptChunk) {
     kCompressionGzip | kObfuscationNone | kCryptoAes256,
     kCompressionGzip | kObfuscationRepeated | kCryptoNone,
     kCompressionGzip | kObfuscationRepeated | kCryptoAes256
-  };
+  } };
 
   std::string content(RandomString(3000 + RandomUint32() % 1000));
   std::string hash1(RandomString(64)), hash2(hash1);

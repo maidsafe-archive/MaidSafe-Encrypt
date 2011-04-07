@@ -399,7 +399,6 @@ TEST_P(SelfEncryptionParamTest, BEH_SelfEnDecryptStreamPattern) {
         new MemoryChunkStore(true, hash_func_));
     std::shared_ptr<std::istringstream> stream_in(new std::istringstream);
     size_t expected_chunks(0);
-    printf("--- case %d ---\n", i);
     switch (i) {
       case 0:  // abc
         stream_in->str(chunk_a + chunk_b + chunk_c);

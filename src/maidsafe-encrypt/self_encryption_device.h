@@ -24,7 +24,6 @@
 #include <string>
 #include <vector>
 
-#include "boost/filesystem.hpp"
 #include "boost/iostreams/concepts.hpp"
 #include "boost/iostreams/positioning.hpp"
 #include "boost/iostreams/stream.hpp"
@@ -36,7 +35,6 @@
   Please update the maidsafe-encrypt library.
 #endif
 
-namespace fs = boost::filesystem;
 namespace io = boost::iostreams;
 
 namespace maidsafe {

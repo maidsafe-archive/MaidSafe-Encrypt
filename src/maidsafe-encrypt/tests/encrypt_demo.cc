@@ -51,9 +51,9 @@ enum ReturnCodes {
 
 /// Formats and scales a byte value with IEC units
 std::string FormatByteValue(const std::uint64_t &value) {
-  const std::array<std::string, 7> kUnits = {
+  const std::array<std::string, 7> kUnits = { {
       "Bytes", "KiB", "MiB", "GiB", "TiB", "PiB", "EiB"
-  };
+  } };
   double val(value);
   size_t mag(0);
   while (mag < kUnits.size() && val >= 1000.0) {
