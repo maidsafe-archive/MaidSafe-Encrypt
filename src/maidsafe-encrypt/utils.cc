@@ -197,11 +197,21 @@ std::string SelfEncryptChunk(const std::string &content,
     case kCryptoNone:
       break;
     case kCryptoAes256:
-      processed_content = crypto::SymmEncrypt(
-          processed_content,
-          encryption_hash.substr(0, crypto::AES256_KeySize),
-          encryption_hash.substr(crypto::AES256_KeySize,
-                                 crypto::AES256_IVSize));
+      {
+        std::string enc_hash;
+        if (!ResizeObfuscationHash(encryption_hash,
+                                   crypto::AES256_KeySize +
+                                       crypto::AES256_IVSize,
+                                   &enc_hash)) {
+          DLOG(ERROR) << "SelfEncryptChunk: Could not expand encryption hash."
+                      << std::endl;
+          return "";
+        }
+        processed_content = crypto::SymmEncrypt(
+            processed_content,
+            enc_hash.substr(0, crypto::AES256_KeySize),
+            enc_hash.substr(crypto::AES256_KeySize, crypto::AES256_IVSize));
+      }
       break;
     default:
       DLOG(ERROR) << "SelfEncryptChunk: Invalid encryption type passed."
@@ -230,11 +240,21 @@ std::string SelfDecryptChunk(const std::string &content,
     case kCryptoNone:
       break;
     case kCryptoAes256:
-      processed_content = crypto::SymmDecrypt(
-          processed_content,
-          encryption_hash.substr(0, crypto::AES256_KeySize),
-          encryption_hash.substr(crypto::AES256_KeySize,
-                                 crypto::AES256_IVSize));
+      {
+        std::string enc_hash;
+        if (!ResizeObfuscationHash(encryption_hash,
+                                   crypto::AES256_KeySize +
+                                       crypto::AES256_IVSize,
+                                   &enc_hash)) {
+          DLOG(ERROR) << "SelfDecryptChunk: Could not expand encryption hash."
+                      << std::endl;
+          return "";
+        }
+        processed_content = crypto::SymmDecrypt(
+            processed_content,
+            enc_hash.substr(0, crypto::AES256_KeySize),
+            enc_hash.substr(crypto::AES256_KeySize, crypto::AES256_IVSize));
+      }
       break;
     default:
       DLOG(ERROR) << "SelfDecryptChunk: Invalid encryption type passed."
