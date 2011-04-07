@@ -21,11 +21,15 @@
 #include <string>
 
 #include "boost/algorithm/string.hpp"
+#include "boost/archive/text_oarchive.hpp"
+#include "boost/archive/text_iarchive.hpp"
 #include "boost/filesystem.hpp"
 #include "boost/format.hpp"
 #include "boost/lexical_cast.hpp"
+#include "boost/serialization/map.hpp"
 #include "maidsafe/common/crypto.h"
 #include "maidsafe/common/file_chunk_store.h"
+#include "maidsafe/common/log.h"
 #include "maidsafe/common/utils.h"
 #include "maidsafe-encrypt/data_map.h"
 #include "maidsafe-encrypt/self_encryption.h"
@@ -46,7 +50,8 @@ enum ReturnCodes {
   kCommandError,
   kInvalidArgumentsError,
   kGenerateError,
-  kEncryptError
+  kEncryptError,
+  kDecryptError
 };
 
 /// Formats and scales a byte value with IEC units
@@ -61,6 +66,33 @@ std::string FormatByteValue(const std::uint64_t &value) {
     val /= 1024.0;
   }
   return (boost::format("%.3g %s") % val % kUnits[mag]).str();
+}
+
+// from http://stackoverflow.com/questions/1746136/
+//      how-do-i-normalize-a-pathname-using-boostfilesystem
+fs::path Normalise(const fs::path &directory_path) {
+  fs::path result;
+  for (fs::path::iterator it = directory_path.begin();
+       it != directory_path.end(); ++it) {
+    if (*it == "..") {
+      // /a/b/.. is not necessarily /a if b is a symbolic link
+      if (fs::is_symlink(result))
+        result /= *it;
+      // /a/b/../.. is not /a/b/.. under most circumstances
+      // We can end up with ..s in our result because of symbolic links
+      else if (result.filename() == "..")
+        result /= *it;
+      // Otherwise it should be safe to resolve the parent
+      else
+        result = result.parent_path();
+    } else if (*it == ".") {
+      // Ignore
+    } else {
+      // Just cat other path entries
+      result /= *it;
+    }
+  }
+  return result;
 }
 
 int Generate(const int &chunk_size,
@@ -87,51 +119,59 @@ int Generate(const int &chunk_size,
   return kSuccess;
 }
 
-int Encrypt(const fs::path &input_path, const fs::path &output_path,
+int Encrypt(const fs::path &input_path,
+            const fs::path &chunk_path,
+            const fs::path &meta_path,
             const SelfEncryptionParams &self_encryption_params) {
   if (!fs::exists(input_path)) {
     printf("Error: Encryption input path not found.\n");
     return kEncryptError;
   }
 
-  if (!fs::exists(output_path) || !fs::is_directory(output_path)) {
-    printf("Error: Encryption output directory not found.\n");
-    return kEncryptError;
-  }
-
   bool error(false);
   std::uint64_t total_size(0), failed_size(0), chunks_size(0),
-                uncompressed_chunks_size(0), meta_size(0);
+                uncompressed_chunks_size(0),  meta_size(0);
   boost::posix_time::time_duration total_duration;
   std::set<std::string> chunks;
   std::vector<fs::path> files;
+  std::map<std::string, DataMap> data_maps;
 
+  fs::path full_path;
   try {
-    if (fs::is_directory(input_path)) {
+    if (input_path.is_absolute())
+      full_path = Normalise(input_path);
+    else
+      full_path = Normalise(fs::current_path() / input_path);
+    if (fs::is_directory(full_path)) {
       printf("Discovering directory contents ...\n");
-      fs::recursive_directory_iterator directory_it(input_path);
+      fs::recursive_directory_iterator directory_it(full_path);
       while (directory_it != fs::recursive_directory_iterator()) {
         if (fs::is_regular_file(*directory_it))
-          files.push_back(*directory_it);
+          files.push_back(std::string(directory_it->path().string()).erase(
+              0, full_path.string().size() + 1));
         ++directory_it;
       }
-      printf("Found %u files.\n", files.size());
+      printf("Found %u files in %s\n", files.size(), full_path.c_str());
     } else {
-      files.push_back(input_path);
+      files.push_back(full_path.filename());
+      full_path.remove_filename();
     }
   }
   catch(...) {
-    printf("Error: Self-encryption failed while discovering files.\n");
+    printf("Error: Self-encryption failed while discovering files in %s\n",
+           full_path.c_str());
     error = true;
   }
 
   std::shared_ptr<FileChunkStore> chunk_store(new FileChunkStore(true,
       std::bind(&crypto::HashFile<crypto::SHA512>, std::placeholders::_1)));
-  chunk_store->Init(output_path);
+  chunk_store->Init(chunk_path);
 
   for (auto file = files.begin(); file != files.end(); ++file) {
     boost::system::error_code ec;
-    std::uint64_t file_size(fs::file_size(*file, ec));
+    std::uint64_t file_size(fs::file_size(full_path / (*file), ec));
+    if (ec)
+      file_size = 0;
     printf("Processing %s (%s) ...\n", file->c_str(),
            FormatByteValue(file_size).c_str());
     if (file_size == 0)
@@ -142,15 +182,16 @@ int Encrypt(const fs::path &input_path, const fs::path &output_path,
     std::shared_ptr<DataMap> data_map(new DataMap);
     boost::posix_time::ptime start_time(
         boost::posix_time::microsec_clock::universal_time());
-    if (SelfEncrypt(*file, self_encryption_params, data_map, chunk_store) ==
-        kSuccess) {
+    if (SelfEncrypt(full_path / (*file), self_encryption_params, data_map,
+                    chunk_store) ==  kSuccess) {
       total_duration += boost::posix_time::microsec_clock::universal_time() -
                         start_time;
-      meta_size += sizeof(DataMap) + data_map->content.size();
+      data_maps[file->string()] = *data_map;
+//       meta_size += sizeof(DataMap) + data_map->content.size();
       for (auto it = data_map->chunks.begin(); it != data_map->chunks.end();
            ++it) {
-        meta_size += sizeof(ChunkDetails) + it->hash.size() +
-                    it->pre_hash.size();
+//         meta_size += sizeof(ChunkDetails) + it->hash.size() +
+//                     it->pre_hash.size();
         if (!it->hash.empty() && chunks.count(it->hash) == 0) {
           chunks.insert(it->hash);
           chunks_size += it->size;
@@ -163,6 +204,17 @@ int Encrypt(const fs::path &input_path, const fs::path &output_path,
       printf("Error: Self-encryption failed for %s\n", file->c_str());
     }
   }
+
+  std::string ser_data_maps;
+  {
+    std::ostringstream ser_data_maps_stream;
+    boost::archive::text_oarchive oa(ser_data_maps_stream);
+    oa << data_maps;
+    ser_data_maps = crypto::Compress(ser_data_maps_stream.str(), 9);
+  }
+  meta_size = ser_data_maps.size();
+  if (!WriteFile(meta_path, ser_data_maps))
+    printf("Error: Self-encryption could not store meta data.\n");
 
   double chunk_ratio(0), meta_ratio(0), failed_ratio(0);
   if (total_size > 0) {
@@ -193,6 +245,62 @@ int Encrypt(const fs::path &input_path, const fs::path &output_path,
   return error ? kEncryptError : kSuccess;
 }
 
+int Decrypt(const fs::path &chunk_path,
+            const fs::path &meta_path,
+            const fs::path &output_path) {
+  bool error(false);
+  std::uint64_t total_size(0);
+  boost::posix_time::time_duration total_duration;
+  std::map<std::string, DataMap> data_maps;
+
+  std::string ser_data_maps;
+  if (ReadFile(meta_path, &ser_data_maps)) {
+    std::istringstream ser_data_maps_stream(crypto::Uncompress(ser_data_maps));
+    boost::archive::text_iarchive ia(ser_data_maps_stream);
+    ia >> data_maps;
+  } else {
+    printf("Error: Self-decryption could not load meta data.\n");
+  }
+
+  printf("Decrypting %u files to %s ...\n",
+         data_maps.size(), output_path.c_str());
+
+  boost::system::error_code ec;
+  std::shared_ptr<FileChunkStore> chunk_store(new FileChunkStore(true,
+      std::bind(&crypto::HashFile<crypto::SHA512>, std::placeholders::_1)));
+  chunk_store->Init(chunk_path);
+
+  for (auto dm = data_maps.begin(); dm != data_maps.end(); ++dm) {
+    printf("Restoring %s (%s) ...\n", dm->first.c_str(),
+           FormatByteValue(dm->second.size).c_str());
+    if (dm->second.size == 0)
+      continue;
+
+    total_size += dm->second.size;
+
+    std::shared_ptr<DataMap> data_map(new DataMap);
+    *data_map = dm->second;
+    fs::path file_path(output_path / dm->first);
+    fs::create_directories(file_path, ec);
+    boost::posix_time::ptime start_time(
+        boost::posix_time::microsec_clock::universal_time());
+    if (SelfDecrypt(data_map, chunk_store, true, file_path) == kSuccess) {
+      total_duration += boost::posix_time::microsec_clock::universal_time() -
+                        start_time;
+    } else {
+      error = true;
+      printf("Error: Self-decryption failed for %s\n", dm->first.c_str());
+    }
+  }
+
+  printf("\nRestored %s to %u files (%s/s)\n",
+         FormatByteValue(total_size).c_str(), data_maps.size(),
+         FormatByteValue(1000.0 * total_size /
+                         total_duration.total_milliseconds()).c_str());
+
+  return error ? kDecryptError : kSuccess;
+}
+
 }  // namespace demo
 
 }  // namespace encrypt
@@ -200,6 +308,12 @@ int Encrypt(const fs::path &input_path, const fs::path &output_path,
 }  // namespace maidsafe
 
 int main(int argc, char* argv[]) {
+  google::InitGoogleLogging(argv[0]);
+  // setting output to be stderr
+  FLAGS_logtostderr = true;
+  // Severity levels are INFO, WARNING, ERROR, and FATAL (0 to 3 respectively).
+  FLAGS_minloglevel = 2;
+
   if (argc < 2) {
     printf("Demo application for MaidSafe-Encrypt\n\n"
            "Usage: %s <command> [<argument>...]\n\n"
@@ -208,20 +322,23 @@ int main(int argc, char* argv[]) {
            "    Generates a file by writing chunks of the given size according "
                 "to a\n    pattern, in which each character represents the "
                 "chunk contents. The given\n    character gets repeated, with "
-                "the exception of '#', which results in a\n    random chunk. "
-                "Example: \"gen 128 aabaa#aab file.dat\"\n"
-           "  encrypt <input-file> <output-dir> [<chunk-sz> <inc-chunk-sz> "
-              "<inc-data-sz>]\n"
-           "    Applies self-encryption to the given file, with chunks being "
-                "stored in the\n    given output directory. Optional "
-                "parameters, in order, are:\n    - maximum chunk size (bytes)\n"
-                "    - maximum includable chunk size (bytes)\n    - maximum "
-                "includable data size (bytes)\n    Example: \"encrypt file.dat "
-                "chunks/ 262144 256 1024\"\n"
-           "  encrypt <input-dir> <output-dir> [<chunk-sz> <inc-chunk-sz> "
-              "<inc-data-sz>]\n"
+                "the exception of '#', which results in a\n    random chunk.\n"
+                "    Example: \"gen 128 aabaa#aab file.dat\"\n\n"
+           "  encrypt <input-file> <chunk-dir> <meta-file>\n"
+           "          [<chunk-sz> <inc-chunk-sz> <inc-data-sz>]\n"
+           "    Applies self-encryption to the given file, storing chunks and "
+                "meta data at\n    the given paths. Optional parameters, in "
+                "order, are:\n    - maximum chunk size (bytes)\n    - maximum "
+                "includable chunk size (bytes)\n    - maximum includable data "
+                "size (bytes)\n    Example: \"encrypt file.dat chunks/ "
+                "meta.dat 262144 256 1024\"\n\n"
+           "  encrypt <input-dir> <chunk-dir> <meta-file>\n"
+           "          [<chunk-sz> <inc-chunk-sz> <inc-data-sz>]\n"
            "    Like above, but for each file in the given input directory "
-                "(recursive).\n",
+                "(recursive).\n\n"
+           "  decrypt <chunk-dir> <meta-file> <output-dir>\n"
+           "    Decrypts chunks to files specified by the meta data file.\n"
+                "    Example: decrypt chunks/ meta.dat output/\n\n",
            argv[0]);
     return mse::demo::kNoArgumentsError;
   }
@@ -237,22 +354,25 @@ int main(int argc, char* argv[]) {
       return mse::demo::Generate(chunk_size, argv[3], argv[4]);
     }
   } else if (command == "encrypt") {
-    if (argc == 4) {
+    if (argc == 5) {
       mse::SelfEncryptionParams sep;
-      return mse::demo::Encrypt(argv[2], argv[3], sep);
-    } else if (argc == 7) {
+      return mse::demo::Encrypt(argv[2], argv[3], argv[4], sep);
+    } else if (argc == 8) {
       try {
         mse::SelfEncryptionParams sep(
-            boost::lexical_cast<std::uint32_t>(std::string(argv[4])),
             boost::lexical_cast<std::uint32_t>(std::string(argv[5])),
-            boost::lexical_cast<std::uint32_t>(std::string(argv[6])));
+            boost::lexical_cast<std::uint32_t>(std::string(argv[6])),
+            boost::lexical_cast<std::uint32_t>(std::string(argv[7])));
         if (mse::utils::CheckParams(sep))
-          return mse::demo::Encrypt(argv[2], argv[3], sep);
+          return mse::demo::Encrypt(argv[2], argv[3], argv[4], sep);
       }
       catch(...) {}
       printf("Error: Invalid size arguments passed.\n");
       return mse::demo::kInvalidArgumentsError;
     }
+  } else if (command == "decrypt") {
+    if (argc == 5)
+      return mse::demo::Decrypt(argv[2], argv[3], argv[4]);
   } else {
     printf("Error: Unrecognised command '%s'.\n", command.c_str());
     return mse::demo::kCommandError;
