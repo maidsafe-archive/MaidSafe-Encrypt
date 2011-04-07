@@ -217,7 +217,7 @@ TEST_F(SelfEncryptionStreamTest, BEH_IncrementalWrite) {
   // write in small bursts and flush every time
   size_t offset(0);
   while (offset < data.size()) {
-    size_t size(60);  // RandomUint32() % sep.max_chunk_size);
+    size_t size(RandomUint32() % sep.max_chunk_size);
     if (offset + size > data.size())
       size = data.size() - offset;
     //stream.seekp(offset);

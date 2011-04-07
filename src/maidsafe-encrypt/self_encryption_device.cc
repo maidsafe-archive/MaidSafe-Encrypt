@@ -158,7 +158,6 @@ std::streamsize SelfEncryptionDevice::write(const char *s, std::streamsize n) {
       for (size_t src(1), snk(0); src < kMinChunks && snk < kMinChunks;) {
         size_t diff(self_encryption_params_.max_chunk_size -
                     chunk_buffers_[snk].content.size());
-        bool full_sink(false);
         if (diff > 0) {
           // space in sink buffer available
           if (src == 1 && snk == 0) {
@@ -172,18 +171,17 @@ std::streamsize SelfEncryptionDevice::write(const char *s, std::streamsize n) {
           chunk_buffers_[snk].hash.clear();
           chunk_buffers_[src].content.erase(0, diff);
           chunk_buffers_[src].hash.clear();
-          ++src;
-          if (chunk_buffers_[snk].content.size() ==
-                  self_encryption_params_.max_chunk_size)
-            full_sink = true;
-        } else {
-          full_sink = true;
         }
 
-        if (full_sink) {
+        if (chunk_buffers_[snk].content.size() ==
+                  self_encryption_params_.max_chunk_size) {
           // continue with next buffer
           FinaliseWriting(snk);
           ++snk;
+          if (src == snk)
+            ++src;
+        } else if (chunk_buffers_[src].content.empty()) {
+          ++src;
         }
       }
 
