@@ -240,6 +240,82 @@ TEST_F(SelfEncryptionStreamTest, BEH_IncrementalWrite) {
   }
 }
 
+TEST_F(SelfEncryptionStreamTest, BEH_Seeking) {
+  SelfEncryptionParams sep(100, 0, 2);
+  std::string data(RandomString(10 * sep.max_chunk_size));  // 10 chunks
+
+  std::shared_ptr<DataMap> data_map(new DataMap);
+  std::shared_ptr<ChunkStore> chunk_store(
+      new MemoryChunkStore(true, hash_func_));
+
+  // write all 10 chunks
+  {
+    SelfEncryptionStream stream(data_map, chunk_store, sep);
+    stream.write(data.data(), data.size());
+  }
+  EXPECT_EQ(data.size(), data_map->size);
+
+  // open new stream with existing DM, write at different offsets
+  {
+    SelfEncryptionStream stream(data_map, chunk_store, sep);
+    std::string new_data(RandomString(sep.max_chunk_size / 2));
+    data.replace(0, new_data.size(), new_data);
+    stream.write(new_data.data(), new_data.size());
+    data.replace(9 * sep.max_chunk_size / 2, new_data.size(), new_data);
+    stream.seekp(9 * sep.max_chunk_size / 2);
+    stream.write(new_data.data(), new_data.size());
+  }
+
+  // check via separate stream
+  {
+    SelfEncryptionStream stream(data_map, chunk_store, sep);
+    std::string data_out(data_map->size, 0);
+    stream.read(&(data_out[0]), data_map->size);
+    EXPECT_EQ(data_map->size, stream.gcount());
+    ASSERT_PRED_FORMAT2(AssertStringsEqual, data, data_out);
+  }
+
+  // write to each chunk in order
+  {
+    SelfEncryptionStream stream(data_map, chunk_store, sep);
+    std::string new_data(RandomString(sep.max_chunk_size / 3));
+    for (int i = 0; i < 10; ++i) {
+      data.replace(i * sep.max_chunk_size, new_data.size(), new_data);
+      stream.seekp(i * sep.max_chunk_size);
+      stream.write(new_data.data(), new_data.size());
+    }
+  }
+
+  // check via separate stream
+  {
+    SelfEncryptionStream stream(data_map, chunk_store, sep);
+    std::string data_out(data_map->size, 0);
+    stream.read(&(data_out[0]), data_map->size);
+    EXPECT_EQ(data_map->size, stream.gcount());
+    ASSERT_PRED_FORMAT2(AssertStringsEqual, data, data_out);
+  }
+
+  // write to each chunk in reverse order
+  {
+    SelfEncryptionStream stream(data_map, chunk_store, sep);
+    std::string new_data(RandomString(sep.max_chunk_size / 3));
+    for (int i = 9; i >= 0; --i) {
+      data.replace(i * sep.max_chunk_size, new_data.size(), new_data);
+      stream.seekp(i * sep.max_chunk_size);
+      stream.write(new_data.data(), new_data.size());
+    }
+  }
+
+  // check via separate stream
+  {
+    SelfEncryptionStream stream(data_map, chunk_store, sep);
+    std::string data_out(data_map->size, 0);
+    stream.read(&(data_out[0]), data_map->size);
+    EXPECT_EQ(data_map->size, stream.gcount());
+    ASSERT_PRED_FORMAT2(AssertStringsEqual, data, data_out);
+  }
+}
+
 TEST_F(SelfEncryptionStreamTest, BEH_ChunksExist) {
   std::shared_ptr<DataMap> data_map(new DataMap);
   std::shared_ptr<ChunkStore> chunk_store(

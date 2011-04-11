@@ -357,6 +357,16 @@ bool SelfEncryptionDevice::flush() {
       }
     }
 
+    // load all unbuffered remaining chunks first
+    std::map<size_t, ChunkBuffer> temp_buffers;
+    for (auto it = pending_chunks_.begin(); it != pending_chunks_.end(); ++it)
+      if (chunk_buffers_[*it % kMinChunks].index != *it)
+        if (!LoadChunkIntoBuffer(*it, &(temp_buffers[*it]))) {
+          DLOG(ERROR) << "flush: Could not load unbuffered chunk " << *it
+                      << std::endl;
+          return false;
+        }
+
     // (re-)encrypt all the remaining chunks
     while (!pending_chunks_.empty()) {
       const size_t idx(*(pending_chunks_.begin()));
@@ -387,22 +397,14 @@ bool SelfEncryptionDevice::flush() {
           data_map_->chunks[(idx + 2) % data_map_->chunks.size()].pre_hash;
       }
 
-      if (chunk_buffers_[idx % kMinChunks].index == idx) {
-        if (!StoreChunkFromBuffer(&(chunk_buffers_[idx % kMinChunks]),
-                                  encryption_hash, obfuscation_hash)) {
-          DLOG(ERROR) << "flush: Could not store chunk " << idx << std::endl;
-          return false;
-        }
-      } else {
-        // need to re-encrypt a chunk we don't have buffered
-        ChunkBuffer chunk_buffer;
-        if (!LoadChunkIntoBuffer(idx, &chunk_buffer) ||
-            !StoreChunkFromBuffer(&chunk_buffer, encryption_hash,
-                                  obfuscation_hash)) {
-          DLOG(ERROR) << "flush: Could not load and re-store chunk " << idx
-                      << std::endl;
-          return false;
-        }
+      if ((chunk_buffers_[idx % kMinChunks].index == idx &&
+             !StoreChunkFromBuffer(&(chunk_buffers_[idx % kMinChunks]),
+                                   encryption_hash, obfuscation_hash)) ||
+          (temp_buffers.count(idx) > 0 &&
+             !StoreChunkFromBuffer(&(temp_buffers[idx]),
+                                   encryption_hash, obfuscation_hash))) {
+        DLOG(ERROR) << "flush: Could not store chunk " << idx << std::endl;
+        return false;
       }
       // NOTE StoreChunkFromBuffer removes entry from pending_chunks_
     }
@@ -494,7 +496,7 @@ bool SelfEncryptionDevice::FinaliseWriting(const size_t &index) {
       if (i <= index)
         pending_chunks_.insert(i);
       else if (data_map_->chunks.size() > index + i)
-        pending_chunks_.insert(data_map_->chunks.size() - i);
+        pending_chunks_.insert(data_map_->chunks.size() - kMinChunks + i);
     return true;
   }
 
