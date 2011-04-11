@@ -19,6 +19,7 @@
 
 #include <algorithm>
 #include <iosfwd>
+#include <map>
 #include <string>
 
 #include "maidsafe/common/chunk_store.h"

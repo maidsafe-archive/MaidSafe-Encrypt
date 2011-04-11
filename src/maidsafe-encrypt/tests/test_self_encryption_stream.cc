@@ -220,12 +220,12 @@ TEST_F(SelfEncryptionStreamTest, BEH_IncrementalWrite) {
     size_t size(RandomUint32() % sep.max_chunk_size);
     if (offset + size > data.size())
       size = data.size() - offset;
-    //stream.seekp(offset);
+    // stream.seekp(offset);
     stream.write(&(data[offset]), size);
     stream.flush();
     offset += size;
     EXPECT_EQ(offset, data_map->size);
-    //EXPECT_EQ(offset, stream.tellp());
+    // EXPECT_EQ(offset, stream.tellp());
 
     // check via separate stream
     {

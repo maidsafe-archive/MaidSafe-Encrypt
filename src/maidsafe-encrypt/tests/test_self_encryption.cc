@@ -495,6 +495,8 @@ TEST_P(SelfEncryptionParamTest, BEH_SelfEnDecryptStreamPattern) {
 
 TEST_P(SelfEncryptionParamTest, BEH_SelfEnDecryptStreamDedup) {
   // Check de-duplication (identical chunks except for last one)
+  if (sep_.max_chunk_size < 4)
+    return;  // collisions far too likely
   std::shared_ptr<DataMap> data_map(new DataMap);
   std::shared_ptr<ChunkStore> chunk_store(
       new MemoryChunkStore(true, hash_func_));
