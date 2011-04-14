@@ -27,8 +27,8 @@
 #include "boost/iostreams/concepts.hpp"
 #include "boost/iostreams/positioning.hpp"
 #include "boost/iostreams/stream.hpp"
-#include "maidsafe-encrypt/config.h"
-#include "maidsafe-encrypt/version.h"
+#include "maidsafe/encrypt/config.h"
+#include "maidsafe/encrypt/version.h"
 
 #if MAIDSAFE_ENCRYPT_VERSION < 6
 #error This API is not compatible with the installed library.\

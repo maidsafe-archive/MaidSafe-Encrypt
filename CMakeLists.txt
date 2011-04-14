@@ -60,20 +60,20 @@ INCLUDE(maidsafe_find_common)
 # Standard setup                                                                                  #
 ###################################################################################################
 INCLUDE(maidsafe_standard_setup)
-HANDLE_VERSIONS(${PROJECT_SOURCE_DIR}/src/maidsafe-encrypt/version.h)
+HANDLE_VERSIONS(${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/version.h)
 
 ###################################################################################################
 # Set up all files as GLOBs                                                                       #
 ###################################################################################################
 ####    CODE    ####
-FILE(GLOB SOURCE_FILES "${PROJECT_SOURCE_DIR}/src/maidsafe-encrypt/*.cc")
-FILE(GLOB HEADER_FILES "${PROJECT_SOURCE_DIR}/src/maidsafe-encrypt/*.h")
+FILE(GLOB SOURCE_FILES "${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/*.cc")
+FILE(GLOB HEADER_FILES "${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/*.h")
 SET(ALL_FILES ${SOURCE_FILES} ${HEADER_FILES})
 
 ####    TESTS    ####
-FILE(GLOB ALL_FILES_TESTS_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe-encrypt/tests/*.cc" "${PROJECT_SOURCE_DIR}/src/maidsafe-encrypt/tests/*.h")
-LIST(REMOVE_ITEM ALL_FILES_TESTS_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe-encrypt/tests/encrypt_demo.cc")
-LIST(REMOVE_ITEM ALL_FILES_TESTS_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe-encrypt/tests/test_benchmark.cc")
+FILE(GLOB ALL_FILES_TESTS_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/tests/*.cc" "${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/tests/*.h")
+LIST(REMOVE_ITEM ALL_FILES_TESTS_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/tests/encrypt_demo.cc")
+LIST(REMOVE_ITEM ALL_FILES_TESTS_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/tests/test_benchmark.cc")
 
 ###################################################################################################
 # All Platforms:  Create libs and executables                                                     #
@@ -81,8 +81,8 @@ LIST(REMOVE_ITEM ALL_FILES_TESTS_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe-encrypt
 ADD_LIBRARY(encrypt_static STATIC ${ALL_FILES})
 SET_TARGET_PROPERTIES(encrypt_static PROPERTIES OUTPUT_NAME maidsafe_encrypt)
 ADD_EXECUTABLE(TESTencrypt ${ALL_FILES_TESTS_DIR})
-ADD_EXECUTABLE(TESTbenchmark "${PROJECT_SOURCE_DIR}/src/maidsafe-encrypt/tests/test_benchmark.cc")
-ADD_EXECUTABLE(DEMOencrypt "${PROJECT_SOURCE_DIR}/src/maidsafe-encrypt/tests/encrypt_demo.cc")
+ADD_EXECUTABLE(TESTbenchmark "${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/tests/test_benchmark.cc")
+ADD_EXECUTABLE(DEMOencrypt "${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/tests/encrypt_demo.cc")
 
 RENAME_EXECUTABLE(TESTencrypt)
 RENAME_EXECUTABLE(TESTbenchmark)
@@ -136,6 +136,11 @@ ELSEIF(UNIX)
   ELSE()
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DLINUX -Wfloat-equal -Wlong-long -Wstrict-overflow=5 -Wredundant-decls -Wuninitialized -Wunused-function")
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wunused-label -Wunused-parameter -Wunused-value -Wunused-variable -fno-stack-protector")
+    SET_SOURCE_FILES_PROPERTIES(${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/tests/test_self_encryption_device.cc
+                                ${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/tests/test_self_encryption_stream.cc
+                                ${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/tests/test_self_encryption.cc
+                                PROPERTIES COMPILE_FLAGS "-Wno-effc++")
+
   ENDIF()
   SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -Wuninitialized")
   SET_TARGET_PROPERTIES(encrypt_static PROPERTIES COMPILE_FLAGS "-fPIC -w -finline-functions")
@@ -146,7 +151,7 @@ ENDIF()
 ###################################################################################################
 IF(PYTHONINTERP_FOUND)
   IF(UNIX)
-    ADD_TEST(STYLE_CHECK python ${MaidSafeCommon_TOOLS_DIR}/cpplint.py ${ALL_FILES} ${ALL_FILES_TESTS_DIR} "${PROJECT_SOURCE_DIR}/src/maidsafe-encrypt/tests/encrypt_demo.cc")
+    ADD_TEST(STYLE_CHECK python ${MaidSafeCommon_TOOLS_DIR}/cpplint.py ${ALL_FILES} ${ALL_FILES_TESTS_DIR} "${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/tests/encrypt_demo.cc")
   ELSE()
     STRING(REPLACE "/" "\\\\" STYLE_CHECK_SOURCE ${PROJECT_SOURCE_DIR})
     ADD_TEST(STYLE_CHECK ${MaidSafeCommon_TOOLS_DIR}/run_cpplint.bat ${STYLE_CHECK_SOURCE})
@@ -168,16 +173,16 @@ TEST_SUMMARY_OUTPUT()
 FINAL_MESSAGE()
 
 SET(MAIDSAFE_ENCRYPT_INSTALL_FILES
-      ${PROJECT_SOURCE_DIR}/src/maidsafe-encrypt/config.h
-      ${PROJECT_SOURCE_DIR}/src/maidsafe-encrypt/data_map.h
-      ${PROJECT_SOURCE_DIR}/src/maidsafe-encrypt/self_encryption.h
-      ${PROJECT_SOURCE_DIR}/src/maidsafe-encrypt/self_encryption_device.h
-      ${PROJECT_SOURCE_DIR}/src/maidsafe-encrypt/self_encryption_stream.h
-      ${PROJECT_SOURCE_DIR}/src/maidsafe-encrypt/version.h)
+      ${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/config.h
+      ${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/data_map.h
+      ${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/self_encryption.h
+      ${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/self_encryption_device.h
+      ${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/self_encryption_stream.h
+      ${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/version.h)
 
 SET(EXPORT_NAME encrypt)
 INSTALL(TARGETS encrypt_static EXPORT ${EXPORT_NAME} ARCHIVE DESTINATION lib)
-INSTALL(FILES ${MAIDSAFE_ENCRYPT_INSTALL_FILES} DESTINATION include/maidsafe/maidsafe-encrypt)
+INSTALL(FILES ${MAIDSAFE_ENCRYPT_INSTALL_FILES} DESTINATION include/maidsafe/encrypt)
 INSTALL(EXPORT ${EXPORT_NAME} DESTINATION share/maidsafe)
 ADD_VERSION_INFO_TO_INSTALLED_FILE()
 

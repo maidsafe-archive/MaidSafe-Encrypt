@@ -14,7 +14,7 @@
  * @date  2008-09-09
  */
 
-#include "maidsafe-encrypt/self_encryption.h"
+#include "maidsafe/encrypt/self_encryption.h"
 
 #include <array>
 #include <map>
@@ -26,10 +26,10 @@
 #include "maidsafe/common/chunk_store.h"
 #include "maidsafe/common/log.h"
 #include "maidsafe/common/utils.h"
-#include "maidsafe-encrypt/config.h"
-#include "maidsafe-encrypt/data_map.h"
-#include "maidsafe-encrypt/self_encryption_stream.h"
-#include "maidsafe-encrypt/utils.h"
+#include "maidsafe/encrypt/config.h"
+#include "maidsafe/encrypt/data_map.h"
+#include "maidsafe/encrypt/self_encryption_stream.h"
+#include "maidsafe/encrypt/utils.h"
 #include "boost/filesystem/fstream.hpp"
 
 namespace fs = boost::filesystem;

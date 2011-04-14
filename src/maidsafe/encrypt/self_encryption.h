@@ -23,8 +23,8 @@
 #include <vector>
 
 #include "boost/filesystem.hpp"
-#include "maidsafe-encrypt/config.h"
-#include "maidsafe-encrypt/version.h"
+#include "maidsafe/encrypt/config.h"
+#include "maidsafe/encrypt/version.h"
 
 #if MAIDSAFE_ENCRYPT_VERSION < 6
 #error This API is not compatible with the installed library.\

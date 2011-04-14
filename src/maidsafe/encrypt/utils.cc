@@ -14,7 +14,7 @@
  * @date  2008-09-09
  */
 
-#include "maidsafe-encrypt/utils.h"
+#include "maidsafe/encrypt/utils.h"
 
 #include <algorithm>
 #include <set>
@@ -22,8 +22,8 @@
 #include "maidsafe/common/crypto.h"
 #include "maidsafe/common/log.h"
 #include "maidsafe/common/utils.h"
-#include "maidsafe-encrypt/config.h"
-#include "maidsafe-encrypt/data_map.h"
+#include "maidsafe/encrypt/config.h"
+#include "maidsafe/encrypt/data_map.h"
 #include "boost/filesystem/fstream.hpp"
 
 namespace fs = boost::filesystem;

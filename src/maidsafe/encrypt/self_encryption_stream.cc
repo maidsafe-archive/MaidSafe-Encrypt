@@ -14,7 +14,7 @@
  * @date  2011-02-18
  */
 
-#include "maidsafe-encrypt/self_encryption_stream.h"
+#include "maidsafe/encrypt/self_encryption_stream.h"
 
 namespace io = boost::iostreams;
 

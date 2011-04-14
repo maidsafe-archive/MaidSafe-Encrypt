@@ -31,9 +31,9 @@
 #include "maidsafe/common/file_chunk_store.h"
 #include "maidsafe/common/log.h"
 #include "maidsafe/common/utils.h"
-#include "maidsafe-encrypt/data_map.h"
-#include "maidsafe-encrypt/self_encryption.h"
-#include "maidsafe-encrypt/utils.h"
+#include "maidsafe/encrypt/data_map.h"
+#include "maidsafe/encrypt/self_encryption.h"
+#include "maidsafe/encrypt/utils.h"
 
 namespace fs = boost::filesystem;
 namespace mse = maidsafe::encrypt;
