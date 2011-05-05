@@ -22,12 +22,12 @@
 #include <map>
 #include <string>
 
+#include "boost/filesystem/fstream.hpp"
 #include "maidsafe/common/chunk_store.h"
-#include "maidsafe/common/log.h"
 #include "maidsafe/common/utils.h"
 #include "maidsafe/encrypt/data_map.h"
+#include "maidsafe/encrypt/log.h"
 #include "maidsafe/encrypt/utils.h"
-#include "boost/filesystem/fstream.hpp"
 
 namespace fs = boost::filesystem;
 namespace io = boost::iostreams;

@@ -29,9 +29,9 @@
 #include "boost/serialization/map.hpp"
 #include "maidsafe/common/crypto.h"
 #include "maidsafe/common/file_chunk_store.h"
-#include "maidsafe/common/log.h"
 #include "maidsafe/common/utils.h"
 #include "maidsafe/encrypt/data_map.h"
+#include "maidsafe/encrypt/log.h"
 #include "maidsafe/encrypt/self_encryption.h"
 #include "maidsafe/encrypt/utils.h"
 
@@ -312,7 +312,9 @@ int main(int argc, char* argv[]) {
   // setting output to be stderr
   FLAGS_logtostderr = true;
   // Severity levels are INFO, WARNING, ERROR, and FATAL (0 to 3 respectively).
-  FLAGS_minloglevel = 2;
+  FLAGS_minloglevel = google::ERROR;
+
+  FLAGS_ms_logging_common = false;
 
   if (argc < 2) {
     printf("Demo application for MaidSafe-Encrypt\n\n"

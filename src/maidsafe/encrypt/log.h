@@ -9,25 +9,14 @@
  *  You are not free to copy, amend or otherwise use this source code without  *
  *  the explicit written permission of the board of directors of maidsafe.net. *
  ***************************************************************************//**
- * @file  self_encryption.h
- * @brief Local version definition and external libs version check.
- * @date  2011-01-31
  */
 
-#ifndef MAIDSAFE_ENCRYPT_VERSION_H_
-#define MAIDSAFE_ENCRYPT_VERSION_H_
+#ifndef MAIDSAFE_ENCRYPT_LOG_H_
+#define MAIDSAFE_ENCRYPT_LOG_H_
 
-#define MAIDSAFE_ENCRYPT_VERSION 7
+#include "maidsafe/common/log.h"
 
-#include "maidsafe/common/version.h"
+#undef LOG
+#define LOG(severity) COMPACT_GOOGLE_LOG_ ## severity(encrypt, :).stream()
 
-#define THIS_NEEDS_MAIDSAFE_COMMON_VERSION 7
-#if MAIDSAFE_COMMON_VERSION < THIS_NEEDS_MAIDSAFE_COMMON_VERSION
-#error This API is not compatible with the installed library.\
-  Please update the maidsafe-common library.
-#elif MAIDSAFE_COMMON_VERSION > THIS_NEEDS_MAIDSAFE_COMMON_VERSION
-#error This API uses a newer version of the maidsafe-common library.\
-  Please update this project.
-#endif
-
-#endif  // MAIDSAFE_ENCRYPT_VERSION_H_
+#endif  // MAIDSAFE_ENCRYPT_LOG_H_
