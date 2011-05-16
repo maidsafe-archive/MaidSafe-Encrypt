@@ -23,14 +23,14 @@
 #include <sstream>
 #include <vector>
 
+#include "boost/filesystem/fstream.hpp"
 #include "maidsafe/common/chunk_store.h"
-#include "maidsafe/common/log.h"
 #include "maidsafe/common/utils.h"
 #include "maidsafe/encrypt/config.h"
 #include "maidsafe/encrypt/data_map.h"
+#include "maidsafe/encrypt/log.h"
 #include "maidsafe/encrypt/self_encryption_stream.h"
 #include "maidsafe/encrypt/utils.h"
-#include "boost/filesystem/fstream.hpp"
 
 namespace fs = boost::filesystem;
 

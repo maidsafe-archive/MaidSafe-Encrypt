@@ -21,11 +21,11 @@
 #include "boost/timer.hpp"
 #include "gtest/gtest.h"
 #include "maidsafe/common/crypto.h"
-#include "maidsafe/common/log.h"
 #include "maidsafe/common/memory_chunk_store.h"
 #include "maidsafe/common/utils.h"
 #include "maidsafe/encrypt/config.h"
 #include "maidsafe/encrypt/data_map.h"
+#include "maidsafe/encrypt/log.h"
 #include "maidsafe/encrypt/self_encryption.h"
 #include "maidsafe/encrypt/utils.h"
 
@@ -186,7 +186,9 @@ int main(int argc, char **argv) {
   // setting output to be stderr
   FLAGS_logtostderr = false;
   // Severity levels are INFO, WARNING, ERROR, and FATAL (0 to 3 respectively).
-  FLAGS_minloglevel = 3;
+  FLAGS_minloglevel = google::FATAL;
+
+  FLAGS_ms_logging_common = false;
 
   testing::InitGoogleTest(&argc, argv);
   int result(RUN_ALL_TESTS());
