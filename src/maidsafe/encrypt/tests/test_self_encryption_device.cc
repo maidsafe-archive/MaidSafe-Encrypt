@@ -603,8 +603,44 @@ TEST_F(SelfEncryptionDeviceTest, BEH_InitialiseDataMap) {
   }
 }
 
-TEST_F(SelfEncryptionDeviceTest, DISABLED_BEH_UpdateCurrentChunkDetails) {
-  FAIL() << "Not implemented.";
+TEST_F(SelfEncryptionDeviceTest, BEH_UpdateCurrentChunkDetails) {
+  std::shared_ptr<ChunkStore> chunk_store(
+      new MemoryChunkStore(true, hash_func_));
+  std::shared_ptr<DataMap> data_map(new DataMap);
+  data_map->self_encryption_type = test_sed::kDefaultSelfEncryptionType;
+  SelfEncryptionDevice sed(data_map, chunk_store);
+  std::string data = RandomString(SelfEncryptionParams().max_chunk_size *9 + 8);
+  EXPECT_EQ(data.size(), sed.write(&data[0], data.size()));
+  EXPECT_TRUE(sed.flush());
+
+  sed.offset_ += 1;
+  // offset > total size
+  EXPECT_FALSE(sed.UpdateCurrentChunkDetails());
+  sed.offset_ -= 1;
+  EXPECT_EQ(data.size(), sed.offset_);
+  EXPECT_EQ(SelfEncryptionParams().max_chunk_size*9,
+            sed.current_chunk_offset_);
+  EXPECT_EQ(9, sed.current_chunk_index_);
+  // offset > current chunk offset
+  EXPECT_TRUE(sed.UpdateCurrentChunkDetails());
+  EXPECT_EQ(SelfEncryptionParams().max_chunk_size*9,
+            sed.current_chunk_offset_);
+  EXPECT_EQ(9, sed.current_chunk_index_);
+ 
+  EXPECT_LT(0, sed.seek(SelfEncryptionParams().max_chunk_size,
+                        std::ios_base::beg));
+  // offset < current chunk offset
+  EXPECT_TRUE(sed.UpdateCurrentChunkDetails());
+  EXPECT_EQ(0, sed.current_chunk_index_);
+  EXPECT_EQ(0, sed.current_chunk_offset_);
+
+  EXPECT_LT(0, sed.seek(SelfEncryptionParams().max_chunk_size * 3.5,
+                        std::ios_base::beg));
+  // offset > current chunk offset & current chunk index < total chunks
+  EXPECT_TRUE(sed.UpdateCurrentChunkDetails());
+  EXPECT_EQ(3, sed.current_chunk_index_);
+  EXPECT_EQ(SelfEncryptionParams().max_chunk_size * 3,
+            sed.current_chunk_offset_);
 }
 
 TEST_F(SelfEncryptionDeviceTest, DISABLED_BEH_FinaliseWriting) {
