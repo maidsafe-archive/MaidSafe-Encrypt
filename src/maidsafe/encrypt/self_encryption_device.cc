@@ -97,7 +97,7 @@ std::streamsize SelfEncryptionDevice::read(char *s, std::streamsize n) {
 }
 
 std::streamsize SelfEncryptionDevice::write(const char *s, std::streamsize n) {
-  // DLOG(INFO) << "write " << n << std::endl;
+//   DLOG(INFO) << "write " << n << std::endl;
 
   if (!s || n <= 0)
     return -1;

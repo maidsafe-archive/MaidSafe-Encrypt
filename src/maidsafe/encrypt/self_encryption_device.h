@@ -52,6 +52,7 @@ class SelfEncryptionDeviceTest_BEH_UpdateCurrentChunkDetails_Test;
 class SelfEncryptionDeviceTest_BEH_FinaliseWriting_Test;
 class SelfEncryptionDeviceTest_BEH_LoadChunkIntoBuffer_Test;
 class SelfEncryptionDeviceTest_BEH_StoreChunkFromBuffer_Test;
+class SelfEncryptionDeviceTest_BEH_Write_Test;
 }
 
 /// Device implementing basic streaming functionality for self-encryption
@@ -81,6 +82,7 @@ class SelfEncryptionDevice {
   friend class test::SelfEncryptionDeviceTest_BEH_FinaliseWriting_Test;
   friend class test::SelfEncryptionDeviceTest_BEH_LoadChunkIntoBuffer_Test;
   friend class test::SelfEncryptionDeviceTest_BEH_StoreChunkFromBuffer_Test;
+  friend class test::SelfEncryptionDeviceTest_BEH_Write_Test;
   void InitialiseDataMap(const ChunkBuffer &chunk_buffer);
   bool UpdateCurrentChunkDetails();
   bool FinaliseWriting(const size_t &index);
