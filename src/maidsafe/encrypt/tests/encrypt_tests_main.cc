@@ -14,15 +14,17 @@
  * @date  2010-10-12
  */
 
-#include "maidsafe/common/log.h"
 #include "gtest/gtest.h"
+#include "maidsafe/encrypt/log.h"
 
 int main(int argc, char **argv) {
   google::InitGoogleLogging(argv[0]);
   // setting output to be stderr
   FLAGS_logtostderr = true;
   // Severity levels are INFO, WARNING, ERROR, and FATAL (0 to 3 respectively).
-  FLAGS_minloglevel = 2;
+  FLAGS_minloglevel = google::ERROR;
+
+  FLAGS_ms_logging_common = false;
 
   testing::InitGoogleTest(&argc, argv);
   int result(RUN_ALL_TESTS());

@@ -19,12 +19,12 @@
 #include <algorithm>
 #include <set>
 
+#include "boost/filesystem/fstream.hpp"
 #include "maidsafe/common/crypto.h"
-#include "maidsafe/common/log.h"
 #include "maidsafe/common/utils.h"
 #include "maidsafe/encrypt/config.h"
 #include "maidsafe/encrypt/data_map.h"
-#include "boost/filesystem/fstream.hpp"
+#include "maidsafe/encrypt/log.h"
 
 namespace fs = boost::filesystem;
 
