@@ -220,236 +220,235 @@ TEST_F(SelfEncryptionDeviceTest, BEH_Read) {
 }
 
 TEST_F(SelfEncryptionDeviceTest, BEH_Write) {
-//   std::shared_ptr<ChunkStore> chunk_store(
-//       new MemoryChunkStore(true, hash_func_));
-//   {
-//     std::shared_ptr<DataMap> data_map(new DataMap);
-//     data_map->self_encryption_type = test_sed::kDefaultSelfEncryptionType;
-//     SelfEncryptionDevice sed(data_map, chunk_store);
-//     // No data sent to write
-//     EXPECT_EQ(-1, sed.write(NULL, 1));
-//     for (uint32_t i = 0; i < kMinChunks ; ++i)
-//       EXPECT_EQ(0, sed.chunk_buffers_[i].content.size());
-//     std::string data = RandomString(
-//         sed.self_encryption_params_.max_chunk_size - 100);
-//     EXPECT_EQ(0, data_map->size);
-//     // invalid stream size
-//     EXPECT_EQ(-1, sed.write(&data[0], 0));
-//   }
-//   {
-//     // data small enough to fit in datamap
-//     std::shared_ptr<DataMap> data_map(new DataMap);
-//     chunk_store->Clear();
-//     data_map->self_encryption_type = test_sed::kDefaultSelfEncryptionType;
-//     SelfEncryptionDevice sed(data_map, chunk_store);
-//     std::string data = RandomString(1020);
-//     // invalid offset at this stage, force UpdateCurrentChunkDetails fail
-//     sed.offset_ = 1;
-//     EXPECT_EQ(-1, sed.write(&data[0], 1));
-//     sed.offset_ = 0;
-//     EXPECT_EQ(data.size(), sed.write(&data[0], data.size()));
-//     EXPECT_EQ(data.size(), sed.chunk_buffers_[0].content.size());
-//     for (uint32_t i = 1; i < kMinChunks ; ++i) {
-//       EXPECT_EQ(0, sed.chunk_buffers_[i].content.size());
-//       EXPECT_EQ(0, sed.chunk_buffers_[i].hash.size());
-//     }
-//     EXPECT_EQ(0, data_map->size);
-//     EXPECT_EQ(0, chunk_store->Size());
-//     EXPECT_EQ(0, chunk_store->Count());
-//     EXPECT_EQ(0, sed.pending_chunks_.size());
-//     EXPECT_TRUE(sed.flush());
-//     EXPECT_EQ(1020, data_map->size);
-//     EXPECT_EQ(1020, data_map->content.size());
-//     EXPECT_EQ(0, chunk_store->Size());
-//     EXPECT_EQ(0, chunk_store->Count());
-//     EXPECT_EQ(0, sed.pending_chunks_.size());
-//   }
-//   {
-//     std::shared_ptr<DataMap> data_map(new DataMap);
-//     chunk_store->Clear();
-//     data_map->self_encryption_type = test_sed::kDefaultSelfEncryptionType;
-//     SelfEncryptionDevice sed(data_map, chunk_store);
-//     std::string data = RandomString(
-//         sed.self_encryption_params_.max_chunk_size - 100);
-//     EXPECT_EQ(data.size(), sed.write(&data[0], data.size()));
-//     EXPECT_EQ(data.size(), sed.chunk_buffers_[0].content.size());
-//     // further data filling rest of buffer 1 and into buffer 2
-//     std::string data2 = RandomString(
-//         sed.self_encryption_params_.max_chunk_size);
-//     EXPECT_EQ(data2.size(), sed.write(&data2[0], data2.size()));
-//     EXPECT_EQ(sed.self_encryption_params_.max_chunk_size,
-//               sed.chunk_buffers_[0].content.size());
-//     EXPECT_LT(0, sed.chunk_buffers_[0].hash.size());
-//     EXPECT_EQ(1, sed.pending_chunks_.size());
-//     EXPECT_EQ(sed.self_encryption_params_.max_chunk_size,
-//               sed.current_chunk_offset_);
-//     EXPECT_EQ(1, sed.current_chunk_index_);
-//     EXPECT_EQ(0, sed.chunk_buffers_[2].content.size());
-//     EXPECT_EQ(0, data_map->size);
-//     EXPECT_EQ(0, chunk_store->Count());
-// 
-//     // fill buffer 3 with more data than free space, causing buffer 1 to be
-//     // flushed, 2 and 3 to be added to pending
-//     std::string data3 = RandomString(
-//         sed.self_encryption_params_.max_chunk_size + 150);
-//     EXPECT_LT(0, sed.write(&data3[0], data3.size()));
-//     EXPECT_EQ(sed.self_encryption_params_.max_chunk_size, data_map->size);
-//     EXPECT_GT(sed.chunk_buffers_[0].index, sed.chunk_buffers_[2].index);
-//     EXPECT_EQ(sed.chunk_buffers_[0].content.size(),
-//               ((data.size() + data2.size() + data3.size()) -
-//               (sed.self_encryption_params_.max_chunk_size * 3)));
-//     EXPECT_EQ(2, sed.pending_chunks_.size());
-//     EXPECT_GT(sed.offset_, sed.current_chunk_offset_);
-//     EXPECT_EQ(sed.current_chunk_index_, 3);
-//     EXPECT_EQ(1, chunk_store->Count());
-//   }
-//   {
-//     // write chunks then change data at some point through the file, dependent
-//     // chunks should be modified
-//     std::shared_ptr<DataMap> data_map(new DataMap);
-//     chunk_store->Clear();
-//     data_map->self_encryption_type = test_sed::kDefaultSelfEncryptionType;
-//     SelfEncryptionDevice sed(data_map, chunk_store);
-//     std::string data = RandomString(
-//         (sed.self_encryption_params_.max_chunk_size) * 8);
-//     EXPECT_EQ(data.size(), sed.write(&data[0], data.size()));
-//     DataMap data_map_copy = *data_map;
-//     std::string data5 = RandomString(
-//         sed.self_encryption_params_.max_chunk_size);
-//     sed.offset_ = 917504;
-// //     sed.seek(sed.self_encryption_params_.max_chunk_size *3, std::ios_base::beg);
-//     EXPECT_EQ(data5.size(), sed.write(&data5[0], data5.size()));
-//     EXPECT_TRUE(sed.flush());
-//     for (int i = 1; i < 5; ++i)
-//       EXPECT_NE(data_map->chunks[i].hash, data_map_copy.chunks[i].hash);
-//     DataMap data_map_copy2 = *data_map;
-//     std::string data2 = RandomString(20000);
-//     sed.write_mode_ = true;
-//     EXPECT_LT(0, sed.seek(-1000, std::ios_base::end));
-//     EXPECT_EQ(data2.size(), sed.write(&data2[0], data2.size()));
-//     EXPECT_TRUE(sed.flush());
-//     for (int i = 5; i < 8; ++i)
-//       EXPECT_NE(data_map->chunks[i].hash, data_map_copy2.chunks[i].hash);
-//   }
-//   {
-//     // fill buffers 1-3, force LoadChunkIntoBuffer fail
-//     std::shared_ptr<DataMap> data_map(new DataMap);
-//     chunk_store->Clear();
-//     data_map->self_encryption_type = test_sed::kDefaultSelfEncryptionType;
-//     SelfEncryptionDevice sed(data_map, chunk_store);
-//     std::string data = RandomString(
-//         sed.self_encryption_params_.max_chunk_size*3);
-//     EXPECT_EQ(data.size(), sed.write(&data[0], data.size()));
-//     EXPECT_TRUE(sed.flush());
-//     for (uint32_t i = 0; i < kMinChunks ; ++i)
-//       sed.chunk_buffers_[i].index = i+1;
-//     sed.data_map_->chunks[0].pre_size = 10;
-//     EXPECT_EQ(-1, sed.write(&data[0], data.size()));
-//   }
-//   {
-//     // small chunks resized and amended
-//     std::shared_ptr<DataMap> data_map(new DataMap);
-//     chunk_store->Clear();
-//     data_map->self_encryption_type = test_sed::kDefaultSelfEncryptionType;
-//     SelfEncryptionDevice sed(data_map, chunk_store);
-//     std::string data = RandomString(
-//         sed.self_encryption_params_.max_chunk_size*3 - 10);
-//     EXPECT_EQ(data.size(), sed.write(&data[0], data.size()));
-//     EXPECT_EQ(2, sed.current_chunk_index_);
-//     EXPECT_EQ(sed.self_encryption_params_.max_chunk_size * 2,
-//               sed.current_chunk_offset_);
-//     EXPECT_EQ(262144, sed.chunk_buffers_[0].content.size());
-//     EXPECT_TRUE(sed.flush());
-//     EXPECT_NE(262144, data_map->chunks[0].size);
-//     EXPECT_EQ(data.size(), (data_map->chunks[0].size +
-//                             data_map->chunks[1].size +
-//                             data_map->chunks[2].size));
-//     EXPECT_EQ(3, sed.chunk_store_->Count());
-//     EXPECT_EQ(data.size(), sed.write(&data[0], data.size()));
-//     EXPECT_EQ(5, sed.current_chunk_index_);
-//     EXPECT_EQ(262144, data_map->chunks[0].size);
-//     EXPECT_EQ(sed.self_encryption_params_.max_chunk_size * 5,
-//               sed.current_chunk_offset_);
-//   }
-//   {
-//     // write same data several times - chunk store should only have
-//     // 1 copy of each chunk, datamap as many as written.
-//     std::shared_ptr<DataMap> data_map(new DataMap);
-//     chunk_store->Clear();
-//     data_map->self_encryption_type = test_sed::kDefaultSelfEncryptionType;
-//     SelfEncryptionDevice sed(data_map, chunk_store);
-//     std::string data = RandomString(
-//         sed.self_encryption_params_.max_chunk_size*3);
-//     for (int i = 0; i < 3; ++i)
-//       EXPECT_EQ(data.size(), sed.write(&data[0], data.size()));
-//     for (int i = 0; i < 3; ++i)
-//       EXPECT_EQ(data_map->chunks[i].hash, data_map->chunks[i+3].hash);
-//     EXPECT_TRUE(sed.flush());
-//     EXPECT_EQ(9, sed.data_map_->chunks.size());
-//     EXPECT_EQ(0, sed.pending_chunks_.size());
-//     EXPECT_EQ(3, sed.chunk_store_->Count());
-//   }
-//   {
-//     // final chunk size small enough for datamap inclusion
-//     std::shared_ptr<DataMap> data_map(new DataMap);
-//     chunk_store->Clear();
-//     data_map->self_encryption_type = test_sed::kDefaultSelfEncryptionType;
-//     SelfEncryptionDevice sed(data_map, chunk_store);
-//     std::string data = RandomString(sed.self_encryption_params_.max_chunk_size*4
-//         + sed.self_encryption_params_.max_includable_chunk_size);
-//     EXPECT_EQ(data.size(), sed.write(&data[0], data.size()));
-//     EXPECT_TRUE(sed.flush());
-//     EXPECT_EQ(4, sed.chunk_store_->Count());
-//     EXPECT_EQ(4, sed.data_map_->chunks.size());
-//     EXPECT_EQ(sed.self_encryption_params_.max_includable_chunk_size,
-//               sed.data_map_->content.size());
-//     EXPECT_EQ(data.size(), sed.data_map_->size);
-//   }
-//   {
-//     // write less than total data size
-//     std::shared_ptr<DataMap> data_map(new DataMap);
-//     chunk_store->Clear();
-//     data_map->self_encryption_type = test_sed::kDefaultSelfEncryptionType;
-//     SelfEncryptionDevice sed(data_map, chunk_store);
-//     std::string data = RandomString(
-//         sed.self_encryption_params_.max_chunk_size*5);
-//     EXPECT_EQ(sed.self_encryption_params_.max_chunk_size + 10,
-//               sed.write(&data[0],
-//                         sed.self_encryption_params_.max_chunk_size + 10));
-//     EXPECT_TRUE(sed.flush());
-//     EXPECT_EQ(sed.self_encryption_params_.max_chunk_size + 10,
-//               sed.data_map_->size);
-//     EXPECT_EQ(3, sed.chunk_store_->Count());
-//     EXPECT_EQ(sed.self_encryption_params_.max_chunk_size + 10,
-//               (sed.chunk_store_->Size(sed.data_map_->chunks[0].hash) +
-//                sed.chunk_store_->Size(sed.data_map_->chunks[1].hash) +
-//                sed.chunk_store_->Size(sed.data_map_->chunks[2].hash)));
-//   }
-//   {
-//     // fill buffers then return to first and rewrite - buffers 2 and 3
-//     // queued until flushed
-//     std::shared_ptr<DataMap> data_map(new DataMap);
-//     chunk_store->Clear();
-//     data_map->self_encryption_type = test_sed::kDefaultSelfEncryptionType;
-//     SelfEncryptionDevice sed(data_map, chunk_store);
-//     std::string data = RandomString(
-//         sed.self_encryption_params_.max_chunk_size*6);
-//     EXPECT_EQ(data.size(), sed.write(&data[0], data.size()));
-//     EXPECT_LT(0, sed.seek(sed.self_encryption_params_.max_chunk_size * 3,
-//                           std::ios_base::beg));
-//     EXPECT_EQ(sed.self_encryption_params_.max_chunk_size * 3,
-//               sed.data_map_->size);
-//     EXPECT_EQ(3, sed.chunk_store_->Count());
-//     std::array<SelfEncryptionDevice::ChunkBuffer, kMinChunks> temp_buf =
-//         sed.chunk_buffers_;
-//     std::string data2 = RandomString(
-//         sed.self_encryption_params_.max_chunk_size);
-//     EXPECT_EQ(data2.size(), sed.write(&data2[0], data2.size()));
-//     EXPECT_NE(temp_buf[0].content, sed.chunk_buffers_[0].content);
-//     EXPECT_EQ(temp_buf[1].content, sed.chunk_buffers_[1].content);
-//     EXPECT_EQ(temp_buf[2].content, sed.chunk_buffers_[2].content);
-//     EXPECT_TRUE(sed.flush());
-//   }
+  std::shared_ptr<ChunkStore> chunk_store(
+      new MemoryChunkStore(true, hash_func_));
+  {
+    std::shared_ptr<DataMap> data_map(new DataMap);
+    data_map->self_encryption_type = test_sed::kDefaultSelfEncryptionType;
+    SelfEncryptionDevice sed(data_map, chunk_store);
+    // No data sent to write
+    EXPECT_EQ(-1, sed.write(NULL, 1));
+    for (uint32_t i = 0; i < kMinChunks ; ++i)
+      EXPECT_EQ(0, sed.chunk_buffers_[i].content.size());
+    std::string data = RandomString(
+        sed.self_encryption_params_.max_chunk_size - 100);
+    EXPECT_EQ(0, data_map->size);
+    // invalid stream size
+    EXPECT_EQ(-1, sed.write(&data[0], 0));
+  }
+  {
+    // data small enough to fit in datamap
+    std::shared_ptr<DataMap> data_map(new DataMap);
+    chunk_store->Clear();
+    data_map->self_encryption_type = test_sed::kDefaultSelfEncryptionType;
+    SelfEncryptionDevice sed(data_map, chunk_store);
+    std::string data = RandomString(1020);
+    // invalid offset at this stage, force UpdateCurrentChunkDetails fail
+    sed.offset_ = 1;
+    EXPECT_EQ(-1, sed.write(&data[0], 1));
+    sed.offset_ = 0;
+    EXPECT_EQ(data.size(), sed.write(&data[0], data.size()));
+    EXPECT_EQ(data.size(), sed.chunk_buffers_[0].content.size());
+    for (uint32_t i = 1; i < kMinChunks ; ++i) {
+      EXPECT_EQ(0, sed.chunk_buffers_[i].content.size());
+      EXPECT_EQ(0, sed.chunk_buffers_[i].hash.size());
+    }
+    EXPECT_EQ(0, data_map->size);
+    EXPECT_EQ(0, chunk_store->Size());
+    EXPECT_EQ(0, chunk_store->Count());
+    EXPECT_EQ(0, sed.pending_chunks_.size());
+    EXPECT_TRUE(sed.flush());
+    EXPECT_EQ(1020, data_map->size);
+    EXPECT_EQ(1020, data_map->content.size());
+    EXPECT_EQ(0, chunk_store->Size());
+    EXPECT_EQ(0, chunk_store->Count());
+    EXPECT_EQ(0, sed.pending_chunks_.size());
+  }
+  {
+    std::shared_ptr<DataMap> data_map(new DataMap);
+    chunk_store->Clear();
+    data_map->self_encryption_type = test_sed::kDefaultSelfEncryptionType;
+    SelfEncryptionDevice sed(data_map, chunk_store);
+    std::string data = RandomString(
+        sed.self_encryption_params_.max_chunk_size - 100);
+    EXPECT_EQ(data.size(), sed.write(&data[0], data.size()));
+    EXPECT_EQ(data.size(), sed.chunk_buffers_[0].content.size());
+    // further data filling rest of buffer 1 and into buffer 2
+    std::string data2 = RandomString(
+        sed.self_encryption_params_.max_chunk_size);
+    EXPECT_EQ(data2.size(), sed.write(&data2[0], data2.size()));
+    EXPECT_EQ(sed.self_encryption_params_.max_chunk_size,
+              sed.chunk_buffers_[0].content.size());
+    EXPECT_LT(0, sed.chunk_buffers_[0].hash.size());
+    EXPECT_EQ(1, sed.pending_chunks_.size());
+    EXPECT_EQ(sed.self_encryption_params_.max_chunk_size,
+              sed.current_chunk_offset_);
+    EXPECT_EQ(1, sed.current_chunk_index_);
+    EXPECT_EQ(0, sed.chunk_buffers_[2].content.size());
+    EXPECT_EQ(0, data_map->size);
+    EXPECT_EQ(0, chunk_store->Count());
+
+    // fill buffer 3 with more data than free space, causing buffer 1 to be
+    // flushed, 2 and 3 to be added to pending
+    std::string data3 = RandomString(
+        sed.self_encryption_params_.max_chunk_size + 150);
+    EXPECT_LT(0, sed.write(&data3[0], data3.size()));
+    EXPECT_EQ(sed.self_encryption_params_.max_chunk_size, data_map->size);
+    EXPECT_GT(sed.chunk_buffers_[0].index, sed.chunk_buffers_[2].index);
+    EXPECT_EQ(sed.chunk_buffers_[0].content.size(),
+              ((data.size() + data2.size() + data3.size()) -
+              (sed.self_encryption_params_.max_chunk_size * 3)));
+    EXPECT_EQ(2, sed.pending_chunks_.size());
+    EXPECT_GT(sed.offset_, sed.current_chunk_offset_);
+    EXPECT_EQ(sed.current_chunk_index_, 3);
+    EXPECT_EQ(1, chunk_store->Count());
+  }
+  {
+    // write chunks then change data at some point through the file, dependent
+    // chunks should be modified
+    std::shared_ptr<DataMap> data_map(new DataMap);
+    chunk_store->Clear();
+    data_map->self_encryption_type = test_sed::kDefaultSelfEncryptionType;
+    SelfEncryptionDevice sed(data_map, chunk_store);
+    std::string data = RandomString(
+        (sed.self_encryption_params_.max_chunk_size) * 8);
+    EXPECT_EQ(data.size(), sed.write(&data[0], data.size()));
+    DataMap data_map_copy = *data_map;
+    std::string data5 = RandomString(
+        sed.self_encryption_params_.max_chunk_size);
+    sed.offset_ = 917504;
+    EXPECT_EQ(data5.size(), sed.write(&data5[0], data5.size()));
+    EXPECT_TRUE(sed.flush());
+    for (int i = 1; i < 5; ++i)
+      EXPECT_NE(data_map->chunks[i].hash, data_map_copy.chunks[i].hash);
+    DataMap data_map_copy2 = *data_map;
+    std::string data2 = RandomString(20000);
+    sed.write_mode_ = true;
+    EXPECT_LT(0, sed.seek(-1000, std::ios_base::end));
+    EXPECT_EQ(data2.size(), sed.write(&data2[0], data2.size()));
+    EXPECT_TRUE(sed.flush());
+    for (int i = 5; i < 8; ++i)
+      EXPECT_NE(data_map->chunks[i].hash, data_map_copy2.chunks[i].hash);
+  }
+  {
+    // fill buffers 1-3, force LoadChunkIntoBuffer fail
+    std::shared_ptr<DataMap> data_map(new DataMap);
+    chunk_store->Clear();
+    data_map->self_encryption_type = test_sed::kDefaultSelfEncryptionType;
+    SelfEncryptionDevice sed(data_map, chunk_store);
+    std::string data = RandomString(
+        sed.self_encryption_params_.max_chunk_size*3);
+    EXPECT_EQ(data.size(), sed.write(&data[0], data.size()));
+    EXPECT_TRUE(sed.flush());
+    for (uint32_t i = 0; i < kMinChunks ; ++i)
+      sed.chunk_buffers_[i].index = i+1;
+    sed.data_map_->chunks[0].pre_size = 10;
+    EXPECT_EQ(-1, sed.write(&data[0], data.size()));
+  }
+  {
+    // small chunks resized and amended
+    std::shared_ptr<DataMap> data_map(new DataMap);
+    chunk_store->Clear();
+    data_map->self_encryption_type = test_sed::kDefaultSelfEncryptionType;
+    SelfEncryptionDevice sed(data_map, chunk_store);
+    std::string data = RandomString(
+        sed.self_encryption_params_.max_chunk_size*3 - 10);
+    EXPECT_EQ(data.size(), sed.write(&data[0], data.size()));
+    EXPECT_EQ(2, sed.current_chunk_index_);
+    EXPECT_EQ(sed.self_encryption_params_.max_chunk_size * 2,
+              sed.current_chunk_offset_);
+    EXPECT_EQ(262144, sed.chunk_buffers_[0].content.size());
+    EXPECT_TRUE(sed.flush());
+    EXPECT_NE(262144, data_map->chunks[0].size);
+    EXPECT_EQ(data.size(), (data_map->chunks[0].size +
+                            data_map->chunks[1].size +
+                            data_map->chunks[2].size));
+    EXPECT_EQ(3, sed.chunk_store_->Count());
+    EXPECT_EQ(data.size(), sed.write(&data[0], data.size()));
+    EXPECT_EQ(5, sed.current_chunk_index_);
+    EXPECT_EQ(262144, data_map->chunks[0].size);
+    EXPECT_EQ(sed.self_encryption_params_.max_chunk_size * 5,
+              sed.current_chunk_offset_);
+  }
+  {
+    // write same data several times - chunk store should only have
+    // 1 copy of each chunk, datamap as many as written.
+    std::shared_ptr<DataMap> data_map(new DataMap);
+    chunk_store->Clear();
+    data_map->self_encryption_type = test_sed::kDefaultSelfEncryptionType;
+    SelfEncryptionDevice sed(data_map, chunk_store);
+    std::string data = RandomString(
+        sed.self_encryption_params_.max_chunk_size*3);
+    for (int i = 0; i < 3; ++i)
+      EXPECT_EQ(data.size(), sed.write(&data[0], data.size()));
+    for (int i = 0; i < 3; ++i)
+      EXPECT_EQ(data_map->chunks[i].hash, data_map->chunks[i+3].hash);
+    EXPECT_TRUE(sed.flush());
+    EXPECT_EQ(9, sed.data_map_->chunks.size());
+    EXPECT_EQ(0, sed.pending_chunks_.size());
+    EXPECT_EQ(3, sed.chunk_store_->Count());
+  }
+  {
+    // final chunk size small enough for datamap inclusion
+    std::shared_ptr<DataMap> data_map(new DataMap);
+    chunk_store->Clear();
+    data_map->self_encryption_type = test_sed::kDefaultSelfEncryptionType;
+    SelfEncryptionDevice sed(data_map, chunk_store);
+    std::string data = RandomString(sed.self_encryption_params_.max_chunk_size*4
+        + sed.self_encryption_params_.max_includable_chunk_size);
+    EXPECT_EQ(data.size(), sed.write(&data[0], data.size()));
+    EXPECT_TRUE(sed.flush());
+    EXPECT_EQ(4, sed.chunk_store_->Count());
+    EXPECT_EQ(4, sed.data_map_->chunks.size());
+    EXPECT_EQ(sed.self_encryption_params_.max_includable_chunk_size,
+              sed.data_map_->content.size());
+    EXPECT_EQ(data.size(), sed.data_map_->size);
+  }
+  {
+    // write less than total data size
+    std::shared_ptr<DataMap> data_map(new DataMap);
+    chunk_store->Clear();
+    data_map->self_encryption_type = test_sed::kDefaultSelfEncryptionType;
+    SelfEncryptionDevice sed(data_map, chunk_store);
+    std::string data = RandomString(
+        sed.self_encryption_params_.max_chunk_size*5);
+    EXPECT_EQ(sed.self_encryption_params_.max_chunk_size + 10,
+              sed.write(&data[0],
+                        sed.self_encryption_params_.max_chunk_size + 10));
+    EXPECT_TRUE(sed.flush());
+    EXPECT_EQ(sed.self_encryption_params_.max_chunk_size + 10,
+              sed.data_map_->size);
+    EXPECT_EQ(3, sed.chunk_store_->Count());
+    EXPECT_EQ(sed.self_encryption_params_.max_chunk_size + 10,
+              (sed.chunk_store_->Size(sed.data_map_->chunks[0].hash) +
+               sed.chunk_store_->Size(sed.data_map_->chunks[1].hash) +
+               sed.chunk_store_->Size(sed.data_map_->chunks[2].hash)));
+  }
+  {
+    // fill buffers then return to first and rewrite - buffers 2 and 3
+    // queued until flushed
+    std::shared_ptr<DataMap> data_map(new DataMap);
+    chunk_store->Clear();
+    data_map->self_encryption_type = test_sed::kDefaultSelfEncryptionType;
+    SelfEncryptionDevice sed(data_map, chunk_store);
+    std::string data = RandomString(
+        sed.self_encryption_params_.max_chunk_size*6);
+    EXPECT_EQ(data.size(), sed.write(&data[0], data.size()));
+    EXPECT_LT(0, sed.seek(sed.self_encryption_params_.max_chunk_size * 3,
+                          std::ios_base::beg));
+    EXPECT_EQ(sed.self_encryption_params_.max_chunk_size * 3,
+              sed.data_map_->size);
+    EXPECT_EQ(3, sed.chunk_store_->Count());
+    std::array<SelfEncryptionDevice::ChunkBuffer, kMinChunks> temp_buf =
+        sed.chunk_buffers_;
+    std::string data2 = RandomString(
+        sed.self_encryption_params_.max_chunk_size);
+    EXPECT_EQ(data2.size(), sed.write(&data2[0], data2.size()));
+    EXPECT_NE(temp_buf[0].content, sed.chunk_buffers_[0].content);
+    EXPECT_EQ(temp_buf[1].content, sed.chunk_buffers_[1].content);
+    EXPECT_EQ(temp_buf[2].content, sed.chunk_buffers_[2].content);
+    EXPECT_TRUE(sed.flush());
+  }
 }
 
 TEST_F(SelfEncryptionDeviceTest, BEH_Seek) {
