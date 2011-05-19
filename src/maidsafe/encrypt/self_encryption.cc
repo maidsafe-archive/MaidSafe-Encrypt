@@ -79,7 +79,7 @@ int SelfEncrypt(std::shared_ptr<std::istream> input_stream,
     output_stream.write(buffer, input_stream->gcount());
     written_size += input_stream->gcount();
   }
-  delete buffer;
+  delete[] buffer;
 
   output_stream.flush();
 
@@ -169,7 +169,7 @@ int SelfDecrypt(std::shared_ptr<DataMap> data_map,
     input_stream.read(buffer, buffer_size);
     output_stream->write(buffer, input_stream.gcount());
   }
-  delete buffer;
+  delete[] buffer;
 
   std::streamsize copied_size(output_stream->tellp());
 
