@@ -532,18 +532,6 @@ TEST_F(SelfEncryptionDeviceTest, BEH_Seek) {
   }
 }
 
-TEST_F(SelfEncryptionDeviceTest, DISABLED_BEH_Flush) {
-  FAIL() << "Not implemented.";
-  /* {
-    std::shared_ptr<DataMap> data_map(new DataMap);
-    data_map->self_encryption_type = test_sed::kDefaultSelfEncryptionType;
-    std::shared_ptr<ChunkStore> chunk_store(
-        new MemoryChunkStore(true, hash_func_));
-    SelfEncryptionDevice sed(data_map, chunk_store);
-    // ...
-  } */
-}
-
 TEST_F(SelfEncryptionDeviceTest, BEH_InitialiseDataMap) {
   std::shared_ptr<DataMap> data_map(new DataMap);
   std::shared_ptr<ChunkStore> chunk_store(
