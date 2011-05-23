@@ -20,6 +20,7 @@
 #include <array>
 #include <iosfwd>
 #include <memory>
+#include <map>
 #include <set>
 #include <string>
 #include <vector>
@@ -97,6 +98,7 @@ class SelfEncryptionDevice {
   io::stream_offset offset_, current_chunk_offset_;
   size_t current_chunk_index_;
   std::array<ChunkBuffer, kMinChunks> chunk_buffers_;
+  std::map<size_t, std::pair<std::string, std::string> > crypto_hashes_;
   std::set<size_t> pending_chunks_;
   std::vector<std::string> deletable_chunks_;
   bool write_mode_;
