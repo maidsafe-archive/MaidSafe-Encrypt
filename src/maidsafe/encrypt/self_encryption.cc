@@ -230,9 +230,7 @@ int SelfDecrypt(std::shared_ptr<DataMap> data_map,
     }
   }
   catch(const std::exception &e) {
-#ifdef DEBUG
-    printf("SelfDecryptToFile: %s\n", e.what());
-#endif
+    DLOG(ERROR) << "SelfDecryptToFile: " << e.what();
     return kIoError;
   }
   std::shared_ptr<fs::ofstream> output_stream(new fs::ofstream(
