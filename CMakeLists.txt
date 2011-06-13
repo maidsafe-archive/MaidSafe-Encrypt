@@ -165,6 +165,9 @@ ADD_GTESTS(TESTencrypt)
 # parameter 3 causes timeout, hence we can't justify marking the test "FUNC"
 SET_PROPERTY(TEST VarChunkSizes/SelfEncryptionParamTest.BEH_SelfEnDecryptStreamPattern/3 PROPERTY TIMEOUT 300)
 
+# This test also needs an increased timeout as it creates and tests encryption on a 4GB file.
+SET_PROPERTY(TEST SelfEncryptionTest.FUNC_SelfEnDecryptLargeFile PROPERTY TIMEOUT 3600)
+
 TEST_SUMMARY_OUTPUT()
 
 ###################################################################################################

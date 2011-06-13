@@ -530,6 +530,53 @@ TEST_F(SelfEncryptionDeviceTest, BEH_Seek) {
     EXPECT_EQ(0, sed.seek(-1500, std::ios_base::end));
     EXPECT_EQ(0, sed.offset_);
   }
+  data_map->chunks.clear();
+  data_map->size = 0;
+  ChunkDetails chunk;
+  chunk.pre_size = 1 << 18;  // 256 kB
+  for (int i = 0; i != 16385; ++i) {  // 4GB + 256kB
+    data_map->chunks.push_back(chunk);
+    data_map->size += chunk.pre_size;
+  }
+  {
+    SelfEncryptionDevice sed(data_map, chunk_store);
+    const boost::iostreams::stream_offset kFourGB(
+        boost::iostreams::stream_offset(1) << 32);
+    EXPECT_EQ(kFourGB - 1, sed.seek(kFourGB - 1, std::ios_base::beg));
+    EXPECT_EQ(kFourGB - 1, sed.offset_);
+    EXPECT_EQ(kFourGB, sed.seek(kFourGB, std::ios_base::beg));
+    EXPECT_EQ(kFourGB, sed.offset_);
+    EXPECT_EQ(kFourGB + 262144, sed.seek(kFourGB + 262144, std::ios_base::beg));
+    EXPECT_EQ(kFourGB + 262144, sed.offset_);
+    EXPECT_EQ(-1, sed.seek(kFourGB + 262145, std::ios_base::beg));
+    EXPECT_EQ(kFourGB + 262144, sed.offset_);
+    EXPECT_EQ(0, sed.seek(0, std::ios_base::beg));
+    EXPECT_EQ(0, sed.offset_);
+
+    EXPECT_EQ(kFourGB / 2, sed.seek(kFourGB / 2, std::ios_base::cur));
+    EXPECT_EQ(kFourGB / 2, sed.offset_);
+    EXPECT_EQ(kFourGB, sed.seek(kFourGB / 2, std::ios_base::cur));
+    EXPECT_EQ(kFourGB, sed.offset_);
+    EXPECT_EQ(-1, sed.seek(262145, std::ios_base::cur));
+    EXPECT_EQ(kFourGB, sed.offset_);
+    EXPECT_EQ(kFourGB / 2, sed.seek(-kFourGB / 2, std::ios_base::cur));
+    EXPECT_EQ(kFourGB / 2, sed.offset_);
+    EXPECT_EQ(-1, sed.seek(-(kFourGB / 2) - 1, std::ios_base::cur));
+    EXPECT_EQ(kFourGB / 2, sed.offset_);
+    EXPECT_EQ(0, sed.seek(-kFourGB / 2, std::ios_base::cur));
+    EXPECT_EQ(0, sed.offset_);
+
+    EXPECT_EQ(-1, sed.seek(1, std::ios_base::end));
+    EXPECT_EQ(0, sed.offset_);
+    EXPECT_EQ(kFourGB + 262144, sed.seek(0, std::ios_base::end));
+    EXPECT_EQ(kFourGB + 262144, sed.offset_);
+    EXPECT_EQ(kFourGB + 261144, sed.seek(-1000, std::ios_base::end));
+    EXPECT_EQ(kFourGB + 261144, sed.offset_);
+    EXPECT_EQ(-1, sed.seek(-kFourGB - 262145, std::ios_base::end));
+    EXPECT_EQ(kFourGB + 261144, sed.offset_);
+    EXPECT_EQ(0, sed.seek(-kFourGB - 262144, std::ios_base::end));
+    EXPECT_EQ(0, sed.offset_);
+  }
 }
 
 TEST_F(SelfEncryptionDeviceTest, BEH_InitialiseDataMap) {

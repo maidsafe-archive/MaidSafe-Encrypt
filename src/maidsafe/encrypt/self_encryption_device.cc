@@ -248,7 +248,7 @@ std::streamsize SelfEncryptionDevice::write(const char *s, std::streamsize n) {
 
 io::stream_offset SelfEncryptionDevice::seek(io::stream_offset offset,
                                              std::ios_base::seekdir way) {
-  size_t total_size(data_map_->size);
+  std::uintmax_t total_size(data_map_->size);
   if (write_mode_) {
     total_size -= data_map_->content.size();
     for (size_t i = data_map_->chunks.size();
@@ -439,7 +439,7 @@ void SelfEncryptionDevice::InitialiseDataMap(const ChunkBuffer &chunk_buffer) {
   DataMap dm;
   (*data_map_) = dm;  // full reset
 
-  size_t offset(0);
+  std::uintmax_t offset(0);
   if (chunk_buffer.content.size() > kCompressionSampleSize)
     offset = (chunk_buffer.content.size() - kCompressionSampleSize) / 2;
   if (utils::CheckCompressibility(

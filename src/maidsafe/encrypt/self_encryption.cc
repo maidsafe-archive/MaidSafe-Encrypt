@@ -17,6 +17,7 @@
 #include "maidsafe/encrypt/self_encryption.h"
 
 #include <array>
+#include <cstdint>
 #include <map>
 #include <memory>
 #include <set>
@@ -72,7 +73,7 @@ int SelfEncrypt(std::shared_ptr<std::istream> input_stream,
                                      self_encryption_params);
 
   std::streamsize buffer_size(io::optimal_buffer_size(output_stream));
-  std::streamsize written_size(0);
+  std::uintmax_t written_size(0);
   char *buffer = new char[buffer_size];
   while (input_stream->good()) {
     input_stream->read(buffer, buffer_size);
@@ -171,7 +172,7 @@ int SelfDecrypt(std::shared_ptr<DataMap> data_map,
   }
   delete[] buffer;
 
-  std::streamsize copied_size(output_stream->tellp());
+  std::uintmax_t copied_size(output_stream->tellp());
 
   if (copied_size != data_map->size) {
     DLOG(ERROR) << "SelfDecrypt: Amount of data read (" << copied_size

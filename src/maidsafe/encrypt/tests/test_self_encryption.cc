@@ -50,7 +50,7 @@ fs::path CreateRandomFile(const fs::path &file_path,
                               std::ios::trunc);
   if (file_size != 0) {
     size_t string_size = (file_size > 100000) ? 100000 :
-                        static_cast<size_t>(file_size);
+                         static_cast<size_t>(file_size);
     std::uint64_t remaining_size = file_size;
     std::string rand_str = RandomString(2 * string_size);
     std::string file_content;
@@ -820,6 +820,37 @@ INSTANTIATE_TEST_CASE_P(VarChunkSizes, SelfEncryptionParamTest, testing::Values(
     SelfEncryptionParams(1 << 8, 1 << 5, 1 << 7),  // 256 Bytes
     SelfEncryptionParams(1 << 18, 1 << 8, 1 << 10)  // 256 KiB (default)
 ));
+
+TEST_F(SelfEncryptionTest, FUNC_SelfEnDecryptLargeFile) {
+  fs::path path_in(test_dir_ / "SelfEncryptFilesTestIn.dat");
+  fs::path path_out(test_dir_ / "SelfEncryptFilesTestOut.dat");
+  {
+    std::shared_ptr<DataMap> data_map(new DataMap);
+    std::shared_ptr<ChunkStore> chunk_store(
+        new MemoryChunkStore(true, hash_func_));
+    // Only need to check for just greater than 4GB.
+    std::uint64_t data_size((std::uint64_t(1) << 32) + 1);
+    test_se::CreateRandomFile(path_in, data_size);
+    EXPECT_EQ(kSuccess, SelfEncrypt(path_in, SelfEncryptionParams(), data_map,
+                                    chunk_store));
+    EXPECT_TRUE(ChunksExist(data_map, chunk_store, NULL));
+    EXPECT_TRUE(test_se::VerifyChunks(data_map, chunk_store));
+    EXPECT_EQ(kSuccess, SelfDecrypt(data_map, chunk_store, true, path_out))
+        << "Data size: " << data_size;
+    EXPECT_TRUE(fs::exists(path_out));
+    ASSERT_PRED_FORMAT2(AssertStringsEqual,
+                        crypto::HashFile<crypto::SHA512>(path_in),
+                        crypto::HashFile<crypto::SHA512>(path_out));
+  }
+  {
+    std::shared_ptr<DataMap> data_map(new DataMap);
+    std::shared_ptr<ChunkStore> chunk_store(
+        new MemoryChunkStore(true, hash_func_));
+    EXPECT_EQ(kFileAlreadyExists,
+              SelfDecrypt(data_map, chunk_store, false, path_out));
+    EXPECT_EQ(kSuccess, SelfDecrypt(data_map, chunk_store, true, path_out));
+  }
+}
 
 }  // namespace test
 

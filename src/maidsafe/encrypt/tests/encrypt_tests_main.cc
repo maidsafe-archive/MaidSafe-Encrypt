@@ -22,7 +22,7 @@ int main(int argc, char **argv) {
   // setting output to be stderr
   FLAGS_logtostderr = true;
   // Severity levels are INFO, WARNING, ERROR, and FATAL (0 to 3 respectively).
-  FLAGS_minloglevel = google::ERROR;
+  FLAGS_minloglevel = google::FATAL;
 
   FLAGS_ms_logging_common = false;
 
