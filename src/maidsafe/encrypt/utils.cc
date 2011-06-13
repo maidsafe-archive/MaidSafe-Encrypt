@@ -47,7 +47,7 @@ bool IsCompressedFile(const fs::path &file_path) {
  * all the data.
  *
  * @param sample A data sample.
- * @param self_encryption_params Compression type.
+ * @param self_encryption_type Compression type.
  * @return True if input data is likely compressible.
  */
 bool CheckCompressibility(const std::string &sample,

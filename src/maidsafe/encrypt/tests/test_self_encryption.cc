@@ -23,9 +23,9 @@
 #include "boost/filesystem.hpp"
 #include "boost/filesystem/fstream.hpp"
 #include "boost/timer.hpp"
-#include "gtest/gtest.h"
 #include "maidsafe/common/crypto.h"
 #include "maidsafe/common/memory_chunk_store.h"
+#include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
 #include "maidsafe/encrypt/data_map.h"
 #include "maidsafe/encrypt/self_encryption.h"
@@ -820,37 +820,6 @@ INSTANTIATE_TEST_CASE_P(VarChunkSizes, SelfEncryptionParamTest, testing::Values(
     SelfEncryptionParams(1 << 8, 1 << 5, 1 << 7),  // 256 Bytes
     SelfEncryptionParams(1 << 18, 1 << 8, 1 << 10)  // 256 KiB (default)
 ));
-
-TEST_F(SelfEncryptionTest, FUNC_SelfEnDecryptLargeFile) {
-  fs::path path_in(test_dir_ / "SelfEncryptFilesTestIn.dat");
-  fs::path path_out(test_dir_ / "SelfEncryptFilesTestOut.dat");
-  {
-    std::shared_ptr<DataMap> data_map(new DataMap);
-    std::shared_ptr<ChunkStore> chunk_store(
-        new MemoryChunkStore(true, hash_func_));
-    // Only need to check for just greater than 4GB.
-    std::uint64_t data_size((std::uint64_t(1) << 32) + 1);
-    test_se::CreateRandomFile(path_in, data_size);
-    EXPECT_EQ(kSuccess, SelfEncrypt(path_in, SelfEncryptionParams(), data_map,
-                                    chunk_store));
-    EXPECT_TRUE(ChunksExist(data_map, chunk_store, NULL));
-    EXPECT_TRUE(test_se::VerifyChunks(data_map, chunk_store));
-    EXPECT_EQ(kSuccess, SelfDecrypt(data_map, chunk_store, true, path_out))
-        << "Data size: " << data_size;
-    EXPECT_TRUE(fs::exists(path_out));
-    ASSERT_PRED_FORMAT2(AssertStringsEqual,
-                        crypto::HashFile<crypto::SHA512>(path_in),
-                        crypto::HashFile<crypto::SHA512>(path_out));
-  }
-  {
-    std::shared_ptr<DataMap> data_map(new DataMap);
-    std::shared_ptr<ChunkStore> chunk_store(
-        new MemoryChunkStore(true, hash_func_));
-    EXPECT_EQ(kFileAlreadyExists,
-              SelfDecrypt(data_map, chunk_store, false, path_out));
-    EXPECT_EQ(kSuccess, SelfDecrypt(data_map, chunk_store, true, path_out));
-  }
-}
 
 }  // namespace test
 

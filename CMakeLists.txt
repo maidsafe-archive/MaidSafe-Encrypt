@@ -74,6 +74,7 @@ SET(ALL_FILES ${SOURCE_FILES} ${HEADER_FILES})
 FILE(GLOB ALL_FILES_TESTS_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/tests/*.cc" "${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/tests/*.h")
 LIST(REMOVE_ITEM ALL_FILES_TESTS_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/tests/encrypt_demo.cc")
 LIST(REMOVE_ITEM ALL_FILES_TESTS_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/tests/test_benchmark.cc")
+LIST(REMOVE_ITEM ALL_FILES_TESTS_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/tests/test_self_encryption_ext.cc")
 
 ###################################################################################################
 # All Platforms:  Create libs and executables                                                     #
@@ -82,10 +83,12 @@ ADD_LIBRARY(encrypt_static STATIC ${ALL_FILES})
 SET_TARGET_PROPERTIES(encrypt_static PROPERTIES OUTPUT_NAME maidsafe_encrypt)
 ADD_EXECUTABLE(TESTencrypt ${ALL_FILES_TESTS_DIR})
 ADD_EXECUTABLE(TESTbenchmark "${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/tests/test_benchmark.cc")
+ADD_EXECUTABLE(TESTextended "${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/tests/encrypt_tests_main.cc" "${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/tests/test_self_encryption_ext.cc")
 ADD_EXECUTABLE(DEMOencrypt "${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/tests/encrypt_demo.cc")
 
 RENAME_EXECUTABLE(TESTencrypt)
 RENAME_EXECUTABLE(TESTbenchmark)
+RENAME_EXECUTABLE(TESTextended)
 RENAME_EXECUTABLE(DEMOencrypt)
 
 TARGET_LINK_LIBRARIES(encrypt_static
@@ -96,6 +99,7 @@ TARGET_LINK_LIBRARIES(encrypt_static
                         boost_system)
 TARGET_LINK_LIBRARIES(TESTencrypt encrypt_static gtest_static)
 TARGET_LINK_LIBRARIES(TESTbenchmark encrypt_static gtest_static)
+TARGET_LINK_LIBRARIES(TESTextended encrypt_static gtest_static)
 TARGET_LINK_LIBRARIES(DEMOencrypt encrypt_static)
 
 IF(UNIX)
@@ -128,6 +132,7 @@ ELSEIF(UNIX)
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DLINUX -Wfloat-equal -Wlong-long -Wstrict-overflow=5 -Wredundant-decls -Wuninitialized -Wunused-function")
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wunused-label -Wunused-parameter -Wunused-value -Wunused-variable -fno-stack-protector")
     SET_SOURCE_FILES_PROPERTIES(${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/tests/test_self_encryption_device.cc
+                                ${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/tests/test_self_encryption_ext.cc
                                 ${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/tests/test_self_encryption_stream.cc
                                 ${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/tests/test_self_encryption.cc
                                 PROPERTIES COMPILE_FLAGS "-Wno-effc++")
@@ -142,7 +147,12 @@ ENDIF()
 ###################################################################################################
 IF(PYTHONINTERP_FOUND)
   IF(UNIX)
-    ADD_TEST(STYLE_CHECK python ${MaidSafeCommon_TOOLS_DIR}/cpplint.py ${ALL_FILES} ${ALL_FILES_TESTS_DIR} "${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/tests/encrypt_demo.cc")
+    ADD_TEST(STYLE_CHECK python ${MaidSafeCommon_TOOLS_DIR}/cpplint.py
+               ${ALL_FILES}
+               ${ALL_FILES_TESTS_DIR}
+               "${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/tests/test_benchmark.cc"
+               "${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/tests/test_self_encryption_ext.cc"
+               "${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/tests/encrypt_demo.cc")
   ELSE()
     STRING(REPLACE "/" "\\\\" STYLE_CHECK_SOURCE ${PROJECT_SOURCE_DIR})
     ADD_TEST(STYLE_CHECK ${MaidSafeCommon_TOOLS_DIR}/run_cpplint.bat ${STYLE_CHECK_SOURCE} ${MaidSafeCommon_TOOLS_DIR}/cpplint.py)
@@ -157,7 +167,7 @@ ADD_GTESTS(TESTencrypt)
 SET_PROPERTY(TEST VarChunkSizes/SelfEncryptionParamTest.BEH_SelfEnDecryptStreamPattern/3 PROPERTY TIMEOUT 300)
 
 # This test also needs an increased timeout as it creates and tests encryption on a 4GB file.
-SET_PROPERTY(TEST SelfEncryptionTest.FUNC_SelfEnDecryptLargeFile PROPERTY TIMEOUT 3600)
+# SET_PROPERTY(TEST SelfEncryptionExtTest.FUNC_SelfEnDecryptLargeFile PROPERTY TIMEOUT 3600)
 
 TEST_SUMMARY_OUTPUT()
 

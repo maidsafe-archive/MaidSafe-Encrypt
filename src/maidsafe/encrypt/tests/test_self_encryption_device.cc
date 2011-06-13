@@ -18,9 +18,9 @@
 #include <functional>
 #include <memory>
 
-#include "gtest/gtest.h"
 #include "maidsafe/common/crypto.h"
 #include "maidsafe/common/memory_chunk_store.h"
+#include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
 #include "maidsafe/encrypt/config.h"
 #include "maidsafe/encrypt/data_map.h"

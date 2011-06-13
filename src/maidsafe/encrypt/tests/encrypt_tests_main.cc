@@ -14,7 +14,7 @@
  * @date  2010-10-12
  */
 
-#include "gtest/gtest.h"
+#include "maidsafe/common/test.h"
 #include "maidsafe/encrypt/log.h"
 
 int main(int argc, char **argv) {
