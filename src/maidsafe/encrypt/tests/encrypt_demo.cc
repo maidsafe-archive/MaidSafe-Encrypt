@@ -21,7 +21,14 @@
 #include <string>
 
 #include "boost/algorithm/string.hpp"
+#ifdef WIN32
+#  pragma warning(push)
+#  pragma warning(disable: 4308)
+#endif
 #include "boost/archive/text_oarchive.hpp"
+#ifdef WIN32
+#  pragma warning(pop)
+#endif
 #include "boost/archive/text_iarchive.hpp"
 #include "boost/filesystem.hpp"
 #include "boost/format.hpp"
@@ -59,7 +66,7 @@ std::string FormatByteValue(const std::uint64_t &value) {
   const std::array<std::string, 7> kUnits = { {
       "Bytes", "KiB", "MiB", "GiB", "TiB", "PiB", "EiB"
   } };
-  double val(value);
+  double val(static_cast<double>(value));
   size_t mag(0);
   while (mag < kUnits.size() && val >= 1000.0) {
     ++mag;
@@ -232,7 +239,7 @@ int Encrypt(const fs::path &input_path,
          "= Space required: %s (%.3g%%)\n",
          FormatByteValue(self_encryption_params.max_chunk_size).c_str(),
          FormatByteValue(total_size).c_str(), files.size(),
-         FormatByteValue(1000.0 * total_size /
+         FormatByteValue(1000 * total_size /
                          total_duration.total_milliseconds()).c_str(),
          FormatByteValue(chunks_size).c_str(),
          FormatByteValue(uncompressed_chunks_size).c_str(),
@@ -295,7 +302,7 @@ int Decrypt(const fs::path &chunk_path,
 
   printf("\nRestored %s to %u files (%s/s)\n",
          FormatByteValue(total_size).c_str(), data_maps.size(),
-         FormatByteValue(1000.0 * total_size /
+         FormatByteValue(1000 * total_size /
                          total_duration.total_milliseconds()).c_str());
 
   return error ? kDecryptError : kSuccess;

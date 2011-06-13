@@ -279,7 +279,7 @@ TEST_F(SelfEncryptionDeviceTest, BEH_Write) {
     EXPECT_EQ(data2.size(), sed.write(&data2[0], data2.size()));
     EXPECT_EQ(sed.self_encryption_params_.max_chunk_size,
               sed.chunk_buffers_[0].content.size());
-    EXPECT_LT(0, sed.chunk_buffers_[0].hash.size());
+    EXPECT_LT(0U, sed.chunk_buffers_[0].hash.size());
     EXPECT_EQ(1, sed.pending_chunks_.size());
     EXPECT_EQ(sed.self_encryption_params_.max_chunk_size,
               sed.current_chunk_offset_);
@@ -359,7 +359,7 @@ TEST_F(SelfEncryptionDeviceTest, BEH_Write) {
               sed.current_chunk_offset_);
     EXPECT_EQ(262144, sed.chunk_buffers_[0].content.size());
     EXPECT_TRUE(sed.flush());
-    EXPECT_NE(262144, data_map->chunks[0].size);
+    EXPECT_NE(262144U, data_map->chunks[0].size);
     EXPECT_EQ(data.size(), (data_map->chunks[0].size +
                             data_map->chunks[1].size +
                             data_map->chunks[2].size));
@@ -668,8 +668,8 @@ TEST_F(SelfEncryptionDeviceTest, BEH_UpdateCurrentChunkDetails) {
   EXPECT_EQ(0, sed.current_chunk_index_);
   EXPECT_EQ(0, sed.current_chunk_offset_);
 
-  EXPECT_LT(0, sed.seek(SelfEncryptionParams().max_chunk_size * 3.5,
-                        std::ios_base::beg));
+  EXPECT_LT(0, sed.seek(static_cast<boost::iostreams::stream_offset>(
+      SelfEncryptionParams().max_chunk_size * 3.5), std::ios_base::beg));
   // offset > current chunk offset & current chunk index < total chunks
   EXPECT_TRUE(sed.UpdateCurrentChunkDetails());
   EXPECT_EQ(3, sed.current_chunk_index_);

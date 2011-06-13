@@ -74,7 +74,7 @@ int SelfEncrypt(std::shared_ptr<std::istream> input_stream,
 
   std::streamsize buffer_size(io::optimal_buffer_size(output_stream));
   std::uintmax_t written_size(0);
-  char *buffer = new char[buffer_size];
+  char *buffer = new char[static_cast<size_t>(buffer_size)];
   while (input_stream->good()) {
     input_stream->read(buffer, buffer_size);
     output_stream.write(buffer, input_stream->gcount());
@@ -165,7 +165,7 @@ int SelfDecrypt(std::shared_ptr<DataMap> data_map,
 
   // input_stream >> output_stream->rdbuf();
   std::streamsize buffer_size(io::optimal_buffer_size(input_stream));
-  char *buffer = new char[buffer_size];
+  char *buffer = new char[static_cast<size_t>(buffer_size)];
   while (input_stream.good()) {
     input_stream.read(buffer, buffer_size);
     output_stream->write(buffer, input_stream.gcount());

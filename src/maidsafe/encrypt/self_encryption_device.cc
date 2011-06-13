@@ -67,7 +67,8 @@ std::streamsize SelfEncryptionDevice::read(char *s, std::streamsize n) {
   if (n == 0)
     return 0;
 
-  if (offset_ == data_map_->size || !UpdateCurrentChunkDetails())
+  if (static_cast<std::uint64_t>(offset_) == data_map_->size ||
+      !UpdateCurrentChunkDetails())
     return -1;
 
   std::streamsize remaining(n);
@@ -80,9 +81,10 @@ std::streamsize SelfEncryptionDevice::read(char *s, std::streamsize n) {
     io::stream_offset this_offset(0);
     if (offset_ > chunk_offset)
       this_offset = offset_ - chunk_offset;
-    size_t size(std::min(remaining, static_cast<std::streamsize>(
+    io::stream_offset size(std::min(remaining, static_cast<std::streamsize>(
         current_chunk_content.size() - this_offset)));
-    memcpy(s, &(current_chunk_content[this_offset]), size);
+    memcpy(s, &(current_chunk_content[static_cast<size_t>(this_offset)]),
+           static_cast<size_t>(size));
 
     current_chunk_index_ = chunk_index;
     current_chunk_offset_ = chunk_offset;
@@ -187,7 +189,8 @@ std::streamsize SelfEncryptionDevice::write(const char *s, std::streamsize n) {
         }
       }
 
-      current_chunk_index_ = offset_ / self_encryption_params_.max_chunk_size;
+      current_chunk_index_ = static_cast<size_t>(offset_ /
+                             self_encryption_params_.max_chunk_size);
       current_chunk_offset_ = current_chunk_index_ *
                               self_encryption_params_.max_chunk_size;
     }
@@ -221,13 +224,14 @@ std::streamsize SelfEncryptionDevice::write(const char *s, std::streamsize n) {
     io::stream_offset this_offset(0);
     if (offset_ > current_chunk_offset_)
       this_offset = offset_ - current_chunk_offset_;
-    size_t size(std::min(remaining, static_cast<std::streamsize>(
+    io::stream_offset size(std::min(remaining, static_cast<std::streamsize>(
         self_encryption_params_.max_chunk_size - this_offset)));
 
     if (size > 0) {
       if (this_offset + size > chunk_buffer.content.size())
-        chunk_buffer.content.resize(this_offset + size);
-      memcpy(&(chunk_buffer.content[this_offset]), s, size);
+        chunk_buffer.content.resize(static_cast<size_t>(this_offset + size));
+      memcpy(&(chunk_buffer.content[static_cast<size_t>(this_offset)]), s,
+             static_cast<size_t>(size));
       chunk_buffer.hash.clear();
       s += size;
       offset_ += size;
@@ -273,7 +277,7 @@ io::stream_offset SelfEncryptionDevice::seek(io::stream_offset offset,
       return -1;
   }
 
-  if (new_offset < 0 || new_offset > total_size) {
+  if (new_offset < 0 || static_cast<std::uintmax_t>(new_offset) > total_size) {
     DLOG(ERROR) << "seek: Invalid offset passed." << std::endl;
     return -1;
   }
@@ -439,7 +443,7 @@ void SelfEncryptionDevice::InitialiseDataMap(const ChunkBuffer &chunk_buffer) {
   DataMap dm;
   (*data_map_) = dm;  // full reset
 
-  std::uintmax_t offset(0);
+  size_t offset(0);
   if (chunk_buffer.content.size() > kCompressionSampleSize)
     offset = (chunk_buffer.content.size() - kCompressionSampleSize) / 2;
   if (utils::CheckCompressibility(
@@ -453,7 +457,7 @@ void SelfEncryptionDevice::InitialiseDataMap(const ChunkBuffer &chunk_buffer) {
 }
 
 bool SelfEncryptionDevice::UpdateCurrentChunkDetails() {
-  if (offset_ > data_map_->size)
+  if (static_cast<std::uint64_t>(offset_) > data_map_->size)
     return false;
 
   if (offset_ < current_chunk_offset_) {

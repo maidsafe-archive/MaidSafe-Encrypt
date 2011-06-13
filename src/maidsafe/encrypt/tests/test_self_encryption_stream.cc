@@ -230,7 +230,7 @@ TEST_F(SelfEncryptionStreamTest, BEH_IncrementalWrite) {
     // check via separate stream
     {
       SelfEncryptionStream stream2(data_map, chunk_store, sep);
-      std::string data_out(data_map->size, 0);
+      std::string data_out(static_cast<size_t>(data_map->size), 0);
       stream2.read(&(data_out[0]), data_map->size);
       EXPECT_EQ(data_map->size, stream2.gcount());
       // ASSERT_PRED_FORMAT2(AssertStringsEqual, data, data_out);
@@ -269,7 +269,7 @@ TEST_F(SelfEncryptionStreamTest, BEH_Seeking) {
   // check via separate stream
   {
     SelfEncryptionStream stream(data_map, chunk_store, sep);
-    std::string data_out(data_map->size, 0);
+    std::string data_out(static_cast<size_t>(data_map->size), 0);
     stream.read(&(data_out[0]), data_map->size);
     EXPECT_EQ(data_map->size, stream.gcount());
     ASSERT_PRED_FORMAT2(AssertStringsEqual, data, data_out);
@@ -289,7 +289,7 @@ TEST_F(SelfEncryptionStreamTest, BEH_Seeking) {
   // check via separate stream
   {
     SelfEncryptionStream stream(data_map, chunk_store, sep);
-    std::string data_out(data_map->size, 0);
+    std::string data_out(static_cast<size_t>(data_map->size), 0);
     stream.read(&(data_out[0]), data_map->size);
     EXPECT_EQ(data_map->size, stream.gcount());
     ASSERT_PRED_FORMAT2(AssertStringsEqual, data, data_out);
@@ -309,7 +309,7 @@ TEST_F(SelfEncryptionStreamTest, BEH_Seeking) {
   // check via separate stream
   {
     SelfEncryptionStream stream(data_map, chunk_store, sep);
-    std::string data_out(data_map->size, 0);
+    std::string data_out(static_cast<size_t>(data_map->size), 0);
     stream.read(&(data_out[0]), data_map->size);
     EXPECT_EQ(data_map->size, stream.gcount());
     ASSERT_PRED_FORMAT2(AssertStringsEqual, data, data_out);

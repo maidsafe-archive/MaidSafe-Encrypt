@@ -18,7 +18,14 @@
 #include <cstdint>
 #include <vector>
 
+#ifdef WIN32
+#  pragma warning(push)
+#  pragma warning(disable: 4308)
+#endif
 #include "boost/archive/text_oarchive.hpp"
+#ifdef WIN32
+#  pragma warning(pop)
+#endif
 #include "boost/archive/text_iarchive.hpp"
 #include "boost/timer.hpp"
 #include "gtest/gtest.h"

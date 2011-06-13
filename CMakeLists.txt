@@ -108,28 +108,19 @@ ENDIF()
 ###################################################################################################
 INCLUDE(maidsafe_standard_flags)
 IF(MSVC)
-  SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /Oi /GF ") #  /wd4503
-  SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /Oi /arch:SSE") #  /wd4503
+  # Set warnings as errors
+  SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /WX")
+  SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /WX")
+  SET(CMAKE_CXX_FLAGS_MINSIZEREL "${CMAKE_CXX_FLAGS_MINSIZEREL} /W4 /WX")
+  SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} /W4 /WX")
   SET_TARGET_PROPERTIES(encrypt_static PROPERTIES
                           STATIC_LIBRARY_FLAGS_RELEASE "/LTCG")
   SET_TARGET_PROPERTIES(TESTencrypt TESTbenchmark DEMOencrypt PROPERTIES
                           LINK_FLAGS "/STACK:1048576"
-                          LINK_FLAGS_RELEASE "/OPT:REF /OPT:ICF /LTCG /INCREMENTAL:NO")
-
-#  SET_TARGET_PROPERTIES(encrypt_static PROPERTIES
-#                            COMPILE_FLAGS "/D_VC80_UPGRADE=0x0710"
-#                            LINK_FLAGS "/STACK:1048576"
-#                            LINK_FLAGS_RELEASE "/OPT:REF /OPT:ICF /LTCG /INCREMENTAL:NO ${LINKER_LIBS_DIRS_RELEASE}"
-#                            LINK_FLAGS_DEBUG "${LINKER_LIBS_DIRS_DEBUG}"
-#                            LINK_FLAGS_RELWITHDEBINFO "${LINKER_LIBS_DIRS_DEBUG}"
-#                            LINK_FLAGS_MINSIZEREL "${LINKER_LIBS_DIRS_DEBUG}")
-#  SET_TARGET_PROPERTIES(TESTencrypt DEMOencrypt PROPERTIES
-#                            COMPILE_FLAGS "/D_CONSOLE /D_VC80_UPGRADE=0x0710 /D_MBCS"
-#                            LINK_FLAGS "/STACK:1048576"
-#                            LINK_FLAGS_RELEASE "/OPT:REF /OPT:ICF /LTCG /INCREMENTAL:NO ${TEST_LINKER_LIBS_DIRS_RELEASE}"
-#                            LINK_FLAGS_DEBUG "${TEST_LINKER_LIBS_DIRS_DEBUG}"
-#                            LINK_FLAGS_RELWITHDEBINFO "/LTCG ${TEST_LINKER_LIBS_DIRS_DEBUG}"
-#                            LINK_FLAGS_MINSIZEREL "/LTCG ${TEST_LINKER_LIBS_DIRS_DEBUG}")
+                          LINK_FLAGS_RELEASE "/OPT:REF /OPT:ICF /LTCG /INCREMENTAL:NO ${LINKER_LIBS_DIRS_RELEASE}"
+                          LINK_FLAGS_DEBUG "${LINKER_LIBS_DIRS_DEBUG}"
+                          LINK_FLAGS_RELWITHDEBINFO "${LINKER_LIBS_DIRS_DEBUG} /LTCG /INCREMENTAL:NO"
+                          LINK_FLAGS_MINSIZEREL "${LINKER_LIBS_DIRS_DEBUG} /LTCG")
 ELSEIF(UNIX)
   IF(APPLE)
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DOSX")
@@ -154,7 +145,7 @@ IF(PYTHONINTERP_FOUND)
     ADD_TEST(STYLE_CHECK python ${MaidSafeCommon_TOOLS_DIR}/cpplint.py ${ALL_FILES} ${ALL_FILES_TESTS_DIR} "${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/tests/encrypt_demo.cc")
   ELSE()
     STRING(REPLACE "/" "\\\\" STYLE_CHECK_SOURCE ${PROJECT_SOURCE_DIR})
-    ADD_TEST(STYLE_CHECK ${MaidSafeCommon_TOOLS_DIR}/run_cpplint.bat ${STYLE_CHECK_SOURCE})
+    ADD_TEST(STYLE_CHECK ${MaidSafeCommon_TOOLS_DIR}/run_cpplint.bat ${STYLE_CHECK_SOURCE} ${MaidSafeCommon_TOOLS_DIR}/cpplint.py)
   ENDIF()
   SET_PROPERTY(TEST STYLE_CHECK PROPERTY LABELS Functional CodingStyle)
 ENDIF()
