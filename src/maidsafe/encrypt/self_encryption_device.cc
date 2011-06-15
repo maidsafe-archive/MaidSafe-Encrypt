@@ -253,13 +253,9 @@ std::streamsize SelfEncryptionDevice::write(const char *s, std::streamsize n) {
 io::stream_offset SelfEncryptionDevice::seek(io::stream_offset offset,
                                              std::ios_base::seekdir way) {
   std::uintmax_t total_size(data_map_->size);
-  if (write_mode_) {
-    total_size -= data_map_->content.size();
-    for (size_t i = data_map_->chunks.size();
-        i < data_map_->chunks.size() + kMinChunks; ++i)
-      if (chunk_buffers_[i % kMinChunks].index == i)
-        total_size += chunk_buffers_[i % kMinChunks].content.size();
-  }
+  if (write_mode_ && (data_map_->chunks.empty() ||
+      (current_chunk_index_ >= data_map_->chunks.size() - 1)))
+    total_size = offset_;
 
   io::stream_offset new_offset;
   switch (way) {
