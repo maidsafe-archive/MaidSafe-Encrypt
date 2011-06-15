@@ -45,6 +45,7 @@ SelfEncryptionDevice::SelfEncryptionDevice(
                                     kObfuscationRepeated | kCryptoAes256),
       data_map_(data_map),
       chunk_store_(chunk_store),
+      data_size_(data_map_->size),
       offset_(0),
       current_chunk_offset_(0),
       current_chunk_index_(0),
@@ -235,6 +236,8 @@ std::streamsize SelfEncryptionDevice::write(const char *s, std::streamsize n) {
       chunk_buffer.hash.clear();
       s += size;
       offset_ += size;
+      if (static_cast<std::uintmax_t>(offset_) > data_size_)
+        data_size_ = offset_;
       remaining -= size;
     } else {
       // buffer is full, continue with the next one
@@ -252,11 +255,6 @@ std::streamsize SelfEncryptionDevice::write(const char *s, std::streamsize n) {
 
 io::stream_offset SelfEncryptionDevice::seek(io::stream_offset offset,
                                              std::ios_base::seekdir way) {
-  std::uintmax_t total_size(data_map_->size);
-  if (write_mode_ && (data_map_->chunks.empty() ||
-      (current_chunk_index_ >= data_map_->chunks.size() - 1)))
-    total_size = offset_;
-
   io::stream_offset new_offset;
   switch (way) {
     case std::ios_base::beg:
@@ -266,14 +264,14 @@ io::stream_offset SelfEncryptionDevice::seek(io::stream_offset offset,
       new_offset = offset_ + offset;
       break;
     case std::ios_base::end:
-      new_offset = total_size + offset;
+      new_offset = data_size_ + offset;
       break;
     default:
       DLOG(ERROR) << "seek: Invalid seek direction passed." << std::endl;
       return -1;
   }
 
-  if (new_offset < 0 || static_cast<std::uintmax_t>(new_offset) > total_size) {
+  if (new_offset < 0 || static_cast<std::uintmax_t>(new_offset) > data_size_) {
     DLOG(ERROR) << "seek: Invalid offset passed." << std::endl;
     return -1;
   }

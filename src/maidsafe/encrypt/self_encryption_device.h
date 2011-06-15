@@ -95,6 +95,7 @@ class SelfEncryptionDevice {
   uint32_t default_self_encryption_type_;
   std::shared_ptr<DataMap> data_map_;
   std::shared_ptr<ChunkStore> chunk_store_;
+  std::uintmax_t data_size_;
   io::stream_offset offset_, current_chunk_offset_;
   size_t current_chunk_index_;
   std::array<ChunkBuffer, kMinChunks> chunk_buffers_;
