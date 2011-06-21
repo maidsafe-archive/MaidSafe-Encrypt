@@ -202,7 +202,7 @@ std::streamsize SelfEncryptionDevice::write(const char *s, std::streamsize n) {
   while (remaining > 0) {
     ChunkBuffer &chunk_buffer =
         chunk_buffers_[current_chunk_index_ % kMinChunks];
-    if ((offset_ == 0 && current_chunk_index_ == 0) ||
+    if ((offset_ == 0 && current_chunk_index_ == 0 && data_size_ == 0) ||
         chunk_buffer.index != current_chunk_index_ ||
         (chunk_buffer.content.empty() && !data_map_->content.empty())) {
       if (current_chunk_index_ >= data_map_->chunks.size() &&

@@ -896,6 +896,30 @@ TEST_F(SelfEncryptionDeviceTest, BEH_StoreChunkFromBuffer) {
   }
 }
 
+TEST_F(SelfEncryptionDeviceTest, BEH_Bugs) {
+  std::shared_ptr<ChunkStore> chunk_store(
+      new MemoryChunkStore(true, hash_func_));
+  {
+    /**
+     * bug: write data, flush, seek to beginning, write; resulting DM size is
+     *      the size of last write op, not total size
+     */
+    std::string data(RandomString(
+        2 * SelfEncryptionParams().max_includable_data_size));
+    std::shared_ptr<DataMap> data_map(new DataMap);
+    data_map->self_encryption_type = test_sed::kDefaultSelfEncryptionType;
+    SelfEncryptionDevice sed(data_map, chunk_store);
+    EXPECT_EQ(data.size(), sed.write(data.data(), data.size()));
+    EXPECT_TRUE(sed.flush());
+    EXPECT_EQ(data.size(), data_map->size);
+    sed.seek(0, std::ios_base::beg);
+    EXPECT_EQ(data.size() / 10, sed.write(&data[data.size() / 2],
+                                          data.size() / 10));
+    EXPECT_TRUE(sed.flush());
+    EXPECT_EQ(data.size(), data_map->size);
+  }
+}
+
 }  // namespace encrypt
 
 }  // namespace test
