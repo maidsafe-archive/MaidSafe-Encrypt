@@ -147,23 +147,21 @@ TEST(SelfEncryptionUtilsTest, BEH_ResizeObfuscationHash) {
   EXPECT_TRUE(ResizeObfuscationHash("abc", 0, &output));
   EXPECT_TRUE(output.empty());
   EXPECT_TRUE(ResizeObfuscationHash("abc", 1, &output));
-  EXPECT_EQ(1, output.size());
+  EXPECT_EQ("a", output);
   EXPECT_TRUE(ResizeObfuscationHash("abc", 3, &output));
-  EXPECT_EQ(3, output.size());
+  EXPECT_EQ("abc", output);
   EXPECT_TRUE(ResizeObfuscationHash("abc", 4, &output));
-  EXPECT_EQ(4, output.size());
+  EXPECT_EQ("abca", output);
   EXPECT_TRUE(ResizeObfuscationHash("abc", 9, &output));
-  EXPECT_EQ(9, output.size());
+  EXPECT_EQ("abcabcabc", output);
   EXPECT_TRUE(ResizeObfuscationHash("abc", 11, &output));
-  EXPECT_NE("abcabcabcab", output);
-  EXPECT_EQ(11, output.size());
+  EXPECT_EQ("abcabcabcab", output);
   EXPECT_TRUE(ResizeObfuscationHash("a", 5, &output));
-  EXPECT_EQ(5, output.size());
+  EXPECT_EQ("aaaaa", output);
 
   SelfEncryptionParams sep;
   const std::string kInput(RandomString(64));
-  const int kRepetitions(2);  // was 25000 but obfuscate too slow now
-  // although overall performance of enc ./ dec not affected
+  const int kRepetitions(25000);
   boost::posix_time::ptime time =
         boost::posix_time::microsec_clock::universal_time();
   for (int i = 0; i < kRepetitions; ++i) {
