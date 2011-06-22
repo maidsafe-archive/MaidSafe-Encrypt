@@ -140,18 +140,25 @@ bool ResizeObfuscationHash(const std::string &input,
                            std::string *resized_data) {
   if (input.empty() || !resized_data)
     return false;
-
-  resized_data->resize(required_size);
   if (required_size == 0)
     return true;
-  size_t input_size(std::min(input.size(), required_size)), copied(input_size);
-  memcpy(&((*resized_data)[0]), input.data(), input_size);
-  while (copied < required_size) {
-    // input_size = std::min(input.size(), required_size - copied);  // slow
-    input_size = std::min(copied, required_size - copied);  // fast
-    memcpy(&((*resized_data)[copied]), resized_data->data(), input_size);
-    copied += input_size;
+
+  const size_t step_size(4);  // bytes
+  const size_t window_size(64 - step_size);  // bytes
+
+  *resized_data = Hash(input, kHashingSha512);  // Just to be sure
+  resized_data->reserve(required_size + window_size);
+
+  size_t offset(0);
+  while (resized_data->size() < required_size) {
+    // TODO(Steve) optimise using integer xor without string copies
+    // TODO(Steve) input still gets repeated :(
+    *resized_data += crypto::XOR(
+        resized_data->substr(offset, window_size),
+        resized_data->substr(offset + step_size, window_size));
+    offset += window_size;
   }
+  resized_data->resize(required_size);  // reduce only
   return true;
 }
 
