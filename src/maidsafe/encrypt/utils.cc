@@ -140,18 +140,28 @@ bool ResizeObfuscationHash(const std::string &input,
                            std::string *resized_data) {
   if (input.empty() || !resized_data)
     return false;
-
-  resized_data->resize(required_size);
   if (required_size == 0)
     return true;
-  size_t input_size(std::min(input.size(), required_size)), copied(input_size);
-  memcpy(&((*resized_data)[0]), input.data(), input_size);
-  while (copied < required_size) {
-    // input_size = std::min(input.size(), required_size - copied);  // slow
-    input_size = std::min(copied, required_size - copied);  // fast
-    memcpy(&((*resized_data)[copied]), resized_data->data(), input_size);
-    copied += input_size;
+  *resized_data += Hash(input, kHashingSha512);  // Just to be sure
+  int substring_size = resized_data->size();
+  resized_data->reserve(required_size + substring_size);
+  for (int i = 0; resized_data->size() < required_size; ++i) {
+    *resized_data +=
+              crypto::XOR(resized_data->substr(i, resized_data->size() -i-1),
+              resized_data->substr(i+1, resized_data->size() -i));
+    // 88991 msec
   }
+  resized_data->resize(required_size);  // reduce only, this was previously used
+// to increase the size to the required_size, but that is insecure.
+// The following was Steve's original, left in place for discussion
+// size_t input_size(std::min(input.size(), required_size)), copied(input_size);
+// memcpy(&((*resized_data)[0]), input.data(), input_size);
+// while (copied < required_size) {
+//   // input_size = std::min(input.size(), required_size - copied);  // slow
+//   input_size = std::min(copied, required_size - copied);  // fast
+//   memcpy(&((*resized_data)[copied]), resized_data->data(), input_size);
+//   copied += input_size;
+// }  557mSec
   return true;
 }
 
