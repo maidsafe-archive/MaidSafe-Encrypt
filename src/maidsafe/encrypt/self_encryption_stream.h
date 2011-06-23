@@ -26,9 +26,9 @@
 #include "maidsafe/encrypt/self_encryption_device.h"
 #include "maidsafe/encrypt/version.h"
 
-#if MAIDSAFE_ENCRYPT_VERSION < 8
-#error This API is not compatible with the installed library.\
-  Please update the maidsafe-encrypt library.
+#if MAIDSAFE_ENCRYPT_VERSION != 509
+#  error This API is not compatible with the installed library.\
+    Please update the maidsafe-encrypt library.
 #endif
 
 namespace io = boost::iostreams;
