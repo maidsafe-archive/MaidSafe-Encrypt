@@ -19,6 +19,7 @@
 #include <algorithm>
 #include <set>
 
+#include <boost/functional/hash.hpp>
 #include "boost/filesystem/fstream.hpp"
 #include "maidsafe/common/crypto.h"
 #include "maidsafe/common/utils.h"
@@ -142,21 +143,24 @@ bool ResizeObfuscationHash(const std::string &input,
     return false;
   if (required_size == 0)
     return true;
-
-  const size_t step_size(4);  // bytes
-  const size_t window_size(64 - step_size);  // bytes
-
+  if (required_size < input.size()) {
+      resized_data->resize(required_size);  // reduce only
+  return true;
+  }
+    
   *resized_data = Hash(input, kHashingSha512);  // Just to be sure
-  resized_data->reserve(required_size + window_size);
+  resized_data->reserve(required_size + (required_size/2));
 
-  size_t offset(0);
   while (resized_data->size() < required_size) {
     // TODO(Steve) optimise using integer xor without string copies
     // TODO(Steve) input still gets repeated :(
-    *resized_data += crypto::XOR(
-        resized_data->substr(offset, window_size),
-        resized_data->substr(offset + step_size, window_size));
-    offset += window_size;
+    // rotate string one place
+    rotate(resized_data->begin(), resized_data->begin()+1, resized_data->end());
+    // could consider some transform here instead, but always it's determined
+    // repeated hashing is also just computationally difficult
+    // maybe a transform but swap chars round based on counter ?
+    // we need to play around here a little to get the answer
+    resized_data->append(*resized_data);
   }
   resized_data->resize(required_size);  // reduce only
   return true;
