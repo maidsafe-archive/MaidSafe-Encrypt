@@ -143,24 +143,13 @@ bool ResizeObfuscationHash(const std::string &input,
     return false;
   if (required_size == 0)
     return true;
-  if (required_size < input.size()) {
-      resized_data->resize(required_size);  // reduce only
-  return true;
-  }
-    
+
   *resized_data = Hash(input, kHashingSha512);  // Just to be sure
   resized_data->reserve(required_size + (required_size/2));
-
+  std::string temp_data = *resized_data;
   while (resized_data->size() < required_size) {
-    // TODO(Steve) optimise using integer xor without string copies
-    // TODO(Steve) input still gets repeated :(
-    // rotate string one place
-    rotate(resized_data->begin(), resized_data->begin()+1, resized_data->end());
-    // could consider some transform here instead, but always it's determined
-    // repeated hashing is also just computationally difficult
-    // maybe a transform but swap chars round based on counter ?
-    // we need to play around here a little to get the answer
-    resized_data->append(*resized_data);
+    temp_data = Hash(temp_data, kHashingSha512);
+    resized_data->append(temp_data);
   }
   resized_data->resize(required_size);  // reduce only
   return true;
