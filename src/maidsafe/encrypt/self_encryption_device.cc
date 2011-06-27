@@ -207,7 +207,7 @@ std::streamsize SelfEncryptionDevice::write(const char *s, std::streamsize n) {
         (chunk_buffer.content.empty() && !data_map_->content.empty())) {
       if (current_chunk_index_ >= data_map_->chunks.size() &&
           data_map_->content.empty() &&
-          offset_ == data_size_) {
+          static_cast<std::uintmax_t>(offset_) == data_size_) {
         chunk_buffer.index = current_chunk_index_;
         chunk_buffer.content.clear();
         chunk_buffer.hash.clear();

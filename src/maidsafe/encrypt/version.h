@@ -17,17 +17,22 @@
 #ifndef MAIDSAFE_ENCRYPT_VERSION_H_
 #define MAIDSAFE_ENCRYPT_VERSION_H_
 
-#define MAIDSAFE_ENCRYPT_VERSION 8
+#define MAIDSAFE_ENCRYPT_VERSION 900
+
+#if defined CMAKE_MAIDSAFE_ENCRYPT_VERSION &&\
+            MAIDSAFE_ENCRYPT_VERSION != CMAKE_MAIDSAFE_ENCRYPT_VERSION
+#  error The project version has changed.  Re-run CMake.
+#endif
 
 #include "maidsafe/common/version.h"
 
-#define THIS_NEEDS_MAIDSAFE_COMMON_VERSION 8
+#define THIS_NEEDS_MAIDSAFE_COMMON_VERSION 900
 #if MAIDSAFE_COMMON_VERSION < THIS_NEEDS_MAIDSAFE_COMMON_VERSION
-#error This API is not compatible with the installed library.\
-  Please update the maidsafe-common library.
+#  error This API is not compatible with the installed library.\
+    Please update the maidsafe-common library.
 #elif MAIDSAFE_COMMON_VERSION > THIS_NEEDS_MAIDSAFE_COMMON_VERSION
-#error This API uses a newer version of the maidsafe-common library.\
-  Please update this project.
+#  error This API uses a newer version of the maidsafe-common library.\
+    Please update this project.
 #endif
 
 #endif  // MAIDSAFE_ENCRYPT_VERSION_H_
