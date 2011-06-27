@@ -19,7 +19,6 @@
 #include <algorithm>
 #include <set>
 
-#include <boost/functional/hash.hpp>
 #include "boost/filesystem/fstream.hpp"
 #include "maidsafe/common/crypto.h"
 #include "maidsafe/common/utils.h"
@@ -136,22 +135,30 @@ std::string Hash(const std::string &input,
   return "";
 }
 
+/**
+ * We expand the input string by simply repeating it until we reach the required
+ * output size. Instead of just repeating it, we could as well repeatedly hash
+ * it and append the resulting hashes. But this is thought to not be any more
+ * secure than simple repetition when used together with encryption, just a lot
+ * slower, so we avoid it until disproven.
+ */
 bool ResizeObfuscationHash(const std::string &input,
                            const size_t &required_size,
                            std::string *resized_data) {
   if (input.empty() || !resized_data)
     return false;
+
+  resized_data->resize(required_size);
   if (required_size == 0)
     return true;
-
-  *resized_data = Hash(input, kHashingSha512);  // Just to be sure
-  resized_data->reserve(required_size + (required_size/2));
-  std::string temp_data = *resized_data;
-  while (resized_data->size() < required_size) {
-    temp_data = Hash(temp_data, kHashingSha512);
-    resized_data->append(temp_data);
+  size_t input_size(std::min(input.size(), required_size)), copied(input_size);
+  memcpy(&((*resized_data)[0]), input.data(), input_size);
+  while (copied < required_size) {
+    // input_size = std::min(input.size(), required_size - copied);  // slow
+    input_size = std::min(copied, required_size - copied);  // fast
+    memcpy(&((*resized_data)[copied]), resized_data->data(), input_size);
+    copied += input_size;
   }
-  resized_data->resize(required_size);  // reduce only
   return true;
 }
 
@@ -175,8 +182,12 @@ std::string SelfEncryptChunk(const std::string &content,
       break;
     case kObfuscationRepeated:
       {
-        std::string obfuscation_pad;
-        if (!utils::ResizeObfuscationHash(obfuscation_hash,
+        std::string prefix, obfuscation_pad;
+        if (encryption_hash.size() > crypto::AES256_KeySize) {
+          // add the remainder of the encryption hash to the obfuscation hash
+          prefix = encryption_hash.substr(crypto::AES256_KeySize);
+        }
+        if (!utils::ResizeObfuscationHash(prefix + obfuscation_hash,
                                           processed_content.size(),
                                           &obfuscation_pad)) {
           DLOG(ERROR) << "SelfEncryptChunk: Could not create obfuscation pad."
@@ -268,8 +279,12 @@ std::string SelfDecryptChunk(const std::string &content,
       break;
     case kObfuscationRepeated:
       {
-        std::string obfuscation_pad;
-        if (!utils::ResizeObfuscationHash(obfuscation_hash,
+        std::string prefix, obfuscation_pad;
+        if (encryption_hash.size() > crypto::AES256_KeySize) {
+          // add the remainder of the encryption hash to the obfuscation hash
+          prefix = encryption_hash.substr(crypto::AES256_KeySize);
+        }
+        if (!utils::ResizeObfuscationHash(prefix + obfuscation_hash,
                                           processed_content.size(),
                                           &obfuscation_pad)) {
           DLOG(ERROR) << "SelfDecryptChunk: Could not create obfuscation pad."
