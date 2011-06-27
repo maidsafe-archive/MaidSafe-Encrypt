@@ -31,7 +31,7 @@
 #include "maidsafe/encrypt/config.h"
 #include "maidsafe/encrypt/version.h"
 
-#if MAIDSAFE_ENCRYPT_VERSION != 900
+#if MAIDSAFE_ENCRYPT_VERSION != 901
 #  error This API is not compatible with the installed library.\
     Please update the maidsafe-encrypt library.
 #endif
