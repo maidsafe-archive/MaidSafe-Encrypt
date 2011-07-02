@@ -56,7 +56,7 @@ bool CheckCompressibility(const std::string &sample,
     return false;
 
   std::string compressed_sample(Compress(sample, self_encryption_type));
-  double ratio = compressed_sample.size() / sample.size();
+  double ratio = static_cast<double>(compressed_sample.size()) / sample.size();
   return !compressed_sample.empty() && ratio <= 0.9;
 }
 

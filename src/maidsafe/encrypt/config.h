@@ -22,7 +22,7 @@
 
 #include "maidsafe/encrypt/version.h"
 
-#if MAIDSAFE_ENCRYPT_VERSION != 902
+#if MAIDSAFE_ENCRYPT_VERSION != 903
 #  error This API is not compatible with the installed library.\
     Please update the maidsafe-encrypt library.
 #endif
@@ -65,7 +65,7 @@ struct SelfEncryptionParams {
 };
 
 /// Amount of data to be tested for compressibility
-const std::uint32_t kCompressionSampleSize = 256;
+const std::uint32_t kCompressionSampleSize = 512;
 
 /// Minimum number of chunks generated per data item, dictated by algorithm
 const std::uint32_t kMinChunks(3);

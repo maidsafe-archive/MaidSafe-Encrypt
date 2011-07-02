@@ -117,8 +117,8 @@ std::streamsize SelfEncryptionDevice::write(const char *s, std::streamsize n) {
         --new_chunk_index;
         new_chunk_offset -=
             chunk_buffers_[new_chunk_index % kMinChunks].content.size();
-      } else if (offset_ > new_chunk_offset +
-                 chunk_buffers_[new_chunk_index % kMinChunks].content.size()) {
+      } else if (offset_ > new_chunk_offset + static_cast<io::stream_offset>(
+                 chunk_buffers_[new_chunk_index % kMinChunks].content.size())) {
         new_chunk_offset +=
             chunk_buffers_[new_chunk_index % kMinChunks].content.size();
         ++new_chunk_index;
@@ -230,8 +230,10 @@ std::streamsize SelfEncryptionDevice::write(const char *s, std::streamsize n) {
         self_encryption_params_.max_chunk_size - this_offset)));
 
     if (size > 0) {
-      if (this_offset + size > chunk_buffer.content.size())
+      if (this_offset + size >
+          static_cast<io::stream_offset>(chunk_buffer.content.size())) {
         chunk_buffer.content.resize(static_cast<size_t>(this_offset + size));
+      }
       memcpy(&(chunk_buffer.content[static_cast<size_t>(this_offset)]), s,
              static_cast<size_t>(size));
       chunk_buffer.hash.clear();
@@ -668,9 +670,9 @@ bool SelfEncryptionDevice::StoreChunkFromBuffer(
     // new chunk
     ChunkDetails chunk;
     chunk.pre_hash = chunk_buffer->hash;
-    chunk.pre_size = chunk_buffer->content.size();
+    chunk.pre_size = static_cast<uint32_t>(chunk_buffer->content.size());
     chunk.hash = hash;
-    chunk.size = encrypted_content.size();
+    chunk.size = static_cast<uint32_t>(encrypted_content.size());
     do_store = true;
     data_map_->chunks.push_back(chunk);
     data_map_->size += chunk.pre_size;
@@ -682,9 +684,9 @@ bool SelfEncryptionDevice::StoreChunkFromBuffer(
       deletable_chunks_.push_back(chunk.hash);
       data_map_->size -= chunk.pre_size;
       chunk.pre_hash = chunk_buffer->hash;
-      chunk.pre_size = chunk_buffer->content.size();
+      chunk.pre_size = static_cast<uint32_t>(chunk_buffer->content.size());
       chunk.hash = hash;
-      chunk.size = encrypted_content.size();
+      chunk.size = static_cast<uint32_t>(encrypted_content.size());
       do_store = true;
       data_map_->size += chunk.pre_size;
     }

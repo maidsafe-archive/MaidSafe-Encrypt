@@ -128,9 +128,9 @@ TEST_F(SelfEncryptionDeviceTest, BEH_Read) {
     EXPECT_TRUE(chunk_store->Store(hash_enc, content_enc));
     ChunkDetails chunk;
     chunk.pre_hash = hash_orig;
-    chunk.pre_size = content_orig.size();
+    chunk.pre_size = static_cast<uint32_t>(content_orig.size());
     chunk.hash = hash_enc;
-    chunk.size = content_enc.size();
+    chunk.size = static_cast<uint32_t>(content_enc.size());
     data_map->chunks.push_back(chunk);
     data_map->size = content_orig.size();
 
@@ -159,7 +159,7 @@ TEST_F(SelfEncryptionDeviceTest, BEH_Read) {
       content_orig.push_back(std::string(kChunkSize,
                                          'a' + static_cast<char>(i)));
       chunk.pre_hash = crypto::Hash<crypto::SHA512>(content_orig.back());
-      chunk.pre_size = content_orig.back().size();
+      chunk.pre_size = static_cast<uint32_t>(content_orig.back().size());
       data_map->chunks.push_back(chunk);
       data_map->size += chunk.pre_size;
     }
@@ -171,7 +171,7 @@ TEST_F(SelfEncryptionDeviceTest, BEH_Read) {
           test_sed::kDefaultSelfEncryptionType));
       std::string hash_enc(crypto::Hash<crypto::SHA512>(content_enc));
       data_map->chunks[i].hash = hash_enc;
-      data_map->chunks[i].size = content_enc.size();
+      data_map->chunks[i].size = static_cast<uint32_t>(content_enc.size());
       EXPECT_TRUE(chunk_store->Store(hash_enc, content_enc));
     }
 
@@ -606,9 +606,17 @@ TEST_F(SelfEncryptionDeviceTest, BEH_InitialiseDataMap) {
     EXPECT_EQ(8722, sed.data_map_->self_encryption_type);
   }
   {
-    // buffer content compressible
-    std::string data = RandomString(200);
-    buffer.content = data + data + data + data + data;
+    // buffer content compresses to ~90.4% (fails compression check)
+    buffer.content = "AAAABBBBCCCCDDDDEEEEFFFFGGGGHHHHIIIIJJJJKKKKLLLLMMMM";
+    sed.InitialiseDataMap(buffer);
+    EXPECT_EQ(0, sed.data_map_->size);
+    EXPECT_EQ(0, sed.data_map_->chunks.size());
+    EXPECT_EQ("", sed.data_map_->content);
+    EXPECT_EQ(8722, sed.data_map_->self_encryption_type);
+  }
+  {
+    // buffer content compresses to ~89.1% (passes compression check)
+    buffer.content = "AAAABBBBCCCCDDDDEEEEFFFFGGGGHHHHIIIIJJJJKKKKLLLLMMMMAAP";
     sed.InitialiseDataMap(buffer);
     EXPECT_EQ(0, sed.data_map_->size);
     EXPECT_EQ(0, sed.data_map_->chunks.size());
@@ -706,8 +714,8 @@ TEST_F(SelfEncryptionDeviceTest, BEH_FinaliseWriting) {
     ChunkDetails chunk;
     chunk.hash = data_hash;
     chunk.pre_hash = data_hash;
-    chunk.size = data.size();
-    chunk.pre_size = data.size();
+    chunk.size = static_cast<uint32_t>(data.size());
+    chunk.pre_size = static_cast<uint32_t>(data.size());
     data_map->chunks.push_back(chunk);
     EXPECT_TRUE(sed.FinaliseWriting(0));
     EXPECT_EQ(0, sed.pending_chunks_.size());
@@ -791,12 +799,12 @@ TEST_F(SelfEncryptionDeviceTest, BEH_LoadChunkIntoBuffer) {
                                          test_sed::kDefaultSelfEncryptionType);
     chunk1.hash = data1_hash;
     chunk1.pre_hash = data1_hash;
-    chunk1.size = data1.size();
-    chunk1.pre_size = data1.size();
+    chunk1.size = static_cast<uint32_t>(data1.size());
+    chunk1.pre_size = static_cast<uint32_t>(data1.size());
     chunk2.hash = data2_hash;
     chunk2.pre_hash = data2_hash;
-    chunk2.size = data2.size();
-    chunk2.pre_size = data2.size();
+    chunk2.size = static_cast<uint32_t>(data2.size());
+    chunk2.pre_size = static_cast<uint32_t>(data2.size());
     data_map->chunks.push_back(chunk1);
     data_map->chunks.push_back(chunk2);
     EXPECT_EQ("", sed.chunk_buffers_[2].content);
