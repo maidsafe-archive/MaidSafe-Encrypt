@@ -122,7 +122,7 @@ TEST_F(SelfEncryptionDeviceTest, BEH_Read) {
     std::string content_orig(RandomString(100));
     std::string hash_orig(crypto::Hash<crypto::SHA512>(content_orig));
     std::string content_enc(utils::SelfEncryptChunk(
-        content_orig, hash_orig, hash_orig,
+        content_orig, hash_orig, hash_orig, hash_orig,
         test_sed::kDefaultSelfEncryptionType));
     std::string hash_enc(crypto::Hash<crypto::SHA512>(content_enc));
     EXPECT_TRUE(chunk_store->Store(hash_enc, content_enc));
@@ -166,7 +166,8 @@ TEST_F(SelfEncryptionDeviceTest, BEH_Read) {
 
     for (size_t i = 0; i < kChunkCount; ++i) {
       std::string content_enc(utils::SelfEncryptChunk(
-          content_orig[i], data_map->chunks[(i + 1) % kChunkCount].pre_hash,
+          content_orig[i], data_map->chunks[i].pre_hash,
+          data_map->chunks[(i + 1) % kChunkCount].pre_hash,
           data_map->chunks[(i + 2) % kChunkCount].pre_hash,
           test_sed::kDefaultSelfEncryptionType));
       std::string hash_enc(crypto::Hash<crypto::SHA512>(content_enc));
@@ -592,7 +593,7 @@ TEST_F(SelfEncryptionDeviceTest, BEH_InitialiseDataMap) {
     sed.InitialiseDataMap(buffer);
     EXPECT_EQ(0, sed.data_map_->size);
     EXPECT_EQ(0, sed.data_map_->chunks.size());
-    EXPECT_EQ("", sed.data_map_->content);
+    EXPECT_TRUE(sed.data_map_->content.empty());
     EXPECT_EQ(8722, sed.data_map_->self_encryption_type);
   }
   {
@@ -602,7 +603,7 @@ TEST_F(SelfEncryptionDeviceTest, BEH_InitialiseDataMap) {
     sed.InitialiseDataMap(buffer);
     EXPECT_EQ(0, sed.data_map_->size);
     EXPECT_EQ(0, sed.data_map_->chunks.size());
-    EXPECT_EQ("", sed.data_map_->content);
+    EXPECT_TRUE(sed.data_map_->content.empty());
     EXPECT_EQ(8722, sed.data_map_->self_encryption_type);
   }
   {
@@ -611,7 +612,7 @@ TEST_F(SelfEncryptionDeviceTest, BEH_InitialiseDataMap) {
     sed.InitialiseDataMap(buffer);
     EXPECT_EQ(0, sed.data_map_->size);
     EXPECT_EQ(0, sed.data_map_->chunks.size());
-    EXPECT_EQ("", sed.data_map_->content);
+    EXPECT_TRUE(sed.data_map_->content.empty());
     EXPECT_EQ(8722, sed.data_map_->self_encryption_type);
   }
   {
@@ -620,7 +621,7 @@ TEST_F(SelfEncryptionDeviceTest, BEH_InitialiseDataMap) {
     sed.InitialiseDataMap(buffer);
     EXPECT_EQ(0, sed.data_map_->size);
     EXPECT_EQ(0, sed.data_map_->chunks.size());
-    EXPECT_EQ("", sed.data_map_->content);
+    EXPECT_TRUE(sed.data_map_->content.empty());
     EXPECT_EQ(sed.default_self_encryption_type_,
               sed.data_map_->self_encryption_type);
   }
@@ -710,7 +711,7 @@ TEST_F(SelfEncryptionDeviceTest, BEH_FinaliseWriting) {
     EXPECT_TRUE(sed.FinaliseWriting(0));
     EXPECT_EQ(0, sed.pending_chunks_.size());
     // no change
-    sed.chunk_buffers_[0].hash = "";
+    sed.chunk_buffers_[0].hash.clear();
     ChunkDetails chunk;
     chunk.hash = data_hash;
     chunk.pre_hash = data_hash;
@@ -730,7 +731,7 @@ TEST_F(SelfEncryptionDeviceTest, BEH_FinaliseWriting) {
     sed.pending_chunks_.clear();
     sed.chunk_buffers_[2].content = data;
     sed.chunk_buffers_[2].index = 2;
-    sed.chunk_buffers_[1].hash = "";
+    sed.chunk_buffers_[1].hash.clear();
     EXPECT_FALSE(sed.FinaliseWriting(2));
     EXPECT_EQ(0, sed.pending_chunks_.size());
   }
@@ -770,15 +771,15 @@ TEST_F(SelfEncryptionDeviceTest, BEH_LoadChunkIntoBuffer) {
     // empty datamap and buffer
     SelfEncryptionDevice::ChunkBuffer buffer;
     EXPECT_FALSE(sed.LoadChunkIntoBuffer(0, &buffer));
-    EXPECT_EQ("", sed.chunk_buffers_[0].content);
+    EXPECT_TRUE(sed.chunk_buffers_[0].content.empty());
     // already loaded
     sed.chunk_buffers_[0].content = data;
     EXPECT_TRUE(sed.LoadChunkIntoBuffer(0, &sed.chunk_buffers_[0]));
     EXPECT_EQ(data, sed.chunk_buffers_[0].content);
     // invalid index
-    sed.chunk_buffers_[0].content = "";
+    sed.chunk_buffers_[0].content.clear();
     EXPECT_FALSE(sed.LoadChunkIntoBuffer(1, &sed.chunk_buffers_[0]));
-    EXPECT_EQ("", sed.chunk_buffers_[0].content);
+    EXPECT_TRUE(sed.chunk_buffers_[0].content.empty());
   }
   {
     std::shared_ptr<DataMap> data_map(new DataMap);
@@ -807,7 +808,7 @@ TEST_F(SelfEncryptionDeviceTest, BEH_LoadChunkIntoBuffer) {
     chunk2.pre_size = static_cast<uint32_t>(data2.size());
     data_map->chunks.push_back(chunk1);
     data_map->chunks.push_back(chunk2);
-    EXPECT_EQ("", sed.chunk_buffers_[2].content);
+    EXPECT_TRUE(sed.chunk_buffers_[2].content.empty());
     EXPECT_TRUE(sed.LoadChunkIntoBuffer(2, &sed.chunk_buffers_[2]));
     EXPECT_EQ(data, sed.chunk_buffers_[2].content);
   }
@@ -840,20 +841,22 @@ TEST_F(SelfEncryptionDeviceTest, BEH_StoreChunkFromBuffer) {
   std::shared_ptr<ChunkStore> chunk_store(
       new MemoryChunkStore(true, hash_func_));
   SelfEncryptionDevice::ChunkBuffer buffer;
-  std::string enc_hash, obf_hash, data;
+  std::string own_hash, enc_hash, obf_hash, data;
   {
     std::shared_ptr<DataMap> data_map(new DataMap);
     data_map->self_encryption_type = test_sed::kDefaultSelfEncryptionType;
     SelfEncryptionDevice sed(data_map, chunk_store);
     // empty chunk buffer
-    EXPECT_FALSE(sed.StoreChunkFromBuffer(&buffer, enc_hash, obf_hash));
+    EXPECT_FALSE(sed.StoreChunkFromBuffer(&buffer, own_hash, enc_hash,
+                                          obf_hash));
     // store to datamap
     data = RandomString(SelfEncryptionParams().max_chunk_size);
     buffer.content = data;
-    EXPECT_TRUE(sed.StoreChunkFromBuffer(&buffer, enc_hash, obf_hash));
+    EXPECT_TRUE(sed.StoreChunkFromBuffer(&buffer, own_hash, enc_hash,
+                                         obf_hash));
     EXPECT_EQ(data.size(), data_map->size);
     EXPECT_EQ(data, data_map->content);
-    EXPECT_EQ("", buffer.content);
+    EXPECT_TRUE(buffer.content.empty());
   }
   {
     std::shared_ptr<DataMap> data_map(new DataMap);
@@ -864,11 +867,19 @@ TEST_F(SelfEncryptionDeviceTest, BEH_StoreChunkFromBuffer) {
     buffer.content = data;
     enc_hash = utils::Hash(RandomString(SelfEncryptionParams().max_chunk_size),
                            data_map->self_encryption_type);
-    EXPECT_FALSE(sed.StoreChunkFromBuffer(&buffer, enc_hash, obf_hash));
+    own_hash = enc_hash;
+    EXPECT_FALSE(sed.StoreChunkFromBuffer(&buffer, own_hash, enc_hash,
+                                          obf_hash));
     EXPECT_EQ(0, data_map->size);
     obf_hash = enc_hash;
-    enc_hash = "";
-    EXPECT_FALSE(sed.StoreChunkFromBuffer(&buffer, enc_hash, obf_hash));
+    enc_hash.clear();
+    EXPECT_FALSE(sed.StoreChunkFromBuffer(&buffer, own_hash, enc_hash,
+                                          obf_hash));
+    EXPECT_EQ(0, data_map->size);
+    enc_hash = obf_hash;
+    own_hash.clear();
+    EXPECT_FALSE(sed.StoreChunkFromBuffer(&buffer, own_hash, enc_hash,
+                                          obf_hash));
     EXPECT_EQ(0, data_map->size);
   }
   {
@@ -878,25 +889,28 @@ TEST_F(SelfEncryptionDeviceTest, BEH_StoreChunkFromBuffer) {
     data = RandomString(SelfEncryptionParams().max_chunk_size*7);
     EXPECT_EQ(data.size(), sed.write(&data[0], data.size()));
     // store new chunk
+    own_hash = sed.chunk_buffers_[1].hash;
     enc_hash = sed.chunk_buffers_[2].hash;
     obf_hash = utils::Hash(sed.chunk_buffers_[0].content,
                            data_map->self_encryption_type);
     EXPECT_EQ(4, data_map->chunks.size());
     EXPECT_EQ(4, chunk_store->Count());
-    EXPECT_TRUE(sed.StoreChunkFromBuffer(&sed.chunk_buffers_[1],
+    EXPECT_TRUE(sed.StoreChunkFromBuffer(&sed.chunk_buffers_[1], own_hash,
                                          enc_hash, obf_hash));
     EXPECT_EQ(5, data_map->chunks.size());
     EXPECT_EQ(5, chunk_store->Count());
     // attempt to store again unchanged
-    EXPECT_TRUE(sed.StoreChunkFromBuffer(&sed.chunk_buffers_[1],
+    EXPECT_TRUE(sed.StoreChunkFromBuffer(&sed.chunk_buffers_[1], own_hash,
                                          enc_hash, obf_hash));
     EXPECT_EQ(5, data_map->chunks.size());
     EXPECT_EQ(5, chunk_store->Count());
     // modify same chunk and store again
     sed.chunk_buffers_[1].content =
         RandomString(SelfEncryptionParams().max_chunk_size);
+    own_hash = utils::Hash(sed.chunk_buffers_[1].content,
+                           data_map->self_encryption_type);
     EXPECT_EQ(0, sed.deletable_chunks_.size());
-    EXPECT_TRUE(sed.StoreChunkFromBuffer(&sed.chunk_buffers_[1],
+    EXPECT_TRUE(sed.StoreChunkFromBuffer(&sed.chunk_buffers_[1], own_hash,
                                          enc_hash, obf_hash));
     EXPECT_EQ(1, sed.deletable_chunks_.size());
     EXPECT_EQ(5, data_map->chunks.size());

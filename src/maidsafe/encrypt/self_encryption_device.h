@@ -23,6 +23,7 @@
 #include <map>
 #include <set>
 #include <string>
+#include <tuple>
 #include <vector>
 
 #include "boost/iostreams/concepts.hpp"
@@ -89,6 +90,7 @@ class SelfEncryptionDevice {
   bool FinaliseWriting(const size_t &index);
   bool LoadChunkIntoBuffer(const size_t &index, ChunkBuffer *chunk_buffer);
   bool StoreChunkFromBuffer(ChunkBuffer *chunk_buffer,
+                            const std::string &own_hash,
                             const std::string &encryption_hash,
                             const std::string &obfuscation_hash);
   SelfEncryptionParams self_encryption_params_;
@@ -99,7 +101,8 @@ class SelfEncryptionDevice {
   io::stream_offset offset_, current_chunk_offset_;
   size_t current_chunk_index_;
   std::array<ChunkBuffer, kMinChunks> chunk_buffers_;
-  std::map<size_t, std::pair<std::string, std::string> > crypto_hashes_;
+  std::map<size_t, std::tuple<std::string, std::string, std::string>>
+      crypto_hashes_;
   std::set<size_t> pending_chunks_;
   std::vector<std::string> deletable_chunks_;
   bool write_mode_;

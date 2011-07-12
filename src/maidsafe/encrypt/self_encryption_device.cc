@@ -323,12 +323,14 @@ bool SelfEncryptionDevice::flush() {
       }
 
       for (i = 0; i < kMinChunks; ++i) {
-        crypto_hashes_[i] = std::make_pair(
+        crypto_hashes_[i] = std::make_tuple(
+            chunk_buffers_[i].hash,
             chunk_buffers_[(i + 1) % kMinChunks].hash,
             chunk_buffers_[(i + 2) % kMinChunks].hash);
         if (!StoreChunkFromBuffer(&(chunk_buffers_[i]),
-                                  crypto_hashes_[i].first,
-                                  crypto_hashes_[i].second)) {
+                                  std::get<0>(crypto_hashes_[i]),
+                                  std::get<1>(crypto_hashes_[i]),
+                                  std::get<2>(crypto_hashes_[i]))) {
           DLOG(ERROR) << "flush: Could not store chunk " << i << std::endl;
           return false;
         }
@@ -346,7 +348,7 @@ bool SelfEncryptionDevice::flush() {
             self_encryption_params_.max_includable_chunk_size) {
       // store last chunk in DataMap
       if (!StoreChunkFromBuffer(&(chunk_buffers_[highest_index % kMinChunks]),
-                                "", "")) {
+                                "", "", "")) {
         DLOG(ERROR) << "flush: Could not store chunk " << highest_index
                     << " in DataMap." << std::endl;
         return false;
@@ -377,11 +379,18 @@ bool SelfEncryptionDevice::flush() {
     // (re-)encrypt all the remaining chunks
     while (!pending_chunks_.empty()) {
       const size_t idx(*(pending_chunks_.begin()));
+      bool this_buf(chunk_buffers_[idx % kMinChunks].index == idx &&
+                    !chunk_buffers_[idx % kMinChunks].hash.empty());
       bool next_buf(chunk_buffers_[(idx + 1) % kMinChunks].index == idx + 1 &&
                     !chunk_buffers_[(idx + 1) % kMinChunks].hash.empty());
       bool next2_buf(chunk_buffers_[(idx + 2) % kMinChunks].index == idx + 2 &&
                      !chunk_buffers_[(idx + 2) % kMinChunks].hash.empty());
-      std::string encryption_hash, obfuscation_hash;
+      std::string this_hash, encryption_hash, obfuscation_hash;
+      if (this_buf)
+        this_hash = chunk_buffers_[idx % kMinChunks].hash;
+      else
+        this_hash = data_map_->chunks[idx % data_map_->chunks.size()].pre_hash;
+
       if (next_buf)
         encryption_hash = chunk_buffers_[(idx + 1) % kMinChunks].hash;
       else if (idx == data_map_->chunks.size())
@@ -404,13 +413,15 @@ bool SelfEncryptionDevice::flush() {
           data_map_->chunks[(idx + 2) % data_map_->chunks.size()].pre_hash;
       }
 
-      crypto_hashes_[idx] = std::make_pair(encryption_hash, obfuscation_hash);
+      crypto_hashes_[idx] = std::make_tuple(this_hash, encryption_hash,
+                                            obfuscation_hash);
 
       if ((chunk_buffers_[idx % kMinChunks].index == idx &&
              !StoreChunkFromBuffer(&(chunk_buffers_[idx % kMinChunks]),
-                                   encryption_hash, obfuscation_hash)) ||
+                                   this_hash, encryption_hash,
+                                   obfuscation_hash)) ||
           (temp_buffers.count(idx) > 0 &&
-             !StoreChunkFromBuffer(&(temp_buffers[idx]),
+             !StoreChunkFromBuffer(&(temp_buffers[idx]), this_hash,
                                    encryption_hash, obfuscation_hash))) {
         DLOG(ERROR) << "flush: Could not store chunk " << idx << std::endl;
         return false;
@@ -511,6 +522,18 @@ bool SelfEncryptionDevice::FinaliseWriting(const size_t &index) {
 
   // we need to update pre-predecessor
   size_t prepred(index + 1 - kMinChunks), pred(prepred + 1);
+  std::string prepred_hash;
+  if (chunk_buffers_[prepred % kMinChunks].index == prepred)
+    prepred_hash = chunk_buffers_[prepred % kMinChunks].hash;
+  else if (prepred < data_map_->chunks.size())
+    prepred_hash = data_map_->chunks[prepred].pre_hash;
+
+  if (prepred_hash.empty()) {
+    DLOG(ERROR) << "FinaliseWriting: Could not get own hash for "
+                << prepred << "." << std::endl;
+    return false;
+  }
+
   std::string encryption_hash;
   if (chunk_buffers_[pred % kMinChunks].index == pred)
     encryption_hash = chunk_buffers_[pred % kMinChunks].hash;
@@ -536,8 +559,9 @@ bool SelfEncryptionDevice::FinaliseWriting(const size_t &index) {
     return false;
   }
 
-  crypto_hashes_[prepred] = std::make_pair(encryption_hash, chunk_buffer.hash);
-  if (!StoreChunkFromBuffer(prepred_chunk_buffer, encryption_hash,
+  crypto_hashes_[prepred] = std::make_tuple(prepred_hash, encryption_hash,
+                                            chunk_buffer.hash);
+  if (!StoreChunkFromBuffer(prepred_chunk_buffer, prepred_hash, encryption_hash,
                             chunk_buffer.hash)) {
     DLOG(ERROR) << "FinaliseWriting: Could not store pre-predecessor of "
                 << index << "." << std::endl;
@@ -587,24 +611,26 @@ bool SelfEncryptionDevice::LoadChunkIntoBuffer(const size_t &index,
 
   const ChunkDetails &chunk = data_map_->chunks[index];
   if (chunk_buffer->content.empty() || chunk_buffer->hash != chunk.pre_hash) {
-    std::string encryption_hash, obfuscation_hash;
+    std::string own_hash, encryption_hash, obfuscation_hash;
     if (crypto_hashes_.count(index) > 0) {
-      encryption_hash = crypto_hashes_[index].first;
-      obfuscation_hash = crypto_hashes_[index].second;
+      own_hash = std::get<0>(crypto_hashes_[index]);
+      encryption_hash = std::get<1>(crypto_hashes_[index]);
+      obfuscation_hash = std::get<2>(crypto_hashes_[index]);
     } else {
+      own_hash = chunk.pre_hash;
       encryption_hash = data_map_->chunks[(index + 1) % chunk_count].pre_hash;
       obfuscation_hash = data_map_->chunks[(index + 2) % chunk_count].pre_hash;
     }
 
     DLOG(INFO) << "LoadChunkIntoBuffer: Self-decrypting chunk " << index
-               << " using hashes " << EncodeToHex(chunk.pre_hash).substr(0, 8)
+               << " using hashes " << EncodeToHex(own_hash).substr(0, 8)
                << ".. | " << EncodeToHex(encryption_hash).substr(0, 8)
                << ".. | " << EncodeToHex(obfuscation_hash).substr(0, 8) << ".."
                << std::endl;
 
     chunk_buffer->content = utils::SelfDecryptChunk(
-        chunk_store_->Get(chunk.hash), encryption_hash, obfuscation_hash,
-        data_map_->self_encryption_type);
+        chunk_store_->Get(chunk.hash), own_hash, encryption_hash,
+        obfuscation_hash, data_map_->self_encryption_type);
     chunk_buffer->hash = chunk.pre_hash;
   }
   chunk_buffer->index = index;
@@ -629,6 +655,7 @@ bool SelfEncryptionDevice::LoadChunkIntoBuffer(const size_t &index,
 
 bool SelfEncryptionDevice::StoreChunkFromBuffer(
     ChunkBuffer *chunk_buffer,
+    const std::string &own_hash,
     const std::string &encryption_hash,
     const std::string &obfuscation_hash) {
   if (chunk_buffer->content.empty()) {
@@ -637,7 +664,7 @@ bool SelfEncryptionDevice::StoreChunkFromBuffer(
     return false;
   }
 
-  if (encryption_hash.empty() && obfuscation_hash.empty()) {
+  if (own_hash.empty() && encryption_hash.empty() && obfuscation_hash.empty()) {
     data_map_->content = chunk_buffer->content;
     data_map_->size += chunk_buffer->content.size();
     pending_chunks_.erase(chunk_buffer->index);
@@ -652,7 +679,7 @@ bool SelfEncryptionDevice::StoreChunkFromBuffer(
   // TODO(Steve) optimisation: check cache for existing hash triple
 
   std::string encrypted_content(utils::SelfEncryptChunk(
-      chunk_buffer->content, encryption_hash, obfuscation_hash,
+      chunk_buffer->content, own_hash, encryption_hash, obfuscation_hash,
       data_map_->self_encryption_type));
 
   if (encrypted_content.empty()) {

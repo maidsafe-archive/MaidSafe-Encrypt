@@ -142,9 +142,9 @@ std::string Hash(const std::string &input,
  * secure than simple repetition when used together with encryption, just a lot
  * slower, so we avoid it until disproven.
  */
-bool ResizeObfuscationHash(const std::string &input,
-                           const size_t &required_size,
-                           std::string *resized_data) {
+bool ResizeInput(const std::string &input,
+                 const size_t &required_size,
+                 std::string *resized_data) {
   if (input.empty() || !resized_data)
     return false;
 
@@ -163,10 +163,12 @@ bool ResizeObfuscationHash(const std::string &input,
 }
 
 std::string SelfEncryptChunk(const std::string &content,
+                             const std::string &own_hash,
                              const std::string &encryption_hash,
                              const std::string &obfuscation_hash,
                              const uint32_t &self_encryption_type) {
-  if (content.empty() || encryption_hash.empty() || obfuscation_hash.empty()) {
+  if (content.empty() || own_hash.empty() || encryption_hash.empty() ||
+      obfuscation_hash.empty()) {
     DLOG(ERROR) << "SelfEncryptChunk: Invalid arguments passed." << std::endl;
     return "";
   }
@@ -182,14 +184,18 @@ std::string SelfEncryptChunk(const std::string &content,
       break;
     case kObfuscationRepeated:
       {
-        std::string prefix, obfuscation_pad;
-        if (encryption_hash.size() > crypto::AES256_KeySize) {
-          // add the remainder of the encryption hash to the obfuscation hash
-          prefix = encryption_hash.substr(crypto::AES256_KeySize);
-        }
-        if (!utils::ResizeObfuscationHash(prefix + obfuscation_hash,
-                                          processed_content.size(),
-                                          &obfuscation_pad)) {
+        std::string obfuscation_pad;
+        // concatenate any remainder of the encryption hash to the obfuscation
+        // hash and lastly concatenate the chunk's own hash
+        if (!utils::ResizeInput(
+              obfuscation_hash + 
+                  ((encryption_hash.size() > 
+                      (crypto::AES256_KeySize + crypto::AES256_IVSize)) ?
+                          encryption_hash.substr(crypto::AES256_KeySize +
+                                                 crypto::AES256_IVSize) : "") +
+                  own_hash,
+              processed_content.size(),
+              &obfuscation_pad)) {
           DLOG(ERROR) << "SelfEncryptChunk: Could not create obfuscation pad."
                       << std::endl;
           return "";
@@ -210,10 +216,9 @@ std::string SelfEncryptChunk(const std::string &content,
     case kCryptoAes256:
       {
         std::string enc_hash;
-        if (!ResizeObfuscationHash(encryption_hash,
-                                   crypto::AES256_KeySize +
-                                       crypto::AES256_IVSize,
-                                   &enc_hash)) {
+        if (!ResizeInput(encryption_hash,
+                         crypto::AES256_KeySize + crypto::AES256_IVSize,
+                         &enc_hash)) {
           DLOG(ERROR) << "SelfEncryptChunk: Could not expand encryption hash."
                       << std::endl;
           return "";
@@ -234,10 +239,12 @@ std::string SelfEncryptChunk(const std::string &content,
 }
 
 std::string SelfDecryptChunk(const std::string &content,
+                             const std::string &own_hash,
                              const std::string &encryption_hash,
                              const std::string &obfuscation_hash,
                              const uint32_t &self_encryption_type) {
-  if (content.empty() || encryption_hash.empty() || obfuscation_hash.empty()) {
+  if (content.empty() || own_hash.empty() || encryption_hash.empty() ||
+      obfuscation_hash.empty()) {
     DLOG(ERROR) << "SelfDecryptChunk: Invalid arguments passed." << std::endl;
     return "";
   }
@@ -253,10 +260,9 @@ std::string SelfDecryptChunk(const std::string &content,
     case kCryptoAes256:
       {
         std::string enc_hash;
-        if (!ResizeObfuscationHash(encryption_hash,
-                                   crypto::AES256_KeySize +
-                                       crypto::AES256_IVSize,
-                                   &enc_hash)) {
+        if (!ResizeInput(encryption_hash,
+                         crypto::AES256_KeySize + crypto::AES256_IVSize,
+                         &enc_hash)) {
           DLOG(ERROR) << "SelfDecryptChunk: Could not expand encryption hash."
                       << std::endl;
           return "";
@@ -279,14 +285,18 @@ std::string SelfDecryptChunk(const std::string &content,
       break;
     case kObfuscationRepeated:
       {
-        std::string prefix, obfuscation_pad;
-        if (encryption_hash.size() > crypto::AES256_KeySize) {
-          // add the remainder of the encryption hash to the obfuscation hash
-          prefix = encryption_hash.substr(crypto::AES256_KeySize);
-        }
-        if (!utils::ResizeObfuscationHash(prefix + obfuscation_hash,
-                                          processed_content.size(),
-                                          &obfuscation_pad)) {
+        std::string obfuscation_pad;
+        // concatenate any remainder of the encryption hash to the obfuscation
+        // hash and lastly concatenate the chunk's own hash
+        if (!utils::ResizeInput(
+              obfuscation_hash + 
+                  ((encryption_hash.size() > 
+                      (crypto::AES256_KeySize + crypto::AES256_IVSize)) ?
+                          encryption_hash.substr(crypto::AES256_KeySize +
+                                                 crypto::AES256_IVSize) : "") +
+                  own_hash,
+              processed_content.size(),
+              &obfuscation_pad)) {
           DLOG(ERROR) << "SelfDecryptChunk: Could not create obfuscation pad."
                       << std::endl;
           return "";
