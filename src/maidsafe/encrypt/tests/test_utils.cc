@@ -175,6 +175,27 @@ TEST(SelfEncryptionUtilsTest, BEH_ResizeObfuscationHash) {
          sep.max_chunk_size, kRepetitions, duration / 1000.0);
 }
 
+TEST(SelfEncryptionUtilsTest, XORtest) {
+ // EXPECT_TRUE(XOR("A", "").empty()); // Exception - no pad
+  EXPECT_TRUE(XOR("", "B").empty());
+  EXPECT_EQ(XOR("A", "BB"), XOR("B", "A"));
+  const size_t kStringSize(1024*256);
+  std::string str1 = RandomString(kStringSize);
+  std::string str2 = RandomString(kStringSize);
+  std::string obfuscated = XOR(str1, str2);
+  EXPECT_EQ(kStringSize, obfuscated.size());
+  EXPECT_EQ(obfuscated, XOR(str2, str1));
+  EXPECT_EQ(str1, XOR(obfuscated, str2));
+  EXPECT_EQ(str2, XOR(obfuscated, str1));
+  const std::string kZeros(kStringSize, 0);
+  EXPECT_EQ(kZeros, XOR(str1, str1));
+  EXPECT_EQ(str1, XOR(kZeros, str1));
+  const std::string kKnown1("\xa5\x5a");
+  const std::string kKnown2("\x5a\xa5");
+  EXPECT_EQ(std::string("\xff\xff"), XOR(kKnown1, kKnown2));
+  
+}
+
 TEST(SelfEncryptionUtilsTest, BEH_SelfEnDecryptChunk) {
   // leaving out hashing, since it's not relevant
   const std::array<std::uint32_t, 8> combinations = { {
@@ -233,14 +254,14 @@ TEST(SelfEncryptionUtilsTest, BEH_SelfEnDecryptChunk) {
     else
       EXPECT_NE(content, SelfDecryptChunk(content_enc[i], hash2, hash1,
                                           combinations[i])) << i;
-
     for (size_t j = 0; j < combinations.size(); ++j)
-      if (i == j)
+      if (i == j) {
         EXPECT_EQ(content, SelfDecryptChunk(content_enc[i], hash1, hash2,
                                             combinations[j])) << i << " " << j;
-      else
+      } else {
         EXPECT_NE(content, SelfDecryptChunk(content_enc[i], hash1, hash2,
                                             combinations[j])) << i << " " << j;
+      }
   }
 }
 

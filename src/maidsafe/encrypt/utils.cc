@@ -18,7 +18,25 @@
 
 #include <algorithm>
 #include <set>
+#ifdef __MSVC__
+#  pragma warning(push, 1)
+#  pragma warning(disable: 4702)
+#endif
 
+#include "cryptopp/gzip.h"
+#include "cryptopp/hex.h"
+#include "cryptopp/aes.h"
+#include "cryptopp/modes.h"
+#include "cryptopp/rsa.h"
+#include "cryptopp/osrng.h"
+#include "cryptopp/integer.h"
+#include "cryptopp/pwdbased.h"
+#include "cryptopp/cryptlib.h"
+#include "cryptopp/filters.h"
+
+#ifdef __MSVC__
+#  pragma warning(pop)
+#endif
 #include "boost/filesystem/fstream.hpp"
 #include "maidsafe/common/crypto.h"
 #include "maidsafe/common/utils.h"
@@ -33,6 +51,90 @@ namespace maidsafe {
 namespace encrypt {
 
 namespace utils {
+
+/**
+ * Implementation of XOR transformation filter to allow pipe-lining
+ *
+ */
+size_t XORFilter::Put2(const byte* inString,
+                      size_t length,
+                      int messageEnd,
+                      bool blocking) {
+  // Anything to process for us? If not, we will pass it on
+  // to the lower filter just in case... from example
+  if((length == 0))
+        return AttachedTransformation()->Put2(inString,
+                                          length,
+                                          messageEnd,
+                                          blocking);
+  if((pad_.size() == 0))
+    throw CryptoPP::Exception(CryptoPP::Exception::INVALID_DATA_FORMAT,
+                              "XORFilter zero length PAD passed");
+
+  size_t pad_limit(pad_.size());
+  size_t buffer_size(length);
+  // Do XOR
+
+  byte *pad = new byte[pad_limit];
+  memcpy(pad, pad_.c_str(), pad_limit); 
+  
+  byte *buffer = new byte[length];
+
+  for (size_t i = 0; i <= length; ++i) {
+     buffer[i] = inString[i] ^ pad[i%pad_limit]; // don't overrun the pad
+   }
+
+  return AttachedTransformation()->Put2(buffer,
+                                        length,
+                                        messageEnd,
+                                        blocking );
+}  
+
+/**
+ * Implementation of an AES transformation filter to allow pipe-lining
+ * This can be done with cfb - do not change cypher without reading a lot 
+ */
+size_t AESFilter::Put2(const byte* inString,
+                      size_t length,
+                      int messageEnd,
+                      bool blocking) {
+  // Anything to process for us? If not, we will pass it on
+  // to the lower filter just in case... from example
+  if((length == 0))
+        return AttachedTransformation()->Put2(inString,
+                                          length,
+                                          messageEnd,
+                                          blocking);
+        
+  byte byte_key[crypto::AES256_KeySize], byte_iv[crypto::AES256_IVSize];
+  // Encryption key
+  CryptoPP::StringSource(enc_hash_.substr(0, crypto::AES256_KeySize),
+                        true,
+                        new CryptoPP::ArraySink(byte_key,
+                                                sizeof(byte_key)));
+  // IV
+  CryptoPP::StringSource(enc_hash_.substr(crypto::AES256_KeySize,
+                                        crypto::AES256_IVSize),
+                                        true,
+                                    new CryptoPP::ArraySink(byte_iv,
+                                                            sizeof(byte_iv)));
+    const byte *out_string;
+  if (encrypt_) {
+  // Encryptor object
+  CryptoPP::CFB_Mode<CryptoPP::AES>::Encryption encryptor(byte_key,
+    sizeof(byte_key), byte_iv);
+    encryptor.ProcessData((byte*)out_string, (byte*)inString, length);
+  } else {
+  //decryptor object
+    CryptoPP::CFB_Mode<CryptoPP::AES>::Decryption decryptor(byte_key,
+    sizeof(byte_key), byte_iv);
+     decryptor.ProcessData((byte*)out_string, (byte*)inString, length);
+  }
+  return AttachedTransformation()->Put2(out_string,
+                                         length,
+                                         messageEnd,
+                                         blocking);
+};
 
 bool IsCompressedFile(const fs::path &file_path) {
   size_t ext_count = sizeof(kNoCompressType) / sizeof(kNoCompressType[0]);
@@ -162,6 +264,18 @@ bool ResizeObfuscationHash(const std::string &input,
   return true;
 }
 
+
+std::string XOR(const std::string data, const std::string pad){
+std::string result;
+        CryptoPP::StringSource (data,true,
+                               new XORFilter(
+                               new CryptoPP::StringSink(result),
+                               pad
+                              ));
+        return result;
+}
+  
+
 std::string SelfEncryptChunk(const std::string &content,
                              const std::string &encryption_hash,
                              const std::string &obfuscation_hash,
@@ -170,11 +284,33 @@ std::string SelfEncryptChunk(const std::string &content,
     DLOG(ERROR) << "SelfEncryptChunk: Invalid arguments passed." << std::endl;
     return "";
   }
-
-  // TODO(Steve) chain all of the following, do processing in-place
+  if (((self_encryption_type & kCompressionMask) == kCompressionNone) ||
+      ((self_encryption_type & kObfuscationMask) == kObfuscationNone) ||
+      ((self_encryption_type & kCryptoMask) == kCryptoNone))
+    return ""; // nothing to do !!
+  std::string processed_content;
+  
+// Attach and detach operations to anchor
+  Anchor anchor;
 
   // compression
-  std::string processed_content(Compress(content, self_encryption_type));
+  switch (self_encryption_type & kCompressionMask) {
+    case kCompressionNone:
+      processed_content = content;
+      break;
+    case kCompressionGzip:
+      try {
+      std::string result;
+      anchor.Attach(new CryptoPP::Gzip(
+         new CryptoPP::StringSink(processed_content), 9));
+      
+      }
+      catch(const CryptoPP::Exception &e) {
+      DLOG(ERROR) << e.what();
+  }
+    default:
+      DLOG(ERROR) << "Compress: Invalid compression type passed." << std::endl;
+  }
 
   // obfuscation
   switch (self_encryption_type & kObfuscationMask) {
@@ -182,19 +318,17 @@ std::string SelfEncryptChunk(const std::string &content,
       break;
     case kObfuscationRepeated:
       {
-        std::string prefix, obfuscation_pad;
+        std::string prefix;
         if (encryption_hash.size() > crypto::AES256_KeySize) {
           // add the remainder of the encryption hash to the obfuscation hash
           prefix = encryption_hash.substr(crypto::AES256_KeySize);
         }
-        if (!utils::ResizeObfuscationHash(prefix + obfuscation_hash,
-                                          processed_content.size(),
-                                          &obfuscation_pad)) {
-          DLOG(ERROR) << "SelfEncryptChunk: Could not create obfuscation pad."
-                      << std::endl;
-          return "";
-        }
-        processed_content = crypto::XOR(processed_content, obfuscation_pad);
+        std::string obfuscation_pad = prefix + obfuscation_hash;
+
+        anchor.Attach(new XORFilter(
+                      new CryptoPP::StringSink(processed_content),
+                      obfuscation_pad
+                      ));
       }
       break;
     default:
@@ -218,10 +352,10 @@ std::string SelfEncryptChunk(const std::string &content,
                       << std::endl;
           return "";
         }
-        processed_content = crypto::SymmEncrypt(
-            processed_content,
-            enc_hash.substr(0, crypto::AES256_KeySize),
-            enc_hash.substr(crypto::AES256_KeySize, crypto::AES256_IVSize));
+      anchor.Attach(new AESFilter(
+                    new CryptoPP::StringSink(processed_content),
+                    enc_hash,
+                    true));
       }
       break;
     default:
@@ -230,6 +364,8 @@ std::string SelfEncryptChunk(const std::string &content,
       return "";
   }
 
+  anchor.Put(reinterpret_cast<const byte*>(content.c_str()), content.size());
+  anchor.MessageEnd();
   return processed_content;
 }
 
@@ -244,8 +380,8 @@ std::string SelfDecryptChunk(const std::string &content,
 
   std::string processed_content(content);
 
-  // TODO(Steve) chain all of the following, do processing in-place
-
+// Attach and detach operations to anchor
+  Anchor anchor;
   // decryption
   switch (self_encryption_type & kCryptoMask) {
     case kCryptoNone:
@@ -261,10 +397,10 @@ std::string SelfDecryptChunk(const std::string &content,
                       << std::endl;
           return "";
         }
-        processed_content = crypto::SymmDecrypt(
-            processed_content,
-            enc_hash.substr(0, crypto::AES256_KeySize),
-            enc_hash.substr(crypto::AES256_KeySize, crypto::AES256_IVSize));
+      anchor.Attach(new AESFilter(
+                    new CryptoPP::StringSink(processed_content),
+                    enc_hash,
+                    false));
       }
       break;
     default:
@@ -279,19 +415,16 @@ std::string SelfDecryptChunk(const std::string &content,
       break;
     case kObfuscationRepeated:
       {
-        std::string prefix, obfuscation_pad;
+        std::string prefix;
         if (encryption_hash.size() > crypto::AES256_KeySize) {
           // add the remainder of the encryption hash to the obfuscation hash
           prefix = encryption_hash.substr(crypto::AES256_KeySize);
         }
-        if (!utils::ResizeObfuscationHash(prefix + obfuscation_hash,
-                                          processed_content.size(),
-                                          &obfuscation_pad)) {
-          DLOG(ERROR) << "SelfDecryptChunk: Could not create obfuscation pad."
-                      << std::endl;
-          return "";
-        }
-        processed_content = crypto::XOR(processed_content, obfuscation_pad);
+        std::string obfuscation_pad = prefix + obfuscation_hash;
+        anchor.Attach(new XORFilter(
+                      new CryptoPP::StringSink(processed_content),
+                      obfuscation_pad
+                      ));
       }
       break;
     default:
@@ -301,7 +434,27 @@ std::string SelfDecryptChunk(const std::string &content,
   }
 
   // decompression
-  return Uncompress(processed_content, self_encryption_type);
+ // return Uncompress(processed_content, self_encryption_type);
+   switch (self_encryption_type & kCompressionMask) {
+    case kCompressionNone:
+      processed_content = content;
+      break;
+    case kCompressionGzip:
+      try {
+      std::string result;
+      anchor.Attach(new CryptoPP::Gzip(
+         new CryptoPP::StringSink(processed_content), 9));
+
+      }
+      catch(const CryptoPP::Exception &e) {
+      DLOG(ERROR) << e.what();
+  }
+    default:
+      DLOG(ERROR) << "Compress: Invalid compression type passed." << std::endl;
+  }
+  anchor.Put(reinterpret_cast<const byte*>(content.c_str()), content.size());
+  anchor.MessageEnd();
+  return processed_content;
 }
 
 }  // namespace utils

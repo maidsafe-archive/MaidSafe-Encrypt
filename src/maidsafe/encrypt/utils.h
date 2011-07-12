@@ -20,6 +20,8 @@
 #include <cstdint>
 #include <string>
 
+#include "cryptopp/cryptlib.h"
+#include "cryptopp/files.h"
 #include "boost/filesystem.hpp"
 
 namespace fs = boost::filesystem;
@@ -31,6 +33,62 @@ namespace encrypt {
 struct SelfEncryptionParams;
 
 namespace utils {
+
+/// XOR transformation class for pipe-lining
+class XORFilter : public CryptoPP::Bufferless<CryptoPP::Filter> {
+public:
+  XORFilter(CryptoPP::BufferedTransformation *attachment = NULL,
+            std::string pad = "",
+            std::string *result_hash = NULL):
+                                       pad_(pad) {
+   CryptoPP::Filter::Detach(attachment);
+  };
+   size_t Put2(const byte* inString,
+               size_t length,
+               int messageEnd,
+               bool blocking);
+   bool IsolatedFlush(bool, bool) { return false; }
+private:
+  std::string pad_;
+};
+
+class AESFilter : public CryptoPP::Bufferless<CryptoPP::Filter> {
+public:
+  AESFilter(CryptoPP::BufferedTransformation *attachment = NULL,
+            std::string enc_hash = "", bool encrypt = true,
+            std::string *result_hash = NULL): enc_hash_(enc_hash),
+                                              encrypt_(encrypt),
+                                              result_hash_(result_hash) {
+   CryptoPP::Filter::Detach(attachment);
+  };
+   size_t Put2(const byte* inString,
+               size_t length,
+               int messageEnd,
+               bool blocking);
+   bool IsolatedFlush(bool, bool) { return false; }
+private:
+  std::string enc_hash_;
+  bool encrypt_;
+  std::string *result_hash_;
+};
+
+
+// Anchor class to allow detach and attach of transforms
+// this will allow us to work with self encryption flags as is
+class Anchor : public CryptoPP::Bufferless<CryptoPP::Filter>
+{
+public:
+    Anchor(CryptoPP::BufferedTransformation* attachment = NULL)
+        { CryptoPP::Filter::Detach(attachment); };
+        
+    size_t Put2(const byte * inString,
+                size_t length,
+                int messageEnd,
+                bool blocking ) {
+        return AttachedTransformation()->Put2(
+            inString, length, messageEnd, blocking );
+    }
+};
 
 /// Checks file extension against a list of known uncompressible file formats.
 bool IsCompressedFile(const fs::path &file_path);
@@ -58,6 +116,8 @@ std::string Hash(const std::string &input,
 bool ResizeObfuscationHash(const std::string &input,
                            const size_t &required_size,
                            std::string *resized_data);
+
+std::string XOR(const std::string data, const std::string pad);
 
 /// Applies self-encryption algorithm to the contents of a chunk
 std::string SelfEncryptChunk(const std::string &content,
