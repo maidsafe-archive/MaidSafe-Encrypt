@@ -37,7 +37,7 @@ namespace test {
 
 namespace test_sed {
 
-const std::uint32_t kDefaultSelfEncryptionType(
+const uint32_t kDefaultSelfEncryptionType(
     kHashingSha512 | kCompressionNone | kObfuscationRepeated | kCryptoAes256);
 
 }  // namespace test_ses

@@ -168,7 +168,7 @@ TEST(SelfEncryptionUtilsTest, BEH_ResizeInput) {
     output.clear();
     ResizeInput(kInput, sep.max_chunk_size, &output);
   }
-  std::uint64_t duration =
+  uint64_t duration =
       (boost::posix_time::microsec_clock::universal_time() -
        time).total_microseconds();
   printf("Resized hash to %u Bytes %d times in %.2f ms.\n",
@@ -177,7 +177,7 @@ TEST(SelfEncryptionUtilsTest, BEH_ResizeInput) {
 
 TEST(SelfEncryptionUtilsTest, BEH_SelfEnDecryptChunk) {
   // leaving out hashing, since it's not relevant
-  const std::array<std::uint32_t, 8> combinations = { {
+  const std::array<uint32_t, 8> combinations = { {
     kCompressionNone | kObfuscationNone | kCryptoNone,
     kCompressionNone | kObfuscationNone | kCryptoAes256,
     kCompressionNone | kObfuscationRepeated | kCryptoNone,

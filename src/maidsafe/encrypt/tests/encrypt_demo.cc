@@ -62,7 +62,7 @@ enum ReturnCodes {
 };
 
 /// Formats and scales a byte value with IEC units
-std::string FormatByteValue(const std::uint64_t &value) {
+std::string FormatByteValue(const uint64_t &value) {
   const std::array<std::string, 7> kUnits = { {
       "Bytes", "KiB", "MiB", "GiB", "TiB", "PiB", "EiB"
   } };
@@ -136,7 +136,7 @@ int Encrypt(const fs::path &input_path,
   }
 
   bool error(false);
-  std::uint64_t total_size(0), failed_size(0), chunks_size(0),
+  uint64_t total_size(0), failed_size(0), chunks_size(0),
                 uncompressed_chunks_size(0),  meta_size(0);
   boost::posix_time::time_duration total_duration;
   std::set<std::string> chunks;
@@ -176,7 +176,7 @@ int Encrypt(const fs::path &input_path,
 
   for (auto file = files.begin(); file != files.end(); ++file) {
     boost::system::error_code ec;
-    std::uint64_t file_size(fs::file_size(full_path / (*file), ec));
+    uint64_t file_size(fs::file_size(full_path / (*file), ec));
     if (ec)
       file_size = 0;
     printf("Processing %s (%s) ...\n", file->c_str(),
@@ -256,7 +256,7 @@ int Decrypt(const fs::path &chunk_path,
             const fs::path &meta_path,
             const fs::path &output_path) {
   bool error(false);
-  std::uint64_t total_size(0);
+  uint64_t total_size(0);
   boost::posix_time::time_duration total_duration;
   std::map<std::string, DataMap> data_maps;
 
@@ -369,9 +369,9 @@ int main(int argc, char* argv[]) {
     } else if (argc == 8) {
       try {
         mse::SelfEncryptionParams sep(
-            boost::lexical_cast<std::uint32_t>(std::string(argv[5])),
-            boost::lexical_cast<std::uint32_t>(std::string(argv[6])),
-            boost::lexical_cast<std::uint32_t>(std::string(argv[7])));
+            boost::lexical_cast<uint32_t>(std::string(argv[5])),
+            boost::lexical_cast<uint32_t>(std::string(argv[6])),
+            boost::lexical_cast<uint32_t>(std::string(argv[7])));
         if (mse::utils::CheckParams(sep))
           return mse::demo::Encrypt(argv[2], argv[3], argv[4], sep);
       }

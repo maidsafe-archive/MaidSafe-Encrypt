@@ -56,8 +56,8 @@ std::string Hash(const std::string &input,
 
 /// Deterministically expands an input string to the required size.
 bool ResizeInput(const std::string &input,
-                           const size_t &required_size,
-                           std::string *resized_data);
+                 const size_t &required_size,
+                 std::string *resized_data);
 
 /// Applies self-encryption algorithm to the contents of a chunk
 std::string SelfEncryptChunk(const std::string &content,

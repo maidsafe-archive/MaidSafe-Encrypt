@@ -57,21 +57,19 @@ enum SelfEncryptionTypes {
 
 /// Holds information about a chunk
 struct ChunkDetails {
-  ChunkDetails()
-    : hash(), size(0), pre_hash(), pre_size(0) {}
+  ChunkDetails() : hash(), size(0), pre_hash(), pre_size(0) {}
   std::string hash;        ///< Hash of processed chunk
-  std::uint32_t size;      ///< Size of processed chunk
+  uint32_t size;      ///< Size of processed chunk
   std::string pre_hash;    ///< Hash of unprocessed source data
-  std::uint32_t pre_size;  ///< Size of unprocessed source data
+  uint32_t pre_size;  ///< Size of unprocessed source data
 };
 
 /// Holds information about the building blocks of a data item
 struct DataMap {
-  DataMap()
-    : self_encryption_type(0), chunks(), size(0), content() {}
-  std::uint32_t self_encryption_type;  ///< Type of SE used for chunks
+  DataMap() : self_encryption_type(0), chunks(), size(0), content() {}
+  uint32_t self_encryption_type;  ///< Type of SE used for chunks
   std::vector<ChunkDetails> chunks;  ///< Information about the chunks
-  std::uint64_t size;      ///< Size of data item
+  uint64_t size;      ///< Size of data item
   std::string content;     ///< Whole data item or last chunk, if small enough
 };
 

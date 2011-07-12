@@ -107,7 +107,7 @@ TEST_P(SelfEncryptionBenchmarkTest, FUNC_Benchmark) {
         boost::posix_time::microsec_clock::universal_time();
     for (size_t i = 0; i < repetitions; ++i)
       SelfEncrypt(contents[i], sep_, data_maps[i], chunk_store);
-    std::uint64_t duration =
+    uint64_t duration =
         (boost::posix_time::microsec_clock::universal_time() -
          time).total_microseconds();
     if (duration == 0)

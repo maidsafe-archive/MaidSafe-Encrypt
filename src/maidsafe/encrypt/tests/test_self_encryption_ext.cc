@@ -41,20 +41,20 @@ namespace test {
 
 namespace test_see {
 
-const std::uint32_t kDefaultSelfEncryptionType(
+const uint32_t kDefaultSelfEncryptionType(
     kHashingSha512 | kCompressionNone | kObfuscationRepeated | kCryptoAes256);
 
 fs::path CreateRandomFile(const fs::path &file_path,
-                          const std::uint64_t &file_size) {
+                          const uint64_t &file_size) {
   fs::ofstream ofs(file_path, std::ios::binary | std::ios::out |
                               std::ios::trunc);
   if (file_size != 0) {
     size_t string_size = (file_size > 100000) ? 100000 :
                          static_cast<size_t>(file_size);
-    std::uint64_t remaining_size = file_size;
+    uint64_t remaining_size = file_size;
     std::string rand_str = RandomString(2 * string_size);
     std::string file_content;
-    std::uint64_t start_pos = 0;
+    uint64_t start_pos = 0;
     while (remaining_size) {
       srand(17);
       start_pos = rand() % string_size;  // NOLINT (Fraser)
@@ -73,8 +73,8 @@ fs::path CreateRandomFile(const fs::path &file_path,
   return file_path;
 }
 
-std::uint64_t TotalChunkSize(const std::vector<std::uint32_t> &chunk_sizes) {
-  std::uint64_t total(0);
+uint64_t TotalChunkSize(const std::vector<uint32_t> &chunk_sizes) {
+  uint64_t total(0);
   for (size_t i = 0; i < chunk_sizes.size(); ++i)
     total += chunk_sizes[i];
   return total;
@@ -90,7 +90,7 @@ size_t CountUniqueChunks(std::shared_ptr<DataMap> data_map) {
 bool VerifyChunks(std::shared_ptr<DataMap> data_map,
                   std::shared_ptr<ChunkStore> chunk_store) {
   std::set<std::string> chunks;
-  std::uintmax_t ref_sum(0);
+  uintmax_t ref_sum(0);
   bool invalid(false);
   for (auto it = data_map->chunks.begin(); it != data_map->chunks.end(); ++it)
     if (chunks.count(it->hash) == 0) {
@@ -165,7 +165,7 @@ TEST_F(SelfEncryptionExtTest, FUNC_SelfEnDecryptLargeFile) {
     std::shared_ptr<ChunkStore> chunk_store(
         new MemoryChunkStore(true, hash_func_));
     // Only need to check for just greater than 4GB.
-    std::uint64_t data_size((std::uint64_t(1) << 32) + 1);
+    uint64_t data_size((uint64_t(1) << 32) + 1);
     test_see::CreateRandomFile(path_in, data_size);
     EXPECT_EQ(kSuccess, SelfEncrypt(path_in, SelfEncryptionParams(), data_map,
                                     chunk_store));
