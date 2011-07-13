@@ -195,6 +195,29 @@ TEST(SelfEncryptionUtilsTest, XORtest) {
   EXPECT_EQ(std::string("\xff\xff"), XOR(kKnown1, kKnown2));
   
 }
+TEST(SelfEncryptionUtilsTest, BEH_SelfEnDecrypt) {
+  const std::string data("this is the password");
+  std::string enc_hash = Hash(data, kHashingSha512);
+  const std::string input(RandomString(1024*256));
+  std::string encrypted, decrypted;
+  CryptoPP::StringSource(input,
+                          true,
+       new AESFilter(
+             new CryptoPP::StringSink(encrypted),
+      enc_hash,
+      true));
+
+  CryptoPP::StringSource(encrypted,
+                          true,
+        new AESFilter(
+             new CryptoPP::StringSink(decrypted),
+        enc_hash,
+        false));
+  EXPECT_EQ(decrypted.size(), input.size());
+  EXPECT_EQ(decrypted, input);
+  EXPECT_NE(encrypted, decrypted);
+  
+        }
 
 TEST(SelfEncryptionUtilsTest, BEH_SelfEnDecryptChunk) {
   // leaving out hashing, since it's not relevant

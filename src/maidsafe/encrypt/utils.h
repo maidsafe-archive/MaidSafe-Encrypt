@@ -38,8 +38,7 @@ namespace utils {
 class XORFilter : public CryptoPP::Bufferless<CryptoPP::Filter> {
 public:
   XORFilter(CryptoPP::BufferedTransformation *attachment = NULL,
-            std::string pad = "",
-            std::string *result_hash = NULL):
+            std::string pad = ""):
                                        pad_(pad) {
    CryptoPP::Filter::Detach(attachment);
   };
