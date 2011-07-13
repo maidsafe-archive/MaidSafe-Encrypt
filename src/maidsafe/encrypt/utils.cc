@@ -299,8 +299,8 @@ std::string SelfEncryptChunk(const std::string &content,
       processed_content = content;
       break;
     case kCompressionGzip:
-//       anchor.Attach(new CryptoPP::Gzip(
-//          new CryptoPP::StringSink(processed_content), 9));
+      anchor.Attach(new CryptoPP::Gzip(
+         new CryptoPP::StringSink(processed_content), 9));
       break;
     default:
       DLOG(ERROR) << "Compress: Invalid compression type passed." << std::endl;
@@ -432,14 +432,12 @@ std::string SelfDecryptChunk(const std::string &content,
   }
 
   // decompression
- // return Uncompress(processed_content, self_encryption_type);
-  // compression
   switch (self_encryption_type & kCompressionMask) {
     case kCompressionNone:
       break;
     case kCompressionGzip:
-//       anchor.Attach(new CryptoPP::Gzip(
-//          new CryptoPP::StringSink(processed_content), 9));
+      anchor.Attach(new CryptoPP::Gzip(
+        new CryptoPP::StringSink(processed_content), 9));
       break;
     default:
       DLOG(ERROR) << "Compress: Invalid compression type passed." << std::endl;

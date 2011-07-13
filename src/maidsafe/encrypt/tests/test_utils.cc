@@ -216,7 +216,45 @@ TEST(SelfEncryptionUtilsTest, BEH_SelfEnDecrypt) {
   EXPECT_EQ(decrypted.size(), input.size());
   EXPECT_EQ(decrypted, input);
   EXPECT_NE(encrypted, decrypted);
-  
+        }
+
+TEST(SelfEncryptionUtilsTest, BEH_AnchorXorAes) {
+  const std::string data("this is the password");
+  std::string enc_hash = Hash(data, kHashingSha512);
+  const std::string input(RandomString(6000));
+  const std::string pad(RandomString(600));
+  std::string encrypted, decrypted;
+
+
+Anchor Encryptor;
+       Encryptor.Attach(new AESFilter(
+             new CryptoPP::StringSink(encrypted),
+      enc_hash,
+      true));
+       Encryptor.Attach(new XORFilter(
+             new CryptoPP::StringSink(encrypted),
+      pad));
+       
+Anchor Decryptor;
+       Decryptor.Attach(new XORFilter(
+             new CryptoPP::StringSink(decrypted),
+       pad)); 
+       Decryptor.Attach(new AESFilter(
+             new CryptoPP::StringSink(decrypted),
+        enc_hash,
+        false));
+
+
+  Encryptor.Put(reinterpret_cast<const byte*>(input.c_str()), input.size());
+  Encryptor.MessageEnd();
+
+  Decryptor.Put(reinterpret_cast<const byte*>(encrypted.c_str()), input.size());
+  Decryptor.MessageEnd();
+
+  EXPECT_EQ(encrypted.size(), input.size());
+  EXPECT_EQ(decrypted.size(), input.size());
+  EXPECT_EQ(decrypted, input);
+  EXPECT_NE(encrypted, decrypted);
         }
 
 TEST(SelfEncryptionUtilsTest, BEH_SelfEnDecryptChunk) {
