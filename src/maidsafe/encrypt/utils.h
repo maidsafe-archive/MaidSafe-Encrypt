@@ -119,13 +119,13 @@ bool ResizeObfuscationHash(const std::string &input,
 std::string XOR(const std::string data, const std::string pad);
 
 /// Applies self-encryption algorithm to the contents of a chunk
-std::string SelfEncryptChunk(const std::string &content,
+bool SelfEncryptChunk(std::shared_ptr<std::string> content,
                              const std::string &encryption_hash,
                              const std::string &obfuscation_hash,
                              const uint32_t &self_encryption_type);
 
 /// Applies self-decryption algorithm to the contents of a chunk
-std::string SelfDecryptChunk(const std::string &content,
+std::string SelfDecryptChunk(std::shared_ptr<std::string> content,
                              const std::string &encryption_hash,
                              const std::string &obfuscation_hash,
                              const uint32_t &self_encryption_type);

@@ -601,9 +601,9 @@ bool SelfEncryptionDevice::LoadChunkIntoBuffer(const size_t &index,
                << ".. | " << EncodeToHex(encryption_hash).substr(0, 8)
                << ".. | " << EncodeToHex(obfuscation_hash).substr(0, 8) << ".."
                << std::endl;
-
+    std::shared_ptr<std::string> data(new std::string(chunk_store_->Get(chunk.hash)));
     chunk_buffer->content = utils::SelfDecryptChunk(
-        chunk_store_->Get(chunk.hash), encryption_hash, obfuscation_hash,
+        data , encryption_hash, obfuscation_hash,
         data_map_->self_encryption_type);
     chunk_buffer->hash = chunk.pre_hash;
   }
@@ -650,18 +650,21 @@ bool SelfEncryptionDevice::StoreChunkFromBuffer(
   }
 
   // TODO(Steve) optimisation: check cache for existing hash triple
+  std::shared_ptr<std::string> data(new std::string(chunk_buffer->content));
+  if (!utils::SelfEncryptChunk(
+      data, encryption_hash, obfuscation_hash,
+      data_map_->self_encryption_type)) {
+        DLOG(ERROR) << "StoreChunkFromBuffer: self-encrypt failed on chunk "
+                << chunk_buffer->index << std::endl;
+  }
 
-  std::string encrypted_content(utils::SelfEncryptChunk(
-      chunk_buffer->content, encryption_hash, obfuscation_hash,
-      data_map_->self_encryption_type));
-
-  if (encrypted_content.empty()) {
+  if (data->empty()) {
     DLOG(ERROR) << "StoreChunkFromBuffer: Could not self-encrypt chunk "
                 << chunk_buffer->index << std::endl;
     return false;
   }
 
-  std::string hash(utils::Hash(encrypted_content,
+  std::string hash(utils::Hash(*data,
                                data_map_->self_encryption_type));
 
   bool do_store(false), added_chunk(false);
@@ -672,7 +675,7 @@ bool SelfEncryptionDevice::StoreChunkFromBuffer(
     chunk.pre_hash = chunk_buffer->hash;
     chunk.pre_size = static_cast<uint32_t>(chunk_buffer->content.size());
     chunk.hash = hash;
-    chunk.size = static_cast<uint32_t>(encrypted_content.size());
+    chunk.size = static_cast<uint32_t>(data->size());
     do_store = true;
     data_map_->chunks.push_back(chunk);
     data_map_->size += chunk.pre_size;
@@ -686,18 +689,18 @@ bool SelfEncryptionDevice::StoreChunkFromBuffer(
       chunk.pre_hash = chunk_buffer->hash;
       chunk.pre_size = static_cast<uint32_t>(chunk_buffer->content.size());
       chunk.hash = hash;
-      chunk.size = static_cast<uint32_t>(encrypted_content.size());
+      chunk.size = static_cast<uint32_t>(data->size());
       do_store = true;
       data_map_->size += chunk.pre_size;
     }
   }
 
   if (do_store) {
-    if (chunk_store_->Store(hash, encrypted_content)) {
+    if (chunk_store_->Store(hash, *data)) {
       DLOG(INFO) << "StoreChunkFromBuffer: Stored chunk " << chunk_buffer->index
                  << " (" << EncodeToHex(hash).substr(0, 8)
                  << ".., " << chunk_buffer->content.size() << " | "
-                 << encrypted_content.size() << " Bytes, ref #"
+                 << data->size() << " Bytes, ref #"
                  << chunk_store_->Count(hash) << ") with hashes "
                  << EncodeToHex(chunk_buffer->hash).substr(0, 8) << ".. | "
                  << EncodeToHex(encryption_hash).substr(0, 8) << ".. | "

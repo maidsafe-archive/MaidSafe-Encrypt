@@ -276,18 +276,18 @@ std::string result;
 }
   
 
-std::string SelfEncryptChunk(const std::string &content,
+bool SelfEncryptChunk(std::shared_ptr<std::string> content,
                              const std::string &encryption_hash,
                              const std::string &obfuscation_hash,
                              const uint32_t &self_encryption_type) {
-  if (content.empty() || encryption_hash.empty() || obfuscation_hash.empty()) {
+  if (content->empty() || encryption_hash.empty() || obfuscation_hash.empty()) {
     DLOG(ERROR) << "SelfEncryptChunk: Invalid arguments passed." << std::endl;
-    return "";
+    return false;
   }
   if (((self_encryption_type & kCompressionMask) == kCompressionNone) &&
       ((self_encryption_type & kObfuscationMask) == kObfuscationNone) &&
       ((self_encryption_type & kCryptoMask) == kCryptoNone))
-    return ""; // nothing to do !!
+    return false; // nothing to do !!
   std::string processed_content;
   
 // Attach and detach operations to anchor
@@ -327,7 +327,7 @@ std::string SelfEncryptChunk(const std::string &content,
     default:
       DLOG(ERROR) << "SelfEncryptChunk: Invalid obfuscation type passed."
                   << std::endl;
-      return "";
+      return false;
   }
 
   // encryption
@@ -343,7 +343,7 @@ std::string SelfEncryptChunk(const std::string &content,
                                    &enc_hash)) {
           DLOG(ERROR) << "SelfEncryptChunk: Could not expand encryption hash."
                       << std::endl;
-          return "";
+          return false;
         }
       anchor.Attach(new AESFilter(
                     new CryptoPP::StringSink(processed_content),
@@ -354,19 +354,20 @@ std::string SelfEncryptChunk(const std::string &content,
     default:
       DLOG(ERROR) << "SelfEncryptChunk: Invalid encryption type passed."
                   << std::endl;
-      return "";
+      return false;
   }
 
-  anchor.Put(reinterpret_cast<const byte*>(content.c_str()), content.size());
+  anchor.Put(reinterpret_cast<const byte*>(content->c_str()), content->size());
   anchor.MessageEnd();
-  return processed_content;
+  std::swap(*content,processed_content);
+  return true;
 }
 
-std::string SelfDecryptChunk(const std::string &content,
+std::string SelfDecryptChunk(std::shared_ptr<std::string> content,
                              const std::string &encryption_hash,
                              const std::string &obfuscation_hash,
                              const uint32_t &self_encryption_type) {
-  if (content.empty() || encryption_hash.empty() || obfuscation_hash.empty()) {
+  if (content->empty() || encryption_hash.empty() || obfuscation_hash.empty()) {
     DLOG(ERROR) << "SelfDecryptChunk: Invalid arguments passed." << std::endl;
     return "";
   }
@@ -375,7 +376,7 @@ std::string SelfDecryptChunk(const std::string &content,
       ((self_encryption_type & kCryptoMask) == kCryptoNone))
     return ""; // nothing to do !!
   std::string processed_content;
-  processed_content.reserve(content.size());
+  processed_content.reserve(content->size());
 
 // Attach and detach operations to anchor
   Anchor anchor;
@@ -441,8 +442,9 @@ std::string SelfDecryptChunk(const std::string &content,
     default:
       DLOG(ERROR) << "Compress: Invalid compression type passed." << std::endl;
   }
-  anchor.Put(reinterpret_cast<const byte*>(content.c_str()), content.size());
+  anchor.Put(reinterpret_cast<const byte*>(content->c_str()), content->size());
   anchor.MessageEnd();
+  *content = processed_content;
   return processed_content;
 }
 
