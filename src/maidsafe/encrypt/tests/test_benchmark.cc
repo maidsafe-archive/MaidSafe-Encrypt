@@ -143,36 +143,36 @@ TEST_P(SelfEncryptionBenchmarkTest, FUNC_Benchmark) {
 
 INSTANTIATE_TEST_CASE_P(ChunkSize, SelfEncryptionBenchmarkTest, testing::Values(
     // Variation in chunk_size
-    SelfEncryptionParams(1 << 8, 0, kMinChunks - 1),  // 256 Bytes
-    SelfEncryptionParams(1 << 10, 0, kMinChunks - 1),  // 1 KiB
-    SelfEncryptionParams(1 << 12, 0, kMinChunks - 1),  // 4 KiB
-    SelfEncryptionParams(1 << 14, 0, kMinChunks - 1),  // 16 KiB
-    SelfEncryptionParams(1 << 16, 0, kMinChunks - 1),  // 64 KiB
-    SelfEncryptionParams(1 << 17, 0, kMinChunks - 1),  // 128 KiB
-    SelfEncryptionParams(1 << 18, 0, kMinChunks - 1),  // 256 KiB (default)
-    SelfEncryptionParams(1 << 19, 0, kMinChunks - 1),  // 512 KiB
-    SelfEncryptionParams(1 << 20, 0, kMinChunks - 1),  // 1 MiB
-    SelfEncryptionParams(1 << 21, 0, kMinChunks - 1)  // 2 MiB
+//     SelfEncryptionParams(1 << 8, 0, kMinChunks - 1),  // 256 Bytes
+//     SelfEncryptionParams(1 << 10, 0, kMinChunks - 1),  // 1 KiB
+//     SelfEncryptionParams(1 << 12, 0, kMinChunks - 1),  // 4 KiB
+//     SelfEncryptionParams(1 << 14, 0, kMinChunks - 1),  // 16 KiB
+//     SelfEncryptionParams(1 << 16, 0, kMinChunks - 1),  // 64 KiB
+//     SelfEncryptionParams(1 << 17, 0, kMinChunks - 1),  // 128 KiB
+    SelfEncryptionParams(1 << 18, 0, kMinChunks - 1)  // 256 KiB (default)
+//     SelfEncryptionParams(1 << 19, 0, kMinChunks - 1),  // 512 KiB
+//     SelfEncryptionParams(1 << 20, 0, kMinChunks - 1),  // 1 MiB
+//     SelfEncryptionParams(1 << 21, 0, kMinChunks - 1)  // 2 MiB
 ));
 
 INSTANTIATE_TEST_CASE_P(IncData, SelfEncryptionBenchmarkTest, testing::Values(
     // Variation in max_includable_data_size
-    SelfEncryptionParams(1 << 18, 0, 1 << 6),  // 64 Bytes
-    SelfEncryptionParams(1 << 18, 0, 1 << 8),  // 256 Bytes
-    SelfEncryptionParams(1 << 18, 0, 1 << 10),  // 1 KiB (default)
-    SelfEncryptionParams(1 << 18, 0, 1 << 12),  // 4 KiB
-    SelfEncryptionParams(1 << 18, 0, 1 << 14),  // 16 KiB
-    SelfEncryptionParams(1 << 18, 0, 1 << 16)  // 64 KiB
+//     SelfEncryptionParams(1 << 18, 0, 1 << 6),  // 64 Bytes
+//     SelfEncryptionParams(1 << 18, 0, 1 << 8),  // 256 Bytes
+    SelfEncryptionParams(1 << 18, 0, 1 << 10)  // 1 KiB (default)
+//     SelfEncryptionParams(1 << 18, 0, 1 << 12),  // 4 KiB
+//     SelfEncryptionParams(1 << 18, 0, 1 << 14),  // 16 KiB
+//     SelfEncryptionParams(1 << 18, 0, 1 << 16)  // 64 KiB
 ));
 
 INSTANTIATE_TEST_CASE_P(IncChunk, SelfEncryptionBenchmarkTest, testing::Values(
     // Variation in max_includable_chunk_size
-    SelfEncryptionParams(1 << 18, 1 << 6, 1 << 8),  // 64 Bytes
-    SelfEncryptionParams(1 << 18, 1 << 8, 1 << 10),  // 256 Bytes (default)
-    SelfEncryptionParams(1 << 18, 1 << 10, 1 << 12),  // 1 KiB
-    SelfEncryptionParams(1 << 18, 1 << 12, 1 << 14),  // 4 KiB
-    SelfEncryptionParams(1 << 18, 1 << 14, 1 << 16),  // 16 KiB
-    SelfEncryptionParams(1 << 18, 1 << 16, 1 << 18)  // 64 KiB
+//     SelfEncryptionParams(1 << 18, 1 << 6, 1 << 8),  // 64 Bytes
+    SelfEncryptionParams(1 << 18, 1 << 8, 1 << 10)  // 256 Bytes (default)
+//     SelfEncryptionParams(1 << 18, 1 << 10, 1 << 12),  // 1 KiB
+//     SelfEncryptionParams(1 << 18, 1 << 12, 1 << 14),  // 4 KiB
+//     SelfEncryptionParams(1 << 18, 1 << 14, 1 << 16),  // 16 KiB
+//     SelfEncryptionParams(1 << 18, 1 << 16, 1 << 18)  // 64 KiB
 ));
 
 }  // namespace test

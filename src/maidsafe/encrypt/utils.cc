@@ -284,8 +284,8 @@ std::string SelfEncryptChunk(const std::string &content,
     DLOG(ERROR) << "SelfEncryptChunk: Invalid arguments passed." << std::endl;
     return "";
   }
-  if (((self_encryption_type & kCompressionMask) == kCompressionNone) ||
-      ((self_encryption_type & kObfuscationMask) == kObfuscationNone) ||
+  if (((self_encryption_type & kCompressionMask) == kCompressionNone) &&
+      ((self_encryption_type & kObfuscationMask) == kObfuscationNone) &&
       ((self_encryption_type & kCryptoMask) == kCryptoNone))
     return ""; // nothing to do !!
   std::string processed_content;
@@ -293,10 +293,9 @@ std::string SelfEncryptChunk(const std::string &content,
 // Attach and detach operations to anchor
   Anchor anchor;
 
-  // compression
+ // compression
   switch (self_encryption_type & kCompressionMask) {
     case kCompressionNone:
-      processed_content = content;
       break;
     case kCompressionGzip:
       anchor.Attach(new CryptoPP::Gzip(
@@ -371,8 +370,8 @@ std::string SelfDecryptChunk(const std::string &content,
     DLOG(ERROR) << "SelfDecryptChunk: Invalid arguments passed." << std::endl;
     return "";
   }
-  if (((self_encryption_type & kCompressionMask) == kCompressionNone) ||
-      ((self_encryption_type & kObfuscationMask) == kObfuscationNone) ||
+  if (((self_encryption_type & kCompressionMask) == kCompressionNone) &&
+      ((self_encryption_type & kObfuscationMask) == kObfuscationNone) &&
       ((self_encryption_type & kCryptoMask) == kCryptoNone))
     return ""; // nothing to do !!
   std::string processed_content;

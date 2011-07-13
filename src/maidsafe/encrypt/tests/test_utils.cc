@@ -179,6 +179,7 @@ TEST(SelfEncryptionUtilsTest, XORtest) {
  // EXPECT_TRUE(XOR("A", "").empty()); // Exception - no pad
   EXPECT_TRUE(XOR("", "B").empty());
   EXPECT_EQ(XOR("A", "BB"), XOR("B", "A"));
+  EXPECT_EQ(XOR("AAAA", "BB"), XOR("BBBB", "AA"));
   const size_t kStringSize(1024*256);
   std::string str1 = RandomString(kStringSize);
   std::string str2 = RandomString(kStringSize);
@@ -301,8 +302,9 @@ TEST(SelfEncryptionUtilsTest, BEH_SelfEnDecryptChunk) {
     EXPECT_TRUE(SelfDecryptChunk(content_enc[i], hash1, "",
                                  combinations[i]).empty());
     EXPECT_TRUE(SelfDecryptChunk(content_enc[i], hash1, hash2, 0).empty());
-    EXPECT_TRUE(SelfDecryptChunk(content_enc[i], hash1, hash2,
-        combinations[i] & (kObfuscationMask | kCryptoMask)).empty());
+    // Changed to FALSE as it may only be compressed
+    EXPECT_FALSE(SelfDecryptChunk(content_enc[i], hash1, hash2,
+        combinations[i] & (kObfuscationMask | kCryptoMask)).empty()); 
     EXPECT_TRUE(SelfDecryptChunk(content_enc[i], hash1, hash2,
         combinations[i] & (kCompressionMask | kCryptoMask)).empty());
     EXPECT_TRUE(SelfDecryptChunk(content_enc[i], hash1, hash2,
@@ -317,6 +319,7 @@ TEST(SelfEncryptionUtilsTest, BEH_SelfEnDecryptChunk) {
                                           combinations[i])) << i;
     for (size_t j = 0; j < combinations.size(); ++j)
       if (i == j) {
+        std::cout << " i is " << i << "j is " << j << std::endl;
         EXPECT_EQ(content, SelfDecryptChunk(content_enc[i], hash1, hash2,
                                             combinations[j])) << i << " " << j;
       } else {
