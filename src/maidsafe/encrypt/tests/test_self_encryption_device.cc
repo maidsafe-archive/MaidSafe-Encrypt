@@ -119,11 +119,13 @@ TEST_F(SelfEncryptionDeviceTest, BEH_Read) {
     data_map->self_encryption_type = test_sed::kDefaultSelfEncryptionType;
     std::shared_ptr<ChunkStore> chunk_store(
         new MemoryChunkStore(true, hash_func_));
-    std::string content_orig(RandomString(100));
+    std::shared_ptr<std::string>
+         content_orig(new std::string(RandomString(100));
     std::string hash_orig(crypto::Hash<crypto::SHA512>(content_orig));
-    std::string content_enc(utils::SelfEncryptChunk(
+    EXPECT_TRUE(utils::SelfEncryptChunk(
         content_orig, hash_orig, hash_orig,
         test_sed::kDefaultSelfEncryptionType));
+    std::string content_enc(*content_orig);
     std::string hash_enc(crypto::Hash<crypto::SHA512>(content_enc));
     EXPECT_TRUE(chunk_store->Store(hash_enc, content_enc));
     ChunkDetails chunk;
