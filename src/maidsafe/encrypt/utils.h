@@ -125,7 +125,7 @@ bool SelfEncryptChunk(std::shared_ptr<std::string> content,
                              const uint32_t &self_encryption_type);
 
 /// Applies self-decryption algorithm to the contents of a chunk
-std::string SelfDecryptChunk(std::shared_ptr<std::string> content,
+bool SelfDecryptChunk(std::shared_ptr<std::string> content,
                              const std::string &encryption_hash,
                              const std::string &obfuscation_hash,
                              const uint32_t &self_encryption_type);

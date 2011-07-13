@@ -602,9 +602,10 @@ bool SelfEncryptionDevice::LoadChunkIntoBuffer(const size_t &index,
                << ".. | " << EncodeToHex(obfuscation_hash).substr(0, 8) << ".."
                << std::endl;
     std::shared_ptr<std::string> data(new std::string(chunk_store_->Get(chunk.hash)));
-    chunk_buffer->content = utils::SelfDecryptChunk(
+    utils::SelfDecryptChunk(
         data , encryption_hash, obfuscation_hash,
         data_map_->self_encryption_type);
+    std::swap(chunk_buffer->content, *data);
     chunk_buffer->hash = chunk.pre_hash;
   }
   chunk_buffer->index = index;

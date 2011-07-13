@@ -363,18 +363,18 @@ bool SelfEncryptChunk(std::shared_ptr<std::string> content,
   return true;
 }
 
-std::string SelfDecryptChunk(std::shared_ptr<std::string> content,
+bool SelfDecryptChunk(std::shared_ptr<std::string> content,
                              const std::string &encryption_hash,
                              const std::string &obfuscation_hash,
                              const uint32_t &self_encryption_type) {
   if (content->empty() || encryption_hash.empty() || obfuscation_hash.empty()) {
     DLOG(ERROR) << "SelfDecryptChunk: Invalid arguments passed." << std::endl;
-    return "";
+    return false;
   }
   if (((self_encryption_type & kCompressionMask) == kCompressionNone) &&
       ((self_encryption_type & kObfuscationMask) == kObfuscationNone) &&
       ((self_encryption_type & kCryptoMask) == kCryptoNone))
-    return ""; // nothing to do !!
+    return false; // nothing to do !!
   std::string processed_content;
   processed_content.reserve(content->size());
 
@@ -393,7 +393,7 @@ std::string SelfDecryptChunk(std::shared_ptr<std::string> content,
                                    &enc_hash)) {
           DLOG(ERROR) << "SelfDecryptChunk: Could not expand encryption hash."
                       << std::endl;
-          return "";
+          return false;
         }
       anchor.Attach(new AESFilter(
                     new CryptoPP::StringSink(processed_content),
@@ -404,7 +404,7 @@ std::string SelfDecryptChunk(std::shared_ptr<std::string> content,
     default:
       DLOG(ERROR) << "SelfDecryptChunk: Invalid encryption type passed."
                   << std::endl;
-      return "";
+      return false;
   }
 
   // de-obfuscation
@@ -428,7 +428,7 @@ std::string SelfDecryptChunk(std::shared_ptr<std::string> content,
     default:
       DLOG(ERROR) << "SelfDecryptChunk: Invalid obfuscation type passed."
                   << std::endl;
-      return "";
+      return false;
   }
 
   // decompression
@@ -444,8 +444,8 @@ std::string SelfDecryptChunk(std::shared_ptr<std::string> content,
   }
   anchor.Put(reinterpret_cast<const byte*>(content->c_str()), content->size());
   anchor.MessageEnd();
-  *content = processed_content;
-  return processed_content;
+  std::swap(*content, processed_content);
+  return true;
 }
 
 }  // namespace utils
