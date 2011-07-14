@@ -34,6 +34,8 @@ struct SelfEncryptionParams;
 
 namespace utils {
 
+int kCompressionRatio = 3; // optimised for speed
+
 /// XOR transformation class for pipe-lining
 class XORFilter : public CryptoPP::Bufferless<CryptoPP::Filter> {
 public:

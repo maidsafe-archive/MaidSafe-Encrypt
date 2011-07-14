@@ -201,7 +201,7 @@ std::string Compress(const std::string &input,
     case kCompressionNone:
       return input;
     case kCompressionGzip:
-      return crypto::Compress(input, 9);
+      return crypto::Compress(input, kCompressionRatio);
     default:
       DLOG(ERROR) << "Compress: Invalid compression type passed." << std::endl;
   }
@@ -299,7 +299,7 @@ bool SelfEncryptChunk(std::shared_ptr<std::string> content,
       break;
     case kCompressionGzip:
       anchor.Attach(new CryptoPP::Gzip(
-         new CryptoPP::StringSink(processed_content), 9));
+         new CryptoPP::StringSink(processed_content), kCompressionRatio));
       break;
     default:
       DLOG(ERROR) << "Compress: Invalid compression type passed." << std::endl;
@@ -331,6 +331,12 @@ bool SelfEncryptChunk(std::shared_ptr<std::string> content,
   }
 
   // encryption
+  // Get the hash out
+  // add redirector to AESFilter instead of stringsink
+      std::string hash;
+      CryptoPP::SHA512 SHA512;
+      CryptoPP::HashFilter get_hash(SHA512,
+          new CryptoPP::StringSink(processed_content));
   switch (self_encryption_type & kCryptoMask) {
     case kCryptoNone:
       break;
@@ -345,10 +351,13 @@ bool SelfEncryptChunk(std::shared_ptr<std::string> content,
                       << std::endl;
           return false;
         }
+
+      CryptoPP::SHA512  hash; 
       anchor.Attach(new AESFilter(
-                    new CryptoPP::StringSink(processed_content),
+                      new CryptoPP::StringSink(processed_content), 
                     enc_hash,
                     true));
+     // std::cout << processed_content << std::endl;
       }
       break;
     default:
@@ -360,6 +369,8 @@ bool SelfEncryptChunk(std::shared_ptr<std::string> content,
   anchor.Put(reinterpret_cast<const byte*>(content->c_str()), content->size());
   anchor.MessageEnd();
   std::swap(*content,processed_content);
+  std::string this_hash;
+  //std::cout << " My HASH is " << get_hash. << std::endl;
   return true;
 }
 
@@ -437,7 +448,7 @@ bool SelfDecryptChunk(std::shared_ptr<std::string> content,
       break;
     case kCompressionGzip:
       anchor.Attach(new CryptoPP::Gzip(
-        new CryptoPP::StringSink(processed_content), 9));
+        new CryptoPP::StringSink(processed_content), kCompressionRatio));
       break;
     default:
       DLOG(ERROR) << "Compress: Invalid compression type passed." << std::endl;
