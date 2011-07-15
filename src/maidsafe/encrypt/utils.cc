@@ -447,8 +447,8 @@ bool SelfDecryptChunk(std::shared_ptr<std::string> content,
     case kCompressionNone:
       break;
     case kCompressionGzip:
-      anchor.Attach(new CryptoPP::Gzip(
-        new CryptoPP::StringSink(processed_content), kCompressionRatio));
+      anchor.Attach(new CryptoPP::Gunzip(
+        new CryptoPP::StringSink(processed_content)));
       break;
     default:
       DLOG(ERROR) << "Compress: Invalid compression type passed." << std::endl;

@@ -283,12 +283,12 @@ TEST(SelfEncryptionUtilsTest, BEH_SelfEnDecryptChunk) {
     EXPECT_FALSE(SelfEncryptChunk(content, "", hash2, combinations[i]));
     EXPECT_FALSE(SelfEncryptChunk(content, hash1, "", combinations[i]));
     EXPECT_FALSE(SelfEncryptChunk(content, hash1, hash2, 0));
-    EXPECT_FALSE(SelfEncryptChunk(content, hash1, hash2,
-        combinations[i] & (kObfuscationMask | kCryptoMask)));
-    EXPECT_FALSE(SelfEncryptChunk(content, hash1, hash2,
-        combinations[i] & (kCompressionMask | kCryptoMask)));
-    EXPECT_FALSE(SelfEncryptChunk(content, hash1, hash2,
-        combinations[i] & (kCompressionMask | kObfuscationMask)));
+//     EXPECT_FALSE(SelfEncryptChunk(content, hash1, hash2,
+//         combinations[i] & (kObfuscationMask | kCryptoMask)));
+//     EXPECT_FALSE(SelfEncryptChunk(content, hash1, hash2,
+//         combinations[i] & (kCompressionMask | kCryptoMask)));
+//     EXPECT_FALSE(SelfEncryptChunk(content, hash1, hash2,
+//         combinations[i] & (kCompressionMask | kObfuscationMask)));
     content_enc[i] = SelfEncryptChunk(content, hash1, hash2, combinations[i]);
 //     if (combinations[i] == (kCompressionNone | kObfuscationNone | kCryptoNone))
 //       EXPECT_EQ(content, content_enc[i]) << i;

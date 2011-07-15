@@ -75,6 +75,18 @@ struct DataMap {
   std::string content;     ///< Whole data item or last chunk, if small enough
 };
 
+/*
+/// Hold datamaps in a version container
+struct VersionedDataMap {
+	VersionedDataMap()
+		: data_map(), user_name(), time_stamp() {}
+	DataMap data_map;
+	std::string user_name;
+	boost::posix_time::time_duration time_stamp;
+};*/
+/*
+std::tuple<uint8_t, fs::path, VersionedDataMap> VersionedDirMap; // for dirs*/
+
 }  // namespace encrypt
 
 }  // namespace maidsafe

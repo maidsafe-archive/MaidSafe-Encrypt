@@ -34,7 +34,7 @@ struct SelfEncryptionParams;
 
 namespace utils {
 
-int kCompressionRatio = 3; // optimised for speed
+static int kCompressionRatio = 3; // optimised for speed
 
 /// XOR transformation class for pipe-lining
 class XORFilter : public CryptoPP::Bufferless<CryptoPP::Filter> {
@@ -58,8 +58,7 @@ public:
   AESFilter(CryptoPP::BufferedTransformation *attachment = NULL,
             std::string enc_hash = "", bool encrypt = true,
             std::string *result_hash = NULL): enc_hash_(enc_hash),
-                                              encrypt_(encrypt),
-                                              result_hash_(result_hash) {
+                                              encrypt_(encrypt) {
    CryptoPP::Filter::Detach(attachment);
   };
    size_t Put2(const byte* inString,
@@ -70,7 +69,6 @@ public:
 private:
   std::string enc_hash_;
   bool encrypt_;
-  std::string *result_hash_;
 };
 
 
