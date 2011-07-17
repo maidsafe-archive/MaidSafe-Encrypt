@@ -25,6 +25,8 @@
 #include "cryptopp/channels.h"
 #include "boost/filesystem.hpp"
 
+#include "maidsafe/encrypt/data_map.h"
+
 namespace fs = boost::filesystem;
 
 namespace maidsafe {
@@ -131,35 +133,33 @@ bool SelfDecryptChunk(std::shared_ptr<std::string> content,
                              const std::string &obfuscation_hash,
                              const uint32_t &self_encryption_type);
 
-
-class SEWrite {
-public:
-  SEWrite() {}
-  std::string Write(const char* data, size_t length); // return data map
-  bool FinishWrite();
-private:
-  SEWrite &operator = (const SEWrite&) {} // no assignment
-  SEWrite (const SEWrite&) {} // no copy
-  Anchor anchor_;
-  CryptoPP::ChannelSwitch channel_switch_;
-  
-};
-
+class ChunkStore;
 
 class SE { // Self Encryption of course
 public:
-  
-  std::string Write(const char* data, size_t length); // return data map
-  bool FinishWrite();
+  SE(ChunkStore &chunk_store) : main_anchor_(), encrypt_anchor_(),
+                                channel_switch_(new CryptoPP::ChannelSwitch),
+                                data_map_(), chunk_number_(0), chunk_vec_(),
+                                pre_enc_hash_() {}
+  bool Write(const char* data, size_t length); // return data map
+  bool FinishWrite() { return main_anchor_.MessageEnd(); }
   std::iostream Read (const std::string &DataMap); // return file
   std::string PartialRead(const std::string &DataMap); // return some data
 
 private:
   SE &operator = (const SE&) {} // no assignment 
   SE (const SE&) {} // no copy
-  Anchor WriteAnchor;
-  Anchor ReadAnchor;
-  Anchor PartialReadAnchor;
+  Anchor main_anchor_;
+  Anchor encrypt_anchor_;
+  CryptoPP::member_ptr<CryptoPP::ChannelSwitch>
+            channel_switch_; 
+  DataMap data_map_;
+  size_t chunk_number_;
+  std::vector<char*> chunk_vec_;
+  std::vector<std::string> pre_enc_hash_;
+  
+//   ChunkStore chunk_store_;
+//   
   
 };
 
