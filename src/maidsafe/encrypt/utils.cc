@@ -33,6 +33,7 @@
 #include "cryptopp/pwdbased.h"
 #include "cryptopp/cryptlib.h"
 #include "cryptopp/filters.h"
+#include "cryptopp/channels.h"
 
 #ifdef __MSVC__
 #  pragma warning(pop)
@@ -298,8 +299,8 @@ bool SelfEncryptChunk(std::shared_ptr<std::string> content,
     case kCompressionNone:
       break;
     case kCompressionGzip:
-      anchor.Attach(new CryptoPP::Gzip(
-         new CryptoPP::StringSink(processed_content), kCompressionRatio));
+      //CryptoPP::Gzip.SetDeflateLevel(1);
+      anchor.Attach(new CryptoPP::Gzip());
       break;
     default:
       DLOG(ERROR) << "Compress: Invalid compression type passed." << std::endl;
@@ -330,13 +331,10 @@ bool SelfEncryptChunk(std::shared_ptr<std::string> content,
       return false;
   }
 
-  // encryption
-  // Get the hash out
-  // add redirector to AESFilter instead of stringsink
-      std::string hash;
-      CryptoPP::SHA512 SHA512;
-      CryptoPP::HashFilter get_hash(SHA512,
-          new CryptoPP::StringSink(processed_content));
+// This needs run to get the processed data here at least. 
+  anchor.Put(reinterpret_cast<const byte*>(content->c_str()), content->size());
+  anchor.MessageEnd();
+        // encryption
   switch (self_encryption_type & kCryptoMask) {
     case kCryptoNone:
       break;
@@ -351,13 +349,29 @@ bool SelfEncryptChunk(std::shared_ptr<std::string> content,
                       << std::endl;
           return false;
         }
+        /*
+  *Testing channels, get hash and encrypted string at same time
+  */
+        CryptoPP::SHA512  hash;
+        std::string cypher;
+        AESFilter aes_filter(new CryptoPP::StringSink(cypher),
+                            enc_hash,
+                            true);
+        CryptoPP::HashFilter hash_filter(hash);
+        CryptoPP::member_ptr<CryptoPP::ChannelSwitch> hash_switch(new CryptoPP::ChannelSwitch);
+        hash_switch->AddDefaultRoute(hash_filter);
+        hash_switch->AddDefaultRoute(aes_filter);
+        CryptoPP::StringSource(processed_content, true,  hash_switch.release() );
 
-      CryptoPP::SHA512  hash; 
-      anchor.Attach(new AESFilter(
-                      new CryptoPP::StringSink(processed_content), 
-                    enc_hash,
-                    true));
-     // std::cout << processed_content << std::endl;
+        std::string digest;
+        CryptoPP::HexEncoder encoder( new CryptoPP::StringSink( digest ), true /* uppercase */ );
+
+        hash_filter.TransferTo(encoder);
+  //      std::cout << " The sha hash is " << digest << std::endl;
+
+        std::swap(*content,cypher);
+        return true;
+
       }
       break;
     default:
@@ -366,12 +380,8 @@ bool SelfEncryptChunk(std::shared_ptr<std::string> content,
       return false;
   }
 
-  anchor.Put(reinterpret_cast<const byte*>(content->c_str()), content->size());
-  anchor.MessageEnd();
-  std::swap(*content,processed_content);
-  std::string this_hash;
-  //std::cout << " My HASH is " << get_hash. << std::endl;
-  return true;
+      std::swap(*content,processed_content);
+      return true;
 }
 
 bool SelfDecryptChunk(std::shared_ptr<std::string> content,
@@ -459,6 +469,65 @@ bool SelfDecryptChunk(std::shared_ptr<std::string> content,
   return true;
 }
 
+std::string SE::Write(const char* data, size_t length)
+{
+
+  
+}
+
+std::string processed_content;
+/*
+// Attach and detach operations to anchor
+  Anchor Write;
+  Write.Attach(new CryptoPP::Gzip(
+         new CryptoPP::StringSink(processed_content), kCompressionRatio));
+
+  std::string prefix;
+  if (encryption_hash.size() > crypto::AES256_KeySize) {
+    // add the remainder of the encryption hash to the obfuscation hash
+    prefix = encryption_hash.substr(crypto::AES256_KeySize);
+  }
+   std::string obfuscation_pad = prefix + obfuscation_hash;
+
+  Write.Attach(new XORFilter(new CryptoPP::StringSink(processed_content),
+                             obfuscation_pad));
+####################################
+  std::string hash;
+      CryptoPP::SHA512 SHA512;
+      CryptoPP::HashFilter get_hash(SHA512,
+          new CryptoPP::StringSink(processed_content));
+  switch (self_encryption_type & kCryptoMask) {
+    case kCryptoNone:
+      break;
+    case kCryptoAes256:
+      {
+        std::string enc_hash;
+        if (!ResizeObfuscationHash(encryption_hash,
+                                   crypto::AES256_KeySize +
+                                       crypto::AES256_IVSize,
+                                   &enc_hash)) {
+          DLOG(ERROR) << "SelfEncryptChunk: Could not expand encryption hash."
+                      << std::endl;
+          return false;
+        }
+
+      CryptoPP::SHA512  hash;
+      anchor.Attach(new AESFilter(
+                      new CryptoPP::StringSink(processed_content),
+                    enc_hash,
+                    true));
+     // std::cout << processed_content << std::endl;
+      }
+      break;
+    default:
+      DLOG(ERROR) << "SelfEncryptChunk: Invalid encryption type passed."
+                  << std::endl;
+      return false;
+  }
+
+  anchor.Put(reinterpret_cast<const byte*>(content->c_str()), content->size());
+  anchor.MessageEnd();
+*/
 }  // namespace utils
 
 }  // namespace encrypt

@@ -22,6 +22,7 @@
 
 #include "cryptopp/cryptlib.h"
 #include "cryptopp/files.h"
+#include "cryptopp/channels.h"
 #include "boost/filesystem.hpp"
 
 namespace fs = boost::filesystem;
@@ -129,6 +130,38 @@ bool SelfDecryptChunk(std::shared_ptr<std::string> content,
                              const std::string &encryption_hash,
                              const std::string &obfuscation_hash,
                              const uint32_t &self_encryption_type);
+
+
+class SEWrite {
+public:
+  SEWrite() {}
+  std::string Write(const char* data, size_t length); // return data map
+  bool FinishWrite();
+private:
+  SEWrite &operator = (const SEWrite&) {} // no assignment
+  SEWrite (const SEWrite&) {} // no copy
+  Anchor anchor_;
+  CryptoPP::ChannelSwitch channel_switch_;
+  
+};
+
+
+class SE { // Self Encryption of course
+public:
+  
+  std::string Write(const char* data, size_t length); // return data map
+  bool FinishWrite();
+  std::iostream Read (const std::string &DataMap); // return file
+  std::string PartialRead(const std::string &DataMap); // return some data
+
+private:
+  SE &operator = (const SE&) {} // no assignment 
+  SE (const SE&) {} // no copy
+  Anchor WriteAnchor;
+  Anchor ReadAnchor;
+  Anchor PartialReadAnchor;
+  
+};
 
 }  // namespace utils
 
