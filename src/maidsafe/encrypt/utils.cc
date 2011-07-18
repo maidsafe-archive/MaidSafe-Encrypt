@@ -517,7 +517,7 @@ bool SE::Write (const char* data, size_t length) {
   if (length == 0) {
     if ((chunk_vec_.size() == 0) && (zipper.MaxRetrievable() < min_chunk_size_)) { // straight to datamap
       std::cout << "small eh! ";
-    } else if ((zipper.MaxRetrievable() < (chunk_vec_.size() - 3) * chunk_size_ )) { // change chunk size
+    } else if ( (zipper.MaxRetrievable() < chunk_size_) && ((zipper.MaxRetrievable() + (chunk_vec_.size() * chunk_size_ )) < (chunk_vec_.size() - 3) * chunk_size_ )) { // change chunk size
        chunk_size_ = length_ / 3;
        Write(data ,length_); // FIXME also need to add any chunk contents uncompressed already in vector
        FinishWrite();
