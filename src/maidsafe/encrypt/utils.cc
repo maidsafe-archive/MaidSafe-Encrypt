@@ -475,83 +475,88 @@ bool SE::Write (const char* data, size_t length) {
 /*            V
  *        Gzip (in 256Kb chunks)
  *            V
- *       V----------V
+ *       V----------V  (Main_ChannelSwitch)
  *    Hash (pre)  Pass to encrypt
  *       V        V
  *  Stringsink   XOR with (cn-1 cn-2 cn)
  *  (to datamap)          V
  *                      Encrypt
  *                         V
- *                 V-----------------------V
+ *                 V-----------------------V (Encrypt_channelSwitch)
  *            MessageQueue           Hash (post)
  *               V                       V
  *           FileSink               StringSink (to Datamap)
  *      (named with Hash(post))
- *        
- *
- *
  */
-
+  length_ += length; // keep size so far
   CryptoPP::SHA512  hash;
   std::string chunk_content;
   std::string obfuscation_pad("Dummy pad for now");
   std::string enc_hash="this is not a password";
   byte *compressed_data;
-  int chunk_size = (1024*256);
-  main_anchor_.Attach(new CryptoPP::Gzip());
-  main_anchor_.Attach(new CryptoPP::MessageQueue());
-  
-    if (length == 0) {
-     // allows method to be called from MessageEnd  to force flush of any last data
-      main_anchor_.MessageEnd();
-      main_anchor_.CopyAllTo(encrypt_anchor_);
-    } else 
-      main_anchor_.Put((byte*)(data), length, true); //  blocking
-
-    // set up encrypt chunks pipeline
-  encrypt_anchor_.Attach(new XORFilter(
-                  new CryptoPP::StringSink(chunk_content),
-                  obfuscation_pad
-                  ));
-  encrypt_anchor_.Attach(new AESFilter(new CryptoPP::StringSink(chunk_content),
-                            enc_hash,
-                            true));
-  // need pre encryption hashes
-  CryptoPP::HashFilter hash_filter(hash);
-  channel_switch_->AddDefaultRoute(hash_filter);
-  channel_switch_->AddDefaultRoute(encrypt_anchor_);
-  // do we need to store hash as encoded !! 
   std::string digest;
-  CryptoPP::HexEncoder encoder( new CryptoPP::StringSink( digest ), true /* uppercase */ );
-  hash_filter.TransferTo(encoder);
+  CryptoPP::HexEncoder encoder(new CryptoPP::StringSink( digest ), true);
+  CryptoPP::Gzip zipper(new CryptoPP::Gzip(new CryptoPP::MessageQueue));
+  CryptoPP::MessageQueue holding_queue = CryptoPP::MessageQueue();
+  CryptoPP::HashFilter pre_enc_hash_filter(hash);
+  CryptoPP::HashFilter post_enc_hash_filter(hash);
+  //ENCRYPT Pipeline
+  XORFilter xor_filter(new XORFilter(new AESFilter(
+                  new AESFilter(new CryptoPP::MessageQueue),
+                  enc_hash,
+                  true),obfuscation_pad));
 
-  // MORE LOGIC NEEDED FOR SMALLER  DATA
-  if ((main_anchor_.MaxRetrievable() < (3*chunk_size)) &&
-       (main_anchor_.MessageEnd())) {
-    // straight into datamap
-  } else if (main_anchor_.MaxRetrievable() >= chunk_size) {
-      ++chunk_number_;
-      if (chunk_number_ > 3) {
-      main_anchor_.CopyRangeTo(encrypt_anchor_, 0, chunk_size); //needs to go to channel instead of encrypt
-      channel_switch_.release();
+  main_channel_switch_->AddDefaultRoute(pre_enc_hash_filter);
+  main_channel_switch_->AddDefaultRoute(zipper);
+  pre_enc_hash_filter.TransferTo(encoder);
+  // Transfer to DataMap
+
+  encrypt_channel_switch_->AddDefaultRoute(holding_queue);
+  encrypt_channel_switch_->AddDefaultRoute(post_enc_hash_filter);
+
+  if (length == 0) {
+    if ((chunk_vec_.size() == 0) && (zipper.MaxRetrievable() < min_chunk_size_)) { // straight to datamap
+      std::cout << "small eh! ";
+    } else if ((zipper.MaxRetrievable() < (chunk_vec_.size() - 3) * chunk_size_ )) { // change chunk size
+       chunk_size_ = length_ / 3;
+       Write(data ,length_); // FIXME also need to add any chunk contents uncompressed already in vector
+       FinishWrite();
+    } else { // already got chunks so just flush
+      zipper.MessageEnd();
+      holding_queue.TransferAllTo(xor_filter);
+    }
+  } else {
+    zipper.Put((byte*)(data), length, true); //  blocking
+  }
+
+ // Rubbish to be deleted
+  ChunkDetails chunk1;
+  chunk1.pre_hash = digest;
+  data_map_.chunks. push_back(chunk1);
+  pre_enc_hash_filter.Flush(true); // to allow reuse
+
+
+  // TODO FIXME
+  while (zipper.MaxRetrievable() >= chunk_size_) {
+      if (chunk_vec_.size() > 3) {
+      //zipper.CopyRangeTo(main_channel_switch_, 0, chunk_size); //needs to go to channel instead of encrypt
+      main_channel_switch_.release();
       } else {
         // Keep first 2 chunks in vector
         char * out;
-        out = new char[chunk_size+1];
-        main_anchor_.Get((byte*)out, chunk_size);
+        out = new char[chunk_size_+1];
+        holding_queue.Get((byte*)out, chunk_size_);
         std::string digest;
         CryptoPP::StringSource(out, true,(new CryptoPP::HexEncoder(
                                          new CryptoPP::StringSink( digest ),
                                                                   true)));
-        out[chunk_size] = 0;
+        out[chunk_size_] = 0;
         chunk_vec_.push_back(out);
         pre_enc_hash_.push_back(digest);
       }
   }
 
-// WE NEED THE HASH HERE AND VECTOR OF CHUNKS
-// Get chunk - hash - pass to encrypt anchor
-      return true;
+  return true;
 }
 }  // namespace utils
 

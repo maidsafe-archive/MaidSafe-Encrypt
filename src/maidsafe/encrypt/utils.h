@@ -27,6 +27,7 @@
 
 #include "maidsafe/encrypt/data_map.h"
 
+
 namespace fs = boost::filesystem;
 
 namespace maidsafe {
@@ -137,28 +138,33 @@ class ChunkStore;
 
 class SE { // Self Encryption of course
 public:
-  SE(ChunkStore &chunk_store) : main_anchor_(), encrypt_anchor_(),
-                                channel_switch_(new CryptoPP::ChannelSwitch),
-                                data_map_(), chunk_number_(0), chunk_vec_(),
-                                pre_enc_hash_(), dummy_("") {}
+  SE(ChunkStore &chunk_store) : 
+                        main_channel_switch_(new CryptoPP::ChannelSwitch),
+                        encrypt_channel_switch_(new CryptoPP::ChannelSwitch),
+                        data_map_(), chunk_number_(0), chunk_vec_(),
+                        pre_enc_hash_(), dummy_(""), chunk_size_(1024*256),
+                        min_chunk_size_(1024) {}
   bool Write(const char* data, size_t length); // return data map
   bool FinishWrite() { return Write(dummy_.c_str(), 0); }
   std::iostream Read (const std::string &DataMap); // return file
   std::string PartialRead(const std::string &DataMap); // return some data
+  DataMap getDataMap() { return data_map_; }
 
 private:
   SE &operator = (const SE&) {} // no assignment 
   SE (const SE&) {} // no copy
-  Anchor main_anchor_;
-  Anchor encrypt_anchor_;
   CryptoPP::member_ptr<CryptoPP::ChannelSwitch>
-            channel_switch_; 
+            main_channel_switch_;
+  CryptoPP::member_ptr<CryptoPP::ChannelSwitch>
+            encrypt_channel_switch_; 
   DataMap data_map_;
   size_t chunk_number_;
   std::vector<char*> chunk_vec_;
   std::vector<std::string> pre_enc_hash_;
   std::string dummy_;
-  
+  size_t chunk_size_;
+  size_t min_chunk_size_;
+  size_t length_;
 //   ChunkStore chunk_store_;
 //   
   
