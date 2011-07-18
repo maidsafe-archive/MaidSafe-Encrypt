@@ -472,6 +472,26 @@ bool SelfDecryptChunk(std::shared_ptr<std::string> content,
 
 bool SE::Write (char* data, size_t length) {
 // needs and object defined and void put methods
+/*            V
+ *        Gzip (in 256Kb chunks)
+ *            V
+ *       V----------V
+ *    Hash (pre)  Pass to encrypt
+ *       V        V
+ *  Stringsink   XOR with (cn-1 cn-2 cn)
+ *  (to datamap)          V
+ *                      Encrypt
+ *                         V
+ *                 V-----------------------V
+ *            MessageQueue           Hash (post)
+ *               V                       V
+ *           FileSink               StringSink (to Datamap)
+ *      (named with Hash(post))
+ *        
+ *
+ *
+ */
+
   CryptoPP::SHA512  hash;
   std::string chunk_content;
   std::string obfuscation_pad("Dummy pad for now");
