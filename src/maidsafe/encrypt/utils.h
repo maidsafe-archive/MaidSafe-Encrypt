@@ -140,9 +140,9 @@ public:
   SE(ChunkStore &chunk_store) : main_anchor_(), encrypt_anchor_(),
                                 channel_switch_(new CryptoPP::ChannelSwitch),
                                 data_map_(), chunk_number_(0), chunk_vec_(),
-                                pre_enc_hash_() {}
-  bool Write(char* data, size_t length); // return data map
-  bool FinishWrite() { return main_anchor_.MessageEnd(); }
+                                pre_enc_hash_(), dummy_("") {}
+  bool Write(const char* data, size_t length); // return data map
+  bool FinishWrite() { return Write(dummy_.c_str(), 0); }
   std::iostream Read (const std::string &DataMap); // return file
   std::string PartialRead(const std::string &DataMap); // return some data
 
@@ -157,6 +157,7 @@ private:
   size_t chunk_number_;
   std::vector<char*> chunk_vec_;
   std::vector<std::string> pre_enc_hash_;
+  std::string dummy_;
   
 //   ChunkStore chunk_store_;
 //   

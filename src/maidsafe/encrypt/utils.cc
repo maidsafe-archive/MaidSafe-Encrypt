@@ -470,7 +470,7 @@ bool SelfDecryptChunk(std::shared_ptr<std::string> content,
 }
 
 
-bool SE::Write (char* data, size_t length) {
+bool SE::Write (const char* data, size_t length) {
 // needs and object defined and void put methods
 /*            V
  *        Gzip (in 256Kb chunks)
@@ -498,12 +498,17 @@ bool SE::Write (char* data, size_t length) {
   std::string enc_hash="this is not a password";
   byte *compressed_data;
   int chunk_size = (1024*256);
-
-
   main_anchor_.Attach(new CryptoPP::Gzip());
   main_anchor_.Attach(new CryptoPP::MessageQueue());
-  main_anchor_.Put(reinterpret_cast<byte*>(data), length, true); //  blocking
-// set up encrypt chunks pipeline
+  
+    if (length == 0) {
+     // allows method to be called from MessageEnd  to force flush of any last data
+      main_anchor_.MessageEnd();
+      main_anchor_.CopyAllTo(encrypt_anchor_);
+    } else 
+      main_anchor_.Put((byte*)(data), length, true); //  blocking
+
+    // set up encrypt chunks pipeline
   encrypt_anchor_.Attach(new XORFilter(
                   new CryptoPP::StringSink(chunk_content),
                   obfuscation_pad
@@ -544,14 +549,8 @@ bool SE::Write (char* data, size_t length) {
       }
   }
 
-  
-
-  
 // WE NEED THE HASH HERE AND VECTOR OF CHUNKS
 // Get chunk - hash - pass to encrypt anchor
-
-
-
       return true;
 }
 }  // namespace utils
