@@ -141,7 +141,7 @@ public:
                                 channel_switch_(new CryptoPP::ChannelSwitch),
                                 data_map_(), chunk_number_(0), chunk_vec_(),
                                 pre_enc_hash_() {}
-  bool Write(const char* data, size_t length); // return data map
+  bool Write(char* data, size_t length); // return data map
   bool FinishWrite() { return main_anchor_.MessageEnd(); }
   std::iostream Read (const std::string &DataMap); // return file
   std::string PartialRead(const std::string &DataMap); // return some data

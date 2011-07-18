@@ -470,7 +470,7 @@ bool SelfDecryptChunk(std::shared_ptr<std::string> content,
 }
 
 
-bool SE::Write (const char* data, size_t length) {
+bool SE::Write (char* data, size_t length) {
 // needs and object defined and void put methods
   CryptoPP::SHA512  hash;
   std::string chunk_content;
@@ -482,6 +482,7 @@ bool SE::Write (const char* data, size_t length) {
 
   main_anchor_.Attach(new CryptoPP::Gzip());
   main_anchor_.Attach(new CryptoPP::MessageQueue());
+  main_anchor_.Put(reinterpret_cast<byte*>(data), length, true); //  blocking
 // set up encrypt chunks pipeline
   encrypt_anchor_.Attach(new XORFilter(
                   new CryptoPP::StringSink(chunk_content),
