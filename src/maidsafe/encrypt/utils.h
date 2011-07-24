@@ -30,6 +30,7 @@
 #include "maidsafe/encrypt/data_map.h"
 #include <common/crypto.h>
 #include <cryptopp/aes.h>
+#include <boost/concept_check.hpp>
 
 
 namespace fs = boost::filesystem;
@@ -151,13 +152,12 @@ public:
   SE(ChunkStore &chunk_store) : 
                         main_channel_switch_(new CryptoPP::ChannelSwitch),
                         encrypt_channel_switch_(new CryptoPP::ChannelSwitch),
-                        data_map_(), chunk_number_(0), chunk_vec_(),
-                        pre_enc_hash_(), dummy_(""), chunk_size_(1024*256),
-                        min_chunk_size_(1024), main_queue_(CryptoPP::MessageQueue()),
+                        data_map_(), complete_(false), chunk_size_(1024*256),
+                        min_chunk_size_(1024), main_encrypt_queue_(CryptoPP::MessageQueue()),
                         chunk_two_(CryptoPP::MessageQueue()),
-                        chunk_one_(CryptoPP::MessageQueue()) {}
-  bool Write(const char* data, size_t length); // return data map
-  bool FinishWrite() { return Write(dummy_.c_str(), 0); }
+                        chunk_one_(CryptoPP::MessageQueue())
+                        {}
+  bool Write(const char* data, size_t length, bool complete);
   std::iostream Read (const std::string &DataMap); // return file
   std::string PartialRead(const std::string &DataMap); // return some data
   DataMap2 getDataMap() { return data_map_; }
@@ -165,26 +165,23 @@ public:
 private:
   SE &operator = (const SE&) {} // no assignment 
   SE (const SE&) {} // no copy
+  bool EncryptChunkFromQueue();
+  
   CryptoPP::member_ptr<CryptoPP::ChannelSwitch>
             main_channel_switch_;
   CryptoPP::member_ptr<CryptoPP::ChannelSwitch>
             encrypt_channel_switch_; 
   DataMap2 data_map_;
-  size_t chunk_number_;
-  std::vector<byte *> chunk_vec_;
-  std::vector<std::string> pre_enc_hash_;
-  std::string dummy_;
+  bool complete_; // in case of requirement to send a complete only
   size_t chunk_size_;
   size_t min_chunk_size_;
   size_t length_;
-  CryptoPP::MessageQueue main_queue_;
+  CryptoPP::MessageQueue main_encrypt_queue_;
   CryptoPP::SHA512  hash_;
   CryptoPP::MessageQueue chunk_two_;
   CryptoPP::MessageQueue chunk_one_;
   ChunkDetails2 chunk_data_;
-//   ChunkStore chunk_store_;
-//   
-  
+  AESFilter aes_filter_;
 };
 
 }  // namespace utils

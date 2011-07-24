@@ -466,19 +466,17 @@ bool SelfDecryptChunk(std::shared_ptr<std::string> content,
 }
 
 
-bool SE::Write (const char* data, size_t length) {
-
+bool SE::Write (const char* data, size_t length, bool complete) {
+  main_encrypt_queue_.Put(reinterpret_cast<const byte*>(data), length);
   length_ += length; // keep size so far
   std::string digest;
-  byte *chunk_content;
-  CryptoPP::HexEncoder encoder(new CryptoPP::StringSink( digest ), true);
 
-  CryptoPP::HashFilter chunk1_hash_filter(hash_, &chunk_one_);
-  CryptoPP::HashFilter chunk2_hash_filter(hash_, &chunk_two_);
-  CryptoPP::HashFilter pre_enc_hash_n (hash_);
+  size_t qlength = main_encrypt_queue_.MaxRetrievable();
+  CryptoPP::HashFilter chunk1_hash_filter(hash_, &chunk_one_, true); // hash and data
+  CryptoPP::HashFilter chunk2_hash_filter(hash_, &chunk_two_, true); 
 
   if (length_ < chunk_size_ * 3)
-    if (length != 0)
+    if (!complete)
       return true; // not finished getting data
     else
       chunk_size_ = (length_ - 1) / 3;
@@ -487,21 +485,17 @@ bool SE::Write (const char* data, size_t length) {
     std::string content(data, length_);
     data_map_.content = content;
   }
-// we have enough to start process off now    
 
-// main_queue.CopyRangeTo2();
 // START
-  
-  main_queue_.Put(reinterpret_cast<const byte*>(data), length);
-  
-  // leave first two chunks in here
+ 
+// leave first two chunks in here
   byte chunk1_hash[CryptoPP::SHA512::DIGESTSIZE];
   byte chunk2_hash[CryptoPP::SHA512::DIGESTSIZE];
-  byte *pre_enc_hashn;
+
   
   if (data_map_.chunks.size() < 2) { // need first 2 hashes
-    main_queue_.TransferTo(chunk1_hash_filter , chunk_size_);
-    main_queue_.TransferTo(chunk2_hash_filter, chunk_size_);
+    main_encrypt_queue_.TransferTo(chunk1_hash_filter , chunk_size_);
+    main_encrypt_queue_.TransferTo(chunk2_hash_filter, chunk_size_);
     chunk_one_.Get(chunk1_hash, 64);
     data_map_.chunks[0].hash = chunk1_hash;
     chunk_two_.Get(chunk2_hash, 64);
@@ -509,12 +503,34 @@ bool SE::Write (const char* data, size_t length) {
   }
 // now chunk one and two are in the messagequeues they should be
 
-  while (main_queue_.TotalBytesRetrievable() > chunk_size_) {
-    // now this has hash and data
-    main_queue_.TransferTo(pre_enc_hash_n, chunk_size_);
+  while (main_encrypt_queue_.TotalBytesRetrievable() > chunk_size_) {
+    EncryptChunkFromQueue();
+  }
+  
+  if (complete) {
+    size_t complete_q_length = main_encrypt_queue_.TotalBytesRetrievable();
+    if (complete_q_length < 1025)
+      main_encrypt_queue_.Get(reinterpret_cast<byte *>(
+                      const_cast<char *>(data_map_.content.c_str())),
+                      complete_q_length);//
+    else {
+      chunk_size_ = complete_q_length;
+      EncryptChunkFromQueue();
+    }
+    // Now process chunks 1 & 2
+
+
+  }
+// If we are not finished main_queue_ still has data in it !!
+  return true;
+}
+
+bool SE::EncryptChunkFromQueue() {
+    byte *chunk_content;
+    CryptoPP::HashFilter pre_enc_hash_n (hash_);
+    byte *pre_enc_hashn;
+    main_encrypt_queue_.TransferTo(pre_enc_hash_n, chunk_size_);
     pre_enc_hash_n.Get(pre_enc_hashn, 64);
-    chunk_data_.pre_size = chunk_size_;
-    chunk_data_.pre_hash = pre_enc_hashn;
     size_t last_chunk_number = data_map_.chunks.size();
     byte key[32];
     byte iv[16];
@@ -524,11 +540,11 @@ bool SE::Write (const char* data, size_t length) {
     std::copy(data_map_.chunks[last_chunk_number].pre_hash + 32,
               data_map_.chunks[last_chunk_number].pre_hash + 48,
               iv);
-    
+
     byte obfuscation_pad[128];
     memcpy(obfuscation_pad, data_map_.chunks[last_chunk_number].pre_hash, 64);
     memcpy(obfuscation_pad, data_map_.chunks[last_chunk_number - 1].pre_hash, 64);
-    // We could add compression here is we want
+    // We could add compression here i we want
     // To allow this to be broken up perhaps we should use an anchor
      AESFilter aes_filter(new AESFilter(
                   new XORFilter(
@@ -540,34 +556,20 @@ bool SE::Write (const char* data, size_t length) {
 
     byte post_hash[64];
     std::copy (chunk_content, chunk_content + 64, post_hash);
-    std::string post_data(reinterpret_cast<char *>(chunk_content), chunk_size_ + 64); 
+    std::string post_data(reinterpret_cast<char *>(chunk_content), chunk_size_ + 64);
     size_t post_size = post_data.size() - 64 ;
-    
+
     data_map_.chunks[last_chunk_number + 1].pre_hash = pre_enc_hashn;
     data_map_.chunks[last_chunk_number + 1].pre_size = chunk_size_;
     data_map_.chunks[last_chunk_number + 1].size = post_size;
     data_map_.chunks[last_chunk_number + 1].hash = post_hash;
-    
-    // This will take data - encrypt and output a string that starts with a hash.
-    // which we know is [CryptoPP::SHA512::DIGESTSIZE]
-    // Fill in datamap and dump data to data_store, this should be as fast as
-     // we can get it now I think.
-     // Need a lot of testing
-   // send post_data.substr(564) to datastore
-  }
-if (length == 0) {
-  if (main_queue_.TotalBytesRetrievable() < 1025)
-//     main_queue_.Get(data_map_.content.c_str(),
-//                     static_cast<size_t>(main_queue_.TotalBytesRetrievable()));//
-//     
-// Need to process chunks one and two !!!
-// plus any remainder in main_queue;
-std::cout << "nuthing " ;
+  //TODO implement this ->>>  chunk_store.Store(post_hash, post_data.substr(64);
+    return true;
 }
 
-// If we are not finished main_queue_ still has data in it !!
-  return true;
-}
+
+
+
 }  // namespace utils
 
 }  // namespace encrypt
