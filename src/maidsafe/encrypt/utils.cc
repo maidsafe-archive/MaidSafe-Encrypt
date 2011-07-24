@@ -469,7 +469,8 @@ bool SelfDecryptChunk(std::shared_ptr<std::string> content,
 bool SE::Write (const char* data, size_t length) {
 
   length_ += length; // keep size so far
-  std::string digest, chunk_content;
+  std::string digest;
+  byte *chunk_content;
   CryptoPP::HexEncoder encoder(new CryptoPP::StringSink( digest ), true);
 
   CryptoPP::HashFilter chunk1_hash_filter(hash_, &chunk_one_);
@@ -523,8 +524,8 @@ bool SE::Write (const char* data, size_t length) {
     std::copy(data_map_.chunks[last_chunk_number].pre_hash + 32,
               data_map_.chunks[last_chunk_number].pre_hash + 48,
               iv);
+    
     byte obfuscation_pad[128];
-    memset(obfuscation_pad, 0, 128); // to make sure it's big enough
     memcpy(obfuscation_pad, data_map_.chunks[last_chunk_number].pre_hash, 64);
     memcpy(obfuscation_pad, data_map_.chunks[last_chunk_number - 1].pre_hash, 64);
     // We could add compression here is we want
@@ -532,21 +533,36 @@ bool SE::Write (const char* data, size_t length) {
      AESFilter aes_filter(new AESFilter(
                   new XORFilter(
                     new CryptoPP::HashFilter(hash_,
-                      new CryptoPP::StringSink(chunk_content), true),
+                      new CryptoPP::ArraySink(chunk_content, chunk_size_ + 64), true),
                    obfuscation_pad),
                 key, iv, true));
+    pre_enc_hash_n.TransferAllTo(aes_filter);
+
+    byte post_hash[64];
+    std::copy (chunk_content, chunk_content + 64, post_hash);
+    std::string post_data(reinterpret_cast<char *>(chunk_content), chunk_size_ + 64); 
+    size_t post_size = post_data.size() - 64 ;
     
- 
+    data_map_.chunks[last_chunk_number + 1].pre_hash = pre_enc_hashn;
+    data_map_.chunks[last_chunk_number + 1].pre_size = chunk_size_;
+    data_map_.chunks[last_chunk_number + 1].size = post_size;
+    data_map_.chunks[last_chunk_number + 1].hash = post_hash;
+    
     // This will take data - encrypt and output a string that starts with a hash.
     // which we know is [CryptoPP::SHA512::DIGESTSIZE]
     // Fill in datamap and dump data to data_store, this should be as fast as
      // we can get it now I think.
-     // Need a lot of testing 
+     // Need a lot of testing
+   // send post_data.substr(564) to datastore
   }
 if (length == 0) {
+  if (main_queue_.TotalBytesRetrievable() < 1025)
+//     main_queue_.Get(data_map_.content.c_str(),
+//                     static_cast<size_t>(main_queue_.TotalBytesRetrievable()));//
+//     
 // Need to process chunks one and two !!!
 // plus any remainder in main_queue;
-
+std::cout << "nuthing " ;
 }
 
 // If we are not finished main_queue_ still has data in it !!
