@@ -165,7 +165,7 @@ public:
 private:
   SE &operator = (const SE&) {} // no assignment 
   SE (const SE&) {} // no copy
-  bool EncryptChunkFromQueue();
+  bool EncryptChunkFromQueue(size_t chunk);
   
   CryptoPP::member_ptr<CryptoPP::ChannelSwitch>
             main_channel_switch_;

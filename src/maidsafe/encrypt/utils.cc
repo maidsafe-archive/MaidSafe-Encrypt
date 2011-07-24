@@ -497,14 +497,16 @@ bool SE::Write (const char* data, size_t length, bool complete) {
     main_encrypt_queue_.TransferTo(chunk1_hash_filter , chunk_size_);
     main_encrypt_queue_.TransferTo(chunk2_hash_filter, chunk_size_);
     chunk_one_.Get(chunk1_hash, 64);
-    data_map_.chunks[0].hash = chunk1_hash;
+    data_map_.chunks[0].pre_hash = chunk1_hash;
+    data_map_.chunks[0].pre_size = chunk_size_;
     chunk_two_.Get(chunk2_hash, 64);
-    data_map_.chunks[1].hash = chunk2_hash;
+    data_map_.chunks[1].pre_hash = chunk2_hash;
+    data_map_.chunks[1].pre_size = chunk_size_;
   }
 // now chunk one and two are in the messagequeues they should be
 
   while (main_encrypt_queue_.TotalBytesRetrievable() > chunk_size_) {
-    EncryptChunkFromQueue();
+    EncryptChunkFromQueue(99);
   }
   
   if (complete) {
@@ -515,7 +517,7 @@ bool SE::Write (const char* data, size_t length, bool complete) {
                       complete_q_length);//
     else {
       chunk_size_ = complete_q_length;
-      EncryptChunkFromQueue();
+      EncryptChunkFromQueue(99);
     }
     // Now process chunks 1 & 2
 
@@ -525,12 +527,18 @@ bool SE::Write (const char* data, size_t length, bool complete) {
   return true;
 }
 
-bool SE::EncryptChunkFromQueue() {
+bool SE::EncryptChunkFromQueue(size_t chunk) {
     byte *chunk_content;
     CryptoPP::HashFilter pre_enc_hash_n (hash_);
     byte *pre_enc_hashn;
-    main_encrypt_queue_.TransferTo(pre_enc_hash_n, chunk_size_);
-    pre_enc_hash_n.Get(pre_enc_hashn, 64);
+    if (chunk == 0) {
+      chunk_one_.TransferAllTo(pre_enc_hash_n);
+    } else if (chunk == 1) {
+      chunk_two_.TransferAllTo(pre_enc_hash_n);
+    } else {
+      main_encrypt_queue_.TransferTo(pre_enc_hash_n, chunk_size_);
+      pre_enc_hash_n.Get(pre_enc_hashn, 64);
+    }
     size_t last_chunk_number = data_map_.chunks.size();
     byte key[32];
     byte iv[16];
@@ -552,18 +560,38 @@ bool SE::EncryptChunkFromQueue() {
                       new CryptoPP::ArraySink(chunk_content, chunk_size_ + 64), true),
                    obfuscation_pad),
                 key, iv, true));
-    pre_enc_hash_n.TransferAllTo(aes_filter);
 
-    byte post_hash[64];
-    std::copy (chunk_content, chunk_content + 64, post_hash);
-    std::string post_data(reinterpret_cast<char *>(chunk_content), chunk_size_ + 64);
-    size_t post_size = post_data.size() - 64 ;
-
-    data_map_.chunks[last_chunk_number + 1].pre_hash = pre_enc_hashn;
-    data_map_.chunks[last_chunk_number + 1].pre_size = chunk_size_;
-    data_map_.chunks[last_chunk_number + 1].size = post_size;
-    data_map_.chunks[last_chunk_number + 1].hash = post_hash;
-  //TODO implement this ->>>  chunk_store.Store(post_hash, post_data.substr(64);
+    if (chunk == 0) {
+      chunk_one_.TransferAllTo(aes_filter);
+      byte post_hash[64];
+      std::copy (chunk_content, chunk_content + 64, post_hash);
+      std::string post_data(reinterpret_cast<char *>(chunk_content),
+                            chunk_size_ + 64);
+      size_t post_size = post_data.size() - 64 ;
+      data_map_.chunks[0].size = post_size;
+      data_map_.chunks[0].hash = post_hash;
+    } else if (chunk == 1) {
+      chunk_two_.TransferAllTo(aes_filter);
+      byte post_hash[64];
+      std::copy (chunk_content, chunk_content + 64, post_hash);
+      std::string post_data(reinterpret_cast<char *>(chunk_content),
+                            chunk_size_ + 64);
+      size_t post_size = post_data.size() - 64 ;
+      data_map_.chunks[1].size = post_size;
+      data_map_.chunks[1].hash = post_hash;
+    } else { 
+      pre_enc_hash_n.TransferAllTo(aes_filter);
+      byte post_hash[64];
+      std::copy (chunk_content, chunk_content + 64, post_hash);
+      std::string post_data(reinterpret_cast<char *>(chunk_content),
+                            chunk_size_ + 64);
+      size_t post_size = post_data.size() - 64 ;
+      data_map_.chunks[last_chunk_number + 1].pre_hash = pre_enc_hashn;
+      data_map_.chunks[last_chunk_number + 1].pre_size = chunk_size_;
+      data_map_.chunks[last_chunk_number + 1].size = post_size;
+      data_map_.chunks[last_chunk_number + 1].hash = post_hash;
+    }
+    //TODO implement this ->>>  chunk_store.Store(post_hash, post_data.substr(64);
     return true;
 }
 
