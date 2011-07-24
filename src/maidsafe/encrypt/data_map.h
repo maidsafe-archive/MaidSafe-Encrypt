@@ -21,6 +21,7 @@
 #include <string>
 #include <vector>
 
+#include "cryptopp/cryptlib.h"
 #include "boost/serialization/string.hpp"
 #include "boost/serialization/vector.hpp"
 #include "maidsafe/encrypt/version.h"
@@ -65,12 +66,35 @@ struct ChunkDetails {
   std::uint32_t pre_size;  ///< Size of unprocessed source data
 };
 
+
+
 /// Holds information about the building blocks of a data item
 struct DataMap {
   DataMap()
     : self_encryption_type(0), chunks(), size(0), content() {}
   std::uint32_t self_encryption_type;  ///< Type of SE used for chunks
   std::vector<ChunkDetails> chunks;  ///< Information about the chunks
+  std::uint64_t size;      ///< Size of data item
+  std::string content;     ///< Whole data item or last chunk, if small enough
+};
+// Dirvine - testing pipelining and holding hashes as byte types
+
+/// Holds information about a chunk
+struct ChunkDetails2 {
+  ChunkDetails2()
+    : hash(), size(0), pre_hash(), pre_size(0) {}
+  byte *hash;        ///< Hash of processed chunk
+  std::uint32_t size;      ///< Size of processed chunk
+  byte *pre_hash;    ///< Hash of unprocessed source data
+  std::uint32_t pre_size;  ///< Size of unprocessed source data
+};
+
+/// Holds information about the building blocks of a data item
+struct DataMap2 {
+  DataMap2()
+    : self_encryption_type(0), chunks(), size(0), content() {}
+  std::uint32_t self_encryption_type;  ///< Type of SE used for chunks
+  std::vector<ChunkDetails2> chunks;  ///< Information about the chunks
   std::uint64_t size;      ///< Size of data item
   std::string content;     ///< Whole data item or last chunk, if small enough
 };

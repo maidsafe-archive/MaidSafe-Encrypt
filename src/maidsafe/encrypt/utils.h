@@ -23,9 +23,13 @@
 #include "cryptopp/cryptlib.h"
 #include "cryptopp/files.h"
 #include "cryptopp/channels.h"
+#include "cryptopp/mqueue.h"
+#include "cryptopp/sha.h"
 #include "boost/filesystem.hpp"
 
 #include "maidsafe/encrypt/data_map.h"
+#include <common/crypto.h>
+#include <cryptopp/aes.h>
 
 
 namespace fs = boost::filesystem;
@@ -44,8 +48,7 @@ static int kCompressionRatio = 3; // optimised for speed
 class XORFilter : public CryptoPP::Bufferless<CryptoPP::Filter> {
 public:
   XORFilter(CryptoPP::BufferedTransformation *attachment = NULL,
-            std::string pad = ""):
-                                       pad_(pad) {
+            byte *pad = NULL): pad_(pad), pad_length_() {
    CryptoPP::Filter::Detach(attachment);
   };
    size_t Put2(const byte* inString,
@@ -54,14 +57,18 @@ public:
                bool blocking);
    bool IsolatedFlush(bool, bool) { return false; }
 private:
-  std::string pad_;
+  byte *pad_;
+  size_t pad_length_;
 };
 
 class AESFilter : public CryptoPP::Bufferless<CryptoPP::Filter> {
 public:
   AESFilter(CryptoPP::BufferedTransformation *attachment = NULL,
-            std::string enc_hash = "", bool encrypt = true,
-            std::string *result_hash = NULL): enc_hash_(enc_hash),
+            byte *key = NULL, byte *iv = NULL, bool encrypt = true,
+            std::string *result_hash = NULL): key_(key),
+                                              key_length_(32),
+                                              iv_(iv),
+                                              iv_length_(16),
                                               encrypt_(encrypt) {
    CryptoPP::Filter::Detach(attachment);
   };
@@ -71,7 +78,10 @@ public:
                bool blocking);
    bool IsolatedFlush(bool, bool) { return false; }
 private:
-  std::string enc_hash_;
+  byte *key_;
+  size_t key_length_;
+  byte *iv_;
+  size_t iv_length_;
   bool encrypt_;
 };
 
@@ -143,12 +153,14 @@ public:
                         encrypt_channel_switch_(new CryptoPP::ChannelSwitch),
                         data_map_(), chunk_number_(0), chunk_vec_(),
                         pre_enc_hash_(), dummy_(""), chunk_size_(1024*256),
-                        min_chunk_size_(1024) {}
+                        min_chunk_size_(1024), main_queue_(CryptoPP::MessageQueue()),
+                        chunk_two_(CryptoPP::MessageQueue()),
+                        chunk_one_(CryptoPP::MessageQueue()) {}
   bool Write(const char* data, size_t length); // return data map
   bool FinishWrite() { return Write(dummy_.c_str(), 0); }
   std::iostream Read (const std::string &DataMap); // return file
   std::string PartialRead(const std::string &DataMap); // return some data
-  DataMap getDataMap() { return data_map_; }
+  DataMap2 getDataMap() { return data_map_; }
 
 private:
   SE &operator = (const SE&) {} // no assignment 
@@ -157,14 +169,19 @@ private:
             main_channel_switch_;
   CryptoPP::member_ptr<CryptoPP::ChannelSwitch>
             encrypt_channel_switch_; 
-  DataMap data_map_;
+  DataMap2 data_map_;
   size_t chunk_number_;
-  std::vector<char*> chunk_vec_;
+  std::vector<byte *> chunk_vec_;
   std::vector<std::string> pre_enc_hash_;
   std::string dummy_;
   size_t chunk_size_;
   size_t min_chunk_size_;
   size_t length_;
+  CryptoPP::MessageQueue main_queue_;
+  CryptoPP::SHA512  hash_;
+  CryptoPP::MessageQueue chunk_two_;
+  CryptoPP::MessageQueue chunk_one_;
+  ChunkDetails2 chunk_data_;
 //   ChunkStore chunk_store_;
 //   
   
