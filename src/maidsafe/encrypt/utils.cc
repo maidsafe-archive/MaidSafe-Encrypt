@@ -476,8 +476,6 @@ bool SE::Write (const char* data, size_t length) {
   CryptoPP::HashFilter chunk2_hash_filter(hash_, &chunk_two_);
   CryptoPP::HashFilter pre_enc_hash_n (hash_);
 
-
-  
   if (length_ < chunk_size_ * 3)
     if (length != 0)
       return true; // not finished getting data
@@ -529,7 +527,8 @@ bool SE::Write (const char* data, size_t length) {
     memset(obfuscation_pad, 0, 128); // to make sure it's big enough
     memcpy(obfuscation_pad, data_map_.chunks[last_chunk_number].pre_hash, 64);
     memcpy(obfuscation_pad, data_map_.chunks[last_chunk_number - 1].pre_hash, 64);
-    
+    // We could add compression here is we want
+    // To allow this to be broken up perhaps we should use an anchor
      AESFilter aes_filter(new AESFilter(
                   new XORFilter(
                     new CryptoPP::HashFilter(hash_,
@@ -544,6 +543,11 @@ bool SE::Write (const char* data, size_t length) {
      // we can get it now I think.
      // Need a lot of testing 
   }
+if (length == 0) {
+// Need to process chunks one and two !!!
+// plus any remainder in main_queue;
+
+}
 
 // If we are not finished main_queue_ still has data in it !!
   return true;
