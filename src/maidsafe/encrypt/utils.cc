@@ -491,7 +491,6 @@ bool SE::Write (const char* data, size_t length, bool complete) {
 // leave first two chunks in here
   byte chunk1_hash[CryptoPP::SHA512::DIGESTSIZE];
   byte chunk2_hash[CryptoPP::SHA512::DIGESTSIZE];
-
   
   if (data_map_.chunks.size() < 2) { // need first 2 hashes
     main_encrypt_queue_.TransferTo(chunk1_hash_filter , chunk_size_);
@@ -519,9 +518,8 @@ bool SE::Write (const char* data, size_t length, bool complete) {
       chunk_size_ = complete_q_length;
       EncryptChunkFromQueue(99);
     }
-    // Now process chunks 1 & 2
-
-
+    EncryptChunkFromQueue(0);
+    EncryptChunkFromQueue(1);
   }
 // If we are not finished main_queue_ still has data in it !!
   return true;
