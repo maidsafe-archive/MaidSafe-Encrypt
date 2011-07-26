@@ -151,13 +151,15 @@ bool SelfDecryptChunk(std::shared_ptr<std::string> content,
 
 class SE { // Self Encryption of course
 public:
-  SE(ChunkStore &chunk_store) : 
+  SE(std::shared_ptr<ChunkStore> chunk_store) :
                         main_channel_switch_(new CryptoPP::ChannelSwitch),
                         encrypt_channel_switch_(new CryptoPP::ChannelSwitch),
                         data_map_(), complete_(false), chunk_size_(1024*256),
-                        min_chunk_size_(1024), main_encrypt_queue_(CryptoPP::MessageQueue()),
-                        chunk_two_(CryptoPP::MessageQueue()),
-                        chunk_one_(CryptoPP::MessageQueue())
+                        min_chunk_size_(1024), c1hash(), c2hash(),
+                        main_encrypt_queue_(CryptoPP::MessageQueue()),
+                        chunk1_hash_filter(hash_,new CryptoPP::ArraySink(c1hash, 64), true),
+                        chunk2_hash_filter(hash_,new CryptoPP::ArraySink(c2hash, 64), true),
+                        chunk_store_(chunk_store)
                         {}
   bool Write(const char* data, size_t length, bool complete);
   std::iostream Read (const std::string &DataMap); // return file
@@ -166,7 +168,7 @@ public:
 
 private:
   SE &operator = (const SE&) {} // no assignment 
-  SE (const SE&) {} // no copy
+//  SE (const SE&) {} // no copy
   bool EncryptChunkFromQueue(size_t chunk);
   
   CryptoPP::member_ptr<CryptoPP::ChannelSwitch>
@@ -180,10 +182,13 @@ private:
   size_t length_;
   CryptoPP::MessageQueue main_encrypt_queue_;
   CryptoPP::SHA512  hash_;
-  CryptoPP::MessageQueue chunk_two_;
-  CryptoPP::MessageQueue chunk_one_;
+  byte c1hash[64];
+  byte c2hash[64];
+  CryptoPP::HashFilter chunk1_hash_filter; //(hash_, true); // hash and data
+  CryptoPP::HashFilter chunk2_hash_filter; // (hash_, true);
   ChunkDetails2 chunk_data_;
   AESFilter aes_filter_;
+  std::shared_ptr<ChunkStore> chunk_store_;
 };
 
 }  // namespace utils

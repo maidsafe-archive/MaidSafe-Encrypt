@@ -42,6 +42,7 @@
 #include "boost/filesystem/fstream.hpp"
 #include "maidsafe/common/crypto.h"
 #include "maidsafe/common/utils.h"
+#include "maidsafe/common/chunk_store.h"
 #include "maidsafe/encrypt/config.h"
 #include "maidsafe/encrypt/data_map.h"
 #include "maidsafe/encrypt/log.h"
@@ -472,8 +473,6 @@ bool SE::Write (const char* data, size_t length, bool complete) {
   std::string digest;
 
   size_t qlength = main_encrypt_queue_.MaxRetrievable();
-  CryptoPP::HashFilter chunk1_hash_filter(hash_, &chunk_one_, true); // hash and data
-  CryptoPP::HashFilter chunk2_hash_filter(hash_, &chunk_two_, true);
 
   if (length_ < chunk_size_ * 3)
     if (!complete)
@@ -496,14 +495,12 @@ bool SE::Write (const char* data, size_t length, bool complete) {
   if (data_map_.chunks.size() < 2) { // need first 2 hashes
     main_encrypt_queue_.TransferTo(chunk1_hash_filter, chunk_size_);
     main_encrypt_queue_.TransferTo(chunk2_hash_filter, chunk_size_);
-    chunk_one_.Get(chunk1_hash, 64);
     ChunkDetails2 chunk_details;
-    chunk_details.pre_hash = chunk1_hash;
+    chunk_details.pre_hash = c1hash;
     chunk_details.pre_size = chunk_size_;
     data_map_.chunks.push_back(chunk_details);
-
-    chunk_two_.Get(chunk2_hash, 64);
-    chunk_details.pre_hash = chunk2_hash;
+    chunk_details.pre_hash = c2hash;
+    chunk_details.pre_size = chunk_size_;
     data_map_.chunks.push_back(chunk_details);
   }
 // now chunk one and two are in the messagequeues they should be
@@ -534,9 +531,9 @@ bool SE::EncryptChunkFromQueue(size_t chunk) {
     CryptoPP::HashFilter pre_enc_hash_n (hash_);
     byte *pre_enc_hashn;
     if (chunk == 0) {
-      chunk_one_.TransferAllTo(pre_enc_hash_n);
+      chunk1_hash_filter.TransferAllTo(pre_enc_hash_n);
     } else if (chunk == 1) {
-      chunk_two_.TransferAllTo(pre_enc_hash_n);
+      chunk2_hash_filter.TransferAllTo(pre_enc_hash_n);
     } else {
       main_encrypt_queue_.TransferTo(pre_enc_hash_n, chunk_size_);
       pre_enc_hash_n.Get(pre_enc_hashn, 64);
@@ -566,7 +563,7 @@ bool SE::EncryptChunkFromQueue(size_t chunk) {
                 key, iv, true));
 
     if (chunk == 0) {
-      chunk_one_.TransferAllTo(aes_filter);
+      chunk1_hash_filter.TransferAllTo(aes_filter);
       byte post_hash[64];
       std::copy (chunk_content, chunk_content + 64, post_hash);
       std::string post_data(reinterpret_cast<char *>(chunk_content),
@@ -575,7 +572,7 @@ bool SE::EncryptChunkFromQueue(size_t chunk) {
       data_map_.chunks[0].size = post_size;
       data_map_.chunks[0].hash = post_hash;
     } else if (chunk == 1) {
-      chunk_two_.TransferAllTo(aes_filter);
+      chunk2_hash_filter.TransferAllTo(aes_filter);
       byte post_hash[64];
       std::copy (chunk_content, chunk_content + 64, post_hash);
       std::string post_data(reinterpret_cast<char *>(chunk_content),
@@ -597,7 +594,8 @@ bool SE::EncryptChunkFromQueue(size_t chunk) {
       chunk_details.hash = post_hash;
       data_map_.chunks.push_back(chunk_details);
     }
-    //TODO implement this ->>>  chunk_store.Store(post_hash, post_data.substr(64);
+    //TODO implement this ->>>
+    // chunk_store_->Store(post_hash, post_data.substr(64);
     return true;
 }
 
