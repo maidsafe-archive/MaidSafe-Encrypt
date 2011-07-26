@@ -339,7 +339,7 @@ TEST(SelfEncryptionUtilsTest, BEH_SEtest_basic) {
   std::string content(RandomString(300000 + RandomUint32() % 1000));
   std::string one_mb(RandomString(1024*1024));
   std::string hundred_mb;
-  for (int i =0; i < 500; ++i)
+  for (int i =0; i < 100; ++i)
     hundred_mb += one_mb; 
 
   char *stuff = new char[40];
@@ -362,7 +362,7 @@ TEST(SelfEncryptionUtilsTest, BEH_SEtest_basic) {
         boost::posix_time::ptime endtime =
         boost::posix_time::microsec_clock::universal_time();
         std::cout << "finish = " << endtime << std::endl;
-  std::cout << " speed is " << (endtime - time) / 500 << " mB/s " << std::endl;
+  std::cout << " speed is " << (endtime - time) / 100 << " mB/s " << std::endl;
 }
 
 }  // namespace test
