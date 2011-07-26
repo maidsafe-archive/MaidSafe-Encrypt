@@ -488,10 +488,6 @@ bool SE::Write (const char* data, size_t length, bool complete) {
 
 // START
 
-// leave first two chunks in here
-  byte chunk1_hash[CryptoPP::SHA512::DIGESTSIZE];
-  byte chunk2_hash[CryptoPP::SHA512::DIGESTSIZE];
-
   if (data_map_.chunks.size() < 2) { // need first 2 hashes
     main_encrypt_queue_.TransferTo(chunk1_hash_filter, chunk_size_);
     main_encrypt_queue_.TransferTo(chunk2_hash_filter, chunk_size_);
