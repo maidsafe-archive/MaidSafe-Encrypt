@@ -357,12 +357,15 @@ TEST(SelfEncryptionUtilsTest, BEH_SEtest_basic) {
 
   boost::posix_time::ptime time =
         boost::posix_time::microsec_clock::universal_time();
-        std::cout << "start = " << time << std::endl;
   EXPECT_TRUE(selfenc.Write(hundredmb, 1024*1024*100, true));
-        boost::posix_time::ptime endtime =
-        boost::posix_time::microsec_clock::universal_time();
-        std::cout << "finish = " << endtime << std::endl;
-  std::cout << " speed is " << (endtime - time) / 100 << " mB/s " << std::endl;
+    std::uint64_t duration =
+        (boost::posix_time::microsec_clock::universal_time() -
+         time).total_microseconds();
+    if (duration == 0)
+      duration = 1;
+    printf("Self-encrypted  %d bytes in %.2f seconds "
+           "(%.3f MB/s).\n", 1024*1024*100, duration / 1000000.0,
+             1024*1024*100 / duration / 1.048576);
 }
 
 }  // namespace test
