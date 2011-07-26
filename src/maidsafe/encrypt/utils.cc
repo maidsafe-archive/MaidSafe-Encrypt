@@ -473,7 +473,7 @@ bool SE::Write (const char* data, size_t length, bool complete) {
 
   size_t qlength = main_encrypt_queue_.MaxRetrievable();
   CryptoPP::HashFilter chunk1_hash_filter(hash_, &chunk_one_, true); // hash and data
-  CryptoPP::HashFilter chunk2_hash_filter(hash_, &chunk_two_, true); 
+  CryptoPP::HashFilter chunk2_hash_filter(hash_, &chunk_two_, true);
 
   if (length_ < chunk_size_ * 3)
     if (!complete)
@@ -481,33 +481,37 @@ bool SE::Write (const char* data, size_t length, bool complete) {
     else
       chunk_size_ = (length_ - 1) / 3;
 // small files direct to data map
-  if (chunk_size_ *3 < 1025) {
+  if ((chunk_size_ *3 < 1025) && complete) {
     std::string content(data, length_);
     data_map_.content = content;
+    return true;
   }
 
 // START
- 
+
 // leave first two chunks in here
   byte chunk1_hash[CryptoPP::SHA512::DIGESTSIZE];
   byte chunk2_hash[CryptoPP::SHA512::DIGESTSIZE];
-  
+
   if (data_map_.chunks.size() < 2) { // need first 2 hashes
-    main_encrypt_queue_.TransferTo(chunk1_hash_filter , chunk_size_);
+    main_encrypt_queue_.TransferTo(chunk1_hash_filter, chunk_size_);
     main_encrypt_queue_.TransferTo(chunk2_hash_filter, chunk_size_);
     chunk_one_.Get(chunk1_hash, 64);
-    data_map_.chunks[0].pre_hash = chunk1_hash;
-    data_map_.chunks[0].pre_size = chunk_size_;
+    ChunkDetails2 chunk_details;
+    chunk_details.pre_hash = chunk1_hash;
+    chunk_details.pre_size = chunk_size_;
+    data_map_.chunks.push_back(chunk_details);
+
     chunk_two_.Get(chunk2_hash, 64);
-    data_map_.chunks[1].pre_hash = chunk2_hash;
-    data_map_.chunks[1].pre_size = chunk_size_;
+    chunk_details.pre_hash = chunk2_hash;
+    data_map_.chunks.push_back(chunk_details);
   }
 // now chunk one and two are in the messagequeues they should be
 
   while (main_encrypt_queue_.TotalBytesRetrievable() > chunk_size_) {
     EncryptChunkFromQueue(99);
   }
-  
+
   if (complete) {
     size_t complete_q_length = main_encrypt_queue_.TotalBytesRetrievable();
     if (complete_q_length < 1025)
@@ -537,7 +541,7 @@ bool SE::EncryptChunkFromQueue(size_t chunk) {
       main_encrypt_queue_.TransferTo(pre_enc_hash_n, chunk_size_);
       pre_enc_hash_n.Get(pre_enc_hashn, 64);
     }
-    size_t last_chunk_number = data_map_.chunks.size();
+    size_t last_chunk_number = (data_map_.chunks.size() - 1);
     byte key[32];
     byte iv[16];
     std::copy(data_map_.chunks[last_chunk_number].pre_hash,
@@ -549,13 +553,15 @@ bool SE::EncryptChunkFromQueue(size_t chunk) {
 
     byte obfuscation_pad[128];
     memcpy(obfuscation_pad, data_map_.chunks[last_chunk_number].pre_hash, 64);
-    memcpy(obfuscation_pad, data_map_.chunks[last_chunk_number - 1].pre_hash, 64);
+    memcpy(obfuscation_pad,
+           data_map_.chunks[last_chunk_number - 1].pre_hash, 64);
     // We could add compression here i we want
     // To allow this to be broken up perhaps we should use an anchor
      AESFilter aes_filter(new AESFilter(
                   new XORFilter(
                     new CryptoPP::HashFilter(hash_,
-                      new CryptoPP::ArraySink(chunk_content, chunk_size_ + 64), true),
+                      new CryptoPP::ArraySink(chunk_content,
+                                              chunk_size_ + 64), true),
                    obfuscation_pad),
                 key, iv, true));
 
@@ -564,8 +570,8 @@ bool SE::EncryptChunkFromQueue(size_t chunk) {
       byte post_hash[64];
       std::copy (chunk_content, chunk_content + 64, post_hash);
       std::string post_data(reinterpret_cast<char *>(chunk_content),
-                            chunk_size_ + 64);
-      size_t post_size = post_data.size() - 64 ;
+                            64, chunk_size_);
+      size_t post_size = post_data.size();
       data_map_.chunks[0].size = post_size;
       data_map_.chunks[0].hash = post_hash;
     } else if (chunk == 1) {
@@ -573,8 +579,8 @@ bool SE::EncryptChunkFromQueue(size_t chunk) {
       byte post_hash[64];
       std::copy (chunk_content, chunk_content + 64, post_hash);
       std::string post_data(reinterpret_cast<char *>(chunk_content),
-                            chunk_size_ + 64);
-      size_t post_size = post_data.size() - 64 ;
+                            64, chunk_size_);
+      size_t post_size = post_data.size();
       data_map_.chunks[1].size = post_size;
       data_map_.chunks[1].hash = post_hash;
     } else { 
@@ -582,12 +588,14 @@ bool SE::EncryptChunkFromQueue(size_t chunk) {
       byte post_hash[64];
       std::copy (chunk_content, chunk_content + 64, post_hash);
       std::string post_data(reinterpret_cast<char *>(chunk_content),
-                            chunk_size_ + 64);
-      size_t post_size = post_data.size() - 64 ;
-      data_map_.chunks[last_chunk_number + 1].pre_hash = pre_enc_hashn;
-      data_map_.chunks[last_chunk_number + 1].pre_size = chunk_size_;
-      data_map_.chunks[last_chunk_number + 1].size = post_size;
-      data_map_.chunks[last_chunk_number + 1].hash = post_hash;
+                            64, chunk_size_);
+      int post_size = post_data.size();
+      ChunkDetails2 chunk_details;
+      chunk_details.pre_hash = pre_enc_hashn;
+      chunk_details.pre_size = chunk_size_;
+      chunk_details.size = post_size;
+      chunk_details.hash = post_hash;
+      data_map_.chunks.push_back(chunk_details);
     }
     //TODO implement this ->>>  chunk_store.Store(post_hash, post_data.substr(64);
     return true;

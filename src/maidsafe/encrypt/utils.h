@@ -37,6 +37,8 @@ namespace fs = boost::filesystem;
 
 namespace maidsafe {
 
+class ChunkStore;
+
 namespace encrypt {
 
 struct SelfEncryptionParams;
@@ -145,7 +147,7 @@ bool SelfDecryptChunk(std::shared_ptr<std::string> content,
                              const std::string &obfuscation_hash,
                              const uint32_t &self_encryption_type);
 
-class ChunkStore;
+
 
 class SE { // Self Encryption of course
 public:

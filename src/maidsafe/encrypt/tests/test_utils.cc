@@ -34,6 +34,7 @@
 #include "maidsafe/encrypt/config.h"
 #include "maidsafe/encrypt/data_map.h"
 #include "maidsafe/encrypt/utils.h"
+#include "maidsafe/common/memory_chunk_store.h"
 
 namespace maidsafe {
 
@@ -328,6 +329,17 @@ TEST(SelfEncryptionUtilsTest, BEH_SelfEnDecryptChunk) {
 //                                             combinations[j])) << i << " " << j;
 //       }
 //   }
+}
+TEST(SelfEncryptionUtilsTest, BEH_SEtest_basic) {
+  MemoryChunkStore::HashFunc hash_func = std::bind(&crypto::Hash<crypto::SHA512>,
+                                                   std::placeholders::_1);
+  MemoryChunkStore chunk_store(true, hash_func);
+  SE selfenc(chunk_store);
+  std::string content(RandomString(300000 + RandomUint32() % 1000));
+  char *stuff = new char[content.size()+1];
+  std::copy(content.begin(), content.end(), stuff);
+  stuff[content.size()] = '\0';
+  EXPECT_TRUE(selfenc.Write(stuff, content.size(), true));
 }
 
 }  // namespace test
