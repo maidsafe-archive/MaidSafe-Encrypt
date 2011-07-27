@@ -162,8 +162,8 @@ public:
                         chunk_store_(chunk_store)
                         {}
   bool Write(const char* data, size_t length, bool complete);
-  std::iostream Read (const std::string &DataMap); // return file
-  std::string PartialRead(const std::string &DataMap); // return some data
+  bool Read (char * data);
+  bool PartialRead(char * data, size_t position, size_t length);
   DataMap2 getDataMap() { return data_map_; }
 
 private:
