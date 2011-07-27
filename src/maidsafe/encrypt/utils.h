@@ -157,9 +157,14 @@ public:
                         data_map_(), complete_(false), chunk_size_(1024*256),
                         min_chunk_size_(1024), c1hash(), c2hash(),
                         main_encrypt_queue_(CryptoPP::MessageQueue()),
-                        chunk1_hash_filter(hash_,new CryptoPP::ArraySink(c1hash, 64), true),
-                        chunk2_hash_filter(hash_,new CryptoPP::ArraySink(c2hash, 64), true),
-                        chunk_store_(chunk_store)
+                        chunk1_hash_filter(hash_,
+                                           new CryptoPP::ArraySink(c1hash, 64),
+                                           true),
+                        chunk2_hash_filter(hash_,
+                                           new CryptoPP::ArraySink(c2hash, 64),
+                                           true),
+                        chunk_store_(chunk_store),
+                        length_(0)
                         {}
   bool Write(const char* data, size_t length, bool complete);
   std::iostream Read (const std::string &DataMap); // return file

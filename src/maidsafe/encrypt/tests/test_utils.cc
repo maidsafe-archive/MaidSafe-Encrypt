@@ -336,6 +336,7 @@ TEST(SelfEncryptionUtilsTest, BEH_SEtest_basic) {
                                                    std::placeholders::_1);
   std::shared_ptr<MemoryChunkStore> chunk_store(new MemoryChunkStore (true, hash_func));
   SE selfenc(chunk_store);
+
   std::string content(RandomString(300000 + RandomUint32() % 1000));
   std::string one_mb(RandomString(1024*1024));
   std::string hundred_mb;
@@ -349,23 +350,23 @@ TEST(SelfEncryptionUtilsTest, BEH_SEtest_basic) {
   char *chunksstuff = new char[4096];
   std::copy(content.c_str(), content.c_str() + 4096, chunksstuff);
   EXPECT_TRUE(selfenc.Write(chunksstuff, 4096, true));
-   
+
   const char *onemb = one_mb.c_str();
-  EXPECT_TRUE(selfenc.Write(onemb, 1024*1024, true));
+  EXPECT_TRUE(selfenc.Write(onemb, 1024*1024, false));
 
   const char *hundredmb = hundred_mb.c_str();
 
   boost::posix_time::ptime time =
         boost::posix_time::microsec_clock::universal_time();
   EXPECT_TRUE(selfenc.Write(hundredmb, 1024*1024*500, true));
-    std::uint64_t duration =
-        (boost::posix_time::microsec_clock::universal_time() -
-         time).total_microseconds();
-    if (duration == 0)
-      duration = 1;
-    printf("Self-encrypted  %d bytes in %.2f seconds "
-           "(%.3f MB/s).\n", 1024*1024*500, duration / 1000000.0,
-             1024*1024*500 / duration / 1.048576);
+  std::uint64_t duration =
+      (boost::posix_time::microsec_clock::universal_time() -
+       time).total_microseconds();
+  if (duration == 0)
+    duration = 1;
+  printf("Self-encrypted  %d bytes in %.2f seconds "
+         "(%.3f MB/s).\n", 1024*1024*500, duration / 1000000.0,
+           1024*1024*500 / duration / 1.048576);
 }
 
 }  // namespace test

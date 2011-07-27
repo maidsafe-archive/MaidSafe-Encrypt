@@ -479,10 +479,13 @@ bool SE::Write (const char* data, size_t length, bool complete) {
       return true; // not finished getting data
     else
       chunk_size_ = (length_ - 1) / 3;
+
 // small files direct to data map
   if ((chunk_size_ *3 < 1025) && complete) {
     std::string content(data, length_);
     data_map_.content = content;
+    chunk_size_ = 1024*256;
+    main_encrypt_queue_.SkipAll();
     return true;
   }
 
@@ -517,6 +520,7 @@ bool SE::Write (const char* data, size_t length, bool complete) {
     }
     EncryptChunkFromQueue(0);
     EncryptChunkFromQueue(1);
+    chunk_size_ = 1024*256;
   }
 // If we are not finished main_queue_ still has data in it !!
   return true;
@@ -550,14 +554,13 @@ bool SE::EncryptChunkFromQueue(size_t chunk) {
            data_map_.chunks[last_chunk_number - 1].pre_hash, 64);
     // We could add compression here i we want
     // To allow this to be broken up perhaps we should use an anchor
-     AESFilter aes_filter(new AESFilter(
+    AESFilter aes_filter(new AESFilter(
                   new XORFilter(
                     new CryptoPP::HashFilter(hash_,
                       new CryptoPP::ArraySink(chunk_content,
                                               chunk_size_ + 64), true),
                    obfuscation_pad),
                 key, iv, true));
-
     if (chunk == 0) {
       chunk1_hash_filter.TransferAllTo(aes_filter);
       byte post_hash[64];
@@ -591,7 +594,7 @@ bool SE::EncryptChunkFromQueue(size_t chunk) {
       data_map_.chunks.push_back(chunk_details);
     }
     //TODO implement this ->>>
-    // chunk_store_->Store(post_hash, post_data.substr(64);
+//     chunk_store_->Store(post_hash2, post_data2.substr(64));
     return true;
 }
 
