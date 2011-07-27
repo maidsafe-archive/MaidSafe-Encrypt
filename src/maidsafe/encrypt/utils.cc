@@ -598,7 +598,121 @@ bool SE::EncryptChunkFromQueue(size_t chunk) {
     return true;
 }
 
+bool SE::Read(char* data)
+{
+  auto itr = data_map_.chunks.end();
+  --itr;
+  byte *N_1_pre_hash = (*itr).pre_hash;
+  --itr;
+  byte *N_2_pre_hash = (*itr).pre_hash;
 
+  Anchor anchor;
+
+  for(auto it = data_map_.chunks.begin(); it != data_map_.chunks.end(); ++it) {
+    byte *pre_hash = (*it).pre_hash;
+    byte obfuscation_pad[128];
+    memcpy(obfuscation_pad, N_1_pre_hash, 64);
+    memcpy(obfuscation_pad, N_2_pre_hash, 64);
+
+    byte key[32];
+    byte iv[16];
+    std::copy(N_1_pre_hash, N_1_pre_hash + 32, key);
+    std::copy(N_1_pre_hash + 32, N_1_pre_hash + 48, iv);
+
+    anchor.Attach(new XORFilter(
+            new AESFilter(
+                new CryptoPP::ArraySink(reinterpret_cast< byte* >(data),
+                                        data_map_.size),
+                key, iv, false),
+            obfuscation_pad));
+
+    std::string hash(reinterpret_cast< char const* >((*it).hash),
+                     sizeof((*it).hash));
+    std::string content(chunk_store_->Get(hash));
+    byte content_bytes[content.size()];
+    std::copy(content.begin(), content.end(), content_bytes);
+    anchor.Put(content_bytes, content.size());
+
+    anchor.Detach();
+
+    N_2_pre_hash = N_1_pre_hash;
+    N_1_pre_hash = pre_hash;
+  }
+}
+
+bool SE::PartialRead(char * data, size_t position, size_t length) {
+  size_t itr_position(0);
+  size_t bytes_read(0);
+  size_t chunk_size(256 * 1024);
+
+  auto itr = data_map_.chunks.end();
+  --itr;
+  byte *N_1_pre_hash = (*itr).pre_hash;
+  --itr;
+  byte *N_2_pre_hash = (*itr).pre_hash;
+
+  Anchor anchor;
+  bool start_read(false);
+  bool read_finished(false);
+
+  auto it = data_map_.chunks.begin();
+  auto it_end = data_map_.chunks.end();
+
+  while ((it != it_end) && (!read_finished)) {
+    byte *pre_hash = (*it).pre_hash;
+
+    if (!start_read) {
+      if ((itr_position + chunk_size) >= position) {
+        start_read = true;
+      }
+    } else {
+      if (itr_position >= (position + length)) {
+        read_finished = true;
+      } else {
+        byte obfuscation_pad[128];
+        memcpy(obfuscation_pad, N_1_pre_hash, 64);
+        memcpy(obfuscation_pad, N_2_pre_hash, 64);
+
+        byte key[32];
+        byte iv[16];
+        std::copy(N_1_pre_hash, N_1_pre_hash + 32, key);
+        std::copy(N_1_pre_hash + 32, N_1_pre_hash + 48, iv);
+
+        anchor.Attach(new XORFilter(
+                new AESFilter(
+                    new CryptoPP::ArraySink(reinterpret_cast< byte* >(data),
+                                            length),
+                    key, iv, false),
+                obfuscation_pad));
+
+        std::string hash(reinterpret_cast< char const* >((*it).hash),
+                        sizeof((*it).hash));
+        std::string content(chunk_store_->Get(hash));
+        byte content_bytes[content.size()];
+        std::copy(content.begin(), content.end(), content_bytes);
+
+        size_t start = itr_position >= position ? 0 : itr_position - position;
+        start = start % chunk_size;
+        size_t end = (itr_position + (*it).pre_size) < (position + length) ?
+                        (*it).size : (position + length) - itr_position;
+        end = end % chunk_size;
+        size_t size = end - start + 1;
+        byte sub_content_bytes[size];
+        std::copy(content_bytes + start, content_bytes + end,
+                  sub_content_bytes);
+
+        anchor.Put(sub_content_bytes, size);
+
+        anchor.Detach();
+      }
+    }
+
+    N_2_pre_hash = N_1_pre_hash;
+    N_1_pre_hash = pre_hash;
+    itr_position += (*it).pre_size;
+    ++it;
+  }
+}
 
 
 }  // namespace utils
