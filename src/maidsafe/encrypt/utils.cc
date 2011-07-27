@@ -504,12 +504,12 @@ bool SE::Write (const char* data, size_t length, bool complete) {
   }
 // now chunk one and two are in the messagequeues they should be
 
-  while (main_encrypt_queue_.TotalBytesRetrievable() > chunk_size_) {
+  while (main_encrypt_queue_.MaxRetrievable() > chunk_size_) {
     EncryptChunkFromQueue(99);
   }
 
   if (complete) {
-    size_t complete_q_length = main_encrypt_queue_.TotalBytesRetrievable();
+    size_t complete_q_length = main_encrypt_queue_.MaxRetrievable();
     if (complete_q_length < 1025)
       main_encrypt_queue_.Get(reinterpret_cast<byte *>(
                       const_cast<char *>(data_map_.content.c_str())),
@@ -562,23 +562,23 @@ bool SE::EncryptChunkFromQueue(size_t chunk) {
                    obfuscation_pad),
                 key, iv, true));
     if (chunk == 0) {
-      chunk1_hash_filter.TransferAllTo(aes_filter);
-      byte post_hash[64];
-      std::copy (chunk_content, chunk_content + 64, post_hash);
-      std::string post_data(reinterpret_cast<char *>(chunk_content),
-                            64, chunk_size_);
-      size_t post_size = post_data.size();
-      data_map_.chunks[0].size = post_size;
-      data_map_.chunks[0].hash = post_hash;
+//       chunk1_hash_filter.TransferAllTo(aes_filter);
+//       byte post_hash[64];
+//       std::copy (chunk_content, chunk_content + 64, post_hash);
+//       std::string post_data(reinterpret_cast<char *>(chunk_content),
+//                             64, chunk_size_);
+//       size_t post_size = post_data.size();
+//       data_map_.chunks[0].size = post_size;
+//       data_map_.chunks[0].hash = post_hash;
     } else if (chunk == 1) {
-      chunk2_hash_filter.TransferAllTo(aes_filter);
-      byte post_hash[64];
-      std::copy (chunk_content, chunk_content + 64, post_hash);
-      std::string post_data(reinterpret_cast<char *>(chunk_content),
-                            64, chunk_size_);
-      size_t post_size = post_data.size();
-      data_map_.chunks[1].size = post_size;
-      data_map_.chunks[1].hash = post_hash;
+//       chunk2_hash_filter.TransferAllTo(aes_filter);
+//       byte post_hash[64];
+//       std::copy (chunk_content, chunk_content + 64, post_hash);
+//       std::string post_data(reinterpret_cast<char *>(chunk_content),
+//                             64, chunk_size_);
+//       size_t post_size = post_data.size();
+//       data_map_.chunks[1].size = post_size;
+//       data_map_.chunks[1].hash = post_hash;
     } else { 
       pre_enc_hash_n.TransferAllTo(aes_filter);
       byte post_hash[64];
@@ -619,7 +619,7 @@ bool SE::Read(char* data)
     std::copy(N_1_pre_hash, N_1_pre_hash + 32, key);
     std::copy(N_1_pre_hash + 32, N_1_pre_hash + 48, iv);
 
-    anchor.Attach(new XORFilter(
+    XORFilter xor_filter(new XORFilter(
             new AESFilter(
                 new CryptoPP::ArraySink(reinterpret_cast< byte* >(data),
                                         data_map_.size),
@@ -631,9 +631,7 @@ bool SE::Read(char* data)
     std::string content(chunk_store_->Get(hash));
     byte content_bytes[content.size()];
     std::copy(content.begin(), content.end(), content_bytes);
-    anchor.Put(content_bytes, content.size());
-
-    anchor.Detach();
+    xor_filter.Put(content_bytes, content.size());
 
     N_2_pre_hash = N_1_pre_hash;
     N_1_pre_hash = pre_hash;
