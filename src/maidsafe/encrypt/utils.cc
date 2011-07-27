@@ -470,7 +470,6 @@ bool SelfDecryptChunk(std::shared_ptr<std::string> content,
 bool SE::Write (const char* data, size_t length, bool complete) {
   main_encrypt_queue_.Put(reinterpret_cast<const byte*>(data), length);
   length_ += length; // keep size so far
-  std::string digest;
 
   size_t qlength = main_encrypt_queue_.MaxRetrievable();
 
@@ -515,8 +514,14 @@ bool SE::Write (const char* data, size_t length, bool complete) {
                       const_cast<char *>(data_map_.content.c_str())),
                       complete_q_length);//
     else {
-      chunk_size_ = complete_q_length;
+      chunk_size_ = (complete_q_length / 3) - 1; // FAILS here
+        if ((chunk_size_ *3 < 1025) && complete) {
+          std::string content(data, length_);
+          data_map_.content = content;
+          chunk_size_ = 1024*256;
+        }
       EncryptChunkFromQueue(99);
+      chunk_size_ = (1024 * 256);
     }
     EncryptChunkFromQueue(0);
     EncryptChunkFromQueue(1);
@@ -538,7 +543,7 @@ bool SE::EncryptChunkFromQueue(size_t chunk) {
       main_encrypt_queue_.TransferTo(pre_enc_hash_n, chunk_size_);
       pre_enc_hash_n.Get(pre_enc_hashn, 64);
     }
-    size_t last_chunk_number = (data_map_.chunks.size() - 1);
+    size_t last_chunk_number = (data_map_.chunks.size() -1);
     byte key[32];
     byte iv[16];
     std::copy(data_map_.chunks[last_chunk_number].pre_hash,
@@ -562,30 +567,27 @@ bool SE::EncryptChunkFromQueue(size_t chunk) {
                    obfuscation_pad),
                 key, iv, true));
     if (chunk == 0) {
-//       chunk1_hash_filter.TransferAllTo(aes_filter);
-//       byte post_hash[64];
-//       std::copy (chunk_content, chunk_content + 64, post_hash);
-//       std::string post_data(reinterpret_cast<char *>(chunk_content),
-//                             64, chunk_size_);
-//       size_t post_size = post_data.size();
-//       data_map_.chunks[0].size = post_size;
-//       data_map_.chunks[0].hash = post_hash;
+      chunk1_hash_filter.TransferAllTo(aes_filter);
+      byte post_hash[64];
+      std::copy (chunk_content, chunk_content + 64, post_hash);
+      byte *post_data = chunk_content;
+      size_t post_size = chunk_size_; // remember to lob off first 64 bytes
+      data_map_.chunks[0].size = post_size;
+      data_map_.chunks[0].hash = post_hash;
     } else if (chunk == 1) {
-//       chunk2_hash_filter.TransferAllTo(aes_filter);
-//       byte post_hash[64];
-//       std::copy (chunk_content, chunk_content + 64, post_hash);
-//       std::string post_data(reinterpret_cast<char *>(chunk_content),
-//                             64, chunk_size_);
-//       size_t post_size = post_data.size();
-//       data_map_.chunks[1].size = post_size;
-//       data_map_.chunks[1].hash = post_hash;
+      chunk2_hash_filter.TransferAllTo(aes_filter);
+      byte post_hash[64];
+      std::copy (chunk_content, chunk_content + 64, post_hash);
+      byte *post_data = chunk_content; // remember to lob off first 64 bytes
+      size_t post_size = chunk_size_;
+      data_map_.chunks[1].size = post_size;
+      data_map_.chunks[1].hash = post_hash;
     } else { 
       pre_enc_hash_n.TransferAllTo(aes_filter);
       byte post_hash[64];
       std::copy (chunk_content, chunk_content + 64, post_hash);
-      std::string post_data(reinterpret_cast<char *>(chunk_content),
-                            64, chunk_size_);
-      int post_size = post_data.size();
+     byte *post_data = chunk_content; // remember to lob off first 64 bytes
+      int post_size = chunk_size_;
       ChunkDetails2 chunk_details;
       chunk_details.pre_hash = pre_enc_hashn;
       chunk_details.pre_size = chunk_size_;

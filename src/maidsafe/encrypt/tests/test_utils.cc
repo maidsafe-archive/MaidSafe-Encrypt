@@ -345,35 +345,33 @@ TEST(SelfEncryptionUtilsTest, BEH_SEtest_basic) {
   std::string data;
 
   
-  char *stuff = new char[40];
-  std::copy(content.c_str(), content.c_str() + 40, stuff);
-  EXPECT_TRUE(selfenc.Write(stuff, 40, true));
+//   char *stuff = new char[40];
+//   std::copy(content.c_str(), content.c_str() + 40, stuff);
+//   EXPECT_TRUE(selfenc.Write(stuff, 40, true));
 
-  char *chunksstuff = new char[4096];
-  for (int i = 0; i <= 4096; ++i) {
+  char *chunksstuff = new char[1048576];
+  for (int i = 0; i <= 1048576; ++i) {
     chunksstuff[i] = 'a';
   }
-//   try {
-    EXPECT_TRUE(selfenc.Write(chunksstuff, 4096, true));
-//   } catch (std::exception &e) {
-//   std::cout << e.what() << std::endl;
-//   }
-//   const char *onemb = one_mb.c_str();
-//   EXPECT_TRUE(selfenc.Write(onemb, 1024*1024, false));
 
-//   const char *hundredmb = hundred_mb.c_str();
-// 
-//   boost::posix_time::ptime time =
-//         boost::posix_time::microsec_clock::universal_time();
-//   EXPECT_TRUE(selfenc.Write(hundredmb, 1024*1024*500, true));
-//   std::uint64_t duration =
-//       (boost::posix_time::microsec_clock::universal_time() -
-//        time).total_microseconds();
-//   if (duration == 0)
-//     duration = 1;
-//   printf("Self-encrypted  %d bytes in %.2f seconds "
-//          "(%.3f MB/s).\n", 1024*1024*500, duration / 1000000.0,
-//            1024*1024*500 / duration / 1.048576);
+    EXPECT_TRUE(selfenc.Write(chunksstuff, 1048576, true));
+
+  const char *onemb = one_mb.c_str();
+  EXPECT_TRUE(selfenc.Write(onemb, 1024*1024, false));
+
+  const char *hundredmb = hundred_mb.c_str();
+
+  boost::posix_time::ptime time =
+        boost::posix_time::microsec_clock::universal_time();
+  EXPECT_TRUE(selfenc.Write(hundredmb, 1024*1024*500, true));
+  std::uint64_t duration =
+      (boost::posix_time::microsec_clock::universal_time() -
+       time).total_microseconds();
+  if (duration == 0)
+    duration = 1;
+  printf("Self-encrypted  %d bytes in %.2f seconds "
+         "(%.3f MB/s).\n", 1024*1024*500, duration / 1000000.0,
+           1024*1024*500 / duration / 1.048576);
 }
 
 }  // namespace test
