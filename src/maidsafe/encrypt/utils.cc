@@ -600,9 +600,11 @@ bool SE::EncryptChunkFromQueue(size_t chunk) {
     return true;
 }
 
-bool SE::Read(char* data)
+bool SE::Read(char* data, std::shared_ptr<DataMap2> data_map)
 {
-  auto itr = data_map_.chunks.end();
+  if (!data_map)
+    data_map.reset(new DataMap2(data_map_));
+  auto itr = data_map->chunks.end();
   --itr;
   byte *N_1_pre_hash = (*itr).pre_hash;
   --itr;
@@ -610,7 +612,7 @@ bool SE::Read(char* data)
 
   Anchor anchor;
 
-  for(auto it = data_map_.chunks.begin(); it != data_map_.chunks.end(); ++it) {
+  for(auto it = data_map->chunks.begin(); it != data_map->chunks.end(); ++it) {
     byte *pre_hash = (*it).pre_hash;
     byte obfuscation_pad[128];
     memcpy(obfuscation_pad, N_1_pre_hash, 64);
@@ -624,7 +626,7 @@ bool SE::Read(char* data)
     XORFilter xor_filter(new XORFilter(
             new AESFilter(
                 new CryptoPP::ArraySink(reinterpret_cast< byte* >(data),
-                                        data_map_.size),
+                                        data_map->size),
                 key, iv, false),
             obfuscation_pad));
 
@@ -640,12 +642,15 @@ bool SE::Read(char* data)
   }
 }
 
-bool SE::PartialRead(char * data, size_t position, size_t length) {
+bool SE::PartialRead(char * data, size_t position, size_t length,
+                     std::shared_ptr<DataMap2> data_map) {
+  if (!data_map)
+    data_map.reset(new DataMap2(data_map_));
   size_t itr_position(0);
   size_t bytes_read(0);
   size_t chunk_size(256 * 1024);
 
-  auto itr = data_map_.chunks.end();
+  auto itr = data_map->chunks.end();
   --itr;
   byte *N_1_pre_hash = (*itr).pre_hash;
   --itr;
@@ -655,8 +660,8 @@ bool SE::PartialRead(char * data, size_t position, size_t length) {
   bool start_read(false);
   bool read_finished(false);
 
-  auto it = data_map_.chunks.begin();
-  auto it_end = data_map_.chunks.end();
+  auto it = data_map->chunks.begin();
+  auto it_end = data_map->chunks.end();
 
   while ((it != it_end) && (!read_finished)) {
     byte *pre_hash = (*it).pre_hash;
