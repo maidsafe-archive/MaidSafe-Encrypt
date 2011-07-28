@@ -166,8 +166,9 @@ public:
                         length_(0)
                         {}
   bool Write(const char* data, size_t length, bool complete);
-  bool Read (char * data);
-  bool PartialRead(char * data, size_t position, size_t length);
+  bool Read (char * data, std::shared_ptr<DataMap2> data_map);
+  bool PartialRead(char * data, size_t position, size_t length,
+                   std::shared_ptr<DataMap2> data_map);
   DataMap2 getDataMap() { return data_map_; }
 
 private:
