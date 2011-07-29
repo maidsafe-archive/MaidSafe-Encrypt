@@ -109,8 +109,8 @@ size_t AESFilter::Put2(const byte* inString,
     encryptor.ProcessData((byte*)out_string, (byte*)inString, length);
   } else {
   //decryptor object
-    CryptoPP::CFB_Mode<CryptoPP::AES>::Decryption decryptor(key_,
-    32, iv_);
+    CryptoPP::CFB_Mode<CryptoPP::AES>::Decryption decryptor(this->key_,
+    32, this->iv_);
      decryptor.ProcessData((byte*)out_string, (byte*)inString, length);
   }
   return AttachedTransformation()->Put2(out_string,
@@ -194,29 +194,29 @@ bool SE::EncryptChunkFromQueue(size_t chunk) {
     }
     
     size_t last_chunk_number = (data_map_.chunks.size() -1);
-    byte key[32];
-    byte iv[16];
+    byte *key;
+    byte *iv;
     std::copy(data_map_.chunks[last_chunk_number].pre_hash,
               data_map_.chunks[last_chunk_number].pre_hash + 32,
-              key_);
+              key);
     std::copy(data_map_.chunks[last_chunk_number].pre_hash + 32,
               data_map_.chunks[last_chunk_number].pre_hash + 48,
-              iv_);
+              iv);
 
-    byte obfuscation_pad[128];
-    memcpy(obfuscation_pad_, data_map_.chunks[last_chunk_number].pre_hash, 64);
-    memcpy(obfuscation_pad_,
+    byte *obfuscation_pad;
+    memcpy(obfuscation_pad, data_map_.chunks[last_chunk_number].pre_hash, 64);
+    memcpy(obfuscation_pad,
            data_map_.chunks[last_chunk_number - 1].pre_hash,
            64);
 
-    AESFilter aes_filter(
-                   new AESFilter(
+    XORFilter aes_filter(
+//                    new AESFilter(
                      new XORFilter(
                         new CryptoPP::HashFilter(hash_,
                           new CryptoPP::StringSink(chunk_content)
                         , true)
                      , obfuscation_pad, 128)
-                   , key_, iv_, true));
+                   /*, key , iv, true)*/);
 
     if (chunk == 0) {
       size_t size = chunk1_and_hash_.size() + 1;
@@ -225,7 +225,7 @@ bool SE::EncryptChunkFromQueue(size_t chunk) {
       aes_filter.Put(putdata, size);
       aes_filter.MessageEnd();
       std::string post_hash = chunk_content.substr(0,64);
-      //std::copy (chunk_content, chunk_content + 64, post_hash); 
+      //std::copy (chunk_content, chunk_content + 64, post_hash);
       std::string post_data = chunk_content.substr(64);
       size_t post_size = chunk_size_;
       data_map_.chunks[0].size = post_size;
@@ -238,17 +238,16 @@ bool SE::EncryptChunkFromQueue(size_t chunk) {
       aes_filter.Put(putdata, size);
       aes_filter.MessageEnd();
       std::string post_hash = chunk_content.substr(0,64);
-//       std::copy (chunk_content, chunk_content + 64, post_hash)
       std::string post_data = chunk_content.substr(64);
       size_t post_size = chunk_size_;
       data_map_.chunks[1].size = post_size;
       data_map_.chunks[1].hash = const_cast<byte*>(reinterpret_cast<const byte *>(post_hash.c_str()));
       chunk_store_->Store(post_hash, post_data);
     } else {
-      size_t size = current_chunk_and_hash_.size() + 1;
-      byte *putdata = new byte[size];
+      size_t size = 200; //current_chunk_and_hash_.size() + 1;
+      byte *putdata;
       std::copy(current_chunk_and_hash_.begin(), current_chunk_and_hash_.end(), putdata);
-      putdata[size] = '\0';
+      //putdata[size] = '\0';
       aes_filter.Put(putdata, size);
       aes_filter.MessageEnd();
       std::string post_hash = chunk_content.substr(0,64);

@@ -134,9 +134,6 @@ private:
   size_t chunk_size_;
   size_t min_chunk_size_;
   size_t length_;
-  byte key_[32];
-  byte iv_[16];
-  byte obfuscation_pad_[128];
   CryptoPP::SHA512  hash_;
   std::string chunk1_and_hash_;
   std::string chunk2_and_hash_;
