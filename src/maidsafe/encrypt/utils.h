@@ -51,7 +51,9 @@ static int kCompressionRatio = 3; // optimised for speed
 class XORFilter : public CryptoPP::Bufferless<CryptoPP::Filter> {
 public:
   XORFilter(CryptoPP::BufferedTransformation *attachment = NULL,
-            byte *pad = NULL): pad_(pad), pad_length_() {
+            byte *pad = NULL, size_t pad_length = 0):
+            pad_(pad),
+            pad_length_(pad_length) {
    CryptoPP::Filter::Detach(attachment);
   };
    size_t Put2(const byte* inString,
@@ -67,11 +69,9 @@ private:
 class AESFilter : public CryptoPP::Bufferless<CryptoPP::Filter> {
 public:
   AESFilter(CryptoPP::BufferedTransformation *attachment = NULL,
-            byte *key = NULL, byte *iv = NULL, bool encrypt = true,
-            std::string *result_hash = NULL): key_(key),
-                                              key_length_(32),
+            byte *key = NULL, byte *iv = NULL, bool encrypt = true) :
+                                              key_(key),
                                               iv_(iv),
-                                              iv_length_(16),
                                               encrypt_(encrypt) {
    CryptoPP::Filter::Detach(attachment);
   };
@@ -82,9 +82,7 @@ public:
    bool IsolatedFlush(bool, bool) { return false; }
 private:
   byte *key_;
-  size_t key_length_;
   byte *iv_;
-  size_t iv_length_;
   bool encrypt_;
 };
 
@@ -152,47 +150,49 @@ bool SelfDecryptChunk(std::shared_ptr<std::string> content,
 class SE { // Self Encryption of course
 public:
   SE(std::shared_ptr<ChunkStore> chunk_store) :
-                        main_channel_switch_(new CryptoPP::ChannelSwitch),
-                        encrypt_channel_switch_(new CryptoPP::ChannelSwitch),
                         data_map_(), complete_(false), chunk_size_(1024*256),
-                        min_chunk_size_(1024), c1hash(), c2hash(),
+                        min_chunk_size_(1024),
                         main_encrypt_queue_(CryptoPP::MessageQueue()),
-                        chunk1_hash_filter(hash_,
-                                           new CryptoPP::ArraySink(c1hash, 64),
+                        current_chunk_hash_filter_(hash_,new 
+                                          CryptoPP::StringSink(current_chunk_and_hash_),
+                                          true),
+                        chunk1_hash_filter(hash_, new
+                                           CryptoPP::StringSink(chunk1_and_hash_),
                                            true),
-                        chunk2_hash_filter(hash_,
-                                           new CryptoPP::ArraySink(c2hash, 64),
+                        chunk2_hash_filter(hash_, new
+                                           CryptoPP::StringSink(chunk2_and_hash_),
                                            true),
                         chunk_store_(chunk_store),
                         length_(0)
                         {}
   bool Write(const char* data, size_t length, bool complete);
-  bool Read (char * data);
-  bool PartialRead(char * data, size_t position, size_t length);
+  bool Read (char * data, std::shared_ptr<DataMap2> data_map);
+  bool PartialRead(char * data, size_t position, size_t length,
+                   std::shared_ptr<DataMap2> data_map);
   DataMap2 getDataMap() { return data_map_; }
 
 private:
   SE &operator = (const SE&) {} // no assignment 
 //  SE (const SE&) {} // no copy
   bool EncryptChunkFromQueue(size_t chunk);
-  
-  CryptoPP::member_ptr<CryptoPP::ChannelSwitch>
-            main_channel_switch_;
-  CryptoPP::member_ptr<CryptoPP::ChannelSwitch>
-            encrypt_channel_switch_; 
+  bool EncryptaChunk(std::string &input, std::string *output);
   DataMap2 data_map_;
   bool complete_; // in case of requirement to send a complete only
   size_t chunk_size_;
   size_t min_chunk_size_;
   size_t length_;
-  CryptoPP::MessageQueue main_encrypt_queue_;
+  byte key_[32];
+  byte iv_[16];
+  byte obfuscation_pad_[128];
   CryptoPP::SHA512  hash_;
-  byte c1hash[64];
-  byte c2hash[64];
+  std::string chunk1_and_hash_;
+  std::string chunk2_and_hash_;
+  std::string current_chunk_and_hash_;
+  CryptoPP::MessageQueue main_encrypt_queue_;
+  CryptoPP::HashFilter current_chunk_hash_filter_;
   CryptoPP::HashFilter chunk1_hash_filter; //(hash_, true); // hash and data
   CryptoPP::HashFilter chunk2_hash_filter; // (hash_, true);
   ChunkDetails2 chunk_data_;
-  AESFilter aes_filter_;
   std::shared_ptr<ChunkStore> chunk_store_;
 };
 
