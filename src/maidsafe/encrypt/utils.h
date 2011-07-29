@@ -41,12 +41,6 @@ class ChunkStore;
 
 namespace encrypt {
 
-struct SelfEncryptionParams;
-
-namespace utils {
-
-static int kCompressionRatio = 3; // optimised for speed
-
 /// XOR transformation class for pipe-lining
 class XORFilter : public CryptoPP::Bufferless<CryptoPP::Filter> {
 public:
@@ -104,47 +98,6 @@ public:
     }
 };
 
-/// Checks file extension against a list of known uncompressible file formats.
-bool IsCompressedFile(const fs::path &file_path);
-
-/// Estimates whether compression could result in space savings.
-bool CheckCompressibility(const std::string &sample,
-                          const uint32_t &self_encryption_type);
-
-/// Verifies sanity of parameter values.
-bool CheckParams(const SelfEncryptionParams &self_encryption_params);
-
-/// Compresses a string.
-std::string Compress(const std::string &input,
-                     const uint32_t &self_encryption_type);
-
-/// Uncompresses a string.
-std::string Uncompress(const std::string &input,
-                       const uint32_t &self_encryption_type);
-
-/// Calculates the cryptographic hash of a string.
-std::string Hash(const std::string &input,
-                 const uint32_t &self_encryption_type);
-
-/// Deterministically expands an input string to the required size.
-bool ResizeObfuscationHash(const std::string &input,
-                           const size_t &required_size,
-                           std::string *resized_data);
-
-std::string XOR(const std::string data, const std::string pad);
-
-/// Applies self-encryption algorithm to the contents of a chunk
-bool SelfEncryptChunk(std::shared_ptr<std::string> content,
-                             const std::string &encryption_hash,
-                             const std::string &obfuscation_hash,
-                             const uint32_t &self_encryption_type);
-
-/// Applies self-decryption algorithm to the contents of a chunk
-bool SelfDecryptChunk(std::shared_ptr<std::string> content,
-                             const std::string &encryption_hash,
-                             const std::string &obfuscation_hash,
-                             const uint32_t &self_encryption_type);
-
 
 
 class SE { // Self Encryption of course
@@ -195,8 +148,6 @@ private:
   ChunkDetails2 chunk_data_;
   std::shared_ptr<ChunkStore> chunk_store_;
 };
-
-}  // namespace utils
 
 }  // namespace encrypt
 

@@ -53,9 +53,6 @@ namespace fs = boost::filesystem;
 namespace maidsafe {
 
 namespace encrypt {
-
-namespace utils {
-
 /**
  * Implementation of XOR transformation filter to allow pipe-lining
  *
@@ -77,7 +74,7 @@ size_t XORFilter::Put2(const byte* inString,
 
   size_t buffer_size(length);
   // Do XOR
- 
+
   byte *buffer = new byte[length];
 
   for (size_t i = 0; i <= length; ++i) {
@@ -88,7 +85,7 @@ size_t XORFilter::Put2(const byte* inString,
                                         length,
                                         messageEnd,
                                         blocking );
-}  
+}
 
 /**
  * Implementation of an AES transformation filter to allow pipe-lining
@@ -121,337 +118,6 @@ size_t AESFilter::Put2(const byte* inString,
                                          messageEnd,
                                          blocking);
 };
-
-bool IsCompressedFile(const fs::path &file_path) {
-  size_t ext_count = sizeof(kNoCompressType) / sizeof(kNoCompressType[0]);
-  std::set<std::string> exts(kNoCompressType, kNoCompressType + ext_count);
-  return (exts.find(boost::to_lower_copy(file_path.extension().string())) !=
-          exts.end());
-}
-
-/**
- * Tries to compress the given sample using the specified compression type.
- * If that yields savings of at least 10%, we assume this can be extrapolated to
- * all the data.
- *
- * @param sample A data sample.
- * @param self_encryption_type Compression type.
- * @return True if input data is likely compressible.
- */
-bool CheckCompressibility(const std::string &sample,
-                          const uint32_t &self_encryption_type) {
-  if (sample.empty())
-    return false;
-
-  std::string compressed_sample(Compress(sample, self_encryption_type));
-  double ratio = static_cast<double>(compressed_sample.size()) / sample.size();
-  return !compressed_sample.empty() && ratio <= 0.9;
-}
-
-/**
- * @param self_encryption_params Parameters for the self-encryption algorithm.
- * @return True if parameters sane.
- */
-bool CheckParams(const SelfEncryptionParams &self_encryption_params) {
-  if (self_encryption_params.max_chunk_size == 0) {
-    DLOG(ERROR) << "CheckParams: Chunk size can't be zero." << std::endl;
-    return false;
-  }
-
-  if (self_encryption_params.max_includable_data_size < kMinChunks - 1) {
-    DLOG(ERROR) << "CheckParams: Max includable data size must be at least "
-                << kMinChunks - 1 << "." << std::endl;
-    return false;
-  }
-
-  if (kMinChunks * self_encryption_params.max_includable_chunk_size >=
-      self_encryption_params.max_includable_data_size) {
-    DLOG(ERROR) << "CheckParams: Max includable data size must be bigger than "
-                   "all includable chunks." << std::endl;
-    return false;
-  }
-
-  if (kMinChunks * self_encryption_params.max_chunk_size <
-      self_encryption_params.max_includable_data_size) {
-    DLOG(ERROR) << "CheckParams: Max includable data size can't be bigger than "
-                << kMinChunks << " chunks." << std::endl;
-    return false;
-  }
-
-  return true;
-}
-
-std::string Compress(const std::string &input,
-                     const uint32_t &self_encryption_type) {
-  switch (self_encryption_type & kCompressionMask) {
-    case kCompressionNone:
-      return input;
-    case kCompressionGzip:
-      return crypto::Compress(input, kCompressionRatio);
-    default:
-      DLOG(ERROR) << "Compress: Invalid compression type passed." << std::endl;
-  }
-  return "";
-}
-
-std::string Uncompress(const std::string &input,
-                       const uint32_t &self_encryption_type) {
-  switch (self_encryption_type & kCompressionMask) {
-    case kCompressionNone:
-      return input;
-    case kCompressionGzip:
-      return crypto::Uncompress(input);
-    default:
-      DLOG(ERROR) << "Uncompress: Invalid compression type passed."
-                  << std::endl;
-  }
-  return "";
-}
-
-std::string Hash(const std::string &input,
-                 const uint32_t &self_encryption_type) {
-  switch (self_encryption_type & kHashingMask) {
-    case kHashingSha1:
-      return crypto::Hash<crypto::SHA1>(input);
-    case kHashingSha512:
-      return crypto::Hash<crypto::SHA512>(input);
-    case kHashingTiger:
-      return crypto::Hash<crypto::Tiger>(input);
-    default:
-      DLOG(ERROR) << "Hash: Invalid hashing type passed." << std::endl;
-  }
-  return "";
-}
-
-/**
- * We expand the input string by simply repeating it until we reach the required
- * output size. Instead of just repeating it, we could as well repeatedly hash
- * it and append the resulting hashes. But this is thought to not be any more
- * secure than simple repetition when used together with encryption, just a lot
- * slower, so we avoid it until disproven.
- */
-bool ResizeObfuscationHash(const std::string &input,
-                           const size_t &required_size,
-                           std::string *resized_data) {
-  if (input.empty() || !resized_data)
-    return false;
-
-  resized_data->resize(required_size);
-  if (required_size == 0)
-    return true;
-  size_t input_size(std::min(input.size(), required_size)), copied(input_size);
-  memcpy(&((*resized_data)[0]), input.data(), input_size);
-  while (copied < required_size) {
-    // input_size = std::min(input.size(), required_size - copied);  // slow
-    input_size = std::min(copied, required_size - copied);  // fast
-    memcpy(&((*resized_data)[copied]), resized_data->data(), input_size);
-    copied += input_size;
-  }
-  return true;
-}
-
-/*
-std::string XOR(const std::string data, const std::string pad){
-std::string result;
-        CryptoPP::StringSource (data,true,
-                               new XORFilter(
-                               new CryptoPP::StringSink(result),
-                               pad
-                              ));
-        return result;
-}*/
-  
-
-bool SelfEncryptChunk(std::shared_ptr<std::string> content,
-                             const std::string &encryption_hash,
-                             const std::string &obfuscation_hash,
-                             const uint32_t &self_encryption_type) {
-//   if (content->empty() || encryption_hash.empty() || obfuscation_hash.empty()) {
-//     DLOG(ERROR) << "SelfEncryptChunk: Invalid arguments passed." << std::endl;
-//     return false;
-//   }
-//   if (((self_encryption_type & kCompressionMask) == kCompressionNone) &&
-//       ((self_encryption_type & kObfuscationMask) == kObfuscationNone) &&
-//       ((self_encryption_type & kCryptoMask) == kCryptoNone))
-//     return false; // nothing to do !!
-//   std::string processed_content;
-//   
-// // Attach and detach operations to anchor
-//   Anchor anchor;
-// 
-//  // compression
-//   switch (self_encryption_type & kCompressionMask) {
-//     case kCompressionNone:
-//       break;
-//     case kCompressionGzip:
-//       //CryptoPP::Gzip.SetDeflateLevel(1);
-//       anchor.Attach(new CryptoPP::Gzip());
-//       break;
-//     default:
-//       DLOG(ERROR) << "Compress: Invalid compression type passed." << std::endl;
-//   }
-// 
-//   // obfuscation
-//   switch (self_encryption_type & kObfuscationMask) {
-//     case kObfuscationNone:
-//       break;
-//     case kObfuscationRepeated:
-//       {
-//         std::string prefix;
-//         if (encryption_hash.size() > crypto::AES256_KeySize) {
-//           // add the remainder of the encryption hash to the obfuscation hash
-//           prefix = encryption_hash.substr(crypto::AES256_KeySize);
-//         }
-//         std::string obfuscation_pad = prefix + obfuscation_hash;
-// 
-//         anchor.Attach(new XORFilter(
-//                       new CryptoPP::StringSink(processed_content),
-//                       obfuscation_pad
-//                       ));
-//       }
-//       break;
-//     default:
-//       DLOG(ERROR) << "SelfEncryptChunk: Invalid obfuscation type passed."
-//                   << std::endl;
-//       return false;
-//   }
-// 
-// // This needs run to get the processed data here at least. 
-//   anchor.Put(reinterpret_cast<const byte*>(content->c_str()), content->size());
-//   anchor.MessageEnd();
-//         // encryption
-//   switch (self_encryption_type & kCryptoMask) {
-//     case kCryptoNone:
-//       break;
-//     case kCryptoAes256:
-//       {
-//         std::string enc_hash;
-//         if (!ResizeObfuscationHash(encryption_hash,
-//                                    crypto::AES256_KeySize +
-//                                        crypto::AES256_IVSize,
-//                                    &enc_hash)) {
-//           DLOG(ERROR) << "SelfEncryptChunk: Could not expand encryption hash."
-//                       << std::endl;
-//           return false;
-//         }
-//         /*
-//   *Testing channels, get hash and encrypted string at same time
-//   * Rather than processing above we should TrasferTo here.
-//   */
-//         CryptoPP::SHA512  hash;
-//         std::string cypher;
-//         AESFilter aes_filter(new CryptoPP::StringSink(cypher),
-//                             enc_hash,
-//                             true);
-//         CryptoPP::HashFilter hash_filter(hash);
-//         CryptoPP::member_ptr<CryptoPP::ChannelSwitch> hash_switch(new CryptoPP::ChannelSwitch);
-//         hash_switch->AddDefaultRoute(hash_filter);
-//         hash_switch->AddDefaultRoute(aes_filter);
-//         CryptoPP::StringSource(processed_content, true,  hash_switch.release() );
-// 
-//         std::string digest;
-//         CryptoPP::HexEncoder encoder( new CryptoPP::StringSink( digest ), true /* uppercase */ );
-//         hash_filter.TransferTo(encoder);
-//   //      std::cout << " The sha hash is " << digest << std::endl;
-//         std::swap(*content,cypher);
-//         return true;
-// 
-//       }
-//       break;
-//     default:
-//       DLOG(ERROR) << "SelfEncryptChunk: Invalid encryption type passed."
-//                   << std::endl;
-//       return false;
-//   }
-// 
-//       std::swap(*content,processed_content);
-      return true;
-}
-
-bool SelfDecryptChunk(std::shared_ptr<std::string> content,
-                             const std::string &encryption_hash,
-                             const std::string &obfuscation_hash,
-                             const uint32_t &self_encryption_type) {
-//   if (content->empty() || encryption_hash.empty() || obfuscation_hash.empty()) {
-//     DLOG(ERROR) << "SelfDecryptChunk: Invalid arguments passed." << std::endl;
-//     return false;
-//   }
-//   if (((self_encryption_type & kCompressionMask) == kCompressionNone) &&
-//       ((self_encryption_type & kObfuscationMask) == kObfuscationNone) &&
-//       ((self_encryption_type & kCryptoMask) == kCryptoNone))
-//     return false; // nothing to do !!
-//   std::string processed_content;
-//   processed_content.reserve(content->size());
-// 
-// // Attach and detach operations to anchor
-//   Anchor anchor;
-//   // decryption
-//   switch (self_encryption_type & kCryptoMask) {
-//     case kCryptoNone:
-//       break;
-//     case kCryptoAes256:
-//       {
-//         std::string enc_hash;
-//         if (!ResizeObfuscationHash(encryption_hash,
-//                                    crypto::AES256_KeySize +
-//                                        crypto::AES256_IVSize,
-//                                    &enc_hash)) {
-//           DLOG(ERROR) << "SelfDecryptChunk: Could not expand encryption hash."
-//                       << std::endl;
-//           return false;
-//         }
-//       anchor.Attach(new AESFilter(
-//                     new CryptoPP::StringSink(processed_content),
-//                     enc_hash,
-//                     false));
-//       }
-//       break;
-//     default:
-//       DLOG(ERROR) << "SelfDecryptChunk: Invalid encryption type passed."
-//                   << std::endl;
-//       return false;
-//   }
-// 
-//   // de-obfuscation
-//   switch (self_encryption_type & kObfuscationMask) {
-//     case kObfuscationNone:
-//       break;
-//     case kObfuscationRepeated:
-//       {
-//         std::string prefix;
-//         if (encryption_hash.size() > crypto::AES256_KeySize) {
-//           // add the remainder of the encryption hash to the obfuscation hash
-//           prefix = encryption_hash.substr(crypto::AES256_KeySize);
-//         }
-//         std::string obfuscation_pad = prefix + obfuscation_hash;
-//         anchor.Attach(new XORFilter(
-//                       new CryptoPP::StringSink(processed_content),
-//                       obfuscation_pad
-//                       ));
-//       }
-//       break;
-//     default:
-//       DLOG(ERROR) << "SelfDecryptChunk: Invalid obfuscation type passed."
-//                   << std::endl;
-//       return false;
-//   }
-// 
-//   // decompression
-//   switch (self_encryption_type & kCompressionMask) {
-//     case kCompressionNone:
-//       break;
-//     case kCompressionGzip:
-//       anchor.Attach(new CryptoPP::Gunzip(
-//         new CryptoPP::StringSink(processed_content)));
-//       break;
-//     default:
-//       DLOG(ERROR) << "Compress: Invalid compression type passed." << std::endl;
-//   }
-//   anchor.Put(reinterpret_cast<const byte*>(content->c_str()), content->size());
-//   anchor.MessageEnd();
-//   std::swap(*content, processed_content);
-  return true;
-}
 
 
 bool SE::Write (const char* data, size_t length, bool complete) {
@@ -590,6 +256,8 @@ bool SE::EncryptChunkFromQueue(size_t chunk) {
       std::string post_data = chunk_content.substr(64);
       size_t post_size = chunk_size_;
       ChunkDetails2 chunk_details;
+      chunk_details.pre_hash = const_cast<byte*>(reinterpret_cast<const byte *>(current_chunk_and_hash_.substr(0, 64).c_str()));
+      chunk_details.pre_size = chunk_size_;
       chunk_details.size = post_size;
       chunk_details.hash = const_cast<byte*>(reinterpret_cast<const byte *>(post_hash.c_str()));
       data_map_.chunks.push_back(chunk_details);
@@ -720,7 +388,6 @@ bool SE::PartialRead(char * data, size_t position, size_t length,
 }
 
 
-}  // namespace utils
 
 }  // namespace encrypt
 

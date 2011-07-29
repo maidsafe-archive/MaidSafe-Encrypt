@@ -82,14 +82,14 @@ LIST(REMOVE_ITEM ALL_FILES_TESTS_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt
 ADD_LIBRARY(encrypt_static STATIC ${ALL_FILES})
 SET_TARGET_PROPERTIES(encrypt_static PROPERTIES OUTPUT_NAME maidsafe_encrypt)
 ADD_EXECUTABLE(TESTencrypt ${ALL_FILES_TESTS_DIR})
-ADD_EXECUTABLE(TESTbenchmark "${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/tests/test_benchmark.cc")
-ADD_EXECUTABLE(TESTextended "${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/tests/encrypt_tests_main.cc" "${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/tests/test_self_encryption_ext.cc")
-ADD_EXECUTABLE(DEMOencrypt "${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/tests/encrypt_demo.cc")
+# ADD_EXECUTABLE(TESTbenchmark "${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/tests/test_benchmark.cc")
+# ADD_EXECUTABLE(TESTextended "${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/tests/encrypt_tests_main.cc" "${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/tests/test_self_encryption_ext.cc")
+# ADD_EXECUTABLE(DEMOencrypt "${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/tests/encrypt_demo.cc")
 
 RENAME_EXECUTABLE(TESTencrypt)
-RENAME_EXECUTABLE(TESTbenchmark)
-RENAME_EXECUTABLE(TESTextended)
-RENAME_EXECUTABLE(DEMOencrypt)
+# RENAME_EXECUTABLE(TESTbenchmark)
+# RENAME_EXECUTABLE(TESTextended)
+# RENAME_EXECUTABLE(DEMOencrypt)
 
 TARGET_LINK_LIBRARIES(encrypt_static
                         maidsafe_common_static
@@ -98,9 +98,9 @@ TARGET_LINK_LIBRARIES(encrypt_static
                         boost_serialization
                         boost_system)
 TARGET_LINK_LIBRARIES(TESTencrypt encrypt_static gtest_static)
-TARGET_LINK_LIBRARIES(TESTbenchmark encrypt_static gtest_static)
-TARGET_LINK_LIBRARIES(TESTextended encrypt_static gtest_static)
-TARGET_LINK_LIBRARIES(DEMOencrypt encrypt_static)
+# TARGET_LINK_LIBRARIES(TESTbenchmark encrypt_static gtest_static)
+# TARGET_LINK_LIBRARIES(TESTextended encrypt_static gtest_static)
+# TARGET_LINK_LIBRARIES(DEMOencrypt encrypt_static)
 
 IF(UNIX)
   # This target builds the reference manual using Doxygen
@@ -164,7 +164,7 @@ ADD_GTESTS(TESTencrypt)
 
 # Workaround to allow parameterised test marked "BEH" to have extra time.  Only
 # parameter 3 causes timeout, hence we can't justify marking the test "FUNC"
-SET_PROPERTY(TEST VarChunkSizes/SelfEncryptionParamTest.BEH_SelfEnDecryptStreamPattern/3 PROPERTY TIMEOUT 300)
+# SET_PROPERTY(TEST VarChunkSizes/SelfEncryptionParamTest.BEH_SelfEnDecryptStreamPattern/3 PROPERTY TIMEOUT 300)
 
 # This test also needs an increased timeout as it creates and tests encryption on a 4GB file.
 # SET_PROPERTY(TEST SelfEncryptionExtTest.FUNC_SelfEnDecryptLargeFile PROPERTY TIMEOUT 3600)

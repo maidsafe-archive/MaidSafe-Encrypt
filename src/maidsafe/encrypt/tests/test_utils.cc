@@ -40,7 +40,6 @@ namespace maidsafe {
 
 namespace encrypt {
 
-namespace utils {
 
 namespace test {
 
@@ -166,8 +165,6 @@ TEST(SelfEncryptionUtilsTest, BEH_SEtest_basic) {
 }
 
 }  // namespace test
-
-}  // namespace utils
 
 }  // namespace encrypt
 
