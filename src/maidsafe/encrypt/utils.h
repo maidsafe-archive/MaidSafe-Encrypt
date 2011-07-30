@@ -116,9 +116,10 @@ public:
                                            CryptoPP::StringSink(chunk2_and_hash_),
                                            true),
                         chunk_store_(chunk_store),
-                        length_(0)
+                        length_(0),  chunk_one_two_q_full_(false)
                         {}
   bool Write(const char* data, size_t length, bool complete);
+  bool FinaliseWrite(); // process what's left in queue and chunk 0 and 1
   bool Read (char * data, std::shared_ptr<DataMap2> data_map);
   bool PartialRead(char * data, size_t position, size_t length,
                    std::shared_ptr<DataMap2> data_map);
@@ -144,6 +145,7 @@ private:
   CryptoPP::HashFilter chunk2_hash_filter; // (hash_, true);
   ChunkDetails2 chunk_data_;
   std::shared_ptr<ChunkStore> chunk_store_;
+  bool chunk_one_two_q_full_;
 };
 
 }  // namespace encrypt

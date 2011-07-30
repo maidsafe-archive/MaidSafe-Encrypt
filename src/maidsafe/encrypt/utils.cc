@@ -119,6 +119,12 @@ size_t AESFilter::Put2(const byte* inString,
                                          blocking);
 };
 
+bool SE::FinaliseWrite()
+{
+// Process any remaining data in queue as well as chunks 0 and 1
+  return true;
+}
+
 
 bool SE::Write (const char* data, size_t length, bool complete) {
   main_encrypt_queue_.Put(const_cast<byte*>(reinterpret_cast<const byte*>(data)), length);
@@ -129,35 +135,34 @@ bool SE::Write (const char* data, size_t length, bool complete) {
   if (length_ < chunk_size_ * 3)
     if (!complete)
       return true; // not finished getting data
-    else
-      chunk_size_ = (length_ - 1) / 3;
+    else if (chunk_size_ = (length_ - 1) / 3) {
+      // small files direct to data map
+        if (chunk_size_ *3 < 1025) {
+          byte *i;
+          main_encrypt_queue_.Get(i, qlength);
+          data_map_.content = i;
+          chunk_size_ = 1024*256;
+          main_encrypt_queue_.SkipAll();
+          main_encrypt_queue_.Initialize();
+          return true;
+        }
+    }
+// Do not process chunks 0 and 1 till we know we have enough for 3 chunks
+  if ((main_encrypt_queue_.MaxRetrievable() >= chunk_size_ * 3) && (!chunk_one_two_q_full_)) {
+    if ((chunk1_hash_filter != chunk_size_ + 64) && (chunk1_hash_filter.MaxRetrievable() + length >= chunk_size_)) {
+        main_encrypt_queue_.TransferTo(chunk1_hash_filter, (chunk1_hash_filter.MaxRetrievable() + length) - chunk_size_);
+        chunk1_hash_filter.MessageEnd();
+    } else {
+        main_encrypt_queue_.TransferAllTo(chunk1_hash_filter);
+        chunk2_hash_filter.MessageEnd();
+        ChunkDetails2 chunk_data;
+        chunk_data.pre_hash = const_cast<byte*>(reinterpret_cast<const byte *>(chunk1_and_hash_.substr(0, 64).c_str()));
+        chunk_data.pre_size = chunk_size_;
+        data_map_.chunks.push_back(chunk_data);
+        return true;
+    }
 
-// small files direct to data map
-  if ((chunk_size_ *3 < 1025) && complete) {
-    byte *i;
-    main_encrypt_queue_.Get(i, qlength);
-    data_map_.content = i;
-    chunk_size_ = 1024*256;
-    main_encrypt_queue_.SkipAll();
-    main_encrypt_queue_.Initialize();
-    return true;
-  }
 
-// START
-
-  if (data_map_.chunks.size() < 2) { // need first 2 hashes
-    main_encrypt_queue_.TransferTo(chunk1_hash_filter, chunk_size_);
-    chunk1_hash_filter.MessageEnd();
-    main_encrypt_queue_.TransferTo(chunk2_hash_filter, chunk_size_);
-    chunk2_hash_filter.MessageEnd();
-    ChunkDetails2 chunk1_data, chunk2_data;
-    chunk1_data.pre_hash = const_cast<byte*>(reinterpret_cast<const byte *>(chunk1_and_hash_.substr(0, 64).c_str()));
-    chunk1_data.pre_size = chunk_size_;
-    data_map_.chunks.push_back(chunk1_data);
-    chunk2_data.pre_hash = const_cast<byte*>(reinterpret_cast<const byte *>(chunk2_and_hash_.substr(0, 64).c_str()));
-    chunk2_data.pre_size = chunk_size_;
-    data_map_.chunks.push_back(chunk2_data);
-  }
   
   while (main_encrypt_queue_.MaxRetrievable() > chunk_size_) {
     EncryptChunkFromQueue(99);
@@ -180,7 +185,7 @@ bool SE::Write (const char* data, size_t length, bool complete) {
     EncryptChunkFromQueue(1);
     chunk_size_ = 1024*256;
   }
-// If we are not finished main_queue_ still has data in it !!
+
   return true;
 }
 
