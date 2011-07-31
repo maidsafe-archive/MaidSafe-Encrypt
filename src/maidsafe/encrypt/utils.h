@@ -45,9 +45,8 @@ namespace encrypt {
 class XORFilter : public CryptoPP::Bufferless<CryptoPP::Filter> {
 public:
   XORFilter(CryptoPP::BufferedTransformation *attachment = NULL,
-            byte *pad = NULL, size_t pad_length = 0):
-            pad_(pad),
-            pad_length_(pad_length) {
+            byte pad[144] = NULL)
+            {
    CryptoPP::Filter::Detach(attachment);
   };
    size_t Put2(const byte* inString,
@@ -56,14 +55,13 @@ public:
                bool blocking);
    bool IsolatedFlush(bool, bool) { return false; }
 private:
-  byte *pad_;
-  size_t pad_length_;
+  byte pad_[144];
 };
 
 class AESFilter : public CryptoPP::Bufferless<CryptoPP::Filter> {
 public:
   AESFilter(CryptoPP::BufferedTransformation *attachment = NULL,
-            byte *key = NULL, byte *iv = NULL, bool encrypt = true) :
+            byte key[32] = 0 , byte iv[16] = 0, bool encrypt = true) :
                                               key_(key),
                                               iv_(iv),
                                               encrypt_(encrypt) {
@@ -118,7 +116,8 @@ public:
                         chunk_store_(chunk_store),
                         length_(0),  chunk_one_two_q_full_(false)
                         {}
-  bool Write(const char* data, size_t length, bool complete);
+  bool Write(const char* data = NULL, size_t length = 0);
+  bool ReInitialise();
   bool FinaliseWrite(); // process what's left in queue and chunk 0 and 1
   bool Read (char * data, std::shared_ptr<DataMap2> data_map);
   bool PartialRead(char * data, size_t position, size_t length,
@@ -126,8 +125,12 @@ public:
   DataMap2 getDataMap() { return data_map_; }
 
 private:
-  SE &operator = (const SE&) {} // no assignment 
-//  SE (const SE&) {} // no copy
+  SE &operator = (const SE&); // no assignment
+  SE(const SE&); // no copy
+  bool QueueC1AndC2();
+  bool EncryptChunkFromQueue(CryptoPP::MessageQueue & queue);
+  bool EncryptC1AndC2();
+  bool ResetEncrypt();
   bool EncryptChunkFromQueue(size_t chunk);
   bool EncryptaChunk(std::string &input, std::string *output);
   DataMap2 data_map_;
