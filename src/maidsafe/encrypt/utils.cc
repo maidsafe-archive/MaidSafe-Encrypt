@@ -201,75 +201,70 @@ bool SE::Write (const char* data, size_t length) {
 }
 
 bool SE::EncryptChunkFromQueue(CryptoPP::MessageQueue & queue) {
-    std::string chunk_content;
-//     byte obfuscation_pad[144] = {0};
-    ChunkDetails2 chunk_details;
-          
-    auto itr = data_map_.chunks.end();
-    --itr;
-    byte *N_1_pre_hash = (*itr).pre_hash;
-     --itr;
-    byte *N_2_pre_hash = (*itr).pre_hash;
+  std::string chunk_content;
+  ChunkDetails2 chunk_details;
 
-// No need to rehash chunks 1 and 2
-    if ((&queue != &chunk1_queue_) && (&queue != &chunk2_queue_)) {
-      byte temp[chunk_size_];
-      chunk1_queue_.Peek(temp, sizeof(temp));
-      CryptoPP::SHA512().CalculateDigest(chunk_details.pre_hash,
-                                        temp,
-                                        sizeof(temp));
-      chunk_details.pre_size = chunk_size_;
-    }
-    // TODO FIXME relace these with CryptoPP::SecByteBlock
-    // which guarantees they will be zero'd when freed
-    byte *key = new byte[32];
-    byte *iv = new byte[16];
-    byte * obfuscation_pad = new byte[144];
-    
-    memset(key, 0 , 32);
-    memset(iv, 0, 16);
-    memset(obfuscation_pad, 0, 144);
-    std::copy(N_1_pre_hash,
-              N_1_pre_hash + 32,
-              key);
-    std::copy(N_1_pre_hash + 32,
-              N_1_pre_hash + 48,
-              iv);
+  auto itr = data_map_.chunks.end();
+  --itr;
+  byte *N_1_pre_hash = (*itr).pre_hash;
+  --itr;
+  byte *N_2_pre_hash = (*itr).pre_hash;
 
-   for(int i = 0; i < 64; ++i) {
-      obfuscation_pad[i] = N_1_pre_hash[i];
-    }
-    for(int i = 0; i < 64; ++i) {     
-      obfuscation_pad[i+64] = chunk_details.pre_hash[i];
-    }
-   
-    for(int i = 0; i < 16; ++i) {
-       obfuscation_pad[i+128] = N_2_pre_hash[i+48];
-    }
+  // No need to rehash chunks 1 and 2
+  if ((&queue != &chunk1_queue_) && (&queue != &chunk2_queue_)) {
+    byte temp[chunk_size_];
+    chunk1_queue_.Peek(temp, sizeof(temp));
+    CryptoPP::SHA512().CalculateDigest(chunk_details.pre_hash,
+                                    temp,
+                                    sizeof(temp));
+    chunk_details.pre_size = chunk_size_;
+  }
+  // TODO FIXME relace these with CryptoPP::SecByteBlock
+  // which guarantees they will be zero'd when freed
+  byte *key = new byte[32];
+  byte *iv = new byte[16];
+  byte * obfuscation_pad = new byte[144];
 
-   AESFilter aes_filter(
-                     new XORFilter(
-                        new CryptoPP::HashFilter(hash_,
-                          new CryptoPP::StringSink(chunk_content)
-                        , true)
-                     , obfuscation_pad)
-                 , key , iv, true);
+  memset(key, 0 , 32);
+  memset(iv, 0, 16);
+  memset(obfuscation_pad, 0, 144);
+  std::copy(N_1_pre_hash,
+          N_1_pre_hash + 32,
+          key);
+  std::copy(N_1_pre_hash + 32,
+          N_1_pre_hash + 48,
+          iv);
 
-      queue.TransferAllTo(aes_filter);
-      aes_filter.MessageEnd();
+  for(int i = 0; i < 64; ++i) {
+    obfuscation_pad[i] = N_1_pre_hash[i];
+  }
+  for(int i = 0; i < 64; ++i) {
+    obfuscation_pad[i+64] = chunk_details.pre_hash[i];
+  }
 
-      byte post_data[chunk_size_];
-      // TODO fill in chunk details post_hash
+  for(int i = 0; i < 16; ++i) {
+    obfuscation_pad[i+128] = N_2_pre_hash[i+48];
+  }
 
-      
-      data_map_.chunks.push_back(chunk_details);
-      //chunk_store_->Store(hash, post_data);
+  AESFilter aes_filter(
+                  new XORFilter(
+                    new CryptoPP::HashFilter(hash_,
+                      new CryptoPP::StringSink(chunk_content)
+                    , true)
+                  , obfuscation_pad)
+              , key , iv, true);
 
-     delete key;
-     delete iv;
-     delete obfuscation_pad;
+  queue.TransferAllTo(aes_filter);
+  aes_filter.MessageEnd();
+  for (int i = 0; i < 64; ++i)
+    chunk_details.hash[i] = chunk_content.substr(chunk_size_)[i];
+  data_map_.chunks.push_back(chunk_details);
+  chunk_store_->Store(chunk_content.substr(chunk_size_), chunk_content.substr(0, chunk_size_));
 
-    return true;
+  delete key;
+  delete iv;
+  delete obfuscation_pad;
+  return true;
 }
 
 bool SE::Read(char* data, std::shared_ptr<DataMap2> data_map)
