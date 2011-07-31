@@ -214,6 +214,11 @@ bool SE::EncryptChunkFromQueue(CryptoPP::MessageQueue & queue) {
   byte *N_2_pre_hash = (*itr).pre_hash;
 
   // No need to rehash chunks 1 and 2
+  // This can all be threaded and chunk number passed
+  // to allow pre enc hashes pre stored and
+  // then we can thread the actual encryption easily enough
+  // this will allows us substantial speed improvements
+  // move this to a method with chunk_number passed 
   if ((&queue != &chunk1_queue_) && (&queue != &chunk2_queue_)) {
     byte temp[chunk_size_];
     chunk1_queue_.Peek(temp, sizeof(temp));
