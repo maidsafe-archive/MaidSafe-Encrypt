@@ -259,7 +259,9 @@ bool SE::EncryptChunkFromQueue(CryptoPP::MessageQueue & queue) {
   for (int i = 0; i < 64; ++i)
     chunk_details.hash[i] = chunk_content.substr(chunk_size_)[i];
   data_map_.chunks.push_back(chunk_details);
-  chunk_store_->Store(chunk_content.substr(chunk_size_), chunk_content.substr(0, chunk_size_));
+  chunk_store_->Store(chunk_content.substr(chunk_size_),
+                      chunk_content.substr(0, chunk_size_));
+  data_map_.size += chunk_size_;
 
   delete key;
   delete iv;
