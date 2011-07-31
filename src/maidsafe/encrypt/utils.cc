@@ -144,6 +144,7 @@ bool SE::ReInitialise() {
     main_encrypt_queue_.SkipAll();
     data_map_.chunks.clear();
     data_map_.size = 0;
+    return true;
 }
 
 
@@ -264,7 +265,6 @@ bool SE::EncryptChunkFromQueue(CryptoPP::MessageQueue & queue) {
   chunk_store_->Store(chunk_content.substr(this_chunk_size_),
                       chunk_content.substr(0, this_chunk_size_));
   data_map_.size += this_chunk_size_;
-
   delete key;
   delete iv;
   delete obfuscation_pad;

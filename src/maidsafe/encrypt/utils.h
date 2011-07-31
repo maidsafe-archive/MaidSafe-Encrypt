@@ -115,7 +115,7 @@ public:
                         chunk_store_(chunk_store),
                         chunk_one_two_q_full_(false), c1_and_2_chunk_size_(),
                         this_chunk_size_()
-                        {}
+                        { }
   bool Write(const char* data = NULL, size_t length = 0);
   bool ReInitialise();
   bool FinaliseWrite(); // process what's left in queue and chunk 0 and 1
