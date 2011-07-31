@@ -113,7 +113,8 @@ public:
                         chunk_current_queue_(CryptoPP::MessageQueue()),
                         chunk_data_(),
                         chunk_store_(chunk_store),
-                        chunk_one_two_q_full_(false)
+                        chunk_one_two_q_full_(false), c1_and_2_chunk_size_(),
+                        this_chunk_size_()
                         {}
   bool Write(const char* data = NULL, size_t length = 0);
   bool ReInitialise();
@@ -145,6 +146,8 @@ private:
   ChunkDetails2 chunk_data_;
   std::shared_ptr<ChunkStore> chunk_store_;
   bool chunk_one_two_q_full_;
+  size_t c1_and_2_chunk_size_;
+  size_t this_chunk_size_;
 };
 
 }  // namespace encrypt

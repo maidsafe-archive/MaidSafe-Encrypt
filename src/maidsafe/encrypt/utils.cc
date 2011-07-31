@@ -136,8 +136,6 @@ bool SE::FinaliseWrite()
     }
     Write();
   }
-
-  
   return true;
 }
 
@@ -152,6 +150,7 @@ bool SE::ReInitialise() {
 
 bool SE::QueueC1AndC2()
 {
+  c1_and_2_chunk_size_ = chunk_size_;
   // Chunk 1
   main_encrypt_queue_.TransferTo(chunk1_queue_, chunk_size_);
   chunk1_queue_.MessageEnd();
@@ -218,7 +217,9 @@ bool SE::EncryptChunkFromQueue(CryptoPP::MessageQueue & queue) {
                                     temp,
                                     sizeof(temp));
     chunk_details.pre_size = chunk_size_;
-  }
+    this_chunk_size_ = chunk_size_;
+  } else
+    this_chunk_size_ = c1_and_2_chunk_size_;
   // TODO FIXME relace these with CryptoPP::SecByteBlock
   // which guarantees they will be zero'd when freed
   byte *key = new byte[32];
@@ -256,12 +257,13 @@ bool SE::EncryptChunkFromQueue(CryptoPP::MessageQueue & queue) {
 
   queue.TransferAllTo(aes_filter);
   aes_filter.MessageEnd();
+
   for (int i = 0; i < 64; ++i)
-    chunk_details.hash[i] = chunk_content.substr(chunk_size_)[i];
+    chunk_details.hash[i] = chunk_content.substr(this_chunk_size_)[i];
   data_map_.chunks.push_back(chunk_details);
-  chunk_store_->Store(chunk_content.substr(chunk_size_),
-                      chunk_content.substr(0, chunk_size_));
-  data_map_.size += chunk_size_;
+  chunk_store_->Store(chunk_content.substr(this_chunk_size_),
+                      chunk_content.substr(0, this_chunk_size_));
+  data_map_.size += this_chunk_size_;
 
   delete key;
   delete iv;
