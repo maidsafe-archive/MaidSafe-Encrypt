@@ -148,21 +148,21 @@ TEST(SelfEncryptionUtilsTest, BEH_SEtest_basic) {
   EXPECT_EQ(0, selfenc.getDataMap().chunks.size());
   EXPECT_EQ(static_cast<char>(*stuff),
             static_cast<char>(*selfenc.getDataMap().content));
-  std::cout << " Created " << selfenc.getDataMap().chunks.size() << " Chunks!!" << std::endl;
-  EXPECT_TRUE(selfenc.ReInitialise());
-  std::cout << " Created " << selfenc.getDataMap().chunks.size() << " Chunks!!" << std::endl;
+
+
   char *chunksstuff = new char[1048576];
   for (int i = 0; i <= 1048576; ++i) {
     chunksstuff[i] = 'a';
   }
+  EXPECT_TRUE(selfenc.ReInitialise());
   EXPECT_TRUE(selfenc.Write(chunksstuff, 1048576));
   EXPECT_TRUE(selfenc.FinaliseWrite());
-  std::cout << " Created " << selfenc.getDataMap().chunks.size() << " Chunks!!" << std::endl;
+
   const char *onemb = one_mb.c_str();
   EXPECT_TRUE(selfenc.ReInitialise());
   EXPECT_TRUE(selfenc.Write(onemb, 1024*1024));
   EXPECT_TRUE(selfenc.FinaliseWrite());
-  std::cout << " Created " << selfenc.getDataMap().chunks.size() << " Chunks!!" << std::endl;
+
   
   const char *hundredmb = hundred_mb.c_str();
   EXPECT_TRUE(selfenc.ReInitialise());
