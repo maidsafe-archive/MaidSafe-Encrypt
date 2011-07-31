@@ -39,6 +39,7 @@
 #ifdef __MSVC__
 #  pragma warning(pop)
 #endif
+#include "boost/thread.hpp"
 #include "boost/filesystem/fstream.hpp"
 #include "maidsafe/common/crypto.h"
 #include "maidsafe/common/utils.h"
@@ -144,6 +145,8 @@ bool SE::ReInitialise() {
     main_encrypt_queue_.SkipAll();
     data_map_.chunks.clear();
     data_map_.size = 0;
+    data_map_.content = {0};
+    data_map_.content_size = 0;
     return true;
 }
 
@@ -214,7 +217,8 @@ bool SE::EncryptChunkFromQueue(CryptoPP::MessageQueue & queue) {
   if ((&queue != &chunk1_queue_) && (&queue != &chunk2_queue_)) {
     byte temp[chunk_size_];
     chunk1_queue_.Peek(temp, sizeof(temp));
-    CryptoPP::SHA512().CalculateDigest(chunk_details.pre_hash,
+    // FIXME thread this to half time taken for encrypt
+     CryptoPP::SHA512().CalculateDigest(chunk_details.pre_hash,
                                     temp,
                                     sizeof(temp));
     chunk_details.pre_size = chunk_size_;
