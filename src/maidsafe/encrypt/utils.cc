@@ -121,16 +121,15 @@ size_t AESFilter::Put2(const byte* inString,
 
 bool SE::FinaliseWrite()
 {
-      size_t qlength = main_encrypt_queue_.TotalBytesRetrievable();
   while (main_encrypt_queue_.TotalBytesRetrievable() < chunk_size_ * 3) {
     chunk_size_ = (main_encrypt_queue_.TotalBytesRetrievable()) / 3;
     // small files direct to data map
     if (chunk_size_ *3 < 1025) {
       size_t qlength = main_encrypt_queue_.TotalBytesRetrievable();     
-      byte *i;
-      CryptoPP::ArraySink content(i, qlength);
-      main_encrypt_queue_.TransferAllTo(content);
-      data_map_.content = i;
+      byte i[qlength];
+      main_encrypt_queue_.Get(data_map_.content, sizeof(i));
+      data_map_.content[qlength] = '\0';
+      data_map_.content_size = qlength;
       data_map_.size += qlength;
       main_encrypt_queue_.SkipAll();
       return true;
@@ -145,46 +144,46 @@ bool SE::FinaliseWrite()
 bool SE::ReInitialise() {
     chunk_size_ = 1024*256;
     main_encrypt_queue_.SkipAll();
-    chunk1_hash_filter.SkipAll();
-    chunk2_hash_filter.SkipAll();
-    current_chunk_hash_filter_.SkipAll();
     data_map_.chunks.clear();
     data_map_.size = 0;
-    data_map_.content = NULL;
 }
 
 
 
 bool SE::QueueC1AndC2()
 {
-  main_encrypt_queue_.TransferTo(chunk1_hash_filter, chunk_size_);
-  chunk1_hash_filter.MessageEnd();
+  // Chunk 1
+  main_encrypt_queue_.TransferTo(chunk1_queue_, chunk_size_);
+  chunk1_queue_.MessageEnd();
   ChunkDetails2 chunk_data;
-  for (int i = 0; i <= 64; ++i)
-    chunk_data.pre_hash[i] =  static_cast<byte>(chunk1_and_hash_.c_str()[i]);
-
+  byte temp[chunk_size_];
+  chunk1_queue_.Peek(temp, sizeof(temp));
+  CryptoPP::SHA512().CalculateDigest(chunk_data.pre_hash,
+                                     temp,
+                                     sizeof(temp));
   chunk_data.pre_size = chunk_size_;
   data_map_.chunks.push_back(chunk_data);
-  main_encrypt_queue_.TransferTo(chunk2_hash_filter, chunk_size_);
-  chunk1_hash_filter.MessageEnd();
-  ChunkDetails2 chunk_data1;
-  for (int i = 0; i <= 64; ++i)
-    chunk_data.pre_hash[i] =   static_cast<byte>(chunk2_and_hash_.c_str()[i]);
-  chunk_data1.pre_size = chunk_size_;
+  
+  // Chunk 2
+  main_encrypt_queue_.TransferTo(chunk2_queue_, chunk_size_);
+  chunk2_queue_.MessageEnd();
+  ChunkDetails2 chunk_data2;
+  byte temp2[chunk_size_];
+  chunk2_queue_.Peek(temp2, sizeof(temp2));
+  CryptoPP::SHA512().CalculateDigest(chunk_data2.pre_hash,
+                                     temp2 ,
+                                     sizeof(temp2));
+  chunk_data2.pre_size = chunk_size_;
   data_map_.chunks.push_back(chunk_data);
   chunk_one_two_q_full_ = true;
-  return true;
+  return chunk_one_two_q_full_;
 }
-
-bool SE::EncryptC1AndC2()
-{
-
-}
-
 
 bool SE::Write (const char* data, size_t length) {
   if (length > 0)
-    main_encrypt_queue_.Put(const_cast<byte*>(reinterpret_cast<const byte*>(data)), length);
+    main_encrypt_queue_.Put2(const_cast<byte*>
+                           (reinterpret_cast<const byte*>(data)),
+                            length, -1, true);
 
     // Do not queue chunks 0 and 1 till we know we have enough for 3 chunks
   if (!chunk_one_two_q_full_) { // for speed 
@@ -195,35 +194,41 @@ bool SE::Write (const char* data, size_t length) {
   }
 
   while (main_encrypt_queue_.MaxRetrievable() > chunk_size_) {
-    if (!EncryptChunkFromQueue(main_encrypt_queue_))
-      return false;
+    main_encrypt_queue_.TransferTo(chunk_current_queue_ , chunk_size_);
+    EncryptChunkFromQueue(chunk_current_queue_);
   }
   return true;
 }
 
 bool SE::EncryptChunkFromQueue(CryptoPP::MessageQueue & queue) {
     std::string chunk_content;
-    byte *pre_hash, *pre_enc_hashn, obfuscation_pad[144] = {0};
-    
+//     byte obfuscation_pad[144] = {0};
+    ChunkDetails2 chunk_details;
+          
     auto itr = data_map_.chunks.end();
     --itr;
     byte *N_1_pre_hash = (*itr).pre_hash;
      --itr;
     byte *N_2_pre_hash = (*itr).pre_hash;
 
-    //TODO FIXME this is causing c1 and c0 to be hashed again 
-    size_t queue_size = queue.MaxRetrievable();
-    queue.TransferTo(current_chunk_hash_filter_, chunk_size_);
-    current_chunk_hash_filter_.MessageEnd();
-// 65 cause of null terminator in a c_str()
-    byte *N_pre_hash =  const_cast<byte *>(reinterpret_cast<const byte *>(current_chunk_and_hash_.substr(0,65).c_str()));
+// No need to rehash chunks 1 and 2
+    if ((&queue != &chunk1_queue_) && (&queue != &chunk2_queue_)) {
+      byte temp[chunk_size_];
+      chunk1_queue_.Peek(temp, sizeof(temp));
+      CryptoPP::SHA512().CalculateDigest(chunk_details.pre_hash,
+                                        temp,
+                                        sizeof(temp));
+      chunk_details.pre_size = chunk_size_;
+    }
+    // TODO FIXME relace these with CryptoPP::SecByteBlock
+    // which guarantees they will be zero'd when freed
+    byte *key = new byte[32];
+    byte *iv = new byte[16];
+    byte * obfuscation_pad = new byte[144];
     
-    byte key[32] = {0};
-    byte iv[16] = {0};
-
-//     for (int i = 0; i > 32; ++i)
-//       key[i] = N_1_pre_hash[i];
-    
+    memset(key, 0 , 32);
+    memset(iv, 0, 16);
+    memset(obfuscation_pad, 0, 144);
     std::copy(N_1_pre_hash,
               N_1_pre_hash + 32,
               key);
@@ -231,49 +236,38 @@ bool SE::EncryptChunkFromQueue(CryptoPP::MessageQueue & queue) {
               N_1_pre_hash + 48,
               iv);
 
-
-    for(int i = 0; i < 64; ++i) {
+   for(int i = 0; i < 64; ++i) {
       obfuscation_pad[i] = N_2_pre_hash[i];
-      obfuscation_pad[i+64] = N_pre_hash[i];
     }
-   for(int i = 0; i < 16; ++i) {
-      obfuscation_pad[i+128] = N_2_pre_hash[i+48];
+    for(int i = 0; i < 64; ++i) {     
+      obfuscation_pad[i+64] = chunk_details.pre_hash[i];
+    }
+   
+    for(int i = 0; i < 16; ++i) {
+       obfuscation_pad[i+128] = N_2_pre_hash[i+48];
     }
 
-
-    
-    AESFilter aes_filter(
-                   new AESFilter(
+   AESFilter aes_filter(
                      new XORFilter(
                         new CryptoPP::HashFilter(hash_,
                           new CryptoPP::StringSink(chunk_content)
                         , true)
                      , obfuscation_pad)
-                   , key , iv, true));
+                 , key , iv, true);
 
-      byte *putdata;
-      std::copy(current_chunk_and_hash_.begin(),
-                current_chunk_and_hash_.end(),
-                putdata);
-      //putdata[size] = '\0';
-      aes_filter.Put(putdata, queue_size);
+      queue.TransferAllTo(aes_filter);
       aes_filter.MessageEnd();
-      std::string post_hash = chunk_content.substr(0,64);
-      //std::copy (chunk_content, chunk_content + 64, post_hash);
-      std::string post_data = chunk_content.substr(64);
-      size_t post_size = chunk_size_;
-      ChunkDetails2 chunk_details;
-      for (int i = 0; i <= 64; ++i)
-         chunk_details.pre_hash[i] =  static_cast<byte>(current_chunk_and_hash_.c_str()[i]);
-      chunk_details.pre_size = chunk_size_;
-      chunk_details.size = post_size;
-      //chunk_details.hash = const_cast<byte*>(reinterpret_cast<const byte *>(post_hash.c_str()));
-      for (int i = 0; i <= 64; ++i)
-        chunk_details.hash[i] =  static_cast<byte>(post_hash.c_str()[i]);
+
+      byte post_data[chunk_size_];
+      // TODO fill in chunk details post_hash
+
+      
       data_map_.chunks.push_back(chunk_details);
-      chunk_store_->Store(post_hash, post_data);
+      //chunk_store_->Store(hash, post_data);
 
-
+     delete key;
+     delete iv;
+     delete obfuscation_pad;
 
     return true;
 }

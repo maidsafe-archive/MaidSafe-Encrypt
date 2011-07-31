@@ -69,7 +69,7 @@ HANDLE_VERSIONS(${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/version.h)
 FILE(GLOB SOURCE_FILES "${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/*.cc")
 FILE(GLOB HEADER_FILES "${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/*.h")
 SET(ALL_FILES ${SOURCE_FILES} ${HEADER_FILES})
-
+LIST(REMOVE_ITEM ALL_FILES "${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/test.cc")
 ####    TESTS    ####
 FILE(GLOB ALL_FILES_TESTS_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/tests/*.cc" "${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/tests/*.h")
 LIST(REMOVE_ITEM ALL_FILES_TESTS_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/tests/encrypt_demo.cc")
@@ -82,6 +82,7 @@ LIST(REMOVE_ITEM ALL_FILES_TESTS_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt
 ADD_LIBRARY(encrypt_static STATIC ${ALL_FILES})
 SET_TARGET_PROPERTIES(encrypt_static PROPERTIES OUTPUT_NAME maidsafe_encrypt)
 ADD_EXECUTABLE(TESTencrypt ${ALL_FILES_TESTS_DIR})
+add_executable(quick_test "${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/test.cc")
 # ADD_EXECUTABLE(TESTbenchmark "${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/tests/test_benchmark.cc")
 # ADD_EXECUTABLE(TESTextended "${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/tests/encrypt_tests_main.cc" "${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/tests/test_self_encryption_ext.cc")
 # ADD_EXECUTABLE(DEMOencrypt "${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/tests/encrypt_demo.cc")
@@ -98,6 +99,7 @@ TARGET_LINK_LIBRARIES(encrypt_static
                         boost_serialization
                         boost_system)
 TARGET_LINK_LIBRARIES(TESTencrypt encrypt_static gtest_static)
+TARGET_LINK_LIBRARIES(quick_test encrypt_static gtest_static)
 # TARGET_LINK_LIBRARIES(TESTbenchmark encrypt_static gtest_static)
 # TARGET_LINK_LIBRARIES(TESTextended encrypt_static gtest_static)
 # TARGET_LINK_LIBRARIES(DEMOencrypt encrypt_static)
