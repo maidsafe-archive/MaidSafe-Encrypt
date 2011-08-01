@@ -39,6 +39,7 @@
 #ifdef __MSVC__
 #  pragma warning(pop)
 #endif
+#include "boost/thread.hpp"
 #include "boost/filesystem/fstream.hpp"
 #include "maidsafe/common/crypto.h"
 #include "maidsafe/common/utils.h"
@@ -53,9 +54,6 @@ namespace fs = boost::filesystem;
 namespace maidsafe {
 
 namespace encrypt {
-
-namespace utils {
-
 /**
  * Implementation of XOR transformation filter to allow pipe-lining
  *
@@ -71,24 +69,24 @@ size_t XORFilter::Put2(const byte* inString,
                                           length,
                                           messageEnd,
                                           blocking);
-  if((pad_length_ == 0))
-    throw CryptoPP::Exception(CryptoPP::Exception::INVALID_DATA_FORMAT,
-                              "XORFilter zero length PAD passed");
+//   if((pad_length_ == 0))
+//     throw CryptoPP::Exception(CryptoPP::Exception::INVALID_DATA_FORMAT,
+//                               "XORFilter zero length PAD passed");
 
   size_t buffer_size(length);
   // Do XOR
- 
+
   byte *buffer = new byte[length];
 
   for (size_t i = 0; i <= length; ++i) {
-     buffer[i] = inString[i] ^ pad_[i%pad_length_]; // don't overrun the pad
+     buffer[i] = inString[i] ^ pad_[i%144]; // don't overrun the pad
    }
 
   return AttachedTransformation()->Put2(buffer,
                                         length,
                                         messageEnd,
                                         blocking );
-}  
+}
 
 /**
  * Implementation of an AES transformation filter to allow pipe-lining
@@ -112,8 +110,8 @@ size_t AESFilter::Put2(const byte* inString,
     encryptor.ProcessData((byte*)out_string, (byte*)inString, length);
   } else {
   //decryptor object
-    CryptoPP::CFB_Mode<CryptoPP::AES>::Decryption decryptor(key_,
-    32, iv_);
+    CryptoPP::CFB_Mode<CryptoPP::AES>::Decryption decryptor(this->key_,
+    32, this->iv_);
      decryptor.ProcessData((byte*)out_string, (byte*)inString, length);
   }
   return AttachedTransformation()->Put2(out_string,
@@ -122,482 +120,164 @@ size_t AESFilter::Put2(const byte* inString,
                                          blocking);
 };
 
-bool IsCompressedFile(const fs::path &file_path) {
-  size_t ext_count = sizeof(kNoCompressType) / sizeof(kNoCompressType[0]);
-  std::set<std::string> exts(kNoCompressType, kNoCompressType + ext_count);
-  return (exts.find(boost::to_lower_copy(file_path.extension().string())) !=
-          exts.end());
-}
-
-/**
- * Tries to compress the given sample using the specified compression type.
- * If that yields savings of at least 10%, we assume this can be extrapolated to
- * all the data.
- *
- * @param sample A data sample.
- * @param self_encryption_type Compression type.
- * @return True if input data is likely compressible.
- */
-bool CheckCompressibility(const std::string &sample,
-                          const uint32_t &self_encryption_type) {
-  if (sample.empty())
-    return false;
-
-  std::string compressed_sample(Compress(sample, self_encryption_type));
-  double ratio = static_cast<double>(compressed_sample.size()) / sample.size();
-  return !compressed_sample.empty() && ratio <= 0.9;
-}
-
-/**
- * @param self_encryption_params Parameters for the self-encryption algorithm.
- * @return True if parameters sane.
- */
-bool CheckParams(const SelfEncryptionParams &self_encryption_params) {
-  if (self_encryption_params.max_chunk_size == 0) {
-    DLOG(ERROR) << "CheckParams: Chunk size can't be zero." << std::endl;
-    return false;
-  }
-
-  if (self_encryption_params.max_includable_data_size < kMinChunks - 1) {
-    DLOG(ERROR) << "CheckParams: Max includable data size must be at least "
-                << kMinChunks - 1 << "." << std::endl;
-    return false;
-  }
-
-  if (kMinChunks * self_encryption_params.max_includable_chunk_size >=
-      self_encryption_params.max_includable_data_size) {
-    DLOG(ERROR) << "CheckParams: Max includable data size must be bigger than "
-                   "all includable chunks." << std::endl;
-    return false;
-  }
-
-  if (kMinChunks * self_encryption_params.max_chunk_size <
-      self_encryption_params.max_includable_data_size) {
-    DLOG(ERROR) << "CheckParams: Max includable data size can't be bigger than "
-                << kMinChunks << " chunks." << std::endl;
-    return false;
-  }
-
-  return true;
-}
-
-std::string Compress(const std::string &input,
-                     const uint32_t &self_encryption_type) {
-  switch (self_encryption_type & kCompressionMask) {
-    case kCompressionNone:
-      return input;
-    case kCompressionGzip:
-      return crypto::Compress(input, kCompressionRatio);
-    default:
-      DLOG(ERROR) << "Compress: Invalid compression type passed." << std::endl;
-  }
-  return "";
-}
-
-std::string Uncompress(const std::string &input,
-                       const uint32_t &self_encryption_type) {
-  switch (self_encryption_type & kCompressionMask) {
-    case kCompressionNone:
-      return input;
-    case kCompressionGzip:
-      return crypto::Uncompress(input);
-    default:
-      DLOG(ERROR) << "Uncompress: Invalid compression type passed."
-                  << std::endl;
-  }
-  return "";
-}
-
-std::string Hash(const std::string &input,
-                 const uint32_t &self_encryption_type) {
-  switch (self_encryption_type & kHashingMask) {
-    case kHashingSha1:
-      return crypto::Hash<crypto::SHA1>(input);
-    case kHashingSha512:
-      return crypto::Hash<crypto::SHA512>(input);
-    case kHashingTiger:
-      return crypto::Hash<crypto::Tiger>(input);
-    default:
-      DLOG(ERROR) << "Hash: Invalid hashing type passed." << std::endl;
-  }
-  return "";
-}
-
-/**
- * We expand the input string by simply repeating it until we reach the required
- * output size. Instead of just repeating it, we could as well repeatedly hash
- * it and append the resulting hashes. But this is thought to not be any more
- * secure than simple repetition when used together with encryption, just a lot
- * slower, so we avoid it until disproven.
- */
-bool ResizeObfuscationHash(const std::string &input,
-                           const size_t &required_size,
-                           std::string *resized_data) {
-  if (input.empty() || !resized_data)
-    return false;
-
-  resized_data->resize(required_size);
-  if (required_size == 0)
-    return true;
-  size_t input_size(std::min(input.size(), required_size)), copied(input_size);
-  memcpy(&((*resized_data)[0]), input.data(), input_size);
-  while (copied < required_size) {
-    // input_size = std::min(input.size(), required_size - copied);  // slow
-    input_size = std::min(copied, required_size - copied);  // fast
-    memcpy(&((*resized_data)[copied]), resized_data->data(), input_size);
-    copied += input_size;
-  }
-  return true;
-}
-
-/*
-std::string XOR(const std::string data, const std::string pad){
-std::string result;
-        CryptoPP::StringSource (data,true,
-                               new XORFilter(
-                               new CryptoPP::StringSink(result),
-                               pad
-                              ));
-        return result;
-}*/
-  
-
-bool SelfEncryptChunk(std::shared_ptr<std::string> content,
-                             const std::string &encryption_hash,
-                             const std::string &obfuscation_hash,
-                             const uint32_t &self_encryption_type) {
-//   if (content->empty() || encryption_hash.empty() || obfuscation_hash.empty()) {
-//     DLOG(ERROR) << "SelfEncryptChunk: Invalid arguments passed." << std::endl;
-//     return false;
-//   }
-//   if (((self_encryption_type & kCompressionMask) == kCompressionNone) &&
-//       ((self_encryption_type & kObfuscationMask) == kObfuscationNone) &&
-//       ((self_encryption_type & kCryptoMask) == kCryptoNone))
-//     return false; // nothing to do !!
-//   std::string processed_content;
-//   
-// // Attach and detach operations to anchor
-//   Anchor anchor;
-// 
-//  // compression
-//   switch (self_encryption_type & kCompressionMask) {
-//     case kCompressionNone:
-//       break;
-//     case kCompressionGzip:
-//       //CryptoPP::Gzip.SetDeflateLevel(1);
-//       anchor.Attach(new CryptoPP::Gzip());
-//       break;
-//     default:
-//       DLOG(ERROR) << "Compress: Invalid compression type passed." << std::endl;
-//   }
-// 
-//   // obfuscation
-//   switch (self_encryption_type & kObfuscationMask) {
-//     case kObfuscationNone:
-//       break;
-//     case kObfuscationRepeated:
-//       {
-//         std::string prefix;
-//         if (encryption_hash.size() > crypto::AES256_KeySize) {
-//           // add the remainder of the encryption hash to the obfuscation hash
-//           prefix = encryption_hash.substr(crypto::AES256_KeySize);
-//         }
-//         std::string obfuscation_pad = prefix + obfuscation_hash;
-// 
-//         anchor.Attach(new XORFilter(
-//                       new CryptoPP::StringSink(processed_content),
-//                       obfuscation_pad
-//                       ));
-//       }
-//       break;
-//     default:
-//       DLOG(ERROR) << "SelfEncryptChunk: Invalid obfuscation type passed."
-//                   << std::endl;
-//       return false;
-//   }
-// 
-// // This needs run to get the processed data here at least. 
-//   anchor.Put(reinterpret_cast<const byte*>(content->c_str()), content->size());
-//   anchor.MessageEnd();
-//         // encryption
-//   switch (self_encryption_type & kCryptoMask) {
-//     case kCryptoNone:
-//       break;
-//     case kCryptoAes256:
-//       {
-//         std::string enc_hash;
-//         if (!ResizeObfuscationHash(encryption_hash,
-//                                    crypto::AES256_KeySize +
-//                                        crypto::AES256_IVSize,
-//                                    &enc_hash)) {
-//           DLOG(ERROR) << "SelfEncryptChunk: Could not expand encryption hash."
-//                       << std::endl;
-//           return false;
-//         }
-//         /*
-//   *Testing channels, get hash and encrypted string at same time
-//   * Rather than processing above we should TrasferTo here.
-//   */
-//         CryptoPP::SHA512  hash;
-//         std::string cypher;
-//         AESFilter aes_filter(new CryptoPP::StringSink(cypher),
-//                             enc_hash,
-//                             true);
-//         CryptoPP::HashFilter hash_filter(hash);
-//         CryptoPP::member_ptr<CryptoPP::ChannelSwitch> hash_switch(new CryptoPP::ChannelSwitch);
-//         hash_switch->AddDefaultRoute(hash_filter);
-//         hash_switch->AddDefaultRoute(aes_filter);
-//         CryptoPP::StringSource(processed_content, true,  hash_switch.release() );
-// 
-//         std::string digest;
-//         CryptoPP::HexEncoder encoder( new CryptoPP::StringSink( digest ), true /* uppercase */ );
-//         hash_filter.TransferTo(encoder);
-//   //      std::cout << " The sha hash is " << digest << std::endl;
-//         std::swap(*content,cypher);
-//         return true;
-// 
-//       }
-//       break;
-//     default:
-//       DLOG(ERROR) << "SelfEncryptChunk: Invalid encryption type passed."
-//                   << std::endl;
-//       return false;
-//   }
-// 
-//       std::swap(*content,processed_content);
+bool SE::FinaliseWrite()
+{
+  while (main_encrypt_queue_.TotalBytesRetrievable() < chunk_size_ * 3) {
+    chunk_size_ = (main_encrypt_queue_.TotalBytesRetrievable()) / 3;
+    // small files direct to data map
+    if (chunk_size_ *3 < 1025) {
+      size_t qlength = main_encrypt_queue_.TotalBytesRetrievable();     
+      byte i[qlength];
+      main_encrypt_queue_.Get(data_map_.content, sizeof(i));
+      data_map_.content[qlength] = '\0';
+      data_map_.content_size = qlength;
+      data_map_.size += qlength;
+      main_encrypt_queue_.SkipAll();
       return true;
-}
-
-bool SelfDecryptChunk(std::shared_ptr<std::string> content,
-                             const std::string &encryption_hash,
-                             const std::string &obfuscation_hash,
-                             const uint32_t &self_encryption_type) {
-//   if (content->empty() || encryption_hash.empty() || obfuscation_hash.empty()) {
-//     DLOG(ERROR) << "SelfDecryptChunk: Invalid arguments passed." << std::endl;
-//     return false;
-//   }
-//   if (((self_encryption_type & kCompressionMask) == kCompressionNone) &&
-//       ((self_encryption_type & kObfuscationMask) == kObfuscationNone) &&
-//       ((self_encryption_type & kCryptoMask) == kCryptoNone))
-//     return false; // nothing to do !!
-//   std::string processed_content;
-//   processed_content.reserve(content->size());
-// 
-// // Attach and detach operations to anchor
-//   Anchor anchor;
-//   // decryption
-//   switch (self_encryption_type & kCryptoMask) {
-//     case kCryptoNone:
-//       break;
-//     case kCryptoAes256:
-//       {
-//         std::string enc_hash;
-//         if (!ResizeObfuscationHash(encryption_hash,
-//                                    crypto::AES256_KeySize +
-//                                        crypto::AES256_IVSize,
-//                                    &enc_hash)) {
-//           DLOG(ERROR) << "SelfDecryptChunk: Could not expand encryption hash."
-//                       << std::endl;
-//           return false;
-//         }
-//       anchor.Attach(new AESFilter(
-//                     new CryptoPP::StringSink(processed_content),
-//                     enc_hash,
-//                     false));
-//       }
-//       break;
-//     default:
-//       DLOG(ERROR) << "SelfDecryptChunk: Invalid encryption type passed."
-//                   << std::endl;
-//       return false;
-//   }
-// 
-//   // de-obfuscation
-//   switch (self_encryption_type & kObfuscationMask) {
-//     case kObfuscationNone:
-//       break;
-//     case kObfuscationRepeated:
-//       {
-//         std::string prefix;
-//         if (encryption_hash.size() > crypto::AES256_KeySize) {
-//           // add the remainder of the encryption hash to the obfuscation hash
-//           prefix = encryption_hash.substr(crypto::AES256_KeySize);
-//         }
-//         std::string obfuscation_pad = prefix + obfuscation_hash;
-//         anchor.Attach(new XORFilter(
-//                       new CryptoPP::StringSink(processed_content),
-//                       obfuscation_pad
-//                       ));
-//       }
-//       break;
-//     default:
-//       DLOG(ERROR) << "SelfDecryptChunk: Invalid obfuscation type passed."
-//                   << std::endl;
-//       return false;
-//   }
-// 
-//   // decompression
-//   switch (self_encryption_type & kCompressionMask) {
-//     case kCompressionNone:
-//       break;
-//     case kCompressionGzip:
-//       anchor.Attach(new CryptoPP::Gunzip(
-//         new CryptoPP::StringSink(processed_content)));
-//       break;
-//     default:
-//       DLOG(ERROR) << "Compress: Invalid compression type passed." << std::endl;
-//   }
-//   anchor.Put(reinterpret_cast<const byte*>(content->c_str()), content->size());
-//   anchor.MessageEnd();
-//   std::swap(*content, processed_content);
+    }
+    Write();
+  }
   return true;
 }
 
-
-bool SE::Write (const char* data, size_t length, bool complete) {
-  main_encrypt_queue_.Put(const_cast<byte*>(reinterpret_cast<const byte*>(data)), length);
-  length_ += length; // keep size so far
-
-  size_t qlength = main_encrypt_queue_.MaxRetrievable();
-
-  if (length_ < chunk_size_ * 3)
-    if (!complete)
-      return true; // not finished getting data
-    else
-      chunk_size_ = (length_ - 1) / 3;
-
-// small files direct to data map
-  if ((chunk_size_ *3 < 1025) && complete) {
-    byte *i;
-    main_encrypt_queue_.Get(i, qlength);
-    data_map_.content = i;
+bool SE::ReInitialise() {
     chunk_size_ = 1024*256;
     main_encrypt_queue_.SkipAll();
-    main_encrypt_queue_.Initialize();
+    data_map_.chunks.clear();
+    data_map_.size = 0;
+    data_map_.content = {0};
+    data_map_.content_size = 0;
     return true;
-  }
+}
 
-// START
 
-  if (data_map_.chunks.size() < 2) { // need first 2 hashes
-    main_encrypt_queue_.TransferTo(chunk1_hash_filter, chunk_size_);
-    chunk1_hash_filter.MessageEnd();
-    main_encrypt_queue_.TransferTo(chunk2_hash_filter, chunk_size_);
-    chunk2_hash_filter.MessageEnd();
-    ChunkDetails2 chunk1_data, chunk2_data;
-    chunk1_data.pre_hash = const_cast<byte*>(reinterpret_cast<const byte *>(chunk1_and_hash_.substr(0, 64).c_str()));
-    chunk1_data.pre_size = chunk_size_;
-    data_map_.chunks.push_back(chunk1_data);
-    chunk2_data.pre_hash = const_cast<byte*>(reinterpret_cast<const byte *>(chunk2_and_hash_.substr(0, 64).c_str()));
-    chunk2_data.pre_size = chunk_size_;
-    data_map_.chunks.push_back(chunk2_data);
-  }
+
+bool SE::QueueC1AndC2()
+{
+  c1_and_2_chunk_size_ = chunk_size_;
+  // Chunk 1
+  main_encrypt_queue_.TransferTo(chunk1_queue_, chunk_size_);
+  chunk1_queue_.MessageEnd();
+  ChunkDetails2 chunk_data;
+  byte temp[chunk_size_];
+  chunk1_queue_.Peek(temp, sizeof(temp));
+  CryptoPP::SHA512().CalculateDigest(chunk_data.pre_hash,
+                                     temp,
+                                     sizeof(temp));
+  chunk_data.pre_size = chunk_size_;
+  data_map_.chunks.push_back(chunk_data);
   
-  while (main_encrypt_queue_.MaxRetrievable() > chunk_size_) {
-    EncryptChunkFromQueue(99);
+  // Chunk 2
+  main_encrypt_queue_.TransferTo(chunk2_queue_, chunk_size_);
+  chunk2_queue_.MessageEnd();
+  ChunkDetails2 chunk_data2;
+  byte temp2[chunk_size_];
+  chunk2_queue_.Peek(temp2, sizeof(temp2));
+  CryptoPP::SHA512().CalculateDigest(chunk_data2.pre_hash,
+                                     temp2 ,
+                                     sizeof(temp2));
+  chunk_data2.pre_size = chunk_size_;
+  data_map_.chunks.push_back(chunk_data);
+  chunk_one_two_q_full_ = true;
+  return chunk_one_two_q_full_;
+}
+
+bool SE::Write (const char* data, size_t length) {
+  if (length > 0)
+    main_encrypt_queue_.Put2(const_cast<byte*>
+                           (reinterpret_cast<const byte*>(data)),
+                            length, -1, true);
+
+    // Do not queue chunks 0 and 1 till we know we have enough for 3 chunks
+  if (!chunk_one_two_q_full_) { // for speed 
+    if (main_encrypt_queue_.MaxRetrievable() >= chunk_size_ * 3) 
+      QueueC1AndC2();
+    else
+      return true; // not enough to process chunks yet 
   }
 
-  if (complete) {
-    size_t complete_q_length = main_encrypt_queue_.MaxRetrievable();
-    if (complete_q_length < 1025)
-      main_encrypt_queue_.Get(data_map_.content, complete_q_length);
-    else {
-      chunk_size_ = (complete_q_length / 3) - 1; 
-        if ((chunk_size_ *3 < 1025) && complete) {
-          main_encrypt_queue_.Get(data_map_.content , qlength);
-          chunk_size_ = 1024*256;
-        }
-      EncryptChunkFromQueue(99);
-      chunk_size_ = (1024 * 256);
-    }
-    EncryptChunkFromQueue(0);
-    EncryptChunkFromQueue(1);
-    chunk_size_ = 1024*256;
+  while (main_encrypt_queue_.MaxRetrievable() > chunk_size_) {
+    main_encrypt_queue_.TransferTo(chunk_current_queue_ , chunk_size_);
+    EncryptChunkFromQueue(chunk_current_queue_);
   }
-// If we are not finished main_queue_ still has data in it !!
   return true;
 }
 
-bool SE::EncryptChunkFromQueue(size_t chunk) {
-    std::string chunk_content;
-    byte *pre_hash;
-    byte *pre_enc_hashn, *test, *processign_content;
-    if ((chunk != 0) && (chunk != 1)) {
-     main_encrypt_queue_.TransferTo(current_chunk_hash_filter_, chunk_size_);
-     current_chunk_hash_filter_.MessageEnd();
-    }
-    
-    size_t last_chunk_number = (data_map_.chunks.size() -1);
-    byte key[32];
-    byte iv[16];
-    std::copy(data_map_.chunks[last_chunk_number].pre_hash,
-              data_map_.chunks[last_chunk_number].pre_hash + 32,
-              key_);
-    std::copy(data_map_.chunks[last_chunk_number].pre_hash + 32,
-              data_map_.chunks[last_chunk_number].pre_hash + 48,
-              iv_);
+bool SE::EncryptChunkFromQueue(CryptoPP::MessageQueue & queue) {
+  std::string chunk_content;
+  ChunkDetails2 chunk_details;
 
-    byte obfuscation_pad[128];
-    memcpy(obfuscation_pad_, data_map_.chunks[last_chunk_number].pre_hash, 64);
-    memcpy(obfuscation_pad_,
-           data_map_.chunks[last_chunk_number - 1].pre_hash,
-           64);
+  auto itr = data_map_.chunks.end();
+  --itr;
+  byte *N_1_pre_hash = (*itr).pre_hash;
+  --itr;
+  byte *N_2_pre_hash = (*itr).pre_hash;
 
-    AESFilter aes_filter(
-                   new AESFilter(
-                     new XORFilter(
-                        new CryptoPP::HashFilter(hash_,
-                          new CryptoPP::StringSink(chunk_content)
-                        , true)
-                     , obfuscation_pad, 128)
-                   , key_, iv_, true));
+  // No need to rehash chunks 1 and 2
+  // This can all be threaded and chunk number passed
+  // to allow pre enc hashes pre stored and
+  // then we can thread the actual encryption easily enough
+  // this will allows us substantial speed improvements
+  // move this to a method with chunk_number passed 
+  if ((&queue != &chunk1_queue_) && (&queue != &chunk2_queue_)) {
+    byte temp[chunk_size_];
+    chunk1_queue_.Peek(temp, sizeof(temp));
+    // FIXME thread this to half time taken for encrypt
+     CryptoPP::SHA512().CalculateDigest(chunk_details.pre_hash,
+                                    temp,
+                                    sizeof(temp));
+    chunk_details.pre_size = chunk_size_;
+    this_chunk_size_ = chunk_size_;
+  } else
+    this_chunk_size_ = c1_and_2_chunk_size_;
+  // TODO FIXME relace these with CryptoPP::SecByteBlock
+  // which guarantees they will be zero'd when freed
+  byte *key = new byte[32];
+  byte *iv = new byte[16];
+  byte * obfuscation_pad = new byte[144];
 
-    if (chunk == 0) {
-      size_t size = chunk1_and_hash_.size() + 1;
-      byte *putdata;
-      std::copy(chunk1_and_hash_.begin(), chunk1_and_hash_.end(), putdata);
-      aes_filter.Put(putdata, size);
-      aes_filter.MessageEnd();
-      std::string post_hash = chunk_content.substr(0,64);
-      //std::copy (chunk_content, chunk_content + 64, post_hash); 
-      std::string post_data = chunk_content.substr(64);
-      size_t post_size = chunk_size_;
-      data_map_.chunks[0].size = post_size;
-      data_map_.chunks[0].hash = const_cast<byte*>(reinterpret_cast<const byte *>(post_hash.c_str()));
-      chunk_store_->Store(post_hash, post_data);
-    } else if (chunk == 1) {
-      size_t size = chunk2_and_hash_.size() + 1;
-      byte *putdata;
-      std::copy(chunk2_and_hash_.begin(), chunk2_and_hash_.end(), putdata);
-      aes_filter.Put(putdata, size);
-      aes_filter.MessageEnd();
-      std::string post_hash = chunk_content.substr(0,64);
-//       std::copy (chunk_content, chunk_content + 64, post_hash)
-      std::string post_data = chunk_content.substr(64);
-      size_t post_size = chunk_size_;
-      data_map_.chunks[1].size = post_size;
-      data_map_.chunks[1].hash = const_cast<byte*>(reinterpret_cast<const byte *>(post_hash.c_str()));
-      chunk_store_->Store(post_hash, post_data);
-    } else {
-      size_t size = current_chunk_and_hash_.size() + 1;
-      byte *putdata = new byte[size];
-      std::copy(current_chunk_and_hash_.begin(), current_chunk_and_hash_.end(), putdata);
-      putdata[size] = '\0';
-      aes_filter.Put(putdata, size);
-      aes_filter.MessageEnd();
-      std::string post_hash = chunk_content.substr(0,64);
-      //std::copy (chunk_content, chunk_content + 64, post_hash);
-      std::string post_data = chunk_content.substr(64);
-      size_t post_size = chunk_size_;
-      ChunkDetails2 chunk_details;
-      chunk_details.size = post_size;
-      chunk_details.hash = const_cast<byte*>(reinterpret_cast<const byte *>(post_hash.c_str()));
-      data_map_.chunks.push_back(chunk_details);
-      chunk_store_->Store(post_hash, post_data);
-     }
+  memset(key, 0 , 32);
+  memset(iv, 0, 16);
+  memset(obfuscation_pad, 0, 144);
+  std::copy(N_1_pre_hash,
+          N_1_pre_hash + 32,
+          key);
+  std::copy(N_1_pre_hash + 32,
+          N_1_pre_hash + 48,
+          iv);
 
+  for(int i = 0; i < 64; ++i) {
+    obfuscation_pad[i] = N_1_pre_hash[i];
+  }
+  for(int i = 0; i < 64; ++i) {
+    obfuscation_pad[i+64] = chunk_details.pre_hash[i];
+  }
 
-    return true;
+  for(int i = 0; i < 16; ++i) {
+    obfuscation_pad[i+128] = N_2_pre_hash[i+48];
+  }
+
+  AESFilter aes_filter(
+                  new XORFilter(
+                    new CryptoPP::HashFilter(hash_,
+                      new CryptoPP::StringSink(chunk_content)
+                    , true)
+                  , obfuscation_pad)
+              , key , iv, true);
+
+  queue.TransferAllTo(aes_filter);
+  aes_filter.MessageEnd();
+
+  for (int i = 0; i < 64; ++i)
+    chunk_details.hash[i] = chunk_content.substr(this_chunk_size_)[i];
+  data_map_.chunks.push_back(chunk_details);
+  chunk_store_->Store(chunk_content.substr(this_chunk_size_),
+                      chunk_content.substr(0, this_chunk_size_));
+  data_map_.size += this_chunk_size_;
+  delete key;
+  delete iv;
+  delete obfuscation_pad;
+  return true;
 }
 
 bool SE::Read(char* data, std::shared_ptr<DataMap2> data_map)
@@ -610,11 +290,10 @@ bool SE::Read(char* data, std::shared_ptr<DataMap2> data_map)
   --itr;
   byte *N_2_pre_hash = (*itr).pre_hash;
 
-  Anchor anchor;
 
   for(auto it = data_map->chunks.begin(); it != data_map->chunks.end(); ++it) {
     byte *pre_hash = (*it).pre_hash;
-    byte obfuscation_pad[128];
+    byte obfuscation_pad[144];
     memcpy(obfuscation_pad, N_1_pre_hash, 64);
     memcpy(obfuscation_pad, N_2_pre_hash, 64);
 
@@ -623,12 +302,12 @@ bool SE::Read(char* data, std::shared_ptr<DataMap2> data_map)
     std::copy(N_1_pre_hash, N_1_pre_hash + 32, key);
     std::copy(N_1_pre_hash + 32, N_1_pre_hash + 48, iv);
 
-    XORFilter xor_filter(new XORFilter(
+    XORFilter xor_filter(
             new AESFilter(
                 new CryptoPP::ArraySink(reinterpret_cast< byte* >(data),
                                         data_map->size),
                 key, iv, false),
-            obfuscation_pad));
+            obfuscation_pad);
 
     std::string hash(reinterpret_cast< char const* >((*it).hash),
                      sizeof((*it).hash));
@@ -644,83 +323,82 @@ bool SE::Read(char* data, std::shared_ptr<DataMap2> data_map)
 
 bool SE::PartialRead(char * data, size_t position, size_t length,
                      std::shared_ptr<DataMap2> data_map) {
-  if (!data_map)
-    data_map.reset(new DataMap2(data_map_));
-  size_t itr_position(0);
-  size_t bytes_read(0);
-  size_t chunk_size(256 * 1024);
-
-  auto itr = data_map->chunks.end();
-  --itr;
-  byte *N_1_pre_hash = (*itr).pre_hash;
-  --itr;
-  byte *N_2_pre_hash = (*itr).pre_hash;
-
-  Anchor anchor;
-  bool start_read(false);
-  bool read_finished(false);
-
-  auto it = data_map->chunks.begin();
-  auto it_end = data_map->chunks.end();
-
-  while ((it != it_end) && (!read_finished)) {
-    byte *pre_hash = (*it).pre_hash;
-
-    if (!start_read) {
-      if ((itr_position + chunk_size) >= position) {
-        start_read = true;
-      }
-    } else {
-      if (itr_position >= (position + length)) {
-        read_finished = true;
-      } else {
-        byte obfuscation_pad[128];
-        memcpy(obfuscation_pad, N_1_pre_hash, 64);
-        memcpy(obfuscation_pad, N_2_pre_hash, 64);
-
-        byte key[32];
-        byte iv[16];
-        std::copy(N_1_pre_hash, N_1_pre_hash + 32, key);
-        std::copy(N_1_pre_hash + 32, N_1_pre_hash + 48, iv);
-
-        anchor.Attach(new XORFilter(
-                new AESFilter(
-                    new CryptoPP::ArraySink(reinterpret_cast< byte* >(data),
-                                            length),
-                    key, iv, false),
-                obfuscation_pad));
-
-        std::string hash(reinterpret_cast< char const* >((*it).hash),
-                        sizeof((*it).hash));
-        std::string content(chunk_store_->Get(hash));
-        byte content_bytes[content.size()];
-        std::copy(content.begin(), content.end(), content_bytes);
-
-        size_t start = itr_position >= position ? 0 : itr_position - position;
-        start = start % chunk_size;
-        size_t end = (itr_position + (*it).pre_size) < (position + length) ?
-                        (*it).size : (position + length) - itr_position;
-        end = end % chunk_size;
-        size_t size = end - start + 1;
-        byte sub_content_bytes[size];
-        std::copy(content_bytes + start, content_bytes + end,
-                  sub_content_bytes);
-
-        anchor.Put(sub_content_bytes, size);
-
-        anchor.Detach();
-      }
-    }
-
-    N_2_pre_hash = N_1_pre_hash;
-    N_1_pre_hash = pre_hash;
-    itr_position += (*it).pre_size;
-    ++it;
-  }
+//   if (!data_map)
+//     data_map.reset(new DataMap2(data_map_));
+//   size_t itr_position(0);
+//   size_t bytes_read(0);
+//   size_t chunk_size(256 * 1024);
+// 
+//   auto itr = data_map->chunks.end();
+//   --itr;
+//   byte *N_1_pre_hash = (*itr).pre_hash;
+//   --itr;
+//   byte *N_2_pre_hash = (*itr).pre_hash;
+// 
+//   Anchor anchor;
+//   bool start_read(false);
+//   bool read_finished(false);
+// 
+//   auto it = data_map->chunks.begin();
+//   auto it_end = data_map->chunks.end();
+// 
+//   while ((it != it_end) && (!read_finished)) {
+//     byte *pre_hash = (*it).pre_hash;
+// 
+//     if (!start_read) {
+//       if ((itr_position + chunk_size) >= position) {
+//         start_read = true;
+//       }
+//     } else {
+//       if (itr_position >= (position + length)) {
+//         read_finished = true;
+//       } else {
+//         byte obfuscation_pad[128];
+//         memcpy(obfuscation_pad, N_1_pre_hash, 64);
+//         memcpy(obfuscation_pad, N_2_pre_hash, 64);
+// 
+//         byte key[32];
+//         byte iv[16];
+//         std::copy(N_1_pre_hash, N_1_pre_hash + 32, key);
+//         std::copy(N_1_pre_hash + 32, N_1_pre_hash + 48, iv);
+// 
+//         anchor.Attach(new XORFilter(
+//                 new AESFilter(
+//                     new CryptoPP::ArraySink(reinterpret_cast< byte* >(data),
+//                                             length),
+//                     key, iv, false),
+//                 obfuscation_pad));
+// 
+//         std::string hash(reinterpret_cast< char const* >((*it).hash),
+//                         sizeof((*it).hash));
+//         std::string content(chunk_store_->Get(hash));
+//         byte content_bytes[content.size()];
+//         std::copy(content.begin(), content.end(), content_bytes);
+// 
+//         size_t start = itr_position >= position ? 0 : itr_position - position;
+//         start = start % chunk_size;
+//         size_t end = (itr_position + (*it).pre_size) < (position + length) ?
+//                         (*it).size : (position + length) - itr_position;
+//         end = end % chunk_size;
+//         size_t size = end - start + 1;
+//         byte sub_content_bytes[size];
+//         std::copy(content_bytes + start, content_bytes + end,
+//                   sub_content_bytes);
+// 
+//         anchor.Put(sub_content_bytes, size);
+// 
+//         anchor.Detach();
+//       }
+//     }
+// 
+//     N_2_pre_hash = N_1_pre_hash;
+//     N_1_pre_hash = pre_hash;
+//     itr_position += (*it).pre_size;
+//     ++it;
+//   }
 }
 
 
-}  // namespace utils
 
 }  // namespace encrypt
 

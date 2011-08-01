@@ -40,7 +40,6 @@ namespace maidsafe {
 
 namespace encrypt {
 
-namespace utils {
 
 namespace test {
 
@@ -137,24 +136,40 @@ TEST(SelfEncryptionUtilsTest, BEH_SEtest_basic) {
     hundred_mb += one_mb; 
   std::string data;
   
-//   char *stuff = new char[40];
-//   std::copy(content.c_str(), content.c_str() + 40, stuff);
-//   EXPECT_TRUE(selfenc.Write(stuff, 40, true));
+  char *stuff = new char[40];
+  std::copy(content.c_str(), content.c_str() + 40, stuff);
+  EXPECT_TRUE(selfenc.Write(stuff, 40));
+  EXPECT_EQ(0, selfenc.getDataMap().chunks.size());
+  EXPECT_EQ(0, selfenc.getDataMap().size);
+  EXPECT_EQ(0, selfenc.getDataMap().content_size);
+  EXPECT_TRUE(selfenc.FinaliseWrite());
+  EXPECT_EQ(40, selfenc.getDataMap().size);
+  EXPECT_EQ(40, selfenc.getDataMap().content_size);
+  EXPECT_EQ(0, selfenc.getDataMap().chunks.size());
+  EXPECT_EQ(static_cast<char>(*stuff),
+            static_cast<char>(*selfenc.getDataMap().content));
+
 
   char *chunksstuff = new char[1048576];
   for (int i = 0; i <= 1048576; ++i) {
     chunksstuff[i] = 'a';
   }
-  EXPECT_TRUE(selfenc.Write(chunksstuff, 1048576, true));
+  EXPECT_TRUE(selfenc.ReInitialise());
+  EXPECT_TRUE(selfenc.Write(chunksstuff, 1048576));
+  EXPECT_TRUE(selfenc.FinaliseWrite());
 
   const char *onemb = one_mb.c_str();
-  EXPECT_TRUE(selfenc.Write(onemb, 1024*1024, false));
+  EXPECT_TRUE(selfenc.ReInitialise());
+  EXPECT_TRUE(selfenc.Write(onemb, 1024*1024));
+  EXPECT_TRUE(selfenc.FinaliseWrite());
 
+  
   const char *hundredmb = hundred_mb.c_str();
-
+  EXPECT_TRUE(selfenc.ReInitialise());
   boost::posix_time::ptime time =
         boost::posix_time::microsec_clock::universal_time();
-  EXPECT_TRUE(selfenc.Write(hundredmb, 1024*1024*500, true));
+  EXPECT_TRUE(selfenc.Write(hundredmb, 1024*1024*500));
+  EXPECT_TRUE(selfenc.FinaliseWrite());
   std::uint64_t duration =
       (boost::posix_time::microsec_clock::universal_time() -
        time).total_microseconds();
@@ -163,11 +178,10 @@ TEST(SelfEncryptionUtilsTest, BEH_SEtest_basic) {
   printf("Self-encrypted  %d bytes in %.2f seconds "
          "(%.3f MB/s).\n", 1024*1024*500, duration / 1000000.0,
            1024*1024*500 / duration / 1.048576);
+  std::cout << " Created " << selfenc.getDataMap().chunks.size() << " Chunks!!" << std::endl;
 }
 
 }  // namespace test
-
-}  // namespace utils
 
 }  // namespace encrypt
 
