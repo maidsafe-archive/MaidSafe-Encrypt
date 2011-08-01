@@ -62,20 +62,12 @@ size_t XORFilter::Put2(const byte* inString,
                       size_t length,
                       int messageEnd,
                       bool blocking) {
-  // Anything to process for us? If not, we will pass it on
-  // to the lower filter just in case
   if((length == 0))
         return AttachedTransformation()->Put2(inString,
                                           length,
                                           messageEnd,
                                           blocking);
-//   if((pad_length_ == 0))
-//     throw CryptoPP::Exception(CryptoPP::Exception::INVALID_DATA_FORMAT,
-//                               "XORFilter zero length PAD passed");
-
   size_t buffer_size(length);
-  // Do XOR
-
   byte *buffer = new byte[length];
 
   for (size_t i = 0; i <= length; ++i) {
@@ -101,8 +93,7 @@ size_t AESFilter::Put2(const byte* inString,
                                           length,
                                           messageEnd,
                                           blocking);
-
-    byte *out_string = new byte[length];
+  byte *out_string = new byte[length];
   if (encrypt_) {
   // Encryptor object
   CryptoPP::CFB_Mode<CryptoPP::AES>::Encryption encryptor(key_,
@@ -149,8 +140,6 @@ bool SE::ReInitialise() {
     data_map_.content_size = 0;
     return true;
 }
-
-
 
 bool SE::QueueC1AndC2()
 {
@@ -246,10 +235,8 @@ bool SE::EncryptChunkFromQueue(CryptoPP::MessageQueue & queue) {
   for(int i = 0; i < 64; ++i) {
     obfuscation_pad[i] = N_1_pre_hash[i];
     obfuscation_pad[i+64] = chunk_details.pre_hash[i];
-  }
-
-  for(int i = 0; i < 16; ++i) {
-    obfuscation_pad[i+128] = N_2_pre_hash[i+48];
+    if (i < 16)
+      obfuscation_pad[i+128] = N_2_pre_hash[i+48];
   }
 
   AESFilter aes_filter(
