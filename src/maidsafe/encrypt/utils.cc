@@ -218,7 +218,7 @@ bool SE::EncryptChunkFromQueue(CryptoPP::MessageQueue & queue) {
   // to allow pre enc hashes pre stored and
   // then we can thread the actual encryption easily enough
   // this will allows us substantial speed improvements
-  // move this to a method with chunk_number passed 
+  // move this to a method with chunk_number passed
   if ((&queue != &chunk1_queue_) && (&queue != &chunk2_queue_)) {
     byte temp[chunk_size_];
     chunk1_queue_.Peek(temp, sizeof(temp));
@@ -236,9 +236,6 @@ bool SE::EncryptChunkFromQueue(CryptoPP::MessageQueue & queue) {
   byte *iv = new byte[16];
   byte * obfuscation_pad = new byte[144];
 
-  memset(key, 0 , 32);
-  memset(iv, 0, 16);
-  memset(obfuscation_pad, 0, 144);
   std::copy(N_1_pre_hash,
           N_1_pre_hash + 32,
           key);
@@ -248,8 +245,6 @@ bool SE::EncryptChunkFromQueue(CryptoPP::MessageQueue & queue) {
 
   for(int i = 0; i < 64; ++i) {
     obfuscation_pad[i] = N_1_pre_hash[i];
-  }
-  for(int i = 0; i < 64; ++i) {
     obfuscation_pad[i+64] = chunk_details.pre_hash[i];
   }
 
