@@ -39,6 +39,7 @@
 #ifdef __MSVC__
 #  pragma warning(pop)
 #endif
+#include "boost/shared_array.hpp"
 #include "boost/thread.hpp"
 #include "boost/filesystem/fstream.hpp"
 #include "boost/scoped_array.hpp"
@@ -232,7 +233,9 @@ bool SE::EncryptChunkFromQueue(CryptoPP::MessageQueue & queue) {
   // which guarantees they will be zero'd when freed
   byte *key = new byte[32];
   byte *iv = new byte[16];
-  byte *obfuscation_pad = new byte[144];
+  boost::shared_array<byte> obfuscation_pad;
+  obfuscation_pad = boost::shared_array<byte>(new byte[144]);
+//   byte *obfuscation_pad = new byte[144];
 
   std::copy(data_map_.chunks[(this_chunk_num + num_chunks -1) % num_chunks].pre_hash,
             data_map_.chunks[(this_chunk_num + num_chunks -1) % num_chunks].pre_hash + 32,
@@ -275,7 +278,7 @@ bool SE::EncryptChunkFromQueue(CryptoPP::MessageQueue & queue) {
                     new CryptoPP::HashFilter(hash_,
                       new CryptoPP::MessageQueue()
                     , true)
-                  , obfuscation_pad)
+                  , obfuscation_pad.get())
               , key , iv, true);
 
   queue.TransferAllTo(aes_filter);
@@ -303,7 +306,7 @@ bool SE::EncryptChunkFromQueue(CryptoPP::MessageQueue & queue) {
   data_map_.size += this_chunk_size_;
   delete[] key;
   delete[] iv;
-  delete[] obfuscation_pad;
+//   delete[] obfuscation_pad;
   return true;
 }
 
