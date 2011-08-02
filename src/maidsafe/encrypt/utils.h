@@ -25,14 +25,12 @@
 #include "cryptopp/channels.h"
 #include "cryptopp/mqueue.h"
 #include "cryptopp/sha.h"
+#include "cryptopp/aes.h"
+#include "common/crypto.h"
 #include "boost/filesystem.hpp"
 #include "boost/scoped_array.hpp"
-
+#include "boost/concept_check.hpp"
 #include "maidsafe/encrypt/data_map.h"
-#include <common/crypto.h>
-#include <cryptopp/aes.h>
-#include <boost/concept_check.hpp>
-
 
 namespace fs = boost::filesystem;
 
@@ -44,40 +42,40 @@ namespace encrypt {
 
 /// XOR transformation class for pipe-lining
 class XORFilter : public CryptoPP::Bufferless<CryptoPP::Filter> {
-public:
+ public:
   XORFilter(CryptoPP::BufferedTransformation *attachment = NULL,
-            byte *pad = NULL) : pad_(pad)
-            {
-   CryptoPP::Filter::Detach(attachment);
+            byte *pad = NULL) :
+            pad_(pad) {
+              CryptoPP::Filter::Detach(attachment);
   };
-   size_t Put2(const byte* inString,
-               size_t length,
-               int messageEnd,
-               bool blocking);
-   bool IsolatedFlush(bool, bool) { return false; }
-private:
-  XORFilter &operator = (const XORFilter&); // no assignment
-  XORFilter(const XORFilter&); // no copy
+  size_t Put2(const byte* inString,
+              size_t length,
+              int messageEnd,
+              bool blocking);
+  bool IsolatedFlush(bool, bool) { return false; }
+ private:
+  XORFilter &operator = (const XORFilter&);  // no assignment
+  XORFilter(const XORFilter&);  // no copy
   byte *pad_;
 };
 
 class AESFilter : public CryptoPP::Bufferless<CryptoPP::Filter> {
-public:
+ public:
   AESFilter(CryptoPP::BufferedTransformation *attachment = NULL,
             byte *key = NULL , byte *iv = NULL, bool encrypt = true) :
-                                              key_(key),
-                                              iv_(iv),
-                                              encrypt_(encrypt) {
-   CryptoPP::Filter::Detach(attachment);
-  };
-   size_t Put2(const byte* inString,
-               size_t length,
-               int messageEnd,
-               bool blocking);
-   bool IsolatedFlush(bool, bool) { return false; }
-private:
-  AESFilter &operator = (const AESFilter&); // no assignment
-  AESFilter(const AESFilter&); // no copy
+            key_(key),
+            iv_(iv),
+            encrypt_(encrypt) {
+              CryptoPP::Filter::Detach(attachment);
+           };
+  size_t Put2(const byte* inString,
+              size_t length,
+              int messageEnd,
+              bool blocking);
+  bool IsolatedFlush(bool, bool) { return false; }
+ private:
+  AESFilter &operator = (const AESFilter&);  // no assignment
+  AESFilter(const AESFilter&);  // no copy
   byte *key_;
   byte *iv_;
   bool encrypt_;
@@ -86,25 +84,22 @@ private:
 
 // Anchor class to allow detach and attach of transforms
 // this will allow us to work with self encryption flags as is
-class Anchor : public CryptoPP::Bufferless<CryptoPP::Filter>
-{
-public:
-    Anchor(CryptoPP::BufferedTransformation* attachment = NULL)
-        { CryptoPP::Filter::Detach(attachment); };
-        
-    size_t Put2(const byte * inString,
-                size_t length,
-                int messageEnd,
-                bool blocking ) {
-        return AttachedTransformation()->Put2(
-            inString, length, messageEnd, blocking );
-    }
+class Anchor : public CryptoPP::Bufferless<CryptoPP::Filter> {
+ public:
+  Anchor(CryptoPP::BufferedTransformation* attachment = NULL) {
+    CryptoPP::Filter::Detach(attachment);
+  };
+  size_t Put2(const byte * inString,
+              size_t length,
+              int messageEnd,
+              bool blocking ) {
+    return AttachedTransformation()->Put2(inString, length,
+                                          messageEnd, blocking);
+  }
 };
 
-
-
-class SE { // Self Encryption of course
-public:
+class SE {  // Self Encryption of course
+ public:
   SE(std::shared_ptr<ChunkStore> chunk_store) :
                         data_map_(), complete_(false), chunk_size_(1024*256),
                         min_chunk_size_(1024), length_(), hash_(),
@@ -119,22 +114,22 @@ public:
                         { }
   bool Write(const char* data = NULL, size_t length = 0);
   bool ReInitialise();
-  bool FinaliseWrite(); // process what's left in queue and chunk 0 and 1
-  bool Read (char * data, std::shared_ptr<DataMap2> data_map);
+  bool FinaliseWrite();  // process what's left in queue and chunk 0 and 1
+  bool Read(char * data, std::shared_ptr<DataMap2> data_map);
   bool PartialRead(char * data, size_t position, size_t length,
                    std::shared_ptr<DataMap2> data_map);
   DataMap2 getDataMap() { return data_map_; }
   bool EncryptChunkFromQueue(CryptoPP::MessageQueue & queue);
-private:
-  SE &operator = (const SE&); // no assignment
-  SE(const SE&); // no copy
+ private:
+  SE &operator = (const SE&);  // no assignment
+  SE(const SE&);  // no copy
   bool QueueC1AndC2();
   void HashMe(byte * digest, byte *data, size_t length);
   bool ResetEncrypt();
   bool EncryptaChunk(std::string &input, std::string *output);
-private:  
+ private:
   DataMap2 data_map_;
-  bool complete_; // in case of requirement to send a complete only
+  bool complete_;  // in case of requirement to send a complete only
   size_t chunk_size_;
   size_t min_chunk_size_;
   size_t length_;
