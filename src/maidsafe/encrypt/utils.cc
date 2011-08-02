@@ -62,8 +62,7 @@ size_t XORFilter::Put2(const byte* inString,
                       size_t length,
                       int messageEnd,
                       bool blocking) {
-
-  if((length == 0))
+  if ((length == 0))
         return AttachedTransformation()->Put2(inString,
                                           length,
                                           messageEnd,
@@ -130,7 +129,7 @@ bool SE::FinaliseWrite() {
       main_encrypt_queue_.SkipAll();
       return true;
     }
-   // EncryptChunkFromQueue(main_encrypt_queue_);
+    // EncryptChunkFromQueue(main_encrypt_queue_);
     Write();
   }
   return true;
@@ -148,8 +147,7 @@ bool SE::ReInitialise() {
     return true;
 }
 
-bool SE::QueueC1AndC2()
-{
+bool SE::QueueC1AndC2() {
   c0_and_1_chunk_size_ = chunk_size_;
   // Chunk 1
   main_encrypt_queue_.TransferTo(chunk0_queue_, chunk_size_);
@@ -180,9 +178,8 @@ bool SE::QueueC1AndC2()
   return chunk_one_two_q_full_;
 }
 
-
-bool SE::Write (const char* data, size_t length) {
-  if (length != 0) 
+bool SE::Write(const char* data, size_t length) {
+  if (length != 0)
     main_encrypt_queue_.Put2(const_cast<byte*>
                            (reinterpret_cast<const byte*>(data)),
                             length, -1, true);
@@ -195,7 +192,7 @@ bool SE::Write (const char* data, size_t length) {
       return true;  // not enough to process chunks yet
   }
 
-  while (main_encrypt_queue_.MaxRetrievable() > chunk_size_) {
+  while (main_encrypt_queue_.MaxRetrievable() > chunk_size_ - 1) {
     main_encrypt_queue_.TransferTo(chunk_current_queue_ , chunk_size_);
     chunk_current_queue_.MessageEnd();
     main_encrypt_queue_.MessageEnd();
@@ -204,11 +201,9 @@ bool SE::Write (const char* data, size_t length) {
   return true;
 }
 
-void SE::HashMe(byte * digest, byte* data, size_t length)
-{
+void SE::HashMe(byte * digest, byte* data, size_t length) {
   CryptoPP::SHA512().CalculateDigest(digest, data, length);
 }
-
 
 bool SE::EncryptChunkFromQueue(CryptoPP::MessageQueue & queue) {
   std::string chunk_content;
@@ -216,48 +211,50 @@ bool SE::EncryptChunkFromQueue(CryptoPP::MessageQueue & queue) {
 
   size_t num_chunks = data_map_.chunks.size();
   size_t this_chunk_num = num_chunks;
-  
-   if ((&queue != &chunk0_queue_) && (&queue != &chunk1_queue_)) {
+
+  if ((&queue != &chunk0_queue_) && (&queue != &chunk1_queue_)) {
     byte temp[chunk_size_];
     queue.Peek(temp, sizeof(temp));
     // FIXME thread this to half time taken for encrypt
- 
-     HashMe(chunk_details.pre_hash, temp, sizeof(temp));
+
+    HashMe(chunk_details.pre_hash, temp, sizeof(temp));
     chunk_details.pre_size = chunk_size_;
-    this_chunk_size_ = chunk_size_;    
-   } else {
-     this_chunk_size_ = c0_and_1_chunk_size_;
-     if (&queue == &chunk0_queue_)
-      this_chunk_num = 0;
-     if (&queue == &chunk1_queue_)
-      this_chunk_num = 1;
-   }
+    this_chunk_size_ = chunk_size_;
+  } else {
+    this_chunk_size_ = c0_and_1_chunk_size_;
+    if (&queue == &chunk0_queue_)
+    this_chunk_num = 0;
+    if (&queue == &chunk1_queue_)
+    this_chunk_num = 1;
+  }
   // TODO FIXME replace these with CryptoPP::SecByteBlock
 
   // which guarantees they will be zero'd when freed
   byte *key = new byte[32];
   byte *iv = new byte[16];
-  byte * obfuscation_pad = new byte[144];
+  byte *obfuscation_pad = new byte[144];
 
   std::copy(data_map_.chunks[(this_chunk_num + num_chunks -1) % num_chunks].pre_hash,
-          data_map_.chunks[(this_chunk_num + num_chunks -1) % num_chunks].pre_hash + 32,
-          key);
+            data_map_.chunks[(this_chunk_num + num_chunks -1) % num_chunks].pre_hash + 32,
+            key);
   std::copy(data_map_.chunks[(this_chunk_num + num_chunks -1) % num_chunks].pre_hash + 32,
-          data_map_.chunks[(this_chunk_num + num_chunks -1) % num_chunks].pre_hash + 48,
-          iv);
+            data_map_.chunks[(this_chunk_num + num_chunks -1) % num_chunks].pre_hash + 48,
+            iv);
 
-  for(int i = 0; i < 64; ++i) {
-    obfuscation_pad[i] =  data_map_.chunks[(this_chunk_num + num_chunks -1) % num_chunks].pre_hash[i];
+  for (int i = 0; i < 64; ++i) {
+    obfuscation_pad[i] =
+        data_map_.chunks[(this_chunk_num + num_chunks -1) % num_chunks].pre_hash[i];
       if (&queue == &chunk0_queue_)
         obfuscation_pad[i+64] =  data_map_.chunks[0].pre_hash[i];
       else if (&queue == &chunk1_queue_)
         obfuscation_pad[i+64] =  data_map_.chunks[1].pre_hash[i];
-      else 
+      else
         obfuscation_pad[i+64] =  chunk_details.pre_hash[i];
     if (i < 16)
-      obfuscation_pad[i+128] = data_map_.chunks[(this_chunk_num + num_chunks -2) % num_chunks].pre_hash[i+48];
+      obfuscation_pad[i+128] =
+          data_map_.chunks[(this_chunk_num + num_chunks -2) % num_chunks].pre_hash[i+48];
   }
-  
+
   std::string str, skey, siv;
   for (int i =0; i < 144;++i) {
     str += static_cast<char>(obfuscation_pad[i]);
@@ -267,14 +264,12 @@ bool SE::EncryptChunkFromQueue(CryptoPP::MessageQueue & queue) {
   }
     for (int i =0; i < 16;++i) {
     siv += static_cast<char>(iv[i]);
-
   }
   std::cout << " Chunk Number (pad)" << num_chunks << " :: " << EncodeToHex(str) <<  std::endl;
   std::cout << "              (Key)" << num_chunks << " :: " << EncodeToHex(skey) <<  std::endl;
   std::cout << "               (IV)" << num_chunks << " :: " << EncodeToHex(siv) <<  std::endl;
   std::cout <<  std::endl;
 
-  
   AESFilter aes_filter(
                   new XORFilter(
                     new CryptoPP::HashFilter(hash_,
@@ -285,10 +280,10 @@ bool SE::EncryptChunkFromQueue(CryptoPP::MessageQueue & queue) {
 
   queue.TransferAllTo(aes_filter);
   aes_filter.MessageEnd();
-  
+
   byte hash[CryptoPP::SHA512::DIGESTSIZE];
   byte chunk[this_chunk_size_];
- 
+
   aes_filter.Get(chunk, sizeof(chunk));
 
   if (&queue == &chunk0_queue_) {
@@ -320,7 +315,6 @@ bool SE::Read(char* data, std::shared_ptr<DataMap2> data_map) {
   byte *N_1_pre_hash = (*itr).pre_hash;
   --itr;
   byte *N_2_pre_hash = (*itr).pre_hash;
-
 
   for (auto it = data_map->chunks.begin(); it != data_map->chunks.end(); ++it) {
     byte *pre_hash = (*it).pre_hash;

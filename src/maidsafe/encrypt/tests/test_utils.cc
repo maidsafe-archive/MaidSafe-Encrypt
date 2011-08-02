@@ -29,6 +29,7 @@
 #include "boost/archive/text_iarchive.hpp"
 #include "boost/timer.hpp"
 #include "gtest/gtest.h"
+#include "cryptopp/modes.h"
 #include "maidsafe/common/crypto.h"
 #include "maidsafe/common/utils.h"
 #include "maidsafe/encrypt/config.h"
@@ -210,6 +211,79 @@ TEST(SelfEncryptionUtilsTest, BEH_SEtest_basic) {
     ASSERT_EQ(selfenc.getDataMap().chunks.at(5).hash[i],
               selfenc.getDataMap().chunks.at(3).hash[i]);
    }
+}
+
+TEST(SelfEncryptionUtilsTest, BEH_SE_manual_check) {
+  MemoryChunkStore::HashFunc hash_func =
+      std::bind(&crypto::Hash<crypto::SHA512>, std::placeholders::_1);
+  std::shared_ptr<MemoryChunkStore> chunk_store(
+      new MemoryChunkStore(true, hash_func));
+  SE selfenc(chunk_store);
+
+  int size(1024*1024*10);
+  byte *manual = new byte[size];
+  byte *pad = new byte[144];
+  byte *xor_res = new byte[size];
+  byte *prehash = new byte[size];
+  byte *posthash = new byte[size];
+  byte *postenc = new byte[size];
+  byte *key = new byte[32];
+  byte *iv = new byte[16];
+
+  for (int i = 0; i <= size; ++i) {
+    manual[i] = 'b';
+  }
+  char *test(reinterpret_cast<char*>(manual));
+
+  EXPECT_TRUE(selfenc.ReInitialise());
+  EXPECT_TRUE(selfenc.Write(test, size));
+  EXPECT_TRUE(selfenc.FinaliseWrite());
+
+  CryptoPP::SHA512().CalculateDigest(prehash, manual, 1024*256);
+
+  for (int i = 0; i < 64; ++i) {
+    pad[i] = prehash[i];
+    pad[i+64] = prehash[i];
+  }
+  for (int i = 0; i < 16; ++i) {
+    pad[i+128] = prehash[i+48];
+  }
+  std::copy(prehash, prehash + 32, key);
+  std::copy(prehash + 32, prehash + 48, iv);
+
+  CryptoPP::CFB_Mode<CryptoPP::AES>::Encryption enc(key, 32, iv);
+  enc.ProcessData(postenc, manual, 1024*1024);
+
+  for (size_t i = 0; i < size; ++i) {
+    xor_res[i] = postenc[i]^pad[i%144];
+  }
+
+  CryptoPP::SHA512().CalculateDigest(posthash, xor_res, 1024*256);
+
+  EXPECT_EQ(EncodeToHex(reinterpret_cast<const char*>(prehash)),
+            EncodeToHex(reinterpret_cast<const char*>
+                           (selfenc.getDataMap().chunks[4].pre_hash)));
+  EXPECT_EQ(EncodeToHex(reinterpret_cast<const char*>(posthash)),
+            EncodeToHex(reinterpret_cast<const char*>
+                           (selfenc.getDataMap().chunks[4].hash)));
+  for (int i = 0; i < selfenc.getDataMap().chunks.size(); ++i)
+    std::cout << "chunk "<< i << " prehash = "
+              << EncodeToHex(reinterpret_cast<const char*>
+                  (selfenc.getDataMap().chunks[i].pre_hash)) << std::endl;
+  for (int i = 0; i < selfenc.getDataMap().chunks.size(); ++i) {
+    std::cout << "chunk "<< i << " enchash = "
+              << EncodeToHex(reinterpret_cast<const char*>
+                  (selfenc.getDataMap().chunks[i].hash)) << std::endl;
+    std::cout << "chunk "<< i << " presize = "
+              << selfenc.getDataMap().chunks[i].pre_size << std::endl;
+    std::cout << "chunk "<< i << " postsize = "
+              << selfenc.getDataMap().chunks[i].size << std::endl;
+  }
+  std::cout << "test  " << " hash = "
+            << EncodeToHex(reinterpret_cast<const char*>(posthash))
+            << std::endl;
+  std::cout << "Total number of chunks =  " << selfenc.getDataMap().chunks.size() << std::endl;
+  std::cout << "Content size = " << selfenc.getDataMap().size << std::endl;
 }
 
 }  // namespace test
