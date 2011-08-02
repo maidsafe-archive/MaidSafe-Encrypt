@@ -25,6 +25,7 @@
 #include "boost/serialization/string.hpp"
 #include "boost/serialization/vector.hpp"
 #include "maidsafe/encrypt/version.h"
+#include <cryptopp/sha.h>
 
 #if MAIDSAFE_ENCRYPT_VERSION != 905
 #  error This API is not compatible with the installed library.\
@@ -82,10 +83,10 @@ struct DataMap {
 /// Holds information about a chunk
 struct ChunkDetails2 {
   ChunkDetails2()
-    : hash(), size(0), pre_hash({0}), pre_size(0) {}
-  byte hash[64];        ///< Hash of processed chunk
+    : hash({0}), size(0), pre_hash({0}), pre_size(0) {}
+  byte hash[CryptoPP::SHA512::DIGESTSIZE];        ///< Hash of processed chunk
   std::uint32_t size;      ///< Size of processed chunk
-  byte pre_hash[64];    ///< Hash of unprocessed source data
+  byte pre_hash[CryptoPP::SHA512::DIGESTSIZE];    ///< Hash of unprocessed source data
   std::uint32_t pre_size;  ///< Size of unprocessed source data
 };
 

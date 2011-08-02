@@ -26,6 +26,7 @@
 #include "cryptopp/mqueue.h"
 #include "cryptopp/sha.h"
 #include "boost/filesystem.hpp"
+#include "boost/scoped_array.hpp"
 
 #include "maidsafe/encrypt/data_map.h"
 #include <common/crypto.h>
@@ -108,12 +109,12 @@ public:
                         data_map_(), complete_(false), chunk_size_(1024*256),
                         min_chunk_size_(1024), length_(), hash_(),
                         main_encrypt_queue_(CryptoPP::MessageQueue()),
+                        chunk0_queue_(CryptoPP::MessageQueue()),
                         chunk1_queue_(CryptoPP::MessageQueue()),
-                        chunk2_queue_(CryptoPP::MessageQueue()),
                         chunk_current_queue_(CryptoPP::MessageQueue()),
                         chunk_data_(),
                         chunk_store_(chunk_store),
-                        chunk_one_two_q_full_(false), c1_and_2_chunk_size_(),
+                        chunk_one_two_q_full_(false), c0_and_1_chunk_size_(),
                         this_chunk_size_()
                         { }
   bool Write(const char* data = NULL, size_t length = 0);
@@ -123,14 +124,13 @@ public:
   bool PartialRead(char * data, size_t position, size_t length,
                    std::shared_ptr<DataMap2> data_map);
   DataMap2 getDataMap() { return data_map_; }
-
+  bool EncryptChunkFromQueue(CryptoPP::MessageQueue & queue);
 private:
   SE &operator = (const SE&); // no assignment
   SE(const SE&); // no copy
   bool QueueC1AndC2();
-  bool EncryptChunkFromQueue(CryptoPP::MessageQueue & queue);
+
   bool ResetEncrypt();
-  bool EncryptChunkFromQueue(size_t chunk);
   bool EncryptaChunk(std::string &input, std::string *output);
 private:  
   DataMap2 data_map_;
@@ -140,13 +140,13 @@ private:
   size_t length_;
   CryptoPP::SHA512  hash_;
   CryptoPP::MessageQueue main_encrypt_queue_;
+  CryptoPP::MessageQueue chunk0_queue_;
   CryptoPP::MessageQueue chunk1_queue_;
-  CryptoPP::MessageQueue chunk2_queue_;
   CryptoPP::MessageQueue chunk_current_queue_;
   ChunkDetails2 chunk_data_;
   std::shared_ptr<ChunkStore> chunk_store_;
   bool chunk_one_two_q_full_;
-  size_t c1_and_2_chunk_size_;
+  size_t c0_and_1_chunk_size_;
   size_t this_chunk_size_;
 };
 
