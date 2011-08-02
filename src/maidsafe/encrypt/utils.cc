@@ -99,12 +99,12 @@ size_t AESFilter::Put2(const byte* inString,
   // Encryptor object
   CryptoPP::CFB_Mode<CryptoPP::AES>::Encryption encryptor(key_,
     32, iv_);
-    encryptor.ProcessData((byte*)out_string, (byte*)inString, length);
+    encryptor.ProcessData(out_string, inString, length);
   } else {
   //decryptor object
     CryptoPP::CFB_Mode<CryptoPP::AES>::Decryption decryptor(this->key_,
     32, this->iv_);
-     decryptor.ProcessData((byte*)out_string, (byte*)inString, length);
+     decryptor.ProcessData(out_string, inString, length);
   }
 
   return AttachedTransformation()->Put2(out_string,
@@ -204,6 +204,12 @@ bool SE::Write (const char* data, size_t length) {
   return true;
 }
 
+void SE::HashMe(byte * digest, byte* data, size_t length)
+{
+  CryptoPP::SHA512().CalculateDigest(digest, data, length);
+}
+
+
 bool SE::EncryptChunkFromQueue(CryptoPP::MessageQueue & queue) {
   std::string chunk_content;
   ChunkDetails2 chunk_details;
@@ -215,9 +221,8 @@ bool SE::EncryptChunkFromQueue(CryptoPP::MessageQueue & queue) {
     byte temp[chunk_size_];
     queue.Peek(temp, sizeof(temp));
     // FIXME thread this to half time taken for encrypt
-     CryptoPP::SHA512().CalculateDigest(chunk_details.pre_hash,
-                                    temp,
-                                     sizeof(temp));
+ 
+     HashMe(chunk_details.pre_hash, temp, sizeof(temp));
     chunk_details.pre_size = chunk_size_;
     this_chunk_size_ = chunk_size_;
     
@@ -228,8 +233,6 @@ bool SE::EncryptChunkFromQueue(CryptoPP::MessageQueue & queue) {
      if (&queue == &chunk1_queue_)
       this_chunk_num = 1;
    }
-
-
   // TODO FIXME replace these with CryptoPP::SecByteBlock
   // which guarantees they will be zero'd when freed
   byte *key = new byte[32];
@@ -255,11 +258,19 @@ bool SE::EncryptChunkFromQueue(CryptoPP::MessageQueue & queue) {
       obfuscation_pad[i+128] = data_map_.chunks[(this_chunk_num + num_chunks -2) % num_chunks].pre_hash[i+48];
   }
   
-  std::string str;
+  std::string str, skey, siv;
   for (int i =0; i < 144;++i) {
     str += static_cast<char>(obfuscation_pad[i]);
   }
-  std::cout << " Chunk Number (pad)" << num_chunks << " :: " << EncodeToHex(str);
+    for (int i =0; i < 32;++i) {
+    skey += static_cast<char>(key[i]);
+  }
+    for (int i =0; i < 16;++i) {
+    siv += static_cast<char>(iv[i]);
+  }
+  std::cout << " Chunk Number (pad)" << num_chunks << " :: " << EncodeToHex(str) <<  std::endl;
+  std::cout << "              (Key)" << num_chunks << " :: " << EncodeToHex(skey) <<  std::endl;
+  std::cout << "               (IV)" << num_chunks << " :: " << EncodeToHex(siv) <<  std::endl;
   std::cout <<  std::endl;
 
   

@@ -129,7 +129,7 @@ private:
   SE &operator = (const SE&); // no assignment
   SE(const SE&); // no copy
   bool QueueC1AndC2();
-
+  void HashMe(byte * digest, byte *data, size_t length);
   bool ResetEncrypt();
   bool EncryptaChunk(std::string &input, std::string *output);
 private:  
