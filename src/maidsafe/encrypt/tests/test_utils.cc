@@ -234,7 +234,7 @@ TEST(SelfEncryptionUtilsTest, BEH_SE_manual_check) {
 
 
   CryptoPP::SHA512().CalculateDigest(prehash, pre_enc_chunk, chunk_size);
-  
+
   for (int i = 0; i < 64; ++i) {
     pad[i] = prehash[i];
     pad[i+64] = prehash[i];
@@ -248,7 +248,9 @@ TEST(SelfEncryptionUtilsTest, BEH_SE_manual_check) {
   std::cout << "iv  = " << EncodeToHex(reinterpret_cast<const char*>(iv)) << std::endl;
   CryptoPP::CFB_Mode<CryptoPP::AES>::Encryption enc(key, 32, iv);
   enc.ProcessData(postenc, pre_enc_chunk, chunk_size);
+  
   std::cout << "post aes = " << EncodeToHex(reinterpret_cast<const char*>(postenc)) << std::endl;
+
   for (size_t i = 0; i < chunk_size; ++i) {
     xor_res[i] = postenc[i]^pad[i%144];
   }
@@ -262,24 +264,34 @@ TEST(SelfEncryptionUtilsTest, BEH_SE_manual_check) {
  //   EXPECT_EQ(posthash[i], selfenc.getDataMap().chunks[4].hash[i]);
   }
 
-  for (size_t i = 0; i < selfenc.getDataMap().chunks.size(); ++i)
-    std::cout << "chunk "<< i << " prehash = "
-              << EncodeToHex(reinterpret_cast<const char*>
-                  (selfenc.getDataMap().chunks[i].pre_hash)) << std::endl;
+  // check chunks' hashes - should be equal for repeated single character input
+  bool match(true);
   for (size_t i = 0; i < selfenc.getDataMap().chunks.size(); ++i) {
-    std::cout << "chunk "<< i << " enchash = "
-              << EncodeToHex(reinterpret_cast<const char*>
-                  (selfenc.getDataMap().chunks[i].hash)) << std::endl;
-    std::cout << "chunk "<< i << " presize = "
-              << selfenc.getDataMap().chunks[i].pre_size << std::endl;
-    std::cout << "chunk "<< i << " postsize = "
-              << selfenc.getDataMap().chunks[i].size << std::endl;
+    for (size_t j = i; j < selfenc.getDataMap().chunks.size(); ++j) {
+      for (int k = 0; k < CryptoPP::SHA512::DIGESTSIZE ; ++k) {
+        if (selfenc.getDataMap().chunks[i].hash[k] !=
+                selfenc.getDataMap().chunks[j].hash[k])
+          match = false;
+      }
+      EXPECT_TRUE(match);
+      match = true;
+    }
   }
-  std::cout << "test hash = "
-            << EncodeToHex(reinterpret_cast<const char*>(posthash))
-            << std::endl;
-  std::cout << "Total number of chunks =  " << selfenc.getDataMap().chunks.size() << std::endl;
-  std::cout << "Content size = " << selfenc.getDataMap().size << std::endl;
+
+//   for (size_t i = 0; i < selfenc.getDataMap().chunks.size(); ++i) {
+//     std::cout << "chunk "<< i << " enchash = "
+//               << EncodeToHex(reinterpret_cast<const char*>
+//                   (selfenc.getDataMap().chunks[i].hash)) << std::endl;
+//     std::cout << "chunk "<< i << " presize = "
+//               << selfenc.getDataMap().chunks[i].pre_size << std::endl;
+//     std::cout << "chunk "<< i << " postsize = "
+//               << selfenc.getDataMap().chunks[i].size << std::endl;
+//   }
+//   std::cout << "test hash = "
+//             << EncodeToHex(reinterpret_cast<const char*>(posthash))
+//             << std::endl;
+//   std::cout << "Total number of chunks =  " << selfenc.getDataMap().chunks.size() << std::endl;
+//   std::cout << "Content size = " << selfenc.getDataMap().size << std::endl;
 }
 
 }  // namespace test

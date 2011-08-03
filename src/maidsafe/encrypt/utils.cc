@@ -71,18 +71,10 @@ size_t XORFilter::Put2(const byte* inString,
   size_t buffer_size(length);
   byte *buffer = new byte[length+1];
 
- 
-std::string str;
-str.reserve(length);
-
   for (size_t i = 0; i < length; ++i) {
-    buffer[i] = inString[i] ^ byte('a') ;// pad_[i%144];  // don't overrun the pad
-    str[i] += 'a'; //static_cast<char>(inString[i] ^ pad_[i%144]);
+    buffer[i] = inString[i] ^  pad_[i%144];  // don't overrun the pad
   }
 
-
-  std::cout << "xor in length = " << length << std::endl;
-  std::cout << "XOR out - " << EncodeToHex(str) << " XOR out length " << str.size() << std::endl;
   return AttachedTransformation()->Put2(buffer,
                                         length,
                                         messageEnd,
@@ -299,10 +291,9 @@ bool SE::EncryptChunkFromQueue(CryptoPP::MessageQueue & queue) {
 
   byte hash[CryptoPP::SHA512::DIGESTSIZE];
   // chunk = chunk content
-  byte chunk[this_chunk_size_];
-
-  aes_filter.Get(chunk, sizeof(chunk));
-
+//   byte chunk[this_chunk_size_];
+// 
+//   aes_filter.Get(chunk, sizeof(chunk));
   if (&queue == &chunk0_queue_) {
       aes_filter.Get(data_map_.chunks[0].hash , sizeof(hash));
       data_map_.chunks[0].size = this_chunk_size_;
