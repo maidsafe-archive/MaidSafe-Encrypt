@@ -127,7 +127,7 @@ namespace test {
 */
 
 
-TEST(SelfEncryptionUtilsTest, BEH_SEtest_basic) {
+TEST(SelfEncryptionUtilsTest, BEH_WriteOnly) {
   MemoryChunkStore::HashFunc hash_func = std::bind(&crypto::Hash<crypto::SHA512>,
                                                    std::placeholders::_1);
   std::shared_ptr<MemoryChunkStore> chunk_store(new MemoryChunkStore (true, hash_func));
@@ -149,7 +149,7 @@ TEST(SelfEncryptionUtilsTest, BEH_SEtest_basic) {
             static_cast<char>(*selfenc.getDataMap().content));
 
   EXPECT_TRUE(selfenc.ReInitialise());
-  size_t test_data_size(1024*1024*200);
+  size_t test_data_size(1024*1024*20);
   char *hundredmb = new char[test_data_size];
   for (size_t i = 0; i < test_data_size; ++i) {
     hundredmb[i] = 'a';
@@ -193,7 +193,7 @@ TEST(SelfEncryptionUtilsTest, BEH_SEtest_basic) {
    }
 }
 
-TEST(SelfEncryptionUtilsTest, BEH_SE_manual_check) {
+TEST(SelfEncryptionUtilsTest, BEH_manual_check_write) {
   MemoryChunkStore::HashFunc hash_func =
       std::bind(&crypto::Hash<crypto::SHA512>, std::placeholders::_1);
   std::shared_ptr<MemoryChunkStore> chunk_store(
@@ -223,7 +223,6 @@ TEST(SelfEncryptionUtilsTest, BEH_SE_manual_check) {
      pre_enc_file[i] = 'b';
   }
 
-
   EXPECT_TRUE(selfenc.ReInitialise());
   EXPECT_TRUE(selfenc.Write(pre_enc_file, file_size));
   EXPECT_TRUE(selfenc.FinaliseWrite());
@@ -231,7 +230,6 @@ TEST(SelfEncryptionUtilsTest, BEH_SE_manual_check) {
   EXPECT_EQ(num_chunks,  selfenc.getDataMap().chunks.size());
   EXPECT_EQ(expected_content_size,  selfenc.getDataMap().content_size);
   EXPECT_EQ(file_size, selfenc.getDataMap().size);
-
 
   CryptoPP::SHA512().CalculateDigest(prehash, pre_enc_chunk, chunk_size);
 
@@ -252,9 +250,6 @@ TEST(SelfEncryptionUtilsTest, BEH_SE_manual_check) {
   for (size_t i = 0; i < chunk_size; ++i) {
     xor_res[i] = postenc[i]^pad[i%144];
   }
-
-
-
 
   CryptoPP::SHA512().CalculateDigest(posthashxor, xor_res, chunk_size);
 

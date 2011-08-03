@@ -63,58 +63,23 @@ size_t XORFilter::Put2(const byte* inString,
                       size_t length,
                       int messageEnd,
                       bool blocking) {
-    if ((length == 0))
-        return AttachedTransformation()->Put2(inString,
+  if ((length == 0))
+    return AttachedTransformation()->Put2(inString,
                                           length,
                                           messageEnd,
                                           blocking);
   size_t buffer_size(length);
-  byte *buffer = new byte[length+1];
+  byte buffer[length+1];
 
   for (size_t i = 0; i < length; ++i) {
     buffer[i] = inString[i] ^  pad_[count_%144];
     ++count_;
   }
-
-
   return AttachedTransformation()->Put2(buffer,
                                         length,
                                         messageEnd,
                                         blocking);
 }
-
-/**
- * Implementation of an AES transformation filter to allow pipe-lining
- * This can be done with cfb - do not change cypher without reading a lot !
- */
-// size_t AESFilter::Put2(const byte* inString,
-//                       size_t length,
-//                       int messageEnd,
-//                       bool blocking) {
-//   DLOG(INFO) << "AES length = " << length << std::endl;
-//   if ((length == 0))
-//         return AttachedTransformation()->Put2(inString,
-//                                           length,
-//                                           messageEnd,
-//                                           blocking);
-//   byte *out_string = new byte[length];
-//   if (encrypt_) {
-//   // Encryptor object
-//   CryptoPP::CFB_Mode<CryptoPP::AES>::Encryption encryptor(key_,
-//     32, iv_);
-//     encryptor.ProcessData(out_string, inString, length);
-//   } else {
-//   // decryptor object
-//     CryptoPP::CFB_Mode<CryptoPP::AES>::Decryption decryptor(this->key_,
-//     32, this->iv_);
-//      decryptor.ProcessData(out_string, inString, length);
-//   }
-//   DLOG(INFO) << "AES out - " << EncodeToHex(reinterpret_cast<const char*>(out_string)) << std::endl;
-//   return AttachedTransformation()->Put2(out_string,
-//                                          length,
-//                                          messageEnd,
-//                                          blocking);
-// };
 
 bool SE::FinaliseWrite() {
   while (main_encrypt_queue_.TotalBytesRetrievable() < chunk_size_ * 3) {
@@ -197,10 +162,8 @@ bool SE::Write(const char* data, size_t length) {
       return true;  // not enough to process chunks yet
   }
 
-  while (main_encrypt_queue_.MaxRetrievable() > chunk_size_ - 1) {
+  while (main_encrypt_queue_.MaxRetrievable() >= chunk_size_) {
     main_encrypt_queue_.TransferTo(chunk_current_queue_ , chunk_size_);
-     chunk_current_queue_.MessageEnd(-1, false);
-//    main_encrypt_queue_.MessageEnd();
     EncryptChunkFromQueue(chunk_current_queue_);
   }
   return true;
@@ -211,12 +174,17 @@ void SE::HashMe(byte * digest, byte* data, size_t length) {
 }
 
 bool SE::EncryptChunkFromQueue(CryptoPP::MessageQueue & queue) {
-  std::string chunk_content;
   ChunkDetails2 chunk_details;
-
   size_t num_chunks = data_map_.chunks.size();
   size_t this_chunk_num = num_chunks;
-
+  size_t n_1_chunk = (this_chunk_num + num_chunks -1) % num_chunks;
+  size_t n_2_chunk = (this_chunk_num + num_chunks -2) % num_chunks;
+  boost::shared_array<byte> obfuscation_pad;
+  obfuscation_pad = boost::shared_array<byte>(new byte[144]);
+  byte key[32];
+  byte iv[16];
+  byte hash[CryptoPP::SHA512::DIGESTSIZE];
+  
   if ((&queue != &chunk0_queue_) && (&queue != &chunk1_queue_)) {
     byte temp[chunk_size_];
     queue.Peek(temp, sizeof(temp));
@@ -233,27 +201,16 @@ bool SE::EncryptChunkFromQueue(CryptoPP::MessageQueue & queue) {
     this_chunk_num = 1;
   }
   
-  // TODO FIXME replace these with CryptoPP::SecByteBlock
-
-  // which guarantees they will be zero'd when freed
-  boost::shared_array<byte> obfuscation_pad/*, key, iv*/;
-  obfuscation_pad = boost::shared_array<byte>(new byte[144]);
-  byte key[32];
-  byte iv[16];
-  
   for (int i = 0; i < 48; ++i) {
     if (i < 32)
-      key[i] = data_map_.chunks[(this_chunk_num + num_chunks -1)
-                                 % num_chunks].pre_hash[i];
+      key[i] = data_map_.chunks[n_1_chunk].pre_hash[i];
     if (i > 31)
-      iv[i - 32] = data_map_.chunks[(this_chunk_num + num_chunks -1)
-                                  % num_chunks].pre_hash[i];
+      iv[i - 32] = data_map_.chunks[n_1_chunk].pre_hash[i];
   }
-
 
   for (int i = 0; i < 64; ++i) {
     obfuscation_pad[i] =
-        data_map_.chunks[(this_chunk_num + num_chunks -1) % num_chunks].pre_hash[i];
+        data_map_.chunks[n_1_chunk].pre_hash[i];
       if (&queue == &chunk0_queue_)
         obfuscation_pad[i+64] =  data_map_.chunks[0].pre_hash[i];
       else if (&queue == &chunk1_queue_)
@@ -265,23 +222,7 @@ bool SE::EncryptChunkFromQueue(CryptoPP::MessageQueue & queue) {
           data_map_.chunks[(this_chunk_num + num_chunks -2) % num_chunks].pre_hash[i+48];
   }
 
-  std::string str, skey, siv;
-  for (int i =0; i < 144;++i) {
-    str += static_cast<char>(obfuscation_pad[i]);
-  }
-    for (int i =0; i < 32;++i) {
-    skey += static_cast<char>(key[i]);
-  }
-    for (int i =0; i < 16;++i) {
-    siv += static_cast<char>(iv[i]);
-  }
-  DLOG(INFO) << " Chunk Number (pad)" << num_chunks << " :: " << EncodeToHex(str) <<  std::endl;
-  DLOG(INFO) << "              (Key)" << num_chunks << " :: " << EncodeToHex(skey) <<  std::endl;
-  DLOG(INFO) << "               (IV)" << num_chunks << " :: " << EncodeToHex(siv) <<  std::endl;
-  DLOG(INFO) <<  std::endl;
-
-  CryptoPP::CFB_Mode<CryptoPP::AES>::Encryption encryptor(key,
-    32, iv);
+  CryptoPP::CFB_Mode<CryptoPP::AES>::Encryption encryptor(key, 32, iv);
   
   CryptoPP::StreamTransformationFilter aes_filter(encryptor,
                   new XORFilter(
@@ -293,11 +234,10 @@ bool SE::EncryptChunkFromQueue(CryptoPP::MessageQueue & queue) {
   queue.TransferAllTo(aes_filter);
   aes_filter.MessageEnd(-1, true);
 
-  byte hash[CryptoPP::SHA512::DIGESTSIZE];
   // chunk = chunk content
-  byte chunk[this_chunk_size_];
-
-  aes_filter.Get(chunk, sizeof(chunk));
+  byte chunk[this_chunk_size_]; // do not move this !!
+  aes_filter.Get(chunk, sizeof(chunk)); // get content
+  
   if (&queue == &chunk0_queue_) {
       aes_filter.Get(data_map_.chunks[0].hash , sizeof(hash));
       data_map_.chunks[0].size = this_chunk_size_;
@@ -310,10 +250,11 @@ bool SE::EncryptChunkFromQueue(CryptoPP::MessageQueue & queue) {
     data_map_.chunks.push_back(chunk_details);
   }
 
-  //   chunk_store_->Store(chunk_content.substr(this_chunk_size_),
-//                       chunk_content.substr(0, this_chunk_size_));
+
+  std::string content(reinterpret_cast<char const*>(chunk));
+  std::string post_hash(reinterpret_cast<char const*>(hash));
+  chunk_store_->Store(post_hash, content);
   data_map_.size += this_chunk_size_;
-  DLOG(INFO) << "-------------------------------------------" << std::endl;
   return true;
 }
 
