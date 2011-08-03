@@ -184,7 +184,7 @@ TEST(SelfEncryptionUtilsTest, BEH_SEtest_basic) {
   DLOG(INFO) <<  std::endl;
   str = ""; str1 = "";
   }
-            
+
   for (int i = 0; i < 64; ++i) {         
     EXPECT_EQ(selfenc.getDataMap().chunks.at(3).pre_hash[i],
               selfenc.getDataMap().chunks.at(4).pre_hash[i]);
@@ -231,11 +231,9 @@ TEST(SelfEncryptionUtilsTest, BEH_SE_manual_check) {
   EXPECT_EQ(num_chunks,  selfenc.getDataMap().chunks.size());
   EXPECT_EQ(expected_content_size,  selfenc.getDataMap().content_size);
   EXPECT_EQ(file_size, selfenc.getDataMap().size);
-  
-  
+
 
   CryptoPP::SHA512().CalculateDigest(prehash, pre_enc_chunk, chunk_size);
-
   
   for (int i = 0; i < 64; ++i) {
     pad[i] = prehash[i];
@@ -246,15 +244,17 @@ TEST(SelfEncryptionUtilsTest, BEH_SE_manual_check) {
   }
   std::copy(prehash, prehash + 32, key);
   std::copy(prehash + 32, prehash + 48, iv);
-
+  std::cout << "key = " << EncodeToHex(reinterpret_cast<const char*>(key)) << std::endl;
+  std::cout << "iv  = " << EncodeToHex(reinterpret_cast<const char*>(iv)) << std::endl;
   CryptoPP::CFB_Mode<CryptoPP::AES>::Encryption enc(key, 32, iv);
   enc.ProcessData(postenc, pre_enc_chunk, chunk_size);
-
+  std::cout << "post aes = " << EncodeToHex(reinterpret_cast<const char*>(postenc)) << std::endl;
   for (size_t i = 0; i < chunk_size; ++i) {
     xor_res[i] = postenc[i]^pad[i%144];
   }
+  std::cout << "post xor = " << EncodeToHex(reinterpret_cast<const char*>(xor_res)) << std::endl;
 
-  CryptoPP::SHA512().CalculateDigest(posthash, postenc, chunk_size);
+  CryptoPP::SHA512().CalculateDigest(posthash, xor_res, chunk_size);
   std:: cout << " num chunks " << selfenc.getDataMap().chunks.size() << std::endl;
   // TODO FIXME - hashing issue unsure whether test or code as of yet
   for (int i = 0; i < 64; ++i) {
@@ -262,8 +262,6 @@ TEST(SelfEncryptionUtilsTest, BEH_SE_manual_check) {
  //   EXPECT_EQ(posthash[i], selfenc.getDataMap().chunks[4].hash[i]);
   }
 
-
-/*  
   for (size_t i = 0; i < selfenc.getDataMap().chunks.size(); ++i)
     std::cout << "chunk "<< i << " prehash = "
               << EncodeToHex(reinterpret_cast<const char*>
@@ -277,11 +275,11 @@ TEST(SelfEncryptionUtilsTest, BEH_SE_manual_check) {
     std::cout << "chunk "<< i << " postsize = "
               << selfenc.getDataMap().chunks[i].size << std::endl;
   }
-  std::cout << "test  " << " hash = "
+  std::cout << "test hash = "
             << EncodeToHex(reinterpret_cast<const char*>(posthash))
             << std::endl;
   std::cout << "Total number of chunks =  " << selfenc.getDataMap().chunks.size() << std::endl;
-  std::cout << "Content size = " << selfenc.getDataMap().size << std::endl;*/
+  std::cout << "Content size = " << selfenc.getDataMap().size << std::endl;
 }
 
 }  // namespace test

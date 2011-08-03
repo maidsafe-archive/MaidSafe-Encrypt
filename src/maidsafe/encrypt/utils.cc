@@ -63,19 +63,22 @@ size_t XORFilter::Put2(const byte* inString,
                       size_t length,
                       int messageEnd,
                       bool blocking) {
- if ((length == 0))
+  if ((length == 0))
         return AttachedTransformation()->Put2(inString,
                                           length,
                                           messageEnd,
                                           blocking);
   size_t buffer_size(length);
-  byte *buffer = new byte[length];
+  byte *buffer = new byte[length+1];
 
+  byte test('a');
 
-  for (size_t i = 0; i <= length; ++i) {
-    buffer[i] = inString[i] ^ pad_[i%144];  // don't overrun the pad
+  for (size_t i = 0; i < length; ++i) {
+    buffer[i] = inString[i] ^ test /*pad_[i%144]*/;  // don't overrun the pad
   }
-
+  buffer[length] = '\0';
+  std::cout << "length = " << length << std::endl;
+  std::cout << "XOR out - " << EncodeToHex(reinterpret_cast<const char*>(buffer)) << std::endl;
   return AttachedTransformation()->Put2(buffer,
                                         length,
                                         messageEnd,
@@ -90,6 +93,7 @@ size_t AESFilter::Put2(const byte* inString,
                       size_t length,
                       int messageEnd,
                       bool blocking) {
+  std::cout << "AES length = " << length << std::endl;
   if ((length == 0))
         return AttachedTransformation()->Put2(inString,
                                           length,
@@ -107,7 +111,7 @@ size_t AESFilter::Put2(const byte* inString,
     32, this->iv_);
      decryptor.ProcessData(out_string, inString, length);
   }
-
+  std::cout << "AES out - " << EncodeToHex(reinterpret_cast<const char*>(out_string)) << std::endl;
   return AttachedTransformation()->Put2(out_string,
                                          length,
                                          messageEnd,
@@ -290,9 +294,9 @@ bool SE::EncryptChunkFromQueue(CryptoPP::MessageQueue & queue) {
   aes_filter.MessageEnd();
 
   byte hash[CryptoPP::SHA512::DIGESTSIZE];
-  byte chunk[this_chunk_size_];
-
-  aes_filter.Get(chunk, sizeof(chunk));
+//   byte chunk[this_chunk_size_];
+// 
+//   aes_filter.Get(chunk, sizeof(chunk));
 
   if (&queue == &chunk0_queue_) {
       aes_filter.Get(data_map_.chunks[0].hash , sizeof(hash));
@@ -309,7 +313,7 @@ bool SE::EncryptChunkFromQueue(CryptoPP::MessageQueue & queue) {
   //   chunk_store_->Store(chunk_content.substr(this_chunk_size_),
 //                       chunk_content.substr(0, this_chunk_size_));
   data_map_.size += this_chunk_size_;
-
+  std::cout << "-------------------------------------------" << std::endl;
   return true;
 }
 
