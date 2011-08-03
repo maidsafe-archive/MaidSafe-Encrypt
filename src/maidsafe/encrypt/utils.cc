@@ -71,14 +71,18 @@ size_t XORFilter::Put2(const byte* inString,
   size_t buffer_size(length);
   byte *buffer = new byte[length+1];
 
-  byte test('a');
+ 
+std::string str;
+str.reserve(length);
 
   for (size_t i = 0; i < length; ++i) {
-    buffer[i] = inString[i] ^ test /*pad_[i%144]*/;  // don't overrun the pad
+    buffer[i] = inString[i] ^ byte('a') ;// pad_[i%144];  // don't overrun the pad
+    str[i] += 'a'; //static_cast<char>(inString[i] ^ pad_[i%144]);
   }
-  buffer[length] = '\0';
-  std::cout << "length = " << length << std::endl;
-  std::cout << "XOR out - " << EncodeToHex(reinterpret_cast<const char*>(buffer)) << std::endl;
+
+
+  std::cout << "xor in length = " << length << std::endl;
+  std::cout << "XOR out - " << EncodeToHex(str) << " XOR out length " << str.size() << std::endl;
   return AttachedTransformation()->Put2(buffer,
                                         length,
                                         messageEnd,
@@ -159,7 +163,7 @@ bool SE::QueueC1AndC2() {
   // Chunk 1
   main_encrypt_queue_.TransferTo(chunk0_queue_, chunk_size_);
   chunk0_queue_.MessageEnd();
-  main_encrypt_queue_.MessageEnd();
+//   main_encrypt_queue_.MessageEnd();
   ChunkDetails2 chunk_data;
   byte temp[chunk_size_];
   chunk0_queue_.Peek(temp, sizeof(temp));
@@ -172,7 +176,7 @@ bool SE::QueueC1AndC2() {
   // Chunk 2
   main_encrypt_queue_.TransferTo(chunk1_queue_, chunk_size_);
   chunk1_queue_.MessageEnd();
-  main_encrypt_queue_.MessageEnd();
+//   main_encrypt_queue_.MessageEnd();
   ChunkDetails2 chunk_data2;
   byte temp2[chunk_size_];
   chunk1_queue_.Peek(temp2, sizeof(temp2));
@@ -201,8 +205,8 @@ bool SE::Write(const char* data, size_t length) {
 
   while (main_encrypt_queue_.MaxRetrievable() > chunk_size_ - 1) {
     main_encrypt_queue_.TransferTo(chunk_current_queue_ , chunk_size_);
-    chunk_current_queue_.MessageEnd();
-    main_encrypt_queue_.MessageEnd();
+     chunk_current_queue_.MessageEnd(-1, false);
+//    main_encrypt_queue_.MessageEnd();
     EncryptChunkFromQueue(chunk_current_queue_);
   }
   return true;
@@ -291,12 +295,13 @@ bool SE::EncryptChunkFromQueue(CryptoPP::MessageQueue & queue) {
               , key.get() , iv.get(), true);
 
   queue.TransferAllTo(aes_filter);
-  aes_filter.MessageEnd();
+  aes_filter.MessageEnd(-1, true);
 
   byte hash[CryptoPP::SHA512::DIGESTSIZE];
-//   byte chunk[this_chunk_size_];
-// 
-//   aes_filter.Get(chunk, sizeof(chunk));
+  // chunk = chunk content
+  byte chunk[this_chunk_size_];
+
+  aes_filter.Get(chunk, sizeof(chunk));
 
   if (&queue == &chunk0_queue_) {
       aes_filter.Get(data_map_.chunks[0].hash , sizeof(hash));
