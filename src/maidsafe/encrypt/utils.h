@@ -45,7 +45,7 @@ class XORFilter : public CryptoPP::Bufferless<CryptoPP::Filter> {
  public:
   XORFilter(CryptoPP::BufferedTransformation *attachment = NULL,
             byte *pad = NULL) :
-            pad_(pad) {
+            pad_(pad), count_(0) {
               CryptoPP::Filter::Detach(attachment);
   };
   size_t Put2(const byte* inString,
@@ -57,30 +57,8 @@ class XORFilter : public CryptoPP::Bufferless<CryptoPP::Filter> {
   XORFilter &operator = (const XORFilter&);  // no assignment
   XORFilter(const XORFilter&);  // no copy
   byte *pad_;
+  size_t count_;
 };
-
-class AESFilter : public CryptoPP::Bufferless<CryptoPP::Filter> {
- public:
-  AESFilter(CryptoPP::BufferedTransformation *attachment = NULL,
-            byte *key = NULL , byte *iv = NULL, bool encrypt = true) :
-            key_(key),
-            iv_(iv),
-            encrypt_(encrypt) {
-              CryptoPP::Filter::Detach(attachment);
-           };
-  size_t Put2(const byte* inString,
-              size_t length,
-              int messageEnd,
-              bool blocking);
-  bool IsolatedFlush(bool, bool) { return false; }
- private:
-  AESFilter &operator = (const AESFilter&);  // no assignment
-  AESFilter(const AESFilter&);  // no copy
-  byte *key_;
-  byte *iv_;
-  bool encrypt_;
-};
-
 
 // Anchor class to allow detach and attach of transforms
 // this will allow us to work with self encryption flags as is
