@@ -36,26 +36,6 @@ namespace maidsafe {
 
 namespace encrypt {
 
-/// Available types of self-encryption
-enum SelfEncryptionTypes {
-  // Type of hashing used (first 4 bits)
-  kHashingSha1 = 1,
-  kHashingSha512 = 2,
-  kHashingTiger = 3,
-  kHashingMask = 0xF,
-  // Type of compression used (second 4 bits)
-  kCompressionNone = 1 << 4,
-  kCompressionGzip = 2 << 4,
-  kCompressionMask = 0xF << 4,
-  // Type of obfuscation used (third 4 bits)
-  kObfuscationNone = 1 << 8,
-  kObfuscationRepeated = 2 << 8,
-  kObfuscationMask = 0xF << 8,
-  // Type of cryptography used (fourth 4 bits)
-  kCryptoNone = 1 << 12,
-  kCryptoAes256 = 2 << 12,
-  kCryptoMask = 0xF << 12
-};
 
 /// Holds information about a chunk
 struct ChunkDetails {
@@ -78,7 +58,7 @@ struct DataMap {
   std::uint64_t size;      ///< Size of data item
   std::string content;     ///< Whole data item or last chunk, if small enough
 };
-// Dirvine - testing pipelining and holding hashes as byte types
+
 
 /// Holds information about a chunk
 struct ChunkDetails2 {

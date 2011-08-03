@@ -157,7 +157,7 @@ bool SE::Write(const char* data, size_t length) {
     // Do not queue chunks 0 and 1 till we know we have enough for 3 chunks
   if (!chunk_one_two_q_full_) {  // for speed
     if (main_encrypt_queue_.MaxRetrievable() >= chunk_size_ * 3)
-      QueueC1AndC2();
+       QueueC1AndC2();
     else
       return true;  // not enough to process chunks yet
   }
@@ -249,8 +249,7 @@ bool SE::EncryptChunkFromQueue(CryptoPP::MessageQueue & queue) {
     chunk_details.size = this_chunk_size_;
     data_map_.chunks.push_back(chunk_details);
   }
-
-
+// alter data_store to store as bytes
   std::string content(reinterpret_cast<char const*>(chunk));
   std::string post_hash(reinterpret_cast<char const*>(hash));
   chunk_store_->Store(post_hash, content);
@@ -261,7 +260,9 @@ bool SE::EncryptChunkFromQueue(CryptoPP::MessageQueue & queue) {
 bool SE::Read(char* data, std::shared_ptr<DataMap2> data_map) {
   if (!data_map)
     data_map.reset(new DataMap2(data_map_));
+  
   auto itr = data_map->chunks.end();
+  byte *N_pre_hash = (*itr).pre_hash;
   --itr;
   byte *N_1_pre_hash = (*itr).pre_hash;
   --itr;
@@ -270,31 +271,47 @@ bool SE::Read(char* data, std::shared_ptr<DataMap2> data_map) {
   for (auto it = data_map->chunks.begin(); it != data_map->chunks.end(); ++it) {
     byte *pre_hash = (*it).pre_hash;
     byte obfuscation_pad[144];
-    memcpy(obfuscation_pad, N_1_pre_hash, 64);
-    memcpy(obfuscation_pad, N_2_pre_hash, 64);
-
+  for (int i = 0; i < 64; ++i) {
+    obfuscation_pad[i] = N_pre_hash[i];
+    obfuscation_pad[i+64] =  N_1_pre_hash[i];
+    if (i < 16)
+      obfuscation_pad[i+128] = N_2_pre_hash[i+48];
+   }
+ 
     byte key[32];
     byte iv[16];
-    std::copy(N_1_pre_hash, N_1_pre_hash + 32, key);
-    std::copy(N_1_pre_hash + 32, N_1_pre_hash + 48, iv);
+    std::copy(N_2_pre_hash, N_2_pre_hash + 32, key);
+    std::copy(N_2_pre_hash + 32, N_2_pre_hash + 48, iv);
     CryptoPP::CFB_Mode<CryptoPP::AES>::Decryption decryptor(key, 32, iv);
     XORFilter xor_filter(
-            new CryptoPP::StreamTransformationFilter(decryptor,
-                new CryptoPP::ArraySink(reinterpret_cast< byte* >(data),
-                                        data_map->size)),
-            obfuscation_pad);
+              new CryptoPP::StreamTransformationFilter(decryptor,
+                new CryptoPP::MessageQueue),
+              obfuscation_pad);
 
     std::string hash(reinterpret_cast< char const* >((*it).hash),
                      sizeof((*it).hash));
     std::string content(chunk_store_->Get(hash));
+    
     byte content_bytes[content.size()];
+    byte answer_bytes[content.size()];
     std::copy(content.begin(), content.end(), content_bytes);
     xor_filter.Put(content_bytes, content.size());
-
+    xor_filter.MessageEnd(-1, true);
+    
+    xor_filter.Get(answer_bytes, content.size());
+    strcat(data, reinterpret_cast<const char*>(answer_bytes));
+    for (size_t i=0; i < content.size(); ++i)
+      std::cout << (char const*)answer_bytes[i] << " answer ";
+    
     N_2_pre_hash = N_1_pre_hash;
     N_1_pre_hash = pre_hash;
   }
+  if (data_map_.content_size > 0) {
+  strcat(data, reinterpret_cast<const char*>(data_map_.content));
+  }
+  return true;
 }
+
 
 bool SE::PartialRead(char * data, size_t position, size_t length,
                      std::shared_ptr<DataMap2> data_map) {

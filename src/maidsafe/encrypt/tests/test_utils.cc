@@ -165,25 +165,18 @@ TEST(SelfEncryptionUtilsTest, BEH_WriteOnly) {
     duration = 1;
   std::cout << "Self-encrypted " << BytesToBinarySiUnits(test_data_size)
              << " in " << (duration / 1000000.0)
-             << " at a speed of " << test_data_size / duration / 1.048576
-             << "mB/s"
-             << std::endl;
+             << " seconds at a speed of "
+             <<  BytesToBinarySiUnits(test_data_size / (duration / 1000000.0) )
+             << "/s" << std::endl;
   DLOG(INFO) << " Created " << selfenc.getDataMap().chunks.size()
             << " Chunks!!" << std::endl;
 
-  std::string str, str1;
-  for(size_t j = 0; j < selfenc.getDataMap().chunks.size(); ++j) {
-    for (size_t i =0; i < 64;++i) {
-      str += static_cast<char>(selfenc.getDataMap().chunks[j].pre_hash[i]);
-      str1 += static_cast<char>(selfenc.getDataMap().chunks[j].hash[i]);
-    }
-  DLOG(INFO) << "pre  hash chunk " << j  << ": " << EncodeToHex(str);
-  DLOG(INFO) <<  std::endl;
-  DLOG(INFO) << "post hash chunk " << j  << ": " << EncodeToHex(str1);
-  DLOG(INFO) <<  std::endl;
-  DLOG(INFO) <<  std::endl;
-  str = ""; str1 = "";
-  }
+  char * answer = new char[test_data_size];
+  std::shared_ptr<DataMap2> data_map(new DataMap2(data_map_));
+  EXPECT_TRUE(selfenc.Read(answer, data_map));
+
+//   for (size_t  i = 0; i < test_data_size; ++i)
+//     EXPECT_EQ(answer[i], hundredmb[i]) << i;
 
   for (int i = 0; i < 64; ++i) {         
     EXPECT_EQ(selfenc.getDataMap().chunks.at(3).pre_hash[i],

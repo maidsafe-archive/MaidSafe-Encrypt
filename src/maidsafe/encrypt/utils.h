@@ -94,13 +94,18 @@ class SE {  // Self Encryption of course
   bool ReInitialise();
   bool FinaliseWrite();  // process what's left in queue and chunk 0 and 1
   bool Read(char * data, std::shared_ptr<DataMap2> data_map);
+  
   bool PartialRead(char * data, size_t position, size_t length,
                    std::shared_ptr<DataMap2> data_map);
   DataMap2 getDataMap() { return data_map_; }
-  bool EncryptChunkFromQueue(CryptoPP::MessageQueue & queue);
- private:
+  
+  void seek(size_t offset, bool direction);
+
+
+ private:  
   SE &operator = (const SE&);  // no assignment
   SE(const SE&);  // no copy
+  bool EncryptChunkFromQueue(CryptoPP::MessageQueue & queue);
   bool QueueC1AndC2();
   void HashMe(byte * digest, byte *data, size_t length);
   bool ResetEncrypt();
@@ -121,6 +126,7 @@ class SE {  // Self Encryption of course
   bool chunk_one_two_q_full_;
   size_t c0_and_1_chunk_size_;
   size_t this_chunk_size_;
+  size_t current_position_;
 };
 
 }  // namespace encrypt
