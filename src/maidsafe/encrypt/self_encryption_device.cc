@@ -667,7 +667,7 @@
 // 
 //   std::string hash(utils::Hash(*data,
 //                                data_map_->self_encryption_type));
-//   //std::cout << " HASH IS " << EncodeToHex(hash) <<std::endl;
+//   //DLOG(INFO) << " HASH IS " << EncodeToHex(hash) <<std::endl;
 // 
 //   bool do_store(false), added_chunk(false);
 // 

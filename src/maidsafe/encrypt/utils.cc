@@ -63,7 +63,7 @@ size_t XORFilter::Put2(const byte* inString,
                       size_t length,
                       int messageEnd,
                       bool blocking) {
-  if ((length == 0))
+ if ((length == 0))
         return AttachedTransformation()->Put2(inString,
                                           length,
                                           messageEnd,
@@ -125,8 +125,10 @@ bool SE::FinaliseWrite() {
       data_map_.content[qlength] = '\0';
       data_map_.content_size = qlength;
       data_map_.size += qlength;
-      EncryptChunkFromQueue(chunk0_queue_);
-      EncryptChunkFromQueue(chunk1_queue_);
+      if (chunk0_queue_.AnyRetrievable()) {
+        EncryptChunkFromQueue(chunk0_queue_);
+        EncryptChunkFromQueue(chunk1_queue_);
+      }
       main_encrypt_queue_.SkipAll();
       return true;
     }
@@ -217,7 +219,7 @@ bool SE::EncryptChunkFromQueue(CryptoPP::MessageQueue & queue) {
     byte temp[chunk_size_];
     queue.Peek(temp, sizeof(temp));
     // FIXME thread this to half time taken for encrypt
-
+    
     HashMe(chunk_details.pre_hash, temp, sizeof(temp));
     chunk_details.pre_size = chunk_size_;
     this_chunk_size_ = chunk_size_;
@@ -228,21 +230,24 @@ bool SE::EncryptChunkFromQueue(CryptoPP::MessageQueue & queue) {
     if (&queue == &chunk1_queue_)
     this_chunk_num = 1;
   }
+  
   // TODO FIXME replace these with CryptoPP::SecByteBlock
 
   // which guarantees they will be zero'd when freed
-  byte *key = new byte[32];
-  byte *iv = new byte[16];
-  boost::shared_array<byte> obfuscation_pad;
+  boost::shared_array<byte> obfuscation_pad, key, iv;
   obfuscation_pad = boost::shared_array<byte>(new byte[144]);
-//   byte *obfuscation_pad = new byte[144];
+  key = boost::shared_array<byte>(new byte[32]);
+  iv  = boost::shared_array<byte>(new byte[16]);
 
-  std::copy(data_map_.chunks[(this_chunk_num + num_chunks -1) % num_chunks].pre_hash,
-            data_map_.chunks[(this_chunk_num + num_chunks -1) % num_chunks].pre_hash + 32,
-            key);
-  std::copy(data_map_.chunks[(this_chunk_num + num_chunks -1) % num_chunks].pre_hash + 32,
-            data_map_.chunks[(this_chunk_num + num_chunks -1) % num_chunks].pre_hash + 48,
-            iv);
+  for (int i = 0; i < 48; ++i) {
+    if (i < 32)
+      key[i] = data_map_.chunks[(this_chunk_num + num_chunks -1)
+                                 % num_chunks].pre_hash[i];
+    if (i > 31)
+      iv[i - 32] = data_map_.chunks[(this_chunk_num + num_chunks -1)
+                                  % num_chunks].pre_hash[i];
+  }
+
 
   for (int i = 0; i < 64; ++i) {
     obfuscation_pad[i] =
@@ -279,7 +284,7 @@ bool SE::EncryptChunkFromQueue(CryptoPP::MessageQueue & queue) {
                       new CryptoPP::MessageQueue()
                     , true)
                   , obfuscation_pad.get())
-              , key , iv, true);
+              , key.get() , iv.get(), true);
 
   queue.TransferAllTo(aes_filter);
   aes_filter.MessageEnd();
@@ -304,9 +309,7 @@ bool SE::EncryptChunkFromQueue(CryptoPP::MessageQueue & queue) {
   //   chunk_store_->Store(chunk_content.substr(this_chunk_size_),
 //                       chunk_content.substr(0, this_chunk_size_));
   data_map_.size += this_chunk_size_;
-  delete[] key;
-  delete[] iv;
-//   delete[] obfuscation_pad;
+
   return true;
 }
 
