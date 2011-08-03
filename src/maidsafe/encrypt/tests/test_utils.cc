@@ -234,7 +234,7 @@ TEST(SelfEncryptionUtilsTest, BEH_SE_manual_check) {
   
   
 
-  CryptoPP::SHA512().CalculateDigest(prehash, pre_enc_chunk, sizeof(pre_enc_chunk));
+  CryptoPP::SHA512().CalculateDigest(prehash, pre_enc_chunk, chunk_size);
 
   
   for (int i = 0; i < 64; ++i) {
@@ -254,12 +254,12 @@ TEST(SelfEncryptionUtilsTest, BEH_SE_manual_check) {
     xor_res[i] = postenc[i]^pad[i%144];
   }
 
-  CryptoPP::SHA512().CalculateDigest(posthash, postenc, sizeof(postenc));
+  CryptoPP::SHA512().CalculateDigest(posthash, postenc, chunk_size);
   std:: cout << " num chunks " << selfenc.getDataMap().chunks.size() << std::endl;
   // TODO FIXME - hashing issue unsure whether test or code as of yet
   for (int i = 0; i < 64; ++i) {
-//    EXPECT_EQ(prehash[i], selfenc.getDataMap().chunks[4].pre_hash[i]);
-//   EXPECT_EQ(posthash[i], selfenc.getDataMap().chunks[4].hash[i]);
+    EXPECT_EQ(prehash[i], selfenc.getDataMap().chunks[4].pre_hash[i]);
+ //   EXPECT_EQ(posthash[i], selfenc.getDataMap().chunks[4].hash[i]);
   }
 
 
