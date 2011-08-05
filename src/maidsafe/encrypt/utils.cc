@@ -85,23 +85,27 @@ bool SE::FinaliseWrite() {
   while (main_encrypt_queue_.TotalBytesRetrievable() < chunk_size_ * 3) {
     chunk_size_ = (main_encrypt_queue_.TotalBytesRetrievable()) / 3;
     // small files direct to data map
-    if (chunk_size_ *3 < 1025) {
+    if ((chunk_size_ +1) *3 < 1025) {
       size_t qlength = main_encrypt_queue_.TotalBytesRetrievable();
       byte i[qlength];
       main_encrypt_queue_.Get(data_map_.content, sizeof(i));
-      data_map_.content[qlength] = '\0';
       data_map_.content_size = qlength;
       data_map_.size += qlength;
       if (chunk0_queue_.AnyRetrievable()) {
         EncryptChunkFromQueue(chunk0_queue_);
         EncryptChunkFromQueue(chunk1_queue_);
+        chunk_one_two_q_full_ = false;
       }
       main_encrypt_queue_.SkipAll();
       return true;
     }
-    // EncryptChunkFromQueue(main_encrypt_queue_);
     Write();
   }
+      if (chunk0_queue_.AnyRetrievable()) {
+        EncryptChunkFromQueue(chunk0_queue_);
+        EncryptChunkFromQueue(chunk1_queue_);
+        chunk_one_two_q_full_ = false;
+      }
   return true;
 }
 
@@ -110,6 +114,7 @@ bool SE::ReInitialise() {
     main_encrypt_queue_.SkipAll();
     chunk0_queue_.SkipAll();
     chunk1_queue_.SkipAll();
+    chunk_one_two_q_full_ = false;
     data_map_.chunks.clear();
     data_map_.size = 0;
     data_map_.content = {0};
@@ -149,6 +154,7 @@ bool SE::QueueC1AndC2() {
 }
 
 bool SE::Write(const char* data, size_t length) {
+
   if (length != 0)
     main_encrypt_queue_.Put2(const_cast<byte*>
                            (reinterpret_cast<const byte*>(data)),
@@ -251,24 +257,27 @@ bool SE::EncryptChunkFromQueue(CryptoPP::MessageQueue & queue) {
   }
 // alter data_store to store as bytes
   std::string content(reinterpret_cast<char const*>(chunk));
-  std::string post_hash(reinterpret_cast<char const*>(hash));
+  std::string post_hash;
+  
+//   for (int i=0;i<64;++i)
+//     post_hash += static_cast<char>(chunk_details.hash[i]);
+
+//    std::cout << "post hash " << EncodeToHex(post_hash) << std::endl;
   chunk_store_->Store(post_hash, content);
   data_map_.size += this_chunk_size_;
   return true;
 }
 
-bool SE::Read(char* data, std::shared_ptr<DataMap2> data_map) {
-  if (!data_map)
-    data_map.reset(new DataMap2(data_map_));
-  
-  auto itr = data_map->chunks.end();
+bool SE::Read(char* data) {
+
+  auto itr = data_map_.chunks.end();
   byte *N_pre_hash = (*itr).pre_hash;
   --itr;
   byte *N_1_pre_hash = (*itr).pre_hash;
   --itr;
   byte *N_2_pre_hash = (*itr).pre_hash;
 
-  for (auto it = data_map->chunks.begin(); it != data_map->chunks.end(); ++it) {
+  for (auto it = data_map_.chunks.begin(); it != data_map_.chunks.end(); ++it) {
     byte *pre_hash = (*it).pre_hash;
     byte obfuscation_pad[144];
   for (int i = 0; i < 64; ++i) {
@@ -288,10 +297,13 @@ bool SE::Read(char* data, std::shared_ptr<DataMap2> data_map) {
                 new CryptoPP::MessageQueue),
               obfuscation_pad);
 
-    std::string hash(reinterpret_cast< char const* >((*it).hash),
-                     sizeof((*it).hash));
-    std::string content(chunk_store_->Get(hash));
+     std::string hash = reinterpret_cast<const char*>((*it).hash);
+
+
+   if (!chunk_store_->Has(hash))
+     return false;
     
+    std::string content(chunk_store_->Get(hash));
     byte content_bytes[content.size()];
     byte answer_bytes[content.size()];
     std::copy(content.begin(), content.end(), content_bytes);
@@ -300,15 +312,14 @@ bool SE::Read(char* data, std::shared_ptr<DataMap2> data_map) {
     
     xor_filter.Get(answer_bytes, content.size());
     strcat(data, reinterpret_cast<const char*>(answer_bytes));
-    for (size_t i=0; i < content.size(); ++i)
-      std::cout << (char const*)answer_bytes[i] << " answer ";
+
     
     N_2_pre_hash = N_1_pre_hash;
     N_1_pre_hash = pre_hash;
   }
-  if (data_map_.content_size > 0) {
-  strcat(data, reinterpret_cast<const char*>(data_map_.content));
-  }
+//   if (data_map_.content_size > 0) {
+//   strcat(data, reinterpret_cast<const char*>(data_map_.content));
+//   }
   return true;
 }
 

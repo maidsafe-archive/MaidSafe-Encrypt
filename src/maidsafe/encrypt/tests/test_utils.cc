@@ -46,109 +46,108 @@ namespace encrypt {
 
 
 namespace test {
+  
+class SelfEncryptionTest : public testing::Test {
+ public:
+  SelfEncryptionTest()
+      : hash_func_(std::bind(&crypto::Hash<crypto::SHA512>,
+                             std::placeholders::_1)),
+      chunk_store_(new MemoryChunkStore (true, hash_func_)),
+      data_map_(), selfenc_(chunk_store_),
+      chunk_size_(1024*256), num_chunks_(10), extra_content_(),
+      expected_content_size_(sizeof(extra_content_)),
+      file_size_(sizeof(extra_content_)), pre_enc_chunk_(new byte[chunk_size_]),
+      pad_(new byte[144]), xor_res_(new byte[chunk_size_]),
+      prehash_(new byte[CryptoPP::SHA512::DIGESTSIZE]),
+      posthashxor_(new byte[CryptoPP::SHA512::DIGESTSIZE]),
+      postenc_(new byte[chunk_size_]), key_(new byte[32]),
+      iv_(new byte[16]), pre_enc_file_(new char[file_size_]) {}
+ ~SelfEncryptionTest() {}
+ bool num_chunks(size_t num_chunks);
+ bool extra_content(byte * extra_data);
 
-// TEST(SelfEncryptionUtilsTest, BEH_Serialisation) {
-//   DataMap data_map;
-//   {
-//     data_map.content = "abcdefg";
-//     data_map.size = 12345;
-//     ChunkDetails chunk;
-//     chunk.hash = "test123";
-//     chunk.size = 10000;
-//     data_map.chunks.push_back(chunk);
-//     chunk.hash = "test456";
-//     chunk.size = 2345;
-//     data_map.chunks.push_back(chunk);
-//   }
-//   std::stringstream ser_data_map;
-//   {  // serialise DataMap to string stream
-//     boost::archive::text_oarchive oa(ser_data_map);
-//     oa << data_map;
-//   }
-//   {
-//     DataMap restored_data_map;
-//     boost::archive::text_iarchive ia(ser_data_map);
-//     ia >> restored_data_map;
-//     EXPECT_EQ(data_map.content, restored_data_map.content);
-//     EXPECT_EQ(data_map.size, restored_data_map.size);
-//     EXPECT_EQ(data_map.chunks.size(), restored_data_map.chunks.size());
-//     EXPECT_EQ(data_map.chunks[0].hash, restored_data_map.chunks[0].hash);
-//     EXPECT_EQ(data_map.chunks[0].size, restored_data_map.chunks[0].size);
-//     EXPECT_EQ(data_map.chunks[1].hash, restored_data_map.chunks[1].hash);
-//     EXPECT_EQ(data_map.chunks[1].size, restored_data_map.chunks[1].size);
-//   }
-// }
+ 
+ private:
+  SelfEncryptionTest &operator=(const SelfEncryptionTest&);
+  SelfEncryptionTest(const SelfEncryptionTest&);
+protected:
+  MemoryChunkStore::HashFunc hash_func_;
+  std::shared_ptr<MemoryChunkStore> chunk_store_;
+  std::shared_ptr<DataMap2> data_map_;
+  SE selfenc_;// (chunk_store);
+  size_t chunk_size_;// (1024*256); // system default
+  size_t num_chunks_; //(10);
+  char * extra_content_; // = new char[5]{'1','2','3','4','5'};
+  size_t expected_content_size_; // ;
+  size_t file_size_; // (chunk_size*num_chunks + expected_content_size);
+  byte *pre_enc_chunk_; // = new byte[chunk_size];
+  byte *pad_; // = new byte[144];
+  byte *xor_res_; // = new byte[chunk_size];
+  byte *prehash_; // = new byte[CryptoPP::SHA512::DIGESTSIZE];
+  byte *posthashxor_; // = new byte[CryptoPP::SHA512::DIGESTSIZE];
+  byte *postenc_; // = new byte[chunk_size];
+  byte *key_;// = new byte[32];
+  byte *iv_;// = new byte[16];
+  char *pre_enc_file_;// = new char[file_size];
+};
 
-// TEST(SelfEncryptionUtilsTest, XORtest) {
-//  // EXPECT_TRUE(XOR("A", "").empty()); // Exception - no pad
-//   XORFilter XOR;
-//   EXPECT_TRUE(XOR("", "B").empty());
-//   EXPECT_EQ(XOR("A", "BB"), XOR("B", "A"));
-//   EXPECT_EQ(XOR("AAAA", "BB"), XOR("BBBB", "AA"));
-//   const size_t kStringSize(1024*256);
-//   std::string str1 = RandomString(kStringSize);
-//   std::string str2 = RandomString(kStringSize);
-//   std::string obfuscated = XOR(str1, str2);
-//   EXPECT_EQ(kStringSize, obfuscated.size());
-//   EXPECT_EQ(obfuscated, XOR(str2, str1));
-//   EXPECT_EQ(str1, XOR(obfuscated, str2));
-//   EXPECT_EQ(str2, XOR(obfuscated, str1));
-//   const std::string kZeros(kStringSize, 0);
-//   EXPECT_EQ(kZeros, XOR(str1, str1));
-//   EXPECT_EQ(str1, XOR(kZeros, str1));
-//   const std::string kKnown1("\xa5\x5a");
-//   const std::string kKnown2("\x5a\xa5");
-//   EXPECT_EQ(std::string("\xff\xff"), XOR(kKnown1, kKnown2));
-// 
-// }
-
-/*TEST(SelfEncryptionUtilsTest, BEH_SelfEnDecrypt) {
-  const std::string data("this is the password");
-  std::string enc_hash = Hash(data, kHashingSha512);
-  const std::string input(RandomString(1024*256));
-  std::string encrypted, decrypted;
-  CryptoPP::StringSource(input,
-                          true,
-       new AESFilter(
-             new CryptoPP::StringSink(encrypted),
-      enc_hash,
-      true));
-
-  CryptoPP::StringSource(encrypted,
-                          true,
-        new AESFilter(
-             new CryptoPP::StringSink(decrypted),
-        enc_hash,
-        false));
-  EXPECT_EQ(decrypted.size(), input.size());
-  EXPECT_EQ(decrypted, input);
-  EXPECT_NE(encrypted, decrypted);
-        }
-*/
-
-
-TEST(SelfEncryptionUtilsTest, BEH_WriteOnly) {
-  MemoryChunkStore::HashFunc hash_func = std::bind(&crypto::Hash<crypto::SHA512>,
-                                                   std::placeholders::_1);
-  std::shared_ptr<MemoryChunkStore> chunk_store(new MemoryChunkStore (true, hash_func));
-  SE selfenc(chunk_store);
-
+TEST_F(SelfEncryptionTest, BEH_40Charsonly) {
   std::string content(RandomString(40));
-
   char *stuff = new char[40];
   std::copy(content.c_str(), content.c_str() + 40, stuff);
-  EXPECT_TRUE(selfenc.Write(stuff, 40));
-  EXPECT_EQ(0, selfenc.getDataMap().chunks.size());
-  EXPECT_EQ(0, selfenc.getDataMap().size);
-  EXPECT_EQ(0, selfenc.getDataMap().content_size);
-  EXPECT_TRUE(selfenc.FinaliseWrite());
-  EXPECT_EQ(40, selfenc.getDataMap().size);
-  EXPECT_EQ(40, selfenc.getDataMap().content_size);
-  EXPECT_EQ(0, selfenc.getDataMap().chunks.size());
+  EXPECT_TRUE(selfenc_.Write(stuff, 40));
+  EXPECT_EQ(0, selfenc_.getDataMap().chunks.size());
+  EXPECT_EQ(0, selfenc_.getDataMap().size);
+  EXPECT_EQ(0, selfenc_.getDataMap().content_size);
+  EXPECT_TRUE(selfenc_.FinaliseWrite());
+  EXPECT_EQ(40, selfenc_.getDataMap().size);
+  EXPECT_EQ(40, selfenc_.getDataMap().content_size);
+  EXPECT_EQ(0, selfenc_.getDataMap().chunks.size());
   EXPECT_EQ(static_cast<char>(*stuff),
-            static_cast<char>(*selfenc.getDataMap().content));
+            static_cast<char>(*selfenc_.getDataMap().content));
+  EXPECT_TRUE(selfenc_.ReInitialise());
+}
 
-  EXPECT_TRUE(selfenc.ReInitialise());
+TEST_F(SelfEncryptionTest, BEH_1023Chars) {
+  EXPECT_TRUE(selfenc_.ReInitialise());
+  std::string content(RandomString(1023));
+  char *stuff1 = new char[1023];
+  std::copy(content.c_str(), content.c_str() + 1023, stuff1);
+  EXPECT_TRUE(selfenc_.Write(stuff1, 1023));
+  EXPECT_EQ(0, selfenc_.getDataMap().chunks.size());
+  EXPECT_EQ(0, selfenc_.getDataMap().size);
+  EXPECT_EQ(0, selfenc_.getDataMap().content_size);
+  EXPECT_TRUE(selfenc_.FinaliseWrite());
+  EXPECT_EQ(1023, selfenc_.getDataMap().size);
+  EXPECT_EQ(0, selfenc_.getDataMap().content_size);
+  EXPECT_EQ(3, selfenc_.getDataMap().chunks.size());
+}
+
+TEST_F(SelfEncryptionTest, BEH_1025Chars3chunks) {
+  EXPECT_TRUE(selfenc_.ReInitialise());
+  std::string content(RandomString(1025));
+  char *stuff1 = new char[1025];
+  std::copy(content.c_str(), content.c_str() + 1025, stuff1);
+  EXPECT_TRUE(selfenc_.Write(stuff1, 1025));
+  EXPECT_EQ(0, selfenc_.getDataMap().chunks.size());
+  EXPECT_EQ(0, selfenc_.getDataMap().size);
+  EXPECT_EQ(0, selfenc_.getDataMap().content_size);
+  EXPECT_TRUE(selfenc_.FinaliseWrite());
+  EXPECT_EQ(1025, selfenc_.getDataMap().size);
+  EXPECT_EQ(2, selfenc_.getDataMap().content_size);
+  EXPECT_EQ(3, selfenc_.getDataMap().chunks.size());
+  EXPECT_EQ(static_cast<char>(stuff1[1023]),
+            static_cast<char>(selfenc_.getDataMap().content[0]));
+  EXPECT_EQ(static_cast<char>(stuff1[1024]),
+            static_cast<char>(selfenc_.getDataMap().content[1]));
+  EXPECT_EQ(static_cast<char>(stuff1[1025]),
+            static_cast<char>(selfenc_.getDataMap().content[2]));
+}
+
+
+
+TEST_F(SelfEncryptionTest, BEH_WriteOnly) {
+  EXPECT_TRUE(selfenc_.ReInitialise());
   size_t test_data_size(1024*1024*20);
   char *hundredmb = new char[test_data_size];
   for (size_t i = 0; i < test_data_size; ++i) {
@@ -156,8 +155,8 @@ TEST(SelfEncryptionUtilsTest, BEH_WriteOnly) {
   }
   boost::posix_time::ptime time =
         boost::posix_time::microsec_clock::universal_time();
-  EXPECT_TRUE(selfenc.Write(hundredmb, test_data_size));
-  EXPECT_TRUE(selfenc.FinaliseWrite());
+  EXPECT_TRUE(selfenc_.Write(hundredmb, test_data_size));
+  EXPECT_TRUE(selfenc_.FinaliseWrite());
   std::uint64_t duration =
       (boost::posix_time::microsec_clock::universal_time() -
        time).total_microseconds();
@@ -168,36 +167,35 @@ TEST(SelfEncryptionUtilsTest, BEH_WriteOnly) {
              << " seconds at a speed of "
              <<  BytesToBinarySiUnits(test_data_size / (duration / 1000000.0) )
              << "/s" << std::endl;
-  DLOG(INFO) << " Created " << selfenc.getDataMap().chunks.size()
+  DLOG(INFO) << " Created " << selfenc_.getDataMap().chunks.size()
             << " Chunks!!" << std::endl;
 
   char * answer = new char[test_data_size];
-  std::shared_ptr<DataMap2> data_map(new DataMap2(data_map_));
-  EXPECT_TRUE(selfenc.Read(answer, data_map));
 
+//   ASSERT_TRUE(selfenc_.Read(answer));
+// 
 //   for (size_t  i = 0; i < test_data_size; ++i)
 //     EXPECT_EQ(answer[i], hundredmb[i]) << i;
 
   for (int i = 0; i < 64; ++i) {         
-    EXPECT_EQ(selfenc.getDataMap().chunks.at(3).pre_hash[i],
-              selfenc.getDataMap().chunks.at(4).pre_hash[i]);
-    ASSERT_EQ(selfenc.getDataMap().chunks.at(5).hash[i],
-              selfenc.getDataMap().chunks.at(3).hash[i]);
+    EXPECT_EQ(selfenc_.getDataMap().chunks.at(3).pre_hash[i],
+              selfenc_.getDataMap().chunks.at(4).pre_hash[i]);
+    ASSERT_EQ(selfenc_.getDataMap().chunks.at(5).hash[i],
+              selfenc_.getDataMap().chunks.at(3).hash[i]);
    }
 }
 
-TEST(SelfEncryptionUtilsTest, BEH_manual_check_write) {
-  MemoryChunkStore::HashFunc hash_func =
-      std::bind(&crypto::Hash<crypto::SHA512>, std::placeholders::_1);
-  std::shared_ptr<MemoryChunkStore> chunk_store(
-      new MemoryChunkStore(true, hash_func));
+TEST_F(SelfEncryptionTest, BEH_manual_check_write) {
+  MemoryChunkStore::HashFunc hash_func = std::bind(&crypto::Hash<crypto::SHA512>,
+                                                   std::placeholders::_1);
+  std::shared_ptr<MemoryChunkStore> chunk_store(new MemoryChunkStore (true, hash_func));
+  std::shared_ptr<DataMap2> data_map; // NULL
   SE selfenc(chunk_store);
-
   size_t chunk_size(1024*256); // system default
   size_t num_chunks(10);
   char * extra_content = new char[5]{'1','2','3','4','5'};
   size_t expected_content_size(sizeof(extra_content));
-  size_t file_size(chunk_size*num_chunks + expected_content_size); 
+  size_t file_size(chunk_size*num_chunks + expected_content_size);
   byte *pre_enc_chunk = new byte[chunk_size];
   byte *pad = new byte[144];
   byte *xor_res = new byte[chunk_size];
@@ -264,8 +262,6 @@ TEST(SelfEncryptionUtilsTest, BEH_manual_check_write) {
       match = true;
     }
   }
-
-
 }
 
 }  // namespace test

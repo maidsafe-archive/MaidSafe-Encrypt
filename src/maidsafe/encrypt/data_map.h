@@ -78,7 +78,7 @@ struct DataMap2 {
   std::vector<ChunkDetails2> chunks;  ///< Information about the chunks
   std::uint64_t size;      ///< Size of data item
   byte content[1024];     ///< Whole data item or last chunk, if small enough
-  std::uint8_t content_size;
+  std::uint16_t content_size;
 };
 
 /*

@@ -88,17 +88,17 @@ class SE {  // Self Encryption of course
                         chunk_data_(),
                         chunk_store_(chunk_store),
                         chunk_one_two_q_full_(false), c0_and_1_chunk_size_(),
-                        this_chunk_size_()
+                        this_chunk_size_(), current_position_()
                         { }
   bool Write(const char* data = NULL, size_t length = 0);
   bool ReInitialise();
   bool FinaliseWrite();  // process what's left in queue and chunk 0 and 1
-  bool Read(char * data, std::shared_ptr<DataMap2> data_map);
-  
+  bool Read(char * data);/*, std::shared_ptr<DataMap2> data_map);*/
   bool PartialRead(char * data, size_t position, size_t length,
                    std::shared_ptr<DataMap2> data_map);
   DataMap2 getDataMap() { return data_map_; }
   
+
   void seek(size_t offset, bool direction);
 
 
