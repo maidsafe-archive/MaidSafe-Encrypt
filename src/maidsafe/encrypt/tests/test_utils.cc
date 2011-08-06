@@ -94,7 +94,8 @@ protected:
 TEST_F(SelfEncryptionTest, BEH_40Charsonly) {
   std::string content(RandomString(40));
   char *stuff = new char[40];
-  std::copy(content.c_str(), content.c_str() + 40, stuff);
+  char *answer = new char[40];
+  std::copy(content.c_str(), content.c_str() + 39, stuff); // null terminator
   EXPECT_TRUE(selfenc_.Write(stuff, 40));
   EXPECT_EQ(0, selfenc_.getDataMap().chunks.size());
   EXPECT_EQ(0, selfenc_.getDataMap().size);
@@ -105,6 +106,9 @@ TEST_F(SelfEncryptionTest, BEH_40Charsonly) {
   EXPECT_EQ(0, selfenc_.getDataMap().chunks.size());
   EXPECT_EQ(static_cast<char>(*stuff),
             static_cast<char>(*selfenc_.getDataMap().content));
+  EXPECT_TRUE(selfenc_.Read(answer));
+  EXPECT_EQ(EncodeToHex(reinterpret_cast<const char *>(stuff)),
+            EncodeToHex(reinterpret_cast<const char *>(answer)));
   EXPECT_TRUE(selfenc_.ReInitialise());
 }
 
@@ -148,14 +152,14 @@ TEST_F(SelfEncryptionTest, BEH_1025Chars3chunks) {
 
 TEST_F(SelfEncryptionTest, BEH_WriteAndRead) {
   EXPECT_TRUE(selfenc_.ReInitialise());
-  size_t test_data_size(1024*1024*20);
-  char *hundredmb = new char[test_data_size];
+  size_t test_data_size(1024*1024*1);
+  char *twentymb = new char[test_data_size];
   for (size_t i = 0; i < test_data_size; ++i) {
-    hundredmb[i] = 'a';
+    twentymb[i] = 'a';
   }
   boost::posix_time::ptime time =
         boost::posix_time::microsec_clock::universal_time();
-  EXPECT_TRUE(selfenc_.Write(hundredmb, test_data_size));
+  EXPECT_TRUE(selfenc_.Write(twentymb, test_data_size));
   EXPECT_TRUE(selfenc_.FinaliseWrite());
   std::uint64_t duration =
       (boost::posix_time::microsec_clock::universal_time() -
@@ -182,11 +186,11 @@ TEST_F(SelfEncryptionTest, BEH_WriteAndRead) {
              << " seconds at a speed of "
              <<  BytesToBinarySiUnits(test_data_size / (duration / 1000000.0) )
              << "/s" << std::endl;
+             
  std::string stranswer(answer, test_data_size);
-// std::cout << stranswer << std::endl;
-
-  for (size_t  i = 0; i < /*test_data_size*/ 12; ++i)
-    ASSERT_EQ(stranswer.c_str()[i], hundredmb[i]) << i;
+ //std::cout << stranswer << std::endl;
+  for (size_t  i = 0; i < test_data_size ; ++i)
+    ASSERT_EQ(twentymb[i], answer[i]) << "failed at count " << i;
 
   for (int i = 0; i < 64; ++i) {         
     EXPECT_EQ(selfenc_.getDataMap().chunks.at(3).pre_hash[i],

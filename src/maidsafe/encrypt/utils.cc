@@ -262,9 +262,7 @@ bool SE::Read(char* data) {
   ChunkDetails2 chunk_details;
   size_t num_chunks = data_map_.chunks.size();
   size_t this_chunk_num = num_chunks;
-  byte * obfuscation_pad = new byte[144];
-  byte *key = new byte[32];
-  byte *iv = new byte[16];
+
   for (size_t i = 0;i < num_chunks; ++i) {
     byte * obfuscation_pad = new byte[144];
     byte *key = new byte[32];
@@ -287,19 +285,21 @@ bool SE::Read(char* data) {
    }
     
     std::string content(chunk_store_->Get(hash));
-    byte content_bytes[content.size()];
-    byte answer_bytes[content.size()];
-    std::copy(content.begin(), content.end(), content_bytes);
-    xor_filter.Put(content_bytes, content.size());
-    xor_filter.MessageEnd(-1, true);
+    size_t size(content.size() -1); // strip \0
+    byte content_bytes[size];
+    byte answer_bytes[size];
+    std::copy(content.begin(), content.end() -1, content_bytes); // copy to bytes
+    xor_filter.Put(content_bytes, size); // put in filter
+    xor_filter.MessageEnd(-1, true); // process 
     
-    xor_filter.Get(answer_bytes, content.size());
-    strncat(data, reinterpret_cast<const char*>(answer_bytes), content.size());
-
+    xor_filter.Get(answer_bytes, size);
+    strncat(data, reinterpret_cast<const char*>(answer_bytes), size);
+       
   }
-//   if (data_map_.content_size > 0) {
-//   strcat(data, reinterpret_cast<const char*>(data_map_.content));
-//   }
+  if (data_map_.content_size > 0) {
+  strcat(data, reinterpret_cast<const char*>(data_map_.content));
+  }
+  //strcat(data, '\0');
   return true;
 }
 
