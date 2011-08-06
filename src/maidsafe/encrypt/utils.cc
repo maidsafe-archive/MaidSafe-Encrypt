@@ -179,34 +179,15 @@ void SE::HashMe(byte * digest, byte* data, size_t length) {
   CryptoPP::SHA512().CalculateDigest(digest, data, length);
 }
 
-bool SE::EncryptChunkFromQueue(CryptoPP::MessageQueue & queue) {
-  ChunkDetails2 chunk_details;
+void SE::getPad_Iv_Key(size_t chunk_num,
+                       byte * key,
+                       byte * iv,
+                       byte * pad)
+{
   size_t num_chunks = data_map_.chunks.size();
   size_t this_chunk_num = num_chunks;
   size_t n_1_chunk = (this_chunk_num + num_chunks -1) % num_chunks;
   size_t n_2_chunk = (this_chunk_num + num_chunks -2) % num_chunks;
-  boost::shared_array<byte> obfuscation_pad;
-  obfuscation_pad = boost::shared_array<byte>(new byte[144]);
-  byte key[32];
-  byte iv[16];
-  byte hash[CryptoPP::SHA512::DIGESTSIZE];
-  
-  if ((&queue != &chunk0_queue_) && (&queue != &chunk1_queue_)) {
-    byte temp[chunk_size_];
-    queue.Peek(temp, sizeof(temp));
-    // FIXME thread this to half time taken for encrypt
-    
-    HashMe(chunk_details.pre_hash, temp, sizeof(temp));
-    chunk_details.pre_size = chunk_size_;
-    this_chunk_size_ = chunk_size_;
-  } else {
-    this_chunk_size_ = c0_and_1_chunk_size_;
-    if (&queue == &chunk0_queue_)
-    this_chunk_num = 0;
-    if (&queue == &chunk1_queue_)
-    this_chunk_num = 1;
-  }
-  
   for (int i = 0; i < 48; ++i) {
     if (i < 32)
       key[i] = data_map_.chunks[n_1_chunk].pre_hash[i];
@@ -215,19 +196,41 @@ bool SE::EncryptChunkFromQueue(CryptoPP::MessageQueue & queue) {
   }
 
   for (int i = 0; i < 64; ++i) {
-    obfuscation_pad[i] =
-        data_map_.chunks[n_1_chunk].pre_hash[i];
-      if (&queue == &chunk0_queue_)
-        obfuscation_pad[i+64] =  data_map_.chunks[0].pre_hash[i];
-      else if (&queue == &chunk1_queue_)
-        obfuscation_pad[i+64] =  data_map_.chunks[1].pre_hash[i];
-      else
-        obfuscation_pad[i+64] =  chunk_details.pre_hash[i];
+    pad[i] =  data_map_.chunks[n_1_chunk].pre_hash[i];
+    pad[i+64] = data_map_.chunks[chunk_num].pre_hash[i];
     if (i < 16)
-      obfuscation_pad[i+128] =
-          data_map_.chunks[(this_chunk_num + num_chunks -2) % num_chunks].pre_hash[i+48];
+      pad[i+128] = data_map_.chunks[n_2_chunk].pre_hash[i+48];
+  }
+}
+
+
+bool SE::EncryptChunkFromQueue(CryptoPP::MessageQueue & queue) {
+  ChunkDetails2 chunk_details;
+  size_t num_chunks = data_map_.chunks.size();
+  size_t this_chunk_num = num_chunks;
+
+//   boost::shared_array<byte> obfuscation_pad;
+  byte * obfuscation_pad = new byte[144];
+  byte *key = new byte[32];
+  byte *iv = new byte[16];
+  byte hash[CryptoPP::SHA512::DIGESTSIZE];
+  
+  if ((&queue != &chunk0_queue_) && (&queue != &chunk1_queue_)) {
+    byte temp[chunk_size_];
+    queue.Peek(temp, sizeof(temp)); // copy whole array
+    HashMe(chunk_details.pre_hash, temp, sizeof(temp));
+    chunk_details.pre_size = chunk_size_;
+    this_chunk_size_ = chunk_size_;
+    data_map_.chunks.push_back(chunk_details);
+  } else {
+    this_chunk_size_ = c0_and_1_chunk_size_;
+    if (&queue == &chunk0_queue_)
+    this_chunk_num = 0;
+    if (&queue == &chunk1_queue_)
+    this_chunk_num = 1;
   }
 
+  getPad_Iv_Key(this_chunk_num, key, iv, obfuscation_pad);
   CryptoPP::CFB_Mode<CryptoPP::AES>::Encryption encryptor(key, 32, iv);
   
   CryptoPP::StreamTransformationFilter aes_filter(encryptor,
@@ -235,63 +238,40 @@ bool SE::EncryptChunkFromQueue(CryptoPP::MessageQueue & queue) {
                     new CryptoPP::HashFilter(hash_,
                       new CryptoPP::MessageQueue()
                     , true)
-                  , obfuscation_pad.get()));
+                  , obfuscation_pad));
 
   queue.TransferAllTo(aes_filter);
   aes_filter.MessageEnd(-1, true);
 
-  // chunk = chunk content
-  byte chunk[this_chunk_size_]; // do not move this !!
-  aes_filter.Get(chunk, sizeof(chunk)); // get content
-  
-  if (&queue == &chunk0_queue_) {
-      aes_filter.Get(data_map_.chunks[0].hash , sizeof(hash));
-      data_map_.chunks[0].size = this_chunk_size_;
-  } else if (&queue == &chunk1_queue_) {
-      aes_filter.Get(data_map_.chunks[1].hash , sizeof(hash));
-      data_map_.chunks[1].size = this_chunk_size_;
-  } else {
-    aes_filter.Get(chunk_details.hash, sizeof(hash));
-    chunk_details.size = this_chunk_size_;
-    data_map_.chunks.push_back(chunk_details);
-  }
-// alter data_store to store as bytes
-  std::string content(reinterpret_cast<char const*>(chunk));
-  std::string post_hash;
-  
-  for (int i=0;i<64;++i)
-    post_hash += static_cast<char>(chunk_details.hash[i]);
+  byte chunk_content[this_chunk_size_]; // do not move this !!
+  aes_filter.Get(chunk_content, sizeof(chunk_content)); // get content
+  aes_filter.Get(data_map_.chunks[this_chunk_num].hash , sizeof(hash));
+  data_map_.chunks[this_chunk_num].size = this_chunk_size_;
 
-//    std::cout << "post hash " << EncodeToHex(post_hash) << std::endl;
-  chunk_store_->Store(post_hash, content);
+  std::string content(reinterpret_cast<char const*>(chunk_content));
+  std::string post_hash(reinterpret_cast<char const*>(data_map_.chunks[this_chunk_num].hash));
+  
+  if (! chunk_store_->Store(post_hash, content))
+    DLOG(ERROR) << "Could not store " << EncodeToHex(post_hash) << std::endl;
   data_map_.size += this_chunk_size_;
   return true;
 }
 
 bool SE::Read(char* data) {
 
-  auto itr = data_map_.chunks.end();
-  byte *N_pre_hash = (*itr).pre_hash;
-  --itr;
-  byte *N_1_pre_hash = (*itr).pre_hash;
-  --itr;
-  byte *N_2_pre_hash = (*itr).pre_hash;
+  ChunkDetails2 chunk_details;
+  size_t num_chunks = data_map_.chunks.size();
+  size_t this_chunk_num = num_chunks;
+  byte * obfuscation_pad = new byte[144];
+  byte *key = new byte[32];
+  byte *iv = new byte[16];
+  for (size_t i = 0;i < num_chunks; ++i) {
+    byte * obfuscation_pad = new byte[144];
+    byte *key = new byte[32];
+    byte *iv = new byte[16];
 
-  for (auto it = data_map_.chunks.begin(); it != data_map_.chunks.end(); ++it) {
-    byte *pre_hash = (*it).pre_hash;
-    byte obfuscation_pad[144];
-  for (int i = 0; i < 64; ++i) {
-    obfuscation_pad[i] =  N_1_pre_hash[i];
-    obfuscation_pad[i+64] = N_pre_hash[i];
-    if (i < 16)
-      obfuscation_pad[i+128] = N_2_pre_hash[i+48];
-   }
- 
-    byte key[32];
-    byte iv[16];
-    std::copy(N_2_pre_hash, N_2_pre_hash + 32, key);
-    std::copy(N_2_pre_hash + 32, N_2_pre_hash + 48, iv);
-    
+    getPad_Iv_Key(i, key, iv, obfuscation_pad);
+  
     CryptoPP::CFB_Mode<CryptoPP::AES>::Decryption decryptor(key, 32, iv);
 
     XORFilter xor_filter(
@@ -299,11 +279,12 @@ bool SE::Read(char* data) {
                 new CryptoPP::MessageQueue),
               obfuscation_pad);
 
-     std::string hash = reinterpret_cast<const char*>((*it).hash);
-//  std::cout << "Hash were lookign for " << hash << std::endl;
 
-   if (!chunk_store_->Has(hash))
+   std::string hash = reinterpret_cast<const char*>(data_map_.chunks[i].hash);
+   if (!chunk_store_->Has(hash)) {
+     DLOG(ERROR) << "ERROR could not locate " << EncodeToHex(hash) << std::endl;
      return false;
+   }
     
     std::string content(chunk_store_->Get(hash));
     byte content_bytes[content.size()];
@@ -315,9 +296,6 @@ bool SE::Read(char* data) {
     xor_filter.Get(answer_bytes, content.size());
     strncat(data, reinterpret_cast<const char*>(answer_bytes), content.size());
 
-    
-    N_2_pre_hash = N_1_pre_hash;
-    N_1_pre_hash = pre_hash;
   }
 //   if (data_map_.content_size > 0) {
 //   strcat(data, reinterpret_cast<const char*>(data_map_.content));

@@ -110,6 +110,10 @@ class SE {  // Self Encryption of course
   void HashMe(byte * digest, byte *data, size_t length);
   bool ResetEncrypt();
   bool EncryptaChunk(std::string &input, std::string *output);
+  void getPad_Iv_Key(size_t chunk_num,
+                       byte * key,
+                       byte * iv,
+                       byte * pad);
  private:
   DataMap2 data_map_;
   bool complete_;  // in case of requirement to send a complete only

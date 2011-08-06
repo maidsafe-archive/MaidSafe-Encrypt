@@ -140,8 +140,8 @@ TEST_F(SelfEncryptionTest, BEH_1025Chars3chunks) {
             static_cast<char>(selfenc_.getDataMap().content[0]));
   EXPECT_EQ(static_cast<char>(stuff1[1024]),
             static_cast<char>(selfenc_.getDataMap().content[1]));
-  EXPECT_EQ(static_cast<char>(stuff1[1025]),
-            static_cast<char>(selfenc_.getDataMap().content[2]));
+//   EXPECT_EQ(static_cast<char>(stuff1[1025]),
+//             static_cast<char>(selfenc_.getDataMap().content[2]));
 }
 
 
