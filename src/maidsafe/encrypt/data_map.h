@@ -64,7 +64,7 @@ struct DataMap {
 struct ChunkDetails2 {
   ChunkDetails2()
     : hash({0}), size(0), pre_hash({0}), pre_size(0) {}
-  byte hash[CryptoPP::SHA512::DIGESTSIZE];        ///< Hash of processed chunk
+  std::string hash;        ///< Hash of processed chunk
   std::uint32_t size;      ///< Size of processed chunk
   byte pre_hash[CryptoPP::SHA512::DIGESTSIZE];    ///< Hash of unprocessed source data
   std::uint32_t pre_size;  ///< Size of unprocessed source data

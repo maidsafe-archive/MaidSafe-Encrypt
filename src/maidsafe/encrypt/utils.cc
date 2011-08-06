@@ -232,24 +232,28 @@ bool SE::EncryptChunkFromQueue(CryptoPP::MessageQueue & queue) {
 
   getPad_Iv_Key(this_chunk_num, key, iv, obfuscation_pad);
   CryptoPP::CFB_Mode<CryptoPP::AES>::Encryption encryptor(key, 32, iv);
-  
+  std::string answer;
   CryptoPP::StreamTransformationFilter aes_filter(encryptor,
                   new XORFilter(
                     new CryptoPP::HashFilter(hash_,
-                      new CryptoPP::MessageQueue()
+                      new CryptoPP::StringSink(answer)
                     , true)
                   , obfuscation_pad));
+  
   queue.TransferAllTo(aes_filter);
   aes_filter.MessageEnd(-1, true);
-  byte chunk_content[this_chunk_size_]; // do not move this !!
-  aes_filter.Get(chunk_content, sizeof(chunk_content)); // get content
-  aes_filter.Get(data_map_.chunks[this_chunk_num].hash , sizeof(hash));
+//   byte chunk_content[this_chunk_size_]; // do not move this !!
+//   aes_filter.Get(chunk_content, sizeof(chunk_content)); // get content
+//   aes_filter.Get(data_map_.chunks[this_chunk_num].hash , sizeof(hash));
+
+//   std::copy(answer.end() - 64, answer.end(),
+  size_t size = answer.size();
+  data_map_.chunks[this_chunk_num].hash = answer.substr(size - 64);
   data_map_.chunks[this_chunk_num].size = this_chunk_size_;
-  std::string content(reinterpret_cast<char const*>(chunk_content));
-  std::string post_hash(reinterpret_cast<char const*>
-                        (data_map_.chunks[this_chunk_num].hash));
-  if (! chunk_store_->Store(post_hash, content))
-    DLOG(ERROR) << "Could not store " << EncodeToHex(post_hash) << std::endl;
+  if (! chunk_store_->Store(answer.substr(size - 64),
+                           answer.substr(0, this_chunk_size_)))
+    DLOG(ERROR) << "Could not store " << EncodeToHex(answer.substr(0,64))
+                                      << std::endl;
   data_map_.size += this_chunk_size_;
   return true;
 }
@@ -265,7 +269,7 @@ bool SE::Read(char* data) {
     byte *key = new byte[32];
     byte *iv = new byte[16];
     getPad_Iv_Key(i, key, iv, obfuscation_pad);
-    std::string hash = reinterpret_cast<const char*>(data_map_.chunks.at(i).hash);
+    std::string hash = data_map_.chunks.at(i).hash;
 
     if (!chunk_store_->Has(hash)) {
      DLOG(ERROR) << "ERROR could not locate " << EncodeToHex(hash) << std::endl;
