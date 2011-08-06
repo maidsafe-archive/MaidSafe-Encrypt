@@ -259,8 +259,8 @@ bool SE::EncryptChunkFromQueue(CryptoPP::MessageQueue & queue) {
   std::string content(reinterpret_cast<char const*>(chunk));
   std::string post_hash;
   
-//   for (int i=0;i<64;++i)
-//     post_hash += static_cast<char>(chunk_details.hash[i]);
+  for (int i=0;i<64;++i)
+    post_hash += static_cast<char>(chunk_details.hash[i]);
 
 //    std::cout << "post hash " << EncodeToHex(post_hash) << std::endl;
   chunk_store_->Store(post_hash, content);
@@ -281,8 +281,8 @@ bool SE::Read(char* data) {
     byte *pre_hash = (*it).pre_hash;
     byte obfuscation_pad[144];
   for (int i = 0; i < 64; ++i) {
-    obfuscation_pad[i] = N_pre_hash[i];
-    obfuscation_pad[i+64] =  N_1_pre_hash[i];
+    obfuscation_pad[i] =  N_1_pre_hash[i];
+    obfuscation_pad[i+64] = N_pre_hash[i];
     if (i < 16)
       obfuscation_pad[i+128] = N_2_pre_hash[i+48];
    }
@@ -291,14 +291,16 @@ bool SE::Read(char* data) {
     byte iv[16];
     std::copy(N_2_pre_hash, N_2_pre_hash + 32, key);
     std::copy(N_2_pre_hash + 32, N_2_pre_hash + 48, iv);
+    
     CryptoPP::CFB_Mode<CryptoPP::AES>::Decryption decryptor(key, 32, iv);
+
     XORFilter xor_filter(
               new CryptoPP::StreamTransformationFilter(decryptor,
                 new CryptoPP::MessageQueue),
               obfuscation_pad);
 
      std::string hash = reinterpret_cast<const char*>((*it).hash);
-
+//  std::cout << "Hash were lookign for " << hash << std::endl;
 
    if (!chunk_store_->Has(hash))
      return false;
@@ -311,7 +313,7 @@ bool SE::Read(char* data) {
     xor_filter.MessageEnd(-1, true);
     
     xor_filter.Get(answer_bytes, content.size());
-    strcat(data, reinterpret_cast<const char*>(answer_bytes));
+    strncat(data, reinterpret_cast<const char*>(answer_bytes), content.size());
 
     
     N_2_pre_hash = N_1_pre_hash;
