@@ -239,18 +239,15 @@ bool SE::EncryptChunkFromQueue(CryptoPP::MessageQueue & queue) {
                       new CryptoPP::MessageQueue()
                     , true)
                   , obfuscation_pad));
-
   queue.TransferAllTo(aes_filter);
   aes_filter.MessageEnd(-1, true);
-
   byte chunk_content[this_chunk_size_]; // do not move this !!
   aes_filter.Get(chunk_content, sizeof(chunk_content)); // get content
   aes_filter.Get(data_map_.chunks[this_chunk_num].hash , sizeof(hash));
   data_map_.chunks[this_chunk_num].size = this_chunk_size_;
-
   std::string content(reinterpret_cast<char const*>(chunk_content));
-  std::string post_hash(reinterpret_cast<char const*>(data_map_.chunks[this_chunk_num].hash));
-  
+  std::string post_hash(reinterpret_cast<char const*>
+                        (data_map_.chunks[this_chunk_num].hash));
   if (! chunk_store_->Store(post_hash, content))
     DLOG(ERROR) << "Could not store " << EncodeToHex(post_hash) << std::endl;
   data_map_.size += this_chunk_size_;
@@ -258,48 +255,43 @@ bool SE::EncryptChunkFromQueue(CryptoPP::MessageQueue & queue) {
 }
 
 bool SE::Read(char* data) {
-
   ChunkDetails2 chunk_details;
   size_t num_chunks = data_map_.chunks.size();
   size_t this_chunk_num = num_chunks;
-
+  size_t position(0);
+  
   for (size_t i = 0;i < num_chunks; ++i) {
     byte * obfuscation_pad = new byte[144];
     byte *key = new byte[32];
     byte *iv = new byte[16];
-
     getPad_Iv_Key(i, key, iv, obfuscation_pad);
-  
-    CryptoPP::CFB_Mode<CryptoPP::AES>::Decryption decryptor(key, 32, iv);
+    std::string hash = reinterpret_cast<const char*>(data_map_.chunks.at(i).hash);
 
-    XORFilter xor_filter(
-              new CryptoPP::StreamTransformationFilter(decryptor,
-                new CryptoPP::MessageQueue),
-              obfuscation_pad);
-
-
-   std::string hash = reinterpret_cast<const char*>(data_map_.chunks[i].hash);
-   if (!chunk_store_->Has(hash)) {
+    if (!chunk_store_->Has(hash)) {
      DLOG(ERROR) << "ERROR could not locate " << EncodeToHex(hash) << std::endl;
      return false;
-   }
-    
+    }
+
     std::string content(chunk_store_->Get(hash));
-    size_t size(content.size() -1); // strip \0
-    byte content_bytes[size];
-    byte answer_bytes[size];
-    std::copy(content.begin(), content.end() -1, content_bytes); // copy to bytes
-    xor_filter.Put(content_bytes, size); // put in filter
-    xor_filter.MessageEnd(-1, true); // process 
-    
-    xor_filter.Get(answer_bytes, size);
-    strncat(data, reinterpret_cast<const char*>(answer_bytes), size);
-       
+    std::string answer;
+    CryptoPP::CFB_Mode<CryptoPP::AES>::Decryption decryptor(key, 32, iv);
+           CryptoPP::StringSource filter(content, true,
+             new XORFilter(
+              new CryptoPP::StreamTransformationFilter(decryptor,
+                new CryptoPP::StringSink(answer)),
+              obfuscation_pad));
+           
+    strncat(data, answer.c_str(), answer.size());
+
+    position += answer.size();
+    // concat
+    delete[] obfuscation_pad;
+    delete[] key;
+    delete[] iv;
   }
   if (data_map_.content_size > 0) {
   strcat(data, reinterpret_cast<const char*>(data_map_.content));
   }
-  //strcat(data, '\0');
   return true;
 }
 
