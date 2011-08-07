@@ -152,13 +152,14 @@ TEST_F(SelfEncryptionTest, BEH_1025Chars3chunks) {
 
 TEST_F(SelfEncryptionTest, BEH_WriteAndRead) {
   EXPECT_TRUE(selfenc_.ReInitialise());
-  size_t test_data_size(1024*1024*10);
- // std::string plain_text(RandomString(test_data_size));
+  size_t test_data_size(1024*1024*20); // less than 2 mB fails due to test
+  std::string plain_text(RandomString(test_data_size));
   char *twentymb = new char[test_data_size];
   for (size_t i = 0; i < test_data_size ; ++i) {
-    twentymb[i] = 'a';
+    twentymb[i] = 'a'; //plain_text[i];
   }
- // std::copy(plain_text.c_str(), plain_text.c_str() + test_data_size, twentymb);
+ //std::copy(plain_text.c_str(), plain_text.c_str() + test_data_size, twentymb);
+ 
   boost::posix_time::ptime time =
         boost::posix_time::microsec_clock::universal_time();
   EXPECT_TRUE(selfenc_.Write(twentymb, test_data_size));
@@ -189,7 +190,7 @@ TEST_F(SelfEncryptionTest, BEH_WriteAndRead) {
              <<  BytesToBinarySiUnits(test_data_size / (duration / 1000000.0) )
              << "/s" << std::endl;
              
- std::string stranswer(answer, test_data_size);
+ //std::string stranswer(answer, test_data_size);
  //std::cout << stranswer << std::endl;
   for (size_t  i = 0; i < test_data_size ; ++i)
     ASSERT_EQ(twentymb[i], answer[i]) << "failed at count " << i;
@@ -197,8 +198,8 @@ TEST_F(SelfEncryptionTest, BEH_WriteAndRead) {
   for (int i = 0; i < 64; ++i) {         
     EXPECT_EQ(selfenc_.getDataMap().chunks.at(3).pre_hash[i],
               selfenc_.getDataMap().chunks.at(4).pre_hash[i]);
-    ASSERT_EQ(selfenc_.getDataMap().chunks.at(5).hash[i],
-              selfenc_.getDataMap().chunks.at(3).hash[i]);
+    ASSERT_EQ(selfenc_.getDataMap().chunks.at(3).hash[i],
+              selfenc_.getDataMap().chunks.at(4).hash[i]);
    }
 }
 

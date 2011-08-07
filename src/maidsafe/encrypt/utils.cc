@@ -70,8 +70,8 @@ size_t XORFilter::Put2(const byte* inString,
                                           messageEnd,
                                           blocking);
   size_t buffer_size(length);
-  byte buffer[length+1];
-
+  byte buffer[length];
+//#pragma omp for //nowait
   for (size_t i = 0; i < length; ++i) {
     buffer[i] = inString[i] ^  pad_[count_%144];
     ++count_;
@@ -173,6 +173,7 @@ bool SE::Write(const char* data, size_t length) {
     main_encrypt_queue_.TransferTo(chunk_current_queue_ , chunk_size_);
     EncryptChunkFromQueue(chunk_current_queue_);
   }
+  
   return true;
 }
 
@@ -204,12 +205,10 @@ void SE::getPad_Iv_Key(size_t chunk_num,
   }
 }
 
-
 bool SE::EncryptChunkFromQueue(CryptoPP::MessageQueue & queue) {
   ChunkDetails2 chunk_details;
   size_t num_chunks = data_map_.chunks.size();
   size_t this_chunk_num = num_chunks;
-
 //   boost::shared_array<byte> obfuscation_pad;
   byte * obfuscation_pad = new byte[144];
   byte *key = new byte[32];
@@ -230,31 +229,27 @@ bool SE::EncryptChunkFromQueue(CryptoPP::MessageQueue & queue) {
     if (&queue == &chunk1_queue_)
     this_chunk_num = 1;
   }
-
   getPad_Iv_Key(this_chunk_num, key, iv, obfuscation_pad);
   CryptoPP::CFB_Mode<CryptoPP::AES>::Encryption encryptor(key, 32, iv);
-  std::string answer;
   CryptoPP::StreamTransformationFilter aes_filter(encryptor,
                   new XORFilter(
                     new CryptoPP::HashFilter(hash_,
-                      new CryptoPP::StringSink(answer)
+                      new CryptoPP::MessageQueue()
                     , true)
                   , obfuscation_pad));
-  
+
   queue.TransferAllTo(aes_filter);
   aes_filter.MessageEnd(-1, true);
-//   byte chunk_content[this_chunk_size_]; // do not move this !!
-//   aes_filter.Get(chunk_content, sizeof(chunk_content)); // get content
-//   aes_filter.Get(data_map_.chunks[this_chunk_num].hash , sizeof(hash));
 
-//   std::copy(answer.end() - 64, answer.end(),
-  size_t size = answer.size();
-  data_map_.chunks[this_chunk_num].hash = answer.substr(size - 64);
-  data_map_.chunks[this_chunk_num].size = this_chunk_size_;
-  if (! chunk_store_->Store(answer.substr(size - 64),
-                           answer.substr(0, this_chunk_size_)))
-    DLOG(ERROR) << "Could not store " << EncodeToHex(answer.substr(0,64))
+  byte chunk_content[this_chunk_size_]; // do not move this !!
+  aes_filter.Get(chunk_content, this_chunk_size_); // get content
+  aes_filter.Get(data_map_.chunks[this_chunk_num].hash , 64);
+  std::string post_hash = reinterpret_cast<char *>(data_map_.chunks[this_chunk_num].hash);
+  std::string data(reinterpret_cast<char *>(chunk_content), this_chunk_size_);
+  if (! chunk_store_->Store(post_hash, data))
+    DLOG(ERROR) << "Could not store " << EncodeToHex(post_hash)
                                       << std::endl;
+  data_map_.chunks[this_chunk_num].size = this_chunk_size_;
   data_map_.size += this_chunk_size_;
   return true;
 }
@@ -266,22 +261,17 @@ bool SE::Read(char* data) {
 
    std::vector<std::string> plain_text_vec(num_chunks);
 
-// get all the chunks
-// #pragma omp parallel for // this actually can slow it down !!! 
+
   for (size_t i = 0;i < num_chunks; ++i) {
-    std::string hash = data_map_.chunks.at(i).hash;
+    std::string hash = reinterpret_cast<char *>(data_map_.chunks[i].hash);
     if (!chunk_store_->Has(hash)) {
     DLOG(ERROR) << "ERROR could not locate " << EncodeToHex(hash) << std::endl;
-    //return false;
+    return false;
   }
-    
    cipher_vec.at(i) = chunk_store_->Get(hash);
   }  
-#pragma omp parallel for 
-//private(obfuscation_pad, key, iv, answer, content, hash)
+#pragma omp parallel for
   for (size_t i = 0;i < num_chunks; ++i) {
-    size_t num_chunks = data_map_.chunks.size();
-    size_t this_chunk_num = num_chunks;
     byte * obfuscation_pad = new byte[144];
     byte *key = new byte[32];
     byte *iv = new byte[16];
@@ -303,10 +293,10 @@ bool SE::Read(char* data) {
   // build data
   std::string alldata;
   for (auto it = plain_text_vec.begin();it < plain_text_vec.end() ; ++it) {
-    alldata += *it;
+    alldata += (*it).c_str() ;
   }
-  
-  strncat(data, alldata.c_str(), alldata.size());
+
+  strncpy(data, alldata.c_str(), alldata.size());
   if (data_map_.content_size > 0) {
    strcat(data, reinterpret_cast<const char*>(data_map_.content));
   }
