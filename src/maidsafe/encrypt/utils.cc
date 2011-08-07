@@ -262,26 +262,22 @@ bool SE::EncryptChunkFromQueue(CryptoPP::MessageQueue & queue) {
 bool SE::Read(char* data) {
   ChunkDetails2 chunk_details;
    size_t num_chunks = data_map_.chunks.size();
-//   size_t this_chunk_num = num_chunks;
-//   size_t position(0);
    std::vector<std::string> cipher_vec(num_chunks);
 
    std::vector<std::string> plain_text_vec(num_chunks);
 
 // get all the chunks
-#pragma omp parallel for
+// #pragma omp parallel for // this actually can slow it down !!! 
   for (size_t i = 0;i < num_chunks; ++i) {
     std::string hash = data_map_.chunks.at(i).hash;
     if (!chunk_store_->Has(hash)) {
     DLOG(ERROR) << "ERROR could not locate " << EncodeToHex(hash) << std::endl;
-    return false;
+    //return false;
   }
     
    cipher_vec.at(i) = chunk_store_->Get(hash);
-  }
-  
-#pragma omp parallel for
-//shared(data_map_)
+  }  
+#pragma omp parallel for 
 //private(obfuscation_pad, key, iv, answer, content, hash)
   for (size_t i = 0;i < num_chunks; ++i) {
     size_t num_chunks = data_map_.chunks.size();
@@ -299,18 +295,17 @@ bool SE::Read(char* data) {
               new CryptoPP::StreamTransformationFilter(decryptor,
                 new CryptoPP::StringSink(answer)),
               obfuscation_pad));
-
     plain_text_vec.at(i) = answer;
-
-    delete[] obfuscation_pad;
+    delete[] obfuscation_pad; // these should be shared_arrays !!!
     delete[] key;
     delete[] iv;
   }
   // build data
   std::string alldata;
-  for (size_t i = 0;i < num_chunks; ++i) {
-    alldata += plain_text_vec.at(i);
+  for (auto it = plain_text_vec.begin();it < plain_text_vec.end() ; ++it) {
+    alldata += *it;
   }
+  
   strncat(data, alldata.c_str(), alldata.size());
   if (data_map_.content_size > 0) {
    strcat(data, reinterpret_cast<const char*>(data_map_.content));
