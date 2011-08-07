@@ -96,11 +96,6 @@ class SE {  // Self Encryption of course
   bool FinaliseWrite();
   bool setDatamap(std::shared_ptr<DataMap2> data_map);
   DataMap2 getDataMap() { return data_map_; }
-  
-
-  void seek(size_t offset, bool direction);
-
-
  private:  
   SE &operator = (const SE&);  // no assignment
   SE(const SE&);  // no copy

@@ -88,7 +88,8 @@ bool SE::FinaliseWrite() {
     if ((chunk_size_ +1) *3 < 1025) {
       size_t qlength = main_encrypt_queue_.TotalBytesRetrievable();
       byte i[qlength];
-      main_encrypt_queue_.Get(data_map_.content, sizeof(i));
+      main_encrypt_queue_.Get(i, sizeof(i));
+      data_map_.content = reinterpret_cast<const char *>(i);
       data_map_.content_size = qlength;
       data_map_.size += qlength;
       if (chunk0_queue_.AnyRetrievable()) {
@@ -117,7 +118,7 @@ bool SE::ReInitialise() {
     chunk_one_two_q_full_ = false;
     data_map_.chunks.clear();
     data_map_.size = 0;
-    data_map_.content = {0};
+    data_map_.content = {};
     data_map_.content_size = 0;
     return true;
 }
@@ -305,7 +306,7 @@ DLOG(INFO) << std::endl;
 
   strncpy(data, alldata.c_str(), alldata.size());
   if (data_map_.content_size > 0) {
-   strncat(data, reinterpret_cast<const char*>(data_map_.content), amount_of_extra_content);
+   strncat(data, data_map_.content.c_str(), amount_of_extra_content);
   }
   return true;
 }

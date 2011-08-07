@@ -77,7 +77,7 @@ struct DataMap2 {
   std::uint32_t self_encryption_type;  ///< Type of SE used for chunks
   std::vector<ChunkDetails2> chunks;  ///< Information about the chunks
   std::uint64_t size;      ///< Size of data item
-  byte content[1024];     ///< Whole data item or last chunk, if small enough
+  std::string content;     ///< Whole data item or last chunk, if small enough
   std::uint16_t content_size;
 };
 
