@@ -23,6 +23,7 @@
 #  pragma warning(disable: 4702)
 #endif
 
+#include <omp.h>
 #include "cryptopp/gzip.h"
 #include "cryptopp/hex.h"
 #include "cryptopp/aes.h"
@@ -260,23 +261,37 @@ bool SE::EncryptChunkFromQueue(CryptoPP::MessageQueue & queue) {
 
 bool SE::Read(char* data) {
   ChunkDetails2 chunk_details;
-  size_t num_chunks = data_map_.chunks.size();
-  size_t this_chunk_num = num_chunks;
-  size_t position(0);
-  
+   size_t num_chunks = data_map_.chunks.size();
+//   size_t this_chunk_num = num_chunks;
+//   size_t position(0);
+   std::vector<std::string> cipher_vec(num_chunks);
+
+   std::vector<std::string> plain_text_vec(num_chunks);
+
+// get all the chunks
+#pragma omp parallel for
   for (size_t i = 0;i < num_chunks; ++i) {
+    std::string hash = data_map_.chunks.at(i).hash;
+    if (!chunk_store_->Has(hash)) {
+    DLOG(ERROR) << "ERROR could not locate " << EncodeToHex(hash) << std::endl;
+    return false;
+  }
+    
+   cipher_vec.at(i) = chunk_store_->Get(hash);
+  }
+  
+#pragma omp parallel for
+//shared(data_map_)
+//private(obfuscation_pad, key, iv, answer, content, hash)
+  for (size_t i = 0;i < num_chunks; ++i) {
+    size_t num_chunks = data_map_.chunks.size();
+    size_t this_chunk_num = num_chunks;
     byte * obfuscation_pad = new byte[144];
     byte *key = new byte[32];
     byte *iv = new byte[16];
     getPad_Iv_Key(i, key, iv, obfuscation_pad);
-    std::string hash = data_map_.chunks.at(i).hash;
 
-    if (!chunk_store_->Has(hash)) {
-     DLOG(ERROR) << "ERROR could not locate " << EncodeToHex(hash) << std::endl;
-     return false;
-    }
-
-    std::string content(chunk_store_->Get(hash));
+    std::string content = cipher_vec.at(i);
     std::string answer;
     CryptoPP::CFB_Mode<CryptoPP::AES>::Decryption decryptor(key, 32, iv);
            CryptoPP::StringSource filter(content, true,
@@ -284,15 +299,19 @@ bool SE::Read(char* data) {
               new CryptoPP::StreamTransformationFilter(decryptor,
                 new CryptoPP::StringSink(answer)),
               obfuscation_pad));
-           
-    strncat(data, answer.c_str(), answer.size());
 
-    position += answer.size();
-    // concat
+    plain_text_vec.at(i) = answer;
+
     delete[] obfuscation_pad;
     delete[] key;
     delete[] iv;
   }
+  // build data
+  std::string alldata;
+  for (size_t i = 0;i < num_chunks; ++i) {
+    alldata += plain_text_vec.at(i);
+  }
+  strncat(data, alldata.c_str(), alldata.size());
   if (data_map_.content_size > 0) {
    strcat(data, reinterpret_cast<const char*>(data_map_.content));
   }
