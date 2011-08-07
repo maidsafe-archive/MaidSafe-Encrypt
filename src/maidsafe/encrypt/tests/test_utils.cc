@@ -158,6 +158,8 @@ TEST_F(SelfEncryptionTest, BEH_WriteAndRead) {
   for (size_t i = 0; i < test_data_size ; ++i) {
     twentymb[i] = 'a'; //plain_text[i];
   }
+  ++test_data_size;
+  twentymb[test_data_size] = 'b';
  //std::copy(plain_text.c_str(), plain_text.c_str() + test_data_size, twentymb);
  
   boost::posix_time::ptime time =
