@@ -294,7 +294,7 @@ bool SE::Read(char* data) {
     delete[] iv;
   }
   if (data_map_.content_size > 0) {
-  strcat(data, reinterpret_cast<const char*>(data_map_.content));
+   strcat(data, reinterpret_cast<const char*>(data_map_.content));
   }
   return true;
 }

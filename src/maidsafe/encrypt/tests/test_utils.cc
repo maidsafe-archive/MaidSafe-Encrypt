@@ -152,13 +152,13 @@ TEST_F(SelfEncryptionTest, BEH_1025Chars3chunks) {
 
 TEST_F(SelfEncryptionTest, BEH_WriteAndRead) {
   EXPECT_TRUE(selfenc_.ReInitialise());
-  size_t test_data_size(1024*1024*1);
-  std::string plain_text(RandomString(test_data_size));
+  size_t test_data_size(1024*1024*20);
+ // std::string plain_text(RandomString(test_data_size));
   char *twentymb = new char[test_data_size];
-//   for (size_t i = 0; i < test_data_size ; ++i) {
-//     twentymb[i] = 'a';
-//   }
-  std::copy(plain_text.c_str(), plain_text.c_str() + test_data_size, twentymb);
+  for (size_t i = 0; i < test_data_size ; ++i) {
+    twentymb[i] = 'a';
+  }
+ // std::copy(plain_text.c_str(), plain_text.c_str() + test_data_size, twentymb);
   boost::posix_time::ptime time =
         boost::posix_time::microsec_clock::universal_time();
   EXPECT_TRUE(selfenc_.Write(twentymb, test_data_size));
