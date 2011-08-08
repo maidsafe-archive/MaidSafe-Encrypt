@@ -28,7 +28,7 @@
 #include "cryptopp/aes.h"
 #include "common/crypto.h"
 #include "boost/filesystem.hpp"
-#include "boost/scoped_array.hpp"
+#include "boost/shared_array.hpp"
 #include "boost/concept_check.hpp"
 #include "maidsafe/encrypt/data_map.h"
 
@@ -108,10 +108,10 @@ class SE {  // Self Encryption of course
   void HashMe(byte * digest, byte *data, size_t length);
   bool ResetEncrypt();
   bool EncryptaChunk(std::string &input, std::string *output);
-  void getPad_Iv_Key(size_t chunk_num,
-                       byte * key,
-                       byte * iv,
-                       byte * pad);
+  void getPad_Iv_Key(size_t this_chunk_num,
+                     boost::shared_array<byte> key,
+                     boost::shared_array<byte> iv,
+                     boost::shared_array<byte> pad);
   bool ProcessMainQueue();
  private:
   DataMap2 data_map_;

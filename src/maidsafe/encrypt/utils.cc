@@ -185,13 +185,13 @@ void SE::HashMe(byte * digest, byte* data, size_t length) {
 }
 
 void SE::getPad_Iv_Key(size_t this_chunk_num,
-                       byte * key,
-                       byte * iv,
-                       byte * pad)
-{
+                       boost::shared_array<byte> key,
+                       boost::shared_array<byte> iv,
+                       boost::shared_array<byte> pad) {
   size_t num_chunks = data_map_.chunks.size();
   size_t n_1_chunk = (this_chunk_num + num_chunks -1) % num_chunks;
   size_t n_2_chunk = (this_chunk_num + num_chunks -2) % num_chunks;
+
   for (int i = 0; i < 48; ++i) {
     if (i < 32)
       key[i] = data_map_.chunks[n_1_chunk].pre_hash[i];
@@ -210,10 +210,9 @@ void SE::getPad_Iv_Key(size_t this_chunk_num,
 bool SE::EncryptChunkFromQueue(CryptoPP::MessageQueue & queue) {
   ChunkDetails2 chunk_details;
   size_t this_chunk_num(0);
-//   boost::shared_array<byte> obfuscation_pad;
-  byte * obfuscation_pad = new byte[144];
-  byte *key = new byte[32];
-  byte *iv = new byte[16];
+  boost::shared_array<byte> pad(new byte[144]);
+  boost::shared_array<byte> key(new byte[32]);
+  boost::shared_array<byte> iv (new byte[16]);
 
   if ((&queue != &chunk0_queue_) && (&queue != &chunk1_queue_)) {
     byte temp[chunk_size_];
@@ -230,14 +229,14 @@ bool SE::EncryptChunkFromQueue(CryptoPP::MessageQueue & queue) {
     if (&queue == &chunk1_queue_)
     this_chunk_num = 1;
   }
-  getPad_Iv_Key(this_chunk_num, key, iv, obfuscation_pad);
-  CryptoPP::CFB_Mode<CryptoPP::AES>::Encryption encryptor(key, 32, iv);
+  getPad_Iv_Key(this_chunk_num, key, iv, pad);
+  CryptoPP::CFB_Mode<CryptoPP::AES>::Encryption encryptor(key.get(), 32, iv.get());
   CryptoPP::StreamTransformationFilter aes_filter(encryptor,
                   new XORFilter(
                     new CryptoPP::HashFilter(hash_,
                       new CryptoPP::MessageQueue()
                     , true)
-                  , obfuscation_pad));
+                  , pad.get()));
 
   queue.TransferAllTo(aes_filter);
   aes_filter.MessageEnd(-1, true);
@@ -264,7 +263,7 @@ bool SE::Read(char* data, size_t length, size_t position) {
 
    // find start and and chunks
    size_t start_chunk(0), start_offset(0), end_chunk(0), run_total(0);
-//#pragma omp parallel for 
+// #pragma omp parallel for
    for(size_t i = 0; i < data_map_.chunks.size(); ++i) {
      if ((data_map_.chunks[i].size + run_total >= position) &&
          (start_chunk = 0)) {
@@ -291,7 +290,7 @@ bool SE::Read(char* data, size_t length, size_t position) {
      ++end_chunk;
 
    std::vector<std::string> plain_text_vec(end_chunk - start_chunk);
-#pragma omp parallel for
+#pragma omp parallel for shared(start_chunk, end_chunk)
   for (size_t i = start_chunk;i < end_chunk ; ++i) {
     ReadChunk(i, &plain_text_vec.at(i));
   }
@@ -320,21 +319,18 @@ bool SE::ReadChunk(size_t chunk_num, std::string *data) {
       DLOG(ERROR) << "Could not find chunk: " << EncodeToHex(hash) << std::endl;
       return false;
     }
-    byte * pad = new byte[144];
-    byte *key = new byte[32];
-    byte *iv = new byte[16];
+  boost::shared_array<byte> pad(new byte[144]);
+  boost::shared_array<byte> key(new byte[32]);
+  boost::shared_array<byte> iv (new byte[16]);
     getPad_Iv_Key(chunk_num, key, iv, pad);
     std::string content(chunk_store_->Get(hash));
     std::string answer;
-    CryptoPP::CFB_Mode<CryptoPP::AES>::Decryption decryptor(key, 32, iv);
+    CryptoPP::CFB_Mode<CryptoPP::AES>::Decryption decryptor(key.get(), 32, iv.get());
            CryptoPP::StringSource filter(content, true,
              new XORFilter(
               new CryptoPP::StreamTransformationFilter(decryptor,
                 new CryptoPP::StringSink(*data)),
-              pad));
-    delete[] pad; // these should be shared_arrays !!!
-    delete[] key;
-    delete[] iv;
+              pad.get()));
   return true;
 }
 

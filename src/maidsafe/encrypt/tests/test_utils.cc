@@ -187,9 +187,7 @@ TEST_F(SelfEncryptionTest, BEH_WriteAndRead) {
              << " seconds at a speed of "
              <<  BytesToBinarySiUnits(test_data_size / (duration / 1000000.0) )
              << "/s" << std::endl;
-             
-//  std::string stranswer(answer, test_data_size);
-//  std::cout << EncodeToHex(stranswer) << std::endl;
+
   for (size_t  i = 0; i < test_data_size ; ++i)
     ASSERT_EQ(plain_data[i], answer[i]) << "failed at count " << i;
 
