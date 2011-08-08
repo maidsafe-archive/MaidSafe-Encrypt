@@ -53,7 +53,7 @@ class SelfEncryptionTest : public testing::Test {
       : hash_func_(std::bind(&crypto::Hash<crypto::SHA512>,
                              std::placeholders::_1)),
       chunk_store_(new MemoryChunkStore (true, hash_func_)),
-      data_map_(), selfenc_(chunk_store_),
+      data_map_(), selfenc_(chunk_store_, data_map_),
       chunk_size_(1024*256), num_chunks_(10), extra_content_(),
       expected_content_size_(sizeof(extra_content_)),
       file_size_(sizeof(extra_content_)), pre_enc_chunk_(new byte[chunk_size_]),
@@ -97,14 +97,14 @@ TEST_F(SelfEncryptionTest, BEH_40Charsonly) {
   char *answer = new char[40];
   std::copy(content.c_str(), content.c_str() + 39, stuff); // null terminator
   EXPECT_TRUE(selfenc_.Write(stuff, 40));
-  EXPECT_EQ(0, selfenc_.getDataMap().chunks.size());
-  EXPECT_EQ(0, selfenc_.getDataMap().size);
-  EXPECT_EQ(0, selfenc_.getDataMap().content_size);
+  EXPECT_EQ(0, selfenc_.getDataMap()->chunks.size());
+  EXPECT_EQ(0, selfenc_.getDataMap()->size);
+  EXPECT_EQ(0, selfenc_.getDataMap()->content_size);
   EXPECT_TRUE(selfenc_.FinaliseWrite());
-  EXPECT_EQ(40, selfenc_.getDataMap().size);
-  EXPECT_EQ(40, selfenc_.getDataMap().content_size);
-  EXPECT_EQ(0, selfenc_.getDataMap().chunks.size());
-  EXPECT_EQ(*stuff, *selfenc_.getDataMap().content.c_str());
+  EXPECT_EQ(40, selfenc_.getDataMap()->size);
+  EXPECT_EQ(40, selfenc_.getDataMap()->content_size);
+  EXPECT_EQ(0, selfenc_.getDataMap()->chunks.size());
+  EXPECT_EQ(*stuff, *selfenc_.getDataMap()->content.c_str());
   EXPECT_TRUE(selfenc_.Read(answer));
   EXPECT_EQ(EncodeToHex(stuff),
             EncodeToHex(answer));
@@ -117,13 +117,13 @@ TEST_F(SelfEncryptionTest, BEH_1023Chars) {
   char *stuff1 = new char[1023];
   std::copy(content.c_str(), content.c_str() + 1023, stuff1);
   EXPECT_TRUE(selfenc_.Write(stuff1, 1023));
-  EXPECT_EQ(0, selfenc_.getDataMap().chunks.size());
-  EXPECT_EQ(0, selfenc_.getDataMap().size);
-  EXPECT_EQ(0, selfenc_.getDataMap().content_size);
+  EXPECT_EQ(0, selfenc_.getDataMap()->chunks.size());
+  EXPECT_EQ(0, selfenc_.getDataMap()->size);
+  EXPECT_EQ(0, selfenc_.getDataMap()->content_size);
   EXPECT_TRUE(selfenc_.FinaliseWrite());
-  EXPECT_EQ(1023, selfenc_.getDataMap().size);
-  EXPECT_EQ(1023, selfenc_.getDataMap().content_size);
-  EXPECT_EQ(0, selfenc_.getDataMap().chunks.size());
+  EXPECT_EQ(1023, selfenc_.getDataMap()->size);
+  EXPECT_EQ(1023, selfenc_.getDataMap()->content_size);
+  EXPECT_EQ(0, selfenc_.getDataMap()->chunks.size());
 }
 
 TEST_F(SelfEncryptionTest, BEH_1025Chars3chunks) {
@@ -132,19 +132,19 @@ TEST_F(SelfEncryptionTest, BEH_1025Chars3chunks) {
   char *stuff1 = new char[1025];
   std::copy(content.c_str(), content.c_str() + 1025, stuff1);
   EXPECT_TRUE(selfenc_.Write(stuff1, 1025));
-  EXPECT_EQ(0, selfenc_.getDataMap().chunks.size());
-  EXPECT_EQ(0, selfenc_.getDataMap().size);
-  EXPECT_EQ(0, selfenc_.getDataMap().content_size);
+  EXPECT_EQ(0, selfenc_.getDataMap()->chunks.size());
+  EXPECT_EQ(0, selfenc_.getDataMap()->size);
+  EXPECT_EQ(0, selfenc_.getDataMap()->content_size);
   EXPECT_TRUE(selfenc_.FinaliseWrite());
-  EXPECT_EQ(1025, selfenc_.getDataMap().size);
-  EXPECT_EQ(1025, selfenc_.getDataMap().content_size);
-  EXPECT_EQ(0, selfenc_.getDataMap().chunks.size());
+  EXPECT_EQ(1025, selfenc_.getDataMap()->size);
+  EXPECT_EQ(1025, selfenc_.getDataMap()->content_size);
+  EXPECT_EQ(0, selfenc_.getDataMap()->chunks.size());
 //   EXPECT_EQ(&stuff1,
-//             selfenc_.getDataMap().content);
+//             selfenc_.getDataMap()->content);
 //   EXPECT_EQ(static_cast<char>(stuff1[1024]),
-//             static_cast<char>(selfenc_.getDataMap().content[1]));
+//             static_cast<char>(selfenc_.getDataMap()->content[1]));
 //   EXPECT_EQ(static_cast<char>(stuff1[1025]),
-//             static_cast<char>(selfenc_.getDataMap().content[2]));
+//             static_cast<char>(selfenc_.getDataMap()->content[2]));
 }
 
 
@@ -196,9 +196,10 @@ TEST_F(SelfEncryptionTest, BEH_WriteAndRead) {
 TEST_F(SelfEncryptionTest, BEH_manual_check_write) {
   MemoryChunkStore::HashFunc hash_func = std::bind(&crypto::Hash<crypto::SHA512>,
                                                    std::placeholders::_1);
-  std::shared_ptr<MemoryChunkStore> chunk_store(new MemoryChunkStore (true, hash_func));
+  std::shared_ptr<MemoryChunkStore>
+       chunk_store(new MemoryChunkStore (true, hash_func));
   std::shared_ptr<DataMap2> data_map; // NULL
-  SE selfenc(chunk_store);
+  SE selfenc(chunk_store, data_map);
   size_t chunk_size(1024*256); // system default
   size_t num_chunks(10);
   char * extra_content = new char[5]{'1','2','3','4','5'};
@@ -226,9 +227,9 @@ TEST_F(SelfEncryptionTest, BEH_manual_check_write) {
   EXPECT_TRUE(selfenc.Write(pre_enc_file, file_size));
   EXPECT_TRUE(selfenc.FinaliseWrite());
 // Do some testing on results
-  EXPECT_EQ(num_chunks,  selfenc.getDataMap().chunks.size());
-  EXPECT_EQ(expected_content_size,  selfenc.getDataMap().content_size);
-  EXPECT_EQ(file_size, selfenc.getDataMap().size);
+  EXPECT_EQ(num_chunks,  selfenc.getDataMap()->chunks.size());
+  EXPECT_EQ(expected_content_size,  selfenc.getDataMap()->content_size);
+  EXPECT_EQ(file_size, selfenc.getDataMap()->size);
 
   CryptoPP::SHA512().CalculateDigest(prehash, pre_enc_chunk, chunk_size);
 
@@ -253,19 +254,19 @@ TEST_F(SelfEncryptionTest, BEH_manual_check_write) {
   CryptoPP::SHA512().CalculateDigest(posthashxor, xor_res, chunk_size);
   
   for (int i = 0; i < 64; ++i) {
-    ASSERT_EQ(prehash[i], selfenc.getDataMap().chunks[4].pre_hash[i])
+    ASSERT_EQ(prehash[i], selfenc.getDataMap()->chunks[4].pre_hash[i])
       << "failed at " << i;
-    ASSERT_EQ(posthashxor[i], static_cast<byte>(selfenc.getDataMap().chunks[4].hash[i]))
+    ASSERT_EQ(posthashxor[i], static_cast<byte>(selfenc.getDataMap()->chunks[4].hash[i]))
       << "failed at " << i;
   }
 
 //   // check chunks' hashes - should be equal for repeated single character input
 //   bool match(true);
-//   for (size_t i = 0; i < selfenc.getDataMap().chunks.size(); ++i) {
-//     for (size_t j = i; j < selfenc.getDataMap().chunks.size(); ++j) {
+//   for (size_t i = 0; i < selfenc.getDataMap()->chunks.size(); ++i) {
+//     for (size_t j = i; j < selfenc.getDataMap()->chunks.size(); ++j) {
 //       for (int k = 0; k < CryptoPP::SHA512::DIGESTSIZE ; ++k) {
-//         if (selfenc.getDataMap().chunks[i].hash[k] !=
-//                 selfenc.getDataMap().chunks[j].hash[k])
+//         if (selfenc.getDataMap()->chunks[i].hash[k] !=
+//                 selfenc.getDataMap()->chunks[j].hash[k])
 //           match = false;
 //       }
 //       EXPECT_TRUE(match);

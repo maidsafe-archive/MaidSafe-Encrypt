@@ -78,8 +78,9 @@ class Anchor : public CryptoPP::Bufferless<CryptoPP::Filter> {
 
 class SE {  // Self Encryption
  public:
-  SE(std::shared_ptr<ChunkStore> chunk_store) :
-                        data_map_(), complete_(false), chunk_size_(1024*256),
+  SE(std::shared_ptr<ChunkStore> chunk_store,
+    std::shared_ptr<DataMap2> data_map) :
+                        data_map_(data_map), complete_(false), chunk_size_(1024*256),
                         min_chunk_size_(1024), length_(), hash_(),
                         main_encrypt_queue_(CryptoPP::MessageQueue()),
                         chunk0_queue_(CryptoPP::MessageQueue()),
@@ -91,13 +92,16 @@ class SE {  // Self Encryption
                         c0_and_1_chunk_size_(chunk_size_),
                         this_chunk_size_(chunk_size_), current_position_(0),
                         sequence_map_()
-                        { }
+                        {
+                          if (!data_map_)
+                            data_map_.reset(new DataMap2);
+                        }
   bool Write(const char* data = NULL, size_t length = 0, size_t position = 0);
   bool Read(char * data, size_t length = 0, size_t position = 0);
   bool ReInitialise();
   bool FinaliseWrite();
   bool setDatamap(std::shared_ptr<DataMap2> data_map);
-  DataMap2 getDataMap() { return data_map_; }
+  std::shared_ptr<DataMap2> getDataMap() { return data_map_; }
   void set_chunk_size(size_t chunk_size) { chunk_size_ = chunk_size; }
   size_t chunk_size() { return chunk_size_; }
  private:  
@@ -119,7 +123,7 @@ class SE {  // Self Encryption
   bool CheckPositionInSequncer(size_t position, size_t length); // maybe not necessary
   
  private:
-  DataMap2 data_map_;
+  std::shared_ptr<DataMap2> data_map_;
   bool complete_;  // in case of requirement to send a complete only
   size_t chunk_size_;
   size_t min_chunk_size_;

@@ -164,9 +164,9 @@ bool SE::FinaliseWrite() {
       size_t qlength = main_encrypt_queue_.TotalBytesRetrievable();
       byte i[qlength];
       main_encrypt_queue_.Get(i, sizeof(i));
-      data_map_.content = reinterpret_cast<const char *>(i);
-      data_map_.content_size = qlength;
-      data_map_.size += qlength;
+      data_map_->content = reinterpret_cast<const char *>(i);
+      data_map_->content_size = qlength;
+      data_map_->size += qlength;
       if (chunk0_queue_.AnyRetrievable()) {
         EncryptChunkFromQueue(chunk0_queue_);
         EncryptChunkFromQueue(chunk1_queue_);
@@ -191,10 +191,10 @@ bool SE::ReInitialise() {
     chunk0_queue_.SkipAll();
     chunk1_queue_.SkipAll();
     chunk_one_two_q_full_ = false;
-    data_map_.chunks.clear();
-    data_map_.size = 0;
-    data_map_.content = {};
-    data_map_.content_size = 0;
+    data_map_->chunks.clear();
+    data_map_->size = 0;
+    data_map_->content = {};
+    data_map_->content_size = 0;
     return true;
 }
 
@@ -210,7 +210,7 @@ bool SE::QueueC1AndC2() {
                                      temp,
                                      sizeof(temp));
   chunk_data.pre_size = chunk_size_;
-  data_map_.chunks.push_back(chunk_data);
+  data_map_->chunks.push_back(chunk_data);
   // Chunk 2
   main_encrypt_queue_.TransferTo(chunk1_queue_, chunk_size_);
   chunk1_queue_.MessageEnd();
@@ -221,7 +221,7 @@ bool SE::QueueC1AndC2() {
                                      temp2 ,
                                      sizeof(temp2));
   chunk_data2.pre_size = chunk_size_;
-  data_map_.chunks.push_back(chunk_data);
+  data_map_->chunks.push_back(chunk_data);
   chunk_one_two_q_full_ = true;
   return chunk_one_two_q_full_;
 }
@@ -243,22 +243,22 @@ void SE::getPad_Iv_Key(size_t this_chunk_num,
                        boost::shared_array<byte> key,
                        boost::shared_array<byte> iv,
                        boost::shared_array<byte> pad) {
-  size_t num_chunks = data_map_.chunks.size();
+  size_t num_chunks = data_map_->chunks.size();
   size_t n_1_chunk = (this_chunk_num + num_chunks -1) % num_chunks;
   size_t n_2_chunk = (this_chunk_num + num_chunks -2) % num_chunks;
 
   for (int i = 0; i < 48; ++i) {
     if (i < 32)
-      key[i] = data_map_.chunks[n_1_chunk].pre_hash[i];
+      key[i] = data_map_->chunks[n_1_chunk].pre_hash[i];
     if (i > 31)
-      iv[i - 32] = data_map_.chunks[n_1_chunk].pre_hash[i];
+      iv[i - 32] = data_map_->chunks[n_1_chunk].pre_hash[i];
   }
 
   for (int i = 0; i < 64; ++i) {
-    pad[i] =  data_map_.chunks[n_1_chunk].pre_hash[i];
-    pad[i+64] = data_map_.chunks[this_chunk_num].pre_hash[i];
+    pad[i] =  data_map_->chunks[n_1_chunk].pre_hash[i];
+    pad[i+64] = data_map_->chunks[this_chunk_num].pre_hash[i];
     if (i < 16)
-      pad[i+128] = data_map_.chunks[n_2_chunk].pre_hash[i+48];
+      pad[i+128] = data_map_->chunks[n_2_chunk].pre_hash[i+48];
   }
 }
 
@@ -275,8 +275,8 @@ bool SE::EncryptChunkFromQueue(CryptoPP::MessageQueue & queue) {
     HashMe(chunk_details.pre_hash, temp, sizeof(temp));
     chunk_details.pre_size = chunk_size_;
     this_chunk_size_ = chunk_size_;
-    data_map_.chunks.push_back(chunk_details);
-    this_chunk_num = data_map_.chunks.size() -1;
+    data_map_->chunks.push_back(chunk_details);
+    this_chunk_num = data_map_->chunks.size() -1;
   } else {
     this_chunk_size_ = c0_and_1_chunk_size_;
     if (&queue == &chunk0_queue_)
@@ -301,9 +301,9 @@ bool SE::EncryptChunkFromQueue(CryptoPP::MessageQueue & queue) {
   byte chunk_content[this_chunk_size_]; // do not move this !!
   
   aes_filter.Get(chunk_content, this_chunk_size_); // get content
-  aes_filter.Get(data_map_.chunks[this_chunk_num].hash , 64);
+  aes_filter.Get(data_map_->chunks[this_chunk_num].hash , 64);
   std::string post_hash = reinterpret_cast<char *>
-                          (data_map_.chunks[this_chunk_num].hash);
+                          (data_map_->chunks[this_chunk_num].hash);
   std::string data(reinterpret_cast<char *>(chunk_content), this_chunk_size_);
   if (! chunk_store_->Store(post_hash, data)) {
     DLOG(ERROR) << "Could not store " << EncodeToHex(post_hash)
@@ -313,27 +313,27 @@ bool SE::EncryptChunkFromQueue(CryptoPP::MessageQueue & queue) {
     // rechunk with ++chunk_size_ if some data is there but not all.
     return false;
   }
-  data_map_.chunks[this_chunk_num].size = this_chunk_size_;
-  data_map_.size += this_chunk_size_;
+  data_map_->chunks[this_chunk_num].size = this_chunk_size_;
+  data_map_->size += this_chunk_size_;
   return true;
 }
 
 bool SE::Read(char* data, size_t length, size_t position) {
 
-   if ((data_map_.size > (length + position)) && (length != 0))
+   if ((data_map_->size > (length + position)) && (length != 0))
      return false;
  
    size_t start_chunk(0), start_offset(0), end_chunk(0), run_total(0);
-   for(size_t i = 0; i < data_map_.chunks.size(); ++i) {
-     if ((data_map_.chunks[i].size + run_total >= position) &&
+   for(size_t i = 0; i < data_map_->chunks.size(); ++i) {
+     if ((data_map_->chunks[i].size + run_total >= position) &&
          (start_chunk = 0)) {
        start_chunk = i;
-       start_offset = run_total + data_map_.chunks[i].size -
+       start_offset = run_total + data_map_->chunks[i].size -
                       (position - run_total);
-       run_total = data_map_.chunks[i].size - start_offset;
+       run_total = data_map_->chunks[i].size - start_offset;
      }
      else 
-       run_total += data_map_.chunks[i].size;
+       run_total += data_map_->chunks[i].size;
            // find end (offset handled by return truncated size
      if ((run_total <= length) || (length == 0))
        end_chunk = i;
@@ -343,7 +343,7 @@ bool SE::Read(char* data, size_t length, size_t position) {
    if (run_total <  length)
      amount_of_extra_content = length - run_total;
    else
-     amount_of_extra_content = data_map_.content_size;
+     amount_of_extra_content = data_map_->content_size;
  
    if (end_chunk != 0)
      ++end_chunk;
@@ -363,14 +363,14 @@ bool SE::Read(char* data, size_t length, size_t position) {
      data[i] = alldata[i];
 #pragma omp parallel for
   for(size_t i = 0; i < amount_of_extra_content; ++i)
-    data[i+alldata.size()] = data_map_.content[i];
+    data[i+alldata.size()] = data_map_->content[i];
   return true;
 }
 
 bool SE::ReadChunk(size_t chunk_num, std::string *data) {
-  if (data_map_.chunks.size() < chunk_num)
+  if (data_map_->chunks.size() < chunk_num)
     return false;
-   std::string hash = reinterpret_cast<char *>(data_map_.chunks[chunk_num].hash);
+   std::string hash = reinterpret_cast<char *>(data_map_->chunks[chunk_num].hash);
     if (!chunk_store_->Has(hash)) {
       DLOG(ERROR) << "Could not find chunk: " << EncodeToHex(hash) << std::endl;
       return false;
