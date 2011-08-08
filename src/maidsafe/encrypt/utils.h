@@ -87,7 +87,8 @@ class SE {  // Self Encryption of course
                         chunk_current_queue_(CryptoPP::MessageQueue()),
                         chunk_data_(),
                         chunk_store_(chunk_store),
-                        chunk_one_two_q_full_(false), c0_and_1_chunk_size_(),
+                        chunk_one_two_q_full_(false),
+                        c0_and_1_chunk_size_(chunk_size_),
                         this_chunk_size_(), current_position_()
                         { }
   bool Write(const char* data = NULL, size_t length = 0, size_t position = 0);
@@ -96,6 +97,8 @@ class SE {  // Self Encryption of course
   bool FinaliseWrite();
   bool setDatamap(std::shared_ptr<DataMap2> data_map);
   DataMap2 getDataMap() { return data_map_; }
+  void set_chunk_size(size_t chunk_size) { chunk_size_ = chunk_size; }
+  size_t chunk_size() { return chunk_size_; }
  private:  
   SE &operator = (const SE&);  // no assignment
   SE(const SE&);  // no copy
@@ -109,6 +112,7 @@ class SE {  // Self Encryption of course
                        byte * key,
                        byte * iv,
                        byte * pad);
+  bool ProcessMainQueue();
  private:
   DataMap2 data_map_;
   bool complete_;  // in case of requirement to send a complete only

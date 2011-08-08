@@ -85,7 +85,7 @@ bool SE::FinaliseWrite() {
   while (main_encrypt_queue_.TotalBytesRetrievable() < chunk_size_ * 3) {
     chunk_size_ = (main_encrypt_queue_.TotalBytesRetrievable()) / 3;
     // small files direct to data map
-    if ((chunk_size_ +1) *3 < 1025) {
+    if ((chunk_size_) < 1025) {
       size_t qlength = main_encrypt_queue_.TotalBytesRetrievable();
       byte i[qlength];
       main_encrypt_queue_.Get(i, sizeof(i));
@@ -100,13 +100,13 @@ bool SE::FinaliseWrite() {
       main_encrypt_queue_.SkipAll();
       return true;
     }
-    Write();
+    EncryptChunkFromQueue(main_encrypt_queue_);
   }
-      if (chunk0_queue_.AnyRetrievable()) {
-        EncryptChunkFromQueue(chunk0_queue_);
-        EncryptChunkFromQueue(chunk1_queue_);
-        chunk_one_two_q_full_ = false;
-      }
+  if (chunk0_queue_.AnyRetrievable()) {
+    EncryptChunkFromQueue(chunk0_queue_);
+    EncryptChunkFromQueue(chunk1_queue_);
+    chunk_one_two_q_full_ = false;
+  }
   return true;
 }
 
@@ -162,12 +162,17 @@ bool SE::Write(const char* data, size_t length, size_t position) {
                             length, -1, true);
     // Do not queue chunks 0 and 1 till we know we have enough for 3 chunks
   if (!chunk_one_two_q_full_) {  // for speed
-    if (main_encrypt_queue_.MaxRetrievable() >= chunk_size_ * 3)
+    if (main_encrypt_queue_.MaxRetrievable() >= chunk_size_ * 3) {
        QueueC1AndC2();
-    else
+       return ProcessMainQueue();
+    } else
       return true;  // not enough to process chunks yet
   }
-  while (main_encrypt_queue_.MaxRetrievable() >= chunk_size_) {
+  return ProcessMainQueue();
+}
+
+bool SE::ProcessMainQueue() {
+  while (main_encrypt_queue_.MaxRetrievable()  >= chunk_size_) {
     main_encrypt_queue_.TransferTo(chunk_current_queue_ , chunk_size_);
     if (!EncryptChunkFromQueue(chunk_current_queue_))
       return false;
@@ -179,13 +184,12 @@ void SE::HashMe(byte * digest, byte* data, size_t length) {
   CryptoPP::SHA512().CalculateDigest(digest, data, length);
 }
 
-void SE::getPad_Iv_Key(size_t chunk_num,
+void SE::getPad_Iv_Key(size_t this_chunk_num,
                        byte * key,
                        byte * iv,
                        byte * pad)
 {
   size_t num_chunks = data_map_.chunks.size();
-  size_t this_chunk_num = num_chunks;
   size_t n_1_chunk = (this_chunk_num + num_chunks -1) % num_chunks;
   size_t n_2_chunk = (this_chunk_num + num_chunks -2) % num_chunks;
   for (int i = 0; i < 48; ++i) {
@@ -197,7 +201,7 @@ void SE::getPad_Iv_Key(size_t chunk_num,
 
   for (int i = 0; i < 64; ++i) {
     pad[i] =  data_map_.chunks[n_1_chunk].pre_hash[i];
-    pad[i+64] = data_map_.chunks[chunk_num].pre_hash[i];
+    pad[i+64] = data_map_.chunks[this_chunk_num].pre_hash[i];
     if (i < 16)
       pad[i+128] = data_map_.chunks[n_2_chunk].pre_hash[i+48];
   }
@@ -205,13 +209,12 @@ void SE::getPad_Iv_Key(size_t chunk_num,
 
 bool SE::EncryptChunkFromQueue(CryptoPP::MessageQueue & queue) {
   ChunkDetails2 chunk_details;
-  size_t num_chunks = data_map_.chunks.size();
-  size_t this_chunk_num = num_chunks;
+  size_t this_chunk_num(0);
 //   boost::shared_array<byte> obfuscation_pad;
   byte * obfuscation_pad = new byte[144];
   byte *key = new byte[32];
   byte *iv = new byte[16];
-  byte hash[CryptoPP::SHA512::DIGESTSIZE];
+
   if ((&queue != &chunk0_queue_) && (&queue != &chunk1_queue_)) {
     byte temp[chunk_size_];
     queue.Peek(temp, sizeof(temp)); // copy whole array
@@ -219,6 +222,7 @@ bool SE::EncryptChunkFromQueue(CryptoPP::MessageQueue & queue) {
     chunk_details.pre_size = chunk_size_;
     this_chunk_size_ = chunk_size_;
     data_map_.chunks.push_back(chunk_details);
+    this_chunk_num = data_map_.chunks.size() -1;
   } else {
     this_chunk_size_ = c0_and_1_chunk_size_;
     if (&queue == &chunk0_queue_)
@@ -226,7 +230,6 @@ bool SE::EncryptChunkFromQueue(CryptoPP::MessageQueue & queue) {
     if (&queue == &chunk1_queue_)
     this_chunk_num = 1;
   }
-
   getPad_Iv_Key(this_chunk_num, key, iv, obfuscation_pad);
   CryptoPP::CFB_Mode<CryptoPP::AES>::Encryption encryptor(key, 32, iv);
   CryptoPP::StreamTransformationFilter aes_filter(encryptor,
@@ -240,14 +243,15 @@ bool SE::EncryptChunkFromQueue(CryptoPP::MessageQueue & queue) {
   aes_filter.MessageEnd(-1, true);
 
   byte chunk_content[this_chunk_size_]; // do not move this !!
+  
   aes_filter.Get(chunk_content, this_chunk_size_); // get content
   aes_filter.Get(data_map_.chunks[this_chunk_num].hash , 64);
-  std::string post_hash = reinterpret_cast<char *>(data_map_.chunks[this_chunk_num].hash);
+  std::string post_hash = reinterpret_cast<char *>
+                          (data_map_.chunks[this_chunk_num].hash);
   std::string data(reinterpret_cast<char *>(chunk_content), this_chunk_size_);
   if (! chunk_store_->Store(post_hash, data))
     DLOG(ERROR) << "Could not store " << EncodeToHex(post_hash)
                                       << std::endl;
-  // Prints out all OK     std::cout << EncodeToHex(data);
   data_map_.chunks[this_chunk_num].size = this_chunk_size_;
   data_map_.size += this_chunk_size_;
   return true;
@@ -260,7 +264,7 @@ bool SE::Read(char* data, size_t length, size_t position) {
 
    // find start and and chunks
    size_t start_chunk(0), start_offset(0), end_chunk(0), run_total(0);
-   
+//#pragma omp parallel for 
    for(size_t i = 0; i < data_map_.chunks.size(); ++i) {
      if ((data_map_.chunks[i].size + run_total >= position) &&
          (start_chunk = 0)) {
@@ -275,14 +279,6 @@ bool SE::Read(char* data, size_t length, size_t position) {
      if ((run_total <= length) || (length == 0))
        end_chunk = i;
    }
-
-DLOG(INFO) << "num chunks " << data_map_.chunks.size()
-           << " start chunk " << start_chunk
-           << " start offset " << start_offset
-           << " end chunk " << end_chunk << std::endl
-           << "run total " << run_total
-           << " Dm size " << data_map_.size
-           << std::endl;
 
 
    size_t amount_of_extra_content(0);
@@ -301,13 +297,14 @@ DLOG(INFO) << "num chunks " << data_map_.chunks.size()
   }
  // build data
   std::string alldata;
-  for (auto it = plain_text_vec.begin();it < plain_text_vec.end() ; ++it) {
-    alldata += (*it);
-  }
 
+  for (size_t i = 0 ;i < plain_text_vec.size() ; ++i) {
+    alldata += plain_text_vec[i];
+  }
+#pragma omp parallel for
   for(size_t i = 0; i < alldata.size(); ++i)
      data[i] = alldata[i];
-
+#pragma omp parallel for
   for(size_t i = 0; i < amount_of_extra_content; ++i)
     data[i+alldata.size()] = data_map_.content[i];
 

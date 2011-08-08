@@ -122,8 +122,8 @@ TEST_F(SelfEncryptionTest, BEH_1023Chars) {
   EXPECT_EQ(0, selfenc_.getDataMap().content_size);
   EXPECT_TRUE(selfenc_.FinaliseWrite());
   EXPECT_EQ(1023, selfenc_.getDataMap().size);
-  EXPECT_EQ(0, selfenc_.getDataMap().content_size);
-  EXPECT_EQ(3, selfenc_.getDataMap().chunks.size());
+  EXPECT_EQ(1023, selfenc_.getDataMap().content_size);
+  EXPECT_EQ(0, selfenc_.getDataMap().chunks.size());
 }
 
 TEST_F(SelfEncryptionTest, BEH_1025Chars3chunks) {
@@ -137,8 +137,8 @@ TEST_F(SelfEncryptionTest, BEH_1025Chars3chunks) {
   EXPECT_EQ(0, selfenc_.getDataMap().content_size);
   EXPECT_TRUE(selfenc_.FinaliseWrite());
   EXPECT_EQ(1025, selfenc_.getDataMap().size);
-  EXPECT_EQ(2, selfenc_.getDataMap().content_size);
-  EXPECT_EQ(3, selfenc_.getDataMap().chunks.size());
+  EXPECT_EQ(1025, selfenc_.getDataMap().content_size);
+  EXPECT_EQ(0, selfenc_.getDataMap().chunks.size());
 //   EXPECT_EQ(&stuff1,
 //             selfenc_.getDataMap().content);
 //   EXPECT_EQ(static_cast<char>(stuff1[1024]),
@@ -151,19 +151,19 @@ TEST_F(SelfEncryptionTest, BEH_1025Chars3chunks) {
 
 TEST_F(SelfEncryptionTest, BEH_WriteAndRead) {
   EXPECT_TRUE(selfenc_.ReInitialise());
-  size_t test_data_size(1024*1024*1); // less than 2 mB fails due to test
+  size_t test_data_size(1024*1024*10); // less than 2 mB fails due to test
   std::string plain_text(RandomString(test_data_size));
-  char *twentymb = new char[test_data_size];
+  char *plain_data = new char[test_data_size];
   for (size_t i = 0; i < test_data_size ; ++i) {
-    twentymb[i] = /*'a'; //*/plain_text[i];
+    plain_data[i] = /*'a'; //*/plain_text[i];
   }
   ++test_data_size;
-  twentymb[test_data_size] = 'b';
+  plain_data[test_data_size] = 'b';
  //std::copy(plain_text.c_str(), plain_text.c_str() + test_data_size, twentymb);
  
   boost::posix_time::ptime time =
         boost::posix_time::microsec_clock::universal_time();
-  EXPECT_TRUE(selfenc_.Write(twentymb, test_data_size));
+  EXPECT_TRUE(selfenc_.Write(plain_data, test_data_size));
   EXPECT_TRUE(selfenc_.FinaliseWrite());
   std::uint64_t duration =
       (boost::posix_time::microsec_clock::universal_time() -
@@ -191,14 +191,8 @@ TEST_F(SelfEncryptionTest, BEH_WriteAndRead) {
 //  std::string stranswer(answer, test_data_size);
 //  std::cout << EncodeToHex(stranswer) << std::endl;
   for (size_t  i = 0; i < test_data_size ; ++i)
-    ASSERT_EQ(twentymb[i], answer[i]) << "failed at count " << i;
+    ASSERT_EQ(plain_data[i], answer[i]) << "failed at count " << i;
 
-  for (int i = 0; i < 64; ++i) {         
-    EXPECT_EQ(selfenc_.getDataMap().chunks.at(3).pre_hash[i],
-              selfenc_.getDataMap().chunks.at(4).pre_hash[i]);
-    ASSERT_EQ(selfenc_.getDataMap().chunks.at(3).hash[i],
-              selfenc_.getDataMap().chunks.at(4).hash[i]);
-   }
 }
 
 TEST_F(SelfEncryptionTest, BEH_manual_check_write) {
