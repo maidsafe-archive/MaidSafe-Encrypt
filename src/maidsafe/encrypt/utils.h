@@ -89,7 +89,8 @@ class SE {  // Self Encryption of course
                         chunk_store_(chunk_store),
                         chunk_one_two_q_full_(false),
                         c0_and_1_chunk_size_(chunk_size_),
-                        this_chunk_size_(), current_position_()
+                        this_chunk_size_(chunk_size_), current_position_(0),
+                        sequence_map_()
                         { }
   bool Write(const char* data = NULL, size_t length = 0, size_t position = 0);
   bool Read(char * data, size_t length = 0, size_t position = 0);
@@ -113,6 +114,10 @@ class SE {  // Self Encryption of course
                      boost::shared_array<byte> iv,
                      boost::shared_array<byte> pad);
   bool ProcessMainQueue();
+  bool AddToSequencer(std::string data, size_t position);
+  std::string getFromSequencer(size_t position);
+  bool CheckPositionInSequncer(size_t position, size_t length); // maybe not necessary
+  
  private:
   DataMap2 data_map_;
   bool complete_;  // in case of requirement to send a complete only
@@ -130,6 +135,7 @@ class SE {  // Self Encryption of course
   size_t c0_and_1_chunk_size_;
   size_t this_chunk_size_;
   size_t current_position_;
+  std::map<size_t, std::string> sequence_map_;
 };
 
 }  // namespace encrypt

@@ -81,6 +81,85 @@ size_t XORFilter::Put2(const byte* inString,
                                         blocking);
 }
 
+bool SE::Write(const char* data, size_t length, size_t position) {
+
+  if (length == 0)
+    return true;
+  
+  if (position == current_position_) {
+    std::string extra(getFromSequencer(current_position_+length));
+    main_encrypt_queue_.Put2(const_cast<byte*>
+                           (reinterpret_cast<const byte*>(data)),
+                            length, -1, true);
+    if (extra != "") {
+    main_encrypt_queue_.Put2(const_cast<byte*>
+                           (reinterpret_cast<const byte*>(extra.c_str())),
+                            extra.size(), -1, true);
+    current_position_ += extra.size();
+    }
+    current_position_ += length;
+    
+  } else if (position < current_position_) {
+    // TODO (dirvine) handle rewrites properly
+    // need to grab data and rewrite it
+    // check sequencer
+  } else {
+    std::string add_this(data, length);
+    AddToSequencer(add_this, position);
+  }
+
+    
+    // Do not queue chunks 0 and 1 till we know we have enough for 3 chunks
+  if (!chunk_one_two_q_full_) {  // for speed
+    if (main_encrypt_queue_.MaxRetrievable() >= chunk_size_ * 3) {
+       QueueC1AndC2();
+       return ProcessMainQueue();
+    } else
+      return true;  // not enough to process chunks yet
+  }
+  return ProcessMainQueue();
+}
+
+bool SE::AddToSequencer(std::string data, size_t position) {
+ // TODO (dirvine) if a write hapens half way through we count as 2 sets,
+ // need to take
+ // care of this in the getFromSequencer method.
+ // ah no needs to be here, otherwise we lose timeline 
+    for (auto it = sequence_map_.begin(); it != sequence_map_.end(); ++it) {
+       auto iter = sequence_map_.find(position);
+       if (iter == sequence_map_.end())
+         sequence_map_.insert(std::pair<size_t, std::string>(position, data));
+       else
+         (*iter).second = data;
+    }
+}
+
+std::string SE::getFromSequencer(size_t position) {
+  if (sequence_map_.size() == 0)
+    return "";
+  for (auto it = sequence_map_.begin(); it != sequence_map_.end(); ++it) {
+    if ((*it).first == position) {
+      std::string result = (*it).second;
+      sequence_map_.erase(it);
+      return result;
+    }
+    if ((*it).first + (*it).second.size()  >= position) {
+      std::string result = (*it).second.substr((*it).first +
+                           (*it).second.size() - position);
+      std::string keep_this = (*it).second.substr(0,(*it).first +
+                                     (*it).second.size() - position);
+      // hopefully this is empty !!
+      std::string keep_this_to = (*it).second.substr((*it).first +
+                                     (*it).second.size() - position);
+      (*it).second = keep_this + keep_this_to;
+      return result;                                           
+    }
+  }
+  return "";  // nothing found
+}
+
+
+
 bool SE::FinaliseWrite() {
   while (main_encrypt_queue_.TotalBytesRetrievable() < chunk_size_ * 3) {
     chunk_size_ = (main_encrypt_queue_.TotalBytesRetrievable()) / 3;
@@ -154,22 +233,7 @@ bool SE::QueueC1AndC2() {
   return chunk_one_two_q_full_;
 }
 
-bool SE::Write(const char* data, size_t length, size_t position) {
 
-  if (length != 0)
-    main_encrypt_queue_.Put2(const_cast<byte*>
-                           (reinterpret_cast<const byte*>(data)),
-                            length, -1, true);
-    // Do not queue chunks 0 and 1 till we know we have enough for 3 chunks
-  if (!chunk_one_two_q_full_) {  // for speed
-    if (main_encrypt_queue_.MaxRetrievable() >= chunk_size_ * 3) {
-       QueueC1AndC2();
-       return ProcessMainQueue();
-    } else
-      return true;  // not enough to process chunks yet
-  }
-  return ProcessMainQueue();
-}
 
 bool SE::ProcessMainQueue() {
   while (main_encrypt_queue_.MaxRetrievable()  >= chunk_size_) {
