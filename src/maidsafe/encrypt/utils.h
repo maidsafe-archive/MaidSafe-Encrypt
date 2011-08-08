@@ -76,7 +76,7 @@ class Anchor : public CryptoPP::Bufferless<CryptoPP::Filter> {
   }
 };
 
-class SE {  // Self Encryption of course
+class SE {  // Self Encryption
  public:
   SE(std::shared_ptr<ChunkStore> chunk_store) :
                         data_map_(), complete_(false), chunk_size_(1024*256),

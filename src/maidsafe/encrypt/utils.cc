@@ -107,8 +107,6 @@ bool SE::Write(const char* data, size_t length, size_t position) {
     std::string add_this(data, length);
     AddToSequencer(add_this, position);
   }
-
-    
     // Do not queue chunks 0 and 1 till we know we have enough for 3 chunks
   if (!chunk_one_two_q_full_) {  // for speed
     if (main_encrypt_queue_.MaxRetrievable() >= chunk_size_ * 3) {
@@ -121,17 +119,17 @@ bool SE::Write(const char* data, size_t length, size_t position) {
 }
 
 bool SE::AddToSequencer(std::string data, size_t position) {
- // TODO (dirvine) if a write hapens half way through we count as 2 sets,
- // need to take
- // care of this in the getFromSequencer method.
- // ah no needs to be here, otherwise we lose timeline 
-    for (auto it = sequence_map_.begin(); it != sequence_map_.end(); ++it) {
-       auto iter = sequence_map_.find(position);
-       if (iter == sequence_map_.end())
-         sequence_map_.insert(std::pair<size_t, std::string>(position, data));
-       else
-         (*iter).second = data;
-    }
+  // TODO (dirvine) if a write happens half way through we count as 2 sets,
+  // need to take
+  // care of this in the getFromSequencer method.
+  // ah no needs to be here, otherwise we lose timeline 
+  for (auto it = sequence_map_.begin(); it != sequence_map_.end(); ++it) {
+      auto iter = sequence_map_.find(position);
+      if (iter == sequence_map_.end())
+        sequence_map_.insert(std::pair<size_t, std::string>(position, data));
+      else
+        (*iter).second = data;
+  }
 }
 
 std::string SE::getFromSequencer(size_t position) {
@@ -157,8 +155,6 @@ std::string SE::getFromSequencer(size_t position) {
   }
   return "";  // nothing found
 }
-
-
 
 bool SE::FinaliseWrite() {
   while (main_encrypt_queue_.TotalBytesRetrievable() < chunk_size_ * 3) {
@@ -207,7 +203,6 @@ bool SE::QueueC1AndC2() {
   // Chunk 1
   main_encrypt_queue_.TransferTo(chunk0_queue_, chunk_size_);
   chunk0_queue_.MessageEnd();
-//   main_encrypt_queue_.MessageEnd();
   ChunkDetails2 chunk_data;
   byte temp[chunk_size_];
   chunk0_queue_.Peek(temp, sizeof(temp));
@@ -216,11 +211,9 @@ bool SE::QueueC1AndC2() {
                                      sizeof(temp));
   chunk_data.pre_size = chunk_size_;
   data_map_.chunks.push_back(chunk_data);
-
   // Chunk 2
   main_encrypt_queue_.TransferTo(chunk1_queue_, chunk_size_);
   chunk1_queue_.MessageEnd();
-//   main_encrypt_queue_.MessageEnd();
   ChunkDetails2 chunk_data2;
   byte temp2[chunk_size_];
   chunk1_queue_.Peek(temp2, sizeof(temp2));
@@ -232,8 +225,6 @@ bool SE::QueueC1AndC2() {
   chunk_one_two_q_full_ = true;
   return chunk_one_two_q_full_;
 }
-
-
 
 bool SE::ProcessMainQueue() {
   while (main_encrypt_queue_.MaxRetrievable()  >= chunk_size_) {
@@ -294,7 +285,9 @@ bool SE::EncryptChunkFromQueue(CryptoPP::MessageQueue & queue) {
     this_chunk_num = 1;
   }
   getPad_Iv_Key(this_chunk_num, key, iv, pad);
-  CryptoPP::CFB_Mode<CryptoPP::AES>::Encryption encryptor(key.get(), 32, iv.get());
+  CryptoPP::CFB_Mode<CryptoPP::AES>::Encryption encryptor(key.get(),
+                                                          32,
+                                                          iv.get());
   CryptoPP::StreamTransformationFilter aes_filter(encryptor,
                   new XORFilter(
                     new CryptoPP::HashFilter(hash_,
@@ -315,6 +308,9 @@ bool SE::EncryptChunkFromQueue(CryptoPP::MessageQueue & queue) {
   if (! chunk_store_->Store(post_hash, data)) {
     DLOG(ERROR) << "Could not store " << EncodeToHex(post_hash)
                                       << std::endl;
+    // TODO FIXME (dirvine) we need to implement logic for retry,
+    // and network down. Also we should use collision avoidance and
+    // rechunk with ++chunk_size_ if some data is there but not all.
     return false;
   }
   data_map_.chunks[this_chunk_num].size = this_chunk_size_;
@@ -326,10 +322,8 @@ bool SE::Read(char* data, size_t length, size_t position) {
 
    if ((data_map_.size > (length + position)) && (length != 0))
      return false;
-
-   // find start and and chunks
+ 
    size_t start_chunk(0), start_offset(0), end_chunk(0), run_total(0);
-// #pragma omp parallel for
    for(size_t i = 0; i < data_map_.chunks.size(); ++i) {
      if ((data_map_.chunks[i].size + run_total >= position) &&
          (start_chunk = 0)) {
@@ -344,8 +338,7 @@ bool SE::Read(char* data, size_t length, size_t position) {
      if ((run_total <= length) || (length == 0))
        end_chunk = i;
    }
-
-
+   
    size_t amount_of_extra_content(0);
    if (run_total <  length)
      amount_of_extra_content = length - run_total;
@@ -360,9 +353,8 @@ bool SE::Read(char* data, size_t length, size_t position) {
   for (size_t i = start_chunk;i < end_chunk ; ++i) {
     ReadChunk(i, &plain_text_vec.at(i));
   }
- // build data
+ 
   std::string alldata;
-
   for (size_t i = 0 ;i < plain_text_vec.size() ; ++i) {
     alldata += plain_text_vec[i];
   }
@@ -372,8 +364,6 @@ bool SE::Read(char* data, size_t length, size_t position) {
 #pragma omp parallel for
   for(size_t i = 0; i < amount_of_extra_content; ++i)
     data[i+alldata.size()] = data_map_.content[i];
-
-
   return true;
 }
 
@@ -388,15 +378,15 @@ bool SE::ReadChunk(size_t chunk_num, std::string *data) {
   boost::shared_array<byte> pad(new byte[144]);
   boost::shared_array<byte> key(new byte[32]);
   boost::shared_array<byte> iv (new byte[16]);
-    getPad_Iv_Key(chunk_num, key, iv, pad);
-    std::string content(chunk_store_->Get(hash));
-    std::string answer;
-    CryptoPP::CFB_Mode<CryptoPP::AES>::Decryption decryptor(key.get(), 32, iv.get());
-           CryptoPP::StringSource filter(content, true,
-             new XORFilter(
-              new CryptoPP::StreamTransformationFilter(decryptor,
-                new CryptoPP::StringSink(*data)),
-              pad.get()));
+  getPad_Iv_Key(chunk_num, key, iv, pad);
+  std::string content(chunk_store_->Get(hash));
+  std::string answer;
+  CryptoPP::CFB_Mode<CryptoPP::AES>::Decryption decryptor(key.get(), 32, iv.get());
+          CryptoPP::StringSource filter(content, true,
+            new XORFilter(
+            new CryptoPP::StreamTransformationFilter(decryptor,
+              new CryptoPP::StringSink(*data)),
+            pad.get()));
   return true;
 }
 
