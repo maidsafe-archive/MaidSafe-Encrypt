@@ -248,9 +248,11 @@ bool SE::EncryptChunkFromQueue(CryptoPP::MessageQueue & queue) {
   std::string post_hash = reinterpret_cast<char *>
                           (data_map_.chunks[this_chunk_num].hash);
   std::string data(reinterpret_cast<char *>(chunk_content), this_chunk_size_);
-  if (! chunk_store_->Store(post_hash, data))
+  if (! chunk_store_->Store(post_hash, data)) {
     DLOG(ERROR) << "Could not store " << EncodeToHex(post_hash)
                                       << std::endl;
+    return false;
+  }
   data_map_.chunks[this_chunk_num].size = this_chunk_size_;
   data_map_.size += this_chunk_size_;
   return true;

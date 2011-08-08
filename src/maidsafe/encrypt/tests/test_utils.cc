@@ -163,8 +163,8 @@ TEST_F(SelfEncryptionTest, BEH_WriteAndRead) {
  
   boost::posix_time::ptime time =
         boost::posix_time::microsec_clock::universal_time();
-  EXPECT_TRUE(selfenc_.Write(plain_data, test_data_size));
-  EXPECT_TRUE(selfenc_.FinaliseWrite());
+  ASSERT_TRUE(selfenc_.Write(plain_data, test_data_size));
+  ASSERT_TRUE(selfenc_.FinaliseWrite());
   std::uint64_t duration =
       (boost::posix_time::microsec_clock::universal_time() -
        time).total_microseconds();
