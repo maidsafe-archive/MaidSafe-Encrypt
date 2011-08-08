@@ -106,8 +106,8 @@ TEST_F(SelfEncryptionTest, BEH_40Charsonly) {
   EXPECT_EQ(0, selfenc_.getDataMap().chunks.size());
   EXPECT_EQ(*stuff, *selfenc_.getDataMap().content.c_str());
   EXPECT_TRUE(selfenc_.Read(answer));
-  EXPECT_EQ(EncodeToHex(reinterpret_cast<char *>(stuff)),
-            EncodeToHex(reinterpret_cast<char *>(answer)));
+  EXPECT_EQ(EncodeToHex(stuff),
+            EncodeToHex(answer));
   EXPECT_TRUE(selfenc_.ReInitialise());
 }
 
@@ -151,11 +151,11 @@ TEST_F(SelfEncryptionTest, BEH_1025Chars3chunks) {
 
 TEST_F(SelfEncryptionTest, BEH_WriteAndRead) {
   EXPECT_TRUE(selfenc_.ReInitialise());
-  size_t test_data_size(1024*1024*20); // less than 2 mB fails due to test
+  size_t test_data_size(1024*1024*1); // less than 2 mB fails due to test
   std::string plain_text(RandomString(test_data_size));
   char *twentymb = new char[test_data_size];
   for (size_t i = 0; i < test_data_size ; ++i) {
-    twentymb[i] = 'a'; //plain_text[i];
+    twentymb[i] = /*'a'; //*/plain_text[i];
   }
   ++test_data_size;
   twentymb[test_data_size] = 'b';
@@ -175,12 +175,9 @@ TEST_F(SelfEncryptionTest, BEH_WriteAndRead) {
              << " seconds at a speed of "
              <<  BytesToBinarySiUnits(test_data_size / (duration / 1000000.0) )
              << "/s" << std::endl;
-  DLOG(INFO) << " Created " << selfenc_.getDataMap().chunks.size()
-            << " Chunks!!" << std::endl;
-
   char * answer = new char[test_data_size];
   time =  boost::posix_time::microsec_clock::universal_time();
-  ASSERT_TRUE(selfenc_.Read(answer));
+  ASSERT_TRUE(selfenc_.Read(answer, test_data_size, 0));
   duration = (boost::posix_time::microsec_clock::universal_time() -
               time).total_microseconds();
   if (duration == 0)
@@ -191,8 +188,8 @@ TEST_F(SelfEncryptionTest, BEH_WriteAndRead) {
              <<  BytesToBinarySiUnits(test_data_size / (duration / 1000000.0) )
              << "/s" << std::endl;
              
- //std::string stranswer(answer, test_data_size);
- //std::cout << stranswer << std::endl;
+//  std::string stranswer(answer, test_data_size);
+//  std::cout << EncodeToHex(stranswer) << std::endl;
   for (size_t  i = 0; i < test_data_size ; ++i)
     ASSERT_EQ(twentymb[i], answer[i]) << "failed at count " << i;
 

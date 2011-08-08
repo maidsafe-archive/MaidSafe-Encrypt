@@ -247,6 +247,7 @@ bool SE::EncryptChunkFromQueue(CryptoPP::MessageQueue & queue) {
   if (! chunk_store_->Store(post_hash, data))
     DLOG(ERROR) << "Could not store " << EncodeToHex(post_hash)
                                       << std::endl;
+  // Prints out all OK     std::cout << EncodeToHex(data);
   data_map_.chunks[this_chunk_num].size = this_chunk_size_;
   data_map_.size += this_chunk_size_;
   return true;
@@ -274,7 +275,7 @@ bool SE::Read(char* data, size_t length, size_t position) {
      if ((run_total <= length) || (length == 0))
        end_chunk = i;
    }
-DLOG(INFO) << std::endl;
+
 DLOG(INFO) << "num chunks " << data_map_.chunks.size()
            << " start chunk " << start_chunk
            << " start offset " << start_offset
@@ -282,7 +283,7 @@ DLOG(INFO) << "num chunks " << data_map_.chunks.size()
            << "run total " << run_total
            << " Dm size " << data_map_.size
            << std::endl;
-DLOG(INFO) << std::endl;
+
 
    size_t amount_of_extra_content(0);
    if (run_total <  length)
@@ -301,13 +302,16 @@ DLOG(INFO) << std::endl;
  // build data
   std::string alldata;
   for (auto it = plain_text_vec.begin();it < plain_text_vec.end() ; ++it) {
-    alldata += (*it).c_str() ;
+    alldata += (*it);
   }
 
-  strncpy(data, alldata.c_str(), alldata.size());
-  if (data_map_.content_size > 0) {
-   strncat(data, data_map_.content.c_str(), amount_of_extra_content);
-  }
+  for(size_t i = 0; i < alldata.size(); ++i)
+     data[i] = alldata[i];
+
+  for(size_t i = 0; i < amount_of_extra_content; ++i)
+    data[i+alldata.size()] = data_map_.content[i];
+
+
   return true;
 }
 
