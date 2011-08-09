@@ -93,7 +93,7 @@ bool SE::Write(const char* data, size_t length, size_t position) {
                             length, -1, true);
     if (extra != "") {
     main_encrypt_queue_.Put2(const_cast<byte*>
-                           (reinterpret_cast<const byte*>(extra.c_str())),
+                           (reinterpret_cast<const byte*>(extra.data())),
                             extra.size(), -1, true);
     current_position_ += extra.size();
     }
@@ -325,7 +325,7 @@ bool SE::Read(char* data, size_t length, size_t position) {
 
    if ((data_map_->size > (length + position)) && (length != 0))
      return false;
- 
+
    size_t start_chunk(0), start_offset(0), end_chunk(0), run_total(0);
    for(size_t i = 0; i < data_map_->chunks.size(); ++i) {
      if ((data_map_->chunks[i].size + run_total >= position) &&
@@ -341,7 +341,7 @@ bool SE::Read(char* data, size_t length, size_t position) {
      if ((run_total <= length) || (length == 0))
        end_chunk = i;
    }
-   
+
    size_t amount_of_extra_content(0);
    if (run_total <  length)
      amount_of_extra_content = length - run_total;
@@ -352,7 +352,7 @@ bool SE::Read(char* data, size_t length, size_t position) {
      ++end_chunk;
 
    std::vector<std::string> plain_text_vec(end_chunk - start_chunk);
-#pragma omp parallel for shared(start_chunk, end_chunk)
+#pragma omp parallel for 
   for (size_t i = start_chunk;i < end_chunk ; ++i) {
     ReadChunk(i, &plain_text_vec.at(i));
   }
