@@ -287,6 +287,7 @@ bool SE::EncryptChunkFromQueue(CryptoPP::MessageQueue & queue) {
     if (&queue == &chunk1_queue_)
     this_chunk_num = 1;
   }
+
   getPad_Iv_Key(this_chunk_num, key, iv, pad);
   CryptoPP::CFB_Mode<CryptoPP::AES>::Encryption encryptor(key.get(),
                                                           32,
@@ -308,18 +309,65 @@ bool SE::EncryptChunkFromQueue(CryptoPP::MessageQueue & queue) {
   std::string post_hash = reinterpret_cast<char *>
                           (data_map_->chunks[this_chunk_num].hash);
   std::string data(reinterpret_cast<char *>(chunk_content), this_chunk_size_);
+  // TODO FIME (dirvine) quick hack for retry
   if (! chunk_store_->Store(post_hash, data)) {
-    DLOG(ERROR) << "Could not store " << EncodeToHex(post_hash)
-                                      << std::endl;
-    // TODO FIXME (dirvine) we need to implement logic for retry,
-    // and network down. Also we should use collision avoidance and
-    // rechunk with ++chunk_size_ if some data is there but not all.
-    return false;
+    if (! chunk_store_->Store(post_hash, data)) {
+      DLOG(ERROR) << "Could not store " << EncodeToHex(post_hash)
+                                        << std::endl;
+      return false;
+    }
   }
   data_map_->chunks[this_chunk_num].size = this_chunk_size_;
   data_map_->size += this_chunk_size_;
   return true;
 }
+
+bool SE::EncryptAChunk(size_t chunk_num, byte* data,
+                       size_t length, bool re_encrypt) {
+  if (data_map_->chunks.size() < chunk_num)
+    return false;
+  if (re_encrypt)  // fix pre enc hash and re-encrypt next 2
+    HashMe(data_map_->chunks[chunk_num].pre_hash, data, length);
+    
+  boost::shared_array<byte> pad(new byte[144]);
+  boost::shared_array<byte> key(new byte[32]);
+  boost::shared_array<byte> iv (new byte[16]);
+  getPad_Iv_Key(chunk_num, key, iv, pad);
+
+  CryptoPP::CFB_Mode<CryptoPP::AES>::Encryption encryptor(key.get(),
+                                                          32,
+                                                          iv.get());
+  CryptoPP::StreamTransformationFilter aes_filter(encryptor,
+                  new XORFilter(
+                    new CryptoPP::HashFilter(hash_,
+                      new CryptoPP::MessageQueue()
+                    , true)
+                  , pad.get()));
+
+  aes_filter.Put2(data, length, -1, true);
+
+  byte chunk_content[length]; // do not move this !!
+  aes_filter.Get(chunk_content, length); // get content
+  aes_filter.Get(data_map_->chunks[chunk_num].hash , 64);
+  std::string post_hash = reinterpret_cast<char *>
+                          (data_map_->chunks[chunk_num].hash);
+  std::string data_to_store(reinterpret_cast<char *>(chunk_content), length);
+  // TODO FIME (dirvine) quick hack for retry
+  if (! chunk_store_->Store(post_hash, data_to_store)) {
+    if (! chunk_store_->Store(post_hash, data_to_store)) {
+      DLOG(ERROR) << "Could not store " << EncodeToHex(post_hash)
+                                        << std::endl;
+      return false;
+    }
+  }
+  
+  if (!re_encrypt) {
+    data_map_->chunks[chunk_num].size = length;
+    data_map_->size += length;
+  }
+  return true;
+}
+
 
 bool SE::Read(char* data, size_t length, size_t position) {
 

@@ -52,7 +52,7 @@ class SelfEncryptionTest : public testing::Test {
   SelfEncryptionTest()
       : hash_func_(std::bind(&crypto::Hash<crypto::SHA512>,
                              std::placeholders::_1)),
-      chunk_store_(new MemoryChunkStore (true, hash_func_)),
+      chunk_store_(new MemoryChunkStore (false, hash_func_)),
       data_map_(), selfenc_(chunk_store_, data_map_),
       chunk_size_(1024*256), num_chunks_(10), extra_content_(),
       expected_content_size_(sizeof(extra_content_)),
@@ -257,7 +257,6 @@ TEST_F(SelfEncryptionTest, BEH_WriteAndReadByteAtATimeOutOfSequenceForward) {
   for (size_t i = 1; i < test_data_size ; i +=2 )  {
     ASSERT_TRUE(selfenc_.Write(plain_data, test_data_size));
   }
-  
   ASSERT_TRUE(selfenc_.FinaliseWrite());
   std::uint64_t duration =
       (boost::posix_time::microsec_clock::universal_time() -
@@ -290,13 +289,11 @@ TEST_F(SelfEncryptionTest, BEH_WriteAndReadByteAtATimeOutOfSequenceForward) {
 
 
 
-
-
 TEST_F(SelfEncryptionTest, BEH_manual_check_write) {
   MemoryChunkStore::HashFunc hash_func = std::bind(&crypto::Hash<crypto::SHA512>,
                                                    std::placeholders::_1);
   std::shared_ptr<MemoryChunkStore>
-       chunk_store(new MemoryChunkStore (true, hash_func));
+       chunk_store(new MemoryChunkStore (false, hash_func));
   std::shared_ptr<DataMap2> data_map; // NULL
   SE selfenc(chunk_store, data_map);
   size_t chunk_size(1024*256); // system default

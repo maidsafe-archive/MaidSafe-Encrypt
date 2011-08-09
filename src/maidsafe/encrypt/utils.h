@@ -110,6 +110,9 @@ class SE {  // Self Encryption
   bool ProcessLastData();
   bool ReadChunk(size_t chunk_num, std::string *data);
   bool EncryptChunkFromQueue(CryptoPP::MessageQueue & queue);
+  bool EncryptAChunk(size_t chunk_num, byte* data,
+                     size_t length, bool re_encrypt);
+  
   bool QueueC1AndC2();
   void HashMe(byte * digest, byte *data, size_t length);
   bool ResetEncrypt();
