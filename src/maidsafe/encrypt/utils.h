@@ -107,6 +107,7 @@ class SE {  // Self Encryption
  private:  
   SE &operator = (const SE&);  // no assignment
   SE(const SE&);  // no copy
+  bool ProcessLastData();
   bool ReadChunk(size_t chunk_num, std::string *data);
   bool EncryptChunkFromQueue(CryptoPP::MessageQueue & queue);
   bool QueueC1AndC2();

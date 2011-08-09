@@ -157,32 +157,38 @@ std::string SE::getFromSequencer(size_t position) {
 }
 
 bool SE::FinaliseWrite() {
+  chunk_size_ = (main_encrypt_queue_.TotalBytesRetrievable()) / 3 ;
   while (main_encrypt_queue_.TotalBytesRetrievable() < chunk_size_ * 3) {
-    chunk_size_ = (main_encrypt_queue_.TotalBytesRetrievable()) / 3;
     // small files direct to data map
     if ((chunk_size_) < 1025) {
-      size_t qlength = main_encrypt_queue_.TotalBytesRetrievable();
-      byte i[qlength];
-      main_encrypt_queue_.Get(i, sizeof(i));
-      data_map_->content = reinterpret_cast<const char *>(i);
-      data_map_->content_size = qlength;
-      data_map_->size += qlength;
-      if (chunk0_queue_.AnyRetrievable()) {
-        EncryptChunkFromQueue(chunk0_queue_);
-        EncryptChunkFromQueue(chunk1_queue_);
-        chunk_one_two_q_full_ = false;
-      }
-      main_encrypt_queue_.SkipAll();
-      return true;
+       return ProcessLastData();
     }
     EncryptChunkFromQueue(main_encrypt_queue_);
   }
+  
   if (chunk0_queue_.AnyRetrievable()) {
     EncryptChunkFromQueue(chunk0_queue_);
     EncryptChunkFromQueue(chunk1_queue_);
     chunk_one_two_q_full_ = false;
   }
-  return true;
+  
+  return ProcessLastData();
+}
+
+bool SE::ProcessLastData() {
+  size_t qlength = main_encrypt_queue_.TotalBytesRetrievable();
+    byte i[qlength];
+    main_encrypt_queue_.Get(i, sizeof(i));
+    data_map_->content = reinterpret_cast<const char *>(i);
+    data_map_->content_size = qlength;
+    data_map_->size += qlength;
+    if (chunk0_queue_.AnyRetrievable()) {
+      EncryptChunkFromQueue(chunk0_queue_);
+      EncryptChunkFromQueue(chunk1_queue_);
+      chunk_one_two_q_full_ = false;
+    }
+    main_encrypt_queue_.SkipAll();
+    return true;
 }
 
 bool SE::ReInitialise() {
@@ -191,10 +197,7 @@ bool SE::ReInitialise() {
     chunk0_queue_.SkipAll();
     chunk1_queue_.SkipAll();
     chunk_one_two_q_full_ = false;
-    data_map_->chunks.clear();
-    data_map_->size = 0;
-    data_map_->content = {};
-    data_map_->content_size = 0;
+    data_map_.reset(new DataMap2);
     return true;
 }
 
