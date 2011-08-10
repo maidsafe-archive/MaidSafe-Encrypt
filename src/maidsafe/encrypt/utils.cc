@@ -303,11 +303,11 @@ bool SE::EncryptChunkFromQueue(CryptoPP::MessageQueue & queue) {
   aes_filter.MessageEnd(-1, true);
 
   byte chunk_content[this_chunk_size_]; // do not move this !!
-  
   aes_filter.Get(chunk_content, this_chunk_size_); // get content
   aes_filter.Get(data_map_->chunks[this_chunk_num].hash , 64);
-  std::string post_hash = reinterpret_cast<char *>
-                          (data_map_->chunks[this_chunk_num].hash);
+
+  std::string post_hash(reinterpret_cast<char *>
+                          (data_map_->chunks[this_chunk_num].hash), 64);
   std::string data(reinterpret_cast<char *>(chunk_content), this_chunk_size_);
   // TODO FIME (dirvine) quick hack for retry
   if (! chunk_store_->Store(post_hash, data)) {
@@ -349,8 +349,8 @@ bool SE::EncryptAChunk(size_t chunk_num, byte* data,
   byte chunk_content[length]; // do not move this !!
   aes_filter.Get(chunk_content, length); // get content
   aes_filter.Get(data_map_->chunks[chunk_num].hash , 64);
-  std::string post_hash = reinterpret_cast<char *>
-                          (data_map_->chunks[chunk_num].hash);
+  std::string post_hash(reinterpret_cast<char *>
+                          (data_map_->chunks[chunk_num].hash), 64);
   std::string data_to_store(reinterpret_cast<char *>(chunk_content), length);
   // TODO FIME (dirvine) quick hack for retry
   if (! chunk_store_->Store(post_hash, data_to_store)) {
@@ -421,7 +421,8 @@ bool SE::Read(char* data, size_t length, size_t position) {
 bool SE::ReadChunk(size_t chunk_num, std::string *data) {
   if (data_map_->chunks.size() < chunk_num)
     return false;
-   std::string hash = reinterpret_cast<char *>(data_map_->chunks[chunk_num].hash);
+   std::string hash(reinterpret_cast<char *>(data_map_->chunks[chunk_num].hash),
+                    64);
     if (!chunk_store_->Has(hash)) {
       DLOG(ERROR) << "Could not find chunk: " << EncodeToHex(hash) << std::endl;
       return false;
