@@ -69,13 +69,12 @@ size_t XORFilter::Put2(const byte* inString,
                                           length,
                                           messageEnd,
                                           blocking);
-  size_t buffer_size(length);
-  byte buffer[length];
+  boost::scoped_array<byte> buffer(new byte[length]);
   for (size_t i = 0; i < length; ++i) {
     buffer[i] = inString[i] ^  pad_[count_%144];
     ++count_;
   }
-  return AttachedTransformation()->Put2(buffer,
+  return AttachedTransformation()->Put2(buffer.get(),
                                        length,
                                         messageEnd,
                                         blocking);
@@ -177,9 +176,9 @@ bool SE::FinaliseWrite() {
 
 bool SE::ProcessLastData() {
   size_t qlength = main_encrypt_queue_.TotalBytesRetrievable();
-    byte i[qlength];
-    main_encrypt_queue_.Get(i, sizeof(i));
-    data_map_->content = reinterpret_cast<const char *>(i);
+    boost::scoped_array<byte> i(new byte[qlength]);
+    main_encrypt_queue_.Get(i.get(), sizeof(i));
+    data_map_->content = reinterpret_cast<const char *>(i.get());
     data_map_->content_size = qlength;
     data_map_->size += qlength;
     if (chunk0_queue_.AnyRetrievable()) {
@@ -207,22 +206,22 @@ bool SE::QueueC1AndC2() {
   main_encrypt_queue_.TransferTo(chunk0_queue_, chunk_size_);
   chunk0_queue_.MessageEnd();
   ChunkDetails2 chunk_data;
-  byte temp[chunk_size_];
-  chunk0_queue_.Peek(temp, sizeof(temp));
+  boost::scoped_array<byte> temp(new byte[chunk_size_]);
+  chunk0_queue_.Peek(temp.get(), chunk_size_);
   CryptoPP::SHA512().CalculateDigest(chunk_data.pre_hash,
-                                     temp,
-                                     sizeof(temp));
+                                     temp.get(),
+                                     chunk_size_);
   chunk_data.pre_size = chunk_size_;
   data_map_->chunks.push_back(chunk_data);
   // Chunk 2
   main_encrypt_queue_.TransferTo(chunk1_queue_, chunk_size_);
   chunk1_queue_.MessageEnd();
   ChunkDetails2 chunk_data2;
-  byte temp2[chunk_size_];
-  chunk1_queue_.Peek(temp2, sizeof(temp2));
+  boost::scoped_array<byte> temp2(new byte[chunk_size_]);
+  chunk1_queue_.Peek(temp2.get(), chunk_size_);
   CryptoPP::SHA512().CalculateDigest(chunk_data2.pre_hash,
-                                     temp2 ,
-                                     sizeof(temp2));
+                                     temp2.get() ,
+                                     chunk_size_);
   chunk_data2.pre_size = chunk_size_;
   data_map_->chunks.push_back(chunk_data);
   chunk_one_two_q_full_ = true;
@@ -273,9 +272,9 @@ bool SE::EncryptChunkFromQueue(CryptoPP::MessageQueue & queue) {
   boost::shared_array<byte> iv (new byte[16]);
 
   if ((&queue != &chunk0_queue_) && (&queue != &chunk1_queue_)) {
-    byte temp[chunk_size_];
-    queue.Peek(temp, sizeof(temp)); // copy whole array
-    HashMe(chunk_details.pre_hash, temp, sizeof(temp));
+    boost::scoped_array<byte> temp(new byte [chunk_size_]);
+    queue.Peek(temp.get(), chunk_size_); // copy whole array
+    HashMe(chunk_details.pre_hash, temp.get(), chunk_size_);
     chunk_details.pre_size = chunk_size_;
     this_chunk_size_ = chunk_size_;
     data_map_->chunks.push_back(chunk_details);
@@ -302,13 +301,14 @@ bool SE::EncryptChunkFromQueue(CryptoPP::MessageQueue & queue) {
   queue.TransferAllTo(aes_filter);
   aes_filter.MessageEnd(-1, true);
 
-  byte chunk_content[this_chunk_size_]; // do not move this !!
-  aes_filter.Get(chunk_content, this_chunk_size_); // get content
+  boost::scoped_array<byte> chunk_content(new byte [this_chunk_size_]); // do not move this !!
+  aes_filter.Get(chunk_content.get(), this_chunk_size_); // get content
   aes_filter.Get(data_map_->chunks[this_chunk_num].hash , 64);
 
   std::string post_hash(reinterpret_cast<char *>
                           (data_map_->chunks[this_chunk_num].hash), 64);
-  std::string data(reinterpret_cast<char *>(chunk_content), this_chunk_size_);
+  std::string data(reinterpret_cast<char *>(chunk_content.get()),
+                   this_chunk_size_);
   // TODO FIME (dirvine) quick hack for retry
   if (! chunk_store_->Store(post_hash, data)) {
     if (! chunk_store_->Store(post_hash, data)) {
@@ -346,12 +346,13 @@ bool SE::EncryptAChunk(size_t chunk_num, byte* data,
 
   aes_filter.Put2(data, length, -1, true);
 
-  byte chunk_content[length]; // do not move this !!
-  aes_filter.Get(chunk_content, length); // get content
+  boost::scoped_array<byte> chunk_content(new byte [length]);
+  aes_filter.Get(chunk_content.get(), length); // get content
   aes_filter.Get(data_map_->chunks[chunk_num].hash , 64);
   std::string post_hash(reinterpret_cast<char *>
                           (data_map_->chunks[chunk_num].hash), 64);
-  std::string data_to_store(reinterpret_cast<char *>(chunk_content), length);
+  std::string data_to_store(reinterpret_cast<char *>(chunk_content.get()),
+                            length);
   // TODO FIME (dirvine) quick hack for retry
   if (! chunk_store_->Store(post_hash, data_to_store)) {
     if (! chunk_store_->Store(post_hash, data_to_store)) {
