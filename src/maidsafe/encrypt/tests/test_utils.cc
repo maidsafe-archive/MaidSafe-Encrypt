@@ -28,7 +28,7 @@
 #endif
 #include "boost/archive/text_iarchive.hpp"
 #include "boost/timer.hpp"
-#include "gtest/gtest.h"
+#include "maidsafe/common/test.h"
 #include "maidsafe/common/crypto.h"
 #include "maidsafe/common/utils.h"
 #include "maidsafe/encrypt/config.h"
