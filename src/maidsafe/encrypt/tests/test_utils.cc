@@ -155,7 +155,7 @@ TEST_F(SelfEncryptionTest, BEH_WriteAndRead) {
   std::string plain_text(RandomString(test_data_size));
   boost::shared_array<char>plain_data (new char[test_data_size]);
   for (size_t i = 0; i < test_data_size ; ++i) {
-    plain_data[i] = /*'a'; //*/plain_text[i];
+    plain_data[i] =/* 'a'; //*/plain_text[i];
   }
   ++test_data_size;
   plain_data[test_data_size] = 'b';
@@ -189,7 +189,7 @@ TEST_F(SelfEncryptionTest, BEH_WriteAndRead) {
              << "/s" << std::endl;
 
   for (size_t  i = 0; i < test_data_size ; ++i)
-    ASSERT_EQ(plain_data.get()[i], answer.get()[i]) << "failed at count " << i;
+    ASSERT_EQ(plain_data[i], answer[i]) << "failed at count " << i;
 
 }
 
@@ -199,7 +199,7 @@ TEST_F(SelfEncryptionTest, BEH_WriteAndReadByteAtATime) {
   std::string plain_text(RandomString(test_data_size));
   boost::shared_array<char>plain_data (new char[test_data_size]);
   for (size_t i = 0; i < test_data_size ; ++i) {
-    plain_data[i] = plain_text[i];
+    plain_data[i] = 'a'; //plain_text[i];
   }
   ++test_data_size;
   plain_data[test_data_size] = 'b';
