@@ -1,4 +1,4 @@
-/*******************************************************************************
+﻿/*******************************************************************************
  *  Copyright 2008-2011 maidsafe.net limited                                   *
  *                                                                             *
  *  The following source code is property of maidsafe.net limited and is not   *
@@ -227,13 +227,45 @@ bool SE::QueueC1AndC2() {
   chunk_one_two_q_full_ = true;
   return chunk_one_two_q_full_;
 }
-
+/*
 bool SE::ProcessMainQueue() {
   while (main_encrypt_queue_.MaxRetrievable()  >= chunk_size_) {
     main_encrypt_queue_.TransferTo(chunk_current_queue_ , chunk_size_);
     if (!EncryptChunkFromQueue(chunk_current_queue_))
       return false;
   }
+  return true;
+}*/
+
+bool SE::ProcessMainQueue() {
+  size_t chunks_to_process = main_encrypt_queue_.MaxRetrievable() / chunk_size_;
+  size_t old_dm_size = data_map_->chunks.size();
+  data_map_->chunks.resize(chunks_to_process + old_dm_size);
+  std::vector<byte[chunk_size_]>chunks(chunks_to_process);
+  boost::shared_array<byte> chunk_content(new byte [this_chunk_size_]);
+
+  //get all hashes
+
+  for(size_t i = 0; i < chunks_to_process; ++i) {
+    main_encrypt_queue_.Get(chunk_content.get(), chunk_size_);
+
+    for(size_t j = 0; j < chunk_size_; ++j)
+      chunks[i][j] = chunk_content[j];
+    
+    HashMe(data_map_->chunks[i + old_dm_size].pre_hash,
+          chunk_content.get(),
+          chunk_size_);
+    data_map_->chunks[i + old_dm_size].pre_size = chunk_size_;
+   }
+  // process chunks
+//#pragma omp parallel for // gives over 100Mb write speeds
+  for(size_t i = 0; i <  chunks_to_process; ++i) {
+    EncryptAChunk(i + old_dm_size,
+                  chunks[i],
+                  chunk_size_,
+                  false);
+  }
+
   return true;
 }
 
