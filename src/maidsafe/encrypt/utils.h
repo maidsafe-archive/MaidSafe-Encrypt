@@ -1,4 +1,4 @@
-/*******************************************************************************
+﻿/*******************************************************************************
  *  Copyright 2008-2011 maidsafe.net limited                                   *
  *                                                                             *
  *  The following source code is property of maidsafe.net limited and is not   *
@@ -83,6 +83,8 @@ class SE {  // Self Encryption
                         data_map_(data_map), complete_(false), chunk_size_(1024*256),
                         min_chunk_size_(1024), length_(), hash_(),
                         main_encrypt_queue_(CryptoPP::MessageQueue()),
+                        chunk0_raw_(new byte[chunk_size_]),
+                        chunk1_raw_(new byte[chunk_size_]),
                         chunk0_queue_(CryptoPP::MessageQueue()),
                         chunk1_queue_(CryptoPP::MessageQueue()),
                         chunk_current_queue_(CryptoPP::MessageQueue()),
@@ -134,6 +136,8 @@ class SE {  // Self Encryption
   size_t length_;
   CryptoPP::SHA512  hash_;
   CryptoPP::MessageQueue main_encrypt_queue_;
+  boost::shared_array<byte> chunk0_raw_; //(new byte[chunk_size_]);
+  boost::shared_array<byte> chunk1_raw_; //(new byte[chunk_size_]);
   CryptoPP::MessageQueue chunk0_queue_;
   CryptoPP::MessageQueue chunk1_queue_;
   CryptoPP::MessageQueue chunk_current_queue_;
