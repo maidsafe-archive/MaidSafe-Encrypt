@@ -119,7 +119,8 @@ bool SE::AddToSequencer(std::string data, size_t position) {
   // TODO (dirvine) if a write happens half way through we count as 2 sets,
   // need to take
   // care of this in the getFromSequencer method.
-  // ah no needs to be here, otherwise we lose timeline 
+  // ah no needs to be here, otherwise we lose timeline
+
   for (auto it = sequence_map_.begin(); it != sequence_map_.end(); ++it) {
       auto iter = sequence_map_.find(position);
       if (iter == sequence_map_.end())
@@ -167,6 +168,7 @@ bool SE::FinaliseWrite() {
     }
     ProcessMainQueue();
   }
+  #pragma omp parallel 
   if (chunk_one_two_q_full_) {
     EncryptAChunk(0,chunk0_raw_.get(), c0_and_1_chunk_size_, false);
     EncryptAChunk(1,chunk1_raw_.get(), c0_and_1_chunk_size_, false);
@@ -236,12 +238,15 @@ bool SE::ProcessMainQueue() {
                                                >(new byte[chunk_size_]));
 
   //get all hashes
-//   #pragma omp parallel for
+
    for(size_t i = 0; i < chunks_to_process; ++i) {
      boost::shared_array<byte> tempy(new byte[chunk_size_]);
      main_encrypt_queue_.Get(tempy.get(), chunk_size_);
      chunk_vec[i] = tempy;
-    HashMe(data_map_->chunks[i + old_dm_size].pre_hash,
+   }
+#pragma omp parallel for
+   for(size_t i = 0; i < chunks_to_process; ++i) {
+     CryptoPP::SHA512().CalculateDigest(data_map_->chunks[i + old_dm_size].pre_hash,
            chunk_vec[i].get(),
            chunk_size_);
     data_map_->chunks[i + old_dm_size].pre_size = chunk_size_;
@@ -291,7 +296,9 @@ bool SE::EncryptAChunk(size_t chunk_num, byte* data,
   if (data_map_->chunks.size() < chunk_num)
     return false;
    if (re_encrypt)  // fix pre enc hash and re-encrypt next 2
-     HashMe(data_map_->chunks[chunk_num].pre_hash, data, length);
+     CryptoPP::SHA512().CalculateDigest(data_map_->chunks[chunk_num].pre_hash,
+                                        data,
+                                        length);
 
   boost::shared_array<byte> pad(new byte[144]);
   boost::shared_array<byte> key(new byte[32]);
