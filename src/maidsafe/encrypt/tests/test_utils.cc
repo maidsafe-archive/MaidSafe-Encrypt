@@ -151,7 +151,7 @@ TEST_F(SelfEncryptionTest, BEH_1025Chars3chunks) {
 
 TEST_F(SelfEncryptionTest, BEH_WriteAndRead) {
   EXPECT_TRUE(selfenc_.ReInitialise());
-  size_t test_data_size(1024*1024*20); // less than 2 mB fails due to test
+  size_t test_data_size(1024*1024*2); // less than 2 mB fails due to test
   std::string plain_text(RandomString(test_data_size));
   boost::shared_array<char>plain_data (new char[test_data_size]);
   for (size_t i = 0; i < test_data_size ; ++i) {

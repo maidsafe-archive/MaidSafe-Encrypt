@@ -157,7 +157,12 @@ std::string SE::getFromSequencer(size_t position) {
 }
 
 bool SE::FinaliseWrite() {
+  std::cout << "finalisewrite" << std::endl;
   chunk_size_ = (main_encrypt_queue_.TotalBytesRetrievable()) / 3 ;
+  if ((chunk_size_) < 1025) {
+    return ProcessLastData();
+  }
+  std::cout << "chunk size now " << chunk_size_ << std::endl;
   while (main_encrypt_queue_.TotalBytesRetrievable() < chunk_size_ * 3) {
     // small files direct to data map
     if ((chunk_size_) < 1025) {
@@ -165,17 +170,16 @@ bool SE::FinaliseWrite() {
     }
     EncryptChunkFromQueue(main_encrypt_queue_);
   }
-  
   if (chunk0_queue_.AnyRetrievable()) {
     EncryptChunkFromQueue(chunk0_queue_);
     EncryptChunkFromQueue(chunk1_queue_);
     chunk_one_two_q_full_ = false;
   }
-  
   return ProcessLastData();
 }
 
 bool SE::ProcessLastData() {
+  std::cout << "process last data" << std::endl;
   size_t qlength = main_encrypt_queue_.TotalBytesRetrievable();
     boost::scoped_array<byte> i(new byte[qlength]);
     main_encrypt_queue_.Get(i.get(), sizeof(i));
@@ -206,6 +210,7 @@ bool SE::ReInitialise() {
 }
 
 bool SE::QueueC1AndC2() {
+  std::cout << "queuec1andc2" << std::endl;
   c0_and_1_chunk_size_ = chunk_size_;
   // Chunk 1
   main_encrypt_queue_.TransferTo(chunk0_queue_, chunk_size_);
@@ -233,45 +238,64 @@ bool SE::QueueC1AndC2() {
   return chunk_one_two_q_full_;
 }
 
-bool SE::ProcessMainQueue() {
-  while (main_encrypt_queue_.MaxRetrievable()  >= chunk_size_) {
-    main_encrypt_queue_.TransferTo(chunk_current_queue_ , chunk_size_);
-    if (!EncryptChunkFromQueue(chunk_current_queue_))
-      return false;
-  }
-  return true;
-}
-
 // bool SE::ProcessMainQueue() {
-//   if (!main_encrypt_queue_.MaxRetrievable()  >= chunk_size_)
-//     return false;
-//   
-//   size_t chunks_to_process = (main_encrypt_queue_.MaxRetrievable() / chunk_size_);
-//   size_t old_dm_size = data_map_->chunks.size();
-//   data_map_->chunks.resize(chunks_to_process + old_dm_size);
-//   std::vector<boost::shared_array<byte>>chunk_vec(chunks_to_process,
-//                                                boost::shared_array<byte
-//                                                >(new byte[chunk_size_]));
-// 
-//   //get all hashes
-// 
-//   for(size_t i = 0; i < chunks_to_process; ++i) {
-//     main_encrypt_queue_.Get(chunk_vec[i].get(), chunk_size_);
-//     HashMe(data_map_->chunks[i + old_dm_size].pre_hash,
-//            chunk_vec[i].get(),
-//            chunk_size_);
-//     data_map_->chunks[i + old_dm_size].pre_size = chunk_size_;
-//    }
-//   // process chunks
-// // #pragma omp parallel for // gives over 100Mb write speeds
-//   for(size_t i = 0; i <  chunks_to_process; ++i) {
-//     EncryptAChunk(i + old_dm_size,
-//                   chunk_vec[i].get(),
-//                   chunk_size_,
-//                   false);
+//   while (main_encrypt_queue_.MaxRetrievable()  >= chunk_size_) {
+//     main_encrypt_queue_.TransferTo(chunk_current_queue_ , chunk_size_);
+//     std::cout << "processing main queue" << std::endl;
+//     if (!EncryptChunkFromQueue(chunk_current_queue_))
+//       return false;
 //   }
 //   return true;
 // }
+
+bool SE::ProcessMainQueue() {
+  if (!main_encrypt_queue_.MaxRetrievable()  >= chunk_size_)
+    return false;
+
+  size_t chunks_to_process = (main_encrypt_queue_.MaxRetrievable() / chunk_size_);
+  size_t old_dm_size = data_map_->chunks.size();
+  data_map_->chunks.resize(chunks_to_process + old_dm_size);
+  std::vector<boost::shared_array<byte>>chunk_vec(chunks_to_process,
+                                               boost::shared_array<byte
+                                               >(new byte[chunk_size_]));
+
+  //get all hashes
+
+   for(size_t i = 0; i < chunks_to_process; ++i) {
+     boost::shared_array<byte> tempy(new byte[chunk_size_]);
+     main_encrypt_queue_.Get(tempy.get(), chunk_size_);
+     chunk_vec[i] = tempy;
+     
+     // FIXME FIXME TODO this is wak
+    byte *temp = new byte[64];
+/*    HashMe(temp,
+           chunk_vec[i].get(),
+           chunk_size_);*/
+//     std::cout << "In Process: " << EncodeToHex((char*)temp).substr(0, 10) << std::endl;
+    std::cout << "In Process: (" << (unsigned long)chunk_vec[i].get() << ")  "
+    << EncodeToHex((char*)(&chunk_vec[i][0])).substr(0, 10) << std::endl;
+    /*    HashMe(data_map_->chunks[i + old_dm_size].pre_hash,
+           chunk_vec[i].get(),
+           chunk_size_);*/
+//    data_map_->chunks[i + old_dm_size].pre_size = chunk_size_;
+/*    for(size_t j = 0; j < chunks_to_process; ++j) {
+      std::cout << "In Process still: " << j << " - ("
+      << (unsigned long)chunk_vec[j][0] << ") " << EncodeToHex((char*)(chunk_vec.at(j)).get()).substr(0, 10) << std::endl;
+    }*/
+      //     std::cout << "calculated hash of chunk " <<  i + old_dm_size << std::endl;
+    }
+  // process chunks
+// #pragma omp parallel for // gives over 100Mb write speeds
+  for(size_t j = 0; j < chunks_to_process; ++j) {
+    std::cout << "Before Encrypt: " << j << " - "<< EncodeToHex((char*)(chunk_vec[j]).get()).substr(0, 10) << std::endl;
+    EncryptAChunk(j + old_dm_size,
+                  &chunk_vec[j][0],
+                  chunk_size_,
+                  false);
+//      std::cout << "sent to encryption chunk " <<  j + old_dm_size << std::endl;
+  }
+  return true;
+}
 
 void SE::HashMe(byte * digest, byte* data, size_t length) {
   CryptoPP::SHA512().CalculateDigest(digest, data, length);
@@ -307,21 +331,21 @@ bool SE::EncryptChunkFromQueue(CryptoPP::MessageQueue & queue) {
   boost::shared_array<byte> key(new byte[32]);
   boost::shared_array<byte> iv (new byte[16]);
 
-  if ((&queue != &chunk0_queue_) && (&queue != &chunk1_queue_)) {
-    boost::scoped_array<byte> temp(new byte [chunk_size_]);
-    queue.Peek(temp.get(), chunk_size_); // copy whole array
-    HashMe(chunk_details.pre_hash, temp.get(), chunk_size_);
-    chunk_details.pre_size = chunk_size_;
-    this_chunk_size_ = chunk_size_;
-    data_map_->chunks.push_back(chunk_details);
-    this_chunk_num = data_map_->chunks.size() -1;
-  } else {
-    this_chunk_size_ = c0_and_1_chunk_size_;
+//   if ((&queue != &chunk0_queue_) && (&queue != &chunk1_queue_)) {
+//     boost::scoped_array<byte> temp(new byte [chunk_size_]);
+//     queue.Peek(temp.get(), chunk_size_); // copy whole array
+//     HashMe(chunk_details.pre_hash, temp.get(), chunk_size_);
+//     chunk_details.pre_size = chunk_size_;
+//     this_chunk_size_ = chunk_size_;
+//     data_map_->chunks.push_back(chunk_details);
+//     this_chunk_num = data_map_->chunks.size() -1;
+//   } else {
+//     this_chunk_size_ = c0_and_1_chunk_size_;
     if (&queue == &chunk0_queue_)
     this_chunk_num = 0;
     if (&queue == &chunk1_queue_)
     this_chunk_num = 1;
-  }
+//   }
 
   getPad_Iv_Key(this_chunk_num, key, iv, pad);
   CryptoPP::CFB_Mode<CryptoPP::AES>::Encryption encryptor(key.get(),
@@ -364,7 +388,11 @@ bool SE::EncryptAChunk(size_t chunk_num, byte* data,
 //   if (data_map_->chunks.size() < chunk_num)
 //     return false;
 //   if (re_encrypt)  // fix pre enc hash and re-encrypt next 2
-//     HashMe(data_map_->chunks[chunk_num].pre_hash, data, length);
+ // TODO FIXME FIXME this fixes all but one hash
+ HashMe(data_map_->chunks[chunk_num].pre_hash, data, length);
+ std::cout << "In Encrypt: " << chunk_num << " - "<< EncodeToHex((char*)data_map_->chunks[chunk_num].pre_hash).substr(0, 10) << std::endl;
+ // std::string last_char((char *) data ,chunk_size_);
+// std::cout << "last char of data " << EncodeToHex(last_char) << std::endl;
     
   boost::shared_array<byte> pad(new byte[144]);
   boost::shared_array<byte> key(new byte[32]);
@@ -398,6 +426,27 @@ bool SE::EncryptAChunk(size_t chunk_num, byte* data,
       return false;
     }
   }
+
+// TODO FIXME - is this wrong
+byte *prehashcheck = new(byte[64]);
+byte *posthashcheck = new(byte[64]);
+bool postfail(false);
+bool prefail(false);
+
+HashMe(posthashcheck, (byte *) data_to_store.data(), length);
+for (int i =0; i < 64; ++i)
+  if (posthashcheck[i] != data_map_->chunks[chunk_num].hash[i])
+    postfail = true;
+  if (postfail)
+    std::cout << "write post hash mismatch " << std::endl;
+  
+  HashMe(prehashcheck, data,length);
+for (int i =0; i < 64; ++i)
+  if (prehashcheck[i] != data_map_->chunks[chunk_num].pre_hash[i])
+    prefail = true;
+  if (prefail)
+    std::cout << "write pre hash mismatch " << chunk_num << std::endl;
+
 
 //   if (!re_encrypt) {
     data_map_->chunks[chunk_num].size = length;
@@ -438,7 +487,7 @@ bool SE::Read(char* data, size_t length, size_t position) {
      ++end_chunk;
 
    std::vector<std::string> plain_text_vec(end_chunk - start_chunk);
-#pragma omp parallel for 
+//#pragma omp parallel for 
   for (size_t i = start_chunk;i < end_chunk ; ++i) {
     ReadChunk(i, &plain_text_vec.at(i));
   }
@@ -447,10 +496,10 @@ bool SE::Read(char* data, size_t length, size_t position) {
   for (size_t i = 0 ;i < plain_text_vec.size() ; ++i) {
     alldata += plain_text_vec[i];
   }
-#pragma omp parallel for
+// #pragma omp parallel for
   for(size_t i = 0; i < alldata.size(); ++i)
      data[i] = alldata[i];
-#pragma omp parallel for
+// #pragma omp parallel for
   for(size_t i = 0; i < amount_of_extra_content; ++i)
     data[i+alldata.size()] = data_map_->content[i];
   return true;
@@ -461,22 +510,46 @@ bool SE::ReadChunk(size_t chunk_num, std::string *data) {
     return false;
    std::string hash(reinterpret_cast<char *>(data_map_->chunks[chunk_num].hash),
                     64);
-    if (!chunk_store_->Has(hash)) {
-      DLOG(ERROR) << "Could not find chunk: " << EncodeToHex(hash) << std::endl;
-      return false;
-    }
+//     if (!chunk_store_->Has(hash)) {
+//       DLOG(ERROR) << "Could not find chunk: " << EncodeToHex(hash) << std::endl;
+//       return false;
+//     }
   boost::shared_array<byte> pad(new byte[144]);
   boost::shared_array<byte> key(new byte[32]);
   boost::shared_array<byte> iv (new byte[16]);
   getPad_Iv_Key(chunk_num, key, iv, pad);
   std::string content(chunk_store_->Get(hash));
-  std::string answer;
+  if (content == ""){
+    DLOG(ERROR) << "Could not find chunk: " << EncodeToHex(hash) << std::endl;
+    return false;
+  }
+    
   CryptoPP::CFB_Mode<CryptoPP::AES>::Decryption decryptor(key.get(), 32, iv.get());
           CryptoPP::StringSource filter(content, true,
             new XORFilter(
             new CryptoPP::StreamTransformationFilter(decryptor,
               new CryptoPP::StringSink(*data)),
             pad.get()));
+
+  // TODO FIXME - is this wrong
+  byte *prehashcheck = new(byte[64]);
+  byte *posthashcheck = new(byte[64]);
+  bool postfail(false);
+  bool prefail(false);
+
+  HashMe(posthashcheck, (byte *) content.data(), content.size());
+  for (int i =0; i < 64; ++i)
+    if (posthashcheck[i] != data_map_->chunks[chunk_num].hash[i])
+        postfail = true;
+    if (postfail)
+      std::cout << " post hash mismatch " << std::endl;
+
+    HashMe(prehashcheck, (byte *) data->data(),content.size());
+  for (int i =0; i < 64; ++i)
+    if (prehashcheck[i] != data_map_->chunks[chunk_num].pre_hash[i])
+      prefail = true;
+    if (prefail)
+      std::cout << " pre hash mismatch " << chunk_num << std::endl;
   return true;
 }
 
