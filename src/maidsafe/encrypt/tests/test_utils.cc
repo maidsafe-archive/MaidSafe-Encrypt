@@ -192,10 +192,9 @@ TEST_F(SelfEncryptionTest, BEH_WriteAndRead) {
 
   bool failed(false);
   for (size_t  i = 0; i < test_data_size ; ++i)
-     if (plain_data[i] != answer2[i]) {
+     if (plain_data[i] != answer2[i]) 
        failed = true;
-       break;
-     }
+
   ASSERT_TRUE(failed);
 
 }

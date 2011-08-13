@@ -70,6 +70,7 @@ size_t XORFilter::Put2(const byte* inString,
                                           messageEnd,
                                           blocking);
   boost::scoped_array<byte> buffer(new byte[length]);
+// #pragme omp parallel for 
   for (size_t i = 0; i < length; ++i) {
     buffer[i] = inString[i] ^  pad_[count_%144];
     ++count_;
@@ -179,7 +180,6 @@ bool SE::FinaliseWrite() {
 
 bool SE::DeleteAllChunks()
 {
-  
   for (size_t i =0; i < data_map_->chunks.size(); ++i)
     if (!chunk_store_->Delete(reinterpret_cast<char *>
                       (data_map_->chunks[i].hash)))
@@ -389,8 +389,10 @@ bool SE::Read(char* data, size_t length, size_t position) {
     ReadChunk(i, reinterpret_cast<byte *>(&data[this_chunk_size])); 
   }
  
-  for(size_t i = 0; i < data_map_->content_size; ++i)
+  for(size_t i = 0; i < data_map_->content_size; ++i) {
+#pragma omp barrier
     data[length - data_map_->content_size + i] = data_map_->content[i];
+  }
   return true;
 }
 
