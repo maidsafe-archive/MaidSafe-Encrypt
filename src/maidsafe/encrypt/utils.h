@@ -94,7 +94,7 @@ class SE {  // Self Encryption
                         chunk_one_two_q_full_(false),
                         c0_and_1_chunk_size_(chunk_size_),
                         this_chunk_size_(chunk_size_), current_position_(0),
-                        sequence_map_()
+                        sequence_map_(), readok_(true)
                         {
                           if (!data_map_)
                             data_map_.reset(new DataMap2);
@@ -152,6 +152,7 @@ class SE {  // Self Encryption
   size_t this_chunk_size_;
   size_t current_position_;
   std::map<size_t, std::string> sequence_map_;
+  bool readok_;
 //   boost::asio::io_service io_service_;
 //   boost::asio::io_service::work work_;
 //   boost::asio::io_service::strand strand_;

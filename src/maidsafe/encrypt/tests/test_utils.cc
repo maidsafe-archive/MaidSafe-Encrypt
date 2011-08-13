@@ -185,17 +185,12 @@ TEST_F(SelfEncryptionTest, BEH_WriteAndRead) {
   for (size_t  i = 0; i < test_data_size ; ++i)
     ASSERT_EQ(plain_data[i], answer[i]) << "failed at count " << i;
 
-  ASSERT_TRUE(selfenc_.DeleteAChunk(0));
-  ASSERT_TRUE(selfenc_.DeleteAChunk(1));
+  for (int i =0; i < 20; ++i) // may be more than one copy
+    selfenc_.DeleteAChunk(0);
+
+  
   boost::shared_array<char>answer2 (new char[test_data_size]);
-  ASSERT_TRUE(selfenc_.Read(answer2.get(), test_data_size, 0));
-
-  bool failed(false);
-  for (size_t  i = 0; i < test_data_size ; ++i)
-     if (plain_data[i] != answer2[i]) 
-       failed = true;
-
-  ASSERT_TRUE(failed);
+  ASSERT_FALSE(selfenc_.Read(answer2.get(), test_data_size, 0));
 
 }
 
@@ -240,7 +235,7 @@ TEST_F(SelfEncryptionTest, BEH_WriteAndReadByteAtATime) {
 
   for (size_t  i = 0; i < test_data_size ; ++i)
     ASSERT_EQ(plain_data.get()[i], answer.get()[i]) << "failed at count " << i;
-  ASSERT_TRUE(selfenc_.DeleteAllChunks());
+  EXPECT_TRUE(selfenc_.DeleteAllChunks());
 }
 
 

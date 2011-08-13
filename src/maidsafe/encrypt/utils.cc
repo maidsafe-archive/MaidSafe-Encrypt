@@ -161,7 +161,6 @@ bool SE::FinaliseWrite() {
   if ((chunk_size_) < 1025) {
     return ProcessLastData();
   }
-  std::cout << "chunk size now " << chunk_size_ << std::endl;
   while (main_encrypt_queue_.TotalBytesRetrievable() < chunk_size_ * 3) {
     // small files direct to data map
     if ((chunk_size_) < 1025) {
@@ -393,7 +392,7 @@ bool SE::Read(char* data, size_t length, size_t position) {
 #pragma omp barrier
     data[length - data_map_->content_size + i] = data_map_->content[i];
   }
-  return true;
+  return readok_;
 }
 
 bool SE::ReadChunk(size_t chunk_num, byte *data) {
@@ -413,7 +412,7 @@ bool SE::ReadChunk(size_t chunk_num, byte *data) {
 }
   if (content == ""){
     DLOG(ERROR) << "Could not find chunk: " << EncodeToHex(hash) << std::endl;
-    return false;
+    readok_ = false;
   }
     
   CryptoPP::CFB_Mode<CryptoPP::AES>::Decryption decryptor(key.get(), 32, iv.get());
