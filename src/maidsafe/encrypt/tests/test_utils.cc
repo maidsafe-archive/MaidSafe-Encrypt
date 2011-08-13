@@ -106,7 +106,7 @@ TEST_F(SelfEncryptionTest, BEH_40Charsonly) {
   EXPECT_EQ(40, selfenc_.getDataMap()->content_size);
   EXPECT_EQ(0, selfenc_.getDataMap()->chunks.size());
   EXPECT_EQ(*stuff.get(), *selfenc_.getDataMap()->content.c_str());
-  EXPECT_TRUE(selfenc_.Read(answer.get()));
+  EXPECT_TRUE(selfenc_.Read(answer.get(),40));
   EXPECT_EQ(*stuff.get(), *answer.get());
   EXPECT_TRUE(selfenc_.ReInitialise());
 }

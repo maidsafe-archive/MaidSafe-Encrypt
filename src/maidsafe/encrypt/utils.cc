@@ -170,8 +170,8 @@ bool SE::FinaliseWrite() {
   }
   #pragma omp parallel 
   if (chunk_one_two_q_full_) {
-    EncryptAChunk(0,chunk0_raw_.get(), c0_and_1_chunk_size_, false);
-    EncryptAChunk(1,chunk1_raw_.get(), c0_and_1_chunk_size_, false);
+    EncryptAChunk(0, chunk0_raw_.get(), c0_and_1_chunk_size_, false);
+    EncryptAChunk(1, chunk1_raw_.get(), c0_and_1_chunk_size_, false);
     chunk_one_two_q_full_ = false;
   }
   return ProcessLastData();
@@ -185,8 +185,8 @@ bool SE::ProcessLastData() {
     data_map_->content_size = qlength;
     data_map_->size += qlength;
     if (chunk_one_two_q_full_) {
-      EncryptAChunk(0,chunk0_raw_.get(), c0_and_1_chunk_size_, false);
-      EncryptAChunk(1,chunk1_raw_.get(), c0_and_1_chunk_size_, false);
+      EncryptAChunk(0, chunk0_raw_.get(), c0_and_1_chunk_size_, false);
+      EncryptAChunk(1, chunk1_raw_.get(), c0_and_1_chunk_size_, false);
       chunk_one_two_q_full_ = false;
     }
     main_encrypt_queue_.SkipAll();
@@ -325,6 +325,7 @@ bool SE::EncryptAChunk(size_t chunk_num, byte* data,
   std::string data_to_store(reinterpret_cast<const char *>(chunk_content.get()),
                             length);
   // TODO FIME (dirvine) quick hack for retry
+//   strand_.d
   if (! chunk_store_->Store(post_hash, data_to_store)) {
     if (! chunk_store_->Store(post_hash, data_to_store)) {
       DLOG(ERROR) << "Could not store " << EncodeToHex(post_hash)
@@ -347,6 +348,7 @@ bool SE::Read(char* data, size_t length, size_t position) {
      return false;
 
    size_t start_chunk(0), start_offset(0), end_chunk(0), run_total(0);
+// #pragma omp parallel for 
    for(size_t i = 0; i < data_map_->chunks.size(); ++i) {
      if ((data_map_->chunks[i].size + run_total >= position) &&
          (start_chunk = 0)) {
@@ -362,39 +364,32 @@ bool SE::Read(char* data, size_t length, size_t position) {
        end_chunk = i;
    }
 
-   size_t amount_of_extra_content(0);
-   if (run_total <  length)
-     amount_of_extra_content = length - run_total;
-   else
-     amount_of_extra_content = data_map_->content_size;
- 
+
    if (end_chunk != 0)
      ++end_chunk;
 
    std::vector<std::string> plain_text_vec(end_chunk - start_chunk);
-#pragma omp parallel for
+
+#pragma omp parallel for shared(data)
   for (size_t i = start_chunk;i < end_chunk ; ++i) {
-    ReadChunk(i, &plain_text_vec.at(i));
+    size_t this_chunk_size(0);
+    for (size_t j = start_chunk; j < i; ++j)
+      this_chunk_size += data_map_->chunks[j].size;
+    ReadChunk(i, reinterpret_cast<byte *>(&data[this_chunk_size])); 
   }
  
-  std::string alldata;
-  for (size_t i = 0 ;i < plain_text_vec.size() ; ++i) {
-    alldata += plain_text_vec[i];
-  }
-#pragma omp parallel for
-  for(size_t i = 0; i < alldata.size(); ++i)
-     data[i] = alldata[i];
-#pragma omp parallel for
-  for(size_t i = 0; i < amount_of_extra_content; ++i)
-    data[i+alldata.size()] = data_map_->content[i];
+  for(size_t i = 0; i < data_map_->content_size; ++i)
+    data[length - data_map_->content_size + i] = data_map_->content[i];
+  
   return true;
 }
 
-bool SE::ReadChunk(size_t chunk_num, std::string *data) {
+bool SE::ReadChunk(size_t chunk_num, byte *data) {
   if (data_map_->chunks.size() < chunk_num)
     return false;
    std::string hash(reinterpret_cast<char *>(data_map_->chunks[chunk_num].hash),
                     64);
+   size_t length = data_map_->chunks[chunk_num].size;
 //     if (!chunk_store_->Has(hash)) {
 //       DLOG(ERROR) << "Could not find chunk: " << EncodeToHex(hash) << std::endl;
 //       return false;
@@ -413,14 +408,9 @@ bool SE::ReadChunk(size_t chunk_num, std::string *data) {
           CryptoPP::StringSource filter(content, true,
             new XORFilter(
             new CryptoPP::StreamTransformationFilter(decryptor,
-              new CryptoPP::StringSink(*data)),
+              new CryptoPP::MessageQueue),
             pad.get()));
-
-  // TODO FIXME - is this wrong
-  byte *prehashcheck = new(byte[64]);
-  byte *posthashcheck = new(byte[64]);
-  bool postfail(false);
-  bool prefail(false);
+   filter.Get(data, length);
 
   return true;
 }

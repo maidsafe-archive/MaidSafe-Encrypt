@@ -29,7 +29,8 @@
 #include "common/crypto.h"
 #include "boost/filesystem.hpp"
 #include "boost/shared_array.hpp"
-#include "boost/concept_check.hpp"
+#include "boost/asio/io_service.hpp"
+#include "boost/asio.hpp"
 #include "maidsafe/encrypt/data_map.h"
 
 namespace fs = boost::filesystem;
@@ -97,6 +98,10 @@ class SE {  // Self Encryption
                         {
                           if (!data_map_)
                             data_map_.reset(new DataMap2);
+                          // TODO FIXME pass in constructor
+//                           if (!io_service) {
+//                             io_service_.reset(new boost::asio::io_service);
+                            
                         }
   bool Write(const char* data = NULL, size_t length = 0, size_t position = 0);
   bool Read(char * data, size_t length = 0, size_t position = 0);
@@ -110,7 +115,7 @@ class SE {  // Self Encryption
   SE &operator = (const SE&);  // no assignment
   SE(const SE&);  // no copy
   bool ProcessLastData();
-  bool ReadChunk(size_t chunk_num, std::string *data);
+  bool ReadChunk(size_t chunk_num, byte *data);
   bool EncryptChunkFromQueue(CryptoPP::MessageQueue & queue);
   bool EncryptAChunk(size_t chunk_num, byte* data,
                      size_t length, bool re_encrypt);
@@ -148,6 +153,9 @@ class SE {  // Self Encryption
   size_t this_chunk_size_;
   size_t current_position_;
   std::map<size_t, std::string> sequence_map_;
+//   boost::asio::io_service io_service_;
+//   boost::asio::io_service::work work_;
+//   boost::asio::io_service::strand strand_;
 };
 
 }  // namespace encrypt
