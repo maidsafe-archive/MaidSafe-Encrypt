@@ -186,6 +186,7 @@ TEST_F(SelfEncryptionTest, BEH_WriteAndRead) {
     ASSERT_EQ(plain_data[i], answer[i]) << "failed at count " << i;
 
   ASSERT_TRUE(selfenc_.DeleteAChunk(0));
+  ASSERT_TRUE(selfenc_.DeleteAChunk(1));
   boost::shared_array<char>answer2 (new char[test_data_size]);
   ASSERT_TRUE(selfenc_.Read(answer2.get(), test_data_size, 0));
 
@@ -195,9 +196,8 @@ TEST_F(SelfEncryptionTest, BEH_WriteAndRead) {
        failed = true;
        break;
      }
-     
   ASSERT_TRUE(failed);
-  ASSERT_TRUE(selfenc_.DeleteAllChunks());
+
 }
 
 TEST_F(SelfEncryptionTest, BEH_WriteAndReadByteAtATime) {
@@ -241,6 +241,7 @@ TEST_F(SelfEncryptionTest, BEH_WriteAndReadByteAtATime) {
 
   for (size_t  i = 0; i < test_data_size ; ++i)
     ASSERT_EQ(plain_data.get()[i], answer.get()[i]) << "failed at count " << i;
+  ASSERT_TRUE(selfenc_.DeleteAllChunks());
 }
 
 
