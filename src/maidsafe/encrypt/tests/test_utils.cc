@@ -185,6 +185,7 @@ TEST_F(SelfEncryptionTest, BEH_WriteAndRead) {
   for (size_t  i = 0; i < test_data_size ; ++i)
     ASSERT_EQ(plain_data[i], answer[i]) << "failed at count " << i;
 
+  ASSERT_TRUE(selfenc_.DeleteAllChunks());
 }
 
 TEST_F(SelfEncryptionTest, BEH_WriteAndReadByteAtATime) {

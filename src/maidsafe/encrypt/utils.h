@@ -98,22 +98,20 @@ class SE {  // Self Encryption
                         {
                           if (!data_map_)
                             data_map_.reset(new DataMap2);
-                          // TODO FIXME pass in constructor
-//                           if (!io_service) {
-//                             io_service_.reset(new boost::asio::io_service);
-                            
                         }
   bool Write(const char* data = NULL, size_t length = 0, size_t position = 0);
   bool Read(char * data, size_t length = 0, size_t position = 0);
   bool ReInitialise();
   bool FinaliseWrite();
   bool setDatamap(std::shared_ptr<DataMap2> data_map);
+  bool DeleteAllChunks();
   std::shared_ptr<DataMap2> getDataMap() { return data_map_; }
-  void set_chunk_size(size_t chunk_size) { chunk_size_ = chunk_size; }
-  size_t chunk_size() { return chunk_size_; }
+
  private:  
   SE &operator = (const SE&);  // no assignment
   SE(const SE&);  // no copy
+  void set_chunk_size(size_t chunk_size) { chunk_size_ = chunk_size; }
+  size_t chunk_size() { return chunk_size_; }
   bool ProcessLastData();
   bool ReadChunk(size_t chunk_num, byte *data);
   bool EncryptChunkFromQueue(CryptoPP::MessageQueue & queue);

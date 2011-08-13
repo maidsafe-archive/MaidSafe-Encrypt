@@ -177,6 +177,17 @@ bool SE::FinaliseWrite() {
   return ProcessLastData();
 }
 
+bool SE::DeleteAllChunks()
+{
+  
+  for (size_t i =0; i < data_map_->chunks.size(); ++i)
+    if (!chunk_store_->Delete(reinterpret_cast<char *>
+                      (data_map_->chunks[i].hash)))
+      return false;
+  return true;
+}
+
+
 bool SE::ProcessLastData() {
   size_t qlength = main_encrypt_queue_.TotalBytesRetrievable();
     boost::scoped_array<byte> i(new byte[qlength]);
@@ -236,9 +247,7 @@ bool SE::ProcessMainQueue() {
   std::vector<boost::shared_array<byte>>chunk_vec(chunks_to_process,
                                                boost::shared_array<byte
                                                >(new byte[chunk_size_]));
-
   //get all hashes
-
    for(size_t i = 0; i < chunks_to_process; ++i) {
      boost::shared_array<byte> tempy(new byte[chunk_size_]);
      main_encrypt_queue_.Get(tempy.get(), chunk_size_);
@@ -324,16 +333,12 @@ bool SE::EncryptAChunk(size_t chunk_num, byte* data,
                           (data_map_->chunks[chunk_num].hash), 64);
   std::string data_to_store(reinterpret_cast<const char *>(chunk_content.get()),
                             length);
-  // TODO FIME (dirvine) quick hack for retry
-//   strand_.d
+
 #pragma omp critical
 {
-  if (! chunk_store_->Store(post_hash, data_to_store)) {
-    if (! chunk_store_->Store(post_hash, data_to_store)) {
-      DLOG(ERROR) << "Could not store " << EncodeToHex(post_hash)
+  if (! chunk_store_->Store(post_hash, data_to_store)) 
+    DLOG(ERROR) << "Could not store " << EncodeToHex(post_hash)
                                         << std::endl;
-    }
-  }
 }
    if (!re_encrypt) {
     data_map_->chunks[chunk_num].size = length;
@@ -365,11 +370,8 @@ bool SE::Read(char* data, size_t length, size_t position) {
        end_chunk = i;
    }
 
-
    if (end_chunk != 0)
      ++end_chunk;
-
-   std::vector<std::string> plain_text_vec(end_chunk - start_chunk);
 
 #pragma omp parallel for shared(data)
   for (size_t i = start_chunk;i < end_chunk ; ++i) {
@@ -381,7 +383,6 @@ bool SE::Read(char* data, size_t length, size_t position) {
  
   for(size_t i = 0; i < data_map_->content_size; ++i)
     data[length - data_map_->content_size + i] = data_map_->content[i];
-  
   return true;
 }
 
@@ -390,11 +391,7 @@ bool SE::ReadChunk(size_t chunk_num, byte *data) {
     return false;
    std::string hash(reinterpret_cast<char *>(data_map_->chunks[chunk_num].hash),
                     64);
-   size_t length = data_map_->chunks[chunk_num].size;
-//     if (!chunk_store_->Has(hash)) {
-//       DLOG(ERROR) << "Could not find chunk: " << EncodeToHex(hash) << std::endl;
-//       return false;
-//     }
+  size_t length = data_map_->chunks[chunk_num].size;
   boost::shared_array<byte> pad(new byte[144]);
   boost::shared_array<byte> key(new byte[32]);
   boost::shared_array<byte> iv (new byte[16]);
@@ -415,8 +412,7 @@ bool SE::ReadChunk(size_t chunk_num, byte *data) {
             new CryptoPP::StreamTransformationFilter(decryptor,
               new CryptoPP::MessageQueue),
             pad.get()));
-   filter.Get(data, length);
-
+  filter.Get(data, length);
   return true;
 }
 
