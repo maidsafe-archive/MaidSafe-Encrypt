@@ -326,14 +326,15 @@ bool SE::EncryptAChunk(size_t chunk_num, byte* data,
                             length);
   // TODO FIME (dirvine) quick hack for retry
 //   strand_.d
+#pragma omp critical
+{
   if (! chunk_store_->Store(post_hash, data_to_store)) {
     if (! chunk_store_->Store(post_hash, data_to_store)) {
       DLOG(ERROR) << "Could not store " << EncodeToHex(post_hash)
                                         << std::endl;
-      return false;
     }
   }
-
+}
    if (!re_encrypt) {
     data_map_->chunks[chunk_num].size = length;
     data_map_->size += length;
@@ -398,7 +399,11 @@ bool SE::ReadChunk(size_t chunk_num, byte *data) {
   boost::shared_array<byte> key(new byte[32]);
   boost::shared_array<byte> iv (new byte[16]);
   getPad_Iv_Key(chunk_num, key, iv, pad);
-  std::string content(chunk_store_->Get(hash));
+  std::string content("");
+#pragma omp critical
+{
+  content = chunk_store_->Get(hash);
+}
   if (content == ""){
     DLOG(ERROR) << "Could not find chunk: " << EncodeToHex(hash) << std::endl;
     return false;
