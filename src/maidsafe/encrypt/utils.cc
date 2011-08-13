@@ -290,14 +290,14 @@ void SE::getPad_Iv_Key(size_t this_chunk_num,
   size_t num_chunks = data_map_->chunks.size();
   size_t n_1_chunk = (this_chunk_num + num_chunks -1) % num_chunks;
   size_t n_2_chunk = (this_chunk_num + num_chunks -2) % num_chunks;
-
+#pragma omp parallel for shared(key, iv)
   for (int i = 0; i < 48; ++i) {
     if (i < 32)
       key[i] = data_map_->chunks[n_1_chunk].pre_hash[i];
     if (i > 31)
       iv[i - 32] = data_map_->chunks[n_1_chunk].pre_hash[i];
   }
-
+#pragma omp parallel for shared(pad)
   for (int i = 0; i < 64; ++i) {
     pad[i] =  data_map_->chunks[n_1_chunk].pre_hash[i];
     pad[i+64] = data_map_->chunks[this_chunk_num].pre_hash[i];
@@ -361,7 +361,7 @@ bool SE::Read(char* data, size_t length, size_t position) {
      return false;
 
    size_t start_chunk(0), start_offset(0), end_chunk(0), run_total(0);
-// #pragma omp parallel for 
+// #pragma omp parallel for shared(start_chunk, start_offset, end_chunk, run_total)
    for(size_t i = 0; i < data_map_->chunks.size(); ++i) {
      if ((data_map_->chunks[i].size + run_total >= position) &&
          (start_chunk = 0)) {
@@ -370,7 +370,8 @@ bool SE::Read(char* data, size_t length, size_t position) {
                       (position - run_total);
        run_total = data_map_->chunks[i].size - start_offset;
      }
-     else 
+     else
+#pragma omp atomic
        run_total += data_map_->chunks[i].size;
            // find end (offset handled by return truncated size
      if ((run_total <= length) || (length == 0))
@@ -384,6 +385,7 @@ bool SE::Read(char* data, size_t length, size_t position) {
   for (size_t i = start_chunk;i < end_chunk ; ++i) {
     size_t this_chunk_size(0);
     for (size_t j = start_chunk; j < i; ++j)
+#pragma omp atomic
       this_chunk_size += data_map_->chunks[j].size;
     ReadChunk(i, reinterpret_cast<byte *>(&data[this_chunk_size])); 
   }
@@ -415,6 +417,7 @@ void SE::ReadChunk(size_t chunk_num, byte *data) {
   if (content == ""){
     DLOG(ERROR) << "Could not find chunk: " << EncodeToHex(hash) << std::endl;
     readok_ = false;
+    return;
   }
     
   CryptoPP::CFB_Mode<CryptoPP::AES>::Decryption decryptor(key.get(), 32, iv.get());
