@@ -114,7 +114,7 @@ class SE {  // Self Encryption
   void set_chunk_size(size_t chunk_size) { chunk_size_ = chunk_size; }
   size_t chunk_size() { return chunk_size_; }
   bool ProcessLastData();
-  bool ReadChunk(size_t chunk_num, byte *data);
+  void ReadChunk(size_t chunk_num, byte *data);
   bool EncryptChunkFromQueue(CryptoPP::MessageQueue & queue);
   bool EncryptAChunk(size_t chunk_num, byte* data,
                      size_t length, bool re_encrypt);

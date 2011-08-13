@@ -395,9 +395,11 @@ bool SE::Read(char* data, size_t length, size_t position) {
   return readok_;
 }
 
-bool SE::ReadChunk(size_t chunk_num, byte *data) {
-  if (data_map_->chunks.size() < chunk_num)
-    return false;
+void SE::ReadChunk(size_t chunk_num, byte *data) {
+  if (data_map_->chunks.size() < chunk_num) {
+    readok_ = false;
+    return;
+  }
    std::string hash(reinterpret_cast<char *>(data_map_->chunks[chunk_num].hash),
                     64);
   size_t length = data_map_->chunks[chunk_num].size;
@@ -422,7 +424,6 @@ bool SE::ReadChunk(size_t chunk_num, byte *data) {
               new CryptoPP::MessageQueue),
             pad.get()));
   filter.Get(data, length);
-  return true;
 }
 
 }  // namespace encrypt
