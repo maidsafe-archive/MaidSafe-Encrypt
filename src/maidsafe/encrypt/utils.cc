@@ -187,6 +187,14 @@ bool SE::DeleteAllChunks()
   return true;
 }
 
+bool SE::DeleteAChunk(size_t chunk_num)
+{
+  if (!chunk_store_->Delete(reinterpret_cast<char *>
+    (data_map_->chunks[chunk_num].hash)))
+    return false;
+  return true;
+}
+
 
 bool SE::ProcessLastData() {
   size_t qlength = main_encrypt_queue_.TotalBytesRetrievable();

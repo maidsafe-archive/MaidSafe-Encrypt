@@ -105,6 +105,7 @@ class SE {  // Self Encryption
   bool FinaliseWrite();
   bool setDatamap(std::shared_ptr<DataMap2> data_map);
   bool DeleteAllChunks();
+  bool DeleteAChunk(size_t chunk_num);
   std::shared_ptr<DataMap2> getDataMap() { return data_map_; }
 
  private:  
