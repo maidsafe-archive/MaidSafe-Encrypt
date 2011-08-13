@@ -185,6 +185,18 @@ TEST_F(SelfEncryptionTest, BEH_WriteAndRead) {
   for (size_t  i = 0; i < test_data_size ; ++i)
     ASSERT_EQ(plain_data[i], answer[i]) << "failed at count " << i;
 
+  ASSERT_TRUE(selfenc_.DeleteAChunk(0));
+  boost::shared_array<char>answer2 (new char[test_data_size]);
+  ASSERT_TRUE(selfenc_.Read(answer2.get(), test_data_size, 0));
+
+  bool failed(false);
+  for (size_t  i = 0; i < test_data_size ; ++i)
+     if (plain_data[i] != answer2[i]) {
+       failed = true;
+       break;
+     }
+     
+  ASSERT_TRUE(failed);
   ASSERT_TRUE(selfenc_.DeleteAllChunks());
 }
 
