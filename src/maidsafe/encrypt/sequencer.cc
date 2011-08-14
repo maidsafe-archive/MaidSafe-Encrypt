@@ -30,7 +30,11 @@
    for (auto it = sequencer_.begin(); it != sequencer_.end(); ++it) {
      auto iter = sequencer_.find(position);
      if (iter == sequencer_.end()) {
+       try {
        sequencer_.insert(std::pair<size_t, sequence_data>(position, sequence_data(data, length)));
+       } catch (std::exception &e) {
+         return false;
+       }
      } else {
        (*iter).second.first = data;
        (*iter).second.second = length;
@@ -47,23 +51,25 @@
      char * this_data = (*it).second.first;
      size_t this_length = (*it).second.second;
      // got the data - it is contiguous
-     if ((*it).first == position) {
-       sequence_data result = sequence_data((*it).second.first,
-                                            (*it).second.second);
+     if (this_position == position) {
+       sequence_data result = sequence_data(this_data,
+                                            this_length);
        if (remove)
          sequencer_.erase(it);
        return result;
      }
      // get some data that's inside a chunk of sequenced data
-     if ((*it).first + (*it).second.second  >= position) {
+     if (this_position + this_length  >= position) {
        // get address of element and length
        sequence_data result =
-           sequence_data (&(*it).second.first[position - (*it).first],
-                          (*it).second.second - (position - (*it).first));
+       sequence_data (&this_data[position - this_position],
+                      this_length - (position - this_position);
 
        if (remove) {
        // get the remaining data add again with Add
-       Add((*it).first, (*it).second.first, position - (*it).first);
+       Add(this_position,
+           &this_data[position - this_position],
+           this_length-position - this_position);
        sequencer_.erase(it); // remove this element
        }
        return result;
@@ -72,7 +78,10 @@
    return (sequence_data(0, NULL)); // nothing found
  }
 
-bool Sequencer::FillinRange(size_t from, size_t to, char* data, size_t length)
+bool Sequencer::FillinRange(size_t from,
+                            size_t to,
+                            char* data,
+                            size_t length, bool remove)
 {
   if (to - from != length)
     return false;

@@ -45,7 +45,8 @@ class Sequencer {
    bool FillinRange(size_t from,
                              size_t to,
                              char * data,
-                             size_t length);
+                             size_t length,
+                             bool remove);
    
  private:
    std::map <size_t ,sequence_data> sequencer_;
