@@ -14,10 +14,11 @@
  * @date  2008-09-09
  */
 
-#include "maidsafe/encrypt/utils.h"
+#include "maidsafe/encrypt/self_encrypt.h"
 
 #include <algorithm>
 #include <set>
+#include <tuple>
 #ifdef __MSVC__
 #  pragma warning(push, 1)
 #  pragma warning(disable: 4702)
@@ -85,27 +86,31 @@ bool SE::Write(const char* data, size_t length, size_t position) {
 
   if (length == 0)
     return true;
-  
+  // FIXME FIXME check sequencer
+    
   if (position == current_position_) {
-    std::string extra(getFromSequencer(current_position_+length));
     main_encrypt_queue_.Put2(const_cast<byte*>
                            (reinterpret_cast<const byte*>(data)),
                             length, -1, true);
-    if (extra != "") {
+    // check sequencer for more data
+    sequence_data extra(sequencer_.Get(current_position_+length));
+    if (extra.second != 0) {
     main_encrypt_queue_.Put2(const_cast<byte*>
-                           (reinterpret_cast<const byte*>(extra.data())),
-                            extra.size(), -1, true);
-    current_position_ += extra.size();
+                           (reinterpret_cast<const byte*>(extra.first)),
+                            extra.second, -1, true);
+    current_position_ += extra.second;
     }
     current_position_ += length;
+    
     
   } else if (position < current_position_) {
     // TODO (dirvine) handle rewrites properly
     // need to grab data and rewrite it
     // check sequencer
   } else {
-    std::string add_this(data, length);
-    AddToSequencer(add_this, position);
+    //std::string add_this(data, length);
+    
+    sequencer_.Add(position, const_cast<char *>(data), length);
   }
     // Do not queue chunks 0 and 1 till we know we have enough for 3 chunks
     if (main_encrypt_queue_.MaxRetrievable() >= chunk_size_ * 3) {
@@ -116,47 +121,9 @@ bool SE::Write(const char* data, size_t length, size_t position) {
       return true;  // not enough to process chunks yet
 }
 
-bool SE::AddToSequencer(std::string data, size_t position) {
-  // TODO (dirvine) if a write happens half way through we count as 2 sets,
-  // need to take
-  // care of this in the getFromSequencer method.
-  // ah no needs to be here, otherwise we lose timeline
-
-  for (auto it = sequence_map_.begin(); it != sequence_map_.end(); ++it) {
-      auto iter = sequence_map_.find(position);
-      if (iter == sequence_map_.end())
-        sequence_map_.insert(std::pair<size_t, std::string>(position, data));
-      else
-        (*iter).second = data;
-  }
-  return true;
-}
-
-std::string SE::getFromSequencer(size_t position) {
-  if (sequence_map_.size() == 0)
-    return "";
-  for (auto it = sequence_map_.begin(); it != sequence_map_.end(); ++it) {
-    if ((*it).first == position) {
-      std::string result = (*it).second;
-      sequence_map_.erase(it);
-      return result;
-    }
-    if ((*it).first + (*it).second.size()  >= position) {
-      std::string result = (*it).second.substr((*it).first +
-                           (*it).second.size() - position);
-      std::string keep_this = (*it).second.substr(0,(*it).first +
-                                     (*it).second.size() - position);
-      // hopefully this is empty !!
-      std::string keep_this_to = (*it).second.substr((*it).first +
-                                     (*it).second.size() - position);
-      (*it).second = keep_this + keep_this_to;
-      return result;                                           
-    }
-  }
-  return "";  // nothing found
-}
 
 bool SE::FinaliseWrite() {
+  // FIXME process sequencer 
   chunk_size_ = (main_encrypt_queue_.TotalBytesRetrievable()) / 3 ;
   if ((chunk_size_) < 1025) {
     return ProcessLastData();

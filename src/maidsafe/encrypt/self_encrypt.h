@@ -17,9 +17,16 @@
 #ifndef MAIDSAFE_ENCRYPT_UTILS_H_
 #define MAIDSAFE_ENCRYPT_UTILS_H_
 
+	#include "maidsafe/encrypt/version.h"
+  	#if MAIDSAFE_ENCRYPT_VERSION != 905
+  	# error This API is not compatible with the installed library.\
+  	 Please update the library.
+  	#endif
+
+
 #include <cstdint>
 #include <string>
-
+#include <tuple>
 #include "cryptopp/cryptlib.h"
 #include "cryptopp/files.h"
 #include "cryptopp/channels.h"
@@ -32,6 +39,7 @@
 #include "boost/asio/io_service.hpp"
 #include "boost/asio.hpp"
 #include "maidsafe/encrypt/data_map.h"
+#include "maidsafe/encrypt/sequencer.h"
 
 namespace fs = boost::filesystem;
 
@@ -40,6 +48,7 @@ namespace maidsafe {
 class ChunkStore;
 
 namespace encrypt {
+
 
 /// XOR transformation class for pipe-lining
 class XORFilter : public CryptoPP::Bufferless<CryptoPP::Filter> {
@@ -94,7 +103,7 @@ class SE {  // Self Encryption
                         chunk_one_two_q_full_(false),
                         c0_and_1_chunk_size_(chunk_size_),
                         this_chunk_size_(chunk_size_), current_position_(0),
-                        sequence_map_(), readok_(true)
+                        sequencer_(), readok_(true)
                         {
                           if (!data_map_)
                             data_map_.reset(new DataMap2);
@@ -128,12 +137,12 @@ class SE {  // Self Encryption
                      boost::shared_array<byte> iv,
                      boost::shared_array<byte> pad);
   bool ProcessMainQueue();
-  bool AddToSequencer(std::string data, size_t position);
-  std::string getFromSequencer(size_t position);
+
   bool CheckPositionInSequncer(size_t position, size_t length); // maybe not necessary
   
  private:
   std::shared_ptr<DataMap2> data_map_;
+  Sequencer sequencer_;
   bool complete_;  // in case of requirement to send a complete only
   size_t chunk_size_;
   size_t min_chunk_size_;
@@ -151,8 +160,9 @@ class SE {  // Self Encryption
   size_t c0_and_1_chunk_size_;
   size_t this_chunk_size_;
   size_t current_position_;
-  std::map<size_t, std::string> sequence_map_;
   bool readok_;
+  
+
 //   boost::asio::io_service io_service_;
 //   boost::asio::io_service::work work_;
 //   boost::asio::io_service::strand strand_;
