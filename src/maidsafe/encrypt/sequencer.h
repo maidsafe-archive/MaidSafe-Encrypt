@@ -16,15 +16,6 @@
 
 #ifndef MAIDSAFE_ENCRYPT_SEQUENCER_H_
 #define MAIDSAFE_ENCRYPT_SEQUENCER_H_
-
-	#include "maidsafe/encrypt/version.h"
-
-  	#if MAIDSAFE_ENCRYPT_VERSION != 905
-
-  	# error This API is not compatible with the installed library.\
-  	 Please update the library.
-
-  	#endif
 #include <map>
 #include "boost/shared_array.hpp"
 #include "boost/thread.hpp"
@@ -45,15 +36,20 @@ typedef std::pair<char* , size_t > sequence_data;
 class Sequencer {
  public:
    bool Add(size_t position, char * data, size_t length);
-   std::pair<char*, size_t> Peek(size_t position) {
+   sequence_data Peek(size_t position) {
              return  getFromSequencer(position, false);
    }
-   std::pair<char*, size_t> Get(size_t position) {
+   sequence_data Get(size_t position) {
      return  getFromSequencer(position, true);
    }
+   bool FillinRange(size_t from,
+                             size_t to,
+                             char * data,
+                             size_t length);
+   
  private:
    std::map <size_t ,sequence_data> sequencer_;
-   std::pair<char*, size_t> getFromSequencer(size_t position, bool remove);
+   sequence_data getFromSequencer(size_t position, bool remove);
    
 };
 

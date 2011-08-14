@@ -69,7 +69,7 @@ HANDLE_VERSIONS(${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/version.h)
 FILE(GLOB SOURCE_FILES "${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/*.cc")
 FILE(GLOB HEADER_FILES "${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/*.h")
 SET(ALL_FILES ${SOURCE_FILES} ${HEADER_FILES})
-LIST(REMOVE_ITEM ALL_FILES "${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/test.cc")
+
 ####    TESTS    ####
 FILE(GLOB ALL_FILES_TESTS_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/tests/*.cc" "${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/tests/*.h")
 

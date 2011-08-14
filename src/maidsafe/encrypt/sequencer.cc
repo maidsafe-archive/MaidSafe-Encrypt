@@ -16,6 +16,7 @@
 
 
 #include "maidsafe/encrypt/sequencer.h"
+
  
  namespace maidsafe {
  namespace encrypt {
@@ -42,7 +43,9 @@
    if (sequencer_.size() == 0)
      return (sequence_data(0, NULL));
    for (auto it = sequencer_.begin(); it != sequencer_.end(); ++it) {
-     
+     size_t this_position = (*it).first;
+     char * this_data = (*it).second.first;
+     size_t this_length = (*it).second.second;
      // got the data - it is contiguous
      if ((*it).first == position) {
        sequence_data result = sequence_data((*it).second.first,
@@ -68,6 +71,31 @@
    }
    return (sequence_data(0, NULL)); // nothing found
  }
+
+bool Sequencer::FillinRange(size_t from, size_t to, char* data, size_t length)
+{
+  if (to - from != length)
+    return false;
+  for (auto it = sequencer_.begin(); it != sequencer_.end(); ++it) {
+    size_t this_position = (*it).first;
+    char * this_data = (*it).second.first;
+    size_t this_length = (*it).second.second;
+    
+    if (from < (*it).first > to) {
+      (for size_t j = this_position; j < length; ++j) {
+        data[j] = this_data[j];
+      }
+      if(this_position + this_length > to - from) {
+        Add(this_position + from,
+            &this_data[from - this_position],
+            this_length - (this_position + from));
+      }
+    }
+  }
+  
+}
+
+
 
 }  // namespace encrypt
 }  // namespace maidsafe
