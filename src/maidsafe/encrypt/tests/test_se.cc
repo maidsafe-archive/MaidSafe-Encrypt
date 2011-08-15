@@ -201,36 +201,27 @@ TEST_F(SelfEncryptionTest, BEH_WriteAndReadByteAtATime) {
   for (size_t i = 0; i < test_data_size ; ++i) {
     plain_data[i] = plain_text[i];
   }
-  //increase by 1 
-  ++test_data_size;
-  plain_data[test_data_size] = 'b';
 
   for (size_t i = 0; i < test_data_size ; ++i)  {
     selfenc_.Write(&plain_data[i], 1, i);
   }
 
   ASSERT_TRUE(selfenc_.FinaliseWrite());
-//   EXPECT_EQ(test_data_size, selfenc_.getDataMap()->size);
-  EXPECT_EQ(1, selfenc_.getDataMap()->content_size);
+   EXPECT_EQ(test_data_size, selfenc_.getDataMap()->size);
+  EXPECT_EQ(0, selfenc_.getDataMap()->content_size);
   EXPECT_EQ(8, selfenc_.getDataMap()->chunks.size());
 //    EXPECT_EQ("b", selfenc_.getDataMap()->content);
-//   boost::scoped_array<char>answer (new char[test_data_size]);
-  char * answer = new char[test_data_size];
-  ASSERT_TRUE(selfenc_.Read(answer, test_data_size));
+   boost::scoped_array<char>answer (new char[test_data_size]);
+
+  ASSERT_TRUE(selfenc_.Read(answer.get(), test_data_size));
 
 //   // check chunks 1 and 2
   for (size_t  i = 0; i < 524288 ; ++i)
     ASSERT_EQ(plain_data[i], answer[i]) << "c0 or c1 failed at count " << i;
-  
   // check all other chunks
   for (size_t  i = 524288; i < test_data_size -1 ; ++i)
-    ASSERT_EQ(plain_data[i], answer[i]) << "normal chunks failed count :" << i;
-  //check content
-   ASSERT_EQ(plain_data[test_data_size -1], answer[test_data_size -1]);
-  
- // EXPECT_TRUE(selfenc_.DeleteAllChunks());
-  //// TODO FIXME this is not guaranteed to fail as
- 
+    ASSERT_EQ(plain_data[i], answer[i]) << "normal chunks failed count :" << i;  
+
 }
 
 
