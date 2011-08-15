@@ -84,8 +84,8 @@ size_t XORFilter::Put2(const byte* inString,
 
 bool SE::Write(const char* data, size_t length, size_t position) {
 
-//   if (length == 0)
-//     return true;
+  if (length == 0)
+    return true;
 //   // FIXME FIXME check sequencer
 //   if (data_map_->chunks.size() == 0) { //check for repeated input
 //     for(size_t i = 1; i < length; ++i) {
@@ -100,9 +100,10 @@ bool SE::Write(const char* data, size_t length, size_t position) {
 //   
     
   if (position == current_position_) {
+//     std::cout << "main q size =  " << main_encrypt_queue_.MaxRetrievable() << std::endl;
     main_encrypt_queue_.Put2(const_cast<byte*>
                            (reinterpret_cast<const byte*>(data)),
-                            length, -1, true);
+                            length, 0, true);
     // check sequencer for more data
     sequence_data extra(sequencer_.Get(current_position_+length));
     if (extra.second != 0) {
@@ -112,56 +113,68 @@ bool SE::Write(const char* data, size_t length, size_t position) {
     current_position_ += extra.second;
     }
     current_position_ += length;
-    
-    
-  } else if (position < current_position_) {
-    // TODO (dirvine) handle rewrites properly
-    // need to grab data and rewrite it
-    // check sequencer
-  } else {
-    //std::string add_this(data, length);
-    
-    sequencer_.Add(position, const_cast<char *>(data), length);
-  }
+
+    } else if (position < current_position_) {
+      // TODO (dirvine) handle rewrites properly
+      // need to grab data and rewrite it
+      // check sequencer
+    } else {
+      //std::string add_this(data, length);
+
+      sequencer_.Add(position, const_cast<char *>(data), length);
+    }
+    size_t max_data = main_encrypt_queue_.MaxRetrievable();
     // Do not queue chunks 0 and 1 till we know we have enough for 3 chunks
-    if (main_encrypt_queue_.MaxRetrievable() >= chunk_size_ * 3) {
-      if (!chunk_one_two_q_full_)
-        QueueC1AndC2();
-       return ProcessMainQueue();
-    } else
-      return true;  // not enough to process chunks yet
+    if ((max_data >= chunk_size_ * 3) &&
+       (! chunk_one_two_q_full_)) {
+       QueueC0AndC1();
+
+       ProcessMainQueue();
+    }
+    if (max_data >= chunk_size_)
+      ProcessMainQueue();
+    return true;  
 }
 
 
 bool SE::FinaliseWrite() {
   // FIXME process sequencer 
-  chunk_size_ = (main_encrypt_queue_.TotalBytesRetrievable()) / 3 ;
+  chunk_size_ = (main_encrypt_queue_.MaxRetrievable()) / 3 ;
+  
   if ((chunk_size_) < 1025) {
     return ProcessLastData();
   }
-  while (main_encrypt_queue_.TotalBytesRetrievable() < chunk_size_ * 3) {
-    // small files direct to data map
-    if ((chunk_size_) < 1025) {
-       return ProcessLastData();
+   ProcessMainQueue();
+}
+
+bool SE::ProcessLastData() {
+  size_t qlength = main_encrypt_queue_.MaxRetrievable();
+  std::cout << "qlength = " << qlength << std::endl;
+    boost::shared_array<byte> i(new byte[qlength]);
+    main_encrypt_queue_.Get(i.get(), qlength);
+    std::string extra(reinterpret_cast<char *>(i.get()), qlength);
+    data_map_->content = extra;
+    data_map_->content_size = qlength;
+    data_map_->size += qlength;
+    // when all that is done, encrypt chunks 0 and 1
+    if (chunk_one_two_q_full_) {
+      EncryptAChunk(0, chunk0_raw_.get(), c0_and_1_chunk_size_, false);
+      EncryptAChunk(1, chunk1_raw_.get(), c0_and_1_chunk_size_, false);
+      chunk0_raw_.reset();
+      chunk1_raw_.reset();
+      chunk_one_two_q_full_ = false;
     }
-    ProcessMainQueue();
-  }
-  #pragma omp parallel 
-  if (chunk_one_two_q_full_) {
-    EncryptAChunk(0, chunk0_raw_.get(), c0_and_1_chunk_size_, false);
-    EncryptAChunk(1, chunk1_raw_.get(), c0_and_1_chunk_size_, false);
-    chunk_one_two_q_full_ = false;
-  }
-  return ProcessLastData();
+    main_encrypt_queue_.SkipAll();
+    return true;
 }
 
 bool SE::DeleteAllChunks()
 {
   for (size_t i =0; i < data_map_->chunks.size(); ++i)
     if (!chunk_store_->Delete(reinterpret_cast<char *>
-                      (data_map_->chunks[i].hash)))
+      (data_map_->chunks[i].hash)))
       return false;
-  return true;
+    return true;
 }
 
 bool SE::DeleteAChunk(size_t chunk_num)
@@ -172,36 +185,17 @@ bool SE::DeleteAChunk(size_t chunk_num)
   return true;
 }
 
-
-bool SE::ProcessLastData() {
-  size_t qlength = main_encrypt_queue_.TotalBytesRetrievable();
-    boost::scoped_array<byte> i(new byte[qlength]);
-    main_encrypt_queue_.Get(i.get(), sizeof(i));
-    data_map_->content = reinterpret_cast<const char *>(i.get());
-    data_map_->content_size = qlength;
-    data_map_->size += qlength;
-    if (chunk_one_two_q_full_) {
-      EncryptAChunk(0, chunk0_raw_.get(), c0_and_1_chunk_size_, false);
-      EncryptAChunk(1, chunk1_raw_.get(), c0_and_1_chunk_size_, false);
-      chunk_one_two_q_full_ = false;
-    }
-    main_encrypt_queue_.SkipAll();
-    return true;
-}
-
 bool SE::ReInitialise() {
     chunk_size_ = 1024*256;
     main_encrypt_queue_.SkipAll();
-    chunk0_queue_.SkipAll();
-    chunk1_queue_.SkipAll();
     chunk_one_two_q_full_ = false;
     data_map_.reset(new DataMap2);
     return true;
 }
 
-bool SE::QueueC1AndC2() {
+bool SE::QueueC0AndC1() {
   c0_and_1_chunk_size_ = chunk_size_;
-  // Chunk 1
+  // Chunk 0
   main_encrypt_queue_.Get(chunk0_raw_.get(), chunk_size_);
   ChunkDetails2 chunk_data;
   CryptoPP::SHA512().CalculateDigest(chunk_data.pre_hash,
@@ -210,20 +204,20 @@ bool SE::QueueC1AndC2() {
   chunk_data.pre_size = chunk_size_;
   data_map_->chunks.push_back(chunk_data);
   
-  // Chunk 2
+  // Chunk 1
   main_encrypt_queue_.Get(chunk1_raw_.get(), chunk_size_);
   ChunkDetails2 chunk_data2;
   CryptoPP::SHA512().CalculateDigest(chunk_data2.pre_hash,
                                      chunk1_raw_.get() ,
                                      chunk_size_);
   chunk_data2.pre_size = chunk_size_;
-  data_map_->chunks.push_back(chunk_data);
+  data_map_->chunks.push_back(chunk_data2);
   chunk_one_two_q_full_ = true;
-  return chunk_one_two_q_full_;
+  return true;
 }
 
 bool SE::ProcessMainQueue() {
-  if (!main_encrypt_queue_.MaxRetrievable()  >= chunk_size_)
+  if (main_encrypt_queue_.MaxRetrievable()  < chunk_size_)
     return false;
 
   size_t chunks_to_process = (main_encrypt_queue_.MaxRetrievable() / chunk_size_);
@@ -246,19 +240,14 @@ bool SE::ProcessMainQueue() {
     data_map_->chunks[i + old_dm_size].pre_size = chunk_size_;
     }
   // process chunks
-#pragma omp parallel for // gives over 100Mb write speeds
+// #pragma omp parallel for // gives over 100Mb write speeds
   for(size_t j = 0; j < chunks_to_process; ++j) {
-
     EncryptAChunk(j + old_dm_size,
                   &chunk_vec[j][0],
                   chunk_size_,
                   false);
   }
   return true;
-}
-
-void SE::HashMe(byte * digest, byte* data, size_t length) {
-  CryptoPP::SHA512().CalculateDigest(digest, data, length);
 }
 
 void SE::getPad_Iv_Key(size_t this_chunk_num,

@@ -44,7 +44,7 @@ class Sequencer {
  public:
    bool Add(size_t position, char * data, size_t length);
    sequence_data Peek(size_t position) {
-             return  getFromSequencer(position, false);
+     return  getFromSequencer(position, false);
    }
    sequence_data Get(size_t position) {
      return  getFromSequencer(position, true);

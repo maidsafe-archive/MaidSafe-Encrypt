@@ -90,20 +90,18 @@ class SE {  // Self Encryption
  public:
   SE(std::shared_ptr<ChunkStore> chunk_store,
     std::shared_ptr<DataMap2> data_map) :
-                        data_map_(data_map), complete_(false), chunk_size_(1024*256),
+                        data_map_(data_map),  sequencer_(),
+                        complete_(false), chunk_size_(1024*256),
                         min_chunk_size_(1024), length_(), hash_(),
                         main_encrypt_queue_(CryptoPP::MessageQueue()),
                         chunk0_raw_(new byte[chunk_size_]),
                         chunk1_raw_(new byte[chunk_size_]),
-                        chunk0_queue_(CryptoPP::MessageQueue()),
-                        chunk1_queue_(CryptoPP::MessageQueue()),
-                        chunk_current_queue_(CryptoPP::MessageQueue()),
                         chunk_data_(),
                         chunk_store_(chunk_store),
                         chunk_one_two_q_full_(false),
                         c0_and_1_chunk_size_(chunk_size_),
-                        this_chunk_size_(chunk_size_), current_position_(0),
-                        sequencer_(), readok_(true)
+                        this_chunk_size_(chunk_size_),
+                        current_position_(0), readok_(true)
                         {
                           if (!data_map_)
                             data_map_.reset(new DataMap2);
@@ -128,8 +126,7 @@ class SE {  // Self Encryption
   bool EncryptAChunk(size_t chunk_num, byte* data,
                      size_t length, bool re_encrypt);
   
-  bool QueueC1AndC2();
-  void HashMe(byte * digest, byte *data, size_t length);
+  bool QueueC0AndC1();
   bool ResetEncrypt();
   bool EncryptaChunk(std::string &input, std::string *output);
   void getPad_Iv_Key(size_t this_chunk_num,
@@ -151,9 +148,6 @@ class SE {  // Self Encryption
   CryptoPP::MessageQueue main_encrypt_queue_;
   boost::shared_array<byte> chunk0_raw_; //(new byte[chunk_size_]);
   boost::shared_array<byte> chunk1_raw_; //(new byte[chunk_size_]);
-  CryptoPP::MessageQueue chunk0_queue_;
-  CryptoPP::MessageQueue chunk1_queue_;
-  CryptoPP::MessageQueue chunk_current_queue_;
   ChunkDetails2 chunk_data_;
   std::shared_ptr<ChunkStore> chunk_store_;
   bool chunk_one_two_q_full_;
