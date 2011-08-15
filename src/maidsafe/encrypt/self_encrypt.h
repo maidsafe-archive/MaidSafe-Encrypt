@@ -70,28 +70,12 @@ class XORFilter : public CryptoPP::Bufferless<CryptoPP::Filter> {
   size_t count_;
 };
 
-// Anchor class to allow detach and attach of transforms
-// this will allow us to work with self encryption flags as is
-class Anchor : public CryptoPP::Bufferless<CryptoPP::Filter> {
- public:
-  Anchor(CryptoPP::BufferedTransformation* attachment = NULL) {
-    CryptoPP::Filter::Detach(attachment);
-  };
-  size_t Put2(const byte * inString,
-              size_t length,
-              int messageEnd,
-              bool blocking ) {
-    return AttachedTransformation()->Put2(inString, length,
-                                          messageEnd, blocking);
-  }
-};
-
 class SE {  // Self Encryption
  public:
   SE(std::shared_ptr<ChunkStore> chunk_store,
-    std::shared_ptr<DataMap2> data_map) :
+    std::shared_ptr<DataMap> data_map) :
                         data_map_(data_map),  sequencer_(),
-                        complete_(false), chunk_size_(1024*256),
+                        chunk_size_(1024*256),
                         min_chunk_size_(1024), length_(), hash_(),
                         main_encrypt_queue_(CryptoPP::MessageQueue()),
                         chunk0_raw_(new byte[chunk_size_]),
@@ -104,16 +88,16 @@ class SE {  // Self Encryption
                         current_position_(0), readok_(true)
                         {
                           if (!data_map_)
-                            data_map_.reset(new DataMap2);
+                            data_map_.reset(new DataMap);
                         }
   bool Write(const char* data = NULL, size_t length = 0, size_t position = 0);
   bool Read(char * data, size_t length = 0, size_t position = 0);
   bool ReInitialise();
   bool FinaliseWrite();
-  bool setDatamap(std::shared_ptr<DataMap2> data_map);
+  bool setDatamap(std::shared_ptr<DataMap> data_map);
   bool DeleteAllChunks();
   bool DeleteAChunk(size_t chunk_num);
-  std::shared_ptr<DataMap2> getDataMap() { return data_map_; }
+  std::shared_ptr<DataMap> getDataMap() { return data_map_; }
 
  private:  
   SE &operator = (const SE&);  // no assignment
@@ -138,28 +122,22 @@ class SE {  // Self Encryption
   bool CheckPositionInSequncer(size_t position, size_t length); // maybe not necessary
   
  private:
-  std::shared_ptr<DataMap2> data_map_;
+  std::shared_ptr<DataMap> data_map_;
   Sequencer sequencer_;
-  bool complete_;  // in case of requirement to send a complete only
   size_t chunk_size_;
   size_t min_chunk_size_;
   size_t length_;
   CryptoPP::SHA512  hash_;
   CryptoPP::MessageQueue main_encrypt_queue_;
-  boost::shared_array<byte> chunk0_raw_; //(new byte[chunk_size_]);
-  boost::shared_array<byte> chunk1_raw_; //(new byte[chunk_size_]);
-  ChunkDetails2 chunk_data_;
+  boost::shared_array<byte> chunk0_raw_; 
+  boost::shared_array<byte> chunk1_raw_; 
+  ChunkDetails chunk_data_;
   std::shared_ptr<ChunkStore> chunk_store_;
   bool chunk_one_two_q_full_;
   size_t c0_and_1_chunk_size_;
   size_t this_chunk_size_;
   size_t current_position_;
   bool readok_;
-  
-
-//   boost::asio::io_service io_service_;
-//   boost::asio::io_service::work work_;
-//   boost::asio::io_service::strand strand_;
 };
 
 }  // namespace encrypt

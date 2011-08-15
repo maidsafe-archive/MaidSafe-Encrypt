@@ -73,22 +73,22 @@ class SelfEncryptionTest : public testing::Test {
 protected:
   MemoryChunkStore::HashFunc hash_func_;
   std::shared_ptr<MemoryChunkStore> chunk_store_;
-  std::shared_ptr<DataMap2> data_map_;
-  SE selfenc_;// (chunk_store);
-  size_t chunk_size_;// (1024*256); // system default
-  size_t num_chunks_; //(10);
-  boost::shared_array<char> extra_content_; // = new char[5]{'1','2','3','4','5'};
-  size_t expected_content_size_; // ;
-  size_t file_size_; // (chunk_size*num_chunks + expected_content_size);
-  boost::shared_array<byte> pre_enc_chunk_; // = new byte[chunk_size];
-  boost::shared_array<byte>pad_; // = new byte[144];
-  boost::shared_array<byte>xor_res_; // = new byte[chunk_size];
-  boost::shared_array<byte>prehash_; // = new byte[CryptoPP::SHA512::DIGESTSIZE];
-  boost::shared_array<byte>posthashxor_; // = new byte[CryptoPP::SHA512::DIGESTSIZE];
-  boost::shared_array<byte>postenc_; // = new byte[chunk_size];
-  boost::shared_array<byte>key_;// = new byte[32];
-  boost::shared_array<byte>iv_;// = new byte[16];
-  boost::shared_array<char>pre_enc_file_;// = new char[file_size];
+  std::shared_ptr<DataMap> data_map_;
+  SE selfenc_;
+  size_t chunk_size_;
+  size_t num_chunks_; 
+  boost::shared_array<char> extra_content_; 
+  size_t expected_content_size_; 
+  size_t file_size_; 
+  boost::shared_array<byte> pre_enc_chunk_;
+  boost::shared_array<byte>pad_;
+  boost::shared_array<byte>xor_res_;
+  boost::shared_array<byte>prehash_;
+  boost::shared_array<byte>posthashxor_;
+  boost::shared_array<byte>postenc_; 
+  boost::shared_array<byte>key_;
+  boost::shared_array<byte>iv_;
+  boost::shared_array<char>pre_enc_file_;
 };
 
 TEST_F(SelfEncryptionTest, BEH_40Charsonly) {
@@ -151,7 +151,7 @@ TEST_F(SelfEncryptionTest, BEH_WriteAndRead) {
   }
   ++test_data_size;
   plain_data[test_data_size] = 'b';
- //std::copy(plain_text.c_str(), plain_text.c_str() + test_data_size, twentymb);
+
  
   boost::posix_time::ptime time =
         boost::posix_time::microsec_clock::universal_time();
@@ -236,41 +236,23 @@ TEST_F(SelfEncryptionTest, BEH_WriteAndReadByteAtATimeOutOfSequenceForward) {
   }
   ++test_data_size;
   plain_data[test_data_size] = 'b';
-  boost::posix_time::ptime time =
-        boost::posix_time::microsec_clock::universal_time();
 
+
+size_t length = 1;
   for (size_t i = 0; i < test_data_size ; i += 2)  {
-    ASSERT_TRUE(selfenc_.Write(plain_data.get(), test_data_size));
+    ASSERT_TRUE(selfenc_.Write(&plain_data.get()[i], length, i));
   }
   for (size_t i = 1; i < test_data_size ; i +=2 )  {
-    ASSERT_TRUE(selfenc_.Write(plain_data.get(), test_data_size));
+    ASSERT_TRUE(selfenc_.Write(&plain_data.get()[i], length, i));
   }
   ASSERT_TRUE(selfenc_.FinaliseWrite());
-  std::uint64_t duration =
-      (boost::posix_time::microsec_clock::universal_time() -
-       time).total_microseconds();
-  if (duration == 0)
-    duration = 1;
-  std::cout << "Self-encrypted " << BytesToBinarySiUnits(test_data_size)
-             << " in " << (duration / 1000000.0)
-             << " seconds at a speed of "
-             <<  BytesToBinarySiUnits(test_data_size / (duration / 1000000.0) )
-             << "/s at Byte per time" << std::endl;
+
   boost::shared_array<char>answer (new char[test_data_size]);
-  time =  boost::posix_time::microsec_clock::universal_time();
+  
   ASSERT_TRUE(selfenc_.Read(answer.get(), test_data_size, 0));
-  duration = (boost::posix_time::microsec_clock::universal_time() -
-              time).total_microseconds();
-  if (duration == 0)
-    duration = 1;
-  std::cout << "Self-decrypted " << BytesToBinarySiUnits(test_data_size)
-             << " in " << (duration / 1000000.0)
-             << " seconds at a speed of "
-             <<  BytesToBinarySiUnits(test_data_size / (duration / 1000000.0) )
-             << "/s" << std::endl;
 
   for (size_t  i = 0; i < test_data_size ; ++i)
-    ASSERT_EQ(plain_data.get()[i], answer.get()[i]) << "failed at count " << i;
+    ASSERT_EQ(plain_data[i], answer[i]) << "failed at count " << i;
 }
 
 TEST_F(SelfEncryptionTest, FUNC_WriteOnceRead20) {
@@ -331,7 +313,7 @@ TEST_F(SelfEncryptionTest, BEH_manual_check_write) {
                                                    std::placeholders::_1);
   std::shared_ptr<MemoryChunkStore>
        chunk_store(new MemoryChunkStore (false, hash_func));
-  std::shared_ptr<DataMap2> data_map; // NULL
+  std::shared_ptr<DataMap> data_map; // NULL
   SE selfenc(chunk_store, data_map);
   size_t chunk_size(1024*256); // system default
   size_t num_chunks(10);
@@ -403,23 +385,23 @@ TEST_F(SelfEncryptionTest, BEH_manual_check_write) {
       << "failed at chunk 0 post hash : " << i;
     ASSERT_EQ(posthashxor[i], static_cast<byte>(selfenc.getDataMap()->chunks[1].hash[i]))
     << "failed at chunk 1 post hash : " << i;
-//     ASSERT_EQ(posthashxor[i], static_cast<byte>(selfenc.getDataMap()->chunks[2].hash[i]))
-//     << "failed at chunk 2 post hash : " << i;
+    ASSERT_EQ(posthashxor[i], static_cast<byte>(selfenc.getDataMap()->chunks[2].hash[i]))
+    << "failed at chunk 2 post hash : " << i;
   }
 // TODO FIXME - this breaks when threaded writes are on.
-//   // check chunks' hashes - should be equal for repeated single character input
-//   bool match(true);
-//   for (size_t i = 0; i < selfenc.getDataMap()->chunks.size(); ++i) {
-//     for (size_t j = i; j < selfenc.getDataMap()->chunks.size(); ++j) {
-//       for (int k = 0; k < CryptoPP::SHA512::DIGESTSIZE ; ++k) {
-//         if (selfenc.getDataMap()->chunks[i].hash[k] !=
-//                 selfenc.getDataMap()->chunks[j].hash[k])
-//           match = false;
-//       }
-//       EXPECT_TRUE(match);
-//       match = true;
-//     }
-//   }
+  // check chunks' hashes - should be equal for repeated single character input
+  bool match(true);
+  for (size_t i = 0; i < selfenc.getDataMap()->chunks.size(); ++i) {
+    for (size_t j = i; j < selfenc.getDataMap()->chunks.size(); ++j) {
+      for (int k = 0; k < CryptoPP::SHA512::DIGESTSIZE ; ++k) {
+        if (selfenc.getDataMap()->chunks[i].hash[k] !=
+                selfenc.getDataMap()->chunks[j].hash[k])
+          match = false;
+      }
+      EXPECT_TRUE(match);
+      match = true;
+    }
+  }
 }
 
 }  // namespace test

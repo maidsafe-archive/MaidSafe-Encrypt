@@ -86,7 +86,7 @@ bool SE::Write(const char* data, size_t length, size_t position) {
 
   if (length == 0)
     return true;
-//   // FIXME FIXME check sequencer
+//   // FIXME FIXME do not encrypt repeated input, store in dm direct 
 //   if (data_map_->chunks.size() == 0) { //check for repeated input
 //     for(size_t i = 1; i < length; ++i) {
 //       if (data[i] != data[i-1])
@@ -112,14 +112,11 @@ bool SE::Write(const char* data, size_t length, size_t position) {
     current_position_ += extra.second;
     }
     current_position_ += length;
-
     } else if (position < current_position_) {
       // TODO (dirvine) handle rewrites properly
       // need to grab data and rewrite it
       // check sequencer
     } else {
-      //std::string add_this(data, length);
-
       sequencer_.Add(position, const_cast<char *>(data), length);
     }
 
@@ -186,7 +183,7 @@ bool SE::ReInitialise() {
     chunk_size_ = 1024*256;
     main_encrypt_queue_.SkipAll();
     chunk_one_two_q_full_ = false;
-    data_map_.reset(new DataMap2);
+    data_map_.reset(new DataMap);
     return true;
 }
 
@@ -194,7 +191,7 @@ bool SE::QueueC0AndC1() {
   c0_and_1_chunk_size_ = chunk_size_;
   // Chunk 0
   main_encrypt_queue_.Get(chunk0_raw_.get(), chunk_size_);
-  ChunkDetails2 chunk_data;
+  ChunkDetails chunk_data;
   CryptoPP::SHA512().CalculateDigest(chunk_data.pre_hash,
                                      chunk0_raw_.get(),
                                      chunk_size_);
@@ -203,7 +200,7 @@ bool SE::QueueC0AndC1() {
   
   // Chunk 1
   main_encrypt_queue_.Get(chunk1_raw_.get(), chunk_size_);
-  ChunkDetails2 chunk_data2;
+  ChunkDetails chunk_data2;
   CryptoPP::SHA512().CalculateDigest(chunk_data2.pre_hash,
                                      chunk1_raw_.get() ,
                                      chunk_size_);
@@ -236,17 +233,15 @@ bool SE::ProcessMainQueue() {
            chunk_size_);
     data_map_->chunks[i + old_dm_size].pre_size = chunk_size_;
     }
-//     #pragma omp barrier 
-  // process chunks
-#pragma omp parallel for  // gives over 100Mb write speeds
+
+// #pragma omp parallel for  // gives over 100Mb write speeds
   for(size_t j = 0; j < chunks_to_process; ++j) {
     EncryptAChunk(j + old_dm_size,
                   &chunk_vec[j][0],
                   chunk_size_,
                   false);
-//     std::cout << " encrypting chunk : " << j + old_dm_size << std::endl;
   }
-// #pragma omp barrier 
+
   return true;
 }
 
@@ -257,14 +252,14 @@ void SE::getPad_Iv_Key(size_t this_chunk_num,
   size_t num_chunks = data_map_->chunks.size();
   size_t n_1_chunk = (this_chunk_num + num_chunks -1) % num_chunks;
   size_t n_2_chunk = (this_chunk_num + num_chunks -2) % num_chunks;
-// #pragma omp parallel for shared(key, iv)
+
   for (int i = 0; i < 48; ++i) {
     if (i < 32)
       key[i] = data_map_->chunks[n_1_chunk].pre_hash[i];
     if (i > 31)
       iv[i - 32] = data_map_->chunks[n_1_chunk].pre_hash[i];
   }
-// #pragma omp parallel for shared(pad)
+
   for (int i = 0; i < 64; ++i) {
     pad[i] =  data_map_->chunks[n_1_chunk].pre_hash[i];
     pad[i+64] = data_map_->chunks[this_chunk_num].pre_hash[i];
@@ -276,10 +271,9 @@ void SE::getPad_Iv_Key(size_t this_chunk_num,
 
 bool SE::EncryptAChunk(size_t chunk_num, byte* data,
                        size_t length, bool re_encrypt) {
-// #pragma omp critical
-//{
-  //   if (data_map_->chunks.size() < chunk_num)
-//     return false;
+
+   if (data_map_->chunks.size() < chunk_num)
+    return false;
    if (re_encrypt)  // fix pre enc hash and re-encrypt next 2
      CryptoPP::SHA512().CalculateDigest(data_map_->chunks[chunk_num].pre_hash,
                                         data,
@@ -319,7 +313,6 @@ bool SE::EncryptAChunk(size_t chunk_num, byte* data,
 #pragma omp atomic
     data_map_->size += length;
    }
-//} // omp
   return true;
 
 }
@@ -331,7 +324,6 @@ bool SE::Read(char* data, size_t length, size_t position) {
      return false;
 
    size_t start_chunk(0), start_offset(0), end_chunk(0), run_total(0);
-// #pragma omp parallel for shared(start_chunk, start_offset, end_chunk, run_total)
    for(size_t i = 0; i < data_map_->chunks.size(); ++i) {
      if ((data_map_->chunks[i].size + run_total >= position) &&
          (start_chunk = 0)) {
