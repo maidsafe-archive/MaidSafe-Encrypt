@@ -35,7 +35,7 @@
 #include "maidsafe/common/utils.h"
 #include "maidsafe/encrypt/config.h"
 #include "maidsafe/encrypt/data_map.h"
-#include "maidsafe/encrypt/utils.h"
+#include "maidsafe/encrypt/self_encrypt.h"
 #include "maidsafe/encrypt/log.h"
 #include "maidsafe/common/memory_chunk_store.h"
 

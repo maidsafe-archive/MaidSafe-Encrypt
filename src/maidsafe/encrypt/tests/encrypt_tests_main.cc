@@ -1,4 +1,4 @@
-﻿/*******************************************************************************
+/*******************************************************************************
  *  Copyright 2010-2011 maidsafe.net limited                                   *
  *                                                                             *
  *  The following source code is property of maidsafe.net limited and is not   *
@@ -28,6 +28,6 @@ int main(int argc, char **argv) {
 
   testing::InitGoogleTest(&argc, argv);
   int result(RUN_ALL_TESTS());
-//   int test_count = testing::UnitTest::GetInstance()->test_to_run_count();
+  int test_count = testing::UnitTest::GetInstance()->test_to_run_count();
   return (test_count == 0) ? -1 : result;
 }

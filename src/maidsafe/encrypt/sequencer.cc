@@ -61,9 +61,8 @@
      // get some data that's inside a chunk of sequenced data
      if (this_position + this_length  >= position) {
        // get address of element and length
-       sequence_data result =
-       sequence_data (&this_data[position - this_position],
-                      this_length - (position - this_position);
+       sequence_data res(&this_data[position - this_position],
+                      this_length - (position - this_position));
 
        if (remove) {
        // get the remaining data add again with Add
@@ -72,7 +71,7 @@
            this_length-position - this_position);
        sequencer_.erase(it); // remove this element
        }
-       return result;
+       return res;
      }
    }
    return (sequence_data(0, NULL)); // nothing found
@@ -91,7 +90,7 @@ bool Sequencer::FillinRange(size_t from,
     size_t this_length = (*it).second.second;
     
     if (from < (*it).first > to) {
-      (for size_t j = this_position; j < length; ++j) {
+      for (size_t j = this_position; j < length; ++j) {
         data[j] = this_data[j];
       }
       if(this_position + this_length > to - from) {

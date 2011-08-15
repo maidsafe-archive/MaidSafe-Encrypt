@@ -84,9 +84,20 @@ size_t XORFilter::Put2(const byte* inString,
 
 bool SE::Write(const char* data, size_t length, size_t position) {
 
-  if (length == 0)
-    return true;
-  // FIXME FIXME check sequencer
+//   if (length == 0)
+//     return true;
+//   // FIXME FIXME check sequencer
+//   if (data_map_->chunks.size() == 0) { //check for repeated input
+//     for(size_t i = 1; i < length; ++i) {
+//       if (data[i] != data[i-1])
+//         break;
+//     // it's repeated add to datamap as repeat
+//       data_map_->content=data[0];
+//       data_map_->content_repeat += length;
+//       return true;
+//     }
+//   }
+//   
     
   if (position == current_position_) {
     main_encrypt_queue_.Put2(const_cast<byte*>
