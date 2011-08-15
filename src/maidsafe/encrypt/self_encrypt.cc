@@ -229,7 +229,7 @@ bool SE::ProcessMainQueue() {
      main_encrypt_queue_.Get(tempy.get(), chunk_size_);
      chunk_vec[i] = tempy;
    }
-// #pragma omp parallel for
+#pragma omp parallel for
    for(size_t i = 0; i < chunks_to_process; ++i) {
      CryptoPP::SHA512().CalculateDigest(data_map_->chunks[i + old_dm_size].pre_hash,
            chunk_vec[i].get(),
@@ -244,7 +244,7 @@ bool SE::ProcessMainQueue() {
                   &chunk_vec[j][0],
                   chunk_size_,
                   false);
-    std::cout << " encrypting chunk : " << j + old_dm_size << std::endl;
+//     std::cout << " encrypting chunk : " << j + old_dm_size << std::endl;
   }
 // #pragma omp barrier 
   return true;
@@ -277,7 +277,7 @@ void SE::getPad_Iv_Key(size_t this_chunk_num,
 bool SE::EncryptAChunk(size_t chunk_num, byte* data,
                        size_t length, bool re_encrypt) {
 // #pragma omp critical
-{
+//{
   //   if (data_map_->chunks.size() < chunk_num)
 //     return false;
    if (re_encrypt)  // fix pre enc hash and re-encrypt next 2
@@ -319,7 +319,7 @@ bool SE::EncryptAChunk(size_t chunk_num, byte* data,
 // #pragma omp atomic
     data_map_->size += length;
    }
-} // omp
+//} // omp
   return true;
 
 }
@@ -341,7 +341,7 @@ bool SE::Read(char* data, size_t length, size_t position) {
        run_total = data_map_->chunks[i].size - start_offset;
      }
      else
-// #pragma omp atomic
+#pragma omp atomic
        run_total += data_map_->chunks[i].size;
            // find end (offset handled by return truncated size
      if ((run_total <= length) || (length == 0))
@@ -351,17 +351,17 @@ bool SE::Read(char* data, size_t length, size_t position) {
    if (end_chunk != 0)
      ++end_chunk;
 
-// #pragma omp parallel for shared(data)
+#pragma omp parallel for shared(data)
   for (size_t i = start_chunk;i < end_chunk ; ++i) {
     size_t this_chunk_size(0);
     for (size_t j = start_chunk; j < i; ++j)
-// #pragma omp atomic
+#pragma omp atomic
       this_chunk_size += data_map_->chunks[j].size;
     ReadChunk(i, reinterpret_cast<byte *>(&data[this_chunk_size])); 
   }
  
   for(size_t i = 0; i < data_map_->content_size; ++i) {
-// #pragma omp barrier
+#pragma omp barrier
     data[length - data_map_->content_size + i] = data_map_->content[i];
   }
   return readok_;
@@ -380,7 +380,7 @@ void SE::ReadChunk(size_t chunk_num, byte *data) {
   boost::shared_array<byte> iv (new byte[16]);
   getPad_Iv_Key(chunk_num, key, iv, pad);
   std::string content("");
-// #pragma omp critical
+#pragma omp critical
 {
   content = chunk_store_->Get(hash);
 }
