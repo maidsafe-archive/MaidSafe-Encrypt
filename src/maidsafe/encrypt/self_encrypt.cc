@@ -238,7 +238,7 @@ bool SE::ProcessMainQueue() {
     }
 //     #pragma omp barrier 
   // process chunks
-// #pragma omp parallel for  // gives over 100Mb write speeds
+#pragma omp parallel for  // gives over 100Mb write speeds
   for(size_t j = 0; j < chunks_to_process; ++j) {
     EncryptAChunk(j + old_dm_size,
                   &chunk_vec[j][0],
@@ -316,7 +316,7 @@ bool SE::EncryptAChunk(size_t chunk_num, byte* data,
 
    if (!re_encrypt) {
     data_map_->chunks[chunk_num].size = length;
-// #pragma omp atomic
+#pragma omp atomic
     data_map_->size += length;
    }
 //} // omp
