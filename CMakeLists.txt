@@ -1,4 +1,4 @@
-﻿# ============================================================================ #
+# ============================================================================ #
 #                                                                              #
 # Copyright [2011] maidsafe.net limited                                        #
 #                                                                              #
@@ -92,7 +92,6 @@ TARGET_LINK_LIBRARIES(encrypt_static
                         boost_serialization
                         boost_system)
 TARGET_LINK_LIBRARIES(TESTencrypt encrypt_static gtest_static)
-TARGET_LINK_LIBRARIES(quick_test encrypt_static gtest_static)
 
 
 IF(UNIX)
