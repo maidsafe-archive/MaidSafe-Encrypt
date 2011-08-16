@@ -104,12 +104,12 @@ class SE {  // Self Encryption
   SE(const SE&);  // no copy
   bool Transmogrify(const char* data = NULL,
                     size_t length = 0, size_t position = 0);
+  bool IncRepeat(const char* data = NULL, size_t length = 0);
   void set_chunk_size(size_t chunk_size) { chunk_size_ = chunk_size; }
   size_t chunk_size() { return chunk_size_; }
   bool ProcessLastData();
   void ReadChunk(size_t chunk_num, byte *data);
-  bool EncryptChunkFromQueue(CryptoPP::MessageQueue & queue);
-  bool EncryptAChunk(size_t chunk_num, byte* data,
+  void EncryptAChunk(size_t chunk_num, byte* data,
                      size_t length, bool re_encrypt);
   
   bool QueueC0AndC1();
@@ -122,6 +122,7 @@ class SE {  // Self Encryption
   bool ProcessMainQueue();
   void CheckSequenceData();
   bool CheckPositionInSequncer(size_t position, size_t length); // maybe not necessary
+  
   
  private:
   std::shared_ptr<DataMap> data_map_;

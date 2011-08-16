@@ -82,28 +82,59 @@ size_t XORFilter::Put2(const byte* inString,
                                         blocking);
 }
 
+bool SE::IncRepeat(const char* data, size_t length)
+{
+  data_map_->content=data[0];
+  data_map_->content_repeat += length;
+  data_map_->content_size += length;
+  data_map_->size += length;
+  return true;
+}
+
+
 bool SE::Write(const char* data, size_t length, size_t position) {
 
   if (length == 0)
     return true;
-//   // FIXME FIXME do not encrypt repeated input, store in dm direct 
-//   if (data_map_->chunks.size() == 0) { //check for repeated input
-//     for(size_t i = 1; i < length; ++i) {
-//       if (data[i] != data[i-1])
-//         break;
-//     // it's repeated add to datamap as repeat
-//       data_map_->content=data[0];
-//       data_map_->content_repeat += length;
-//       return true;
+  // Repeated input logic FIXME TODO (dirvine)
+  // if anything passed this then ignore this whole condition
+//   if ((main_encrypt_queue_.MaxRetrievable() == 0) &&
+//        (sequencer_.size() == 0) ) { //no data so far check for repeated input
+// 
+//     if ((length == 1) && (data_map_->content_repeat == 0)) {
+//       return IncRepeat(data, length);
+//     } // first bit of data captured
+//     
+//     if ((length == 1) && (data_map_->content_repeat > 0)
+//                 && (data_map_->content[0] = data[0])) { // repeated bit
+//       return IncRepeat(data, length);
+//     } else {
+//       main_encrypt_queue_.Put2(const_cast<byte*>
+//       (reinterpret_cast<const byte*>(data_map_->content.c_str())),
+//                                1, 0, true);
+//       data_map_->content_repeat = 0;
 //     }
+//     // capture streams of repeating data here
+//     if (length > 1) 
+//       for(size_t i = 1; i < length; ++i) {
+//         if (data[i] == data[i-1]) {
+//           IncRepeat();
+//         } else {
+//           data_map_->content_repeat = 0;
+//           break;
+//         }
+//         if ( i == length -1 )
+//           return true;
+//       }
 //   }
 
     // TODO transmogrify 
-//     if (data_map_->size > position)
+//      if (data_map_->size > position)
+//        std::cout << " would transmogrify I think size is "
+//        << data_map_->size << std::endl;
 //       return Transmogrify(data, length, position);
       
     CheckSequenceData();
-    
     if (position == current_position_) {
       main_encrypt_queue_.Put2(const_cast<byte*>
                              (reinterpret_cast<const byte*>(data)),
@@ -201,12 +232,14 @@ bool SE::Transmogrify(const char* data, size_t length, size_t position) {
 
 
 bool SE::FinaliseWrite() {
-  // FIXME process sequencer 
+  if (data_map_->content_repeat > 0)
+    return true;
   chunk_size_ = (main_encrypt_queue_.MaxRetrievable()) / 3 ;
   
   if ((chunk_size_) < 1025) {
     return ProcessLastData();
   }
+   CheckSequenceData();
    ProcessMainQueue();
 }
 
@@ -302,7 +335,7 @@ bool SE::ProcessMainQueue() {
     data_map_->chunks[i + old_dm_size].pre_size = chunk_size_;
     }
 
-// #pragma omp parallel for  // gives over 100Mb write speeds
+#pragma omp parallel for  // gives over 100Mb write speeds
   for(size_t j = 0; j < chunks_to_process; ++j) {
     EncryptAChunk(j + old_dm_size,
                   &chunk_vec[j][0],
@@ -337,11 +370,11 @@ void SE::getPad_Iv_Key(size_t this_chunk_num,
 }
 
 
-bool SE::EncryptAChunk(size_t chunk_num, byte* data,
+void SE::EncryptAChunk(size_t chunk_num, byte* data,
                        size_t length, bool re_encrypt) {
 
    if (data_map_->chunks.size() < chunk_num)
-    return false;
+    return;
    if (re_encrypt)  // fix pre enc hash and re-encrypt next 2
      CryptoPP::SHA512().CalculateDigest(data_map_->chunks[chunk_num].pre_hash,
                                         data,
@@ -354,35 +387,30 @@ bool SE::EncryptAChunk(size_t chunk_num, byte* data,
   CryptoPP::CFB_Mode<CryptoPP::AES>::Encryption encryptor(key.get(),
                                                           32,
                                                           iv.get());
+  std::string chunk_content;
   CryptoPP::StreamTransformationFilter aes_filter(encryptor,
                   new XORFilter(
-                    new CryptoPP::HashFilter(hash_,
-                      new CryptoPP::MessageQueue()
-                    , true)
+                    new CryptoPP::StringSink(chunk_content)
                   , pad.get()));
-  
   aes_filter.Put2(data, length, -1, true);
-
-  boost::scoped_array<byte> chunk_content(new byte [length]);
-
-  aes_filter.Get(chunk_content.get(), length); // get content
-  aes_filter.Get(data_map_->chunks[chunk_num].hash , 64);
-  
+  CryptoPP::SHA512().CalculateDigest(data_map_->chunks[chunk_num].hash,
+                      const_cast<byte *>
+                      (reinterpret_cast<const byte *>(chunk_content.c_str())),
+                      length);
   std::string post_hash(reinterpret_cast<char *>
                           (data_map_->chunks[chunk_num].hash), 64);
-  std::string data_to_store(reinterpret_cast<const char *>(chunk_content.get()),
-                            length);
-  if (! chunk_store_->Store(post_hash, data_to_store)) 
+#pragma omp critical
+{
+  if (!chunk_store_->Store(post_hash,  chunk_content))
     DLOG(ERROR) << "Could not store " << EncodeToHex(post_hash)
                                         << std::endl;
+}
 
    if (!re_encrypt) {
     data_map_->chunks[chunk_num].size = length;
 #pragma omp atomic
     data_map_->size += length;
    }
-  return true;
-
 }
 
 
@@ -390,7 +418,12 @@ bool SE::Read(char* data, size_t length, size_t position) {
 
    if ((data_map_->size > (length + position)) && (length != 0))
      return false;
-
+   if (data_map_->content_repeat > 0) {
+     for(size_t i = 0; i < length; ++i)
+       data[i] = data_map_->content.c_str()[i];
+     return true;
+   }
+   
    size_t start_chunk(0), start_offset(0), end_chunk(0), run_total(0);
    for(size_t i = 0; i < data_map_->chunks.size(); ++i) {
      if ((data_map_->chunks[i].size + run_total >= position) &&

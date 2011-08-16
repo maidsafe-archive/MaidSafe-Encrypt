@@ -18,6 +18,8 @@
 #include <cstdint>
 #include <vector>
 #include <exception>
+#include <algorithm>
+#include <functional>
 #ifdef WIN32
 #  pragma warning(push)
 #  pragma warning(disable: 4308)
@@ -152,7 +154,6 @@ TEST_F(SelfEncryptionTest, BEH_WriteAndRead) {
   ++test_data_size;
   plain_data[test_data_size] = 'b';
 
- 
   boost::posix_time::ptime time =
         boost::posix_time::microsec_clock::universal_time();
   ASSERT_TRUE(selfenc_.Write(plain_data.get(), test_data_size));
@@ -183,21 +184,13 @@ TEST_F(SelfEncryptionTest, BEH_WriteAndRead) {
   for (size_t  i = 0; i < test_data_size ; ++i)
     ASSERT_EQ(plain_data[i], answer[i]) << "failed at count " << i;
 
-  for (int i =0; i < 20; ++i) // may be more than one copy
-    selfenc_.DeleteAChunk(0);
- 
- // ASSERT_TRUE(selfenc_.Read(answer2.get(), test_data_size, 0));
-//// TODO FIXME this is not guaranteed to fail as
-    // delete returns true and does not always remove chunk
-
 }
 
 TEST_F(SelfEncryptionTest, BEH_WriteAndReadByteAtATime) {
   EXPECT_TRUE(selfenc_.ReInitialise());
   size_t test_data_size(1024*1024*2); // less than 2 mB fails due to test
   std::string plain_text(SRandomString(test_data_size));
-//   boost::shared_array<char>plain_data (new char[test_data_size]);
-  char * plain_data = new char[test_data_size];
+  boost::shared_array<char>plain_data (new char[test_data_size]);
   for (size_t i = 0; i < test_data_size ; ++i) {
     plain_data[i] = plain_text[i];
   }
@@ -205,26 +198,20 @@ TEST_F(SelfEncryptionTest, BEH_WriteAndReadByteAtATime) {
   for (size_t i = 0; i < test_data_size ; ++i)  {
     selfenc_.Write(&plain_data[i], 1, i);
   }
-
   ASSERT_TRUE(selfenc_.FinaliseWrite());
-   EXPECT_EQ(test_data_size, selfenc_.getDataMap()->size);
+  EXPECT_EQ(test_data_size, selfenc_.getDataMap()->size);
   EXPECT_EQ(0, selfenc_.getDataMap()->content_size);
   EXPECT_EQ(8, selfenc_.getDataMap()->chunks.size());
-//    EXPECT_EQ("b", selfenc_.getDataMap()->content);
-   boost::scoped_array<char>answer (new char[test_data_size]);
-
+  boost::scoped_array<char>answer (new char[test_data_size]);
   ASSERT_TRUE(selfenc_.Read(answer.get(), test_data_size));
 
 //   // check chunks 1 and 2
   for (size_t  i = 0; i < 524288 ; ++i)
     ASSERT_EQ(plain_data[i], answer[i]) << "c0 or c1 failed at count " << i;
-  // check all other chunks
+// check all other chunks
   for (size_t  i = 524288; i < test_data_size -1 ; ++i)
     ASSERT_EQ(plain_data[i], answer[i]) << "normal chunks failed count :" << i;  
-
 }
-
-
 
 TEST_F(SelfEncryptionTest, BEH_WriteAndReadByteAtATimeOutOfSequenceForward) {
   EXPECT_TRUE(selfenc_.ReInitialise());
@@ -237,7 +224,7 @@ TEST_F(SelfEncryptionTest, BEH_WriteAndReadByteAtATimeOutOfSequenceForward) {
   ++test_data_size;
   plain_data[test_data_size] = 'b';
 
-size_t length = 1;
+  size_t length = 1;
   for (size_t i = 0; i < test_data_size ; i += 2)  {
     ASSERT_TRUE(selfenc_.Write(&plain_data.get()[i], length, i));
   }
@@ -280,30 +267,56 @@ TEST_F(SelfEncryptionTest, FUNC_WriteOnceRead20) {
   }
 }
 
-/*
+
 TEST_F(SelfEncryptionTest, BEH_WriteRandomlyAllDirections) {
   EXPECT_TRUE(selfenc_.ReInitialise());
   size_t test_data_size(1024*1024);
   std::string plain_text(RandomString(test_data_size));
   boost::shared_array<char>plain_data (new char[test_data_size]);
+  std::vector<size_t> vec_data(test_data_size);
   for (size_t i = 0; i < test_data_size ; ++i) {
     plain_data[i] = plain_text[i];
   }
-  ++test_data_size;
-  plain_data[test_data_size] = 'b';
-// #pragma omp parallel for
+
+  for (size_t i = 0; i < test_data_size; ++i) 
+    vec_data[i] = i; // vector of seq numbers
+
+  std::random_shuffle(vec_data.begin(), vec_data.end()); // shuffle all about
+  
   for (size_t i = 0; i < test_data_size; ++i) {
-    EXPECT_TRUE(selfenc_.Write(&plain_data[i], 1, i));
+    EXPECT_TRUE(selfenc_.Write(&plain_data[vec_data[i]], 1, vec_data[i]));
   }
-std::cout << " write finished "   <<std::endl;
+
   ASSERT_TRUE(selfenc_.FinaliseWrite());
-  std::cout << " finalise write finished"   <<std::endl;
-  // check it works at least once
   boost::shared_array<char>answer (new char[test_data_size]);
   ASSERT_TRUE(selfenc_.Read(answer.get(), test_data_size, 0));
   for (size_t  i = 0; i < test_data_size ; ++i)
     ASSERT_EQ(plain_data[i], answer[i]) << "failed at count " << i;
-}*/
+}
+
+// TEST_F(SelfEncryptionTest, BEH_RepeatedCharInputOneatTime) {
+//   EXPECT_TRUE(selfenc_.ReInitialise());
+//   size_t test_data_size(1024*1024*2);
+//   boost::shared_array<char>plain_data (new char[test_data_size]);
+// 
+//   for (size_t i = 0; i < test_data_size ; ++i) 
+//     plain_data[i] = 'a';
+//   
+//   
+//   for (size_t i = 0; i < test_data_size; ++i)
+//     EXPECT_TRUE(selfenc_.Write(&plain_data[i], 1, i));
+//   
+//     
+//   ASSERT_TRUE(selfenc_.FinaliseWrite());
+//   EXPECT_EQ(0,  selfenc_.getDataMap()->chunks.size());
+//   EXPECT_EQ(test_data_size,  selfenc_.getDataMap()->content_size);
+//   EXPECT_EQ(test_data_size, selfenc_.getDataMap()->size);
+//   
+//   boost::shared_array<char>answer (new char[test_data_size]);
+//   EXPECT_TRUE(selfenc_.Read(answer.get(), test_data_size, 0));
+//   for (size_t  i = 0; i < test_data_size ; ++i)
+//     ASSERT_EQ(plain_data[i], answer[i]) << "failed at count " << i;
+// }
 
 
 TEST_F(SelfEncryptionTest, BEH_manual_check_write) {
@@ -328,12 +341,14 @@ TEST_F(SelfEncryptionTest, BEH_manual_check_write) {
   boost::shared_array<byte>iv(new byte[16]);
   boost::shared_array<char>pre_enc_file(new char[file_size]);
 
-  for (size_t i = 0; i < chunk_size; ++i) {
-    pre_enc_chunk[i] = 'b';
+  for (size_t i = 0; i < chunk_size; i += 2) {
+    pre_enc_chunk[i] = 'a';
+    pre_enc_chunk[i+1] = 'b';   
   }
 
-  for (size_t i = 0; i < file_size; ++i) {
-     pre_enc_file[i] = 'b';
+  for (size_t i = 0; i < file_size; i += 2) {
+     pre_enc_file[i] = 'a';
+     pre_enc_file[i+1] = 'b';
   }
 
   EXPECT_TRUE(selfenc.ReInitialise());
@@ -360,7 +375,6 @@ TEST_F(SelfEncryptionTest, BEH_manual_check_write) {
 
   CryptoPP::CFB_Mode<CryptoPP::AES>::Encryption enc(key.get(), 32, iv.get());
   enc.ProcessData(postenc.get(), pre_enc_chunk.get(), chunk_size);
-
 
   for (size_t i = 0; i < chunk_size; ++i) {
     xor_res[i] = postenc[i]^pad[i%144];
@@ -401,6 +415,7 @@ TEST_F(SelfEncryptionTest, BEH_manual_check_write) {
     }
   }
 }
+
 
 }  // namespace test
 
