@@ -141,12 +141,14 @@ bool SE::Transmogrify(const char* data, size_t length, size_t position) {
 // then re-encrypt it and store again, it will also re-encrypt
 // the following two chunks.
 // Check its a chunk.
-  size_t start_chunk_num(0), end_chunk_num(0), total(0);
+  
+  size_t start_chunk_num(0), end_chunk_num(0), total(0), start_position(0);
   bool got_it(false);
   for(size_t i =0; data_map_->chunks.size(); ++i) {
     total += data_map_->chunks[i].size;
     if (total >= position) {
       start_chunk_num = i;
+      start_position = total - data_map_->chunks[i].size + position;
       got_it = true;
     }
     if (got_it && (total >= position+length)) 
@@ -154,9 +156,25 @@ bool SE::Transmogrify(const char* data, size_t length, size_t position) {
   }
   // do the work now
   if (got_it) {
+    std::string replace_string(data, length);
+    size_t count(0);
     while(start_chunk_num <= end_chunk_num) { // single chunk
-    std::string start_data;
-      
+    std::string this_hash(reinterpret_cast<char *>
+      (data_map_->chunks[start_chunk_num].hash), 64);
+    std::string chunk_data(chunk_store_->Get(this_hash));
+    size_t stop = std::min(length,
+                           start_position -
+                           data_map_->chunks[start_chunk_num].size);
+    for (size_t i = start_position; stop; ++i) {
+      chunk_data[i] = replace_string[count];
+      ++count;
+    }
+    start_position = 0; // for more chunks
+    EncryptAChunk(start_chunk_num,const_cast<byte *>
+    (reinterpret_cast<const byte *>(chunk_data.c_str())),
+                  chunk_data.size(),
+                  true);
+    ++start_chunk_num;
     }
     // do next two chunks
     size_t chunk_num(0);
@@ -167,7 +185,8 @@ bool SE::Transmogrify(const char* data, size_t length, size_t position) {
                        (data_map_->chunks[chunk_num].hash), 64);
       
       EncryptAChunk(chunk_num,const_cast<byte *>
-                    (reinterpret_cast<const byte *>(hash.c_str())),
+                    (reinterpret_cast<const byte *>
+                      (chunk_store_->Get(hash).c_str())),
                     data_map_->chunks[chunk_num].size,
                     true);
     }
