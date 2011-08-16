@@ -84,13 +84,12 @@ size_t XORFilter::Put2(const byte* inString,
 
 bool SE::IncRepeat(const char* data, size_t length)
 {
-  data_map_->content=data[0];
+  data_map_->content= (&data[0],1);
   data_map_->content_repeat += length;
   data_map_->content_size += length;
   data_map_->size += length;
   return true;
 }
-
 
 bool SE::Write(const char* data, size_t length, size_t position) {
 
