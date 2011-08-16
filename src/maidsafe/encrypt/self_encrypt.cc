@@ -102,14 +102,7 @@ bool SE::Write(const char* data, size_t length, size_t position) {
 //     if (data_map_->size > position)
 //       return Transmogrify(data, length, position);
       
-    sequence_data extra(sequencer_.Get(current_position_));
-    while (extra.second != 0) {
-      main_encrypt_queue_.Put2(const_cast<byte*>
-      (reinterpret_cast<const byte*>(extra.first)),
-                               extra.second, 0, true);
-      current_position_ += extra.second;
-      extra = sequencer_.Get(current_position_);
-    }
+    CheckSequenceData();
     
     if (position == current_position_) {
       main_encrypt_queue_.Put2(const_cast<byte*>
@@ -134,6 +127,17 @@ bool SE::Write(const char* data, size_t length, size_t position) {
     return true;  
 }
 
+void SE::CheckSequenceData() {
+ sequence_data extra(sequencer_.Get(current_position_));
+  while (extra.second != 0) {
+    main_encrypt_queue_.Put2(const_cast<byte*>
+    (reinterpret_cast<const byte*>(extra.first)),
+                             extra.second, 0, true);
+    current_position_ += extra.second;
+    extra = sequencer_.Get(current_position_);
+  }
+}
+
 bool SE::Transmogrify(const char* data, size_t length, size_t position) {
 
 // Transmogrifier will identify the appropriate chunk
@@ -155,9 +159,10 @@ bool SE::Transmogrify(const char* data, size_t length, size_t position) {
       end_chunk_num = i;
   }
   // do the work now
+  size_t count(0);
+  std::string replace_string(data, length);
   if (got_it) {
-    std::string replace_string(data, length);
-    size_t count(0);
+
     while(start_chunk_num <= end_chunk_num) { // single chunk
     std::string this_hash(reinterpret_cast<char *>
       (data_map_->chunks[start_chunk_num].hash), 64);
@@ -190,7 +195,7 @@ bool SE::Transmogrify(const char* data, size_t length, size_t position) {
                     data_map_->chunks[chunk_num].size,
                     true);
     }
-  } else
+  } else // might be in content !!! FIXME also check count >= length
     return false;
 }
 

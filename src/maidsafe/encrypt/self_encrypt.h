@@ -120,7 +120,7 @@ class SE {  // Self Encryption
                      boost::shared_array<byte> iv,
                      boost::shared_array<byte> pad);
   bool ProcessMainQueue();
-
+  void CheckSequenceData();
   bool CheckPositionInSequncer(size_t position, size_t length); // maybe not necessary
   
  private:
