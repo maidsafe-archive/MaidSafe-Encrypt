@@ -102,6 +102,8 @@ class SE {  // Self Encryption
  private:  
   SE &operator = (const SE&);  // no assignment
   SE(const SE&);  // no copy
+  bool Transmogrify(const char* data = NULL,
+                    size_t length = 0, size_t position = 0);
   void set_chunk_size(size_t chunk_size) { chunk_size_ = chunk_size; }
   size_t chunk_size() { return chunk_size_; }
   bool ProcessLastData();

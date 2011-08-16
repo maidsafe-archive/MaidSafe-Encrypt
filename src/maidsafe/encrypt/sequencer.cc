@@ -26,8 +26,7 @@
    // need to take
    // care of this in the getFromSequencer method.
    // ah no needs to be here, otherwise we lose timeline
-   
-//    for (auto it = sequencer_.begin(); it != sequencer_.end(); ++it) {
+
      auto iter = sequencer_.find(position);
      if (iter == sequencer_.end()) {
        try {
@@ -39,7 +38,6 @@
      } else {
        (*iter).second.first = data;
        (*iter).second.second = length;
-//      }
    }
    return true;
  }

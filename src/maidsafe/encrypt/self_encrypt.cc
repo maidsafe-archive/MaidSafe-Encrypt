@@ -97,10 +97,13 @@ bool SE::Write(const char* data, size_t length, size_t position) {
 //       return true;
 //     }
 //   }
-    
+
+    // TODO transmogrify 
+//     if (data_map_->size > position)
+//       return Transmogrify(data, length, position);
+      
     sequence_data extra(sequencer_.Get(current_position_));
     while (extra.second != 0) {
-//       std::cout << " Got a byte from sequencer at " << extra.second <<  " length was " << length << " current position was " << current_position_ << std::endl;
       main_encrypt_queue_.Put2(const_cast<byte*>
       (reinterpret_cast<const byte*>(extra.first)),
                                extra.second, 0, true);
@@ -109,24 +112,16 @@ bool SE::Write(const char* data, size_t length, size_t position) {
     }
     
     if (position == current_position_) {
-//       std::cout << " Stored a byte to queue " << position <<  " length was " << length << " current position was " << current_position_ << std::endl;
       main_encrypt_queue_.Put2(const_cast<byte*>
                              (reinterpret_cast<const byte*>(data)),
                               length, 0, true);
     current_position_ += length;
-    //    check sequencer for any data we may need
 
-//     } else if (position < current_position_) {
-// 
-//       // TODO if already a chunks we need to get it back
-//       // and encrypt next 2 as well
-
-    } else if (position > current_position_) {
-//       std::cout << " Added a byte to sequencer at " << position <<  " length was " << length << " current position was " << current_position_ << std::endl;
-//       std::cout << " size before add was " <<  sequencer_.size() << std::endl;
+    } else if (position > current_position_) { // we cannot have less !! 
       sequencer_.Add(position, const_cast<char *>(data), length);
-//       std::cout << " size after add was " <<  sequencer_.size() << std::endl;
     }
+
+
 
     // Do not queue chunks 0 and 1 till we know we have enough for 3 chunks
     if ((main_encrypt_queue_.MaxRetrievable() >= chunk_size_ * 3) &&
@@ -137,6 +132,47 @@ bool SE::Write(const char* data, size_t length, size_t position) {
       (chunk_one_two_q_full_))
       ProcessMainQueue();
     return true;  
+}
+
+bool SE::Transmogrify(const char* data, size_t length, size_t position) {
+
+// Transmogrifier will identify the appropriate chunk
+// recover it and alter the data in place
+// then re-encrypt it and store again, it will also re-encrypt
+// the following two chunks.
+// Check its a chunk.
+  size_t start_chunk_num(0), end_chunk_num(0), total(0);
+  bool got_it(false);
+  for(size_t i =0; data_map_->chunks.size(); ++i) {
+    total += data_map_->chunks[i].size;
+    if (total >= position) {
+      start_chunk_num = i;
+      got_it = true;
+    }
+    if (got_it && (total >= position+length)) 
+      end_chunk_num = i;
+  }
+  // do the work now
+  if (got_it) {
+    while(start_chunk_num <= end_chunk_num) { // single chunk
+    std::string start_data;
+      
+    }
+    // do next two chunks
+    size_t chunk_num(0);
+    for (int i = 1; i <= 2; ++i) {
+      chunk_num = (end_chunk_num + i + data_map_->chunks.size())
+                       %  data_map_->chunks.size();
+      std::string hash(reinterpret_cast<char *>
+                       (data_map_->chunks[chunk_num].hash), 64);
+      
+      EncryptAChunk(chunk_num,const_cast<byte *>
+                    (reinterpret_cast<const byte *>(hash.c_str())),
+                    data_map_->chunks[chunk_num].size,
+                    true);
+    }
+  } else
+    return false;
 }
 
 
