@@ -115,17 +115,17 @@ bool SE::Write(const char* data, size_t length, size_t position) {
 //       data_map_->content_repeat = 0;
 //     }
 //     // capture streams of repeating data here
-//     if (length > 1) 
-//       for(size_t i = 1; i < length; ++i) {
-//         if (data[i] == data[i-1]) {
-//           IncRepeat();
-//         } else {
-//           data_map_->content_repeat = 0;
-//           break;
-//         }
-//         if ( i == length -1 )
-//           return true;
-//       }
+    if (length > 1)
+      for(size_t i = 1; i < length; ++i) {
+        if (data[i] == data[i-1]) {
+          IncRepeat();
+        } else {
+          data_map_->content_repeat = 0;
+          break;
+        }
+        if ( i == length -1 )
+          return true;
+      }
 //   }
 
     // TODO transmogrify 
