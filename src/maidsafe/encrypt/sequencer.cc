@@ -27,18 +27,19 @@
    // care of this in the getFromSequencer method.
    // ah no needs to be here, otherwise we lose timeline
    
-   for (auto it = sequencer_.begin(); it != sequencer_.end(); ++it) {
+//    for (auto it = sequencer_.begin(); it != sequencer_.end(); ++it) {
      auto iter = sequencer_.find(position);
      if (iter == sequencer_.end()) {
        try {
-       sequencer_.insert(std::pair<size_t, sequence_data>(position, sequence_data(data, length)));
+         auto it = sequencer_.begin();
+       sequencer_.insert(it, std::pair<size_t, sequence_data>(position, sequence_data(data, length)));
        } catch (std::exception &e) {
          return false;
        }
      } else {
        (*iter).second.first = data;
        (*iter).second.second = length;
-     }
+//      }
    }
    return true;
  }

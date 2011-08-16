@@ -54,7 +54,7 @@ class Sequencer {
                              char * data,
                              size_t length,
                              bool remove);
-   
+   size_t size() { return sequencer_.size(); }
  private:
    std::map <size_t ,sequence_data> sequencer_;
    sequence_data getFromSequencer(size_t position, bool remove);

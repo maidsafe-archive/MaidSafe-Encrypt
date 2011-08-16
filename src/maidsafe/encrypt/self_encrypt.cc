@@ -100,16 +100,16 @@ bool SE::Write(const char* data, size_t length, size_t position) {
     
     sequence_data extra(sequencer_.Get(current_position_));
     while (extra.second != 0) {
-      std::cout << " Got a byte from sequencer at " << extra.second <<  " length was " << length << " current position was " << current_position_ << std::endl;
+//       std::cout << " Got a byte from sequencer at " << extra.second <<  " length was " << length << " current position was " << current_position_ << std::endl;
       main_encrypt_queue_.Put2(const_cast<byte*>
       (reinterpret_cast<const byte*>(extra.first)),
                                extra.second, 0, true);
       current_position_ += extra.second;
-      sequence_data extra(sequencer_.Get(current_position_));
+      extra = sequencer_.Get(current_position_);
     }
     
     if (position == current_position_) {
-      std::cout << " Stored a byte to queue " << position <<  " length was " << length << " current position was " << current_position_ << std::endl;
+//       std::cout << " Stored a byte to queue " << position <<  " length was " << length << " current position was " << current_position_ << std::endl;
       main_encrypt_queue_.Put2(const_cast<byte*>
                              (reinterpret_cast<const byte*>(data)),
                               length, 0, true);
@@ -122,8 +122,10 @@ bool SE::Write(const char* data, size_t length, size_t position) {
 //       // and encrypt next 2 as well
 
     } else if (position > current_position_) {
-      std::cout << " Added a byte to sequencer at " << position <<  " length was " << length << " current position was " << current_position_ << std::endl;
+//       std::cout << " Added a byte to sequencer at " << position <<  " length was " << length << " current position was " << current_position_ << std::endl;
+//       std::cout << " size before add was " <<  sequencer_.size() << std::endl;
       sequencer_.Add(position, const_cast<char *>(data), length);
+//       std::cout << " size after add was " <<  sequencer_.size() << std::endl;
     }
 
     // Do not queue chunks 0 and 1 till we know we have enough for 3 chunks
