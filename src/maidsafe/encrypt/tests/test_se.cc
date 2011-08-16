@@ -237,7 +237,6 @@ TEST_F(SelfEncryptionTest, BEH_WriteAndReadByteAtATimeOutOfSequenceForward) {
   ++test_data_size;
   plain_data[test_data_size] = 'b';
 
-
 size_t length = 1;
   for (size_t i = 0; i < test_data_size ; i += 2)  {
     ASSERT_TRUE(selfenc_.Write(&plain_data.get()[i], length, i));
@@ -304,7 +303,6 @@ std::cout << " write finished "   <<std::endl;
   ASSERT_TRUE(selfenc_.Read(answer.get(), test_data_size, 0));
   for (size_t  i = 0; i < test_data_size ; ++i)
     ASSERT_EQ(plain_data[i], answer[i]) << "failed at count " << i;
-
 }*/
 
 

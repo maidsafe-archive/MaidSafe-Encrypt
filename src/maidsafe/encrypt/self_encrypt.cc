@@ -97,26 +97,32 @@ bool SE::Write(const char* data, size_t length, size_t position) {
 //       return true;
 //     }
 //   }
-//   
     
-  if (position == current_position_) {     
-    main_encrypt_queue_.Put2(const_cast<byte*>
-                           (reinterpret_cast<const byte*>(data)),
-                            length, 0, true);
-    // check sequencer for more data
-    sequence_data extra(sequencer_.Get(current_position_+length));
-    if (extra.second != 0) {
-    main_encrypt_queue_.Put2(const_cast<byte*>
-                           (reinterpret_cast<const byte*>(extra.first)),
-                            extra.second, -1, true);
-    current_position_ += extra.second;
+    sequence_data extra(sequencer_.Get(current_position_));
+    while (extra.second != 0) {
+      std::cout << " Got a byte from sequencer at " << extra.second <<  " length was " << length << " current position was " << current_position_ << std::endl;
+      main_encrypt_queue_.Put2(const_cast<byte*>
+      (reinterpret_cast<const byte*>(extra.first)),
+                               extra.second, 0, true);
+      current_position_ += extra.second;
+      sequence_data extra(sequencer_.Get(current_position_));
     }
+    
+    if (position == current_position_) {
+      std::cout << " Stored a byte to queue " << position <<  " length was " << length << " current position was " << current_position_ << std::endl;
+      main_encrypt_queue_.Put2(const_cast<byte*>
+                             (reinterpret_cast<const byte*>(data)),
+                              length, 0, true);
     current_position_ += length;
-    } else if (position < current_position_) {
-      // TODO (dirvine) handle rewrites properly
-      // need to grab data and rewrite it
-      // check sequencer
-    } else {
+    //    check sequencer for any data we may need
+
+//     } else if (position < current_position_) {
+// 
+//       // TODO if already a chunks we need to get it back
+//       // and encrypt next 2 as well
+
+    } else if (position > current_position_) {
+      std::cout << " Added a byte to sequencer at " << position <<  " length was " << length << " current position was " << current_position_ << std::endl;
       sequencer_.Add(position, const_cast<char *>(data), length);
     }
 
