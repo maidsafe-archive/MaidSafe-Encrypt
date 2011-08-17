@@ -383,7 +383,7 @@ void SE::EncryptAChunk(size_t chunk_num, byte* data,
   CryptoPP::SHA512().CalculateDigest(data_map_->chunks[chunk_num].hash,
                       const_cast<byte *>
                       (reinterpret_cast<const byte *>(chunk_content.c_str())),
-                      length);
+                      chunk_content.size());
   std::string post_hash(reinterpret_cast<char *>
                           (data_map_->chunks[chunk_num].hash), 64);
 #pragma omp critical
@@ -394,7 +394,7 @@ void SE::EncryptAChunk(size_t chunk_num, byte* data,
 }
 
    if (!re_encrypt) {
-    data_map_->chunks[chunk_num].size = length;
+    data_map_->chunks[chunk_num].size = length; // keep pre-compressed length
 #pragma omp atomic
     data_map_->size += length;
    }

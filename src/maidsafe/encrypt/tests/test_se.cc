@@ -415,16 +415,24 @@ TEST_F(SelfEncryptionTest, BEH_manual_check_write) {
   std::copy(prehash.get(), prehash.get() + 32, key.get());
   std::copy(prehash.get() + 32, prehash.get() + 48, iv.get());
 
-  CryptoPP::CFB_Mode<CryptoPP::AES>::Encryption enc(key.get(), 32, iv.get());
-  enc.ProcessData(postenc.get(), pre_enc_chunk.get(), chunk_size);
+  CryptoPP::Gzip compress(0);
+  compress.Put2(pre_enc_chunk.get(), chunk_size, -1, true);
+  
+  size_t compressed_size(compress.MaxRetrievable());
 
-  for (size_t i = 0; i < chunk_size; ++i) {
+  boost::shared_array<byte> comp_data (new byte[compressed_size]);
+  compress.Get(comp_data.get(), compressed_size);
+  
+  CryptoPP::CFB_Mode<CryptoPP::AES>::Encryption enc(key.get(), 32, iv.get());
+  enc.ProcessData(postenc.get(), comp_data.get(), compressed_size);
+
+  for (size_t i = 0; i < compressed_size; ++i) {
     xor_res[i] = postenc[i]^pad[i%144];
   }
 
   CryptoPP::SHA512().CalculateDigest(posthashxor.get(),
                                      xor_res.get(),
-                                     chunk_size);
+                                     compressed_size);
   
   for (int i = 0; i < 64; ++i) {
     
@@ -442,7 +450,6 @@ TEST_F(SelfEncryptionTest, BEH_manual_check_write) {
     ASSERT_EQ(posthashxor[i], static_cast<byte>(selfenc.getDataMap()->chunks[2].hash[i]))
     << "failed at chunk 2 post hash : " << i;
   }
-// TODO FIXME - this breaks when threaded writes are on.
   // check chunks' hashes - should be equal for repeated single character input
   bool match(true);
   for (size_t i = 0; i < selfenc.getDataMap()->chunks.size(); ++i) {
@@ -456,8 +463,8 @@ TEST_F(SelfEncryptionTest, BEH_manual_check_write) {
       match = true;
     }
   }
-}*/
-
+}
+*/
 
 }  // namespace test
 
