@@ -39,11 +39,12 @@ namespace encrypt {
 /// Holds information about a chunk
 struct ChunkDetails {
   ChunkDetails()
-    : hash(), size(0), pre_hash(), pre_size(0) {}
-  byte hash[CryptoPP::SHA512::DIGESTSIZE];        ///< Hash of processed chunk
-  std::uint32_t size;      ///< Size of processed chunk
-  byte pre_hash[CryptoPP::SHA512::DIGESTSIZE];    ///< Hash of unprocessed source data
-  std::uint32_t pre_size;  ///< Size of unprocessed source data
+    : hash(), repeated(0), pre_hash(), comp_data(), size(0) {}
+  byte hash[CryptoPP::SHA512::DIGESTSIZE];        /// processed chunk
+  std::uint32_t repeated;      ///< Size of processed chunk
+  byte pre_hash[CryptoPP::SHA512::DIGESTSIZE];  /// unprocessed source data
+  std::string comp_data; /// compressed data of repeated chunks
+  std::uint32_t size;  ///< Size of unprocessed source data
 };
 
 /// Holds information about the building blocks of a data item
@@ -84,9 +85,10 @@ void serialize(Archive &archive,  // NOLINT
                maidsafe::encrypt::ChunkDetails &chunk_details,
                const unsigned int /* version */) {
   archive & chunk_details.hash;
-  archive & chunk_details.size;
+  archive & chunk_details.repeated;
   archive & chunk_details.pre_hash;
-  archive & chunk_details.pre_size;
+  archive & chunk_details.comp_data;
+  archive & chunk_details.size;
 }
 
 template<class Archive>

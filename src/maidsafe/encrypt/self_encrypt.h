@@ -86,7 +86,8 @@ class SE {  // Self Encryption
                         chunk_one_two_q_full_(false),
                         c0_and_1_chunk_size_(chunk_size_),
                         this_chunk_size_(chunk_size_),
-                        current_position_(0), readok_(true)
+                        current_position_(0), readok_(true),
+                        repeated_chunks_(false)
                         {
                           if (!data_map_)
                             data_map_.reset(new DataMap);
@@ -122,6 +123,7 @@ class SE {  // Self Encryption
                      boost::shared_array<byte> pad);
   bool ProcessMainQueue();
   void CheckSequenceData();
+  void EmptySequencer();
   bool CheckPositionInSequncer(size_t position, size_t length); // maybe not necessary
   
   
@@ -142,6 +144,7 @@ class SE {  // Self Encryption
   size_t this_chunk_size_;
   size_t current_position_;
   bool readok_;
+  bool repeated_chunks_;
 };
 
 }  // namespace encrypt

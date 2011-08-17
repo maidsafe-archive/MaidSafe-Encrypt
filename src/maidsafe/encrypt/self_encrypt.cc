@@ -95,44 +95,7 @@ bool SE::Write(const char* data, size_t length, size_t position) {
 
   if (length == 0)
     return true;
-  // Repeated input logic FIXME TODO (dirvine)
-  // if anything passed this then ignore this whole condition
-//   if ((main_encrypt_queue_.MaxRetrievable() == 0) &&
-//        (sequencer_.size() == 0) ) { //no data so far check for repeated input
-// 
-//     if ((length == 1) && (data_map_->content_repeat == 0)) {
-//       return IncRepeat(data, length);
-//     } // first bit of data captured
-//     
-//     if ((length == 1) && (data_map_->content_repeat > 0)
-//                 && (data_map_->content[0] = data[0])) { // repeated bit
-//       return IncRepeat(data, length);
-//     } else {
-//       main_encrypt_queue_.Put2(const_cast<byte*>
-//       (reinterpret_cast<const byte*>(data_map_->content.c_str())),
-//                                1, 0, true);
-//       data_map_->content_repeat = 0;
-//     }
-//     // capture streams of repeating data here
-//     if (length > 1)
-//       for(size_t i = 1; i < length; ++i) {
-//         if (data[i] == data[i-1]) {
-//           IncRepeat();
-//         } else {
-//           data_map_->content_repeat = 0;
-//           break;
-//         }
-//         if ( i == length -1 )
-//           return true;
-//       }
-//   }
-
-    // TODO transmogrify 
-//      if (data_map_->size > position)
-//        std::cout << " would transmogrify I think size is "
-//        << data_map_->size << std::endl;
-//       return Transmogrify(data, length, position);
-      
+        
     CheckSequenceData();
     if (position == current_position_) {
       main_encrypt_queue_.Put2(const_cast<byte*>
@@ -166,6 +129,21 @@ void SE::CheckSequenceData() {
     current_position_ += extra.second;
     extra = sequencer_.Get(current_position_);
   }
+}
+
+void SE::EmptySequencer() {
+  // FIXME -  this runs at finalisewrite
+  // should empty sequencer data into chunks via transmogrify
+  // get stuff stored in sequencer
+  // iterate map
+
+  //get data - find which chunk it belongs to
+
+  // Transmogrify
+
+  // can be improved by only doing a chunk at a time
+  // needs new transogrify method with a list of chunks being passed
+  // to it
 }
 
 bool SE::Transmogrify(const char* data, size_t length, size_t position) {
@@ -231,8 +209,7 @@ bool SE::Transmogrify(const char* data, size_t length, size_t position) {
 
 
 bool SE::FinaliseWrite() {
-  if (data_map_->content_repeat > 0)
-    return true;
+  repeated_chunks_ = false;
   chunk_size_ = (main_encrypt_queue_.MaxRetrievable()) / 3 ;
   
   if ((chunk_size_) < 1025) {
@@ -240,6 +217,8 @@ bool SE::FinaliseWrite() {
   }
    CheckSequenceData();
    ProcessMainQueue();
+// finally rechunk what we have to!
+   EmptySequencer();
 }
 
 bool SE::ProcessLastData() {
@@ -283,6 +262,7 @@ bool SE::ReInitialise() {
     chunk_size_ = 1024*256;
     main_encrypt_queue_.SkipAll();
     chunk_one_two_q_full_ = false;
+    current_position_ = 0;
     data_map_.reset(new DataMap);
     return true;
 }
@@ -295,7 +275,7 @@ bool SE::QueueC0AndC1() {
   CryptoPP::SHA512().CalculateDigest(chunk_data.pre_hash,
                                      chunk0_raw_.get(),
                                      chunk_size_);
-  chunk_data.pre_size = chunk_size_;
+  chunk_data.size = chunk_size_;
   data_map_->chunks.push_back(chunk_data);
   
   // Chunk 1
@@ -304,7 +284,7 @@ bool SE::QueueC0AndC1() {
   CryptoPP::SHA512().CalculateDigest(chunk_data2.pre_hash,
                                      chunk1_raw_.get() ,
                                      chunk_size_);
-  chunk_data2.pre_size = chunk_size_;
+  chunk_data2.size = chunk_size_;
   data_map_->chunks.push_back(chunk_data2);
   chunk_one_two_q_full_ = true;
   return true;
@@ -331,8 +311,9 @@ bool SE::ProcessMainQueue() {
      CryptoPP::SHA512().CalculateDigest(data_map_->chunks[i + old_dm_size].pre_hash,
            chunk_vec[i].get(),
            chunk_size_);
-    data_map_->chunks[i + old_dm_size].pre_size = chunk_size_;
+    data_map_->chunks[i + old_dm_size].size = chunk_size_;
     }
+
 
 #pragma omp parallel for  // gives over 100Mb write speeds
   for(size_t j = 0; j < chunks_to_process; ++j) {
@@ -424,11 +405,12 @@ bool SE::Read(char* data, size_t length, size_t position) {
 
    if ((data_map_->size > (length + position)) && (length != 0))
      return false;
-   if (data_map_->content_repeat > 0) {
-     for(size_t i = 0; i < length; ++i)
-       data[i] = data_map_->content.c_str()[i];
-     return true;
-   }
+   // FIXME check sequencer and queue for any data 
+//    if (data_map_->content_repeat > 0) {
+//      for(size_t i = 0; i < length; ++i)
+//        data[i] = data_map_->content.c_str()[i];
+//      return true;
+//    }
    
    size_t start_chunk(0), start_offset(0), end_chunk(0), run_total(0);
    for(size_t i = 0; i < data_map_->chunks.size(); ++i) {
