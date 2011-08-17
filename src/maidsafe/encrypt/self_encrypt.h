@@ -33,6 +33,7 @@
 #include "cryptopp/mqueue.h"
 #include "cryptopp/sha.h"
 #include "cryptopp/aes.h"
+#include "cryptopp/gzip.h"
 #include "common/crypto.h"
 #include "boost/filesystem.hpp"
 #include "boost/shared_array.hpp"

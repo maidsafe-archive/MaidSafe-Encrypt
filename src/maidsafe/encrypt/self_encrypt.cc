@@ -114,17 +114,17 @@ bool SE::Write(const char* data, size_t length, size_t position) {
 //       data_map_->content_repeat = 0;
 //     }
 //     // capture streams of repeating data here
-    if (length > 1)
-      for(size_t i = 1; i < length; ++i) {
-        if (data[i] == data[i-1]) {
-          IncRepeat();
-        } else {
-          data_map_->content_repeat = 0;
-          break;
-        }
-        if ( i == length -1 )
-          return true;
-      }
+//     if (length > 1)
+//       for(size_t i = 1; i < length; ++i) {
+//         if (data[i] == data[i-1]) {
+//           IncRepeat();
+//         } else {
+//           data_map_->content_repeat = 0;
+//           break;
+//         }
+//         if ( i == length -1 )
+//           return true;
+//       }
 //   }
 
     // TODO transmogrify 
@@ -147,7 +147,7 @@ bool SE::Write(const char* data, size_t length, size_t position) {
 
 
     // Do not queue chunks 0 and 1 till we know we have enough for 3 chunks
-    if ((main_encrypt_queue_.MaxRetrievable() >= chunk_size_ * 3) &&
+    if ((main_encrypt_queue_.TotalBytesRetrievable() >= chunk_size_ * 3) &&
        (! chunk_one_two_q_full_)) {
        QueueC0AndC1();
     }
@@ -387,10 +387,17 @@ void SE::EncryptAChunk(size_t chunk_num, byte* data,
                                                           32,
                                                           iv.get());
   std::string chunk_content;
-  CryptoPP::StreamTransformationFilter aes_filter(encryptor,
-                  new XORFilter(
-                    new CryptoPP::StringSink(chunk_content)
-                  , pad.get()));
+//   CryptoPP::StreamTransformationFilter aes_filter(encryptor,
+//                   new XORFilter(
+//                     new CryptoPP::StringSink(chunk_content)
+//                   , pad.get()));
+  // with compression speeds are min 10% slower mostly 25% slower
+  CryptoPP::Gzip aes_filter(new CryptoPP::StreamTransformationFilter(encryptor,
+                              new XORFilter(
+                                new CryptoPP::StringSink(chunk_content)
+                              , pad.get())), 0);
+
+  
   aes_filter.Put2(data, length, -1, true);
   CryptoPP::SHA512().CalculateDigest(data_map_->chunks[chunk_num].hash,
                       const_cast<byte *>
@@ -477,16 +484,24 @@ void SE::ReadChunk(size_t chunk_num, byte *data) {
   content = chunk_store_->Get(hash);
 }
   if (content == ""){
-    DLOG(ERROR) << "Could not find chunk: " << EncodeToHex(hash) << std::endl;
+    DLOG(ERROR) << "Could not find chunk number : " << chunk_num
+        << " which is " << EncodeToHex(hash) << std::endl;
     readok_ = false;
     return;
   }
-    
   CryptoPP::CFB_Mode<CryptoPP::AES>::Decryption decryptor(key.get(), 32, iv.get());
-          CryptoPP::StringSource filter(content, true,
-            new XORFilter(
-            new CryptoPP::StreamTransformationFilter(decryptor,
-              new CryptoPP::MessageQueue),
+//   CryptoPP::CFB_Mode<CryptoPP::AES>::Decryption decryptor(key.get(), 32, iv.get());
+//           CryptoPP::StringSource filter(content, true,
+//             new XORFilter(
+//             new CryptoPP::StreamTransformationFilter(decryptor,
+//               new CryptoPP::MessageQueue),
+//             pad.get()));
+
+
+  CryptoPP::StringSource filter(content, true,
+           new XORFilter(
+             new CryptoPP::StreamTransformationFilter(decryptor,
+                new CryptoPP::Gunzip(new CryptoPP::MessageQueue())),
             pad.get()));
   filter.Get(data, length);
 }
