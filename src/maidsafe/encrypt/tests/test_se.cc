@@ -143,7 +143,7 @@ TEST_F(SelfEncryptionTest, BEH_1025Chars3chunks) {
   EXPECT_EQ(0, selfenc_.getDataMap()->chunks.size());
 }
 
-TEST_F(SelfEncryptionTest, BEH_WriteAndRead) {
+TEST_F(SelfEncryptionTest, BEH_WriteAndReadIncompressable) {
   EXPECT_TRUE(selfenc_.ReInitialise());
   size_t test_data_size(1024*1024*20); 
   std::string plain_text(RandomString(test_data_size));
@@ -183,8 +183,50 @@ TEST_F(SelfEncryptionTest, BEH_WriteAndRead) {
 
   for (size_t  i = 0; i < test_data_size ; ++i)
     ASSERT_EQ(plain_data[i], answer[i]) << "failed at count " << i;
-
 }
+
+TEST_F(SelfEncryptionTest, BEH_WriteAndReadCompressable) {
+  EXPECT_TRUE(selfenc_.ReInitialise());
+  size_t test_data_size(1024*1024*20);
+  std::string plain_text(RandomString(test_data_size));
+  boost::shared_array<char>plain_data (new char[test_data_size]);
+  for (size_t i = 0; i < test_data_size ; ++i) {
+    plain_data[i] = 'a';
+  }
+  ++test_data_size;
+  plain_data[test_data_size] = 'b';
+  
+  boost::posix_time::ptime time =
+  boost::posix_time::microsec_clock::universal_time();
+  ASSERT_TRUE(selfenc_.Write(plain_data.get(), test_data_size));
+  ASSERT_TRUE(selfenc_.FinaliseWrite());
+  std::uint64_t duration =
+  (boost::posix_time::microsec_clock::universal_time() -
+  time).total_microseconds();
+  if (duration == 0)
+    duration = 1;
+  std::cout << "Self-encrypted " << BytesToBinarySiUnits(test_data_size)
+  << " in " << (duration / 1000000.0)
+  << " seconds at a speed of "
+  <<  BytesToBinarySiUnits(test_data_size / (duration / 1000000.0) )
+  << "/s" << std::endl;
+  boost::shared_array<char>answer (new char[test_data_size]);
+  time =  boost::posix_time::microsec_clock::universal_time();
+  ASSERT_TRUE(selfenc_.Read(answer.get(), test_data_size, 0));
+  duration = (boost::posix_time::microsec_clock::universal_time() -
+  time).total_microseconds();
+  if (duration == 0)
+    duration = 1;
+  std::cout << "Self-decrypted " << BytesToBinarySiUnits(test_data_size)
+  << " in " << (duration / 1000000.0)
+  << " seconds at a speed of "
+  <<  BytesToBinarySiUnits(test_data_size / (duration / 1000000.0) )
+  << "/s" << std::endl;
+  
+  for (size_t  i = 0; i < test_data_size ; ++i)
+    ASSERT_EQ(plain_data[i], answer[i]) << "failed at count " << i;
+}
+
 
 TEST_F(SelfEncryptionTest, BEH_WriteAndReadByteAtATime) {
   EXPECT_TRUE(selfenc_.ReInitialise());
