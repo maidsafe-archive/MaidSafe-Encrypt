@@ -8,7 +8,7 @@
  *                                                                             *
  *  You are not free to copy, amend or otherwise use this source code without  *
  *  the explicit written permission of the board of directors of maidsafe.net. *
- ***************************************************************************//**
+ *******************************************************************************
  * @file  test_utils.cc
  * @brief Tests for the self-encryption helper functions.
  * @date  2011-04-05
@@ -336,31 +336,31 @@ TEST_F(SelfEncryptionTest, BEH_WriteRandomlyAllDirections) {
     ASSERT_EQ(plain_data[i], answer[i]) << "failed at count " << i;
 }
 
-// TEST_F(SelfEncryptionTest, BEH_RepeatedCharInputOneatTime) {
-//   EXPECT_TRUE(selfenc_.ReInitialise());
-//   size_t test_data_size(1024*1024*2);
-//   boost::shared_array<char>plain_data (new char[test_data_size]);
-// 
-//   for (size_t i = 0; i < test_data_size ; ++i) 
-//     plain_data[i] = 'a';
-//   
-//   
-//   for (size_t i = 0; i < test_data_size; ++i)
-//     EXPECT_TRUE(selfenc_.Write(&plain_data[i], 1, i));
-//   
-//     
-//   ASSERT_TRUE(selfenc_.FinaliseWrite());
-//   EXPECT_EQ(0,  selfenc_.getDataMap()->chunks.size());
-//   EXPECT_EQ(test_data_size,  selfenc_.getDataMap()->content_size);
-//   EXPECT_EQ(test_data_size, selfenc_.getDataMap()->size);
-//   
-//   boost::shared_array<char>answer (new char[test_data_size]);
-//   EXPECT_TRUE(selfenc_.Read(answer.get(), test_data_size, 0));
-//   for (size_t  i = 0; i < test_data_size ; ++i)
-//     ASSERT_EQ(plain_data[i], answer[i]) << "failed at count " << i;
-// }
+TEST_F(SelfEncryptionTest, BEH_RepeatedCharInputOneatTime) {
+  EXPECT_TRUE(selfenc_.ReInitialise());
+  size_t test_data_size(1024*1024*2);
+  boost::shared_array<char>plain_data (new char[test_data_size]);
 
-/*
+  for (size_t i = 0; i < test_data_size ; ++i)
+    plain_data[i] = 'a';
+
+
+  for (size_t i = 0; i < test_data_size; ++i)
+    EXPECT_TRUE(selfenc_.Write(&plain_data[i], 1, i));
+
+
+  ASSERT_TRUE(selfenc_.FinaliseWrite());
+  EXPECT_EQ(8,  selfenc_.getDataMap()->chunks.size());
+  EXPECT_EQ(0,  selfenc_.getDataMap()->content_size);
+  EXPECT_EQ(test_data_size, selfenc_.getDataMap()->size);
+
+  boost::shared_array<char>answer (new char[test_data_size]);
+  EXPECT_TRUE(selfenc_.Read(answer.get(), test_data_size, 0));
+  for (size_t  i = 0; i < test_data_size ; ++i)
+    ASSERT_EQ(plain_data[i], answer[i]) << "failed at count " << i;
+}
+
+
 TEST_F(SelfEncryptionTest, BEH_manual_check_write) {
   MemoryChunkStore::HashFunc hash_func = std::bind(&crypto::Hash<crypto::SHA512>,
                                                    std::placeholders::_1);
@@ -383,14 +383,12 @@ TEST_F(SelfEncryptionTest, BEH_manual_check_write) {
   boost::shared_array<byte>iv(new byte[16]);
   boost::shared_array<char>pre_enc_file(new char[file_size]);
 
-  for (size_t i = 0; i < chunk_size; i += 2) {
-    pre_enc_chunk[i] = 'a';
-    pre_enc_chunk[i+1] = 'b';   
+  for (size_t i = 0; i < chunk_size; ++i ) {
+    pre_enc_chunk[i] = 'a';   
   }
 
-  for (size_t i = 0; i < file_size; i += 2) {
+  for (size_t i = 0; i < file_size; ++i) {
      pre_enc_file[i] = 'a';
-     pre_enc_file[i+1] = 'b';
   }
 
   EXPECT_TRUE(selfenc.ReInitialise());
@@ -415,7 +413,7 @@ TEST_F(SelfEncryptionTest, BEH_manual_check_write) {
   std::copy(prehash.get(), prehash.get() + 32, key.get());
   std::copy(prehash.get() + 32, prehash.get() + 48, iv.get());
 
-  CryptoPP::Gzip compress(0);
+  CryptoPP::Gzip compress(new CryptoPP::MessageQueue(), 0);
   compress.Put2(pre_enc_chunk.get(), chunk_size, -1, true);
   
   size_t compressed_size(compress.MaxRetrievable());
@@ -464,7 +462,7 @@ TEST_F(SelfEncryptionTest, BEH_manual_check_write) {
     }
   }
 }
-*/
+
 
 }  // namespace test
 

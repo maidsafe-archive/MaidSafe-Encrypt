@@ -8,7 +8,7 @@
  *                                                                             *
  *  You are not free to copy, amend or otherwise use this source code without  *
  *  the explicit written permission of the board of directors of maidsafe.net. *
- ***************************************************************************//**
+ *******************************************************************************
  * @file  utils.cc
  * @brief Helper functions for self-encryption engine.
  * @date  2008-09-09
