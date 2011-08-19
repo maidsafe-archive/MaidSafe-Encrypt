@@ -492,12 +492,14 @@ bool SelfEncryptionDevice::FinaliseWriting(const size_t &index) {
   chunk_buffer.hash = utils::Hash(chunk_buffer.content,
                                   data_map_->self_encryption_type);
 
-  if (index < data_map_->chunks.size() &&
-      data_map_->chunks[index].pre_hash == chunk_buffer.hash) {
-    DLOG(INFO) << "FinaliseWriting: Skipping unchanged chunk "
-               << index << std::endl;
-    return true;  // nothing actually changed
-  }
+//   if (index < data_map_->chunks.size() &&
+//       data_map_->chunks[index].pre_hash == chunk_buffer.hash) {
+//     // but the chunk previous to it need to be stored
+//     // TODO(qima): any work can be saved by skipping ?
+//     std::cout << "FinaliseWriting: Skipping unchanged chunk "
+//                << index << std::endl;
+//     return true;  // nothing actually changed
+//   }
 
   if (index < kMinChunks - 1) {
     // we are near beginning of stream, just queue dependent chunks
