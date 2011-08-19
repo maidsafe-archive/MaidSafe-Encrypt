@@ -75,6 +75,7 @@ class SelfEncryptionDevice {
   std::streamsize write(const char *s, std::streamsize n);
   io::stream_offset seek(io::stream_offset offset, std::ios_base::seekdir way);
   bool flush();
+  io::stream_offset InitialAllZero(io::stream_offset size);
  private:
   friend class test::SelfEncryptionDeviceTest_BEH_Seek_Test;
   friend class test::SelfEncryptionDeviceTest_BEH_InitialiseDataMap_Test;
