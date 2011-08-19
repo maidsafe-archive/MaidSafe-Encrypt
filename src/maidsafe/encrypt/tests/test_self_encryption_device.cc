@@ -20,6 +20,7 @@
 
 #include "maidsafe/common/crypto.h"
 #include "maidsafe/common/memory_chunk_store.h"
+#include "maidsafe/common/file_chunk_store.h"
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
 #include "maidsafe/encrypt/config.h"
@@ -905,13 +906,13 @@ TEST_F(SelfEncryptionDeviceTest, BEH_StoreChunkFromBuffer) {
 }
 
 TEST_F(SelfEncryptionDeviceTest, BEH_Bugs) {
-  std::shared_ptr<ChunkStore> chunk_store(
-      new MemoryChunkStore(true, hash_func_));
   {
     /**
      * bug: write data, flush, seek to beginning, write; resulting DM size is
      *      the size of last write op, not total size
      */
+    std::shared_ptr<ChunkStore> chunk_store(
+        new MemoryChunkStore(true, hash_func_));
     std::string data(RandomString(
         2 * SelfEncryptionParams().max_includable_data_size));
     std::shared_ptr<DataMap> data_map(new DataMap);
@@ -925,6 +926,61 @@ TEST_F(SelfEncryptionDeviceTest, BEH_Bugs) {
                                           data.size() / 10));
     EXPECT_TRUE(sed.flush());
     EXPECT_EQ(data.size(), data_map->size);
+  }
+  {
+    /**
+     * bug:populate with all zero at the beginning, replace conetent with part
+     *     of the content un-changed (all zero)
+     */
+    std::shared_ptr<FileChunkStore> chunk_store(
+        new FileChunkStore(true,
+                           std::bind(&crypto::HashFile<crypto::SHA512>,
+                                     std::placeholders::_1)));
+    fs::path test_dir("test");
+    chunk_store->Init(test_dir);
+    std::string all_zero(SelfEncryptionParams().max_chunk_size, 0);
+    std::vector<std::string> test_data;
+    test_data.push_back(RandomString(SelfEncryptionParams().max_chunk_size));
+    test_data.push_back(all_zero);
+    test_data.push_back(RandomString(SelfEncryptionParams().max_chunk_size));
+    test_data.push_back(RandomString(SelfEncryptionParams().max_chunk_size));
+    test_data.push_back(RandomString(SelfEncryptionParams().max_chunk_size));
+    test_data.push_back(RandomString(SelfEncryptionParams().max_chunk_size));
+    test_data.push_back(all_zero);
+    test_data.push_back(all_zero);
+    test_data.push_back(all_zero);
+    test_data.push_back(RandomString(SelfEncryptionParams().max_chunk_size));
+    test_data.push_back(RandomString(SelfEncryptionParams().max_chunk_size));
+    test_data.push_back(RandomString(SelfEncryptionParams().max_chunk_size));
+
+    std::shared_ptr<DataMap> data_map(new DataMap);
+    data_map->self_encryption_type = test_sed::kDefaultSelfEncryptionType;
+    SelfEncryptionDevice sed(data_map, chunk_store);
+
+    for (auto it = test_data.begin(); it != test_data.end(); ++it) {
+      EXPECT_EQ(SelfEncryptionParams().max_chunk_size,
+                sed.write(all_zero.data(),
+                          SelfEncryptionParams().max_chunk_size));
+    }
+    EXPECT_TRUE(sed.flush());
+
+    sed.seek(0, std::ios_base::beg);
+    for (auto it = test_data.begin(); it != test_data.end(); ++it) {
+      EXPECT_EQ(SelfEncryptionParams().max_chunk_size,
+                sed.write((*it).data(), SelfEncryptionParams().max_chunk_size));
+    }
+    EXPECT_TRUE(sed.flush());
+
+    sed.seek(0, std::ios_base::beg);
+    std::string content(SelfEncryptionParams().max_chunk_size, 0);
+    int chunk_index(0);
+    for (auto it = test_data.begin(); it != test_data.end(); ++it) {
+      EXPECT_EQ(SelfEncryptionParams().max_chunk_size,
+                sed.read(&(content[0]), SelfEncryptionParams().max_chunk_size));
+      if (*it != content)
+        EXPECT_EQ(0, chunk_index);
+      ++chunk_index;
+    }
   }
 }
 
