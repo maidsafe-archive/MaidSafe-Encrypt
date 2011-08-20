@@ -52,6 +52,7 @@
 #include "maidsafe/encrypt/data_map.h"
 #include "maidsafe/encrypt/log.h"
 
+
 namespace fs = boost::filesystem;
 
 namespace maidsafe {
@@ -71,7 +72,7 @@ size_t XORFilter::Put2(const byte* inString,
                                           messageEnd,
                                           blocking);
   boost::scoped_array<byte> buffer(new byte[length]);
-// #pragme omp parallel for 
+//  #pragma omp parallel for private(pad_) reduction(+: count_)
   for (size_t i = 0; i < length; ++i) {
     buffer[i] = inString[i] ^  pad_[count_%144];
     ++count_;
@@ -107,12 +108,11 @@ bool SE::Write(const char* data, size_t length, size_t position) {
       sequencer_.Add(position, const_cast<char *>(data), length);
     }
 
-
-
     // Do not queue chunks 0 and 1 till we know we have enough for 3 chunks
     if ((main_encrypt_queue_.TotalBytesRetrievable() >= chunk_size_ * 3) &&
        (! chunk_one_two_q_full_)) {
        QueueC0AndC1();
+       q_position_ = chunk_size_ * 2;
     }
     if ((main_encrypt_queue_.MaxRetrievable() >= chunk_size_) &&
       (chunk_one_two_q_full_))
@@ -304,6 +304,7 @@ bool SE::ProcessMainQueue() {
    for(size_t i = 0; i < chunks_to_process; ++i) {
      boost::shared_array<byte> tempy(new byte[chunk_size_]);
      main_encrypt_queue_.Get(tempy.get(), chunk_size_);
+     q_position_ += chunk_size_;
      chunk_vec[i] = tempy;
    }
 #pragma omp parallel for
@@ -400,17 +401,87 @@ void SE::EncryptAChunk(size_t chunk_num, byte* data,
    }
 }
 
+bool SE::ReadInProcessData(char* data, size_t *length, size_t *position)
+{
+  // true == all data received, false means still work to do
+  // pointer to length as it may be returned different size if not all found
+  size_t q_size = main_encrypt_queue_.MaxRetrievable();
+  size_t wanted_length = *length;
+  size_t start_position = *position;
+
+  // check c0 and c1
+  if ((*position < c0_and_1_chunk_size_ * 2) && (chunk_one_two_q_full_)) {
+
+    for (size_t i = start_position; i < c0_and_1_chunk_size_ * 2,
+      wanted_length > 0;  ++i,--wanted_length ) {
+      
+      if (c0_and_1_chunk_size_ > i)
+        data[i] = static_cast<char>(chunk0_raw_[i]);
+      else if (c0_and_1_chunk_size_ > i < (c0_and_1_chunk_size_ * 2))
+        data[i] = static_cast<char>(chunk1_raw_[i]);
+    }
+    if (wanted_length == 0)
+      return true;
+    else
+      *length = wanted_length;
+      *position += wanted_length;
+      start_position += wanted_length;
+  }
+  
+
+     
+  // now work with start_position and wanted_length
+  // check queue
+  if ((q_size > 0) && (q_size + current_position_ > start_position)) {
+    size_t to_get = (q_size - current_position_ + wanted_length);
+    
+    // grab all queue into new array
+    boost::scoped_array<char>  temp(new char[q_size]);
+    main_encrypt_queue_.Peek(reinterpret_cast<byte *>(temp.get()), q_size);
+    size_t start(0);
+    if (current_position_ == q_size)
+      start = start_position;
+    else
+      start = current_position_ - q_size + start_position;
+    
+    for (size_t i = start; i < (to_get + start), wanted_length > 0;
+                          ++i, --wanted_length) {
+      data[i] = temp[i];
+    }
+    if (wanted_length == 0)
+      return true;
+    else
+      *length = wanted_length;
+      *position += wanted_length;
+      start_position += wanted_length;
+  }
+
+  
+  if (sequencer_.size() > 0) {
+    sequence_data answer = sequencer_.Peek(start_position);
+    for (size_t i = 0; i < answer.second, wanted_length > 0;
+          ++i, --wanted_length) {
+      data[i + start_position] = answer.first[i];
+    }
+    if (wanted_length == 0)
+      return true;
+    else {
+      *length = wanted_length;
+      *position = start_position;
+    }
+  }
+
+
+  return false;
+}
+
+
 
 bool SE::Read(char* data, size_t length, size_t position) {
 
-   if ((data_map_->size > (length + position)) && (length != 0))
-     return false;
-   // FIXME check sequencer and queue for any data 
-//    if (data_map_->content_repeat > 0) {
-//      for(size_t i = 0; i < length; ++i)
-//        data[i] = data_map_->content.c_str()[i];
-//      return true;
-//    }
+   if (ReadInProcessData(data, &length, &position))
+     return true;
+   // length and position may be smaller now
    
    size_t start_chunk(0), start_offset(0), end_chunk(0), run_total(0);
    for(size_t i = 0; i < data_map_->chunks.size(); ++i) {

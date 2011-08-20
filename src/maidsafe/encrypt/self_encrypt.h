@@ -87,7 +87,7 @@ class SE {  // Self Encryption
                         c0_and_1_chunk_size_(chunk_size_),
                         this_chunk_size_(chunk_size_),
                         current_position_(0), readok_(true),
-                        repeated_chunks_(false)
+                        repeated_chunks_(false), q_position_(0)
                         {
                           if (!data_map_)
                             data_map_.reset(new DataMap);
@@ -125,6 +125,8 @@ class SE {  // Self Encryption
   void CheckSequenceData();
   void EmptySequencer();
   bool CheckPositionInSequncer(size_t position, size_t length); // maybe not necessary
+  bool ReadInProcessData(char * data, size_t  *length, size_t *position);
+  
   
   
  private:
@@ -145,6 +147,7 @@ class SE {  // Self Encryption
   size_t current_position_;
   bool readok_;
   bool repeated_chunks_;
+  size_t q_position_;
 };
 
 }  // namespace encrypt
