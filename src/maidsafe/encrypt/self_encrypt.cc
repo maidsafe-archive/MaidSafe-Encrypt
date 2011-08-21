@@ -557,9 +557,10 @@ bool SE::Read(char* data, size_t length, size_t position) {
          data[i] = static_cast<char>(chunk_data[i]);
       return readok_;
      }
-
-// #pragma omp parallel for shared(data) reduction(+: this_position)
+;
+#pragma omp parallel for shared(data) 
     for (size_t i = start_chunk;i < end_chunk ; ++i) {
+      size_t pos(0);
       size_t this_chunk_size(data_map_->chunks[i].size);
 
         if ((i == start_chunk) && (start_offset != 0)) {
@@ -568,31 +569,36 @@ bool SE::Read(char* data, size_t length, size_t position) {
           boost::shared_array<byte> chunk_data
                       (new byte[data_map_->chunks[start_chunk].size]);
           ReadChunk(start_chunk, chunk_data.get());
-          
+
           for (size_t j = start_offset; j < this_chunk_size; ++j)
             data[j] = static_cast<char>(chunk_data[j]);
- 
+
         } else if ((i == end_chunk) && (end_cut != 0)) {
           this_chunk_size -= end_cut;
-          
+
           boost::shared_array<byte> chunk_data
           (new byte[data_map_->chunks[end_chunk].size]);
           ReadChunk(start_chunk, chunk_data.get());
           
+          for (size_t j = start_chunk; j < i; ++j)
+#pragma omp atomic
+            pos += data_map_->chunks[j].size;
+
           for (size_t j = 0; j < this_chunk_size; ++j)
-            data[j] = static_cast<char>(chunk_data[j]);
+            data[j + pos] = static_cast<char>(chunk_data[j]);
 
         }else {
-          ReadChunk(i, reinterpret_cast<byte *>(&data[this_position]));     
-        }
-        this_position += this_chunk_size;
+          for (size_t j = start_chunk; j < i; ++j)
+#pragma omp atomic
+            pos += data_map_->chunks[j].size;
+          ReadChunk(i, reinterpret_cast<byte *>(&data[pos]));
+       }
     }
   }
-  
+  #pragma omp barrier
  // Extra data in data_map_->content
  if ((data_map_->content != "") && (this_position < length))
   for(size_t i = 0; i < data_map_->content_size; ++i) {
-#pragma omp barrier
     data[length - data_map_->content_size + i] = data_map_->content[i];
   }
   return readok_;
