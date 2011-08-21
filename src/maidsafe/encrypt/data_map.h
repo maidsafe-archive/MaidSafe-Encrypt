@@ -39,25 +39,21 @@ namespace encrypt {
 /// Holds information about a chunk
 struct ChunkDetails {
   ChunkDetails()
-    : hash(), repeated(0), pre_hash(), comp_data(), size(0) {}
+    : hash(), pre_hash(), size(0) {}
   byte hash[CryptoPP::SHA512::DIGESTSIZE];        /// processed chunk
-  std::uint32_t repeated;      ///< Size of processed chunk
   byte pre_hash[CryptoPP::SHA512::DIGESTSIZE];  /// unprocessed source data
-  std::string comp_data; /// compressed data of repeated chunks
   std::uint32_t size;  ///< Size of unprocessed source data
 };
 
 /// Holds information about the building blocks of a data item
 struct DataMap {
   DataMap()
-    : self_encryption_type(0), chunks(), size(0), content(), content_size(0),
-      content_repeat(0) {}
+    : self_encryption_type(0), chunks(), size(0), content(), content_size(0) {}
   std::uint32_t self_encryption_type;  ///< Type of SE used for chunks
   std::vector<ChunkDetails> chunks;  ///< Information about the chunks
   std::uint64_t size;      ///< Size of data item
   std::string content;     ///< Whole data item or last chunk, if small enough
   std::uint16_t content_size;
-  std::uint64_t content_repeat;
 };
 
 /*
@@ -85,9 +81,7 @@ void serialize(Archive &archive,  // NOLINT
                maidsafe::encrypt::ChunkDetails &chunk_details,
                const unsigned int /* version */) {
   archive & chunk_details.hash;
-  archive & chunk_details.repeated;
   archive & chunk_details.pre_hash;
-  archive & chunk_details.comp_data;
   archive & chunk_details.size;
 }
 

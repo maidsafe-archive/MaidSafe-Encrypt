@@ -312,7 +312,7 @@ TEST_F(SelfEncryptionTest, FUNC_WriteOnceRead20) {
 
 TEST_F(SelfEncryptionTest, BEH_WriteRandomlyAllDirections) {
   EXPECT_TRUE(selfenc_.ReInitialise());
-  size_t test_data_size(1024*1024);
+  size_t test_data_size(1024*1024*2);
   std::string plain_text(RandomString(test_data_size));
   boost::scoped_array<char>plain_data (new char[test_data_size]);
   std::vector<size_t> vec_data(test_data_size);
@@ -330,13 +330,15 @@ TEST_F(SelfEncryptionTest, BEH_WriteRandomlyAllDirections) {
   }
 
   ASSERT_TRUE(selfenc_.FinaliseWrite());
+  EXPECT_EQ(8, selfenc_.getDataMap()->chunks.size());
+  
   boost::scoped_array<char>answer (new char[test_data_size]);
   ASSERT_TRUE(selfenc_.Read(answer.get(), test_data_size, 0));
   for (size_t  i = 0; i < test_data_size ; ++i)
     ASSERT_EQ(plain_data[i], answer[i]) << "failed at count " << i;
 }
 
-TEST_F(SelfEncryptionTest, BEH_RepeatedRandomChaReadInProcess) {
+TEST_F(SelfEncryptionTest, FUNC_RepeatedRandomChaReadInProcess) {
   EXPECT_TRUE(selfenc_.ReInitialise());
   size_t chunk_size(1024*256);
   size_t test_data_size(chunk_size * 4);
@@ -379,7 +381,7 @@ for (size_t i = 0; i < chunk_size * 2; ++i) {
 
   EXPECT_EQ(8,  selfenc_.getDataMap()->chunks.size());
   EXPECT_EQ(0,  selfenc_.getDataMap()->content_size);
-  EXPECT_EQ(test_data_size, selfenc_.getDataMap()->size);*/
+  EXPECT_EQ(test_data_size, selfenc_.getDataMap()->size);
 
   boost::scoped_array<char>answer (new char[test_data_size]);
   EXPECT_TRUE(selfenc_.Read(answer.get(), test_data_size, 0));
@@ -445,7 +447,7 @@ TEST_F(SelfEncryptionTest, BEH_manual_check_write) {
   
   size_t compressed_size(compress.MaxRetrievable());
 
-  boost::scoped_array<byte> comp_data (new byte[compressed_size]);
+  boost::shared_array<byte> comp_data (new byte[compressed_size]);
   compress.Get(comp_data.get(), compressed_size);
   
   CryptoPP::CFB_Mode<CryptoPP::AES>::Encryption enc(key.get(), 32, iv.get());
@@ -488,8 +490,8 @@ TEST_F(SelfEncryptionTest, BEH_manual_check_write) {
       match = true;
     }
   }
-}*/
-
+}
+*/
 
 }  // namespace test
 

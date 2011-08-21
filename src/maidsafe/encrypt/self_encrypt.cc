@@ -83,15 +83,6 @@ size_t XORFilter::Put2(const byte* inString,
                                         blocking);
 }
 
-bool SE::IncRepeat(const char* data, size_t length)
-{
-  data_map_->content= (&data[0],1);
-  data_map_->content_repeat += length;
-  data_map_->content_size += length;
-  data_map_->size += length;
-  return true;
-}
-
 bool SE::Write(const char* data, size_t length, size_t position) {
 
   if (length == 0)
@@ -209,16 +200,23 @@ bool SE::Transmogrify(const char* data, size_t length, size_t position) {
 
 
 bool SE::FinaliseWrite() {
-  repeated_chunks_ = false;
+  complete_ = true;
   chunk_size_ = (main_encrypt_queue_.MaxRetrievable()) / 3 ;
-  
   if ((chunk_size_) < 1025) {
+    chunk_size_ = 1024*256;
+    current_position_ = 0;
+    q_position_ = 0;
     return ProcessLastData();
   }
    CheckSequenceData();
    ProcessMainQueue();
 // finally rechunk what we have to!
    EmptySequencer();
+   chunk_size_ = 1024*256;
+   main_encrypt_queue_.SkipAll();
+   chunk_one_two_q_full_ = false;
+   current_position_ = 0;
+   q_position_ = 0;
 }
 
 bool SE::ProcessLastData() {
@@ -263,6 +261,7 @@ bool SE::ReInitialise() {
     main_encrypt_queue_.SkipAll();
     chunk_one_two_q_full_ = false;
     current_position_ = 0;
+    q_position_ = 0;
     data_map_.reset(new DataMap);
     return true;
 }
@@ -314,7 +313,31 @@ bool SE::ProcessMainQueue() {
            chunk_size_);
     data_map_->chunks[i + old_dm_size].size = chunk_size_;
     }
-
+// check for repeated content
+// TODO FIXME ( needs tested )
+// bool repeated_data = false;
+//   for(size_t i = 0; i < chunks_to_process; ++i) {
+//     if ((data_map_->chunks[i + old_dm_size].pre_hash ==
+//       data_map_->chunks[i + old_dm_size].pre_hash) &&
+//       (data_map_->chunks[i + old_dm_size].pre_hash ==
+//       data_map_->chunks[i -1 + old_dm_size].pre_hash) &&
+//       (data_map_->chunks[i + old_dm_size].pre_hash ==
+//       data_map_->chunks[i -2 + old_dm_size].pre_hash)) {
+//       if (!repeated_data) {
+//         EncryptAChunk(i + old_dm_size,
+//                       &chunk_vec[i][0],
+//                       chunk_size_,
+//                       false);
+//         repeated_data = true;
+//       } else {
+//         for (int j =0; j < 64; ++j)
+//           data_map_->chunks[i + old_dm_size].hash[j] =
+//           data_map_->chunks[i - 1 + old_dm_size].hash[j];
+//       }
+//     }
+//   }
+//   if (repeated_data)
+//     return true;
 
 #pragma omp parallel for  // gives over 100Mb write speeds
   for(size_t j = 0; j < chunks_to_process; ++j) {
@@ -478,40 +501,78 @@ bool SE::ReadInProcessData(char* data, size_t *length, size_t *position)
 
 
 bool SE::Read(char* data, size_t length, size_t position) {
+  
+   // this will get date in process including c0 and c1
+   // so unless finalise write is given it will be here
+   if (!complete_)
+     if (ReadInProcessData(data, &length, &position))
+       return true;
+   // length and position may be adjusted now
+   // --length and ++ position
 
-   if (ReadInProcessData(data, &length, &position))
-     return true;
-   // length and position may be smaller now
-   
-   size_t start_chunk(0), start_offset(0), end_chunk(0), run_total(0);
-   for(size_t i = 0; i < data_map_->chunks.size(); ++i) {
-     if ((data_map_->chunks[i].size + run_total >= position) &&
-         (start_chunk = 0)) {
-       start_chunk = i;
-       start_offset = run_total + data_map_->chunks[i].size -
-                      (position - run_total);
-       run_total = data_map_->chunks[i].size - start_offset;
-     }
-     else
+    size_t start_chunk(0), start_offset(0), end_chunk(0), run_total(0);
+    bool found_start(false);
+    bool found_end(false);
+    size_t still_to_get = length;
+    size_t num_chunks = data_map_->chunks.size();
+    
+  if (num_chunks > 0) {
+    for(size_t i = 0; i <= num_chunks;  ++i) {
+      size_t this_chunk_size = data_map_->chunks[i].size;
+      if ((this_chunk_size + run_total >= position)
+           && (!found_start)) {
+        start_chunk = i;
+      start_offset =  this_chunk_size - (position - run_total) -
+                      (run_total + this_chunk_size);
+      run_total = this_chunk_size - start_offset;
+        found_start = true;
+        if (run_total >= length) {
+          found_end = true;
+          end_chunk = i;
+          break;
+        }
+        continue;
+      } 
+
+     if (found_start) // FIXME FIXME error here
+ #pragma omp atomic
+       run_total += this_chunk_size - start_offset;
+
+      if (run_total > length) {
+        end_chunk = i;
+        found_end = true;
+        break;
+      }
+    }
+     if (!found_end)
+      end_chunk = num_chunks;
+
+//      if (start_chunk == end_chunk) {
+//       ReadChunk(start_chunk, reinterpret_cast<byte *>(&data[start_offset]));
+//       still_to_get -= std::min(data_map_->chunks[start_chunk].size - position,
+//                                position + length);
+//       return readok_;
+//      }
+    size_t j(0);
+// #pragma omp parallel for shared(data) firstprivate(j) lastprivate(i)
+    for (size_t i = start_chunk;i < end_chunk ; ++i) {
+      size_t this_chunk_size(0);
+      for (j = start_chunk; j < i; ++j) {
 #pragma omp atomic
-       run_total += data_map_->chunks[i].size;
-           // find end (offset handled by return truncated size
-     if ((run_total <= length) || (length == 0))
-       end_chunk = i;
-   }
-
-   if (end_chunk != 0)
-     ++end_chunk;
-
-#pragma omp parallel for shared(data)
-  for (size_t i = start_chunk;i < end_chunk ; ++i) {
-    size_t this_chunk_size(0);
-    for (size_t j = start_chunk; j < i; ++j)
-#pragma omp atomic
-      this_chunk_size += data_map_->chunks[j].size;
-    ReadChunk(i, reinterpret_cast<byte *>(&data[this_chunk_size])); 
+        this_chunk_size += data_map_->chunks[j].size;
+      }
+        if (i == start_chunk) { // get part of this chunk
+          ReadChunk(i, reinterpret_cast<byte *>(&data[start_offset]));
+          still_to_get -= std::min(this_chunk_size - position, position + length);
+        } else {
+          ReadChunk(i, reinterpret_cast<byte *>(&data[this_chunk_size]));
+          still_to_get -= this_chunk_size;          
+        }
+    }
   }
- 
+  
+ // Extra data in data_map_->content
+ if (data_map_->content != "")
   for(size_t i = 0; i < data_map_->content_size; ++i) {
 #pragma omp barrier
     data[length - data_map_->content_size + i] = data_map_->content[i];

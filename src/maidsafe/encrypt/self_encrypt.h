@@ -89,8 +89,13 @@ class SE {  // Self Encryption
                         current_position_(0), readok_(true),
                         repeated_chunks_(false), q_position_(0)
                         {
-                          if (!data_map_)
+                          if (!data_map_) 
                             data_map_.reset(new DataMap);
+                          else
+                            complete_ = true; // TODO FIXME can we be passed
+                            // and incomplete data map ?
+                          
+                          
                         }
   bool Write(const char* data = NULL, size_t length = 0, size_t position = 0);
   bool Read(char * data, size_t length = 0, size_t position = 0);
@@ -101,14 +106,12 @@ class SE {  // Self Encryption
   bool DeleteAChunk(size_t chunk_num);
   std::shared_ptr<DataMap> getDataMap() { return data_map_; }
 
- private:  
+ private:
+   // METHODS
   SE &operator = (const SE&);  // no assignment
   SE(const SE&);  // no copy
   bool Transmogrify(const char* data = NULL,
                     size_t length = 0, size_t position = 0);
-  bool IncRepeat(const char* data = NULL, size_t length = 0);
-  void set_chunk_size(size_t chunk_size) { chunk_size_ = chunk_size; }
-  size_t chunk_size() { return chunk_size_; }
   bool ProcessLastData();
   void ReadChunk(size_t chunk_num, byte *data);
   void EncryptAChunk(size_t chunk_num, byte* data,
@@ -126,10 +129,13 @@ class SE {  // Self Encryption
   void EmptySequencer();
   bool CheckPositionInSequncer(size_t position, size_t length); // maybe not necessary
   bool ReadInProcessData(char * data, size_t  *length, size_t *position);
-  
-  
+ private:
+  // Setters and Getters, testing only
+  void set_chunk_size(size_t chunk_size) { chunk_size_ = chunk_size; }
+  size_t chunk_size() { return chunk_size_; } 
   
  private:
+   // MEMBERS
   std::shared_ptr<DataMap> data_map_;
   Sequencer sequencer_;
   size_t chunk_size_;
@@ -148,6 +154,7 @@ class SE {  // Self Encryption
   bool readok_;
   bool repeated_chunks_;
   size_t q_position_;
+  bool complete_;
 };
 
 }  // namespace encrypt
