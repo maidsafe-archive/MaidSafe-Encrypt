@@ -353,14 +353,14 @@ for (size_t i = 0; i < chunk_size * 2; ++i) {
     EXPECT_TRUE(selfenc_.Write(&plain_data[i], 1, i));
   }
  // read some data - should be in queue
- // Check read From Queue
+ //Check read From Queue FIXME !!
   for (size_t i = 0; i < 10 ; ++i) {
     boost::scoped_array<char> test(new char[1]);
     EXPECT_TRUE(selfenc_.Read(test.get(), 1, i));
     ASSERT_EQ(test.get()[i], plain_data[i]) << "not read " << i << std::endl;
   }
   // next 2 
-  for (size_t i = chunk_size * 2; i < chunk_size * 3; ++i) {
+  for (size_t i = chunk_size * 2; i < chunk_size * 4; ++i) {
     EXPECT_TRUE(selfenc_.Write(&plain_data[i], 1, i));
   }
 //   /// should be in c0 and c1
@@ -379,7 +379,7 @@ for (size_t i = 0; i < chunk_size * 2; ++i) {
     ASSERT_EQ(test.get()[i], plain_data[i]) << "not read " << i << std::endl;
   }
 
-  EXPECT_EQ(8,  selfenc_.getDataMap()->chunks.size());
+  EXPECT_EQ(4,  selfenc_.getDataMap()->chunks.size());
   EXPECT_EQ(0,  selfenc_.getDataMap()->content_size);
   EXPECT_EQ(test_data_size, selfenc_.getDataMap()->size);
 

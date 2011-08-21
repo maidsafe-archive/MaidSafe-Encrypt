@@ -510,20 +510,20 @@ bool SE::Read(char* data, size_t length, size_t position) {
    // length and position may be adjusted now
    // --length and ++ position
 
-    size_t start_chunk(0), start_offset(0), end_chunk(0), run_total(0);
+    size_t start_chunk(0), start_offset(0), end_chunk(0), run_total(0),
+            end_cut(0);
     bool found_start(false);
     bool found_end(false);
     size_t still_to_get = length;
     size_t num_chunks = data_map_->chunks.size();
-    
+    size_t this_position(0);
   if (num_chunks > 0) {
     for(size_t i = 0; i <= num_chunks;  ++i) {
       size_t this_chunk_size = data_map_->chunks[i].size;
       if ((this_chunk_size + run_total >= position)
            && (!found_start)) {
         start_chunk = i;
-      start_offset =  this_chunk_size - (position - run_total) -
-                      (run_total + this_chunk_size);
+      start_offset =  position;
       run_total = this_chunk_size - start_offset;
         found_start = true;
         if (run_total >= length) {
@@ -534,12 +534,13 @@ bool SE::Read(char* data, size_t length, size_t position) {
         continue;
       } 
 
-     if (found_start) // FIXME FIXME error here
+     if (found_start) 
  #pragma omp atomic
        run_total += this_chunk_size - start_offset;
 
       if (run_total > length) {
         end_chunk = i;
+        end_cut = length - run_total;
         found_end = true;
         break;
       }
@@ -547,32 +548,49 @@ bool SE::Read(char* data, size_t length, size_t position) {
      if (!found_end)
       end_chunk = num_chunks;
 
-//      if (start_chunk == end_chunk) {
-//       ReadChunk(start_chunk, reinterpret_cast<byte *>(&data[start_offset]));
-//       still_to_get -= std::min(data_map_->chunks[start_chunk].size - position,
-//                                position + length);
-//       return readok_;
-//      }
-    size_t j(0);
-// #pragma omp parallel for shared(data) firstprivate(j) lastprivate(i)
+     if (start_chunk == end_chunk) {
+       // get chunk
+       boost::shared_array<byte> chunk_data
+                   (new byte[data_map_->chunks[start_chunk].size]);
+       ReadChunk(start_chunk, chunk_data.get());
+       for (size_t i = start_offset; i < length + start_offset; ++i)
+         data[i] = static_cast<char>(chunk_data[i]);
+      return readok_;
+     }
+
+// #pragma omp parallel for shared(data) reduction(+: this_position)
     for (size_t i = start_chunk;i < end_chunk ; ++i) {
-      size_t this_chunk_size(0);
-      for (j = start_chunk; j < i; ++j) {
-#pragma omp atomic
-        this_chunk_size += data_map_->chunks[j].size;
-      }
-        if (i == start_chunk) { // get part of this chunk
-          ReadChunk(i, reinterpret_cast<byte *>(&data[start_offset]));
-          still_to_get -= std::min(this_chunk_size - position, position + length);
-        } else {
-          ReadChunk(i, reinterpret_cast<byte *>(&data[this_chunk_size]));
-          still_to_get -= this_chunk_size;          
+      size_t this_chunk_size(data_map_->chunks[i].size);
+
+        if ((i == start_chunk) && (start_offset != 0)) {
+          this_chunk_size -= start_offset;
+
+          boost::shared_array<byte> chunk_data
+                      (new byte[data_map_->chunks[start_chunk].size]);
+          ReadChunk(start_chunk, chunk_data.get());
+          
+          for (size_t j = start_offset; j < this_chunk_size; ++j)
+            data[j] = static_cast<char>(chunk_data[j]);
+ 
+        } else if ((i == end_chunk) && (end_cut != 0)) {
+          this_chunk_size -= end_cut;
+          
+          boost::shared_array<byte> chunk_data
+          (new byte[data_map_->chunks[end_chunk].size]);
+          ReadChunk(start_chunk, chunk_data.get());
+          
+          for (size_t j = 0; j < this_chunk_size; ++j)
+            data[j] = static_cast<char>(chunk_data[j]);
+
+        }else {
+          ReadChunk(i, reinterpret_cast<byte *>(&data[this_position]));     
         }
+        this_position += this_chunk_size;
     }
   }
   
  // Extra data in data_map_->content
- if (data_map_->content != "")
+ if ((data_map_->content != "") && (this_position < length))
   for(size_t i = 0; i < data_map_->content_size; ++i) {
 #pragma omp barrier
     data[length - data_map_->content_size + i] = data_map_->content[i];
