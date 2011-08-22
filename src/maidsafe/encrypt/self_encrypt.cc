@@ -72,11 +72,14 @@ size_t XORFilter::Put2(const byte* inString,
                                           messageEnd,
                                           blocking);
   boost::scoped_array<byte> buffer(new byte[length]);
-//  #pragma omp parallel for private(pad_) reduction(+: count_)
-  for (size_t i = 0; i < length; ++i) {
+  size_t i(0);
+  
+// #pragma omp parallel for shared(buffer, inString) private(i)
+  for (i = 0; i < length; ++i) {
     buffer[i] = inString[i] ^  pad_[count_%144];
     ++count_;
   }
+
   return AttachedTransformation()->Put2(buffer.get(),
                                        length,
                                         messageEnd,
@@ -318,7 +321,7 @@ bool SE::ProcessMainQueue() {
     }
 // check for repeated content
 // TODO FIXME ( needs tested )
-// bool repeated_data = false;
+
 //   for(size_t i = 0; i < chunks_to_process; ++i) {
 //     if ((data_map_->chunks[i + old_dm_size].pre_hash ==
 //       data_map_->chunks[i + old_dm_size].pre_hash) &&
@@ -326,12 +329,8 @@ bool SE::ProcessMainQueue() {
 //       data_map_->chunks[i -1 + old_dm_size].pre_hash) &&
 //       (data_map_->chunks[i + old_dm_size].pre_hash ==
 //       data_map_->chunks[i -2 + old_dm_size].pre_hash)) {
-//       if (!repeated_data) {
-//         EncryptAChunk(i + old_dm_size,
-//                       &chunk_vec[i][0],
-//                       chunk_size_,
-//                       false);
-//         repeated_data = true;
+//       if (i == 2) { // only encrypt chunk 2
+//         EncryptAChunk(i + old_dm_size, &chunk_vec[i][0], chunk_size_, false);
 //       } else {
 //         for (int j =0; j < 64; ++j)
 //           data_map_->chunks[i + old_dm_size].hash[j] =
@@ -339,8 +338,7 @@ bool SE::ProcessMainQueue() {
 //       }
 //     }
 //   }
-//   if (repeated_data)
-//     return true;
+
 
 #pragma omp parallel for  // gives over 100Mb write speeds
   for(size_t j = 0; j < chunks_to_process; ++j) {
@@ -598,6 +596,7 @@ bool SE::Read(char* data, size_t length, size_t position) {
   #pragma omp barrier
  // Extra data in data_map_->content
  if ((data_map_->content != "") && (this_position < length))
+#pragma omp parallel for shared(data)
   for(size_t i = 0; i < data_map_->content_size; ++i) {
     data[length - data_map_->content_size + i] = data_map_->content[i];
   }

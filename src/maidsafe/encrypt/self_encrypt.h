@@ -103,8 +103,6 @@ class SE {  // Self Encryption
                           else
                             complete_ = true; // TODO FIXME can we be passed
                             // and incomplete data map ?
-                          
-                          
                         }
   bool Write(const char* data = NULL, size_t length = 0, size_t position = 0);
   bool Read(char * data, size_t length = 0, size_t position = 0);

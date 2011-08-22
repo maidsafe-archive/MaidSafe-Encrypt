@@ -25,6 +25,9 @@
 #  pragma warning(disable: 4308)
 #endif
 #include "boost/archive/text_oarchive.hpp"
+#include "cryptopp/cryptlib.h"
+#include "cryptopp/aes.h"
+#include "cryptopp/modes.h"
 #ifdef WIN32
 #  pragma warning(pop)
 #endif
@@ -387,15 +390,14 @@ boost::scoped_array<char> testc0(new char[chunk_size]);
   for (size_t  i = 0; i < test_data_size ; ++i)
     ASSERT_EQ(plain_data[i], answer[i]) << "failed at count " << i;
 }
-
 /*
-TEST_F(SelfEncryptionTest, BEH_manual_check_write) {
+TEST(SelfEncryptionManualTest, BEH_manual_check_write) {
   MemoryChunkStore::HashFunc hash_func = std::bind(&crypto::Hash<crypto::SHA512>,
                                                    std::placeholders::_1);
   std::shared_ptr<MemoryChunkStore>
-       chunk_store(new MemoryChunkStore (false, hash_func));
+    chunk_store(new MemoryChunkStore (false, hash_func));
   std::shared_ptr<DataMap> data_map; // NULL
-  SE selfenc(chunk_store, data_map);
+  SE selfenc_(chunk_store, data_map);
   size_t chunk_size(1024*256); // system default
   size_t num_chunks(10);
   boost::scoped_array<char>extra_content(new char[5]{'1','2','3','4','5'});
@@ -419,13 +421,12 @@ TEST_F(SelfEncryptionTest, BEH_manual_check_write) {
      pre_enc_file[i] = 'a';
   }
 
-  EXPECT_TRUE(selfenc.ReInitialise());
-  EXPECT_TRUE(selfenc.Write(pre_enc_file.get(), file_size));
-  EXPECT_TRUE(selfenc.FinaliseWrite());
+  EXPECT_TRUE(selfenc_.Write(pre_enc_file.get(), file_size));
+  EXPECT_TRUE(selfenc_.FinaliseWrite());
 // Do some testing on results
-  EXPECT_EQ(num_chunks,  selfenc.getDataMap()->chunks.size());
-  EXPECT_EQ(expected_content_size,  selfenc.getDataMap()->content_size);
-  EXPECT_EQ(file_size, selfenc.getDataMap()->size);
+  EXPECT_EQ(num_chunks,  selfenc_.getDataMap()->chunks.size());
+  EXPECT_EQ(expected_content_size,  selfenc_.getDataMap()->content_size);
+  EXPECT_EQ(file_size, selfenc_.getDataMap()->size);
 
   CryptoPP::SHA512().CalculateDigest(prehash.get(), pre_enc_chunk.get(),
                                      chunk_size);
@@ -462,27 +463,30 @@ TEST_F(SelfEncryptionTest, BEH_manual_check_write) {
   
   for (int i = 0; i < 64; ++i) {
     
-    ASSERT_EQ(prehash[i], selfenc.getDataMap()->chunks[0].pre_hash[i])
+    ASSERT_EQ(prehash[i], selfenc_.getDataMap()->chunks[0].pre_hash[i])
       << "failed at chunk 0 pre hash " << i;
-    ASSERT_EQ(prehash[i], selfenc.getDataMap()->chunks[1].pre_hash[i])
+    ASSERT_EQ(prehash[i], selfenc_.getDataMap()->chunks[1].pre_hash[i])
       << "failed at chunk 1 pre hash " << i;
-    ASSERT_EQ(prehash[i], selfenc.getDataMap()->chunks[2].pre_hash[i])
+    ASSERT_EQ(prehash[i], selfenc_.getDataMap()->chunks[2].pre_hash[i])
       << "failed at chunk 2 pre hash " << i;
       // TODO uncomment these and fix
-    ASSERT_EQ(posthashxor[i], static_cast<byte>(selfenc.getDataMap()->chunks[0].hash[i]))
+    ASSERT_EQ(posthashxor[i], static_cast<byte>
+      (selfenc_.getDataMap()->chunks[0].hash[i]))
       << "failed at chunk 0 post hash : " << i;
-    ASSERT_EQ(posthashxor[i], static_cast<byte>(selfenc.getDataMap()->chunks[1].hash[i]))
+    ASSERT_EQ(posthashxor[i], static_cast<byte>
+      (selfenc_.getDataMap()->chunks[1].hash[i]))
     << "failed at chunk 1 post hash : " << i;
-    ASSERT_EQ(posthashxor[i], static_cast<byte>(selfenc.getDataMap()->chunks[2].hash[i]))
+    ASSERT_EQ(posthashxor[i], static_cast<byte>
+      (selfenc_.getDataMap()->chunks[2].hash[i]))
     << "failed at chunk 2 post hash : " << i;
   }
   // check chunks' hashes - should be equal for repeated single character input
   bool match(true);
-  for (size_t i = 0; i < selfenc.getDataMap()->chunks.size(); ++i) {
-    for (size_t j = i; j < selfenc.getDataMap()->chunks.size(); ++j) {
+  for (size_t i = 0; i < selfenc_.getDataMap()->chunks.size(); ++i) {
+    for (size_t j = i; j < selfenc_.getDataMap()->chunks.size(); ++j) {
       for (int k = 0; k < CryptoPP::SHA512::DIGESTSIZE ; ++k) {
-        if (selfenc.getDataMap()->chunks[i].hash[k] !=
-                selfenc.getDataMap()->chunks[j].hash[k])
+        if (selfenc_.getDataMap()->chunks[i].hash[k] !=
+                selfenc_.getDataMap()->chunks[j].hash[k])
           match = false;
       }
       EXPECT_TRUE(match);
