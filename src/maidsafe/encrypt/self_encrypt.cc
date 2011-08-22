@@ -100,7 +100,7 @@ bool SE::Write(const char* data, size_t length, size_t position) {
     }
 
     // Do not queue chunks 0 and 1 till we know we have enough for 3 chunks
-    if ((main_encrypt_queue_.TotalBytesRetrievable() >= chunk_size_ * 3) &&
+    if ((main_encrypt_queue_.MaxRetrievable() >= chunk_size_ * 3) &&
        (! chunk_one_two_q_full_)) {
        QueueC0AndC1();
        q_position_ = chunk_size_ * 2;
@@ -435,20 +435,19 @@ bool SE::ReadInProcessData(char* data, size_t *length, size_t *position)
   // check c0 and c1
   if ((*position < c0_and_1_chunk_size_ * 2) && (chunk_one_two_q_full_)) {
 
-    for (size_t i = start_position; i < c0_and_1_chunk_size_ * 2,
-      wanted_length > 0;  ++i,--wanted_length ) {
+    for (size_t i = start_position; i < c0_and_1_chunk_size_ * 2;
+          ++i,--wanted_length ) {
       
       if (c0_and_1_chunk_size_ > i)
         data[i] = static_cast<char>(chunk0_raw_[i]);
       else if (c0_and_1_chunk_size_ > i < (c0_and_1_chunk_size_ * 2))
         data[i] = static_cast<char>(chunk1_raw_[i]);
+      if (wanted_length == 0)
+        return true;
     }
-    if (wanted_length == 0)
-      return true;
-    else
-      *length = wanted_length;
-      *position += wanted_length;
-      start_position += wanted_length;
+    *length = wanted_length;
+    *position += wanted_length;
+    start_position += wanted_length;
   }
   
 
@@ -467,16 +466,15 @@ bool SE::ReadInProcessData(char* data, size_t *length, size_t *position)
     else
       start = current_position_ - q_size + start_position;
     
-    for (size_t i = start; i < (to_get + start), wanted_length > 0;
+    for (size_t i = start; i < to_get + start;
                           ++i, --wanted_length) {
       data[i] = temp[i];
+      if (wanted_length == 0)
+        return true;
     }
-    if (wanted_length == 0)
-      return true;
-    else
-      *length = wanted_length;
-      *position += wanted_length;
-      start_position += wanted_length;
+    *length = wanted_length;
+    *position += wanted_length;
+    start_position += wanted_length;
   }
 
   
@@ -605,7 +603,8 @@ bool SE::Read(char* data, size_t length, size_t position) {
 }
 
 void SE::ReadChunk(size_t chunk_num, byte *data) {
-  if (data_map_->chunks.size() < chunk_num) {
+  if ((data_map_->chunks.size() < chunk_num) ||
+    (data_map_->chunks.size() == 0)){
     readok_ = false;
     return;
   }
