@@ -194,6 +194,7 @@ bool SE::Transmogrify(const char* data, size_t length, size_t position) {
                     data_map_->chunks[chunk_num].size,
                     true);
     }
+    return true;
   } else // might be in content !!! FIXME also check count >= length
     return false;
 }
@@ -217,6 +218,7 @@ bool SE::FinaliseWrite() {
    chunk_one_two_q_full_ = false;
    current_position_ = 0;
    q_position_ = 0;
+   return true;
 }
 
 bool SE::ProcessLastData() {
@@ -263,6 +265,7 @@ bool SE::ReInitialise() {
     current_position_ = 0;
     q_position_ = 0;
     data_map_.reset(new DataMap);
+    complete_ = false;
     return true;
 }
 
@@ -440,7 +443,7 @@ bool SE::ReadInProcessData(char* data, size_t *length, size_t *position)
       
       if (c0_and_1_chunk_size_ > i)
         data[i] = static_cast<char>(chunk0_raw_[i]);
-      else if (c0_and_1_chunk_size_ > i < (c0_and_1_chunk_size_ * 2))
+      else if ((c0_and_1_chunk_size_ > i) && (i < (c0_and_1_chunk_size_ * 2)))
         data[i] = static_cast<char>(chunk1_raw_[i]);
       if (wanted_length == 1)
         return true;
@@ -512,11 +515,10 @@ bool SE::Read(char* data, size_t length, size_t position) {
             end_cut(0);
     bool found_start(false);
     bool found_end(false);
-    size_t still_to_get = length;
     size_t num_chunks = data_map_->chunks.size();
     size_t this_position(0);
   if (num_chunks > 0) {
-    for(size_t i = 0; i <= num_chunks;  ++i) {
+    for(size_t i = 0; i < num_chunks;  ++i) {
       size_t this_chunk_size = data_map_->chunks[i].size;
       if ((this_chunk_size + run_total >= position)
            && (!found_start)) {

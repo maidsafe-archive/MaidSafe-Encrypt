@@ -31,8 +31,6 @@
 #include "boost/archive/text_iarchive.hpp"
 #include "boost/timer.hpp"
 #include "maidsafe/common/test.h"
-#include "cryptopp/modes.h"
-#include "cryptopp/sha.h"
 #include "maidsafe/common/crypto.h"
 #include "maidsafe/common/utils.h"
 #include "maidsafe/encrypt/config.h"
@@ -338,7 +336,7 @@ TEST_F(SelfEncryptionTest, BEH_WriteRandomlyAllDirections) {
     ASSERT_EQ(plain_data[i], answer[i]) << "failed at count " << i;
 }
 
-TEST_F(SelfEncryptionTest, FUNC_RepeatedRandomChaReadInProcess) {
+TEST_F(SelfEncryptionTest, FUNC_RepeatedRandomCharReadInProcess) {
   EXPECT_TRUE(selfenc_.ReInitialise());
   size_t chunk_size(1024*256);
   size_t test_data_size(chunk_size * 4);
@@ -354,7 +352,7 @@ for (size_t i = 0; i < chunk_size * 2; ++i) {
   }
  // read some data - should be in queue
  //Check read From Queue FIXME !!
- boost::scoped_array<char> testq(new char[1]);
+ boost::scoped_array<char> testq(new char[10]);
   for (size_t i = 0; i < 10 ; ++i) {
     EXPECT_TRUE(selfenc_.Read(testq.get(), 1, i));
  // TODO FIXME this is inconsistent
@@ -374,7 +372,7 @@ boost::scoped_array<char> testc0(new char[chunk_size]);
   
   ASSERT_TRUE(selfenc_.FinaliseWrite());
   // read some data - should be in chunks now
-  boost::scoped_array<char> testchunks(new char[1]);
+  boost::scoped_array<char> testchunks(new char[10]);
   for (size_t i = 0; i < 10 ; ++i) {
     EXPECT_TRUE(selfenc_.Read(testchunks.get(), 1, i));
     ASSERT_EQ(testchunks.get()[i], plain_data[i]) << "not read " << i << std::endl;

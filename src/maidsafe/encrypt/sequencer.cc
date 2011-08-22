@@ -44,7 +44,7 @@
  
  sequence_data Sequencer::getFromSequencer(size_t position, bool remove) {
    if (sequencer_.size() == 0)
-     return (sequence_data(0, NULL));
+     return (sequence_data(static_cast<char*>(NULL), 0));
    for (auto it = sequencer_.begin(); it != sequencer_.end(); ++it) {
      size_t this_position = (*it).first;
      char * this_data = (*it).second.first;
@@ -73,7 +73,7 @@
        return res;
      }
    }
-   return (sequence_data(0, NULL)); // nothing found
+   return (sequence_data(static_cast<char*>(NULL), 0));  // nothing found
  }
 
 bool Sequencer::FillinRange(size_t from,
@@ -88,7 +88,7 @@ bool Sequencer::FillinRange(size_t from,
     char * this_data = (*it).second.first;
     size_t this_length = (*it).second.second;
     
-    if (from < (*it).first > to) {
+    if ((from < (*it).first) && ((*it).first > to)) {
       for (size_t j = this_position; j < length; ++j) {
         data[j] = this_data[j];
       }
@@ -99,7 +99,7 @@ bool Sequencer::FillinRange(size_t from,
       }
     }
   }
-  
+  return true;
 }
 
 

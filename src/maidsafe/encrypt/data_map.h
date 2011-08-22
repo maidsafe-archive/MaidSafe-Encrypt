@@ -21,7 +21,15 @@
 #include <string>
 #include <vector>
 
+#ifdef __MSVC__
+#  pragma warning(push, 1)
+#  pragma warning(disable: 4702)
+#endif
 #include "cryptopp/cryptlib.h"
+#ifdef __MSVC__
+#  pragma warning(pop)
+#endif
+
 #include "boost/serialization/string.hpp"
 #include "boost/serialization/vector.hpp"
 #include "maidsafe/encrypt/version.h"
@@ -59,11 +67,11 @@ struct DataMap {
 /*
 /// Hold datamaps in a version container
 struct VersionedDataMap {
-	VersionedDataMap()
-		: data_map(), user_name(), time_stamp() {}
-	DataMap data_map;
-	std::string user_name;
-	boost::posix_time::time_duration time_stamp;
+  VersionedDataMap()
+    : data_map(), user_name(), time_stamp() {}
+  DataMap data_map;
+  std::string user_name;
+  boost::posix_time::time_duration time_stamp;
 };*/
 /*
 std::tuple<uint8_t, fs::path, VersionedDataMap> VersionedDirMap; // for dirs*/

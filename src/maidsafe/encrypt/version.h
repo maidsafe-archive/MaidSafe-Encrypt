@@ -26,7 +26,7 @@
 
 #include "maidsafe/common/version.h"
 
-#define THIS_NEEDS_MAIDSAFE_COMMON_VERSION 1000
+#define THIS_NEEDS_MAIDSAFE_COMMON_VERSION 1001
 #if MAIDSAFE_COMMON_VERSION < THIS_NEEDS_MAIDSAFE_COMMON_VERSION
 #  error This API is not compatible with the installed library.\
     Please update the maidsafe-common library.

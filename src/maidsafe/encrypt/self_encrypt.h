@@ -17,16 +17,21 @@
 #ifndef MAIDSAFE_ENCRYPT_UTILS_H_
 #define MAIDSAFE_ENCRYPT_UTILS_H_
 
-	#include "maidsafe/encrypt/version.h"
-  	#if MAIDSAFE_ENCRYPT_VERSION != 905
-  	# error This API is not compatible with the installed library.\
-  	 Please update the library.
-  	#endif
+  #include "maidsafe/encrypt/version.h"
+    #if MAIDSAFE_ENCRYPT_VERSION != 905
+    # error This API is not compatible with the installed library.\
+     Please update the library.
+    #endif
 
 
 #include <cstdint>
 #include <string>
 #include <tuple>
+
+#ifdef __MSVC__
+#  pragma warning(push, 1)
+#  pragma warning(disable: 4702)
+#endif
 #include "cryptopp/cryptlib.h"
 #include "cryptopp/files.h"
 #include "cryptopp/channels.h"
@@ -35,6 +40,10 @@
 #include "cryptopp/aes.h"
 #include "cryptopp/gzip.h"
 #include "common/crypto.h"
+#ifdef __MSVC__
+#  pragma warning(pop)
+#endif
+
 #include "boost/filesystem.hpp"
 #include "boost/shared_array.hpp"
 #include "boost/asio/io_service.hpp"
