@@ -354,23 +354,23 @@ for (size_t i = 0; i < chunk_size * 2; ++i) {
   }
  // read some data - should be in queue
  //Check read From Queue FIXME !!
-//  boost::scoped_array<char> testq(new char[1]);
-//   for (size_t i = 0; i < 10 ; ++i) {
-//     EXPECT_TRUE(selfenc_.Read(testq.get(), 1, i));
-//  // TODO FIXME this is inconsistent
-//     ASSERT_EQ(testq[i], plain_data[i]) << "not read " << i << std::endl;
-//   }
+ boost::scoped_array<char> testq(new char[1]);
+  for (size_t i = 0; i < 10 ; ++i) {
+    EXPECT_TRUE(selfenc_.Read(testq.get(), 1, i));
+ // TODO FIXME this is inconsistent
+    ASSERT_EQ(testq[i], plain_data[i]) << "not read " << i << std::endl;
+  }
   // next 2 
   for (size_t i = chunk_size * 2; i < chunk_size * 4; ++i) {
     EXPECT_TRUE(selfenc_.Write(&plain_data[i], 1, i));
   }
 // Check read from c0 and c1 buffer
 // TODO FIXME inconsistent
-// boost::scoped_array<char> testc0(new char[chunk_size]);
-//   for (size_t i = 0; i < chunk_size ; ++i) {
-//     EXPECT_TRUE(selfenc_.Read(testc0.get(), 1, i));
-//     ASSERT_EQ(testc0[i], plain_data[i]) << "not read " << i << std::endl;
-//   }
+boost::scoped_array<char> testc0(new char[chunk_size]);
+  for (size_t i = 0; i < chunk_size ; ++i) {
+    EXPECT_TRUE(selfenc_.Read(testc0.get(), 1, i));
+    ASSERT_EQ(testc0[i], plain_data[i]) << "not read " << i << std::endl;
+  }
   
   ASSERT_TRUE(selfenc_.FinaliseWrite());
   // read some data - should be in chunks now

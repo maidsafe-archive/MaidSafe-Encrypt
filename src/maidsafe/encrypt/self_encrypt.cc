@@ -442,7 +442,7 @@ bool SE::ReadInProcessData(char* data, size_t *length, size_t *position)
         data[i] = static_cast<char>(chunk0_raw_[i]);
       else if (c0_and_1_chunk_size_ > i < (c0_and_1_chunk_size_ * 2))
         data[i] = static_cast<char>(chunk1_raw_[i]);
-      if (wanted_length == 0)
+      if (wanted_length == 1)
         return true;
     }
     *length = wanted_length;
@@ -469,7 +469,7 @@ bool SE::ReadInProcessData(char* data, size_t *length, size_t *position)
     for (size_t i = start; i < to_get + start;
                           ++i, --wanted_length) {
       data[i] = temp[i];
-      if (wanted_length == 0)
+      if (wanted_length == 1) //  will be zero on next round
         return true;
     }
     *length = wanted_length;
