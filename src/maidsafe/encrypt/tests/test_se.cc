@@ -342,7 +342,7 @@ TEST_F(SelfEncryptionTest, BEH_WriteRandomlyAllDirections) {
 TEST_F(SelfEncryptionTest, FUNC_RepeatedRandomCharReadInProcess) {
   EXPECT_TRUE(selfenc_.ReInitialise());
   size_t chunk_size(1024*256);
-  size_t test_data_size(chunk_size * 4);
+  size_t test_data_size(chunk_size * 6);
   std::string plain_text(RandomString(test_data_size));
   boost::scoped_array<char>plain_data (new char[test_data_size]);
 
@@ -355,7 +355,7 @@ for (size_t i = 0; i < chunk_size * 2; ++i) {
   }
  // read some data - should be in queue
  //Check read From Queue FIXME !!
- boost::scoped_array<char> testq(new char[10]);
+ boost::scoped_array<char> testq(new char[chunk_size]);
   for (size_t i = 0; i < 10 ; ++i) {
     EXPECT_TRUE(selfenc_.Read(testq.get(), 1, i));
  // TODO FIXME this is inconsistent
@@ -373,6 +373,21 @@ boost::scoped_array<char> testc0(new char[chunk_size]);
     ASSERT_EQ(testc0[i], plain_data[i]) << "not read " << i << std::endl;
   }
   
+  // write last chunk backwards (should be in sequencer now
+  for (size_t i = chunk_size * 5; i < chunk_size * 6; ++i) {
+    EXPECT_TRUE(selfenc_.Write(&plain_data[i], 1, i));
+  }
+  // Check read from Sequencer
+  boost::scoped_array<char> testseq(new char[chunk_size]);
+  for (size_t i = 0; i < chunk_size ; ++i) {
+    EXPECT_TRUE(selfenc_.Read(testseq.get(), 1, i));
+    ASSERT_EQ(testseq[i], plain_data[i]) << "not read " << i << std::endl;
+  }
+  // write second last chunk 
+  for (size_t i = chunk_size * 4; i < chunk_size * 5; ++i) {
+    EXPECT_TRUE(selfenc_.Write(&plain_data[i], 1, i));
+  }
+  
   ASSERT_TRUE(selfenc_.FinaliseWrite());
   // read some data - should be in chunks now
   boost::scoped_array<char> testchunks(new char[10]);
@@ -381,7 +396,7 @@ boost::scoped_array<char> testc0(new char[chunk_size]);
     ASSERT_EQ(testchunks.get()[i], plain_data[i]) << "not read " << i << std::endl;
   }
 
-  EXPECT_EQ(4,  selfenc_.getDataMap()->chunks.size());
+  EXPECT_EQ(6,  selfenc_.getDataMap()->chunks.size());
   EXPECT_EQ(0,  selfenc_.getDataMap()->content_size);
   EXPECT_EQ(test_data_size, selfenc_.getDataMap()->size);
 
@@ -390,6 +405,11 @@ boost::scoped_array<char> testc0(new char[chunk_size]);
   for (size_t  i = 0; i < test_data_size ; ++i)
     ASSERT_EQ(plain_data[i], answer[i]) << "failed at count " << i;
 }
+
+
+
+
+
 /*
 TEST(SelfEncryptionManualTest, BEH_manual_check_write) {
   MemoryChunkStore::HashFunc hash_func = std::bind(&crypto::Hash<crypto::SHA512>,

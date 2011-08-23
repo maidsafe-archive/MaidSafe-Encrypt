@@ -98,10 +98,11 @@ bool SE::Write(const char* data, size_t length, size_t position) {
                               length, 0, true);
     current_position_ += length;
 
-    } else if (position > current_position_) { // we cannot have less !! 
+    } else if (position > current_position_) { ! 
       sequencer_.Add(position, const_cast<char *>(data), length);
-    }
-
+    } /*else if (position < current_position_) { 
+      return Transmogrify(data, length, position);
+    }*/
     // Do not queue chunks 0 and 1 till we know we have enough for 3 chunks
     if ((main_encrypt_queue_.MaxRetrievable() >= chunk_size_ * 3) &&
        (! chunk_one_two_q_full_)) {
@@ -147,46 +148,59 @@ bool SE::Transmogrify(const char* data, size_t length, size_t position) {
 // then re-encrypt it and store again, it will also re-encrypt
 // the following two chunks.
 // Check its a chunk.
-  
-  size_t start_chunk_num(0), end_chunk_num(0), total(0), start_position(0);
-  bool got_it(false);
-  for(size_t i =0; data_map_->chunks.size(); ++i) {
-    total += data_map_->chunks[i].size;
-    if (total >= position) {
-      start_chunk_num = i;
-      start_position = total - data_map_->chunks[i].size + position;
-      got_it = true;
-    }
-    if (got_it && (total >= position+length)) 
-      end_chunk_num = i;
-  }
-  // do the work now
-  size_t count(0);
-  std::string replace_string(data, length);
-  if (got_it) {
 
-    while(start_chunk_num <= end_chunk_num) { // single chunk
-    std::string this_hash(reinterpret_cast<char *>
-      (data_map_->chunks[start_chunk_num].hash), 64);
-    std::string chunk_data(chunk_store_->Get(this_hash));
-    size_t stop = std::min(length,
-                           start_position -
-                           data_map_->chunks[start_chunk_num].size);
-    for (size_t i = start_position; stop; ++i) {
-      chunk_data[i] = replace_string[count];
-      ++count;
+  size_t start_chunk(0), start_offset(0), end_chunk(0), run_total(0),
+  end_cut(0);
+  bool found_start(false);
+  bool found_end(false);
+  size_t num_chunks = data_map_->chunks.size();
+  size_t this_position(0);
+  if (num_chunks > 0) {
+    for(size_t i = 0; i < num_chunks;  ++i) {
+      size_t this_chunk_size = data_map_->chunks[i].size;
+      if ((this_chunk_size + run_total >= position)
+        && (!found_start)) {
+        start_chunk = i;
+      start_offset =  position;
+      run_total = this_chunk_size - start_offset;
+      found_start = true;
+      if (run_total >= length) {
+        found_end = true;
+        end_chunk = i;
+        break;
+      }
+      continue;
+        }
+
+        if (found_start)
+          #pragma omp atomic
+        run_total += this_chunk_size - start_offset;
+
+        if (run_total > length) {
+          end_chunk = i;
+          end_cut = length - run_total;
+          found_end = true;
+          break;
+        }
     }
-    start_position = 0; // for more chunks
-    EncryptAChunk(start_chunk_num,const_cast<byte *>
-    (reinterpret_cast<const byte *>(chunk_data.c_str())),
-                  chunk_data.size(),
-                  true);
-    ++start_chunk_num;
-    }
+    if (!found_end)
+      end_chunk = num_chunks;
+
+    do {
+      // get chunk
+      boost::shared_array<byte> chunk_data
+      (new byte[data_map_->chunks[start_chunk].size]);
+      ReadChunk(start_chunk, chunk_data.get());
+      for (size_t i = start_offset; i < length + start_offset; ++i)
+        chunk_data[i] = static_cast<const char>(data[i]);
+      EncryptAChunk(start_chunk, chunk_data.get(), sizeof(chunk_data), true);
+      ++start_offset;
+    } while (start_chunk < end_chunk);
+    
     // do next two chunks
     size_t chunk_num(0);
-    for (int i = 1; i <= 2; ++i) {
-      chunk_num = (end_chunk_num + i + data_map_->chunks.size())
+    for (int i = end_chunk; i <= 2; ++i) {
+      chunk_num = (i + data_map_->chunks.size())
                        %  data_map_->chunks.size();
       std::string hash(reinterpret_cast<char *>
                        (data_map_->chunks[chunk_num].hash), 64);
@@ -545,7 +559,8 @@ bool SE::Read(char* data, size_t length, size_t position) {
     }
      if (!found_end)
       end_chunk = num_chunks;
-
+// this is 2 for loops to allow openmp to thread properly.
+// should be refactored to a do loop and openmp fixed
      if (start_chunk == end_chunk) {
        // get chunk
        boost::shared_array<byte> chunk_data
@@ -555,7 +570,7 @@ bool SE::Read(char* data, size_t length, size_t position) {
          data[i] = static_cast<char>(chunk_data[i]);
       return readok_;
      }
-;
+
 #pragma omp parallel for shared(data) 
     for (size_t i = start_chunk;i < end_chunk ; ++i) {
       size_t pos(0);
