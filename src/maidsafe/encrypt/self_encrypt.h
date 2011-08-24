@@ -82,8 +82,8 @@ class XORFilter : public CryptoPP::Bufferless<CryptoPP::Filter> {
 
 class SE {  // Self Encryption
  public:
-  SE(std::shared_ptr<ChunkStore> chunk_store,
-    std::shared_ptr<DataMap> data_map) :
+   SE(std::shared_ptr<DataMap> data_map,
+      std::shared_ptr<ChunkStore> chunk_store) :
                         data_map_(data_map),  sequencer_(),
                         chunk_size_(1024*256),
                         min_chunk_size_(1024), length_(), hash_(),

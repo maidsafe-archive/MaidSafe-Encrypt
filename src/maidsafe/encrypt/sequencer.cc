@@ -31,7 +31,8 @@
      if (iter == sequencer_.end()) {
        try {
          auto it = sequencer_.begin();
-       sequencer_.insert(it, std::pair<size_t, sequence_data>(position, sequence_data(data, length)));
+       sequencer_.insert(it, std::pair<size_t, sequence_data>
+         (position, sequence_data(data, length)));
        } catch (std::exception &e) {
          return false;
        }

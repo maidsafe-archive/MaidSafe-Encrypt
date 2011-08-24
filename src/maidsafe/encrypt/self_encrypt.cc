@@ -128,6 +128,10 @@ void SE::CheckSequenceData() {
 
 void SE::EmptySequencer() {
   // FIXME -  this runs at finalisewrite
+  // Anything left in here has been written after file dumped to chunks
+  // may be easier to grab all chunks from start position and rewrite whole
+  // file
+  
   // should empty sequencer data into chunks via transmogrify
   // get stuff stored in sequencer
   // iterate map

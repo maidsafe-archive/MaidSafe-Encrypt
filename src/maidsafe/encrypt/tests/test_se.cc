@@ -56,7 +56,7 @@ class SelfEncryptionTest : public testing::Test {
       : hash_func_(std::bind(&crypto::Hash<crypto::SHA512>,
                              std::placeholders::_1)),
       chunk_store_(new MemoryChunkStore (false, hash_func_)),
-      data_map_(), selfenc_(chunk_store_, data_map_),
+      data_map_(), selfenc_(data_map_, chunk_store_),
       chunk_size_(1024*256), num_chunks_(10), extra_content_(),
       expected_content_size_(sizeof(extra_content_)),
       file_size_(sizeof(extra_content_)), pre_enc_chunk_(new byte[chunk_size_]),
@@ -373,7 +373,7 @@ boost::scoped_array<char> testc0(new char[chunk_size]);
     ASSERT_EQ(testc0[i], plain_data[i]) << "not read " << i << std::endl;
   }
   
-  // write last chunk backwards (should be in sequencer now
+  // write last chunk out of sequence (should be in sequencer now
   for (size_t i = chunk_size * 5; i < chunk_size * 6; ++i) {
     EXPECT_TRUE(selfenc_.Write(&plain_data[i], 1, i));
   }
