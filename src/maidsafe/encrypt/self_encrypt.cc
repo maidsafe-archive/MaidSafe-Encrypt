@@ -268,6 +268,7 @@ bool SE::DeleteAllChunks()
     if (!chunk_store_->Delete(reinterpret_cast<char *>
       (data_map_->chunks[i].hash)))
       return false;
+    data_map_->chunks.clear();
     return true;
 }
 
