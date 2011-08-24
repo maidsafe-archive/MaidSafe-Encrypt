@@ -26,7 +26,7 @@
 #include "maidsafe/common/chunk_store.h"
 #include "maidsafe/encrypt/config.h"
 #include "maidsafe/encrypt/data_map.h"
-#include "maidsafe/encrypt/log.h"
+
 
 #include "maidsafe/encrypt/version.h"
 #if MAIDSAFE_ENCRYPT_VERSION != 905
