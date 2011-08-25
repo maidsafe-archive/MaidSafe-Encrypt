@@ -114,6 +114,29 @@ TEST_F(SelfEncryptionTest, BEH_40Charsonly) {
   EXPECT_TRUE(selfenc_.ReInitialise());
 }
 
+TEST_F(SelfEncryptionTest, BEH_40CharPlusPadding) {
+  std::string content(RandomString(40));
+  boost::scoped_array<char>stuff(new char[40]);
+  boost::scoped_array<char>answer(new char[40]);
+  std::copy(content.data(), content.data() + 40, stuff.get());
+  
+  EXPECT_TRUE(selfenc_.Write(stuff.get(), 40, 40));
+  EXPECT_EQ(0, selfenc_.getDataMap()->chunks.size());
+  EXPECT_EQ(0, selfenc_.getDataMap()->size);
+  EXPECT_EQ(0, selfenc_.getDataMap()->content_size);
+  EXPECT_TRUE(selfenc_.FinaliseWrite());
+  EXPECT_EQ(40, selfenc_.getDataMap()->size);
+  EXPECT_EQ(40, selfenc_.getDataMap()->content_size);
+  EXPECT_EQ(0, selfenc_.getDataMap()->chunks.size());
+  EXPECT_EQ(*stuff.get(), *selfenc_.getDataMap()->content.c_str());
+  EXPECT_TRUE(selfenc_.Read(answer.get(),40));
+  EXPECT_EQ(*stuff.get(), *answer.get());
+  EXPECT_TRUE(selfenc_.ReInitialise());
+}
+
+
+
+
 TEST_F(SelfEncryptionTest, BEH_1023Chars) {
   EXPECT_TRUE(selfenc_.ReInitialise());
   std::string content(RandomString(1023));

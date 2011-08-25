@@ -43,22 +43,28 @@ typedef std::pair<char* , size_t > sequence_data;
 class Sequencer {
  public:
    bool Add(size_t position, char * data, size_t length);
+
    sequence_data Peek(size_t position) {
-     return  getFromSequencer(position, false);
+     return  PositionFromSequencer(position, false);
    }
+
    sequence_data Get(size_t position) {
-     return  getFromSequencer(position, true);
+     return  PositionFromSequencer(position, true);
    }
-   bool FillinRange(size_t from,
-                             size_t to,
-                             char * data,
-                             size_t length,
-                             bool remove);
+
+size_t PeekFirst(char * data, size_t length) {
+     return NextFromSequencer(data, length, false);
+   }
+    
+    size_t GetFirst(char * data, size_t length) {
+     return NextFromSequencer(data, length, true);
+   }
+   
    size_t size() { return sequencer_.size(); }
  private:
    std::map <size_t ,sequence_data> sequencer_;
-   sequence_data getFromSequencer(size_t position, bool remove);
-   
+   sequence_data PositionFromSequencer(size_t position, bool remove);
+   size_t NextFromSequencer(char * data, size_t length, bool remove);
 };
 
 }  // namespace encrypt

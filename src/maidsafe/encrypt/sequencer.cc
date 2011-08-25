@@ -43,7 +43,7 @@
    return true;
  }
  
- sequence_data Sequencer::getFromSequencer(size_t position, bool remove) {
+ sequence_data Sequencer::PositionFromSequencer(size_t position, bool remove) {
    if (sequencer_.size() == 0)
      return (sequence_data(static_cast<char*>(NULL), 0));
    for (auto it = sequencer_.begin(); it != sequencer_.end(); ++it) {
@@ -77,33 +77,18 @@
    return (sequence_data(static_cast<char*>(NULL), 0));  // nothing found
  }
 
-bool Sequencer::FillinRange(size_t from,
-                            size_t to,
-                            char* data,
-                            size_t length, bool remove)
-{
-  if (to - from != length)
-    return false;
-  for (auto it = sequencer_.begin(); it != sequencer_.end(); ++it) {
-    size_t this_position = (*it).first;
-    char * this_data = (*it).second.first;
-    size_t this_length = (*it).second.second;
-    
-    if ((from < (*it).first) && ((*it).first > to)) {
-      for (size_t j = this_position; j < length; ++j) {
-        data[j] = this_data[j];
-      }
-      if(this_position + this_length > to - from) {
-        Add(this_position + from,
-            &this_data[from - this_position],
-            this_length - (this_position + from));
-      }
-    }
-  }
-  return true;
+size_t Sequencer::NextFromSequencer(char * data, size_t length, bool remove) {
+  if (sequencer_.size() == 0)
+    return (0);
+  auto it = sequencer_.begin();
+  size_t position = (*it).first;
+  data = (*it).second.first;
+  length = (*it).second.second;
+
+  if (remove)
+    sequencer_.erase(it);
+  return position;
 }
-
-
 
 }  // namespace encrypt
 }  // namespace maidsafe
