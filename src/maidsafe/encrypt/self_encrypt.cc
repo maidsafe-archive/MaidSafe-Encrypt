@@ -363,9 +363,10 @@ bool SE::ProcessMainQueue() {
    }
 #pragma omp parallel for
    for(size_t i = 0; i < chunks_to_process; ++i) {
-     CryptoPP::SHA512().CalculateDigest(data_map_->chunks[i + old_dm_size].pre_hash,
-           chunk_vec[i].get(),
-           chunk_size_);
+     CryptoPP::SHA512().CalculateDigest(
+       data_map_->chunks[i + old_dm_size].pre_hash,
+       chunk_vec[i].get(),
+       chunk_size_);
     data_map_->chunks[i + old_dm_size].size = chunk_size_;
     }
 // check for repeated content
@@ -396,7 +397,6 @@ bool SE::ProcessMainQueue() {
                   chunk_size_,
                   false);
   }
-
   return true;
 }
 
