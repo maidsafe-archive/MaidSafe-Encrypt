@@ -110,8 +110,9 @@ bool SE::Write(const char* data, size_t length, size_t position) {
        q_position_ = chunk_size_ * 2;
     }
     size_t num_chunks_to_process(0);
+    
     if (!ignore_threads_)
-      num_chunks_to_process = num_procs_ * chunk_size_;
+      num_chunks_to_process = (num_procs_) * chunk_size_;
     else
       num_chunks_to_process = chunk_size_;
     
@@ -249,6 +250,7 @@ bool SE::Transmogrify(const char* data, size_t length, size_t position) {
 
 
 bool SE::FinaliseWrite() {
+  ProcessMainQueue(); // to pick up unprocessed whole chunks
   complete_ = true;
   EmptySequencer();
   chunk_size_ = (main_encrypt_queue_.MaxRetrievable()) / 3 ;
