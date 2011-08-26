@@ -109,7 +109,13 @@ bool SE::Write(const char* data, size_t length, size_t position) {
        QueueC0AndC1();
        q_position_ = chunk_size_ * 2;
     }
-    if ((main_encrypt_queue_.MaxRetrievable() >= chunk_size_) &&
+    size_t num_chunks_to_process(0);
+    if (!ignore_threads_)
+      num_chunks_to_process = num_procs_ * chunk_size_;
+    else
+      num_chunks_to_process = chunk_size_;
+    
+    if ((main_encrypt_queue_.MaxRetrievable() >= num_chunks_to_process) &&
       (chunk_one_two_q_full_))
       ProcessMainQueue();
     return true;  
@@ -212,6 +218,7 @@ bool SE::Transmogrify(const char* data, size_t length, size_t position) {
       DeleteAChunk(start_chunk);
       EncryptAChunk(start_chunk, chunk_data.get(), sizeof(chunk_data), true);
       ++start_offset;
+      this_position += data_map_->chunks[start_chunk].size;
     } while (start_chunk < end_chunk);
     
     // encrypt next two chunks
@@ -227,10 +234,17 @@ bool SE::Transmogrify(const char* data, size_t length, size_t position) {
                       (chunk_store_->Get(hash).c_str())),
                     data_map_->chunks[chunk_num].size,
                     true);
+      this_position += data_map_->chunks[chunk_num].size;
     }
     return true;
-  } else // might be in content !!! FIXME also check count >= length
-    return false;
+  }  // might be in content !!! FIXME make string
+  if (this_position < (position + length)) {
+    data_map_->content = (reinterpret_cast<char *>(data[this_position]),
+                          (position + length) - this_position);
+    data_map_->content_size = data_map_->content.size();
+    return true;
+  }
+  return false;
 }
 
 
@@ -483,10 +497,6 @@ bool SE::ReadInProcessData(char* data, size_t *length, size_t *position)
     *position += wanted_length;
     start_position += wanted_length;
   }
-  
-
-     
-  // now work with start_position and wanted_length
   // check queue
   if ((q_size > 0) && (q_size + current_position_ > start_position)) {
     size_t to_get = (q_size - current_position_ + wanted_length);
@@ -525,8 +535,6 @@ bool SE::ReadInProcessData(char* data, size_t *length, size_t *position)
       *position = start_position;
     }
   }
-
-
   return false;
 }
 
@@ -641,6 +649,9 @@ bool SE::Read(char* data, size_t length, size_t position) {
       data[this_position] = data_map_->content.c_str()[i];
     ++this_position;
   }
+  // pad rest with zero's just in case.
+  for (size_t i = this_position; i < (position + length); ++i)
+    data[i] = '0';
   return readok_;
 }
 

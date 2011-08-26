@@ -27,6 +27,7 @@
 #include <cstdint>
 #include <string>
 #include <tuple>
+#include <omp.h>
 
 #ifdef __MSVC__
 #  pragma warning(push, 1)
@@ -47,7 +48,6 @@
 #include "boost/filesystem.hpp"
 #include "boost/shared_array.hpp"
 #include "boost/asio/io_service.hpp"
-#include "boost/asio.hpp"
 #include "maidsafe/encrypt/data_map.h"
 #include "maidsafe/encrypt/sequencer.h"
 
@@ -96,7 +96,8 @@ class SE {  // Self Encryption
                         c0_and_1_chunk_size_(chunk_size_),
                         this_chunk_size_(chunk_size_),
                         current_position_(0), readok_(true),
-                        repeated_chunks_(false), q_position_(0)
+                        repeated_chunks_(false), q_position_(0),
+                        ignore_threads_(false), num_procs_(omp_get_num_procs())
                         {
                           if (!data_map_) 
                             data_map_.reset(new DataMap);
@@ -162,6 +163,8 @@ class SE {  // Self Encryption
   bool repeated_chunks_;
   size_t q_position_;
   bool complete_;
+  bool ignore_threads_;
+  std::int8_t num_procs_;
 };
 
 }  // namespace encrypt
