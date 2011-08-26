@@ -52,11 +52,11 @@ class Sequencer {
      return  PositionFromSequencer(position, true);
    }
 
-size_t PeekFirst(char * data, size_t length) {
+size_t PeekFirst(char * data, size_t *length) {
      return NextFromSequencer(data, length, false);
    }
     
-    size_t GetFirst(char * data, size_t length) {
+    size_t GetFirst(char * data, size_t *length) {
      return NextFromSequencer(data, length, true);
    }
    
@@ -64,7 +64,7 @@ size_t PeekFirst(char * data, size_t length) {
  private:
    std::map <size_t ,sequence_data> sequencer_;
    sequence_data PositionFromSequencer(size_t position, bool remove);
-   size_t NextFromSequencer(char * data, size_t length, bool remove);
+   size_t NextFromSequencer(char * data, size_t *length, bool remove);
 };
 
 }  // namespace encrypt

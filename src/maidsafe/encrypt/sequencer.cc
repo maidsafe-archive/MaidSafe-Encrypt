@@ -77,13 +77,13 @@
    return (sequence_data(static_cast<char*>(NULL), 0));  // nothing found
  }
 
-size_t Sequencer::NextFromSequencer(char * data, size_t length, bool remove) {
+size_t Sequencer::NextFromSequencer(char * data, size_t *length, bool remove) {
   if (sequencer_.size() == 0)
     return (0);
   auto it = sequencer_.begin();
   size_t position = (*it).first;
   data = (*it).second.first;
-  length = (*it).second.second;
+  *length = (*it).second.second;
 
   if (remove)
     sequencer_.erase(it);

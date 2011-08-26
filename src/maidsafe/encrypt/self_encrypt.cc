@@ -127,11 +127,23 @@ void SE::CheckSequenceData() {
 }
 
 void SE::EmptySequencer() {
-  // FIXME -  this runs at finalisewrite
-  // Anything left in here has been written after file dumped to chunks
-  // may be easier to grab all chunks from start position and rewrite whole
-  // file
-  
+  if (sequencer_.size() == 0)
+    return;
+
+  while (sequencer_.size() > 0) {
+    char * data;
+    size_t length(0);
+    size_t pos = sequencer_.GetFirst(data, &length);
+
+    // need to pad 
+    if (current_position_ < pos) { // Nothing done - pad to this point
+      boost::scoped_array<char> pad(new char[1]);
+      pad[0] = 'a';
+      for (size_t i = current_position_; i < pos; ++i)
+        Write(pad.get(),1, current_position_);
+       Write(data, length, pos);
+    } 
+  }
   // should empty sequencer data into chunks via transmogrify
   // get stuff stored in sequencer
   // iterate map
@@ -223,6 +235,7 @@ bool SE::Transmogrify(const char* data, size_t length, size_t position) {
 
 bool SE::FinaliseWrite() {
   complete_ = true;
+  EmptySequencer();
   chunk_size_ = (main_encrypt_queue_.MaxRetrievable()) / 3 ;
   if ((chunk_size_) < 1025) {
     chunk_size_ = 1024*256;
@@ -231,9 +244,8 @@ bool SE::FinaliseWrite() {
     return ProcessLastData();
   }
    CheckSequenceData();
+
    ProcessMainQueue();
-// finally rechunk what we have to!
-   EmptySequencer();
    chunk_size_ = 1024*256;
    main_encrypt_queue_.SkipAll();
    chunk_one_two_q_full_ = false;
@@ -591,6 +603,7 @@ bool SE::Read(char* data, size_t length, size_t position) {
           for (size_t j = start_offset; j < this_chunk_size; ++j)
             data[j] = static_cast<char>(chunk_data[j]);
 
+
         } else if ((i == end_chunk) && (end_cut != 0)) {
           this_chunk_size -= end_cut;
 
@@ -613,12 +626,18 @@ bool SE::Read(char* data, size_t length, size_t position) {
        }
     }
   }
+
+  
   #pragma omp barrier
+  for(size_t i = 0; i < num_chunks;  ++i) 
+    this_position += data_map_->chunks[i].size;
  // Extra data in data_map_->content
- if ((data_map_->content != "") && (this_position < length))
-#pragma omp parallel for shared(data)
-  for(size_t i = 0; i < data_map_->content_size; ++i) {
-    data[length - data_map_->content_size + i] = data_map_->content[i];
+  //if ((data_map_->content_size > 0) && (this_position < length))
+// #pragma omp parallel for shared(data)
+  for(size_t i = 0; i < data_map_->content_size ; ++i) {
+    if (this_position < (position + length))
+      data[this_position] = data_map_->content.c_str()[i];
+    ++this_position;
   }
   return readok_;
 }
