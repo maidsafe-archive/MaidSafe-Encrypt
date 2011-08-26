@@ -44,20 +44,20 @@ class Sequencer {
  public:
    bool Add(size_t position, char * data, size_t length);
 
-   sequence_data Peek(size_t position) {
-     return  PositionFromSequencer(position, false);
+  sequence_data Peek(size_t position) {
+    return  PositionFromSequencer(position, false);
    }
 
-   sequence_data Get(size_t position) {
-     return  PositionFromSequencer(position, true);
+  sequence_data Get(size_t position) {
+    return  PositionFromSequencer(position, true);
    }
 
-size_t PeekFirst(char * data, size_t *length) {
-     return NextFromSequencer(data, length, false);
+  size_t PeekFirst(char * data, size_t *length) {
+    return NextFromSequencer(data, length, false);
    }
     
-    size_t GetFirst(char * data, size_t *length) {
-     return NextFromSequencer(data, length, true);
+  size_t GetFirst(char * data, size_t *length) {
+    return NextFromSequencer(data, length, true);
    }
    
    size_t size() { return sequencer_.size(); }

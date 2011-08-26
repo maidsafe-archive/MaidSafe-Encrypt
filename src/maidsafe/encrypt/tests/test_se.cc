@@ -220,7 +220,7 @@ TEST_F(SelfEncryptionTest, BEH_Benchmark4kBytes) {
   << "/s" << std::endl;
 }
 
-TEST_F(SelfEncryptionTest, BEH_Benchmark16kBytes) {
+TEST_F(SelfEncryptionTest, BEH_Benchmark64kBytes) {
   EXPECT_TRUE(selfenc_.ReInitialise());
   size_t test_data_size(1024*1024*20);
   boost::scoped_array<char>plain_data (new char[test_data_size]);
@@ -228,10 +228,10 @@ TEST_F(SelfEncryptionTest, BEH_Benchmark16kBytes) {
     plain_data[i] = 'a';
   }
   // Write in 16kB byte chunks
-  size_t sixteenkB(4096 * 4);
+  size_t sixtyfourkB(65536);
   boost::posix_time::ptime time = boost::posix_time::microsec_clock::universal_time();
-  for (size_t i = 0; i < test_data_size; i += sixteenkB)
-    ASSERT_TRUE(selfenc_.Write(&plain_data[i], sixteenkB, i));
+  for (size_t i = 0; i < test_data_size; i += sixtyfourkB)
+    ASSERT_TRUE(selfenc_.Write(&plain_data[i], sixtyfourkB, i));
   ASSERT_TRUE(selfenc_.FinaliseWrite());
   std::uint64_t duration =  (boost::posix_time::microsec_clock::universal_time() -
   time).total_microseconds();
