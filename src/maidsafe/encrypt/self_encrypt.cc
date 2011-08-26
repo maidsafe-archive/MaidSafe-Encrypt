@@ -133,15 +133,15 @@ void SE::EmptySequencer() {
   while (sequencer_.size() > 0) {
     char * data;
     size_t length(0);
-    size_t pos = sequencer_.GetFirst(data, &length);
+    size_t seq_pos = sequencer_.GetFirst(data, &length);
 
     // need to pad 
-    if (current_position_ < pos) { // Nothing done - pad to this point
+    if (current_position_ < seq_pos) { // Nothing done - pad to this point
       boost::scoped_array<char> pad(new char[1]);
       pad[0] = 'a';
-      for (size_t i = current_position_; i < pos; ++i)
+      for (size_t i = current_position_; i < seq_pos; ++i)
         Write(pad.get(),1, current_position_);
-       Write(data, length, pos);
+      Write(data, length, seq_pos);
     } 
   }
   // should empty sequencer data into chunks via transmogrify
@@ -209,18 +209,19 @@ bool SE::Transmogrify(const char* data, size_t length, size_t position) {
       ReadChunk(start_chunk, chunk_data.get());
       for (size_t i = start_offset; i < length + start_offset; ++i)
         chunk_data[i] = static_cast<const char>(data[i]);
+      DeleteAChunk(start_chunk);
       EncryptAChunk(start_chunk, chunk_data.get(), sizeof(chunk_data), true);
       ++start_offset;
     } while (start_chunk < end_chunk);
     
-    // do next two chunks
+    // encrypt next two chunks
     size_t chunk_num(0);
     for (int i = end_chunk; i <= 2; ++i) {
       chunk_num = (i + data_map_->chunks.size())
                        %  data_map_->chunks.size();
       std::string hash(reinterpret_cast<char *>
                        (data_map_->chunks[chunk_num].hash), 64);
-      
+      DeleteAChunk(i);
       EncryptAChunk(chunk_num,const_cast<byte *>
                     (reinterpret_cast<const byte *>
                       (chunk_store_->Get(hash).c_str())),
@@ -294,6 +295,7 @@ bool SE::DeleteAChunk(size_t chunk_num)
 
 bool SE::ReInitialise() {
     chunk_size_ = 1024*256;
+    DeleteAllChunks();
     main_encrypt_queue_.SkipAll();
     chunk_one_two_q_full_ = false;
     current_position_ = 0;
