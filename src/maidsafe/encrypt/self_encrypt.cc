@@ -573,26 +573,36 @@ bool SE::ReadInProcessData(char* data, size_t *length, size_t *position)
   return false;
 }
 
-bool SE::ReadAhead(char* data, size_t length, size_t position) {
- size_t buffersize(chunk_size_ * num_procs_);
-
- //quite big just get it direct
- if (length + position > buffersize - read_ahead_buffer_start_pos_)
+bool SE::Read(char* data, size_t length, size_t position) {
+ size_t maxbuffersize(chunk_size_ * num_procs_);
+ size_t buffersize = std::min(data_map_->size, maxbuffersize);
+ // full file, just get it
+ if (length >= data_map_->size) {
    ReadAhead(data, length, position);
- 
- if (read_ahead_buffer_start_pos_ + buffersize >= position)  {
+   return true;
+ }
+ //quite big just get it direct
+ if ((length + position) > (buffersize - read_ahead_buffer_start_pos_)) {
+   ReadAhead(data, length, position);
+   return true;
+ }
+
+ // OK refresh buffer if needed
+ if ((read_ahead_buffer_start_pos_ + buffersize <= position + length) ||
+    (position == 0)){
    size_t toread = std::min(data_map_->size - position, buffersize);
    ReadAhead(read_ahead_buffer_.get(), toread, position);
+   read_ahead_buffer_start_pos_ += toread;
  }
  // actually read from buffer
- for (size_t i = position - read_ahead_buffer_start_pos_;
+ for (size_t i = position - read_ahead_buffer_start_pos_; //FIXME
       (i < length) || (i <  buffersize - read_ahead_buffer_start_pos_) ; ++i) {
    data[i] = read_ahead_buffer_[i];
  }
  return true;
 }
 
-bool SE::Read(char* data, size_t length, size_t position) {
+bool SE::ReadAhead(char* data, size_t length, size_t position) {
    // first check read ahead buffer
 
    // does read ahead need to read more
