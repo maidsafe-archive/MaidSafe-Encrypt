@@ -97,7 +97,10 @@ class SE {  // Self Encryption
                         this_chunk_size_(chunk_size_),
                         current_position_(0), readok_(true),
                         repeated_chunks_(false), q_position_(0),
-                        ignore_threads_(false), num_procs_(omp_get_num_procs())
+                        complete_(false), 
+                        ignore_threads_(false), num_procs_(omp_get_num_procs()),
+                        read_ahead_buffer_(new char[chunk_size_ * num_procs_]),
+                        read_ahead_buffer_start_pos_(0), rewriting_(false)
                         {
                           if (!data_map_) 
                             data_map_.reset(new DataMap);
@@ -137,6 +140,7 @@ class SE {  // Self Encryption
   void EmptySequencer();
   bool CheckPositionInSequncer(size_t position, size_t length); // maybe not necessary
   bool ReadInProcessData(char * data, size_t  *length, size_t *position);
+  void SequenceAllNonStandardChunksAndExtraContent();
  private:
   // Setters and Getters, testing only
   void set_chunk_size(size_t chunk_size) { chunk_size_ = chunk_size; }
@@ -165,6 +169,9 @@ class SE {  // Self Encryption
   bool complete_;
   bool ignore_threads_;
   std::int8_t num_procs_;
+  boost::shared_array<char> read_ahead_buffer_;
+  size_t read_ahead_buffer_start_pos_;
+  bool rewriting_;
 };
 
 }  // namespace encrypt

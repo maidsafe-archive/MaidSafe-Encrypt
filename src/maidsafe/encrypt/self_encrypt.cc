@@ -86,40 +86,80 @@ size_t XORFilter::Put2(const byte* inString,
                                         blocking);
 }
 
+void SE::SequenceAllNonStandardChunksAndExtraContent() {
+  size_t start_chunk(0), chunk_size(0), pos(0);
+  for (size_t i = 0; i < data_map_->chunks.size(); ++i) {
+    pos += data_map_->chunks[i].size;
+    if ((data_map_->chunks[i].size >2) &&
+      (data_map_->chunks[i].size != data_map_->chunks[i - 1].size)) {
+      start_chunk = i - 2;
+      chunk_size = data_map_->chunks[i].size;
+      break;
+    }
+    if (start_chunk > 0) {
+      for (size_t i = start_chunk; i < data_map_->chunks.size(); ++i) {
+        // shove chunk data into sequencer (which will get overwritten anyway
+        // as sequencer has ability to maintain timelines)
+        boost::scoped_array<byte> data(new byte[chunk_size]);
+        
+        ReadChunk(i, data.get());
+        sequencer_.Add(pos, reinterpret_cast<char *>(data.get()), chunk_size);
+        DeleteAChunk(i);
+        pos += data_map_->chunks[i].size;
+      }
+      if (data_map_->content_size > 0)
+        sequencer_.Add(pos,
+                       const_cast<char *>(data_map_->content.c_str()),
+                       data_map_->content_size);
+      data_map_->content = "";
+      data_map_->content_size = 0;
+    }
+  }
+}
+
 bool SE::Write(const char* data, size_t length, size_t position) {
 
   if (length == 0)
     return true;
-        
-    CheckSequenceData();
-    if (position == current_position_) {
-      main_encrypt_queue_.Put2(const_cast<byte*>
-                             (reinterpret_cast<const byte*>(data)),
-                              length, 0, true);
-    current_position_ += length;
-
-    } else if (position > current_position_) { ! 
+  if (complete_) {
+    SequenceAllNonStandardChunksAndExtraContent();
+  if (position != current_position_) 
       sequencer_.Add(position, const_cast<char *>(data), length);
-    } /*else if (position < current_position_) { 
-      return Transmogrify(data, length, position);
-    }*/
-    // Do not queue chunks 0 and 1 till we know we have enough for 3 chunks
-    if ((main_encrypt_queue_.MaxRetrievable() >= chunk_size_ * 3) &&
-       (! chunk_one_two_q_full_)) {
-       QueueC0AndC1();
-       q_position_ = chunk_size_ * 2;
-    }
-    size_t num_chunks_to_process(0);
-    
-    if (!ignore_threads_)
-      num_chunks_to_process = (num_procs_) * chunk_size_;
-    else
-      num_chunks_to_process = chunk_size_;
-    
-    if ((main_encrypt_queue_.MaxRetrievable() >= num_chunks_to_process) &&
-      (chunk_one_two_q_full_))
-      ProcessMainQueue();
-    return true;  
+  else
+    // continue as usual we are rewriting data
+    // assume we will rewrite everything TODO (DI) check assumption
+    rewriting_ = true;
+  }
+  
+  CheckSequenceData();
+  if (position == current_position_) {
+    main_encrypt_queue_.Put2(const_cast<byte*>
+                            (reinterpret_cast<const byte*>(data)),
+                            length, 0, true);
+  current_position_ += length;
+
+  } else if (position > current_position_) { !
+    sequencer_.Add(position, const_cast<char *>(data), length);
+  } /*else if (position < current_position_) {
+    return Transmogrify(data, length, position);
+  }*/
+  // Do not queue chunks 0 and 1 till we know we have enough for 3 chunks
+  if ((main_encrypt_queue_.MaxRetrievable() >= chunk_size_ * 3) &&
+      (! chunk_one_two_q_full_)) {
+      QueueC0AndC1();
+      q_position_ = chunk_size_ * 2;
+  }
+  size_t num_chunks_to_process(0);
+
+  if (!ignore_threads_)
+    num_chunks_to_process = (num_procs_) * chunk_size_;
+  else
+    num_chunks_to_process = chunk_size_;
+
+  if ((main_encrypt_queue_.MaxRetrievable() >= num_chunks_to_process) &&
+    (chunk_one_two_q_full_))
+    ProcessMainQueue();
+  return true;
 }
 
 void SE::CheckSequenceData() {
@@ -250,9 +290,12 @@ bool SE::Transmogrify(const char* data, size_t length, size_t position) {
 
 
 bool SE::FinaliseWrite() {
+  if (complete_)
+    return true;
+
   ProcessMainQueue(); // to pick up unprocessed whole chunks
-  complete_ = true;
   EmptySequencer();
+  complete_ = true;
   chunk_size_ = (main_encrypt_queue_.MaxRetrievable()) / 3 ;
   if ((chunk_size_) < 1025) {
     chunk_size_ = 1024*256;
@@ -261,7 +304,6 @@ bool SE::FinaliseWrite() {
     return ProcessLastData();
   }
    CheckSequenceData();
-
    ProcessMainQueue();
    chunk_size_ = 1024*256;
    main_encrypt_queue_.SkipAll();
