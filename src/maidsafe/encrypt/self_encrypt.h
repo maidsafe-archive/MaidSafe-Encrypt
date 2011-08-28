@@ -100,7 +100,8 @@ class SE {  // Self Encryption
                         complete_(false), 
                         ignore_threads_(false), num_procs_(omp_get_num_procs()),
                         read_ahead_buffer_(new char[chunk_size_ * num_procs_]),
-                        read_ahead_buffer_start_pos_(0), rewriting_(false)
+                        read_ahead_buffer_start_pos_(0), rewriting_(false),
+                        read_ahead_initialised_(false)
                         {
                           if (!data_map_) 
                             data_map_.reset(new DataMap);
@@ -173,6 +174,7 @@ class SE {  // Self Encryption
   boost::shared_array<char> read_ahead_buffer_;
   size_t read_ahead_buffer_start_pos_;
   bool rewriting_;
+  bool read_ahead_initialised_;
 };
 
 }  // namespace encrypt

@@ -586,17 +586,26 @@ bool SE::Read(char* data, size_t length, size_t position) {
    ReadAhead(data, length, position);
    return true;
  }
+// buffer bigger than filesize
+  if(buffersize >= data_map_->size) {
+    if (!read_ahead_initialised_) {
+      ReadAhead(read_ahead_buffer_.get(), data_map_->size, 0);
+      read_ahead_initialised_ = true;
+      read_ahead_buffer_start_pos_ = 0;
+    }
+  }
 
  // OK refresh buffer if needed
- if ((read_ahead_buffer_start_pos_ + buffersize <= position + length) ||
-    (position == 0)){
+ if ((read_ahead_buffer_start_pos_ + buffersize < position + length) ||
+    (!read_ahead_initialised_)){ 
    size_t toread = std::min(data_map_->size - position, buffersize);
    ReadAhead(read_ahead_buffer_.get(), toread, position);
-   read_ahead_buffer_start_pos_ += toread;
+   read_ahead_initialised_ = true;
+   read_ahead_buffer_start_pos_ = position;
  }
  // actually read from buffer
- for (size_t i = position - read_ahead_buffer_start_pos_; //FIXME
-      (i < length) || (i <  buffersize - read_ahead_buffer_start_pos_) ; ++i) {
+ for (size_t i = position - read_ahead_buffer_start_pos_; //FIXM
+      i < length  ; ++i) {
    data[i] = read_ahead_buffer_[i];
  }
  return true;
