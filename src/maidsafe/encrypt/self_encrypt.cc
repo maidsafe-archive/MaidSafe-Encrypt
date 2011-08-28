@@ -182,26 +182,19 @@ void SE::EmptySequencer() {
     size_t length(0);
     size_t seq_pos = sequencer_.GetFirst(data, &length);
 
-    // need to pad 
+    // need to pad and write data
     if (current_position_ < seq_pos) { // Nothing done - pad to this point
       boost::scoped_array<char> pad(new char[1]);
       pad[0] = 'a';
       for (size_t i = current_position_; i < seq_pos; ++i)
         Write(pad.get(),1, current_position_);
       Write(data, length, seq_pos);
+      CheckSequenceData();
     } 
+    size_t pos = sequencer_.GetFirst(data, &length);
+    Transmogrify(data, length, pos);
   }
-  // should empty sequencer data into chunks via transmogrify
-  // get stuff stored in sequencer
-  // iterate map
 
-  //get data - find which chunk it belongs to
-
-  // Transmogrify
-
-  // can be improved by only doing a chunk at a time
-  // needs new transogrify method with a list of chunks being passed
-  // to it
 }
 
 bool SE::Transmogrify(const char* data, size_t length, size_t position) {
@@ -292,10 +285,9 @@ bool SE::Transmogrify(const char* data, size_t length, size_t position) {
 bool SE::FinaliseWrite() {
   if (complete_)
     return true;
-
+  complete_ = true;
   ProcessMainQueue(); // to pick up unprocessed whole chunks
   EmptySequencer();
-  complete_ = true;
   chunk_size_ = (main_encrypt_queue_.MaxRetrievable()) / 3 ;
   if ((chunk_size_) < 1025) {
     chunk_size_ = 1024*256;
