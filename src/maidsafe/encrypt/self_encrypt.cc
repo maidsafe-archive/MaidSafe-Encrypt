@@ -203,7 +203,6 @@ bool SE::Transmogrify(const char* data, size_t length, size_t position) {
 // recover it and alter the data in place
 // then re-encrypt it and store again, it will also re-encrypt
 // the following two chunks.
-// Check its a chunk.
 
   size_t start_chunk(0), start_offset(0), end_chunk(0), run_total(0),
   end_cut(0);
@@ -574,10 +573,32 @@ bool SE::ReadInProcessData(char* data, size_t *length, size_t *position)
   return false;
 }
 
+bool SE::ReadAhead(char* data, size_t length, size_t position) {
+ size_t buffersize(chunk_size_ * num_procs_);
 
+ //quite big just get it direct
+ if (length + position > buffersize - read_ahead_buffer_start_pos_)
+   ReadAhead(data, length, position);
+ 
+ if (read_ahead_buffer_start_pos_ + buffersize >= position)  {
+   size_t toread = std::min(data_map_->size - position, buffersize);
+   ReadAhead(read_ahead_buffer_.get(), toread, position);
+ }
+ // actually read from buffer
+ for (size_t i = position - read_ahead_buffer_start_pos_;
+      (i < length) || (i <  buffersize - read_ahead_buffer_start_pos_) ; ++i) {
+   data[i] = read_ahead_buffer_[i];
+ }
+ return true;
+}
 
 bool SE::Read(char* data, size_t length, size_t position) {
-  
+   // first check read ahead buffer
+
+   // does read ahead need to read more
+
+   // read ahead
+   
    // this will get date in process including c0 and c1
    // so unless finalise write is given it will be here
    if (!complete_)

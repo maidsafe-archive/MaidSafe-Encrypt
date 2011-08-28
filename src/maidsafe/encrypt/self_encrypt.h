@@ -121,6 +121,7 @@ class SE {  // Self Encryption
    // METHODS
   SE &operator = (const SE&);  // no assignment
   SE(const SE&);  // no copy
+  bool ReadAhead(char* data, size_t length, size_t position);
   bool Transmogrify(const char* data = NULL,
                     size_t length = 0, size_t position = 0);
   bool ProcessLastData();
