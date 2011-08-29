@@ -141,7 +141,7 @@ class SE {  // Self Encryption
   void CheckSequenceData();
   void EmptySequencer();
   bool CheckPositionInSequncer(size_t position, size_t length); // maybe not necessary
-  bool ReadInProcessData(char * data, size_t  *length, size_t *position);
+  void ReadInProcessData(char * data, size_t  length, size_t position);
   void SequenceAllNonStandardChunksAndExtraContent();
  private:
   // Setters and Getters, testing only

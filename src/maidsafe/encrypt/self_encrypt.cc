@@ -506,71 +506,45 @@ void SE::EncryptAChunk(size_t chunk_num, byte* data,
    }
 }
 
-bool SE::ReadInProcessData(char* data, size_t *length, size_t *position)
+void SE::ReadInProcessData(char* data, size_t length, size_t position)
 {
-  // true == all data received, false means still work to do
-  // pointer to length as it may be returned different size if not all found
   size_t q_size = main_encrypt_queue_.MaxRetrievable();
-  size_t wanted_length = *length;
-  size_t start_position = *position;
 
   // check c0 and c1
-  if ((*position < c0_and_1_chunk_size_ * 2) && (chunk_one_two_q_full_)) {
-
-    for (size_t i = start_position; i < c0_and_1_chunk_size_ * 2;
-          ++i,--wanted_length ) {
+  if ((position < c0_and_1_chunk_size_ * 2) && (chunk_one_two_q_full_))
+    for (size_t i = position; i < (c0_and_1_chunk_size_ * 2) && (i < length);
+          ++i) {
       
-      if (c0_and_1_chunk_size_ > i)
+      if (i < c0_and_1_chunk_size_ )
         data[i] = static_cast<char>(chunk0_raw_[i]);
-      else if ((c0_and_1_chunk_size_ > i) && (i < (c0_and_1_chunk_size_ * 2)))
+      else if (i < (c0_and_1_chunk_size_ * 2))
         data[i] = static_cast<char>(chunk1_raw_[i]);
-      if (wanted_length == 1)
-        return true;
     }
-    *length = wanted_length;
-    *position += wanted_length;
-    start_position += wanted_length;
-    read_c0andc1_ = true;
-  }
+  
   // check queue
-  if ((q_size > 0) && (q_size + current_position_ > start_position)) {
-    size_t to_get = (q_size - current_position_ + wanted_length);
+  if ((q_size > 0) && (q_size + current_position_ > position)) {
+    size_t to_get = (q_size - current_position_ + length);
     
     // grab all queue into new array
     boost::scoped_array<char>  temp(new char[q_size]);
     main_encrypt_queue_.Peek(reinterpret_cast<byte *>(temp.get()), q_size);
-    size_t start(0);
-    if (current_position_ == q_size)
-      start = start_position;
-    else
-      start = current_position_ - q_size + start_position;
+
+    size_t pos(current_position_ - q_size + position);
     
-    for (size_t i = start; i < to_get + start;
-                          ++i, --wanted_length) {
+    for (size_t i = pos; i < to_get + pos;
+                          ++i) {
       data[i] = temp[i];
-      if (wanted_length == 1) //  will be zero on next round
-        return true;
+
     }
-    *length = wanted_length;
-    *position += wanted_length;
-    start_position += wanted_length;
   }
 
-  
   if (sequencer_.size() > 0) {
-    sequence_data answer = sequencer_.Peek(start_position);
-    for (size_t i = 0; i < answer.second, wanted_length > 0;
-          ++i, --wanted_length) {
-      data[i + start_position] = answer.first[i];
-    }
-    if (wanted_length == 0)
-      return true;
-    else {
-      *length = wanted_length;
-      *position = start_position;
+    sequence_data answer = sequencer_.Peek(position);
+    for (size_t i = 0; i < answer.second, length > 0;
+          ++i, --length) {
+      data[i + position] = answer.first[i];
     }
   }
-  return false;
 }
 
 bool SE::ReadAhead(char* data, size_t length, size_t position) {
@@ -609,61 +583,56 @@ bool SE::ReadAhead(char* data, size_t length, size_t position) {
 }
 
 bool SE::Read(char* data, size_t length, size_t position) {
-   // this will get date in process including c0 and c1
-   // so unless finalise write is given it will be here
-   if (!complete_)
-     if (ReadInProcessData(data, &length, &position))
-       return true;
-   // length and position may be adjusted now
-   // --length and ++ position
 
     size_t start_chunk(0), start_offset(0), end_chunk(0), run_total(0),
-            end_cut(0);
+            all_run_total(0), end_cut(0), start_after_this(0);
     bool found_start(false);
     bool found_end(false);
     size_t num_chunks = data_map_->chunks.size();
-    size_t this_position(0);
+    
+    
+  
   if (num_chunks > 0) {
     for(size_t i = 0; i < num_chunks;  ++i) {
-      size_t this_chunk_size = data_map_->chunks[i].size;
-      if ((this_chunk_size + run_total >= position)
-           && (!found_start)) {
+      if (found_start)
+        run_total += data_map_->chunks[i].size;
+      
+      if ((all_run_total >= position) && (!found_start)) {
         start_chunk = i;
-      start_offset =  position;
-      run_total = this_chunk_size - start_offset;
+        start_offset =  all_run_total - position;
+        run_total = data_map_->chunks[i].size - start_offset;
         found_start = true;
-        if (run_total >= length) {
-          found_end = true;
-          end_chunk = i;
-          break;
-        }
-        continue;
-      } 
-
-     if (found_start) 
- #pragma omp atomic
-       run_total += this_chunk_size - start_offset;
+      }
 
       if (run_total > length) {
-        end_chunk = i;
-        end_cut = length - run_total;
         found_end = true;
+        end_chunk = i;
+        end_cut = run_total - length;
         break;
       }
+      all_run_total += data_map_->chunks[i].size;
     }
-     if (!found_end)
-      end_chunk = num_chunks;
+
+  if (!found_end)
+    end_chunk = num_chunks;
 // this is 2 for loops to allow openmp to thread properly.
 // should be refactored to a do loop and openmp fixed
-     if (start_chunk == end_chunk) {
-       // get chunk
-       boost::shared_array<byte> chunk_data
-                   (new byte[data_map_->chunks[start_chunk].size]);
-       ReadChunk(start_chunk, chunk_data.get());
-       for (size_t i = start_offset; i < length + start_offset; ++i)
-         data[i] = static_cast<char>(chunk_data[i]);
-      return readok_;
-     }
+    if (chunk_one_two_q_full_) { // don't try and get these chunks there in a q
+     if (start_chunk < 2)
+       start_chunk = 2;
+     if (end_chunk < 2)
+       end_chunk = 2;
+    }
+    
+    if (start_chunk == end_chunk) {
+      // get chunk
+      boost::shared_array<byte> chunk_data
+                  (new byte[data_map_->chunks[start_chunk].size]);
+      ReadChunk(start_chunk, chunk_data.get());
+      for (size_t i = start_offset; i < length + start_offset; ++i)
+        data[i] = static_cast<char>(chunk_data[i]);
+    return readok_;
+    }
 
 #pragma omp parallel for shared(data) 
     for (size_t i = start_chunk;i < end_chunk ; ++i) {
@@ -704,21 +673,19 @@ bool SE::Read(char* data, size_t length, size_t position) {
     }
   }
 
-  
+  size_t this_position(0);
   #pragma omp barrier
   for(size_t i = 0; i < num_chunks;  ++i) 
     this_position += data_map_->chunks[i].size;
- // Extra data in data_map_->content
-  //if ((data_map_->content_size > 0) && (this_position < length))
-// #pragma omp parallel for shared(data)
+
   for(size_t i = 0; i < data_map_->content_size ; ++i) {
     if (this_position < (position + length))
       data[this_position] = data_map_->content.c_str()[i];
     ++this_position;
   }
-  // pad rest with zero's just in case.
-  for (size_t i = this_position; i < (position + length); ++i)
-    data[i] = '0';
+  // replace any chunk data with most recently written stuff
+  ReadInProcessData(data, length, position);
+  
   return readok_;
 }
 

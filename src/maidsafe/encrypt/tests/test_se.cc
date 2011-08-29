@@ -261,15 +261,16 @@ TEST(SelfEncryptionTest, BEH_WriteAndReadIncompressable) {
   std::shared_ptr<MemoryChunkStore> chunk_store
   (new MemoryChunkStore (false, hash_func));
   std::shared_ptr<DataMap> data_map(new DataMap);
-  SE selfenc(data_map, chunk_store);
-  EXPECT_TRUE(selfenc.ReInitialise());
+
+
   size_t test_data_size(1024*1024*20 + 4); 
   std::string plain_text(RandomString(test_data_size));
   boost::scoped_array<char>plain_data (new char[test_data_size]);
   for (size_t i = 0; i < test_data_size; ++i) {
     plain_data[i] =/* 'a'; //*/plain_text[i];
   }
-  
+{
+  SE selfenc(data_map, chunk_store);
   boost::posix_time::ptime time =
         boost::posix_time::microsec_clock::universal_time();
   ASSERT_TRUE(selfenc.Write(plain_data.get(), test_data_size));
@@ -284,10 +285,13 @@ TEST(SelfEncryptionTest, BEH_WriteAndReadIncompressable) {
              << " seconds at a speed of "
              <<  BytesToBinarySiUnits(test_data_size / (duration / 1000000.0) )
              << "/s" << std::endl;
+}
+  SE selfenc(data_map, chunk_store);
   boost::scoped_array<char>answer (new char[test_data_size]);
-  time =  boost::posix_time::microsec_clock::universal_time();
+  boost::posix_time::ptime time =
+        boost::posix_time::microsec_clock::universal_time();
   ASSERT_TRUE(selfenc.Read(answer.get(), test_data_size, 0));
-  duration = (boost::posix_time::microsec_clock::universal_time() -
+  std::uint64_t duration = (boost::posix_time::microsec_clock::universal_time() -
               time).total_microseconds();
   if (duration == 0)
     duration = 1;
