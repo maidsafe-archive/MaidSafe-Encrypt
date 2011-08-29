@@ -530,6 +530,7 @@ bool SE::ReadInProcessData(char* data, size_t *length, size_t *position)
     *length = wanted_length;
     *position += wanted_length;
     start_position += wanted_length;
+    read_c0andc1_ = true;
   }
   // check queue
   if ((q_size > 0) && (q_size + current_position_ > start_position)) {
