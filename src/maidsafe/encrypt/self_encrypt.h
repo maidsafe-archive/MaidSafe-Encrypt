@@ -109,10 +109,10 @@ class SE {  // Self Encryption
                             complete_ = true; // TODO FIXME can we be passed
                             // and incomplete data map ?
                         }
+  ~SE();
   bool Write(const char* data = NULL, size_t length = 0, size_t position = 0);
   bool Read(char * data, size_t length = 0, size_t position = 0);
   bool ReInitialise();
-  bool FinaliseWrite();
   bool setDatamap(std::shared_ptr<DataMap> data_map);
   bool DeleteAllChunks();
   bool DeleteAChunk(size_t chunk_num);

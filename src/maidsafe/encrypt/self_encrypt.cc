@@ -86,6 +86,27 @@ size_t XORFilter::Put2(const byte* inString,
                                         blocking);
 }
 
+SE::~SE() {
+  ProcessMainQueue(); // to pick up unprocessed whole chunks
+  EmptySequencer();
+  chunk_size_ = (main_encrypt_queue_.MaxRetrievable()) / 3 ;
+  if ((chunk_size_) < 1025) {
+    chunk_size_ = 1024*256;
+    current_position_ = 0;
+    q_position_ = 0;
+    ProcessLastData();
+    return;
+  }
+  CheckSequenceData();
+  ProcessMainQueue();
+  chunk_size_ = 1024*256;
+  main_encrypt_queue_.SkipAll();
+  chunk_one_two_q_full_ = false;
+  current_position_ = 0;
+  q_position_ = 0;
+  return;
+}
+
 void SE::SequenceAllNonStandardChunksAndExtraContent() {
   size_t start_chunk(0), chunk_size(0), pos(0);
   for (size_t i = 0; i < data_map_->chunks.size(); ++i) {
@@ -281,28 +302,6 @@ bool SE::Transmogrify(const char* data, size_t length, size_t position) {
 }
 
 
-bool SE::FinaliseWrite() {
-  if (complete_)
-    return true;
-  complete_ = true;
-  ProcessMainQueue(); // to pick up unprocessed whole chunks
-  EmptySequencer();
-  chunk_size_ = (main_encrypt_queue_.MaxRetrievable()) / 3 ;
-  if ((chunk_size_) < 1025) {
-    chunk_size_ = 1024*256;
-    current_position_ = 0;
-    q_position_ = 0;
-    return ProcessLastData();
-  }
-   CheckSequenceData();
-   ProcessMainQueue();
-   chunk_size_ = 1024*256;
-   main_encrypt_queue_.SkipAll();
-   chunk_one_two_q_full_ = false;
-   current_position_ = 0;
-   q_position_ = 0;
-   return true;
-}
 
 bool SE::ProcessLastData() {
   size_t qlength = main_encrypt_queue_.MaxRetrievable();
@@ -593,10 +592,7 @@ bool SE::Read(char* data, size_t length, size_t position) {
       read_ahead_initialised_ = true;
       read_ahead_buffer_start_pos_ = 0;
     }
-  }
-
- // OK refresh buffer if needed
- if ((read_ahead_buffer_start_pos_ + buffersize < position + length) ||
+  } else if  ((read_ahead_buffer_start_pos_ + buffersize < position + length) ||
     (!read_ahead_initialised_)){ 
    size_t toread = std::min(data_map_->size - position, buffersize);
    ReadAhead(read_ahead_buffer_.get(), toread, position);
@@ -612,12 +608,6 @@ bool SE::Read(char* data, size_t length, size_t position) {
 }
 
 bool SE::ReadAhead(char* data, size_t length, size_t position) {
-   // first check read ahead buffer
-
-   // does read ahead need to read more
-
-   // read ahead
-   
    // this will get date in process including c0 and c1
    // so unless finalise write is given it will be here
    if (!complete_)
