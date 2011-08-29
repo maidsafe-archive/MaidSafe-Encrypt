@@ -572,7 +572,7 @@ bool SE::ReadInProcessData(char* data, size_t *length, size_t *position)
   return false;
 }
 
-bool SE::Read(char* data, size_t length, size_t position) {
+bool SE::ReadAhead(char* data, size_t length, size_t position) {
  size_t maxbuffersize(chunk_size_ * num_procs_);
  size_t buffersize = std::min(data_map_->size, maxbuffersize);
  // full file, just get it
@@ -607,7 +607,7 @@ bool SE::Read(char* data, size_t length, size_t position) {
  return true;
 }
 
-bool SE::ReadAhead(char* data, size_t length, size_t position) {
+bool SE::Read(char* data, size_t length, size_t position) {
    // this will get date in process including c0 and c1
    // so unless finalise write is given it will be here
    if (!complete_)
