@@ -548,8 +548,8 @@ void SE::ReadInProcessData(char* data, size_t length, size_t position)
 }
 
 bool SE::ReadAhead(char* data, size_t length, size_t position) {
- size_t maxbuffersize(chunk_size_ * num_procs_);
- size_t buffersize = std::min(data_map_->size, maxbuffersize);
+ uint64_t maxbuffersize(chunk_size_ * num_procs_);
+ uint64_t buffersize = std::min(data_map_->size, maxbuffersize);
  // full file, just get it
  if (length >= data_map_->size) {
    ReadAhead(data, length, position);
@@ -569,7 +569,7 @@ bool SE::ReadAhead(char* data, size_t length, size_t position) {
     }
   } else if  ((read_ahead_buffer_start_pos_ + buffersize < position + length) ||
     (!read_ahead_initialised_)){ 
-   size_t toread = std::min(data_map_->size - position, buffersize);
+   uint64_t toread = std::min(data_map_->size - position, buffersize);
    ReadAhead(read_ahead_buffer_.get(), toread, position);
    read_ahead_initialised_ = true;
    read_ahead_buffer_start_pos_ = position;
