@@ -89,21 +89,14 @@ size_t XORFilter::Put2(const byte* inString,
 SE::~SE() {
   ProcessMainQueue(); // to pick up unprocessed whole chunks
   EmptySequencer();
-  chunk_size_ = (main_encrypt_queue_.MaxRetrievable()) / 3 ;
+  if (main_encrypt_queue_.MaxRetrievable() > 0);
+    chunk_size_ = (main_encrypt_queue_.MaxRetrievable()) / 3 ;
   if ((chunk_size_) < 1025) {
-    chunk_size_ = 1024*256;
-    current_position_ = 0;
-    q_position_ = 0;
     ProcessLastData();
     return;
   }
   CheckSequenceData();
   ProcessMainQueue();
-  chunk_size_ = 1024*256;
-  main_encrypt_queue_.SkipAll();
-  chunk_one_two_q_full_ = false;
-  current_position_ = 0;
-  q_position_ = 0;
   return;
 }
 
@@ -305,12 +298,14 @@ bool SE::Transmogrify(const char* data, size_t length, size_t position) {
 
 bool SE::ProcessLastData() {
   size_t qlength = main_encrypt_queue_.MaxRetrievable();
+  if (qlength > 0) {
     boost::shared_array<byte> i(new byte[qlength]);
     main_encrypt_queue_.Get(i.get(), qlength);
     std::string extra(reinterpret_cast<char *>(i.get()), qlength);
     data_map_->content = extra;
     data_map_->content_size = qlength;
     data_map_->size += qlength;
+  }
     // when all that is done, encrypt chunks 0 and 1
     if (chunk_one_two_q_full_) {
       EncryptAChunk(0, chunk0_raw_.get(), c0_and_1_chunk_size_, false);
@@ -671,7 +666,7 @@ bool SE::Read(char* data, size_t length, size_t position) {
         ReadChunk(i, reinterpret_cast<byte *>(&data[pos - position]));
       }
     }
-    return readok_;
+//     return readok_;
   }
 
   size_t this_position(0);
@@ -681,11 +676,10 @@ bool SE::Read(char* data, size_t length, size_t position) {
 
   for(size_t i = 0; i < data_map_->content_size ; ++i) {
     if (this_position < (position + length))
-      data[this_position] = data_map_->content.c_str()[i];
-    ++this_position;
+      data[this_position + i] = data_map_->content.c_str()[i];
   }
   // replace any chunk data with most recently written stuff
-  ReadInProcessData(data, length, position);
+   ReadInProcessData(data, length, position);
 
   return readok_;
 }
