@@ -666,16 +666,15 @@ bool SE::Read(char* data, size_t length, size_t position) {
         ReadChunk(i, reinterpret_cast<byte *>(&data[pos - position]));
       }
     }
-//     return readok_;
   }
 
   size_t this_position(0);
 #pragma omp barrier
-  for(size_t i = 0; i < num_chunks;  ++i) 
+  for(size_t i = 0; i < num_chunks;  ++i)
     this_position += data_map_->chunks[i].size;
 
-  for(size_t i = 0; i < data_map_->content_size ; ++i) {
-    if (this_position < (position + length))
+  for(size_t i = 0; i < data_map_->content_size; ++i) {
+    if (this_position + i < (length + position))
       data[this_position + i] = data_map_->content.c_str()[i];
   }
   // replace any chunk data with most recently written stuff
