@@ -636,7 +636,7 @@ bool SE::Read(char* data, size_t length, size_t position) {
     }
 
 #pragma omp parallel for shared(data)
-    for (size_t i = start_chunk;i <= end_chunk ; ++i) {
+    for (size_t i = start_chunk;i < end_chunk ; ++i) {
       size_t pos(0);
       size_t this_chunk_size(data_map_->chunks[i].size);
 
