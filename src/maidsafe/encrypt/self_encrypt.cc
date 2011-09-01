@@ -605,7 +605,7 @@ bool SE::Read(char* data, size_t length, size_t position) {
         found_start = true;
       }
 
-      if (run_total > length) {
+      if (run_total >= length) {
         found_end = true;
         end_chunk = i;
         end_cut = position + length - all_run_total;//  all_run_total - position - length
@@ -635,47 +635,47 @@ bool SE::Read(char* data, size_t length, size_t position) {
     return readok_;
     }
 
-#pragma omp parallel for shared(data) 
-    for (size_t i = start_chunk;i < end_chunk ; ++i) {
+#pragma omp parallel for shared(data)
+    for (size_t i = start_chunk;i <= end_chunk ; ++i) {
       size_t pos(0);
       size_t this_chunk_size(data_map_->chunks[i].size);
 
-        if ((i == start_chunk) && (start_offset != 0)) {
-//           this_chunk_size -= start_offset;
-
+      if (i == start_chunk) {
+        if (start_offset != 0) {
           boost::shared_array<byte> chunk_data
                       (new byte[data_map_->chunks[start_chunk].size]);
           ReadChunk(start_chunk, chunk_data.get());
 
           for (size_t j = start_offset; j < this_chunk_size; ++j)
             data[j - start_offset] = static_cast<char>(chunk_data[j]);
+        } else {
+          ReadChunk(i, reinterpret_cast<byte *>(&data[0]));
+        }
 
+      } else if (i == end_chunk) {
+        boost::shared_array<byte> chunk_data
+            (new byte[data_map_->chunks[end_chunk].size]);
+        ReadChunk(end_chunk, chunk_data.get());
 
-        } else if ((i == end_chunk) && (end_cut != 0)) {
-          this_chunk_size -= end_cut;
-
-          boost::shared_array<byte> chunk_data
-          (new byte[data_map_->chunks[end_chunk].size]);
-          ReadChunk(start_chunk, chunk_data.get());
-          
-          for (size_t j = start_chunk; j < i; ++j)
+        for (size_t j = 0; j < i; ++j)
 #pragma omp atomic
-            pos += data_map_->chunks[j].size;
+          pos += data_map_->chunks[j].size;
 
-          for (size_t j = 0; j < this_chunk_size; ++j)
-            data[j + pos] = static_cast<char>(chunk_data[j]);
+        for (size_t j = 0; j < end_cut; ++j)
+          data[j + pos - position] = static_cast<char>(chunk_data[j]);
 
-        }else {
-          for (size_t j = start_chunk; j < i; ++j)
+      } else {
+        for (size_t j = 0; j < i; ++j)
 #pragma omp atomic
-            pos += data_map_->chunks[j].size;
-          ReadChunk(i, reinterpret_cast<byte *>(&data[pos]));
-       }
+          pos += data_map_->chunks[j].size;
+        ReadChunk(i, reinterpret_cast<byte *>(&data[pos - position]));
+      }
     }
+    return readok_;
   }
 
   size_t this_position(0);
-  #pragma omp barrier
+#pragma omp barrier
   for(size_t i = 0; i < num_chunks;  ++i) 
     this_position += data_map_->chunks[i].size;
 
@@ -686,7 +686,7 @@ bool SE::Read(char* data, size_t length, size_t position) {
   }
   // replace any chunk data with most recently written stuff
   ReadInProcessData(data, length, position);
-  
+
   return readok_;
 }
 
