@@ -585,7 +585,8 @@ bool SE::ReadAhead(char* data, size_t length, size_t position) {
 bool SE::Read(char* data, size_t length, size_t position) {
 
     size_t start_chunk(0), start_offset(0), end_chunk(0), run_total(0),
-            all_run_total(0), end_cut(0), start_after_this(0);
+            all_run_total(0), end_cut(0), start_after_this(0),
+            prev_all_run_total(0);
     bool found_start(false);
     bool found_end(false);
     size_t num_chunks = data_map_->chunks.size();
@@ -599,8 +600,8 @@ bool SE::Read(char* data, size_t length, size_t position) {
       
       if ((all_run_total >= position) && (!found_start)) {
         start_chunk = i;
-        start_offset =  all_run_total - position;
-        run_total = data_map_->chunks[i].size - start_offset;
+        start_offset =  position - prev_all_run_total;
+        run_total = all_run_total - prev_all_run_total;
         found_start = true;
       }
 
@@ -610,6 +611,7 @@ bool SE::Read(char* data, size_t length, size_t position) {
         end_cut = run_total - length;
         break;
       }
+      prev_all_run_total = all_run_total;
       all_run_total += data_map_->chunks[i].size;
     }
 
@@ -630,7 +632,7 @@ bool SE::Read(char* data, size_t length, size_t position) {
                   (new byte[data_map_->chunks[start_chunk].size]);
       ReadChunk(start_chunk, chunk_data.get());
       for (size_t i = start_offset; i < length + start_offset; ++i)
-        data[i] = static_cast<char>(chunk_data[i]);
+        data[i - start_offset] = static_cast<char>(chunk_data[i]);
     return readok_;
     }
 
