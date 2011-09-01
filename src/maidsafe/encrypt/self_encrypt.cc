@@ -585,33 +585,32 @@ bool SE::ReadAhead(char* data, size_t length, size_t position) {
 bool SE::Read(char* data, size_t length, size_t position) {
 
     size_t start_chunk(0), start_offset(0), end_chunk(0), run_total(0),
-            all_run_total(0), end_cut(0), start_after_this(0),
-            prev_all_run_total(0);
+            all_run_total(0), end_cut(0), start_after_this(0);
     bool found_start(false);
     bool found_end(false);
     size_t num_chunks = data_map_->chunks.size();
-    
-    
-  
+
+
+
   if (num_chunks > 0) {
     for(size_t i = 0; i < num_chunks;  ++i) {
       if (found_start)
         run_total += data_map_->chunks[i].size;
-      
-      if ((all_run_total >= position) && (!found_start)) {
+
+      if (((all_run_total + data_map_->chunks[i].size) > position) &&
+          (!found_start)) {
         start_chunk = i;
-        start_offset =  position - prev_all_run_total;
-        run_total = all_run_total - prev_all_run_total;
+        start_offset =  position - all_run_total;
+        run_total = all_run_total + data_map_->chunks[i].size - position;
         found_start = true;
       }
 
       if (run_total > length) {
         found_end = true;
         end_chunk = i;
-        end_cut = run_total - length;
+        end_cut = position + length - all_run_total;//  all_run_total - position - length
         break;
       }
-      prev_all_run_total = all_run_total;
       all_run_total += data_map_->chunks[i].size;
     }
 
@@ -625,7 +624,7 @@ bool SE::Read(char* data, size_t length, size_t position) {
      if (end_chunk < 2)
        end_chunk = 2;
     }
-    
+
     if (start_chunk == end_chunk) {
       // get chunk
       boost::shared_array<byte> chunk_data
@@ -642,14 +641,14 @@ bool SE::Read(char* data, size_t length, size_t position) {
       size_t this_chunk_size(data_map_->chunks[i].size);
 
         if ((i == start_chunk) && (start_offset != 0)) {
-          this_chunk_size -= start_offset;
+//           this_chunk_size -= start_offset;
 
           boost::shared_array<byte> chunk_data
                       (new byte[data_map_->chunks[start_chunk].size]);
           ReadChunk(start_chunk, chunk_data.get());
 
           for (size_t j = start_offset; j < this_chunk_size; ++j)
-            data[j] = static_cast<char>(chunk_data[j]);
+            data[j - start_offset] = static_cast<char>(chunk_data[j]);
 
 
         } else if ((i == end_chunk) && (end_cut != 0)) {
