@@ -608,23 +608,45 @@ TEST(SelfEncryptionTest, FUNC_ReadArbitaryPosition) {
   {
     // read some data
     SE selfenc(data_map, chunk_store);
-    boost::scoped_array<char> testq(new char[1]);
+    boost::scoped_array<char> testq(new char[chunk_size * 6]);
     for (size_t i = 0; i < 10; ++i) {
       EXPECT_TRUE(selfenc.Read(testq.get(), 1, i));
-      ASSERT_EQ(plain_data[i], testq[0]) << "not read " << i << std::endl;
+      ASSERT_EQ(plain_data[i], testq[0]) << "not match " << i << std::endl;
     }
     for (size_t i = chunk_size - 1; i < chunk_size + 1; ++i) {
       EXPECT_TRUE(selfenc.Read(testq.get(), 1, i));
-      ASSERT_EQ(plain_data[i], testq[0]) << "not read " << i << std::endl;
+      ASSERT_EQ(plain_data[i], testq[0]) << "not match " << i << std::endl;
     }
     for (size_t i = chunk_size * 3 - 1; i < chunk_size * 3 + 1; ++i) {
       EXPECT_TRUE(selfenc.Read(testq.get(), 1, i));
-      ASSERT_EQ(plain_data[i], testq[0]) << "not read " << i << std::endl;
+      ASSERT_EQ(plain_data[i], testq[0]) << "not match " << i << std::endl;
     }
     for (size_t i = chunk_size * 6 - 1; i < chunk_size * 6; ++i) {
-      EXPECT_TRUE(selfenc.Read(testq.get(), 1, i));
-      ASSERT_EQ(plain_data[i], testq[0]) << "not read " << i << std::endl;
+      EXPECT_TRUE(selfenc.Read(testq.get(), 1, i))
+          << "not read " << i << std::endl;
+      ASSERT_EQ(plain_data[i], testq[0]) << "not match " << i << std::endl;
     }
+
+    int position(0);
+    int length(chunk_size + 2);
+    EXPECT_TRUE(selfenc.Read(testq.get(), length, position));
+    for (int i = 0; i < length; ++i)
+      EXPECT_EQ(plain_data[position + i], testq[i])
+          << "not match " << i << std::endl;
+
+    position = chunk_size - 1;
+    length = chunk_size * 2 + 2;
+    EXPECT_TRUE(selfenc.Read(testq.get(), length, position));
+    for (int i = 0; i < length; ++i)
+      EXPECT_EQ(plain_data[position + i], testq[i])
+          << "not match " << i << std::endl;
+
+    position = chunk_size * 2 - 1;
+    length = chunk_size * 3 + 2;
+    EXPECT_TRUE(selfenc.Read(testq.get(), length, position));
+    for (int i = 0; i < length; ++i)
+      EXPECT_EQ(plain_data[position + i], testq[i])
+          << "not match " << i << std::endl;
   }
 }
 
