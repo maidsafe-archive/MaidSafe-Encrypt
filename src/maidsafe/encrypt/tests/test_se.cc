@@ -589,7 +589,44 @@ TEST(SelfEncryptionTest, FUNC_RepeatedRandomCharReadInProcess) {
     ASSERT_EQ(plain_data[i], answer[i]) << "failed at count " << i;
 }
 
+TEST(SelfEncryptionTest, FUNC_ReadArbitaryPosition) {
+  MemoryChunkStore::HashFunc hash_func(std::bind(&crypto::Hash<crypto::SHA512>,
+                                                 std::placeholders::_1));
+  std::shared_ptr<MemoryChunkStore> chunk_store
+  (new MemoryChunkStore (false, hash_func));
+  std::shared_ptr<DataMap> data_map(new DataMap);
+  size_t chunk_size(1024*256);
+  size_t test_data_size(chunk_size * 6);
+  std::string plain_text(RandomString(test_data_size));
+  boost::scoped_array<char>plain_data (new char[test_data_size]);
 
+  std::copy(plain_text.begin(), plain_text.end(), plain_data.get());
+  {
+    SE selfenc(data_map, chunk_store);
+    EXPECT_TRUE(selfenc.Write(plain_data.get(), test_data_size));
+  }
+  {
+    // read some data
+    SE selfenc(data_map, chunk_store);
+    boost::scoped_array<char> testq(new char[1]);
+    for (size_t i = 0; i < 10; ++i) {
+      EXPECT_TRUE(selfenc.Read(testq.get(), 1, i));
+      ASSERT_EQ(plain_data[i], testq[0]) << "not read " << i << std::endl;
+    }
+    for (size_t i = chunk_size - 1; i < chunk_size + 1; ++i) {
+      EXPECT_TRUE(selfenc.Read(testq.get(), 1, i));
+      ASSERT_EQ(plain_data[i], testq[0]) << "not read " << i << std::endl;
+    }
+    for (size_t i = chunk_size * 3 - 1; i < chunk_size * 3 + 1; ++i) {
+      EXPECT_TRUE(selfenc.Read(testq.get(), 1, i));
+      ASSERT_EQ(plain_data[i], testq[0]) << "not read " << i << std::endl;
+    }
+    for (size_t i = chunk_size * 6 - 1; i < chunk_size * 6; ++i) {
+      EXPECT_TRUE(selfenc.Read(testq.get(), 1, i));
+      ASSERT_EQ(plain_data[i], testq[0]) << "not read " << i << std::endl;
+    }
+  }
+}
 
 
 
