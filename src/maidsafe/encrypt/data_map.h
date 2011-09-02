@@ -56,8 +56,7 @@ struct ChunkDetails {
 /// Holds information about the building blocks of a data item
 struct DataMap {
   DataMap()
-    : self_encryption_type(0), chunks(), size(0), content(), content_size(0) {}
-  std::uint32_t self_encryption_type;  ///< Type of SE used for chunks
+    : chunks(), size(0), content(), content_size(0) {}
   std::vector<ChunkDetails> chunks;  ///< Information about the chunks
   std::uint64_t size;      ///< Size of data item
   std::string content;     ///< Whole data item or last chunk, if small enough
@@ -97,7 +96,6 @@ template<class Archive>
 void serialize(Archive &archive,  // NOLINT
                maidsafe::encrypt::DataMap &data_map,
                const unsigned int /* version */) {
-  archive & data_map.self_encryption_type;
   archive & data_map.chunks;
   archive & data_map.size;
   archive & data_map.content;

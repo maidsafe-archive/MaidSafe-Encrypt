@@ -132,7 +132,7 @@ void SE::SequenceAllNonStandardChunksAndExtraContent() {
   }
 }
 
-bool SE::Write(const char* data, size_t length, size_t position) {
+bool SE::Write(const char* data, std::uint32_t length, std::uint64_t position) {
 
   if (length == 0)
     return true;
@@ -212,7 +212,9 @@ void SE::EmptySequencer() {
 
 }
 
-bool SE::Transmogrify(const char* data, size_t length, size_t position) {
+bool SE::Transmogrify(const char* data,
+                      std::uint32_t length,
+                      std::uint64_t position) {
 
 // Transmogrifier will identify the appropriate chunk
 // recover it and alter the data in place
@@ -451,8 +453,8 @@ void SE::getPad_Iv_Key(size_t this_chunk_num,
 }
 
 
-void SE::EncryptAChunk(size_t chunk_num, byte* data,
-                       size_t length, bool re_encrypt) {
+void SE::EncryptAChunk(std::uint16_t chunk_num, byte* data,
+                       std::uint32_t length, bool re_encrypt) {
 
    if (data_map_->chunks.size() < chunk_num)
     return;
@@ -501,7 +503,7 @@ void SE::EncryptAChunk(size_t chunk_num, byte* data,
    }
 }
 
-void SE::ReadInProcessData(char* data, size_t length, size_t position)
+void SE::ReadInProcessData(char* data, std::uint32_t length, std::uint64_t position)
 {
   size_t q_size = main_encrypt_queue_.MaxRetrievable();
 
@@ -541,7 +543,7 @@ void SE::ReadInProcessData(char* data, size_t length, size_t position)
   }
 }
 
-bool SE::ReadAhead(char* data, size_t length, size_t position) {
+bool SE::ReadAhead(char* data, std::uint32_t length, std::uint64_t position) {
  uint64_t maxbuffersize(chunk_size_ * num_procs_);
  uint64_t buffersize = std::min(data_map_->size, maxbuffersize);
  // full file, just get it
@@ -576,9 +578,9 @@ bool SE::ReadAhead(char* data, size_t length, size_t position) {
  return true;
 }
 
-bool SE::Read(char* data, size_t length, size_t position) {
+bool SE::Read(char* data, std::uint32_t length, std::uint64_t position) {
 
-  size_t start_chunk(0), start_offset(0), end_chunk(0), run_total(0),
+  std::uint32_t start_chunk(0), start_offset(0), end_chunk(0), run_total(0),
           all_run_total(0), end_cut(0), start_after_this(0);
   bool found_start(false);
   bool found_end(false);
@@ -610,7 +612,7 @@ bool SE::Read(char* data, size_t length, size_t position) {
       end_chunk = num_chunks - 1;
       end_cut = std::min(position + length -
                             (all_run_total - data_map_->chunks[end_chunk].size),
-                        data_map_->chunks[end_chunk].size);
+                 static_cast<std::uint64_t>(data_map_->chunks[end_chunk].size));
     }
 // this is 2 for loops to allow openmp to thread properly.
 // should be refactored to a do loop and openmp fixed
@@ -684,7 +686,7 @@ bool SE::Read(char* data, size_t length, size_t position) {
   return readok_;
 }
 
-void SE::ReadChunk(size_t chunk_num, byte *data) {
+void SE::ReadChunk(std::uint16_t chunk_num, byte *data) {
   if ((data_map_->chunks.size() < chunk_num) ||
     (data_map_->chunks.size() == 0)){
     readok_ = false;

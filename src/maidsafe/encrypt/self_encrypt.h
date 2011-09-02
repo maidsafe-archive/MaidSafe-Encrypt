@@ -110,8 +110,8 @@ class SE {  // Self Encryption
                             // and incomplete data map ?
                         }
   ~SE();
-  bool Write(const char* data = NULL, size_t length = 0, size_t position = 0);
-  bool Read(char * data, size_t length = 0, size_t position = 0);
+  bool Write(const char* data = NULL, std::uint32_t length = 0, std::uint64_t position = 0);
+  bool Read(char * data, std::uint32_t length = 0, std::uint64_t position = 0);
   bool ReInitialise();
   bool setDatamap(std::shared_ptr<DataMap> data_map);
   bool DeleteAllChunks();
@@ -122,13 +122,13 @@ class SE {  // Self Encryption
    // METHODS
   SE &operator = (const SE&);  // no assignment
   SE(const SE&);  // no copy
-  bool ReadAhead(char* data, size_t length, size_t position);
+  bool ReadAhead(char* data, std::uint32_t length, std::uint64_t position);
   bool Transmogrify(const char* data = NULL,
-                    size_t length = 0, size_t position = 0);
+                    std::uint32_t length = 0, std::uint64_t position = 0);
   bool ProcessLastData();
-  void ReadChunk(size_t chunk_num, byte *data);
-  void EncryptAChunk(size_t chunk_num, byte* data,
-                     size_t length, bool re_encrypt);
+  void ReadChunk(std::uint16_t chunk_num, byte *data);
+  void EncryptAChunk(std::uint16_t chunk_num, byte* data,
+                     std::uint32_t length, bool re_encrypt);
   
   bool QueueC0AndC1();
   bool ResetEncrypt();
@@ -140,13 +140,16 @@ class SE {  // Self Encryption
   bool ProcessMainQueue();
   void CheckSequenceData();
   void EmptySequencer();
-  bool CheckPositionInSequncer(size_t position, size_t length); // maybe not necessary
-  void ReadInProcessData(char * data, size_t  length, size_t position);
+  bool CheckPositionInSequncer(std::uint64_t position,
+                               std::uint32_t length); // maybe not necessary
+  void ReadInProcessData(char * data,
+                         std::uint32_t  length,
+                         std::uint64_t position);
   void SequenceAllNonStandardChunksAndExtraContent();
  private:
   // Setters and Getters, testing only
   void set_chunk_size(size_t chunk_size) { chunk_size_ = chunk_size; }
-  size_t chunk_size() { return chunk_size_; } 
+  std::uint32_t chunk_size() { return chunk_size_; }
   
  private:
    // MEMBERS
@@ -162,9 +165,9 @@ class SE {  // Self Encryption
   ChunkDetails chunk_data_;
   std::shared_ptr<ChunkStore> chunk_store_;
   bool chunk_one_two_q_full_;
-  size_t c0_and_1_chunk_size_;
-  size_t this_chunk_size_;
-  size_t current_position_;
+  std::uint32_t c0_and_1_chunk_size_;
+  std::uint32_t this_chunk_size_;
+  std::uint32_t current_position_;
   bool readok_;
   bool repeated_chunks_;
   size_t q_position_;
