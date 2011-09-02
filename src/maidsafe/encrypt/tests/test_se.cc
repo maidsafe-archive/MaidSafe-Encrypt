@@ -520,45 +520,41 @@ TEST(SelfEncryptionTest, FUNC_RepeatedRandomCharReadInProcess) {
   for (size_t i = 0; i < test_data_size -1 ; ++i)
     plain_data[i] = plain_text[i];
   plain_data[test_data_size] = 'b';
-  {
-    SE selfenc(data_map, chunk_store);
-    EXPECT_TRUE(selfenc.ReInitialise());
+  SE selfenc(data_map, chunk_store);
   //check 2 chunk_size
     for (size_t i = 0; i < chunk_size * 2; ++i) {
       EXPECT_TRUE(selfenc.Write(&plain_data[i], 1, i));
     }
-  }
-  {
+  
     // read some data - should be in queue
     //Check read From Queue FIXME !!
-    SE selfenc(data_map, chunk_store);
     boost::scoped_array<char> testq(new char[chunk_size]);
     for (size_t i = 0; i < 10 ; ++i) {
-      EXPECT_TRUE(selfenc.Read(testq.get() + i, 1, i));
-  // TODO FIXME this is inconsistent
+      EXPECT_TRUE(selfenc.Read(testq.get(), 1, i));
       ASSERT_EQ(plain_data[i], testq[i]) << "not read " << i << std::endl;
     }
     // next 2
     for (size_t i = chunk_size * 2; i < chunk_size * 4; ++i) {
       EXPECT_TRUE(selfenc.Write(&plain_data[i], 1, i));
     }
-  }
-  {
-    SE selfenc(data_map, chunk_store);
+
     // Check read from c0 and c1 buffer
+    EXPECT_EQ(0, data_map->size);
+    EXPECT_EQ(0, data_map->content_size);
+    EXPECT_EQ(2, data_map->chunks.size()); // not really but pre_hash is set
     // TODO FIXME inconsistent
     boost::scoped_array<char> testc0(new char[chunk_size]);
-    for (size_t i = 0; i < chunk_size ; ++i) {
-      EXPECT_TRUE(selfenc.Read(testc0.get(), 1, i));
+    for (size_t i = 0; i < 100 ; ++i) {
+      EXPECT_TRUE(selfenc.Read(&testc0[i], 1, i));
       ASSERT_EQ(testc0[i], plain_data[i]) << "not read " << i << std::endl;
     }
     // write last chunk out of sequence (should be in sequencer now
     for (size_t i = chunk_size * 5; i < chunk_size * 6; ++i) {
       EXPECT_TRUE(selfenc.Write(&plain_data[i], 1, i));
     }
-  }
-  {
-    SE selfenc(data_map, chunk_store);
+  
+  
+
     // Check read from Sequencer
     boost::scoped_array<char> testseq(new char[chunk_size]);
     for (size_t i = 0; i < chunk_size ; ++i) {
@@ -569,7 +565,7 @@ TEST(SelfEncryptionTest, FUNC_RepeatedRandomCharReadInProcess) {
     for (size_t i = chunk_size * 4; i < chunk_size * 5; ++i) {
       EXPECT_TRUE(selfenc.Write(&plain_data[i], 1, i));
     }
-  }
+  
   // TODO FIXME - wont work till destructor called
 //   ASSERT_TRUE(selfenc.FinaliseWrite());
 //   // read some data - should be in chunks now
@@ -582,7 +578,7 @@ TEST(SelfEncryptionTest, FUNC_RepeatedRandomCharReadInProcess) {
 //   EXPECT_EQ(6,  selfenc.getDataMap()->chunks.size());
 //   EXPECT_EQ(0,  selfenc.getDataMap()->content_size);
 //   EXPECT_EQ(test_data_size, selfenc.getDataMap()->size);
-  SE selfenc(data_map, chunk_store);
+
   boost::scoped_array<char>answer (new char[test_data_size]);
   EXPECT_TRUE(selfenc.Read(answer.get(), test_data_size, 0));
   for (size_t  i = 0; i < test_data_size ; ++i)

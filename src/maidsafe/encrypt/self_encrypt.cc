@@ -503,44 +503,42 @@ void SE::EncryptAChunk(std::uint16_t chunk_num, byte* data,
    }
 }
 
-void SE::ReadInProcessData(char* data, std::uint32_t length, std::uint64_t position)
+bool SE::ReadInProcessData(char* data,
+                           std::uint32_t length,
+                           std::uint64_t position)
 {
+
+  size_t to_get = length;
   size_t q_size = main_encrypt_queue_.MaxRetrievable();
-
-  // check c0 and c1
-  if ((position < c0_and_1_chunk_size_ * 2) && (chunk_one_two_q_full_))
-    for (size_t i = position; i < (c0_and_1_chunk_size_ * 2) && (i < length);
-          ++i) {
-
-      if (i < c0_and_1_chunk_size_ )
-        data[i] = static_cast<char>(chunk0_raw_[i]);
-      else if (i < (c0_and_1_chunk_size_ * 2))
-        data[i] = static_cast<char>(chunk1_raw_[i]);
-    }
 
   // check queue
   if ((q_size > 0) && (q_size + current_position_ > position)) {
-    size_t to_get = (q_size - current_position_ + length);
-
     // grab all queue into new array
     boost::scoped_array<char>  temp(new char[q_size]);
     main_encrypt_queue_.Peek(reinterpret_cast<byte *>(temp.get()), q_size);
 
-    size_t pos(current_position_ - q_size + position);
-
-    for (size_t i = pos; i < to_get + pos; ++i) {
+    size_t pos = (current_position_ - q_size + position);
+    size_t limit = to_get + pos;
+    for (size_t i = pos; i < limit; ++i) {
       data[i] = temp[i];
-
+      --to_get;
     }
   }
+  if (to_get == 0)
+    return true;
 
   if (sequencer_.size() > 0) {
     sequence_data answer = sequencer_.Peek(position);
-    for (size_t i = 0; i < answer.second, length > 0;
-          ++i, --length) {
+    for (size_t i = 0; i < answer.second, to_get > 0;
+          ++i) {
       data[i + position] = answer.first[i];
+    --to_get;   
     }
   }
+  if (to_get == 0)
+    return true;
+  else
+    return false;
 }
 
 bool SE::ReadAhead(char* data, std::uint32_t length, std::uint64_t position) {
@@ -579,7 +577,6 @@ bool SE::ReadAhead(char* data, std::uint32_t length, std::uint64_t position) {
 }
 
 bool SE::Read(char* data, std::uint32_t length, std::uint64_t position) {
-
   std::uint32_t start_chunk(0), start_offset(0), end_chunk(0), run_total(0),
           all_run_total(0), end_cut(0), start_after_this(0);
   bool found_start(false);
@@ -616,12 +613,12 @@ bool SE::Read(char* data, std::uint32_t length, std::uint64_t position) {
     }
 // this is 2 for loops to allow openmp to thread properly.
 // should be refactored to a do loop and openmp fixed
-    if (chunk_one_two_q_full_) { // don't try and get these chunks there in a q
-     if (start_chunk < 2)
-       start_chunk = 2;
-     if (end_chunk < 2)
-       end_chunk = 2;
-    }
+//     if (chunk_one_two_q_full_) { // don't try and get these chunks there in a q
+//      if ((start_chunk < 2) && (end_chunk < 2)) {
+//       ReadInProcessData(data, length, position);
+//       return true;
+//      }
+//     }
 
     if (start_chunk == end_chunk) {
       // get chunk
@@ -692,6 +689,17 @@ void SE::ReadChunk(std::uint16_t chunk_num, byte *data) {
     readok_ = false;
     return;
   }
+  // still in process of writing so read raw arrays
+  if ((chunk_one_two_q_full_) && (chunk_num < 2)) {
+    for (size_t i = 0; i < c0_and_1_chunk_size_; ++i) {
+    if (chunk_num == 0)
+      data[i] = static_cast<byte>(chunk0_raw_[i]);
+    else
+      data[c0_and_1_chunk_size_ + i] = static_cast<byte >(chunk1_raw_[i]);
+    }
+    return;
+  }
+  
    std::string hash(reinterpret_cast<char *>(data_map_->chunks[chunk_num].hash),
                     64);
   size_t length = data_map_->chunks[chunk_num].size;

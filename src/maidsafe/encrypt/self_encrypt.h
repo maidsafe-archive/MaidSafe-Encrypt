@@ -142,7 +142,7 @@ class SE {  // Self Encryption
   void EmptySequencer();
   bool CheckPositionInSequncer(std::uint64_t position,
                                std::uint32_t length); // maybe not necessary
-  void ReadInProcessData(char * data,
+  bool ReadInProcessData(char * data,
                          std::uint32_t  length,
                          std::uint64_t position);
   void SequenceAllNonStandardChunksAndExtraContent();
