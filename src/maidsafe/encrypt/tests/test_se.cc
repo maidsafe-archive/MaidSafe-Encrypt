@@ -104,10 +104,9 @@ TEST(SelfEncryptionTest, BEH_40CharPlusPadding) {
   EXPECT_EQ(80, selfenc.getDataMap()->size);
   EXPECT_EQ(80, selfenc.getDataMap()->content_size);
   EXPECT_EQ(0, selfenc.getDataMap()->chunks.size());
-  //FIXME
-//   for( size_t i = 0; i < 40; ++i) {
-//     EXPECT_TRUE(selfenc.Read(&answer[i], 1, i));
-//   }
+  for( size_t i = 0; i < 40; ++i) {
+    EXPECT_TRUE(selfenc.Read(&answer[i], 1, i));
+  }
 }
 
 
@@ -264,7 +263,7 @@ TEST(SelfEncryptionTest, BEH_WriteAndReadIncompressable) {
   std::shared_ptr<DataMap> data_map(new DataMap);
 
 
-  size_t test_data_size(1024*1024*20 + 4); 
+  size_t test_data_size(1024*1024*20 + 4);
   std::string plain_text(RandomString(test_data_size));
   boost::scoped_array<char>plain_data (new char[test_data_size]);
   for (size_t i = 0; i < test_data_size; ++i) {
@@ -650,6 +649,8 @@ TEST(SelfEncryptionTest, FUNC_ReadArbitaryPosition) {
           << "not match " << i << std::endl;
   }
 }
+
+
 
 /*
 TEST(SelfEncryptionManualTest, BEH_manual_check_write) {

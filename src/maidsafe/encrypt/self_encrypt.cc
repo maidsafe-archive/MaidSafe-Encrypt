@@ -267,7 +267,7 @@ bool SE::Transmogrify(const char* data, size_t length, size_t position) {
       ++start_offset;
       this_position += data_map_->chunks[start_chunk].size;
     } while (start_chunk < end_chunk);
-    
+
     // encrypt next two chunks
     size_t chunk_num(0);
     for (int i = end_chunk; i <= 2; ++i) {
@@ -306,16 +306,16 @@ bool SE::ProcessLastData() {
     data_map_->content_size = qlength;
     data_map_->size += qlength;
   }
-    // when all that is done, encrypt chunks 0 and 1
-    if (chunk_one_two_q_full_) {
-      EncryptAChunk(0, chunk0_raw_.get(), c0_and_1_chunk_size_, false);
-      EncryptAChunk(1, chunk1_raw_.get(), c0_and_1_chunk_size_, false);
-      chunk0_raw_.reset();
-      chunk1_raw_.reset();
-      chunk_one_two_q_full_ = false;
-    }
-    main_encrypt_queue_.SkipAll();
-    return true;
+  // when all that is done, encrypt chunks 0 and 1
+  if (chunk_one_two_q_full_) {
+    EncryptAChunk(0, chunk0_raw_.get(), c0_and_1_chunk_size_, false);
+    EncryptAChunk(1, chunk1_raw_.get(), c0_and_1_chunk_size_, false);
+    chunk0_raw_.reset();
+    chunk1_raw_.reset();
+    chunk_one_two_q_full_ = false;
+  }
+  main_encrypt_queue_.SkipAll();
+  return true;
 }
 
 bool SE::DeleteAllChunks()
@@ -579,13 +579,11 @@ bool SE::ReadAhead(char* data, size_t length, size_t position) {
 
 bool SE::Read(char* data, size_t length, size_t position) {
 
-    size_t start_chunk(0), start_offset(0), end_chunk(0), run_total(0),
-            all_run_total(0), end_cut(0), start_after_this(0);
-    bool found_start(false);
-    bool found_end(false);
-    size_t num_chunks = data_map_->chunks.size();
-
-
+  size_t start_chunk(0), start_offset(0), end_chunk(0), run_total(0),
+          all_run_total(0), end_cut(0), start_after_this(0);
+  bool found_start(false);
+  bool found_end(false);
+  size_t num_chunks = data_map_->chunks.size();
 
   if (num_chunks > 0) {
     for(size_t i = 0; i < num_chunks;  ++i) {
@@ -609,8 +607,12 @@ bool SE::Read(char* data, size_t length, size_t position) {
       all_run_total += data_map_->chunks[i].size;
     }
 
-  if (!found_end)
-    end_chunk = num_chunks;
+  if (!found_end) {
+    end_chunk = num_chunks - 1;
+    end_cut = std::min(position + length -
+                          (all_run_total - data_map_->chunks[end_chunk].size),
+                       data_map_->chunks[end_chunk].size);
+  }
 // this is 2 for loops to allow openmp to thread properly.
 // should be refactored to a do loop and openmp fixed
     if (chunk_one_two_q_full_) { // don't try and get these chunks there in a q
@@ -627,11 +629,11 @@ bool SE::Read(char* data, size_t length, size_t position) {
       ReadChunk(start_chunk, chunk_data.get());
       for (size_t i = start_offset; i < length + start_offset; ++i)
         data[i - start_offset] = static_cast<char>(chunk_data[i]);
-    return readok_;
+      return readok_;
     }
 
 #pragma omp parallel for shared(data)
-    for (size_t i = start_chunk;i < end_chunk ; ++i) {
+    for (size_t i = start_chunk;i <= end_chunk ; ++i) {
       size_t pos(0);
       size_t this_chunk_size(data_map_->chunks[i].size);
 
@@ -674,11 +676,11 @@ bool SE::Read(char* data, size_t length, size_t position) {
     this_position += data_map_->chunks[i].size;
 
   for(size_t i = 0; i < data_map_->content_size; ++i) {
-    if (this_position + i < (length + position))
-      data[this_position + i] = data_map_->content.c_str()[i];
+    if ((this_position + i) < (position + length))
+      data[this_position + i - position] = data_map_->content.c_str()[i];
   }
   // replace any chunk data with most recently written stuff
-   ReadInProcessData(data, length, position);
+  ReadInProcessData(data, length, position);
 
   return readok_;
 }
