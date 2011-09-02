@@ -720,12 +720,12 @@ TEST_F(SelfEncryptionDeviceTest, BEH_FinaliseWriting) {
     chunk.pre_size = static_cast<uint32_t>(data.size());
     data_map->chunks.push_back(chunk);
     EXPECT_TRUE(sed.FinaliseWriting(0));
-    EXPECT_EQ(0, sed.pending_chunks_.size());
+    EXPECT_EQ(1, sed.pending_chunks_.size());
     // queue dependents
     std::string data2 = RandomString(400);
     sed.chunk_buffers_[1].content = data2;
     sed.chunk_buffers_[1].index = 1;
-    EXPECT_EQ(0, sed.pending_chunks_.size());
+    EXPECT_EQ(1, sed.pending_chunks_.size());
     EXPECT_TRUE(sed.FinaliseWriting(1));
     EXPECT_EQ(2, sed.pending_chunks_.size());
     // update pre-predecessor, fail to retrieve encryption hash
