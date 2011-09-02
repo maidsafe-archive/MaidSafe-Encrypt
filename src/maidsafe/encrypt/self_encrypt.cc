@@ -73,7 +73,7 @@ size_t XORFilter::Put2(const byte* inString,
                                           blocking);
   boost::scoped_array<byte> buffer(new byte[length]);
   size_t i(0);
-  
+
 // #pragma omp parallel for shared(buffer, inString) private(i)
   for (i = 0; i < length; ++i) {
     buffer[i] = inString[i] ^  pad_[count_%144];
@@ -89,14 +89,15 @@ size_t XORFilter::Put2(const byte* inString,
 SE::~SE() {
   ProcessMainQueue(); // to pick up unprocessed whole chunks
   EmptySequencer();
-  if (main_encrypt_queue_.MaxRetrievable() > 0);
+  do {
     chunk_size_ = (main_encrypt_queue_.MaxRetrievable()) / 3 ;
-  if ((chunk_size_) < 1025) {
-    ProcessLastData();
-    return;
-  }
-  CheckSequenceData();
-  ProcessMainQueue();
+    if ((chunk_size_) < 1025) {
+      ProcessLastData();
+      return;
+    }
+    CheckSequenceData();
+    ProcessMainQueue();
+  } while (main_encrypt_queue_.MaxRetrievable() > 0);
   return;
 }
 
@@ -115,7 +116,7 @@ void SE::SequenceAllNonStandardChunksAndExtraContent() {
         // shove chunk data into sequencer (which will get overwritten anyway
         // as sequencer has ability to maintain timelines)
         boost::scoped_array<byte> data(new byte[chunk_size]);
-        
+
         ReadChunk(i, data.get());
         sequencer_.Add(pos, reinterpret_cast<char *>(data.get()), chunk_size);
         DeleteAChunk(i);
@@ -144,7 +145,7 @@ bool SE::Write(const char* data, size_t length, size_t position) {
     // assume we will rewrite everything TODO (DI) check assumption
     rewriting_ = true;
   }
-  
+
   CheckSequenceData();
   if (position == current_position_) {
     main_encrypt_queue_.Put2(const_cast<byte*>
@@ -295,7 +296,6 @@ bool SE::Transmogrify(const char* data, size_t length, size_t position) {
 }
 
 
-
 bool SE::ProcessLastData() {
   size_t qlength = main_encrypt_queue_.MaxRetrievable();
   if (qlength > 0) {
@@ -358,7 +358,7 @@ bool SE::QueueC0AndC1() {
                                      chunk_size_);
   chunk_data.size = chunk_size_;
   data_map_->chunks.push_back(chunk_data);
-  
+
   // Chunk 1
   main_encrypt_queue_.Get(chunk1_raw_.get(), chunk_size_);
   ChunkDetails chunk_data2;
@@ -479,7 +479,7 @@ void SE::EncryptAChunk(size_t chunk_num, byte* data,
                                 new CryptoPP::StringSink(chunk_content)
                               , pad.get())), 0);
 
-  
+
   aes_filter.Put2(data, length, -1, true);
   CryptoPP::SHA512().CalculateDigest(data_map_->chunks[chunk_num].hash,
                       const_cast<byte *>
@@ -509,25 +509,24 @@ void SE::ReadInProcessData(char* data, size_t length, size_t position)
   if ((position < c0_and_1_chunk_size_ * 2) && (chunk_one_two_q_full_))
     for (size_t i = position; i < (c0_and_1_chunk_size_ * 2) && (i < length);
           ++i) {
-      
+
       if (i < c0_and_1_chunk_size_ )
         data[i] = static_cast<char>(chunk0_raw_[i]);
       else if (i < (c0_and_1_chunk_size_ * 2))
         data[i] = static_cast<char>(chunk1_raw_[i]);
     }
-  
+
   // check queue
   if ((q_size > 0) && (q_size + current_position_ > position)) {
     size_t to_get = (q_size - current_position_ + length);
-    
+
     // grab all queue into new array
     boost::scoped_array<char>  temp(new char[q_size]);
     main_encrypt_queue_.Peek(reinterpret_cast<byte *>(temp.get()), q_size);
 
     size_t pos(current_position_ - q_size + position);
-    
-    for (size_t i = pos; i < to_get + pos;
-                          ++i) {
+
+    for (size_t i = pos; i < to_get + pos; ++i) {
       data[i] = temp[i];
 
     }
@@ -607,16 +606,12 @@ bool SE::Read(char* data, size_t length, size_t position) {
       all_run_total += data_map_->chunks[i].size;
     }
 
-  if ((!found_start) && (!found_end)) {
-    // all required content sits in data_map->content
-  } else {
-
-  if (!found_end) {
-    end_chunk = num_chunks - 1;
-    end_cut = std::min(position + length -
-                          (all_run_total - data_map_->chunks[end_chunk].size),
-                       data_map_->chunks[end_chunk].size);
-  }
+    if (!found_end) {
+      end_chunk = num_chunks - 1;
+      end_cut = std::min(position + length -
+                            (all_run_total - data_map_->chunks[end_chunk].size),
+                        data_map_->chunks[end_chunk].size);
+    }
 // this is 2 for loops to allow openmp to thread properly.
 // should be refactored to a do loop and openmp fixed
     if (chunk_one_two_q_full_) { // don't try and get these chunks there in a q
@@ -672,7 +667,6 @@ bool SE::Read(char* data, size_t length, size_t position) {
         ReadChunk(i, reinterpret_cast<byte *>(&data[pos - position]));
       }
     }
-  }
   }
 
   size_t this_position(0);
