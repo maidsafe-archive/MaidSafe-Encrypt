@@ -16,7 +16,6 @@
 
 #include "maidsafe/encrypt/self_encryption_stream.h"
 
-namespace io = boost::iostreams;
 
 namespace maidsafe {
 

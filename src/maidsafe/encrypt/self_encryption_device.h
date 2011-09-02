@@ -17,6 +17,7 @@
 #ifndef MAIDSAFE_ENCRYPT_SELF_ENCRYPTION_DEVICE_H_
 #define MAIDSAFE_ENCRYPT_SELF_ENCRYPTION_DEVICE_H_
 
+#include <tuple>
 #include <array>
 #include <iosfwd>
 #include <memory>
@@ -90,17 +91,19 @@ class SelfEncryptionDevice {
   bool FinaliseWriting(const size_t &index);
   bool LoadChunkIntoBuffer(const size_t &index, ChunkBuffer *chunk_buffer);
   bool StoreChunkFromBuffer(ChunkBuffer *chunk_buffer,
+                            const std::string &own_hash,
                             const std::string &encryption_hash,
                             const std::string &obfuscation_hash);
   SelfEncryptionParams self_encryption_params_;
   uint32_t default_self_encryption_type_;
   std::shared_ptr<DataMap> data_map_;
   std::shared_ptr<ChunkStore> chunk_store_;
-  std::uintmax_t data_size_;
+  uintmax_t data_size_;
   io::stream_offset offset_, current_chunk_offset_;
   size_t current_chunk_index_;
   std::array<ChunkBuffer, kMinChunks> chunk_buffers_;
-  std::map<size_t, std::pair<std::string, std::string> > crypto_hashes_;
+  std::map<size_t, std::tuple<std::string, std::string, std::string>>
+      crypto_hashes_;
   std::set<size_t> pending_chunks_;
   std::vector<std::string> deletable_chunks_;
   bool write_mode_;

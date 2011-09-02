@@ -47,28 +47,28 @@ enum ReturnCode {
 /// Parameters for the self-encryption algorithm
 struct SelfEncryptionParams {
   SelfEncryptionParams()
-    : max_chunk_size(1 << 18),  // 256 KiB
-      max_includable_chunk_size(1 << 8),  // 256 Bytes
-      max_includable_data_size(1 << 10) {}  // 1 KiB
-  SelfEncryptionParams(const std::uint32_t &max_chunk_size,
-                       const std::uint32_t &max_includable_chunk_size,
-                       const std::uint32_t &max_includable_data_size)
-    : max_chunk_size(max_chunk_size),
-      max_includable_chunk_size(max_includable_chunk_size),
-      max_includable_data_size(max_includable_data_size) {}
+      : max_chunk_size(1 << 18),  // 256 KiB
+        max_includable_chunk_size(1 << 8),  // 256 Bytes
+        max_includable_data_size(1 << 10) {}  // 1 KiB
+  SelfEncryptionParams(const uint32_t &max_chunk_size,
+                       const uint32_t &max_includable_chunk_size,
+                       const uint32_t &max_includable_data_size)
+      : max_chunk_size(max_chunk_size),
+        max_includable_chunk_size(max_includable_chunk_size),
+        max_includable_data_size(max_includable_data_size) {}
   /// Maximum size for a chunk, must fit into memory 5 times
-  std::uint32_t max_chunk_size;
+  uint32_t max_chunk_size;
   /// Maximum size for a chunk to be included directly in the DataMap
-  std::uint32_t max_includable_chunk_size;
+  uint32_t max_includable_chunk_size;
   /// Maximum size for a data item to be included directly in the DataMap
-  std::uint32_t max_includable_data_size;
+  uint32_t max_includable_data_size;
 };
 
 /// Amount of data to be tested for compressibility
-const std::uint32_t kCompressionSampleSize = 512;
+const uint32_t kCompressionSampleSize = 512;
 
 /// Minimum number of chunks generated per data item, dictated by algorithm
-const std::uint32_t kMinChunks(3);
+const uint32_t kMinChunks(3);
 
 /// Array of file extensions indicating already existing compression
 const std::string kNoCompressType[] = {".jpg", ".jpeg", ".jpe", ".jfif",

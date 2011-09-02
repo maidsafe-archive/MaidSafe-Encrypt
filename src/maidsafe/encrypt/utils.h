@@ -55,18 +55,20 @@ std::string Hash(const std::string &input,
                  const uint32_t &self_encryption_type);
 
 /// Deterministically expands an input string to the required size.
-bool ResizeObfuscationHash(const std::string &input,
-                           const size_t &required_size,
-                           std::string *resized_data);
+bool ResizeInput(const std::string &input,
+                 const size_t &required_size,
+                 std::string *resized_data);
 
 /// Applies self-encryption algorithm to the contents of a chunk
 std::string SelfEncryptChunk(const std::string &content,
+                             const std::string &own_hash,
                              const std::string &encryption_hash,
                              const std::string &obfuscation_hash,
                              const uint32_t &self_encryption_type);
 
 /// Applies self-decryption algorithm to the contents of a chunk
 std::string SelfDecryptChunk(const std::string &content,
+                             const std::string &own_hash,
                              const std::string &encryption_hash,
                              const std::string &obfuscation_hash,
                              const uint32_t &self_encryption_type);

@@ -28,7 +28,7 @@
 #endif
 #include "boost/archive/text_iarchive.hpp"
 #include "boost/timer.hpp"
-#include "gtest/gtest.h"
+#include "maidsafe/common/test.h"
 #include "maidsafe/common/crypto.h"
 #include "maidsafe/common/utils.h"
 #include "maidsafe/encrypt/config.h"
@@ -130,8 +130,8 @@ TEST(SelfEncryptionUtilsTest, BEH_Compress) {
 
 TEST(SelfEncryptionUtilsTest, BEH_Hash) {
   std::string data_raw(RandomString(123));
-  EXPECT_EQ("", Hash("", 0));
-  EXPECT_EQ("", Hash(data_raw, 0));
+  EXPECT_TRUE(Hash("", 0).empty());
+  EXPECT_TRUE(Hash(data_raw, 0).empty());
   EXPECT_EQ(crypto::Hash<crypto::SHA1>(data_raw), Hash(data_raw, kHashingSha1));
   EXPECT_EQ(crypto::Hash<crypto::SHA512>(data_raw),
             Hash(data_raw, kHashingSha512));
@@ -139,24 +139,24 @@ TEST(SelfEncryptionUtilsTest, BEH_Hash) {
             Hash(data_raw, kHashingTiger));
 }
 
-TEST(SelfEncryptionUtilsTest, BEH_ResizeObfuscationHash) {
+TEST(SelfEncryptionUtilsTest, BEH_ResizeInput) {
   std::string output;
-  EXPECT_FALSE(ResizeObfuscationHash("abc", 10, NULL));
-  EXPECT_FALSE(ResizeObfuscationHash("", 10, &output));
+  EXPECT_FALSE(ResizeInput("abc", 10, NULL));
+  EXPECT_FALSE(ResizeInput("", 10, &output));
   EXPECT_TRUE(output.empty());
-  EXPECT_TRUE(ResizeObfuscationHash("abc", 0, &output));
+  EXPECT_TRUE(ResizeInput("abc", 0, &output));
   EXPECT_TRUE(output.empty());
-  EXPECT_TRUE(ResizeObfuscationHash("abc", 1, &output));
+  EXPECT_TRUE(ResizeInput("abc", 1, &output));
   EXPECT_EQ("a", output);
-  EXPECT_TRUE(ResizeObfuscationHash("abc", 3, &output));
+  EXPECT_TRUE(ResizeInput("abc", 3, &output));
   EXPECT_EQ("abc", output);
-  EXPECT_TRUE(ResizeObfuscationHash("abc", 4, &output));
+  EXPECT_TRUE(ResizeInput("abc", 4, &output));
   EXPECT_EQ("abca", output);
-  EXPECT_TRUE(ResizeObfuscationHash("abc", 9, &output));
+  EXPECT_TRUE(ResizeInput("abc", 9, &output));
   EXPECT_EQ("abcabcabc", output);
-  EXPECT_TRUE(ResizeObfuscationHash("abc", 11, &output));
+  EXPECT_TRUE(ResizeInput("abc", 11, &output));
   EXPECT_EQ("abcabcabcab", output);
-  EXPECT_TRUE(ResizeObfuscationHash("a", 5, &output));
+  EXPECT_TRUE(ResizeInput("a", 5, &output));
   EXPECT_EQ("aaaaa", output);
 
   SelfEncryptionParams sep;
@@ -166,9 +166,9 @@ TEST(SelfEncryptionUtilsTest, BEH_ResizeObfuscationHash) {
         boost::posix_time::microsec_clock::universal_time();
   for (int i = 0; i < kRepetitions; ++i) {
     output.clear();
-    ResizeObfuscationHash(kInput, sep.max_chunk_size, &output);
+    ResizeInput(kInput, sep.max_chunk_size, &output);
   }
-  std::uint64_t duration =
+  uint64_t duration =
       (boost::posix_time::microsec_clock::universal_time() -
        time).total_microseconds();
   printf("Resized hash to %u Bytes %d times in %.2f ms.\n",
@@ -177,7 +177,7 @@ TEST(SelfEncryptionUtilsTest, BEH_ResizeObfuscationHash) {
 
 TEST(SelfEncryptionUtilsTest, BEH_SelfEnDecryptChunk) {
   // leaving out hashing, since it's not relevant
-  const std::array<std::uint32_t, 8> combinations = { {
+  const std::array<uint32_t, 8> combinations = { {
     kCompressionNone | kObfuscationNone | kCryptoNone,
     kCompressionNone | kObfuscationNone | kCryptoAes256,
     kCompressionNone | kObfuscationRepeated | kCryptoNone,
@@ -189,23 +189,32 @@ TEST(SelfEncryptionUtilsTest, BEH_SelfEnDecryptChunk) {
   } };
 
   std::string content(RandomString(3000 + RandomUint32() % 1000));
-  std::string hash1(RandomString(64)), hash2(hash1);
+  std::string hash1(RandomString(64)), hash2(RandomString(64)),
+              hash3(RandomString(64));
   while (hash2 == hash1)
     hash2 = RandomString(64);
+  while (hash3 == hash1)
+    hash3 = RandomString(64);
 
   std::array<std::string, 8> content_enc;
   for (size_t i = 0; i < combinations.size(); ++i) {
-    EXPECT_TRUE(SelfEncryptChunk("", hash1, hash2, combinations[i]).empty());
-    EXPECT_TRUE(SelfEncryptChunk(content, "", hash2, combinations[i]).empty());
-    EXPECT_TRUE(SelfEncryptChunk(content, hash1, "", combinations[i]).empty());
-    EXPECT_TRUE(SelfEncryptChunk(content, hash1, hash2, 0).empty());
-    EXPECT_TRUE(SelfEncryptChunk(content, hash1, hash2,
+    EXPECT_TRUE(SelfEncryptChunk("", hash1, hash2, hash3,
+                                 combinations[i]).empty());
+    EXPECT_TRUE(SelfEncryptChunk(content, "", hash2, hash3,
+                                 combinations[i]).empty());
+    EXPECT_TRUE(SelfEncryptChunk(content, hash1, "", hash3,
+                                 combinations[i]).empty());
+    EXPECT_TRUE(SelfEncryptChunk(content, hash1, hash2, "",
+                                 combinations[i]).empty());
+    EXPECT_TRUE(SelfEncryptChunk(content, hash1, hash2, hash3, 0).empty());
+    EXPECT_TRUE(SelfEncryptChunk(content, hash1, hash2, hash3,
         combinations[i] & (kObfuscationMask | kCryptoMask)).empty());
-    EXPECT_TRUE(SelfEncryptChunk(content, hash1, hash2,
+    EXPECT_TRUE(SelfEncryptChunk(content, hash1, hash2, hash3,
         combinations[i] & (kCompressionMask | kCryptoMask)).empty());
-    EXPECT_TRUE(SelfEncryptChunk(content, hash1, hash2,
+    EXPECT_TRUE(SelfEncryptChunk(content, hash1, hash2, hash3,
         combinations[i] & (kCompressionMask | kObfuscationMask)).empty());
-    content_enc[i] = SelfEncryptChunk(content, hash1, hash2, combinations[i]);
+    content_enc[i] = SelfEncryptChunk(content, hash1, hash2, hash3,
+                                      combinations[i]);
     if (combinations[i] == (kCompressionNone | kObfuscationNone | kCryptoNone))
       EXPECT_EQ(content, content_enc[i]) << i;
     else
@@ -213,33 +222,59 @@ TEST(SelfEncryptionUtilsTest, BEH_SelfEnDecryptChunk) {
   }
 
   for (size_t i = 0; i < combinations.size(); ++i) {
-    EXPECT_TRUE(SelfDecryptChunk("", hash1, hash2, combinations[i]).empty());
-    EXPECT_TRUE(SelfDecryptChunk(content_enc[i], "", hash2,
+    EXPECT_TRUE(SelfDecryptChunk("", hash1, hash2, hash3,
                                  combinations[i]).empty());
-    EXPECT_TRUE(SelfDecryptChunk(content_enc[i], hash1, "",
+    EXPECT_TRUE(SelfDecryptChunk(content_enc[i], "", hash2, hash3,
                                  combinations[i]).empty());
-    EXPECT_TRUE(SelfDecryptChunk(content_enc[i], hash1, hash2, 0).empty());
-    EXPECT_TRUE(SelfDecryptChunk(content_enc[i], hash1, hash2,
+    EXPECT_TRUE(SelfDecryptChunk(content_enc[i], hash1, "", hash3,
+                                 combinations[i]).empty());
+    EXPECT_TRUE(SelfDecryptChunk(content_enc[i], hash1, hash2, "",
+                                 combinations[i]).empty());
+    EXPECT_TRUE(SelfDecryptChunk(content_enc[i], hash1, hash2, hash3,
+                                 0).empty());
+    EXPECT_TRUE(SelfDecryptChunk(content_enc[i], hash1, hash2, hash3,
         combinations[i] & (kObfuscationMask | kCryptoMask)).empty());
-    EXPECT_TRUE(SelfDecryptChunk(content_enc[i], hash1, hash2,
+    EXPECT_TRUE(SelfDecryptChunk(content_enc[i], hash1, hash2, hash3,
         combinations[i] & (kCompressionMask | kCryptoMask)).empty());
-    EXPECT_TRUE(SelfDecryptChunk(content_enc[i], hash1, hash2,
+    EXPECT_TRUE(SelfDecryptChunk(content_enc[i], hash1, hash2, hash3,
         combinations[i] & (kCompressionMask | kObfuscationMask)).empty());
 
     if ((combinations[i] & (kObfuscationMask | kCryptoMask)) ==
-            (kObfuscationNone | kCryptoNone))
-      EXPECT_EQ(content, SelfDecryptChunk(content_enc[i], hash2, hash1,
+            (kObfuscationNone | kCryptoNone)) {
+      EXPECT_EQ(content, SelfDecryptChunk(content_enc[i], hash1, hash3, hash2,
                                           combinations[i])) << i;
-    else
-      EXPECT_NE(content, SelfDecryptChunk(content_enc[i], hash2, hash1,
+      EXPECT_EQ(content, SelfDecryptChunk(content_enc[i], hash2, hash1, hash3,
                                           combinations[i])) << i;
+      EXPECT_EQ(content, SelfDecryptChunk(content_enc[i], hash2, hash3, hash1,
+                                          combinations[i])) << i;
+      EXPECT_EQ(content, SelfDecryptChunk(content_enc[i], hash3, hash1, hash2,
+                                          combinations[i])) << i;
+      EXPECT_EQ(content, SelfDecryptChunk(content_enc[i], hash3, hash2, hash1,
+                                          combinations[i])) << i;
+    } else {
+      EXPECT_NE(content, SelfDecryptChunk(content_enc[i], hash1, hash3, hash2,
+                                          combinations[i])) << i;
+      EXPECT_NE(content, SelfDecryptChunk(content_enc[i], hash2, hash1, hash3,
+                                          combinations[i])) << i;
+      EXPECT_NE(content, SelfDecryptChunk(content_enc[i], hash2, hash3, hash1,
+                                          combinations[i])) << i;
+      EXPECT_NE(content, SelfDecryptChunk(content_enc[i], hash3, hash1, hash2,
+                                          combinations[i])) << i;
+      if ((combinations[i] & kObfuscationMask) == kObfuscationNone) {
+        EXPECT_EQ(content, SelfDecryptChunk(content_enc[i], hash3, hash2, hash1,
+                                            combinations[i])) << i;
+      } else {
+        EXPECT_NE(content, SelfDecryptChunk(content_enc[i], hash3, hash2, hash1,
+                                            combinations[i])) << i;
+      }
+    }
 
     for (size_t j = 0; j < combinations.size(); ++j)
       if (i == j)
-        EXPECT_EQ(content, SelfDecryptChunk(content_enc[i], hash1, hash2,
+        EXPECT_EQ(content, SelfDecryptChunk(content_enc[i], hash1, hash2, hash3,
                                             combinations[j])) << i << " " << j;
       else
-        EXPECT_NE(content, SelfDecryptChunk(content_enc[i], hash1, hash2,
+        EXPECT_NE(content, SelfDecryptChunk(content_enc[i], hash1, hash2, hash3,
                                             combinations[j])) << i << " " << j;
   }
 }

@@ -54,18 +54,17 @@ int SelfEncrypt(std::shared_ptr<std::istream> input_stream,
                 std::shared_ptr<DataMap> data_map,
                 std::shared_ptr<ChunkStore> chunk_store) {
   if (!input_stream || !data_map || !chunk_store) {
-    DLOG(ERROR) << "SelfEncrypt: One of the pointers is null." << std::endl;
+    DLOG(ERROR) << "SelfEncrypt: One of the pointers is null.";
     return kNullPointer;
   }
 
   if (!utils::CheckParams(self_encryption_params)) {
-    DLOG(ERROR) << "SelfEncrypt: Invalid parameters passed." << std::endl;
+    DLOG(ERROR) << "SelfEncrypt: Invalid parameters passed.";
     return kInvalidInput;
   }
 
   if (!input_stream->good()) {
-    DLOG(ERROR) << "SelfEncrypt: Input stream is invalid."
-                << std::endl;
+    DLOG(ERROR) << "SelfEncrypt: Input stream is invalid.";
     return kIoError;
   }
 
@@ -73,7 +72,7 @@ int SelfEncrypt(std::shared_ptr<std::istream> input_stream,
                                      self_encryption_params);
 
   std::streamsize buffer_size(io::optimal_buffer_size(output_stream));
-  std::uintmax_t written_size(0);
+  uintmax_t written_size(0);
   char *buffer = new char[static_cast<size_t>(buffer_size)];
   while (input_stream->good()) {
     input_stream->read(buffer, buffer_size);
@@ -87,12 +86,12 @@ int SelfEncrypt(std::shared_ptr<std::istream> input_stream,
   if (written_size != data_map->size) {
     DLOG(ERROR) << "SelfEncrypt: Amount of data written (" << written_size
                 << ") does not match reported data size (" << data_map->size
-                << ")." << std::endl;
+                << ").";
     return kEncryptError;
   }
 
   if (!input_stream->eof() || !output_stream.good()) {
-    DLOG(ERROR) << "SelfEncrypt: Stream operation failed." << std::endl;
+    DLOG(ERROR) << "SelfEncrypt: Stream operation failed.";
     return kEncryptError;
   }
 
@@ -156,8 +155,7 @@ int SelfDecrypt(std::shared_ptr<DataMap> data_map,
     return kNullPointer;
 
   if (!output_stream->good()) {
-    DLOG(ERROR) << "SelfDecrypt: Output stream is invalid."
-                << std::endl;
+    DLOG(ERROR) << "SelfDecrypt: Output stream is invalid.";
     return kIoError;
   }
 
@@ -172,17 +170,17 @@ int SelfDecrypt(std::shared_ptr<DataMap> data_map,
   }
   delete[] buffer;
 
-  std::uintmax_t copied_size(output_stream->tellp());
+  uintmax_t copied_size(output_stream->tellp());
 
   if (copied_size != data_map->size) {
     DLOG(ERROR) << "SelfDecrypt: Amount of data read (" << copied_size
                 << ") does not match total data size (" << data_map->size
-                << ")." << std::endl;
+                << ").";
     return kDecryptError;
   }
 
   if (!input_stream.eof() || !output_stream->good()) {
-    DLOG(ERROR) << "SelfDecrypt: Stream operation failed." << std::endl;
+    DLOG(ERROR) << "SelfDecrypt: Stream operation failed.";
     return kDecryptError;
   }
 

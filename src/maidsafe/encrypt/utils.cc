@@ -66,27 +66,27 @@ bool CheckCompressibility(const std::string &sample,
  */
 bool CheckParams(const SelfEncryptionParams &self_encryption_params) {
   if (self_encryption_params.max_chunk_size == 0) {
-    DLOG(ERROR) << "CheckParams: Chunk size can't be zero." << std::endl;
+    DLOG(ERROR) << "CheckParams: Chunk size can't be zero.";
     return false;
   }
 
   if (self_encryption_params.max_includable_data_size < kMinChunks - 1) {
     DLOG(ERROR) << "CheckParams: Max includable data size must be at least "
-                << kMinChunks - 1 << "." << std::endl;
+                << kMinChunks - 1 << ".";
     return false;
   }
 
   if (kMinChunks * self_encryption_params.max_includable_chunk_size >=
       self_encryption_params.max_includable_data_size) {
     DLOG(ERROR) << "CheckParams: Max includable data size must be bigger than "
-                   "all includable chunks." << std::endl;
+                   "all includable chunks.";
     return false;
   }
 
   if (kMinChunks * self_encryption_params.max_chunk_size <
       self_encryption_params.max_includable_data_size) {
     DLOG(ERROR) << "CheckParams: Max includable data size can't be bigger than "
-                << kMinChunks << " chunks." << std::endl;
+                << kMinChunks << " chunks.";
     return false;
   }
 
@@ -101,7 +101,7 @@ std::string Compress(const std::string &input,
     case kCompressionGzip:
       return crypto::Compress(input, 9);
     default:
-      DLOG(ERROR) << "Compress: Invalid compression type passed." << std::endl;
+      DLOG(ERROR) << "Compress: Invalid compression type passed.";
   }
   return "";
 }
@@ -114,8 +114,7 @@ std::string Uncompress(const std::string &input,
     case kCompressionGzip:
       return crypto::Uncompress(input);
     default:
-      DLOG(ERROR) << "Uncompress: Invalid compression type passed."
-                  << std::endl;
+      DLOG(ERROR) << "Uncompress: Invalid compression type passed.";
   }
   return "";
 }
@@ -130,7 +129,7 @@ std::string Hash(const std::string &input,
     case kHashingTiger:
       return crypto::Hash<crypto::Tiger>(input);
     default:
-      DLOG(ERROR) << "Hash: Invalid hashing type passed." << std::endl;
+      DLOG(ERROR) << "Hash: Invalid hashing type passed.";
   }
   return "";
 }
@@ -142,9 +141,9 @@ std::string Hash(const std::string &input,
  * secure than simple repetition when used together with encryption, just a lot
  * slower, so we avoid it until disproven.
  */
-bool ResizeObfuscationHash(const std::string &input,
-                           const size_t &required_size,
-                           std::string *resized_data) {
+bool ResizeInput(const std::string &input,
+                 const size_t &required_size,
+                 std::string *resized_data) {
   if (input.empty() || !resized_data)
     return false;
 
@@ -163,11 +162,13 @@ bool ResizeObfuscationHash(const std::string &input,
 }
 
 std::string SelfEncryptChunk(const std::string &content,
+                             const std::string &own_hash,
                              const std::string &encryption_hash,
                              const std::string &obfuscation_hash,
                              const uint32_t &self_encryption_type) {
-  if (content.empty() || encryption_hash.empty() || obfuscation_hash.empty()) {
-    DLOG(ERROR) << "SelfEncryptChunk: Invalid arguments passed." << std::endl;
+  if (content.empty() || own_hash.empty() || encryption_hash.empty() ||
+      obfuscation_hash.empty()) {
+    DLOG(ERROR) << "SelfEncryptChunk: Invalid arguments passed.";
     return "";
   }
 
@@ -182,24 +183,26 @@ std::string SelfEncryptChunk(const std::string &content,
       break;
     case kObfuscationRepeated:
       {
-        std::string prefix, obfuscation_pad;
-        if (encryption_hash.size() > crypto::AES256_KeySize) {
-          // add the remainder of the encryption hash to the obfuscation hash
-          prefix = encryption_hash.substr(crypto::AES256_KeySize);
-        }
-        if (!utils::ResizeObfuscationHash(prefix + obfuscation_hash,
-                                          processed_content.size(),
-                                          &obfuscation_pad)) {
-          DLOG(ERROR) << "SelfEncryptChunk: Could not create obfuscation pad."
-                      << std::endl;
+        std::string obfuscation_pad;
+        // concatenate any remainder of the encryption hash to the obfuscation
+        // hash and lastly concatenate the chunk's own hash
+        if (!utils::ResizeInput(
+              obfuscation_hash +
+                  ((encryption_hash.size() >
+                      (crypto::AES256_KeySize + crypto::AES256_IVSize)) ?
+                          encryption_hash.substr(crypto::AES256_KeySize +
+                                                 crypto::AES256_IVSize) : "") +
+                  own_hash,
+              processed_content.size(),
+              &obfuscation_pad)) {
+          DLOG(ERROR) << "SelfEncryptChunk: Could not create obfuscation pad.";
           return "";
         }
         processed_content = crypto::XOR(processed_content, obfuscation_pad);
       }
       break;
     default:
-      DLOG(ERROR) << "SelfEncryptChunk: Invalid obfuscation type passed."
-                  << std::endl;
+      DLOG(ERROR) << "SelfEncryptChunk: Invalid obfuscation type passed.";
       return "";
   }
 
@@ -210,12 +213,10 @@ std::string SelfEncryptChunk(const std::string &content,
     case kCryptoAes256:
       {
         std::string enc_hash;
-        if (!ResizeObfuscationHash(encryption_hash,
-                                   crypto::AES256_KeySize +
-                                       crypto::AES256_IVSize,
-                                   &enc_hash)) {
-          DLOG(ERROR) << "SelfEncryptChunk: Could not expand encryption hash."
-                      << std::endl;
+        if (!ResizeInput(encryption_hash,
+                         crypto::AES256_KeySize + crypto::AES256_IVSize,
+                         &enc_hash)) {
+          DLOG(ERROR) << "SelfEncryptChunk: Could not expand encryption hash.";
           return "";
         }
         processed_content = crypto::SymmEncrypt(
@@ -225,8 +226,7 @@ std::string SelfEncryptChunk(const std::string &content,
       }
       break;
     default:
-      DLOG(ERROR) << "SelfEncryptChunk: Invalid encryption type passed."
-                  << std::endl;
+      DLOG(ERROR) << "SelfEncryptChunk: Invalid encryption type passed.";
       return "";
   }
 
@@ -234,11 +234,13 @@ std::string SelfEncryptChunk(const std::string &content,
 }
 
 std::string SelfDecryptChunk(const std::string &content,
+                             const std::string &own_hash,
                              const std::string &encryption_hash,
                              const std::string &obfuscation_hash,
                              const uint32_t &self_encryption_type) {
-  if (content.empty() || encryption_hash.empty() || obfuscation_hash.empty()) {
-    DLOG(ERROR) << "SelfDecryptChunk: Invalid arguments passed." << std::endl;
+  if (content.empty() || own_hash.empty() || encryption_hash.empty() ||
+      obfuscation_hash.empty()) {
+    DLOG(ERROR) << "SelfDecryptChunk: Invalid arguments passed.";
     return "";
   }
 
@@ -253,12 +255,10 @@ std::string SelfDecryptChunk(const std::string &content,
     case kCryptoAes256:
       {
         std::string enc_hash;
-        if (!ResizeObfuscationHash(encryption_hash,
-                                   crypto::AES256_KeySize +
-                                       crypto::AES256_IVSize,
-                                   &enc_hash)) {
-          DLOG(ERROR) << "SelfDecryptChunk: Could not expand encryption hash."
-                      << std::endl;
+        if (!ResizeInput(encryption_hash,
+                         crypto::AES256_KeySize + crypto::AES256_IVSize,
+                         &enc_hash)) {
+          DLOG(ERROR) << "SelfDecryptChunk: Could not expand encryption hash.";
           return "";
         }
         processed_content = crypto::SymmDecrypt(
@@ -268,8 +268,7 @@ std::string SelfDecryptChunk(const std::string &content,
       }
       break;
     default:
-      DLOG(ERROR) << "SelfDecryptChunk: Invalid encryption type passed."
-                  << std::endl;
+      DLOG(ERROR) << "SelfDecryptChunk: Invalid encryption type passed.";
       return "";
   }
 
@@ -279,24 +278,26 @@ std::string SelfDecryptChunk(const std::string &content,
       break;
     case kObfuscationRepeated:
       {
-        std::string prefix, obfuscation_pad;
-        if (encryption_hash.size() > crypto::AES256_KeySize) {
-          // add the remainder of the encryption hash to the obfuscation hash
-          prefix = encryption_hash.substr(crypto::AES256_KeySize);
-        }
-        if (!utils::ResizeObfuscationHash(prefix + obfuscation_hash,
-                                          processed_content.size(),
-                                          &obfuscation_pad)) {
-          DLOG(ERROR) << "SelfDecryptChunk: Could not create obfuscation pad."
-                      << std::endl;
+        std::string obfuscation_pad;
+        // concatenate any remainder of the encryption hash to the obfuscation
+        // hash and lastly concatenate the chunk's own hash
+        if (!utils::ResizeInput(
+              obfuscation_hash +
+                  ((encryption_hash.size() >
+                      (crypto::AES256_KeySize + crypto::AES256_IVSize)) ?
+                          encryption_hash.substr(crypto::AES256_KeySize +
+                                                 crypto::AES256_IVSize) : "") +
+                  own_hash,
+              processed_content.size(),
+              &obfuscation_pad)) {
+          DLOG(ERROR) << "SelfDecryptChunk: Could not create obfuscation pad.";
           return "";
         }
         processed_content = crypto::XOR(processed_content, obfuscation_pad);
       }
       break;
     default:
-      DLOG(ERROR) << "SelfDecryptChunk: Invalid obfuscation type passed."
-                  << std::endl;
+      DLOG(ERROR) << "SelfDecryptChunk: Invalid obfuscation type passed.";
       return "";
   }
 

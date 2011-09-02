@@ -17,7 +17,7 @@
 # ============================================================================ #
 
 
-CMAKE_MINIMUM_REQUIRED(VERSION 2.8 FATAL_ERROR)
+CMAKE_MINIMUM_REQUIRED(VERSION 2.8.4 FATAL_ERROR)
 MESSAGE("================================================================================\n")
 
 SET(ERROR_MESSAGE_CMAKE_PATH "cmake ../../..")
@@ -112,15 +112,10 @@ ENDIF()
 ###################################################################################################
 INCLUDE(maidsafe_standard_flags)
 IF(MSVC)
-  # Set warnings as errors
-  SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /WX")
-  SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /WX")
-  SET(CMAKE_CXX_FLAGS_MINSIZEREL "${CMAKE_CXX_FLAGS_MINSIZEREL} /W4 /WX")
-  SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} /W4 /WX")
   SET_TARGET_PROPERTIES(encrypt_static PROPERTIES
                           STATIC_LIBRARY_FLAGS_RELEASE "/LTCG")
   SET_TARGET_PROPERTIES(TESTencrypt TESTbenchmark DEMOencrypt PROPERTIES
-                          LINK_FLAGS "/STACK:1048576"
+#                          LINK_FLAGS "/STACK:1048576"
                           LINK_FLAGS_RELEASE "/OPT:REF /OPT:ICF /LTCG /INCREMENTAL:NO ${LINKER_LIBS_DIRS_RELEASE}"
                           LINK_FLAGS_DEBUG "${LINKER_LIBS_DIRS_DEBUG}"
                           LINK_FLAGS_RELWITHDEBINFO "${LINKER_LIBS_DIRS_DEBUG} /LTCG /INCREMENTAL:NO"
