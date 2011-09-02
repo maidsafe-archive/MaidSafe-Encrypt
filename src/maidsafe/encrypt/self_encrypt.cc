@@ -607,6 +607,10 @@ bool SE::Read(char* data, size_t length, size_t position) {
       all_run_total += data_map_->chunks[i].size;
     }
 
+  if ((!found_start) && (!found_end)) {
+    // all required content sits in data_map->content
+  } else {
+
   if (!found_end) {
     end_chunk = num_chunks - 1;
     end_cut = std::min(position + length -
@@ -668,6 +672,7 @@ bool SE::Read(char* data, size_t length, size_t position) {
         ReadChunk(i, reinterpret_cast<byte *>(&data[pos - position]));
       }
     }
+  }
   }
 
   size_t this_position(0);
