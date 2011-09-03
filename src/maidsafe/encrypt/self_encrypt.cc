@@ -512,7 +512,7 @@ bool SE::ReadInProcessData(char* data,
   size_t q_size = main_encrypt_queue_.MaxRetrievable();
 
   // check queue
-  if ((q_size > 0) && (q_size + current_position_ > position)) {
+  if ((q_size > 0) && (current_position_ - q_size <= position)) {
     // grab all queue into new array
     boost::scoped_array<char>  temp(new char[q_size]);
     main_encrypt_queue_.Peek(reinterpret_cast<byte *>(temp.get()), q_size);
@@ -695,7 +695,7 @@ void SE::ReadChunk(std::uint16_t chunk_num, byte *data) {
     if (chunk_num == 0)
       data[i] = static_cast<byte>(chunk0_raw_[i]);
     else
-      data[c0_and_1_chunk_size_ + i] = static_cast<byte >(chunk1_raw_[i]);
+      data[i] = static_cast<byte >(chunk1_raw_[i]);
     }
     return;
   }
