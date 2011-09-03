@@ -525,6 +525,7 @@ TEST(SelfEncryptionTest, FUNC_RepeatedRandomCharReadInProcess) {
 
   for (size_t i = 0; i < test_data_size -1 ; ++i)
     plain_data[i] = plain_text[i];
+  ++test_data_size;
   plain_data[test_data_size] = 'b';
   SE selfenc(data_map, chunk_store);
   //check 2 chunk_size
@@ -534,13 +535,13 @@ TEST(SelfEncryptionTest, FUNC_RepeatedRandomCharReadInProcess) {
  
     // read some data - should be in queue
     //Check read From Queue FIXME !!
-    boost::scoped_array<char> testq(new char[chunk_size]);
-    for (size_t i = 0; i < 10 ; ++i) {
-//TODO FIXME - this next line causes segfault (double free error in checked delete)
-//      EXPECT_TRUE(selfenc.Read(testq.get(), 1, i));
-//       EXPECT_EQ(plain_data[i], testq[i]) << "not read " << i << std::endl;
-    }
-  /*   
+//     boost::scoped_array<char> testq(new char[chunk_size]);
+//     for (size_t i = 0; i < 10 ; ++i) {
+// //TODO FIXME - this next line causes segfault (double free error in checked delete)
+// //      EXPECT_TRUE(selfenc.Read(testq.get(), 1, i));
+// //       EXPECT_EQ(plain_data[i], testq[i]) << "not read " << i << std::endl;
+//     }
+    
     // next 2
     for (size_t i = chunk_size * 2; i < chunk_size * 4; ++i) {
       EXPECT_TRUE(selfenc.Write(&plain_data[i], 1, i));
@@ -567,12 +568,9 @@ TEST(SelfEncryptionTest, FUNC_RepeatedRandomCharReadInProcess) {
 
 
 
-    
-    for (size_t i = chunk_size * 4; i < chunk_size * 5; ++i) {
-      EXPECT_TRUE(selfenc.Write(&plain_data[i], 1, i));
-    }
-    // write last chunk out of sequence (should be in sequencer now
-    for (size_t i = chunk_size * 5; i < chunk_size * 6; ++i) {
+
+    // write  out of sequence (should be in sequencer now
+    for (size_t i = chunk_size * 5; i < (chunk_size * 5) + 10; ++i) {
       EXPECT_TRUE(selfenc.Write(&plain_data[i], 1, i));
     }
   
@@ -580,12 +578,19 @@ TEST(SelfEncryptionTest, FUNC_RepeatedRandomCharReadInProcess) {
 
     // Check read from Sequencer
     boost::scoped_array<char> testseq(new char[chunk_size]);
-//     for (size_t i = 0; i < chunk_size ; ++i) {
-//       EXPECT_TRUE(selfenc.Read(testseq.get(), 1, i));
-//       ASSERT_EQ(testseq[i], plain_data[i]) << "not read " << i << std::endl;
-//     }
+    for (size_t i = 0; i < 10 ; ++i) {
+      EXPECT_TRUE(selfenc.Read(&testseq[i], 1, i));
+      ASSERT_EQ(testseq[i], plain_data[i]) << "not read " << i << std::endl;
+    }
     // write second last chunk
+   
+    for (size_t i = chunk_size * 4; i < chunk_size * 5; i += chunk_size) {
+      EXPECT_TRUE(selfenc.Write(&plain_data[i], 1, i));
+    }
 
+    for (size_t i = (chunk_size * 5) + 10; i < chunk_size * 6; ++i) {
+      EXPECT_TRUE(selfenc.Write(&plain_data[i], 1, i));
+    }
   
   // TODO FIXME - wont work till destructor called
 //   ASSERT_TRUE(selfenc.FinaliseWrite());
@@ -603,7 +608,7 @@ TEST(SelfEncryptionTest, FUNC_RepeatedRandomCharReadInProcess) {
   boost::scoped_array<char>answer (new char[test_data_size]);
   EXPECT_TRUE(selfenc.Read(answer.get(), test_data_size, 0));
   for (size_t  i = 0; i < test_data_size ; ++i)
-    ASSERT_EQ(plain_data[i], answer[i]) << "failed at count " << i;*/
+    ASSERT_EQ(plain_data[i], answer[i]) << "failed at count " << i;
 }
 
 TEST(SelfEncryptionTest, FUNC_ReadArbitaryPosition) {
