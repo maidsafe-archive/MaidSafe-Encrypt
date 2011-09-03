@@ -137,15 +137,6 @@ bool SE::Write(const char* data, std::uint32_t length, std::uint64_t position) {
 
   if (length == 0)
     return true;
-  if (complete_) {
-    SequenceAllNonStandardChunksAndExtraContent();
-  if (position != current_position_) 
-      sequencer_.Add(position, const_cast<char *>(data), length);
-  else
-    // continue as usual we are rewriting data
-    // assume we will rewrite everything TODO (DI) check assumption
-    rewriting_ = true;
-  }
 
   CheckSequenceData();
   if (position == current_position_) {
@@ -156,9 +147,11 @@ bool SE::Write(const char* data, std::uint32_t length, std::uint64_t position) {
 
   } else if (position > current_position_) { !
     sequencer_.Add(position, const_cast<char *>(data), length);
-  } /*else if (position < current_position_) {
-    return Transmogrify(data, length, position);
-  }*/
+  } else  {
+    rewriting_ = true;
+    SequenceAllNonStandardChunksAndExtraContent();
+    sequencer_.Add(position, const_cast<char *>(data), length);   
+  }
   // Do not queue chunks 0 and 1 till we know we have enough for 3 chunks
   if ((main_encrypt_queue_.MaxRetrievable() >= chunk_size_ * 3) &&
       (! chunk_one_two_q_full_)) {
@@ -337,18 +330,6 @@ bool SE::DeleteAChunk(size_t chunk_num)
     (data_map_->chunks[chunk_num].hash)))
     return false;
   return true;
-}
-
-bool SE::ReInitialise() {
-    chunk_size_ = 1024*256;
-    DeleteAllChunks();
-    main_encrypt_queue_.SkipAll();
-    chunk_one_two_q_full_ = false;
-    current_position_ = 0;
-    q_position_ = 0;
-    data_map_.reset(new DataMap);
-    complete_ = false;
-    return true;
 }
 
 bool SE::QueueC0AndC1() {

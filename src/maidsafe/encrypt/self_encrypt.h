@@ -97,31 +97,30 @@ class SE {  // Self Encryption
                         this_chunk_size_(chunk_size_),
                         current_position_(0), readok_(true),
                         repeated_chunks_(false), q_position_(0),
-                        complete_(false), 
+                        rewriting_(false),
                         ignore_threads_(false), num_procs_(omp_get_num_procs()),
                         read_ahead_buffer_(new char[chunk_size_ * num_procs_]),
-                        read_ahead_buffer_start_pos_(0), rewriting_(false),
+                        read_ahead_buffer_start_pos_(0),
                         read_ahead_initialised_(false), read_c0andc1_(false)
                         {
                           if (!data_map_) 
                             data_map_.reset(new DataMap);
                           else
-                            complete_ = true; // TODO FIXME can we be passed
+                            rewriting_ = true; // TODO FIXME can we be passed
                             // and incomplete data map ?
                         }
   ~SE();
   bool Write(const char* data = NULL, std::uint32_t length = 0, std::uint64_t position = 0);
   bool Read(char * data, std::uint32_t length = 0, std::uint64_t position = 0);
-  bool ReInitialise();
   bool setDatamap(std::shared_ptr<DataMap> data_map);
   bool DeleteAllChunks();
-  bool DeleteAChunk(size_t chunk_num);
   std::shared_ptr<DataMap> getDataMap() { return data_map_; }
 
  private:
    // METHODS
   SE &operator = (const SE&);  // no assignment
   SE(const SE&);  // no copy
+  bool DeleteAChunk(size_t chunk_num);
   bool ReadAhead(char* data, std::uint32_t length, std::uint64_t position);
   bool Transmogrify(const char* data = NULL,
                     std::uint32_t length = 0, std::uint64_t position = 0);
@@ -171,12 +170,11 @@ class SE {  // Self Encryption
   bool readok_;
   bool repeated_chunks_;
   size_t q_position_;
-  bool complete_;
+  bool rewriting_;
   bool ignore_threads_;
   std::int8_t num_procs_;
   boost::shared_array<char> read_ahead_buffer_;
   size_t read_ahead_buffer_start_pos_;
-  bool rewriting_;
   bool read_ahead_initialised_;
   bool read_c0andc1_;
 };

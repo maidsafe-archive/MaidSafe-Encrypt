@@ -204,7 +204,6 @@ TEST(SelfEncryptionTest, BEH_Benchmark4kBytes) {
   std::shared_ptr<DataMap> data_map(new DataMap);
   SE selfenc(data_map, chunk_store);
   
-  EXPECT_TRUE(selfenc.ReInitialise());
   size_t test_data_size(1024*1024*20);
   boost::scoped_array<char>plain_data (new char[test_data_size]);
   for (size_t i = 0; i < test_data_size ; ++i) {
@@ -235,7 +234,6 @@ TEST(SelfEncryptionTest, BEH_Benchmark64kBytes) {
   (new MemoryChunkStore (false, hash_func));
   std::shared_ptr<DataMap> data_map(new DataMap);
   SE selfenc(data_map, chunk_store);
-  EXPECT_TRUE(selfenc.ReInitialise());
   size_t test_data_size(1024*1024*20);
   boost::scoped_array<char>plain_data (new char[test_data_size]);
   for (size_t i = 0; i < test_data_size ; ++i) {
