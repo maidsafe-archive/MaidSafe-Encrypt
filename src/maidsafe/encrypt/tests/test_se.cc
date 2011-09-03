@@ -508,12 +508,14 @@ TEST(SelfEncryptionTest, BEH_WriteRandomlyAllDirections) {
   std::random_shuffle(vec_data.begin(), vec_data.end()); // shuffle all about
   {
     SE selfenc(data_map, chunk_store);
-//     EXPECT_TRUE(selfenc.ReInitialise());
+    boost::scoped_array<char>answer (new char[test_data_size]);
     for (size_t i = 0; i < test_data_size; ++i) {
       EXPECT_TRUE(selfenc.Write(&plain_data[vec_data[i]], 1, vec_data[i]));
+      ASSERT_TRUE(selfenc.Read(answer.get(), test_data_size, 0));
+      ASSERT_EQ(plain_data[i], answer[i]) << "failed in process ";
     }
     // In process check
-    boost::scoped_array<char>answer (new char[test_data_size]);
+
     ASSERT_TRUE(selfenc.Read(answer.get(), test_data_size, 0));
     for (size_t  i = 0; i < test_data_size ; ++i)
       ASSERT_EQ(plain_data[i], answer[i]) << "failed at count " << i;
