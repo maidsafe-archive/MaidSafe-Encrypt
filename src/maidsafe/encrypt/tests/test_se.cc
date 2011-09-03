@@ -462,6 +462,17 @@ TEST(SelfEncryptionTest, FUNC_WriteOnceRead20) {
     ASSERT_TRUE(selfenc.Write(plain_data.get(), test_data_size));
     //   ASSERT_TRUE(selfenc.FinaliseWrite());  // TODO FIXME - wont work till destructor called
     // check it works at least once
+    boost::scoped_array<char>answer (new char[test_data_size]);
+    ASSERT_TRUE(selfenc.Read(answer.get(), test_data_size, 0));
+    // In process check !!
+    for (int j = 0; j < 20; ++j) {
+      boost::scoped_array<char>answer1 (new char[test_data_size]);
+      ASSERT_TRUE(selfenc.Read(answer1.get(), test_data_size, 0))
+      << "failed at read attempt " << j;
+      for (size_t  i = 0; i < test_data_size ; ++i)
+        ASSERT_EQ(plain_data[i], answer1[i]) << "failed at count " << i;
+    }
+    
   }
   SE selfenc(data_map, chunk_store);
   boost::scoped_array<char>answer (new char[test_data_size]);
@@ -501,9 +512,14 @@ TEST(SelfEncryptionTest, BEH_WriteRandomlyAllDirections) {
     for (size_t i = 0; i < test_data_size; ++i) {
       EXPECT_TRUE(selfenc.Write(&plain_data[vec_data[i]], 1, vec_data[i]));
     }
+    // In process check
+    boost::scoped_array<char>answer (new char[test_data_size]);
+    ASSERT_TRUE(selfenc.Read(answer.get(), test_data_size, 0));
+    for (size_t  i = 0; i < test_data_size ; ++i)
+      ASSERT_EQ(plain_data[i], answer[i]) << "failed at count " << i;
   }
 
-// //   ASSERT_TRUE(selfenc.FinaliseWrite());  // TODO FIXME - wont work till destructor called
+
 //   EXPECT_EQ(8, selfenc.getDataMap()->chunks.size());
   SE selfenc(data_map, chunk_store);
   boost::scoped_array<char>answer (new char[test_data_size]);
