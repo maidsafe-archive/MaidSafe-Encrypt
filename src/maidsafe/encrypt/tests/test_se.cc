@@ -69,6 +69,9 @@ TEST(SelfEncryptionTest, BEH_40Charsonly) {
   EXPECT_EQ(0, selfenc.getDataMap()->chunks.size());
   EXPECT_EQ(0, selfenc.getDataMap()->size);
   EXPECT_EQ(0, selfenc.getDataMap()->content_size);
+  // read before write - all in queue
+  EXPECT_TRUE(selfenc.Read(answer.get(),40));
+  EXPECT_EQ(*stuff.get(), *answer.get());
 }
   SE selfenc(data_map, chunk_store);
    EXPECT_EQ(40, data_map->size);
@@ -274,7 +277,6 @@ TEST(SelfEncryptionTest, BEH_WriteAndReadIncompressable) {
   boost::posix_time::ptime time =
         boost::posix_time::microsec_clock::universal_time();
   ASSERT_TRUE(selfenc.Write(plain_data.get(), test_data_size));
-  //   ASSERT_TRUE(selfenc.FinaliseWrite());  // TODO FIXME - wont work till destructor called
   std::uint64_t duration =
       (boost::posix_time::microsec_clock::universal_time() -
        time).total_microseconds();
@@ -285,6 +287,10 @@ TEST(SelfEncryptionTest, BEH_WriteAndReadIncompressable) {
              << " seconds at a speed of "
              <<  BytesToBinarySiUnits(test_data_size / (duration / 1000000.0) )
              << "/s" << std::endl;
+  boost::scoped_array<char>some_chunks_some_q (new char[test_data_size]);
+  ASSERT_TRUE(selfenc.Read(some_chunks_some_q.get(), test_data_size, 0));
+  for (size_t  i = 0; i < test_data_size ; ++i)
+    ASSERT_EQ(plain_text[i], some_chunks_some_q[i]) << "failed at count " << i;
 }
   SE selfenc(data_map, chunk_store);
   boost::scoped_array<char>answer (new char[test_data_size]);

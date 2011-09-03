@@ -88,8 +88,8 @@ size_t XORFilter::Put2(const byte* inString,
 
 SE::~SE() {
   ProcessMainQueue(); // to pick up unprocessed whole chunks
-  EmptySequencer();
-  do {
+ // EmptySequencer();
+  while (main_encrypt_queue_.MaxRetrievable() > 0) {
     chunk_size_ = (main_encrypt_queue_.MaxRetrievable()) / 3 ;
     if ((chunk_size_) < 1025) {
       ProcessLastData();
@@ -97,7 +97,8 @@ SE::~SE() {
     }
     CheckSequenceData();
     ProcessMainQueue();
-  } while (main_encrypt_queue_.MaxRetrievable() > 0);
+  } 
+  ProcessLastData();
   return;
 }
 
@@ -503,42 +504,33 @@ void SE::EncryptAChunk(std::uint16_t chunk_num, byte* data,
    }
 }
 
-bool SE::ReadInProcessData(char* data,
+void SE::ReadInProcessData(char* data,
                            std::uint32_t length,
                            std::uint64_t position)
 {
 
-  size_t to_get = length;
-  size_t q_size = main_encrypt_queue_.MaxRetrievable();
 
+  size_t q_size = main_encrypt_queue_.MaxRetrievable();
+  
   // check queue
-  if ((q_size > 0) && (current_position_ - q_size <= position)) {
+  if (q_size > 0)  {
     // grab all queue into new array
     boost::scoped_array<char>  temp(new char[q_size]);
     main_encrypt_queue_.Peek(reinterpret_cast<byte *>(temp.get()), q_size);
-
-    size_t pos = (current_position_ - q_size + position);
-    size_t limit = to_get + pos;
-    for (size_t i = pos; i < limit; ++i) {
-      data[i] = temp[i];
-      --to_get;
+    size_t pos = (current_position_ - q_size);
+ 
+    for (size_t i = 0; i < q_size; ++i) {
+      data[pos + i] = temp[i];
     }
   }
-  if (to_get == 0)
-    return true;
 
   if (sequencer_.size() > 0) {
     sequence_data answer = sequencer_.Peek(position);
-    for (size_t i = 0; i < answer.second, to_get > 0;
-          ++i) {
-      data[i + position] = answer.first[i];
-    --to_get;   
+    for (size_t i = 0; i < answer.second;   ++i) {
+      data[i + position] = answer.first[i]; 
     }
   }
-  if (to_get == 0)
-    return true;
-  else
-    return false;
+
 }
 
 bool SE::ReadAhead(char* data, std::uint32_t length, std::uint64_t position) {
@@ -684,8 +676,8 @@ bool SE::Read(char* data, std::uint32_t length, std::uint64_t position) {
 }
 
 void SE::ReadChunk(std::uint16_t chunk_num, byte *data) {
-  if ((data_map_->chunks.size() < chunk_num) ||
-    (data_map_->chunks.size() == 0)){
+  if ((data_map_->chunks.size() < chunk_num) /*||
+    (data_map_->chunks.size() == 0)*/){
     readok_ = false;
     return;
   }
