@@ -460,15 +460,11 @@ void SE::EncryptAChunk(std::uint16_t chunk_num, byte* data,
                                                           32,
                                                           iv.get());
   std::string chunk_content;
-//   CryptoPP::StreamTransformationFilter aes_filter(encryptor,
-//                   new XORFilter(
-//                     new CryptoPP::StringSink(chunk_content)
-//                   , pad.get()));
-  // with compression speeds are min 10% slower mostly 25% slower
+
   CryptoPP::Gzip aes_filter(new CryptoPP::StreamTransformationFilter(encryptor,
                               new XORFilter(
                                 new CryptoPP::StringSink(chunk_content)
-                              , pad.get())), 0);
+                              , pad.get())), 6);
 
 
   aes_filter.Put2(data, length, -1, true);
