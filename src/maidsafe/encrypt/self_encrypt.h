@@ -101,13 +101,11 @@ class SE {  // Self Encryption
                         ignore_threads_(false), num_procs_(omp_get_num_procs()),
                         read_ahead_buffer_(new char[chunk_size_ * num_procs_]),
                         read_ahead_buffer_start_pos_(0),
-                        read_ahead_initialised_(false), read_c0andc1_(false)
+                        read_ahead_initialised_(false), read_c0andc1_(false),
+                        end_of_chunks_position_(0)
                         {
                           if (!data_map_) 
                             data_map_.reset(new DataMap);
-                          else
-                            rewriting_ = true; // TODO FIXME can we be passed
-                            // and incomplete data map ?
                         }
   ~SE();
   bool Write(const char* data = NULL, std::uint32_t length = 0, std::uint64_t position = 0);
@@ -122,7 +120,8 @@ class SE {  // Self Encryption
    // METHODS
   SE &operator = (const SE&);  // no assignment
   SE(const SE&);  // no copy
-  bool DeleteAChunk(size_t chunk_num);
+  bool DeleteAChunkFromStore(size_t chunk_num);
+  bool AttemptProcessQueue();
   bool ReadAhead(char* data, std::uint32_t length, std::uint64_t position);
   bool Transmogrify(char* data,
                     std::uint32_t length = 0,
@@ -170,7 +169,7 @@ class SE {  // Self Encryption
   bool chunk_one_two_q_full_;
   std::uint32_t c0_and_1_chunk_size_;
   std::uint32_t this_chunk_size_;
-  std::uint32_t current_position_;
+  std::uint64_t current_position_;
   bool readok_;
   bool repeated_chunks_;
   size_t q_position_;
@@ -181,6 +180,7 @@ class SE {  // Self Encryption
   size_t read_ahead_buffer_start_pos_;
   bool read_ahead_initialised_;
   bool read_c0andc1_;
+  std::uint64_t end_of_chunks_position_;
 };
 
 }  // namespace encrypt

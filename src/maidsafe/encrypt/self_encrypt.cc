@@ -110,29 +110,30 @@ void SE::SequenceAllNonStandardChunksAndExtraContent() {
     pos += data_map_->chunks[i].size;
     if ((data_map_->chunks[i].size >2) &&
       (data_map_->chunks[i].size != data_map_->chunks[i - 1].size)) {
-      start_chunk = i - 2;
-      chunk_size = data_map_->chunks[i].size;
+      start_chunk = i - 1;
+      chunk_size = data_map_->chunks[i - 1].size;
+      end_of_chunks_position_ = pos - data_map_->chunks[i].size;
       break;
     }
-    if (start_chunk > 0) {
-      for (size_t i = start_chunk; i < data_map_->chunks.size(); ++i) {
-        // shove chunk data into sequencer (which will get overwritten anyway
-        // as sequencer has ability to maintain timelines)
-        boost::scoped_array<byte> data(new byte[chunk_size]);
+ 
+    for (size_t i = start_chunk; i < data_map_->chunks.size(); ++i) {
+      // shove chunk data into sequencer (which will get overwritten anyway
+      // as sequencer has ability to maintain timelines)
+      boost::scoped_array<byte> data(new byte[chunk_size]);
 
-        ReadChunk(i, data.get());
-        sequencer_.Add(pos, reinterpret_cast<char *>(data.get()), chunk_size);
-        DeleteAChunk(i);
-        pos += data_map_->chunks[i].size;
-      }
-      if (data_map_->content_size > 0)
-        sequencer_.Add(pos,
-                       const_cast<char *>(data_map_->content.c_str()),
-                       data_map_->content_size);
-      data_map_->content = "";
-      data_map_->content_size = 0;
+      ReadChunk(i, data.get());
+      sequencer_.Add(pos, reinterpret_cast<char *>(data.get()), chunk_size);
+      DeleteAChunkFromStore(i);
+      pos += data_map_->chunks[i].size;
     }
+    if (data_map_->content_size > 0)
+      sequencer_.Add(pos,
+                      const_cast<char *>(data_map_->content.c_str()),
+                      data_map_->content_size);
+    data_map_->content = "";
+    data_map_->content_size = 0;
   }
+  data_map_->complete = false;
 }
 
 bool SE::Write(const char* data, std::uint32_t length, std::uint64_t position) {
@@ -141,28 +142,33 @@ bool SE::Write(const char* data, std::uint32_t length, std::uint64_t position) {
     return true;
 
   AddReleventSeqDataToQueue();
-  if (position == current_position_) {
+  if (position == current_position_) { // assuming rewrites from zero
     main_encrypt_queue_.Put2(const_cast<byte*>
                             (reinterpret_cast<const byte*>(data)),
                             length, 0, true);
   current_position_ += length;
-
   } else if (position > current_position_) { !
     sequencer_.Add(position, const_cast<char *>(data), length);
-  } else  {
-    rewriting_ = true;
-    SequenceAllNonStandardChunksAndExtraContent();
-    sequencer_.Add(position, const_cast<char *>(data), length);   
+  } else  { /// we went backwards or rewriting !!!
+    if (!rewriting_) {
+      rewriting_ = true;
+      SequenceAllNonStandardChunksAndExtraContent();
+    }
+    sequencer_.Add(position, const_cast<char *>(data), length);
   }
-  
+  AttemptProcessQueue();
+  return true;
+}
+
+bool SE::AttemptProcessQueue()
+{
   // Do not queue chunks 0 and 1 till we know we have enough for 3 chunks
   if ((main_encrypt_queue_.MaxRetrievable() >= chunk_size_ * 3) &&
-      (! chunk_one_two_q_full_)) {
-      QueueC0AndC1();
-      q_position_ = chunk_size_ * 2;
-  }
+    (! chunk_one_two_q_full_)) {
+    QueueC0AndC1();
+    q_position_ = chunk_size_ * 2;
+    }
   size_t num_chunks_to_process(0);
-
   if (!ignore_threads_)
     num_chunks_to_process = (num_procs_) * chunk_size_;
   else
@@ -171,7 +177,6 @@ bool SE::Write(const char* data, std::uint32_t length, std::uint64_t position) {
   if ((main_encrypt_queue_.MaxRetrievable() >= num_chunks_to_process) &&
     (chunk_one_two_q_full_))
     ProcessMainQueue();
-  return true;
 }
 
 void SE::AddReleventSeqDataToQueue() {
@@ -326,10 +331,10 @@ bool SE::DeleteAllChunks()
     return true;
 }
 
-bool SE::DeleteAChunk(size_t chunk_num)
+bool SE::DeleteAChunkFromStore(size_t chunk_num)
 {
   if (!chunk_store_->Delete(reinterpret_cast<char *>
-    (data_map_->chunks[chunk_num].hash)))
+    (data_map_->chunks[chunk_num].hash)) )
     return false;
   return true;
 }
@@ -500,8 +505,8 @@ void SE::ReadInProcessData(char* data,
     // grab all queue into new array
     boost::scoped_array<char>  temp(new char[q_size]);
     main_encrypt_queue_.Peek(reinterpret_cast<byte *>(temp.get()), q_size);
+    // TODO FIXME - just get what we need 
     size_t pos = (current_position_ - q_size);
- 
     for (size_t i = 0; i < q_size; ++i) {
       data[pos + i] = temp[i];
     }
@@ -513,8 +518,8 @@ void SE::ReadInProcessData(char* data,
       data[i + position] = answer.first[i]; 
     }
   }
-
 }
+
 
 bool SE::ReadAhead(char* data, std::uint32_t length, std::uint64_t position) {
  uint64_t maxbuffersize(chunk_size_ * num_procs_);
