@@ -56,11 +56,12 @@ struct ChunkDetails {
 /// Holds information about the building blocks of a data item
 struct DataMap {
   DataMap()
-    : chunks(), size(0), content(), content_size(0) {}
+    : chunks(), size(0), content(), content_size(0), complete(false) {}
   std::vector<ChunkDetails> chunks;  ///< Information about the chunks
   std::uint64_t size;      ///< Size of data item
   std::string content;     ///< Whole data item or last chunk, if small enough
   std::uint16_t content_size;
+  bool complete; /// for ease 
 };
 
 /*
@@ -99,6 +100,7 @@ void serialize(Archive &archive,  // NOLINT
   archive & data_map.chunks;
   archive & data_map.size;
   archive & data_map.content;
+  archive & data_map.complete;
 }
 
 }  // namespace serialization

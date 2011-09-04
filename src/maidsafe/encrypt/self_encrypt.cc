@@ -88,17 +88,19 @@ size_t XORFilter::Put2(const byte* inString,
 
 SE::~SE() {
   ProcessMainQueue(); // to pick up unprocessed whole chunks
- // EmptySequencer();
+  EmptySequencer();
   while (main_encrypt_queue_.MaxRetrievable() > 0) {
     chunk_size_ = (main_encrypt_queue_.MaxRetrievable()) / 3 ;
     if ((chunk_size_) < 1025) {
-      ProcessLastData();
+      WriteExtraAndEnc0and1();
+      data_map_->complete = true;
       return;
     }
-    CheckSequenceData();
+    AddReleventSeqDataToQueue();
     ProcessMainQueue();
   } 
-  ProcessLastData();
+  WriteExtraAndEnc0and1();
+  data_map_->complete = true;
   return;
 }
 
@@ -138,7 +140,7 @@ bool SE::Write(const char* data, std::uint32_t length, std::uint64_t position) {
   if (length == 0)
     return true;
 
-  CheckSequenceData();
+  AddReleventSeqDataToQueue();
   if (position == current_position_) {
     main_encrypt_queue_.Put2(const_cast<byte*>
                             (reinterpret_cast<const byte*>(data)),
@@ -152,6 +154,7 @@ bool SE::Write(const char* data, std::uint32_t length, std::uint64_t position) {
     SequenceAllNonStandardChunksAndExtraContent();
     sequencer_.Add(position, const_cast<char *>(data), length);   
   }
+  
   // Do not queue chunks 0 and 1 till we know we have enough for 3 chunks
   if ((main_encrypt_queue_.MaxRetrievable() >= chunk_size_ * 3) &&
       (! chunk_one_two_q_full_)) {
@@ -171,14 +174,13 @@ bool SE::Write(const char* data, std::uint32_t length, std::uint64_t position) {
   return true;
 }
 
-void SE::CheckSequenceData() {
+void SE::AddReleventSeqDataToQueue() {
  sequence_data extra(sequencer_.Get(current_position_));
-  while (extra.second != 0) {
+  if (extra.second != 0) {
     main_encrypt_queue_.Put2(const_cast<byte*>
     (reinterpret_cast<const byte*>(extra.first)),
                              extra.second, 0, true);
     current_position_ += extra.second;
-    extra = sequencer_.Get(current_position_);
   }
 }
 
@@ -194,18 +196,18 @@ void SE::EmptySequencer() {
     // need to pad and write data
     if (current_position_ < seq_pos) { // Nothing done - pad to this point
       boost::scoped_array<char> pad(new char[1]);
-      pad[0] = 'a';
+      pad[0] = '0';
       for (size_t i = current_position_; i < seq_pos; ++i)
-        Write(pad.get(),1, current_position_);
+        Write(&pad[0],1, current_position_);
       Write(data, length, seq_pos);
-      CheckSequenceData();
+      AddReleventSeqDataToQueue();
     } 
     size_t pos = sequencer_.GetFirst(data, &length);
-    Transmogrify(data, length, pos);
+//     Transmogrify(data, length, pos);
   }
 
 }
-
+/*
 bool SE::Transmogrify(const char* data,
                       std::uint32_t length,
                       std::uint64_t position) {
@@ -289,10 +291,10 @@ bool SE::Transmogrify(const char* data,
     return true;
   }
   return false;
-}
+}*/
 
 
-bool SE::ProcessLastData() {
+bool SE::WriteExtraAndEnc0and1() {
   size_t qlength = main_encrypt_queue_.MaxRetrievable();
   if (qlength > 0) {
     boost::shared_array<byte> i(new byte[qlength]);
@@ -549,7 +551,10 @@ bool SE::ReadAhead(char* data, std::uint32_t length, std::uint64_t position) {
  return true;
 }
 
-bool SE::Read(char* data, std::uint32_t length, std::uint64_t position) {
+bool SE::Transmogrify(char* data,
+              std::uint32_t length,
+              std::uint64_t position,
+              bool writing) {
   std::uint32_t start_chunk(0), start_offset(0), end_chunk(0), run_total(0),
           all_run_total(0), end_cut(0), start_after_this(0);
   bool found_start(false);

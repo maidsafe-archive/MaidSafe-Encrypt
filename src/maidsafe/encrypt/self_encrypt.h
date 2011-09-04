@@ -111,7 +111,9 @@ class SE {  // Self Encryption
                         }
   ~SE();
   bool Write(const char* data = NULL, std::uint32_t length = 0, std::uint64_t position = 0);
-  bool Read(char * data, std::uint32_t length = 0, std::uint64_t position = 0);
+  bool Read(char * data, std::uint32_t length = 0, std::uint64_t position = 0) {
+    return Transmogrify(data, length, position,false);
+  }
   bool setDatamap(std::shared_ptr<DataMap> data_map);
   bool DeleteAllChunks();
   std::shared_ptr<DataMap> getDataMap() { return data_map_; }
@@ -122,9 +124,11 @@ class SE {  // Self Encryption
   SE(const SE&);  // no copy
   bool DeleteAChunk(size_t chunk_num);
   bool ReadAhead(char* data, std::uint32_t length, std::uint64_t position);
-  bool Transmogrify(const char* data = NULL,
-                    std::uint32_t length = 0, std::uint64_t position = 0);
-  bool ProcessLastData();
+  bool Transmogrify(char* data,
+                    std::uint32_t length = 0,
+                    std::uint64_t position = 0,
+                    bool writing = false);
+  bool WriteExtraAndEnc0and1();
   void ReadChunk(std::uint16_t chunk_num, byte *data);
   void EncryptAChunk(std::uint16_t chunk_num, byte* data,
                      std::uint32_t length, bool re_encrypt);
@@ -137,7 +141,7 @@ class SE {  // Self Encryption
                      boost::shared_array<byte> iv,
                      boost::shared_array<byte> pad);
   bool ProcessMainQueue();
-  void CheckSequenceData();
+  void AddReleventSeqDataToQueue();
   void EmptySequencer();
   bool CheckPositionInSequncer(std::uint64_t position,
                                std::uint32_t length); // maybe not necessary
