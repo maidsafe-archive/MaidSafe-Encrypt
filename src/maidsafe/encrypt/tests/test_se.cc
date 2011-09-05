@@ -745,7 +745,6 @@ TEST(SelfEncryptionManualTest, BEH_RandomAccess) {
                 content_data[i] = plain_text[i];
               }
 
-              SE selfenc(data_map, chunk_store);
               EXPECT_TRUE(selfenc.Write(content_data.get(),
                                         write_length, write_position));
               break;
@@ -758,7 +757,6 @@ TEST(SelfEncryptionManualTest, BEH_RandomAccess) {
               DLOG(INFO) << " read_position : " << read_position
                          << " read_length : " << read_length;
 
-              SE selfenc(data_map, chunk_store);
               // The read method shall accept a reading request that exceeds
               // the current data lenth of the encrypt stream.
               // It shall return part of the content or false if the starting
@@ -793,7 +791,6 @@ TEST(SelfEncryptionManualTest, BEH_RandomAccess) {
     std::shared_ptr<MemoryChunkStore> chunk_store
         (new MemoryChunkStore(false, hash_func));
     std::shared_ptr<DataMap> data_map(new DataMap);
-    SE selfenc(data_map, chunk_store);
 
     for (size_t i = 0; i < max_variation.size(); ++i) {
       size_t num_tries = num_of_tries[i];
