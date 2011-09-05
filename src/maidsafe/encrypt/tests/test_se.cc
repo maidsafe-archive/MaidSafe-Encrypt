@@ -83,6 +83,10 @@ TEST(SelfEncryptionTest, BEH_40Charsonly) {
 
 }
 /*
+// This test get passed in Debug mode,
+// but will get segmentation fail in Release mode
+// The breaking point is : CryptoPP::Put2 being called by SE::Write
+//                         in SE::EnptySedquence during destruction
 TEST(SelfEncryptionTest, BEH_40CharPlusPadding) {
   MemoryChunkStore::HashFunc hash_func(std::bind(&crypto::Hash<crypto::SHA512>,
                                                  std::placeholders::_1));
