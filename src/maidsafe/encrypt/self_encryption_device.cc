@@ -765,7 +765,7 @@ io::stream_offset SelfEncryptionDevice::InitialAllZero(io::stream_offset size) {
     chunk.pre_hash = pre_hash;
     chunk.pre_size = self_encryption_params.max_chunk_size;
     chunk.hash = post_hash;
-    chunk.size = encrypted_content.size();
+    chunk.size = static_cast<uint32_t>(encrypted_content.size());
     data_map_->chunks.push_back(chunk);
     data_map_->size += chunk.pre_size;
     ++chunk_index;
@@ -799,7 +799,7 @@ io::stream_offset SelfEncryptionDevice::InitialAllZero(io::stream_offset size) {
     chunk.pre_hash = pre_hash;
     chunk.pre_size = self_encryption_params.max_chunk_size;
     chunk.hash = post_hash_n_2;
-    chunk.size = encrypted_content_n_2.size();
+    chunk.size = static_cast<uint32_t>(encrypted_content_n_2.size());
     data_map_->chunks.push_back(chunk);
     data_map_->size += chunk.pre_size;
   }
@@ -812,7 +812,7 @@ io::stream_offset SelfEncryptionDevice::InitialAllZero(io::stream_offset size) {
     chunk.pre_hash = pre_hash;
     chunk.pre_size = self_encryption_params.max_chunk_size;
     chunk.hash = post_hash_n_1;
-    chunk.size = encrypted_content_n_1.size();
+    chunk.size = static_cast<uint32_t>(encrypted_content_n_1.size());
     data_map_->chunks.push_back(chunk);
     data_map_->size += chunk.pre_size;
   }
@@ -823,9 +823,9 @@ io::stream_offset SelfEncryptionDevice::InitialAllZero(io::stream_offset size) {
                                                   pre_hash);
     ChunkDetails chunk;
     chunk.pre_hash = pre_hash_remain;
-    chunk.pre_size = remain;
+    chunk.pre_size = static_cast<uint32_t>(remain);
     chunk.hash = post_hash_n;
-    chunk.size = encrypted_content_n.size();
+    chunk.size = static_cast<uint32_t>(encrypted_content_n.size());
     data_map_->chunks.push_back(chunk);
     data_map_->size += chunk.pre_size;
   }
