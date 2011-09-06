@@ -26,7 +26,7 @@
 #include "maidsafe/encrypt/self_encryption_device.h"
 #include "maidsafe/encrypt/version.h"
 
-#if MAIDSAFE_ENCRYPT_VERSION != 905
+#if MAIDSAFE_ENCRYPT_VERSION != 906
 #  error This API is not compatible with the installed library.\
     Please update the maidsafe-encrypt library.
 #endif
