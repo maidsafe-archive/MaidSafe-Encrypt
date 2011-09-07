@@ -1,4 +1,5 @@
-﻿/*******************************************************************************
+﻿
+/*******************************************************************************
  *  Copyright 2008-2011 maidsafe.net limited                                   *
  *                                                                             *
  *  The following source code is property of maidsafe.net limited and is not   *
@@ -16,28 +17,18 @@
 
 #include "maidsafe/encrypt/self_encrypt.h"
 
+#include <omp.h>
+
+#include <tuple>
 #include <algorithm>
 #include <set>
-#include <tuple>
+
 #ifdef __MSVC__
 #  pragma warning(push, 1)
-#  pragma warning(disable: 4702)
 #endif
-
-// #include <omp.h>
 #include "cryptopp/gzip.h"
-#include "cryptopp/hex.h"
 #include "cryptopp/aes.h"
 #include "cryptopp/modes.h"
-#include "cryptopp/rsa.h"
-#include "cryptopp/osrng.h"
-#include "cryptopp/integer.h"
-#include "cryptopp/pwdbased.h"
-#include "cryptopp/cryptlib.h"
-#include "cryptopp/filters.h"
-#include "cryptopp/channels.h"
-#include "cryptopp/mqueue.h"
-
 #ifdef __MSVC__
 #  pragma warning(pop)
 #endif
@@ -48,6 +39,7 @@
 #include "maidsafe/common/crypto.h"
 #include "maidsafe/common/utils.h"
 #include "maidsafe/common/chunk_store.h"
+
 #include "maidsafe/encrypt/config.h"
 #include "maidsafe/encrypt/data_map.h"
 #include "maidsafe/encrypt/log.h"
@@ -56,166 +48,358 @@
 namespace fs = boost::filesystem;
 
 namespace maidsafe {
-
 namespace encrypt {
-/**
- * Implementation of XOR transformation filter to allow pipe-lining
- *
- */
-size_t XORFilter::Put2(const byte* inString,
-                      size_t length,
-                      int messageEnd,
-                      bool blocking) {
-  if ((length == 0))
-    return AttachedTransformation()->Put2(inString,
-                                          length,
-                                          messageEnd,
-                                          blocking);
-  boost::scoped_array<byte> buffer(new byte[length]);
-  size_t i(0);
 
-// #pragma omp parallel for shared(buffer, inString) private(i)
-  for (i = 0; i < length; ++i) {
-    buffer[i] = inString[i] ^  pad_[count_%144];
+/// Implementation of XOR transformation filter to allow pipe-lining
+size_t XORFilter::Put2(const byte *in_string,
+                       size_t length,
+                       int message_end,
+                       bool blocking) {
+  if (length == 0) {
+    return AttachedTransformation()->Put2(in_string, length, message_end,
+                                          blocking);
+  }
+  boost::scoped_array<byte> buffer(new byte[length]);
+
+  size_t i(0);
+  size_t offset((3 * crypto::SHA512::DIGESTSIZE) - crypto::AES256_KeySize -
+                crypto::AES256_IVSize);
+// #pragma omp parallel for shared(buffer, in_string) private(i)
+  for (; i != length; ++i) {
+    buffer[i] = in_string[i] ^ pad_[count_ % offset];
     ++count_;
   }
 
-  return AttachedTransformation()->Put2(buffer.get(),
-                                       length,
-                                        messageEnd,
+  return AttachedTransformation()->Put2(buffer.get(), length, message_end,
                                         blocking);
 }
 
-SE::~SE() {
-  ProcessMainQueue(); // to pick up unprocessed whole chunks
+SelfEncryptor::~SelfEncryptor() {
+  ProcessMainQueue();  // to pick up unprocessed whole chunks
   EmptySequencer();
   while (main_encrypt_queue_.MaxRetrievable() > 0) {
-    chunk_size_ = (main_encrypt_queue_.MaxRetrievable()) / 3 ;
-    if ((chunk_size_) < 1025) {
+    chunk_size_ =
+        static_cast<uint32_t>(main_encrypt_queue_.MaxRetrievable() / 3);
+    if (chunk_size_ < 1025) {
       WriteExtraAndEnc0and1();
-      data_map_->complete = true;
-      return;
     }
     AddReleventSeqDataToQueue();
     ProcessMainQueue();
-  } 
-  WriteExtraAndEnc0and1();
-  data_map_->complete = true;
-  return;
-}
-
-void SE::SequenceAllNonStandardChunksAndExtraContent() {
-  size_t start_chunk(0), chunk_size(0), pos(0);
-  for (size_t i = 0; i < data_map_->chunks.size(); ++i) {
-    pos += data_map_->chunks[i].size;
-    if ((data_map_->chunks[i].size >2) &&
-      (data_map_->chunks[i].size != data_map_->chunks[i - 1].size)) {
-      start_chunk = i - 1;
-      chunk_size = data_map_->chunks[i - 1].size;
-      end_of_chunks_position_ = pos - data_map_->chunks[i].size;
-      break;
-    }
- 
-    for (size_t i = start_chunk; i < data_map_->chunks.size(); ++i) {
-      // shove chunk data into sequencer (which will get overwritten anyway
-      // as sequencer has ability to maintain timelines)
-      boost::scoped_array<byte> data(new byte[chunk_size]);
-
-      ReadChunk(i, data.get());
-      sequencer_.Add(pos, reinterpret_cast<char *>(data.get()), chunk_size);
-      DeleteAChunkFromStore(i);
-      pos += data_map_->chunks[i].size;
-    }
-    if (data_map_->content_size > 0)
-      sequencer_.Add(pos,
-                      const_cast<char *>(data_map_->content.c_str()),
-                      data_map_->content_size);
-    data_map_->content = "";
-    data_map_->content_size = 0;
   }
-  data_map_->complete = false;
+  WriteExtraAndEnc0and1();
 }
 
-bool SE::Write(const char* data, std::uint32_t length, std::uint64_t position) {
-
+bool SelfEncryptor::Write(const char *data,
+                          uint32_t length,
+                          uint64_t position) {
   if (length == 0)
     return true;
 
   AddReleventSeqDataToQueue();
-  if (position == current_position_) { // assuming rewrites from zero
-    main_encrypt_queue_.Put2(const_cast<byte*>
-                            (reinterpret_cast<const byte*>(data)),
-                            length, 0, true);
-  current_position_ += length;
-  } else if (position > current_position_) { !
-    sequencer_.Add(position, const_cast<char *>(data), length);
-  } else  { /// we went backwards or rewriting !!!
+  if (position == current_position_) {  // assuming rewrites from zero
+    main_encrypt_queue_.Put2(const_cast<byte*>(
+        reinterpret_cast<const byte*>(data)), length, 0, true);
+    current_position_ += length;
+  } else if (position > current_position_) {
+    sequencer_.Add(position, const_cast<char*>(data), length);
+  } else  {  // we went backwards or rewriting !!!
     if (!rewriting_) {
       rewriting_ = true;
       SequenceAllNonStandardChunksAndExtraContent();
     }
-    sequencer_.Add(position, const_cast<char *>(data), length);
+    sequencer_.Add(position, const_cast<char*>(data), length);
   }
   AttemptProcessQueue();
   return true;
 }
 
-bool SE::AttemptProcessQueue()
-{
-  // Do not queue chunks 0 and 1 till we know we have enough for 3 chunks
-  if ((main_encrypt_queue_.MaxRetrievable() >= chunk_size_ * 3) &&
-    (! chunk_one_two_q_full_)) {
-    QueueC0AndC1();
-    q_position_ = chunk_size_ * 2;
-    }
-  size_t num_chunks_to_process(0);
-  if (!ignore_threads_)
-    num_chunks_to_process = (num_procs_) * chunk_size_;
-  else
-    num_chunks_to_process = chunk_size_;
-
-  if ((main_encrypt_queue_.MaxRetrievable() >= num_chunks_to_process) &&
-    (chunk_one_two_q_full_))
-    ProcessMainQueue();
-}
-
-void SE::AddReleventSeqDataToQueue() {
- sequence_data extra(sequencer_.Get(current_position_));
+void SelfEncryptor::AddReleventSeqDataToQueue() {
+  SequenceData extra(sequencer_.Get(current_position_));
   if (extra.second != 0) {
-    main_encrypt_queue_.Put2(const_cast<byte*>
-    (reinterpret_cast<const byte*>(extra.first)),
-                             extra.second, 0, true);
+    main_encrypt_queue_.Put2(const_cast<byte*>(
+        reinterpret_cast<const byte*>(extra.first)), extra.second, 0, true);
     current_position_ += extra.second;
   }
 }
 
-void SE::EmptySequencer() {
-  if (sequencer_.size() == 0)
+void SelfEncryptor::SequenceAllNonStandardChunksAndExtraContent() {
+  size_t start_chunk(0), chunk_size(0), pos(0);
+  for (size_t i = 0; i != data_map_->chunks.size(); ++i) {
+    pos += data_map_->chunks[i].size;
+    if ((data_map_->chunks[i].size > 2) &&
+        (data_map_->chunks[i].size != data_map_->chunks[i - 1].size)) {
+      start_chunk = i - 1;
+      chunk_size = data_map_->chunks[i - 1].size;
+      break;
+    }
+
+    for (uint16_t i = static_cast<uint16_t>(start_chunk);
+         i != data_map_->chunks.size(); ++i) {
+      // shove chunk data into sequencer (which will get overwritten anyway
+      // as sequencer has ability to maintain timelines)
+      boost::scoped_array<byte> data(new byte[chunk_size]);
+      ReadChunk(i, data.get());
+      sequencer_.Add(pos, reinterpret_cast<char*>(data.get()), chunk_size);
+      chunk_store_->Delete(reinterpret_cast<char*>(
+          data_map_->chunks[i].hash));
+      pos += data_map_->chunks[i].size;
+    }
+
+    if (data_map_->content_size > 0) {
+      sequencer_.Add(pos, const_cast<char*>(data_map_->content.c_str()),
+                     data_map_->content_size);
+    }
+    data_map_->content.clear();
+    data_map_->content_size = 0;
+  }
+  data_map_->complete = false;
+}
+
+void SelfEncryptor::ReadChunk(uint16_t chunk_num, byte *data) {
+//  if ((data_map_->chunks.size() < chunk_num) ||
+//      (data_map_->chunks.size() == 0)) {
+  if (data_map_->chunks.size() < chunk_num) {
+    read_ok_ = false;
+    return;
+  }
+
+  // still in process of writing so read raw arrays
+  if (chunk_one_two_q_full_ && (chunk_num < 2)) {
+    if (chunk_num == 0) {
+      for (size_t i = 0; i != c0_and_1_chunk_size_; ++i)
+        data[i] = static_cast<byte>(chunk0_raw_[i]);
+    } else {
+      for (size_t i = 0; i != c0_and_1_chunk_size_; ++i)
+        data[i] = static_cast<byte >(chunk1_raw_[i]);
+    }
+    return;
+  }
+
+  std::string hash(reinterpret_cast<char*>(data_map_->chunks[chunk_num].hash),
+                   crypto::SHA512::DIGESTSIZE);
+  size_t length = data_map_->chunks[chunk_num].size;
+  ByteArray pad(new byte[(3 * crypto::SHA512::DIGESTSIZE) -
+                         crypto::AES256_KeySize - crypto::AES256_IVSize]);
+  ByteArray key(new byte[crypto::AES256_KeySize]);
+  ByteArray iv(new byte[crypto::AES256_IVSize]);
+  GetPadIvKey(chunk_num, key, iv, pad);
+  std::string content;
+#pragma omp critical
+  {  // NOLINT (Fraser)
+    content = chunk_store_->Get(hash);
+  }
+
+  if (content.empty()) {
+    DLOG(ERROR) << "Could not find chunk number : " << chunk_num
+                << " which is " << EncodeToHex(hash);
+    read_ok_ = false;
+    return;
+  }
+
+  CryptoPP::CFB_Mode<CryptoPP::AES>::Decryption decryptor(
+      key.get(), crypto::AES256_KeySize, iv.get());
+//   CryptoPP::CFB_Mode<CryptoPP::AES>::Decryption decryptor(key.get(),
+//       crypto::AES256_KeySize, iv.get());
+//           CryptoPP::StringSource filter(content, true,
+//             new XORFilter(
+//             new CryptoPP::StreamTransformationFilter(decryptor,
+//               new CryptoPP::MessageQueue),
+//             pad.get()));
+  CryptoPP::StringSource filter(content, true,
+      new XORFilter(
+          new CryptoPP::StreamTransformationFilter(decryptor,
+              new CryptoPP::Gunzip(new CryptoPP::MessageQueue())), pad.get()));
+  filter.Get(data, length);
+}
+
+void SelfEncryptor::GetPadIvKey(size_t this_chunk_num,
+                                ByteArray key,
+                                ByteArray iv,
+                                ByteArray pad) {
+  size_t num_chunks = data_map_->chunks.size();
+  size_t n_1_chunk = (this_chunk_num + num_chunks - 1) % num_chunks;
+  size_t n_2_chunk = (this_chunk_num + num_chunks - 2) % num_chunks;
+
+  for (size_t i = 0; i != crypto::AES256_KeySize; ++i)
+    key[i] = data_map_->chunks[n_1_chunk].pre_hash[i];
+  for (size_t i = 0; i != crypto::AES256_IVSize; ++i)
+    iv[i] = data_map_->chunks[n_1_chunk].pre_hash[i + crypto::AES256_KeySize];
+
+  for (size_t i = 0; i != crypto::SHA512::DIGESTSIZE; ++i) {
+    pad[i] = data_map_->chunks[n_1_chunk].pre_hash[i];
+    pad[i + crypto::SHA512::DIGESTSIZE] =
+        data_map_->chunks[this_chunk_num].pre_hash[i];
+  }
+
+  size_t pad_offset(2 * crypto::SHA512::DIGESTSIZE);
+  size_t hash_offset(crypto::AES256_KeySize + crypto::AES256_IVSize);
+  for (size_t i = 0; i != crypto::AES256_IVSize; ++i) {
+    pad[i + pad_offset] =
+        data_map_->chunks[n_2_chunk].pre_hash[i + hash_offset];
+  }
+}
+
+bool SelfEncryptor::AttemptProcessQueue() {
+  // Do not queue chunks 0 and 1 till we know we have enough for 3 chunks
+  if ((main_encrypt_queue_.MaxRetrievable() >= chunk_size_ * 3) &&
+      !chunk_one_two_q_full_) {
+    QueueC0AndC1();
+  }
+  size_t num_chunks_to_process(ignore_threads_ ? chunk_size_ :
+                               num_procs_ * chunk_size_);
+
+  if ((main_encrypt_queue_.MaxRetrievable() >= num_chunks_to_process) &&
+      chunk_one_two_q_full_) {
+    ProcessMainQueue();
+  }
+  return true;
+}
+
+bool SelfEncryptor::QueueC0AndC1() {
+  c0_and_1_chunk_size_ = chunk_size_;
+  // Chunk 0
+  main_encrypt_queue_.Get(chunk0_raw_.get(), chunk_size_);
+  ChunkDetails chunk_data;
+  CryptoPP::SHA512().CalculateDigest(chunk_data.pre_hash,
+                                     chunk0_raw_.get(),
+                                     chunk_size_);
+  chunk_data.size = chunk_size_;
+  data_map_->chunks.push_back(chunk_data);
+
+  // Chunk 1
+  main_encrypt_queue_.Get(chunk1_raw_.get(), chunk_size_);
+  ChunkDetails chunk_data2;
+  CryptoPP::SHA512().CalculateDigest(chunk_data2.pre_hash,
+                                     chunk1_raw_.get() ,
+                                     chunk_size_);
+  chunk_data2.size = chunk_size_;
+  data_map_->chunks.push_back(chunk_data2);
+  chunk_one_two_q_full_ = true;
+  return true;
+}
+
+bool SelfEncryptor::ProcessMainQueue() {
+  if (main_encrypt_queue_.MaxRetrievable() < chunk_size_)
+    return false;
+
+  size_t chunks_to_process = main_encrypt_queue_.MaxRetrievable() / chunk_size_;
+  size_t old_dm_size = data_map_->chunks.size();
+  data_map_->chunks.resize(chunks_to_process + old_dm_size);
+  std::vector<ByteArray>chunk_vec(chunks_to_process,
+                                  ByteArray(new byte[chunk_size_]));
+  // get all hashes
+  for (size_t i = 0; i != chunks_to_process; ++i) {
+    chunk_vec[i] = ByteArray(new byte[chunk_size_]);
+    main_encrypt_queue_.Get(chunk_vec[i].get(), chunk_size_);
+  }
+
+#pragma omp parallel for
+  for (size_t i = 0; i != chunks_to_process; ++i) {
+    CryptoPP::SHA512().CalculateDigest(
+        data_map_->chunks[i + old_dm_size].pre_hash,
+        chunk_vec[i].get(),
+        chunk_size_);
+    data_map_->chunks[i + old_dm_size].size = chunk_size_;
+  }
+// check for repeated content
+// TODO(dirvine) FIXME ( needs tested )
+
+//   for(size_t i = 0; i < chunks_to_process; ++i) {
+//     if ((data_map_->chunks[i + old_dm_size].pre_hash ==
+//       data_map_->chunks[i + old_dm_size].pre_hash) &&
+//       (data_map_->chunks[i + old_dm_size].pre_hash ==
+//       data_map_->chunks[i -1 + old_dm_size].pre_hash) &&
+//       (data_map_->chunks[i + old_dm_size].pre_hash ==
+//       data_map_->chunks[i -2 + old_dm_size].pre_hash)) {
+//       if (i == 2) { // only encrypt chunk 2
+//         EncryptAChunk(i + old_dm_size, &chunk_vec[i][0], chunk_size_, false);
+//       } else {
+//         for (int j =0; j != crypto::SHA512::DIGESTSIZE; ++j)
+//           data_map_->chunks[i + old_dm_size].hash[j] =
+//           data_map_->chunks[i - 1 + old_dm_size].hash[j];
+//       }
+//     }
+//   }
+#pragma omp parallel for  // gives over 100Mb write speeds
+  for (size_t i = 0; i != chunks_to_process; ++i) {
+    EncryptAChunk(static_cast<uint16_t>(i + old_dm_size), &chunk_vec[i][0],
+                  chunk_size_, false);
+  }
+  return true;
+}
+
+void SelfEncryptor::EncryptAChunk(uint16_t chunk_num,
+                                  byte *data,
+                                  uint32_t length,
+                                  bool re_encrypt) {
+  if (data_map_->chunks.size() < chunk_num)
+    return;
+  if (re_encrypt)  // fix pre enc hash and re-encrypt next 2
+    CryptoPP::SHA512().CalculateDigest(data_map_->chunks[chunk_num].pre_hash,
+                                       data,
+                                       length);
+
+  ByteArray pad(new byte[(3 * crypto::SHA512::DIGESTSIZE) -
+                         crypto::AES256_KeySize - crypto::AES256_IVSize]);
+  ByteArray key(new byte[crypto::AES256_KeySize]);
+  ByteArray iv(new byte[crypto::AES256_IVSize]);
+  GetPadIvKey(chunk_num, key, iv, pad);
+  CryptoPP::CFB_Mode<CryptoPP::AES>::Encryption encryptor(
+      key.get(), crypto::AES256_KeySize, iv.get());
+
+  std::string chunk_content;
+  CryptoPP::Gzip aes_filter(new CryptoPP::StreamTransformationFilter(encryptor,
+                                new XORFilter(
+                                    new CryptoPP::StringSink(chunk_content),
+                                    pad.get())), 6);
+  aes_filter.Put2(data, length, -1, true);
+
+  CryptoPP::SHA512().CalculateDigest(data_map_->chunks[chunk_num].hash,
+      const_cast<byte*>(reinterpret_cast<const byte*>(chunk_content.c_str())),
+      chunk_content.size());
+
+  std::string post_hash(reinterpret_cast<char*>(
+      data_map_->chunks[chunk_num].hash), crypto::SHA512::DIGESTSIZE);
+#pragma omp critical
+  {  // NOLINT (Fraser)
+    if (!chunk_store_->Store(post_hash, chunk_content))
+      DLOG(ERROR) << "Could not store " << EncodeToHex(post_hash);
+  }
+
+  if (!re_encrypt) {
+    data_map_->chunks[chunk_num].size = length;  // keep pre-compressed length
+#pragma omp atomic
+    data_map_->size += length;
+  }
+}
+
+void SelfEncryptor::EmptySequencer() {
+  if (sequencer_.empty())
     return;
 
-  while (sequencer_.size() > 0) {
-    char * data;
+  while (!sequencer_.empty()) {
+    boost::scoped_ptr<char> data(new char);
     size_t length(0);
-    size_t seq_pos = sequencer_.GetFirst(data, &length);
+    size_t seq_pos = sequencer_.GetFirst(data.get(), &length);
 
     // need to pad and write data
-    if (current_position_ < seq_pos) { // Nothing done - pad to this point
+    if (current_position_ < seq_pos) {  // Nothing done - pad to this point
       boost::scoped_array<char> pad(new char[1]);
       pad[0] = '0';
       for (size_t i = current_position_; i < seq_pos; ++i)
-        Write(&pad[0],1, current_position_);
-      Write(data, length, seq_pos);
+        Write(&pad[0], 1, current_position_);
+      Write(data.get(), static_cast<uint32_t>(length), seq_pos);
       AddReleventSeqDataToQueue();
-    } 
-    size_t pos = sequencer_.GetFirst(data, &length);
+    }
+    /*size_t pos = */ sequencer_.GetFirst(data.get(), &length);
 //     Transmogrify(data, length, pos);
   }
-
 }
+
 /*
-bool SE::Transmogrify(const char* data,
-                      std::uint32_t length,
-                      std::uint64_t position) {
+bool SelfEncryptor::Transmogrify(const char* data,
+                      uint32_t length,
+                      uint64_t position) {
 
 // Transmogrifier will identify the appropriate chunk
 // recover it and alter the data in place
@@ -261,7 +445,7 @@ bool SE::Transmogrify(const char* data,
 
     do {
       // get chunk
-      boost::shared_array<byte> chunk_data
+      ByteArray chunk_data
       (new byte[data_map_->chunks[start_chunk].size]);
       ReadChunk(start_chunk, chunk_data.get());
       for (size_t i = start_offset; i < length + start_offset; ++i)
@@ -277,8 +461,8 @@ bool SE::Transmogrify(const char* data,
     for (int i = end_chunk; i <= 2; ++i) {
       chunk_num = (i + data_map_->chunks.size())
                        %  data_map_->chunks.size();
-      std::string hash(reinterpret_cast<char *>
-                       (data_map_->chunks[chunk_num].hash), 64);
+      std::string hash(reinterpret_cast<char*>(
+          data_map_->chunks[chunk_num].hash), crypto::SHA512::DIGESTSIZE);
       DeleteAChunk(i);
       EncryptAChunk(chunk_num,const_cast<byte *>
                     (reinterpret_cast<const byte *>
@@ -298,15 +482,14 @@ bool SE::Transmogrify(const char* data,
   return false;
 }*/
 
-
-bool SE::WriteExtraAndEnc0and1() {
+bool SelfEncryptor::WriteExtraAndEnc0and1() {
   size_t qlength = main_encrypt_queue_.MaxRetrievable();
-  if (qlength > 0) {
-    boost::shared_array<byte> i(new byte[qlength]);
+  if (qlength != 0) {
+    ByteArray i(new byte[qlength]);
     main_encrypt_queue_.Get(i.get(), qlength);
-    std::string extra(reinterpret_cast<char *>(i.get()), qlength);
+    std::string extra(reinterpret_cast<char*>(i.get()), qlength);
     data_map_->content = extra;
-    data_map_->content_size = qlength;
+    data_map_->content_size = static_cast<uint16_t>(qlength);
     data_map_->size += qlength;
   }
   // when all that is done, encrypt chunks 0 and 1
@@ -318,206 +501,12 @@ bool SE::WriteExtraAndEnc0and1() {
     chunk_one_two_q_full_ = false;
   }
   main_encrypt_queue_.SkipAll();
+  data_map_->complete = true;
   return true;
 }
 
-bool SE::DeleteAllChunks()
-{
-  for (size_t i =0; i < data_map_->chunks.size(); ++i)
-    if (!chunk_store_->Delete(reinterpret_cast<char *>
-      (data_map_->chunks[i].hash)))
-      return false;
-    data_map_->chunks.clear();
-    return true;
-}
-
-bool SE::DeleteAChunkFromStore(size_t chunk_num)
-{
-  if (!chunk_store_->Delete(reinterpret_cast<char *>
-    (data_map_->chunks[chunk_num].hash)) )
-    return false;
-  return true;
-}
-
-bool SE::QueueC0AndC1() {
-  c0_and_1_chunk_size_ = chunk_size_;
-  // Chunk 0
-  main_encrypt_queue_.Get(chunk0_raw_.get(), chunk_size_);
-  ChunkDetails chunk_data;
-  CryptoPP::SHA512().CalculateDigest(chunk_data.pre_hash,
-                                     chunk0_raw_.get(),
-                                     chunk_size_);
-  chunk_data.size = chunk_size_;
-  data_map_->chunks.push_back(chunk_data);
-
-  // Chunk 1
-  main_encrypt_queue_.Get(chunk1_raw_.get(), chunk_size_);
-  ChunkDetails chunk_data2;
-  CryptoPP::SHA512().CalculateDigest(chunk_data2.pre_hash,
-                                     chunk1_raw_.get() ,
-                                     chunk_size_);
-  chunk_data2.size = chunk_size_;
-  data_map_->chunks.push_back(chunk_data2);
-  chunk_one_two_q_full_ = true;
-  return true;
-}
-
-bool SE::ProcessMainQueue() {
-  if (main_encrypt_queue_.MaxRetrievable()  < chunk_size_)
-    return false;
-
-  size_t chunks_to_process = (main_encrypt_queue_.MaxRetrievable() / chunk_size_);
-  size_t old_dm_size = data_map_->chunks.size();
-  data_map_->chunks.resize(chunks_to_process + old_dm_size);
-  std::vector<boost::shared_array<byte>>chunk_vec(chunks_to_process,
-                                               boost::shared_array<byte
-                                               >(new byte[chunk_size_]));
-  //get all hashes
-   for(size_t i = 0; i < chunks_to_process; ++i) {
-     boost::shared_array<byte> tempy(new byte[chunk_size_]);
-     main_encrypt_queue_.Get(tempy.get(), chunk_size_);
-     q_position_ += chunk_size_;
-     chunk_vec[i] = tempy;
-   }
-#pragma omp parallel for
-   for(size_t i = 0; i < chunks_to_process; ++i) {
-     CryptoPP::SHA512().CalculateDigest(
-       data_map_->chunks[i + old_dm_size].pre_hash,
-       chunk_vec[i].get(),
-       chunk_size_);
-    data_map_->chunks[i + old_dm_size].size = chunk_size_;
-    }
-// check for repeated content
-// TODO FIXME ( needs tested )
-
-//   for(size_t i = 0; i < chunks_to_process; ++i) {
-//     if ((data_map_->chunks[i + old_dm_size].pre_hash ==
-//       data_map_->chunks[i + old_dm_size].pre_hash) &&
-//       (data_map_->chunks[i + old_dm_size].pre_hash ==
-//       data_map_->chunks[i -1 + old_dm_size].pre_hash) &&
-//       (data_map_->chunks[i + old_dm_size].pre_hash ==
-//       data_map_->chunks[i -2 + old_dm_size].pre_hash)) {
-//       if (i == 2) { // only encrypt chunk 2
-//         EncryptAChunk(i + old_dm_size, &chunk_vec[i][0], chunk_size_, false);
-//       } else {
-//         for (int j =0; j < 64; ++j)
-//           data_map_->chunks[i + old_dm_size].hash[j] =
-//           data_map_->chunks[i - 1 + old_dm_size].hash[j];
-//       }
-//     }
-//   }
-
-
-#pragma omp parallel for  // gives over 100Mb write speeds
-  for(size_t j = 0; j < chunks_to_process; ++j) {
-    EncryptAChunk(j + old_dm_size,
-                  &chunk_vec[j][0],
-                  chunk_size_,
-                  false);
-  }
-  return true;
-}
-
-void SE::getPad_Iv_Key(size_t this_chunk_num,
-                       boost::shared_array<byte> key,
-                       boost::shared_array<byte> iv,
-                       boost::shared_array<byte> pad) {
-  size_t num_chunks = data_map_->chunks.size();
-  size_t n_1_chunk = (this_chunk_num + num_chunks -1) % num_chunks;
-  size_t n_2_chunk = (this_chunk_num + num_chunks -2) % num_chunks;
-
-  for (int i = 0; i < 48; ++i) {
-    if (i < 32)
-      key[i] = data_map_->chunks[n_1_chunk].pre_hash[i];
-    if (i > 31)
-      iv[i - 32] = data_map_->chunks[n_1_chunk].pre_hash[i];
-  }
-
-  for (int i = 0; i < 64; ++i) {
-    pad[i] =  data_map_->chunks[n_1_chunk].pre_hash[i];
-    pad[i+64] = data_map_->chunks[this_chunk_num].pre_hash[i];
-    if (i < 16)
-      pad[i+128] = data_map_->chunks[n_2_chunk].pre_hash[i+48];
-  }
-}
-
-
-void SE::EncryptAChunk(std::uint16_t chunk_num, byte* data,
-                       std::uint32_t length, bool re_encrypt) {
-
-   if (data_map_->chunks.size() < chunk_num)
-    return;
-   if (re_encrypt)  // fix pre enc hash and re-encrypt next 2
-     CryptoPP::SHA512().CalculateDigest(data_map_->chunks[chunk_num].pre_hash,
-                                        data,
-                                        length);
-
-  boost::shared_array<byte> pad(new byte[144]);
-  boost::shared_array<byte> key(new byte[32]);
-  boost::shared_array<byte> iv (new byte[16]);
-  getPad_Iv_Key(chunk_num, key, iv, pad);
-  CryptoPP::CFB_Mode<CryptoPP::AES>::Encryption encryptor(key.get(),
-                                                          32,
-                                                          iv.get());
-  std::string chunk_content;
-
-  CryptoPP::Gzip aes_filter(new CryptoPP::StreamTransformationFilter(encryptor,
-                              new XORFilter(
-                                new CryptoPP::StringSink(chunk_content)
-                              , pad.get())), 6);
-
-
-  aes_filter.Put2(data, length, -1, true);
-  CryptoPP::SHA512().CalculateDigest(data_map_->chunks[chunk_num].hash,
-                      const_cast<byte *>
-                      (reinterpret_cast<const byte *>(chunk_content.c_str())),
-                      chunk_content.size());
-  std::string post_hash(reinterpret_cast<char *>
-                          (data_map_->chunks[chunk_num].hash), 64);
-#pragma omp critical
-{
-  if (!chunk_store_->Store(post_hash,  chunk_content))
-    DLOG(ERROR) << "Could not store " << EncodeToHex(post_hash)
-                                        << std::endl;
-}
-
-   if (!re_encrypt) {
-    data_map_->chunks[chunk_num].size = length; // keep pre-compressed length
-#pragma omp atomic
-    data_map_->size += length;
-   }
-}
-
-void SE::ReadInProcessData(char* data,
-                           std::uint32_t length,
-                           std::uint64_t position)
-{
-
-
-  size_t q_size = main_encrypt_queue_.MaxRetrievable();
-  
-  // check queue
-  if (q_size > 0)  {
-    // grab all queue into new array
-    boost::scoped_array<char>  temp(new char[q_size]);
-    main_encrypt_queue_.Peek(reinterpret_cast<byte *>(temp.get()), q_size);
-    // TODO FIXME - just get what we need 
-    size_t pos = (current_position_ - q_size);
-    for (size_t i = 0; i < q_size; ++i) {
-      data[pos + i] = temp[i];
-    }
-  }
-
-  if (sequencer_.size() > 0) {
-    sequence_data answer = sequencer_.Peek(position);
-    for (size_t i = 0; i < answer.second;   ++i) {
-      data[i + position] = answer.first[i]; 
-    }
-  }
-}
-
-bool SE::Read(char* data, std::uint32_t length, std::uint64_t position) {
-  uint64_t maxbuffersize(chunk_size_ * num_procs_);
+bool SelfEncryptor::Read(char* data, uint32_t length, uint64_t position) {
+  uint64_t maxbuffersize = chunk_size_ * num_procs_;
   uint64_t cachesize = std::min(data_map_->size, maxbuffersize);
 
   if (length < cachesize) {
@@ -527,20 +516,20 @@ bool SE::Read(char* data, std::uint32_t length, std::uint64_t position) {
     //  requested position not greater than cache end and
     //  enough info in cache to fulfil request
     if (cache_ &&
-       (position > cache_initial_posn_) &&
-       (cache_initial_posn_ + cachesize > position) &&
-       ((cachesize - (position - cache_initial_posn_)) >= length)) {
+        (position > cache_initial_posn_) &&
+        (cache_initial_posn_ + cachesize > position) &&
+        ((cachesize - (position - cache_initial_posn_)) >= length)) {
       // read data_cache_
-      for (uint32_t i = 0; i < length; ++i) {
+      for (uint32_t i = 0; i != length; ++i) {
         data[i] = data_cache_[(position - cache_initial_posn_) + i];
       }
     } else {
       // populate data_cache_ and read
-      Transmogrify(data_cache_.get(), cachesize, position, false);
+      Transmogrify(data_cache_.get(), static_cast<uint32_t>(cachesize),
+                   position, false);
       cache_initial_posn_ = position;
-      for (uint32_t i = 0; i < length; ++i) {
+      for (uint32_t i = 0; i != length; ++i)
         data[i] = data_cache_[i];
-      }
       cache_ = true;
     }
   } else {
@@ -550,37 +539,39 @@ bool SE::Read(char* data, std::uint32_t length, std::uint64_t position) {
   return true;
 }
 
-bool SE::Transmogrify(char* data,
-              std::uint32_t length,
-              std::uint64_t position,
-              bool writing) {
+bool SelfEncryptor::Transmogrify(char *data,
+                                 uint32_t length,
+                                 uint64_t position,
+                                 bool /*writing*/) {
   // TODO(JLB) :  ensure that on rewrite, if data is being written to area
   //              currently held in cache, then cache is refreshed after write.
   //              Transmogrify(data_cache_.get(), (chunk_size_ * num_procs_),
   //                           cache_initial_posn_, false)
-  std::uint32_t start_chunk(0), start_offset(0), end_chunk(0), run_total(0),
-          all_run_total(0), end_cut(0), start_after_this(0);
+  uint32_t start_offset(0), run_total(0), all_run_total(0), end_cut(0);
+  uint16_t start_chunk(0), end_chunk(0);
   bool found_start(false);
   bool found_end(false);
-  size_t num_chunks = data_map_->chunks.size();
+  uint16_t num_chunks = static_cast<uint16_t>(data_map_->chunks.size());
 
-  if (num_chunks > 0) {
-    for(size_t i = 0; i < num_chunks;  ++i) {
+  if (num_chunks != 0) {
+    for (uint16_t i = 0; i != num_chunks; ++i) {
       if (found_start)
         run_total += data_map_->chunks[i].size;
 
       if (((all_run_total + data_map_->chunks[i].size) > position) &&
-          (!found_start)) {
-        start_chunk = i;
-        start_offset =  position - all_run_total;
-        run_total = all_run_total + data_map_->chunks[i].size - position;
+          !found_start) {
+        start_chunk = static_cast<uint16_t>(i);
+        start_offset = static_cast<uint32_t>(position - all_run_total);
+        run_total = all_run_total + data_map_->chunks[i].size -
+                    static_cast<uint32_t>(position);
         found_start = true;
       }
 
       if (run_total >= length) {
         found_end = true;
-        end_chunk = i;
-        end_cut = position + length - all_run_total;//  all_run_total - position - length
+        end_chunk = static_cast<uint16_t>(i);
+        end_cut = length + static_cast<uint32_t>(position - all_run_total);
+               // all_run_total - position - length
         break;
       }
       all_run_total += data_map_->chunks[i].size;
@@ -588,13 +579,15 @@ bool SE::Transmogrify(char* data,
 
     if (!found_end) {
       end_chunk = num_chunks - 1;
-      end_cut = std::min(position + length -
-                            (all_run_total - data_map_->chunks[end_chunk].size),
-                 static_cast<std::uint64_t>(data_map_->chunks[end_chunk].size));
+      end_cut = static_cast<uint32_t>(
+          std::min(position + length -
+                   (all_run_total - data_map_->chunks[end_chunk].size),
+                   static_cast<uint64_t>(data_map_->chunks[end_chunk].size)));
     }
 // this is 2 for loops to allow openmp to thread properly.
 // should be refactored to a do loop and openmp fixed
-//     if (chunk_one_two_q_full_) { // don't try and get these chunks there in a q
+//     if (chunk_one_two_q_full_) {
+//      // don't try and get these chunks they're in a q
 //      if ((start_chunk < 2) && (end_chunk < 2)) {
 //       ReadInProcessData(data, length, position);
 //       return true;
@@ -603,119 +596,96 @@ bool SE::Transmogrify(char* data,
 
     if (start_chunk == end_chunk) {
       // get chunk
-      boost::shared_array<byte> chunk_data
-                  (new byte[data_map_->chunks[start_chunk].size]);
+      ByteArray chunk_data(new byte[data_map_->chunks[start_chunk].size]);
       ReadChunk(start_chunk, chunk_data.get());
-      for (size_t i = start_offset; i < length + start_offset; ++i)
+      for (size_t i = start_offset; i != length + start_offset; ++i)
         data[i - start_offset] = static_cast<char>(chunk_data[i]);
-      return readok_;
+      return read_ok_;
     }
 
 #pragma omp parallel for shared(data)
-    for (size_t i = start_chunk;i <= end_chunk ; ++i) {
+    for (uint16_t i = start_chunk; i <= end_chunk ; ++i) {
       size_t pos(0);
       size_t this_chunk_size(data_map_->chunks[i].size);
 
       if (i == start_chunk) {
         if (start_offset != 0) {
-          boost::shared_array<byte> chunk_data
-                      (new byte[data_map_->chunks[start_chunk].size]);
+          ByteArray chunk_data(new byte[data_map_->chunks[start_chunk].size]);
           ReadChunk(start_chunk, chunk_data.get());
-
-          for (size_t j = start_offset; j < this_chunk_size; ++j)
+          for (size_t j = start_offset; j != this_chunk_size; ++j)
             data[j - start_offset] = static_cast<char>(chunk_data[j]);
         } else {
-          ReadChunk(i, reinterpret_cast<byte *>(&data[0]));
+          ReadChunk(i, reinterpret_cast<byte*>(&data[0]));
         }
-
       } else if (i == end_chunk) {
-        boost::shared_array<byte> chunk_data
-            (new byte[data_map_->chunks[end_chunk].size]);
+        ByteArray chunk_data(new byte[data_map_->chunks[end_chunk].size]);
         ReadChunk(end_chunk, chunk_data.get());
 
-        for (size_t j = 0; j < i; ++j)
+        for (size_t j = 0; j != i; ++j)
 #pragma omp atomic
           pos += data_map_->chunks[j].size;
 
-        for (size_t j = 0; j < end_cut; ++j)
+        for (size_t j = 0; j != end_cut; ++j)
           data[j + pos - position] = static_cast<char>(chunk_data[j]);
 
       } else {
-        for (size_t j = 0; j < i; ++j)
+        for (size_t j = 0; j != i; ++j)
 #pragma omp atomic
           pos += data_map_->chunks[j].size;
-        ReadChunk(i, reinterpret_cast<byte *>(&data[pos - position]));
+
+        ReadChunk(i, reinterpret_cast<byte*>(&data[pos - position]));
       }
     }
   }
 
   size_t this_position(0);
 #pragma omp barrier
-  for(size_t i = 0; i < num_chunks;  ++i)
+  for (uint16_t i = 0; i != num_chunks; ++i)
     this_position += data_map_->chunks[i].size;
 
-  for(size_t i = 0; i < data_map_->content_size; ++i) {
+  for (size_t i = 0; i != data_map_->content_size; ++i) {
     if ((this_position + i) < (position + length))
       data[this_position + i - position] = data_map_->content.c_str()[i];
   }
   // replace any chunk data with most recently written stuff
   ReadInProcessData(data, length, position);
-
-  return readok_;
+  return read_ok_;
 }
 
-void SE::ReadChunk(std::uint16_t chunk_num, byte *data) {
-  if ((data_map_->chunks.size() < chunk_num) /*||
-    (data_map_->chunks.size() == 0)*/){
-    readok_ = false;
-    return;
-  }
-  // still in process of writing so read raw arrays
-  if ((chunk_one_two_q_full_) && (chunk_num < 2)) {
-    for (size_t i = 0; i < c0_and_1_chunk_size_; ++i) {
-    if (chunk_num == 0)
-      data[i] = static_cast<byte>(chunk0_raw_[i]);
-    else
-      data[i] = static_cast<byte >(chunk1_raw_[i]);
+void SelfEncryptor::ReadInProcessData(char *data,
+                                      uint32_t /*length*/,
+                                      uint64_t position) {
+  size_t q_size = main_encrypt_queue_.MaxRetrievable();
+
+  // check queue
+  if (q_size != 0)  {
+    // grab all queue into new array
+    boost::scoped_array<char> temp(new char[q_size]);
+    main_encrypt_queue_.Peek(reinterpret_cast<byte*>(temp.get()), q_size);
+    // TODO(dirvine) FIXME - just get what we need
+    size_t pos = current_position_ - q_size;
+    for (size_t i = 0; i != q_size; ++i) {
+      data[pos + i] = temp[i];
     }
-    return;
   }
-  
-   std::string hash(reinterpret_cast<char *>(data_map_->chunks[chunk_num].hash),
-                    64);
-  size_t length = data_map_->chunks[chunk_num].size;
-  boost::shared_array<byte> pad(new byte[144]);
-  boost::shared_array<byte> key(new byte[32]);
-  boost::shared_array<byte> iv (new byte[16]);
-  getPad_Iv_Key(chunk_num, key, iv, pad);
-  std::string content("");
-#pragma omp critical
-{
-  content = chunk_store_->Get(hash);
+
+  if (!sequencer_.empty()) {
+    SequenceData answer = sequencer_.Peek(position);
+    for (size_t i = 0; i != answer.second; ++i) {
+      data[i + position] = answer.first[i];
+    }
+  }
 }
-  if (content == ""){
-    DLOG(ERROR) << "Could not find chunk number : " << chunk_num
-        << " which is " << EncodeToHex(hash) << std::endl;
-    readok_ = false;
-    return;
+
+bool SelfEncryptor::DeleteAllChunks() {
+  for (size_t i = 0; i != data_map_->chunks.size(); ++i) {
+    if (!chunk_store_->Delete(reinterpret_cast<char*>(
+                              data_map_->chunks[i].hash)))
+      return false;
   }
-  CryptoPP::CFB_Mode<CryptoPP::AES>::Decryption decryptor(key.get(), 32, iv.get());
-//   CryptoPP::CFB_Mode<CryptoPP::AES>::Decryption decryptor(key.get(), 32, iv.get());
-//           CryptoPP::StringSource filter(content, true,
-//             new XORFilter(
-//             new CryptoPP::StreamTransformationFilter(decryptor,
-//               new CryptoPP::MessageQueue),
-//             pad.get()));
-
-
-  CryptoPP::StringSource filter(content, true,
-           new XORFilter(
-             new CryptoPP::StreamTransformationFilter(decryptor,
-                new CryptoPP::Gunzip(new CryptoPP::MessageQueue())),
-            pad.get()));
-  filter.Get(data, length);
+  data_map_->chunks.clear();
+  return true;
 }
 
 }  // namespace encrypt
-
 }  // namespace maidsafe

@@ -18,22 +18,15 @@
 #define MAIDSAFE_ENCRYPT_DATA_MAP_H_
 
 #include <cstdint>
+#include <memory>
 #include <string>
 #include <vector>
 
-#ifdef __MSVC__
-#  pragma warning(push, 1)
-#  pragma warning(disable: 4702)
-#endif
-#include "cryptopp/cryptlib.h"
-#ifdef __MSVC__
-#  pragma warning(pop)
-#endif
-
+#include "maidsafe/common/crypto.h"
 #include "boost/serialization/string.hpp"
 #include "boost/serialization/vector.hpp"
+
 #include "maidsafe/encrypt/version.h"
-#include <cryptopp/sha.h>
 
 #if MAIDSAFE_ENCRYPT_VERSION != 906
 #  error This API is not compatible with the installed library.\
@@ -41,28 +34,27 @@
 #endif
 
 namespace maidsafe {
-
 namespace encrypt {
 
 /// Holds information about a chunk
 struct ChunkDetails {
-  ChunkDetails()
-    : hash(), pre_hash(), size(0) {}
-  byte hash[CryptoPP::SHA512::DIGESTSIZE];        /// processed chunk
-  byte pre_hash[CryptoPP::SHA512::DIGESTSIZE];  /// unprocessed source data
-  std::uint32_t size;  ///< Size of unprocessed source data
+  ChunkDetails() : hash(), pre_hash(), size(0) {}
+  byte hash[crypto::SHA512::DIGESTSIZE];  ///< processed chunk
+  byte pre_hash[crypto::SHA512::DIGESTSIZE];  ///< unprocessed source data
+  uint32_t size;  ///< Size of unprocessed source data
 };
 
 /// Holds information about the building blocks of a data item
 struct DataMap {
-  DataMap()
-    : chunks(), size(0), content(), content_size(0), complete(false) {}
+  DataMap() : chunks(), size(0), content(), content_size(0), complete(false) {}
   std::vector<ChunkDetails> chunks;  ///< Information about the chunks
-  uint64_t size;      ///< Size of data item
-  std::string content;     ///< Whole data item or last chunk, if small enough
-  std::uint16_t content_size;
-  bool complete; /// for ease 
+  uint64_t size;  ///< Size of data item
+  std::string content;  ///< Whole data item or last chunk, if small enough
+  uint16_t content_size;
+  bool complete;  ///< for ease
 };
+
+typedef std::shared_ptr<DataMap> DataMapPtr;
 
 /*
 /// Hold datamaps in a version container
@@ -77,34 +69,32 @@ struct VersionedDataMap {
 std::tuple<uint8_t, fs::path, VersionedDataMap> VersionedDirMap; // for dirs*/
 
 }  // namespace encrypt
-
 }  // namespace maidsafe
 
-namespace boost {
 
+namespace boost {
 namespace serialization {
 
 template<class Archive>
 void serialize(Archive &archive,  // NOLINT
                maidsafe::encrypt::ChunkDetails &chunk_details,
                const unsigned int /* version */) {
-  archive & chunk_details.hash;
-  archive & chunk_details.pre_hash;
-  archive & chunk_details.size;
+  archive &chunk_details.hash;
+  archive &chunk_details.pre_hash;
+  archive &chunk_details.size;
 }
 
 template<class Archive>
 void serialize(Archive &archive,  // NOLINT
                maidsafe::encrypt::DataMap &data_map,
                const unsigned int /* version */) {
-  archive & data_map.chunks;
-  archive & data_map.size;
-  archive & data_map.content;
-  archive & data_map.complete;
+  archive &data_map.chunks;
+  archive &data_map.size;
+  archive &data_map.content;
+  archive &data_map.complete;
 }
 
 }  // namespace serialization
-
 }  // namespace boost
 
 #endif  // MAIDSAFE_ENCRYPT_DATA_MAP_H_

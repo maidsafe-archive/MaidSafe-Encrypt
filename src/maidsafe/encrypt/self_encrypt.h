@@ -1,4 +1,5 @@
-﻿/*******************************************************************************
+﻿
+/*******************************************************************************
  *  Copyright 2008-2011 maidsafe.net limited                                   *
  *                                                                             *
  *  The following source code is property of maidsafe.net limited and is not   *
@@ -14,173 +15,135 @@
  * @date  2008-09-09
  */
 
-#ifndef MAIDSAFE_ENCRYPT_UTILS_H_
-#define MAIDSAFE_ENCRYPT_UTILS_H_
-
-  #include "maidsafe/encrypt/version.h"
-    #if MAIDSAFE_ENCRYPT_VERSION != 905
-    # error This API is not compatible with the installed library.\
-     Please update the library.
-    #endif
+#ifndef MAIDSAFE_ENCRYPT_SELF_ENCRYPT_H_
+#define MAIDSAFE_ENCRYPT_SELF_ENCRYPT_H_
 
 
+#include <omp.h>
+
+#include <tuple>
 #include <cstdint>
 #include <string>
-#include <tuple>
-#include <omp.h>
 
 #ifdef __MSVC__
 #  pragma warning(push, 1)
-#  pragma warning(disable: 4702)
 #endif
-#include "cryptopp/cryptlib.h"
-#include "cryptopp/files.h"
-#include "cryptopp/channels.h"
 #include "cryptopp/mqueue.h"
 #include "cryptopp/sha.h"
-#include "cryptopp/aes.h"
-#include "cryptopp/gzip.h"
-#include "common/crypto.h"
 #ifdef __MSVC__
 #  pragma warning(pop)
 #endif
-
-#include "boost/filesystem.hpp"
 #include "boost/shared_array.hpp"
-#include "boost/asio/io_service.hpp"
+
 #include "maidsafe/encrypt/data_map.h"
 #include "maidsafe/encrypt/sequencer.h"
+#include "maidsafe/encrypt/version.h"
 
-namespace fs = boost::filesystem;
+#if MAIDSAFE_ENCRYPT_VERSION != 906
+#  error This API is not compatible with the installed library.\
+    Please update the library.
+#endif
+
 
 namespace maidsafe {
 
 class ChunkStore;
+typedef std::shared_ptr<ChunkStore> ChunkStorePtr;
 
 namespace encrypt {
-
 
 /// XOR transformation class for pipe-lining
 class XORFilter : public CryptoPP::Bufferless<CryptoPP::Filter> {
  public:
   XORFilter(CryptoPP::BufferedTransformation *attachment = NULL,
-            byte *pad = NULL) :
-            pad_(pad), count_(0) {
-              CryptoPP::Filter::Detach(attachment);
-  };
-  size_t Put2(const byte* inString,
+            byte *pad = NULL)
+      : pad_(pad), count_(0) { CryptoPP::Filter::Detach(attachment); }
+  size_t Put2(const byte* in_string,
               size_t length,
-              int messageEnd,
+              int message_end,
               bool blocking);
   bool IsolatedFlush(bool, bool) { return false; }
  private:
-  XORFilter &operator = (const XORFilter&);  // no assignment
-  XORFilter(const XORFilter&);  // no copy
+  XORFilter &operator = (const XORFilter&);
+  XORFilter(const XORFilter&);
   byte *pad_;
   size_t count_;
 };
 
-class SE {  // Self Encryption
+class SelfEncryptor {
  public:
-   SE(std::shared_ptr<DataMap> data_map,
-      std::shared_ptr<ChunkStore> chunk_store) :
-                        data_map_(data_map),  sequencer_(),
-                        chunk_size_(1024*256),
-                        min_chunk_size_(1024), length_(), hash_(),
-                        main_encrypt_queue_(CryptoPP::MessageQueue()),
-                        chunk0_raw_(new byte[chunk_size_]),
-                        chunk1_raw_(new byte[chunk_size_]),
-                        chunk_data_(),
-                        chunk_store_(chunk_store),
-                        chunk_one_two_q_full_(false),
-                        c0_and_1_chunk_size_(chunk_size_),
-                        current_position_(0), readok_(true),
-                        repeated_chunks_(false), q_position_(0),
-                        rewriting_(false),
-                        ignore_threads_(false), num_procs_(omp_get_num_procs()),
-                        read_c0andc1_(false),
-                        end_of_chunks_position_(0),
-                        cache_(false),
-                        data_cache_(new char[chunk_size_ * num_procs_]),
-                        cache_initial_posn_(0) {
-                          if (!data_map_)
-                            data_map_.reset(new DataMap);
-                        }
-  ~SE();
-  bool Write(const char* data = NULL,
-             std::uint32_t length = 0,
-             std::uint64_t position = 0);
-  bool Read(char* data, std::uint32_t length = 0, std::uint64_t position = 0);
-  bool setDatamap(std::shared_ptr<DataMap> data_map);
+  SelfEncryptor(DataMapPtr data_map, std::shared_ptr<ChunkStore> chunk_store)
+      : data_map_(data_map ? data_map : DataMapPtr(new DataMap)),
+        sequencer_(),
+        chunk_size_(1024 * 256),
+        main_encrypt_queue_(),
+        chunk0_raw_(new byte[chunk_size_]),
+        chunk1_raw_(new byte[chunk_size_]),
+        chunk_store_(chunk_store),
+        chunk_one_two_q_full_(false),
+        c0_and_1_chunk_size_(static_cast<uint32_t>(chunk_size_)),
+        current_position_(0),
+        read_ok_(true),
+        rewriting_(false),
+        ignore_threads_(false),
+        num_procs_(omp_get_num_procs()),
+        cache_(false),
+        data_cache_(new char[chunk_size_ * num_procs_]),
+        cache_initial_posn_(0) {}
+  ~SelfEncryptor();
+  bool Write(const char *data = NULL,
+             uint32_t length = 0,
+             uint64_t position = 0);
+  bool Read(char *data, uint32_t length = 0, uint64_t position = 0);
   bool DeleteAllChunks();
-  std::shared_ptr<DataMap> getDataMap() { return data_map_; }
+  DataMapPtr data_map() const { return data_map_; }
 
  private:
-   // METHODS
-  SE &operator = (const SE&);  // no assignment
-  SE(const SE&);  // no copy
-  bool DeleteAChunkFromStore(size_t chunk_num);
-  bool AttemptProcessQueue();
-  bool Transmogrify(char* data,
-                    std::uint32_t length = 0,
-                    std::uint64_t position = 0,
-                    bool writing = false);
-  bool WriteExtraAndEnc0and1();
-  void ReadChunk(std::uint16_t chunk_num, byte *data);
-  void EncryptAChunk(std::uint16_t chunk_num, byte* data,
-                     std::uint32_t length, bool re_encrypt);
-  bool QueueC0AndC1();
-  bool ResetEncrypt();
-  bool EncryptaChunk(std::string &input, std::string *output);
-  void getPad_Iv_Key(size_t this_chunk_num,
-                     boost::shared_array<byte> key,
-                     boost::shared_array<byte> iv,
-                     boost::shared_array<byte> pad);
-  bool ProcessMainQueue();
+  typedef boost::shared_array<byte> ByteArray;
+  SelfEncryptor &operator = (const SelfEncryptor&);
+  SelfEncryptor(const SelfEncryptor&);
   void AddReleventSeqDataToQueue();
-  void EmptySequencer();
-  bool CheckPositionInSequncer(std::uint64_t position,
-                               std::uint32_t length); // maybe not necessary
-  void ReadInProcessData(char * data,
-                         std::uint32_t  length,
-                         std::uint64_t position);
   void SequenceAllNonStandardChunksAndExtraContent();
- private:
-  // Setters and Getters, testing only
-  void set_chunk_size(size_t chunk_size) { chunk_size_ = chunk_size; }
-  std::uint32_t chunk_size() { return chunk_size_; }
+  void ReadChunk(uint16_t chunk_num, byte *data);
+  void GetPadIvKey(size_t this_chunk_num,
+                   ByteArray key,
+                   ByteArray iv,
+                   ByteArray pad);
+  bool AttemptProcessQueue();
+  bool QueueC0AndC1();
+  bool ProcessMainQueue();
+  void EncryptAChunk(uint16_t chunk_num,
+                     byte *data,
+                     uint32_t length,
+                     bool re_encrypt);
+  void EmptySequencer();
+  bool WriteExtraAndEnc0and1();
+  bool Transmogrify(char *data,
+                    uint32_t length = 0,
+                    uint64_t position = 0,
+                    bool writing = false);
+  void ReadInProcessData(char *data, uint32_t length, uint64_t position);
 
- private:
-   // MEMBERS
-  std::shared_ptr<DataMap> data_map_;
+  DataMapPtr data_map_;
   Sequencer sequencer_;
-  size_t chunk_size_;
-  size_t min_chunk_size_;
-  size_t length_;
-  CryptoPP::SHA512  hash_;
+  uint32_t chunk_size_;
   CryptoPP::MessageQueue main_encrypt_queue_;
-  boost::shared_array<byte> chunk0_raw_;
-  boost::shared_array<byte> chunk1_raw_;
-  ChunkDetails chunk_data_;
+  ByteArray chunk0_raw_;
+  ByteArray chunk1_raw_;
   std::shared_ptr<ChunkStore> chunk_store_;
   bool chunk_one_two_q_full_;
-  std::uint32_t c0_and_1_chunk_size_;
-  std::uint64_t current_position_;
-  bool readok_;
-  bool repeated_chunks_;
-  size_t q_position_;
+  uint32_t c0_and_1_chunk_size_;
+  uint64_t current_position_;
+  bool read_ok_;
   bool rewriting_;
   bool ignore_threads_;
-  std::int8_t num_procs_;
-  bool read_c0andc1_;
-  std::uint64_t end_of_chunks_position_;
+  int num_procs_;
   bool cache_;
   boost::shared_array<char> data_cache_;
   uint64_t cache_initial_posn_;
 };
 
 }  // namespace encrypt
-
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_ENCRYPT_UTILS_H_
+#endif  // MAIDSAFE_ENCRYPT_SELF_ENCRYPT_H_

@@ -46,9 +46,7 @@
 // namespace mse = maidsafe::encrypt;
 // 
 // namespace maidsafe {
-// 
 // namespace encrypt {
-// 
 // namespace demo {
 // 
 // enum ReturnCodes {
@@ -62,7 +60,7 @@
 // };
 // 
 // /// Formats and scales a byte value with IEC units
-// std::string FormatByteValue(const std::uint64_t &value) {
+// std::string FormatByteValue(const uint64_t &value) {
 //   const std::array<std::string, 7> kUnits = { {
 //       "Bytes", "KiB", "MiB", "GiB", "TiB", "PiB", "EiB"
 //   } };
@@ -136,7 +134,7 @@
 //   }
 // 
 //   bool error(false);
-//   std::uint64_t total_size(0), failed_size(0), chunks_size(0),
+//   uint64_t total_size(0), failed_size(0), chunks_size(0),
 //                 uncompressed_chunks_size(0),  meta_size(0);
 //   boost::posix_time::time_duration total_duration;
 //   std::set<std::string> chunks;
@@ -176,7 +174,7 @@
 // 
 //   for (auto file = files.begin(); file != files.end(); ++file) {
 //     boost::system::error_code ec;
-//     std::uint64_t file_size(fs::file_size(full_path / (*file), ec));
+//     uint64_t file_size(fs::file_size(full_path / (*file), ec));
 //     if (ec)
 //       file_size = 0;
 //     printf("Processing %s (%s) ...\n", file->c_str(),
@@ -186,7 +184,7 @@
 // 
 //     total_size += file_size;
 // 
-//     std::shared_ptr<DataMap> data_map(new DataMap);
+//     DataMapPtr data_map(new DataMap);
 //     boost::posix_time::ptime start_time(
 //         boost::posix_time::microsec_clock::universal_time());
 //     if (SelfEncrypt(full_path / (*file), self_encryption_params, data_map,
@@ -256,7 +254,7 @@
 //             const fs::path &meta_path,
 //             const fs::path &output_path) {
 //   bool error(false);
-//   std::uint64_t total_size(0);
+//   uint64_t total_size(0);
 //   boost::posix_time::time_duration total_duration;
 //   std::map<std::string, DataMap> data_maps;
 // 
@@ -285,7 +283,7 @@
 // 
 //     total_size += dm->second.size;
 // 
-//     std::shared_ptr<DataMap> data_map(new DataMap);
+//     DataMapPtr data_map(new DataMap);
 //     *data_map = dm->second;
 //     fs::path file_path(output_path / dm->first);
 //     fs::create_directories(file_path, ec);
@@ -309,9 +307,7 @@
 // }
 // 
 // }  // namespace demo
-// 
 // }  // namespace encrypt
-// 
 // }  // namespace maidsafe
 // 
 // int main(int argc, char* argv[]) {
@@ -369,9 +365,9 @@
 //     } else if (argc == 8) {
 //       try {
 //         mse::SelfEncryptionParams sep(
-//             boost::lexical_cast<std::uint32_t>(std::string(argv[5])),
-//             boost::lexical_cast<std::uint32_t>(std::string(argv[6])),
-//             boost::lexical_cast<std::uint32_t>(std::string(argv[7])));
+//             boost::lexical_cast<uint32_t>(std::string(argv[5])),
+//             boost::lexical_cast<uint32_t>(std::string(argv[6])),
+//             boost::lexical_cast<uint32_t>(std::string(argv[7])));
 //         if (mse::utils::CheckParams(sep))
 //           return mse::demo::Encrypt(argv[2], argv[3], argv[4], sep);
 //       }

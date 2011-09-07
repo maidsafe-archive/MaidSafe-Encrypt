@@ -1,4 +1,5 @@
-﻿/*******************************************************************************
+﻿
+/*******************************************************************************
  *  Copyright 2008-2011 maidsafe.net limited                                   *
  *                                                                             *
  *  The following source code is property of maidsafe.net limited and is not   *
@@ -14,72 +15,68 @@
  * @date  2011-08-14
  */
 
-
 #include "maidsafe/encrypt/sequencer.h"
+#include "maidsafe/encrypt/log.h"
 
- 
- namespace maidsafe {
- namespace encrypt {
- 
- bool Sequencer::Add(size_t position, char* data, size_t length) {
-   // TODO (dirvine) if a write happens half way through we count as 2 sets,
-   // need to take
-   // care of this in the getFromSequencer method.
-   // ah no needs to be here, otherwise we lose timeline
+namespace maidsafe {
+namespace encrypt {
 
-     auto iter = sequencer_.find(position);
-     if (iter == sequencer_.end()) {
-       try {
-         auto it = sequencer_.begin();
-       sequencer_.insert(it, std::pair<size_t, sequence_data>
-         (position, sequence_data(data, length)));
-       } catch (std::exception &e) {
-         return false;
-       }
-     } else {
-       (*iter).second.first = data;
-       (*iter).second.second = length;
-   }
-   return true;
- }
- 
- sequence_data Sequencer::PositionFromSequencer(size_t position, bool remove) {
-   if (sequencer_.size() == 0)
-     return (sequence_data(static_cast<char*>(NULL), 0));
-   for (auto it = sequencer_.begin(); it != sequencer_.end(); ++it) {
-     size_t this_position = (*it).first;
-     char * this_data = (*it).second.first;
-     size_t this_length = (*it).second.second;
-     // got the data - it is contiguous
-     if (this_position == position) {
-       sequence_data result = sequence_data(this_data,
-                                            this_length);
-       if (remove)
-         sequencer_.erase(it);
-       return result;
-     }
-     // get some data that's inside a chunk of sequenced data
-     if (this_position + this_length  >= position) {
-       // get address of element and length
-       sequence_data res(&this_data[position - this_position],
-                      this_length - (position - this_position));
+bool Sequencer::Add(size_t position, char *data, size_t length) {
+  // TODO(dirvine) if a write happens half way through we count as 2 sets,
+  // need to take care of this here, otherwise we lose timeline
+  auto iter = sequencer_.find(position);
+  if (iter == sequencer_.end()) {
+    try {
+      auto it = sequencer_.begin();
+      sequencer_.insert(it,
+                        std::make_pair(position, SequenceData(data, length)));
+    }
+    catch(const std::exception &e) {
+      DLOG(ERROR) << e.what();
+      return false;
+    }
+  } else {
+    (*iter).second.first = data;
+    (*iter).second.second = length;
+  }
+  return true;
+}
 
-       if (remove) {
-       // get the remaining data add again with Add
-       Add(this_position,
-           &this_data[position - this_position],
-           this_length-position - this_position);
-       sequencer_.erase(it); // remove this element
-       }
-       return res;
-     }
-   }
-   return (sequence_data(static_cast<char*>(NULL), 0));  // nothing found
- }
+SequenceData Sequencer::PositionFromSequencer(size_t position, bool remove) {
+  if (sequencer_.empty())
+    return (SequenceData(static_cast<char*>(NULL), 0));
+  for (auto it = sequencer_.begin(); it != sequencer_.end(); ++it) {
+    size_t this_position = (*it).first;
+    char *this_data = (*it).second.first;
+    size_t this_length = (*it).second.second;
+    // got the data - it is contiguous
+    if (this_position == position) {
+      SequenceData result(this_data, this_length);
+      if (remove)
+        sequencer_.erase(it);
+      return result;
+    }
+    // get some data that's inside a chunk of sequenced data
+    if (this_position + this_length >= position) {
+      // get address of element and length
+      SequenceData result(&this_data[position - this_position],
+                          this_length - (position - this_position));
+      if (remove) {
+        // get the remaining data and re-add
+        Add(this_position,
+            &this_data[position - this_position],
+            this_length - position - this_position);
+        sequencer_.erase(it);
+      }
+      return result;
+    }
+  }
+  return (SequenceData(static_cast<char*>(NULL), 0));  // nothing found
+}
 
-size_t Sequencer::NextFromSequencer(char * data, size_t *length, bool remove) {
-  if (sequencer_.size() == 0)
-    return (0);
+size_t Sequencer::NextFromSequencer(char *data, size_t *length, bool remove) {
+  if (sequencer_.empty())
+    return 0;
   auto it = sequencer_.begin();
   size_t position = (*it).first;
   data = (*it).second.first;

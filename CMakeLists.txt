@@ -66,24 +66,28 @@ HANDLE_VERSIONS(${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/version.h)
 # Set up all files as GLOBs                                                                       #
 ###################################################################################################
 ####    CODE    ####
-FILE(GLOB SOURCE_FILES "${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/*.cc")
-FILE(GLOB HEADER_FILES "${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/*.h")
-SET(ALL_FILES ${SOURCE_FILES} ${HEADER_FILES})
+FILE(GLOB SOURCE_FILES_ENCRYPT_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/*.cc")
+FILE(GLOB HEADER_FILES_ENCRYPT_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/*.h")
+SET(ALL_FILES_ENCRYPT_DIR ${SOURCE_FILES_ENCRYPT_DIR} ${HEADER_FILES_ENCRYPT_DIR})
+SOURCE_GROUP("Encrypt Source Files" FILES ${SOURCE_FILES_ENCRYPT_DIR})
+SOURCE_GROUP("Encrypt Header Files" FILES ${HEADER_FILES_ENCRYPT_DIR})
 
 ####    TESTS    ####
-FILE(GLOB ALL_FILES_TESTS_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/tests/*.cc" "${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/tests/*.h")
+FILE(GLOB SOURCE_FILES_TESTS_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/tests/*.cc")
+FILE(GLOB HEADER_FILES_TESTS_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/tests/*.h")
+SET(ALL_FILES_TESTS_DIR ${SOURCE_FILES_TESTS_DIR} ${HEADER_FILES_TESTS_DIR})
+SOURCE_GROUP("Tests Source Files" FILES ${SOURCE_FILES_TESTS_DIR})
+SOURCE_GROUP("Tests Header Files" FILES ${HEADER_FILES_TESTS_DIR})
 
 
 ###################################################################################################
 # All Platforms:  Create libs and executables                                                     #
 ###################################################################################################
-ADD_LIBRARY(encrypt_static STATIC ${ALL_FILES})
+ADD_LIBRARY(encrypt_static STATIC ${ALL_FILES_ENCRYPT_DIR})
 SET_TARGET_PROPERTIES(encrypt_static PROPERTIES OUTPUT_NAME maidsafe_encrypt)
 ADD_EXECUTABLE(TESTencrypt ${ALL_FILES_TESTS_DIR})
 
-
 RENAME_EXECUTABLE(TESTencrypt)
-
 
 TARGET_LINK_LIBRARIES(encrypt_static
                         maidsafe_common_static
@@ -93,26 +97,30 @@ TARGET_LINK_LIBRARIES(encrypt_static
                         boost_system)
 TARGET_LINK_LIBRARIES(TESTencrypt encrypt_static gtest_static)
 
-
 IF(UNIX)
   # This target builds the reference manual using Doxygen
   ADD_CUSTOM_TARGET(Reference COMMAND doxygen WORKING_DIRECTORY ${PROJECT_SOURCE_DIR})
 ENDIF()
 
 ###################################################################################################
-# Compiler and linker flags - after all targets declared                                          #
+# Compiler and linker flags                                                                       #
 ###################################################################################################
 INCLUDE(maidsafe_standard_flags)
 IF(MSVC)
-  SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /WX-")
-  SET_TARGET_PROPERTIES(encrypt_static PROPERTIES
-                          STATIC_LIBRARY_FLAGS_RELEASE "/LTCG")
-#  SET_TARGET_PROPERTIES(TESTencrypt TESTbenchmark DEMOencrypt PROPERTIES
+  # C4351 'new behavior: elements of array will be default initialized' not needed
+  # C4503 'decorated name length exceeded' caused by boost multi-index and signals2
+  # Disabled as per advice at https://svn.boost.org/trac/boost/wiki/Guidelines/WarningsGuidelines
+  # C4512 'assignment operator could not be generated' caused by boost signals2
+  # Disabled as per advice at http://lists.boost.org/boost-users/2009/01/44368.php
+  # C4996 'Function call with parameters that may be unsafe' caused by boost signals2
+  # Disabled as per advice at https://svn.boost.org/trac/boost/wiki/Guidelines/WarningsGuidelines
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4351 /wd4503 /wd4512 /wd4996")
+  SET_TARGET_PROPERTIES(encrypt_static PROPERTIES STATIC_LIBRARY_FLAGS_RELEASE "/LTCG")
   SET_TARGET_PROPERTIES(TESTencrypt  PROPERTIES
                           LINK_FLAGS_RELEASE "/OPT:REF /OPT:ICF /LTCG /INCREMENTAL:NO ${LINKER_LIBS_DIRS_RELEASE}"
                           LINK_FLAGS_DEBUG "${LINKER_LIBS_DIRS_DEBUG}"
-                          LINK_FLAGS_RELWITHDEBINFO "${LINKER_LIBS_DIRS_DEBUG} /LTCG /INCREMENTAL:NO"
-                          LINK_FLAGS_MINSIZEREL "${LINKER_LIBS_DIRS_DEBUG} /LTCG")
+                          LINK_FLAGS_RELWITHDEBINFO "${LINKER_LIBS_DIRS_DEBUG}"
+                          LINK_FLAGS_MINSIZEREL "${LINKER_LIBS_DIRS_DEBUG}")
 ELSEIF(UNIX)
   IF(APPLE)
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DOSX")
@@ -132,10 +140,7 @@ ENDIF()
 ###################################################################################################
 IF(PYTHONINTERP_FOUND)
   IF(UNIX)
-    ADD_TEST(STYLE_CHECK python ${MaidSafeCommon_TOOLS_DIR}/cpplint.py
-               ${ALL_FILES}
-               ${ALL_FILES_TESTS_DIR})
-
+    ADD_TEST(STYLE_CHECK python ${MaidSafeCommon_TOOLS_DIR}/cpplint.py ${ALL_FILES_ENCRYPT_DIR} ${ALL_FILES_TESTS_DIR})
   ELSE()
     STRING(REPLACE "/" "\\\\" STYLE_CHECK_SOURCE ${PROJECT_SOURCE_DIR})
     ADD_TEST(STYLE_CHECK ${MaidSafeCommon_TOOLS_DIR}/run_cpplint.bat ${STYLE_CHECK_SOURCE} ${MaidSafeCommon_TOOLS_DIR}/cpplint.py)
@@ -144,13 +149,6 @@ IF(PYTHONINTERP_FOUND)
 ENDIF()
 
 ADD_GTESTS(TESTencrypt)
-
-# Workaround to allow parameterised test marked "BEH" to have extra time.  Only
-# parameter 3 causes timeout, hence we can't justify marking the test "FUNC"
-# SET_PROPERTY(TEST VarChunkSizes/SelfEncryptionParamTest.BEH_SelfEnDecryptStreamPattern/3 PROPERTY TIMEOUT 300)
-
-# This test also needs an increased timeout as it creates and tests encryption on a 4GB file.
-# SET_PROPERTY(TEST SelfEncryptionExtTest.FUNC_SelfEnDecryptLargeFile PROPERTY TIMEOUT 3600)
 
 TEST_SUMMARY_OUTPUT()
 
@@ -174,7 +172,6 @@ INSTALL(TARGETS encrypt_static EXPORT ${EXPORT_NAME} ARCHIVE DESTINATION lib)
 INSTALL(FILES ${MAIDSAFE_ENCRYPT_INSTALL_FILES} DESTINATION include/maidsafe/encrypt)
 INSTALL(EXPORT ${EXPORT_NAME} DESTINATION share/maidsafe)
 ADD_VERSION_INFO_TO_INSTALLED_FILE()
-
 
 IF(CMAKE_BUILD_TYPE MATCHES "Release")
   SET(CPACK_PACKAGE_NAME "maidsafe_encrypt")
