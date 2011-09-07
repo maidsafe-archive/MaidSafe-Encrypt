@@ -516,40 +516,38 @@ void SE::ReadInProcessData(char* data,
   }
 }
 
+bool SE::Read(char* data, std::uint32_t length, std::uint64_t position) {
+  uint64_t maxbuffersize(chunk_size_ * num_procs_);
+  uint64_t cachesize = std::min(data_map_->size, maxbuffersize);
 
-bool SE::ReadAhead(char* data, std::uint32_t length, std::uint64_t position) {
- uint64_t maxbuffersize(chunk_size_ * num_procs_);
- uint64_t buffersize = std::min(data_map_->size, maxbuffersize);
- // full file, just get it
- if (length >= data_map_->size) {
-   ReadAhead(data, length, position);
-   return true;
- }
- //quite big just get it direct
- if ((length + position) > (buffersize - read_ahead_buffer_start_pos_)) {
-   ReadAhead(data, length, position);
-   return true;
- }
-// buffer bigger than filesize
-  if(buffersize >= data_map_->size) {
-    if (!read_ahead_initialised_) {
-      ReadAhead(read_ahead_buffer_.get(), data_map_->size, 0);
-      read_ahead_initialised_ = true;
-      read_ahead_buffer_start_pos_ = 0;
+  if (length < cachesize) {
+    //  required -
+    //  cache already populated and
+    //  requested position not less than cache start and
+    //  requested position not greater than cache end and
+    //  enough info in cache to fulfil request
+    if (cache_ &&
+       (position > cache_initial_posn_) &&
+       (cache_initial_posn_ + cachesize > position) &&
+       ((cachesize - (position - cache_initial_posn_)) >= length)) {
+      // read data_cache_
+      for (uint32_t i = 0; i < length; ++i) {
+        data[i] = data_cache_[(position - cache_initial_posn_) + i];
+      }
+    } else {
+      // populate data_cache_ and read
+      Transmogrify(data_cache_.get(), cachesize, position, false);
+      cache_initial_posn_ = position;
+      for (uint32_t i = 0; i < length; ++i) {
+        data[i] = data_cache_[i];
+      }
+      cache_ = true;
     }
-  } else if  ((read_ahead_buffer_start_pos_ + buffersize < position + length) ||
-    (!read_ahead_initialised_)){ 
-   uint64_t toread = std::min(data_map_->size - position, buffersize);
-   ReadAhead(read_ahead_buffer_.get(), toread, position);
-   read_ahead_initialised_ = true;
-   read_ahead_buffer_start_pos_ = position;
- }
- // actually read from buffer
- for (size_t i = position - read_ahead_buffer_start_pos_; //FIXM
-      i < length  ; ++i) {
-   data[i] = read_ahead_buffer_[i];
- }
- return true;
+  } else {
+    // length requested larger than cache size, just go ahead and read
+    Transmogrify(data, length, position, false);
+  }
+  return true;
 }
 
 bool SE::Transmogrify(char* data,

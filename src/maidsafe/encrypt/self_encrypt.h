@@ -94,24 +94,26 @@ class SE {  // Self Encryption
                         chunk_store_(chunk_store),
                         chunk_one_two_q_full_(false),
                         c0_and_1_chunk_size_(chunk_size_),
-                        this_chunk_size_(chunk_size_),
                         current_position_(0), readok_(true),
                         repeated_chunks_(false), q_position_(0),
                         rewriting_(false),
                         ignore_threads_(false), num_procs_(omp_get_num_procs()),
-                        read_ahead_buffer_(new char[chunk_size_ * num_procs_]),
-                        read_ahead_buffer_start_pos_(0),
-                        read_ahead_initialised_(false), read_c0andc1_(false),
-                        end_of_chunks_position_(0)
-                        {
-                          if (!data_map_) 
+                        read_c0andc1_(false),
+                        end_of_chunks_position_(0),
+                        cache_(false),
+                        data_cache_(new char[chunk_size_ * num_procs_]),
+                        cache_initial_posn_(0) {
+                          if (!data_map_)
                             data_map_.reset(new DataMap);
                         }
   ~SE();
-  bool Write(const char* data = NULL, std::uint32_t length = 0, std::uint64_t position = 0);
-  bool Read(char * data, std::uint32_t length = 0, std::uint64_t position = 0) {
-    return Transmogrify(data, length, position,false);
-  }
+  bool Write(const char* data = NULL,
+             std::uint32_t length = 0,
+             std::uint64_t position = 0);
+  bool Read(char* data, std::uint32_t length = 0, std::uint64_t position = 0);
+//   bool Read(char * data, std::uint32_t length = 0, std::uint64_t position = 0) {
+//     return Transmogrify(data, length, position,false);
+//   }
   bool setDatamap(std::shared_ptr<DataMap> data_map);
   bool DeleteAllChunks();
   std::shared_ptr<DataMap> getDataMap() { return data_map_; }
@@ -122,7 +124,6 @@ class SE {  // Self Encryption
   SE(const SE&);  // no copy
   bool DeleteAChunkFromStore(size_t chunk_num);
   bool AttemptProcessQueue();
-  bool ReadAhead(char* data, std::uint32_t length, std::uint64_t position);
   bool Transmogrify(char* data,
                     std::uint32_t length = 0,
                     std::uint64_t position = 0,
@@ -131,7 +132,6 @@ class SE {  // Self Encryption
   void ReadChunk(std::uint16_t chunk_num, byte *data);
   void EncryptAChunk(std::uint16_t chunk_num, byte* data,
                      std::uint32_t length, bool re_encrypt);
-  
   bool QueueC0AndC1();
   bool ResetEncrypt();
   bool EncryptaChunk(std::string &input, std::string *output);
@@ -152,7 +152,7 @@ class SE {  // Self Encryption
   // Setters and Getters, testing only
   void set_chunk_size(size_t chunk_size) { chunk_size_ = chunk_size; }
   std::uint32_t chunk_size() { return chunk_size_; }
-  
+
  private:
    // MEMBERS
   std::shared_ptr<DataMap> data_map_;
@@ -162,13 +162,12 @@ class SE {  // Self Encryption
   size_t length_;
   CryptoPP::SHA512  hash_;
   CryptoPP::MessageQueue main_encrypt_queue_;
-  boost::shared_array<byte> chunk0_raw_; 
-  boost::shared_array<byte> chunk1_raw_; 
+  boost::shared_array<byte> chunk0_raw_;
+  boost::shared_array<byte> chunk1_raw_;
   ChunkDetails chunk_data_;
   std::shared_ptr<ChunkStore> chunk_store_;
   bool chunk_one_two_q_full_;
   std::uint32_t c0_and_1_chunk_size_;
-  std::uint32_t this_chunk_size_;
   std::uint64_t current_position_;
   bool readok_;
   bool repeated_chunks_;
@@ -176,11 +175,11 @@ class SE {  // Self Encryption
   bool rewriting_;
   bool ignore_threads_;
   std::int8_t num_procs_;
-  boost::shared_array<char> read_ahead_buffer_;
-  size_t read_ahead_buffer_start_pos_;
-  bool read_ahead_initialised_;
   bool read_c0andc1_;
   std::uint64_t end_of_chunks_position_;
+  bool cache_;
+  boost::shared_array<char> data_cache_;
+  uint64_t cache_initial_posn_;
 };
 
 }  // namespace encrypt

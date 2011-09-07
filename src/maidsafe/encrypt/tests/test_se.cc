@@ -127,7 +127,7 @@ TEST(SelfEncryptionTest, BEH_1023Chars) {
   std::shared_ptr<DataMap> data_map(new DataMap);
 
 
-  
+
   std::string content(RandomString(1023));
   boost::scoped_array<char>stuff1 (new char[1023]);
   std::copy(content.c_str(), content.c_str() + 1023, stuff1.get());
@@ -138,7 +138,7 @@ TEST(SelfEncryptionTest, BEH_1023Chars) {
   EXPECT_EQ(0, selfenc.getDataMap()->size);
   EXPECT_EQ(0, selfenc.getDataMap()->content_size);
 }
-  
+
   EXPECT_EQ(1023, data_map->size);
   EXPECT_EQ(1023, data_map->content_size);
   EXPECT_EQ(0, data_map->chunks.size());
@@ -151,18 +151,18 @@ TEST(SelfEncryptionTest, BEH_1025Chars3chunks) {
   (new MemoryChunkStore (false, hash_func));
   std::shared_ptr<DataMap> data_map(new DataMap);
 
-  
+
   std::string content(RandomString(1025));
   boost::scoped_array<char>stuff1 (new char[1025]);
   std::copy(content.c_str(), content.c_str() + 1025, stuff1.get());
   {
-  SE selfenc(data_map, chunk_store);  
+  SE selfenc(data_map, chunk_store);
   EXPECT_TRUE(selfenc.Write(stuff1.get(), 1025));
   EXPECT_EQ(0, selfenc.getDataMap()->chunks.size());
   EXPECT_EQ(0, selfenc.getDataMap()->size);
   EXPECT_EQ(0, selfenc.getDataMap()->content_size);
   }
-  SE selfenc(data_map, chunk_store); 
+  SE selfenc(data_map, chunk_store);
   EXPECT_EQ(1025, selfenc.getDataMap()->size);
   EXPECT_EQ(1025, selfenc.getDataMap()->content_size);
   EXPECT_EQ(0, selfenc.getDataMap()->chunks.size());
@@ -175,7 +175,7 @@ TEST(SelfEncryptionTest, BEH_BenchmarkMemOnly) {
   (new MemoryChunkStore (false, hash_func));
   std::shared_ptr<DataMap> data_map(new DataMap);
   SE selfenc(data_map, chunk_store);
-  
+
   size_t test_data_size(1024*1024*20);
   boost::scoped_array<char>plain_data (new char[test_data_size]);
   for (size_t i = 0; i < test_data_size ; ++i) {
@@ -207,7 +207,7 @@ TEST(SelfEncryptionTest, BEH_Benchmark4kBytes) {
   (new MemoryChunkStore (false, hash_func));
   std::shared_ptr<DataMap> data_map(new DataMap);
   SE selfenc(data_map, chunk_store);
-  
+
   size_t test_data_size(1024*1024*20);
   boost::scoped_array<char>plain_data (new char[test_data_size]);
   for (size_t i = 0; i < test_data_size ; ++i) {
@@ -394,7 +394,7 @@ TEST(SelfEncryptionTest, BEH_WriteAndReadByteAtATime) {
     ASSERT_EQ(plain_data[i], answer[i]) << "c0 or c1 failed at count " << i;
 // check all other chunks
   for (size_t  i = 524288; i < test_data_size -1 ; ++i)
-    ASSERT_EQ(plain_data[i], answer[i]) << "normal chunks failed count :" << i;  
+    ASSERT_EQ(plain_data[i], answer[i]) << "normal chunks failed count :" << i;
 }
 
 TEST(SelfEncryptionTest, BEH_WriteAndReadByteAtATimeOutOfSequenceForward) {
@@ -473,7 +473,7 @@ TEST(SelfEncryptionTest, FUNC_WriteOnceRead20) {
       for (size_t  i = 0; i < test_data_size ; ++i)
         ASSERT_EQ(plain_data[i], answer1[i]) << "failed at count " << i;
     }
-    
+
   }
   SE selfenc(data_map, chunk_store);
   boost::scoped_array<char>answer (new char[test_data_size]);
@@ -503,7 +503,7 @@ TEST(SelfEncryptionTest, BEH_WriteRandomlyAllDirections) {
     plain_data[i] = 'a'; // plain_text[i];
   }
 //   plain_data[test_data_size] = 'b';
-  for (size_t i = 0; i < test_data_size; ++i) 
+  for (size_t i = 0; i < test_data_size; ++i)
     vec_data[i] = i; // vector of seq numbers
 
   std::random_shuffle(vec_data.begin(), vec_data.end()); // shuffle all about
@@ -551,7 +551,7 @@ TEST(SelfEncryptionTest, FUNC_RepeatedRandomCharReadInProcess) {
     for (size_t i = 0; i < chunk_size * 2; ++i) {
       EXPECT_TRUE(selfenc.Write(&plain_data[i], 1, i));
     }
- 
+
     // read some data - should be in queue
     //Check read From Queue FIXME !!
 //     boost::scoped_array<char> testq(new char[chunk_size]);
@@ -560,7 +560,7 @@ TEST(SelfEncryptionTest, FUNC_RepeatedRandomCharReadInProcess) {
 // //      EXPECT_TRUE(selfenc.Read(testq.get(), 1, i));
 // //       EXPECT_EQ(plain_data[i], testq[i]) << "not read " << i << std::endl;
 //     }
-    
+
     // next 2
     for (size_t i = chunk_size * 2; i < chunk_size * 4; ++i) {
       EXPECT_TRUE(selfenc.Write(&plain_data[i], 1, i));
@@ -576,8 +576,8 @@ TEST(SelfEncryptionTest, FUNC_RepeatedRandomCharReadInProcess) {
       EXPECT_TRUE(selfenc.Read(&testc0[i], 1, i));
       ASSERT_EQ(testc0[i], plain_data[i]) << "not read " << i << std::endl;
     }
- 
-    
+
+
     boost::scoped_array<char> testc1(new char[chunk_size]);
     for (size_t i = 0 ; i <  100 ; ++i) {
       EXPECT_TRUE(selfenc.Read(&testc1[i], 1, i +  chunk_size));
@@ -592,8 +592,8 @@ TEST(SelfEncryptionTest, FUNC_RepeatedRandomCharReadInProcess) {
     for (size_t i = chunk_size * 5; i < (chunk_size * 5) + 10; ++i) {
       EXPECT_TRUE(selfenc.Write(&plain_data[i], 1, i));
     }
-  
-  
+
+
 
     // Check read from Sequencer
     boost::scoped_array<char> testseq(new char[chunk_size]);
@@ -602,7 +602,7 @@ TEST(SelfEncryptionTest, FUNC_RepeatedRandomCharReadInProcess) {
       ASSERT_EQ(testseq[i], plain_data[i]) << "not read " << i << std::endl;
     }
     // write second last chunk
-   
+
     for (size_t i = chunk_size * 4; i < chunk_size * 5; i += chunk_size) {
       EXPECT_TRUE(selfenc.Write(&plain_data[i], 1, i));
     }
@@ -610,7 +610,7 @@ TEST(SelfEncryptionTest, FUNC_RepeatedRandomCharReadInProcess) {
     for (size_t i = (chunk_size * 5) + 10; i < chunk_size * 6; ++i) {
       EXPECT_TRUE(selfenc.Write(&plain_data[i], 1, i));
     }
-  
+
   // TODO FIXME - wont work till destructor called
 //   ASSERT_TRUE(selfenc.FinaliseWrite());
 //   // read some data - should be in chunks now
@@ -619,7 +619,7 @@ TEST(SelfEncryptionTest, FUNC_RepeatedRandomCharReadInProcess) {
 //     EXPECT_TRUE(selfenc.Read(testchunks.get(), 1, i));
 //     ASSERT_EQ(testchunks.get()[i], plain_data[i]) << "not read " << i << std::endl;
 //   }
-// 
+//
 //   EXPECT_EQ(6,  selfenc.getDataMap()->chunks.size());
 //   EXPECT_EQ(0,  selfenc.getDataMap()->content_size);
 //   EXPECT_EQ(test_data_size, selfenc.getDataMap()->size);
@@ -828,6 +828,59 @@ TEST(SelfEncryptionManualTest, BEH_RandomAccess) {
   // be considered
 }
 
+TEST(SelfEncryptionTest, BEH_NewRead) {
+  MemoryChunkStore::HashFunc hash_func(std::bind(&crypto::Hash<crypto::SHA512>,
+                                                 std::placeholders::_1));
+  std::shared_ptr<MemoryChunkStore> chunk_store
+      (new MemoryChunkStore(false, hash_func));
+  std::shared_ptr<DataMap> data_map(new DataMap);
+
+  uint32_t size = 1024*256*10;    // 10 chunks
+  uint64_t position = 0;
+  std::string content(RandomString(size));
+  boost::scoped_array<char> stuff1(new char[size]);
+  std::copy(content.c_str(), content.c_str() + size, stuff1.get());
+  {
+    SE selfenc(data_map, chunk_store);
+    EXPECT_TRUE(selfenc.Write(stuff1.get(), size));
+    EXPECT_EQ(10, selfenc.getDataMap()->chunks.size());
+    EXPECT_EQ(size - (1024*256*2), selfenc.getDataMap()->size);
+    EXPECT_EQ(0, selfenc.getDataMap()->content_size);
+  }
+  SE selfenc(data_map, chunk_store);
+  boost::scoped_array<char> answer(new char[size]);
+  EXPECT_TRUE(selfenc.Read(answer.get(), 4096, position));
+  for (int i = 0; i < 4096; ++i) {
+    if (stuff1[i+position] != answer[i])
+    DLOG(INFO) << "stuff1[" << i << "] = " << stuff1[i] << "   answer["
+               << i << "] = " << answer[i];
+  }
+  // read next small part straight from cache
+  position += 4096;
+  EXPECT_TRUE(selfenc.Read(answer.get(), 4096, position));
+  for (int i = 0; i < 4096; ++i) {
+    if (stuff1[i+position] != answer[i])
+    DLOG(INFO) << "stuff1[" << i << "] = " << stuff1[i] << "   answer["
+               << i << "] = " << answer[i];
+  }
+  // try to read from end of cache, but request more data than remains
+  // will result in cache being refreshed
+  position += (1024*256*8 - 1000);
+  EXPECT_TRUE(selfenc.Read(answer.get(), 4096, position));
+  for (int i = 0; i < 4096; ++i) {
+    if (stuff1[i+position] != answer[i])
+    DLOG(INFO) << "stuff1[" << i << "] = " << stuff1[i] << "   answer["
+               << i << "] = " << answer[i];
+  }
+  // try to read startish of file, no longer in cache
+  position = 5;
+  EXPECT_TRUE(selfenc.Read(answer.get(), 4096, position));
+  for (int i = 0; i < 4096; ++i) {
+    if (stuff1[i+position] != answer[i])
+    DLOG(INFO) << "stuff1[" << i << "] = " << stuff1[i] << "   answer["
+               << i << "] = " << answer[i];
+  }
+}
 /*
 TEST(SelfEncryptionManualTest, BEH_manual_check_write) {
   MemoryChunkStore::HashFunc hash_func(std::bind(&crypto::Hash<crypto::SHA512>,
