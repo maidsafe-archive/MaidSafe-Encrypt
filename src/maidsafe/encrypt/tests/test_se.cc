@@ -880,6 +880,41 @@ TEST(SelfEncryptionTest, BEH_NewRead) {
     DLOG(INFO) << "stuff1[" << i << "] = " << stuff1[i] << "   answer["
                << i << "] = " << answer[i];
   }
+
+  // use file smaller than the cache size
+  std::shared_ptr<MemoryChunkStore> chunk_store2
+      (new MemoryChunkStore(false, hash_func));
+  std::shared_ptr<DataMap> data_map2(new DataMap);
+  size = 1024*256*5;
+  std::string content2(RandomString(size));
+  boost::scoped_array<char> stuff2(new char[size]);
+  std::copy(content2.c_str(), content2.c_str() + size, stuff2.get());
+  {
+    SE selfenc(data_map2, chunk_store2);
+    EXPECT_TRUE(selfenc.Write(stuff2.get(), size));
+    EXPECT_EQ(2, selfenc.getDataMap()->chunks.size());
+    EXPECT_EQ(0, selfenc.getDataMap()->size);
+    EXPECT_EQ(0, selfenc.getDataMap()->content_size);
+  }
+  // try to read the entire file, will not cache.
+  SE selfenc2(data_map2, chunk_store2);
+  boost::scoped_array<char> answer2(new char[size]);
+  EXPECT_TRUE(selfenc2.Read(answer2.get(), size, 0));
+  for (int i = 0; i < size; ++i) {
+    if (stuff2[i] != answer2[i])
+    DLOG(INFO) << "stuff2[" << i << "] = " << stuff2[i] << "   answer2["
+               << i << "] = " << answer2[i];
+  }
+  // same small file, many small reads, will cache and read from.
+  for (int a = 0; a < 10; ++a) {
+    EXPECT_TRUE(selfenc2.Read(answer2.get(), 4096, (4096 * a)));
+    for (int i = 0; i < 4096; ++i) {
+      if (stuff2[i + (4096 * a)] != answer2[i])
+      DLOG(INFO) << "stuff2[" << i + (4096 * a) << "] = "
+                 << stuff2[i+ (4096 * a)] << "   answer2["
+                 << i << "] = " << answer2[i];
+    }
+  }
 }
 /*
 TEST(SelfEncryptionManualTest, BEH_manual_check_write) {
