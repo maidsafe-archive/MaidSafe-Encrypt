@@ -111,9 +111,6 @@ class SE {  // Self Encryption
              std::uint32_t length = 0,
              std::uint64_t position = 0);
   bool Read(char* data, std::uint32_t length = 0, std::uint64_t position = 0);
-//   bool Read(char * data, std::uint32_t length = 0, std::uint64_t position = 0) {
-//     return Transmogrify(data, length, position,false);
-//   }
   bool setDatamap(std::shared_ptr<DataMap> data_map);
   bool DeleteAllChunks();
   std::shared_ptr<DataMap> getDataMap() { return data_map_; }
