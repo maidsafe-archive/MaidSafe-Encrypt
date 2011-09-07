@@ -35,7 +35,7 @@
 #include "maidsafe/encrypt/version.h"
 #include <cryptopp/sha.h>
 
-#if MAIDSAFE_ENCRYPT_VERSION != 905
+#if MAIDSAFE_ENCRYPT_VERSION != 906
 #  error This API is not compatible with the installed library.\
     Please update the maidsafe-encrypt library.
 #endif
@@ -58,7 +58,7 @@ struct DataMap {
   DataMap()
     : chunks(), size(0), content(), content_size(0), complete(false) {}
   std::vector<ChunkDetails> chunks;  ///< Information about the chunks
-  std::uint64_t size;      ///< Size of data item
+  uint64_t size;      ///< Size of data item
   std::string content;     ///< Whole data item or last chunk, if small enough
   std::uint16_t content_size;
   bool complete; /// for ease 

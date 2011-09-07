@@ -1,0 +1,12 @@
+v0.09.06 (WIP)
+--------------
+
+
+
+v0.09.05
+--------
+* Bypass the encrypt_stream->write method during TruncateIncrease.
+* Manipulate datamap directly to overcome the timed-out error when copying large
+  files across the network.
+* Added valgrind suppressions file.
+* Added some test fixes.
