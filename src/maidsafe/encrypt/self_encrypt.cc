@@ -554,6 +554,10 @@ bool SE::Transmogrify(char* data,
               std::uint32_t length,
               std::uint64_t position,
               bool writing) {
+  // TODO(JLB) :  ensure that on rewrite, if data is being written to area
+  //              currently held in cache, then cache is refreshed after write.
+  //              Transmogrify(data_cache_.get(), (chunk_size_ * num_procs_),
+  //                           cache_initial_posn_, false)
   std::uint32_t start_chunk(0), start_offset(0), end_chunk(0), run_total(0),
           all_run_total(0), end_cut(0), start_after_this(0);
   bool found_start(false);
