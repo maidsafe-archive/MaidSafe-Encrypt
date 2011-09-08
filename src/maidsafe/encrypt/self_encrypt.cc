@@ -96,21 +96,52 @@ bool SelfEncryptor::Write(const char *data,
   if (length == 0)
     return true;
 
-  AddReleventSeqDataToQueue();
-  if (position == current_position_) {  // assuming rewrites from zero
-    main_encrypt_queue_.Put2(const_cast<byte*>(
-        reinterpret_cast<const byte*>(data)), length, 0, true);
-    current_position_ += length;
-  } else if (position > current_position_) {
-    sequencer_.Add(static_cast<size_t>(position), const_cast<char*>(data),
-                   length);
-  } else  {  // we went backwards or rewriting !!!
-    if (!rewriting_) {
-      rewriting_ = true;
-      SequenceAllNonStandardChunksAndExtraContent();
+  if (rewriting_) {
+    // write to sequencer as far as start of trailing_data_
+    uint32_t written(0);
+    if (position < trailing_data_start_) {
+      uint32_t amount_to_write =
+          std::min(length,
+                   static_cast<uint32_t>(trailing_data_start_ - position));
+      sequencer_.Add(static_cast<size_t>(position), const_cast<char*>(data),
+                     amount_to_write);
+      length -= amount_to_write;
+      position += amount_to_write;
+      written += amount_to_write;
     }
-    sequencer_.Add(static_cast<size_t>(position), const_cast<char*>(data),
-                   length);
+
+    // overwrite data in trailing_data_
+    if (length != 0 && position < trailing_data_start_ + trailing_data_size_) {
+      uint32_t amount_to_write = static_cast<uint32_t>(trailing_data_start_ +
+                                 trailing_data_size_ - position);
+      memcpy(trailing_data_.get(), data + written, amount_to_write);
+      length -= amount_to_write;
+      position += amount_to_write;
+      written += amount_to_write;
+    }
+
+    // write remaining data beyond trailing_data_ to sequencer
+    if (length != 0) {
+      sequencer_.Add(static_cast<size_t>(position), const_cast<char*>(data),
+                     length);
+    }
+  } else {
+    AddReleventSeqDataToQueue();
+    if (position == current_position_) {  // assuming rewrites from zero
+      main_encrypt_queue_.Put2(const_cast<byte*>(
+          reinterpret_cast<const byte*>(data)), length, 0, true);
+      current_position_ += length;
+    } else if (position > current_position_) {
+      sequencer_.Add(static_cast<size_t>(position), const_cast<char*>(data),
+                     length);
+    } else  {  // we went backwards or rewriting !!!
+      if (!rewriting_ && data_map_->complete) {
+        rewriting_ = true;
+        SequenceAllNonStandardChunksAndExtraContent();
+      }
+      sequencer_.Add(static_cast<size_t>(position), const_cast<char*>(data),
+                     length);
+    }
   }
   AttemptProcessQueue();
   return true;
@@ -126,34 +157,38 @@ void SelfEncryptor::AddReleventSeqDataToQueue() {
 }
 
 void SelfEncryptor::SequenceAllNonStandardChunksAndExtraContent() {
-  size_t start_chunk(0), chunk_size(0), pos(0);
-  if (!data_map_->chunks.empty()) {
+  int start_chunk(-1);
+  size_t chunk_size(0), pos(0);
+  if (data_map_->chunks.size() > 2) {
     pos += data_map_->chunks[0].size;
     for (size_t i = 1; i != data_map_->chunks.size(); ++i) {
-      pos += data_map_->chunks[i].size;
-      if (data_map_->chunks[i].size > 2 &&
-          data_map_->chunks[i].size != data_map_->chunks[i - 1].size) {
-        start_chunk = i - 1;
+      if (data_map_->chunks[i].size == data_map_->chunks[i - 1].size) {
+        pos += data_map_->chunks[i].size;
+      } else {
+        start_chunk = i;
         break;
       }
     }
-    chunk_size = data_map_->chunks[start_chunk].size;
   }
 
-  for (uint16_t i = static_cast<uint16_t>(start_chunk);
-       i != data_map_->chunks.size(); ++i) {
-    // shove chunk data into sequencer (which will get overwritten anyway
-    // as sequencer has ability to maintain timelines)
-    boost::scoped_array<byte> data(new byte[chunk_size]);
-    ReadChunk(i, data.get());
-    sequencer_.Add(pos, reinterpret_cast<char*>(data.get()), chunk_size);
-    chunk_store_->Delete(reinterpret_cast<char*>(data_map_->chunks[i].hash));
-    pos += data_map_->chunks[i].size;
+  trailing_data_start_ = pos;
+  trailing_data_size_ = data_map_->content_size;
+  size_t offset(0);
+  if (start_chunk != -1) {
+    BOOST_ASSERT(data_map_->chunks.size() - start_chunk == 3);
+    chunk_size = data_map_->chunks[start_chunk].size;
+    trailing_data_size_ += chunk_size * 3;
+    trailing_data_.reset(new byte[trailing_data_size_]);
+    for (uint16_t i = static_cast<uint16_t>(start_chunk);
+         i != data_map_->chunks.size(); ++i, offset += chunk_size) {
+      ReadChunk(i, trailing_data_.get() + offset);
+      chunk_store_->Delete(reinterpret_cast<char*>(data_map_->chunks[i].hash));
+    }
   }
 
   if (data_map_->content_size > 0) {
-    sequencer_.Add(pos, const_cast<char*>(data_map_->content.c_str()),
-                    data_map_->content_size);
+    memcpy(trailing_data_.get() + offset, data_map_->content.data(),
+           data_map_->content_size);
   }
   data_map_->content.clear();
   data_map_->content_size = 0;

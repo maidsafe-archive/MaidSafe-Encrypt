@@ -89,7 +89,10 @@ class SelfEncryptor {
         num_procs_(omp_get_num_procs()),
         cache_(false),
         data_cache_(new char[chunk_size_ * num_procs_]),
-        cache_initial_posn_(0) {}
+        cache_initial_posn_(0),
+        trailing_data_(),
+        trailing_data_start_(0),
+        trailing_data_size_(0) {}
   ~SelfEncryptor();
   bool Write(const char *data = NULL,
              uint32_t length = 0,
@@ -141,6 +144,9 @@ class SelfEncryptor {
   bool cache_;
   boost::shared_array<char> data_cache_;
   uint64_t cache_initial_posn_;
+  ByteArray trailing_data_;
+  uint64_t trailing_data_start_;
+  uint32_t trailing_data_size_;
 };
 
 }  // namespace encrypt
