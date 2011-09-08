@@ -18,6 +18,7 @@
 #ifndef MAIDSAFE_ENCRYPT_SEQUENCER_H_
 #define MAIDSAFE_ENCRYPT_SEQUENCER_H_
 
+#include <stdint.h>
 #include <map>
 #include "maidsafe/encrypt/version.h"
 
@@ -34,23 +35,26 @@ typedef std::pair<char*, size_t> SequenceData;
 
 class Sequencer {
  public:
-  bool Add(size_t position, char *data, size_t length);
-  SequenceData Peek(size_t position) {
+   bool Add(uint64_t position, char *data, uint64_t length);
+  SequenceData Peek(uint64_t position) {
     return PositionFromSequencer(position, false);
   }
-  SequenceData Get(size_t position) {
+  SequenceData Get(uint64_t position) {
     return PositionFromSequencer(position, true);
   }
-  size_t PeekFirst(char *data, size_t *length) {
+  uint64_t PeekFirst(char *data, uint32_t *length) {
     return NextFromSequencer(data, length, false);
   }
-  size_t GetFirst(char *data, size_t *length) {
+  uint64_t GetFirst(char *data, uint32_t *length) {
     return NextFromSequencer(data, length, true);
   }
   bool empty() const { return sequencer_.empty(); }
+//   uint64_t
  private:
-  SequenceData PositionFromSequencer(size_t position, bool remove);
-  size_t NextFromSequencer(char *data, size_t *length, bool remove);
+   SequenceData PositionFromSequencer(uint64_t position, bool remove);
+   uint64_t NextFromSequencer(char *data,
+                                   uint32_t *length,
+                                   bool remove);
   std::map<size_t, SequenceData> sequencer_;
 };
 

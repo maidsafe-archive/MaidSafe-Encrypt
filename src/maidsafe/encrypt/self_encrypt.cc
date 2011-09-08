@@ -434,12 +434,17 @@ void SelfEncryptor::EmptySequencer() {
     // so read->chunk / alter / encrypt chunk / enc next 2 (unless ...)
     // divide num chunks with / chunks_size to get current floor
     // floor + chunk_size_ is this range !!
-
+//   auto 
+//   size_t last_seq_pos((*it).first);
+//   size_t last_seq_length((*it).second.second);
+//   size_t total_size(last_seq_pos + last_seq_length);
+//   size_t last_chunk_num(total_size / chunk_size_);
+  // after this set current_position_ and q - process last
     
   while (!sequencer_.empty()) {
     size_t chunks_written_to(data_map_->chunks.size() / chunk_size_);
     boost::scoped_array<char> data(new char);
-    size_t length(0);
+    std::uint32_t length(0);
     size_t seq_pos = sequencer_.GetFirst(data.get(), &length);
 
     if (seq_pos < chunks_written_to) {
@@ -448,8 +453,7 @@ void SelfEncryptor::EmptySequencer() {
       size_t start_chunk(seq_pos / chunk_size_); // floor
       size_t end_chunk((seq_pos + length / chunk_size_) + 1);
       size_t chunk_array_size((end_chunk - start_chunk) * chunk_size_);
-      boost::scoped_array<byte>
-      chunk_array(new byte[chunk_array_size]);
+      ByteArray chunk_array(new byte[chunk_array_size]);
       // get chunks
       for(size_t i = start_chunk; i < end_chunk; ++i) 
         ReadChunk(i,
@@ -459,15 +463,27 @@ void SelfEncryptor::EmptySequencer() {
         chunk_array[i] = data[i];
       // encrypt chunks
         for(size_t i = start_chunk; i < end_chunk; ++i)
+//           DeleteAChunk(i);
           EncryptAChunk(i,
                         &chunk_array[start_chunk * chunk_size_],
                         chunk_size_, true);
 
-        // encrypt next 2 (maybe)
-      
-      //TODO need to alter a chunk
-      // and maybe the next one if we overrun boundary
-      
+          
+        // TODO (DI) not always required, encrypt next 2 
+//       for (int i = end_chunk; i <= 2; ++i) {
+//         chunk_num = (i + data_map_->chunks.size())
+//         %  data_map_->chunks.size();
+//         std::string hash(reinterpret_cast<char*>(
+//           data_map_->chunks[chunk_num].hash), crypto::SHA512::DIGESTSIZE);
+// //         DeleteAChunk(i);
+//         EncryptAChunk(chunk_num,const_cast<byte *>
+//         (reinterpret_cast<const byte *>
+//         (chunk_store_->Get(hash).c_str())),
+//                       data_map_->chunks[chunk_num].size,
+//                       true);
+//         current_position_ += data_map_->chunks[chunk_num].size;
+//         // for q to process last
+//       }
       continue;
     }
 
@@ -485,6 +501,7 @@ void SelfEncryptor::EmptySequencer() {
     /*size_t pos = */ sequencer_.GetFirst(data.get(), &length);
 //     Transmogrify(data, length, pos);
   }
+  
 }
 
 /*

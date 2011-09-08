@@ -86,7 +86,7 @@ SequenceData Sequencer::PositionFromSequencer(size_t position, bool remove) {
   return (SequenceData(static_cast<char*>(NULL), 0));  // nothing found
 }
 
-size_t Sequencer::NextFromSequencer(char *data, size_t *length, bool remove) {
+uint64_t Sequencer::NextFromSequencer(char *data, uint32_t *length, bool remove) {
   if (sequencer_.empty())
     return 0;
   auto it = sequencer_.begin();
