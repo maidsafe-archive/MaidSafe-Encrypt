@@ -500,8 +500,18 @@ bool SelfEncryptor::WriteExtraAndEnc0and1() {
   }
   // when all that is done, encrypt chunks 0 and 1
   if (chunk_one_two_q_full_) {
+#pragma omp sections
+{
+#pragma omp section
+{
     EncryptAChunk(0, chunk0_raw_.get(), c0_and_1_chunk_size_, false);
+}
+#pragma omp section
+{
     EncryptAChunk(1, chunk1_raw_.get(), c0_and_1_chunk_size_, false);
+}
+} // end omp sections
+
     chunk0_raw_.reset();
     chunk1_raw_.reset();
     chunk_one_two_q_full_ = false;
