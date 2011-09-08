@@ -22,6 +22,7 @@
 #include <tuple>
 #include <algorithm>
 #include <set>
+#include <vector>
 
 #ifdef __MSVC__
 #  pragma warning(push, 1)
@@ -296,7 +297,7 @@ bool SelfEncryptor::ProcessMainQueue() {
   }
 
 #pragma omp parallel for
-  for (size_t i = 0; i != chunks_to_process; ++i) {
+  for (size_t i = 0; i < chunks_to_process; ++i) {
     CryptoPP::SHA512().CalculateDigest(
         data_map_->chunks[i + old_dm_size].pre_hash,
         chunk_vec[i].get(),
@@ -323,7 +324,7 @@ bool SelfEncryptor::ProcessMainQueue() {
 //     }
 //   }
 #pragma omp parallel for  // gives over 100Mb write speeds
-  for (size_t i = 0; i != chunks_to_process; ++i) {
+  for (size_t i = 0; i < chunks_to_process; ++i) {
     EncryptAChunk(static_cast<uint16_t>(i + old_dm_size), &chunk_vec[i][0],
                   chunk_size_, false);
   }
