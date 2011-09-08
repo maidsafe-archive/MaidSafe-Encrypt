@@ -434,12 +434,12 @@ void SelfEncryptor::EmptySequencer() {
     // so read->chunk / alter / encrypt chunk / enc next 2 (unless ...)
     // divide num chunks with / chunks_size to get current floor
     // floor + chunk_size_ is this range !!
-//   auto 
-//   size_t last_seq_pos((*it).first);
-//   size_t last_seq_length((*it).second.second);
-//   size_t total_size(last_seq_pos + last_seq_length);
-//   size_t last_chunk_num(total_size / chunk_size_);
-  // after this set current_position_ and q - process last
+    uint32_t last_seq_length;
+    uint64_t last_seq_pos = sequencer_.PeekLast(& last_seq_length);
+
+    size_t total_size(last_seq_pos + last_seq_length);
+    size_t last_chunk_num(total_size / chunk_size_);
+     //after this set current_position_ and q - process last
     
   while (!sequencer_.empty()) {
     size_t chunks_written_to(data_map_->chunks.size() / chunk_size_);
@@ -504,91 +504,6 @@ void SelfEncryptor::EmptySequencer() {
   
 }
 
-/*
-bool SelfEncryptor::Transmogrify(const char* data,
-                      uint32_t length,
-                      uint64_t position) {
-
-// Transmogrifier will identify the appropriate chunk
-// recover it and alter the data in place
-// then re-encrypt it and store again, it will also re-encrypt
-// the following two chunks.
-
-  size_t start_chunk(0), start_offset(0), end_chunk(0), run_total(0),
-  end_cut(0);
-  bool found_start(false);
-  bool found_end(false);
-  size_t num_chunks = data_map_->chunks.size();
-  size_t this_position(0);
-  if (num_chunks > 0) {
-    for(size_t i = 0; i < num_chunks;  ++i) {
-      size_t this_chunk_size = data_map_->chunks[i].size;
-      if ((this_chunk_size + run_total >= position)
-        && (!found_start)) {
-        start_chunk = i;
-      start_offset =  position;
-      run_total = this_chunk_size - start_offset;
-      found_start = true;
-      if (run_total >= length) {
-        found_end = true;
-        end_chunk = i;
-        break;
-      }
-      continue;
-        }
-
-        if (found_start)
-          #pragma omp atomic
-        run_total += this_chunk_size - start_offset;
-
-        if (run_total > length) {
-          end_chunk = i;
-          end_cut = length - run_total;
-          found_end = true;
-          break;
-        }
-    }
-    if (!found_end)
-      end_chunk = num_chunks;
-
-    do {
-      // get chunk
-      ByteArray chunk_data
-      (new byte[data_map_->chunks[start_chunk].size]);
-      ReadChunk(start_chunk, chunk_data.get());
-      for (size_t i = start_offset; i < length + start_offset; ++i)
-        chunk_data[i] = static_cast<const char>(data[i]);
-      DeleteAChunk(start_chunk);
-      EncryptAChunk(start_chunk, chunk_data.get(), sizeof(chunk_data), true);
-      ++start_offset;
-      this_position += data_map_->chunks[start_chunk].size;
-    } while (start_chunk < end_chunk);
-
-    // encrypt next two chunks
-    size_t chunk_num(0);
-    for (int i = end_chunk; i <= 2; ++i) {
-      chunk_num = (i + data_map_->chunks.size())
-                       %  data_map_->chunks.size();
-      std::string hash(reinterpret_cast<char*>(
-          data_map_->chunks[chunk_num].hash), crypto::SHA512::DIGESTSIZE);
-      DeleteAChunk(i);
-      EncryptAChunk(chunk_num,const_cast<byte *>
-                    (reinterpret_cast<const byte *>
-                      (chunk_store_->Get(hash).c_str())),
-                    data_map_->chunks[chunk_num].size,
-                    true);
-      this_position += data_map_->chunks[chunk_num].size;
-    }
-    return true;
-  }  // might be in content !!! FIXME make string
-  if (this_position < (position + length)) {
-    data_map_->content = (reinterpret_cast<char *>(data[this_position]),
-                          (position + length) - this_position);
-    data_map_->content_size = data_map_->content.size();
-    return true;
-  }
-  return false;
-}*/
 
 bool SelfEncryptor::WriteExtraAndEnc0and1() {
   size_t qlength = static_cast<size_t>(main_encrypt_queue_.MaxRetrievable());

@@ -49,7 +49,7 @@ class Sequencer {
     return NextFromSequencer(data, length, true);
   }
   bool empty() const { return sequencer_.empty(); }
-//   uint64_t
+  uint64_t PeekLast(uint32_t *length);
  private:
    SequenceData PositionFromSequencer(uint64_t position, bool remove);
    uint64_t NextFromSequencer(char *data,

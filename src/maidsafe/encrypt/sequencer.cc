@@ -54,6 +54,14 @@ bool Sequencer::Add(size_t position, char *data, size_t length) {
   return true;
 }
 
+uint64_t Sequencer::PeekLast(uint32_t* length)
+{
+    auto it = sequencer_.end();
+    *length = ((*it).first);
+    return (*it).second.second;
+}
+
+
 SequenceData Sequencer::PositionFromSequencer(size_t position, bool remove) {
   if (sequencer_.empty())
     return (SequenceData(static_cast<char*>(NULL), 0));
