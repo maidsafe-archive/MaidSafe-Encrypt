@@ -784,7 +784,7 @@ TEST(SelfEncryptionTest, BEH_NewRead) {
   boost::scoped_array<char> answer(new char[size]);
   EXPECT_TRUE(selfenc.Read(answer.get(), 4096, position));
   for (int i = 0; i < 4096; ++i) {
-    if (stuff1[i + position] != answer[i])
+    if (stuff1[static_cast<size_t>(position + i)] != answer[i])
     DLOG(INFO) << "stuff1[" << i << "] = " << stuff1[i] << "   answer["
                << i << "] = " << answer[i];
   }
@@ -792,7 +792,7 @@ TEST(SelfEncryptionTest, BEH_NewRead) {
   position += 4096;
   EXPECT_TRUE(selfenc.Read(answer.get(), 4096, position));
   for (int i = 0; i < 4096; ++i) {
-    if (stuff1[i + position] != answer[i])
+    if (stuff1[static_cast<size_t>(position + i)] != answer[i])
     DLOG(INFO) << "stuff1[" << i << "] = " << stuff1[i] << "   answer["
                << i << "] = " << answer[i];
   }
@@ -801,7 +801,7 @@ TEST(SelfEncryptionTest, BEH_NewRead) {
   position += (1024 * 256 * 8 - 1000);
   EXPECT_TRUE(selfenc.Read(answer.get(), 4096, position));
   for (int i = 0; i < 4096; ++i) {
-    if (stuff1[i + position] != answer[i])
+    if (stuff1[static_cast<size_t>(position + i)] != answer[i])
     DLOG(INFO) << "stuff1[" << i << "] = " << stuff1[i] << "   answer["
                << i << "] = " << answer[i];
   }
@@ -809,7 +809,7 @@ TEST(SelfEncryptionTest, BEH_NewRead) {
   position = 5;
   EXPECT_TRUE(selfenc.Read(answer.get(), 4096, position));
   for (int i = 0; i < 4096; ++i) {
-    if (stuff1[i + position] != answer[i])
+    if (stuff1[static_cast<size_t>(position + i)] != answer[i])
     DLOG(INFO) << "stuff1[" << i << "] = " << stuff1[i] << "   answer["
                << i << "] = " << answer[i];
   }
@@ -1208,7 +1208,7 @@ TEST(SelfEncryptionManualTest, BEH_manual_check_write) {
   CryptoPP::Gzip compress(new CryptoPP::MessageQueue(), 6);
   compress.Put2(pre_enc_chunk.get(), chunk_size, -1, true);
 
-  size_t compressed_size(compress.MaxRetrievable());
+  size_t compressed_size(static_cast<size_t>(compress.MaxRetrievable()));
 
   boost::shared_array<byte> comp_data(new byte[compressed_size]);
   compress.Get(comp_data.get(), compressed_size);
