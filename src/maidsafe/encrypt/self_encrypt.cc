@@ -26,8 +26,8 @@
 #ifdef __MSVC__
 #  pragma warning(push, 1)
 #endif
-#include "cryptopp/gzip.h"
 #include "cryptopp/aes.h"
+#include "cryptopp/gzip.h"
 #include "cryptopp/modes.h"
 #ifdef __MSVC__
 #  pragma warning(pop)
@@ -604,7 +604,7 @@ bool SelfEncryptor::Transmogrify(char *data,
     }
 
 #pragma omp parallel for shared(data)
-    for (uint16_t i = start_chunk; i <= end_chunk ; ++i) {
+    for (uint16_t i = start_chunk; i <= end_chunk; ++i) {
       size_t pos(0);
       size_t this_chunk_size(data_map_->chunks[i].size);
 

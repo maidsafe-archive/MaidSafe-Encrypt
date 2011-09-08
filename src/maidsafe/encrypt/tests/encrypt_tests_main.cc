@@ -19,13 +19,12 @@
 
 int main(int argc, char **argv) {
   google::InitGoogleLogging(argv[0]);
-  // setting output to be stderr
   FLAGS_logtostderr = true;
-  // Severity levels are INFO, WARNING, ERROR, and FATAL (0 to 3 respectively).
+  FLAGS_alsologtostderr = false;
   FLAGS_minloglevel = google::INFO;
-
-  FLAGS_ms_logging_common = false;
-
+  FLAGS_log_prefix = true;
+  FLAGS_v = 0;
+  FLAGS_ms_logging_common = true;
   testing::InitGoogleTest(&argc, argv);
   int result(RUN_ALL_TESTS());
   int test_count = testing::UnitTest::GetInstance()->test_to_run_count();
