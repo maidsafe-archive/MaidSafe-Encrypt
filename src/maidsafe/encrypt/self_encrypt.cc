@@ -102,20 +102,22 @@ bool SelfEncryptor::Write(const char *data,
         reinterpret_cast<const byte*>(data)), length, 0, true);
     current_position_ += length;
   } else if (position > current_position_) {
-    sequencer_.Add(position, const_cast<char*>(data), length);
+    sequencer_.Add(static_cast<size_t>(position), const_cast<char*>(data),
+                   length);
   } else  {  // we went backwards or rewriting !!!
     if (!rewriting_) {
       rewriting_ = true;
       SequenceAllNonStandardChunksAndExtraContent();
     }
-    sequencer_.Add(position, const_cast<char*>(data), length);
+    sequencer_.Add(static_cast<size_t>(position), const_cast<char*>(data),
+                   length);
   }
   AttemptProcessQueue();
   return true;
 }
 
 void SelfEncryptor::AddReleventSeqDataToQueue() {
-  SequenceData extra(sequencer_.Get(current_position_));
+  SequenceData extra(sequencer_.Get(static_cast<size_t>(current_position_)));
   if (extra.second != 0) {
     main_encrypt_queue_.Put2(const_cast<byte*>(
         reinterpret_cast<const byte*>(extra.first)), extra.second, 0, true);
@@ -285,7 +287,8 @@ bool SelfEncryptor::ProcessMainQueue() {
   if (main_encrypt_queue_.MaxRetrievable() < chunk_size_ || chunk_size_ == 0)
     return false;
 
-  size_t chunks_to_process = main_encrypt_queue_.MaxRetrievable() / chunk_size_;
+  size_t chunks_to_process =
+      static_cast<size_t>(main_encrypt_queue_.MaxRetrievable() / chunk_size_);
   size_t old_dm_size = data_map_->chunks.size();
   data_map_->chunks.resize(chunks_to_process + old_dm_size);
   std::vector<ByteArray>chunk_vec(chunks_to_process,
@@ -389,7 +392,7 @@ void SelfEncryptor::EmptySequencer() {
     if (current_position_ < seq_pos) {  // Nothing done - pad to this point
       boost::scoped_array<char> pad(new char[1]);
       pad[0] = '0';
-      for (size_t i = current_position_; i < seq_pos; ++i)
+      for (size_t i = static_cast<size_t>(current_position_); i < seq_pos; ++i)
         Write(&pad[0], 1, current_position_);
       Write(data.get(), static_cast<uint32_t>(length), seq_pos);
       AddReleventSeqDataToQueue();
@@ -486,7 +489,7 @@ bool SelfEncryptor::Transmogrify(const char* data,
 }*/
 
 bool SelfEncryptor::WriteExtraAndEnc0and1() {
-  size_t qlength = main_encrypt_queue_.MaxRetrievable();
+  size_t qlength = static_cast<size_t>(main_encrypt_queue_.MaxRetrievable());
   if (qlength != 0) {
     ByteArray i(new byte[qlength]);
     main_encrypt_queue_.Get(i.get(), qlength);
@@ -524,7 +527,8 @@ bool SelfEncryptor::Read(char* data, uint32_t length, uint64_t position) {
         ((cachesize - (position - cache_initial_posn_)) >= length)) {
       // read data_cache_
       for (uint32_t i = 0; i != length; ++i) {
-        data[i] = data_cache_[(position - cache_initial_posn_) + i];
+        data[i] = data_cache_[static_cast<size_t>(position -
+                              cache_initial_posn_) + i];
       }
     } else {
       // populate data_cache_ and read
@@ -658,7 +662,8 @@ bool SelfEncryptor::Transmogrify(char *data,
 void SelfEncryptor::ReadInProcessData(char *data,
                                       uint32_t /*length*/,
                                       uint64_t position) {
-  size_t q_size = main_encrypt_queue_.MaxRetrievable();
+  size_t q_size =
+      static_cast<size_t>(main_encrypt_queue_.MaxRetrievable());
 
   // check queue
   if (q_size != 0)  {
@@ -666,14 +671,14 @@ void SelfEncryptor::ReadInProcessData(char *data,
     boost::scoped_array<char> temp(new char[q_size]);
     main_encrypt_queue_.Peek(reinterpret_cast<byte*>(temp.get()), q_size);
     // TODO(dirvine) FIXME - just get what we need
-    size_t pos = current_position_ - q_size;
+    size_t pos = static_cast<size_t>(current_position_ - q_size);
     for (size_t i = 0; i != q_size; ++i) {
       data[pos + i] = temp[i];
     }
   }
 
   if (!sequencer_.empty()) {
-    SequenceData answer = sequencer_.Peek(position);
+    SequenceData answer = sequencer_.Peek(static_cast<size_t>(position));
     for (size_t i = 0; i != answer.second; ++i) {
       data[i + position] = answer.first[i];
     }
