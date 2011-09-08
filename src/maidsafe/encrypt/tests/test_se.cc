@@ -146,24 +146,24 @@ TEST(SelfEncryptionTest, BEH_BenchmarkMemOnly) {
   DataMapPtr data_map(new DataMap);
   SelfEncryptor selfenc(data_map, chunk_store);
 
-  uint32_t test_data_size(1024 * 1024 * 20);
-  boost::scoped_array<char> plain_data(new char[test_data_size]);
-  for (size_t i = 0; i < test_data_size; ++i) {
+  const uint32_t kTestDataSize(1024 * 1024 * 20);
+  boost::scoped_array<char> plain_data(new char[kTestDataSize]);
+  for (size_t i = 0; i < kTestDataSize; ++i) {
     plain_data[i] = 'a';
   }
   // Memory chunkstore
   // Write as complete stream
   bptime::ptime time =
       bptime::microsec_clock::universal_time();
-  ASSERT_TRUE(selfenc.Write(plain_data.get(), test_data_size));
+  ASSERT_TRUE(selfenc.Write(plain_data.get(), kTestDataSize));
   // TODO(dirvine) FIXME - wont work till destructor called
 //   ASSERT_TRUE(selfenc.FinaliseWrite());
   uint64_t duration =
       (bptime::microsec_clock::universal_time() - time).total_microseconds();
   if (duration == 0)
     duration = 1;
-  uint64_t speed((test_data_size * 1000000) / duration);
-  std::cout << "Self-encrypted " << BytesToBinarySiUnits(test_data_size)
+  uint64_t speed((static_cast<uint64_t>(kTestDataSize) * 1000000) / duration);
+  std::cout << "Self-encrypted " << BytesToBinarySiUnits(kTestDataSize)
             << " in " << (duration / 1000000.0) << " seconds at a speed of "
             << BytesToBinarySiUnits(speed) << "/s" << std::endl;
 }
@@ -173,15 +173,15 @@ TEST(SelfEncryptionTest, BEH_Benchmark4kBytes) {
   DataMapPtr data_map(new DataMap);
   SelfEncryptor selfenc(data_map, chunk_store);
 
-  uint32_t test_data_size(1024 * 1024 * 20);
-  boost::scoped_array<char> plain_data(new char[test_data_size]);
-  for (uint32_t i = 0; i < test_data_size; ++i) {
+  const uint32_t kTestDataSize(1024 * 1024 * 20);
+  boost::scoped_array<char> plain_data(new char[kTestDataSize]);
+  for (uint32_t i = 0; i < kTestDataSize; ++i) {
     plain_data[i] = 'a';
   }
   // Write in 4kB byte chunks
   uint32_t fourkB(4096);
   bptime::ptime time = bptime::microsec_clock::universal_time();
-  for (uint32_t i = 0; i < test_data_size; i += fourkB)
+  for (uint32_t i = 0; i < kTestDataSize; i += fourkB)
     ASSERT_TRUE(selfenc.Write(&plain_data[i], fourkB, i));
   // TODO(dirvine) FIXME - wont work till destructor called
 //   ASSERT_TRUE(selfenc.FinaliseWrite());
@@ -189,8 +189,8 @@ TEST(SelfEncryptionTest, BEH_Benchmark4kBytes) {
       (bptime::microsec_clock::universal_time() - time).total_microseconds();
   if (duration == 0)
     duration = 1;
-  uint64_t speed((test_data_size * 1000000) / duration);
-  std::cout << "Self-encrypted " << BytesToBinarySiUnits(test_data_size)
+  uint64_t speed((static_cast<uint64_t>(kTestDataSize) * 1000000) / duration);
+  std::cout << "Self-encrypted " << BytesToBinarySiUnits(kTestDataSize)
             << " in " << (duration / 1000000.0) << " seconds at a speed of "
             << BytesToBinarySiUnits(speed) << "/s" << std::endl;
 }
@@ -199,15 +199,15 @@ TEST(SelfEncryptionTest, BEH_Benchmark64kBytes) {
   MemoryChunkStorePtr chunk_store(new MemoryChunkStore(false, g_hash_func));
   DataMapPtr data_map(new DataMap);
   SelfEncryptor selfenc(data_map, chunk_store);
-  uint32_t test_data_size(1024 * 1024 * 20);
-  boost::scoped_array<char> plain_data(new char[test_data_size]);
-  for (uint32_t i = 0; i < test_data_size; ++i) {
+  const uint32_t kTestDataSize(1024 * 1024 * 20);
+  boost::scoped_array<char> plain_data(new char[kTestDataSize]);
+  for (uint32_t i = 0; i < kTestDataSize; ++i) {
     plain_data[i] = 'a';
   }
   // Write in 16kB byte chunks
   uint32_t sixtyfourkB(65536);
   bptime::ptime time = bptime::microsec_clock::universal_time();
-  for (uint32_t i = 0; i < test_data_size; i += sixtyfourkB)
+  for (uint32_t i = 0; i < kTestDataSize; i += sixtyfourkB)
     ASSERT_TRUE(selfenc.Write(&plain_data[i], sixtyfourkB, i));
   // TODO(dirvine) FIXME - wont work till destructor called
   //   ASSERT_TRUE(selfenc.FinaliseWrite());
@@ -215,20 +215,20 @@ TEST(SelfEncryptionTest, BEH_Benchmark64kBytes) {
       (bptime::microsec_clock::universal_time() - time).total_microseconds();
   if (duration == 0)
     duration = 1;
-  uint64_t speed((test_data_size * 1000000) / duration);
-  std::cout << "Self-encrypted " << BytesToBinarySiUnits(test_data_size)
+  uint64_t speed((static_cast<uint64_t>(kTestDataSize) * 1000000) / duration);
+  std::cout << "Self-encrypted " << BytesToBinarySiUnits(kTestDataSize)
             << " in " << (duration / 1000000.0) << " seconds at a speed of "
             << BytesToBinarySiUnits(speed) << "/s" << std::endl;
 }
 
-TEST(SelfEncryptionTest, BEH_WriteAndReadIncompressable) {
+TEST(SelfEncryptionTest, BEH_WriteAndReadIncompressible) {
   MemoryChunkStorePtr chunk_store(new MemoryChunkStore(false, g_hash_func));
   DataMapPtr data_map(new DataMap);
 
-  uint32_t test_data_size((1024 * 1024 * 20) + 4);
-  std::string plain_text(RandomString(test_data_size));
-  boost::scoped_array<char> plain_data(new char[test_data_size]);
-  for (uint32_t i = 0; i < test_data_size; ++i) {
+  const uint32_t kTestDataSize((1024 * 1024 * 20) + 4);
+  std::string plain_text(RandomString(kTestDataSize));
+  boost::scoped_array<char> plain_data(new char[kTestDataSize]);
+  for (uint32_t i = 0; i < kTestDataSize; ++i) {
 //    plain_data[i] = 'a';
     plain_data[i] = plain_text[i];
   }
@@ -236,77 +236,77 @@ TEST(SelfEncryptionTest, BEH_WriteAndReadIncompressable) {
     SelfEncryptor selfenc(data_map, chunk_store);
     bptime::ptime time =
           bptime::microsec_clock::universal_time();
-    ASSERT_TRUE(selfenc.Write(plain_data.get(), test_data_size));
+    ASSERT_TRUE(selfenc.Write(plain_data.get(), kTestDataSize));
     uint64_t duration =
         (bptime::microsec_clock::universal_time() - time).total_microseconds();
     if (duration == 0)
       duration = 1;
-    uint64_t speed((test_data_size * 1000000) / duration);
-    std::cout << "Self-encrypted " << BytesToBinarySiUnits(test_data_size)
+    uint64_t speed((static_cast<uint64_t>(kTestDataSize) * 1000000) / duration);
+    std::cout << "Self-encrypted " << BytesToBinarySiUnits(kTestDataSize)
               << " in " << (duration / 1000000.0) << " seconds at a speed of "
               << BytesToBinarySiUnits(speed) << "/s" << std::endl;
-    boost::scoped_array<char> some_chunks_some_q(new char[test_data_size]);
-    ASSERT_TRUE(selfenc.Read(some_chunks_some_q.get(), test_data_size, 0));
-    for (uint32_t  i = 0; i < test_data_size; ++i)
+    boost::scoped_array<char> some_chunks_some_q(new char[kTestDataSize]);
+    ASSERT_TRUE(selfenc.Read(some_chunks_some_q.get(), kTestDataSize, 0));
+    for (uint32_t  i = 0; i < kTestDataSize; ++i)
       ASSERT_EQ(plain_text[i], some_chunks_some_q[i]) << "failed @ count " << i;
   }
   SelfEncryptor selfenc(data_map, chunk_store);
-  boost::scoped_array<char> answer(new char[test_data_size]);
+  boost::scoped_array<char> answer(new char[kTestDataSize]);
   bptime::ptime time =
         bptime::microsec_clock::universal_time();
-  ASSERT_TRUE(selfenc.Read(answer.get(), test_data_size, 0));
+  ASSERT_TRUE(selfenc.Read(answer.get(), kTestDataSize, 0));
   uint64_t duration =
       (bptime::microsec_clock::universal_time() - time).total_microseconds();
   if (duration == 0)
     duration = 1;
-  uint64_t speed((test_data_size * 1000000) / duration);
-  std::cout << "Self-decrypted " << BytesToBinarySiUnits(test_data_size)
+  uint64_t speed((static_cast<uint64_t>(kTestDataSize) * 1000000) / duration);
+  std::cout << "Self-decrypted " << BytesToBinarySiUnits(kTestDataSize)
             << " in " << (duration / 1000000.0) << " seconds at a speed of "
             << BytesToBinarySiUnits(speed) << "/s" << std::endl;
 
-  for (uint32_t  i = 0; i < test_data_size; ++i)
+  for (uint32_t  i = 0; i < kTestDataSize; ++i)
     ASSERT_EQ(plain_text[i], answer[i]) << "failed at count " << i;
 }
 
-TEST(SelfEncryptionTest, BEH_WriteAndReadCompressable) {
+TEST(SelfEncryptionTest, BEH_WriteAndReadCompressible) {
   MemoryChunkStorePtr chunk_store(new MemoryChunkStore(false, g_hash_func));
   DataMapPtr data_map(new DataMap);
 
-  uint32_t test_data_size((1024 * 1024 * 20) + 36);
-  std::string plain_text(RandomString(test_data_size));
-  boost::scoped_array<char> plain_data(new char[test_data_size]);
-  for (uint32_t i = 0; i < test_data_size; ++i) {
+  const uint32_t kTestDataSize((1024 * 1024 * 20) + 36);
+  std::string plain_text(RandomString(kTestDataSize));
+  boost::scoped_array<char> plain_data(new char[kTestDataSize]);
+  for (uint32_t i = 0; i < kTestDataSize; ++i) {
     plain_data[i] = 'a';
   }
   {
     SelfEncryptor selfenc(data_map, chunk_store);
   //   EXPECT_TRUE(selfenc.ReInitialise());
     bptime::ptime time = bptime::microsec_clock::universal_time();
-    ASSERT_TRUE(selfenc.Write(plain_data.get(), test_data_size));
+    ASSERT_TRUE(selfenc.Write(plain_data.get(), kTestDataSize));
     // TODO(dirvine) FIXME - wont work till destructor called
     //   ASSERT_TRUE(selfenc.FinaliseWrite());
     uint64_t duration =
         (bptime::microsec_clock::universal_time() - time).total_microseconds();
     if (duration == 0)
       duration = 1;
-    uint64_t speed((test_data_size * 1000000) / duration);
-    std::cout << "Self-encrypted " << BytesToBinarySiUnits(test_data_size)
+    uint64_t speed((static_cast<uint64_t>(kTestDataSize) * 1000000) / duration);
+    std::cout << "Self-encrypted " << BytesToBinarySiUnits(kTestDataSize)
               << " in " << (duration / 1000000.0) << " seconds at a speed of "
               << BytesToBinarySiUnits(speed) << "/s" << std::endl;
   }
   SelfEncryptor selfenc(data_map, chunk_store);
-  boost::scoped_array<char> answer(new char[test_data_size]);
+  boost::scoped_array<char> answer(new char[kTestDataSize]);
   bptime::ptime time =  bptime::microsec_clock::universal_time();
-  ASSERT_TRUE(selfenc.Read(answer.get(), test_data_size, 0));
+  ASSERT_TRUE(selfenc.Read(answer.get(), kTestDataSize, 0));
   uint64_t duration =
       (bptime::microsec_clock::universal_time() - time).total_microseconds();
   if (duration == 0)
     duration = 1;
-  uint64_t speed((test_data_size * 1000000) / duration);
-  std::cout << "Self-decrypted " << BytesToBinarySiUnits(test_data_size)
+  uint64_t speed((static_cast<uint64_t>(kTestDataSize) * 1000000) / duration);
+  std::cout << "Self-decrypted " << BytesToBinarySiUnits(kTestDataSize)
             << " in " << (duration / 1000000.0) << " seconds at a speed of "
             << BytesToBinarySiUnits(speed) << "/s" << std::endl;
-  for (uint32_t i = 0; i < test_data_size; ++i)
+  for (uint32_t i = 0; i < kTestDataSize; ++i)
     ASSERT_EQ(plain_data[i], answer[i]) << "failed at count " << i;
 }
 
@@ -314,55 +314,55 @@ TEST(SelfEncryptionTest, BEH_WriteAndReadCompressable) {
 TEST(SelfEncryptionTest, BEH_WriteAndReadByteAtATime) {
   MemoryChunkStorePtr chunk_store(new MemoryChunkStore(false, g_hash_func));
   DataMapPtr data_map(new DataMap);
-  uint32_t test_data_size(1024 * 1024 * 2);  // less than 2 mB fails due to test
-  std::string plain_text(SRandomString(test_data_size));
-  boost::scoped_array<char> plain_data(new char[test_data_size]);
-  for (uint32_t i = 0; i < test_data_size; ++i) {
+  // less than 2 MB fails due to test
+  const uint32_t kTestDataSize(1024 * 1024 * 2);
+  std::string plain_text(SRandomString(kTestDataSize));
+  boost::scoped_array<char> plain_data(new char[kTestDataSize]);
+  for (uint32_t i = 0; i < kTestDataSize - 1; ++i) {
     plain_data[i] = 'a';  // plain_text[i];
   }
-  plain_data[test_data_size] = 'b';
+  plain_data[kTestDataSize - 1] = 'b';
   {
     SelfEncryptor selfenc(data_map, chunk_store);
     // EXPECT_TRUE(selfenc.ReInitialise());
     // extra = sequencer_.Get(current_position_);
-    for (uint32_t i = 0; i < test_data_size; ++i)  {
+    for (uint32_t i = 0; i < kTestDataSize; ++i)  {
       selfenc.Write(&plain_data[i], 1, i);
     }
   }
   SelfEncryptor selfenc(data_map, chunk_store);
-  EXPECT_EQ(test_data_size, data_map->size);
+  EXPECT_EQ(kTestDataSize, data_map->size);
   EXPECT_EQ(0, data_map->content_size);
   EXPECT_EQ(8, data_map->chunks.size());
-  boost::scoped_array<char> answer(new char[test_data_size]);
-  ASSERT_TRUE(selfenc.Read(answer.get(), test_data_size));
+  boost::scoped_array<char> answer(new char[kTestDataSize]);
+  ASSERT_TRUE(selfenc.Read(answer.get(), kTestDataSize));
 
 //   // check chunks 1 and 2
   for (uint32_t i = 0; i < 524288; ++i)
     ASSERT_EQ(plain_data[i], answer[i]) << "c0 or c1 failed at count " << i;
 // check all other chunks
-  for (uint32_t i = 524288; i < test_data_size - 1; ++i)
+  for (uint32_t i = 524288; i < kTestDataSize - 1; ++i)
     ASSERT_EQ(plain_data[i], answer[i]) << "normal chunks failed count :" << i;
 }
 
 TEST(SelfEncryptionTest, BEH_WriteAndReadByteAtATimeOutOfSequenceForward) {
   MemoryChunkStorePtr chunk_store(new MemoryChunkStore(false, g_hash_func));
   DataMapPtr data_map(new DataMap);
-  uint32_t test_data_size(1024 * 20);
-  std::string plain_text(RandomString(test_data_size));
-  boost::scoped_array<char> plain_data(new char[test_data_size]);
-  for (uint32_t i = 0; i < test_data_size; ++i) {
+  const uint32_t kTestDataSize(1024 * 20);
+  std::string plain_text(RandomString(kTestDataSize));
+  boost::scoped_array<char> plain_data(new char[kTestDataSize]);
+  for (uint32_t i = 0; i < kTestDataSize - 2; ++i) {
     plain_data[i] = plain_text[i];
   }
-  plain_data[test_data_size] = 'a';
-  ++test_data_size;
-  plain_data[test_data_size] = 'b';
+  plain_data[kTestDataSize - 2] = 'a';
+  plain_data[kTestDataSize - 1] = 'b';
 
   uint32_t length = 1;
   {
     SelfEncryptor selfenc(data_map, chunk_store);
   bptime::ptime time = bptime::microsec_clock::universal_time();
   //   EXPECT_TRUE(selfenc.ReInitialise());
-    for (uint32_t i = 0; i < test_data_size; i += 2)  {
+    for (uint32_t i = 0; i < kTestDataSize + 1; i += 2)  {
       ASSERT_TRUE(selfenc.Write(&plain_data.get()[i], length, i));
     }
   uint64_t duration1 =
@@ -370,7 +370,7 @@ TEST(SelfEncryptionTest, BEH_WriteAndReadByteAtATimeOutOfSequenceForward) {
        time).total_microseconds();
   std::cout << "even byte_by_byte written taken : " << duration1
             << " microseconds" << std::endl;
-    for (uint32_t i = 1; i < test_data_size; i += 2)  {
+    for (uint32_t i = 1; i < kTestDataSize + 1; i += 2)  {
       ASSERT_TRUE(selfenc.Write(&plain_data.get()[i], length, i));
     }
   uint64_t duration2 =
@@ -382,93 +382,92 @@ TEST(SelfEncryptionTest, BEH_WriteAndReadByteAtATimeOutOfSequenceForward) {
   //   ASSERT_TRUE(selfenc.FinaliseWrite());
   }
   SelfEncryptor selfenc(data_map, chunk_store);
-  boost::scoped_array<char> answer(new char[test_data_size]);
+  boost::scoped_array<char> answer(new char[kTestDataSize + 1]);
 
-  ASSERT_TRUE(selfenc.Read(answer.get(), test_data_size, 0));
+  ASSERT_TRUE(selfenc.Read(answer.get(), kTestDataSize + 1, 0));
 
-  for (size_t  i = 0; i < test_data_size; ++i)
+  for (size_t  i = 0; i < kTestDataSize + 1; ++i)
     ASSERT_EQ(plain_data[i], answer[i]) << "failed at count " << i;
 }
 
-TEST(SelfEncryptionTest, FUNC_WriteOnceRead20) {
+TEST(SelfEncryptionTest, BEH_WriteOnceRead20) {
   MemoryChunkStorePtr chunk_store(new MemoryChunkStore(false, g_hash_func));
   DataMapPtr data_map(new DataMap);
-  uint32_t test_data_size(1024 * 1024);
-  std::string plain_text(RandomString(test_data_size));
-  boost::scoped_array<char> plain_data(new char[test_data_size]);
-  for (uint32_t i = 0; i < test_data_size; ++i) {
+  const uint32_t kTestDataSize(1024 * 1024);
+  std::string plain_text(RandomString(kTestDataSize));
+  boost::scoped_array<char> plain_data(new char[kTestDataSize]);
+  for (uint32_t i = 0; i < kTestDataSize - 1; ++i) {
 //    plain_data[i] = 'a';
     plain_data[i] = plain_text[i];
   }
-  plain_data[test_data_size] = 'b';
+  plain_data[kTestDataSize - 1] = 'b';
   {
     SelfEncryptor selfenc(data_map, chunk_store);
 //   EXPECT_TRUE(selfenc.ReInitialise());
-    ASSERT_TRUE(selfenc.Write(plain_data.get(), test_data_size));
+    ASSERT_TRUE(selfenc.Write(plain_data.get(), kTestDataSize));
     // TODO(dirvine) FIXME - wont work till destructor called
     //   ASSERT_TRUE(selfenc.FinaliseWrite());
     // check it works at least once
-    boost::scoped_array<char> answer(new char[test_data_size]);
-    ASSERT_TRUE(selfenc.Read(answer.get(), test_data_size, 0));
+    boost::scoped_array<char> answer(new char[kTestDataSize]);
+    ASSERT_TRUE(selfenc.Read(answer.get(), kTestDataSize, 0));
     // In process check !!
     for (int j = 0; j < 20; ++j) {
-      boost::scoped_array<char> answer1(new char[test_data_size]);
-      ASSERT_TRUE(selfenc.Read(answer1.get(), test_data_size, 0))
+      boost::scoped_array<char> answer1(new char[kTestDataSize]);
+      ASSERT_TRUE(selfenc.Read(answer1.get(), kTestDataSize, 0))
       << "failed at read attempt " << j;
-      for (uint32_t  i = 0; i < test_data_size; ++i)
+      for (uint32_t  i = 0; i < kTestDataSize; ++i)
         ASSERT_EQ(plain_data[i], answer1[i]) << "failed at count " << i;
     }
   }
   SelfEncryptor selfenc(data_map, chunk_store);
-  boost::scoped_array<char> answer(new char[test_data_size]);
-  ASSERT_TRUE(selfenc.Read(answer.get(), test_data_size, 0));
+  boost::scoped_array<char> answer(new char[kTestDataSize]);
+  ASSERT_TRUE(selfenc.Read(answer.get(), kTestDataSize, 0));
 
   for (int j = 0; j < 20; ++j) {
-    boost::scoped_array<char> answer1(new char[test_data_size]);
-    ASSERT_TRUE(selfenc.Read(answer1.get(), test_data_size, 0))
+    boost::scoped_array<char> answer1(new char[kTestDataSize]);
+    ASSERT_TRUE(selfenc.Read(answer1.get(), kTestDataSize, 0))
     << "failed at read attempt " << j;
-    for (uint32_t  i = 0; i < test_data_size; ++i)
+    for (uint32_t  i = 0; i < kTestDataSize; ++i)
       ASSERT_EQ(plain_data[i], answer1[i]) << "failed at count " << i;
   }
 }
 
-
 TEST(SelfEncryptionTest, BEH_WriteRandomlyAllDirections) {
   MemoryChunkStorePtr chunk_store(new MemoryChunkStore(false, g_hash_func));
   DataMapPtr data_map(new DataMap);
-  uint32_t test_data_size(1024 * 20);
-//   std::string plain_text(RandomString(test_data_size));
-  boost::scoped_array<char> plain_data(new char[test_data_size]);
-  std::vector<size_t> vec_data(test_data_size);
-  for (uint32_t i = 0; i < test_data_size; ++i) {
+  const uint32_t kTestDataSize(1024 * 20);
+//   std::string plain_text(RandomString(kTestDataSize));
+  boost::scoped_array<char> plain_data(new char[kTestDataSize]);
+  std::vector<size_t> vec_data(kTestDataSize);
+  for (uint32_t i = 0; i < kTestDataSize; ++i) {
     plain_data[i] = 'a';  // plain_text[i];
   }
-//   plain_data[test_data_size] = 'b';
-  for (uint32_t i = 0; i < test_data_size; ++i)
+//   plain_data[kTestDataSize - 1] = 'b';
+  for (uint32_t i = 0; i < kTestDataSize; ++i)
     vec_data[i] = i;  // vector of seq numbers
 
   std::random_shuffle(vec_data.begin(), vec_data.end());  // shuffle all about
   {
     SelfEncryptor selfenc(data_map, chunk_store);
-    boost::scoped_array<char> answer(new char[test_data_size]);
-    for (uint32_t i = 0; i < test_data_size; ++i) {
+    boost::scoped_array<char> answer(new char[kTestDataSize]);
+    for (uint32_t i = 0; i < kTestDataSize; ++i) {
       EXPECT_TRUE(selfenc.Write(&plain_data[vec_data[i]], 1, vec_data[i]));
-      ASSERT_TRUE(selfenc.Read(answer.get(), test_data_size, 0));
-      ASSERT_EQ(plain_data[i], answer[i]) << "failed in process ";
+      ASSERT_TRUE(selfenc.Read(answer.get(), kTestDataSize, 0));
+      ASSERT_EQ(plain_data[i], answer[i]) << "failed in process at " << i;
     }
     // In process check
 
-    ASSERT_TRUE(selfenc.Read(answer.get(), test_data_size, 0));
-    for (uint32_t  i = 0; i < test_data_size; ++i)
+    ASSERT_TRUE(selfenc.Read(answer.get(), kTestDataSize, 0));
+    for (uint32_t i = 0; i < kTestDataSize; ++i)
       ASSERT_EQ(plain_data[i], answer[i]) << "failed at count " << i;
   }
 
 
 //   EXPECT_EQ(8, selfenc.data_map()->chunks.size());
   SelfEncryptor selfenc(data_map, chunk_store);
-  boost::scoped_array<char> answer(new char[test_data_size]);
-  ASSERT_TRUE(selfenc.Read(answer.get(), test_data_size, 0));
-  for (uint32_t i = 0; i < test_data_size; ++i)
+  boost::scoped_array<char> answer(new char[kTestDataSize]);
+  ASSERT_TRUE(selfenc.Read(answer.get(), kTestDataSize, 0));
+  for (uint32_t i = 0; i < kTestDataSize; ++i)
     ASSERT_EQ(plain_data[i], answer[i]) << "failed at count " << i;
 }
 
@@ -476,14 +475,13 @@ TEST(SelfEncryptionTest, FUNC_RepeatedRandomCharReadInProcess) {
   MemoryChunkStorePtr chunk_store(new MemoryChunkStore(false, g_hash_func));
   DataMapPtr data_map(new DataMap);
   uint32_t chunk_size(1024 * 256);
-  uint32_t test_data_size(chunk_size * 6);
-  std::string plain_text(RandomString(test_data_size));
-  boost::scoped_array<char> plain_data(new char[test_data_size]);
+  const uint32_t kTestDataSize(chunk_size * 6);
+  std::string plain_text(RandomString(kTestDataSize));
+  boost::scoped_array<char> plain_data(new char[kTestDataSize]);
 
-  for (uint32_t i = 0; i < test_data_size - 1; ++i)
+  for (uint32_t i = 0; i < kTestDataSize - 1; ++i)
     plain_data[i] = plain_text[i];
-  ++test_data_size;
-  plain_data[test_data_size] = 'b';
+  plain_data[kTestDataSize - 1] = 'b';
   SelfEncryptor selfenc(data_map, chunk_store);
   // check 2 chunk_size
     for (uint32_t i = 0; i < chunk_size * 2; ++i) {
@@ -561,11 +559,11 @@ TEST(SelfEncryptionTest, FUNC_RepeatedRandomCharReadInProcess) {
 //
 //   EXPECT_EQ(6,  selfenc.data_map()->chunks.size());
 //   EXPECT_EQ(0,  selfenc.data_map()->content_size);
-//   EXPECT_EQ(test_data_size, selfenc.data_map()->size);
+//   EXPECT_EQ(kTestDataSize + 1, selfenc.data_map()->size);
 
-//   boost::scoped_array<char> answer(new char[test_data_size]);
-//   EXPECT_TRUE(selfenc.Read(answer.get(), test_data_size, 0));
-//   for (uint32_t  i = 0; i < test_data_size; ++i)
+//   boost::scoped_array<char> answer(new char[kTestDataSize + 1]);
+//   EXPECT_TRUE(selfenc.Read(answer.get(), kTestDataSize + 1, 0));
+//   for (uint32_t i = 0; i < kTestDataSize + 1; ++i)
 //     ASSERT_EQ(plain_data[i], answer[i]) << "failed at count " << i;
 }
 
@@ -573,14 +571,14 @@ TEST(SelfEncryptionTest, FUNC_ReadArbitaryPosition) {
   MemoryChunkStorePtr chunk_store(new MemoryChunkStore(false, g_hash_func));
   DataMapPtr data_map(new DataMap);
   uint32_t chunk_size(1024 * 256);
-  uint32_t test_data_size(chunk_size * 6);
-  std::string plain_text(RandomString(test_data_size));
-  boost::scoped_array<char> plain_data(new char[test_data_size]);
+  const uint32_t kTestDataSize(chunk_size * 6);
+  std::string plain_text(RandomString(kTestDataSize));
+  boost::scoped_array<char> plain_data(new char[kTestDataSize]);
 
   std::copy(plain_text.begin(), plain_text.end(), plain_data.get());
   {
     SelfEncryptor selfenc(data_map, chunk_store);
-    EXPECT_TRUE(selfenc.Write(plain_data.get(), test_data_size));
+    EXPECT_TRUE(selfenc.Write(plain_data.get(), kTestDataSize));
   }
   {
     // read some data
@@ -643,7 +641,7 @@ TEST(SelfEncryptionTest, FUNC_ReadArbitaryPosition) {
 //   num_of_tries.push_back(200);
 //   // the longest length of data is writing to position 6 * chunk_size with
 //   // a content length of 6 * chunk_size, make the total to be 12 * chunk_size
-//   size_t test_data_size(chunk_size * 12);
+//   size_t kTestDataSize(chunk_size * 12);
 //
 //   {
 //     // In Process random write/read access
@@ -654,9 +652,9 @@ TEST(SelfEncryptionTest, FUNC_ReadArbitaryPosition) {
 //     DataMapPtr data_map(new DataMap);
 //     SelfEncryptor selfenc(data_map, chunk_store);
 //
-//     boost::scoped_array<char>plain_data(new char[test_data_size]);
+//     boost::scoped_array<char>plain_data(new char[kTestDataSize]);
 //     // The initialization value of truncated data shall be filled here
-//     for (size_t i = 0; i < test_data_size; ++i)
+//     for (size_t i = 0; i < kTestDataSize; ++i)
 //       plain_data[i] = '0';
 //
 //     for (size_t i = 0; i < max_variation.size(); ++i) {
