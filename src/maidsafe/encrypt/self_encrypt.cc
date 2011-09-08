@@ -96,7 +96,7 @@ bool SelfEncryptor::Write(const char *data,
   if (length == 0)
     return true;
 
-  AddReleventSeqDataToQueue();
+  AddReleventSeqDataToQueue(); // gets any relevent data from sequencer
   if (position == current_position_) {  // assuming rewrites from zero
     main_encrypt_queue_.Put2(const_cast<byte*>(
         reinterpret_cast<const byte*>(data)), length, 0, true);
@@ -137,7 +137,7 @@ void SelfEncryptor::RewritingData(const char* data,
     position += amount_to_write;
     written += amount_to_write;
   }
-  
+  // TODO(DI) not sure if we should not just dump all in sequencer ?
   // overwrite data in trailing_data_
   if (length != 0 && position < trailing_data_start_ + trailing_data_size_) {
     uint32_t amount_to_write = static_cast<uint32_t>(trailing_data_start_ +
@@ -147,7 +147,6 @@ void SelfEncryptor::RewritingData(const char* data,
     position += amount_to_write;
     written += amount_to_write;
   }
-  
   // write remaining data beyond trailing_data_ to sequencer
   if (length != 0) {
     sequencer_.Add(static_cast<size_t>(position), const_cast<char*>(data),
@@ -427,12 +426,30 @@ void SelfEncryptor::EncryptAChunk(uint16_t chunk_num,
 void SelfEncryptor::EmptySequencer() {
   if (sequencer_.empty())
     return;
+// TODO
+    // check if chunks exists that the sequencer should write to
+    // i.e. get data map parameters and keep these chunks.num current size etc.
+    // as we empty sequencer we grab chunks worth at time and encrypt that chunk
+    // we need to check whether we have data for next chunks to encrypt next2
+    // so read->chunk / alter / encrypt chunk / enc next 2 (unless ...)
+    // divide num chunks with / chunks_size to get current floor
+    // floor + chunk_size_ is this range !!
 
+    
   while (!sequencer_.empty()) {
+    size_t chunks_written_to(data_map_->chunks.size() / chunk_size_);
     boost::scoped_ptr<char> data(new char);
     size_t length(0);
     size_t seq_pos = sequencer_.GetFirst(data.get(), &length);
 
+    if (seq_pos < chunks_written_to) {
+      //TODO need to alter a chunk
+      // and maybe the next one if we overrun boundary
+      
+      continue;
+    }
+
+    
     // need to pad and write data
     if (current_position_ < seq_pos) {  // Nothing done - pad to this point
       boost::scoped_array<char> pad(new char[1]);
@@ -441,6 +458,7 @@ void SelfEncryptor::EmptySequencer() {
         Write(&pad[0], 1, current_position_);
       Write(data.get(), static_cast<uint32_t>(length), seq_pos);
       AddReleventSeqDataToQueue();
+      continue;
     }
     /*size_t pos = */ sequencer_.GetFirst(data.get(), &length);
 //     Transmogrify(data, length, pos);
