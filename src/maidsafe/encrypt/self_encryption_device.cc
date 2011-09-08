@@ -760,7 +760,8 @@ io::stream_offset SelfEncryptionDevice::InitialAllZero(io::stream_offset size) {
   io::stream_offset chunk_index(0);
   while (chunk_index < (chunk_num - 2)) {
     chunk_store_->Store(post_hash, encrypted_content);
-    crypto_hashes_[chunk_index] = std::make_tuple(pre_hash, pre_hash, pre_hash);
+    crypto_hashes_[static_cast<uint32_t>(chunk_index)] =
+        std::make_tuple(pre_hash, pre_hash, pre_hash);
     ChunkDetails chunk;
     chunk.pre_hash = pre_hash;
     chunk.pre_size = self_encryption_params.max_chunk_size;
@@ -771,7 +772,8 @@ io::stream_offset SelfEncryptionDevice::InitialAllZero(io::stream_offset size) {
     ++chunk_index;
   }
 
-  io::stream_offset remain = size % self_encryption_params.max_chunk_size;
+  uint32_t remain =
+      static_cast<uint32_t>(size % self_encryption_params.max_chunk_size);
   std::string remain_zeros(remain, 0);
   std::string pre_hash_remain = utils::Hash(remain_zeros,
                                      data_map_->self_encryption_type);
@@ -793,8 +795,8 @@ io::stream_offset SelfEncryptionDevice::InitialAllZero(io::stream_offset size) {
 
   chunk_store_->Store(post_hash_n_2, encrypted_content_n_2);
   {
-    crypto_hashes_[chunk_index] = std::make_tuple(pre_hash, pre_hash,
-                                                  pre_hash_remain);
+    crypto_hashes_[static_cast<uint32_t>(chunk_index)] =
+        std::make_tuple(pre_hash, pre_hash, pre_hash_remain);
     ChunkDetails chunk;
     chunk.pre_hash = pre_hash;
     chunk.pre_size = self_encryption_params.max_chunk_size;
@@ -806,8 +808,8 @@ io::stream_offset SelfEncryptionDevice::InitialAllZero(io::stream_offset size) {
   ++chunk_index;
   chunk_store_->Store(post_hash_n_1, encrypted_content_n_1);
   {
-    crypto_hashes_[chunk_index] = std::make_tuple(pre_hash, pre_hash_remain,
-                                                  pre_hash);
+    crypto_hashes_[static_cast<uint32_t>(chunk_index)] =
+        std::make_tuple(pre_hash, pre_hash_remain, pre_hash);
     ChunkDetails chunk;
     chunk.pre_hash = pre_hash;
     chunk.pre_size = self_encryption_params.max_chunk_size;
@@ -819,8 +821,8 @@ io::stream_offset SelfEncryptionDevice::InitialAllZero(io::stream_offset size) {
   ++chunk_index;
   chunk_store_->Store(post_hash_n, encrypted_content_n);
   {
-    crypto_hashes_[chunk_index] = std::make_tuple(pre_hash_remain, pre_hash,
-                                                  pre_hash);
+    crypto_hashes_[static_cast<uint32_t>(chunk_index)] =
+        std::make_tuple(pre_hash_remain, pre_hash, pre_hash);
     ChunkDetails chunk;
     chunk.pre_hash = pre_hash_remain;
     chunk.pre_size = static_cast<uint32_t>(remain);
