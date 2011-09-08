@@ -438,11 +438,33 @@ void SelfEncryptor::EmptySequencer() {
     
   while (!sequencer_.empty()) {
     size_t chunks_written_to(data_map_->chunks.size() / chunk_size_);
-    boost::scoped_ptr<char> data(new char);
+    boost::scoped_array<char> data(new char);
     size_t length(0);
     size_t seq_pos = sequencer_.GetFirst(data.get(), &length);
 
     if (seq_pos < chunks_written_to) {
+      size_t c_start((chunk_size_ - seq_pos) % chunk_size_);
+      size_t c_end((chunk_size_ - (seq_pos + length)) % chunk_size_);
+      size_t start_chunk(seq_pos / chunk_size_); // floor
+      size_t end_chunk((seq_pos + length / chunk_size_) + 1);
+      size_t chunk_array_size((end_chunk - start_chunk) * chunk_size_);
+      boost::scoped_array<byte>
+      chunk_array(new byte[chunk_array_size]);
+      // get chunks
+      for(size_t i = start_chunk; i < end_chunk; ++i) 
+        ReadChunk(i,
+                  &chunk_array[start_chunk * chunk_size_]);
+      // rewrite data in chunks
+      for(size_t i = c_start; i < chunk_array_size - c_end; ++i )
+        chunk_array[i] = data[i];
+      // encrypt chunks
+        for(size_t i = start_chunk; i < end_chunk; ++i)
+          EncryptAChunk(i,
+                        &chunk_array[start_chunk * chunk_size_],
+                        chunk_size_, true);
+
+        // encrypt next 2 (maybe)
+      
       //TODO need to alter a chunk
       // and maybe the next one if we overrun boundary
       
