@@ -81,7 +81,7 @@ SelfEncryptor::~SelfEncryptor() {
   while (main_encrypt_queue_.MaxRetrievable() > 0) {
     chunk_size_ =
         static_cast<uint32_t>(main_encrypt_queue_.MaxRetrievable() / 3);
-    if (chunk_size_ < 1025) {
+    if (chunk_size_ < 1024) {
       WriteExtraAndEnc0and1();
     }
     AddReleventSeqDataToQueue();
@@ -692,6 +692,13 @@ bool SelfEncryptor::DeleteAllChunks() {
       return false;
   }
   data_map_->chunks.clear();
+  return true;
+}
+
+bool SelfEncryptor::Truncate(std::uint64_t size) {
+  if (data_map_->complete) {
+  } else {
+  }
   return true;
 }
 

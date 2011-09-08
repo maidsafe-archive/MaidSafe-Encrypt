@@ -912,11 +912,9 @@ TEST(SelfEncryptionTest, BEH_1024x256x3Minus1Chars) {
   }
   SelfEncryptor selfenc(data_map, chunk_store);
   // Check data_map values again after destruction...
-  EXPECT_EQ(3, selfenc.data_map()->chunks.size());
-  for (size_t i = 0; i != 3; ++i)
-    EXPECT_EQ(1024*255+1023, selfenc.data_map()->chunks[i].size);
+  EXPECT_EQ(5, selfenc.data_map()->chunks.size());
   EXPECT_EQ(size, selfenc.data_map()->size);
-  EXPECT_EQ(2, selfenc.data_map()->content_size);
+  EXPECT_EQ(0, selfenc.data_map()->content_size);
 }
 
 TEST(SelfEncryptionTest, BEH_1024x256x3Plus1Chars) {
@@ -979,13 +977,13 @@ TEST(SelfEncryptionTest, BEH_10Chunk4096ByteOutOfSequenceWrites) {
   EXPECT_EQ(1, selfenc.data_map()->content_size);
 }
 
-TEST(SelfEncryptionTest, BEH_9Chunk4096ByteOutOfSequenceWrites) {
+TEST(SelfEncryptionTest, BEH_12Chunk4096ByteOutOfSequenceWrites) {
   MemoryChunkStorePtr chunk_store(new MemoryChunkStore(false, g_hash_func));
   DataMapPtr data_map(new DataMap);
-  // 9 chunks, (1024*256*10-1)...
+  // 12 chunks, (1024*256*10-1)...
   // 639, 4096 byte parts...
   const size_t parts(639), size(4096);
-  size_t chunks((7 / omp_get_num_procs()) * omp_get_num_procs());
+  size_t chunks((10 / omp_get_num_procs()) * omp_get_num_procs());
   std::array<std::string, parts> string_array;
   std::array<size_t, parts> index_array;
   std::string content(RandomString(4095));
@@ -1007,9 +1005,9 @@ TEST(SelfEncryptionTest, BEH_9Chunk4096ByteOutOfSequenceWrites) {
   }
   SelfEncryptor selfenc(data_map, chunk_store);
   // Check data_map values again after destruction...
-  EXPECT_EQ(9, selfenc.data_map()->chunks.size());
+  EXPECT_EQ(12, selfenc.data_map()->chunks.size());
   EXPECT_EQ(1024*256*10-1, selfenc.data_map()->size);
-  EXPECT_EQ(1024*256-1, selfenc.data_map()->content_size);
+  EXPECT_EQ(0, selfenc.data_map()->content_size);
 }
 
 TEST(SelfEncryptionTest, BEH_10Chunk65536ByteOutOfSequenceWrites) {
@@ -1046,13 +1044,13 @@ TEST(SelfEncryptionTest, BEH_10Chunk65536ByteOutOfSequenceWrites) {
   EXPECT_EQ(1, selfenc.data_map()->content_size);
 }
 
-TEST(SelfEncryptionTest, BEH_9Chunk65536ByteOutOfSequenceWrites) {
+TEST(SelfEncryptionTest, BEH_12Chunk65536ByteOutOfSequenceWrites) {
   MemoryChunkStorePtr chunk_store(new MemoryChunkStore(false, g_hash_func));
   DataMapPtr data_map(new DataMap);
-  // 9 chunks, (1024*256*10-1)...
+  // 12 chunks, (1024*256*10-1)...
   // 39, 65536 byte parts...
   const size_t parts(39), size(65536);
-  size_t chunks((7 / omp_get_num_procs()) * omp_get_num_procs());
+  size_t chunks((10 / omp_get_num_procs()) * omp_get_num_procs());
   std::array<std::string, parts> string_array;
   std::array<size_t, parts> index_array;
   std::string content(RandomString(65535));
@@ -1074,15 +1072,15 @@ TEST(SelfEncryptionTest, BEH_9Chunk65536ByteOutOfSequenceWrites) {
   }
   SelfEncryptor selfenc(data_map, chunk_store);
   // Check data_map values again after destruction...
-  EXPECT_EQ(9, selfenc.data_map()->chunks.size());
+  EXPECT_EQ(12, selfenc.data_map()->chunks.size());
   EXPECT_EQ(1024*256*10-1, selfenc.data_map()->size);
-  EXPECT_EQ(1024*256-1, selfenc.data_map()->content_size);
+  EXPECT_EQ(0, selfenc.data_map()->content_size);
 }
 
-TEST(SelfEncryptionTest, BEH_9Chunk4096ByteOutOfSequenceWritesWithGap) {
+TEST(SelfEncryptionTest, BEH_12Chunk4096ByteOutOfSequenceWritesWithGap) {
   MemoryChunkStorePtr chunk_store(new MemoryChunkStore(false, g_hash_func));
   DataMapPtr data_map(new DataMap);
-  // 9 chunks, (1024*256*10-1)...
+  // 12 chunks, (1024*256*10-1)...
   // 639, 4096 byte parts...
   const size_t parts(639), size(4096);
   std::array<std::string, parts> string_array;
@@ -1108,15 +1106,15 @@ TEST(SelfEncryptionTest, BEH_9Chunk4096ByteOutOfSequenceWritesWithGap) {
   }
   SelfEncryptor selfenc(data_map, chunk_store);
   // Check data_map values again after destruction...
-  EXPECT_EQ(9, selfenc.data_map()->chunks.size());
+  EXPECT_EQ(12, selfenc.data_map()->chunks.size());
   EXPECT_EQ(1024*256*10-1, selfenc.data_map()->size);
-  EXPECT_EQ(1024*256-1, selfenc.data_map()->content_size);
+  EXPECT_EQ(0, selfenc.data_map()->content_size);
 }
 
-TEST(SelfEncryptionTest, BEH_9Chunk65536ByteOutOfSequenceWritesWithGaps) {
+TEST(SelfEncryptionTest, BEH_12Chunk65536ByteOutOfSequenceWritesWithGaps) {
   MemoryChunkStorePtr chunk_store(new MemoryChunkStore(false, g_hash_func));
   DataMapPtr data_map(new DataMap);
-  // 9 chunks, (1024*256*10-1)...
+  // 12 chunks, (1024*256*10-1)...
   // 39, 65536 byte parts...
   const size_t parts(39), size(65536);
   std::array<std::string, parts> string_array;
@@ -1145,9 +1143,9 @@ TEST(SelfEncryptionTest, BEH_9Chunk65536ByteOutOfSequenceWritesWithGaps) {
   }
   SelfEncryptor selfenc(data_map, chunk_store);
   // Check data_map values again after destruction...
-  EXPECT_EQ(9, selfenc.data_map()->chunks.size());
+  EXPECT_EQ(12, selfenc.data_map()->chunks.size());
   EXPECT_EQ(1024*256*10-1, selfenc.data_map()->size);
-  EXPECT_EQ(1024*256-1, selfenc.data_map()->content_size);
+  EXPECT_EQ(0, selfenc.data_map()->content_size);
 }
 
 TEST(SelfEncryptionManualTest, BEH_manual_check_write) {
