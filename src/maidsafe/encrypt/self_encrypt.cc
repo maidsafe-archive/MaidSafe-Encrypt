@@ -730,7 +730,7 @@ bool SelfEncryptor::DeleteAllChunks() {
   return true;
 }
 
-bool SelfEncryptor::Truncate(std::uint64_t size) {
+bool SelfEncryptor::Truncate(std::uint64_t /*size*/) {
   if (data_map_->complete) {
   } else {
   }
