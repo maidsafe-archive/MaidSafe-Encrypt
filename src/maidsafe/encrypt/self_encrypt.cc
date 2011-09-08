@@ -96,56 +96,66 @@ bool SelfEncryptor::Write(const char *data,
   if (length == 0)
     return true;
 
-  if (rewriting_) {
-    // write to sequencer as far as start of trailing_data_
-    uint32_t written(0);
-    if (position < trailing_data_start_) {
-      uint32_t amount_to_write =
-          std::min(length,
-                   static_cast<uint32_t>(trailing_data_start_ - position));
-      sequencer_.Add(static_cast<size_t>(position), const_cast<char*>(data),
-                     amount_to_write);
-      length -= amount_to_write;
-      position += amount_to_write;
-      written += amount_to_write;
+  AddReleventSeqDataToQueue();
+  if (position == current_position_) {  // assuming rewrites from zero
+    main_encrypt_queue_.Put2(const_cast<byte*>(
+        reinterpret_cast<const byte*>(data)), length, 0, true);
+    current_position_ += length;
+  } else if (position > current_position_) {
+    sequencer_.Add(static_cast<size_t>(position), const_cast<char*>(data),
+                    length);
+  } else  {  // we went backwards or rewriting !!!
+    if (!rewriting_ && data_map_->complete) {
+      rewriting_ = true;
+      SequenceAllNonStandardChunksAndExtraContent();
+      data_map_->complete = false;
     }
-
-    // overwrite data in trailing_data_
-    if (length != 0 && position < trailing_data_start_ + trailing_data_size_) {
-      uint32_t amount_to_write = static_cast<uint32_t>(trailing_data_start_ +
-                                 trailing_data_size_ - position);
-      memcpy(trailing_data_.get(), data + written, amount_to_write);
-      length -= amount_to_write;
-      position += amount_to_write;
-      written += amount_to_write;
-    }
-
-    // write remaining data beyond trailing_data_ to sequencer
-    if (length != 0) {
-      sequencer_.Add(static_cast<size_t>(position), const_cast<char*>(data),
-                     length);
-    }
-  } else {
-    AddReleventSeqDataToQueue();
-    if (position == current_position_) {  // assuming rewrites from zero
-      main_encrypt_queue_.Put2(const_cast<byte*>(
-          reinterpret_cast<const byte*>(data)), length, 0, true);
-      current_position_ += length;
-    } else if (position > current_position_) {
-      sequencer_.Add(static_cast<size_t>(position), const_cast<char*>(data),
-                     length);
-    } else  {  // we went backwards or rewriting !!!
-      if (!rewriting_ && data_map_->complete) {
-        rewriting_ = true;
-        SequenceAllNonStandardChunksAndExtraContent();
-      }
-      sequencer_.Add(static_cast<size_t>(position), const_cast<char*>(data),
-                     length);
+    if (rewriting_) {
+        RewritingData(data, length, position);
+    } else {
+        sequencer_.Add(static_cast<size_t>(position), const_cast<char*>(data),
+                      length);
     }
   }
   AttemptProcessQueue();
   return true;
 }
+
+void SelfEncryptor::RewritingData(const char* data,
+                                       uint32_t length,
+                                       uint64_t position)
+{
+  // write to sequencer as far as start of trailing_data_
+  uint32_t written(0);
+  if (position < trailing_data_start_) {
+    uint32_t amount_to_write =
+    std::min(length,
+             static_cast<uint32_t>(trailing_data_start_ - position));
+    sequencer_.Add(static_cast<size_t>(position), const_cast<char*>(data),
+                   amount_to_write);
+    length -= amount_to_write;
+    position += amount_to_write;
+    written += amount_to_write;
+  }
+  
+  // overwrite data in trailing_data_
+  if (length != 0 && position < trailing_data_start_ + trailing_data_size_) {
+    uint32_t amount_to_write = static_cast<uint32_t>(trailing_data_start_ +
+    trailing_data_size_ - position);
+    memcpy(trailing_data_.get(), data + written, amount_to_write);
+    length -= amount_to_write;
+    position += amount_to_write;
+    written += amount_to_write;
+  }
+  
+  // write remaining data beyond trailing_data_ to sequencer
+  if (length != 0) {
+    sequencer_.Add(static_cast<size_t>(position), const_cast<char*>(data),
+                   length);
+  }
+}
+
+
 
 void SelfEncryptor::AddReleventSeqDataToQueue() {
   SequenceData extra(sequencer_.Get(static_cast<size_t>(current_position_)));
