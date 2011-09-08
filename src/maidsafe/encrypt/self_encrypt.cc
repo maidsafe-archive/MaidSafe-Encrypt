@@ -105,7 +105,7 @@ bool SelfEncryptor::Write(const char *data,
     sequencer_.Add(static_cast<size_t>(position), const_cast<char*>(data),
                    length);
   } else  {  // we went backwards or rewriting !!!
-    if (!rewriting_) {
+    if (!rewriting_ && data_map_->complete) {
       rewriting_ = true;
       SequenceAllNonStandardChunksAndExtraContent();
     }
