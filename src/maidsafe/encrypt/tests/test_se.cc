@@ -847,6 +847,79 @@ TEST(SelfEncryptionTest, BEH_NewRead) {
   }
 }
 
+TEST(SelfEncryptionTest, BEH_WriteAllRandom) {
+  //  create string for input, break into random sized pieces
+  //  then write in random order
+  MemoryChunkStorePtr chunk_store(new MemoryChunkStore(false, g_hash_func));
+  DataMapPtr data_map(new DataMap);
+  const uint32_t kTestDataSize(1024*256*20);
+  std::string plain_text(RandomString(kTestDataSize));
+  std::vector<std::pair<uint32_t, std::string>> broken_data;
+
+  uint32_t i(0);
+  uint32_t total(0);
+  while (i < kTestDataSize) {
+    uint32_t size;
+    if (kTestDataSize - i < 4096)
+      size = kTestDataSize - i;
+    else
+      size = RandomUint32() % 4096;
+    std::pair<uint32_t, std::string> piece(i, plain_text.substr(i, size));
+    broken_data.push_back(piece);
+    total += size;
+//     std::cout << "position = " << i << " , size of string = " << piece.second.length()
+//               << " file length accounted for = " << total << std::endl;
+    i += size;
+  }
+
+  std::random_shuffle(broken_data.begin(), broken_data.end());
+
+  {
+    SelfEncryptor selfenc(data_map, chunk_store);
+    for (auto it = broken_data.begin(); it != broken_data.end(); ++it) {
+      std::pair<uint32_t, std::string> stuff = *it;
+      uint32_t posn(stuff.first);
+      std::string data(stuff.second);
+      uint32_t length = data.length();
+      boost::scoped_array<char> content(new char[length]);
+      std::copy(data.c_str(), data.c_str()+length, content.get());
+      std::cout << "Content size " << length << " about to be written to posn " << posn << std::endl;
+      EXPECT_TRUE(selfenc.Write(content.get(), length, posn));
+      std::cout << "       Content size " << length << " written to posn " << posn << std::endl;
+      boost::scoped_array<char> answer(new char[length]);
+//       if (posn == 0) {
+//           EXPECT_TRUE(selfenc.Read(answer.get(), length, 0));
+//           for (uint32_t i = 0; i < length; ++i) {
+//             if (content[i] == answer[i])
+//               DLOG(INFO) << "content[" << i << "] = " << content[i] << "  "
+//                         << (int)content[i] << "   answer["
+//                         << i << "] = " << answer[i] << "  " << (int)answer[i];
+//           }
+//       }
+    }
+  }
+
+  SelfEncryptor selfenc(data_map, chunk_store);
+  // standard checks for sizes
+  EXPECT_EQ(20, selfenc.data_map()->chunks.size());
+  EXPECT_EQ(kTestDataSize, selfenc.data_map()->size);
+  EXPECT_EQ(0, selfenc.data_map()->content_size);
+
+  boost::scoped_array<char> answer(new char[kTestDataSize]);
+  boost::scoped_array<char> original(new char[kTestDataSize]);
+  std::copy(plain_text.c_str(), plain_text.c_str() + kTestDataSize, original.get());
+  EXPECT_TRUE(selfenc.Read(answer.get(), kTestDataSize, 0));
+  bool match(true);
+  for (uint32_t i = 0; i < kTestDataSize; ++i) {
+    if (original[i] != answer[i])
+      match = false;
+//       DLOG(INFO) << "original[" << i << "] = " << original[i] << "  "
+//                  << (int)original[i] << "   answer["
+//                  << i << "] = " << answer[i] << "  " << (int)answer[i];
+  }
+  EXPECT_TRUE(match);
+}
+
 TEST(SelfEncryptionManualTest, BEH_manual_check_write) {
   MemoryChunkStorePtr chunk_store(new MemoryChunkStore(false, g_hash_func));
   DataMapPtr data_map(new DataMap);
