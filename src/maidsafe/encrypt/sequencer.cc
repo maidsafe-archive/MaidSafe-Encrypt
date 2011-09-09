@@ -21,7 +21,7 @@
 namespace maidsafe {
 namespace encrypt {
 
-bool Sequencer::Add(size_t position, char *data, size_t length) {
+bool Sequencer::Add(uint64_t position, char *data, uint32_t length) {
   // TODO(dirvine) if a write happens half way through we count as 2 sets,
   // need to take care of this here, otherwise we lose timeline
   auto iter = sequencer_.find(position);
@@ -32,7 +32,7 @@ bool Sequencer::Add(size_t position, char *data, size_t length) {
                         std::make_pair(position, SequenceData(data, length)));
     }
     catch(const std::exception &e) {
-      // TODO (DI) here we need to catch the error - likely out of mem
+      // TODO(DI) here we need to catch the error - likely out of mem
       // We should then set up a flilestream in boost::tmp_dir
       // empty sequencer and this write data to the file
       // set a flag to say we have written a fstream.
@@ -54,21 +54,19 @@ bool Sequencer::Add(size_t position, char *data, size_t length) {
   return true;
 }
 
-uint64_t Sequencer::PeekLast(uint32_t* length)
-{
-    auto it = sequencer_.end();
-    *length = ((*it).first);
-    return (*it).second.second;
+uint64_t Sequencer::PeekLast(uint32_t *length) {
+  auto it = sequencer_.end();
+  *length = (*it).second.second;
+  return (*it).first;
 }
 
-
-SequenceData Sequencer::PositionFromSequencer(size_t position, bool remove) {
+SequenceData Sequencer::PositionFromSequencer(uint64_t position, bool remove) {
   if (sequencer_.empty())
     return (SequenceData(static_cast<char*>(NULL), 0));
   for (auto it = sequencer_.begin(); it != sequencer_.end(); ++it) {
-    size_t this_position = (*it).first;
+    uint64_t this_position = (*it).first;
     char *this_data = (*it).second.first;
-    size_t this_length = (*it).second.second;
+    uint32_t this_length = (*it).second.second;
     // got the data - it is contiguous
     if (this_position == position) {
       SequenceData result(this_data, this_length);
@@ -80,12 +78,12 @@ SequenceData Sequencer::PositionFromSequencer(size_t position, bool remove) {
     if (this_position + this_length >= position) {
       // get address of element and length
       SequenceData result(&this_data[position - this_position],
-                          this_length - (position - this_position));
+          this_length - static_cast<uint32_t>(position - this_position));
       if (remove) {
         // get the remaining data and re-add
         Add(this_position,
             &this_data[position - this_position],
-            this_length - position - this_position);
+            this_length - static_cast<uint32_t>(position - this_position));
         sequencer_.erase(it);
       }
       return result;
@@ -94,11 +92,13 @@ SequenceData Sequencer::PositionFromSequencer(size_t position, bool remove) {
   return (SequenceData(static_cast<char*>(NULL), 0));  // nothing found
 }
 
-uint64_t Sequencer::NextFromSequencer(char *data, uint32_t *length, bool remove) {
+uint64_t Sequencer::NextFromSequencer(char *data,
+                                      uint32_t *length,
+                                      bool remove) {
   if (sequencer_.empty())
     return 0;
   auto it = sequencer_.begin();
-  size_t position = (*it).first;
+  const uint64_t &position = (*it).first;
   data = (*it).second.first;
   *length = (*it).second.second;
 

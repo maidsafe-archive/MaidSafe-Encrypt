@@ -107,7 +107,6 @@ class SelfEncryptor {
   SelfEncryptor &operator = (const SelfEncryptor&);
   SelfEncryptor(const SelfEncryptor&);
   void AddReleventSeqDataToQueue();
-  void RewritingData(const char *data, uint32_t length, uint64_t position);
   void SequenceAllNonStandardChunksAndExtraContent();
   void ReadChunk(uint16_t chunk_num, byte *data);
   void GetPadIvKey(size_t this_chunk_num,

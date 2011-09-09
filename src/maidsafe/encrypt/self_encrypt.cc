@@ -96,65 +96,23 @@ bool SelfEncryptor::Write(const char *data,
   if (length == 0)
     return true;
 
-  AddReleventSeqDataToQueue(); // gets any relevent data from sequencer
+  AddReleventSeqDataToQueue();  // gets any relevent data from sequencer
   if (position == current_position_) {  // assuming rewrites from zero
     main_encrypt_queue_.Put2(const_cast<byte*>(
         reinterpret_cast<const byte*>(data)), length, 0, true);
     current_position_ += length;
-  } else if (position > current_position_) {
-    sequencer_.Add(static_cast<size_t>(position), const_cast<char*>(data),
-                    length);
   } else  {  // we went backwards or rewriting !!!
     if (!rewriting_ && data_map_->complete) {
       rewriting_ = true;
       SequenceAllNonStandardChunksAndExtraContent();
       data_map_->complete = false;
     }
-    if (rewriting_) {
-        RewritingData(data, length, position);
-    } else {
-        sequencer_.Add(static_cast<size_t>(position), const_cast<char*>(data),
-                      length);
-    }
+      sequencer_.Add(static_cast<size_t>(position), const_cast<char*>(data),
+                    length);
   }
   AttemptProcessQueue();
   return true;
 }
-
-void SelfEncryptor::RewritingData(const char* data,
-                                       uint32_t length,
-                                       uint64_t position)
-{
-  // write to sequencer as far as start of trailing_data_
-  uint32_t written(0);
-  if (position < trailing_data_start_) {
-    uint32_t amount_to_write =
-    std::min(length,
-             static_cast<uint32_t>(trailing_data_start_ - position));
-    sequencer_.Add(static_cast<size_t>(position), const_cast<char*>(data),
-                   amount_to_write);
-    length -= amount_to_write;
-    position += amount_to_write;
-    written += amount_to_write;
-  }
-  // TODO(DI) not sure if we should not just dump all in sequencer ?
-  // overwrite data in trailing_data_
-  if (length != 0 && position < trailing_data_start_ + trailing_data_size_) {
-    uint32_t amount_to_write = static_cast<uint32_t>(trailing_data_start_ +
-    trailing_data_size_ - position);
-    memcpy(trailing_data_.get(), data + written, amount_to_write);
-    length -= amount_to_write;
-    position += amount_to_write;
-    written += amount_to_write;
-  }
-  // write remaining data beyond trailing_data_ to sequencer
-  if (length != 0) {
-    sequencer_.Add(static_cast<size_t>(position), const_cast<char*>(data),
-                   length);
-  }
-}
-
-
 
 void SelfEncryptor::AddReleventSeqDataToQueue() {
   SequenceData extra(sequencer_.Get(static_cast<size_t>(current_position_)));
@@ -426,7 +384,7 @@ void SelfEncryptor::EncryptAChunk(uint16_t chunk_num,
 void SelfEncryptor::EmptySequencer() {
   if (sequencer_.empty())
     return;
-// TODO
+// TODO(dirvine)
     // check if chunks exists that the sequencer should write to
     // i.e. get data map parameters and keep these chunks.num current size etc.
     // as we empty sequencer we grab chunks worth at time and encrypt that chunk
@@ -434,42 +392,42 @@ void SelfEncryptor::EmptySequencer() {
     // so read->chunk / alter / encrypt chunk / enc next 2 (unless ...)
     // divide num chunks with / chunks_size to get current floor
     // floor + chunk_size_ is this range !!
-    uint32_t last_seq_length;
-    uint64_t last_seq_pos = sequencer_.PeekLast(& last_seq_length);
+//  uint32_t last_seq_length;
+//  uint64_t last_seq_pos = sequencer_.PeekLast(&last_seq_length);
 
-    size_t total_size(last_seq_pos + last_seq_length);
-    size_t last_chunk_num(total_size / chunk_size_);
-     //after this set current_position_ and q - process last
-    
+//  uint64_t total_size(last_seq_pos + last_seq_length);
+//  size_t last_chunk_num(static_cast<size_t>(total_size / chunk_size_));
+     // after this set current_position_ and q - process last
+
   while (!sequencer_.empty()) {
     size_t chunks_written_to(data_map_->chunks.size() / chunk_size_);
     boost::scoped_array<char> data(new char);
     std::uint32_t length(0);
-    size_t seq_pos = sequencer_.GetFirst(data.get(), &length);
+    uint64_t seq_pos = sequencer_.GetFirst(data.get(), &length);
 
     if (seq_pos < chunks_written_to) {
       size_t c_start((chunk_size_ - seq_pos) % chunk_size_);
       size_t c_end((chunk_size_ - (seq_pos + length)) % chunk_size_);
-      size_t start_chunk(seq_pos / chunk_size_); // floor
-      size_t end_chunk((seq_pos + length / chunk_size_) + 1);
+      uint16_t start_chunk(static_cast<uint16_t>(seq_pos / chunk_size_));
+      uint16_t end_chunk(
+          static_cast<uint16_t>((seq_pos + length) / chunk_size_) + 1);
       size_t chunk_array_size((end_chunk - start_chunk) * chunk_size_);
       ByteArray chunk_array(new byte[chunk_array_size]);
       // get chunks
-      for(size_t i = start_chunk; i < end_chunk; ++i) 
-        ReadChunk(i,
-                  &chunk_array[start_chunk * chunk_size_]);
+      for (uint16_t i = start_chunk; i < end_chunk; ++i)
+        ReadChunk(i, &chunk_array[start_chunk * chunk_size_]);
       // rewrite data in chunks
-      for(size_t i = c_start; i < chunk_array_size - c_end; ++i )
+      for (size_t i = c_start; i < chunk_array_size - c_end; ++i )
         chunk_array[i] = data[i];
       // encrypt chunks
-        for(size_t i = start_chunk; i < end_chunk; ++i)
-//           DeleteAChunk(i);
+      for (uint16_t i = start_chunk; i < end_chunk; ++i)
+//        DeleteAChunk(i);
           EncryptAChunk(i,
                         &chunk_array[start_chunk * chunk_size_],
                         chunk_size_, true);
 
-          
-        // TODO (DI) not always required, encrypt next 2 
+
+        // TODO(DI) not always required, encrypt next 2
 //       for (int i = end_chunk; i <= 2; ++i) {
 //         chunk_num = (i + data_map_->chunks.size())
 //         %  data_map_->chunks.size();
@@ -487,7 +445,6 @@ void SelfEncryptor::EmptySequencer() {
       continue;
     }
 
-    
     // need to pad and write data
     if (current_position_ < seq_pos) {  // Nothing done - pad to this point
       boost::scoped_array<char> pad(new char[1]);
@@ -501,7 +458,6 @@ void SelfEncryptor::EmptySequencer() {
     /*size_t pos = */ sequencer_.GetFirst(data.get(), &length);
 //     Transmogrify(data, length, pos);
   }
-  
 }
 
 
@@ -518,16 +474,16 @@ bool SelfEncryptor::WriteExtraAndEnc0and1() {
   // when all that is done, encrypt chunks 0 and 1
   if (chunk_one_two_q_full_) {
 #pragma omp sections
-{
+{  // NOLINT (Fraser)
 #pragma omp section
-{
+{  // NOLINT (Fraser)
     EncryptAChunk(0, chunk0_raw_.get(), c0_and_1_chunk_size_, false);
 }
 #pragma omp section
-{
+{  // NOLINT (Fraser)
     EncryptAChunk(1, chunk1_raw_.get(), c0_and_1_chunk_size_, false);
 }
-} // end omp sections
+}  // end omp sections
 
     chunk0_raw_.reset();
     chunk1_raw_.reset();

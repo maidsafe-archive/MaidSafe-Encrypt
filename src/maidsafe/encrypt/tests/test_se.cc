@@ -15,6 +15,9 @@
  * @date  2011-04-05
  */
 
+#include <array>
+#include <string>
+
 #ifdef WIN32
 #  pragma warning(push, 1)
 #endif
@@ -33,8 +36,6 @@
 #include "maidsafe/encrypt/self_encrypt.h"
 #include "maidsafe/encrypt/log.h"
 
-#include <array>
-#include <string>
 
 namespace bptime = boost::posix_time;
 
@@ -98,7 +99,7 @@ TEST(SelfEncryptionTest, BEH_40CharPlusPadding) {
   EXPECT_EQ(80, selfenc.data_map()->size);
   EXPECT_EQ(80, selfenc.data_map()->content_size);
   EXPECT_EQ(0, selfenc.data_map()->chunks.size());
-  for( size_t i = 0; i < 40; ++i) {
+  for (size_t i = 0; i < 40; ++i) {
     EXPECT_TRUE(selfenc.Read(&answer[i], 1, i));
   }
 }

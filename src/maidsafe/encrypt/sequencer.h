@@ -31,11 +31,11 @@
 namespace maidsafe {
 namespace encrypt {
 
-typedef std::pair<char*, size_t> SequenceData;
+typedef std::pair<char*, uint32_t> SequenceData;
 
 class Sequencer {
  public:
-   bool Add(uint64_t position, char *data, uint64_t length);
+  bool Add(uint64_t position, char *data, uint32_t length);
   SequenceData Peek(uint64_t position) {
     return PositionFromSequencer(position, false);
   }
@@ -51,11 +51,9 @@ class Sequencer {
   bool empty() const { return sequencer_.empty(); }
   uint64_t PeekLast(uint32_t *length);
  private:
-   SequenceData PositionFromSequencer(uint64_t position, bool remove);
-   uint64_t NextFromSequencer(char *data,
-                                   uint32_t *length,
-                                   bool remove);
-  std::map<size_t, SequenceData> sequencer_;
+  SequenceData PositionFromSequencer(uint64_t position, bool remove);
+  uint64_t NextFromSequencer(char *data, uint32_t *length, bool remove);
+  std::map<uint64_t, SequenceData> sequencer_;
 };
 
 }  // namespace encrypt
