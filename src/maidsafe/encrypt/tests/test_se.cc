@@ -74,7 +74,7 @@ TEST(SelfEncryptionTest, BEH_40Charsonly) {
   EXPECT_TRUE(selfenc.Read(answer.get(), 40));
   EXPECT_EQ(*stuff.get(), *answer.get());
 }
-/*
+
 // This test get passed in Debug mode,
 // but will get segmentation fail in Release mode
 // The breaking point is : CryptoPP::Put2 being called by SelfEncryptor::Write
@@ -101,7 +101,7 @@ TEST(SelfEncryptionTest, BEH_40CharPlusPadding) {
   for( size_t i = 0; i < 40; ++i) {
     EXPECT_TRUE(selfenc.Read(&answer[i], 1, i));
   }
-}*/
+}
 
 
 
