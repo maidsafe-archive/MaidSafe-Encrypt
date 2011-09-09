@@ -32,6 +32,18 @@ bool Sequencer::Add(size_t position, char *data, size_t length) {
                         std::make_pair(position, SequenceData(data, length)));
     }
     catch(const std::exception &e) {
+      // TODO (DI) here we need to catch the error - likely out of mem
+      // We should then set up a flilestream in boost::tmp_dir
+      // empty sequencer and this write data to the file
+      // set a flag to say we have written a fstream.
+      // all further writes to fstream
+      // on destruct - write all data from fstream
+      // to write method, This will encrypt whole file
+      // write zero's where there are zero's in the fstream.
+      // read form fstream as well as write
+      // maybe make protected getter/setter and we can run all tests against the
+      // fstream as well
+      // else fail ???
       DLOG(ERROR) << e.what();
       return false;
     }
@@ -41,6 +53,14 @@ bool Sequencer::Add(size_t position, char *data, size_t length) {
   }
   return true;
 }
+
+uint64_t Sequencer::PeekLast(uint32_t* length)
+{
+    auto it = sequencer_.end();
+    *length = ((*it).first);
+    return (*it).second.second;
+}
+
 
 SequenceData Sequencer::PositionFromSequencer(size_t position, bool remove) {
   if (sequencer_.empty())
@@ -74,7 +94,7 @@ SequenceData Sequencer::PositionFromSequencer(size_t position, bool remove) {
   return (SequenceData(static_cast<char*>(NULL), 0));  // nothing found
 }
 
-size_t Sequencer::NextFromSequencer(char *data, size_t *length, bool remove) {
+uint64_t Sequencer::NextFromSequencer(char *data, uint32_t *length, bool remove) {
   if (sequencer_.empty())
     return 0;
   auto it = sequencer_.begin();
