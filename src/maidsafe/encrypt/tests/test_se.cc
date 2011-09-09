@@ -1148,6 +1148,60 @@ TEST(SelfEncryptionTest, BEH_12Chunk65536ByteOutOfSequenceWritesWithGaps) {
   EXPECT_EQ(0, selfenc.data_map()->content_size);
 }
 
+TEST(SelfEncryptionTest, BEH_RandomSizedOutOfSequenceWrites) {
+  MemoryChunkStorePtr chunk_store(new MemoryChunkStore(false, g_hash_func));
+  DataMapPtr data_map(new DataMap);
+  const size_t parts(500);
+  std::array<std::string, parts> string_array;
+  std::array<size_t, parts> index_array;
+  for (size_t i = 0; i != parts; ++i) {
+    string_array[i] = RandomString(RandomUint32() % ((1 << 18) + 1));
+    index_array[i] = i;
+  }
+  std::random_shuffle(index_array.begin(), index_array.end());
+  {
+    SelfEncryptor selfenc(data_map, chunk_store);
+    for (size_t i = 0; i != parts; ++i)
+      EXPECT_TRUE(selfenc.Write(string_array[index_array[i]].c_str(),
+                        string_array[index_array[i]].size(),
+                        index_array[i] * string_array[index_array[i]].size()));
+    // No content yet...
+    EXPECT_EQ(0, selfenc.data_map()->content_size);
+  }
+  // Unknown number of chunks and content details.
+}
+
+TEST(SelfEncryptionTest, BEH_RandomSizedOutOfSequenceWritesWithGaps) {
+  MemoryChunkStorePtr chunk_store(new MemoryChunkStore(false, g_hash_func));
+  DataMapPtr data_map(new DataMap);
+  const size_t parts(500);
+  std::array<std::string, parts> string_array;
+  std::array<size_t, parts> index_array;
+  for (size_t i = 0; i != parts; ++i) {
+    string_array[i] = RandomString(RandomUint32() % ((1 << 18) + 1));
+    index_array[i] = i;
+  }
+  std::random_shuffle(index_array.begin(), index_array.end());
+  {
+    SelfEncryptor selfenc(data_map, chunk_store);
+    for (size_t i = 0; i != 101; ++i)
+      EXPECT_TRUE(selfenc.Write(string_array[index_array[i]].c_str(),
+                        string_array[index_array[i]].size(),
+                        index_array[i] * string_array[index_array[i]].size()));
+    for (size_t i = 102; i != 233; ++i)
+      EXPECT_TRUE(selfenc.Write(string_array[index_array[i]].c_str(),
+                        string_array[index_array[i]].size(),
+                        index_array[i] * string_array[index_array[i]].size()));
+    for (size_t i = 234; i != parts; ++i)
+      EXPECT_TRUE(selfenc.Write(string_array[index_array[i]].c_str(),
+                        string_array[index_array[i]].size(),
+                        index_array[i] * string_array[index_array[i]].size()));
+    // No content yet...
+    EXPECT_EQ(0, selfenc.data_map()->content_size);
+  }
+  // Unknown number of chunks and content details.
+}
+
 TEST(SelfEncryptionManualTest, BEH_manual_check_write) {
   MemoryChunkStorePtr chunk_store(new MemoryChunkStore(false, g_hash_func));
   DataMapPtr data_map(new DataMap);
