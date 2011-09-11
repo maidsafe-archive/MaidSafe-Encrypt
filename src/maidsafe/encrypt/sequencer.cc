@@ -98,7 +98,7 @@ uint64_t Sequencer::NextFromSequencer(char *data,
   if (sequencer_.empty())
     return 0;
   auto it = sequencer_.begin();
-  const uint64_t &position = (*it).first;
+  uint64_t position = (*it).first;
   data = (*it).second.first;
   *length = (*it).second.second;
 

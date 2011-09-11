@@ -81,7 +81,7 @@ class SelfEncryptor {
         chunk1_raw_(new byte[chunk_size_]),
         chunk_store_(chunk_store),
         chunk_one_two_q_full_(false),
-        c0_and_1_chunk_size_(static_cast<uint32_t>(chunk_size_)),
+        c0_and_1_chunk_size_(chunk_size_),
         current_position_(0),
         read_ok_(true),
         rewriting_(false),
@@ -108,15 +108,15 @@ class SelfEncryptor {
   SelfEncryptor(const SelfEncryptor&);
   void AddReleventSeqDataToQueue();
   void SequenceAllNonStandardChunksAndExtraContent();
-  void ReadChunk(uint16_t chunk_num, byte *data);
-  void GetPadIvKey(size_t this_chunk_num,
+  void ReadChunk(uint32_t chunk_num, byte *data);
+  void GetPadIvKey(uint32_t this_chunk_num,
                    ByteArray key,
                    ByteArray iv,
                    ByteArray pad);
   bool AttemptProcessQueue();
   bool QueueC0AndC1();
   bool ProcessMainQueue();
-  void EncryptAChunk(uint16_t chunk_num,
+  void EncryptAChunk(uint32_t chunk_num,
                      byte *data,
                      uint32_t length,
                      bool re_encrypt);

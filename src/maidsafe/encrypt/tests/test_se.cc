@@ -87,25 +87,22 @@ TEST(SelfEncryptionTest, BEH_40CharPlusPadding) {
   boost::scoped_array<char>stuff(new char[40]);
   boost::scoped_array<char>answer(new char[80]);
   std::copy(content.data(), content.data() + 40, stuff.get());
-{
-  SelfEncryptor selfenc(data_map, chunk_store);
-  EXPECT_TRUE(selfenc.Write(stuff.get(), 40, 40));
-  EXPECT_EQ(0, selfenc.data_map()->chunks.size());
-  EXPECT_EQ(0, selfenc.data_map()->size);
-  EXPECT_EQ(0, selfenc.data_map()->content_size);
-}
+  {
+    SelfEncryptor selfenc(data_map, chunk_store);
+    EXPECT_TRUE(selfenc.Write(stuff.get(), 40, 40));
+    EXPECT_EQ(0, selfenc.data_map()->chunks.size());
+    EXPECT_EQ(0, selfenc.data_map()->size);
+    EXPECT_EQ(0, selfenc.data_map()->content_size);
+  }
 
   SelfEncryptor selfenc(data_map, chunk_store);
   EXPECT_EQ(80, selfenc.data_map()->size);
   EXPECT_EQ(80, selfenc.data_map()->content_size);
   EXPECT_EQ(0, selfenc.data_map()->chunks.size());
-  for (size_t i = 0; i < 40; ++i) {
+  for (uint64_t i = 0; i < 40; ++i) {
     EXPECT_TRUE(selfenc.Read(&answer[i], 1, i));
   }
 }
-
-
-
 
 TEST(SelfEncryptionTest, BEH_1023Chars) {
   MemoryChunkStorePtr chunk_store(new MemoryChunkStore(false, g_hash_func));
@@ -880,7 +877,7 @@ TEST(SelfEncryptionTest, BEH_WriteRandomSizeRandomPosition) {
       std::pair<uint32_t, std::string> stuff = *it;
       uint32_t posn(stuff.first);
       std::string data(stuff.second);
-      uint32_t length = data.length();
+      uint32_t length = static_cast<uint32_t>(data.length());
       boost::scoped_array<char> content(new char[length]);
       std::copy(data.c_str(), data.c_str()+length, content.get());
       EXPECT_TRUE(selfenc.Write(content.get(), length, posn));
@@ -1058,7 +1055,8 @@ TEST(SelfEncryptionTest, BEH_12Chunk4096ByteOutOfSequenceWrites) {
     for (size_t i = 0; i != parts; ++i)
       EXPECT_TRUE(selfenc.Write(string_array[index_array[i]].c_str(), size,
                                 index_array[i] * size));
-    EXPECT_TRUE(selfenc.Write(content.c_str(), content.size(), parts * size));
+    EXPECT_TRUE(selfenc.Write(content.c_str(),
+                static_cast<uint32_t>(content.size()), parts * size));
     EXPECT_EQ(2 + chunks, selfenc.data_map()->chunks.size());
     EXPECT_EQ(1024*256*chunks, selfenc.data_map()->size);
     // No content yet...
@@ -1125,7 +1123,8 @@ TEST(SelfEncryptionTest, BEH_12Chunk65536ByteOutOfSequenceWrites) {
     for (size_t i = 0; i != parts; ++i)
       EXPECT_TRUE(selfenc.Write(string_array[index_array[i]].c_str(), size,
                                 index_array[i] * size));
-    EXPECT_TRUE(selfenc.Write(content.c_str(), content.size(), parts * size));
+    EXPECT_TRUE(selfenc.Write(content.c_str(),
+                static_cast<uint32_t>(content.size()), parts * size));
     EXPECT_EQ(2 + chunks, selfenc.data_map()->chunks.size());
     EXPECT_EQ(1024*256*chunks, selfenc.data_map()->size);
     // No content yet...
@@ -1160,7 +1159,8 @@ TEST(SelfEncryptionTest, BEH_12Chunk4096ByteOutOfSequenceWritesWithGap) {
     for (size_t i = 301; i != parts; ++i)
       EXPECT_TRUE(selfenc.Write(string_array[index_array[i]].c_str(), size,
                                 index_array[i] * size));
-    EXPECT_TRUE(selfenc.Write(content.c_str(), content.size(), parts * size));
+    EXPECT_TRUE(selfenc.Write(content.c_str(),
+                static_cast<uint32_t>(content.size()), parts * size));
     // Unknown number of chunks and data map size...
     // No content yet...
     EXPECT_EQ(0, selfenc.data_map()->content_size);
@@ -1197,7 +1197,8 @@ TEST(SelfEncryptionTest, BEH_12Chunk65536ByteOutOfSequenceWritesWithGaps) {
     for (size_t i = 35; i != parts; ++i)
       EXPECT_TRUE(selfenc.Write(string_array[index_array[i]].c_str(), size,
                                 index_array[i] * size));
-    EXPECT_TRUE(selfenc.Write(content.c_str(), content.size(), parts * size));
+    EXPECT_TRUE(selfenc.Write(content.c_str(),
+                static_cast<uint32_t>(content.size()), parts * size));
     // Unknown number of chunks and data map size...
     // No content yet...
     EXPECT_EQ(0, selfenc.data_map()->content_size);
@@ -1224,8 +1225,8 @@ TEST(SelfEncryptionTest, BEH_RandomSizedOutOfSequenceWrites) {
     SelfEncryptor selfenc(data_map, chunk_store);
     for (size_t i = 0; i != parts; ++i)
       EXPECT_TRUE(selfenc.Write(string_array[index_array[i]].c_str(),
-                        string_array[index_array[i]].size(),
-                        index_array[i] * string_array[index_array[i]].size()));
+                  static_cast<uint32_t>(string_array[index_array[i]].size()),
+                  index_array[i] * string_array[index_array[i]].size()));
     // No content yet...
     EXPECT_EQ(0, selfenc.data_map()->content_size);
   }
@@ -1247,16 +1248,16 @@ TEST(SelfEncryptionTest, BEH_RandomSizedOutOfSequenceWritesWithGaps) {
     SelfEncryptor selfenc(data_map, chunk_store);
     for (size_t i = 0; i != 101; ++i)
       EXPECT_TRUE(selfenc.Write(string_array[index_array[i]].c_str(),
-                        string_array[index_array[i]].size(),
-                        index_array[i] * string_array[index_array[i]].size()));
+                  static_cast<uint32_t>(string_array[index_array[i]].size()),
+                  index_array[i] * string_array[index_array[i]].size()));
     for (size_t i = 102; i != 233; ++i)
       EXPECT_TRUE(selfenc.Write(string_array[index_array[i]].c_str(),
-                        string_array[index_array[i]].size(),
-                        index_array[i] * string_array[index_array[i]].size()));
+                  static_cast<uint32_t>(string_array[index_array[i]].size()),
+                  index_array[i] * string_array[index_array[i]].size()));
     for (size_t i = 234; i != parts; ++i)
       EXPECT_TRUE(selfenc.Write(string_array[index_array[i]].c_str(),
-                        string_array[index_array[i]].size(),
-                        index_array[i] * string_array[index_array[i]].size()));
+                  static_cast<uint32_t>(string_array[index_array[i]].size()),
+                  index_array[i] * string_array[index_array[i]].size()));
     // No content yet...
     EXPECT_EQ(0, selfenc.data_map()->content_size);
   }
