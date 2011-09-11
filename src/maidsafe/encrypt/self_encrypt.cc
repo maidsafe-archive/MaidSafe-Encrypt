@@ -115,11 +115,12 @@ bool SelfEncryptor::Write(const char *data,
 
 void SelfEncryptor::AddReleventSeqDataToQueue() {
   SequenceData extra(sequencer_.Get(current_position_));
-  if (extra.second != 0) {
+  while (extra.second != 0) {
     main_encrypt_queue_.Put2(const_cast<byte*>(
         reinterpret_cast<const byte*>(extra.first)), extra.second, 0, true);
     current_position_ += extra.second;
-  }
+    extra = sequencer_.Get(current_position_);
+  } 
 }
 
 void SelfEncryptor::SequenceAllNonStandardChunksAndExtraContent() {
