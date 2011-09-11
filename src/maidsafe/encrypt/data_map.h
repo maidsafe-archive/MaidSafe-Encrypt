@@ -50,7 +50,7 @@ struct DataMap {
   std::vector<ChunkDetails> chunks;  ///< Information about the chunks
   uint64_t size;  ///< Size of data item
   std::string content;  ///< Whole data item or last chunk, if small enough
-  uint16_t content_size;
+  uint32_t content_size;
   bool complete;  ///< for ease
 };
 

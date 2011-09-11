@@ -64,7 +64,7 @@
 //   const std::array<std::string, 7> kUnits = { {
 //       "Bytes", "KiB", "MiB", "GiB", "TiB", "PiB", "EiB"
 //   } };
-//   double val(static_cast<double>(value));
+//   double val(value);
 //   size_t mag(0);
 //   while (mag < kUnits.size() && val >= 1000.0) {
 //     ++mag;

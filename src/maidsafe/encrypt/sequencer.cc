@@ -27,7 +27,7 @@ bool Sequencer::Add(uint64_t position, char *data, uint32_t length) {
   auto iter = sequencer_.find(position);
   if (iter == sequencer_.end()) {
     try {
-      auto it = sequencer_.begin();
+      auto it = sequencer_.end();
       sequencer_.insert(it,
                         std::make_pair(position, SequenceData(data, length)));
     }
@@ -98,7 +98,7 @@ uint64_t Sequencer::NextFromSequencer(char *data,
   if (sequencer_.empty())
     return 0;
   auto it = sequencer_.begin();
-  const uint64_t &position = (*it).first;
+  uint64_t position = (*it).first;
   data = (*it).second.first;
   *length = (*it).second.second;
 
