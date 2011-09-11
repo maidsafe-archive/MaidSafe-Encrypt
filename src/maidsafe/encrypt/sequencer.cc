@@ -107,5 +107,9 @@ uint64_t Sequencer::NextFromSequencer(char *data,
   return position;
 }
 
+void Sequencer::Clear() {
+  sequencer_.clear();
+}
+
 }  // namespace encrypt
 }  // namespace maidsafe

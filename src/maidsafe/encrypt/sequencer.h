@@ -50,6 +50,9 @@ class Sequencer {
   }
   bool empty() const { return sequencer_.empty(); }
   uint64_t PeekLast(uint32_t *length);
+
+  void Clear();
+
  private:
   SequenceData PositionFromSequencer(uint64_t position, bool remove);
   uint64_t NextFromSequencer(char *data, uint32_t *length, bool remove);

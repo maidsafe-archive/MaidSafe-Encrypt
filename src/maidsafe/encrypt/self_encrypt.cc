@@ -678,10 +678,73 @@ bool SelfEncryptor::DeleteAllChunks() {
   return true;
 }
 
-bool SelfEncryptor::Truncate(std::uint64_t /*size*/) {
-  if (data_map_->complete) {
-  } else {
-  }
+bool SelfEncryptor::Truncate(std::uint64_t size) {
+  std::uint64_t byte_count(0);
+  size_t number_of_chunks(data_map_->chunks.size());
+  bool delete_remainder(false), found_end(false);
+  // if (data_map_->complete) {
+    // Assume size < data_map.size
+    for (size_t i = 0; i != number_of_chunks; ++i) {
+      size_t chunk_size = data_map_->chunks[i].size;
+      byte_count += chunk_size;
+      if (byte_count > size) {
+        // Found chunk with data at position 'size'.
+        if (main_encrypt_queue_.MaxRetrievable() != 0)
+            main_encrypt_queue_.SkipAll();
+        sequencer_.Clear();
+        for (size_t j = i + 1; j != number_of_chunks; ++j) {
+          if (!chunk_store_->Delete(reinterpret_cast<char*>
+                                      (data_map_->chunks[j].hash))) {
+            DLOG(ERROR) << "Failed to delete chunk";
+            return false;
+          }
+          data_map_->chunks.pop_back();
+        }
+        if (byte_count - size == chunk_size) {
+          if (!chunk_store_->Delete(reinterpret_cast<char*>
+                                      (data_map_->chunks[i].hash))) {
+            DLOG(ERROR) << "Failed to delete chunk";
+            return false;
+          }
+          data_map_->chunks.pop_back();
+        } else {
+          std::shared_ptr<byte> data(new byte[chunk_size]);
+          ReadChunk(i, data.get());
+          size_t bytes_to_queue(chunk_size - (byte_count - size));
+          main_encrypt_queue_.Put2(data.get(), bytes_to_queue, 0, true);
+          if (!chunk_store_->Delete(reinterpret_cast<char*>
+                                      (data_map_->chunks[i].hash))) {
+            DLOG(ERROR) << "Failed to delete chunk";
+            return false;
+          }
+          data_map_->chunks.pop_back();
+        }
+        current_position_ = size;
+        data_map_->size = (byte_count - chunk_size);
+        data_map_->content.erase();
+        data_map_->content_size = 0;
+        data_map_->complete = false;
+        return true;
+      }
+    }
+    // Check data map content.
+
+  // } else {
+    //if (delete_remainder == true) {
+    //  sequencer_.EraseAll();
+    //  main_encrypt_queue_.SkipAll();
+    //} else {
+    //  // check content
+    //else
+    //  //check queue;
+    //else
+    //  //check sequencer
+    //  std::uint64_t retrievable = main_encrypt_queue_.MaxRetrievable();
+    //  if (size <= retrievable) {
+    //    
+    //  }
+    //}
+  // }
   return true;
 }
 
