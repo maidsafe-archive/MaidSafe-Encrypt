@@ -99,7 +99,7 @@ TEST(SelfEncryptionTest, BEH_40CharPlusPadding) {
   EXPECT_EQ(80, selfenc.data_map()->size);
   EXPECT_EQ(80, selfenc.data_map()->content_size);
   EXPECT_EQ(0, selfenc.data_map()->chunks.size());
-  for (uint64_t i = 0; i < 40; ++i) {
+  for (uint32_t i = 0; i < 40; ++i) {
     EXPECT_TRUE(selfenc.Read(&answer[i], 1, i));
   }
 }

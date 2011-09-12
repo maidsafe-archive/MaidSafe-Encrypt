@@ -21,6 +21,7 @@
 
 #include <tuple>
 #include <algorithm>
+#include <limits>
 #include <set>
 #include <vector>
 
@@ -101,7 +102,7 @@ bool SelfEncryptor::Write(const char *data,
     main_encrypt_queue_.Put2(const_cast<byte*>(
         reinterpret_cast<const byte*>(data)), length, 0, true);
     current_position_ += length;
-  } else  {  // we went backwards or rewriting !!!
+  } else {  // we went backwards or rewriting !!!
     if (!rewriting_ && data_map_->complete) {
       rewriting_ = true;
       SequenceAllNonStandardChunksAndExtraContent();
@@ -120,20 +121,21 @@ void SelfEncryptor::AddReleventSeqDataToQueue() {
         reinterpret_cast<const byte*>(extra.first)), extra.second, 0, true);
     current_position_ += extra.second;
     extra = sequencer_.Get(current_position_);
-  } 
+  }
 }
 
 void SelfEncryptor::SequenceAllNonStandardChunksAndExtraContent() {
-  int start_chunk(-1);
-  uint32_t chunk_size(0);
+  uint32_t chunk_size(0), start_chunk(0);
   uint64_t pos(0);
+  bool found_start_chunk(false);
   if (data_map_->chunks.size() > 2) {
     pos += data_map_->chunks[0].size;
-    for (int i = 1; i != data_map_->chunks.size(); ++i) {
+    for (uint32_t i = 1; i != data_map_->chunks.size(); ++i) {
       if (data_map_->chunks[i].size == data_map_->chunks[i - 1].size) {
         pos += data_map_->chunks[i].size;
       } else {
         start_chunk = i;
+        found_start_chunk = true;
         break;
       }
     }
@@ -142,7 +144,7 @@ void SelfEncryptor::SequenceAllNonStandardChunksAndExtraContent() {
   trailing_data_start_ = pos;
   trailing_data_size_ = data_map_->content_size;
   size_t offset(0);
-  if (start_chunk != -1) {
+  if (found_start_chunk) {
     BOOST_ASSERT(data_map_->chunks.size() - start_chunk == 3);
     chunk_size = data_map_->chunks[start_chunk].size;
     trailing_data_size_ += chunk_size * 3;
@@ -403,7 +405,7 @@ void SelfEncryptor::EmptySequencer() {
     uint32_t chunks_written_to =
         static_cast<uint32_t>(data_map_->chunks.size() / chunk_size_);
     boost::scoped_array<char> data(new char);
-    std::uint32_t length(0);
+    uint32_t length(0);
     uint64_t seq_pos = sequencer_.GetFirst(data.get(), &length);
 
     if (seq_pos < chunks_written_to) {
@@ -463,28 +465,32 @@ void SelfEncryptor::EmptySequencer() {
 
 
 bool SelfEncryptor::WriteExtraAndEnc0and1() {
-  uint64_t qlength = main_encrypt_queue_.MaxRetrievable();
+  BOOST_ASSERT(main_encrypt_queue_.MaxRetrievable() <=
+               std::numeric_limits<uint32_t>::max());
+  uint32_t qlength =
+      static_cast<uint32_t>(main_encrypt_queue_.MaxRetrievable());
+
   if (qlength != 0) {
     ByteArray i(new byte[qlength]);
     main_encrypt_queue_.Get(i.get(), qlength);
     std::string extra(reinterpret_cast<char*>(i.get()), qlength);
     data_map_->content = extra;
-    data_map_->content_size = static_cast<uint32_t>(qlength);
+    data_map_->content_size = qlength;
     data_map_->size += qlength;
   }
   // when all that is done, encrypt chunks 0 and 1
   if (chunk_one_two_q_full_) {
 #pragma omp sections
-{  // NOLINT (Fraser)
+    {  // NOLINT (Fraser)
 #pragma omp section
-{  // NOLINT (Fraser)
-    EncryptAChunk(0, chunk0_raw_.get(), c0_and_1_chunk_size_, false);
-}
+      {  // NOLINT (Fraser)
+        EncryptAChunk(0, chunk0_raw_.get(), c0_and_1_chunk_size_, false);
+      }
 #pragma omp section
-{  // NOLINT (Fraser)
-    EncryptAChunk(1, chunk1_raw_.get(), c0_and_1_chunk_size_, false);
-}
-}  // end omp sections
+      {  // NOLINT (Fraser)
+        EncryptAChunk(1, chunk1_raw_.get(), c0_and_1_chunk_size_, false);
+      }
+    }
 
     chunk0_raw_.reset();
     chunk1_raw_.reset();
@@ -513,7 +519,10 @@ bool SelfEncryptor::Read(char* data, uint32_t length, uint64_t position) {
         ((cachesize - (position - cache_initial_posn_)) >= length)) {
       // read data_cache_
       for (uint32_t i = 0; i != length; ++i) {
-        data[i] = data_cache_[position - cache_initial_posn_ + i];
+        BOOST_ASSERT(position - cache_initial_posn_ + i <=
+                     std::numeric_limits<uint32_t>::max());
+        data[i] = data_cache_[static_cast<uint32_t>(position -
+                              cache_initial_posn_) + i];
       }
     } else {
       // populate data_cache_ and read
@@ -602,7 +611,7 @@ bool SelfEncryptor::Transmogrify(char *data,
         if (start_offset != 0) {
           ByteArray chunk_data(new byte[data_map_->chunks[start_chunk].size]);
           ReadChunk(start_chunk, chunk_data.get());
-          for (uint64_t j = start_offset; j != this_chunk_size; ++j)
+          for (uint32_t j = start_offset; j != this_chunk_size; ++j)
             data[j - start_offset] = static_cast<char>(chunk_data[j]);
         } else {
           ReadChunk(i, reinterpret_cast<byte*>(&data[0]));
@@ -647,7 +656,10 @@ bool SelfEncryptor::Transmogrify(char *data,
 void SelfEncryptor::ReadInProcessData(char *data,
                                       uint32_t /*length*/,
                                       uint64_t position) {
-  uint64_t q_size = main_encrypt_queue_.MaxRetrievable();
+  BOOST_ASSERT(main_encrypt_queue_.MaxRetrievable() <=
+               std::numeric_limits<uint32_t>::max());
+  uint32_t q_size =
+      static_cast<uint32_t>(main_encrypt_queue_.MaxRetrievable());
 
   // check queue
   if (q_size != 0)  {
@@ -656,7 +668,7 @@ void SelfEncryptor::ReadInProcessData(char *data,
     main_encrypt_queue_.Peek(reinterpret_cast<byte*>(temp.get()), q_size);
     // TODO(dirvine) FIXME - just get what we need
     uint64_t pos = current_position_ - q_size;
-    for (uint64_t i = 0; i != q_size; ++i) {
+    for (uint32_t i = 0; i != q_size; ++i) {
       data[pos + i] = temp[i];
     }
   }
@@ -680,19 +692,19 @@ bool SelfEncryptor::DeleteAllChunks() {
   return true;
 }
 
-bool SelfEncryptor::Truncate(std::uint64_t size) {
-  std::uint64_t byte_count(0);
+bool SelfEncryptor::Truncate(uint64_t size) {
+  uint64_t byte_count(0);
   size_t number_of_chunks(data_map_->chunks.size());
-  bool delete_remainder(false), found_end(false);
+//  bool delete_remainder(false), found_end(false);
   // if (data_map_->complete) {
     // Assume size < data_map.size
     for (size_t i = 0; i != number_of_chunks; ++i) {
-      size_t chunk_size = data_map_->chunks[i].size;
+      uint32_t chunk_size = data_map_->chunks[i].size;
       byte_count += chunk_size;
       if (byte_count > size) {
         // Found chunk with data at position 'size'.
         if (main_encrypt_queue_.MaxRetrievable() != 0)
-            main_encrypt_queue_.SkipAll();
+          main_encrypt_queue_.SkipAll();
         sequencer_.Clear();
         for (size_t j = i + 1; j != number_of_chunks; ++j) {
           if (!chunk_store_->Delete(reinterpret_cast<char*>
@@ -712,7 +724,9 @@ bool SelfEncryptor::Truncate(std::uint64_t size) {
         } else {
           std::shared_ptr<byte> data(new byte[chunk_size]);
           ReadChunk(i, data.get());
-          size_t bytes_to_queue(chunk_size - (byte_count - size));
+          BOOST_ASSERT(byte_count - size <= chunk_size);
+          size_t bytes_to_queue(chunk_size -
+                                static_cast<uint32_t>(byte_count - size));
           main_encrypt_queue_.Put2(data.get(), bytes_to_queue, 0, true);
           if (!chunk_store_->Delete(reinterpret_cast<char*>
                                       (data_map_->chunks[i].hash))) {
@@ -732,20 +746,20 @@ bool SelfEncryptor::Truncate(std::uint64_t size) {
     // Check data map content.
 
   // } else {
-    //if (delete_remainder == true) {
-    //  sequencer_.EraseAll();
-    //  main_encrypt_queue_.SkipAll();
-    //} else {
-    //  // check content
-    //else
-    //  //check queue;
-    //else
-    //  //check sequencer
-    //  std::uint64_t retrievable = main_encrypt_queue_.MaxRetrievable();
-    //  if (size <= retrievable) {
-    //    
-    //  }
-    //}
+//    if (delete_remainder == true) {
+//      sequencer_.EraseAll();
+//      main_encrypt_queue_.SkipAll();
+//    } else {
+//      // check content
+//    else
+//      //check queue;
+//    else
+//      //check sequencer
+//      uint64_t retrievable = main_encrypt_queue_.MaxRetrievable();
+//      if (size <= retrievable) {
+//
+//      }
+//    }
   // }
   return true;
 }

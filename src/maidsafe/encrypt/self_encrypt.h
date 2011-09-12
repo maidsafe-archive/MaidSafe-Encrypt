@@ -99,7 +99,7 @@ class SelfEncryptor {
              uint64_t position = 0);
   bool Read(char *data, uint32_t length = 0, uint64_t position = 0);
   bool DeleteAllChunks();
-  bool Truncate(std::uint64_t size);
+  bool Truncate(uint64_t size);
   DataMapPtr data_map() const { return data_map_; }
 
  private:
