@@ -854,7 +854,7 @@ TEST(SelfEncryptionTest, BEH_WriteRandomSizeRandomPosition) {
   DataMapPtr data_map(new DataMap);
   const uint32_t kTestDataSize(1024*256*20);
   std::string plain_text(RandomString(kTestDataSize));
-  std::vector<std::pair<uint32_t, std::string>> broken_data;
+  std::vector<std::pair<uint64_t, std::string>> broken_data;
 
   uint32_t i(0);
   while (i < kTestDataSize) {
@@ -863,7 +863,7 @@ TEST(SelfEncryptionTest, BEH_WriteRandomSizeRandomPosition) {
       size = kTestDataSize - i;
     else
       size = RandomUint32() % 4096;
-    std::pair<uint32_t, std::string> piece(i, plain_text.substr(i, size));
+    std::pair<uint64_t, std::string> piece(i, plain_text.substr(i, size));
     broken_data.push_back(piece);
     i += size;
   }
@@ -874,14 +874,10 @@ TEST(SelfEncryptionTest, BEH_WriteRandomSizeRandomPosition) {
     SelfEncryptor selfenc(data_map, chunk_store);
     uint32_t wtotal(0);
     for (auto it = broken_data.begin(); it != broken_data.end(); ++it) {
-      std::pair<uint32_t, std::string> stuff = *it;
-      uint32_t posn(stuff.first);
-      std::string data(stuff.second);
-      uint32_t length = static_cast<uint32_t>(data.length());
-      boost::scoped_array<char> content(new char[length]);
-      std::copy(data.c_str(), data.c_str()+length, content.get());
-      EXPECT_TRUE(selfenc.Write(content.get(), length, posn));
-      wtotal += length;
+      EXPECT_TRUE(selfenc.Write(it->second.data(),
+                                it->second.size(),
+                                it->first));
+      wtotal += it->second.size();
     }
     EXPECT_EQ(wtotal, kTestDataSize);
   }
