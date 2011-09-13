@@ -453,7 +453,7 @@ void SelfEncryptor::EmptySequencer() {
     // need to pad and write data
     if (current_position_ < seq_pos) {  // Nothing done - pad to this point
       boost::scoped_array<char> pad(new char[1]);
-      pad[0] = '0';
+      pad[0] = 0;
       for (uint64_t i = current_position_; i < seq_pos; ++i)
         Write(&pad[0], 1, current_position_);
       Write(data.get(), length, seq_pos);
@@ -677,7 +677,7 @@ void SelfEncryptor::ReadInProcessData(char *data,
   if (!sequencer_.empty()) {
     SequenceData answer = sequencer_.Peek(position);
     for (uint32_t i = 0; i != answer.second; ++i) {
-      data[i + position] = answer.first[i];
+      data[i] = answer.first[i];
     }
   }
 }

@@ -45,36 +45,76 @@ namespace test {
 
 namespace {
 typedef std::shared_ptr<MemoryChunkStore> MemoryChunkStorePtr;
+typedef std::pair<uint32_t, uint32_t> SizeAndOffset;
 MemoryChunkStore::HashFunc g_hash_func(std::bind(&crypto::Hash<crypto::SHA512>,
                                                  std::placeholders::_1));
 }  // unnamed namespace
 
 
-TEST(SelfEncryptionTest, BEH_40Charsonly) {
-  MemoryChunkStorePtr chunk_store(new MemoryChunkStore(false, g_hash_func));
-  DataMapPtr data_map(new DataMap);
-  std::string content(RandomString(40));
-  boost::scoped_array<char>stuff(new char[40]);
-  boost::scoped_array<char>answer(new char[40]);
-  std::copy(content.data(), content.data() + 40, stuff.get());
-  {
-    SelfEncryptor selfenc(data_map, chunk_store);
-    EXPECT_TRUE(selfenc.Write(stuff.get(), 40));
-    EXPECT_EQ(0, selfenc.data_map()->chunks.size());
-    EXPECT_EQ(0, selfenc.data_map()->size);
-    EXPECT_EQ(0, selfenc.data_map()->content_size);
-    // read before write - all in queue
-    EXPECT_TRUE(selfenc.Read(answer.get(), 40));
-    EXPECT_EQ(*stuff.get(), *answer.get());
+class BasicSelfEncryptionTest : public testing::TestWithParam<SizeAndOffset> {
+ public:
+  BasicSelfEncryptionTest()
+      : chunk_store_(new MemoryChunkStore(false,
+            std::bind(&crypto::Hash<crypto::SHA512>, std::placeholders::_1))),
+        data_map_(new DataMap),
+        self_encryptor_(new SelfEncryptor(data_map_, chunk_store_)),
+        kDataSize_(GetParam().first),
+        kOffset_(GetParam().second),
+        original_(new char[kDataSize_]),
+        answer_(new char[kOffset_ + kDataSize_]) {}
+
+ protected:
+  void SetUp() {
+    std::string content(RandomString(kDataSize_));
+    std::copy(content.data(), content.data() + kDataSize_, original_.get());
   }
-  SelfEncryptor selfenc(data_map, chunk_store);
-  EXPECT_EQ(40, data_map->size);
-  EXPECT_EQ(40, data_map->content_size);
-  EXPECT_EQ(0, data_map->chunks.size());
-  EXPECT_EQ(*stuff.get(), *data_map->content.c_str());
-  EXPECT_TRUE(selfenc.Read(answer.get(), 40));
-  EXPECT_EQ(*stuff.get(), *answer.get());
+  void TearDown() {}
+
+  MemoryChunkStorePtr chunk_store_;
+  DataMapPtr data_map_;
+  std::shared_ptr<SelfEncryptor> self_encryptor_;
+  const uint32_t kDataSize_, kOffset_;
+  boost::scoped_array<char> original_, answer_;
+};
+
+TEST_P(BasicSelfEncryptionTest, BEH_EncryptDecrypt) {
+  EXPECT_TRUE(self_encryptor_->Write(original_.get(), kDataSize_, kOffset_));
+  EXPECT_TRUE(self_encryptor_->data_map()->chunks.empty());
+  EXPECT_EQ(0, self_encryptor_->data_map()->size);
+  EXPECT_EQ(0, self_encryptor_->data_map()->content_size);
+  // read before write - all in queue
+  EXPECT_TRUE(self_encryptor_->Read(answer_.get(), kDataSize_, kOffset_));
+  for (uint32_t i = 0; i != kDataSize_; ++i)
+    ASSERT_EQ(original_[i], answer_[i]) << "i == " << i;
+
+  self_encryptor_.reset(new SelfEncryptor(data_map_, chunk_store_));
+  EXPECT_EQ(kOffset_ + kDataSize_, data_map_->size);
+  ASSERT_EQ(kOffset_ + kDataSize_, data_map_->content_size);
+  EXPECT_TRUE(data_map_->chunks.empty());
+  for (uint32_t i = 0; i != kOffset_; ++i)
+    ASSERT_EQ(0, data_map_->content[i]) << "i == " << i;
+  for (uint32_t i = 0; i != kDataSize_; ++i)
+    ASSERT_EQ(original_[i], data_map_->content[kOffset_ + i]) << "i == " << i;
+
+  answer_.reset(new char[kOffset_ + kDataSize_]);
+  EXPECT_TRUE(self_encryptor_->Read(answer_.get(), kOffset_ + kDataSize_));
+  for (uint32_t i = 0; i != kOffset_; ++i)
+    ASSERT_EQ(0, answer_[i]) << "i == " << i;
+  for (uint32_t i = 0; i != kDataSize_; ++i)
+    ASSERT_EQ(original_[i], answer_[kOffset_ + i]) << "i == " << i;
 }
+
+INSTANTIATE_TEST_CASE_P(FileSmallerThanOneChunk, BasicSelfEncryptionTest,
+                        testing::Values(std::make_pair(40, 0),
+                                        std::make_pair(40, 50),
+                                        std::make_pair(1023, 0),
+                                        std::make_pair(1023, 50),
+                                        std::make_pair(1023, 1023),
+                                        std::make_pair(1023, 1025),
+                                        std::make_pair(1025, 0),
+                                        std::make_pair(1025, 50),
+                                        std::make_pair(1025, 1023),
+                                        std::make_pair(1025, 1025)));
 
 // This test get passed in Debug mode,
 // but will get segmentation fail in Release mode
@@ -85,7 +125,7 @@ TEST(SelfEncryptionTest, BEH_40CharPlusPadding) {
   DataMapPtr data_map(new DataMap);
   std::string content(RandomString(40));
   boost::scoped_array<char>stuff(new char[40]);
-  boost::scoped_array<char>answer(new char[80]);
+  boost::scoped_array<char> answer(new char[80]);
   std::copy(content.data(), content.data() + 40, stuff.get());
   {
     SelfEncryptor selfenc(data_map, chunk_store);
