@@ -97,7 +97,6 @@ bool SelfEncryptor::Write(const char *data,
   if (length == 0)
     return true;
 
-  AddReleventSeqDataToQueue();  // gets any relevent data from sequencer
   if (position == current_position_) {  // assuming rewrites from zero
     main_encrypt_queue_.Put2(const_cast<byte*>(
         reinterpret_cast<const byte*>(data)), length, 0, true);
@@ -111,6 +110,7 @@ bool SelfEncryptor::Write(const char *data,
     sequencer_.Add(position, const_cast<char*>(data), length);
   }
   AttemptProcessQueue();
+  AddReleventSeqDataToQueue();  // gets any relevent data from sequencer
   return true;
 }
 
@@ -335,6 +335,7 @@ bool SelfEncryptor::ProcessMainQueue() {
 #pragma omp parallel for  // gives over 100Mb write speeds
   for (uint32_t i = 0; i < chunks_to_process; ++i)
     EncryptAChunk(i + old_dm_size, &chunk_vec[i][0], chunk_size_, false);
+
   return true;
 }
 
@@ -403,7 +404,7 @@ void SelfEncryptor::EmptySequencer() {
 
   while (!sequencer_.empty()) {
     uint32_t chunks_written_to =
-        static_cast<uint32_t>(data_map_->chunks.size() / chunk_size_);
+        static_cast<uint32_t>(data_map_->chunks.size() * chunk_size_);
     boost::scoped_array<char> data(new char);
     uint32_t length(0);
     uint64_t seq_pos = sequencer_.GetFirst(data.get(), &length);
@@ -448,6 +449,7 @@ void SelfEncryptor::EmptySequencer() {
       continue;
     }
 
+    Write(data.get(), length, seq_pos);
     // need to pad and write data
     if (current_position_ < seq_pos) {  // Nothing done - pad to this point
       boost::scoped_array<char> pad(new char[1]);
@@ -458,9 +460,8 @@ void SelfEncryptor::EmptySequencer() {
       AddReleventSeqDataToQueue();
       continue;
     }
-    /*uint64_t pos = */ sequencer_.GetFirst(data.get(), &length);
-//     Transmogrify(data, length, pos);
   }
+//   ProcessMainQueue();
 }
 
 

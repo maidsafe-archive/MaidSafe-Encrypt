@@ -859,10 +859,10 @@ TEST(SelfEncryptionTest, BEH_WriteRandomSizeRandomPosition) {
   uint32_t i(0);
   while (i < kTestDataSize) {
     uint32_t size;
-    if (kTestDataSize - i < 4096)
+    if (kTestDataSize - i < (4096*5))
       size = kTestDataSize - i;
     else
-      size = RandomUint32() % 4096;
+      size = RandomUint32() % (4096*5);
     std::pair<uint64_t, std::string> piece(i, plain_text.substr(i, size));
     broken_data.push_back(piece);
     i += size;
@@ -893,14 +893,8 @@ TEST(SelfEncryptionTest, BEH_WriteRandomSizeRandomPosition) {
   std::copy(plain_text.c_str(), plain_text.c_str() + kTestDataSize,
             original.get());
   EXPECT_TRUE(selfenc.Read(answer.get(), kTestDataSize, 0));
-  bool match(true);
-  for (uint32_t i = 0; i < kTestDataSize; ++i) {
-    if (original[i] != answer[i]) {
-      match = false;
-      break;
-    }
-  }
-  EXPECT_TRUE(match);
+  for (uint32_t i = 0; i < kTestDataSize; ++i)
+    ASSERT_EQ(original[i], answer[i]) << "difference at " << i;
 }
 
 TEST(SelfEncryptionTest, BEH_1024x3Minus1Chars) {
