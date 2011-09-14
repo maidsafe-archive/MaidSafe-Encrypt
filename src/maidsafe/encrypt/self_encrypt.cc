@@ -82,7 +82,7 @@ SelfEncryptor::~SelfEncryptor() {
   while (main_encrypt_queue_.MaxRetrievable() > 0) {
     chunk_size_ =
         static_cast<uint32_t>(main_encrypt_queue_.MaxRetrievable() / 3);
-    if (chunk_size_ < 1024) {
+    if (chunk_size_ < kMinChunkSize) {
       WriteExtraAndEnc0and1();
     }
     AddReleventSeqDataToQueue();

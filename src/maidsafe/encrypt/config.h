@@ -30,6 +30,9 @@
 namespace maidsafe {
 namespace encrypt {
 
+const uint32_t kMinChunkSize(1024);
+const uint32_t kDefaultChunkSize(1024 * 256);
+
 /// Codes returned by the self-en/decryption wrapper methods
 enum ReturnCode {
   kSuccess = 0,

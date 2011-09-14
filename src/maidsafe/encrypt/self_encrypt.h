@@ -35,6 +35,7 @@
 #endif
 #include "boost/shared_array.hpp"
 
+#include "maidsafe/encrypt/config.h"
 #include "maidsafe/encrypt/data_map.h"
 #include "maidsafe/encrypt/sequencer.h"
 #include "maidsafe/encrypt/version.h"
@@ -75,7 +76,7 @@ class SelfEncryptor {
   SelfEncryptor(DataMapPtr data_map, std::shared_ptr<ChunkStore> chunk_store)
       : data_map_(data_map ? data_map : DataMapPtr(new DataMap)),
         sequencer_(),
-        chunk_size_(1024 * 256),
+        chunk_size_(kDefaultChunkSize),
         main_encrypt_queue_(),
         chunk0_raw_(new byte[chunk_size_]),
         chunk1_raw_(new byte[chunk_size_]),

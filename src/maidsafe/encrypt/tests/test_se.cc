@@ -34,6 +34,7 @@
 #include "maidsafe/common/utils.h"
 
 #include "maidsafe/encrypt/self_encrypt.h"
+#include "maidsafe/encrypt/config.h"
 #include "maidsafe/encrypt/log.h"
 
 
@@ -53,6 +54,14 @@ MemoryChunkStore::HashFunc g_hash_func(std::bind(&crypto::Hash<crypto::SHA512>,
 
 class BasicSelfEncryptionTest : public testing::TestWithParam<SizeAndOffset> {
  public:
+  enum TestFileSize {
+    kTiny = 3 * kMinChunkSize,
+    kVerySmall = kDefaultChunkSize,
+    kSmall = 3 * kDefaultChunkSize,
+    kMedium = 10 * kDefaultChunkSize,
+    kLarge = 1000 * kDefaultChunkSize,
+    kMax = 2147483647
+  };
   BasicSelfEncryptionTest()
       : chunk_store_(new MemoryChunkStore(false,
             std::bind(&crypto::Hash<crypto::SHA512>, std::placeholders::_1))),
@@ -61,10 +70,22 @@ class BasicSelfEncryptionTest : public testing::TestWithParam<SizeAndOffset> {
         kDataSize_(GetParam().first),
         kOffset_(GetParam().second),
         original_(new char[kDataSize_]),
-        answer_(new char[kOffset_ + kDataSize_]) {}
+        answer_(new char[kOffset_ + kDataSize_]),
+        test_file_size_(kMax) {
+    if (kOffset_ + kDataSize_ < kLarge)
+      test_file_size_ = kLarge;
+    if (kOffset_ + kDataSize_ < kMedium)
+      test_file_size_ = kMedium;
+    if (kOffset_ + kDataSize_ < kSmall)
+      test_file_size_ = kSmall;
+    if (kOffset_ + kDataSize_ < kVerySmall)
+      test_file_size_ = kVerySmall;
+    if (kOffset_ + kDataSize_ < kTiny)
+      test_file_size_ = kTiny;
+  }
 
  protected:
-  void SetUp() {
+  virtual void SetUp() {
     std::string content(RandomString(kDataSize_));
     std::copy(content.data(), content.data() + kDataSize_, original_.get());
   }
@@ -75,13 +96,42 @@ class BasicSelfEncryptionTest : public testing::TestWithParam<SizeAndOffset> {
   std::shared_ptr<SelfEncryptor> self_encryptor_;
   const uint32_t kDataSize_, kOffset_;
   boost::scoped_array<char> original_, answer_;
+  TestFileSize test_file_size_;
 };
 
 TEST_P(BasicSelfEncryptionTest, BEH_EncryptDecrypt) {
   EXPECT_TRUE(self_encryptor_->Write(original_.get(), kDataSize_, kOffset_));
-  EXPECT_TRUE(self_encryptor_->data_map()->chunks.empty());
-  EXPECT_EQ(0, self_encryptor_->data_map()->size);
-  EXPECT_EQ(0, self_encryptor_->data_map()->content_size);
+  switch (test_file_size_) {
+    case kTiny:
+      EXPECT_TRUE(self_encryptor_->data_map()->chunks.empty());
+      EXPECT_EQ(0, self_encryptor_->data_map()->size);
+      EXPECT_EQ(0, self_encryptor_->data_map()->content_size);
+      break;
+    case kVerySmall:
+      EXPECT_TRUE(self_encryptor_->data_map()->chunks.empty());
+      EXPECT_EQ(0, self_encryptor_->data_map()->size);
+      EXPECT_EQ(0, self_encryptor_->data_map()->content_size);
+      break;
+    case kSmall:
+      EXPECT_TRUE(self_encryptor_->data_map()->chunks.empty());
+      EXPECT_EQ(0, self_encryptor_->data_map()->size);
+      EXPECT_EQ(0, self_encryptor_->data_map()->content_size);
+      break;
+    case kMedium:
+      EXPECT_TRUE(self_encryptor_->data_map()->chunks.empty());
+      EXPECT_EQ(0, self_encryptor_->data_map()->size);
+      EXPECT_EQ(0, self_encryptor_->data_map()->content_size);
+      break;
+    case kLarge:
+      EXPECT_TRUE(self_encryptor_->data_map()->chunks.empty());
+      EXPECT_EQ(0, self_encryptor_->data_map()->size);
+      EXPECT_EQ(0, self_encryptor_->data_map()->content_size);
+      break;
+    default:
+      EXPECT_TRUE(self_encryptor_->data_map()->chunks.empty());
+      EXPECT_EQ(0, self_encryptor_->data_map()->size);
+      EXPECT_EQ(0, self_encryptor_->data_map()->content_size);
+  }
   // read before write - all in queue
   EXPECT_TRUE(self_encryptor_->Read(answer_.get(), kDataSize_, kOffset_));
   for (uint32_t i = 0; i != kDataSize_; ++i)
@@ -104,82 +154,21 @@ TEST_P(BasicSelfEncryptionTest, BEH_EncryptDecrypt) {
     ASSERT_EQ(original_[i], answer_[kOffset_ + i]) << "i == " << i;
 }
 
+INSTANTIATE_TEST_CASE_P(FileSmallerThanMinFileSize, BasicSelfEncryptionTest,
+                        testing::Values(
+                            std::make_pair(40, 0),
+                            std::make_pair(40, 50),
+                            std::make_pair(1024, 0),
+                            std::make_pair((3 * kMinChunkSize) - 23, 23),
+                            std::make_pair((3 * kMinChunkSize) - 1, 0)));
+
 INSTANTIATE_TEST_CASE_P(FileSmallerThanOneChunk, BasicSelfEncryptionTest,
-                        testing::Values(std::make_pair(40, 0),
-                                        std::make_pair(40, 50),
-                                        std::make_pair(1023, 0),
-                                        std::make_pair(1023, 50),
-                                        std::make_pair(1023, 1023),
-                                        std::make_pair(1023, 1025),
-                                        std::make_pair(1025, 0),
-                                        std::make_pair(1025, 50),
-                                        std::make_pair(1025, 1023),
-                                        std::make_pair(1025, 1025)));
-
-// This test get passed in Debug mode,
-// but will get segmentation fail in Release mode
-// The breaking point is : CryptoPP::Put2 being called by SelfEncryptor::Write
-//                         in SelfEncryptor::EnptySedquence during destruction
-TEST(SelfEncryptionTest, BEH_40CharPlusPadding) {
-  MemoryChunkStorePtr chunk_store(new MemoryChunkStore(false, g_hash_func));
-  DataMapPtr data_map(new DataMap);
-  std::string content(RandomString(40));
-  boost::scoped_array<char>stuff(new char[40]);
-  boost::scoped_array<char> answer(new char[80]);
-  std::copy(content.data(), content.data() + 40, stuff.get());
-  {
-    SelfEncryptor selfenc(data_map, chunk_store);
-    EXPECT_TRUE(selfenc.Write(stuff.get(), 40, 40));
-    EXPECT_EQ(0, selfenc.data_map()->chunks.size());
-    EXPECT_EQ(0, selfenc.data_map()->size);
-    EXPECT_EQ(0, selfenc.data_map()->content_size);
-  }
-
-  SelfEncryptor selfenc(data_map, chunk_store);
-  EXPECT_EQ(80, selfenc.data_map()->size);
-  EXPECT_EQ(80, selfenc.data_map()->content_size);
-  EXPECT_EQ(0, selfenc.data_map()->chunks.size());
-  for (uint32_t i = 0; i < 40; ++i) {
-    EXPECT_TRUE(selfenc.Read(&answer[i], 1, i));
-  }
-}
-
-TEST(SelfEncryptionTest, BEH_1023Chars) {
-  MemoryChunkStorePtr chunk_store(new MemoryChunkStore(false, g_hash_func));
-  DataMapPtr data_map(new DataMap);
-  std::string content(RandomString(1023));
-  boost::scoped_array<char> stuff1(new char[1023]);
-  std::copy(content.c_str(), content.c_str() + 1023, stuff1.get());
-  {
-    SelfEncryptor selfenc(data_map, chunk_store);
-    EXPECT_TRUE(selfenc.Write(stuff1.get(), 1023));
-    EXPECT_EQ(0, selfenc.data_map()->chunks.size());
-    EXPECT_EQ(0, selfenc.data_map()->size);
-    EXPECT_EQ(0, selfenc.data_map()->content_size);
-  }
-  EXPECT_EQ(1023, data_map->size);
-  EXPECT_EQ(1023, data_map->content_size);
-  EXPECT_EQ(0, data_map->chunks.size());
-}
-
-TEST(SelfEncryptionTest, BEH_1025Chars3chunks) {
-  MemoryChunkStorePtr chunk_store(new MemoryChunkStore(false, g_hash_func));
-  DataMapPtr data_map(new DataMap);
-  std::string content(RandomString(1025));
-  boost::scoped_array<char> stuff1(new char[1025]);
-  std::copy(content.c_str(), content.c_str() + 1025, stuff1.get());
-  {
-    SelfEncryptor selfenc(data_map, chunk_store);
-    EXPECT_TRUE(selfenc.Write(stuff1.get(), 1025));
-    EXPECT_EQ(0, selfenc.data_map()->chunks.size());
-    EXPECT_EQ(0, selfenc.data_map()->size);
-    EXPECT_EQ(0, selfenc.data_map()->content_size);
-  }
-  SelfEncryptor selfenc(data_map, chunk_store);
-  EXPECT_EQ(1025, selfenc.data_map()->size);
-  EXPECT_EQ(1025, selfenc.data_map()->content_size);
-  EXPECT_EQ(0, selfenc.data_map()->chunks.size());
-}
+                        testing::Values(
+                            std::make_pair(3 * kMinChunkSize, 0),
+                            std::make_pair((3 * kMinChunkSize) - 1, 1),
+                            std::make_pair((3 * kMinChunkSize) - 1, 1024),
+                            std::make_pair(kDefaultChunkSize - 23, 22),
+                            std::make_pair(kDefaultChunkSize - 1, 0)));
 
 TEST(SelfEncryptionTest, BEH_BenchmarkMemOnly) {
   MemoryChunkStorePtr chunk_store(new MemoryChunkStore(false, g_hash_func));
@@ -514,7 +503,7 @@ TEST(SelfEncryptionTest, BEH_WriteRandomlyAllDirections) {
 TEST(SelfEncryptionTest, FUNC_RepeatedRandomCharReadInProcess) {
   MemoryChunkStorePtr chunk_store(new MemoryChunkStore(false, g_hash_func));
   DataMapPtr data_map(new DataMap);
-  uint32_t chunk_size(1024 * 256);
+  uint32_t chunk_size(kDefaultChunkSize);
   const uint32_t kTestDataSize(chunk_size * 6);
   std::string plain_text(RandomString(kTestDataSize));
   boost::scoped_array<char> plain_data(new char[kTestDataSize]);
@@ -610,7 +599,7 @@ TEST(SelfEncryptionTest, FUNC_RepeatedRandomCharReadInProcess) {
 TEST(SelfEncryptionTest, FUNC_ReadArbitaryPosition) {
   MemoryChunkStorePtr chunk_store(new MemoryChunkStore(false, g_hash_func));
   DataMapPtr data_map(new DataMap);
-  uint32_t chunk_size(1024 * 256);
+  uint32_t chunk_size(kDefaultChunkSize);
   const uint32_t kTestDataSize(chunk_size * 6);
   std::string plain_text(RandomString(kTestDataSize));
   boost::scoped_array<char> plain_data(new char[kTestDataSize]);
@@ -666,7 +655,7 @@ TEST(SelfEncryptionTest, FUNC_ReadArbitaryPosition) {
 }
 
 // TEST(SelfEncryptionManualTest, BEH_RandomAccess) {
-//   size_t chunk_size(1024 * 256);
+//   size_t chunk_size(kDefaultChunkSize);
 //   std::vector<size_t> num_of_tries;
 //   std::vector<size_t> max_variation;
 //   max_variation.push_back(1024);
@@ -806,7 +795,7 @@ TEST(SelfEncryptionTest, BEH_NewRead) {
   MemoryChunkStorePtr chunk_store(new MemoryChunkStore(false, g_hash_func));
   DataMapPtr data_map(new DataMap);
 
-  uint32_t size = 1024 * 256 * 10;    // 10 chunks
+  uint32_t size = kDefaultChunkSize * 10;    // 10 chunks
   uint64_t position = 0;
   std::string content(RandomString(size));
   boost::scoped_array<char> stuff1(new char[size]);
@@ -815,7 +804,7 @@ TEST(SelfEncryptionTest, BEH_NewRead) {
     SelfEncryptor selfenc(data_map, chunk_store);
     EXPECT_TRUE(selfenc.Write(stuff1.get(), size));
     EXPECT_EQ(10, selfenc.data_map()->chunks.size());
-    EXPECT_EQ(size - (1024 * 256 * 2), selfenc.data_map()->size);
+    EXPECT_EQ(size - (kDefaultChunkSize * 2), selfenc.data_map()->size);
     EXPECT_EQ(0, selfenc.data_map()->content_size);
   }
   SelfEncryptor selfenc(data_map, chunk_store);
@@ -836,7 +825,7 @@ TEST(SelfEncryptionTest, BEH_NewRead) {
   }
   // try to read from end of cache, but request more data than remains
   // will result in cache being refreshed
-  position += (1024 * 256 * 8 - 1000);
+  position += (kDefaultChunkSize * 8 - 1000);
   EXPECT_TRUE(selfenc.Read(answer.get(), 4096, position));
   for (int i = 0; i < 4096; ++i) {
     if (stuff1[static_cast<size_t>(position + i)] != answer[i])
@@ -855,7 +844,7 @@ TEST(SelfEncryptionTest, BEH_NewRead) {
   // use file smaller than the cache size
   MemoryChunkStorePtr chunk_store2(new MemoryChunkStore(false, g_hash_func));
   DataMapPtr data_map2(new DataMap);
-  size = 1024 * 256 * 5;
+  size = kDefaultChunkSize * 5;
   std::string content2(RandomString(size));
   boost::scoped_array<char> stuff2(new char[size]);
   std::copy(content2.c_str(), content2.c_str() + size, stuff2.get());
@@ -1297,7 +1286,7 @@ TEST(SelfEncryptionTest, BEH_RandomSizedOutOfSequenceWritesWithGaps) {
 TEST(SelfEncryptionManualTest, BEH_manual_check_write) {
   MemoryChunkStorePtr chunk_store(new MemoryChunkStore(false, g_hash_func));
   DataMapPtr data_map(new DataMap);
-  uint32_t chunk_size(1024 * 256);  // system default
+  uint32_t chunk_size(kDefaultChunkSize);
   uint32_t num_chunks(10);
   boost::scoped_array<char> extra_content(new char[5]);
   for (char i = 0; i != 5; ++i)
