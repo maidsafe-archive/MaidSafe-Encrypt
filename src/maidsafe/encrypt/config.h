@@ -37,7 +37,7 @@ const uint32_t kDefaultChunkSize(1024 * 256);
 enum ReturnCode {
   kSuccess = 0,
   kEncryptError = -200001,
-  kDecryptError = -200002,
+  kDecryptError = -200002
 };
 
 }  // namespace encrypt
