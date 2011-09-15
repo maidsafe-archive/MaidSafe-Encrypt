@@ -77,7 +77,10 @@ class SelfEncryptor {
       : data_map_(data_map ? data_map : DataMapPtr(new DataMap)),
         sequencer_(),
         chunk_size_(kDefaultChunkSize),
-        main_encrypt_queue_(),
+        kDefaultByteArraySize_(chunk_size_ * omp_get_num_procs()),
+        main_encrypt_queue_(new byte[kDefaultByteArraySize_]),
+        queue_start_position_(2 * kDefaultChunkSize),
+        retrievable_from_queue_(0),
         chunk0_raw_(new byte[chunk_size_]),
         chunk1_raw_(new byte[chunk_size_]),
         chunk_store_(chunk_store),
@@ -87,9 +90,8 @@ class SelfEncryptor {
         read_ok_(true),
         rewriting_(false),
         ignore_threads_(false),
-        num_procs_(omp_get_num_procs()),
         cache_(false),
-        data_cache_(new char[chunk_size_ * num_procs_]),
+        data_cache_(new char[kDefaultByteArraySize_]),
         cache_initial_posn_(0),
         trailing_data_(),
         trailing_data_start_(0),
@@ -107,6 +109,35 @@ class SelfEncryptor {
   typedef boost::shared_array<byte> ByteArray;
   SelfEncryptor &operator = (const SelfEncryptor&);
   SelfEncryptor(const SelfEncryptor&);
+  // Copies data to chunk0_raw_ and/or chunk1_raw_.  Returns number of bytes
+  // copied.  Updates length and position if data is copied.
+  uint32_t PutToInitialChunks(const char *data,
+                              uint32_t *length,
+                              uint64_t *position);
+  // If data for writing overlaps or joins on to the end of main_encrypt_queue_,
+  // this returns true and sets the offsets to the required start positions of
+  // the data and the main_encrypt_queue_.
+  bool GetDataOffsetForEnqueuing(const uint32_t &length,
+                                 const uint64_t &position,
+                                 uint32_t *data_offset,
+                                 uint32_t *queue_offset);
+  // Copies data into main_encrypt_queue_.  Any elements of data that precede
+  // the start of main_encrypt_queue_ are ignored.  If the main_encrypt_queue_
+  // becomes full during the process, it is encrpyted and reset.  This repeats
+  // until all of the remaining data is copied.  If any of the data falls into
+  // chunk 0 or 1, it is copied to those buffer(s) instead.  In this case, these
+  // chunk buffers are treated as part of the main_encrypt_queue_ as far as
+  // updating position pointers is concerned.
+  void PutToEncryptQueue(const char *data,
+                         uint32_t length,
+                         uint32_t data_offset,
+                         uint32_t queue_offset);
+  // Any data for writing beyond chunks 0 and 1 and which precedes
+  // main_encrypt_queue_, is added to the sequencer.  So is any data which
+  // follows but doesn't adjoin main_encrypt_queue_.  For such a case, this
+  // returns true and adjusts length to the required amount of data to be
+  // copied.
+  bool GetLengthForSequencer(const uint64_t &position, uint32_t *length);
   void AddReleventSeqDataToQueue();
   void SequenceAllNonStandardChunksAndExtraContent();
   void ReadChunk(uint32_t chunk_num, byte *data);
@@ -114,8 +145,8 @@ class SelfEncryptor {
                    ByteArray key,
                    ByteArray iv,
                    ByteArray pad);
-  bool AttemptProcessQueue();
-  bool QueueC0AndC1();
+//  bool AttemptProcessQueue();
+//  bool QueueC0AndC1();
   bool ProcessMainQueue();
   void EncryptAChunk(uint32_t chunk_num,
                      byte *data,
@@ -132,7 +163,10 @@ class SelfEncryptor {
   DataMapPtr data_map_;
   Sequencer sequencer_;
   uint32_t chunk_size_;
-  CryptoPP::MessageQueue main_encrypt_queue_;
+  const uint32_t kDefaultByteArraySize_;
+  ByteArray main_encrypt_queue_;
+  uint64_t queue_start_position_;
+  uint32_t retrievable_from_queue_;
   ByteArray chunk0_raw_;
   ByteArray chunk1_raw_;
   std::shared_ptr<ChunkStore> chunk_store_;
@@ -142,7 +176,6 @@ class SelfEncryptor {
   bool read_ok_;
   bool rewriting_;
   bool ignore_threads_;
-  int num_procs_;
   bool cache_;
   boost::shared_array<char> data_cache_;
   uint64_t cache_initial_posn_;

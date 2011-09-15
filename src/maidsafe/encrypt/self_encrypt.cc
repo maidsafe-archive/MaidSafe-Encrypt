@@ -79,9 +79,8 @@ size_t XORFilter::Put2(const byte *in_string,
 SelfEncryptor::~SelfEncryptor() {
   ProcessMainQueue();  // to pick up unprocessed whole chunks
   EmptySequencer();
-  while (main_encrypt_queue_.MaxRetrievable() > 0) {
-    chunk_size_ =
-        static_cast<uint32_t>(main_encrypt_queue_.MaxRetrievable() / 3);
+  while (retrievable_from_queue_ > 0) {
+    chunk_size_ = retrievable_from_queue_ / 3;
     if (chunk_size_ < kMinChunkSize) {
       WriteExtraAndEnc0and1();
     }
@@ -97,30 +96,132 @@ bool SelfEncryptor::Write(const char *data,
   if (length == 0)
     return true;
 
-  if (position == current_position_) {  // assuming rewrites from zero
-    main_encrypt_queue_.Put2(const_cast<byte*>(
-        reinterpret_cast<const byte*>(data)), length, 0, true);
-    current_position_ += length;
-  } else {  // we went backwards or rewriting !!!
-    if (!rewriting_ && data_map_->complete) {
-      rewriting_ = true;
-      SequenceAllNonStandardChunksAndExtraContent();
-      data_map_->complete = false;
-    }
-    sequencer_.Add(position, const_cast<char*>(data), length);
+  uint32_t written = PutToInitialChunks(data, &length, &position);
+
+  uint32_t data_offset(0), queue_offset(0);
+  if (GetDataOffsetForEnqueuing(length, position, &data_offset,
+                                &queue_offset)) {
+    PutToEncryptQueue(data + written, length, data_offset, queue_offset);
   }
-//   AttemptProcessQueue();
+
+  if (GetLengthForSequencer(position, &length))
+    sequencer_.Add(data + written, length, position);
+
+//  } else {  // we went backwards or rewriting !!!
+//    if (!rewriting_ && data_map_->complete) {
+//      rewriting_ = true;
+//      SequenceAllNonStandardChunksAndExtraContent();
+//      data_map_->complete = false;
+//    }
+//    sequencer_.Add(position, const_cast<char*>(data), length);
+//  }
+////   AttemptProcessQueue();
   AddReleventSeqDataToQueue();  // gets any relevent data from sequencer
-  AttemptProcessQueue();
+//  AttemptProcessQueue();
   return true;
+}
+
+uint32_t SelfEncryptor::PutToInitialChunks(const char *data,
+                                           uint32_t *length,
+                                           uint64_t *position) {
+  uint32_t copy_length0(0);
+  // Handle Chunk 0
+  if (*position < kDefaultChunkSize) {
+    copy_length0 =
+        std::min(*length, kDefaultChunkSize - static_cast<uint32_t>(*position));
+    memcpy(&chunk0_raw_[*position], data, copy_length0);
+    // Don't decrease current_position_ (could be a rewrite - this shouldn't
+    // change current_position_).
+    if (current_position_ < copy_length0)
+      current_position_ = copy_length0;
+    *length -= copy_length0;
+    *position += copy_length0;
+  }
+
+  // Handle Chunk 1
+  uint32_t copy_length1(0);
+  if ((*position >= kDefaultChunkSize) && (*position < 2 * kDefaultChunkSize)) {
+    copy_length1 = std::min(*length,
+        (2 * kDefaultChunkSize) - static_cast<uint32_t>(*position));
+    memcpy(&chunk1_raw_[*position], data + copy_length0, copy_length1);
+    // Don't decrease current_position_ (could be a rewrite - this shouldn't
+    // change current_position_).
+    if (current_position_ < kDefaultChunkSize + copy_length1)
+      current_position_ = kDefaultChunkSize + copy_length1;
+    *length -= copy_length1;
+    *position += copy_length1;
+  }
+
+  return copy_length0 + copy_length1;
+}
+
+bool SelfEncryptor::GetDataOffsetForEnqueuing(const uint32_t &length,
+                                              const uint64_t &position,
+                                              uint32_t *data_offset,
+                                              uint32_t *queue_offset) {
+  // Cover most common case first
+  if (position == current_position_) {
+    *data_offset = 0;
+    *queue_offset =
+        static_cast<uint32_t>(current_position_ - queue_start_position_);
+    return true;
+  }
+
+  if (length == 0)
+    return false;
+
+  if (position < queue_start_position_) {
+    // We don't care if this overflows as in this case we return false
+    *data_offset = static_cast<uint32_t>(queue_start_position_ - position);
+    *queue_offset = 0;
+    return (position + length >= queue_start_position_);
+  }
+
+  *data_offset = 0;
+  // We don't care if this overflows as in this case we return false
+  *queue_offset = static_cast<uint32_t>(position - queue_start_position_);
+  return (position <= queue_start_position_ + kDefaultByteArraySize_);
+}
+
+void SelfEncryptor::PutToEncryptQueue(const char *data,
+                                      uint32_t length,
+                                      uint32_t data_offset,
+                                      uint32_t queue_offset) {
+  length -= data_offset;
+  uint32_t copy_length(std::min(length,
+                       kDefaultByteArraySize_ - retrievable_from_queue_));
+  while (copy_length != 0) {
+    memcpy(&main_encrypt_queue_[queue_offset], data + data_offset, copy_length);
+    retrievable_from_queue_ += copy_length;
+    current_position_ += copy_length;
+    if (retrievable_from_queue_ == kDefaultByteArraySize_)
+      ProcessMainQueue();
+    data_offset += copy_length;
+    queue_offset = 0;
+    length -= copy_length;
+    copy_length = std::min(length, kDefaultByteArraySize_);
+  }
+}
+
+bool SelfEncryptor::GetLengthForSequencer(const uint64_t &position,
+                                          uint32_t *length) {
+  BOOST_ASSERT(position >= 2 * kDefaultChunkSize);
+  if (*length == 0)
+    return false;
+  if (position < queue_start_position_) {
+    *length = static_cast<uint32_t>(std::min(static_cast<uint64_t>(*length),
+                                             queue_start_position_ - position));
+    return true;
+  }
+  return (position > queue_start_position_ + kDefaultByteArraySize_);
 }
 
 void SelfEncryptor::AddReleventSeqDataToQueue() {
   SequenceData extra(sequencer_.Get(current_position_));
   while (extra.second != 0) {
-    main_encrypt_queue_.Put2(const_cast<byte*>(
-        reinterpret_cast<const byte*>(extra.first)), extra.second, 0, true);
-    current_position_ += extra.second;
+    PutToEncryptQueue(extra.first, extra.second, 0,
+                      static_cast<uint32_t>(current_position_ -
+                                            queue_start_position_));
     extra = sequencer_.Get(current_position_);
   }
 }
@@ -251,66 +352,56 @@ void SelfEncryptor::GetPadIvKey(uint32_t this_chunk_num,
   }
 }
 
-bool SelfEncryptor::AttemptProcessQueue() {
-  // Do not queue chunks 0 and 1 till we know we have enough for 3 chunks
-  if ((main_encrypt_queue_.MaxRetrievable() >= chunk_size_ * 3) &&
-      !chunk_one_two_q_full_) {
-    QueueC0AndC1();
-  }
-  uint32_t num_chunks_to_process(ignore_threads_ ? chunk_size_ :
-                                 num_procs_ * chunk_size_);
-
-  if ((main_encrypt_queue_.MaxRetrievable() >= num_chunks_to_process) &&
-      chunk_one_two_q_full_) {
-    ProcessMainQueue();
-  }
-  return true;
-}
-
-bool SelfEncryptor::QueueC0AndC1() {
-  c0_and_1_chunk_size_ = chunk_size_;
-  // Chunk 0
-  main_encrypt_queue_.Get(chunk0_raw_.get(), chunk_size_);
-  ChunkDetails chunk_data;
-  CryptoPP::SHA512().CalculateDigest(chunk_data.pre_hash,
-                                     chunk0_raw_.get(),
-                                     chunk_size_);
-  chunk_data.size = chunk_size_;
-  data_map_->chunks.push_back(chunk_data);
-
-  // Chunk 1
-  main_encrypt_queue_.Get(chunk1_raw_.get(), chunk_size_);
-  ChunkDetails chunk_data2;
-  CryptoPP::SHA512().CalculateDigest(chunk_data2.pre_hash,
-                                     chunk1_raw_.get() ,
-                                     chunk_size_);
-  chunk_data2.size = chunk_size_;
-  data_map_->chunks.push_back(chunk_data2);
-  chunk_one_two_q_full_ = true;
-  return true;
-}
+//bool SelfEncryptor::AttemptProcessQueue() {
+//  // Do not queue chunks 0 and 1 till we know we have enough for 3 chunks
+//  if ((retrievable_from_queue_ >= chunk_size_ * 3) && !chunk_one_two_q_full_)
+//    QueueC0AndC1();
+//
+//  uint32_t bytes_to_process(ignore_threads_ ? chunk_size_ :
+//                            kDefaultByteArraySize_);
+//
+//  if ((retrievable_from_queue_ >= bytes_to_process) && chunk_one_two_q_full_)
+//    ProcessMainQueue();
+//
+//  return true;
+//}
+//
+//bool SelfEncryptor::QueueC0AndC1() {
+//  c0_and_1_chunk_size_ = chunk_size_;
+//  // Chunk 0
+//  main_encrypt_queue_.Get(chunk0_raw_.get(), chunk_size_);
+//  ChunkDetails chunk_data;
+//  CryptoPP::SHA512().CalculateDigest(chunk_data.pre_hash,
+//                                     chunk0_raw_.get(),
+//                                     chunk_size_);
+//  chunk_data.size = chunk_size_;
+//  data_map_->chunks.push_back(chunk_data);
+//
+//  // Chunk 1
+//  main_encrypt_queue_.Get(chunk1_raw_.get(), chunk_size_);
+//  ChunkDetails chunk_data2;
+//  CryptoPP::SHA512().CalculateDigest(chunk_data2.pre_hash,
+//                                     chunk1_raw_.get() ,
+//                                     chunk_size_);
+//  chunk_data2.size = chunk_size_;
+//  data_map_->chunks.push_back(chunk_data2);
+//  chunk_one_two_q_full_ = true;
+//  return true;
+//}
 
 bool SelfEncryptor::ProcessMainQueue() {
-  if (main_encrypt_queue_.MaxRetrievable() < chunk_size_ || chunk_size_ == 0)
+  if (retrievable_from_queue_ < chunk_size_ || chunk_size_ == 0)
     return false;
 
-  uint32_t chunks_to_process =
-      static_cast<uint32_t>(main_encrypt_queue_.MaxRetrievable() / chunk_size_);
+  uint32_t chunks_to_process = retrievable_from_queue_ / chunk_size_;
   uint32_t old_dm_size = static_cast<uint32_t>(data_map_->chunks.size());
   data_map_->chunks.resize(chunks_to_process + old_dm_size);
-  std::vector<ByteArray>chunk_vec(chunks_to_process,
-                                  ByteArray(new byte[chunk_size_]));
-  // get all hashes
-  for (uint32_t i = 0; i != chunks_to_process; ++i) {
-    chunk_vec[i] = ByteArray(new byte[chunk_size_]);
-    main_encrypt_queue_.Get(chunk_vec[i].get(), chunk_size_);
-  }
 
 #pragma omp parallel for
-  for (uint32_t i = 0; i < chunks_to_process; ++i) {
+  for (uint32_t i = 0; i != chunks_to_process; ++i) {
     CryptoPP::SHA512().CalculateDigest(
         data_map_->chunks[i + old_dm_size].pre_hash,
-        chunk_vec[i].get(),
+        main_encrypt_queue_.get() + (i * chunk_size_),
         chunk_size_);
     data_map_->chunks[i + old_dm_size].size = chunk_size_;
   }
@@ -334,9 +425,13 @@ bool SelfEncryptor::ProcessMainQueue() {
 //     }
 //   }
 #pragma omp parallel for  // gives over 100Mb write speeds
-  for (uint32_t i = 0; i < chunks_to_process; ++i)
-    EncryptAChunk(i + old_dm_size, &chunk_vec[i][0], chunk_size_, false);
-
+  for (uint32_t i = 0; i != chunks_to_process; ++i) {
+    EncryptAChunk(i + old_dm_size,
+                  main_encrypt_queue_.get() + (i * chunk_size_), chunk_size_,
+                  false);
+  }
+  queue_start_position_ += retrievable_from_queue_;
+  retrievable_from_queue_ = 0;
   return true;
 }
 
@@ -460,20 +555,15 @@ void SelfEncryptor::EmptySequencer() {
   }
 }
 
-
 bool SelfEncryptor::WriteExtraAndEnc0and1() {
-  BOOST_ASSERT(main_encrypt_queue_.MaxRetrievable() <=
-               std::numeric_limits<uint32_t>::max());
-  uint32_t qlength =
-      static_cast<uint32_t>(main_encrypt_queue_.MaxRetrievable());
-
-  if (qlength != 0) {
-    ByteArray i(new byte[qlength]);
-    main_encrypt_queue_.Get(i.get(), qlength);
-    std::string extra(reinterpret_cast<char*>(i.get()), qlength);
+  if (retrievable_from_queue_ != 0) {
+    ByteArray i(new byte[retrievable_from_queue_]);
+//    main_encrypt_queue_.Get(i.get(), retrievable_from_queue_);
+    std::string extra(reinterpret_cast<char*>(i.get()),
+                      retrievable_from_queue_);
     data_map_->content = extra;
-    data_map_->content_size = qlength;
-    data_map_->size += qlength;
+    data_map_->content_size = retrievable_from_queue_;
+    data_map_->size += retrievable_from_queue_;
   }
   // when all that is done, encrypt chunks 0 and 1
   if (chunk_one_two_q_full_) {
@@ -493,13 +583,13 @@ bool SelfEncryptor::WriteExtraAndEnc0and1() {
     chunk1_raw_.reset();
     chunk_one_two_q_full_ = false;
   }
-  main_encrypt_queue_.SkipAll();
+//  main_encrypt_queue_.SkipAll();
   data_map_->complete = true;
   return true;
 }
 
 bool SelfEncryptor::Read(char* data, uint32_t length, uint64_t position) {
-  uint32_t maxbuffersize = chunk_size_ * num_procs_;
+  uint32_t maxbuffersize = kDefaultByteArraySize_;
   uint32_t cachesize =
       static_cast<uint32_t>(std::min(data_map_->size,
                                      static_cast<uint64_t>(maxbuffersize)));
@@ -542,7 +632,7 @@ bool SelfEncryptor::Transmogrify(char *data,
                                  bool /*writing*/) {
   // TODO(JLB) :  ensure that on rewrite, if data is being written to area
   //              currently held in cache, then cache is refreshed after write.
-  //              Transmogrify(data_cache_.get(), (chunk_size_ * num_procs_),
+  //              Transmogrify(data_cache_.get(), kDefaultByteArraySize_,
   //                           cache_initial_posn_, false)
   uint64_t run_total(0), all_run_total(0);
   uint32_t start_offset(0), end_cut(0), start_chunk(0), end_chunk(0);
@@ -651,23 +741,23 @@ bool SelfEncryptor::Transmogrify(char *data,
 }
 
 void SelfEncryptor::ReadInProcessData(char *data,
-                                      uint32_t /*length*/,
+                                      uint32_t length,
                                       uint64_t position) {
-  BOOST_ASSERT(main_encrypt_queue_.MaxRetrievable() <=
-               std::numeric_limits<uint32_t>::max());
-  uint32_t q_size =
-      static_cast<uint32_t>(main_encrypt_queue_.MaxRetrievable());
+                                                          // TODO(Fraser#5#): 2011-09-15 - check Chunks 0 and 1
 
   // check queue
-  if (q_size != 0)  {
-    // grab all queue into new array
-    boost::scoped_array<char> temp(new char[q_size]);
-    main_encrypt_queue_.Peek(reinterpret_cast<byte*>(temp.get()), q_size);
-    // TODO(dirvine) FIXME - just get what we need
-    uint64_t pos = current_position_ - q_size;
-    for (uint32_t i = 0; i != q_size; ++i) {
-      data[pos + i] = temp[i];
+  if (retrievable_from_queue_ != 0)  {
+    uint32_t data_offset(0), queue_offset(0), copy_length(0);
+    if ((position < queue_start_position_ + retrievable_from_queue_) &&
+        (position + length > queue_start_position_)) {
+      if (position < queue_start_position_)
+        data_offset = static_cast<uint32_t>(queue_start_position_ - position);
+      else
+        queue_offset = static_cast<uint32_t>(position - queue_start_position_);
+      copy_length = std::min(length - data_offset,
+                             retrievable_from_queue_ - queue_offset);
     }
+    memcpy(data + data_offset, &main_encrypt_queue_[queue_offset], copy_length);
   }
 
   if (!sequencer_.empty()) {
@@ -691,19 +781,19 @@ bool SelfEncryptor::DeleteAllChunks() {
 
 bool SelfEncryptor::Truncate(uint64_t size) {
   uint64_t byte_count(0);
-  size_t number_of_chunks(data_map_->chunks.size());
+  uint32_t number_of_chunks(static_cast<uint32_t>(data_map_->chunks.size()));
 //  bool delete_remainder(false), found_end(false);
   // if (data_map_->complete) {
     // Assume size < data_map.size
-    for (size_t i = 0; i != number_of_chunks; ++i) {
+    for (uint32_t i = 0; i != number_of_chunks; ++i) {
       uint32_t chunk_size = data_map_->chunks[i].size;
       byte_count += chunk_size;
       if (byte_count > size) {
         // Found chunk with data at position 'size'.
-        if (main_encrypt_queue_.MaxRetrievable() != 0)
-          main_encrypt_queue_.SkipAll();
+        if (retrievable_from_queue_ != 0)
+//          main_encrypt_queue_.SkipAll();
         sequencer_.Clear();
-        for (size_t j = i + 1; j != number_of_chunks; ++j) {
+        for (uint32_t j = i + 1; j != number_of_chunks; ++j) {
           if (!chunk_store_->Delete(reinterpret_cast<char*>
                                       (data_map_->chunks[j].hash))) {
             DLOG(ERROR) << "Failed to delete chunk";
@@ -722,9 +812,9 @@ bool SelfEncryptor::Truncate(uint64_t size) {
           std::shared_ptr<byte> data(new byte[chunk_size]);
           ReadChunk(i, data.get());
           BOOST_ASSERT(byte_count - size <= chunk_size);
-          size_t bytes_to_queue(chunk_size -
-                                static_cast<uint32_t>(byte_count - size));
-          main_encrypt_queue_.Put2(data.get(), bytes_to_queue, 0, true);
+//          uint32_t bytes_to_queue(chunk_size -
+//                                  static_cast<uint32_t>(byte_count - size));
+//          main_encrypt_queue_.Put2(data.get(), bytes_to_queue, 0, true);
           if (!chunk_store_->Delete(reinterpret_cast<char*>
                                       (data_map_->chunks[i].hash))) {
             DLOG(ERROR) << "Failed to delete chunk";
@@ -752,8 +842,7 @@ bool SelfEncryptor::Truncate(uint64_t size) {
 //      //check queue;
 //    else
 //      //check sequencer
-//      uint64_t retrievable = main_encrypt_queue_.MaxRetrievable();
-//      if (size <= retrievable) {
+//      if (size <= retrievable_from_queue_) {
 //
 //      }
 //    }

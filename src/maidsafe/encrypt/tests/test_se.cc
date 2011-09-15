@@ -904,9 +904,9 @@ TEST(SelfEncryptionTest, BEH_WriteRandomSizeRandomPosition) {
     uint32_t wtotal(0);
     for (auto it = broken_data.begin(); it != broken_data.end(); ++it) {
       EXPECT_TRUE(selfenc.Write(it->second.data(),
-                                it->second.size(),
+                                static_cast<uint32_t>(it->second.size()),
                                 it->first));
-      wtotal += it->second.size();
+      wtotal += static_cast<uint32_t>(it->second.size());
     }
     EXPECT_EQ(wtotal, kTestDataSize);
   }

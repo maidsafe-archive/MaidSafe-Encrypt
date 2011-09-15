@@ -21,7 +21,7 @@
 namespace maidsafe {
 namespace encrypt {
 
-bool Sequencer::Add(uint64_t position, char *data, uint32_t length) {
+bool Sequencer::Add(const char *data, uint32_t length, uint64_t position) {
   // TODO(dirvine) if a write happens half way through we count as 2 sets,
   // need to take care of this here, otherwise we lose timeline
   auto iter = sequencer_.find(position);
@@ -65,7 +65,7 @@ SequenceData Sequencer::PositionFromSequencer(uint64_t position, bool remove) {
     return (SequenceData(static_cast<char*>(NULL), 0));
   for (auto it = sequencer_.begin(); it != sequencer_.end(); ++it) {
     uint64_t this_position = (*it).first;
-    char *this_data = (*it).second.first;
+    const char *this_data = (*it).second.first;
     uint32_t this_length = (*it).second.second;
     // got the data - it is contiguous
     if (this_position == position) {
@@ -81,9 +81,9 @@ SequenceData Sequencer::PositionFromSequencer(uint64_t position, bool remove) {
           this_length - static_cast<uint32_t>(position - this_position));
       if (remove) {
         // get the remaining data and re-add
-        Add(this_position,
-            &this_data[position - this_position],
-            this_length - static_cast<uint32_t>(position - this_position));
+        Add(&this_data[position - this_position],
+            this_length - static_cast<uint32_t>(position - this_position),
+            this_position);
         sequencer_.erase(it);
       }
       return result;
@@ -99,7 +99,7 @@ uint64_t Sequencer::NextFromSequencer(char *data,
     return 0;
   auto it = sequencer_.begin();
   uint64_t position = (*it).first;
-  data = (*it).second.first;
+  data = const_cast<char*>((*it).second.first);
   *length = (*it).second.second;
 
   if (remove)
