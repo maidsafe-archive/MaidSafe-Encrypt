@@ -75,15 +75,15 @@ class SelfEncryptor {
  public:
   SelfEncryptor(DataMapPtr data_map,
                 std::shared_ptr<ChunkStore> chunk_store,
-                uint32_t default_byte_array_size = 0)
+                int num_procs = 0)
       : data_map_(data_map ? data_map : DataMapPtr(new DataMap)),
         sequencer_(),
-        chunk_size_(kDefaultChunkSize),
-        kDefaultByteArraySize_(default_byte_array_size == 0 ?
-                               chunk_size_ * omp_get_num_procs() :
-                               default_byte_array_size),
+        kDefaultByteArraySize_(num_procs == 0 ?
+                               kDefaultChunkSize * omp_get_num_procs() :
+                               kDefaultChunkSize * num_procs),
         main_encrypt_queue_(),
         queue_start_position_(2 * kDefaultChunkSize),
+        kQueueCapacity_(kDefaultByteArraySize_ + kDefaultChunkSize),
         retrievable_from_queue_(0),
         chunk0_raw_(),
         chunk1_raw_(),
@@ -152,7 +152,7 @@ class SelfEncryptor {
                    ByteArray pad);
 //  bool AttemptProcessQueue();
 //  bool QueueC0AndC1();
-  bool ProcessMainQueue();
+  bool ProcessMainQueue(uint32_t chunk_size = kDefaultChunkSize);
   void EncryptAChunk(uint32_t chunk_num,
                      byte *data,
                      uint32_t length,
@@ -167,10 +167,10 @@ class SelfEncryptor {
 
   DataMapPtr data_map_;
   Sequencer sequencer_;
-  uint32_t chunk_size_;
   const uint32_t kDefaultByteArraySize_;
   ByteArray main_encrypt_queue_;
   uint64_t queue_start_position_;
+  const uint32_t kQueueCapacity_;
   uint32_t retrievable_from_queue_;
   ByteArray chunk0_raw_;
   ByteArray chunk1_raw_;
