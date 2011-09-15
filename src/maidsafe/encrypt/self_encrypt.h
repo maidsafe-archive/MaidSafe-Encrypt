@@ -73,29 +73,31 @@ class XORFilter : public CryptoPP::Bufferless<CryptoPP::Filter> {
 
 class SelfEncryptor {
  public:
-  SelfEncryptor(DataMapPtr data_map, std::shared_ptr<ChunkStore> chunk_store)
+  SelfEncryptor(DataMapPtr data_map,
+                std::shared_ptr<ChunkStore> chunk_store,
+                uint32_t default_byte_array_size = 0)
       : data_map_(data_map ? data_map : DataMapPtr(new DataMap)),
         sequencer_(),
         chunk_size_(kDefaultChunkSize),
-        kDefaultByteArraySize_(chunk_size_ * omp_get_num_procs()),
-        main_encrypt_queue_(new byte[kDefaultByteArraySize_]),
+        kDefaultByteArraySize_(default_byte_array_size == 0 ?
+                               chunk_size_ * omp_get_num_procs() :
+                               default_byte_array_size),
+        main_encrypt_queue_(),
         queue_start_position_(2 * kDefaultChunkSize),
         retrievable_from_queue_(0),
-        chunk0_raw_(new byte[chunk_size_]),
-        chunk1_raw_(new byte[chunk_size_]),
+        chunk0_raw_(),
+        chunk1_raw_(),
         chunk_store_(chunk_store),
         chunk_one_two_q_full_(false),
-        c0_and_1_chunk_size_(chunk_size_),
+        c0_and_1_chunk_size_(kDefaultChunkSize),
         current_position_(0),
+        prepared_for_writing_(!data_map),
         read_ok_(true),
         rewriting_(false),
         ignore_threads_(false),
         cache_(false),
         data_cache_(new char[kDefaultByteArraySize_]),
-        cache_initial_posn_(0),
-        trailing_data_(),
-        trailing_data_start_(0),
-        trailing_data_size_(0) {}
+        cache_initial_posn_(0) {}
   ~SelfEncryptor();
   bool Write(const char *data = NULL,
              uint32_t length = 0,
@@ -109,6 +111,10 @@ class SelfEncryptor {
   typedef boost::shared_array<byte> ByteArray;
   SelfEncryptor &operator = (const SelfEncryptor&);
   SelfEncryptor(const SelfEncryptor&);
+  // If prepared_for_writing_ is not already true, this either reads the first 2
+  // and last 1 chunks into their appropriate buffers or reads the content field
+  // of the data_map_ into chunk0_raw_.
+  void PrepareToWrite();
   // Copies data to chunk0_raw_ and/or chunk1_raw_.  Returns number of bytes
   // copied.  Updates length and position if data is copied.
   uint32_t PutToInitialChunks(const char *data,
@@ -139,7 +145,6 @@ class SelfEncryptor {
   // copied.
   bool GetLengthForSequencer(const uint64_t &position, uint32_t *length);
   void AddReleventSeqDataToQueue();
-  void SequenceAllNonStandardChunksAndExtraContent();
   void ReadChunk(uint32_t chunk_num, byte *data);
   void GetPadIvKey(uint32_t this_chunk_num,
                    ByteArray key,
@@ -173,15 +178,13 @@ class SelfEncryptor {
   bool chunk_one_two_q_full_;
   uint32_t c0_and_1_chunk_size_;
   uint64_t current_position_;
+  bool prepared_for_writing_;
   bool read_ok_;
   bool rewriting_;
   bool ignore_threads_;
   bool cache_;
   boost::shared_array<char> data_cache_;
   uint64_t cache_initial_posn_;
-  ByteArray trailing_data_;
-  uint64_t trailing_data_start_;
-  uint32_t trailing_data_size_;
 };
 
 }  // namespace encrypt
