@@ -53,6 +53,8 @@ class Sequencer {
 
   void Clear();
 
+  std::pair<uint64_t, SequenceData> GetFirst();
+
  private:
   SequenceData PositionFromSequencer(uint64_t position, bool remove);
   uint64_t NextFromSequencer(char *data, uint32_t *length, bool remove);

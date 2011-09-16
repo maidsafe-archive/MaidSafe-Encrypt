@@ -87,7 +87,6 @@ void serialize(Archive &archive,  // NOLINT
                maidsafe::encrypt::DataMap &data_map,
                const unsigned int /* version */) {
   archive &data_map.chunks;
-  archive &data_map.size;
   archive &data_map.content;
   archive &data_map.complete;
 }
