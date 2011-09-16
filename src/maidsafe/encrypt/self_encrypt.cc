@@ -132,7 +132,7 @@ void SelfEncryptor::PrepareToWrite() {
     memset(chunk1_raw_.get(), 0, kDefaultChunkSize);
   }
 
-  if (data_map_->content_size == 0) {
+  if (data_map_->content.empty()) {
     BOOST_ASSERT(data_map_->chunks.empty() || data_map_->chunks.size() >= 3);
     uint32_t i(0);
     ByteArray temp(new byte[kDefaultChunkSize + 1023]);
@@ -148,13 +148,12 @@ void SelfEncryptor::PrepareToWrite() {
           crypto::SHA512::DIGESTSIZE));
     }
   } else {
-    uint32_t length(data_map_->content_size);
+    uint32_t length(static_cast<uint32_t>(data_map_->content.size()));
     uint64_t position(0);
     PutToInitialChunks(data_map_->content.data(), &length, &position);
   }
 
   data_map_->content.clear();
-  data_map_->content_size = 0;
   data_map_->complete = false;
 }
 
@@ -497,8 +496,7 @@ void SelfEncryptor::EmptySequencer() {
      // after this set current_position_ and q - process last
 
   while (!sequencer_.empty()) {
-    uint32_t chunks_written_to =
-        static_cast<uint32_t>(data_map_->chunks.size() * kDefaultChunkSize);
+    uint64_t chunks_written_to = data_map_->chunks.size() * kDefaultChunkSize;
     boost::scoped_array<char> data(new char);
     uint32_t length(0);
     uint64_t seq_pos = sequencer_.GetFirst(data.get(), &length);
@@ -561,7 +559,6 @@ bool SelfEncryptor::WriteExtraAndEnc0and1() {
     std::string extra(reinterpret_cast<char*>(i.get()),
                       retrievable_from_queue_);
     data_map_->content = extra;
-    data_map_->content_size = retrievable_from_queue_;
     data_map_->size += retrievable_from_queue_;
   }
   // when all that is done, encrypt chunks 0 and 1
@@ -728,9 +725,9 @@ bool SelfEncryptor::Transmogrify(char *data,
   for (uint32_t i = 0; i != num_chunks; ++i)
     this_position += data_map_->chunks[i].size;
 
-  for (uint32_t i = 0; i != data_map_->content_size; ++i) {
+  for (size_t i = 0; i != data_map_->content.size(); ++i) {
     if ((this_position + i) < (position + length)) {
-      data[static_cast<uint32_t>(this_position - position) + i] =
+      data[static_cast<size_t>(this_position - position) + i] =
           data_map_->content.c_str()[i];
     }
   }
@@ -824,7 +821,6 @@ bool SelfEncryptor::Truncate(uint64_t size) {
         current_position_ = size;
         data_map_->size = (byte_count - chunk_size);
         data_map_->content.erase();
-        data_map_->content_size = 0;
         data_map_->complete = false;
         return true;
       }
