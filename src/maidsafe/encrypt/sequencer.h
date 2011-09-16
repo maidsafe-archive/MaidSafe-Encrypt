@@ -20,7 +20,11 @@
 
 #include <stdint.h>
 #include <map>
+
+#include "boost/shared_array.hpp"
+#include "cryptopp/config.h"
 #include "maidsafe/encrypt/version.h"
+
 
 #if MAIDSAFE_ENCRYPT_VERSION != 906
 #  error This API is not compatible with the installed library.\
@@ -31,25 +35,23 @@
 namespace maidsafe {
 namespace encrypt {
 
-typedef std::pair<const char*, uint32_t> SequenceData;
+typedef boost::shared_array<byte> ByteArray;
+typedef std::pair<ByteArray, uint32_t> SequenceData;
 
 class Sequencer {
  public:
-  bool Add(const char *data, uint32_t length, uint64_t position);
+  bool Add(const char *data,
+           const uint32_t &length,
+           const uint64_t &position);
+
   SequenceData Peek(uint64_t position) {
     return PositionFromSequencer(position, false);
   }
   SequenceData Get(uint64_t position) {
     return PositionFromSequencer(position, true);
   }
-  uint64_t PeekFirst(char *data, uint32_t *length) {
-    return NextFromSequencer(data, length, false);
-  }
-  uint64_t GetFirst(char *data, uint32_t *length) {
-    return NextFromSequencer(data, length, true);
-  }
+
   bool empty() const { return sequencer_.empty(); }
-  uint64_t PeekLast(uint32_t *length);
 
   void Clear();
 
