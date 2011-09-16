@@ -263,7 +263,7 @@ bool SelfEncryptor::GetLengthForSequencer(const uint64_t &position,
 void SelfEncryptor::AddReleventSeqDataToQueue() {
   SequenceData extra(sequencer_.Get(current_position_));
   while (extra.second != 0) {
-    PutToEncryptQueue(extra.first, extra.second, 0,
+    PutToEncryptQueue(reinterpret_cast<char*>(extra.first[0]), extra.second, 0,
                       static_cast<uint32_t>(current_position_ -
                                             queue_start_position_));
     extra = sequencer_.Get(current_position_);
@@ -503,7 +503,7 @@ void SelfEncryptor::EmptySequencer() {
     uint64_t chunks_written_to = data_map_->chunks.size() * kDefaultChunkSize;
     boost::scoped_array<char> data(new char);
     uint32_t length(0);
-    uint64_t seq_pos = sequencer_.GetFirst(data.get(), &length);
+    uint64_t seq_pos = 0;  /*sequencer_.GetFirst(data.get(), &length);*/
 
     if (seq_pos < chunks_written_to) {
       uint32_t c_start((kDefaultChunkSize - seq_pos) % kDefaultChunkSize);

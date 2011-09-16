@@ -153,8 +153,7 @@ void Sequencer::Clear() {
 
 std::pair<uint64_t, SequenceData> Sequencer::GetFirst() {
   if (sequencer_.empty()) {
-    char temp(0);
-    SequenceData invalid(std::make_pair(&temp, 0));
+    SequenceData invalid(std::make_pair(ByteArray(), 0));
     return std::make_pair(std::numeric_limits<uint64_t>::max(), invalid);
   } else {
     std::pair<uint64_t, SequenceData> result(*sequencer_.begin());
