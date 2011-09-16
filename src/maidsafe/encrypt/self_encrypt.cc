@@ -52,6 +52,13 @@ namespace fs = boost::filesystem;
 namespace maidsafe {
 namespace encrypt {
 
+uint64_t TotalSize(DataMapPtr data_map) {
+  uint64_t size(data_map->content.size());
+  std::for_each(data_map->chunks.begin(), data_map->chunks.end(),
+                [&size] (ChunkDetails chunk) { size += chunk.size; });
+  return size;
+}
+
 /// Implementation of XOR transformation filter to allow pipe-lining
 size_t XORFilter::Put2(const byte *in_string,
                        size_t length,
@@ -470,11 +477,8 @@ void SelfEncryptor::EncryptAChunk(uint32_t chunk_num,
       DLOG(ERROR) << "Could not store " << EncodeToHex(post_hash);
   }
 
-  if (!re_encrypt) {
+  if (!re_encrypt)
     data_map_->chunks[chunk_num].size = length;  // keep pre-compressed length
-#pragma omp atomic
-    data_map_->size += length;
-  }
 }
 
 void SelfEncryptor::EmptySequencer() {
@@ -559,7 +563,6 @@ bool SelfEncryptor::WriteExtraAndEnc0and1() {
     std::string extra(reinterpret_cast<char*>(i.get()),
                       retrievable_from_queue_);
     data_map_->content = extra;
-    data_map_->size += retrievable_from_queue_;
   }
   // when all that is done, encrypt chunks 0 and 1
   if (chunk_one_two_q_full_) {
@@ -587,7 +590,7 @@ bool SelfEncryptor::WriteExtraAndEnc0and1() {
 bool SelfEncryptor::Read(char* data, uint32_t length, uint64_t position) {
   uint32_t maxbuffersize = kDefaultByteArraySize_;
   uint32_t cachesize =
-      static_cast<uint32_t>(std::min(data_map_->size,
+      static_cast<uint32_t>(std::min(TotalSize(data_map_),
                                      static_cast<uint64_t>(maxbuffersize)));
 
   if (length < cachesize) {
@@ -819,7 +822,6 @@ bool SelfEncryptor::Truncate(uint64_t size) {
           data_map_->chunks.pop_back();
         }
         current_position_ = size;
-        data_map_->size = (byte_count - chunk_size);
         data_map_->content.erase();
         data_map_->complete = false;
         return true;

@@ -46,9 +46,8 @@ struct ChunkDetails {
 
 /// Holds information about the building blocks of a data item
 struct DataMap {
-  DataMap() : chunks(), size(0), content(), complete(false) {}
+  DataMap() : chunks(), content(), complete(false) {}
   std::vector<ChunkDetails> chunks;  ///< Information about the chunks
-  uint64_t size;  ///< Size of data item
   std::string content;  ///< Whole data item, if small enough
   bool complete;  ///< for ease
 };

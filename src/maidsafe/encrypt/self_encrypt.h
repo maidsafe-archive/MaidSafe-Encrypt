@@ -53,6 +53,8 @@ typedef std::shared_ptr<ChunkStore> ChunkStorePtr;
 
 namespace encrypt {
 
+uint64_t TotalSize(DataMapPtr data_map);
+
 /// XOR transformation class for pipe-lining
 class XORFilter : public CryptoPP::Bufferless<CryptoPP::Filter> {
  public:
