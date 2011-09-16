@@ -16,6 +16,7 @@
  */
 
 #include "maidsafe/encrypt/sequencer.h"
+#include <limits>
 #include "maidsafe/encrypt/log.h"
 
 namespace maidsafe {
@@ -149,6 +150,19 @@ uint64_t Sequencer::NextFromSequencer(char *data,
 void Sequencer::Clear() {
   sequencer_.clear();
 }
+
+std::pair<uint64_t, SequenceData> Sequencer::GetFirst() {
+  if (sequencer_.empty()) {
+    char temp(0);
+    SequenceData invalid(std::make_pair(&temp, 0));
+    return std::make_pair(std::numeric_limits<uint64_t>::max(), invalid);
+  } else {
+    std::pair<uint64_t, SequenceData> result(*sequencer_.begin());
+    sequencer_.erase(sequencer_.begin());
+    return result;
+  }
+}
+
 
 }  // namespace encrypt
 }  // namespace maidsafe
