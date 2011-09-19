@@ -124,6 +124,9 @@ std::pair<uint64_t, SequenceData> Sequencer::GetFirst() {
   }
 }
 
+uint64_t Sequencer::GetEndPosition() {
+  return (*sequencer_.rbegin()).first + (*sequencer_.rbegin()).second.second;
+}
 
 }  // namespace encrypt
 }  // namespace maidsafe
