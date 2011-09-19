@@ -45,22 +45,25 @@ bool Sequencer::Add(const char *data,
       }
 
       const uint64_t &lower_start_position((*lower_itr).first);
-      const uint32_t &lower_size((*lower_itr).second.second);
-      uint64_t front(0);
-      if (position > lower_start_position)
-        front = (position - lower_start_position);
+      uint32_t front(0);
+      if (position > lower_start_position) {
+        BOOST_ASSERT(position - lower_start_position <
+                     std::numeric_limits<uint32_t>::max());
+        front = static_cast<uint32_t>(position - lower_start_position);
+      }
 
       --upper_itr;
       const uint64_t &upper_start_position((*upper_itr).first);
       const uint32_t &upper_size((*upper_itr).second.second);
 
       uint64_t post_overlap_posn(0);
-      uint64_t post_overlap_size(0);
+      uint32_t post_overlap_size(0);
       if (((position + length) > upper_start_position) &&
           (position < upper_start_position )) {
         post_overlap_posn = position + length;
+        BOOST_ASSERT(upper_size > post_overlap_posn - upper_start_position);
         post_overlap_size = upper_size -
-            (post_overlap_posn - upper_start_position);
+            static_cast<uint32_t>(post_overlap_posn - upper_start_position);
       }
       uint32_t new_length(front + length + post_overlap_size);
 

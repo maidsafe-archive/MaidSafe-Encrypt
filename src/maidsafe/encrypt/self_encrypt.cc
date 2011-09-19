@@ -559,8 +559,9 @@ void SelfEncryptor::Flush() {
 
   std::pair<uint64_t, SequenceData> sequence_block(sequencer_.GetFirst());
   uint64_t sequence_block_position(sequence_block.first);
-  const char* sequence_block_data(sequence_block.second.first);
+  ByteArray sequence_block_data(sequence_block.second.first);
   uint32_t sequence_block_size(sequence_block.second.second);
+  uint32_t sequence_block_copied(0);
 
   ByteArray chunk_array(new byte[kDefaultChunkSize + kMinChunkSize]);
 
@@ -590,20 +591,21 @@ void SelfEncryptor::Flush() {
 
     // Overwrite with any data from sequencer
     if (this_chunk_has_data_in_sequencer) {
-      while (sequence_block_position < flush_position + kDefaultChunkSize) {
-        uint32_t copy_size(std::min(sequence_block_size, static_cast<uint32_t>(
-            flush_position + kDefaultChunkSize - sequence_block_position)));
+      while (sequence_block_position + sequence_block_copied <
+             flush_position + kDefaultChunkSize) {
+        uint32_t copy_size(std::min(sequence_block_size - sequence_block_copied,
+            static_cast<uint32_t>(flush_position + kDefaultChunkSize -
+                sequence_block_position + sequence_block_copied)));
         memcpy(chunk_array.get() + sequence_block_position - flush_position,
-               sequence_block_data, copy_size);
+               sequence_block_data.get(), copy_size);
         if (copy_size == sequence_block_size) {
           sequence_block = sequencer_.GetFirst();
           sequence_block_position = sequence_block.first;
           sequence_block_data = sequence_block.second.first;
           sequence_block_size = sequence_block.second.second;
+          sequence_block_copied = 0;
         } else {
-          sequence_block_position += copy_size;
-          sequence_block_data += copy_size;
-          sequence_block_size -= copy_size;
+          sequence_block_copied += copy_size;
         }
       }
     } else if (this_chunk_has_data_in_queue) {
