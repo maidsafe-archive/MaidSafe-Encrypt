@@ -22,51 +22,90 @@
 namespace maidsafe {
 namespace encrypt {
 
-bool Sequencer::Add(const char *data, uint32_t length, uint64_t position) {
+bool Sequencer::Add(const char *data,
+                    const uint32_t &length,
+                    const uint64_t &position) {
   // TODO(dirvine) if a write happens half way through we count as 2 sets,
   // need to take care of this here, otherwise we lose timeline
-  auto iter = sequencer_.find(position);
-  if (iter == sequencer_.end()) {
-    try {
-      auto it = sequencer_.end();
-      sequencer_.insert(it,
-                        std::make_pair(position, SequenceData(data, length)));
+  auto lower_itr = sequencer_.lower_bound(position);
+  auto upper_itr = sequencer_.upper_bound(position + length);
+  try {
+    // If the insertion point is past the current end, just insert a new element
+    if (lower_itr == sequencer_.end()) {
+      auto result = sequencer_.insert(std::make_pair(position,
+          std::make_pair(ByteArray(new byte[length]), length)));
+      memcpy((*(result.first)).second.first.get(), data, length);
+    } else {
+      // Check to see if new data spans part of, or joins onto, data of element
+      // preceding lower_itr
+      if (lower_itr != sequencer_.begin() && (*lower_itr).first != position) {
+        --lower_itr;
+        if ((*lower_itr).first + (*lower_itr).second.second + 1 < position)
+          ++lower_itr;
+      }
+
+      const uint64_t &lower_start_position((*lower_itr).first);
+      const uint32_t &lower_size((*lower_itr).second.second);
+      uint64_t front(0);
+      if (position > lower_start_position)
+        front = (position - lower_start_position);
+
+      --upper_itr;
+      const uint64_t &upper_start_position((*upper_itr).first);
+      const uint32_t &upper_size((*upper_itr).second.second);
+
+      uint64_t post_overlap_posn(0);
+      uint64_t post_overlap_size(0);
+      if (((position + length) > upper_start_position) &&
+          (position < upper_start_position )) {
+        post_overlap_posn = position + length;
+        post_overlap_size = upper_size -
+            (post_overlap_posn - upper_start_position);
+      }
+      uint32_t new_length(front + length + post_overlap_size);
+
+      SequenceData new_entry(std::make_pair(ByteArray(new byte[new_length]),
+                                            new_length));
+
+      memcpy(new_entry.first.get(),
+             (*lower_itr).second.first.get(),
+             front);
+      memcpy(new_entry.first.get(), data, length);
+      memcpy(new_entry.first.get(),
+             (*upper_itr).second.first.get() + post_overlap_posn,
+             post_overlap_size);
+
+      ++upper_itr;
+      sequencer_.erase(lower_itr, upper_itr);
+      auto result = sequencer_.insert(std::make_pair(lower_start_position,
+                                                     new_entry));
     }
-    catch(const std::exception &e) {
-      // TODO(DI) here we need to catch the error - likely out of mem
-      // We should then set up a flilestream in boost::tmp_dir
-      // empty sequencer and this write data to the file
-      // set a flag to say we have written a fstream.
-      // all further writes to fstream
-      // on destruct - write all data from fstream
-      // to write method, This will encrypt whole file
-      // write zero's where there are zero's in the fstream.
-      // read form fstream as well as write
-      // maybe make protected getter/setter and we can run all tests against the
-      // fstream as well
-      // else fail ???
-      DLOG(ERROR) << e.what();
-      return false;
-    }
-  } else {
-    (*iter).second.first = data;
-    (*iter).second.second = length;
+  }
+  catch(const std::exception &e) {
+    // TODO(DI) here we need to catch the error - likely out of mem
+    // We should then set up a flilestream in boost::tmp_dir
+    // empty sequencer and this write data to the file
+    // set a flag to say we have written a fstream.
+    // all further writes to fstream
+    // on destruct - write all data from fstream
+    // to write method, This will encrypt whole file
+    // write zero's where there are zero's in the fstream.
+    // read form fstream as well as write
+    // maybe make protected getter/setter and we can run all tests against the
+    // fstream as well
+    // else fail ???
+    DLOG(ERROR) << e.what();
+    return false;
   }
   return true;
 }
 
-uint64_t Sequencer::PeekLast(uint32_t *length) {
-  auto it = sequencer_.end();
-  *length = (*it).second.second;
-  return (*it).first;
-}
-
 SequenceData Sequencer::PositionFromSequencer(uint64_t position, bool remove) {
   if (sequencer_.empty())
-    return (SequenceData(static_cast<char*>(NULL), 0));
+    return (SequenceData(static_cast<ByteArray>(NULL), 0));
   for (auto it = sequencer_.begin(); it != sequencer_.end(); ++it) {
     uint64_t this_position = (*it).first;
-    const char *this_data = (*it).second.first;
+    ByteArray this_data = (*it).second.first;
     uint32_t this_length = (*it).second.second;
     // got the data - it is contiguous
     if (this_position == position) {
@@ -76,21 +115,21 @@ SequenceData Sequencer::PositionFromSequencer(uint64_t position, bool remove) {
       return result;
     }
     // get some data that's inside a chunk of sequenced data
-    if (this_position + this_length >= position) {
-      // get address of element and length
-      SequenceData result(&this_data[position - this_position],
-          this_length - static_cast<uint32_t>(position - this_position));
-      if (remove) {
-        // get the remaining data and re-add
-        Add(&this_data[position - this_position],
-            this_length - static_cast<uint32_t>(position - this_position),
-            this_position);
-        sequencer_.erase(it);
-      }
-      return result;
-    }
+//     if (this_position + this_length >= position) {
+//       // get address of element and length
+//       SequenceData result(&this_data[position - this_position],
+//           this_length - static_cast<uint32_t>(position - this_position));
+//       if (remove) {
+//         // get the remaining data and re-add
+//         Add(&this_data[position - this_position],
+//             this_length - static_cast<uint32_t>(position - this_position),
+//             this_position);
+//         sequencer_.erase(it);
+//       }
+//       return result;
+//     }
   }
-  return (SequenceData(static_cast<char*>(NULL), 0));  // nothing found
+  return (SequenceData(static_cast<ByteArray>(NULL), 0));  // nothing found
 }
 
 uint64_t Sequencer::NextFromSequencer(char *data,
@@ -100,7 +139,7 @@ uint64_t Sequencer::NextFromSequencer(char *data,
     return 0;
   auto it = sequencer_.begin();
   uint64_t position = (*it).first;
-  data = const_cast<char*>((*it).second.first);
+  data = reinterpret_cast<char*>((*it).second.first[0]);
   *length = (*it).second.second;
 
   if (remove)
@@ -114,8 +153,7 @@ void Sequencer::Clear() {
 
 std::pair<uint64_t, SequenceData> Sequencer::GetFirst() {
   if (sequencer_.empty()) {
-    char temp(0);
-    SequenceData invalid(std::make_pair(&temp, 0));
+    SequenceData invalid(std::make_pair(ByteArray(), 0));
     return std::make_pair(std::numeric_limits<uint64_t>::max(), invalid);
   } else {
     std::pair<uint64_t, SequenceData> result(*sequencer_.begin());

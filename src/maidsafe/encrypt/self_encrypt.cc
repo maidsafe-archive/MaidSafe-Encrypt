@@ -304,7 +304,7 @@ bool SelfEncryptor::GetLengthForSequencer(const uint64_t &position,
 void SelfEncryptor::AddReleventSeqDataToQueue() {
   SequenceData extra(sequencer_.Get(current_position_));
   if (extra.second != 0) {
-    PutToEncryptQueue(extra.first, extra.second, 0,
+    PutToEncryptQueue(reinterpret_cast<char*>(extra.first[0]), extra.second, 0,
                       static_cast<uint32_t>(current_position_ -
                                             queue_start_position_));
   }
