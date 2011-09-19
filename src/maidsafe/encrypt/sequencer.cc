@@ -46,9 +46,8 @@ bool Sequencer::Add(const char *data,
       }
 
       const uint64_t &lower_start_position((*lower_itr).first);
-      const uint32_t &lower_size((*lower_itr).second.second);
-      uint32_t new_start_position(position);
-      uint64_t pre_overlap_size(0);
+      uint64_t new_start_position(position);
+      uint32_t pre_overlap_size(0);
       bool reduced_upper(false);
 
       if (position > lower_start_position) {
