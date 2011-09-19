@@ -132,7 +132,7 @@ TEST_P(BasicSelfEncryptionTest, BEH_EncryptDecrypt) {
       EXPECT_EQ(0, TotalSize(self_encryptor_->data_map()));
       EXPECT_TRUE(self_encryptor_->data_map()->content.empty());
   }
-  // read before write - all in queue
+  // read before write - all in buffers
   EXPECT_TRUE(self_encryptor_->Read(answer_.get(), kDataSize_, kOffset_));
   for (uint32_t i = 0; i != kDataSize_; ++i)
     ASSERT_EQ(original_[i], answer_[i]) << "i == " << i;

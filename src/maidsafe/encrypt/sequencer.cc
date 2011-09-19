@@ -180,7 +180,10 @@ std::pair<uint64_t, SequenceData> Sequencer::GetFirst() {
 }
 
 uint64_t Sequencer::GetEndPosition() {
-  return (*sequencer_.rbegin()).first + (*sequencer_.rbegin()).second.second;
+  if (sequencer_.empty())
+    return 0;
+  else
+    return (*sequencer_.rbegin()).first + (*sequencer_.rbegin()).second.second;
 }
 
 }  // namespace encrypt
