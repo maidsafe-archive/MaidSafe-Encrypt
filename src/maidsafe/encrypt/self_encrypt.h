@@ -100,8 +100,10 @@ class SelfEncryptor {
         rewriting_(false),
         ignore_threads_(false),
         cache_(false),
-        data_cache_(new char[kDefaultByteArraySize_]),
-        cache_initial_posn_(0) {}
+        read_cache_(),
+        cache_start_position_(0),
+        retrievable_from_cache_(0),
+        prepared_for_reading_() {}
   ~SelfEncryptor();
   bool Write(const char *data = NULL,
              uint32_t length = 0,
@@ -167,6 +169,9 @@ class SelfEncryptor {
                       uint32_t *normal_chunk_size,
                       uint64_t *last_chunk_position);
   bool WriteExtraAndEnc0and1();
+
+  // If prepared_for_reading_ is not already true, this initialises read_cache_.
+  void PrepareToRead();
   bool Transmogrify(char *data,
                     uint32_t length = 0,
                     uint64_t position = 0,
@@ -192,8 +197,10 @@ class SelfEncryptor {
   bool rewriting_;
   bool ignore_threads_;
   bool cache_;
-  boost::shared_array<char> data_cache_;
-  uint64_t cache_initial_posn_;
+  boost::shared_array<char> read_cache_;
+  uint64_t cache_start_position_;
+  uint32_t retrievable_from_cache_;
+  bool prepared_for_reading_;
 };
 
 }  // namespace encrypt

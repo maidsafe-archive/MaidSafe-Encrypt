@@ -707,6 +707,11 @@ void SelfEncryptor::CalculateSizes(uint64_t *file_size,
 //}
 
 bool SelfEncryptor::Read(char* data, uint32_t length, uint64_t position) {
+  if (length == 0)
+    return true;
+
+  PrepareToRead();
+
   uint32_t maxbuffersize = kDefaultByteArraySize_;
   uint32_t cachesize =
       static_cast<uint32_t>(std::min(TotalSize(data_map_),
@@ -719,22 +724,22 @@ bool SelfEncryptor::Read(char* data, uint32_t length, uint64_t position) {
     //  requested position not greater than cache end and
     //  enough info in cache to fulfil request
     if (cache_ &&
-        (position > cache_initial_posn_) &&
-        (cache_initial_posn_ + cachesize > position) &&
-        ((cachesize - (position - cache_initial_posn_)) >= length)) {
-      // read data_cache_
+        (position > cache_start_position_) &&
+        (cache_start_position_ + cachesize > position) &&
+        ((cachesize - (position - cache_start_position_)) >= length)) {
+      // read read_cache_
       for (uint32_t i = 0; i != length; ++i) {
-        BOOST_ASSERT(position - cache_initial_posn_ + i <=
+        BOOST_ASSERT(position - cache_start_position_ + i <=
                      std::numeric_limits<uint32_t>::max());
-        data[i] = data_cache_[static_cast<uint32_t>(position -
-                              cache_initial_posn_) + i];
+        data[i] = read_cache_[static_cast<uint32_t>(position -
+                              cache_start_position_) + i];
       }
     } else {
-      // populate data_cache_ and read
-      Transmogrify(data_cache_.get(), cachesize, position, false);
-      cache_initial_posn_ = position;
+      // populate read_cache_ and read
+      Transmogrify(read_cache_.get(), cachesize, position, false);
+      cache_start_position_ = position;
       for (uint32_t i = 0; i != length; ++i)
-        data[i] = data_cache_[i];
+        data[i] = read_cache_[i];
       cache_ = true;
     }
   } else {
@@ -744,14 +749,24 @@ bool SelfEncryptor::Read(char* data, uint32_t length, uint64_t position) {
   return true;
 }
 
+void SelfEncryptor::PrepareToRead() {
+  if (prepared_for_reading_)
+    return;
+
+  if (!read_cache_) {
+    read_cache_.reset(new char[kDefaultByteArraySize_]);
+    memset(read_cache_.get(), 0, kDefaultByteArraySize_);
+  }
+}
+
 bool SelfEncryptor::Transmogrify(char *data,
                                  uint32_t length,
                                  uint64_t position,
                                  bool /*writing*/) {
   // TODO(JLB) :  ensure that on rewrite, if data is being written to area
   //              currently held in cache, then cache is refreshed after write.
-  //              Transmogrify(data_cache_.get(), kDefaultByteArraySize_,
-  //                           cache_initial_posn_, false)
+  //              Transmogrify(read_cache_.get(), kDefaultByteArraySize_,
+  //                           cache_start_position_, false)
   uint64_t run_total(0), all_run_total(0);
   uint32_t start_offset(0), end_cut(0), start_chunk(0), end_chunk(0);
   bool found_start(false);
