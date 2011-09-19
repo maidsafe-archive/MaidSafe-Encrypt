@@ -98,11 +98,8 @@ class SelfEncryptor {
         chunk1_modified_(true),
         read_ok_(true),
         rewriting_(false),
-        ignore_threads_(false),
-        cache_(false),
         read_cache_(),
         cache_start_position_(0),
-        retrievable_from_cache_(0),
         prepared_for_reading_() {}
   ~SelfEncryptor();
   bool Write(const char *data = NULL,
@@ -125,6 +122,10 @@ class SelfEncryptor {
   // it will be empty after.  Chunks read in from data_map_ are deleted from
   // chunk_store_.
   void PrepareToWrite();
+  // Copies any relevant data to read_cache_.
+  void PutToReadCache(const char *data,
+                      const uint32_t &length,
+                      const uint64_t &position);
   // Copies data to chunk0_raw_ and/or chunk1_raw_.  Returns number of bytes
   // copied.  Updates length and position if data is copied.
   uint32_t PutToInitialChunks(const char *data,
@@ -195,11 +196,8 @@ class SelfEncryptor {
   bool chunk0_modified_, chunk1_modified_;
   bool read_ok_;
   bool rewriting_;
-  bool ignore_threads_;
-  bool cache_;
   boost::shared_array<char> read_cache_;
   uint64_t cache_start_position_;
-  uint32_t retrievable_from_cache_;
   bool prepared_for_reading_;
 };
 

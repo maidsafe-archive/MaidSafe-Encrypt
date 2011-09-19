@@ -59,7 +59,7 @@ bool Sequencer::Add(const char *data,
       uint64_t post_overlap_posn(0);
       uint32_t post_overlap_size(0);
       if (((position + length) > upper_start_position) &&
-          (position < upper_start_position )) {
+          (position < upper_start_position)) {
         post_overlap_posn = position + length;
         BOOST_ASSERT(upper_size > post_overlap_posn - upper_start_position);
         post_overlap_size = upper_size -

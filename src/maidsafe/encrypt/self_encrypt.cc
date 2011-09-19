@@ -105,6 +105,7 @@ bool SelfEncryptor::Write(const char *data,
     return true;
 
   PrepareToWrite();
+  PutToReadCache(data, length, position);
 
   uint32_t written = PutToInitialChunks(data, &length, &position);
 
@@ -151,7 +152,7 @@ void SelfEncryptor::PrepareToWrite() {
       uint32_t length(kDefaultChunkSize);
       uint64_t position(0);
       ReadChunk(0, temp.get());
-      PutToInitialChunks(reinterpret_cast<char*>(temp.get()), &length,  
+      PutToInitialChunks(reinterpret_cast<char*>(temp.get()), &length,
                          &position);
       BOOST_ASSERT(current_position_ == kDefaultChunkSize);
       BOOST_ASSERT(length == 0);
@@ -167,7 +168,6 @@ void SelfEncryptor::PrepareToWrite() {
         uint64_t position(current_position_);
         PutToInitialChunks(reinterpret_cast<char*>(temp.get()), &length,
                            &position);
-
       }
       chunk0_modified_ = chunk1_modified_ = false;
     } else {
@@ -201,6 +201,26 @@ void SelfEncryptor::PrepareToWrite() {
   }
 
   data_map_->complete = false;
+}
+
+void SelfEncryptor::PutToReadCache(const char *data,
+                                   const uint32_t &length,
+                                   const uint64_t &position) {
+  if (!prepared_for_reading_)
+    return;
+  if (position < cache_start_position_ + kDefaultByteArraySize_ &&
+      position + length >= cache_start_position_) {
+    uint32_t data_offset(0), cache_offset(0);
+    uint32_t copy_size(length);
+    if (position < cache_start_position_) {
+      data_offset = static_cast<uint32_t>(cache_start_position_ - position);
+      copy_size -= data_offset;
+    } else {
+      cache_offset = static_cast<uint32_t>(position - cache_start_position_);
+    }
+    copy_size = std::min(copy_size, kDefaultByteArraySize_ - cache_offset);
+    memcpy(read_cache_.get() + cache_offset, data + data_offset, copy_size);
+  }
 }
 
 uint32_t SelfEncryptor::PutToInitialChunks(const char *data,
@@ -542,26 +562,20 @@ void SelfEncryptor::EncryptChunk(uint32_t chunk_num,
 void SelfEncryptor::Flush() {
   if (!prepared_for_writing_)
     return;
-  // TODO(dirvine)
-    // check if chunks exists that the sequencer should write to
-    // i.e. get data map parameters and keep these chunks.num current size etc.
-    // as we empty sequencer we grab chunks worth at time and encrypt that chunk
-    // we need to check whether we have data for next chunks to encrypt next2
-    // so read->chunk / alter / encrypt chunk / enc next 2 (unless ...)
-    // divide num chunks with / chunks_size to get current floor
-    // floor + chunk_size_ is this range !!
-//  uint32_t last_seq_length;
-//  uint64_t last_seq_pos = sequencer_.PeekLast(&last_seq_length);
-
-//  uint64_t total_size(last_seq_pos + last_seq_length);
-//  uint32_t last_chunk_num(static_cast<uint32_t>(total_size / chunk_size_));
-     // after this set current_position_ and q - process last
 
   uint64_t file_size, last_chunk_position;
   uint32_t normal_chunk_size;
   CalculateSizes(&file_size, &normal_chunk_size, &last_chunk_position);
-  ProcessMainQueue(normal_chunk_size, last_chunk_position);  // Queue now only
-                                                             // contains 1 chunk
+
+  if (file_size < 3 * kMinChunkSize) {
+    data_map_->content.assign(reinterpret_cast<char*>(chunk0_raw_.get()),
+                              file_size);
+    return;
+  }
+
+  // Empty queue (after this call it will contain 0 or 1 chunks).
+  ProcessMainQueue(normal_chunk_size, last_chunk_position);
+
   uint64_t flush_position(2 * normal_chunk_size);
   uint32_t chunk_index(2);
   bool pre_pre_chunk_modified(chunk0_modified_);
@@ -712,36 +726,18 @@ bool SelfEncryptor::Read(char* data, uint32_t length, uint64_t position) {
 
   PrepareToRead();
 
-  uint32_t maxbuffersize = kDefaultByteArraySize_;
-  uint32_t cachesize =
-      static_cast<uint32_t>(std::min(TotalSize(data_map_),
-                                     static_cast<uint64_t>(maxbuffersize)));
-
-  if (length < cachesize) {
+  if (length < kDefaultByteArraySize_) {
     //  required -
-    //  cache already populated and
     //  requested position not less than cache start and
-    //  requested position not greater than cache end and
-    //  enough info in cache to fulfil request
-    if (cache_ &&
-        (position > cache_start_position_) &&
-        (cache_start_position_ + cachesize > position) &&
-        ((cachesize - (position - cache_start_position_)) >= length)) {
-      // read read_cache_
-      for (uint32_t i = 0; i != length; ++i) {
-        BOOST_ASSERT(position - cache_start_position_ + i <=
-                     std::numeric_limits<uint32_t>::max());
-        data[i] = read_cache_[static_cast<uint32_t>(position -
-                              cache_start_position_) + i];
-      }
-    } else {
-      // populate read_cache_ and read
-      Transmogrify(read_cache_.get(), cachesize, position, false);
+    //  requested position + length not greater than cache end
+    if (position < cache_start_position_ ||
+        position + length > cache_start_position_ + kDefaultByteArraySize_) {
+      // populate read_cache_.
+      Transmogrify(read_cache_.get(), kDefaultByteArraySize_, position, false);
       cache_start_position_ = position;
-      for (uint32_t i = 0; i != length; ++i)
-        data[i] = read_cache_[i];
-      cache_ = true;
     }
+    memcpy(data, read_cache_.get() + static_cast<uint32_t>(position -
+           cache_start_position_), length);
   } else {
     // length requested larger than cache size, just go ahead and read
     Transmogrify(data, length, position, false);
@@ -763,10 +759,11 @@ bool SelfEncryptor::Transmogrify(char *data,
                                  uint32_t length,
                                  uint64_t position,
                                  bool /*writing*/) {
-  // TODO(JLB) :  ensure that on rewrite, if data is being written to area
-  //              currently held in cache, then cache is refreshed after write.
-  //              Transmogrify(read_cache_.get(), kDefaultByteArraySize_,
-  //                           cache_start_position_, false)
+  // TODO(Fraser#5#): 2011-09-19 - If data is within chunk0 and/or chunk1, get
+  //                  from chunk0_raw_ and/or chunk1_raw_.  For any data outside
+  //                  of these, first get from existing chunks in DM, then copy
+  //                  from queue and/or sequencer.  Queue and sequencer data
+  //                  will not overlap.
   uint64_t run_total(0), all_run_total(0);
   uint32_t start_offset(0), end_cut(0), start_chunk(0), end_chunk(0);
   bool found_start(false);
