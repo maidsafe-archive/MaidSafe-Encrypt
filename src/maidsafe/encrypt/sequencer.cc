@@ -18,6 +18,7 @@
 #include "maidsafe/encrypt/sequencer.h"
 #include <limits>
 #include "maidsafe/encrypt/log.h"
+#include <boost/concept_check.hpp>
 
 namespace maidsafe {
 namespace encrypt {
@@ -45,42 +46,55 @@ bool Sequencer::Add(const char *data,
       }
 
       const uint64_t &lower_start_position((*lower_itr).first);
-      uint32_t front(0);
+      const uint32_t &lower_size((*lower_itr).second.second);
+      uint32_t new_start_position(position);
+      uint64_t pre_overlap_size(0);
+      bool reduced_upper(false);
+
       if (position > lower_start_position) {
         BOOST_ASSERT(position - lower_start_position <
                      std::numeric_limits<uint32_t>::max());
-        front = static_cast<uint32_t>(position - lower_start_position);
+        pre_overlap_size =
+            static_cast<uint32_t>(position - lower_start_position);
+        new_start_position = lower_start_position;
       }
 
-      --upper_itr;
+      if (upper_itr != sequencer_.begin() &&
+          position + length < (*upper_itr).first) {
+        --upper_itr;
+        reduced_upper = true;
+      }
       const uint64_t &upper_start_position((*upper_itr).first);
       const uint32_t &upper_size((*upper_itr).second.second);
 
       uint64_t post_overlap_posn(0);
       uint32_t post_overlap_size(0);
-      if (((position + length) > upper_start_position) &&
+
+      if (((position + length) >= upper_start_position) &&
           (position < upper_start_position)) {
         post_overlap_posn = position + length;
         BOOST_ASSERT(upper_size > post_overlap_posn - upper_start_position);
         post_overlap_size = upper_size -
             static_cast<uint32_t>(post_overlap_posn - upper_start_position);
       }
-      uint32_t new_length(front + length + post_overlap_size);
+      uint32_t new_length(pre_overlap_size + length + post_overlap_size);
 
       SequenceData new_entry(std::make_pair(ByteArray(new byte[new_length]),
                                             new_length));
 
       memcpy(new_entry.first.get(),
              (*lower_itr).second.first.get(),
-             front);
+             pre_overlap_size);
       memcpy(new_entry.first.get(), data, length);
       memcpy(new_entry.first.get(),
-             (*upper_itr).second.first.get() + post_overlap_posn,
+             (*upper_itr).second.first.get() +
+                 (post_overlap_posn - upper_start_position),
              post_overlap_size);
 
-      ++upper_itr;
+      if (reduced_upper)
+        ++upper_itr;
       sequencer_.erase(lower_itr, upper_itr);
-      auto result = sequencer_.insert(std::make_pair(lower_start_position,
+      auto result = sequencer_.insert(std::make_pair(new_start_position,
                                                      new_entry));
     }
   }
