@@ -160,11 +160,9 @@ class SelfEncryptor {
                    ByteArray pad);
 //  bool AttemptProcessQueue();
 //  bool QueueC0AndC1();
-  bool ProcessMainQueue(uint32_t chunk_size = kDefaultChunkSize);
-  void EncryptAChunk(uint32_t chunk_num,
-                     byte *data,
-                     uint32_t length,
-                     bool re_encrypt);
+  bool ProcessMainQueue(const uint32_t &chunk_size,
+                        const uint64_t &last_chunk_position);
+  void EncryptChunk(uint32_t chunk_num, byte *data, uint32_t length);
   void CalculateSizes(uint64_t *file_size,
                       uint32_t *normal_chunk_size,
                       uint64_t *last_chunk_position);
