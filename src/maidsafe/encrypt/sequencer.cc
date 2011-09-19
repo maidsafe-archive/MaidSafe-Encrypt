@@ -50,8 +50,12 @@ bool Sequencer::Add(const char *data,
       uint32_t new_start_position(position);
       uint64_t pre_overlap_size(0);
       bool reduced_upper(false);
+
       if (position > lower_start_position) {
-        pre_overlap_size = (position - lower_start_position);
+        BOOST_ASSERT(position - lower_start_position <
+                     std::numeric_limits<uint32_t>::max());
+        pre_overlap_size =
+            static_cast<uint32_t>(position - lower_start_position);
         new_start_position = lower_start_position;
       }
 
@@ -65,11 +69,13 @@ bool Sequencer::Add(const char *data,
 
       uint64_t post_overlap_posn(0);
       uint32_t post_overlap_size(0);
+
       if (((position + length) >= upper_start_position) &&
           (position < upper_start_position )) {
         post_overlap_posn = position + length;
+        BOOST_ASSERT(upper_size > post_overlap_posn - upper_start_position);
         post_overlap_size = upper_size -
-            (post_overlap_posn - upper_start_position);
+            static_cast<uint32_t>(post_overlap_posn - upper_start_position);
       }
       uint32_t new_length(pre_overlap_size + length + post_overlap_size);
 
@@ -82,7 +88,7 @@ bool Sequencer::Add(const char *data,
       memcpy(new_entry.first.get(), data, length);
       memcpy(new_entry.first.get(),
              (*upper_itr).second.first.get() +
-               (post_overlap_posn - upper_start_position),
+                 (post_overlap_posn - upper_start_position),
              post_overlap_size);
 
       if (reduced_upper)
@@ -173,6 +179,9 @@ std::pair<uint64_t, SequenceData> Sequencer::GetFirst() {
   }
 }
 
+uint64_t Sequencer::GetEndPosition() {
+  return (*sequencer_.rbegin()).first + (*sequencer_.rbegin()).second.second;
+}
 
 }  // namespace encrypt
 }  // namespace maidsafe

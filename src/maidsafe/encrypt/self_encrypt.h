@@ -94,6 +94,8 @@ class SelfEncryptor {
         c0_and_1_chunk_size_(kDefaultChunkSize),
         current_position_(0),
         prepared_for_writing_(!data_map),
+        chunk0_modified_(true),
+        chunk1_modified_(true),
         read_ok_(true),
         rewriting_(false),
         ignore_threads_(false),
@@ -107,6 +109,7 @@ class SelfEncryptor {
   bool Read(char *data, uint32_t length = 0, uint64_t position = 0);
   bool DeleteAllChunks();
   bool Truncate(uint64_t size);
+  void Flush();
   DataMapPtr data_map() const { return data_map_; }
 
  private:
@@ -114,8 +117,11 @@ class SelfEncryptor {
   SelfEncryptor &operator = (const SelfEncryptor&);
   SelfEncryptor(const SelfEncryptor&);
   // If prepared_for_writing_ is not already true, this either reads the first 2
-  // and last 1 chunks into their appropriate buffers or reads the content field
-  // of the data_map_ into chunk0_raw_.
+  // chunks into their appropriate buffers or reads the content field of
+  // data_map_ into chunk0_raw_.  This guarantees that if data_map_ had
+  // exactly 3 chunks before (the only way chunks could be non-default-sized),
+  // it will be empty after.  Chunks read in from data_map_ are deleted from
+  // chunk_store_.
   void PrepareToWrite();
   // Copies data to chunk0_raw_ and/or chunk1_raw_.  Returns number of bytes
   // copied.  Updates length and position if data is copied.
@@ -159,7 +165,9 @@ class SelfEncryptor {
                      byte *data,
                      uint32_t length,
                      bool re_encrypt);
-  void EmptySequencer();
+  void CalculateSizes(uint64_t *file_size,
+                      uint32_t *normal_chunk_size,
+                      uint64_t *last_chunk_position);
   bool WriteExtraAndEnc0and1();
   bool Transmogrify(char *data,
                     uint32_t length = 0,
@@ -181,6 +189,7 @@ class SelfEncryptor {
   uint32_t c0_and_1_chunk_size_;
   uint64_t current_position_;
   bool prepared_for_writing_;
+  bool chunk0_modified_, chunk1_modified_;
   bool read_ok_;
   bool rewriting_;
   bool ignore_threads_;

@@ -57,6 +57,9 @@ class Sequencer {
 
   std::pair<uint64_t, SequenceData> GetFirst();
 
+  // Returns position of end of last piece of sequence data
+  uint64_t GetEndPosition();
+
  private:
   SequenceData PositionFromSequencer(uint64_t position, bool remove);
   uint64_t NextFromSequencer(char *data, uint32_t *length, bool remove);
