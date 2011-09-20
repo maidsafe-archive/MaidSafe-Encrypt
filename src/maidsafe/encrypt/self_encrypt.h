@@ -174,9 +174,11 @@ class SelfEncryptor {
   // If prepared_for_reading_ is not already true, this initialises read_cache_.
   void PrepareToRead();
   bool Transmogrify(char *data,
-                    uint32_t length = 0,
-                    uint64_t position = 0,
-                    bool writing = false);
+                    const uint32_t &length,
+                    const uint64_t &position);
+  bool ReadDataMap(char *data,
+                   const uint32_t &length,
+                   const uint64_t &position);
   void ReadInProcessData(char *data, uint32_t length, uint64_t position);
 
   DataMapPtr data_map_;

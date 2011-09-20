@@ -18,7 +18,6 @@
 #include "maidsafe/encrypt/sequencer.h"
 #include <limits>
 #include "maidsafe/encrypt/log.h"
-#include <boost/concept_check.hpp>
 
 namespace maidsafe {
 namespace encrypt {
@@ -26,8 +25,6 @@ namespace encrypt {
 bool Sequencer::Add(const char *data,
                     const uint32_t &length,
                     const uint64_t &position) {
-  // TODO(dirvine) if a write happens half way through we count as 2 sets,
-  // need to take care of this here, otherwise we lose timeline
   auto lower_itr = sequencer_.lower_bound(position);
   auto upper_itr = sequencer_.upper_bound(position + length);
   try {
@@ -175,6 +172,16 @@ std::pair<uint64_t, SequenceData> Sequencer::GetFirst() {
     std::pair<uint64_t, SequenceData> result(*sequencer_.begin());
     sequencer_.erase(sequencer_.begin());
     return result;
+  }
+}
+
+std::pair<uint64_t, SequenceData> Sequencer::Peek(const uint64_t &position) {
+  auto itr(sequencer_.lower_bound(position));
+  if (itr == sequencer_.end()) {
+    SequenceData invalid(std::make_pair(ByteArray(), 0));
+    return std::make_pair(std::numeric_limits<uint64_t>::max(), invalid);
+  } else {
+    return *itr;
   }
 }
 
