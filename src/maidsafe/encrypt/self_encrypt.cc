@@ -119,6 +119,7 @@ bool SelfEncryptor::Write(const char *data,
     sequencer_.Add(data + written, length, position);
 
   AddReleventSeqDataToQueue();  // gets any relevent data from sequencer
+
   return true;
 }
 
@@ -201,6 +202,7 @@ void SelfEncryptor::PrepareToWrite() {
   }
 
   data_map_->complete = false;
+  prepared_for_writing_ = true;
 }
 
 void SelfEncryptor::PutToReadCache(const char *data,
@@ -234,8 +236,8 @@ uint32_t SelfEncryptor::PutToInitialChunks(const char *data,
     memcpy(&chunk0_raw_[static_cast<uint32_t>(*position)], data, copy_length0);
     // Don't decrease current_position_ (could be a rewrite - this shouldn't
     // change current_position_).
-    if (current_position_ < copy_length0)
-      current_position_ = copy_length0;
+    if (current_position_ < *position + copy_length0)
+      current_position_ =  *position + copy_length0;
     *length -= copy_length0;
     *position += copy_length0;
     chunk0_modified_ = true;
@@ -250,8 +252,8 @@ uint32_t SelfEncryptor::PutToInitialChunks(const char *data,
            data + copy_length0, copy_length1);
     // Don't decrease current_position_ (could be a rewrite - this shouldn't
     // change current_position_).
-    if (current_position_ < kDefaultChunkSize + copy_length1)
-      current_position_ = kDefaultChunkSize + copy_length1;
+    if (current_position_ < *position + copy_length1)
+      current_position_ = *position + copy_length1;
     *length -= copy_length1;
     *position += copy_length1;
     chunk1_modified_ = true;
@@ -299,8 +301,12 @@ void SelfEncryptor::PutToEncryptQueue(const char *data,
     memcpy(&main_encrypt_queue_[queue_offset], data + data_offset, copy_length);
     retrievable_from_queue_ += copy_length;
     current_position_ += copy_length;
-    if (retrievable_from_queue_ == kQueueCapacity_)
-      ProcessMainQueue(kDefaultChunkSize, 0);
+    if (retrievable_from_queue_ == kQueueCapacity_) {
+      uint64_t file_size, last_chunk_position;
+      uint32_t normal_chunk_size;
+      CalculateSizes(&file_size, &normal_chunk_size, &last_chunk_position);
+      ProcessMainQueue(kDefaultChunkSize, last_chunk_position);
+    }
     data_offset += copy_length;
     queue_offset = kDefaultChunkSize;
     length -= copy_length;
@@ -339,7 +345,7 @@ void SelfEncryptor::ReadChunk(uint32_t chunk_num, byte *data) {
   }
 
   // still in process of writing so read raw arrays
-  if (chunk_one_two_q_full_ && (chunk_num < 2)) {
+  if (/*chunk_one_two_q_full_ && */(chunk_num < 2)) {
     if (chunk_num == 0) {
       for (uint32_t i = 0; i != c0_and_1_chunk_size_; ++i)
         data[i] = static_cast<byte>(chunk0_raw_[i]);
@@ -591,6 +597,8 @@ void SelfEncryptor::Flush() {
   uint32_t sequence_block_copied(0);
 
   ByteArray chunk_array(new byte[kDefaultChunkSize + kMinChunkSize]);
+  uint32_t old_chunk_count(data_map_->chunks.size());
+  data_map_->chunks.resize((last_chunk_position / normal_chunk_size) + 1);
 
   while (flush_position <= last_chunk_position) {
     memset(chunk_array.get(), 0, kDefaultChunkSize + kMinChunkSize);
@@ -608,7 +616,7 @@ void SelfEncryptor::Flush() {
                  this_chunk_has_data_in_queue));
 
     // Read in any data from previously-encrypted chunk
-    if (chunk_index < data_map_->chunks.size() &&
+    if (chunk_index < old_chunk_count &&
         (pre_pre_chunk_modified || pre_chunk_modified || this_chunk_modified)) {
       ReadChunk(chunk_index, chunk_array.get());
       chunk_store_->Delete(std::string(
@@ -670,7 +678,8 @@ void SelfEncryptor::CalculateSizes(uint64_t *file_size,
                                    uint64_t *last_chunk_position) {
   *file_size = std::max(sequencer_.GetEndPosition(),
                         std::max(current_position_, TotalSize(data_map_)));
-  if (*file_size < kMinChunkSize) {
+  *last_chunk_position = 2 * kDefaultChunkSize;
+  if (*file_size < 3 * kMinChunkSize) {
     *normal_chunk_size = 0;
     *last_chunk_position = std::numeric_limits<uint64_t>::max();
   } else {
@@ -683,8 +692,8 @@ void SelfEncryptor::CalculateSizes(uint64_t *file_size,
           static_cast<uint32_t>(*file_size / kDefaultChunkSize);
       if (*file_size % kDefaultChunkSize < kMinChunkSize) {
         --chunk_count_excluding_last;
-        *last_chunk_position = chunk_count_excluding_last * kDefaultChunkSize;
       }
+      *last_chunk_position = chunk_count_excluding_last * kDefaultChunkSize;
     }
   }
 }
