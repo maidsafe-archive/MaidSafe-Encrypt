@@ -337,24 +337,22 @@ void SelfEncryptor::AddReleventSeqDataToQueue() {
 }
 
 void SelfEncryptor::ReadChunk(uint32_t chunk_num, byte *data) {
-//  if ((data_map_->chunks.size() < chunk_num) ||
-//      (data_map_->chunks.size() == 0)) {
-  if (data_map_->chunks.size() < chunk_num) {
+  if (data_map_->chunks.size() <= chunk_num) {
     read_ok_ = false;
     return;
   }
 
   // still in process of writing so read raw arrays
-  if (/*chunk_one_two_q_full_ && */(chunk_num < 2)) {
-    if (chunk_num == 0) {
-      for (uint32_t i = 0; i != c0_and_1_chunk_size_; ++i)
-        data[i] = static_cast<byte>(chunk0_raw_[i]);
-    } else {
-      for (uint32_t i = 0; i != c0_and_1_chunk_size_; ++i)
-        data[i] = static_cast<byte>(chunk1_raw_[i]);
-    }
-    return;
-  }
+//   if (chunk_num < 2) {
+//     if (chunk_num == 0) {
+//       for (uint32_t i = 0; i != kDefaultChunkSize; ++i)
+//         data[i] = static_cast<byte>(chunk0_raw_[i]);
+//     } else {
+//       for (uint32_t i = 0; i != kDefaultChunkSize; ++i)
+//         data[i] = static_cast<byte>(chunk1_raw_[i]);
+//     }
+//     return;
+//   }
 
   std::string hash(reinterpret_cast<char*>(data_map_->chunks[chunk_num].hash),
                    crypto::SHA512::DIGESTSIZE);
