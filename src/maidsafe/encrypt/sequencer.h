@@ -44,9 +44,9 @@ class Sequencer {
            const uint32_t &length,
            const uint64_t &position);
 
-  SequenceData Peek(uint64_t position) {
-    return PositionFromSequencer(position, false);
-  }
+                                                                              //  SequenceData Peek(uint64_t position) {
+                                                                              //    return PositionFromSequencer(position, false);
+                                                                              //  }
   SequenceData Get(uint64_t position) {
     return PositionFromSequencer(position, true);
   }
@@ -55,7 +55,14 @@ class Sequencer {
 
   void Clear();
 
+  // Returns and removes the first block of sequenced data in the map.  If the
+  // map is empty, it returns pair<max uint64_t, invalid SequenceData>
   std::pair<uint64_t, SequenceData> GetFirst();
+
+  // Returns without removing the first block of sequenced data in the map which
+  // compares >= position.  If this is the map end, it returns
+  // pair<max uint64_t, invalid SequenceData>
+  std::pair<uint64_t, SequenceData> Peek(const uint64_t &position);
 
   // Returns position of end of last piece of sequence data
   uint64_t GetEndPosition();
