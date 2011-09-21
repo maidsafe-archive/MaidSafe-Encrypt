@@ -595,8 +595,10 @@ void SelfEncryptor::Flush() {
   uint32_t sequence_block_copied(0);
 
   ByteArray chunk_array(new byte[kDefaultChunkSize + kMinChunkSize]);
-  uint32_t old_chunk_count(data_map_->chunks.size());
-  data_map_->chunks.resize((last_chunk_position / normal_chunk_size) + 1);
+  const uint32_t kOldChunkCount(
+      static_cast<uint32_t>(data_map_->chunks.size()));
+  data_map_->chunks.resize(
+      static_cast<uint32_t>(last_chunk_position / normal_chunk_size) + 1);
 
   while (flush_position <= last_chunk_position) {
     memset(chunk_array.get(), 0, kDefaultChunkSize + kMinChunkSize);
@@ -614,7 +616,7 @@ void SelfEncryptor::Flush() {
                  this_chunk_has_data_in_queue));
 
     // Read in any data from previously-encrypted chunk
-    if (chunk_index < old_chunk_count &&
+    if (chunk_index < kOldChunkCount &&
         (pre_pre_chunk_modified || pre_chunk_modified || this_chunk_modified)) {
       ReadChunk(chunk_index, chunk_array.get());
       chunk_store_->Delete(std::string(
