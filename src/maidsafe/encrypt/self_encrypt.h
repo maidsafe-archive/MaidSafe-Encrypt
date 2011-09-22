@@ -90,14 +90,11 @@ class SelfEncryptor {
         chunk0_raw_(),
         chunk1_raw_(),
         chunk_store_(chunk_store),
-        chunk_one_two_q_full_(false),
-        c0_and_1_chunk_size_(kDefaultChunkSize),
         current_position_(0),
         prepared_for_writing_(!data_map),
         chunk0_modified_(true),
         chunk1_modified_(true),
         read_ok_(true),
-        rewriting_(false),
         read_cache_(),
         cache_start_position_(0),
         prepared_for_reading_() {}
@@ -161,18 +158,16 @@ class SelfEncryptor {
                    ByteArray key,
                    ByteArray iv,
                    ByteArray pad);
-//  bool AttemptProcessQueue();
-//  bool QueueC0AndC1();
   bool ProcessMainQueue(const uint32_t &chunk_size,
                         const uint64_t &last_chunk_position);
   void EncryptChunk(uint32_t chunk_num, byte *data, uint32_t length);
   void CalculateSizes(uint64_t *file_size,
                       uint32_t *normal_chunk_size,
                       uint64_t *last_chunk_position);
-  bool WriteExtraAndEnc0and1();
 
   // If prepared_for_reading_ is not already true, this initialises read_cache_.
   void PrepareToRead();
+  // Handles reading from populated data_map_ and all the various write buffers.
   bool Transmogrify(char *data,
                     const uint32_t &length,
                     const uint64_t &position);
@@ -188,16 +183,10 @@ class SelfEncryptor {
   uint64_t queue_start_position_;
   const uint32_t kQueueCapacity_;
   uint32_t retrievable_from_queue_;
-  ByteArray chunk0_raw_;
-  ByteArray chunk1_raw_;
+  ByteArray chunk0_raw_, chunk1_raw_;
   std::shared_ptr<ChunkStore> chunk_store_;
-  bool chunk_one_two_q_full_;
-  uint32_t c0_and_1_chunk_size_;
   uint64_t current_position_;
-  bool prepared_for_writing_;
-  bool chunk0_modified_, chunk1_modified_;
-  bool read_ok_;
-  bool rewriting_;
+  bool prepared_for_writing_, chunk0_modified_, chunk1_modified_, read_ok_;
   boost::shared_array<char> read_cache_;
   uint64_t cache_start_position_;
   bool prepared_for_reading_;

@@ -27,19 +27,19 @@ bool Sequencer::Add(const char *data,
                     const uint64_t &position) {
   try {
     // If the insertion point is past the current end, just insert a new element
-    if (sequencer_.empty() ||
-        (*sequencer_.rbegin()).first + (*sequencer_.rbegin()).second.second <
+    if (blocks_.empty() ||
+        (*blocks_.rbegin()).first + (*blocks_.rbegin()).second.second <
         position) {
-      auto result = sequencer_.insert(std::make_pair(position,
+      auto result = blocks_.insert(std::make_pair(position,
           std::make_pair(ByteArray(new byte[length]), length)));
       memcpy((*(result.first)).second.first.get(), data, length);
     } else {
-      auto lower_itr = sequencer_.lower_bound(position);
-      auto upper_itr = sequencer_.upper_bound(position + length);
+      auto lower_itr = blocks_.lower_bound(position);
+      auto upper_itr = blocks_.upper_bound(position + length);
       // Check to see if new data spans part of, or joins onto, data of element
       // preceding lower_itr
-      if (lower_itr == sequencer_.end() ||
-          (lower_itr != sequencer_.begin() && (*lower_itr).first != position)) {
+      if (lower_itr == blocks_.end() ||
+          (lower_itr != blocks_.begin() && (*lower_itr).first != position)) {
         --lower_itr;
         if ((*lower_itr).first + (*lower_itr).second.second < position)
           ++lower_itr;
@@ -58,7 +58,7 @@ bool Sequencer::Add(const char *data,
         new_start_position = lower_start_position;
       }
 
-      if (upper_itr != sequencer_.begin()) {
+      if (upper_itr != blocks_.begin()) {
         --upper_itr;
         reduced_upper = true;
       }
@@ -91,9 +91,9 @@ bool Sequencer::Add(const char *data,
 
       if (reduced_upper)
         ++upper_itr;
-      sequencer_.erase(lower_itr, upper_itr);
-      auto result = sequencer_.insert(std::make_pair(new_start_position,
-                                                     new_entry));
+      blocks_.erase(lower_itr, upper_itr);
+      auto result = blocks_.insert(std::make_pair(new_start_position,
+                                                  new_entry));
     }
   }
   catch(const std::exception &e) {
@@ -115,50 +115,29 @@ bool Sequencer::Add(const char *data,
   return true;
 }
 
-SequenceData Sequencer::PositionFromSequencer(uint64_t position, bool remove) {
-  auto itr(sequencer_.find(position));
-  if (itr == sequencer_.end())
+SequenceData Sequencer::Get(const uint64_t &position) {
+  auto itr(blocks_.find(position));
+  if (itr == blocks_.end())
     return (SequenceData(static_cast<ByteArray>(NULL), 0));
-
   SequenceData result((*itr).second);
-  if (remove)
-    sequencer_.erase(itr);
+  blocks_.erase(itr);
   return result;
 }
 
-uint64_t Sequencer::NextFromSequencer(char *data,
-                                      uint32_t *length,
-                                      bool remove) {
-  if (sequencer_.empty())
-    return 0;
-  auto it = sequencer_.begin();
-  uint64_t position = (*it).first;
-  data = reinterpret_cast<char*>((*it).second.first[0]);
-  *length = (*it).second.second;
-
-  if (remove)
-    sequencer_.erase(it);
-  return position;
-}
-
-void Sequencer::Clear() {
-  sequencer_.clear();
-}
-
 std::pair<uint64_t, SequenceData> Sequencer::GetFirst() {
-  if (sequencer_.empty()) {
+  if (blocks_.empty()) {
     SequenceData invalid(std::make_pair(ByteArray(), 0));
     return std::make_pair(std::numeric_limits<uint64_t>::max(), invalid);
   } else {
-    std::pair<uint64_t, SequenceData> result(*sequencer_.begin());
-    sequencer_.erase(sequencer_.begin());
+    std::pair<uint64_t, SequenceData> result(*blocks_.begin());
+    blocks_.erase(blocks_.begin());
     return result;
   }
 }
 
 std::pair<uint64_t, SequenceData> Sequencer::Peek(const uint64_t &position) {
-  auto itr(sequencer_.lower_bound(position));
-  if (itr == sequencer_.end()) {
+  auto itr(blocks_.lower_bound(position));
+  if (itr == blocks_.end()) {
     SequenceData invalid(std::make_pair(ByteArray(), 0));
     return std::make_pair(std::numeric_limits<uint64_t>::max(), invalid);
   } else {
@@ -167,10 +146,10 @@ std::pair<uint64_t, SequenceData> Sequencer::Peek(const uint64_t &position) {
 }
 
 uint64_t Sequencer::GetEndPosition() {
-  if (sequencer_.empty())
+  if (blocks_.empty())
     return 0;
   else
-    return (*sequencer_.rbegin()).first + (*sequencer_.rbegin()).second.second;
+    return (*blocks_.rbegin()).first + (*blocks_.rbegin()).second.second;
 }
 
 }  // namespace encrypt

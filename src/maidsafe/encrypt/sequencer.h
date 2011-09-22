@@ -43,31 +43,23 @@ class Sequencer {
   bool Add(const char *data,
            const uint32_t &length,
            const uint64_t &position);
-
-  SequenceData Get(uint64_t position) {
-    return PositionFromSequencer(position, true);
-  }
-
-  bool empty() const { return sequencer_.empty(); }
-
-  void Clear();
-
+  // Returns and removes the block of sequenced data at position in the map.  If
+  // no block exists at position, it returns
+  // pair<max uint64_t, invalid SequenceData>
+  SequenceData Get(const uint64_t &position);
   // Returns and removes the first block of sequenced data in the map.  If the
   // map is empty, it returns pair<max uint64_t, invalid SequenceData>
   std::pair<uint64_t, SequenceData> GetFirst();
-
   // Returns without removing the first block of sequenced data in the map which
   // compares >= position.  If this is the map end, it returns
   // pair<max uint64_t, invalid SequenceData>
   std::pair<uint64_t, SequenceData> Peek(const uint64_t &position);
-
   // Returns position of end of last piece of sequence data
   uint64_t GetEndPosition();
-
+  bool empty() const { return blocks_.empty(); }
+  void clear() { blocks_.clear(); }
  private:
-  SequenceData PositionFromSequencer(uint64_t position, bool remove);
-  uint64_t NextFromSequencer(char *data, uint32_t *length, bool remove);
-  std::map<uint64_t, SequenceData> sequencer_;
+  std::map<uint64_t, SequenceData> blocks_;
 };
 
 }  // namespace encrypt

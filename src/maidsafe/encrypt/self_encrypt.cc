@@ -972,7 +972,7 @@ bool SelfEncryptor::Truncate(uint64_t size) {
         // Found chunk with data at position 'size'.
         if (retrievable_from_queue_ != 0)
 //          main_encrypt_queue_.SkipAll();
-        sequencer_.Clear();
+        sequencer_.clear();
         for (uint32_t j = i + 1; j != number_of_chunks; ++j) {
           if (!chunk_store_->Delete(reinterpret_cast<char*>
                                       (data_map_->chunks[j].hash))) {
