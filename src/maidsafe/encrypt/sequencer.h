@@ -44,9 +44,6 @@ class Sequencer {
            const uint32_t &length,
            const uint64_t &position);
 
-                                                                              //  SequenceData Peek(uint64_t position) {
-                                                                              //    return PositionFromSequencer(position, false);
-                                                                              //  }
   SequenceData Get(uint64_t position) {
     return PositionFromSequencer(position, true);
   }

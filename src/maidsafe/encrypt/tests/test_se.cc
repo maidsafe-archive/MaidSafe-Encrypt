@@ -159,7 +159,7 @@ INSTANTIATE_TEST_CASE_P(FileSmallerThanMinFileSize, BasicSelfEncryptionTest,
                             std::make_pair(40, 0),
                             std::make_pair(40, 50),
                             std::make_pair(1024, 0),
-                            std::make_pair((3 * kMinChunkSize) - 23, 23),
+                            std::make_pair((3 * kMinChunkSize) - 24, 23),
                             std::make_pair((3 * kMinChunkSize) - 1, 0)));
 
 INSTANTIATE_TEST_CASE_P(FileSmallerThanOneChunk, BasicSelfEncryptionTest,
@@ -922,6 +922,7 @@ TEST(SelfEncryptionTest, BEH_WriteRandomSizeRandomPosition) {
   std::copy(plain_text.c_str(), plain_text.c_str() + kTestDataSize,
             original.get());
   EXPECT_TRUE(selfenc.Read(answer.get(), kTestDataSize, 0));
+
   for (uint32_t i = 0; i < kTestDataSize; ++i)
     ASSERT_EQ(original[i], answer[i]) << "difference at " << i;
 }

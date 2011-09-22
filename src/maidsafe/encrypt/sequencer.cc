@@ -25,20 +25,23 @@ namespace encrypt {
 bool Sequencer::Add(const char *data,
                     const uint32_t &length,
                     const uint64_t &position) {
-  auto lower_itr = sequencer_.lower_bound(position);
-  auto upper_itr = sequencer_.upper_bound(position + length);
   try {
     // If the insertion point is past the current end, just insert a new element
-    if (lower_itr == sequencer_.end()) {
+    if (sequencer_.empty() ||
+        (*sequencer_.rbegin()).first + (*sequencer_.rbegin()).second.second <
+        position) {
       auto result = sequencer_.insert(std::make_pair(position,
           std::make_pair(ByteArray(new byte[length]), length)));
       memcpy((*(result.first)).second.first.get(), data, length);
     } else {
+      auto lower_itr = sequencer_.lower_bound(position);
+      auto upper_itr = sequencer_.upper_bound(position + length);
       // Check to see if new data spans part of, or joins onto, data of element
       // preceding lower_itr
-      if (lower_itr != sequencer_.begin() && (*lower_itr).first != position) {
+      if (lower_itr == sequencer_.end() ||
+          (lower_itr != sequencer_.begin() && (*lower_itr).first != position)) {
         --lower_itr;
-        if ((*lower_itr).first + (*lower_itr).second.second + 1 < position)
+        if ((*lower_itr).first + (*lower_itr).second.second < position)
           ++lower_itr;
       }
 
@@ -55,8 +58,7 @@ bool Sequencer::Add(const char *data,
         new_start_position = lower_start_position;
       }
 
-      if (upper_itr != sequencer_.begin() &&
-          position + length < (*upper_itr).first) {
+      if (upper_itr != sequencer_.begin()) {
         --upper_itr;
         reduced_upper = true;
       }
@@ -81,8 +83,8 @@ bool Sequencer::Add(const char *data,
       memcpy(new_entry.first.get(),
              (*lower_itr).second.first.get(),
              pre_overlap_size);
-      memcpy(new_entry.first.get(), data, length);
-      memcpy(new_entry.first.get(),
+      memcpy(new_entry.first.get() + pre_overlap_size, data, length);
+      memcpy(new_entry.first.get() + pre_overlap_size + length,
              (*upper_itr).second.first.get() +
                  (post_overlap_posn - upper_start_position),
              post_overlap_size);
@@ -114,35 +116,14 @@ bool Sequencer::Add(const char *data,
 }
 
 SequenceData Sequencer::PositionFromSequencer(uint64_t position, bool remove) {
-  if (sequencer_.empty())
+  auto itr(sequencer_.find(position));
+  if (itr == sequencer_.end())
     return (SequenceData(static_cast<ByteArray>(NULL), 0));
-  for (auto it = sequencer_.begin(); it != sequencer_.end(); ++it) {
-    uint64_t this_position = (*it).first;
-    ByteArray this_data = (*it).second.first;
-    uint32_t this_length = (*it).second.second;
-    // got the data - it is contiguous
-    if (this_position == position) {
-      SequenceData result(this_data, this_length);
-      if (remove)
-        sequencer_.erase(it);
-      return result;
-    }
-    // get some data that's inside a chunk of sequenced data
-//     if (this_position + this_length >= position) {
-//       // get address of element and length
-//       SequenceData result(&this_data[position - this_position],
-//           this_length - static_cast<uint32_t>(position - this_position));
-//       if (remove) {
-//         // get the remaining data and re-add
-//         Add(&this_data[position - this_position],
-//             this_length - static_cast<uint32_t>(position - this_position),
-//             this_position);
-//         sequencer_.erase(it);
-//       }
-//       return result;
-//     }
-  }
-  return (SequenceData(static_cast<ByteArray>(NULL), 0));  // nothing found
+
+  SequenceData result((*itr).second);
+  if (remove)
+    sequencer_.erase(itr);
+  return result;
 }
 
 uint64_t Sequencer::NextFromSequencer(char *data,

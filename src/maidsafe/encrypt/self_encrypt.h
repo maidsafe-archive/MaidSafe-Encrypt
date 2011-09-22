@@ -176,9 +176,9 @@ class SelfEncryptor {
   bool Transmogrify(char *data,
                     const uint32_t &length,
                     const uint64_t &position);
-  bool ReadDataMap(char *data,
-                   const uint32_t &length,
-                   const uint64_t &position);
+  bool ReadDataMapChunks(char *data,
+                         const uint32_t &length,
+                         const uint64_t &position);
   void ReadInProcessData(char *data, uint32_t length, uint64_t position);
 
   DataMapPtr data_map_;
