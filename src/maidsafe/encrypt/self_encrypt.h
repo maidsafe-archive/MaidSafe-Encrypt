@@ -91,7 +91,7 @@ class SelfEncryptor {
         chunk1_raw_(),
         chunk_store_(chunk_store),
         current_position_(0),
-        prepared_for_writing_(!data_map),
+        prepared_for_writing_(false),
         chunk0_modified_(true),
         chunk1_modified_(true),
         read_ok_(true),
@@ -99,10 +99,8 @@ class SelfEncryptor {
         cache_start_position_(0),
         prepared_for_reading_() {}
   ~SelfEncryptor();
-  bool Write(const char *data = NULL,
-             uint32_t length = 0,
-             uint64_t position = 0);
-  bool Read(char *data, uint32_t length = 0, uint64_t position = 0);
+  bool Write(const char *data, uint32_t length, uint64_t position);
+  bool Read(char *data, const uint32_t &length, const uint64_t &position);
   bool DeleteAllChunks();
   bool Truncate(uint64_t size);
   void Flush();

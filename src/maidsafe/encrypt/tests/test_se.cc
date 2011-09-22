@@ -147,7 +147,7 @@ TEST_P(BasicSelfEncryptionTest, BEH_EncryptDecrypt) {
     ASSERT_EQ(original_[i], data_map_->content[kOffset_ + i]) << "i == " << i;
 
   answer_.reset(new char[kOffset_ + kDataSize_]);
-  EXPECT_TRUE(self_encryptor_->Read(answer_.get(), kOffset_ + kDataSize_));
+  EXPECT_TRUE(self_encryptor_->Read(answer_.get(), kOffset_ + kDataSize_, 0));
   for (uint32_t i = 0; i != kOffset_; ++i)
     ASSERT_EQ(0, answer_[i]) << "i == " << i;
   for (uint32_t i = 0; i != kDataSize_; ++i)
@@ -184,7 +184,7 @@ TEST(SelfEncryptionTest, BEH_BenchmarkMemOnly) {
   // Write as complete stream
   bptime::ptime time =
       bptime::microsec_clock::universal_time();
-  ASSERT_TRUE(selfenc.Write(plain_data.get(), kTestDataSize));
+  ASSERT_TRUE(selfenc.Write(plain_data.get(), kTestDataSize, 0));
   // TODO(dirvine) FIXME - wont work till destructor called
 //   ASSERT_TRUE(selfenc.FinaliseWrite());
   uint64_t duration =
@@ -256,10 +256,11 @@ TEST(SelfEncryptionTest, BEH_WriteAndReadIncompressible) {
 
   const uint32_t kTestDataSize((1024 * 1024 * 20) + 4);
   std::string plain_text(RandomString(kTestDataSize));
+  boost::scoped_array<char> some_chunks_some_q(new char[kTestDataSize]);
   {
     SelfEncryptor selfenc(data_map, chunk_store);
     bptime::ptime time = bptime::microsec_clock::universal_time();
-    ASSERT_TRUE(selfenc.Write(plain_text.data(), kTestDataSize));
+    ASSERT_TRUE(selfenc.Write(plain_text.data(), kTestDataSize, 0));
     uint64_t duration =
         (bptime::microsec_clock::universal_time() - time).total_microseconds();
     if (duration == 0)
@@ -268,9 +269,8 @@ TEST(SelfEncryptionTest, BEH_WriteAndReadIncompressible) {
     std::cout << "Self-encrypted " << BytesToBinarySiUnits(kTestDataSize)
               << " in " << (duration / 1000000.0) << " seconds at a speed of "
               << BytesToBinarySiUnits(speed) << "/s" << std::endl;
-    boost::scoped_array<char> some_chunks_some_q(new char[kTestDataSize]);
     ASSERT_TRUE(selfenc.Read(some_chunks_some_q.get(), kTestDataSize, 0));
-    for (uint32_t  i = 0; i < kTestDataSize; ++i)
+    for (uint32_t i = 0; i < kTestDataSize; ++i)
       ASSERT_EQ(plain_text[i], some_chunks_some_q[i]) << "failed @ count " << i;
   }
   SelfEncryptor selfenc(data_map, chunk_store);
@@ -287,7 +287,7 @@ TEST(SelfEncryptionTest, BEH_WriteAndReadIncompressible) {
             << " in " << (duration / 1000000.0) << " seconds at a speed of "
             << BytesToBinarySiUnits(speed) << "/s" << std::endl;
 
-  for (uint32_t  i = 0; i < kTestDataSize; ++i)
+  for (uint32_t i = 0; i < kTestDataSize; ++i)
     ASSERT_EQ(plain_text[i], answer[i]) << "failed at count " << i;
 }
 
@@ -305,7 +305,7 @@ TEST(SelfEncryptionTest, BEH_WriteAndReadCompressible) {
     SelfEncryptor selfenc(data_map, chunk_store);
   //   EXPECT_TRUE(selfenc.ReInitialise());
     bptime::ptime time = bptime::microsec_clock::universal_time();
-    ASSERT_TRUE(selfenc.Write(plain_data.get(), kTestDataSize));
+    ASSERT_TRUE(selfenc.Write(plain_data.get(), kTestDataSize, 0));
     // TODO(dirvine) FIXME - wont work till destructor called
     //   ASSERT_TRUE(selfenc.FinaliseWrite());
     uint64_t duration =
@@ -358,7 +358,7 @@ TEST(SelfEncryptionTest, BEH_WriteAndReadByteAtATime) {
   EXPECT_TRUE(data_map->content.empty());
   EXPECT_EQ(8, data_map->chunks.size());
   boost::scoped_array<char> answer(new char[kTestDataSize]);
-  ASSERT_TRUE(selfenc.Read(answer.get(), kTestDataSize));
+  ASSERT_TRUE(selfenc.Read(answer.get(), kTestDataSize, 0));
 
 //   // check chunks 1 and 2
   for (uint32_t i = 0; i < 524288; ++i)
@@ -427,7 +427,7 @@ TEST(SelfEncryptionTest, BEH_WriteOnceRead20) {
   {
     SelfEncryptor selfenc(data_map, chunk_store);
 //   EXPECT_TRUE(selfenc.ReInitialise());
-    ASSERT_TRUE(selfenc.Write(plain_data.get(), kTestDataSize));
+    ASSERT_TRUE(selfenc.Write(plain_data.get(), kTestDataSize, 0));
     // TODO(dirvine) FIXME - wont work till destructor called
     //   ASSERT_TRUE(selfenc.FinaliseWrite());
     // check it works at least once
@@ -601,7 +601,7 @@ TEST(SelfEncryptionTest, FUNC_ReadArbitaryPosition) {
   std::copy(plain_text.begin(), plain_text.end(), plain_data.get());
   {
     SelfEncryptor selfenc(data_map, chunk_store);
-    EXPECT_TRUE(selfenc.Write(plain_data.get(), kTestDataSize));
+    EXPECT_TRUE(selfenc.Write(plain_data.get(), kTestDataSize, 0));
   }
   {
     // read some data
@@ -790,13 +790,13 @@ TEST(SelfEncryptionTest, BEH_NewRead) {
   DataMapPtr data_map(new DataMap);
 
   uint32_t size = kDefaultChunkSize * 10;    // 10 chunks
-  uint64_t position = 0;
+  uint32_t position = 0;
   std::string content(RandomString(size));
   boost::scoped_array<char> stuff1(new char[size]);
   std::copy(content.c_str(), content.c_str() + size, stuff1.get());
   {
     SelfEncryptor selfenc(data_map, chunk_store);
-    EXPECT_TRUE(selfenc.Write(stuff1.get(), size));
+    EXPECT_TRUE(selfenc.Write(stuff1.get(), size, 0));
   }
   SelfEncryptor selfenc(data_map, chunk_store);
   boost::scoped_array<char> answer(new char[size]);
@@ -831,7 +831,7 @@ TEST(SelfEncryptionTest, BEH_NewRead) {
   std::copy(content2.c_str(), content2.c_str() + size, stuff2.get());
   {
     SelfEncryptor selfenc(data_map2, chunk_store2);
-    EXPECT_TRUE(selfenc.Write(stuff2.get(), size));
+    EXPECT_TRUE(selfenc.Write(stuff2.get(), size, 0));
   }
   // try to read the entire file, will not cache.
   SelfEncryptor selfenc2(data_map2, chunk_store2);
@@ -1286,7 +1286,7 @@ TEST(SelfEncryptionManualTest, BEH_manual_check_write) {
   }
   {
     SelfEncryptor selfenc(data_map, chunk_store);
-    EXPECT_TRUE(selfenc.Write(pre_enc_file.get(), file_size));
+    EXPECT_TRUE(selfenc.Write(pre_enc_file.get(), file_size, 0));
   }
 // Do some testing on results
   SelfEncryptor selfenc(data_map, chunk_store);

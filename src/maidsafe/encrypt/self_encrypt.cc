@@ -54,10 +54,14 @@ namespace maidsafe {
 namespace encrypt {
 
 uint64_t TotalSize(DataMapPtr data_map) {
-  uint64_t size(data_map->content.size());
-  std::for_each(data_map->chunks.begin(), data_map->chunks.end(),
-                [&size] (ChunkDetails chunk) { size += chunk.size; });
-  return size;
+  if (!data_map->content.empty())
+    return data_map->content.size();
+
+  if (data_map->chunks.empty())
+    return 0;
+
+  return ((data_map->chunks.size() - 1) * data_map->normal_chunk_size) +
+          (*data_map->chunks.rbegin()).size;
 }
 
 /// Implementation of XOR transformation filter to allow pipe-lining
@@ -132,6 +136,7 @@ void SelfEncryptor::PrepareToWrite() {
     memset(chunk1_raw_.get(), 0, kDefaultChunkSize);
   }
 
+  data_map_->normal_chunk_size = kDefaultChunkSize;
   if (data_map_->content.empty()) {
     BOOST_ASSERT(data_map_->chunks.empty() || data_map_->chunks.size() >= 3);
     if (TotalSize(data_map_) >= 3 * kDefaultChunkSize) {
@@ -381,6 +386,14 @@ void SelfEncryptor::ReadChunk(uint32_t chunk_num, byte *data) {
     DLOG(ERROR) << e.what();
     read_ok_ = false;
   }
+//  if (chunk_num == 79) {
+//    std::cout << "DECRYPT #79" << std::endl;
+//    std::cout << "Key: " << EncodeToHex(std::string(reinterpret_cast<char*>(key.get()), 32)) << std::endl;
+//    std::cout << "IV:  " << EncodeToHex(std::string(reinterpret_cast<char*>(iv.get()), 16)) << std::endl;
+//    std::cout << "Pad: " << EncodeToHex(std::string(reinterpret_cast<char*>(pad.get()), 144)) << std::endl;
+//    std::cout << "Raw: " << EncodeToHex(std::string(reinterpret_cast<char*>(data), length)) << std::endl;
+//    std::cout << "Enc: " << EncodeToHex(content) << std::endl;
+//  }
 }
 
 void SelfEncryptor::GetPadIvKey(uint32_t this_chunk_num,
@@ -491,8 +504,8 @@ bool SelfEncryptor::ProcessMainQueue(const uint32_t &chunk_size,
     memcpy(main_encrypt_queue_.get(),
            main_encrypt_queue_.get() + (chunks_to_process * chunk_size),
            chunk_size);
-    queue_start_position_ += retrievable_from_queue_ - chunk_size;
-    retrievable_from_queue_ = chunk_size;
+    queue_start_position_ += (chunks_to_process * chunk_size);
+    retrievable_from_queue_ -= (chunks_to_process * chunk_size);
   }
   return true;
 }
@@ -519,11 +532,11 @@ void SelfEncryptor::EncryptChunk(uint32_t chunk_num,
   ByteArray key(new byte[crypto::AES256_KeySize]);
   ByteArray iv(new byte[crypto::AES256_IVSize]);
   GetPadIvKey(chunk_num, key, iv, pad);
+                                                                    std::string chunk_content;
   try {
     CryptoPP::CFB_Mode<CryptoPP::AES>::Encryption encryptor(
         key.get(), crypto::AES256_KeySize, iv.get());
 
-    std::string chunk_content;
     chunk_content.reserve(kDefaultChunkSize);
     CryptoPP::Gzip aes_filter(
         new CryptoPP::StreamTransformationFilter(encryptor,
@@ -548,6 +561,15 @@ void SelfEncryptor::EncryptChunk(uint32_t chunk_num,
   }
 
   data_map_->chunks[chunk_num].size = length;  // keep pre-compressed length
+
+//  if (chunk_num == 79) {
+//    std::cout << "ENCRYPT #79" << std::endl;
+//    std::cout << "Key: " << EncodeToHex(std::string(reinterpret_cast<char*>(key.get()), 32)) << std::endl;
+//    std::cout << "IV:  " << EncodeToHex(std::string(reinterpret_cast<char*>(iv.get()), 16)) << std::endl;
+//    std::cout << "Pad: " << EncodeToHex(std::string(reinterpret_cast<char*>(pad.get()), 144)) << std::endl;
+//    std::cout << "Raw: " << EncodeToHex(std::string(reinterpret_cast<char*>(data), length)) << std::endl;
+//    std::cout << "Enc: " << EncodeToHex(chunk_content) << std::endl;
+//  }
 }
 
 void SelfEncryptor::Flush() {
@@ -555,8 +577,8 @@ void SelfEncryptor::Flush() {
     return;
 
   uint64_t file_size, last_chunk_position;
-  uint32_t normal_chunk_size;
-  CalculateSizes(&file_size, &normal_chunk_size, &last_chunk_position);
+  CalculateSizes(&file_size, &data_map_->normal_chunk_size,
+                 &last_chunk_position);
 
   if (file_size < 3 * kMinChunkSize) {
     data_map_->content.assign(reinterpret_cast<char*>(chunk0_raw_.get()),
@@ -565,9 +587,9 @@ void SelfEncryptor::Flush() {
   }
 
   // Empty queue (after this call it will contain 0 or 1 chunks).
-  ProcessMainQueue(normal_chunk_size, last_chunk_position);
+  ProcessMainQueue(data_map_->normal_chunk_size, last_chunk_position);
 
-  uint64_t flush_position(2 * normal_chunk_size);
+  uint64_t flush_position(2 * data_map_->normal_chunk_size);
   uint32_t chunk_index(2);
   bool pre_pre_chunk_modified(chunk0_modified_);
   bool pre_chunk_modified(chunk1_modified_);
@@ -584,10 +606,14 @@ void SelfEncryptor::Flush() {
   ByteArray chunk_array(new byte[kDefaultChunkSize + kMinChunkSize]);
   const uint32_t kOldChunkCount(
       static_cast<uint32_t>(data_map_->chunks.size()));
-  data_map_->chunks.resize(
-      static_cast<uint32_t>(last_chunk_position / normal_chunk_size) + 1);
+  data_map_->chunks.resize(static_cast<uint32_t>(
+      last_chunk_position / data_map_->normal_chunk_size) + 1);
 
+  uint32_t this_chunk_size(data_map_->normal_chunk_size);
   while (flush_position <= last_chunk_position) {
+    if (chunk_index == data_map_->chunks.size() - 1)  // on last chunk
+      this_chunk_size = static_cast<uint32_t>(file_size - last_chunk_position);
+
     memset(chunk_array.get(), 0, kDefaultChunkSize + kMinChunkSize);
     if (sequence_block_position < flush_position + kDefaultChunkSize) {
       this_chunk_has_data_in_sequencer = true;
@@ -639,13 +665,9 @@ void SelfEncryptor::Flush() {
     }
 
     if (pre_pre_chunk_modified || pre_chunk_modified || this_chunk_modified)
-      EncryptChunk(chunk_index, chunk_array.get(), normal_chunk_size);
+      EncryptChunk(chunk_index, chunk_array.get(), this_chunk_size);
 
-    if (chunk_index == data_map_->chunks.size() - 1)
-      flush_position += (file_size - last_chunk_position);
-    else
-      flush_position += normal_chunk_size;
-
+    flush_position += this_chunk_size;
     ++chunk_index;
     pre_pre_chunk_modified = pre_chunk_modified;
     pre_chunk_modified = this_chunk_modified;
@@ -655,13 +677,13 @@ void SelfEncryptor::Flush() {
   BOOST_ASSERT(flush_position == file_size);
 
   if (pre_pre_chunk_modified || pre_chunk_modified || chunk0_modified_)
-    EncryptChunk(0, chunk0_raw_.get(), normal_chunk_size);
+    EncryptChunk(0, chunk0_raw_.get(), data_map_->normal_chunk_size);
 
   pre_pre_chunk_modified = pre_chunk_modified;
   pre_chunk_modified = chunk0_modified_;
 
   if (pre_pre_chunk_modified || pre_chunk_modified || chunk1_modified_)
-    EncryptChunk(1, chunk1_raw_.get(), normal_chunk_size);
+    EncryptChunk(1, chunk1_raw_.get(), data_map_->normal_chunk_size);
 }
 
 void SelfEncryptor::CalculateSizes(uint64_t *file_size,
@@ -689,7 +711,9 @@ void SelfEncryptor::CalculateSizes(uint64_t *file_size,
   }
 }
 
-bool SelfEncryptor::Read(char* data, uint32_t length, uint64_t position) {
+bool SelfEncryptor::Read(char* data,
+                         const uint32_t &length,
+                         const uint64_t &position) {
   if (length == 0)
     return true;
 
@@ -763,40 +787,23 @@ bool SelfEncryptor::ReadDataMapChunks(char *data,
   if (data_map_->chunks.empty())
     return false;
 
-  uint64_t run_total(0), all_run_total(0);
-  uint32_t start_offset(0), end_cut(0), start_chunk(0), end_chunk(0);
-  bool found_start(false);
-  bool found_end(false);
   uint32_t num_chunks = static_cast<uint32_t>(data_map_->chunks.size());
-
-  for (uint32_t i = 0; i != num_chunks; ++i) {
-    if (found_start)
-      run_total += data_map_->chunks[i].size;
-
-    if (((all_run_total + data_map_->chunks[i].size) > position) &&
-        !found_start) {
-      start_chunk = i;
-      start_offset = static_cast<uint32_t>(position - all_run_total);
-      run_total = all_run_total + data_map_->chunks[i].size - position;
-      found_start = true;
-    }
-
-    if (run_total >= length) {
-      found_end = true;
-      end_chunk = i;
-      end_cut = static_cast<uint32_t>(length + position - all_run_total);
-      break;
-    }
-    all_run_total += data_map_->chunks[i].size;
+  uint32_t start_chunk =
+      static_cast<uint32_t>(position / data_map_->normal_chunk_size);
+  uint32_t end_chunk = std::min(num_chunks - 1, static_cast<uint32_t>(
+      (position + length - 1) / data_map_->normal_chunk_size));
+  BOOST_ASSERT(start_chunk < num_chunks);
+  BOOST_ASSERT(end_chunk < num_chunks);
+  uint32_t start_offset(position % data_map_->normal_chunk_size);
+  uint32_t end_cut(0);
+  uint64_t total_data_map_size(TotalSize(data_map_));
+  if (position + length >= total_data_map_size) {
+    end_cut = (*data_map_->chunks.rbegin()).size;
+  } else {
+    end_cut = static_cast<uint32_t>(position + length -
+        (data_map_->normal_chunk_size * (data_map_->chunks.size() - 1)));
   }
 
-  if (!found_end) {
-    end_chunk = num_chunks - 1;
-    end_cut = static_cast<uint32_t>(
-        std::min(position + length -
-                 (all_run_total - data_map_->chunks[end_chunk].size),
-                 static_cast<uint64_t>(data_map_->chunks[end_chunk].size)));
-  }
 // this is 2 for loops to allow openmp to thread properly.
 // should be refactored to a do loop and openmp fixed
 //     if (chunk_one_two_q_full_) {
@@ -807,7 +814,7 @@ bool SelfEncryptor::ReadDataMapChunks(char *data,
 //      }
 //     }
 
-  if (start_chunk == end_chunk) {
+  if (start_chunk == end_chunk && data_map_->chunks[start_chunk].size != 0) {
     // get chunk
     ByteArray chunk_data(new byte[data_map_->chunks[start_chunk].size]);
     ReadChunk(start_chunk, chunk_data.get());
@@ -821,39 +828,42 @@ bool SelfEncryptor::ReadDataMapChunks(char *data,
     uint64_t pos(0);
     uint32_t this_chunk_size(data_map_->chunks[i].size);
 
-    if (i == start_chunk) {
-      if (start_offset != 0) {
-        ByteArray chunk_data(new byte[data_map_->chunks[start_chunk].size]);
-        ReadChunk(start_chunk, chunk_data.get());
-        for (uint32_t j = start_offset; j != this_chunk_size; ++j)
-          data[j - start_offset] = static_cast<char>(chunk_data[j]);
+    if (this_chunk_size != 0) {
+      if (i == start_chunk) {
+        if (start_offset != 0) {
+          ByteArray chunk_data(new byte[data_map_->chunks[start_chunk].size]);
+          ReadChunk(start_chunk, chunk_data.get());
+          for (uint32_t j = start_offset; j != this_chunk_size; ++j)
+            data[j - start_offset] = static_cast<char>(chunk_data[j]);
+        } else {
+          ReadChunk(i, reinterpret_cast<byte*>(&data[0]));
+        }
+      } else if (i == end_chunk) {
+        ByteArray chunk_data(new byte[data_map_->chunks[end_chunk].size]);
+        ReadChunk(end_chunk, chunk_data.get());
+
+//        for (uint32_t j = 0; j != i; ++j)
+// #pragma omp atomic
+//          pos += data_map_->chunks[j].size;
+        pos = i * data_map_->normal_chunk_size;
+
+        for (uint32_t j = 0; j != end_cut; ++j)
+          data[j + pos - position] = static_cast<char>(chunk_data[j]);
+
       } else {
-        ReadChunk(i, reinterpret_cast<byte*>(&data[0]));
+//        for (uint32_t j = 0; j != i; ++j)
+// #pragma omp atomic
+//          pos += data_map_->chunks[j].size;
+        pos = i * data_map_->normal_chunk_size;
+        ReadChunk(i, reinterpret_cast<byte*>(&data[pos - position]));
       }
-    } else if (i == end_chunk) {
-      ByteArray chunk_data(new byte[data_map_->chunks[end_chunk].size]);
-      ReadChunk(end_chunk, chunk_data.get());
-
-      for (uint32_t j = 0; j != i; ++j)
-#pragma omp atomic
-        pos += data_map_->chunks[j].size;
-
-      for (uint32_t j = 0; j != end_cut; ++j)
-        data[j + pos - position] = static_cast<char>(chunk_data[j]);
-
-    } else {
-      for (uint32_t j = 0; j != i; ++j)
-#pragma omp atomic
-        pos += data_map_->chunks[j].size;
-
-      ReadChunk(i, reinterpret_cast<byte*>(&data[pos - position]));
     }
   }
 
-  uint64_t this_position(0);
-#pragma omp barrier
-  for (uint32_t i = 0; i != num_chunks; ++i)
-    this_position += data_map_->chunks[i].size;
+//    uint64_t this_position(0);
+//  #pragma omp barrier
+//    for (uint32_t i = 0; i != num_chunks; ++i)
+//      this_position += data_map_->chunks[i].size;
 
   return read_ok_;
 //  uint64_t data_map_offset(0), read_position(position);
