@@ -24,6 +24,7 @@
 #include <limits>
 #include <set>
 #include <vector>
+#include <utility>
 
 #ifdef __MSVC__
 #  pragma warning(push, 1)
@@ -640,7 +641,11 @@ void SelfEncryptor::Flush() {
     if (pre_pre_chunk_modified || pre_chunk_modified || this_chunk_modified)
       EncryptChunk(chunk_index, chunk_array.get(), normal_chunk_size);
 
-    flush_position += normal_chunk_size;
+    if (chunk_index == data_map_->chunks.size() - 1)
+      flush_position += (file_size - last_chunk_position);
+    else
+      flush_position += normal_chunk_size;
+
     ++chunk_index;
     pre_pre_chunk_modified = pre_chunk_modified;
     pre_chunk_modified = this_chunk_modified;

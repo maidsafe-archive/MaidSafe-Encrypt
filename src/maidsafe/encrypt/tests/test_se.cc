@@ -797,43 +797,30 @@ TEST(SelfEncryptionTest, BEH_NewRead) {
   {
     SelfEncryptor selfenc(data_map, chunk_store);
     EXPECT_TRUE(selfenc.Write(stuff1.get(), size));
-    EXPECT_EQ(10, selfenc.data_map()->chunks.size());
-    EXPECT_EQ(size - (kDefaultChunkSize * 2), TotalSize(selfenc.data_map()));
-    EXPECT_TRUE(selfenc.data_map()->content.empty());
   }
   SelfEncryptor selfenc(data_map, chunk_store);
   boost::scoped_array<char> answer(new char[size]);
   EXPECT_TRUE(selfenc.Read(answer.get(), 4096, position));
-  for (int i = 0; i < 4096; ++i) {
-    if (stuff1[static_cast<size_t>(position + i)] != answer[i])
-    DLOG(INFO) << "stuff1[" << i << "] = " << stuff1[i] << "   answer["
-               << i << "] = " << answer[i];
-  }
+  for (int i = 0; i < 4096; ++i)
+    ASSERT_EQ(stuff1[i], answer[i]) << "difference at " << i;
   // read next small part straight from cache
   position += 4096;
   EXPECT_TRUE(selfenc.Read(answer.get(), 4096, position));
-  for (int i = 0; i < 4096; ++i) {
-    if (stuff1[static_cast<size_t>(position + i)] != answer[i])
-    DLOG(INFO) << "stuff1[" << i << "] = " << stuff1[i] << "   answer["
-               << i << "] = " << answer[i];
-  }
+  for (int i = 0; i < 4096; ++i)
+    ASSERT_EQ(stuff1[position + i], answer[i]) << "difference at " << i;
+
   // try to read from end of cache, but request more data than remains
   // will result in cache being refreshed
   position += (kDefaultChunkSize * 8 - 1000);
   EXPECT_TRUE(selfenc.Read(answer.get(), 4096, position));
-  for (int i = 0; i < 4096; ++i) {
-    if (stuff1[static_cast<size_t>(position + i)] != answer[i])
-    DLOG(INFO) << "stuff1[" << i << "] = " << stuff1[i] << "   answer["
-               << i << "] = " << answer[i];
-  }
+  for (int i = 0; i < 4096; ++i)
+    ASSERT_EQ(stuff1[position + i], answer[i]) << "difference at " << i;
+
   // try to read startish of file, no longer in cache
   position = 5;
   EXPECT_TRUE(selfenc.Read(answer.get(), 4096, position));
-  for (int i = 0; i < 4096; ++i) {
-    if (stuff1[static_cast<size_t>(position + i)] != answer[i])
-    DLOG(INFO) << "stuff1[" << i << "] = " << stuff1[i] << "   answer["
-               << i << "] = " << answer[i];
-  }
+  for (int i = 0; i < 4096; ++i)
+    ASSERT_EQ(stuff1[position + i], answer[i]) << "difference at " << i;
 
   // use file smaller than the cache size
   MemoryChunkStorePtr chunk_store2(new MemoryChunkStore(false, g_hash_func));
@@ -845,28 +832,19 @@ TEST(SelfEncryptionTest, BEH_NewRead) {
   {
     SelfEncryptor selfenc(data_map2, chunk_store2);
     EXPECT_TRUE(selfenc.Write(stuff2.get(), size));
-    EXPECT_EQ(2, selfenc.data_map()->chunks.size());
-    EXPECT_EQ(0, TotalSize(selfenc.data_map()));
-    EXPECT_TRUE(selfenc.data_map()->content.empty());
   }
   // try to read the entire file, will not cache.
   SelfEncryptor selfenc2(data_map2, chunk_store2);
   boost::scoped_array<char> answer2(new char[size]);
   EXPECT_TRUE(selfenc2.Read(answer2.get(), size, 0));
-  for (uint32_t i = 0; i < size; ++i) {
-    if (stuff2[i] != answer2[i])
-    DLOG(INFO) << "stuff2[" << i << "] = " << stuff2[i] << "   answer2["
-               << i << "] = " << answer2[i];
-  }
+  for (uint32_t i = 0; i < size; ++i)
+    ASSERT_EQ(stuff2[i], answer2[i]) << "difference at " << i;
+
   // same small file, many small reads, will cache and read from.
   for (int a = 0; a < 10; ++a) {
     EXPECT_TRUE(selfenc2.Read(answer2.get(), 4096, (4096 * a)));
-    for (int i = 0; i < 4096; ++i) {
-      if (stuff2[i + (4096 * a)] != answer2[i])
-      DLOG(INFO) << "stuff2[" << i + (4096 * a) << "] = "
-                 << stuff2[i+ (4096 * a)] << "   answer2["
-                 << i << "] = " << answer2[i];
-    }
+    for (int i = 0; i < 4096; ++i)
+      ASSERT_EQ(stuff2[i + (4096 * a)], answer2[i]) << "difference at " << i;
   }
 }
 
