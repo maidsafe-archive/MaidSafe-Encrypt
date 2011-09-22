@@ -256,16 +256,10 @@ TEST(SelfEncryptionTest, BEH_WriteAndReadIncompressible) {
 
   const uint32_t kTestDataSize((1024 * 1024 * 20) + 4);
   std::string plain_text(RandomString(kTestDataSize));
-  boost::scoped_array<char> plain_data(new char[kTestDataSize]);
-  for (uint32_t i = 0; i < kTestDataSize; ++i) {
-//    plain_data[i] = 'a';
-    plain_data[i] = plain_text[i];
-  }
   {
     SelfEncryptor selfenc(data_map, chunk_store);
-    bptime::ptime time =
-          bptime::microsec_clock::universal_time();
-    ASSERT_TRUE(selfenc.Write(plain_data.get(), kTestDataSize));
+    bptime::ptime time = bptime::microsec_clock::universal_time();
+    ASSERT_TRUE(selfenc.Write(plain_text.data(), kTestDataSize));
     uint64_t duration =
         (bptime::microsec_clock::universal_time() - time).total_microseconds();
     if (duration == 0)

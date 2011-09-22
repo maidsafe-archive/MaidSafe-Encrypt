@@ -46,10 +46,9 @@ struct ChunkDetails {
 
 /// Holds information about the building blocks of a data item
 struct DataMap {
-  DataMap() : chunks(), content(), complete(false) {}
+  DataMap() : chunks(), content() {}
   std::vector<ChunkDetails> chunks;  ///< Information about the chunks
   std::string content;  ///< Whole data item, if small enough
-  bool complete;  ///< for ease
 };
 
 typedef std::shared_ptr<DataMap> DataMapPtr;
@@ -88,7 +87,6 @@ void serialize(Archive &archive,  // NOLINT
                const unsigned int /* version */) {
   archive &data_map.chunks;
   archive &data_map.content;
-  archive &data_map.complete;
 }
 
 }  // namespace serialization

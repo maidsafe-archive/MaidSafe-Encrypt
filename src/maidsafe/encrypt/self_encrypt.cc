@@ -191,7 +191,6 @@ void SelfEncryptor::PrepareToWrite() {
     data_map_->content.clear();
   }
 
-  data_map_->complete = false;
   prepared_for_writing_ = true;
 }
 
@@ -305,7 +304,7 @@ bool SelfEncryptor::GetLengthForSequencer(const uint64_t &position,
   if (*length == 0)
     return false;
   BOOST_ASSERT(position >= 2 * kDefaultChunkSize);
-  if (position < queue_start_position_) {
+  if (position + *length < queue_start_position_) {
     *length = static_cast<uint32_t>(std::min(static_cast<uint64_t>(*length),
                                              queue_start_position_ - position));
     return true;
@@ -501,6 +500,7 @@ void SelfEncryptor::EncryptChunk(uint32_t chunk_num,
                                  byte *data,
                                  uint32_t length) {
   BOOST_ASSERT(data_map_->chunks.size() > chunk_num);
+
   if (data_map_->chunks[chunk_num].size != 0) {
 #pragma omp critical
     {  // NOLINT (Fraser)
@@ -513,7 +513,6 @@ void SelfEncryptor::EncryptChunk(uint32_t chunk_num,
 
   CryptoPP::SHA512().CalculateDigest(data_map_->chunks[chunk_num].pre_hash,
                                      data, length);
-
   ByteArray pad(new byte[(3 * crypto::SHA512::DIGESTSIZE) -
                          crypto::AES256_KeySize - crypto::AES256_IVSize]);
   ByteArray key(new byte[crypto::AES256_KeySize]);
@@ -1005,7 +1004,6 @@ bool SelfEncryptor::Truncate(uint64_t size) {
         }
         current_position_ = size;
         data_map_->content.erase();
-        data_map_->complete = false;
         return true;
       }
     }
