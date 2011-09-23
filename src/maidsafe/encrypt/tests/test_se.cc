@@ -489,11 +489,8 @@ TEST(SelfEncryptionTest, BEH_WriteRandomlyAllDirections) {
       EXPECT_TRUE(selfenc.Write(&plain_data[vec_data[i]], 1, vec_data[i]));
 
       ASSERT_TRUE(selfenc.Read(&answer[vec_data[i]] , 1, vec_data[i]));
-   // TODO FIXME - this should pass !!
-   // We are not reading properly before write complete
-   // this should be in sequencer.
-//       ASSERT_EQ(plain_data[vec_data[i]], answer[vec_data[i]])
-//       << "failed in process at round " << i << " position " << vec_data[i];
+      ASSERT_EQ(plain_data[vec_data[i]], answer[vec_data[i]])
+          << "failed in process at round " << i << " position " << vec_data[i];
     }
     // In process check
     ASSERT_TRUE(selfenc.Read(answer.get(), kTestDataSize, 0));

@@ -351,7 +351,7 @@ bool SelfEncryptor::GetDataOffsetForEnqueuing(const uint32_t &length,
     *data_offset = 0;
     *queue_offset =
         static_cast<uint32_t>(current_position_ - queue_start_position_);
-    return true;
+    return current_position_ >= queue_start_position_;
   }
 
   if (length == 0)
@@ -967,8 +967,9 @@ void SelfEncryptor::ReadInProcessData(char *data,
   uint64_t read_position(position);
   // Get data from chunk 0 if required.
   if (read_position < kDefaultChunkSize) {
-    copy_size = std::min(length, normal_chunk_size_);
-    memcpy(data, chunk0_raw_.get(), copy_size);
+    copy_size = std::min(length, kDefaultChunkSize -
+                         static_cast<uint32_t>(read_position));
+    memcpy(data, chunk0_raw_.get() + read_position, copy_size);
     bytes_read += copy_size;
     read_position += copy_size;
     if (bytes_read == length)
@@ -976,8 +977,11 @@ void SelfEncryptor::ReadInProcessData(char *data,
   }
   // Get data from chunk 1 if required.
   if (read_position < 2 * kDefaultChunkSize) {
-    copy_size = std::min(length - bytes_read, kDefaultChunkSize);
-    memcpy(data + bytes_read, chunk1_raw_.get(), copy_size);
+    copy_size = std::min(length - bytes_read, (2 * kDefaultChunkSize) -
+                         static_cast<uint32_t>(read_position));
+    memcpy(data + bytes_read,
+           chunk1_raw_.get() + read_position - kDefaultChunkSize,
+           copy_size);
     bytes_read += copy_size;
     read_position += copy_size;
     if (bytes_read == length)
