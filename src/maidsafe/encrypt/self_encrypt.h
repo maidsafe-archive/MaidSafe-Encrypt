@@ -24,15 +24,6 @@
 #include <tuple>
 #include <cstdint>
 #include <string>
-
-#ifdef __MSVC__
-#  pragma warning(push, 1)
-#endif
-#include "cryptopp/mqueue.h"
-#include "cryptopp/sha.h"
-#ifdef __MSVC__
-#  pragma warning(pop)
-#endif
 #include "boost/shared_array.hpp"
 
 #include "maidsafe/encrypt/config.h"
@@ -53,51 +44,11 @@ typedef std::shared_ptr<ChunkStore> ChunkStorePtr;
 
 namespace encrypt {
 
-uint64_t TotalSize(DataMapPtr data_map);
-
-/// XOR transformation class for pipe-lining
-class XORFilter : public CryptoPP::Bufferless<CryptoPP::Filter> {
- public:
-  XORFilter(CryptoPP::BufferedTransformation *attachment = NULL,
-            byte *pad = NULL)
-      : pad_(pad), count_(0) { CryptoPP::Filter::Detach(attachment); }
-  size_t Put2(const byte* in_string,
-              size_t length,
-              int message_end,
-              bool blocking);
-  bool IsolatedFlush(bool, bool) { return false; }
- private:
-  XORFilter &operator = (const XORFilter&);
-  XORFilter(const XORFilter&);
-  byte *pad_;
-  size_t count_;
-};
-
 class SelfEncryptor {
  public:
   SelfEncryptor(DataMapPtr data_map,
                 std::shared_ptr<ChunkStore> chunk_store,
-                int num_procs = 0)
-      : data_map_(data_map ? data_map : DataMapPtr(new DataMap)),
-        sequencer_(),
-        kDefaultByteArraySize_(num_procs == 0 ?
-                               kDefaultChunkSize * omp_get_num_procs() :
-                               kDefaultChunkSize * num_procs),
-        main_encrypt_queue_(),
-        queue_start_position_(2 * kDefaultChunkSize),
-        kQueueCapacity_(kDefaultByteArraySize_ + kDefaultChunkSize),
-        retrievable_from_queue_(0),
-        chunk0_raw_(),
-        chunk1_raw_(),
-        chunk_store_(chunk_store),
-        current_position_(0),
-        prepared_for_writing_(false),
-        chunk0_modified_(true),
-        chunk1_modified_(true),
-        read_ok_(true),
-        read_cache_(),
-        cache_start_position_(0),
-        prepared_for_reading_() {}
+                int num_procs = 0);
   ~SelfEncryptor();
   bool Write(const char *data, uint32_t length, uint64_t position);
   bool Read(char *data, const uint32_t &length, const uint64_t &position);
@@ -156,12 +107,9 @@ class SelfEncryptor {
                    ByteArray key,
                    ByteArray iv,
                    ByteArray pad);
-  bool ProcessMainQueue(const uint32_t &chunk_size,
-                        const uint64_t &last_chunk_position);
+  bool ProcessMainQueue();
   void EncryptChunk(uint32_t chunk_num, byte *data, uint32_t length);
-  void CalculateSizes(uint64_t *file_size,
-                      uint32_t *normal_chunk_size,
-                      uint64_t *last_chunk_position);
+  void CalculateSizes(bool force);
 
   // If prepared_for_reading_ is not already true, this initialises read_cache_.
   void PrepareToRead();
@@ -177,6 +125,8 @@ class SelfEncryptor {
   DataMapPtr data_map_;
   Sequencer sequencer_;
   const uint32_t kDefaultByteArraySize_;
+  uint64_t file_size_, last_chunk_position_;
+  uint32_t normal_chunk_size_;
   ByteArray main_encrypt_queue_;
   uint64_t queue_start_position_;
   const uint32_t kQueueCapacity_;

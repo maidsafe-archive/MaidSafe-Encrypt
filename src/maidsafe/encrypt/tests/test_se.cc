@@ -24,6 +24,7 @@
 #include "cryptopp/aes.h"
 #include "cryptopp/gzip.h"
 #include "cryptopp/modes.h"
+#include "cryptopp/mqueue.h"
 #ifdef WIN32
 #  pragma warning(pop)
 #endif
@@ -45,10 +46,19 @@ namespace encrypt {
 namespace test {
 
 namespace {
+
 typedef std::shared_ptr<MemoryChunkStore> MemoryChunkStorePtr;
 typedef std::pair<uint32_t, uint32_t> SizeAndOffset;
 MemoryChunkStore::HashFunc g_hash_func(std::bind(&crypto::Hash<crypto::SHA512>,
                                                  std::placeholders::_1));
+
+uint64_t TotalSize(DataMapPtr data_map) {
+  uint64_t size(data_map->chunks.empty() ? data_map->content.size() : 0);
+  std::for_each(data_map->chunks.begin(), data_map->chunks.end(),
+                [&size] (ChunkDetails chunk) { size += chunk.size; });
+  return size;
+}
+
 }  // unnamed namespace
 
 
@@ -103,10 +113,6 @@ TEST_P(BasicSelfEncryptionTest, BEH_EncryptDecrypt) {
   EXPECT_TRUE(self_encryptor_->Write(original_.get(), kDataSize_, kOffset_));
   switch (test_file_size_) {
     case kTiny:
-      EXPECT_TRUE(self_encryptor_->data_map()->chunks.empty());
-      EXPECT_EQ(0, TotalSize(self_encryptor_->data_map()));
-      EXPECT_TRUE(self_encryptor_->data_map()->content.empty());
-      break;
     case kVerySmall:
       EXPECT_TRUE(self_encryptor_->data_map()->chunks.empty());
       EXPECT_EQ(0, TotalSize(self_encryptor_->data_map()));
@@ -137,14 +143,20 @@ TEST_P(BasicSelfEncryptionTest, BEH_EncryptDecrypt) {
   for (uint32_t i = 0; i != kDataSize_; ++i)
     ASSERT_EQ(original_[i], answer_[i]) << "i == " << i;
 
+  self_encryptor_->Flush();
   self_encryptor_.reset(new SelfEncryptor(data_map_, chunk_store_));
   EXPECT_EQ(kOffset_ + kDataSize_, TotalSize(data_map_));
-  ASSERT_EQ(kOffset_ + kDataSize_, data_map_->content.size());
-  EXPECT_TRUE(data_map_->chunks.empty());
-  for (uint32_t i = 0; i != kOffset_; ++i)
-    ASSERT_EQ(0, data_map_->content[i]) << "i == " << i;
-  for (uint32_t i = 0; i != kDataSize_; ++i)
-    ASSERT_EQ(original_[i], data_map_->content[kOffset_ + i]) << "i == " << i;
+  if (test_file_size_ == kTiny) {
+    ASSERT_EQ(kOffset_ + kDataSize_, data_map_->content.size());
+    EXPECT_TRUE(data_map_->chunks.empty());
+    for (uint32_t i = 0; i != kOffset_; ++i)
+      ASSERT_EQ(0, data_map_->content[i]) << "i == " << i;
+    for (uint32_t i = 0; i != kDataSize_; ++i)
+      ASSERT_EQ(original_[i], data_map_->content[kOffset_ + i]) << "i == " << i;
+  } else {
+    EXPECT_TRUE(data_map_->content.empty());
+    EXPECT_FALSE(data_map_->chunks.empty());
+  }
 
   answer_.reset(new char[kOffset_ + kDataSize_]);
   EXPECT_TRUE(self_encryptor_->Read(answer_.get(), kOffset_ + kDataSize_, 0));
