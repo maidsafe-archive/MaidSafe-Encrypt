@@ -546,35 +546,15 @@ bool SelfEncryptor::ProcessMainQueue() {
   uint32_t first_queue_chunk_index =
       static_cast<uint32_t>(queue_start_position_ / kDefaultChunkSize);
   data_map_->chunks.resize(first_queue_chunk_index + chunks_to_process);
+// TODO FIXME (dirvine) uncomment line below and next loop for parallel writes
+// #pragma omp parallel for 
+ for (uint32_t i = 0; i < chunks_to_process; ++i) {
+   CryptoPP::SHA512().CalculateDigest(
+       data_map_->chunks[first_queue_chunk_index + i].pre_hash,
+       main_encrypt_queue_.get() + (i *  kDefaultChunkSize), kDefaultChunkSize);
+ }
 
-// #pragma omp parallel for
-//  for (uint32_t i = 0; i < chunks_to_process; ++i) {
-//    CryptoPP::SHA512().CalculateDigest(
-//        data_map_->chunks[first_queue_chunk_index + i].pre_hash,
-//        main_encrypt_queue_.get() + (i * chunk_size),
-//        chunk_size);
-//  }
-
-// check for repeated content
-// TODO(dirvine) FIXME ( needs tested )
-
-//   for(uint32_t i = 0; i < chunks_to_process; ++i) {
-//     if ((data_map_->chunks[i + old_dm_size].pre_hash ==
-//       data_map_->chunks[i + old_dm_size].pre_hash) &&
-//       (data_map_->chunks[i + old_dm_size].pre_hash ==
-//       data_map_->chunks[i -1 + old_dm_size].pre_hash) &&
-//       (data_map_->chunks[i + old_dm_size].pre_hash ==
-//       data_map_->chunks[i -2 + old_dm_size].pre_hash)) {
-//       if (i == 2) { // only encrypt chunk 2
-//         EncryptAChunk(i + old_dm_size, &chunk_vec[i][0], chunk_size_, false);
-//       } else {
-//         for (int j =0; j != crypto::SHA512::DIGESTSIZE; ++j)
-//           data_map_->chunks[i + old_dm_size].hash[j] =
-//           data_map_->chunks[i - 1 + old_dm_size].hash[j];
-//       }
-//     }
-//   }
-// #pragma omp parallel for
+// #pragma omp parallel for 
   for (uint32_t i = 0; i < chunks_to_process; ++i) {
     EncryptChunk(first_queue_chunk_index + i,
                  main_encrypt_queue_.get() + (i * kDefaultChunkSize),
@@ -608,8 +588,7 @@ void SelfEncryptor::EncryptChunk(uint32_t chunk_num,
     }
   }
 
-  CryptoPP::SHA512().CalculateDigest(data_map_->chunks[chunk_num].pre_hash,
-                                     data, length);
+
   ByteArray pad(new byte[(3 * crypto::SHA512::DIGESTSIZE) -
                          crypto::AES256_KeySize - crypto::AES256_IVSize]);
   ByteArray key(new byte[crypto::AES256_KeySize]);
@@ -905,10 +884,8 @@ bool SelfEncryptor::ReadDataMapChunks(char *data,
     return read_ok_;
   }
 
-// TODO(Fraser#5#): 2011-09-24 - Handle overflow in casting to int
 #pragma omp parallel for shared(data)
-  for (int i = static_cast<int>(start_chunk); i <= static_cast<int>(end_chunk);
-       ++i) {
+  for (uint32_t i = start_chunk; i <= end_chunk; ++i) {
     uint32_t this_chunk_size(data_map_->chunks[i].size);
     if (this_chunk_size != 0) {
       if (i == static_cast<int>(start_chunk)) {
