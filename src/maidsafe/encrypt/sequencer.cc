@@ -65,13 +65,14 @@ bool Sequencer::Add(const char *data,
       const uint64_t &upper_start_position((*upper_itr).first);
       const uint32_t &upper_size((*upper_itr).second.second);
 
-      uint64_t post_overlap_posn(0);
+      uint64_t post_overlap_posn(position + length);
       uint32_t post_overlap_size(0);
 
-      if (((position + length) >= upper_start_position) &&
-          (position < upper_start_position)) {
-        post_overlap_posn = position + length;
+      if ((position + length) < (upper_start_position + upper_size) &&
+          reduced_upper) {
         BOOST_ASSERT(upper_size > post_overlap_posn - upper_start_position);
+        BOOST_ASSERT(upper_size - (post_overlap_posn - upper_start_position) <
+                     std::numeric_limits<uint32_t>::max());
         post_overlap_size = upper_size -
             static_cast<uint32_t>(post_overlap_posn - upper_start_position);
       }

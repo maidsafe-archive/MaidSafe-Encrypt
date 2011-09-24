@@ -34,7 +34,7 @@
 #include "maidsafe/common/memory_chunk_store.h"
 #include "maidsafe/common/utils.h"
 
-#include "maidsafe/encrypt/self_encrypt.h"
+#include "maidsafe/encrypt/self_encryptor.h"
 #include "maidsafe/encrypt/config.h"
 #include "maidsafe/encrypt/log.h"
 
@@ -171,14 +171,14 @@ INSTANTIATE_TEST_CASE_P(FileSmallerThanMinFileSize, BasicSelfEncryptionTest,
                             std::make_pair(40, 0),
                             std::make_pair(40, 50),
                             std::make_pair(1024, 0),
-                            std::make_pair((3 * kMinChunkSize) - 24, 23),
-                            std::make_pair((3 * kMinChunkSize) - 1, 0)));
+                            std::make_pair(3 * kMinChunkSize - 24, 23),
+                            std::make_pair(3 * kMinChunkSize - 1, 0)));
 
 INSTANTIATE_TEST_CASE_P(FileSmallerThanOneChunk, BasicSelfEncryptionTest,
                         testing::Values(
                             std::make_pair(3 * kMinChunkSize, 0),
-                            std::make_pair((3 * kMinChunkSize) - 1, 1),
-                            std::make_pair((3 * kMinChunkSize) - 1, 1024),
+                            std::make_pair(3 * kMinChunkSize - 1, 1),
+                            std::make_pair(3 * kMinChunkSize - 1, 1024),
                             std::make_pair(kDefaultChunkSize - 23, 22),
                             std::make_pair(kDefaultChunkSize - 1, 0)));
 
@@ -519,87 +519,66 @@ TEST(SelfEncryptionTest, FUNC_RepeatedRandomCharReadInProcess) {
   plain_data[kTestDataSize - 1] = 'b';
   SelfEncryptor selfenc(data_map, chunk_store);
   // check 2 chunk_size
-    for (uint32_t i = 0; i < chunk_size * 2; ++i) {
-      EXPECT_TRUE(selfenc.Write(&plain_data[i], 1, i));
-    }
+  for (uint32_t i = 0; i < chunk_size * 2; ++i)
+    EXPECT_TRUE(selfenc.Write(&plain_data[i], 1, i));
 
-    // read some data - should be in queue
-    // Check read From Queue FIXME !!
-//     boost::scoped_array<char> testq(new char[chunk_size]);
-//     for (uint32_t i = 0; i < 10; ++i) {
-// // TODO(dirvine) FIXME - this next line causes segfault (double free error
-// //                       in checked delete)
-// //      EXPECT_TRUE(selfenc.Read(testq.get(), 1, i));
-// //       EXPECT_EQ(plain_data[i], testq[i]) << "not read " << i << std::endl;
-//     }
+  // read some data
+  boost::scoped_array<char> testq(new char[chunk_size]);
+  for (uint32_t i = 0; i < 10; ++i) {
+    EXPECT_TRUE(selfenc.Read(testq.get() + i, 1, i));
+    EXPECT_EQ(plain_data[i], testq[i]) << "not read " << i;
+  }
 
-    // next 2
-    for (uint32_t i = chunk_size * 2; i < chunk_size * 4; ++i) {
-      EXPECT_TRUE(selfenc.Write(&plain_data[i], 1, i));
-    }
+  // next 2
+  for (uint32_t i = chunk_size * 2; i < chunk_size * 4; ++i)
+    EXPECT_TRUE(selfenc.Write(&plain_data[i], 1, i));
 
-    // Check read from c0 and c1 buffer
-    EXPECT_EQ(0, TotalSize(data_map));
-    EXPECT_TRUE(data_map->content.empty());
-    EXPECT_EQ(2, data_map->chunks.size());  // not really but pre_hash is set
+  boost::scoped_array<char> testc0(new char[chunk_size]);
+  for (uint32_t i = 0; i < 100; ++i) {
+    EXPECT_TRUE(selfenc.Read(&testc0[i], 1, i));
+    ASSERT_EQ(testc0[i], plain_data[i]) << "not read " << i;
+  }
 
-    boost::scoped_array<char> testc0(new char[chunk_size]);
-    for (uint32_t i = 0; i < 100; ++i) {
-      EXPECT_TRUE(selfenc.Read(&testc0[i], 1, i));
-      ASSERT_EQ(testc0[i], plain_data[i]) << "not read " << i << std::endl;
-    }
+  boost::scoped_array<char> testc1(new char[chunk_size]);
+  for (uint32_t i = 0; i < 100; ++i) {
+    EXPECT_TRUE(selfenc.Read(&testc1[i], 1, i +  chunk_size));
+    ASSERT_EQ(testc1[i], plain_data[i  + chunk_size]) << "not read " << i;
+  }
 
+  // write  out of sequence (should be in sequencer now
+  for (uint32_t i = chunk_size * 5; i < (chunk_size * 5) + 10; ++i)
+    EXPECT_TRUE(selfenc.Write(&plain_data[i], 1, i));
 
-    boost::scoped_array<char> testc1(new char[chunk_size]);
-    for (uint32_t i = 0; i <  100; ++i) {
-      EXPECT_TRUE(selfenc.Read(&testc1[i], 1, i +  chunk_size));
-      ASSERT_EQ(testc1[i], plain_data[i  + chunk_size])
-      << "not read " << i << std::endl;
-    }
+  // Check read from Sequencer
+  boost::scoped_array<char> testseq(new char[chunk_size]);
+  for (uint32_t i = 0; i < 10; ++i) {
+    EXPECT_TRUE(selfenc.Read(&testseq[i], 1, i));
+    ASSERT_EQ(testseq[i], plain_data[i]) << "not read " << i;
+  }
 
+  // write second last chunk
+  for (uint32_t i = chunk_size * 4; i < chunk_size * 5; ++i)
+    EXPECT_TRUE(selfenc.Write(&plain_data[i], 1, i));
 
+  for (uint32_t i = (chunk_size * 5) + 10; i < chunk_size * 6; ++i)
+    EXPECT_TRUE(selfenc.Write(&plain_data[i], 1, i));
 
+  selfenc.Flush();
+  // read some data - should be in chunks now
+  boost::scoped_array<char> testchunks(new char[10]);
+  for (uint32_t i = 0; i < 10; ++i) {
+    EXPECT_TRUE(selfenc.Read(testchunks.get() + i, 1, i));
+    ASSERT_EQ(testchunks[i], plain_data[i]) << "not read " << i;
+  }
 
-    // write  out of sequence (should be in sequencer now
-    for (uint32_t i = chunk_size * 5; i < (chunk_size * 5) + 10; ++i) {
-      EXPECT_TRUE(selfenc.Write(&plain_data[i], 1, i));
-    }
+  EXPECT_EQ(6, selfenc.data_map()->chunks.size());
+  EXPECT_TRUE(selfenc.data_map()->content.empty());
+  EXPECT_EQ(kTestDataSize, TotalSize(selfenc.data_map()));
 
-
-
-    // Check read from Sequencer
-    boost::scoped_array<char> testseq(new char[chunk_size]);
-    for (uint32_t i = 0; i < 10; ++i) {
-      EXPECT_TRUE(selfenc.Read(&testseq[i], 1, i));
-      ASSERT_EQ(testseq[i], plain_data[i]) << "not read " << i << std::endl;
-    }
-    // write second last chunk
-
-    for (uint32_t i = chunk_size * 4; i < chunk_size * 5; i += chunk_size) {
-      EXPECT_TRUE(selfenc.Write(&plain_data[i], 1, i));
-    }
-
-    for (uint32_t i = (chunk_size * 5) + 10; i < chunk_size * 6; ++i) {
-      EXPECT_TRUE(selfenc.Write(&plain_data[i], 1, i));
-    }
-
-  // TODO(dirvine) FIXME - wont work till destructor called
-//   ASSERT_TRUE(selfenc.FinaliseWrite());
-//   // read some data - should be in chunks now
-//   boost::scoped_array<char> testchunks(new char[10]);
-//   for (uint32_t i = 0; i < 10; ++i) {
-//     EXPECT_TRUE(selfenc.Read(testchunks.get(), 1, i));
-//     ASSERT_EQ(testchunks.get()[i], plain_data[i]) << "not read " << i;
-//   }
-//
-//   EXPECT_EQ(6,  selfenc.data_map()->chunks.size());
-//   EXPECT_TRUE(selfenc.data_map()->content.empty());
-//   EXPECT_EQ(kTestDataSize + 1, TotalSize(selfenc.data_map()));
-
-//   boost::scoped_array<char> answer(new char[kTestDataSize + 1]);
-//   EXPECT_TRUE(selfenc.Read(answer.get(), kTestDataSize + 1, 0));
-//   for (uint32_t i = 0; i < kTestDataSize + 1; ++i)
-//     ASSERT_EQ(plain_data[i], answer[i]) << "failed at count " << i;
+  boost::scoped_array<char> answer(new char[kTestDataSize]);
+  EXPECT_TRUE(selfenc.Read(answer.get(), kTestDataSize, 0));
+  for (uint32_t i = 0; i < kTestDataSize; ++i)
+    ASSERT_EQ(plain_data[i], answer[i]) << "failed at count " << i;
 }
 
 TEST(SelfEncryptionTest, FUNC_ReadArbitaryPosition) {
@@ -621,20 +600,20 @@ TEST(SelfEncryptionTest, FUNC_ReadArbitaryPosition) {
     boost::scoped_array<char> testq(new char[chunk_size * 6]);
     for (size_t i = 0; i < 10; ++i) {
       EXPECT_TRUE(selfenc.Read(testq.get(), 1, i));
-      ASSERT_EQ(plain_data[i], testq[0]) << "not match " << i << std::endl;
+      ASSERT_EQ(plain_data[i], testq[0]) << "not match " << i;
     }
     for (size_t i = chunk_size - 1; i < chunk_size + 1; ++i) {
       EXPECT_TRUE(selfenc.Read(testq.get(), 1, i));
-      ASSERT_EQ(plain_data[i], testq[0]) << "not match " << i << std::endl;
+      ASSERT_EQ(plain_data[i], testq[0]) << "not match " << i;
     }
     for (size_t i = chunk_size * 3 - 1; i < chunk_size * 3 + 1; ++i) {
       EXPECT_TRUE(selfenc.Read(testq.get(), 1, i));
-      ASSERT_EQ(plain_data[i], testq[0]) << "not match " << i << std::endl;
+      ASSERT_EQ(plain_data[i], testq[0]) << "not match " << i;
     }
     for (size_t i = chunk_size * 6 - 1; i < chunk_size * 6; ++i) {
       EXPECT_TRUE(selfenc.Read(testq.get(), 1, i))
-          << "not read " << i << std::endl;
-      ASSERT_EQ(plain_data[i], testq[0]) << "not match " << i << std::endl;
+          << "not read " << i;
+      ASSERT_EQ(plain_data[i], testq[0]) << "not match " << i;
     }
 
     int position(0);
@@ -642,21 +621,21 @@ TEST(SelfEncryptionTest, FUNC_ReadArbitaryPosition) {
     EXPECT_TRUE(selfenc.Read(testq.get(), length, position));
     for (int i = 0; i < length; ++i)
       EXPECT_EQ(plain_data[position + i], testq[i])
-          << "not match " << i << std::endl;
+          << "not match " << i;
 
     position = chunk_size - 1;
     length = chunk_size * 2 + 2;
     EXPECT_TRUE(selfenc.Read(testq.get(), length, position));
     for (int i = 0; i < length; ++i)
       EXPECT_EQ(plain_data[position + i], testq[i])
-          << "not match " << i << std::endl;
+          << "not match " << i;
 
     position = chunk_size * 2 - 1;
     length = chunk_size * 3 + 2;
     EXPECT_TRUE(selfenc.Read(testq.get(), length, position));
     for (int i = 0; i < length; ++i)
       EXPECT_EQ(plain_data[position + i], testq[i])
-          << "not match " << i << std::endl;
+          << "not match " << i;
   }
 }
 
@@ -737,12 +716,12 @@ TEST(SelfEncryptionTest, FUNC_ReadArbitaryPosition) {
 //                 for (size_t i = 0; i < read_length; ++i)
 //                   ASSERT_EQ(plain_data[read_position + i], answer[i])
 //                       << "not match " << i << " from " << read_position
-//                     << " when total data is " << data_map->size << std::endl;
+//                     << " when total data is " << data_map->size;
 //               } else {
 //                 EXPECT_FALSE(selfenc.Read(answer.get(),
 //                                           read_length, read_position))
 //                     << " when trying to read " << read_position
-//                     << " from " << data_map->size << std::endl;
+//                     << " from " << data_map->size;
 //               }
 //               break;
 //             }
@@ -788,7 +767,7 @@ TEST(SelfEncryptionTest, FUNC_ReadArbitaryPosition) {
 //
 //         for (size_t i = 0; i < length; ++i)
 //           ASSERT_EQ(content_data[i], answer[i])
-//               << "not match " << i << std::endl;
+//               << "not match " << i;
 //       }
 //     }
 //   }
@@ -805,7 +784,7 @@ TEST(SelfEncryptionTest, BEH_NewRead) {
   uint32_t position = 0;
   std::string content(RandomString(size));
   boost::scoped_array<char> stuff1(new char[size]);
-  std::copy(content.c_str(), content.c_str() + size, stuff1.get());
+  std::copy(content.data(), content.data() + size, stuff1.get());
   {
     SelfEncryptor selfenc(data_map, chunk_store);
     EXPECT_TRUE(selfenc.Write(stuff1.get(), size, 0));
@@ -840,7 +819,7 @@ TEST(SelfEncryptionTest, BEH_NewRead) {
   size = kDefaultChunkSize * 5;
   std::string content2(RandomString(size));
   boost::scoped_array<char> stuff2(new char[size]);
-  std::copy(content2.c_str(), content2.c_str() + size, stuff2.get());
+  std::copy(content2.data(), content2.data() + size, stuff2.get());
   {
     SelfEncryptor selfenc(data_map2, chunk_store2);
     EXPECT_TRUE(selfenc.Write(stuff2.get(), size, 0));
@@ -903,7 +882,7 @@ TEST(SelfEncryptionTest, BEH_WriteRandomSizeRandomPosition) {
 
   boost::scoped_array<char> answer(new char[kTestDataSize]);
   boost::scoped_array<char> original(new char[kTestDataSize]);
-  std::copy(plain_text.c_str(), plain_text.c_str() + kTestDataSize,
+  std::copy(plain_text.data(), plain_text.data() + kTestDataSize,
             original.get());
   EXPECT_TRUE(selfenc.Read(answer.get(), kTestDataSize, 0));
 
@@ -918,7 +897,7 @@ TEST(SelfEncryptionTest, BEH_1024x3Minus1Chars) {
   const size_t size(1024*3-1);
   std::string content(RandomString(size));
   boost::scoped_array<char> stuff(new char[size]);
-  std::copy(content.c_str(), content.c_str() + size, stuff.get());
+  std::copy(content.data(), content.data() + size, stuff.get());
   {
     SelfEncryptor selfenc(data_map, chunk_store);
     EXPECT_TRUE(selfenc.Write(stuff.get(), size, 0));
@@ -940,7 +919,7 @@ TEST(SelfEncryptionTest, BEH_1024x3Plus1Chars) {
   const size_t size(1024*3+1);
   std::string content(RandomString(size));
   boost::scoped_array<char> stuff(new char[size]);
-  std::copy(content.c_str(), content.c_str() + size, stuff.get());
+  std::copy(content.data(), content.data() + size, stuff.get());
   {
     SelfEncryptor selfenc(data_map, chunk_store);
     EXPECT_TRUE(selfenc.Write(stuff.get(), size, 0));
@@ -951,10 +930,11 @@ TEST(SelfEncryptionTest, BEH_1024x3Plus1Chars) {
   SelfEncryptor selfenc(data_map, chunk_store);
   // Check data_map values again after destruction...
   EXPECT_EQ(3, selfenc.data_map()->chunks.size());
-  for (size_t i = 0; i != 3; ++i)
-    EXPECT_EQ(1024, selfenc.data_map()->chunks[i].size);
+  EXPECT_EQ(1024, selfenc.data_map()->chunks[0].size);
+  EXPECT_EQ(1024, selfenc.data_map()->chunks[1].size);
+  EXPECT_EQ(1025, selfenc.data_map()->chunks[2].size);
   EXPECT_EQ(size, TotalSize(selfenc.data_map()));
-  EXPECT_EQ(1, selfenc.data_map()->content.size());
+  EXPECT_TRUE(selfenc.data_map()->content.empty());
 }
 
 TEST(SelfEncryptionTest, BEH_1024x256x3Minus1Chars) {
@@ -964,17 +944,17 @@ TEST(SelfEncryptionTest, BEH_1024x256x3Minus1Chars) {
   const size_t size(1024*256*3-1);
   std::string content(RandomString(size));
   boost::scoped_array<char> stuff(new char[size]);
-  std::copy(content.c_str(), content.c_str() + size, stuff.get());
+  std::copy(content.data(), content.data() + size, stuff.get());
   {
     SelfEncryptor selfenc(data_map, chunk_store);
     EXPECT_TRUE(selfenc.Write(stuff.get(), size, 0));
-    EXPECT_EQ(0, selfenc.data_map()->chunks.size());
+    EXPECT_TRUE(selfenc.data_map()->chunks.empty());
     EXPECT_EQ(0, TotalSize(selfenc.data_map()));
     EXPECT_TRUE(selfenc.data_map()->content.empty());
   }
   SelfEncryptor selfenc(data_map, chunk_store);
   // Check data_map values again after destruction...
-  EXPECT_EQ(5, selfenc.data_map()->chunks.size());
+  EXPECT_EQ(3, selfenc.data_map()->chunks.size());
   EXPECT_EQ(size, TotalSize(selfenc.data_map()));
   EXPECT_TRUE(selfenc.data_map()->content.empty());
 }
@@ -984,25 +964,24 @@ TEST(SelfEncryptionTest, BEH_1024x256x3Plus1Chars) {
   DataMapPtr data_map(new DataMap);
 
   const size_t size(1024*256*3+1);
-  size_t chunks((1 / omp_get_num_procs()) * omp_get_num_procs());
   std::string content(RandomString(size));
   boost::scoped_array<char> stuff(new char[size]);
-  std::copy(content.c_str(), content.c_str() + size, stuff.get());
+  std::copy(content.data(), content.data() + size, stuff.get());
   {
     SelfEncryptor selfenc(data_map, chunk_store);
     EXPECT_TRUE(selfenc.Write(stuff.get(), size, 0));
-    EXPECT_EQ(2 + chunks, selfenc.data_map()->chunks.size());
-    EXPECT_EQ(1024*256*chunks, TotalSize(selfenc.data_map()));
-    // No content yet...
+    EXPECT_TRUE(selfenc.data_map()->chunks.empty());
+    EXPECT_EQ(0, TotalSize(selfenc.data_map()));
     EXPECT_TRUE(selfenc.data_map()->content.empty());
   }
   SelfEncryptor selfenc(data_map, chunk_store);
   // Check data_map values again after destruction...
   EXPECT_EQ(3, selfenc.data_map()->chunks.size());
-  for (size_t i = 0; i != 3; ++i)
-    EXPECT_EQ(1024*256, selfenc.data_map()->chunks[i].size);
+  EXPECT_EQ(1024*256, selfenc.data_map()->chunks[0].size);
+  EXPECT_EQ(1024*256, selfenc.data_map()->chunks[1].size);
+  EXPECT_EQ(1024*256+1, selfenc.data_map()->chunks[2].size);
   EXPECT_EQ(size, TotalSize(selfenc.data_map()));
-  EXPECT_EQ(1, selfenc.data_map()->content.size());
+  EXPECT_TRUE(selfenc.data_map()->content.empty());
 }
 
 TEST(SelfEncryptionTest, BEH_10Chunk4096ByteOutOfSequenceWrites) {
@@ -1011,7 +990,7 @@ TEST(SelfEncryptionTest, BEH_10Chunk4096ByteOutOfSequenceWrites) {
   // 10 chunks, (1024*256*10+1)...
   // 640, 4096 byte parts...
   const size_t parts(640), size(4096);
-  size_t chunks((8 / omp_get_num_procs()) * omp_get_num_procs());
+//  size_t chunks((8 / omp_get_num_procs()) * omp_get_num_procs());
   std::array<std::string, parts> string_array;
   std::array<size_t, parts> index_array;
   char *content(new char[1]);
@@ -1024,28 +1003,27 @@ TEST(SelfEncryptionTest, BEH_10Chunk4096ByteOutOfSequenceWrites) {
   {
     SelfEncryptor selfenc(data_map, chunk_store);
     for (size_t i = 0; i != parts; ++i)
-      EXPECT_TRUE(selfenc.Write(string_array[index_array[i]].c_str(), size,
+      EXPECT_TRUE(selfenc.Write(string_array[index_array[i]].data(), size,
                                 index_array[i] * size));
     EXPECT_TRUE(selfenc.Write(content, 1, 1024*256*10));
-    EXPECT_EQ(2 + chunks, selfenc.data_map()->chunks.size());
-    EXPECT_EQ(1024*256*chunks, TotalSize(selfenc.data_map()));
-    // No content yet...
-    EXPECT_TRUE(selfenc.data_map()->content.empty());
+//    EXPECT_EQ(chunks, selfenc.data_map()->chunks.size());
+//    EXPECT_EQ(1024*256*chunks, TotalSize(selfenc.data_map()));
+//    EXPECT_TRUE(selfenc.data_map()->content.empty());
   }
   SelfEncryptor selfenc(data_map, chunk_store);
   // Check data_map values again after destruction...
   EXPECT_EQ(10, selfenc.data_map()->chunks.size());
   EXPECT_EQ(1024*256*10+1, TotalSize(selfenc.data_map()));
-  EXPECT_EQ(1, selfenc.data_map()->content.size());
+  EXPECT_TRUE(selfenc.data_map()->content.empty());
 }
 
-TEST(SelfEncryptionTest, BEH_12Chunk4096ByteOutOfSequenceWrites) {
+TEST(SelfEncryptionTest, BEH_10Chunk4096ByteOutOfSequenceWritesSmall) {
   MemoryChunkStorePtr chunk_store(new MemoryChunkStore(false, g_hash_func));
   DataMapPtr data_map(new DataMap);
   // 12 chunks, (1024*256*10-1)...
   // 639, 4096 byte parts...
   const size_t parts(639), size(4096);
-  size_t chunks((10 / omp_get_num_procs()) * omp_get_num_procs());
+//  size_t chunks((10 / omp_get_num_procs()) * omp_get_num_procs());
   std::array<std::string, parts> string_array;
   std::array<size_t, parts> index_array;
   std::string content(RandomString(4095));
@@ -1057,18 +1035,17 @@ TEST(SelfEncryptionTest, BEH_12Chunk4096ByteOutOfSequenceWrites) {
   {
     SelfEncryptor selfenc(data_map, chunk_store);
     for (size_t i = 0; i != parts; ++i)
-      EXPECT_TRUE(selfenc.Write(string_array[index_array[i]].c_str(), size,
+      EXPECT_TRUE(selfenc.Write(string_array[index_array[i]].data(), size,
                                 index_array[i] * size));
-    EXPECT_TRUE(selfenc.Write(content.c_str(),
+    EXPECT_TRUE(selfenc.Write(content.data(),
                 static_cast<uint32_t>(content.size()), parts * size));
-    EXPECT_EQ(2 + chunks, selfenc.data_map()->chunks.size());
-    EXPECT_EQ(1024*256*chunks, TotalSize(selfenc.data_map()));
-    // No content yet...
-    EXPECT_TRUE(selfenc.data_map()->content.empty());
+//    EXPECT_EQ(2 + chunks, selfenc.data_map()->chunks.size());
+//    EXPECT_EQ(1024*256*chunks, TotalSize(selfenc.data_map()));
+//    EXPECT_TRUE(selfenc.data_map()->content.empty());
   }
   SelfEncryptor selfenc(data_map, chunk_store);
   // Check data_map values again after destruction...
-  EXPECT_EQ(12, selfenc.data_map()->chunks.size());
+  EXPECT_EQ(10, selfenc.data_map()->chunks.size());
   EXPECT_EQ(1024*256*10-1, TotalSize(selfenc.data_map()));
   EXPECT_TRUE(selfenc.data_map()->content.empty());
 }
@@ -1079,7 +1056,7 @@ TEST(SelfEncryptionTest, BEH_10Chunk65536ByteOutOfSequenceWrites) {
   // 10 chunks, (1024*256*10+1)...
   // 40, 65536 byte parts...
   const size_t parts(40), size(65536);
-  size_t chunks((8 / omp_get_num_procs()) * omp_get_num_procs());
+//  size_t chunks((8 / omp_get_num_procs()) * omp_get_num_procs());
   std::array<std::string, parts> string_array;
   std::array<size_t, parts> index_array;
   char *content(new char[1]);
@@ -1092,28 +1069,27 @@ TEST(SelfEncryptionTest, BEH_10Chunk65536ByteOutOfSequenceWrites) {
   {
     SelfEncryptor selfenc(data_map, chunk_store);
     for (size_t i = 0; i != parts; ++i)
-      EXPECT_TRUE(selfenc.Write(string_array[index_array[i]].c_str(), size,
+      EXPECT_TRUE(selfenc.Write(string_array[index_array[i]].data(), size,
                                 index_array[i] * size));
     EXPECT_TRUE(selfenc.Write(content, 1, 1024*256*10));
-    EXPECT_EQ(2 + chunks, selfenc.data_map()->chunks.size());
-    EXPECT_EQ(1024*256*chunks, TotalSize(selfenc.data_map()));
-    // No content yet...
-    EXPECT_TRUE(selfenc.data_map()->content.empty());
+//    EXPECT_EQ(2 + chunks, selfenc.data_map()->chunks.size());
+//    EXPECT_EQ(1024*256*chunks, TotalSize(selfenc.data_map()));
+//    EXPECT_TRUE(selfenc.data_map()->content.empty());
   }
   SelfEncryptor selfenc(data_map, chunk_store);
   // Check data_map values again after destruction...
   EXPECT_EQ(10, selfenc.data_map()->chunks.size());
   EXPECT_EQ(1024*256*10+1, TotalSize(selfenc.data_map()));
-  EXPECT_EQ(1, selfenc.data_map()->content.size());
+  EXPECT_TRUE(selfenc.data_map()->content.empty());
 }
 
-TEST(SelfEncryptionTest, BEH_12Chunk65536ByteOutOfSequenceWrites) {
+TEST(SelfEncryptionTest, BEH_10Chunk65536ByteOutOfSequenceWritesSmall) {
   MemoryChunkStorePtr chunk_store(new MemoryChunkStore(false, g_hash_func));
   DataMapPtr data_map(new DataMap);
   // 12 chunks, (1024*256*10-1)...
   // 39, 65536 byte parts...
   const size_t parts(39), size(65536);
-  size_t chunks((10 / omp_get_num_procs()) * omp_get_num_procs());
+//  size_t chunks((10 / omp_get_num_procs()) * omp_get_num_procs());
   std::array<std::string, parts> string_array;
   std::array<size_t, parts> index_array;
   std::string content(RandomString(65535));
@@ -1125,23 +1101,22 @@ TEST(SelfEncryptionTest, BEH_12Chunk65536ByteOutOfSequenceWrites) {
   {
     SelfEncryptor selfenc(data_map, chunk_store);
     for (size_t i = 0; i != parts; ++i)
-      EXPECT_TRUE(selfenc.Write(string_array[index_array[i]].c_str(), size,
+      EXPECT_TRUE(selfenc.Write(string_array[index_array[i]].data(), size,
                                 index_array[i] * size));
-    EXPECT_TRUE(selfenc.Write(content.c_str(),
+    EXPECT_TRUE(selfenc.Write(content.data(),
                 static_cast<uint32_t>(content.size()), parts * size));
-    EXPECT_EQ(2 + chunks, selfenc.data_map()->chunks.size());
-    EXPECT_EQ(1024*256*chunks, TotalSize(selfenc.data_map()));
-    // No content yet...
-    EXPECT_TRUE(selfenc.data_map()->content.empty());
+//    EXPECT_EQ(2 + chunks, selfenc.data_map()->chunks.size());
+//    EXPECT_EQ(1024*256*chunks, TotalSize(selfenc.data_map()));
+//    EXPECT_TRUE(selfenc.data_map()->content.empty());
   }
   SelfEncryptor selfenc(data_map, chunk_store);
   // Check data_map values again after destruction...
-  EXPECT_EQ(12, selfenc.data_map()->chunks.size());
+  EXPECT_EQ(10, selfenc.data_map()->chunks.size());
   EXPECT_EQ(1024*256*10-1, TotalSize(selfenc.data_map()));
   EXPECT_TRUE(selfenc.data_map()->content.empty());
 }
 
-TEST(SelfEncryptionTest, BEH_12Chunk4096ByteOutOfSequenceWritesWithGap) {
+TEST(SelfEncryptionTest, BEH_10Chunk4096ByteOutOfSequenceWritesWithGap) {
   MemoryChunkStorePtr chunk_store(new MemoryChunkStore(false, g_hash_func));
   DataMapPtr data_map(new DataMap);
   // 12 chunks, (1024*256*10-1)...
@@ -1158,12 +1133,12 @@ TEST(SelfEncryptionTest, BEH_12Chunk4096ByteOutOfSequenceWritesWithGap) {
   {
     SelfEncryptor selfenc(data_map, chunk_store);
     for (size_t i = 0; i != 300; ++i)
-      EXPECT_TRUE(selfenc.Write(string_array[index_array[i]].c_str(), size,
+      EXPECT_TRUE(selfenc.Write(string_array[index_array[i]].data(), size,
                                 index_array[i] * size));
     for (size_t i = 301; i != parts; ++i)
-      EXPECT_TRUE(selfenc.Write(string_array[index_array[i]].c_str(), size,
+      EXPECT_TRUE(selfenc.Write(string_array[index_array[i]].data(), size,
                                 index_array[i] * size));
-    EXPECT_TRUE(selfenc.Write(content.c_str(),
+    EXPECT_TRUE(selfenc.Write(content.data(),
                 static_cast<uint32_t>(content.size()), parts * size));
     // Unknown number of chunks and data map size...
     // No content yet...
@@ -1171,12 +1146,12 @@ TEST(SelfEncryptionTest, BEH_12Chunk4096ByteOutOfSequenceWritesWithGap) {
   }
   SelfEncryptor selfenc(data_map, chunk_store);
   // Check data_map values again after destruction...
-  EXPECT_EQ(12, selfenc.data_map()->chunks.size());
+  EXPECT_EQ(10, selfenc.data_map()->chunks.size());
   EXPECT_EQ(1024*256*10-1, TotalSize(selfenc.data_map()));
   EXPECT_TRUE(selfenc.data_map()->content.empty());
 }
 
-TEST(SelfEncryptionTest, BEH_12Chunk65536ByteOutOfSequenceWritesWithGaps) {
+TEST(SelfEncryptionTest, BEH_10Chunk65536ByteOutOfSequenceWritesWithGaps) {
   MemoryChunkStorePtr chunk_store(new MemoryChunkStore(false, g_hash_func));
   DataMapPtr data_map(new DataMap);
   // 12 chunks, (1024*256*10-1)...
@@ -1193,15 +1168,15 @@ TEST(SelfEncryptionTest, BEH_12Chunk65536ByteOutOfSequenceWritesWithGaps) {
   {
     SelfEncryptor selfenc(data_map, chunk_store);
     for (size_t i = 0; i != 5; ++i)
-      EXPECT_TRUE(selfenc.Write(string_array[index_array[i]].c_str(), size,
+      EXPECT_TRUE(selfenc.Write(string_array[index_array[i]].data(), size,
                                 index_array[i] * size));
     for (size_t i = 6; i != 34; ++i)
-      EXPECT_TRUE(selfenc.Write(string_array[index_array[i]].c_str(), size,
+      EXPECT_TRUE(selfenc.Write(string_array[index_array[i]].data(), size,
                                 index_array[i] * size));
     for (size_t i = 35; i != parts; ++i)
-      EXPECT_TRUE(selfenc.Write(string_array[index_array[i]].c_str(), size,
+      EXPECT_TRUE(selfenc.Write(string_array[index_array[i]].data(), size,
                                 index_array[i] * size));
-    EXPECT_TRUE(selfenc.Write(content.c_str(),
+    EXPECT_TRUE(selfenc.Write(content.data(),
                 static_cast<uint32_t>(content.size()), parts * size));
     // Unknown number of chunks and data map size...
     // No content yet...
@@ -1209,7 +1184,7 @@ TEST(SelfEncryptionTest, BEH_12Chunk65536ByteOutOfSequenceWritesWithGaps) {
   }
   SelfEncryptor selfenc(data_map, chunk_store);
   // Check data_map values again after destruction...
-  EXPECT_EQ(12, selfenc.data_map()->chunks.size());
+  EXPECT_EQ(10, selfenc.data_map()->chunks.size());
   EXPECT_EQ(1024*256*10-1, TotalSize(selfenc.data_map()));
   EXPECT_TRUE(selfenc.data_map()->content.empty());
 }
@@ -1228,7 +1203,7 @@ TEST(SelfEncryptionTest, BEH_RandomSizedOutOfSequenceWrites) {
   {
     SelfEncryptor selfenc(data_map, chunk_store);
     for (size_t i = 0; i != parts; ++i)
-      EXPECT_TRUE(selfenc.Write(string_array[index_array[i]].c_str(),
+      EXPECT_TRUE(selfenc.Write(string_array[index_array[i]].data(),
                   static_cast<uint32_t>(string_array[index_array[i]].size()),
                   index_array[i] * string_array[index_array[i]].size()));
     // No content yet...
@@ -1251,15 +1226,15 @@ TEST(SelfEncryptionTest, BEH_RandomSizedOutOfSequenceWritesWithGaps) {
   {
     SelfEncryptor selfenc(data_map, chunk_store);
     for (size_t i = 0; i != 101; ++i)
-      EXPECT_TRUE(selfenc.Write(string_array[index_array[i]].c_str(),
+      EXPECT_TRUE(selfenc.Write(string_array[index_array[i]].data(),
                   static_cast<uint32_t>(string_array[index_array[i]].size()),
                   index_array[i] * string_array[index_array[i]].size()));
     for (size_t i = 102; i != 233; ++i)
-      EXPECT_TRUE(selfenc.Write(string_array[index_array[i]].c_str(),
+      EXPECT_TRUE(selfenc.Write(string_array[index_array[i]].data(),
                   static_cast<uint32_t>(string_array[index_array[i]].size()),
                   index_array[i] * string_array[index_array[i]].size()));
     for (size_t i = 234; i != parts; ++i)
-      EXPECT_TRUE(selfenc.Write(string_array[index_array[i]].c_str(),
+      EXPECT_TRUE(selfenc.Write(string_array[index_array[i]].data(),
                   static_cast<uint32_t>(string_array[index_array[i]].size()),
                   index_array[i] * string_array[index_array[i]].size()));
     // No content yet...
@@ -1268,13 +1243,13 @@ TEST(SelfEncryptionTest, BEH_RandomSizedOutOfSequenceWritesWithGaps) {
   // Unknown number of chunks and content details.
 }
 
-TEST(SelfEncryptionManualTest, BEH_manual_check_write) {
+TEST(SelfEncryptionManualTest, DISABLED_BEH_ManualCheckWrite) {
   MemoryChunkStorePtr chunk_store(new MemoryChunkStore(false, g_hash_func));
   DataMapPtr data_map(new DataMap);
   uint32_t chunk_size(kDefaultChunkSize);
   uint32_t num_chunks(10);
   boost::scoped_array<char> extra_content(new char[5]);
-  for (char i = 0; i != 5; ++i)
+  for (unsigned char i = 0; i != 5; ++i)
     extra_content[i] = 49 + i;
   uint32_t expected_content_size(sizeof(extra_content));
   uint32_t file_size((chunk_size * num_chunks) + expected_content_size);
@@ -1378,7 +1353,6 @@ TEST(SelfEncryptionManualTest, BEH_manual_check_write) {
     }
   }
 }
-
 
 }  // namespace test
 }  // namespace encrypt

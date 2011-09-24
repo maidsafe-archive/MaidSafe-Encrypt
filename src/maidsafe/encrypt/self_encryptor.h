@@ -10,13 +10,10 @@
  *  You are not free to copy, amend or otherwise use this source code without  *
  *  the explicit written permission of the board of directors of maidsafe.net. *
  ***************************************************************************//**
- * @file  utils.h
- * @brief Helper functions for self-encryption engine.
- * @date  2008-09-09
  */
 
-#ifndef MAIDSAFE_ENCRYPT_SELF_ENCRYPT_H_
-#define MAIDSAFE_ENCRYPT_SELF_ENCRYPT_H_
+#ifndef MAIDSAFE_ENCRYPT_SELF_ENCRYPTOR_H_
+#define MAIDSAFE_ENCRYPT_SELF_ENCRYPTOR_H_
 
 
 #include <omp.h>
@@ -143,4 +140,4 @@ class SelfEncryptor {
 }  // namespace encrypt
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_ENCRYPT_SELF_ENCRYPT_H_
+#endif  // MAIDSAFE_ENCRYPT_SELF_ENCRYPTOR_H_

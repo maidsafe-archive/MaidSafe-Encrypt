@@ -10,12 +10,9 @@
  *  You are not free to copy, amend or otherwise use this source code without  *
  *  the explicit written permission of the board of directors of maidsafe.net. *
  *******************************************************************************
- * @file  utils.cc
- * @brief Helper functions for self-encryption engine.
- * @date  2008-09-09
  */
 
-#include "maidsafe/encrypt/self_encrypt.h"
+#include "maidsafe/encrypt/self_encryptor.h"
 
 #include <omp.h>
 
@@ -489,11 +486,11 @@ void SelfEncryptor::GetPadIvKey(uint32_t this_chunk_num,
         // Some at end of chunk0_raw_ and rest in start of chunk1_raw_.
         ByteArray temp(new byte[normal_chunk_size_]);
         uint32_t size_chunk0(kDefaultChunkSize - normal_chunk_size_);
-        uint32_t size_chunk1(kDefaultChunkSize - size_chunk0);
+        uint32_t size_chunk1(normal_chunk_size_ - size_chunk0);
         memcpy(temp.get(), chunk0_raw_.get() + normal_chunk_size_, size_chunk0);
         memcpy(temp.get() + size_chunk0, chunk1_raw_.get(), size_chunk1);
-          CryptoPP::SHA512().CalculateDigest(data_map_->chunks[1].pre_hash,
-                                             temp.get(), normal_chunk_size_);
+        CryptoPP::SHA512().CalculateDigest(data_map_->chunks[1].pre_hash,
+                                            temp.get(), normal_chunk_size_);
       }
     }
   }
@@ -788,7 +785,7 @@ void SelfEncryptor::Flush() {
       // Some at end of chunk0_raw_ and rest in start of chunk1_raw_
       ByteArray temp(new byte[normal_chunk_size_]);
       uint32_t size_chunk0(kDefaultChunkSize - normal_chunk_size_);
-      uint32_t size_chunk1(kDefaultChunkSize - size_chunk0);
+      uint32_t size_chunk1(normal_chunk_size_ - size_chunk0);
       memcpy(temp.get(), chunk0_raw_.get() + normal_chunk_size_, size_chunk0);
       memcpy(temp.get() + size_chunk0, chunk1_raw_.get(), size_chunk1);
       EncryptChunk(1, temp.get(), normal_chunk_size_);
@@ -842,15 +839,16 @@ bool SelfEncryptor::Transmogrify(char *data,
   memset(data, 0, length);
 
   // For tiny files, all data is in data_map_->content or chunk0_raw_.
-  uint32_t copy_size(length);
   if (file_size_ < 3 * kMinChunkSize) {
     if (position >= 3 * kMinChunkSize)
       return false;
-    copy_size =
-        std::min(length, (3 * kMinChunkSize) - static_cast<uint32_t>(position));
     if (prepared_for_writing_) {
+      uint32_t copy_size = std::min(length, (3 * kMinChunkSize) -
+                                    static_cast<uint32_t>(position));
       memcpy(data, chunk0_raw_.get() + position, copy_size);
     } else {
+      uint32_t copy_size = std::min(length,
+                           static_cast<uint32_t>(data_map_->content.size()));
       memcpy(data, data_map_->content.data() + position, copy_size);
     }
     return true;
@@ -909,22 +907,29 @@ bool SelfEncryptor::ReadDataMapChunks(char *data,
 
 #pragma omp parallel for shared(data)
   for (uint32_t i = start_chunk; i <= end_chunk; ++i) {
-    uint64_t pos(0);
     uint32_t this_chunk_size(data_map_->chunks[i].size);
-
     if (this_chunk_size != 0) {
       if (i == start_chunk) {
         if (start_offset != 0) {
-          ByteArray chunk_data(new byte[data_map_->chunks[start_chunk].size]);
-          ReadChunk(start_chunk, chunk_data.get());
-          for (uint32_t j = start_offset; j != this_chunk_size; ++j)
-            data[j - start_offset] = static_cast<char>(chunk_data[j]);
+          // Create temp array as we don't need data before "start_offset".
+          ByteArray temp(new byte[this_chunk_size]);
+          ReadChunk(start_chunk, temp.get());
+          memcpy(data, temp.get() + start_offset,
+                 this_chunk_size - start_offset);
         } else {
           ReadChunk(i, reinterpret_cast<byte*>(&data[0]));
         }
       } else {
-        pos = i * normal_chunk_size_;
-        ReadChunk(i, reinterpret_cast<byte*>(&data[pos - position]));
+        uint64_t pos(i * normal_chunk_size_);
+        if (i == end_chunk && end_cut != data_map_->chunks[end_chunk].size) {
+          // Create temp array as we'll possibly have to read beyond the end of
+          // what's available in variable "data".
+          ByteArray temp(new byte[this_chunk_size]);
+          ReadChunk(end_chunk, temp.get());
+          memcpy(data + pos - position, temp.get(), end_cut);
+        } else {
+          ReadChunk(i, reinterpret_cast<byte*>(&data[pos - position]));
+        }
       }
     }
   }
