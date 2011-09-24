@@ -15,7 +15,6 @@
 #define MAIDSAFE_ENCRYPT_DATA_MAP_H_
 
 #include <cstdint>
-#include <memory>
 #include <string>
 #include <vector>
 
@@ -33,34 +32,33 @@
 namespace maidsafe {
 namespace encrypt {
 
-/// Holds information about a chunk
 struct ChunkDetails {
   ChunkDetails() : hash(), pre_hash(), size(0) {}
-  byte hash[crypto::SHA512::DIGESTSIZE];  ///< processed chunk
-  byte pre_hash[crypto::SHA512::DIGESTSIZE];  ///< unprocessed source data
-  uint32_t size;  ///< Size of unprocessed source data
+  byte hash[crypto::SHA512::DIGESTSIZE];  // SHA512 of processed chunk
+  byte pre_hash[crypto::SHA512::DIGESTSIZE];  // SHA512 of unprocessed src data
+  uint32_t size;  // Size of unprocessed source data in bytes
 };
 
-/// Holds information about the building blocks of a data item
 struct DataMap {
   DataMap() : chunks(), content() {}
-  std::vector<ChunkDetails> chunks;  ///< Information about the chunks
-  std::string content;  ///< Whole data item, if small enough
+  std::vector<ChunkDetails> chunks;
+  std::string content;  // Whole data item, if small enough
 };
 
 typedef std::shared_ptr<DataMap> DataMapPtr;
 
 /*
-/// Hold datamaps in a version container
+// Hold datamaps in a version container
 struct VersionedDataMap {
   VersionedDataMap()
     : data_map(), user_name(), time_stamp() {}
   DataMap data_map;
   std::string user_name;
   boost::posix_time::time_duration time_stamp;
-};*/
-/*
-std::tuple<uint8_t, fs::path, VersionedDataMap> VersionedDirMap; // for dirs*/
+};
+
+std::tuple<uint8_t, fs::path, VersionedDataMap> VersionedDirMap; // for dirs
+*/
 
 }  // namespace encrypt
 }  // namespace maidsafe

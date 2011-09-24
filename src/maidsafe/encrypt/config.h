@@ -15,7 +15,6 @@
 #define MAIDSAFE_ENCRYPT_CONFIG_H_
 
 #include <cstdint>
-#include <string>
 
 #include "maidsafe/encrypt/version.h"
 
@@ -27,14 +26,14 @@
 namespace maidsafe {
 namespace encrypt {
 
-const uint32_t kMinChunkSize(1024);
-const uint32_t kDefaultChunkSize(1024 * 256);
+const uint32_t kMinChunkSize(1024);  // bytes
+const uint32_t kDefaultChunkSize(1024 * 256);  // bytes
 
-/// Codes returned by the self-en/decryption wrapper methods
 enum ReturnCode {
   kSuccess = 0,
   kEncryptError = -200001,
-  kDecryptError = -200002
+  kDecryptError = -200002,
+  kSequencerException = -200101
 };
 
 }  // namespace encrypt

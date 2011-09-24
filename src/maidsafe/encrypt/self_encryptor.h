@@ -14,17 +14,16 @@
 #ifndef MAIDSAFE_ENCRYPT_SELF_ENCRYPTOR_H_
 #define MAIDSAFE_ENCRYPT_SELF_ENCRYPTOR_H_
 
-
 #include <omp.h>
 
 #include <tuple>
 #include <cstdint>
 #include <string>
+#include "boost/scoped_ptr.hpp"
 #include "boost/shared_array.hpp"
 
 #include "maidsafe/encrypt/config.h"
 #include "maidsafe/encrypt/data_map.h"
-#include "maidsafe/encrypt/sequencer.h"
 #include "maidsafe/encrypt/version.h"
 
 #if MAIDSAFE_ENCRYPT_VERSION != 906
@@ -39,6 +38,8 @@ class ChunkStore;
 typedef std::shared_ptr<ChunkStore> ChunkStorePtr;
 
 namespace encrypt {
+
+class Sequencer;
 
 class SelfEncryptor {
  public:
@@ -97,7 +98,6 @@ class SelfEncryptor {
   // returns true and adjusts length to the required amount of data to be
   // copied.
   bool GetLengthForSequencer(const uint64_t &position, uint32_t *length);
-  void AddReleventSeqDataToQueue();
   void ReadChunk(uint32_t chunk_num, byte *data);
   void GetPadIvKey(uint32_t this_chunk_num,
                    ByteArray key,
@@ -119,7 +119,7 @@ class SelfEncryptor {
   void ReadInProcessData(char *data, uint32_t length, uint64_t position);
 
   DataMapPtr data_map_;
-  Sequencer sequencer_;
+  boost::scoped_ptr<Sequencer> sequencer_;
   const uint32_t kDefaultByteArraySize_;
   uint64_t file_size_, last_chunk_position_;
   uint32_t normal_chunk_size_;

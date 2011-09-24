@@ -159,7 +159,6 @@ SET(MAIDSAFE_ENCRYPT_INSTALL_FILES
       ${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/config.h
       ${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/data_map.h
       ${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/self_encryptor.h
-      ${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/sequencer.h
       ${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/version.h)
 FOREACH(MAIDSAFE_ENCRYPT_INSTALL_FILE ${MAIDSAFE_ENCRYPT_INSTALL_FILES})
   CHECK_INSTALL_HEADER_HAS_VERSION_GUARD(${MAIDSAFE_ENCRYPT_INSTALL_FILE})

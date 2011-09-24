@@ -44,6 +44,7 @@
 #include "maidsafe/encrypt/config.h"
 #include "maidsafe/encrypt/data_map.h"
 #include "maidsafe/encrypt/log.h"
+#include "maidsafe/encrypt/sequencer.h"
 
 
 namespace fs = boost::filesystem;
@@ -106,7 +107,7 @@ SelfEncryptor::SelfEncryptor(DataMapPtr data_map,
                              std::shared_ptr<ChunkStore> chunk_store,
                              int num_procs)
     : data_map_(data_map ? data_map : DataMapPtr(new DataMap)),
-      sequencer_(),
+      sequencer_(new Sequencer),
       kDefaultByteArraySize_(num_procs == 0 ?
                              kDefaultChunkSize * omp_get_num_procs() :
                              kDefaultChunkSize * num_procs),
@@ -171,9 +172,14 @@ bool SelfEncryptor::Write(const char *data,
   }
 
   if (GetLengthForSequencer(position, &length))
-    sequencer_.Add(data + written, length, position);
+    sequencer_->Add(data + written, length, position);
 
-  AddReleventSeqDataToQueue();  // gets any relevent data from sequencer
+  SequenceData extra(sequencer_->Get(current_position_));
+  if (extra.second != 0) {
+    PutToEncryptQueue(reinterpret_cast<char*>(extra.first.get()), extra.second,
+                      0, static_cast<uint32_t>(current_position_ -
+                                               queue_start_position_));
+  }
 
   return true;
 }
@@ -241,8 +247,8 @@ void SelfEncryptor::PrepareToWrite() {
                                &length, &position);
         consumed_whole_chunk = (length == 0);
         if (!consumed_whole_chunk) {
-          sequencer_.Add(reinterpret_cast<char*>(temp.get()) + written, length,
-                         position);
+          sequencer_->Add(reinterpret_cast<char*>(temp.get()) + written, length,
+                          position);
         }
         chunk_store_->Delete(std::string(
             reinterpret_cast<char*>(data_map_->chunks[i].hash),
@@ -393,15 +399,6 @@ bool SelfEncryptor::GetLengthForSequencer(const uint64_t &position,
     return true;
   }
   return (position > queue_start_position_ + retrievable_from_queue_);
-}
-
-void SelfEncryptor::AddReleventSeqDataToQueue() {
-  SequenceData extra(sequencer_.Get(current_position_));
-  if (extra.second != 0) {
-    PutToEncryptQueue(reinterpret_cast<char*>(extra.first.get()), extra.second,
-                      0, static_cast<uint32_t>(current_position_ -
-                                               queue_start_position_));
-  }
 }
 
 void SelfEncryptor::ReadChunk(uint32_t chunk_num, byte *data) {
@@ -633,7 +630,7 @@ void SelfEncryptor::Flush() {
   bool this_chunk_has_data_in_queue(false);
   bool this_chunk_has_data_in_c0_or_c1(false);
 
-  std::pair<uint64_t, SequenceData> sequence_block(sequencer_.GetFirst());
+  std::pair<uint64_t, SequenceData> sequence_block(sequencer_->GetFirst());
   uint64_t sequence_block_position(sequence_block.first);
   ByteArray sequence_block_data(sequence_block.second.first);
   uint32_t sequence_block_size(sequence_block.second.second);
@@ -705,7 +702,7 @@ void SelfEncryptor::Flush() {
         memcpy(chunk_array.get() + copy_offset,
                sequence_block_data.get() + sequence_block_copied, copy_size);
         if (sequence_block_copied + copy_size == sequence_block_size) {
-          sequence_block = sequencer_.GetFirst();
+          sequence_block = sequencer_->GetFirst();
           sequence_block_position = sequence_block.first;
           sequence_block_data = sequence_block.second.first;
           sequence_block_size = sequence_block.second.second;
@@ -971,7 +968,7 @@ void SelfEncryptor::ReadInProcessData(char *data,
   }
 
   // Get data from sequencer if required.
-  std::pair<uint64_t, SequenceData> sequence_block(sequencer_.Peek(position));
+  std::pair<uint64_t, SequenceData> sequence_block(sequencer_->Peek(position));
   uint64_t sequence_block_position(sequence_block.first);
   ByteArray sequence_block_data(sequence_block.second.first);
   uint32_t sequence_block_size(sequence_block.second.second);
@@ -996,7 +993,7 @@ void SelfEncryptor::ReadInProcessData(char *data,
            sequence_block_data.get() + sequence_block_offset, copy_length);
 
     seq_position = sequence_block_position + sequence_block_size;
-    sequence_block = sequencer_.Peek(seq_position);
+    sequence_block = sequencer_->Peek(seq_position);
     sequence_block_position = sequence_block.first;
     sequence_block_data = sequence_block.second.first;
     sequence_block_size = sequence_block.second.second;
@@ -1027,7 +1024,7 @@ bool SelfEncryptor::Truncate(uint64_t size) {
         // Found chunk with data at position 'size'.
         if (retrievable_from_queue_ != 0)
 //          main_encrypt_queue_.SkipAll();
-        sequencer_.clear();
+        sequencer_->clear();
         for (uint32_t j = i + 1; j != number_of_chunks; ++j) {
           if (!chunk_store_->Delete(reinterpret_cast<char*>
                                       (data_map_->chunks[j].hash))) {
@@ -1066,7 +1063,7 @@ bool SelfEncryptor::Truncate(uint64_t size) {
 
   // } else {
 //    if (delete_remainder == true) {
-//      sequencer_.EraseAll();
+//      sequencer_->EraseAll();
 //      main_encrypt_queue_.SkipAll();
 //    } else {
 //      // check content
