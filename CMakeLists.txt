@@ -115,6 +115,8 @@ IF(MSVC)
   # C4996 'Function call with parameters that may be unsafe' caused by boost signals2
   # Disabled as per advice at https://svn.boost.org/trac/boost/wiki/Guidelines/WarningsGuidelines
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4351 /wd4503 /wd4512 /wd4996")
+  # Enable OpenMP
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /openmp")
   SET_TARGET_PROPERTIES(encrypt_static PROPERTIES STATIC_LIBRARY_FLAGS_RELEASE "/LTCG")
   SET_TARGET_PROPERTIES(TESTencrypt  PROPERTIES
                           LINK_FLAGS_RELEASE "/OPT:REF /OPT:ICF /LTCG /INCREMENTAL:NO ${LINKER_LIBS_DIRS_RELEASE}"

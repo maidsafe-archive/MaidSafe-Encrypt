@@ -905,11 +905,13 @@ bool SelfEncryptor::ReadDataMapChunks(char *data,
     return read_ok_;
   }
 
+// TODO(Fraser#5#): 2011-09-24 - Handle overflow in casting to int
 #pragma omp parallel for shared(data)
-  for (uint32_t i = start_chunk; i <= end_chunk; ++i) {
+  for (int i = static_cast<int>(start_chunk); i <= static_cast<int>(end_chunk);
+       ++i) {
     uint32_t this_chunk_size(data_map_->chunks[i].size);
     if (this_chunk_size != 0) {
-      if (i == start_chunk) {
+      if (i == static_cast<int>(start_chunk)) {
         if (start_offset != 0) {
           // Create temp array as we don't need data before "start_offset".
           ByteArray temp(new byte[this_chunk_size]);
@@ -921,7 +923,8 @@ bool SelfEncryptor::ReadDataMapChunks(char *data,
         }
       } else {
         uint64_t pos(i * normal_chunk_size_);
-        if (i == end_chunk && end_cut != data_map_->chunks[end_chunk].size) {
+        if (i == static_cast<int>(end_chunk) &&
+            end_cut != data_map_->chunks[end_chunk].size) {
           // Create temp array as we'll possibly have to read beyond the end of
           // what's available in variable "data".
           ByteArray temp(new byte[this_chunk_size]);
