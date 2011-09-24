@@ -1,19 +1,15 @@
 ﻿
 /*******************************************************************************
- *  Copyright 2011 maidsafe.net limited                                        *
- *                                                                             *
- *  The following source code is property of maidsafe.net limited and is not   *
- *  meant for external use.  The use of this code is governed by the license   *
- *  file LICENSE.TXT found in the root of this directory and also on           *
- *  www.maidsafe.net.                                                          *
- *                                                                             *
- *  You are not free to copy, amend or otherwise use this source code without  *
- *  the explicit written permission of the board of directors of maidsafe.net. *
- *******************************************************************************
- * @file  test_utils.cc
- * @brief Tests for the self-encryption helper functions.
- * @date  2011-04-05
- */
+*  Copyright 2011 MaidSafe.net limited                                         *
+*                                                                              *
+*  The following source code is property of MaidSafe.net limited and is not    *
+*  meant for external use.  The use of this code is governed by the license    *
+*  file LICENSE.TXT found in the root of this directory and also on            *
+*  www.MaidSafe.net.                                                           *
+*                                                                              *
+*  You are not free to copy, amend or otherwise use this source code without   *
+*  the explicit written permission of the board of directors of MaidSafe.net.  *
+*******************************************************************************/
 
 #include <array>
 #include <string>

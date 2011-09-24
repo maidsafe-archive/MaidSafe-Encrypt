@@ -1,18 +1,14 @@
 # ============================================================================ #
 #                                                                              #
-# Copyright [2011] maidsafe.net limited                                        #
+# Copyright [2011] MaidSafe.net limited                                        #
 #                                                                              #
-# Description:  CMakeList for MaidSafe-Encrypt project.                        #
-# Created:      2011-01-31                                                     #
-# Company:      maidsafe.net limited                                           #
-#                                                                              #
-# The following source code is property of maidsafe.net limited and is not     #
+# The following source code is property of MaidSafe.net limited and is not     #
 # meant for external use.  The use of this code is governed by the license     #
 # file LICENSE.TXT found in the root of this directory and also on             #
-# www.maidsafe.net.                                                            #
+# www.MaidSafe.net.                                                            #
 #                                                                              #
 # You are not free to copy, amend or otherwise use this source code without    #
-# the explicit written permission of the board of directors of maidsafe.net.   #
+# the explicit written permission of the board of directors of MaidSafe.net.   #
 #                                                                              #
 # ============================================================================ #
 
@@ -178,7 +174,7 @@ ADD_VERSION_INFO_TO_INSTALLED_FILE()
 IF(CMAKE_BUILD_TYPE MATCHES "Release")
   SET(CPACK_PACKAGE_NAME "maidsafe_encrypt")
   SET(CPACK_PACKAGE_CONTACT "dev@maidsafe.net")
-  SET(CPACK_PACKAGE_VENDOR "maidsafe.net")
+  SET(CPACK_PACKAGE_VENDOR "MaidSafe.net")
   SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "MaidSafe-Encrypt")
   SET(CPACK_PACKAGE_INSTALL_DIRECTORY "maidsafe-encrypt")
 #  SET(CPACK_RESOURCE_FILE_README "${PROJECT_SOURCE_DIR}/docs/readme.txt")

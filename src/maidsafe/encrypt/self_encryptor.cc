@@ -1,16 +1,15 @@
 ﻿
 /*******************************************************************************
- *  Copyright 2008-2011 maidsafe.net limited                                   *
- *                                                                             *
- *  The following source code is property of maidsafe.net limited and is not   *
- *  meant for external use.  The use of this code is governed by the license   *
- *  file LICENSE.TXT found in the root of this directory and also on           *
- *  www.maidsafe.net.                                                          *
- *                                                                             *
- *  You are not free to copy, amend or otherwise use this source code without  *
- *  the explicit written permission of the board of directors of maidsafe.net. *
- *******************************************************************************
- */
+*  Copyright 2011 MaidSafe.net limited                                         *
+*                                                                              *
+*  The following source code is property of MaidSafe.net limited and is not    *
+*  meant for external use.  The use of this code is governed by the license    *
+*  file LICENSE.TXT found in the root of this directory and also on            *
+*  www.MaidSafe.net.                                                           *
+*                                                                              *
+*  You are not free to copy, amend or otherwise use this source code without   *
+*  the explicit written permission of the board of directors of MaidSafe.net.  *
+*******************************************************************************/
 
 #include "maidsafe/encrypt/self_encryptor.h"
 
@@ -509,24 +508,6 @@ void SelfEncryptor::GetPadIvKey(uint32_t this_chunk_num,
   memcpy(pad.get() + (2 * crypto::SHA512::DIGESTSIZE),
          &data_map_->chunks[n_2_chunk].pre_hash[hash_offset],
          crypto::SHA512::DIGESTSIZE - hash_offset);
-
-//  for (uint32_t i = 0; i != crypto::AES256_KeySize; ++i)
-//    key[i] = data_map_->chunks[n_2_chunk].pre_hash[i];
-//  for (uint32_t i = 0; i != crypto::AES256_IVSize; ++i)
-//    iv[i] = data_map_->chunks[n_2_chunk].pre_hash[i + crypto::AES256_KeySize];
-//
-//  for (uint32_t i = 0; i != crypto::SHA512::DIGESTSIZE; ++i) {
-//    pad[i] = data_map_->chunks[n_1_chunk].pre_hash[i];
-//    pad[i + crypto::SHA512::DIGESTSIZE] =
-//        data_map_->chunks[this_chunk_num].pre_hash[i];
-//  }
-//
-//  uint32_t pad_offset(2 * crypto::SHA512::DIGESTSIZE);
-//  uint32_t hash_offset(crypto::AES256_KeySize + crypto::AES256_IVSize);
-//  for (uint32_t i = 0; i != crypto::AES256_IVSize; ++i) {
-//    pad[i + pad_offset] =
-//        data_map_->chunks[n_2_chunk].pre_hash[i + hash_offset];
-//  }
 }
 
 bool SelfEncryptor::ProcessMainQueue() {
@@ -546,17 +527,17 @@ bool SelfEncryptor::ProcessMainQueue() {
   uint32_t first_queue_chunk_index =
       static_cast<uint32_t>(queue_start_position_ / kDefaultChunkSize);
   data_map_->chunks.resize(first_queue_chunk_index + chunks_to_process);
-// TODO FIXME (dirvine) uncomment line below and next loop for parallel writes
-// #pragma omp parallel for 
- for (uint32_t i = 0; i < chunks_to_process; ++i) {
-   CryptoPP::SHA512().CalculateDigest(
-       data_map_->chunks[first_queue_chunk_index + i].pre_hash,
-       main_encrypt_queue_.get() + (i *  kDefaultChunkSize), kDefaultChunkSize);
- }
+// TODO(dirvine) FIXME uncomment line below and next loop for parallel writes
+// #pragma omp parallel for
+  for (int64_t i = 0; i < chunks_to_process; ++i) {
+    CryptoPP::SHA512().CalculateDigest(
+        data_map_->chunks[first_queue_chunk_index + i].pre_hash,
+        main_encrypt_queue_.get() + (i * kDefaultChunkSize), kDefaultChunkSize);
+  }
 
-// #pragma omp parallel for 
-  for (uint32_t i = 0; i < chunks_to_process; ++i) {
-    EncryptChunk(first_queue_chunk_index + i,
+// #pragma omp parallel for
+  for (int64_t i = 0; i < chunks_to_process; ++i) {
+    EncryptChunk(first_queue_chunk_index + static_cast<uint32_t>(i),
                  main_encrypt_queue_.get() + (i * kDefaultChunkSize),
                  kDefaultChunkSize);
   }
@@ -885,10 +866,10 @@ bool SelfEncryptor::ReadDataMapChunks(char *data,
   }
 
 #pragma omp parallel for shared(data)
-  for (uint32_t i = start_chunk; i <= end_chunk; ++i) {
+  for (int64_t i = start_chunk; i <= end_chunk; ++i) {
     uint32_t this_chunk_size(data_map_->chunks[i].size);
     if (this_chunk_size != 0) {
-      if (i == static_cast<int>(start_chunk)) {
+      if (i == start_chunk) {
         if (start_offset != 0) {
           // Create temp array as we don't need data before "start_offset".
           ByteArray temp(new byte[this_chunk_size]);
@@ -896,19 +877,20 @@ bool SelfEncryptor::ReadDataMapChunks(char *data,
           memcpy(data, temp.get() + start_offset,
                  this_chunk_size - start_offset);
         } else {
-          ReadChunk(i, reinterpret_cast<byte*>(&data[0]));
+          ReadChunk(static_cast<uint32_t>(i),
+                    reinterpret_cast<byte*>(&data[0]));
         }
       } else {
-        uint64_t pos(i * normal_chunk_size_);
-        if (i == static_cast<int>(end_chunk) &&
-            end_cut != data_map_->chunks[end_chunk].size) {
+        uint64_t pos(static_cast<uint32_t>(i) * normal_chunk_size_);
+        if (i == end_chunk && end_cut != data_map_->chunks[end_chunk].size) {
           // Create temp array as we'll possibly have to read beyond the end of
           // what's available in variable "data".
           ByteArray temp(new byte[this_chunk_size]);
           ReadChunk(end_chunk, temp.get());
           memcpy(data + pos - position, temp.get(), end_cut);
         } else {
-          ReadChunk(i, reinterpret_cast<byte*>(&data[pos - position]));
+          ReadChunk(static_cast<uint32_t>(i),
+                    reinterpret_cast<byte*>(&data[pos - position]));
         }
       }
     }
