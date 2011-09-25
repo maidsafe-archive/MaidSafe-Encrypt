@@ -25,8 +25,13 @@ int Sequencer::Add(const char *data,
   try {
     // If the insertion point is past the current end, just insert a new element
     auto last_block(blocks_.rbegin());
-    const uint64_t &last_start_position((*last_block).first);
-    const uint32_t &last_size((*last_block).second.second);
+    const uint64_t last_start_position(0);
+    const uint32_t last_size(0);
+    if (!blocks_.empty()) {
+      const uint64_t &last_start_position((*last_block).first);
+      const uint32_t &last_size((*last_block).second.second);
+    }
+    
     if (blocks_.empty() || position > last_start_position + last_size) {
       auto result = blocks_.insert(std::make_pair(position,
           std::make_pair(ByteArray(new byte[length]), length)));
