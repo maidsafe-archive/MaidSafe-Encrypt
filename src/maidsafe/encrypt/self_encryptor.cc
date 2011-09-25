@@ -175,8 +175,8 @@ bool SelfEncryptor::Write(const char *data,
     sequencer_->Add(data + written, length, position);
 
   SequenceData extra(sequencer_->Get(current_position_));
-  if (extra.second != 0) {
-    PutToEncryptQueue(reinterpret_cast<char*>(extra.first.get()), extra.second,
+  if (extra.size != 0) {
+    PutToEncryptQueue(reinterpret_cast<char*>(extra.data.get()), extra.size,
                       0, static_cast<uint32_t>(current_position_ -
                                                queue_start_position_));
   }
@@ -511,13 +511,10 @@ bool SelfEncryptor::ProcessMainQueue() {
   if (retrievable_from_queue_ < kDefaultChunkSize)
     return false;
 
-  uint32_t chunks_to_process(0);
-  if (queue_start_position_ + retrievable_from_queue_ > last_chunk_position_) {
-    chunks_to_process = static_cast<uint32_t>(
-        (last_chunk_position_ - queue_start_position_) / kDefaultChunkSize);
-  } else {
-    chunks_to_process = (retrievable_from_queue_ / kDefaultChunkSize) - 1;
-  }
+  uint32_t chunks_to_process(retrievable_from_queue_ / kDefaultChunkSize);
+  if ((retrievable_from_queue_ % kDefaultChunkSize) < kMinChunkSize)
+    --chunks_to_process;
+
   BOOST_ASSERT((last_chunk_position_ - queue_start_position_) %
                kDefaultChunkSize == 0);
 
@@ -632,8 +629,8 @@ void SelfEncryptor::Flush() {
 
   std::pair<uint64_t, SequenceData> sequence_block(sequencer_->GetFirst());
   uint64_t sequence_block_position(sequence_block.first);
-  ByteArray sequence_block_data(sequence_block.second.first);
-  uint32_t sequence_block_size(sequence_block.second.second);
+  ByteArray sequence_block_data(sequence_block.second.data);
+  uint32_t sequence_block_size(sequence_block.second.size);
   uint32_t sequence_block_copied(0);
 
   ByteArray chunk_array(new byte[kDefaultChunkSize + kMinChunkSize]);
@@ -704,8 +701,8 @@ void SelfEncryptor::Flush() {
         if (sequence_block_copied + copy_size == sequence_block_size) {
           sequence_block = sequencer_->GetFirst();
           sequence_block_position = sequence_block.first;
-          sequence_block_data = sequence_block.second.first;
-          sequence_block_size = sequence_block.second.second;
+          sequence_block_data = sequence_block.second.data;
+          sequence_block_size = sequence_block.second.size;
           sequence_block_copied = 0;
         } else {
           sequence_block_copied += copy_size;
@@ -970,8 +967,8 @@ void SelfEncryptor::ReadInProcessData(char *data,
   // Get data from sequencer if required.
   std::pair<uint64_t, SequenceData> sequence_block(sequencer_->Peek(position));
   uint64_t sequence_block_position(sequence_block.first);
-  ByteArray sequence_block_data(sequence_block.second.first);
-  uint32_t sequence_block_size(sequence_block.second.second);
+  ByteArray sequence_block_data(sequence_block.second.data);
+  uint32_t sequence_block_size(sequence_block.second.size);
   uint64_t seq_position(position);
   uint32_t sequence_block_offset(0);
 
@@ -995,8 +992,8 @@ void SelfEncryptor::ReadInProcessData(char *data,
     seq_position = sequence_block_position + sequence_block_size;
     sequence_block = sequencer_->Peek(seq_position);
     sequence_block_position = sequence_block.first;
-    sequence_block_data = sequence_block.second.first;
-    sequence_block_size = sequence_block.second.second;
+    sequence_block_data = sequence_block.second.data;
+    sequence_block_size = sequence_block.second.size;
   }
 }
 

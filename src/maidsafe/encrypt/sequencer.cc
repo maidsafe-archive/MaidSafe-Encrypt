@@ -12,37 +12,40 @@
 *******************************************************************************/
 
 #include "maidsafe/encrypt/sequencer.h"
-#include <limits>
 #include "maidsafe/encrypt/config.h"
 #include "maidsafe/encrypt/log.h"
 
 namespace maidsafe {
 namespace encrypt {
 
+namespace {
+const SequenceBlock kInvalidSeqBlock(std::make_pair(
+    std::numeric_limits<uint64_t>::max(), SequenceData()));
+}  // unnamed namespace
+
 int Sequencer::Add(const char *data,
                    const uint32_t &length,
                    const uint64_t &position) {
   try {
     // If the insertion point is past the current end, just insert a new element
-    auto last_block(blocks_.rbegin());
-    const uint64_t &last_start_position((*last_block).first);
-    const uint32_t &last_size((*last_block).second.second);
-    if (blocks_.empty() || position > last_start_position + last_size) {
+    if (blocks_.empty() || position >
+        (*blocks_.rbegin()).first + (*blocks_.rbegin()).second.size) {
       auto result = blocks_.insert(std::make_pair(position,
-          std::make_pair(ByteArray(new byte[length]), length)));
+                                                  SequenceData(length)));
       BOOST_ASSERT(result.second);
-      memcpy((*(result.first)).second.first.get(), data, length);
+      memcpy((*(result.first)).second.data.get(), data, length);
       return kSuccess;
     }
 
     auto lower_itr = blocks_.lower_bound(position);
     auto upper_itr = blocks_.upper_bound(position + length);
+
     // Check to see if new data spans part of, or joins onto, data of element
     // preceding lower_itr
     if (lower_itr == blocks_.end() ||
         (lower_itr != blocks_.begin() && (*lower_itr).first != position)) {
       --lower_itr;
-      if ((*lower_itr).first + (*lower_itr).second.second < position)
+      if ((*lower_itr).first + (*lower_itr).second.size < position)
         ++lower_itr;
     }
 
@@ -58,12 +61,14 @@ int Sequencer::Add(const char *data,
       new_start_position = lower_start_position;
     }
 
+    // Check to see if new data spans part of, or joins onto, data of element
+    // preceding upper_itr
     if (upper_itr != blocks_.begin()) {
       --upper_itr;
       reduced_upper = true;
     }
     const uint64_t &upper_start_position((*upper_itr).first);
-    const uint32_t &upper_size((*upper_itr).second.second);
+    const uint32_t &upper_size((*upper_itr).second.size);
 
     uint64_t post_overlap_posn(position + length);
     uint32_t post_overlap_size(0);
@@ -76,16 +81,13 @@ int Sequencer::Add(const char *data,
       post_overlap_size = upper_size -
           static_cast<uint32_t>(post_overlap_posn - upper_start_position);
     }
-    uint32_t new_length(pre_overlap_size + length + post_overlap_size);
 
-    SequenceData new_entry(std::make_pair(ByteArray(new byte[new_length]),
-                                          new_length));
-
-    memcpy(new_entry.first.get(), (*lower_itr).second.first.get(),
+    SequenceData new_entry(pre_overlap_size + length + post_overlap_size);
+    memcpy(new_entry.data.get(), (*lower_itr).second.data.get(),
            pre_overlap_size);
-    memcpy(new_entry.first.get() + pre_overlap_size, data, length);
-    memcpy(new_entry.first.get() + pre_overlap_size + length,
-           (*upper_itr).second.first.get() +
+    memcpy(new_entry.data.get() + pre_overlap_size, data, length);
+    memcpy(new_entry.data.get() + pre_overlap_size + length,
+           (*upper_itr).second.data.get() +
                 (post_overlap_posn - upper_start_position),
            post_overlap_size);
 
@@ -114,7 +116,7 @@ int Sequencer::Add(const char *data,
 SequenceData Sequencer::Get(const uint64_t &position) {
   auto itr(blocks_.find(position));
   if (itr == blocks_.end())
-    return kInvalidSeqData;
+    return SequenceData();
   SequenceData result((*itr).second);
   blocks_.erase(itr);
   return result;
@@ -123,7 +125,7 @@ SequenceData Sequencer::Get(const uint64_t &position) {
 SequenceBlock Sequencer::GetFirst() {
   if (blocks_.empty())
     return kInvalidSeqBlock;
-  std::pair<uint64_t, SequenceData> result(*blocks_.begin());
+  auto result(*blocks_.begin());
   blocks_.erase(blocks_.begin());
   return result;
 }

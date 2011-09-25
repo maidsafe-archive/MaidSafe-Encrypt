@@ -15,6 +15,7 @@
 #define MAIDSAFE_ENCRYPT_SEQUENCER_H_
 
 #include <cstdint>
+#include <limits>
 #include <map>
 
 #include "boost/shared_array.hpp"
@@ -23,21 +24,28 @@
 namespace maidsafe {
 namespace encrypt {
 
+struct SequenceData;
+
 typedef boost::shared_array<byte> ByteArray;
-typedef std::pair<ByteArray, uint32_t> SequenceData;
 typedef std::map<uint64_t, SequenceData> SequenceBlockMap;
 typedef SequenceBlockMap::value_type SequenceBlock;
 
-const SequenceData kInvalidSeqData(std::make_pair(ByteArray(), 0));
-const SequenceBlock kInvalidSeqBlock(std::make_pair(
-    std::numeric_limits<uint64_t>::max(), kInvalidSeqData));
+struct SequenceData {
+  explicit SequenceData(const uint32_t &sz) : data(new byte[sz]), size(sz) {}
+  SequenceData() : data(), size(0) {}
+  ByteArray data;
+  uint32_t size;
+};
 
 class Sequencer {
  public:
   Sequencer() : blocks_(), end_position_(0) {}
+  // Adds a new block to the map.  If this overlaps or joins any existing ones,
+  // the new block is set to cover the total span of all the overlapping blocks
+  // and the old ones are removed.
   int Add(const char *data, const uint32_t &length, const uint64_t &position);
   // Returns and removes the block of sequenced data at position in the map.  If
-  // no block exists at position, it returns kInvalidSeqData.
+  // no block exists at position, it returns a default (invalid) SequenceData.
   SequenceData Get(const uint64_t &position);
   // Returns and removes the first block of sequenced data in the map.  If the
   // map is empty, it returns kInvalidSeqBlock.
@@ -47,7 +55,7 @@ class Sequencer {
   SequenceBlock Peek(const uint64_t &position) const;
   void clear() { blocks_.clear(); }
  private:
-  Sequencer &operator = (const Sequencer&);
+  Sequencer &operator=(const Sequencer&);
   Sequencer(const Sequencer&);
   SequenceBlockMap blocks_;
   uint64_t end_position_;

@@ -56,7 +56,7 @@ class SelfEncryptor {
 
  private:
   typedef boost::shared_array<byte> ByteArray;
-  SelfEncryptor &operator = (const SelfEncryptor&);
+  SelfEncryptor &operator=(const SelfEncryptor&);
   SelfEncryptor(const SelfEncryptor&);
   // If prepared_for_writing_ is not already true, this either reads the first 2
   // chunks into their appropriate buffers or reads the content field of
