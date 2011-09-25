@@ -859,7 +859,7 @@ bool SelfEncryptor::ReadDataMapChunks(char *data,
     return read_ok_;
   }
 
-#pragma omp parallel for shared(data)
+// #pragma omp parallel for shared(data)
   for (int64_t i = start_chunk; i <= end_chunk; ++i) {
     uint32_t this_chunk_size(data_map_->chunks[i].size);
     if (this_chunk_size != 0) {
