@@ -525,8 +525,11 @@ bool SelfEncryptor::ProcessMainQueue() {
 // #pragma omp parallel for
   for (int64_t i = 0; i < chunks_to_process; ++i) {
     CryptoPP::SHA512().CalculateDigest(
-        data_map_->chunks[first_queue_chunk_index + i].pre_hash,
-        main_encrypt_queue_.get() + (i * kDefaultChunkSize), kDefaultChunkSize);
+        data_map_->chunks[first_queue_chunk_index +
+                          static_cast<uint32_t>(i)].pre_hash,
+        main_encrypt_queue_.get() +
+            (static_cast<uint32_t>(i) * kDefaultChunkSize),
+        kDefaultChunkSize);
   }
 
 // #pragma omp parallel for
@@ -861,7 +864,7 @@ bool SelfEncryptor::ReadDataMapChunks(char *data,
 
 // #pragma omp parallel for shared(data)
   for (int64_t i = start_chunk; i <= end_chunk; ++i) {
-    uint32_t this_chunk_size(data_map_->chunks[i].size);
+    uint32_t this_chunk_size(data_map_->chunks[static_cast<uint32_t>(i)].size);
     if (this_chunk_size != 0) {
       if (i == start_chunk) {
         if (start_offset != 0) {
