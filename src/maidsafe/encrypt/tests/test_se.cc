@@ -341,7 +341,6 @@ TEST(SelfEncryptionTest, BEH_WriteAndReadCompressible) {
     ASSERT_EQ(plain_data[i], answer[i]) << "failed at count " << i;
 }
 
-
 TEST(SelfEncryptionTest, BEH_WriteAndReadByteAtATime) {
   MemoryChunkStorePtr chunk_store(new MemoryChunkStore(false, g_hash_func));
   DataMapPtr data_map(new DataMap);

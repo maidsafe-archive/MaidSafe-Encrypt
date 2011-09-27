@@ -99,14 +99,21 @@ class SelfEncryptor {
   // copied.
   bool GetLengthForSequencer(const uint64_t &position, uint32_t *length);
   void ReadChunk(uint32_t chunk_num, byte *data);
+  // Retrieves appropriate pre-hashes from data_map_ and constructs key, IV and
+  // encryption pad.  If writing, and chunk has old_n1_pre_hash and
+  // old_n2_pre_hash fields set, they are reset to NULL.
   void GetPadIvKey(uint32_t this_chunk_num,
                    ByteArray key,
                    ByteArray iv,
-                   ByteArray pad);
+                   ByteArray pad,
+                   bool writing);
   bool ProcessMainQueue();
   void EncryptChunk(uint32_t chunk_num, byte *data, uint32_t length);
+  // If chunk_num has a valid hash in data_map_ (i.e. it was previously stored)
+  // it is deleted.  Chunks n+1 and n+2 have their old_n1_pre_hash and
+  // old_n2_pre_hash fields completed if not already done.
+  void HandleRewrite(const uint32_t &chunk_num);
   void CalculateSizes(bool force);
-
   // If prepared_for_reading_ is not already true, this initialises read_cache_.
   void PrepareToRead();
   // Handles reading from populated data_map_ and all the various write buffers.

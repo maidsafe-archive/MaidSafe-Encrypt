@@ -19,6 +19,7 @@
 #include <vector>
 
 #include "maidsafe/common/crypto.h"
+#include "boost/scoped_array.hpp"
 #include "boost/serialization/string.hpp"
 #include "boost/serialization/vector.hpp"
 
@@ -34,8 +35,11 @@ namespace encrypt {
 
 struct ChunkDetails {
   ChunkDetails() : hash(), pre_hash(), size(0) {}
-  byte hash[crypto::SHA512::DIGESTSIZE];  // SHA512 of processed chunk
+  std::string hash;  // SHA512 of processed chunk
   byte pre_hash[crypto::SHA512::DIGESTSIZE];  // SHA512 of unprocessed src data
+  // pre hashes of chunks n-1 and n-2, only valid if chunk n-1 or n-2 has
+  // modified content
+  boost::shared_array<byte> old_n1_pre_hash, old_n2_pre_hash;
   uint32_t size;  // Size of unprocessed source data in bytes
 };
 
