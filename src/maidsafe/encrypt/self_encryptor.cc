@@ -125,7 +125,6 @@ SelfEncryptor::SelfEncryptor(DataMapPtr data_map,
       prepared_for_writing_(false),
       chunk0_modified_(true),
       chunk1_modified_(true),
-      read_ok_(true),
       read_cache_(),
       cache_start_position_(0),
       prepared_for_reading_() {
@@ -155,7 +154,10 @@ bool SelfEncryptor::Write(const char *data,
   if (length == 0)
     return true;
 
-  PrepareToWrite();
+  if (PrepareToWrite() != kSuccess) {
+    DLOG(ERROR) << "Failed to write " << length << "B at pos " << position;
+    return false;
+  }
   PutToReadCache(data, length, position);
 
   if (position + length > file_size_) {
@@ -174,25 +176,37 @@ bool SelfEncryptor::Write(const char *data,
   uint32_t data_offset(0), queue_offset(0);
   if (GetDataOffsetForEnqueuing(length, position, &data_offset,
                                 &queue_offset)) {
-    PutToEncryptQueue(data + written, length, data_offset, queue_offset);
+    if (PutToEncryptQueue(data + written, length, data_offset, queue_offset) !=
+        kSuccess) {
+      DLOG(ERROR) << "Failed to write " << length << "B at pos " << position;
+      return false;
+    }
   }
 
-  if (GetLengthForSequencer(position, &length))
-    sequencer_->Add(data + written, length, position);
+  if (GetLengthForSequencer(position, &length)) {
+    if (sequencer_->Add(data + written, length, position) != kSuccess) {
+      DLOG(ERROR) << "Failed to write " << length << "B at pos " << position;
+      return false;
+    }
+  }
 
   SequenceData extra(sequencer_->Get(current_position_));
   if (extra.size != 0) {
-    PutToEncryptQueue(reinterpret_cast<char*>(extra.data.get()), extra.size,
-                      0, static_cast<uint32_t>(current_position_ -
-                                               queue_start_position_));
+    if (PutToEncryptQueue(reinterpret_cast<char*>(extra.data.get()), extra.size,
+                          0, static_cast<uint32_t>(current_position_ -
+                                                   queue_start_position_)) !=
+        kSuccess) {
+      DLOG(ERROR) << "Failed to write " << length << "B at pos " << position;
+      return false;
+    }
   }
 
   return true;
 }
 
-void SelfEncryptor::PrepareToWrite() {
+int SelfEncryptor::PrepareToWrite() {
   if (prepared_for_writing_)
-    return;
+    return kSuccess;
 
   if (!main_encrypt_queue_) {
     main_encrypt_queue_.reset(new byte[kQueueCapacity_]);
@@ -212,54 +226,32 @@ void SelfEncryptor::PrepareToWrite() {
   normal_chunk_size_ = kDefaultChunkSize;
   if (!data_map_->chunks.empty()) {
     BOOST_ASSERT(data_map_->chunks.empty() || data_map_->chunks.size() >= 3);
-    if (TotalSize(data_map_, normal_chunk_size_) >= 3 * kDefaultChunkSize) {
-      // First 2 chunks must all be kDefaultChunkSize
-      BOOST_ASSERT(data_map_->chunks[0].size == kDefaultChunkSize);
-      BOOST_ASSERT(data_map_->chunks[1].size == kDefaultChunkSize);
-      BOOST_ASSERT(current_position_ == 0);
-      ByteArray temp(new byte[kDefaultChunkSize]);
-      uint32_t length(kDefaultChunkSize);
-      uint64_t position(0);
-      ReadChunk(0, temp.get());
-      PutToInitialChunks(reinterpret_cast<char*>(temp.get()), &length,
-                         &position);
-      BOOST_ASSERT(current_position_ == kDefaultChunkSize);
-      BOOST_ASSERT(length == 0);
-      BOOST_ASSERT(current_position_ == kDefaultChunkSize);
-      BOOST_ASSERT(current_position_ == kDefaultChunkSize);
-
-      ReadChunk(1, temp.get());
-      PutToInitialChunks(reinterpret_cast<char*>(temp.get()), &length,
-                         &position);
-
-      for (size_t i(0); i != 2; ++i) {
-        uint32_t length(data_map_->chunks[i].size);
-        uint64_t position(current_position_);
-        PutToInitialChunks(reinterpret_cast<char*>(temp.get()), &length,
-                           &position);
+    ByteArray temp(new byte[kDefaultChunkSize + 1]);
+    uint32_t chunks_to_decrypt(2);
+    if (data_map_->chunks[0].size != kDefaultChunkSize)
+      chunks_to_decrypt = 3;
+    bool consumed_whole_chunk(true);
+    for (uint32_t i(0); i != chunks_to_decrypt; ++i) {
+      int result(DecryptChunk(i, temp.get()));
+      if (result != kSuccess) {
+        DLOG(ERROR) << "Failed to prepare for writing.";
+        return result;
       }
-      chunk0_modified_ = chunk1_modified_ = false;
-    } else {
-      uint32_t i(0);
-      ByteArray temp(new byte[kDefaultChunkSize + kMinChunkSize - 1]);
-      bool consumed_whole_chunk(true);
-      while (i != static_cast<uint32_t>(data_map_->chunks.size()) &&
-             consumed_whole_chunk) {
-        ReadChunk(i, temp.get());
-        uint32_t length(data_map_->chunks[i].size);
-        uint64_t position(current_position_);
-        uint32_t written =
-            PutToInitialChunks(reinterpret_cast<char*>(temp.get()),
-                               &length, &position);
-        consumed_whole_chunk = (length == 0);
-        if (!consumed_whole_chunk) {
-          sequencer_->Add(reinterpret_cast<char*>(temp.get()) + written, length,
-                          position);
+      uint32_t length(data_map_->chunks[i].size);
+      uint64_t position(current_position_);
+      uint32_t written =
+          PutToInitialChunks(reinterpret_cast<char*>(temp.get()),
+                              &length, &position);
+      consumed_whole_chunk = (length == 0);
+      if (!consumed_whole_chunk) {
+        result = sequencer_->Add(reinterpret_cast<char*>(temp.get()) + written,
+                                 length, position);
+        if (result != kSuccess) {
+          DLOG(ERROR) << "Failed to prepare for writing.";
+          return result;
         }
-        chunk_store_->Delete(data_map_->chunks[i].hash);
-        data_map_->chunks[i].size = 0;
-        ++i;
       }
+      data_map_->chunks[i].size = 0;
     }
   } else {
     uint32_t length(static_cast<uint32_t>(data_map_->content.size()));
@@ -271,6 +263,7 @@ void SelfEncryptor::PrepareToWrite() {
   chunk0_modified_ = false;
   chunk1_modified_ = false;
   prepared_for_writing_ = true;
+  return kSuccess;
 }
 
 void SelfEncryptor::PutToReadCache(const char *data,
@@ -374,10 +367,10 @@ bool SelfEncryptor::GetDataOffsetForEnqueuing(const uint32_t &length,
   return false;
 }
 
-void SelfEncryptor::PutToEncryptQueue(const char *data,
-                                      uint32_t length,
-                                      uint32_t data_offset,
-                                      uint32_t queue_offset) {
+int SelfEncryptor::PutToEncryptQueue(const char *data,
+                                     uint32_t length,
+                                     uint32_t data_offset,
+                                     uint32_t queue_offset) {
   length -= data_offset;
   uint32_t copy_length =
       std::min(length, kQueueCapacity_ - retrievable_from_queue_);
@@ -385,13 +378,17 @@ void SelfEncryptor::PutToEncryptQueue(const char *data,
     memcpy(&main_encrypt_queue_[queue_offset], data + data_offset, copy_length);
     retrievable_from_queue_ += copy_length;
     current_position_ += copy_length;
-    if (retrievable_from_queue_ == kQueueCapacity_)
-      ProcessMainQueue();
+    if (retrievable_from_queue_ == kQueueCapacity_) {
+      int result(ProcessMainQueue());
+      if (result != kSuccess)
+        return result;
+    }
     data_offset += copy_length;
     queue_offset = kDefaultChunkSize;
     length -= copy_length;
     copy_length = std::min(length, kDefaultByteArraySize_);
   }
+  return kSuccess;
 }
 
 bool SelfEncryptor::GetLengthForSequencer(const uint64_t &position,
@@ -407,10 +404,11 @@ bool SelfEncryptor::GetLengthForSequencer(const uint64_t &position,
   return (position > queue_start_position_ + retrievable_from_queue_);
 }
 
-void SelfEncryptor::ReadChunk(uint32_t chunk_num, byte *data) {
+int SelfEncryptor::DecryptChunk(const uint32_t &chunk_num, byte *data) {
   if (data_map_->chunks.size() <= chunk_num) {
-    read_ok_ = false;
-    return;
+    DLOG(WARNING) << "Can't decrypt chunk " << chunk_num << " of "
+                  << data_map_->chunks.size();
+    return kInvalidChunkIndex;
   }
 
   uint32_t length = data_map_->chunks[chunk_num].size;
@@ -427,8 +425,7 @@ void SelfEncryptor::ReadChunk(uint32_t chunk_num, byte *data) {
   if (content.empty()) {
     DLOG(ERROR) << "Could not find chunk number " << chunk_num
                 << ", hash " << EncodeToHex(data_map_->chunks[chunk_num].hash);
-    read_ok_ = false;
-    return;
+    return kMissingChunk;
   }
 
   try {
@@ -442,8 +439,9 @@ void SelfEncryptor::ReadChunk(uint32_t chunk_num, byte *data) {
   }
   catch(const std::exception &e) {
     DLOG(ERROR) << e.what();
-    read_ok_ = false;
+    return kDecryptionException;
   }
+  return kSuccess;
 }
 
 void SelfEncryptor::GetPadIvKey(uint32_t this_chunk_num,
@@ -515,9 +513,9 @@ void SelfEncryptor::GetPadIvKey(uint32_t this_chunk_num,
          n_2_pre_hash + hash_offset, crypto::SHA512::DIGESTSIZE - hash_offset);
 }
 
-bool SelfEncryptor::ProcessMainQueue() {
+int SelfEncryptor::ProcessMainQueue() {
   if (retrievable_from_queue_ < kDefaultChunkSize)
-    return false;
+    return kSuccess;
 
   uint32_t chunks_to_process(retrievable_from_queue_ / kDefaultChunkSize);
   if ((retrievable_from_queue_ % kDefaultChunkSize) < kMinChunkSize)
@@ -529,8 +527,7 @@ bool SelfEncryptor::ProcessMainQueue() {
   uint32_t first_queue_chunk_index =
       static_cast<uint32_t>(queue_start_position_ / kDefaultChunkSize);
   data_map_->chunks.resize(first_queue_chunk_index + chunks_to_process);
-// TODO(dirvine) FIXME uncomment line below and next loop for parallel writes
-// #pragma omp parallel for
+#pragma omp parallel for
   for (int64_t i = 0; i < chunks_to_process; ++i) {
     CryptoPP::SHA512().CalculateDigest(
         data_map_->chunks[first_queue_chunk_index +
@@ -540,14 +537,23 @@ bool SelfEncryptor::ProcessMainQueue() {
         kDefaultChunkSize);
   }
 
-// #pragma omp parallel for
+  int result(kSuccess);
+#pragma omp parallel for
   for (int64_t i = 0; i < chunks_to_process; ++i) {
-    EncryptChunk(first_queue_chunk_index + static_cast<uint32_t>(i),
-                 main_encrypt_queue_.get() + (i * kDefaultChunkSize),
-                 kDefaultChunkSize);
+    int res(EncryptChunk(first_queue_chunk_index + static_cast<uint32_t>(i),
+                         main_encrypt_queue_.get() + (i * kDefaultChunkSize),
+                         kDefaultChunkSize));
+    if (res != kSuccess) {
+      DLOG(ERROR) << "Failed processing main queue at chunk "
+                  << first_queue_chunk_index + i;
+#pragma omp critical
+      {  // NOLINT (Fraser)
+        result = res;
+      }
+    }
   }
 
-  if (chunks_to_process != 0) {
+  if (chunks_to_process != 0 && result == kSuccess) {
     uint32_t move_size(retrievable_from_queue_ -
                        (chunks_to_process * kDefaultChunkSize));
     memcpy(main_encrypt_queue_.get(),
@@ -556,12 +562,12 @@ bool SelfEncryptor::ProcessMainQueue() {
     queue_start_position_ += (chunks_to_process * kDefaultChunkSize);
     retrievable_from_queue_ -= (chunks_to_process * kDefaultChunkSize);
   }
-  return true;
+  return kSuccess;
 }
 
-void SelfEncryptor::EncryptChunk(uint32_t chunk_num,
-                                 byte *data,
-                                 uint32_t length) {
+int SelfEncryptor::EncryptChunk(const uint32_t &chunk_num,
+                                byte *data,
+                                const uint32_t &length) {
   BOOST_ASSERT(data_map_->chunks.size() > chunk_num);
 
   if (!data_map_->chunks[chunk_num].hash.empty()) {
@@ -570,13 +576,17 @@ void SelfEncryptor::EncryptChunk(uint32_t chunk_num,
       HandleRewrite(chunk_num);
     }
   } else {
-    data_map_->chunks[chunk_num].hash.resize(crypto::SHA512::DIGESTSIZE);
+#pragma omp critical
+    {  // NOLINT (Fraser)
+      data_map_->chunks[chunk_num].hash.resize(crypto::SHA512::DIGESTSIZE);
+    }
   }
 
   ByteArray pad(new byte[kPadSize]);
   ByteArray key(new byte[crypto::AES256_KeySize]);
   ByteArray iv(new byte[crypto::AES256_IVSize]);
   GetPadIvKey(chunk_num, key, iv, pad, true);
+  int result(kSuccess);
   try {
     CryptoPP::CFB_Mode<CryptoPP::AES>::Encryption encryptor(
         key.get(), crypto::AES256_KeySize, iv.get());
@@ -601,20 +611,25 @@ void SelfEncryptor::EncryptChunk(uint32_t chunk_num,
                                chunk_content)) {
         DLOG(ERROR) << "Could not store "
                     << EncodeToHex(data_map_->chunks[chunk_num].hash);
+        result = kFailedToStoreChunk;
       }
     }
   }
   catch(const std::exception &e) {
     DLOG(ERROR) << e.what();
+    result = kEncryptionException;
   }
 
   data_map_->chunks[chunk_num].size = length;  // keep pre-compressed length
+  return result;
 }
 
 void SelfEncryptor::HandleRewrite(const uint32_t &chunk_num) {
-  if (!chunk_store_->Delete(data_map_->chunks[chunk_num].hash))
-    DLOG(ERROR) << "Failed to delete chunk "
-                << EncodeToHex(data_map_->chunks[chunk_num].hash);
+  if (!data_map_->chunks[chunk_num].hash.empty() &&
+      !chunk_store_->Delete(data_map_->chunks[chunk_num].hash)) {
+    DLOG(WARNING) << "Failed to delete chunk " << chunk_num << ": "
+                  << EncodeToHex(data_map_->chunks[chunk_num].hash);
+  }
   uint32_t num_chunks = static_cast<uint32_t>(data_map_->chunks.size());
   uint32_t n_minus_1_chunk = (chunk_num + num_chunks - 1) % num_chunks;
   uint32_t n_plus_1_chunk = (chunk_num + 1) % num_chunks;
@@ -645,14 +660,14 @@ void SelfEncryptor::HandleRewrite(const uint32_t &chunk_num) {
   }
 }
 
-void SelfEncryptor::Flush() {
+bool SelfEncryptor::Flush() {
   if (!prepared_for_writing_)
-    return;
+    return true;
 
   if (file_size_ < 3 * kMinChunkSize) {
     data_map_->content.assign(reinterpret_cast<char*>(chunk0_raw_.get()),
                               static_cast<size_t>(file_size_));
-    return;
+    return true;
   }
 
   // Re-calculate normal_chunk_size_ and last_chunk_position_
@@ -661,7 +676,11 @@ void SelfEncryptor::Flush() {
   CalculateSizes(true);
 
   // Empty queue (after this call it will contain 0 or 1 chunks).
-  ProcessMainQueue();
+  int result(ProcessMainQueue());
+  if (result != kSuccess) {
+    DLOG(ERROR) << "Failed in Flush.";
+    return false;
+  }
 
   uint64_t flush_position(2 * normal_chunk_size_);
   uint32_t chunk_index(2);
@@ -708,8 +727,8 @@ void SelfEncryptor::Flush() {
     // Read in any data from previously-encrypted chunk
     if (chunk_index < kOldChunkCount &&
         (pre_pre_chunk_modified || pre_chunk_modified || this_chunk_modified)) {
-      ReadChunk(chunk_index, chunk_array.get());
-      if (read_ok_)
+      int result(DecryptChunk(chunk_index, chunk_array.get()));
+      if (result == kSuccess)
         chunk_store_->Delete(data_map_->chunks[chunk_index].hash);
     }
 
@@ -760,8 +779,13 @@ void SelfEncryptor::Flush() {
           this_chunk_size);
     }
 
-    if (pre_pre_chunk_modified || pre_chunk_modified || this_chunk_modified)
-      EncryptChunk(chunk_index, chunk_array.get(), this_chunk_size);
+    if (pre_pre_chunk_modified || pre_chunk_modified || this_chunk_modified) {
+      result = EncryptChunk(chunk_index, chunk_array.get(), this_chunk_size);
+      if (result != kSuccess) {
+        DLOG(ERROR) << "Failed in Flush.";
+        return false;
+      }
+    }
 
     flush_position += this_chunk_size;
     ++chunk_index;
@@ -772,19 +796,32 @@ void SelfEncryptor::Flush() {
 
   BOOST_ASSERT(flush_position == file_size_);
 
-  if (pre_pre_chunk_modified || pre_chunk_modified || chunk0_modified_)
-    EncryptChunk(0, chunk0_raw_.get(), normal_chunk_size_);
+  if (pre_pre_chunk_modified || pre_chunk_modified || chunk0_modified_) {
+    result = EncryptChunk(0, chunk0_raw_.get(), normal_chunk_size_);
+    if (result != kSuccess) {
+      DLOG(ERROR) << "Failed in Flush.";
+      return false;
+    }
+  }
 
   pre_pre_chunk_modified = pre_chunk_modified;
   pre_chunk_modified = chunk0_modified_;
 
   if (pre_pre_chunk_modified || pre_chunk_modified || chunk1_modified_) {
     if (normal_chunk_size_ == kDefaultChunkSize) {
-      EncryptChunk(1, chunk1_raw_.get(), normal_chunk_size_);
+      result = EncryptChunk(1, chunk1_raw_.get(), normal_chunk_size_);
+      if (result != kSuccess) {
+        DLOG(ERROR) << "Failed in Flush.";
+        return false;
+      }
     } else if (normal_chunk_size_ * 2 <= kDefaultChunkSize) {
       // All of chunk 0 and chunk 1 data in chunk0_raw_
-      EncryptChunk(1, chunk0_raw_.get() + normal_chunk_size_,
-                   normal_chunk_size_);
+      result = EncryptChunk(1, chunk0_raw_.get() + normal_chunk_size_,
+                            normal_chunk_size_);
+      if (result != kSuccess) {
+        DLOG(ERROR) << "Failed in Flush.";
+        return false;
+      }
     } else {
       // Some at end of chunk0_raw_ and rest in start of chunk1_raw_
       ByteArray temp(new byte[normal_chunk_size_]);
@@ -792,13 +829,18 @@ void SelfEncryptor::Flush() {
       uint32_t size_chunk1(normal_chunk_size_ - size_chunk0);
       memcpy(temp.get(), chunk0_raw_.get() + normal_chunk_size_, size_chunk0);
       memcpy(temp.get() + size_chunk0, chunk1_raw_.get(), size_chunk1);
-      EncryptChunk(1, temp.get(), normal_chunk_size_);
+      result = EncryptChunk(1, temp.get(), normal_chunk_size_);
+      if (result != kSuccess) {
+        DLOG(ERROR) << "Failed in Flush.";
+        return false;
+      }
     }
   }
 
   // Restore sizes, in case of further writes.
   normal_chunk_size_ = normal_chunk_size_before_flush;
   last_chunk_position_ = last_chunk_position_before_flush;
+  return true;
 }
 
 bool SelfEncryptor::Read(char* data,
@@ -816,14 +858,21 @@ bool SelfEncryptor::Read(char* data,
     if (position < cache_start_position_ ||
         position + length > cache_start_position_ + kDefaultByteArraySize_) {
       // populate read_cache_.
-      Transmogrify(read_cache_.get(), kDefaultByteArraySize_, position);
+      if (Transmogrify(read_cache_.get(), kDefaultByteArraySize_, position) !=
+          kSuccess) {
+        DLOG(ERROR) << "Failed to read " << length << "B at pos " << position;
+        return false;
+      }
       cache_start_position_ = position;
     }
     memcpy(data, read_cache_.get() + static_cast<uint32_t>(position -
            cache_start_position_), length);
   } else {
     // length requested larger than cache size, just go ahead and read
-    Transmogrify(data, length, position);
+    if (Transmogrify(data, length, position) != kSuccess) {
+      DLOG(ERROR) << "Failed to read " << length << "B at pos " << position;
+      return false;
+    }
   }
   return true;
 }
@@ -837,15 +886,18 @@ void SelfEncryptor::PrepareToRead() {
   prepared_for_reading_ = true;
 }
 
-bool SelfEncryptor::Transmogrify(char *data,
-                                 const uint32_t &length,
-                                 const uint64_t &position) {
+int SelfEncryptor::Transmogrify(char *data,
+                                const uint32_t &length,
+                                const uint64_t &position) {
   memset(data, 0, length);
 
   // For tiny files, all data is in data_map_->content or chunk0_raw_.
   if (file_size_ < 3 * kMinChunkSize) {
-    if (position >= 3 * kMinChunkSize)
-      return false;
+    if (position >= 3 * kMinChunkSize) {
+      DLOG(ERROR) << "Failed to transmogrify " << length << "B at position "
+                  << position << " with file size of " << file_size_ << "B";
+      return kInvalidPosition;
+    }
     if (prepared_for_writing_) {
       uint32_t copy_size = std::min(length, (3 * kMinChunkSize) -
                                     static_cast<uint32_t>(position));
@@ -855,24 +907,28 @@ bool SelfEncryptor::Transmogrify(char *data,
                            static_cast<uint32_t>(data_map_->content.size()));
       memcpy(data, data_map_->content.data() + position, copy_size);
     }
-    return true;
+    return kSuccess;
   }
 
-  ReadDataMapChunks(data, length, position);
+  int result(ReadDataMapChunks(data, length, position));
+  if (result != kSuccess) {
+    DLOG(ERROR) << "Failed to read DM chunks during transmogrification of "
+                << length << "B at position " << position;
+    return result;
+  }
 
   if (!prepared_for_writing_)
-    return true;
+    return kSuccess;
 
   ReadInProcessData(data, length, position);
-
-  return true;
+  return kSuccess;
 }
 
-bool SelfEncryptor::ReadDataMapChunks(char *data,
-                                      const uint32_t &length,
-                                      const uint64_t &position) {
+int SelfEncryptor::ReadDataMapChunks(char *data,
+                                     const uint32_t &length,
+                                     const uint64_t &position) {
   if (data_map_->chunks.empty())
-    return false;
+    return kSuccess;
 
   uint32_t num_chunks = static_cast<uint32_t>(data_map_->chunks.size());
   uint32_t start_chunk = static_cast<uint32_t>(position / normal_chunk_size_);
@@ -890,15 +946,20 @@ bool SelfEncryptor::ReadDataMapChunks(char *data,
                                     (normal_chunk_size_ * end_chunk));
   }
 
+  int result(kSuccess);
   if (start_chunk == end_chunk && data_map_->chunks[start_chunk].size != 0) {
     ByteArray chunk_data(new byte[data_map_->chunks[start_chunk].size]);
-    ReadChunk(start_chunk, chunk_data.get());
+    result = DecryptChunk(start_chunk, chunk_data.get());
+    if (result != kSuccess) {
+      DLOG(ERROR) << "Failed to decrypt chunk " << start_chunk;
+      return result;
+    }
     for (uint32_t i = start_offset; i != length + start_offset; ++i)
       data[i - start_offset] = static_cast<char>(chunk_data[i]);
-    return read_ok_;
+    return kSuccess;
   }
 
-// #pragma omp parallel for shared(data)
+#pragma omp parallel for shared(data)
   for (int64_t i = start_chunk; i <= end_chunk; ++i) {
     uint32_t this_chunk_size(data_map_->chunks[static_cast<uint32_t>(i)].size);
     if (this_chunk_size != 0) {
@@ -906,12 +967,26 @@ bool SelfEncryptor::ReadDataMapChunks(char *data,
         if (start_offset != 0) {
           // Create temp array as we don't need data before "start_offset".
           ByteArray temp(new byte[this_chunk_size]);
-          ReadChunk(start_chunk, temp.get());
+          int res = DecryptChunk(start_chunk, temp.get());
+          if (res != kSuccess) {
+            DLOG(ERROR) << "Failed to decrypt chunk " << start_chunk;
+#pragma omp critical
+            {  // NOLINT (Fraser)
+              result = res;
+            }
+          }
           memcpy(data, temp.get() + start_offset,
                  this_chunk_size - start_offset);
         } else {
-          ReadChunk(static_cast<uint32_t>(i),
-                    reinterpret_cast<byte*>(&data[0]));
+          int res = DecryptChunk(static_cast<uint32_t>(i),
+                                 reinterpret_cast<byte*>(&data[0]));
+          if (res != kSuccess) {
+            DLOG(ERROR) << "Failed to decrypt chunk " << i;
+#pragma omp critical
+            {  // NOLINT (Fraser)
+              result = res;
+            }
+          }
         }
       } else {
         uint64_t pos(static_cast<uint32_t>(i) * normal_chunk_size_);
@@ -919,16 +994,30 @@ bool SelfEncryptor::ReadDataMapChunks(char *data,
           // Create temp array as we'll possibly have to read beyond the end of
           // what's available in variable "data".
           ByteArray temp(new byte[this_chunk_size]);
-          ReadChunk(end_chunk, temp.get());
+          int res = DecryptChunk(end_chunk, temp.get());
+          if (res != kSuccess) {
+            DLOG(ERROR) << "Failed to decrypt chunk " << end_chunk;
+#pragma omp critical
+            {  // NOLINT (Fraser)
+              result = res;
+            }
+          }
           memcpy(data + pos - position, temp.get(), end_cut);
         } else {
-          ReadChunk(static_cast<uint32_t>(i),
+          int res = DecryptChunk(static_cast<uint32_t>(i),
                     reinterpret_cast<byte*>(&data[pos - position]));
+          if (res != kSuccess) {
+            DLOG(ERROR) << "Failed to decrypt chunk " << i;
+#pragma omp critical
+            {  // NOLINT (Fraser)
+              result = res;
+            }
+          }
         }
       }
     }
   }
-  return read_ok_;
+  return result;
 }
 
 void SelfEncryptor::ReadInProcessData(char *data,
@@ -1008,16 +1097,17 @@ void SelfEncryptor::ReadInProcessData(char *data,
 }
 
 bool SelfEncryptor::DeleteAllChunks() {
-  for (uint32_t i = 0; i != static_cast<uint32_t>(data_map_->chunks.size());
-       ++i) {
-    if (!chunk_store_->Delete(data_map_->chunks[i].hash))
+  for (uint32_t i(0); i != data_map_->chunks.size(); ++i) {
+    if (!chunk_store_->Delete(data_map_->chunks[i].hash)) {
+      DLOG(WARNING) << "Failed to delete chunk " << i;
       return false;
+    }
   }
   data_map_->chunks.clear();
   return true;
 }
 
-bool SelfEncryptor::Truncate(uint64_t size) {
+bool SelfEncryptor::Truncate(const uint64_t &length) {
   uint64_t byte_count(0);
   uint32_t number_of_chunks(static_cast<uint32_t>(data_map_->chunks.size()));
 //  bool delete_remainder(false), found_end(false);
@@ -1026,7 +1116,7 @@ bool SelfEncryptor::Truncate(uint64_t size) {
     for (uint32_t i = 0; i != number_of_chunks; ++i) {
       uint32_t chunk_size = data_map_->chunks[i].size;
       byte_count += chunk_size;
-      if (byte_count > size) {
+      if (byte_count > length) {
         // Found chunk with data at position 'size'.
         if (retrievable_from_queue_ != 0)
 //          main_encrypt_queue_.SkipAll();
@@ -1038,7 +1128,7 @@ bool SelfEncryptor::Truncate(uint64_t size) {
           }
           data_map_->chunks.pop_back();
         }
-        if (byte_count - size == chunk_size) {
+        if (byte_count - length == chunk_size) {
           if (!chunk_store_->Delete(data_map_->chunks[i].hash)) {
             DLOG(ERROR) << "Failed to delete chunk";
             return false;
@@ -1046,10 +1136,10 @@ bool SelfEncryptor::Truncate(uint64_t size) {
           data_map_->chunks.pop_back();
         } else {
           std::shared_ptr<byte> data(new byte[chunk_size]);
-          ReadChunk(i, data.get());
-          BOOST_ASSERT(byte_count - size <= chunk_size);
+          DecryptChunk(i, data.get());
+          BOOST_ASSERT(byte_count - length <= chunk_size);
 //          uint32_t bytes_to_queue(chunk_size -
-//                                  static_cast<uint32_t>(byte_count - size));
+//                                  static_cast<uint32_t>(byte_count - length));
 //          main_encrypt_queue_.Put2(data.get(), bytes_to_queue, 0, true);
           if (!chunk_store_->Delete(data_map_->chunks[i].hash)) {
             DLOG(ERROR) << "Failed to delete chunk";
@@ -1057,7 +1147,7 @@ bool SelfEncryptor::Truncate(uint64_t size) {
           }
           data_map_->chunks.pop_back();
         }
-        current_position_ = size;
+        current_position_ = length;
         data_map_->content.erase();
         return true;
       }
@@ -1074,7 +1164,7 @@ bool SelfEncryptor::Truncate(uint64_t size) {
 //      // check queue;
 //    else
 //      // check sequencer
-//      if (size <= retrievable_from_queue_) {
+//      if (length <= retrievable_from_queue_) {
 //
 //      }
 //    }

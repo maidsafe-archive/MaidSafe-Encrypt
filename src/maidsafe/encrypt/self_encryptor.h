@@ -50,8 +50,11 @@ class SelfEncryptor {
   bool Write(const char *data, uint32_t length, uint64_t position);
   bool Read(char *data, const uint32_t &length, const uint64_t &position);
   bool DeleteAllChunks();
-  bool Truncate(uint64_t size);
-  void Flush();
+  // Can only truncate down in size
+  bool Truncate(const uint64_t &length);
+  // Forces all buffered data to be encrypted.  Missing portions of the file
+  // be filled with '\0's
+  bool Flush();
   DataMapPtr data_map() const { return data_map_; }
 
  private:
@@ -64,7 +67,7 @@ class SelfEncryptor {
   // exactly 3 chunks before (the only way chunks could be non-default-sized),
   // it will be empty after.  Chunks read in from data_map_ are deleted from
   // chunk_store_.
-  void PrepareToWrite();
+  int PrepareToWrite();
   // Copies any relevant data to read_cache_.
   void PutToReadCache(const char *data,
                       const uint32_t &length,
@@ -88,17 +91,18 @@ class SelfEncryptor {
   // chunk 0 or 1, it is copied to those buffer(s) instead.  In this case, these
   // chunk buffers are treated as part of the main_encrypt_queue_ as far as
   // updating position pointers is concerned.
-  void PutToEncryptQueue(const char *data,
-                         uint32_t length,
-                         uint32_t data_offset,
-                         uint32_t queue_offset);
+  int PutToEncryptQueue(const char *data,
+                        uint32_t length,
+                        uint32_t data_offset,
+                        uint32_t queue_offset);
   // Any data for writing beyond chunks 0 and 1 and which precedes
   // main_encrypt_queue_, is added to the sequencer.  So is any data which
   // follows but doesn't adjoin main_encrypt_queue_.  For such a case, this
   // returns true and adjusts length to the required amount of data to be
   // copied.
   bool GetLengthForSequencer(const uint64_t &position, uint32_t *length);
-  void ReadChunk(uint32_t chunk_num, byte *data);
+  // Retrieves the encrypted chunk from chunk_store_ and decrypts it to "data".
+  int DecryptChunk(const uint32_t &chunk_num, byte *data);
   // Retrieves appropriate pre-hashes from data_map_ and constructs key, IV and
   // encryption pad.  If writing, and chunk has old_n1_pre_hash and
   // old_n2_pre_hash fields set, they are reset to NULL.
@@ -107,8 +111,13 @@ class SelfEncryptor {
                    ByteArray iv,
                    ByteArray pad,
                    bool writing);
-  bool ProcessMainQueue();
-  void EncryptChunk(uint32_t chunk_num, byte *data, uint32_t length);
+  // Encrypts all but the last chunk in the queue, then moves the last chunk to
+  // the front of the queue.
+  int ProcessMainQueue();
+  // Encrypts the chunk and stores in chunk_store_
+  int EncryptChunk(const uint32_t &chunk_num,
+                   byte *data,
+                   const uint32_t &length);
   // If chunk_num has a valid hash in data_map_ (i.e. it was previously stored)
   // it is deleted.  Chunks n+1 and n+2 have their old_n1_pre_hash and
   // old_n2_pre_hash fields completed if not already done.
@@ -117,12 +126,12 @@ class SelfEncryptor {
   // If prepared_for_reading_ is not already true, this initialises read_cache_.
   void PrepareToRead();
   // Handles reading from populated data_map_ and all the various write buffers.
-  bool Transmogrify(char *data,
-                    const uint32_t &length,
-                    const uint64_t &position);
-  bool ReadDataMapChunks(char *data,
-                         const uint32_t &length,
-                         const uint64_t &position);
+  int Transmogrify(char *data,
+                   const uint32_t &length,
+                   const uint64_t &position);
+  int ReadDataMapChunks(char *data,
+                        const uint32_t &length,
+                        const uint64_t &position);
   void ReadInProcessData(char *data, uint32_t length, uint64_t position);
 
   DataMapPtr data_map_;
@@ -137,7 +146,7 @@ class SelfEncryptor {
   ByteArray chunk0_raw_, chunk1_raw_;
   std::shared_ptr<ChunkStore> chunk_store_;
   uint64_t current_position_;
-  bool prepared_for_writing_, chunk0_modified_, chunk1_modified_, read_ok_;
+  bool prepared_for_writing_, chunk0_modified_, chunk1_modified_;
   boost::shared_array<char> read_cache_;
   uint64_t cache_start_position_;
   bool prepared_for_reading_;

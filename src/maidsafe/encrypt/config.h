@@ -33,6 +33,12 @@ enum ReturnCode {
   kSuccess = 0,
   kEncryptError = -200001,
   kDecryptError = -200002,
+  kInvalidChunkIndex = -200003,
+  kFailedToStoreChunk = -200004,
+  kMissingChunk = -200005,
+  kEncryptionException = -200006,
+  kDecryptionException = -200007,
+  kInvalidPosition = -200008,
   kSequencerException = -200101
 };
 
