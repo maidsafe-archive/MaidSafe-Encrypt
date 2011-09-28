@@ -220,7 +220,6 @@ int SelfEncryptor::PrepareToWrite() {
     memset(chunk1_raw_.get(), 0, Size(chunk1_raw_));
   }
 
-  normal_chunk_size_ = kDefaultChunkSize;
   if (!data_map_->chunks.empty()) {
     BOOST_ASSERT(data_map_->chunks.empty() || data_map_->chunks.size() >= 3);
     ByteArray temp(GetNewByteArray(kDefaultChunkSize + 1));
@@ -397,9 +396,11 @@ int SelfEncryptor::PutToEncryptQueue(const char *data,
       int result(ProcessMainQueue());
       if (result != kSuccess)
         return result;
+      queue_offset = retrievable_from_queue_;
+    } else {
+      queue_offset += copy_length;
     }
     data_offset += copy_length;
-    queue_offset = kDefaultChunkSize;
     length -= copy_length;
     copy_length = std::min(length, kDefaultByteArraySize_);
   }
@@ -746,10 +747,13 @@ bool SelfEncryptor::Flush() {
       this_chunk_modified = true;
     }
 
-    if (flush_position == queue_start_position_) {
+    if (flush_position <= queue_start_position_ &&
+        flush_position + this_chunk_size > queue_start_position_) {
       this_chunk_has_data_in_queue = true;
       this_chunk_modified = true;
-    } else if (flush_position < 2 * kDefaultChunkSize) {
+    }
+
+    if (flush_position < 2 * kDefaultChunkSize) {
       this_chunk_has_data_in_c0_or_c1 = true;
       this_chunk_modified = true;
     }
@@ -766,22 +770,27 @@ bool SelfEncryptor::Flush() {
     uint32_t copied(0);
     if (this_chunk_has_data_in_c0_or_c1) {
       uint32_t offset(static_cast<uint32_t>(flush_position));
-      uint32_t size_in_chunk0(0);
+      uint32_t size_in_chunk0(0), c1_offset(0);
       if (offset < kDefaultChunkSize) {  // in chunk 0
         size_in_chunk0 = std::min(kDefaultChunkSize - offset, this_chunk_size);
         copied = MemCopy(chunk_array, 0, chunk0_raw_.get() + offset,
                          size_in_chunk0);
         BOOST_ASSERT(size_in_chunk0 == copied);
+      } else if (offset < 2 * kDefaultChunkSize) {
+        c1_offset = offset - kDefaultChunkSize;
       }
-      uint32_t size_in_chunk1(this_chunk_size - size_in_chunk0);
+      uint32_t size_in_chunk1(std::min(this_chunk_size - size_in_chunk0,
+                                       kDefaultChunkSize - c1_offset));
       if (size_in_chunk1 != 0) {  // in chunk 1
-        copied = MemCopy(chunk_array, size_in_chunk0, chunk1_raw_.get(),
-                         size_in_chunk1);
-        BOOST_ASSERT(size_in_chunk1 == copied);
+        copied += MemCopy(chunk_array, size_in_chunk0,
+                          chunk1_raw_.get() + c1_offset, size_in_chunk1);
+        BOOST_ASSERT(size_in_chunk0 + size_in_chunk1 == copied);
       }
-    } else if (this_chunk_has_data_in_queue) {
-      // Overwrite with any data in queue
-      copied = MemCopy(chunk_array, 0, main_encrypt_queue_.get(),
+    }
+
+    // Overwrite with any data in queue
+    if (this_chunk_has_data_in_queue) {
+      copied = MemCopy(chunk_array, copied, main_encrypt_queue_.get(),
                        retrievable_from_queue_);
       BOOST_ASSERT(retrievable_from_queue_ == copied);
     }
@@ -1100,7 +1109,7 @@ void SelfEncryptor::ReadInProcessData(char *data,
       copy_length = std::min(length - data_offset,
                              retrievable_from_queue_ - queue_offset);
     }
-    memcpy(data + data_offset, main_encrypt_queue_.get() + queue_offset,
+    memcpy(data + data_offset, &*main_encrypt_queue_ + queue_offset,
            copy_length);
   }
 

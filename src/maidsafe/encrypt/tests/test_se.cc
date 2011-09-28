@@ -110,10 +110,6 @@ TEST_P(BasicSelfEncryptionTest, BEH_EncryptDecrypt) {
   switch (test_file_size_) {
     case kTiny:
     case kVerySmall:
-      EXPECT_TRUE(self_encryptor_->data_map()->chunks.empty());
-      EXPECT_EQ(0, TotalSize(self_encryptor_->data_map()));
-      EXPECT_TRUE(self_encryptor_->data_map()->content.empty());
-      break;
     case kSmall:
       EXPECT_TRUE(self_encryptor_->data_map()->chunks.empty());
       EXPECT_EQ(0, TotalSize(self_encryptor_->data_map()));
@@ -177,6 +173,15 @@ INSTANTIATE_TEST_CASE_P(FileSmallerThanOneChunk, BasicSelfEncryptionTest,
                             std::make_pair(3 * kMinChunkSize - 1, 1024),
                             std::make_pair(kDefaultChunkSize - 23, 22),
                             std::make_pair(kDefaultChunkSize - 1, 0)));
+
+INSTANTIATE_TEST_CASE_P(FileSmallerThanThreeNormalChunks,
+                        BasicSelfEncryptionTest,
+                        testing::Values(
+                            std::make_pair(kDefaultChunkSize, 0),
+                            std::make_pair(kDefaultChunkSize - 1, 1),
+                            std::make_pair(kDefaultChunkSize - 1, 1024),
+                            std::make_pair(3 * kDefaultChunkSize - 23, 22),
+                            std::make_pair(3 * kDefaultChunkSize - 1, 0)));
 
 TEST(SelfEncryptionTest, BEH_BenchmarkMemOnly) {
   MemoryChunkStorePtr chunk_store(new MemoryChunkStore(false, g_hash_func));
