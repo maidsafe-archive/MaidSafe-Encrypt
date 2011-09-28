@@ -210,17 +210,17 @@ int SelfEncryptor::PrepareToWrite() {
 
   if (!main_encrypt_queue_) {
     main_encrypt_queue_ = GetNewByteArray(kQueueCapacity_);
-    memset(main_encrypt_queue_.get(), 0, kQueueCapacity_);
+    memset(main_encrypt_queue_.get(), 0, Size(main_encrypt_queue_));
   }
 
   if (!chunk0_raw_) {
     chunk0_raw_ = GetNewByteArray(kDefaultChunkSize);
-    memset(chunk0_raw_.get(), 0, kDefaultChunkSize);
+    memset(chunk0_raw_.get(), 0, Size(chunk0_raw_));
   }
 
   if (!chunk1_raw_) {
     chunk1_raw_ = GetNewByteArray(kDefaultChunkSize);
-    memset(chunk1_raw_.get(), 0, kDefaultChunkSize);
+    memset(chunk1_raw_.get(), 0, Size(chunk1_raw_));
   }
 
   normal_chunk_size_ = kDefaultChunkSize;
@@ -313,7 +313,7 @@ uint32_t SelfEncryptor::PutToInitialChunks(const char *data,
   if (*position < kDefaultChunkSize) {
     copy_length0 =
         std::min(*length, kDefaultChunkSize - static_cast<uint32_t>(*position));
-#ifdef DEBUG
+#ifndef NDEBUG
     uint32_t copied =
 #endif
         MemCopy(chunk0_raw_, static_cast<uint32_t>(*position), data,
@@ -333,7 +333,7 @@ uint32_t SelfEncryptor::PutToInitialChunks(const char *data,
   if ((*position >= kDefaultChunkSize) && (*position < 2 * kDefaultChunkSize)) {
     copy_length1 = std::min(*length,
         (2 * kDefaultChunkSize) - static_cast<uint32_t>(*position));
-#ifdef DEBUG
+#ifndef NDEBUG
     uint32_t copied =
 #endif
         MemCopy(chunk1_raw_,
@@ -485,8 +485,12 @@ void SelfEncryptor::GetPadIvKey(uint32_t this_chunk_num,
         ByteArray temp(GetNewByteArray(normal_chunk_size_));
         uint32_t size_chunk0(kDefaultChunkSize - normal_chunk_size_);
         uint32_t size_chunk1(normal_chunk_size_ - size_chunk0);
-        memcpy(temp.get(), chunk0_raw_.get() + normal_chunk_size_, size_chunk0);
-        memcpy(temp.get() + size_chunk0, chunk1_raw_.get(), size_chunk1);
+        uint32_t copied = MemCopy(temp, 0,
+                                  chunk0_raw_.get() + normal_chunk_size_,
+                                  size_chunk0);
+        BOOST_ASSERT(size_chunk0 == copied);
+        copied = MemCopy(temp, size_chunk0, chunk1_raw_.get(), size_chunk1);
+        BOOST_ASSERT(size_chunk1 == copied);
         CryptoPP::SHA512().CalculateDigest(data_map_->chunks[1].pre_hash,
                                             temp.get(), normal_chunk_size_);
       }
@@ -513,16 +517,22 @@ void SelfEncryptor::GetPadIvKey(uint32_t this_chunk_num,
     }
   }
 
-  memcpy(key.get(), n_2_pre_hash, crypto::AES256_KeySize);
-  memcpy(iv.get(), n_2_pre_hash + crypto::AES256_KeySize,
-         crypto::AES256_IVSize);
-  memcpy(pad.get(), n_1_pre_hash, crypto::SHA512::DIGESTSIZE);
-  memcpy(pad.get() + crypto::SHA512::DIGESTSIZE,
-         &data_map_->chunks[this_chunk_num].pre_hash[0],
-         crypto::SHA512::DIGESTSIZE);
+  uint32_t copied = MemCopy(key, 0, n_2_pre_hash, crypto::AES256_KeySize);
+  BOOST_ASSERT(crypto::AES256_KeySize == copied);
+  copied = MemCopy(iv, 0, n_2_pre_hash + crypto::AES256_KeySize,
+                   crypto::AES256_IVSize);
+  BOOST_ASSERT(crypto::AES256_IVSize == copied);
+  copied = MemCopy(pad, 0, n_1_pre_hash, crypto::SHA512::DIGESTSIZE);
+  BOOST_ASSERT(crypto::AES256_KeySize == copied);
+  copied = MemCopy(pad, crypto::SHA512::DIGESTSIZE,
+                   &data_map_->chunks[this_chunk_num].pre_hash[0],
+                   crypto::SHA512::DIGESTSIZE);
+  BOOST_ASSERT(crypto::SHA512::DIGESTSIZE == copied);
   uint32_t hash_offset(crypto::AES256_KeySize + crypto::AES256_IVSize);
-  memcpy(pad.get() + (2 * crypto::SHA512::DIGESTSIZE),
-         n_2_pre_hash + hash_offset, crypto::SHA512::DIGESTSIZE - hash_offset);
+  copied = MemCopy(pad, (2 * crypto::SHA512::DIGESTSIZE),
+                   n_2_pre_hash + hash_offset,
+                   crypto::SHA512::DIGESTSIZE - hash_offset);
+  BOOST_ASSERT(crypto::SHA512::DIGESTSIZE - hash_offset == copied);
 }
 
 int SelfEncryptor::ProcessMainQueue() {
@@ -568,9 +578,14 @@ int SelfEncryptor::ProcessMainQueue() {
   if (chunks_to_process != 0 && result == kSuccess) {
     uint32_t move_size(retrievable_from_queue_ -
                        (chunks_to_process * kDefaultChunkSize));
-    memcpy(main_encrypt_queue_.get(),
-           main_encrypt_queue_.get() + (chunks_to_process * kDefaultChunkSize),
-           move_size);
+#ifndef NDEBUG
+    uint32_t copied =
+#endif
+        MemCopy(main_encrypt_queue_, 0,
+                main_encrypt_queue_.get() +
+                    (chunks_to_process * kDefaultChunkSize),
+                move_size);
+    BOOST_ASSERT(move_size == copied);
     queue_start_position_ += (chunks_to_process * kDefaultChunkSize);
     retrievable_from_queue_ -= (chunks_to_process * kDefaultChunkSize);
   }
@@ -722,7 +737,7 @@ bool SelfEncryptor::Flush() {
           static_cast<uint32_t>(file_size_ - last_chunk_position_);
     }
 
-    memset(chunk_array.get(), 0, kDefaultChunkSize + kMinChunkSize);
+    memset(chunk_array.get(), 0, Size(chunk_array));
     if (sequence_block_position < flush_position + kDefaultChunkSize) {
       this_chunk_has_data_in_sequencer = true;
       this_chunk_modified = true;
@@ -745,22 +760,27 @@ bool SelfEncryptor::Flush() {
     }
 
     // Overwrite with any data in chunk0_raw_ and/or chunk1_raw_
+    uint32_t copied(0);
     if (this_chunk_has_data_in_c0_or_c1) {
       uint32_t offset(static_cast<uint32_t>(flush_position));
       uint32_t size_in_chunk0(0);
       if (offset < kDefaultChunkSize) {  // in chunk 0
         size_in_chunk0 = std::min(kDefaultChunkSize - offset, this_chunk_size);
-        memcpy(chunk_array.get(), chunk0_raw_.get() + offset, size_in_chunk0);
+        copied = MemCopy(chunk_array, 0, chunk0_raw_.get() + offset,
+                         size_in_chunk0);
+        BOOST_ASSERT(size_in_chunk0 == copied);
       }
       uint32_t size_in_chunk1(this_chunk_size - size_in_chunk0);
       if (size_in_chunk1 != 0) {  // in chunk 1
-        memcpy(chunk_array.get() + size_in_chunk0, chunk1_raw_.get(),
-               size_in_chunk1);
+        copied = MemCopy(chunk_array, size_in_chunk0, chunk1_raw_.get(),
+                         size_in_chunk1);
+        BOOST_ASSERT(size_in_chunk1 == copied);
       }
     } else if (this_chunk_has_data_in_queue) {
       // Overwrite with any data in queue
-      memcpy(chunk_array.get(), main_encrypt_queue_.get(),
-             retrievable_from_queue_);
+      copied = MemCopy(chunk_array, 0, main_encrypt_queue_.get(),
+                       retrievable_from_queue_);
+      BOOST_ASSERT(retrievable_from_queue_ == copied);
     }
 
     // Overwrite with any data from sequencer
@@ -771,8 +791,10 @@ bool SelfEncryptor::Flush() {
             static_cast<uint32_t>(flush_position + kDefaultChunkSize - (
                 sequence_block_position + sequence_block_copied))));
         uint32_t copy_offset = kDefaultChunkSize - copy_size;
-        memcpy(chunk_array.get() + copy_offset,
-               sequence_block_data.get() + sequence_block_copied, copy_size);
+        copied = MemCopy(chunk_array, copy_offset,
+                         sequence_block_data.get() + sequence_block_copied,
+                         copy_size);
+        BOOST_ASSERT(copy_size == copied);
         if (sequence_block_copied + copy_size == sequence_block_size) {
           sequence_block = sequencer_->GetFirst();
           sequence_block_position = sequence_block.first;
@@ -839,8 +861,11 @@ bool SelfEncryptor::Flush() {
       ByteArray temp(GetNewByteArray(normal_chunk_size_));
       uint32_t size_chunk0(kDefaultChunkSize - normal_chunk_size_);
       uint32_t size_chunk1(normal_chunk_size_ - size_chunk0);
-      memcpy(temp.get(), chunk0_raw_.get() + normal_chunk_size_, size_chunk0);
-      memcpy(temp.get() + size_chunk0, chunk1_raw_.get(), size_chunk1);
+      uint32_t copied = MemCopy(temp, 0, chunk0_raw_.get() + normal_chunk_size_,
+                                size_chunk0);
+      BOOST_ASSERT(size_chunk0 == copied);
+      copied = MemCopy(temp, size_chunk0, chunk1_raw_.get(), size_chunk1);
+      BOOST_ASSERT(size_chunk1 == copied);
       result = EncryptChunk(1, temp.get(), normal_chunk_size_);
       if (result != kSuccess) {
         DLOG(ERROR) << "Failed in Flush.";
