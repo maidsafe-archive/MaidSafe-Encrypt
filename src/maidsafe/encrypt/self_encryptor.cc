@@ -33,9 +33,6 @@
 #ifdef __MSVC__
 #  pragma warning(pop)
 #endif
-#include "boost/shared_array.hpp"
-#include "boost/thread.hpp"
-#include "boost/filesystem/fstream.hpp"
 #include "boost/scoped_array.hpp"
 #include "maidsafe/common/crypto.h"
 #include "maidsafe/common/utils.h"
@@ -372,6 +369,10 @@ bool SelfEncryptor::GetDataOffsetForEnqueuing(const uint32_t &length,
     *data_offset = static_cast<uint32_t>(queue_start_position_ - position);
     *queue_offset = 0;
     return (position + length >= queue_start_position_);
+  } else if (position < queue_start_position_ + retrievable_from_queue_) {
+    *data_offset = 0;
+    *queue_offset = static_cast<uint32_t>(position - queue_start_position_);
+    return true;
   }
   return false;
 }
@@ -388,8 +389,10 @@ int SelfEncryptor::PutToEncryptQueue(const char *data,
     copied = MemCopy(main_encrypt_queue_, queue_offset, data + data_offset,
                      copy_length);
     BOOST_ASSERT(copy_length == copied);
-    retrievable_from_queue_ += copy_length;
-    current_position_ += copy_length;
+    current_position_ = std::max(queue_start_position_ + copied + queue_offset,
+                                 current_position_);
+    retrievable_from_queue_ = static_cast<uint32_t>(current_position_ -
+                                                    queue_start_position_);
     if (retrievable_from_queue_ == kQueueCapacity_) {
       int result(ProcessMainQueue());
       if (result != kSuccess)
@@ -523,7 +526,7 @@ void SelfEncryptor::GetPadIvKey(uint32_t this_chunk_num,
                    crypto::AES256_IVSize);
   BOOST_ASSERT(crypto::AES256_IVSize == copied);
   copied = MemCopy(pad, 0, n_1_pre_hash, crypto::SHA512::DIGESTSIZE);
-  BOOST_ASSERT(crypto::AES256_KeySize == copied);
+  BOOST_ASSERT(crypto::SHA512::DIGESTSIZE == copied);
   copied = MemCopy(pad, crypto::SHA512::DIGESTSIZE,
                    &data_map_->chunks[this_chunk_num].pre_hash[0],
                    crypto::SHA512::DIGESTSIZE);
