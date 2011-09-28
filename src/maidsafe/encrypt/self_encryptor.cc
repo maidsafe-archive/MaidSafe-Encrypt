@@ -802,7 +802,10 @@ bool SelfEncryptor::Flush() {
         uint32_t copy_size(std::min(sequence_block_size - sequence_block_copied,
             static_cast<uint32_t>(flush_position + kDefaultChunkSize - (
                 sequence_block_position + sequence_block_copied))));
-        uint32_t copy_offset = kDefaultChunkSize - copy_size;
+        uint32_t copy_offset(0);
+        if (sequence_block_position > flush_position)
+          copy_offset = std::min(kDefaultChunkSize - copy_size,
+             static_cast<uint32_t>(sequence_block_position - flush_position));
         copied = MemCopy(chunk_array, copy_offset,
                          sequence_block_data.get() + sequence_block_copied,
                          copy_size);

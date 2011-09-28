@@ -844,9 +844,11 @@ TEST(SelfEncryptionTest, BEH_WriteRandomSizeRandomPosition) {
   //  then write in random order
   MemoryChunkStorePtr chunk_store(new MemoryChunkStore(false, g_hash_func));
   DataMapPtr data_map(new DataMap);
-  const uint32_t kTestDataSize(1024*256*20);
+  uint32_t num_chunks(20);
+  const uint32_t kTestDataSize(1024*256*num_chunks);
   std::string plain_text(RandomString(kTestDataSize));
   std::vector<std::pair<uint64_t, std::string>> broken_data;
+  std::string extra("amended");
 
   uint32_t i(0);
   while (i < kTestDataSize) {
@@ -861,6 +863,13 @@ TEST(SelfEncryptionTest, BEH_WriteRandomSizeRandomPosition) {
   }
 
   std::random_shuffle(broken_data.begin(), broken_data.end());
+  std::pair<uint64_t, std::string> overlap(broken_data.back().first,
+                                           (broken_data.back().second
+                                               + extra));
+  uint32_t position(broken_data.back().first +
+                      broken_data.back().second.size());
+
+  plain_text.replace(position, 7, extra);
 
   {
     SelfEncryptor selfenc(data_map, chunk_store);
@@ -872,12 +881,18 @@ TEST(SelfEncryptionTest, BEH_WriteRandomSizeRandomPosition) {
       wtotal += static_cast<uint32_t>(it->second.size());
     }
     EXPECT_EQ(wtotal, kTestDataSize);
+    EXPECT_TRUE(selfenc.Write(overlap.second.data(),
+                              static_cast<uint32_t>(overlap.second.size()),
+                              overlap.first));
   }
 
   SelfEncryptor selfenc(data_map, chunk_store);
   // standard checks for sizes
   EXPECT_EQ(20, selfenc.data_map()->chunks.size());
-  EXPECT_EQ(kTestDataSize, TotalSize(selfenc.data_map()));
+  if (position / kDefaultChunkSize == num_chunks)
+    EXPECT_EQ(kTestDataSize + extra.size(), TotalSize(selfenc.data_map()));
+  else
+    EXPECT_EQ(kTestDataSize, TotalSize(selfenc.data_map()));
   EXPECT_TRUE(selfenc.data_map()->content.empty());
 
   boost::scoped_array<char> answer(new char[kTestDataSize]);
