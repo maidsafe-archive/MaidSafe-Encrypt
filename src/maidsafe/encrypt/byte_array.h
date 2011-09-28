@@ -1,4 +1,4 @@
-
+﻿
 /*******************************************************************************
 *  Copyright 2011 MaidSafe.net limited                                         *
 *                                                                              *
@@ -11,39 +11,38 @@
 *  the explicit written permission of the board of directors of MaidSafe.net.  *
 *******************************************************************************/
 
-#ifndef MAIDSAFE_ENCRYPT_CONFIG_H_
-#define MAIDSAFE_ENCRYPT_CONFIG_H_
+#ifndef MAIDSAFE_ENCRYPT_BYTE_ARRAY_H_
+#define MAIDSAFE_ENCRYPT_BYTE_ARRAY_H_
 
 #include <cstdint>
-
-#include "maidsafe/encrypt/version.h"
-
-#if MAIDSAFE_ENCRYPT_VERSION != 906
-#  error This API is not compatible with the installed library.\
-    Please update the maidsafe-encrypt library.
-#endif
+#include <memory>
+#include "cryptopp/config.h"
 
 namespace maidsafe {
 namespace encrypt {
 
-const uint32_t kMinChunkSize(1024);  // bytes
-const uint32_t kDefaultChunkSize(1024 * 256);  // bytes
+typedef std::shared_ptr<byte> ByteArray;
 
-enum ReturnCode {
-  kSuccess = 0,
-  kEncryptError = -200001,
-  kDecryptError = -200002,
-  kInvalidChunkIndex = -200003,
-  kFailedToStoreChunk = -200004,
-  kMissingChunk = -200005,
-  kEncryptionException = -200006,
-  kDecryptionException = -200007,
-  kInvalidPosition = -200008,
-  kSequencerException = -200101,
-  kSequencerAddError = -200102
+ByteArray GetNewByteArray(const uint32_t &size);
+
+uint32_t Size(const ByteArray &ptr);
+
+uint32_t MemCopy(const ByteArray &destination,
+                 const uint32_t &destination_offset,
+                 const void *source,
+                 uint32_t copy_size);
+
+struct ByteArrayDeleter {
+  explicit ByteArrayDeleter(const uint32_t &size) : kSize_(size) {}
+  void operator() (byte *&ptr) {
+    delete[] ptr;
+    ptr = NULL;
+  }
+  const uint32_t kSize_;
 };
+
 
 }  // namespace encrypt
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_ENCRYPT_CONFIG_H_
+#endif  // MAIDSAFE_ENCRYPT_BYTE_ARRAY_H_

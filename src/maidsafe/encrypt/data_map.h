@@ -19,7 +19,7 @@
 #include <vector>
 
 #include "maidsafe/common/crypto.h"
-#include "boost/scoped_array.hpp"
+#include "boost/shared_array.hpp"
 #include "boost/serialization/string.hpp"
 #include "boost/serialization/vector.hpp"
 

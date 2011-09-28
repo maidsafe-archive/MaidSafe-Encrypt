@@ -11,6 +11,7 @@
 *  the explicit written permission of the board of directors of MaidSafe.net.  *
 *******************************************************************************/
 
+#include "boost/assert.hpp"
 #include "maidsafe/encrypt/sequencer.h"
 #include "maidsafe/encrypt/config.h"
 #include "maidsafe/encrypt/log.h"
@@ -20,7 +21,7 @@ namespace encrypt {
 
 namespace {
 const SequenceBlock kInvalidSeqBlock(std::make_pair(
-    std::numeric_limits<uint64_t>::max(), SequenceData()));
+    std::numeric_limits<uint64_t>::max(), ByteArray()));
 }  // unnamed namespace
 
 int Sequencer::Add(const char *data,
@@ -29,11 +30,15 @@ int Sequencer::Add(const char *data,
   try {
     // If the insertion point is past the current end, just insert a new element
     if (blocks_.empty() || position >
-        (*blocks_.rbegin()).first + (*blocks_.rbegin()).second.size) {
+        (*blocks_.rbegin()).first + Size((*blocks_.rbegin()).second)) {
       auto result = blocks_.insert(std::make_pair(position,
-                                                  SequenceData(length)));
+                                                  GetNewByteArray(length)));
       BOOST_ASSERT(result.second);
-      memcpy((*(result.first)).second.data.get(), data, length);
+      if (MemCopy((*(result.first)).second, 0, data, length) != length) {
+        DLOG(ERROR) << "Error adding " << length << "B to sequencer at "
+                    << position;
+        return kSequencerAddError;
+      }
       return kSuccess;
     }
 
@@ -45,7 +50,7 @@ int Sequencer::Add(const char *data,
     if (lower_itr == blocks_.end() ||
         (lower_itr != blocks_.begin() && (*lower_itr).first != position)) {
       --lower_itr;
-      if ((*lower_itr).first + (*lower_itr).second.size < position)
+      if ((*lower_itr).first + Size((*lower_itr).second) < position)
         ++lower_itr;
     }
 
@@ -68,7 +73,7 @@ int Sequencer::Add(const char *data,
       reduced_upper = true;
     }
     const uint64_t &upper_start_position((*upper_itr).first);
-    const uint32_t &upper_size((*upper_itr).second.size);
+    uint32_t upper_size(Size((*upper_itr).second));
 
     uint64_t post_overlap_posn(position + length);
     uint32_t post_overlap_size(0);
@@ -82,14 +87,28 @@ int Sequencer::Add(const char *data,
           static_cast<uint32_t>(post_overlap_posn - upper_start_position);
     }
 
-    SequenceData new_entry(pre_overlap_size + length + post_overlap_size);
-    memcpy(new_entry.data.get(), (*lower_itr).second.data.get(),
-           pre_overlap_size);
-    memcpy(new_entry.data.get() + pre_overlap_size, data, length);
-    memcpy(new_entry.data.get() + pre_overlap_size + length,
-           (*upper_itr).second.data.get() +
-                (post_overlap_posn - upper_start_position),
-           post_overlap_size);
+    ByteArray new_entry =
+        GetNewByteArray(pre_overlap_size + length + post_overlap_size);
+
+    if (MemCopy(new_entry, 0, (*lower_itr).second.get(), pre_overlap_size) !=
+        pre_overlap_size) {
+      DLOG(ERROR) << "Error adding pre-overlap";
+      return kSequencerAddError;
+    }
+
+    if (MemCopy(new_entry, pre_overlap_size, data, length) != length) {
+      DLOG(ERROR) << "Error adding mid-overlap";
+      return kSequencerAddError;
+    }
+
+    if (MemCopy(new_entry,
+                pre_overlap_size + length,
+                (*upper_itr).second.get() +
+                    (post_overlap_posn - upper_start_position),
+                post_overlap_size) != post_overlap_size) {
+      DLOG(ERROR) << "Error adding post-overlap";
+      return kSequencerAddError;
+    }
 
     if (reduced_upper)
       ++upper_itr;
@@ -113,11 +132,11 @@ int Sequencer::Add(const char *data,
   return kSuccess;
 }
 
-SequenceData Sequencer::Get(const uint64_t &position) {
+ByteArray Sequencer::Get(const uint64_t &position) {
   auto itr(blocks_.find(position));
   if (itr == blocks_.end())
-    return SequenceData();
-  SequenceData result((*itr).second);
+    return ByteArray();
+  ByteArray result((*itr).second);
   blocks_.erase(itr);
   return result;
 }

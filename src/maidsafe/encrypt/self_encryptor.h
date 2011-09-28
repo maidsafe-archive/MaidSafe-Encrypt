@@ -58,7 +58,6 @@ class SelfEncryptor {
   DataMapPtr data_map() const { return data_map_; }
 
  private:
-  typedef boost::shared_array<byte> ByteArray;
   SelfEncryptor &operator=(const SelfEncryptor&);
   SelfEncryptor(const SelfEncryptor&);
   // If prepared_for_writing_ is not already true, this either reads the first 2
@@ -107,9 +106,9 @@ class SelfEncryptor {
   // encryption pad.  If writing, and chunk has old_n1_pre_hash and
   // old_n2_pre_hash fields set, they are reset to NULL.
   void GetPadIvKey(uint32_t this_chunk_num,
-                   ByteArray key,
-                   ByteArray iv,
-                   ByteArray pad,
+                   std::shared_ptr<byte> key,
+                   std::shared_ptr<byte> iv,
+                   std::shared_ptr<byte> pad,
                    bool writing);
   // Encrypts all but the last chunk in the queue, then moves the last chunk to
   // the front of the queue.
@@ -139,11 +138,11 @@ class SelfEncryptor {
   const uint32_t kDefaultByteArraySize_;
   uint64_t file_size_, last_chunk_position_;
   uint32_t normal_chunk_size_;
-  ByteArray main_encrypt_queue_;
+  std::shared_ptr<byte> main_encrypt_queue_;
   uint64_t queue_start_position_;
   const uint32_t kQueueCapacity_;
   uint32_t retrievable_from_queue_;
-  ByteArray chunk0_raw_, chunk1_raw_;
+  std::shared_ptr<byte> chunk0_raw_, chunk1_raw_;
   std::shared_ptr<ChunkStore> chunk_store_;
   uint64_t current_position_;
   bool prepared_for_writing_, chunk0_modified_, chunk1_modified_;

@@ -18,24 +18,13 @@
 #include <limits>
 #include <map>
 
-#include "boost/shared_array.hpp"
-#include "cryptopp/config.h"
+#include "maidsafe/encrypt/byte_array.h"
 
 namespace maidsafe {
 namespace encrypt {
 
-struct SequenceData;
-
-typedef boost::shared_array<byte> ByteArray;
-typedef std::map<uint64_t, SequenceData> SequenceBlockMap;
+typedef std::map<uint64_t, ByteArray> SequenceBlockMap;
 typedef SequenceBlockMap::value_type SequenceBlock;
-
-struct SequenceData {
-  explicit SequenceData(const uint32_t &sz) : data(new byte[sz]), size(sz) {}
-  SequenceData() : data(), size(0) {}
-  ByteArray data;
-  uint32_t size;
-};
 
 class Sequencer {
  public:
@@ -45,8 +34,8 @@ class Sequencer {
   // and the old ones are removed.
   int Add(const char *data, const uint32_t &length, const uint64_t &position);
   // Returns and removes the block of sequenced data at position in the map.  If
-  // no block exists at position, it returns a default (invalid) SequenceData.
-  SequenceData Get(const uint64_t &position);
+  // no block exists at position, it returns a default (NULL) ByteArray.
+  ByteArray Get(const uint64_t &position);
   // Returns and removes the first block of sequenced data in the map.  If the
   // map is empty, it returns kInvalidSeqBlock.
   SequenceBlock GetFirst();
