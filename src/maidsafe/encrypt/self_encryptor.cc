@@ -368,7 +368,7 @@ bool SelfEncryptor::GetDataOffsetForEnqueuing(const uint32_t &length,
     *data_offset = static_cast<uint32_t>(queue_start_position_ - position);
     *queue_offset = 0;
     return (position + length >= queue_start_position_);
-  } else if (position < queue_start_position_ + retrievable_from_queue_) {
+  } else if (position <= queue_start_position_ + retrievable_from_queue_) {
     *data_offset = 0;
     *queue_offset = static_cast<uint32_t>(position - queue_start_position_);
     return true;
@@ -742,7 +742,7 @@ bool SelfEncryptor::Flush() {
     }
 
     memset(chunk_array.get(), 0, Size(chunk_array));
-    if (sequence_block_position < flush_position + kDefaultChunkSize) {
+    if (sequence_block_position < flush_position + this_chunk_size) {
       this_chunk_has_data_in_sequencer = true;
       this_chunk_modified = true;
     }
@@ -798,13 +798,13 @@ bool SelfEncryptor::Flush() {
     // Overwrite with any data from sequencer
     if (this_chunk_has_data_in_sequencer) {
       while (sequence_block_position + sequence_block_copied <
-             flush_position + kDefaultChunkSize) {
+             flush_position + this_chunk_size) {
         uint32_t copy_size(std::min(sequence_block_size - sequence_block_copied,
-            static_cast<uint32_t>(flush_position + kDefaultChunkSize - (
+            static_cast<uint32_t>(flush_position + this_chunk_size - (
                 sequence_block_position + sequence_block_copied))));
         uint32_t copy_offset(0);
         if (sequence_block_position > flush_position)
-          copy_offset = std::min(kDefaultChunkSize - copy_size,
+          copy_offset = std::min(this_chunk_size - copy_size,
              static_cast<uint32_t>(sequence_block_position - flush_position));
         copied = MemCopy(chunk_array, copy_offset,
                          sequence_block_data.get() + sequence_block_copied,
@@ -1136,7 +1136,7 @@ void SelfEncryptor::ReadInProcessData(char *data,
     }
     copy_length = std::min(length - data_offset, static_cast<uint32_t>(
                            sequence_block_position + sequence_block_size -
-                           queue_offset));
+                           position));
 
     memcpy(data + data_offset,
            sequence_block_data.get() + sequence_block_offset, copy_length);

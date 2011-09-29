@@ -12,6 +12,7 @@
 *******************************************************************************/
 
 #include <array>
+#include <cstdlib>
 #include <string>
 
 #ifdef WIN32
@@ -175,13 +176,22 @@ INSTANTIATE_TEST_CASE_P(FileSmallerThanOneChunk, BasicSelfEncryptionTest,
                             std::make_pair(kDefaultChunkSize - 1, 0)));
 
 INSTANTIATE_TEST_CASE_P(FileSmallerThanThreeNormalChunks,
-                        BasicSelfEncryptionTest,
-                        testing::Values(
-                            std::make_pair(kDefaultChunkSize, 0),
-                            std::make_pair(kDefaultChunkSize - 1, 1),
-                            std::make_pair(kDefaultChunkSize - 1, 1024),
-                            std::make_pair(3 * kDefaultChunkSize - 23, 22),
-                            std::make_pair(3 * kDefaultChunkSize - 1, 0)));
+    BasicSelfEncryptionTest,
+    testing::Values(
+        std::make_pair(1, 2 * kDefaultChunkSize - 1),
+        std::make_pair(1, 2 * kDefaultChunkSize),
+        std::make_pair(1, 3 * kDefaultChunkSize - 2),
+        std::make_pair(kDefaultChunkSize, 0),
+        std::make_pair(kDefaultChunkSize - 1, 1),
+        std::make_pair(kDefaultChunkSize - 1, 1024),
+        std::make_pair(kDefaultChunkSize, kDefaultChunkSize),
+        std::make_pair(kDefaultChunkSize, kDefaultChunkSize + 1),
+        std::make_pair(2 * kDefaultChunkSize - 1, 0),
+        std::make_pair(2 * kDefaultChunkSize - 1, 1),
+        std::make_pair(2 * kDefaultChunkSize, 0),
+        std::make_pair(2 * kDefaultChunkSize - 1, kDefaultChunkSize),
+        std::make_pair(3 * kDefaultChunkSize - 23, 22),
+        std::make_pair(3 * kDefaultChunkSize - 1, 0)));
 
 TEST(SelfEncryptionTest, BEH_BenchmarkMemOnly) {
   MemoryChunkStorePtr chunk_store(new MemoryChunkStore(false, g_hash_func));
@@ -481,6 +491,7 @@ TEST(SelfEncryptionTest, BEH_WriteRandomlyAllDirections) {
   for (uint32_t i = 0; i < kTestDataSize; ++i)
     vec_data[i] = i;  // vector of seq numbers
 
+  srand(RandomUint32());
   std::random_shuffle(vec_data.begin(), vec_data.end());  // shuffle all about
   {
     SelfEncryptor selfenc(data_map, chunk_store);
@@ -849,7 +860,6 @@ TEST(SelfEncryptionTest, BEH_WriteRandomSizeRandomPosition) {
   std::string plain_text(RandomString(kTestDataSize));
   std::vector<std::pair<uint64_t, std::string>> broken_data;
   std::string extra("amended");
-  uint32_t file_size(kTestDataSize);
 
   uint32_t i(0);
   while (i < kTestDataSize) {
@@ -863,15 +873,16 @@ TEST(SelfEncryptionTest, BEH_WriteRandomSizeRandomPosition) {
     i += size;
   }
 
+  srand(RandomUint32());
   std::random_shuffle(broken_data.begin(), broken_data.end());
-
-  std::pair<uint64_t, std::string> post_overlap(broken_data.back().first,
+  std::pair<uint64_t, std::string> overlap(broken_data.back().first,
                                            (broken_data.back().second
                                                + extra));
-  uint32_t post_position(broken_data.back().first +
-                         broken_data.back().second.size());
+  uint32_t position(static_cast<uint32_t>(broken_data.back().first +
+                                          broken_data.back().second.size()));
 
-  plain_text.replace(post_position, 7, extra);
+  plain_text.replace(position, 7, extra);
+
   {
     SelfEncryptor selfenc(data_map, chunk_store);
     uint32_t wtotal(0);
@@ -882,28 +893,27 @@ TEST(SelfEncryptionTest, BEH_WriteRandomSizeRandomPosition) {
       wtotal += static_cast<uint32_t>(it->second.size());
     }
     EXPECT_EQ(wtotal, kTestDataSize);
-    EXPECT_TRUE(selfenc.Write(post_overlap.second.data(),
-                              static_cast<uint32_t>(post_overlap.second.size()),
-                              post_overlap.first));
+    EXPECT_TRUE(selfenc.Write(overlap.second.data(),
+                              static_cast<uint32_t>(overlap.second.size()),
+                              overlap.first));
   }
 
   SelfEncryptor selfenc(data_map, chunk_store);
   // standard checks for sizes
   EXPECT_EQ(20, selfenc.data_map()->chunks.size());
-  if (post_position / kDefaultChunkSize == num_chunks) {
-    EXPECT_EQ(kTestDataSize + extra.size() , TotalSize(selfenc.data_map()));
-    file_size += extra.size();
-  } else
+  if (position / kDefaultChunkSize == num_chunks)
+    EXPECT_EQ(kTestDataSize + extra.size(), TotalSize(selfenc.data_map()));
+  else
     EXPECT_EQ(kTestDataSize, TotalSize(selfenc.data_map()));
   EXPECT_TRUE(selfenc.data_map()->content.empty());
 
-  boost::scoped_array<char> answer(new char[file_size]);
-  boost::scoped_array<char> original(new char[file_size]);
-  std::copy(plain_text.data(), plain_text.data() + file_size,
+  boost::scoped_array<char> answer(new char[kTestDataSize]);
+  boost::scoped_array<char> original(new char[kTestDataSize]);
+  std::copy(plain_text.data(), plain_text.data() + kTestDataSize,
             original.get());
-  EXPECT_TRUE(selfenc.Read(answer.get(), file_size, 0));
+  EXPECT_TRUE(selfenc.Read(answer.get(), kTestDataSize, 0));
 
-  for (uint32_t i = 0; i < file_size; ++i)
+  for (uint32_t i = 0; i < kTestDataSize; ++i)
     ASSERT_EQ(original[i], answer[i]) << "difference at " << i;
 }
 
@@ -1016,6 +1026,7 @@ TEST(SelfEncryptionTest, BEH_10Chunk4096ByteOutOfSequenceWrites) {
     string_array[i] = RandomString(size);
     index_array[i] = i;
   }
+  srand(RandomUint32());
   std::random_shuffle(index_array.begin(), index_array.end());
   {
     SelfEncryptor selfenc(data_map, chunk_store);
@@ -1048,6 +1059,7 @@ TEST(SelfEncryptionTest, BEH_10Chunk4096ByteOutOfSequenceWritesSmall) {
     string_array[i] = RandomString(size);
     index_array[i] = i;
   }
+  srand(RandomUint32());
   std::random_shuffle(index_array.begin(), index_array.end());
   {
     SelfEncryptor selfenc(data_map, chunk_store);
@@ -1082,6 +1094,7 @@ TEST(SelfEncryptionTest, BEH_10Chunk65536ByteOutOfSequenceWrites) {
     string_array[i] = RandomString(size);
     index_array[i] = i;
   }
+  srand(RandomUint32());
   std::random_shuffle(index_array.begin(), index_array.end());
   {
     SelfEncryptor selfenc(data_map, chunk_store);
@@ -1114,6 +1127,7 @@ TEST(SelfEncryptionTest, BEH_10Chunk65536ByteOutOfSequenceWritesSmall) {
     string_array[i] = RandomString(size);
     index_array[i] = i;
   }
+  srand(RandomUint32());
   std::random_shuffle(index_array.begin(), index_array.end());
   {
     SelfEncryptor selfenc(data_map, chunk_store);
@@ -1146,6 +1160,7 @@ TEST(SelfEncryptionTest, BEH_10Chunk4096ByteOutOfSequenceWritesWithGap) {
     string_array[i] = RandomString(size);
     index_array[i] = i;
   }
+  srand(RandomUint32());
   std::random_shuffle(index_array.begin(), index_array.end());
   {
     SelfEncryptor selfenc(data_map, chunk_store);
@@ -1181,6 +1196,7 @@ TEST(SelfEncryptionTest, BEH_10Chunk65536ByteOutOfSequenceWritesWithGaps) {
     string_array[i] = RandomString(size);
     index_array[i] = i;
   }
+  srand(RandomUint32());
   std::random_shuffle(index_array.begin(), index_array.end());
   {
     SelfEncryptor selfenc(data_map, chunk_store);
@@ -1216,6 +1232,7 @@ TEST(SelfEncryptionTest, BEH_RandomSizedOutOfSequenceWrites) {
     string_array[i] = RandomString(RandomUint32() % ((1 << 18) + 1));
     index_array[i] = i;
   }
+  srand(RandomUint32());
   std::random_shuffle(index_array.begin(), index_array.end());
   {
     SelfEncryptor selfenc(data_map, chunk_store);
@@ -1239,6 +1256,7 @@ TEST(SelfEncryptionTest, BEH_RandomSizedOutOfSequenceWritesWithGaps) {
     string_array[i] = RandomString(RandomUint32() % ((1 << 18) + 1));
     index_array[i] = i;
   }
+  srand(RandomUint32());
   std::random_shuffle(index_array.begin(), index_array.end());
   {
     SelfEncryptor selfenc(data_map, chunk_store);
