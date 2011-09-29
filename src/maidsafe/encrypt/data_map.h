@@ -34,7 +34,15 @@ namespace maidsafe {
 namespace encrypt {
 
 struct ChunkDetails {
+#ifdef __MSVC__
+# pragma warning(push)
+#  pragma warning (disable: 4351)
+    ChunkDetails() : hash(), pre_hash(), size(0) {}
+#  pragma warning (default: 4351)
+# pragma warning(pop)
+#else
   ChunkDetails() : hash(), pre_hash(), size(0) {}
+#endif
   std::string hash;  // SHA512 of processed chunk
   byte pre_hash[crypto::SHA512::DIGESTSIZE];  // SHA512 of unprocessed src data
   // pre hashes of chunks n-1 and n-2, only valid if chunk n-1 or n-2 has
