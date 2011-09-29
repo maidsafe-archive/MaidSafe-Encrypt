@@ -860,6 +860,7 @@ TEST(SelfEncryptionTest, BEH_WriteRandomSizeRandomPosition) {
   std::string plain_text(RandomString(kTestDataSize));
   std::vector<std::pair<uint64_t, std::string>> broken_data;
   std::string extra("amended");
+  uint32_t file_size(kTestDataSize);
 
   uint32_t i(0);
   while (i < kTestDataSize) {
@@ -875,13 +876,13 @@ TEST(SelfEncryptionTest, BEH_WriteRandomSizeRandomPosition) {
 
   srand(RandomUint32());
   std::random_shuffle(broken_data.begin(), broken_data.end());
-  std::pair<uint64_t, std::string> overlap(broken_data.back().first,
-                                           (broken_data.back().second
-                                               + extra));
-  uint32_t position(static_cast<uint32_t>(broken_data.back().first +
-                                          broken_data.back().second.size()));
+  std::pair<uint64_t, std::string> post_overlap(broken_data.back().first,
+                                                (broken_data.back().second +
+                                                extra));
+  uint32_t post_position(static_cast<uint32_t>(broken_data.back().first +
+                         broken_data.back().second.size()));
 
-  plain_text.replace(position, 7, extra);
+  plain_text.replace(post_position, 7, extra);
 
   {
     SelfEncryptor selfenc(data_map, chunk_store);
@@ -893,27 +894,28 @@ TEST(SelfEncryptionTest, BEH_WriteRandomSizeRandomPosition) {
       wtotal += static_cast<uint32_t>(it->second.size());
     }
     EXPECT_EQ(wtotal, kTestDataSize);
-    EXPECT_TRUE(selfenc.Write(overlap.second.data(),
-                              static_cast<uint32_t>(overlap.second.size()),
-                              overlap.first));
+    EXPECT_TRUE(selfenc.Write(post_overlap.second.data(),
+                              static_cast<uint32_t>(post_overlap.second.size()),
+                              post_overlap.first));
   }
 
   SelfEncryptor selfenc(data_map, chunk_store);
   // standard checks for sizes
   EXPECT_EQ(20, selfenc.data_map()->chunks.size());
-  if (position / kDefaultChunkSize == num_chunks)
+  if (post_position / kDefaultChunkSize == num_chunks) {
     EXPECT_EQ(kTestDataSize + extra.size(), TotalSize(selfenc.data_map()));
-  else
+    file_size += extra.size();
+  } else {
     EXPECT_EQ(kTestDataSize, TotalSize(selfenc.data_map()));
+  }
   EXPECT_TRUE(selfenc.data_map()->content.empty());
 
-  boost::scoped_array<char> answer(new char[kTestDataSize]);
-  boost::scoped_array<char> original(new char[kTestDataSize]);
-  std::copy(plain_text.data(), plain_text.data() + kTestDataSize,
-            original.get());
-  EXPECT_TRUE(selfenc.Read(answer.get(), kTestDataSize, 0));
+  boost::scoped_array<char> answer(new char[file_size]);
+  boost::scoped_array<char> original(new char[file_size]);
+  std::copy(plain_text.data(), plain_text.data() + file_size, original.get());
+  EXPECT_TRUE(selfenc.Read(answer.get(), file_size, 0));
 
-  for (uint32_t i = 0; i < kTestDataSize; ++i)
+  for (uint32_t i = 0; i < file_size; ++i)
     ASSERT_EQ(original[i], answer[i]) << "difference at " << i;
 }
 
