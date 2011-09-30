@@ -177,6 +177,30 @@ std::string SelfEncryptChunk(const std::string &content,
   // compression
   std::string processed_content(Compress(content, self_encryption_type));
 
+  // encryption
+  switch (self_encryption_type & kCryptoMask) {
+    case kCryptoNone:
+      break;
+    case kCryptoAes256:
+      {
+        std::string enc_hash;
+        if (!ResizeInput(encryption_hash,
+                         crypto::AES256_KeySize + crypto::AES256_IVSize,
+                         &enc_hash)) {
+          DLOG(ERROR) << "SelfEncryptChunk: Could not expand encryption hash.";
+          return "";
+        }
+        processed_content = crypto::SymmEncrypt(
+            processed_content,
+            enc_hash.substr(0, crypto::AES256_KeySize),
+            enc_hash.substr(crypto::AES256_KeySize, crypto::AES256_IVSize));
+      }
+      break;
+    default:
+      DLOG(ERROR) << "SelfEncryptChunk: Invalid encryption type passed.";
+      return "";
+  }
+
   // obfuscation
   switch (self_encryption_type & kObfuscationMask) {
     case kObfuscationNone:
@@ -206,30 +230,6 @@ std::string SelfEncryptChunk(const std::string &content,
       return "";
   }
 
-  // encryption
-  switch (self_encryption_type & kCryptoMask) {
-    case kCryptoNone:
-      break;
-    case kCryptoAes256:
-      {
-        std::string enc_hash;
-        if (!ResizeInput(encryption_hash,
-                         crypto::AES256_KeySize + crypto::AES256_IVSize,
-                         &enc_hash)) {
-          DLOG(ERROR) << "SelfEncryptChunk: Could not expand encryption hash.";
-          return "";
-        }
-        processed_content = crypto::SymmEncrypt(
-            processed_content,
-            enc_hash.substr(0, crypto::AES256_KeySize),
-            enc_hash.substr(crypto::AES256_KeySize, crypto::AES256_IVSize));
-      }
-      break;
-    default:
-      DLOG(ERROR) << "SelfEncryptChunk: Invalid encryption type passed.";
-      return "";
-  }
-
   return processed_content;
 }
 
@@ -247,30 +247,6 @@ std::string SelfDecryptChunk(const std::string &content,
   std::string processed_content(content);
 
   // TODO(Steve) chain all of the following, do processing in-place
-
-  // decryption
-  switch (self_encryption_type & kCryptoMask) {
-    case kCryptoNone:
-      break;
-    case kCryptoAes256:
-      {
-        std::string enc_hash;
-        if (!ResizeInput(encryption_hash,
-                         crypto::AES256_KeySize + crypto::AES256_IVSize,
-                         &enc_hash)) {
-          DLOG(ERROR) << "SelfDecryptChunk: Could not expand encryption hash.";
-          return "";
-        }
-        processed_content = crypto::SymmDecrypt(
-            processed_content,
-            enc_hash.substr(0, crypto::AES256_KeySize),
-            enc_hash.substr(crypto::AES256_KeySize, crypto::AES256_IVSize));
-      }
-      break;
-    default:
-      DLOG(ERROR) << "SelfDecryptChunk: Invalid encryption type passed.";
-      return "";
-  }
 
   // de-obfuscation
   switch (self_encryption_type & kObfuscationMask) {
@@ -298,6 +274,30 @@ std::string SelfDecryptChunk(const std::string &content,
       break;
     default:
       DLOG(ERROR) << "SelfDecryptChunk: Invalid obfuscation type passed.";
+      return "";
+  }
+
+  // decryption
+  switch (self_encryption_type & kCryptoMask) {
+    case kCryptoNone:
+      break;
+    case kCryptoAes256:
+      {
+        std::string enc_hash;
+        if (!ResizeInput(encryption_hash,
+                         crypto::AES256_KeySize + crypto::AES256_IVSize,
+                         &enc_hash)) {
+          DLOG(ERROR) << "SelfDecryptChunk: Could not expand encryption hash.";
+          return "";
+        }
+        processed_content = crypto::SymmDecrypt(
+            processed_content,
+            enc_hash.substr(0, crypto::AES256_KeySize),
+            enc_hash.substr(crypto::AES256_KeySize, crypto::AES256_IVSize));
+      }
+      break;
+    default:
+      DLOG(ERROR) << "SelfDecryptChunk: Invalid encryption type passed.";
       return "";
   }
 
