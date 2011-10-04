@@ -124,7 +124,9 @@ SelfEncryptor::SelfEncryptor(DataMapPtr data_map,
       chunk1_modified_(true),
       read_cache_(),
       cache_start_position_(0),
-      prepared_for_reading_() {
+      prepared_for_reading_(),
+      data_mutex_(),
+      chunk_store_mutex_() {
   if (data_map) {
     if (data_map->chunks.empty()) {
       file_size_ = data_map->content.size();
@@ -433,8 +435,8 @@ int SelfEncryptor::DecryptChunk(const uint32_t &chunk_num, byte *data) {
   ByteArray iv(GetNewByteArray(crypto::AES256_IVSize));
   GetPadIvKey(chunk_num, key, iv, pad, false);
   std::string content;
-#pragma omp critical
-  {  // NOLINT (Fraser)
+  {
+    SharedLock shared_lock(chunk_store_mutex_);
     content = chunk_store_->Get(data_map_->chunks[chunk_num].hash);
   }
 
@@ -570,12 +572,10 @@ int SelfEncryptor::ProcessMainQueue() {
                          main_encrypt_queue_.get() + (i * kDefaultChunkSize),
                          kDefaultChunkSize));
     if (res != kSuccess) {
+      UniqueLock unique_lock(data_mutex_);
       DLOG(ERROR) << "Failed processing main queue at chunk "
                   << first_queue_chunk_index + i;
-#pragma omp critical
-      {  // NOLINT (Fraser)
-        result = res;
-      }
+      result = res;
     }
   }
 
@@ -602,15 +602,10 @@ int SelfEncryptor::EncryptChunk(const uint32_t &chunk_num,
   BOOST_ASSERT(data_map_->chunks.size() > chunk_num);
 
   if (!data_map_->chunks[chunk_num].hash.empty()) {
-#pragma omp critical
-    {  // NOLINT (Fraser)
-      HandleRewrite(chunk_num);
-    }
+    HandleRewrite(chunk_num);
   } else {
-#pragma omp critical
-    {  // NOLINT (Fraser)
-      data_map_->chunks[chunk_num].hash.resize(crypto::SHA512::DIGESTSIZE);
-    }
+//    UniqueLock unique_lock(data_mutex_);
+    data_map_->chunks[chunk_num].hash.resize(crypto::SHA512::DIGESTSIZE);
   }
 
   ByteArray pad(GetNewByteArray(kPadSize));
@@ -636,14 +631,12 @@ int SelfEncryptor::EncryptChunk(const uint32_t &chunk_num,
         reinterpret_cast<const byte*>(chunk_content.data()),
         chunk_content.size());
 
-#pragma omp critical
-    {  // NOLINT (Fraser)
-      if (!chunk_store_->Store(data_map_->chunks[chunk_num].hash,
-                               chunk_content)) {
-        DLOG(ERROR) << "Could not store "
-                    << EncodeToHex(data_map_->chunks[chunk_num].hash);
-        result = kFailedToStoreChunk;
-      }
+    UniqueLock unique_lock(chunk_store_mutex_);
+    if (!chunk_store_->Store(data_map_->chunks[chunk_num].hash,
+                             chunk_content)) {
+      DLOG(ERROR) << "Could not store "
+                  << EncodeToHex(data_map_->chunks[chunk_num].hash);
+      result = kFailedToStoreChunk;
     }
   }
   catch(const std::exception &e) {
@@ -656,16 +649,23 @@ int SelfEncryptor::EncryptChunk(const uint32_t &chunk_num,
 }
 
 void SelfEncryptor::HandleRewrite(const uint32_t &chunk_num) {
-  if (!data_map_->chunks[chunk_num].hash.empty() &&
-      !chunk_store_->Delete(data_map_->chunks[chunk_num].hash)) {
-    DLOG(WARNING) << "Failed to delete chunk " << chunk_num << ": "
-                  << EncodeToHex(data_map_->chunks[chunk_num].hash);
+  {
+    SharedLock shared_lock(data_mutex_);
+    if (!data_map_->chunks[chunk_num].hash.empty()) {
+      UniqueLock unique_lock(chunk_store_mutex_);
+      if (!chunk_store_->Delete(data_map_->chunks[chunk_num].hash)) {
+        DLOG(WARNING) << "Failed to delete chunk " << chunk_num << ": "
+                      << EncodeToHex(data_map_->chunks[chunk_num].hash);
+      }
+    }
   }
   uint32_t num_chunks = static_cast<uint32_t>(data_map_->chunks.size());
   uint32_t n_minus_1_chunk = (chunk_num + num_chunks - 1) % num_chunks;
   uint32_t n_plus_1_chunk = (chunk_num + 1) % num_chunks;
   uint32_t n_plus_2_chunk = (chunk_num + 2) % num_chunks;
+  UpgradeLock upgrade_lock(data_mutex_);
   if (!data_map_->chunks[n_plus_1_chunk].old_n1_pre_hash) {
+    UpgradeToUniqueLock unique_lock(upgrade_lock);
     data_map_->chunks[n_plus_1_chunk].old_n1_pre_hash.reset(
         new byte[crypto::SHA512::DIGESTSIZE]);
     data_map_->chunks[n_plus_1_chunk].old_n2_pre_hash.reset(
@@ -678,6 +678,7 @@ void SelfEncryptor::HandleRewrite(const uint32_t &chunk_num) {
            crypto::SHA512::DIGESTSIZE);
   }
   if (!data_map_->chunks[n_plus_2_chunk].old_n1_pre_hash) {
+    UpgradeToUniqueLock unique_lock(upgrade_lock);
     data_map_->chunks[n_plus_2_chunk].old_n1_pre_hash.reset(
         new byte[crypto::SHA512::DIGESTSIZE]);
     data_map_->chunks[n_plus_2_chunk].old_n2_pre_hash.reset(
@@ -765,8 +766,13 @@ bool SelfEncryptor::Flush() {
     if (chunk_index < kOldChunkCount &&
         (pre_pre_chunk_modified || pre_chunk_modified || this_chunk_modified)) {
       int result(DecryptChunk(chunk_index, chunk_array.get()));
-      if (result == kSuccess)
-        chunk_store_->Delete(data_map_->chunks[chunk_index].hash);
+      if (result == kSuccess) {
+        UniqueLock unique_lock(chunk_store_mutex_);
+        if (!chunk_store_->Delete(data_map_->chunks[chunk_index].hash)) {
+          DLOG(WARNING) << "Failed to delete chunk " << chunk_index << ": "
+                        << EncodeToHex(data_map_->chunks[chunk_index].hash);
+        }
+      }
     }
 
     // Overwrite with any data in chunk0_raw_ and/or chunk1_raw_
@@ -1024,11 +1030,9 @@ int SelfEncryptor::ReadDataMapChunks(char *data,
           ByteArray temp(GetNewByteArray(this_chunk_size));
           int res = DecryptChunk(start_chunk, temp.get());
           if (res != kSuccess) {
+            UniqueLock unique_lock(data_mutex_);
             DLOG(ERROR) << "Failed to decrypt chunk " << start_chunk;
-#pragma omp critical
-            {  // NOLINT (Fraser)
-              result = res;
-            }
+            result = res;
           }
           memcpy(data, temp.get() + start_offset,
                  this_chunk_size - start_offset);
@@ -1036,11 +1040,9 @@ int SelfEncryptor::ReadDataMapChunks(char *data,
           int res = DecryptChunk(static_cast<uint32_t>(i),
                                  reinterpret_cast<byte*>(&data[0]));
           if (res != kSuccess) {
+            UniqueLock unique_lock(data_mutex_);
             DLOG(ERROR) << "Failed to decrypt chunk " << i;
-#pragma omp critical
-            {  // NOLINT (Fraser)
-              result = res;
-            }
+            result = res;
           }
         }
       } else {
@@ -1051,22 +1053,18 @@ int SelfEncryptor::ReadDataMapChunks(char *data,
           ByteArray temp(GetNewByteArray(this_chunk_size));
           int res = DecryptChunk(end_chunk, temp.get());
           if (res != kSuccess) {
+            UniqueLock unique_lock(data_mutex_);
             DLOG(ERROR) << "Failed to decrypt chunk " << end_chunk;
-#pragma omp critical
-            {  // NOLINT (Fraser)
-              result = res;
-            }
+            result = res;
           }
           memcpy(data + pos - position, temp.get(), end_cut);
         } else {
           int res = DecryptChunk(static_cast<uint32_t>(i),
                     reinterpret_cast<byte*>(&data[pos - position]));
           if (res != kSuccess) {
+            UniqueLock unique_lock(data_mutex_);
             DLOG(ERROR) << "Failed to decrypt chunk " << i;
-#pragma omp critical
-            {  // NOLINT (Fraser)
-              result = res;
-            }
+            result = res;
           }
         }
       }
@@ -1153,12 +1151,14 @@ void SelfEncryptor::ReadInProcessData(char *data,
 }
 
 bool SelfEncryptor::DeleteAllChunks() {
+  UniqueLock chunk_store_unique_lock(chunk_store_mutex_);
   for (uint32_t i(0); i != data_map_->chunks.size(); ++i) {
     if (!chunk_store_->Delete(data_map_->chunks[i].hash)) {
       DLOG(WARNING) << "Failed to delete chunk " << i;
       return false;
     }
   }
+  UniqueLock data_unique_lock(data_mutex_);
   data_map_->chunks.clear();
   return true;
 }
@@ -1178,17 +1178,21 @@ bool SelfEncryptor::Truncate(const uint64_t &length) {
 //          main_encrypt_queue_.SkipAll();
         sequencer_->clear();
         for (uint32_t j = i + 1; j != number_of_chunks; ++j) {
+          UniqueLock chunk_store_unique_lock(chunk_store_mutex_);
           if (!chunk_store_->Delete(data_map_->chunks[j].hash)) {
             DLOG(ERROR) << "Failed to delete chunk";
             return false;
           }
+          UniqueLock data_unique_lock(data_mutex_);
           data_map_->chunks.pop_back();
         }
         if (byte_count - length == chunk_size) {
+          UniqueLock chunk_store_unique_lock(chunk_store_mutex_);
           if (!chunk_store_->Delete(data_map_->chunks[i].hash)) {
             DLOG(ERROR) << "Failed to delete chunk";
             return false;
           }
+          UniqueLock data_unique_lock(data_mutex_);
           data_map_->chunks.pop_back();
         } else {
           ByteArray data(GetNewByteArray(chunk_size));
@@ -1197,13 +1201,16 @@ bool SelfEncryptor::Truncate(const uint64_t &length) {
 //          uint32_t bytes_to_queue(chunk_size -
 //                                  static_cast<uint32_t>(byte_count - length));
 //          main_encrypt_queue_.Put2(data.get(), bytes_to_queue, 0, true);
+          UniqueLock chunk_store_unique_lock(chunk_store_mutex_);
           if (!chunk_store_->Delete(data_map_->chunks[i].hash)) {
             DLOG(ERROR) << "Failed to delete chunk";
             return false;
           }
+          UniqueLock data_unique_lock(data_mutex_);
           data_map_->chunks.pop_back();
         }
         current_position_ = length;
+        UniqueLock data_unique_lock(data_mutex_);
         data_map_->content.erase();
         return true;
       }

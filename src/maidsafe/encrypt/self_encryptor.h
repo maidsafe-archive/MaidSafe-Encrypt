@@ -21,6 +21,8 @@
 #include <string>
 #include "boost/scoped_ptr.hpp"
 #include "boost/shared_array.hpp"
+#include "boost/thread/shared_mutex.hpp"
+#include "boost/thread/locks.hpp"
 
 #include "maidsafe/encrypt/config.h"
 #include "maidsafe/encrypt/data_map.h"
@@ -58,6 +60,11 @@ class SelfEncryptor {
   DataMapPtr data_map() const { return data_map_; }
 
  private:
+  typedef boost::shared_lock<boost::shared_mutex> SharedLock;
+  typedef boost::upgrade_lock<boost::shared_mutex> UpgradeLock;
+  typedef boost::unique_lock<boost::shared_mutex> UniqueLock;
+  typedef boost::upgrade_to_unique_lock<boost::shared_mutex>
+      UpgradeToUniqueLock;
   SelfEncryptor &operator=(const SelfEncryptor&);
   SelfEncryptor(const SelfEncryptor&);
   // If prepared_for_writing_ is not already true, this either reads the first 2
@@ -149,6 +156,7 @@ class SelfEncryptor {
   boost::shared_array<char> read_cache_;
   uint64_t cache_start_position_;
   bool prepared_for_reading_;
+  boost::shared_mutex data_mutex_, chunk_store_mutex_;
 };
 
 }  // namespace encrypt
