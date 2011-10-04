@@ -56,6 +56,53 @@ uint64_t TotalSize(DataMapPtr data_map) {
   return size;
 }
 
+void GetEncryptionResult(boost::shared_array<byte> *result,
+                         boost::shared_array<byte> n1hash,
+                         boost::shared_array<byte> n2hash,
+                         boost::shared_array<byte> hash,
+                         boost::shared_array<byte> chunk,
+                         uint32_t chunk_size) {
+  boost::scoped_array<byte>pad(new byte[(3 * crypto::SHA512::DIGESTSIZE) -
+    crypto::AES256_KeySize - crypto::AES256_IVSize]);
+  boost::scoped_array<byte> key(new byte[32]);
+  boost::scoped_array<byte> iv(new byte[crypto::AES256_IVSize]);
+  boost::scoped_array<byte> postenc(new byte[chunk_size]);
+  boost::scoped_array<byte> xor_res(new byte[chunk_size]);
+
+  // set up pad
+  for (int i = 0; i != crypto::SHA512::DIGESTSIZE; ++i) {
+    pad[i] = n1hash[i];
+    pad[i + crypto::SHA512::DIGESTSIZE] = hash[i];
+  }
+  for (int i = 0; i != crypto::AES256_IVSize; ++i) {
+    pad[i + (2 * crypto::SHA512::DIGESTSIZE)] =
+        n2hash[i + crypto::AES256_KeySize + crypto::AES256_IVSize];
+  }
+  // get key & IV
+  std::copy(n2hash.get(), n2hash.get() + crypto::AES256_KeySize, key.get());
+  std::copy(n2hash.get() + crypto::AES256_KeySize,
+            n2hash.get() + crypto::AES256_KeySize + crypto::AES256_IVSize,
+            iv.get());
+
+  CryptoPP::Gzip compress(new CryptoPP::MessageQueue(), 6);
+  compress.Put2(chunk.get(), chunk_size, -1, true);
+  uint32_t compressed_size = static_cast<size_t>(compress.MaxRetrievable());
+  boost::shared_array<byte> comp_data(new byte[compressed_size]);
+  compress.Get(comp_data.get(), compressed_size);
+  CryptoPP::CFB_Mode<CryptoPP::AES>::Encryption enc(
+      key.get(), crypto::AES256_KeySize, iv.get());
+  enc.ProcessData(postenc.get(), comp_data.get(), compressed_size);
+
+  for (size_t i = 0; i < compressed_size; ++i) {
+    xor_res[i] =
+        postenc[i] ^ pad[i % ((3 * crypto::SHA512::DIGESTSIZE) -
+                              crypto::AES256_KeySize - crypto::AES256_IVSize)];
+  }
+  CryptoPP::SHA512().CalculateDigest(result->get(),
+                                     xor_res.get(),
+                                     compressed_size);
+}
+
 }  // unnamed namespace
 
 
@@ -1280,115 +1327,106 @@ TEST(SelfEncryptionTest, BEH_RandomSizedOutOfSequenceWritesWithGaps) {
   // Unknown number of chunks and content details.
 }
 
-TEST(SelfEncryptionManualTest, DISABLED_BEH_ManualCheckWrite) {
+TEST(SelfEncryptionManualTest, BEH_ManualCheckWrite) {
   MemoryChunkStorePtr chunk_store(new MemoryChunkStore(false, g_hash_func));
   DataMapPtr data_map(new DataMap);
   uint32_t chunk_size(kDefaultChunkSize);
   uint32_t num_chunks(10);
-  boost::scoped_array<char> extra_content(new char[5]);
+  boost::scoped_array<char> extra(new char[5]);
   for (unsigned char i = 0; i != 5; ++i)
-    extra_content[i] = 49 + i;
-  uint32_t expected_content_size(sizeof(extra_content));
-  uint32_t file_size((chunk_size * num_chunks) + expected_content_size);
-  boost::scoped_array<byte> pre_enc_chunk(new byte[chunk_size]);
-  boost::scoped_array<byte>pad(new byte[(3 * crypto::SHA512::DIGESTSIZE) -
-      crypto::AES256_KeySize - crypto::AES256_IVSize]);
-  boost::scoped_array<byte>xor_res(new byte[chunk_size]);
-  boost::scoped_array<byte>prehash(new byte[crypto::SHA512::DIGESTSIZE]);
-  boost::scoped_array<byte>posthashxor(new byte[crypto::SHA512::DIGESTSIZE]);
-  boost::scoped_array<byte>postenc(new byte[chunk_size]);
-  boost::scoped_array<byte>key(new byte[32]);
-  boost::scoped_array<byte>iv(new byte[crypto::AES256_IVSize]);
-  boost::scoped_array<char>pre_enc_file(new char[file_size]);
+    extra[i] = 49 + i;
+  uint32_t extra_size(5);
+  uint32_t final_chunk_size(chunk_size + extra_size);
+  uint32_t file_size((chunk_size * num_chunks) + extra_size);
+  boost::shared_array<char> pre_enc_file(new char[file_size]);
+  boost::shared_array<byte> pre_enc_chunk(new byte[chunk_size]);
+  boost::shared_array<byte> final_chunk(new byte[final_chunk_size]);
+  boost::shared_array<byte> prehash(new byte[crypto::SHA512::DIGESTSIZE]);
+  boost::shared_array<byte> prehash_final(new byte[crypto::SHA512::DIGESTSIZE]);
+  boost::shared_array<byte> enc_res(new byte[crypto::SHA512::DIGESTSIZE]);
+  boost::shared_array<byte> enc_res_final(
+      new byte[crypto::SHA512::DIGESTSIZE]);
+  boost::shared_array<byte> enc_res_C0(new byte[crypto::SHA512::DIGESTSIZE]);
+  boost::shared_array<byte> enc_res_C1(new byte[crypto::SHA512::DIGESTSIZE]);
 
-  for (size_t i = 0; i < chunk_size; ++i) {
+  for (size_t i = 0; i < chunk_size; ++i)
     pre_enc_chunk[i] = 'a';
-  }
 
-  for (size_t i = 0; i < file_size; ++i) {
-     pre_enc_file[i] = 'a';
-  }
+  for (uint32_t i = 0; i < file_size - extra_size ; ++i)
+    pre_enc_file[i] = 'a';
+
+  for (uint32_t i = file_size - extra_size; i < file_size; ++i)
+    pre_enc_file[i] = extra[i - (file_size - extra_size)];
+
+  // calculate specifics for final chunk
+  for (size_t i = 0; i < chunk_size; ++i)
+    final_chunk[i] = 'a';
+  for (size_t i = chunk_size; i < final_chunk_size; ++i)
+    final_chunk[i] = extra[i - chunk_size];
+
   {
     SelfEncryptor selfenc(data_map, chunk_store);
     EXPECT_TRUE(selfenc.Write(pre_enc_file.get(), file_size, 0));
   }
-// Do some testing on results
-  SelfEncryptor selfenc(data_map, chunk_store);
-  EXPECT_EQ(num_chunks,  selfenc.data_map()->chunks.size());
-  EXPECT_EQ(expected_content_size,  selfenc.data_map()->content.size());
-  EXPECT_EQ(file_size, TotalSize(selfenc.data_map()));
 
+  // get pre-encryption hashes
   CryptoPP::SHA512().CalculateDigest(prehash.get(), pre_enc_chunk.get(),
                                      chunk_size);
+  CryptoPP::SHA512().CalculateDigest(prehash_final.get(), final_chunk.get(),
+                                     final_chunk_size);
 
-  for (int i = 0; i != crypto::SHA512::DIGESTSIZE; ++i) {
-    pad[i] = prehash[i];
-    pad[i + crypto::SHA512::DIGESTSIZE] = prehash[i];
-  }
-  for (int i = 0; i != crypto::AES256_IVSize; ++i) {
-    pad[i + (2 * crypto::SHA512::DIGESTSIZE)] =
-        prehash[i + crypto::AES256_KeySize + crypto::AES256_IVSize];
-  }
+  // calculate result of enc for chunks 2->last-1
+  GetEncryptionResult(&enc_res, prehash, prehash, prehash, pre_enc_chunk,
+                      chunk_size);
+  // calculate result of enc for final chunk
+  GetEncryptionResult(&enc_res_final, prehash, prehash, prehash_final,
+                      final_chunk, final_chunk_size);
+  // calculate result of enc for chunk 0 & 1
+  GetEncryptionResult(&enc_res_C0, prehash_final, prehash, prehash,
+                      pre_enc_chunk, chunk_size);
+  GetEncryptionResult(&enc_res_C1, prehash, prehash_final, prehash,
+                      pre_enc_chunk, chunk_size);
 
-  std::copy(prehash.get(), prehash.get() + crypto::AES256_KeySize, key.get());
-  std::copy(prehash.get() + crypto::AES256_KeySize,
-            prehash.get() + crypto::AES256_KeySize + crypto::AES256_IVSize,
-            iv.get());
+  // Check results
+  SelfEncryptor selfenc(data_map, chunk_store);
+  EXPECT_EQ(num_chunks,  selfenc.data_map()->chunks.size());
+  EXPECT_EQ(0,  selfenc.data_map()->content.size());
+  EXPECT_EQ(file_size, TotalSize(selfenc.data_map()));
 
-  CryptoPP::Gzip compress(new CryptoPP::MessageQueue(), 6);
-  compress.Put2(pre_enc_chunk.get(), chunk_size, -1, true);
-
-  size_t compressed_size(static_cast<size_t>(compress.MaxRetrievable()));
-
-  boost::shared_array<byte> comp_data(new byte[compressed_size]);
-  compress.Get(comp_data.get(), compressed_size);
-
-  CryptoPP::CFB_Mode<CryptoPP::AES>::Encryption enc(key.get(),
-                                                    crypto::AES256_KeySize,
-                                                    iv.get());
-  enc.ProcessData(postenc.get(), comp_data.get(), compressed_size);
-
-  for (size_t i = 0; i < compressed_size; ++i) {
-    xor_res[i] =
-        postenc[i] ^ pad[i % ((3 * crypto::SHA512::DIGESTSIZE) -
-                              crypto::AES256_KeySize - crypto::AES256_IVSize)];
-  }
-
-  CryptoPP::SHA512().CalculateDigest(posthashxor.get(),
-                                     xor_res.get(),
-                                     compressed_size);
-
-  for (int i = 0; i != crypto::SHA512::DIGESTSIZE; ++i) {
-    ASSERT_EQ(prehash[i], selfenc.data_map()->chunks[0].pre_hash[i])
-      << "failed at chunk 0 pre hash " << i;
-    ASSERT_EQ(prehash[i], selfenc.data_map()->chunks[1].pre_hash[i])
-      << "failed at chunk 1 pre hash " << i;
-    ASSERT_EQ(prehash[i], selfenc.data_map()->chunks[2].pre_hash[i])
-      << "failed at chunk 2 pre hash " << i;
-      // TODO(dirvine) uncomment these and fix
-    ASSERT_EQ(posthashxor[i], static_cast<byte>
-      (selfenc.data_map()->chunks[0].hash[i]))
-      << "failed at chunk 0 post hash : " << i;
-    ASSERT_EQ(posthashxor[i], static_cast<byte>
-      (selfenc.data_map()->chunks[1].hash[i]))
-    << "failed at chunk 1 post hash : " << i;
-    ASSERT_EQ(posthashxor[i], static_cast<byte>
-      (selfenc.data_map()->chunks[2].hash[i]))
-    << "failed at chunk 2 post hash : " << i;
-  }
-  // check chunks' hashes - should be equal for repeated single character input
-  bool match(true);
-  for (size_t i = 0; i < selfenc.data_map()->chunks.size(); ++i) {
-    for (size_t j = i; j < selfenc.data_map()->chunks.size(); ++j) {
-      for (int k = 0; k < crypto::SHA512::DIGESTSIZE; ++k) {
-        if (selfenc.data_map()->chunks[i].hash[k] !=
-                selfenc.data_map()->chunks[j].hash[k])
-          match = false;
-      }
-      EXPECT_TRUE(match);
-      match = true;
+  // Prehash checks
+  for (uint32_t i = 0; i!= num_chunks-1; ++i) {
+    for (int j = 0; j != crypto::SHA512::DIGESTSIZE; ++j) {
+    ASSERT_EQ(prehash[j], selfenc.data_map()->chunks[i].pre_hash[j])
+      << "failed at chunk " << i << " pre hash " << j;
     }
   }
+  for (int j = 0; j != crypto::SHA512::DIGESTSIZE; ++j) {
+    ASSERT_EQ(prehash_final[j],
+              selfenc.data_map()->chunks[num_chunks-1].pre_hash[j])
+      << "failed at final chunk pre hash " << j;
+  }
+
+  // enc hash checks
+  for (int i = 0; i != crypto::SHA512::DIGESTSIZE; ++i) {
+    ASSERT_EQ(enc_res_C0[i], static_cast<byte>
+      (selfenc.data_map()->chunks[0].hash[i]))
+      << "failed at chunk 0 post hash : " << i;
+    ASSERT_EQ(enc_res_C1[i], static_cast<byte>
+      (selfenc.data_map()->chunks[1].hash[i]))
+      << "failed at chunk 1 post hash : " << i;
+    ASSERT_EQ(enc_res_final[i], static_cast<byte>
+      (selfenc.data_map()->chunks[num_chunks-1].hash[i]))
+      << "failed at final chunk post hash : " << i;
+  }
+
+  for (uint32_t i = 2; i!= num_chunks-1; ++i) {
+    for (int j = 0; j != crypto::SHA512::DIGESTSIZE; ++j) {
+    ASSERT_EQ(enc_res[j], static_cast<byte>
+      (selfenc.data_map()->chunks[i].hash[j]))
+      << "failed at chunk " << i << " post hash : " << j;
+    }
+  }
+
 }
 
 }  // namespace test
