@@ -758,6 +758,9 @@ bool SelfEncryptor::Flush() {
       this_chunk_modified = true;
     }
 
+    if (data_map_->chunks[chunk_index].size == 0)
+      this_chunk_modified = true;
+
     // Read in any data from previously-encrypted chunk
     if (chunk_index < kOldChunkCount &&
         (pre_pre_chunk_modified || pre_chunk_modified || this_chunk_modified)) {

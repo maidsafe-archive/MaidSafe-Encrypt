@@ -120,7 +120,7 @@ class BasicSelfEncryptionTest : public testing::TestWithParam<SizeAndOffset> {
       : chunk_store_(new MemoryChunkStore(false,
             std::bind(&crypto::Hash<crypto::SHA512>, std::placeholders::_1))),
         data_map_(new DataMap),
-        self_encryptor_(new SelfEncryptor(data_map_, chunk_store_)),
+        self_encryptor_(new SelfEncryptor(data_map_, chunk_store_, 5)),
         kDataSize_(GetParam().first),
         kOffset_(GetParam().second),
         original_(new char[kDataSize_]),
@@ -159,10 +159,6 @@ TEST_P(BasicSelfEncryptionTest, BEH_EncryptDecrypt) {
     case kTiny:
     case kVerySmall:
     case kSmall:
-      EXPECT_TRUE(self_encryptor_->data_map()->chunks.empty());
-      EXPECT_EQ(0, TotalSize(self_encryptor_->data_map()));
-      EXPECT_TRUE(self_encryptor_->data_map()->content.empty());
-      break;
     case kMedium:
       EXPECT_TRUE(self_encryptor_->data_map()->chunks.empty());
       EXPECT_EQ(0, TotalSize(self_encryptor_->data_map()));
@@ -174,9 +170,7 @@ TEST_P(BasicSelfEncryptionTest, BEH_EncryptDecrypt) {
       EXPECT_TRUE(self_encryptor_->data_map()->content.empty());
       break;
     default:
-      EXPECT_TRUE(self_encryptor_->data_map()->chunks.empty());
-      EXPECT_EQ(0, TotalSize(self_encryptor_->data_map()));
-      EXPECT_TRUE(self_encryptor_->data_map()->content.empty());
+      FAIL();
   }
   // read before write - all in buffers
   EXPECT_TRUE(self_encryptor_->Read(answer_.get(), kDataSize_, kOffset_));
@@ -239,6 +233,72 @@ INSTANTIATE_TEST_CASE_P(FileSmallerThanThreeNormalChunks,
         std::make_pair(2 * kDefaultChunkSize - 1, kDefaultChunkSize),
         std::make_pair(3 * kDefaultChunkSize - 23, 22),
         std::make_pair(3 * kDefaultChunkSize - 1, 0)));
+
+INSTANTIATE_TEST_CASE_P(FileGreaterThanThreeNormalChunks,  // or equal to
+    BasicSelfEncryptionTest,
+    testing::Values(
+        std::make_pair(1, 3 * kDefaultChunkSize - 1),
+        std::make_pair(1, 3 * kDefaultChunkSize),
+        std::make_pair(1, 3 * kDefaultChunkSize + 1),
+        std::make_pair(kDefaultChunkSize - 1, 2 * kDefaultChunkSize + 1),
+        std::make_pair(kDefaultChunkSize - 1, 2 * kDefaultChunkSize + 2),
+        std::make_pair(kDefaultChunkSize - 1, 2 * kDefaultChunkSize + kMinChunkSize),
+        std::make_pair(kDefaultChunkSize - 1, 2 * kDefaultChunkSize + kMinChunkSize + 1),
+        std::make_pair(kDefaultChunkSize - 1, 2 * kDefaultChunkSize + kMinChunkSize + 2),
+        std::make_pair(kDefaultChunkSize - 1, 3 * kDefaultChunkSize),
+        std::make_pair(kDefaultChunkSize - 1, 3 * kDefaultChunkSize + 1),
+        std::make_pair(kDefaultChunkSize - 1, 3 * kDefaultChunkSize + 2),
+        std::make_pair(kDefaultChunkSize, 2 * kDefaultChunkSize),
+        std::make_pair(kDefaultChunkSize, 2 * kDefaultChunkSize + 1),
+        std::make_pair(kDefaultChunkSize, 2 * kDefaultChunkSize + kMinChunkSize - 1),
+        std::make_pair(kDefaultChunkSize, 2 * kDefaultChunkSize + kMinChunkSize),
+        std::make_pair(kDefaultChunkSize, 2 * kDefaultChunkSize + kMinChunkSize + 1),
+        std::make_pair(kDefaultChunkSize, 3 * kDefaultChunkSize - 1),
+        std::make_pair(kDefaultChunkSize, 3 * kDefaultChunkSize),
+        std::make_pair(kDefaultChunkSize, 3 * kDefaultChunkSize + 1),
+        std::make_pair(kDefaultChunkSize, 3 * kDefaultChunkSize + kMinChunkSize - 1),
+        std::make_pair(kDefaultChunkSize, 3 * kDefaultChunkSize + kMinChunkSize),
+        std::make_pair(kDefaultChunkSize, 3 * kDefaultChunkSize + kMinChunkSize + 1),
+        std::make_pair(2 * kDefaultChunkSize - 1, kDefaultChunkSize + 1),
+        std::make_pair(2 * kDefaultChunkSize - 1, kDefaultChunkSize + 2),
+        std::make_pair(2 * kDefaultChunkSize - 1, 2 * kDefaultChunkSize + kMinChunkSize),
+        std::make_pair(2 * kDefaultChunkSize - 1, 2 * kDefaultChunkSize + kMinChunkSize + 1),
+        std::make_pair(2 * kDefaultChunkSize - 1, 2 * kDefaultChunkSize + kMinChunkSize + 2),
+        std::make_pair(2 * kDefaultChunkSize - 1, 2 * kDefaultChunkSize),
+        std::make_pair(2 * kDefaultChunkSize - 1, 2 * kDefaultChunkSize + 1),
+        std::make_pair(2 * kDefaultChunkSize - 1, 2 * kDefaultChunkSize + 2),
+        std::make_pair(2 * kDefaultChunkSize, kDefaultChunkSize),
+        std::make_pair(2 * kDefaultChunkSize, kDefaultChunkSize + 1),
+        std::make_pair(2 * kDefaultChunkSize, kDefaultChunkSize + kMinChunkSize - 1),
+        std::make_pair(2 * kDefaultChunkSize, kDefaultChunkSize + kMinChunkSize),
+        std::make_pair(2 * kDefaultChunkSize, kDefaultChunkSize + kMinChunkSize + 1),
+        std::make_pair(2 * kDefaultChunkSize, 2 * kDefaultChunkSize - 1),
+        std::make_pair(2 * kDefaultChunkSize, 2 * kDefaultChunkSize),
+        std::make_pair(2 * kDefaultChunkSize, 2 * kDefaultChunkSize + 1),
+        std::make_pair(2 * kDefaultChunkSize, 2 * kDefaultChunkSize + kMinChunkSize - 1),
+        std::make_pair(2 * kDefaultChunkSize, 2 * kDefaultChunkSize + kMinChunkSize),
+        std::make_pair(2 * kDefaultChunkSize, 2 * kDefaultChunkSize + kMinChunkSize + 1),
+        std::make_pair(2 * kDefaultChunkSize - 1, 8 * kDefaultChunkSize),
+        std::make_pair(2 * kDefaultChunkSize, 8 * kDefaultChunkSize - 1)));
+
+INSTANTIATE_TEST_CASE_P(FileGreaterThanTenNormalChunks,  // or equal to
+    BasicSelfEncryptionTest,
+    testing::Values(
+        std::make_pair(1, 10 * kDefaultChunkSize - 1),
+        std::make_pair(1, 10 * kDefaultChunkSize),
+        std::make_pair(1, 10 * kDefaultChunkSize + kMinChunkSize - 1),
+        std::make_pair(1, 10 * kDefaultChunkSize + kMinChunkSize),
+        std::make_pair(1, 10 * kDefaultChunkSize + kMinChunkSize + 1),
+        std::make_pair(10 * kDefaultChunkSize - 1, 0),
+        std::make_pair(10 * kDefaultChunkSize - 1, 1),
+        std::make_pair(10 * kDefaultChunkSize - 1, 2),
+        std::make_pair(10 * kDefaultChunkSize, 0),
+        std::make_pair(10 * kDefaultChunkSize, 1),
+        std::make_pair(10 * kDefaultChunkSize + kMinChunkSize - 1, 0),
+        std::make_pair(10 * kDefaultChunkSize + kMinChunkSize - 1, 1),
+        std::make_pair(10 * kDefaultChunkSize + kMinChunkSize, 0),
+        std::make_pair(10 * kDefaultChunkSize + kMinChunkSize, 1)));
+
 
 TEST(SelfEncryptionTest, BEH_BenchmarkMemOnly) {
   MemoryChunkStorePtr chunk_store(new MemoryChunkStore(false, g_hash_func));
