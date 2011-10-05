@@ -1,6 +1,11 @@
-v0.09.06 (WIP)
+v0.10.00 (WIP)
 --------------
+* 
 
+
+v0.09.06
+--------
+* Swapped order of XOR and Encryption in Self-Encryption.
 
 
 v0.09.05
