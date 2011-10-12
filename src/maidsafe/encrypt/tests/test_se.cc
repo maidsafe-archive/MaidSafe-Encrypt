@@ -63,7 +63,8 @@ void GetEncryptionResult(boost::shared_array<byte> *result,
                          boost::shared_array<byte> chunk,
                          uint32_t chunk_size) {
   boost::scoped_array<byte>pad(new byte[(3 * crypto::SHA512::DIGESTSIZE) -
-    crypto::AES256_KeySize - crypto::AES256_IVSize]);
+                                        crypto::AES256_KeySize -
+                                        crypto::AES256_IVSize]);
   boost::scoped_array<byte> key(new byte[32]);
   boost::scoped_array<byte> iv(new byte[crypto::AES256_IVSize]);
   boost::scoped_array<byte> postenc(new byte[chunk_size]);
@@ -86,7 +87,7 @@ void GetEncryptionResult(boost::shared_array<byte> *result,
 
   CryptoPP::Gzip compress(new CryptoPP::MessageQueue(), 6);
   compress.Put2(chunk.get(), chunk_size, -1, true);
-  uint32_t compressed_size = static_cast<size_t>(compress.MaxRetrievable());
+  uint32_t compressed_size = static_cast<uint32_t>(compress.MaxRetrievable());
   boost::shared_array<byte> comp_data(new byte[compressed_size]);
   compress.Get(comp_data.get(), compressed_size);
   CryptoPP::CFB_Mode<CryptoPP::AES>::Encryption enc(
@@ -155,24 +156,14 @@ class BasicSelfEncryptionTest : public testing::TestWithParam<SizeAndOffset> {
 
 TEST_P(BasicSelfEncryptionTest, BEH_EncryptDecrypt) {
   EXPECT_TRUE(self_encryptor_->Write(original_.get(), kDataSize_, kOffset_));
-  switch (test_file_size_) {
-    case kTiny:
-    case kVerySmall:
-    case kSmall:
-    case kMedium:
-      EXPECT_TRUE(self_encryptor_->data_map()->chunks.empty());
-      EXPECT_EQ(0, TotalSize(self_encryptor_->data_map()));
-      EXPECT_TRUE(self_encryptor_->data_map()->content.empty());
-      break;
-    case kLarge:
-      EXPECT_TRUE(self_encryptor_->data_map()->chunks.empty());
-      EXPECT_EQ(0, TotalSize(self_encryptor_->data_map()));
-      EXPECT_TRUE(self_encryptor_->data_map()->content.empty());
-      break;
-    default:
-      FAIL();
-  }
-  // read before write - all in buffers
+
+  EXPECT_TRUE(self_encryptor_->Read(answer_.get(), kOffset_ + kDataSize_, 0));
+  for (uint32_t i = 0; i != kOffset_; ++i)
+    ASSERT_EQ(0, answer_[i]) << "i == " << i;
+  for (uint32_t i = 0; i != kDataSize_; ++i)
+    ASSERT_EQ(original_[i], answer_[kOffset_ + i]) << "i == " << i;
+
+  answer_.reset(new char[kOffset_ + kDataSize_]);
   EXPECT_TRUE(self_encryptor_->Read(answer_.get(), kDataSize_, kOffset_));
   for (uint32_t i = 0; i != kDataSize_; ++i)
     ASSERT_EQ(original_[i], answer_[i]) << "i == " << i;
@@ -240,44 +231,64 @@ INSTANTIATE_TEST_CASE_P(FileGreaterThanThreeNormalChunks,  // or equal to
         std::make_pair(1, 3 * kDefaultChunkSize - 1),
         std::make_pair(1, 3 * kDefaultChunkSize),
         std::make_pair(1, 3 * kDefaultChunkSize + 1),
-        std::make_pair(kDefaultChunkSize - 1, 2 * kDefaultChunkSize + 1),
-        std::make_pair(kDefaultChunkSize - 1, 2 * kDefaultChunkSize + 2),
-        std::make_pair(kDefaultChunkSize - 1, 2 * kDefaultChunkSize + kMinChunkSize),
-        std::make_pair(kDefaultChunkSize - 1, 2 * kDefaultChunkSize + kMinChunkSize + 1),
-        std::make_pair(kDefaultChunkSize - 1, 2 * kDefaultChunkSize + kMinChunkSize + 2),
+        std::make_pair(kDefaultChunkSize - 1,
+                       2 * kDefaultChunkSize + 1),
+        std::make_pair(kDefaultChunkSize - 1,
+                       2 * kDefaultChunkSize + 2),
+        std::make_pair(kDefaultChunkSize - 1,
+                       2 * kDefaultChunkSize + kMinChunkSize),
+        std::make_pair(kDefaultChunkSize - 1,
+                       2 * kDefaultChunkSize + kMinChunkSize + 1),
+        std::make_pair(kDefaultChunkSize - 1,
+                       2 * kDefaultChunkSize + kMinChunkSize + 2),
         std::make_pair(kDefaultChunkSize - 1, 3 * kDefaultChunkSize),
         std::make_pair(kDefaultChunkSize - 1, 3 * kDefaultChunkSize + 1),
         std::make_pair(kDefaultChunkSize - 1, 3 * kDefaultChunkSize + 2),
         std::make_pair(kDefaultChunkSize, 2 * kDefaultChunkSize),
         std::make_pair(kDefaultChunkSize, 2 * kDefaultChunkSize + 1),
-        std::make_pair(kDefaultChunkSize, 2 * kDefaultChunkSize + kMinChunkSize - 1),
-        std::make_pair(kDefaultChunkSize, 2 * kDefaultChunkSize + kMinChunkSize),
-        std::make_pair(kDefaultChunkSize, 2 * kDefaultChunkSize + kMinChunkSize + 1),
+        std::make_pair(kDefaultChunkSize,
+                       2 * kDefaultChunkSize + kMinChunkSize - 1),
+        std::make_pair(kDefaultChunkSize,
+                       2 * kDefaultChunkSize + kMinChunkSize),
+        std::make_pair(kDefaultChunkSize,
+                       2 * kDefaultChunkSize + kMinChunkSize + 1),
         std::make_pair(kDefaultChunkSize, 3 * kDefaultChunkSize - 1),
         std::make_pair(kDefaultChunkSize, 3 * kDefaultChunkSize),
         std::make_pair(kDefaultChunkSize, 3 * kDefaultChunkSize + 1),
-        std::make_pair(kDefaultChunkSize, 3 * kDefaultChunkSize + kMinChunkSize - 1),
-        std::make_pair(kDefaultChunkSize, 3 * kDefaultChunkSize + kMinChunkSize),
-        std::make_pair(kDefaultChunkSize, 3 * kDefaultChunkSize + kMinChunkSize + 1),
+        std::make_pair(kDefaultChunkSize,
+                       3 * kDefaultChunkSize + kMinChunkSize - 1),
+        std::make_pair(kDefaultChunkSize,
+                       3 * kDefaultChunkSize + kMinChunkSize),
+        std::make_pair(kDefaultChunkSize,
+                       3 * kDefaultChunkSize + kMinChunkSize + 1),
         std::make_pair(2 * kDefaultChunkSize - 1, kDefaultChunkSize + 1),
         std::make_pair(2 * kDefaultChunkSize - 1, kDefaultChunkSize + 2),
-        std::make_pair(2 * kDefaultChunkSize - 1, 2 * kDefaultChunkSize + kMinChunkSize),
-        std::make_pair(2 * kDefaultChunkSize - 1, 2 * kDefaultChunkSize + kMinChunkSize + 1),
-        std::make_pair(2 * kDefaultChunkSize - 1, 2 * kDefaultChunkSize + kMinChunkSize + 2),
+        std::make_pair(2 * kDefaultChunkSize - 1,
+                       2 * kDefaultChunkSize + kMinChunkSize),
+        std::make_pair(2 * kDefaultChunkSize - 1,
+                       2 * kDefaultChunkSize + kMinChunkSize + 1),
+        std::make_pair(2 * kDefaultChunkSize - 1,
+                       2 * kDefaultChunkSize + kMinChunkSize + 2),
         std::make_pair(2 * kDefaultChunkSize - 1, 2 * kDefaultChunkSize),
         std::make_pair(2 * kDefaultChunkSize - 1, 2 * kDefaultChunkSize + 1),
         std::make_pair(2 * kDefaultChunkSize - 1, 2 * kDefaultChunkSize + 2),
         std::make_pair(2 * kDefaultChunkSize, kDefaultChunkSize),
         std::make_pair(2 * kDefaultChunkSize, kDefaultChunkSize + 1),
-        std::make_pair(2 * kDefaultChunkSize, kDefaultChunkSize + kMinChunkSize - 1),
-        std::make_pair(2 * kDefaultChunkSize, kDefaultChunkSize + kMinChunkSize),
-        std::make_pair(2 * kDefaultChunkSize, kDefaultChunkSize + kMinChunkSize + 1),
+        std::make_pair(2 * kDefaultChunkSize,
+                       kDefaultChunkSize + kMinChunkSize - 1),
+        std::make_pair(2 * kDefaultChunkSize,
+                       kDefaultChunkSize + kMinChunkSize),
+        std::make_pair(2 * kDefaultChunkSize,
+                       kDefaultChunkSize + kMinChunkSize + 1),
         std::make_pair(2 * kDefaultChunkSize, 2 * kDefaultChunkSize - 1),
         std::make_pair(2 * kDefaultChunkSize, 2 * kDefaultChunkSize),
         std::make_pair(2 * kDefaultChunkSize, 2 * kDefaultChunkSize + 1),
-        std::make_pair(2 * kDefaultChunkSize, 2 * kDefaultChunkSize + kMinChunkSize - 1),
-        std::make_pair(2 * kDefaultChunkSize, 2 * kDefaultChunkSize + kMinChunkSize),
-        std::make_pair(2 * kDefaultChunkSize, 2 * kDefaultChunkSize + kMinChunkSize + 1),
+        std::make_pair(2 * kDefaultChunkSize,
+                       2 * kDefaultChunkSize + kMinChunkSize - 1),
+        std::make_pair(2 * kDefaultChunkSize,
+                       2 * kDefaultChunkSize + kMinChunkSize),
+        std::make_pair(2 * kDefaultChunkSize,
+                       2 * kDefaultChunkSize + kMinChunkSize + 1),
         std::make_pair(2 * kDefaultChunkSize - 1, 8 * kDefaultChunkSize),
         std::make_pair(2 * kDefaultChunkSize, 8 * kDefaultChunkSize - 1)));
 
@@ -299,6 +310,12 @@ INSTANTIATE_TEST_CASE_P(FileGreaterThanTenNormalChunks,  // or equal to
         std::make_pair(10 * kDefaultChunkSize + kMinChunkSize, 0),
         std::make_pair(10 * kDefaultChunkSize + kMinChunkSize, 1)));
 
+INSTANTIATE_TEST_CASE_P(LargeFile, BasicSelfEncryptionTest,
+    testing::Values(
+        std::make_pair(1, 50 * kDefaultChunkSize),
+        std::make_pair(10 * kDefaultChunkSize, 50 * kDefaultChunkSize),
+        std::make_pair(50 * kDefaultChunkSize + kMinChunkSize, 1)));
+
 
 TEST(SelfEncryptionTest, BEH_BenchmarkMemOnly) {
   MemoryChunkStorePtr chunk_store(new MemoryChunkStore(false, g_hash_func));
@@ -307,16 +324,10 @@ TEST(SelfEncryptionTest, BEH_BenchmarkMemOnly) {
 
   const uint32_t kTestDataSize(1024 * 1024 * 20);
   boost::scoped_array<char> plain_data(new char[kTestDataSize]);
-  for (size_t i = 0; i < kTestDataSize; ++i) {
-    plain_data[i] = 'a';
-  }
-  // Memory chunkstore
-  // Write as complete stream
-  bptime::ptime time =
-      bptime::microsec_clock::universal_time();
+  memset(plain_data.get(), 'a', kTestDataSize);
+  bptime::ptime time = bptime::microsec_clock::universal_time();
   ASSERT_TRUE(selfenc.Write(plain_data.get(), kTestDataSize, 0));
-  // TODO(dirvine) FIXME - wont work till destructor called
-//   ASSERT_TRUE(selfenc.FinaliseWrite());
+  selfenc.Flush();
   uint64_t duration =
       (bptime::microsec_clock::universal_time() - time).total_microseconds();
   if (duration == 0)
@@ -500,45 +511,40 @@ TEST(SelfEncryptionTest, BEH_WriteAndReadByteAtATime) {
 TEST(SelfEncryptionTest, BEH_WriteAndReadByteAtATimeOutOfSequenceForward) {
   MemoryChunkStorePtr chunk_store(new MemoryChunkStore(false, g_hash_func));
   DataMapPtr data_map(new DataMap);
-  const uint32_t kTestDataSize(1024 * 20);
+  const uint32_t kTestDataSize(kDefaultChunkSize * 4 + 1025);
   std::string plain_text(RandomString(kTestDataSize));
   boost::scoped_array<char> plain_data(new char[kTestDataSize]);
-  for (uint32_t i = 0; i < kTestDataSize - 2; ++i) {
+  for (uint32_t i = 0; i < kTestDataSize - 2; ++i)
     plain_data[i] = plain_text[i];
-  }
+
   plain_data[kTestDataSize - 2] = 'a';
   plain_data[kTestDataSize - 1] = 'b';
 
   uint32_t length = 1;
   {
     SelfEncryptor selfenc(data_map, chunk_store);
-  bptime::ptime time = bptime::microsec_clock::universal_time();
-  //   EXPECT_TRUE(selfenc.ReInitialise());
-    for (uint32_t i = 0; i < kTestDataSize + 1; i += 2)  {
+    bptime::ptime time = bptime::microsec_clock::universal_time();
+    for (uint32_t i = 0; i < kTestDataSize; i += 2)
       ASSERT_TRUE(selfenc.Write(&plain_data.get()[i], length, i));
-    }
-  uint64_t duration1 =
-      (bptime::microsec_clock::universal_time() -
-       time).total_microseconds();
-  std::cout << "even byte_by_byte written taken : " << duration1
-            << " microseconds" << std::endl;
-    for (uint32_t i = 1; i < kTestDataSize + 1; i += 2)  {
+    uint64_t duration1 =
+        (bptime::microsec_clock::universal_time() -
+        time).total_microseconds();
+    std::cout << "Even byte_by_byte written taken: " << duration1
+              << " microseconds" << std::endl;
+    for (uint32_t i = 1; i < kTestDataSize; i += 2)
       ASSERT_TRUE(selfenc.Write(&plain_data.get()[i], length, i));
-    }
-  uint64_t duration2 =
-      (bptime::microsec_clock::universal_time() -
-       time).total_microseconds();
-  std::cout << "odd byte_by_byte written taken : " << duration2 - duration1
-            << " microseconds" << std::endl;
-  // TODO(dirvine) FIXME - wont work till destructor called
-  //   ASSERT_TRUE(selfenc.FinaliseWrite());
+    uint64_t duration2 =
+        (bptime::microsec_clock::universal_time() -
+        time).total_microseconds();
+    std::cout << "Odd byte_by_byte written taken: " << duration2 - duration1
+              << " microseconds" << std::endl;
   }
   SelfEncryptor selfenc(data_map, chunk_store);
   boost::scoped_array<char> answer(new char[kTestDataSize + 1]);
 
   ASSERT_TRUE(selfenc.Read(answer.get(), kTestDataSize + 1, 0));
 
-  for (size_t  i = 0; i < kTestDataSize + 1; ++i)
+  for (size_t  i = 0; i < kTestDataSize; ++i)
     ASSERT_EQ(plain_data[i], answer[i]) << "failed at count " << i;
 }
 
@@ -963,17 +969,16 @@ TEST(SelfEncryptionTest, BEH_WriteRandomSizeRandomPosition) {
   MemoryChunkStorePtr chunk_store(new MemoryChunkStore(false, g_hash_func));
   DataMapPtr data_map(new DataMap);
   uint32_t num_chunks(20);
-  const uint32_t kTestDataSize(1024*256*num_chunks);
-  std::string plain_text(RandomString(kTestDataSize));
+  const uint32_t kFileSize(1024*256*num_chunks);
+  std::string plain_text(RandomString(kFileSize));
   std::vector<std::pair<uint64_t, std::string>> broken_data;
   std::string extra("amended");
-  uint32_t file_size(kTestDataSize);
 
   uint32_t i(0);
-  while (i < kTestDataSize) {
+  while (i < kFileSize) {
     uint32_t size;
-    if (kTestDataSize - i < (4096*5))
-      size = kTestDataSize - i;
+    if (kFileSize - i < (4096*5))
+      size = kFileSize - i;
     else
       size = RandomUint32() % (4096*5);
     std::pair<uint64_t, std::string> piece(i, plain_text.substr(i, size));
@@ -981,16 +986,21 @@ TEST(SelfEncryptionTest, BEH_WriteRandomSizeRandomPosition) {
     i += size;
   }
 
+  uint64_t last_piece((*broken_data.rbegin()).first);
   srand(RandomUint32());
   std::random_shuffle(broken_data.begin(), broken_data.end());
-  std::pair<uint64_t, std::string> post_overlap(broken_data.back().first,
-                                                (broken_data.back().second +
+  auto overlap_itr(broken_data.rbegin());
+  if ((*overlap_itr).first == last_piece)
+    ++overlap_itr;
+  std::pair<uint64_t, std::string> post_overlap((*overlap_itr).first,
+                                                ((*overlap_itr).second +
                                                 extra));
-  uint32_t post_position(static_cast<uint32_t>(broken_data.back().first +
-                         broken_data.back().second.size()));
+  uint32_t post_position(static_cast<uint32_t>((*overlap_itr).first +
+                          (*overlap_itr).second.size()));
 
-  plain_text.replace(post_position, 7, extra);
-
+  boost::scoped_array<char> original(new char[kFileSize]);
+  std::copy(plain_text.data(), plain_text.data() + kFileSize, original.get());
+  boost::scoped_array<char> answer(new char[kFileSize]);
   {
     SelfEncryptor selfenc(data_map, chunk_store);
     uint32_t wtotal(0);
@@ -1000,30 +1010,35 @@ TEST(SelfEncryptionTest, BEH_WriteRandomSizeRandomPosition) {
                                 it->first));
       wtotal += static_cast<uint32_t>(it->second.size());
     }
-    EXPECT_EQ(wtotal, kTestDataSize);
+    EXPECT_EQ(wtotal, kFileSize);
+    EXPECT_TRUE(selfenc.Read(answer.get(), kFileSize, 0));
+    for (uint32_t i = 0; i < kFileSize; ++i) {
+      ASSERT_EQ(original[i], answer[i]) << "difference at " << i << " of "
+                                        << kFileSize;
+    }
+    memset(answer.get(), 0, kFileSize);
+
+    plain_text.replace(post_position, 7, extra);
+    std::copy(plain_text.data(), plain_text.data() + kFileSize, original.get());
     EXPECT_TRUE(selfenc.Write(post_overlap.second.data(),
                               static_cast<uint32_t>(post_overlap.second.size()),
                               post_overlap.first));
+    EXPECT_TRUE(selfenc.Read(answer.get(), kFileSize, 0));
+    for (uint32_t i = 0; i < kFileSize; ++i) {
+      ASSERT_EQ(original[i], answer[i]) << "difference at " << i << " of "
+                                        << kFileSize;
+    }
+    memset(answer.get(), 0, kFileSize);
   }
 
   SelfEncryptor selfenc(data_map, chunk_store);
-  // standard checks for sizes
-  EXPECT_EQ(20, selfenc.data_map()->chunks.size());
-  if (post_position / kDefaultChunkSize == num_chunks) {
-    EXPECT_EQ(kTestDataSize + extra.size(), TotalSize(selfenc.data_map()));
-    file_size += extra.size();
-  } else {
-    EXPECT_EQ(kTestDataSize, TotalSize(selfenc.data_map()));
-  }
+  EXPECT_EQ(kFileSize, TotalSize(selfenc.data_map()));
   EXPECT_TRUE(selfenc.data_map()->content.empty());
-
-  boost::scoped_array<char> answer(new char[file_size]);
-  boost::scoped_array<char> original(new char[file_size]);
-  std::copy(plain_text.data(), plain_text.data() + file_size, original.get());
-  EXPECT_TRUE(selfenc.Read(answer.get(), file_size, 0));
-
-  for (uint32_t i = 0; i < file_size; ++i)
-    ASSERT_EQ(original[i], answer[i]) << "difference at " << i;
+  EXPECT_TRUE(selfenc.Read(answer.get(), kFileSize, 0));
+  for (uint32_t i = 0; i < kFileSize; ++i) {
+    ASSERT_EQ(original[i], answer[i]) << "difference at " << i << " of "
+                                      << kFileSize;
+  }
 }
 
 TEST(SelfEncryptionTest, BEH_1024x3Minus1Chars) {
@@ -1037,9 +1052,6 @@ TEST(SelfEncryptionTest, BEH_1024x3Minus1Chars) {
   {
     SelfEncryptor selfenc(data_map, chunk_store);
     EXPECT_TRUE(selfenc.Write(stuff.get(), size, 0));
-    EXPECT_EQ(0, selfenc.data_map()->chunks.size());
-    EXPECT_EQ(0, TotalSize(selfenc.data_map()));
-    EXPECT_TRUE(selfenc.data_map()->content.empty());
   }
   SelfEncryptor selfenc(data_map, chunk_store);
   // Check data_map values again after destruction...
@@ -1059,9 +1071,6 @@ TEST(SelfEncryptionTest, BEH_1024x3Plus1Chars) {
   {
     SelfEncryptor selfenc(data_map, chunk_store);
     EXPECT_TRUE(selfenc.Write(stuff.get(), size, 0));
-    EXPECT_EQ(0, selfenc.data_map()->chunks.size());
-    EXPECT_EQ(0, TotalSize(selfenc.data_map()));
-    EXPECT_TRUE(selfenc.data_map()->content.empty());
   }
   SelfEncryptor selfenc(data_map, chunk_store);
   // Check data_map values again after destruction...
@@ -1084,9 +1093,6 @@ TEST(SelfEncryptionTest, BEH_1024x256x3Minus1Chars) {
   {
     SelfEncryptor selfenc(data_map, chunk_store);
     EXPECT_TRUE(selfenc.Write(stuff.get(), size, 0));
-    EXPECT_TRUE(selfenc.data_map()->chunks.empty());
-    EXPECT_EQ(0, TotalSize(selfenc.data_map()));
-    EXPECT_TRUE(selfenc.data_map()->content.empty());
   }
   SelfEncryptor selfenc(data_map, chunk_store);
   // Check data_map values again after destruction...
@@ -1106,9 +1112,6 @@ TEST(SelfEncryptionTest, BEH_1024x256x3Plus1Chars) {
   {
     SelfEncryptor selfenc(data_map, chunk_store);
     EXPECT_TRUE(selfenc.Write(stuff.get(), size, 0));
-    EXPECT_TRUE(selfenc.data_map()->chunks.empty());
-    EXPECT_EQ(0, TotalSize(selfenc.data_map()));
-    EXPECT_TRUE(selfenc.data_map()->content.empty());
   }
   SelfEncryptor selfenc(data_map, chunk_store);
   // Check data_map values again after destruction...
@@ -1486,7 +1489,6 @@ TEST(SelfEncryptionManualTest, BEH_ManualCheckWrite) {
       << "failed at chunk " << i << " post hash : " << j;
     }
   }
-
 }
 
 }  // namespace test

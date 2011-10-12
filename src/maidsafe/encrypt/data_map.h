@@ -34,20 +34,21 @@ namespace maidsafe {
 namespace encrypt {
 
 struct ChunkDetails {
-#ifdef __MSVC__
-# pragma warning(push)
-#  pragma warning (disable: 4351)
-    ChunkDetails() : hash(), pre_hash(), size(0) {}
-#  pragma warning (default: 4351)
-# pragma warning(pop)
-#else
-  ChunkDetails() : hash(), pre_hash(), size(0) {}
-#endif
+  enum PreHashState { kEmpty, kOutdated, kOk };
+  ChunkDetails() : hash(),
+                   pre_hash(),
+                   old_n1_pre_hash(),
+                   old_n2_pre_hash(),
+                   pre_hash_state(kEmpty),
+                   size(0) {}
   std::string hash;  // SHA512 of processed chunk
   byte pre_hash[crypto::SHA512::DIGESTSIZE];  // SHA512 of unprocessed src data
   // pre hashes of chunks n-1 and n-2, only valid if chunk n-1 or n-2 has
   // modified content
   boost::shared_array<byte> old_n1_pre_hash, old_n2_pre_hash;
+  // If the pre_hash hasn't been calculated, or if data has been written to the
+  // chunk since the pre_hash was last calculated, pre_hash_ok should be false.
+  PreHashState pre_hash_state;
   uint32_t size;  // Size of unprocessed source data in bytes
 };
 
@@ -86,6 +87,8 @@ void serialize(Archive &archive,  // NOLINT
   archive &chunk_details.hash;
   archive &chunk_details.pre_hash;
   archive &chunk_details.size;
+  if (Archive::is_loading::value)
+    chunk_details.pre_hash_state = kOk;
 }
 
 template<class Archive>

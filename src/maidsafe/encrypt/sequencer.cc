@@ -35,7 +35,7 @@ int Sequencer::Add(const char *data,
                                                   GetNewByteArray(length)));
       BOOST_ASSERT(result.second);
       if (MemCopy((*(result.first)).second, 0, data, length) != length) {
-        DLOG(ERROR) << "Error adding " << length << "B to sequencer at "
+        DLOG(ERROR) << "Error adding " << length << " bytes to sequencer at "
                     << position;
         return kSequencerAddError;
       }

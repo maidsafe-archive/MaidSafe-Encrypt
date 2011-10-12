@@ -1,4 +1,4 @@
-﻿
+
 /*******************************************************************************
 *  Copyright 2011 MaidSafe.net limited                                         *
 *                                                                              *
@@ -14,8 +14,6 @@
 #ifndef MAIDSAFE_ENCRYPT_SELF_ENCRYPTOR_H_
 #define MAIDSAFE_ENCRYPT_SELF_ENCRYPTOR_H_
 
-#include <omp.h>
-
 #include <tuple>
 #include <cstdint>
 #include <string>
@@ -28,7 +26,7 @@
 #include "maidsafe/encrypt/data_map.h"
 #include "maidsafe/encrypt/version.h"
 
-#if MAIDSAFE_ENCRYPT_VERSION != 906
+#if MAIDSAFE_ENCRYPT_VERSION != 1000
 #  error This API is not compatible with the installed library.\
     Please update the library.
 #endif
@@ -72,8 +70,9 @@ class SelfEncryptor {
   // data_map_ into chunk0_raw_.  This guarantees that if data_map_ had
   // exactly 3 chunks before (the only way chunks could be non-default-sized),
   // it will be empty after.  Chunks read in from data_map_ are deleted from
-  // chunk_store_.
-  int PrepareToWrite();
+  // chunk_store_.  The main_encrypt_queue_ is set to start at "position" if it
+  // is beyond the end of the first 2 chunks.
+  int PrepareToWrite(const uint32_t &length, const uint64_t &position);
   // Copies any relevant data to read_cache_.
   void PutToReadCache(const char *data,
                       const uint32_t &length,
@@ -124,10 +123,13 @@ class SelfEncryptor {
   int EncryptChunk(const uint32_t &chunk_num,
                    byte *data,
                    const uint32_t &length);
-  // If chunk_num has a valid hash in data_map_ (i.e. it was previously stored)
-  // it is deleted.  Chunks n+1 and n+2 have their old_n1_pre_hash and
-  // old_n2_pre_hash fields completed if not already done.
-  void HandleRewrite(const uint32_t &chunk_num);
+  // If the calculated pre-hash is different to any existing pre-hash,
+  // modified is set to true.  In this case, chunks n+1 and n+2 have their
+  // old_n1_pre_hash and old_n2_pre_hash fields completed if not already done.
+  void CalculatePreHash(const uint32_t &chunk_num,
+                        const byte *data,
+                        const uint32_t &length,
+                        bool *modified);
   void CalculateSizes(bool force);
   // If prepared_for_reading_ is not already true, this initialises read_cache_.
   void PrepareToRead();
@@ -139,6 +141,7 @@ class SelfEncryptor {
                         const uint32_t &length,
                         const uint64_t &position);
   void ReadInProcessData(char *data, uint32_t length, uint64_t position);
+  void DeleteChunk(const uint32_t &chunk_num);
 
   DataMapPtr data_map_;
   boost::scoped_ptr<Sequencer> sequencer_;
@@ -152,7 +155,7 @@ class SelfEncryptor {
   std::shared_ptr<byte> chunk0_raw_, chunk1_raw_;
   std::shared_ptr<ChunkStore> chunk_store_;
   uint64_t current_position_;
-  bool prepared_for_writing_, chunk0_modified_, chunk1_modified_;
+  bool prepared_for_writing_, flushed_;
   boost::shared_array<char> read_cache_;
   uint64_t cache_start_position_;
   bool prepared_for_reading_;
