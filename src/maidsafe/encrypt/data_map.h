@@ -35,19 +35,12 @@ namespace encrypt {
 
 struct ChunkDetails {
   enum PreHashState { kEmpty, kOutdated, kOk };
-#ifdef __MSVC__
-#  pragma warning(disable: 4351)
-#endif
   ChunkDetails() : hash(),
                    pre_hash(),
                    old_n1_pre_hash(),
                    old_n2_pre_hash(),
                    pre_hash_state(kEmpty),
-                   size(0) {
-#ifdef __MSVC__
-#  pragma warning(default: 4351)
-#endif
-  }
+                   size(0) {}
   std::string hash;  // SHA512 of processed chunk
   byte pre_hash[crypto::SHA512::DIGESTSIZE];  // SHA512 of unprocessed src data
   // pre hashes of chunks n-1 and n-2, only valid if chunk n-1 or n-2 has
