@@ -183,16 +183,29 @@ bool SelfEncryptor::Write(const char *data,
     }
   }
 
-  ByteArray extra(sequencer_->Get(current_position_));
-  if (extra) {
-    if (PutToEncryptQueue(reinterpret_cast<char*>(extra.get()), Size(extra),
-                          0, static_cast<uint32_t>(current_position_ -
-                                                   queue_start_position_)) !=
-        kSuccess) {
-      DLOG(ERROR) << "Failed to write " << length << " bytes at position "
-                  << position;
-      return false;
+  std::pair<uint64_t, ByteArray> next_seq_block(
+      sequencer_->Peek(current_position_));
+  while (next_seq_block.first < queue_start_position_ + kQueueCapacity_) {
+    ByteArray extra(sequencer_->Get(next_seq_block.first));
+    BOOST_ASSERT(extra);
+    uint32_t extra_offset(0);
+    if (next_seq_block.first < current_position_) {
+      extra_offset = static_cast<uint32_t>(current_position_ -
+                                           next_seq_block.first);
     }
+    if (extra_offset < Size(extra)) {
+      uint32_t queue_offset(static_cast<uint32_t>(
+          std::max(current_position_, next_seq_block.first) -
+          queue_start_position_));
+      if (PutToEncryptQueue(reinterpret_cast<char*>(extra.get()),
+                            Size(extra), extra_offset,
+                            queue_offset) != kSuccess) {
+        DLOG(ERROR) << "Failed to write " << length << " bytes at position "
+                    << position;
+        return false;
+      }
+    }
+    next_seq_block = sequencer_->Peek(current_position_);
   }
 
   return true;
@@ -498,13 +511,19 @@ void SelfEncryptor::GetPadIvKey(uint32_t this_chunk_num,
   const byte* n_2_pre_hash =
       data_map_->chunks[this_chunk_num].old_n2_pre_hash.get();
   if (writing) {
-    if (n_1_pre_hash) {
-      BOOST_ASSERT(n_2_pre_hash);
-      data_map_->chunks[this_chunk_num].old_n1_pre_hash.reset();
-      data_map_->chunks[this_chunk_num].old_n2_pre_hash.reset();
+    if (!n_1_pre_hash) {
+      BOOST_ASSERT(!n_2_pre_hash);
+      data_map_->chunks[this_chunk_num].old_n1_pre_hash.reset(
+          new byte[crypto::SHA512::DIGESTSIZE]);
+      data_map_->chunks[this_chunk_num].old_n2_pre_hash.reset(
+          new byte[crypto::SHA512::DIGESTSIZE]);
     }
     n_1_pre_hash = &data_map_->chunks[n_1_chunk].pre_hash[0];
     n_2_pre_hash = &data_map_->chunks[n_2_chunk].pre_hash[0];
+    memcpy(data_map_->chunks[this_chunk_num].old_n1_pre_hash.get(),
+           n_1_pre_hash, crypto::SHA512::DIGESTSIZE);
+    memcpy(data_map_->chunks[this_chunk_num].old_n2_pre_hash.get(),
+           n_2_pre_hash, crypto::SHA512::DIGESTSIZE);
   } else {
     if (!n_1_pre_hash) {
       BOOST_ASSERT(!n_2_pre_hash);
@@ -688,39 +707,6 @@ void SelfEncryptor::CalculatePreHash(const uint32_t &chunk_num,
   }
 
   data_map_->chunks[chunk_num].pre_hash_state = ChunkDetails::kOk;
-  UpgradeLock upgrade_lock(data_mutex_);
-  if (!data_map_->chunks[chunk_num].hash.empty()) {
-    uint32_t num_chunks = static_cast<uint32_t>(data_map_->chunks.size());
-    uint32_t n_minus_1_chunk = (chunk_num + num_chunks - 1) % num_chunks;
-    uint32_t n_plus_1_chunk = (chunk_num + 1) % num_chunks;
-    uint32_t n_plus_2_chunk = (chunk_num + 2) % num_chunks;
-    if (!data_map_->chunks[n_plus_1_chunk].old_n1_pre_hash) {
-      UpgradeToUniqueLock unique_lock(upgrade_lock);
-      data_map_->chunks[n_plus_1_chunk].old_n1_pre_hash.reset(
-          new byte[crypto::SHA512::DIGESTSIZE]);
-      data_map_->chunks[n_plus_1_chunk].old_n2_pre_hash.reset(
-          new byte[crypto::SHA512::DIGESTSIZE]);
-      memcpy(data_map_->chunks[n_plus_1_chunk].old_n1_pre_hash.get(),
-             &data_map_->chunks[chunk_num].pre_hash[0],
-             crypto::SHA512::DIGESTSIZE);
-      memcpy(data_map_->chunks[n_plus_1_chunk].old_n2_pre_hash.get(),
-             &data_map_->chunks[n_minus_1_chunk].pre_hash[0],
-             crypto::SHA512::DIGESTSIZE);
-    }
-    if (!data_map_->chunks[n_plus_2_chunk].old_n1_pre_hash) {
-      UpgradeToUniqueLock unique_lock(upgrade_lock);
-      data_map_->chunks[n_plus_2_chunk].old_n1_pre_hash.reset(
-          new byte[crypto::SHA512::DIGESTSIZE]);
-      data_map_->chunks[n_plus_2_chunk].old_n2_pre_hash.reset(
-          new byte[crypto::SHA512::DIGESTSIZE]);
-      memcpy(data_map_->chunks[n_plus_2_chunk].old_n1_pre_hash.get(),
-             &data_map_->chunks[n_plus_1_chunk].pre_hash[0],
-             crypto::SHA512::DIGESTSIZE);
-      memcpy(data_map_->chunks[n_plus_2_chunk].old_n2_pre_hash.get(),
-             &data_map_->chunks[chunk_num].pre_hash[0],
-             crypto::SHA512::DIGESTSIZE);
-    }
-  }
 }
 
 bool SelfEncryptor::Flush() {
@@ -885,6 +871,7 @@ bool SelfEncryptor::Flush() {
     }
 
     if (this_chunk_modified) {
+      data_map_->chunks[chunk_index].pre_hash_state = ChunkDetails::kOutdated;
       CalculatePreHash(chunk_index, chunk_array.get(), this_chunk_size,
                        &this_chunk_modified);
       if (this_chunk_modified)
@@ -904,6 +891,9 @@ bool SelfEncryptor::Flush() {
     pre_pre_chunk_modified = pre_chunk_modified;
     pre_chunk_modified = this_chunk_modified;
     this_chunk_modified = false;
+    this_chunk_has_data_in_sequencer = false;
+    this_chunk_has_data_in_queue = false;
+    this_chunk_has_data_in_c0_or_c1 = false;
   }
 
   BOOST_ASSERT(flush_position == file_size_);

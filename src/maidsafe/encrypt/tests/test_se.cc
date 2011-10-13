@@ -1017,7 +1017,6 @@ TEST(SelfEncryptionTest, BEH_WriteRandomSizeRandomPosition) {
                                         << kFileSize;
     }
     memset(answer.get(), 0, kFileSize);
-
     plain_text.replace(post_position, 7, extra);
     std::copy(plain_text.data(), plain_text.data() + kFileSize, original.get());
     EXPECT_TRUE(selfenc.Write(post_overlap.second.data(),
@@ -1039,88 +1038,6 @@ TEST(SelfEncryptionTest, BEH_WriteRandomSizeRandomPosition) {
     ASSERT_EQ(original[i], answer[i]) << "difference at " << i << " of "
                                       << kFileSize;
   }
-}
-
-TEST(SelfEncryptionTest, BEH_1024x3Minus1Chars) {
-  MemoryChunkStorePtr chunk_store(new MemoryChunkStore(false, g_hash_func));
-  DataMapPtr data_map(new DataMap);
-
-  const size_t size(1024*3-1);
-  std::string content(RandomString(size));
-  boost::scoped_array<char> stuff(new char[size]);
-  std::copy(content.data(), content.data() + size, stuff.get());
-  {
-    SelfEncryptor selfenc(data_map, chunk_store);
-    EXPECT_TRUE(selfenc.Write(stuff.get(), size, 0));
-  }
-  SelfEncryptor selfenc(data_map, chunk_store);
-  // Check data_map values again after destruction...
-  EXPECT_EQ(0, selfenc.data_map()->chunks.size());
-  EXPECT_EQ(size, TotalSize(selfenc.data_map()));
-  EXPECT_EQ(size, selfenc.data_map()->content.size());
-}
-
-TEST(SelfEncryptionTest, BEH_1024x3Plus1Chars) {
-  MemoryChunkStorePtr chunk_store(new MemoryChunkStore(false, g_hash_func));
-  DataMapPtr data_map(new DataMap);
-
-  const size_t size(1024*3+1);
-  std::string content(RandomString(size));
-  boost::scoped_array<char> stuff(new char[size]);
-  std::copy(content.data(), content.data() + size, stuff.get());
-  {
-    SelfEncryptor selfenc(data_map, chunk_store);
-    EXPECT_TRUE(selfenc.Write(stuff.get(), size, 0));
-  }
-  SelfEncryptor selfenc(data_map, chunk_store);
-  // Check data_map values again after destruction...
-  EXPECT_EQ(3, selfenc.data_map()->chunks.size());
-  EXPECT_EQ(1024, selfenc.data_map()->chunks[0].size);
-  EXPECT_EQ(1024, selfenc.data_map()->chunks[1].size);
-  EXPECT_EQ(1025, selfenc.data_map()->chunks[2].size);
-  EXPECT_EQ(size, TotalSize(selfenc.data_map()));
-  EXPECT_TRUE(selfenc.data_map()->content.empty());
-}
-
-TEST(SelfEncryptionTest, BEH_1024x256x3Minus1Chars) {
-  MemoryChunkStorePtr chunk_store(new MemoryChunkStore(false, g_hash_func));
-  DataMapPtr data_map(new DataMap);
-
-  const size_t size(1024*256*3-1);
-  std::string content(RandomString(size));
-  boost::scoped_array<char> stuff(new char[size]);
-  std::copy(content.data(), content.data() + size, stuff.get());
-  {
-    SelfEncryptor selfenc(data_map, chunk_store);
-    EXPECT_TRUE(selfenc.Write(stuff.get(), size, 0));
-  }
-  SelfEncryptor selfenc(data_map, chunk_store);
-  // Check data_map values again after destruction...
-  EXPECT_EQ(3, selfenc.data_map()->chunks.size());
-  EXPECT_EQ(size, TotalSize(selfenc.data_map()));
-  EXPECT_TRUE(selfenc.data_map()->content.empty());
-}
-
-TEST(SelfEncryptionTest, BEH_1024x256x3Plus1Chars) {
-  MemoryChunkStorePtr chunk_store(new MemoryChunkStore(false, g_hash_func));
-  DataMapPtr data_map(new DataMap);
-
-  const size_t size(1024*256*3+1);
-  std::string content(RandomString(size));
-  boost::scoped_array<char> stuff(new char[size]);
-  std::copy(content.data(), content.data() + size, stuff.get());
-  {
-    SelfEncryptor selfenc(data_map, chunk_store);
-    EXPECT_TRUE(selfenc.Write(stuff.get(), size, 0));
-  }
-  SelfEncryptor selfenc(data_map, chunk_store);
-  // Check data_map values again after destruction...
-  EXPECT_EQ(3, selfenc.data_map()->chunks.size());
-  EXPECT_EQ(1024*256, selfenc.data_map()->chunks[0].size);
-  EXPECT_EQ(1024*256, selfenc.data_map()->chunks[1].size);
-  EXPECT_EQ(1024*256+1, selfenc.data_map()->chunks[2].size);
-  EXPECT_EQ(size, TotalSize(selfenc.data_map()));
-  EXPECT_TRUE(selfenc.data_map()->content.empty());
 }
 
 TEST(SelfEncryptionTest, BEH_10Chunk4096ByteOutOfSequenceWrites) {
