@@ -35,12 +35,19 @@ namespace encrypt {
 
 struct ChunkDetails {
   enum PreHashState { kEmpty, kOutdated, kOk };
+#ifdef __MSVC__
+#  pragma warning(disable: 4351)
+#endif
   ChunkDetails() : hash(),
                    pre_hash(),
                    old_n1_pre_hash(),
                    old_n2_pre_hash(),
                    pre_hash_state(kEmpty),
-                   size(0) {}
+                   size(0) {
+#ifdef __MSVC__
+#  pragma warning(default: 4351)
+#endif
+  }
   std::string hash;  // SHA512 of processed chunk
   byte pre_hash[crypto::SHA512::DIGESTSIZE];  // SHA512 of unprocessed src data
   // pre hashes of chunks n-1 and n-2, only valid if chunk n-1 or n-2 has
@@ -80,6 +87,9 @@ std::tuple<uint8_t, fs::path, VersionedDataMap> VersionedDirMap; // for dirs
 namespace boost {
 namespace serialization {
 
+#ifdef __MSVC__
+#  pragma warning(disable: 4127)
+#endif
 template<class Archive>
 void serialize(Archive &archive,  // NOLINT
                maidsafe::encrypt::ChunkDetails &chunk_details,
@@ -88,7 +98,10 @@ void serialize(Archive &archive,  // NOLINT
   archive &chunk_details.pre_hash;
   archive &chunk_details.size;
   if (Archive::is_loading::value)
-    chunk_details.pre_hash_state = kOk;
+#ifdef __MSVC__
+#  pragma warning(default: 4127)
+#endif
+    chunk_details.pre_hash_state = maidsafe::encrypt::ChunkDetails::kOk;
 }
 
 template<class Archive>
