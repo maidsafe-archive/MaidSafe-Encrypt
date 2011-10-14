@@ -55,6 +55,7 @@ class SelfEncryptor {
   // Forces all buffered data to be encrypted.  Missing portions of the file
   // be filled with '\0's
   bool Flush();
+  uint64_t size() const { return file_size_; }
   DataMapPtr data_map() const { return data_map_; }
 
  private:

@@ -28,7 +28,7 @@ typedef SequenceBlockMap::value_type SequenceBlock;
 
 class Sequencer {
  public:
-  Sequencer() : blocks_(), end_position_(0) {}
+  Sequencer() : blocks_() {}
   // Adds a new block to the map.  If this overlaps or joins any existing ones,
   // the new block is set to cover the total span of all the overlapping blocks
   // and the old ones are removed.
@@ -47,7 +47,6 @@ class Sequencer {
   Sequencer &operator=(const Sequencer&);
   Sequencer(const Sequencer&);
   SequenceBlockMap blocks_;
-  uint64_t end_position_;
 };
 
 }  // namespace encrypt
