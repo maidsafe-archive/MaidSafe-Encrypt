@@ -712,8 +712,8 @@ TEST(SelfEncryptionTest, BEH_RandomAccess) {
         switch (op_code) {
           case 0:  // write
             {
-              size_t write_position(RandomUint32() % variation);
-              size_t write_length(RandomUint32() % variation);
+              uint64_t write_position(RandomUint32() % variation);
+              uint32_t write_length(RandomUint32() % variation);
               DLOG(INFO) << " write_position : " << write_position
                          << " write_length : " << write_length;
 
@@ -731,8 +731,8 @@ TEST(SelfEncryptionTest, BEH_RandomAccess) {
             }
           case 1:  // read
             {
-              size_t read_position(RandomUint32() % variation);
-              size_t read_length(RandomUint32() % variation);
+              uint64_t read_position(RandomUint32() % variation);
+              uint32_t read_length(RandomUint32() % variation);
               boost::scoped_array<char>answer(new char[read_length]);
               DLOG(INFO) << " read_position : " << read_position
                          << " read_length : " << read_length;
@@ -777,8 +777,8 @@ TEST(SelfEncryptionTest, BEH_RandomAccess) {
       size_t num_tries = num_of_tries[i];
       size_t variation = max_variation[i];
       for (size_t j = 0; j < num_tries; ++j) {
-        size_t position(RandomUint32() % variation);
-        size_t length(RandomUint32() % variation);
+        uint64_t position(RandomUint32() % variation);
+        uint32_t length(RandomUint32() % variation);
         DLOG(INFO) << " accesing at postion : " << position
                    << " with data length : " << length;
 
