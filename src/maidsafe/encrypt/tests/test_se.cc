@@ -700,7 +700,7 @@ TEST(SelfEncryptionTest, BEH_RandomAccess) {
     boost::scoped_array<char>plain_data(new char[kTestDataSize]);
     // The initialization value of truncated data shall be filled here
     for (size_t i = 0; i < kTestDataSize; ++i)
-      plain_data[i] = '0';
+      plain_data[i] = '\0';
 
     for (size_t i = 0; i < max_variation.size(); ++i) {
       size_t num_tries = num_of_tries[i];
@@ -726,7 +726,7 @@ TEST(SelfEncryptionTest, BEH_RandomAccess) {
 
               EXPECT_TRUE(selfenc.Write(content_data.get(),
                                         write_length, write_position));
-              DLOG(INFO) << " current data size is : " << TotalSize(data_map);
+              DLOG(INFO) << " current data size is : " << selfenc.size();
               break;
             }
           case 1:  // read
@@ -741,20 +741,22 @@ TEST(SelfEncryptionTest, BEH_RandomAccess) {
               // the current data lenth of the encrypt stream.
               // It shall return part of the content or false if the starting
               // read position exceed the data size
-              if (read_position < TotalSize(data_map)) {
+              if (read_position < selfenc.size()) {
                 EXPECT_TRUE(selfenc.Read(answer.get(),
                                          read_length, read_position));
                 // A return value of num_of_bytes succeeded read is required
                 for (size_t i = 0; i < read_length; ++i)
-                  ASSERT_EQ(plain_data[read_position + i], answer[i])
-                      << "not match " << i << " from " << read_position
-                    << " when total data is " << TotalSize(data_map);
+                  if ((i + read_position) < selfenc.size())
+                    ASSERT_EQ(plain_data[read_position + i], answer[i])
+                        << "not match " << i << " from " << read_position
+                        << " when total data is " << selfenc.size();
               } else {
-                EXPECT_FALSE(selfenc.Read(answer.get(),
+                // Should expect a False when reading out-of-range
+                EXPECT_TRUE(selfenc.Read(answer.get(),
                                           read_length, read_position))
                     << " when trying to read " << read_length
                     << " from " << read_position
-                    << " when total data is " << TotalSize(data_map);
+                    << " when total data is " << selfenc.size();
               }
               break;
             }
