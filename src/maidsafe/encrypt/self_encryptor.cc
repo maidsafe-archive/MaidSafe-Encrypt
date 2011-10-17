@@ -1010,6 +1010,9 @@ int SelfEncryptor::ReadDataMapChunks(char *data,
                                      const uint64_t &position) {
   if (data_map_->chunks.empty())
     return kSuccess;
+  uint64_t total_data_map_size(TotalSize(data_map_, normal_chunk_size_));
+  if (position >= total_data_map_size)
+    return kSuccess;
 
   uint32_t num_chunks = static_cast<uint32_t>(data_map_->chunks.size());
   uint32_t start_chunk = std::min(num_chunks - 1,
@@ -1022,7 +1025,6 @@ int SelfEncryptor::ReadDataMapChunks(char *data,
     --start_chunk;
   uint32_t start_offset(position % normal_chunk_size_);
   uint32_t end_cut(0);
-  uint64_t total_data_map_size(TotalSize(data_map_, normal_chunk_size_));
   if (position + length >= total_data_map_size) {
     end_cut = (*data_map_->chunks.rbegin()).size;
   } else {
