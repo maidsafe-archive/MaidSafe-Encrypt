@@ -132,8 +132,9 @@ SelfEncryptor::SelfEncryptor(DataMapPtr data_map,
       normal_chunk_size_ = 0;
     } else {
       file_size_ = (data_map->chunks.empty() ? data_map->content.size() : 0);
-      std::for_each(data_map->chunks.begin(), --data_map->chunks.end(),
-                    [=] (ChunkDetails chunk) { file_size_ += chunk.size; });
+      auto penultimate(--data_map->chunks.end());
+      for (auto it(data_map->chunks.begin()); it != penultimate; ++it)
+        file_size_ += (*it).size;
       last_chunk_position_ = file_size_;
       file_size_ += (*data_map->chunks.rbegin()).size;
       normal_chunk_size_ = (*data_map->chunks.begin()).size;

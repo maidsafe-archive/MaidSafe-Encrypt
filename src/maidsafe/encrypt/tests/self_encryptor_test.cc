@@ -48,8 +48,8 @@ const int g_num_procs(omp_get_num_procs());
 
 uint64_t TotalSize(DataMapPtr data_map) {
   uint64_t size(data_map->chunks.empty() ? data_map->content.size() : 0);
-  std::for_each(data_map->chunks.begin(), data_map->chunks.end(),
-                [&size] (ChunkDetails chunk) { size += chunk.size; });
+  for (auto it(data_map->chunks.begin()); it != data_map->chunks.end(); ++it)
+    size += (*it).size;
   return size;
 }
 
@@ -848,7 +848,7 @@ TEST_F(BasicTest, BEH_RandomAccess) {
         switch (op_code) {
           case 0:  // write
             {
-              uint64_t write_position(RandomUint32() % variation);
+              uint32_t write_position(RandomUint32() % variation);
               uint32_t write_length(RandomUint32() % variation);
               DLOG(INFO) << " write_position : " << write_position
                          << " write_length : " << write_length;
@@ -868,7 +868,7 @@ TEST_F(BasicTest, BEH_RandomAccess) {
             }
           case 1:  // read
             {
-              uint64_t read_position(RandomUint32() % variation);
+              uint32_t read_position(RandomUint32() % variation);
               uint32_t read_length(RandomUint32() % variation);
               boost::scoped_array<char>answer(new char[read_length]);
               DLOG(INFO) << " read_position : " << read_position
@@ -917,7 +917,7 @@ TEST_F(BasicTest, BEH_RandomAccess) {
       size_t num_tries = num_of_tries[i];
       size_t variation = max_variation[i];
       for (size_t j = 0; j < num_tries; ++j) {
-        uint64_t position(RandomUint32() % variation);
+        uint32_t position(RandomUint32() % variation);
         uint32_t length(RandomUint32() % variation);
         DLOG(INFO) << " accesing at postion : " << position
                    << " with data length : " << length;
