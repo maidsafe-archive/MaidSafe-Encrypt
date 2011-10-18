@@ -1026,7 +1026,7 @@ int SelfEncryptor::ReadDataMapChunks(char *data,
   uint32_t start_offset(position % normal_chunk_size_);
   uint32_t end_cut(0);
   if (position + length >= total_data_map_size) {
-    end_cut = (*data_map_->chunks.rbegin()).size;
+    end_cut = (*data_map_->chunks.rbegin()).size - start_offset;
   } else {
     end_cut = static_cast<uint32_t>(position + length -
                                     (normal_chunk_size_ * end_chunk));
@@ -1040,8 +1040,7 @@ int SelfEncryptor::ReadDataMapChunks(char *data,
       DLOG(ERROR) << "Failed to decrypt chunk " << start_chunk;
       return result;
     }
-    for (uint32_t i = start_offset; i != length + start_offset; ++i)
-      data[i - start_offset] = static_cast<char>(*(chunk_data.get() + i));
+    memcpy(data, chunk_data.get() + start_offset, end_cut);
     return kSuccess;
   }
 
