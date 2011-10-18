@@ -51,7 +51,7 @@ class SelfEncryptor {
   bool Read(char *data, const uint32_t &length, const uint64_t &position);
   bool DeleteAllChunks();
   // Can only truncate down in size
-  bool Truncate(const uint64_t &length);
+  bool Truncate(const uint64_t &position);
   // Forces all buffered data to be encrypted.  Missing portions of the file
   // be filled with '\0's
   bool Flush();

@@ -759,9 +759,9 @@ bool SelfEncryptor::Flush() {
 
   const uint32_t kOldChunkCount(
       static_cast<uint32_t>(data_map_->chunks.size()));
-  data_map_->chunks.resize(std::max(
-      static_cast<uint32_t>(data_map_->chunks.size()),
-      static_cast<uint32_t>(last_chunk_position_ / normal_chunk_size_) + 1));
+  const uint32_t kNewChunkCount(static_cast<uint32_t>(
+      last_chunk_position_ / normal_chunk_size_) + 1);
+  data_map_->chunks.resize(std::max(kOldChunkCount, kNewChunkCount));
 
   uint64_t flush_position(2 * normal_chunk_size_);
   uint32_t chunk_index(2);
@@ -783,7 +783,7 @@ bool SelfEncryptor::Flush() {
   ByteArray chunk_array(GetNewByteArray(kDefaultChunkSize + kMinChunkSize));
   uint32_t this_chunk_size(normal_chunk_size_);
   while (flush_position <= last_chunk_position_) {
-    if (chunk_index == data_map_->chunks.size() - 1) {  // on last chunk
+    if (chunk_index == kNewChunkCount - 1) {  // on last chunk
       this_chunk_size =
           static_cast<uint32_t>(file_size_ - last_chunk_position_);
     }
@@ -898,6 +898,13 @@ bool SelfEncryptor::Flush() {
   }
 
   BOOST_ASSERT(flush_position == file_size_);
+
+  // truncate the DataMap if required
+  if (kNewChunkCount < kOldChunkCount) {
+    while (chunk_index < kOldChunkCount)
+      DeleteChunk(chunk_index++);
+    data_map_->chunks.resize(kNewChunkCount);
+  }
 
   if (pre_pre_chunk_modified || pre_chunk_modified ||
       data_map_->chunks[0].pre_hash_state != ChunkDetails::kOk) {
@@ -1188,75 +1195,48 @@ bool SelfEncryptor::DeleteAllChunks() {
   return true;
 }
 
-bool SelfEncryptor::Truncate(const uint64_t &length) {
-  uint64_t byte_count(0);
-  uint32_t number_of_chunks(static_cast<uint32_t>(data_map_->chunks.size()));
-//  bool delete_remainder(false), found_end(false);
-  // if (data_map_->complete) {
-    // Assume size < data_map.size
-    for (uint32_t i = 0; i != number_of_chunks; ++i) {
-      uint32_t chunk_size = data_map_->chunks[i].size;
-      byte_count += chunk_size;
-      if (byte_count > length) {
-        // Found chunk with data at position 'size'.
-        if (retrievable_from_queue_ != 0)
-//          main_encrypt_queue_.SkipAll();
-        sequencer_->clear();
-        for (uint32_t j = i + 1; j != number_of_chunks; ++j) {
-          UniqueLock chunk_store_unique_lock(chunk_store_mutex_);
-          if (!chunk_store_->Delete(data_map_->chunks[j].hash)) {
-            DLOG(ERROR) << "Failed to delete chunk";
-            return false;
-          }
-          UniqueLock data_unique_lock(data_mutex_);
-          data_map_->chunks.pop_back();
-        }
-        if (byte_count - length == chunk_size) {
-          UniqueLock chunk_store_unique_lock(chunk_store_mutex_);
-          if (!chunk_store_->Delete(data_map_->chunks[i].hash)) {
-            DLOG(ERROR) << "Failed to delete chunk";
-            return false;
-          }
-          UniqueLock data_unique_lock(data_mutex_);
-          data_map_->chunks.pop_back();
-        } else {
-          ByteArray data(GetNewByteArray(chunk_size));
-          DecryptChunk(i, data.get());
-          BOOST_ASSERT(byte_count - length <= chunk_size);
-//          uint32_t bytes_to_queue(chunk_size -
-//                                  static_cast<uint32_t>(byte_count - length));
-//          main_encrypt_queue_.Put2(data.get(), bytes_to_queue, 0, true);
-          UniqueLock chunk_store_unique_lock(chunk_store_mutex_);
-          if (!chunk_store_->Delete(data_map_->chunks[i].hash)) {
-            DLOG(ERROR) << "Failed to delete chunk";
-            return false;
-          }
-          UniqueLock data_unique_lock(data_mutex_);
-          data_map_->chunks.pop_back();
-        }
-        current_position_ = length;
-        UniqueLock data_unique_lock(data_mutex_);
-        data_map_->content.erase();
-        return true;
-      }
-    }
-    // Check data map content.
+bool SelfEncryptor::Truncate(const uint64_t &position) {
+  if (position > file_size_) {
+    DLOG(ERROR) << "Cannot truncate from " << file_size_ << " to " << position;
+    return false;
+  }
 
-  // } else {
-//    if (delete_remainder == true) {
-//      sequencer_->EraseAll();
-//      main_encrypt_queue_.SkipAll();
-//    } else {
-//      // check content
-//    else
-//      // check queue;
-//    else
-//      // check sequencer
-//      if (length <= retrievable_from_queue_) {
-//
-//      }
-//    }
-  // }
+  if (position == file_size_)
+    return true;
+
+  // truncate queue, sequencer, and chunks 0 & 1.
+  PrepareToWrite(0, 0);
+
+  if (position < queue_start_position_) {
+    queue_start_position_ = 2 * kDefaultChunkSize;
+    current_position_ = queue_start_position_;
+    retrievable_from_queue_ = 0;
+  } else if (position < queue_start_position_ + retrievable_from_queue_) {
+    current_position_ = position;
+    retrievable_from_queue_ = static_cast<uint32_t>(current_position_ -
+                                                    queue_start_position_);
+  }
+
+  sequencer_->Truncate(position);
+
+  // TODO(Fraser#5#): 2011-10-18 - Confirm these memset's are really required
+  if (position < 2 * kDefaultChunkSize) {
+    uint32_t overwite_size(std::max((2 * kDefaultChunkSize) -
+                                    static_cast<uint32_t>(position),
+                                    kDefaultChunkSize));
+    uint32_t overwrite_position(kDefaultChunkSize - overwite_size);
+    memset(chunk1_raw_.get() + overwrite_position, 0, overwite_size);
+  }
+  if (position < kDefaultChunkSize) {
+    uint32_t overwite_size(std::max(kDefaultChunkSize -
+                                    static_cast<uint32_t>(position),
+                                    kDefaultChunkSize));
+    uint32_t overwrite_position(kDefaultChunkSize - overwite_size);
+    memset(chunk0_raw_.get() + overwrite_position, 0, overwite_size);
+  }
+
+  file_size_ = position;
+  CalculateSizes(true);
   return true;
 }
 

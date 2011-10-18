@@ -154,5 +154,36 @@ SequenceBlock Sequencer::Peek(const uint64_t &position) const {
   return itr == blocks_.end() ? kInvalidSeqBlock : *itr;
 }
 
+void Sequencer::Truncate(const uint64_t &position) {
+  if (blocks_.empty())
+    return;
+
+  // Find the block which spans position, or if none, the first one starting
+  // after position
+  auto lower_itr(blocks_.lower_bound(position));
+  if (lower_itr == blocks_.end() ||
+      (lower_itr != blocks_.begin() && (*lower_itr).first != position)) {
+    --lower_itr;
+  }
+  if ((*lower_itr).first < position) {
+    // If it spans, truncate the block
+    if ((*lower_itr).first + Size((*lower_itr).second) > position) {
+      uint32_t reduced_size = static_cast<uint32_t>((*lower_itr).first +
+                              Size((*lower_itr).second) - position);
+      ByteArray temp(GetNewByteArray(reduced_size));
+#ifndef NDEBUG
+      uint32_t copied =
+#endif
+          MemCopy(temp, 0, (*lower_itr).second.get(), reduced_size);
+      BOOST_ASSERT(reduced_size == copied);
+      (*lower_itr).second = temp;
+    }
+    // Move to first block past position
+    ++lower_itr;
+  }
+
+  blocks_.erase(lower_itr, blocks_.end());
+}
+
 }  // namespace encrypt
 }  // namespace maidsafe
