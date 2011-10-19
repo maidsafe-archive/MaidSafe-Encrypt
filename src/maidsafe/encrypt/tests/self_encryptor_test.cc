@@ -573,14 +573,14 @@ TEST_F(BasicTest, BEH_NewRead) {
 
   // try to read from end of cache, but request more data than remains
   // will result in cache being refreshed
-  read_position += (kDefaultChunkSize * 8 - 1000);
+  index = read_position += (kDefaultChunkSize * 8 - 1000);
   EXPECT_TRUE(self_encryptor_->Read(&decrypted_[read_position], kReadSize,
                                     read_position));
   for (; index != read_position + kReadSize; ++index)
     ASSERT_EQ(original_[index], decrypted_[index]) << "difference at " << index;
 
   // try to read from near start of file, no longer in cache
-  read_position = 5;
+  index = read_position = 5;
   EXPECT_TRUE(self_encryptor_->Read(&decrypted_[read_position], kReadSize,
                                     read_position));
   for (; index != read_position + kReadSize; ++index)
@@ -684,12 +684,12 @@ TEST_F(BasicTest, BEH_WriteRandomSizeRandomPosition) {
 TEST_F(BasicTest, BEH_RandomSizedOutOfSequenceWritesWithGaps) {
   const size_t parts(500);
   std::array<std::string, parts> string_array;
-  std::array<size_t, parts> index_array;
+  std::array<uint32_t, parts> index_array;
   uint32_t total_size(0);
-  for (size_t i = 0; i != parts; ++i) {
+  for (uint32_t i = 0; i != parts; ++i) {
     string_array[i] = RandomString(RandomUint32() % ((1 << 18) + 1));
     index_array[i] = i;
-    total_size += string_array[i].size();
+    total_size += static_cast<uint32_t>(string_array[i].size());
   }
   srand(RandomUint32());
   std::random_shuffle(index_array.begin(), index_array.end());
@@ -724,7 +724,6 @@ TEST_F(BasicTest, BEH_RandomSizedOutOfSequenceWritesWithGaps) {
                                            << total_size;
   }
 }
-
 TEST_F(BasicTest, BEH_ManualCheckWrite) {
   uint32_t chunk_size(kDefaultChunkSize);
   uint32_t num_chunks(10);

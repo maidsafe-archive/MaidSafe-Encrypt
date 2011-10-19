@@ -141,7 +141,9 @@ class SelfEncryptor {
   int ReadDataMapChunks(char *data,
                         const uint32_t &length,
                         const uint64_t &position);
-  void ReadInProcessData(char *data, uint32_t length, uint64_t position);
+  void ReadInProcessData(char *data,
+                         const uint32_t &length,
+                         const uint64_t &position);
   void DeleteChunk(const uint32_t &chunk_num);
 
   DataMapPtr data_map_;

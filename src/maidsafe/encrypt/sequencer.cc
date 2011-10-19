@@ -149,9 +149,31 @@ SequenceBlock Sequencer::GetFirst() {
   return result;
 }
 
-SequenceBlock Sequencer::Peek(const uint64_t &position) const {
+SequenceBlock Sequencer::PeekBeyond(const uint64_t &position) const {
   auto itr(blocks_.lower_bound(position));
   return itr == blocks_.end() ? kInvalidSeqBlock : *itr;
+}
+
+SequenceBlock Sequencer::Peek(const uint32_t &length,
+                              const uint64_t &position) const {
+  if (blocks_.empty())
+    return kInvalidSeqBlock;
+
+  auto itr(blocks_.lower_bound(position));
+  if (itr != blocks_.end() && (*itr).first == position)
+    return *itr;
+
+  if (itr == blocks_.end() || itr != blocks_.begin())
+    --itr;
+
+  if ((*itr).first < position) {
+    if ((*itr).first + Size((*itr).second) > position)
+      return *itr;
+    else
+      return kInvalidSeqBlock;
+  }
+
+  return ((*itr).first < length + position) ? *itr : kInvalidSeqBlock;
 }
 
 void Sequencer::Truncate(const uint64_t &position) {
