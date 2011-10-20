@@ -905,6 +905,8 @@ bool SelfEncryptor::Flush() {
       DLOG(ERROR) << "Failed in Flush.";
       return false;
     }
+    // once chunk 0 updated, assume chunk 1 shall be updated as well
+    pre_chunk_modified = true;
   }
 
   pre_pre_chunk_modified = pre_chunk_modified;
