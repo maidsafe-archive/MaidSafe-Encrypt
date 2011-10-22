@@ -897,7 +897,7 @@ bool SelfEncryptor::Flush() {
       DeleteChunk(chunk_index++);
     data_map_->chunks.resize(kNewChunkCount);
   }
-
+  pre_pre_chunk_modified = true;
   if (pre_pre_chunk_modified || pre_chunk_modified ||
       data_map_->chunks[0].pre_hash_state != ChunkDetails::kOk) {
     result = EncryptChunk(0, chunk0_raw_.get(), normal_chunk_size_);
