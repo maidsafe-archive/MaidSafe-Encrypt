@@ -68,7 +68,7 @@ class XORFilter : public CryptoPP::Bufferless<CryptoPP::Filter> {
     boost::scoped_array<byte> buffer(new byte[length]);
 
     size_t i(0);
-  // #pragma omp parallel for shared(buffer, in_string) private(i)
+// #pragma omp parallel for shared(buffer, in_string) private(i)
     for (; i != length; ++i) {
       buffer[i] = in_string[i] ^ pad_[count_ % kPadSize];
       ++count_;
@@ -250,10 +250,10 @@ int SelfEncryptor::PrepareToWrite(const uint32_t &length,
       uint64_t pos(current_position_);
       uint32_t written = PutToInitialChunks(reinterpret_cast<char*>(temp.get()),
                                             &len, &pos);
-      consumed_whole_chunk = (length == 0);
+      consumed_whole_chunk = (len == 0);
       if (!consumed_whole_chunk) {
         result = sequencer_->Add(reinterpret_cast<char*>(temp.get()) + written,
-                                 length, position);
+                                 len, pos);
         if (result != kSuccess) {
           DLOG(ERROR) << "Failed to prepare for writing.";
           return result;
@@ -710,6 +710,8 @@ bool SelfEncryptor::Flush() {
     data_map_->chunks.clear();
     flushed_ = true;
     return true;
+  } else {
+    data_map_->content.clear();
   }
 
   CalculateSizes(true);
@@ -756,9 +758,7 @@ bool SelfEncryptor::Flush() {
   uint64_t flush_position(2 * normal_chunk_size_);
   uint32_t chunk_index(2);
   bool pre_pre_chunk_modified(true);
-      //data_map_->chunks[0].pre_hash_state != ChunkDetails::kOk);
   bool pre_chunk_modified(true);
-      //data_map_->chunks[1].pre_hash_state != ChunkDetails::kOk);
   bool this_chunk_modified(false);
   bool this_chunk_has_data_in_sequencer(false);
   bool this_chunk_has_data_in_queue(false);
@@ -867,8 +867,6 @@ bool SelfEncryptor::Flush() {
                        &this_chunk_modified);
       if (this_chunk_modified)
         DeleteChunk(chunk_index);
-      //else
-        //data_map_->chunks[chunk_index].size = this_chunk_size;
     }
 
     if (pre_pre_chunk_modified || pre_chunk_modified || this_chunk_modified) {

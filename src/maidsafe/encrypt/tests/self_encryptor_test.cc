@@ -681,75 +681,394 @@ TEST_F(BasicTest, BEH_WriteRandomSizeRandomPosition) {
   }
 }
 
-TEST_F(BasicTest, BEH_RandomSizedOutOfSequenceWritesWithGaps) {
-  const size_t parts(500);
-  std::array<std::string, parts> string_array;
-  std::array<uint32_t, parts> index_array;
+TEST_F(BasicTest, BEH_RandomSizedOutOfSequenceWritesWithGapsAndOverlaps) {
+  const size_t kParts(80);
+  ASSERT_GE(kDataSize_ / kDefaultChunkSize, kParts);
+  std::array<std::string, kParts> string_array;
+  std::array<uint32_t, kParts> index_array;
   uint32_t total_size(0);
-  for (uint32_t i = 0; i != parts; ++i) {
-    string_array[i] = RandomString(RandomUint32() % ((1 << 18) + 1));
+
+  // Grab randomly-sized pieces of random data at random offsets and shuffle.
+  for (uint32_t i = 0; i != kParts; ++i) {
+    uint32_t offset(RandomUint32() % (kDataSize_ - kDefaultChunkSize - 2));
+    uint32_t size(RandomUint32() % kDefaultChunkSize + 1);
+    string_array[i].assign(original_.get() + offset, size);
     index_array[i] = i;
-    total_size += static_cast<uint32_t>(string_array[i].size());
   }
   srand(RandomUint32());
   std::random_shuffle(index_array.begin(), index_array.end());
-  uint32_t gap1(101), gap2(233);
-  for (size_t i(0); i != gap1; ++i)
-    EXPECT_TRUE(self_encryptor_->Write(string_array[index_array[i]].data(),
-                static_cast<uint32_t>(string_array[index_array[i]].size()),
-                index_array[i] * string_array[index_array[i]].size()));
-  for (size_t i(gap1 + 1); i != gap2; ++i)
-    EXPECT_TRUE(self_encryptor_->Write(string_array[index_array[i]].data(),
-                static_cast<uint32_t>(string_array[index_array[i]].size()),
-                index_array[i] * string_array[index_array[i]].size()));
-  for (size_t i(gap2 + 1); i != parts; ++i)
-    EXPECT_TRUE(self_encryptor_->Write(string_array[index_array[i]].data(),
-                static_cast<uint32_t>(string_array[index_array[i]].size()),
-                index_array[i] * string_array[index_array[i]].size()));
 
+  // Clear original_ ready to take modified input data.
+  memset(original_.get(), 0, kDataSize_);
+
+  // Write the pieces.  Positions could yield overlaps or gaps.
+  for (size_t i(0); i != kParts; ++i) {
+    uint32_t piece_size =
+        static_cast<uint32_t>(string_array[index_array[i]].size());
+    uint64_t piece_position(index_array[i] * piece_size);
+    total_size = std::max(total_size,
+                          static_cast<uint32_t>(piece_position + piece_size));
+    EXPECT_TRUE(self_encryptor_->Write(string_array[index_array[i]].data(),
+                piece_size, piece_position));
+    ASSERT_GE(kDataSize_, total_size);
+    EXPECT_EQ(total_size, self_encryptor_->size());
+    memcpy(original_.get() + piece_position,
+           string_array[index_array[i]].data(), piece_size);
+  }
+
+  // Read back and check while in process.
   decrypted_.reset(new char[total_size]);
   memset(decrypted_.get(), 1, total_size);
   EXPECT_TRUE(self_encryptor_->Read(decrypted_.get(), total_size, 0));
-  uint32_t current_offset(0);
-  for (uint32_t i = 0; i != parts; ++i) {
-    for (uint32_t j(0);
-         j != static_cast<uint32_t>(string_array[index_array[i]].size());
-         ++j, ++current_offset) {
-      if (i == gap1 || i == gap2) {
-        ASSERT_EQ('\0', decrypted_[current_offset])
-            << "difference at " << current_offset << " of " << total_size;
+  for (uint32_t i(0); i != total_size; ++i) {
+    ASSERT_EQ(original_[i], decrypted_[i]) << "difference at " << i << " of "
+                                           << total_size;
+  }
+  EXPECT_EQ(total_size, self_encryptor_->size());
+
+  // Read back and check post processing.
+  self_encryptor_->Flush();
+  EXPECT_EQ(total_size, self_encryptor_->size());
+  memset(decrypted_.get(), 1, total_size);
+  EXPECT_TRUE(self_encryptor_->Read(decrypted_.get(), total_size, 0));
+  for (uint32_t i(0); i != total_size; ++i) {
+    ASSERT_EQ(original_[i], decrypted_[i]) << "difference at " << i << " of "
+                                           << total_size;
+  }
+}
+
+TEST_F(BasicTest, BEH_WriteLongAndShort65536SegmentsReadThenRewrite) {
+  size_t chunk_size(1024 * 256), count(0);
+  size_t max_length = chunk_size * 3 + chunk_size / 3;
+  const size_t parts(50), size(65536);
+  std::array<std::string, parts> original;
+
+  for (size_t i = 0; i != parts; ++i) {
+    if (i % 5 == 0)
+      original[i] = RandomString(max_length);
+    else
+      original[i] = RandomString(size);
+  }
+  for (size_t i = 0; i != parts; ++i) {
+    EXPECT_TRUE(self_encryptor_->Write(original[i].c_str(),
+        static_cast<uint32_t>(original[i].size()), count));
+    count += original[i].size();
+  }
+  self_encryptor_->Flush();
+
+  {
+    SelfEncryptor self_encryptor(data_map_, chunk_store_);
+    // Check data_map values again after destruction...
+    EXPECT_EQ(44, self_encryptor.data_map()->chunks.size());
+    EXPECT_EQ(size*40 + max_length*10, TotalSize(self_encryptor.data_map()));
+    EXPECT_EQ(0, self_encryptor.data_map()->content.size());
+
+    std::array<std::string, parts> recovered;
+    for (size_t i = 0; i != parts; ++i) {
+      if (i % 5 == 0)
+        recovered[i].resize(max_length);
+      else
+        recovered[i].resize(size);
+    }
+    count = 0;
+    for (size_t i = 0; i != parts; ++i) {
+      EXPECT_TRUE(self_encryptor.Read(const_cast<char*>(recovered[i].data()),
+          static_cast<uint32_t>(recovered[i].size()), count));
+      EXPECT_EQ(original[i], recovered[i]);
+      count += original[i].size();
+    }
+  }
+  {
+    // rewrite
+    size_t max_length = chunk_size * 3 + 256;
+    const size_t parts(70), size(4096);
+    std::array<std::string, parts> overwrite, recovered;
+
+    for (size_t i = 0; i != parts; ++i) {
+      if (i % 5 == 0) {
+        overwrite[i] = RandomString(max_length);
+        recovered[i].resize(max_length);
       } else {
-        // TODO(Fraser#5#): 2011-10-19 - Once test passing, remove following if block
-        if (string_array[index_array[i]].at(j) != decrypted_[current_offset]) {
-          std::cout << "difference at " << current_offset << " of " << total_size << std::endl;
-          std::cout << "string_array[index_array[" << i << "]].at(" << j << ") " << string_array[index_array[i]].at(j) << "\tdecrypted_[" << current_offset << "] " << decrypted_[current_offset] << std::endl;
-          i = parts - 1;
-          break;
-        }
-        ASSERT_EQ(string_array[index_array[i]].at(j),
-                  decrypted_[current_offset]) << "difference at "
-                  << current_offset << " of " << total_size;
+        overwrite[i] = RandomString(size);
+        recovered[i].resize(size);
+      }
+    }
+    {
+      SelfEncryptor self_encryptor(data_map_, chunk_store_);
+      count = 0;
+      for (size_t i = 0; i != parts; ++i) {
+        EXPECT_TRUE(self_encryptor.Write(overwrite[i].c_str(),
+            static_cast<uint32_t>(overwrite[i].size()), count));
+        count += overwrite[i].size();
+      }
+    }
+    SelfEncryptor self_encryptor(data_map_, chunk_store_);
+    count = 0;
+    for (size_t i = 0; i != parts; ++i) {
+      EXPECT_TRUE(self_encryptor.Read(const_cast<char*>(recovered[i].data()),
+          static_cast<uint32_t>(recovered[i].size()), count));
+      size_t overwrite_size(overwrite[i].size());
+      for (size_t j = 0; j != overwrite_size; ++j)
+        EXPECT_EQ(overwrite[i][j], recovered[i][j]) << "Failed on string " << i
+                                                    << " at position " << j;
+      // EXPECT_EQ(overwrite[i], recovered[i]);
+      count += overwrite[i].size();
+    }
+  }
+}
+
+TEST_F(BasicTest, BEH_4096ByteOutOfSequenceWritesReadsAndRewrites) {
+  // 10 chunks, (1024*256*10-4096)...
+  // 639, 4096 byte parts...
+  const size_t parts(639), size(4096);
+  std::array<std::string, parts> string_array;
+  std::array<size_t, parts> index_array;
+  std::string compare(639*4096, 0);
+  for (size_t i = 0; i != parts; ++i) {
+    string_array[i] = RandomString(size);
+    index_array[i] = i;
+  }
+  srand(RandomUint32());
+  std::random_shuffle(index_array.begin(), index_array.end());
+  std::string::iterator it(compare.begin());
+
+  for (size_t i = 0; i != 300; ++i) {
+    EXPECT_TRUE(self_encryptor_->Write(string_array[index_array[i]].data(),
+                                        size, index_array[i] * size));
+    compare.replace(it + index_array[i] * size, it + index_array[i] * size
+                    + size, string_array[index_array[i]].data(), size);
+  }
+  for (size_t i = 301; i != parts; ++i) {
+    EXPECT_TRUE(self_encryptor_->Write(string_array[index_array[i]].data(),
+                                        size, index_array[i] * size));
+    compare.replace(it + index_array[i] * size, it + index_array[i] * size
+                    + size, string_array[index_array[i]].data(), size);
+  }
+  // write to the gap...
+  EXPECT_TRUE(self_encryptor_->Write(string_array[index_array[300]].data(),
+                                      size, index_array[300] * size + 1025));
+  compare.replace(it + index_array[300] * size + 1025, it +
+                  index_array[300] * size + 1025 + size,
+                  string_array[index_array[300]].data(), size);
+  // Unknown number of chunks and data map size...
+  // No content yet...
+  EXPECT_TRUE(self_encryptor_->data_map()->content.empty());
+  self_encryptor_->Flush();
+
+  SelfEncryptor self_encryptor(data_map_, chunk_store_);
+  // Check data_map values again after destruction...
+  EXPECT_EQ(10, self_encryptor.data_map()->chunks.size());
+  EXPECT_EQ(1024*256*10-4096, TotalSize(self_encryptor.data_map()));
+  EXPECT_TRUE(self_encryptor.data_map()->content.empty());
+
+  std::string written;
+  written.resize(size);
+  for (size_t i = 0; i != parts; ++i) {
+    self_encryptor.Read(const_cast<char*>(written.c_str()), size, i * size);
+    EXPECT_EQ(written, compare.substr(i * size, size));
+  }
+
+  for (size_t i = 0; i != parts; ++i) {
+    uint32_t offset(RandomUint32() % string_array[i].size());
+    if (i % 10 == 0) {
+      self_encryptor.Read(const_cast<char*>(written.c_str()), size, i * size);
+      EXPECT_EQ(written, compare.substr(i * size, size));
+      if (i * size >= offset) {
+        self_encryptor.Write(string_array[i].data(),
+                             static_cast<uint32_t>(string_array[i].size()),
+                             i * size - offset);
+        compare.replace(it + i * size - offset, it + i * size - offset +
+                        string_array[i].size(), string_array[i].data(),
+                        string_array[i].size());
+      } else {
+        self_encryptor.Write(string_array[i].data(),
+                             static_cast<uint32_t>(string_array[i].size()),
+                             i * size + offset);
+        compare.replace(it + i * size + offset, it + i * size + offset +
+                        string_array[i].size(), string_array[i].data(),
+                        string_array[i].size());
+      }
+    } else if (i % 20 == 0) {
+      self_encryptor.Write(string_array[i].data(),
+                           static_cast<uint32_t>(string_array[i].size()),
+                           i * size + offset);
+      compare.replace(it + i * size + offset, it + i * size + offset +
+                      string_array[i].size(), string_array[i].data(),
+                      string_array[i].size());
+      self_encryptor.Read(const_cast<char*>(written.c_str()), size, i * size);
+      EXPECT_EQ(written, compare.substr(i * size, size));
+    } else {
+      if (i % 2 == 0) {
+        self_encryptor.Write(string_array[i].data(),
+                             static_cast<uint32_t>(string_array[i].size()),
+                             i * size);
+        compare.replace(it + i * size, it + i * size + string_array[i].size(),
+                        string_array[i].data(), string_array[i].size());
+        self_encryptor.Read(const_cast<char*>(written.c_str()), size, i * size);
+        EXPECT_EQ(written, compare.substr(i * size, size));
+      } else {
+        self_encryptor.Read(const_cast<char*>(written.c_str()), size, i * size);
+        EXPECT_EQ(written, compare.substr(i * size, size));
+        self_encryptor.Write(string_array[i].data(),
+                             static_cast<uint32_t>(string_array[i].size()),
+                             i * size);
+        compare.replace(it + i * size, it + i * size + string_array[i].size(),
+                        string_array[i].data(), string_array[i].size());
       }
     }
   }
+}
 
+TEST_F(BasicTest, BEH_WriteSmallThenAdd) {
+  // Write and read small amount
+  const uint32_t kSize = (3 * kMinChunkSize) - 2;
+  std::string original(RandomString(kSize)), decrypted(kSize, 1);
+  EXPECT_EQ(0, self_encryptor_->size());
+  EXPECT_TRUE(self_encryptor_->Write(original.data(), kSize, 0));
+  EXPECT_EQ(kSize, self_encryptor_->size());
+  EXPECT_TRUE(self_encryptor_->Read(const_cast<char*>(decrypted.data()), kSize,
+                                    0));
+  EXPECT_EQ(original, decrypted);
+  EXPECT_EQ(kSize, self_encryptor_->size());
   self_encryptor_->Flush();
-  memset(decrypted_.get(), 1, total_size);
-  current_offset = 0;
-  EXPECT_TRUE(self_encryptor_->Read(decrypted_.get(), total_size, 0));
-  for (uint32_t i = 0; i != parts; ++i) {
-    for (uint32_t j(0);
-         j != static_cast<uint32_t>(string_array[index_array[i]].size());
-         ++j, ++current_offset) {
-      if (i == gap1 || i == gap2) {
-        ASSERT_EQ('\0', decrypted_[current_offset])
-            << "difference at " << current_offset << " of " << total_size;
-      } else {
-        ASSERT_EQ(string_array[index_array[i]].at(j),
-                  decrypted_[current_offset]) << "difference at "
-                  << current_offset << " of " << total_size;
-      }
-    }
+  decrypted.assign(decrypted.size(), 1);
+  EXPECT_TRUE(self_encryptor_->Read(const_cast<char*>(decrypted.data()), kSize,
+                                    0));
+  EXPECT_EQ(original, decrypted);
+  EXPECT_EQ(kSize, self_encryptor_->size());
+  EXPECT_EQ(kSize, TotalSize(data_map_));
+  EXPECT_EQ(kSize, data_map_->content.size());
+  decrypted.assign(decrypted.size(), 1);
+
+  // Append a single char and read
+  char data = 'a';
+  EXPECT_TRUE(self_encryptor_->Write(&data, sizeof(data), kSize));
+  EXPECT_EQ(kSize + 1, self_encryptor_->size());
+  original.append(1, data);
+  decrypted.resize(kSize + 1);
+  decrypted.assign(decrypted.size(), 1);
+  EXPECT_TRUE(self_encryptor_->Read(const_cast<char*>(decrypted.data()),
+                                    kSize + 1, 0));
+  EXPECT_EQ(original, decrypted);
+  EXPECT_EQ(kSize + 1, self_encryptor_->size());
+  self_encryptor_->Flush();
+  decrypted.assign(decrypted.size(), 1);
+  EXPECT_TRUE(self_encryptor_->Read(const_cast<char*>(decrypted.data()),
+                                    kSize + 1, 0));
+  EXPECT_EQ(original, decrypted);
+  EXPECT_EQ(kSize + 1, self_encryptor_->size());
+  EXPECT_EQ(kSize + 1, TotalSize(data_map_));
+  EXPECT_EQ(kSize + 1, data_map_->content.size());
+
+  // Append another single char and read
+  EXPECT_TRUE(self_encryptor_->Write(&data, sizeof(data), kSize + 1));
+  EXPECT_EQ(kSize + 2, self_encryptor_->size());
+  original.append(1, data);
+  decrypted.resize(kSize + 2);
+  decrypted.assign(decrypted.size(), 1);
+  EXPECT_TRUE(self_encryptor_->Read(const_cast<char*>(decrypted.data()),
+                                    kSize + 2, 0));
+  EXPECT_EQ(original, decrypted);
+  EXPECT_EQ(kSize + 2, self_encryptor_->size());
+  self_encryptor_->Flush();
+  decrypted.assign(decrypted.size(), 1);
+  EXPECT_TRUE(self_encryptor_->Read(const_cast<char*>(decrypted.data()),
+                                    kSize + 2, 0));
+  EXPECT_EQ(original, decrypted);
+  EXPECT_EQ(kSize + 2, self_encryptor_->size());
+  EXPECT_EQ(kSize + 2, TotalSize(data_map_));
+  EXPECT_TRUE(data_map_->content.empty());
+
+  // "Right-shift" the data by 1 byte
+  EXPECT_TRUE(self_encryptor_->Write(const_cast<char*>(original.data()),
+                                     kSize + 1, 1));
+  EXPECT_EQ(kSize + 2, self_encryptor_->size());
+  original.replace(original.begin() + 1, original.end(), original.data(),
+                   kSize + 1);
+  decrypted.assign(decrypted.size(), 1);
+  EXPECT_TRUE(self_encryptor_->Read(const_cast<char*>(decrypted.data()),
+                                    kSize + 2, 0));
+  EXPECT_EQ(original, decrypted);
+  EXPECT_EQ(kSize + 2, self_encryptor_->size());
+  self_encryptor_->Flush();
+  decrypted.assign(decrypted.size(), 1);
+  EXPECT_TRUE(self_encryptor_->Read(const_cast<char*>(decrypted.data()),
+                                    kSize + 2, 0));
+  EXPECT_EQ(original, decrypted);
+  EXPECT_EQ(kSize + 2, self_encryptor_->size());
+  EXPECT_EQ(kSize + 2, TotalSize(data_map_));
+  EXPECT_TRUE(data_map_->content.empty());
+
+  // Append large block and read
+  const uint32_t kNewSize(3 * kDefaultChunkSize);
+  std::string new_content(RandomString(kNewSize));
+  EXPECT_TRUE(self_encryptor_->Write(const_cast<char*>(new_content.data()),
+                                     kNewSize, kSize + 2));
+  EXPECT_EQ(kSize + 2 + kNewSize, self_encryptor_->size());
+  original += new_content;
+  decrypted.resize(kSize + 2 + kNewSize);
+  decrypted.assign(decrypted.size(), 1);
+  EXPECT_TRUE(self_encryptor_->Read(const_cast<char*>(decrypted.data()),
+                                    kSize + 2 + kNewSize, 0));
+  EXPECT_EQ(original, decrypted);
+  EXPECT_EQ(kSize + 2 + kNewSize, self_encryptor_->size());
+  self_encryptor_->Flush();
+  decrypted.assign(decrypted.size(), 1);
+  EXPECT_TRUE(self_encryptor_->Read(const_cast<char*>(decrypted.data()),
+                                    kSize + 2 + kNewSize, 0));
+  EXPECT_EQ(original, decrypted);
+  EXPECT_EQ(kSize + 2 + kNewSize, self_encryptor_->size());
+  EXPECT_EQ(kSize + 2 + kNewSize, TotalSize(data_map_));
+  EXPECT_TRUE(data_map_->content.empty());
+
+  // Append a single char and read
+  EXPECT_TRUE(self_encryptor_->Write(&data, sizeof(data),
+                                     kSize + 2 + kNewSize));
+  EXPECT_EQ(kSize + 2 + kNewSize + 1, self_encryptor_->size());
+  original.append(1, data);
+  decrypted.resize(kSize + 2 + kNewSize + 1);
+  decrypted.assign(decrypted.size(), 1);
+  EXPECT_TRUE(self_encryptor_->Read(const_cast<char*>(decrypted.data()),
+                                    kSize + 2 + kNewSize + 1, 0));
+  EXPECT_EQ(original, decrypted);
+  EXPECT_EQ(kSize + 2 + kNewSize + 1, self_encryptor_->size());
+  self_encryptor_->Flush();
+  decrypted.assign(decrypted.size(), 1);
+  EXPECT_TRUE(self_encryptor_->Read(const_cast<char*>(decrypted.data()),
+                                    kSize + 2 + kNewSize + 1, 0));
+  EXPECT_EQ(original, decrypted);
+  EXPECT_EQ(kSize + 2 + kNewSize + 1, self_encryptor_->size());
+  EXPECT_EQ(kSize + 2 + kNewSize + 1, TotalSize(data_map_));
+  EXPECT_TRUE(data_map_->content.empty());
+}
+
+TEST_F(BasicTest, BEH_3SmallChunkRewrite) {
+  uint32_t size = 153855*2+153857;
+  std::string content(RandomString(size)), recovered;
+  recovered.resize(size);
+
+  EXPECT_TRUE(self_encryptor_->Write(content.data(), size, 0));
+  self_encryptor_->Flush();
+
+  {
+    SelfEncryptor self_encryptor(data_map_, chunk_store_);
+    ASSERT_EQ(TotalSize(data_map_), size);
+    EXPECT_TRUE(self_encryptor.Read(const_cast<char*>(recovered.data()), size,
+                                    0));
+    ASSERT_EQ(content, recovered);
+  }
+  {
+    SelfEncryptor self_encryptor(data_map_, chunk_store_);
+    content.erase(content.begin() + 300, content.begin() + 350);
+    EXPECT_TRUE(self_encryptor.Write(content.data(),
+                static_cast<uint32_t>(content.size()), 0));
+    recovered.resize(size - 50);
+  }
+  {
+    SelfEncryptor self_encryptor(data_map_, chunk_store_);
+    EXPECT_TRUE(self_encryptor.Read(const_cast<char*>(recovered.data()), size -
+                                    50, 0));
+    ASSERT_EQ(content, recovered);
   }
 }
 
