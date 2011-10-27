@@ -1035,8 +1035,9 @@ int SelfEncryptor::ReadDataMapChunks(char *data,
     }
     if (result != kSuccess)
       return result;
-    memcpy(data, temp.get() + position,
-           static_cast<size_t>(file_size_ - position));
+
+    memcpy(data, temp.get() + position, std::min(length,
+           static_cast<uint32_t>(file_size_ - position)));
     return kSuccess;
   }
 

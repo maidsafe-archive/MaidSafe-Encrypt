@@ -35,6 +35,7 @@ class EncryptTestBase {
         self_encryptor_(new SelfEncryptor(data_map_, chunk_store_, num_procs)),
         original_(),
         decrypted_() {}
+  virtual ~EncryptTestBase() {}
  protected:
   std::shared_ptr<MemoryChunkStore> chunk_store_;
   DataMapPtr data_map_;
