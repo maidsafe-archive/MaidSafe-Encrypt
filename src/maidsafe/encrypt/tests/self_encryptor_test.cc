@@ -27,6 +27,7 @@
 #endif
 #include "boost/scoped_array.hpp"
 #include "maidsafe/common/test.h"
+#include "maidsafe/common/hashable_chunk_validation.h"
 #include "maidsafe/common/memory_chunk_store.h"
 #include "maidsafe/common/omp.h"
 #include "maidsafe/common/utils.h"
@@ -1263,10 +1264,10 @@ TEST_F(BasicTest, BEH_RandomAccess) {
 
   {
     // Out Process random write/read access
-    MemoryChunkStore::HashFunc hash_func
-        (std::bind(&crypto::Hash<crypto::SHA512>, std::placeholders::_1));
+    std::shared_ptr<ChunkValidation> chunk_validation(
+        new HashableChunkValidation<crypto::SHA512>);
     std::shared_ptr<MemoryChunkStore> chunk_store
-        (new MemoryChunkStore(false, hash_func));
+        (new MemoryChunkStore(false, chunk_validation));
     DataMapPtr data_map(new DataMap);
 
     for (size_t i = 0; i < max_variation.size(); ++i) {
