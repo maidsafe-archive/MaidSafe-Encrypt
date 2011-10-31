@@ -1170,10 +1170,10 @@ TEST_F(BasicTest, BEH_ManualCheckWrite) {
   }
 }
 
-TEST_F(BasicTest, BEH_RandomAccess) {
-  size_t chunk_size(kDefaultChunkSize);
-  std::vector<size_t> num_of_tries;
-  std::vector<size_t> max_variation;
+TEST_F(BasicTest, FUNC_RandomAccess) {
+  uint32_t chunk_size(kDefaultChunkSize);
+  std::vector<uint32_t> num_of_tries;
+  std::vector<uint32_t> max_variation;
   max_variation.push_back(1024);
   max_variation.push_back(3072);
   max_variation.push_back(chunk_size);
@@ -1184,31 +1184,30 @@ TEST_F(BasicTest, BEH_RandomAccess) {
   num_of_tries.push_back(50);
   num_of_tries.push_back(100);
   num_of_tries.push_back(200);
-  // the longest length of data is writing to position 6 * chunk_size with
-  // a content length of 6 * chunk_size, make the total to be 12 * chunk_size
-  size_t kTestDataSize(chunk_size * 12);
 
   {
+    // the longest length of data is writing to position 6 * chunk_size with
+    // a content length of 6 * chunk_size, make the total to be 12 * chunk_size
+    const size_t kTestDataSize(chunk_size * 12);
     // In Process random write/read access
     boost::scoped_array<char>plain_data(new char[kTestDataSize]);
     // The initialization value of truncated data shall be filled here
-    for (size_t i = 0; i < kTestDataSize; ++i)
-      plain_data[i] = '\0';
+    memset(plain_data.get(), 0, kTestDataSize);
 
     for (size_t i = 0; i < max_variation.size(); ++i) {
       size_t num_tries = num_of_tries[i];
       size_t variation = max_variation[i];
       for (size_t j = 0; j < num_tries; ++j) {
         int op_code(RandomUint32() % 2);
-        DLOG(INFO) << " op code : " << op_code;
+//        DLOG(INFO) << "op code: " << op_code;
 
         switch (op_code) {
           case 0:  // write
             {
               uint32_t write_position(RandomUint32() % variation);
               uint32_t write_length(RandomUint32() % variation);
-              DLOG(INFO) << " write_position : " << write_position
-                         << " write_length : " << write_length;
+//              DLOG(INFO) << "write_position: " << write_position
+//                         << "\twrite_length: " << write_length;
 
               std::string plain_text(RandomString(write_length));
               boost::scoped_array<char>content_data(new char[write_length]);
@@ -1219,8 +1218,8 @@ TEST_F(BasicTest, BEH_RandomAccess) {
 
               EXPECT_TRUE(self_encryptor_->Write(content_data.get(),
                                                  write_length, write_position));
-              DLOG(INFO) << " current data size is : "
-                         << self_encryptor_->size();
+//              DLOG(INFO) << "current data size is:\t"
+//                         << self_encryptor_->size();
               break;
             }
           case 1:  // read
@@ -1228,8 +1227,8 @@ TEST_F(BasicTest, BEH_RandomAccess) {
               uint32_t read_position(RandomUint32() % variation);
               uint32_t read_length(RandomUint32() % variation);
               boost::scoped_array<char>answer(new char[read_length]);
-              DLOG(INFO) << " read_position : " << read_position
-                         << " read_length : " << read_length;
+//              DLOG(INFO) << "read_position: " << read_position
+//                         << "\tread_length: " << read_length;
 
               // The read method shall accept a reading request that exceeds
               // the current data lenth of the encrypt stream.
@@ -1267,36 +1266,34 @@ TEST_F(BasicTest, BEH_RandomAccess) {
     std::shared_ptr<ChunkValidation> chunk_validation(
         new HashableChunkValidation<crypto::SHA512>);
     std::shared_ptr<MemoryChunkStore> chunk_store
-        (new MemoryChunkStore(false, chunk_validation));
+        (new MemoryChunkStore(true, chunk_validation));
     DataMapPtr data_map(new DataMap);
-
     for (size_t i = 0; i < max_variation.size(); ++i) {
-      size_t num_tries = num_of_tries[i];
-      size_t variation = max_variation[i];
+      uint32_t num_tries = num_of_tries[i];
+      uint32_t variation = max_variation[i];
       for (size_t j = 0; j < num_tries; ++j) {
-        uint32_t position(RandomUint32() % variation);
-        uint32_t length(RandomUint32() % variation);
-        DLOG(INFO) << " accessing at position : " << position
-                   << " with data length : " << length;
-
-        std::string plain_text(RandomString(length));
-        boost::scoped_array<char>content_data(new char[length]);
-        for (size_t i = 0; i < length; ++i)
-          content_data[i] = plain_text[i];
-
+        const uint32_t kPosition(RandomUint32() % variation);
+        const uint32_t kLength(RandomUint32() % variation);
+//        DLOG(INFO) << i << ", " << j << ":\taccessing at pos: " << kPosition
+//                   << "  \twith data length: " << kLength;
+        std::string plain_text(RandomString(kLength));
         {
           SelfEncryptor selfenc(data_map, chunk_store);
-          EXPECT_TRUE(selfenc.Write(content_data.get(), length, position));
+          EXPECT_TRUE(selfenc.Write(plain_text.data(), kLength, kPosition));
+          std::string answer(kLength, 1);
+          EXPECT_TRUE(selfenc.Read(const_cast<char*>(answer.data()), kLength,
+                                   kPosition));
+          ASSERT_EQ(plain_text, answer);
         }
-
-        boost::scoped_array<char>answer(new char[length]);
+        boost::scoped_array<char>answer(new char[kLength]);
+        memset(answer.get(), 1, kLength);
         {
           SelfEncryptor selfenc(data_map, chunk_store);
-          EXPECT_TRUE(selfenc.Read(answer.get(), length, position));
+          EXPECT_TRUE(selfenc.Read(answer.get(), kLength, kPosition));
         }
 
-        for (size_t i = 0; i < length; ++i)
-          ASSERT_EQ(content_data[i], answer[i]) << "not match " << i;
+        for (size_t k = 0; k < kLength; ++k)
+          ASSERT_EQ(plain_text[k], answer[k]) << "not match " << k;
       }
     }
   }
