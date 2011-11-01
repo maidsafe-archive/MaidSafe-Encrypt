@@ -1216,19 +1216,17 @@ bool SelfEncryptor::Truncate(const uint64_t &position) {
   sequencer_->Truncate(position);
 
   // TODO(Fraser#5#): 2011-10-18 - Confirm these memset's are really required
-  if (position < 2 * kDefaultChunkSize) {
-    uint32_t overwite_size(std::max((2 * kDefaultChunkSize) -
-                                    static_cast<uint32_t>(position),
-                                    kDefaultChunkSize));
-    uint32_t overwrite_position(kDefaultChunkSize - overwite_size);
-    memset(chunk1_raw_.get() + overwrite_position, 0, overwite_size);
-  }
   if (position < kDefaultChunkSize) {
-    uint32_t overwite_size(std::max(kDefaultChunkSize -
-                                    static_cast<uint32_t>(position),
-                                    kDefaultChunkSize));
-    uint32_t overwrite_position(kDefaultChunkSize - overwite_size);
+    uint32_t overwite_size(kDefaultChunkSize - static_cast<uint32_t>(position));
+    uint32_t overwrite_position(static_cast<uint32_t>(position));
     memset(chunk0_raw_.get() + overwrite_position, 0, overwite_size);
+    memset(chunk1_raw_.get(), 0, kDefaultChunkSize);
+  } else if (position < 2 * kDefaultChunkSize) {
+    uint32_t overwite_size((2 * kDefaultChunkSize) -
+                                    static_cast<uint32_t>(position));
+    uint32_t overwrite_position(static_cast<uint32_t>(position)-
+                                kDefaultChunkSize);
+    memset(chunk1_raw_.get() + overwrite_position, 0, overwite_size);
   }
 
   file_size_ = position;
