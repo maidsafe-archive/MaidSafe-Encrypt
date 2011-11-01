@@ -810,7 +810,7 @@ TEST_F(BasicTest, BEH_WriteLongAndShort65536SegmentsReadThenRewrite) {
           static_cast<uint32_t>(recovered[i].size()), count));
       size_t overwrite_size(overwrite[i].size());
       for (size_t j = 0; j != overwrite_size; ++j)
-        EXPECT_EQ(overwrite[i][j], recovered[i][j]) << "Failed on string " << i
+        ASSERT_EQ(overwrite[i][j], recovered[i][j]) << "Failed on string " << i
                                                     << " at position " << j;
       // EXPECT_EQ(overwrite[i], recovered[i]);
       count += overwrite[i].size();

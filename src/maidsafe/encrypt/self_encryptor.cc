@@ -465,7 +465,7 @@ int SelfEncryptor::DecryptChunk(const uint32_t &chunk_num, byte *data) {
 
   if (content.empty()) {
     DLOG(ERROR) << "Could not find chunk number " << chunk_num
-                << ", hash " << EncodeToHex(data_map_->chunks[chunk_num].hash);
+                << ", hash " << HexSubstr(data_map_->chunks[chunk_num].hash);
     return kMissingChunk;
   }
 
@@ -648,7 +648,7 @@ int SelfEncryptor::EncryptChunk(const uint32_t &chunk_num,
     if (!chunk_store_->Store(data_map_->chunks[chunk_num].hash,
                              chunk_content)) {
       DLOG(ERROR) << "Could not store "
-                  << EncodeToHex(data_map_->chunks[chunk_num].hash);
+                  << HexSubstr(data_map_->chunks[chunk_num].hash);
       result = kFailedToStoreChunk;
     }
   }
@@ -1240,7 +1240,7 @@ void SelfEncryptor::DeleteChunk(const uint32_t &chunk_num) {
     UniqueLock unique_lock(chunk_store_mutex_);
     if (!chunk_store_->Delete(data_map_->chunks[chunk_num].hash)) {
       DLOG(WARNING) << "Failed to delete chunk " << chunk_num << ": "
-                    << EncodeToHex(data_map_->chunks[chunk_num].hash);
+                    << HexSubstr(data_map_->chunks[chunk_num].hash);
     }
   }
 }
