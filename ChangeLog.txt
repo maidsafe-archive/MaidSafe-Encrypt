@@ -1,6 +1,12 @@
-v0.10.00 (WIP)
+v0.10.01 (WIP)
 --------------
 * 
+
+
+v0.10.00
+--------
+* Rewrite of entire library.  Now makes better use of CryptoPP pipelining and
+  avoids the need for buffering full files before their encryption.
 
 
 v0.09.06
