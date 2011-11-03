@@ -1177,40 +1177,77 @@ TEST_F(BasicTest, BEH_ManualCheckWrite) {
   }
 }
 
-TEST_F(BasicTest, FUNC_TruncateIncrease) {
-  {
-    const size_t kTestDataSize(kDefaultChunkSize * 12);
-    boost::scoped_array<char>plain_data(new char[kTestDataSize]);
-    memset(plain_data.get(), 0, kTestDataSize);
+TEST_F(BasicTest, FUNC_TruncateIncreaseScenario1) {
+  const size_t kTestDataSize(kDefaultChunkSize * 12);
+  boost::scoped_array<char>plain_data(new char[kTestDataSize]);
+  memset(plain_data.get(), 0, kTestDataSize);
 
-    for (size_t i = 0; i < kTestDataSize; i += 4096) {
-      uint32_t write_position(i);
-      uint32_t write_length(4096);
-      std::string plain_text(RandomString(write_length));
-      boost::scoped_array<char>content_data(new char[write_length]);
-      for (size_t i = 0; i < write_length; ++i) {
-        plain_data[i + write_position] = plain_text[i];
-        content_data[i] = plain_text[i];
-      }
-
-      EXPECT_TRUE(self_encryptor_->Write(content_data.get(),
-                                          write_length, write_position));
+  for (size_t i = 0; i < kTestDataSize; i += 4096) {
+    uint32_t write_position(i);
+    uint32_t write_length(4096);
+    std::string plain_text(RandomString(write_length));
+    boost::scoped_array<char>content_data(new char[write_length]);
+    for (size_t i = 0; i < write_length; ++i) {
+      plain_data[i + write_position] = plain_text[i];
+      content_data[i] = plain_text[i];
     }
 
-    self_encryptor_->Truncate(kTestDataSize + 2994);
-
-    uint32_t read_position(kTestDataSize);
-    uint32_t read_length(892);
-    boost::scoped_array<char>answer(new char[read_length]);
-    EXPECT_TRUE(self_encryptor_->Read(answer.get(),
-                                      read_length, read_position));
-    for (size_t i = 0; i < read_length; ++i)
-      if ((i + read_position) < self_encryptor_->size())
-        ASSERT_EQ(plain_data[read_position + i], answer[i])
-            << "not match " << i << " from " << read_position
-            << " when total data is " << self_encryptor_->size();
-    self_encryptor_->Flush();
+    EXPECT_TRUE(self_encryptor_->Write(content_data.get(),
+                                        write_length, write_position));
   }
+
+  self_encryptor_->Truncate(kTestDataSize + 2994);
+
+  uint32_t read_position(kTestDataSize);
+  uint32_t read_length(892);
+  boost::scoped_array<char>answer(new char[read_length]);
+  EXPECT_TRUE(self_encryptor_->Read(answer.get(),
+                                    read_length, read_position));
+  for (size_t i = 0; i < read_length; ++i)
+    if ((i + read_position) < self_encryptor_->size())
+      ASSERT_EQ(plain_data[read_position + i], answer[i])
+          << "not match " << i << " from " << read_position
+          << " when total data is " << self_encryptor_->size();
+  self_encryptor_->Flush();
+}
+
+TEST_F(BasicTest, FUNC_TruncateIncreaseScenario2) {
+  self_encryptor_->Truncate(100);
+  EXPECT_EQ(self_encryptor_->size(), 100);
+
+  const size_t kTestDataSize(kDefaultChunkSize * 40);
+  boost::scoped_array<char>plain_data(new char[kTestDataSize]);
+  memset(plain_data.get(), 0, kTestDataSize);
+
+  self_encryptor_->Truncate(kTestDataSize);
+
+  for (size_t i = 0; i < (kDefaultChunkSize * 38); i += 4096) {
+    uint32_t write_position(i);
+    uint32_t write_length(4096);
+    std::string plain_text(RandomString(write_length));
+    boost::scoped_array<char>content_data(new char[write_length]);
+    for (size_t i = 0; i < write_length; ++i) {
+      plain_data[i + write_position] = plain_text[i];
+      content_data[i] = plain_text[i];
+    }
+
+    EXPECT_TRUE(self_encryptor_->Write(content_data.get(),
+                                        write_length, write_position));
+  }
+
+  EXPECT_EQ(self_encryptor_->size(), kTestDataSize);
+
+  uint32_t read_position(0);
+  uint32_t read_length(4096);
+  boost::scoped_array<char>answer(new char[read_length]);
+  EXPECT_TRUE(self_encryptor_->Read(answer.get(),
+                                    read_length, read_position));
+  for (size_t i = 0; i < read_length; ++i)
+    if ((i + read_position) < self_encryptor_->size())
+      ASSERT_EQ(plain_data[read_position + i], answer[i])
+          << "not match " << i << " from " << read_position
+          << " when total data is " << self_encryptor_->size();
+  self_encryptor_->Flush();
 }
 
 TEST_F(BasicTest, FUNC_TruncateDecrease) {
@@ -1249,6 +1286,21 @@ TEST_F(BasicTest, FUNC_TruncateDecrease) {
             << " when total data is " << self_encryptor_->size();
     self_encryptor_->Flush();
   }
+}
+
+TEST_F(BasicTest, BEH_Uint32Error) {
+  const uint64_t kTestDataSize(4304797696);
+  self_encryptor_->Truncate(kTestDataSize);
+  uint64_t write_length(32768);
+  boost::scoped_array<char>content_data(new char[write_length]);
+  memset(content_data.get(), 0, write_length);
+
+  for (uint64_t i = 0; i < kTestDataSize; i += write_length) {
+    EXPECT_TRUE(self_encryptor_->Write(content_data.get(),
+                                        write_length, i));
+  }
+  self_encryptor_->Flush();
+  EXPECT_EQ(kTestDataSize, self_encryptor_->size());
 }
 
 TEST_F(BasicTest, FUNC_RandomAccess) {
