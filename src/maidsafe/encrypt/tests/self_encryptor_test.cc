@@ -1291,7 +1291,7 @@ TEST_F(BasicTest, FUNC_TruncateDecrease) {
 TEST_F(BasicTest, BEH_Uint32Error) {
   const uint64_t kTestDataSize(4304797696);
   self_encryptor_->Truncate(kTestDataSize);
-  uint64_t write_length(32768);
+  uint32_t write_length(32768);
   boost::scoped_array<char>content_data(new char[write_length]);
   memset(content_data.get(), 0, write_length);
 
