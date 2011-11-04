@@ -1295,12 +1295,15 @@ TEST_F(BasicTest, BEH_Uint32Error) {
   boost::scoped_array<char>content_data(new char[write_length]);
   memset(content_data.get(), 0, write_length);
 
-  for (uint64_t i = 0; i < kTestDataSize; i += write_length) {
-    EXPECT_TRUE(self_encryptor_->Write(content_data.get(),
-                                        write_length, i));
-  }
+  for (uint64_t i = 0; i < kTestDataSize; i += write_length)
+    EXPECT_TRUE(self_encryptor_->Write(content_data.get(), write_length, i));
+
   self_encryptor_->Flush();
   EXPECT_EQ(kTestDataSize, self_encryptor_->size());
+
+  std::shared_ptr<SelfEncryptor> self_encryptor(new
+                      SelfEncryptor(data_map_, chunk_store_));
+  EXPECT_EQ(kTestDataSize, self_encryptor->size());
 }
 
 TEST_F(BasicTest, FUNC_RandomAccess) {
