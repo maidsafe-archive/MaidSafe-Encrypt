@@ -47,7 +47,9 @@ class SelfEncryptor {
                 std::shared_ptr<ChunkStore> chunk_store,
                 int num_procs = 0);
   ~SelfEncryptor();
-  bool Write(const char *data, uint32_t length, uint64_t position);
+  bool Write(const char *data,
+             const uint32_t &length,
+             const uint64_t &position);
   bool Read(char *data, const uint32_t &length, const uint64_t &position);
   bool DeleteAllChunks();
   // Can only truncate down in size

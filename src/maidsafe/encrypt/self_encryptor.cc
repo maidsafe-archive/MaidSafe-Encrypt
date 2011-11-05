@@ -135,8 +135,8 @@ SelfEncryptor::~SelfEncryptor() {
 }
 
 bool SelfEncryptor::Write(const char *data,
-                          uint32_t length,
-                          uint64_t position) {
+                          const uint32_t &length,
+                          const uint64_t &position) {
   if (length == 0)
     return true;
 
@@ -147,25 +147,36 @@ bool SelfEncryptor::Write(const char *data,
   }
   PutToReadCache(data, length, position);
 
-  uint32_t written = PutToInitialChunks(data, &length, &position);
+  uint32_t write_length(length);
+  uint64_t write_position(position);
+  uint32_t written = PutToInitialChunks(data, &write_length, &write_position);
   uint32_t data_offset(0), queue_offset(0);
-  bool data_in_queue =
-      GetDataOffsetForEnqueuing(length, position, &data_offset, &queue_offset);
+  bool data_in_queue = GetDataOffsetForEnqueuing(write_length, write_position,
+                                                 &data_offset, &queue_offset);
   if (data_in_queue) {
+    uint32_t seq_length(write_length);
+    if (data_offset != 0 &&
+        GetLengthForSequencer(write_position, &seq_length)) {
+      if (sequencer_->Add(data + written, seq_length, write_position) !=
+          kSuccess) {
+        DLOG(ERROR) << "Failed to write " << length << " bytes at position "
+                    << position;
+        return false;
+      }
+    }
     BOOST_ASSERT(data_map_->chunks.size() >= 2);
     bool modified(false);
     CalculatePreHash(0, chunk0_raw_.get(), normal_chunk_size_, &modified);
     CalculatePreHash(1, chunk1_raw_.get(), normal_chunk_size_, &modified);
-    if (PutToEncryptQueue(data + written, length, data_offset, queue_offset) !=
-        kSuccess) {
+    if (PutToEncryptQueue(data + written, write_length, data_offset,
+                          queue_offset) != kSuccess) {
       DLOG(ERROR) << "Failed to write " << length << " bytes at position "
                   << position;
       return false;
     }
-  }
-
-  if (GetLengthForSequencer(position, &length)) {
-    if (sequencer_->Add(data + written, length, position) != kSuccess) {
+  } else if (GetLengthForSequencer(write_position, &write_length)) {
+    if (sequencer_->Add(data + written, write_length, write_position) !=
+        kSuccess) {
       DLOG(ERROR) << "Failed to write " << length << " bytes at position "
                   << position;
       return false;
@@ -309,8 +320,7 @@ void SelfEncryptor::CalculateSizes(bool force) {
     }
     normal_chunk_size_ = kDefaultChunkSize;
   }
-  uint64_t chunk_count_excluding_last =
-      static_cast<uint64_t>(file_size_ / kDefaultChunkSize);
+  uint64_t chunk_count_excluding_last = file_size_ / kDefaultChunkSize;
   if (file_size_ % kDefaultChunkSize < kMinChunkSize)
     --chunk_count_excluding_last;
   last_chunk_position_ = chunk_count_excluding_last * kDefaultChunkSize;
@@ -638,11 +648,12 @@ int SelfEncryptor::EncryptChunk(const uint32_t &chunk_num,
               new CryptoPP::StringSink(chunk_content), pad.get())), 6);
     aes_filter.Put2(data, length, -1, true);
 
-    CryptoPP::SHA512().CalculateDigest(
-        const_cast<byte*>(reinterpret_cast<const byte*>(
-            data_map_->chunks[chunk_num].hash.data())),
+    ByteArray post_hash(GetNewByteArray(64));
+    CryptoPP::SHA512().CalculateDigest(post_hash.get(),
         reinterpret_cast<const byte*>(chunk_content.data()),
         chunk_content.size());
+    data_map_->chunks[chunk_num].hash.assign(
+        reinterpret_cast<char*>(post_hash.get()), 64);
 
     UniqueLock unique_lock(chunk_store_mutex_);
     if (!chunk_store_->Store(data_map_->chunks[chunk_num].hash,
@@ -720,6 +731,8 @@ bool SelfEncryptor::Flush() {
     data_map_->chunks.resize(2);
   bool modified(false);
   CalculatePreHash(0, chunk0_raw_.get(), normal_chunk_size_, &modified);
+  if (modified)
+    DeleteChunk(0);
   byte *chunk1_start(chunk1_raw_.get());
   ByteArray temp;
   if (normal_chunk_size_ != kDefaultChunkSize) {
@@ -740,6 +753,8 @@ bool SelfEncryptor::Flush() {
     }
   }
   CalculatePreHash(1, chunk1_start, normal_chunk_size_, &modified);
+  if (modified)
+    DeleteChunk(1);
 
   // Empty queue (after this call it will contain 0 or 1 chunks).
   int result(ProcessMainQueue());
@@ -869,11 +884,10 @@ bool SelfEncryptor::Flush() {
       data_map_->chunks[chunk_index].pre_hash_state = ChunkDetails::kOutdated;
       CalculatePreHash(chunk_index, chunk_array.get(), this_chunk_size,
                        &this_chunk_modified);
-      if (this_chunk_modified)
-        DeleteChunk(chunk_index);
     }
 
     if (pre_pre_chunk_modified || pre_chunk_modified || this_chunk_modified) {
+      DeleteChunk(chunk_index);
       result = EncryptChunk(chunk_index, chunk_array.get(), this_chunk_size);
       if (result != kSuccess) {
         DLOG(ERROR) << "Failed in Flush.";
@@ -902,6 +916,7 @@ bool SelfEncryptor::Flush() {
   pre_pre_chunk_modified = true;
   if (pre_pre_chunk_modified || pre_chunk_modified ||
       data_map_->chunks[0].pre_hash_state != ChunkDetails::kOk) {
+    DeleteChunk(0);
     result = EncryptChunk(0, chunk0_raw_.get(), normal_chunk_size_);
     if (result != kSuccess) {
       DLOG(ERROR) << "Failed in Flush.";
@@ -917,6 +932,7 @@ bool SelfEncryptor::Flush() {
 
   if (pre_pre_chunk_modified || pre_chunk_modified ||
       data_map_->chunks[1].pre_hash_state != ChunkDetails::kOk) {
+    DeleteChunk(1);
     result = EncryptChunk(1, chunk1_start, normal_chunk_size_);
     if (result != kSuccess) {
       DLOG(ERROR) << "Failed in Flush.";
