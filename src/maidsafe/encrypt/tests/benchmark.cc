@@ -51,7 +51,7 @@ class Benchmark : public EncryptTestBase,
   const uint32_t kTestDataSize_, kPieceSize_;
 };
 
-TEST_P(Benchmark, BEH_BenchmarkMemOnly) {
+TEST_P(Benchmark, FUNC_BenchmarkMemOnly) {
   bool compressible(true);
   for (int z(0); z != 2; ++z) {
     if (compressible) {
