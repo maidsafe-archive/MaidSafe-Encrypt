@@ -57,7 +57,10 @@ class SelfEncryptor {
   // Forces all buffered data to be encrypted.  Missing portions of the file
   // be filled with '\0's
   bool Flush();
-  uint64_t size() const { return file_size_; }
+  uint64_t size() const {
+    return (file_size_ < truncated_file_size_) ?
+        truncated_file_size_ : file_size_;
+  }
   DataMapPtr data_map() const { return data_map_; }
 
  private:
@@ -152,6 +155,7 @@ class SelfEncryptor {
   boost::scoped_ptr<Sequencer> sequencer_;
   const uint32_t kDefaultByteArraySize_;
   uint64_t file_size_, last_chunk_position_;
+  uint64_t truncated_file_size_;
   uint32_t normal_chunk_size_;
   std::shared_ptr<byte> main_encrypt_queue_;
   uint64_t queue_start_position_;

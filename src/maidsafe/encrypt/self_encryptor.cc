@@ -98,6 +98,7 @@ SelfEncryptor::SelfEncryptor(DataMapPtr data_map,
                              kDefaultChunkSize * num_procs),
       file_size_(0),
       last_chunk_position_(0),
+      truncated_file_size_(0),
       normal_chunk_size_(0),
       main_encrypt_queue_(),
       queue_start_position_(2 * kDefaultChunkSize),
@@ -131,6 +132,18 @@ SelfEncryptor::SelfEncryptor(DataMapPtr data_map,
 }
 
 SelfEncryptor::~SelfEncryptor() {
+  if (truncated_file_size_ > file_size_) {
+    boost::scoped_array<char>tail_data(new char[kDefaultByteArraySize_]);
+    memset(tail_data.get(), 0, kDefaultByteArraySize_);
+    uint64_t position(file_size_);
+    uint64_t length(truncated_file_size_ - position);
+    while (length > kDefaultByteArraySize_) {
+      Write(tail_data.get(), kDefaultByteArraySize_, position);
+      position += kDefaultByteArraySize_;
+      length -= kDefaultByteArraySize_;
+    }
+    Write(tail_data.get(), length, position);
+  }
   Flush();
 }
 
@@ -1208,12 +1221,8 @@ bool SelfEncryptor::DeleteAllChunks() {
 }
 
 bool SelfEncryptor::Truncate(const uint64_t &position) {
-  if (position > file_size_) {
-    DLOG(ERROR) << "Cannot truncate from " << file_size_ << " to " << position;
-    return false;
-  }
-
-  if (position == file_size_)
+  truncated_file_size_ = position;
+  if (position >= file_size_)
     return true;
 
   // truncate queue, sequencer, and chunks 0 & 1.
