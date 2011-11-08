@@ -1235,12 +1235,12 @@ TEST_F(BasicTest, BEH_TruncateIncreaseScenario2) {
     EXPECT_TRUE(self_encryptor->Truncate(kTestDataSize));
 
     uint32_t write_length(4096);
-    uint64_t file_size(0);
-    for (size_t i = 0; i < (kDefaultChunkSize * 38); i += write_length) {
-      uint64_t write_position(i);
+    uint32_t file_size(0);
+    for (uint32_t i = 0; i < (kDefaultChunkSize * 38); i += write_length) {
+      uint32_t write_position(i);
       std::string plain_text(RandomString(write_length));
       boost::scoped_array<char>content_data(new char[write_length]);
-      for (size_t i = 0; i < write_length; ++i) {
+      for (uint32_t i = 0; i < write_length; ++i) {
         plain_data[i + write_position] = plain_text[i];
         content_data[i] = plain_text[i];
       }

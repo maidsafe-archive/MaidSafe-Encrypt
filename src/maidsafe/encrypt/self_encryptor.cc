@@ -142,7 +142,7 @@ SelfEncryptor::~SelfEncryptor() {
       position += kDefaultByteArraySize_;
       length -= kDefaultByteArraySize_;
     }
-    Write(tail_data.get(), length, position);
+    Write(tail_data.get(), static_cast<uint32_t>(length), position);
   }
   Flush();
 }
