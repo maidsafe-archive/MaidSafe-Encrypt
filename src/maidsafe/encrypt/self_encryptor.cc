@@ -113,6 +113,11 @@ SelfEncryptor::SelfEncryptor(DataMapPtr data_map,
       read_cache_(),
       cache_start_position_(0),
       prepared_for_reading_(),
+      read_buffer_(),
+      buffer_activated_(false),
+      buffer_length_(0),
+      last_read_position_(0),
+      kMaxBufferSize_(20 * kDefaultByteArraySize_),
       data_mutex_(),
       chunk_store_mutex_() {
   if (data_map) {
@@ -159,6 +164,7 @@ bool SelfEncryptor::Write(const char *data,
     return false;
   }
   PutToReadCache(data, length, position);
+  PutToReadBuffer(data, length, position);
 
   uint32_t write_length(length);
   uint64_t write_position(position);
@@ -317,6 +323,18 @@ void SelfEncryptor::PutToReadCache(const char *data,
     }
     copy_size = std::min(copy_size, kDefaultByteArraySize_ - cache_offset);
     memcpy(read_cache_.get() + cache_offset, data + data_offset, copy_size);
+  }
+}
+
+void SelfEncryptor::PutToReadBuffer(const char *data,
+                                    const uint32_t &length,
+                                    const uint64_t &position) {
+  if (!buffer_activated_)
+    return;
+  if (position < buffer_length_) {
+    uint32_t copy_size(buffer_length_ - position);
+    copy_size = std::min (copy_size, length);
+    memcpy(read_buffer_.get() + position, data, copy_size);
   }
 }
 
@@ -963,6 +981,9 @@ bool SelfEncryptor::Read(char* data,
   if (length == 0)
     return true;
 
+  if (ReadFromBuffer(data, length, position))
+    return true;
+
   PrepareToRead();
 
   if (length < kDefaultByteArraySize_) {
@@ -988,6 +1009,37 @@ bool SelfEncryptor::Read(char* data,
     }
   }
   return true;
+}
+
+bool SelfEncryptor::ReadFromBuffer(char *data,
+                                   const uint32_t &length,
+                                   const uint64_t &position) {
+  if (!buffer_activated_) {
+    uint64_t diff = std::abs(position - last_read_position_);
+    last_read_position_ = position;
+    if (diff > kDefaultByteArraySize_)
+      ++buffer_length_;
+    // trigger buffering once detected too many jumpping reading
+    if (buffer_length_ > 5) {
+      buffer_length_ = size();
+      if (buffer_length_ > kMaxBufferSize_)
+        buffer_length_ = kMaxBufferSize_;
+      read_buffer_.reset(new char[buffer_length_]);
+      // always buffering from 0
+      if (Transmogrify(read_buffer_.get(), buffer_length_, 0) != kSuccess) {
+        DLOG(ERROR) << "Failed to read " << buffer_length_ << " bytes";
+        return false;
+      }
+      buffer_activated_ = true;
+    }
+  }
+  if (buffer_activated_) {
+    if ((position + length) < buffer_length_) {
+      memcpy(data, read_buffer_.get() + position, length);
+      return true;
+    }
+  }
+  return false;
 }
 
 void SelfEncryptor::PrepareToRead() {

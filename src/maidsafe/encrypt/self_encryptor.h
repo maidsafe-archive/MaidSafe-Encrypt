@@ -83,6 +83,10 @@ class SelfEncryptor {
   void PutToReadCache(const char *data,
                       const uint32_t &length,
                       const uint64_t &position);
+  // Copies any relevant data to read_buffer_.
+  void PutToReadBuffer(const char *data,
+                       const uint32_t &length,
+                       const uint64_t &position);
   // Copies data to chunk0_raw_ and/or chunk1_raw_.  Returns number of bytes
   // copied.  Updates length and position if data is copied.
   uint32_t PutToInitialChunks(const char *data,
@@ -139,6 +143,12 @@ class SelfEncryptor {
   void CalculateSizes(bool force);
   // If prepared_for_reading_ is not already true, this initialises read_cache_.
   void PrepareToRead();
+  // Buffer will be much larger than Cache, trying to buffer the whole file
+  // or the first block with size of defined times of kDefaultByteArraySize_
+  // If can't read from buffer, read will try to read from cache or the chunks
+  bool ReadFromBuffer(char *data,
+                      const uint32_t &length,
+                      const uint64_t &position);
   // Handles reading from populated data_map_ and all the various write buffers.
   int Transmogrify(char *data,
                    const uint32_t &length,
@@ -168,6 +178,11 @@ class SelfEncryptor {
   boost::shared_array<char> read_cache_;
   uint64_t cache_start_position_;
   bool prepared_for_reading_;
+  boost::shared_array<char> read_buffer_;
+  bool buffer_activated_;
+  uint64_t buffer_length_;
+  uint64_t last_read_position_;
+  const uint32_t kMaxBufferSize_;
   boost::shared_mutex data_mutex_, chunk_store_mutex_;
 };
 
