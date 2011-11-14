@@ -1029,7 +1029,12 @@ bool SelfEncryptor::ReadFromBuffer(char *data,
         buffer_length_ = kMaxBufferSize_;
       else
         buffer_length_ = static_cast<uint32_t>(size());
-      read_buffer_.reset(new char[buffer_length_]);
+      try {
+        read_buffer_.reset(new char[buffer_length_]);
+      } catch (...) {
+        read_buffer_.reset();
+        return false;
+      }
       // always buffering from 0
       if (Transmogrify(read_buffer_.get(), buffer_length_, 0) != kSuccess) {
         DLOG(ERROR) << "Failed to read " << buffer_length_ << " bytes";
