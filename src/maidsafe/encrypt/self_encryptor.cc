@@ -332,9 +332,11 @@ void SelfEncryptor::PutToReadBuffer(const char *data,
   if (!buffer_activated_)
     return;
   if (position < buffer_length_) {
-    uint32_t copy_size(buffer_length_ - position);
-    copy_size = std::min (copy_size, length);
-    memcpy(read_buffer_.get() + position, data, copy_size);
+    uint64_t copy_size(buffer_length_ - position);
+    if (copy_size > length)
+      copy_size = length;
+    memcpy(read_buffer_.get() + position, data,
+           static_cast<uint32_t>(copy_size));
   }
 }
 
@@ -1015,15 +1017,18 @@ bool SelfEncryptor::ReadFromBuffer(char *data,
                                    const uint32_t &length,
                                    const uint64_t &position) {
   if (!buffer_activated_) {
-    uint64_t diff = std::abs(position - last_read_position_);
+    uint64_t diff((position > last_read_position_) ?
+                  (position - last_read_position_) :
+                  (last_read_position_ - position));
     last_read_position_ = position;
     if (diff > kDefaultByteArraySize_)
       ++buffer_length_;
     // trigger buffering once detected too many jumpping reading
     if (buffer_length_ > 5) {
-      buffer_length_ = size();
-      if (buffer_length_ > kMaxBufferSize_)
+      if (size() > kMaxBufferSize_)
         buffer_length_ = kMaxBufferSize_;
+      else
+        buffer_length_ = static_cast<uint32_t>(size());
       read_buffer_.reset(new char[buffer_length_]);
       // always buffering from 0
       if (Transmogrify(read_buffer_.get(), buffer_length_, 0) != kSuccess) {

@@ -180,7 +180,7 @@ class SelfEncryptor {
   bool prepared_for_reading_;
   boost::shared_array<char> read_buffer_;
   bool buffer_activated_;
-  uint64_t buffer_length_;
+  uint32_t buffer_length_;
   uint64_t last_read_position_;
   const uint32_t kMaxBufferSize_;
   boost::shared_mutex data_mutex_, chunk_store_mutex_;
