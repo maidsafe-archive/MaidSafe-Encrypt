@@ -18,10 +18,10 @@ int main(int argc, char **argv) {
   google::InitGoogleLogging(argv[0]);
   FLAGS_logtostderr = true;
   FLAGS_alsologtostderr = false;
-  FLAGS_minloglevel = google::INFO;
+  FLAGS_ms_logging_common = google::FATAL;
+  FLAGS_ms_logging_encrypt = google::INFO;
   FLAGS_log_prefix = true;
   FLAGS_v = 0;
-  FLAGS_ms_logging_common = false;
   testing::InitGoogleTest(&argc, argv);
   int result(RUN_ALL_TESTS());
   int test_count = testing::UnitTest::GetInstance()->test_to_run_count();

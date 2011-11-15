@@ -30,8 +30,8 @@ class EncryptTestBase {
  public:
   explicit EncryptTestBase(int num_procs = 0)
       : chunk_store_(new MemoryChunkStore(
-            true, std::shared_ptr<ChunkValidation>(
-                new HashableChunkValidation<crypto::SHA512>))),
+            std::shared_ptr<ChunkValidation>(
+                new HashableChunkValidation<crypto::SHA512, crypto::Tiger>))),
         data_map_(new DataMap),
         self_encryptor_(new SelfEncryptor(data_map_, chunk_store_, num_procs)),
         original_(),

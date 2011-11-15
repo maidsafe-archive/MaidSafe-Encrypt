@@ -1218,7 +1218,7 @@ TEST_F(BasicTest, BEH_TruncateIncreaseScenario1) {
   }
   std::shared_ptr<SelfEncryptor> temp_self_encryptor(
       new SelfEncryptor(data_map_, chunk_store_, 0));
-  EXPECT_EQ(kTestDataSize + 2994 ,temp_self_encryptor->size());
+  EXPECT_EQ(kTestDataSize + 2994, temp_self_encryptor->size());
 }
 
 TEST_F(BasicTest, BEH_TruncateIncreaseScenario2) {
@@ -1265,7 +1265,7 @@ TEST_F(BasicTest, BEH_TruncateIncreaseScenario2) {
 
   std::shared_ptr<SelfEncryptor> temp_self_encryptor(
       new SelfEncryptor(data_map_, chunk_store_, 0));
-  EXPECT_EQ(kTestDataSize ,temp_self_encryptor->size());
+  EXPECT_EQ(kTestDataSize, temp_self_encryptor->size());
 }
 
 TEST_F(BasicTest, BEH_TruncateDecrease) {
@@ -1419,9 +1419,9 @@ TEST_F(BasicTest, FUNC_RandomAccess) {
   {
     // Out Process random write/read access
     std::shared_ptr<ChunkValidation> chunk_validation(
-        new HashableChunkValidation<crypto::SHA512>);
+        new HashableChunkValidation<crypto::SHA512, crypto::Tiger>);
     std::shared_ptr<MemoryChunkStore> chunk_store
-        (new MemoryChunkStore(true, chunk_validation));
+        (new MemoryChunkStore(chunk_validation));
     DataMapPtr data_map(new DataMap);
     for (size_t i = 0; i < max_variation.size(); ++i) {
       uint32_t num_tries = num_of_tries[i];

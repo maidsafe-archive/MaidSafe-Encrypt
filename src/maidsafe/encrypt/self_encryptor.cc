@@ -1031,7 +1031,10 @@ bool SelfEncryptor::ReadFromBuffer(char *data,
         buffer_length_ = static_cast<uint32_t>(size());
       try {
         read_buffer_.reset(new char[buffer_length_]);
-      } catch (...) {
+      }
+      catch(const std::exception &e) {
+        DLOG(ERROR) << "Failed to read " << buffer_length_ << " bytes: "
+                    << e.what();
         read_buffer_.reset();
         return false;
       }
