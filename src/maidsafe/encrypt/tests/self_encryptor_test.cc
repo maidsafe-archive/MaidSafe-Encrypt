@@ -710,11 +710,21 @@ TEST_F(BasicTest, BEH_RandomSizedOutOfSequenceWritesWithGapsAndOverlaps) {
     total_size = std::max(total_size,
                           static_cast<uint32_t>(piece_position + piece_size));
     EXPECT_TRUE(self_encryptor_->Write(string_array[index_array[i]].data(),
-                piece_size, piece_position));
+                                       piece_size, piece_position));
+
     ASSERT_GE(kDataSize_, total_size);
     EXPECT_EQ(total_size, self_encryptor_->size());
     memcpy(original_.get() + piece_position,
            string_array[index_array[i]].data(), piece_size);
+
+    decrypted_.reset(new char[total_size]);
+    memset(decrypted_.get(), 1, total_size);
+    EXPECT_TRUE(self_encryptor_->Read(decrypted_.get(), total_size, 0));
+    for (uint32_t j(0); j != total_size; ++j) {
+      ASSERT_EQ(original_[j], decrypted_[j]) << "difference at " << j << " of "
+                                             << total_size;
+    }
+    EXPECT_EQ(total_size, self_encryptor_->size());
   }
 
   // Read back and check while in process.
@@ -1218,7 +1228,7 @@ TEST_F(BasicTest, BEH_TruncateIncreaseScenario1) {
   }
   std::shared_ptr<SelfEncryptor> temp_self_encryptor(
       new SelfEncryptor(data_map_, chunk_store_, 0));
-  EXPECT_EQ(kTestDataSize + 2994 ,temp_self_encryptor->size());
+  EXPECT_EQ(kTestDataSize + 2994, temp_self_encryptor->size());
 }
 
 TEST_F(BasicTest, BEH_TruncateIncreaseScenario2) {
@@ -1265,7 +1275,7 @@ TEST_F(BasicTest, BEH_TruncateIncreaseScenario2) {
 
   std::shared_ptr<SelfEncryptor> temp_self_encryptor(
       new SelfEncryptor(data_map_, chunk_store_, 0));
-  EXPECT_EQ(kTestDataSize ,temp_self_encryptor->size());
+  EXPECT_EQ(kTestDataSize, temp_self_encryptor->size());
 }
 
 TEST_F(BasicTest, BEH_TruncateDecrease) {
