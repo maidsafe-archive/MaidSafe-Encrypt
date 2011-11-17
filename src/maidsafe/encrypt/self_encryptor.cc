@@ -203,7 +203,7 @@ bool SelfEncryptor::Write(const char *data,
   }
 
   std::pair<uint64_t, ByteArray> next_seq_block(
-      sequencer_->PeekBeyond(current_position_));
+      sequencer_->PeekBeyond(queue_start_position_));
   while (next_seq_block.first < queue_start_position_ + kQueueCapacity_) {
     ByteArray extra(sequencer_->Get(next_seq_block.first));
     BOOST_ASSERT(extra);

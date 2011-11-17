@@ -710,11 +710,21 @@ TEST_F(BasicTest, BEH_RandomSizedOutOfSequenceWritesWithGapsAndOverlaps) {
     total_size = std::max(total_size,
                           static_cast<uint32_t>(piece_position + piece_size));
     EXPECT_TRUE(self_encryptor_->Write(string_array[index_array[i]].data(),
-                piece_size, piece_position));
+                                       piece_size, piece_position));
+
     ASSERT_GE(kDataSize_, total_size);
     EXPECT_EQ(total_size, self_encryptor_->size());
     memcpy(original_.get() + piece_position,
            string_array[index_array[i]].data(), piece_size);
+
+    decrypted_.reset(new char[total_size]);
+    memset(decrypted_.get(), 1, total_size);
+    EXPECT_TRUE(self_encryptor_->Read(decrypted_.get(), total_size, 0));
+    for (uint32_t j(0); j != total_size; ++j) {
+      ASSERT_EQ(original_[j], decrypted_[j]) << "difference at " << j << " of "
+                                             << total_size;
+    }
+    EXPECT_EQ(total_size, self_encryptor_->size());
   }
 
   // Read back and check while in process.
