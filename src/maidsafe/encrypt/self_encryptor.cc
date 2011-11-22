@@ -32,6 +32,9 @@
 #  pragma warning(pop)
 #endif
 #include "boost/scoped_array.hpp"
+#include "boost/archive/text_oarchive.hpp"
+#include "boost/archive/text_iarchive.hpp"
+
 #include "maidsafe/common/crypto.h"
 #include "maidsafe/common/utils.h"
 #include "maidsafe/common/chunk_store.h"
@@ -55,8 +58,12 @@ const size_t kPadSize((3 * crypto::SHA512::DIGESTSIZE) -
 
 class XORFilter : public CryptoPP::Bufferless<CryptoPP::Filter> {
  public:
-  XORFilter(CryptoPP::BufferedTransformation *attachment, byte *pad)
-      : pad_(pad), count_(0) { CryptoPP::Filter::Detach(attachment); }
+  XORFilter(CryptoPP::BufferedTransformation *attachment,
+            byte *pad,
+            const size_t &pad_size = kPadSize)
+      : pad_(pad), count_(0), kPadSize_(pad_size) {
+    CryptoPP::Filter::Detach(attachment);
+  }
   size_t Put2(const byte* in_string,
               size_t length,
               int message_end,
@@ -70,7 +77,7 @@ class XORFilter : public CryptoPP::Bufferless<CryptoPP::Filter> {
     size_t i(0);
 // #pragma omp parallel for shared(buffer, in_string) private(i)
     for (; i != length; ++i) {
-      buffer[i] = in_string[i] ^ pad_[count_ % kPadSize];
+      buffer[i] = in_string[i] ^ pad_[count_ % kPadSize_];
       ++count_;
     }
 
@@ -83,13 +90,14 @@ class XORFilter : public CryptoPP::Bufferless<CryptoPP::Filter> {
   XORFilter(const XORFilter&);
   byte *pad_;
   size_t count_;
+  const size_t kPadSize_;
 };
 
 }  // unnamed namespace
 
 
 SelfEncryptor::SelfEncryptor(DataMapPtr data_map,
-                             std::shared_ptr<ChunkStore> chunk_store,
+                             ChunkStorePtr chunk_store,
                              int num_procs)
     : data_map_(data_map ? data_map : DataMapPtr(new DataMap)),
       sequencer_(new Sequencer),
@@ -681,12 +689,12 @@ int SelfEncryptor::EncryptChunk(const uint32_t &chunk_num,
               new CryptoPP::StringSink(chunk_content), pad.get())), 6);
     aes_filter.Put2(data, length, -1, true);
 
-    ByteArray post_hash(GetNewByteArray(64));
+    ByteArray post_hash(GetNewByteArray(crypto::SHA512::DIGESTSIZE));
     CryptoPP::SHA512().CalculateDigest(post_hash.get(),
         reinterpret_cast<const byte*>(chunk_content.data()),
         chunk_content.size());
     data_map_->chunks[chunk_num].hash.assign(
-        reinterpret_cast<char*>(post_hash.get()), 64);
+        reinterpret_cast<char*>(post_hash.get()), crypto::SHA512::DIGESTSIZE);
 
     UniqueLock unique_lock(chunk_store_mutex_);
     if (!chunk_store_->Store(data_map_->chunks[chunk_num].hash,
@@ -1333,6 +1341,129 @@ void SelfEncryptor::DeleteChunk(const uint32_t &chunk_num) {
                     << HexSubstr(data_map_->chunks[chunk_num].hash);
     }
   }
+}
+
+bool EncryptDataMap(const std::string &parent_id,
+                    const std::string &this_id,
+                    DataMapPtr data_map,
+                    ChunkStorePtr chunk_store) {
+  BOOST_ASSERT(parent_id.size() == crypto::SHA512::DIGESTSIZE);
+  BOOST_ASSERT(this_id.size() == crypto::SHA512::DIGESTSIZE);
+  BOOST_ASSERT(data_map);
+  BOOST_ASSERT(chunk_store);
+
+  std::ostringstream output_stream(std::ios_base::binary);
+  try {
+    boost::archive::text_oarchive output_archive(output_stream);
+    output_archive << const_cast<const DataMap&>(*data_map);
+  } catch(const boost::archive::archive_exception &e) {
+    DLOG(ERROR) << e.what();
+    return false;
+  }
+  ByteArray serialised_data_map(GetNewByteArray(output_stream.str().size()));
+  uint32_t copied(MemCopy(serialised_data_map, 0, output_stream.str().c_str(),
+                          Size(serialised_data_map)));
+  BOOST_ASSERT(Size(serialised_data_map) == copied);
+
+  std::string encrypted_data_map;
+  try {
+    size_t inputs_size(parent_id.size() + this_id.size());
+    ByteArray enc_hash(GetNewByteArray(crypto::SHA512::DIGESTSIZE)),
+              xor_hash(GetNewByteArray(crypto::SHA512::DIGESTSIZE));
+    CryptoPP::SHA512().CalculateDigest(
+        enc_hash.get(),
+        reinterpret_cast<const byte*>((parent_id + this_id).data()),
+        inputs_size);
+    CryptoPP::SHA512().CalculateDigest(
+        xor_hash.get(),
+        reinterpret_cast<const byte*>((this_id + parent_id).data()),
+        inputs_size);
+
+    CryptoPP::CFB_Mode<CryptoPP::AES>::Encryption encryptor(
+        enc_hash.get(),
+        crypto::AES256_KeySize,
+        enc_hash.get() + crypto::AES256_KeySize);
+
+    encrypted_data_map.reserve(copied);
+    CryptoPP::Gzip aes_filter(
+        new CryptoPP::StreamTransformationFilter(encryptor,
+            new XORFilter(
+                new CryptoPP::StringSink(encrypted_data_map),
+                xor_hash.get(),
+                crypto::SHA512::DIGESTSIZE)),
+        6);
+    aes_filter.Put2(serialised_data_map.get(), copied, -1, true);
+  }
+  catch(const CryptoPP::Exception &e) {
+    DLOG(ERROR) << "Failed data_map encryption: " << e.what();
+    return false;
+  }
+
+  if (!chunk_store->Store(this_id, encrypted_data_map)) {
+    DLOG(ERROR) << "Could not store " << Base32Substr(this_id);
+    return false;
+  }
+
+  return true;
+}
+
+bool DecryptDataMap(const std::string &parent_id,
+                    const std::string &this_id,
+                    DataMapPtr data_map,
+                    ChunkStorePtr chunk_store) {
+  BOOST_ASSERT(parent_id.size() == crypto::SHA512::DIGESTSIZE);
+  BOOST_ASSERT(this_id.size() == crypto::SHA512::DIGESTSIZE);
+  BOOST_ASSERT(data_map);
+  BOOST_ASSERT(chunk_store);
+
+  std::string encrypted_data_map(chunk_store->Get(this_id));
+  if (encrypted_data_map.empty()) {
+    DLOG(ERROR) << "Could not get " << Base32Substr(this_id);
+    return false;
+  }
+
+  std::string serialised_data_map;
+  try {
+    size_t inputs_size(parent_id.size() + this_id.size());
+    ByteArray enc_hash(GetNewByteArray(crypto::SHA512::DIGESTSIZE)),
+              xor_hash(GetNewByteArray(crypto::SHA512::DIGESTSIZE));
+    CryptoPP::SHA512().CalculateDigest(
+        enc_hash.get(),
+        reinterpret_cast<const byte*>((parent_id + this_id).data()),
+        inputs_size);
+    CryptoPP::SHA512().CalculateDigest(
+        xor_hash.get(),
+        reinterpret_cast<const byte*>((this_id + parent_id).data()),
+        inputs_size);
+
+    CryptoPP::CFB_Mode<CryptoPP::AES>::Decryption decryptor(
+        enc_hash.get(),
+        crypto::AES256_KeySize,
+        enc_hash.get() + crypto::AES256_KeySize);
+
+    CryptoPP::StringSource filter(encrypted_data_map, true,
+        new XORFilter(
+            new CryptoPP::StreamTransformationFilter(decryptor,
+                new CryptoPP::Gunzip(
+                    new CryptoPP::StringSink(serialised_data_map))),
+            xor_hash.get(),
+            crypto::SHA512::DIGESTSIZE));
+  }
+  catch(const CryptoPP::Exception &e) {
+    DLOG(ERROR) << e.what();
+    return false;
+  }
+
+  std::istringstream input_stream(serialised_data_map, std::ios_base::binary);
+  try {
+    boost::archive::text_iarchive input_archive(input_stream);
+    input_archive >> *data_map;
+  } catch(const boost::archive::archive_exception &e) {
+    DLOG(ERROR) << e.what();
+    return false;
+  }
+
+  return true;
 }
 
 }  // namespace encrypt

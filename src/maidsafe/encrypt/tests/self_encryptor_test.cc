@@ -1466,6 +1466,38 @@ TEST_F(BasicTest, FUNC_RandomAccess) {
   // be considered
 }
 
+TEST_F(BasicTest, BEH_EncryptDecryptDataMap) {
+  EXPECT_TRUE(self_encryptor_->Write(&original_[0], kDataSize_, 0));
+  EXPECT_TRUE(self_encryptor_->Flush());
+  const std::string kParentId(RandomString(64)), kThisId(RandomString(64));
+
+  EXPECT_TRUE(EncryptDataMap(kParentId, kThisId, data_map_, chunk_store_));
+
+  DataMapPtr retrieved_data_map(new DataMap);
+  std::shared_ptr<MemoryChunkStore> empty_chunk_store(new MemoryChunkStore(
+            std::shared_ptr<ChunkValidation>(
+                new HashableChunkValidation<crypto::SHA512, crypto::Tiger>)));
+  EXPECT_FALSE(DecryptDataMap(kParentId, kThisId, retrieved_data_map,
+                              empty_chunk_store));
+  EXPECT_NE(data_map_->chunks.size(), retrieved_data_map->chunks.size());
+
+  EXPECT_TRUE(DecryptDataMap(kParentId, kThisId, retrieved_data_map,
+                             chunk_store_));
+  ASSERT_EQ(data_map_->chunks.size(), retrieved_data_map->chunks.size());
+  auto original_itr(data_map_->chunks.begin()),
+       retrieved_itr(retrieved_data_map->chunks.begin());
+  std::string original_pre_hash(64, 0), retrieved_pre_hash(64, 0);
+  for (; original_itr != data_map_->chunks.end();
+       ++original_itr, ++retrieved_itr) {
+    ASSERT_EQ((*original_itr).hash, (*retrieved_itr).hash);
+    memcpy(&original_pre_hash[0], &(*original_itr).pre_hash, 64);
+    memcpy(&retrieved_pre_hash[0], &(*retrieved_itr).pre_hash, 64);
+    ASSERT_EQ(original_pre_hash, retrieved_pre_hash);
+    ASSERT_EQ((*original_itr).pre_hash_state, (*retrieved_itr).pre_hash_state);
+    ASSERT_EQ((*original_itr).size, (*retrieved_itr).size);
+  }
+}
+
 }  // namespace test
 }  // namespace encrypt
 }  // namespace maidsafe

@@ -41,10 +41,21 @@ namespace encrypt {
 
 class Sequencer;
 
+bool EncryptDataMap(const std::string &parent_id,
+                    const std::string &this_id,
+                    DataMapPtr data_map,
+                    ChunkStorePtr chunk_store);
+
+bool DecryptDataMap(const std::string &parent_id,
+                    const std::string &this_id,
+                    DataMapPtr data_map,
+                    ChunkStorePtr chunk_store);
+
+
 class SelfEncryptor {
  public:
   SelfEncryptor(DataMapPtr data_map,
-                std::shared_ptr<ChunkStore> chunk_store,
+                ChunkStorePtr chunk_store,
                 int num_procs = 0);
   ~SelfEncryptor();
   bool Write(const char *data,
@@ -172,7 +183,7 @@ class SelfEncryptor {
   const uint32_t kQueueCapacity_;
   uint32_t retrievable_from_queue_;
   std::shared_ptr<byte> chunk0_raw_, chunk1_raw_;
-  std::shared_ptr<ChunkStore> chunk_store_;
+  ChunkStorePtr chunk_store_;
   uint64_t current_position_;
   bool prepared_for_writing_, flushed_;
   boost::shared_array<char> read_cache_;
