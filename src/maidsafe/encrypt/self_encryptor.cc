@@ -1360,7 +1360,8 @@ bool EncryptDataMap(const std::string &parent_id,
     DLOG(ERROR) << e.what();
     return false;
   }
-  ByteArray serialised_data_map(GetNewByteArray(output_stream.str().size()));
+  ByteArray serialised_data_map(GetNewByteArray(
+      static_cast<uint32_t>(output_stream.str().size())));
   uint32_t copied(MemCopy(serialised_data_map, 0, output_stream.str().c_str(),
                           Size(serialised_data_map)));
   BOOST_ASSERT(Size(serialised_data_map) == copied);
