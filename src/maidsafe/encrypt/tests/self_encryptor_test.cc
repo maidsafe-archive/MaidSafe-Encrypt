@@ -682,7 +682,7 @@ TEST_F(BasicTest, BEH_WriteRandomSizeRandomPosition) {
   }
 }
 
-TEST_F(BasicTest, BEH_RandomSizedOutOfSequenceWritesWithGapsAndOverlaps) {
+TEST_F(BasicTest, FUNC_RandomSizedOutOfSequenceWritesWithGapsAndOverlaps) {
   const size_t kParts(80);
   ASSERT_GE(kDataSize_ / kDefaultChunkSize, kParts);
   std::array<std::string, kParts> string_array;
@@ -1193,42 +1193,41 @@ TEST_F(BasicTest, BEH_ManualCheckWrite) {
 
 TEST_F(BasicTest, BEH_TruncateIncreaseScenario1) {
   const uint32_t kTestDataSize(kDefaultChunkSize * 12);
+  const uint32_t kIncrease((RandomUint32() % 4000) + 95);
   {
     std::shared_ptr<SelfEncryptor> self_encryptor(
         new SelfEncryptor(data_map_, chunk_store_, 0));
     boost::scoped_array<char>plain_data(new char[kTestDataSize]);
     memset(plain_data.get(), 0, kTestDataSize);
 
-    for (uint32_t i = 0; i < kTestDataSize; i += 4096) {
-      uint32_t write_position(i);
-      uint32_t write_length(4096);
-      std::string plain_text(RandomString(write_length));
-      boost::scoped_array<char>content_data(new char[write_length]);
-      for (uint32_t i = 0; i < write_length; ++i) {
-        plain_data[i + write_position] = plain_text[i];
-        content_data[i] = plain_text[i];
-      }
-
-      EXPECT_TRUE(self_encryptor->Write(content_data.get(),
-                                        write_length, write_position));
+    const uint32_t kWriteLength(4096);
+    for (uint32_t i = 0; i < kTestDataSize; i += kWriteLength) {
+      std::string plain_text(RandomString(kWriteLength));
+      memcpy(plain_data.get() + i, plain_text.c_str(), kWriteLength);
+      EXPECT_TRUE(self_encryptor->Write(plain_text.c_str(), kWriteLength, i));
     }
 
-    EXPECT_TRUE(self_encryptor->Truncate(kTestDataSize + 2994));
+    EXPECT_TRUE(self_encryptor->Truncate(kTestDataSize + kIncrease));
 
-    uint32_t read_position(kTestDataSize);
-    uint32_t read_length(892);
-    boost::scoped_array<char>answer(new char[read_length]);
-    EXPECT_TRUE(self_encryptor->Read(answer.get(),
-                                     read_length, read_position));
-    for (uint32_t i = 0; i < read_length; ++i)
-      if ((i + read_position) < self_encryptor->size())
-        ASSERT_EQ(plain_data[read_position + i], answer[i])
-            << "not match " << i << " from " << read_position
-            << " when total data is " << self_encryptor->size();
+    const uint32_t kReadLength((RandomUint32() % (kIncrease - 100)) + 100);
+    boost::scoped_array<char>answer(new char[kReadLength]);
+    memset(answer.get(), 1, kReadLength);
+    EXPECT_TRUE(self_encryptor->Read(answer.get(), kReadLength, 0));
+    EXPECT_EQ(kTestDataSize + kIncrease, self_encryptor->size());
+    ASSERT_LE(kReadLength, self_encryptor->size());
+    for (uint32_t i = 0; i < kReadLength; ++i) {
+      if (i < kTestDataSize) {
+        ASSERT_EQ(plain_data[i], answer[i]) << "not match " << i << " from "
+            << kReadLength << " when total data is " << self_encryptor->size();
+      } else {
+        ASSERT_EQ(0, answer[i]) << "not match " << i << " from "
+            << kReadLength << " when total data is " << self_encryptor->size();
+      }
+    }
   }
   std::shared_ptr<SelfEncryptor> temp_self_encryptor(
       new SelfEncryptor(data_map_, chunk_store_, 0));
-  EXPECT_EQ(kTestDataSize + 2994, temp_self_encryptor->size());
+  EXPECT_EQ(kTestDataSize + kIncrease, temp_self_encryptor->size());
 }
 
 TEST_F(BasicTest, BEH_TruncateIncreaseScenario2) {
