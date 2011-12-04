@@ -1402,11 +1402,20 @@ bool EncryptDataMap(const std::string &parent_id,
 
   // TODO(Fraser#5#): 2011-11-25 - Change this Delete followed by Store to
   //                               Modify once available.
-  if (chunk_store->Has(this_id) && !chunk_store->Delete(this_id)) {
-    DLOG(ERROR) << "Could not delete " << Base32Substr(this_id);
-    return false;
-  }
-  if (!chunk_store->Store(this_id, encrypted_data_map)) {
+//  if (chunk_store->Has(this_id) && !chunk_store->Delete(this_id)) {
+//    DLOG(ERROR) << "Could not delete " << Base32Substr(this_id);
+//    return false;
+//  }
+//  if (!chunk_store->Store(this_id, encrypted_data_map)) {
+//    DLOG(ERROR) << "Could not store " << Base32Substr(this_id);
+//    return false;
+//  }
+  if (chunk_store->Has(this_id)) {
+    if (!chunk_store->Modify(this_id, encrypted_data_map)) {
+      DLOG(ERROR) << "Could not modify " << Base32Substr(this_id);
+      return false;
+    }
+  } else if (!chunk_store->Store(this_id, encrypted_data_map)) {
     DLOG(ERROR) << "Could not store " << Base32Substr(this_id);
     return false;
   }
