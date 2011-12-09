@@ -1,50 +1,47 @@
-# ============================================================================ #
+#==============================================================================#
 #                                                                              #
-# Copyright [2011] MaidSafe.net limited                                        #
+#  Copyright (c) 2011 MaidSafe.net limited                                     #
 #                                                                              #
-# The following source code is property of MaidSafe.net limited and is not     #
-# meant for external use.  The use of this code is governed by the license     #
-# file LICENSE.TXT found in the root of this directory and also on             #
-# www.MaidSafe.net.                                                            #
+#  The following source code is property of MaidSafe.net limited and is not    #
+#  meant for external use.  The use of this code is governed by the license    #
+#  file licence.txt found in the root directory of this project and also on    #
+#  www.maidsafe.net.                                                           #
 #                                                                              #
-# You are not free to copy, amend or otherwise use this source code without    #
-# the explicit written permission of the board of directors of MaidSafe.net.   #
+#  You are not free to copy, amend or otherwise use this source code without   #
+#  the explicit written permission of the board of directors of MaidSafe.net.  #
 #                                                                              #
-# ============================================================================ #
+#==============================================================================#
 
+
+SET(MS_PROJECT_NAME maidsafe_encrypt)
 
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8.4 FATAL_ERROR)
 MESSAGE("================================================================================\n")
 
-SET(ERROR_MESSAGE_CMAKE_PATH "cmake ../../..")
 GET_FILENAME_COMPONENT(CMAKE_BUILD_TYPE_DIR ${CMAKE_BINARY_DIR} NAME)
 
-# Variable MSVC is not set until after PROJECT command below
+# Variable MSVC is not set until after "PROJECT" command below
 IF(CMAKE_BUILD_TYPE_DIR MATCHES "Win_MSVC")
   SET(CMAKE_BUILD_TYPE_DIR Release)
-  SET(ERROR_MESSAGE_CMAKE_PATH "   cmake ..\\..")
 ELSEIF(CMAKE_BUILD_TYPE_DIR MATCHES "kdev")
   SET(CMAKE_BUILD_TYPE_DIR Debug)
   SET(KDEV 1)
 ENDIF()
 
-SET(ERROR_MESSAGE "No generator previously specified.\nTo see a full list of generators, run:\n\t${ERROR_MESSAGE_CMAKE_PATH} --help\n")
-SET(CMAKE_GEN ${CMAKE_GENERATOR} CACHE INTERNAL "" FORCE)
 IF(NOT ${CMAKE_C_COMPILER_WORKS})
-  MESSAGE(FATAL_ERROR ${ERROR_MESSAGE})
+  MESSAGE(FATAL_ERROR "No generator previously specified.\nTo see a full list of generators, run:\n\tcmake --help\n")
 ENDIF()
 
+# This "PROJECT" command resets CMAKE_BUILD_TYPE, hence it's copied from CMAKE_BUILD_TYPE_DIR which is set above.
 IF((CMAKE_BUILD_TYPE_DIR MATCHES "Release") OR (DEFINED ${KDEV}))
-  SET(PROJECT_NAME MaidSafe-Encrypt)
+  PROJECT(${MS_PROJECT_NAME})
 ELSE()
-  SET(PROJECT_NAME MaidSafe-Encrypt_${CMAKE_BUILD_TYPE_DIR})
+  STRING(TOLOWER ${CMAKE_BUILD_TYPE_DIR} MS_PROJECT_NAME_APPENDIX)
+  PROJECT(${MS_PROJECT_NAME}_${MS_PROJECT_NAME_APPENDIX})
 ENDIF()
-OPTION (BUILD_SHARED_LIBS "Build shared libraries." OFF)
 
-
-# This call resets CMAKE_BUILD_TYPE, hence it's copied from CMAKE_BUILD_TYPE_DIR which is set above.
-PROJECT(${PROJECT_NAME})
 SET(CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE_DIR} CACHE INTERNAL "Except for MSVC, the build type is set by running cmake from the appropriate build subdirectory e.g. for a Debug build, \"cd build/Linux/Debug && cmake ../../..\"." FORCE)
+
 
 ###################################################################################################
 # MaidSafe Common library search                                                                  #
@@ -52,11 +49,13 @@ SET(CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE_DIR} CACHE INTERNAL "Except for MSVC, th
 SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/build)
 INCLUDE(maidsafe_find_common)
 
+
 ###################################################################################################
 # Standard setup                                                                                  #
 ###################################################################################################
 INCLUDE(maidsafe_standard_setup)
 HANDLE_VERSIONS(${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/version.h)
+
 
 ###################################################################################################
 # Set up all files as GLOBs                                                                       #
@@ -69,123 +68,65 @@ SOURCE_GROUP("Encrypt Source Files" FILES ${SOURCE_FILES_ENCRYPT_DIR})
 SOURCE_GROUP("Encrypt Header Files" FILES ${HEADER_FILES_ENCRYPT_DIR})
 
 ####    TESTS    ####
-FILE(GLOB SOURCE_FILES_TESTS_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/tests/*.cc")
-FILE(GLOB HEADER_FILES_TESTS_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/tests/*.h")
-SET(ALL_FILES_TESTS_DIR ${SOURCE_FILES_TESTS_DIR} ${HEADER_FILES_TESTS_DIR})
-SOURCE_GROUP("Tests Source Files" FILES ${SOURCE_FILES_TESTS_DIR})
-SOURCE_GROUP("Tests Header Files" FILES ${HEADER_FILES_TESTS_DIR})
+FILE(GLOB SOURCE_FILES_ENCRYPT_TESTS_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/tests/*.cc")
+FILE(GLOB HEADER_FILES_ENCRYPT_TESTS_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/tests/*.h")
+SET(ALL_FILES_ENCRYPT_TESTS_DIR ${SOURCE_FILES_ENCRYPT_TESTS_DIR} ${HEADER_FILES_ENCRYPT_TESTS_DIR})
+SOURCE_GROUP("Tests Source Files" FILES ${SOURCE_FILES_ENCRYPT_TESTS_DIR})
+SOURCE_GROUP("Tests Header Files" FILES ${HEADER_FILES_ENCRYPT_TESTS_DIR})
 
 
 ###################################################################################################
-# All Platforms:  Create libs and executables                                                     #
+# Define MaidSafe libraries and executables                                                       #
 ###################################################################################################
-ADD_LIBRARY(encrypt_static STATIC ${ALL_FILES_ENCRYPT_DIR})
-SET_TARGET_PROPERTIES(encrypt_static PROPERTIES OUTPUT_NAME maidsafe_encrypt)
-ADD_EXECUTABLE(TESTencrypt ${ALL_FILES_TESTS_DIR})
+MS_ADD_STATIC_LIBRARY(${MS_PROJECT_NAME} ${ALL_FILES_ENCRYPT_DIR})
+MS_ADD_EXECUTABLE(TESTencrypt Tests ${ALL_FILES_ENCRYPT_TESTS_DIR})
 
-RENAME_EXECUTABLE(TESTencrypt)
-
-TARGET_LINK_LIBRARIES(encrypt_static
-                        maidsafe_common_static
-                        glog_static
-                        boost_filesystem
-                        boost_serialization
-                        boost_system)
-TARGET_LINK_LIBRARIES(TESTencrypt encrypt_static gtest_static)
+TARGET_LINK_LIBRARIES(maidsafe_encrypt_static maidsafe_common_static)
+TARGET_LINK_LIBRARIES(TESTencrypt maidsafe_encrypt_static gtest_static)
 
 IF(UNIX)
   # This target builds the reference manual using Doxygen
   ADD_CUSTOM_TARGET(Reference COMMAND doxygen WORKING_DIRECTORY ${PROJECT_SOURCE_DIR})
 ENDIF()
 
+
 ###################################################################################################
-# Compiler and linker flags                                                                       #
+# Set compiler and linker flags                                                                   #
 ###################################################################################################
 INCLUDE(maidsafe_standard_flags)
-IF(MSVC)
-  # C4351 'new behavior: elements of array will be default initialized' not needed
-  # C4503 'decorated name length exceeded' caused by boost multi-index and signals2
-  # Disabled as per advice at https://svn.boost.org/trac/boost/wiki/Guidelines/WarningsGuidelines
-  # C4512 'assignment operator could not be generated' caused by boost signals2
-  # Disabled as per advice at http://lists.boost.org/boost-users/2009/01/44368.php
-  # C4996 'Function call with parameters that may be unsafe' caused by boost signals2
-  # Disabled as per advice at https://svn.boost.org/trac/boost/wiki/Guidelines/WarningsGuidelines
-  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4351 /wd4503 /wd4512 /wd4996")
-  # Enable OpenMP
-  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /openmp")
-  SET_TARGET_PROPERTIES(encrypt_static PROPERTIES STATIC_LIBRARY_FLAGS_RELEASE "/LTCG")
-  SET_TARGET_PROPERTIES(TESTencrypt  PROPERTIES
-                          LINK_FLAGS_RELEASE "/OPT:REF /OPT:ICF /LTCG /INCREMENTAL:NO ${LINKER_LIBS_DIRS_RELEASE}"
-                          LINK_FLAGS_DEBUG "${LINKER_LIBS_DIRS_DEBUG}"
-                          LINK_FLAGS_RELWITHDEBINFO "${LINKER_LIBS_DIRS_DEBUG}"
-                          LINK_FLAGS_MINSIZEREL "${LINKER_LIBS_DIRS_DEBUG}")
-ELSEIF(UNIX)
-  IF(APPLE)
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DOSX")
-  ELSE()
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DLINUX -fopenmp -Wfloat-equal -Wlong-long -Wstrict-overflow=5 -Wredundant-decls -Wuninitialized -Wunused-function")
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wunused-label -Wunused-parameter -Wunused-value -Wunused-variable -fno-stack-protector")
+
+IF(UNIX)
+  IF(NOT APPLE)
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-stack-protector")
     SET_SOURCE_FILES_PROPERTIES(${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/tests/test_se.cc
                                 PROPERTIES COMPILE_FLAGS "-Wno-effc++")
 
   ENDIF()
-  SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -Wuninitialized")
-  SET_TARGET_PROPERTIES(encrypt_static PROPERTIES COMPILE_FLAGS "-fPIC -w -finline-functions")
+  SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
+#  SET_TARGET_PROPERTIES(maidsafe_encrypt_static PROPERTIES COMPILE_FLAGS "-w")
 ENDIF()
+
 
 ###################################################################################################
 # Tests                                                                                           #
 ###################################################################################################
-IF(PYTHONINTERP_FOUND)
-  IF(UNIX)
-    ADD_TEST(STYLE_CHECK python ${MaidSafeCommon_TOOLS_DIR}/cpplint.py ${ALL_FILES_ENCRYPT_DIR} ${ALL_FILES_TESTS_DIR})
-  ELSE()
-    STRING(REPLACE "/" "\\\\" STYLE_CHECK_SOURCE ${PROJECT_SOURCE_DIR})
-    ADD_TEST(STYLE_CHECK ${MaidSafeCommon_TOOLS_DIR}/run_cpplint.bat ${STYLE_CHECK_SOURCE} ${MaidSafeCommon_TOOLS_DIR}/cpplint.py)
-  ENDIF()
-  SET_PROPERTY(TEST STYLE_CHECK PROPERTY LABELS Functional CodingStyle)
-ENDIF()
-
+ADD_STYLE_TEST(${ALL_FILES_ENCRYPT_DIR} ${ALL_FILES_ENCRYPT_TESTS_DIR})
 ADD_GTESTS(TESTencrypt)
-
 TEST_SUMMARY_OUTPUT()
+
 
 ###################################################################################################
 # Install details                                                                                 #
 ###################################################################################################
 FINAL_MESSAGE()
+RENAME_OUTDATED_BUILT_EXES()
 
 SET(MAIDSAFE_ENCRYPT_INSTALL_FILES
       ${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/config.h
       ${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/data_map.h
       ${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/self_encryptor.h
       ${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/version.h)
-FOREACH(MAIDSAFE_ENCRYPT_INSTALL_FILE ${MAIDSAFE_ENCRYPT_INSTALL_FILES})
-  CHECK_INSTALL_HEADER_HAS_VERSION_GUARD(${MAIDSAFE_ENCRYPT_INSTALL_FILE})
-ENDFOREACH()
 
-SET(EXPORT_NAME encrypt)
-INSTALL(TARGETS encrypt_static EXPORT ${EXPORT_NAME} ARCHIVE DESTINATION lib)
-INSTALL(FILES ${MAIDSAFE_ENCRYPT_INSTALL_FILES} DESTINATION include/maidsafe/encrypt)
-INSTALL(EXPORT ${EXPORT_NAME} DESTINATION share/maidsafe)
-ADD_VERSION_INFO_TO_INSTALLED_FILE()
-
-IF(CMAKE_BUILD_TYPE MATCHES "Release")
-  SET(CPACK_PACKAGE_NAME "maidsafe_encrypt")
-  SET(CPACK_PACKAGE_CONTACT "dev@maidsafe.net")
-  SET(CPACK_PACKAGE_VENDOR "MaidSafe.net")
-  SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "MaidSafe-Encrypt")
-  SET(CPACK_PACKAGE_INSTALL_DIRECTORY "maidsafe-encrypt")
-#  SET(CPACK_RESOURCE_FILE_README "${PROJECT_SOURCE_DIR}/docs/readme.txt")
-  IF(UNIX)
-    SET(CPACK_SET_DESTDIR on)
-    SET(CPACK_GENERATOR DEB;RPM;TGZ)
-    MESSAGE("Package install directory is set to \"${CPACK_PACKAGE_INSTALL_DIRECTORY}\"")
-    MESSAGE("================================================================================")
-  ELSE()
-    SET(CPACK_GENERATOR ZIP)
-  ENDIF()
-  INCLUDE(CPack)
-ELSE()
-  FILE(REMOVE ${PROJECT_BINARY_DIR}/CPackConfig.cmake ${PROJECT_BINARY_DIR}/CPackSourceConfig.cmake)
-ENDIF()
+MS_INSTALL_LIBS(maidsafe_encrypt_static)
+MS_INSTALL_HEADERS(encrypt ${MAIDSAFE_ENCRYPT_INSTALL_FILES})
+MS_INSTALL_EXPORT()
