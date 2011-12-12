@@ -1,7 +1,15 @@
-v0.10.01 (WIP)
+v0.10.02 (WIP)
 --------------
-* 
 
+
+v0.10.01
+--------
+* Changed to match updated CMake modules.
+* Changed delete and store to update in EncryptDataMap.
+* Added methods for encrypting and decrypting DataMaps.
+* Changes to match amended Common.
+* Solved the problem of slow performance of random read
+* Bug fix to allow over uint32 data to be correctly handled
 
 v0.10.00
 --------
