@@ -26,7 +26,7 @@
 #include "maidsafe/encrypt/data_map.h"
 #include "maidsafe/encrypt/version.h"
 
-#if MAIDSAFE_ENCRYPT_VERSION != 1001
+#if MAIDSAFE_ENCRYPT_VERSION != 1002
 #  error This API is not compatible with the installed library.\
     Please update the library.
 #endif
