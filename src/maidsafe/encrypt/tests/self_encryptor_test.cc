@@ -19,7 +19,9 @@
 #  pragma warning(push, 1)
 #endif
 #include "cryptopp/aes.h"
+#include "cryptopp/channels.h"
 #include "cryptopp/gzip.h"
+#include "cryptopp/ida.h"
 #include "cryptopp/modes.h"
 #include "cryptopp/mqueue.h"
 #ifdef WIN32
@@ -27,7 +29,6 @@
 #endif
 #include "boost/scoped_array.hpp"
 #include "maidsafe/common/test.h"
-#include "maidsafe/common/hashable_chunk_validation.h"
 #include "maidsafe/common/memory_chunk_store.h"
 #include "maidsafe/common/omp.h"
 #include "maidsafe/common/utils.h"
@@ -1427,10 +1428,7 @@ TEST_F(BasicTest, FUNC_RandomAccess) {
 
   {
     // Out Process random write/read access
-    std::shared_ptr<ChunkValidation> chunk_validation(
-        new HashableChunkValidation<crypto::SHA512, crypto::Tiger>);
-    std::shared_ptr<MemoryChunkStore> chunk_store
-        (new MemoryChunkStore(chunk_validation));
+    std::shared_ptr<MemoryChunkStore> chunk_store(new MemoryChunkStore);
     DataMapPtr data_map(new DataMap);
     for (size_t i = 0; i < max_variation.size(); ++i) {
       uint32_t num_tries = num_of_tries[i];
@@ -1470,12 +1468,15 @@ TEST_F(BasicTest, BEH_EncryptDecryptDataMap) {
   EXPECT_TRUE(self_encryptor_->Flush());
   const std::string kParentId(RandomString(64)), kThisId(RandomString(64));
 
-  EXPECT_TRUE(EncryptDataMap(kParentId, kThisId, data_map_, chunk_store_));
+  asymm::Keys key_pair;
+  ASSERT_EQ(kSuccess, asymm::GenerateKeyPair(&key_pair));
+  std::string key_id(RandomString(crypto::SHA512::DIGESTSIZE));
+
+  EXPECT_TRUE(EncryptDataMap(kParentId, kThisId, data_map_, chunk_store_,
+                             &key_pair.private_key, key_id, true));
 
   DataMapPtr retrieved_data_map(new DataMap);
-  std::shared_ptr<MemoryChunkStore> empty_chunk_store(new MemoryChunkStore(
-            std::shared_ptr<ChunkValidation>(
-                new HashableChunkValidation<crypto::SHA512, crypto::Tiger>)));
+  std::shared_ptr<MemoryChunkStore> empty_chunk_store(new MemoryChunkStore);
   EXPECT_FALSE(DecryptDataMap(kParentId, kThisId, retrieved_data_map,
                               empty_chunk_store));
   EXPECT_NE(data_map_->chunks.size(), retrieved_data_map->chunks.size());

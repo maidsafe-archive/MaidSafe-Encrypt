@@ -16,7 +16,6 @@
 
 #include <memory>
 #include "boost/scoped_array.hpp"
-#include "maidsafe/common/hashable_chunk_validation.h"
 #include "maidsafe/common/memory_chunk_store.h"
 #include "maidsafe/common/utils.h"
 
@@ -29,9 +28,7 @@ namespace test {
 class EncryptTestBase {
  public:
   explicit EncryptTestBase(int num_procs = 0)
-      : chunk_store_(new MemoryChunkStore(
-            std::shared_ptr<ChunkValidation>(
-                new HashableChunkValidation<crypto::SHA512, crypto::Tiger>))),
+      : chunk_store_(new MemoryChunkStore),
         data_map_(new DataMap),
         self_encryptor_(new SelfEncryptor(data_map_, chunk_store_, num_procs)),
         original_(),
