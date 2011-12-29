@@ -1416,7 +1416,7 @@ bool EncryptDataMap(const std::string &parent_id,
     return false;
   }
   signed_data.set_signature(signature);
-  signed_data.set_signing_id(private_key_id);
+//  signed_data.set_signing_id(private_key_id);
   std::string serialised_data;
   try {
     if (!signed_data.SerializeToString(&serialised_data)) {
