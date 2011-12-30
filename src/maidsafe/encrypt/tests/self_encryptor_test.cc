@@ -1470,10 +1470,9 @@ TEST_F(BasicTest, BEH_EncryptDecryptDataMap) {
 
   asymm::Keys key_pair;
   ASSERT_EQ(kSuccess, asymm::GenerateKeyPair(&key_pair));
-  std::string key_id(RandomString(crypto::SHA512::DIGESTSIZE));
 
   EXPECT_TRUE(EncryptDataMap(kParentId, kThisId, data_map_, chunk_store_,
-                             &key_pair.private_key, key_id, true));
+                             &key_pair.private_key, true));
 
   DataMapPtr retrieved_data_map(new DataMap);
   std::shared_ptr<MemoryChunkStore> empty_chunk_store(new MemoryChunkStore);

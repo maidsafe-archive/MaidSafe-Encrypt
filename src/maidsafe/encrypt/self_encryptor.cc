@@ -89,6 +89,7 @@ class XORFilter : public CryptoPP::Bufferless<CryptoPP::Filter> {
                                           blocking);
   }
   bool IsolatedFlush(bool, bool) { return false; }
+
  private:
   XORFilter &operator = (const XORFilter&);
   XORFilter(const XORFilter&);
@@ -1352,7 +1353,6 @@ bool EncryptDataMap(const std::string &parent_id,
                     DataMapPtr data_map,
                     ChunkStorePtr chunk_store,
                     const asymm::PrivateKey * const private_key,
-                    const std::string &private_key_id,
                     bool initial_instance) {
   BOOST_ASSERT(parent_id.size() == crypto::SHA512::DIGESTSIZE);
   BOOST_ASSERT(this_id.size() == crypto::SHA512::DIGESTSIZE);
@@ -1406,6 +1406,7 @@ bool EncryptDataMap(const std::string &parent_id,
     DLOG(ERROR) << "Failed data_map encryption: " << e.what();
     return false;
   }
+  BOOST_ASSERT(!encrypted_data_map.empty());
 
   priv::chunk_actions::SignedData signed_data;
   signed_data.set_data(encrypted_data_map);
@@ -1416,18 +1417,8 @@ bool EncryptDataMap(const std::string &parent_id,
     return false;
   }
   signed_data.set_signature(signature);
-//  signed_data.set_signing_id(private_key_id);
-  std::string serialised_data;
-  try {
-    if (!signed_data.SerializeToString(&serialised_data)) {
-      DLOG(ERROR) << "Failed to serialise data_map";
-      return false;
-    }
-  }
-  catch(const std::exception &e) {
-    DLOG(ERROR) << "Failed to serialise data_map: " << e.what();
-    return false;
-  }
+  std::string serialised_data(signed_data.SerializeAsString());
+  BOOST_ASSERT(!serialised_data.empty());
 
   std::string full_name(priv::chunk_actions::ApplyTypeToName(this_id,
       priv::chunk_actions::kModifiableByOwner));
@@ -1468,18 +1459,15 @@ bool DecryptDataMap(const std::string &parent_id,
   }
 
   priv::chunk_actions::SignedData signed_data;
-  try {
-    if (!signed_data.ParseFromString(serialised_data)) {
-      DLOG(ERROR) << "Failed to parse data_map";
-      return false;
-    }
-  }
-  catch(const std::exception &e) {
-    DLOG(ERROR) << "Failed to parse data_map: " << e.what();
+  if (!signed_data.ParseFromString(serialised_data)) {
+    DLOG(ERROR) << "Failed to parse data_map";
     return false;
   }
-  BOOST_ASSERT(signed_data.IsInitialized());
-  BOOST_ASSERT(!signed_data.data().empty());
+
+  if (signed_data.data().empty() || signed_data.signature().empty()) {
+    DLOG(ERROR) << "data_map missing data or signature";
+    return false;
+  }
 
   std::string serialised_data_map;
   try {

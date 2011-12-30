@@ -50,6 +50,7 @@ class Sequencer {
   // to terminate at position.
   void Truncate(const uint64_t &position);
   void clear() { blocks_.clear(); }
+
  private:
   Sequencer &operator=(const Sequencer&);
   Sequencer(const Sequencer&);
