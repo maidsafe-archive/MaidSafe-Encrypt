@@ -46,6 +46,7 @@ bool EncryptDataMap(const std::string &parent_id,
                     DataMapPtr data_map,
                     ChunkStorePtr chunk_store,
                     const asymm::PrivateKey * const private_key,
+                    const std::string &private_key_id,
                     bool initial_instance);
 
 bool DecryptDataMap(const std::string &parent_id,

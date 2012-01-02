@@ -1353,6 +1353,7 @@ bool EncryptDataMap(const std::string &parent_id,
                     DataMapPtr data_map,
                     ChunkStorePtr chunk_store,
                     const asymm::PrivateKey * const private_key,
+                    const std::string &private_key_id,
                     bool initial_instance) {
   BOOST_ASSERT(parent_id.size() == crypto::SHA512::DIGESTSIZE);
   BOOST_ASSERT(this_id.size() == crypto::SHA512::DIGESTSIZE);
@@ -1425,12 +1426,12 @@ bool EncryptDataMap(const std::string &parent_id,
   BOOST_ASSERT(!full_name.empty());
 
   if (initial_instance) {
-    if (!chunk_store->Store(full_name, serialised_data)) {
+    if (!chunk_store->Store(full_name, serialised_data, private_key_id)) {
       DLOG(ERROR) << "Could not store " << Base32Substr(this_id);
       return false;
     }
   } else {
-    if (!chunk_store->Modify(full_name, serialised_data)) {
+    if (!chunk_store->Modify(full_name, serialised_data, private_key_id)) {
       DLOG(ERROR) << "Could not modify " << Base32Substr(this_id);
       return false;
     }
