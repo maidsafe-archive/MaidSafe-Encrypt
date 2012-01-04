@@ -1352,8 +1352,7 @@ bool EncryptDataMap(const std::string &parent_id,
                     const std::string &this_id,
                     DataMapPtr data_map,
                     ChunkStorePtr chunk_store,
-                    const asymm::PrivateKey * const private_key,
-                    const std::string &private_key_id,
+                    const AlternativeStore::ValidationData &validation_data,
                     bool initial_instance) {
   BOOST_ASSERT(parent_id.size() == crypto::SHA512::DIGESTSIZE);
   BOOST_ASSERT(this_id.size() == crypto::SHA512::DIGESTSIZE);
@@ -1412,7 +1411,9 @@ bool EncryptDataMap(const std::string &parent_id,
   priv::chunk_actions::SignedData signed_data;
   signed_data.set_data(encrypted_data_map);
   asymm::Signature signature;
-  int result(asymm::Sign(encrypted_data_map, *private_key, &signature));
+  int result(asymm::Sign(encrypted_data_map,
+                         validation_data.key_pair.private_key,
+                         &signature));
   if (result != kSuccess) {
     DLOG(ERROR) << "Failed to sign data_map.  Returned " << result;
     return false;
@@ -1426,12 +1427,12 @@ bool EncryptDataMap(const std::string &parent_id,
   BOOST_ASSERT(!full_name.empty());
 
   if (initial_instance) {
-    if (!chunk_store->Store(full_name, serialised_data, private_key_id)) {
+    if (!chunk_store->Store(full_name, serialised_data, validation_data)) {
       DLOG(ERROR) << "Could not store " << Base32Substr(this_id);
       return false;
     }
   } else {
-    if (!chunk_store->Modify(full_name, serialised_data, private_key_id)) {
+    if (!chunk_store->Modify(full_name, serialised_data, validation_data)) {
       DLOG(ERROR) << "Could not modify " << Base32Substr(this_id);
       return false;
     }

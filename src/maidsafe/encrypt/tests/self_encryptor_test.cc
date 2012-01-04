@@ -1468,12 +1468,19 @@ TEST_F(BasicTest, BEH_EncryptDecryptDataMap) {
   EXPECT_TRUE(self_encryptor_->Flush());
   const std::string kParentId(RandomString(64)), kThisId(RandomString(64));
 
-  asymm::Keys key_pair;
-  ASSERT_EQ(kSuccess, asymm::GenerateKeyPair(&key_pair));
-  std::string key_id(RandomString(crypto::SHA512::DIGESTSIZE));
+  AlternativeStore::ValidationData validation_data;
+  ASSERT_EQ(kSuccess, asymm::GenerateKeyPair(&validation_data.key_pair));
+  std::string public_key;
+  asymm::EncodePublicKey(validation_data.key_pair.public_key, &public_key);
+  ASSERT_FALSE(public_key.empty());
+  ASSERT_EQ(kSuccess, asymm::Sign(public_key,
+                                  validation_data.key_pair.private_key,
+                                  &validation_data.key_pair.validation_token));
+  validation_data.key_pair.identity = crypto::Hash<crypto::SHA512>(
+      public_key + validation_data.key_pair.validation_token);
 
   EXPECT_TRUE(EncryptDataMap(kParentId, kThisId, data_map_, chunk_store_,
-                             &key_pair.private_key, key_id, true));
+                             validation_data, true));
 
   DataMapPtr retrieved_data_map(new DataMap);
   std::shared_ptr<MemoryChunkStore> empty_chunk_store(new MemoryChunkStore);

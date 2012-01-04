@@ -22,6 +22,8 @@
 #include "boost/thread/shared_mutex.hpp"
 #include "boost/thread/locks.hpp"
 
+#include "maidsafe/common/alternative_store.h"
+
 #include "maidsafe/encrypt/config.h"
 #include "maidsafe/encrypt/data_map.h"
 #include "maidsafe/encrypt/version.h"
@@ -45,8 +47,7 @@ bool EncryptDataMap(const std::string &parent_id,
                     const std::string &this_id,
                     DataMapPtr data_map,
                     ChunkStorePtr chunk_store,
-                    const asymm::PrivateKey * const private_key,
-                    const std::string &private_key_id,
+                    const AlternativeStore::ValidationData &validation_data,
                     bool initial_instance);
 
 bool DecryptDataMap(const std::string &parent_id,
