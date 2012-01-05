@@ -38,7 +38,9 @@ enum ReturnCode {
   kMissingChunk = -200005,
   kEncryptionException = -200006,
   kDecryptionException = -200007,
-  kInvalidPosition = -200008,
+  kSerialisationException = -200008,
+  kDeserialisationException = -200009,
+  kInvalidPosition = -200010,
   kSequencerException = -200101,
   kSequencerAddError = -200102
 };

@@ -1464,32 +1464,19 @@ TEST_F(BasicTest, FUNC_RandomAccess) {
 }
 
 TEST_F(BasicTest, BEH_EncryptDecryptDataMap) {
+  // TODO(Fraser#5#): 2012-01-05 - Test failure cases also.
   EXPECT_TRUE(self_encryptor_->Write(&original_[0], kDataSize_, 0));
   EXPECT_TRUE(self_encryptor_->Flush());
   const std::string kParentId(RandomString(64)), kThisId(RandomString(64));
 
-  AlternativeStore::ValidationData validation_data;
-  ASSERT_EQ(kSuccess, asymm::GenerateKeyPair(&validation_data.key_pair));
-  std::string public_key;
-  asymm::EncodePublicKey(validation_data.key_pair.public_key, &public_key);
-  ASSERT_FALSE(public_key.empty());
-  ASSERT_EQ(kSuccess, asymm::Sign(public_key,
-                                  validation_data.key_pair.private_key,
-                                  &validation_data.key_pair.validation_token));
-  validation_data.key_pair.identity = crypto::Hash<crypto::SHA512>(
-      public_key + validation_data.key_pair.validation_token);
-
-  EXPECT_TRUE(EncryptDataMap(kParentId, kThisId, data_map_, chunk_store_,
-                             validation_data, true));
+  std::string encrypted_data_map("d");
+  EXPECT_EQ(kSuccess, EncryptDataMap(kParentId, kThisId, data_map_,
+                                     &encrypted_data_map));
+  EXPECT_FALSE(encrypted_data_map.empty());
 
   DataMapPtr retrieved_data_map(new DataMap);
-  std::shared_ptr<MemoryChunkStore> empty_chunk_store(new MemoryChunkStore);
-  EXPECT_FALSE(DecryptDataMap(kParentId, kThisId, retrieved_data_map,
-                              empty_chunk_store));
-  EXPECT_NE(data_map_->chunks.size(), retrieved_data_map->chunks.size());
-
-  EXPECT_TRUE(DecryptDataMap(kParentId, kThisId, retrieved_data_map,
-                             chunk_store_));
+  EXPECT_EQ(kSuccess, DecryptDataMap(kParentId, kThisId, encrypted_data_map,
+                                     retrieved_data_map));
   ASSERT_EQ(data_map_->chunks.size(), retrieved_data_map->chunks.size());
   auto original_itr(data_map_->chunks.begin()),
        retrieved_itr(retrieved_data_map->chunks.begin());

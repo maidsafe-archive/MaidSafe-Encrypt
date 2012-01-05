@@ -40,10 +40,6 @@
 #include "maidsafe/common/chunk_store.h"
 #include "maidsafe/common/omp.h"
 
-#include "maidsafe/private/chunk_actions/chunk_action_authority.h"
-#include "maidsafe/private/chunk_actions/chunk_pb.h"
-#include "maidsafe/private/chunk_actions/modifiable_by_owner_rules.h"
-
 #include "maidsafe/encrypt/config.h"
 #include "maidsafe/encrypt/data_map.h"
 #include "maidsafe/encrypt/log.h"
@@ -1348,16 +1344,15 @@ void SelfEncryptor::DeleteChunk(const uint32_t &chunk_num) {
   }
 }
 
-bool EncryptDataMap(const std::string &parent_id,
-                    const std::string &this_id,
-                    DataMapPtr data_map,
-                    ChunkStorePtr chunk_store,
-                    const AlternativeStore::ValidationData &validation_data,
-                    bool initial_instance) {
+int EncryptDataMap(const std::string &parent_id,
+                   const std::string &this_id,
+                   DataMapPtr data_map,
+                   std::string *encrypted_data_map) {
   BOOST_ASSERT(parent_id.size() == crypto::SHA512::DIGESTSIZE);
   BOOST_ASSERT(this_id.size() == crypto::SHA512::DIGESTSIZE);
   BOOST_ASSERT(data_map);
-  BOOST_ASSERT(chunk_store);
+  BOOST_ASSERT(encrypted_data_map);
+  encrypted_data_map->clear();
 
   std::ostringstream output_stream(std::ios_base::binary);
   try {
@@ -1365,7 +1360,7 @@ bool EncryptDataMap(const std::string &parent_id,
     output_archive << const_cast<const DataMap&>(*data_map);
   } catch(const boost::archive::archive_exception &e) {
     DLOG(ERROR) << e.what();
-    return false;
+    return kSerialisationException;
   }
   ByteArray serialised_data_map(GetNewByteArray(
       static_cast<uint32_t>(output_stream.str().size())));
@@ -1373,7 +1368,6 @@ bool EncryptDataMap(const std::string &parent_id,
                           Size(serialised_data_map)));
   BOOST_ASSERT(Size(serialised_data_map) == copied);
 
-  std::string encrypted_data_map;
   try {
     size_t inputs_size(parent_id.size() + this_id.size());
     ByteArray enc_hash(GetNewByteArray(crypto::SHA512::DIGESTSIZE)),
@@ -1392,11 +1386,11 @@ bool EncryptDataMap(const std::string &parent_id,
         crypto::AES256_KeySize,
         enc_hash.get() + crypto::AES256_KeySize);
 
-    encrypted_data_map.reserve(copied);
+    encrypted_data_map->reserve(copied);
     CryptoPP::Gzip aes_filter(
         new CryptoPP::StreamTransformationFilter(encryptor,
             new XORFilter(
-                new CryptoPP::StringSink(encrypted_data_map),
+                new CryptoPP::StringSink(*encrypted_data_map),
                 xor_hash.get(),
                 crypto::SHA512::DIGESTSIZE)),
         6);
@@ -1404,72 +1398,20 @@ bool EncryptDataMap(const std::string &parent_id,
   }
   catch(const CryptoPP::Exception &e) {
     DLOG(ERROR) << "Failed data_map encryption: " << e.what();
-    return false;
+    return kEncryptionException;
   }
-  BOOST_ASSERT(!encrypted_data_map.empty());
-
-  priv::chunk_actions::SignedData signed_data;
-  signed_data.set_data(encrypted_data_map);
-  asymm::Signature signature;
-  int result(asymm::Sign(encrypted_data_map,
-                         validation_data.key_pair.private_key,
-                         &signature));
-  if (result != kSuccess) {
-    DLOG(ERROR) << "Failed to sign data_map.  Returned " << result;
-    return false;
-  }
-  signed_data.set_signature(signature);
-  std::string serialised_data(signed_data.SerializeAsString());
-  BOOST_ASSERT(!serialised_data.empty());
-
-  std::string full_name(priv::chunk_actions::ApplyTypeToName(this_id,
-      priv::chunk_actions::kModifiableByOwner));
-  BOOST_ASSERT(!full_name.empty());
-
-  if (initial_instance) {
-    if (!chunk_store->Store(full_name, serialised_data, validation_data)) {
-      DLOG(ERROR) << "Could not store " << Base32Substr(this_id);
-      return false;
-    }
-  } else {
-    if (!chunk_store->Modify(full_name, serialised_data, validation_data)) {
-      DLOG(ERROR) << "Could not modify " << Base32Substr(this_id);
-      return false;
-    }
-  }
-
-  return true;
+  BOOST_ASSERT(!encrypted_data_map->empty());
+  return kSuccess;
 }
 
-bool DecryptDataMap(const std::string &parent_id,
-                    const std::string &this_id,
-                    DataMapPtr data_map,
-                    ChunkStorePtr chunk_store) {
+int DecryptDataMap(const std::string &parent_id,
+                   const std::string &this_id,
+                   const std::string &encrypted_data_map,
+                   DataMapPtr data_map) {
   BOOST_ASSERT(parent_id.size() == crypto::SHA512::DIGESTSIZE);
   BOOST_ASSERT(this_id.size() == crypto::SHA512::DIGESTSIZE);
+  BOOST_ASSERT(!encrypted_data_map.empty());
   BOOST_ASSERT(data_map);
-  BOOST_ASSERT(chunk_store);
-
-  std::string full_name(priv::chunk_actions::ApplyTypeToName(this_id,
-      priv::chunk_actions::kModifiableByOwner));
-  BOOST_ASSERT(!full_name.empty());
-
-  std::string serialised_data(chunk_store->Get(full_name));
-  if (serialised_data.empty()) {
-    DLOG(ERROR) << "Could not get " << Base32Substr(full_name);
-    return false;
-  }
-
-  priv::chunk_actions::SignedData signed_data;
-  if (!signed_data.ParseFromString(serialised_data)) {
-    DLOG(ERROR) << "Failed to parse data_map";
-    return false;
-  }
-
-  if (signed_data.data().empty() || signed_data.signature().empty()) {
-    DLOG(ERROR) << "data_map missing data or signature";
-    return false;
-  }
 
   std::string serialised_data_map;
   try {
@@ -1490,7 +1432,7 @@ bool DecryptDataMap(const std::string &parent_id,
         crypto::AES256_KeySize,
         enc_hash.get() + crypto::AES256_KeySize);
 
-    CryptoPP::StringSource filter(signed_data.data(), true,
+    CryptoPP::StringSource filter(encrypted_data_map, true,
         new XORFilter(
             new CryptoPP::StreamTransformationFilter(decryptor,
                 new CryptoPP::Gunzip(
@@ -1500,7 +1442,7 @@ bool DecryptDataMap(const std::string &parent_id,
   }
   catch(const CryptoPP::Exception &e) {
     DLOG(ERROR) << e.what();
-    return false;
+    return kDecryptionException;
   }
 
   std::istringstream input_stream(serialised_data_map, std::ios_base::binary);
@@ -1509,10 +1451,10 @@ bool DecryptDataMap(const std::string &parent_id,
     input_archive >> *data_map;
   } catch(const boost::archive::archive_exception &e) {
     DLOG(ERROR) << e.what();
-    return false;
+    return kDeserialisationException;
   }
 
-  return true;
+  return kSuccess;
 }
 
 }  // namespace encrypt
