@@ -1492,6 +1492,50 @@ TEST_F(BasicTest, BEH_EncryptDecryptDataMap) {
   }
 }
 
+TEST_F(BasicTest, BEH_DifferentDataMapSameChunk) {
+  DataMapPtr data_map_1(new DataMap);
+  DataMapPtr data_map_2(new DataMap);
+
+  {
+    std::shared_ptr<SelfEncryptor> self_encryptor_1(
+        new SelfEncryptor(data_map_1, chunk_store_, 0));
+    std::shared_ptr<SelfEncryptor> self_encryptor_2(
+        new SelfEncryptor(data_map_2, chunk_store_, 0));
+
+    self_encryptor_1->Write(original_.get(), 16 * 1024, 0);
+    self_encryptor_2->Write(original_.get(), 16 * 1024, 0);
+  }
+  {
+    boost::scoped_array<char> result_data;
+    result_data.reset(new char[16 * 1024]);
+    std::shared_ptr<SelfEncryptor> self_encryptor_2(
+        new SelfEncryptor(data_map_2, chunk_store_, 0));
+
+    self_encryptor_2->Read(result_data.get(), 16 * 1024, 0);
+    for (uint32_t i = 0; i != 16 * 1024; ++i)
+      ASSERT_EQ(original_[i], result_data[i]) << "i == " << i;
+  }
+  boost::scoped_array<char> temp_data;
+  temp_data.reset(new char[500]);
+  memset(temp_data.get(), 'b', 500);
+  {
+    std::shared_ptr<SelfEncryptor> self_encryptor_1(
+        new SelfEncryptor(data_map_1, chunk_store_, 0));
+
+    self_encryptor_1->Write(temp_data.get(), 500, 1000);
+    self_encryptor_1->Truncate(10 * 1024);
+  }
+  {
+    boost::scoped_array<char> result_data;
+    result_data.reset(new char[16 * 1024]);
+    std::shared_ptr<SelfEncryptor> self_encryptor_2(
+        new SelfEncryptor(data_map_2, chunk_store_, 0));
+    self_encryptor_2->Read(result_data.get(), 16 * 1024, 0);
+    for (uint32_t i = 0; i != 16 * 1024; ++i)
+      ASSERT_EQ(original_[i], result_data[i]) << "i == " << i;
+  }
+}
+
 }  // namespace test
 }  // namespace encrypt
 }  // namespace maidsafe
