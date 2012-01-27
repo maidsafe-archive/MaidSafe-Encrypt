@@ -1515,8 +1515,8 @@ TEST_F(BasicTest, BEH_DifferentDataMapSameChunk) {
     for (uint32_t i = 0; i != 16 * 1024; ++i)
       ASSERT_EQ(original_[i], result_data[i]) << "i == " << i;
   }
-  boost::scoped_array<char> temp_data;
-  temp_data.reset(new char[500]);
+
+  boost::scoped_array<char> temp_data(new char[500]);
   memset(temp_data.get(), 'b', 500);
   {
     std::shared_ptr<SelfEncryptor> self_encryptor_1(

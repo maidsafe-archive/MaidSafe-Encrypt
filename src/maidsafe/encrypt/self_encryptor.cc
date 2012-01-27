@@ -517,7 +517,7 @@ int SelfEncryptor::DecryptChunk(const uint32_t &chunk_num, byte *data) {
 
   if (content.empty()) {
     DLOG(ERROR) << "Could not find chunk number " << chunk_num
-                << ", hash " << HexSubstr(data_map_->chunks[chunk_num].hash);
+                << ", hash " << Base32Substr(data_map_->chunks[chunk_num].hash);
     return kMissingChunk;
   }
 
@@ -701,7 +701,7 @@ int SelfEncryptor::EncryptChunk(const uint32_t &chunk_num,
     if (!chunk_store_->Store(data_map_->chunks[chunk_num].hash,
                              chunk_content)) {
       DLOG(ERROR) << "Could not store "
-                  << HexSubstr(data_map_->chunks[chunk_num].hash);
+                  << Base32Substr(data_map_->chunks[chunk_num].hash);
       result = kFailedToStoreChunk;
     }
   }
@@ -771,10 +771,8 @@ bool SelfEncryptor::Flush() {
   // Get pre-encryption hashes for chunks 0 & 1
   if (data_map_->chunks.size() < 2)
     data_map_->chunks.resize(2);
-  bool modified(false);
-  CalculatePreHash(0, chunk0_raw_.get(), normal_chunk_size_, &modified);
-  if (modified)
-    DeleteChunk(0);
+  bool chunk0_modified(false);
+  CalculatePreHash(0, chunk0_raw_.get(), normal_chunk_size_, &chunk0_modified);
   byte *chunk1_start(chunk1_raw_.get());
   ByteArray temp;
   if (normal_chunk_size_ != kDefaultChunkSize) {
@@ -794,9 +792,8 @@ bool SelfEncryptor::Flush() {
       chunk1_start = temp.get();
     }
   }
-  CalculatePreHash(1, chunk1_start, normal_chunk_size_, &modified);
-  if (modified)
-    DeleteChunk(1);
+  bool chunk1_modified(false);
+  CalculatePreHash(1, chunk1_start, normal_chunk_size_, &chunk1_modified);
 
   // Empty queue (after this call it will contain 0 or 1 chunks).
   int result(ProcessMainQueue());
@@ -956,7 +953,7 @@ bool SelfEncryptor::Flush() {
     data_map_->chunks.resize(kNewChunkCount);
   }
   pre_pre_chunk_modified = true;
-  if (pre_pre_chunk_modified || pre_chunk_modified ||
+  if (pre_pre_chunk_modified || pre_chunk_modified || chunk0_modified ||
       data_map_->chunks[0].pre_hash_state != ChunkDetails::kOk) {
     DeleteChunk(0);
     result = EncryptChunk(0, chunk0_raw_.get(), normal_chunk_size_);
@@ -972,7 +969,7 @@ bool SelfEncryptor::Flush() {
   pre_chunk_modified =
       (data_map_->chunks[0].pre_hash_state != ChunkDetails::kOk);
 
-  if (pre_pre_chunk_modified || pre_chunk_modified ||
+  if (pre_pre_chunk_modified || pre_chunk_modified || chunk1_modified ||
       data_map_->chunks[1].pre_hash_state != ChunkDetails::kOk) {
     DeleteChunk(1);
     result = EncryptChunk(1, chunk1_start, normal_chunk_size_);
@@ -1320,12 +1317,15 @@ bool SelfEncryptor::Truncate(const uint64_t &position) {
     uint32_t overwrite_position(static_cast<uint32_t>(position));
     memset(chunk0_raw_.get() + overwrite_position, 0, overwite_size);
     memset(chunk1_raw_.get(), 0, kDefaultChunkSize);
+    data_map_->chunks[0].pre_hash_state = ChunkDetails::kOutdated;
+    data_map_->chunks[1].pre_hash_state = ChunkDetails::kOutdated;
   } else if (position < 2 * kDefaultChunkSize) {
     uint32_t overwite_size((2 * kDefaultChunkSize) -
                                     static_cast<uint32_t>(position));
     uint32_t overwrite_position(static_cast<uint32_t>(position)-
                                 kDefaultChunkSize);
     memset(chunk1_raw_.get() + overwrite_position, 0, overwite_size);
+    data_map_->chunks[1].pre_hash_state = ChunkDetails::kOutdated;
   }
 
   file_size_ = position;
@@ -1339,7 +1339,7 @@ void SelfEncryptor::DeleteChunk(const uint32_t &chunk_num) {
     UniqueLock unique_lock(chunk_store_mutex_);
     if (!chunk_store_->Delete(data_map_->chunks[chunk_num].hash)) {
       DLOG(WARNING) << "Failed to delete chunk " << chunk_num << ": "
-                    << HexSubstr(data_map_->chunks[chunk_num].hash);
+                    << Base32Substr(data_map_->chunks[chunk_num].hash);
     }
   }
 }
