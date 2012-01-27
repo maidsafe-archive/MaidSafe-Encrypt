@@ -773,6 +773,12 @@ bool SelfEncryptor::Flush() {
     data_map_->chunks.resize(2);
   bool chunk0_modified(false);
   CalculatePreHash(0, chunk0_raw_.get(), normal_chunk_size_, &chunk0_modified);
+  bool pre_pre_chunk_pre_hash_modified(chunk0_modified);
+  // If chunk 0 was previously modified, it may already have had its pre-enc
+  // hash updated to allow chunk 2 to be stored.  In this case, the modification
+  // is indicated by a size of 0 in the data map.
+  if (data_map_->chunks[0].size == 0)
+    chunk0_modified = true;
   byte *chunk1_start(chunk1_raw_.get());
   ByteArray temp;
   if (normal_chunk_size_ != kDefaultChunkSize) {
@@ -794,6 +800,12 @@ bool SelfEncryptor::Flush() {
   }
   bool chunk1_modified(false);
   CalculatePreHash(1, chunk1_start, normal_chunk_size_, &chunk1_modified);
+  bool pre_chunk_pre_hash_modified(chunk1_modified);
+  // If chunk 1 was previously modified, it may already have had its pre-enc
+  // hash updated to allow chunks 2 & 3 to be stored.  In this case, the
+  // modification is indicated by a size of 0 in the data map.
+  if (data_map_->chunks[1].size == 0)
+    chunk1_modified = true;
 
   // Empty queue (after this call it will contain 0 or 1 chunks).
   int result(ProcessMainQueue());
@@ -810,8 +822,6 @@ bool SelfEncryptor::Flush() {
 
   uint64_t flush_position(2 * normal_chunk_size_);
   uint32_t chunk_index(2);
-  bool pre_pre_chunk_modified(true);
-  bool pre_chunk_modified(true);
   bool this_chunk_modified(false);
   bool this_chunk_has_data_in_sequencer(false);
   bool this_chunk_has_data_in_queue(false);
@@ -855,7 +865,9 @@ bool SelfEncryptor::Flush() {
 
     // Read in any data from previously-encrypted chunk
     if (chunk_index < kOldChunkCount &&
-        (pre_pre_chunk_modified || pre_chunk_modified || this_chunk_modified)) {
+            (pre_pre_chunk_pre_hash_modified ||
+                pre_chunk_pre_hash_modified ||
+                this_chunk_modified)) {
       DecryptChunk(chunk_index, chunk_array.get());
     }
 
@@ -925,7 +937,9 @@ bool SelfEncryptor::Flush() {
                        &this_chunk_modified);
     }
 
-    if (pre_pre_chunk_modified || pre_chunk_modified || this_chunk_modified) {
+    if (pre_pre_chunk_pre_hash_modified ||
+        pre_chunk_pre_hash_modified ||
+        this_chunk_modified) {
       DeleteChunk(chunk_index);
       result = EncryptChunk(chunk_index, chunk_array.get(), this_chunk_size);
       if (result != kSuccess) {
@@ -936,8 +950,8 @@ bool SelfEncryptor::Flush() {
 
     flush_position += this_chunk_size;
     ++chunk_index;
-    pre_pre_chunk_modified = pre_chunk_modified;
-    pre_chunk_modified = this_chunk_modified;
+    pre_pre_chunk_pre_hash_modified = pre_chunk_pre_hash_modified;
+    pre_chunk_pre_hash_modified = this_chunk_modified;
     this_chunk_modified = false;
     this_chunk_has_data_in_sequencer = false;
     this_chunk_has_data_in_queue = false;
@@ -952,8 +966,10 @@ bool SelfEncryptor::Flush() {
       DeleteChunk(chunk_index++);
     data_map_->chunks.resize(kNewChunkCount);
   }
-  pre_pre_chunk_modified = true;
-  if (pre_pre_chunk_modified || pre_chunk_modified || chunk0_modified ||
+
+  if (pre_pre_chunk_pre_hash_modified ||
+      pre_chunk_pre_hash_modified ||
+      chunk0_modified ||
       data_map_->chunks[0].pre_hash_state != ChunkDetails::kOk) {
     DeleteChunk(0);
     result = EncryptChunk(0, chunk0_raw_.get(), normal_chunk_size_);
@@ -961,15 +977,15 @@ bool SelfEncryptor::Flush() {
       DLOG(ERROR) << "Failed in Flush.";
       return false;
     }
-    // once chunk 0 updated, assume chunk 1 shall be updated as well
-    pre_chunk_modified = true;
   }
 
-  pre_pre_chunk_modified = pre_chunk_modified;
-  pre_chunk_modified =
+  pre_pre_chunk_pre_hash_modified = pre_chunk_pre_hash_modified;
+  pre_chunk_pre_hash_modified =
       (data_map_->chunks[0].pre_hash_state != ChunkDetails::kOk);
 
-  if (pre_pre_chunk_modified || pre_chunk_modified || chunk1_modified ||
+  if (pre_pre_chunk_pre_hash_modified ||
+      pre_chunk_pre_hash_modified ||
+      chunk1_modified ||
       data_map_->chunks[1].pre_hash_state != ChunkDetails::kOk) {
     DeleteChunk(1);
     result = EncryptChunk(1, chunk1_start, normal_chunk_size_);
