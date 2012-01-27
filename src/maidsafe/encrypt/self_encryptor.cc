@@ -1333,15 +1333,18 @@ bool SelfEncryptor::Truncate(const uint64_t &position) {
     uint32_t overwrite_position(static_cast<uint32_t>(position));
     memset(chunk0_raw_.get() + overwrite_position, 0, overwite_size);
     memset(chunk1_raw_.get(), 0, kDefaultChunkSize);
-    data_map_->chunks[0].pre_hash_state = ChunkDetails::kOutdated;
-    data_map_->chunks[1].pre_hash_state = ChunkDetails::kOutdated;
+    if (data_map_->chunks.size() > 1) {
+      data_map_->chunks[0].pre_hash_state = ChunkDetails::kOutdated;
+      data_map_->chunks[1].pre_hash_state = ChunkDetails::kOutdated;
+    }
   } else if (position < 2 * kDefaultChunkSize) {
     uint32_t overwite_size((2 * kDefaultChunkSize) -
                                     static_cast<uint32_t>(position));
     uint32_t overwrite_position(static_cast<uint32_t>(position)-
                                 kDefaultChunkSize);
     memset(chunk1_raw_.get() + overwrite_position, 0, overwite_size);
-    data_map_->chunks[1].pre_hash_state = ChunkDetails::kOutdated;
+    if (data_map_->chunks.size() > 1)
+      data_map_->chunks[1].pre_hash_state = ChunkDetails::kOutdated;
   }
 
   file_size_ = position;
