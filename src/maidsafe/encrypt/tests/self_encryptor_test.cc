@@ -106,7 +106,6 @@ void GetEncryptionResult(boost::shared_array<byte> *result,
 }  // unnamed namespace
 
 
-
 class BasicOffsetTest : public EncryptTestBase,
                         public testing::TestWithParam<SizeAndOffset> {
  public:
@@ -119,7 +118,7 @@ class BasicOffsetTest : public EncryptTestBase,
     kMax = 2147483647
   };
   BasicOffsetTest()
-      : EncryptTestBase(5),
+      : EncryptTestBase((RandomUint32() % omp_get_num_procs()) + 1),
         kDataSize_(GetParam().first),
         kOffset_(GetParam().second),
         test_file_size_(kMax) {
@@ -316,7 +315,9 @@ INSTANTIATE_TEST_CASE_P(LargeFile, BasicOffsetTest,
 class EncryptTest : public EncryptTestBase,
                     public testing::TestWithParam<uint32_t> {
  public:
-  EncryptTest() : EncryptTestBase(), kDataSize_(GetParam()) {
+  EncryptTest()
+      : EncryptTestBase((RandomUint32() % omp_get_num_procs()) + 1),
+        kDataSize_(GetParam()) {
     original_.reset(new char[kDataSize_]);
     decrypted_.reset(new char[kDataSize_]);
   }
@@ -503,7 +504,7 @@ INSTANTIATE_TEST_CASE_P(Reading, InProcessTest, testing::Values(
 
 class BasicTest : public EncryptTestBase, public testing::Test {
  public:
-  BasicTest() : EncryptTestBase(),
+  BasicTest() : EncryptTestBase((RandomUint32() % omp_get_num_procs()) + 1),
                 kDataSize_(1024 * 1024 * 20),
                 content_(RandomString(kDataSize_)) {
     original_.reset(new char[kDataSize_]);

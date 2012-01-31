@@ -25,7 +25,7 @@ namespace test {
 class Benchmark : public EncryptTestBase,
                   public testing::TestWithParam<uint32_t> {
  public:
-  Benchmark() : EncryptTestBase(),
+  Benchmark() : EncryptTestBase(0),
                 kTestDataSize_(1024 * 1024 * 20),
                 kPieceSize_(GetParam() ? GetParam() : kTestDataSize_) {
     original_.reset(new char[kTestDataSize_]);

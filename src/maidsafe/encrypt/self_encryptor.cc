@@ -195,7 +195,11 @@ bool SelfEncryptor::Write(const char *data,
     BOOST_ASSERT(data_map_->chunks.size() >= 2);
     bool modified(false);
     CalculatePreHash(0, chunk0_raw_.get(), normal_chunk_size_, &modified);
+    if (modified)
+      data_map_->chunks[0].size = 0;
     CalculatePreHash(1, chunk1_raw_.get(), normal_chunk_size_, &modified);
+    if (modified)
+      data_map_->chunks[1].size = 0;
     if (PutToEncryptQueue(data + written, write_length, data_offset,
                           queue_offset) != kSuccess) {
       DLOG(ERROR) << "Failed to write " << length << " bytes at position "
@@ -270,9 +274,9 @@ int SelfEncryptor::PrepareToWrite(const uint32_t &length,
   if (!data_map_->chunks.empty()) {
     BOOST_ASSERT(data_map_->chunks.empty() || data_map_->chunks.size() >= 3);
     ByteArray temp(GetNewByteArray(kDefaultChunkSize + 1));
-    uint32_t chunks_to_decrypt(2);
-    if (data_map_->chunks[0].size != kDefaultChunkSize)
-      chunks_to_decrypt = 3;
+    uint32_t chunks_to_decrypt(
+        std::min((kQueueCapacity_ / kDefaultChunkSize) + 2,
+                 static_cast<uint32_t>(data_map_->chunks.size())));
     bool consumed_whole_chunk(true);
     uint64_t pos(0);
     for (uint32_t i(0); i != chunks_to_decrypt; ++i) {
@@ -439,7 +443,7 @@ bool SelfEncryptor::GetDataOffsetForEnqueuing(const uint32_t &length,
     *data_offset = static_cast<uint32_t>(queue_start_position_ - position);
     *queue_offset = 0;
     return (position + length >= queue_start_position_);
-  } else if (position <= queue_start_position_ + kQueueCapacity_) {
+  } else if (position < queue_start_position_ + kQueueCapacity_) {
     *data_offset = 0;
     *queue_offset = static_cast<uint32_t>(position - queue_start_position_);
     return true;
@@ -980,8 +984,7 @@ bool SelfEncryptor::Flush() {
   }
 
   pre_pre_chunk_pre_hash_modified = pre_chunk_pre_hash_modified;
-  pre_chunk_pre_hash_modified =
-      (data_map_->chunks[0].pre_hash_state != ChunkDetails::kOk);
+  pre_chunk_pre_hash_modified = chunk0_modified;
 
   if (pre_pre_chunk_pre_hash_modified ||
       pre_chunk_pre_hash_modified ||

@@ -17,6 +17,7 @@
 #include <memory>
 #include "boost/scoped_array.hpp"
 #include "maidsafe/common/memory_chunk_store.h"
+#include "maidsafe/common/omp.h"
 #include "maidsafe/common/utils.h"
 
 #include "maidsafe/encrypt/self_encryptor.h"
@@ -27,18 +28,29 @@ namespace test {
 
 class EncryptTestBase {
  public:
-  explicit EncryptTestBase(int num_procs = 0)
+  explicit EncryptTestBase(int num_procs)
       : chunk_store_(new MemoryChunkStore),
         data_map_(new DataMap),
         self_encryptor_(new SelfEncryptor(data_map_, chunk_store_, num_procs)),
         original_(),
-        decrypted_() {}
-  virtual ~EncryptTestBase() {}
+        decrypted_(),
+        num_procs_((num_procs == 0) ? omp_get_num_procs() : num_procs) {}
+  virtual ~EncryptTestBase() {
+    if (testing::UnitTest::GetInstance()->current_test_info()->result()->
+        Failed()) {
+      std::cout << "Number of available processors set in SelfEncryptor: "
+                << num_procs_ << std::endl;
+    }
+  }
+
  protected:
   std::shared_ptr<MemoryChunkStore> chunk_store_;
   DataMapPtr data_map_;
   std::shared_ptr<SelfEncryptor> self_encryptor_;
   boost::scoped_array<char> original_, decrypted_;
+
+ private:
+  int num_procs_;
 };
 
 }  // namespace test
