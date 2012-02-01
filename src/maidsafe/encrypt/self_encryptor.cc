@@ -279,6 +279,7 @@ int SelfEncryptor::PrepareToWrite(const uint32_t &length,
                  static_cast<uint32_t>(data_map_->chunks.size())));
     bool consumed_whole_chunk(true);
     uint64_t pos(0);
+    uint32_t copied_to_queue(0);
     for (uint32_t i(0); i != chunks_to_decrypt; ++i) {
       int result(DecryptChunk(i, temp.get()));
       if (result != kSuccess) {
@@ -289,12 +290,12 @@ int SelfEncryptor::PrepareToWrite(const uint32_t &length,
       uint32_t written = PutToInitialChunks(reinterpret_cast<char*>(temp.get()),
                                             &len, &pos);
       consumed_whole_chunk = (len == 0);
+
       if (!consumed_whole_chunk) {
-        uint32_t copied =
-            MemCopy(main_encrypt_queue_, 0, temp.get() + written, len);
+        uint32_t copied = MemCopy(main_encrypt_queue_, copied_to_queue,
+                                  temp.get() + written, len);
         BOOST_ASSERT(len == copied);
-        current_position_ = queue_start_position_ + copied;
-        retrievable_from_queue_ = copied;
+        copied_to_queue += copied;
       }
     }
     data_map_->chunks[0].size = 0;
@@ -302,6 +303,8 @@ int SelfEncryptor::PrepareToWrite(const uint32_t &length,
     data_map_->chunks[1].size = 0;
     data_map_->chunks[1].pre_hash_state = ChunkDetails::kOk;
     if (chunks_to_decrypt == 3) {
+      current_position_ = queue_start_position_ + copied_to_queue;
+      retrievable_from_queue_ = copied_to_queue;
       data_map_->chunks[2].pre_hash_state = ChunkDetails::kOutdated;
     }
   } else {
@@ -538,6 +541,7 @@ int SelfEncryptor::DecryptChunk(const uint32_t &chunk_num, byte *data) {
     DLOG(ERROR) << e.what();
     return kDecryptionException;
   }
+
   return kSuccess;
 }
 
@@ -777,12 +781,12 @@ bool SelfEncryptor::Flush() {
     data_map_->chunks.resize(2);
   bool chunk0_modified(false);
   CalculatePreHash(0, chunk0_raw_.get(), normal_chunk_size_, &chunk0_modified);
-  bool pre_pre_chunk_pre_hash_modified(chunk0_modified);
   // If chunk 0 was previously modified, it may already have had its pre-enc
   // hash updated to allow chunk 2 to be stored.  In this case, the modification
   // is indicated by a size of 0 in the data map.
   if (data_map_->chunks[0].size == 0)
     chunk0_modified = true;
+  bool pre_pre_chunk_pre_hash_modified(chunk0_modified);
   byte *chunk1_start(chunk1_raw_.get());
   ByteArray temp;
   if (normal_chunk_size_ != kDefaultChunkSize) {
@@ -804,12 +808,12 @@ bool SelfEncryptor::Flush() {
   }
   bool chunk1_modified(false);
   CalculatePreHash(1, chunk1_start, normal_chunk_size_, &chunk1_modified);
-  bool pre_chunk_pre_hash_modified(chunk1_modified);
   // If chunk 1 was previously modified, it may already have had its pre-enc
   // hash updated to allow chunks 2 & 3 to be stored.  In this case, the
   // modification is indicated by a size of 0 in the data map.
   if (data_map_->chunks[1].size == 0)
     chunk1_modified = true;
+  bool pre_chunk_pre_hash_modified(chunk1_modified);
 
   // Empty queue (after this call it will contain 0 or 1 chunks).
   int result(ProcessMainQueue());

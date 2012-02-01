@@ -1,7 +1,12 @@
+// This was generated from the output of accesses made to a pdb file during
+// building MaidSafe-PKI using VS2010.
 
-TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
+
+TEST_F(BasicTest, FUNC_SimulationOfPdbAccesses) {
 //  EXPECT_TRUE(self_encryptor_->Write(&original_[0], kDataSize_, 0));
 //  EXPECT_TRUE(self_encryptor_->Flush());
+  original_.reset(new char[34000000]);
+  decrypted_.reset(new char[34000000]);
 
   std::string data(9636836, 'a');
 //  EXPECT_TRUE(self_encryptor_->Write(data.c_str(), 4096, 33857536));
@@ -56,8 +61,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
 ////  for (uint32_t i(33800192); i != 33800192 + 56; ++i)
 ////    ASSERT_EQ(original_[i], decrypted_[i]) << "difference at " << i;
 ////
-////                              self_encryptor->Read(decrypted_.get() + 524290, 1, 524290);
-////  if (original_[524290] != decrypted_[524290]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+////                              self_encryptor->Read(decrypted_.get() + 786434, 1, 786434);
+////  if (original_[786434] != decrypted_[786434]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 //
 //
 
@@ -2161,20 +2166,20 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   memcpy(original_.get() + 0, data.c_str(), 4096);
   self_encryptor_->Write(data.c_str(), 4096, 0);
   self_encryptor_->Flush();
-  self_encryptor_.reset(new SelfEncryptor(data_map_, chunk_store_, 0));
+  self_encryptor_.reset(new SelfEncryptor(data_map_, chunk_store_, num_procs_));
 
 //  GetFileInfo
-  self_encryptor_.reset(new SelfEncryptor(data_map_, chunk_store_, 0));
+  self_encryptor_.reset(new SelfEncryptor(data_map_, chunk_store_, num_procs_));
 
-  self_encryptor_.reset(new SelfEncryptor(data_map_, chunk_store_, 0));
+  self_encryptor_.reset(new SelfEncryptor(data_map_, chunk_store_, num_procs_));
 
-  self_encryptor_.reset(new SelfEncryptor(data_map_, chunk_store_, 0));
+  self_encryptor_.reset(new SelfEncryptor(data_map_, chunk_store_, num_procs_));
 
-  self_encryptor_.reset(new SelfEncryptor(data_map_, chunk_store_, 0));
+  self_encryptor_.reset(new SelfEncryptor(data_map_, chunk_store_, num_procs_));
 
-  self_encryptor_.reset(new SelfEncryptor(data_map_, chunk_store_, 0));
+  self_encryptor_.reset(new SelfEncryptor(data_map_, chunk_store_, num_procs_));
 
-  self_encryptor_.reset(new SelfEncryptor(data_map_, chunk_store_, 0));
+  self_encryptor_.reset(new SelfEncryptor(data_map_, chunk_store_, num_procs_));
 
   if (!self_encryptor_->Read(decrypted_.get() + 0, 1024, 0))
     std::cout << "Read failed" << std::endl;
@@ -46523,8 +46528,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Flush();
 
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 32653312, data.c_str(), 4096);
@@ -46536,8 +46541,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(32661504);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
                                                   std::cout << "Line " << __LINE__ << std::endl;
@@ -46547,8 +46552,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(32665600);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 32661504, data.c_str(), 4096);
@@ -46560,8 +46565,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(32669696);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 32665600, data.c_str(), 4096);
@@ -46569,8 +46574,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(32673792);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 32669696, data.c_str(), 4096);
@@ -46582,8 +46587,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(32677888);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 32673792, data.c_str(), 4096);
@@ -46591,8 +46596,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(32681984);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 32677888, data.c_str(), 4096);
@@ -46604,8 +46609,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(32686080);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 32681984, data.c_str(), 4096);
@@ -46613,8 +46618,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(32690176);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 32686080, data.c_str(), 4096);
@@ -46626,8 +46631,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(32694272);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 32690176, data.c_str(), 4096);
@@ -46635,8 +46640,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(32698368);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 32694272, data.c_str(), 4096);
@@ -46648,8 +46653,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(32702464);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 32698368, data.c_str(), 4096);
@@ -46657,8 +46662,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(32706560);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 32702464, data.c_str(), 4096);
@@ -46670,8 +46675,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(32710656);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 32706560, data.c_str(), 4096);
@@ -46679,8 +46684,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(32714752);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 32710656, data.c_str(), 4096);
@@ -46692,8 +46697,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(32718848);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 32714752, data.c_str(), 4096);
@@ -46701,8 +46706,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(32722944);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 32718848, data.c_str(), 4096);
@@ -46714,8 +46719,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(32727040);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 32722944, data.c_str(), 4096);
@@ -46723,8 +46728,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(32731136);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 32727040, data.c_str(), 4096);
@@ -46736,8 +46741,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(32735232);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 32731136, data.c_str(), 4096);
@@ -46745,8 +46750,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(32739328);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 32735232, data.c_str(), 4096);
@@ -46758,8 +46763,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(32743424);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 32739328, data.c_str(), 4096);
@@ -46767,8 +46772,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(32747520);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 32743424, data.c_str(), 4096);
@@ -46780,8 +46785,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(32751616);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 32747520, data.c_str(), 4096);
@@ -46789,8 +46794,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(32755712);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 32751616, data.c_str(), 4096);
@@ -46806,8 +46811,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(32759808);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 32755712, data.c_str(), 4096);
@@ -46815,8 +46820,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(32763904);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 32759808, data.c_str(), 4096);
@@ -46828,8 +46833,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(32768000);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 32763904, data.c_str(), 4096);
@@ -46837,8 +46842,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(32772096);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 32768000, data.c_str(), 4096);
@@ -46850,8 +46855,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(32776192);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 32772096, data.c_str(), 4096);
@@ -46859,8 +46864,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(32780288);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 32776192, data.c_str(), 4096);
@@ -46872,8 +46877,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(32784384);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 32780288, data.c_str(), 4096);
@@ -46881,8 +46886,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(32788480);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 32784384, data.c_str(), 4096);
@@ -46894,8 +46899,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(32792576);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 32788480, data.c_str(), 4096);
@@ -46903,8 +46908,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(32796672);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 32792576, data.c_str(), 4096);
@@ -46916,8 +46921,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(32800768);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 32796672, data.c_str(), 4096);
@@ -46925,8 +46930,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(32804864);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 32800768, data.c_str(), 4096);
@@ -46938,8 +46943,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(32808960);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 32804864, data.c_str(), 4096);
@@ -46947,8 +46952,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(32813056);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 32808960, data.c_str(), 4096);
@@ -46960,8 +46965,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(32817152);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 32813056, data.c_str(), 4096);
@@ -46969,8 +46974,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(32821248);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 32817152, data.c_str(), 4096);
@@ -46982,8 +46987,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(32825344);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 32821248, data.c_str(), 4096);
@@ -46991,8 +46996,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(32829440);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 32825344, data.c_str(), 4096);
@@ -47004,8 +47009,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(32833536);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 32829440, data.c_str(), 4096);
@@ -47013,8 +47018,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(32837632);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 32833536, data.c_str(), 4096);
@@ -47026,8 +47031,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(32841728);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 32837632, data.c_str(), 4096);
@@ -47035,8 +47040,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(32845824);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 32841728, data.c_str(), 4096);
@@ -47048,8 +47053,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(32849920);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 32845824, data.c_str(), 4096);
@@ -47057,8 +47062,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(32854016);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 32849920, data.c_str(), 4096);
@@ -47070,8 +47075,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(32858112);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 32854016, data.c_str(), 4096);
@@ -47079,8 +47084,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(32862208);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 32858112, data.c_str(), 4096);
@@ -47092,8 +47097,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(32866304);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 32862208, data.c_str(), 4096);
@@ -47101,8 +47106,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(32870400);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 32866304, data.c_str(), 4096);
@@ -47114,8 +47119,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(32874496);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 32870400, data.c_str(), 4096);
@@ -47123,8 +47128,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(32878592);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 32874496, data.c_str(), 4096);
@@ -47136,22 +47141,22 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(32882688);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
 
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
   memcpy(original_.get() + 32878592, data.c_str(), 4096);
   self_encryptor_->Write(data.c_str(), 4096, 32878592);
   self_encryptor_->Truncate(32886784);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 32882688, data.c_str(), 4096);
@@ -47163,8 +47168,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(32890880);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 32886784, data.c_str(), 4096);
@@ -47172,8 +47177,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(32894976);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 32890880, data.c_str(), 4096);
@@ -47185,8 +47190,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(32899072);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 32894976, data.c_str(), 4096);
@@ -47194,8 +47199,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(32903168);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 32899072, data.c_str(), 4096);
@@ -47207,8 +47212,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(32907264);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 32903168, data.c_str(), 4096);
@@ -47216,8 +47221,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(32911360);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 32907264, data.c_str(), 4096);
@@ -47229,8 +47234,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(32915456);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 32911360, data.c_str(), 4096);
@@ -47238,8 +47243,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(32919552);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 32915456, data.c_str(), 4096);
@@ -47251,8 +47256,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(32923648);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 32919552, data.c_str(), 4096);
@@ -47260,8 +47265,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(32927744);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 32923648, data.c_str(), 4096);
@@ -47273,8 +47278,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(32931840);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 32927744, data.c_str(), 4096);
@@ -47282,8 +47287,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(32935936);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 32931840, data.c_str(), 4096);
@@ -47295,8 +47300,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(32940032);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 32935936, data.c_str(), 4096);
@@ -47304,8 +47309,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(32944128);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 32940032, data.c_str(), 4096);
@@ -47317,8 +47322,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(32948224);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 32944128, data.c_str(), 4096);
@@ -47326,8 +47331,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(32952320);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 32948224, data.c_str(), 4096);
@@ -47339,8 +47344,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(32956416);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 32952320, data.c_str(), 4096);
@@ -47348,8 +47353,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(32960512);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 32956416, data.c_str(), 4096);
@@ -47361,8 +47366,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(32964608);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 32960512, data.c_str(), 4096);
@@ -47370,8 +47375,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(32968704);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 32964608, data.c_str(), 4096);
@@ -47387,8 +47392,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(32972800);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 32968704, data.c_str(), 4096);
@@ -47396,8 +47401,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(32976896);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 32972800, data.c_str(), 4096);
@@ -47409,8 +47414,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(32980992);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 32976896, data.c_str(), 4096);
@@ -47418,8 +47423,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(32985088);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 32980992, data.c_str(), 4096);
@@ -47431,8 +47436,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(32989184);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 32985088, data.c_str(), 4096);
@@ -47440,8 +47445,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(32993280);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 32989184, data.c_str(), 4096);
@@ -47453,8 +47458,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(32997376);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 32993280, data.c_str(), 4096);
@@ -47462,8 +47467,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33001472);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 32997376, data.c_str(), 4096);
@@ -47475,8 +47480,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33005568);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33001472, data.c_str(), 4096);
@@ -47484,8 +47489,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33009664);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33005568, data.c_str(), 4096);
@@ -47497,8 +47502,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33013760);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33009664, data.c_str(), 4096);
@@ -47506,8 +47511,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33017856);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33013760, data.c_str(), 4096);
@@ -47519,8 +47524,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33021952);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33017856, data.c_str(), 4096);
@@ -47528,8 +47533,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33026048);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33021952, data.c_str(), 4096);
@@ -47541,8 +47546,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33030144);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33026048, data.c_str(), 4096);
@@ -47550,8 +47555,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33034240);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33030144, data.c_str(), 4096);
@@ -47563,8 +47568,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33038336);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33034240, data.c_str(), 4096);
@@ -47572,8 +47577,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33042432);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33038336, data.c_str(), 4096);
@@ -47585,8 +47590,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33046528);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33042432, data.c_str(), 4096);
@@ -47594,8 +47599,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33050624);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33046528, data.c_str(), 4096);
@@ -47607,8 +47612,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33054720);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33050624, data.c_str(), 4096);
@@ -47616,8 +47621,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33058816);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33054720, data.c_str(), 4096);
@@ -47629,8 +47634,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33062912);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33058816, data.c_str(), 4096);
@@ -47638,8 +47643,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33067008);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33062912, data.c_str(), 4096);
@@ -47651,8 +47656,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33071104);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33067008, data.c_str(), 4096);
@@ -47660,8 +47665,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33075200);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33071104, data.c_str(), 4096);
@@ -47673,8 +47678,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33079296);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33075200, data.c_str(), 4096);
@@ -47682,8 +47687,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33083392);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33079296, data.c_str(), 4096);
@@ -47695,8 +47700,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33087488);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33083392, data.c_str(), 4096);
@@ -47704,8 +47709,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33091584);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33087488, data.c_str(), 4096);
@@ -47717,8 +47722,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33095680);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33091584, data.c_str(), 4096);
@@ -47726,8 +47731,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33099776);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33095680, data.c_str(), 4096);
@@ -47739,22 +47744,22 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33103872);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
 
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
   memcpy(original_.get() + 33099776, data.c_str(), 4096);
   self_encryptor_->Write(data.c_str(), 4096, 33099776);
   self_encryptor_->Truncate(33107968);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33103872, data.c_str(), 4096);
@@ -47766,8 +47771,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33112064);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33107968, data.c_str(), 4096);
@@ -47775,8 +47780,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33116160);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33112064, data.c_str(), 4096);
@@ -47788,8 +47793,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33120256);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33116160, data.c_str(), 4096);
@@ -47797,8 +47802,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33124352);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33120256, data.c_str(), 4096);
@@ -47810,8 +47815,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33128448);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33124352, data.c_str(), 4096);
@@ -47819,8 +47824,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33132544);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33128448, data.c_str(), 4096);
@@ -47832,8 +47837,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33136640);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33132544, data.c_str(), 4096);
@@ -47841,8 +47846,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33140736);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33136640, data.c_str(), 4096);
@@ -47854,8 +47859,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33144832);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33140736, data.c_str(), 4096);
@@ -47863,8 +47868,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33148928);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33144832, data.c_str(), 4096);
@@ -47876,8 +47881,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33153024);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33148928, data.c_str(), 4096);
@@ -47885,8 +47890,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33157120);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33153024, data.c_str(), 4096);
@@ -47898,8 +47903,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33161216);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33157120, data.c_str(), 4096);
@@ -47907,8 +47912,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33165312);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33161216, data.c_str(), 4096);
@@ -47920,8 +47925,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33169408);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33165312, data.c_str(), 4096);
@@ -47929,8 +47934,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33173504);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33169408, data.c_str(), 4096);
@@ -47946,8 +47951,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33177600);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33173504, data.c_str(), 4096);
@@ -47955,8 +47960,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33181696);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33177600, data.c_str(), 4096);
@@ -47968,8 +47973,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33185792);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33181696, data.c_str(), 4096);
@@ -47977,8 +47982,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33189888);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33185792, data.c_str(), 4096);
@@ -47990,8 +47995,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33193984);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33189888, data.c_str(), 4096);
@@ -47999,8 +48004,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33198080);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33193984, data.c_str(), 4096);
@@ -48012,8 +48017,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33202176);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33198080, data.c_str(), 4096);
@@ -48021,8 +48026,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33206272);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33202176, data.c_str(), 4096);
@@ -48034,8 +48039,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33210368);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33206272, data.c_str(), 4096);
@@ -48043,8 +48048,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33214464);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33210368, data.c_str(), 4096);
@@ -48056,8 +48061,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33218560);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33214464, data.c_str(), 4096);
@@ -48065,8 +48070,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33222656);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33218560, data.c_str(), 4096);
@@ -48078,8 +48083,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33226752);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33222656, data.c_str(), 4096);
@@ -48087,8 +48092,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33230848);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33226752, data.c_str(), 4096);
@@ -48100,8 +48105,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33234944);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33230848, data.c_str(), 4096);
@@ -48109,8 +48114,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33239040);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33234944, data.c_str(), 4096);
@@ -48122,8 +48127,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33243136);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33239040, data.c_str(), 4096);
@@ -48131,8 +48136,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33247232);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33243136, data.c_str(), 4096);
@@ -48144,8 +48149,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33251328);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33247232, data.c_str(), 4096);
@@ -48153,8 +48158,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33255424);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33251328, data.c_str(), 4096);
@@ -48166,8 +48171,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33259520);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33255424, data.c_str(), 4096);
@@ -48175,8 +48180,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33263616);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33259520, data.c_str(), 4096);
@@ -48188,8 +48193,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33267712);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33263616, data.c_str(), 4096);
@@ -48197,8 +48202,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33271808);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33267712, data.c_str(), 4096);
@@ -48210,8 +48215,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33275904);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33271808, data.c_str(), 4096);
@@ -48219,8 +48224,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33280000);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33275904, data.c_str(), 4096);
@@ -48232,8 +48237,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33284096);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33280000, data.c_str(), 4096);
@@ -48241,8 +48246,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33288192);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33284096, data.c_str(), 4096);
@@ -48254,8 +48259,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33292288);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33288192, data.c_str(), 4096);
@@ -48263,8 +48268,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33296384);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33292288, data.c_str(), 4096);
@@ -48276,8 +48281,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33300480);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33296384, data.c_str(), 4096);
@@ -48285,8 +48290,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33304576);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33300480, data.c_str(), 4096);
@@ -48298,8 +48303,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33308672);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33304576, data.c_str(), 4096);
@@ -48307,8 +48312,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33312768);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33308672, data.c_str(), 4096);
@@ -48320,8 +48325,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33316864);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33312768, data.c_str(), 4096);
@@ -48329,8 +48334,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33320960);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33316864, data.c_str(), 4096);
@@ -48342,8 +48347,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33325056);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33320960, data.c_str(), 4096);
@@ -48351,14 +48356,14 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33329152);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
 
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
   memcpy(original_.get() + 33325056, data.c_str(), 4096);
   self_encryptor_->Write(data.c_str(), 4096, 33325056);
@@ -48369,8 +48374,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33333248);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33329152, data.c_str(), 4096);
@@ -48378,8 +48383,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33337344);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33333248, data.c_str(), 4096);
@@ -48391,8 +48396,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33341440);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33337344, data.c_str(), 4096);
@@ -48400,8 +48405,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33345536);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33341440, data.c_str(), 4096);
@@ -48413,8 +48418,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33349632);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33345536, data.c_str(), 4096);
@@ -48422,8 +48427,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33353728);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33349632, data.c_str(), 4096);
@@ -48435,8 +48440,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33357824);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33353728, data.c_str(), 4096);
@@ -48444,8 +48449,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33361920);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33357824, data.c_str(), 4096);
@@ -48457,8 +48462,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33366016);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33361920, data.c_str(), 4096);
@@ -48466,8 +48471,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33370112);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33366016, data.c_str(), 4096);
@@ -48479,8 +48484,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33374208);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33370112, data.c_str(), 4096);
@@ -48488,8 +48493,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33378304);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33374208, data.c_str(), 4096);
@@ -48501,8 +48506,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33382400);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33378304, data.c_str(), 4096);
@@ -48510,8 +48515,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33386496);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33382400, data.c_str(), 4096);
@@ -48523,8 +48528,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33390592);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33386496, data.c_str(), 4096);
@@ -48532,8 +48537,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33394688);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33390592, data.c_str(), 4096);
@@ -48545,8 +48550,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33398784);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33394688, data.c_str(), 4096);
@@ -48554,8 +48559,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33402880);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33398784, data.c_str(), 4096);
@@ -48567,8 +48572,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33406976);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33402880, data.c_str(), 4096);
@@ -48576,8 +48581,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33411072);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33406976, data.c_str(), 4096);
@@ -48589,8 +48594,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33415168);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33411072, data.c_str(), 4096);
@@ -48598,8 +48603,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33419264);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33415168, data.c_str(), 4096);
@@ -48611,8 +48616,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33423360);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33419264, data.c_str(), 4096);
@@ -48620,8 +48625,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33427456);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33423360, data.c_str(), 4096);
@@ -48633,8 +48638,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33431552);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33427456, data.c_str(), 4096);
@@ -48642,8 +48647,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33435648);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33431552, data.c_str(), 4096);
@@ -48655,8 +48660,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33439744);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33435648, data.c_str(), 4096);
@@ -48664,8 +48669,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33443840);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33439744, data.c_str(), 4096);
@@ -48677,8 +48682,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33447936);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33443840, data.c_str(), 4096);
@@ -48686,8 +48691,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33452032);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33447936, data.c_str(), 4096);
@@ -48699,8 +48704,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33456128);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33452032, data.c_str(), 4096);
@@ -48708,8 +48713,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33460224);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33456128, data.c_str(), 4096);
@@ -48721,8 +48726,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33464320);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33460224, data.c_str(), 4096);
@@ -48730,8 +48735,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33468416);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33464320, data.c_str(), 4096);
@@ -48743,8 +48748,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33472512);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33468416, data.c_str(), 4096);
@@ -48752,8 +48757,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33476608);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33472512, data.c_str(), 4096);
@@ -48765,8 +48770,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33480704);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33476608, data.c_str(), 4096);
@@ -48774,8 +48779,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33484800);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33480704, data.c_str(), 4096);
@@ -48783,8 +48788,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33488896);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33484800, data.c_str(), 4096);
@@ -48792,8 +48797,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33492992);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33488896, data.c_str(), 4096);
@@ -48801,8 +48806,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33497088);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33492992, data.c_str(), 4096);
@@ -48810,8 +48815,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33501184);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33497088, data.c_str(), 4096);
@@ -48819,8 +48824,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33505280);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33501184, data.c_str(), 4096);
@@ -48828,8 +48833,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33509376);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33505280, data.c_str(), 4096);
@@ -48837,8 +48842,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33513472);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33509376, data.c_str(), 4096);
@@ -48846,8 +48851,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33517568);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33513472, data.c_str(), 4096);
@@ -48855,8 +48860,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33521664);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33517568, data.c_str(), 4096);
@@ -48864,8 +48869,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33525760);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33521664, data.c_str(), 4096);
@@ -48873,8 +48878,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33529856);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33525760, data.c_str(), 4096);
@@ -48882,8 +48887,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33533952);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33529856, data.c_str(), 4096);
@@ -48895,8 +48900,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33538048);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33533952, data.c_str(), 4096);
@@ -48904,8 +48909,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33542144);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33538048, data.c_str(), 4096);
@@ -48917,8 +48922,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33546240);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33542144, data.c_str(), 4096);
@@ -48926,8 +48931,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33550336);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33546240, data.c_str(), 4096);
@@ -48939,8 +48944,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33554432);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33550336, data.c_str(), 4096);
@@ -48948,8 +48953,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33558528);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33554432, data.c_str(), 4096);
@@ -48969,8 +48974,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33562624);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33558528, data.c_str(), 4096);
@@ -48978,13 +48983,13 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33566720);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33562624, data.c_str(), 4096);
@@ -48992,8 +48997,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33570816);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33566720, data.c_str(), 4096);
@@ -49001,8 +49006,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33574912);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33570816, data.c_str(), 4096);
@@ -49010,8 +49015,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33579008);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33574912, data.c_str(), 4096);
@@ -49019,8 +49024,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33583104);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33579008, data.c_str(), 4096);
@@ -49028,8 +49033,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33587200);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33583104, data.c_str(), 4096);
@@ -49037,8 +49042,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33591296);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33587200, data.c_str(), 4096);
@@ -49046,8 +49051,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33595392);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33591296, data.c_str(), 4096);
@@ -49055,8 +49060,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33599488);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33595392, data.c_str(), 4096);
@@ -49064,8 +49069,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33603584);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33599488, data.c_str(), 4096);
@@ -49073,8 +49078,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33607680);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33603584, data.c_str(), 4096);
@@ -49082,8 +49087,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33611776);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33607680, data.c_str(), 4096);
@@ -49091,8 +49096,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33615872);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33611776, data.c_str(), 4096);
@@ -49100,8 +49105,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33619968);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33615872, data.c_str(), 4096);
@@ -49109,8 +49114,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33624064);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33619968, data.c_str(), 4096);
@@ -49118,8 +49123,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33628160);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33624064, data.c_str(), 4096);
@@ -49127,8 +49132,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33632256);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33628160, data.c_str(), 4096);
@@ -49136,8 +49141,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33636352);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33632256, data.c_str(), 4096);
@@ -49145,8 +49150,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33640448);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33636352, data.c_str(), 4096);
@@ -49154,8 +49159,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33644544);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33640448, data.c_str(), 4096);
@@ -49163,8 +49168,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33648640);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33644544, data.c_str(), 4096);
@@ -49172,8 +49177,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33652736);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33648640, data.c_str(), 4096);
@@ -49181,8 +49186,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33656832);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33652736, data.c_str(), 4096);
@@ -49190,8 +49195,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33660928);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33656832, data.c_str(), 4096);
@@ -49199,8 +49204,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33665024);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33660928, data.c_str(), 4096);
@@ -49208,8 +49213,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33669120);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33665024, data.c_str(), 4096);
@@ -49217,8 +49222,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33673216);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33669120, data.c_str(), 4096);
@@ -49226,8 +49231,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33677312);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33673216, data.c_str(), 4096);
@@ -49235,8 +49240,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33681408);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33677312, data.c_str(), 4096);
@@ -49244,8 +49249,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33685504);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33681408, data.c_str(), 4096);
@@ -49253,8 +49258,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33689600);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33685504, data.c_str(), 4096);
@@ -49262,8 +49267,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33693696);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33689600, data.c_str(), 4096);
@@ -49271,8 +49276,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33697792);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33693696, data.c_str(), 4096);
@@ -49280,8 +49285,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33701888);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33697792, data.c_str(), 4096);
@@ -49289,8 +49294,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33705984);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33701888, data.c_str(), 4096);
@@ -49298,8 +49303,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33710080);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33705984, data.c_str(), 4096);
@@ -49307,8 +49312,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33714176);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33710080, data.c_str(), 4096);
@@ -49316,8 +49321,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33718272);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33714176, data.c_str(), 4096);
@@ -49325,8 +49330,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33722368);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33718272, data.c_str(), 4096);
@@ -49334,8 +49339,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33726464);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33722368, data.c_str(), 4096);
@@ -49343,8 +49348,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33730560);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33726464, data.c_str(), 4096);
@@ -49352,8 +49357,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33734656);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33730560, data.c_str(), 4096);
@@ -49361,8 +49366,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33738752);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33734656, data.c_str(), 4096);
@@ -49370,8 +49375,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33742848);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33738752, data.c_str(), 4096);
@@ -49379,8 +49384,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33746944);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33742848, data.c_str(), 4096);
@@ -49388,8 +49393,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33751040);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33746944, data.c_str(), 4096);
@@ -49397,8 +49402,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33755136);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33751040, data.c_str(), 4096);
@@ -49406,8 +49411,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33759232);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33755136, data.c_str(), 4096);
@@ -49415,8 +49420,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33763328);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33759232, data.c_str(), 4096);
@@ -49424,8 +49429,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33767424);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33763328, data.c_str(), 4096);
@@ -49433,8 +49438,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33771520);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33767424, data.c_str(), 4096);
@@ -49442,8 +49447,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33775616);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33771520, data.c_str(), 4096);
@@ -49451,8 +49456,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33779712);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33775616, data.c_str(), 4096);
@@ -49460,8 +49465,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33783808);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33779712, data.c_str(), 4096);
@@ -49469,8 +49474,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33787904);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33783808, data.c_str(), 4096);
@@ -49478,8 +49483,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33792000);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33787904, data.c_str(), 4096);
@@ -49487,8 +49492,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33796096);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33792000, data.c_str(), 4096);
@@ -49510,8 +49515,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33800192);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33796096, data.c_str(), 4096);
@@ -49519,8 +49524,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33804288);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33800192, data.c_str(), 4096);
@@ -49554,8 +49559,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33808384);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33804288, data.c_str(), 4096);
@@ -49563,8 +49568,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33812480);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33808384, data.c_str(), 4096);
@@ -49572,8 +49577,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33816576);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33812480, data.c_str(), 4096);
@@ -49581,8 +49586,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33820672);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33816576, data.c_str(), 4096);
@@ -49590,8 +49595,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33824768);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33820672, data.c_str(), 4096);
@@ -49599,8 +49604,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33828864);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33824768, data.c_str(), 4096);
@@ -49608,8 +49613,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33832960);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33828864, data.c_str(), 4096);
@@ -49617,8 +49622,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33837056);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33832960, data.c_str(), 4096);
@@ -49626,8 +49631,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33841152);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33837056, data.c_str(), 4096);
@@ -49635,8 +49640,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33845248);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33841152, data.c_str(), 4096);
@@ -49651,41 +49656,41 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Write(data.c_str(), 4096, 0);
 
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 // SetFileAttributes 0x20
   self_encryptor_->Flush();
 
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
-  self_encryptor_.reset(new SelfEncryptor(data_map_, chunk_store_, 0));
+  self_encryptor_.reset(new SelfEncryptor(data_map_, chunk_store_, num_procs_));
 
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
 //  GetFileInfo
-  self_encryptor_.reset(new SelfEncryptor(data_map_, chunk_store_, 0));
+  self_encryptor_.reset(new SelfEncryptor(data_map_, chunk_store_, num_procs_));
 
-  self_encryptor_.reset(new SelfEncryptor(data_map_, chunk_store_, 0));
+  self_encryptor_.reset(new SelfEncryptor(data_map_, chunk_store_, num_procs_));
 
-  self_encryptor_.reset(new SelfEncryptor(data_map_, chunk_store_, 0));
+  self_encryptor_.reset(new SelfEncryptor(data_map_, chunk_store_, num_procs_));
 
-  self_encryptor_.reset(new SelfEncryptor(data_map_, chunk_store_, 0));
+  self_encryptor_.reset(new SelfEncryptor(data_map_, chunk_store_, num_procs_));
 
-  self_encryptor_.reset(new SelfEncryptor(data_map_, chunk_store_, 0));
+  self_encryptor_.reset(new SelfEncryptor(data_map_, chunk_store_, num_procs_));
 
-  self_encryptor_.reset(new SelfEncryptor(data_map_, chunk_store_, 0));
+  self_encryptor_.reset(new SelfEncryptor(data_map_, chunk_store_, num_procs_));
 
-  self_encryptor_.reset(new SelfEncryptor(data_map_, chunk_store_, 0));
+  self_encryptor_.reset(new SelfEncryptor(data_map_, chunk_store_, num_procs_));
 
-  self_encryptor_.reset(new SelfEncryptor(data_map_, chunk_store_, 0));
+  self_encryptor_.reset(new SelfEncryptor(data_map_, chunk_store_, num_procs_));
 
-  self_encryptor_.reset(new SelfEncryptor(data_map_, chunk_store_, 0));
+  self_encryptor_.reset(new SelfEncryptor(data_map_, chunk_store_, num_procs_));
 
   if (!self_encryptor_->Read(decrypted_.get() + 0, 1024, 0))
     std::cout << "Read failed" << std::endl;
@@ -49717,8 +49722,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33849344);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33845248, data.c_str(), 4096);
@@ -49726,8 +49731,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33853440);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33849344, data.c_str(), 4096);
@@ -49735,8 +49740,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33857536);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33853440, data.c_str(), 4096);
@@ -49744,8 +49749,8 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33861632);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33857536, data.c_str(), 4096);
@@ -49759,11 +49764,11 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   memcpy(original_.get() + 33845248, data.c_str(), 14356);
   self_encryptor_->Write(data.c_str(), 14356, 33845248);
   self_encryptor_->Truncate(33865728);
-  if (!self_encryptor_->Flush())     //   <=========================== THIS FAILS =====================================
+  if (!self_encryptor_->Flush())
     std::cout << "Flush failed" << std::endl;
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33861632, data.c_str(), 4096);
@@ -49771,116 +49776,82 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
   self_encryptor_->Truncate(33869824);
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
 
   memcpy(original_.get() + 33865728, data.c_str(), 4096);
   self_encryptor_->Write(data.c_str(), 4096, 33865728);
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
   memcpy(original_.get() + 33861632, data.c_str(), 36);
   self_encryptor_->Write(data.c_str(), 36, 33861632);
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
   memcpy(original_.get() + 8192, data.c_str(), 4096);
   self_encryptor_->Write(data.c_str(), 4096, 8192);
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
   memcpy(original_.get() + 0, data.c_str(), 4096);
                                             std::cout << "WRITING at line " << __LINE__ << std::endl;
   self_encryptor_->Write(data.c_str(), 4096, 0);
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
   self_encryptor_->Flush();
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
   if (!self_encryptor_->Read(decrypted_.get() + 33800192, 56, 33800192))
     std::cout << "Read failed" << std::endl;
   for (uint32_t i(33800192); i != 33800192 + 56; ++i)
     ASSERT_EQ(original_[i], decrypted_[i]) << "difference at " << i;
 
-                              self_encryptor_->Read(decrypted_.get() + 524290, 1, 524290);
-  if (original_[524290] != decrypted_[524290]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
-
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
-
-
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786434, 1, 786434);
+  if (original_[786434] != decrypted_[786434]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
   if (!self_encryptor_->Read(decrypted_.get() + 33792860, 3236, 33792860))
     std::cout << "Read failed" << std::endl;
   for (uint32_t i(33792860); i != 33792860 + 3236; ++i)
     ASSERT_EQ(original_[i], decrypted_[i]) << "difference at " << i;
 
-
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
-
-
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
   if (!self_encryptor_->Read(decrypted_.get() + 33787904, 1668, 33787904))
     std::cout << "Read failed" << std::endl;
   for (uint32_t i(33787904); i != 33787904 + 1668; ++i)
     ASSERT_EQ(original_[i], decrypted_[i]) << "difference at " << i;
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
-
-
-
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
   if (!self_encryptor_->Read(decrypted_.get() + 33800248, 4040, 33800248))
     std::cout << "Read failed" << std::endl;
   for (uint32_t i(33800248); i != 33800248 + 4040; ++i)
     ASSERT_EQ(original_[i], decrypted_[i]) << "difference at " << i;
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
-
-
-
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786432, 1, 786432);
+  if (original_[786432] != decrypted_[786432]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
   if (!self_encryptor_->Read(decrypted_.get() + 16384, 4096, 16384))
     std::cout << "Read failed" << std::endl;
   for (uint32_t i(16384); i != 16384 + 4096; ++i)
     ASSERT_EQ(original_[i], decrypted_[i]) << "difference at " << i;
 
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
-
-
-
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
+                              self_encryptor_->Read(decrypted_.get() + 786433, 1, 786433);
+  if (original_[786433] != decrypted_[786433]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
 
   if (!self_encryptor_->Read(decrypted_.get() + 32768, 1056768, 32768))
     std::cout << "Read failed" << std::endl;
-
-                              self_encryptor_->Read(decrypted_.get() + 524288, 1, 524288);
-  if (original_[524288] != decrypted_[524288]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
-
-  self_encryptor_->Read(decrypted_.get() + 524289, 1, 524289);
-  if (original_[524289] != decrypted_[524289]) std::cout << "Line " << __LINE__ << ": FAIL" << std::endl;
-                                                          // Fails here for i == 524288
   for (uint32_t i(32768); i != 32768 + 1056768; ++i)
     ASSERT_EQ(original_[i], decrypted_[i]) << "difference at " << i;
 
@@ -49958,5 +49929,4 @@ TEST_F(BasicTest, DISABLED_FUNC_OverwriteChunk0Twice) {
     std::cout << "Read failed" << std::endl;
   for (uint32_t i(29557056); i != 29557056 + 4; ++i)
     ASSERT_EQ(original_[i], decrypted_[i]) << "difference at " << i;
-
 }
