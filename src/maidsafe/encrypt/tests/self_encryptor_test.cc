@@ -888,7 +888,7 @@ TEST_F(BasicTest, BEH_4096ByteOutOfSequenceWritesReadsAndRewrites) {
 
   for (size_t i = 0; i != kParts; ++i) {
     const uint32_t kOffset(RandomUint32() % string_array[i].size());
-    if (i % 10 == 0) {
+    if (i % 20 == 0) {
       self_encryptor.Read(const_cast<char*>(written.c_str()), kSize, i * kSize);
       EXPECT_EQ(written, compare.substr(i * kSize, kSize));
       if (i * kSize >= kOffset) {
@@ -906,7 +906,7 @@ TEST_F(BasicTest, BEH_4096ByteOutOfSequenceWritesReadsAndRewrites) {
                         string_array[i].size(), string_array[i].data(),
                         string_array[i].size());
       }
-    } else if (i % 20 == 0) {
+    } else if (i % 10 == 0) {
       self_encryptor.Write(string_array[i].data(),
                            static_cast<uint32_t>(string_array[i].size()),
                            i * kSize + kOffset);
