@@ -18,7 +18,7 @@ int main(int argc, char **argv) {
   google::InitGoogleLogging(argv[0]);
   FLAGS_logtostderr = true;
   FLAGS_alsologtostderr = false;
-  FLAGS_ms_logging_common = google::FATAL;
+  FLAGS_ms_logging_common = google::ERROR;
   FLAGS_ms_logging_encrypt = google::INFO;
   FLAGS_log_prefix = true;
   FLAGS_v = 0;

@@ -94,6 +94,30 @@ class XORFilter : public CryptoPP::Bufferless<CryptoPP::Filter> {
   const size_t kPadSize_;
 };
 
+void DebugPrint(bool encrypting,
+                uint32_t chunk_num,
+                ByteArray pad,
+                ByteArray key,
+                ByteArray iv,
+                const byte* plain_data,
+                uint32_t plain_data_length,
+                const std::string &encrypted_data) {
+  std::string pad_str(Base32Substr(std::string(
+      reinterpret_cast<char*>(pad.get()), kPadSize)));
+  std::string key_str(Base32Substr(std::string(
+      reinterpret_cast<char*>(key.get()), crypto::AES256_KeySize)));
+  std::string iv_str(Base32Substr(std::string(
+      reinterpret_cast<char*>(iv.get()), crypto::AES256_IVSize)));
+  std::string plain(Base32Substr(crypto::Hash<crypto::SHA512>(std::string(
+      reinterpret_cast<const char*>(plain_data), plain_data_length))));
+  std::string encrypted(Base32Substr(crypto::Hash<crypto::SHA512>(
+      encrypted_data)));
+  DLOG(INFO) << (encrypting ? "\nEncrypt chunk " : "\nDecrypt chunk ")
+             << chunk_num << "\nPad: " << pad_str << "   Key: " << key_str
+             << "   IV: " << iv_str << "   Plain: " << plain << "   Encrypted: "
+             << encrypted;
+}
+
 }  // unnamed namespace
 
 
@@ -261,6 +285,7 @@ int SelfEncryptor::PrepareToWrite(const uint32_t &length,
         last_chunk_position_ > 2 * kDefaultChunkSize) {
       queue_start_position_ = std::min(last_chunk_position_,
           (position / kDefaultChunkSize) * kDefaultChunkSize);
+      BOOST_ASSERT(queue_start_position_ % kDefaultChunkSize == 0);
       current_position_ = queue_start_position_;
     }
   }
@@ -541,6 +566,7 @@ int SelfEncryptor::DecryptChunk(const uint32_t &chunk_num, byte *data) {
     DLOG(ERROR) << e.what();
     return kDecryptionException;
   }
+//  DebugPrint(false, chunk_num, pad, key, iv, data, length, content);
 
   return kSuccess;
 }
@@ -633,6 +659,8 @@ int SelfEncryptor::ProcessMainQueue() {
 
   int64_t first_chunk_index(0);
   if (data_map_->chunks[first_queue_chunk_index - 1].pre_hash_state ==
+      ChunkDetails::kEmpty ||
+      data_map_->chunks[first_queue_chunk_index - 2].pre_hash_state ==
       ChunkDetails::kEmpty) {
     sequencer_->Add(reinterpret_cast<char*>(main_encrypt_queue_.get()),
                     kDefaultChunkSize, queue_start_position_);
@@ -712,6 +740,7 @@ int SelfEncryptor::EncryptChunk(const uint32_t &chunk_num,
                   << Base32Substr(data_map_->chunks[chunk_num].hash);
       result = kFailedToStoreChunk;
     }
+//    DebugPrint(true, chunk_num, pad, key, iv, data, length, chunk_content);
   }
   catch(const std::exception &e) {
     DLOG(ERROR) << e.what();
