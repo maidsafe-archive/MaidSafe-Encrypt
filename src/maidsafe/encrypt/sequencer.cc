@@ -170,8 +170,11 @@ SequenceBlock Sequencer::Peek(const uint32_t &length,
     if ((*itr).first + Size((*itr).second) > position)
       return *itr;
     else
-      return kInvalidSeqBlock;
+      ++itr;
   }
+
+  if (itr == blocks_.end())
+    return kInvalidSeqBlock;
 
   return ((*itr).first < length + position) ? *itr : kInvalidSeqBlock;
 }

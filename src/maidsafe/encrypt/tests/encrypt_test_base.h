@@ -32,7 +32,7 @@ class EncryptTestBase {
       : num_procs_(num_procs),
         chunk_store_(new MemoryChunkStore),
         data_map_(new DataMap),
-        self_encryptor_(new SelfEncryptor(data_map_, chunk_store_, num_procs)),
+        self_encryptor_(new SelfEncryptor(data_map_, chunk_store_, num_procs_)),
         original_(),
         decrypted_() {}
   virtual ~EncryptTestBase() {

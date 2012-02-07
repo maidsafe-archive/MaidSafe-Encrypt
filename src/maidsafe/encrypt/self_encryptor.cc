@@ -470,7 +470,7 @@ bool SelfEncryptor::GetDataOffsetForEnqueuing(const uint32_t &length,
     // We don't care if this overflows as in this case we return false
     *data_offset = static_cast<uint32_t>(queue_start_position_ - position);
     *queue_offset = 0;
-    return (position + length >= queue_start_position_);
+    return (position + length > queue_start_position_);
   } else if (position < queue_start_position_ + kQueueCapacity_) {
     *data_offset = 0;
     *queue_offset = static_cast<uint32_t>(position - queue_start_position_);
