@@ -612,11 +612,11 @@ void SelfEncryptor::GetPadIvKey(uint32_t this_chunk_num,
                    crypto::AES256_IVSize);
   BOOST_ASSERT(crypto::AES256_IVSize == copied);
   copied = MemCopy(pad, 0, n_1_pre_hash, crypto::SHA512::DIGESTSIZE);
-  BOOST_ASSERT(crypto::SHA512::DIGESTSIZE == copied);
+  BOOST_ASSERT(static_cast<uint32_t>(crypto::SHA512::DIGESTSIZE) == copied);
   copied = MemCopy(pad, crypto::SHA512::DIGESTSIZE,
                    &data_map_->chunks[this_chunk_num].pre_hash[0],
                    crypto::SHA512::DIGESTSIZE);
-  BOOST_ASSERT(crypto::SHA512::DIGESTSIZE == copied);
+  BOOST_ASSERT(static_cast<uint32_t>(crypto::SHA512::DIGESTSIZE) == copied);
   uint32_t hash_offset(crypto::AES256_KeySize + crypto::AES256_IVSize);
   copied = MemCopy(pad, (2 * crypto::SHA512::DIGESTSIZE),
                    n_2_pre_hash + hash_offset,
@@ -1403,8 +1403,10 @@ int EncryptDataMap(const std::string &parent_id,
                    const std::string &this_id,
                    DataMapPtr data_map,
                    std::string *encrypted_data_map) {
-  BOOST_ASSERT(parent_id.size() == crypto::SHA512::DIGESTSIZE);
-  BOOST_ASSERT(this_id.size() == crypto::SHA512::DIGESTSIZE);
+  BOOST_ASSERT(parent_id.size() ==
+               static_cast<size_t>(crypto::SHA512::DIGESTSIZE));
+  BOOST_ASSERT(this_id.size() ==
+               static_cast<size_t>(crypto::SHA512::DIGESTSIZE));
   BOOST_ASSERT(data_map);
   BOOST_ASSERT(encrypted_data_map);
   encrypted_data_map->clear();
@@ -1463,8 +1465,10 @@ int DecryptDataMap(const std::string &parent_id,
                    const std::string &this_id,
                    const std::string &encrypted_data_map,
                    DataMapPtr data_map) {
-  BOOST_ASSERT(parent_id.size() == crypto::SHA512::DIGESTSIZE);
-  BOOST_ASSERT(this_id.size() == crypto::SHA512::DIGESTSIZE);
+  BOOST_ASSERT(parent_id.size() ==
+               static_cast<size_t>(crypto::SHA512::DIGESTSIZE));
+  BOOST_ASSERT(this_id.size() ==
+               static_cast<size_t>(crypto::SHA512::DIGESTSIZE));
   BOOST_ASSERT(!encrypted_data_map.empty());
   BOOST_ASSERT(data_map);
 
