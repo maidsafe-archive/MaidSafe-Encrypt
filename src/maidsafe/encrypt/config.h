@@ -18,7 +18,7 @@
 
 #include "maidsafe/encrypt/version.h"
 
-#if MAIDSAFE_ENCRYPT_VERSION != 1002
+#if MAIDSAFE_ENCRYPT_VERSION != 1100
 #  error This API is not compatible with the installed library.\
     Please update the maidsafe-encrypt library.
 #endif
