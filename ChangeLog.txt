@@ -1,6 +1,24 @@
-v0.10.02 (WIP)
+v0.11.00 (WIP)
 --------------
 
+
+v0.10.02
+--------
+* Removed responsibility of storage/retrieval of DataMap from Encrypt/DecryptDataMap methods.
+* Changed EncryptDataMap to take ValidationData.
+* Re-added private_key_id parameter to EncryptDataMap.
+* Removed unnecessary try catch blocks.
+* Removed extra parameter from EncryptDataMap.
+* Removed call to function that no longer exists in SignedData
+* Changed EncryptDataMap and DecryptDataMap to accommodate new ChunkActionAuthority in Private.
+* Updated ctest config file in sync with project name change.
+* Further fixes to Encrypt.
+* Corrected logic in test.
+* Ensured consistency of reported processors to SelfEncrypt during tests' executions.
+* Addressed much of issue #4
+* Randomised number of processors set in ctor of SelfEncryptor during tests.
+* Fixed issue #3.
+* Fixed bug where chunks 0 and 1 were sometimes not being re-encrypted after modification.
 
 v0.10.01
 --------
