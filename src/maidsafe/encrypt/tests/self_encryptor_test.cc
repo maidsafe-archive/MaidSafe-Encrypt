@@ -28,8 +28,8 @@
 #  pragma warning(pop)
 #endif
 #include "boost/scoped_array.hpp"
+
 #include "maidsafe/common/test.h"
-#include "maidsafe/common/memory_chunk_store.h"
 #include "maidsafe/common/omp.h"
 #include "maidsafe/common/utils.h"
 
@@ -117,6 +117,7 @@ class BasicOffsetTest : public EncryptTestBase,
     kLarge = 1000 * kDefaultChunkSize,
     kMax = 2147483647
   };
+
   BasicOffsetTest()
       : EncryptTestBase((RandomUint32() % omp_get_num_procs()) + 1),
         kDataSize_(GetParam().first),
@@ -142,6 +143,7 @@ class BasicOffsetTest : public EncryptTestBase,
     std::copy(content.data(), content.data() + kDataSize_, original_.get());
     memset(decrypted_.get(), 1, kDataSize_);
   }
+
   void TearDown() {}
 
   const uint32_t kDataSize_, kOffset_;
@@ -1429,7 +1431,11 @@ TEST_F(BasicTest, FUNC_RandomAccess) {
 
   {
     // Out Process random write/read access
-    std::shared_ptr<MemoryChunkStore> chunk_store(new MemoryChunkStore);
+    AsioService service;
+    service.Start(5);
+    maidsafe::test::TestPath path(maidsafe::test::CreateTestPath());
+    RemoteChunkStorePtr chunk_store(
+        priv::chunk_store::CreateLocalChunkStore(*path, service.service()));
     DataMapPtr data_map(new DataMap);
     for (size_t i = 0; i < max_variation.size(); ++i) {
       uint32_t num_tries = num_of_tries[i];
@@ -1459,6 +1465,7 @@ TEST_F(BasicTest, FUNC_RandomAccess) {
           ASSERT_EQ(plain_text[k], answer[k]) << "not match " << k;
       }
     }
+    service.Stop();
   }
   // The situation combining in-process and out-process access may need to
   // be considered

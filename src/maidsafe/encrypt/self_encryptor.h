@@ -34,8 +34,14 @@
 
 namespace maidsafe {
 
-class ChunkStore;
-typedef std::shared_ptr<ChunkStore> ChunkStorePtr;
+namespace priv {
+namespace chunk_store {
+class RemoteChunkStore;
+}  // namespace chunk_store
+}  // namespace priv
+
+typedef std::shared_ptr<priv::chunk_store::RemoteChunkStore>
+        RemoteChunkStorePtr;
 
 namespace encrypt {
 
@@ -55,7 +61,7 @@ int DecryptDataMap(const std::string &parent_id,
 class SelfEncryptor {
  public:
   SelfEncryptor(DataMapPtr data_map,
-                ChunkStorePtr chunk_store,
+                RemoteChunkStorePtr chunk_store,
                 int num_procs = 0);
   ~SelfEncryptor();
   bool Write(const char *data,
@@ -183,7 +189,7 @@ class SelfEncryptor {
   const uint32_t kQueueCapacity_;
   uint32_t retrievable_from_queue_;
   std::shared_ptr<byte> chunk0_raw_, chunk1_raw_;
-  ChunkStorePtr chunk_store_;
+  RemoteChunkStorePtr chunk_store_;
   uint64_t current_position_;
   bool prepared_for_writing_, flushed_;
   boost::shared_array<char> read_cache_;

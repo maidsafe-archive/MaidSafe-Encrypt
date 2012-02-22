@@ -15,10 +15,14 @@
 #define MAIDSAFE_ENCRYPT_TESTS_ENCRYPT_TEST_BASE_H_
 
 #include <memory>
+
 #include "boost/scoped_array.hpp"
-#include "maidsafe/common/memory_chunk_store.h"
+
+#include "maidsafe/common/asio_service.h"
 #include "maidsafe/common/omp.h"
 #include "maidsafe/common/utils.h"
+
+#include "maidsafe/private/chunk_store/remote_chunk_store.h"
 
 #include "maidsafe/encrypt/self_encryptor.h"
 
@@ -29,13 +33,24 @@ namespace test {
 class EncryptTestBase {
  public:
   explicit EncryptTestBase(int num_procs)
-      : num_procs_(num_procs),
-        chunk_store_(new MemoryChunkStore),
+      : test_dir_(maidsafe::test::CreateTestPath()),
+        num_procs_(num_procs),
+        asio_service_(),
+        chunk_store_(),
         data_map_(new DataMap),
-        self_encryptor_(new SelfEncryptor(data_map_, chunk_store_, num_procs_)),
+        self_encryptor_(),
         original_(),
-        decrypted_() {}
+        decrypted_() {
+    asio_service_.Start(5);
+    chunk_store_ =
+        priv::chunk_store::CreateLocalChunkStore(*test_dir_,
+                                                 asio_service_.service());
+    self_encryptor_.reset(new SelfEncryptor(data_map_,
+                                            chunk_store_,
+                                            num_procs_));
+  }
   virtual ~EncryptTestBase() {
+    asio_service_.Stop();
     if (testing::UnitTest::GetInstance()->current_test_info()->result()->
         Failed()) {
       std::cerr << "Number of available processors set in SelfEncryptor: "
@@ -45,8 +60,10 @@ class EncryptTestBase {
   }
 
  protected:
+  maidsafe::test::TestPath test_dir_;
   int num_procs_;
-  std::shared_ptr<MemoryChunkStore> chunk_store_;
+  AsioService asio_service_;
+  RemoteChunkStorePtr chunk_store_;
   DataMapPtr data_map_;
   std::shared_ptr<SelfEncryptor> self_encryptor_;
   boost::scoped_array<char> original_, decrypted_;
