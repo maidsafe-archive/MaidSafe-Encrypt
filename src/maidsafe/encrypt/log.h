@@ -17,6 +17,6 @@
 #include "maidsafe/common/log.h"
 
 #undef LOG
-#define LOG(severity) COMPACT_GOOGLE_LOG_ ## severity(encrypt, :).stream()
+#define LOG(severity) MAIDSAFE_LOG(encrypt, severity)
 
 #endif  // MAIDSAFE_ENCRYPT_LOG_H_

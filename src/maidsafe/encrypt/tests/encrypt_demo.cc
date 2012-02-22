@@ -308,7 +308,7 @@
 // }  // namespace maidsafe
 //
 // int main(int argc, char* argv[]) {
-//   google::InitGoogleLogging(argv[0]);
+//   maidsafe::InitLogging(argv[0]);
 //   // setting output to be stderr
 //   FLAGS_logtostderr = true;
 //   FLAGS_minloglevel = google::ERROR;

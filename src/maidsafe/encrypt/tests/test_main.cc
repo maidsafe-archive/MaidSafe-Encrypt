@@ -15,7 +15,7 @@
 #include "maidsafe/encrypt/log.h"
 
 int main(int argc, char **argv) {
-  google::InitGoogleLogging(argv[0]);
+  maidsafe::InitLogging(argv[0]);
   FLAGS_logtostderr = true;
   FLAGS_alsologtostderr = false;
   FLAGS_ms_logging_common = google::ERROR;
