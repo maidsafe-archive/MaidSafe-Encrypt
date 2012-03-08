@@ -1,6 +1,12 @@
-v0.11.00 (WIP)
+v0.12.00 (WIP)
 --------------
 
+v0.11.00
+--------
+* Removed warnings. crypto::SHA512::DIGESTSIZE is defined by a macro that defines an enum, so the type is int.
+  As long as the hash never accepts negative values, the cast is safe.
+* Updated logging macro.
+* Adapted encrypt to remote chunkstore interface.
 
 v0.10.02
 --------
