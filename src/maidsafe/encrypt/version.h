@@ -32,4 +32,15 @@
     Please update this project.
 #endif
 
+#include "maidsafe/private/version.h"
+
+#define THIS_NEEDS_MAIDSAFE_PRIVATE_VERSION 200
+#if MAIDSAFE_PRIVATE_VERSION < THIS_NEEDS_MAIDSAFE_PRIVATE_VERSION
+#  error This API is not compatible with the installed library.\
+    Please update the maidsafe-private library.
+#elif MAIDSAFE_PRIVATE_VERSION > THIS_NEEDS_MAIDSAFE_PRIVATE_VERSION
+#  error This API uses a newer version of the maidsafe-private library.\
+    Please update this project.
+#endif
+
 #endif  // MAIDSAFE_ENCRYPT_VERSION_H_
