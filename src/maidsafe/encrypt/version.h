@@ -14,7 +14,7 @@
 #ifndef MAIDSAFE_ENCRYPT_VERSION_H_
 #define MAIDSAFE_ENCRYPT_VERSION_H_
 
-#define MAIDSAFE_ENCRYPT_VERSION 1100
+#define MAIDSAFE_ENCRYPT_VERSION 1200
 
 #if defined CMAKE_MAIDSAFE_ENCRYPT_VERSION &&\
             MAIDSAFE_ENCRYPT_VERSION != CMAKE_MAIDSAFE_ENCRYPT_VERSION
@@ -23,12 +23,23 @@
 
 #include "maidsafe/common/version.h"
 
-#define THIS_NEEDS_MAIDSAFE_COMMON_VERSION 1100
+#define THIS_NEEDS_MAIDSAFE_COMMON_VERSION 1200
 #if MAIDSAFE_COMMON_VERSION < THIS_NEEDS_MAIDSAFE_COMMON_VERSION
 #  error This API is not compatible with the installed library.\
     Please update the maidsafe-common library.
 #elif MAIDSAFE_COMMON_VERSION > THIS_NEEDS_MAIDSAFE_COMMON_VERSION
 #  error This API uses a newer version of the maidsafe-common library.\
+    Please update this project.
+#endif
+
+#include "maidsafe/private/version.h"
+
+#define THIS_NEEDS_MAIDSAFE_PRIVATE_VERSION 300
+#if MAIDSAFE_PRIVATE_VERSION < THIS_NEEDS_MAIDSAFE_PRIVATE_VERSION
+#  error This API is not compatible with the installed library.\
+    Please update the maidsafe-private library.
+#elif MAIDSAFE_PRIVATE_VERSION > THIS_NEEDS_MAIDSAFE_PRIVATE_VERSION
+#  error This API uses a newer version of the maidsafe-private library.\
     Please update this project.
 #endif
 
