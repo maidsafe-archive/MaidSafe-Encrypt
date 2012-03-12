@@ -736,7 +736,7 @@ int SelfEncryptor::EncryptChunk(const uint32_t &chunk_num,
 
     UniqueLock unique_lock(chunk_store_mutex_);
     if (!chunk_store_->Store(data_map_->chunks[chunk_num].hash,
-                             chunk_content)) {
+                             chunk_content, nullptr)) {
       DLOG(ERROR) << "Could not store "
                   << Base32Substr(data_map_->chunks[chunk_num].hash);
       result = kFailedToStoreChunk;
@@ -1334,7 +1334,7 @@ void SelfEncryptor::ReadInProcessData(char *data,
 bool SelfEncryptor::DeleteAllChunks() {
   UniqueLock chunk_store_unique_lock(chunk_store_mutex_);
   for (uint32_t i(0); i != data_map_->chunks.size(); ++i) {
-    if (!chunk_store_->Delete(data_map_->chunks[i].hash)) {
+    if (!chunk_store_->Delete(data_map_->chunks[i].hash, nullptr)) {
       DLOG(WARNING) << "Failed to delete chunk " << i;
       return false;
     }
@@ -1393,7 +1393,7 @@ void SelfEncryptor::DeleteChunk(const uint32_t &chunk_num) {
   SharedLock shared_lock(data_mutex_);
   if (!data_map_->chunks[chunk_num].hash.empty()) {
     UniqueLock unique_lock(chunk_store_mutex_);
-    if (!chunk_store_->Delete(data_map_->chunks[chunk_num].hash)) {
+    if (!chunk_store_->Delete(data_map_->chunks[chunk_num].hash, nullptr)) {
       DLOG(WARNING) << "Failed to delete chunk " << chunk_num << ": "
                     << Base32Substr(data_map_->chunks[chunk_num].hash);
     }
