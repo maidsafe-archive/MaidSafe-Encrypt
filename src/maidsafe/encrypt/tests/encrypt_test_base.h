@@ -17,6 +17,7 @@
 #include <memory>
 
 #include "boost/scoped_array.hpp"
+#include "boost/filesystem/path.hpp"
 
 #include "maidsafe/common/asio_service.h"
 #include "maidsafe/common/omp.h"
@@ -25,6 +26,8 @@
 #include "maidsafe/private/chunk_store/remote_chunk_store.h"
 
 #include "maidsafe/encrypt/self_encryptor.h"
+
+namespace fs = boost::filesystem;
 
 namespace maidsafe {
 namespace encrypt {
@@ -42,9 +45,11 @@ class EncryptTestBase {
         original_(),
         decrypted_() {
     asio_service_.Start(5);
+    fs::path buffered_chunk_store_path;
     chunk_store_ =
         priv::chunk_store::CreateLocalChunkStore(*test_dir_,
-                                                 asio_service_.service());
+                                                 asio_service_.service(),
+                                                 &buffered_chunk_store_path);
     self_encryptor_.reset(new SelfEncryptor(data_map_,
                                             chunk_store_,
                                             num_procs_));

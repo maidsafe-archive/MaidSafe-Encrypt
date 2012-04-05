@@ -1434,8 +1434,11 @@ TEST_F(BasicTest, FUNC_RandomAccess) {
     AsioService service;
     service.Start(5);
     maidsafe::test::TestPath path(maidsafe::test::CreateTestPath());
+    fs::path buffered_chunk_store_path;
     RemoteChunkStorePtr chunk_store(
-        priv::chunk_store::CreateLocalChunkStore(*path, service.service()));
+        priv::chunk_store::CreateLocalChunkStore(*path,
+                                                 service.service(),
+                                                 &buffered_chunk_store_path));
     DataMapPtr data_map(new DataMap);
     for (size_t i = 0; i < max_variation.size(); ++i) {
       uint32_t num_tries = num_of_tries[i];
