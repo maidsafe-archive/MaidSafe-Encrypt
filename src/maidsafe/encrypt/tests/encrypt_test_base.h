@@ -45,11 +45,12 @@ class EncryptTestBase {
         original_(),
         decrypted_() {
     asio_service_.Start(5);
-    fs::path buffered_chunk_store_path;
+    fs::path buffered_chunk_store_path(*test_dir_ /
+                                       RandomAlphaNumericString(8));
     chunk_store_ =
-        priv::chunk_store::CreateLocalChunkStore(*test_dir_,
-                                                 asio_service_.service(),
-                                                 &buffered_chunk_store_path);
+        priv::chunk_store::CreateLocalChunkStore(buffered_chunk_store_path,
+                                                 *test_dir_ / "local",
+                                                 asio_service_.service());
     self_encryptor_.reset(new SelfEncryptor(data_map_,
                                             chunk_store_,
                                             num_procs_));
