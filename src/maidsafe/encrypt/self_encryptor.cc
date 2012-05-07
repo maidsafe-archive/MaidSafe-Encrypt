@@ -19,6 +19,7 @@
 #include <set>
 #include <vector>
 #include <utility>
+#include <thread>
 
 #ifdef __MSVC__
 #  pragma warning(push, 1)
@@ -37,7 +38,6 @@
 
 #include "maidsafe/common/crypto.h"
 #include "maidsafe/common/utils.h"
-#include "maidsafe/common/omp.h"
 
 #include "maidsafe/private/chunk_store/remote_chunk_store.h"
 
@@ -128,7 +128,7 @@ SelfEncryptor::SelfEncryptor(DataMapPtr data_map,
     : data_map_(data_map ? data_map : DataMapPtr(new DataMap)),
       sequencer_(new Sequencer),
       kDefaultByteArraySize_(num_procs == 0 ?
-                             kDefaultChunkSize * omp_get_num_procs() :
+                             kDefaultChunkSize * std::max(std::thread::hardware_concurrency(), 2U) :
                              kDefaultChunkSize * num_procs),
       file_size_(0),
       last_chunk_position_(0),

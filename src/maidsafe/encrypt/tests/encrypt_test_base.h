@@ -15,12 +15,12 @@
 #define MAIDSAFE_ENCRYPT_TESTS_ENCRYPT_TEST_BASE_H_
 
 #include <memory>
+#include <thread>
 
 #include "boost/scoped_array.hpp"
 #include "boost/filesystem/path.hpp"
 
 #include "maidsafe/common/asio_service.h"
-#include "maidsafe/common/omp.h"
 #include "maidsafe/common/utils.h"
 
 #include "maidsafe/private/chunk_store/remote_chunk_store.h"
@@ -60,7 +60,8 @@ class EncryptTestBase {
     if (testing::UnitTest::GetInstance()->current_test_info()->result()->
         Failed()) {
       std::cerr << "Number of available processors set in SelfEncryptor: "
-                << ((num_procs_ == 0) ? omp_get_num_procs() : num_procs_)
+                << ((num_procs_ == 0) ? (std::max(std::thread::hardware_concurrency(), 2U)):
+                                        num_procs_)
                 << std::endl;
     }
   }

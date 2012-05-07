@@ -14,6 +14,7 @@
 #include <array>
 #include <cstdlib>
 #include <string>
+#include <thread>
 
 #ifdef WIN32
 #  pragma warning(push, 1)
@@ -30,7 +31,6 @@
 #include "boost/scoped_array.hpp"
 
 #include "maidsafe/common/test.h"
-#include "maidsafe/common/omp.h"
 #include "maidsafe/common/utils.h"
 
 #include "maidsafe/encrypt/self_encryptor.h"
@@ -46,7 +46,7 @@ namespace test {
 namespace {
 
 typedef std::pair<uint32_t, uint32_t> SizeAndOffset;
-const int g_num_procs(omp_get_num_procs());
+const int g_num_procs(std::max(std::thread::hardware_concurrency(), 2U));
 
 uint64_t TotalSize(DataMapPtr data_map) {
   uint64_t size(data_map->chunks.empty() ? data_map->content.size() : 0);
@@ -119,7 +119,7 @@ class BasicOffsetTest : public EncryptTestBase,
   };
 
   BasicOffsetTest()
-      : EncryptTestBase((RandomUint32() % omp_get_num_procs()) + 1),
+      : EncryptTestBase((RandomUint32() % (std::max(std::thread::hardware_concurrency(), 2U))) + 1),
         kDataSize_(GetParam().first),
         kOffset_(GetParam().second),
         test_file_size_(kMax) {
@@ -318,7 +318,7 @@ class EncryptTest : public EncryptTestBase,
                     public testing::TestWithParam<uint32_t> {
  public:
   EncryptTest()
-      : EncryptTestBase((RandomUint32() % omp_get_num_procs()) + 1),
+      : EncryptTestBase((RandomUint32() % (std::max(std::thread::hardware_concurrency(), 2U))) + 1),
         kDataSize_(GetParam()) {
     original_.reset(new char[kDataSize_]);
     decrypted_.reset(new char[kDataSize_]);
@@ -506,7 +506,8 @@ INSTANTIATE_TEST_CASE_P(Reading, InProcessTest, testing::Values(
 
 class BasicTest : public EncryptTestBase, public testing::Test {
  public:
-  BasicTest() : EncryptTestBase((RandomUint32() % omp_get_num_procs()) + 1),
+  BasicTest() : EncryptTestBase((RandomUint32() %
+                                 (std::max(std::thread::hardware_concurrency(), 2U))) + 1),
                 kDataSize_(1024 * 1024 * 20),
                 content_(RandomString(kDataSize_)) {
     original_.reset(new char[kDataSize_]);
