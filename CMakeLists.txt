@@ -47,7 +47,7 @@ source_group("Tests Header Files" FILES ${HEADER_FILES_ENCRYPT_TESTS_DIR})
 # Define MaidSafe libraries and executables                                                       #
 ###################################################################################################
 ms_add_static_library(encrypt ${ALL_FILES_ENCRYPT_DIR})
-ms_add_executable(TESTencrypt Tests ${ALL_FILES_ENCRYPT_TESTS_DIR})
+ms_add_executable(TESTencrypt "Tests/Encrypt" ${ALL_FILES_ENCRYPT_TESTS_DIR})
 
 target_link_libraries(maidsafe_encrypt maidsafe_private)
 target_link_libraries(TESTencrypt maidsafe_encrypt)
