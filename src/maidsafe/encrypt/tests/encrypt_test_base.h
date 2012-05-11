@@ -57,13 +57,13 @@ class EncryptTestBase {
   }
   virtual ~EncryptTestBase() {
     asio_service_.Stop();
-    if (testing::UnitTest::GetInstance()->current_test_info()->result()->
-        Failed()) {
-      std::cerr << "Number of available processors set in SelfEncryptor: "
-                << ((num_procs_ == 0) ? (std::max(std::thread::hardware_concurrency(), 2U)):
-                                        num_procs_)
-                << std::endl;
-    }
+//     if (testing::UnitTest::GetInstance()->current_test_info()->result()->
+//         Failed()) {
+//       std::cerr << "Number of available processors set in SelfEncryptor: "
+//                 << ((num_procs_ == 0) ? (std::max(std::thread::hardware_concurrency(), 2U)):
+//                                         num_procs_)
+//                 << std::endl;
+//     }
   }
 
  protected:
