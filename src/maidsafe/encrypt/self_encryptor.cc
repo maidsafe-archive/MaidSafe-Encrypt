@@ -128,7 +128,7 @@ SelfEncryptor::SelfEncryptor(DataMapPtr data_map,
     : data_map_(data_map ? data_map : DataMapPtr(new DataMap)),
       sequencer_(new Sequencer),
       kDefaultByteArraySize_(num_procs == 0 ?
-                             kDefaultChunkSize * std::max(std::thread::hardware_concurrency(), 2U) :
+                             kDefaultChunkSize * Concurrency() :
                              kDefaultChunkSize * num_procs),
       file_size_(0),
       last_chunk_position_(0),

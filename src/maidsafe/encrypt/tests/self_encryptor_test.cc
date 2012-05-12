@@ -46,7 +46,7 @@ namespace test {
 namespace {
 
 typedef std::pair<uint32_t, uint32_t> SizeAndOffset;
-const int g_num_procs(std::max(std::thread::hardware_concurrency(), 2U));
+const int g_num_procs(Concurrency());
 
 uint64_t TotalSize(DataMapPtr data_map) {
   uint64_t size(data_map->chunks.empty() ? data_map->content.size() : 0);
@@ -119,7 +119,7 @@ class BasicOffsetTest : public EncryptTestBase,
   };
 
   BasicOffsetTest()
-      : EncryptTestBase((RandomUint32() % (std::max(std::thread::hardware_concurrency(), 2U))) + 1),
+      : EncryptTestBase(RandomUint32() % (Concurrency() + 1)),
         kDataSize_(GetParam().first),
         kOffset_(GetParam().second),
         test_file_size_(kMax) {
@@ -502,12 +502,10 @@ INSTANTIATE_TEST_CASE_P(Reading, InProcessTest, testing::Values(
     g_num_procs * 3 * kDefaultChunkSize + kMinChunkSize,
     g_num_procs * 3 * kDefaultChunkSize + kMinChunkSize + 1));
 
-
-
 class BasicTest : public EncryptTestBase, public testing::Test {
  public:
-  BasicTest() : EncryptTestBase((RandomUint32() %
-                                 (std::max(std::thread::hardware_concurrency(), 2U))) + 1),
+  BasicTest() : EncryptTestBase(RandomUint32() %
+                                 (Concurrency() + 1)),
                 kDataSize_(1024 * 1024 * 20),
                 content_(RandomString(kDataSize_)) {
     original_.reset(new char[kDataSize_]);
