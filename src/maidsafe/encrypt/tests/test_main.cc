@@ -18,8 +18,8 @@ int main(int argc, char **argv) {
   maidsafe::InitLogging(argv[0]);
   FLAGS_logtostderr = true;
   FLAGS_alsologtostderr = false;
-  FLAGS_ms_logging_common = google::ERROR;
-  FLAGS_ms_logging_encrypt = google::INFO;
+  FLAGS_ms_logging_common = google::FATAL;
+  FLAGS_ms_logging_encrypt = google::FATAL;
   FLAGS_log_prefix = true;
   FLAGS_v = 0;
   testing::InitGoogleTest(&argc, argv);
