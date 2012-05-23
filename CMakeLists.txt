@@ -31,9 +31,11 @@ include_directories(${private_SOURCE_DIR}/include)
 ####    CODE    ####
 file(GLOB SOURCE_FILES_ENCRYPT_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/*.cc")
 file(GLOB HEADER_FILES_ENCRYPT_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/*.h")
-set(ALL_FILES_ENCRYPT_DIR ${SOURCE_FILES_ENCRYPT_DIR} ${HEADER_FILES_ENCRYPT_DIR})
+file(GLOB API_FILES_ENCRYPT_DIR "${PROJECT_SOURCE_DIR}/include/maidsafe/encrypt/*.h")
+set(ALL_FILES_ENCRYPT_DIR ${SOURCE_FILES_ENCRYPT_DIR} ${HEADER_FILES_ENCRYPT_DIR} ${API_FILES_ENCRYPT_DIR})
 source_group("Encrypt Source Files" FILES ${SOURCE_FILES_ENCRYPT_DIR})
 source_group("Encrypt Header Files" FILES ${HEADER_FILES_ENCRYPT_DIR})
+source_group("Encrypt API Files" FILES ${API_FILES_ENCRYPT_DIR})
 
 ####    TESTS    ####
 file(GLOB SOURCE_FILES_ENCRYPT_TESTS_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/tests/*.cc")
