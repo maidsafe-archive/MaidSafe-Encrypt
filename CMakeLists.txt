@@ -74,4 +74,5 @@ endif()
 ###################################################################################################
 add_style_test(${ALL_FILES_ENCRYPT_DIR} ${ALL_FILES_ENCRYPT_TESTS_DIR})
 add_gtests(TESTencrypt)
+add_project_experimental()
 test_summary_output()
