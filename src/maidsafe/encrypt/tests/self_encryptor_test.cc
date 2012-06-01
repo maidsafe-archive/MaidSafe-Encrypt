@@ -11,10 +11,10 @@
 *  the explicit written permission of the board of directors of MaidSafe.net.  *
 *******************************************************************************/
 
+#include <thread>
 #include <array>
 #include <cstdlib>
 #include <string>
-#include <thread>
 
 #ifdef WIN32
 #  pragma warning(push, 1)
@@ -1436,7 +1436,8 @@ TEST_F(BasicTest, FUNC_RandomAccess) {
     fs::path buffered_chunk_store_path(*path / RandomAlphaNumericString(8));
     RemoteChunkStorePtr chunk_store(
         priv::chunk_store::CreateLocalChunkStore(buffered_chunk_store_path,
-                                                 *path / "local",
+                                                 *path / "local_manager",
+                                                 *path / "chunk_locks",
                                                  service.service()));
     DataMapPtr data_map(new DataMap);
     for (size_t i = 0; i < max_variation.size(); ++i) {

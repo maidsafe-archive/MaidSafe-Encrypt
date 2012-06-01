@@ -94,7 +94,8 @@ TEST(MassiveFile, FUNC_MemCheck) {
   DLOG(INFO) << "Creating chunk store in " << buffered_chunk_store_path;
   RemoteChunkStorePtr chunk_store =
         priv::chunk_store::CreateLocalChunkStore(buffered_chunk_store_path,
-                                                 *test_dir / "local",
+                                                 *test_dir / "local_manager",
+                                                 *test_dir / "chunk_locks",
                                                  asio_service.service());
   DataMapPtr data_map(new DataMap);
   std::shared_ptr<SelfEncryptor> self_encryptor(

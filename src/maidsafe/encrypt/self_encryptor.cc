@@ -13,13 +13,13 @@
 
 #include "maidsafe/encrypt/self_encryptor.h"
 
+#include <thread>
 #include <tuple>
 #include <algorithm>
 #include <limits>
 #include <set>
 #include <vector>
 #include <utility>
-#include <thread>
 
 #ifdef __MSVC__
 #  pragma warning(push, 1)

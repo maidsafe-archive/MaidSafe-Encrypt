@@ -14,8 +14,8 @@
 #ifndef MAIDSAFE_ENCRYPT_TESTS_ENCRYPT_TEST_BASE_H_
 #define MAIDSAFE_ENCRYPT_TESTS_ENCRYPT_TEST_BASE_H_
 
-#include <memory>
 #include <thread>
+#include <memory>
 
 #include "boost/scoped_array.hpp"
 #include "boost/filesystem/path.hpp"
@@ -49,7 +49,8 @@ class EncryptTestBase {
                                        RandomAlphaNumericString(8));
     chunk_store_ =
         priv::chunk_store::CreateLocalChunkStore(buffered_chunk_store_path,
-                                                 *test_dir_ / "local",
+                                                 *test_dir_ / "local_manager",
+                                                 *test_dir_ / "chunk_locks",
                                                  asio_service_.service());
     self_encryptor_.reset(new SelfEncryptor(data_map_,
                                             chunk_store_,
