@@ -98,8 +98,9 @@ TEST(MassiveFile, FUNC_MemCheck) {
                                                  *test_dir / "chunk_locks",
                                                  asio_service.service());
   DataMapPtr data_map(new DataMap);
-  std::shared_ptr<SelfEncryptor> self_encryptor(
-      new SelfEncryptor(data_map, chunk_store, kNumProcs));
+  std::shared_ptr<SelfEncryptor> self_encryptor(new SelfEncryptor(data_map,
+								  *chunk_store,
+								  kNumProcs));
 
   const uint32_t kDataSize((1 << 20) + 1);
   boost::scoped_array<char> original(new char[kDataSize]);

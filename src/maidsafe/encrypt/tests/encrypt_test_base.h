@@ -33,6 +33,9 @@ namespace maidsafe {
 namespace encrypt {
 namespace test {
 
+typedef std::shared_ptr<priv::chunk_store::RemoteChunkStore>
+        RemoteChunkStorePtr;
+
 class EncryptTestBase {
  public:
   explicit EncryptTestBase(int num_procs)
@@ -45,16 +48,13 @@ class EncryptTestBase {
         original_(),
         decrypted_() {
     asio_service_.Start(5);
-    fs::path buffered_chunk_store_path(*test_dir_ /
-                                       RandomAlphaNumericString(8));
+    fs::path buffered_chunk_store_path(*test_dir_ / RandomAlphaNumericString(8));
     chunk_store_ =
         priv::chunk_store::CreateLocalChunkStore(buffered_chunk_store_path,
                                                  *test_dir_ / "local_manager",
                                                  *test_dir_ / "chunk_locks",
                                                  asio_service_.service());
-    self_encryptor_.reset(new SelfEncryptor(data_map_,
-                                            chunk_store_,
-                                            num_procs_));
+    self_encryptor_.reset(new SelfEncryptor(data_map_, *chunk_store_, num_procs_));
   }
   virtual ~EncryptTestBase() {
     asio_service_.Stop();

@@ -48,6 +48,7 @@
 
 
 namespace fs = boost::filesystem;
+namespace pcs = maidsafe::priv::chunk_store;
 
 namespace maidsafe {
 namespace encrypt {
@@ -123,7 +124,7 @@ void DebugPrint(bool encrypting,
 
 
 SelfEncryptor::SelfEncryptor(DataMapPtr data_map,
-                             RemoteChunkStorePtr chunk_store,
+                             pcs::RemoteChunkStore& chunk_store,
                              int num_procs)
     : data_map_(data_map ? data_map : DataMapPtr(new DataMap)),
       sequencer_(new Sequencer),
@@ -545,7 +546,7 @@ int SelfEncryptor::DecryptChunk(const uint32_t &chunk_num, byte *data) {
   std::string content;
   {
     SharedLock shared_lock(chunk_store_mutex_);
-    content = chunk_store_->Get(data_map_->chunks[chunk_num].hash);
+    content = chunk_store_.Get(data_map_->chunks[chunk_num].hash);
   }
 
   if (content.empty()) {
@@ -735,7 +736,7 @@ int SelfEncryptor::EncryptChunk(const uint32_t &chunk_num,
         reinterpret_cast<char*>(post_hash.get()), crypto::SHA512::DIGESTSIZE);
 
     UniqueLock unique_lock(chunk_store_mutex_);
-    if (!chunk_store_->Store(data_map_->chunks[chunk_num].hash,
+    if (!chunk_store_.Store(data_map_->chunks[chunk_num].hash,
                              chunk_content, nullptr)) {
       DLOG(ERROR) << "Could not store "
                   << Base32Substr(data_map_->chunks[chunk_num].hash);
@@ -1334,7 +1335,7 @@ void SelfEncryptor::ReadInProcessData(char *data,
 bool SelfEncryptor::DeleteAllChunks() {
   UniqueLock chunk_store_unique_lock(chunk_store_mutex_);
   for (uint32_t i(0); i != data_map_->chunks.size(); ++i) {
-    if (!chunk_store_->Delete(data_map_->chunks[i].hash, nullptr)) {
+    if (!chunk_store_.Delete(data_map_->chunks[i].hash, nullptr)) {
       DLOG(WARNING) << "Failed to delete chunk " << i;
       return false;
     }
@@ -1393,7 +1394,7 @@ void SelfEncryptor::DeleteChunk(const uint32_t &chunk_num) {
   SharedLock shared_lock(data_mutex_);
   if (!data_map_->chunks[chunk_num].hash.empty()) {
     UniqueLock unique_lock(chunk_store_mutex_);
-    if (!chunk_store_->Delete(data_map_->chunks[chunk_num].hash, nullptr)) {
+    if (!chunk_store_.Delete(data_map_->chunks[chunk_num].hash, nullptr)) {
       DLOG(WARNING) << "Failed to delete chunk " << chunk_num << ": "
                     << Base32Substr(data_map_->chunks[chunk_num].hash);
     }
