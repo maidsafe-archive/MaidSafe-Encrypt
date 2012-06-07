@@ -1,5 +1,4 @@
-﻿
-/*******************************************************************************
+﻿/*******************************************************************************
 *  Copyright 2011 MaidSafe.net limited                                         *
 *                                                                              *
 *  The following source code is property of MaidSafe.net limited and is not    *
@@ -99,8 +98,8 @@ TEST(MassiveFile, FUNC_MemCheck) {
                                                  asio_service.service());
   DataMapPtr data_map(new DataMap);
   std::shared_ptr<SelfEncryptor> self_encryptor(new SelfEncryptor(data_map,
-								  *chunk_store,
-								  kNumProcs));
+                  *chunk_store,
+                  kNumProcs));
 
   const uint32_t kDataSize((1 << 20) + 1);
   boost::scoped_array<char> original(new char[kDataSize]);

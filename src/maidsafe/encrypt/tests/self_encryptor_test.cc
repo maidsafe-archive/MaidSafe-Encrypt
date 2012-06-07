@@ -1,5 +1,4 @@
-﻿
-/*******************************************************************************
+﻿/*******************************************************************************
 *  Copyright 2011 MaidSafe.net limited                                         *
 *                                                                              *
 *  The following source code is property of MaidSafe.net limited and is not    *
@@ -76,7 +75,7 @@ void GetEncryptionResult(boost::shared_array<byte> *result,
   }
   for (int i = 0; i != crypto::AES256_IVSize; ++i) {
     pad[i + (2 * crypto::SHA512::DIGESTSIZE)] =
-	n2hash[i + crypto::AES256_KeySize + crypto::AES256_IVSize];
+  n2hash[i + crypto::AES256_KeySize + crypto::AES256_IVSize];
   }
   // get key & IV
   std::copy(n2hash.get(), n2hash.get() + crypto::AES256_KeySize, key.get());
@@ -94,7 +93,7 @@ void GetEncryptionResult(boost::shared_array<byte> *result,
 
   for (size_t i = 0; i < compressed_size; ++i) {
     xor_res[i] = postenc[i] ^ pad[i % ((3 * crypto::SHA512::DIGESTSIZE) -
-				       crypto::AES256_KeySize - crypto::AES256_IVSize)];
+                 crypto::AES256_KeySize - crypto::AES256_IVSize)];
   }
   CryptoPP::SHA512().CalculateDigest(result->get(), xor_res.get(), compressed_size);
 }
@@ -183,128 +182,127 @@ TEST_P(BasicOffsetTest, BEH_EncryptDecrypt) {
 }
 
 INSTANTIATE_TEST_CASE_P(FileSmallerThanMinFileSize,
-			BasicOffsetTest,
+                        BasicOffsetTest,
                         testing::Values(std::make_pair(40, 0),
-					std::make_pair(40, 50),
-					std::make_pair(1024, 0),
-					std::make_pair(3 * kMinChunkSize - 24, 23),
-					std::make_pair(3 * kMinChunkSize - 1, 0)));
+                                        std::make_pair(40, 50),
+                                        std::make_pair(1024, 0),
+                                        std::make_pair(3 * kMinChunkSize - 24, 23),
+                                        std::make_pair(3 * kMinChunkSize - 1, 0)));
 
 INSTANTIATE_TEST_CASE_P(FileSmallerThanOneChunk,
-			BasicOffsetTest,
+                        BasicOffsetTest,
                         testing::Values(std::make_pair(3 * kMinChunkSize, 0),
-					std::make_pair(3 * kMinChunkSize - 1, 1),
-					std::make_pair(3 * kMinChunkSize - 1, 1024),
-					std::make_pair(kDefaultChunkSize - 23, 22),
-					std::make_pair(kDefaultChunkSize - 1, 0)));
+                                        std::make_pair(3 * kMinChunkSize - 1, 1),
+                                        std::make_pair(3 * kMinChunkSize - 1, 1024),
+                                        std::make_pair(kDefaultChunkSize - 23, 22),
+                                        std::make_pair(kDefaultChunkSize - 1, 0)));
 
 INSTANTIATE_TEST_CASE_P(FileSmallerThanThreeNormalChunks,
-			BasicOffsetTest,
-			testing::Values(std::make_pair(1, 2 * kDefaultChunkSize - 1),
-					std::make_pair(1, 2 * kDefaultChunkSize),
-					std::make_pair(1, 3 * kDefaultChunkSize - 2),
-					std::make_pair(kDefaultChunkSize, 0),
-					std::make_pair(kDefaultChunkSize - 1, 1),
-					std::make_pair(kDefaultChunkSize - 1, 1024),
-					std::make_pair(kDefaultChunkSize, kDefaultChunkSize),
-					std::make_pair(kDefaultChunkSize, kDefaultChunkSize + 1),
-					std::make_pair(2 * kDefaultChunkSize - 1, 0),
-					std::make_pair(2 * kDefaultChunkSize - 1, 1),
-					std::make_pair(2 * kDefaultChunkSize, 0),
-					std::make_pair(2 * kDefaultChunkSize - 1,
-						       kDefaultChunkSize),
-					std::make_pair(3 * kDefaultChunkSize - 23, 22),
-					std::make_pair(3 * kDefaultChunkSize - 1, 0)));
+      BasicOffsetTest,
+      testing::Values(std::make_pair(1, 2 * kDefaultChunkSize - 1),
+                      std::make_pair(1, 2 * kDefaultChunkSize),
+                      std::make_pair(1, 3 * kDefaultChunkSize - 2),
+                      std::make_pair(kDefaultChunkSize, 0),
+                      std::make_pair(kDefaultChunkSize - 1, 1),
+                      std::make_pair(kDefaultChunkSize - 1, 1024),
+                      std::make_pair(kDefaultChunkSize, kDefaultChunkSize),
+                      std::make_pair(kDefaultChunkSize, kDefaultChunkSize + 1),
+                      std::make_pair(2 * kDefaultChunkSize - 1, 0),
+                      std::make_pair(2 * kDefaultChunkSize - 1, 1),
+                      std::make_pair(2 * kDefaultChunkSize, 0),
+                      std::make_pair(2 * kDefaultChunkSize - 1, kDefaultChunkSize),
+                      std::make_pair(3 * kDefaultChunkSize - 23, 22),
+                      std::make_pair(3 * kDefaultChunkSize - 1, 0)));
 
 INSTANTIATE_TEST_CASE_P(FileGreaterThanThreeNormalChunks,  // or equal to
-			BasicOffsetTest,
-			testing::Values(
-			    std::make_pair(1, 3 * kDefaultChunkSize - 1),
-			    std::make_pair(1, 3 * kDefaultChunkSize),
-			    std::make_pair(1, 3 * kDefaultChunkSize + 1),
-			    std::make_pair(kDefaultChunkSize - 1, 2 * kDefaultChunkSize + 1),
-			    std::make_pair(kDefaultChunkSize - 1, 2 * kDefaultChunkSize + 2),
-			    std::make_pair(kDefaultChunkSize - 1,
-					   2 * kDefaultChunkSize + kMinChunkSize),
-			    std::make_pair(kDefaultChunkSize - 1,
-					   2 * kDefaultChunkSize + kMinChunkSize + 1),
-			    std::make_pair(kDefaultChunkSize - 1,
-					   2 * kDefaultChunkSize + kMinChunkSize + 2),
-			    std::make_pair(kDefaultChunkSize - 1, 3 * kDefaultChunkSize),
-			    std::make_pair(kDefaultChunkSize - 1, 3 * kDefaultChunkSize + 1),
-			    std::make_pair(kDefaultChunkSize - 1, 3 * kDefaultChunkSize + 2),
-			    std::make_pair(kDefaultChunkSize, 2 * kDefaultChunkSize),
-			    std::make_pair(kDefaultChunkSize, 2 * kDefaultChunkSize + 1),
-			    std::make_pair(kDefaultChunkSize,
-					   2 * kDefaultChunkSize + kMinChunkSize - 1),
-			    std::make_pair(kDefaultChunkSize,
-					   2 * kDefaultChunkSize + kMinChunkSize),
-			    std::make_pair(kDefaultChunkSize,
-					   2 * kDefaultChunkSize + kMinChunkSize + 1),
-			    std::make_pair(kDefaultChunkSize, 3 * kDefaultChunkSize - 1),
-			    std::make_pair(kDefaultChunkSize, 3 * kDefaultChunkSize),
-			    std::make_pair(kDefaultChunkSize, 3 * kDefaultChunkSize + 1),
-			    std::make_pair(kDefaultChunkSize,
-					   3 * kDefaultChunkSize + kMinChunkSize - 1),
-			    std::make_pair(kDefaultChunkSize,
-					   3 * kDefaultChunkSize + kMinChunkSize),
-			    std::make_pair(kDefaultChunkSize,
-					   3 * kDefaultChunkSize + kMinChunkSize + 1),
-			    std::make_pair(2 * kDefaultChunkSize - 1, kDefaultChunkSize + 1),
-			    std::make_pair(2 * kDefaultChunkSize - 1, kDefaultChunkSize + 2),
-			    std::make_pair(2 * kDefaultChunkSize - 1,
-					   2 * kDefaultChunkSize + kMinChunkSize),
-			    std::make_pair(2 * kDefaultChunkSize - 1,
-					   2 * kDefaultChunkSize + kMinChunkSize + 1),
-			    std::make_pair(2 * kDefaultChunkSize - 1,
-					   2 * kDefaultChunkSize + kMinChunkSize + 2),
-			    std::make_pair(2 * kDefaultChunkSize - 1, 2 * kDefaultChunkSize),
-			    std::make_pair(2 * kDefaultChunkSize - 1, 2 * kDefaultChunkSize + 1),
-			    std::make_pair(2 * kDefaultChunkSize - 1, 2 * kDefaultChunkSize + 2),
-			    std::make_pair(2 * kDefaultChunkSize, kDefaultChunkSize),
-			    std::make_pair(2 * kDefaultChunkSize, kDefaultChunkSize + 1),
-			    std::make_pair(2 * kDefaultChunkSize,
-					   kDefaultChunkSize + kMinChunkSize - 1),
-			    std::make_pair(2 * kDefaultChunkSize,
-					   kDefaultChunkSize + kMinChunkSize),
-			    std::make_pair(2 * kDefaultChunkSize,
-					   kDefaultChunkSize + kMinChunkSize + 1),
-			    std::make_pair(2 * kDefaultChunkSize, 2 * kDefaultChunkSize - 1),
-			    std::make_pair(2 * kDefaultChunkSize, 2 * kDefaultChunkSize),
-			    std::make_pair(2 * kDefaultChunkSize, 2 * kDefaultChunkSize + 1),
-			    std::make_pair(2 * kDefaultChunkSize,
-					   2 * kDefaultChunkSize + kMinChunkSize - 1),
-			    std::make_pair(2 * kDefaultChunkSize,
-					   2 * kDefaultChunkSize + kMinChunkSize),
-			    std::make_pair(2 * kDefaultChunkSize,
-					   2 * kDefaultChunkSize + kMinChunkSize + 1),
-			    std::make_pair(2 * kDefaultChunkSize - 1, 8 * kDefaultChunkSize),
-			    std::make_pair(2 * kDefaultChunkSize, 8 * kDefaultChunkSize - 1)));
+                        BasicOffsetTest,
+                        testing::Values(
+                            std::make_pair(1, 3 * kDefaultChunkSize - 1),
+                            std::make_pair(1, 3 * kDefaultChunkSize),
+                            std::make_pair(1, 3 * kDefaultChunkSize + 1),
+                            std::make_pair(kDefaultChunkSize - 1, 2 * kDefaultChunkSize + 1),
+                            std::make_pair(kDefaultChunkSize - 1, 2 * kDefaultChunkSize + 2),
+                            std::make_pair(kDefaultChunkSize - 1,
+                                           2 * kDefaultChunkSize + kMinChunkSize),
+                            std::make_pair(kDefaultChunkSize - 1,
+                                           2 * kDefaultChunkSize + kMinChunkSize + 1),
+                            std::make_pair(kDefaultChunkSize - 1,
+                                           2 * kDefaultChunkSize + kMinChunkSize + 2),
+                            std::make_pair(kDefaultChunkSize - 1, 3 * kDefaultChunkSize),
+                            std::make_pair(kDefaultChunkSize - 1, 3 * kDefaultChunkSize + 1),
+                            std::make_pair(kDefaultChunkSize - 1, 3 * kDefaultChunkSize + 2),
+                            std::make_pair(kDefaultChunkSize, 2 * kDefaultChunkSize),
+                            std::make_pair(kDefaultChunkSize, 2 * kDefaultChunkSize + 1),
+                            std::make_pair(kDefaultChunkSize,
+                                           2 * kDefaultChunkSize + kMinChunkSize - 1),
+                            std::make_pair(kDefaultChunkSize,
+                                           2 * kDefaultChunkSize + kMinChunkSize),
+                            std::make_pair(kDefaultChunkSize,
+                                           2 * kDefaultChunkSize + kMinChunkSize + 1),
+                            std::make_pair(kDefaultChunkSize, 3 * kDefaultChunkSize - 1),
+                            std::make_pair(kDefaultChunkSize, 3 * kDefaultChunkSize),
+                            std::make_pair(kDefaultChunkSize, 3 * kDefaultChunkSize + 1),
+                            std::make_pair(kDefaultChunkSize,
+                                           3 * kDefaultChunkSize + kMinChunkSize - 1),
+                            std::make_pair(kDefaultChunkSize,
+                                           3 * kDefaultChunkSize + kMinChunkSize),
+                            std::make_pair(kDefaultChunkSize,
+                                           3 * kDefaultChunkSize + kMinChunkSize + 1),
+                            std::make_pair(2 * kDefaultChunkSize - 1, kDefaultChunkSize + 1),
+                            std::make_pair(2 * kDefaultChunkSize - 1, kDefaultChunkSize + 2),
+                            std::make_pair(2 * kDefaultChunkSize - 1,
+                                           2 * kDefaultChunkSize + kMinChunkSize),
+                            std::make_pair(2 * kDefaultChunkSize - 1,
+                                           2 * kDefaultChunkSize + kMinChunkSize + 1),
+                            std::make_pair(2 * kDefaultChunkSize - 1,
+                                           2 * kDefaultChunkSize + kMinChunkSize + 2),
+                            std::make_pair(2 * kDefaultChunkSize - 1, 2 * kDefaultChunkSize),
+                            std::make_pair(2 * kDefaultChunkSize - 1, 2 * kDefaultChunkSize + 1),
+                            std::make_pair(2 * kDefaultChunkSize - 1, 2 * kDefaultChunkSize + 2),
+                            std::make_pair(2 * kDefaultChunkSize, kDefaultChunkSize),
+                            std::make_pair(2 * kDefaultChunkSize, kDefaultChunkSize + 1),
+                            std::make_pair(2 * kDefaultChunkSize,
+                                           kDefaultChunkSize + kMinChunkSize - 1),
+                            std::make_pair(2 * kDefaultChunkSize,
+                                           kDefaultChunkSize + kMinChunkSize),
+                            std::make_pair(2 * kDefaultChunkSize,
+                                           kDefaultChunkSize + kMinChunkSize + 1),
+                            std::make_pair(2 * kDefaultChunkSize, 2 * kDefaultChunkSize - 1),
+                            std::make_pair(2 * kDefaultChunkSize, 2 * kDefaultChunkSize),
+                            std::make_pair(2 * kDefaultChunkSize, 2 * kDefaultChunkSize + 1),
+                            std::make_pair(2 * kDefaultChunkSize,
+                                           2 * kDefaultChunkSize + kMinChunkSize - 1),
+                            std::make_pair(2 * kDefaultChunkSize,
+                                           2 * kDefaultChunkSize + kMinChunkSize),
+                            std::make_pair(2 * kDefaultChunkSize,
+                                           2 * kDefaultChunkSize + kMinChunkSize + 1),
+                            std::make_pair(2 * kDefaultChunkSize - 1, 8 * kDefaultChunkSize),
+                            std::make_pair(2 * kDefaultChunkSize, 8 * kDefaultChunkSize - 1)));
 
 INSTANTIATE_TEST_CASE_P(FileGreaterThanTenNormalChunks,  // or equal to
-			BasicOffsetTest,
-			testing::Values(
-			    std::make_pair(1, 10 * kDefaultChunkSize - 1),
-			    std::make_pair(1, 10 * kDefaultChunkSize),
-			    std::make_pair(1, 10 * kDefaultChunkSize + kMinChunkSize - 1),
-			    std::make_pair(1, 10 * kDefaultChunkSize + kMinChunkSize),
-			    std::make_pair(1, 10 * kDefaultChunkSize + kMinChunkSize + 1),
-			    std::make_pair(10 * kDefaultChunkSize - 1, 0),
-			    std::make_pair(10 * kDefaultChunkSize - 1, 1),
-			    std::make_pair(10 * kDefaultChunkSize - 1, 2),
-			    std::make_pair(10 * kDefaultChunkSize, 0),
-			    std::make_pair(10 * kDefaultChunkSize, 1),
-			    std::make_pair(10 * kDefaultChunkSize + kMinChunkSize - 1, 0),
-			    std::make_pair(10 * kDefaultChunkSize + kMinChunkSize - 1, 1),
-			    std::make_pair(10 * kDefaultChunkSize + kMinChunkSize, 0),
-			    std::make_pair(10 * kDefaultChunkSize + kMinChunkSize, 1)));
+                        BasicOffsetTest,
+                        testing::Values(
+                            std::make_pair(1, 10 * kDefaultChunkSize - 1),
+                            std::make_pair(1, 10 * kDefaultChunkSize),
+                            std::make_pair(1, 10 * kDefaultChunkSize + kMinChunkSize - 1),
+                            std::make_pair(1, 10 * kDefaultChunkSize + kMinChunkSize),
+                            std::make_pair(1, 10 * kDefaultChunkSize + kMinChunkSize + 1),
+                            std::make_pair(10 * kDefaultChunkSize - 1, 0),
+                            std::make_pair(10 * kDefaultChunkSize - 1, 1),
+                            std::make_pair(10 * kDefaultChunkSize - 1, 2),
+                            std::make_pair(10 * kDefaultChunkSize, 0),
+                            std::make_pair(10 * kDefaultChunkSize, 1),
+                            std::make_pair(10 * kDefaultChunkSize + kMinChunkSize - 1, 0),
+                            std::make_pair(10 * kDefaultChunkSize + kMinChunkSize - 1, 1),
+                            std::make_pair(10 * kDefaultChunkSize + kMinChunkSize, 0),
+                            std::make_pair(10 * kDefaultChunkSize + kMinChunkSize, 1)));
 
 INSTANTIATE_TEST_CASE_P(LargeFile,
-			BasicOffsetTest,
-			testing::Values(
-			    std::make_pair(1, 50 * kDefaultChunkSize),
-			    std::make_pair(10 * kDefaultChunkSize, 50 * kDefaultChunkSize),
-			    std::make_pair(50 * kDefaultChunkSize + kMinChunkSize, 1)));
+                        BasicOffsetTest,
+                        testing::Values(
+                            std::make_pair(1, 50 * kDefaultChunkSize),
+                            std::make_pair(10 * kDefaultChunkSize, 50 * kDefaultChunkSize),
+                            std::make_pair(50 * kDefaultChunkSize + kMinChunkSize, 1)));
 
 
 
@@ -381,25 +379,25 @@ TEST_P(SingleBytesTest, BEH_WriteAlternatingBytes) {
 }
 
 INSTANTIATE_TEST_CASE_P(Writing,
-			SingleBytesTest,
-			testing::Values(2,
-					kMinChunkSize - 1,
-					kMinChunkSize,
-					kMinChunkSize + 1,
-					3 * kMinChunkSize - 1,
-					3 * kMinChunkSize,
-					3 * kMinChunkSize + 1,
-					kDefaultChunkSize - 1,
-					kDefaultChunkSize,
-					kDefaultChunkSize + 1,
-					3 * kDefaultChunkSize - 1,
-					3 * kDefaultChunkSize,
-					3 * kDefaultChunkSize + 1,
-					4 * kDefaultChunkSize - 1,
-					4 * kDefaultChunkSize,
-					4 * kDefaultChunkSize + kMinChunkSize - 1,
-					4 * kDefaultChunkSize + kMinChunkSize,
-					4 * kDefaultChunkSize + kMinChunkSize + 1));
+                        SingleBytesTest,
+                        testing::Values(2,
+                                        kMinChunkSize - 1,
+                                        kMinChunkSize,
+                                        kMinChunkSize + 1,
+                                        3 * kMinChunkSize - 1,
+                                        3 * kMinChunkSize,
+                                        3 * kMinChunkSize + 1,
+                                        kDefaultChunkSize - 1,
+                                        kDefaultChunkSize,
+                                        kDefaultChunkSize + 1,
+                                        3 * kDefaultChunkSize - 1,
+                                        3 * kDefaultChunkSize,
+                                        3 * kDefaultChunkSize + 1,
+                                        4 * kDefaultChunkSize - 1,
+                                        4 * kDefaultChunkSize,
+                                        4 * kDefaultChunkSize + kMinChunkSize - 1,
+                                        4 * kDefaultChunkSize + kMinChunkSize,
+                                        4 * kDefaultChunkSize + kMinChunkSize + 1));
 
 
 
@@ -432,17 +430,17 @@ TEST_P(SmallSingleBytesTest, BEH_WriteRandomOrder) {
 }
 
 INSTANTIATE_TEST_CASE_P(Writing,
-			SmallSingleBytesTest,
-			testing::Values(1,
-					kMinChunkSize - 1,
-					kMinChunkSize,
-					kMinChunkSize + 1,
-					3 * kMinChunkSize - 1,
-					3 * kMinChunkSize,
-					3 * kMinChunkSize + 1,
-					kDefaultChunkSize - 1,
-					kDefaultChunkSize,
-					kDefaultChunkSize + 1));
+                        SmallSingleBytesTest,
+                        testing::Values(1,
+                                        kMinChunkSize - 1,
+                                        kMinChunkSize,
+                                        kMinChunkSize + 1,
+                                        3 * kMinChunkSize - 1,
+                                        3 * kMinChunkSize,
+                                        3 * kMinChunkSize + 1,
+                                        kDefaultChunkSize - 1,
+                                        kDefaultChunkSize,
+                                        kDefaultChunkSize + 1));
 
 
 
@@ -454,13 +452,14 @@ TEST_P(InProcessTest, BEH_ReadInOrder) {
   while (current_read_position != kDataSize_) {
     current_write_size = std::min(kDefaultChunkSize, kDataSize_ - current_write_position);
     EXPECT_TRUE(self_encryptor_->Write(&original_[current_write_position],
-                current_write_size, current_write_position));
+                                       current_write_size,
+                                       current_write_position));
     while (current_read_position != current_write_position) {
       current_read_size = std::min(current_write_position - current_read_position,
-				   RandomUint32() % (kDefaultChunkSize / 3));
+                                   RandomUint32() % (kDefaultChunkSize / 3));
       EXPECT_TRUE(self_encryptor_->Read(&decrypted_[current_read_position],
-					current_read_size,
-					current_read_position));
+                                        current_read_size,
+                                        current_read_position));
       for (uint32_t i = current_read_position; i < current_read_position + current_read_size; ++i)
         ASSERT_EQ(original_[i], decrypted_[i]) << "i == " << i;
       current_read_position += current_read_size;
@@ -476,26 +475,25 @@ TEST_P(InProcessTest, BEH_ReadInOrder) {
 }
 
 INSTANTIATE_TEST_CASE_P(Reading,
-			InProcessTest,
-			testing::Values(
-			    1,
-			    kMinChunkSize - 1,
-			    kMinChunkSize,
-			    kMinChunkSize + 1,
-			    3 * kMinChunkSize - 1,
-			    3 * kMinChunkSize,
-			    3 * kMinChunkSize + 1,
-			    kDefaultChunkSize - 1,
-			    kDefaultChunkSize,
-			    kDefaultChunkSize + 1,
-			    3 * kDefaultChunkSize - 1,
-			    3 * kDefaultChunkSize,
-			    3 * kDefaultChunkSize + 1,
-			    g_num_procs * 3 * kDefaultChunkSize - 1,
-			    g_num_procs * 3 * kDefaultChunkSize,
-			    g_num_procs * 3 * kDefaultChunkSize + kMinChunkSize - 1,
-			    g_num_procs * 3 * kDefaultChunkSize + kMinChunkSize,
-			    g_num_procs * 3 * kDefaultChunkSize + kMinChunkSize + 1));
+                        InProcessTest,
+                        testing::Values(1,
+                                        kMinChunkSize - 1,
+                                        kMinChunkSize,
+                                        kMinChunkSize + 1,
+                                        3 * kMinChunkSize - 1,
+                                        3 * kMinChunkSize,
+                                        3 * kMinChunkSize + 1,
+                                        kDefaultChunkSize - 1,
+                                        kDefaultChunkSize,
+                                        kDefaultChunkSize + 1,
+                                        3 * kDefaultChunkSize - 1,
+                                        3 * kDefaultChunkSize,
+                                        3 * kDefaultChunkSize + 1,
+                                        g_num_procs * 3 * kDefaultChunkSize - 1,
+                                        g_num_procs * 3 * kDefaultChunkSize,
+                                        g_num_procs * 3 * kDefaultChunkSize + kMinChunkSize - 1,
+                                        g_num_procs * 3 * kDefaultChunkSize + kMinChunkSize,
+                                        g_num_procs * 3 * kDefaultChunkSize + kMinChunkSize + 1));
 
 class BasicTest : public EncryptTestBase, public testing::Test {
  public:
@@ -630,15 +628,15 @@ TEST_F(BasicTest, BEH_WriteRandomSizeRandomPosition) {
   if ((*overlap_itr).first == last_piece)
     ++overlap_itr;
   std::pair<uint64_t, std::string> post_overlap((*overlap_itr).first,
-						((*overlap_itr).second + extra));
+                                                ((*overlap_itr).second + extra));
   uint32_t post_position(static_cast<uint32_t>((*overlap_itr).first +
-					       (*overlap_itr).second.size()));
+                                               (*overlap_itr).second.size()));
 
   uint32_t wtotal(0);
   for (auto it = broken_data.begin(); it != broken_data.end(); ++it) {
     EXPECT_TRUE(self_encryptor_->Write((*it).second.data(),
-				       static_cast<uint32_t>((*it).second.size()),
-				       (*it).first));
+                                       static_cast<uint32_t>((*it).second.size()),
+                                       (*it).first));
     wtotal += static_cast<uint32_t>(it->second.size());
   }
   EXPECT_EQ(wtotal, kDataSize_);
@@ -650,8 +648,8 @@ TEST_F(BasicTest, BEH_WriteRandomSizeRandomPosition) {
   content_.replace(post_position, 7, extra);
   std::copy(content_.data(), content_.data() + kDataSize_, original_.get());
   EXPECT_TRUE(self_encryptor_->Write(post_overlap.second.data(),
-				     static_cast<uint32_t>(post_overlap.second.size()),
-				     post_overlap.first));
+                                     static_cast<uint32_t>(post_overlap.second.size()),
+                                     post_overlap.first));
   EXPECT_TRUE(self_encryptor_->Read(decrypted_.get(), kDataSize_, 0));
   for (uint32_t i(0); i != kDataSize_; ++i) {
     ASSERT_EQ(original_[i], decrypted_[i]) << "difference at " << i << " of " << kDataSize_;
@@ -694,8 +692,8 @@ TEST_F(BasicTest, FUNC_RandomSizedOutOfSequenceWritesWithGapsAndOverlaps) {
     uint64_t piece_position(index_array[i] * piece_size);
     total_size = std::max(total_size, static_cast<uint32_t>(piece_position + piece_size));
     EXPECT_TRUE(self_encryptor_->Write(string_array[index_array[i]].data(),
-				       piece_size,
-				       piece_position));
+                                       piece_size,
+                                       piece_position));
 
     ASSERT_GE(kDataSize_, total_size);
     EXPECT_EQ(total_size, self_encryptor_->size());
@@ -743,7 +741,8 @@ TEST_F(BasicTest, BEH_WriteLongAndShort65536SegmentsReadThenRewrite) {
   }
   for (size_t i = 0; i != parts; ++i) {
     EXPECT_TRUE(self_encryptor_->Write(original[i].c_str(),
-        static_cast<uint32_t>(original[i].size()), count));
+                                       static_cast<uint32_t>(original[i].size()),
+                                       count));
     count += original[i].size();
   }
   self_encryptor_->Flush();
@@ -765,8 +764,8 @@ TEST_F(BasicTest, BEH_WriteLongAndShort65536SegmentsReadThenRewrite) {
     count = 0;
     for (size_t i = 0; i != parts; ++i) {
       EXPECT_TRUE(self_encryptor.Read(const_cast<char*>(recovered[i].data()),
-				      static_cast<uint32_t>(recovered[i].size()),
-				      count));
+                                      static_cast<uint32_t>(recovered[i].size()),
+                                      count));
       EXPECT_EQ(original[i], recovered[i]);
       count += original[i].size();
     }
@@ -791,8 +790,8 @@ TEST_F(BasicTest, BEH_WriteLongAndShort65536SegmentsReadThenRewrite) {
       count = 0;
       for (size_t i = 0; i != parts; ++i) {
         EXPECT_TRUE(self_encryptor.Write(overwrite[i].c_str(),
-					 static_cast<uint32_t>(overwrite[i].size()),
-					 count));
+           static_cast<uint32_t>(overwrite[i].size()),
+           count));
         count += overwrite[i].size();
       }
     }
@@ -800,8 +799,8 @@ TEST_F(BasicTest, BEH_WriteLongAndShort65536SegmentsReadThenRewrite) {
     count = 0;
     for (size_t i = 0; i != parts; ++i) {
       EXPECT_TRUE(self_encryptor.Read(const_cast<char*>(recovered[i].data()),
-				      static_cast<uint32_t>(recovered[i].size()),
-				      count));
+                                      static_cast<uint32_t>(recovered[i].size()),
+                                      count));
       size_t overwrite_size(overwrite[i].size());
       for (size_t j = 0; j != overwrite_size; ++j)
         ASSERT_EQ(overwrite[i][j], recovered[i][j]) << "Failed on string " << i
@@ -832,11 +831,11 @@ TEST_F(BasicTest, BEH_4096ByteOutOfSequenceWritesReadsAndRewrites) {
   for (size_t i = 0; i != kGapIndex; ++i) {
     EXPECT_TRUE(self_encryptor_->Write(string_array[index_array[i]].data(),
                                        kSize,
-				       index_array[i] * kSize));
+                                       index_array[i] * kSize));
     compare.replace(it + index_array[i] * kSize,
                     it + index_array[i] * kSize + kSize,
                     string_array[index_array[i]].data(),
-		    kSize);
+                    kSize);
   }
   for (size_t i = kGapIndex + 1; i != kParts; ++i) {
     EXPECT_TRUE(self_encryptor_->Write(string_array[index_array[i]].data(),
@@ -844,16 +843,16 @@ TEST_F(BasicTest, BEH_4096ByteOutOfSequenceWritesReadsAndRewrites) {
     compare.replace(it + index_array[i] * kSize,
                     it + index_array[i] * kSize + kSize,
                     string_array[index_array[i]].data(),
-		    kSize);
+                    kSize);
   }
   // write to the gap...
   EXPECT_TRUE(self_encryptor_->Write(string_array[index_array[kGapIndex]].data(),
-				     kSize,
-				     index_array[kGapIndex] * kSize + 1025));
+                                     kSize,
+                                     index_array[kGapIndex] * kSize + 1025));
   compare.replace(it + index_array[kGapIndex] * kSize + 1025,
                   it + index_array[kGapIndex] * kSize + 1025 + kSize,
                   string_array[index_array[kGapIndex]].data(),
-		  kSize);
+                  kSize);
   // Unknown number of chunks and data map size...
   // No content yet...
   EXPECT_TRUE(self_encryptor_->data_map()->content.empty());
@@ -882,16 +881,16 @@ TEST_F(BasicTest, BEH_4096ByteOutOfSequenceWritesReadsAndRewrites) {
                              static_cast<uint32_t>(string_array[i].size()),
                              i * kSize - kOffset);
         compare.replace(it + i * kSize - kOffset,
-			it + i * kSize - kOffset + string_array[i].size(),
-			string_array[i].data(),
+                        it + i * kSize - kOffset + string_array[i].size(),
+                        string_array[i].data(),
                         string_array[i].size());
       } else {
         self_encryptor.Write(string_array[i].data(),
-			     static_cast<uint32_t>(string_array[i].size()),
+                             static_cast<uint32_t>(string_array[i].size()),
                              i * kSize + kOffset);
         compare.replace(it + i * kSize + kOffset,
-			it + i * kSize + kOffset + string_array[i].size(),
-			string_array[i].data(),
+                        it + i * kSize + kOffset + string_array[i].size(),
+                        string_array[i].data(),
                         string_array[i].size());
       }
     } else if (i % 10 == 0) {
@@ -899,20 +898,20 @@ TEST_F(BasicTest, BEH_4096ByteOutOfSequenceWritesReadsAndRewrites) {
                            static_cast<uint32_t>(string_array[i].size()),
                            i * kSize + kOffset);
       compare.replace(it + i * kSize + kOffset,
-		      it + i * kSize + kOffset + string_array[i].size(),
-		      string_array[i].data(),
+                      it + i * kSize + kOffset + string_array[i].size(),
+                      string_array[i].data(),
                       string_array[i].size());
       self_encryptor.Read(const_cast<char*>(written.c_str()), kSize, i * kSize);
       EXPECT_EQ(written, compare.substr(i * kSize, kSize));
     } else {
       if (i % 2 == 0) {
         self_encryptor.Write(string_array[i].data(),
-			     static_cast<uint32_t>(string_array[i].size()),
+                             static_cast<uint32_t>(string_array[i].size()),
                              i * kSize);
         compare.replace(it + i * kSize,
-			it + i * kSize + string_array[i].size(),
+                        it + i * kSize + string_array[i].size(),
                         string_array[i].data(),
-			string_array[i].size());
+                        string_array[i].size());
         self_encryptor.Read(const_cast<char*>(written.c_str()), kSize, i * kSize);
         EXPECT_EQ(written, compare.substr(i * kSize, kSize));
       } else {
@@ -922,9 +921,9 @@ TEST_F(BasicTest, BEH_4096ByteOutOfSequenceWritesReadsAndRewrites) {
                              static_cast<uint32_t>(string_array[i].size()),
                              i * kSize);
         compare.replace(it + i * kSize,
-			it + i * kSize + string_array[i].size(),
+                        it + i * kSize + string_array[i].size(),
                         string_array[i].data(),
-			string_array[i].size());
+                        string_array[i].size());
       }
     }
   }
@@ -1008,16 +1007,12 @@ TEST_F(BasicTest, BEH_WriteSmallThenAdd) {
   original += new_content;
   decrypted.resize(kSize + 2 + kNewSize);
   decrypted.assign(decrypted.size(), 1);
-  EXPECT_TRUE(self_encryptor_->Read(const_cast<char*>(decrypted.data()),
-                                    kSize + 2 + kNewSize,
-				    0));
+  EXPECT_TRUE(self_encryptor_->Read(const_cast<char*>(decrypted.data()), kSize + 2 + kNewSize, 0));
   EXPECT_EQ(original, decrypted);
   EXPECT_EQ(kSize + 2 + kNewSize, self_encryptor_->size());
   self_encryptor_->Flush();
   decrypted.assign(decrypted.size(), 1);
-  EXPECT_TRUE(self_encryptor_->Read(const_cast<char*>(decrypted.data()),
-                                    kSize + 2 + kNewSize,
-				    0));
+  EXPECT_TRUE(self_encryptor_->Read(const_cast<char*>(decrypted.data()), kSize + 2 + kNewSize, 0));
   EXPECT_EQ(original, decrypted);
   EXPECT_EQ(kSize + 2 + kNewSize, self_encryptor_->size());
   EXPECT_EQ(kSize + 2 + kNewSize, TotalSize(data_map_));
@@ -1031,14 +1026,14 @@ TEST_F(BasicTest, BEH_WriteSmallThenAdd) {
   decrypted.assign(decrypted.size(), 1);
   EXPECT_TRUE(self_encryptor_->Read(const_cast<char*>(decrypted.data()),
                                     kSize + 2 + kNewSize + 1,
-				    0));
+                                    0));
   EXPECT_EQ(original, decrypted);
   EXPECT_EQ(kSize + 2 + kNewSize + 1, self_encryptor_->size());
   self_encryptor_->Flush();
   decrypted.assign(decrypted.size(), 1);
   EXPECT_TRUE(self_encryptor_->Read(const_cast<char*>(decrypted.data()),
                                     kSize + 2 + kNewSize + 1,
-				    0));
+                                    0));
   EXPECT_EQ(original, decrypted);
   EXPECT_EQ(kSize + 2 + kNewSize + 1, self_encryptor_->size());
   EXPECT_EQ(kSize + 2 + kNewSize + 1, TotalSize(data_map_));
@@ -1046,7 +1041,7 @@ TEST_F(BasicTest, BEH_WriteSmallThenAdd) {
 }
 
 TEST_F(BasicTest, BEH_3SmallChunkRewrite) {
-  uint32_t size = 153855*2+153857;
+  uint32_t size = 153855 * 2  +153857;
   std::string content(RandomString(size)), recovered(size, 'V');
 
   EXPECT_TRUE(self_encryptor_->Write(content.data(), size, 0));
@@ -1062,7 +1057,7 @@ TEST_F(BasicTest, BEH_3SmallChunkRewrite) {
     SelfEncryptor self_encryptor(data_map_, *chunk_store_, num_procs_);
     content.erase(content.begin() + 300, content.begin() + 350);
     EXPECT_TRUE(self_encryptor.Write(content.data(),
-                static_cast<uint32_t>(content.size()), 0));
+                                     static_cast<uint32_t>(content.size()), 0));
     recovered.assign(size - 50, 'W');
     EXPECT_TRUE(self_encryptor.Read(const_cast<char*>(recovered.data()), size - 50, 0));
     ASSERT_EQ(content, recovered);
@@ -1121,7 +1116,7 @@ TEST_F(BasicTest, BEH_ManualCheckWrite) {
   GetEncryptionResult(&enc_res, prehash, prehash, prehash, pre_enc_chunk, chunk_size);
   // calculate result of enc for final chunk
   GetEncryptionResult(&enc_res_final, prehash, prehash, prehash_final,
-		      final_chunk, final_chunk_size);
+          final_chunk, final_chunk_size);
   // calculate result of enc for chunk 0 & 1
   GetEncryptionResult(&enc_res_C0, prehash_final, prehash, prehash, pre_enc_chunk, chunk_size);
   GetEncryptionResult(&enc_res_C1, prehash, prehash_final, prehash, pre_enc_chunk, chunk_size);
@@ -1136,23 +1131,23 @@ TEST_F(BasicTest, BEH_ManualCheckWrite) {
   for (uint32_t i = 0; i!= num_chunks-1; ++i) {
     for (int j = 0; j != crypto::SHA512::DIGESTSIZE; ++j) {
     ASSERT_EQ(prehash[j], self_encryptor_->data_map()->chunks[i].pre_hash[j])
-	      << "failed at chunk " << i << " pre hash " << j;
+        << "failed at chunk " << i << " pre hash " << j;
     }
   }
   for (int j = 0; j != crypto::SHA512::DIGESTSIZE; ++j) {
     ASSERT_EQ(prehash_final[j], self_encryptor_->data_map()->chunks[num_chunks-1].pre_hash[j])
-	      << "failed at final chunk pre hash " << j;
+        << "failed at final chunk pre hash " << j;
   }
 
   // enc hash checks
   for (int i = 0; i != crypto::SHA512::DIGESTSIZE; ++i) {
     ASSERT_EQ(enc_res_C0[i], static_cast<byte>(self_encryptor_->data_map()->chunks[0].hash[i]))
-	      << "failed at chunk 0 post hash : " << i;
+        << "failed at chunk 0 post hash : " << i;
     ASSERT_EQ(enc_res_C1[i], static_cast<byte>(self_encryptor_->data_map()->chunks[1].hash[i]))
-	      << "failed at chunk 1 post hash : " << i;
+        << "failed at chunk 1 post hash : " << i;
     ASSERT_EQ(enc_res_final[i],
-	      static_cast<byte>(self_encryptor_->data_map()->chunks[num_chunks-1].hash[i]))
-	      << "failed at final chunk post hash : " << i;
+        static_cast<byte>(self_encryptor_->data_map()->chunks[num_chunks-1].hash[i]))
+        << "failed at final chunk post hash : " << i;
   }
 
   for (uint32_t i = 2; i!= num_chunks-1; ++i) {
@@ -1168,8 +1163,8 @@ TEST_F(BasicTest, BEH_TruncateIncreaseScenario1) {
   const uint32_t kIncrease((RandomUint32() % 4000) + 95);
   {
     std::shared_ptr<SelfEncryptor> self_encryptor(new SelfEncryptor(data_map_,
-								    *chunk_store_,
-								    num_procs_));
+                                                                    *chunk_store_,
+                                                                    num_procs_));
     boost::scoped_array<char>plain_data(new char[kTestDataSize]);
     memset(plain_data.get(), 0, kTestDataSize);
 
@@ -1199,8 +1194,8 @@ TEST_F(BasicTest, BEH_TruncateIncreaseScenario1) {
     }
   }
   std::shared_ptr<SelfEncryptor> temp_self_encryptor(new SelfEncryptor(data_map_,
-								       *chunk_store_,
-								       num_procs_));
+                                                                       *chunk_store_,
+                                                                       num_procs_));
   EXPECT_EQ(kTestDataSize + kIncrease, temp_self_encryptor->size());
 }
 
@@ -1208,8 +1203,8 @@ TEST_F(BasicTest, BEH_TruncateIncreaseScenario2) {
   const size_t kTestDataSize(kDefaultChunkSize * 40);
   {
     std::shared_ptr<SelfEncryptor> self_encryptor(new SelfEncryptor(data_map_,
-								    *chunk_store_,
-								    num_procs_));
+                                                                    *chunk_store_,
+                                                                    num_procs_));
     EXPECT_TRUE(self_encryptor->Truncate(100));
     EXPECT_EQ(100, self_encryptor->size());
 
@@ -1247,8 +1242,8 @@ TEST_F(BasicTest, BEH_TruncateIncreaseScenario2) {
   }
 
   std::shared_ptr<SelfEncryptor> temp_self_encryptor(new SelfEncryptor(data_map_,
-								       *chunk_store_,
-								       num_procs_));
+                                                                       *chunk_store_,
+                                                                       num_procs_));
   EXPECT_EQ(kTestDataSize, temp_self_encryptor->size());
 }
 
@@ -1278,11 +1273,12 @@ TEST_F(BasicTest, BEH_TruncateDecrease) {
   uint32_t read_length(200);
   boost::scoped_array<char>answer(new char[read_length]);
   EXPECT_TRUE(self_encryptor_->Read(answer.get(), read_length, read_position));
-  for (size_t i = 0; i < read_length; ++i)
+  for (size_t i = 0; i < read_length; ++i) {
     if ((i + read_position) < self_encryptor_->size())
       ASSERT_EQ(plain_data[read_position + i], answer[i])
           << "not match " << i << " from " << read_position
           << " when total data is " << self_encryptor_->size();
+  }
   self_encryptor_->Flush();
 }
 
@@ -1302,8 +1298,8 @@ TEST_F(BasicTest, FUNC_MassiveWrite) {
   EXPECT_EQ(test_data_size, self_encryptor_->size());
 
   std::shared_ptr<SelfEncryptor> self_encryptor(new SelfEncryptor(data_map_,
-								  *chunk_store_,
-								  num_procs_));
+                                                                  *chunk_store_,
+                                                                  num_procs_));
   EXPECT_EQ(test_data_size, self_encryptor->size());
 }
 
@@ -1373,11 +1369,12 @@ TEST_F(BasicTest, FUNC_RandomAccess) {
               if (read_position < self_encryptor_->size()) {
                 EXPECT_TRUE(self_encryptor_->Read(answer.get(), read_length, read_position));
                 // A return value of num_of_bytes succeeded read is required
-                for (size_t i = 0; i < read_length; ++i)
+                for (size_t i = 0; i < read_length; ++i) {
                   if ((i + read_position) < self_encryptor_->size())
                     ASSERT_EQ(plain_data[read_position + i], answer[i])
                         << "not match " << i << " from " << read_position
                         << " when total data is " << self_encryptor_->size();
+                }
               } else {
                 // Should expect a False when reading out-of-range
                 EXPECT_TRUE(self_encryptor_->Read(answer.get(), read_length, read_position))
@@ -1472,11 +1469,11 @@ TEST_F(BasicTest, BEH_DifferentDataMapSameChunk) {
 
   {
     std::shared_ptr<SelfEncryptor> self_encryptor_1(new SelfEncryptor(data_map_1,
-								      *chunk_store_,
-								      num_procs_));
+                                                                      *chunk_store_,
+                                                                      num_procs_));
     std::shared_ptr<SelfEncryptor> self_encryptor_2(new SelfEncryptor(data_map_2,
-								      *chunk_store_,
-								      num_procs_));
+                                                                      *chunk_store_,
+                                                                      num_procs_));
 
     self_encryptor_1->Write(original_.get(), 16 * 1024, 0);
     self_encryptor_2->Write(original_.get(), 16 * 1024, 0);
