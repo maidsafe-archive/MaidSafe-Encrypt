@@ -1,4 +1,5 @@
-﻿/*******************************************************************************
+﻿
+/*******************************************************************************
 *  Copyright 2011 MaidSafe.net limited                                         *
 *                                                                              *
 *  The following source code is property of MaidSafe.net limited and is not    *
