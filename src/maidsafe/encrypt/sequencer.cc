@@ -12,9 +12,9 @@
 *******************************************************************************/
 
 #include "boost/assert.hpp"
+#include "maidsafe/common/log.h"
 #include "maidsafe/encrypt/sequencer.h"
 #include "maidsafe/encrypt/config.h"
-#include "maidsafe/encrypt/log.h"
 
 namespace maidsafe {
 namespace encrypt {
@@ -35,7 +35,7 @@ int Sequencer::Add(const char *data,
                                                   GetNewByteArray(length)));
       BOOST_ASSERT(result.second);
       if (MemCopy((*(result.first)).second, 0, data, length) != length) {
-        DLOG(ERROR) << "Error adding " << length << " bytes to sequencer at "
+        LOG(kError) << "Error adding " << length << " bytes to sequencer at "
                     << position;
         return kSequencerAddError;
       }
@@ -92,12 +92,12 @@ int Sequencer::Add(const char *data,
 
     if (MemCopy(new_entry, 0, (*lower_itr).second.get(), pre_overlap_size) !=
         pre_overlap_size) {
-      DLOG(ERROR) << "Error adding pre-overlap";
+      LOG(kError) << "Error adding pre-overlap";
       return kSequencerAddError;
     }
 
     if (MemCopy(new_entry, pre_overlap_size, data, length) != length) {
-      DLOG(ERROR) << "Error adding mid-overlap";
+      LOG(kError) << "Error adding mid-overlap";
       return kSequencerAddError;
     }
 
@@ -106,7 +106,7 @@ int Sequencer::Add(const char *data,
                 (*upper_itr).second.get() +
                     (post_overlap_posn - upper_start_position),
                 post_overlap_size) != post_overlap_size) {
-      DLOG(ERROR) << "Error adding post-overlap";
+      LOG(kError) << "Error adding post-overlap";
       return kSequencerAddError;
     }
 
@@ -126,7 +126,7 @@ int Sequencer::Add(const char *data,
     // 0s where there are 0s in the fstream.  Read from fstream as well as
     // write, maybe make protected getter/setter and we can run all tests
     // against the fstream as well.  Else fail ???
-    DLOG(ERROR) << e.what();
+    LOG(kError) << e.what();
     return kSequencerException;
   }
   return kSuccess;

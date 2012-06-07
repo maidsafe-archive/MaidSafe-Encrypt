@@ -37,13 +37,13 @@
 #include "boost/archive/text_iarchive.hpp"
 
 #include "maidsafe/common/crypto.h"
+#include "maidsafe/common/log.h"
 #include "maidsafe/common/utils.h"
 
 #include "maidsafe/private/chunk_store/remote_chunk_store.h"
 
 #include "maidsafe/encrypt/config.h"
 #include "maidsafe/encrypt/data_map.h"
-#include "maidsafe/encrypt/log.h"
 #include "maidsafe/encrypt/sequencer.h"
 
 
@@ -114,7 +114,7 @@ void DebugPrint(bool encrypting,
       reinterpret_cast<const char*>(plain_data), plain_data_length))));
   std::string encrypted(Base32Substr(crypto::Hash<crypto::SHA512>(
       encrypted_data)));
-  DLOG(INFO) << (encrypting ? "\nEncrypt chunk " : "\nDecrypt chunk ")
+  LOG(kInfo) << (encrypting ? "\nEncrypt chunk " : "\nDecrypt chunk ")
              << chunk_num << "\nPad: " << pad_str << "   Key: " << key_str
              << "   IV: " << iv_str << "   Plain: " << plain << "   Encrypted: "
              << encrypted;
@@ -194,7 +194,7 @@ bool SelfEncryptor::Write(const char *data,
     return true;
 
   if (PrepareToWrite(length, position) != kSuccess) {
-    DLOG(ERROR) << "Failed to write " << length << " bytes at position "
+    LOG(kError) << "Failed to write " << length << " bytes at position "
                 << position;
     return false;
   }
@@ -213,7 +213,7 @@ bool SelfEncryptor::Write(const char *data,
         GetLengthForSequencer(write_position, &seq_length)) {
       if (sequencer_->Add(data + written, seq_length, write_position) !=
           kSuccess) {
-        DLOG(ERROR) << "Failed to write " << length << " bytes at position "
+        LOG(kError) << "Failed to write " << length << " bytes at position "
                     << position;
         return false;
       }
@@ -228,14 +228,14 @@ bool SelfEncryptor::Write(const char *data,
       data_map_->chunks[1].size = 0;
     if (PutToEncryptQueue(data + written, write_length, data_offset,
                           queue_offset) != kSuccess) {
-      DLOG(ERROR) << "Failed to write " << length << " bytes at position "
+      LOG(kError) << "Failed to write " << length << " bytes at position "
                   << position;
       return false;
     }
   } else if (GetLengthForSequencer(write_position, &write_length)) {
     if (sequencer_->Add(data + written, write_length, write_position) !=
         kSuccess) {
-      DLOG(ERROR) << "Failed to write " << length << " bytes at position "
+      LOG(kError) << "Failed to write " << length << " bytes at position "
                   << position;
       return false;
     }
@@ -258,7 +258,7 @@ bool SelfEncryptor::Write(const char *data,
       if (PutToEncryptQueue(reinterpret_cast<char*>(extra.get()),
                             Size(extra), extra_offset,
                             queue_offset) != kSuccess) {
-        DLOG(ERROR) << "Failed to write " << length << " bytes at position "
+        LOG(kError) << "Failed to write " << length << " bytes at position "
                     << position;
         return false;
       }
@@ -310,7 +310,7 @@ int SelfEncryptor::PrepareToWrite(const uint32_t &length,
     for (uint32_t i(0); i != chunks_to_decrypt; ++i) {
       int result(DecryptChunk(i, temp.get()));
       if (result != kSuccess) {
-        DLOG(ERROR) << "Failed to prepare for writing.";
+        LOG(kError) << "Failed to prepare for writing.";
         return result;
       }
       uint32_t len(data_map_->chunks[i].size);
@@ -528,7 +528,7 @@ bool SelfEncryptor::GetLengthForSequencer(const uint64_t &position,
 
 int SelfEncryptor::DecryptChunk(const uint32_t &chunk_num, byte *data) {
   if (data_map_->chunks.size() <= chunk_num) {
-    DLOG(WARNING) << "Can't decrypt chunk " << chunk_num << " of "
+    LOG(kWarning) << "Can't decrypt chunk " << chunk_num << " of "
                   << data_map_->chunks.size();
     return kInvalidChunkIndex;
   }
@@ -550,7 +550,7 @@ int SelfEncryptor::DecryptChunk(const uint32_t &chunk_num, byte *data) {
   }
 
   if (content.empty()) {
-    DLOG(ERROR) << "Could not find chunk number " << chunk_num
+    LOG(kError) << "Could not find chunk number " << chunk_num
                 << ", hash " << Base32Substr(data_map_->chunks[chunk_num].hash);
     return kMissingChunk;
   }
@@ -565,7 +565,7 @@ int SelfEncryptor::DecryptChunk(const uint32_t &chunk_num, byte *data) {
     filter.Get(data, length);
   }
   catch(const std::exception &e) {
-    DLOG(ERROR) << e.what();
+    LOG(kError) << e.what();
     return kDecryptionException;
   }
 //  DebugPrint(false, chunk_num, pad, key, iv, data, length, content);
@@ -680,7 +680,7 @@ int SelfEncryptor::ProcessMainQueue() {
                          kDefaultChunkSize));
     if (res != kSuccess) {
       UniqueLock unique_lock(data_mutex_);
-      DLOG(ERROR) << "Failed processing main queue at chunk "
+      LOG(kError) << "Failed processing main queue at chunk "
                   << first_queue_chunk_index + i;
       result = res;
     }
@@ -738,14 +738,14 @@ int SelfEncryptor::EncryptChunk(const uint32_t &chunk_num,
     UniqueLock unique_lock(chunk_store_mutex_);
     if (!chunk_store_.Store(data_map_->chunks[chunk_num].hash,
                              chunk_content, nullptr)) {
-      DLOG(ERROR) << "Could not store "
+      LOG(kError) << "Could not store "
                   << Base32Substr(data_map_->chunks[chunk_num].hash);
       result = kFailedToStoreChunk;
     }
 //    DebugPrint(true, chunk_num, pad, key, iv, data, length, chunk_content);
   }
   catch(const std::exception &e) {
-    DLOG(ERROR) << e.what();
+    LOG(kError) << e.what();
     result = kEncryptionException;
   }
 
@@ -849,7 +849,7 @@ bool SelfEncryptor::Flush() {
   // Empty queue (after this call it will contain 0 or 1 chunks).
   int result(ProcessMainQueue());
   if (result != kSuccess) {
-    DLOG(ERROR) << "Failed in Flush.";
+    LOG(kError) << "Failed in Flush.";
     return false;
   }
 
@@ -982,7 +982,7 @@ bool SelfEncryptor::Flush() {
       DeleteChunk(chunk_index);
       result = EncryptChunk(chunk_index, chunk_array.get(), this_chunk_size);
       if (result != kSuccess) {
-        DLOG(ERROR) << "Failed in Flush.";
+        LOG(kError) << "Failed in Flush.";
         return false;
       }
     }
@@ -1013,7 +1013,7 @@ bool SelfEncryptor::Flush() {
     DeleteChunk(0);
     result = EncryptChunk(0, chunk0_raw_.get(), normal_chunk_size_);
     if (result != kSuccess) {
-      DLOG(ERROR) << "Failed in Flush.";
+      LOG(kError) << "Failed in Flush.";
       return false;
     }
   }
@@ -1028,7 +1028,7 @@ bool SelfEncryptor::Flush() {
     DeleteChunk(1);
     result = EncryptChunk(1, chunk1_start, normal_chunk_size_);
     if (result != kSuccess) {
-      DLOG(ERROR) << "Failed in Flush.";
+      LOG(kError) << "Failed in Flush.";
       return false;
     }
   }
@@ -1054,7 +1054,7 @@ bool SelfEncryptor::Read(char* data,
       // populate read_cache_.
       if (Transmogrify(read_cache_.get(), kDefaultByteArraySize_, position) !=
           kSuccess) {
-        DLOG(ERROR) << "Failed to read " << length << " bytes at position "
+        LOG(kError) << "Failed to read " << length << " bytes at position "
                     << position;
         return false;
       }
@@ -1065,7 +1065,7 @@ bool SelfEncryptor::Read(char* data,
   } else {
     // length requested larger than cache size, just go ahead and read
     if (Transmogrify(data, length, position) != kSuccess) {
-      DLOG(ERROR) << "Failed to read " << length << " bytes at position "
+      LOG(kError) << "Failed to read " << length << " bytes at position "
                   << position;
       return false;
     }
@@ -1093,14 +1093,14 @@ bool SelfEncryptor::ReadFromBuffer(char *data,
         read_buffer_.reset(new char[buffer_length_]);
       }
       catch(const std::exception &e) {
-        DLOG(ERROR) << "Failed to read " << buffer_length_ << " bytes: "
+        LOG(kError) << "Failed to read " << buffer_length_ << " bytes: "
                     << e.what();
         read_buffer_.reset();
         return false;
       }
       // always buffering from 0
       if (Transmogrify(read_buffer_.get(), buffer_length_, 0) != kSuccess) {
-        DLOG(ERROR) << "Failed to read " << buffer_length_ << " bytes";
+        LOG(kError) << "Failed to read " << buffer_length_ << " bytes";
         return false;
       }
       buffer_activated_ = true;
@@ -1132,7 +1132,7 @@ int SelfEncryptor::Transmogrify(char *data,
   // For tiny files, all data is in data_map_->content or chunk0_raw_.
   if (file_size_ < 3 * kMinChunkSize) {
     if (position >= 3 * kMinChunkSize) {
-      DLOG(ERROR) << "Failed to transmogrify " << length
+      LOG(kError) << "Failed to transmogrify " << length
                   << " bytes at position " << position << " with file size of "
                   << file_size_ << " bytes.";
       return kInvalidPosition;
@@ -1154,7 +1154,7 @@ int SelfEncryptor::Transmogrify(char *data,
 
   int result(ReadDataMapChunks(data, length, position));
   if (result != kSuccess) {
-    DLOG(ERROR) << "Failed to read DM chunks during transmogrification of "
+    LOG(kError) << "Failed to read DM chunks during transmogrification of "
                 << length << " bytes at position " << position;
     return result;
   }
@@ -1185,7 +1185,7 @@ int SelfEncryptor::ReadDataMapChunks(char *data,
         int res = DecryptChunk(static_cast<uint32_t>(i), temp.get() + offset);
         if (res != kSuccess) {
           UniqueLock unique_lock(data_mutex_);
-          DLOG(ERROR) << "Failed to decrypt chunk " << i;
+          LOG(kError) << "Failed to decrypt chunk " << i;
           result = res;
         }
       }
@@ -1224,7 +1224,7 @@ int SelfEncryptor::ReadDataMapChunks(char *data,
         ByteArray temp(GetNewByteArray(this_chunk_size));
         int res = DecryptChunk(static_cast<uint32_t>(i), temp.get());
         if (res != kSuccess) {
-          DLOG(ERROR) << "Failed to decrypt chunk " << i;
+          LOG(kError) << "Failed to decrypt chunk " << i;
           result = res;
         }
         memcpy(data, temp.get() + first_chunk_offset, first_chunk_size);
@@ -1232,7 +1232,7 @@ int SelfEncryptor::ReadDataMapChunks(char *data,
         ByteArray temp(GetNewByteArray(this_chunk_size));
         int res = DecryptChunk(static_cast<uint32_t>(i), temp.get());
         if (res != kSuccess) {
-          DLOG(ERROR) << "Failed to decrypt chunk " << i;
+          LOG(kError) << "Failed to decrypt chunk " << i;
           result = res;
         }
         uint32_t offset = kDefaultChunkSize - first_chunk_offset +
@@ -1245,7 +1245,7 @@ int SelfEncryptor::ReadDataMapChunks(char *data,
                                reinterpret_cast<byte*>(&data[offset]));
         if (res != kSuccess) {
           UniqueLock unique_lock(data_mutex_);
-          DLOG(ERROR) << "Failed to decrypt chunk " << i;
+          LOG(kError) << "Failed to decrypt chunk " << i;
           result = res;
         }
       }
@@ -1336,7 +1336,7 @@ bool SelfEncryptor::DeleteAllChunks() {
   UniqueLock chunk_store_unique_lock(chunk_store_mutex_);
   for (uint32_t i(0); i != data_map_->chunks.size(); ++i) {
     if (!chunk_store_.Delete(data_map_->chunks[i].hash, nullptr)) {
-      DLOG(WARNING) << "Failed to delete chunk " << i;
+      LOG(kWarning) << "Failed to delete chunk " << i;
       return false;
     }
   }
@@ -1395,7 +1395,7 @@ void SelfEncryptor::DeleteChunk(const uint32_t &chunk_num) {
   if (!data_map_->chunks[chunk_num].hash.empty()) {
     UniqueLock unique_lock(chunk_store_mutex_);
     if (!chunk_store_.Delete(data_map_->chunks[chunk_num].hash, nullptr)) {
-      DLOG(WARNING) << "Failed to delete chunk " << chunk_num << ": "
+      LOG(kWarning) << "Failed to delete chunk " << chunk_num << ": "
                     << Base32Substr(data_map_->chunks[chunk_num].hash);
     }
   }
@@ -1418,7 +1418,7 @@ int EncryptDataMap(const std::string &parent_id,
     boost::archive::text_oarchive output_archive(output_stream);
     output_archive << const_cast<const DataMap&>(*data_map);
   } catch(const boost::archive::archive_exception &e) {
-    DLOG(ERROR) << e.what();
+    LOG(kError) << e.what();
     return kSerialisationException;
   }
   ByteArray serialised_data_map(GetNewByteArray(
@@ -1456,7 +1456,7 @@ int EncryptDataMap(const std::string &parent_id,
     aes_filter.Put2(serialised_data_map.get(), copied, -1, true);
   }
   catch(const CryptoPP::Exception &e) {
-    DLOG(ERROR) << "Failed data_map encryption: " << e.what();
+    LOG(kError) << "Failed data_map encryption: " << e.what();
     return kEncryptionException;
   }
   BOOST_ASSERT(!encrypted_data_map->empty());
@@ -1502,7 +1502,7 @@ int DecryptDataMap(const std::string &parent_id,
             crypto::SHA512::DIGESTSIZE));
   }
   catch(const CryptoPP::Exception &e) {
-    DLOG(ERROR) << e.what();
+    LOG(kError) << e.what();
     return kDecryptionException;
   }
 
@@ -1511,7 +1511,7 @@ int DecryptDataMap(const std::string &parent_id,
     boost::archive::text_iarchive input_archive(input_stream);
     input_archive >> *data_map;
   } catch(const boost::archive::archive_exception &e) {
-    DLOG(ERROR) << e.what();
+    LOG(kError) << e.what();
     return kDeserialisationException;
   }
 

@@ -30,12 +30,12 @@
 #endif
 #include "boost/scoped_array.hpp"
 
+#include "maidsafe/common/log.h"
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
 
 #include "maidsafe/encrypt/self_encryptor.h"
 #include "maidsafe/encrypt/config.h"
-#include "maidsafe/encrypt/log.h"
 #include "maidsafe/encrypt/tests/encrypt_test_base.h"
 
 
@@ -1333,14 +1333,14 @@ TEST_F(BasicTest, FUNC_RandomAccess) {
       size_t variation = max_variation[i];
       for (size_t j = 0; j < num_tries; ++j) {
         int op_code(RandomUint32() % 2);
-//        DLOG(INFO) << "op code: " << op_code;
+//        LOG(kInfo) << "op code: " << op_code;
 
         switch (op_code) {
           case 0:  // write
             {
               uint32_t write_position(RandomUint32() % variation);
               uint32_t write_length(RandomUint32() % variation);
-//              DLOG(INFO) << "write_position: " << write_position
+//              LOG(kInfo) << "write_position: " << write_position
 //                         << "\twrite_length: " << write_length;
 
               std::string plain_text(RandomString(write_length));
@@ -1351,7 +1351,7 @@ TEST_F(BasicTest, FUNC_RandomAccess) {
               }
 
               EXPECT_TRUE(self_encryptor_->Write(content_data.get(), write_length, write_position));
-//              DLOG(INFO) << "current data size is:\t"
+//              LOG(kInfo) << "current data size is:\t"
 //                         << self_encryptor_->size();
               break;
             }
@@ -1360,7 +1360,7 @@ TEST_F(BasicTest, FUNC_RandomAccess) {
               uint32_t read_position(RandomUint32() % variation);
               uint32_t read_length(RandomUint32() % variation);
               boost::scoped_array<char>answer(new char[read_length]);
-//              DLOG(INFO) << "read_position: " << read_position
+//              LOG(kInfo) << "read_position: " << read_position
 //                         << "\tread_length: " << read_length;
 
               // The read method shall accept a reading request that exceeds
@@ -1411,7 +1411,7 @@ TEST_F(BasicTest, FUNC_RandomAccess) {
       for (size_t j = 0; j < num_tries; ++j) {
         const uint32_t kPosition(RandomUint32() % variation);
         const uint32_t kLength(RandomUint32() % variation);
-//        DLOG(INFO) << i << ", " << j << ":\taccessing at pos: " << kPosition
+//        LOG(kInfo) << i << ", " << j << ":\taccessing at pos: " << kPosition
 //                   << "  \twith data length: " << kLength;
         std::string plain_text(RandomString(kLength));
         {

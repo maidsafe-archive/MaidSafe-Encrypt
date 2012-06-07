@@ -12,9 +12,9 @@
 *******************************************************************************/
 
 #include "boost/date_time/posix_time/posix_time.hpp"
+#include "maidsafe/common/log.h"
 #include "maidsafe/common/test.h"
 #include "maidsafe/encrypt/tests/encrypt_test_base.h"
-#include "maidsafe/encrypt/log.h"
 
 
 namespace bptime = boost::posix_time;
@@ -91,7 +91,7 @@ TEST(MassiveFile, FUNC_MemCheck) {
   asio_service.Start(5);
   maidsafe::test::TestPath test_dir(maidsafe::test::CreateTestPath());
   fs::path buffered_chunk_store_path(*test_dir / RandomAlphaNumericString(8));
-  DLOG(INFO) << "Creating chunk store in " << buffered_chunk_store_path;
+  LOG(kInfo) << "Creating chunk store in " << buffered_chunk_store_path;
   RemoteChunkStorePtr chunk_store =
         priv::chunk_store::CreateLocalChunkStore(buffered_chunk_store_path,
                                                  *test_dir / "local_manager",
@@ -113,12 +113,12 @@ TEST(MassiveFile, FUNC_MemCheck) {
 
   asio_service.Stop();
 
-  DLOG(INFO) << "Resetting self encryptor.";
+  LOG(kInfo) << "Resetting self encryptor.";
   self_encryptor.reset();
   // Sleep to allow chosen memory monitor to update its display.
   Sleep(boost::posix_time::seconds(1));
 
-  DLOG(INFO) << "Resetting chunk store.";
+  LOG(kInfo) << "Resetting chunk store.";
   chunk_store.reset();
   boost::system::error_code rm_error_code, exists_error_code;
   EXPECT_GT(fs::remove_all(buffered_chunk_store_path, rm_error_code), 0U)
