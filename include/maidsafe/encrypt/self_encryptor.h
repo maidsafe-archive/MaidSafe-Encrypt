@@ -34,9 +34,6 @@ class RemoteChunkStore;
 }  // namespace chunk_store
 }  // namespace priv
 
-typedef std::shared_ptr<priv::chunk_store::RemoteChunkStore>
-        RemoteChunkStorePtr;
-
 namespace encrypt {
 
 class Sequencer;
@@ -55,7 +52,7 @@ int DecryptDataMap(const std::string &parent_id,
 class SelfEncryptor {
  public:
   SelfEncryptor(DataMapPtr data_map,
-                RemoteChunkStorePtr chunk_store,
+                priv::chunk_store::RemoteChunkStore& chunk_store,
                 int num_procs = 0);
   ~SelfEncryptor();
   bool Write(const char *data,
@@ -183,7 +180,7 @@ class SelfEncryptor {
   const uint32_t kQueueCapacity_;
   uint32_t retrievable_from_queue_;
   std::shared_ptr<byte> chunk0_raw_, chunk1_raw_;
-  RemoteChunkStorePtr chunk_store_;
+  priv::chunk_store::RemoteChunkStore& chunk_store_;
   uint64_t current_position_;
   bool prepared_for_writing_, flushed_;
   boost::shared_array<char> read_cache_;
