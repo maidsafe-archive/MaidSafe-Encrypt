@@ -87,8 +87,8 @@ INSTANTIATE_TEST_CASE_P(WriteRead, Benchmark, testing::Values(0, 4096, 65536));
 // monitored.
 TEST(MassiveFile, FUNC_MemCheck) {
   int kNumProcs(8);
-  AsioService asio_service;
-  asio_service.Start(5);
+  AsioService asio_service(5);
+  asio_service.Start();
   maidsafe::test::TestPath test_dir(maidsafe::test::CreateTestPath());
   fs::path buffered_chunk_store_path(*test_dir / RandomAlphaNumericString(8));
   LOG(kInfo) << "Creating chunk store in " << buffered_chunk_store_path;

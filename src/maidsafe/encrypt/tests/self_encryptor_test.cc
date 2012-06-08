@@ -1395,8 +1395,8 @@ TEST_F(BasicTest, FUNC_RandomAccess) {
 
   {
     // Out Process random write/read access
-    AsioService service;
-    service.Start(5);
+    AsioService service(5);
+    service.Start();
     maidsafe::test::TestPath path(maidsafe::test::CreateTestPath());
     fs::path buffered_chunk_store_path(*path / RandomAlphaNumericString(8));
     RemoteChunkStorePtr chunk_store(

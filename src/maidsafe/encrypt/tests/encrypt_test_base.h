@@ -41,13 +41,13 @@ class EncryptTestBase {
   explicit EncryptTestBase(int num_procs)
       : test_dir_(maidsafe::test::CreateTestPath()),
         num_procs_(num_procs),
-        asio_service_(),
+        asio_service_(5),
         chunk_store_(),
         data_map_(new DataMap),
         self_encryptor_(),
         original_(),
         decrypted_() {
-    asio_service_.Start(5);
+    asio_service_.Start();
     fs::path buffered_chunk_store_path(*test_dir_ / RandomAlphaNumericString(8));
     chunk_store_ =
         priv::chunk_store::CreateLocalChunkStore(buffered_chunk_store_path,
