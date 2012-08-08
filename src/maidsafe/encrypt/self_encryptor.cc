@@ -96,6 +96,7 @@ class XORFilter : public CryptoPP::Bufferless<CryptoPP::Filter> {
   const size_t kPadSize_;
 };
 
+/*
 void DebugPrint(bool encrypting,
                 uint32_t chunk_num,
                 ByteArray pad,
@@ -119,6 +120,7 @@ void DebugPrint(bool encrypting,
              << "   IV: " << iv_str << "   Plain: " << plain << "   Encrypted: "
              << encrypted;
 }
+*/
 
 }  // unnamed namespace
 
