@@ -77,7 +77,9 @@ class XORFilter : public CryptoPP::Bufferless<CryptoPP::Filter> {
     boost::scoped_array<byte> buffer(new byte[length]);
 
     size_t i(0);
-// #pragma omp parallel for shared(buffer, in_string) private(i)
+#ifdef MAIDSAFE_OMP_ENABLED
+// #  pragma omp parallel for shared(buffer, in_string) private(i)
+#endif
     for (; i != length; ++i) {
       buffer[i] = in_string[i] ^ pad_[count_ % kPadSize_];
       ++count_;
@@ -647,7 +649,9 @@ int SelfEncryptor::ProcessMainQueue() {
   data_map_->chunks.resize(std::max(
       static_cast<uint32_t>(data_map_->chunks.size()),
       first_queue_chunk_index + chunks_to_process));
-#pragma omp parallel for
+#ifdef MAIDSAFE_OMP_ENABLED
+#  pragma omp parallel for
+#endif
   for (int64_t i = 0; i < chunks_to_process; ++i) {
     bool modified(false);
     uint32_t chunk_index(first_queue_chunk_index + static_cast<uint32_t>(i));
@@ -675,7 +679,9 @@ int SelfEncryptor::ProcessMainQueue() {
   }
 
   int result(kSuccess);
-#pragma omp parallel for
+#ifdef MAIDSAFE_OMP_ENABLED
+#  pragma omp parallel for
+#endif
   for (int64_t i = first_chunk_index; i < chunks_to_process; ++i) {
     int res(EncryptChunk(first_queue_chunk_index + static_cast<uint32_t>(i),
                          main_encrypt_queue_.get() + (i * kDefaultChunkSize),
@@ -1178,7 +1184,9 @@ int SelfEncryptor::ReadDataMapChunks(char *data,
   if (normal_chunk_size_ != kDefaultChunkSize) {
     BOOST_ASSERT(file_size_ < 3 * kDefaultChunkSize + kMinChunkSize - 1);
     ByteArray temp(GetNewByteArray(static_cast<uint32_t>(file_size_)));
-#pragma omp parallel for
+#ifdef MAIDSAFE_OMP_ENABLED
+#  pragma omp parallel for
+#endif
     for (int64_t i = 0; i < num_chunks; ++i) {
       uint32_t this_chunk_size(
           data_map_->chunks[static_cast<uint32_t>(i)].size);
@@ -1217,7 +1225,9 @@ int SelfEncryptor::ReadDataMapChunks(char *data,
                             (last_chunk_index * kDefaultChunkSize)),
       data_map_->chunks[last_chunk_index].size));
 
-#pragma omp parallel for
+#ifdef MAIDSAFE_OMP_ENABLED
+#  pragma omp parallel for
+#endif
   for (int64_t i = first_chunk_index; i <= last_chunk_index; ++i) {
     const uint32_t &this_chunk_size(
         data_map_->chunks[static_cast<uint32_t>(i)].size);
