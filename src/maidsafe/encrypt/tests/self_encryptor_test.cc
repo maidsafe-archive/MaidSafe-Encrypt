@@ -1072,6 +1072,36 @@ TEST_F(BasicTest, BEH_3SmallChunkRewrite) {
   }
 }
 
+TEST_F(BasicTest, BEH_nKFile) {
+  std::string original, temp, recovered;
+  for (uint32_t i = 0; i != 159; ++i) {
+    for (uint32_t j = 0; j != 100; ++j)
+      temp += "a";
+    temp += "\r\n";
+    original += temp;
+    temp = "";
+  }
+  EXPECT_TRUE(self_encryptor_->Write(original.data(), original.size(), 0));
+  self_encryptor_->Flush();
+  uint32_t start(0), remove(0), add(0), read(0);
+  for (uint32_t i = 0; i != 10; ++i) {
+    start = RandomUint32() % (original.size() - 150);
+    remove = RandomUint32() % 150;
+    original = original.erase(start, remove);
+  }
+  for (uint32_t i = 0; i != 3; ++i) {
+    start = RandomUint32() % (original.size() - 1);
+    add = RandomUint32() % 150;
+    original = original.insert(start, add, ' ');
+  }
+  EXPECT_TRUE(self_encryptor_->Write(original.data(), original.size(), 0));
+  EXPECT_TRUE(self_encryptor_->Truncate(original.size()));
+  start = RandomUint32() % original.size();
+  read = original.size() - start;
+  recovered.resize(read);
+  EXPECT_TRUE(self_encryptor_->Read(const_cast<char*>(recovered.data()), read, start));
+}
+
 TEST_F(BasicTest, BEH_ManualCheckWrite) {
   uint32_t chunk_size(kDefaultChunkSize);
   uint32_t num_chunks(10);
