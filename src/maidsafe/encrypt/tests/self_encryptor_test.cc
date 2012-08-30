@@ -1082,7 +1082,7 @@ TEST_F(BasicTest, BEH_nKFile) {
     temp = "";
   }
   EXPECT_TRUE(self_encryptor_->Write(original.data(), static_cast<uint32_t>(original.size()), 0));
-  self_encryptor_->Flush();
+  EXPECT_TRUE(self_encryptor_->Flush());
   uint32_t start(0), remove(0), add(0), read(0);
   for (uint32_t i = 0; i != 10; ++i) {
     start = RandomUint32() % (original.size() - 150);
@@ -1096,6 +1096,7 @@ TEST_F(BasicTest, BEH_nKFile) {
   }
   EXPECT_TRUE(self_encryptor_->Write(original.data(), static_cast<uint32_t>(original.size()), 0));
   EXPECT_TRUE(self_encryptor_->Truncate(original.size()));
+  EXPECT_TRUE(self_encryptor_->Flush());
   start = RandomUint32() % original.size();
   read = static_cast<uint32_t>(original.size()) - start;
   recovered.resize(read);
