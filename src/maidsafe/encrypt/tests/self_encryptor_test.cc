@@ -456,8 +456,9 @@ TEST_P(InProcessTest, BEH_ReadInOrder) {
                                        current_write_size,
                                        current_write_position));
     while (current_read_position != current_write_position) {
+      assert(kDefaultChunkSize != 0);
       current_read_size = std::min(current_write_position - current_read_position,
-                                   RandomUint32() % (kDefaultChunkSize / 3));
+                                   (RandomUint32() % (kDefaultChunkSize / 3)));
       EXPECT_TRUE(self_encryptor_->Read(&decrypted_[current_read_position],
                                         current_read_size,
                                         current_read_position));
