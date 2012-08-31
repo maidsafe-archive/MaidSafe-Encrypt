@@ -400,10 +400,9 @@ void SelfEncryptor::CalculateSizes(bool force) {
     }
     normal_chunk_size_ = kDefaultChunkSize;
   }
- 
-    uint64_t chunk_count_excluding_last(0);
-  if (kDefaultChunkSize != 0)
-    hunk_count_excluding_last = file_size_ / kDefaultChunkSize;
+
+  assert(kDefaultChunkSize > 0);
+  uint64_t chunk_count_excluding_last = file_size_ / kDefaultChunkSize;
 
   if (file_size_ % kDefaultChunkSize < kMinChunkSize)
     --chunk_count_excluding_last;
