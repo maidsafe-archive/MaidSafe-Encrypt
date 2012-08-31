@@ -1481,6 +1481,7 @@ TEST_F(BasicTest, BEH_EncryptDecryptDataMap) {
   EXPECT_FALSE(encrypted_data_map.empty());
 
   DataMapPtr retrieved_data_map(new DataMap);
+
   EXPECT_EQ(kSuccess, DecryptDataMap(kParentId, kThisId, encrypted_data_map, retrieved_data_map));
   ASSERT_EQ(data_map_->chunks.size(), retrieved_data_map->chunks.size());
   auto original_itr(data_map_->chunks.begin()),

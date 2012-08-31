@@ -19,6 +19,9 @@ set(CMAKE_DISABLE_IN_SOURCE_BUILD ON)
 cmake_minimum_required(VERSION 2.8.7 FATAL_ERROR)
 project(encrypt)
 
+set(PROTO_SOURCE_DIR ${PROJECT_SOURCE_DIR}/src)
+file(GLOB PROTO_FILES RELATIVE ${PROTO_SOURCE_DIR} "${PROTO_SOURCE_DIR}/maidsafe/encrypt/*.proto")
+
 include(../../cmake_modules/maidsafe_find_openmp.cmake)
 include(../../cmake_modules/maidsafe_standard_setup.cmake)
 

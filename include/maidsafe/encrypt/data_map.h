@@ -1,4 +1,3 @@
-
 /*******************************************************************************
 *  Copyright 2011 MaidSafe.net limited                                         *
 *                                                                              *
@@ -25,6 +24,7 @@
 
 
 namespace maidsafe {
+
 namespace encrypt {
 
 struct ChunkDetails {
@@ -74,6 +74,9 @@ struct DataMap {
 
 typedef std::shared_ptr<DataMap> DataMapPtr;
 
+int SerialiseDataMap(const DataMap& data_map, std::string& serialised_data_map);
+int ParseDataMap(const std::string& serialised_data_map, DataMap& data_map);
+
 /*
 // Hold datamaps in a version container
 struct VersionedDataMap {
@@ -88,6 +91,7 @@ std::tuple<uint8_t, fs::path, VersionedDataMap> VersionedDirMap; // for dirs
 */
 
 }  // namespace encrypt
+
 }  // namespace maidsafe
 
 

@@ -1,4 +1,3 @@
-
 /*******************************************************************************
 *  Copyright 2011 MaidSafe.net limited                                         *
 *                                                                              *
@@ -11,10 +10,16 @@
 *  the explicit written permission of the board of directors of MaidSafe.net.  *
 *******************************************************************************/
 
-#include "maidsafe/common/test.h"
+#ifndef MAIDSAFE_ENCRYPT_DATA_MAP_PB_H_
+#define MAIDSAFE_ENCRYPT_DATA_MAP_PB_H_
 
-int main(int argc, char **argv) {
-  maidsafe::log::FilterMap map;
-  map["encrypt"] = maidsafe::log::kInfo;
-  return ExecuteMain(argc, argv);
-}
+#ifdef __MSVC__
+#  pragma warning(push)
+#  pragma warning(disable: 4127 4244 4267)
+#endif
+#include "maidsafe/encrypt/data_map.pb.h"
+#ifdef __MSVC__
+#  pragma warning(pop)
+#endif
+
+#endif  // MAIDSAFE_ENCRYPT_DATA_MAP_PB_H_

@@ -1428,19 +1428,26 @@ int EncryptDataMap(const std::string &parent_id,
   BOOST_ASSERT(encrypted_data_map);
   encrypted_data_map->clear();
 
-  std::ostringstream output_stream(std::ios_base::binary);
-  try {
-    boost::archive::text_oarchive output_archive(output_stream);
-    output_archive << const_cast<const DataMap&>(*data_map);
-  } catch(const boost::archive::archive_exception &e) {
-    LOG(kError) << e.what();
-    return kSerialisationException;
+  std::string serialised_data_map;
+  int result(SerialiseDataMap(*data_map, serialised_data_map));
+  if (result != kSuccess) {
+    LOG(kError) << "Failed to serialise data map.";
+    return result;
   }
-  ByteArray serialised_data_map(GetNewByteArray(
-      static_cast<uint32_t>(output_stream.str().size())));
-  uint32_t copied(MemCopy(serialised_data_map, 0, output_stream.str().c_str(),
-                          Size(serialised_data_map)));
-  BOOST_ASSERT(Size(serialised_data_map) == copied);
+
+//  std::ostringstream output_stream(std::ios_base::binary);
+//  try {
+//    boost::archive::text_oarchive output_archive(output_stream);
+//    output_archive << const_cast<const DataMap&>(*data_map);
+//  } catch(const boost::archive::archive_exception &e) {
+//    LOG(kError) << e.what();
+//    return kSerialisationException;
+//  }
+  ByteArray array_data_map(GetNewByteArray(
+      static_cast<uint32_t>(serialised_data_map.size())));
+  uint32_t copied(MemCopy(array_data_map, 0, serialised_data_map.c_str(),
+                          Size(array_data_map)));
+  BOOST_ASSERT(Size(array_data_map) == copied);
 
   try {
     size_t inputs_size(parent_id.size() + this_id.size());
@@ -1468,7 +1475,7 @@ int EncryptDataMap(const std::string &parent_id,
                 xor_hash.get(),
                 crypto::SHA512::DIGESTSIZE)),
         6);
-    aes_filter.Put2(serialised_data_map.get(), copied, -1, true);
+    aes_filter.Put2(array_data_map.get(), copied, -1, true);
   }
   catch(const CryptoPP::Exception &e) {
     LOG(kError) << "Failed data_map encryption: " << e.what();
@@ -1521,14 +1528,20 @@ int DecryptDataMap(const std::string &parent_id,
     return kDecryptionException;
   }
 
-  std::istringstream input_stream(serialised_data_map, std::ios_base::binary);
-  try {
-    boost::archive::text_iarchive input_archive(input_stream);
-    input_archive >> *data_map;
-  } catch(const boost::archive::archive_exception &e) {
-    LOG(kError) << e.what();
-    return kDeserialisationException;
+  int result(ParseDataMap(serialised_data_map, *data_map));
+  if (result != kSuccess) {
+    LOG(kError) << "Failed to parse datamap.";
+    return result;
   }
+
+//  std::istringstream input_stream(serialised_data_map, std::ios_base::binary);
+//  try {
+//    boost::archive::text_iarchive input_archive(input_stream);
+//    input_archive >> *data_map;
+//  } catch(const boost::archive::archive_exception &e) {
+//    LOG(kError) << e.what();
+//    return kDeserialisationException;
+//  }
 
   return kSuccess;
 }
