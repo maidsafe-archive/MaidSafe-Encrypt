@@ -48,6 +48,10 @@ set(ALL_FILES_ENCRYPT_TESTS_DIR ${SOURCE_FILES_ENCRYPT_TESTS_DIR} ${HEADER_FILES
 source_group("Tests Source Files" FILES ${SOURCE_FILES_ENCRYPT_TESTS_DIR})
 source_group("Tests Header Files" FILES ${HEADER_FILES_ENCRYPT_TESTS_DIR})
 
+####    STYLE    ####
+set(STYLE_FILES ${ALL_FILES_ENCRYPT_DIR} ${ALL_FILES_ENCRYPT_TESTS_DIR})
+list(REMOVE_ITEM STYLE_FILES "${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/data_map.pb.h")
+list(REMOVE_ITEM STYLE_FILES "${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/data_map.pb.cc")
 
 ###################################################################################################
 # Define MaidSafe libraries and executables                                                       #
@@ -82,7 +86,7 @@ endif()
 ###################################################################################################
 # Tests                                                                                           #
 ###################################################################################################
-add_style_test(${ALL_FILES_ENCRYPT_DIR} ${ALL_FILES_ENCRYPT_TESTS_DIR})
+add_style_test(${STYLE_FILES})
 add_gtests(TESTencrypt)
 add_project_experimental()
 test_summary_output()
