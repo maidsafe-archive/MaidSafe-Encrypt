@@ -24,14 +24,13 @@ namespace encrypt {
 
 int SerialiseDataMap(const DataMap& data_map, std::string& serialised_data_map) {
   if (data_map.content.empty() && data_map.chunks.empty()) {
-    std::cout << "Datamap seems empty." << std::endl;
-//    LOG(kError) << "Datamap seems empty.";
-    return -1;
+    LOG(kError) << "Datamap seems empty.";
+    return kSerialisationError;
   }
 
   protobuf::DataMap proto_data_map;
   if (!data_map.content.empty()) {
-      std::cout << "Added content" << std::endl;
+    LOG(kVerbose) << "Added content";
     proto_data_map.set_content(data_map.content);
   }
 
@@ -45,9 +44,8 @@ int SerialiseDataMap(const DataMap& data_map, std::string& serialised_data_map) 
   }
 
   if (!proto_data_map.SerializeToString(&serialised_data_map)) {
-      std::cout << "Error serialising." << std::endl;
-//    LOG(kError) << "Error serialising.";
-    return -1;
+    LOG(kError) << "Error serialising.";
+    return kSerialisationError;
   }
 
   return kSuccess;
@@ -62,7 +60,6 @@ bool ExtractChunkDetails(const protobuf::DataMap& proto_data_map, DataMap& data_
       for (int ch(0); ch < crypto::SHA512::DIGESTSIZE; ++ch)
         temp.pre_hash[ch] = pre_hash.at(ch);
     } else {
-        std::cout << "Clearing details vector. Incorrect pre hash size in PB: " << pre_hash.size() << std::endl;
       LOG(kError) << "Clearing details vector. Incorrect pre hash size in PB: " << pre_hash.size();
       data_map.chunks.clear();
       return false;
@@ -79,26 +76,24 @@ bool ExtractChunkDetails(const protobuf::DataMap& proto_data_map, DataMap& data_
 int ParseDataMap(const std::string& serialised_data_map, DataMap& data_map) {
   protobuf::DataMap proto_data_map;
   if (!proto_data_map.ParseFromString(serialised_data_map)) {
-      std::cout << "Error parsing." << std::endl;
-//    LOG(kError) << "Error parsing.";
-    return -1;
+    LOG(kError) << "Error parsing.";
+    return kDeserialisationError;
   }
 
   if (proto_data_map.has_content() && proto_data_map.chunk_details_size() != 0) {
-      std::cout << "Data map contains both chinks and content!" << std::endl;
-//    LOG(kWarning) << "Data map contains both chinks and content!";
+    LOG(kWarning) << "Data map contains both chunks and content";
     data_map.content = proto_data_map.content();
     if (!ExtractChunkDetails(proto_data_map, data_map))
-      return -1;
+      return kDeserialisationError;
   } else if (proto_data_map.has_content()) {
     data_map.content = proto_data_map.content();
   } else if (proto_data_map.chunk_details_size() != 0) {
     if (!ExtractChunkDetails(proto_data_map, data_map))
-      return -1;
+      return kDeserialisationError;
   } else {
-      std::cout << "No chunks or content! " << serialised_data_map.size() << std::endl;
-//    LOG(kError) << "No chunks or content!";
-    return -1;
+    LOG(kError) << "No chunks or content - serialised_data_map.size(): "
+                << serialised_data_map.size();
+    return kDeserialisationError;
   }
 
   return kSuccess;
