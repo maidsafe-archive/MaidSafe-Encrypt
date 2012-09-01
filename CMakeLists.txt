@@ -65,6 +65,8 @@ rename_outdated_built_exes()
 # Set compiler and linker flags                                                                   #
 ###################################################################################################
 include(maidsafe_standard_flags)
+file(GLOB_RECURSE PROTO_SOURCE_FILES "${PROJECT_SOURCE_DIR}/src/*.pb.cc")
+ms_disable_warnings(${PROTO_SOURCE_FILES})
 
 # Enable OpenMP if available
 if(OPENMP_FOUND)
@@ -72,11 +74,8 @@ if(OPENMP_FOUND)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
 endif()
 
-
 if(UNIX AND (NOT APPLE))
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-stack-protector")
-  set_source_files_properties(${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/tests/test_se.cc
-                                PROPERTIES COMPILE_FLAGS "-Wno-effc++")
 endif()
 
 
