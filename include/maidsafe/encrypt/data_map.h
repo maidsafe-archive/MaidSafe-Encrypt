@@ -19,8 +19,6 @@
 
 #include "maidsafe/common/crypto.h"
 #include "boost/shared_array.hpp"
-#include "boost/serialization/string.hpp"
-#include "boost/serialization/vector.hpp"
 
 
 namespace maidsafe {
@@ -93,37 +91,5 @@ std::tuple<uint8_t, fs::path, VersionedDataMap> VersionedDirMap; // for dirs
 }  // namespace encrypt
 
 }  // namespace maidsafe
-
-
-namespace boost {
-namespace serialization {
-
-#ifdef __MSVC__
-#  pragma warning(disable: 4127)
-#endif
-template<class Archive>
-void serialize(Archive &archive,  // NOLINT
-               maidsafe::encrypt::ChunkDetails &chunk_details,
-               const unsigned int /* version */) {
-  archive &chunk_details.hash;
-  archive &chunk_details.pre_hash;
-  archive &chunk_details.size;
-  if (Archive::is_loading::value)
-#ifdef __MSVC__
-#  pragma warning(default: 4127)
-#endif
-    chunk_details.pre_hash_state = maidsafe::encrypt::ChunkDetails::kOk;
-}
-
-template<class Archive>
-void serialize(Archive &archive,  // NOLINT
-               maidsafe::encrypt::DataMap &data_map,
-               const unsigned int /* version */) {
-  archive &data_map.chunks;
-  archive &data_map.content;
-}
-
-}  // namespace serialization
-}  // namespace boost
 
 #endif  // MAIDSAFE_ENCRYPT_DATA_MAP_H_

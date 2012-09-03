@@ -33,8 +33,6 @@
 #  pragma warning(pop)
 #endif
 #include "boost/scoped_array.hpp"
-#include "boost/archive/text_oarchive.hpp"
-#include "boost/archive/text_iarchive.hpp"
 
 #include "maidsafe/common/crypto.h"
 #include "maidsafe/common/log.h"
@@ -1435,14 +1433,6 @@ int EncryptDataMap(const std::string &parent_id,
     return result;
   }
 
-//  std::ostringstream output_stream(std::ios_base::binary);
-//  try {
-//    boost::archive::text_oarchive output_archive(output_stream);
-//    output_archive << const_cast<const DataMap&>(*data_map);
-//  } catch(const boost::archive::archive_exception &e) {
-//    LOG(kError) << e.what();
-//    return kSerialisationException;
-//  }
   ByteArray array_data_map(GetNewByteArray(
       static_cast<uint32_t>(serialised_data_map.size())));
   uint32_t copied(MemCopy(array_data_map, 0, serialised_data_map.c_str(),
@@ -1533,15 +1523,6 @@ int DecryptDataMap(const std::string &parent_id,
     LOG(kError) << "Failed to parse datamap.";
     return result;
   }
-
-//  std::istringstream input_stream(serialised_data_map, std::ios_base::binary);
-//  try {
-//    boost::archive::text_iarchive input_archive(input_stream);
-//    input_archive >> *data_map;
-//  } catch(const boost::archive::archive_exception &e) {
-//    LOG(kError) << e.what();
-//    return kDeserialisationException;
-//  }
 
   return kSuccess;
 }
