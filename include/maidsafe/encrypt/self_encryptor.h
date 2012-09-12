@@ -25,6 +25,7 @@
 #include "maidsafe/encrypt/config.h"
 #include "maidsafe/encrypt/data_map.h"
 
+#include "maidsafe/private/chunk_store/remote_chunk_store.h"
 
 namespace maidsafe {
 
@@ -48,6 +49,7 @@ int DecryptDataMap(const std::string &parent_id,
                    const std::string &encrypted_data_map,
                    DataMapPtr data_map);
 
+typedef priv::chunk_store::RemoteChunkStore::OpFunctor OpFunctor;
 
 class SelfEncryptor {
  public:
@@ -65,6 +67,9 @@ class SelfEncryptor {
   // Forces all buffered data to be encrypted.  Missing portions of the file
   // be filled with '\0's
   bool Flush();
+  uint32_t ExpectedChunks();
+  void SetOpFunctor(const OpFunctor& op_functor);
+
   uint64_t size() const {
     return (file_size_ < truncated_file_size_) ?
         truncated_file_size_ : file_size_;
@@ -170,6 +175,7 @@ class SelfEncryptor {
   void DeleteChunk(const uint32_t &chunk_num);
 
   DataMapPtr data_map_;
+  DataMapPtr original_data_map_;
   boost::scoped_ptr<Sequencer> sequencer_;
   const uint32_t kDefaultByteArraySize_;
   uint64_t file_size_, last_chunk_position_;
@@ -192,6 +198,7 @@ class SelfEncryptor {
   uint64_t last_read_position_;
   const uint32_t kMaxBufferSize_;
   boost::shared_mutex data_mutex_, chunk_store_mutex_;
+  OpFunctor op_functor_;
 };
 
 }  // namespace encrypt

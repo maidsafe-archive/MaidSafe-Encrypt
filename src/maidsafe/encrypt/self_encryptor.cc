@@ -129,6 +129,7 @@ SelfEncryptor::SelfEncryptor(DataMapPtr data_map,
                              pcs::RemoteChunkStore& chunk_store,
                              int num_procs)
     : data_map_(data_map ? data_map : DataMapPtr(new DataMap)),
+      original_data_map_(new DataMap(*data_map)),
       sequencer_(new Sequencer),
       kDefaultByteArraySize_(num_procs == 0 ?
                              kDefaultChunkSize * Concurrency() :
@@ -156,7 +157,8 @@ SelfEncryptor::SelfEncryptor(DataMapPtr data_map,
       last_read_position_(0),
       kMaxBufferSize_(20 * kDefaultByteArraySize_),
       data_mutex_(),
-      chunk_store_mutex_() {
+      chunk_store_mutex_(),
+      op_functor_(nullptr) {
   if (data_map) {
     if (data_map->chunks.empty()) {
       file_size_ = data_map->content.size();
@@ -746,7 +748,7 @@ int SelfEncryptor::EncryptChunk(const uint32_t &chunk_num,
 
     UniqueLock unique_lock(chunk_store_mutex_);
     if (!chunk_store_.Store(data_map_->chunks[chunk_num].hash,
-                             chunk_content, nullptr)) {
+                             chunk_content, op_functor_)) {
       LOG(kError) << "Could not store "
                   << Base32Substr(data_map_->chunks[chunk_num].hash);
       result = kFailedToStoreChunk;
@@ -1044,6 +1046,24 @@ bool SelfEncryptor::Flush() {
 
   flushed_ = true;
   return true;
+}
+
+uint32_t SelfEncryptor::ExpectedChunks() {
+  if (file_size_ < 3 * kMinChunkSize) {
+    return 0;
+  } else if (file_size_ < 3 * kDefaultChunkSize) {
+    return 3;
+  } else {
+    uint32_t quot(static_cast<uint32_t>(file_size_ / kDefaultChunkSize)),
+             rem(static_cast<uint32_t>(file_size_ % kDefaultChunkSize));
+    if (rem > kMinChunkSize)
+      ++quot;
+    return quot;
+  }
+}
+
+void SelfEncryptor::SetOpFunctor(const OpFunctor& op_functor) {
+  op_functor_ = op_functor;
 }
 
 bool SelfEncryptor::Read(char* data,
@@ -1406,6 +1426,9 @@ bool SelfEncryptor::Truncate(const uint64_t &position) {
 void SelfEncryptor::DeleteChunk(const uint32_t &chunk_num) {
   SharedLock shared_lock(data_mutex_);
   if (!data_map_->chunks[chunk_num].hash.empty()) {
+    if (chunk_num < original_data_map_->chunks.size())
+      if (data_map_->chunks[chunk_num].hash == original_data_map_->chunks[chunk_num].hash)
+        return;
     UniqueLock unique_lock(chunk_store_mutex_);
     if (!chunk_store_.Delete(data_map_->chunks[chunk_num].hash, nullptr)) {
       LOG(kWarning) << "Failed to delete chunk " << chunk_num << ": "
