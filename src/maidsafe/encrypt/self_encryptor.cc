@@ -1049,6 +1049,8 @@ bool SelfEncryptor::Flush() {
 }
 
 uint32_t SelfEncryptor::ExpectedChunks() {
+  if (flushed_ || !prepared_for_writing_)
+    return 0;
   if (file_size_ < 3 * kMinChunkSize) {
     return 0;
   } else if (file_size_ < 3 * kDefaultChunkSize) {
