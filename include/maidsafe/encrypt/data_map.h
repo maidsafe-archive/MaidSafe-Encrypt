@@ -27,11 +27,13 @@ namespace encrypt {
 
 struct ChunkDetails {
   enum PreHashState { kEmpty, kOutdated, kOk };
+  enum StorageState { kStored, kPending, kUnstored };
   ChunkDetails() : hash(),
                    pre_hash(),
                    old_n1_pre_hash(),
                    old_n2_pre_hash(),
                    pre_hash_state(kEmpty),
+                   storage_state(kUnstored),
                    size(0) {}
   std::string hash;  // SHA512 of processed chunk
   byte pre_hash[crypto::SHA512::DIGESTSIZE];  // SHA512 of unprocessed src data
@@ -41,6 +43,7 @@ struct ChunkDetails {
   // If the pre_hash hasn't been calculated, or if data has been written to the
   // chunk since the pre_hash was last calculated, pre_hash_ok should be false.
   PreHashState pre_hash_state;
+  StorageState storage_state;
   uint32_t size;  // Size of unprocessed source data in bytes
 };
 

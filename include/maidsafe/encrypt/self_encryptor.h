@@ -25,13 +25,15 @@
 #include "maidsafe/encrypt/config.h"
 #include "maidsafe/encrypt/data_map.h"
 
+#include "maidsafe/private/chunk_store/file_chunk_store.h"
 #include "maidsafe/private/chunk_store/remote_chunk_store.h"
 
 namespace maidsafe {
 
 namespace priv {
 namespace chunk_store {
-class RemoteChunkStore;
+  class RemoteChunkStore;
+  class FileChunkStore;
 }  // namespace chunk_store
 }  // namespace priv
 
@@ -49,12 +51,11 @@ int DecryptDataMap(const std::string &parent_id,
                    const std::string &encrypted_data_map,
                    DataMapPtr data_map);
 
-typedef priv::chunk_store::RemoteChunkStore::OpFunctor OpFunctor;
-
 class SelfEncryptor {
  public:
   SelfEncryptor(DataMapPtr data_map,
-                priv::chunk_store::RemoteChunkStore& chunk_store,
+                priv::chunk_store::RemoteChunkStore& remote_chunk_store,
+                priv::chunk_store::FileChunkStore& file_chunk_store,
                 int num_procs = 0);
   ~SelfEncryptor();
   bool Write(const char *data,
@@ -67,9 +68,8 @@ class SelfEncryptor {
   // Forces all buffered data to be encrypted.  Missing portions of the file
   // be filled with '\0's
   bool Flush();
-  uint32_t ExpectedChunks();
-  void SetOpFunctor(const OpFunctor& op_functor);
-
+  bool CanStore();
+  
   uint64_t size() const {
     return (file_size_ < truncated_file_size_) ?
         truncated_file_size_ : file_size_;
@@ -186,7 +186,8 @@ class SelfEncryptor {
   const uint32_t kQueueCapacity_;
   uint32_t retrievable_from_queue_;
   std::shared_ptr<byte> chunk0_raw_, chunk1_raw_;
-  priv::chunk_store::RemoteChunkStore& chunk_store_;
+  priv::chunk_store::RemoteChunkStore& remote_chunk_store_;
+  priv::chunk_store::FileChunkStore& file_chunk_store_;
   uint64_t current_position_;
   bool prepared_for_writing_, flushed_;
   boost::shared_array<char> read_cache_;
@@ -198,7 +199,6 @@ class SelfEncryptor {
   uint64_t last_read_position_;
   const uint32_t kMaxBufferSize_;
   boost::shared_mutex data_mutex_, chunk_store_mutex_;
-  OpFunctor op_functor_;
 };
 
 }  // namespace encrypt
