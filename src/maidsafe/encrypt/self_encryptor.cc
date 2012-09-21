@@ -698,7 +698,7 @@ int SelfEncryptor::ProcessMainQueue() {
   if (result == kSuccess && chunks_to_process > 0) {
     uint32_t start_point(chunks_to_process * kDefaultChunkSize);
     uint32_t move_size(retrievable_from_queue_ - start_point);
-    if (start_point < move_size) 
+    if (start_point < move_size)
       return result;
 #ifndef NDEBUG
     uint32_t copied =
