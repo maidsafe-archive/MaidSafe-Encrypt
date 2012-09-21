@@ -23,11 +23,6 @@ namespace maidsafe {
 namespace encrypt {
 
 int SerialiseDataMap(const DataMap& data_map, std::string& serialised_data_map) {
-  if (data_map.content.empty() && data_map.chunks.empty()) {
-    LOG(kError) << "Datamap seems empty.";
-    return kSerialisationError;
-  }
-
   protobuf::DataMap proto_data_map;
   if (!data_map.content.empty()) {
     LOG(kVerbose) << "Added content";
@@ -90,10 +85,6 @@ int ParseDataMap(const std::string& serialised_data_map, DataMap& data_map) {
   } else if (proto_data_map.chunk_details_size() != 0) {
     if (!ExtractChunkDetails(proto_data_map, data_map))
       return kDeserialisationError;
-  } else {
-    LOG(kError) << "No chunks or content - serialised_data_map.size(): "
-                << serialised_data_map.size();
-    return kDeserialisationError;
   }
 
   return kSuccess;
