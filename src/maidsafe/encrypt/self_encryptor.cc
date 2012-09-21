@@ -695,15 +695,16 @@ int SelfEncryptor::ProcessMainQueue() {
     }
   }
 
-  if (result == kSuccess) {
-    uint32_t move_size(retrievable_from_queue_ -
-                       (chunks_to_process * kDefaultChunkSize));
+  if (result == kSuccess && chunks_to_process > 0) {
+    uint32_t start_point(chunks_to_process * kDefaultChunkSize);
+    uint32_t move_size(retrievable_from_queue_ - start_point);
+    if (start_point < move_size) 
+      return result;
 #ifndef NDEBUG
     uint32_t copied =
 #endif
         MemCopy(main_encrypt_queue_, 0,
-                main_encrypt_queue_.get() +
-                    (chunks_to_process * kDefaultChunkSize),
+                main_encrypt_queue_.get() + start_point,
                 move_size);
     BOOST_ASSERT(move_size == copied);
     queue_start_position_ += (chunks_to_process * kDefaultChunkSize);

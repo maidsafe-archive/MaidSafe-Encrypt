@@ -16,5 +16,5 @@
 int main(int argc, char **argv) {
   maidsafe::log::FilterMap map;
   map["encrypt"] = maidsafe::log::kInfo;
-  return ExecuteMain(argc, argv);
+  return ExecuteMain(argc, argv, map);
 }
