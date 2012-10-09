@@ -39,6 +39,7 @@
 #include "maidsafe/common/utils.h"
 
 #include "maidsafe/private/chunk_store/remote_chunk_store.h"
+#include "maidsafe/private/chunk_actions/chunk_id.h"
 
 #include "maidsafe/encrypt/config.h"
 #include "maidsafe/encrypt/data_map.h"
@@ -551,7 +552,7 @@ int SelfEncryptor::DecryptChunk(const uint32_t &chunk_num, byte *data) {
   std::string content;
   {
     SharedLock shared_lock(chunk_store_mutex_);
-    content = chunk_store_.Get(data_map_->chunks[chunk_num].hash);
+    content = chunk_store_.Get(priv::ChunkId(data_map_->chunks[chunk_num].hash));
   }
 
   if (content.empty()) {
@@ -746,7 +747,7 @@ int SelfEncryptor::EncryptChunk(const uint32_t &chunk_num,
         reinterpret_cast<char*>(post_hash.get()), crypto::SHA512::DIGESTSIZE);
 
     UniqueLock unique_lock(chunk_store_mutex_);
-    if (!chunk_store_.Store(data_map_->chunks[chunk_num].hash,
+    if (!chunk_store_.Store(priv::ChunkId(data_map_->chunks[chunk_num].hash),
                              chunk_content, nullptr)) {
       LOG(kError) << "Could not store "
                   << Base32Substr(data_map_->chunks[chunk_num].hash);
@@ -1349,7 +1350,7 @@ void SelfEncryptor::ReadInProcessData(char *data,
 bool SelfEncryptor::DeleteAllChunks() {
   UniqueLock chunk_store_unique_lock(chunk_store_mutex_);
   for (uint32_t i(0); i != data_map_->chunks.size(); ++i) {
-    if (!chunk_store_.Delete(data_map_->chunks[i].hash, nullptr)) {
+    if (!chunk_store_.Delete(priv::ChunkId(data_map_->chunks[i].hash), nullptr)) {
       LOG(kWarning) << "Failed to delete chunk " << i;
       return false;
     }
@@ -1406,12 +1407,15 @@ bool SelfEncryptor::Truncate(const uint64_t &position) {
 
 void SelfEncryptor::DeleteChunk(const uint32_t &chunk_num) {
   SharedLock shared_lock(data_mutex_);
-  if (!data_map_->chunks[chunk_num].hash.empty()) {
+  if (data_map_->chunks[chunk_num].hash.size() == crypto::SHA512::DIGESTSIZE) {
     UniqueLock unique_lock(chunk_store_mutex_);
-    if (!chunk_store_.Delete(data_map_->chunks[chunk_num].hash, nullptr)) {
+    if (!chunk_store_.Delete(priv::ChunkId(data_map_->chunks[chunk_num].hash), nullptr)) {
       LOG(kWarning) << "Failed to delete chunk " << chunk_num << ": "
                     << Base32Substr(data_map_->chunks[chunk_num].hash);
     }
+  } else {
+      LOG(kWarning) << "Invalid chunk name (not SHA512HASH) " << chunk_num << ": "
+                    << Base32Substr(data_map_->chunks[chunk_num].hash);
   }
 }
 
