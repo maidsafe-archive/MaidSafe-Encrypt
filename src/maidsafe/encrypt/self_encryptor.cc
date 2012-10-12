@@ -38,7 +38,7 @@
 #include "maidsafe/common/log.h"
 #include "maidsafe/common/utils.h"
 
-#include "maidsafe/private/chunk_store/remote_chunk_store.h"
+#include "maidsafe/private/chunk_store/file_chunk_store.h"
 #include "maidsafe/private/chunk_actions/chunk_id.h"
 
 #include "maidsafe/encrypt/config.h"
@@ -127,9 +127,11 @@ void DebugPrint(bool encrypting,
 
 
 SelfEncryptor::SelfEncryptor(DataMapPtr data_map,
-                             pcs::RemoteChunkStore& chunk_store,
+                             pcs::RemoteChunkStore& remote_chunk_store,
+                             pcs::FileChunkStore& file_chunk_store,
                              int num_procs)
     : data_map_(data_map ? data_map : DataMapPtr(new DataMap)),
+      original_data_map_(new DataMap(*data_map)),
       sequencer_(new Sequencer),
       kDefaultByteArraySize_(num_procs == 0 ?
                              kDefaultChunkSize * Concurrency() :
@@ -144,7 +146,8 @@ SelfEncryptor::SelfEncryptor(DataMapPtr data_map,
       retrievable_from_queue_(0),
       chunk0_raw_(),
       chunk1_raw_(),
-      chunk_store_(chunk_store),
+      remote_chunk_store_(remote_chunk_store),
+      file_chunk_store_(file_chunk_store),
       current_position_(0),
       prepared_for_writing_(false),
       flushed_(true),
@@ -552,7 +555,10 @@ int SelfEncryptor::DecryptChunk(const uint32_t &chunk_num, byte *data) {
   std::string content;
   {
     SharedLock shared_lock(chunk_store_mutex_);
-    content = chunk_store_.Get(priv::ChunkId(data_map_->chunks[chunk_num].hash));
+    content = file_chunk_store_.Get(priv::ChunkId(data_map_->chunks[chunk_num].hash));
+    if (content.empty())
+      content = remote_chunk_store_.Get(priv::ChunkId(data_map_->chunks[chunk_num].hash),
+                                        asymm::Keys());
   }
 
   if (content.empty()) {
@@ -747,10 +753,10 @@ int SelfEncryptor::EncryptChunk(const uint32_t &chunk_num,
         reinterpret_cast<char*>(post_hash.get()), crypto::SHA512::DIGESTSIZE);
 
     UniqueLock unique_lock(chunk_store_mutex_);
-    if (!chunk_store_.Store(priv::ChunkId(data_map_->chunks[chunk_num].hash),
-                             chunk_content, nullptr)) {
-      LOG(kError) << "Could not store "
-                  << Base32Substr(data_map_->chunks[chunk_num].hash);
+    data_map_->chunks[chunk_num].storage_state = ChunkDetails::kPending;
+    if (!file_chunk_store_.Store(priv::ChunkId(data_map_->chunks[chunk_num].hash), chunk_content)) {
+      LOG(kError) << "Could not store " << Base32Substr(data_map_->chunks[chunk_num].hash);
+      data_map_->chunks[chunk_num].storage_state = ChunkDetails::kUnstored;
       result = kFailedToStoreChunk;
     }
 //    DebugPrint(true, chunk_num, pad, key, iv, data, length, chunk_content);
@@ -1046,6 +1052,10 @@ bool SelfEncryptor::Flush() {
 
   flushed_ = true;
   return true;
+}
+
+bool SelfEncryptor::CanStore() {
+  return flushed_ || !prepared_for_writing_;
 }
 
 bool SelfEncryptor::Read(char* data,
@@ -1350,9 +1360,12 @@ void SelfEncryptor::ReadInProcessData(char *data,
 bool SelfEncryptor::DeleteAllChunks() {
   UniqueLock chunk_store_unique_lock(chunk_store_mutex_);
   for (uint32_t i(0); i != data_map_->chunks.size(); ++i) {
-    if (!chunk_store_.Delete(priv::ChunkId(data_map_->chunks[i].hash), nullptr)) {
-      LOG(kWarning) << "Failed to delete chunk " << i;
-      return false;
+    if (!file_chunk_store_.Delete(priv::ChunkId(data_map_->chunks[i].hash))) {
+      if (!remote_chunk_store_.Delete(priv::ChunkId(data_map_->chunks[i].hash), nullptr,
+                                      asymm::Keys())) {
+        LOG(kWarning) << "Failed to delete chunk " << i;
+        return false;
+      }
     }
   }
   UniqueLock data_unique_lock(data_mutex_);
@@ -1408,10 +1421,16 @@ bool SelfEncryptor::Truncate(const uint64_t &position) {
 void SelfEncryptor::DeleteChunk(const uint32_t &chunk_num) {
   SharedLock shared_lock(data_mutex_);
   if (data_map_->chunks[chunk_num].hash.size() == crypto::SHA512::DIGESTSIZE) {
+    if (chunk_num < original_data_map_->chunks.size())
+      if (data_map_->chunks[chunk_num].hash == original_data_map_->chunks[chunk_num].hash)
+        return;
     UniqueLock unique_lock(chunk_store_mutex_);
-    if (!chunk_store_.Delete(priv::ChunkId(data_map_->chunks[chunk_num].hash), nullptr)) {
-      LOG(kWarning) << "Failed to delete chunk " << chunk_num << ": "
-                    << Base32Substr(data_map_->chunks[chunk_num].hash);
+    if (!file_chunk_store_.Delete(priv::ChunkId(data_map_->chunks[chunk_num].hash))) {
+      if (!remote_chunk_store_.Delete(priv::ChunkId(data_map_->chunks[chunk_num].hash), nullptr,
+                                      asymm::Keys())) {
+        LOG(kWarning) << "Failed to delete chunk " << chunk_num << ": "
+                      << Base32Substr(data_map_->chunks[chunk_num].hash);
+      }
     }
   } else {
       LOG(kWarning) << "Invalid chunk name (not SHA512HASH) " << chunk_num << ": "

@@ -35,6 +35,8 @@ namespace test {
 
 typedef std::shared_ptr<priv::chunk_store::RemoteChunkStore>
         RemoteChunkStorePtr;
+typedef std::shared_ptr<priv::chunk_store::FileChunkStore>
+        FileChunkStorePtr;
 
 class EncryptTestBase {
  public:
@@ -42,19 +44,26 @@ class EncryptTestBase {
       : test_dir_(maidsafe::test::CreateTestPath()),
         num_procs_(num_procs),
         asio_service_(5),
-        chunk_store_(),
+        remote_chunk_store_(),
+        file_chunk_store_(new priv::chunk_store::FileChunkStore()),
         data_map_(new DataMap),
         self_encryptor_(),
         original_(),
         decrypted_() {
     asio_service_.Start();
     fs::path buffered_chunk_store_path(*test_dir_ / RandomAlphaNumericString(8));
-    chunk_store_ =
+    remote_chunk_store_ =
         priv::chunk_store::CreateLocalChunkStore(buffered_chunk_store_path,
                                                  *test_dir_ / "local_manager",
                                                  *test_dir_ / "chunk_locks",
                                                  asio_service_.service());
-    self_encryptor_.reset(new SelfEncryptor(data_map_, *chunk_store_, num_procs_));
+    if (!file_chunk_store_->Init(*test_dir_ / "temp")) {
+      LOG(kError) << "Failed to initialise file chunk store.";
+    }
+    self_encryptor_.reset(new SelfEncryptor(data_map_,
+                                            *remote_chunk_store_,
+                                            *file_chunk_store_,
+                                            num_procs_));
   }
   virtual ~EncryptTestBase() {
     asio_service_.Stop();
@@ -71,7 +80,8 @@ class EncryptTestBase {
   maidsafe::test::TestPath test_dir_;
   int num_procs_;
   AsioService asio_service_;
-  RemoteChunkStorePtr chunk_store_;
+  RemoteChunkStorePtr remote_chunk_store_;
+  FileChunkStorePtr file_chunk_store_;
   DataMapPtr data_map_;
   std::shared_ptr<SelfEncryptor> self_encryptor_;
   boost::scoped_array<char> original_, decrypted_;

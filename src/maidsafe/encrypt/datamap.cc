@@ -36,6 +36,7 @@ int SerialiseDataMap(const DataMap& data_map, std::string& serialised_data_map) 
                                            crypto::SHA512::DIGESTSIZE));
     chunk_details->set_size(chunk_detail.size);
     chunk_details->set_pre_hash_state(chunk_detail.pre_hash_state);
+    chunk_details->set_storage_state(chunk_detail.storage_state);
   }
 
   if (!proto_data_map.SerializeToString(&serialised_data_map)) {
@@ -62,6 +63,8 @@ bool ExtractChunkDetails(const protobuf::DataMap& proto_data_map, DataMap& data_
     temp.size = proto_data_map.chunk_details(n).size();
     temp.pre_hash_state =
         static_cast<ChunkDetails::PreHashState>(proto_data_map.chunk_details(n).pre_hash_state());
+    temp.storage_state =
+        static_cast<ChunkDetails::StorageState>(proto_data_map.chunk_details(n).storage_state());
     data_map.chunks.push_back(temp);
   }
 

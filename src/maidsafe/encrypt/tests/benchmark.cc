@@ -92,14 +92,18 @@ TEST(MassiveFile, FUNC_MemCheck) {
   maidsafe::test::TestPath test_dir(maidsafe::test::CreateTestPath());
   fs::path buffered_chunk_store_path(*test_dir / RandomAlphaNumericString(8));
   LOG(kInfo) << "Creating chunk store in " << buffered_chunk_store_path;
-  RemoteChunkStorePtr chunk_store =
+  RemoteChunkStorePtr remote_chunk_store =
         priv::chunk_store::CreateLocalChunkStore(buffered_chunk_store_path,
                                                  *test_dir / "local_manager",
                                                  *test_dir / "chunk_locks",
                                                  asio_service.service());
+  priv::chunk_store::FileChunkStore file_chunk_store;
+  EXPECT_TRUE(file_chunk_store.Init(*test_dir / "temp"));
+
   DataMapPtr data_map(new DataMap);
   std::shared_ptr<SelfEncryptor> self_encryptor(new SelfEncryptor(data_map,
-                  *chunk_store,
+                  *remote_chunk_store,
+                  file_chunk_store,
                   kNumProcs));
 
   const uint32_t kDataSize((1 << 20) + 1);
@@ -119,7 +123,7 @@ TEST(MassiveFile, FUNC_MemCheck) {
   Sleep(boost::posix_time::seconds(1));
 
   LOG(kInfo) << "Resetting chunk store.";
-  chunk_store.reset();
+  remote_chunk_store.reset();
   boost::system::error_code rm_error_code, exists_error_code;
   EXPECT_GT(fs::remove_all(buffered_chunk_store_path, rm_error_code), 0U)
       << rm_error_code.message();
