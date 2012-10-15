@@ -41,13 +41,12 @@ namespace encrypt {
 
 class Sequencer;
 
-int EncryptDataMap(const std::string &parent_id,
-                   const std::string &this_id,
-                   DataMapPtr data_map,
-                   std::string *encrypted_data_map);
+asymm::CipherText EncryptDataMap(const Identity& parent_id,
+                                 const Identity& this_id,
+                                 DataMapPtr data_map);
 
-int DecryptDataMap(const std::string &parent_id,
-                   const std::string &this_id,
+int DecryptDataMap(const Identity& parent_id,
+                   const Identity& this_id,
                    const std::string &encrypted_data_map,
                    DataMapPtr data_map);
 

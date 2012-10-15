@@ -1438,24 +1438,18 @@ void SelfEncryptor::DeleteChunk(const uint32_t &chunk_num) {
   }
 }
 
-int EncryptDataMap(const std::string &parent_id,
-                   const std::string &this_id,
-                   DataMapPtr data_map,
-                   std::string *encrypted_data_map) {
-  BOOST_ASSERT(parent_id.size() ==
+asymm::CipherText EncryptDataMap(const Identity& parent_id,
+                                 const Identity& this_id,
+                                 DataMapPtr data_map) {
+  BOOST_ASSERT(parent_id.string().size() ==
                static_cast<size_t>(crypto::SHA512::DIGESTSIZE));
-  BOOST_ASSERT(this_id.size() ==
+  BOOST_ASSERT(this_id.string().size() ==
                static_cast<size_t>(crypto::SHA512::DIGESTSIZE));
   BOOST_ASSERT(data_map);
-  BOOST_ASSERT(encrypted_data_map);
-  encrypted_data_map->clear();
 
-  std::string serialised_data_map;
+  std::string serialised_data_map, encrypted_data_map;
   int result(SerialiseDataMap(*data_map, serialised_data_map));
-  if (result != kSuccess) {
-    LOG(kError) << "Failed to serialise data map.";
-    return result;
-  }
+  BOOST_ASSERT(result == kSuccess);
 
   ByteArray array_data_map(GetNewByteArray(
       static_cast<uint32_t>(serialised_data_map.size())));
@@ -1463,65 +1457,60 @@ int EncryptDataMap(const std::string &parent_id,
                           Size(array_data_map)));
   BOOST_ASSERT(Size(array_data_map) == copied);
 
-  try {
-    size_t inputs_size(parent_id.size() + this_id.size());
-    ByteArray enc_hash(GetNewByteArray(crypto::SHA512::DIGESTSIZE)),
-              xor_hash(GetNewByteArray(crypto::SHA512::DIGESTSIZE));
-    CryptoPP::SHA512().CalculateDigest(
-        enc_hash.get(),
-        reinterpret_cast<const byte*>((parent_id + this_id).data()),
-        inputs_size);
-    CryptoPP::SHA512().CalculateDigest(
-        xor_hash.get(),
-        reinterpret_cast<const byte*>((this_id + parent_id).data()),
-        inputs_size);
+  size_t inputs_size(parent_id.string().size() + this_id.string().size());
+  ByteArray enc_hash(GetNewByteArray(crypto::SHA512::DIGESTSIZE)),
+            xor_hash(GetNewByteArray(crypto::SHA512::DIGESTSIZE));
+  CryptoPP::SHA512().CalculateDigest(
+      enc_hash.get(),
+      reinterpret_cast<const byte*>((parent_id.string() + this_id.string()).data()),
+      inputs_size);
+  CryptoPP::SHA512().CalculateDigest(
+      xor_hash.get(),
+      reinterpret_cast<const byte*>((this_id.string() + parent_id.string()).data()),
+      inputs_size);
 
-    CryptoPP::CFB_Mode<CryptoPP::AES>::Encryption encryptor(
-        enc_hash.get(),
-        crypto::AES256_KeySize,
-        enc_hash.get() + crypto::AES256_KeySize);
+  CryptoPP::CFB_Mode<CryptoPP::AES>::Encryption encryptor(
+      enc_hash.get(),
+      crypto::AES256_KeySize,
+      enc_hash.get() + crypto::AES256_KeySize);
 
-    encrypted_data_map->reserve(copied);
-    CryptoPP::Gzip aes_filter(
-        new CryptoPP::StreamTransformationFilter(encryptor,
-            new XORFilter(
-                new CryptoPP::StringSink(*encrypted_data_map),
-                xor_hash.get(),
-                crypto::SHA512::DIGESTSIZE)),
-        6);
-    aes_filter.Put2(array_data_map.get(), copied, -1, true);
-  }
-  catch(const CryptoPP::Exception &e) {
-    LOG(kError) << "Failed data_map encryption: " << e.what();
-    return kEncryptionException;
-  }
-  BOOST_ASSERT(!encrypted_data_map->empty());
-  return kSuccess;
+  encrypted_data_map.reserve(copied);
+  CryptoPP::Gzip aes_filter(
+      new CryptoPP::StreamTransformationFilter(encryptor,
+          new XORFilter(
+              new CryptoPP::StringSink(encrypted_data_map),
+              xor_hash.get(),
+              crypto::SHA512::DIGESTSIZE)),
+      6);
+  aes_filter.Put2(array_data_map.get(), copied, -1, true);
+
+  BOOST_ASSERT(!encrypted_data_map.empty());
+  return asymm::CipherText(encrypted_data_map);
 }
 
-int DecryptDataMap(const std::string &parent_id,
-                   const std::string &this_id,
+int DecryptDataMap(const Identity& parent_id,
+                   const Identity& this_id,
                    const std::string &encrypted_data_map,
                    DataMapPtr data_map) {
-  BOOST_ASSERT(parent_id.size() ==
+  BOOST_ASSERT(parent_id.string().size() ==
                static_cast<size_t>(crypto::SHA512::DIGESTSIZE));
-  BOOST_ASSERT(this_id.size() ==
+  BOOST_ASSERT(this_id.string().size() ==
                static_cast<size_t>(crypto::SHA512::DIGESTSIZE));
   BOOST_ASSERT(!encrypted_data_map.empty());
   BOOST_ASSERT(data_map);
 
   std::string serialised_data_map;
   try {
-    size_t inputs_size(parent_id.size() + this_id.size());
+    size_t inputs_size(parent_id.string().size() + this_id.string().size());
     ByteArray enc_hash(GetNewByteArray(crypto::SHA512::DIGESTSIZE)),
               xor_hash(GetNewByteArray(crypto::SHA512::DIGESTSIZE));
     CryptoPP::SHA512().CalculateDigest(
         enc_hash.get(),
-        reinterpret_cast<const byte*>((parent_id + this_id).data()),
+        reinterpret_cast<const byte*>((parent_id.string() + this_id.string()).data()),
         inputs_size);
     CryptoPP::SHA512().CalculateDigest(
         xor_hash.get(),
-        reinterpret_cast<const byte*>((this_id + parent_id).data()),
+        reinterpret_cast<const byte*>((this_id.string() + parent_id.string()).data()),
         inputs_size);
 
     CryptoPP::CFB_Mode<CryptoPP::AES>::Decryption decryptor(
