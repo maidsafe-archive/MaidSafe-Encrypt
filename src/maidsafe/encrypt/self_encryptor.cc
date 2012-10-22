@@ -1450,6 +1450,7 @@ asymm::CipherText EncryptDataMap(const Identity& parent_id,
   std::string serialised_data_map, encrypted_data_map;
   int result(SerialiseDataMap(*data_map, serialised_data_map));
   BOOST_ASSERT(result == kSuccess);
+  static_cast<void>(result);
 
   ByteArray array_data_map(GetNewByteArray(
       static_cast<uint32_t>(serialised_data_map.size())));
