@@ -57,10 +57,12 @@ list(REMOVE_ITEM STYLE_FILES "${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/data_ma
 # Define MaidSafe libraries and executables                                                       #
 ###################################################################################################
 ms_add_static_library(encrypt ${ALL_FILES_ENCRYPT_DIR})
-ms_add_executable(TESTencrypt "Tests/Encrypt" ${ALL_FILES_ENCRYPT_TESTS_DIR})
-
 target_link_libraries(maidsafe_encrypt maidsafe_private)
-target_link_libraries(TESTencrypt maidsafe_encrypt)
+
+if(MAIDSAFE_TESTING)
+  ms_add_executable(TESTencrypt "Tests/Encrypt" ${ALL_FILES_ENCRYPT_TESTS_DIR})
+  target_link_libraries(TESTencrypt maidsafe_encrypt)
+endif()
 
 rename_outdated_built_exes()
 
@@ -86,7 +88,9 @@ endif()
 ###################################################################################################
 # Tests                                                                                           #
 ###################################################################################################
-add_style_test(${STYLE_FILES})
-add_gtests(TESTencrypt)
-add_project_experimental()
-test_summary_output()
+if(MAIDSAFE_TESTING)
+  add_style_test(${STYLE_FILES})
+  add_gtests(TESTencrypt)
+  add_project_experimental()
+  test_summary_output()
+endif()
