@@ -1149,6 +1149,29 @@ TEST_F(BasicTest, BEH_nKFile) {
   EXPECT_TRUE(self_encryptor_->Read(const_cast<char*>(recovered.data()), read, start));
 }
 
+TEST_F(BasicTest, BEH_nKFileAppend) {
+  std::string original, recovered;
+  for (uint32_t i = 0; i != 21485; ++i)
+    original += "a";
+
+  EXPECT_TRUE(self_encryptor_->Write(original.data(), static_cast<uint32_t>(original.size()), 0));
+  EXPECT_TRUE(self_encryptor_->Flush());
+  self_encryptor_.reset();
+  {
+    std::shared_ptr<SelfEncryptor> self_encryptor(new SelfEncryptor(data_map_,
+                                                                    *remote_chunk_store_,
+                                                                    *file_chunk_store_,
+                                                                    num_procs_));
+    EXPECT_TRUE(self_encryptor->Truncate(original.size() + 1));
+    EXPECT_TRUE(self_encryptor->Flush());
+    original += "a";
+    EXPECT_TRUE(self_encryptor->Write(original.data(), static_cast<uint32_t>(original.size()), 0));
+    uint32_t read_size(21485 + 1);
+    recovered.resize(read_size);
+    EXPECT_TRUE(self_encryptor->Read(const_cast<char*>(recovered.data()), read_size, 0));
+  }
+}
+
 TEST_F(BasicTest, BEH_ManualCheckWrite) {
   uint32_t chunk_size(kDefaultChunkSize);
   uint32_t num_chunks(10);
