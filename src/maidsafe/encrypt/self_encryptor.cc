@@ -32,7 +32,6 @@
 #ifdef __MSVC__
 #  pragma warning(pop)
 #endif
-#include "boost/scoped_array.hpp"
 
 #include "maidsafe/common/crypto.h"
 #include "maidsafe/common/log.h"
@@ -73,7 +72,7 @@ class XORFilter : public CryptoPP::Bufferless<CryptoPP::Filter> {
       return AttachedTransformation()->Put2(in_string, length, message_end,
                                             blocking);
     }
-    boost::scoped_array<byte> buffer(new byte[length]);
+    std::unique_ptr<byte[]> buffer(new byte[length]);
 
     size_t i(0);
 #ifdef MAIDSAFE_OMP_ENABLED
@@ -138,7 +137,6 @@ SelfEncryptor::SelfEncryptor(DataMapPtr data_map,
                              kDefaultChunkSize * num_procs),
       file_size_(0),
       last_chunk_position_(0),
-      truncated_file_size_(0),
       normal_chunk_size_(0),
       main_encrypt_queue_(),
       queue_start_position_(2 * kDefaultChunkSize),
@@ -178,18 +176,6 @@ SelfEncryptor::SelfEncryptor(DataMapPtr data_map,
 }
 
 SelfEncryptor::~SelfEncryptor() {
-  if (truncated_file_size_ > file_size_) {
-    boost::scoped_array<char>tail_data(new char[kDefaultByteArraySize_]);
-    memset(tail_data.get(), 0, kDefaultByteArraySize_);
-    uint64_t position(file_size_);
-    uint64_t length(truncated_file_size_ - position);
-    while (length > kDefaultByteArraySize_) {
-      Write(tail_data.get(), kDefaultByteArraySize_, position);
-      position += kDefaultByteArraySize_;
-      length -= kDefaultByteArraySize_;
-    }
-    Write(tail_data.get(), static_cast<uint32_t>(length), position);
-  }
   Flush();
 }
 
@@ -275,8 +261,7 @@ bool SelfEncryptor::Write(const char *data,
   return true;
 }
 
-int SelfEncryptor::PrepareToWrite(const uint32_t &length,
-                                  const uint64_t &position) {
+int SelfEncryptor::PrepareToWrite(const uint32_t &length, const uint64_t &position) {
   if (position + length > file_size_) {
     file_size_ = position + length;
     CalculateSizes(false);
@@ -1373,10 +1358,14 @@ bool SelfEncryptor::DeleteAllChunks() {
 }
 
 bool SelfEncryptor::Truncate(const uint64_t &position) {
-  truncated_file_size_ = position;
-  if (position >= file_size_)
-    return true;
+  if (position > file_size_)
+    return TruncateUp(position);
+  else if (position < file_size_)
+    return TruncateDown(position);
+  return true;
+}
 
+bool SelfEncryptor::TruncateDown(const uint64_t &position) {
   // truncate queue, sequencer, and chunks 0 & 1.
   PrepareToWrite(0, 0);
 
@@ -1417,24 +1406,37 @@ bool SelfEncryptor::Truncate(const uint64_t &position) {
   return true;
 }
 
+bool SelfEncryptor::TruncateUp(const uint64_t &position) {
+  std::unique_ptr<char[]>tail_data(new char[kDefaultByteArraySize_]);
+  memset(tail_data.get(), 0, kDefaultByteArraySize_);
+  uint64_t current_position(file_size_);
+  uint64_t length(position - current_position);
+  while (length > kDefaultByteArraySize_) {
+    if (!Write(tail_data.get(), kDefaultByteArraySize_, current_position))
+      return false;
+    current_position += kDefaultByteArraySize_;
+    length -= kDefaultByteArraySize_;
+  }
+  return Write(tail_data.get(), static_cast<uint32_t>(length), current_position);
+}
+
 void SelfEncryptor::DeleteChunk(const uint32_t &chunk_num) {
   SharedLock shared_lock(data_mutex_);
-  if (data_map_->chunks[chunk_num].hash.size() == static_cast<size_t>(crypto::SHA512::DIGESTSIZE)) {
-    if (chunk_num < original_data_map_->chunks.size())
-      if (data_map_->chunks[chunk_num].hash == original_data_map_->chunks[chunk_num].hash)
-        return;
-    UniqueLock unique_lock(chunk_store_mutex_);
-    if (!file_chunk_store_.Delete(priv::ChunkId(data_map_->chunks[chunk_num].hash))) {
-      if (!remote_chunk_store_.Delete(priv::ChunkId(data_map_->chunks[chunk_num].hash),
-                                      nullptr,
-                                      Fob())) {
-        LOG(kWarning) << "Failed to delete chunk " << chunk_num << ": "
-                      << Base32Substr(data_map_->chunks[chunk_num].hash);
-      }
+  if (data_map_->chunks[chunk_num].hash.empty())
+    return;
+
+  if (chunk_num < original_data_map_->chunks.size() &&
+      data_map_->chunks[chunk_num].hash == original_data_map_->chunks[chunk_num].hash) {
+    return;
+  }
+
+  UniqueLock unique_lock(chunk_store_mutex_);
+  if (!file_chunk_store_.Delete(priv::ChunkId(data_map_->chunks[chunk_num].hash))) {
+    if (!remote_chunk_store_.Delete(priv::ChunkId(data_map_->chunks[chunk_num].hash), nullptr,
+                                    Fob())) {
+      LOG(kWarning) << "Failed to delete chunk " << chunk_num << ": "
+                    << Base32Substr(data_map_->chunks[chunk_num].hash);
     }
-  } else {
-    LOG(kWarning) << "Invalid chunk name (not SHA512HASH) " << chunk_num << ": "
-                  << Base32Substr(data_map_->chunks[chunk_num].hash);
   }
 }
 

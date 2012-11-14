@@ -14,19 +14,20 @@
 #ifndef MAIDSAFE_ENCRYPT_SELF_ENCRYPTOR_H_
 #define MAIDSAFE_ENCRYPT_SELF_ENCRYPTOR_H_
 
-#include <tuple>
 #include <cstdint>
+#include <memory>
 #include <string>
-#include "boost/scoped_ptr.hpp"
-#include "boost/shared_array.hpp"
+#include <tuple>
+
 #include "boost/thread/shared_mutex.hpp"
 #include "boost/thread/locks.hpp"
+
+#include "maidsafe/private/chunk_store/file_chunk_store.h"
+#include "maidsafe/private/chunk_store/remote_chunk_store.h"
 
 #include "maidsafe/encrypt/config.h"
 #include "maidsafe/encrypt/data_map.h"
 
-#include "maidsafe/private/chunk_store/file_chunk_store.h"
-#include "maidsafe/private/chunk_store/remote_chunk_store.h"
 
 namespace maidsafe {
 
@@ -69,10 +70,7 @@ class SelfEncryptor {
   bool Flush();
   bool CanStore();
 
-  uint64_t size() const {
-    return (file_size_ < truncated_file_size_) ?
-        truncated_file_size_ : file_size_;
-  }
+  uint64_t size() const { return file_size_; }
   DataMapPtr data_map() const { return data_map_; }
 
  private:
@@ -171,14 +169,15 @@ class SelfEncryptor {
   void ReadInProcessData(char *data,
                          const uint32_t &length,
                          const uint64_t &position);
+  bool TruncateUp(const uint64_t &position);
+  bool TruncateDown(const uint64_t &position);
   void DeleteChunk(const uint32_t &chunk_num);
 
   DataMapPtr data_map_;
   DataMapPtr original_data_map_;
-  boost::scoped_ptr<Sequencer> sequencer_;
+  std::unique_ptr<Sequencer> sequencer_;
   const uint32_t kDefaultByteArraySize_;
   uint64_t file_size_, last_chunk_position_;
-  uint64_t truncated_file_size_;
   uint32_t normal_chunk_size_;
   std::shared_ptr<byte> main_encrypt_queue_;
   uint64_t queue_start_position_;
@@ -189,10 +188,10 @@ class SelfEncryptor {
   priv::chunk_store::FileChunkStore& file_chunk_store_;
   uint64_t current_position_;
   bool prepared_for_writing_, flushed_;
-  boost::shared_array<char> read_cache_;
+  std::unique_ptr<char[]> read_cache_;
   uint64_t cache_start_position_;
   bool prepared_for_reading_;
-  boost::shared_array<char> read_buffer_;
+  std::unique_ptr<char[]> read_buffer_;
   bool buffer_activated_;
   uint32_t buffer_length_;
   uint64_t last_read_position_;

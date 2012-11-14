@@ -20,7 +20,7 @@ namespace encrypt {
 ByteArray GetNewByteArray(const uint32_t &size) {
   ByteArray byte_array(new byte[size], ByteArrayDeleter(size));
   memset(byte_array.get(), 0, size);
-  return byte_array;
+  return std::move(byte_array);
 }
 
 uint32_t Size(const std::shared_ptr<byte> &ptr) {

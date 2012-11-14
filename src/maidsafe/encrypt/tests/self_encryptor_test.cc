@@ -1150,10 +1150,7 @@ TEST_F(BasicTest, BEH_nKFile) {
 }
 
 TEST_F(BasicTest, BEH_nKFileAppend) {
-  std::string original, recovered;
-  for (uint32_t i = 0; i != 21485; ++i)
-    original += "a";
-
+  std::string original(21485, 'a'), recovered;
   EXPECT_TRUE(self_encryptor_->Write(original.data(), static_cast<uint32_t>(original.size()), 0));
   EXPECT_TRUE(self_encryptor_->Flush());
   self_encryptor_.reset();
@@ -1391,7 +1388,7 @@ TEST_F(BasicTest, FUNC_MassiveWrite) {
   uint64_t test_data_size(430479769);
   test_data_size *= 10;
   test_data_size += 6;
-  EXPECT_TRUE(self_encryptor_->Truncate(test_data_size));
+//  EXPECT_TRUE(self_encryptor_->Truncate(test_data_size));
   uint32_t write_length(32768);
   boost::scoped_array<char>content_data(new char[write_length]);
   memset(content_data.get(), 0, write_length);
