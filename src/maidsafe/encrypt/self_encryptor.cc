@@ -1407,17 +1407,20 @@ bool SelfEncryptor::TruncateDown(const uint64_t &position) {
 }
 
 bool SelfEncryptor::TruncateUp(const uint64_t &position) {
-  std::unique_ptr<char[]>tail_data(new char[kDefaultByteArraySize_]);
-  memset(tail_data.get(), 0, kDefaultByteArraySize_);
-  uint64_t current_position(file_size_);
-  uint64_t length(position - current_position);
-  while (length > kDefaultByteArraySize_) {
-    if (!Write(tail_data.get(), kDefaultByteArraySize_, current_position))
-      return false;
-    current_position += kDefaultByteArraySize_;
-    length -= kDefaultByteArraySize_;
+  if (file_size_ != 0) {
+    std::unique_ptr<char[]>tail_data(new char[kDefaultByteArraySize_]);
+    memset(tail_data.get(), 0, kDefaultByteArraySize_);
+    uint64_t current_position(file_size_);
+    uint64_t length(position - current_position);
+    while (length > kDefaultByteArraySize_) {
+      if (!Write(tail_data.get(), kDefaultByteArraySize_, current_position))
+        return false;
+      current_position += kDefaultByteArraySize_;
+      length -= kDefaultByteArraySize_;
+    }
+    return Write(tail_data.get(), static_cast<uint32_t>(length), current_position);
   }
-  return Write(tail_data.get(), static_cast<uint32_t>(length), current_position);
+  return true;
 }
 
 void SelfEncryptor::DeleteChunk(const uint32_t &chunk_num) {
