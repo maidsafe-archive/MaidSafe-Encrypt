@@ -406,12 +406,9 @@ uint32_t SelfEncryptor::PutToInitialChunks(const char *data,
   if (*position < kDefaultChunkSize) {
     copy_length0 =
         std::min(*length, kDefaultChunkSize - static_cast<uint32_t>(*position));
-#ifndef NDEBUG
-    uint32_t copied =
-#endif
-        MemCopy(chunk0_raw_, static_cast<uint32_t>(*position), data,
-                copy_length0);
+    uint32_t copied = MemCopy(chunk0_raw_, static_cast<uint32_t>(*position), data, copy_length0);
     BOOST_ASSERT(copy_length0 == copied);
+    static_cast<void>(copied);
     // Don't decrease current_position_ (could be a rewrite - this shouldn't
     // change current_position_).
     if (current_position_ < *position + copy_length0)
@@ -427,13 +424,12 @@ uint32_t SelfEncryptor::PutToInitialChunks(const char *data,
   if ((*position >= kDefaultChunkSize) && (*position < 2 * kDefaultChunkSize)) {
     copy_length1 = std::min(*length,
         (2 * kDefaultChunkSize) - static_cast<uint32_t>(*position));
-#ifndef NDEBUG
     uint32_t copied =
-#endif
         MemCopy(chunk1_raw_,
                 static_cast<uint32_t>(*position - kDefaultChunkSize),
                 data + copy_length0, copy_length1);
     BOOST_ASSERT(copy_length1 == copied);
+    static_cast<void>(copied);
     // Don't decrease current_position_ (could be a rewrite - this shouldn't
     // change current_position_).
     if (current_position_ < *position + copy_length1)
@@ -604,37 +600,22 @@ void SelfEncryptor::GetPadIvKey(uint32_t this_chunk_num,
     }
   }
 
-#ifndef NDEBUG
-  uint32_t copied =
-#endif
-      MemCopy(key, 0, n_2_pre_hash, crypto::AES256_KeySize);
+  uint32_t copied = MemCopy(key, 0, n_2_pre_hash, crypto::AES256_KeySize);
   BOOST_ASSERT(crypto::AES256_KeySize == copied);
-#ifndef NDEBUG
-  copied =
-    #endif
-      MemCopy(iv, 0, n_2_pre_hash + crypto::AES256_KeySize,
-                   crypto::AES256_IVSize);
+  copied = MemCopy(iv, 0, n_2_pre_hash + crypto::AES256_KeySize, crypto::AES256_IVSize);
   BOOST_ASSERT(crypto::AES256_IVSize == copied);
-#ifndef NDEBUG
-  copied =
-#endif
-      MemCopy(pad, 0, n_1_pre_hash, crypto::SHA512::DIGESTSIZE);
+  copied = MemCopy(pad, 0, n_1_pre_hash, crypto::SHA512::DIGESTSIZE);
   BOOST_ASSERT(static_cast<uint32_t>(crypto::SHA512::DIGESTSIZE) == copied);
-#ifndef NDEBUG
-  copied =
-#endif
-      MemCopy(pad, crypto::SHA512::DIGESTSIZE,
+  copied = MemCopy(pad, crypto::SHA512::DIGESTSIZE,
                    &data_map_->chunks[this_chunk_num].pre_hash[0],
                    crypto::SHA512::DIGESTSIZE);
   BOOST_ASSERT(static_cast<uint32_t>(crypto::SHA512::DIGESTSIZE) == copied);
   uint32_t hash_offset(crypto::AES256_KeySize + crypto::AES256_IVSize);
-#ifndef NDEBUG
-  copied =
-#endif
-      MemCopy(pad, (2 * crypto::SHA512::DIGESTSIZE),
+  copied = MemCopy(pad, (2 * crypto::SHA512::DIGESTSIZE),
                    n_2_pre_hash + hash_offset,
                    crypto::SHA512::DIGESTSIZE - hash_offset);
   BOOST_ASSERT(crypto::SHA512::DIGESTSIZE - hash_offset == copied);
+  static_cast<void>(copied);
 }
 
 int SelfEncryptor::ProcessMainQueue() {
@@ -706,13 +687,10 @@ int SelfEncryptor::ProcessMainQueue() {
     uint32_t move_size(retrievable_from_queue_ - start_point);
     if (start_point < move_size)
       return result;
-#ifndef NDEBUG
-    uint32_t copied =
-#endif
-        MemCopy(main_encrypt_queue_, 0,
-                main_encrypt_queue_.get() + start_point,
-                move_size);
+    uint32_t copied = MemCopy(main_encrypt_queue_, 0, main_encrypt_queue_.get() + start_point,
+                              move_size);
     BOOST_ASSERT(move_size == copied);
+    static_cast<void>(copied);
     queue_start_position_ += (chunks_to_process * kDefaultChunkSize);
     retrievable_from_queue_ -= (chunks_to_process * kDefaultChunkSize);
     memset(main_encrypt_queue_.get() + retrievable_from_queue_, 0,
@@ -846,16 +824,11 @@ bool SelfEncryptor::Flush() {
       temp = GetNewByteArray(normal_chunk_size_);
       uint32_t size_chunk0(kDefaultChunkSize - normal_chunk_size_);
       uint32_t size_chunk1(normal_chunk_size_ - size_chunk0);
-#ifndef NDEBUG
-      uint32_t copied =
-#endif
-          MemCopy(temp, 0, chunk0_raw_.get() + normal_chunk_size_, size_chunk0);
+      uint32_t copied = MemCopy(temp, 0, chunk0_raw_.get() + normal_chunk_size_, size_chunk0);
       BOOST_ASSERT(size_chunk0 == copied);
-#ifndef NDEBUG
-      copied =
-#endif
-          MemCopy(temp, size_chunk0, chunk1_raw_.get(), size_chunk1);
+      copied = MemCopy(temp, size_chunk0, chunk1_raw_.get(), size_chunk1);
       BOOST_ASSERT(size_chunk1 == copied);
+      static_cast<void>(copied);
       chunk1_start = temp.get();
     }
   }
