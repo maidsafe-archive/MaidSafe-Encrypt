@@ -113,7 +113,6 @@ int Sequencer::Add(const char *data,
     if (reduced_upper)
       ++upper_itr;
     blocks_.erase(lower_itr, upper_itr);
-    blocks_.insert(std::make_pair(new_start_position, new_entry));
     auto result = blocks_.insert(std::make_pair(new_start_position, new_entry));
     BOOST_ASSERT(result.second);
     static_cast<void>(result);
