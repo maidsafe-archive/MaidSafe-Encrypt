@@ -604,19 +604,34 @@ void SelfEncryptor::GetPadIvKey(uint32_t this_chunk_num,
     }
   }
 
-  uint32_t copied = MemCopy(key, 0, n_2_pre_hash, crypto::AES256_KeySize);
+#ifndef NDEBUG
+  uint32_t copied =
+#endif
+      MemCopy(key, 0, n_2_pre_hash, crypto::AES256_KeySize);
   BOOST_ASSERT(crypto::AES256_KeySize == copied);
-  copied = MemCopy(iv, 0, n_2_pre_hash + crypto::AES256_KeySize,
+#ifndef NDEBUG
+  copied =
+    #endif
+      MemCopy(iv, 0, n_2_pre_hash + crypto::AES256_KeySize,
                    crypto::AES256_IVSize);
   BOOST_ASSERT(crypto::AES256_IVSize == copied);
-  copied = MemCopy(pad, 0, n_1_pre_hash, crypto::SHA512::DIGESTSIZE);
+#ifndef NDEBUG
+  copied =
+#endif
+      MemCopy(pad, 0, n_1_pre_hash, crypto::SHA512::DIGESTSIZE);
   BOOST_ASSERT(static_cast<uint32_t>(crypto::SHA512::DIGESTSIZE) == copied);
-  copied = MemCopy(pad, crypto::SHA512::DIGESTSIZE,
+#ifndef NDEBUG
+  copied =
+#endif
+      MemCopy(pad, crypto::SHA512::DIGESTSIZE,
                    &data_map_->chunks[this_chunk_num].pre_hash[0],
                    crypto::SHA512::DIGESTSIZE);
   BOOST_ASSERT(static_cast<uint32_t>(crypto::SHA512::DIGESTSIZE) == copied);
   uint32_t hash_offset(crypto::AES256_KeySize + crypto::AES256_IVSize);
-  copied = MemCopy(pad, (2 * crypto::SHA512::DIGESTSIZE),
+#ifndef NDEBUG
+  copied =
+#endif
+      MemCopy(pad, (2 * crypto::SHA512::DIGESTSIZE),
                    n_2_pre_hash + hash_offset,
                    crypto::SHA512::DIGESTSIZE - hash_offset);
   BOOST_ASSERT(crypto::SHA512::DIGESTSIZE - hash_offset == copied);
@@ -831,10 +846,15 @@ bool SelfEncryptor::Flush() {
       temp = GetNewByteArray(normal_chunk_size_);
       uint32_t size_chunk0(kDefaultChunkSize - normal_chunk_size_);
       uint32_t size_chunk1(normal_chunk_size_ - size_chunk0);
-      uint32_t copied = MemCopy(temp, 0, chunk0_raw_.get() + normal_chunk_size_,
-                                size_chunk0);
+#ifndef NDEBUG
+      uint32_t copied =
+#endif
+          MemCopy(temp, 0, chunk0_raw_.get() + normal_chunk_size_, size_chunk0);
       BOOST_ASSERT(size_chunk0 == copied);
-      copied = MemCopy(temp, size_chunk0, chunk1_raw_.get(), size_chunk1);
+#ifndef NDEBUG
+      copied =
+#endif
+          MemCopy(temp, size_chunk0, chunk1_raw_.get(), size_chunk1);
       BOOST_ASSERT(size_chunk1 == copied);
       chunk1_start = temp.get();
     }

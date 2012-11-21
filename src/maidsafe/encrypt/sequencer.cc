@@ -113,9 +113,12 @@ int Sequencer::Add(const char *data,
     if (reduced_upper)
       ++upper_itr;
     blocks_.erase(lower_itr, upper_itr);
-    auto result = blocks_.insert(std::make_pair(new_start_position,
-                                                new_entry));
+#ifdef NDEBUG
+    blocks_.insert(std::make_pair(new_start_position, new_entry));
+#else
+    auto result = blocks_.insert(std::make_pair(new_start_position, new_entry));
     BOOST_ASSERT(result.second);
+#endif
   }
   catch(const std::exception &e) {
     // TODO(DI) here we need to catch the error - likely out of mem.  We
