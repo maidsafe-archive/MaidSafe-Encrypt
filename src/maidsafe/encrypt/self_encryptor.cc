@@ -137,6 +137,7 @@ SelfEncryptor::SelfEncryptor(DataMapPtr data_map,
                              kDefaultChunkSize * num_procs),
       file_size_(0),
       last_chunk_position_(0),
+      truncated_file_size_(0),
       normal_chunk_size_(0),
       main_encrypt_queue_(),
       queue_start_position_(2 * kDefaultChunkSize),
@@ -176,6 +177,8 @@ SelfEncryptor::SelfEncryptor(DataMapPtr data_map,
 }
 
 SelfEncryptor::~SelfEncryptor() {
+  if (truncated_file_size_ > file_size_)
+    AppendNulls(truncated_file_size_);
   Flush();
 }
 
@@ -1400,20 +1403,31 @@ bool SelfEncryptor::TruncateDown(const uint64_t &position) {
 }
 
 bool SelfEncryptor::TruncateUp(const uint64_t &position) {
-  if (file_size_ != 0) {
-    std::unique_ptr<char[]>tail_data(new char[kDefaultByteArraySize_]);
-    memset(tail_data.get(), 0, kDefaultByteArraySize_);
-    uint64_t current_position(file_size_);
-    uint64_t length(position - current_position);
-    while (length > kDefaultByteArraySize_) {
-      if (!Write(tail_data.get(), kDefaultByteArraySize_, current_position))
-        return false;
-      current_position += kDefaultByteArraySize_;
-      length -= kDefaultByteArraySize_;
+  if (file_size_ < kDefaultByteArraySize_) {
+    uint64_t target_position(std::min(position, static_cast<uint64_t>(kDefaultByteArraySize_)));
+    if (!AppendNulls(target_position)) {
+      LOG(kError) << "Failed to append nulls to beyond end of Chunk 1";
+      return false;
     }
-    return Write(tail_data.get(), static_cast<uint32_t>(length), current_position);
+    if (position <= kDefaultByteArraySize_)
+      return true;
   }
+  truncated_file_size_ = position;
   return true;
+}
+
+bool SelfEncryptor::AppendNulls(const uint64_t &position) {
+  std::unique_ptr<char[]>tail_data(new char[kDefaultByteArraySize_]);
+  memset(tail_data.get(), 0, kDefaultByteArraySize_);
+  uint64_t current_position(file_size_);
+  uint64_t length(position - current_position);
+  while (length > kDefaultByteArraySize_) {
+    if (!Write(tail_data.get(), kDefaultByteArraySize_, current_position))
+      return false;
+    current_position += kDefaultByteArraySize_;
+    length -= kDefaultByteArraySize_;
+  }
+  return Write(tail_data.get(), static_cast<uint32_t>(length), current_position);
 }
 
 void SelfEncryptor::DeleteChunk(const uint32_t &chunk_num) {

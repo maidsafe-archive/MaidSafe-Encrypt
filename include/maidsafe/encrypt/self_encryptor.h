@@ -70,7 +70,9 @@ class SelfEncryptor {
   bool Flush();
   bool CanStore();
 
-  uint64_t size() const { return file_size_; }
+  uint64_t size() const {
+    return (file_size_ < truncated_file_size_) ? truncated_file_size_ : file_size_;
+  }
   DataMapPtr data_map() const { return data_map_; }
 
  private:
@@ -170,6 +172,7 @@ class SelfEncryptor {
                          const uint32_t &length,
                          const uint64_t &position);
   bool TruncateUp(const uint64_t &position);
+  bool AppendNulls(const uint64_t &position);
   bool TruncateDown(const uint64_t &position);
   void DeleteChunk(const uint32_t &chunk_num);
 
@@ -178,6 +181,7 @@ class SelfEncryptor {
   std::unique_ptr<Sequencer> sequencer_;
   const uint32_t kDefaultByteArraySize_;
   uint64_t file_size_, last_chunk_position_;
+  uint64_t truncated_file_size_;
   uint32_t normal_chunk_size_;
   std::shared_ptr<byte> main_encrypt_queue_;
   uint64_t queue_start_position_;

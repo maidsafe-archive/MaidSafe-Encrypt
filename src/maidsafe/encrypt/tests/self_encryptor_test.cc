@@ -1388,7 +1388,7 @@ TEST_F(BasicTest, FUNC_MassiveWrite) {
   uint64_t test_data_size(430479769);
   test_data_size *= 10;
   test_data_size += 6;
-//  EXPECT_TRUE(self_encryptor_->Truncate(test_data_size));
+  EXPECT_TRUE(self_encryptor_->Truncate(test_data_size));
   uint32_t write_length(32768);
   boost::scoped_array<char>content_data(new char[write_length]);
   memset(content_data.get(), 0, write_length);
