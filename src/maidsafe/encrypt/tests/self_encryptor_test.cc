@@ -1177,7 +1177,7 @@ TEST_F(BasicTest, BEH_DeleteStoredChunkFromDisk) {
   EXPECT_TRUE(self_encryptor_->Write(original.data(), static_cast<uint32_t>(original.size()), 0));
   EXPECT_TRUE(self_encryptor_->Flush());
   fs::directory_iterator it(file_chunk_store_path_);
-  EXPECT_NE(0, fs::remove_all(it->path(), error_code));
+  EXPECT_EQ(6, fs::remove_all(it->path(), error_code)); // directory depth == 5
   EXPECT_EQ(0, error_code.value());
   EXPECT_FALSE(self_encryptor_->Read(const_cast<char*>(recovered.data()), recovered.size(), 0));
 }
