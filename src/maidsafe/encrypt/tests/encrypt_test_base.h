@@ -46,6 +46,7 @@ class EncryptTestBase {
         asio_service_(5),
         remote_chunk_store_(),
         file_chunk_store_(new priv::chunk_store::FileChunkStore()),
+        file_chunk_store_path_(*test_dir_ / "temp"),
         data_map_(new DataMap),
         self_encryptor_(),
         original_(),
@@ -57,7 +58,7 @@ class EncryptTestBase {
                                                  *test_dir_ / "local_manager",
                                                  *test_dir_ / "chunk_locks",
                                                  asio_service_.service());
-    if (!file_chunk_store_->Init(*test_dir_ / "temp")) {
+    if (!file_chunk_store_->Init(file_chunk_store_path_)) {
       LOG(kError) << "Failed to initialise file chunk store.";
     }
     self_encryptor_.reset(new SelfEncryptor(data_map_,
@@ -82,6 +83,7 @@ class EncryptTestBase {
   AsioService asio_service_;
   RemoteChunkStorePtr remote_chunk_store_;
   FileChunkStorePtr file_chunk_store_;
+  fs::path file_chunk_store_path_;
   DataMapPtr data_map_;
   std::shared_ptr<SelfEncryptor> self_encryptor_;
   boost::scoped_array<char> original_, decrypted_;
