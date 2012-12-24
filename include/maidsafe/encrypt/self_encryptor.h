@@ -22,8 +22,9 @@
 #include "boost/thread/shared_mutex.hpp"
 #include "boost/thread/locks.hpp"
 
-#include "maidsafe/private/chunk_store/file_chunk_store.h"
-#include "maidsafe/private/chunk_store/remote_chunk_store.h"
+#include "maidsafe/data_store/data_store.h"
+#include "maidsafe/data_store/data_buffer.h"
+#include "maidsafe/nfs/nfs.h"
 
 #include "maidsafe/encrypt/config.h"
 #include "maidsafe/encrypt/data_map.h"
@@ -42,7 +43,7 @@ namespace encrypt {
 
 class Sequencer;
 
-asymm::CipherText EncryptDataMap(const Identity& parent_id,
+crypto::CipherText EncryptDataMap(const Identity& parent_id,
                                  const Identity& this_id,
                                  DataMapPtr data_map);
 
@@ -53,9 +54,11 @@ int DecryptDataMap(const Identity& parent_id,
 
 class SelfEncryptor {
  public:
+  typedef data_store::DataStore<data_store::DataBuffer> DataStore;
+
   SelfEncryptor(DataMapPtr data_map,
-                priv::chunk_store::RemoteChunkStore& remote_chunk_store,
-                priv::chunk_store::FileChunkStore& file_chunk_store,
+                nfs::ClientMaidNfs& client_nfs,
+                DataStore& data_store,
                 int num_procs = 0);
   ~SelfEncryptor();
   bool Write(const char *data,
@@ -79,8 +82,7 @@ class SelfEncryptor {
   typedef boost::shared_lock<boost::shared_mutex> SharedLock;
   typedef boost::upgrade_lock<boost::shared_mutex> UpgradeLock;
   typedef boost::unique_lock<boost::shared_mutex> UniqueLock;
-  typedef boost::upgrade_to_unique_lock<boost::shared_mutex>
-      UpgradeToUniqueLock;
+  typedef boost::upgrade_to_unique_lock<boost::shared_mutex> UpgradeToUniqueLock;
   SelfEncryptor &operator=(const SelfEncryptor&);
   SelfEncryptor(const SelfEncryptor&);
   // If prepared_for_writing_ is not already true, this either reads the first 2
@@ -188,8 +190,8 @@ class SelfEncryptor {
   const uint32_t kQueueCapacity_;
   uint32_t retrievable_from_queue_;
   std::shared_ptr<byte> chunk0_raw_, chunk1_raw_;
-  priv::chunk_store::RemoteChunkStore& remote_chunk_store_;
-  priv::chunk_store::FileChunkStore& file_chunk_store_;
+  nfs::ClientMaidNfs& client_nfs_;
+  DataStore& data_store_;
   uint64_t current_position_;
   bool prepared_for_writing_, flushed_;
   std::unique_ptr<char[]> read_cache_;

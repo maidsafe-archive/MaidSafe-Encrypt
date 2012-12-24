@@ -126,8 +126,8 @@ void DebugPrint(bool encrypting,
 
 
 SelfEncryptor::SelfEncryptor(DataMapPtr data_map,
-                             pcs::RemoteChunkStore& remote_chunk_store,
-                             pcs::FileChunkStore& file_chunk_store,
+                             nfs::ClientMaidNfs& client_nfs,
+                             DataStore& data_store,
                              int num_procs)
     : data_map_(data_map ? data_map : DataMapPtr(new DataMap)),
       original_data_map_(new DataMap(*data_map)),
@@ -145,8 +145,8 @@ SelfEncryptor::SelfEncryptor(DataMapPtr data_map,
       retrievable_from_queue_(0),
       chunk0_raw_(),
       chunk1_raw_(),
-      remote_chunk_store_(remote_chunk_store),
-      file_chunk_store_(file_chunk_store),
+      client_nfs_(client_nfs),
+      data_store_(data_store),
       current_position_(0),
       prepared_for_writing_(false),
       flushed_(true),
@@ -539,7 +539,7 @@ int SelfEncryptor::DecryptChunk(const uint32_t &chunk_num, byte *data) {
   std::string content;
   {
     SharedLock shared_lock(chunk_store_mutex_);
-    content = file_chunk_store_.Get(priv::ChunkId(data_map_->chunks[chunk_num].hash));
+    content = data_store_.Get(ChunkId(data_map_->chunks[chunk_num].hash));
     if (content.empty())
       content = remote_chunk_store_.Get(priv::ChunkId(data_map_->chunks[chunk_num].hash), Fob());
   }

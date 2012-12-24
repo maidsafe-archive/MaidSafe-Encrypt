@@ -27,7 +27,7 @@ include(../../cmake_modules/maidsafe_standard_setup.cmake)
 
 include_directories(${common_SOURCE_DIR}/include)
 include_directories(${private_SOURCE_DIR}/include)
-
+include_directories(${nfs_SOURCE_DIR}/include)
 
 ###################################################################################################
 # Set up all files as GLOBs                                                                       #
@@ -57,7 +57,7 @@ list(REMOVE_ITEM STYLE_FILES "${PROJECT_SOURCE_DIR}/src/maidsafe/encrypt/data_ma
 # Define MaidSafe libraries and executables                                                       #
 ###################################################################################################
 ms_add_static_library(encrypt ${ALL_FILES_ENCRYPT_DIR})
-target_link_libraries(maidsafe_encrypt maidsafe_private)
+target_link_libraries(maidsafe_encrypt maidsafe_private maidsafe_nfs)
 
 if(MAIDSAFE_TESTING)
   ms_add_executable(TESTencrypt "Tests/Encrypt" ${ALL_FILES_ENCRYPT_TESTS_DIR})
