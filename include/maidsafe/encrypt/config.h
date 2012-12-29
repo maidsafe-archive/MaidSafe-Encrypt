@@ -21,8 +21,6 @@
 namespace maidsafe {
 namespace encrypt {
 
-struct ImmutableDataTag { static const int kEnumValue = maidsafe::detail::kImmutableDataValue; };  // NOLINT (Brian)
-
 const uint32_t kMinChunkSize(1024);  // bytes
 const uint32_t kDefaultChunkSize(1024 * 256);  // bytes
 

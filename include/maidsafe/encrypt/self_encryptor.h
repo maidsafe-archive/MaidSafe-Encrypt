@@ -23,7 +23,6 @@
 #include "boost/thread/locks.hpp"
 
 #include "maidsafe/data_store/data_store.h"
-#include "maidsafe/data_store/data_buffer.h"
 #include "maidsafe/nfs/nfs.h"
 
 #include "maidsafe/encrypt/config.h"

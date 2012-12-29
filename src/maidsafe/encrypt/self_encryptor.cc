@@ -37,8 +37,7 @@
 #include "maidsafe/common/log.h"
 #include "maidsafe/common/utils.h"
 
-#include "maidsafe/private/chunk_store/file_chunk_store.h"
-#include "maidsafe/private/chunk_actions/chunk_id.h"
+#include "maidsafe/data_types/immutable_data.h"
 
 #include "maidsafe/encrypt/config.h"
 #include "maidsafe/encrypt/data_map.h"
@@ -536,15 +535,25 @@ int SelfEncryptor::DecryptChunk(const uint32_t &chunk_num, byte *data) {
   ByteArray key(GetNewByteArray(crypto::AES256_KeySize));
   ByteArray iv(GetNewByteArray(crypto::AES256_IVSize));
   GetPadIvKey(chunk_num, key, iv, pad, false);
-  std::string content;
+  NonEmptyString content;
   {
     SharedLock shared_lock(chunk_store_mutex_);
-    content = data_store_.Get(ChunkId(data_map_->chunks[chunk_num].hash));
-    if (content.empty())
-      content = remote_chunk_store_.Get(priv::ChunkId(data_map_->chunks[chunk_num].hash), Fob());
+    TaggedValue<Identity, ImmutableDataTag> key(Identity(data_map_->chunks[chunk_num].hash));
+    content = data_store_.Get(key);
+    if (content.string().empty()) {
+      std::future<ImmutableData> future(client_nfs_.Get<ImmutableData>(key));
+      try {
+        content = future.get().data();
+      }
+      catch(...) {  // temporary catch all!!!
+        LOG(kError) << "Failed to get data for "
+                    << EncodeToBase32(data_map_->chunks[chunk_num].hash);
+        throw;
+      }
+    }
   }
 
-  if (content.empty()) {
+  if (content.string().empty()) {
     LOG(kError) << "Could not find chunk number " << chunk_num
                 << ", hash " << Base32Substr(data_map_->chunks[chunk_num].hash);
     return kMissingChunk;
@@ -553,7 +562,7 @@ int SelfEncryptor::DecryptChunk(const uint32_t &chunk_num, byte *data) {
   try {
     CryptoPP::CFB_Mode<CryptoPP::AES>::Decryption decryptor(
         key.get(), crypto::AES256_KeySize, iv.get());
-    CryptoPP::StringSource filter(content, true,
+    CryptoPP::StringSource filter(content.string(), true,
         new XORFilter(
             new CryptoPP::StreamTransformationFilter(decryptor,
                 new CryptoPP::Gunzip(new CryptoPP::MessageQueue)), pad.get()));
@@ -734,8 +743,11 @@ int SelfEncryptor::EncryptChunk(const uint32_t &chunk_num,
 
     UniqueLock unique_lock(chunk_store_mutex_);
     data_map_->chunks[chunk_num].storage_state = ChunkDetails::kPending;
-    if (!file_chunk_store_.Store(priv::ChunkId(data_map_->chunks[chunk_num].hash),
-                                 NonEmptyString(chunk_content))) {
+    TaggedValue<Identity, ImmutableDataTag> key(Identity(data_map_->chunks[chunk_num].hash));
+    try {
+      data_store_.Store(key, NonEmptyString(chunk_content));
+    }
+    catch(...) {
       LOG(kError) << "Could not store " << Base32Substr(data_map_->chunks[chunk_num].hash);
       data_map_->chunks[chunk_num].storage_state = ChunkDetails::kUnstored;
       result = kFailedToStoreChunk;
@@ -1341,8 +1353,15 @@ void SelfEncryptor::ReadInProcessData(char *data,
 bool SelfEncryptor::DeleteAllChunks() {
   UniqueLock chunk_store_unique_lock(chunk_store_mutex_);
   for (uint32_t i(0); i != data_map_->chunks.size(); ++i) {
-    if (!file_chunk_store_.Delete(priv::ChunkId(data_map_->chunks[i].hash))) {
-      if (!remote_chunk_store_.Delete(priv::ChunkId(data_map_->chunks[i].hash), nullptr, Fob())) {
+    TaggedValue<Identity, ImmutableDataTag> key(Identity(data_map_->chunks[i].hash));
+    try {
+      data_store_.Delete(key);
+    }
+    catch(...) {
+      try {
+        client_nfs_.Delete(key, nullptr);
+      }
+      catch(...) {
         LOG(kWarning) << "Failed to delete chunk " << i;
         return false;
       }
@@ -1441,11 +1460,16 @@ void SelfEncryptor::DeleteChunk(const uint32_t &chunk_num) {
   }
 
   UniqueLock unique_lock(chunk_store_mutex_);
-  if (!file_chunk_store_.Delete(priv::ChunkId(data_map_->chunks[chunk_num].hash))) {
-    if (!remote_chunk_store_.Delete(priv::ChunkId(data_map_->chunks[chunk_num].hash), nullptr,
-                                    Fob())) {
-      LOG(kWarning) << "Failed to delete chunk " << chunk_num << ": "
-                    << Base32Substr(data_map_->chunks[chunk_num].hash);
+  TaggedValue<Identity, ImmutableDataTag> key(Identity(data_map_->chunks[chunk_num].hash));
+  try {
+    data_store_.Delete(key);
+  }
+  catch(...) {
+    try {
+      client_nfs_.Delete(key, nullptr);
+    }
+    catch(...) {
+      LOG(kWarning) << "Failed to delete chunk " << chunk_num;
     }
   }
 }
