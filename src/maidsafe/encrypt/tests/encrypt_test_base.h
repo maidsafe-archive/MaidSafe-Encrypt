@@ -43,7 +43,7 @@ class EncryptTestBase {
       : test_dir_(maidsafe::test::CreateTestPath()),
         num_procs_(num_procs),
         client_nfs_(),
-        data_store_(new DataStore(MemoryUsage(uint64_t(1 << 20)),
+        data_store_(new DataStore(MemoryUsage(uint64_t(0)),
                                   DiskUsage(uint64_t(4294967296)),  // 1 << 32
                                   PopFunctor())),
         data_map_(new DataMap),

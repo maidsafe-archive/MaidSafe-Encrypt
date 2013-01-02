@@ -90,7 +90,7 @@ TEST(MassiveFile, FUNC_MemCheck) {
   maidsafe::test::TestPath test_dir(maidsafe::test::CreateTestPath());
   fs::path data_store_path(*test_dir / "data_store");
   ClientNfsPtr client_nfs;
-  DataStore data_store(MemoryUsage(uint64_t(1 << 20)),
+  DataStore data_store(MemoryUsage(uint64_t(0)),
                        DiskUsage(uint64_t(4294967296)),  // 1 << 32
                        PopFunctor(),
                        data_store_path);
