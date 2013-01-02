@@ -64,7 +64,7 @@ target_link_libraries(maidsafe_encrypt maidsafe_private)
 
 if(MAIDSAFE_TESTING)
   ms_add_executable(TESTencrypt "Tests/Encrypt" ${ALL_FILES_ENCRYPT_TESTS_DIR})
-  target_link_libraries(TESTencrypt maidsafe_encrypt)
+  target_link_libraries(TESTencrypt maidsafe_encrypt maidsafe_routing maidsafe_nfs)
 endif()
 
 rename_outdated_built_exes()

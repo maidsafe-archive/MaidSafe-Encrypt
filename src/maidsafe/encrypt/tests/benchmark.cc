@@ -87,24 +87,16 @@ INSTANTIATE_TEST_CASE_P(WriteRead, Benchmark, testing::Values(0, 4096, 65536));
 // monitored.
 TEST(MassiveFile, FUNC_MemCheck) {
   int kNumProcs(8);
-  AsioService asio_service(5);
-  asio_service.Start();
   maidsafe::test::TestPath test_dir(maidsafe::test::CreateTestPath());
-  fs::path buffered_chunk_store_path(*test_dir / RandomAlphaNumericString(8));
-  LOG(kInfo) << "Creating chunk store in " << buffered_chunk_store_path;
-  RemoteChunkStorePtr remote_chunk_store =
-        priv::chunk_store::CreateLocalChunkStore(buffered_chunk_store_path,
-                                                 *test_dir / "local_manager",
-                                                 *test_dir / "chunk_locks",
-                                                 asio_service.service());
-  priv::chunk_store::FileChunkStore file_chunk_store;
-  EXPECT_TRUE(file_chunk_store.Init(*test_dir / "temp"));
+  fs::path data_store_path(*test_dir / "data_store");
+  ClientNfsPtr client_nfs;
+  DataStore data_store(MemoryUsage(uint64_t(1 << 20)),
+                       DiskUsage(uint64_t(4294967296)),  // 1 << 32
+                       PopFunctor(),
+                       data_store_path);
 
   DataMapPtr data_map(new DataMap);
-  std::shared_ptr<SelfEncryptor> self_encryptor(new SelfEncryptor(data_map,
-                  *remote_chunk_store,
-                  file_chunk_store,
-                  kNumProcs));
+  SelfEncryptorPtr self_encryptor(new SelfEncryptor(data_map, *client_nfs, data_store, kNumProcs));
 
   const uint32_t kDataSize((1 << 20) + 1);
   boost::scoped_array<char> original(new char[kDataSize]);
@@ -115,19 +107,17 @@ TEST(MassiveFile, FUNC_MemCheck) {
   for (uint64_t offset(0); offset != 200 * kDataSize; offset += kDataSize)
     EXPECT_TRUE(self_encryptor->Write(original.get(), kDataSize, offset));
 
-  asio_service.Stop();
-
   LOG(kInfo) << "Resetting self encryptor.";
   self_encryptor.reset();
   // Sleep to allow chosen memory monitor to update its display.
   Sleep(boost::posix_time::seconds(1));
 
   LOG(kInfo) << "Resetting chunk store.";
-  remote_chunk_store.reset();
+  client_nfs.reset();
   boost::system::error_code rm_error_code, exists_error_code;
-  EXPECT_GT(fs::remove_all(buffered_chunk_store_path, rm_error_code), 0U)
+  EXPECT_GT(fs::remove_all(data_store_path, rm_error_code), 0U)
       << rm_error_code.message();
-  EXPECT_FALSE(fs::exists(buffered_chunk_store_path, exists_error_code))
+  EXPECT_FALSE(fs::exists(data_store_path, exists_error_code))
       << "Remove all failed: " << rm_error_code
       << (exists_error_code ?
           "\nExists error: " + exists_error_code.message() :

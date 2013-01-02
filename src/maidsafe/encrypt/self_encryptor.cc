@@ -538,26 +538,32 @@ int SelfEncryptor::DecryptChunk(const uint32_t &chunk_num, byte *data) {
   NonEmptyString content;
   {
     SharedLock shared_lock(chunk_store_mutex_);
-    TaggedValue<Identity, ImmutableDataTag> key(Identity(data_map_->chunks[chunk_num].hash));
-    content = data_store_.Get(key);
-    if (content.string().empty()) {
-      std::future<ImmutableData> future(client_nfs_.Get<ImmutableData>(key));
-      try {
-        content = future.get().data();
-      }
-      catch(...) {  // temporary catch all!!!
-        LOG(kError) << "Failed to get data for "
-                    << EncodeToBase32(data_map_->chunks[chunk_num].hash);
-        throw;
-      }
+    ImmutableKeyType key(Identity(data_map_->chunks[chunk_num].hash));
+    try {
+      content = data_store_.Get(key);
+    }
+    catch(...) {
+      LOG(kError) << "Failed to get local data for "
+                  << EncodeToBase32(data_map_->chunks[chunk_num].hash);
+      return kMissingChunk;
+
+      // std::future<ImmutableData> future(client_nfs_.Get<ImmutableData>(key));
+      // try {
+      //   content = future.get().data();
+      // }
+      // catch(...) {  // temporary catch all!!!
+      //   LOG(kError) << "Failed to get data for "
+      //               << EncodeToBase32(data_map_->chunks[chunk_num].hash);
+      //   throw;
+      // }
     }
   }
 
-  if (content.string().empty()) {
-    LOG(kError) << "Could not find chunk number " << chunk_num
-                << ", hash " << Base32Substr(data_map_->chunks[chunk_num].hash);
-    return kMissingChunk;
-  }
+  // if (content.string().empty()) {
+  //   LOG(kError) << "Could not find chunk number " << chunk_num
+  //               << ", hash " << Base32Substr(data_map_->chunks[chunk_num].hash);
+  //   return kMissingChunk;
+  // }
 
   try {
     CryptoPP::CFB_Mode<CryptoPP::AES>::Decryption decryptor(
@@ -743,7 +749,7 @@ int SelfEncryptor::EncryptChunk(const uint32_t &chunk_num,
 
     UniqueLock unique_lock(chunk_store_mutex_);
     data_map_->chunks[chunk_num].storage_state = ChunkDetails::kPending;
-    TaggedValue<Identity, ImmutableDataTag> key(Identity(data_map_->chunks[chunk_num].hash));
+    ImmutableKeyType key(Identity(data_map_->chunks[chunk_num].hash));
     try {
       data_store_.Store(key, NonEmptyString(chunk_content));
     }
@@ -1353,7 +1359,7 @@ void SelfEncryptor::ReadInProcessData(char *data,
 bool SelfEncryptor::DeleteAllChunks() {
   UniqueLock chunk_store_unique_lock(chunk_store_mutex_);
   for (uint32_t i(0); i != data_map_->chunks.size(); ++i) {
-    TaggedValue<Identity, ImmutableDataTag> key(Identity(data_map_->chunks[i].hash));
+    ImmutableKeyType key(Identity(data_map_->chunks[i].hash));
     try {
       data_store_.Delete(key);
     }
@@ -1460,7 +1466,7 @@ void SelfEncryptor::DeleteChunk(const uint32_t &chunk_num) {
   }
 
   UniqueLock unique_lock(chunk_store_mutex_);
-  TaggedValue<Identity, ImmutableDataTag> key(Identity(data_map_->chunks[chunk_num].hash));
+  ImmutableKeyType key(Identity(data_map_->chunks[chunk_num].hash));
   try {
     data_store_.Delete(key);
   }

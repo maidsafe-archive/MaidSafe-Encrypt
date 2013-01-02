@@ -82,6 +82,8 @@ class SelfEncryptor {
   typedef boost::upgrade_lock<boost::shared_mutex> UpgradeLock;
   typedef boost::unique_lock<boost::shared_mutex> UniqueLock;
   typedef boost::upgrade_to_unique_lock<boost::shared_mutex> UpgradeToUniqueLock;
+  typedef TaggedValue<Identity, ImmutableDataTag> ImmutableKeyType;
+
   SelfEncryptor &operator=(const SelfEncryptor&);
   SelfEncryptor(const SelfEncryptor&);
   // If prepared_for_writing_ is not already true, this either reads the first 2
