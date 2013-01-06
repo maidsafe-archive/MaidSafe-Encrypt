@@ -125,7 +125,7 @@ void DebugPrint(bool encrypting,
 
 
 SelfEncryptor::SelfEncryptor(DataMapPtr data_map,
-                             nfs::ClientMaidNfs& client_nfs,
+                             nfs::TemporaryClientMaidNfs& client_nfs,
                              DataStore& data_store,
                              int num_procs)
     : data_map_(data_map ? data_map : DataMapPtr(new DataMap)),

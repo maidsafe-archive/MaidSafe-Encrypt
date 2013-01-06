@@ -34,7 +34,7 @@ namespace test {
 typedef data_store::DataStore<data_store::DataBuffer> DataStore;
 typedef std::shared_ptr<DataStore> DataStorePtr;
 typedef DataStore::PopFunctor PopFunctor;
-typedef std::shared_ptr<nfs::ClientMaidNfs> ClientNfsPtr;
+typedef std::shared_ptr<nfs::TemporaryClientMaidNfs> ClientNfsPtr;
 typedef std::shared_ptr<SelfEncryptor> SelfEncryptorPtr;
 
 class EncryptTestBase {

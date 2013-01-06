@@ -56,7 +56,7 @@ class SelfEncryptor {
   typedef data_store::DataStore<data_store::DataBuffer> DataStore;
 
   SelfEncryptor(DataMapPtr data_map,
-                nfs::ClientMaidNfs& client_nfs,
+                nfs::TemporaryClientMaidNfs& client_nfs,
                 DataStore& data_store,
                 int num_procs = 0);
   ~SelfEncryptor();
@@ -191,7 +191,7 @@ class SelfEncryptor {
   const uint32_t kQueueCapacity_;
   uint32_t retrievable_from_queue_;
   std::shared_ptr<byte> chunk0_raw_, chunk1_raw_;
-  nfs::ClientMaidNfs& client_nfs_;
+  nfs::TemporaryClientMaidNfs& client_nfs_;
   DataStore& data_store_;
   uint64_t current_position_;
   bool prepared_for_writing_, flushed_;
