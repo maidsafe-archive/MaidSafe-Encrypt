@@ -1365,7 +1365,7 @@ bool SelfEncryptor::DeleteAllChunks() {
     }
     catch(...) {
       try {
-        client_nfs_.Delete(key, nullptr);
+        client_nfs_.Delete<ImmutableData>(key, nullptr);
       }
       catch(...) {
         LOG(kWarning) << "Failed to delete chunk " << i;
@@ -1472,7 +1472,7 @@ void SelfEncryptor::DeleteChunk(const uint32_t &chunk_num) {
   }
   catch(...) {
     try {
-      client_nfs_.Delete(key, nullptr);
+      client_nfs_.Delete<ImmutableData>(key, nullptr);
     }
     catch(...) {
       LOG(kWarning) << "Failed to delete chunk " << chunk_num;

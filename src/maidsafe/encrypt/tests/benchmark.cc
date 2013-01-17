@@ -12,6 +12,7 @@
 *******************************************************************************/
 
 #include "boost/date_time/posix_time/posix_time.hpp"
+#include "boost/filesystem/operations.hpp"
 #include "maidsafe/common/log.h"
 #include "maidsafe/common/test.h"
 #include "maidsafe/encrypt/tests/encrypt_test_base.h"
