@@ -43,15 +43,16 @@ class EncryptTestBase {
       : test_dir_(maidsafe::test::CreateTestPath()),
         num_procs_(num_procs),
         client_nfs_(),
-        data_store_(new DataStore(MemoryUsage(uint64_t(0)),
-                                  DiskUsage(uint64_t(4294967296)),  // 1 << 32
-                                  PopFunctor())),
-        data_map_(new DataMap),
-        self_encryptor_(),
+        data_store_(std::make_shared<DataStore>(MemoryUsage(uint64_t(0)),
+                                                DiskUsage(uint64_t(4294967296)),  // 1 << 32
+                                                PopFunctor())),
+        data_map_(std::make_shared<DataMap>()),
+        self_encryptor_(std::make_shared<SelfEncryptor>(data_map_,
+                                                        *client_nfs_,
+                                                        *data_store_,
+                                                        num_procs_)),
         original_(),
-        decrypted_() {
-    self_encryptor_.reset(new SelfEncryptor(data_map_, *client_nfs_, *data_store_, num_procs_));
-  }
+        decrypted_() {}
   virtual ~EncryptTestBase() {}
 
  protected:

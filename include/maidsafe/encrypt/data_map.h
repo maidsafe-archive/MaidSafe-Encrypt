@@ -54,8 +54,7 @@ struct DataMap {
     if (!this)
       return false;
 
-    if ((content != other.content) ||
-        (chunks.size() != other.chunks.size()))
+    if (content != other.content || chunks.size() != other.chunks.size())
       return false;
 
     for (uint32_t i = 0; i < chunks.size(); ++i)
@@ -65,9 +64,7 @@ struct DataMap {
     return true;
   }
 
-  bool operator!=(const DataMap &other) const {
-    return !(*this == other);
-  }
+  bool operator!=(const DataMap &other) const { return !(*this == other); }
 
   std::vector<ChunkDetails> chunks;
   std::string content;  // Whole data item, if small enough
