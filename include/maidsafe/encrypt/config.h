@@ -16,9 +16,9 @@
 
 #include <cstdint>
 
-#include "maidsafe/data_types/detail/data_type_values.h"
 
 namespace maidsafe {
+
 namespace encrypt {
 
 const uint32_t kMinChunkSize(1024);  // bytes
@@ -41,6 +41,7 @@ enum ReturnCode {
 };
 
 }  // namespace encrypt
+
 }  // namespace maidsafe
 
 #endif  // MAIDSAFE_ENCRYPT_CONFIG_H_
