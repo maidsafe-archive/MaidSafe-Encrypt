@@ -16,7 +16,7 @@
 
 #include <cstdint>
 
-#include "maidsafe/detail/data_type_values.h"
+#include "maidsafe/data_types/detail/data_type_values.h"
 
 namespace maidsafe {
 namespace encrypt {
