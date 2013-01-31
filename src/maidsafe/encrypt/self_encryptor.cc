@@ -120,7 +120,7 @@ void DebugPrint(bool encrypting,
 
 
 SelfEncryptor::SelfEncryptor(DataMapPtr data_map,
-                             nfs::TemporaryClientMaidNfs& client_nfs,
+                             ClientNfs& client_nfs,
                              DataStore& data_store,
                              int num_procs)
     : data_map_(data_map ? data_map : std::make_shared<DataMap>()),

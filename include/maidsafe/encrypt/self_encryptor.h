@@ -43,10 +43,11 @@ int DecryptDataMap(const Identity& parent_id,
 
 class SelfEncryptor {
  public:
+  typedef nfs::ClientMaidNfs ClientNfs;
   typedef data_store::DataStore<data_store::DataBuffer> DataStore;
 
   SelfEncryptor(DataMapPtr data_map,
-                nfs::TemporaryClientMaidNfs& client_nfs,
+                ClientNfs& client_nfs,
                 DataStore& data_store,
                 int num_procs = 0);
   ~SelfEncryptor();
@@ -159,7 +160,7 @@ class SelfEncryptor {
   const uint32_t kQueueCapacity_;
   uint32_t retrievable_from_queue_;
   std::shared_ptr<byte> chunk0_raw_, chunk1_raw_;
-  nfs::TemporaryClientMaidNfs& client_nfs_;
+  ClientNfs& client_nfs_;
   DataStore& data_store_;
   uint64_t current_position_;
   bool prepared_for_writing_, flushed_;
