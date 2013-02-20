@@ -19,7 +19,8 @@
 #include <string>
 #include <tuple>
 
-#include "maidsafe/data_store/data_store.h"
+//#include "maidsafe/data_store/data_store.h"
+#include "maidsafe/data_store/permanent_store.h"
 #include "maidsafe/nfs/nfs.h"
 
 #include "maidsafe/encrypt/config.h"
@@ -36,15 +37,16 @@ crypto::CipherText EncryptDataMap(const Identity& parent_id,
                                   const Identity& this_id,
                                   DataMapPtr data_map);
 
-int DecryptDataMap(const Identity& parent_id,
-                   const Identity& this_id,
-                   const std::string &encrypted_data_map,
-                   DataMapPtr data_map);
+void DecryptDataMap(const Identity& parent_id,
+                    const Identity& this_id,
+                    const std::string &encrypted_data_map,
+                    DataMapPtr data_map);
 
 class SelfEncryptor {
  public:
   typedef nfs::ClientMaidNfs ClientNfs;
-  typedef data_store::DataStore<data_store::DataBuffer> DataStore;
+  //typedef data_store::DataStore<data_store::DataBuffer> DataStore;
+  typedef data_store::PermanentStore DataStore;
 
   SelfEncryptor(DataMapPtr data_map,
                 ClientNfs& client_nfs,
@@ -53,7 +55,7 @@ class SelfEncryptor {
   ~SelfEncryptor();
   bool Write(const char *data, const uint32_t &length, const uint64_t &position);
   bool Read(char *data, const uint32_t &length, const uint64_t &position);
-  bool DeleteAllChunks();
+  void DeleteAllChunks();
   // Can only truncate down in size
   bool Truncate(const uint64_t &position);
   // Forces all buffered data to be encrypted.  Missing portions of the file

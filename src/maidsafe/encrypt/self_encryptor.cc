@@ -724,7 +724,7 @@ int SelfEncryptor::EncryptChunk(const uint32_t &chunk_num, byte *data, const uin
     data_map_->chunks[chunk_num].storage_state = ChunkDetails::kPending;
     ImmutableKeyType key(Identity(data_map_->chunks[chunk_num].hash));
     try {
-      data_store_.Store(key, NonEmptyString(chunk_content));
+      data_store_.Put(key, NonEmptyString(chunk_content));
     }
     catch(...) {
       LOG(kError) << "Could not store " << Base32Substr(data_map_->chunks[chunk_num].hash);
@@ -1294,7 +1294,7 @@ void SelfEncryptor::ReadInProcessData(char *data,
   }
 }
 
-bool SelfEncryptor::DeleteAllChunks() {
+void SelfEncryptor::DeleteAllChunks() {
   // TODO(Team): Check that this two guards are needed or at least don't clash
   std::lock_guard<std::mutex> chunk_store_guard(chunk_store_mutex_);
   for (uint32_t i(0); i != data_map_->chunks.size(); ++i) {
@@ -1303,18 +1303,12 @@ bool SelfEncryptor::DeleteAllChunks() {
       data_store_.Delete(key);
     }
     catch(...) {
-      try {
-        client_nfs_.Delete<ImmutableData>(key, nullptr);
-      }
-      catch(...) {
-        LOG(kWarning) << "Failed to delete chunk " << i;
-        return false;
-      }
+      client_nfs_.Delete<ImmutableData>(key, nullptr);
     }
   }
   std::lock_guard<std::mutex> data_unique_guard(data_mutex_);
   data_map_->chunks.clear();
-  return true;
+  return;
 }
 
 bool SelfEncryptor::Truncate(const uint64_t &position) {
@@ -1397,10 +1391,10 @@ void SelfEncryptor::DeleteChunk(const uint32_t &chunk_num) {
   if (data_map_->chunks[chunk_num].hash.empty())
     return;
 
-  if (chunk_num < original_data_map_->chunks.size() &&
+  /*if (chunk_num < original_data_map_->chunks.size() &&
       data_map_->chunks[chunk_num].hash == original_data_map_->chunks[chunk_num].hash) {
     return;
-  }
+  }*/
 
   std::lock_guard<std::mutex> chunk_guard(chunk_store_mutex_);
   ImmutableKeyType key(Identity(data_map_->chunks[chunk_num].hash));
@@ -1425,9 +1419,7 @@ asymm::CipherText EncryptDataMap(const Identity& parent_id,
   assert(data_map);
 
   std::string serialised_data_map, encrypted_data_map;
-  int result(SerialiseDataMap(*data_map, serialised_data_map));
-  assert(result == kSuccess);
-  static_cast<void>(result);
+  SerialiseDataMap(*data_map, serialised_data_map);
 
   ByteArray array_data_map(GetNewByteArray(static_cast<uint32_t>(serialised_data_map.size())));
   uint32_t copied(MemCopy(array_data_map, 0, serialised_data_map.c_str(), Size(array_data_map)));
@@ -1464,54 +1456,43 @@ asymm::CipherText EncryptDataMap(const Identity& parent_id,
   return asymm::CipherText(encrypted_data_map);
 }
 
-int DecryptDataMap(const Identity& parent_id,
-                   const Identity& this_id,
-                   const std::string &encrypted_data_map,
-                   DataMapPtr data_map) {
+void DecryptDataMap(const Identity& parent_id,
+                    const Identity& this_id,
+                    const std::string &encrypted_data_map,
+                    DataMapPtr data_map) {
   assert(parent_id.string().size() == static_cast<size_t>(crypto::SHA512::DIGESTSIZE));
   assert(this_id.string().size() == static_cast<size_t>(crypto::SHA512::DIGESTSIZE));
   assert(!encrypted_data_map.empty());
   assert(data_map);
 
   std::string serialised_data_map;
-  try {
-    size_t inputs_size(parent_id.string().size() + this_id.string().size());
-    ByteArray enc_hash(GetNewByteArray(crypto::SHA512::DIGESTSIZE)),
-              xor_hash(GetNewByteArray(crypto::SHA512::DIGESTSIZE));
-    CryptoPP::SHA512().CalculateDigest(enc_hash.get(),
-                                       reinterpret_cast<const byte*>((parent_id.string() +
-                                                                      this_id.string()).data()),
-                                       inputs_size);
-    CryptoPP::SHA512().CalculateDigest(xor_hash.get(),
-                                       reinterpret_cast<const byte*>((this_id.string() +
-                                                                      parent_id.string()).data()),
-                                       inputs_size);
+  size_t inputs_size(parent_id.string().size() + this_id.string().size());
+  ByteArray enc_hash(GetNewByteArray(crypto::SHA512::DIGESTSIZE)),
+            xor_hash(GetNewByteArray(crypto::SHA512::DIGESTSIZE));
+  CryptoPP::SHA512().CalculateDigest(enc_hash.get(),
+                                      reinterpret_cast<const byte*>((parent_id.string() +
+                                                                    this_id.string()).data()),
+                                      inputs_size);
+  CryptoPP::SHA512().CalculateDigest(xor_hash.get(),
+                                      reinterpret_cast<const byte*>((this_id.string() +
+                                                                    parent_id.string()).data()),
+                                      inputs_size);
 
-    CryptoPP::CFB_Mode<CryptoPP::AES>::Decryption decryptor(
-        enc_hash.get(),
-        crypto::AES256_KeySize,
-        enc_hash.get() + crypto::AES256_KeySize);
+  CryptoPP::CFB_Mode<CryptoPP::AES>::Decryption decryptor(
+      enc_hash.get(),
+      crypto::AES256_KeySize,
+      enc_hash.get() + crypto::AES256_KeySize);
 
-    CryptoPP::StringSource filter(encrypted_data_map, true,
-        new XORFilter(
-            new CryptoPP::StreamTransformationFilter(
-                decryptor,
-                new CryptoPP::Gunzip(new CryptoPP::StringSink(serialised_data_map))),
-            xor_hash.get(),
-            crypto::SHA512::DIGESTSIZE));
-  }
-  catch(const CryptoPP::Exception &e) {
-    LOG(kError) << e.what();
-    return kDecryptionException;
-  }
-
-  int result(ParseDataMap(serialised_data_map, *data_map));
-  if (result != kSuccess) {
-    LOG(kError) << "Failed to parse datamap.";
-    return result;
-  }
-
-  return kSuccess;
+  CryptoPP::StringSource filter(encrypted_data_map, true,
+      new XORFilter(
+          new CryptoPP::StreamTransformationFilter(
+              decryptor,
+              new CryptoPP::Gunzip(new CryptoPP::StringSink(serialised_data_map))),
+          xor_hash.get(),
+          crypto::SHA512::DIGESTSIZE));
+  
+  ParseDataMap(serialised_data_map, *data_map);
+  return;
 }
 
 }  // namespace encrypt
