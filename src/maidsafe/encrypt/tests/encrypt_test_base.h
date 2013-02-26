@@ -20,9 +20,9 @@
 #include "boost/scoped_array.hpp"
 #include "boost/filesystem/path.hpp"
 
-#include "maidsafe/common/asio_service.h"
 #include "maidsafe/common/utils.h"
-
+#include "maidsafe/data_store/permanent_store.h"
+#include "maidsafe/nfs/nfs.h"
 #include "maidsafe/encrypt/self_encryptor.h"
 
 namespace fs = boost::filesystem;
@@ -31,10 +31,9 @@ namespace maidsafe {
 namespace encrypt {
 namespace test {
 
-typedef data_store::DataStore<data_store::DataBuffer> DataStore;
+typedef data_store::PermanentStore DataStore;
 typedef std::shared_ptr<DataStore> DataStorePtr;
-typedef DataStore::PopFunctor PopFunctor;
-typedef std::shared_ptr<nfs::TemporaryClientMaidNfs> ClientNfsPtr;
+typedef std::shared_ptr<nfs::ClientMaidNfs> ClientNfsPtr;
 typedef std::shared_ptr<SelfEncryptor> SelfEncryptorPtr;
 
 class EncryptTestBase {
@@ -42,10 +41,11 @@ class EncryptTestBase {
   explicit EncryptTestBase(int num_procs)
       : test_dir_(maidsafe::test::CreateTestPath()),
         num_procs_(num_procs),
-        client_nfs_(),
-        data_store_(std::make_shared<DataStore>(MemoryUsage(uint64_t(0)),
-                                                DiskUsage(uint64_t(4294967296)),  // 1 << 32
-                                                PopFunctor())),
+        routing_(nullptr),
+        maid_(maidsafe::passport::Maid::signer_type()),
+        client_nfs_(new nfs::ClientMaidNfs(routing_, maid_)),
+        data_store_(std::make_shared<DataStore>(*test_dir_ / "data_store",
+                                                DiskUsage(uint64_t(4294967296)))),
         data_map_(std::make_shared<DataMap>()),
         self_encryptor_(std::make_shared<SelfEncryptor>(data_map_,
                                                         *client_nfs_,
@@ -58,6 +58,8 @@ class EncryptTestBase {
  protected:
   maidsafe::test::TestPath test_dir_;
   int num_procs_;
+  routing::Routing routing_;
+  passport::Maid maid_;
   ClientNfsPtr client_nfs_;
   DataStorePtr data_store_;
   DataMapPtr data_map_;

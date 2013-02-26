@@ -11,14 +11,12 @@
 *  the explicit written permission of the board of directors of MaidSafe.net.  *
 *******************************************************************************/
 
-#include "boost/date_time/posix_time/posix_time.hpp"
+#include <chrono>
+
 #include "boost/filesystem/operations.hpp"
 #include "maidsafe/common/log.h"
 #include "maidsafe/common/test.h"
 #include "maidsafe/encrypt/tests/encrypt_test_base.h"
-
-
-namespace bptime = boost::posix_time;
 
 namespace maidsafe {
 namespace encrypt {
@@ -27,6 +25,8 @@ namespace test {
 class Benchmark : public EncryptTestBase,
                   public testing::TestWithParam<uint32_t> {
  public:
+  typedef std::chrono::time_point<std::chrono::system_clock> chrono_time_point;
+
   Benchmark() : EncryptTestBase(0),
                 kTestDataSize_(1024 * 1024 * 20),
                 kPieceSize_(GetParam() ? GetParam() : kTestDataSize_) {
@@ -35,11 +35,12 @@ class Benchmark : public EncryptTestBase,
   }
 
  protected:
-  void PrintResult(const bptime::ptime &start_time,
-                   const bptime::ptime &stop_time,
+  void PrintResult(const chrono_time_point& start_time,
+                   const chrono_time_point& stop_time,
                    bool encrypting,
                    bool compressible) {
-    uint64_t duration = (stop_time - start_time).total_microseconds();
+    uint64_t duration =
+      std::chrono::duration_cast<std::chrono::microseconds>(stop_time - start_time).count();
     if (duration == 0)
       duration = 1;
     uint64_t rate((static_cast<uint64_t>(kTestDataSize_) * 1000000) / duration);
@@ -47,7 +48,7 @@ class Benchmark : public EncryptTestBase,
     std::string comp(compressible ? "compressible" : "incompressible");
     std::cout << encrypted << BytesToBinarySiUnits(kTestDataSize_) << " of "
               << comp << " data in " << BytesToBinarySiUnits(kPieceSize_)
-              << " pieces in " << (duration / 1000000.0) << " seconds at a "
+              << " pieces in " << (duration / 1000000) << " seconds at a "
               << "speed of " << BytesToBinarySiUnits(rate) << "/s" << std::endl;
   }
   const uint32_t kTestDataSize_, kPieceSize_;
@@ -63,17 +64,17 @@ TEST_P(Benchmark, FUNC_BenchmarkMemOnly) {
              kTestDataSize_);
     }
 
-    bptime::ptime start_time(bptime::microsec_clock::universal_time());
+    chrono_time_point start_time(std::chrono::system_clock::now());
     for (uint32_t i(0); i < kTestDataSize_; i += kPieceSize_)
       ASSERT_TRUE(self_encryptor_->Write(&original_[i], kPieceSize_, i));
     self_encryptor_->Flush();
-    bptime::ptime stop_time(bptime::microsec_clock::universal_time());
+    chrono_time_point stop_time(std::chrono::system_clock::now());
     PrintResult(start_time, stop_time, true, compressible);
 
-    start_time = bptime::microsec_clock::universal_time();
+    start_time = std::chrono::system_clock::now();
     for (uint32_t i(0); i < kTestDataSize_; i += kPieceSize_)
       ASSERT_TRUE(self_encryptor_->Read(&decrypted_[i], kPieceSize_, i));
-    stop_time = bptime::microsec_clock::universal_time();
+    stop_time = std::chrono::system_clock::now();
     for (uint32_t i(0); i < kTestDataSize_; ++i)
       ASSERT_EQ(original_[i], decrypted_[i]) << "failed @ count " << i;
     PrintResult(start_time, stop_time, false, compressible);
@@ -91,10 +92,7 @@ TEST(MassiveFile, FUNC_MemCheck) {
   maidsafe::test::TestPath test_dir(maidsafe::test::CreateTestPath());
   fs::path data_store_path(*test_dir / "data_store");
   ClientNfsPtr client_nfs;
-  DataStore data_store(MemoryUsage(uint64_t(0)),
-                       DiskUsage(uint64_t(4294967296)),  // 1 << 32
-                       PopFunctor(),
-                       data_store_path);
+  DataStore data_store(data_store_path, DiskUsage(uint64_t(4294967296)));
 
   DataMapPtr data_map(new DataMap);
   SelfEncryptorPtr self_encryptor(new SelfEncryptor(data_map, *client_nfs, data_store, kNumProcs));
