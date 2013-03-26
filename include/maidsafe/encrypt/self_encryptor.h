@@ -19,7 +19,6 @@
 #include <string>
 #include <tuple>
 
-//#include "maidsafe/data_store/data_store.h"
 #include "maidsafe/data_store/permanent_store.h"
 #include "maidsafe/nfs/nfs.h"
 
@@ -45,7 +44,6 @@ void DecryptDataMap(const Identity& parent_id,
 class SelfEncryptor {
  public:
   typedef nfs::ClientMaidNfs ClientNfs;
-  //typedef data_store::DataStore<data_store::DataBuffer> DataStore;
   typedef data_store::PermanentStore DataStore;
 
   SelfEncryptor(DataMapPtr data_map,

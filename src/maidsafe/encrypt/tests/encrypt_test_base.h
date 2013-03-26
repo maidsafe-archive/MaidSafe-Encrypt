@@ -41,8 +41,8 @@ class EncryptTestBase {
   explicit EncryptTestBase(int num_procs)
       : test_dir_(maidsafe::test::CreateTestPath()),
         num_procs_(num_procs),
-        routing_(nullptr),
         maid_(maidsafe::passport::Maid::signer_type()),
+        routing_(maid_),
         client_nfs_(new nfs::ClientMaidNfs(routing_, maid_)),
         data_store_(std::make_shared<DataStore>(*test_dir_ / "data_store",
                                                 DiskUsage(uint64_t(4294967296)))),
@@ -58,8 +58,8 @@ class EncryptTestBase {
  protected:
   maidsafe::test::TestPath test_dir_;
   int num_procs_;
-  routing::Routing routing_;
   passport::Maid maid_;
+  routing::Routing routing_;
   ClientNfsPtr client_nfs_;
   DataStorePtr data_store_;
   DataMapPtr data_map_;

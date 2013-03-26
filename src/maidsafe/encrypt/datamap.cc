@@ -39,7 +39,6 @@ void SerialiseDataMap(const DataMap& data_map, std::string& serialised_data_map)
   }
   if (!proto_data_map.SerializeToString(&serialised_data_map))
     ThrowError(CommonErrors::serialisation_error);
-  return;
 }
 
 void ExtractChunkDetails(const protobuf::DataMap& proto_data_map, DataMap& data_map) {
@@ -61,7 +60,6 @@ void ExtractChunkDetails(const protobuf::DataMap& proto_data_map, DataMap& data_
         static_cast<ChunkDetails::StorageState>(proto_data_map.chunk_details(n).storage_state());
     data_map.chunks.push_back(temp);
   }
-  return;
 }
 
 void ParseDataMap(const std::string& serialised_data_map, DataMap& data_map) {
@@ -77,7 +75,6 @@ void ParseDataMap(const std::string& serialised_data_map, DataMap& data_map) {
   } else if (proto_data_map.chunk_details_size() != 0) {
     ExtractChunkDetails(proto_data_map, data_map);
   }
-  return;
 }
 
 }  // namespace encrypt

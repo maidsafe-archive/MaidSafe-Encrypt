@@ -36,7 +36,7 @@ struct ByteArrayDeleter {
   explicit ByteArrayDeleter(const uint32_t &size) : kSize_(size) {}
   void operator() (byte *&ptr) {
     delete[] ptr;
-    ptr = NULL;
+    ptr = nullptr;
   }
   const uint32_t kSize_;
 };

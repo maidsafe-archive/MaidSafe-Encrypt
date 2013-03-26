@@ -1308,7 +1308,6 @@ void SelfEncryptor::DeleteAllChunks() {
   }
   std::lock_guard<std::mutex> data_unique_guard(data_mutex_);
   data_map_->chunks.clear();
-  return;
 }
 
 bool SelfEncryptor::Truncate(const uint64_t &position) {
@@ -1490,9 +1489,8 @@ void DecryptDataMap(const Identity& parent_id,
               new CryptoPP::Gunzip(new CryptoPP::StringSink(serialised_data_map))),
           xor_hash.get(),
           crypto::SHA512::DIGESTSIZE));
-  
+
   ParseDataMap(serialised_data_map, *data_map);
-  return;
 }
 
 }  // namespace encrypt
