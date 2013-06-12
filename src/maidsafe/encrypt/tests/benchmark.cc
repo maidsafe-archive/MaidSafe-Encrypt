@@ -12,6 +12,7 @@
 *******************************************************************************/
 
 #include "boost/date_time/posix_time/posix_time.hpp"
+#include "maidsafe/common/log.h"
 #include "maidsafe/common/test.h"
 #include "maidsafe/encrypt/tests/encrypt_test_base.h"
 
@@ -80,6 +81,60 @@ TEST_P(Benchmark, FUNC_BenchmarkMemOnly) {
 }
 
 INSTANTIATE_TEST_CASE_P(WriteRead, Benchmark, testing::Values(0, 4096, 65536));
+
+// This test is to allow confirmation that memory usage is capped at an
+// acceptable level.  While the test is running, memory usage must be visually
+// monitored.
+TEST(MassiveFile, FUNC_MemCheck) {
+  int kNumProcs(8);
+  AsioService asio_service(5);
+  asio_service.Start();
+  maidsafe::test::TestPath test_dir(maidsafe::test::CreateTestPath());
+  fs::path buffered_chunk_store_path(*test_dir / RandomAlphaNumericString(8));
+  LOG(kInfo) << "Creating chunk store in " << buffered_chunk_store_path;
+  RemoteChunkStorePtr remote_chunk_store =
+        priv::chunk_store::CreateLocalChunkStore(buffered_chunk_store_path,
+                                                 *test_dir / "local_manager",
+                                                 *test_dir / "chunk_locks",
+                                                 asio_service.service());
+  priv::chunk_store::FileChunkStore file_chunk_store;
+  EXPECT_TRUE(file_chunk_store.Init(*test_dir / "temp"));
+
+  DataMapPtr data_map(new DataMap);
+  std::shared_ptr<SelfEncryptor> self_encryptor(new SelfEncryptor(data_map,
+                  *remote_chunk_store,
+                  file_chunk_store,
+                  kNumProcs));
+
+  const uint32_t kDataSize((1 << 20) + 1);
+  boost::scoped_array<char> original(new char[kDataSize]);
+  std::string content(RandomString(kDataSize));
+  std::copy(content.data(), content.data() + kDataSize, original.get());
+
+  // Writes ~200MB
+  for (uint64_t offset(0); offset != 200 * kDataSize; offset += kDataSize)
+    EXPECT_TRUE(self_encryptor->Write(original.get(), kDataSize, offset));
+
+  asio_service.Stop();
+
+  LOG(kInfo) << "Resetting self encryptor.";
+  self_encryptor.reset();
+  // Sleep to allow chosen memory monitor to update its display.
+  Sleep(boost::posix_time::seconds(1));
+
+  LOG(kInfo) << "Resetting chunk store.";
+  remote_chunk_store.reset();
+  boost::system::error_code rm_error_code, exists_error_code;
+  EXPECT_GT(fs::remove_all(buffered_chunk_store_path, rm_error_code), 0U)
+      << rm_error_code.message();
+  EXPECT_FALSE(fs::exists(buffered_chunk_store_path, exists_error_code))
+      << "Remove all failed: " << rm_error_code
+      << (exists_error_code ?
+          "\nExists error: " + exists_error_code.message() :
+          "");
+  // Sleep to allow chosen memory monitor to update its display.
+  Sleep(boost::posix_time::seconds(3));
+}
 
 }  // namespace test
 }  // namespace encrypt

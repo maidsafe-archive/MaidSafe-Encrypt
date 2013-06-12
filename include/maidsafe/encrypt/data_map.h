@@ -1,4 +1,3 @@
-
 /*******************************************************************************
 *  Copyright 2011 MaidSafe.net limited                                         *
 *                                                                              *
@@ -20,26 +19,21 @@
 
 #include "maidsafe/common/crypto.h"
 #include "boost/shared_array.hpp"
-#include "boost/serialization/string.hpp"
-#include "boost/serialization/vector.hpp"
 
-#include "maidsafe/encrypt/version.h"
-
-#if MAIDSAFE_ENCRYPT_VERSION != 1100
-#  error This API is not compatible with the installed library.\
-    Please update the maidsafe-encrypt library.
-#endif
 
 namespace maidsafe {
+
 namespace encrypt {
 
 struct ChunkDetails {
   enum PreHashState { kEmpty, kOutdated, kOk };
+  enum StorageState { kStored, kPending, kUnstored };
   ChunkDetails() : hash(),
                    pre_hash(),
                    old_n1_pre_hash(),
                    old_n2_pre_hash(),
                    pre_hash_state(kEmpty),
+                   storage_state(kUnstored),
                    size(0) {}
   std::string hash;  // SHA512 of processed chunk
   byte pre_hash[crypto::SHA512::DIGESTSIZE];  // SHA512 of unprocessed src data
@@ -49,16 +43,40 @@ struct ChunkDetails {
   // If the pre_hash hasn't been calculated, or if data has been written to the
   // chunk since the pre_hash was last calculated, pre_hash_ok should be false.
   PreHashState pre_hash_state;
+  StorageState storage_state;
   uint32_t size;  // Size of unprocessed source data in bytes
 };
 
 struct DataMap {
   DataMap() : chunks(), content() {}
+
+  bool operator==(const DataMap &other) const {
+    if (!this)
+      return false;
+
+    if ((content != other.content) ||
+        (chunks.size() != other.chunks.size()))
+      return false;
+
+    for (uint32_t i = 0; i < chunks.size(); ++i)
+      if (chunks[i].hash != other.chunks[i].hash)
+        return false;
+
+    return true;
+  }
+
+  bool operator!=(const DataMap &other) const {
+    return !(*this == other);
+  }
+
   std::vector<ChunkDetails> chunks;
   std::string content;  // Whole data item, if small enough
 };
 
 typedef std::shared_ptr<DataMap> DataMapPtr;
+
+int SerialiseDataMap(const DataMap& data_map, std::string& serialised_data_map);
+int ParseDataMap(const std::string& serialised_data_map, DataMap& data_map);
 
 /*
 // Hold datamaps in a version container
@@ -74,38 +92,7 @@ std::tuple<uint8_t, fs::path, VersionedDataMap> VersionedDirMap; // for dirs
 */
 
 }  // namespace encrypt
+
 }  // namespace maidsafe
-
-
-namespace boost {
-namespace serialization {
-
-#ifdef __MSVC__
-#  pragma warning(disable: 4127)
-#endif
-template<class Archive>
-void serialize(Archive &archive,  // NOLINT
-               maidsafe::encrypt::ChunkDetails &chunk_details,
-               const unsigned int /* version */) {
-  archive &chunk_details.hash;
-  archive &chunk_details.pre_hash;
-  archive &chunk_details.size;
-  if (Archive::is_loading::value)
-#ifdef __MSVC__
-#  pragma warning(default: 4127)
-#endif
-    chunk_details.pre_hash_state = maidsafe::encrypt::ChunkDetails::kOk;
-}
-
-template<class Archive>
-void serialize(Archive &archive,  // NOLINT
-               maidsafe::encrypt::DataMap &data_map,
-               const unsigned int /* version */) {
-  archive &data_map.chunks;
-  archive &data_map.content;
-}
-
-}  // namespace serialization
-}  // namespace boost
 
 #endif  // MAIDSAFE_ENCRYPT_DATA_MAP_H_

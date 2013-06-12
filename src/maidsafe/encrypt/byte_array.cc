@@ -12,7 +12,7 @@
 *******************************************************************************/
 
 #include "maidsafe/encrypt/byte_array.h"
-#include "maidsafe/encrypt/log.h"
+#include "maidsafe/common/log.h"
 
 namespace maidsafe {
 namespace encrypt {
@@ -20,7 +20,7 @@ namespace encrypt {
 ByteArray GetNewByteArray(const uint32_t &size) {
   ByteArray byte_array(new byte[size], ByteArrayDeleter(size));
   memset(byte_array.get(), 0, size);
-  return byte_array;
+  return std::move(byte_array);
 }
 
 uint32_t Size(const std::shared_ptr<byte> &ptr) {
@@ -32,12 +32,12 @@ uint32_t MemCopy(const ByteArray &destination,
                  const void *source,
                  uint32_t copy_size) {
   if (Size(destination) < destination_offset) {
-    DLOG(WARNING) << "Size (" << Size(destination) << ") < offset ("
+    LOG(kWarning) << "Size (" << Size(destination) << ") < offset ("
         << destination_offset << ").";
     return 0;
   }
   if (Size(destination) - destination_offset < copy_size) {
-    DLOG(WARNING) << "Resizing from " << copy_size << " to "
+    LOG(kWarning) << "Resizing from " << copy_size << " to "
         << Size(destination) - destination_offset << " to avoid overrun.";
     copy_size = Size(destination) - destination_offset;
   }

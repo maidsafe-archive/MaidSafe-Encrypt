@@ -14,56 +14,76 @@
 #ifndef MAIDSAFE_ENCRYPT_TESTS_ENCRYPT_TEST_BASE_H_
 #define MAIDSAFE_ENCRYPT_TESTS_ENCRYPT_TEST_BASE_H_
 
+#include <thread>
 #include <memory>
 
 #include "boost/scoped_array.hpp"
+#include "boost/filesystem/path.hpp"
 
 #include "maidsafe/common/asio_service.h"
-#include "maidsafe/common/omp.h"
 #include "maidsafe/common/utils.h"
 
 #include "maidsafe/private/chunk_store/remote_chunk_store.h"
 
 #include "maidsafe/encrypt/self_encryptor.h"
 
+namespace fs = boost::filesystem;
+
 namespace maidsafe {
 namespace encrypt {
 namespace test {
+
+typedef std::shared_ptr<priv::chunk_store::RemoteChunkStore>
+        RemoteChunkStorePtr;
+typedef std::shared_ptr<priv::chunk_store::FileChunkStore>
+        FileChunkStorePtr;
 
 class EncryptTestBase {
  public:
   explicit EncryptTestBase(int num_procs)
       : test_dir_(maidsafe::test::CreateTestPath()),
         num_procs_(num_procs),
-        asio_service_(),
-        chunk_store_(),
+        asio_service_(5),
+        remote_chunk_store_(),
+        file_chunk_store_(new priv::chunk_store::FileChunkStore()),
+        file_chunk_store_path_(*test_dir_ / "temp"),
         data_map_(new DataMap),
         self_encryptor_(),
         original_(),
         decrypted_() {
-    asio_service_.Start(5);
-    chunk_store_ =
-        priv::chunk_store::CreateLocalChunkStore(*test_dir_,
+    asio_service_.Start();
+    fs::path buffered_chunk_store_path(*test_dir_ / RandomAlphaNumericString(8));
+    remote_chunk_store_ =
+        priv::chunk_store::CreateLocalChunkStore(buffered_chunk_store_path,
+                                                 *test_dir_ / "local_manager",
+                                                 *test_dir_ / "chunk_locks",
                                                  asio_service_.service());
+    if (!file_chunk_store_->Init(file_chunk_store_path_)) {
+      LOG(kError) << "Failed to initialise file chunk store.";
+    }
     self_encryptor_.reset(new SelfEncryptor(data_map_,
-                                            chunk_store_,
+                                            *remote_chunk_store_,
+                                            *file_chunk_store_,
                                             num_procs_));
   }
   virtual ~EncryptTestBase() {
     asio_service_.Stop();
-    if (testing::UnitTest::GetInstance()->current_test_info()->result()->
-        Failed()) {
-      std::cerr << "Number of available processors set in SelfEncryptor: "
-                << ((num_procs_ == 0) ? omp_get_num_procs() : num_procs_)
-                << std::endl;
-    }
+//     if (testing::UnitTest::GetInstance()->current_test_info()->result()->
+//         Failed()) {
+//       std::cerr << "Number of available processors set in SelfEncryptor: "
+//                 << ((num_procs_ == 0) ? (std::max(std::thread::hardware_concurrency(), 2U)):
+//                                         num_procs_)
+//                 << std::endl;
+//     }
   }
 
  protected:
   maidsafe::test::TestPath test_dir_;
   int num_procs_;
   AsioService asio_service_;
-  RemoteChunkStorePtr chunk_store_;
+  RemoteChunkStorePtr remote_chunk_store_;
+  FileChunkStorePtr file_chunk_store_;
+  fs::path file_chunk_store_path_;
   DataMapPtr data_map_;
   std::shared_ptr<SelfEncryptor> self_encryptor_;
   boost::scoped_array<char> original_, decrypted_;

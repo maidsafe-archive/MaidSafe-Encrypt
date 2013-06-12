@@ -16,12 +16,6 @@
 
 #include <cstdint>
 
-#include "maidsafe/encrypt/version.h"
-
-#if MAIDSAFE_ENCRYPT_VERSION != 1100
-#  error This API is not compatible with the installed library.\
-    Please update the maidsafe-encrypt library.
-#endif
 
 namespace maidsafe {
 namespace encrypt {
@@ -38,8 +32,8 @@ enum ReturnCode {
   kMissingChunk = -200005,
   kEncryptionException = -200006,
   kDecryptionException = -200007,
-  kSerialisationException = -200008,
-  kDeserialisationException = -200009,
+  kSerialisationError = -200008,
+  kDeserialisationError = -200009,
   kInvalidPosition = -200010,
   kSequencerException = -200101,
   kSequencerAddError = -200102

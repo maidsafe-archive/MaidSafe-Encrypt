@@ -33,9 +33,9 @@
 // #include "boost/serialization/map.hpp"
 // #include "maidsafe/common/crypto.h"
 // #include "maidsafe/common/file_chunk_store.h"
+// #include "maidsafe/common/log.h"
 // #include "maidsafe/common/utils.h"
 // #include "maidsafe/encrypt/data_map.h"
-// #include "maidsafe/encrypt/log.h"
 // #include "maidsafe/encrypt/self_encryption.h"
 // #include "maidsafe/encrypt/utils.h"
 //

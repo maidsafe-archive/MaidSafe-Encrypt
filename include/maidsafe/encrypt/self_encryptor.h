@@ -14,54 +14,48 @@
 #ifndef MAIDSAFE_ENCRYPT_SELF_ENCRYPTOR_H_
 #define MAIDSAFE_ENCRYPT_SELF_ENCRYPTOR_H_
 
-#include <tuple>
 #include <cstdint>
+#include <memory>
 #include <string>
-#include "boost/scoped_ptr.hpp"
-#include "boost/shared_array.hpp"
+#include <tuple>
+
 #include "boost/thread/shared_mutex.hpp"
 #include "boost/thread/locks.hpp"
 
+#include "maidsafe/private/chunk_store/file_chunk_store.h"
+#include "maidsafe/private/chunk_store/remote_chunk_store.h"
+
 #include "maidsafe/encrypt/config.h"
 #include "maidsafe/encrypt/data_map.h"
-#include "maidsafe/encrypt/version.h"
-
-#if MAIDSAFE_ENCRYPT_VERSION != 1100
-#  error This API is not compatible with the installed library.\
-    Please update the library.
-#endif
 
 
 namespace maidsafe {
 
 namespace priv {
 namespace chunk_store {
-class RemoteChunkStore;
+  class RemoteChunkStore;
+  class FileChunkStore;
 }  // namespace chunk_store
 }  // namespace priv
-
-typedef std::shared_ptr<priv::chunk_store::RemoteChunkStore>
-        RemoteChunkStorePtr;
 
 namespace encrypt {
 
 class Sequencer;
 
-int EncryptDataMap(const std::string &parent_id,
-                   const std::string &this_id,
-                   DataMapPtr data_map,
-                   std::string *encrypted_data_map);
+asymm::CipherText EncryptDataMap(const Identity& parent_id,
+                                 const Identity& this_id,
+                                 DataMapPtr data_map);
 
-int DecryptDataMap(const std::string &parent_id,
-                   const std::string &this_id,
+int DecryptDataMap(const Identity& parent_id,
+                   const Identity& this_id,
                    const std::string &encrypted_data_map,
                    DataMapPtr data_map);
-
 
 class SelfEncryptor {
  public:
   SelfEncryptor(DataMapPtr data_map,
-                RemoteChunkStorePtr chunk_store,
+                priv::chunk_store::RemoteChunkStore& remote_chunk_store,
+                priv::chunk_store::FileChunkStore& file_chunk_store,
                 int num_procs = 0);
   ~SelfEncryptor();
   bool Write(const char *data,
@@ -74,9 +68,10 @@ class SelfEncryptor {
   // Forces all buffered data to be encrypted.  Missing portions of the file
   // be filled with '\0's
   bool Flush();
+  bool CanStore();
+
   uint64_t size() const {
-    return (file_size_ < truncated_file_size_) ?
-        truncated_file_size_ : file_size_;
+    return (file_size_ < truncated_file_size_) ? truncated_file_size_ : file_size_;
   }
   DataMapPtr data_map() const { return data_map_; }
 
@@ -176,10 +171,14 @@ class SelfEncryptor {
   void ReadInProcessData(char *data,
                          const uint32_t &length,
                          const uint64_t &position);
+  bool TruncateUp(const uint64_t &position);
+  bool AppendNulls(const uint64_t &position);
+  bool TruncateDown(const uint64_t &position);
   void DeleteChunk(const uint32_t &chunk_num);
 
   DataMapPtr data_map_;
-  boost::scoped_ptr<Sequencer> sequencer_;
+  DataMapPtr original_data_map_;
+  std::unique_ptr<Sequencer> sequencer_;
   const uint32_t kDefaultByteArraySize_;
   uint64_t file_size_, last_chunk_position_;
   uint64_t truncated_file_size_;
@@ -189,13 +188,14 @@ class SelfEncryptor {
   const uint32_t kQueueCapacity_;
   uint32_t retrievable_from_queue_;
   std::shared_ptr<byte> chunk0_raw_, chunk1_raw_;
-  RemoteChunkStorePtr chunk_store_;
+  priv::chunk_store::RemoteChunkStore& remote_chunk_store_;
+  priv::chunk_store::FileChunkStore& file_chunk_store_;
   uint64_t current_position_;
   bool prepared_for_writing_, flushed_;
-  boost::shared_array<char> read_cache_;
+  std::unique_ptr<char[]> read_cache_;
   uint64_t cache_start_position_;
   bool prepared_for_reading_;
-  boost::shared_array<char> read_buffer_;
+  std::unique_ptr<char[]> read_buffer_;
   bool buffer_activated_;
   uint32_t buffer_length_;
   uint64_t last_read_position_;

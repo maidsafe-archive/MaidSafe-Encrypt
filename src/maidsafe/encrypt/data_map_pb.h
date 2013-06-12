@@ -1,4 +1,3 @@
-
 /*******************************************************************************
 *  Copyright 2011 MaidSafe.net limited                                         *
 *                                                                              *
@@ -11,12 +10,16 @@
 *  the explicit written permission of the board of directors of MaidSafe.net.  *
 *******************************************************************************/
 
-#ifndef MAIDSAFE_ENCRYPT_LOG_H_
-#define MAIDSAFE_ENCRYPT_LOG_H_
+#ifndef MAIDSAFE_ENCRYPT_DATA_MAP_PB_H_
+#define MAIDSAFE_ENCRYPT_DATA_MAP_PB_H_
 
-#include "maidsafe/common/log.h"
+#ifdef __MSVC__
+#  pragma warning(push)
+#  pragma warning(disable: 4127 4244 4267)
+#endif
+#include "maidsafe/encrypt/data_map.pb.h"
+#ifdef __MSVC__
+#  pragma warning(pop)
+#endif
 
-#undef LOG
-#define LOG(severity) MAIDSAFE_LOG(encrypt, severity)
-
-#endif  // MAIDSAFE_ENCRYPT_LOG_H_
+#endif  // MAIDSAFE_ENCRYPT_DATA_MAP_PB_H_
